@@ -1,0 +1,3 @@
+# =^.^= lang=kitteh
+
+print("hello starlark")

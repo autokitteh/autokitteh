@@ -1,0 +1,17 @@
+#!/bin/bash
+
+cd "$(dirname "$0")"
+
+source common
+
+[[ ! -d ${UNLOCKED_CRYPT_PATH} ]] && echo "no unlocked crypt" && exit 1
+
+trap "rm -f ${ARCHIVE_PATH}" 0
+
+touch "${UNLOCKED_CRYPT_PATH}/.saved"
+
+tar cvf "${ARCHIVE_PATH}" "${UNLOCKED_CRYPT_PATH}"
+
+[[ -w "${LOCKED_CRYPT_PATH}" ]] && mv "${LOCKED_CRYPT_PATH}" ".${LOCKED_CRYPT_PATH}.bak"
+
+gpg --cipher-algo AES256 -o "${LOCKED_CRYPT_PATH}" -c "${ARCHIVE_PATH}"

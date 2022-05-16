@@ -1,0 +1,8 @@
+{
+  "sounds": {
+    "pig": "oink",
+    "cat": "meow",
+    "dog": "woof",
+    "human": "hi"
+  }
+}

@@ -1,0 +1,26 @@
+load('ak', 'get_credentials', 'get_secret')
+load('autokitteh.slack', 'slack')
+load('autokitteh.twilio', 'twilio')
+
+load('autokitteh.test', 'test')
+load('fs:examples/default/sounds.json', 'sounds')
+
+
+def _on_slack_message(ak_context, channel, text):
+  _slack = slack.open(secret_token=get_credentials('slack', ak_context['team_id']))
+  _twilio = twilio.open(account_sid=get_secret('twilio_account_sid'), secret_auth_token=get_secret('twilio_auth_token'))
+
+  print('%s: %s' % (channel, text))
+
+  if text.startswith('text '):
+    _twilio.create_message(to='9173329447', from_='7752548834', body=text[4:])
+    _slack.post_message(channel=channel, text='texted')
+  if text in sounds:
+    _slack.post_message(channel=channel, text=sounds[text])
+  elif text.startswith('say '):
+    _slack.post_message(channel=channel, text=text[4:])
+
+
+spec = [
+  ('slack.message', _on_slack_message, 'team_id'),
+]

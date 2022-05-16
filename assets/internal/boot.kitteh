@@ -1,0 +1,50 @@
+load('$inmem:second', _='none')
+
+load('reflect', 'funcargs')
+load('internal.ak', 'ak')
+
+
+def _getarg(arg, binding, event):
+  if arg == 'ak_name':
+    return binding.name
+  elif arg == 'ak_ctx':
+    return binding.context
+  elif arg == 'ak_event':
+    return event
+
+  # 'event_X' gets X from event struct...
+  if arg.startswith('event_'):
+    _name = arg[6:]
+    if hasattr(event, _name):
+      return getattr(event, _name)
+
+  # ... while all others get from event data.
+  if arg in event.data.keys():
+    return event.data[arg]
+
+  fail('does not know how to supply argument %r' % arg)
+
+
+def _handle(binding, event, h = None):
+  h = h or binding.handler
+
+  args = funcargs(h)
+  kwargs = {arg: _getarg(arg, binding, event) for arg in args}
+
+  ret = h(**kwargs)
+
+  # if return value is a function, call it the same way the original
+  # handler is called. this faciliates deferring handling to other
+  # handlers if required.
+  if type(ret) == 'function':
+    _handle(binding, event, h = ret)
+
+
+def main():
+  bindings = ak.sources.match()
+
+  for binding in bindings:
+    _handle(binding, ak.event)
+
+
+main()

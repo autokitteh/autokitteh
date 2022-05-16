@@ -1,0 +1,25 @@
+{{ define "event-state" }}
+  {{ typeOf .State.Type | replace "*event.EventState_" "" | upper }}
+{{ end }}
+
+{{ define "project-event-state" }}
+  {{ typeOf .State.Type | replace "*event.ProjectEventState_" "" | upper }}
+{{ end }}
+
+{{ define "header" }}
+<html>
+  <head>
+    <title>{{ . }}</title>
+
+    <link rel="stylesheet" href="/dashboard/static/dashboard.css">
+  </head>
+  <body>
+    <nav>
+      autokitteh |&nbsp; <a href="/dashboard/events">Events</a>
+    </nav>
+{{ end }}
+
+{{ define "footer" }}
+  </body>
+</html>
+{{ end }}

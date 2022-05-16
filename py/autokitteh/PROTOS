@@ -1,0 +1,23 @@
+# Proto directories to include in package.
+account
+accountsvc
+croneventsrc
+event
+eventsrc
+eventsrcsvc
+eventsvc
+fseventsrc
+googleapi
+httpeventsrc
+lang
+langsvc
+plugin
+pluginsprovidersvc
+pluginsregsvc
+program
+project
+projectsvc
+secretssvc
+statesvc
+validate
+values

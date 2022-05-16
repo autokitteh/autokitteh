@@ -1,0 +1,65 @@
+syntax = "proto3";
+
+package autokitteh.statesvc;
+
+option go_package = "gitlab.com/softkitteh/autokitteh/gen/proto/stubs/go/statesvc";
+
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+import "validate/validate.proto";
+
+import "values/values.proto";
+
+
+message SetRequest {
+  string       project_id = 1 {{ ProjectID }};
+  string       name       = 2 {{ VarName }};
+  values.Value value      = 3; // omit to delete.
+}
+
+message SetResponse {}
+
+message ValueMetadata {
+  google.protobuf.Timestamp updated_at = 1;
+}
+
+message GetRequest {
+  string        project_id = 1 {{ ProjectID }};
+  string        name       = 2 {{ VarName }};
+  ValueMetadata metadata   = 3;
+}
+
+message GetResponse {
+  values.Value  value    = 1 [(validate.rules).message.required = true];
+  ValueMetadata metadata = 2;
+}
+
+message ListRequest {
+  string project_id = 1 {{ ProjectID }};
+}
+
+message ListResponse {
+  repeated string names = 1;
+}
+
+
+service State {
+  rpc Set(SetRequest) returns (SetResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/states/{project_id}/{name}"
+      body: "*"
+    };
+  }
+
+  rpc Get(GetRequest) returns (GetResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/states/{project_id}/{name}"
+    };
+  }
+
+  rpc List(ListRequest) returns (ListResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/states/{project_id}"
+    };
+  }
+}

@@ -1,0 +1,21 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+build = "*"
+mypy = "*"
+types-protobuf = "*"
+grpc-stubs = "*"
+pytest = "*"
+protobuf3 = "*"
+click = "*"
+twine = "*"
+protobuf = "*"
+types-requests = "*"
+
+[dev-packages]
+
+[requires]
+python_version = "3.9"

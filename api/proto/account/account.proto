@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package autokitteh.account;
+
+option go_package = "gitlab.com/softkitteh/autokitteh/gen/proto/stubs/go/account";
+
+import "google/protobuf/timestamp.proto";
+import "validate/validate.proto";
+
+
+message AccountSettings {
+  bool enabled = 1;
+
+  // General human readable data about the account.
+  // Not used for any automation.
+  map<string, string> memo = 50 [(validate.rules).map.keys.string.min_len = 1];
+}
+
+message Account {
+  string          name = 1 {{ AccountName }};
+  AccountSettings settings = 2;
+
+  google.protobuf.Timestamp created_at = 100;
+  google.protobuf.Timestamp updated_at = 101;
+}

@@ -1,0 +1,7 @@
+load("meow.kitteh", "meow")
+load("woof.kitteh", "woof")
+load("test-wrapped.kitteh.yaml", "animals")
+
+print(animals)
+
+voices=[meow, woof, predefined]

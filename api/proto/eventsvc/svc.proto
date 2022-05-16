@@ -1,0 +1,146 @@
+syntax = "proto3";
+
+package autokitteh.eventsvc;
+
+option go_package = "gitlab.com/softkitteh/autokitteh/gen/proto/stubs/go/eventsvc";
+
+import "google/api/annotations.proto";
+import "validate/validate.proto";
+
+import "event/event.proto";
+import "event/event_state.proto";
+import "event/project_state.proto";
+import "values/values.proto";
+
+
+message IngestEventRequest {
+  string                    src_id            = 1 {{ EventSourceID }};
+  string                    association_token = 2;
+  string                    type              = 3;
+  map<string, values.Value> data              = 4 {{ VarMap }};
+  string                    original_id       = 5;
+
+  // for caller use only - not used in event processing.
+  map<string, string>       memo        = 50 [(validate.rules).map.keys.string.min_len = 1];
+}
+
+message IngestEventResponse {
+  string id = 1 {{ EventID }};
+}
+
+message GetEventRequest {
+  string id = 1 {{ EventID }};
+}
+
+message GetEventResponse {
+  event.Event event = 1 [(validate.rules).message.required = true];
+}
+
+message GetEventStateRequest {
+  string id = 1 {{ EventID }};
+}
+
+message GetEventStateResponse {
+  repeated event.EventStateRecord log = 1 [(validate.rules).repeated.items.message.required = true];
+}
+
+message GetEventStateForProjectRequest {
+  string id         = 1 {{ EventID }};
+  string project_id = 2 {{ ProjectID }};
+}
+
+message GetEventStateForProjectResponse {
+  repeated event.ProjectEventStateRecord log = 1 [(validate.rules).repeated.items.message.required = true];
+}
+
+message UpdateEventStateRequest {
+  string           id         = 1 {{ EventID }};
+  event.EventState state      = 2 [(validate.rules).message.required = true];
+}
+
+message UpdateEventStateResponse {}
+
+message UpdateEventStateForProjectRequest {
+  string                  id         = 1 {{ EventID }};
+  string                  project_id = 2 {{ ProjectID }};
+  event.ProjectEventState state      = 3 [(validate.rules).message.required = true];
+}
+
+message UpdateEventStateForProjectResponse {}
+
+message ListEventsRequest {
+  string project_id = 1; // if not set, all events.
+  uint32 ofs        = 2;
+  uint32 len        = 3;
+}
+
+message ListEventRecord {
+  event.Event                     event  = 1 [(validate.rules).message.required = true];
+  repeated event.EventStateRecord states = 2 [(validate.rules).repeated.items.message.required = true];
+}
+
+message ListEventsResponse {
+  repeated ListEventRecord records = 1 [(validate.rules).repeated.items.message.required = true];
+}
+
+message GetProjectWaitingEventsRequest {
+  string project_id = 1; // if not set, all events.
+}
+
+message GetProjectWaitingEventsResponse {
+  repeated string event_ids = 2 {{ RepeatedEventID }};
+}
+
+service Events {
+  rpc IngestEvent(IngestEventRequest) returns (IngestEventResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/events",
+      body: "*"
+    };
+  }
+
+  rpc GetEvent(GetEventRequest) returns (GetEventResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/events/{id}",
+    };
+  }
+
+  rpc GetEventState(GetEventStateRequest) returns (GetEventStateResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/events/{id}/state",
+    };
+  }
+
+  rpc UpdateEventState(UpdateEventStateRequest) returns (UpdateEventStateResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/events/{id}/state",
+    };
+  }
+
+  rpc ListEvents(ListEventsRequest) returns (ListEventsResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/events",
+      additional_bindings {
+        get: "/api/v1/projects/{project_id}/events"
+      }
+    };
+  }
+
+  rpc GetEventStateForProject(GetEventStateForProjectRequest) returns (GetEventStateForProjectResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/events/{id}/projects/{project_id}/state",
+    };
+  }
+
+  rpc UpdateEventStateForProject(UpdateEventStateForProjectRequest) returns (UpdateEventStateForProjectResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/events/{id}/projects/{project_id}/state",
+    };
+  }
+
+  rpc GetProjectWaitingEvents(GetProjectWaitingEventsRequest) returns (GetProjectWaitingEventsResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/projects/{project_id}/waiting",
+    };
+  }
+}

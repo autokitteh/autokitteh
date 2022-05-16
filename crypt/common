@@ -1,0 +1,9 @@
+set -euo pipefail
+
+[[ -n ${DEBUG-} ]] && set -x
+
+CRYPT_NAME="${CRYPT_NAME-data}"
+
+ARCHIVE_PATH=".${CRYPT_NAME}.tar.gz"
+UNLOCKED_CRYPT_PATH="${CRYPT_NAME}/"
+LOCKED_CRYPT_PATH="${CRYPT_NAME}.gpg"

@@ -1,0 +1,139 @@
+{{ template "header" (cat "Event" .Event.Id "/" .Project.Id) }}
+<table>
+  <tr>
+    <th>T</th>
+    <th>ID</th>
+    <th>Src Binding</th>
+    <th>Type</th>
+    <th>OrigID</th>
+    <th>State</th>
+  </tr>
+  <tr>
+    <td>
+      {{ .Event.T.Seconds | date "2006-01-02 15:04:05" }}
+    </td>
+    <td>
+      <b>
+      <a href="/dashboard/events/{{ .Event.Id }}">{{ .Event.Id }}</a>
+      &#8594;
+      <a href="/dashboard/projects/{{ .Project.Id }}">{{ .Project.Id }}</a> 
+      "{{ .Project.Settings.Name }}"
+      </b>
+    </td>
+    <td>
+      <a href="/dashboard/eventsrcs/{{ .Event.SrcId }}">{{ .Event.SrcId }}</a>
+      &#8594;
+      <a href="/dashboard/eventsrcs/{{ .Event.SrcId }}/bindings/{{ .Project.Id }}/{{ .Binding.Name }}">{{ .Binding.Name }}</a>
+
+    </td>
+    <td>
+      {{ .Event.Type }}
+    </td>
+    <td>
+      {{ .Event.OriginalId }}
+    </td>
+    <td>
+      {{ template "project-event-state" (first .States) }}
+    </td>
+  </tr>
+  <tr>
+    <td colspan=6>
+      <dl>
+        <dt>Data:</dt>
+        <dd><pre>{{ toPrettyJson .UnwrappedData }}</pre></dd>
+      </dl>
+    </td>
+  </tr>
+  {{ if .Event.Memo }}
+  <tr>
+    <td colspan=6>
+      <dl>
+        <dt>Memo:</dt>
+        <dd><pre>{{ toPrettyJson .Event.Memo}}</pre></dd>
+      </dl>
+    </td>
+  </tr>
+  {{ end }}
+  <tr>
+    <td colspan=6>
+      <dt>States:</dt>
+      <dd>
+        <ul class="no-bullets">
+          {{ range .States }}
+          <li class="no-bullets">{{ .T.Seconds | date "2006-01-02 15:04:05" }} | {{ template "project-event-state"  . }} </li>
+          {{ end }}
+        </ul>
+      </dd>
+    </td>
+  </tr>
+  {{ $state := (first .States).State.Type }}
+  {{ $stateName := trimPrefix "_" (regexFind "_.+" (upper (typeOf $state))) }}
+  {{ if eq $stateName "IGNORED" }}
+  <tr>
+    <td colspan=6>
+      <dt>Ignored:</dt>
+      <dd>
+        <pre>{{ $state.Reason }}</pre>
+      </dd>
+    </td>
+  </tr>
+  {{ else if eq $stateName "ERROR" }}
+  <tr>
+    <td colspan=6>
+      <dt>Error:</dt>
+      <dd>
+        <pre>{{ $state.Error.Error }}</pre>
+      </dd>
+    </td>
+  </tr>
+  {{ end }}
+  {{ if .RunSummary }}
+  <tr>
+    <td colspan=6>
+      <dt>Console:</dt>
+      <dd>
+        <textarea class="console" cols=100 readonly=true wrap=off>{{ join "\n" .FlatPrints }}</textarea>
+      </dd>
+      <dt>Log:</dt>
+      <dd>
+        <ol class="no-bullets">
+        {{ range .FlatLog }}
+          <li class="no-bullets">
+            <details>
+              <summary>
+                {{ if .Source }}
+                <span class="run-source">{{ .Source.Scheme }}:{{ .Source.Path | base | abbrev 15 }}</span>
+                {{ else }}
+                <span class="run-source">boot</span>
+                {{ end }}
+                |
+                {{ $runStateName := upper (trimPrefix "_" (regexFind "_.+" (typeOf .State.Type))) }}
+                {{ .T.Seconds | date "2006-01-02 15:04:05" }} |
+                <span class="run-state">{{ $runStateName }}</span>
+                |
+                {{ if eq $runStateName "LOAD" }}
+                  {{ toJson .State.Type.Load.Path }}
+                {{ else if eq $runStateName "LOADRET" }}
+                  {{ range $k, $v := .State.Type.Loadret.Vals }}{{ $k }}&nbsp;{{ end }}
+                {{ else if eq $runStateName "CALL" }}
+                  {{ .State.Type.Call.Call }}
+                {{ else if eq $runStateName "PRINT" }}
+                  {{ .State.Type.Print.Text | abbrev 60 | quote }}
+                {{ else if eq $runStateName "COMPLETED" }}
+                  {{ range $k, $v := .State.Type.Completed.Vals }}{{ $k }}&nbsp;{{ end }}
+                {{ else if eq $runStateName "ERROR" }}
+                {{ end}}
+                <!-- TODO: error -->
+                <!-- TODO: cancelled -->
+              </summary>
+              <pre>{{ protoToPrettyJson .State }}</pre>
+            </details>
+          </li>
+        {{ end }}
+        </ol>
+      </dd>
+    </td>
+  </tr>
+  {{ end }}
+</table>
+{{ template "footer" }}

@@ -1,0 +1,14 @@
+dict:
+  items:
+    - k:
+       string:
+         v: animals
+      v:
+        list:
+          vs:
+            - string:
+                v:
+                  cat
+            - string:
+                v:
+                  dog

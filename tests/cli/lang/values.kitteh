@@ -1,0 +1,10 @@
+s="meow"
+another_s="mew mew mew"
+number=42
+another_number=4.3
+b=True
+l=[1, 2, number, b, s]
+t=(1.2, 2, number)
+d={"cat": s, "n": number}
+st=struct(x=1, y=2)
+m=module("mod", foo=1, st=st)

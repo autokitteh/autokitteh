@@ -1,0 +1,35 @@
+load('parsecmd', 'parsecmd')
+load('slack', 'slack')
+load('github', 'github')
+
+
+
+def _on_github_issue_comment(binding_context, comment, issue):
+  if comment.body.startswith("/"):
+    cmd = parsecmd(comment.body[1:])
+
+    if cmd.name == 'meow':
+      _slack = slack.open(secret_token=binding_context['secret_slack_token'])
+
+      _slack.post_message(
+        channel=binding_context['slack_channel'],
+        text='%s wants a review for %s.' % (comment.user.login, issue.html_url),
+      )
+
+      for arg in cmd.args:
+        user = _slack.get_user_by_email(email=arg)
+        _slack.post_message(
+          channel=user.id,
+          text='%s wants a review for %s: ' % (comment.user.login, issue.html_url),
+        )
+
+
+def setup(sources, secret_slack_token, slack_channel):
+  sources.bind(
+    "github.issue_comment",
+    _on_github_issue_comment,
+    context={
+      'secret_slack_token': secret_slack_token,
+      'slack_channel': slack_channel,
+    },
+  )

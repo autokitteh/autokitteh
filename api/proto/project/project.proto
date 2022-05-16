@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+package autokitteh.project;
+
+option go_package = "gitlab.com/softkitteh/autokitteh/gen/proto/stubs/go/project";
+
+import "google/protobuf/timestamp.proto";
+import "validate/validate.proto";
+
+import "program/program.proto";
+import "values/values.proto";
+
+message ProjectPlugin {
+  string plugin_id = 1 {{ PluginID }};
+  bool   enabled   = 2;
+}
+
+message ProjectSettings {
+  string       name          = 1;
+  bool         enabled       = 2;
+
+  program.Path main_path = 3;
+
+  map<string, values.Value> predecls = 5 {{ VarMap }};
+
+  repeated ProjectPlugin plugins = 6 [(validate.rules).repeated.items.message.required = true];
+
+  // General human readable data about the project.
+  // Not used for any automation.
+  map<string, string> memo = 50;
+}
+
+message Project {
+  string          id           = 1 {{ MaybeProjectID }}; // must be populated when in the db.
+  string          account_name = 2 {{ AccountName }};
+  ProjectSettings settings     = 3 [(validate.rules).message.required = true];
+
+  google.protobuf.Timestamp created_at = 100;
+  google.protobuf.Timestamp updated_at = 101;
+}

@@ -1,0 +1,5 @@
+#!/bin/bash
+
+set -euo pipefail
+
+AK_PROC_READY_ID=$$ exec make -C ../../py/twilioplugin run

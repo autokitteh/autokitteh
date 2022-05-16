@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+package autokitteh.githubeventsrc;
+
+option go_package = "gitlab.com/softkitteh/autokitteh/gen/proto/stubs/go/githubeventsrc";
+
+import "google/api/annotations.proto";
+import "validate/validate.proto";
+
+
+message BindRequest {
+  string project_id = 1 {{ ProjectID }};
+  string name       = 2;
+  string org        = 3;
+  string repo       = 4;
+}
+
+message BindResponse {}
+
+message UnbindRequest {
+  string project_id = 1 {{ ProjectID }};
+  string name       = 2;
+}
+
+message UnbindResponse {}
+
+
+service GithubEventSource {
+  rpc Bind(BindRequest) returns (BindResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/githubsrc/bind",
+      body: "*"
+    };
+  }
+
+  rpc Unbind(UnbindRequest) returns (UnbindResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/githubsrc/unbind",
+      body: "*"
+    };
+  }
+}

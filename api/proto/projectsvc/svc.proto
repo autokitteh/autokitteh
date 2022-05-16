@@ -1,0 +1,79 @@
+syntax = "proto3";
+
+package autokitteh.projectsvc;
+
+option go_package = "gitlab.com/softkitteh/autokitteh/gen/proto/stubs/go/projectsvc";
+
+import "google/api/annotations.proto";
+import "validate/validate.proto";
+
+import "project/project.proto";
+
+
+message CreateProjectRequest {
+  string                  account_name = 1 {{ AccountName }};
+  string                  id           = 2 {{ MaybeProjectID }};
+  project.ProjectSettings settings     = 3 [(validate.rules).message.required = true];
+}
+
+message CreateProjectResponse {
+  string id = 1 {{ ProjectID }};
+}
+
+message UpdateProjectRequest {
+  string                  id       = 1 {{ ProjectID }};
+  project.ProjectSettings settings = 2 [(validate.rules).message.required = true];
+}
+
+message UpdateProjectResponse {}
+
+message RemoveProjectRequest {
+  string id = 1 {{ ProjectID }};
+}
+
+message RemoveProjectResponse {}
+
+message GetProjectRequest {
+  string id            = 1 {{ ProjectID }};
+}
+
+message GetProjectResponse {
+  project.Project project = 1 [(validate.rules).message.required = true];
+}
+
+message GetProjectsRequest {
+  repeated string ids = 1 {{ RepeatedProjectID }};
+}
+
+message GetProjectsResponse {
+  repeated project.Project projects = 1 [(validate.rules).repeated.items.message.required = true];
+}
+
+service Projects {
+  rpc CreateProject(CreateProjectRequest) returns (CreateProjectResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/projects",
+      body: "*"
+    };
+  }
+
+  rpc UpdateProject(UpdateProjectRequest) returns (UpdateProjectResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/projects/{id}",
+      body: "*"
+    };
+  }
+
+  rpc GetProject(GetProjectRequest) returns (GetProjectResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/projects/{id}",
+    };
+  }
+
+  rpc GetProjects(GetProjectsRequest) returns (GetProjectsResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/projects",
+      body: "*"
+    };
+  }
+}

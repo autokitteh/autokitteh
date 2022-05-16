@@ -1,0 +1,3 @@
+$ ./ak.sh l c lang.meow
+$ ./ak.sh -y l cat lang.meow.akm | grep lang:
+  lang: kitteh

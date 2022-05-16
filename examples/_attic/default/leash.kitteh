@@ -1,0 +1,47 @@
+load('parsecmd', 'parsecmd')
+load('time', 'parse_duration', 'second')
+load('slack', 'slack')
+load('googlesheets', 'googlesheets')
+
+
+def _page(ak_context, channel):
+  n = ak_context.state.inc('n')
+  prefix = '[INCIDENT %d]' % n
+  print('incident number: %d' % n)
+
+  vs = ak_context.sheets.values.get(id=ak_context.schedule_sheet_id, range='Sheet1!A2:B10')
+
+  while True:
+    for name, number in vs:
+      if name == '' or number == '':
+        continue
+
+      ak_context.slack.post_message(channel=channel, text='%s paging %s' % (prefix, name))
+      ak_context.twilio.create_message(to=number, from_='7752548834', body='%s ALERT ALERT ALERT' % prefix)
+
+      while True:
+        ev = ak_context.sources.wait(types=['twilio.message'])
+
+        body = ev.data['body'].lower()
+
+        if body == 'ack':
+          ak_context.slack.post_message(channel=channel, text='%s acked' % name)
+          return
+        elif body == 'esc':
+          ak_context.slack.post_message(channel=channel, text='%s escalated' % name)
+          break
+        else:
+          ak_context.twilio.create_message(to=number, from_='7752548834', body='what now?')
+
+
+def _on_slack_message(text):
+  cmd = parsecmd(text)
+
+  if cmd.name in ['page', 'yank']:
+    return _page
+
+
+def setup(sources, **kwargs):
+  ak_context = kwargs
+  ak_context['sources'] = sources
+  sources.bind("slack.message", _on_slack_message, ak_context=struct(**ak_context))

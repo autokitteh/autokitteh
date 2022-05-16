@@ -1,0 +1,135 @@
+$ ./ak.sh l c values.kitteh
+$ ./ak.sh -y l r -u values.akm
+values:
+  another_number: 4.3
+  another_s: mew mew mew
+  b: true
+  d:
+    cat: meow
+    "n": 42
+  l:
+  - 1
+  - 2
+  - 42
+  - true
+  - meow
+  m:
+    Members:
+      foo:
+        integer:
+          v: "1"
+      st:
+        struct:
+          ctor:
+            string:
+              v: struct
+          fields:
+            x:
+              integer:
+                v: "1"
+            "y":
+              integer:
+                v: "2"
+    Name: mod
+  number: 42
+  s: meow
+  st:
+    Ctor:
+      string:
+        v: struct
+    Fields:
+      x:
+        integer:
+          v: "1"
+      "y":
+        integer:
+          v: "2"
+  t:
+  - 1.2
+  - 2
+  - 42
+$ ./ak.sh -y l r values.akm
+values:
+  another_number:
+    float:
+      v: 4.3
+  another_s:
+    string:
+      v: mew mew mew
+  b:
+    boolean:
+      v: true
+  d:
+    dict:
+      items:
+      - k:
+          string:
+            v: cat
+        v:
+          string:
+            v: meow
+      - k:
+          string:
+            v: "n"
+        v:
+          integer:
+            v: "42"
+  l:
+    list:
+      vs:
+      - integer:
+          v: "1"
+      - integer:
+          v: "2"
+      - integer:
+          v: "42"
+      - boolean:
+          v: true
+      - string:
+          v: meow
+  m:
+    module:
+      members:
+        foo:
+          integer:
+            v: "1"
+        st:
+          struct:
+            ctor:
+              string:
+                v: struct
+            fields:
+              x:
+                integer:
+                  v: "1"
+              "y":
+                integer:
+                  v: "2"
+      name: mod
+  number:
+    integer:
+      v: "42"
+  s:
+    string:
+      v: meow
+  st:
+    struct:
+      ctor:
+        string:
+          v: struct
+      fields:
+        x:
+          integer:
+            v: "1"
+        "y":
+          integer:
+            v: "2"
+  t:
+    list:
+      vs:
+      - float:
+          v: 1.2
+      - integer:
+          v: "2"
+      - integer:
+          v: "42"

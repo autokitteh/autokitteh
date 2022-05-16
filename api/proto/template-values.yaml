@@ -1,0 +1,30 @@
+# Used with patterns.yaml as input.
+
+VarName:             '[(validate.rules).string.pattern = {{ VarNamePattern }}]'
+AccountName:         '[(validate.rules).string.pattern = {{ NamePattern }}]'
+EventSourceName:     '[(validate.rules).string.pattern = {{ NamePattern }}]'
+EventSourceID:       '[(validate.rules).string.pattern = {{ EventSourceIDPattern }}]'
+EventID:             '[(validate.rules).string.pattern = {{ EventIDPattern }}]'
+FunctionID:          '[(validate.rules).string.pattern = {{ FunctionIDPattern }}]'
+Lang:                '[(validate.rules).string.pattern = {{ LangPattern }}]'
+ModuleName:          '[(validate.rules).string.pattern = {{ ModuleNamePattern }}]'
+PluginID:            '[(validate.rules).string.pattern = {{ PluginIDPattern }}]'
+ProjectID:           '[(validate.rules).string.pattern = {{ ProjectIDPattern }}]'
+RunID:               '[(validate.rules).string.pattern = {{ RunIDPattern }}]'
+
+MaybeVarName:         '[(validate.rules).string = {ignore_empty:true, pattern: {{ VarNamePattern }} }]'
+MaybeAccountName:     '[(validate.rules).string = {ignore_empty:true, pattern: {{ NamePattern }} }]'
+MaybeProjectID:       '[(validate.rules).string = {ignore_empty:true, pattern: {{ ProjectIDPattern }} }]'
+MaybeEventSourceName: '[(validate.rules).string = {ignore_empty:true, pattern: {{ NamePattern }} }]'
+MaybeEventSourceID:   '[(validate.rules).string = {ignore_empty:true, pattern: {{ EventSourceIDPattern }} }]'
+
+RepeatedAccountName:     '[(validate.rules).repeated.items.string.pattern = {{ NamePattern }}]'
+RepeatedEventID:         '[(validate.rules).repeated.items.string.pattern = {{ EventIDPattern }}]'
+RepeatedEventSourceName: '[(validate.rules).repeated.items.string.pattern = {{ NamePattern }}]'
+RepeatedEventSourceID:   '[(validate.rules).repeated.items.string.pattern = {{ EventSourceIDPattern }}]'
+RepeatedPluginID:        '[(validate.rules).repeated.items.string.pattern = {{ PluginIDPattern }}]'
+RepeatedPredecl:         '[(validate.rules).repeated.items.string.pattern = {{ VarNamePattern }}]'
+RepeatedProjectID:       '[(validate.rules).repeated.items.string.pattern = {{ ProjectIDPattern }}]'
+RepeatedVarName:         '[(validate.rules).repeated.items.string.pattern = {{ VarNamePattern }}]'
+
+VarMap: '[(validate.rules).map={no_sparse: true, keys:{string:{pattern: {{ VarNamePattern }}}}}]'

@@ -1,0 +1,7 @@
+reset-test-idgen
+l c callargs.kitteh
+l r callargs.akm
+l call -u F1.kitteh.S1 '"cow"'
+l call -u F1.kitteh.S1 '"kitty"' greeting="meow"
+l call F9.kitteh.S1
+l call F1.kitteh.S1

@@ -1,0 +1,17 @@
+load("ak", "get_credentials")
+load("autokitteh.slack", "slack")
+load('fs:examples/assets/sounds.json', 'sounds')
+
+
+def _on_slack_message(ak_ctx, channel, text):
+  _slack = slack.open(secret_token=get_credentials('slack', ak_ctx['team_id']))
+
+  if text in sounds:
+    _slack.post_message(channel=channel, text=sounds[text])
+  elif text.startswith('say '):
+    _slack.post_message(channel=channel, text=text[4:])
+
+
+spec = [
+  ('slack.message', _on_slack_message, 'team_id'),
+]
