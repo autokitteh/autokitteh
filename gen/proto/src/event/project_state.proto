@@ -1,0 +1,54 @@
+syntax = "proto3";
+
+package autokitteh.event;
+
+option go_package = "github.com/autokitteh/autokitteh/gen/proto/stubs/go/event";
+
+import "google/protobuf/timestamp.proto";
+import "validate/validate.proto";
+
+import "lang/run.proto";
+
+
+message ProjectEventStateRecord {
+  google.protobuf.Timestamp t     = 1 [(validate.rules).timestamp.required = true];
+  ProjectEventState         state = 2 [(validate.rules).message.required = true];
+}
+
+message ProjectEventState {
+  oneof type {
+    option (validate.required) = true;
+
+    ErrorProjectEventState      error      = 1;
+    IgnoredProjectEventState    ignored    = 2;
+    PendingProjectEventState    pending    = 3;
+    ProcessingProjectEventState processing = 4;
+    WaitingProjectEventState    waiting    = 5;
+    ProcessedProjectEventState  processed  = 6;
+  }
+}
+
+message ErrorProjectEventState {
+  lang.RunSummary run_summary = 1;
+  string          error       = 2;
+
+  // TODO: explicit callstack.
+}
+
+message IgnoredProjectEventState {
+  string reason = 1;
+}
+
+message PendingProjectEventState {}
+
+message ProcessingProjectEventState {
+  lang.RunSummary run_summary = 1;
+}
+
+message ProcessedProjectEventState {
+  lang.RunSummary run_summary = 1;
+}
+
+message WaitingProjectEventState {
+  lang.RunSummary run_summary = 1;
+}

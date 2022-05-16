@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package autokitteh.program;
+
+option go_package = "github.com/autokitteh/autokitteh/gen/proto/stubs/go/program";
+
+import "program/program.proto";
+
+
+message CallFrame {
+  string   name = 1;
+  Location loc  = 2;
+}
+
+message Error {
+  string             msg       = 1;
+  string             type      = 2;
+  repeated CallFrame callstack = 3;
+  Error              next      = 4; // next error if multiple errors.
+}

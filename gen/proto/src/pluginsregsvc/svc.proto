@@ -1,0 +1,46 @@
+syntax = "proto3";
+
+package autokitteh.pluginsregsvc;
+
+option go_package = "github.com/autokitteh/autokitteh/gen/proto/stubs/go/pluginsregsvc";
+
+import "plugin/plugin.proto";
+import "validate/validate.proto";
+
+
+message RegisterRequest {
+  string                id       = 1 [(validate.rules).string.pattern = "^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z][0-9a-zA-Z_-]+$"];
+  plugin.PluginSettings settings = 2 [(validate.rules).message.required = true];
+}
+
+message RegisterResponse {}
+
+message ListRequest {
+  string account_name = 1 [(validate.rules).string = {ignore_empty:true, pattern: "^[a-zA-Z][0-9a-zA-Z_-]+$" }]; // optional filter.
+}
+
+message ListResponse {
+  repeated string ids = 1 [(validate.rules).repeated.items.string.pattern = "^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z][0-9a-zA-Z_-]+$"];
+}
+
+message GetRequest {
+  string id = 1 [(validate.rules).string.pattern = "^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z][0-9a-zA-Z_-]+$"];
+}
+
+message GetResponse {
+  plugin.Plugin plugin = 1 [(validate.rules).message.required = true];
+}
+
+
+// Register plugins so we'll know how to connect to them.
+// Should be served only by the autokitteh service.
+service PluginsRegistry {
+  rpc List(ListRequest) returns (ListResponse);
+
+  rpc Get(GetRequest) returns (GetResponse);
+
+  rpc Register(RegisterRequest) returns (RegisterResponse);
+
+  // TODO: Update
+  // TODO: Unregister
+}

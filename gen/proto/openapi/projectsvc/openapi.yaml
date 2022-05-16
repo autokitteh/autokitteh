@@ -1,0 +1,397 @@
+# Generated with protoc-gen-openapi
+# https://github.com/google/gnostic/tree/master/cmd/protoc-gen-openapi
+
+openapi: 3.0.3
+info:
+    title: Projects API
+    version: 0.0.1
+paths:
+    /api/v1/projects:
+        post:
+            tags:
+                - Projects
+            operationId: Projects_GetProjects
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/GetProjectsRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GetProjectsResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /api/v1/projects/{id}:
+        get:
+            tags:
+                - Projects
+            operationId: Projects_GetProject
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GetProjectResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+        post:
+            tags:
+                - Projects
+            operationId: Projects_UpdateProject
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/UpdateProjectRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UpdateProjectResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+components:
+    schemas:
+        Boolean:
+            type: object
+            properties:
+                v:
+                    type: boolean
+        Bytes:
+            type: object
+            properties:
+                v:
+                    type: string
+                    format: bytes
+        Call:
+            type: object
+            properties:
+                id:
+                    type: string
+                name:
+                    type: string
+                issuer:
+                    type: string
+                flags:
+                    type: object
+                    additionalProperties:
+                        type: boolean
+        CreateProjectRequest:
+            type: object
+            properties:
+                accountName:
+                    type: string
+                id:
+                    type: string
+                settings:
+                    $ref: '#/components/schemas/ProjectSettings'
+        CreateProjectResponse:
+            type: object
+            properties:
+                id:
+                    type: string
+        Dict:
+            type: object
+            properties:
+                items:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/DictItem'
+        DictItem:
+            type: object
+            properties:
+                k:
+                    $ref: '#/components/schemas/Value'
+                v:
+                    $ref: '#/components/schemas/Value'
+        Duration:
+            type: object
+            properties:
+                seconds:
+                    type: integer
+                    description: 'Signed seconds of the span of time. Must be from -315,576,000,000 to +315,576,000,000 inclusive. Note: these bounds are computed from: 60 sec/min * 60 min/hr * 24 hr/day * 365.25 days/year * 10000 years'
+                    format: int64
+                nanos:
+                    type: integer
+                    description: Signed fractions of a second at nanosecond resolution of the span of time. Durations less than one second are represented with a 0 `seconds` field and a positive or negative `nanos` field. For durations of one second or more, a non-zero value for the `nanos` field must be of the same sign as the `seconds` field. Must be from -999,999,999 to +999,999,999 inclusive.
+                    format: int32
+            description: 'A Duration represents a signed, fixed-length span of time represented as a count of seconds and fractions of seconds at nanosecond resolution. It is independent of any calendar and concepts like "day" or "month". It is related to Timestamp in that the difference between two Timestamp values is a Duration and it can be added or subtracted from a Timestamp. Range is approximately +-10,000 years. # Examples Example 1: Compute Duration from two Timestamps in pseudo code.     Timestamp start = ...;     Timestamp end = ...;     Duration duration = ...;     duration.seconds = end.seconds - start.seconds;     duration.nanos = end.nanos - start.nanos;     if (duration.seconds < 0 && duration.nanos > 0) {       duration.seconds += 1;       duration.nanos -= 1000000000;     } else if (duration.seconds > 0 && duration.nanos < 0) {       duration.seconds -= 1;       duration.nanos += 1000000000;     } Example 2: Compute Timestamp from Timestamp + Duration in pseudo code.     Timestamp start = ...;     Duration duration = ...;     Timestamp end = ...;     end.seconds = start.seconds + duration.seconds;     end.nanos = start.nanos + duration.nanos;     if (end.nanos < 0) {       end.seconds -= 1;       end.nanos += 1000000000;     } else if (end.nanos >= 1000000000) {       end.seconds += 1;       end.nanos -= 1000000000;     } Example 3: Compute Duration from datetime.timedelta in Python.     td = datetime.timedelta(days=3, minutes=10)     duration = Duration()     duration.FromTimedelta(td) # JSON Mapping In JSON format, the Duration type is encoded as a string rather than an object, where the string ends in the suffix "s" (indicating seconds) and is preceded by the number of seconds, with nanoseconds expressed as fractional seconds. For example, 3 seconds with 0 nanoseconds should be encoded in JSON format as "3s", while 3 seconds and 1 nanosecond should be expressed in JSON format as "3.000000001s", and 3 seconds and 1 microsecond should be expressed in JSON format as "3.000001s".'
+        Float:
+            type: object
+            properties:
+                v:
+                    type: number
+                    format: float
+        Function:
+            type: object
+            properties:
+                funcId:
+                    type: string
+                lang:
+                    type: string
+                scope:
+                    type: string
+                sig:
+                    $ref: '#/components/schemas/FunctionSignature'
+        FunctionSignature:
+            type: object
+            properties:
+                name:
+                    type: string
+                doc:
+                    type: string
+                nArgs:
+                    type: integer
+                    format: uint32
+                nKwonlyargs:
+                    type: integer
+                    format: uint32
+                argsNames:
+                    type: array
+                    items:
+                        type: string
+                hasVarargs:
+                    type: boolean
+                hasKwargs:
+                    type: boolean
+        GetProjectResponse:
+            type: object
+            properties:
+                project:
+                    $ref: '#/components/schemas/Project'
+        GetProjectsRequest:
+            type: object
+            properties:
+                ids:
+                    type: array
+                    items:
+                        type: string
+        GetProjectsResponse:
+            type: object
+            properties:
+                projects:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Project'
+        GoogleProtobufAny:
+            type: object
+            properties:
+                '@type':
+                    type: string
+                    description: The type of the serialized message.
+            additionalProperties: true
+            description: Contains an arbitrary serialized message along with a @type that describes the type of the serialized message.
+        Integer:
+            type: object
+            properties:
+                v:
+                    type: integer
+                    format: int64
+        List:
+            type: object
+            properties:
+                vs:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Value'
+            description: For Starlark, will be used for Tuple in return values.
+        Module:
+            type: object
+            properties:
+                lang:
+                    type: string
+                predecls:
+                    type: array
+                    items:
+                        type: string
+                compilerVersion:
+                    type: string
+                sourcePath:
+                    $ref: '#/components/schemas/Path'
+                compiledCode:
+                    type: string
+                    format: bytes
+        None:
+            type: object
+            properties: {}
+        Path:
+            type: object
+            properties:
+                scheme:
+                    type: string
+                path:
+                    type: string
+                version:
+                    type: string
+        Project:
+            type: object
+            properties:
+                id:
+                    type: string
+                accountName:
+                    type: string
+                settings:
+                    $ref: '#/components/schemas/ProjectSettings'
+                createdAt:
+                    type: string
+                    format: date-time
+                updatedAt:
+                    type: string
+                    format: date-time
+        ProjectPlugin:
+            type: object
+            properties:
+                pluginId:
+                    type: string
+                enabled:
+                    type: boolean
+        ProjectSettings:
+            type: object
+            properties:
+                name:
+                    type: string
+                enabled:
+                    type: boolean
+                mainPath:
+                    $ref: '#/components/schemas/Path'
+                predecls:
+                    type: object
+                    additionalProperties:
+                        $ref: '#/components/schemas/Value'
+                plugins:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/ProjectPlugin'
+                memo:
+                    type: object
+                    additionalProperties:
+                        type: string
+                    description: General human readable data about the project. Not used for any automation.
+        Set:
+            type: object
+            properties:
+                vs:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Value'
+        Status:
+            type: object
+            properties:
+                code:
+                    type: integer
+                    description: The status code, which should be an enum value of [google.rpc.Code][google.rpc.Code].
+                    format: int32
+                message:
+                    type: string
+                    description: A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the [google.rpc.Status.details][google.rpc.Status.details] field, or localized by the client.
+                details:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/GoogleProtobufAny'
+                    description: A list of messages that carry the error details.  There is a common set of message types for APIs to use.
+            description: 'The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors).'
+        String:
+            type: object
+            properties:
+                v:
+                    type: string
+        Struct:
+            type: object
+            properties:
+                ctor:
+                    $ref: '#/components/schemas/Value'
+                fields:
+                    type: object
+                    additionalProperties:
+                        $ref: '#/components/schemas/Value'
+        Symbol:
+            type: object
+            properties:
+                name:
+                    type: string
+        Time:
+            type: object
+            properties:
+                t:
+                    type: string
+                    format: date-time
+        UpdateProjectRequest:
+            type: object
+            properties:
+                id:
+                    type: string
+                settings:
+                    $ref: '#/components/schemas/ProjectSettings'
+        UpdateProjectResponse:
+            type: object
+            properties: {}
+        Value:
+            type: object
+            properties:
+                none:
+                    $ref: '#/components/schemas/None'
+                string:
+                    $ref: '#/components/schemas/String'
+                integer:
+                    $ref: '#/components/schemas/Integer'
+                boolean:
+                    $ref: '#/components/schemas/Boolean'
+                list:
+                    $ref: '#/components/schemas/List'
+                dict:
+                    $ref: '#/components/schemas/Dict'
+                float:
+                    $ref: '#/components/schemas/Float'
+                set:
+                    $ref: '#/components/schemas/Set'
+                bytes:
+                    $ref: '#/components/schemas/Bytes'
+                time:
+                    $ref: '#/components/schemas/Time'
+                duration:
+                    $ref: '#/components/schemas/Duration'
+                symbol:
+                    $ref: '#/components/schemas/Symbol'
+                struct:
+                    $ref: '#/components/schemas/Struct'
+                module:
+                    $ref: '#/components/schemas/Module'
+                function:
+                    $ref: '#/components/schemas/Function'
+                call:
+                    $ref: '#/components/schemas/Call'
+tags:
+    - name: Projects

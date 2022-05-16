@@ -1,0 +1,71 @@
+syntax = "proto3";
+
+package autokitteh.accountsvc;
+
+option go_package = "github.com/autokitteh/autokitteh/gen/proto/stubs/go/accountsvc";
+
+import "google/api/annotations.proto";
+import "validate/validate.proto";
+
+import "account/account.proto";
+
+
+message CreateAccountRequest {
+  string                  name     = 1 [(validate.rules).string.pattern = "^[a-zA-Z][0-9a-zA-Z_-]+$"];
+  account.AccountSettings settings = 2 [(validate.rules).message.required = true];
+}
+
+message CreateAccountResponse {
+}
+
+message UpdateAccountRequest {
+  string                  name     = 1 [(validate.rules).string.pattern = "^[a-zA-Z][0-9a-zA-Z_-]+$"];
+  account.AccountSettings settings = 2 [(validate.rules).message.required = true];
+}
+
+message UpdateAccountResponse {}
+
+message GetAccountRequest {
+  string name = 1 [(validate.rules).string.pattern = "^[a-zA-Z][0-9a-zA-Z_-]+$"];
+}
+
+message GetAccountResponse {
+  account.Account account = 1 [(validate.rules).message.required = true];
+}
+
+message GetAccountsRequest {
+  repeated string names = 1 [(validate.rules).repeated.items.string.pattern = "^[a-zA-Z][0-9a-zA-Z_-]+$"];
+}
+
+message GetAccountsResponse {
+  repeated account.Account accounts = 1 [(validate.rules).repeated.items.message.required = true];
+}
+
+service Accounts {
+  rpc CreateAccount(CreateAccountRequest) returns (CreateAccountResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/accounts",
+      body: "*"
+    };
+  }
+
+  rpc UpdateAccount(UpdateAccountRequest) returns (UpdateAccountResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/accounts/{name}",
+      body: "*"
+    };
+  }
+
+  rpc GetAccount(GetAccountRequest) returns (GetAccountResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/accounts/{name}",
+    };
+  }
+
+  rpc GetAccounts(GetAccountsRequest) returns (GetAccountsResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/accounts",
+      body: "*"
+    };
+  }
+}

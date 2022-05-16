@@ -1,0 +1,61 @@
+syntax = "proto3";
+
+package autokitteh.pluginsprovidersvc;
+
+option go_package = "github.com/autokitteh/autokitteh/gen/proto/stubs/go/pluginsprovidersvc";
+
+import "validate/validate.proto";
+
+import "plugin/desc.proto";
+import "values/values.proto";
+import "program/error.proto";
+
+
+message ListRequest {}
+
+message ListResponse {
+  repeated string ids = 1 [(validate.rules).repeated.items.string.pattern = "^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z][0-9a-zA-Z_-]+$"];
+}
+
+message DescribeRequest {
+  string id = 1 [(validate.rules).string.pattern = "^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z][0-9a-zA-Z_-]+$"];
+}
+
+message DescribeResponse {
+  plugin.PluginDesc desc = 1 [(validate.rules).message.required = true];
+}
+
+message GetValuesRequest {
+  string          id    = 1 [(validate.rules).string.pattern = "^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z][0-9a-zA-Z_-]+$"];
+  repeated string names = 2 [(validate.rules).repeated.items.string.pattern = "^[a-zA-Z_][a-zA-Z0-9_]*$"]; // if empty, returns all.
+}
+
+message GetValuesResponse {
+  map<string, values.Value> values = 1 [(validate.rules).map={no_sparse: true, keys:{string:{pattern: "^[a-zA-Z_][a-zA-Z0-9_]*$"}}}];
+}
+
+message CallValueRequest {
+  string                    id     = 1 [(validate.rules).string.pattern = "^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z][0-9a-zA-Z_-]+$"];
+  values.Value              value  = 2 [(validate.rules).message.required = true];
+  repeated values.Value     args   = 3 [(validate.rules).repeated.items.message.required = true];
+  map<string, values.Value> kwargs = 4 [(validate.rules).map={no_sparse: true, keys:{string:{pattern: "^[a-zA-Z_][a-zA-Z0-9_]*$"}}}];
+}
+
+message CallValueResponse {
+  oneof ret {
+    values.Value  retval = 1;
+    program.Error error  = 2;
+  }
+}
+
+// Serve plugins implementations (actual execution of the plugins).
+// Should be served by plugin provider.
+service PluginsProvider {
+  rpc List(ListRequest) returns (ListResponse);
+
+  rpc Describe(DescribeRequest) returns (DescribeResponse);
+
+  rpc GetValues(GetValuesRequest) returns (GetValuesResponse);
+
+  rpc CallValue(CallValueRequest) returns (CallValueResponse);
+}
