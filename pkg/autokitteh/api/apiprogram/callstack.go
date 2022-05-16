@@ -6,7 +6,7 @@ import (
 
 	"google.golang.org/protobuf/proto"
 
-	pbprogram "gitlab.com/softkitteh/autokitteh/gen/proto/stubs/go/program"
+	pbprogram "github.com/autokitteh/autokitteh/gen/proto/stubs/go/program"
 )
 
 type CallFrame struct{ pb *pbprogram.CallFrame }

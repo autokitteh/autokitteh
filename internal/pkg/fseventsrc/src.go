@@ -11,12 +11,12 @@ import (
 
 	"github.com/fsnotify/fsnotify"
 
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apieventsrc"
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apiproject"
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apivalues"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/events"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/eventsrcsstore"
-	L "gitlab.com/softkitteh/autokitteh/pkg/l"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apieventsrc"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiproject"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apivalues"
+	"github.com/autokitteh/autokitteh/internal/pkg/events"
+	"github.com/autokitteh/autokitteh/internal/pkg/eventsrcsstore"
+	L "github.com/autokitteh/autokitteh/pkg/l"
 )
 
 var EventTypes = []string{"create", "write", "remove", "rename", "chmod"}

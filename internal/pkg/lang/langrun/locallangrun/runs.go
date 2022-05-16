@@ -6,12 +6,12 @@ import (
 	"sync"
 	"time"
 
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apilang"
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apiprogram"
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apivalues"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/lang"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/lang/langrun"
-	L "gitlab.com/softkitteh/autokitteh/pkg/l"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apilang"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiprogram"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apivalues"
+	"github.com/autokitteh/autokitteh/internal/pkg/lang"
+	"github.com/autokitteh/autokitteh/internal/pkg/lang/langrun"
+	L "github.com/autokitteh/autokitteh/pkg/l"
 )
 
 type RunModuleFunc func(L.L, string, langrun.RunID, *apiprogram.Module, map[string]*apivalues.Value, langrun.SendFunc) (langrun.Run, error)

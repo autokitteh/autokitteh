@@ -5,7 +5,7 @@ package aksvc
 import (
 	"errors"
 
-	"gitlab.com/softkitteh/autokitteh/pkg/svc"
+	"github.com/autokitteh/autokitteh/pkg/svc"
 )
 
 var TemporaliteComponent = svc.Component{

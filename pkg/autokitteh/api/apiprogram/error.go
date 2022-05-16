@@ -8,7 +8,7 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 
-	pbprogram "gitlab.com/softkitteh/autokitteh/gen/proto/stubs/go/program"
+	pbprogram "github.com/autokitteh/autokitteh/gen/proto/stubs/go/program"
 )
 
 type Error struct{ pb *pbprogram.Error }

@@ -8,8 +8,8 @@ import (
 
 	"github.com/urfave/cli/v2"
 
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apiprogram"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/lang"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiprogram"
+	"github.com/autokitteh/autokitteh/internal/pkg/lang"
 )
 
 func run(app *cli.App, args []string) int {

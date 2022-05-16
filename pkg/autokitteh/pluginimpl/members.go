@@ -3,7 +3,7 @@ package pluginimpl
 import (
 	"context"
 
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apivalues"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apivalues"
 )
 
 type PluginMethodFunc func(

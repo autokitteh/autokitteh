@@ -3,8 +3,8 @@ package builtinplugin
 import (
 	"fmt"
 
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apivalues"
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/pluginimpl"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apivalues"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/pluginimpl"
 )
 
 type funcs struct {

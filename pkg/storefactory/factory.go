@@ -10,8 +10,8 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"gorm.io/gorm"
 
-	"gitlab.com/softkitteh/autokitteh/pkg/gormfactory"
-	L "gitlab.com/softkitteh/autokitteh/pkg/l"
+	"github.com/autokitteh/autokitteh/pkg/gormfactory"
+	L "github.com/autokitteh/autokitteh/pkg/l"
 )
 
 type GRPCConfig struct {

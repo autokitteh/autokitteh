@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apivalues"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apivalues"
 )
 
 func SimplifyPluginMethodFunc(f func(context.Context, []*apivalues.Value, map[string]*apivalues.Value) (*apivalues.Value, error)) PluginMethodFunc {

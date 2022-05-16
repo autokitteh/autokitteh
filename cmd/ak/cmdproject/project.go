@@ -3,11 +3,11 @@ package cmdproject
 import (
 	"github.com/urfave/cli/v2"
 
-	"gitlab.com/softkitteh/autokitteh/cmd/ak/cmdproject/cmdcreate"
-	"gitlab.com/softkitteh/autokitteh/cmd/ak/cmdproject/cmdget"
-	"gitlab.com/softkitteh/autokitteh/cmd/ak/cmdproject/cmdsetup"
-	"gitlab.com/softkitteh/autokitteh/cmd/ak/cmdproject/cmdupdate"
-	"gitlab.com/softkitteh/autokitteh/cmd/ak/cmdproject/projecttools"
+	"github.com/autokitteh/autokitteh/cmd/ak/cmdproject/cmdcreate"
+	"github.com/autokitteh/autokitteh/cmd/ak/cmdproject/cmdget"
+	"github.com/autokitteh/autokitteh/cmd/ak/cmdproject/cmdsetup"
+	"github.com/autokitteh/autokitteh/cmd/ak/cmdproject/cmdupdate"
+	"github.com/autokitteh/autokitteh/cmd/ak/cmdproject/projecttools"
 )
 
 var (

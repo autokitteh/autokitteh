@@ -7,12 +7,12 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	pb "gitlab.com/softkitteh/autokitteh/gen/proto/stubs/go/pluginsprovidersvc"
+	pb "github.com/autokitteh/autokitteh/gen/proto/stubs/go/pluginsprovidersvc"
 
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apiplugin"
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apiprogram"
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apivalues"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/plugin"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiplugin"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiprogram"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apivalues"
+	"github.com/autokitteh/autokitteh/internal/pkg/plugin"
 )
 
 func check(resp interface{ Validate() error }, err error) error {

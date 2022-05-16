@@ -36,7 +36,7 @@ mkdir /go/src/protoc
 
 cd /go/src/protoc
 
-go mod init gitlab.com/softkitteh/autokitteh/protoc
+go mod init github.com/autokitteh/autokitteh/protoc
 
 go_install() {
   go install "${1}@${2}"

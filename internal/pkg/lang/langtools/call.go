@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apilang"
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apivalues"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/lang"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apilang"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apivalues"
+	"github.com/autokitteh/autokitteh/internal/pkg/lang"
 )
 
 func CallFunction(

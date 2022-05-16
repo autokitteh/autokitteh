@@ -12,11 +12,11 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	pb "gitlab.com/softkitteh/autokitteh/gen/proto/stubs/go/httpeventsrc"
+	pb "github.com/autokitteh/autokitteh/gen/proto/stubs/go/httpeventsrc"
 
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apiproject"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/httpeventsrc"
-	L "gitlab.com/softkitteh/autokitteh/pkg/l"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiproject"
+	"github.com/autokitteh/autokitteh/internal/pkg/httpeventsrc"
+	L "github.com/autokitteh/autokitteh/pkg/l"
 )
 
 type Svc struct {

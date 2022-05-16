@@ -3,9 +3,9 @@ package lang
 import (
 	"context"
 
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apilang"
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apiprogram"
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apivalues"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apilang"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiprogram"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apivalues"
 )
 
 type Lang interface {

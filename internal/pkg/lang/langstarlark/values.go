@@ -10,10 +10,10 @@ import (
 	"go.starlark.net/starlark"
 	"go.starlark.net/starlarkstruct"
 
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/lang"
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apivalues"
-	"gitlab.com/softkitteh/autokitteh/pkg/idgen"
-	"gitlab.com/softkitteh/autokitteh/pkg/starlarkutils"
+	"github.com/autokitteh/autokitteh/internal/pkg/lang"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apivalues"
+	"github.com/autokitteh/autokitteh/pkg/idgen"
+	"github.com/autokitteh/autokitteh/pkg/starlarkutils"
 )
 
 var (

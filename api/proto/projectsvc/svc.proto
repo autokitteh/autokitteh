@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package autokitteh.projectsvc;
 
-option go_package = "gitlab.com/softkitteh/autokitteh/gen/proto/stubs/go/projectsvc";
+option go_package = "github.com/autokitteh/autokitteh/gen/proto/stubs/go/projectsvc";
 
 import "google/api/annotations.proto";
 import "validate/validate.proto";

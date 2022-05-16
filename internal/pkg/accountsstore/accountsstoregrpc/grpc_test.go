@@ -10,9 +10,9 @@ import (
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 
-	"gitlab.com/softkitteh/autokitteh/internal/app/accountsstoregrpcsvc"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/accountsstore/accountsstoregorm"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/accountsstore/tests"
+	"github.com/autokitteh/autokitteh/internal/app/accountsstoregrpcsvc"
+	"github.com/autokitteh/autokitteh/internal/pkg/accountsstore/accountsstoregorm"
+	"github.com/autokitteh/autokitteh/internal/pkg/accountsstore/tests"
 )
 
 func TestAllGRPC(t *testing.T) {

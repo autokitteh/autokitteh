@@ -9,12 +9,12 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	pbaccount "gitlab.com/softkitteh/autokitteh/gen/proto/stubs/go/account"
-	pbaccountsvc "gitlab.com/softkitteh/autokitteh/gen/proto/stubs/go/accountsvc"
+	pbaccount "github.com/autokitteh/autokitteh/gen/proto/stubs/go/account"
+	pbaccountsvc "github.com/autokitteh/autokitteh/gen/proto/stubs/go/accountsvc"
 
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/accountsstore"
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apiaccount"
-	L "gitlab.com/softkitteh/autokitteh/pkg/l"
+	"github.com/autokitteh/autokitteh/internal/pkg/accountsstore"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiaccount"
+	L "github.com/autokitteh/autokitteh/pkg/l"
 )
 
 type Svc struct {

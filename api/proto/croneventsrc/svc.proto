@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package autokitteh.croneventsrc;
 
-option go_package = "gitlab.com/softkitteh/autokitteh/gen/proto/stubs/go/croneventsrc";
+option go_package = "github.com/autokitteh/autokitteh/gen/proto/stubs/go/croneventsrc";
 
 import "google/api/annotations.proto";
 import "validate/validate.proto";

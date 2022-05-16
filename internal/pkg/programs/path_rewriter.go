@@ -3,7 +3,7 @@ package programs
 import (
 	"strings"
 
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apiprogram"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiprogram"
 )
 
 // If not rewritten, must return nil.

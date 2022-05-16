@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package autokitteh.statesvc;
 
-option go_package = "gitlab.com/softkitteh/autokitteh/gen/proto/stubs/go/statesvc";
+option go_package = "github.com/autokitteh/autokitteh/gen/proto/stubs/go/statesvc";
 
 import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";

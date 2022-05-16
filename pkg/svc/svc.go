@@ -21,9 +21,9 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 
-	"gitlab.com/softkitteh/autokitteh/pkg/flexcall"
-	L "gitlab.com/softkitteh/autokitteh/pkg/l"
-	Z "gitlab.com/softkitteh/autokitteh/pkg/z"
+	"github.com/autokitteh/autokitteh/pkg/flexcall"
+	L "github.com/autokitteh/autokitteh/pkg/l"
+	Z "github.com/autokitteh/autokitteh/pkg/z"
 )
 
 var DefaultServiceName = filepath.Base(os.Args[0])

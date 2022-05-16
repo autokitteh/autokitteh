@@ -1,5 +1,5 @@
 package main
 
-import "gitlab.com/softkitteh/autokitteh/internal/app/aksvc"
+import "github.com/autokitteh/autokitteh/internal/app/aksvc"
 
 func main() { aksvc.Run() }

@@ -6,9 +6,9 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	pb "gitlab.com/softkitteh/autokitteh/gen/proto/stubs/go/slackeventsrc"
+	pb "github.com/autokitteh/autokitteh/gen/proto/stubs/go/slackeventsrc"
 
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apiproject"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiproject"
 )
 
 func (s *Svc) Bind(ctx context.Context, req *pb.BindRequest) (*pb.BindResponse, error) {

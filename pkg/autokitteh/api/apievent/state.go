@@ -6,7 +6,7 @@ import (
 
 	"google.golang.org/protobuf/proto"
 
-	pbevent "gitlab.com/softkitteh/autokitteh/gen/proto/stubs/go/event"
+	pbevent "github.com/autokitteh/autokitteh/gen/proto/stubs/go/event"
 )
 
 type EventState struct{ pb *pbevent.EventState }

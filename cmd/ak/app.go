@@ -8,18 +8,18 @@ import (
 
 	"github.com/urfave/cli/v2"
 
-	"gitlab.com/softkitteh/autokitteh/cmd/ak/clitools"
-	"gitlab.com/softkitteh/autokitteh/cmd/ak/cmdaccount"
-	"gitlab.com/softkitteh/autokitteh/cmd/ak/cmdbumptestidgen"
-	"gitlab.com/softkitteh/autokitteh/cmd/ak/cmdlang"
-	"gitlab.com/softkitteh/autokitteh/cmd/ak/cmdparseargs"
-	"gitlab.com/softkitteh/autokitteh/cmd/ak/cmdproject"
-	"gitlab.com/softkitteh/autokitteh/cmd/ak/cmdresettestidgen"
+	"github.com/autokitteh/autokitteh/cmd/ak/clitools"
+	"github.com/autokitteh/autokitteh/cmd/ak/cmdaccount"
+	"github.com/autokitteh/autokitteh/cmd/ak/cmdbumptestidgen"
+	"github.com/autokitteh/autokitteh/cmd/ak/cmdlang"
+	"github.com/autokitteh/autokitteh/cmd/ak/cmdparseargs"
+	"github.com/autokitteh/autokitteh/cmd/ak/cmdproject"
+	"github.com/autokitteh/autokitteh/cmd/ak/cmdresettestidgen"
 
-	"gitlab.com/softkitteh/autokitteh/internal/app/aksvc"
-	"gitlab.com/softkitteh/autokitteh/pkg/idgen"
-	L "gitlab.com/softkitteh/autokitteh/pkg/l"
-	"gitlab.com/softkitteh/autokitteh/pkg/svc"
+	"github.com/autokitteh/autokitteh/internal/app/aksvc"
+	"github.com/autokitteh/autokitteh/pkg/idgen"
+	L "github.com/autokitteh/autokitteh/pkg/l"
+	"github.com/autokitteh/autokitteh/pkg/svc"
 )
 
 var (

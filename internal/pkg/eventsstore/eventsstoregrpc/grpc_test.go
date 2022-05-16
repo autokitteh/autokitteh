@@ -10,10 +10,10 @@ import (
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 
-	"gitlab.com/softkitteh/autokitteh/internal/app/eventsstoregrpcsvc"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/eventsstore"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/eventsstore/eventsstoregorm"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/eventsstore/tests"
+	"github.com/autokitteh/autokitteh/internal/app/eventsstoregrpcsvc"
+	"github.com/autokitteh/autokitteh/internal/pkg/eventsstore"
+	"github.com/autokitteh/autokitteh/internal/pkg/eventsstore/eventsstoregorm"
+	"github.com/autokitteh/autokitteh/internal/pkg/eventsstore/tests"
 )
 
 func newStore(t *testing.T) func() eventsstore.Store {

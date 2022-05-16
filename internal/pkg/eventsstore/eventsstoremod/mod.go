@@ -8,13 +8,13 @@ import (
 	"go.starlark.net/starlark"
 	"go.starlark.net/starlarkstruct"
 
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apievent"
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apieventsrc"
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apiproject"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/eventsstore"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/eventsstore/eventsstorefactory"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/lang/langstarlark"
-	"gitlab.com/softkitteh/autokitteh/pkg/starlarkutils"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apievent"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apieventsrc"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiproject"
+	"github.com/autokitteh/autokitteh/internal/pkg/eventsstore"
+	"github.com/autokitteh/autokitteh/internal/pkg/eventsstore/eventsstorefactory"
+	"github.com/autokitteh/autokitteh/internal/pkg/lang/langstarlark"
+	"github.com/autokitteh/autokitteh/pkg/starlarkutils"
 )
 
 var Module = &starlarkstruct.Module{

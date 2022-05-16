@@ -6,11 +6,11 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	pb "gitlab.com/softkitteh/autokitteh/gen/proto/stubs/go/pluginsprovidersvc"
+	pb "github.com/autokitteh/autokitteh/gen/proto/stubs/go/pluginsprovidersvc"
 
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apiplugin"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/plugin"
-	L "gitlab.com/softkitteh/autokitteh/pkg/l"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiplugin"
+	"github.com/autokitteh/autokitteh/internal/pkg/plugin"
+	L "github.com/autokitteh/autokitteh/pkg/l"
 )
 
 type GRPCPlugin struct {

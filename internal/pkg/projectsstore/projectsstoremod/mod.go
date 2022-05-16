@@ -8,13 +8,13 @@ import (
 	"go.starlark.net/starlark"
 	"go.starlark.net/starlarkstruct"
 
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/accountsstore/accountsstorefactory"
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apiaccount"
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apiprogram"
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apiproject"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/projectsstore"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/projectsstore/projectsstorefactory"
-	"gitlab.com/softkitteh/autokitteh/pkg/starlarkutils"
+	"github.com/autokitteh/autokitteh/internal/pkg/accountsstore/accountsstorefactory"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiaccount"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiprogram"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiproject"
+	"github.com/autokitteh/autokitteh/internal/pkg/projectsstore"
+	"github.com/autokitteh/autokitteh/internal/pkg/projectsstore/projectsstorefactory"
+	"github.com/autokitteh/autokitteh/pkg/starlarkutils"
 )
 
 var Module = &starlarkstruct.Module{

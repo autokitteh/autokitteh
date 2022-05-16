@@ -1,11 +1,11 @@
 package apilang
 
 import (
-	pblang "gitlab.com/softkitteh/autokitteh/gen/proto/stubs/go/lang"
-	pbprogram "gitlab.com/softkitteh/autokitteh/gen/proto/stubs/go/program"
+	pblang "github.com/autokitteh/autokitteh/gen/proto/stubs/go/lang"
+	pbprogram "github.com/autokitteh/autokitteh/gen/proto/stubs/go/program"
 
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apiprogram"
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apivalues"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiprogram"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apivalues"
 )
 
 type runState interface {

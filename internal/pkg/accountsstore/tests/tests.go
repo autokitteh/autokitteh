@@ -10,8 +10,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/accountsstore"
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apiaccount"
+	"github.com/autokitteh/autokitteh/internal/pkg/accountsstore"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiaccount"
 )
 
 func TestAll(t *testing.T, as accountsstore.Store) {

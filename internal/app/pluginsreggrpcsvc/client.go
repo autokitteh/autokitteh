@@ -5,7 +5,7 @@ import (
 
 	"google.golang.org/grpc"
 
-	pb "gitlab.com/softkitteh/autokitteh/gen/proto/stubs/go/pluginsregsvc"
+	pb "github.com/autokitteh/autokitteh/gen/proto/stubs/go/pluginsregsvc"
 )
 
 type LocalClient struct{ Server pb.PluginsRegistryServer }

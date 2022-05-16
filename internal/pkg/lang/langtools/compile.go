@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"regexp"
 
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apiprogram"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/lang"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiprogram"
+	"github.com/autokitteh/autokitteh/internal/pkg/lang"
 )
 
 var langRe = regexp.MustCompile(`^# =\^\.\^= lang=([0-9A-Za-z_]+)`) // =^.^= (keep for grepping)

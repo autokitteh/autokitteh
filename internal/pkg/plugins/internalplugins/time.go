@@ -4,7 +4,7 @@ import (
 	starlibtime "github.com/qri-io/starlib/time"
 	"go.starlark.net/starlark"
 
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/starlarkplugin"
+	"github.com/autokitteh/autokitteh/internal/pkg/starlarkplugin"
 )
 
 var Time = starlarkplugin.Plugin(

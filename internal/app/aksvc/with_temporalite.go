@@ -16,10 +16,10 @@ replace (
 )
 
 import (
-	"gitlab.com/softkitteh/autokitteh/internal/app/temporalite"
+	"github.com/autokitteh/autokitteh/internal/app/temporalite"
 
-	L "gitlab.com/softkitteh/autokitteh/pkg/l"
-	"gitlab.com/softkitteh/autokitteh/pkg/svc"
+	L "github.com/autokitteh/autokitteh/pkg/l"
+	"github.com/autokitteh/autokitteh/pkg/svc"
 )
 
 var TemporaliteComponent = svc.Component{

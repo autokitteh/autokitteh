@@ -1,4 +1,4 @@
-export GOPRIVATE=gitlab.com/softkitteh/*
+export GOPRIVATE=github.com/autokitteh/*
 
 GO=go
 TAGS=

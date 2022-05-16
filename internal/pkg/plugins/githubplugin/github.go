@@ -6,10 +6,10 @@ import (
 
 	"github.com/google/go-github/v42/github"
 
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apivalues"
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/pluginimpl"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apivalues"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/pluginimpl"
 
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/githubinstalls"
+	"github.com/autokitteh/autokitteh/internal/pkg/githubinstalls"
 )
 
 var (

@@ -6,8 +6,8 @@ import (
 	"errors"
 	"fmt"
 
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apiproject"
-	"gitlab.com/softkitteh/autokitteh/pkg/pkvstore"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiproject"
+	"github.com/autokitteh/autokitteh/pkg/pkvstore"
 )
 
 var ErrNotFound = pkvstore.ErrNotFound

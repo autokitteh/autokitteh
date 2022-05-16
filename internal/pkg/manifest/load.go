@@ -3,7 +3,7 @@ package manifest
 import (
 	"os"
 
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/akcue"
+	"github.com/autokitteh/autokitteh/internal/pkg/akcue"
 )
 
 // TODO: validate manifest using cue.Value.Subsume

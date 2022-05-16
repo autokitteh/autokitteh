@@ -9,16 +9,16 @@ import (
 	"go.temporal.io/sdk/worker"
 	"go.temporal.io/sdk/workflow"
 
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/accountsstore"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/eventsrcsstore"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/eventsstore"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/projectsstore"
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apievent"
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apieventsrc"
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apilang"
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apiproject"
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apivalues"
-	L "gitlab.com/softkitteh/autokitteh/pkg/l"
+	"github.com/autokitteh/autokitteh/internal/pkg/accountsstore"
+	"github.com/autokitteh/autokitteh/internal/pkg/eventsrcsstore"
+	"github.com/autokitteh/autokitteh/internal/pkg/eventsstore"
+	"github.com/autokitteh/autokitteh/internal/pkg/projectsstore"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apievent"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apieventsrc"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apilang"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiproject"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apivalues"
+	L "github.com/autokitteh/autokitteh/pkg/l"
 )
 
 type Stores struct {

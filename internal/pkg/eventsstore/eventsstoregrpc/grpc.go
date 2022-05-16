@@ -7,13 +7,13 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	pbeventsvc "gitlab.com/softkitteh/autokitteh/gen/proto/stubs/go/eventsvc"
+	pbeventsvc "github.com/autokitteh/autokitteh/gen/proto/stubs/go/eventsvc"
 
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apievent"
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apieventsrc"
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apiproject"
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apivalues"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/eventsstore"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apievent"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apieventsrc"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiproject"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apivalues"
+	"github.com/autokitteh/autokitteh/internal/pkg/eventsstore"
 )
 
 type Store struct{ Client pbeventsvc.EventsClient }

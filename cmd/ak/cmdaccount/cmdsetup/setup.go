@@ -3,8 +3,8 @@ package cmdsetup
 import (
 	"github.com/urfave/cli/v2"
 
-	T "gitlab.com/softkitteh/autokitteh/cmd/ak/clitools"
-	A "gitlab.com/softkitteh/autokitteh/cmd/ak/cmdaccount/accounttools"
+	T "github.com/autokitteh/autokitteh/cmd/ak/clitools"
+	A "github.com/autokitteh/autokitteh/cmd/ak/cmdaccount/accounttools"
 )
 
 var (

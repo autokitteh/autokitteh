@@ -7,7 +7,7 @@ import (
 	"github.com/slack-go/slack/slackevents"
 	"github.com/slack-go/slack/socketmode"
 
-	L "gitlab.com/softkitteh/autokitteh/pkg/l"
+	L "github.com/autokitteh/autokitteh/pkg/l"
 )
 
 func (s *Svc) startSocketMode() {

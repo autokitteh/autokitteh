@@ -3,10 +3,10 @@ package projecttools
 import (
 	"fmt"
 
-	T "gitlab.com/softkitteh/autokitteh/cmd/ak/clitools"
-	A "gitlab.com/softkitteh/autokitteh/cmd/ak/cmdaccount/accounttools"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/projectsstore"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/projectsstore/projectsstorefactory"
+	T "github.com/autokitteh/autokitteh/cmd/ak/clitools"
+	A "github.com/autokitteh/autokitteh/cmd/ak/cmdaccount/accounttools"
+	"github.com/autokitteh/autokitteh/internal/pkg/projectsstore"
+	"github.com/autokitteh/autokitteh/internal/pkg/projectsstore/projectsstorefactory"
 )
 
 var Settings struct {

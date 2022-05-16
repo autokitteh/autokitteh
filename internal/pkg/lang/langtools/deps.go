@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apiprogram"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/lang"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiprogram"
+	"github.com/autokitteh/autokitteh/internal/pkg/lang"
 )
 
 func GetModuleDependencies(ctx context.Context, cat lang.Catalog, mod *apiprogram.Module) ([]*apiprogram.Path, error) {

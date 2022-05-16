@@ -5,9 +5,9 @@ import (
 
 	"go.temporal.io/sdk/workflow"
 
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apievent"
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apilang"
-	L "gitlab.com/softkitteh/autokitteh/pkg/l"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apievent"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apilang"
+	L "github.com/autokitteh/autokitteh/pkg/l"
 )
 
 var sessionKey struct{}

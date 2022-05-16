@@ -6,9 +6,9 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	pbeventsrc "gitlab.com/softkitteh/autokitteh/gen/proto/stubs/go/eventsrc"
+	pbeventsrc "github.com/autokitteh/autokitteh/gen/proto/stubs/go/eventsrc"
 
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apiproject"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiproject"
 )
 
 type EventSourceProjectBindingPB = pbeventsrc.EventSourceProjectBinding

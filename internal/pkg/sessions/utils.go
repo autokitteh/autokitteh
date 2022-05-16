@@ -7,8 +7,8 @@ import (
 	"go.temporal.io/sdk/temporal"
 	"go.temporal.io/sdk/workflow"
 
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apivalues"
-	L "gitlab.com/softkitteh/autokitteh/pkg/l"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apivalues"
+	L "github.com/autokitteh/autokitteh/pkg/l"
 )
 
 var ErrNoCallValue = errors.New("no call value allowed")

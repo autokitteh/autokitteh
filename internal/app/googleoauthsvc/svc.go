@@ -10,11 +10,11 @@ import (
 	"github.com/gorilla/mux"
 	"golang.org/x/oauth2"
 
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apiproject"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/credsstore"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/googleoauth"
-	"gitlab.com/softkitteh/autokitteh/pkg/kvstore"
-	L "gitlab.com/softkitteh/autokitteh/pkg/l"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiproject"
+	"github.com/autokitteh/autokitteh/internal/pkg/credsstore"
+	"github.com/autokitteh/autokitteh/internal/pkg/googleoauth"
+	"github.com/autokitteh/autokitteh/pkg/kvstore"
+	L "github.com/autokitteh/autokitteh/pkg/l"
 )
 
 type Config = googleoauth.Config

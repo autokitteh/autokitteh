@@ -3,9 +3,9 @@ package accounttools
 import (
 	"fmt"
 
-	T "gitlab.com/softkitteh/autokitteh/cmd/ak/clitools"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/accountsstore"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/accountsstore/accountsstorefactory"
+	T "github.com/autokitteh/autokitteh/cmd/ak/clitools"
+	"github.com/autokitteh/autokitteh/internal/pkg/accountsstore"
+	"github.com/autokitteh/autokitteh/internal/pkg/accountsstore/accountsstorefactory"
 )
 
 var Settings struct {

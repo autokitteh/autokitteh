@@ -15,18 +15,18 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	pb "gitlab.com/softkitteh/autokitteh/gen/proto/stubs/go/githubeventsrc"
+	pb "github.com/autokitteh/autokitteh/gen/proto/stubs/go/githubeventsrc"
 
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apievent"
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apieventsrc"
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apiproject"
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apivalues"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/events"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/eventsrcsstore"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/githubinstalls"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apievent"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apieventsrc"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiproject"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apivalues"
+	"github.com/autokitteh/autokitteh/internal/pkg/events"
+	"github.com/autokitteh/autokitteh/internal/pkg/eventsrcsstore"
+	"github.com/autokitteh/autokitteh/internal/pkg/githubinstalls"
 
-	H "gitlab.com/softkitteh/autokitteh/pkg/h"
-	L "gitlab.com/softkitteh/autokitteh/pkg/l"
+	H "github.com/autokitteh/autokitteh/pkg/h"
+	L "github.com/autokitteh/autokitteh/pkg/l"
 )
 
 // TODO: filter.

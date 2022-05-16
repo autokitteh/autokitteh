@@ -6,9 +6,9 @@ import (
 
 	"github.com/gorilla/mux"
 
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apiproject"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/projectsstore"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/statestore"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiproject"
+	"github.com/autokitteh/autokitteh/internal/pkg/projectsstore"
+	"github.com/autokitteh/autokitteh/internal/pkg/statestore"
 )
 
 func (s *Svc) registerProjects(r *mux.Router) {

@@ -5,15 +5,15 @@ import (
 	"fmt"
 	"time"
 
-	pblangsvc "gitlab.com/softkitteh/autokitteh/gen/proto/stubs/go/langsvc"
+	pblangsvc "github.com/autokitteh/autokitteh/gen/proto/stubs/go/langsvc"
 
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/lang"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/lang/langrun"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/lang/langrun/grpclangrun"
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apilang"
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apiprogram"
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apivalues"
-	L "gitlab.com/softkitteh/autokitteh/pkg/l"
+	"github.com/autokitteh/autokitteh/internal/pkg/lang"
+	"github.com/autokitteh/autokitteh/internal/pkg/lang/langrun"
+	"github.com/autokitteh/autokitteh/internal/pkg/lang/langrun/grpclangrun"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apilang"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiprogram"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apivalues"
+	L "github.com/autokitteh/autokitteh/pkg/l"
 )
 
 var ErrUnsupported = fmt.Errorf("unsupported")

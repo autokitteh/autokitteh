@@ -1,7 +1,7 @@
 package pluginimpl
 
 import (
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apivalues"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apivalues"
 )
 
 type FuncToValueFuncOpts struct{ Flags map[string]bool }

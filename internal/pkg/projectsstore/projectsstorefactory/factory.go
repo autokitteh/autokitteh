@@ -7,15 +7,15 @@ import (
 	"google.golang.org/grpc"
 	"gorm.io/gorm"
 
-	pbprojectsvc "gitlab.com/softkitteh/autokitteh/gen/proto/stubs/go/projectsvc"
+	pbprojectsvc "github.com/autokitteh/autokitteh/gen/proto/stubs/go/projectsvc"
 
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/accountsstore"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/projectsstore"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/projectsstore/projectsstoregorm"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/projectsstore/projectsstoregrpc"
-	"gitlab.com/softkitteh/autokitteh/pkg/gormfactory"
-	L "gitlab.com/softkitteh/autokitteh/pkg/l"
-	"gitlab.com/softkitteh/autokitteh/pkg/storefactory"
+	"github.com/autokitteh/autokitteh/internal/pkg/accountsstore"
+	"github.com/autokitteh/autokitteh/internal/pkg/projectsstore"
+	"github.com/autokitteh/autokitteh/internal/pkg/projectsstore/projectsstoregorm"
+	"github.com/autokitteh/autokitteh/internal/pkg/projectsstore/projectsstoregrpc"
+	"github.com/autokitteh/autokitteh/pkg/gormfactory"
+	L "github.com/autokitteh/autokitteh/pkg/l"
+	"github.com/autokitteh/autokitteh/pkg/storefactory"
 )
 
 type Config = storefactory.Config

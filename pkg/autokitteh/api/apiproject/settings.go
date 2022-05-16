@@ -3,11 +3,11 @@ package apiproject
 import (
 	"google.golang.org/protobuf/proto"
 
-	pbproject "gitlab.com/softkitteh/autokitteh/gen/proto/stubs/go/project"
+	pbproject "github.com/autokitteh/autokitteh/gen/proto/stubs/go/project"
 
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apiplugin"
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apiprogram"
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apivalues"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiplugin"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiprogram"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apivalues"
 )
 
 type ProjectSettingsPB = pbproject.ProjectSettings

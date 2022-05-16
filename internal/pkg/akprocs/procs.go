@@ -7,8 +7,8 @@ import (
 
 	"github.com/gorilla/mux"
 
-	L "gitlab.com/softkitteh/autokitteh/pkg/l"
-	"gitlab.com/softkitteh/autokitteh/pkg/procs"
+	L "github.com/autokitteh/autokitteh/pkg/l"
+	"github.com/autokitteh/autokitteh/pkg/procs"
 )
 
 type Config struct {

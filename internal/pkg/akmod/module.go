@@ -3,15 +3,15 @@ package akmod
 import (
 	"context"
 
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apievent"
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apiplugin"
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apiproject"
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apivalues"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/plugin/builtinplugin"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/statestore"
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/pluginimpl"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apievent"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiplugin"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiproject"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apivalues"
+	"github.com/autokitteh/autokitteh/internal/pkg/plugin/builtinplugin"
+	"github.com/autokitteh/autokitteh/internal/pkg/statestore"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/pluginimpl"
 
-	L "gitlab.com/softkitteh/autokitteh/pkg/l"
+	L "github.com/autokitteh/autokitteh/pkg/l"
 )
 
 var PluginID = apiplugin.NewInternalPluginID("ak")

@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package autokitteh.lang;
 
-option go_package = "gitlab.com/softkitteh/autokitteh/gen/proto/stubs/go/lang";
+option go_package = "github.com/autokitteh/autokitteh/gen/proto/stubs/go/lang";
 
 import "validate/validate.proto";
 import "google/protobuf/timestamp.proto";

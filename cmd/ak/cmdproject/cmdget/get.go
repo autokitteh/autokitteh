@@ -5,9 +5,9 @@ import (
 
 	"github.com/urfave/cli/v2"
 
-	T "gitlab.com/softkitteh/autokitteh/cmd/ak/clitools"
-	P "gitlab.com/softkitteh/autokitteh/cmd/ak/cmdproject/projecttools"
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apiproject"
+	T "github.com/autokitteh/autokitteh/cmd/ak/clitools"
+	P "github.com/autokitteh/autokitteh/cmd/ak/cmdproject/projecttools"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiproject"
 )
 
 var (

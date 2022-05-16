@@ -24,5 +24,5 @@ cp -r /build/api/scripts /scripts
 ./api/scripts/_go.sh
 ./api/scripts/_openapi.sh
 
-ln -s /gen/go/gitlab.com/softkitteh/autokitteh/gen/proto/stubs/go /build/gen/proto/stubs/go
+ln -s /gen/go/github.com/autokitteh/autokitteh/gen/proto/stubs/go /build/gen/proto/stubs/go
 ln -s /gen/openapi /build/gen/proto/openapi

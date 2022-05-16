@@ -3,10 +3,10 @@ package cmdruns
 import (
 	"github.com/urfave/cli/v2"
 
-	"gitlab.com/softkitteh/autokitteh/cmd/ak/cmdlang/cmdruns/cmdrunscancel"
-	"gitlab.com/softkitteh/autokitteh/cmd/ak/cmdlang/cmdruns/cmdrunsdiscard"
-	"gitlab.com/softkitteh/autokitteh/cmd/ak/cmdlang/cmdruns/cmdrunsget"
-	"gitlab.com/softkitteh/autokitteh/cmd/ak/cmdlang/cmdruns/cmdrunslist"
+	"github.com/autokitteh/autokitteh/cmd/ak/cmdlang/cmdruns/cmdrunscancel"
+	"github.com/autokitteh/autokitteh/cmd/ak/cmdlang/cmdruns/cmdrunsdiscard"
+	"github.com/autokitteh/autokitteh/cmd/ak/cmdlang/cmdruns/cmdrunsget"
+	"github.com/autokitteh/autokitteh/cmd/ak/cmdlang/cmdruns/cmdrunslist"
 )
 
 var (

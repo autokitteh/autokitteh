@@ -5,7 +5,7 @@ import (
 
 	"go.starlark.net/starlark"
 
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/lang"
+	"github.com/autokitteh/autokitteh/internal/pkg/lang"
 )
 
 func setTLSContext(t *starlark.Thread, ctx context.Context) { t.SetLocal("context", ctx) }

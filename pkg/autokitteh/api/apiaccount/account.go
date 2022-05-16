@@ -6,7 +6,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	pbaccount "gitlab.com/softkitteh/autokitteh/gen/proto/stubs/go/account"
+	pbaccount "github.com/autokitteh/autokitteh/gen/proto/stubs/go/account"
 )
 
 type AccountPB = pbaccount.Account

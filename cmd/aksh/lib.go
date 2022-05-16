@@ -6,10 +6,10 @@ import (
 	"go.starlark.net/starlark"
 	"go.starlark.net/starlarkstruct"
 
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/accountsstore/accountsstoremod"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/eventsrcsstore/eventsrcsstoremod"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/eventsstore/eventsstoremod"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/projectsstore/projectsstoremod"
+	"github.com/autokitteh/autokitteh/internal/pkg/accountsstore/accountsstoremod"
+	"github.com/autokitteh/autokitteh/internal/pkg/eventsrcsstore/eventsrcsstoremod"
+	"github.com/autokitteh/autokitteh/internal/pkg/eventsstore/eventsstoremod"
+	"github.com/autokitteh/autokitteh/internal/pkg/projectsstore/projectsstoremod"
 )
 
 func initModules() {

@@ -9,11 +9,11 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	pb "gitlab.com/softkitteh/autokitteh/gen/proto/stubs/go/secretssvc"
+	pb "github.com/autokitteh/autokitteh/gen/proto/stubs/go/secretssvc"
 
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/secretsstore"
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apiproject"
-	L "gitlab.com/softkitteh/autokitteh/pkg/l"
+	"github.com/autokitteh/autokitteh/internal/pkg/secretsstore"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiproject"
+	L "github.com/autokitteh/autokitteh/pkg/l"
 )
 
 type Svc struct {

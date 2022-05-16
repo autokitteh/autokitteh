@@ -1,9 +1,9 @@
 package apievent
 
 import (
-	pbevent "gitlab.com/softkitteh/autokitteh/gen/proto/stubs/go/event"
+	pbevent "github.com/autokitteh/autokitteh/gen/proto/stubs/go/event"
 
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apilang"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apilang"
 )
 
 type projectEventState interface {

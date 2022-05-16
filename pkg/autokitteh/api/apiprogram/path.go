@@ -8,9 +8,9 @@ import (
 
 	"google.golang.org/protobuf/proto"
 
-	pbprogram "gitlab.com/softkitteh/autokitteh/gen/proto/stubs/go/program"
+	pbprogram "github.com/autokitteh/autokitteh/gen/proto/stubs/go/program"
 
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apiplugin"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiplugin"
 )
 
 var pathRe = regexp.MustCompile(`` +

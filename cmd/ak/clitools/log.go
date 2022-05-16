@@ -1,8 +1,8 @@
 package clitools
 
 import (
-	LL "gitlab.com/softkitteh/autokitteh/pkg/l"
-	Z "gitlab.com/softkitteh/autokitteh/pkg/z"
+	LL "github.com/autokitteh/autokitteh/pkg/l"
+	Z "github.com/autokitteh/autokitteh/pkg/z"
 )
 
 var l LL.L = LL.Nop

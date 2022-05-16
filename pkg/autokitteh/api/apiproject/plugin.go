@@ -3,9 +3,9 @@ package apiproject
 import (
 	"google.golang.org/protobuf/proto"
 
-	pbproject "gitlab.com/softkitteh/autokitteh/gen/proto/stubs/go/project"
+	pbproject "github.com/autokitteh/autokitteh/gen/proto/stubs/go/project"
 
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apiplugin"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiplugin"
 )
 
 type ProjectPlugin struct{ pb *pbproject.ProjectPlugin }

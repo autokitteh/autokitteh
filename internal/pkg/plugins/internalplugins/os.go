@@ -6,8 +6,8 @@ import (
 	"os"
 	"os/exec"
 
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apivalues"
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/pluginimpl"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apivalues"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/pluginimpl"
 )
 
 func run(ctx context.Context, path string, args, env []interface{}, dir string, fail bool) (*apivalues.Value, error) {

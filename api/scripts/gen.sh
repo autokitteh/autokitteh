@@ -17,7 +17,7 @@ run() {
     -it \
     -v "${PWD}/api/proto:/proto/src:ro" \
     -v "${PWD}/gen/proto/src:/gen/proto/src" \
-    -v "${PWD}/gen/proto/stubs/go:/gen/go/gitlab.com/softkitteh/autokitteh/gen/proto/stubs/go" \
+    -v "${PWD}/gen/proto/stubs/go:/gen/go/github.com/autokitteh/autokitteh/gen/proto/stubs/go" \
     -v "${PWD}/gen/proto/stubs/py:/gen/py" \
     -v "${PWD}/gen/proto/openapi:/gen/openapi" \
     -v "${PWD}/gen/proto/stubs/grpcweb:/gen/grpcweb" \

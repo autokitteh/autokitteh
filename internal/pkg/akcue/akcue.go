@@ -9,7 +9,7 @@ import (
 
 	"go.dagger.io/dagger/compiler"
 
-	cuemod "gitlab.com/softkitteh/autokitteh/cue.mod"
+	cuemod "github.com/autokitteh/autokitteh/cue.mod"
 )
 
 func Load(path string, dst interface{}) error {

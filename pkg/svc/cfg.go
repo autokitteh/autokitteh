@@ -9,8 +9,8 @@ import (
 	"github.com/ghodss/yaml"
 	"github.com/kelseyhightower/envconfig"
 
-	L "gitlab.com/softkitteh/autokitteh/pkg/l"
-	Z "gitlab.com/softkitteh/autokitteh/pkg/z"
+	L "github.com/autokitteh/autokitteh/pkg/l"
+	Z "github.com/autokitteh/autokitteh/pkg/z"
 )
 
 type httpCfg struct {

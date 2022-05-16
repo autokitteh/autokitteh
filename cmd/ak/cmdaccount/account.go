@@ -3,11 +3,11 @@ package cmdaccount
 import (
 	"github.com/urfave/cli/v2"
 
-	"gitlab.com/softkitteh/autokitteh/cmd/ak/cmdaccount/accounttools"
-	"gitlab.com/softkitteh/autokitteh/cmd/ak/cmdaccount/cmdcreate"
-	"gitlab.com/softkitteh/autokitteh/cmd/ak/cmdaccount/cmdget"
-	"gitlab.com/softkitteh/autokitteh/cmd/ak/cmdaccount/cmdsetup"
-	"gitlab.com/softkitteh/autokitteh/cmd/ak/cmdaccount/cmdupdate"
+	"github.com/autokitteh/autokitteh/cmd/ak/cmdaccount/accounttools"
+	"github.com/autokitteh/autokitteh/cmd/ak/cmdaccount/cmdcreate"
+	"github.com/autokitteh/autokitteh/cmd/ak/cmdaccount/cmdget"
+	"github.com/autokitteh/autokitteh/cmd/ak/cmdaccount/cmdsetup"
+	"github.com/autokitteh/autokitteh/cmd/ak/cmdaccount/cmdupdate"
 )
 
 var (

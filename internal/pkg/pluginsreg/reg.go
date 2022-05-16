@@ -10,16 +10,16 @@ import (
 
 	"github.com/samber/lo"
 
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/akprocs"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/plugin"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/plugin/builtinplugin"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/plugin/grpcplugin"
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apiaccount"
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apiplugin"
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/pluginimpl"
+	"github.com/autokitteh/autokitteh/internal/pkg/akprocs"
+	"github.com/autokitteh/autokitteh/internal/pkg/plugin"
+	"github.com/autokitteh/autokitteh/internal/pkg/plugin/builtinplugin"
+	"github.com/autokitteh/autokitteh/internal/pkg/plugin/grpcplugin"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiaccount"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiplugin"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/pluginimpl"
 
-	L "gitlab.com/softkitteh/autokitteh/pkg/l"
-	"gitlab.com/softkitteh/autokitteh/pkg/pkvstore"
+	L "github.com/autokitteh/autokitteh/pkg/l"
+	"github.com/autokitteh/autokitteh/pkg/pkvstore"
 )
 
 var ErrNotFound = pkvstore.ErrNotFound

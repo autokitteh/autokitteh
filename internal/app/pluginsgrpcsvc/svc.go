@@ -7,14 +7,14 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	pbsvc "gitlab.com/softkitteh/autokitteh/gen/proto/stubs/go/pluginsprovidersvc"
-	pbvalues "gitlab.com/softkitteh/autokitteh/gen/proto/stubs/go/values"
+	pbsvc "github.com/autokitteh/autokitteh/gen/proto/stubs/go/pluginsprovidersvc"
+	pbvalues "github.com/autokitteh/autokitteh/gen/proto/stubs/go/values"
 
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/plugin"
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apiplugin"
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apiprogram"
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apivalues"
-	L "gitlab.com/softkitteh/autokitteh/pkg/l"
+	"github.com/autokitteh/autokitteh/internal/pkg/plugin"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiplugin"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiprogram"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apivalues"
+	L "github.com/autokitteh/autokitteh/pkg/l"
 )
 
 type Svc struct {

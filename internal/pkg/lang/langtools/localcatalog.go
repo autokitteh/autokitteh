@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"sync"
 
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/lang"
-	L "gitlab.com/softkitteh/autokitteh/pkg/l"
+	"github.com/autokitteh/autokitteh/internal/pkg/lang"
+	L "github.com/autokitteh/autokitteh/pkg/l"
 )
 
 type langent struct {

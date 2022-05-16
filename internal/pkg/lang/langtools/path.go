@@ -3,7 +3,7 @@ package langtools
 import (
 	"strings"
 
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/lang"
+	"github.com/autokitteh/autokitteh/internal/pkg/lang"
 )
 
 func SplitExtension(cat lang.Catalog, path string) (base, ext string) {

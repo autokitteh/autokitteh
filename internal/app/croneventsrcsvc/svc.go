@@ -14,16 +14,16 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apieventsrc"
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apiproject"
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apivalues"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/events"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/eventsrcsstore"
-	"gitlab.com/softkitteh/autokitteh/pkg/kvstore"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apieventsrc"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiproject"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apivalues"
+	"github.com/autokitteh/autokitteh/internal/pkg/events"
+	"github.com/autokitteh/autokitteh/internal/pkg/eventsrcsstore"
+	"github.com/autokitteh/autokitteh/pkg/kvstore"
 
-	pb "gitlab.com/softkitteh/autokitteh/gen/proto/stubs/go/croneventsrc"
+	pb "github.com/autokitteh/autokitteh/gen/proto/stubs/go/croneventsrc"
 
-	L "gitlab.com/softkitteh/autokitteh/pkg/l"
+	L "github.com/autokitteh/autokitteh/pkg/l"
 )
 
 var EventTypes = []string{"tick"}

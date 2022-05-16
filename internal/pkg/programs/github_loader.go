@@ -9,8 +9,8 @@ import (
 
 	"github.com/google/go-github/v42/github"
 
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apiprogram"
-	L "gitlab.com/softkitteh/autokitteh/pkg/l"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiprogram"
+	L "github.com/autokitteh/autokitteh/pkg/l"
 )
 
 var GithubPathRewriter = NewPrefixPathRewriter("github", "github.com/", "github")

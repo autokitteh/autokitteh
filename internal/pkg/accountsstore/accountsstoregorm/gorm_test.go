@@ -10,7 +10,7 @@ import (
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/accountsstore/tests"
+	"github.com/autokitteh/autokitteh/internal/pkg/accountsstore/tests"
 )
 
 func TestAllSQLite(t *testing.T) {

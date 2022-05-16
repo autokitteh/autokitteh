@@ -10,15 +10,15 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	pblangsvc "gitlab.com/softkitteh/autokitteh/gen/proto/stubs/go/langsvc"
+	pblangsvc "github.com/autokitteh/autokitteh/gen/proto/stubs/go/langsvc"
 
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apilang"
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apiprogram"
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apivalues"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/lang/langrun"
-	L "gitlab.com/softkitteh/autokitteh/pkg/l"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apilang"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiprogram"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apivalues"
+	"github.com/autokitteh/autokitteh/internal/pkg/lang/langrun"
+	L "github.com/autokitteh/autokitteh/pkg/l"
 
-	_ "gitlab.com/softkitteh/autokitteh/internal/pkg/lang/langall"
+	_ "github.com/autokitteh/autokitteh/internal/pkg/lang/langall"
 )
 
 type Svc struct {

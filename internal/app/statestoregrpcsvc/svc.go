@@ -10,12 +10,12 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	pb "gitlab.com/softkitteh/autokitteh/gen/proto/stubs/go/statesvc"
+	pb "github.com/autokitteh/autokitteh/gen/proto/stubs/go/statesvc"
 
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apiproject"
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apivalues"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/statestore"
-	L "gitlab.com/softkitteh/autokitteh/pkg/l"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiproject"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apivalues"
+	"github.com/autokitteh/autokitteh/internal/pkg/statestore"
+	L "github.com/autokitteh/autokitteh/pkg/l"
 )
 
 type Svc struct {

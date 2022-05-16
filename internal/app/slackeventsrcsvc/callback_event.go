@@ -6,8 +6,8 @@ import (
 
 	"github.com/slack-go/slack/slackevents"
 
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apiproject"
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apivalues"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiproject"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apivalues"
 )
 
 func (s *Svc) handleCallbackEvent(ctx context.Context, data *slackevents.EventsAPICallbackEvent, inner *slackevents.EventsAPIInnerEvent) {

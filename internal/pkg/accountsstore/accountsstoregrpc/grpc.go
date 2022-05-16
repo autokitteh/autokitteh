@@ -8,10 +8,10 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	pbaccountsvc "gitlab.com/softkitteh/autokitteh/gen/proto/stubs/go/accountsvc"
+	pbaccountsvc "github.com/autokitteh/autokitteh/gen/proto/stubs/go/accountsvc"
 
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/accountsstore"
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apiaccount"
+	"github.com/autokitteh/autokitteh/internal/pkg/accountsstore"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiaccount"
 )
 
 type Store struct{ Client pbaccountsvc.AccountsClient }

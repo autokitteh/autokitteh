@@ -11,8 +11,8 @@ import (
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/eventsstore"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/eventsstore/tests"
+	"github.com/autokitteh/autokitteh/internal/pkg/eventsstore"
+	"github.com/autokitteh/autokitteh/internal/pkg/eventsstore/tests"
 )
 
 var dburl = flag.String("dburl", "file::memory:", "sqlite db url")

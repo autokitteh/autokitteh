@@ -11,7 +11,7 @@ setuptools.setup(
     description="AutoKitteh SDK",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://gitlab.com/softkitteh/autokitteh",
+    url="https://github.com/autokitteh/autokitteh",
     project_urls={
     },
     classifiers=[

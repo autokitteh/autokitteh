@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/accountsstore"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/eventsrcsstore"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/pluginsreg"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/projectsstore"
+	"github.com/autokitteh/autokitteh/internal/pkg/accountsstore"
+	"github.com/autokitteh/autokitteh/internal/pkg/eventsrcsstore"
+	"github.com/autokitteh/autokitteh/internal/pkg/pluginsreg"
+	"github.com/autokitteh/autokitteh/internal/pkg/projectsstore"
 )
 
 type Env struct {

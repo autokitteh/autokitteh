@@ -3,7 +3,7 @@ package statestoregorm
 import (
 	"gorm.io/datatypes"
 
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/statestore"
+	"github.com/autokitteh/autokitteh/internal/pkg/statestore"
 )
 
 type value struct {

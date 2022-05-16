@@ -1,30 +1,30 @@
 package aksvc
 
 import (
-	"gitlab.com/softkitteh/autokitteh/internal/app/dashboardsvc"
-	"gitlab.com/softkitteh/autokitteh/internal/app/githubeventsrcsvc"
-	"gitlab.com/softkitteh/autokitteh/internal/app/googleoauthsvc"
-	"gitlab.com/softkitteh/autokitteh/internal/app/temporalite"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/accountsstore/accountsstorefactory"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/akprocs"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/eventsrcsstore/eventsrcsstorefactory"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/eventsstore/eventsstorefactory"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/githubinstalls"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/projectsstore/projectsstorefactory"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/sessions"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/statestore/statestorefactory"
+	"github.com/autokitteh/autokitteh/internal/app/dashboardsvc"
+	"github.com/autokitteh/autokitteh/internal/app/githubeventsrcsvc"
+	"github.com/autokitteh/autokitteh/internal/app/googleoauthsvc"
+	"github.com/autokitteh/autokitteh/internal/app/temporalite"
+	"github.com/autokitteh/autokitteh/internal/pkg/accountsstore/accountsstorefactory"
+	"github.com/autokitteh/autokitteh/internal/pkg/akprocs"
+	"github.com/autokitteh/autokitteh/internal/pkg/eventsrcsstore/eventsrcsstorefactory"
+	"github.com/autokitteh/autokitteh/internal/pkg/eventsstore/eventsstorefactory"
+	"github.com/autokitteh/autokitteh/internal/pkg/githubinstalls"
+	"github.com/autokitteh/autokitteh/internal/pkg/projectsstore/projectsstorefactory"
+	"github.com/autokitteh/autokitteh/internal/pkg/sessions"
+	"github.com/autokitteh/autokitteh/internal/pkg/statestore/statestorefactory"
 
-	"gitlab.com/softkitteh/autokitteh/internal/app/croneventsrcsvc"
-	"gitlab.com/softkitteh/autokitteh/internal/app/slackeventsrcsvc"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/fseventsrc"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/httpeventsrc"
+	"github.com/autokitteh/autokitteh/internal/app/croneventsrcsvc"
+	"github.com/autokitteh/autokitteh/internal/app/slackeventsrcsvc"
+	"github.com/autokitteh/autokitteh/internal/pkg/fseventsrc"
+	"github.com/autokitteh/autokitteh/internal/pkg/httpeventsrc"
 
-	"gitlab.com/softkitteh/autokitteh/pkg/initd"
+	"github.com/autokitteh/autokitteh/pkg/initd"
 
-	"gitlab.com/softkitteh/autokitteh/pkg/kvstore"
-	L "gitlab.com/softkitteh/autokitteh/pkg/l"
-	"gitlab.com/softkitteh/autokitteh/pkg/pkvstore"
-	"gitlab.com/softkitteh/autokitteh/pkg/storefactory"
+	"github.com/autokitteh/autokitteh/pkg/kvstore"
+	L "github.com/autokitteh/autokitteh/pkg/l"
+	"github.com/autokitteh/autokitteh/pkg/pkvstore"
+	"github.com/autokitteh/autokitteh/pkg/storefactory"
 )
 
 type TemporalConfig struct {

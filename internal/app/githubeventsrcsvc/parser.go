@@ -6,9 +6,9 @@ import (
 	"github.com/google/go-github/v42/github"
 	"github.com/iancoleman/strcase"
 
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apivalues"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apivalues"
 
-	H "gitlab.com/softkitteh/autokitteh/pkg/h"
+	H "github.com/autokitteh/autokitteh/pkg/h"
 )
 
 type parsedEvent struct {

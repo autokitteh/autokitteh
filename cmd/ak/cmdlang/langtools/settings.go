@@ -6,13 +6,13 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	T "gitlab.com/softkitteh/autokitteh/cmd/ak/clitools"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/lang"
-	_ "gitlab.com/softkitteh/autokitteh/internal/pkg/lang/langall"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/lang/langrun"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/lang/langrun/grpclangrun"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/lang/langrun/locallangrun"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/lang/langtools"
+	T "github.com/autokitteh/autokitteh/cmd/ak/clitools"
+	"github.com/autokitteh/autokitteh/internal/pkg/lang"
+	_ "github.com/autokitteh/autokitteh/internal/pkg/lang/langall"
+	"github.com/autokitteh/autokitteh/internal/pkg/lang/langrun"
+	"github.com/autokitteh/autokitteh/internal/pkg/lang/langrun/grpclangrun"
+	"github.com/autokitteh/autokitteh/internal/pkg/lang/langrun/locallangrun"
+	"github.com/autokitteh/autokitteh/internal/pkg/lang/langtools"
 )
 
 var Settings struct {

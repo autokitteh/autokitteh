@@ -7,7 +7,7 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	L "gitlab.com/softkitteh/autokitteh/pkg/l"
+	L "github.com/autokitteh/autokitteh/pkg/l"
 )
 
 type Config struct {

@@ -1,11 +1,11 @@
 package main
 
 import (
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/pluginsvc"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/pluginsvc"
 
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/plugins/githubplugin"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/plugins/googlesheetsplugin"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/plugins/slackplugin"
+	"github.com/autokitteh/autokitteh/internal/pkg/plugins/githubplugin"
+	"github.com/autokitteh/autokitteh/internal/pkg/plugins/googlesheetsplugin"
+	"github.com/autokitteh/autokitteh/internal/pkg/plugins/slackplugin"
 )
 
 func main() {

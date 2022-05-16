@@ -3,17 +3,17 @@ package cmdlang
 import (
 	"github.com/urfave/cli/v2"
 
-	"gitlab.com/softkitteh/autokitteh/cmd/ak/cmdlang/langtools"
+	"github.com/autokitteh/autokitteh/cmd/ak/cmdlang/langtools"
 
-	"gitlab.com/softkitteh/autokitteh/cmd/ak/cmdlang/cmdcall"
-	"gitlab.com/softkitteh/autokitteh/cmd/ak/cmdlang/cmdcat"
-	"gitlab.com/softkitteh/autokitteh/cmd/ak/cmdlang/cmdcompile"
-	"gitlab.com/softkitteh/autokitteh/cmd/ak/cmdlang/cmddeps"
-	"gitlab.com/softkitteh/autokitteh/cmd/ak/cmdlang/cmdlist"
-	"gitlab.com/softkitteh/autokitteh/cmd/ak/cmdlang/cmdrun"
-	"gitlab.com/softkitteh/autokitteh/cmd/ak/cmdlang/cmdruns"
+	"github.com/autokitteh/autokitteh/cmd/ak/cmdlang/cmdcall"
+	"github.com/autokitteh/autokitteh/cmd/ak/cmdlang/cmdcat"
+	"github.com/autokitteh/autokitteh/cmd/ak/cmdlang/cmdcompile"
+	"github.com/autokitteh/autokitteh/cmd/ak/cmdlang/cmddeps"
+	"github.com/autokitteh/autokitteh/cmd/ak/cmdlang/cmdlist"
+	"github.com/autokitteh/autokitteh/cmd/ak/cmdlang/cmdrun"
+	"github.com/autokitteh/autokitteh/cmd/ak/cmdlang/cmdruns"
 
-	_ "gitlab.com/softkitteh/autokitteh/internal/pkg/lang/langall"
+	_ "github.com/autokitteh/autokitteh/internal/pkg/lang/langall"
 )
 
 var (

@@ -6,9 +6,9 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	pbproject "gitlab.com/softkitteh/autokitteh/gen/proto/stubs/go/project"
+	pbproject "github.com/autokitteh/autokitteh/gen/proto/stubs/go/project"
 
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apiaccount"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiaccount"
 )
 
 type ProjectPB = pbproject.Project

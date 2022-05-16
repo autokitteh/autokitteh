@@ -13,15 +13,15 @@ import (
 
 	"google.golang.org/grpc"
 
-	"gitlab.com/softkitteh/autokitteh/internal/app/pluginsgrpcsvc"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/plugin"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/plugin/builtinplugin"
+	"github.com/autokitteh/autokitteh/internal/app/pluginsgrpcsvc"
+	"github.com/autokitteh/autokitteh/internal/pkg/plugin"
+	"github.com/autokitteh/autokitteh/internal/pkg/plugin/builtinplugin"
 
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apiplugin"
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/pluginimpl"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiplugin"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/pluginimpl"
 
-	L "gitlab.com/softkitteh/autokitteh/pkg/l"
-	"gitlab.com/softkitteh/autokitteh/pkg/svc"
+	L "github.com/autokitteh/autokitteh/pkg/l"
+	"github.com/autokitteh/autokitteh/pkg/svc"
 )
 
 var (

@@ -7,7 +7,7 @@ import (
 	"github.com/psanford/memfs"
 	"go.dagger.io/dagger/compiler"
 
-	cuemod "gitlab.com/softkitteh/autokitteh/cue.mod"
+	cuemod "github.com/autokitteh/autokitteh/cue.mod"
 )
 
 func UnmarshalCue(src []byte, dst interface{}) error {

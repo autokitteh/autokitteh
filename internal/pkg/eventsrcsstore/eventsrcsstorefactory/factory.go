@@ -7,14 +7,14 @@ import (
 	"google.golang.org/grpc"
 	"gorm.io/gorm"
 
-	pbeventsrcsvc "gitlab.com/softkitteh/autokitteh/gen/proto/stubs/go/eventsrcsvc"
+	pbeventsrcsvc "github.com/autokitteh/autokitteh/gen/proto/stubs/go/eventsrcsvc"
 
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/eventsrcsstore"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/eventsrcsstore/eventsrcsstoregorm"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/eventsrcsstore/eventsrcsstoregrpc"
-	"gitlab.com/softkitteh/autokitteh/pkg/gormfactory"
-	L "gitlab.com/softkitteh/autokitteh/pkg/l"
-	"gitlab.com/softkitteh/autokitteh/pkg/storefactory"
+	"github.com/autokitteh/autokitteh/internal/pkg/eventsrcsstore"
+	"github.com/autokitteh/autokitteh/internal/pkg/eventsrcsstore/eventsrcsstoregorm"
+	"github.com/autokitteh/autokitteh/internal/pkg/eventsrcsstore/eventsrcsstoregrpc"
+	"github.com/autokitteh/autokitteh/pkg/gormfactory"
+	L "github.com/autokitteh/autokitteh/pkg/l"
+	"github.com/autokitteh/autokitteh/pkg/storefactory"
 )
 
 type Config = storefactory.Config

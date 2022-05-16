@@ -5,12 +5,12 @@ import (
 
 	"github.com/urfave/cli/v2"
 
-	T "gitlab.com/softkitteh/autokitteh/cmd/ak/clitools"
-	P "gitlab.com/softkitteh/autokitteh/cmd/ak/cmdproject/projecttools"
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apiaccount"
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apiprogram"
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apiproject"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/projectsstore"
+	T "github.com/autokitteh/autokitteh/cmd/ak/clitools"
+	P "github.com/autokitteh/autokitteh/cmd/ak/cmdproject/projecttools"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiaccount"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiprogram"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiproject"
+	"github.com/autokitteh/autokitteh/internal/pkg/projectsstore"
 )
 
 var (

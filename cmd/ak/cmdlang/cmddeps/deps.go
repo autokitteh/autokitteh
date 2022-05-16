@@ -5,9 +5,9 @@ import (
 
 	"github.com/urfave/cli/v2"
 
-	T "gitlab.com/softkitteh/autokitteh/cmd/ak/clitools"
-	L "gitlab.com/softkitteh/autokitteh/cmd/ak/cmdlang/langtools"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/lang/langtools"
+	T "github.com/autokitteh/autokitteh/cmd/ak/clitools"
+	L "github.com/autokitteh/autokitteh/cmd/ak/cmdlang/langtools"
+	"github.com/autokitteh/autokitteh/internal/pkg/lang/langtools"
 )
 
 var (

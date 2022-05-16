@@ -6,7 +6,7 @@ import (
 
 	"github.com/ghodss/yaml"
 
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apivalues"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apivalues"
 )
 
 func ParseValuesArgs(args []string, wrapped bool) (l []*apivalues.Value, m map[string]*apivalues.Value, err error) {

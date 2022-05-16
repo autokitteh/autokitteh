@@ -3,8 +3,8 @@ package cmdparseargs
 import (
 	"github.com/urfave/cli/v2"
 
-	T "gitlab.com/softkitteh/autokitteh/cmd/ak/clitools"
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apivalues"
+	T "github.com/autokitteh/autokitteh/cmd/ak/clitools"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apivalues"
 )
 
 var (

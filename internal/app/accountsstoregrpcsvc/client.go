@@ -5,7 +5,7 @@ import (
 
 	"google.golang.org/grpc"
 
-	pbaccountsvc "gitlab.com/softkitteh/autokitteh/gen/proto/stubs/go/accountsvc"
+	pbaccountsvc "github.com/autokitteh/autokitteh/gen/proto/stubs/go/accountsvc"
 )
 
 type LocalClient struct {

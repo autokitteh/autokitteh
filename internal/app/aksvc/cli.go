@@ -2,7 +2,7 @@ package aksvc
 
 import (
 	"github.com/urfave/cli/v2"
-	"gitlab.com/softkitteh/autokitteh/pkg/svc"
+	"github.com/autokitteh/autokitteh/pkg/svc"
 )
 
 // See [# InitPaths #] in config.go

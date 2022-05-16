@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package autokitteh.pluginsregsvc;
 
-option go_package = "gitlab.com/softkitteh/autokitteh/gen/proto/stubs/go/pluginsregsvc";
+option go_package = "github.com/autokitteh/autokitteh/gen/proto/stubs/go/pluginsregsvc";
 
 import "plugin/plugin.proto";
 import "validate/validate.proto";

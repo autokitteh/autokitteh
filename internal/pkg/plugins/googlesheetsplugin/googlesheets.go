@@ -13,10 +13,10 @@ import (
 	"google.golang.org/api/option"
 	"google.golang.org/api/sheets/v4"
 
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apivalues"
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/pluginimpl"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apivalues"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/pluginimpl"
 
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/googleoauth"
+	"github.com/autokitteh/autokitteh/internal/pkg/googleoauth"
 )
 
 var (

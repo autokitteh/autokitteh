@@ -5,7 +5,7 @@ import (
 
 	"google.golang.org/protobuf/encoding/protojson"
 
-	pbeventsrc "gitlab.com/softkitteh/autokitteh/gen/proto/stubs/go/eventsrc"
+	pbeventsrc "github.com/autokitteh/autokitteh/gen/proto/stubs/go/eventsrc"
 )
 
 var (

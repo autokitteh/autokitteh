@@ -3,7 +3,7 @@ package apiplugin
 import (
 	"google.golang.org/protobuf/proto"
 
-	pbplugin "gitlab.com/softkitteh/autokitteh/gen/proto/stubs/go/plugin"
+	pbplugin "github.com/autokitteh/autokitteh/gen/proto/stubs/go/plugin"
 )
 
 type PluginMemberDesc struct{ pb *pbplugin.PluginMemberDesc }

@@ -9,8 +9,8 @@ import (
 	"go.starlark.net/starlark"
 	"go.starlark.net/syntax"
 
-	"gitlab.com/softkitteh/autokitteh/pkg/autokitteh/api/apiprogram"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/lang"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiprogram"
+	"github.com/autokitteh/autokitteh/internal/pkg/lang"
 )
 
 func newCallFrame(name string, pos *syntax.Position) *apiprogram.CallFrame {

@@ -6,11 +6,11 @@ import (
 
 	"google.golang.org/grpc"
 
-	pblangsvc "gitlab.com/softkitteh/autokitteh/gen/proto/stubs/go/langsvc"
+	pblangsvc "github.com/autokitteh/autokitteh/gen/proto/stubs/go/langsvc"
 
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/lang"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/lang/langgrpc"
-	L "gitlab.com/softkitteh/autokitteh/pkg/l"
+	"github.com/autokitteh/autokitteh/internal/pkg/lang"
+	"github.com/autokitteh/autokitteh/internal/pkg/lang/langgrpc"
+	L "github.com/autokitteh/autokitteh/pkg/l"
 )
 
 type grpcCatalog struct{ local LocalCatalog }

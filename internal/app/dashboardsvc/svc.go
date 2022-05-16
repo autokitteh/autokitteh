@@ -5,13 +5,13 @@ import (
 
 	"github.com/gorilla/mux"
 
-	"gitlab.com/softkitteh/autokitteh/internal/app/dashboardsvc/templates"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/eventsrcsstore"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/eventsstore"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/projectsstore"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/secretsstore"
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/statestore"
-	"gitlab.com/softkitteh/autokitteh/pkg/tmplrender"
+	"github.com/autokitteh/autokitteh/internal/app/dashboardsvc/templates"
+	"github.com/autokitteh/autokitteh/internal/pkg/eventsrcsstore"
+	"github.com/autokitteh/autokitteh/internal/pkg/eventsstore"
+	"github.com/autokitteh/autokitteh/internal/pkg/projectsstore"
+	"github.com/autokitteh/autokitteh/internal/pkg/secretsstore"
+	"github.com/autokitteh/autokitteh/internal/pkg/statestore"
+	"github.com/autokitteh/autokitteh/pkg/tmplrender"
 )
 
 type Config struct {

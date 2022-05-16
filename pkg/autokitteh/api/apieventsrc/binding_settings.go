@@ -3,7 +3,7 @@ package apieventsrc
 import (
 	"google.golang.org/protobuf/proto"
 
-	pbeventsrc "gitlab.com/softkitteh/autokitteh/gen/proto/stubs/go/eventsrc"
+	pbeventsrc "github.com/autokitteh/autokitteh/gen/proto/stubs/go/eventsrc"
 )
 
 type EventSourceProjectBindingSettingsPB = pbeventsrc.EventSourceProjectBindingSettings

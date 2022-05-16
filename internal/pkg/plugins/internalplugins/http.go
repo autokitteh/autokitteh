@@ -5,7 +5,7 @@ import (
 	"go.starlark.net/starlark"
 	"go.starlark.net/starlarkstruct"
 
-	"gitlab.com/softkitteh/autokitteh/internal/pkg/starlarkplugin"
+	"github.com/autokitteh/autokitteh/internal/pkg/starlarkplugin"
 )
 
 var HTTP = starlarkplugin.Plugin(
