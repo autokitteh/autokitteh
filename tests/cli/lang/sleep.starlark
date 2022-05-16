@@ -1,0 +1,10 @@
+def stall():
+  print("start")
+  sleep(10)
+  print("finish")
+
+def _main():
+  if test_main:
+    stall()
+
+_main()

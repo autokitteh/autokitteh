@@ -1,0 +1,17 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+mypy = "*"
+twilio = "*"
+twilio-stubs = "*"
+flask = "*"
+stringcase = "*"
+autokitteh = {editable = true, path = "./../autokitteh"}
+
+[dev-packages]
+
+[requires]
+python_version = "3.9"

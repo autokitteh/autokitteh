@@ -1,0 +1,8 @@
+cat: "meow"
+dog: "woof"
+animals:
+  - "cat"
+  - "dog"
+translate:
+  cat: "meow"
+  dog: "woof"

@@ -1,0 +1,31 @@
+$ ./ak.sh l c err_syntax.kitteh; echo $?
+program error: [syntax] load operand must be "x" or x="originalname" (want '=' after x)
+  #0 err_syntax.kitteh:1.14
+10
+$ ./ak.sh l c err_resolve.kitteh; echo $?
+program error: [resolve] undefined: meow
+  #0 err_resolve.kitteh:1.1
+10
+$ ./ak.sh l c err_eval.kitteh err_load.kitteh; echo $?
+0
+$ ./ak.sh l r err_eval.akm; echo $?
+{"values": null}
+program error: [eval] floating-point division by zero
+  #0 err_eval.kitteh:1.8 <toplevel>
+
+10
+$ ./ak.sh l r err_load.akm; echo $?
+{"values": null}
+program error: [eval] cannot load meow: load "meow": not found
+  #0 err_load.kitteh:1.1 <toplevel>
+
+10
+$ ./ak.sh l c err_cycle.kitteh; echo $?
+0
+$ ./ak.sh l r err_cycle.akm; echo $?
+{"values":null}
+program error: [eval] cannot load err_cycle.kitteh: load "err_cycle.kitteh": [eval] cannot load err_cycle.kitteh: load "err_cycle.kitteh": load cycle
+  #0 err_cycle.kitteh:1.1 <toplevel>
+  #0 err_cycle.kitteh:1.1 <toplevel>
+
+10

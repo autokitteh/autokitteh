@@ -1,0 +1,27 @@
+$ ./ak.sh --ll error --tti 400ms -y sh callcancel.aksh
+exec: [../../../bin/ak reset-test-idgen]
+rc: 0
+exec: [../../../bin/ak l c -p test_main sleep.starlark]
+rc: 0
+exec: [../../../bin/ak l r -u -p test_main=0 sleep.akm]
+values:
+  stall:
+    FuncID: F1
+    Lang: starlark
+    Scope: S1
+    Signature:
+      ArgsNames: null
+      Doc: ""
+      HasKWArgs: false
+      HasVarargs: false
+      Name: stall
+      NumArgs: 0
+      NumKWOnlyArgs: 0
+rc: 0
+exec: [../../../bin/ak l call -u F1.starlark.S1]
+start
+value: null
+canceled:
+  #0 sleep.starlark:3.8 stall
+  #1 unknown sleep
+rc: 20

@@ -1,0 +1,149 @@
+syntax = "proto3";
+
+package autokitteh.langsvc;
+
+option go_package = "gitlab.com/softkitteh/autokitteh/gen/proto/stubs/go/langsvc";
+
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+import "validate/validate.proto";
+
+import "lang/run.proto";
+import "program/error.proto";
+import "program/program.proto";
+import "values/values.proto";
+
+
+message RunRequest {
+  string                    scope    = 1 {{ Scope }};
+  string                    id       = 2 {{ RunID }};
+  program.Module            module   = 3 [(validate.rules).message.required = true];
+  map<string, values.Value> predecls = 4 {{ VarMap }};
+}
+
+message CallFunctionRequest {
+  string                    run_id = 1 {{ RunID }};
+  values.Value              f      = 2 [(validate.rules).message.required = true];
+  repeated values.Value     args   = 3;
+  map<string, values.Value> kwargs = 4 {{ VarMap }};
+}
+
+message RunGetRequest {
+  string run_id      = 1 {{ RunID }};
+  bool   get_summary = 2;
+}
+
+message RunDiscardRequest {
+  string id = 1 {{ RunID }};
+}
+
+message RunDiscardResponse {}
+
+message RunGetResponse {
+  lang.RunSummary summary = 1;
+}
+
+message RunUpdate {
+  string                    run_id = 1 {{ RunID }};
+  google.protobuf.Timestamp t      = 2 [(validate.rules).timestamp.required = true];
+  lang.RunState             prev   = 3; // will be nil on first update.
+  lang.RunState             next   = 4 [(validate.rules).message.required = true];
+}
+
+message RunCallReturnRequest {
+  string                run_id = 1 {{ RunID }};
+  program.Error         error  = 2;
+  values.Value          retval = 3;
+}
+
+message RunCallReturnResponse {}
+
+message RunLoadReturnRequest {
+  string                    run_id      = 1 {{ RunID }};
+  program.Error             error       = 2;
+  lang.RunSummary           run_summary = 3;
+  map<string, values.Value> values      = 4 {{ VarMap }};
+}
+
+message RunLoadReturnResponse {}
+
+message RunCancelRequest {
+  string run_id = 1 {{ RunID }};
+  string reason = 2;
+}
+
+message RunCancelResponse {}
+
+message ListRunsRequest {}
+
+message ListRun {
+  string id = 1 {{ RunID }};
+}
+
+message ListRuns {
+  repeated ListRun runs = 1;
+}
+
+message ListRunsResponse {
+  map<string, ListRuns> states = 1 [(validate.rules).map={no_sparse: true, keys:{string:{min_len: 1}}}];
+}
+
+service LangRun {
+  //
+  // IMPORTANT: All functions are running on the same server RunModule
+  // was called from.
+  //
+
+  rpc Run(RunRequest) returns (stream RunUpdate) {
+    option (google.api.http) = {
+      post: "/api/v1/langs/runs",
+      body: "*"
+    };
+  }
+
+  rpc CallFunction(CallFunctionRequest) returns (stream RunUpdate) {
+    option (google.api.http) = {
+      post: "/api/v1/langs/runs/{run_id}/call-function",
+      body: "*"
+    };
+  }
+
+  rpc RunGet(RunGetRequest) returns (RunGetResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/langs/runs/{run_id}",
+    };
+  }
+
+  rpc RunCallReturn(RunCallReturnRequest) returns (RunCallReturnResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/langs/runs/{run_id}/call-return",
+      body: "*"
+    };
+  }
+
+  rpc RunLoadReturn(RunLoadReturnRequest) returns (RunLoadReturnResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/langs/runs/{run_id}/load-return",
+      body: "*"
+    };
+  }
+
+  rpc RunCancel(RunCancelRequest) returns (RunCancelResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/langs/runs/{run_id}/cancel",
+      body: "*"
+    };
+  }
+
+  rpc ListRuns(ListRunsRequest) returns (ListRunsResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/langs/runs",
+    };
+  }
+
+  rpc RunDiscard(RunDiscardRequest) returns (RunDiscardResponse) {
+    option (google.api.http) = {
+      delete: "/api/v1/langs/runs",
+    };
+  }
+}

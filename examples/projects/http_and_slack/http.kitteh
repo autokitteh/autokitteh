@@ -1,0 +1,13 @@
+load("ak", "get_credentials")
+load("autokitteh.slack", "slack")
+
+
+def _on_http_post(ak_ctx, body):
+  _slack = slack.open(secret_token=get_credentials('slack', ak_ctx['slack_team_id']))
+
+  _slack.post_message(channel=ak_ctx['slack_channel'], text=body)
+
+
+spec = [
+  ('http.POST', _on_http_post, 'slack_team_id', 'slack_channel'),
+]

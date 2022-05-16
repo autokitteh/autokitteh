@@ -1,0 +1,13 @@
+.DS_Store
+dump.rdb
+dive.log
+
+gen
+bin
+dist
+tmp
+
+autokitteh.sqlite
+
+/crypt/data
+/crypt/.data.gpg.bak

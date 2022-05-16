@@ -1,0 +1,5 @@
+$ ./ak.sh l c call1.kitteh call2.kitteh
+$ ./ak.sh l r call1.akm call2.akm; echo $?
+meow, gizmo
+{"values":{}}
+0

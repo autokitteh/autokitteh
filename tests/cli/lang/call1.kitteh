@@ -1,0 +1,2 @@
+load("call2.kitteh", "call2")
+print(call2("gizmo"))

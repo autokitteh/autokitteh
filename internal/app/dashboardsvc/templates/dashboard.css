@@ -1,0 +1,69 @@
+body {
+  font-family: monospace;
+}
+
+table {
+  border-collapse: collapse;
+}
+
+td, th {
+  border: 1px solid #999;
+  padding: 0.5rem;
+}
+
+td {
+  text-align: left;
+}
+
+ol.no-bullets, ul.no-bullets {
+  padding: 0;
+}
+
+li.no-bullets {
+  list-style-type: none;
+  list-style-position: outside;
+  padding: 0;
+}
+
+dt {
+  font-weight: bold;
+}
+
+textarea.console {
+  border: 1px dashed gray;
+  padding: 0.5rem;
+  margin: 1rem;
+  margin-left: 0;
+}
+
+span.run-source {
+  width: 10rem;
+  display: inline-block;
+}
+
+span.run-state {
+  width: 4.5rem;
+  display: inline-block;
+}
+
+a.proj-relevant {
+  color: green;
+}
+
+a.proj-attn {
+  color: red;
+}
+
+a.proj-ignored {
+  color: gray;
+}
+
+nav {
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-wrap: wrap;
+  padding: 0.3rem;
+  margin-bottom: 0.5rem;
+  background-color: #eaeaea;
+}

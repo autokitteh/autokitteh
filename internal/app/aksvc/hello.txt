@@ -1,0 +1,15 @@
+
+        _..--~~~~--.._             AutoKitteh {{ .Version }}
+     _--              --_          PID: {{ .PID }}
+    '                    `
+   '                      `        HTTP Port: {{ .HTTPPort }}
+  '                        `       gRPC Port: {{ .GRPCPort }}
+ |                    |\   |
+ |                    | \  |       {{ .Extra0 }}
+ |          .,    _,-~   \ |       {{ .Extra1 }}
+  \         \ `.-'        \/       {{ .Extra2 }}
+   `         \        ▀            {{ .Extra3 }}
+    \         \    ▀               {{ .Extra4 }}
+     `._       \                   {{ .Extra5 }}
+        `---____\                  {{ .Extra6 }}
+

@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package autokitteh.plugin;
+
+option go_package = "gitlab.com/softkitteh/autokitteh/gen/proto/stubs/go/plugin";
+
+import "validate/validate.proto";
+
+
+message PluginMemberDesc {
+  string          name   = 1 {{ VarName }};
+  string          doc    = 2;
+}
+
+message PluginDesc {
+  string                    doc     = 1;
+  repeated PluginMemberDesc members = 2 [(validate.rules).repeated.items.message.required = true];
+}

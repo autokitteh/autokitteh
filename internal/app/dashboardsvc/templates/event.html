@@ -1,0 +1,86 @@
+{{ template "header" (cat "Event: " .Event.Id) }}
+{{ $eventID := .Event.Id }}
+<table>
+  <tr>
+    <th>T</th>
+    <th>ID</th>
+    <th>Src</th>
+    <th>Type</th>
+    <th>OrigID</th>
+    <th>State</th>
+  </tr>
+  <tr>
+    <td>
+      {{ .Event.T.Seconds | date "2006-01-02 15:04:05" }}
+    </td>
+    <td>
+      <a href="/dashboard/events/{{ .Event.Id }}.json"><b>{{ $eventID }}.json</b></a>
+    </td>
+    <td>
+      <a href="/dashboard/eventsrcs/{{ .Event.SrcId }}">{{ .Event.SrcId }}</a>
+    </td>
+    <td>
+      {{ .Event.Type }}
+    </td>
+    <td>
+      {{ .Event.OriginalId }}
+    </td>
+    <td>
+      {{ template "event-state" (first .States) }}
+    </td>
+  </tr>
+  {{ if .Bindings }}
+  <tr>
+    <td colspan=6>
+      <dl>
+        <dt>Projects:</dt>
+        <dd>
+          {{ range .Bindings }}
+            <a href="/dashboard/events/{{ $eventID }}/projects/{{ .ProjectId }}"
+            {{ if has .ProjectId $.AttnProjectIDs }}
+               class="proj-attn"
+            {{ else if has .ProjectId $.IgnoredProjectIDs }}
+               class="proj-ignored"
+            {{ else if has .ProjectId $.ProjectIDs }}
+               class="proj-relevant"
+            {{ end }}
+           >
+               <b>{{ .ProjectId }}</b></a>
+            &nbsp;
+          {{ end }}
+        </dd>
+    </td>
+  </tr>
+  {{ end }}
+  <tr>
+    <td colspan=6>
+      <dl>
+        <dt>Data:</dt>
+        <dd><pre>{{ toPrettyJson .UnwrappedData }}</pre></dd>
+      </dl>
+    </td>
+  </tr>
+  {{ if .Event.Memo }}
+  <tr>
+    <td colspan=6>
+      <dl>
+        <dt>Memo:</dt>
+        <dd><pre>{{ toPrettyJson .Event.Memo}}</pre></dd>
+      </dl>
+    </td>
+  </tr>
+  {{ end }}
+  <tr>
+    <td colspan=6>
+      <dt>States:</dt>
+      <dd>
+        <ul class="no-bullets">
+          {{ range .States }}
+          <li class="no-bullets">{{ .T.Seconds | date "2006-01-02 15:04:05" }} | {{ .State }} </li>
+          {{ end }}
+        </ul>
+      </dd>
+    </td>
+  </tr>
+</table>
+{{ template "footer" }}

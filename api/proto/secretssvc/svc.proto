@@ -1,0 +1,55 @@
+syntax = "proto3";
+
+package autokitteh.secretssvc;
+
+option go_package = "gitlab.com/softkitteh/autokitteh/gen/proto/stubs/go/secretssvc";
+
+import "google/api/annotations.proto";
+import "validate/validate.proto";
+
+
+message SetRequest {
+  string project_id = 1 {{ ProjectID }};
+  string name       = 2 {{ VarName }};
+  string value      = 3; // omit to delete.
+}
+
+message SetResponse {}
+
+message GetRequest {
+  string project_id = 1 {{ ProjectID }};
+  string name       = 2 {{ VarName }};
+}
+
+message GetResponse {
+  string value = 1;
+}
+
+message ListRequest {
+  string project_id = 1 {{ ProjectID }};
+}
+
+message ListResponse {
+  repeated string names = 1;
+}
+
+service Secrets {
+  rpc Set(SetRequest) returns (SetResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/secrets/{project_id}/{name}"
+      body: "*"
+    };
+  }
+
+  rpc Get(GetRequest) returns (GetResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/secrets/{project_id}/{name}"
+    };
+  }
+
+  rpc List(ListRequest) returns (ListResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/secrets/{project_id}"
+    };
+  }
+}

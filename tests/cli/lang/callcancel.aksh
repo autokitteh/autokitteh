@@ -1,0 +1,4 @@
+reset-test-idgen
+l c -p test_main sleep.starlark
+l r -u -p test_main=0 sleep.akm
+l call -u F1.starlark.S1

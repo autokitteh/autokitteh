@@ -1,0 +1,28 @@
+$ ./ak.sh l c -p predefined say.kitteh test-wrapped.kitteh.yaml woof.kitteh meow.kitteh
+$ ./ak.sh l r -u -p predefined="moo" say.akm meow.akm woof.akm test-wrapped.akm
+["cat", "dog"]
+{"values":{"voices":["meow","woof","moo"]}}
+$ ./ak.sh --ij l r -u -p predefined="mew" say.akm meow.akm woof.akm test-wrapped.akm
+["cat", "dog"]
+{
+  "values": {
+    "voices": [
+      "meow",
+      "woof",
+      "mew"
+    ]
+  }
+}
+$ ./ak.sh -y l r -u -p predefined="moo" say.akm meow.akm woof.akm test-wrapped.akm
+["cat", "dog"]
+values:
+  voices:
+  - meow
+  - woof
+  - moo
+$ ./ak.sh -y l r -u say.akm meow.akm woof.akm test-wrapped.akm
+["cat", "dog"]
+values: {}
+program error: [eval] internal error: predeclared variable predefined is uninitialized
+  #0 say.kitteh:7.21 <toplevel>
+

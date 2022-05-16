@@ -1,0 +1,33 @@
+load('ak', 'sources', 'get_credentials', 'get_secret', 'state')
+
+load('slack', 'slack')
+load('googlesheets', 'googlesheets')
+load('default.twilio', 'twilio')
+
+load('fs:examples/default/data.kitteh.cue', sounds1='sounds')
+print(sounds1)
+
+load('fs:examples/default/data.cue', sounds2='sounds')
+print(sounds2)
+
+load('fs:examples/default/review.kitteh', setup_review='setup')
+load('fs:examples/default/leash.kitteh', setup_leash='setup')
+
+_slack = slack.open(secret_token=get_credentials('slack', 'TFPTT3QFN'))
+_twilio = twilio.open(account_sid=get_secret('twilio_account_sid'), secret_auth_token=get_secret('twilio_auth_token'))
+_sheets = googlesheets.open(token=get_credentials('googleoauth', 'googlesheets'))
+
+setup_review(
+  sources=sources.sub(github='github_softkitteh'),
+  secret_slack_token=get_credentials('slack', 'TFPTT3QFN'),
+  slack_channel='CFPAVMMU0',
+)
+
+setup_leash(
+  sources=sources.sub('twilio', slack='slack_softkitteh'),
+  state=state.scoped('leash'),
+  twilio=_twilio,
+  slack=_slack,
+  sheets=_sheets,
+  schedule_sheet_id='1Cpll4Bzq9kN7EiaMu5fbFjUNy7Rerzp3uyqyGjt8uWk',
+)

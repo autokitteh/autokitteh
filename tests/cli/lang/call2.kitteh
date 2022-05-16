@@ -1,0 +1,2 @@
+def call2(who):
+  return "meow, " + who

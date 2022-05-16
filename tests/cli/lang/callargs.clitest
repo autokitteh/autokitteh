@@ -1,0 +1,40 @@
+$ ./ak.sh -y sh callargs.aksh
+exec: [../../../bin/ak reset-test-idgen]
+rc: 0
+exec: [../../../bin/ak l c callargs.kitteh]
+rc: 0
+exec: [../../../bin/ak l r callargs.akm]
+values:
+  meow:
+    function:
+      funcId: F1
+      lang: kitteh
+      scope: S1
+      sig:
+        argsNames:
+        - who
+        - greeting
+        nArgs: 2
+        name: meow
+rc: 0
+exec: [../../../bin/ak l call -u F1.kitteh.S1 "cow"]
+moo, cow
+value: cow
+rc: 0
+exec: [../../../bin/ak l call -u F1.kitteh.S1 "kitty" greeting=meow]
+meow, kitty
+value:
+- kitty
+- meow
+rc: 0
+exec: [../../../bin/ak l call F9.kitteh.S1]
+value: null
+program error: function not found: F9
+
+rc: 10
+exec: [../../../bin/ak l call F1.kitteh.S1]
+value: null
+program error: [eval] function meow missing 1 argument (who)
+  #0 callargs.kitteh:1.1 meow
+
+rc: 10

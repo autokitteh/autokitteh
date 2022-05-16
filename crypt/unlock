@@ -1,0 +1,9 @@
+#!/bin/bash
+
+cd "$(dirname "$0")"
+
+source common
+
+[[ -d "${UNLOCKED_CRYPT_PATH}" ]] && echo "crypt already unlocked" && exit 0
+
+gpg --decrypt "${LOCKED_CRYPT_PATH}" | tar xv

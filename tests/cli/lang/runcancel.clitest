@@ -1,0 +1,19 @@
+$ ./ak.sh l c -p test_main sleep.starlark
+$ ./ak.sh --ll error --tti 400ms l r -u -p test_main=1 sleep.akm; echo $?
+start
+{"values":{}}
+canceled:
+  #0 sleep.starlark:10.6 <toplevel>
+  #1 sleep.starlark:8.10 _main
+  #2 sleep.starlark:3.8 stall
+  #3 unknown sleep
+20
+$ ./ak.sh --ll error --ttc 400ms l r -u -p test_main=1 sleep.akm; echo $?
+start
+{"values":{}}
+canceled:
+  #0 sleep.starlark:10.6 <toplevel>
+  #1 sleep.starlark:8.10 _main
+  #2 sleep.starlark:3.8 stall
+  #3 unknown sleep
+20

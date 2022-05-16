@@ -1,0 +1,7 @@
+{{ template "header" .ProjectID }}
+<ul>
+{{ range .Names }}
+<li><a href="/dashboard/projects/{{ $.ProjectID }}/state/{{ . }}">{{ . }}</a></li>
+{{ end }}
+</ul>
+{{ template "footer" }}

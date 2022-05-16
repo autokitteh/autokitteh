@@ -1,0 +1,47 @@
+{{ template "header" "Events" }}
+<table>
+  <tr>
+    <th>#</th>
+    <th>T</th>
+    <th>ID</th>
+    <th>Src</th>
+    <th>Type</th>
+    <th>OrigID</th>
+    <th>State</th>
+    <th>Description</th>
+  </tr>
+{{ range $i, $r := .Records }}
+  <tr>
+    <td>
+      {{ add (add 1 $.Ofs) $i }}
+    </td>
+    <td>
+      {{ $r.Event.T.Seconds | date "2006-01-02 15:04:05" }}
+    </td>
+    <td>
+      <a href="/dashboard/events/{{ $r.Event.Id }}">{{ $r.Event.Id }}</a>
+    </td>
+    <td>
+      <a href="/dashboard/eventsrcs/{{ $r.Event.SrcId}}">{{ $r.Event.SrcId }}</a>
+      {{ if $.ProjectID }}
+        &#8594
+        {{ $b := get $.Bindings (printf "%s" $r.Event.SrcId) }}
+        <a href="/dashboard/eventsrcs/{{ $r.Event.SrcId }}/bindings/{{ $.ProjectID }}/{{ $b.Data.Name }}">{{ $b.Data.Name }}</a>
+      {{ end }}
+    </td>
+    <td>
+      {{ $r.Event.Type }}
+    </td>
+    <td>
+      {{ $r.Event.OriginalId }}
+    </td>
+    <td>
+      {{ template "event-state" (first .States) }}
+    </td>
+    <td>
+      {{ gets $r.Event.Memo "description" }}
+    </td>
+  </tr>
+{{ end }}
+</table>
+{{ template "footer" }}

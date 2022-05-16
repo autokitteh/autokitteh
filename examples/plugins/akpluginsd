@@ -1,0 +1,5 @@
+#!/bin/bash
+
+set -euo pipefail
+
+AKPLUGINSD_GRPC_PORT=0 AKPLUGINSD_HTTP_PORT=0 exec ../../bin/akpluginsd

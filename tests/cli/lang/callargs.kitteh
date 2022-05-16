@@ -1,0 +1,5 @@
+def meow(who, greeting="moo"):
+  print(greeting + ", " + who)
+  if greeting != "moo":
+    return who, greeting
+  return who
