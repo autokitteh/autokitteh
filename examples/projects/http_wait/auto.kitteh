@@ -7,7 +7,7 @@ def _on_http_get(query_values):
 
   print('waiting for "%s"' % ','.join(ids))
 
-  while True:
+  while ids:
     ev = sources.wait(['http.POST'])
 
     data = json.decode(ev.data['body'])
@@ -17,9 +17,6 @@ def _on_http_get(query_values):
         print('got answer for "%s": "%s"' % (k, v))
 
         ids.remove(k)
-
-        if not ids:
-          return
 
 
 sources.bind('http.GET', _on_http_get)
