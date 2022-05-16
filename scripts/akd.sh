@@ -72,7 +72,7 @@ fi
 # GOOGLE OAUTH
 #
 
-source crypt/data/google-oauth-local.sh
+[[ -r crypt/data/google-oauth-local.sh ]] && source crypt/data/google-oauth-local.sh
 
 export AKD_GOOGLE_OAUTH_REDIRECT_URL="https://autokitteh.ngrok.io/google-oauth/oauth/installed"
 export AKD_GOOGLE_OAUTH_SCOPES="https://www.googleapis.com/auth/spreadsheets"
