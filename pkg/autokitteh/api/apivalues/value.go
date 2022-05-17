@@ -5,7 +5,7 @@ import (
 
 	"google.golang.org/protobuf/proto"
 
-	pbvalues "github.com/autokitteh/autokitteh/gen/proto/stubs/go/values"
+	pbvalues "github.com/autokitteh/autokitteh/api/gen/stubs/go/values"
 )
 
 type value interface {

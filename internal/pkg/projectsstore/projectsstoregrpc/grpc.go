@@ -7,7 +7,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	pbprojectsvc "github.com/autokitteh/autokitteh/gen/proto/stubs/go/projectsvc"
+	pbprojectsvc "github.com/autokitteh/autokitteh/api/gen/stubs/go/projectsvc"
 
 	"github.com/autokitteh/autokitteh/internal/pkg/projectsstore"
 	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiaccount"

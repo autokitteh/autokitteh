@@ -7,7 +7,7 @@
 package eventsrcsvc
 
 import (
-	eventsrc "github.com/autokitteh/autokitteh/gen/proto/stubs/go/eventsrc"
+	eventsrc "github.com/autokitteh/autokitteh/api/gen/stubs/go/eventsrc"
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"

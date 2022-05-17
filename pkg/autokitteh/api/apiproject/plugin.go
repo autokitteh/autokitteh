@@ -3,7 +3,7 @@ package apiproject
 import (
 	"google.golang.org/protobuf/proto"
 
-	pbproject "github.com/autokitteh/autokitteh/gen/proto/stubs/go/project"
+	pbproject "github.com/autokitteh/autokitteh/api/gen/stubs/go/project"
 
 	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiplugin"
 )

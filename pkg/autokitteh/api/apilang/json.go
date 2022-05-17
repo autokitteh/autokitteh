@@ -5,7 +5,7 @@ import (
 
 	"google.golang.org/protobuf/encoding/protojson"
 
-	pblang "github.com/autokitteh/autokitteh/gen/proto/stubs/go/lang"
+	pblang "github.com/autokitteh/autokitteh/api/gen/stubs/go/lang"
 )
 
 var (

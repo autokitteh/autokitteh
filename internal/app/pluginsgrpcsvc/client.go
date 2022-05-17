@@ -5,7 +5,7 @@ import (
 
 	"google.golang.org/grpc"
 
-	pb "github.com/autokitteh/autokitteh/gen/proto/stubs/go/pluginsprovidersvc"
+	pb "github.com/autokitteh/autokitteh/api/gen/stubs/go/pluginsprovidersvc"
 )
 
 type LocalClient struct{ Server pb.PluginsProviderServer }

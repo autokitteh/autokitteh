@@ -6,7 +6,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	pb "github.com/autokitteh/autokitteh/gen/proto/stubs/go/slackeventsrc"
+	pb "github.com/autokitteh/autokitteh/api/gen/stubs/go/slackeventsrc"
 
 	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiproject"
 )

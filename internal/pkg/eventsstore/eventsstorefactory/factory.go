@@ -7,7 +7,7 @@ import (
 	"google.golang.org/grpc"
 	"gorm.io/gorm"
 
-	pbeventsvc "github.com/autokitteh/autokitteh/gen/proto/stubs/go/eventsvc"
+	pbeventsvc "github.com/autokitteh/autokitteh/api/gen/stubs/go/eventsvc"
 
 	"github.com/autokitteh/autokitteh/internal/pkg/eventsstore"
 	"github.com/autokitteh/autokitteh/internal/pkg/eventsstore/eventsstoregorm"

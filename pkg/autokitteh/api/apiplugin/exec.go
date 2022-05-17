@@ -3,7 +3,7 @@ package apiplugin
 import (
 	"google.golang.org/protobuf/proto"
 
-	pbplugin "github.com/autokitteh/autokitteh/gen/proto/stubs/go/plugin"
+	pbplugin "github.com/autokitteh/autokitteh/api/gen/stubs/go/plugin"
 )
 
 type PluginExecSettingsPB = pbplugin.PluginExecutionSettings

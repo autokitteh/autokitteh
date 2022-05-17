@@ -7,7 +7,7 @@
 package event
 
 import (
-	lang "github.com/autokitteh/autokitteh/gen/proto/stubs/go/lang"
+	lang "github.com/autokitteh/autokitteh/api/gen/stubs/go/lang"
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"

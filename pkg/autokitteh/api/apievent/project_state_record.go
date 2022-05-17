@@ -6,7 +6,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	pbevent "github.com/autokitteh/autokitteh/gen/proto/stubs/go/event"
+	pbevent "github.com/autokitteh/autokitteh/api/gen/stubs/go/event"
 )
 
 type ProjectEventStateRecord struct {

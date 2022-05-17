@@ -6,7 +6,7 @@ import (
 
 	"google.golang.org/protobuf/proto"
 
-	pblang "github.com/autokitteh/autokitteh/gen/proto/stubs/go/lang"
+	pblang "github.com/autokitteh/autokitteh/api/gen/stubs/go/lang"
 )
 
 type RunState struct{ pb *pblang.RunState }

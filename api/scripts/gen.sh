@@ -8,19 +8,19 @@ if [[ -z $(docker images -q "${PROTOC_IMAGE_NAME}") ]]; then
   make protoc
 fi
 
-rm -fR gen/proto
-mkdir -p gen/proto/stubs
+rm -fR api/gen
+mkdir -p api/gen
 
 run() {
   docker run \
     --rm \
     -it \
     -v "${PWD}/api/proto:/proto/src:ro" \
-    -v "${PWD}/gen/proto/src:/gen/proto/src" \
-    -v "${PWD}/gen/proto/stubs/go:/gen/go/github.com/autokitteh/autokitteh/gen/proto/stubs/go" \
-    -v "${PWD}/gen/proto/stubs/py:/gen/py" \
-    -v "${PWD}/gen/proto/openapi:/gen/openapi" \
-    -v "${PWD}/gen/proto/stubs/grpcweb:/gen/grpcweb" \
+    -v "${PWD}/api/gen/src:/gen/proto/src" \
+    -v "${PWD}/api/gen/stubs/go:/gen/go/github.com/autokitteh/autokitteh/gen/proto/stubs/go" \
+    -v "${PWD}/api/gen/stubs/py:/gen/py" \
+    -v "${PWD}/api/gen/openapi:/gen/openapi" \
+    -v "${PWD}/api/gen/stubs/grpcweb:/gen/grpcweb" \
     -v "${PWD}/api/scripts:/scripts:ro" \
     "${PROTOC_IMAGE_NAME}" \
     "${@}"

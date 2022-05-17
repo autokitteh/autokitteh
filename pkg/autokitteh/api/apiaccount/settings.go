@@ -3,7 +3,7 @@ package apiaccount
 import (
 	"google.golang.org/protobuf/proto"
 
-	pbaccount "github.com/autokitteh/autokitteh/gen/proto/stubs/go/account"
+	pbaccount "github.com/autokitteh/autokitteh/api/gen/stubs/go/account"
 )
 
 type AccountSettingsPB = pbaccount.AccountSettings

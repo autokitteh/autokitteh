@@ -15,7 +15,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	pb "github.com/autokitteh/autokitteh/gen/proto/stubs/go/githubeventsrc"
+	pb "github.com/autokitteh/autokitteh/api/gen/stubs/go/githubeventsrc"
 
 	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apievent"
 	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apieventsrc"

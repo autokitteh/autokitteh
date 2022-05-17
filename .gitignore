@@ -5,6 +5,7 @@ dive.log
 bin
 dist
 tmp
+gen
 
 autokitteh.sqlite
 

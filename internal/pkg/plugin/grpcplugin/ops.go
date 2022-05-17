@@ -7,7 +7,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	pb "github.com/autokitteh/autokitteh/gen/proto/stubs/go/pluginsprovidersvc"
+	pb "github.com/autokitteh/autokitteh/api/gen/stubs/go/pluginsprovidersvc"
 
 	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiplugin"
 	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiprogram"

@@ -5,7 +5,7 @@ DO NOT USE. NOT READY FOR GA.
 # RUN USING DOCKER
 
 ```
-# Takes ~160s cold on an Apple M1 Pro 2021.
+# Takes ~100s cold on an Apple M1 Pro 2021.
 $ make docker
 
 # Run temporal, might want to wait 30s to let it start up.
@@ -22,13 +22,6 @@ $ ./scripts/akd-docker.sh
 # RUN LOCAL BUILD, MINIMAL
 
 ```
-# Only required if first ever running on machine.
-# (requires docker to run in experimental mode)
-$ make protoc
-
-# Only needed if never built before, or any api changes.
-$ make api
-
 # Requires go >= 1.18 installed locally on the machine.
 $ make bin
 
@@ -42,9 +35,18 @@ $ ./scripts/akd.sh --setup
 $ ./bin/akd
 ```
 
-# RUN LOCAL BUILD, WITH WORKING PLUGINS + EVENT SOURCES
+# API CHANGES
 
-TODO
+All generated code for proto is checked into the repository.
+If any proto is changed, these must be ran:
+
+```
+# Only run if not done before on the machine.
+$ make protoc
+
+# Always run.
+$ make api
+```
 
 # LOCAL BUILD REQUIREMENTS
 

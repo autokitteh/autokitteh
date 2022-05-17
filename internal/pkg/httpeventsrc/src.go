@@ -12,7 +12,7 @@ import (
 
 	"github.com/ucarion/urlpath"
 
-	pb "github.com/autokitteh/autokitteh/gen/proto/stubs/go/httpeventsrc"
+	pb "github.com/autokitteh/autokitteh/api/gen/stubs/go/httpeventsrc"
 
 	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apievent"
 	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apieventsrc"

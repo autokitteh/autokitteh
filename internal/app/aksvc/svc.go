@@ -16,7 +16,7 @@ import (
 	temporalclient "go.temporal.io/sdk/client"
 	"google.golang.org/grpc"
 
-	"github.com/autokitteh/autokitteh/gen/proto/openapi"
+	"github.com/autokitteh/autokitteh/api/gen/openapi"
 	webdashboard "github.com/autokitteh/autokitteh/web/dashboard"
 
 	"github.com/autokitteh/autokitteh/internal/app/accountsstoregrpcsvc"

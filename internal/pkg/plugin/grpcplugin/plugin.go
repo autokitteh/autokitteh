@@ -6,7 +6,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	pb "github.com/autokitteh/autokitteh/gen/proto/stubs/go/pluginsprovidersvc"
+	pb "github.com/autokitteh/autokitteh/api/gen/stubs/go/pluginsprovidersvc"
 
 	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiplugin"
 	"github.com/autokitteh/autokitteh/internal/pkg/plugin"

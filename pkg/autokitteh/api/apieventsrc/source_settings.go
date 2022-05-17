@@ -3,7 +3,7 @@ package apieventsrc
 import (
 	"google.golang.org/protobuf/proto"
 
-	pbeventsrc "github.com/autokitteh/autokitteh/gen/proto/stubs/go/eventsrc"
+	pbeventsrc "github.com/autokitteh/autokitteh/api/gen/stubs/go/eventsrc"
 )
 
 type EventSourceSettingsPB = pbeventsrc.EventSourceSettings

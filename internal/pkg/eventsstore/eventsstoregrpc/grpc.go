@@ -7,7 +7,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	pbeventsvc "github.com/autokitteh/autokitteh/gen/proto/stubs/go/eventsvc"
+	pbeventsvc "github.com/autokitteh/autokitteh/api/gen/stubs/go/eventsvc"
 
 	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apievent"
 	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apieventsrc"

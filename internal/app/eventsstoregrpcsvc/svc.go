@@ -9,8 +9,8 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	pbevent "github.com/autokitteh/autokitteh/gen/proto/stubs/go/event"
-	pbeventsvc "github.com/autokitteh/autokitteh/gen/proto/stubs/go/eventsvc"
+	pbevent "github.com/autokitteh/autokitteh/api/gen/stubs/go/event"
+	pbeventsvc "github.com/autokitteh/autokitteh/api/gen/stubs/go/eventsvc"
 
 	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apievent"
 	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apieventsrc"

@@ -7,8 +7,8 @@
 package lang
 
 import (
-	program "github.com/autokitteh/autokitteh/gen/proto/stubs/go/program"
-	values "github.com/autokitteh/autokitteh/gen/proto/stubs/go/values"
+	program "github.com/autokitteh/autokitteh/api/gen/stubs/go/program"
+	values "github.com/autokitteh/autokitteh/api/gen/stubs/go/values"
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"

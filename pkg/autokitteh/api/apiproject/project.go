@@ -6,7 +6,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	pbproject "github.com/autokitteh/autokitteh/gen/proto/stubs/go/project"
+	pbproject "github.com/autokitteh/autokitteh/api/gen/stubs/go/project"
 
 	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiaccount"
 )

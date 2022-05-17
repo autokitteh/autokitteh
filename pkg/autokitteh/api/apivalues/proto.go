@@ -9,7 +9,7 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	pbvalues "github.com/autokitteh/autokitteh/gen/proto/stubs/go/values"
+	pbvalues "github.com/autokitteh/autokitteh/api/gen/stubs/go/values"
 )
 
 var ErrUnknownType = errors.New("(proto) unknown type")

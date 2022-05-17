@@ -10,7 +10,7 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	pb "github.com/autokitteh/autokitteh/gen/proto/stubs/go/statesvc"
+	pb "github.com/autokitteh/autokitteh/api/gen/stubs/go/statesvc"
 
 	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiproject"
 	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apivalues"

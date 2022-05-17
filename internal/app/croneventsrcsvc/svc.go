@@ -21,7 +21,7 @@ import (
 	"github.com/autokitteh/autokitteh/internal/pkg/eventsrcsstore"
 	"github.com/autokitteh/autokitteh/pkg/kvstore"
 
-	pb "github.com/autokitteh/autokitteh/gen/proto/stubs/go/croneventsrc"
+	pb "github.com/autokitteh/autokitteh/api/gen/stubs/go/croneventsrc"
 
 	L "github.com/autokitteh/autokitteh/pkg/l"
 )

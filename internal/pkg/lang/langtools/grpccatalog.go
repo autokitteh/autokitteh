@@ -6,7 +6,7 @@ import (
 
 	"google.golang.org/grpc"
 
-	pblangsvc "github.com/autokitteh/autokitteh/gen/proto/stubs/go/langsvc"
+	pblangsvc "github.com/autokitteh/autokitteh/api/gen/stubs/go/langsvc"
 
 	"github.com/autokitteh/autokitteh/internal/pkg/lang"
 	"github.com/autokitteh/autokitteh/internal/pkg/lang/langgrpc"

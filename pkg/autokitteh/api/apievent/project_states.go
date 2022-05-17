@@ -1,7 +1,7 @@
 package apievent
 
 import (
-	pbevent "github.com/autokitteh/autokitteh/gen/proto/stubs/go/event"
+	pbevent "github.com/autokitteh/autokitteh/api/gen/stubs/go/event"
 
 	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apilang"
 )

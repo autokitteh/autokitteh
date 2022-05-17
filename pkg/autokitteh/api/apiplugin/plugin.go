@@ -6,7 +6,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	pbplugin "github.com/autokitteh/autokitteh/gen/proto/stubs/go/plugin"
+	pbplugin "github.com/autokitteh/autokitteh/api/gen/stubs/go/plugin"
 )
 
 type PluginPB = pbplugin.Plugin

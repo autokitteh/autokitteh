@@ -7,8 +7,8 @@
 package eventsvc
 
 import (
-	event "github.com/autokitteh/autokitteh/gen/proto/stubs/go/event"
-	values "github.com/autokitteh/autokitteh/gen/proto/stubs/go/values"
+	event "github.com/autokitteh/autokitteh/api/gen/stubs/go/event"
+	values "github.com/autokitteh/autokitteh/api/gen/stubs/go/values"
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"

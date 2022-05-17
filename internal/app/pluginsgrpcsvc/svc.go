@@ -7,8 +7,8 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	pbsvc "github.com/autokitteh/autokitteh/gen/proto/stubs/go/pluginsprovidersvc"
-	pbvalues "github.com/autokitteh/autokitteh/gen/proto/stubs/go/values"
+	pbsvc "github.com/autokitteh/autokitteh/api/gen/stubs/go/pluginsprovidersvc"
+	pbvalues "github.com/autokitteh/autokitteh/api/gen/stubs/go/values"
 
 	"github.com/autokitteh/autokitteh/internal/pkg/plugin"
 	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiplugin"

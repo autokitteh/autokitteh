@@ -7,7 +7,7 @@
 package projectsvc
 
 import (
-	project "github.com/autokitteh/autokitteh/gen/proto/stubs/go/project"
+	project "github.com/autokitteh/autokitteh/api/gen/stubs/go/project"
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"

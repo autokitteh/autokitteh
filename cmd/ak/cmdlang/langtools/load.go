@@ -5,7 +5,7 @@ import (
 
 	"google.golang.org/protobuf/proto"
 
-	pbprogram "github.com/autokitteh/autokitteh/gen/proto/stubs/go/program"
+	pbprogram "github.com/autokitteh/autokitteh/api/gen/stubs/go/program"
 
 	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiprogram"
 )

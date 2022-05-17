@@ -9,7 +9,7 @@ import (
 	"github.com/slack-go/slack"
 	"google.golang.org/grpc"
 
-	pb "github.com/autokitteh/autokitteh/gen/proto/stubs/go/slackeventsrc"
+	pb "github.com/autokitteh/autokitteh/api/gen/stubs/go/slackeventsrc"
 
 	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apieventsrc"
 	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiproject"

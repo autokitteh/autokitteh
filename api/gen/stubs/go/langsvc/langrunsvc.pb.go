@@ -7,9 +7,9 @@
 package langsvc
 
 import (
-	lang "github.com/autokitteh/autokitteh/gen/proto/stubs/go/lang"
-	program "github.com/autokitteh/autokitteh/gen/proto/stubs/go/program"
-	values "github.com/autokitteh/autokitteh/gen/proto/stubs/go/values"
+	lang "github.com/autokitteh/autokitteh/api/gen/stubs/go/lang"
+	program "github.com/autokitteh/autokitteh/api/gen/stubs/go/program"
+	values "github.com/autokitteh/autokitteh/api/gen/stubs/go/values"
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"

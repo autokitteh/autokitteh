@@ -1,8 +1,8 @@
 package apilang
 
 import (
-	pblang "github.com/autokitteh/autokitteh/gen/proto/stubs/go/lang"
-	pbprogram "github.com/autokitteh/autokitteh/gen/proto/stubs/go/program"
+	pblang "github.com/autokitteh/autokitteh/api/gen/stubs/go/lang"
+	pbprogram "github.com/autokitteh/autokitteh/api/gen/stubs/go/program"
 
 	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiprogram"
 	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apivalues"

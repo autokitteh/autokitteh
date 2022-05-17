@@ -9,8 +9,8 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	pbaccount "github.com/autokitteh/autokitteh/gen/proto/stubs/go/account"
-	pbaccountsvc "github.com/autokitteh/autokitteh/gen/proto/stubs/go/accountsvc"
+	pbaccount "github.com/autokitteh/autokitteh/api/gen/stubs/go/account"
+	pbaccountsvc "github.com/autokitteh/autokitteh/api/gen/stubs/go/accountsvc"
 
 	"github.com/autokitteh/autokitteh/internal/pkg/accountsstore"
 	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiaccount"
