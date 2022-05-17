@@ -34,7 +34,7 @@ def init(prefix: str, id: Optional[EventSourceID] = None) -> EventSource:
     if src:
         return src
 
-    client = Client.insecure(target=_getenv(prefix, 'AKD_ADDR', getenv('AK_GRPC_ADDR', '127.0.0.1:50001')))
+    client = Client.insecure(target=_getenv(prefix, 'AKD_ADDR', getenv('AK_GRPC_ADDR', '127.0.0.1:20001')))
 
     src = EventSource(client=client, id=id)
 

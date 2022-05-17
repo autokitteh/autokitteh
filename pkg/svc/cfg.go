@@ -15,7 +15,7 @@ import (
 
 type httpCfg struct {
 	Enabled              bool     `envconfig:"ENABLED" default:"true" json:"enabled"`
-	Port                 int      `envconfig:"PORT" default:"50000" json:"port"`
+	Port                 int      `envconfig:"PORT" default:"20000" json:"port"`
 	CORS                 bool     `envconfig:"CORS" default:"false" json:"cors"`
 	CORSAllowedOrigins   []string `envconfig:"CORS_ALLOWED_ORIGINS" json:"cors_allowed_origins"`
 	CORSAllowCredentials bool     `envconfig:"CORS_ALLOW_CREDENTIALS" default:"false" json:"cors_allow_credentails"`
@@ -24,7 +24,7 @@ type httpCfg struct {
 
 type grpcCfg struct {
 	Enabled bool `envconfig:"ENABLED" default:"true" json:"enabled"`
-	Port    int  `envconfig:"PORT" default:"50001" json:"port"`
+	Port    int  `envconfig:"PORT" default:"20001" json:"port"`
 }
 
 type SvcCfg struct {

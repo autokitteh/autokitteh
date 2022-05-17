@@ -10,4 +10,4 @@ test-local:
 
 .PHONY: test-grpc
 test-grpc:
-	DSN="grpc:127.0.0.1:50001" make test-local
+	DSN="grpc:127.0.0.1:20001" make test-local

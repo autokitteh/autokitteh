@@ -15,7 +15,7 @@ import (
 )
 
 type GRPCConfig struct {
-	HostPort string `envconfig:"HOSTPORT" default:"127.0.0.1:50001" json:"hostport"`
+	HostPort string `envconfig:"HOSTPORT" default:"127.0.0.1:20001" json:"hostport"`
 }
 
 type RedisConfig struct {

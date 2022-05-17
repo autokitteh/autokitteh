@@ -99,7 +99,7 @@ func (c *Config) PostSvcLoad(l L.L) error {
 	c.InitPaths = append(c.InitPaths, initPaths.Value()...)
 
 	if c.PluginsRegProcs.ReadyAddress == "" {
-		c.PluginsRegProcs.ReadyAddress = "http://127.0.0.1:50000/pluginsreg/ready"
+		c.PluginsRegProcs.ReadyAddress = "http://127.0.0.1:20000/pluginsreg/ready"
 	}
 
 	return nil

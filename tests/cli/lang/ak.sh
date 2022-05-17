@@ -7,7 +7,7 @@ if [[ -n ${test_grpc-} ]]; then
   AKD_CATALOG_PERMISSIVE=1 AKD_LOG_LEVEL=error ../../../bin/akd --enable testidgen --disable hello &
   pid=$!
   trap 'kill ${pid}' 0
-  cli_flags="-a 127.0.0.1:50001"
+  cli_flags="-a 127.0.0.1:20001"
 
   sleep 0.1
 fi

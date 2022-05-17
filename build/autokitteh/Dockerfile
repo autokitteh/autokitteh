@@ -32,7 +32,7 @@ COPY assets /ak/assets
 
 WORKDIR /ak
 
-EXPOSE 50000
-EXPOSE 50001
+EXPOSE 20000
+EXPOSE 20001
 
 ENTRYPOINT ["/ak/bin/entrypoint.sh"]

@@ -16,8 +16,8 @@ docker run \
   --env-file "${ENV_FILE}" \
   -v "${PWD}:/work" \
   -w "/work" \
-  -p 50000:50000 \
-  -p 50001:50001 \
+  -p 20000:20000 \
+  -p 20001:20001 \
   -it "autokitteh-${ARCH}" \
   --enable defaults \
   "$@"
