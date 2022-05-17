@@ -14,6 +14,7 @@ endif
 endif
 
 OUTDIR?=bin
+BUILD_OUTDIR=$(OUTDIR)
 GENDIR?=gen
 
 ifeq (, $(shell which gotestsum))
@@ -23,7 +24,7 @@ GOTEST=gotestsum --
 endif
 
 define build
-$(GO) build --tags "${TAGS}" -o $(OUTDIR)/$@ $(GO_BUILD_OPTS) ./cmd/$@
+$(GO) build --tags "${TAGS}" -o $(BUILD_OUTDIR)/$@ $(GO_BUILD_OPTS) ./cmd/$@
 endef
 
 define test
@@ -39,8 +40,11 @@ clean:
 	mkdir $(OUTDIR) $(GENDIR)
 	make -C tests clean
 
+.PHONY: plugins
+plugins: aktestplugind akpluginsd
+
 .PHONY: bin
-bin: akd aktestplugind akpluginsd
+bin: akd plugins
 
 .PHONY: build
 build:
@@ -74,10 +78,12 @@ aksh:
 
 .PHONY: akpluginsd
 akpluginsd:
+	$(eval BUILD_OUTDIR:=$(OUTDIR)/plugins)
 	$(build)
 
 .PHONY: aktestplugind
 aktestplugind:
+	$(eval BUILD_OUTDIR:=$(OUTDIR)/plugins)
 	$(build)
 
 .PHONY: d
