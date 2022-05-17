@@ -6,7 +6,8 @@ ENV ARCH=${ARCH}
 COPY . /build
 WORKDIR /build
 
-RUN ./api/scripts/gen-in-docker-build.sh
+# Not needed since /gen is comitted into the repository.
+# RUN ./api/scripts/gen-in-docker-build.sh
 
 ENV GOOS=linux
 
