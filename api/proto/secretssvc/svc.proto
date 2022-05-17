@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package autokitteh.secretssvc;
 
-option go_package = "github.com/autokitteh/autokitteh/gen/proto/stubs/go/secretssvc";
+option go_package = "github.com/autokitteh/autokitteh/api/gen/stubs/go/secretssvc";
 
 import "google/api/annotations.proto";
 import "validate/validate.proto";

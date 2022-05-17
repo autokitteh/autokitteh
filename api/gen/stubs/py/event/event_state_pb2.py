@@ -16,7 +16,7 @@ from google.protobuf import timestamp_pb2 as google_dot_protobuf_dot_timestamp__
 from validate import validate_pb2 as validate_dot_validate__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x17\x65vent/event_state.proto\x12\x10\x61utokitteh.event\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x17validate/validate.proto\"z\n\x10\x45ventStateRecord\x12/\n\x01t\x18\x01 \x01(\x0b\x32\x1a.google.protobuf.TimestampB\x08\xfa\x42\x05\xb2\x01\x02\x08\x01\x12\x35\n\x05state\x18\x02 \x01(\x0b\x32\x1c.autokitteh.event.EventStateB\x08\xfa\x42\x05\x8a\x01\x02\x10\x01\"\xb7\x02\n\nEventState\x12\x36\n\x07ignored\x18\x01 \x01(\x0b\x32#.autokitteh.event.IgnoredEventStateH\x00\x12\x32\n\x05\x65rror\x18\x02 \x01(\x0b\x32!.autokitteh.event.ErrorEventStateH\x00\x12\x36\n\x07pending\x18\x03 \x01(\x0b\x32#.autokitteh.event.PendingEventStateH\x00\x12<\n\nprocessing\x18\x04 \x01(\x0b\x32&.autokitteh.event.ProcessingEventStateH\x00\x12:\n\tprocessed\x18\x05 \x01(\x0b\x32%.autokitteh.event.ProcessedEventStateH\x00\x42\x0b\n\x04type\x12\x03\xf8\x42\x01\"#\n\x11IgnoredEventState\x12\x0e\n\x06reason\x18\x01 \x01(\t\" \n\x0f\x45rrorEventState\x12\r\n\x05\x65rror\x18\x01 \x01(\t\"\x13\n\x11PendingEventState\"\x82\x01\n\x14ProcessingEventState\x12\x30\n\x0bproject_ids\x18\x01 \x03(\tB\x1b\xfa\x42\x18\x92\x01\x15\"\x13r\x11\x32\x0f^[a-zA-Z0-9_]+$\x12\x38\n\x13ignored_project_ids\x18\x02 \x03(\tB\x1b\xfa\x42\x18\x92\x01\x15\"\x13r\x11\x32\x0f^[a-zA-Z0-9_]+$\"~\n\x13ProcessedEventState\x12\x30\n\x0bproject_ids\x18\x01 \x03(\tB\x1b\xfa\x42\x18\x92\x01\x15\"\x13r\x11\x32\x0f^[a-zA-Z0-9_]+$\x12\x35\n\x10\x61ttn_project_ids\x18\x02 \x03(\tB\x1b\xfa\x42\x18\x92\x01\x15\"\x13r\x11\x32\x0f^[a-zA-Z0-9_]+$B;Z9github.com/autokitteh/autokitteh/gen/proto/stubs/go/eventb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x17\x65vent/event_state.proto\x12\x10\x61utokitteh.event\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x17validate/validate.proto\"z\n\x10\x45ventStateRecord\x12/\n\x01t\x18\x01 \x01(\x0b\x32\x1a.google.protobuf.TimestampB\x08\xfa\x42\x05\xb2\x01\x02\x08\x01\x12\x35\n\x05state\x18\x02 \x01(\x0b\x32\x1c.autokitteh.event.EventStateB\x08\xfa\x42\x05\x8a\x01\x02\x10\x01\"\xb7\x02\n\nEventState\x12\x36\n\x07ignored\x18\x01 \x01(\x0b\x32#.autokitteh.event.IgnoredEventStateH\x00\x12\x32\n\x05\x65rror\x18\x02 \x01(\x0b\x32!.autokitteh.event.ErrorEventStateH\x00\x12\x36\n\x07pending\x18\x03 \x01(\x0b\x32#.autokitteh.event.PendingEventStateH\x00\x12<\n\nprocessing\x18\x04 \x01(\x0b\x32&.autokitteh.event.ProcessingEventStateH\x00\x12:\n\tprocessed\x18\x05 \x01(\x0b\x32%.autokitteh.event.ProcessedEventStateH\x00\x42\x0b\n\x04type\x12\x03\xf8\x42\x01\"#\n\x11IgnoredEventState\x12\x0e\n\x06reason\x18\x01 \x01(\t\" \n\x0f\x45rrorEventState\x12\r\n\x05\x65rror\x18\x01 \x01(\t\"\x13\n\x11PendingEventState\"\xb4\x01\n\x14ProcessingEventState\x12I\n\x0bproject_ids\x18\x01 \x03(\tB4\xfa\x42\x31\x92\x01.\",r*2(^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z0-9_-]+$\x12Q\n\x13ignored_project_ids\x18\x02 \x03(\tB4\xfa\x42\x31\x92\x01.\",r*2(^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z0-9_-]+$\"\xb0\x01\n\x13ProcessedEventState\x12I\n\x0bproject_ids\x18\x01 \x03(\tB4\xfa\x42\x31\x92\x01.\",r*2(^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z0-9_-]+$\x12N\n\x10\x61ttn_project_ids\x18\x02 \x03(\tB4\xfa\x42\x31\x92\x01.\",r*2(^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z0-9_-]+$B9Z7github.com/autokitteh/autokitteh/api/gen/stubs/go/eventb\x06proto3')
 
 
 
@@ -79,7 +79,7 @@ _sym_db.RegisterMessage(ProcessedEventState)
 if _descriptor._USE_C_DESCRIPTORS == False:
 
   DESCRIPTOR._options = None
-  DESCRIPTOR._serialized_options = b'Z9github.com/autokitteh/autokitteh/gen/proto/stubs/go/event'
+  DESCRIPTOR._serialized_options = b'Z7github.com/autokitteh/autokitteh/api/gen/stubs/go/event'
   _EVENTSTATERECORD.fields_by_name['t']._options = None
   _EVENTSTATERECORD.fields_by_name['t']._serialized_options = b'\372B\005\262\001\002\010\001'
   _EVENTSTATERECORD.fields_by_name['state']._options = None
@@ -87,13 +87,13 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _EVENTSTATE.oneofs_by_name['type']._options = None
   _EVENTSTATE.oneofs_by_name['type']._serialized_options = b'\370B\001'
   _PROCESSINGEVENTSTATE.fields_by_name['project_ids']._options = None
-  _PROCESSINGEVENTSTATE.fields_by_name['project_ids']._serialized_options = b'\372B\030\222\001\025\"\023r\0212\017^[a-zA-Z0-9_]+$'
+  _PROCESSINGEVENTSTATE.fields_by_name['project_ids']._serialized_options = b'\372B1\222\001.\",r*2(^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z0-9_-]+$'
   _PROCESSINGEVENTSTATE.fields_by_name['ignored_project_ids']._options = None
-  _PROCESSINGEVENTSTATE.fields_by_name['ignored_project_ids']._serialized_options = b'\372B\030\222\001\025\"\023r\0212\017^[a-zA-Z0-9_]+$'
+  _PROCESSINGEVENTSTATE.fields_by_name['ignored_project_ids']._serialized_options = b'\372B1\222\001.\",r*2(^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z0-9_-]+$'
   _PROCESSEDEVENTSTATE.fields_by_name['project_ids']._options = None
-  _PROCESSEDEVENTSTATE.fields_by_name['project_ids']._serialized_options = b'\372B\030\222\001\025\"\023r\0212\017^[a-zA-Z0-9_]+$'
+  _PROCESSEDEVENTSTATE.fields_by_name['project_ids']._serialized_options = b'\372B1\222\001.\",r*2(^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z0-9_-]+$'
   _PROCESSEDEVENTSTATE.fields_by_name['attn_project_ids']._options = None
-  _PROCESSEDEVENTSTATE.fields_by_name['attn_project_ids']._serialized_options = b'\372B\030\222\001\025\"\023r\0212\017^[a-zA-Z0-9_]+$'
+  _PROCESSEDEVENTSTATE.fields_by_name['attn_project_ids']._serialized_options = b'\372B1\222\001.\",r*2(^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z0-9_-]+$'
   _EVENTSTATERECORD._serialized_start=103
   _EVENTSTATERECORD._serialized_end=225
   _EVENTSTATE._serialized_start=228
@@ -105,7 +105,7 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _PENDINGEVENTSTATE._serialized_start=612
   _PENDINGEVENTSTATE._serialized_end=631
   _PROCESSINGEVENTSTATE._serialized_start=634
-  _PROCESSINGEVENTSTATE._serialized_end=764
-  _PROCESSEDEVENTSTATE._serialized_start=766
-  _PROCESSEDEVENTSTATE._serialized_end=892
+  _PROCESSINGEVENTSTATE._serialized_end=814
+  _PROCESSEDEVENTSTATE._serialized_start=817
+  _PROCESSEDEVENTSTATE._serialized_end=993
 # @@protoc_insertion_point(module_scope)

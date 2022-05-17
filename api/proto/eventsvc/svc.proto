@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package autokitteh.eventsvc;
 
-option go_package = "github.com/autokitteh/autokitteh/gen/proto/stubs/go/eventsvc";
+option go_package = "github.com/autokitteh/autokitteh/api/gen/stubs/go/eventsvc";
 
 import "google/api/annotations.proto";
 import "validate/validate.proto";

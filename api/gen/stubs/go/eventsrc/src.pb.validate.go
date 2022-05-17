@@ -294,7 +294,7 @@ func (m *EventSourceProjectBinding) Validate() error {
 	if !_EventSourceProjectBinding_ProjectId_Pattern.MatchString(m.GetProjectId()) {
 		return EventSourceProjectBindingValidationError{
 			field:  "ProjectId",
-			reason: "value does not match regex pattern \"^[a-zA-Z0-9_]+$\"",
+			reason: "value does not match regex pattern \"^[a-zA-Z][0-9a-zA-Z_-]+\\\\.[a-zA-Z0-9_-]+$\"",
 		}
 	}
 
@@ -406,6 +406,6 @@ var _ interface {
 
 var _EventSourceProjectBinding_SrcId_Pattern = regexp.MustCompile("^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z][0-9a-zA-Z_-]+$")
 
-var _EventSourceProjectBinding_ProjectId_Pattern = regexp.MustCompile("^[a-zA-Z0-9_]+$")
+var _EventSourceProjectBinding_ProjectId_Pattern = regexp.MustCompile("^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z0-9_-]+$")
 
 var _EventSourceProjectBinding_Name_Pattern = regexp.MustCompile("^[a-zA-Z_][a-zA-Z0-9_]*$")

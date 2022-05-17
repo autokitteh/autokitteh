@@ -2,7 +2,7 @@
 
 package autokitteh.values;
 
-option go_package = "github.com/autokitteh/autokitteh/gen/proto/stubs/go/values";
+option go_package = "github.com/autokitteh/autokitteh/api/gen/stubs/go/values";
 
 import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";

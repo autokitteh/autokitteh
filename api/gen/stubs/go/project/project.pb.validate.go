@@ -255,7 +255,7 @@ func (m *Project) Validate() error {
 		if !_Project_Id_Pattern.MatchString(m.GetId()) {
 			return ProjectValidationError{
 				field:  "Id",
-				reason: "value does not match regex pattern \"^[a-zA-Z0-9_]+$\"",
+				reason: "value does not match regex pattern \"^[a-zA-Z][0-9a-zA-Z_-]+\\\\.[a-zA-Z0-9_-]+$\"",
 			}
 		}
 
@@ -362,6 +362,6 @@ var _ interface {
 	ErrorName() string
 } = ProjectValidationError{}
 
-var _Project_Id_Pattern = regexp.MustCompile("^[a-zA-Z0-9_]+$")
+var _Project_Id_Pattern = regexp.MustCompile("^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z0-9_-]+$")
 
 var _Project_AccountName_Pattern = regexp.MustCompile("^[a-zA-Z][0-9a-zA-Z_-]+$")

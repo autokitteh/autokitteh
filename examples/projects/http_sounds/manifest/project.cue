@@ -7,7 +7,7 @@ import "autokitteh.io/manifest"
 manifest.#Manifest & {
 	projects: [
 		{
-			id:           "http_sounds"
+			id:           "autokitteh.http_sounds"
 			name:         "http_sounds"
 			account_name: "autokitteh"
 			main_path:    "fs:examples/projects/http_sounds/auto.kitteh"

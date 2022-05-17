@@ -16,7 +16,7 @@ from google.api import annotations_pb2 as google_dot_api_dot_annotations__pb2
 from validate import validate_pb2 as validate_dot_validate__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x14secretssvc/svc.proto\x12\x15\x61utokitteh.secretssvc\x1a\x1cgoogle/api/annotations.proto\x1a\x17validate/validate.proto\"v\n\nSetRequest\x12*\n\nproject_id\x18\x01 \x01(\tB\x16\xfa\x42\x13r\x11\x32\x0f^[a-zA-Z0-9_]+$\x12-\n\x04name\x18\x02 \x01(\tB\x1f\xfa\x42\x1cr\x1a\x32\x18^[a-zA-Z_][a-zA-Z0-9_]*$\x12\r\n\x05value\x18\x03 \x01(\t\"\r\n\x0bSetResponse\"g\n\nGetRequest\x12*\n\nproject_id\x18\x01 \x01(\tB\x16\xfa\x42\x13r\x11\x32\x0f^[a-zA-Z0-9_]+$\x12-\n\x04name\x18\x02 \x01(\tB\x1f\xfa\x42\x1cr\x1a\x32\x18^[a-zA-Z_][a-zA-Z0-9_]*$\"\x1c\n\x0bGetResponse\x12\r\n\x05value\x18\x01 \x01(\t\"9\n\x0bListRequest\x12*\n\nproject_id\x18\x01 \x01(\tB\x16\xfa\x42\x13r\x11\x32\x0f^[a-zA-Z0-9_]+$\"\x1d\n\x0cListResponse\x12\r\n\x05names\x18\x01 \x03(\t2\xf9\x02\n\x07Secrets\x12|\n\x03Set\x12!.autokitteh.secretssvc.SetRequest\x1a\".autokitteh.secretssvc.SetResponse\".\x82\xd3\xe4\x93\x02(\"#/api/v1/secrets/{project_id}/{name}:\x01*\x12y\n\x03Get\x12!.autokitteh.secretssvc.GetRequest\x1a\".autokitteh.secretssvc.GetResponse\"+\x82\xd3\xe4\x93\x02%\x12#/api/v1/secrets/{project_id}/{name}\x12u\n\x04List\x12\".autokitteh.secretssvc.ListRequest\x1a#.autokitteh.secretssvc.ListResponse\"$\x82\xd3\xe4\x93\x02\x1e\x12\x1c/api/v1/secrets/{project_id}B@Z>github.com/autokitteh/autokitteh/gen/proto/stubs/go/secretssvcb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x14secretssvc/svc.proto\x12\x15\x61utokitteh.secretssvc\x1a\x1cgoogle/api/annotations.proto\x1a\x17validate/validate.proto\"\x8f\x01\n\nSetRequest\x12\x43\n\nproject_id\x18\x01 \x01(\tB/\xfa\x42,r*2(^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z0-9_-]+$\x12-\n\x04name\x18\x02 \x01(\tB\x1f\xfa\x42\x1cr\x1a\x32\x18^[a-zA-Z_][a-zA-Z0-9_]*$\x12\r\n\x05value\x18\x03 \x01(\t\"\r\n\x0bSetResponse\"\x80\x01\n\nGetRequest\x12\x43\n\nproject_id\x18\x01 \x01(\tB/\xfa\x42,r*2(^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z0-9_-]+$\x12-\n\x04name\x18\x02 \x01(\tB\x1f\xfa\x42\x1cr\x1a\x32\x18^[a-zA-Z_][a-zA-Z0-9_]*$\"\x1c\n\x0bGetResponse\x12\r\n\x05value\x18\x01 \x01(\t\"R\n\x0bListRequest\x12\x43\n\nproject_id\x18\x01 \x01(\tB/\xfa\x42,r*2(^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z0-9_-]+$\"\x1d\n\x0cListResponse\x12\r\n\x05names\x18\x01 \x03(\t2\xf9\x02\n\x07Secrets\x12|\n\x03Set\x12!.autokitteh.secretssvc.SetRequest\x1a\".autokitteh.secretssvc.SetResponse\".\x82\xd3\xe4\x93\x02(\"#/api/v1/secrets/{project_id}/{name}:\x01*\x12y\n\x03Get\x12!.autokitteh.secretssvc.GetRequest\x1a\".autokitteh.secretssvc.GetResponse\"+\x82\xd3\xe4\x93\x02%\x12#/api/v1/secrets/{project_id}/{name}\x12u\n\x04List\x12\".autokitteh.secretssvc.ListRequest\x1a#.autokitteh.secretssvc.ListResponse\"$\x82\xd3\xe4\x93\x02\x1e\x12\x1c/api/v1/secrets/{project_id}B>Z<github.com/autokitteh/autokitteh/api/gen/stubs/go/secretssvcb\x06proto3')
 
 
 
@@ -72,35 +72,35 @@ _SECRETS = DESCRIPTOR.services_by_name['Secrets']
 if _descriptor._USE_C_DESCRIPTORS == False:
 
   DESCRIPTOR._options = None
-  DESCRIPTOR._serialized_options = b'Z>github.com/autokitteh/autokitteh/gen/proto/stubs/go/secretssvc'
+  DESCRIPTOR._serialized_options = b'Z<github.com/autokitteh/autokitteh/api/gen/stubs/go/secretssvc'
   _SETREQUEST.fields_by_name['project_id']._options = None
-  _SETREQUEST.fields_by_name['project_id']._serialized_options = b'\372B\023r\0212\017^[a-zA-Z0-9_]+$'
+  _SETREQUEST.fields_by_name['project_id']._serialized_options = b'\372B,r*2(^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z0-9_-]+$'
   _SETREQUEST.fields_by_name['name']._options = None
   _SETREQUEST.fields_by_name['name']._serialized_options = b'\372B\034r\0322\030^[a-zA-Z_][a-zA-Z0-9_]*$'
   _GETREQUEST.fields_by_name['project_id']._options = None
-  _GETREQUEST.fields_by_name['project_id']._serialized_options = b'\372B\023r\0212\017^[a-zA-Z0-9_]+$'
+  _GETREQUEST.fields_by_name['project_id']._serialized_options = b'\372B,r*2(^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z0-9_-]+$'
   _GETREQUEST.fields_by_name['name']._options = None
   _GETREQUEST.fields_by_name['name']._serialized_options = b'\372B\034r\0322\030^[a-zA-Z_][a-zA-Z0-9_]*$'
   _LISTREQUEST.fields_by_name['project_id']._options = None
-  _LISTREQUEST.fields_by_name['project_id']._serialized_options = b'\372B\023r\0212\017^[a-zA-Z0-9_]+$'
+  _LISTREQUEST.fields_by_name['project_id']._serialized_options = b'\372B,r*2(^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z0-9_-]+$'
   _SECRETS.methods_by_name['Set']._options = None
   _SECRETS.methods_by_name['Set']._serialized_options = b'\202\323\344\223\002(\"#/api/v1/secrets/{project_id}/{name}:\001*'
   _SECRETS.methods_by_name['Get']._options = None
   _SECRETS.methods_by_name['Get']._serialized_options = b'\202\323\344\223\002%\022#/api/v1/secrets/{project_id}/{name}'
   _SECRETS.methods_by_name['List']._options = None
   _SECRETS.methods_by_name['List']._serialized_options = b'\202\323\344\223\002\036\022\034/api/v1/secrets/{project_id}'
-  _SETREQUEST._serialized_start=102
-  _SETREQUEST._serialized_end=220
-  _SETRESPONSE._serialized_start=222
-  _SETRESPONSE._serialized_end=235
-  _GETREQUEST._serialized_start=237
-  _GETREQUEST._serialized_end=340
-  _GETRESPONSE._serialized_start=342
-  _GETRESPONSE._serialized_end=370
-  _LISTREQUEST._serialized_start=372
-  _LISTREQUEST._serialized_end=429
-  _LISTRESPONSE._serialized_start=431
-  _LISTRESPONSE._serialized_end=460
-  _SECRETS._serialized_start=463
-  _SECRETS._serialized_end=840
+  _SETREQUEST._serialized_start=103
+  _SETREQUEST._serialized_end=246
+  _SETRESPONSE._serialized_start=248
+  _SETRESPONSE._serialized_end=261
+  _GETREQUEST._serialized_start=264
+  _GETREQUEST._serialized_end=392
+  _GETRESPONSE._serialized_start=394
+  _GETRESPONSE._serialized_end=422
+  _LISTREQUEST._serialized_start=424
+  _LISTREQUEST._serialized_end=506
+  _LISTRESPONSE._serialized_start=508
+  _LISTRESPONSE._serialized_end=537
+  _SECRETS._serialized_start=540
+  _SECRETS._serialized_end=917
 # @@protoc_insertion_point(module_scope)

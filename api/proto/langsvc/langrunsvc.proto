@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package autokitteh.langsvc;
 
-option go_package = "github.com/autokitteh/autokitteh/gen/proto/stubs/go/langsvc";
+option go_package = "github.com/autokitteh/autokitteh/api/gen/stubs/go/langsvc";
 
 import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";

@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package autokitteh.project;
 
-option go_package = "github.com/autokitteh/autokitteh/gen/proto/stubs/go/project";
+option go_package = "github.com/autokitteh/autokitteh/api/gen/stubs/go/project";
 
 import "google/protobuf/timestamp.proto";
 import "validate/validate.proto";
@@ -31,7 +31,7 @@ message ProjectSettings {
 }
 
 message Project {
-  string          id           = 1 [(validate.rules).string = {ignore_empty:true, pattern: "^[a-zA-Z0-9_]+$" }]; // must be populated when in the db.
+  string          id           = 1 [(validate.rules).string = {ignore_empty:true, pattern: "^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z0-9_-]+$" }]; // must be populated when in the db.
   string          account_name = 2 [(validate.rules).string.pattern = "^[a-zA-Z][0-9a-zA-Z_-]+$"];
   ProjectSettings settings     = 3 [(validate.rules).message.required = true];
 

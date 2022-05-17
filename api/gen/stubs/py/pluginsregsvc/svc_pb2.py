@@ -16,7 +16,7 @@ from plugin import plugin_pb2 as plugin_dot_plugin__pb2
 from validate import validate_pb2 as validate_dot_validate__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x17pluginsregsvc/svc.proto\x12\x18\x61utokitteh.pluginsregsvc\x1a\x13plugin/plugin.proto\x1a\x17validate/validate.proto\"\x95\x01\n\x0fRegisterRequest\x12\x43\n\x02id\x18\x01 \x01(\tB7\xfa\x42\x34r220^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z][0-9a-zA-Z_-]+$\x12=\n\x08settings\x18\x02 \x01(\x0b\x32!.autokitteh.plugin.PluginSettingsB\x08\xfa\x42\x05\x8a\x01\x02\x10\x01\"\x12\n\x10RegisterResponse\"G\n\x0bListRequest\x12\x38\n\x0c\x61\x63\x63ount_name\x18\x01 \x01(\tB\"\xfa\x42\x1fr\x1d\x32\x18^[a-zA-Z][0-9a-zA-Z_-]+$\xd0\x01\x01\"Y\n\x0cListResponse\x12I\n\x03ids\x18\x01 \x03(\tB<\xfa\x42\x39\x92\x01\x36\"4r220^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z][0-9a-zA-Z_-]+$\"Q\n\nGetRequest\x12\x43\n\x02id\x18\x01 \x01(\tB7\xfa\x42\x34r220^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z][0-9a-zA-Z_-]+$\"B\n\x0bGetResponse\x12\x33\n\x06plugin\x18\x01 \x01(\x0b\x32\x19.autokitteh.plugin.PluginB\x08\xfa\x42\x05\x8a\x01\x02\x10\x01\x32\x9f\x02\n\x0fPluginsRegistry\x12U\n\x04List\x12%.autokitteh.pluginsregsvc.ListRequest\x1a&.autokitteh.pluginsregsvc.ListResponse\x12R\n\x03Get\x12$.autokitteh.pluginsregsvc.GetRequest\x1a%.autokitteh.pluginsregsvc.GetResponse\x12\x61\n\x08Register\x12).autokitteh.pluginsregsvc.RegisterRequest\x1a*.autokitteh.pluginsregsvc.RegisterResponseBCZAgithub.com/autokitteh/autokitteh/gen/proto/stubs/go/pluginsregsvcb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x17pluginsregsvc/svc.proto\x12\x18\x61utokitteh.pluginsregsvc\x1a\x13plugin/plugin.proto\x1a\x17validate/validate.proto\"\x95\x01\n\x0fRegisterRequest\x12\x43\n\x02id\x18\x01 \x01(\tB7\xfa\x42\x34r220^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z][0-9a-zA-Z_-]+$\x12=\n\x08settings\x18\x02 \x01(\x0b\x32!.autokitteh.plugin.PluginSettingsB\x08\xfa\x42\x05\x8a\x01\x02\x10\x01\"\x12\n\x10RegisterResponse\"G\n\x0bListRequest\x12\x38\n\x0c\x61\x63\x63ount_name\x18\x01 \x01(\tB\"\xfa\x42\x1fr\x1d\x32\x18^[a-zA-Z][0-9a-zA-Z_-]+$\xd0\x01\x01\"Y\n\x0cListResponse\x12I\n\x03ids\x18\x01 \x03(\tB<\xfa\x42\x39\x92\x01\x36\"4r220^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z][0-9a-zA-Z_-]+$\"Q\n\nGetRequest\x12\x43\n\x02id\x18\x01 \x01(\tB7\xfa\x42\x34r220^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z][0-9a-zA-Z_-]+$\"B\n\x0bGetResponse\x12\x33\n\x06plugin\x18\x01 \x01(\x0b\x32\x19.autokitteh.plugin.PluginB\x08\xfa\x42\x05\x8a\x01\x02\x10\x01\x32\x9f\x02\n\x0fPluginsRegistry\x12U\n\x04List\x12%.autokitteh.pluginsregsvc.ListRequest\x1a&.autokitteh.pluginsregsvc.ListResponse\x12R\n\x03Get\x12$.autokitteh.pluginsregsvc.GetRequest\x1a%.autokitteh.pluginsregsvc.GetResponse\x12\x61\n\x08Register\x12).autokitteh.pluginsregsvc.RegisterRequest\x1a*.autokitteh.pluginsregsvc.RegisterResponseBAZ?github.com/autokitteh/autokitteh/api/gen/stubs/go/pluginsregsvcb\x06proto3')
 
 
 
@@ -72,7 +72,7 @@ _PLUGINSREGISTRY = DESCRIPTOR.services_by_name['PluginsRegistry']
 if _descriptor._USE_C_DESCRIPTORS == False:
 
   DESCRIPTOR._options = None
-  DESCRIPTOR._serialized_options = b'ZAgithub.com/autokitteh/autokitteh/gen/proto/stubs/go/pluginsregsvc'
+  DESCRIPTOR._serialized_options = b'Z?github.com/autokitteh/autokitteh/api/gen/stubs/go/pluginsregsvc'
   _REGISTERREQUEST.fields_by_name['id']._options = None
   _REGISTERREQUEST.fields_by_name['id']._serialized_options = b'\372B4r220^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z][0-9a-zA-Z_-]+$'
   _REGISTERREQUEST.fields_by_name['settings']._options = None

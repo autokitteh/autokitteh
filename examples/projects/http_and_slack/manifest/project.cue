@@ -7,7 +7,7 @@ import "autokitteh.io/manifest"
 manifest.#Manifest & {
 	projects: [
 		{
-			id:           "http_and_slack"
+			id:           "autokitteh.http_and_slack"
 			name:         "http_and_slack"
 			account_name: "autokitteh"
 			main_path:    "fs:examples/projects/http_and_slack/auto.kitteh.cue"

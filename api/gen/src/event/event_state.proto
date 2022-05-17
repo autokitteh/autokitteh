@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package autokitteh.event;
 
-option go_package = "github.com/autokitteh/autokitteh/gen/proto/stubs/go/event";
+option go_package = "github.com/autokitteh/autokitteh/api/gen/stubs/go/event";
 
 import "google/protobuf/timestamp.proto";
 import "validate/validate.proto";
@@ -36,11 +36,11 @@ message ErrorEventState {
 message PendingEventState {}
 
 message ProcessingEventState {
-  repeated string project_ids         = 1 [(validate.rules).repeated.items.string.pattern = "^[a-zA-Z0-9_]+$"];
-  repeated string ignored_project_ids = 2 [(validate.rules).repeated.items.string.pattern = "^[a-zA-Z0-9_]+$"];
+  repeated string project_ids         = 1 [(validate.rules).repeated.items.string.pattern = "^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z0-9_-]+$"];
+  repeated string ignored_project_ids = 2 [(validate.rules).repeated.items.string.pattern = "^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z0-9_-]+$"];
 }
 
 message ProcessedEventState {
-  repeated string project_ids      = 1 [(validate.rules).repeated.items.string.pattern = "^[a-zA-Z0-9_]+$"];
-  repeated string attn_project_ids = 2 [(validate.rules).repeated.items.string.pattern = "^[a-zA-Z0-9_]+$"];
+  repeated string project_ids      = 1 [(validate.rules).repeated.items.string.pattern = "^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z0-9_-]+$"];
+  repeated string attn_project_ids = 2 [(validate.rules).repeated.items.string.pattern = "^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z0-9_-]+$"];
 }

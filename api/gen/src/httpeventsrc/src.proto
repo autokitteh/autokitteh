@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package autokitteh.httpeventsrc;
 
-option go_package = "github.com/autokitteh/autokitteh/gen/proto/stubs/go/httpeventsrc";
+option go_package = "github.com/autokitteh/autokitteh/api/gen/stubs/go/httpeventsrc";
 
 import "google/api/annotations.proto";
 import "validate/validate.proto";
@@ -15,7 +15,7 @@ message Route {
 }
 
 message BindRequest {
-  string         project_id = 1 [(validate.rules).string.pattern = "^[a-zA-Z0-9_]+$"];
+  string         project_id = 1 [(validate.rules).string.pattern = "^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z0-9_-]+$"];
   string         name       = 2 [(validate.rules).string.pattern = "^[a-zA-Z_][a-zA-Z0-9_]*$"];
   repeated Route routes     = 3 [(validate.rules).repeated.items.message.required = true];
 }
@@ -23,7 +23,7 @@ message BindRequest {
 message BindResponse {}
 
 message UnbindRequest {
-  string project_id = 1 [(validate.rules).string.pattern = "^[a-zA-Z0-9_]+$"];
+  string project_id = 1 [(validate.rules).string.pattern = "^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z0-9_-]+$"];
   string name       = 2 [(validate.rules).string.pattern = "^[a-zA-Z_][a-zA-Z0-9_]*$"];
 }
 

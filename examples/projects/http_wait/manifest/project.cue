@@ -7,7 +7,7 @@ import "autokitteh.io/manifest"
 manifest.#Manifest & {
 	projects: [
 		{
-			id:           "http_wait"
+			id:           "autokitteh.http_wait"
 			name:         "http_wait"
 			account_name: "autokitteh"
 			main_path:    "fs:examples/projects/http_wait/auto.kitteh"

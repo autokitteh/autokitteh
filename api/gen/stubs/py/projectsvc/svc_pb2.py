@@ -17,7 +17,7 @@ from validate import validate_pb2 as validate_dot_validate__pb2
 from project import project_pb2 as project_dot_project__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x14projectsvc/svc.proto\x12\x15\x61utokitteh.projectsvc\x1a\x1cgoogle/api/annotations.proto\x1a\x17validate/validate.proto\x1a\x15project/project.proto\"\xb5\x01\n\x14\x43reateProjectRequest\x12\x35\n\x0c\x61\x63\x63ount_name\x18\x01 \x01(\tB\x1f\xfa\x42\x1cr\x1a\x32\x18^[a-zA-Z][0-9a-zA-Z_-]+$\x12%\n\x02id\x18\x02 \x01(\tB\x19\xfa\x42\x16r\x14\x32\x0f^[a-zA-Z0-9_]+$\xd0\x01\x01\x12?\n\x08settings\x18\x03 \x01(\x0b\x32#.autokitteh.project.ProjectSettingsB\x08\xfa\x42\x05\x8a\x01\x02\x10\x01\";\n\x15\x43reateProjectResponse\x12\"\n\x02id\x18\x01 \x01(\tB\x16\xfa\x42\x13r\x11\x32\x0f^[a-zA-Z0-9_]+$\"{\n\x14UpdateProjectRequest\x12\"\n\x02id\x18\x01 \x01(\tB\x16\xfa\x42\x13r\x11\x32\x0f^[a-zA-Z0-9_]+$\x12?\n\x08settings\x18\x02 \x01(\x0b\x32#.autokitteh.project.ProjectSettingsB\x08\xfa\x42\x05\x8a\x01\x02\x10\x01\"\x17\n\x15UpdateProjectResponse\":\n\x14RemoveProjectRequest\x12\"\n\x02id\x18\x01 \x01(\tB\x16\xfa\x42\x13r\x11\x32\x0f^[a-zA-Z0-9_]+$\"\x17\n\x15RemoveProjectResponse\"7\n\x11GetProjectRequest\x12\"\n\x02id\x18\x01 \x01(\tB\x16\xfa\x42\x13r\x11\x32\x0f^[a-zA-Z0-9_]+$\"L\n\x12GetProjectResponse\x12\x36\n\x07project\x18\x01 \x01(\x0b\x32\x1b.autokitteh.project.ProjectB\x08\xfa\x42\x05\x8a\x01\x02\x10\x01\">\n\x12GetProjectsRequest\x12(\n\x03ids\x18\x01 \x03(\tB\x1b\xfa\x42\x18\x92\x01\x15\"\x13r\x11\x32\x0f^[a-zA-Z0-9_]+$\"S\n\x13GetProjectsResponse\x12<\n\x08projects\x18\x01 \x03(\x0b\x32\x1b.autokitteh.project.ProjectB\r\xfa\x42\n\x92\x01\x07\"\x05\x8a\x01\x02\x10\x01\x32\xaa\x04\n\x08Projects\x12\x87\x01\n\rCreateProject\x12+.autokitteh.projectsvc.CreateProjectRequest\x1a,.autokitteh.projectsvc.CreateProjectResponse\"\x1b\x82\xd3\xe4\x93\x02\x15\"\x10/api/v1/projects:\x01*\x12\x8c\x01\n\rUpdateProject\x12+.autokitteh.projectsvc.UpdateProjectRequest\x1a,.autokitteh.projectsvc.UpdateProjectResponse\" \x82\xd3\xe4\x93\x02\x1a\"\x15/api/v1/projects/{id}:\x01*\x12\x80\x01\n\nGetProject\x12(.autokitteh.projectsvc.GetProjectRequest\x1a).autokitteh.projectsvc.GetProjectResponse\"\x1d\x82\xd3\xe4\x93\x02\x17\x12\x15/api/v1/projects/{id}\x12\x81\x01\n\x0bGetProjects\x12).autokitteh.projectsvc.GetProjectsRequest\x1a*.autokitteh.projectsvc.GetProjectsResponse\"\x1b\x82\xd3\xe4\x93\x02\x15\"\x10/api/v1/projects:\x01*B@Z>github.com/autokitteh/autokitteh/gen/proto/stubs/go/projectsvcb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x14projectsvc/svc.proto\x12\x15\x61utokitteh.projectsvc\x1a\x1cgoogle/api/annotations.proto\x1a\x17validate/validate.proto\x1a\x15project/project.proto\"\xce\x01\n\x14\x43reateProjectRequest\x12\x35\n\x0c\x61\x63\x63ount_name\x18\x01 \x01(\tB\x1f\xfa\x42\x1cr\x1a\x32\x18^[a-zA-Z][0-9a-zA-Z_-]+$\x12>\n\x02id\x18\x02 \x01(\tB2\xfa\x42/r-2(^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z0-9_-]+$\xd0\x01\x01\x12?\n\x08settings\x18\x03 \x01(\x0b\x32#.autokitteh.project.ProjectSettingsB\x08\xfa\x42\x05\x8a\x01\x02\x10\x01\"T\n\x15\x43reateProjectResponse\x12;\n\x02id\x18\x01 \x01(\tB/\xfa\x42,r*2(^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z0-9_-]+$\"\x94\x01\n\x14UpdateProjectRequest\x12;\n\x02id\x18\x01 \x01(\tB/\xfa\x42,r*2(^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z0-9_-]+$\x12?\n\x08settings\x18\x02 \x01(\x0b\x32#.autokitteh.project.ProjectSettingsB\x08\xfa\x42\x05\x8a\x01\x02\x10\x01\"\x17\n\x15UpdateProjectResponse\"S\n\x14RemoveProjectRequest\x12;\n\x02id\x18\x01 \x01(\tB/\xfa\x42,r*2(^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z0-9_-]+$\"\x17\n\x15RemoveProjectResponse\"P\n\x11GetProjectRequest\x12;\n\x02id\x18\x01 \x01(\tB/\xfa\x42,r*2(^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z0-9_-]+$\"L\n\x12GetProjectResponse\x12\x36\n\x07project\x18\x01 \x01(\x0b\x32\x1b.autokitteh.project.ProjectB\x08\xfa\x42\x05\x8a\x01\x02\x10\x01\"W\n\x12GetProjectsRequest\x12\x41\n\x03ids\x18\x01 \x03(\tB4\xfa\x42\x31\x92\x01.\",r*2(^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z0-9_-]+$\"S\n\x13GetProjectsResponse\x12<\n\x08projects\x18\x01 \x03(\x0b\x32\x1b.autokitteh.project.ProjectB\r\xfa\x42\n\x92\x01\x07\"\x05\x8a\x01\x02\x10\x01\x32\xaa\x04\n\x08Projects\x12\x87\x01\n\rCreateProject\x12+.autokitteh.projectsvc.CreateProjectRequest\x1a,.autokitteh.projectsvc.CreateProjectResponse\"\x1b\x82\xd3\xe4\x93\x02\x15\"\x10/api/v1/projects:\x01*\x12\x8c\x01\n\rUpdateProject\x12+.autokitteh.projectsvc.UpdateProjectRequest\x1a,.autokitteh.projectsvc.UpdateProjectResponse\" \x82\xd3\xe4\x93\x02\x1a\"\x15/api/v1/projects/{id}:\x01*\x12\x80\x01\n\nGetProject\x12(.autokitteh.projectsvc.GetProjectRequest\x1a).autokitteh.projectsvc.GetProjectResponse\"\x1d\x82\xd3\xe4\x93\x02\x17\x12\x15/api/v1/projects/{id}\x12\x81\x01\n\x0bGetProjects\x12).autokitteh.projectsvc.GetProjectsRequest\x1a*.autokitteh.projectsvc.GetProjectsResponse\"\x1b\x82\xd3\xe4\x93\x02\x15\"\x10/api/v1/projects:\x01*B>Z<github.com/autokitteh/autokitteh/api/gen/stubs/go/projectsvcb\x06proto3')
 
 
 
@@ -105,27 +105,27 @@ _PROJECTS = DESCRIPTOR.services_by_name['Projects']
 if _descriptor._USE_C_DESCRIPTORS == False:
 
   DESCRIPTOR._options = None
-  DESCRIPTOR._serialized_options = b'Z>github.com/autokitteh/autokitteh/gen/proto/stubs/go/projectsvc'
+  DESCRIPTOR._serialized_options = b'Z<github.com/autokitteh/autokitteh/api/gen/stubs/go/projectsvc'
   _CREATEPROJECTREQUEST.fields_by_name['account_name']._options = None
   _CREATEPROJECTREQUEST.fields_by_name['account_name']._serialized_options = b'\372B\034r\0322\030^[a-zA-Z][0-9a-zA-Z_-]+$'
   _CREATEPROJECTREQUEST.fields_by_name['id']._options = None
-  _CREATEPROJECTREQUEST.fields_by_name['id']._serialized_options = b'\372B\026r\0242\017^[a-zA-Z0-9_]+$\320\001\001'
+  _CREATEPROJECTREQUEST.fields_by_name['id']._serialized_options = b'\372B/r-2(^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z0-9_-]+$\320\001\001'
   _CREATEPROJECTREQUEST.fields_by_name['settings']._options = None
   _CREATEPROJECTREQUEST.fields_by_name['settings']._serialized_options = b'\372B\005\212\001\002\020\001'
   _CREATEPROJECTRESPONSE.fields_by_name['id']._options = None
-  _CREATEPROJECTRESPONSE.fields_by_name['id']._serialized_options = b'\372B\023r\0212\017^[a-zA-Z0-9_]+$'
+  _CREATEPROJECTRESPONSE.fields_by_name['id']._serialized_options = b'\372B,r*2(^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z0-9_-]+$'
   _UPDATEPROJECTREQUEST.fields_by_name['id']._options = None
-  _UPDATEPROJECTREQUEST.fields_by_name['id']._serialized_options = b'\372B\023r\0212\017^[a-zA-Z0-9_]+$'
+  _UPDATEPROJECTREQUEST.fields_by_name['id']._serialized_options = b'\372B,r*2(^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z0-9_-]+$'
   _UPDATEPROJECTREQUEST.fields_by_name['settings']._options = None
   _UPDATEPROJECTREQUEST.fields_by_name['settings']._serialized_options = b'\372B\005\212\001\002\020\001'
   _REMOVEPROJECTREQUEST.fields_by_name['id']._options = None
-  _REMOVEPROJECTREQUEST.fields_by_name['id']._serialized_options = b'\372B\023r\0212\017^[a-zA-Z0-9_]+$'
+  _REMOVEPROJECTREQUEST.fields_by_name['id']._serialized_options = b'\372B,r*2(^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z0-9_-]+$'
   _GETPROJECTREQUEST.fields_by_name['id']._options = None
-  _GETPROJECTREQUEST.fields_by_name['id']._serialized_options = b'\372B\023r\0212\017^[a-zA-Z0-9_]+$'
+  _GETPROJECTREQUEST.fields_by_name['id']._serialized_options = b'\372B,r*2(^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z0-9_-]+$'
   _GETPROJECTRESPONSE.fields_by_name['project']._options = None
   _GETPROJECTRESPONSE.fields_by_name['project']._serialized_options = b'\372B\005\212\001\002\020\001'
   _GETPROJECTSREQUEST.fields_by_name['ids']._options = None
-  _GETPROJECTSREQUEST.fields_by_name['ids']._serialized_options = b'\372B\030\222\001\025\"\023r\0212\017^[a-zA-Z0-9_]+$'
+  _GETPROJECTSREQUEST.fields_by_name['ids']._serialized_options = b'\372B1\222\001.\",r*2(^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z0-9_-]+$'
   _GETPROJECTSRESPONSE.fields_by_name['projects']._options = None
   _GETPROJECTSRESPONSE.fields_by_name['projects']._serialized_options = b'\372B\n\222\001\007\"\005\212\001\002\020\001'
   _PROJECTS.methods_by_name['CreateProject']._options = None
@@ -137,25 +137,25 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _PROJECTS.methods_by_name['GetProjects']._options = None
   _PROJECTS.methods_by_name['GetProjects']._serialized_options = b'\202\323\344\223\002\025\"\020/api/v1/projects:\001*'
   _CREATEPROJECTREQUEST._serialized_start=126
-  _CREATEPROJECTREQUEST._serialized_end=307
-  _CREATEPROJECTRESPONSE._serialized_start=309
-  _CREATEPROJECTRESPONSE._serialized_end=368
-  _UPDATEPROJECTREQUEST._serialized_start=370
-  _UPDATEPROJECTREQUEST._serialized_end=493
-  _UPDATEPROJECTRESPONSE._serialized_start=495
-  _UPDATEPROJECTRESPONSE._serialized_end=518
-  _REMOVEPROJECTREQUEST._serialized_start=520
-  _REMOVEPROJECTREQUEST._serialized_end=578
-  _REMOVEPROJECTRESPONSE._serialized_start=580
-  _REMOVEPROJECTRESPONSE._serialized_end=603
-  _GETPROJECTREQUEST._serialized_start=605
-  _GETPROJECTREQUEST._serialized_end=660
-  _GETPROJECTRESPONSE._serialized_start=662
-  _GETPROJECTRESPONSE._serialized_end=738
-  _GETPROJECTSREQUEST._serialized_start=740
-  _GETPROJECTSREQUEST._serialized_end=802
-  _GETPROJECTSRESPONSE._serialized_start=804
-  _GETPROJECTSRESPONSE._serialized_end=887
-  _PROJECTS._serialized_start=890
-  _PROJECTS._serialized_end=1444
+  _CREATEPROJECTREQUEST._serialized_end=332
+  _CREATEPROJECTRESPONSE._serialized_start=334
+  _CREATEPROJECTRESPONSE._serialized_end=418
+  _UPDATEPROJECTREQUEST._serialized_start=421
+  _UPDATEPROJECTREQUEST._serialized_end=569
+  _UPDATEPROJECTRESPONSE._serialized_start=571
+  _UPDATEPROJECTRESPONSE._serialized_end=594
+  _REMOVEPROJECTREQUEST._serialized_start=596
+  _REMOVEPROJECTREQUEST._serialized_end=679
+  _REMOVEPROJECTRESPONSE._serialized_start=681
+  _REMOVEPROJECTRESPONSE._serialized_end=704
+  _GETPROJECTREQUEST._serialized_start=706
+  _GETPROJECTREQUEST._serialized_end=786
+  _GETPROJECTRESPONSE._serialized_start=788
+  _GETPROJECTRESPONSE._serialized_end=864
+  _GETPROJECTSREQUEST._serialized_start=866
+  _GETPROJECTSREQUEST._serialized_end=953
+  _GETPROJECTSRESPONSE._serialized_start=955
+  _GETPROJECTSRESPONSE._serialized_end=1038
+  _PROJECTS._serialized_start=1041
+  _PROJECTS._serialized_end=1595
 # @@protoc_insertion_point(module_scope)

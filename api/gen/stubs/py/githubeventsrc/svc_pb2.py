@@ -16,7 +16,7 @@ from google.api import annotations_pb2 as google_dot_api_dot_annotations__pb2
 from validate import validate_pb2 as validate_dot_validate__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x18githubeventsrc/svc.proto\x12\x19\x61utokitteh.githubeventsrc\x1a\x1cgoogle/api/annotations.proto\x1a\x17validate/validate.proto\"b\n\x0b\x42indRequest\x12*\n\nproject_id\x18\x01 \x01(\tB\x16\xfa\x42\x13r\x11\x32\x0f^[a-zA-Z0-9_]+$\x12\x0c\n\x04name\x18\x02 \x01(\t\x12\x0b\n\x03org\x18\x03 \x01(\t\x12\x0c\n\x04repo\x18\x04 \x01(\t\"\x0e\n\x0c\x42indResponse\"I\n\rUnbindRequest\x12*\n\nproject_id\x18\x01 \x01(\tB\x16\xfa\x42\x13r\x11\x32\x0f^[a-zA-Z0-9_]+$\x12\x0c\n\x04name\x18\x02 \x01(\t\"\x10\n\x0eUnbindResponse2\x94\x02\n\x11GithubEventSource\x12z\n\x04\x42ind\x12&.autokitteh.githubeventsrc.BindRequest\x1a\'.autokitteh.githubeventsrc.BindResponse\"!\x82\xd3\xe4\x93\x02\x1b\"\x16/api/v1/githubsrc/bind:\x01*\x12\x82\x01\n\x06Unbind\x12(.autokitteh.githubeventsrc.UnbindRequest\x1a).autokitteh.githubeventsrc.UnbindResponse\"#\x82\xd3\xe4\x93\x02\x1d\"\x18/api/v1/githubsrc/unbind:\x01*BDZBgithub.com/autokitteh/autokitteh/gen/proto/stubs/go/githubeventsrcb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x18githubeventsrc/svc.proto\x12\x19\x61utokitteh.githubeventsrc\x1a\x1cgoogle/api/annotations.proto\x1a\x17validate/validate.proto\"{\n\x0b\x42indRequest\x12\x43\n\nproject_id\x18\x01 \x01(\tB/\xfa\x42,r*2(^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z0-9_-]+$\x12\x0c\n\x04name\x18\x02 \x01(\t\x12\x0b\n\x03org\x18\x03 \x01(\t\x12\x0c\n\x04repo\x18\x04 \x01(\t\"\x0e\n\x0c\x42indResponse\"b\n\rUnbindRequest\x12\x43\n\nproject_id\x18\x01 \x01(\tB/\xfa\x42,r*2(^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z0-9_-]+$\x12\x0c\n\x04name\x18\x02 \x01(\t\"\x10\n\x0eUnbindResponse2\x94\x02\n\x11GithubEventSource\x12z\n\x04\x42ind\x12&.autokitteh.githubeventsrc.BindRequest\x1a\'.autokitteh.githubeventsrc.BindResponse\"!\x82\xd3\xe4\x93\x02\x1b\"\x16/api/v1/githubsrc/bind:\x01*\x12\x82\x01\n\x06Unbind\x12(.autokitteh.githubeventsrc.UnbindRequest\x1a).autokitteh.githubeventsrc.UnbindResponse\"#\x82\xd3\xe4\x93\x02\x1d\"\x18/api/v1/githubsrc/unbind:\x01*BBZ@github.com/autokitteh/autokitteh/api/gen/stubs/go/githubeventsrcb\x06proto3')
 
 
 
@@ -56,23 +56,23 @@ _GITHUBEVENTSOURCE = DESCRIPTOR.services_by_name['GithubEventSource']
 if _descriptor._USE_C_DESCRIPTORS == False:
 
   DESCRIPTOR._options = None
-  DESCRIPTOR._serialized_options = b'ZBgithub.com/autokitteh/autokitteh/gen/proto/stubs/go/githubeventsrc'
+  DESCRIPTOR._serialized_options = b'Z@github.com/autokitteh/autokitteh/api/gen/stubs/go/githubeventsrc'
   _BINDREQUEST.fields_by_name['project_id']._options = None
-  _BINDREQUEST.fields_by_name['project_id']._serialized_options = b'\372B\023r\0212\017^[a-zA-Z0-9_]+$'
+  _BINDREQUEST.fields_by_name['project_id']._serialized_options = b'\372B,r*2(^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z0-9_-]+$'
   _UNBINDREQUEST.fields_by_name['project_id']._options = None
-  _UNBINDREQUEST.fields_by_name['project_id']._serialized_options = b'\372B\023r\0212\017^[a-zA-Z0-9_]+$'
+  _UNBINDREQUEST.fields_by_name['project_id']._serialized_options = b'\372B,r*2(^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z0-9_-]+$'
   _GITHUBEVENTSOURCE.methods_by_name['Bind']._options = None
   _GITHUBEVENTSOURCE.methods_by_name['Bind']._serialized_options = b'\202\323\344\223\002\033\"\026/api/v1/githubsrc/bind:\001*'
   _GITHUBEVENTSOURCE.methods_by_name['Unbind']._options = None
   _GITHUBEVENTSOURCE.methods_by_name['Unbind']._serialized_options = b'\202\323\344\223\002\035\"\030/api/v1/githubsrc/unbind:\001*'
   _BINDREQUEST._serialized_start=110
-  _BINDREQUEST._serialized_end=208
-  _BINDRESPONSE._serialized_start=210
-  _BINDRESPONSE._serialized_end=224
-  _UNBINDREQUEST._serialized_start=226
-  _UNBINDREQUEST._serialized_end=299
-  _UNBINDRESPONSE._serialized_start=301
-  _UNBINDRESPONSE._serialized_end=317
-  _GITHUBEVENTSOURCE._serialized_start=320
-  _GITHUBEVENTSOURCE._serialized_end=596
+  _BINDREQUEST._serialized_end=233
+  _BINDRESPONSE._serialized_start=235
+  _BINDRESPONSE._serialized_end=249
+  _UNBINDREQUEST._serialized_start=251
+  _UNBINDREQUEST._serialized_end=349
+  _UNBINDRESPONSE._serialized_start=351
+  _UNBINDRESPONSE._serialized_end=367
+  _GITHUBEVENTSOURCE._serialized_start=370
+  _GITHUBEVENTSOURCE._serialized_end=646
 # @@protoc_insertion_point(module_scope)

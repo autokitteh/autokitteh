@@ -15,7 +15,7 @@ _sym_db = _symbol_database.Default()
 from validate import validate_pb2 as validate_dot_validate__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x11plugin/desc.proto\x12\x11\x61utokitteh.plugin\x1a\x17validate/validate.proto\"N\n\x10PluginMemberDesc\x12-\n\x04name\x18\x01 \x01(\tB\x1f\xfa\x42\x1cr\x1a\x32\x18^[a-zA-Z_][a-zA-Z0-9_]*$\x12\x0b\n\x03\x64oc\x18\x02 \x01(\t\"^\n\nPluginDesc\x12\x0b\n\x03\x64oc\x18\x01 \x01(\t\x12\x43\n\x07members\x18\x02 \x03(\x0b\x32#.autokitteh.plugin.PluginMemberDescB\r\xfa\x42\n\x92\x01\x07\"\x05\x8a\x01\x02\x10\x01\x42<Z:github.com/autokitteh/autokitteh/gen/proto/stubs/go/pluginb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x11plugin/desc.proto\x12\x11\x61utokitteh.plugin\x1a\x17validate/validate.proto\"N\n\x10PluginMemberDesc\x12-\n\x04name\x18\x01 \x01(\tB\x1f\xfa\x42\x1cr\x1a\x32\x18^[a-zA-Z_][a-zA-Z0-9_]*$\x12\x0b\n\x03\x64oc\x18\x02 \x01(\t\"^\n\nPluginDesc\x12\x0b\n\x03\x64oc\x18\x01 \x01(\t\x12\x43\n\x07members\x18\x02 \x03(\x0b\x32#.autokitteh.plugin.PluginMemberDescB\r\xfa\x42\n\x92\x01\x07\"\x05\x8a\x01\x02\x10\x01\x42:Z8github.com/autokitteh/autokitteh/api/gen/stubs/go/pluginb\x06proto3')
 
 
 
@@ -38,7 +38,7 @@ _sym_db.RegisterMessage(PluginDesc)
 if _descriptor._USE_C_DESCRIPTORS == False:
 
   DESCRIPTOR._options = None
-  DESCRIPTOR._serialized_options = b'Z:github.com/autokitteh/autokitteh/gen/proto/stubs/go/plugin'
+  DESCRIPTOR._serialized_options = b'Z8github.com/autokitteh/autokitteh/api/gen/stubs/go/plugin'
   _PLUGINMEMBERDESC.fields_by_name['name']._options = None
   _PLUGINMEMBERDESC.fields_by_name['name']._serialized_options = b'\372B\034r\0322\030^[a-zA-Z_][a-zA-Z0-9_]*$'
   _PLUGINDESC.fields_by_name['members']._options = None

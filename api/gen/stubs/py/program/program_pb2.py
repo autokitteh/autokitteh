@@ -15,7 +15,7 @@ _sym_db = _symbol_database.Default()
 from validate import validate_pb2 as validate_dot_validate__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x15program/program.proto\x12\x12\x61utokitteh.program\x1a\x17validate/validate.proto\">\n\x04Path\x12\x0e\n\x06scheme\x18\x01 \x01(\t\x12\x15\n\x04path\x18\x02 \x01(\tB\x07\xfa\x42\x04r\x02\x10\x01\x12\x0f\n\x07version\x18\x03 \x01(\t\"P\n\x08Location\x12&\n\x04path\x18\x01 \x01(\x0b\x32\x18.autokitteh.program.Path\x12\x0c\n\x04line\x18\x02 \x01(\x05\x12\x0e\n\x06\x63olumn\x18\x03 \x01(\x05\"\xd1\x01\n\x06Module\x12%\n\x04lang\x18\x01 \x01(\tB\x17\xfa\x42\x14r\x12\x32\x10^[0-9a-zA-Z_-]+$\x12\x36\n\x08predecls\x18\x02 \x03(\tB$\xfa\x42!\x92\x01\x1e\"\x1cr\x1a\x32\x18^[a-zA-Z_][a-zA-Z0-9_]*$\x12\x18\n\x10\x63ompiler_version\x18\x03 \x01(\t\x12\x37\n\x0bsource_path\x18\x04 \x01(\x0b\x32\x18.autokitteh.program.PathB\x08\xfa\x42\x05\x8a\x01\x02\x10\x01\x12\x15\n\rcompiled_code\x18\x05 \x01(\x0c\x42=Z;github.com/autokitteh/autokitteh/gen/proto/stubs/go/programb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x15program/program.proto\x12\x12\x61utokitteh.program\x1a\x17validate/validate.proto\">\n\x04Path\x12\x0e\n\x06scheme\x18\x01 \x01(\t\x12\x15\n\x04path\x18\x02 \x01(\tB\x07\xfa\x42\x04r\x02\x10\x01\x12\x0f\n\x07version\x18\x03 \x01(\t\"P\n\x08Location\x12&\n\x04path\x18\x01 \x01(\x0b\x32\x18.autokitteh.program.Path\x12\x0c\n\x04line\x18\x02 \x01(\x05\x12\x0e\n\x06\x63olumn\x18\x03 \x01(\x05\"\xd1\x01\n\x06Module\x12%\n\x04lang\x18\x01 \x01(\tB\x17\xfa\x42\x14r\x12\x32\x10^[0-9a-zA-Z_-]+$\x12\x36\n\x08predecls\x18\x02 \x03(\tB$\xfa\x42!\x92\x01\x1e\"\x1cr\x1a\x32\x18^[a-zA-Z_][a-zA-Z0-9_]*$\x12\x18\n\x10\x63ompiler_version\x18\x03 \x01(\t\x12\x37\n\x0bsource_path\x18\x04 \x01(\x0b\x32\x18.autokitteh.program.PathB\x08\xfa\x42\x05\x8a\x01\x02\x10\x01\x12\x15\n\rcompiled_code\x18\x05 \x01(\x0c\x42;Z9github.com/autokitteh/autokitteh/api/gen/stubs/go/programb\x06proto3')
 
 
 
@@ -46,7 +46,7 @@ _sym_db.RegisterMessage(Module)
 if _descriptor._USE_C_DESCRIPTORS == False:
 
   DESCRIPTOR._options = None
-  DESCRIPTOR._serialized_options = b'Z;github.com/autokitteh/autokitteh/gen/proto/stubs/go/program'
+  DESCRIPTOR._serialized_options = b'Z9github.com/autokitteh/autokitteh/api/gen/stubs/go/program'
   _PATH.fields_by_name['path']._options = None
   _PATH.fields_by_name['path']._serialized_options = b'\372B\004r\002\020\001'
   _MODULE.fields_by_name['lang']._options = None

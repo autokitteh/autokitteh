@@ -10,9 +10,9 @@ import (
 	"gorm.io/gorm/clause"
 
 	"github.com/autokitteh/autokitteh/internal/pkg/accountsstore"
+	"github.com/autokitteh/autokitteh/internal/pkg/projectsstore"
 	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiaccount"
 	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiproject"
-	"github.com/autokitteh/autokitteh/internal/pkg/projectsstore"
 )
 
 type Store struct {
@@ -59,7 +59,11 @@ func (db *Store) Create(
 	}
 
 	if id == projectsstore.AutoProjectID {
-		id = apiproject.NewProjectID()
+		id = apiproject.NewProjectID(aname)
+	}
+
+	if id.AccountName() != aname {
+		return "", fmt.Errorf("project id account name %q != %q", id.AccountName(), aname)
 	}
 
 	p := project{

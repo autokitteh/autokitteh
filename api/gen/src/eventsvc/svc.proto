@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package autokitteh.eventsvc;
 
-option go_package = "github.com/autokitteh/autokitteh/gen/proto/stubs/go/eventsvc";
+option go_package = "github.com/autokitteh/autokitteh/api/gen/stubs/go/eventsvc";
 
 import "google/api/annotations.proto";
 import "validate/validate.proto";
@@ -46,7 +46,7 @@ message GetEventStateResponse {
 
 message GetEventStateForProjectRequest {
   string id         = 1 [(validate.rules).string.pattern = "^E[0-9a-f]+$"];
-  string project_id = 2 [(validate.rules).string.pattern = "^[a-zA-Z0-9_]+$"];
+  string project_id = 2 [(validate.rules).string.pattern = "^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z0-9_-]+$"];
 }
 
 message GetEventStateForProjectResponse {
@@ -62,7 +62,7 @@ message UpdateEventStateResponse {}
 
 message UpdateEventStateForProjectRequest {
   string                  id         = 1 [(validate.rules).string.pattern = "^E[0-9a-f]+$"];
-  string                  project_id = 2 [(validate.rules).string.pattern = "^[a-zA-Z0-9_]+$"];
+  string                  project_id = 2 [(validate.rules).string.pattern = "^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z0-9_-]+$"];
   event.ProjectEventState state      = 3 [(validate.rules).message.required = true];
 }
 

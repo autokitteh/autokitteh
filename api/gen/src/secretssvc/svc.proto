@@ -2,14 +2,14 @@ syntax = "proto3";
 
 package autokitteh.secretssvc;
 
-option go_package = "github.com/autokitteh/autokitteh/gen/proto/stubs/go/secretssvc";
+option go_package = "github.com/autokitteh/autokitteh/api/gen/stubs/go/secretssvc";
 
 import "google/api/annotations.proto";
 import "validate/validate.proto";
 
 
 message SetRequest {
-  string project_id = 1 [(validate.rules).string.pattern = "^[a-zA-Z0-9_]+$"];
+  string project_id = 1 [(validate.rules).string.pattern = "^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z0-9_-]+$"];
   string name       = 2 [(validate.rules).string.pattern = "^[a-zA-Z_][a-zA-Z0-9_]*$"];
   string value      = 3; // omit to delete.
 }
@@ -17,7 +17,7 @@ message SetRequest {
 message SetResponse {}
 
 message GetRequest {
-  string project_id = 1 [(validate.rules).string.pattern = "^[a-zA-Z0-9_]+$"];
+  string project_id = 1 [(validate.rules).string.pattern = "^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z0-9_-]+$"];
   string name       = 2 [(validate.rules).string.pattern = "^[a-zA-Z_][a-zA-Z0-9_]*$"];
 }
 
@@ -26,7 +26,7 @@ message GetResponse {
 }
 
 message ListRequest {
-  string project_id = 1 [(validate.rules).string.pattern = "^[a-zA-Z0-9_]+$"];
+  string project_id = 1 [(validate.rules).string.pattern = "^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z0-9_-]+$"];
 }
 
 message ListResponse {

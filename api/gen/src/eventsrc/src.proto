@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package autokitteh.eventsrc;
 
-option go_package = "github.com/autokitteh/autokitteh/gen/proto/stubs/go/eventsrc";
+option go_package = "github.com/autokitteh/autokitteh/api/gen/stubs/go/eventsrc";
 
 import "google/protobuf/timestamp.proto";
 import "validate/validate.proto";
@@ -35,7 +35,7 @@ message EventSourceProjectBindingSettings {
 // to prevent unwanted projects getting events.
 message EventSourceProjectBinding {
   string src_id            = 1 [(validate.rules).string.pattern = "^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z][0-9a-zA-Z_-]+$"];
-  string project_id        = 2 [(validate.rules).string.pattern = "^[a-zA-Z0-9_]+$"];
+  string project_id        = 2 [(validate.rules).string.pattern = "^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z0-9_-]+$"];
   string name              = 3 [(validate.rules).string = {ignore_empty:true, pattern: "^[a-zA-Z_][a-zA-Z0-9_]*$" }]; // might not be set if not approved.
   string association_token = 4; // "multicast group" set by source.
   string source_config     = 5; //                   set by source.

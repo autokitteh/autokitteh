@@ -43,7 +43,7 @@ func (m *SetRequest) Validate() error {
 	if !_SetRequest_ProjectId_Pattern.MatchString(m.GetProjectId()) {
 		return SetRequestValidationError{
 			field:  "ProjectId",
-			reason: "value does not match regex pattern \"^[a-zA-Z0-9_]+$\"",
+			reason: "value does not match regex pattern \"^[a-zA-Z][0-9a-zA-Z_-]+\\\\.[a-zA-Z0-9_-]+$\"",
 		}
 	}
 
@@ -121,7 +121,7 @@ var _ interface {
 	ErrorName() string
 } = SetRequestValidationError{}
 
-var _SetRequest_ProjectId_Pattern = regexp.MustCompile("^[a-zA-Z0-9_]+$")
+var _SetRequest_ProjectId_Pattern = regexp.MustCompile("^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z0-9_-]+$")
 
 var _SetRequest_Name_Pattern = regexp.MustCompile("^[a-zA-Z_][a-zA-Z0-9_]*$")
 
@@ -275,7 +275,7 @@ func (m *GetRequest) Validate() error {
 	if !_GetRequest_ProjectId_Pattern.MatchString(m.GetProjectId()) {
 		return GetRequestValidationError{
 			field:  "ProjectId",
-			reason: "value does not match regex pattern \"^[a-zA-Z0-9_]+$\"",
+			reason: "value does not match regex pattern \"^[a-zA-Z][0-9a-zA-Z_-]+\\\\.[a-zA-Z0-9_-]+$\"",
 		}
 	}
 
@@ -353,7 +353,7 @@ var _ interface {
 	ErrorName() string
 } = GetRequestValidationError{}
 
-var _GetRequest_ProjectId_Pattern = regexp.MustCompile("^[a-zA-Z0-9_]+$")
+var _GetRequest_ProjectId_Pattern = regexp.MustCompile("^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z0-9_-]+$")
 
 var _GetRequest_Name_Pattern = regexp.MustCompile("^[a-zA-Z_][a-zA-Z0-9_]*$")
 
@@ -460,7 +460,7 @@ func (m *ListRequest) Validate() error {
 	if !_ListRequest_ProjectId_Pattern.MatchString(m.GetProjectId()) {
 		return ListRequestValidationError{
 			field:  "ProjectId",
-			reason: "value does not match regex pattern \"^[a-zA-Z0-9_]+$\"",
+			reason: "value does not match regex pattern \"^[a-zA-Z][0-9a-zA-Z_-]+\\\\.[a-zA-Z0-9_-]+$\"",
 		}
 	}
 
@@ -521,7 +521,7 @@ var _ interface {
 	ErrorName() string
 } = ListRequestValidationError{}
 
-var _ListRequest_ProjectId_Pattern = regexp.MustCompile("^[a-zA-Z0-9_]+$")
+var _ListRequest_ProjectId_Pattern = regexp.MustCompile("^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z0-9_-]+$")
 
 // Validate checks the field values on ListResponse with the rules defined in
 // the proto definition for this message. If any rules are violated, an error

@@ -44,7 +44,7 @@ func (m *BindRequest) Validate() error {
 	if !_BindRequest_ProjectId_Pattern.MatchString(m.GetProjectId()) {
 		return BindRequestValidationError{
 			field:  "ProjectId",
-			reason: "value does not match regex pattern \"^[a-zA-Z0-9_]+$\"",
+			reason: "value does not match regex pattern \"^[a-zA-Z][0-9a-zA-Z_-]+\\\\.[a-zA-Z0-9_-]+$\"",
 		}
 	}
 
@@ -111,7 +111,7 @@ var _ interface {
 	ErrorName() string
 } = BindRequestValidationError{}
 
-var _BindRequest_ProjectId_Pattern = regexp.MustCompile("^[a-zA-Z0-9_]+$")
+var _BindRequest_ProjectId_Pattern = regexp.MustCompile("^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z0-9_-]+$")
 
 // Validate checks the field values on BindResponse with the rules defined in
 // the proto definition for this message. If any rules are violated, an error
@@ -189,7 +189,7 @@ func (m *UnbindRequest) Validate() error {
 	if !_UnbindRequest_ProjectId_Pattern.MatchString(m.GetProjectId()) {
 		return UnbindRequestValidationError{
 			field:  "ProjectId",
-			reason: "value does not match regex pattern \"^[a-zA-Z0-9_]+$\"",
+			reason: "value does not match regex pattern \"^[a-zA-Z][0-9a-zA-Z_-]+\\\\.[a-zA-Z0-9_-]+$\"",
 		}
 	}
 
@@ -252,7 +252,7 @@ var _ interface {
 	ErrorName() string
 } = UnbindRequestValidationError{}
 
-var _UnbindRequest_ProjectId_Pattern = regexp.MustCompile("^[a-zA-Z0-9_]+$")
+var _UnbindRequest_ProjectId_Pattern = regexp.MustCompile("^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z0-9_-]+$")
 
 // Validate checks the field values on UnbindResponse with the rules defined in
 // the proto definition for this message. If any rules are violated, an error

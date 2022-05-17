@@ -574,7 +574,7 @@ func (m *GetEventStateForProjectRequest) Validate() error {
 	if !_GetEventStateForProjectRequest_ProjectId_Pattern.MatchString(m.GetProjectId()) {
 		return GetEventStateForProjectRequestValidationError{
 			field:  "ProjectId",
-			reason: "value does not match regex pattern \"^[a-zA-Z0-9_]+$\"",
+			reason: "value does not match regex pattern \"^[a-zA-Z][0-9a-zA-Z_-]+\\\\.[a-zA-Z0-9_-]+$\"",
 		}
 	}
 
@@ -640,7 +640,7 @@ var _ interface {
 
 var _GetEventStateForProjectRequest_Id_Pattern = regexp.MustCompile("^E[0-9a-f]+$")
 
-var _GetEventStateForProjectRequest_ProjectId_Pattern = regexp.MustCompile("^[a-zA-Z0-9_]+$")
+var _GetEventStateForProjectRequest_ProjectId_Pattern = regexp.MustCompile("^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z0-9_-]+$")
 
 // Validate checks the field values on GetEventStateForProjectResponse with the
 // rules defined in the proto definition for this message. If any rules are
@@ -910,7 +910,7 @@ func (m *UpdateEventStateForProjectRequest) Validate() error {
 	if !_UpdateEventStateForProjectRequest_ProjectId_Pattern.MatchString(m.GetProjectId()) {
 		return UpdateEventStateForProjectRequestValidationError{
 			field:  "ProjectId",
-			reason: "value does not match regex pattern \"^[a-zA-Z0-9_]+$\"",
+			reason: "value does not match regex pattern \"^[a-zA-Z][0-9a-zA-Z_-]+\\\\.[a-zA-Z0-9_-]+$\"",
 		}
 	}
 
@@ -993,7 +993,7 @@ var _ interface {
 
 var _UpdateEventStateForProjectRequest_Id_Pattern = regexp.MustCompile("^E[0-9a-f]+$")
 
-var _UpdateEventStateForProjectRequest_ProjectId_Pattern = regexp.MustCompile("^[a-zA-Z0-9_]+$")
+var _UpdateEventStateForProjectRequest_ProjectId_Pattern = regexp.MustCompile("^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z0-9_-]+$")
 
 // Validate checks the field values on UpdateEventStateForProjectResponse with
 // the rules defined in the proto definition for this message. If any rules

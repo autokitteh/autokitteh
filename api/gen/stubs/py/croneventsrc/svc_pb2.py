@@ -16,7 +16,7 @@ from google.api import annotations_pb2 as google_dot_api_dot_annotations__pb2
 from validate import validate_pb2 as validate_dot_validate__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x16\x63roneventsrc/svc.proto\x12\x17\x61utokitteh.croneventsrc\x1a\x1cgoogle/api/annotations.proto\x1a\x17validate/validate.proto\"b\n\x0b\x42indRequest\x12*\n\nproject_id\x18\x01 \x01(\tB\x16\xfa\x42\x13r\x11\x32\x0f^[a-zA-Z0-9_]+$\x12\x0c\n\x04name\x18\x02 \x01(\t\x12\x19\n\x08\x63ronspec\x18\x03 \x01(\tB\x07\xfa\x42\x04r\x02\x10\x01\"\x0e\n\x0c\x42indResponse\";\n\rUnbindRequest\x12*\n\nproject_id\x18\x01 \x01(\tB\x16\xfa\x42\x13r\x11\x32\x0f^[a-zA-Z0-9_]+$\"\x10\n\x0eUnbindResponse\"\r\n\x0bTickRequest\"\x0e\n\x0cTickResponse2\xfb\x02\n\x0f\x43ronEventSource\x12t\n\x04Tick\x12$.autokitteh.croneventsrc.TickRequest\x1a%.autokitteh.croneventsrc.TickResponse\"\x1f\x82\xd3\xe4\x93\x02\x19\"\x14/api/v1/cronsrc/tick:\x01*\x12t\n\x04\x42ind\x12$.autokitteh.croneventsrc.BindRequest\x1a%.autokitteh.croneventsrc.BindResponse\"\x1f\x82\xd3\xe4\x93\x02\x19\"\x14/api/v1/cronsrc/bind:\x01*\x12|\n\x06Unbind\x12&.autokitteh.croneventsrc.UnbindRequest\x1a\'.autokitteh.croneventsrc.UnbindResponse\"!\x82\xd3\xe4\x93\x02\x1b\"\x16/api/v1/cronsrc/unbind:\x01*BBZ@github.com/autokitteh/autokitteh/gen/proto/stubs/go/croneventsrcb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x16\x63roneventsrc/svc.proto\x12\x17\x61utokitteh.croneventsrc\x1a\x1cgoogle/api/annotations.proto\x1a\x17validate/validate.proto\"{\n\x0b\x42indRequest\x12\x43\n\nproject_id\x18\x01 \x01(\tB/\xfa\x42,r*2(^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z0-9_-]+$\x12\x0c\n\x04name\x18\x02 \x01(\t\x12\x19\n\x08\x63ronspec\x18\x03 \x01(\tB\x07\xfa\x42\x04r\x02\x10\x01\"\x0e\n\x0c\x42indResponse\"T\n\rUnbindRequest\x12\x43\n\nproject_id\x18\x01 \x01(\tB/\xfa\x42,r*2(^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z0-9_-]+$\"\x10\n\x0eUnbindResponse\"\r\n\x0bTickRequest\"\x0e\n\x0cTickResponse2\xfb\x02\n\x0f\x43ronEventSource\x12t\n\x04Tick\x12$.autokitteh.croneventsrc.TickRequest\x1a%.autokitteh.croneventsrc.TickResponse\"\x1f\x82\xd3\xe4\x93\x02\x19\"\x14/api/v1/cronsrc/tick:\x01*\x12t\n\x04\x42ind\x12$.autokitteh.croneventsrc.BindRequest\x1a%.autokitteh.croneventsrc.BindResponse\"\x1f\x82\xd3\xe4\x93\x02\x19\"\x14/api/v1/cronsrc/bind:\x01*\x12|\n\x06Unbind\x12&.autokitteh.croneventsrc.UnbindRequest\x1a\'.autokitteh.croneventsrc.UnbindResponse\"!\x82\xd3\xe4\x93\x02\x1b\"\x16/api/v1/cronsrc/unbind:\x01*B@Z>github.com/autokitteh/autokitteh/api/gen/stubs/go/croneventsrcb\x06proto3')
 
 
 
@@ -72,13 +72,13 @@ _CRONEVENTSOURCE = DESCRIPTOR.services_by_name['CronEventSource']
 if _descriptor._USE_C_DESCRIPTORS == False:
 
   DESCRIPTOR._options = None
-  DESCRIPTOR._serialized_options = b'Z@github.com/autokitteh/autokitteh/gen/proto/stubs/go/croneventsrc'
+  DESCRIPTOR._serialized_options = b'Z>github.com/autokitteh/autokitteh/api/gen/stubs/go/croneventsrc'
   _BINDREQUEST.fields_by_name['project_id']._options = None
-  _BINDREQUEST.fields_by_name['project_id']._serialized_options = b'\372B\023r\0212\017^[a-zA-Z0-9_]+$'
+  _BINDREQUEST.fields_by_name['project_id']._serialized_options = b'\372B,r*2(^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z0-9_-]+$'
   _BINDREQUEST.fields_by_name['cronspec']._options = None
   _BINDREQUEST.fields_by_name['cronspec']._serialized_options = b'\372B\004r\002\020\001'
   _UNBINDREQUEST.fields_by_name['project_id']._options = None
-  _UNBINDREQUEST.fields_by_name['project_id']._serialized_options = b'\372B\023r\0212\017^[a-zA-Z0-9_]+$'
+  _UNBINDREQUEST.fields_by_name['project_id']._serialized_options = b'\372B,r*2(^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z0-9_-]+$'
   _CRONEVENTSOURCE.methods_by_name['Tick']._options = None
   _CRONEVENTSOURCE.methods_by_name['Tick']._serialized_options = b'\202\323\344\223\002\031\"\024/api/v1/cronsrc/tick:\001*'
   _CRONEVENTSOURCE.methods_by_name['Bind']._options = None
@@ -86,17 +86,17 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _CRONEVENTSOURCE.methods_by_name['Unbind']._options = None
   _CRONEVENTSOURCE.methods_by_name['Unbind']._serialized_options = b'\202\323\344\223\002\033\"\026/api/v1/cronsrc/unbind:\001*'
   _BINDREQUEST._serialized_start=106
-  _BINDREQUEST._serialized_end=204
-  _BINDRESPONSE._serialized_start=206
-  _BINDRESPONSE._serialized_end=220
-  _UNBINDREQUEST._serialized_start=222
-  _UNBINDREQUEST._serialized_end=281
-  _UNBINDRESPONSE._serialized_start=283
-  _UNBINDRESPONSE._serialized_end=299
-  _TICKREQUEST._serialized_start=301
-  _TICKREQUEST._serialized_end=314
-  _TICKRESPONSE._serialized_start=316
-  _TICKRESPONSE._serialized_end=330
-  _CRONEVENTSOURCE._serialized_start=333
-  _CRONEVENTSOURCE._serialized_end=712
+  _BINDREQUEST._serialized_end=229
+  _BINDRESPONSE._serialized_start=231
+  _BINDRESPONSE._serialized_end=245
+  _UNBINDREQUEST._serialized_start=247
+  _UNBINDREQUEST._serialized_end=331
+  _UNBINDRESPONSE._serialized_start=333
+  _UNBINDRESPONSE._serialized_end=349
+  _TICKREQUEST._serialized_start=351
+  _TICKREQUEST._serialized_end=364
+  _TICKRESPONSE._serialized_start=366
+  _TICKRESPONSE._serialized_end=380
+  _CRONEVENTSOURCE._serialized_start=383
+  _CRONEVENTSOURCE._serialized_end=762
 # @@protoc_insertion_point(module_scope)

@@ -473,7 +473,7 @@ func (m *ProcessingEventState) Validate() error {
 		if !_ProcessingEventState_ProjectIds_Pattern.MatchString(item) {
 			return ProcessingEventStateValidationError{
 				field:  fmt.Sprintf("ProjectIds[%v]", idx),
-				reason: "value does not match regex pattern \"^[a-zA-Z0-9_]+$\"",
+				reason: "value does not match regex pattern \"^[a-zA-Z][0-9a-zA-Z_-]+\\\\.[a-zA-Z0-9_-]+$\"",
 			}
 		}
 
@@ -485,7 +485,7 @@ func (m *ProcessingEventState) Validate() error {
 		if !_ProcessingEventState_IgnoredProjectIds_Pattern.MatchString(item) {
 			return ProcessingEventStateValidationError{
 				field:  fmt.Sprintf("IgnoredProjectIds[%v]", idx),
-				reason: "value does not match regex pattern \"^[a-zA-Z0-9_]+$\"",
+				reason: "value does not match regex pattern \"^[a-zA-Z][0-9a-zA-Z_-]+\\\\.[a-zA-Z0-9_-]+$\"",
 			}
 		}
 
@@ -550,9 +550,9 @@ var _ interface {
 	ErrorName() string
 } = ProcessingEventStateValidationError{}
 
-var _ProcessingEventState_ProjectIds_Pattern = regexp.MustCompile("^[a-zA-Z0-9_]+$")
+var _ProcessingEventState_ProjectIds_Pattern = regexp.MustCompile("^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z0-9_-]+$")
 
-var _ProcessingEventState_IgnoredProjectIds_Pattern = regexp.MustCompile("^[a-zA-Z0-9_]+$")
+var _ProcessingEventState_IgnoredProjectIds_Pattern = regexp.MustCompile("^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z0-9_-]+$")
 
 // Validate checks the field values on ProcessedEventState with the rules
 // defined in the proto definition for this message. If any rules are
@@ -568,7 +568,7 @@ func (m *ProcessedEventState) Validate() error {
 		if !_ProcessedEventState_ProjectIds_Pattern.MatchString(item) {
 			return ProcessedEventStateValidationError{
 				field:  fmt.Sprintf("ProjectIds[%v]", idx),
-				reason: "value does not match regex pattern \"^[a-zA-Z0-9_]+$\"",
+				reason: "value does not match regex pattern \"^[a-zA-Z][0-9a-zA-Z_-]+\\\\.[a-zA-Z0-9_-]+$\"",
 			}
 		}
 
@@ -580,7 +580,7 @@ func (m *ProcessedEventState) Validate() error {
 		if !_ProcessedEventState_AttnProjectIds_Pattern.MatchString(item) {
 			return ProcessedEventStateValidationError{
 				field:  fmt.Sprintf("AttnProjectIds[%v]", idx),
-				reason: "value does not match regex pattern \"^[a-zA-Z0-9_]+$\"",
+				reason: "value does not match regex pattern \"^[a-zA-Z][0-9a-zA-Z_-]+\\\\.[a-zA-Z0-9_-]+$\"",
 			}
 		}
 
@@ -645,6 +645,6 @@ var _ interface {
 	ErrorName() string
 } = ProcessedEventStateValidationError{}
 
-var _ProcessedEventState_ProjectIds_Pattern = regexp.MustCompile("^[a-zA-Z0-9_]+$")
+var _ProcessedEventState_ProjectIds_Pattern = regexp.MustCompile("^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z0-9_-]+$")
 
-var _ProcessedEventState_AttnProjectIds_Pattern = regexp.MustCompile("^[a-zA-Z0-9_]+$")
+var _ProcessedEventState_AttnProjectIds_Pattern = regexp.MustCompile("^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z0-9_-]+$")

@@ -16,7 +16,7 @@ from google.protobuf import timestamp_pb2 as google_dot_protobuf_dot_timestamp__
 from validate import validate_pb2 as validate_dot_validate__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x13plugin/plugin.proto\x12\x11\x61utokitteh.plugin\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x17validate/validate.proto\"\'\n\x17PluginExecutionSettings\x12\x0c\n\x04name\x18\x01 \x01(\t\"\x87\x01\n\x0ePluginSettings\x12\x0f\n\x07\x65nabled\x18\x01 \x01(\x08\x12\x1c\n\x07\x61\x64\x64ress\x18\x02 \x01(\tB\x0b\xfa\x42\x08r\x06\xa8\x01\x01\xd0\x01\x01\x12\x0c\n\x04port\x18\x03 \x01(\r\x12\x38\n\x04\x65xec\x18\x04 \x01(\x0b\x32*.autokitteh.plugin.PluginExecutionSettings\"\xec\x01\n\x06Plugin\x12\x43\n\x02id\x18\x01 \x01(\tB7\xfa\x42\x34r220^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z][0-9a-zA-Z_-]+$\x12=\n\x08settings\x18\x02 \x01(\x0b\x32!.autokitteh.plugin.PluginSettingsB\x08\xfa\x42\x05\x8a\x01\x02\x10\x01\x12.\n\ncreated_at\x18\x64 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12.\n\nupdated_at\x18\x65 \x01(\x0b\x32\x1a.google.protobuf.TimestampB<Z:github.com/autokitteh/autokitteh/gen/proto/stubs/go/pluginb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x13plugin/plugin.proto\x12\x11\x61utokitteh.plugin\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x17validate/validate.proto\"\'\n\x17PluginExecutionSettings\x12\x0c\n\x04name\x18\x01 \x01(\t\"\x87\x01\n\x0ePluginSettings\x12\x0f\n\x07\x65nabled\x18\x01 \x01(\x08\x12\x1c\n\x07\x61\x64\x64ress\x18\x02 \x01(\tB\x0b\xfa\x42\x08r\x06\xa8\x01\x01\xd0\x01\x01\x12\x0c\n\x04port\x18\x03 \x01(\r\x12\x38\n\x04\x65xec\x18\x04 \x01(\x0b\x32*.autokitteh.plugin.PluginExecutionSettings\"\xec\x01\n\x06Plugin\x12\x43\n\x02id\x18\x01 \x01(\tB7\xfa\x42\x34r220^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z][0-9a-zA-Z_-]+$\x12=\n\x08settings\x18\x02 \x01(\x0b\x32!.autokitteh.plugin.PluginSettingsB\x08\xfa\x42\x05\x8a\x01\x02\x10\x01\x12.\n\ncreated_at\x18\x64 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12.\n\nupdated_at\x18\x65 \x01(\x0b\x32\x1a.google.protobuf.TimestampB:Z8github.com/autokitteh/autokitteh/api/gen/stubs/go/pluginb\x06proto3')
 
 
 
@@ -47,7 +47,7 @@ _sym_db.RegisterMessage(Plugin)
 if _descriptor._USE_C_DESCRIPTORS == False:
 
   DESCRIPTOR._options = None
-  DESCRIPTOR._serialized_options = b'Z:github.com/autokitteh/autokitteh/gen/proto/stubs/go/plugin'
+  DESCRIPTOR._serialized_options = b'Z8github.com/autokitteh/autokitteh/api/gen/stubs/go/plugin'
   _PLUGINSETTINGS.fields_by_name['address']._options = None
   _PLUGINSETTINGS.fields_by_name['address']._serialized_options = b'\372B\010r\006\250\001\001\320\001\001'
   _PLUGIN.fields_by_name['id']._options = None

@@ -16,7 +16,7 @@ from google.api import annotations_pb2 as google_dot_api_dot_annotations__pb2
 from validate import validate_pb2 as validate_dot_validate__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x16httpeventsrc/src.proto\x12\x17\x61utokitteh.httpeventsrc\x1a\x1cgoogle/api/annotations.proto\x1a\x17validate/validate.proto\"4\n\x05Route\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0c\n\x04path\x18\x02 \x01(\t\x12\x0f\n\x07methods\x18\x03 \x03(\t\"\xa7\x01\n\x0b\x42indRequest\x12*\n\nproject_id\x18\x01 \x01(\tB\x16\xfa\x42\x13r\x11\x32\x0f^[a-zA-Z0-9_]+$\x12-\n\x04name\x18\x02 \x01(\tB\x1f\xfa\x42\x1cr\x1a\x32\x18^[a-zA-Z_][a-zA-Z0-9_]*$\x12=\n\x06routes\x18\x03 \x03(\x0b\x32\x1e.autokitteh.httpeventsrc.RouteB\r\xfa\x42\n\x92\x01\x07\"\x05\x8a\x01\x02\x10\x01\"\x0e\n\x0c\x42indResponse\"j\n\rUnbindRequest\x12*\n\nproject_id\x18\x01 \x01(\tB\x16\xfa\x42\x13r\x11\x32\x0f^[a-zA-Z0-9_]+$\x12-\n\x04name\x18\x02 \x01(\tB\x1f\xfa\x42\x1cr\x1a\x32\x18^[a-zA-Z_][a-zA-Z0-9_]*$\"\x10\n\x0eUnbindResponse2\x90\x02\n\x0fHTTPEventSource\x12y\n\x04\x42ind\x12$.autokitteh.httpeventsrc.BindRequest\x1a%.autokitteh.httpeventsrc.BindResponse\"$\x82\xd3\xe4\x93\x02\x1e\"\x19/api/v1/httpeventsrc/bind:\x01*\x12\x81\x01\n\x06Unbind\x12&.autokitteh.httpeventsrc.UnbindRequest\x1a\'.autokitteh.httpeventsrc.UnbindResponse\"&\x82\xd3\xe4\x93\x02 \"\x1b/api/v1/httpeventsrc/unbind:\x01*BBZ@github.com/autokitteh/autokitteh/gen/proto/stubs/go/httpeventsrcb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x16httpeventsrc/src.proto\x12\x17\x61utokitteh.httpeventsrc\x1a\x1cgoogle/api/annotations.proto\x1a\x17validate/validate.proto\"4\n\x05Route\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0c\n\x04path\x18\x02 \x01(\t\x12\x0f\n\x07methods\x18\x03 \x03(\t\"\xc0\x01\n\x0b\x42indRequest\x12\x43\n\nproject_id\x18\x01 \x01(\tB/\xfa\x42,r*2(^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z0-9_-]+$\x12-\n\x04name\x18\x02 \x01(\tB\x1f\xfa\x42\x1cr\x1a\x32\x18^[a-zA-Z_][a-zA-Z0-9_]*$\x12=\n\x06routes\x18\x03 \x03(\x0b\x32\x1e.autokitteh.httpeventsrc.RouteB\r\xfa\x42\n\x92\x01\x07\"\x05\x8a\x01\x02\x10\x01\"\x0e\n\x0c\x42indResponse\"\x83\x01\n\rUnbindRequest\x12\x43\n\nproject_id\x18\x01 \x01(\tB/\xfa\x42,r*2(^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z0-9_-]+$\x12-\n\x04name\x18\x02 \x01(\tB\x1f\xfa\x42\x1cr\x1a\x32\x18^[a-zA-Z_][a-zA-Z0-9_]*$\"\x10\n\x0eUnbindResponse2\x90\x02\n\x0fHTTPEventSource\x12y\n\x04\x42ind\x12$.autokitteh.httpeventsrc.BindRequest\x1a%.autokitteh.httpeventsrc.BindResponse\"$\x82\xd3\xe4\x93\x02\x1e\"\x19/api/v1/httpeventsrc/bind:\x01*\x12\x81\x01\n\x06Unbind\x12&.autokitteh.httpeventsrc.UnbindRequest\x1a\'.autokitteh.httpeventsrc.UnbindResponse\"&\x82\xd3\xe4\x93\x02 \"\x1b/api/v1/httpeventsrc/unbind:\x01*B@Z>github.com/autokitteh/autokitteh/api/gen/stubs/go/httpeventsrcb\x06proto3')
 
 
 
@@ -64,15 +64,15 @@ _HTTPEVENTSOURCE = DESCRIPTOR.services_by_name['HTTPEventSource']
 if _descriptor._USE_C_DESCRIPTORS == False:
 
   DESCRIPTOR._options = None
-  DESCRIPTOR._serialized_options = b'Z@github.com/autokitteh/autokitteh/gen/proto/stubs/go/httpeventsrc'
+  DESCRIPTOR._serialized_options = b'Z>github.com/autokitteh/autokitteh/api/gen/stubs/go/httpeventsrc'
   _BINDREQUEST.fields_by_name['project_id']._options = None
-  _BINDREQUEST.fields_by_name['project_id']._serialized_options = b'\372B\023r\0212\017^[a-zA-Z0-9_]+$'
+  _BINDREQUEST.fields_by_name['project_id']._serialized_options = b'\372B,r*2(^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z0-9_-]+$'
   _BINDREQUEST.fields_by_name['name']._options = None
   _BINDREQUEST.fields_by_name['name']._serialized_options = b'\372B\034r\0322\030^[a-zA-Z_][a-zA-Z0-9_]*$'
   _BINDREQUEST.fields_by_name['routes']._options = None
   _BINDREQUEST.fields_by_name['routes']._serialized_options = b'\372B\n\222\001\007\"\005\212\001\002\020\001'
   _UNBINDREQUEST.fields_by_name['project_id']._options = None
-  _UNBINDREQUEST.fields_by_name['project_id']._serialized_options = b'\372B\023r\0212\017^[a-zA-Z0-9_]+$'
+  _UNBINDREQUEST.fields_by_name['project_id']._serialized_options = b'\372B,r*2(^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z0-9_-]+$'
   _UNBINDREQUEST.fields_by_name['name']._options = None
   _UNBINDREQUEST.fields_by_name['name']._serialized_options = b'\372B\034r\0322\030^[a-zA-Z_][a-zA-Z0-9_]*$'
   _HTTPEVENTSOURCE.methods_by_name['Bind']._options = None
@@ -82,13 +82,13 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _ROUTE._serialized_start=106
   _ROUTE._serialized_end=158
   _BINDREQUEST._serialized_start=161
-  _BINDREQUEST._serialized_end=328
-  _BINDRESPONSE._serialized_start=330
-  _BINDRESPONSE._serialized_end=344
-  _UNBINDREQUEST._serialized_start=346
-  _UNBINDREQUEST._serialized_end=452
-  _UNBINDRESPONSE._serialized_start=454
-  _UNBINDRESPONSE._serialized_end=470
-  _HTTPEVENTSOURCE._serialized_start=473
-  _HTTPEVENTSOURCE._serialized_end=745
+  _BINDREQUEST._serialized_end=353
+  _BINDRESPONSE._serialized_start=355
+  _BINDRESPONSE._serialized_end=369
+  _UNBINDREQUEST._serialized_start=372
+  _UNBINDREQUEST._serialized_end=503
+  _UNBINDRESPONSE._serialized_start=505
+  _UNBINDRESPONSE._serialized_end=521
+  _HTTPEVENTSOURCE._serialized_start=524
+  _HTTPEVENTSOURCE._serialized_end=796
 # @@protoc_insertion_point(module_scope)

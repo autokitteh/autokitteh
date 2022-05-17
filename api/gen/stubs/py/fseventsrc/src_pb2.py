@@ -16,7 +16,7 @@ from google.api import annotations_pb2 as google_dot_api_dot_annotations__pb2
 from validate import validate_pb2 as validate_dot_validate__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x14\x66seventsrc/src.proto\x12\x15\x61utokitteh.fseventsrc\x1a\x1cgoogle/api/annotations.proto\x1a\x17validate/validate.proto\"S\n\x03Ops\x12\x0e\n\x06\x63reate\x18\x01 \x01(\x08\x12\r\n\x05write\x18\x02 \x01(\x08\x12\x0e\n\x06remove\x18\x03 \x01(\x08\x12\x0e\n\x06rename\x18\x04 \x01(\x08\x12\r\n\x05\x63hmod\x18\x05 \x01(\x08\"\xb2\x01\n\x0b\x42indRequest\x12*\n\nproject_id\x18\x01 \x01(\tB\x16\xfa\x42\x13r\x11\x32\x0f^[a-zA-Z0-9_]+$\x12-\n\x04name\x18\x02 \x01(\tB\x1f\xfa\x42\x1cr\x1a\x32\x18^[a-zA-Z_][a-zA-Z0-9_]*$\x12\x15\n\x04path\x18\x03 \x01(\tB\x07\xfa\x42\x04r\x02\x10\x01\x12\x31\n\x03ops\x18\x04 \x01(\x0b\x32\x1a.autokitteh.fseventsrc.OpsB\x08\xfa\x42\x05\x8a\x01\x02\x10\x01\"\x0e\n\x0c\x42indResponse\"j\n\rUnbindRequest\x12*\n\nproject_id\x18\x01 \x01(\tB\x16\xfa\x42\x13r\x11\x32\x0f^[a-zA-Z0-9_]+$\x12-\n\x04name\x18\x02 \x01(\tB\x1f\xfa\x42\x1cr\x1a\x32\x18^[a-zA-Z_][a-zA-Z0-9_]*$\"\x10\n\x0eUnbindResponse2\x81\x02\n\rFSEventSource\x12s\n\x04\x42ind\x12\".autokitteh.fseventsrc.BindRequest\x1a#.autokitteh.fseventsrc.BindResponse\"\"\x82\xd3\xe4\x93\x02\x1c\"\x17/api/v1/fseventsrc/bind:\x01*\x12{\n\x06Unbind\x12$.autokitteh.fseventsrc.UnbindRequest\x1a%.autokitteh.fseventsrc.UnbindResponse\"$\x82\xd3\xe4\x93\x02\x1e\"\x19/api/v1/fseventsrc/unbind:\x01*B@Z>github.com/autokitteh/autokitteh/gen/proto/stubs/go/fseventsrcb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x14\x66seventsrc/src.proto\x12\x15\x61utokitteh.fseventsrc\x1a\x1cgoogle/api/annotations.proto\x1a\x17validate/validate.proto\"S\n\x03Ops\x12\x0e\n\x06\x63reate\x18\x01 \x01(\x08\x12\r\n\x05write\x18\x02 \x01(\x08\x12\x0e\n\x06remove\x18\x03 \x01(\x08\x12\x0e\n\x06rename\x18\x04 \x01(\x08\x12\r\n\x05\x63hmod\x18\x05 \x01(\x08\"\xcb\x01\n\x0b\x42indRequest\x12\x43\n\nproject_id\x18\x01 \x01(\tB/\xfa\x42,r*2(^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z0-9_-]+$\x12-\n\x04name\x18\x02 \x01(\tB\x1f\xfa\x42\x1cr\x1a\x32\x18^[a-zA-Z_][a-zA-Z0-9_]*$\x12\x15\n\x04path\x18\x03 \x01(\tB\x07\xfa\x42\x04r\x02\x10\x01\x12\x31\n\x03ops\x18\x04 \x01(\x0b\x32\x1a.autokitteh.fseventsrc.OpsB\x08\xfa\x42\x05\x8a\x01\x02\x10\x01\"\x0e\n\x0c\x42indResponse\"\x83\x01\n\rUnbindRequest\x12\x43\n\nproject_id\x18\x01 \x01(\tB/\xfa\x42,r*2(^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z0-9_-]+$\x12-\n\x04name\x18\x02 \x01(\tB\x1f\xfa\x42\x1cr\x1a\x32\x18^[a-zA-Z_][a-zA-Z0-9_]*$\"\x10\n\x0eUnbindResponse2\x81\x02\n\rFSEventSource\x12s\n\x04\x42ind\x12\".autokitteh.fseventsrc.BindRequest\x1a#.autokitteh.fseventsrc.BindResponse\"\"\x82\xd3\xe4\x93\x02\x1c\"\x17/api/v1/fseventsrc/bind:\x01*\x12{\n\x06Unbind\x12$.autokitteh.fseventsrc.UnbindRequest\x1a%.autokitteh.fseventsrc.UnbindResponse\"$\x82\xd3\xe4\x93\x02\x1e\"\x19/api/v1/fseventsrc/unbind:\x01*B>Z<github.com/autokitteh/autokitteh/api/gen/stubs/go/fseventsrcb\x06proto3')
 
 
 
@@ -64,9 +64,9 @@ _FSEVENTSOURCE = DESCRIPTOR.services_by_name['FSEventSource']
 if _descriptor._USE_C_DESCRIPTORS == False:
 
   DESCRIPTOR._options = None
-  DESCRIPTOR._serialized_options = b'Z>github.com/autokitteh/autokitteh/gen/proto/stubs/go/fseventsrc'
+  DESCRIPTOR._serialized_options = b'Z<github.com/autokitteh/autokitteh/api/gen/stubs/go/fseventsrc'
   _BINDREQUEST.fields_by_name['project_id']._options = None
-  _BINDREQUEST.fields_by_name['project_id']._serialized_options = b'\372B\023r\0212\017^[a-zA-Z0-9_]+$'
+  _BINDREQUEST.fields_by_name['project_id']._serialized_options = b'\372B,r*2(^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z0-9_-]+$'
   _BINDREQUEST.fields_by_name['name']._options = None
   _BINDREQUEST.fields_by_name['name']._serialized_options = b'\372B\034r\0322\030^[a-zA-Z_][a-zA-Z0-9_]*$'
   _BINDREQUEST.fields_by_name['path']._options = None
@@ -74,7 +74,7 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _BINDREQUEST.fields_by_name['ops']._options = None
   _BINDREQUEST.fields_by_name['ops']._serialized_options = b'\372B\005\212\001\002\020\001'
   _UNBINDREQUEST.fields_by_name['project_id']._options = None
-  _UNBINDREQUEST.fields_by_name['project_id']._serialized_options = b'\372B\023r\0212\017^[a-zA-Z0-9_]+$'
+  _UNBINDREQUEST.fields_by_name['project_id']._serialized_options = b'\372B,r*2(^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z0-9_-]+$'
   _UNBINDREQUEST.fields_by_name['name']._options = None
   _UNBINDREQUEST.fields_by_name['name']._serialized_options = b'\372B\034r\0322\030^[a-zA-Z_][a-zA-Z0-9_]*$'
   _FSEVENTSOURCE.methods_by_name['Bind']._options = None
@@ -84,13 +84,13 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _OPS._serialized_start=102
   _OPS._serialized_end=185
   _BINDREQUEST._serialized_start=188
-  _BINDREQUEST._serialized_end=366
-  _BINDRESPONSE._serialized_start=368
-  _BINDRESPONSE._serialized_end=382
-  _UNBINDREQUEST._serialized_start=384
-  _UNBINDREQUEST._serialized_end=490
-  _UNBINDRESPONSE._serialized_start=492
-  _UNBINDRESPONSE._serialized_end=508
-  _FSEVENTSOURCE._serialized_start=511
-  _FSEVENTSOURCE._serialized_end=768
+  _BINDREQUEST._serialized_end=391
+  _BINDRESPONSE._serialized_start=393
+  _BINDRESPONSE._serialized_end=407
+  _UNBINDREQUEST._serialized_start=410
+  _UNBINDREQUEST._serialized_end=541
+  _UNBINDRESPONSE._serialized_start=543
+  _UNBINDRESPONSE._serialized_end=559
+  _FSEVENTSOURCE._serialized_start=562
+  _FSEVENTSOURCE._serialized_end=819
 # @@protoc_insertion_point(module_scope)

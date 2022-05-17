@@ -16,7 +16,7 @@ from validate import validate_pb2 as validate_dot_validate__pb2
 from eventsrc import src_pb2 as eventsrc_dot_src__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x15\x65ventsrcsvc/svc.proto\x12\x16\x61utokitteh.eventsrcsvc\x1a\x17validate/validate.proto\x1a\x12\x65ventsrc/src.proto\"\x98\x01\n\x15\x41\x64\x64\x45ventSourceRequest\x12\x43\n\x02id\x18\x01 \x01(\tB7\xfa\x42\x34r220^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z][0-9a-zA-Z_-]+$\x12:\n\x08settings\x18\x02 \x01(\x0b\x32(.autokitteh.eventsrc.EventSourceSettings\"\x18\n\x16\x41\x64\x64\x45ventSourceResponse\"\xa5\x01\n\x18UpdateEventSourceRequest\x12\x43\n\x02id\x18\x01 \x01(\tB7\xfa\x42\x34r220^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z][0-9a-zA-Z_-]+$\x12\x44\n\x08settings\x18\x02 \x01(\x0b\x32(.autokitteh.eventsrc.EventSourceSettingsB\x08\xfa\x42\x05\x8a\x01\x02\x10\x01\"\x1b\n\x19UpdateEventSourceResponse\"\\\n\x15GetEventSourceRequest\x12\x43\n\x02id\x18\x01 \x01(\tB7\xfa\x42\x34r220^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z][0-9a-zA-Z_-]+$\"Q\n\x16GetEventSourceResponse\x12\x37\n\x03src\x18\x01 \x01(\x0b\x32 .autokitteh.eventsrc.EventSourceB\x08\xfa\x42\x05\x8a\x01\x02\x10\x01\"S\n\x17ListEventSourcesRequest\x12\x38\n\x0c\x61\x63\x63ount_name\x18\x01 \x01(\tB\"\xfa\x42\x1fr\x1d\x32\x18^[a-zA-Z][0-9a-zA-Z_-]+$\xd0\x01\x01\"e\n\x18ListEventSourcesResponse\x12I\n\x03ids\x18\x01 \x03(\tB<\xfa\x42\x39\x92\x01\x36\"4r220^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z][0-9a-zA-Z_-]+$\"\x86\x02\n$GetEventSourceProjectBindingsRequest\x12\x46\n\x02id\x18\x01 \x01(\tB:\xfa\x42\x37r520^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z][0-9a-zA-Z_-]+$\xd0\x01\x01\x12-\n\nproject_id\x18\x03 \x01(\tB\x19\xfa\x42\x16r\x14\x32\x0f^[a-zA-Z0-9_]+$\xd0\x01\x01\x12\x30\n\x04name\x18\x04 \x01(\tB\"\xfa\x42\x1fr\x1d\x32\x18^[a-zA-Z_][a-zA-Z0-9_]*$\xd0\x01\x01\x12\x19\n\x11\x61ssociation_token\x18\x05 \x01(\t\x12\x1a\n\x12include_unapproved\x18\x06 \x01(\x08\"x\n%GetEventSourceProjectBindingsResponse\x12O\n\x08\x62indings\x18\x01 \x03(\x0b\x32..autokitteh.eventsrc.EventSourceProjectBindingB\r\xfa\x42\n\x92\x01\x07\"\x05\x8a\x01\x02\x10\x01\"\xda\x02\n#AddEventSourceProjectBindingRequest\x12G\n\x06src_id\x18\x01 \x01(\tB7\xfa\x42\x34r220^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z][0-9a-zA-Z_-]+$\x12*\n\nproject_id\x18\x03 \x01(\tB\x16\xfa\x42\x13r\x11\x32\x0f^[a-zA-Z0-9_]+$\x12\x30\n\x04name\x18\x04 \x01(\tB\"\xfa\x42\x1fr\x1d\x32\x18^[a-zA-Z_][a-zA-Z0-9_]*$\xd0\x01\x01\x12\x19\n\x11\x61ssociation_token\x18\x05 \x01(\t\x12H\n\x08settings\x18\x06 \x01(\x0b\x32\x36.autokitteh.eventsrc.EventSourceProjectBindingSettings\x12\x15\n\rsource_config\x18\x07 \x01(\t\x12\x10\n\x08\x61pproved\x18\x08 \x01(\x08\"&\n$AddEventSourceProjectBindingResponse\"\xa8\x02\n&UpdateEventSourceProjectBindingRequest\x12G\n\x06src_id\x18\x01 \x01(\tB7\xfa\x42\x34r220^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z][0-9a-zA-Z_-]+$\x12*\n\nproject_id\x18\x02 \x01(\tB\x16\xfa\x42\x13r\x11\x32\x0f^[a-zA-Z0-9_]+$\x12-\n\x04name\x18\x03 \x01(\tB\x1f\xfa\x42\x1cr\x1a\x32\x18^[a-zA-Z_][a-zA-Z0-9_]*$\x12\x10\n\x08\x61pproved\x18\x04 \x01(\x08\x12H\n\x08settings\x18\x05 \x01(\x0b\x32\x36.autokitteh.eventsrc.EventSourceProjectBindingSettings\")\n\'UpdateEventSourceProjectBindingResponse2\xc1\x07\n\x0c\x45ventSources\x12o\n\x0e\x41\x64\x64\x45ventSource\x12-.autokitteh.eventsrcsvc.AddEventSourceRequest\x1a..autokitteh.eventsrcsvc.AddEventSourceResponse\x12x\n\x11UpdateEventSource\x12\x30.autokitteh.eventsrcsvc.UpdateEventSourceRequest\x1a\x31.autokitteh.eventsrcsvc.UpdateEventSourceResponse\x12o\n\x0eGetEventSource\x12-.autokitteh.eventsrcsvc.GetEventSourceRequest\x1a..autokitteh.eventsrcsvc.GetEventSourceResponse\x12\x99\x01\n\x1c\x41\x64\x64\x45ventSourceProjectBinding\x12;.autokitteh.eventsrcsvc.AddEventSourceProjectBindingRequest\x1a<.autokitteh.eventsrcsvc.AddEventSourceProjectBindingResponse\x12\xa2\x01\n\x1fUpdateEventSourceProjectBinding\x12>.autokitteh.eventsrcsvc.UpdateEventSourceProjectBindingRequest\x1a?.autokitteh.eventsrcsvc.UpdateEventSourceProjectBindingResponse\x12\x9c\x01\n\x1dGetEventSourceProjectBindings\x12<.autokitteh.eventsrcsvc.GetEventSourceProjectBindingsRequest\x1a=.autokitteh.eventsrcsvc.GetEventSourceProjectBindingsResponse\x12u\n\x10ListEventSources\x12/.autokitteh.eventsrcsvc.ListEventSourcesRequest\x1a\x30.autokitteh.eventsrcsvc.ListEventSourcesResponseBAZ?github.com/autokitteh/autokitteh/gen/proto/stubs/go/eventsrcsvcb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x15\x65ventsrcsvc/svc.proto\x12\x16\x61utokitteh.eventsrcsvc\x1a\x17validate/validate.proto\x1a\x12\x65ventsrc/src.proto\"\x98\x01\n\x15\x41\x64\x64\x45ventSourceRequest\x12\x43\n\x02id\x18\x01 \x01(\tB7\xfa\x42\x34r220^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z][0-9a-zA-Z_-]+$\x12:\n\x08settings\x18\x02 \x01(\x0b\x32(.autokitteh.eventsrc.EventSourceSettings\"\x18\n\x16\x41\x64\x64\x45ventSourceResponse\"\xa5\x01\n\x18UpdateEventSourceRequest\x12\x43\n\x02id\x18\x01 \x01(\tB7\xfa\x42\x34r220^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z][0-9a-zA-Z_-]+$\x12\x44\n\x08settings\x18\x02 \x01(\x0b\x32(.autokitteh.eventsrc.EventSourceSettingsB\x08\xfa\x42\x05\x8a\x01\x02\x10\x01\"\x1b\n\x19UpdateEventSourceResponse\"\\\n\x15GetEventSourceRequest\x12\x43\n\x02id\x18\x01 \x01(\tB7\xfa\x42\x34r220^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z][0-9a-zA-Z_-]+$\"Q\n\x16GetEventSourceResponse\x12\x37\n\x03src\x18\x01 \x01(\x0b\x32 .autokitteh.eventsrc.EventSourceB\x08\xfa\x42\x05\x8a\x01\x02\x10\x01\"S\n\x17ListEventSourcesRequest\x12\x38\n\x0c\x61\x63\x63ount_name\x18\x01 \x01(\tB\"\xfa\x42\x1fr\x1d\x32\x18^[a-zA-Z][0-9a-zA-Z_-]+$\xd0\x01\x01\"e\n\x18ListEventSourcesResponse\x12I\n\x03ids\x18\x01 \x03(\tB<\xfa\x42\x39\x92\x01\x36\"4r220^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z][0-9a-zA-Z_-]+$\"\x9f\x02\n$GetEventSourceProjectBindingsRequest\x12\x46\n\x02id\x18\x01 \x01(\tB:\xfa\x42\x37r520^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z][0-9a-zA-Z_-]+$\xd0\x01\x01\x12\x46\n\nproject_id\x18\x03 \x01(\tB2\xfa\x42/r-2(^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z0-9_-]+$\xd0\x01\x01\x12\x30\n\x04name\x18\x04 \x01(\tB\"\xfa\x42\x1fr\x1d\x32\x18^[a-zA-Z_][a-zA-Z0-9_]*$\xd0\x01\x01\x12\x19\n\x11\x61ssociation_token\x18\x05 \x01(\t\x12\x1a\n\x12include_unapproved\x18\x06 \x01(\x08\"x\n%GetEventSourceProjectBindingsResponse\x12O\n\x08\x62indings\x18\x01 \x03(\x0b\x32..autokitteh.eventsrc.EventSourceProjectBindingB\r\xfa\x42\n\x92\x01\x07\"\x05\x8a\x01\x02\x10\x01\"\xf3\x02\n#AddEventSourceProjectBindingRequest\x12G\n\x06src_id\x18\x01 \x01(\tB7\xfa\x42\x34r220^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z][0-9a-zA-Z_-]+$\x12\x43\n\nproject_id\x18\x03 \x01(\tB/\xfa\x42,r*2(^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z0-9_-]+$\x12\x30\n\x04name\x18\x04 \x01(\tB\"\xfa\x42\x1fr\x1d\x32\x18^[a-zA-Z_][a-zA-Z0-9_]*$\xd0\x01\x01\x12\x19\n\x11\x61ssociation_token\x18\x05 \x01(\t\x12H\n\x08settings\x18\x06 \x01(\x0b\x32\x36.autokitteh.eventsrc.EventSourceProjectBindingSettings\x12\x15\n\rsource_config\x18\x07 \x01(\t\x12\x10\n\x08\x61pproved\x18\x08 \x01(\x08\"&\n$AddEventSourceProjectBindingResponse\"\xc1\x02\n&UpdateEventSourceProjectBindingRequest\x12G\n\x06src_id\x18\x01 \x01(\tB7\xfa\x42\x34r220^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z][0-9a-zA-Z_-]+$\x12\x43\n\nproject_id\x18\x02 \x01(\tB/\xfa\x42,r*2(^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z0-9_-]+$\x12-\n\x04name\x18\x03 \x01(\tB\x1f\xfa\x42\x1cr\x1a\x32\x18^[a-zA-Z_][a-zA-Z0-9_]*$\x12\x10\n\x08\x61pproved\x18\x04 \x01(\x08\x12H\n\x08settings\x18\x05 \x01(\x0b\x32\x36.autokitteh.eventsrc.EventSourceProjectBindingSettings\")\n\'UpdateEventSourceProjectBindingResponse2\xc1\x07\n\x0c\x45ventSources\x12o\n\x0e\x41\x64\x64\x45ventSource\x12-.autokitteh.eventsrcsvc.AddEventSourceRequest\x1a..autokitteh.eventsrcsvc.AddEventSourceResponse\x12x\n\x11UpdateEventSource\x12\x30.autokitteh.eventsrcsvc.UpdateEventSourceRequest\x1a\x31.autokitteh.eventsrcsvc.UpdateEventSourceResponse\x12o\n\x0eGetEventSource\x12-.autokitteh.eventsrcsvc.GetEventSourceRequest\x1a..autokitteh.eventsrcsvc.GetEventSourceResponse\x12\x99\x01\n\x1c\x41\x64\x64\x45ventSourceProjectBinding\x12;.autokitteh.eventsrcsvc.AddEventSourceProjectBindingRequest\x1a<.autokitteh.eventsrcsvc.AddEventSourceProjectBindingResponse\x12\xa2\x01\n\x1fUpdateEventSourceProjectBinding\x12>.autokitteh.eventsrcsvc.UpdateEventSourceProjectBindingRequest\x1a?.autokitteh.eventsrcsvc.UpdateEventSourceProjectBindingResponse\x12\x9c\x01\n\x1dGetEventSourceProjectBindings\x12<.autokitteh.eventsrcsvc.GetEventSourceProjectBindingsRequest\x1a=.autokitteh.eventsrcsvc.GetEventSourceProjectBindingsResponse\x12u\n\x10ListEventSources\x12/.autokitteh.eventsrcsvc.ListEventSourcesRequest\x1a\x30.autokitteh.eventsrcsvc.ListEventSourcesResponseB?Z=github.com/autokitteh/autokitteh/api/gen/stubs/go/eventsrcsvcb\x06proto3')
 
 
 
@@ -136,7 +136,7 @@ _EVENTSOURCES = DESCRIPTOR.services_by_name['EventSources']
 if _descriptor._USE_C_DESCRIPTORS == False:
 
   DESCRIPTOR._options = None
-  DESCRIPTOR._serialized_options = b'Z?github.com/autokitteh/autokitteh/gen/proto/stubs/go/eventsrcsvc'
+  DESCRIPTOR._serialized_options = b'Z=github.com/autokitteh/autokitteh/api/gen/stubs/go/eventsrcsvc'
   _ADDEVENTSOURCEREQUEST.fields_by_name['id']._options = None
   _ADDEVENTSOURCEREQUEST.fields_by_name['id']._serialized_options = b'\372B4r220^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z][0-9a-zA-Z_-]+$'
   _UPDATEEVENTSOURCEREQUEST.fields_by_name['id']._options = None
@@ -154,7 +154,7 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _GETEVENTSOURCEPROJECTBINDINGSREQUEST.fields_by_name['id']._options = None
   _GETEVENTSOURCEPROJECTBINDINGSREQUEST.fields_by_name['id']._serialized_options = b'\372B7r520^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z][0-9a-zA-Z_-]+$\320\001\001'
   _GETEVENTSOURCEPROJECTBINDINGSREQUEST.fields_by_name['project_id']._options = None
-  _GETEVENTSOURCEPROJECTBINDINGSREQUEST.fields_by_name['project_id']._serialized_options = b'\372B\026r\0242\017^[a-zA-Z0-9_]+$\320\001\001'
+  _GETEVENTSOURCEPROJECTBINDINGSREQUEST.fields_by_name['project_id']._serialized_options = b'\372B/r-2(^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z0-9_-]+$\320\001\001'
   _GETEVENTSOURCEPROJECTBINDINGSREQUEST.fields_by_name['name']._options = None
   _GETEVENTSOURCEPROJECTBINDINGSREQUEST.fields_by_name['name']._serialized_options = b'\372B\037r\0352\030^[a-zA-Z_][a-zA-Z0-9_]*$\320\001\001'
   _GETEVENTSOURCEPROJECTBINDINGSRESPONSE.fields_by_name['bindings']._options = None
@@ -162,13 +162,13 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _ADDEVENTSOURCEPROJECTBINDINGREQUEST.fields_by_name['src_id']._options = None
   _ADDEVENTSOURCEPROJECTBINDINGREQUEST.fields_by_name['src_id']._serialized_options = b'\372B4r220^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z][0-9a-zA-Z_-]+$'
   _ADDEVENTSOURCEPROJECTBINDINGREQUEST.fields_by_name['project_id']._options = None
-  _ADDEVENTSOURCEPROJECTBINDINGREQUEST.fields_by_name['project_id']._serialized_options = b'\372B\023r\0212\017^[a-zA-Z0-9_]+$'
+  _ADDEVENTSOURCEPROJECTBINDINGREQUEST.fields_by_name['project_id']._serialized_options = b'\372B,r*2(^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z0-9_-]+$'
   _ADDEVENTSOURCEPROJECTBINDINGREQUEST.fields_by_name['name']._options = None
   _ADDEVENTSOURCEPROJECTBINDINGREQUEST.fields_by_name['name']._serialized_options = b'\372B\037r\0352\030^[a-zA-Z_][a-zA-Z0-9_]*$\320\001\001'
   _UPDATEEVENTSOURCEPROJECTBINDINGREQUEST.fields_by_name['src_id']._options = None
   _UPDATEEVENTSOURCEPROJECTBINDINGREQUEST.fields_by_name['src_id']._serialized_options = b'\372B4r220^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z][0-9a-zA-Z_-]+$'
   _UPDATEEVENTSOURCEPROJECTBINDINGREQUEST.fields_by_name['project_id']._options = None
-  _UPDATEEVENTSOURCEPROJECTBINDINGREQUEST.fields_by_name['project_id']._serialized_options = b'\372B\023r\0212\017^[a-zA-Z0-9_]+$'
+  _UPDATEEVENTSOURCEPROJECTBINDINGREQUEST.fields_by_name['project_id']._serialized_options = b'\372B,r*2(^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z0-9_-]+$'
   _UPDATEEVENTSOURCEPROJECTBINDINGREQUEST.fields_by_name['name']._options = None
   _UPDATEEVENTSOURCEPROJECTBINDINGREQUEST.fields_by_name['name']._serialized_options = b'\372B\034r\0322\030^[a-zA-Z_][a-zA-Z0-9_]*$'
   _ADDEVENTSOURCEREQUEST._serialized_start=95
@@ -188,17 +188,17 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _LISTEVENTSOURCESRESPONSE._serialized_start=734
   _LISTEVENTSOURCESRESPONSE._serialized_end=835
   _GETEVENTSOURCEPROJECTBINDINGSREQUEST._serialized_start=838
-  _GETEVENTSOURCEPROJECTBINDINGSREQUEST._serialized_end=1100
-  _GETEVENTSOURCEPROJECTBINDINGSRESPONSE._serialized_start=1102
-  _GETEVENTSOURCEPROJECTBINDINGSRESPONSE._serialized_end=1222
-  _ADDEVENTSOURCEPROJECTBINDINGREQUEST._serialized_start=1225
-  _ADDEVENTSOURCEPROJECTBINDINGREQUEST._serialized_end=1571
-  _ADDEVENTSOURCEPROJECTBINDINGRESPONSE._serialized_start=1573
-  _ADDEVENTSOURCEPROJECTBINDINGRESPONSE._serialized_end=1611
-  _UPDATEEVENTSOURCEPROJECTBINDINGREQUEST._serialized_start=1614
-  _UPDATEEVENTSOURCEPROJECTBINDINGREQUEST._serialized_end=1910
-  _UPDATEEVENTSOURCEPROJECTBINDINGRESPONSE._serialized_start=1912
-  _UPDATEEVENTSOURCEPROJECTBINDINGRESPONSE._serialized_end=1953
-  _EVENTSOURCES._serialized_start=1956
-  _EVENTSOURCES._serialized_end=2917
+  _GETEVENTSOURCEPROJECTBINDINGSREQUEST._serialized_end=1125
+  _GETEVENTSOURCEPROJECTBINDINGSRESPONSE._serialized_start=1127
+  _GETEVENTSOURCEPROJECTBINDINGSRESPONSE._serialized_end=1247
+  _ADDEVENTSOURCEPROJECTBINDINGREQUEST._serialized_start=1250
+  _ADDEVENTSOURCEPROJECTBINDINGREQUEST._serialized_end=1621
+  _ADDEVENTSOURCEPROJECTBINDINGRESPONSE._serialized_start=1623
+  _ADDEVENTSOURCEPROJECTBINDINGRESPONSE._serialized_end=1661
+  _UPDATEEVENTSOURCEPROJECTBINDINGREQUEST._serialized_start=1664
+  _UPDATEEVENTSOURCEPROJECTBINDINGREQUEST._serialized_end=1985
+  _UPDATEEVENTSOURCEPROJECTBINDINGRESPONSE._serialized_start=1987
+  _UPDATEEVENTSOURCEPROJECTBINDINGRESPONSE._serialized_end=2028
+  _EVENTSOURCES._serialized_start=2031
+  _EVENTSOURCES._serialized_end=2992
 # @@protoc_insertion_point(module_scope)

@@ -15,7 +15,7 @@ _sym_db = _symbol_database.Default()
 from program import program_pb2 as program_dot_program__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x13program/error.proto\x12\x12\x61utokitteh.program\x1a\x15program/program.proto\"D\n\tCallFrame\x12\x0c\n\x04name\x18\x01 \x01(\t\x12)\n\x03loc\x18\x02 \x01(\x0b\x32\x1c.autokitteh.program.Location\"}\n\x05\x45rror\x12\x0b\n\x03msg\x18\x01 \x01(\t\x12\x0c\n\x04type\x18\x02 \x01(\t\x12\x30\n\tcallstack\x18\x03 \x03(\x0b\x32\x1d.autokitteh.program.CallFrame\x12\'\n\x04next\x18\x04 \x01(\x0b\x32\x19.autokitteh.program.ErrorB=Z;github.com/autokitteh/autokitteh/gen/proto/stubs/go/programb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x13program/error.proto\x12\x12\x61utokitteh.program\x1a\x15program/program.proto\"D\n\tCallFrame\x12\x0c\n\x04name\x18\x01 \x01(\t\x12)\n\x03loc\x18\x02 \x01(\x0b\x32\x1c.autokitteh.program.Location\"}\n\x05\x45rror\x12\x0b\n\x03msg\x18\x01 \x01(\t\x12\x0c\n\x04type\x18\x02 \x01(\t\x12\x30\n\tcallstack\x18\x03 \x03(\x0b\x32\x1d.autokitteh.program.CallFrame\x12\'\n\x04next\x18\x04 \x01(\x0b\x32\x19.autokitteh.program.ErrorB;Z9github.com/autokitteh/autokitteh/api/gen/stubs/go/programb\x06proto3')
 
 
 
@@ -38,7 +38,7 @@ _sym_db.RegisterMessage(Error)
 if _descriptor._USE_C_DESCRIPTORS == False:
 
   DESCRIPTOR._options = None
-  DESCRIPTOR._serialized_options = b'Z;github.com/autokitteh/autokitteh/gen/proto/stubs/go/program'
+  DESCRIPTOR._serialized_options = b'Z9github.com/autokitteh/autokitteh/api/gen/stubs/go/program'
   _CALLFRAME._serialized_start=66
   _CALLFRAME._serialized_end=134
   _ERROR._serialized_start=136

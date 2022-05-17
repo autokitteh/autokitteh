@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package autokitteh.fseventsrc;
 
-option go_package = "github.com/autokitteh/autokitteh/gen/proto/stubs/go/fseventsrc";
+option go_package = "github.com/autokitteh/autokitteh/api/gen/stubs/go/fseventsrc";
 
 import "google/api/annotations.proto";
 import "validate/validate.proto";

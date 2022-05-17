@@ -20,7 +20,7 @@ from event import project_state_pb2 as event_dot_project__state__pb2
 from values import values_pb2 as values_dot_values__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x12\x65ventsvc/svc.proto\x12\x13\x61utokitteh.eventsvc\x1a\x1cgoogle/api/annotations.proto\x1a\x17validate/validate.proto\x1a\x11\x65vent/event.proto\x1a\x17\x65vent/event_state.proto\x1a\x19\x65vent/project_state.proto\x1a\x13values/values.proto\"\xc7\x03\n\x12IngestEventRequest\x12G\n\x06src_id\x18\x01 \x01(\tB7\xfa\x42\x34r220^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z][0-9a-zA-Z_-]+$\x12\x19\n\x11\x61ssociation_token\x18\x02 \x01(\t\x12\x0c\n\x04type\x18\x03 \x01(\t\x12g\n\x04\x64\x61ta\x18\x04 \x03(\x0b\x32\x31.autokitteh.eventsvc.IngestEventRequest.DataEntryB&\xfa\x42#\x9a\x01 \x18\x01\"\x1cr\x1a\x32\x18^[a-zA-Z_][a-zA-Z0-9_]*$\x12\x13\n\x0boriginal_id\x18\x05 \x01(\t\x12M\n\x04memo\x18\x32 \x03(\x0b\x32\x31.autokitteh.eventsvc.IngestEventRequest.MemoEntryB\x0c\xfa\x42\t\x9a\x01\x06\"\x04r\x02\x10\x01\x1a\x45\n\tDataEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\'\n\x05value\x18\x02 \x01(\x0b\x32\x18.autokitteh.values.Value:\x02\x38\x01\x1a+\n\tMemoEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"6\n\x13IngestEventResponse\x12\x1f\n\x02id\x18\x01 \x01(\tB\x13\xfa\x42\x10r\x0e\x32\x0c^E[0-9a-f]+$\"2\n\x0fGetEventRequest\x12\x1f\n\x02id\x18\x01 \x01(\tB\x13\xfa\x42\x10r\x0e\x32\x0c^E[0-9a-f]+$\"D\n\x10GetEventResponse\x12\x30\n\x05\x65vent\x18\x01 \x01(\x0b\x32\x17.autokitteh.event.EventB\x08\xfa\x42\x05\x8a\x01\x02\x10\x01\"7\n\x14GetEventStateRequest\x12\x1f\n\x02id\x18\x01 \x01(\tB\x13\xfa\x42\x10r\x0e\x32\x0c^E[0-9a-f]+$\"W\n\x15GetEventStateResponse\x12>\n\x03log\x18\x01 \x03(\x0b\x32\".autokitteh.event.EventStateRecordB\r\xfa\x42\n\x92\x01\x07\"\x05\x8a\x01\x02\x10\x01\"m\n\x1eGetEventStateForProjectRequest\x12\x1f\n\x02id\x18\x01 \x01(\tB\x13\xfa\x42\x10r\x0e\x32\x0c^E[0-9a-f]+$\x12*\n\nproject_id\x18\x02 \x01(\tB\x16\xfa\x42\x13r\x11\x32\x0f^[a-zA-Z0-9_]+$\"h\n\x1fGetEventStateForProjectResponse\x12\x45\n\x03log\x18\x01 \x03(\x0b\x32).autokitteh.event.ProjectEventStateRecordB\r\xfa\x42\n\x92\x01\x07\"\x05\x8a\x01\x02\x10\x01\"q\n\x17UpdateEventStateRequest\x12\x1f\n\x02id\x18\x01 \x01(\tB\x13\xfa\x42\x10r\x0e\x32\x0c^E[0-9a-f]+$\x12\x35\n\x05state\x18\x02 \x01(\x0b\x32\x1c.autokitteh.event.EventStateB\x08\xfa\x42\x05\x8a\x01\x02\x10\x01\"\x1a\n\x18UpdateEventStateResponse\"\xae\x01\n!UpdateEventStateForProjectRequest\x12\x1f\n\x02id\x18\x01 \x01(\tB\x13\xfa\x42\x10r\x0e\x32\x0c^E[0-9a-f]+$\x12*\n\nproject_id\x18\x02 \x01(\tB\x16\xfa\x42\x13r\x11\x32\x0f^[a-zA-Z0-9_]+$\x12<\n\x05state\x18\x03 \x01(\x0b\x32#.autokitteh.event.ProjectEventStateB\x08\xfa\x42\x05\x8a\x01\x02\x10\x01\"$\n\"UpdateEventStateForProjectResponse\"A\n\x11ListEventsRequest\x12\x12\n\nproject_id\x18\x01 \x01(\t\x12\x0b\n\x03ofs\x18\x02 \x01(\r\x12\x0b\n\x03len\x18\x03 \x01(\r\"\x86\x01\n\x0fListEventRecord\x12\x30\n\x05\x65vent\x18\x01 \x01(\x0b\x32\x17.autokitteh.event.EventB\x08\xfa\x42\x05\x8a\x01\x02\x10\x01\x12\x41\n\x06states\x18\x02 \x03(\x0b\x32\".autokitteh.event.EventStateRecordB\r\xfa\x42\n\x92\x01\x07\"\x05\x8a\x01\x02\x10\x01\"Z\n\x12ListEventsResponse\x12\x44\n\x07records\x18\x01 \x03(\x0b\x32$.autokitteh.eventsvc.ListEventRecordB\r\xfa\x42\n\x92\x01\x07\"\x05\x8a\x01\x02\x10\x01\"4\n\x1eGetProjectWaitingEventsRequest\x12\x12\n\nproject_id\x18\x01 \x01(\t\"N\n\x1fGetProjectWaitingEventsResponse\x12+\n\tevent_ids\x18\x02 \x03(\tB\x18\xfa\x42\x15\x92\x01\x12\"\x10r\x0e\x32\x0c^E[0-9a-f]+$2\xfb\t\n\x06\x45vents\x12{\n\x0bIngestEvent\x12\'.autokitteh.eventsvc.IngestEventRequest\x1a(.autokitteh.eventsvc.IngestEventResponse\"\x19\x82\xd3\xe4\x93\x02\x13\"\x0e/api/v1/events:\x01*\x12t\n\x08GetEvent\x12$.autokitteh.eventsvc.GetEventRequest\x1a%.autokitteh.eventsvc.GetEventResponse\"\x1b\x82\xd3\xe4\x93\x02\x15\x12\x13/api/v1/events/{id}\x12\x89\x01\n\rGetEventState\x12).autokitteh.eventsvc.GetEventStateRequest\x1a*.autokitteh.eventsvc.GetEventStateResponse\"!\x82\xd3\xe4\x93\x02\x1b\x12\x19/api/v1/events/{id}/state\x12\x92\x01\n\x10UpdateEventState\x12,.autokitteh.eventsvc.UpdateEventStateRequest\x1a-.autokitteh.eventsvc.UpdateEventStateResponse\"!\x82\xd3\xe4\x93\x02\x1b\"\x19/api/v1/events/{id}/state\x12\x9d\x01\n\nListEvents\x12&.autokitteh.eventsvc.ListEventsRequest\x1a\'.autokitteh.eventsvc.ListEventsResponse\">\x82\xd3\xe4\x93\x02\x38\x12\x0e/api/v1/eventsZ&\x12$/api/v1/projects/{project_id}/events\x12\xbd\x01\n\x17GetEventStateForProject\x12\x33.autokitteh.eventsvc.GetEventStateForProjectRequest\x1a\x34.autokitteh.eventsvc.GetEventStateForProjectResponse\"7\x82\xd3\xe4\x93\x02\x31\x12//api/v1/events/{id}/projects/{project_id}/state\x12\xc6\x01\n\x1aUpdateEventStateForProject\x12\x36.autokitteh.eventsvc.UpdateEventStateForProjectRequest\x1a\x37.autokitteh.eventsvc.UpdateEventStateForProjectResponse\"7\x82\xd3\xe4\x93\x02\x31\"//api/v1/events/{id}/projects/{project_id}/state\x12\xb3\x01\n\x17GetProjectWaitingEvents\x12\x33.autokitteh.eventsvc.GetProjectWaitingEventsRequest\x1a\x34.autokitteh.eventsvc.GetProjectWaitingEventsResponse\"-\x82\xd3\xe4\x93\x02\'\x12%/api/v1/projects/{project_id}/waitingB>Z<github.com/autokitteh/autokitteh/gen/proto/stubs/go/eventsvcb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x12\x65ventsvc/svc.proto\x12\x13\x61utokitteh.eventsvc\x1a\x1cgoogle/api/annotations.proto\x1a\x17validate/validate.proto\x1a\x11\x65vent/event.proto\x1a\x17\x65vent/event_state.proto\x1a\x19\x65vent/project_state.proto\x1a\x13values/values.proto\"\xc7\x03\n\x12IngestEventRequest\x12G\n\x06src_id\x18\x01 \x01(\tB7\xfa\x42\x34r220^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z][0-9a-zA-Z_-]+$\x12\x19\n\x11\x61ssociation_token\x18\x02 \x01(\t\x12\x0c\n\x04type\x18\x03 \x01(\t\x12g\n\x04\x64\x61ta\x18\x04 \x03(\x0b\x32\x31.autokitteh.eventsvc.IngestEventRequest.DataEntryB&\xfa\x42#\x9a\x01 \x18\x01\"\x1cr\x1a\x32\x18^[a-zA-Z_][a-zA-Z0-9_]*$\x12\x13\n\x0boriginal_id\x18\x05 \x01(\t\x12M\n\x04memo\x18\x32 \x03(\x0b\x32\x31.autokitteh.eventsvc.IngestEventRequest.MemoEntryB\x0c\xfa\x42\t\x9a\x01\x06\"\x04r\x02\x10\x01\x1a\x45\n\tDataEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\'\n\x05value\x18\x02 \x01(\x0b\x32\x18.autokitteh.values.Value:\x02\x38\x01\x1a+\n\tMemoEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"6\n\x13IngestEventResponse\x12\x1f\n\x02id\x18\x01 \x01(\tB\x13\xfa\x42\x10r\x0e\x32\x0c^E[0-9a-f]+$\"2\n\x0fGetEventRequest\x12\x1f\n\x02id\x18\x01 \x01(\tB\x13\xfa\x42\x10r\x0e\x32\x0c^E[0-9a-f]+$\"D\n\x10GetEventResponse\x12\x30\n\x05\x65vent\x18\x01 \x01(\x0b\x32\x17.autokitteh.event.EventB\x08\xfa\x42\x05\x8a\x01\x02\x10\x01\"7\n\x14GetEventStateRequest\x12\x1f\n\x02id\x18\x01 \x01(\tB\x13\xfa\x42\x10r\x0e\x32\x0c^E[0-9a-f]+$\"W\n\x15GetEventStateResponse\x12>\n\x03log\x18\x01 \x03(\x0b\x32\".autokitteh.event.EventStateRecordB\r\xfa\x42\n\x92\x01\x07\"\x05\x8a\x01\x02\x10\x01\"\x86\x01\n\x1eGetEventStateForProjectRequest\x12\x1f\n\x02id\x18\x01 \x01(\tB\x13\xfa\x42\x10r\x0e\x32\x0c^E[0-9a-f]+$\x12\x43\n\nproject_id\x18\x02 \x01(\tB/\xfa\x42,r*2(^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z0-9_-]+$\"h\n\x1fGetEventStateForProjectResponse\x12\x45\n\x03log\x18\x01 \x03(\x0b\x32).autokitteh.event.ProjectEventStateRecordB\r\xfa\x42\n\x92\x01\x07\"\x05\x8a\x01\x02\x10\x01\"q\n\x17UpdateEventStateRequest\x12\x1f\n\x02id\x18\x01 \x01(\tB\x13\xfa\x42\x10r\x0e\x32\x0c^E[0-9a-f]+$\x12\x35\n\x05state\x18\x02 \x01(\x0b\x32\x1c.autokitteh.event.EventStateB\x08\xfa\x42\x05\x8a\x01\x02\x10\x01\"\x1a\n\x18UpdateEventStateResponse\"\xc7\x01\n!UpdateEventStateForProjectRequest\x12\x1f\n\x02id\x18\x01 \x01(\tB\x13\xfa\x42\x10r\x0e\x32\x0c^E[0-9a-f]+$\x12\x43\n\nproject_id\x18\x02 \x01(\tB/\xfa\x42,r*2(^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z0-9_-]+$\x12<\n\x05state\x18\x03 \x01(\x0b\x32#.autokitteh.event.ProjectEventStateB\x08\xfa\x42\x05\x8a\x01\x02\x10\x01\"$\n\"UpdateEventStateForProjectResponse\"A\n\x11ListEventsRequest\x12\x12\n\nproject_id\x18\x01 \x01(\t\x12\x0b\n\x03ofs\x18\x02 \x01(\r\x12\x0b\n\x03len\x18\x03 \x01(\r\"\x86\x01\n\x0fListEventRecord\x12\x30\n\x05\x65vent\x18\x01 \x01(\x0b\x32\x17.autokitteh.event.EventB\x08\xfa\x42\x05\x8a\x01\x02\x10\x01\x12\x41\n\x06states\x18\x02 \x03(\x0b\x32\".autokitteh.event.EventStateRecordB\r\xfa\x42\n\x92\x01\x07\"\x05\x8a\x01\x02\x10\x01\"Z\n\x12ListEventsResponse\x12\x44\n\x07records\x18\x01 \x03(\x0b\x32$.autokitteh.eventsvc.ListEventRecordB\r\xfa\x42\n\x92\x01\x07\"\x05\x8a\x01\x02\x10\x01\"4\n\x1eGetProjectWaitingEventsRequest\x12\x12\n\nproject_id\x18\x01 \x01(\t\"N\n\x1fGetProjectWaitingEventsResponse\x12+\n\tevent_ids\x18\x02 \x03(\tB\x18\xfa\x42\x15\x92\x01\x12\"\x10r\x0e\x32\x0c^E[0-9a-f]+$2\xfb\t\n\x06\x45vents\x12{\n\x0bIngestEvent\x12\'.autokitteh.eventsvc.IngestEventRequest\x1a(.autokitteh.eventsvc.IngestEventResponse\"\x19\x82\xd3\xe4\x93\x02\x13\"\x0e/api/v1/events:\x01*\x12t\n\x08GetEvent\x12$.autokitteh.eventsvc.GetEventRequest\x1a%.autokitteh.eventsvc.GetEventResponse\"\x1b\x82\xd3\xe4\x93\x02\x15\x12\x13/api/v1/events/{id}\x12\x89\x01\n\rGetEventState\x12).autokitteh.eventsvc.GetEventStateRequest\x1a*.autokitteh.eventsvc.GetEventStateResponse\"!\x82\xd3\xe4\x93\x02\x1b\x12\x19/api/v1/events/{id}/state\x12\x92\x01\n\x10UpdateEventState\x12,.autokitteh.eventsvc.UpdateEventStateRequest\x1a-.autokitteh.eventsvc.UpdateEventStateResponse\"!\x82\xd3\xe4\x93\x02\x1b\"\x19/api/v1/events/{id}/state\x12\x9d\x01\n\nListEvents\x12&.autokitteh.eventsvc.ListEventsRequest\x1a\'.autokitteh.eventsvc.ListEventsResponse\">\x82\xd3\xe4\x93\x02\x38\x12\x0e/api/v1/eventsZ&\x12$/api/v1/projects/{project_id}/events\x12\xbd\x01\n\x17GetEventStateForProject\x12\x33.autokitteh.eventsvc.GetEventStateForProjectRequest\x1a\x34.autokitteh.eventsvc.GetEventStateForProjectResponse\"7\x82\xd3\xe4\x93\x02\x31\x12//api/v1/events/{id}/projects/{project_id}/state\x12\xc6\x01\n\x1aUpdateEventStateForProject\x12\x36.autokitteh.eventsvc.UpdateEventStateForProjectRequest\x1a\x37.autokitteh.eventsvc.UpdateEventStateForProjectResponse\"7\x82\xd3\xe4\x93\x02\x31\"//api/v1/events/{id}/projects/{project_id}/state\x12\xb3\x01\n\x17GetProjectWaitingEvents\x12\x33.autokitteh.eventsvc.GetProjectWaitingEventsRequest\x1a\x34.autokitteh.eventsvc.GetProjectWaitingEventsResponse\"-\x82\xd3\xe4\x93\x02\'\x12%/api/v1/projects/{project_id}/waitingB<Z:github.com/autokitteh/autokitteh/api/gen/stubs/go/eventsvcb\x06proto3')
 
 
 
@@ -182,7 +182,7 @@ _EVENTS = DESCRIPTOR.services_by_name['Events']
 if _descriptor._USE_C_DESCRIPTORS == False:
 
   DESCRIPTOR._options = None
-  DESCRIPTOR._serialized_options = b'Z<github.com/autokitteh/autokitteh/gen/proto/stubs/go/eventsvc'
+  DESCRIPTOR._serialized_options = b'Z:github.com/autokitteh/autokitteh/api/gen/stubs/go/eventsvc'
   _INGESTEVENTREQUEST_DATAENTRY._options = None
   _INGESTEVENTREQUEST_DATAENTRY._serialized_options = b'8\001'
   _INGESTEVENTREQUEST_MEMOENTRY._options = None
@@ -206,7 +206,7 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _GETEVENTSTATEFORPROJECTREQUEST.fields_by_name['id']._options = None
   _GETEVENTSTATEFORPROJECTREQUEST.fields_by_name['id']._serialized_options = b'\372B\020r\0162\014^E[0-9a-f]+$'
   _GETEVENTSTATEFORPROJECTREQUEST.fields_by_name['project_id']._options = None
-  _GETEVENTSTATEFORPROJECTREQUEST.fields_by_name['project_id']._serialized_options = b'\372B\023r\0212\017^[a-zA-Z0-9_]+$'
+  _GETEVENTSTATEFORPROJECTREQUEST.fields_by_name['project_id']._serialized_options = b'\372B,r*2(^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z0-9_-]+$'
   _GETEVENTSTATEFORPROJECTRESPONSE.fields_by_name['log']._options = None
   _GETEVENTSTATEFORPROJECTRESPONSE.fields_by_name['log']._serialized_options = b'\372B\n\222\001\007\"\005\212\001\002\020\001'
   _UPDATEEVENTSTATEREQUEST.fields_by_name['id']._options = None
@@ -216,7 +216,7 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _UPDATEEVENTSTATEFORPROJECTREQUEST.fields_by_name['id']._options = None
   _UPDATEEVENTSTATEFORPROJECTREQUEST.fields_by_name['id']._serialized_options = b'\372B\020r\0162\014^E[0-9a-f]+$'
   _UPDATEEVENTSTATEFORPROJECTREQUEST.fields_by_name['project_id']._options = None
-  _UPDATEEVENTSTATEFORPROJECTREQUEST.fields_by_name['project_id']._serialized_options = b'\372B\023r\0212\017^[a-zA-Z0-9_]+$'
+  _UPDATEEVENTSTATEFORPROJECTREQUEST.fields_by_name['project_id']._serialized_options = b'\372B,r*2(^[a-zA-Z][0-9a-zA-Z_-]+\\.[a-zA-Z0-9_-]+$'
   _UPDATEEVENTSTATEFORPROJECTREQUEST.fields_by_name['state']._options = None
   _UPDATEEVENTSTATEFORPROJECTREQUEST.fields_by_name['state']._serialized_options = b'\372B\005\212\001\002\020\001'
   _LISTEVENTRECORD.fields_by_name['event']._options = None
@@ -259,28 +259,28 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _GETEVENTSTATEREQUEST._serialized_end=881
   _GETEVENTSTATERESPONSE._serialized_start=883
   _GETEVENTSTATERESPONSE._serialized_end=970
-  _GETEVENTSTATEFORPROJECTREQUEST._serialized_start=972
-  _GETEVENTSTATEFORPROJECTREQUEST._serialized_end=1081
-  _GETEVENTSTATEFORPROJECTRESPONSE._serialized_start=1083
-  _GETEVENTSTATEFORPROJECTRESPONSE._serialized_end=1187
-  _UPDATEEVENTSTATEREQUEST._serialized_start=1189
-  _UPDATEEVENTSTATEREQUEST._serialized_end=1302
-  _UPDATEEVENTSTATERESPONSE._serialized_start=1304
-  _UPDATEEVENTSTATERESPONSE._serialized_end=1330
-  _UPDATEEVENTSTATEFORPROJECTREQUEST._serialized_start=1333
-  _UPDATEEVENTSTATEFORPROJECTREQUEST._serialized_end=1507
-  _UPDATEEVENTSTATEFORPROJECTRESPONSE._serialized_start=1509
-  _UPDATEEVENTSTATEFORPROJECTRESPONSE._serialized_end=1545
-  _LISTEVENTSREQUEST._serialized_start=1547
-  _LISTEVENTSREQUEST._serialized_end=1612
-  _LISTEVENTRECORD._serialized_start=1615
-  _LISTEVENTRECORD._serialized_end=1749
-  _LISTEVENTSRESPONSE._serialized_start=1751
-  _LISTEVENTSRESPONSE._serialized_end=1841
-  _GETPROJECTWAITINGEVENTSREQUEST._serialized_start=1843
-  _GETPROJECTWAITINGEVENTSREQUEST._serialized_end=1895
-  _GETPROJECTWAITINGEVENTSRESPONSE._serialized_start=1897
-  _GETPROJECTWAITINGEVENTSRESPONSE._serialized_end=1975
-  _EVENTS._serialized_start=1978
-  _EVENTS._serialized_end=3253
+  _GETEVENTSTATEFORPROJECTREQUEST._serialized_start=973
+  _GETEVENTSTATEFORPROJECTREQUEST._serialized_end=1107
+  _GETEVENTSTATEFORPROJECTRESPONSE._serialized_start=1109
+  _GETEVENTSTATEFORPROJECTRESPONSE._serialized_end=1213
+  _UPDATEEVENTSTATEREQUEST._serialized_start=1215
+  _UPDATEEVENTSTATEREQUEST._serialized_end=1328
+  _UPDATEEVENTSTATERESPONSE._serialized_start=1330
+  _UPDATEEVENTSTATERESPONSE._serialized_end=1356
+  _UPDATEEVENTSTATEFORPROJECTREQUEST._serialized_start=1359
+  _UPDATEEVENTSTATEFORPROJECTREQUEST._serialized_end=1558
+  _UPDATEEVENTSTATEFORPROJECTRESPONSE._serialized_start=1560
+  _UPDATEEVENTSTATEFORPROJECTRESPONSE._serialized_end=1596
+  _LISTEVENTSREQUEST._serialized_start=1598
+  _LISTEVENTSREQUEST._serialized_end=1663
+  _LISTEVENTRECORD._serialized_start=1666
+  _LISTEVENTRECORD._serialized_end=1800
+  _LISTEVENTSRESPONSE._serialized_start=1802
+  _LISTEVENTSRESPONSE._serialized_end=1892
+  _GETPROJECTWAITINGEVENTSREQUEST._serialized_start=1894
+  _GETPROJECTWAITINGEVENTSREQUEST._serialized_end=1946
+  _GETPROJECTWAITINGEVENTSRESPONSE._serialized_start=1948
+  _GETPROJECTWAITINGEVENTSRESPONSE._serialized_end=2026
+  _EVENTS._serialized_start=2029
+  _EVENTS._serialized_end=3304
 # @@protoc_insertion_point(module_scope)
