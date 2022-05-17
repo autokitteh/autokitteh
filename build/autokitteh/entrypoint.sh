@@ -2,4 +2,4 @@
 
 set -xeuo pipefail
 
-exec bin/akd "$@"
+exec /ak/bin/akd "$@"
