@@ -18,6 +18,6 @@ docker run \
   -w "/work" \
   -p 20000:20000 \
   -p 20001:20001 \
-  -it "autokitteh-${ARCH}" \
+  -it "autokitteh/autokitteh" \
   --enable defaults \
   "$@"
