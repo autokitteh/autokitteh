@@ -4,11 +4,12 @@
 
 set -euo pipefail
 
-ARCH="$(uname -m)"
-PROTOC_ARCH="${ARCH}"
-if [[ $ARCH == "aarch64" ]]; then
-  PROTOC_ARCH="aarch_64"
-fi
+case "$(uname -m)" in
+  "aarch64" | "arm64")
+    PROTOC_ARCH="aarch_64";;
+  *)
+    PROTOC_ARCH="${ARCH}";;
+esac
 
 PROTOC_VER=3.17.3
 GRPC_VER=1.1.0
