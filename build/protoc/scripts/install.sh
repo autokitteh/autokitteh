@@ -4,8 +4,9 @@
 
 set -euo pipefail
 
+ARCH="$(uname -m)"
 PROTOC_ARCH="${ARCH}"
-if [[ $ARCH == "arm64" ]]; then
+if [[ $ARCH == "aarch64" ]]; then
   PROTOC_ARCH="aarch_64"
 fi
 
