@@ -1,9 +1,6 @@
 FROM golang:1.18
 
-ARG ARCH
-ENV ARCH=${ARCH}
-
-ADD scripts /scripts
-RUN chmod +x /scripts/install.sh && /scripts/install.sh && rm -fR /scripts
+COPY install.sh /
+RUN chmod +x /install.sh && /install.sh && rm -fR /install.sh
 
 CMD ["/usr/bin/protoc"]
