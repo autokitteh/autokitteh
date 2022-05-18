@@ -4,7 +4,8 @@
 
 set -euo pipefail
 
-case "$(uname -m)" in
+ARCH="$(uname -m)"
+case "${ARCH}" in
   "aarch64" | "arm64")
     PROTOC_ARCH="aarch_64";;
   *)
