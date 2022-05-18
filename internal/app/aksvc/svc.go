@@ -67,6 +67,7 @@ import (
 	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiplugin"
 	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiprogram"
 
+	"github.com/autokitteh/autokitteh/assets"
 	"github.com/autokitteh/autokitteh/pkg/idgen"
 	"github.com/autokitteh/autokitteh/pkg/initd"
 	"github.com/autokitteh/autokitteh/pkg/kvstore"
@@ -328,7 +329,7 @@ var SvcOpts = []svc.OptFunc{
 
 							}
 
-							return os.ReadFile(filepath.Join(cfg.InternalProgramLoaderPath, p))
+							return assets.FS.ReadFile(filepath.Join("internal", p))
 						},
 						"github": programs.NewGithubLoader(l.Named("githubloader"), github.GetClient),
 					},

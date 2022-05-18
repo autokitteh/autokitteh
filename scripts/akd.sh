@@ -19,8 +19,6 @@ export AKD_INIT_PATHS="${AKD_INIT_PATHS-"examples/manifests"}"
 export AKD_PLUGINS_REG_PROCS_EXEC_ROOT_PATH="examples/plugins"
 export AKD_INITD_DIR="examples/initd"
 
-export AKD_HTTP_EVENT_SOURCE_EVENT_SOURCE_ID="internal.http"
-
 #
 # TEMPORALITE
 #

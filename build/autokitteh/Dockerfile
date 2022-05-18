@@ -28,8 +28,6 @@ RUN apk update && apk --no-cache add ca-certificates bash curl
 COPY --from=builder /build/bin/* /ak/bin/
 COPY build/autokitteh/entrypoint.sh /ak/bin
 
-COPY assets /ak/assets
-
 WORKDIR /ak
 
 EXPOSE 20000

@@ -33,26 +33,25 @@ type TemporalConfig struct {
 }
 
 type Config struct {
-	Initd                     initd.Config                 `envconfig:"INITD" json:"initd"`
-	EmbeddedDash              bool                         `envconfig:"EMBEDDED_DASH" default:"true" json:"embedded_dash"`
-	InitPaths                 []string                     `envconfig:"INIT_PATHS" json:"init_paths"`
-	Temporal                  TemporalConfig               `envconfig:"TEMPORAL" json:"temporal"`
-	Temporalite               temporalite.Config           `envconfig:"TEMPORALITE" json:"temporalite"`
-	CatalogPermissive         bool                         `envconfig:"CATALOG_PERMISSIVE" json:"catalog_permissive"`
-	DefaultStore              storefactory.Config          `envconfig:"DEFAULT_STORE" json:"default_store"`
-	AccountsStore             accountsstorefactory.Config  `envconfig:"ACCOUNTS_STORE" json:"accounts_store"`
-	ProjectsStore             projectsstorefactory.Config  `envconfig:"PROJECTS_STORE" json:"projects_store"`
-	StateStore                statestorefactory.Config     `envconfig:"STATE_STORE" json:"state_store"`
-	EventsStore               eventsstorefactory.Config    `envconfig:"EVENTS_STORE" json:"events_store"`
-	EventSourcesStore         eventsrcsstorefactory.Config `envconfig:"EVENT_SOURCES_STORE" json:"event_srcs_store"`
-	Sessions                  sessions.Config              `envconfig:"SESSIONS" json:"sessions"`
-	InternalProgramLoaderPath string                       `envconfig:"INTERNAL_PROGRAM_LOADER_PATH" json:"internal_program_loader_path" default:"assets/internal"`
-	Dashboard                 dashboardsvc.Config          `envconfig:"DASHBOARD" json:"dashboard"`
-	UtilityStore              kvstore.Config               `envconfig:"UTILITY_STORE" json:"utility_store"`
-	SecretsStore              pkvstore.Config              `envconfig:"SECRETS_STORE" json:"secrets_store"`
-	CredsStore                pkvstore.Config              `envconfig:"CREDS_STORE" json:"creds_store"`
-	PluginsRegStore           pkvstore.Config              `envconfig:"PLUGINS_REG_STORE" json:"plugins_reg_store"`
-	PluginsRegProcs           akprocs.Config               `envconfig:"PLUGINS_REG_PROCS" json:"plugins_reg_procs"`
+	Initd             initd.Config                 `envconfig:"INITD" json:"initd"`
+	EmbeddedDash      bool                         `envconfig:"EMBEDDED_DASH" default:"true" json:"embedded_dash"`
+	InitPaths         []string                     `envconfig:"INIT_PATHS" json:"init_paths"`
+	Temporal          TemporalConfig               `envconfig:"TEMPORAL" json:"temporal"`
+	Temporalite       temporalite.Config           `envconfig:"TEMPORALITE" json:"temporalite"`
+	CatalogPermissive bool                         `envconfig:"CATALOG_PERMISSIVE" json:"catalog_permissive"`
+	DefaultStore      storefactory.Config          `envconfig:"DEFAULT_STORE" json:"default_store"`
+	AccountsStore     accountsstorefactory.Config  `envconfig:"ACCOUNTS_STORE" json:"accounts_store"`
+	ProjectsStore     projectsstorefactory.Config  `envconfig:"PROJECTS_STORE" json:"projects_store"`
+	StateStore        statestorefactory.Config     `envconfig:"STATE_STORE" json:"state_store"`
+	EventsStore       eventsstorefactory.Config    `envconfig:"EVENTS_STORE" json:"events_store"`
+	EventSourcesStore eventsrcsstorefactory.Config `envconfig:"EVENT_SOURCES_STORE" json:"event_srcs_store"`
+	Sessions          sessions.Config              `envconfig:"SESSIONS" json:"sessions"`
+	Dashboard         dashboardsvc.Config          `envconfig:"DASHBOARD" json:"dashboard"`
+	UtilityStore      kvstore.Config               `envconfig:"UTILITY_STORE" json:"utility_store"`
+	SecretsStore      pkvstore.Config              `envconfig:"SECRETS_STORE" json:"secrets_store"`
+	CredsStore        pkvstore.Config              `envconfig:"CREDS_STORE" json:"creds_store"`
+	PluginsRegStore   pkvstore.Config              `envconfig:"PLUGINS_REG_STORE" json:"plugins_reg_store"`
+	PluginsRegProcs   akprocs.Config               `envconfig:"PLUGINS_REG_PROCS" json:"plugins_reg_procs"`
 
 	// [# google-oauth-config #]
 	GoogleOAuthSvc            googleoauthsvc.Config `envconfig:"GOOGLE_OAUTH" json:"googleauths"`

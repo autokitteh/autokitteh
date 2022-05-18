@@ -1,8 +1,6 @@
 package cuemod
 
-import (
-	"embed"
-)
+import "embed"
 
 //go:embed module.cue pkg
 var FS embed.FS

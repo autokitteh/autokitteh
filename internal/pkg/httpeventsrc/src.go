@@ -14,12 +14,12 @@ import (
 
 	pb "github.com/autokitteh/autokitteh/api/gen/stubs/go/httpeventsrc"
 
+	"github.com/autokitteh/autokitteh/internal/pkg/events"
+	"github.com/autokitteh/autokitteh/internal/pkg/eventsrcsstore"
 	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apievent"
 	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apieventsrc"
 	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiproject"
 	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apivalues"
-	"github.com/autokitteh/autokitteh/internal/pkg/events"
-	"github.com/autokitteh/autokitteh/internal/pkg/eventsrcsstore"
 	L "github.com/autokitteh/autokitteh/pkg/l"
 )
 
@@ -28,7 +28,7 @@ var EventTypes = []string{"get", "put", "post", "delete", "patch", "head"}
 type Route = pb.Route
 
 type Config struct {
-	EventSourceID apieventsrc.EventSourceID `envconfig:"EVENT_SOURCE_ID" json:"event_source_id"`
+	EventSourceID apieventsrc.EventSourceID `envconfig:"EVENT_SOURCE_ID" default:"internal.http" json:"event_source_id"`
 }
 
 type bindingConfig struct {
