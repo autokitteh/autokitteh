@@ -5,7 +5,9 @@ DO NOT USE. NOT READY FOR GA.
 # RUN USING DOCKER
 
 ```
-# Takes ~100s cold on an Apple M1 Pro 2021.
+# OPTIONAL: Build AutoKitteh docker image locally.
+# If not done, latest image from dockerhub is used.
+# Local build takes ~115s cold on an Apple M1 Pro 2021.
 $ make docker
 
 # Run temporal, might want to wait 30s to let it start up.
@@ -41,7 +43,8 @@ All generated code for proto is checked into the repository.
 If any proto is changed, these must be ran:
 
 ```
-# Only run if not done before on the machine.
+# OPTIONAL: Build protoc docker image locally.
+# If not done, latest image from dockerhub is used.
 $ make protoc
 
 # Always run.

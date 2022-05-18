@@ -139,18 +139,16 @@ lint: $(OUTDIR)/tools/golangci-lint
 shellcheck:
 	docker run -v $(shell pwd):/src -w /src koalaman/shellcheck -a -- $(shell find . -name \*.sh)
 
-.PHONY: protoc
-protoc:
+.PHONY: docker-protoc
+docker-protoc:
 	make -C build/protoc
 
-.PHONY: docker
-docker:
-	docker build -t autokitteh/autokitteh-${ARCH} -f build/autokitteh/Dockerfile . --build-arg ARCH="${ARCH}"
+.PHONY: docker-autokitteh
+docker-autokitteh:
+	docker build -t autokitteh/autokitteh -f build/autokitteh/Dockerfile .
 
-.PHONY: docker-push
-docker-push:
-	# reqires `docker login`
-	docker push autokitteh/autokitteh-${ARCH}
+.PHONY: docker
+docker: docker-autokitteh docker-protoc
 
 .PHONY: py
 py:

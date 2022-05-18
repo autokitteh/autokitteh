@@ -1,12 +1,10 @@
 FROM golang:1.18 AS builder
 
-ARG ARCH
-ENV ARCH=${ARCH}
-
 COPY . /build
 WORKDIR /build
 
 # Not needed since /gen is comitted into the repository.
+# (left here in a comment if we want to revert in the future)
 # RUN ./api/scripts/gen-in-docker-build.sh
 
 ENV GOOS=linux
@@ -17,7 +15,6 @@ ENV GO_BUILD_OPTS="-a -ldflags '-linkmode external -extldflags "-static"'"
 
 RUN go mod download
 RUN make bin
-# }
 
 #---
 

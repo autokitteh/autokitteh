@@ -2,11 +2,7 @@
 
 set -euo pipefail
 
-PROTOC_IMAGE_NAME="protoc-$(uname -m)"
-
-if [[ -z $(docker images -q "${PROTOC_IMAGE_NAME}") ]]; then
-  make protoc
-fi
+PROTOC_IMAGE_NAME="autokitteh/protoc"
 
 rm -fR api/gen
 mkdir -p api/gen
