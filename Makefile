@@ -145,7 +145,12 @@ protoc:
 
 .PHONY: docker
 docker:
-	docker build -t autokitteh-${ARCH} -f build/autokitteh/Dockerfile . --build-arg ARCH="${ARCH}"
+	docker build -t autokitteh/autokitteh-${ARCH} -f build/autokitteh/Dockerfile . --build-arg ARCH="${ARCH}"
+
+.PHONY: docker-push
+docker-push:
+	# reqires `docker login`
+	docker push autokitteh/autokitteh-${ARCH}
 
 .PHONY: py
 py:
