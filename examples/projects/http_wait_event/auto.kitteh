@@ -1,4 +1,4 @@
-load("ak", "sources")
+load("ak", "signals", "sources")
 load("encoding/json", "json")
 
 
@@ -8,7 +8,7 @@ def _on_http_get(query_values):
   print('waiting for "%s"' % ','.join(ids))
 
   while ids:
-    ev = sources.wait(['http.POST'])
+    ev = signals.wait('http.POST')
 
     data = json.decode(ev.data['body'])
 

@@ -150,6 +150,12 @@ paths:
                     type: array
                     items:
                         type: string
+                - name: state.waiting.names
+                  in: query
+                  schema:
+                    type: array
+                    items:
+                        type: string
             responses:
                 "200":
                     description: OK
@@ -840,6 +846,10 @@ components:
         WaitingProjectEventState:
             type: object
             properties:
+                names:
+                    type: array
+                    items:
+                        type: string
                 runSummary:
                     $ref: '#/components/schemas/RunSummary'
 tags:

@@ -3,12 +3,12 @@ package akmod
 import (
 	"context"
 
+	"github.com/autokitteh/autokitteh/internal/pkg/plugin/builtinplugin"
+	"github.com/autokitteh/autokitteh/internal/pkg/statestore"
 	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apievent"
 	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiplugin"
 	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiproject"
 	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apivalues"
-	"github.com/autokitteh/autokitteh/internal/pkg/plugin/builtinplugin"
-	"github.com/autokitteh/autokitteh/internal/pkg/statestore"
 	"github.com/autokitteh/autokitteh/pkg/autokitteh/pluginimpl"
 
 	L "github.com/autokitteh/autokitteh/pkg/l"
@@ -54,6 +54,9 @@ func New(
 					event:          event,
 					bindings:       &bindings{},
 				}).asValueWithMatch),
+				"signals": pluginimpl.NewLazyValueMember("signals control", (&signals{
+					l: l.Named("signals"),
+				}).asValue),
 			},
 		},
 	}

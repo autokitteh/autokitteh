@@ -3,7 +3,11 @@
 {{ end }}
 
 {{ define "project-event-state" }}
-  {{ typeOf .State.Type | replace "*event.ProjectEventState_" "" | upper }}
+  {{ $t := typeOf .State.Type }}
+  {{ $t | replace "*event.ProjectEventState_" "" | upper }}
+  {{ if eq $t "*event.ProjectEventState_Waiting" }}
+    {{ (toDict .State.Type).Waiting.names | join " " }}
+  {{ end }}
 {{ end }}
 
 {{ define "header" }}

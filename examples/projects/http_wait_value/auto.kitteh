@@ -1,0 +1,23 @@
+load("ak", "signals", "sources", "state")
+load("encoding/json", "json")
+
+
+def _on_http_post(query_values, body):
+  ids = query_values.get('id')
+  if not ids:
+    print("no ids received")
+    return
+
+  for id in ids:
+    print('sending "%s" to %s' % (body, id))
+    signals.send(id, "response", body)
+
+
+def _on_http_get(event_id, query_values):
+  v = signals.wait("response")
+
+  print(v)
+
+
+sources.bind('http.GET', _on_http_get)
+sources.bind('http.POST', _on_http_post)

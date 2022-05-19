@@ -188,7 +188,7 @@ if (goog.DEBUG && !COMPILED) {
  * @constructor
  */
 proto.autokitteh.event.WaitingProjectEventState = function(opt_data) {
-  jspb.Message.initialize(this, opt_data, 0, -1, null, null);
+  jspb.Message.initialize(this, opt_data, 0, -1, proto.autokitteh.event.WaitingProjectEventState.repeatedFields_, null);
 };
 goog.inherits(proto.autokitteh.event.WaitingProjectEventState, jspb.Message);
 if (goog.DEBUG && !COMPILED) {
@@ -1551,6 +1551,13 @@ proto.autokitteh.event.ProcessedProjectEventState.prototype.hasRunSummary = func
 
 
 
+/**
+ * List of repeated fields within this message type.
+ * @private {!Array<number>}
+ * @const
+ */
+proto.autokitteh.event.WaitingProjectEventState.repeatedFields_ = [1];
+
 
 
 if (jspb.Message.GENERATE_TO_OBJECT) {
@@ -1582,6 +1589,7 @@ proto.autokitteh.event.WaitingProjectEventState.prototype.toObject = function(op
  */
 proto.autokitteh.event.WaitingProjectEventState.toObject = function(includeInstance, msg) {
   var f, obj = {
+    namesList: (f = jspb.Message.getRepeatedField(msg, 1)) == null ? undefined : f,
     runSummary: (f = msg.getRunSummary()) && lang_run_pb.RunSummary.toObject(includeInstance, f)
   };
 
@@ -1620,6 +1628,10 @@ proto.autokitteh.event.WaitingProjectEventState.deserializeBinaryFromReader = fu
     var field = reader.getFieldNumber();
     switch (field) {
     case 1:
+      var value = /** @type {string} */ (reader.readString());
+      msg.addNames(value);
+      break;
+    case 2:
       var value = new lang_run_pb.RunSummary;
       reader.readMessage(value,lang_run_pb.RunSummary.deserializeBinaryFromReader);
       msg.setRunSummary(value);
@@ -1653,10 +1665,17 @@ proto.autokitteh.event.WaitingProjectEventState.prototype.serializeBinary = func
  */
 proto.autokitteh.event.WaitingProjectEventState.serializeBinaryToWriter = function(message, writer) {
   var f = undefined;
+  f = message.getNamesList();
+  if (f.length > 0) {
+    writer.writeRepeatedString(
+      1,
+      f
+    );
+  }
   f = message.getRunSummary();
   if (f != null) {
     writer.writeMessage(
-      1,
+      2,
       f,
       lang_run_pb.RunSummary.serializeBinaryToWriter
     );
@@ -1665,12 +1684,49 @@ proto.autokitteh.event.WaitingProjectEventState.serializeBinaryToWriter = functi
 
 
 /**
- * optional autokitteh.lang.RunSummary run_summary = 1;
+ * repeated string names = 1;
+ * @return {!Array<string>}
+ */
+proto.autokitteh.event.WaitingProjectEventState.prototype.getNamesList = function() {
+  return /** @type {!Array<string>} */ (jspb.Message.getRepeatedField(this, 1));
+};
+
+
+/**
+ * @param {!Array<string>} value
+ * @return {!proto.autokitteh.event.WaitingProjectEventState} returns this
+ */
+proto.autokitteh.event.WaitingProjectEventState.prototype.setNamesList = function(value) {
+  return jspb.Message.setField(this, 1, value || []);
+};
+
+
+/**
+ * @param {string} value
+ * @param {number=} opt_index
+ * @return {!proto.autokitteh.event.WaitingProjectEventState} returns this
+ */
+proto.autokitteh.event.WaitingProjectEventState.prototype.addNames = function(value, opt_index) {
+  return jspb.Message.addToRepeatedField(this, 1, value, opt_index);
+};
+
+
+/**
+ * Clears the list making it empty but non-null.
+ * @return {!proto.autokitteh.event.WaitingProjectEventState} returns this
+ */
+proto.autokitteh.event.WaitingProjectEventState.prototype.clearNamesList = function() {
+  return this.setNamesList([]);
+};
+
+
+/**
+ * optional autokitteh.lang.RunSummary run_summary = 2;
  * @return {?proto.autokitteh.lang.RunSummary}
  */
 proto.autokitteh.event.WaitingProjectEventState.prototype.getRunSummary = function() {
   return /** @type{?proto.autokitteh.lang.RunSummary} */ (
-    jspb.Message.getWrapperField(this, lang_run_pb.RunSummary, 1));
+    jspb.Message.getWrapperField(this, lang_run_pb.RunSummary, 2));
 };
 
 
@@ -1679,7 +1735,7 @@ proto.autokitteh.event.WaitingProjectEventState.prototype.getRunSummary = functi
  * @return {!proto.autokitteh.event.WaitingProjectEventState} returns this
 */
 proto.autokitteh.event.WaitingProjectEventState.prototype.setRunSummary = function(value) {
-  return jspb.Message.setWrapperField(this, 1, value);
+  return jspb.Message.setWrapperField(this, 2, value);
 };
 
 
@@ -1697,7 +1753,7 @@ proto.autokitteh.event.WaitingProjectEventState.prototype.clearRunSummary = func
  * @return {boolean}
  */
 proto.autokitteh.event.WaitingProjectEventState.prototype.hasRunSummary = function() {
-  return jspb.Message.getField(this, 1) != null;
+  return jspb.Message.getField(this, 2) != null;
 };
 
 

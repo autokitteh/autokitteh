@@ -56,6 +56,7 @@ func (e *Event) AsStructValue() apivalues.StructValue {
 		Fields: map[string]*apivalues.Value{
 			"id":          S(e.ID().String()),
 			"type":        S(e.Type()),
+			"src_id":      S(e.EventSourceID().String()),
 			"original_id": S(e.OriginalID()),
 			"t":           apivalues.MustNewValue(apivalues.TimeValue(e.T())),
 			"data":        apivalues.MustNewValue(apivalues.DictValue(dataDict)),
@@ -70,6 +71,23 @@ func EventFromProto(pb *pbevent.Event) (*Event, error) {
 
 	// TODO: more validation?
 	return (&Event{pb: pb}).Clone(), nil
+}
+
+func MustNewEvent(
+	id EventID,
+	srcid apieventsrc.EventSourceID,
+	assoc string,
+	originalID string,
+	typ string,
+	data map[string]*apivalues.Value,
+	memo map[string]string,
+	t time.Time,
+) *Event {
+	ev, err := NewEvent(id, srcid, assoc, originalID, typ, data, memo, t)
+	if err != nil {
+		panic(err)
+	}
+	return ev
 }
 
 func NewEvent(

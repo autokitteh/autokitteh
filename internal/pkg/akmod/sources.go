@@ -4,9 +4,6 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"time"
-
-	"go.temporal.io/sdk/workflow"
 
 	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apievent"
 	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apivalues"
@@ -169,139 +166,6 @@ func (s *sources) bind(
 	return apivalues.None, nil
 }
 
-func (s *sources) wait(
-	cctx context.Context,
-	_ string,
-	args []*apivalues.Value,
-	kwargs map[string]*apivalues.Value,
-	_ pluginimpl.FuncToValueFunc,
-) (*apivalues.Value, error) {
-	session := getSessionContext(cctx)
-	ctx, l := session.Context, session.L
-
-	var (
-		tmo    apivalues.DurationValue
-		events []interface{}
-	)
-
-	if err := pluginimpl.UnpackArgs(
-		args,
-		kwargs,
-		"events?", &events,
-		"timeout?", &tmo,
-	); err != nil {
-		return nil, err
-	}
-
-	stypes := make([]string, len(events))
-	for i, t := range events {
-		sv, ok := t.(string)
-		if !ok {
-			return nil, fmt.Errorf("events[%d] is not a string", i)
-		}
-
-		if !isBindingAllowed(s.subs, sv) {
-			return nil, fmt.Errorf("binding %q is not allowed", sv)
-		}
-
-		stypes[i] = sv
-	}
-
-	if err := session.UpdateState(apievent.NewWaitingProjectEventState(session.RunSummary)); err != nil {
-		return nil, fmt.Errorf("set waiting: %w", err)
-	}
-
-	var (
-		evSig     *SessionEventSignal
-		tmoFuture workflow.Future
-	)
-
-	if tmo != 0 {
-		tmoFuture = workflow.NewTimer(ctx, time.Duration(tmo))
-	}
-
-	tmoed := false
-
-Outer:
-	for {
-		sel := workflow.NewSelector(ctx)
-
-		var sigs []*SessionEventSignal
-
-		sel.AddReceive(
-			session.SignalChannel,
-			func(c workflow.ReceiveChannel, _ bool) {
-				var sig *SessionEventSignal
-
-				for c.ReceiveAsync(&sig) {
-					sigs = append(sigs, sig)
-				}
-
-				l.Debug("received signals", "sigs", sigs)
-			},
-		)
-
-		if tmoFuture != nil {
-			sel.AddFuture(
-				tmoFuture,
-				func(f workflow.Future) {
-					l.Debug("timed out")
-					tmoed = true
-				},
-			)
-		}
-
-		sel.Select(ctx)
-
-		if tmoed || len(stypes) == 0 {
-			break
-		}
-
-		for _, sig := range sigs {
-			l := l.With("sig", sig)
-
-			l.Debug("checking signal")
-
-			for _, typ := range stypes {
-				parts := strings.SplitN(typ, ".", 2)
-
-				if sig.BindingName != parts[0] {
-					continue
-				}
-
-				if len(parts) == 2 && sig.Event.Type() != parts[1] {
-					continue
-				}
-
-				l.Debug("signal is relevant")
-
-				evSig = sig
-				break Outer
-			}
-
-			l.Debug("signal is not relevant")
-		}
-	}
-
-	if err := session.UpdateState(apievent.NewProcessingProjectEventState(session.RunSummary)); err != nil {
-		return nil, fmt.Errorf("set processing: %w", err)
-	}
-
-	if tmoed {
-		l.Debug("timed out")
-		return apivalues.None, nil
-	}
-
-	if evSig == nil {
-		return apivalues.None, nil
-	}
-
-	st := evSig.Event.AsStructValue()
-	st.Fields["binding_name"] = apivalues.String(evSig.BindingName)
-
-	return apivalues.NewValue(st)
-}
-
 func (s *sources) match(
 	_ context.Context,
 	_ string,
@@ -366,7 +230,6 @@ func (s *sources) asStruct(funcToValue pluginimpl.FuncToValueFunc) apivalues.Str
 		Fields: map[string]*apivalues.Value{
 			"bind": funcToValue("bind", s.bind, pluginimpl.WithFlags("allow_passing_call_values")),
 			"sub":  funcToValue("sub", s.sub),
-			"wait": funcToValue("wait", s.wait, pluginimpl.WithFlags("session")),
 		},
 	}
 }

@@ -15,6 +15,8 @@ type value interface {
 
 type converter interface{ ConvertFrom(value) error }
 
+type ValuePB = pbvalues.Value
+
 type Value struct{ pb *pbvalues.Value }
 
 func (v *Value) PB() *pbvalues.Value {

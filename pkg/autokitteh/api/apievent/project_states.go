@@ -103,10 +103,11 @@ func (w *WaitingProjectEventState) RunSummary() *apilang.RunSummary {
 	return apilang.MustRunSummaryFromProto(w.pb.RunSummary)
 }
 
-func NewWaitingProjectEventState(sum *apilang.RunSummary) *ProjectEventState {
+func NewWaitingProjectEventState(names []string, sum *apilang.RunSummary) *ProjectEventState {
 	return NewProjectEventState(
 		&WaitingProjectEventState{
 			pb: &pbevent.WaitingProjectEventState{
+				Names:      names,
 				RunSummary: sum.PB(),
 			},
 		},

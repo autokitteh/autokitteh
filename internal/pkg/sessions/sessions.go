@@ -152,6 +152,7 @@ func (s *Sessions) signalWaitingSessions(ctx workflow.Context, event *apievent.E
 
 	var eids []apievent.EventID
 
+	// TODO: get only sessions that wait on a specific event name.
 	if err := workflow.ExecuteLocalActivity(ctx, s.EventsStore.GetProjectWaitingEvents, project.ID()).Get(ctx, &eids); err != nil {
 		l.Error("get waiting error", "err", err)
 		return err
@@ -159,7 +160,7 @@ func (s *Sessions) signalWaitingSessions(ctx workflow.Context, event *apievent.E
 
 	l.Debug("waiting sessions", "event_ids", eids)
 
-	data := akmod.SessionEventSignal{Event: event, BindingName: binding}
+	data := akmod.NewEventSignal(binding, event)
 
 	var futs []workflow.Future
 
@@ -309,12 +310,16 @@ func (s *Sessions) Run(
 	evSigCh := workflow.GetSignalChannel(ctx, akmod.SessionEventSignalName)
 
 	sessionContext := &akmod.Session{
-		Context: ctx,
+		L:              l.Named("signals"),
+		Context:        ctx,
+		Event:          event,
+		SignalChannel:  evSigCh,
+		Temporal:       s.Temporal,
+		ProjectID:      project.ID(),
+		SrcBindingName: srcBindingName,
 		UpdateState: func(state *apievent.ProjectEventState) error {
 			return s.updateProjectState(ctx, event.ID(), project.ID(), state)
 		},
-		SignalChannel: evSigCh,
-		L:             l.Named("wait"),
 	}
 
 	runCtx := akmod.WithSessionContext(

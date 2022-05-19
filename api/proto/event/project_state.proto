@@ -50,5 +50,6 @@ message ProcessedProjectEventState {
 }
 
 message WaitingProjectEventState {
-  lang.RunSummary run_summary = 1;
+  repeated string names       = 1;
+  lang.RunSummary run_summary = 2;
 }

@@ -4,6 +4,7 @@ isort:skip_file
 """
 import builtins
 import google.protobuf.descriptor
+import google.protobuf.internal.containers
 import google.protobuf.message
 import google.protobuf.timestamp_pb2
 import lang.run_pb2
@@ -124,13 +125,17 @@ global___ProcessedProjectEventState = ProcessedProjectEventState
 
 class WaitingProjectEventState(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    NAMES_FIELD_NUMBER: builtins.int
     RUN_SUMMARY_FIELD_NUMBER: builtins.int
+    @property
+    def names(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[typing.Text]: ...
     @property
     def run_summary(self) -> lang.run_pb2.RunSummary: ...
     def __init__(self,
         *,
+        names: typing.Optional[typing.Iterable[typing.Text]] = ...,
         run_summary: typing.Optional[lang.run_pb2.RunSummary] = ...,
         ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["run_summary",b"run_summary"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["run_summary",b"run_summary"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["names",b"names","run_summary",b"run_summary"]) -> None: ...
 global___WaitingProjectEventState = WaitingProjectEventState
