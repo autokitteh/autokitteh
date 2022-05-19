@@ -1,14 +1,18 @@
 package aksvc
 
 import (
-	"github.com/urfave/cli/v2"
 	"github.com/autokitteh/autokitteh/pkg/svc"
+	"github.com/urfave/cli/v2"
 )
 
 // See [# InitPaths #] in config.go
 var initPaths cli.StringSlice
 
-func Run() {
+type Version = svc.Version
+
+func Run(version *Version) {
+	svc.SetVersion(version)
+
 	svc.RunCLI(
 		"",
 		append(

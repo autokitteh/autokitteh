@@ -97,7 +97,11 @@ func BuildSvcOpts(pls map[apiplugin.PluginID]plugin.Plugin) []svc.OptFunc {
 	}
 }
 
-func Run(pls ...*pluginimpl.Plugin) {
+type Version = svc.Version
+
+func Run(ver *Version, pls ...*pluginimpl.Plugin) {
+	svc.SetVersion(ver)
+
 	bipls := make(map[apiplugin.PluginID]plugin.Plugin, len(pls))
 
 	for _, pl := range pls {

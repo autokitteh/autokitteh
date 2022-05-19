@@ -22,7 +22,7 @@ func FlagsAndAction(optsargs ...OptFunc) ([]cli.Flag, func(c *cli.Context) error
 	var (
 		flags                             Flags
 		enables, disables, onlys, excepts cli.StringSlice
-		bg                                bool
+		ver, bg                           bool
 	)
 
 	cliFlags := []cli.Flag{
@@ -81,7 +81,20 @@ func FlagsAndAction(optsargs ...OptFunc) ([]cli.Flag, func(c *cli.Context) error
 		},
 	}
 
+	if GetVersion() != nil {
+		cliFlags = append(cliFlags, &cli.BoolFlag{
+			Name:        "version",
+			Destination: &ver,
+			Usage:       "print version and exit",
+		})
+	}
+
 	cliAction := func(c *cli.Context) error {
+		if ver {
+			fmt.Println(GetVersion().String())
+			return nil
+		}
+
 		for _, a := range cliopts.preaction {
 			if err := a(c); err != nil {
 				return err

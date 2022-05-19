@@ -27,4 +27,4 @@ var Test = &pluginimpl.Plugin{
 	},
 }
 
-func main() { pluginsvc.Run(Test) }
+func main() { pluginsvc.Run(nil, Test) }

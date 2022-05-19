@@ -224,6 +224,10 @@ func Start(opts ...OptFunc) (<-chan error, error) {
 
 	l.Debug("log init")
 
+	if v := GetVersion(); v != nil {
+		l.Info("initializing", "version", v)
+	}
+
 	for _, c := range svc.opts.cfgs {
 		if err := loadCfg(l.Named("configs"), name, c, flags.ConfigPath); err != nil {
 			return nil, fmt.Errorf("load user cfg error: %w", err)
