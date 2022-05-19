@@ -153,3 +153,7 @@ docker: docker-autokitteh docker-protoc
 .PHONY: py
 py:
 	make -C py
+
+.PHONY: goreleaser
+goreleaser:
+	goreleaser release --snapshot --rm-dist

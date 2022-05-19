@@ -1,0 +1,38 @@
+before:
+  hooks:
+    - go mod download
+builds:
+  -
+    id: akd
+    binary: akd
+    main: ./cmd/akd
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+  -
+    id: akpluginsd
+    binary: akpluginsd
+    main: ./cmd/akpluginsd
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+archives:
+  - replacements:
+      darwin: Darwin
+      linux: Linux
+checksum:
+  name_template: 'checksums.txt'
+snapshot:
+  name_template: "{{ .Tag }}-next"
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
