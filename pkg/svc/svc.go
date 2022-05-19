@@ -314,7 +314,7 @@ func Start(opts ...OptFunc) (<-chan error, error) {
 		),
 	)
 
-	grpcSrv := grpc.NewServer(grpcOpts.opts...)
+	grpcSrv := grpc.NewServer(append(grpcOpts.opts, grpc.MaxSendMsgSize(1024*1024*50))...)
 
 	providers.Add(grpcSrv)
 

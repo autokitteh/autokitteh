@@ -215,7 +215,11 @@ func (f *Factory) Open(ctx context.Context, l L.L, cfg *Config) (interface{}, er
 		}
 
 	case "grpc":
-		conn, err := grpc.Dial(cfg.GRPC.HostPort, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+		conn, err := grpc.Dial(
+			cfg.GRPC.HostPort,
+			grpc.WithTransportCredentials(insecure.NewCredentials()),
+			grpc.WithBlock(),
+		)
 		if err != nil {
 			return nil, fmt.Errorf("grpc dial: %w", err)
 		}

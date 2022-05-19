@@ -158,7 +158,7 @@ func (r *run) call(ctx context.Context, cv *apivalues.Value, kwargs map[string]*
 			cv,
 			args,
 			kwargs,
-			r.summary(),
+			nil, // r.summary(),
 		),
 	)
 	r.lock.Unlock()
