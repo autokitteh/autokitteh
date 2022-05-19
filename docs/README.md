@@ -58,6 +58,7 @@ $ make api
 - go >= 1.18
 - optional: docker (for shellcheck)
 - optional: gotestsum
+- optional: goreleaser (for testing releases)
 
 ## local protoc build
 
