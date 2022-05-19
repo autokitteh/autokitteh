@@ -43,10 +43,10 @@ func NewNaiveValues() *values { return &values{} }
 
 var NilValues *values = nil // must always be nil
 
-func (lv *values) FromStringDict(d starlark.StringDict, other func(starlark.Value) (*apivalues.Value, error)) (m map[string]*apivalues.Value, err error) {
+func (lv *values) FromStringDict(d starlark.StringDict, override, other func(starlark.Value) (*apivalues.Value, error)) (m map[string]*apivalues.Value, err error) {
 	m = make(map[string]*apivalues.Value, len(d))
 	for k, v := range d {
-		if m[k], err = lv.FromStarlarkValue(v, other); err != nil {
+		if m[k], err = lv.FromStarlarkValue(v, override, other); err != nil {
 			return nil, fmt.Errorf("key %q: %w", k, err)
 		}
 	}
@@ -63,9 +63,17 @@ func (lv *values) ToStringDict(m map[string]*apivalues.Value) (d starlark.String
 	return
 }
 
-func (lv *values) FromStarlarkValue(v starlark.Value, other func(starlark.Value) (*apivalues.Value, error)) (*apivalues.Value, error) {
+func (lv *values) FromStarlarkValue(v starlark.Value, override, other func(starlark.Value) (*apivalues.Value, error)) (*apivalues.Value, error) {
 	defaultOther := func(v starlark.Value) (*apivalues.Value, error) {
 		return nil, fmt.Errorf("(from) %w: %v", ErrUnknownType, reflect.TypeOf(v))
+	}
+
+	if override != nil {
+		if v1, err := override(v); err != nil {
+			return nil, err
+		} else if v1 != nil {
+			return v1, nil
+		}
 	}
 
 	switch vv := v.(type) {
@@ -88,7 +96,7 @@ func (lv *values) FromStarlarkValue(v starlark.Value, other func(starlark.Value)
 	case starlark.Bytes:
 		return apivalues.NewValue(apivalues.BytesValue(vv))
 	case starlark.Tuple:
-		vs, err := lv.froms([]starlark.Value(vv), other)
+		vs, err := lv.froms([]starlark.Value(vv), override, other)
 		if err != nil {
 			return nil, err
 		}
@@ -101,7 +109,7 @@ func (lv *values) FromStarlarkValue(v starlark.Value, other func(starlark.Value)
 		vs := make([]*apivalues.Value, vv.Len())
 		for i := 0; i < vv.Len(); i++ {
 			var err error
-			if vs[i], err = lv.FromStarlarkValue(vv.Index(i), other); err != nil {
+			if vs[i], err = lv.FromStarlarkValue(vv.Index(i), override, other); err != nil {
 				return nil, fmt.Errorf("item %d: %w", i, err)
 			}
 		}
@@ -112,7 +120,7 @@ func (lv *values) FromStarlarkValue(v starlark.Value, other func(starlark.Value)
 		for i := 0; iter.Next(&vs[i]); i++ {
 			// nop
 		}
-		vvs, err := lv.froms(vs, other)
+		vvs, err := lv.froms(vs, override, other)
 		if err != nil {
 			return nil, err
 		}
@@ -124,7 +132,7 @@ func (lv *values) FromStarlarkValue(v starlark.Value, other func(starlark.Value)
 
 			vs[i] = &apivalues.DictItem{}
 
-			vs[i].K, err = lv.FromStarlarkValue(k, other)
+			vs[i].K, err = lv.FromStarlarkValue(k, override, other)
 			if err != nil {
 				return nil, fmt.Errorf("key %v: %w", k, err)
 			}
@@ -136,14 +144,14 @@ func (lv *values) FromStarlarkValue(v starlark.Value, other func(starlark.Value)
 				return nil, fmt.Errorf("value for key %v: %w", k, err)
 			}
 
-			vs[i].V, err = lv.FromStarlarkValue(v, other)
+			vs[i].V, err = lv.FromStarlarkValue(v, override, other)
 			if err != nil {
 				return nil, fmt.Errorf("key %v: value %v: %w", k, v, err)
 			}
 		}
 		return apivalues.NewValue(apivalues.DictValue(vs))
 	case *starlarkstruct.Struct:
-		ctor, err := lv.FromStarlarkValue(vv.Constructor(), other)
+		ctor, err := lv.FromStarlarkValue(vv.Constructor(), override, other)
 		if err != nil {
 			return nil, fmt.Errorf("ctor: %w", err)
 		}
@@ -151,14 +159,14 @@ func (lv *values) FromStarlarkValue(v starlark.Value, other func(starlark.Value)
 		d := make(starlark.StringDict)
 		vv.ToStringDict(d)
 
-		fs, err := lv.FromStringDict(d, other)
+		fs, err := lv.FromStringDict(d, override, other)
 		if err != nil {
 			return nil, fmt.Errorf("fields: %w", err)
 		}
 
 		return apivalues.NewValue(apivalues.StructValue{Ctor: ctor, Fields: fs})
 	case *starlarkstruct.Module:
-		ms, err := lv.FromStringDict(vv.Members, other)
+		ms, err := lv.FromStringDict(vv.Members, override, other)
 		if err != nil {
 			return nil, fmt.Errorf("members: %w", err)
 		}
@@ -192,10 +200,10 @@ func (lv *values) FromStarlarkValue(v starlark.Value, other func(starlark.Value)
 	}
 }
 
-func (lv *values) froms(ins []starlark.Value, other func(starlark.Value) (*apivalues.Value, error)) (outs []*apivalues.Value, err error) {
+func (lv *values) froms(ins []starlark.Value, override, other func(starlark.Value) (*apivalues.Value, error)) (outs []*apivalues.Value, err error) {
 	outs = make([]*apivalues.Value, len(ins))
 	for i, in := range ins {
-		if outs[i], err = lv.FromStarlarkValue(in, other); err != nil {
+		if outs[i], err = lv.FromStarlarkValue(in, override, other); err != nil {
 			return nil, fmt.Errorf("item %d: %w", i, err)
 		}
 	}
@@ -331,7 +339,7 @@ func (lv *values) builtin(
 
 	args := make([]*apivalues.Value, len(slargs))
 	for i, slarg := range slargs {
-		if args[i], err = lv.FromStarlarkValue(slarg, nil); err != nil {
+		if args[i], err = lv.FromStarlarkValue(slarg, nil, nil); err != nil {
 			return nil, fmt.Errorf("pos arg %d: %w", i, err)
 		}
 	}
@@ -349,7 +357,7 @@ func (lv *values) builtin(
 			return nil, fmt.Errorf("invalid starlark kv args, key not a string (%v)", slk.Type())
 		}
 
-		v, err := lv.FromStarlarkValue(slv, nil)
+		v, err := lv.FromStarlarkValue(slv, nil, nil)
 		if err != nil {
 			return nil, fmt.Errorf("unable to decode pair starlark value for key %q: %w", slks, err)
 		}

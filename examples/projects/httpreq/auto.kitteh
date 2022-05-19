@@ -1,0 +1,11 @@
+load("ak", "sources")
+load("http", "get")
+
+
+def _on_http_get(event_id, query_values):
+  resp = get("http://example.com")
+  print(resp)
+  print(resp.body())
+
+
+sources.bind('http.GET', _on_http_get)

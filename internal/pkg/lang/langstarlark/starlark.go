@@ -281,7 +281,7 @@ func (s *langstarlark) RunModule(
 
 	g = filterGlobals(g)
 
-	gvs, err := s.vs.WithEnv(env).FromStringDict(g, nil)
+	gvs, err := s.vs.WithEnv(env).FromStringDict(g, nil, nil)
 	if err != nil {
 		return nil, nil, errf("convert: %w", err)
 	}
@@ -376,7 +376,7 @@ func (s *langstarlark) CallFunction(
 		return nil, nil, translateError(retv.err)
 	}
 
-	gv, err := s.vs.WithEnv(env).FromStarlarkValue(retv.v, nil)
+	gv, err := s.vs.WithEnv(env).FromStarlarkValue(retv.v, nil, nil)
 	if err != nil {
 		return nil, nil, errf("convert: %w", err)
 	}

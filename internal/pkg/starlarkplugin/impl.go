@@ -6,8 +6,8 @@ import (
 
 	"go.starlark.net/starlark"
 
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apivalues"
 	"github.com/autokitteh/autokitteh/internal/pkg/lang/langstarlark"
+	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apivalues"
 	"github.com/autokitteh/autokitteh/pkg/autokitteh/pluginimpl"
 )
 
@@ -64,6 +64,7 @@ func mkcall(bi *starlark.Builtin) func(
 
 				return funcToValue(bi.Name(), mkcall(bi)), nil
 			},
+			nil,
 		)
 	}
 }
@@ -78,7 +79,7 @@ func Plugin(
 		if bi, ok := v.(*starlark.Builtin); ok {
 			// TODO: builtin doc somehow.
 			plmembers[name] = pluginimpl.NewMethodMember("?", mkcall(bi))
-		} else if v, err := langstarlark.NilValues.FromStarlarkValue(v, nil); err != nil {
+		} else if v, err := langstarlark.NilValues.FromStarlarkValue(v, nil, nil); err != nil {
 			panic(fmt.Errorf("%s: %w", name, err))
 		} else {
 			plmembers[name] = pluginimpl.NewValueMember("", v)

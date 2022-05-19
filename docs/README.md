@@ -59,6 +59,7 @@ $ make api
 - optional: docker (for shellcheck)
 - optional: gotestsum
 - optional: goreleaser (for testing releases)
+- optional: tctl
 
 ## local protoc build
 
