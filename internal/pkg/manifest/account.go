@@ -14,9 +14,13 @@ type Account struct {
 	Memo     map[string]string `json:"memo"`
 }
 
-func (a Account) API() (*apiaccount.Account, error) {
+func (a Account) API(name string) (*apiaccount.Account, error) {
+	if a.Name != "" {
+		name = a.Name
+	}
+
 	return apiaccount.NewAccount(
-		apiaccount.AccountName(a.Name),
+		apiaccount.AccountName(name),
 		(&apiaccount.AccountSettings{}).
 			SetEnabled(!a.Disabled).
 			SetMemo(a.Memo),
@@ -25,14 +29,14 @@ func (a Account) API() (*apiaccount.Account, error) {
 	)
 }
 
-func (a Account) Compile() ([]*Action, error) {
-	api, err := a.API()
+func (a Account) Compile(name string) ([]*Action, error) {
+	api, err := a.API(name)
 	if err != nil {
 		return nil, fmt.Errorf("invalid account: %w", err)
 	}
 
 	return []*Action{{
-		Desc: fmt.Sprintf("create account %s", api.Name()),
+		Desc: fmt.Sprintf("create account %q", api.Name()),
 		Run: func(ctx context.Context, env *Env) (string, error) {
 			err := env.Accounts.Create(ctx, api.Name(), api.Settings())
 			if err != nil {

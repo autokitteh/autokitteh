@@ -3,23 +3,23 @@ package manifest
 #Memo: [string]: string
 
 #Account: {
-	name:      string
+	name?:     string
 	disabled?: bool
 	memo:      #Memo
 }
 
-#Accounts: [...#Account]
+#Accounts: [string]: #Account
 
 #EventSource: {
-	id:        string
+	id?:       string
 	disabled?: bool
-	types?: [...string]
+	types?:    [...string]
 }
 
-#EventSources: [...#EventSource]
+#EventSources: [string]: #EventSource
 
 #Plugin: {
-	id:        string
+	id?:       string
 	address?:  string
 	port?:     number
 	disabled?: bool
@@ -28,7 +28,7 @@ package manifest
 	}
 }
 
-#Plugins: [...#Plugin]
+#Plugins: [string]: #Plugin
 
 #ProjectPlugin: {
 	disabled?: bool
@@ -46,18 +46,18 @@ package manifest
 #ProjectSourceBindings: [string]: #ProjectSourceBinding
 
 #Project: {
-	id:           string
-	name:         string
-	account_name: string
-	main_path:    string
-	disabled?:    bool
-	memo:         #Memo
-	plugins:      #ProjectPlugins
-	src_bindings: #ProjectSourceBindings
+	id?:           string
+	name?:         string
+	account_name?: string
+	main_path:     string
+	disabled?:     bool
+	memo:          #Memo
+	plugins:       #ProjectPlugins
+	src_bindings:  #ProjectSourceBindings
 	Predecls: [string]: string
 }
 
-#Projects: [...#Project]
+#Projects: [string]: #Project
 
 #Manifest: {
 	accounts:  #Accounts

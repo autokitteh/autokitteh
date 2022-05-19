@@ -14,9 +14,13 @@ type EventSource struct {
 	Types    []string                  `json:"types"`
 }
 
-func (a EventSource) API() (*apieventsrc.EventSource, error) {
+func (a EventSource) API(id string) (*apieventsrc.EventSource, error) {
+	if a.ID != "" {
+		id = a.ID.String()
+	}
+
 	return apieventsrc.NewEventSource(
-		apieventsrc.EventSourceID(a.ID),
+		apieventsrc.EventSourceID(id),
 		(&apieventsrc.EventSourceSettings{}).
 			SetTypes(a.Types).
 			SetEnabled(!a.Disabled),
@@ -25,14 +29,14 @@ func (a EventSource) API() (*apieventsrc.EventSource, error) {
 	)
 }
 
-func (a EventSource) Compile() ([]*Action, error) {
-	api, err := a.API()
+func (a EventSource) Compile(id string) ([]*Action, error) {
+	api, err := a.API(id)
 	if err != nil {
 		return nil, fmt.Errorf("invalid eventsrc: %w", err)
 	}
 
 	return []*Action{{
-		Desc: fmt.Sprintf("create eventsrc %s", api.ID()),
+		Desc: fmt.Sprintf("create eventsrc %q", api.ID()),
 		Run: func(ctx context.Context, env *Env) (string, error) {
 			err := env.EventSources.Add(ctx, api.ID(), api.Settings())
 			if err != nil {

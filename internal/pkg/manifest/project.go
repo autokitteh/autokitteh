@@ -3,6 +3,7 @@ package manifest
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/samber/lo"
@@ -38,7 +39,7 @@ type Project struct {
 	Predecls    map[string]string               `json:"predecls"`     // TODO: allow more than just strings.
 }
 
-func (p Project) API() (*apiproject.Project, error) {
+func (p Project) API(id string) (*apiproject.Project, error) {
 	mainPath, err := apiprogram.ParsePathString(p.MainPath)
 	if err != nil {
 		return nil, fmt.Errorf("main path: %w", err)
@@ -51,7 +52,7 @@ func (p Project) API() (*apiproject.Project, error) {
 
 		apipl, err := apiproject.NewProjectPlugin(id, !pl.Disabled)
 		if err != nil {
-			return nil, fmt.Errorf("plugin %s: %w", id, err)
+			return nil, fmt.Errorf("plugin %q: %w", id, err)
 		}
 
 		plugins = append(plugins, apipl)
@@ -61,11 +62,25 @@ func (p Project) API() (*apiproject.Project, error) {
 		return apivalues.String(v)
 	})
 
+	if p.ID != "" {
+		id = p.ID
+	}
+
+	accountName, projectName, _ := strings.Cut(id, ".")
+
+	if p.AccountName != "" {
+		accountName = p.AccountName
+	}
+
+	if p.Name != "" {
+		projectName = p.Name
+	}
+
 	return apiproject.NewProject(
-		apiproject.ProjectID(p.ID),
-		apiaccount.AccountName(p.AccountName),
+		apiproject.ProjectID(id),
+		apiaccount.AccountName(accountName),
 		(&apiproject.ProjectSettings{}).
-			SetName(p.Name).
+			SetName(projectName).
 			SetEnabled(!p.Disabled).
 			SetMemo(p.Memo).
 			SetMainPath(mainPath).
@@ -76,8 +91,8 @@ func (p Project) API() (*apiproject.Project, error) {
 	)
 }
 
-func (a Project) Compile() ([]*Action, error) {
-	api, err := a.API()
+func (a Project) Compile(id string) ([]*Action, error) {
+	api, err := a.API(id)
 	if err != nil {
 		return nil, fmt.Errorf("invalid project: %w", err)
 	}
@@ -103,7 +118,7 @@ func (a Project) Compile() ([]*Action, error) {
 			acts = append(
 				acts,
 				&Action{
-					Desc: fmt.Sprintf("bind eventsource %s to %s as %s", srcid, api.ID(), name),
+					Desc: fmt.Sprintf("bind eventsource %q to %q as %q", srcid, api.ID(), name),
 					Run: func(ctx context.Context, env *Env) (string, error) {
 						err := env.EventSources.AddProjectBinding(
 							ctx,

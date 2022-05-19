@@ -18,7 +18,7 @@ type Plugin struct {
 	} `json:"exec"`
 }
 
-func (a Plugin) API() (*apiplugin.Plugin, error) {
+func (a Plugin) API(id string) (*apiplugin.Plugin, error) {
 	s := (&apiplugin.PluginSettings{}).SetEnabled(!a.Disabled)
 
 	if a.Port != 0 {
@@ -33,22 +33,26 @@ func (a Plugin) API() (*apiplugin.Plugin, error) {
 		s = s.SetExec((&apiplugin.PluginExecSettings{}).SetName(a.Exec.Name))
 	}
 
+	if a.ID != "" {
+		id = a.ID.String()
+	}
+
 	return apiplugin.NewPlugin(
-		apiplugin.PluginID(a.ID),
+		apiplugin.PluginID(id),
 		s,
 		time.Now(),
 		nil,
 	)
 }
 
-func (a Plugin) Compile() ([]*Action, error) {
-	api, err := a.API()
+func (a Plugin) Compile(id string) ([]*Action, error) {
+	api, err := a.API(id)
 	if err != nil {
 		return nil, fmt.Errorf("invalid plugin: %w", err)
 	}
 
 	return []*Action{{
-		Desc: fmt.Sprintf("create plugin %s", api.ID()),
+		Desc: fmt.Sprintf("create plugin %q", api.ID()),
 		Run: func(ctx context.Context, env *Env) (string, error) {
 			err := env.Plugins.RegisterExternalPlugin(ctx, api.ID(), api.Settings())
 			if err != nil {
