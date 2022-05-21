@@ -139,16 +139,13 @@ lint: $(OUTDIR)/tools/golangci-lint
 shellcheck:
 	docker run -v $(shell pwd):/src -w /src koalaman/shellcheck -a -- $(shell find . -name \*.sh)
 
-.PHONY: docker-protoc
-docker-protoc:
-	make -C build/protoc
 
 .PHONY: docker-autokitteh
 docker-autokitteh:
 	docker build -t autokitteh/autokitteh -f build/autokitteh/Dockerfile .
 
 .PHONY: docker
-docker: docker-autokitteh docker-protoc
+docker: docker-autokitteh
 
 .PHONY: py
 py:

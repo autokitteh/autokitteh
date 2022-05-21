@@ -3,10 +3,6 @@ FROM golang:1.18 AS builder
 COPY . /build
 WORKDIR /build
 
-# Not needed since /gen is comitted into the repository.
-# (left here in a comment if we want to revert in the future)
-# RUN ./api/scripts/gen-in-docker-build.sh
-
 ENV GOOS=linux
 
 # see https://awstip.com/containerize-go-sqlite-with-docker-6d7fbecd14f0
