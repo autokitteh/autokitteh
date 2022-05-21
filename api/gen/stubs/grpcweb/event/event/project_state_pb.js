@@ -1280,7 +1280,7 @@ proto.autokitteh.event.ProcessingProjectEventState.prototype.toObject = function
  */
 proto.autokitteh.event.ProcessingProjectEventState.toObject = function(includeInstance, msg) {
   var f, obj = {
-    runSummary: (f = msg.getRunSummary()) && lang_run_pb.RunSummary.toObject(includeInstance, f)
+
   };
 
   if (includeInstance) {
@@ -1317,11 +1317,6 @@ proto.autokitteh.event.ProcessingProjectEventState.deserializeBinaryFromReader =
     }
     var field = reader.getFieldNumber();
     switch (field) {
-    case 1:
-      var value = new lang_run_pb.RunSummary;
-      reader.readMessage(value,lang_run_pb.RunSummary.deserializeBinaryFromReader);
-      msg.setRunSummary(value);
-      break;
     default:
       reader.skipField();
       break;
@@ -1351,51 +1346,6 @@ proto.autokitteh.event.ProcessingProjectEventState.prototype.serializeBinary = f
  */
 proto.autokitteh.event.ProcessingProjectEventState.serializeBinaryToWriter = function(message, writer) {
   var f = undefined;
-  f = message.getRunSummary();
-  if (f != null) {
-    writer.writeMessage(
-      1,
-      f,
-      lang_run_pb.RunSummary.serializeBinaryToWriter
-    );
-  }
-};
-
-
-/**
- * optional autokitteh.lang.RunSummary run_summary = 1;
- * @return {?proto.autokitteh.lang.RunSummary}
- */
-proto.autokitteh.event.ProcessingProjectEventState.prototype.getRunSummary = function() {
-  return /** @type{?proto.autokitteh.lang.RunSummary} */ (
-    jspb.Message.getWrapperField(this, lang_run_pb.RunSummary, 1));
-};
-
-
-/**
- * @param {?proto.autokitteh.lang.RunSummary|undefined} value
- * @return {!proto.autokitteh.event.ProcessingProjectEventState} returns this
-*/
-proto.autokitteh.event.ProcessingProjectEventState.prototype.setRunSummary = function(value) {
-  return jspb.Message.setWrapperField(this, 1, value);
-};
-
-
-/**
- * Clears the message field making it undefined.
- * @return {!proto.autokitteh.event.ProcessingProjectEventState} returns this
- */
-proto.autokitteh.event.ProcessingProjectEventState.prototype.clearRunSummary = function() {
-  return this.setRunSummary(undefined);
-};
-
-
-/**
- * Returns whether this field is set.
- * @return {boolean}
- */
-proto.autokitteh.event.ProcessingProjectEventState.prototype.hasRunSummary = function() {
-  return jspb.Message.getField(this, 1) != null;
 };
 
 

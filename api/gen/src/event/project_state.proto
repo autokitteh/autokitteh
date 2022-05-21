@@ -42,7 +42,6 @@ message IgnoredProjectEventState {
 message PendingProjectEventState {}
 
 message ProcessingProjectEventState {
-  lang.RunSummary run_summary = 1;
 }
 
 message ProcessedProjectEventState {

@@ -175,7 +175,7 @@ func (s *signals) wait(
 		sig = nil
 	}
 
-	if err := session.UpdateState(apievent.NewProcessingProjectEventState(session.RunSummary)); err != nil {
+	if err := session.UpdateState(apievent.NewProcessingProjectEventState()); err != nil {
 		return nil, fmt.Errorf("set processing: %w", err)
 	}
 

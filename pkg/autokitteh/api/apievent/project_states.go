@@ -76,16 +76,10 @@ type ProcessingProjectEventState struct {
 func (*ProcessingProjectEventState) isProjectEventState() {}
 func (*ProcessingProjectEventState) Name() string         { return "processing" }
 
-func (p *ProcessingProjectEventState) RunSummary() *apilang.RunSummary {
-	return apilang.MustRunSummaryFromProto(p.pb.RunSummary)
-}
-
-func NewProcessingProjectEventState(sum *apilang.RunSummary) *ProjectEventState {
+func NewProcessingProjectEventState() *ProjectEventState {
 	return NewProjectEventState(
 		&ProcessingProjectEventState{
-			pb: &pbevent.ProcessingProjectEventState{
-				RunSummary: sum.PB(),
-			},
+			pb: &pbevent.ProcessingProjectEventState{},
 		},
 	)
 }

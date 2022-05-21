@@ -236,7 +236,7 @@ func (e *Events) ingestProjectEventWorkflow(
 		},
 	)
 
-	e.updateProjectState(ctx, event.ID(), project.ID(), apievent.NewProcessingProjectEventState(nil))
+	e.updateProjectState(ctx, event.ID(), project.ID(), apievent.NewProcessingProjectEventState())
 
 	sum, err := e.Run(ctx, event, project, bindingName)
 	if err != nil {

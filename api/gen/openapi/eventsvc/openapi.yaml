@@ -144,13 +144,13 @@ paths:
                   in: query
                   schema:
                     type: string
-                - name: state.processing.runSummary.prints
+                - name: state.waiting.names
                   in: query
                   schema:
                     type: array
                     items:
                         type: string
-                - name: state.waiting.names
+                - name: state.waiting.runSummary.prints
                   in: query
                   schema:
                     type: array
@@ -681,9 +681,7 @@ components:
                         type: string
         ProcessingProjectEventState:
             type: object
-            properties:
-                runSummary:
-                    $ref: '#/components/schemas/RunSummary'
+            properties: {}
         ProjectEventState:
             type: object
             properties:

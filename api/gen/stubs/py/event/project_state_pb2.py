@@ -17,7 +17,7 @@ from validate import validate_pb2 as validate_dot_validate__pb2
 from lang import run_pb2 as lang_dot_run__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x19\x65vent/project_state.proto\x12\x10\x61utokitteh.event\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x17validate/validate.proto\x1a\x0elang/run.proto\"\x88\x01\n\x17ProjectEventStateRecord\x12/\n\x01t\x18\x01 \x01(\x0b\x32\x1a.google.protobuf.TimestampB\x08\xfa\x42\x05\xb2\x01\x02\x08\x01\x12<\n\x05state\x18\x02 \x01(\x0b\x32#.autokitteh.event.ProjectEventStateB\x08\xfa\x42\x05\x8a\x01\x02\x10\x01\"\xa0\x03\n\x11ProjectEventState\x12\x39\n\x05\x65rror\x18\x01 \x01(\x0b\x32(.autokitteh.event.ErrorProjectEventStateH\x00\x12=\n\x07ignored\x18\x02 \x01(\x0b\x32*.autokitteh.event.IgnoredProjectEventStateH\x00\x12=\n\x07pending\x18\x03 \x01(\x0b\x32*.autokitteh.event.PendingProjectEventStateH\x00\x12\x43\n\nprocessing\x18\x04 \x01(\x0b\x32-.autokitteh.event.ProcessingProjectEventStateH\x00\x12=\n\x07waiting\x18\x05 \x01(\x0b\x32*.autokitteh.event.WaitingProjectEventStateH\x00\x12\x41\n\tprocessed\x18\x06 \x01(\x0b\x32,.autokitteh.event.ProcessedProjectEventStateH\x00\x42\x0b\n\x04type\x12\x03\xf8\x42\x01\"Y\n\x16\x45rrorProjectEventState\x12\x30\n\x0brun_summary\x18\x01 \x01(\x0b\x32\x1b.autokitteh.lang.RunSummary\x12\r\n\x05\x65rror\x18\x02 \x01(\t\"*\n\x18IgnoredProjectEventState\x12\x0e\n\x06reason\x18\x01 \x01(\t\"\x1a\n\x18PendingProjectEventState\"O\n\x1bProcessingProjectEventState\x12\x30\n\x0brun_summary\x18\x01 \x01(\x0b\x32\x1b.autokitteh.lang.RunSummary\"N\n\x1aProcessedProjectEventState\x12\x30\n\x0brun_summary\x18\x01 \x01(\x0b\x32\x1b.autokitteh.lang.RunSummary\"[\n\x18WaitingProjectEventState\x12\r\n\x05names\x18\x01 \x03(\t\x12\x30\n\x0brun_summary\x18\x02 \x01(\x0b\x32\x1b.autokitteh.lang.RunSummaryB9Z7github.com/autokitteh/autokitteh/api/gen/stubs/go/eventb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x19\x65vent/project_state.proto\x12\x10\x61utokitteh.event\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x17validate/validate.proto\x1a\x0elang/run.proto\"\x88\x01\n\x17ProjectEventStateRecord\x12/\n\x01t\x18\x01 \x01(\x0b\x32\x1a.google.protobuf.TimestampB\x08\xfa\x42\x05\xb2\x01\x02\x08\x01\x12<\n\x05state\x18\x02 \x01(\x0b\x32#.autokitteh.event.ProjectEventStateB\x08\xfa\x42\x05\x8a\x01\x02\x10\x01\"\xa0\x03\n\x11ProjectEventState\x12\x39\n\x05\x65rror\x18\x01 \x01(\x0b\x32(.autokitteh.event.ErrorProjectEventStateH\x00\x12=\n\x07ignored\x18\x02 \x01(\x0b\x32*.autokitteh.event.IgnoredProjectEventStateH\x00\x12=\n\x07pending\x18\x03 \x01(\x0b\x32*.autokitteh.event.PendingProjectEventStateH\x00\x12\x43\n\nprocessing\x18\x04 \x01(\x0b\x32-.autokitteh.event.ProcessingProjectEventStateH\x00\x12=\n\x07waiting\x18\x05 \x01(\x0b\x32*.autokitteh.event.WaitingProjectEventStateH\x00\x12\x41\n\tprocessed\x18\x06 \x01(\x0b\x32,.autokitteh.event.ProcessedProjectEventStateH\x00\x42\x0b\n\x04type\x12\x03\xf8\x42\x01\"Y\n\x16\x45rrorProjectEventState\x12\x30\n\x0brun_summary\x18\x01 \x01(\x0b\x32\x1b.autokitteh.lang.RunSummary\x12\r\n\x05\x65rror\x18\x02 \x01(\t\"*\n\x18IgnoredProjectEventState\x12\x0e\n\x06reason\x18\x01 \x01(\t\"\x1a\n\x18PendingProjectEventState\"\x1d\n\x1bProcessingProjectEventState\"N\n\x1aProcessedProjectEventState\x12\x30\n\x0brun_summary\x18\x01 \x01(\x0b\x32\x1b.autokitteh.lang.RunSummary\"[\n\x18WaitingProjectEventState\x12\r\n\x05names\x18\x01 \x03(\t\x12\x30\n\x0brun_summary\x18\x02 \x01(\x0b\x32\x1b.autokitteh.lang.RunSummaryB9Z7github.com/autokitteh/autokitteh/api/gen/stubs/go/eventb\x06proto3')
 
 
 
@@ -106,9 +106,9 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _PENDINGPROJECTEVENTSTATE._serialized_start=814
   _PENDINGPROJECTEVENTSTATE._serialized_end=840
   _PROCESSINGPROJECTEVENTSTATE._serialized_start=842
-  _PROCESSINGPROJECTEVENTSTATE._serialized_end=921
-  _PROCESSEDPROJECTEVENTSTATE._serialized_start=923
-  _PROCESSEDPROJECTEVENTSTATE._serialized_end=1001
-  _WAITINGPROJECTEVENTSTATE._serialized_start=1003
-  _WAITINGPROJECTEVENTSTATE._serialized_end=1094
+  _PROCESSINGPROJECTEVENTSTATE._serialized_end=871
+  _PROCESSEDPROJECTEVENTSTATE._serialized_start=873
+  _PROCESSEDPROJECTEVENTSTATE._serialized_end=951
+  _WAITINGPROJECTEVENTSTATE._serialized_start=953
+  _WAITINGPROJECTEVENTSTATE._serialized_end=1044
 # @@protoc_insertion_point(module_scope)

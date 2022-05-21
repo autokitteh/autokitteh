@@ -99,15 +99,8 @@ global___PendingProjectEventState = PendingProjectEventState
 
 class ProcessingProjectEventState(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
-    RUN_SUMMARY_FIELD_NUMBER: builtins.int
-    @property
-    def run_summary(self) -> lang.run_pb2.RunSummary: ...
     def __init__(self,
-        *,
-        run_summary: typing.Optional[lang.run_pb2.RunSummary] = ...,
         ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["run_summary",b"run_summary"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["run_summary",b"run_summary"]) -> None: ...
 global___ProcessingProjectEventState = ProcessingProjectEventState
 
 class ProcessedProjectEventState(google.protobuf.message.Message):

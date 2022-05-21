@@ -496,16 +496,6 @@ func (m *ProcessingProjectEventState) Validate() error {
 		return nil
 	}
 
-	if v, ok := interface{}(m.GetRunSummary()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return ProcessingProjectEventStateValidationError{
-				field:  "RunSummary",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
 	return nil
 }
 

@@ -254,8 +254,6 @@ func (s *Svc) eventForProject(w http.ResponseWriter, r *http.Request) {
 				sum = sv.RunSummary()
 			case *apievent.WaitingProjectEventState:
 				sum = sv.RunSummary()
-			case *apievent.ProcessingProjectEventState:
-				sum = sv.RunSummary()
 			}
 		}
 	}
