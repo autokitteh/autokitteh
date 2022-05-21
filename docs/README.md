@@ -43,11 +43,6 @@ All generated code for proto is checked into the repository.
 If any proto is changed, these must be ran:
 
 ```
-# OPTIONAL: Build protoc docker image locally.
-# If not done, latest image from dockerhub is used.
-$ make protoc
-
-# Always run.
 $ make api
 ```
 
