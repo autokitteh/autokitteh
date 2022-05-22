@@ -4,7 +4,7 @@ import (
 	"go.starlark.net/starlark"
 	"go.starlark.net/starlarkstruct"
 
-	"github.com/autokitteh/autokitteh/pkg/parsecmd"
+	"github.com/autokitteh/parsecmd"
 	"github.com/autokitteh/starlarkutils"
 )
 

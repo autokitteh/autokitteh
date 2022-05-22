@@ -61,6 +61,7 @@ require (
 	github.com/Songmu/axslogparser v1.4.0 // indirect
 	github.com/Songmu/go-ltsv v0.0.0-20181014062614-c30af2b7b171 // indirect
 	github.com/andybalholm/cascadia v1.1.0 // indirect
+	github.com/autokitteh/parsecmd v0.0.0-20220522021831-04f6419353d5 // indirect
 	github.com/autokitteh/starlarkutils v0.0.0-20220522021518-dd78b8b234d6 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/cockroachdb/apd/v2 v2.0.2 // indirect

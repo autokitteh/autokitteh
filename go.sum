@@ -238,6 +238,8 @@ github.com/autokitteh/L v0.0.0-20220522012714-c0074b7a9bbf h1:iNKSKTYurooCREENJ9
 github.com/autokitteh/L v0.0.0-20220522012714-c0074b7a9bbf/go.mod h1:FLgQ9xlH9ixcZl9hFwXZ9f3o0OH8y1mprW0ncpvktDM=
 github.com/autokitteh/flexcall v0.0.0-20220522011406-2215eb451150 h1:WW4I80HvWYajsGBbiwo/3Oppev6MjNYGMY1pfOyf0jw=
 github.com/autokitteh/flexcall v0.0.0-20220522011406-2215eb451150/go.mod h1:AsIIbySYBr40J6Vzl5bKKW4wzkMZlNGCvzYfHFiHW4E=
+github.com/autokitteh/parsecmd v0.0.0-20220522021831-04f6419353d5 h1:DdoYeIXpbF0EigiT/MOlgwj6QBd77xkW6+JT7gGcRAU=
+github.com/autokitteh/parsecmd v0.0.0-20220522021831-04f6419353d5/go.mod h1:26WlNpWBVwaa3ZUjjHzYD5BV4FeddeGf8Nk1v3AF/9E=
 github.com/autokitteh/starlarkutils v0.0.0-20220522021518-dd78b8b234d6 h1:J2oNbDOnFizkCr1jRUnGJvbSzJBqjTSlMRYNgLCxq7g=
 github.com/autokitteh/starlarkutils v0.0.0-20220522021518-dd78b8b234d6/go.mod h1:HM6lYRtgVS+zFtcuuvEE0B8+ReO7pvAFeNbyYV38liY=
 github.com/autokitteh/stores v0.0.0-20220522015029-ac85b54e1480 h1:xElWZZayb0nw92PnXvhXfiWNWpdTdTfZLIL83MXPdkY=
