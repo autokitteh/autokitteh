@@ -3,6 +3,7 @@ module github.com/autokitteh/autokitteh
 go 1.18
 
 require (
+	github.com/autokitteh/H v0.0.0-20220522023555-2f7de06b9c0a
 	github.com/autokitteh/L v0.0.0-20220522012714-c0074b7a9bbf
 	github.com/autokitteh/parsecmd v0.0.0-20220522021831-04f6419353d5
 	github.com/autokitteh/procs v0.0.0-20220522022722-6170e66abe0f

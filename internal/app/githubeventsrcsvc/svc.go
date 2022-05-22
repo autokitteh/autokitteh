@@ -17,15 +17,15 @@ import (
 
 	pb "github.com/autokitteh/autokitteh/api/gen/stubs/go/githubeventsrc"
 
+	"github.com/autokitteh/autokitteh/internal/pkg/events"
+	"github.com/autokitteh/autokitteh/internal/pkg/eventsrcsstore"
+	"github.com/autokitteh/autokitteh/internal/pkg/githubinstalls"
 	"github.com/autokitteh/autokitteh/sdk/api/apievent"
 	"github.com/autokitteh/autokitteh/sdk/api/apieventsrc"
 	"github.com/autokitteh/autokitteh/sdk/api/apiproject"
 	"github.com/autokitteh/autokitteh/sdk/api/apivalues"
-	"github.com/autokitteh/autokitteh/internal/pkg/events"
-	"github.com/autokitteh/autokitteh/internal/pkg/eventsrcsstore"
-	"github.com/autokitteh/autokitteh/internal/pkg/githubinstalls"
 
-	H "github.com/autokitteh/autokitteh/pkg/h"
+	"github.com/autokitteh/H"
 	"github.com/autokitteh/L"
 )
 

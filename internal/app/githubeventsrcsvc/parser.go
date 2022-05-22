@@ -8,7 +8,7 @@ import (
 
 	"github.com/autokitteh/autokitteh/sdk/api/apivalues"
 
-	H "github.com/autokitteh/autokitteh/pkg/h"
+	"github.com/autokitteh/H"
 )
 
 type parsedEvent struct {
