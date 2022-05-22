@@ -8,11 +8,11 @@ import (
 	"github.com/gorilla/mux"
 
 	"github.com/autokitteh/L"
-	"github.com/autokitteh/autokitteh/pkg/procs"
+	"github.com/autokitteh/procs"
 )
 
 type Config struct {
-	procs.Config
+	procs.ProcsConfig
 
 	// If not set, can run everywhere.
 	RootPath     string `envconfig:"EXEC_ROOT_PATH" default:"." json:"exec_root_path"`
@@ -27,7 +27,7 @@ type Procs struct {
 }
 
 func (ps *Procs) Register(r *mux.Router) {
-	ps.procs = &procs.Procs{Config: ps.Config.Config, L: L.N(ps.L.Named("procs"))}
+	ps.procs = &procs.Procs{Config: ps.Config.ProcsConfig, L: L.N(ps.L.Named("procs"))}
 
 	r.HandleFunc("/ready", ps.procs.HTTPHandler)
 }

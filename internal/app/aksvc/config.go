@@ -19,7 +19,7 @@ import (
 	"github.com/autokitteh/autokitteh/internal/pkg/fseventsrc"
 	"github.com/autokitteh/autokitteh/internal/pkg/httpeventsrc"
 
-	"github.com/autokitteh/autokitteh/pkg/initd"
+	"github.com/autokitteh/procs"
 
 	"github.com/autokitteh/L"
 	"github.com/autokitteh/stores/kvstore"
@@ -33,7 +33,7 @@ type TemporalConfig struct {
 }
 
 type Config struct {
-	Initd             initd.Config                 `envconfig:"INITD" json:"initd"`
+	Initd             procs.InitdConfig            `envconfig:"INITD" json:"initd"`
 	EmbeddedDash      bool                         `envconfig:"EMBEDDED_DASH" default:"true" json:"embedded_dash"`
 	InitPaths         []string                     `envconfig:"INIT_PATHS" json:"init_paths"`
 	Temporal          TemporalConfig               `envconfig:"TEMPORAL" json:"temporal"`

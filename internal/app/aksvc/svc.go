@@ -70,8 +70,8 @@ import (
 	"github.com/autokitteh/L"
 	"github.com/autokitteh/autokitteh/assets"
 	"github.com/autokitteh/autokitteh/pkg/idgen"
-	"github.com/autokitteh/autokitteh/pkg/initd"
 	"github.com/autokitteh/autokitteh/pkg/svc"
+	"github.com/autokitteh/procs"
 	"github.com/autokitteh/stores/kvstore"
 	"github.com/autokitteh/stores/pkvstore"
 )
@@ -606,7 +606,7 @@ var SvcOpts = []svc.OptFunc{
 		svc.Component{
 			Name: "initd",
 			Ready: func(cfg *Config, l L.L, svcCfg svc.SvcCfg) error {
-				return (&initd.Initd{
+				return (&procs.Initd{
 					Config: cfg.Initd,
 					L:      L.N(l),
 					Env: map[string]string{

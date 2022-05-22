@@ -6,6 +6,7 @@ require (
 	github.com/autokitteh/L v0.0.0-20220522012714-c0074b7a9bbf
 	github.com/autokitteh/flexcall v0.0.0-20220522011406-2215eb451150
 	github.com/autokitteh/parsecmd v0.0.0-20220522021831-04f6419353d5
+	github.com/autokitteh/procs v0.0.0-20220522022722-6170e66abe0f
 	github.com/autokitteh/starlarkutils v0.0.0-20220522021518-dd78b8b234d6
 	github.com/autokitteh/stores v0.0.0-20220522015029-ac85b54e1480
 	github.com/autokitteh/tmplrender v0.0.0-20220522022256-3c30fdc6cfd4
