@@ -69,7 +69,7 @@ import (
 
 	"github.com/autokitteh/L"
 	"github.com/autokitteh/autokitteh/assets"
-	"github.com/autokitteh/autokitteh/pkg/idgen"
+	"github.com/autokitteh/idgen"
 	"github.com/autokitteh/procs"
 	"github.com/autokitteh/stores/kvstore"
 	"github.com/autokitteh/stores/pkvstore"

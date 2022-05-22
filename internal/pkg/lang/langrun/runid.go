@@ -3,7 +3,7 @@ package langrun
 import (
 	"fmt"
 
-	"github.com/autokitteh/autokitteh/pkg/idgen"
+	"github.com/autokitteh/idgen"
 )
 
 type RunID string

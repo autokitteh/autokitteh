@@ -242,6 +242,8 @@ github.com/autokitteh/L v0.0.0-20220522012714-c0074b7a9bbf h1:iNKSKTYurooCREENJ9
 github.com/autokitteh/L v0.0.0-20220522012714-c0074b7a9bbf/go.mod h1:FLgQ9xlH9ixcZl9hFwXZ9f3o0OH8y1mprW0ncpvktDM=
 github.com/autokitteh/flexcall v0.0.0-20220522011731-56eaad787001 h1:d9dNtB5ZspgH6ktJS19rniW6flEkMU335UGFdfy87fQ=
 github.com/autokitteh/flexcall v0.0.0-20220522011731-56eaad787001/go.mod h1:AsIIbySYBr40J6Vzl5bKKW4wzkMZlNGCvzYfHFiHW4E=
+github.com/autokitteh/idgen v0.0.0-20220522024226-2185039b1ae1 h1:B/7AIREL0EnMbCRqtANXuHztvGnGFzGoxDt5+k+qxUA=
+github.com/autokitteh/idgen v0.0.0-20220522024226-2185039b1ae1/go.mod h1:UBdcVc94olSSQneIOVLx62UTEzcWnD8B7aje8UoXbRI=
 github.com/autokitteh/parsecmd v0.0.0-20220522021831-04f6419353d5 h1:DdoYeIXpbF0EigiT/MOlgwj6QBd77xkW6+JT7gGcRAU=
 github.com/autokitteh/parsecmd v0.0.0-20220522021831-04f6419353d5/go.mod h1:26WlNpWBVwaa3ZUjjHzYD5BV4FeddeGf8Nk1v3AF/9E=
 github.com/autokitteh/procs v0.0.0-20220522022722-6170e66abe0f h1:8cpmKcT1KzCL/xwGgAiMB/Z5AkVzhJfhHvg0dNtKGhQ=

@@ -1,6 +1,6 @@
 package apievent
 
-import "github.com/autokitteh/autokitteh/pkg/idgen"
+import "github.com/autokitteh/idgen"
 
 type EventID string
 

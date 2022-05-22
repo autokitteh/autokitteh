@@ -3,7 +3,7 @@ package cmdbumptestidgen
 import (
 	"github.com/urfave/cli/v2"
 
-	"github.com/autokitteh/autokitteh/pkg/idgen"
+	"github.com/autokitteh/idgen"
 )
 
 var (

@@ -5,6 +5,7 @@ go 1.18
 require (
 	github.com/autokitteh/H v0.0.0-20220522023555-2f7de06b9c0a
 	github.com/autokitteh/L v0.0.0-20220522012714-c0074b7a9bbf
+	github.com/autokitteh/idgen v0.0.0-20220522024226-2185039b1ae1
 	github.com/autokitteh/parsecmd v0.0.0-20220522021831-04f6419353d5
 	github.com/autokitteh/procs v0.0.0-20220522022722-6170e66abe0f
 	github.com/autokitteh/starlarkutils v0.0.0-20220522021518-dd78b8b234d6
@@ -20,7 +21,6 @@ require (
 	github.com/fsnotify/fsnotify v1.5.1
 	github.com/ghodss/yaml v1.0.0
 	github.com/google/go-github/v42 v42.0.0
-	github.com/google/uuid v1.3.0
 	github.com/gorilla/mux v1.8.0
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.10.0
 	github.com/hashicorp/go-multierror v1.1.1
@@ -84,6 +84,7 @@ require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/go-github/v41 v41.0.0 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
+	github.com/google/uuid v1.3.0 // indirect
 	github.com/googleapis/gax-go/v2 v2.3.0 // indirect
 	github.com/gorilla/handlers v1.5.1 // indirect
 	github.com/gorilla/websocket v1.4.2 // indirect
