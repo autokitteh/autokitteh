@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/autokitteh/flexcall"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
@@ -21,7 +22,6 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 
-	"github.com/autokitteh/autokitteh/pkg/flexcall"
 	L "github.com/autokitteh/autokitteh/pkg/l"
 	Z "github.com/autokitteh/autokitteh/pkg/z"
 )

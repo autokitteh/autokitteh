@@ -60,6 +60,7 @@ require (
 	github.com/PuerkitoBio/goquery v1.5.1 // indirect
 	github.com/Songmu/go-ltsv v0.0.0-20181014062614-c30af2b7b171 // indirect
 	github.com/andybalholm/cascadia v1.1.0 // indirect
+	github.com/autokitteh/flexcall v0.0.0-20220522011406-2215eb451150 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/cockroachdb/apd/v2 v2.0.2 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.1 // indirect
