@@ -214,6 +214,8 @@ github.com/andybalholm/cascadia v1.1.0 h1:BuuO6sSfQNFRu1LppgbD25Hr2vLYW25JvxHs5z
 github.com/andybalholm/cascadia v1.1.0/go.mod h1:GsXiBklL0woXo1j/WYWtSYYC4ouU9PqHO0sqidkEA4Y=
 github.com/anmitsu/go-shlex v0.0.0-20161002113705-648efa622239/go.mod h1:2FmKhYUyUczH0OGQWaF5ceTx0UBShxjsH6f8oGKYe2c=
 github.com/antihax/optional v1.0.0/go.mod h1:uupD/76wgC+ih3iEmQUL+0Ugr19nfwCT1kdvxnR2qWY=
+github.com/antzucaro/matchr v0.0.0-20210222213004-b04723ef80f0 h1:R/qAiUxFT3mNgQaNqJe0IVznjKRNm23ohAIh9lgtlzc=
+github.com/antzucaro/matchr v0.0.0-20210222213004-b04723ef80f0/go.mod h1:v3ZDlfVAL1OrkKHbGSFFK60k0/7hruHPDq2XMs9Gu6U=
 github.com/apache/thrift v0.12.0/go.mod h1:cp2SuWMxlEZw2r+iP2GNCdIi4C1qmUzdZFSVb+bacwQ=
 github.com/apex/log v1.1.4/go.mod h1:AlpoD9aScyQfJDVHmLMEcx4oU6LqzkWp4Mg9GdAcEvQ=
 github.com/apex/log v1.3.0/go.mod h1:jd8Vpsr46WAe3EZSQ/IUMs2qQD/GOycT5rPWCO1yGcs=
@@ -236,8 +238,8 @@ github.com/armon/go-socks5 v0.0.0-20160902184237-e75332964ef5/go.mod h1:wHh0iHkY
 github.com/asaskevich/govalidator v0.0.0-20190424111038-f61b66f89f4a/go.mod h1:lB+ZfQJz7igIIfQNfa7Ml4HSf2uFQQRzpGGRXenZAgY=
 github.com/autokitteh/L v0.0.0-20220522012714-c0074b7a9bbf h1:iNKSKTYurooCREENJ9tQ5ai8QdcB2IGsLtP5lMK0LBY=
 github.com/autokitteh/L v0.0.0-20220522012714-c0074b7a9bbf/go.mod h1:FLgQ9xlH9ixcZl9hFwXZ9f3o0OH8y1mprW0ncpvktDM=
-github.com/autokitteh/flexcall v0.0.0-20220522011406-2215eb451150 h1:WW4I80HvWYajsGBbiwo/3Oppev6MjNYGMY1pfOyf0jw=
-github.com/autokitteh/flexcall v0.0.0-20220522011406-2215eb451150/go.mod h1:AsIIbySYBr40J6Vzl5bKKW4wzkMZlNGCvzYfHFiHW4E=
+github.com/autokitteh/flexcall v0.0.0-20220522011731-56eaad787001 h1:d9dNtB5ZspgH6ktJS19rniW6flEkMU335UGFdfy87fQ=
+github.com/autokitteh/flexcall v0.0.0-20220522011731-56eaad787001/go.mod h1:AsIIbySYBr40J6Vzl5bKKW4wzkMZlNGCvzYfHFiHW4E=
 github.com/autokitteh/parsecmd v0.0.0-20220522021831-04f6419353d5 h1:DdoYeIXpbF0EigiT/MOlgwj6QBd77xkW6+JT7gGcRAU=
 github.com/autokitteh/parsecmd v0.0.0-20220522021831-04f6419353d5/go.mod h1:26WlNpWBVwaa3ZUjjHzYD5BV4FeddeGf8Nk1v3AF/9E=
 github.com/autokitteh/procs v0.0.0-20220522022722-6170e66abe0f h1:8cpmKcT1KzCL/xwGgAiMB/Z5AkVzhJfhHvg0dNtKGhQ=
@@ -246,6 +248,8 @@ github.com/autokitteh/starlarkutils v0.0.0-20220522021518-dd78b8b234d6 h1:J2oNbD
 github.com/autokitteh/starlarkutils v0.0.0-20220522021518-dd78b8b234d6/go.mod h1:HM6lYRtgVS+zFtcuuvEE0B8+ReO7pvAFeNbyYV38liY=
 github.com/autokitteh/stores v0.0.0-20220522015029-ac85b54e1480 h1:xElWZZayb0nw92PnXvhXfiWNWpdTdTfZLIL83MXPdkY=
 github.com/autokitteh/stores v0.0.0-20220522015029-ac85b54e1480/go.mod h1:Gp/JRgVyYn6qFuk+Odvd2+erR0LBG8hBigOy7bZbRIc=
+github.com/autokitteh/svc v0.0.0-20220522023144-62ab8572aa2a h1:KJyXYsM6CTmM3CqgWplHuHdp7ngFzDvj060lX/eUK8s=
+github.com/autokitteh/svc v0.0.0-20220522023144-62ab8572aa2a/go.mod h1:SncdZ/z5w0xygHZVZfROiAcJ1Mk6eYShaxy+fsy2C5A=
 github.com/autokitteh/tmplrender v0.0.0-20220522022256-3c30fdc6cfd4 h1:3jTo3lBhyFIiizp+Xu7i+FhKe/okbcOjovCTOyZMDvw=
 github.com/autokitteh/tmplrender v0.0.0-20220522022256-3c30fdc6cfd4/go.mod h1:Yja1fdHDI25CC9EoWpawJ0dMuxjxuCAlJQ03/npW6WE=
 github.com/aws/aws-sdk-go v1.15.11/go.mod h1:mFuSZ37Z9YOHbQEwBWztmVzqXrEkub65tZoCYDt7FT0=
@@ -1580,8 +1584,8 @@ github.com/urfave/cli v1.20.0/go.mod h1:70zkFmudgCuE/ngEzBv17Jvp/497gISqfk5gWijb
 github.com/urfave/cli v1.22.1/go.mod h1:Gos4lmkARVdJ6EkW0WaNv/tZAAMe9V7XWyB60NtXRu0=
 github.com/urfave/cli v1.22.2/go.mod h1:Gos4lmkARVdJ6EkW0WaNv/tZAAMe9V7XWyB60NtXRu0=
 github.com/urfave/cli v1.22.4/go.mod h1:Gos4lmkARVdJ6EkW0WaNv/tZAAMe9V7XWyB60NtXRu0=
-github.com/urfave/cli/v2 v2.4.0 h1:m2pxjjDFgDxSPtO8WSdbndj17Wu2y8vOT86wE/tjr+I=
-github.com/urfave/cli/v2 v2.4.0/go.mod h1:NX9W0zmTvedE5oDoOMs2RTC8RvdK98NTYZE5LbaEYPg=
+github.com/urfave/cli/v2 v2.7.1 h1:DsAOFeI9T0vmUW4LiGR5mhuCIn5kqGIE4WMU2ytmH00=
+github.com/urfave/cli/v2 v2.7.1/go.mod h1:TYFbtzt/azQoJOrGH5mDfZtS0jIkl/OeFwlRWPR9KRM=
 github.com/uudashr/gocognit v1.0.1/go.mod h1:j44Ayx2KW4+oB6SWMv8KsmHzZrOInQav7D3cQMJ5JUM=
 github.com/valyala/bytebufferpool v1.0.0/go.mod h1:6bBcMArwyJ5K/AmCkWv1jt77kVWyCJ6HpOuEn7z0Csc=
 github.com/valyala/fasthttp v1.2.0/go.mod h1:4vX61m6KN+xDduDNwXrhIAVZaZaZiQ1luJk8LWSxF3s=

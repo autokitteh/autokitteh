@@ -70,10 +70,10 @@ import (
 	"github.com/autokitteh/L"
 	"github.com/autokitteh/autokitteh/assets"
 	"github.com/autokitteh/autokitteh/pkg/idgen"
-	"github.com/autokitteh/autokitteh/pkg/svc"
 	"github.com/autokitteh/procs"
 	"github.com/autokitteh/stores/kvstore"
 	"github.com/autokitteh/stores/pkvstore"
+	"github.com/autokitteh/svc"
 )
 
 var version = "dev"

@@ -19,7 +19,7 @@ import (
 	"github.com/autokitteh/autokitteh/internal/app/temporalite"
 
 	"github.com/autokitteh/L"
-	"github.com/autokitteh/autokitteh/pkg/svc"
+	"github.com/autokitteh/svc"
 )
 
 var TemporaliteComponent = svc.Component{

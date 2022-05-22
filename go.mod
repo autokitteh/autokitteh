@@ -4,11 +4,11 @@ go 1.18
 
 require (
 	github.com/autokitteh/L v0.0.0-20220522012714-c0074b7a9bbf
-	github.com/autokitteh/flexcall v0.0.0-20220522011406-2215eb451150
 	github.com/autokitteh/parsecmd v0.0.0-20220522021831-04f6419353d5
 	github.com/autokitteh/procs v0.0.0-20220522022722-6170e66abe0f
 	github.com/autokitteh/starlarkutils v0.0.0-20220522021518-dd78b8b234d6
 	github.com/autokitteh/stores v0.0.0-20220522015029-ac85b54e1480
+	github.com/autokitteh/svc v0.0.0-20220522023144-62ab8572aa2a
 	github.com/autokitteh/tmplrender v0.0.0-20220522022256-3c30fdc6cfd4
 	github.com/bradleyfalzon/ghinstallation/v2 v2.0.4
 	github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e
@@ -20,9 +20,7 @@ require (
 	github.com/ghodss/yaml v1.0.0
 	github.com/google/go-github/v42 v42.0.0
 	github.com/google/uuid v1.3.0
-	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/mux v1.8.0
-	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.10.0
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/iancoleman/strcase v0.2.0
@@ -30,17 +28,15 @@ require (
 	github.com/psanford/memfs v0.0.0-20210214183328-a001468d78ef
 	github.com/qri-io/starlib v0.5.0
 	github.com/robfig/cron v1.2.0
-	github.com/rs/cors v1.8.2
 	github.com/samber/lo v1.11.0
 	github.com/slack-go/slack v0.10.2
 	github.com/stretchr/testify v1.7.1
 	github.com/ucarion/urlpath v0.0.0-20200424170820-7ccc79b76bbb
-	github.com/urfave/cli/v2 v2.4.0
+	github.com/urfave/cli/v2 v2.7.1
 	go.dagger.io/dagger v0.2.7
 	go.starlark.net v0.0.0-20220328144851-d1966c6b9fcd
 	go.temporal.io/api v1.7.1-0.20220223032354-6e6fe738916a
 	go.temporal.io/sdk v1.14.0
-	go.uber.org/zap v1.21.0
 	golang.org/x/exp v0.0.0-20220303212507-bbda1eaf7a17
 	golang.org/x/oauth2 v0.0.0-20220411215720-9780585627b5
 	google.golang.org/api v0.74.0
@@ -64,6 +60,8 @@ require (
 	github.com/Songmu/axslogparser v1.4.0 // indirect
 	github.com/Songmu/go-ltsv v0.0.0-20181014062614-c30af2b7b171 // indirect
 	github.com/andybalholm/cascadia v1.1.0 // indirect
+	github.com/antzucaro/matchr v0.0.0-20210222213004-b04723ef80f0 // indirect
+	github.com/autokitteh/flexcall v0.0.0-20220522011731-56eaad787001 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/cockroachdb/apd/v2 v2.0.2 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.1 // indirect
@@ -86,7 +84,9 @@ require (
 	github.com/google/go-github/v41 v41.0.0 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/googleapis/gax-go/v2 v2.3.0 // indirect
+	github.com/gorilla/handlers v1.5.1 // indirect
 	github.com/gorilla/websocket v1.4.2 // indirect
+	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/huandu/xstrings v1.3.1 // indirect
 	github.com/imdario/mergo v0.3.12 // indirect
@@ -114,6 +114,7 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/protocolbuffers/txtpbfmt v0.0.0-20220422154955-566caf83112c // indirect
+	github.com/rs/cors v1.8.2 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/shopspring/decimal v1.2.0 // indirect
 	github.com/spf13/cast v1.4.1 // indirect
@@ -121,6 +122,7 @@ require (
 	go.opencensus.io v0.23.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
+	go.uber.org/zap v1.21.0 // indirect
 	golang.org/x/crypto v0.0.0-20220411220226-7b82a4e95df4 // indirect
 	golang.org/x/net v0.0.0-20220421235706-1d1ef9303861 // indirect
 	golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a // indirect

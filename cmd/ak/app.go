@@ -16,10 +16,10 @@ import (
 	"github.com/autokitteh/autokitteh/cmd/ak/cmdproject"
 	"github.com/autokitteh/autokitteh/cmd/ak/cmdresettestidgen"
 
+	"github.com/autokitteh/L"
 	"github.com/autokitteh/autokitteh/internal/app/aksvc"
 	"github.com/autokitteh/autokitteh/pkg/idgen"
-	"github.com/autokitteh/L"
-	"github.com/autokitteh/autokitteh/pkg/svc"
+	"github.com/autokitteh/svc"
 )
 
 var (
