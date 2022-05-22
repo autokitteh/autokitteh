@@ -5,7 +5,7 @@ import (
 	"go.starlark.net/starlarkstruct"
 
 	"github.com/autokitteh/autokitteh/pkg/parsecmd"
-	"github.com/autokitteh/autokitteh/pkg/starlarkutils"
+	"github.com/autokitteh/starlarkutils"
 )
 
 var Module = starlarkstruct.Module{

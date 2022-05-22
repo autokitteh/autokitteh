@@ -10,7 +10,7 @@ import (
 
 	"github.com/autokitteh/autokitteh/internal/pkg/lang/langstarlark/modules/parsecmd"
 	"github.com/autokitteh/autokitteh/internal/pkg/lang/langstarlark/modules/reflect"
-	"github.com/autokitteh/autokitteh/pkg/starlarkutils"
+	"github.com/autokitteh/starlarkutils"
 )
 
 var (
