@@ -23,7 +23,7 @@ import (
 
 	pb "github.com/autokitteh/autokitteh/api/gen/stubs/go/croneventsrc"
 
-	L "github.com/autokitteh/L"
+	"github.com/autokitteh/L"
 )
 
 var EventTypes = []string{"tick"}

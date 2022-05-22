@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	L "github.com/autokitteh/L"
+	"github.com/autokitteh/L"
 )
 
 type Cmd = exec.Cmd

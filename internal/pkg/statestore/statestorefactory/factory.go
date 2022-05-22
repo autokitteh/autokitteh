@@ -9,7 +9,7 @@ import (
 	"github.com/autokitteh/autokitteh/internal/pkg/statestore"
 	"github.com/autokitteh/autokitteh/internal/pkg/statestore/statestoregorm"
 	"github.com/autokitteh/autokitteh/pkg/gormfactory"
-	L "github.com/autokitteh/L"
+	"github.com/autokitteh/L"
 	"github.com/autokitteh/autokitteh/pkg/storefactory"
 )
 

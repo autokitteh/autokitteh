@@ -10,7 +10,7 @@ import (
 
 	"github.com/autokitteh/autokitteh/sdk/api/apiplugin"
 	"github.com/autokitteh/autokitteh/internal/pkg/plugin"
-	L "github.com/autokitteh/L"
+	"github.com/autokitteh/L"
 )
 
 type GRPCPlugin struct {

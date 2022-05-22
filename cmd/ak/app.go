@@ -18,7 +18,7 @@ import (
 
 	"github.com/autokitteh/autokitteh/internal/app/aksvc"
 	"github.com/autokitteh/autokitteh/pkg/idgen"
-	L "github.com/autokitteh/L"
+	"github.com/autokitteh/L"
 	"github.com/autokitteh/autokitteh/pkg/svc"
 )
 

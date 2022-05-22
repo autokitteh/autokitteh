@@ -16,7 +16,7 @@ import (
 	"github.com/autokitteh/autokitteh/sdk/api/apivalues"
 	"github.com/autokitteh/autokitteh/internal/pkg/events"
 	"github.com/autokitteh/autokitteh/internal/pkg/eventsrcsstore"
-	L "github.com/autokitteh/L"
+	"github.com/autokitteh/L"
 )
 
 var EventTypes = []string{"create", "write", "remove", "rename", "chmod"}

@@ -10,7 +10,7 @@ import (
 
 	"github.com/autokitteh/autokitteh/internal/pkg/lang"
 	"github.com/autokitteh/autokitteh/internal/pkg/lang/langgrpc"
-	L "github.com/autokitteh/L"
+	"github.com/autokitteh/L"
 )
 
 type grpcCatalog struct{ local LocalCatalog }

@@ -10,7 +10,7 @@ import (
 	"github.com/google/go-github/v42/github"
 
 	"github.com/autokitteh/autokitteh/sdk/api/apiprogram"
-	L "github.com/autokitteh/L"
+	"github.com/autokitteh/L"
 )
 
 var GithubPathRewriter = NewPrefixPathRewriter("github", "github.com/", "github")

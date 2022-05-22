@@ -2,7 +2,7 @@ package clitools
 
 import (
 	LL "github.com/autokitteh/L"
-	Z "github.com/autokitteh/autokitteh/pkg/z"
+	"github.com/autokitteh/autokitteh/pkg/z"
 )
 
 var l LL.L = LL.Nop

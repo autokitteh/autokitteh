@@ -13,7 +13,7 @@ import (
 
 	"github.com/autokitteh/autokitteh/internal/pkg/secretsstore"
 	"github.com/autokitteh/autokitteh/sdk/api/apiproject"
-	L "github.com/autokitteh/L"
+	"github.com/autokitteh/L"
 )
 
 type Svc struct {

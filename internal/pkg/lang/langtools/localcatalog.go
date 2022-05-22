@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	"github.com/autokitteh/autokitteh/internal/pkg/lang"
-	L "github.com/autokitteh/L"
+	"github.com/autokitteh/L"
 )
 
 type langent struct {

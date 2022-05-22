@@ -11,7 +11,7 @@ import (
 	"github.com/autokitteh/autokitteh/sdk/api/apivalues"
 	"github.com/autokitteh/autokitteh/internal/pkg/lang"
 	"github.com/autokitteh/autokitteh/internal/pkg/lang/langrun"
-	L "github.com/autokitteh/L"
+	"github.com/autokitteh/L"
 )
 
 type RunModuleFunc func(L.L, string, langrun.RunID, *apiprogram.Module, map[string]*apivalues.Value, langrun.SendFunc) (langrun.Run, error)

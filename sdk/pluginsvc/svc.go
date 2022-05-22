@@ -20,7 +20,7 @@ import (
 	"github.com/autokitteh/autokitteh/sdk/api/apiplugin"
 	"github.com/autokitteh/autokitteh/sdk/pluginimpl"
 
-	L "github.com/autokitteh/L"
+	"github.com/autokitteh/L"
 	"github.com/autokitteh/autokitteh/pkg/svc"
 )
 

@@ -18,7 +18,7 @@ import (
 	"github.com/autokitteh/autokitteh/sdk/api/apivalues"
 	"github.com/autokitteh/autokitteh/internal/pkg/events"
 	"github.com/autokitteh/autokitteh/internal/pkg/eventsstore"
-	L "github.com/autokitteh/L"
+	"github.com/autokitteh/L"
 )
 
 type Svc struct {

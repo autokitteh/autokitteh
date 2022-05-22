@@ -16,7 +16,7 @@ import (
 	"github.com/autokitteh/autokitteh/internal/pkg/credsstore"
 	"github.com/autokitteh/autokitteh/internal/pkg/events"
 	"github.com/autokitteh/autokitteh/internal/pkg/eventsrcsstore"
-	L "github.com/autokitteh/L"
+	"github.com/autokitteh/L"
 )
 
 // TODO

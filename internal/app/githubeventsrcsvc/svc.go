@@ -26,7 +26,7 @@ import (
 	"github.com/autokitteh/autokitteh/internal/pkg/githubinstalls"
 
 	H "github.com/autokitteh/autokitteh/pkg/h"
-	L "github.com/autokitteh/L"
+	"github.com/autokitteh/L"
 )
 
 // TODO: filter.

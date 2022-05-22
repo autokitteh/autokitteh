@@ -13,7 +13,7 @@ import (
 	"github.com/autokitteh/autokitteh/internal/pkg/eventsstore/eventsstoregorm"
 	"github.com/autokitteh/autokitteh/internal/pkg/eventsstore/eventsstoregrpc"
 	"github.com/autokitteh/autokitteh/pkg/gormfactory"
-	L "github.com/autokitteh/L"
+	"github.com/autokitteh/L"
 	"github.com/autokitteh/autokitteh/pkg/storefactory"
 )
 

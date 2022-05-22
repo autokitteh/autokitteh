@@ -8,7 +8,7 @@ import (
 	"go.temporal.io/sdk/workflow"
 
 	"github.com/autokitteh/autokitteh/sdk/api/apivalues"
-	L "github.com/autokitteh/L"
+	"github.com/autokitteh/L"
 )
 
 var ErrNoCallValue = errors.New("no call value allowed")

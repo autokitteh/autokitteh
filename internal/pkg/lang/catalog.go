@@ -1,7 +1,7 @@
 package lang
 
 import (
-	L "github.com/autokitteh/L"
+	"github.com/autokitteh/L"
 )
 
 type NewLangFunc func(l L.L, name string) (Lang, error)
