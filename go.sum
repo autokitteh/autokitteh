@@ -234,6 +234,10 @@ github.com/armon/go-radix v0.0.0-20180808171621-7fddfc383310/go.mod h1:ufUuZ+zHj
 github.com/armon/go-radix v1.0.0/go.mod h1:ufUuZ+zHj4x4TnLV4JWEpy2hxWSpsRywHrMgIH9cCH8=
 github.com/armon/go-socks5 v0.0.0-20160902184237-e75332964ef5/go.mod h1:wHh0iHkYZB8zMSxRWpUBQtwG5a7fFgvEO+odwuTv2gs=
 github.com/asaskevich/govalidator v0.0.0-20190424111038-f61b66f89f4a/go.mod h1:lB+ZfQJz7igIIfQNfa7Ml4HSf2uFQQRzpGGRXenZAgY=
+github.com/autokitteh/L v0.0.0-20220522012303-5c448c600eaa h1:1L3ssRUzM2AbeWvuc4HbD+nR/ayPAE9kUSJEAmgzheM=
+github.com/autokitteh/L v0.0.0-20220522012303-5c448c600eaa/go.mod h1:FLgQ9xlH9ixcZl9hFwXZ9f3o0OH8y1mprW0ncpvktDM=
+github.com/autokitteh/L v0.0.0-20220522012714-c0074b7a9bbf h1:iNKSKTYurooCREENJ9tQ5ai8QdcB2IGsLtP5lMK0LBY=
+github.com/autokitteh/L v0.0.0-20220522012714-c0074b7a9bbf/go.mod h1:FLgQ9xlH9ixcZl9hFwXZ9f3o0OH8y1mprW0ncpvktDM=
 github.com/autokitteh/flexcall v0.0.0-20220522011406-2215eb451150 h1:WW4I80HvWYajsGBbiwo/3Oppev6MjNYGMY1pfOyf0jw=
 github.com/autokitteh/flexcall v0.0.0-20220522011406-2215eb451150/go.mod h1:AsIIbySYBr40J6Vzl5bKKW4wzkMZlNGCvzYfHFiHW4E=
 github.com/aws/aws-sdk-go v1.15.11/go.mod h1:mFuSZ37Z9YOHbQEwBWztmVzqXrEkub65tZoCYDt7FT0=

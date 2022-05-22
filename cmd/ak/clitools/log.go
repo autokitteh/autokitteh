@@ -1,7 +1,7 @@
 package clitools
 
 import (
-	LL "github.com/autokitteh/autokitteh/pkg/l"
+	LL "github.com/autokitteh/L"
 	Z "github.com/autokitteh/autokitteh/pkg/z"
 )
 

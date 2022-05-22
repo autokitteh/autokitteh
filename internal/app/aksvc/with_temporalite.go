@@ -18,7 +18,7 @@ replace (
 import (
 	"github.com/autokitteh/autokitteh/internal/app/temporalite"
 
-	L "github.com/autokitteh/autokitteh/pkg/l"
+	L "github.com/autokitteh/L"
 	"github.com/autokitteh/autokitteh/pkg/svc"
 )
 

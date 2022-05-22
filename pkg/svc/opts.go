@@ -1,7 +1,7 @@
 package svc
 
 import (
-	L "github.com/autokitteh/autokitteh/pkg/l"
+	L "github.com/autokitteh/L"
 )
 
 type callback struct {

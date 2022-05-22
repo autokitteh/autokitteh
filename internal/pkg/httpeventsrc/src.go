@@ -20,7 +20,7 @@ import (
 	"github.com/autokitteh/autokitteh/sdk/api/apieventsrc"
 	"github.com/autokitteh/autokitteh/sdk/api/apiproject"
 	"github.com/autokitteh/autokitteh/sdk/api/apivalues"
-	L "github.com/autokitteh/autokitteh/pkg/l"
+	L "github.com/autokitteh/L"
 )
 
 var EventTypes = []string{"get", "put", "post", "delete", "patch", "head"}

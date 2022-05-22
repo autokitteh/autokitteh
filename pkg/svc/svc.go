@@ -12,7 +12,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/autokitteh/flexcall"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
@@ -22,8 +21,9 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 
-	L "github.com/autokitteh/autokitteh/pkg/l"
-	Z "github.com/autokitteh/autokitteh/pkg/z"
+	"github.com/autokitteh/L"
+	"github.com/autokitteh/L/Z"
+	"github.com/autokitteh/flexcall"
 )
 
 var DefaultServiceName = filepath.Base(os.Args[0])

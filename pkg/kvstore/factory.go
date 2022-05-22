@@ -7,7 +7,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/autokitteh/autokitteh/pkg/gormfactory"
-	L "github.com/autokitteh/autokitteh/pkg/l"
+	L "github.com/autokitteh/L"
 	"github.com/autokitteh/autokitteh/pkg/storefactory"
 )
 

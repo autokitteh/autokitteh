@@ -15,7 +15,7 @@ import (
 	"github.com/autokitteh/autokitteh/internal/pkg/projectsstore"
 	"github.com/autokitteh/autokitteh/sdk/api/apiaccount"
 	"github.com/autokitteh/autokitteh/sdk/api/apiproject"
-	L "github.com/autokitteh/autokitteh/pkg/l"
+	L "github.com/autokitteh/L"
 )
 
 type Svc struct {

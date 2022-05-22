@@ -9,7 +9,7 @@ import (
 	"github.com/autokitteh/autokitteh/sdk/api/apivalues"
 	"github.com/autokitteh/autokitteh/sdk/pluginimpl"
 
-	L "github.com/autokitteh/autokitteh/pkg/l"
+	L "github.com/autokitteh/L"
 )
 
 type binding struct {

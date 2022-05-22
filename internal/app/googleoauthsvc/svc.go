@@ -14,7 +14,7 @@ import (
 	"github.com/autokitteh/autokitteh/internal/pkg/credsstore"
 	"github.com/autokitteh/autokitteh/internal/pkg/googleoauth"
 	"github.com/autokitteh/autokitteh/pkg/kvstore"
-	L "github.com/autokitteh/autokitteh/pkg/l"
+	L "github.com/autokitteh/L"
 )
 
 type Config = googleoauth.Config

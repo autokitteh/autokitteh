@@ -71,7 +71,7 @@ import (
 	"github.com/autokitteh/autokitteh/pkg/idgen"
 	"github.com/autokitteh/autokitteh/pkg/initd"
 	"github.com/autokitteh/autokitteh/pkg/kvstore"
-	L "github.com/autokitteh/autokitteh/pkg/l"
+	L "github.com/autokitteh/L"
 	"github.com/autokitteh/autokitteh/pkg/pkvstore"
 	"github.com/autokitteh/autokitteh/pkg/svc"
 )

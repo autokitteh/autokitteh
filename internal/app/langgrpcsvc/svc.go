@@ -15,7 +15,7 @@ import (
 	"github.com/autokitteh/autokitteh/sdk/api/apiprogram"
 	"github.com/autokitteh/autokitteh/internal/pkg/lang"
 	"github.com/autokitteh/autokitteh/internal/pkg/lang/langtools"
-	L "github.com/autokitteh/autokitteh/pkg/l"
+	L "github.com/autokitteh/L"
 
 	_ "github.com/autokitteh/autokitteh/internal/pkg/lang/langall"
 )

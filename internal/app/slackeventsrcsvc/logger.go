@@ -1,7 +1,7 @@
 package slackeventsrcsvc
 
 import (
-	L "github.com/autokitteh/autokitteh/pkg/l"
+	L "github.com/autokitteh/L"
 )
 
 type logger struct{ L.L }

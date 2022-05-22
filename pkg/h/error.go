@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	L "github.com/autokitteh/autokitteh/pkg/l"
+	L "github.com/autokitteh/L"
 )
 
 type errHTTP struct {
