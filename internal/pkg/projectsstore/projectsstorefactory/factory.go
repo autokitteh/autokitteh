@@ -9,13 +9,13 @@ import (
 
 	pbprojectsvc "github.com/autokitteh/autokitteh/api/gen/stubs/go/projectsvc"
 
+	"github.com/autokitteh/L"
 	"github.com/autokitteh/autokitteh/internal/pkg/accountsstore"
 	"github.com/autokitteh/autokitteh/internal/pkg/projectsstore"
 	"github.com/autokitteh/autokitteh/internal/pkg/projectsstore/projectsstoregorm"
 	"github.com/autokitteh/autokitteh/internal/pkg/projectsstore/projectsstoregrpc"
-	"github.com/autokitteh/autokitteh/pkg/gormfactory"
-	"github.com/autokitteh/L"
-	"github.com/autokitteh/autokitteh/pkg/storefactory"
+	"github.com/autokitteh/stores/gormfactory"
+	"github.com/autokitteh/stores/storefactory"
 )
 
 type Config = storefactory.Config

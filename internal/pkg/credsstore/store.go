@@ -7,7 +7,7 @@ import (
 	"fmt"
 
 	"github.com/autokitteh/autokitteh/sdk/api/apiproject"
-	"github.com/autokitteh/autokitteh/pkg/pkvstore"
+	"github.com/autokitteh/stores/pkvstore"
 )
 
 var ErrNotFound = pkvstore.ErrNotFound

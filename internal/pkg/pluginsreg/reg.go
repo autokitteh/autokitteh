@@ -19,7 +19,7 @@ import (
 	"github.com/autokitteh/autokitteh/sdk/pluginimpl"
 
 	"github.com/autokitteh/L"
-	"github.com/autokitteh/autokitteh/pkg/pkvstore"
+	"github.com/autokitteh/stores/pkvstore"
 )
 
 var ErrNotFound = pkvstore.ErrNotFound

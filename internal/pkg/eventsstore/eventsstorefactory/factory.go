@@ -9,12 +9,12 @@ import (
 
 	pbeventsvc "github.com/autokitteh/autokitteh/api/gen/stubs/go/eventsvc"
 
+	"github.com/autokitteh/L"
 	"github.com/autokitteh/autokitteh/internal/pkg/eventsstore"
 	"github.com/autokitteh/autokitteh/internal/pkg/eventsstore/eventsstoregorm"
 	"github.com/autokitteh/autokitteh/internal/pkg/eventsstore/eventsstoregrpc"
-	"github.com/autokitteh/autokitteh/pkg/gormfactory"
-	"github.com/autokitteh/L"
-	"github.com/autokitteh/autokitteh/pkg/storefactory"
+	"github.com/autokitteh/stores/gormfactory"
+	"github.com/autokitteh/stores/storefactory"
 )
 
 type Config = storefactory.Config

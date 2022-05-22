@@ -14,12 +14,12 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"github.com/autokitteh/autokitteh/internal/pkg/events"
+	"github.com/autokitteh/autokitteh/internal/pkg/eventsrcsstore"
 	"github.com/autokitteh/autokitteh/sdk/api/apieventsrc"
 	"github.com/autokitteh/autokitteh/sdk/api/apiproject"
 	"github.com/autokitteh/autokitteh/sdk/api/apivalues"
-	"github.com/autokitteh/autokitteh/internal/pkg/events"
-	"github.com/autokitteh/autokitteh/internal/pkg/eventsrcsstore"
-	"github.com/autokitteh/autokitteh/pkg/kvstore"
+	"github.com/autokitteh/stores/kvstore"
 
 	pb "github.com/autokitteh/autokitteh/api/gen/stubs/go/croneventsrc"
 

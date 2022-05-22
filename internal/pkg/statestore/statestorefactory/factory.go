@@ -6,11 +6,11 @@ import (
 
 	"gorm.io/gorm"
 
+	"github.com/autokitteh/L"
 	"github.com/autokitteh/autokitteh/internal/pkg/statestore"
 	"github.com/autokitteh/autokitteh/internal/pkg/statestore/statestoregorm"
-	"github.com/autokitteh/autokitteh/pkg/gormfactory"
-	"github.com/autokitteh/L"
-	"github.com/autokitteh/autokitteh/pkg/storefactory"
+	"github.com/autokitteh/stores/gormfactory"
+	"github.com/autokitteh/stores/storefactory"
 )
 
 type Config = storefactory.Config

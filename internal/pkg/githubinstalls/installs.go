@@ -9,7 +9,7 @@ import (
 	"github.com/bradleyfalzon/ghinstallation/v2"
 	"github.com/google/go-github/v42/github"
 
-	"github.com/autokitteh/autokitteh/pkg/kvstore"
+	"github.com/autokitteh/stores/kvstore"
 )
 
 type Config struct {

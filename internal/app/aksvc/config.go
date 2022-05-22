@@ -21,10 +21,10 @@ import (
 
 	"github.com/autokitteh/autokitteh/pkg/initd"
 
-	"github.com/autokitteh/autokitteh/pkg/kvstore"
 	"github.com/autokitteh/L"
-	"github.com/autokitteh/autokitteh/pkg/pkvstore"
-	"github.com/autokitteh/autokitteh/pkg/storefactory"
+	"github.com/autokitteh/stores/kvstore"
+	"github.com/autokitteh/stores/pkvstore"
+	"github.com/autokitteh/stores/storefactory"
 )
 
 type TemporalConfig struct {

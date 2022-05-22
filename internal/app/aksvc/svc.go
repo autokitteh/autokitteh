@@ -67,13 +67,13 @@ import (
 	"github.com/autokitteh/autokitteh/sdk/api/apiplugin"
 	"github.com/autokitteh/autokitteh/sdk/api/apiprogram"
 
+	"github.com/autokitteh/L"
 	"github.com/autokitteh/autokitteh/assets"
 	"github.com/autokitteh/autokitteh/pkg/idgen"
 	"github.com/autokitteh/autokitteh/pkg/initd"
-	"github.com/autokitteh/autokitteh/pkg/kvstore"
-	"github.com/autokitteh/L"
-	"github.com/autokitteh/autokitteh/pkg/pkvstore"
 	"github.com/autokitteh/autokitteh/pkg/svc"
+	"github.com/autokitteh/stores/kvstore"
+	"github.com/autokitteh/stores/pkvstore"
 )
 
 var version = "dev"
