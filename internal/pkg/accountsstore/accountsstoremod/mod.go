@@ -11,7 +11,7 @@ import (
 	"github.com/autokitteh/autokitteh/internal/pkg/accountsstore"
 	"github.com/autokitteh/autokitteh/internal/pkg/accountsstore/accountsstorefactory"
 	"github.com/autokitteh/autokitteh/sdk/api/apiaccount"
-	"github.com/autokitteh/autokitteh/pkg/starlarkutils"
+	"github.com/autokitteh/starlarkutils"
 )
 
 var Module = &starlarkstruct.Module{

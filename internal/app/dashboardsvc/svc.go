@@ -11,7 +11,7 @@ import (
 	"github.com/autokitteh/autokitteh/internal/pkg/projectsstore"
 	"github.com/autokitteh/autokitteh/internal/pkg/secretsstore"
 	"github.com/autokitteh/autokitteh/internal/pkg/statestore"
-	"github.com/autokitteh/autokitteh/pkg/tmplrender"
+	"github.com/autokitteh/tmplrender"
 )
 
 type Config struct {

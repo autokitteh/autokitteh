@@ -7,12 +7,12 @@ import (
 	"go.starlark.net/starlark"
 	"go.starlark.net/starlarkstruct"
 
+	"github.com/autokitteh/autokitteh/internal/pkg/eventsrcsstore"
+	"github.com/autokitteh/autokitteh/internal/pkg/eventsrcsstore/eventsrcsstorefactory"
 	"github.com/autokitteh/autokitteh/sdk/api/apiaccount"
 	"github.com/autokitteh/autokitteh/sdk/api/apieventsrc"
 	"github.com/autokitteh/autokitteh/sdk/api/apiproject"
-	"github.com/autokitteh/autokitteh/internal/pkg/eventsrcsstore"
-	"github.com/autokitteh/autokitteh/internal/pkg/eventsrcsstore/eventsrcsstorefactory"
-	"github.com/autokitteh/autokitteh/pkg/starlarkutils"
+	"github.com/autokitteh/starlarkutils"
 )
 
 var Module = &starlarkstruct.Module{

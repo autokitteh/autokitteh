@@ -244,6 +244,8 @@ github.com/autokitteh/starlarkutils v0.0.0-20220522021518-dd78b8b234d6 h1:J2oNbD
 github.com/autokitteh/starlarkutils v0.0.0-20220522021518-dd78b8b234d6/go.mod h1:HM6lYRtgVS+zFtcuuvEE0B8+ReO7pvAFeNbyYV38liY=
 github.com/autokitteh/stores v0.0.0-20220522015029-ac85b54e1480 h1:xElWZZayb0nw92PnXvhXfiWNWpdTdTfZLIL83MXPdkY=
 github.com/autokitteh/stores v0.0.0-20220522015029-ac85b54e1480/go.mod h1:Gp/JRgVyYn6qFuk+Odvd2+erR0LBG8hBigOy7bZbRIc=
+github.com/autokitteh/tmplrender v0.0.0-20220522022256-3c30fdc6cfd4 h1:3jTo3lBhyFIiizp+Xu7i+FhKe/okbcOjovCTOyZMDvw=
+github.com/autokitteh/tmplrender v0.0.0-20220522022256-3c30fdc6cfd4/go.mod h1:Yja1fdHDI25CC9EoWpawJ0dMuxjxuCAlJQ03/npW6WE=
 github.com/aws/aws-sdk-go v1.15.11/go.mod h1:mFuSZ37Z9YOHbQEwBWztmVzqXrEkub65tZoCYDt7FT0=
 github.com/aws/aws-sdk-go v1.15.27/go.mod h1:mFuSZ37Z9YOHbQEwBWztmVzqXrEkub65tZoCYDt7FT0=
 github.com/aws/aws-sdk-go v1.15.90/go.mod h1:es1KtYUFs7le0xQ3rOihkuoVD90z7D0fR2Qm4S00/gU=
@@ -2075,7 +2077,6 @@ golang.org/x/sys v0.0.0-20220209214540-3681064d5158/go.mod h1:oPkhp1MJrh7nUepCBc
 golang.org/x/sys v0.0.0-20220222200937-f2425489ef4c/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 golang.org/x/sys v0.0.0-20220227234510-4e6760a101f9/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 golang.org/x/sys v0.0.0-20220328115105-d36c6a25d886/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
-golang.org/x/sys v0.0.0-20220412211240-33da011f77ad h1:ntjMns5wyP/fN65tdBD4g8J5w8n015+iIIs9rtjXkY0=
 golang.org/x/sys v0.0.0-20220412211240-33da011f77ad/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a h1:dGzPydgVsqGcTRVwiLJ1jVbufYwmzD3LfVPLKsKg+0k=
 golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=

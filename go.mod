@@ -3,10 +3,12 @@ module github.com/autokitteh/autokitteh
 go 1.18
 
 require (
-	github.com/Masterminds/sprig/v3 v3.2.2
 	github.com/autokitteh/L v0.0.0-20220522012714-c0074b7a9bbf
 	github.com/autokitteh/flexcall v0.0.0-20220522011406-2215eb451150
+	github.com/autokitteh/parsecmd v0.0.0-20220522021831-04f6419353d5
+	github.com/autokitteh/starlarkutils v0.0.0-20220522021518-dd78b8b234d6
 	github.com/autokitteh/stores v0.0.0-20220522015029-ac85b54e1480
+	github.com/autokitteh/tmplrender v0.0.0-20220522022256-3c30fdc6cfd4
 	github.com/bradleyfalzon/ghinstallation/v2 v2.0.4
 	github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e
 	github.com/cosiner/argv v0.1.0
@@ -24,7 +26,6 @@ require (
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/iancoleman/strcase v0.2.0
 	github.com/kelseyhightower/envconfig v1.4.0
-	github.com/mattn/go-shellwords v1.0.12
 	github.com/psanford/memfs v0.0.0-20210214183328-a001468d78ef
 	github.com/qri-io/starlib v0.5.0
 	github.com/robfig/cron v1.2.0
@@ -57,12 +58,11 @@ require (
 	github.com/KromDaniel/jonson v0.0.0-20180630143114-d2f9c3c389db // indirect
 	github.com/Masterminds/goutils v1.1.1 // indirect
 	github.com/Masterminds/semver/v3 v3.1.1 // indirect
+	github.com/Masterminds/sprig/v3 v3.2.2 // indirect
 	github.com/PuerkitoBio/goquery v1.5.1 // indirect
 	github.com/Songmu/axslogparser v1.4.0 // indirect
 	github.com/Songmu/go-ltsv v0.0.0-20181014062614-c30af2b7b171 // indirect
 	github.com/andybalholm/cascadia v1.1.0 // indirect
-	github.com/autokitteh/parsecmd v0.0.0-20220522021831-04f6419353d5 // indirect
-	github.com/autokitteh/starlarkutils v0.0.0-20220522021518-dd78b8b234d6 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/cockroachdb/apd/v2 v2.0.2 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.1 // indirect
@@ -101,6 +101,7 @@ require (
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/mattn/go-colorable v0.1.12 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
+	github.com/mattn/go-shellwords v1.0.12 // indirect
 	github.com/mattn/go-sqlite3 v1.14.12 // indirect
 	github.com/mitchellh/copystructure v1.0.0 // indirect
 	github.com/mitchellh/go-wordwrap v1.0.1 // indirect
