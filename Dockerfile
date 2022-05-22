@@ -19,11 +19,10 @@ FROM alpine:latest
 RUN apk update && apk --no-cache add ca-certificates bash curl
 
 COPY --from=builder /build/bin/* /ak/bin/
-COPY build/autokitteh/entrypoint.sh /ak/bin
 
 WORKDIR /ak
 
 EXPOSE 20000
 EXPOSE 20001
 
-ENTRYPOINT ["/ak/bin/entrypoint.sh"]
+ENTRYPOINT ["/ak/bin/akd"]

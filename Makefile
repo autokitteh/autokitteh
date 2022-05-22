@@ -142,7 +142,7 @@ shellcheck:
 
 .PHONY: docker-autokitteh
 docker-autokitteh:
-	docker build -t autokitteh/autokitteh -f build/autokitteh/Dockerfile .
+	docker build -t autokitteh/autokitteh .
 
 .PHONY: docker
 docker: docker-autokitteh
