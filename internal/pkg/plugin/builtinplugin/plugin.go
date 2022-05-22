@@ -5,10 +5,10 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiplugin"
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apivalues"
+	"github.com/autokitteh/autokitteh/sdk/api/apiplugin"
+	"github.com/autokitteh/autokitteh/sdk/api/apivalues"
 	"github.com/autokitteh/autokitteh/internal/pkg/plugin"
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/pluginimpl"
+	"github.com/autokitteh/autokitteh/sdk/pluginimpl"
 )
 
 var ErrNotACallValue = errors.New("not a call value")

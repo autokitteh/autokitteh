@@ -9,10 +9,10 @@ import (
 	"github.com/gorilla/mux"
 
 	"github.com/autokitteh/autokitteh/internal/pkg/eventsstore"
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apievent"
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apilang"
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiproject"
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apivalues"
+	"github.com/autokitteh/autokitteh/sdk/api/apievent"
+	"github.com/autokitteh/autokitteh/sdk/api/apilang"
+	"github.com/autokitteh/autokitteh/sdk/api/apiproject"
+	"github.com/autokitteh/autokitteh/sdk/api/apivalues"
 )
 
 func (s *Svc) registerEvents(r *mux.Router) {

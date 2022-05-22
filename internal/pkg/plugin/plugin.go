@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiplugin"
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apivalues"
+	"github.com/autokitteh/autokitteh/sdk/api/apiplugin"
+	"github.com/autokitteh/autokitteh/sdk/api/apivalues"
 )
 
 var ErrPluginNotFound = errors.New("plugin not found")

@@ -6,7 +6,7 @@ import (
 
 	"github.com/dustinkirkland/golang-petname"
 
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiaccount"
+	"github.com/autokitteh/autokitteh/sdk/api/apiaccount"
 )
 
 type ProjectID string

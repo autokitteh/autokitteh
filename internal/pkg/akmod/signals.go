@@ -11,9 +11,9 @@ import (
 	"go.temporal.io/sdk/workflow"
 
 	"github.com/autokitteh/autokitteh/internal/pkg/events"
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apievent"
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apivalues"
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/pluginimpl"
+	"github.com/autokitteh/autokitteh/sdk/api/apievent"
+	"github.com/autokitteh/autokitteh/sdk/api/apivalues"
+	"github.com/autokitteh/autokitteh/sdk/pluginimpl"
 
 	L "github.com/autokitteh/autokitteh/pkg/l"
 )

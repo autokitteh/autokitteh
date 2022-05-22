@@ -10,8 +10,8 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiproject"
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apivalues"
+	"github.com/autokitteh/autokitteh/sdk/api/apiproject"
+	"github.com/autokitteh/autokitteh/sdk/api/apivalues"
 	"github.com/autokitteh/autokitteh/internal/pkg/statestore"
 )
 

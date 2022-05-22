@@ -11,9 +11,9 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/autokitteh/autokitteh/internal/pkg/accountsstore"
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiaccount"
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiprogram"
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiproject"
+	"github.com/autokitteh/autokitteh/sdk/api/apiaccount"
+	"github.com/autokitteh/autokitteh/sdk/api/apiprogram"
+	"github.com/autokitteh/autokitteh/sdk/api/apiproject"
 	"github.com/autokitteh/autokitteh/internal/pkg/projectsstore"
 )
 

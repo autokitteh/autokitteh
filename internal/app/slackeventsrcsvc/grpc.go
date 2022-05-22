@@ -8,7 +8,7 @@ import (
 
 	pb "github.com/autokitteh/autokitteh/api/gen/stubs/go/slackeventsrc"
 
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiproject"
+	"github.com/autokitteh/autokitteh/sdk/api/apiproject"
 )
 
 func (s *Svc) Bind(ctx context.Context, req *pb.BindRequest) (*pb.BindResponse, error) {

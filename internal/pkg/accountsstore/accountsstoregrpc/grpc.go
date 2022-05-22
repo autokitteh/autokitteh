@@ -11,7 +11,7 @@ import (
 	pbaccountsvc "github.com/autokitteh/autokitteh/api/gen/stubs/go/accountsvc"
 
 	"github.com/autokitteh/autokitteh/internal/pkg/accountsstore"
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiaccount"
+	"github.com/autokitteh/autokitteh/sdk/api/apiaccount"
 )
 
 type Store struct{ Client pbaccountsvc.AccountsClient }

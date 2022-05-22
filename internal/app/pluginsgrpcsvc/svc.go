@@ -11,9 +11,9 @@ import (
 	pbvalues "github.com/autokitteh/autokitteh/api/gen/stubs/go/values"
 
 	"github.com/autokitteh/autokitteh/internal/pkg/plugin"
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiplugin"
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiprogram"
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apivalues"
+	"github.com/autokitteh/autokitteh/sdk/api/apiplugin"
+	"github.com/autokitteh/autokitteh/sdk/api/apiprogram"
+	"github.com/autokitteh/autokitteh/sdk/api/apivalues"
 	L "github.com/autokitteh/autokitteh/pkg/l"
 )
 

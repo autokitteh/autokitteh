@@ -3,7 +3,7 @@ package secretsstore
 import (
 	"context"
 
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiproject"
+	"github.com/autokitteh/autokitteh/sdk/api/apiproject"
 	"github.com/autokitteh/autokitteh/pkg/pkvstore"
 )
 

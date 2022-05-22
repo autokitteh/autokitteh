@@ -12,8 +12,8 @@ import (
 	pbsvc "github.com/autokitteh/autokitteh/api/gen/stubs/go/pluginsregsvc"
 
 	"github.com/autokitteh/autokitteh/internal/pkg/pluginsreg"
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiaccount"
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiplugin"
+	"github.com/autokitteh/autokitteh/sdk/api/apiaccount"
+	"github.com/autokitteh/autokitteh/sdk/api/apiplugin"
 
 	L "github.com/autokitteh/autokitteh/pkg/l"
 )

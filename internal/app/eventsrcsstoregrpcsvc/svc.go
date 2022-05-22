@@ -11,9 +11,9 @@ import (
 	pbeventsrc "github.com/autokitteh/autokitteh/api/gen/stubs/go/eventsrc"
 	pbeventsrcsvc "github.com/autokitteh/autokitteh/api/gen/stubs/go/eventsrcsvc"
 
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiaccount"
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apieventsrc"
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiproject"
+	"github.com/autokitteh/autokitteh/sdk/api/apiaccount"
+	"github.com/autokitteh/autokitteh/sdk/api/apieventsrc"
+	"github.com/autokitteh/autokitteh/sdk/api/apiproject"
 	"github.com/autokitteh/autokitteh/internal/pkg/eventsrcsstore"
 	L "github.com/autokitteh/autokitteh/pkg/l"
 )

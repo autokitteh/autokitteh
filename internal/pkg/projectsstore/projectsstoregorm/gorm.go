@@ -11,8 +11,8 @@ import (
 
 	"github.com/autokitteh/autokitteh/internal/pkg/accountsstore"
 	"github.com/autokitteh/autokitteh/internal/pkg/projectsstore"
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiaccount"
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiproject"
+	"github.com/autokitteh/autokitteh/sdk/api/apiaccount"
+	"github.com/autokitteh/autokitteh/sdk/api/apiproject"
 )
 
 type Store struct {

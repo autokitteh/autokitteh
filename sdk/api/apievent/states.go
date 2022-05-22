@@ -3,7 +3,7 @@ package apievent
 import (
 	pbevent "github.com/autokitteh/autokitteh/api/gen/stubs/go/event"
 
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiproject"
+	"github.com/autokitteh/autokitteh/sdk/api/apiproject"
 )
 
 type eventState interface {

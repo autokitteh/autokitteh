@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apilang"
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiprogram"
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apivalues"
+	"github.com/autokitteh/autokitteh/sdk/api/apilang"
+	"github.com/autokitteh/autokitteh/sdk/api/apiprogram"
+	"github.com/autokitteh/autokitteh/sdk/api/apivalues"
 	"github.com/autokitteh/autokitteh/internal/pkg/lang"
 	"github.com/autokitteh/autokitteh/pkg/idgen"
 )

@@ -8,7 +8,7 @@ import (
 
 	"github.com/urfave/cli/v2"
 
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiprogram"
+	"github.com/autokitteh/autokitteh/sdk/api/apiprogram"
 	"github.com/autokitteh/autokitteh/internal/pkg/lang"
 )
 

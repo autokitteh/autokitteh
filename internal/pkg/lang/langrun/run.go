@@ -3,8 +3,8 @@ package langrun
 import (
 	"context"
 
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apilang"
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apivalues"
+	"github.com/autokitteh/autokitteh/sdk/api/apilang"
+	"github.com/autokitteh/autokitteh/sdk/api/apivalues"
 )
 
 type Run interface {

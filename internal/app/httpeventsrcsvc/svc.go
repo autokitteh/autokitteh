@@ -14,7 +14,7 @@ import (
 
 	pb "github.com/autokitteh/autokitteh/api/gen/stubs/go/httpeventsrc"
 
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiproject"
+	"github.com/autokitteh/autokitteh/sdk/api/apiproject"
 	"github.com/autokitteh/autokitteh/internal/pkg/httpeventsrc"
 	L "github.com/autokitteh/autokitteh/pkg/l"
 )

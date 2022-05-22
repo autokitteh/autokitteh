@@ -5,8 +5,8 @@ import (
 	"errors"
 	"time"
 
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiproject"
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apivalues"
+	"github.com/autokitteh/autokitteh/sdk/api/apiproject"
+	"github.com/autokitteh/autokitteh/sdk/api/apivalues"
 )
 
 var ErrNotFound = errors.New("not found")

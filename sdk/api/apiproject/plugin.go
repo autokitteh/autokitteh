@@ -5,7 +5,7 @@ import (
 
 	pbproject "github.com/autokitteh/autokitteh/api/gen/stubs/go/project"
 
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiplugin"
+	"github.com/autokitteh/autokitteh/sdk/api/apiplugin"
 )
 
 type ProjectPlugin struct{ pb *pbproject.ProjectPlugin }

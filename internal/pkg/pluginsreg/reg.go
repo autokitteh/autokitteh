@@ -14,9 +14,9 @@ import (
 	"github.com/autokitteh/autokitteh/internal/pkg/plugin"
 	"github.com/autokitteh/autokitteh/internal/pkg/plugin/builtinplugin"
 	"github.com/autokitteh/autokitteh/internal/pkg/plugin/grpcplugin"
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiaccount"
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiplugin"
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/pluginimpl"
+	"github.com/autokitteh/autokitteh/sdk/api/apiaccount"
+	"github.com/autokitteh/autokitteh/sdk/api/apiplugin"
+	"github.com/autokitteh/autokitteh/sdk/pluginimpl"
 
 	L "github.com/autokitteh/autokitteh/pkg/l"
 	"github.com/autokitteh/autokitteh/pkg/pkvstore"

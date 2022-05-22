@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiprogram"
+	"github.com/autokitteh/autokitteh/sdk/api/apiprogram"
 	"github.com/autokitteh/autokitteh/internal/pkg/lang"
 )
 

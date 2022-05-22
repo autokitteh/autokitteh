@@ -10,7 +10,7 @@ import (
 
 	pbprogram "github.com/autokitteh/autokitteh/api/gen/stubs/go/program"
 
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiplugin"
+	"github.com/autokitteh/autokitteh/sdk/api/apiplugin"
 )
 
 var pathRe = regexp.MustCompile(`` +

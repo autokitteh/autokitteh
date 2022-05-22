@@ -10,7 +10,7 @@ import (
 
 	"github.com/autokitteh/autokitteh/internal/pkg/accountsstore"
 	"github.com/autokitteh/autokitteh/internal/pkg/accountsstore/accountsstorefactory"
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiaccount"
+	"github.com/autokitteh/autokitteh/sdk/api/apiaccount"
 	"github.com/autokitteh/autokitteh/pkg/starlarkutils"
 )
 

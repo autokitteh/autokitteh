@@ -9,10 +9,10 @@ import (
 
 	pbeventsvc "github.com/autokitteh/autokitteh/api/gen/stubs/go/eventsvc"
 
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apievent"
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apieventsrc"
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiproject"
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apivalues"
+	"github.com/autokitteh/autokitteh/sdk/api/apievent"
+	"github.com/autokitteh/autokitteh/sdk/api/apieventsrc"
+	"github.com/autokitteh/autokitteh/sdk/api/apiproject"
+	"github.com/autokitteh/autokitteh/sdk/api/apivalues"
 	"github.com/autokitteh/autokitteh/internal/pkg/eventsstore"
 )
 

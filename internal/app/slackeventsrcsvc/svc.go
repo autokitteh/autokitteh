@@ -11,8 +11,8 @@ import (
 
 	pb "github.com/autokitteh/autokitteh/api/gen/stubs/go/slackeventsrc"
 
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apieventsrc"
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiproject"
+	"github.com/autokitteh/autokitteh/sdk/api/apieventsrc"
+	"github.com/autokitteh/autokitteh/sdk/api/apiproject"
 	"github.com/autokitteh/autokitteh/internal/pkg/credsstore"
 	"github.com/autokitteh/autokitteh/internal/pkg/events"
 	"github.com/autokitteh/autokitteh/internal/pkg/eventsrcsstore"

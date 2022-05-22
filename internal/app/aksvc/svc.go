@@ -64,8 +64,8 @@ import (
 	"github.com/autokitteh/autokitteh/internal/pkg/sessions"
 	"github.com/autokitteh/autokitteh/internal/pkg/statestore"
 	"github.com/autokitteh/autokitteh/internal/pkg/statestore/statestorefactory"
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiplugin"
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiprogram"
+	"github.com/autokitteh/autokitteh/sdk/api/apiplugin"
+	"github.com/autokitteh/autokitteh/sdk/api/apiprogram"
 
 	"github.com/autokitteh/autokitteh/assets"
 	"github.com/autokitteh/autokitteh/pkg/idgen"

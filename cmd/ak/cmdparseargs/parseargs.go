@@ -4,7 +4,7 @@ import (
 	"github.com/urfave/cli/v2"
 
 	T "github.com/autokitteh/autokitteh/cmd/ak/clitools"
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apivalues"
+	"github.com/autokitteh/autokitteh/sdk/api/apivalues"
 )
 
 var (

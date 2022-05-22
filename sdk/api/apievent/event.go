@@ -8,8 +8,8 @@ import (
 
 	pbevent "github.com/autokitteh/autokitteh/api/gen/stubs/go/event"
 
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apieventsrc"
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apivalues"
+	"github.com/autokitteh/autokitteh/sdk/api/apieventsrc"
+	"github.com/autokitteh/autokitteh/sdk/api/apivalues"
 )
 
 type EventPB = pbevent.Event

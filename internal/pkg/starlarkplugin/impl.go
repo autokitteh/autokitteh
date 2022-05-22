@@ -7,8 +7,8 @@ import (
 	"go.starlark.net/starlark"
 
 	"github.com/autokitteh/autokitteh/internal/pkg/lang/langstarlark"
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apivalues"
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/pluginimpl"
+	"github.com/autokitteh/autokitteh/sdk/api/apivalues"
+	"github.com/autokitteh/autokitteh/sdk/pluginimpl"
 )
 
 func mkcall(bi *starlark.Builtin) func(

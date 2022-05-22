@@ -9,9 +9,9 @@ import (
 	"go.starlark.net/starlarkstruct"
 
 	"github.com/autokitteh/autokitteh/internal/pkg/accountsstore/accountsstorefactory"
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiaccount"
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiprogram"
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiproject"
+	"github.com/autokitteh/autokitteh/sdk/api/apiaccount"
+	"github.com/autokitteh/autokitteh/sdk/api/apiprogram"
+	"github.com/autokitteh/autokitteh/sdk/api/apiproject"
 	"github.com/autokitteh/autokitteh/internal/pkg/projectsstore"
 	"github.com/autokitteh/autokitteh/internal/pkg/projectsstore/projectsstorefactory"
 	"github.com/autokitteh/autokitteh/pkg/starlarkutils"

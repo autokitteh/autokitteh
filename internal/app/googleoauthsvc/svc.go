@@ -10,7 +10,7 @@ import (
 	"github.com/gorilla/mux"
 	"golang.org/x/oauth2"
 
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiproject"
+	"github.com/autokitteh/autokitteh/sdk/api/apiproject"
 	"github.com/autokitteh/autokitteh/internal/pkg/credsstore"
 	"github.com/autokitteh/autokitteh/internal/pkg/googleoauth"
 	"github.com/autokitteh/autokitteh/pkg/kvstore"

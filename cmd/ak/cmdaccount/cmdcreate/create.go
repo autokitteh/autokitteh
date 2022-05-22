@@ -8,7 +8,7 @@ import (
 	T "github.com/autokitteh/autokitteh/cmd/ak/clitools"
 	A "github.com/autokitteh/autokitteh/cmd/ak/cmdaccount/accounttools"
 	"github.com/autokitteh/autokitteh/internal/pkg/accountsstore"
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiaccount"
+	"github.com/autokitteh/autokitteh/sdk/api/apiaccount"
 )
 
 var (

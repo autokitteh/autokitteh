@@ -12,7 +12,7 @@ import (
 	pblangsvc "github.com/autokitteh/autokitteh/api/gen/stubs/go/langsvc"
 	pbprogram "github.com/autokitteh/autokitteh/api/gen/stubs/go/program"
 
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiprogram"
+	"github.com/autokitteh/autokitteh/sdk/api/apiprogram"
 	"github.com/autokitteh/autokitteh/internal/pkg/lang"
 	"github.com/autokitteh/autokitteh/internal/pkg/lang/langtools"
 	L "github.com/autokitteh/autokitteh/pkg/l"

@@ -12,7 +12,7 @@ import (
 	pb "github.com/autokitteh/autokitteh/api/gen/stubs/go/secretssvc"
 
 	"github.com/autokitteh/autokitteh/internal/pkg/secretsstore"
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiproject"
+	"github.com/autokitteh/autokitteh/sdk/api/apiproject"
 	L "github.com/autokitteh/autokitteh/pkg/l"
 )
 

@@ -9,7 +9,7 @@ import (
 
 	"github.com/google/go-github/v42/github"
 
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiprogram"
+	"github.com/autokitteh/autokitteh/sdk/api/apiprogram"
 	L "github.com/autokitteh/autokitteh/pkg/l"
 )
 

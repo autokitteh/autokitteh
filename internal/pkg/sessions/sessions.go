@@ -20,12 +20,12 @@ import (
 	"github.com/autokitteh/autokitteh/internal/pkg/pluginsreg"
 	"github.com/autokitteh/autokitteh/internal/pkg/programs"
 	"github.com/autokitteh/autokitteh/internal/pkg/statestore"
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apievent"
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apilang"
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiplugin"
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiprogram"
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiproject"
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apivalues"
+	"github.com/autokitteh/autokitteh/sdk/api/apievent"
+	"github.com/autokitteh/autokitteh/sdk/api/apilang"
+	"github.com/autokitteh/autokitteh/sdk/api/apiplugin"
+	"github.com/autokitteh/autokitteh/sdk/api/apiprogram"
+	"github.com/autokitteh/autokitteh/sdk/api/apiproject"
+	"github.com/autokitteh/autokitteh/sdk/api/apivalues"
 
 	L "github.com/autokitteh/autokitteh/pkg/l"
 )

@@ -7,7 +7,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	pblang "github.com/autokitteh/autokitteh/api/gen/stubs/go/lang"
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiprogram"
+	"github.com/autokitteh/autokitteh/sdk/api/apiprogram"
 )
 
 type RunStateLogRecord struct{ pb *pblang.RunStateLogRecord }

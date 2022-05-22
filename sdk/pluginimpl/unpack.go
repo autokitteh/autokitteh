@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apivalues"
+	"github.com/autokitteh/autokitteh/sdk/api/apivalues"
 )
 
 func UnpackArgs(args []*apivalues.Value, kwargs_ map[string]*apivalues.Value, dsts ...interface{}) error {

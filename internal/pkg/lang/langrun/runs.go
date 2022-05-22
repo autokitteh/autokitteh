@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apilang"
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiprogram"
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apivalues"
+	"github.com/autokitteh/autokitteh/sdk/api/apilang"
+	"github.com/autokitteh/autokitteh/sdk/api/apiprogram"
+	"github.com/autokitteh/autokitteh/sdk/api/apivalues"
 )
 
 type SendFunc func(id RunID, t time.Time, from *apilang.RunState, to *apilang.RunState)

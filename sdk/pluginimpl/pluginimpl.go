@@ -1,7 +1,7 @@
 package pluginimpl
 
 import (
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiplugin"
+	"github.com/autokitteh/autokitteh/sdk/api/apiplugin"
 )
 
 type Plugin struct {

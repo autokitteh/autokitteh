@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/autokitteh/autokitteh/internal/pkg/accountsstore"
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiaccount"
+	"github.com/autokitteh/autokitteh/sdk/api/apiaccount"
 )
 
 func TestAll(t *testing.T, as accountsstore.Store) {

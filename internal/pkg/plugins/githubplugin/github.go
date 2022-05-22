@@ -6,8 +6,8 @@ import (
 
 	"github.com/google/go-github/v42/github"
 
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apivalues"
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/pluginimpl"
+	"github.com/autokitteh/autokitteh/sdk/api/apivalues"
+	"github.com/autokitteh/autokitteh/sdk/pluginimpl"
 
 	"github.com/autokitteh/autokitteh/internal/pkg/githubinstalls"
 )

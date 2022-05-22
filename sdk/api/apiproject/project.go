@@ -8,7 +8,7 @@ import (
 
 	pbproject "github.com/autokitteh/autokitteh/api/gen/stubs/go/project"
 
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiaccount"
+	"github.com/autokitteh/autokitteh/sdk/api/apiaccount"
 )
 
 type ProjectPB = pbproject.Project

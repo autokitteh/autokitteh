@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/autokitteh/autokitteh/pkg/autokitteh/api/apiaccount"
+	"github.com/autokitteh/autokitteh/sdk/api/apiaccount"
 )
 
 const sep = "."
