@@ -39,12 +39,8 @@ $ ./bin/akd
 
 # API CHANGES
 
-All generated code for proto is checked into the repository.
-If any proto is changed, these must be ran:
-
-```
-$ make api
-```
+- Protobuffer defintions are in https://github.com/autokitteh/idl.
+- SDK, which depends on the protobuffers, are in https://github.com/autokitteh/go-sdk.
 
 # LOCAL BUILD REQUIREMENTS
 
@@ -60,9 +56,3 @@ $ make api
 
 - jq
 - docker
-
-## py
-
-- python3
-- pipenv
-
