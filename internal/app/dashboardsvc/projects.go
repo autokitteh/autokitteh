@@ -6,7 +6,7 @@ import (
 
 	"github.com/gorilla/mux"
 
-	"github.com/autokitteh/autokitteh/sdk/api/apiproject"
+	"go.autokitteh.dev/sdk/api/apiproject"
 	"github.com/autokitteh/autokitteh/internal/pkg/projectsstore"
 	"github.com/autokitteh/autokitteh/internal/pkg/statestore"
 )

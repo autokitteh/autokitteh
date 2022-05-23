@@ -32,7 +32,7 @@ $(GOTEST) -v $(GO_TEST_OPTS) -count=1 "$1"
 endef
 
 .PHONY: all
-all: shellcheck api py bin lint test
+all: shellcheck py bin lint test
 
 .PHONY: clean
 clean:
@@ -94,14 +94,6 @@ c: ak
 
 .PHONY: sh
 sh: aksh
-
-.PHONY: $(GENDIR)/proto
-$(GENDIR)/proto:
-	rm -fR $(GENDIR)/proto
-	./api/scripts/gen.sh
-
-.PHONY: api
-api: $(GENDIR)/proto
 
 $(OUTDIR)/tools/golangci-lint:
 	mkdir -p $(OUTDIR)/tools

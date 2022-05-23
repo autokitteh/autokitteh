@@ -11,10 +11,10 @@ import (
 	"github.com/autokitteh/autokitteh/internal/pkg/eventsstore"
 	"github.com/autokitteh/autokitteh/internal/pkg/eventsstore/eventsstorefactory"
 	"github.com/autokitteh/autokitteh/internal/pkg/lang/langstarlark"
-	"github.com/autokitteh/autokitteh/sdk/api/apievent"
-	"github.com/autokitteh/autokitteh/sdk/api/apieventsrc"
-	"github.com/autokitteh/autokitteh/sdk/api/apiproject"
 	"github.com/autokitteh/starlarkutils"
+	"go.autokitteh.dev/sdk/api/apievent"
+	"go.autokitteh.dev/sdk/api/apieventsrc"
+	"go.autokitteh.dev/sdk/api/apiproject"
 )
 
 var Module = &starlarkstruct.Module{
@@ -87,7 +87,7 @@ func makeAdd(s eventsstore.Store) func(thread *starlark.Thread, b *starlark.Buil
 			strdict[string(strk)] = v
 		}
 
-		data, err := langstarlark.NewNaiveValues().FromStringDict(strdict, nil)
+		data, err := langstarlark.NewNaiveValues().FromStringDict(strdict, nil, nil)
 		if err != nil {
 			return nil, fmt.Errorf("error translating data: %w", err)
 		}

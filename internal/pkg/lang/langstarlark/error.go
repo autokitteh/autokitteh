@@ -9,7 +9,7 @@ import (
 	"go.starlark.net/starlark"
 	"go.starlark.net/syntax"
 
-	"github.com/autokitteh/autokitteh/sdk/api/apiprogram"
+	"go.autokitteh.dev/sdk/api/apiprogram"
 	"github.com/autokitteh/autokitteh/internal/pkg/lang"
 )
 

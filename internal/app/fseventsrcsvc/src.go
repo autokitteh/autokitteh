@@ -10,9 +10,9 @@ import (
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
 
-	pb "github.com/autokitteh/autokitteh/api/gen/stubs/go/fseventsrc"
+	pb "go.autokitteh.dev/idl/go/fseventsrc"
 
-	"github.com/autokitteh/autokitteh/sdk/api/apiproject"
+	"go.autokitteh.dev/sdk/api/apiproject"
 	"github.com/autokitteh/autokitteh/internal/pkg/fseventsrc"
 	"github.com/autokitteh/L"
 )

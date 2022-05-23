@@ -3,6 +3,7 @@
 package langcue
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,7 +15,7 @@ func TestUnmarshalCueData(t *testing.T) {
 
 	require.NoError(
 		t,
-		UnmarshalCue([]byte(`package main
+		UnmarshalCue(context.Background(), []byte(`package main
 
 import "encoding/json"
 import "autokitteh.io/values"

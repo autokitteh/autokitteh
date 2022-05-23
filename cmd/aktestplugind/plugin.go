@@ -3,9 +3,9 @@ package main
 import (
 	"context"
 
-	"github.com/autokitteh/autokitteh/sdk/api/apivalues"
-	"github.com/autokitteh/autokitteh/sdk/pluginimpl"
-	"github.com/autokitteh/autokitteh/sdk/pluginsvc"
+	"go.autokitteh.dev/sdk/api/apivalues"
+	"go.autokitteh.dev/sdk/pluginimpl"
+	"go.autokitteh.dev/sdk/pluginsvc"
 )
 
 var Test = &pluginimpl.Plugin{

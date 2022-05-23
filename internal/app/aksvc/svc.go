@@ -16,8 +16,13 @@ import (
 	temporalclient "go.temporal.io/sdk/client"
 	"google.golang.org/grpc"
 
-	"github.com/autokitteh/autokitteh/api/gen/openapi"
 	webdashboard "github.com/autokitteh/autokitteh/web/dashboard"
+	"go.autokitteh.dev/idl/openapi"
+
+	"go.autokitteh.dev/sdk/api/apiplugin"
+	"go.autokitteh.dev/sdk/api/apiprogram"
+	"go.autokitteh.dev/sdk/plugin"
+	"go.autokitteh.dev/sdk/pluginsgrpcsvc"
 
 	"github.com/autokitteh/autokitteh/internal/app/accountsstoregrpcsvc"
 	"github.com/autokitteh/autokitteh/internal/app/croneventsrcsvc"
@@ -30,7 +35,6 @@ import (
 	"github.com/autokitteh/autokitteh/internal/app/httpeventsrcsvc"
 	"github.com/autokitteh/autokitteh/internal/app/langgrpcsvc"
 	"github.com/autokitteh/autokitteh/internal/app/langrungrpcsvc"
-	"github.com/autokitteh/autokitteh/internal/app/pluginsgrpcsvc"
 	"github.com/autokitteh/autokitteh/internal/app/pluginsreggrpcsvc"
 	"github.com/autokitteh/autokitteh/internal/app/projectsstoregrpcsvc"
 	"github.com/autokitteh/autokitteh/internal/app/secretsstoregrpcsvc"
@@ -54,7 +58,6 @@ import (
 	"github.com/autokitteh/autokitteh/internal/pkg/lang/langrun/locallangrun"
 	"github.com/autokitteh/autokitteh/internal/pkg/lang/langtools"
 	"github.com/autokitteh/autokitteh/internal/pkg/manifest"
-	"github.com/autokitteh/autokitteh/internal/pkg/plugin"
 	"github.com/autokitteh/autokitteh/internal/pkg/plugins/internalplugins"
 	"github.com/autokitteh/autokitteh/internal/pkg/pluginsreg"
 	"github.com/autokitteh/autokitteh/internal/pkg/programs"
@@ -64,8 +67,6 @@ import (
 	"github.com/autokitteh/autokitteh/internal/pkg/sessions"
 	"github.com/autokitteh/autokitteh/internal/pkg/statestore"
 	"github.com/autokitteh/autokitteh/internal/pkg/statestore/statestorefactory"
-	"github.com/autokitteh/autokitteh/sdk/api/apiplugin"
-	"github.com/autokitteh/autokitteh/sdk/api/apiprogram"
 
 	"github.com/autokitteh/L"
 	"github.com/autokitteh/autokitteh/assets"
@@ -659,9 +660,9 @@ var SvcOpts = []svc.OptFunc{
 		},
 		svc.Component{
 			Name: "initmanifest",
-			Init: func(l L.L, cfg *Config) (actions manifest.Actions, _ error) {
+			Init: func(ctx context.Context, l L.L, cfg *Config) (actions manifest.Actions, _ error) {
 				for _, initpath := range cfg.InitPaths {
-					m, err := manifest.ManifestFromPath(initpath)
+					m, err := manifest.ManifestFromPath(ctx, initpath)
 					if err != nil {
 						return nil, fmt.Errorf("%q: %w", initpath, err)
 					}

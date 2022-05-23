@@ -13,7 +13,7 @@ import (
 	"github.com/autokitteh/L"
 	"github.com/autokitteh/autokitteh/internal/pkg/credsstore"
 	"github.com/autokitteh/autokitteh/internal/pkg/googleoauth"
-	"github.com/autokitteh/autokitteh/sdk/api/apiproject"
+	"go.autokitteh.dev/sdk/api/apiproject"
 	"github.com/autokitteh/stores/kvstore"
 )
 

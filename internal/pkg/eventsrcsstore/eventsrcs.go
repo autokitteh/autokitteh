@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 
-	"github.com/autokitteh/autokitteh/sdk/api/apiaccount"
-	"github.com/autokitteh/autokitteh/sdk/api/apieventsrc"
-	"github.com/autokitteh/autokitteh/sdk/api/apiproject"
+	"go.autokitteh.dev/sdk/api/apiaccount"
+	"go.autokitteh.dev/sdk/api/apieventsrc"
+	"go.autokitteh.dev/sdk/api/apiproject"
 )
 
 var (

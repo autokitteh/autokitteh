@@ -7,11 +7,11 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	pbeventsrcsvc "github.com/autokitteh/autokitteh/api/gen/stubs/go/eventsrcsvc"
+	pbeventsrcsvc "go.autokitteh.dev/idl/go/eventsrcsvc"
 
-	"github.com/autokitteh/autokitteh/sdk/api/apiaccount"
-	"github.com/autokitteh/autokitteh/sdk/api/apieventsrc"
-	"github.com/autokitteh/autokitteh/sdk/api/apiproject"
+	"go.autokitteh.dev/sdk/api/apiaccount"
+	"go.autokitteh.dev/sdk/api/apieventsrc"
+	"go.autokitteh.dev/sdk/api/apiproject"
 	"github.com/autokitteh/autokitteh/internal/pkg/eventsrcsstore"
 )
 

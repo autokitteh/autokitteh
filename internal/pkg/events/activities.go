@@ -6,10 +6,10 @@ import (
 
 	"go.temporal.io/sdk/workflow"
 
-	"github.com/autokitteh/autokitteh/sdk/api/apiaccount"
-	"github.com/autokitteh/autokitteh/sdk/api/apievent"
-	"github.com/autokitteh/autokitteh/sdk/api/apieventsrc"
-	"github.com/autokitteh/autokitteh/sdk/api/apiproject"
+	"go.autokitteh.dev/sdk/api/apiaccount"
+	"go.autokitteh.dev/sdk/api/apievent"
+	"go.autokitteh.dev/sdk/api/apieventsrc"
+	"go.autokitteh.dev/sdk/api/apiproject"
 )
 
 type eventRelatedData struct {

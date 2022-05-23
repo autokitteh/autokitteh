@@ -1,8 +1,8 @@
 package internalplugins
 
 import (
-	"github.com/autokitteh/autokitteh/sdk/api/apiplugin"
-	"github.com/autokitteh/autokitteh/sdk/pluginimpl"
+	"go.autokitteh.dev/sdk/api/apiplugin"
+	"go.autokitteh.dev/sdk/pluginimpl"
 )
 
 func RegisterAll(f func(apiplugin.PluginName, *pluginimpl.Plugin)) {

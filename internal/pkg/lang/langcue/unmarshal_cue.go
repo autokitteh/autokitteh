@@ -1,6 +1,7 @@
 package langcue
 
 import (
+	"context"
 	"fmt"
 	"io/fs"
 
@@ -10,14 +11,14 @@ import (
 	cuemod "github.com/autokitteh/autokitteh/cue.mod"
 )
 
-func UnmarshalCue(src []byte, dst interface{}) error {
+func UnmarshalCue(ctx context.Context, src []byte, dst interface{}) error {
 	srcfs := memfs.New()
 
 	// TODO: accept configurable filename (for error messages?).
 	srcfs.WriteFile("main.cue", src, 0644)
 
 	// TODO: SECURITY: make sure this cannot access the fs.
-	v, err := compiler.Build("/", map[string]fs.FS{
+	v, err := compiler.Build(ctx, "/", map[string]fs.FS{
 		// HACK: both keys should've been "/" or "", but obviously since this is a
 		// map this can't happen. using "/" with "" allows to "add" them togethor.
 		"/":       srcfs,

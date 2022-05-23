@@ -13,11 +13,11 @@ import (
 	"github.com/autokitteh/autokitteh/internal/pkg/eventsrcsstore"
 	"github.com/autokitteh/autokitteh/internal/pkg/eventsstore"
 	"github.com/autokitteh/autokitteh/internal/pkg/projectsstore"
-	"github.com/autokitteh/autokitteh/sdk/api/apievent"
-	"github.com/autokitteh/autokitteh/sdk/api/apieventsrc"
-	"github.com/autokitteh/autokitteh/sdk/api/apilang"
-	"github.com/autokitteh/autokitteh/sdk/api/apiproject"
-	"github.com/autokitteh/autokitteh/sdk/api/apivalues"
+	"go.autokitteh.dev/sdk/api/apievent"
+	"go.autokitteh.dev/sdk/api/apieventsrc"
+	"go.autokitteh.dev/sdk/api/apilang"
+	"go.autokitteh.dev/sdk/api/apiproject"
+	"go.autokitteh.dev/sdk/api/apivalues"
 	"github.com/autokitteh/L"
 )
 

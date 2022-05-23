@@ -3,8 +3,8 @@ package langrun
 import (
 	"context"
 
-	"github.com/autokitteh/autokitteh/sdk/api/apilang"
-	"github.com/autokitteh/autokitteh/sdk/api/apivalues"
+	"go.autokitteh.dev/sdk/api/apilang"
+	"go.autokitteh.dev/sdk/api/apivalues"
 )
 
 type Run interface {

@@ -7,7 +7,7 @@ import (
 	"google.golang.org/grpc"
 	"gorm.io/gorm"
 
-	pbprojectsvc "github.com/autokitteh/autokitteh/api/gen/stubs/go/projectsvc"
+	pbprojectsvc "go.autokitteh.dev/idl/go/projectsvc"
 
 	"github.com/autokitteh/L"
 	"github.com/autokitteh/autokitteh/internal/pkg/accountsstore"

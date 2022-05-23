@@ -7,10 +7,10 @@ import (
 
 	"gorm.io/datatypes"
 
-	"github.com/autokitteh/autokitteh/sdk/api/apiaccount"
-	"github.com/autokitteh/autokitteh/sdk/api/apiprogram"
-	"github.com/autokitteh/autokitteh/sdk/api/apiproject"
-	"github.com/autokitteh/autokitteh/sdk/api/apivalues"
+	"go.autokitteh.dev/sdk/api/apiaccount"
+	"go.autokitteh.dev/sdk/api/apiprogram"
+	"go.autokitteh.dev/sdk/api/apiproject"
+	"go.autokitteh.dev/sdk/api/apivalues"
 )
 
 type project struct {

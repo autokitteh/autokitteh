@@ -7,11 +7,11 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	pbprojectsvc "github.com/autokitteh/autokitteh/api/gen/stubs/go/projectsvc"
+	pbprojectsvc "go.autokitteh.dev/idl/go/projectsvc"
 
 	"github.com/autokitteh/autokitteh/internal/pkg/projectsstore"
-	"github.com/autokitteh/autokitteh/sdk/api/apiaccount"
-	"github.com/autokitteh/autokitteh/sdk/api/apiproject"
+	"go.autokitteh.dev/sdk/api/apiaccount"
+	"go.autokitteh.dev/sdk/api/apiproject"
 )
 
 type Store struct{ Client pbprojectsvc.ProjectsClient }

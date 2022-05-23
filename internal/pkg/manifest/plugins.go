@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/autokitteh/autokitteh/sdk/api/apiplugin"
+	"go.autokitteh.dev/sdk/api/apiplugin"
 )
 
 type Plugin struct {

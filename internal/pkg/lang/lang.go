@@ -3,9 +3,9 @@ package lang
 import (
 	"context"
 
-	"github.com/autokitteh/autokitteh/sdk/api/apilang"
-	"github.com/autokitteh/autokitteh/sdk/api/apiprogram"
-	"github.com/autokitteh/autokitteh/sdk/api/apivalues"
+	"go.autokitteh.dev/sdk/api/apilang"
+	"go.autokitteh.dev/sdk/api/apiprogram"
+	"go.autokitteh.dev/sdk/api/apivalues"
 )
 
 type Lang interface {

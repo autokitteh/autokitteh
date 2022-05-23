@@ -1,16 +1,17 @@
 package manifest
 
 import (
+	"context"
 	"os"
 
 	"github.com/autokitteh/autokitteh/internal/pkg/akcue"
 )
 
 // TODO: validate manifest using cue.Value.Subsume
-func ManifestFromPath(path string) (*Manifest, error) {
+func ManifestFromPath(ctx context.Context, path string) (*Manifest, error) {
 	var m Manifest
 
-	if err := akcue.Load(path, &m); err != nil {
+	if err := akcue.Load(ctx, path, &m); err != nil {
 		if os.IsNotExist(err) {
 			return nil, nil
 		}

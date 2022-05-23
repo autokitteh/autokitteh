@@ -6,15 +6,15 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/autokitteh/L"
 	"github.com/autokitteh/autokitteh/internal/pkg/lang"
 	"github.com/autokitteh/autokitteh/internal/pkg/lang/langtools"
-	"github.com/autokitteh/autokitteh/sdk/api/apilang"
-	"github.com/autokitteh/autokitteh/sdk/api/apiprogram"
-	"github.com/autokitteh/autokitteh/sdk/api/apivalues"
-	"github.com/autokitteh/L"
+	"go.autokitteh.dev/sdk/api/apilang"
+	"go.autokitteh.dev/sdk/api/apiprogram"
+	"go.autokitteh.dev/sdk/api/apivalues"
 )
 
-type decoderFunc func([]byte, interface{}) error
+type decoderFunc func(context.Context, []byte, interface{}) error
 
 type langvalues struct {
 	name     string
@@ -30,10 +30,18 @@ func init() {
 }
 
 var (
-	NewJSONDataLang = factory(true, UnmarshalJSON)
-	NewJSONProgLang = factory(false, UnmarshalJSON)
-	NewYAMLDataLang = factory(true, UnmarshalYAML)
-	NewYAMLProgLang = factory(false, UnmarshalYAML)
+	unmarshalJSON = func(_ context.Context, src []byte, dst interface{}) error {
+		return UnmarshalJSON(src, dst)
+	}
+
+	unmarshalYAML = func(_ context.Context, src []byte, dst interface{}) error {
+		return UnmarshalYAML(src, dst)
+	}
+
+	NewJSONDataLang = factory(true, unmarshalJSON)
+	NewJSONProgLang = factory(false, unmarshalJSON)
+	NewYAMLDataLang = factory(true, unmarshalYAML)
+	NewYAMLProgLang = factory(false, unmarshalYAML)
 	NewCueDataLang  = factory(true, UnmarshalCue)
 	NewCueProgLang  = factory(false, UnmarshalCue)
 )
@@ -104,7 +112,7 @@ func (*langvalues) GetModuleDependencies(_ context.Context, mod *apiprogram.Modu
 }
 
 func (l *langvalues) CompileModule(
-	_ context.Context,
+	ctx context.Context,
 	path *apiprogram.Path,
 	src []byte,
 	_ []string,
@@ -114,7 +122,7 @@ func (l *langvalues) CompileModule(
 	if l.dataOnly {
 		var m map[string]interface{}
 
-		if err := l.decoder(src, &m); err != nil {
+		if err := l.decoder(ctx, src, &m); err != nil {
 			return nil, fmt.Errorf("unmarshal: %w", err)
 		}
 
@@ -139,7 +147,7 @@ func (l *langvalues) CompileModule(
 			err  error
 		)
 
-		if err = l.decoder(src, &prog); err != nil {
+		if err = l.decoder(ctx, src, &prog); err != nil {
 			return nil, fmt.Errorf("unmarshal: %w", err)
 		}
 
@@ -245,8 +253,12 @@ func (l *langvalues) RunModule(
 		compiled.Consts = map[string]*apivalues.Value{}
 	}
 
-	if l.dataOnly {
+	if l.dataOnly || len(compiled.Modules) == 0 {
 		return compiled.Consts, nil, nil
+	}
+
+	if env == nil || env.Load == nil {
+		return nil, nil, fmt.Errorf("cannot load modules without environment")
 	}
 
 	// TODO: make sure this is only possible in the main file.

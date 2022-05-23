@@ -9,11 +9,11 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	pbsvc "github.com/autokitteh/autokitteh/api/gen/stubs/go/pluginsregsvc"
+	pbsvc "go.autokitteh.dev/idl/go/pluginsregsvc"
 
 	"github.com/autokitteh/autokitteh/internal/pkg/pluginsreg"
-	"github.com/autokitteh/autokitteh/sdk/api/apiaccount"
-	"github.com/autokitteh/autokitteh/sdk/api/apiplugin"
+	"go.autokitteh.dev/sdk/api/apiaccount"
+	"go.autokitteh.dev/sdk/api/apiplugin"
 
 	"github.com/autokitteh/L"
 )

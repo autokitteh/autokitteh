@@ -11,7 +11,7 @@ import (
 	"go.starlark.net/starlarkstruct"
 
 	"github.com/autokitteh/autokitteh/internal/pkg/lang"
-	"github.com/autokitteh/autokitteh/sdk/api/apivalues"
+	"go.autokitteh.dev/sdk/api/apivalues"
 	"github.com/autokitteh/idgen"
 	"github.com/autokitteh/starlarkutils"
 )

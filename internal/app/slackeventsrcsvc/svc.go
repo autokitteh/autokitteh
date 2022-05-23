@@ -9,10 +9,10 @@ import (
 	"github.com/slack-go/slack"
 	"google.golang.org/grpc"
 
-	pb "github.com/autokitteh/autokitteh/api/gen/stubs/go/slackeventsrc"
+	pb "go.autokitteh.dev/idl/go/slackeventsrc"
 
-	"github.com/autokitteh/autokitteh/sdk/api/apieventsrc"
-	"github.com/autokitteh/autokitteh/sdk/api/apiproject"
+	"go.autokitteh.dev/sdk/api/apieventsrc"
+	"go.autokitteh.dev/sdk/api/apiproject"
 	"github.com/autokitteh/autokitteh/internal/pkg/credsstore"
 	"github.com/autokitteh/autokitteh/internal/pkg/events"
 	"github.com/autokitteh/autokitteh/internal/pkg/eventsrcsstore"

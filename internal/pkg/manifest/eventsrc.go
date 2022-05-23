@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/autokitteh/autokitteh/sdk/api/apieventsrc"
+	"go.autokitteh.dev/sdk/api/apieventsrc"
 )
 
 type EventSource struct {

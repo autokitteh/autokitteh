@@ -5,7 +5,7 @@ import (
 
 	"google.golang.org/grpc"
 
-	pbeventsrcsvc "github.com/autokitteh/autokitteh/api/gen/stubs/go/eventsrcsvc"
+	pbeventsrcsvc "go.autokitteh.dev/idl/go/eventsrcsvc"
 )
 
 type LocalClient struct {

@@ -9,10 +9,10 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	pblangsvc "github.com/autokitteh/autokitteh/api/gen/stubs/go/langsvc"
-	pbprogram "github.com/autokitteh/autokitteh/api/gen/stubs/go/program"
+	pblangsvc "go.autokitteh.dev/idl/go/langsvc"
+	pbprogram "go.autokitteh.dev/idl/go/program"
 
-	"github.com/autokitteh/autokitteh/sdk/api/apiprogram"
+	"go.autokitteh.dev/sdk/api/apiprogram"
 	"github.com/autokitteh/autokitteh/internal/pkg/lang"
 	"github.com/autokitteh/autokitteh/internal/pkg/lang/langtools"
 	"github.com/autokitteh/L"

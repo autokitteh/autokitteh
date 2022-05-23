@@ -7,9 +7,9 @@ import (
 	"strings"
 
 	"github.com/autokitteh/autokitteh/internal/pkg/statestore"
-	"github.com/autokitteh/autokitteh/sdk/api/apiproject"
-	"github.com/autokitteh/autokitteh/sdk/api/apivalues"
-	"github.com/autokitteh/autokitteh/sdk/pluginimpl"
+	"go.autokitteh.dev/sdk/api/apiproject"
+	"go.autokitteh.dev/sdk/api/apivalues"
+	"go.autokitteh.dev/sdk/pluginimpl"
 
 	"github.com/autokitteh/L"
 )

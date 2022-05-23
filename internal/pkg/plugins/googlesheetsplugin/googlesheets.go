@@ -13,8 +13,8 @@ import (
 	"google.golang.org/api/option"
 	"google.golang.org/api/sheets/v4"
 
-	"github.com/autokitteh/autokitteh/sdk/api/apivalues"
-	"github.com/autokitteh/autokitteh/sdk/pluginimpl"
+	"go.autokitteh.dev/sdk/api/apivalues"
+	"go.autokitteh.dev/sdk/pluginimpl"
 
 	"github.com/autokitteh/autokitteh/internal/pkg/googleoauth"
 )

@@ -12,9 +12,9 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	pb "github.com/autokitteh/autokitteh/api/gen/stubs/go/httpeventsrc"
+	pb "go.autokitteh.dev/idl/go/httpeventsrc"
 
-	"github.com/autokitteh/autokitteh/sdk/api/apiproject"
+	"go.autokitteh.dev/sdk/api/apiproject"
 	"github.com/autokitteh/autokitteh/internal/pkg/httpeventsrc"
 	"github.com/autokitteh/L"
 )

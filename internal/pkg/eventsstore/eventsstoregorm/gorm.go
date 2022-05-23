@@ -9,10 +9,10 @@ import (
 
 	"gorm.io/gorm"
 
-	"github.com/autokitteh/autokitteh/sdk/api/apievent"
-	"github.com/autokitteh/autokitteh/sdk/api/apieventsrc"
-	"github.com/autokitteh/autokitteh/sdk/api/apiproject"
-	"github.com/autokitteh/autokitteh/sdk/api/apivalues"
+	"go.autokitteh.dev/sdk/api/apievent"
+	"go.autokitteh.dev/sdk/api/apieventsrc"
+	"go.autokitteh.dev/sdk/api/apiproject"
+	"go.autokitteh.dev/sdk/api/apivalues"
 	"github.com/autokitteh/autokitteh/internal/pkg/eventsstore"
 )
 

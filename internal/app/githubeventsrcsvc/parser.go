@@ -6,7 +6,7 @@ import (
 	"github.com/google/go-github/v42/github"
 	"github.com/iancoleman/strcase"
 
-	"github.com/autokitteh/autokitteh/sdk/api/apivalues"
+	"go.autokitteh.dev/sdk/api/apivalues"
 
 	"github.com/autokitteh/H"
 )

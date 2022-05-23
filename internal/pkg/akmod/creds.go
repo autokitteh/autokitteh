@@ -3,8 +3,8 @@ package akmod
 import (
 	"context"
 
-	"github.com/autokitteh/autokitteh/sdk/api/apivalues"
-	"github.com/autokitteh/autokitteh/sdk/pluginimpl"
+	"go.autokitteh.dev/sdk/api/apivalues"
+	"go.autokitteh.dev/sdk/pluginimpl"
 )
 
 func getCreds(get func(context.Context, string, string) ([]byte, error)) pluginimpl.SimplePluginMethodFunc {

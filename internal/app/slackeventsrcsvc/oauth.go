@@ -8,7 +8,7 @@ import (
 
 	"github.com/slack-go/slack"
 
-	"github.com/autokitteh/autokitteh/sdk/api/apiproject"
+	"go.autokitteh.dev/sdk/api/apiproject"
 )
 
 func (s *Svc) getOAuthToken(ctx context.Context, pid apiproject.ProjectID, teamID string) ([]byte, error) {

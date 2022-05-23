@@ -7,7 +7,7 @@ import (
 
 	"gorm.io/datatypes"
 
-	"github.com/autokitteh/autokitteh/sdk/api/apiaccount"
+	"go.autokitteh.dev/sdk/api/apiaccount"
 )
 
 type account struct {

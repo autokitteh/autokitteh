@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/autokitteh/autokitteh/sdk/api/apiprogram"
+	"go.autokitteh.dev/sdk/api/apiprogram"
 )
 
 var (

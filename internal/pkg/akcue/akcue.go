@@ -1,6 +1,7 @@
 package akcue
 
 import (
+	"context"
 	"fmt"
 	"io/fs"
 	"os"
@@ -12,7 +13,7 @@ import (
 	cuemod "github.com/autokitteh/autokitteh/cue.mod"
 )
 
-func Load(path string, dst interface{}) error {
+func Load(ctx context.Context, path string, dst interface{}) error {
 	actual, member, _ := strings.Cut(path, ":")
 
 	fi, err := os.Stat(actual)
@@ -32,7 +33,7 @@ func Load(path string, dst interface{}) error {
 		filepath.Join(actual, "cue.mod"): cuemod.FS,
 	}
 
-	v, err := compiler.Build(actual, overlay, args...)
+	v, err := compiler.Build(ctx, actual, overlay, args...)
 	if err != nil {
 		return err
 	}

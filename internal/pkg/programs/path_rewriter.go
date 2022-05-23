@@ -3,7 +3,7 @@ package programs
 import (
 	"strings"
 
-	"github.com/autokitteh/autokitteh/sdk/api/apiprogram"
+	"go.autokitteh.dev/sdk/api/apiprogram"
 )
 
 // If not rewritten, must return nil.

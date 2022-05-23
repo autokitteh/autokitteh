@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/autokitteh/autokitteh/sdk/api/apilang"
-	"github.com/autokitteh/autokitteh/sdk/api/apivalues"
+	"go.autokitteh.dev/sdk/api/apilang"
+	"go.autokitteh.dev/sdk/api/apivalues"
 	"github.com/autokitteh/autokitteh/internal/pkg/lang"
 )
 

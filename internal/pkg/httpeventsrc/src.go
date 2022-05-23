@@ -12,14 +12,14 @@ import (
 
 	"github.com/ucarion/urlpath"
 
-	pb "github.com/autokitteh/autokitteh/api/gen/stubs/go/httpeventsrc"
+	pb "go.autokitteh.dev/idl/go/httpeventsrc"
 
 	"github.com/autokitteh/autokitteh/internal/pkg/events"
 	"github.com/autokitteh/autokitteh/internal/pkg/eventsrcsstore"
-	"github.com/autokitteh/autokitteh/sdk/api/apievent"
-	"github.com/autokitteh/autokitteh/sdk/api/apieventsrc"
-	"github.com/autokitteh/autokitteh/sdk/api/apiproject"
-	"github.com/autokitteh/autokitteh/sdk/api/apivalues"
+	"go.autokitteh.dev/sdk/api/apievent"
+	"go.autokitteh.dev/sdk/api/apieventsrc"
+	"go.autokitteh.dev/sdk/api/apiproject"
+	"go.autokitteh.dev/sdk/api/apivalues"
 	"github.com/autokitteh/L"
 )
 

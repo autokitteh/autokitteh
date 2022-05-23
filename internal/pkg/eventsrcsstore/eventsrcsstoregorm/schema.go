@@ -7,8 +7,8 @@ import (
 
 	"gorm.io/datatypes"
 
-	"github.com/autokitteh/autokitteh/sdk/api/apieventsrc"
-	"github.com/autokitteh/autokitteh/sdk/api/apiproject"
+	"go.autokitteh.dev/sdk/api/apieventsrc"
+	"go.autokitteh.dev/sdk/api/apiproject"
 )
 
 type eventsrc struct {

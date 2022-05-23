@@ -3,13 +3,14 @@ package akmod
 import (
 	"context"
 
-	"github.com/autokitteh/autokitteh/internal/pkg/plugin/builtinplugin"
+	"go.autokitteh.dev/sdk/api/apievent"
+	"go.autokitteh.dev/sdk/api/apiplugin"
+	"go.autokitteh.dev/sdk/api/apiproject"
+	"go.autokitteh.dev/sdk/api/apivalues"
+	"go.autokitteh.dev/sdk/plugin/builtinplugin"
+	"go.autokitteh.dev/sdk/pluginimpl"
+
 	"github.com/autokitteh/autokitteh/internal/pkg/statestore"
-	"github.com/autokitteh/autokitteh/sdk/api/apievent"
-	"github.com/autokitteh/autokitteh/sdk/api/apiplugin"
-	"github.com/autokitteh/autokitteh/sdk/api/apiproject"
-	"github.com/autokitteh/autokitteh/sdk/api/apivalues"
-	"github.com/autokitteh/autokitteh/sdk/pluginimpl"
 
 	"github.com/autokitteh/L"
 )

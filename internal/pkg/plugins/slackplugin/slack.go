@@ -5,8 +5,8 @@ import (
 
 	"github.com/slack-go/slack"
 
-	"github.com/autokitteh/autokitteh/sdk/api/apivalues"
-	"github.com/autokitteh/autokitteh/sdk/pluginimpl"
+	"go.autokitteh.dev/sdk/api/apivalues"
+	"go.autokitteh.dev/sdk/pluginimpl"
 )
 
 var Plugin = &pluginimpl.Plugin{

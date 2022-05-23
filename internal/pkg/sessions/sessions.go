@@ -11,23 +11,24 @@ import (
 	"go.temporal.io/sdk/worker"
 	"go.temporal.io/sdk/workflow"
 
+	"go.autokitteh.dev/sdk/api/apievent"
+	"go.autokitteh.dev/sdk/api/apilang"
+	"go.autokitteh.dev/sdk/api/apiplugin"
+	"go.autokitteh.dev/sdk/api/apiprogram"
+	"go.autokitteh.dev/sdk/api/apiproject"
+	"go.autokitteh.dev/sdk/api/apivalues"
+	"go.autokitteh.dev/sdk/plugin"
+
+	"github.com/autokitteh/L"
+
 	"github.com/autokitteh/autokitteh/internal/pkg/akmod"
 	"github.com/autokitteh/autokitteh/internal/pkg/events"
 	"github.com/autokitteh/autokitteh/internal/pkg/eventsstore"
 	"github.com/autokitteh/autokitteh/internal/pkg/lang"
 	"github.com/autokitteh/autokitteh/internal/pkg/lang/langtools"
-	"github.com/autokitteh/autokitteh/internal/pkg/plugin"
 	"github.com/autokitteh/autokitteh/internal/pkg/pluginsreg"
 	"github.com/autokitteh/autokitteh/internal/pkg/programs"
 	"github.com/autokitteh/autokitteh/internal/pkg/statestore"
-	"github.com/autokitteh/autokitteh/sdk/api/apievent"
-	"github.com/autokitteh/autokitteh/sdk/api/apilang"
-	"github.com/autokitteh/autokitteh/sdk/api/apiplugin"
-	"github.com/autokitteh/autokitteh/sdk/api/apiprogram"
-	"github.com/autokitteh/autokitteh/sdk/api/apiproject"
-	"github.com/autokitteh/autokitteh/sdk/api/apivalues"
-
-	"github.com/autokitteh/L"
 )
 
 type Config struct{}

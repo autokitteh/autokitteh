@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/autokitteh/autokitteh/sdk/api/apiprogram"
+	"go.autokitteh.dev/sdk/api/apiprogram"
 )
 
 var ErrNotFound = errors.New("not found")

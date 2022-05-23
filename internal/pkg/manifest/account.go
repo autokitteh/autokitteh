@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/autokitteh/autokitteh/sdk/api/apiaccount"
+	"go.autokitteh.dev/sdk/api/apiaccount"
 )
 
 type Account struct {

@@ -10,11 +10,11 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	pblangsvc "github.com/autokitteh/autokitteh/api/gen/stubs/go/langsvc"
+	pblangsvc "go.autokitteh.dev/idl/go/langsvc"
 
-	"github.com/autokitteh/autokitteh/sdk/api/apilang"
-	"github.com/autokitteh/autokitteh/sdk/api/apiprogram"
-	"github.com/autokitteh/autokitteh/sdk/api/apivalues"
+	"go.autokitteh.dev/sdk/api/apilang"
+	"go.autokitteh.dev/sdk/api/apiprogram"
+	"go.autokitteh.dev/sdk/api/apivalues"
 	"github.com/autokitteh/autokitteh/internal/pkg/lang/langrun"
 	"github.com/autokitteh/L"
 

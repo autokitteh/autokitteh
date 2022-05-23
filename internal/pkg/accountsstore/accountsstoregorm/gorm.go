@@ -10,7 +10,7 @@ import (
 	"gorm.io/gorm/clause"
 
 	"github.com/autokitteh/autokitteh/internal/pkg/accountsstore"
-	"github.com/autokitteh/autokitteh/sdk/api/apiaccount"
+	"go.autokitteh.dev/sdk/api/apiaccount"
 )
 
 type Store struct{ DB *gorm.DB }

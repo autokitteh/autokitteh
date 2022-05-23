@@ -10,16 +10,17 @@ import (
 
 	"github.com/samber/lo"
 
-	"github.com/autokitteh/autokitteh/internal/pkg/akprocs"
-	"github.com/autokitteh/autokitteh/internal/pkg/plugin"
-	"github.com/autokitteh/autokitteh/internal/pkg/plugin/builtinplugin"
-	"github.com/autokitteh/autokitteh/internal/pkg/plugin/grpcplugin"
-	"github.com/autokitteh/autokitteh/sdk/api/apiaccount"
-	"github.com/autokitteh/autokitteh/sdk/api/apiplugin"
-	"github.com/autokitteh/autokitteh/sdk/pluginimpl"
+	"go.autokitteh.dev/sdk/api/apiaccount"
+	"go.autokitteh.dev/sdk/api/apiplugin"
+	"go.autokitteh.dev/sdk/plugin"
+	"go.autokitteh.dev/sdk/plugin/builtinplugin"
+	"go.autokitteh.dev/sdk/plugin/grpcplugin"
+	"go.autokitteh.dev/sdk/pluginimpl"
 
 	"github.com/autokitteh/L"
 	"github.com/autokitteh/stores/pkvstore"
+
+	"github.com/autokitteh/autokitteh/internal/pkg/akprocs"
 )
 
 var ErrNotFound = pkvstore.ErrNotFound

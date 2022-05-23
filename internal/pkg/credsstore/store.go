@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/autokitteh/autokitteh/sdk/api/apiproject"
+	"go.autokitteh.dev/sdk/api/apiproject"
 	"github.com/autokitteh/stores/pkvstore"
 )
 

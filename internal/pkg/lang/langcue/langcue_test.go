@@ -7,9 +7,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/autokitteh/autokitteh/sdk/api/apiprogram"
-	"github.com/autokitteh/autokitteh/sdk/api/apivalues"
 	"github.com/autokitteh/L"
+	"go.autokitteh.dev/sdk/api/apiprogram"
+	"go.autokitteh.dev/sdk/api/apivalues"
 )
 
 func TestJSONData(t *testing.T) {
@@ -40,7 +40,7 @@ func TestJSONProg(t *testing.T) {
 	mod, err := l.CompileModule(
 		context.Background(),
 		apiprogram.MustParsePathString("fs:test.kitteh.json"),
-		[]byte(`{"values": {"cat": "meow"}}`),
+		[]byte(`{"consts": {"cat": "meow"}}`),
 		nil,
 	)
 	require.NoError(t, err)
@@ -82,7 +82,7 @@ func TestYAMLProg(t *testing.T) {
 	mod, err := l.CompileModule(
 		context.Background(),
 		apiprogram.MustParsePathString("fs:test.kitteh.json"),
-		[]byte("values:\n  cat: meow"),
+		[]byte("consts:\n  cat: meow"),
 		nil,
 	)
 	require.NoError(t, err)
@@ -124,7 +124,7 @@ func TestCueProg(t *testing.T) {
 	mod, err := l.CompileModule(
 		context.Background(),
 		apiprogram.MustParsePathString("fs:test.kitteh.json"),
-		[]byte(`values: cat: "meow"`),
+		[]byte(`consts: cat: "meow"`),
 		nil,
 	)
 	require.NoError(t, err)
