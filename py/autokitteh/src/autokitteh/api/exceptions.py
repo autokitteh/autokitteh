@@ -1,3 +1,0 @@
-class AutoKittehException(Exception):
-    pass
-

@@ -1,5 +1,0 @@
-#!/bin/bash
-
-export PYTHONPATH="${PYTHONPATH}:src"
-
-pipenv run bin/akpluginsd "$@"

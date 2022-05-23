@@ -1,6 +1,0 @@
-.mypy_cache
-.pytest_cache
-src/autokitteh/proto/
-dist/
-build/
-*.egg-info
