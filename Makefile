@@ -32,7 +32,7 @@ $(GOTEST) -v $(GO_TEST_OPTS) -count=1 "$1"
 endef
 
 .PHONY: all
-all: shellcheck py bin lint test
+all: shellcheck bin lint test
 
 .PHONY: clean
 clean:
@@ -138,10 +138,6 @@ docker-autokitteh:
 
 .PHONY: docker
 docker: docker-autokitteh
-
-.PHONY: py
-py:
-	make -C py
 
 .PHONY: goreleaser
 goreleaser:
