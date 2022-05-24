@@ -5,6 +5,9 @@ go 1.18
 // Uncomment these to build against local idl and sdk:
 // replace go.autokitteh.dev/idl => ../idl
 // replace go.autokitteh.dev/sdk => ../sdk
+//
+// RECOMMENDED: run ./scripts/git-hooks/install.sh to make sure these do not
+// get comitted.
 
 require (
 	github.com/autokitteh/H v0.0.0-20220522023555-2f7de06b9c0a
