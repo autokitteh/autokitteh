@@ -1,0 +1,11 @@
+#!/bin/bash
+
+set -euo pipefail
+
+if [[ -n "$(git diff --name-only --cached | grep '^go.mod$')" ]] &&
+   [[ -n "$(cat go.mod | grep '^replace ')" ]];
+then
+  echo "replace directives found in go.mod."
+  echo "remove these to commit."
+  exit 1
+fi

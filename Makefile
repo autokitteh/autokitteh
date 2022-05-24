@@ -142,3 +142,7 @@ docker: docker-autokitteh
 .PHONY: goreleaser
 goreleaser:
 	goreleaser release --snapshot --rm-dist
+
+.PHONY: install-githooks
+install-githooks:
+	./scripts/git-hooks/install.sh
