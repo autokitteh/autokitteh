@@ -2,6 +2,10 @@ module github.com/autokitteh/autokitteh
 
 go 1.18
 
+// Uncomment these to build against local idl and sdk:
+// replace go.autokitteh.dev/idl => ../idl
+// replace go.autokitteh.dev/sdk => ../sdk
+
 require (
 	github.com/autokitteh/H v0.0.0-20220522023555-2f7de06b9c0a
 	github.com/autokitteh/L v0.0.0-20220522012714-c0074b7a9bbf
