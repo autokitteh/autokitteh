@@ -4,6 +4,8 @@
   "private": true,
   "homepage": "/dash/",
   "dependencies": {
+    "@headlessui/react": "^1.6.2",
+    "@heroicons/react": "^1.0.6",
     "@testing-library/jest-dom": "^5.16.4",
     "@testing-library/react": "^13.2.0",
     "@testing-library/user-event": "^13.5.0",
@@ -14,10 +16,10 @@
     "web-vitals": "^2.1.4"
   },
   "scripts": {
-    "start": "react-app-rewired start", 
-    "build": "react-app-rewired build", 
-    "test": "react-app-rewired test", 
-    "eject": "react-scripts eject" 
+    "start": "react-app-rewired start",
+    "build": "react-app-rewired build",
+    "test": "react-app-rewired test",
+    "eject": "react-scripts eject"
   },
   "eslintConfig": {
     "extends": [
@@ -39,14 +41,17 @@
   },
   "devDependencies": {
     "assert": "^2.0.0",
+    "autoprefixer": "^10.4.7",
     "buffer": "^6.0.3",
     "crypto-browserify": "^3.12.0",
     "https-browserify": "^1.0.0",
     "os-browserify": "^0.3.0",
+    "postcss": "^8.4.14",
     "process": "^0.11.10",
     "react-app-rewired": "^2.2.1",
     "stream-browserify": "^3.0.0",
     "stream-http": "^3.2.0",
+    "tailwindcss": "^3.0.24",
     "url": "^0.11.0"
   }
 }
