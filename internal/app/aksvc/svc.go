@@ -17,7 +17,7 @@ import (
 	"google.golang.org/grpc"
 
 	webdashboard "github.com/autokitteh/autokitteh/web/dashboard"
-	"go.autokitteh.dev/idl/openapi"
+	"go.autokitteh.dev/idl"
 
 	"go.autokitteh.dev/sdk/api/apiplugin"
 	"go.autokitteh.dev/sdk/api/apiprogram"
@@ -561,7 +561,7 @@ var SvcOpts = []svc.OptFunc{
 					Handler(
 						http.StripPrefix(
 							"/openapi",
-							http.FileServer(http.FS(openapi.FS)),
+							http.FileServer(http.FS(idl.OpenAPIFS)),
 						),
 					)
 			},

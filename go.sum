@@ -1635,6 +1635,8 @@ go.autokitteh.dev/idl v0.3.1-0.20220524010604-2e83524abde7 h1:wpfApPH88S/O7ekojT
 go.autokitteh.dev/idl v0.3.1-0.20220524010604-2e83524abde7/go.mod h1:irSbV4BAsqDSj4XRnRHXNEnrAuy05h9461aF78tX1EU=
 go.autokitteh.dev/idl v0.3.1 h1:2uFvxgIfgFLLfe2Xv7+QH7iETAsgYi00GITzBFlg/K8=
 go.autokitteh.dev/idl v0.3.1/go.mod h1:irSbV4BAsqDSj4XRnRHXNEnrAuy05h9461aF78tX1EU=
+go.autokitteh.dev/idl v0.4.0 h1:bRQ+VEJgwC1hT8FOe15iwrD93cuynpyMWOQ7uKidcgw=
+go.autokitteh.dev/idl v0.4.0/go.mod h1:irSbV4BAsqDSj4XRnRHXNEnrAuy05h9461aF78tX1EU=
 go.autokitteh.dev/sdk v0.3.0 h1:94gIymO3FR7Iyibg/gQ1dHQZ4ZaNEgR0anqP7O3oXIU=
 go.autokitteh.dev/sdk v0.3.0/go.mod h1:V0/tTw/MoBlFxOc7aWk3afNNhjTqsfnAhxnqrq8KpXo=
 go.dagger.io/dagger v0.2.11 h1:q9ACsQYsphslEYLcL73nnbf/DaAjT+j/hDlg4+VPeXk=
