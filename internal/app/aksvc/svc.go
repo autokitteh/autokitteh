@@ -35,6 +35,7 @@ import (
 	"github.com/autokitteh/autokitteh/internal/app/httpeventsrcsvc"
 	"github.com/autokitteh/autokitteh/internal/app/langgrpcsvc"
 	"github.com/autokitteh/autokitteh/internal/app/langrungrpcsvc"
+	"github.com/autokitteh/autokitteh/internal/app/litterboxgrpcsvc"
 	"github.com/autokitteh/autokitteh/internal/app/pluginsreggrpcsvc"
 	"github.com/autokitteh/autokitteh/internal/app/projectsstoregrpcsvc"
 	"github.com/autokitteh/autokitteh/internal/app/secretsstoregrpcsvc"
@@ -656,6 +657,15 @@ var SvcOpts = []svc.OptFunc{
 				}
 
 				return nil
+			},
+		},
+		svc.Component{
+			Name: "litterboxgrpcsvc",
+			Init: func(ctx context.Context, l L.L) *litterboxgrpcsvc.Svc {
+				return &litterboxgrpcsvc.Svc{L: L.N(l)}
+			},
+			Start: func(ctx context.Context, svc *litterboxgrpcsvc.Svc, srv *grpc.Server, gw *runtime.ServeMux) {
+				svc.Register(ctx, srv, gw)
 			},
 		},
 		svc.Component{

@@ -36,7 +36,7 @@ require (
 	github.com/stretchr/testify v1.7.1
 	github.com/ucarion/urlpath v0.0.0-20200424170820-7ccc79b76bbb
 	github.com/urfave/cli/v2 v2.7.1
-	go.autokitteh.dev/idl v0.0.0-20220523052730-ba5b11f1364e
+	go.autokitteh.dev/idl v0.3.1-0.20220524010604-2e83524abde7
 	go.autokitteh.dev/sdk v0.3.0
 	go.dagger.io/dagger v0.2.11
 	go.starlark.net v0.0.0-20220328144851-d1966c6b9fcd
