@@ -17,7 +17,7 @@ require (
 	github.com/autokitteh/parsecmd v0.0.0-20220522021831-04f6419353d5
 	github.com/autokitteh/procs v0.0.0-20220522022722-6170e66abe0f
 	github.com/autokitteh/starlarkutils v0.0.0-20220522021518-dd78b8b234d6
-	github.com/autokitteh/stores v0.0.0-20220527035616-4b982787a7b8
+	github.com/autokitteh/stores v0.0.0-20220527072145-9b4899be43d9
 	github.com/autokitteh/svc v0.0.0-20220527041452-d5fc099d4aef
 	github.com/autokitteh/tmplrender v0.0.0-20220522022256-3c30fdc6cfd4
 	github.com/bradleyfalzon/ghinstallation/v2 v2.0.4
@@ -50,7 +50,7 @@ require (
 	google.golang.org/protobuf v1.28.0
 	gorm.io/datatypes v1.0.6
 	gorm.io/driver/sqlite v1.3.2
-	gorm.io/gorm v1.23.4
+	gorm.io/gorm v1.23.5
 )
 
 require (
@@ -80,6 +80,8 @@ require (
 	github.com/facebookgo/clock v0.0.0-20150410010913-600d898af40a // indirect
 	github.com/felixge/httpsnoop v1.0.2 // indirect
 	github.com/ghodss/yaml v1.0.0 // indirect
+	github.com/glebarez/go-sqlite v1.17.2 // indirect
+	github.com/glebarez/sqlite v1.4.5 // indirect
 	github.com/go-logr/logr v1.2.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-redis/redis/v8 v8.11.5 // indirect
@@ -125,6 +127,7 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/protocolbuffers/txtpbfmt v0.0.0-20201118171849-f6a6b3f636fc // indirect
+	github.com/remyoudompheng/bigfft v0.0.0-20200410134404-eec4a21b6bb0 // indirect
 	github.com/rs/cors v1.8.2 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/shopspring/decimal v1.2.0 // indirect
@@ -147,4 +150,8 @@ require (
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 	gorm.io/driver/mysql v1.3.2 // indirect
 	gorm.io/driver/postgres v1.3.5 // indirect
+	modernc.org/libc v1.16.8 // indirect
+	modernc.org/mathutil v1.4.1 // indirect
+	modernc.org/memory v1.1.1 // indirect
+	modernc.org/sqlite v1.17.3 // indirect
 )
