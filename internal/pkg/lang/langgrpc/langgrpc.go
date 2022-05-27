@@ -7,13 +7,13 @@ import (
 
 	pblangsvc "go.autokitteh.dev/idl/go/langsvc"
 
+	"github.com/autokitteh/L"
 	"github.com/autokitteh/autokitteh/internal/pkg/lang"
 	"github.com/autokitteh/autokitteh/internal/pkg/lang/langrun"
 	"github.com/autokitteh/autokitteh/internal/pkg/lang/langrun/grpclangrun"
 	"go.autokitteh.dev/sdk/api/apilang"
 	"go.autokitteh.dev/sdk/api/apiprogram"
 	"go.autokitteh.dev/sdk/api/apivalues"
-	"github.com/autokitteh/L"
 )
 
 var ErrUnsupported = fmt.Errorf("unsupported")
@@ -197,7 +197,7 @@ func (gl *grpcLang) run(
 			case *apilang.CallWaitRunState:
 				l.Debug("calling")
 
-				v, err := env.Call(ctx, s.CallValue(), s.Kws(), s.Args(), s.RunSummary())
+				v, err := env.Call(ctx, s.CallValue(), s.Kws(), s.Args(), sum)
 
 				l.Debug("returning call", "err", err)
 

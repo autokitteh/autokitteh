@@ -6,13 +6,13 @@ import (
 	"sync"
 	"time"
 
+	"github.com/autokitteh/L"
 	"github.com/autokitteh/autokitteh/internal/pkg/lang"
 	"github.com/autokitteh/autokitteh/internal/pkg/lang/langrun"
 	"github.com/autokitteh/autokitteh/internal/pkg/lang/langtools"
 	"go.autokitteh.dev/sdk/api/apilang"
 	"go.autokitteh.dev/sdk/api/apiprogram"
 	"go.autokitteh.dev/sdk/api/apivalues"
-	"github.com/autokitteh/L"
 )
 
 var (
@@ -158,7 +158,6 @@ func (r *run) call(ctx context.Context, cv *apivalues.Value, kwargs map[string]*
 			cv,
 			args,
 			kwargs,
-			nil, // r.summary(),
 		),
 	)
 	r.lock.Unlock()
