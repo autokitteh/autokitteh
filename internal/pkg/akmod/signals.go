@@ -107,12 +107,6 @@ func (s *signals) wait(
 
 	for i, arg := range args {
 		names[i] = arg.String()
-
-		/* TODO: SECURITY: allows only a subset of sources.
-		if !isBindingAllowed(s.sources.subs, sv) {
-			return nil, fmt.Errorf("binding %q is not allowed", sv)
-		}
-		*/
 	}
 
 	if err := pluginimpl.UnpackArgs(
@@ -138,6 +132,10 @@ func (s *signals) wait(
 
 	if tmo != 0 {
 		tmoFuture = workflow.NewTimer(ctx, time.Duration(tmo))
+	}
+
+	// flush all previously sent signals.
+	for session.SignalChannel.ReceiveAsync(&sig) {
 	}
 
 	// loop until a timeout occurs or a relevant signal is received.
@@ -189,8 +187,6 @@ func (s *signals) wait(
 
 	if sig.Event.EventSourceID() == syntheticEventSourceID && sig.Event.Type() == syntheticEventType {
 		st.Fields["value"] = sig.Event.Data()["value"]
-	} else {
-		st.Fields["value"] = apivalues.DictFromMap(sig.Event.Data())
 	}
 
 	return apivalues.MustNewValue(st), nil

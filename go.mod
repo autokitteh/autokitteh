@@ -18,7 +18,7 @@ require (
 	github.com/autokitteh/procs v0.0.0-20220522022722-6170e66abe0f
 	github.com/autokitteh/starlarkutils v0.0.0-20220522021518-dd78b8b234d6
 	github.com/autokitteh/stores v0.0.0-20220527035616-4b982787a7b8
-	github.com/autokitteh/svc v0.0.0-20220522023144-62ab8572aa2a
+	github.com/autokitteh/svc v0.0.0-20220527041452-d5fc099d4aef
 	github.com/autokitteh/tmplrender v0.0.0-20220522022256-3c30fdc6cfd4
 	github.com/bradleyfalzon/ghinstallation/v2 v2.0.4
 	github.com/fatih/color v1.13.0
