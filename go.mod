@@ -8,7 +8,7 @@ go 1.18
 // replace go.autokitteh.dev/sdk => ../go-sdk
 //
 // RECOMMENDED: run ./scripts/git-hooks/install.sh to make sure these do not
-// get comitted.
+// get pushed.
 
 require (
 	github.com/autokitteh/H v0.0.0-20220522023555-2f7de06b9c0a
