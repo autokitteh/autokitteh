@@ -4,8 +4,10 @@ go 1.18
 
 // Uncomment these to build against local idl and sdk:
 //
-// replace go.autokitteh.dev/idl => ../idl
-// replace go.autokitteh.dev/sdk => ../go-sdk
+replace go.autokitteh.dev/idl => ../idl
+
+replace go.autokitteh.dev/sdk => ../go-sdk
+
 //
 // RECOMMENDED: run ./scripts/git-hooks/install.sh to make sure these do not
 // get comitted.
@@ -16,6 +18,7 @@ require (
 	github.com/autokitteh/idgen v0.0.0-20220522024226-2185039b1ae1
 	github.com/autokitteh/parsecmd v0.0.0-20220522021831-04f6419353d5
 	github.com/autokitteh/procs v0.0.0-20220522022722-6170e66abe0f
+	github.com/autokitteh/pubsub v0.0.0-20220530045934-d33996c0a118
 	github.com/autokitteh/starlarkutils v0.0.0-20220522021518-dd78b8b234d6
 	github.com/autokitteh/stores v0.0.0-20220527072145-9b4899be43d9
 	github.com/autokitteh/svc v0.0.0-20220527041452-d5fc099d4aef
@@ -141,6 +144,7 @@ require (
 	go.uber.org/zap v1.21.0 // indirect
 	golang.org/x/crypto v0.0.0-20220411220226-7b82a4e95df4 // indirect
 	golang.org/x/net v0.0.0-20220421235706-1d1ef9303861 // indirect
+	golang.org/x/sync v0.0.0-20220513210516-0976fa681c29 // indirect
 	golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/time v0.0.0-20210723032227-1f47c861a9ac // indirect

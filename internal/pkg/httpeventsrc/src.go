@@ -14,13 +14,13 @@ import (
 
 	pb "go.autokitteh.dev/idl/go/httpeventsrc"
 
+	"github.com/autokitteh/L"
 	"github.com/autokitteh/autokitteh/internal/pkg/events"
 	"github.com/autokitteh/autokitteh/internal/pkg/eventsrcsstore"
 	"go.autokitteh.dev/sdk/api/apievent"
 	"go.autokitteh.dev/sdk/api/apieventsrc"
 	"go.autokitteh.dev/sdk/api/apiproject"
 	"go.autokitteh.dev/sdk/api/apivalues"
-	"github.com/autokitteh/L"
 )
 
 var EventTypes = []string{"get", "put", "post", "delete", "patch", "head"}
@@ -216,6 +216,7 @@ func (s *HTTPEventSource) Handle(req *http.Request) (apievent.EventID, error) {
 
 	id, err := s.Events.IngestEvent(
 		req.Context(),
+		"",
 		s.Config.EventSourceID,
 		fmt.Sprintf("%v.%s", pid, bindingName),
 		/* originalID */ path, // TODO: get from header? If so, need to configure how.

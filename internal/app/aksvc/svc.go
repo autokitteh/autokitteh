@@ -15,12 +15,15 @@ import (
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	temporalclient "go.temporal.io/sdk/client"
 	"google.golang.org/grpc"
+	"google.golang.org/protobuf/proto"
 
 	webdashboard "github.com/autokitteh/autokitteh/web/dashboard"
 	"go.autokitteh.dev/idl"
 
+	"go.autokitteh.dev/sdk/api/apievent"
 	"go.autokitteh.dev/sdk/api/apiplugin"
 	"go.autokitteh.dev/sdk/api/apiprogram"
+	"go.autokitteh.dev/sdk/api/apiproject"
 	"go.autokitteh.dev/sdk/plugin"
 	"go.autokitteh.dev/sdk/pluginsgrpcsvc"
 
@@ -58,6 +61,7 @@ import (
 	"github.com/autokitteh/autokitteh/internal/pkg/lang/langrun"
 	"github.com/autokitteh/autokitteh/internal/pkg/lang/langrun/locallangrun"
 	"github.com/autokitteh/autokitteh/internal/pkg/lang/langtools"
+	"github.com/autokitteh/autokitteh/internal/pkg/litterbox/litterboxlocal"
 	"github.com/autokitteh/autokitteh/internal/pkg/manifest"
 	"github.com/autokitteh/autokitteh/internal/pkg/plugins/internalplugins"
 	"github.com/autokitteh/autokitteh/internal/pkg/pluginsreg"
@@ -73,6 +77,8 @@ import (
 	"github.com/autokitteh/autokitteh/assets"
 	"github.com/autokitteh/idgen"
 	"github.com/autokitteh/procs"
+	"github.com/autokitteh/pubsub"
+	"github.com/autokitteh/pubsub/pubsubfactory"
 	"github.com/autokitteh/stores/kvstore"
 	"github.com/autokitteh/stores/pkvstore"
 	"github.com/autokitteh/svc"
@@ -109,6 +115,12 @@ var SvcOpts = []svc.OptFunc{
 			},
 		},
 		TemporaliteComponent,
+		svc.Component{
+			Name: "pubsub",
+			Init: func(cfg *Config) (pubsub.PubSub, error) {
+				return pubsubfactory.NewFromConfig(&cfg.PubSub)
+			},
+		},
 		svc.Component{
 			Name: "temporalclient",
 			Init: func(l L.L, cfg *Config) (temporalclient.Client, error) {
@@ -207,8 +219,38 @@ var SvcOpts = []svc.OptFunc{
 		},
 		svc.Component{
 			Name: "eventsstore",
-			Init: func(ctx context.Context, l L.L, cfg *Config) (eventsstore.Store, error) {
-				return eventsstorefactory.Open(ctx, l, &cfg.EventsStore)
+			Init: func(ctx context.Context, l L.L, cfg *Config, pubsub pubsub.PubSub) (eventsstore.Store, error) {
+				s, err := eventsstorefactory.Open(ctx, l, &cfg.EventsStore)
+				if err != nil {
+					return nil, err
+				}
+
+				publish := func(upd *apievent.TrackIngestEventUpdate) {
+					l := l.With("event_id", upd.EventID().String())
+
+					payload, err := proto.Marshal(upd.PB())
+					if err != nil {
+						l.Error("publish error", "event_id", upd.EventID().String(), "err", err)
+					}
+
+					if err := pubsub.Publish(
+						context.Background(),
+						events.TopicForEvent(upd.EventID()),
+						payload,
+					); err != nil {
+						l.Error("publish error", "err", err)
+					}
+				}
+
+				return &eventsstore.MonitoredStore{
+					Store: s,
+					EventStateUpdate: func(eid apievent.EventID, r *apievent.EventStateRecord) {
+						publish(apievent.MustNewTrackIngestEventUpdate(eid, r, nil, nil))
+					},
+					ProjectEventStateUpdate: func(eid apievent.EventID, pid apiproject.ProjectID, r *apievent.ProjectEventStateRecord) {
+						publish(apievent.MustNewTrackIngestEventUpdate(eid, nil, &pid, r))
+					},
+				}, nil
 			},
 			Setup: func(ctx context.Context, as eventsstore.Store) error {
 				return as.Setup(ctx)
@@ -310,8 +352,29 @@ var SvcOpts = []svc.OptFunc{
 			},
 		},
 		svc.Component{
+			Name: "litterbox",
+			Init: func(
+				ctx context.Context,
+				l L.L,
+				cfg *Config,
+				projects projectsstore.Store,
+				eventsrcs eventsrcsstore.Store,
+				events *events.Events,
+				ustore kvstore.Store,
+			) *litterboxlocal.LitterBox {
+				return &litterboxlocal.LitterBox{
+					L:             L.N(l),
+					Config:        cfg.LitterBox,
+					Projects:      projects,
+					EventSrcs:     eventsrcs,
+					ProgramsStore: &kvstore.StoreWithKeyPrefix{Store: ustore, Prefix: "litterbox_"},
+					Events:        events,
+				}
+			},
+		},
+		svc.Component{
 			Name: "programs",
-			Init: func(ctx context.Context, cfg *Config, l L.L, cat GRPCLangCatalog, github *githubinstalls.Installs) *programs.Programs {
+			Init: func(ctx context.Context, cfg *Config, l L.L, cat GRPCLangCatalog, github *githubinstalls.Installs, lb *litterboxlocal.LitterBox) *programs.Programs {
 				return &programs.Programs{
 					L:       L.N(l),
 					Catalog: cat,
@@ -333,7 +396,8 @@ var SvcOpts = []svc.OptFunc{
 
 							return assets.FS.ReadFile(filepath.Join("internal", p))
 						},
-						"github": programs.NewGithubLoader(l.Named("githubloader"), github.GetClient),
+						"github":    programs.NewGithubLoader(l.Named("githubloader"), github.GetClient),
+						"litterbox": lb.Loader,
 					},
 				}
 			},
@@ -419,9 +483,11 @@ var SvcOpts = []svc.OptFunc{
 				eventsStore eventsstore.Store,
 				eventsrcsStore eventsrcsstore.Store,
 				sessions *sessions.Sessions,
+				pubsub pubsub.PubSub,
 			) *events.Events {
 				es := &events.Events{
 					Temporal: temporal,
+					PubSub:   pubsub,
 					L:        L.N(l),
 					Run:      sessions.Run,
 					Stores: events.Stores{
@@ -661,8 +727,8 @@ var SvcOpts = []svc.OptFunc{
 		},
 		svc.Component{
 			Name: "litterboxgrpcsvc",
-			Init: func(ctx context.Context, l L.L) *litterboxgrpcsvc.Svc {
-				return &litterboxgrpcsvc.Svc{L: L.N(l)}
+			Init: func(ctx context.Context, l L.L, lb *litterboxlocal.LitterBox) *litterboxgrpcsvc.Svc {
+				return &litterboxgrpcsvc.Svc{L: L.N(l), LitterBox: lb}
 			},
 			Start: func(ctx context.Context, svc *litterboxgrpcsvc.Svc, srv *grpc.Server, gw *runtime.ServeMux) {
 				svc.Register(ctx, srv, gw)

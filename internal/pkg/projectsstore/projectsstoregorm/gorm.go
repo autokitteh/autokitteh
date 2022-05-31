@@ -59,7 +59,7 @@ func (db *Store) Create(
 	}
 
 	if id == projectsstore.AutoProjectID {
-		id = apiproject.NewProjectID(aname)
+		id = apiproject.NewProjectID(aname, "")
 	}
 
 	if id.AccountName() != aname {
