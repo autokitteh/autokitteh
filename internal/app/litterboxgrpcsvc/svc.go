@@ -42,7 +42,7 @@ func (s *Svc) Setup(ctx context.Context, req *pbsvc.SetupRequest) (*pbsvc.SetupR
 		return nil, status.Errorf(codes.InvalidArgument, "validate: %v", err)
 	}
 
-	id, err := s.LitterBox.Setup(ctx, req.Name, req.Source)
+	id, err := s.LitterBox.Setup(ctx, litterbox.LitterBoxID(req.Id), req.Sources, req.MainSourceName)
 	if err != nil {
 		return nil, status.Errorf(codes.Unknown, "setup: %v", err)
 	}

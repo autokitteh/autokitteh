@@ -39,10 +39,6 @@ func (lb *LitterBox) EventSourceID() apieventsrc.EventSourceID {
 	return apieventsrc.EventSourceID(fmt.Sprintf("%s.litterbox", lb.Config.AccountName))
 }
 
-func (lb *LitterBox) idFromProjectID(pid apiproject.ProjectID) litterbox.LitterBoxID {
-	return litterbox.LitterBoxID(pid.Unique())
-}
-
 func (lb *LitterBox) projectIDFromID(id litterbox.LitterBoxID) apiproject.ProjectID {
 	return apiproject.NewProjectID(apiaccount.AccountName(lb.Config.AccountName), string(id))
 }
@@ -51,20 +47,52 @@ func (lb *LitterBox) Loader(ctx context.Context, path *apiprogram.Path) ([]byte,
 	return lb.ProgramsStore.Get(ctx, path.String())
 }
 
-func (lb *LitterBox) Setup(ctx context.Context, name, source string) (litterbox.LitterBoxID, error) {
-	pid := apiproject.NewProjectID(apiaccount.AccountName(lb.Config.AccountName), name)
-	id := lb.idFromProjectID(pid)
+// TODO: update.
+func (lb *LitterBox) Setup(
+	ctx context.Context,
+	id litterbox.LitterBoxID,
+	sources map[string][]byte,
+	main string,
+) (litterbox.LitterBoxID, error) {
+	pid := apiproject.NewProjectID(
+		apiaccount.AccountName(lb.Config.AccountName),
+		string(id),
+	)
 
-	path := apiprogram.MustNewPath("litterbox", string(id), "")
+	id = litterbox.LitterBoxID(pid.Unique())
 
-	if err := lb.ProgramsStore.Put(ctx, path.String(), []byte(source)); err != nil {
-		return "", fmt.Errorf("program store: %w", err)
+	root := apiprogram.MustNewPath("litterbox", string(id), "")
+
+	mainPath_, err := apiprogram.NewPath("", main, "")
+	if err != nil {
+		return "", fmt.Errorf("invalid main path %q: %w", main, err)
+	}
+
+	mainPath, err := apiprogram.JoinPaths(root, mainPath_)
+	if err != nil {
+		return "", fmt.Errorf("invalid main path %q: %w", main, err)
+	}
+
+	for k, v := range sources {
+		path_, err := apiprogram.NewPath("", k, "")
+		if err != nil {
+			return "", fmt.Errorf("invalid path %q: %w", k, err)
+		}
+
+		path, err := apiprogram.JoinPaths(root, path_)
+		if err != nil {
+			return "", fmt.Errorf("invalid path %q: %w", k, err)
+		}
+
+		if err := lb.ProgramsStore.Put(ctx, path.String(), v); err != nil {
+			return "", fmt.Errorf("program store: %w", err)
+		}
 	}
 
 	settings := (&apiproject.ProjectSettings{}).
 		SetEnabled(true).
-		SetName(name).
-		SetMainPath(path)
+		SetName("litterbox").
+		SetMainPath(mainPath)
 
 	if _, err := lb.Projects.Create(
 		ctx,

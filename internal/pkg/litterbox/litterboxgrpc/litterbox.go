@@ -19,8 +19,8 @@ type LitterBox struct {
 
 var _ litterbox.LitterBox = &LitterBox{}
 
-func (lb *LitterBox) Setup(ctx context.Context, name, source string) (litterbox.LitterBoxID, error) {
-	resp, err := lb.Client.Setup(ctx, &pb.SetupRequest{Name: name, Source: source})
+func (lb *LitterBox) Setup(ctx context.Context, id litterbox.LitterBoxID, sources map[string][]byte, main string) (litterbox.LitterBoxID, error) {
+	resp, err := lb.Client.Setup(ctx, &pb.SetupRequest{Id: string(id), Sources: sources, MainSourceName: main})
 	if err != nil {
 		return "", err
 	}
