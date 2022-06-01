@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"golang.org/x/tools/txtar"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -42,7 +43,17 @@ func (s *Svc) Setup(ctx context.Context, req *pbsvc.SetupRequest) (*pbsvc.SetupR
 		return nil, status.Errorf(codes.InvalidArgument, "validate: %v", err)
 	}
 
-	id, err := s.LitterBox.Setup(ctx, litterbox.LitterBoxID(req.Id), req.Sources, req.MainSourceName)
+	sources := req.Sources
+
+	if alt := req.AltSources; alt != "" {
+		a := txtar.Parse([]byte(alt))
+
+		for _, f := range a.Files {
+			sources[f.Name] = f.Data
+		}
+	}
+
+	id, err := s.LitterBox.Setup(ctx, litterbox.LitterBoxID(req.Id), sources, req.MainSourceName)
 	if err != nil {
 		return nil, status.Errorf(codes.Unknown, "setup: %v", err)
 	}

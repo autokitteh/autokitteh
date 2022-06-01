@@ -48,6 +48,7 @@ require (
 	go.temporal.io/sdk v1.14.0
 	golang.org/x/exp v0.0.0-20220518171630-0b5c67f07fdf
 	golang.org/x/oauth2 v0.0.0-20220411215720-9780585627b5
+	golang.org/x/tools v0.1.10
 	google.golang.org/api v0.74.0
 	google.golang.org/grpc v1.46.2
 	google.golang.org/protobuf v1.28.0
