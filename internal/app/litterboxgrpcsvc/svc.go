@@ -45,8 +45,8 @@ func (s *Svc) Setup(ctx context.Context, req *pbsvc.SetupRequest) (*pbsvc.SetupR
 
 	sources := req.Sources
 
-	if alt := req.AltSources; alt != "" {
-		a := txtar.Parse([]byte(alt))
+	if alt := req.AltSources; alt != nil {
+		a := txtar.Parse(alt)
 
 		for _, f := range a.Files {
 			sources[f.Name] = f.Data

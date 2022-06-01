@@ -6,6 +6,7 @@ manifest.#Manifest & {
 	accounts: {
 		"internal": {}
 		"autokitteh": {}
+		"litterbox": {}
 	}
 
 	eventsrcs: {

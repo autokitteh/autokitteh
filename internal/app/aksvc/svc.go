@@ -797,7 +797,11 @@ var SvcOpts = []svc.OptFunc{
 		},
 		svc.Component{
 			Name: "grpcgw",
-			Init: func() *runtime.ServeMux { return runtime.NewServeMux() },
+			Init: func() *runtime.ServeMux {
+				return runtime.NewServeMux(
+					runtime.WithMarshalerOption(PlainTextMarshaler.ContentType(""), PlainTextMarshaler),
+				)
+			},
 			Start: func(mux *runtime.ServeMux, r *mux.Router) {
 				r.PathPrefix("/api/").Handler(mux)
 			},
