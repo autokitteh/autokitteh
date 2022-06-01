@@ -9,6 +9,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	pbsvc "go.autokitteh.dev/idl/go/litterboxsvc"
+
 	"go.autokitteh.dev/sdk/api/apievent"
 	"go.autokitteh.dev/sdk/api/apivalues"
 
@@ -88,14 +89,9 @@ func (s *Svc) Run(req *pbsvc.RunRequest, srv pbsvc.LitterBox_RunServer) error {
 		for upd := range ch {
 			l.Debug("got update", "upd", upd)
 
-			if s := upd.ProjectState(); s != nil {
-				if err := srv.Send(&pbsvc.RunUpdate{
-					Id:    string(id),
-					State: s.PB(),
-				}); err != nil {
-					l.Error("send update error", "err", err)
-					return
-				}
+			if err := srv.Send(upd.PB()); err != nil {
+				l.Error("send update error", "err", err)
+				return
 			}
 		}
 	}()

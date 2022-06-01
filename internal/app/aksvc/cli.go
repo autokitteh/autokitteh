@@ -19,6 +19,10 @@ func Run(version *Version) {
 		append(
 			SvcOpts,
 			svc.WithCLIOptions(
+				svc.WithCLICommand(&cli.Command{
+					Name:   "test",
+					Action: func(*cli.Context) error { return nil },
+				}),
 				svc.WithCLIFlags(
 					[]cli.Flag{
 						&cli.StringSliceFlag{
