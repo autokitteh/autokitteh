@@ -10,6 +10,7 @@ import (
 	"github.com/autokitteh/autokitteh/internal/pkg/eventsrcsstore/eventsrcsstorefactory"
 	"github.com/autokitteh/autokitteh/internal/pkg/eventsstore/eventsstorefactory"
 	"github.com/autokitteh/autokitteh/internal/pkg/githubinstalls"
+	"github.com/autokitteh/autokitteh/internal/pkg/litterbox/litterboxlocal"
 	"github.com/autokitteh/autokitteh/internal/pkg/projectsstore/projectsstorefactory"
 	"github.com/autokitteh/autokitteh/internal/pkg/sessions"
 	"github.com/autokitteh/autokitteh/internal/pkg/statestore/statestorefactory"
@@ -22,6 +23,7 @@ import (
 	"github.com/autokitteh/procs"
 
 	"github.com/autokitteh/L"
+	"github.com/autokitteh/pubsub/pubsubfactory"
 	"github.com/autokitteh/stores/kvstore"
 	"github.com/autokitteh/stores/pkvstore"
 	"github.com/autokitteh/stores/storefactory"
@@ -52,6 +54,8 @@ type Config struct {
 	CredsStore        pkvstore.Config              `envconfig:"CREDS_STORE" json:"creds_store"`
 	PluginsRegStore   pkvstore.Config              `envconfig:"PLUGINS_REG_STORE" json:"plugins_reg_store"`
 	PluginsRegProcs   akprocs.Config               `envconfig:"PLUGINS_REG_PROCS" json:"plugins_reg_procs"`
+	LitterBox         litterboxlocal.Config        `envconfig:"LITTERBOX" json:"litterbox"`
+	PubSub            pubsubfactory.Config         `envconfig:"PUBSUB" json:"pubsub"`
 
 	// [# google-oauth-config #]
 	GoogleOAuthSvc            googleoauthsvc.Config `envconfig:"GOOGLE_OAUTH" json:"googleauths"`

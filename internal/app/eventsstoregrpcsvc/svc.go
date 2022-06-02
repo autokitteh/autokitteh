@@ -12,13 +12,13 @@ import (
 	pbevent "go.autokitteh.dev/idl/go/event"
 	pbeventsvc "go.autokitteh.dev/idl/go/eventsvc"
 
+	"github.com/autokitteh/L"
+	"github.com/autokitteh/autokitteh/internal/pkg/events"
+	"github.com/autokitteh/autokitteh/internal/pkg/eventsstore"
 	"go.autokitteh.dev/sdk/api/apievent"
 	"go.autokitteh.dev/sdk/api/apieventsrc"
 	"go.autokitteh.dev/sdk/api/apiproject"
 	"go.autokitteh.dev/sdk/api/apivalues"
-	"github.com/autokitteh/autokitteh/internal/pkg/events"
-	"github.com/autokitteh/autokitteh/internal/pkg/eventsstore"
-	"github.com/autokitteh/L"
 )
 
 type Svc struct {
@@ -42,6 +42,47 @@ func (s *Svc) Register(ctx context.Context, srv *grpc.Server, gw *runtime.ServeM
 	}
 }
 
+func (s *Svc) TrackIngestEvent(req *pbeventsvc.IngestEventRequest, srv pbeventsvc.Events_TrackIngestEventServer) error {
+	if err := req.Validate(); err != nil {
+		return status.Errorf(codes.InvalidArgument, "validate: %v", err)
+	}
+
+	if s.Events == nil {
+		return status.Errorf(codes.Unimplemented, "not supported")
+	}
+
+	data, err := apivalues.StringValueMapFromProto(req.Data)
+	if err != nil {
+		return status.Errorf(codes.InvalidArgument, "data: %v", err)
+	}
+
+	ch := make(chan *apievent.TrackIngestEventUpdate, 16)
+
+	go func() {
+		for upd := range ch {
+			if err := srv.Send(upd.PB()); err != nil {
+				s.L.Error("send error", "err", err)
+			}
+		}
+	}()
+
+	if err := s.Events.TrackIngestEvent(
+		srv.Context(),
+		ch,
+		apievent.EventID(req.EventId),
+		apieventsrc.EventSourceID(req.SrcId),
+		req.AssociationToken,
+		req.OriginalId,
+		req.Type,
+		data,
+		req.Memo,
+	); err != nil {
+		return status.Errorf(codes.Unknown, "add: %v", err)
+	}
+
+	return nil
+}
+
 func (s *Svc) IngestEvent(ctx context.Context, req *pbeventsvc.IngestEventRequest) (*pbeventsvc.IngestEventResponse, error) {
 	if err := req.Validate(); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "validate: %v", err)
@@ -54,12 +95,12 @@ func (s *Svc) IngestEvent(ctx context.Context, req *pbeventsvc.IngestEventReques
 
 	srcid := apieventsrc.EventSourceID(req.SrcId)
 
-	var id apievent.EventID
+	id := apievent.EventID(req.EventId)
 
 	if s.Events != nil {
-		id, err = s.Events.IngestEvent(ctx, srcid, req.AssociationToken, req.OriginalId, req.Type, data, req.Memo)
+		id, err = s.Events.IngestEvent(ctx, id, srcid, req.AssociationToken, req.OriginalId, req.Type, data, req.Memo)
 	} else {
-		id, err = s.Store.Add(ctx, srcid, req.AssociationToken, req.OriginalId, req.Type, data, req.Memo)
+		id, err = s.Store.Add(ctx, id, srcid, req.AssociationToken, req.OriginalId, req.Type, data, req.Memo)
 	}
 
 	if err != nil {

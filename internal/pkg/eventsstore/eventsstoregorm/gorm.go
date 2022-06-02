@@ -9,11 +9,11 @@ import (
 
 	"gorm.io/gorm"
 
+	"github.com/autokitteh/autokitteh/internal/pkg/eventsstore"
 	"go.autokitteh.dev/sdk/api/apievent"
 	"go.autokitteh.dev/sdk/api/apieventsrc"
 	"go.autokitteh.dev/sdk/api/apiproject"
 	"go.autokitteh.dev/sdk/api/apivalues"
-	"github.com/autokitteh/autokitteh/internal/pkg/eventsstore"
 )
 
 type Store struct {
@@ -22,8 +22,10 @@ type Store struct {
 
 var _ eventsstore.Store = &Store{}
 
-func (s *Store) Add(ctx context.Context, srcid apieventsrc.EventSourceID, assoc, originalID, typ string, data map[string]*apivalues.Value, memo map[string]string) (apievent.EventID, error) {
-	id := apievent.NewEventID()
+func (s *Store) Add(ctx context.Context, id apievent.EventID, srcid apieventsrc.EventSourceID, assoc, originalID, typ string, data map[string]*apivalues.Value, memo map[string]string) (apievent.EventID, error) {
+	if id == "" {
+		id = apievent.NewEventID()
+	}
 
 	e, err := apievent.NewEvent(id, srcid, assoc, originalID, typ, data, memo, time.Now())
 	if err != nil {

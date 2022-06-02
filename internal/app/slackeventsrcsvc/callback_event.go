@@ -32,6 +32,7 @@ func (s *Svc) handleCallbackEvent(ctx context.Context, data *slackevents.EventsA
 
 	id, err := s.Events.IngestEvent(
 		ctx,
+		"",
 		s.Config.EventSourceID,
 		/* assoc */ data.TeamID,
 		/* originalID */ data.EventID,

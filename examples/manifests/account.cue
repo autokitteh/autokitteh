@@ -6,6 +6,7 @@ manifest.#Manifest & {
 	accounts: {
 		"internal": {}
 		"autokitteh": {}
+		"litterbox": {}
 	}
 
 	eventsrcs: {
@@ -15,6 +16,7 @@ manifest.#Manifest & {
 		"internal.cron": {}
 		"internal.fs": {}
 		"internal.http": {}
+		"litterbox.litterbox": {}
 	}
 
 	plugins: {

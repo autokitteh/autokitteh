@@ -1,0 +1,9 @@
+-- auto.kitteh --
+load("ak", "sources")
+
+
+def _on_binding_test():
+  print("meow")
+
+
+sources.bind("binding.test", _on_binding_test)

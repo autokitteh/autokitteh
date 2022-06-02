@@ -20,6 +20,7 @@ type ListRecord struct {
 type Store interface {
 	Add(
 		_ context.Context,
+		_ apievent.EventID,
 		_ apieventsrc.EventSourceID,
 		assoc string,
 		originalID string,

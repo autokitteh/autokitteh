@@ -5,10 +5,11 @@ go 1.18
 // Uncomment these to build against local idl and sdk:
 //
 // replace go.autokitteh.dev/idl => ../idl
+//
 // replace go.autokitteh.dev/sdk => ../go-sdk
 //
 // RECOMMENDED: run ./scripts/git-hooks/install.sh to make sure these do not
-// get pushed.
+// get comitted.
 
 require (
 	github.com/autokitteh/H v0.0.0-20220522023555-2f7de06b9c0a
@@ -16,9 +17,10 @@ require (
 	github.com/autokitteh/idgen v0.0.0-20220522024226-2185039b1ae1
 	github.com/autokitteh/parsecmd v0.0.0-20220522021831-04f6419353d5
 	github.com/autokitteh/procs v0.0.0-20220522022722-6170e66abe0f
+	github.com/autokitteh/pubsub v0.0.0-20220530045934-d33996c0a118
 	github.com/autokitteh/starlarkutils v0.0.0-20220522021518-dd78b8b234d6
-	github.com/autokitteh/stores v0.0.0-20220527072145-9b4899be43d9
-	github.com/autokitteh/svc v0.0.0-20220527041452-d5fc099d4aef
+	github.com/autokitteh/stores v0.0.0-20220602050721-84c014cafdd5
+	github.com/autokitteh/svc v0.0.0-20220601071802-fdb33d56a228
 	github.com/autokitteh/tmplrender v0.0.0-20220522022256-3c30fdc6cfd4
 	github.com/bradleyfalzon/ghinstallation/v2 v2.0.4
 	github.com/fatih/color v1.13.0
@@ -37,20 +39,21 @@ require (
 	github.com/stretchr/testify v1.7.1
 	github.com/ucarion/urlpath v0.0.0-20200424170820-7ccc79b76bbb
 	github.com/urfave/cli/v2 v2.7.1
-	go.autokitteh.dev/idl v0.5.0
-	go.autokitteh.dev/sdk v0.5.0
+	go.autokitteh.dev/idl v0.6.0
+	go.autokitteh.dev/sdk v0.6.0
 	go.dagger.io/dagger v0.2.11
 	go.starlark.net v0.0.0-20220328144851-d1966c6b9fcd
 	go.temporal.io/api v1.7.1-0.20220223032354-6e6fe738916a
 	go.temporal.io/sdk v1.14.0
 	golang.org/x/exp v0.0.0-20220518171630-0b5c67f07fdf
 	golang.org/x/oauth2 v0.0.0-20220411215720-9780585627b5
+	golang.org/x/tools v0.1.10
 	google.golang.org/api v0.74.0
-	google.golang.org/grpc v1.46.2
+	google.golang.org/grpc v1.47.0
 	google.golang.org/protobuf v1.28.0
 	gorm.io/datatypes v1.0.6
 	gorm.io/driver/sqlite v1.3.2
-	gorm.io/gorm v1.23.5
+	gorm.io/gorm v1.23.4
 )
 
 require (
@@ -68,7 +71,6 @@ require (
 	github.com/antzucaro/matchr v0.0.0-20210222213004-b04723ef80f0 // indirect
 	github.com/autokitteh/flexcall v0.0.0-20220522011731-56eaad787001 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
-	github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e // indirect
 	github.com/cockroachdb/apd/v2 v2.0.1 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
@@ -81,7 +83,7 @@ require (
 	github.com/felixge/httpsnoop v1.0.2 // indirect
 	github.com/ghodss/yaml v1.0.0 // indirect
 	github.com/glebarez/go-sqlite v1.17.2 // indirect
-	github.com/glebarez/sqlite v1.4.5 // indirect
+	github.com/glebarez/sqlite v1.4.3 // indirect
 	github.com/go-logr/logr v1.2.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-redis/redis/v8 v8.11.5 // indirect
@@ -141,6 +143,7 @@ require (
 	go.uber.org/zap v1.21.0 // indirect
 	golang.org/x/crypto v0.0.0-20220411220226-7b82a4e95df4 // indirect
 	golang.org/x/net v0.0.0-20220421235706-1d1ef9303861 // indirect
+	golang.org/x/sync v0.0.0-20220513210516-0976fa681c29 // indirect
 	golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/time v0.0.0-20210723032227-1f47c861a9ac // indirect

@@ -5,14 +5,18 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gorilla/mux"
 
-	"github.com/autokitteh/autokitteh/internal/pkg/eventsstore"
+	pbeventsrc "go.autokitteh.dev/idl/go/eventsrc"
+
 	"go.autokitteh.dev/sdk/api/apievent"
 	"go.autokitteh.dev/sdk/api/apilang"
 	"go.autokitteh.dev/sdk/api/apiproject"
 	"go.autokitteh.dev/sdk/api/apivalues"
+
+	"github.com/autokitteh/autokitteh/internal/pkg/eventsstore"
 )
 
 func (s *Svc) registerEvents(r *mux.Router) {
@@ -166,8 +170,15 @@ func (s *Svc) event(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	assoc := ev.AssociationToken()
 	srcID := ev.EventSourceID()
-	bindings, err := s.EventSourcesStore.GetProjectBindings(r.Context(), &srcID, nil, "", ev.AssociationToken(), false)
+
+	// [# litterbox-assoc #]
+	if srcID.EventSourceName() == "litterbox" {
+		assoc, _, _ = strings.Cut(assoc, ",")
+	}
+
+	bindings, err := s.EventSourcesStore.GetProjectBindings(r.Context(), &srcID, nil, "", assoc, false)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -230,15 +241,27 @@ func (s *Svc) eventForProject(w http.ResponseWriter, r *http.Request) {
 
 	srcID := ev.EventSourceID()
 
-	bindings, err := s.EventSourcesStore.GetProjectBindings(r.Context(), &srcID, &pid, "", ev.AssociationToken(), false)
+	assoc := ev.AssociationToken()
+	var bindingName string
+
+	// [# litterbox-assoc #]
+	if srcID.EventSourceName() == "litterbox" {
+		assoc, bindingName, _ = strings.Cut(assoc, ",")
+	}
+
+	bindings, err := s.EventSourcesStore.GetProjectBindings(r.Context(), &srcID, &pid, "", assoc, false)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	var pbbinding interface{}
+	var pbbinding *pbeventsrc.EventSourceProjectBinding
 	if len(bindings) == 1 {
 		pbbinding = bindings[0].PB()
+	}
+
+	if bindingName != "" && pbbinding != nil {
+		pbbinding.Name = bindingName
 	}
 
 	var sum *apilang.RunSummary

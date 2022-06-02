@@ -11,11 +11,11 @@ import (
 	pbeventsrc "go.autokitteh.dev/idl/go/eventsrc"
 	pbeventsrcsvc "go.autokitteh.dev/idl/go/eventsrcsvc"
 
+	"github.com/autokitteh/L"
+	"github.com/autokitteh/autokitteh/internal/pkg/eventsrcsstore"
 	"go.autokitteh.dev/sdk/api/apiaccount"
 	"go.autokitteh.dev/sdk/api/apieventsrc"
 	"go.autokitteh.dev/sdk/api/apiproject"
-	"github.com/autokitteh/autokitteh/internal/pkg/eventsrcsstore"
-	"github.com/autokitteh/L"
 )
 
 type Svc struct {

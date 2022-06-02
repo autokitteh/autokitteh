@@ -3,6 +3,7 @@ package events
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"go.temporal.io/sdk/workflow"
 
@@ -34,6 +35,12 @@ func (e *Events) getEventRelatedData(ctx workflow.Context, id apievent.EventID, 
 			srcid apieventsrc.EventSourceID,
 			assoc string,
 		) (erd *eventRelatedData, err error) {
+			// [# litterbox-assoc #]
+			var litterboxBindingName string
+			if srcid.EventSourceName() == "litterbox" {
+				assoc, litterboxBindingName, _ = strings.Cut(assoc, ",")
+			}
+
 			stores := &e.Stores
 			erd = &eventRelatedData{}
 
@@ -72,6 +79,10 @@ func (e *Events) getEventRelatedData(ctx workflow.Context, id apievent.EventID, 
 
 			erd.Bindings = make(map[apiproject.ProjectID]*apieventsrc.EventSourceProjectBinding)
 			for _, b := range bindings {
+				if litterboxBindingName != "" {
+					b = b.WithName(litterboxBindingName)
+				}
+
 				erd.Bindings[b.ProjectID()] = b
 			}
 
@@ -93,6 +104,11 @@ func (e *Events) getEventRelatedData(ctx workflow.Context, id apievent.EventID, 
 				pids = append(pids, pid)
 			}
 
+			if len(pids) == 0 {
+				l.Debug("no enabled projects associated with event")
+				return
+			}
+
 			if erd.Projects, err = stores.Projects.BatchGet(ctx, pids); err != nil {
 				err = fmt.Errorf("projects: %w", err)
 				return
@@ -105,6 +121,11 @@ func (e *Events) getEventRelatedData(ctx workflow.Context, id apievent.EventID, 
 				}
 
 				aids = append(aids, p.AccountName())
+			}
+
+			if len(aids) == 0 {
+				l.Debug("no enabled accounts")
+				return
 			}
 
 			accounts, err := stores.Accounts.BatchGet(ctx, aids)
