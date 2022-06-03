@@ -637,9 +637,7 @@ var SvcOpts = []svc.OptFunc{
 			Start: func(cfg *Config, r *mux.Router, l L.L) {
 				fs := http.FS(webdashboard.FS)
 				if !cfg.EmbeddedDash {
-					l.Info("serving dashboard from filesystem")
 					fs = http.Dir("web/dashboard/build")
-				} else {
 					l.Info("serving dashboard from filesystem")
 				}
 
