@@ -4,19 +4,14 @@ import "autokitteh.io/manifest"
 
 manifest.#Manifest & {
 	accounts: {
-		"internal": {}
 		"autokitteh": {}
-		"litterbox": {}
 	}
 
 	eventsrcs: {
 		"autokitteh.github": {}
 		"autokitteh.slack": {}
 		"autokitteh.twilio": {}
-		"internal.cron": {}
 		"internal.fs": {}
-		"internal.http": {}
-		"litterbox.litterbox": {}
 	}
 
 	plugins: {

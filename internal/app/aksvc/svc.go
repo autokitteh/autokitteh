@@ -47,6 +47,7 @@ import (
 
 	"github.com/autokitteh/autokitteh/internal/pkg/accountsstore"
 	"github.com/autokitteh/autokitteh/internal/pkg/accountsstore/accountsstorefactory"
+	"github.com/autokitteh/autokitteh/internal/pkg/akcue"
 	"github.com/autokitteh/autokitteh/internal/pkg/akprocs"
 	"github.com/autokitteh/autokitteh/internal/pkg/credsstore"
 	"github.com/autokitteh/autokitteh/internal/pkg/events"
@@ -738,6 +739,17 @@ var SvcOpts = []svc.OptFunc{
 		svc.Component{
 			Name: "initmanifest",
 			Init: func(ctx context.Context, l L.L, cfg *Config) (actions manifest.Actions, _ error) {
+				var builtin manifest.Manifest
+
+				err := akcue.LoadFS(ctx, assets.FS, "internal", &builtin)
+				if err != nil {
+					return nil, fmt.Errorf("builtin load: %w", err)
+				}
+
+				if actions, err = builtin.Compile(); err != nil {
+					return nil, fmt.Errorf("builtin compile: %w", err)
+				}
+
 				for _, initpath := range cfg.InitPaths {
 					m, err := manifest.ManifestFromPath(ctx, initpath)
 					if err != nil {
