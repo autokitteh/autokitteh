@@ -85,8 +85,6 @@ import (
 	"github.com/autokitteh/svc"
 )
 
-var version = "dev"
-
 //go:embed hello.txt
 var hello string
 
@@ -714,10 +712,13 @@ var SvcOpts = []svc.OptFunc{
 					HTTPPort, GRPCPort                                     string
 					Extra0, Extra1, Extra2, Extra3, Extra4, Extra5, Extra6 string
 				}{
-					Version:  version,
 					PID:      valColor(fmt.Sprintf("%d", os.Getpid())),
 					HTTPPort: valColor(httpPort),
 					GRPCPort: valColor(grpcPort),
+				}
+
+				if v := svc.GetVersion(); v != nil {
+					data.Version = v.Version
 				}
 
 				if err := helloTemplate.Execute(os.Stdout, data); err != nil {
