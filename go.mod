@@ -20,7 +20,7 @@ require (
 	github.com/autokitteh/pubsub v0.0.0-20220530045934-d33996c0a118
 	github.com/autokitteh/starlarkutils v0.0.0-20220522021518-dd78b8b234d6
 	github.com/autokitteh/stores v0.0.0-20220602050721-84c014cafdd5
-	github.com/autokitteh/svc v0.0.0-20220601071802-fdb33d56a228
+	github.com/autokitteh/svc v0.0.0-20220603073142-5f50d0831348
 	github.com/autokitteh/tmplrender v0.0.0-20220522022256-3c30fdc6cfd4
 	github.com/bradleyfalzon/ghinstallation/v2 v2.0.4
 	github.com/fatih/color v1.13.0

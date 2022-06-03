@@ -97,6 +97,9 @@ func init() {
 	}
 }
 
+// set to true if setup phase ran.
+var setup bool
+
 // Boxing to distinguish for svc.
 type GRPCLangCatalog struct{ lang.Catalog }
 type LocalLangCatalog struct{ lang.Catalog }
@@ -683,7 +686,8 @@ var SvcOpts = []svc.OptFunc{
 			},
 		},
 		svc.Component{
-			Name: "hello",
+			Name:  "hello",
+			Setup: func() { setup = true },
 			Ready: func(
 				ctx context.Context,
 				svcCfg *svc.SvcCfg,
@@ -713,6 +717,10 @@ var SvcOpts = []svc.OptFunc{
 					PID:      valColor(fmt.Sprintf("%d", os.Getpid())),
 					HTTPPort: valColor(httpPort),
 					GRPCPort: valColor(grpcPort),
+				}
+
+				if !setup {
+					data.Extra0 = "HINT: Specify --setup to bootstrap."
 				}
 
 				if v := svc.GetVersion(); v != nil {

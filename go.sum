@@ -257,6 +257,8 @@ github.com/autokitteh/stores v0.0.0-20220602050721-84c014cafdd5 h1:EodKBu6f5lbQV
 github.com/autokitteh/stores v0.0.0-20220602050721-84c014cafdd5/go.mod h1:blVhePf6kBKgryYwPwM3BP8lV8o/3aTW1Oyho+LoY3I=
 github.com/autokitteh/svc v0.0.0-20220601071802-fdb33d56a228 h1:3NGQXlcoCPH5LD3gCB9J7ER0E+/DAvC2oWeHGZbjIE4=
 github.com/autokitteh/svc v0.0.0-20220601071802-fdb33d56a228/go.mod h1:SncdZ/z5w0xygHZVZfROiAcJ1Mk6eYShaxy+fsy2C5A=
+github.com/autokitteh/svc v0.0.0-20220603073142-5f50d0831348 h1:M2LFLvouRhRSrhyODL9/5J8wUZChqO7ErAcqDf2EDFo=
+github.com/autokitteh/svc v0.0.0-20220603073142-5f50d0831348/go.mod h1:SncdZ/z5w0xygHZVZfROiAcJ1Mk6eYShaxy+fsy2C5A=
 github.com/autokitteh/tmplrender v0.0.0-20220522022256-3c30fdc6cfd4 h1:3jTo3lBhyFIiizp+Xu7i+FhKe/okbcOjovCTOyZMDvw=
 github.com/autokitteh/tmplrender v0.0.0-20220522022256-3c30fdc6cfd4/go.mod h1:Yja1fdHDI25CC9EoWpawJ0dMuxjxuCAlJQ03/npW6WE=
 github.com/aws/aws-sdk-go v1.15.11/go.mod h1:mFuSZ37Z9YOHbQEwBWztmVzqXrEkub65tZoCYDt7FT0=
