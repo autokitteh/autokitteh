@@ -50,6 +50,10 @@ func (lb *LitterBox) Setup(
 	sources map[string][]byte,
 	main string,
 ) (litterbox.LitterBoxID, error) {
+	if len(sources) == 0 {
+		return "", litterbox.ErrNoSources
+	}
+
 	pid := apiproject.NewProjectID(
 		apiaccount.AccountName(lb.Config.AccountName),
 		string(id),

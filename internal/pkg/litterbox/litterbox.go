@@ -2,10 +2,13 @@ package litterbox
 
 import (
 	"context"
+	"errors"
 
 	"go.autokitteh.dev/sdk/api/apievent"
 	"go.autokitteh.dev/sdk/api/apivalues"
 )
+
+var ErrNoSources = errors.New("no sources supplied")
 
 type LitterBoxID string
 

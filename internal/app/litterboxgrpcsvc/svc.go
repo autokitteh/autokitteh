@@ -2,6 +2,7 @@ package litterboxgrpcsvc
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
@@ -74,6 +75,10 @@ func (s *Svc) Setup(ctx context.Context, req *pbsvc.SetupRequest) (*pbsvc.SetupR
 
 	id, err := s.LitterBox.Setup(ctx, litterbox.LitterBoxID(req.Id), sources, req.MainSourceName)
 	if err != nil {
+		if errors.Is(err, litterbox.ErrNoSources) {
+			return nil, status.Errorf(codes.InvalidArgument, "setup: %v", err)
+		}
+
 		return nil, status.Errorf(codes.Unknown, "setup: %v", err)
 	}
 
