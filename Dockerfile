@@ -7,6 +7,15 @@ ENV GOOS=linux
 
 ENV GO_BUILD_OPTS="-a -ldflags '-linkmode external -extldflags "-static"'"
 
+ARG COMMIT
+ENV COMMIT=${COMMIT}
+
+ARG VERSION
+ENV VERSION=${VERSION}
+
+ARG DATE
+ENV DATE=${DATE}
+
 RUN go mod download
 RUN make bin
 

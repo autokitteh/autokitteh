@@ -5,6 +5,12 @@ TAGS=
 
 ARCH=$(shell uname -m)
 
+COMMIT?="$(shell git rev-parse HEAD)"
+DATE?="$(shell date -u "+%Y-%m-%dT%H:%MZ")"
+VERSION?="dev"
+
+LDOPTS?=-X 'main.version=${VERSION}' -X 'main.date=${DATE}' -X 'main.commit=${COMMIT}'
+
 ifndef GO_BUILD_OPTS
 ifdef DEBUG
 GO_BUILD_OPTS=-gcflags=all="-N -l"
@@ -24,7 +30,7 @@ GOTEST=gotestsum --
 endif
 
 define build
-$(GO) build --tags "${TAGS}" -o $(BUILD_OUTDIR)/$@ $(GO_BUILD_OPTS) ./cmd/$@
+$(GO) build --tags "${TAGS}" -o $(BUILD_OUTDIR)/$@ -ldflags="$(LDOPTS)" $(GO_BUILD_OPTS) ./cmd/$@
 endef
 
 define test
@@ -131,13 +137,9 @@ lint: $(OUTDIR)/tools/golangci-lint
 shellcheck:
 	docker run -v $(shell pwd):/src -w /src koalaman/shellcheck -a -- $(shell find . -name \*.sh)
 
-
-.PHONY: docker-autokitteh
-docker-autokitteh:
-	docker build -t autokitteh/autokitteh .
-
 .PHONY: docker
-docker: docker-autokitteh
+docker:
+	docker build -t autokitteh/autokitteh .
 
 .PHONY: goreleaser
 goreleaser:
