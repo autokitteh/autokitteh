@@ -6,22 +6,22 @@ TAGS=
 ARCH=$(shell uname -m)
 
 ifeq ($(COMMIT),)
-COMMIT="$(shell git rev-parse HEAD)"
+COMMIT=$(shell git rev-parse HEAD)
 endif
 
 ifeq ($(DATE),)
-DATE="$(shell date -u "+%Y-%m-%dT%H:%MZ")"
+DATE=$(shell date -u "+%Y-%m-%dT%H:%MZ")
 endif
 
 ifeq ($(VERSION),)
-VERSION="dev"
+VERSION=dev
 endif
 
-LDOPTS?=-X 'main.version=${VERSION}' -X 'main.date=${DATE}' -X 'main.commit=${COMMIT}'
+LDFLAGS+=-X 'main.version=${VERSION}' -X 'main.date=${DATE}' -X 'main.commit=${COMMIT}'
 
 ifndef GO_BUILD_OPTS
 ifdef DEBUG
-GO_BUILD_OPTS=-gcflags=all="-N -l"
+GO_BUILD_OPTS+=-gcflags=all="-N -l"
 else
 GO_BUILD_OPTS=
 endif
@@ -38,7 +38,7 @@ GOTEST=gotestsum --
 endif
 
 define build
-$(GO) build --tags "${TAGS}" -o $(BUILD_OUTDIR)/$@ -ldflags="$(LDOPTS)" $(GO_BUILD_OPTS) ./cmd/$@
+$(GO) build --tags "${TAGS}" -o $(BUILD_OUTDIR)/$@ -ldflags="$(LDFLAGS)" $(GO_BUILD_OPTS) ./cmd/$@
 endef
 
 define test
@@ -147,7 +147,7 @@ shellcheck:
 
 .PHONY: docker
 docker:
-	docker build -t autokitteh/autokitteh .
+	docker build -t autokitteh/autokitteh . --build-arg "VERSION=$(VERSION)-docker" --build-arg "COMMIT=$(COMMIT)"
 
 .PHONY: goreleaser
 goreleaser:
