@@ -126,11 +126,37 @@ var SvcOpts = []svc.OptFunc{
 		svc.Component{
 			Name: "temporalclient",
 			Init: func(l L.L, cfg *Config) (temporalclient.Client, error) {
-				return temporalclient.NewClient(temporalclient.Options{
+				client, err := temporalclient.NewClient(temporalclient.Options{
 					HostPort:  cfg.Temporal.HostPort,
 					Namespace: cfg.Temporal.Namespace,
 					Logger:    L.Silent{L: l},
 				})
+
+				if err != nil {
+					// Ugly, but will suppress some ugly output.
+					// TODO: instruct svc to not clutter up on some errors.
+
+					fmt.Fprintf(
+						os.Stderr,
+						`*** Cannot connect to Temporal ***
+
+AutoKitteh requires Temporal to be up and running.
+
+Current config (can be modified via environment variables):
+
+AKD_TEMPORAL_HOSTPORT=%q
+AKD_TEMPORAL_NAMESPACE=%q
+
+See https://github.com/temporalio/docker-compose for more info.
+`,
+						cfg.Temporal.HostPort,
+						cfg.Temporal.Namespace,
+					)
+
+					os.Exit(7)
+				}
+
+				return client, nil
 			},
 		},
 		svc.Component{

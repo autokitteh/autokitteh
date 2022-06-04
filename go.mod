@@ -13,14 +13,14 @@ go 1.18
 
 require (
 	github.com/autokitteh/H v0.0.0-20220522023555-2f7de06b9c0a
-	github.com/autokitteh/L v0.0.0-20220522012714-c0074b7a9bbf
+	github.com/autokitteh/L v0.0.0-20220604052907-47eb089e43af
 	github.com/autokitteh/idgen v0.0.0-20220522024226-2185039b1ae1
 	github.com/autokitteh/parsecmd v0.0.0-20220522021831-04f6419353d5
 	github.com/autokitteh/procs v0.0.0-20220522022722-6170e66abe0f
 	github.com/autokitteh/pubsub v0.0.0-20220530045934-d33996c0a118
 	github.com/autokitteh/starlarkutils v0.0.0-20220522021518-dd78b8b234d6
 	github.com/autokitteh/stores v0.0.0-20220602050721-84c014cafdd5
-	github.com/autokitteh/svc v0.0.0-20220603073142-5f50d0831348
+	github.com/autokitteh/svc v0.0.0-20220604052940-6df8ca54f50b
 	github.com/autokitteh/tmplrender v0.0.0-20220522022256-3c30fdc6cfd4
 	github.com/bradleyfalzon/ghinstallation/v2 v2.0.4
 	github.com/fatih/color v1.13.0

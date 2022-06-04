@@ -239,8 +239,8 @@ github.com/armon/go-socks5 v0.0.0-20160902184237-e75332964ef5/go.mod h1:wHh0iHkY
 github.com/asaskevich/govalidator v0.0.0-20190424111038-f61b66f89f4a/go.mod h1:lB+ZfQJz7igIIfQNfa7Ml4HSf2uFQQRzpGGRXenZAgY=
 github.com/autokitteh/H v0.0.0-20220522023555-2f7de06b9c0a h1:CADgea+r8a8Km6Ah7GtAwBeEB4DuJ/a7l3Nu/FFqlIg=
 github.com/autokitteh/H v0.0.0-20220522023555-2f7de06b9c0a/go.mod h1:N9mVcvmFBHPXePVfspzZsKWJh5Lrb3wV0TWce4vfKmg=
-github.com/autokitteh/L v0.0.0-20220522012714-c0074b7a9bbf h1:iNKSKTYurooCREENJ9tQ5ai8QdcB2IGsLtP5lMK0LBY=
-github.com/autokitteh/L v0.0.0-20220522012714-c0074b7a9bbf/go.mod h1:FLgQ9xlH9ixcZl9hFwXZ9f3o0OH8y1mprW0ncpvktDM=
+github.com/autokitteh/L v0.0.0-20220604052907-47eb089e43af h1:shnT19Bc0xjusG1Dc1hw5b/gpUH4U6E2Y8xQT0M3pt4=
+github.com/autokitteh/L v0.0.0-20220604052907-47eb089e43af/go.mod h1:AXyG/Uxe/UtaaUTGj6CpKorJ31+VPnELKZBE75mcRmM=
 github.com/autokitteh/flexcall v0.0.0-20220522011731-56eaad787001 h1:d9dNtB5ZspgH6ktJS19rniW6flEkMU335UGFdfy87fQ=
 github.com/autokitteh/flexcall v0.0.0-20220522011731-56eaad787001/go.mod h1:AsIIbySYBr40J6Vzl5bKKW4wzkMZlNGCvzYfHFiHW4E=
 github.com/autokitteh/idgen v0.0.0-20220522024226-2185039b1ae1 h1:B/7AIREL0EnMbCRqtANXuHztvGnGFzGoxDt5+k+qxUA=
@@ -255,10 +255,8 @@ github.com/autokitteh/starlarkutils v0.0.0-20220522021518-dd78b8b234d6 h1:J2oNbD
 github.com/autokitteh/starlarkutils v0.0.0-20220522021518-dd78b8b234d6/go.mod h1:HM6lYRtgVS+zFtcuuvEE0B8+ReO7pvAFeNbyYV38liY=
 github.com/autokitteh/stores v0.0.0-20220602050721-84c014cafdd5 h1:EodKBu6f5lbQVlDvyIBqZcyDWoihtDUkXbu7a5aB1Ik=
 github.com/autokitteh/stores v0.0.0-20220602050721-84c014cafdd5/go.mod h1:blVhePf6kBKgryYwPwM3BP8lV8o/3aTW1Oyho+LoY3I=
-github.com/autokitteh/svc v0.0.0-20220601071802-fdb33d56a228 h1:3NGQXlcoCPH5LD3gCB9J7ER0E+/DAvC2oWeHGZbjIE4=
-github.com/autokitteh/svc v0.0.0-20220601071802-fdb33d56a228/go.mod h1:SncdZ/z5w0xygHZVZfROiAcJ1Mk6eYShaxy+fsy2C5A=
-github.com/autokitteh/svc v0.0.0-20220603073142-5f50d0831348 h1:M2LFLvouRhRSrhyODL9/5J8wUZChqO7ErAcqDf2EDFo=
-github.com/autokitteh/svc v0.0.0-20220603073142-5f50d0831348/go.mod h1:SncdZ/z5w0xygHZVZfROiAcJ1Mk6eYShaxy+fsy2C5A=
+github.com/autokitteh/svc v0.0.0-20220604052940-6df8ca54f50b h1:HZjADn3RmDvIQXNfV73HP9MXcYB0YBohWBEz2eIYMew=
+github.com/autokitteh/svc v0.0.0-20220604052940-6df8ca54f50b/go.mod h1:FcfbllJrgM3gM/xVik3xHEWvKidT6ETjfK/tQtq0VN8=
 github.com/autokitteh/tmplrender v0.0.0-20220522022256-3c30fdc6cfd4 h1:3jTo3lBhyFIiizp+Xu7i+FhKe/okbcOjovCTOyZMDvw=
 github.com/autokitteh/tmplrender v0.0.0-20220522022256-3c30fdc6cfd4/go.mod h1:Yja1fdHDI25CC9EoWpawJ0dMuxjxuCAlJQ03/npW6WE=
 github.com/aws/aws-sdk-go v1.15.11/go.mod h1:mFuSZ37Z9YOHbQEwBWztmVzqXrEkub65tZoCYDt7FT0=
