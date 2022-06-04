@@ -5,9 +5,9 @@ TAGS=
 
 ARCH=$(shell uname -m)
 
-COMMIT?="$(shell git rev-parse HEAD)"
-DATE?="$(shell date -u "+%Y-%m-%dT%H:%MZ")"
-VERSION?="dev"
+COMMIT:="$(shell git rev-parse HEAD)"
+DATE:="$(shell date -u "+%Y-%m-%dT%H:%MZ")"
+VERSION:="dev"
 
 LDOPTS?=-X 'main.version=${VERSION}' -X 'main.date=${DATE}' -X 'main.commit=${COMMIT}'
 
