@@ -1,0 +1,100 @@
+{{ template "header" "LitterBox " }}
+
+<label for="lbid">ID:</label>
+<input type="text" id="lbid" value="n/a" size="80" readonly></input>
+
+<h3>Source <button onclick="setup()">Setup</button> <button onclick="scoop()">Scoop</button></h3>
+<textarea id="source" name="source" rows="20" cols="80"></textarea>
+<h3>Event <button onclick="sendEvent()">Send</button></h3>
+<textarea id="event" name="event" rows="20" cols="80">
+</textarea>
+
+<script>
+  function source() {
+    e = document.getElementById("source")
+    return e.value;
+  }
+
+  function eventData() {
+    e = document.getElementById("event")
+    return e.value;
+  }
+
+  async function setup() {
+    const resp = await fetch('http://{{ .Addr }}/api/v1/litterboxes', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'text/plain',
+      },
+      body: source(),
+    })
+
+    const body = await resp.json()
+
+    if (!resp.ok) {
+      console.error('setup: ', body)
+      return
+    }
+
+    console.log('setup: ', body)
+    document.getElementById("lbid").value = body['id'];
+  }
+
+  function scoop() { console.error("scoop not implemented yet") }
+
+  async function sendEvent() {
+    const lbid = document.getElementById('lbid').value;
+    console.log(lbid);
+
+    const resp = await fetch("http://{{ .Addr }}/api/v1/litterboxes/" + lbid + "/events", {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: eventData(),
+    })
+
+    if (!resp.ok) {
+      const err = await resp.json()
+      console.error('event: ', err)
+      return
+    }
+
+    const r = resp.body.getReader();
+    for await (const l of readLines(r)) {
+      console.log(JSON.parse(l)['result']);
+    }
+  }
+
+  async function *readLines(reader) {
+      const textDecoder = new TextDecoder();
+      let partOfLine = '';
+      for await (const chunk of readChunks(reader)) {
+          const chunkText = textDecoder.decode(chunk);
+          const chunkLines = chunkText.split('\n');
+          if (chunkLines.length === 1) {
+              partOfLine += chunkLines[0];
+          } else if (chunkLines.length > 1) {
+              yield partOfLine + chunkLines[0];
+              for (let i=1; i < chunkLines.length - 1; i++) {
+                  yield chunkLines[i];
+              }
+              partOfLine = chunkLines[chunkLines.length - 1];
+          }
+      }
+  }
+
+  function readChunks(reader) {
+      return {
+          async* [Symbol.asyncIterator]() {
+              let readResult = await reader.read();
+              while (!readResult.done) {
+                  yield readResult.value;
+                  readResult = await reader.read();
+              }
+          },
+      };
+  }
+</script>
+
+{{ template "footer" }}

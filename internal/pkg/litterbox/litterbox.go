@@ -8,7 +8,10 @@ import (
 	"go.autokitteh.dev/sdk/api/apivalues"
 )
 
-var ErrNoSources = errors.New("no sources supplied")
+var (
+	ErrNoSources        = errors.New("no sources supplied")
+	ErrMainNotSpecified = errors.New("main not specified")
+)
 
 type LitterBoxID string
 

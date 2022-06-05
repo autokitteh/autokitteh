@@ -681,6 +681,7 @@ See https://github.com/temporalio/docker-compose for more info.
 			Name: "dashboard",
 			Start: func(
 				cfg *Config,
+				svcCfg *svc.SvcCfg,
 				r *mux.Router,
 				eventsStore eventsstore.Store,
 				projectsStore projectsstore.Store,
@@ -695,6 +696,7 @@ See https://github.com/temporalio/docker-compose for more info.
 					EventSourcesStore: eventSrcsStore,
 					StateStore:        stateStore,
 					SecretsStore:      secretsStore,
+					Port:              svcCfg.HTTP.Port,
 				}).Register(r)
 			},
 		},

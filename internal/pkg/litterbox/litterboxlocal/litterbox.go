@@ -54,6 +54,16 @@ func (lb *LitterBox) Setup(
 		return "", litterbox.ErrNoSources
 	}
 
+	if main == "" {
+		if len(sources) > 1 {
+			return "", litterbox.ErrMainNotSpecified
+		}
+
+		for k := range sources {
+			main = k
+		}
+	}
+
 	pid := apiproject.NewProjectID(
 		apiaccount.AccountName(lb.Config.AccountName),
 		string(id),

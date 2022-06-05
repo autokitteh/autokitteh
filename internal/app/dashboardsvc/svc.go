@@ -8,6 +8,7 @@ import (
 	"github.com/autokitteh/autokitteh/internal/app/dashboardsvc/templates"
 	"github.com/autokitteh/autokitteh/internal/pkg/eventsrcsstore"
 	"github.com/autokitteh/autokitteh/internal/pkg/eventsstore"
+	"github.com/autokitteh/autokitteh/internal/pkg/litterbox"
 	"github.com/autokitteh/autokitteh/internal/pkg/projectsstore"
 	"github.com/autokitteh/autokitteh/internal/pkg/secretsstore"
 	"github.com/autokitteh/autokitteh/internal/pkg/statestore"
@@ -25,6 +26,9 @@ type Svc struct {
 	EventSourcesStore eventsrcsstore.Store
 	StateStore        statestore.Store
 	SecretsStore      *secretsstore.Store
+	LitterBox         litterbox.LitterBox
+
+	Port int
 
 	renderFn tmplrender.RenderFunc
 }
@@ -48,4 +52,5 @@ func (s *Svc) Register(r *mux.Router) {
 	s.registerEvents(dashboard)
 	s.registerEventSrcs(dashboard)
 	s.registerProjects(dashboard)
+	s.registerLitterbox(dashboard)
 }

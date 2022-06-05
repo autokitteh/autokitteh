@@ -69,13 +69,22 @@ func (s *Svc) Setup(ctx context.Context, req *pbsvc.SetupRequest) (*pbsvc.SetupR
 		a := txtar.Parse(alt)
 
 		for _, f := range a.Files {
+			if req.MainSourceName == "" {
+				req.MainSourceName = f.Name
+			}
+
 			sources[f.Name] = f.Data
+		}
+
+		if len(sources) == 0 {
+			req.MainSourceName = "auto.kitteh"
+			sources[req.MainSourceName] = alt
 		}
 	}
 
 	id, err := s.LitterBox.Setup(ctx, litterbox.LitterBoxID(req.Id), sources, req.MainSourceName)
 	if err != nil {
-		if errors.Is(err, litterbox.ErrNoSources) {
+		if errors.Is(err, litterbox.ErrNoSources) || errors.Is(err, litterbox.ErrMainNotSpecified) {
 			return nil, status.Errorf(codes.InvalidArgument, "setup: %v", err)
 		}
 
