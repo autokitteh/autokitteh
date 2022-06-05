@@ -37,7 +37,7 @@
 <p>
   <h3>
     Console
-    <button onclick="onClear()">Clear</button>
+    <button onclick="clearLog()">Clear</button>
   </h3>
   <textarea readonly id="console" name="console" rows="10" cols="80"></textarea>
 </p>
@@ -49,7 +49,7 @@
     document.getElementById("console").value += txt + "\n"
   }
 
-  function onClear() {
+  function clearLog() {
       document.getElementById("console").value = ""
   }
 
@@ -100,6 +100,8 @@
   }
 
   async function setup() {
+    clearLog()
+
     const resp = await fetch('http://{{ .Addr }}/api/v1/litterboxes', {
       method: 'POST',
       headers: {
@@ -144,11 +146,22 @@
       p = JSON.parse(l)['result']
       console.log(p);
 
-      ps = p.projectEventState?.state?.processed?.runSummary?.prints
+      const ps = p.projectEventState?.state?.processed?.runSummary?.prints
       if (ps) {
         for (const l of ps) {
           addLog(l)
         }
+      }
+
+      const err = p.projectEventState?.state?.error
+      if (err) {
+        if (err.runSummary?.prints) {
+          for (const l of err.runSummary.prints) {
+            addLog(l)
+          }
+        }
+
+        addLog("error: " + err.error)
       }
     }
   }
