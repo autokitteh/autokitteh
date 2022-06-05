@@ -1641,8 +1641,8 @@ github.com/zclconf/go-cty v1.10.0/go.mod h1:vVKLxnk3puL4qRAv72AO+W99LUD4da90g3uU
 github.com/zenazn/goji v0.9.0/go.mod h1:7S9M489iMyHBNxwZnk9/EHS098H4/F6TATF2mIxtB1Q=
 go.autokitteh.dev/idl v0.6.0 h1:3bAMqoSVziodTXkf1GQdup6BwJqT1c9WJR3n4iivACg=
 go.autokitteh.dev/idl v0.6.0/go.mod h1:irSbV4BAsqDSj4XRnRHXNEnrAuy05h9461aF78tX1EU=
-go.autokitteh.dev/sdk v0.6.0 h1:wJyfgTjFfpkYKXUVRHlGNOEMo6QVujz9ZKsyOGePM10=
-go.autokitteh.dev/sdk v0.6.0/go.mod h1:utQM30aK/6pJnLa3Yus3rdN3QBxdm5AMGgM654SWRwE=
+go.autokitteh.dev/sdk v0.6.6 h1:kuzvJ0bI/vyfWyLoOt5CDu4xQE4s71h4iUDzjFn+Hek=
+go.autokitteh.dev/sdk v0.6.6/go.mod h1:tlYsUtfs9zGA2gIuXAJbo40szsdM0jTt33YMsGMhzIQ=
 go.dagger.io/dagger v0.2.11 h1:q9ACsQYsphslEYLcL73nnbf/DaAjT+j/hDlg4+VPeXk=
 go.dagger.io/dagger v0.2.11/go.mod h1:hHwqqsmJwkvAsMjDLajOPaw8k3UOrsgHrhOdmoc1tBM=
 go.etcd.io/bbolt v1.3.2/go.mod h1:IbVyRI1SCnLcuJnV2u8VeU0CEYM7e686BmAb1XKL+uU=

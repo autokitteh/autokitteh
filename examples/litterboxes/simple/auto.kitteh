@@ -1,9 +1,12 @@
 -- auto.kitteh --
 load("ak", "sources")
-
+load("./meow.kitteh", "meow")
 
 def _on_binding_test():
-  print("meow")
+  print(meow)
 
 
 sources.bind("binding.test", _on_binding_test)
+
+-- meow.kitteh --
+meow="mew"

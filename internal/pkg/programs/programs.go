@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 
-	"go.autokitteh.dev/sdk/api/apiprogram"
-	"go.autokitteh.dev/sdk/api/apiproject"
 	"github.com/autokitteh/autokitteh/internal/pkg/lang"
 	"github.com/autokitteh/autokitteh/internal/pkg/lang/langtools"
+	"go.autokitteh.dev/sdk/api/apiprogram"
+	"go.autokitteh.dev/sdk/api/apiproject"
 
 	"github.com/autokitteh/L"
 )
@@ -75,6 +75,10 @@ func (p *Programs) Load(
 	path *apiprogram.Path,
 ) (*apiprogram.Module, error) {
 	l := p.L.With("path", path.String(), "project_id", pid)
+
+	if path.IsRelative() {
+		return nil, fmt.Errorf("relative paths are not supported by loader")
+	}
 
 	if len(p.CommonLoaders) == 0 {
 		return nil, fmt.Errorf("no loaders configured")

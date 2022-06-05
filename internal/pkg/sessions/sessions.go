@@ -115,7 +115,12 @@ func (s *Sessions) loadAllModules(
 				continue
 			}
 
-			q = append(q, depPath)
+			dep, err := apiprogram.JoinWithParent(curr, depPath)
+			if err != nil {
+				return fmt.Errorf("invalid relative path %q to %q: %w", depPath.String(), curr.String(), err)
+			}
+
+			q = append(q, dep)
 		}
 
 		return nil
