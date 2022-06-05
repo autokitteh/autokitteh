@@ -15,23 +15,43 @@
 </select>
 </p>
 
-<h3>
-  Source
-  <button onclick="setup()">Setup</button> 
-  <button onclick="scoop()">Scoop</button>
-</h3>
-<textarea id="source" name="source" rows="20" cols="80"></textarea>
+<p>
+  <h3>
+    Source
+    <button onclick="setup()">Setup</button> 
+    <button onclick="scoop()">Scoop</button>
+  </h3>
+  <textarea id="source" name="source" rows="20" cols="80"></textarea>
+</p>
 
-<h3>
-  Event
-  <button onclick="sendEvent()">Send</button>
-  <label for="eventexample">Example:</label>
-  <select name="eventexample" id="eventexample" onchange="changeEventExample()" />
-</h3>
-<textarea id="event" name="event" rows="20" cols="80"></textarea>
+<p>
+  <h3>
+    Event
+    <button onclick="sendEvent()">Send</button>
+    <label for="eventexample">Example:</label>
+    <select name="eventexample" id="eventexample" onchange="changeEventExample()"></select>
+  </h3>
+  <textarea id="event" name="event" rows="10" cols="80"></textarea>
+</p>
+
+<p>
+  <h3>
+    Console
+    <button onclick="onClear()">Clear</button>
+  </h3>
+  <textarea readonly id="console" name="console" rows="10" cols="80"></textarea>
+</p>
 
 <script>
   const examples = JSON.parse("{{ .JSONExamples }}")
+
+  function addLog(txt) {
+    document.getElementById("console").value += txt + "\n"
+  }
+
+  function onClear() {
+      document.getElementById("console").value = ""
+  }
 
   function changeEventExample() {
     const sel = document.getElementById("example").value
@@ -121,7 +141,15 @@
 
     const r = resp.body.getReader();
     for await (const l of readLines(r)) {
-      console.log(JSON.parse(l)['result']);
+      p = JSON.parse(l)['result']
+      console.log(p);
+
+      ps = p.projectEventState?.state?.processed?.runSummary?.prints
+      if (ps) {
+        for (const l of ps) {
+          addLog(l)
+        }
+      }
     }
   }
 
