@@ -1,15 +1,74 @@
 {{ template "header" "LitterBox " }}
 
+<p>
 <label for="lbid">ID:</label>
 <input type="text" id="lbid" value="n/a" size="80" readonly></input>
+</p>
 
-<h3>Source <button onclick="setup()">Setup</button> <button onclick="scoop()">Scoop</button></h3>
+<p>
+<label for="example">Examples:</label>
+<select name="example" id="example" onchange="changeExample()">
+  <option value=""></option>
+  {{ range $k, $v := .Examples }}
+  <option value="{{ $k }}">{{ $k }}</option>
+  {{ end }}
+</select>
+</p>
+
+<h3>
+  Source
+  <button onclick="setup()">Setup</button> 
+  <button onclick="scoop()">Scoop</button>
+</h3>
 <textarea id="source" name="source" rows="20" cols="80"></textarea>
-<h3>Event <button onclick="sendEvent()">Send</button></h3>
-<textarea id="event" name="event" rows="20" cols="80">
-</textarea>
+
+<h3>
+  Event
+  <button onclick="sendEvent()">Send</button>
+  <label for="eventexample">Example:</label>
+  <select name="eventexample" id="eventexample" onchange="changeEventExample()" />
+</h3>
+<textarea id="event" name="event" rows="20" cols="80"></textarea>
 
 <script>
+  const examples = JSON.parse("{{ .JSONExamples }}")
+
+  function changeEventExample() {
+    const sel = document.getElementById("example").value
+
+    const ex = document.getElementById("eventexample").value
+
+    const x = ex ? examples[sel]['events'][ex] : ""
+
+    document.getElementById("event").value = x
+  }
+
+  function changeExample() {
+    const sel = document.getElementById("example").value
+
+    const ex = document.getElementById("eventexample")
+    ex.innerHTML = ''
+
+    if (sel == "") {
+      return
+    }
+
+    const x = examples[sel]
+
+    document.getElementById("source").value = x["source"]
+
+    for (const k of Object.keys(x['events'])) {
+      var option = document.createElement("option");
+      option.text = k
+      ex.add(option);
+    }
+
+    var option = document.createElement("option");
+    ex.add(option);
+
+    changeEventExample()
+  }
+
   function source() {
     e = document.getElementById("source")
     return e.value;
