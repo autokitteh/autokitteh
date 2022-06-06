@@ -1,0 +1,20 @@
+# Welcome to AutoKitteh. This Tour of AutoKitteh is an introduction to the
+# programing model and is divided into multiple parts.
+# To access a specific part, use the "Examples" select at the top of the page.
+#
+# AutoKitteh has three distinct concepts:
+# - Event Sources, which send events;
+# - Plugins, which affect side effects on the world;
+# - A program, that tells AutoKitteh  what to do when an event is received
+#   from Event Sources, and use Plugins to affect your deeds on the
+#   world.
+#
+# The LitterBox is where we can play and try out various programs and
+# see how they behave to different pre-recorded events.
+#
+# The LitterBox has three parts:
+# - The Program editor, where you write the program to try.
+# - The Event editor, where you stage an event to be sent to the program.
+# - The Console, where you see your program "print" output.
+#
+# Next, load up the "02-meow-world" example for the next step.

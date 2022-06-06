@@ -3,6 +3,7 @@ package litterboxes
 import (
 	"embed"
 	"encoding/json"
+	"fmt"
 	"io/fs"
 	"path/filepath"
 	"strings"
@@ -22,44 +23,75 @@ var (
 )
 
 func init() {
-	if err := fs.WalkDir(FS, ".", func(path string, d fs.DirEntry, err error) error {
+	dis, err := FS.ReadDir(".")
+	if err != nil {
+		panic(err)
+	}
+
+	for _, di := range dis {
+		if !di.IsDir() {
+			continue
+		}
+
+		dname := filepath.Base(di.Name())
+
+		dis, err := FS.ReadDir(di.Name())
 		if err != nil {
-			return err
+			panic(err)
 		}
 
-		if path == "." {
-			return nil
-		}
-
-		if d.IsDir() {
-			Examples[path] = &Example{
-				Events: make(map[string]string),
-			}
-		} else if d := filepath.Dir(path); d != "." {
-			x := Examples[d]
-			if x == nil {
-				panic("no such example")
+		for _, di := range dis {
+			if di.IsDir() {
+				continue
 			}
 
-			bs, err := fs.ReadFile(FS, path)
+			name := filepath.Base(di.Name())
+
+			prep := func(sub string) *Example {
+				key := dname
+				if sub != "" {
+					key = fmt.Sprintf("%s/%s", dname, sub)
+				}
+
+				x := Examples[key]
+				if x == nil {
+					x = &Example{Events: make(map[string]string)}
+					Examples[key] = x
+				}
+
+				return x
+			}
+
+			a, b, _ := strings.Cut(name, "--")
+
+			var (
+				x    *Example
+				kind string
+			)
+
+			if b == "" {
+				x = prep("")
+				kind = a
+			} else {
+				x = prep(a)
+				kind = b
+			}
+
+			bs, err := fs.ReadFile(FS, filepath.Join(dname, di.Name()))
 			if err != nil {
 				panic(err)
 			}
 
 			txt := string(bs)
 
-			if filepath.Base(path) == "source" {
+			if strings.HasSuffix(kind, ".json") {
+				n := strings.TrimSuffix(kind, ".json")
+
+				x.Events[n] = txt
+			} else if kind == "source" {
 				x.Source = txt
-			} else if filepath.Ext(path) == ".json" {
-				x.Events[strings.TrimSuffix(filepath.Base(path), ".json")] = txt
 			}
-
-			return nil
 		}
-
-		return nil
-	}); err != nil {
-		panic(err)
 	}
 
 	bs, err := json.Marshal(Examples)

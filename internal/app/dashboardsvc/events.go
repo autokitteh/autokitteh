@@ -281,12 +281,8 @@ func (s *Svc) eventForProject(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	flog, fprints := sum.Flatten()
-
-	pbflog := make([]interface{}, len(flog))
-	for i, x := range flog {
-		pbflog[i] = x.PB()
-	}
+	fsum := sum.Flatten()
+	flog, fprints := fsum.PB().Log, fsum.PB().Prints
 
 	s.render(w, "project-event.html", struct {
 		Event, UnwrappedData, States, Binding, Project, RunSummary, FlatLog, FlatPrints interface{}
@@ -297,7 +293,7 @@ func (s *Svc) eventForProject(w http.ResponseWriter, r *http.Request) {
 		Binding:       pbbinding,
 		Project:       proj.PB(),
 		RunSummary:    sum.PB(),
-		FlatLog:       pbflog,
+		FlatLog:       flog,
 		FlatPrints:    fprints,
 	})
 }

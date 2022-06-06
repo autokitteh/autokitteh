@@ -17,7 +17,7 @@
 
 <p>
   <h3>
-    Source
+    Program
     <button onclick="setup()">Setup</button> 
     <button onclick="scoop()">Scoop</button>
   </h3>
@@ -125,7 +125,7 @@
 
   async function sendEvent() {
     const lbid = document.getElementById('lbid').value;
-    console.log(lbid);
+    console.log("---\nsend: " + lbid + "\nevent: " + eventData());
 
     const resp = await fetch("http://{{ .Addr }}/api/v1/litterboxes/" + lbid + "/events", {
       method: 'POST',
@@ -144,24 +144,31 @@
     const r = resp.body.getReader();
     for await (const l of readLines(r)) {
       p = JSON.parse(l)['result']
-      console.log(p);
 
-      const ps = p.projectEventState?.state?.processed?.runSummary?.prints
-      if (ps) {
-        for (const l of ps) {
-          addLog(l)
-        }
+      console.debug(p)
+
+      pes = p.projectEventState?.state
+
+      if (pes) {
+        console.info(pes)
       }
 
-      const err = p.projectEventState?.state?.error
-      if (err) {
-        if (err.runSummary?.prints) {
-          for (const l of err.runSummary.prints) {
+      const sum = p.flattenedRunSummary
+      if (sum) {
+        const prints = sum.prints
+
+        if (prints) {
+          clearLog()
+
+          for (const l of prints) {
             addLog(l)
           }
         }
+      }
 
-        addLog("error: " + err.error)
+      const err = pes?.error
+      if (pes?.error) {
+        addLog("error: " + pes.error)
       }
     }
   }
