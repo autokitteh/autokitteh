@@ -14,5 +14,26 @@ type Version = svc.Version
 func Run(version *Version) {
 	svc.SetVersion(version)
 
-	svc.RunCLI("", SvcOpts...)
+	svc.RunCLI(
+		"",
+		append(
+			SvcOpts,
+			svc.WithCLIOptions(
+				svc.WithCLICommand(&cli.Command{
+					Name:   "test",
+					Action: func(*cli.Context) error { return nil },
+				}),
+				svc.WithCLIFlags(
+					[]cli.Flag{
+						&cli.StringSliceFlag{
+							Name:        "initpath",
+							Aliases:     []string{"i"},
+							Destination: &initPaths,
+							Usage:       "list of paths to initialization manifests",
+						},
+					},
+				),
+			),
+		)...,
+	)
 }
