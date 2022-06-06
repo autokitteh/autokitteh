@@ -16,7 +16,7 @@ var (
 type LitterBoxID string
 
 type LitterBoxEvent struct {
-	SrcBinding string
+	Src        string
 	Type       string
 	Data       map[string]*apivalues.Value
 	OriginalID string

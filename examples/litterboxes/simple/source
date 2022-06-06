@@ -6,7 +6,7 @@ def _on_binding_test():
   print(meow)
 
 
-sources.bind("binding.test", _on_binding_test)
+sources.bind("src.test", _on_binding_test)
 
 -- meow.kitteh --
 meow="mew"

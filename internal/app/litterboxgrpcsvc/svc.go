@@ -59,30 +59,30 @@ func (s *Svc) Setup(ctx context.Context, req *pbsvc.SetupRequest) (*pbsvc.SetupR
 		return nil, status.Errorf(codes.InvalidArgument, "validate: %v", err)
 	}
 
-	sources := req.SourcesMap
+	files := req.FilesMap
 
-	if sources == nil {
-		sources = make(map[string][]byte)
+	if files == nil {
+		files = make(map[string][]byte)
 	}
 
-	if alt := req.Sources; alt != nil {
+	if alt := req.FilesTxtar; alt != nil {
 		a := txtar.Parse(alt)
 
 		for _, f := range a.Files {
-			if req.MainSourceName == "" {
-				req.MainSourceName = f.Name
+			if req.MainFileName == "" {
+				req.MainFileName = f.Name
 			}
 
-			sources[f.Name] = f.Data
+			files[f.Name] = f.Data
 		}
 
-		if len(sources) == 0 {
-			req.MainSourceName = "auto.kitteh"
-			sources[req.MainSourceName] = alt
+		if len(files) == 0 {
+			req.MainFileName = "auto.kitteh"
+			files[req.MainFileName] = alt
 		}
 	}
 
-	id, err := s.LitterBox.Setup(ctx, litterbox.LitterBoxID(req.Id), sources, req.MainSourceName)
+	id, err := s.LitterBox.Setup(ctx, litterbox.LitterBoxID(req.Id), files, req.MainFileName)
 	if err != nil {
 		if errors.Is(err, litterbox.ErrNoSources) || errors.Is(err, litterbox.ErrMainNotSpecified) {
 			return nil, status.Errorf(codes.InvalidArgument, "setup: %v", err)
@@ -121,7 +121,7 @@ func (s *Svc) Event(req *pbsvc.EventRequest, srv pbsvc.LitterBox_EventServer) er
 	}
 
 	ev := litterbox.LitterBoxEvent{
-		SrcBinding: req.Event.SrcBinding,
+		Src:        req.Event.Src,
 		Type:       req.Event.Type,
 		OriginalID: req.Event.OriginalId,
 		Data:       data,

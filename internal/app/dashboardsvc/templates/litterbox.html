@@ -2,7 +2,8 @@
 
 <p>
 <label for="lbid">ID:</label>
-<input type="text" id="lbid" value="n/a" size="80" readonly></input>
+<input type="text" id="lbid" value="" size="80" readonly></input>
+<button onclick="clearID()">Clear</button>
 </p>
 
 <p>
@@ -18,7 +19,7 @@
 <p>
   <h3>
     Program
-    <button onclick="setup()">Setup</button> 
+    <button id="setup" onclick="setup()">Setup</button> 
     <button onclick="scoop()">Scoop</button>
   </h3>
   <textarea id="source" name="source" rows="20" cols="80"></textarea>
@@ -27,7 +28,7 @@
 <p>
   <h3>
     Event
-    <button onclick="sendEvent()">Send</button>
+    <button id="sendEvent" disabled onclick="sendEvent()">Send</button>
     <label for="eventexample">Example:</label>
     <select name="eventexample" id="eventexample" onchange="changeEventExample()"></select>
   </h3>
@@ -99,10 +100,27 @@
     return e.value;
   }
 
+  function clearID() {
+    document.getElementById("sendEvent").setAttribute("disabled", "");
+    document.getElementById("setup").innerHTML = "Setup";
+    document.getElementById("lbid").value = '';
+  }
+
+  function lbid() {
+    return document.getElementById("lbid").value
+  }
+
   async function setup() {
     clearLog()
 
-    const resp = await fetch('http://{{ .Addr }}/api/v1/litterboxes', {
+    extra = ''
+
+    id = lbid()
+    if (id) {
+      extra = '?id=' + id
+    }
+
+    const resp = await fetch('http://{{ .Addr }}/api/v1/litterboxes' + extra, {
       method: 'POST',
       headers: {
         'Content-Type': 'text/plain',
@@ -119,15 +137,16 @@
 
     console.log('setup: ', body)
     document.getElementById("lbid").value = body['id'];
+    document.getElementById("setup").innerHTML = "Update";
+    document.getElementById("sendEvent").removeAttribute("disabled")
   }
 
   function scoop() { console.error("scoop not implemented yet") }
 
   async function sendEvent() {
-    const lbid = document.getElementById('lbid').value;
-    console.log("---\nsend: " + lbid + "\nevent: " + eventData());
+    console.log("---\nsend: " + lbid() + "\nevent: " + eventData());
 
-    const resp = await fetch("http://{{ .Addr }}/api/v1/litterboxes/" + lbid + "/events", {
+    const resp = await fetch("http://{{ .Addr }}/api/v1/litterboxes/" + lbid() + "/events", {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -168,7 +187,7 @@
 
       const err = pes?.error
       if (pes?.error) {
-        addLog("error: " + pes.error)
+        addLog("error: " + pes.error.error)
       }
     }
   }

@@ -2,6 +2,7 @@ package litterboxlocal
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"go.autokitteh.dev/sdk/api/apiaccount"
@@ -110,6 +111,10 @@ func (lb *LitterBox) Setup(
 		pid,
 		settings,
 	); err != nil {
+		if errors.Is(err, projectsstore.ErrAlreadyExists) {
+			return id, nil
+		}
+
 		return "", fmt.Errorf("create project: %w", err)
 	}
 
@@ -146,7 +151,7 @@ func (lb *LitterBox) RunEvent(
 		ch,
 		eid,
 		lb.EventSourceID(),
-		fmt.Sprintf("litterbox:%s,%s", id, event.SrcBinding), // [# litterbox-assoc #]
+		fmt.Sprintf("litterbox:%s,%s", id, event.Src), // [# litterbox-assoc #]
 		event.OriginalID,
 		event.Type,
 		event.Data,
