@@ -17,7 +17,7 @@ load("ak", "sources")
 # For more modules, see https://github.com/qri-io/starlib.
 load("http", "http")
 
-# To spice things up, let's use cuelang for out config.
+# To spice things up, let's use cuelang for our config.
 load("./cats.cue", "sounds")
 
 def _on_sound(ak_ctx, ak_name, sound):

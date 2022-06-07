@@ -101,6 +101,9 @@ func init() {
 // set to true if setup phase ran.
 var setup bool
 
+// set to true if litterbox is enabled.
+var litterbox bool
+
 // Boxing to distinguish for svc.
 type GRPCLangCatalog struct{ lang.Catalog }
 type LocalLangCatalog struct{ lang.Catalog }
@@ -768,7 +771,13 @@ See https://github.com/temporalio/docker-compose for more info.
 				}
 
 				if !setup {
+					// TODO: only if not yet bootstrapped.
 					data.Extra0 = "HINT: Specify --setup to bootstrap."
+				}
+
+				if litterbox && setup {
+					data.Extra0 = "Try the LitterBox!"
+					data.Extra1 = fmt.Sprintf("http://127.0.0.1:%d/dashboard/litterbox", svcCfg.HTTP.Port)
 				}
 
 				if v := svc.GetVersion(); v != nil {
@@ -789,6 +798,7 @@ See https://github.com/temporalio/docker-compose for more info.
 			},
 			Start: func(ctx context.Context, svcCfg *svc.SvcCfg, svc *litterboxgrpcsvc.Svc, srv *grpc.Server, gw *runtime.ServeMux) {
 				svc.Register(ctx, srv, gw, svcCfg.GRPC.Port)
+				litterbox = true
 			},
 		},
 		svc.Component{
