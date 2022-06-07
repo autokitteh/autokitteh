@@ -21,6 +21,8 @@
     Program
     <button id="setup" onclick="setup()">Setup</button> 
     <button onclick="scoop()">Scoop</button>
+    State:
+    <input type="text" id="pstate" value="" size="15" readonly></input>
   </h3>
   <textarea id="program" name="program" rows="20" cols="80"></textarea>
 </p>
@@ -178,6 +180,8 @@
 
       if (pes) {
         console.info(pes)
+
+        document.getElementById('pstate').value = Object.keys(pes)[0].toUpperCase()
       }
 
       const sum = p.flattenedRunSummary

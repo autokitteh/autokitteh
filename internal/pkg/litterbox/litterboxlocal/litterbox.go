@@ -44,7 +44,6 @@ func (lb *LitterBox) Loader(ctx context.Context, path *apiprogram.Path) ([]byte,
 	return lb.ProgramsStore.Get(ctx, path.String())
 }
 
-// TODO: update.
 func (lb *LitterBox) Setup(
 	ctx context.Context,
 	id litterbox.LitterBoxID,
