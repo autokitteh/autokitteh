@@ -1,0 +1,38 @@
+# In this exercise we're going to make our dispenser much more
+# easier to handle. Instead of modifying the code to change
+# cat's permissions, we will change a data file.
+
+# In the LitterBox, you can provide multiple files in the same
+# listing. This is using the Txtar format:
+# https://pkg.go.dev/golang.org/x/tools/txtar#hdr-Txtar_format
+-- auto.kitteh --
+load("ak", "sources")
+
+# This will load "acl.yaml" in a path relative to the directory
+# of this file. This is useful for the LitterBox since you cannot
+# know the LitterBox path ahead of time.
+load("./acl.yaml", "sounds")
+
+def _on_sound(ak_name, sound):
+  kind = ak_name.split('_')[0]
+
+  print('%s food dispenser heard a %s' % (kind, sound))
+
+  if sound in sounds[kind]:
+    print('dispensing %s food to %s' % (kind, sounds[kind][sound]))
+  else:
+    print('wrong dispenser')
+
+
+sources.bind('wet_dispenser.sound', _on_sound)
+sources.bind('dry_dispenser.sound', _on_sound)
+
+-- acl.yaml --
+sounds:
+  dry:
+    meow: gizmo
+    grrrr: midnight
+
+  wet:
+    purrrr: pepurr
+    hiss: zumi

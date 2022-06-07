@@ -1,0 +1,11 @@
+{
+  "src": "camera",
+  "type": "snap",
+  "data": {
+    "image_slug": {
+      "integer": {
+        "v": "1"
+      }
+    }
+  }
+}

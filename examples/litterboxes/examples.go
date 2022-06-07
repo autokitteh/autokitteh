@@ -13,8 +13,8 @@ import (
 var FS embed.FS
 
 type Example struct {
-	Events map[string]string `json:"events"`
-	Source string            `json:"source"`
+	Events  map[string]string `json:"events"`
+	Program string            `json:"program"`
 }
 
 var (
@@ -88,8 +88,8 @@ func init() {
 				n := strings.TrimSuffix(kind, ".json")
 
 				x.Events[n] = txt
-			} else if kind == "source" {
-				x.Source = txt
+			} else if kind == "program" {
+				x.Program = txt
 			}
 		}
 	}

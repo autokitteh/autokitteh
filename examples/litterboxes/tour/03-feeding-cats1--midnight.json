@@ -1,0 +1,11 @@
+{
+  "src": "dry_dispenser",
+  "type": "sound",
+  "data": {
+    "sound": {
+      "string": {
+        "v": "grrrr"
+      }
+    }
+  }
+}

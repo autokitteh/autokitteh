@@ -22,7 +22,7 @@
     <button id="setup" onclick="setup()">Setup</button> 
     <button onclick="scoop()">Scoop</button>
   </h3>
-  <textarea id="source" name="source" rows="20" cols="80"></textarea>
+  <textarea id="program" name="program" rows="20" cols="80"></textarea>
 </p>
 
 <p>
@@ -31,6 +31,7 @@
     <button id="sendEvent" disabled onclick="sendEvent()">Send</button>
     <label for="eventexample">Example:</label>
     <select name="eventexample" id="eventexample" onchange="changeEventExample()"></select>
+    Last: <a id="event_link" target="_blank" rel="noopener noreferrer">None</a>
   </h3>
   <textarea id="event" name="event" rows="10" cols="80"></textarea>
 </p>
@@ -76,7 +77,7 @@
 
     const x = examples[sel]
 
-    document.getElementById("source").value = x["source"]
+    document.getElementById("program").value = x["program"]
 
     for (const k of Object.keys(x['events'])) {
       var option = document.createElement("option");
@@ -90,8 +91,8 @@
     changeEventExample()
   }
 
-  function source() {
-    e = document.getElementById("source")
+  function program() {
+    e = document.getElementById("program")
     return e.value;
   }
 
@@ -125,7 +126,7 @@
       headers: {
         'Content-Type': 'text/plain',
       },
-      body: source(),
+      body: program(),
     })
 
     const body = await resp.json()
@@ -165,6 +166,13 @@
       p = JSON.parse(l)['result']
 
       console.debug(p)
+
+      const eid = p.eventId
+      if (eid) {
+        const elem = document.getElementById("event_link")
+        elem.innerHTML = eid
+        elem.href = "http://{{ .Addr }}/dashboard/events/" + eid
+      }
 
       pes = p.projectEventState?.state
 

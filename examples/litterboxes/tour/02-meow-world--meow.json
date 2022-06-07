@@ -1,5 +1,11 @@
 {
-  "src": "binding",
-  "type": "sound",
-  "data": {}
+  "src": "someone",
+  "type": "greeting",
+  "data": {
+    "what": {
+      "string": {
+        "v": "world"
+      }
+    }
+  }
 }

@@ -1,0 +1,42 @@
+# In this demo we are going to learn how to process events from different
+# sources in a more idiomatic and scalable way.
+
+# We are going to program very special voice activated cat food dispensers.
+# We're dealing here with four very smart cats, which some consume wet
+# food, and other dry food. These dispensers listen for a "password" from cats,
+# and dispense food only to specific cats based on the sound they make.
+
+# After reading this code, try to send different events and see what happens.
+# Also try to modify the events payload.
+
+# First load the `sources` module from `ak`. This will be used later.
+load("ak", "sources")
+
+# This handler will be invoked only if the wet food dispenser hears a
+# vocalization. It receives a single parameter - `sound`, that comes
+# from the data in the event that triggered it.
+def _on_wet_sound(sound):
+  print('wet dispenser heard a %s' % sound)
+
+  if sound in ['hiss', 'purrrr']:
+    print('dispensing wet food')
+  else:
+    print('wrong dispenser')
+
+
+# This registers the above function to be invoked if a `sound` event
+# is coming from the `wet_dispenser' event source.
+sources.bind('wet_dispenser.sound', _on_wet_sound)
+
+
+# Same thing goes for the dry food dispenser.
+def _on_dry_sound(sound):
+  print('dry dispenser heard a %s' % sound)
+
+  if sound in ['meow', 'grrr']:
+    print('dispensing dry food')
+  else:
+    print('wrong dispenser')
+
+
+sources.bind('dry_dispenser.sound', _on_dry_sound)

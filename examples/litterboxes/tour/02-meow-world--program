@@ -1,0 +1,37 @@
+# One of the languages that AutoKitteh supports is Starlark.
+# Although Starlark is a dialect of Python, it is not identical.
+# A summary of the differenced is nicely summarized in
+# https://github.com/google/starlark-go/blob/master/doc/spec.md#dialect-differences.
+
+# An AutoKitteh program is ran whenever an event is received from
+# any of its configured event sources. In the LitterBox, however,
+# it runs whenever any event is received.
+
+# Here we load the `event` variable from the `ak` module. The `ak` module
+# is a builtin module in AutoKitteh that supplies some common
+# functions and variables.
+# The `event` variable always contains details about the event
+# that triggered this invocation.
+load("ak", "event")
+
+# As you can see in the event editor, a 'what' field is specified.
+# Let's use it.
+what = event.data['what'] or 'world'
+
+# Now we just print a greeting using the above value.
+print("meow, %s!" % what)
+
+# To run this, hit "Setup" above, then hit "Send" below.
+# You'll see the greeting emitted in the console window.
+# A link to a low level description of how the event
+# is processed will also appear next to the Event editor.
+
+# Now try to change the "what" field value below, and hit "Send" again.
+# Convince yourself that the value sent is the one used :)
+
+# Also note that once you hit "Setup", an id was generated
+# for the litterbox. Also, "Setup" turned into "Update",
+# which means the id above will be reused for every code change.
+# You'll have to hit "Update" every time you change the code
+# In order to generate a new ID, just hit "Clear" on the id,
+# then hit "Setup" again.

@@ -1,0 +1,11 @@
+{
+  "src": "wet_dispenser",
+  "type": "sound",
+  "data": {
+    "sound": {
+      "string": {
+        "v": "purrrr"
+      }
+    }
+  }
+}

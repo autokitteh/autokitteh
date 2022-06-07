@@ -4,6 +4,7 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
+	"io/fs"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -659,6 +660,25 @@ See https://github.com/temporalio/docker-compose for more info.
 							http.FileServer(http.FS(idl.OpenAPIFS)),
 						),
 					)
+			},
+		},
+		svc.Component{
+			Name: "cats",
+			Start: func(r *mux.Router) error {
+				catsfs, err := fs.Sub(assets.FS, "cats")
+				if err != nil {
+					return err
+				}
+
+				fs := http.FS(catsfs)
+
+				r.
+					PathPrefix("/cats/").
+					Handler(
+						http.StripPrefix("/cats/", http.FileServer(fs)),
+					)
+
+				return nil
 			},
 		},
 		svc.Component{
