@@ -2,6 +2,12 @@
 
 DO NOT USE. NOT READY FOR GA.
 
+## Easiest way to run autokitteh
+
+```bash
+docker run --network host -it autokitteh/autokitteh
+```
+
 # RUN USING DOCKER
 
 ```
