@@ -23,6 +23,11 @@ func (c *LocalClient) TrackIngestEvent(ctx context.Context, req *pbeventsvc.Inge
 	return nil, nil
 }
 
+func (c *LocalClient) MonitorProjectEvents(ctx context.Context, in *pbeventsvc.MonitorProjectEventsRequest, _ ...grpc.CallOption) (pbeventsvc.Events_MonitorProjectEventsClient, error) {
+	// TODO
+	return nil, nil
+}
+
 func (c *LocalClient) GetEvent(ctx context.Context, req *pbeventsvc.GetEventRequest, _ ...grpc.CallOption) (*pbeventsvc.GetEventResponse, error) {
 	return c.Server.GetEvent(ctx, req)
 }

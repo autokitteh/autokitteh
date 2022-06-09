@@ -78,3 +78,34 @@ func (lb *LitterBox) RunEvent(
 		ch <- upd
 	}
 }
+
+func (lb *LitterBox) Run(
+	ctx context.Context,
+	id litterbox.LitterBoxID,
+	ch chan<- *apievent.TrackIngestEventUpdate,
+) (err error) {
+	client, err := lb.Client.Run(ctx, &pb.RunRequest{
+		Id: string(id),
+	})
+	if err != nil {
+		return err
+	}
+
+	for {
+		pbupd, err := client.Recv()
+		if err != nil {
+			if err == io.EOF {
+				return nil
+			}
+
+			return fmt.Errorf("recv: %w", err)
+		}
+
+		upd, err := apievent.TrackIngestEventUpdateFromProto(pbupd)
+		if err != nil {
+			return fmt.Errorf("invalid event: %w", err)
+		}
+
+		ch <- upd
+	}
+}

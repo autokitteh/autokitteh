@@ -25,5 +25,6 @@ type LitterBoxEvent struct {
 type LitterBox interface {
 	Setup(_ context.Context, id LitterBoxID, sources map[string][]byte, main string) (LitterBoxID, error)
 	RunEvent(context.Context, LitterBoxID, *LitterBoxEvent, chan<- *apievent.TrackIngestEventUpdate) error
+	Run(context.Context, LitterBoxID, chan<- *apievent.TrackIngestEventUpdate) error
 	Scoop(context.Context, LitterBoxID) error
 }

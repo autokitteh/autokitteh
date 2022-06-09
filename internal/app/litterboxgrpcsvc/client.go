@@ -46,6 +46,16 @@ func (c *LocalClient) Event(ctx context.Context, in *pbsvc.EventRequest, _ ...gr
 	return rx, nil
 }
 
+func (c *LocalClient) Run(ctx context.Context, in *pbsvc.RunRequest, _ ...grpc.CallOption) (pbsvc.LitterBox_RunClient, error) {
+	ch := make(chan *pbevent.TrackIngestEventUpdate, 16)
+	tx, rx := &runServer{ctx: ctx, ch: ch}, &runClient{ctx: ctx, ch: ch}
+	go func() {
+		_ = c.Server.Run(in, tx)
+		close(ch)
+	}()
+	return rx, nil
+}
+
 func (c *LocalClient) Scoop(ctx context.Context, in *pbsvc.ScoopRequest, _ ...grpc.CallOption) (*pbsvc.ScoopResponse, error) {
 	return c.Server.Scoop(ctx, in)
 }

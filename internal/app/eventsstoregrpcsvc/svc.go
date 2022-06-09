@@ -42,6 +42,36 @@ func (s *Svc) Register(ctx context.Context, srv *grpc.Server, gw *runtime.ServeM
 	}
 }
 
+func (s *Svc) MonitorProjectEvents(req *pbeventsvc.MonitorProjectEventsRequest, srv pbeventsvc.Events_MonitorProjectEventsServer) error {
+	if err := req.Validate(); err != nil {
+		return status.Errorf(codes.InvalidArgument, "validate: %v", err)
+	}
+
+	if s.Events == nil {
+		return status.Errorf(codes.Unimplemented, "not supported")
+	}
+
+	ch := make(chan *apievent.TrackIngestEventUpdate, 16)
+
+	go func() {
+		for upd := range ch {
+			if err := srv.Send(upd.PB()); err != nil {
+				s.L.Error("send error", "err", err)
+			}
+		}
+	}()
+
+	if err := s.Events.MonitorProjectEvents(
+		srv.Context(),
+		ch,
+		apiproject.ProjectID(req.ProjectId),
+	); err != nil {
+		return status.Errorf(codes.Unknown, "monitor: %v", err)
+	}
+
+	return nil
+}
+
 func (s *Svc) TrackIngestEvent(req *pbeventsvc.IngestEventRequest, srv pbeventsvc.Events_TrackIngestEventServer) error {
 	if err := req.Validate(); err != nil {
 		return status.Errorf(codes.InvalidArgument, "validate: %v", err)

@@ -106,6 +106,39 @@ func (s *Svc) Scoop(ctx context.Context, req *pbsvc.ScoopRequest) (*pbsvc.ScoopR
 	return &pbsvc.ScoopResponse{}, nil
 }
 
+func (s *Svc) Run(req *pbsvc.RunRequest, srv pbsvc.LitterBox_RunServer) error {
+	if err := req.Validate(); err != nil {
+		return status.Errorf(codes.InvalidArgument, "validate: %v", err)
+	}
+
+	id := litterbox.LitterBoxID(req.Id)
+
+	l := s.L.With("litterbox_id", id)
+
+	ch := make(chan *apievent.TrackIngestEventUpdate, 16)
+
+	go func() {
+		for upd := range ch {
+			l.Debug("got update", "upd", upd)
+
+			if err := srv.Send(upd.PB()); err != nil {
+				l.Error("send update error", "err", err)
+				return
+			}
+		}
+	}()
+
+	if err := s.LitterBox.Run(
+		srv.Context(),
+		id,
+		ch,
+	); err != nil {
+		return status.Errorf(codes.Unknown, "runevent: %v", err)
+	}
+
+	return nil
+}
+
 func (s *Svc) Event(req *pbsvc.EventRequest, srv pbsvc.LitterBox_EventServer) error {
 	if err := req.Validate(); err != nil {
 		return status.Errorf(codes.InvalidArgument, "validate: %v", err)

@@ -59,6 +59,66 @@ func TopicForEvent(id apievent.EventID) string {
 	return fmt.Sprintf("event-tracking-%s", id.String())
 }
 
+func TopicForProject(id apiproject.ProjectID) string {
+	return fmt.Sprintf("project-tracking-%s", id.String())
+}
+
+func (e *Events) MonitorProjectEvents(
+	ctx context.Context,
+	ch chan<- *apievent.TrackIngestEventUpdate,
+	pid apiproject.ProjectID,
+) error {
+	l := e.L.With("project_id", pid.String())
+
+	sub, err := e.PubSub.Subscribe(ctx, TopicForProject(pid))
+	if err != nil {
+		return fmt.Errorf("subscribe: %w", err)
+	}
+
+	defer func() {
+		go func() {
+			if err := sub.Unsubscribe(context.Background()); err != nil {
+				e.L.Error("unsubscribe error", "err", err)
+			}
+		}()
+	}()
+
+	for {
+		payload, err := sub.Consume(ctx)
+		if err != nil {
+			close(ch)
+
+			switch err {
+			case pubsub.ErrUnsubscribed:
+				l.Debug("unsubscribed")
+			case context.Canceled:
+				l.Debug("canceled")
+			default:
+				return L.Error(l, "consume error", "err", err)
+			}
+
+			return nil
+		}
+
+		var pb apievent.TrackIngestEventUpdatePB
+
+		if err := proto.Unmarshal(payload, &pb); err != nil {
+			l.Error("update unmarshal error", "err", err)
+			continue
+		}
+
+		upd, err := apievent.TrackIngestEventUpdateFromProto(&pb)
+		if err != nil {
+			l.Error("invalid update", "err", err)
+			continue
+		}
+
+		l.Debug("sent update", "upd", upd)
+
+		ch <- upd
+	}
+}
+
 func (e *Events) TrackIngestEvent(
 	ctx context.Context,
 	ch chan<- *apievent.TrackIngestEventUpdate,
@@ -98,6 +158,8 @@ func (e *Events) TrackIngestEvent(
 		for {
 			payload, err := sub.Consume(ctx)
 			if err != nil {
+				close(ch)
+
 				switch err {
 				case pubsub.ErrUnsubscribed:
 					l.Debug("unsubscribed")
@@ -107,7 +169,6 @@ func (e *Events) TrackIngestEvent(
 					l.Error("consume error", "err", err)
 				}
 
-				close(ch)
 				return
 			}
 

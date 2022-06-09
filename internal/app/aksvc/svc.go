@@ -272,6 +272,16 @@ See https://github.com/temporalio/docker-compose for more info.
 					); err != nil {
 						l.Error("publish error", "err", err)
 					}
+
+					if pid := upd.ProjectID(); !pid.IsEmpty() {
+						if err := pubsub.Publish(
+							context.Background(),
+							events.TopicForProject(upd.ProjectID()),
+							payload,
+						); err != nil {
+							l.Error("publish error", "err", err)
+						}
+					}
 				}
 
 				return &eventsstore.MonitoredStore{

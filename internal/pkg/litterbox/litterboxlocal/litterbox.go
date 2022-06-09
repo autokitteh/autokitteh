@@ -44,6 +44,13 @@ func (lb *LitterBox) Loader(ctx context.Context, path *apiprogram.Path) ([]byte,
 	return lb.ProgramsStore.Get(ctx, path.String())
 }
 
+func (lb *LitterBox) projectID(id litterbox.LitterBoxID) apiproject.ProjectID {
+	return apiproject.NewProjectID(
+		apiaccount.AccountName(lb.Config.AccountName),
+		string(id),
+	)
+}
+
 func (lb *LitterBox) Setup(
 	ctx context.Context,
 	id litterbox.LitterBoxID,
@@ -64,10 +71,7 @@ func (lb *LitterBox) Setup(
 		}
 	}
 
-	pid := apiproject.NewProjectID(
-		apiaccount.AccountName(lb.Config.AccountName),
-		string(id),
-	)
+	pid := lb.projectID(id)
 
 	id = litterbox.LitterBoxID(pid.Unique())
 
@@ -155,6 +159,28 @@ func (lb *LitterBox) RunEvent(
 		event.Type,
 		event.Data,
 		nil,
+	); err != nil {
+		return fmt.Errorf("ingest: %w", err)
+	}
+
+	return nil
+}
+
+func (lb *LitterBox) Run(
+	ctx context.Context,
+	id litterbox.LitterBoxID,
+	ch chan<- *apievent.TrackIngestEventUpdate,
+) (err error) {
+	eid := apievent.NewEventID()
+
+	l := lb.L.With("id", id, "event_id", eid)
+
+	l.Debug("running")
+
+	if err := lb.Events.MonitorProjectEvents(
+		ctx,
+		ch,
+		lb.projectID(id),
 	); err != nil {
 		return fmt.Errorf("ingest: %w", err)
 	}
