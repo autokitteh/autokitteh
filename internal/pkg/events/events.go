@@ -401,8 +401,6 @@ func (e *Events) ingestProjectEventWorkflow(
 		},
 	)
 
-	e.updateProjectState(ctx, event.ID(), project.ID(), apievent.NewProcessingProjectEventState())
-
 	sum, err := e.Run(ctx, event, project, bindingName)
 	if err != nil {
 		l.Debug("run error", "err", err)
@@ -413,7 +411,7 @@ func (e *Events) ingestProjectEventWorkflow(
 
 	l.Debug("session run completed", "summary", sum)
 
-	state := apievent.NewProcessedProjectEventState(sum)
+	state := apievent.NewCompletedProjectEventState(sum)
 
 	e.updateProjectState(ctx, event.ID(), project.ID(), state)
 

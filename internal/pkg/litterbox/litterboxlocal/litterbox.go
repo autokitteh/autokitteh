@@ -2,19 +2,23 @@ package litterboxlocal
 
 import (
 	"context"
+	"crypto/sha256"
 	"errors"
 	"fmt"
+	"strings"
 
 	"go.autokitteh.dev/sdk/api/apiaccount"
 	"go.autokitteh.dev/sdk/api/apievent"
 	"go.autokitteh.dev/sdk/api/apieventsrc"
 	"go.autokitteh.dev/sdk/api/apiprogram"
 	"go.autokitteh.dev/sdk/api/apiproject"
+	"golang.org/x/tools/txtar"
 
 	"github.com/autokitteh/L"
 	"github.com/autokitteh/autokitteh/internal/pkg/events"
 	"github.com/autokitteh/autokitteh/internal/pkg/eventsrcsstore"
 	"github.com/autokitteh/autokitteh/internal/pkg/litterbox"
+	"github.com/autokitteh/autokitteh/internal/pkg/programs/loaders"
 	"github.com/autokitteh/autokitteh/internal/pkg/projectsstore"
 	"github.com/autokitteh/pubsub"
 	"github.com/autokitteh/stores/kvstore"
@@ -40,8 +44,39 @@ func (lb *LitterBox) EventSourceID() apieventsrc.EventSourceID {
 	return apieventsrc.EventSourceID(fmt.Sprintf("%s.litterbox", lb.Config.AccountName))
 }
 
-func (lb *LitterBox) Loader(ctx context.Context, path *apiprogram.Path) ([]byte, error) {
-	return lb.ProgramsStore.Get(ctx, path.String())
+func (lb *LitterBox) Loader(ctx context.Context, path *apiprogram.Path) ([]byte, string, error) {
+	lbid, actual, _ := strings.Cut(path.Path(), "/")
+
+	root, err := apiprogram.NewPath("litterbox", lbid, "")
+	if err != nil {
+		return nil, "", fmt.Errorf("invalid path")
+	}
+
+	bs, err := lb.ProgramsStore.Get(ctx, root.String())
+	if err != nil {
+		if errors.Is(err, kvstore.ErrNotFound) {
+			return nil, "", loaders.ErrNotFound
+		}
+
+		return nil, "", fmt.Errorf("get %q: %w", root.String(), err)
+	}
+
+	arch := txtar.Parse(bs)
+	if len(arch.Files) == 0 {
+		if actual == "auto.kitteh" {
+			return bs, fmt.Sprintf("%x", sha256.Sum256(bs)), nil
+		}
+
+		return nil, "", loaders.ErrNotFound
+	}
+
+	for _, f := range arch.Files {
+		if f.Name == actual {
+			return f.Data, fmt.Sprintf("%x", sha256.Sum256(f.Data)), nil
+		}
+	}
+
+	return nil, "", loaders.ErrNotFound
 }
 
 func (lb *LitterBox) projectID(id litterbox.LitterBoxID) apiproject.ProjectID {
@@ -54,20 +89,19 @@ func (lb *LitterBox) projectID(id litterbox.LitterBoxID) apiproject.ProjectID {
 func (lb *LitterBox) Setup(
 	ctx context.Context,
 	id litterbox.LitterBoxID,
-	sources map[string][]byte,
-	main string,
+	files []byte,
 ) (litterbox.LitterBoxID, error) {
-	if len(sources) == 0 {
-		return "", litterbox.ErrNoSources
-	}
-
-	if main == "" {
-		if len(sources) > 1 {
-			return "", litterbox.ErrMainNotSpecified
+	arch := txtar.Parse(files)
+	if len(arch.Files) == 0 {
+		if len(files) == 0 {
+			return "", litterbox.ErrNoSources
 		}
 
-		for k := range sources {
-			main = k
+		arch.Files = []txtar.File{
+			{
+				Name: "auto.kitteh",
+				Data: files,
+			},
 		}
 	}
 
@@ -77,6 +111,7 @@ func (lb *LitterBox) Setup(
 
 	root := apiprogram.MustNewPath("litterbox", string(id), "")
 
+	main := arch.Files[0].Name
 	mainPath_, err := apiprogram.NewPath("", main, "")
 	if err != nil {
 		return "", fmt.Errorf("invalid main path %q: %w", main, err)
@@ -87,20 +122,8 @@ func (lb *LitterBox) Setup(
 		return "", fmt.Errorf("invalid main path %q: %w", main, err)
 	}
 
-	for k, v := range sources {
-		path_, err := apiprogram.NewPath("", k, "")
-		if err != nil {
-			return "", fmt.Errorf("invalid path %q: %w", k, err)
-		}
-
-		path, err := apiprogram.JoinPaths(root, path_)
-		if err != nil {
-			return "", fmt.Errorf("invalid path %q: %w", k, err)
-		}
-
-		if err := lb.ProgramsStore.Put(ctx, path.String(), v); err != nil {
-			return "", fmt.Errorf("program store: %w", err)
-		}
+	if err := lb.ProgramsStore.Put(ctx, root.String(), files); err != nil {
+		return "", fmt.Errorf("program store: %w", err)
 	}
 
 	settings := (&apiproject.ProjectSettings{}).
@@ -186,6 +209,17 @@ func (lb *LitterBox) Run(
 	}
 
 	return nil
+}
+
+func (lb *LitterBox) Get(ctx context.Context, id litterbox.LitterBoxID) ([]byte, error) {
+	root := apiprogram.MustNewPath("litterbox", string(id), "")
+
+	src, err := lb.ProgramsStore.Get(ctx, root.String())
+	if errors.Is(err, kvstore.ErrNotFound) {
+		return nil, litterbox.ErrNotFound
+	}
+
+	return src, err
 }
 
 func (lb *LitterBox) Scoop(ctx context.Context, id litterbox.LitterBoxID) error {

@@ -2,6 +2,7 @@ package aksvc
 
 import (
 	"context"
+	"crypto/sha256"
 	_ "embed"
 	"fmt"
 	"io/fs"
@@ -41,6 +42,7 @@ import (
 	"github.com/autokitteh/autokitteh/internal/app/langrungrpcsvc"
 	"github.com/autokitteh/autokitteh/internal/app/litterboxgrpcsvc"
 	"github.com/autokitteh/autokitteh/internal/app/pluginsreggrpcsvc"
+	"github.com/autokitteh/autokitteh/internal/app/programsgrpcsvc"
 	"github.com/autokitteh/autokitteh/internal/app/projectsstoregrpcsvc"
 	"github.com/autokitteh/autokitteh/internal/app/secretsstoregrpcsvc"
 	"github.com/autokitteh/autokitteh/internal/app/slackeventsrcsvc"
@@ -68,6 +70,8 @@ import (
 	"github.com/autokitteh/autokitteh/internal/pkg/plugins/internalplugins"
 	"github.com/autokitteh/autokitteh/internal/pkg/pluginsreg"
 	"github.com/autokitteh/autokitteh/internal/pkg/programs"
+	"github.com/autokitteh/autokitteh/internal/pkg/programs/loaders"
+	"github.com/autokitteh/autokitteh/internal/pkg/programsstore"
 	"github.com/autokitteh/autokitteh/internal/pkg/projectsstore"
 	"github.com/autokitteh/autokitteh/internal/pkg/projectsstore/projectsstorefactory"
 	"github.com/autokitteh/autokitteh/internal/pkg/secretsstore"
@@ -202,6 +206,20 @@ See https://github.com/temporalio/docker-compose for more info.
 					Store: store,
 					L:     L.N(l),
 				}).Register(ctx, srv, gw)
+			},
+		},
+		svc.Component{
+			Name: "programsstore",
+			Init: func(ctx context.Context, l L.L, cfg *Config) (*programsstore.Store, error) {
+				pkv, err := pkvstore.Factory{Name: "programs"}.Open(ctx, l, &cfg.ProgramsStore)
+				if err != nil {
+					return nil, fmt.Errorf("open: %w", err)
+				}
+
+				return &programsstore.Store{Store: pkv}, nil
+			},
+			Setup: func(ctx context.Context, s *secretsstore.Store) error {
+				return s.Setup(ctx)
 			},
 		},
 		svc.Component{
@@ -416,33 +434,57 @@ See https://github.com/temporalio/docker-compose for more info.
 			},
 		},
 		svc.Component{
-			Name: "programs",
-			Init: func(ctx context.Context, cfg *Config, l L.L, cat GRPCLangCatalog, github *githubinstalls.Installs, lb *litterboxlocal.LitterBox) *programs.Programs {
-				return &programs.Programs{
-					L:       L.N(l),
-					Catalog: cat,
-					PathRewriters: []programs.PathRewriterFunc{
-						programs.GithubPathRewriter,
+			Name: "loaders",
+			Init: func(ctx context.Context, cfg *Config, l L.L, github *githubinstalls.Installs, lb *litterboxlocal.LitterBox) *loaders.Loaders {
+				return &loaders.Loaders{
+					L: L.N(l),
+					PathRewriters: []loaders.PathRewriterFunc{
+						loaders.GithubPathRewriter,
 					},
-					CommonLoaders: map[string]programs.LoaderFunc{
-						"$internal": func(ctx context.Context, path *apiprogram.Path) ([]byte, error) {
+					CommonLoaders: map[string]loaders.LoaderFunc{
+						"$internal": func(ctx context.Context, path *apiprogram.Path) ([]byte, string, error) {
 							if path.Scheme() != "$internal" {
-								return nil, fmt.Errorf("invalid scheme %q", path.Scheme())
+								return nil, "", fmt.Errorf("invalid scheme %q", path.Scheme())
 							}
 
 							p := filepath.Clean(path.Path())
 
 							if p == "" || strings.Contains(p, "..") || p[0] == os.PathSeparator {
-								return nil, fmt.Errorf("invalid path %q -> %q", path.Path(), p)
+								return nil, "", fmt.Errorf("invalid path %q -> %q", path.Path(), p)
 
 							}
 
-							return assets.FS.ReadFile(filepath.Join("internal", p))
+							bs, err := assets.FS.ReadFile(filepath.Join("internal", p))
+							if err != nil {
+								return nil, "", fmt.Errorf("read: %w", err)
+							}
+
+							return bs, fmt.Sprintf("%x", sha256.Sum256(bs)), nil
 						},
-						"github":    programs.NewGithubLoader(l.Named("githubloader"), github.GetClient),
+						"github":    loaders.NewGithubLoader(l.Named("githubloader"), github.GetClient),
 						"litterbox": lb.Loader,
 					},
 				}
+			},
+		},
+		svc.Component{
+			Name: "programs",
+			Init: func(ctx context.Context, l L.L, cat GRPCLangCatalog, store *programsstore.Store, loaders *loaders.Loaders) *programs.Programs {
+				return &programs.Programs{
+					L:       L.N(l),
+					Store:   store,
+					Loaders: loaders,
+					Catalog: cat,
+				}
+			},
+		},
+		svc.Component{
+			Name: "programsgrpcsvc",
+			Start: func(ctx context.Context, l L.L, p *programs.Programs, srv *grpc.Server, gw *runtime.ServeMux) {
+				(&programsstoregrpcsvc.Svc{
+					Programs: p,
+					L:        L.N(l),
+				}).Register(ctx, srv, gw)
 			},
 		},
 		svc.Component{
@@ -659,7 +701,7 @@ See https://github.com/temporalio/docker-compose for more info.
 			Name:     "defaults",
 			Disabled: true,
 			Ready: func(p *programs.Programs) {
-				p.SetCommonLoader("fs", programs.NewFSLoader(os.DirFS("."), "."))
+				p.Loaders.SetCommonLoader("fs", loaders.NewFSLoader(os.DirFS("."), "."))
 			},
 		},
 		svc.Component{
@@ -887,7 +929,7 @@ See https://github.com/temporalio/docker-compose for more info.
 			Name: "grpcgw",
 			Init: func() *runtime.ServeMux {
 				return runtime.NewServeMux(
-					runtime.WithMarshalerOption(PlainTextMarshaler.ContentType(""), PlainTextMarshaler),
+					runtime.WithMarshalerOption(PlainTextMarshaler.ContentType(nil), PlainTextMarshaler),
 				)
 			},
 			Start: func(mux *runtime.ServeMux, r *mux.Router) {

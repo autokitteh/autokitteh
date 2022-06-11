@@ -273,7 +273,7 @@ func (s *Svc) eventForProject(w http.ResponseWriter, r *http.Request) {
 			switch sv := s.State().Get().(type) {
 			case *apievent.ErrorProjectEventState:
 				sum = sv.RunSummary()
-			case *apievent.ProcessedProjectEventState:
+			case *apievent.CompletedProjectEventState:
 				sum = sv.RunSummary()
 			case *apievent.WaitingProjectEventState:
 				sum = sv.RunSummary()

@@ -56,6 +56,10 @@ func (c *LocalClient) Run(ctx context.Context, in *pbsvc.RunRequest, _ ...grpc.C
 	return rx, nil
 }
 
+func (c *LocalClient) Get(ctx context.Context, in *pbsvc.GetRequest, _ ...grpc.CallOption) (*pbsvc.GetResponse, error) {
+	return c.Server.Get(ctx, in)
+}
+
 func (c *LocalClient) Scoop(ctx context.Context, in *pbsvc.ScoopRequest, _ ...grpc.CallOption) (*pbsvc.ScoopResponse, error) {
 	return c.Server.Scoop(ctx, in)
 }

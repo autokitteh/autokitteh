@@ -8,6 +8,15 @@
   {{ if eq $t "*event.ProjectEventState_Waiting" }}
     {{ (toDict .State.Type).Waiting.names | join " " }}
   {{ end }}
+  {{ if eq $t "*event.ProjectEventState_Loading" }}
+    {{ $p := (toDict .State.Type).Loading.main_path }}
+    {{ $p.scheme }}:{{ $p.path }}#{{ $p.version }}
+  {{ end }}
+  {{ if eq $t "*event.ProjectEventState_Loaded" }}
+    {{ range (toDict .State.Type).Loaded.paths }}
+      {{ .scheme }}:{{ .path }}#...{{ .version | trunc -6 }}
+    {{ end }}
+  {{ end }}
 {{ end }}
 
 {{ define "header" }}

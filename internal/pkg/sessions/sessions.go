@@ -49,98 +49,6 @@ func (s *Sessions) Init() {
 
 func (s *Sessions) Start() error { return s.worker.Start() }
 
-// First returned module is main.
-// TODO: account for internal modules.
-func (s *Sessions) loadAllModules(
-	ctx workflow.Context,
-	pid apiproject.ProjectID,
-	predecls []string,
-	mainPath *apiprogram.Path,
-) ([]*apiprogram.Module, []apiplugin.PluginID, error) {
-	l := s.L.With("project_id", pid, "main", mainPath.String())
-
-	const N = 16
-
-	q := make([]*apiprogram.Path, 0, N)
-
-	mods := make([]*apiprogram.Module, 0, N)
-	pluginIDs := make([]apiplugin.PluginID, 0, N)
-
-	load := func(curr *apiprogram.Path, depth int) error {
-		l := l.With("path", curr.String())
-
-		var mod *apiprogram.Module
-
-		l.Debug("loading")
-
-		// first is internal boot. second is the actual main.
-		if curr.String() == "$inmem:second" {
-			curr = mainPath
-		}
-
-		if err := workflow.ExecuteLocalActivity(
-			// TODO: this assumes all failures are deterministic.
-			withLocalActivityWithoutRetries(ctx),
-			s.Programs.Load,
-			pid,
-			predecls,
-			curr,
-		).Get(ctx, &mod); err != nil {
-			temporalErrorLogger(l, err)("load error")
-			return err
-		}
-
-		mods = append(mods, mod)
-
-		var depPaths []*apiprogram.Path
-
-		if err := workflow.ExecuteLocalActivity(ctx, langtools.GetModuleDependencies, s.Programs.Catalog, mod).Get(ctx, &depPaths); err != nil {
-			err = fmt.Errorf("dependencies: %w", err)
-
-			temporalErrorLogger(l, err)("dependencies error")
-			l.Debug("dependencies error", "err", err)
-			return err
-		}
-
-		l.Debug("dependencies", "deps", depPaths)
-
-		for _, depPath := range depPaths {
-			if depPath.IsInternal() {
-				if !curr.IsInternal() {
-					return fmt.Errorf("internal loads are allowed only from internal modules")
-				}
-			} else if plugID, isPlugin := depPath.PluginID(); isPlugin {
-				// handled by either the lang load or session load (plugin).
-				pluginIDs = append(pluginIDs, plugID)
-				continue
-			}
-
-			dep, err := apiprogram.JoinWithParent(curr, depPath)
-			if err != nil {
-				return fmt.Errorf("invalid relative path %q to %q: %w", depPath.String(), curr.String(), err)
-			}
-
-			q = append(q, dep)
-		}
-
-		return nil
-	}
-
-	if err := load(apiprogram.MustParsePathString("$internal:boot.kitteh"), 0); err != nil {
-		return nil, nil, err
-	}
-
-	for depth := 1; len(q) != 0; q, depth = q[1:], depth+1 {
-		curr := q[0]
-
-		if err := load(curr, depth); err != nil {
-			return nil, nil, err
-		}
-	}
-
-	return mods, pluginIDs, nil
-}
-
 // TODO: this should probably run as a child-workflow.
 func (s *Sessions) Run(
 	ctx workflow.Context,
@@ -165,16 +73,30 @@ func (s *Sessions) Run(
 		predeclsKeys = append(predeclsKeys, k)
 	}
 
-	l.Debug("loading all modules", "predecls", predeclsKeys)
+	l.Debug("fetching all modules", "predecls", predeclsKeys)
 
-	mods, depPluginIDs, err := s.loadAllModules(
+	if err := s.updateProjectState(ctx, event.ID(), project.ID(), apievent.NewLoadingProjectEventState(mainPath)); err != nil {
+		return nil, err
+	}
+
+	var fr programs.FetchResult
+
+	if err := workflow.ExecuteLocalActivity(
 		ctx,
+		s.Programs.Fetch,
 		project.ID(),
-		predeclsKeys,
 		mainPath,
-	)
-	if err != nil {
-		return nil, fmt.Errorf("load: %w", err)
+		predeclsKeys,
+	).Get(ctx, &fr); err != nil {
+		err = fmt.Errorf("fetch: %w", err)
+
+		temporalErrorLogger(l, err)("fetch error")
+		l.Debug("fetch error", "err", err)
+		return nil, err
+	}
+
+	if err := s.updateProjectState(ctx, event.ID(), project.ID(), apievent.NewLoadedProjectEventState(fr.Paths())); err != nil {
+		return nil, err
 	}
 
 	akmodPlugin := akmod.New(
@@ -198,7 +120,7 @@ func (s *Sessions) Run(
 		akmod.PluginID: akmodPlugin,
 	}
 
-	for _, id := range depPluginIDs {
+	for _, id := range fr.PluginIDs {
 		l := l.With("plugin_id", id)
 
 		var projectPlugin *apiproject.ProjectPlugin
@@ -365,7 +287,10 @@ func (s *Sessions) Run(
 				return v, err
 			}
 
-			var ret *apivalues.Value
+			var (
+				ret *apivalues.Value
+				err error
+			)
 
 			if callvCall.Flags["session"] {
 				// Run directly in workflow context.
@@ -389,9 +314,13 @@ func (s *Sessions) Run(
 		},
 	}
 
+	if err := s.updateProjectState(ctx, event.ID(), project.ID(), apievent.NewRunningProjectEventState()); err != nil {
+		return nil, err
+	}
+
 	// This should not be in an activity as this is determinisitc. Any non-deterministic
 	// action is being run as an activity in runEnv.Call above.
-	_, sum, err := langtools.RunModules(runCtx, s.Programs.Catalog, &runEnv, mods)
+	_, sum, err := langtools.RunModules(runCtx, s.Programs.Catalog, &runEnv, fr.Modules())
 	if err != nil {
 		return sum, fmt.Errorf("run: %w", err)
 	}

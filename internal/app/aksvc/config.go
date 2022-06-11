@@ -53,6 +53,7 @@ type Config struct {
 	SecretsStore      pkvstore.Config              `envconfig:"SECRETS_STORE" json:"secrets_store"`
 	CredsStore        pkvstore.Config              `envconfig:"CREDS_STORE" json:"creds_store"`
 	PluginsRegStore   pkvstore.Config              `envconfig:"PLUGINS_REG_STORE" json:"plugins_reg_store"`
+	ProgramsStore     pkvstore.Config              `envconfig:"PROGRAMS_STORE" json:"programs_store"`
 	PluginsRegProcs   akprocs.Config               `envconfig:"PLUGINS_REG_PROCS" json:"plugins_reg_procs"`
 	LitterBox         litterboxlocal.Config        `envconfig:"LITTERBOX" json:"litterbox"`
 	PubSub            pubsubfactory.Config         `envconfig:"PUBSUB" json:"pubsub"`

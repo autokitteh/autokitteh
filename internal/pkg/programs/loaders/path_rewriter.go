@@ -1,4 +1,4 @@
-package programs
+package loaders
 
 import (
 	"strings"

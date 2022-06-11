@@ -1,4 +1,4 @@
-package programs
+package loaders
 
 import (
 	"context"
@@ -9,20 +9,20 @@ import (
 
 	"github.com/google/go-github/v42/github"
 
-	"go.autokitteh.dev/sdk/api/apiprogram"
 	"github.com/autokitteh/L"
+	"go.autokitteh.dev/sdk/api/apiprogram"
 )
 
 var GithubPathRewriter = NewPrefixPathRewriter("github", "github.com/", "github")
 
 func NewGithubLoader(l L.L, getClient func(context.Context, string, string) (*github.Client, error)) LoaderFunc {
-	return func(ctx context.Context, in *apiprogram.Path) ([]byte, error) {
+	return func(ctx context.Context, in *apiprogram.Path) ([]byte, string, error) {
 		// github:org/repo/path...#ref
 
 		parts := strings.SplitN(in.Path(), "/", 3)
 
 		if len(parts) != 3 {
-			return nil, fmt.Errorf("invalid path")
+			return nil, "", fmt.Errorf("invalid path")
 		}
 
 		owner, repo, path := parts[0], parts[1], parts[2]
@@ -36,7 +36,7 @@ func NewGithubLoader(l L.L, getClient func(context.Context, string, string) (*gi
 		if getClient != nil {
 			var err error
 			if client, err = getClient(ctx, owner, repo); err != nil {
-				return nil, fmt.Errorf("get github client: %w", err)
+				return nil, "", fmt.Errorf("get github client: %w", err)
 			}
 
 			if client != nil {
@@ -50,9 +50,9 @@ func NewGithubLoader(l L.L, getClient func(context.Context, string, string) (*gi
 
 		before := time.Now()
 
-		stream, _, err := client.Repositories.DownloadContents(ctx, owner, repo, path, &github.RepositoryContentGetOptions{Ref: in.Version()})
+		stream, content, _, err := client.Repositories.DownloadContentsWithMeta(ctx, owner, repo, path, &github.RepositoryContentGetOptions{Ref: in.Version()})
 		if err != nil {
-			return nil, fmt.Errorf("download content: %w", err)
+			return nil, "", fmt.Errorf("download content: %w", err)
 		}
 
 		l = l.With("t", time.Since(before))
@@ -61,11 +61,16 @@ func NewGithubLoader(l L.L, getClient func(context.Context, string, string) (*gi
 
 		bs, err := ioutil.ReadAll(stream)
 		if err != nil {
-			return nil, fmt.Errorf("read content: %w", err)
+			return nil, "", fmt.Errorf("read content: %w", err)
 		}
 
 		l.Debug("repo content downloaded", "size", len(bs))
 
-		return bs, nil
+		var sha string
+		if content.SHA != nil {
+			sha = *content.SHA
+		}
+
+		return bs, sha, nil
 	}
 }

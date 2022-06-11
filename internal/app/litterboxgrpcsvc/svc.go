@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
-	"golang.org/x/tools/txtar"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
@@ -59,30 +58,7 @@ func (s *Svc) Setup(ctx context.Context, req *pbsvc.SetupRequest) (*pbsvc.SetupR
 		return nil, status.Errorf(codes.InvalidArgument, "validate: %v", err)
 	}
 
-	files := req.FilesMap
-
-	if files == nil {
-		files = make(map[string][]byte)
-	}
-
-	if alt := req.FilesTxtar; alt != nil {
-		a := txtar.Parse(alt)
-
-		for _, f := range a.Files {
-			if req.MainFileName == "" {
-				req.MainFileName = f.Name
-			}
-
-			files[f.Name] = f.Data
-		}
-
-		if len(files) == 0 {
-			req.MainFileName = "auto.kitteh"
-			files[req.MainFileName] = alt
-		}
-	}
-
-	id, err := s.LitterBox.Setup(ctx, litterbox.LitterBoxID(req.Id), files, req.MainFileName)
+	id, err := s.LitterBox.Setup(ctx, litterbox.LitterBoxID(req.Id), req.FilesTxtar)
 	if err != nil {
 		if errors.Is(err, litterbox.ErrNoSources) || errors.Is(err, litterbox.ErrMainNotSpecified) {
 			return nil, status.Errorf(codes.InvalidArgument, "setup: %v", err)
@@ -137,6 +113,25 @@ func (s *Svc) Run(req *pbsvc.RunRequest, srv pbsvc.LitterBox_RunServer) error {
 	}
 
 	return nil
+}
+
+func (s *Svc) Get(ctx context.Context, req *pbsvc.GetRequest) (*pbsvc.GetResponse, error) {
+	if err := req.Validate(); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "validate: %v", err)
+	}
+
+	id := litterbox.LitterBoxID(req.Id)
+
+	src, err := s.LitterBox.Get(ctx, id)
+	if err != nil {
+		if errors.Is(err, litterbox.ErrNotFound) {
+			return nil, status.Errorf(codes.NotFound, "not found")
+		}
+
+		return nil, status.Errorf(codes.Unknown, "error: %v", err)
+	}
+
+	return &pbsvc.GetResponse{FilesTxtar: src}, nil
 }
 
 func (s *Svc) Event(req *pbsvc.EventRequest, srv pbsvc.LitterBox_EventServer) error {

@@ -7,6 +7,7 @@ import (
 	"go.autokitteh.dev/sdk/api/apilang"
 	"go.autokitteh.dev/sdk/api/apiprogram"
 	"go.autokitteh.dev/sdk/api/apivalues"
+
 	"github.com/autokitteh/autokitteh/internal/pkg/lang"
 )
 
@@ -16,7 +17,8 @@ func NewInMemoryLoader(
 	run func(context.Context, *apiprogram.Module) (map[string]*apivalues.Value, *apilang.RunSummary, error),
 ) lang.LoadFunc {
 	return RejectCycles(func(ctx context.Context, path *apiprogram.Path) (map[string]*apivalues.Value, *apilang.RunSummary, error) {
-		if path.String() == "$inmem:second" {
+		// TODO: [[# internal_main #]
+		if path.String() == "$internal:main" {
 			if len(mods) < 2 {
 				return nil, nil, errors.New("not found")
 			}

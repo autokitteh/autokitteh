@@ -1,4 +1,4 @@
-load('$inmem:second', _='none')
+load('$internal:main', _='none')
 
 load('reflect', 'funcargs')
 load('internal.ak', 'ak')

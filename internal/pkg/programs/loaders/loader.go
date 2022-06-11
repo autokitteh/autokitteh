@@ -1,4 +1,4 @@
-package programs
+package loaders
 
 import (
 	"context"
@@ -9,4 +9,4 @@ import (
 
 var ErrNotFound = errors.New("not found")
 
-type LoaderFunc func(context.Context, *apiprogram.Path) ([]byte, error)
+type LoaderFunc func(context.Context, *apiprogram.Path) (content []byte, ver string, _ error)

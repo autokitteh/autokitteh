@@ -2,113 +2,144 @@ package programs
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"time"
 
-	"github.com/autokitteh/autokitteh/internal/pkg/lang"
-	"github.com/autokitteh/autokitteh/internal/pkg/lang/langtools"
+	"go.autokitteh.dev/sdk/api/apiplugin"
 	"go.autokitteh.dev/sdk/api/apiprogram"
 	"go.autokitteh.dev/sdk/api/apiproject"
 
 	"github.com/autokitteh/L"
+
+	"github.com/autokitteh/autokitteh/internal/pkg/lang"
+	"github.com/autokitteh/autokitteh/internal/pkg/lang/langtools"
+	"github.com/autokitteh/autokitteh/internal/pkg/programs/loaders"
+	"github.com/autokitteh/autokitteh/internal/pkg/programsstore"
 )
 
+var bootPath = apiprogram.MustParsePathString("$internal:boot.kitteh")
+
+type File = programsstore.File
+
 type Programs struct {
+	Store   *programsstore.Store
+	Loaders *loaders.Loaders
 	Catalog lang.Catalog
-
-	// Only first that does not return nil is taken into account.
-	// These apply only to paths without schemes. Versions are unaffected.
-	PathRewriters []PathRewriterFunc
-
-	// scheme -> loader
-	CommonLoaders map[string]LoaderFunc
-
-	L L.Nullable
+	L       L.Nullable
 }
 
-func (p *Programs) SetCommonLoader(scheme string, loader LoaderFunc) {
-	if p.CommonLoaders == nil {
-		p.CommonLoaders = make(map[string]LoaderFunc)
-	}
-
-	p.CommonLoaders[scheme] = loader
+func (p *Programs) Update(
+	ctx context.Context,
+	pid apiproject.ProjectID,
+	files []*File,
+) error {
+	return p.Store.Update(ctx, pid, files)
 }
 
-func RewritePath(pathRewriters []PathRewriterFunc, path *apiprogram.Path) (*apiprogram.Path, error) {
-	if path.Scheme() != "" {
-		return path, nil
+func (p *Programs) Get(ctx context.Context, pid apiproject.ProjectID, path *apiprogram.Path) (*File, error) {
+	fs, err := p.Store.Get(ctx, pid, []*apiprogram.Path{path}, false)
+	if err != nil {
+		return nil, err
 	}
 
-	for _, f := range pathRewriters {
-		if newPath, name, err := f(path.Path()); err != nil {
-			return nil, fmt.Errorf("path rewriter %q: %w", name, err)
-		} else if newPath != nil {
-			if oldVersion := path.Version(); oldVersion != "" {
-				if newVersion := newPath.Version(); newVersion != "" {
-					// Cannot rewrite version.
-					return nil, fmt.Errorf(
-						"rewriter %q returned a version %q, but other version %q specified in input",
-						name,
-						oldVersion,
-						newVersion,
-					)
+	if len(fs) == 0 || errors.Is(err, programsstore.ErrNotFound) {
+		return nil, nil
+	}
+
+	if len(fs) > 1 {
+		return nil, fmt.Errorf("%d records returned", len(fs))
+	}
+
+	return fs[0], nil
+}
+
+type FetchResult struct {
+	Files     []*File
+	PluginIDs []apiplugin.PluginID
+}
+
+func (fr *FetchResult) Paths() (paths []*apiprogram.Path) {
+	for _, f := range fr.Files {
+		paths = append(paths, f.Path.WithVersion(f.FetchedVersion))
+	}
+	return
+}
+
+func (fr *FetchResult) Modules() (mods []*apiprogram.Module) {
+	for _, f := range fr.Files {
+		mods = append(mods, f.Module)
+	}
+	return
+}
+
+func (p *Programs) Fetch(
+	ctx context.Context,
+	pid apiproject.ProjectID,
+	mainPath *apiprogram.Path,
+	predecls []string,
+) (*FetchResult, error) {
+	q := []*apiprogram.Path{bootPath}
+
+	var (
+		batch     []*File
+		pluginIDs []apiplugin.PluginID
+	)
+
+	for ; len(q) != 0; q = q[1:] {
+		path := q[0]
+
+		// TODO: [# internal_main #] duplicity
+		if path.String() == "$internal:main" {
+			path = mainPath
+		}
+
+		src, ver, err := p.Loaders.Fetch(ctx, pid, path)
+		if err != nil {
+			return nil, fmt.Errorf("fetch %v %q: %w", pid, path, err)
+		}
+
+		mod, _, err := langtools.CompileModule(ctx, p.Catalog, predecls, path, src)
+		if err != nil {
+			return nil, fmt.Errorf("compile %v %q: %w", pid, path, err)
+		}
+
+		batch = append(batch, &File{
+			Path:           path,
+			FetchedVersion: ver,
+			Source:         src,
+			Module:         mod,
+			FetchedAt:      time.Now(),
+		})
+
+		deps, err := langtools.GetModuleDependencies(ctx, p.Catalog, mod)
+		if err != nil {
+			return nil, fmt.Errorf("get deps %v %q: %w", pid, path, err)
+		}
+
+		for _, dep := range deps {
+			if dep.IsInternal() {
+				if !path.IsInternal() {
+					return nil, fmt.Errorf("internal loads are allowed only from internal modules")
 				}
-
-				newPath = newPath.WithVersion(path.Version())
+			} else if plugID, isPlugin := dep.PluginID(); isPlugin {
+				// handled by either the lang load or session load (plugin).
+				pluginIDs = append(pluginIDs, plugID)
+				continue
 			}
 
-			path = newPath
-			break
+			dep, err := apiprogram.JoinWithParent(path, dep)
+			if err != nil {
+				return nil, fmt.Errorf("invalid relative path %q to %q: %w", dep.String(), path.String(), err)
+			}
+
+			q = append(q, dep)
 		}
 	}
 
-	return path, nil
-}
-
-func (p *Programs) RewritePath(path *apiprogram.Path) (*apiprogram.Path, error) {
-	return RewritePath(p.PathRewriters, path)
-}
-
-func (p *Programs) Load(
-	ctx context.Context,
-	pid apiproject.ProjectID, // use this to determine access?
-	predecls []string,
-	path *apiprogram.Path,
-) (*apiprogram.Module, error) {
-	l := p.L.With("path", path.String(), "project_id", pid)
-
-	if path.IsRelative() {
-		return nil, fmt.Errorf("relative paths are not supported by loader")
+	if err := p.Update(ctx, pid, batch); err != nil {
+		p.L.Error("update failed", "err", err)
 	}
 
-	if len(p.CommonLoaders) == 0 {
-		return nil, fmt.Errorf("no loaders configured")
-	}
-
-	actualPath, err := p.RewritePath(path)
-	if err != nil {
-		return nil, fmt.Errorf("path rewrite error: %w", err)
-	}
-
-	l = l.With("actual_path", actualPath)
-
-	loader := p.CommonLoaders[actualPath.Scheme()]
-	if loader == nil {
-		return nil, fmt.Errorf("%q: no loader configured for scheme %q", actualPath, actualPath.Scheme())
-	}
-
-	src, err := loader(ctx, actualPath)
-	if err != nil {
-		return nil, fmt.Errorf("%q: %w", path, err)
-	}
-
-	// Use original path here to be compatible with loader in session (what the caller thinks
-	// the path is).
-	mod, _, err := langtools.CompileModule(ctx, p.Catalog, predecls, path, src)
-	if err != nil {
-		return nil, fmt.Errorf("%q: compile: %w", path, err)
-	}
-
-	l.Debug("module loaded", "lang", mod.Lang())
-
-	return mod, nil
+	return &FetchResult{Files: batch, PluginIDs: pluginIDs}, nil
 }
