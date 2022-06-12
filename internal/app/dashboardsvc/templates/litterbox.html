@@ -1,8 +1,8 @@
 {{ template "header" "LitterBox" }}
 
 <p>
-  <label for="example">Examples:</label>
-  <select name="example" id="example" onchange="changeExample()">
+  <label for="progexample">Examples:</label>
+  <select name="progexample" id="progexample" onchange="changeProgramExample()">
     <option value=""></option>
     {{ range $k, $v := .Examples }}
     <option value="{{ $k }}">{{ $k }}</option>
@@ -13,7 +13,7 @@
 <p>
   <h3>
     Program
-    <button id="setup" onclick="setup()">Setup</button> 
+    <button id="update" onclick="update()">Update</button> 
     <button onclick="scoop()">Scoop</button>
     State:
     <input type="text" id="pstate" value="" size="15" readonly></input>
@@ -43,28 +43,21 @@
 <script>
   const examples = JSON.parse("{{ .JSONExamples }}")
 
-  function addLog(txt) {
-    document.getElementById("console").value += txt + "\n"
-  }
+  function addLog(txt) { document.getElementById("console").value += txt + "\n" }
 
-  function clearLog() {
-      document.getElementById("console").value = ""
-  }
+  function clearLog() { document.getElementById("console").value = "" }
 
   function changeEventExample() {
-    const sel = document.getElementById("example").value
-
+    const sel = document.getElementById("progexample").value
     const ex = document.getElementById("eventexample").value
-
     const x = ex ? examples[sel]['events'][ex] : ""
-
     document.getElementById("event").value = x
   }
 
-  function changeExample() {
-    const sel = document.getElementById("example").value
-
+  function changeProgramExample() {
+    const sel = document.getElementById("progexample").value
     const ex = document.getElementById("eventexample")
+
     ex.innerHTML = ''
 
     if (sel == "") {
@@ -85,31 +78,33 @@
     ex.add(option);
 
     changeEventExample()
+
+    update()
   }
 
-  function program() {
-    e = document.getElementById("program")
-    return e.value;
+  function program() { return document.getElementById("program").value; }
+
+  function eventData() { return document.getElementById("event").value; }
+
+  function getLBId() {
+    const last = window.location.pathname.split('/').at(-1);
+    if ((last == '') || (last == 'litterbox')) {
+      return null
+    }
+    return last
   }
 
-  function eventData() {
-    e = document.getElementById("event")
-    return e.value;
-  }
-
-  var lbid = '{{ .ID }}';
-
-  async function setup() {
+  async function update() {
     clearLog()
 
     extra = ''
 
-    id = lbid;
+    id = getLBId();
     if (id) {
       extra = '?id=' + id
     }
 
-    const resp = await fetch('http://{{ .Addr }}/api/v1/litterboxes' + extra, {
+    const resp = await fetch('/api/v1/litterboxes' + extra, {
       method: 'POST',
       headers: {
         'Content-Type': 'text/plain',
@@ -120,24 +115,26 @@
     const body = await resp.json()
 
     if (!resp.ok) {
-      console.error('setup: ', body)
+      console.error('update: ', body)
       return
     }
 
-    console.log('setup: ', body)
+    console.log('update: ', body)
 
-    lbid = body['id'];
-    history.pushState({}, null, "http://{{ .Addr }}/dashboard/litterbox/" + lbid);
-    document.getElementById("setup").innerHTML = "Update";
+    const lbid = body['id'];
+    history.pushState({}, null, "/dashboard/litterbox/" + lbid);
+
     document.getElementById("sendEvent").removeAttribute("disabled")
   }
 
   function scoop() { console.error("scoop not implemented yet") }
 
   async function sendEvent() {
+    const lbid = getLBId()
+
     console.log("---\nsend: " + lbid + "\nevent: " + eventData());
 
-    const resp = await fetch("http://{{ .Addr }}/api/v1/litterboxes/" + lbid + "/events", {
+    const resp = await fetch("/api/v1/litterboxes/" + lbid + "/events", {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
