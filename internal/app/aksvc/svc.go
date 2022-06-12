@@ -763,6 +763,8 @@ See https://github.com/temporalio/docker-compose for more info.
 				eventSrcsStore eventsrcsstore.Store,
 				stateStore statestore.Store,
 				secretsStore *secretsstore.Store,
+				lb *litterboxlocal.LitterBox,
+				programs *programs.Programs,
 			) {
 				(&dashboardsvc.Svc{
 					Config:            cfg.Dashboard,
@@ -772,6 +774,8 @@ See https://github.com/temporalio/docker-compose for more info.
 					StateStore:        stateStore,
 					SecretsStore:      secretsStore,
 					Port:              svcCfg.HTTP.Port,
+					LitterBox:         lb,
+					Programs:          programs,
 				}).Register(r)
 			},
 		},

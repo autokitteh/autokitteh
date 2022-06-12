@@ -1,19 +1,13 @@
-{{ template "header" "LitterBox " }}
+{{ template "header" "LitterBox" }}
 
 <p>
-<label for="lbid">ID:</label>
-<input type="text" id="lbid" value="" size="80" readonly></input>
-<button onclick="clearID()">Clear</button>
-</p>
-
-<p>
-<label for="example">Examples:</label>
-<select name="example" id="example" onchange="changeExample()">
-  <option value=""></option>
-  {{ range $k, $v := .Examples }}
-  <option value="{{ $k }}">{{ $k }}</option>
-  {{ end }}
-</select>
+  <label for="example">Examples:</label>
+  <select name="example" id="example" onchange="changeExample()">
+    <option value=""></option>
+    {{ range $k, $v := .Examples }}
+    <option value="{{ $k }}">{{ $k }}</option>
+    {{ end }}
+  </select>
 </p>
 
 <p>
@@ -24,7 +18,7 @@
     State:
     <input type="text" id="pstate" value="" size="15" readonly></input>
   </h3>
-  <textarea id="program" name="program" rows="20" cols="80"></textarea>
+  <textarea id="program" name="program" rows="20" cols="80">{{ .Source }}</textarea>
 </p>
 
 <p>
@@ -103,22 +97,14 @@
     return e.value;
   }
 
-  function clearID() {
-    document.getElementById("sendEvent").setAttribute("disabled", "");
-    document.getElementById("setup").innerHTML = "Setup";
-    document.getElementById("lbid").value = '';
-  }
-
-  function lbid() {
-    return document.getElementById("lbid").value
-  }
+  var lbid = '{{ .ID }}';
 
   async function setup() {
     clearLog()
 
     extra = ''
 
-    id = lbid()
+    id = lbid;
     if (id) {
       extra = '?id=' + id
     }
@@ -139,7 +125,9 @@
     }
 
     console.log('setup: ', body)
-    document.getElementById("lbid").value = body['id'];
+
+    lbid = body['id'];
+    history.pushState({}, null, "http://{{ .Addr }}/dashboard/litterbox/" + lbid);
     document.getElementById("setup").innerHTML = "Update";
     document.getElementById("sendEvent").removeAttribute("disabled")
   }
@@ -147,9 +135,9 @@
   function scoop() { console.error("scoop not implemented yet") }
 
   async function sendEvent() {
-    console.log("---\nsend: " + lbid() + "\nevent: " + eventData());
+    console.log("---\nsend: " + lbid + "\nevent: " + eventData());
 
-    const resp = await fetch("http://{{ .Addr }}/api/v1/litterboxes/" + lbid() + "/events", {
+    const resp = await fetch("http://{{ .Addr }}/api/v1/litterboxes/" + lbid + "/events", {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

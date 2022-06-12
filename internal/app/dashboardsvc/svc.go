@@ -9,6 +9,7 @@ import (
 	"github.com/autokitteh/autokitteh/internal/pkg/eventsrcsstore"
 	"github.com/autokitteh/autokitteh/internal/pkg/eventsstore"
 	"github.com/autokitteh/autokitteh/internal/pkg/litterbox"
+	"github.com/autokitteh/autokitteh/internal/pkg/programs"
 	"github.com/autokitteh/autokitteh/internal/pkg/projectsstore"
 	"github.com/autokitteh/autokitteh/internal/pkg/secretsstore"
 	"github.com/autokitteh/autokitteh/internal/pkg/statestore"
@@ -27,6 +28,7 @@ type Svc struct {
 	StateStore        statestore.Store
 	SecretsStore      *secretsstore.Store
 	LitterBox         litterbox.LitterBox
+	Programs          *programs.Programs
 
 	Port int
 
@@ -53,4 +55,5 @@ func (s *Svc) Register(r *mux.Router) {
 	s.registerEventSrcs(dashboard)
 	s.registerProjects(dashboard)
 	s.registerLitterbox(dashboard)
+	s.registerPrograms(dashboard)
 }

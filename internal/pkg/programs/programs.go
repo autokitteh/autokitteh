@@ -81,6 +81,8 @@ func (p *Programs) Fetch(
 ) (*FetchResult, error) {
 	q := []*apiprogram.Path{bootPath}
 
+	l := p.L.With("project_id", pid.String())
+
 	var (
 		batch     []*File
 		pluginIDs []apiplugin.PluginID
@@ -104,13 +106,17 @@ func (p *Programs) Fetch(
 			return nil, fmt.Errorf("compile %v %q: %w", pid, path, err)
 		}
 
-		batch = append(batch, &File{
+		f := File{
 			Path:           path,
 			FetchedVersion: ver,
 			Source:         src,
 			Module:         mod,
 			FetchedAt:      time.Now(),
-		})
+		}
+
+		l.Debug("adding to batch", "f", f)
+
+		batch = append(batch, &f)
 
 		deps, err := langtools.GetModuleDependencies(ctx, p.Catalog, mod)
 		if err != nil {
