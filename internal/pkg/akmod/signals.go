@@ -58,6 +58,8 @@ func (s *signals) send(
 
 	dstWorkflowID := events.GetIngestProjectEventWorkflowID(apievent.EventID(dstid), session.ProjectID)
 
+	l.Debug("sending signal", "dst", dstid, "dst_wid", dstWorkflowID, "name", name, "value", v)
+
 	fut := workflow.ExecuteLocalActivity(
 		ctx,
 		func(ctx context.Context, wid string, data interface{}) error {
@@ -114,6 +116,8 @@ func (s *signals) wait(
 		return nil, fmt.Errorf("no names or tmo specified")
 	}
 
+	l.Debug("waiting for signal", "names", names)
+
 	if err := session.UpdateState(apievent.NewWaitingProjectEventState(names, session.RunSummary)); err != nil {
 		return nil, fmt.Errorf("set waiting: %w", err)
 	}
@@ -156,12 +160,19 @@ func (s *signals) wait(
 
 		l := l.With("sig", sig)
 
-		l.Debug("received signal")
+		l.Debug("select returned")
 
-		if sig == nil || slices.Contains(names, sig.Name) {
+		if sig == nil {
+			l.Debug("timed out")
+			break
+		}
+
+		if slices.Contains(names, sig.Name) {
 			l.Debug("relevant signal")
 			break
 		}
+
+		l.Debug("irrelevant signal")
 
 		sig = nil
 	}
@@ -171,7 +182,6 @@ func (s *signals) wait(
 	}
 
 	if sig == nil {
-		l.Debug("timed out")
 		return apivalues.None, nil
 	}
 

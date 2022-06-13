@@ -156,7 +156,7 @@ func (e *Events) updateErrorState(ctx workflow.Context, id apievent.EventID, err
 }
 
 func (e *Events) updateState(ctx workflow.Context, id apievent.EventID, state *apievent.EventState) {
-	l := e.L.With("event_id", id, "state", state)
+	l := e.L.With("event_id", id, "state", state.Name())
 
 	l.Debug("updating event state")
 
@@ -166,7 +166,7 @@ func (e *Events) updateState(ctx workflow.Context, id apievent.EventID, state *a
 }
 
 func (e *Events) updateProjectState(ctx workflow.Context, id apievent.EventID, pid apiproject.ProjectID, state *apievent.ProjectEventState) {
-	l := e.L.With("event_id", id, "project_id", pid, "state", state)
+	l := e.L.With("event_id", id, "project_id", pid, "state", state.Name())
 
 	l.Debug("updating project state")
 

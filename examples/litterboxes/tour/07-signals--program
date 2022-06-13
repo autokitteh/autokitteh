@@ -1,5 +1,3 @@
-# THIS IS NOT WORKING YET, DO NOT TRY.
-
 -- auto.kitteh --
 load("ak", "ak")
 load("./cats.cue", "cats")
@@ -16,6 +14,7 @@ def _dispense(kind, name):
     if not ak.signals.wait("approve", timeout=30):
       print('timed out')
       return
+    print("got approval!")
 
   count = ak.state.inc(name)
 
@@ -31,7 +30,7 @@ def _on_human_approve():
 
   for id in ids:
     print('sending approval to %s' % id)
-    ak.signals.send('approve', id, 'ok')
+    ak.signals.send(id, 'approve', 'ok')
 
 
 def _on_sound(ak_ctx, ak_name, sound):
@@ -48,11 +47,11 @@ ak.sources.bind('wet_dispenser.sound', _on_sound, context='wet')
 ak.sources.bind('dry_dispenser.sound', _on_sound, context='dry')
 ak.sources.bind('human.approve', _on_human_approve)
 
-# EVENT approve: { "src": "human", "type": "approve", "data": {} }
 # EVENT gizmo: { "src": "dry_dispenser", "type": "sound", "data": { "sound": { "string": { "v": "meow" } } } }
 # EVENT midnight: { "src": "dry_dispenser", "type": "sound", "data": { "sound": { "string": { "v": "grrrr" } } } }
 # EVENT pepurr: { "src": "wet_dispenser", "type": "sound", "data": { "sound": { "string": { "v": "purrrr" } } } }
 # EVENT zumi: { "src": "wet_dispenser", "type": "sound", "data": { "sound": { "string": { "v": "hiss" } } } }
+# EVENT approve: { "src": "human", "type": "approve", "data": {} }
 
 -- cats.cue --
 cats: {

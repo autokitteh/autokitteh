@@ -334,7 +334,7 @@ func (s *Sessions) Run(
 }
 
 func (s *Sessions) updateProjectState(ctx workflow.Context, id apievent.EventID, pid apiproject.ProjectID, state *apievent.ProjectEventState) error {
-	l := s.L.With("event_id", id, "project_id", pid, "state", state)
+	l := s.L.With("event_id", id, "project_id", pid, "state", state.Name())
 
 	l.Debug("updating project state")
 

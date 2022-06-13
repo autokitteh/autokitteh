@@ -185,7 +185,7 @@ func (e *Events) TrackIngestEvent(
 				continue
 			}
 
-			l.Debug("sent update", "upd", upd)
+			l.Debug("sent update")
 
 			ch <- upd
 		}

@@ -95,7 +95,7 @@ func (s *Svc) Run(req *pbsvc.RunRequest, srv pbsvc.LitterBox_RunServer) error {
 
 	go func() {
 		for upd := range ch {
-			l.Debug("got update", "upd", upd)
+			l.Debug("got update")
 
 			if err := srv.Send(upd.PB()); err != nil {
 				l.Error("send update error", "err", err)
@@ -159,7 +159,7 @@ func (s *Svc) Event(req *pbsvc.EventRequest, srv pbsvc.LitterBox_EventServer) er
 
 	go func() {
 		for upd := range ch {
-			l.Debug("got update", "upd", upd)
+			l.Debug("got update")
 
 			if err := srv.Send(upd.PB()); err != nil {
 				l.Error("send update error", "err", err)
