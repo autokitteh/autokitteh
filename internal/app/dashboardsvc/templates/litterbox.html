@@ -163,7 +163,26 @@
       if (pes) {
         console.info(pes)
 
-        document.getElementById('pstate').value = Object.keys(pes)[0].toUpperCase()
+        const name = Object.keys(pes)[0].toUpperCase()
+
+        document.getElementById('pstate').value = name
+
+        elem = document.getElementById('sendEvent')
+
+        switch(name) {
+        case 'PENDING':
+        case 'RUNNING':
+        case 'WAITING':
+        case 'LOADING':
+        case 'LOADED':
+              elem.setAttribute('disabled', '')
+              break;
+
+        case 'ERROR':
+        case 'COMPLETED':
+              elem.removeAttribute('disabled')
+              break;
+        }
       }
 
       const sum = p.flattenedRunSummary
