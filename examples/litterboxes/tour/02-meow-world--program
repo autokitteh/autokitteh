@@ -21,7 +21,7 @@ what = event.data['what'] or 'world'
 # Now we just print a greeting using the above value.
 print("meow, %s!" % what)
 
-# To run this, hit "Setup" above, then hit "Send" below.
+# To run this, hit "Send" below.
 # You'll see the greeting emitted in the console window.
 # A link to a low level description of how the event
 # is processed will also appear next to the Event editor.
@@ -29,12 +29,9 @@ print("meow, %s!" % what)
 # Now try to change the "what" field value below, and hit "Send" again.
 # Convince yourself that the value sent is the one used :)
 
-# Also note that once you hit "Setup", an id was generated
-# for the litterbox. Also, "Setup" turned into "Update",
-# which means the id above will be reused for every code change.
-# You'll have to hit "Update" every time you change the code
-# In order to generate a new ID, just hit "Clear" on the id,
-# then hit "Setup" again.
+# Also note that if you want to change the program, you'll need to
+# hit "Update".
 
-
+# Below are embedded event examples. The litterbox knows to parse
+# these lines and populate the "Events" section below.
 # EVENT meow: { "src": "someone", "type": "greeting", "data": { "what": { "string": { "v": "world" } } } }
