@@ -121,6 +121,8 @@
     history.pushState({}, null, "/dashboard/litterbox/" + lbid);
 
     document.getElementById("sendEvent").removeAttribute("disabled")
+
+    loadEventExamples();
   }
 
   function scoop() { console.error("scoop not implemented yet") }
@@ -216,12 +218,12 @@
       };
   }
 
-  function setProgram(prog) {
+  function loadEventExamples() {
+    const prog = document.getElementById("program").value;
+
     const ex = document.getElementById("eventexample")
     ex.innerHTML = ''
     eventExamples = {};
-
-    document.getElementById("program").value = prog;
 
     const re = /^# *EVENT ([^:]+): (.+)/;
 
@@ -244,6 +246,12 @@
     })
 
     changeEventExample()
+  }
+
+  function setProgram(prog) {
+    document.getElementById("program").value = prog;
+
+    loadEventExamples();
   }
 
 
