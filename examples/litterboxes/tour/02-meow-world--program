@@ -35,3 +35,6 @@ print("meow, %s!" % what)
 # You'll have to hit "Update" every time you change the code
 # In order to generate a new ID, just hit "Clear" on the id,
 # then hit "Setup" again.
+
+
+# EVENT meow: { "src": "someone", "type": "greeting", "data": { "what": { "string": { "v": "world" } } } }

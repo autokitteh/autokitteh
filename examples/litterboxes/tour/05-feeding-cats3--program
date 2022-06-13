@@ -58,6 +58,12 @@ sources.bind('wet_dispenser.sound', _on_sound, context='wet')
 sources.bind('dry_dispenser.sound', _on_sound, context='dry')
 sources.bind('camera.snap', _on_camera_snap)
 
+# EVENT gizmo: { "src": "dry_dispenser", "type": "sound", "data": { "sound": { "string": { "v": "meow" } } } }
+# EVENT midnight: { "src": "dry_dispenser", "type": "sound", "data": { "sound": { "string": { "v": "grrrr" } } } }
+# EVENT pepurr: { "src": "wet_dispenser", "type": "sound", "data": { "sound": { "string": { "v": "purrrr" } } } }
+# EVENT zumi: { "src": "wet_dispenser", "type": "sound", "data": { "sound": { "string": { "v": "hiss" } } } }
+# EVENT snap: { "src": "camera", "type": "snap", "data": { "image_slug": { "integer": { "v": "1" } } } }
+
 -- cats.cue --
 
 sounds: {

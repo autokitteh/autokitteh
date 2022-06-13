@@ -40,3 +40,8 @@ def _on_dry_sound(sound):
 
 
 sources.bind('dry_dispenser.sound', _on_dry_sound)
+
+# EVENT gizmo: { "src": "dry_dispenser", "type": "sound", "data": { "sound": { "string": { "v": "meow" } } } }
+# EVENT midnight: { "src": "dry_dispenser", "type": "sound", "data": { "sound": { "string": { "v": "grrrr" } } } }
+# EVENT pepurr: { "src": "wet_dispenser", "type": "sound", "data": { "sound": { "string": { "v": "purrrr" } } } }
+# EVENT zumi: { "src": "wet_dispenser", "type": "sound", "data": { "sound": { "string": { "v": "hiss" } } } }

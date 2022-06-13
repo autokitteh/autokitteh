@@ -18,7 +18,7 @@
     State:
     <input type="text" id="pstate" value="" size="15" readonly></input>
   </h3>
-  <textarea id="program" name="program" rows="20" cols="80">{{ .Source }}</textarea>
+  <textarea id="program" name="program" rows="20" cols="80"></textarea>
 </p>
 
 <p>
@@ -41,7 +41,8 @@
 </p>
 
 <script>
-  const examples = JSON.parse("{{ .JSONExamples }}")
+  const allExamples = JSON.parse("{{ .JSONExamples }}")
+  var eventExamples = {};
 
   function addLog(txt) { document.getElementById("console").value += txt + "\n" }
 
@@ -50,7 +51,7 @@
   function changeEventExample() {
     const sel = document.getElementById("progexample").value
     const ex = document.getElementById("eventexample").value
-    const x = ex ? examples[sel]['events'][ex] : ""
+    const x = ex ? eventExamples[ex] : ""
     document.getElementById("event").value = x
   }
 
@@ -64,15 +65,9 @@
       return
     }
 
-    const x = examples[sel]
+    const x = allExamples[sel]
 
-    document.getElementById("program").value = x["program"]
-
-    for (const k of Object.keys(x['events'])) {
-      var option = document.createElement("option");
-      option.text = k
-      ex.add(option);
-    }
+    setProgram(x["program"])
 
     var option = document.createElement("option");
     ex.add(option);
@@ -218,6 +213,58 @@
           },
       };
   }
+
+  function setProgram(prog) {
+    const ex = document.getElementById("eventexample")
+    ex.innerHTML = ''
+    eventExamples = {};
+
+    document.getElementById("program").value = prog;
+
+    const re = /^# *EVENT ([^:]+): (.+)/;
+
+    const lines = prog.split('\n');
+
+    lines.forEach(l => {
+      const m = l.match(re);
+
+      if (m) {
+        obj = JSON.parse(m[2]);
+
+        ev = JSON.stringify(obj, null, 2);
+
+        var option = document.createElement("option");
+        option.text = m[1];
+        ex.add(option);
+
+        eventExamples[m[1]] = ev;
+      }
+    })
+
+    changeEventExample()
+  }
+
+
+  (async function() {
+    const id = getLBId();
+
+    if (id) {
+      const resp = await fetch( '/api/v1/litterboxes/' + id, {
+        headers: {
+          'Accept': 'text/plain',
+        }
+      })
+
+      const body = await resp.text()
+
+      if (!resp.ok) {
+        console.error("get program: ", body)
+        return
+      }
+
+      setProgram(body);
+    }
+  })();
 </script>
 
 {{ template "footer" }}

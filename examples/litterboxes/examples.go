@@ -13,8 +13,7 @@ import (
 var FS embed.FS
 
 type Example struct {
-	Events  map[string]string `json:"events"`
-	Program string            `json:"program"`
+	Program string `json:"program"`
 }
 
 var (
@@ -55,7 +54,7 @@ func init() {
 
 				x := Examples[key]
 				if x == nil {
-					x = &Example{Events: make(map[string]string)}
+					x = &Example{}
 					Examples[key] = x
 				}
 
@@ -84,11 +83,7 @@ func init() {
 
 			txt := string(bs)
 
-			if strings.HasSuffix(kind, ".json") {
-				n := strings.TrimSuffix(kind, ".json")
-
-				x.Events[n] = txt
-			} else if kind == "program" {
+			if kind == "program" {
 				x.Program = txt
 			}
 		}
