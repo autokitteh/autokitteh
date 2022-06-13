@@ -15,6 +15,7 @@
     Program
     <button id="update" onclick="update()">Update</button> 
     <button onclick="scoop()">Scoop</button>
+    <button onclick="makenew()">New</button>
     State:
     <input type="text" id="pstate" value="" size="15" readonly></input>
   </h3>
@@ -123,6 +124,7 @@
   }
 
   function scoop() { console.error("scoop not implemented yet") }
+  function makenew() { window.location.href = '/dashboard/litterbox' }
 
   async function sendEvent() {
     const lbid = getLBId()
