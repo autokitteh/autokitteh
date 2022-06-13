@@ -2,5 +2,5 @@ package static
 
 import "embed"
 
-//go:embed *.js *.css
+//go:embed *.css
 var FS embed.FS
