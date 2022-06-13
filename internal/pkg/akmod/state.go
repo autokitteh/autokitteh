@@ -96,10 +96,10 @@ func (s *state) get(
 ) (*apivalues.Value, error) {
 	var (
 		name string
-		fail = true
+		def  *apivalues.Value
 	)
 
-	if err := pluginimpl.UnpackArgs(args, kwargs, "name", &name, "fail?", &fail); err != nil {
+	if err := pluginimpl.UnpackArgs(args, kwargs, "name", &name, "default?", &def); err != nil {
 		return nil, err
 	}
 
@@ -110,8 +110,8 @@ func (s *state) get(
 
 	v, _, err := s.stateStore.Get(ctx, s.projectID, name)
 	if err != nil {
-		if !fail && errors.Is(err, statestore.ErrNotFound) {
-			return apivalues.None, nil
+		if def != nil && errors.Is(err, statestore.ErrNotFound) {
+			return def, nil
 		}
 
 		return nil, fmt.Errorf("get: %w", err)
@@ -204,6 +204,10 @@ func (s *state) take(
 
 	v, err := s.stateStore.Take(ctx, s.projectID, name, index, count)
 	if err != nil {
+		if errors.Is(err, apivalues.ErrOutOfRange) {
+			return apivalues.None, nil
+		}
+
 		return nil, fmt.Errorf("take: %w", err)
 	}
 

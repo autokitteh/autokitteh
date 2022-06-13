@@ -11,17 +11,17 @@ load("ak", "sources")
 # This will load "acl.yaml" in a path relative to the directory
 # of this file. This is useful for the LitterBox since you cannot
 # know the LitterBox path ahead of time.
-load("./acl.yaml", "sounds")
+load("./cats.yaml", "cats")
+
 
 def _on_sound(ak_name, sound):
   kind = ak_name.split('_')[0]
 
   print('%s food dispenser heard a %s' % (kind, sound))
 
-  if sound in sounds[kind]:
-    print('dispensing %s food to %s' % (kind, sounds[kind][sound]))
-  else:
-    print('wrong dispenser')
+  for name, cfg in cats.items():
+    if cfg['sound'] == sound and kind in cfg['kinds']:
+      print('dispensing %s food to %s' % (kind, name))
 
 
 sources.bind('wet_dispenser.sound', _on_sound)
@@ -32,12 +32,17 @@ sources.bind('dry_dispenser.sound', _on_sound)
 # EVENT pepurr: { "src": "wet_dispenser", "type": "sound", "data": { "sound": { "string": { "v": "purrrr" } } } }
 # EVENT zumi: { "src": "wet_dispenser", "type": "sound", "data": { "sound": { "string": { "v": "hiss" } } } }
 
--- acl.yaml --
-sounds:
-  dry:
-    meow: gizmo
-    grrrr: midnight
-
-  wet:
-    purrrr: pepurr
-    hiss: zumi
+-- cats.yaml --
+cats:
+  gizmo:
+    sound: "meow"
+    kinds: ["dry"]
+  midnight:
+    sound: "grrrr"
+    kinds: ["dry"]
+  pepurr:
+    sound: "purrrr"
+    kinds: ["wet", "dry"]
+  zumi:
+    sound: "hiss"
+    kinds: ["wet"]

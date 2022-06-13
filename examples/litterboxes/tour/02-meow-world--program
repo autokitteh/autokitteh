@@ -14,6 +14,7 @@
 # that triggered this invocation.
 load("ak", "event")
 
+
 # As you can see in the event editor, a 'what' field is specified.
 # Let's use it.
 what = event.data['what'] or 'world'

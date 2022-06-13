@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"golang.org/x/exp/slices"
-	"strings"
 	"time"
 
 	"go.temporal.io/api/serviceerror"
@@ -24,7 +23,7 @@ type signals struct {
 
 func (s *signals) asStruct(funcToValue pluginimpl.FuncToValueFunc) apivalues.StructValue {
 	return apivalues.StructValue{
-		Ctor: apivalues.Symbol("sources"),
+		Ctor: apivalues.Symbol("signals"),
 		Fields: map[string]*apivalues.Value{
 			"send": funcToValue("send", s.send, pluginimpl.WithFlags("session")),
 			"wait": funcToValue("wait", s.wait, pluginimpl.WithFlags("session")),
@@ -55,12 +54,6 @@ func (s *signals) send(
 		"value", &v,
 	); err != nil {
 		return nil, err
-	}
-
-	if strings.Contains(name, ".") {
-		// Period denote a signal coming from an event (binding_name.type).
-		// See [# signal-event-name #].
-		return nil, fmt.Errorf("signal name must not contain dots")
 	}
 
 	dstWorkflowID := events.GetIngestProjectEventWorkflowID(apievent.EventID(dstid), session.ProjectID)

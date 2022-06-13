@@ -18,17 +18,20 @@ load("ak", "sources")
 load("http", "http")
 
 # To spice things up, let's use cuelang for our config.
-load("./cats.cue", "sounds")
+load("./cats.cue", "cats")
+
+
+def _dispense(kind, name):
+  print('dispensing %s food to %s' % (kind, name))
 
 def _on_sound(ak_ctx, ak_name, sound):
   kind = ak_ctx
 
   print('%s food dispenser heard a %s' % (kind, sound))
 
-  if sound in sounds[kind]:
-    print('dispensing %s food to %s' % (kind, sounds[kind][sound]))
-  else:
-    print('wrong dispenser')
+  for name, cfg in cats.items():
+    if cfg['sound'] == sound and kind in cfg['kinds']:
+      _dispense(kind, name)
 
 
 # Handler that get invoked when the camera takes a picture.
@@ -41,13 +44,11 @@ def _on_camera_snap(image_slug):
     name = img.split('\n')[0]
     print("identified cat: %s" % name)
 
-    for kind in sounds:
-      for _, curr in sounds[kind].items():
-        if curr == name:
-          print("dispensing %s food" % kind)
-          return
+    for curr_name, cfg in cats.items():
+      if curr_name == name:
+        for kind in cfg['kinds']:
+          _dispense(kind, name)
 
-    print('no match found')
   elif resp.status_code == 404:
     print('could not identify cat')
   else:
@@ -65,15 +66,21 @@ sources.bind('camera.snap', _on_camera_snap)
 # EVENT snap: { "src": "camera", "type": "snap", "data": { "image_slug": { "integer": { "v": "1" } } } }
 
 -- cats.cue --
-
-sounds: {
-  dry: {
-    meow: "gizmo"
-    grrrr: "midnight"
+cats: {
+  gizmo: {
+    sound: "meow"
+    kinds: ["dry"]
   }
-
-  wet: {
-    purrrr: "pepurr"
-    hiss: "zumi"
+  midnight: {
+    sound: "grrrr"
+    kinds: ["dry"]
+  }
+  pepurr: {
+    sound: "purrrr"
+    kinds: ["wet", "dry"]
+  }
+  zumi: {
+    sound: "hiss"
+    kinds: ["wet"]
   }
 }

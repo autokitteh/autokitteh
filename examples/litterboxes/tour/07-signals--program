@@ -1,0 +1,81 @@
+# THIS IS NOT WORKING YET, DO NOT TRY.
+
+-- auto.kitteh --
+load("ak", "ak")
+load("./cats.cue", "cats")
+
+
+def _dispense(kind, name):
+  count = ak.state.get(name, 0)
+
+  limit = cats[name]['limit']
+
+  if count >= limit:
+    print('%s already ate %d portions, which is too much. waiting for approval.' % (name, count))
+    ak.state.insert('waiting_event_ids', value=ak.event.id, index=-1)
+    if not ak.signals.wait("approve", timeout=30):
+      print('timed out')
+      return
+
+  count = ak.state.inc(name)
+
+  print('dispensing %s food to %s' % (kind, name))
+  print('%s so far consumed %d portions' % (name, count))
+
+
+def _on_human_approve():
+  ids = ak.state.take('waiting_event_ids')
+  if not ids:
+    print('no approval is needed')
+    return
+
+  for id in ids:
+    print('sending approval to %s' % id)
+    ak.signals.send('approve', id, 'ok')
+
+
+def _on_sound(ak_ctx, ak_name, sound):
+  kind = ak_ctx
+
+  print('%s food dispenser heard a %s' % (kind, sound))
+
+  for name, cfg in cats.items():
+    if cfg['sound'] == sound and kind in cfg['kinds']:
+      _dispense(kind, name)
+
+
+ak.sources.bind('wet_dispenser.sound', _on_sound, context='wet')
+ak.sources.bind('dry_dispenser.sound', _on_sound, context='dry')
+ak.sources.bind('human.approve', _on_human_approve)
+
+# EVENT approve: { "src": "human", "type": "approve", "data": {} }
+# EVENT gizmo: { "src": "dry_dispenser", "type": "sound", "data": { "sound": { "string": { "v": "meow" } } } }
+# EVENT midnight: { "src": "dry_dispenser", "type": "sound", "data": { "sound": { "string": { "v": "grrrr" } } } }
+# EVENT pepurr: { "src": "wet_dispenser", "type": "sound", "data": { "sound": { "string": { "v": "purrrr" } } } }
+# EVENT zumi: { "src": "wet_dispenser", "type": "sound", "data": { "sound": { "string": { "v": "hiss" } } } }
+
+-- cats.cue --
+cats: {
+  gizmo: {
+    sound: "meow"
+    kinds: ["dry"]
+    limit: 2
+  }
+  midnight: {
+    sound: "grrrr"
+    kinds: ["dry"]
+    limit: 5
+  }
+  pepurr: {
+    sound: "purrrr"
+    kinds: ["wet", "dry"]
+    limit: 3
+  }
+  zumi: {
+    sound: "hiss"
+    kinds: ["wet"]
+    limit: 7
+  }
+}
+
+

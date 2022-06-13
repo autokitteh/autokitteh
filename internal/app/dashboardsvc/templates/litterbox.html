@@ -25,7 +25,7 @@
 <p>
   <h3>
     Event
-    <button id="sendEvent" disabled onclick="sendEvent()">Send</button>
+    <button id="sendEvent" onclick="sendEvent()">Send</button>
     <label for="eventexample">Example:</label>
     <select name="eventexample" id="eventexample" onchange="changeEventExample()"></select>
     Last: <a id="event_link" target="_blank" rel="noopener noreferrer">None</a>
@@ -119,8 +119,6 @@
 
     const lbid = body['id'];
     history.pushState({}, null, "/dashboard/litterbox/" + lbid);
-
-    document.getElementById("sendEvent").removeAttribute("disabled")
 
     loadEventExamples();
   }
