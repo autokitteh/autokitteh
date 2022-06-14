@@ -1,5 +1,11 @@
+# Sometimes we'd like to allow our cats a little extra portion.
+# In this example, we're going to wait for a confirmation every
+# time a cat tries to get a portion after they already got their
+# limit.
+#
+# TODO: explain signals below.
 -- auto.kitteh --
-load("ak", "ak")
+load("ak", "ak") # load just "ak", and use its fields below.
 load("./cats.cue", "cats")
 
 
@@ -10,7 +16,13 @@ def _dispense(kind, name):
 
   if count >= limit:
     print('%s already ate %d portions, which is too much. waiting for approval.' % (name, count))
+
+    # Add the event id to the "requesting approvals" queue.
+    # This can be considered as an "events waiting for approvals",
+    # to let the signal sender know who to signal approval.
     ak.state.insert('waiting_event_ids', value=ak.event.id, index=-1)
+
+    # Wait for approval.
     if not ak.signals.wait("approve", timeout=30):
       print('timed out')
       return
@@ -23,6 +35,7 @@ def _dispense(kind, name):
 
 
 def _on_human_approve():
+  # Pop the next event waiting for approval.
   ids = ak.state.take('waiting_event_ids')
   if not ids:
     print('no approval is needed')
@@ -76,5 +89,3 @@ cats: {
     limit: 7
   }
 }
-
-
