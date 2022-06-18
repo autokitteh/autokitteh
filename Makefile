@@ -5,9 +5,23 @@ TAGS=
 
 ARCH=$(shell uname -m)
 
+ifeq ($(COMMIT),)
+COMMIT=$(shell git rev-parse HEAD)
+endif
+
+ifeq ($(DATE),)
+DATE=$(shell date -u "+%Y-%m-%dT%H:%MZ")
+endif
+
+ifeq ($(VERSION),)
+VERSION=dev
+endif
+
+LDFLAGS+=-X 'main.version=${VERSION}' -X 'main.date=${DATE}' -X 'main.commit=${COMMIT}'
+
 ifndef GO_BUILD_OPTS
 ifdef DEBUG
-GO_BUILD_OPTS=-gcflags=all="-N -l"
+GO_BUILD_OPTS+=-gcflags=all="-N -l"
 else
 GO_BUILD_OPTS=
 endif
@@ -24,7 +38,7 @@ GOTEST=gotestsum --
 endif
 
 define build
-$(GO) build --tags "${TAGS}" -o $(BUILD_OUTDIR)/$@ $(GO_BUILD_OPTS) ./cmd/$@
+$(GO) build --tags "${TAGS}" -o $(BUILD_OUTDIR)/$@ -ldflags="$(LDFLAGS)" $(GO_BUILD_OPTS) ./cmd/$@
 endef
 
 define test
@@ -131,13 +145,9 @@ lint: $(OUTDIR)/tools/golangci-lint
 shellcheck:
 	docker run -v $(shell pwd):/src -w /src koalaman/shellcheck -a -- $(shell find . -name \*.sh)
 
-
-.PHONY: docker-autokitteh
-docker-autokitteh:
-	docker build -t autokitteh/autokitteh .
-
 .PHONY: docker
-docker: docker-autokitteh
+docker:
+	docker build -t autokitteh/autokitteh . --build-arg "VERSION=$(VERSION)-docker" --build-arg "COMMIT=$(COMMIT)"
 
 .PHONY: goreleaser
 goreleaser:

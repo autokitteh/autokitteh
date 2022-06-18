@@ -1,0 +1,297 @@
+{{ template "header" "LitterBox" }}
+
+<p>
+  <label for="progexample">Examples:</label>
+  <select name="progexample" id="progexample" onchange="changeProgramExample()">
+    <option value=""></option>
+    {{ range $k, $v := .Examples }}
+    <option value="{{ $k }}">{{ $k }}</option>
+    {{ end }}
+  </select>
+</p>
+
+<p>
+  <h3>
+    Program
+    <button id="update" onclick="update()">Update</button> 
+    <button onclick="scoop()">Scoop</button>
+    <button onclick="makenew()">New</button>
+    State:
+    <input type="text" id="pstate" value="" size="15" readonly></input>
+  </h3>
+  <textarea id="program" name="program" rows="20" cols="80"></textarea>
+</p>
+
+<p>
+  <h3>
+    Event
+    <button id="sendEvent" onclick="sendEvent()">Send</button>
+    <label for="eventexample">Example:</label>
+    <select name="eventexample" id="eventexample" onchange="changeEventExample()"></select>
+    Last: <a id="event_link" target="_blank" rel="noopener noreferrer">None</a>
+  </h3>
+  <textarea id="event" name="event" rows="10" cols="80"></textarea>
+</p>
+
+<p>
+  <h3>
+    Console
+    <button onclick="clearLog()">Clear</button>
+  </h3>
+  <textarea readonly id="console" name="console" rows="10" cols="80"></textarea>
+</p>
+
+<script>
+  const allExamples = JSON.parse("{{ .JSONExamples }}")
+  var eventExamples = {};
+
+  function addLog(txt) { document.getElementById("console").value += txt + "\n" }
+
+  function clearLog() { document.getElementById("console").value = "" }
+
+  function changeEventExample() {
+    const sel = document.getElementById("progexample").value
+    const ex = document.getElementById("eventexample").value
+    const x = ex ? eventExamples[ex] : ""
+    document.getElementById("event").value = x
+  }
+
+  function changeProgramExample() {
+    const sel = document.getElementById("progexample").value
+    const ex = document.getElementById("eventexample")
+
+    ex.innerHTML = ''
+
+    if (sel == "") {
+      return
+    }
+
+    const x = allExamples[sel]
+
+    setProgram(x["program"])
+
+    var option = document.createElement("option");
+    ex.add(option);
+
+    changeEventExample()
+
+    update()
+  }
+
+  function program() { return document.getElementById("program").value; }
+
+  function eventData() { return document.getElementById("event").value; }
+
+  function getLBId() {
+    const last = window.location.pathname.split('/').at(-1);
+    if ((last == '') || (last == 'litterbox')) {
+      return null
+    }
+    return last
+  }
+
+  async function update() {
+    clearLog()
+
+    extra = ''
+
+    id = getLBId();
+    if (id) {
+      extra = '?id=' + id
+    }
+
+    const resp = await fetch('/api/v1/litterboxes' + extra, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'text/plain',
+      },
+      body: program(),
+    })
+
+    const body = await resp.json()
+
+    if (!resp.ok) {
+      console.error('update: ', body)
+      return
+    }
+
+    console.log('update: ', body)
+
+    const lbid = body['id'];
+    history.pushState({}, null, "/dashboard/litterbox/" + lbid);
+
+    loadEventExamples();
+  }
+
+  function scoop() { console.error("scoop not implemented yet") }
+  function makenew() { window.location.href = '/dashboard/litterbox' }
+
+  async function sendEvent() {
+    const lbid = getLBId()
+
+    console.log("---\nsend: " + lbid + "\nevent: " + eventData());
+
+    const resp = await fetch("/api/v1/litterboxes/" + lbid + "/events", {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: eventData(),
+    })
+
+    if (!resp.ok) {
+      const err = await resp.json()
+      console.error('event: ', err)
+      return
+    }
+
+    const r = resp.body.getReader();
+    for await (const l of readLines(r)) {
+      p = JSON.parse(l)['result']
+
+      console.debug(p)
+
+      const eid = p.eventId
+      if (eid) {
+        const elem = document.getElementById("event_link")
+        elem.innerHTML = eid
+        elem.href = "http://{{ .Addr }}/dashboard/events/" + eid
+      }
+
+      pes = p.projectEventState?.state
+
+      if (pes) {
+        console.info(pes)
+
+        const name = Object.keys(pes)[0].toUpperCase()
+
+        document.getElementById('pstate').value = name
+
+        elem = document.getElementById('sendEvent')
+
+        switch(name) {
+        case 'PENDING':
+        case 'RUNNING':
+        case 'WAITING':
+        case 'LOADING':
+        case 'LOADED':
+              elem.setAttribute('disabled', '')
+              break;
+
+        case 'ERROR':
+        case 'COMPLETED':
+              elem.removeAttribute('disabled')
+              break;
+        }
+      }
+
+      const sum = p.flattenedRunSummary
+      if (sum) {
+        const prints = sum.prints
+
+        if (prints) {
+          clearLog()
+
+          for (const l of prints) {
+            addLog(l)
+          }
+        }
+      }
+
+      const err = pes?.error
+      if (pes?.error) {
+        addLog("error: " + pes.error.error)
+      }
+    }
+  }
+
+  async function *readLines(reader) {
+      const textDecoder = new TextDecoder();
+      let partOfLine = '';
+      for await (const chunk of readChunks(reader)) {
+          const chunkText = textDecoder.decode(chunk);
+          const chunkLines = chunkText.split('\n');
+          if (chunkLines.length === 1) {
+              partOfLine += chunkLines[0];
+          } else if (chunkLines.length > 1) {
+              yield partOfLine + chunkLines[0];
+              for (let i=1; i < chunkLines.length - 1; i++) {
+                  yield chunkLines[i];
+              }
+              partOfLine = chunkLines[chunkLines.length - 1];
+          }
+      }
+  }
+
+  function readChunks(reader) {
+      return {
+          async* [Symbol.asyncIterator]() {
+              let readResult = await reader.read();
+              while (!readResult.done) {
+                  yield readResult.value;
+                  readResult = await reader.read();
+              }
+          },
+      };
+  }
+
+  function loadEventExamples() {
+    const prog = document.getElementById("program").value;
+
+    const ex = document.getElementById("eventexample")
+    ex.innerHTML = ''
+    eventExamples = {};
+
+    const re = /^# *EVENT ([^:]+): (.+)/;
+
+    const lines = prog.split('\n');
+
+    lines.forEach(l => {
+      const m = l.match(re);
+
+      if (m) {
+        obj = JSON.parse(m[2]);
+
+        ev = JSON.stringify(obj, null, 2);
+
+        var option = document.createElement("option");
+        option.text = m[1];
+        ex.add(option);
+
+        eventExamples[m[1]] = ev;
+      }
+    })
+
+    changeEventExample()
+  }
+
+  function setProgram(prog) {
+    document.getElementById("program").value = prog;
+
+    loadEventExamples();
+  }
+
+
+  (async function() {
+    const id = getLBId();
+
+    if (id) {
+      const resp = await fetch( '/api/v1/litterboxes/' + id, {
+        headers: {
+          'Accept': 'text/plain',
+        }
+      })
+
+      const body = await resp.text()
+
+      if (!resp.ok) {
+        console.error("get program: ", body)
+        return
+      }
+
+      setProgram(body);
+    }
+  })();
+</script>
+
+{{ template "footer" }}

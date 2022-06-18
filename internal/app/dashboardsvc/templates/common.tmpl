@@ -3,10 +3,21 @@
 {{ end }}
 
 {{ define "project-event-state" }}
-  {{ $t := typeOf .State.Type }}
+  {{ $s := (first .).State }}
+  {{ $pid := (last .) }}
+  {{ $t := typeOf $s.Type }}
   {{ $t | replace "*event.ProjectEventState_" "" | upper }}
   {{ if eq $t "*event.ProjectEventState_Waiting" }}
-    {{ (toDict .State.Type).Waiting.names | join " " }}
+    {{ (toDict $s.Type).Waiting.names | join " " }}
+  {{ end }}
+  {{ if eq $t "*event.ProjectEventState_Loading" }}
+    {{ $p := (toDict $s.Type).Loading.main_path }}
+    {{ $p.scheme }}:{{ $p.path }}#{{ $p.version }}
+  {{ end }}
+  {{ if eq $t "*event.ProjectEventState_Loaded" }}
+    {{ range (toDict $s.Type).Loaded.paths }}
+      <a href="/dashboard/programs/{{ $pid }}?path={{ .scheme }}:{{ .path }}#{{ .version }}" target="_blank" rel="noopener noreferrer">{{ .scheme }}:{{ .path }}#...{{ .version | trunc -6 }}</a>
+    {{ end }}
   {{ end }}
 {{ end }}
 
@@ -19,7 +30,7 @@
   </head>
   <body>
     <nav>
-      autokitteh |&nbsp; <a href="/dashboard/events">Events</a>
+      autokitteh |&nbsp; <a href="/dashboard/events">Events</a> &nbsp; <a href="/dashboard/litterbox">LitterBox</a>
     </nav>
 {{ end }}
 

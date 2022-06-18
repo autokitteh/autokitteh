@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"golang.org/x/exp/slices"
-	"strings"
 	"time"
 
 	"go.temporal.io/api/serviceerror"
@@ -24,7 +23,7 @@ type signals struct {
 
 func (s *signals) asStruct(funcToValue pluginimpl.FuncToValueFunc) apivalues.StructValue {
 	return apivalues.StructValue{
-		Ctor: apivalues.Symbol("sources"),
+		Ctor: apivalues.Symbol("signals"),
 		Fields: map[string]*apivalues.Value{
 			"send": funcToValue("send", s.send, pluginimpl.WithFlags("session")),
 			"wait": funcToValue("wait", s.wait, pluginimpl.WithFlags("session")),
@@ -57,13 +56,9 @@ func (s *signals) send(
 		return nil, err
 	}
 
-	if strings.Contains(name, ".") {
-		// Period denote a signal coming from an event (binding_name.type).
-		// See [# signal-event-name #].
-		return nil, fmt.Errorf("signal name must not contain dots")
-	}
-
 	dstWorkflowID := events.GetIngestProjectEventWorkflowID(apievent.EventID(dstid), session.ProjectID)
+
+	l.Debug("sending signal", "dst", dstid, "dst_wid", dstWorkflowID, "name", name, "value", v)
 
 	fut := workflow.ExecuteLocalActivity(
 		ctx,
@@ -107,12 +102,6 @@ func (s *signals) wait(
 
 	for i, arg := range args {
 		names[i] = arg.String()
-
-		/* TODO: SECURITY: allows only a subset of sources.
-		if !isBindingAllowed(s.sources.subs, sv) {
-			return nil, fmt.Errorf("binding %q is not allowed", sv)
-		}
-		*/
 	}
 
 	if err := pluginimpl.UnpackArgs(
@@ -127,6 +116,8 @@ func (s *signals) wait(
 		return nil, fmt.Errorf("no names or tmo specified")
 	}
 
+	l.Debug("waiting for signal", "names", names)
+
 	if err := session.UpdateState(apievent.NewWaitingProjectEventState(names, session.RunSummary)); err != nil {
 		return nil, fmt.Errorf("set waiting: %w", err)
 	}
@@ -138,6 +129,10 @@ func (s *signals) wait(
 
 	if tmo != 0 {
 		tmoFuture = workflow.NewTimer(ctx, time.Duration(tmo))
+	}
+
+	// flush all previously sent signals.
+	for session.SignalChannel.ReceiveAsync(&sig) {
 	}
 
 	// loop until a timeout occurs or a relevant signal is received.
@@ -165,22 +160,28 @@ func (s *signals) wait(
 
 		l := l.With("sig", sig)
 
-		l.Debug("received signal")
+		l.Debug("select returned")
 
-		if sig == nil || slices.Contains(names, sig.Name) {
+		if sig == nil {
+			l.Debug("timed out")
+			break
+		}
+
+		if slices.Contains(names, sig.Name) {
 			l.Debug("relevant signal")
 			break
 		}
 
+		l.Debug("irrelevant signal")
+
 		sig = nil
 	}
 
-	if err := session.UpdateState(apievent.NewProcessingProjectEventState()); err != nil {
-		return nil, fmt.Errorf("set processing: %w", err)
+	if err := session.UpdateState(apievent.NewRunningProjectEventState()); err != nil {
+		return nil, fmt.Errorf("set running: %w", err)
 	}
 
 	if sig == nil {
-		l.Debug("timed out")
 		return apivalues.None, nil
 	}
 
@@ -189,8 +190,6 @@ func (s *signals) wait(
 
 	if sig.Event.EventSourceID() == syntheticEventSourceID && sig.Event.Type() == syntheticEventType {
 		st.Fields["value"] = sig.Event.Data()["value"]
-	} else {
-		st.Fields["value"] = apivalues.DictFromMap(sig.Event.Data())
 	}
 
 	return apivalues.MustNewValue(st), nil

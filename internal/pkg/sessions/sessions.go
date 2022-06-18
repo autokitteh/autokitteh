@@ -3,10 +3,7 @@ package sessions
 import (
 	"context"
 	"fmt"
-	"time"
 
-	enums "go.temporal.io/api/enums/v1"
-	"go.temporal.io/api/serviceerror"
 	temporalclient "go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/worker"
 	"go.temporal.io/sdk/workflow"
@@ -22,7 +19,6 @@ import (
 	"github.com/autokitteh/L"
 
 	"github.com/autokitteh/autokitteh/internal/pkg/akmod"
-	"github.com/autokitteh/autokitteh/internal/pkg/events"
 	"github.com/autokitteh/autokitteh/internal/pkg/eventsstore"
 	"github.com/autokitteh/autokitteh/internal/pkg/lang"
 	"github.com/autokitteh/autokitteh/internal/pkg/lang/langtools"
@@ -49,159 +45,9 @@ type Sessions struct {
 
 func (s *Sessions) Init() {
 	s.worker = worker.New(s.Temporal, "sessions", worker.Options{})
-	s.worker.RegisterWorkflow(s.signalWaitingSessions)
 }
 
 func (s *Sessions) Start() error { return s.worker.Start() }
-
-// First returned module is main.
-// TODO: account for internal modules.
-func (s *Sessions) loadAllModules(
-	ctx workflow.Context,
-	pid apiproject.ProjectID,
-	predecls []string,
-	mainPath *apiprogram.Path,
-) ([]*apiprogram.Module, []apiplugin.PluginID, error) {
-	l := s.L.With("project_id", pid, "main", mainPath.String())
-
-	const N = 16
-
-	q := make([]*apiprogram.Path, 0, N)
-
-	mods := make([]*apiprogram.Module, 0, N)
-	pluginIDs := make([]apiplugin.PluginID, 0, N)
-
-	load := func(curr *apiprogram.Path, depth int) error {
-		l := l.With("path", curr.String())
-
-		var mod *apiprogram.Module
-
-		l.Debug("loading")
-
-		// first is internal boot. second is the actual main.
-		if curr.String() == "$inmem:second" {
-			curr = mainPath
-		}
-
-		if err := workflow.ExecuteLocalActivity(
-			// TODO: this assumes all failures are deterministic.
-			withLocalActivityWithoutRetries(ctx),
-			s.Programs.Load,
-			pid,
-			predecls,
-			curr,
-		).Get(ctx, &mod); err != nil {
-			temporalErrorLogger(l, err)("load error")
-			return err
-		}
-
-		mods = append(mods, mod)
-
-		var depPaths []*apiprogram.Path
-
-		if err := workflow.ExecuteLocalActivity(ctx, langtools.GetModuleDependencies, s.Programs.Catalog, mod).Get(ctx, &depPaths); err != nil {
-			err = fmt.Errorf("dependencies: %w", err)
-
-			temporalErrorLogger(l, err)("dependencies error")
-			l.Debug("dependencies error", "err", err)
-			return err
-		}
-
-		l.Debug("dependencies", "deps", depPaths)
-
-		for _, depPath := range depPaths {
-			if depPath.IsInternal() {
-				if !curr.IsInternal() {
-					return fmt.Errorf("internal loads are allowed only from internal modules")
-				}
-			} else if plugID, isPlugin := depPath.PluginID(); isPlugin {
-				// handled by either the lang load or session load (plugin).
-				pluginIDs = append(pluginIDs, plugID)
-				continue
-			}
-
-			q = append(q, depPath)
-		}
-
-		return nil
-	}
-
-	if err := load(apiprogram.MustParsePathString("$internal:boot.kitteh"), 0); err != nil {
-		return nil, nil, err
-	}
-
-	for depth := 1; len(q) != 0; q, depth = q[1:], depth+1 {
-		curr := q[0]
-
-		if err := load(curr, depth); err != nil {
-			return nil, nil, err
-		}
-	}
-
-	return mods, pluginIDs, nil
-}
-
-func (s *Sessions) signalWaitingSessions(ctx workflow.Context, event *apievent.Event, project *apiproject.Project, binding string) error {
-	l := s.L.With("event_id", event.ID(), "event_type", event.Type(), "project_id", project.ID())
-
-	ctx = workflow.WithLocalActivityOptions(
-		ctx,
-		workflow.LocalActivityOptions{
-			ScheduleToCloseTimeout: 5 * time.Second,
-		},
-	)
-
-	var eids []apievent.EventID
-
-	// TODO: get only sessions that wait on a specific event name.
-	if err := workflow.ExecuteLocalActivity(ctx, s.EventsStore.GetProjectWaitingEvents, project.ID()).Get(ctx, &eids); err != nil {
-		l.Error("get waiting error", "err", err)
-		return err
-	}
-
-	l.Debug("waiting sessions", "event_ids", eids)
-
-	data := akmod.NewEventSignal(binding, event)
-
-	var futs []workflow.Future
-
-	for _, eid := range eids {
-		l := l.With("target_event_id", eid)
-
-		l.Debug("signaling waiting session")
-
-		workflowID := events.GetIngestProjectEventWorkflowID(eid, project.ID())
-
-		fut := workflow.ExecuteLocalActivity(
-			ctx,
-			func(ctx context.Context, wid string, data interface{}) error {
-				if err := s.Temporal.SignalWorkflow(ctx, wid, "", akmod.SessionEventSignalName, data); err != nil {
-					l := s.L.With("workflow_id", workflowID)
-					if _, ok := err.(*serviceerror.NotFound); ok { // for some reason errors.Is doesn't work well here.
-						l.Debug("workflow not found, might have already finished")
-						return nil
-					}
-
-					l.Error("signal error", "err", err)
-				}
-
-				return nil
-			},
-			workflowID,
-			data,
-		)
-
-		futs = append(futs, fut)
-	}
-
-	for _, f := range futs {
-		if err := f.Get(ctx, nil); err != nil {
-			l.Error("signal error", "err", err)
-		}
-	}
-
-	return nil
-}
 
 // TODO: this should probably run as a child-workflow.
 func (s *Sessions) Run(
@@ -213,22 +59,6 @@ func (s *Sessions) Run(
 	l := s.L.With("event_id", event.ID(), "project_id", project.ID(), "event_source_binding_name", srcBindingName)
 
 	sessionID := fmt.Sprintf("%v/%v", project.ID(), event.ID())
-
-	if err := workflow.ExecuteChildWorkflow(
-		workflow.WithChildOptions(
-			ctx,
-			workflow.ChildWorkflowOptions{
-				TaskQueue:         "sessions",
-				ParentClosePolicy: enums.PARENT_CLOSE_POLICY_ABANDON,
-			},
-		),
-		s.signalWaitingSessions,
-		event,
-		project,
-		srcBindingName,
-	).Get(ctx, nil); err != nil { // TODO: This need to be fire and forget. For some reason, if no get is done the workflow will not run.
-		l.Error("signal workflow error", "err", err)
-	}
 
 	mainPath := project.Settings().MainPath()
 
@@ -243,16 +73,30 @@ func (s *Sessions) Run(
 		predeclsKeys = append(predeclsKeys, k)
 	}
 
-	l.Debug("loading all modules", "predecls", predeclsKeys)
+	l.Debug("fetching all modules", "predecls", predeclsKeys)
 
-	mods, depPluginIDs, err := s.loadAllModules(
+	if err := s.updateProjectState(ctx, event.ID(), project.ID(), apievent.NewLoadingProjectEventState(mainPath)); err != nil {
+		return nil, err
+	}
+
+	var fr programs.FetchResult
+
+	if err := workflow.ExecuteLocalActivity(
 		ctx,
+		s.Programs.Fetch,
 		project.ID(),
-		predeclsKeys,
 		mainPath,
-	)
-	if err != nil {
-		return nil, fmt.Errorf("load: %w", err)
+		predeclsKeys,
+	).Get(ctx, &fr); err != nil {
+		err = fmt.Errorf("fetch: %w", err)
+
+		temporalErrorLogger(l, err)("fetch error")
+		l.Debug("fetch error", "err", err)
+		return nil, err
+	}
+
+	if err := s.updateProjectState(ctx, event.ID(), project.ID(), apievent.NewLoadedProjectEventState(fr.Paths())); err != nil {
+		return nil, err
 	}
 
 	akmodPlugin := akmod.New(
@@ -276,7 +120,7 @@ func (s *Sessions) Run(
 		akmod.PluginID: akmodPlugin,
 	}
 
-	for _, id := range depPluginIDs {
+	for _, id := range fr.PluginIDs {
 		l := l.With("plugin_id", id)
 
 		var projectPlugin *apiproject.ProjectPlugin
@@ -443,7 +287,10 @@ func (s *Sessions) Run(
 				return v, err
 			}
 
-			var ret *apivalues.Value
+			var (
+				ret *apivalues.Value
+				err error
+			)
 
 			if callvCall.Flags["session"] {
 				// Run directly in workflow context.
@@ -467,9 +314,13 @@ func (s *Sessions) Run(
 		},
 	}
 
+	if err := s.updateProjectState(ctx, event.ID(), project.ID(), apievent.NewRunningProjectEventState()); err != nil {
+		return nil, err
+	}
+
 	// This should not be in an activity as this is determinisitc. Any non-deterministic
 	// action is being run as an activity in runEnv.Call above.
-	_, sum, err := langtools.RunModules(runCtx, s.Programs.Catalog, &runEnv, mods)
+	_, sum, err := langtools.RunModules(runCtx, s.Programs.Catalog, &runEnv, fr.Modules())
 	if err != nil {
 		return sum, fmt.Errorf("run: %w", err)
 	}
@@ -483,7 +334,7 @@ func (s *Sessions) Run(
 }
 
 func (s *Sessions) updateProjectState(ctx workflow.Context, id apievent.EventID, pid apiproject.ProjectID, state *apievent.ProjectEventState) error {
-	l := s.L.With("event_id", id, "project_id", pid, "state", state)
+	l := s.L.With("event_id", id, "project_id", pid, "state", state.Name())
 
 	l.Debug("updating project state")
 

@@ -2,8 +2,10 @@ package aksvc
 
 import (
 	"context"
+	"crypto/sha256"
 	_ "embed"
 	"fmt"
+	"io/fs"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -15,12 +17,15 @@ import (
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	temporalclient "go.temporal.io/sdk/client"
 	"google.golang.org/grpc"
+	"google.golang.org/protobuf/proto"
 
 	webdashboard "github.com/autokitteh/autokitteh/web/dashboard"
-	"go.autokitteh.dev/idl/openapi"
+	"go.autokitteh.dev/idl"
 
+	"go.autokitteh.dev/sdk/api/apievent"
 	"go.autokitteh.dev/sdk/api/apiplugin"
 	"go.autokitteh.dev/sdk/api/apiprogram"
+	"go.autokitteh.dev/sdk/api/apiproject"
 	"go.autokitteh.dev/sdk/plugin"
 	"go.autokitteh.dev/sdk/pluginsgrpcsvc"
 
@@ -37,6 +42,7 @@ import (
 	"github.com/autokitteh/autokitteh/internal/app/langrungrpcsvc"
 	"github.com/autokitteh/autokitteh/internal/app/litterboxgrpcsvc"
 	"github.com/autokitteh/autokitteh/internal/app/pluginsreggrpcsvc"
+	"github.com/autokitteh/autokitteh/internal/app/programsgrpcsvc"
 	"github.com/autokitteh/autokitteh/internal/app/projectsstoregrpcsvc"
 	"github.com/autokitteh/autokitteh/internal/app/secretsstoregrpcsvc"
 	"github.com/autokitteh/autokitteh/internal/app/slackeventsrcsvc"
@@ -44,6 +50,7 @@ import (
 
 	"github.com/autokitteh/autokitteh/internal/pkg/accountsstore"
 	"github.com/autokitteh/autokitteh/internal/pkg/accountsstore/accountsstorefactory"
+	"github.com/autokitteh/autokitteh/internal/pkg/akcue"
 	"github.com/autokitteh/autokitteh/internal/pkg/akprocs"
 	"github.com/autokitteh/autokitteh/internal/pkg/credsstore"
 	"github.com/autokitteh/autokitteh/internal/pkg/events"
@@ -58,10 +65,13 @@ import (
 	"github.com/autokitteh/autokitteh/internal/pkg/lang/langrun"
 	"github.com/autokitteh/autokitteh/internal/pkg/lang/langrun/locallangrun"
 	"github.com/autokitteh/autokitteh/internal/pkg/lang/langtools"
+	"github.com/autokitteh/autokitteh/internal/pkg/litterbox/litterboxlocal"
 	"github.com/autokitteh/autokitteh/internal/pkg/manifest"
 	"github.com/autokitteh/autokitteh/internal/pkg/plugins/internalplugins"
 	"github.com/autokitteh/autokitteh/internal/pkg/pluginsreg"
 	"github.com/autokitteh/autokitteh/internal/pkg/programs"
+	"github.com/autokitteh/autokitteh/internal/pkg/programs/loaders"
+	"github.com/autokitteh/autokitteh/internal/pkg/programsstore"
 	"github.com/autokitteh/autokitteh/internal/pkg/projectsstore"
 	"github.com/autokitteh/autokitteh/internal/pkg/projectsstore/projectsstorefactory"
 	"github.com/autokitteh/autokitteh/internal/pkg/secretsstore"
@@ -73,12 +83,12 @@ import (
 	"github.com/autokitteh/autokitteh/assets"
 	"github.com/autokitteh/idgen"
 	"github.com/autokitteh/procs"
+	"github.com/autokitteh/pubsub"
+	"github.com/autokitteh/pubsub/pubsubfactory"
 	"github.com/autokitteh/stores/kvstore"
 	"github.com/autokitteh/stores/pkvstore"
 	"github.com/autokitteh/svc"
 )
-
-var version = "dev"
 
 //go:embed hello.txt
 var hello string
@@ -91,6 +101,12 @@ func init() {
 		panic(err)
 	}
 }
+
+// set to true if setup phase ran.
+var setup bool
+
+// set to true if litterbox is enabled.
+var litterbox bool
 
 // Boxing to distinguish for svc.
 type GRPCLangCatalog struct{ lang.Catalog }
@@ -110,13 +126,45 @@ var SvcOpts = []svc.OptFunc{
 		},
 		TemporaliteComponent,
 		svc.Component{
+			Name: "pubsub",
+			Init: func(cfg *Config) (pubsub.PubSub, error) {
+				return pubsubfactory.NewFromConfig(&cfg.PubSub)
+			},
+		},
+		svc.Component{
 			Name: "temporalclient",
 			Init: func(l L.L, cfg *Config) (temporalclient.Client, error) {
-				return temporalclient.NewClient(temporalclient.Options{
+				client, err := temporalclient.NewClient(temporalclient.Options{
 					HostPort:  cfg.Temporal.HostPort,
 					Namespace: cfg.Temporal.Namespace,
 					Logger:    L.Silent{L: l},
 				})
+
+				if err != nil {
+					// Ugly, but will suppress some ugly output.
+					// TODO: instruct svc to not clutter up on some errors.
+
+					fmt.Fprintf(
+						os.Stderr,
+						`*** Cannot connect to Temporal ***
+
+AutoKitteh requires Temporal to be up and running.
+
+Current config (can be modified via environment variables):
+
+AKD_TEMPORAL_HOSTPORT=%q
+AKD_TEMPORAL_NAMESPACE=%q
+
+See https://github.com/temporalio/docker-compose for more info.
+`,
+						cfg.Temporal.HostPort,
+						cfg.Temporal.Namespace,
+					)
+
+					os.Exit(7)
+				}
+
+				return client, nil
 			},
 		},
 		svc.Component{
@@ -158,6 +206,20 @@ var SvcOpts = []svc.OptFunc{
 					Store: store,
 					L:     L.N(l),
 				}).Register(ctx, srv, gw)
+			},
+		},
+		svc.Component{
+			Name: "programsstore",
+			Init: func(ctx context.Context, l L.L, cfg *Config) (*programsstore.Store, error) {
+				pkv, err := pkvstore.Factory{Name: "programs"}.Open(ctx, l, &cfg.ProgramsStore)
+				if err != nil {
+					return nil, fmt.Errorf("open: %w", err)
+				}
+
+				return &programsstore.Store{Store: pkv}, nil
+			},
+			Setup: func(ctx context.Context, s *secretsstore.Store) error {
+				return s.Setup(ctx)
 			},
 		},
 		svc.Component{
@@ -207,8 +269,48 @@ var SvcOpts = []svc.OptFunc{
 		},
 		svc.Component{
 			Name: "eventsstore",
-			Init: func(ctx context.Context, l L.L, cfg *Config) (eventsstore.Store, error) {
-				return eventsstorefactory.Open(ctx, l, &cfg.EventsStore)
+			Init: func(ctx context.Context, l L.L, cfg *Config, pubsub pubsub.PubSub) (eventsstore.Store, error) {
+				s, err := eventsstorefactory.Open(ctx, l, &cfg.EventsStore)
+				if err != nil {
+					return nil, err
+				}
+
+				publish := func(upd *apievent.TrackIngestEventUpdate) {
+					l := l.With("event_id", upd.EventID().String())
+
+					payload, err := proto.Marshal(upd.PB())
+					if err != nil {
+						l.Error("publish error", "event_id", upd.EventID().String(), "err", err)
+					}
+
+					if err := pubsub.Publish(
+						context.Background(),
+						events.TopicForEvent(upd.EventID()),
+						payload,
+					); err != nil {
+						l.Error("publish error", "err", err)
+					}
+
+					if pid := upd.ProjectID(); !pid.IsEmpty() {
+						if err := pubsub.Publish(
+							context.Background(),
+							events.TopicForProject(upd.ProjectID()),
+							payload,
+						); err != nil {
+							l.Error("publish error", "err", err)
+						}
+					}
+				}
+
+				return &eventsstore.MonitoredStore{
+					Store: s,
+					EventStateUpdate: func(eid apievent.EventID, r *apievent.EventStateRecord) {
+						publish(apievent.MustNewTrackIngestEventUpdate(eid, r, nil, nil))
+					},
+					ProjectEventStateUpdate: func(eid apievent.EventID, pid apiproject.ProjectID, r *apievent.ProjectEventStateRecord) {
+						publish(apievent.MustNewTrackIngestEventUpdate(eid, nil, &pid, r))
+					},
+				}, nil
 			},
 			Setup: func(ctx context.Context, as eventsstore.Store) error {
 				return as.Setup(ctx)
@@ -310,32 +412,79 @@ var SvcOpts = []svc.OptFunc{
 			},
 		},
 		svc.Component{
-			Name: "programs",
-			Init: func(ctx context.Context, cfg *Config, l L.L, cat GRPCLangCatalog, github *githubinstalls.Installs) *programs.Programs {
-				return &programs.Programs{
-					L:       L.N(l),
-					Catalog: cat,
-					PathRewriters: []programs.PathRewriterFunc{
-						programs.GithubPathRewriter,
+			Name: "litterbox",
+			Init: func(
+				ctx context.Context,
+				l L.L,
+				cfg *Config,
+				projects projectsstore.Store,
+				eventsrcs eventsrcsstore.Store,
+				ustore kvstore.Store,
+			) *litterboxlocal.LitterBox {
+				return &litterboxlocal.LitterBox{
+					L:             L.N(l),
+					Config:        cfg.LitterBox,
+					Projects:      projects,
+					EventSrcs:     eventsrcs,
+					ProgramsStore: &kvstore.StoreWithKeyPrefix{Store: ustore, Prefix: "litterbox_"},
+				}
+			},
+			Setup: func(lb *litterboxlocal.LitterBox, events *events.Events) {
+				lb.Events = events
+			},
+		},
+		svc.Component{
+			Name: "loaders",
+			Init: func(ctx context.Context, cfg *Config, l L.L, github *githubinstalls.Installs, lb *litterboxlocal.LitterBox) *loaders.Loaders {
+				return &loaders.Loaders{
+					L: L.N(l),
+					PathRewriters: []loaders.PathRewriterFunc{
+						loaders.GithubPathRewriter,
 					},
-					CommonLoaders: map[string]programs.LoaderFunc{
-						"$internal": func(ctx context.Context, path *apiprogram.Path) ([]byte, error) {
+					CommonLoaders: map[string]loaders.LoaderFunc{
+						"$internal": func(ctx context.Context, path *apiprogram.Path) ([]byte, string, error) {
 							if path.Scheme() != "$internal" {
-								return nil, fmt.Errorf("invalid scheme %q", path.Scheme())
+								return nil, "", fmt.Errorf("invalid scheme %q", path.Scheme())
 							}
 
 							p := filepath.Clean(path.Path())
 
 							if p == "" || strings.Contains(p, "..") || p[0] == os.PathSeparator {
-								return nil, fmt.Errorf("invalid path %q -> %q", path.Path(), p)
+								return nil, "", fmt.Errorf("invalid path %q -> %q", path.Path(), p)
 
 							}
 
-							return assets.FS.ReadFile(filepath.Join("internal", p))
+							bs, err := assets.FS.ReadFile(filepath.Join("internal", p))
+							if err != nil {
+								return nil, "", fmt.Errorf("read: %w", err)
+							}
+
+							return bs, fmt.Sprintf("%x", sha256.Sum256(bs)), nil
 						},
-						"github": programs.NewGithubLoader(l.Named("githubloader"), github.GetClient),
+						"github":    loaders.NewGithubLoader(l.Named("githubloader"), github.GetClient),
+						"litterbox": lb.Loader,
 					},
 				}
+			},
+		},
+		svc.Component{
+			Name: "programs",
+			Init: func(ctx context.Context, l L.L, cat GRPCLangCatalog, store *programsstore.Store, loaders *loaders.Loaders) *programs.Programs {
+				return &programs.Programs{
+					L:       L.N(l),
+					Store:   store,
+					Loaders: loaders,
+					Catalog: cat,
+				}
+			},
+		},
+		svc.Component{
+			Name: "programsgrpcsvc",
+			Start: func(ctx context.Context, l L.L, p *programs.Programs, srv *grpc.Server, gw *runtime.ServeMux) {
+				(&programsstoregrpcsvc.Svc{
+					Programs: p,
+					L:        L.N(l),
+				}).Register(ctx, srv, gw)
 			},
 		},
 		svc.Component{
@@ -419,9 +568,11 @@ var SvcOpts = []svc.OptFunc{
 				eventsStore eventsstore.Store,
 				eventsrcsStore eventsrcsstore.Store,
 				sessions *sessions.Sessions,
+				pubsub pubsub.PubSub,
 			) *events.Events {
 				es := &events.Events{
 					Temporal: temporal,
+					PubSub:   pubsub,
 					L:        L.N(l),
 					Run:      sessions.Run,
 					Stores: events.Stores{
@@ -550,7 +701,7 @@ var SvcOpts = []svc.OptFunc{
 			Name:     "defaults",
 			Disabled: true,
 			Ready: func(p *programs.Programs) {
-				p.SetCommonLoader("fs", programs.NewFSLoader(os.DirFS("."), "."))
+				p.Loaders.SetCommonLoader("fs", loaders.NewFSLoader(os.DirFS("."), "."))
 			},
 		},
 		svc.Component{
@@ -561,9 +712,28 @@ var SvcOpts = []svc.OptFunc{
 					Handler(
 						http.StripPrefix(
 							"/openapi",
-							http.FileServer(http.FS(openapi.FS)),
+							http.FileServer(http.FS(idl.OpenAPIFS)),
 						),
 					)
+			},
+		},
+		svc.Component{
+			Name: "cats",
+			Start: func(r *mux.Router) error {
+				catsfs, err := fs.Sub(assets.FS, "cats")
+				if err != nil {
+					return err
+				}
+
+				fs := http.FS(catsfs)
+
+				r.
+					PathPrefix("/cats/").
+					Handler(
+						http.StripPrefix("/cats/", http.FileServer(fs)),
+					)
+
+				return nil
 			},
 		},
 		svc.Component{
@@ -571,9 +741,7 @@ var SvcOpts = []svc.OptFunc{
 			Start: func(cfg *Config, r *mux.Router, l L.L) {
 				fs := http.FS(webdashboard.FS)
 				if !cfg.EmbeddedDash {
-					l.Info("serving dashboard from filesystem")
 					fs = http.Dir("web/dashboard/build")
-				} else {
 					l.Info("serving dashboard from filesystem")
 				}
 
@@ -588,12 +756,15 @@ var SvcOpts = []svc.OptFunc{
 			Name: "dashboard",
 			Start: func(
 				cfg *Config,
+				svcCfg *svc.SvcCfg,
 				r *mux.Router,
 				eventsStore eventsstore.Store,
 				projectsStore projectsstore.Store,
 				eventSrcsStore eventsrcsstore.Store,
 				stateStore statestore.Store,
 				secretsStore *secretsstore.Store,
+				lb *litterboxlocal.LitterBox,
+				programs *programs.Programs,
 			) {
 				(&dashboardsvc.Svc{
 					Config:            cfg.Dashboard,
@@ -602,6 +773,9 @@ var SvcOpts = []svc.OptFunc{
 					EventSourcesStore: eventSrcsStore,
 					StateStore:        stateStore,
 					SecretsStore:      secretsStore,
+					Port:              svcCfg.HTTP.Port,
+					LitterBox:         lb,
+					Programs:          programs,
 				}).Register(r)
 			},
 		},
@@ -619,7 +793,8 @@ var SvcOpts = []svc.OptFunc{
 			},
 		},
 		svc.Component{
-			Name: "hello",
+			Name:  "hello",
+			Setup: func() { setup = true },
 			Ready: func(
 				ctx context.Context,
 				svcCfg *svc.SvcCfg,
@@ -646,10 +821,23 @@ var SvcOpts = []svc.OptFunc{
 					HTTPPort, GRPCPort                                     string
 					Extra0, Extra1, Extra2, Extra3, Extra4, Extra5, Extra6 string
 				}{
-					Version:  version,
 					PID:      valColor(fmt.Sprintf("%d", os.Getpid())),
 					HTTPPort: valColor(httpPort),
 					GRPCPort: valColor(grpcPort),
+				}
+
+				if !setup {
+					// TODO: only if not yet bootstrapped.
+					data.Extra0 = "HINT: Specify --setup to bootstrap."
+				}
+
+				if litterbox && setup {
+					data.Extra0 = "Try the LitterBox!"
+					data.Extra1 = fmt.Sprintf("http://127.0.0.1:%d/dashboard/litterbox", svcCfg.HTTP.Port)
+				}
+
+				if v := svc.GetVersion(); v != nil {
+					data.Version = v.Version
 				}
 
 				if err := helloTemplate.Execute(os.Stdout, data); err != nil {
@@ -661,16 +849,28 @@ var SvcOpts = []svc.OptFunc{
 		},
 		svc.Component{
 			Name: "litterboxgrpcsvc",
-			Init: func(ctx context.Context, l L.L) *litterboxgrpcsvc.Svc {
-				return &litterboxgrpcsvc.Svc{L: L.N(l)}
+			Init: func(ctx context.Context, l L.L, lb *litterboxlocal.LitterBox) *litterboxgrpcsvc.Svc {
+				return &litterboxgrpcsvc.Svc{L: L.N(l), LitterBox: lb}
 			},
-			Start: func(ctx context.Context, svc *litterboxgrpcsvc.Svc, srv *grpc.Server, gw *runtime.ServeMux) {
-				svc.Register(ctx, srv, gw)
+			Start: func(ctx context.Context, svcCfg *svc.SvcCfg, svc *litterboxgrpcsvc.Svc, srv *grpc.Server, gw *runtime.ServeMux) {
+				svc.Register(ctx, srv, gw, svcCfg.GRPC.Port)
+				litterbox = true
 			},
 		},
 		svc.Component{
 			Name: "initmanifest",
 			Init: func(ctx context.Context, l L.L, cfg *Config) (actions manifest.Actions, _ error) {
+				var builtin manifest.Manifest
+
+				err := akcue.LoadFS(ctx, assets.FS, "internal", &builtin)
+				if err != nil {
+					return nil, fmt.Errorf("builtin load: %w", err)
+				}
+
+				if actions, err = builtin.Compile(); err != nil {
+					return nil, fmt.Errorf("builtin compile: %w", err)
+				}
+
 				for _, initpath := range cfg.InitPaths {
 					m, err := manifest.ManifestFromPath(ctx, initpath)
 					if err != nil {
@@ -731,7 +931,11 @@ var SvcOpts = []svc.OptFunc{
 		},
 		svc.Component{
 			Name: "grpcgw",
-			Init: func() *runtime.ServeMux { return runtime.NewServeMux() },
+			Init: func() *runtime.ServeMux {
+				return runtime.NewServeMux(
+					runtime.WithMarshalerOption(PlainTextMarshaler.ContentType(nil), PlainTextMarshaler),
+				)
+			},
 			Start: func(mux *runtime.ServeMux, r *mux.Router) {
 				r.PathPrefix("/api/").Handler(mux)
 			},

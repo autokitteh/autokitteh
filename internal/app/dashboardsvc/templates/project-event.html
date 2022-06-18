@@ -16,7 +16,7 @@
       <b>
       <a href="/dashboard/events/{{ .Event.Id }}">{{ .Event.Id }}</a>
       &#8594;
-      <a href="/dashboard/projects/{{ .Project.Id }}">{{ .Project.Id }}</a> 
+      <a href="/dashboard/projects/{{ .Project.Id }}">{{ .Project.Id }}</a>
       "{{ .Project.Settings.Name }}"
       </b>
     </td>
@@ -33,7 +33,7 @@
       {{ .Event.OriginalId }}
     </td>
     <td>
-      {{ template "project-event-state" (first .States) }}
+      {{ template "project-event-state" (list (first .States) .Project.Id) }}
     </td>
   </tr>
   <tr>
@@ -60,7 +60,7 @@
       <dd>
         <ul class="no-bullets">
           {{ range .States }}
-          <li class="no-bullets">{{ .T.Seconds | date "2006-01-02 15:04:05" }} | {{ template "project-event-state"  . }} </li>
+          <li class="no-bullets">{{ .T.Seconds | date "2006-01-02 15:04:05" }} | {{ template "project-event-state"  (list . $.Project.Id) }} </li>
           {{ end }}
         </ul>
       </dd>

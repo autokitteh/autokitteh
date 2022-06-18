@@ -11,12 +11,12 @@ import (
 
 	"github.com/fsnotify/fsnotify"
 
+	"github.com/autokitteh/L"
+	"github.com/autokitteh/autokitteh/internal/pkg/events"
+	"github.com/autokitteh/autokitteh/internal/pkg/eventsrcsstore"
 	"go.autokitteh.dev/sdk/api/apieventsrc"
 	"go.autokitteh.dev/sdk/api/apiproject"
 	"go.autokitteh.dev/sdk/api/apivalues"
-	"github.com/autokitteh/autokitteh/internal/pkg/events"
-	"github.com/autokitteh/autokitteh/internal/pkg/eventsrcsstore"
-	"github.com/autokitteh/L"
 )
 
 var EventTypes = []string{"create", "write", "remove", "rename", "chmod"}
@@ -254,6 +254,7 @@ func (s *FSEventSource) rx(ctx context.Context, ev *fsnotify.Event) {
 
 			eid, err := s.Events.IngestEvent(
 				ctx,
+				"",
 				s.Config.EventSourceID,
 				assoc,
 				"", // no original id

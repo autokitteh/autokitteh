@@ -2,4 +2,4 @@
 
 set -xeuo pipefail
 
-cp scripts/git-hooks/pre-commit .git/hooks/
+cp scripts/git-hooks/pre-push .git/hooks/

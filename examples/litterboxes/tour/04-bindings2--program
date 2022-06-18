@@ -1,0 +1,48 @@
+# In this exercise we're going to make our dispenser much more
+# easier to handle. Instead of modifying the code to change
+# cat's permissions, we will change a data file.
+
+# In the LitterBox, you can provide multiple files in the same
+# listing. This is using the Txtar format:
+# https://pkg.go.dev/golang.org/x/tools/txtar#hdr-Txtar_format
+-- auto.kitteh --
+load("ak", "sources")
+
+# This will load "acl.yaml" in a path relative to the directory
+# of this file. This is useful for the LitterBox since you cannot
+# know the LitterBox path ahead of time.
+load("./cats.yaml", "cats")
+
+
+def _on_sound(ak_name, sound):
+  kind = ak_name.split('_')[0]
+
+  print('%s food dispenser heard a %s' % (kind, sound))
+
+  for name, cfg in cats.items():
+    if cfg['sound'] == sound and kind in cfg['kinds']:
+      print('dispensing %s food to %s' % (kind, name))
+
+
+sources.bind('wet_dispenser.sound', _on_sound)
+sources.bind('dry_dispenser.sound', _on_sound)
+
+# EVENT gizmo: { "src": "dry_dispenser", "type": "sound", "data": { "sound": { "string": { "v": "meow" } } } }
+# EVENT midnight: { "src": "dry_dispenser", "type": "sound", "data": { "sound": { "string": { "v": "grrrr" } } } }
+# EVENT pepurr: { "src": "wet_dispenser", "type": "sound", "data": { "sound": { "string": { "v": "purrrr" } } } }
+# EVENT zumi: { "src": "wet_dispenser", "type": "sound", "data": { "sound": { "string": { "v": "hiss" } } } }
+
+-- cats.yaml --
+cats:
+  gizmo:
+    sound: "meow"
+    kinds: ["dry"]
+  midnight:
+    sound: "grrrr"
+    kinds: ["dry"]
+  pepurr:
+    sound: "purrrr"
+    kinds: ["wet", "dry"]
+  zumi:
+    sound: "hiss"
+    kinds: ["wet"]

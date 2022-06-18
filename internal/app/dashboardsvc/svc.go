@@ -5,13 +5,17 @@ import (
 
 	"github.com/gorilla/mux"
 
-	"github.com/autokitteh/autokitteh/internal/app/dashboardsvc/templates"
 	"github.com/autokitteh/autokitteh/internal/pkg/eventsrcsstore"
 	"github.com/autokitteh/autokitteh/internal/pkg/eventsstore"
+	"github.com/autokitteh/autokitteh/internal/pkg/litterbox"
+	"github.com/autokitteh/autokitteh/internal/pkg/programs"
 	"github.com/autokitteh/autokitteh/internal/pkg/projectsstore"
 	"github.com/autokitteh/autokitteh/internal/pkg/secretsstore"
 	"github.com/autokitteh/autokitteh/internal/pkg/statestore"
 	"github.com/autokitteh/tmplrender"
+
+	"github.com/autokitteh/autokitteh/internal/app/dashboardsvc/static"
+	"github.com/autokitteh/autokitteh/internal/app/dashboardsvc/templates"
 )
 
 type Config struct {
@@ -25,6 +29,10 @@ type Svc struct {
 	EventSourcesStore eventsrcsstore.Store
 	StateStore        statestore.Store
 	SecretsStore      *secretsstore.Store
+	LitterBox         litterbox.LitterBox
+	Programs          *programs.Programs
+
+	Port int
 
 	renderFn tmplrender.RenderFunc
 }
@@ -37,15 +45,23 @@ func (s *Svc) render(w http.ResponseWriter, name string, ctx interface{}) {
 	s.renderFn(w, name, ctx)
 }
 
-func (s *Svc) static(w http.ResponseWriter, req *http.Request) {
-	s.render(w, req.URL.Path, nil)
+func (s *Svc) staticHandler(w http.ResponseWriter, req *http.Request) {
+	bs, err := static.FS.ReadFile(req.URL.Path)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Write(bs)
 }
 
 func (s *Svc) Register(r *mux.Router) {
 	dashboard := r.PathPrefix("/dashboard/").Subrouter()
-	dashboard.PathPrefix("/static/").Handler(http.StripPrefix("/dashboard/static/", http.HandlerFunc(s.static)))
+	dashboard.PathPrefix("/static/").Handler(http.StripPrefix("/dashboard/static/", http.HandlerFunc(s.staticHandler)))
 
 	s.registerEvents(dashboard)
 	s.registerEventSrcs(dashboard)
 	s.registerProjects(dashboard)
+	s.registerLitterbox(dashboard)
+	s.registerPrograms(dashboard)
 }

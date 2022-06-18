@@ -56,3 +56,6 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta_autokitteh.outputs.tags }}
           labels: ${{ steps.meta_autokitteh.outputs.labels }}
+          build-args: |
+            VERSION=${{ github.ref_name }}-docker
+            COMMIT=${{ github.sha }}

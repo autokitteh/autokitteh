@@ -5,9 +5,17 @@ WORKDIR /build
 
 ENV GOOS=linux
 
-# see https://awstip.com/containerize-go-sqlite-with-docker-6d7fbecd14f0
-ENV CGO_ENABLED=1
-ENV GO_BUILD_OPTS="-a -ldflags '-linkmode external -extldflags "-static"'"
+ARG COMMIT
+ENV COMMIT=${COMMIT}
+
+ARG VERSION
+ENV VERSION=${VERSION}
+
+ARG DATE
+ENV DATE=${DATE}
+
+ENV LDFLAGS="-linkmode external --extldflags "-static""
+ENV GO_BUILD_OPTS="-a"
 
 RUN go mod download
 RUN make bin

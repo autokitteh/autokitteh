@@ -10,12 +10,12 @@ import (
 	"go.starlark.net/starlark"
 	"go.starlark.net/starlarkstruct"
 
+	"github.com/autokitteh/L"
 	"github.com/autokitteh/autokitteh/internal/pkg/lang"
 	"github.com/autokitteh/autokitteh/internal/pkg/lang/langtools"
 	"go.autokitteh.dev/sdk/api/apilang"
 	"go.autokitteh.dev/sdk/api/apiprogram"
 	"go.autokitteh.dev/sdk/api/apivalues"
-	"github.com/autokitteh/L"
 )
 
 type langstarlark struct {
@@ -122,6 +122,10 @@ func (s *langstarlark) GetModuleDependencies(ctx context.Context, mod *apiprogra
 			return nil, errf("path %q: %w", load, err)
 		}
 
+		if path, err = apiprogram.JoinWithParent(mod.SourcePath(), path); err != nil {
+			return nil, errf("invalid relative path %q to %q: %w", path.String(), mod.SourcePath().String(), err)
+		}
+
 		// only report non-builtins.
 		if s.modules[path.Path()] == nil {
 			paths = append(paths, path)
@@ -185,7 +189,7 @@ func (s *langstarlark) RunModule(
 	thread := &starlark.Thread{
 		Name:  mod.SourcePath().String(),
 		Print: func(_ *starlark.Thread, msg string) { env.Print(msg) },
-		Load: func(_ *starlark.Thread, module string) (starlark.StringDict, error) {
+		Load: func(t *starlark.Thread, module string) (starlark.StringDict, error) {
 			if s.modules != nil {
 				if load, found := s.modules[module]; found {
 					return load()
@@ -195,6 +199,10 @@ func (s *langstarlark) RunModule(
 			p, err := apiprogram.ParsePathString(module)
 			if err != nil {
 				return nil, errf("new path %q: %w", module, err)
+			}
+
+			if p, err = apiprogram.JoinWithParent(mod.SourcePath(), p); err != nil {
+				return nil, errf("invalid relative path %q to %q: %w", p.String(), mod.SourcePath().String(), err)
 			}
 
 			vs, _, err := env.Load(ctx, p)

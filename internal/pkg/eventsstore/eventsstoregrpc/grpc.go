@@ -9,21 +9,22 @@ import (
 
 	pbeventsvc "go.autokitteh.dev/idl/go/eventsvc"
 
+	"github.com/autokitteh/autokitteh/internal/pkg/eventsstore"
 	"go.autokitteh.dev/sdk/api/apievent"
 	"go.autokitteh.dev/sdk/api/apieventsrc"
 	"go.autokitteh.dev/sdk/api/apiproject"
 	"go.autokitteh.dev/sdk/api/apivalues"
-	"github.com/autokitteh/autokitteh/internal/pkg/eventsstore"
 )
 
 type Store struct{ Client pbeventsvc.EventsClient }
 
 var _ eventsstore.Store = &Store{}
 
-func (s *Store) Add(ctx context.Context, srcid apieventsrc.EventSourceID, assoc, originalID, typ string, data map[string]*apivalues.Value, memo map[string]string) (apievent.EventID, error) {
+func (s *Store) Add(ctx context.Context, id apievent.EventID, srcid apieventsrc.EventSourceID, assoc, originalID, typ string, data map[string]*apivalues.Value, memo map[string]string) (apievent.EventID, error) {
 	resp, err := s.Client.IngestEvent(
 		ctx,
 		&pbeventsvc.IngestEventRequest{
+			EventId:          id.String(),
 			SrcId:            srcid.String(),
 			Type:             typ,
 			Memo:             memo,

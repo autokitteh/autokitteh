@@ -16,10 +16,10 @@ import (
 
 	"github.com/autokitteh/autokitteh/internal/pkg/events"
 	"github.com/autokitteh/autokitteh/internal/pkg/eventsrcsstore"
+	"github.com/autokitteh/stores/kvstore"
 	"go.autokitteh.dev/sdk/api/apieventsrc"
 	"go.autokitteh.dev/sdk/api/apiproject"
 	"go.autokitteh.dev/sdk/api/apivalues"
-	"github.com/autokitteh/stores/kvstore"
 
 	pb "go.autokitteh.dev/idl/go/croneventsrc"
 
@@ -181,6 +181,7 @@ func (s *Svc) tick() {
 
 			id, err := s.Events.IngestEvent(
 				ctx,
+				"",
 				s.Config.EventSourceID,
 				/* assoc */ "",
 				/* originalID */ now.String(),

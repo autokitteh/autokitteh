@@ -169,13 +169,13 @@ func (s *Svc) httpEvent(w http.ResponseWriter, r *http.Request) {
 
 	eids := make(map[string]apievent.EventID, 2)
 
-	if eids[pev.Owner], err = s.Events.IngestEvent(r.Context(), s.Config.EventSourceID, pev.Owner, deliveryID, webhookType, pev.Data, nil); err != nil {
+	if eids[pev.Owner], err = s.Events.IngestEvent(r.Context(), "", s.Config.EventSourceID, pev.Owner, deliveryID, webhookType, pev.Data, nil); err != nil {
 		l.Error("owner ingest event error", "err", err)
 	}
 
 	if pev.Repo != "" {
 		assoc := fmt.Sprintf("%s/%s", pev.Owner, pev.Repo)
-		if eids[assoc], err = s.Events.IngestEvent(r.Context(), s.Config.EventSourceID, assoc, deliveryID, webhookType, pev.Data, nil); err != nil {
+		if eids[assoc], err = s.Events.IngestEvent(r.Context(), "", s.Config.EventSourceID, assoc, deliveryID, webhookType, pev.Data, nil); err != nil {
 			l.Error("repo ingest event error", "err", err)
 		}
 	}

@@ -5,14 +5,18 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gorilla/mux"
 
-	"github.com/autokitteh/autokitteh/internal/pkg/eventsstore"
+	pbeventsrc "go.autokitteh.dev/idl/go/eventsrc"
+
 	"go.autokitteh.dev/sdk/api/apievent"
 	"go.autokitteh.dev/sdk/api/apilang"
 	"go.autokitteh.dev/sdk/api/apiproject"
 	"go.autokitteh.dev/sdk/api/apivalues"
+
+	"github.com/autokitteh/autokitteh/internal/pkg/eventsstore"
 )
 
 func (s *Svc) registerEvents(r *mux.Router) {
@@ -166,8 +170,15 @@ func (s *Svc) event(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	assoc := ev.AssociationToken()
 	srcID := ev.EventSourceID()
-	bindings, err := s.EventSourcesStore.GetProjectBindings(r.Context(), &srcID, nil, "", ev.AssociationToken(), false)
+
+	// [# litterbox-assoc #]
+	if srcID.EventSourceName() == "litterbox" {
+		assoc, _, _ = strings.Cut(assoc, ",")
+	}
+
+	bindings, err := s.EventSourcesStore.GetProjectBindings(r.Context(), &srcID, nil, "", assoc, false)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -230,15 +241,27 @@ func (s *Svc) eventForProject(w http.ResponseWriter, r *http.Request) {
 
 	srcID := ev.EventSourceID()
 
-	bindings, err := s.EventSourcesStore.GetProjectBindings(r.Context(), &srcID, &pid, "", ev.AssociationToken(), false)
+	assoc := ev.AssociationToken()
+	var bindingName string
+
+	// [# litterbox-assoc #]
+	if srcID.EventSourceName() == "litterbox" {
+		assoc, bindingName, _ = strings.Cut(assoc, ",")
+	}
+
+	bindings, err := s.EventSourcesStore.GetProjectBindings(r.Context(), &srcID, &pid, "", assoc, false)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	var pbbinding interface{}
+	var pbbinding *pbeventsrc.EventSourceProjectBinding
 	if len(bindings) == 1 {
 		pbbinding = bindings[0].PB()
+	}
+
+	if bindingName != "" && pbbinding != nil {
+		pbbinding.Name = bindingName
 	}
 
 	var sum *apilang.RunSummary
@@ -250,7 +273,7 @@ func (s *Svc) eventForProject(w http.ResponseWriter, r *http.Request) {
 			switch sv := s.State().Get().(type) {
 			case *apievent.ErrorProjectEventState:
 				sum = sv.RunSummary()
-			case *apievent.ProcessedProjectEventState:
+			case *apievent.CompletedProjectEventState:
 				sum = sv.RunSummary()
 			case *apievent.WaitingProjectEventState:
 				sum = sv.RunSummary()
@@ -258,12 +281,8 @@ func (s *Svc) eventForProject(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	flog, fprints := sum.Flatten()
-
-	pbflog := make([]interface{}, len(flog))
-	for i, x := range flog {
-		pbflog[i] = x.PB()
-	}
+	fsum := sum.Flatten()
+	flog, fprints := fsum.PB().Log, fsum.PB().Prints
 
 	s.render(w, "project-event.html", struct {
 		Event, UnwrappedData, States, Binding, Project, RunSummary, FlatLog, FlatPrints interface{}
@@ -274,7 +293,7 @@ func (s *Svc) eventForProject(w http.ResponseWriter, r *http.Request) {
 		Binding:       pbbinding,
 		Project:       proj.PB(),
 		RunSummary:    sum.PB(),
-		FlatLog:       pbflog,
+		FlatLog:       flog,
 		FlatPrints:    fprints,
 	})
 }

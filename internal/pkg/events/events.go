@@ -8,17 +8,21 @@ import (
 	temporalclient "go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/worker"
 	"go.temporal.io/sdk/workflow"
+	"google.golang.org/protobuf/proto"
 
-	"github.com/autokitteh/autokitteh/internal/pkg/accountsstore"
-	"github.com/autokitteh/autokitteh/internal/pkg/eventsrcsstore"
-	"github.com/autokitteh/autokitteh/internal/pkg/eventsstore"
-	"github.com/autokitteh/autokitteh/internal/pkg/projectsstore"
 	"go.autokitteh.dev/sdk/api/apievent"
 	"go.autokitteh.dev/sdk/api/apieventsrc"
 	"go.autokitteh.dev/sdk/api/apilang"
 	"go.autokitteh.dev/sdk/api/apiproject"
 	"go.autokitteh.dev/sdk/api/apivalues"
+
 	"github.com/autokitteh/L"
+	"github.com/autokitteh/pubsub"
+
+	"github.com/autokitteh/autokitteh/internal/pkg/accountsstore"
+	"github.com/autokitteh/autokitteh/internal/pkg/eventsrcsstore"
+	"github.com/autokitteh/autokitteh/internal/pkg/eventsstore"
+	"github.com/autokitteh/autokitteh/internal/pkg/projectsstore"
 )
 
 type Stores struct {
@@ -30,6 +34,7 @@ type Stores struct {
 
 type Events struct {
 	Temporal temporalclient.Client
+	PubSub   pubsub.PubSub
 	Stores   Stores
 	Run      func(workflow.Context, *apievent.Event, *apiproject.Project, string) (*apilang.RunSummary, error)
 
@@ -50,8 +55,152 @@ func GetIngestProjectEventWorkflowID(eid apievent.EventID, pid apiproject.Projec
 	return fmt.Sprintf("ingest_project_event-%v-%v", eid, pid)
 }
 
+func TopicForEvent(id apievent.EventID) string {
+	return fmt.Sprintf("event-tracking-%s", id.String())
+}
+
+func TopicForProject(id apiproject.ProjectID) string {
+	return fmt.Sprintf("project-tracking-%s", id.String())
+}
+
+func (e *Events) MonitorProjectEvents(
+	ctx context.Context,
+	ch chan<- *apievent.TrackIngestEventUpdate,
+	pid apiproject.ProjectID,
+) error {
+	l := e.L.With("project_id", pid.String())
+
+	sub, err := e.PubSub.Subscribe(ctx, TopicForProject(pid))
+	if err != nil {
+		return fmt.Errorf("subscribe: %w", err)
+	}
+
+	defer func() {
+		go func() {
+			if err := sub.Unsubscribe(context.Background()); err != nil {
+				e.L.Error("unsubscribe error", "err", err)
+			}
+		}()
+	}()
+
+	for {
+		payload, err := sub.Consume(ctx)
+		if err != nil {
+			close(ch)
+
+			switch err {
+			case pubsub.ErrUnsubscribed:
+				l.Debug("unsubscribed")
+			case context.Canceled:
+				l.Debug("canceled")
+			default:
+				return L.Error(l, "consume error", "err", err)
+			}
+
+			return nil
+		}
+
+		var pb apievent.TrackIngestEventUpdatePB
+
+		if err := proto.Unmarshal(payload, &pb); err != nil {
+			l.Error("update unmarshal error", "err", err)
+			continue
+		}
+
+		upd, err := apievent.TrackIngestEventUpdateFromProto(&pb)
+		if err != nil {
+			l.Error("invalid update", "err", err)
+			continue
+		}
+
+		l.Debug("sent update", "upd", upd)
+
+		ch <- upd
+	}
+}
+
+func (e *Events) TrackIngestEvent(
+	ctx context.Context,
+	ch chan<- *apievent.TrackIngestEventUpdate,
+	id apievent.EventID,
+	srcid apieventsrc.EventSourceID,
+	assoc string,
+	originalID string,
+	typ string,
+	data map[string]*apivalues.Value,
+	memo map[string]string,
+) error {
+	if id == "" {
+		id = apievent.NewEventID()
+	}
+
+	l := e.L.With("event_id", id.String())
+
+	sub, err := e.PubSub.Subscribe(ctx, TopicForEvent(id))
+	if err != nil {
+		return fmt.Errorf("subscribe: %w", err)
+	}
+
+	defer func() {
+		go func() {
+			if err := sub.Unsubscribe(context.Background()); err != nil {
+				e.L.Error("unsubscribe error", "err", err)
+			}
+		}()
+	}()
+
+	we, err := e.ingestEvent(ctx, id, srcid, assoc, originalID, typ, data, memo)
+	if err != nil {
+		return err
+	}
+
+	go func() {
+		for {
+			payload, err := sub.Consume(ctx)
+			if err != nil {
+				close(ch)
+
+				switch err {
+				case pubsub.ErrUnsubscribed:
+					l.Debug("unsubscribed")
+				case context.Canceled:
+					l.Debug("canceled")
+				default:
+					l.Error("consume error", "err", err)
+				}
+
+				return
+			}
+
+			var pb apievent.TrackIngestEventUpdatePB
+
+			if err := proto.Unmarshal(payload, &pb); err != nil {
+				l.Error("update unmarshal error", "err", err)
+				continue
+			}
+
+			upd, err := apievent.TrackIngestEventUpdateFromProto(&pb)
+			if err != nil {
+				l.Error("invalid update", "err", err)
+				continue
+			}
+
+			l.Debug("sent update")
+
+			ch <- upd
+		}
+	}()
+
+	if err := we.Get(ctx, nil); err != nil {
+		return L.Error(l, "wait error", "err", err)
+	}
+
+	return nil
+}
+
 func (e *Events) IngestEvent(
 	ctx context.Context,
+	id apievent.EventID,
 	srcid apieventsrc.EventSourceID,
 	assoc string,
 	originalID string,
@@ -59,19 +208,35 @@ func (e *Events) IngestEvent(
 	data map[string]*apivalues.Value,
 	memo map[string]string,
 ) (apievent.EventID, error) {
+	if id == "" {
+		id = apievent.NewEventID()
+	}
+
+	_, err := e.ingestEvent(ctx, id, srcid, assoc, originalID, typ, data, memo)
+	return id, err
+}
+
+func (e *Events) ingestEvent(
+	ctx context.Context,
+	id apievent.EventID,
+	srcid apieventsrc.EventSourceID,
+	assoc string,
+	originalID string,
+	typ string,
+	data map[string]*apivalues.Value,
+	memo map[string]string,
+) (temporalclient.WorkflowRun, error) {
 	l := e.L.With("srcid", srcid, "type", typ, "original_id", originalID, "assoc", assoc)
 
-	id, err := e.Stores.Events.Add(ctx, srcid, assoc, originalID, typ, data, memo)
+	id, err := e.Stores.Events.Add(ctx, id, srcid, assoc, originalID, typ, data, memo)
 	if err != nil {
-		return "", fmt.Errorf("add: %w", err)
+		return nil, fmt.Errorf("add: %w", err)
 	}
 
 	l.Debug("event added", "id", id)
 
 	if err := e.Stores.Events.UpdateState(ctx, id, apievent.NewPendingEventState()); err != nil {
-		l.Error("update event state failed", "err", err)
-
-		// fallthrough (failure not critical)
+		return nil, L.Error(l, "update event state failed", "err", err)
 	}
 
 	wopts := temporalclient.StartWorkflowOptions{
@@ -91,12 +256,12 @@ func (e *Events) IngestEvent(
 			}
 		}()
 
-		return "", err
+		return nil, err
 	}
 
 	l.Debug("started ingest-event workflow", "workflow_id", we.GetID(), "run_id", we.GetRunID())
 
-	return id, nil
+	return we, nil
 }
 
 func (e *Events) ingestEventWorkflow(
@@ -236,8 +401,6 @@ func (e *Events) ingestProjectEventWorkflow(
 		},
 	)
 
-	e.updateProjectState(ctx, event.ID(), project.ID(), apievent.NewProcessingProjectEventState())
-
 	sum, err := e.Run(ctx, event, project, bindingName)
 	if err != nil {
 		l.Debug("run error", "err", err)
@@ -248,7 +411,7 @@ func (e *Events) ingestProjectEventWorkflow(
 
 	l.Debug("session run completed", "summary", sum)
 
-	state := apievent.NewProcessedProjectEventState(sum)
+	state := apievent.NewCompletedProjectEventState(sum)
 
 	e.updateProjectState(ctx, event.ID(), project.ID(), state)
 

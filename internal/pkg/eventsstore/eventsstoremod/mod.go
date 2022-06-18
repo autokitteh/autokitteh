@@ -60,12 +60,13 @@ func open(
 func makeAdd(s eventsstore.Store) func(thread *starlark.Thread, b *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
 	return func(thread *starlark.Thread, b *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
 		var (
-			srcid, typ, originalID, associationToken starlark.String
-			dataArg                                  starlark.Dict
+			id, srcid, typ, originalID, associationToken starlark.String
+			dataArg                                      starlark.Dict
 		)
 
 		if err := starlark.UnpackArgs(
 			b.Name(), args, kwargs,
+			"id?", &id,
 			"src_id", &srcid,
 			"type", &typ,
 			"original_id?", &originalID,
@@ -92,7 +93,7 @@ func makeAdd(s eventsstore.Store) func(thread *starlark.Thread, b *starlark.Buil
 			return nil, fmt.Errorf("error translating data: %w", err)
 		}
 
-		id, err := s.Add(context.Background(), apieventsrc.EventSourceID(srcid), string(associationToken), string(typ), string(originalID), data, nil)
+		id, err := s.Add(context.Background(), apievent.EventID(id), apieventsrc.EventSourceID(srcid), string(associationToken), string(typ), string(originalID), data, nil)
 		if err != nil {
 			return nil, fmt.Errorf("create: %w", err)
 		}

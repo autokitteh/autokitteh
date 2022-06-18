@@ -4,7 +4,6 @@ import "autokitteh.io/manifest"
 
 manifest.#Manifest & {
 	accounts: {
-		"internal": {}
 		"autokitteh": {}
 	}
 
@@ -12,9 +11,7 @@ manifest.#Manifest & {
 		"autokitteh.github": {}
 		"autokitteh.slack": {}
 		"autokitteh.twilio": {}
-		"internal.cron": {}
 		"internal.fs": {}
-		"internal.http": {}
 	}
 
 	plugins: {

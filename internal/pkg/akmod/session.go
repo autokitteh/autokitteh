@@ -2,18 +2,17 @@ package akmod
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	temporalclient "go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/workflow"
 
+	"github.com/autokitteh/L"
 	"go.autokitteh.dev/sdk/api/apievent"
 	"go.autokitteh.dev/sdk/api/apieventsrc"
 	"go.autokitteh.dev/sdk/api/apilang"
 	"go.autokitteh.dev/sdk/api/apiproject"
 	"go.autokitteh.dev/sdk/api/apivalues"
-	"github.com/autokitteh/L"
 )
 
 var sessionKey struct{}
@@ -68,13 +67,5 @@ func NewSyntheticEvent(origEvent *apievent.Event, name string, v *apivalues.Valu
 			},
 			time.Now(),
 		),
-	}
-}
-
-func NewEventSignal(bindingName string, event *apievent.Event) *sessionEventSignal {
-	return &sessionEventSignal{
-		// [# signal-event-name #]
-		Name:  fmt.Sprintf("%s.%s", bindingName, event.Type()),
-		Event: event,
 	}
 }
