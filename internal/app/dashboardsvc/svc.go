@@ -52,7 +52,7 @@ func (s *Svc) staticHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	w.Write(bs)
+	_, _ = w.Write(bs)
 }
 
 func (s *Svc) Register(r *mux.Router) {

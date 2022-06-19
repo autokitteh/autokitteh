@@ -41,7 +41,6 @@ func (s *Svc) Register(ctx context.Context, srv *grpc.Server, gw *runtime.ServeM
 			fmt.Sprintf("127.0.0.1:%d", port),
 			[]grpc.DialOption{
 				grpc.WithTransportCredentials(insecure.NewCredentials()),
-				grpc.WithMaxMsgSize(1000000),
 				grpc.WithDefaultCallOptions(
 					grpc.MaxCallRecvMsgSize(1000000),
 					grpc.MaxCallSendMsgSize(1000000),
