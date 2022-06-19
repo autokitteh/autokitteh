@@ -36,6 +36,60 @@ var OS = &pluginimpl.Plugin{
 				return apivalues.String(v), nil
 			},
 		),
+		"read_text_file": pluginimpl.NewSimpleMethodMember(
+			"TODO",
+			func(
+				ctx context.Context,
+				args []*apivalues.Value,
+				kwargs map[string]*apivalues.Value,
+			) (*apivalues.Value, error) {
+				var (
+					name string
+				)
+
+				if err := pluginimpl.UnpackArgs(
+					args, kwargs,
+					"name", &name,
+				); err != nil {
+					return nil, err
+				}
+
+				bs, err := os.ReadFile(name)
+				if err != nil {
+					return nil, err
+				}
+
+				return apivalues.String(string(bs)), nil
+			},
+		),
+		"write_text_file": pluginimpl.NewSimpleMethodMember(
+			"TODO",
+			func(
+				ctx context.Context,
+				args []*apivalues.Value,
+				kwargs map[string]*apivalues.Value,
+			) (*apivalues.Value, error) {
+				var (
+					name, text string
+					mode       int64 = 0644
+				)
+
+				if err := pluginimpl.UnpackArgs(
+					args, kwargs,
+					"name", &name,
+					"text", &text,
+					"mode?", &mode,
+				); err != nil {
+					return nil, err
+				}
+
+				if err := os.WriteFile(name, []byte(text), os.FileMode(mode)); err != nil {
+					return nil, err
+				}
+
+				return apivalues.None, nil
+			},
+		),
 		"exec": pluginimpl.NewSimpleMethodMember(
 			"TODO",
 			func(
