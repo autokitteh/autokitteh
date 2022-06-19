@@ -10,6 +10,7 @@ import (
 
 	"github.com/autokitteh/autokitteh/internal/pkg/lang/langstarlark/modules/parsecmd"
 	"github.com/autokitteh/autokitteh/internal/pkg/lang/langstarlark/modules/reflect"
+	"github.com/autokitteh/autokitteh/internal/pkg/lang/langstarlark/modules/txtar"
 	"github.com/autokitteh/starlarkutils"
 )
 
@@ -17,6 +18,7 @@ var (
 	DeterministicBuiltinModules = map[string]func() (starlark.StringDict, error){
 		"reflect":  func() (starlark.StringDict, error) { return reflect.Load(), nil },
 		"parsecmd": func() (starlark.StringDict, error) { return parsecmd.Load(), nil },
+		"txtar":    func() (starlark.StringDict, error) { return txtar.Load(), nil },
 	}
 	PermissiveBuiltinModules = make(map[string]func() (starlark.StringDict, error))
 
