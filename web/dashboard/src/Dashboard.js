@@ -10,7 +10,9 @@ function Dashboard() {
   function click() {
     // api.init()
     // .then(client => client.Accounts_GetAccount('default'))
-    fetch('http://127.0.0.1:20000/api/v1/accounts/autokitteh')
+    fetch('http://127.0.0.1:20000/api/v1/accounts/autokitteh', {
+      mode: 'no-cors'
+    })
     .then(res => res.json())
     .then(res => console.log(res) || setData(res))
     .catch(error => console.log(error) || setData(error))
