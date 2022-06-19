@@ -2,7 +2,9 @@ package internalplugins
 
 import (
 	"context"
+	"errors"
 	"os"
+	"os/exec"
 
 	"go.autokitteh.dev/sdk/api/apivalues"
 	"go.autokitteh.dev/sdk/pluginimpl"
@@ -43,9 +45,7 @@ var OS = &pluginimpl.Plugin{
 				args []*apivalues.Value,
 				kwargs map[string]*apivalues.Value,
 			) (*apivalues.Value, error) {
-				var (
-					name string
-				)
+				var name string
 
 				if err := pluginimpl.UnpackArgs(
 					args, kwargs,
@@ -90,6 +90,34 @@ var OS = &pluginimpl.Plugin{
 				return apivalues.None, nil
 			},
 		),
+		"look_path": pluginimpl.NewSimpleMethodMember(
+			"TODO",
+			func(
+				ctx context.Context,
+				args []*apivalues.Value,
+				kwargs map[string]*apivalues.Value,
+			) (*apivalues.Value, error) {
+				var file string
+
+				if err := pluginimpl.UnpackArgs(
+					args, kwargs,
+					"file", &file,
+				); err != nil {
+					return nil, err
+				}
+
+				path, err := exec.LookPath(file)
+				if err != nil {
+					if errors.Is(err, exec.ErrNotFound) {
+						return apivalues.None, nil
+					}
+
+					return nil, err
+				}
+
+				return apivalues.String(path), nil
+			},
+		),
 		"exec": pluginimpl.NewSimpleMethodMember(
 			"TODO",
 			func(
@@ -105,7 +133,7 @@ var OS = &pluginimpl.Plugin{
 
 				if err := pluginimpl.UnpackArgs(
 					args, kwargs,
-					"path?", &path,
+					"path", &path,
 					"args?", &cmdargs,
 					"env?", &env,
 					"dir?", &dir,
