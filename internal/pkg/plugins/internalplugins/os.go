@@ -2,54 +2,11 @@ package internalplugins
 
 import (
 	"context"
-	"fmt"
 	"os"
-	"os/exec"
 
 	"go.autokitteh.dev/sdk/api/apivalues"
 	"go.autokitteh.dev/sdk/pluginimpl"
 )
-
-func run(ctx context.Context, path string, args, env []interface{}, dir string, fail bool) (*apivalues.Value, error) {
-	sargs := make([]string, len(args))
-	for i, a := range args {
-		s, ok := a.(string)
-		if !ok {
-			return nil, fmt.Errorf("args must be a list of strings")
-		}
-
-		sargs[i] = s
-	}
-
-	cmd := exec.CommandContext(ctx, path, sargs...)
-	cmd.Dir = dir
-
-	if env != nil {
-		cmd.Env = make([]string, len(env))
-		for i, e := range env {
-			s, ok := e.(string)
-			if !ok {
-				return nil, fmt.Errorf("env must be a list of strings")
-			}
-
-			cmd.Env[i] = s
-		}
-	}
-
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		if _, ee := err.(*exec.ExitError); fail || !ee {
-			return nil, err
-		}
-	}
-
-	return apivalues.MustNewValue(apivalues.ListValue(
-		[]*apivalues.Value{
-			apivalues.Integer(int64(cmd.ProcessState.ExitCode())),
-			apivalues.String(string(out)),
-		},
-	)), nil
-}
 
 var OS = &pluginimpl.Plugin{
 	Doc: "TODO",
