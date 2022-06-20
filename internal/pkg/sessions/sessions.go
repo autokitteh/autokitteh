@@ -232,7 +232,7 @@ func (s *Sessions) Run(
 				sessionID,
 				plugID,
 			).Get(ctx, &members); err != nil {
-				return nil, nil, L.Error(l, "load plugins: %w", err)
+				return nil, nil, L.Error(l, "load plugins", "err", err)
 			}
 
 			for _, m := range members {

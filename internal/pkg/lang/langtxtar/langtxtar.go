@@ -3,6 +3,7 @@ package langtxtar
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"golang.org/x/tools/txtar"
 
@@ -27,9 +28,9 @@ func init() {
 }
 
 func Register(cat lang.Catalog) {
-	cat.Register("json-program", lang.CatalogLang{
+	cat.Register("txtar", lang.CatalogLang{
 		New:  NewTxtarLang,
-		Exts: []string{"kitteh.json"},
+		Exts: []string{"txtar"},
 	})
 }
 
@@ -69,7 +70,28 @@ func (l *langtxtar) RunModule(
 		return nil, nil, fmt.Errorf("compiler version mismatch, %s != supported %s", cv, compilerVersion)
 	}
 
-	arch := txtar.Parse(mod.CompiledCode())
+	txt := string(mod.CompiledCode())
+
+	const header = "# txtar-sep="
+	if strings.HasPrefix(txt, header) {
+		ls := strings.Split(txt, "\n")
+
+		sep := strings.TrimSpace(ls[0][len(header):])
+		pre := sep + " "
+		post := " " + sep
+
+		ls = ls[1:]
+
+		for i, l := range ls {
+			if strings.HasPrefix(l, pre) && strings.HasSuffix(l, post) {
+				ls[i] = "-- " + strings.TrimSuffix(strings.TrimPrefix(l, pre), post) + " --"
+			}
+		}
+
+		txt = strings.Join(ls, "\n")
+	}
+
+	arch := txtar.Parse([]byte(txt))
 
 	fs := make(map[string]*apivalues.Value, len(arch.Files))
 	for _, f := range arch.Files {
