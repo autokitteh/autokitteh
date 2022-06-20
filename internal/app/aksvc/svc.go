@@ -533,6 +533,7 @@ See https://github.com/temporalio/docker-compose for more info.
 			Init: func(
 				ctx context.Context,
 				l L.L,
+				cfg *Config,
 				temporal temporalclient.Client,
 				programs *programs.Programs,
 				eventsStore eventsstore.Store,
@@ -542,6 +543,7 @@ See https://github.com/temporalio/docker-compose for more info.
 				pluginsReg *pluginsreg.Registry,
 			) *sessions.Sessions {
 				es := &sessions.Sessions{
+					Config:      cfg.Sessions,
 					Temporal:    temporal,
 					L:           L.N(l),
 					Programs:    programs,

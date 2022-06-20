@@ -3,8 +3,12 @@ package sessions
 import (
 	"context"
 	"fmt"
+	"sync"
+	"time"
 
+	"go.temporal.io/sdk/activity"
 	temporalclient "go.temporal.io/sdk/client"
+	"go.temporal.io/sdk/temporal"
 	"go.temporal.io/sdk/worker"
 	"go.temporal.io/sdk/workflow"
 
@@ -27,7 +31,12 @@ import (
 	"github.com/autokitteh/autokitteh/internal/pkg/statestore"
 )
 
-type Config struct{}
+type Config struct {
+	TaskQueueName        string        `envconfig:"TASK_QUEUE_NAME" default:"sessions" json:"task_queue_name"`
+	UpdateStateTimeout   time.Duration `envconfig:"UPDATE_STATE_TIMEOUT" default:"30s" json:"update_state_timeout"`
+	ProgramsFetchTimeout time.Duration `envconfig:"PROGRAMS_FETCH_TIMEOUT" default:"1m" json:"programs_fetch_timeout"`
+	LoadPluginsTimeout   time.Duration `envconfig:"LOAD_PLUGINS_TIMEOUT" default:"1m" json:"load_plugins_timeout"`
+}
 
 type Sessions struct {
 	Config      Config
@@ -41,10 +50,55 @@ type Sessions struct {
 	L           L.Nullable
 
 	worker worker.Worker
+
+	// Since all activities run in the same temporal session,
+	// they will run in the same process. This enables them to
+	// share the plugins value.
+	pluginsMutex sync.RWMutex
+	plugins      map[string]map[apiplugin.PluginID]plugin.Plugin
 }
 
+const (
+	programsFetchActivityName         = "programs-fetch"
+	updateStateForProjectActivityName = "update-state-for-project"
+	loadPluginsActivityName           = "load-plugins"
+	loadPluginActivityName            = "load-plugin"
+	callPluginActivityName            = "call-plugin"
+)
+
 func (s *Sessions) Init() {
-	s.worker = worker.New(s.Temporal, "sessions", worker.Options{})
+	s.worker = worker.New(
+		s.Temporal,
+		s.Config.TaskQueueName,
+		worker.Options{
+			EnableSessionWorker: true,
+		},
+	)
+
+	s.worker.RegisterActivityWithOptions(
+		s.Programs.Fetch,
+		activity.RegisterOptions{Name: programsFetchActivityName},
+	)
+
+	s.worker.RegisterActivityWithOptions(
+		s.EventsStore.UpdateStateForProject,
+		activity.RegisterOptions{Name: updateStateForProjectActivityName},
+	)
+
+	s.worker.RegisterActivityWithOptions(
+		s.loadPlugins,
+		activity.RegisterOptions{Name: loadPluginsActivityName},
+	)
+
+	s.worker.RegisterActivityWithOptions(
+		s.loadPlugin,
+		activity.RegisterOptions{Name: loadPluginActivityName},
+	)
+
+	s.worker.RegisterActivityWithOptions(
+		s.callPlugin,
+		activity.RegisterOptions{Name: callPluginActivityName},
+	)
 }
 
 func (s *Sessions) Start() error { return s.worker.Start() }
@@ -56,6 +110,8 @@ func (s *Sessions) Run(
 	project *apiproject.Project,
 	srcBindingName string,
 ) (*apilang.RunSummary, error) {
+	ctx = workflow.WithTaskQueue(ctx, s.Config.TaskQueueName)
+
 	l := s.L.With("event_id", event.ID(), "project_id", project.ID(), "event_source_binding_name", srcBindingName)
 
 	sessionID := fmt.Sprintf("%v/%v", project.ID(), event.ID())
@@ -81,9 +137,9 @@ func (s *Sessions) Run(
 
 	var fr programs.FetchResult
 
-	if err := workflow.ExecuteLocalActivity(
-		ctx,
-		s.Programs.Fetch,
+	if err := workflow.ExecuteActivity(
+		workflow.WithStartToCloseTimeout(ctx, s.Config.ProgramsFetchTimeout),
+		programsFetchActivityName,
 		project.ID(),
 		mainPath,
 		predeclsKeys,
@@ -99,55 +155,29 @@ func (s *Sessions) Run(
 		return nil, err
 	}
 
-	akmodPlugin := akmod.New(
-		s.L.Named("akmod"),
-		s.StateStore,
-		project,
-		event,
-		func(ctx context.Context, n string) (string, error) {
-			// no need for an activity - this is part of a the Call activity.
-			return s.GetSecret(ctx, project.ID(), n)
+	sessionCtx, err := workflow.CreateSession(
+		ctx,
+		&workflow.SessionOptions{
+			ExecutionTimeout: time.Hour, // this probably needs to be configurable.
+			CreationTimeout:  time.Minute,
 		},
-		func(ctx context.Context, k, n string) ([]byte, error) {
-			// no need for an activity - this is part of a the Call activity.
-			return s.GetCreds(ctx, project.ID(), k, n)
-		},
-		srcBindingName,
-		"0.0.0", /* TODO */
 	)
-
-	plugins := map[apiplugin.PluginID]plugin.Plugin{
-		akmod.PluginID: akmodPlugin,
+	if err != nil {
+		return nil, fmt.Errorf("create session: %w", err)
 	}
 
-	for _, id := range fr.PluginIDs {
-		l := l.With("plugin_id", id)
+	defer workflow.CompleteSession(sessionCtx)
 
-		var projectPlugin *apiproject.ProjectPlugin
-
-		if plugins[id] != nil {
-			// already registered, no need to repeat.
-			continue
-		} else if id.IsInternal() {
-			// implemented internaly by ak.
-		} else if projectPlugin = project.Settings().Plugin(id); projectPlugin != nil {
-			if !projectPlugin.Enabled() {
-				return nil, fmt.Errorf("plugin %q is not enabled", id)
-			}
-		} else {
-			// might be builtin in starlark (or lang specific).
-			return nil, fmt.Errorf("plugin not configured for project")
-		}
-
-		var pl plugin.Plugin
-
-		// TODO: this might block for a short while, so better put it into some kind of activity?
-		pl, err := s.Plugins.NewPlugin(context.Background() /* TODO */, l.Named("plugin:"+id.String()), id, sessionID)
-		if err != nil {
-			return nil, fmt.Errorf("cannot create plugin %v: %w", id, err)
-		}
-
-		plugins[id] = pl
+	if err := workflow.ExecuteActivity(
+		workflow.WithStartToCloseTimeout(sessionCtx, s.Config.LoadPluginsTimeout),
+		loadPluginsActivityName,
+		sessionID,
+		project,
+		event,
+		srcBindingName,
+		fr,
+	).Get(ctx, nil); err != nil {
+		return nil, fmt.Errorf("load plugins: %w", err)
 	}
 
 	var prints []string
@@ -193,17 +223,16 @@ func (s *Sessions) Run(
 
 			l = l.With("plugin_id", plugID)
 
-			l.Debug("loading plugin")
-
-			plug := plugins[plugID]
-			if plug == nil {
-				return nil, nil, L.Error(l, "plugin not preloaded")
-			}
-
 			var members map[string]*apivalues.Value
 
-			if err := workflow.ExecuteLocalActivity(ctx, plug.GetAll).Get(ctx, &members); err != nil {
-				return nil, nil, fmt.Errorf("load members: %w", err)
+			// This needs to be an acitivity to guarntee it's part of the session.
+			if err := workflow.ExecuteActivity(
+				workflow.WithStartToCloseTimeout(sessionCtx, 5*time.Second),
+				loadPluginActivityName,
+				sessionID,
+				plugID,
+			).Get(ctx, &members); err != nil {
+				return nil, nil, L.Error(l, "load plugins: %w", err)
 			}
 
 			for _, m := range members {
@@ -236,11 +265,6 @@ func (s *Sessions) Run(
 				return nil, L.Error(l, "call to non-call value")
 			}
 
-			plug, ok := plugins[apiplugin.PluginID(callvCall.Issuer)]
-			if !ok {
-				return nil, L.Error(l, "call to unknown plugin", "call", callvCall)
-			}
-
 			if !callvCall.Flags["allow_passing_call_values"] { // [# allow_passing_call_values #]
 				// These ensures that any call value returned from a plugin call is generated by that call.
 				// This is essential for proper call registeration as it prevent plugins mascarading as
@@ -263,14 +287,18 @@ func (s *Sessions) Run(
 				// Run directly in workflow context.
 
 				// callCtx is the context given to RunModule.
-				ret, err = s.call(runCtx, callv, plug, args, kwargs)
+				ret, err = s.callPlugin(runCtx, sessionID, callv, args, kwargs)
 			} else {
-				err = workflow.ExecuteLocalActivity(
-					// TODO: this assume call has no non-deterministic failures.
-					withLocalActivityWithoutRetries(ctx),
-					s.call,
+				err = workflow.ExecuteActivity(
+					workflow.WithRetryPolicy(
+						workflow.WithStartToCloseTimeout(sessionCtx, 5*time.Second),
+						temporal.RetryPolicy{ // TODO
+							MaximumAttempts: 1,
+						},
+					),
+					callPluginActivityName,
+					sessionID,
 					callv,
-					plug,
 					args,
 					kwargs,
 				).Get(ctx, &ret)
@@ -297,6 +325,10 @@ func (s *Sessions) Run(
 
 	l.Debug("run completed", "summary", sum)
 
+	s.pluginsMutex.Lock()
+	delete(s.plugins, sessionID)
+	s.pluginsMutex.Unlock()
+
 	// TODO: this should happen even if session fails.
 	s.Plugins.CloseSession(sessionID)
 
@@ -308,7 +340,13 @@ func (s *Sessions) updateProjectState(ctx workflow.Context, id apievent.EventID,
 
 	l.Debug("updating project state")
 
-	if err := workflow.ExecuteLocalActivity(ctx, s.EventsStore.UpdateStateForProject, id, pid, state).Get(ctx, nil); err != nil {
+	if err := workflow.ExecuteActivity(
+		workflow.WithStartToCloseTimeout(ctx, s.Config.UpdateStateTimeout),
+		updateStateForProjectActivityName,
+		id,
+		pid,
+		state,
+	).Get(ctx, nil); err != nil {
 		l.Error("update project event state failed", "err", err)
 		return err
 	}
