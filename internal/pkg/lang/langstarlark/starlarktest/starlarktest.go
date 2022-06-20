@@ -11,17 +11,24 @@ import (
 var FailBuiltin = starlark.NewBuiltin("fail", fail)
 var CatchBuiltin = starlark.NewBuiltin("catch", catch)
 
-// catch(f) evaluates f() and returns its evaluation error message
-// if it failed or None if it succeeded.
+// returns tuple (retval, err_as_string):
+// - if succeeds, returns (retval, None)
+// - if fails, returns (None, err_as_string)
 func catch(thread *starlark.Thread, _ *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
 	var fn starlark.Callable
 	if err := starlark.UnpackArgs("catch", args, kwargs, "fn", &fn); err != nil {
 		return nil, err
 	}
-	if _, err := starlark.Call(thread, fn, nil, nil); err != nil {
-		return starlark.String(err.Error()), nil
+	ret, err := starlark.Call(thread, fn, nil, nil)
+	if err != nil {
+		return starlark.Tuple(
+			[]starlark.Value{
+				starlark.None,
+				starlark.String(err.Error()),
+			}), nil
 	}
-	return starlark.None, nil
+
+	return starlark.Tuple([]starlark.Value{ret, starlark.None}), nil
 }
 
 func fail(thread *starlark.Thread, _ *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
