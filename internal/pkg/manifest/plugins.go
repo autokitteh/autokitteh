@@ -14,7 +14,7 @@ type Plugin struct {
 	Port     uint16             `json:"port"`
 	Disabled bool               `json:"disabled"`
 	Exec     *struct {
-		Name string `json:"name"`
+		Path string `json:"path"`
 	} `json:"exec"`
 }
 
@@ -30,7 +30,7 @@ func (a Plugin) API(id string) (*apiplugin.Plugin, error) {
 	}
 
 	if a.Exec != nil {
-		s = s.SetExec((&apiplugin.PluginExecSettings{}).SetName(a.Exec.Name))
+		s = s.SetExec((&apiplugin.PluginExecSettings{}).SetPath(a.Exec.Path))
 	}
 
 	if a.ID != "" {

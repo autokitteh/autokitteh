@@ -13,7 +13,7 @@ package manifest
 #EventSource: {
 	id?:       string
 	disabled?: bool
-	types?:    [...string]
+	types?: [...string]
 }
 
 #EventSources: [string]: #EventSource
@@ -24,7 +24,7 @@ package manifest
 	port?:     number
 	disabled?: bool
 	exec?: {
-		name: string
+		path: string
 	}
 }
 

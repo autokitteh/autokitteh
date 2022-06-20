@@ -3,7 +3,7 @@ package akprocs
 import (
 	"fmt"
 	"os"
-	"path/filepath"
+	"os/exec"
 
 	"github.com/gorilla/mux"
 
@@ -14,8 +14,6 @@ import (
 type Config struct {
 	procs.ProcsConfig
 
-	// If not set, can run everywhere.
-	RootPath     string `envconfig:"EXEC_ROOT_PATH" default:"." json:"exec_root_path"`
 	ReadyAddress string `envconfig:"READY_ADDRESS" json:"ready_address"`
 }
 
@@ -37,31 +35,13 @@ func (ps *Procs) Start(path string, args []string, env map[string]string) (cmd *
 		panic("must be registered first")
 	}
 
-	if ps.Config.RootPath != "" {
-		rootPath, err := filepath.Abs(ps.Config.RootPath)
-		if err != nil {
-			return nil, "", fmt.Errorf("cannot deduce abs path %q", rootPath)
-		}
-
-		path, err = filepath.Abs(filepath.Join(rootPath, path))
-		if err != nil {
-			return nil, "", fmt.Errorf("cannot deduce abs path for %q", path)
-		}
-
-		rel, err := filepath.Rel(rootPath, path)
-		if err != nil {
-			return nil, "", fmt.Errorf("cannot deduce rel path of %q to %q", path, rootPath)
-		}
-
-		if rel[0] == '.' || rel[0] == '/' || rel[0] == '\\' {
-			return nil, "", fmt.Errorf("%q must be under %q", path, rootPath)
-		}
+	if path, err = exec.LookPath(path); err != nil {
+		return nil, "", fmt.Errorf("LookPath(%q): %w", path, err)
 	}
 
 	cmd = &procs.Cmd{
-		Path: filepath.Base(path),
-		Args: append([]string{filepath.Base(path)}, args...),
-		Dir:  filepath.Dir(path),
+		Path: path,
+		Args: append([]string{path}, args...),
 		Env: append(
 			os.Environ(),
 			fmt.Sprintf("AK_PROC_READY_ADDRESS=%s", ps.Config.ReadyAddress),

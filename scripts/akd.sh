@@ -16,7 +16,6 @@ export AKD_DASHBOARD_TEMPLATES_PATH="internal/app/dashboardsvc/templates"
 
 export AKD_INIT_PATHS="${AKD_INIT_PATHS-"examples/manifests"}"
 
-export AKD_PLUGINS_REG_PROCS_EXEC_ROOT_PATH="examples/plugins"
 export AKD_INITD_DIR="examples/initd"
 
 #

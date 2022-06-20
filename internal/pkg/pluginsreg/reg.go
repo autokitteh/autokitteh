@@ -39,7 +39,7 @@ type Registry struct {
 
 func (s *Registry) startExec(id apiplugin.PluginID, sid string, exec *apiplugin.PluginExecSettings) (string, error) {
 	cmd, addr, err := s.Procs.Start(
-		exec.Name(),
+		exec.Path(),
 		nil,
 		map[string]string{
 			"AK_PLUGIN_ID": id.String(),
@@ -110,12 +110,13 @@ func (s *Registry) NewPlugin(ctx context.Context, l L.L, id apiplugin.PluginID, 
 
 	var addr string
 
-	if pl.Settings().Exec().Name() != "" {
-		if addr, err = s.startExec(id, sessionID, pl.Settings().Exec()); err != nil {
+	settings := pl.Settings()
+	if exec := settings.Exec(); exec.Path() != "" {
+		if addr, err = s.startExec(id, sessionID, exec); err != nil {
 			return nil, fmt.Errorf("exec: %w", err)
 		}
 	} else {
-		addr = fmt.Sprintf("%s:%d", pl.Settings().Address(), pl.Settings().Port())
+		addr = fmt.Sprintf("%s:%d", settings.Address(), settings.Port())
 	}
 
 	return grpcplugin.NewFromHostPort(l, id, addr)

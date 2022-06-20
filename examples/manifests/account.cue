@@ -15,10 +15,10 @@ manifest.#Manifest & {
 	}
 
 	plugins: {
-		"autokitteh.slack": exec: name:        "slack"
-		"autokitteh.github": exec: name:       "github"
-		"autokitteh.googlesheets": exec: name: "googlesheets"
-		"autokitteh.twilio": exec: name:       "twilio"
-		"autokitteh.test": exec: name:         "test"
+		"autokitteh.slack": exec: path:        "examples/plugins/slack"
+		"autokitteh.github": exec: path:       "examples/plugins/github"
+		"autokitteh.googlesheets": exec: path: "examples/plugins/googlesheets"
+		"autokitteh.twilio": exec: path:       "examples/plugins/twilio"
+		"autokitteh.test": exec: path:         "examples/plugins/test"
 	}
 }
