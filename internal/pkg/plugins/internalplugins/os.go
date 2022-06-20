@@ -90,6 +90,30 @@ var OS = &pluginimpl.Plugin{
 				return apivalues.None, nil
 			},
 		),
+		"make_temp_dir": pluginimpl.NewSimpleMethodMember(
+			"TODO",
+			func(
+				ctx context.Context,
+				args []*apivalues.Value,
+				kwargs map[string]*apivalues.Value,
+			) (*apivalues.Value, error) {
+				var pattern string
+
+				if err := pluginimpl.UnpackArgs(
+					args, kwargs,
+					"pattern", &pattern,
+				); err != nil {
+					return nil, err
+				}
+
+				path, err := os.MkdirTemp("", pattern)
+				if err != nil {
+					return nil, err
+				}
+
+				return apivalues.String(path), nil
+			},
+		),
 		"look_path": pluginimpl.NewSimpleMethodMember(
 			"TODO",
 			func(
