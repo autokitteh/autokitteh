@@ -4,8 +4,6 @@ load("./example.txtar", "files", "comment")
 print(comment)
 print(files)
 
-# EVENT trigger: { "src": "nothing", "type": "nothing", "data": {} }
-
 -- example.txtar --
 # txtar-sep=~~
 a comment

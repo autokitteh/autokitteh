@@ -262,6 +262,15 @@
       }
     })
 
+    var option = document.createElement("option");
+    option.text = "trigger"
+    ex.add(option);
+    eventExamples[option.text] = JSON.stringify(
+        {"src": "trigger", "type": "trigger", "data": {"string_var_name": {"string": {"v": "meow"}}}},
+        null,
+        2
+    )
+
     changeEventExample()
   }
 

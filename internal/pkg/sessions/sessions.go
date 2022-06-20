@@ -36,6 +36,10 @@ type Config struct {
 	UpdateStateTimeout   time.Duration `envconfig:"UPDATE_STATE_TIMEOUT" default:"30s" json:"update_state_timeout"`
 	ProgramsFetchTimeout time.Duration `envconfig:"PROGRAMS_FETCH_TIMEOUT" default:"1m" json:"programs_fetch_timeout"`
 	LoadPluginsTimeout   time.Duration `envconfig:"LOAD_PLUGINS_TIMEOUT" default:"1m" json:"load_plugins_timeout"`
+
+	// TODO: these should be variable somehow as load and call can take very long time (long running actions).
+	LoadPluginTimeout time.Duration `envconfig:"LOAD_PLUGIN_TIMEOUT" default:"1h" json:"load_plugin_timeout"`
+	CallPluginTimeout time.Duration `envconfig:"CALL_PLUGIN_TIMEOUT" default:"1h" json:"call_plugin_timeout"`
 }
 
 type Sessions struct {
@@ -138,7 +142,12 @@ func (s *Sessions) Run(
 	var fr programs.FetchResult
 
 	if err := workflow.ExecuteActivity(
-		workflow.WithStartToCloseTimeout(ctx, s.Config.ProgramsFetchTimeout),
+		workflow.WithRetryPolicy(
+			workflow.WithStartToCloseTimeout(ctx, s.Config.ProgramsFetchTimeout),
+			temporal.RetryPolicy{ // TODO
+				MaximumAttempts: 1,
+			},
+		),
 		programsFetchActivityName,
 		project.ID(),
 		mainPath,
@@ -169,7 +178,12 @@ func (s *Sessions) Run(
 	defer workflow.CompleteSession(sessionCtx)
 
 	if err := workflow.ExecuteActivity(
-		workflow.WithStartToCloseTimeout(sessionCtx, s.Config.LoadPluginsTimeout),
+		workflow.WithRetryPolicy(
+			workflow.WithStartToCloseTimeout(sessionCtx, s.Config.LoadPluginsTimeout),
+			temporal.RetryPolicy{ // TODO
+				MaximumAttempts: 1,
+			},
+		),
 		loadPluginsActivityName,
 		sessionID,
 		project,
@@ -227,7 +241,12 @@ func (s *Sessions) Run(
 
 			// This needs to be an acitivity to guarntee it's part of the session.
 			if err := workflow.ExecuteActivity(
-				workflow.WithStartToCloseTimeout(sessionCtx, 5*time.Second),
+				workflow.WithRetryPolicy(
+					workflow.WithStartToCloseTimeout(sessionCtx, s.Config.LoadPluginTimeout),
+					temporal.RetryPolicy{ // TODO
+						MaximumAttempts: 1,
+					},
+				),
 				loadPluginActivityName,
 				sessionID,
 				plugID,
@@ -291,7 +310,7 @@ func (s *Sessions) Run(
 			} else {
 				err = workflow.ExecuteActivity(
 					workflow.WithRetryPolicy(
-						workflow.WithStartToCloseTimeout(sessionCtx, 5*time.Second),
+						workflow.WithStartToCloseTimeout(sessionCtx, s.Config.CallPluginTimeout),
 						temporal.RetryPolicy{ // TODO
 							MaximumAttempts: 1,
 						},
