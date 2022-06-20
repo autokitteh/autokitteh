@@ -11,6 +11,7 @@ import (
 	"github.com/autokitteh/autokitteh/internal/pkg/lang/langstarlark/modules/parsecmd"
 	"github.com/autokitteh/autokitteh/internal/pkg/lang/langstarlark/modules/reflect"
 	"github.com/autokitteh/autokitteh/internal/pkg/lang/langstarlark/modules/txtar"
+	"github.com/autokitteh/autokitteh/internal/pkg/lang/langstarlark/starlarktest"
 	"github.com/autokitteh/starlarkutils"
 )
 
@@ -26,6 +27,8 @@ var (
 		"struct": starlark.NewBuiltin("struct", starlarkstruct.Make),
 		"module": starlark.NewBuiltin("module", starlarkstruct.MakeModule),
 		"symbol": starlark.NewBuiltin("gensym", starlarkutils.GenSymbol),
+		"fail":   starlarktest.FailBuiltin,
+		"catch":  starlarktest.CatchBuiltin,
 	}
 	PermissiveBuiltinValues map[string]starlark.Value
 )
