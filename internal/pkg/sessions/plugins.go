@@ -13,10 +13,14 @@ import (
 	"github.com/autokitteh/L"
 
 	"github.com/autokitteh/autokitteh/internal/pkg/akmod"
+	"github.com/autokitteh/autokitteh/internal/pkg/heartbeat"
 	"github.com/autokitteh/autokitteh/internal/pkg/programs"
 )
 
 func (s *Sessions) loadPlugins(ctx context.Context, sessionID string, project *apiproject.Project, event *apievent.Event, srcBindingName string, fr *programs.FetchResult) error {
+	ctx, cancel := heartbeat.Begin(ctx, s.Config.HeartbeatInterval, nil)
+	defer cancel()
+
 	l := s.L.Named("loadplugins")
 
 	akmodPlugin := akmod.New(
@@ -61,8 +65,7 @@ func (s *Sessions) loadPlugins(ctx context.Context, sessionID string, project *a
 
 		var pl plugin.Plugin
 
-		// TODO: this might block for a short while, so better put it into some kind of activity?
-		pl, err := s.Plugins.NewPlugin(context.Background() /* TODO */, l.Named("plugin:"+id.String()), id, sessionID)
+		pl, err := s.Plugins.NewPlugin(ctx, l.Named("plugin:"+id.String()), id, sessionID)
 		if err != nil {
 			return fmt.Errorf("cannot create plugin %v: %w", id, err)
 		}
@@ -84,6 +87,9 @@ func (s *Sessions) loadPlugins(ctx context.Context, sessionID string, project *a
 }
 
 func (s *Sessions) loadPlugin(ctx context.Context, sessionID string, plugID apiplugin.PluginID) (map[string]*apivalues.Value, error) {
+	ctx, cancel := heartbeat.Begin(ctx, s.Config.HeartbeatInterval, nil)
+	defer cancel()
+
 	l := s.L.With("plugin_id", plugID)
 
 	l.Debug("loading plugin")
@@ -113,6 +119,9 @@ func (s *Sessions) callPlugin(
 	args []*apivalues.Value,
 	kwargs map[string]*apivalues.Value,
 ) (*apivalues.Value, error) {
+	ctx, cancel := heartbeat.Begin(ctx, s.Config.HeartbeatInterval, nil)
+	defer cancel()
+
 	l := s.L.With("call", callv)
 
 	callvCall := apivalues.GetCallValue(callv)

@@ -54,6 +54,10 @@ func (a Plugin) Compile(id string) ([]*Action, error) {
 	return []*Action{{
 		Desc: fmt.Sprintf("create plugin %q", api.ID()),
 		Run: func(ctx context.Context, env *Env) (string, error) {
+			if env.Plugins == nil {
+				return "", fmt.Errorf("have no plugins access")
+			}
+
 			err := env.Plugins.RegisterExternalPlugin(ctx, api.ID(), api.Settings())
 			if err != nil {
 				return "failed", err

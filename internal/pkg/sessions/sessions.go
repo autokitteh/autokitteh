@@ -24,6 +24,7 @@ import (
 
 	"github.com/autokitteh/autokitteh/internal/pkg/akmod"
 	"github.com/autokitteh/autokitteh/internal/pkg/eventsstore"
+	"github.com/autokitteh/autokitteh/internal/pkg/heartbeat"
 	"github.com/autokitteh/autokitteh/internal/pkg/lang"
 	"github.com/autokitteh/autokitteh/internal/pkg/lang/langtools"
 	"github.com/autokitteh/autokitteh/internal/pkg/pluginsreg"
@@ -40,6 +41,7 @@ type Config struct {
 	// TODO: these should be variable somehow as load and call can take very long time (long running actions).
 	LoadPluginTimeout time.Duration `envconfig:"LOAD_PLUGIN_TIMEOUT" default:"1h" json:"load_plugin_timeout"`
 	CallPluginTimeout time.Duration `envconfig:"CALL_PLUGIN_TIMEOUT" default:"1h" json:"call_plugin_timeout"`
+	HeartbeatInterval time.Duration `envconfig:"HEARTBEAT_INTERVAL" default:"3s" json:"heartbeat_interval"`
 }
 
 type Sessions struct {
@@ -70,6 +72,18 @@ const (
 	callPluginActivityName            = "call-plugin"
 )
 
+func (s *Sessions) fetchProgram(
+	ctx context.Context,
+	pid apiproject.ProjectID,
+	mainPath *apiprogram.Path,
+	predecls []string,
+) (*programs.FetchResult, error) {
+	ctx, cancel := heartbeat.Begin(ctx, s.Config.HeartbeatInterval, nil)
+	defer cancel()
+
+	return s.Programs.Fetch(ctx, pid, mainPath, predecls)
+}
+
 func (s *Sessions) Init() {
 	s.worker = worker.New(
 		s.Temporal,
@@ -80,13 +94,13 @@ func (s *Sessions) Init() {
 	)
 
 	s.worker.RegisterActivityWithOptions(
-		s.Programs.Fetch,
-		activity.RegisterOptions{Name: programsFetchActivityName},
+		s.EventsStore.UpdateStateForProject,
+		activity.RegisterOptions{Name: updateStateForProjectActivityName},
 	)
 
 	s.worker.RegisterActivityWithOptions(
-		s.EventsStore.UpdateStateForProject,
-		activity.RegisterOptions{Name: updateStateForProjectActivityName},
+		s.fetchProgram,
+		activity.RegisterOptions{Name: programsFetchActivityName},
 	)
 
 	s.worker.RegisterActivityWithOptions(
@@ -251,7 +265,7 @@ func (s *Sessions) Run(
 				sessionID,
 				plugID,
 			).Get(ctx, &members); err != nil {
-				return nil, nil, L.Error(l, "load plugins", "err", err)
+				return nil, nil, L.Error(l, "load plugin", "err", err)
 			}
 
 			for _, m := range members {

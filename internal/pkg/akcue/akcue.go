@@ -56,6 +56,24 @@ func LoadFS(ctx context.Context, lfs fs.FS, path string, dst interface{}) error 
 	return nil
 }
 
+// TODO: this should all be done in memory.
+func Parse(ctx context.Context, src []byte, dst interface{}) error {
+	d, err := os.MkdirTemp("", "")
+	if err != nil {
+		return fmt.Errorf("mkdirtemp: %w", err)
+	}
+
+	defer os.RemoveAll(d)
+
+	p := filepath.Join(d, "manifest.cue")
+
+	if err := os.WriteFile(p, src, 0600); err != nil {
+		return fmt.Errorf("write: %w", err)
+	}
+
+	return Load(ctx, p, dst)
+}
+
 func Load(ctx context.Context, path string, dst interface{}) error {
 	actual, member, _ := strings.Cut(path, ":")
 

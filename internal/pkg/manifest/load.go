@@ -21,3 +21,13 @@ func ManifestFromPath(ctx context.Context, path string) (*Manifest, error) {
 
 	return &m, nil
 }
+
+func ParseManifest(ctx context.Context, src []byte) (*Manifest, error) {
+	var m Manifest
+
+	if err := akcue.Parse(ctx, src, &m); err != nil {
+		return nil, err
+	}
+
+	return &m, nil
+}

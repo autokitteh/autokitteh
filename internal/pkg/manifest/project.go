@@ -2,6 +2,7 @@ package manifest
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -14,6 +15,10 @@ import (
 	"go.autokitteh.dev/sdk/api/apiprogram"
 	"go.autokitteh.dev/sdk/api/apiproject"
 	"go.autokitteh.dev/sdk/api/apivalues"
+
+	"github.com/autokitteh/autokitteh/internal/pkg/akcue"
+	"github.com/autokitteh/autokitteh/internal/pkg/eventsrcsstore"
+	"github.com/autokitteh/autokitteh/internal/pkg/projectsstore"
 )
 
 type ProjectPlugin struct {
@@ -37,6 +42,16 @@ type Project struct {
 	Plugins     map[string]ProjectPlugin        `json:"plugins"`      // pluginID -> plugin
 	Bindings    map[string]ProjectSourceBinding `json:"src_bindings"` // name -> binding
 	Predecls    map[string]string               `json:"predecls"`     // TODO: allow more than just strings.
+}
+
+func ParseProject(ctx context.Context, src []byte) (*Project, error) {
+	var p Project
+
+	if err := akcue.Parse(ctx, src, &p); err != nil {
+		return nil, err
+	}
+
+	return &p, nil
 }
 
 func (p Project) API(id string) (*apiproject.Project, error) {
@@ -101,8 +116,16 @@ func (a Project) Compile(id string) ([]*Action, error) {
 		{
 			Desc: fmt.Sprintf("create project %q as %q", api.ID(), api.Settings().Name()),
 			Run: func(ctx context.Context, env *Env) (string, error) {
+				if env.Projects == nil {
+					return "", fmt.Errorf("project %q: have no projects access", api.ID())
+				}
+
 				id, err := env.Projects.Create(ctx, api.AccountName(), api.ID(), api.Settings())
 				if err != nil {
+					if errors.Is(err, projectsstore.ErrAlreadyExists) {
+						return fmt.Sprintf("project %q: already exists", api.ID()), nil
+					}
+
 					return "", err
 				}
 
@@ -120,6 +143,10 @@ func (a Project) Compile(id string) ([]*Action, error) {
 				&Action{
 					Desc: fmt.Sprintf("bind eventsource %q to %q as %q", srcid, api.ID(), name),
 					Run: func(ctx context.Context, env *Env) (string, error) {
+						if env.EventSources == nil {
+							return "", fmt.Errorf("have no event sources access")
+						}
+
 						err := env.EventSources.AddProjectBinding(
 							ctx,
 							srcid,
@@ -130,6 +157,10 @@ func (a Project) Compile(id string) ([]*Action, error) {
 							true,
 							(&apieventsrc.EventSourceProjectBindingSettings{}).SetEnabled(!b.Disabled),
 						)
+
+						if errors.Is(err, eventsrcsstore.ErrAlreadyExists) {
+							return fmt.Sprintf("event source project binding %q already exists", api.ID()), nil
+						}
 
 						return "", err
 					},

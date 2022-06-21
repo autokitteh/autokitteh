@@ -106,6 +106,8 @@
         'Content-Type': 'text/plain',
       },
       body: program(),
+    }).catch((err) => {
+      console.error('update: ', err)
     })
 
     const body = await resp.json()

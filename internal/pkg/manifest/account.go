@@ -2,9 +2,11 @@ package manifest
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
+	"github.com/autokitteh/autokitteh/internal/pkg/accountsstore"
 	"go.autokitteh.dev/sdk/api/apiaccount"
 )
 
@@ -38,8 +40,16 @@ func (a Account) Compile(name string) ([]*Action, error) {
 	return []*Action{{
 		Desc: fmt.Sprintf("create account %q", api.Name()),
 		Run: func(ctx context.Context, env *Env) (string, error) {
+			if env.Accounts == nil {
+				return "", fmt.Errorf("have no accounts access")
+			}
+
 			err := env.Accounts.Create(ctx, api.Name(), api.Settings())
 			if err != nil {
+				if errors.Is(err, accountsstore.ErrAlreadyExists) {
+					return "already exists", nil
+				}
+
 				return "failed", err
 			}
 

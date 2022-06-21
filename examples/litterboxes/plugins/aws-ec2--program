@@ -1,0 +1,15 @@
+-- auto.kitteh --
+load("autokitteh.aws", "ec2")
+
+
+print(ec2.DescribeVpcs(
+  params={
+  }
+))
+
+-- project.cue --
+package aws
+
+plugins: {
+  "autokitteh.aws": {}
+}

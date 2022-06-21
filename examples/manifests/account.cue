@@ -20,5 +20,9 @@ manifest.#Manifest & {
 		"autokitteh.googlesheets": exec: path: "examples/plugins/googlesheets"
 		"autokitteh.twilio": exec: path:       "examples/plugins/twilio"
 		"autokitteh.test": exec: path:         "examples/plugins/test"
+		"autokitteh.aws": {
+			address: "127.0.0.1"
+			port:    30001
+		}
 	}
 }
