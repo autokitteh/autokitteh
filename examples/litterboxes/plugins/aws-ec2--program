@@ -2,7 +2,7 @@
 load("autokitteh.aws", "ec2")
 
 
-print(ec2.DescribeVpcs(
+print(ec2.describe_vpcs(
   params={
   }
 ))
