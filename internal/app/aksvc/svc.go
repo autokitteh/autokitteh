@@ -704,6 +704,7 @@ See https://github.com/temporalio/docker-compose for more info.
 			Disabled: true,
 			Ready: func(p *programs.Programs) {
 				p.Loaders.SetCommonLoader("fs", loaders.NewFSLoader(os.DirFS("."), "."))
+				p.Loaders.SetCommonLoader("fsroot", loaders.NewRootFSLoader())
 			},
 		},
 		svc.Component{

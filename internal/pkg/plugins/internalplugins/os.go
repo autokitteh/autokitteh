@@ -3,6 +3,7 @@ package internalplugins
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 
@@ -70,24 +71,40 @@ var OS = &pluginimpl.Plugin{
 				kwargs map[string]*apivalues.Value,
 			) (*apivalues.Value, error) {
 				var (
-					name, text string
-					mode       int64 = 0644
+					name, text, pattern string
+					mode                int64 = 0644
 				)
 
 				if err := pluginimpl.UnpackArgs(
 					args, kwargs,
-					"name", &name,
+					"name?", &name,
 					"text", &text,
 					"mode?", &mode,
+					"pattern?", &pattern,
 				); err != nil {
 					return nil, err
 				}
 
-				if err := os.WriteFile(name, []byte(text), os.FileMode(mode)); err != nil {
-					return nil, err
+				if name == "" {
+					f, err := os.CreateTemp("", pattern)
+					if err != nil {
+						return nil, fmt.Errorf("create temp: %w", err)
+					}
+
+					defer f.Close()
+
+					name = f.Name()
+
+					if _, err := f.Write([]byte(text)); err != nil {
+						return nil, fmt.Errorf("write: %w", err)
+					}
+				} else {
+					if err := os.WriteFile(name, []byte(text), os.FileMode(mode)); err != nil {
+						return nil, err
+					}
 				}
 
-				return apivalues.None, nil
+				return apivalues.String(name), nil
 			},
 		),
 		"make_temp_dir": pluginimpl.NewSimpleMethodMember(
@@ -101,7 +118,7 @@ var OS = &pluginimpl.Plugin{
 
 				if err := pluginimpl.UnpackArgs(
 					args, kwargs,
-					"pattern", &pattern,
+					"pattern?", &pattern,
 				); err != nil {
 					return nil, err
 				}
@@ -161,7 +178,7 @@ var OS = &pluginimpl.Plugin{
 					"args?", &cmdargs,
 					"env?", &env,
 					"dir?", &dir,
-					"error?", &fail,
+					"fail?", &fail,
 				); err != nil {
 					return nil, err
 				}
@@ -189,7 +206,7 @@ var OS = &pluginimpl.Plugin{
 					"shell?", &shell,
 					"env?", &env,
 					"dir?", &dir,
-					"error?", &fail,
+					"fail?", &fail,
 				); err != nil {
 					return nil, err
 				}
