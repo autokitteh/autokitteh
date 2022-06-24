@@ -28,6 +28,7 @@ var (
 		"module": starlark.NewBuiltin("module", starlarkstruct.MakeModule),
 		"symbol": starlark.NewBuiltin("gensym", starlarkutils.GenSymbol),
 		"fail":   starlarktest.FailBuiltin,
+		"assert": starlarktest.AssertBuiltin,
 		"catch":  starlarktest.CatchBuiltin,
 	}
 	PermissiveBuiltinValues map[string]starlark.Value

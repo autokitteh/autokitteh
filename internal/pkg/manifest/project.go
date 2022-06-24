@@ -44,10 +44,10 @@ type Project struct {
 	Predecls    map[string]string               `json:"predecls"`     // TODO: allow more than just strings.
 }
 
-func ParseProject(ctx context.Context, src []byte) (*Project, error) {
+func ParseProject(ctx context.Context, src []byte, tags []string) (*Project, error) {
 	var p Project
 
-	if err := akcue.Parse(ctx, src, &p); err != nil {
+	if err := akcue.Parse(ctx, src, &p, tags); err != nil {
 		return nil, err
 	}
 

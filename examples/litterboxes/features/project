@@ -1,0 +1,9 @@
+-- auto.kitteh --
+print(pid)
+
+-- project.cue --
+package example
+
+predecls: {
+  pid: string @tag(project_id)
+}

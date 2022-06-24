@@ -1,0 +1,44 @@
+-- auto.kitteh --
+load("ak", "ak")
+load("github.com/autokitteh/examples/modules/temporal-terraform/auto.kitteh", "create_network", "destroy_network")
+
+
+def _create(body_value):
+  assert(body_value, "request body expected")
+  create_network(**body_value)
+
+
+def _destroy(body_value):
+  assert(body_value, "request body expected")
+  destroy_network(**body_value)
+
+
+ak.sources.bind("http.POST", _create)
+ak.sources.bind("http.DELETE", _destroy)
+
+-- project.cue --
+package temporal
+
+import "encoding/json"
+
+plugins: {
+  "autokitteh.aws": {}
+}
+
+#project_id: string @tag(project_id)
+
+src_bindings: {
+  "http": {
+    src_id:     "internal.http"
+    assoc:      "\( #project_id ).http"
+    src_config: json.Marshal({
+      name: string @tag(project_name)
+      routes: [
+        {
+          name: "catchall"
+          path: "*"
+        },
+      ]
+    })
+  }
+}

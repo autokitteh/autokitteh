@@ -1645,6 +1645,8 @@ github.com/zclconf/go-cty v1.10.0/go.mod h1:vVKLxnk3puL4qRAv72AO+W99LUD4da90g3uU
 github.com/zenazn/goji v0.9.0/go.mod h1:7S9M489iMyHBNxwZnk9/EHS098H4/F6TATF2mIxtB1Q=
 go.autokitteh.dev/idl v0.12.0 h1:q0NUNHwKdqbv0vrgnapF2T9aLM4cPqxfoQXffgcO6O0=
 go.autokitteh.dev/idl v0.12.0/go.mod h1:irSbV4BAsqDSj4XRnRHXNEnrAuy05h9461aF78tX1EU=
+go.autokitteh.dev/idl v0.13.0 h1:GFZKNE1+UDzAGmUNB3zPa77XjavMCJJ49svp5N1STpw=
+go.autokitteh.dev/idl v0.13.0/go.mod h1:irSbV4BAsqDSj4XRnRHXNEnrAuy05h9461aF78tX1EU=
 go.autokitteh.dev/sdk v0.12.0 h1:Xus1tEHwZAvZpH/Lew8zIzqPFd5nmJUZ5bnOObj9jpo=
 go.autokitteh.dev/sdk v0.12.0/go.mod h1:OHiXTd4O0AZsAzDXtImaiQngxRZZQfH2YeRc8t9ny1o=
 go.autokitteh.dev/sdk v0.12.1 h1:aYyf1ArPPqT8p8xPlf/4q2UWEcGNwPmP9qUPiR6ngbw=

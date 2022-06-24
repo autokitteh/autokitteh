@@ -159,10 +159,29 @@ func (lb *LitterBox) Setup(
 	p := defaultProject
 
 	if manifestSrc != nil {
+		var tags []string
+
+		addTag := func(k, v string) {
+			// TODO: *HACK* For some reason if the manifest does not
+			// contain mentioning of the tag, cue will scream.
+			if strings.Contains(string(manifestSrc), fmt.Sprintf("@tag(%s)", k)) {
+				tags = append(tags, fmt.Sprintf("%s=%s", k, v))
+			}
+		}
+
+		addTag("project_id", pid.String())
+		addTag("project_name", pid.Unique()) // TODO: not really project name, but ehh.
+		addTag("account_name", pid.AccountName().String())
+
 		var err error
-		if p, err = manifest.ParseProject(ctx, manifestSrc); err != nil {
+		if p, err = manifest.ParseProject(
+			ctx,
+			manifestSrc,
+			tags,
+		); err != nil {
 			return "", fmt.Errorf("invalid manifest: %w", err)
 		}
+
 	}
 
 	if p.MainPath == "" {
@@ -177,8 +196,8 @@ func (lb *LitterBox) Setup(
 		p.AccountName = defaultProject.AccountName
 	}
 
-	if len(p.Bindings) == 0 {
-		p.Bindings = defaultProject.Bindings
+	if _, ok := p.Bindings["litterbox"]; !ok {
+		p.Bindings["litterbox"] = defaultProject.Bindings["litterbox"]
 	}
 
 	acts, err := p.Compile(pid.String())

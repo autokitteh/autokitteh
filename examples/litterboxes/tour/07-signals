@@ -60,10 +60,10 @@ ak.sources.bind('wet_dispenser.sound', _on_sound, context='wet')
 ak.sources.bind('dry_dispenser.sound', _on_sound, context='dry')
 ak.sources.bind('human.approve', _on_human_approve)
 
-# EVENT gizmo: { "src": "dry_dispenser", "type": "sound", "data": { "sound": { "string": { "v": "meow" } } } }
-# EVENT midnight: { "src": "dry_dispenser", "type": "sound", "data": { "sound": { "string": { "v": "grrrr" } } } }
-# EVENT pepurr: { "src": "wet_dispenser", "type": "sound", "data": { "sound": { "string": { "v": "purrrr" } } } }
-# EVENT zumi: { "src": "wet_dispenser", "type": "sound", "data": { "sound": { "string": { "v": "hiss" } } } }
+# EVENT gizmo: { "src": "dry_dispenser", "type": "sound", "data": { "sound": "meow" } }
+# EVENT midnight: { "src": "dry_dispenser", "type": "sound", "data": { "sound": "grrrr" } }
+# EVENT pepurr: { "src": "wet_dispenser", "type": "sound", "data": { "sound": "purrrr" } }
+# EVENT zumi: { "src": "wet_dispenser", "type": "sound", "data": { "sound": "hiss" } }
 # EVENT approve: { "src": "human", "type": "approve", "data": {} }
 
 -- cats.cue --

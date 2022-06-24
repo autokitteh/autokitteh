@@ -2,6 +2,7 @@ package litterboxgrpcsvc
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -142,9 +143,43 @@ func (s *Svc) Event(req *pbsvc.EventRequest, srv pbsvc.LitterBox_EventServer) er
 
 	l := s.L.With("litterbox_id", id)
 
-	data, err := apivalues.StringValueMapFromProto(req.Event.Data)
-	if err != nil {
-		return status.Errorf(codes.InvalidArgument, "invalid data: %v", err)
+	if len(req.Event.Values) > 0 && len(req.Event.Data) > 0 {
+		return status.Errorf(codes.InvalidArgument, "values and data are mutually exclusive")
+	}
+
+	var (
+		data = make(map[string]*apivalues.Value)
+		err  error
+	)
+
+	if len(req.Event.Values) != 0 {
+		if data, err = apivalues.StringValueMapFromProto(req.Event.Values); err != nil {
+			return status.Errorf(codes.InvalidArgument, "invalid values: %v", err)
+		}
+	} else if bs := []byte(req.Event.Data); len(bs) != 0 {
+		var wrapped struct {
+			W json.RawMessage `json:"$ak:wrapped"`
+		}
+
+		if err := json.Unmarshal(bs, &wrapped); err != nil {
+			return status.Errorf(codes.InvalidArgument, "invalid data: %v", err)
+		}
+
+		if len(wrapped.W) > 0 {
+			if err := json.Unmarshal(wrapped.W, &data); err != nil {
+				return status.Errorf(codes.InvalidArgument, "invalid wrapped data: %v", err)
+			}
+		} else {
+			var raw map[string]any
+
+			if err := json.Unmarshal(bs, &raw); err != nil {
+				return status.Errorf(codes.InvalidArgument, "invalid data: %v", err)
+			}
+
+			if err := apivalues.WrapIntoValuesMap(data, raw); err != nil {
+				return status.Errorf(codes.InvalidArgument, "cannot wrap data: %v", err)
+			}
+		}
 	}
 
 	ev := litterbox.LitterBoxEvent{

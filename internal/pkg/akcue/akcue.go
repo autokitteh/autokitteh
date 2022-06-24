@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"go.dagger.io/dagger/compiler"
+	cueload "cuelang.org/go/cue/load"
 
 	cuemod "github.com/autokitteh/autokitteh/cue.mod"
 )
@@ -38,7 +38,13 @@ func LoadFS(ctx context.Context, lfs fs.FS, path string, dst interface{}) error 
 		filepath.Join(actual, "cue.mod"): cuemod.FS,
 	}
 
-	v, err := compiler.Build(ctx, "/", overlay, actual)
+	cfg := cueload.Config{Dir: "/"}
+
+	if cfg.Overlay, err = overlays(cfg.Dir, overlay); err != nil {
+		return fmt.Errorf("overlays: %w", err)
+	}
+
+	v, err := build(ctx, &cfg, actual)
 	if err != nil {
 		return err
 	}
@@ -57,7 +63,7 @@ func LoadFS(ctx context.Context, lfs fs.FS, path string, dst interface{}) error 
 }
 
 // TODO: this should all be done in memory.
-func Parse(ctx context.Context, src []byte, dst interface{}) error {
+func Parse(ctx context.Context, src []byte, dst interface{}, tags []string) error {
 	d, err := os.MkdirTemp("", "")
 	if err != nil {
 		return fmt.Errorf("mkdirtemp: %w", err)
@@ -71,10 +77,10 @@ func Parse(ctx context.Context, src []byte, dst interface{}) error {
 		return fmt.Errorf("write: %w", err)
 	}
 
-	return Load(ctx, p, dst)
+	return Load(ctx, p, dst, tags)
 }
 
-func Load(ctx context.Context, path string, dst interface{}) error {
+func Load(ctx context.Context, path string, dst interface{}, tags []string) error {
 	actual, member, _ := strings.Cut(path, ":")
 
 	fi, err := os.Stat(actual)
@@ -94,7 +100,17 @@ func Load(ctx context.Context, path string, dst interface{}) error {
 		filepath.Join(actual, "cue.mod"): cuemod.FS,
 	}
 
-	v, err := compiler.Build(ctx, actual, overlay, args...)
+	cfg := cueload.Config{
+		Dir:  actual,
+		Tags: tags,
+	}
+
+	if cfg.Overlay, err = overlays(cfg.Dir, overlay); err != nil {
+		return fmt.Errorf("overlays: %w", err)
+	}
+
+	v, err := build(ctx, &cfg, args...)
+
 	if err != nil {
 		return err
 	}
