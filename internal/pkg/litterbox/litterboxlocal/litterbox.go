@@ -196,6 +196,10 @@ func (lb *LitterBox) Setup(
 		p.AccountName = defaultProject.AccountName
 	}
 
+	if p.Bindings == nil {
+		p.Bindings = defaultProject.Bindings
+	}
+
 	if _, ok := p.Bindings["litterbox"]; !ok {
 		p.Bindings["litterbox"] = defaultProject.Bindings["litterbox"]
 	}
