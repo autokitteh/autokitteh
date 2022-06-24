@@ -1,3 +1,4 @@
+#
 -- auto.kitteh --
 load("ak", "ak")
 load("github.com/autokitteh/examples/modules/temporal-terraform/auto.kitteh", "create_network", "destroy_network")
@@ -15,6 +16,9 @@ def _destroy(body_value):
 
 ak.sources.bind("http.POST", _create)
 ak.sources.bind("http.DELETE", _destroy)
+
+# EVENT post: { "src": "http", "type": "POST", "data": { "body_value": { "name": "test", "region": "us-west-1", "cidr_block": "10.0.0.0/16", "subnets": [ { "az": "a", "cidr_block": "10.0.0.0/24" } ] } } }
+# EVENT delete: { "src": "http", "type": "DELETE", "data": { "body_value": { "name": "test", "region": "us-west-1" } } }
 
 -- project.cue --
 package temporal
