@@ -1,19 +1,16 @@
 import React, { useState } from 'react';
-// import OpenAPIClientAxios from 'openapi-client-axios';
+import OpenAPIClientAxios from 'openapi-client-axios';
 
 
-// const api = new OpenAPIClientAxios({ definition: 'http://127.0.0.1:20000/openapi/litterboxsvc/svc.swagger.json' });
+const api = new OpenAPIClientAxios({ definition: 'http://127.0.0.1:20000/openapi/litterboxsvc/openapi.yaml' });
 
 
 function Dashboard() {
   const [data, setData] = React.useState(null)
   function click() {
-    // api.init()
-    // .then(client => client.Accounts_GetAccount('default'))
-    fetch('http://127.0.0.1:20000/api/v1/accounts/autokitteh', {
-      mode: 'no-cors'
-    })
-    .then(res => res.json())
+    // fetch('http://127.0.0.1:20000/api/v1/accounts/autokitteh').then(res => res.json())
+    api.init()
+    .then(client => client.Accounts_GetAccount('default'))
     .then(res => console.log(res) || setData(res))
     .catch(error => console.log(error) || setData(error))
   }
