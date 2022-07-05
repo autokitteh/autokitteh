@@ -2,6 +2,7 @@ package internalplugins
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -9,47 +10,6 @@ import (
 	"go.autokitteh.dev/sdk/api/apivalues"
 	"go.autokitteh.dev/sdk/pluginimpl"
 )
-
-func run(ctx context.Context, path string, args, env []interface{}, dir string, fail bool) (*apivalues.Value, error) {
-	sargs := make([]string, len(args))
-	for i, a := range args {
-		s, ok := a.(string)
-		if !ok {
-			return nil, fmt.Errorf("args must be a list of strings")
-		}
-
-		sargs[i] = s
-	}
-
-	cmd := exec.CommandContext(ctx, path, sargs...)
-	cmd.Dir = dir
-
-	if env != nil {
-		cmd.Env = make([]string, len(env))
-		for i, e := range env {
-			s, ok := e.(string)
-			if !ok {
-				return nil, fmt.Errorf("env must be a list of strings")
-			}
-
-			cmd.Env[i] = s
-		}
-	}
-
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		if _, ee := err.(*exec.ExitError); fail || !ee {
-			return nil, err
-		}
-	}
-
-	return apivalues.MustNewValue(apivalues.ListValue(
-		[]*apivalues.Value{
-			apivalues.Integer(int64(cmd.ProcessState.ExitCode())),
-			apivalues.String(string(out)),
-		},
-	)), nil
-}
 
 var OS = &pluginimpl.Plugin{
 	Doc: "TODO",
@@ -79,6 +39,126 @@ var OS = &pluginimpl.Plugin{
 				return apivalues.String(v), nil
 			},
 		),
+		"read_text_file": pluginimpl.NewSimpleMethodMember(
+			"TODO",
+			func(
+				ctx context.Context,
+				args []*apivalues.Value,
+				kwargs map[string]*apivalues.Value,
+			) (*apivalues.Value, error) {
+				var name string
+
+				if err := pluginimpl.UnpackArgs(
+					args, kwargs,
+					"name", &name,
+				); err != nil {
+					return nil, err
+				}
+
+				bs, err := os.ReadFile(name)
+				if err != nil {
+					return nil, err
+				}
+
+				return apivalues.String(string(bs)), nil
+			},
+		),
+		"write_text_file": pluginimpl.NewSimpleMethodMember(
+			"TODO",
+			func(
+				ctx context.Context,
+				args []*apivalues.Value,
+				kwargs map[string]*apivalues.Value,
+			) (*apivalues.Value, error) {
+				var (
+					name, text, pattern string
+					mode                int64 = 0644
+				)
+
+				if err := pluginimpl.UnpackArgs(
+					args, kwargs,
+					"name?", &name,
+					"text", &text,
+					"mode?", &mode,
+					"pattern?", &pattern,
+				); err != nil {
+					return nil, err
+				}
+
+				if name == "" {
+					f, err := os.CreateTemp("", pattern)
+					if err != nil {
+						return nil, fmt.Errorf("create temp: %w", err)
+					}
+
+					defer f.Close()
+
+					name = f.Name()
+
+					if _, err := f.Write([]byte(text)); err != nil {
+						return nil, fmt.Errorf("write: %w", err)
+					}
+				} else {
+					if err := os.WriteFile(name, []byte(text), os.FileMode(mode)); err != nil {
+						return nil, err
+					}
+				}
+
+				return apivalues.String(name), nil
+			},
+		),
+		"make_temp_dir": pluginimpl.NewSimpleMethodMember(
+			"TODO",
+			func(
+				ctx context.Context,
+				args []*apivalues.Value,
+				kwargs map[string]*apivalues.Value,
+			) (*apivalues.Value, error) {
+				var pattern string
+
+				if err := pluginimpl.UnpackArgs(
+					args, kwargs,
+					"pattern?", &pattern,
+				); err != nil {
+					return nil, err
+				}
+
+				path, err := os.MkdirTemp("", pattern)
+				if err != nil {
+					return nil, err
+				}
+
+				return apivalues.String(path), nil
+			},
+		),
+		"look_path": pluginimpl.NewSimpleMethodMember(
+			"TODO",
+			func(
+				ctx context.Context,
+				args []*apivalues.Value,
+				kwargs map[string]*apivalues.Value,
+			) (*apivalues.Value, error) {
+				var file string
+
+				if err := pluginimpl.UnpackArgs(
+					args, kwargs,
+					"file", &file,
+				); err != nil {
+					return nil, err
+				}
+
+				path, err := exec.LookPath(file)
+				if err != nil {
+					if errors.Is(err, exec.ErrNotFound) {
+						return apivalues.None, nil
+					}
+
+					return nil, err
+				}
+
+				return apivalues.String(path), nil
+			},
+		),
 		"exec": pluginimpl.NewSimpleMethodMember(
 			"TODO",
 			func(
@@ -94,11 +174,11 @@ var OS = &pluginimpl.Plugin{
 
 				if err := pluginimpl.UnpackArgs(
 					args, kwargs,
-					"path?", &path,
+					"path", &path,
 					"args?", &cmdargs,
 					"env?", &env,
 					"dir?", &dir,
-					"error?", &fail,
+					"fail?", &fail,
 				); err != nil {
 					return nil, err
 				}
@@ -126,7 +206,7 @@ var OS = &pluginimpl.Plugin{
 					"shell?", &shell,
 					"env?", &env,
 					"dir?", &dir,
-					"error?", &fail,
+					"fail?", &fail,
 				); err != nil {
 					return nil, err
 				}

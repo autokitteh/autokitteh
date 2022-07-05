@@ -151,7 +151,6 @@ func (s *Svc) tick() {
 
 		if since.IsZero() {
 			l.Debug("never ran, setting since to now")
-			since = time.Now()
 
 			if err := s.setLast(ctx, b.ProjectID(), b.Name(), now); err != nil {
 				l.Error("set last error", "err", err)

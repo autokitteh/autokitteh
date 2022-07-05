@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io/fs"
 	"path/filepath"
-	"strings"
 )
 
 //go:embed *
@@ -61,20 +60,7 @@ func init() {
 				return x
 			}
 
-			a, b, _ := strings.Cut(name, "--")
-
-			var (
-				x    *Example
-				kind string
-			)
-
-			if b == "" {
-				x = prep("")
-				kind = a
-			} else {
-				x = prep(a)
-				kind = b
-			}
+			x := prep(name)
 
 			bs, err := fs.ReadFile(FS, filepath.Join(dname, di.Name()))
 			if err != nil {
@@ -83,9 +69,7 @@ func init() {
 
 			txt := string(bs)
 
-			if kind == "program" {
-				x.Program = txt
-			}
+			x.Program = txt
 		}
 	}
 

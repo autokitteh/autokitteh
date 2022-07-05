@@ -18,6 +18,7 @@ import (
 	"github.com/autokitteh/autokitteh/internal/pkg/events"
 	"github.com/autokitteh/autokitteh/internal/pkg/eventsrcsstore"
 	"github.com/autokitteh/autokitteh/internal/pkg/litterbox"
+	"github.com/autokitteh/autokitteh/internal/pkg/manifest"
 	"github.com/autokitteh/autokitteh/internal/pkg/programs/loaders"
 	"github.com/autokitteh/autokitteh/internal/pkg/projectsstore"
 	"github.com/autokitteh/pubsub"
@@ -111,50 +112,115 @@ func (lb *LitterBox) Setup(
 
 	root := apiprogram.MustNewPath("litterbox", string(id), "")
 
-	main := arch.Files[0].Name
-	mainPath_, err := apiprogram.NewPath("", main, "")
-	if err != nil {
-		return "", fmt.Errorf("invalid main path %q: %w", main, err)
-	}
+	var mainPath *apiprogram.Path
 
-	mainPath, err := apiprogram.JoinPaths(root, mainPath_)
-	if err != nil {
-		return "", fmt.Errorf("invalid main path %q: %w", main, err)
+	for _, f := range arch.Files {
+		if f.Name == "project.cue" {
+			continue
+		}
+
+		main := arch.Files[0].Name
+		mainPath_, err := apiprogram.NewPath("", main, "")
+		if err != nil {
+			return "", fmt.Errorf("invalid main path %q: %w", main, err)
+		}
+
+		if mainPath, err = apiprogram.JoinPaths(root, mainPath_); err != nil {
+			return "", fmt.Errorf("invalid main path %q: %w", main, err)
+		}
+
+		break
 	}
 
 	if err := lb.ProgramsStore.Put(ctx, root.String(), files); err != nil {
 		return "", fmt.Errorf("program store: %w", err)
 	}
 
-	settings := (&apiproject.ProjectSettings{}).
-		SetEnabled(true).
-		SetName(fmt.Sprintf("litterbox_%s", id)).
-		SetMainPath(mainPath)
-
-	if _, err := lb.Projects.Create(
-		ctx,
-		pid.AccountName(),
-		pid,
-		settings,
-	); err != nil {
-		if errors.Is(err, projectsstore.ErrAlreadyExists) {
-			return id, nil
+	var manifestSrc []byte
+	for _, f := range arch.Files {
+		if f.Name == "project.cue" {
+			manifestSrc = f.Data
+			break
 		}
-
-		return "", fmt.Errorf("create project: %w", err)
 	}
 
-	if err := lb.EventSrcs.AddProjectBinding(
-		ctx,
-		lb.EventSourceID(),
-		pid,
-		"litterbox",
-		fmt.Sprintf("litterbox:%s", id),
-		"",
-		true,
-		(&apieventsrc.EventSourceProjectBindingSettings{}).SetEnabled(true),
-	); err != nil {
-		return "", fmt.Errorf("add source binding: %w", err)
+	defaultProject := &manifest.Project{
+		MainPath:    mainPath.String(),
+		Name:        fmt.Sprintf("litterbox_%s", id),
+		AccountName: pid.AccountName().String(),
+		Bindings: map[string]manifest.ProjectSourceBinding{
+			"litterbox": {
+				SourceID: lb.EventSourceID(),
+				Assoc:    fmt.Sprintf("litterbox:%s", id),
+			},
+		},
+	}
+
+	p := defaultProject
+
+	if manifestSrc != nil {
+		var tags []string
+
+		addTag := func(k, v string) {
+			// TODO: *HACK* For some reason if the manifest does not
+			// contain mentioning of the tag, cue will scream.
+			if strings.Contains(string(manifestSrc), fmt.Sprintf("@tag(%s)", k)) {
+				tags = append(tags, fmt.Sprintf("%s=%s", k, v))
+			}
+		}
+
+		addTag("project_id", pid.String())
+		addTag("project_name", pid.Unique()) // TODO: not really project name, but ehh.
+		addTag("account_name", pid.AccountName().String())
+
+		var err error
+		if p, err = manifest.ParseProject(
+			ctx,
+			manifestSrc,
+			tags,
+		); err != nil {
+			return "", fmt.Errorf("invalid manifest: %w", err)
+		}
+
+	}
+
+	if p.MainPath == "" {
+		p.MainPath = defaultProject.MainPath
+	}
+
+	if p.Name == "" {
+		p.Name = defaultProject.Name
+	}
+
+	if p.AccountName == defaultProject.AccountName {
+		p.AccountName = defaultProject.AccountName
+	}
+
+	if p.Bindings == nil {
+		p.Bindings = defaultProject.Bindings
+	}
+
+	if _, ok := p.Bindings["litterbox"]; !ok {
+		p.Bindings["litterbox"] = defaultProject.Bindings["litterbox"]
+	}
+
+	acts, err := p.Compile(pid.String())
+	if err != nil {
+		return "", fmt.Errorf("compile manifest: %w", err)
+	}
+
+	env := manifest.Env{
+		Projects:     lb.Projects,
+		EventSources: lb.EventSrcs,
+	}
+
+	for _, act := range acts {
+		msg, err := act.Run(ctx, &env)
+		if err != nil {
+			return "", fmt.Errorf("%q: manifest action error: %w", act.Desc, err)
+		}
+
+		lb.L.Debug("manifest action run", "msg", msg)
 	}
 
 	return id, nil

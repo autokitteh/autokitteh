@@ -1,0 +1,13 @@
+-- auto.kitteh --
+load("./example.txtar", "files", "comment")
+
+print(comment)
+print(files)
+
+-- example.txtar --
+# txtar-sep=~~
+a comment
+~~ greeting ~~
+meow, world!
+~~ subdir/bark ~~
+woof, world!

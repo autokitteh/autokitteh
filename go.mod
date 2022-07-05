@@ -11,14 +11,14 @@ go 1.18
 
 require (
 	github.com/autokitteh/H v0.0.0-20220522023555-2f7de06b9c0a
-	github.com/autokitteh/L v0.0.0-20220604052907-47eb089e43af
+	github.com/autokitteh/L v0.0.0-20220621043148-4d56abbbcc92
 	github.com/autokitteh/idgen v0.0.0-20220522024226-2185039b1ae1
 	github.com/autokitteh/parsecmd v0.0.0-20220522021831-04f6419353d5
 	github.com/autokitteh/procs v0.0.0-20220522022722-6170e66abe0f
 	github.com/autokitteh/pubsub v0.0.0-20220530045934-d33996c0a118
 	github.com/autokitteh/starlarkutils v0.0.0-20220522021518-dd78b8b234d6
 	github.com/autokitteh/stores v0.0.0-20220602050721-84c014cafdd5
-	github.com/autokitteh/svc v0.0.0-20220604052940-6df8ca54f50b
+	github.com/autokitteh/svc v0.0.0-20220621043313-de83b126137c
 	github.com/autokitteh/tmplrender v0.0.0-20220522022256-3c30fdc6cfd4
 	github.com/bradleyfalzon/ghinstallation/v2 v2.0.4
 	github.com/fatih/color v1.13.0
@@ -37,8 +37,8 @@ require (
 	github.com/stretchr/testify v1.7.1
 	github.com/ucarion/urlpath v0.0.0-20200424170820-7ccc79b76bbb
 	github.com/urfave/cli/v2 v2.7.1
-	go.autokitteh.dev/idl v0.10.1
-	go.autokitteh.dev/sdk v0.10.0
+	go.autokitteh.dev/idl v0.13.0
+	go.autokitteh.dev/sdk v0.12.1
 	go.dagger.io/dagger v0.2.11
 	go.starlark.net v0.0.0-20220328144851-d1966c6b9fcd
 	go.temporal.io/api v1.7.1-0.20220223032354-6e6fe738916a

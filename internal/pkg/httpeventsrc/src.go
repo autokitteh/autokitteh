@@ -201,12 +201,20 @@ func (s *HTTPEventSource) Handle(req *http.Request) (apievent.EventID, error) {
 		return "", httpError(http.StatusInternalServerError, "body read error: %v", err)
 	}
 
+	bodyValue := apivalues.None
+
+	var b any
+	if err := json.Unmarshal(body, &b); err == nil {
+		bodyValue, _ = apivalues.Wrap(b)
+	}
+
 	data := map[string]*apivalues.Value{
 		// TODO: form values (probably need to be setup as form in the source db).
 		"method":       apivalues.String(req.Method),
 		"path":         apivalues.String(rest),
 		"trailing":     apivalues.String(trailing),
-		"body":         apivalues.String(string(body)), // TODO: any issues with string cast here? security?
+		"body_text":    apivalues.Bytes(body),
+		"body_value":   bodyValue,
 		"route_name":   apivalues.String(routeName),
 		"binding_name": apivalues.String(bindingName),
 		"params":       paramsValue,

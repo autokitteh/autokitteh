@@ -155,8 +155,6 @@ func (s *langstarlark) toStarlarkPredecls(env *lang.RunEnv) (map[string]starlark
 		return nil, errf("predecls: %w", err)
 	}
 
-	// TODO: std to be overridden by predecls?
-
 	for k, v := range s.builtins {
 		if _, ok := predecls[k]; ok {
 			return nil, errf("%v is already in use", k)

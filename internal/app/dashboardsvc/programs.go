@@ -39,5 +39,5 @@ func (s *Svc) program(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Fprintf(w, "# FetchedAt: %v\n\n", f.FetchedAt)
 
-	w.Write(f.Source)
+	_, _ = w.Write(f.Source)
 }

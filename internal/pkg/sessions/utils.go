@@ -5,9 +5,9 @@ import (
 	"fmt"
 
 	"go.temporal.io/sdk/temporal"
-	"go.temporal.io/sdk/workflow"
 
 	"go.autokitteh.dev/sdk/api/apivalues"
+
 	"github.com/autokitteh/L"
 )
 
@@ -22,12 +22,6 @@ func temporalErrorLogger(l L.L, err error) func(string, ...interface{}) {
 	}
 
 	return l.Error
-}
-
-func withLocalActivityWithoutRetries(ctx workflow.Context) workflow.Context {
-	lao := workflow.GetLocalActivityOptions(ctx)
-	lao.RetryPolicy = &temporal.RetryPolicy{MaximumAttempts: 1}
-	return workflow.WithLocalActivityOptions(ctx, lao)
 }
 
 func EnsureNoCallValues(v *apivalues.Value) error {

@@ -2,9 +2,11 @@ package manifest
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
+	"github.com/autokitteh/autokitteh/internal/pkg/eventsrcsstore"
 	"go.autokitteh.dev/sdk/api/apieventsrc"
 )
 
@@ -38,8 +40,16 @@ func (a EventSource) Compile(id string) ([]*Action, error) {
 	return []*Action{{
 		Desc: fmt.Sprintf("create eventsrc %q", api.ID()),
 		Run: func(ctx context.Context, env *Env) (string, error) {
+			if env.EventSources == nil {
+				return "", fmt.Errorf("have no event sources access")
+			}
+
 			err := env.EventSources.Add(ctx, api.ID(), api.Settings())
 			if err != nil {
+				if errors.Is(err, eventsrcsstore.ErrAlreadyExists) {
+					return "already exists", nil
+				}
+
 				return "failed", err
 			}
 

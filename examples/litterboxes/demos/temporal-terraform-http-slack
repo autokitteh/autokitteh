@@ -1,0 +1,71 @@
+#
+-- auto.kitteh --
+load("ak", "ak")
+load("autokitteh.slack", "slack")
+load("parsecmd", "parsecmd")
+load("github.com/autokitteh/examples/modules/temporal-terraform/auto.kitteh", "create_network", "destroy_network")
+
+_slack = slack.open(secret_token=ak.get_credentials('slack', 'TFPTT3QFN'))
+
+def _create(body_value):
+  assert(body_value, "request body expected")
+  body_value["subnets"] = body_value.get("subnets", [])
+
+  _slack.post_message(channel='D02T8C0MVFU', text='creating network')
+
+  create_network(**body_value)
+
+  _slack.post_message(channel='D02T8C0MVFU', text='created network')
+
+
+def _destroy(body_value):
+  assert(body_value, "request body expected")
+  destroy_network(**body_value)
+
+
+def _slack_message(text):
+  cmd = parsecmd(text)
+  if cmd.name == 'create':
+    _create(body_value=cmd.kwargs)
+  elif cmd.name == 'destroy':
+    _destroy(body_value=cmd.kwargs)
+
+
+ak.sources.bind("http.POST", _create)
+ak.sources.bind("http.DELETE", _destroy)
+ak.sources.bind("slack.message", _slack_message)
+
+# EVENT post: { "src": "http", "type": "POST", "data": { "body_value": { "name": "test", "region": "us-west-1", "cidr_block": "10.0.0.0/16", "subnets": [ { "az": "a", "cidr_block": "10.0.0.0/24" } ] } } }
+# EVENT delete: { "src": "http", "type": "DELETE", "data": { "body_value": { "name": "test", "region": "us-west-1" } } }
+
+-- project.cue --
+package temporal
+
+import "encoding/json"
+
+plugins: {
+  "autokitteh.aws": {}
+  "autokitteh.slack": {}
+}
+
+#project_id: string @tag(project_id)
+
+src_bindings: {
+  "http": {
+    src_id:     "internal.http"
+    assoc:      "\( #project_id ).http"
+    src_config: json.Marshal({
+      name: string @tag(project_name)
+      routes: [
+        {
+          name: "catchall"
+          path: "*"
+        },
+      ]
+    })
+  }
+  "slack": {
+    src_id: "autokitteh.slack"
+    assoc:  "TFPTT3QFN"
+  }
+}

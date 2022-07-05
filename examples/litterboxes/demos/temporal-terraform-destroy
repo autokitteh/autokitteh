@@ -1,0 +1,16 @@
+-- auto.kitteh --
+load("github.com/autokitteh/examples/modules/temporal-terraform/auto.kitteh", "create_network", "destroy_network")
+
+
+destroy_network(
+  name="test",
+  region="us-west-1",
+)
+
+-- project.cue --
+package temporal
+
+
+plugins: {
+  "autokitteh.aws": {}
+}

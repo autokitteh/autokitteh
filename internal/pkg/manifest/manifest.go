@@ -6,6 +6,9 @@ import (
 	multierror "github.com/hashicorp/go-multierror"
 )
 
+// TODO: All operations currently just succeed if resource already exists.
+//       There is no check for diffs between what exists and what is needed.
+
 type Manifest struct {
 	Accounts     map[string]Account     `json:"accounts"`  // name -> acount
 	EventSources map[string]EventSource `json:"eventsrcs"` // id (=account.name) -> eventsrc

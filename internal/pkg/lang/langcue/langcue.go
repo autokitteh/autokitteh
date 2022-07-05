@@ -38,15 +38,31 @@ var (
 		return UnmarshalYAML(src, dst)
 	}
 
+	unmarshalXML = func(_ context.Context, src []byte, dst interface{}) error {
+		return UnmarshalXML(src, dst)
+	}
+
 	NewJSONDataLang = factory(true, unmarshalJSON)
 	NewJSONProgLang = factory(false, unmarshalJSON)
 	NewYAMLDataLang = factory(true, unmarshalYAML)
 	NewYAMLProgLang = factory(false, unmarshalYAML)
 	NewCueDataLang  = factory(true, UnmarshalCue)
 	NewCueProgLang  = factory(false, UnmarshalCue)
+	NewXMLDataLang  = factory(true, unmarshalXML)
+	NewXMLProgLang  = factory(false, unmarshalXML)
 )
 
 func Register(cat lang.Catalog) {
+	cat.Register("xml-program", lang.CatalogLang{
+		New:  NewXMLProgLang,
+		Exts: []string{"kitteh.xml"},
+	})
+
+	cat.Register("xml-data", lang.CatalogLang{
+		New:  NewXMLDataLang,
+		Exts: []string{"xml"},
+	})
+
 	cat.Register("json-program", lang.CatalogLang{
 		New:  NewJSONProgLang,
 		Exts: []string{"kitteh.json"},

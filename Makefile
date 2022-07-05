@@ -111,7 +111,7 @@ sh: aksh
 
 $(OUTDIR)/tools/golangci-lint:
 	mkdir -p $(OUTDIR)/tools
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b "$(OUTDIR)/tools" v1.44.2
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b "$(OUTDIR)/tools" v1.46.2
 
 $(OUTDIR)/tools/clitest:
 	mkdir -p $(OUTDIR)/tools

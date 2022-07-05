@@ -15,7 +15,9 @@ func UnmarshalCue(ctx context.Context, src []byte, dst interface{}) error {
 	srcfs := memfs.New()
 
 	// TODO: accept configurable filename (for error messages?).
-	srcfs.WriteFile("main.cue", src, 0644)
+	if err := srcfs.WriteFile("main.cue", src, 0644); err != nil {
+		return fmt.Errorf("write: %w", err)
+	}
 
 	// TODO: SECURITY: make sure this cannot access the fs.
 	v, err := compiler.Build(ctx, "/", map[string]fs.FS{

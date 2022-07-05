@@ -36,7 +36,7 @@ def _on_sound(ak_ctx, ak_name, sound):
 
 # Handler that get invoked when the camera takes a picture.
 def _on_camera_snap(image_slug):
-  resp = http.get('http://127.0.0.1:20000/cats/%d' % image_slug)
+  resp = http.get('http://127.0.0.1:20000/cats/%s' % image_slug)
   if resp.status_code == 200:
     img = resp.body()
     print("received image:\n%s" % img)
@@ -59,11 +59,11 @@ sources.bind('wet_dispenser.sound', _on_sound, context='wet')
 sources.bind('dry_dispenser.sound', _on_sound, context='dry')
 sources.bind('camera.snap', _on_camera_snap)
 
-# EVENT gizmo: { "src": "dry_dispenser", "type": "sound", "data": { "sound": { "string": { "v": "meow" } } } }
-# EVENT midnight: { "src": "dry_dispenser", "type": "sound", "data": { "sound": { "string": { "v": "grrrr" } } } }
-# EVENT pepurr: { "src": "wet_dispenser", "type": "sound", "data": { "sound": { "string": { "v": "purrrr" } } } }
-# EVENT zumi: { "src": "wet_dispenser", "type": "sound", "data": { "sound": { "string": { "v": "hiss" } } } }
-# EVENT snap: { "src": "camera", "type": "snap", "data": { "image_slug": { "integer": { "v": "1" } } } }
+# EVENT snap: { "src": "camera", "type": "snap", "data": { "image_slug": "1" } }
+# EVENT gizmo: { "src": "dry_dispenser", "type": "sound", "data": { "sound": "meow" } }
+# EVENT midnight: { "src": "dry_dispenser", "type": "sound", "data": { "sound": "grrrr" } }
+# EVENT pepurr: { "src": "wet_dispenser", "type": "sound", "data": { "sound": "purrrr" } }
+# EVENT zumi: { "src": "wet_dispenser", "type": "sound", "data": { "sound": "hiss" } }
 
 -- cats.cue --
 cats: {

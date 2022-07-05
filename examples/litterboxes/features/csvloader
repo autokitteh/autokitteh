@@ -1,0 +1,9 @@
+-- auto.kitteh --
+load("./data.csv", "records")
+
+print(records)
+
+-- data.csv --
+a,b,c
+1,2,3
+i,ii,iii

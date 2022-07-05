@@ -80,7 +80,15 @@
 
   function program() { return document.getElementById("program").value; }
 
-  function eventData() { return document.getElementById("event").value; }
+  function eventData() {
+    const raw = document.getElementById("event").value;
+    const json = JSON.parse(raw)
+    const data = json["data"]
+    if (data) {
+      json["data"] = JSON.stringify(data)
+    }
+    return JSON.stringify(json)
+  }
 
   function getLBId() {
     const last = window.location.pathname.split('/').at(-1);
@@ -106,6 +114,8 @@
         'Content-Type': 'text/plain',
       },
       body: program(),
+    }).catch((err) => {
+      console.error('update: ', err)
     })
 
     const body = await resp.json()
@@ -246,21 +256,45 @@
 
     const lines = prog.split('\n');
 
+    var empty = true
+
+    var g = document.createElement("optgroup")
+    g.label = "program"
+
     lines.forEach(l => {
       const m = l.match(re);
 
       if (m) {
+        empty = false
         obj = JSON.parse(m[2]);
 
         ev = JSON.stringify(obj, null, 2);
 
         var option = document.createElement("option");
         option.text = m[1];
-        ex.add(option);
+        g.appendChild(option);
 
         eventExamples[m[1]] = ev;
       }
     })
+
+    if (!empty) {
+      ex.add(g)
+    }
+
+    g = document.createElement("optgroup")
+    g.label = "common"
+
+    var option = document.createElement("option");
+    option.text = "trigger"
+    g.appendChild(option);
+    eventExamples[option.text] = JSON.stringify(
+        {"src": "trigger", "type": "trigger", "data": {"string_var_name": "meow"}},
+        null,
+        2
+    )
+
+    ex.add(g)
 
     changeEventExample()
   }
