@@ -1,0 +1,94 @@
+syntax = "proto3";
+
+package autokitteh.deployments.v1;
+
+import "autokitteh/deployments/v1/deployment.proto";
+import "buf/validate/validate.proto";
+
+message CreateRequest {
+  option (buf.validate.message).cel = {
+    id: "deployment.deployment_id_must_be_empty",
+    message: "deployment_id must not be specified",
+    expression: "has(this.deployment) && this.deployment.deployment_id == ''",
+  };
+  option (buf.validate.message).cel = {
+    id: "deployment.deployment_state_must_be_unspecified",
+    message: "deployment_state must not be specified",
+    expression: "has(this.deployment) && this.deployment.state == 0",
+  };
+
+  // deployment.state must be 0 or inactive.
+  Deployment deployment = 1 [(buf.validate.field).required = true];
+}
+
+message CreateResponse {
+  string deployment_id = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+message ActivateRequest {
+  string deployment_id = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+message ActivateResponse {}
+
+message DrainRequest {
+  string deployment_id = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+message DrainResponse {}
+
+message DeactivateRequest {
+  string deployment_id = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+message DeactivateResponse {}
+
+message TestRequest {
+  string deployment_id = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+message TestResponse {}
+
+message ListRequest {
+  string env_id = 1;
+  string build_id = 2;
+  DeploymentState state = 3 [(buf.validate.field).enum.defined_only = true];
+  uint32 limit = 4;
+  bool include_session_stats = 5;
+
+  // TODO: FieldMask.
+  // TODO: Paging.
+}
+
+message ListResponse {
+  // Chronological order: the last element is the latest.
+  repeated Deployment deployments = 1 [(buf.validate.field).repeated.items.required = true];
+}
+
+message GetRequest {
+  string deployment_id = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+message GetResponse {
+  Deployment deployment = 1;
+}
+
+service DeploymentsService {
+  rpc Create(CreateRequest) returns (CreateResponse);
+
+  // Activate a deployment, automatically drains all others.
+  rpc Activate(ActivateRequest) returns (ActivateResponse);
+
+  // Drain a deployment.
+  rpc Drain(DrainRequest) returns (DrainResponse);
+
+  // Deactivate a deployment - forcefully stops all sessions associated
+  // with the deployment.
+  rpc Deactivate(DeactivateRequest) returns (DeactivateResponse);
+
+  rpc Test(TestRequest) returns (TestResponse);
+
+  rpc List(ListRequest) returns (ListResponse);
+
+  rpc Get(GetRequest) returns (GetResponse);
+}

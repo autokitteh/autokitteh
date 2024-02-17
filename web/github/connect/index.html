@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>autokitteh GitHub Integration</title>
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="/static/apple-touch-icon.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="/static/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="/static/favicon-16x16.png"
+    />
+    <link rel="manifest" href="/static/site.webmanifest" />
+    <link rel="stylesheet" type="text/css" href="styles.css" />
+    <meta name="robots" content="noindex, nofollow" />
+    <script src="form.js" defer></script>
+  </head>
+
+  <body>
+    <a href="/" target="_self">
+      <img class="banner" src="/static/banner.svg" alt="autokitteh" />
+    </a>
+
+    <table class="title">
+      <td><img class="logo" src="/static/images/github.svg" alt="GitHub" /></td>
+      <td><h1>GitHub - Create a New Connection</h1></td>
+    </table>
+
+    <div class="toggle-container">
+      <button class="toggle" id="toggletab1" onclick="toggleTab('tab1')">
+        User (PAT)
+      </button>
+      <span class="toggle-sep"></span>
+      <button class="toggle" id="toggletab2" onclick="toggleTab('tab2')">
+        GitHub App
+      </button>
+    </div>
+
+    <div class="tab" id="tab1">
+      <p class="info">Information:</p>
+      <ul class="links">
+        <li>
+          <a
+            href="https://docs.github.com/en/rest/authentication/authenticating-to-the-rest-api#authenticating-with-a-personal-access-token"
+            target="_blank"
+            class="info"
+          >
+            Authenticating with a personal access token
+          </a>
+        </li>
+        <li>
+          <a
+            href="https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens"
+            target="_blank"
+            class="info"
+          >
+            Managing your personal access tokens
+          </a>
+        </li>
+        <li>
+          <a
+            href="https://docs.github.com/en/organizations/managing-programmatic-access-to-your-organization/setting-a-personal-access-token-policy-for-your-organization"
+            target="_blank"
+            class="info"
+          >
+            Setting a PAT policy for your organization
+          </a>
+        </li>
+        <li>
+          <a
+            href="https://docs.github.com/en/rest/authentication/endpoints-available-for-fine-grained-personal-access-tokens"
+            target="_blank"
+            class="info"
+          >
+            Endpoints available for fine-grained PATs
+          </a>
+        </li>
+      </ul>
+
+      <form method="post" action="/github/save_pat">
+        <div class="form-group">
+          <label for="pat">
+            Personal Access Token (PAT) - fine-grained or classic
+          </label>
+          <input
+            type="text"
+            name="pat"
+            autocomplete="off"
+            spellcheck="false"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="webhook">Webhook URL</label>
+          <input
+            type="text"
+            id="webhook"
+            name="webhook"
+            value="https://{{.address}}/github/webhook/{{.path}}"
+            readonly
+          />
+          <span class="copy-btn" id="copyButton">Copy</span>
+          <span class="notif" id="notif">Copied</span>
+        </div>
+
+        <div class="form-group">
+          <label for="secret">Webhook Secret</label>
+          <input
+            type="text"
+            name="secret"
+            autocomplete="off"
+            spellcheck="false"
+          />
+        </div>
+
+        <button type="submit" class="submit-btn">Save Connection</button>
+      </form>
+    </div>
+
+    <div class="tab" id="tab2">
+      <p class="info">
+        Information:
+        <a
+          href="https://docs.github.com/en/apps/using-github-apps/about-using-github-apps"
+          target="_blank"
+          class="info"
+        >
+          About using GitHub Apps
+        </a>
+        <br /><br />
+        Click the button below to install and authorize<br />
+        the <strong>autokitteh</strong> GitHub app
+      </p>
+      <a href="/oauth/start/github" class="clickable">Start OAuth Flow</a>
+    </div>
+  </body>
+</html>

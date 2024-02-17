@@ -1,0 +1,159 @@
+package sdkbuild
+
+import (
+	"context"
+	"fmt"
+	"io/fs"
+	"net/url"
+	"os"
+
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
+	"go.autokitteh.dev/autokitteh/sdk/sdkbuild/sdkbuildfile"
+	"go.autokitteh.dev/autokitteh/sdk/sdkruntimes"
+	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
+)
+
+func buildWithRuntime(
+	ctx context.Context,
+	rt sdkservices.Runtime,
+	data *sdkbuildfile.RuntimeData,
+	rootURL *url.URL,
+	path string,
+	symbols []sdktypes.Symbol,
+) error {
+	p, err := rt.Build(ctx, rootURL, path, symbols)
+	if err != nil {
+		return fmt.Errorf("runtime_build: %w", err)
+	}
+
+	return data.MergeFrom(
+		&sdkbuildfile.RuntimeData{
+			Artifact: p,
+		},
+	)
+}
+
+func Build(
+	ctx context.Context,
+	rts sdkservices.Runtimes,
+	rootURL *url.URL,
+	pathPatterns []string,
+	symbols []sdktypes.Symbol,
+	memo map[string]string,
+) (*sdkbuildfile.BuildFile, error) {
+	if rootURL.Scheme != "file" && rootURL.Scheme != "" {
+		return nil, fmt.Errorf("unsupported scheme: %q", rootURL.Scheme)
+	}
+
+	// requirements that are unsatisfiable at build time.
+	externals, err := kittehs.TransformError(symbols, func(sym sdktypes.Symbol) (sdktypes.Requirement, error) {
+		return sdktypes.NewRequirement(nil, nil, sym)
+	})
+	if err != nil {
+		return nil, fmt.Errorf("invalid symbols: %w", err)
+	}
+
+	var q []sdktypes.Requirement
+
+	rootFS := os.DirFS(rootURL.Path)
+
+	for _, pattern := range pathPatterns {
+		paths, err := fs.Glob(rootFS, pattern)
+		if err != nil {
+			return nil, fmt.Errorf("glob %s: %w", pattern, err)
+		}
+
+		if len(paths) == 0 {
+			return nil, fmt.Errorf("no files found for pattern %q", pattern)
+		}
+
+		for _, path := range paths {
+			req, err := sdktypes.NewRequirement(nil, &url.URL{Path: path}, nil)
+			if err != nil {
+				return nil, err
+			}
+
+			q = append(q, req)
+		}
+	}
+
+	rtdescs, err := rts.List(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("list: %w", err)
+	}
+
+	type rtCacheEntry struct {
+		runtime sdkservices.Runtime
+		data    *sdkbuildfile.RuntimeData
+	}
+
+	rtCache := make(map[string]*rtCacheEntry)
+	visited := make(map[string]bool)
+
+	for ; len(q) > 0; q = q[1:] {
+		req := q[0]
+
+		reqURL := sdktypes.GetRequirementURL(req)
+
+		if reqURL.Scheme != "file" && reqURL.Scheme != "" {
+			return nil, fmt.Errorf("unsupported scheme: %q", reqURL.Scheme)
+		}
+
+		path := reqURL.Path
+
+		if visited[path] {
+			continue
+		}
+
+		visited[path] = true
+
+		rtd := sdkruntimes.MatchRuntimeByPath(rtdescs, path)
+
+		if rtd == nil {
+			externals = append(externals, req)
+			continue
+		}
+
+		rtName := sdktypes.GetRuntimeName(rtd)
+
+		cached := rtCache[rtName.String()]
+		if cached == nil {
+			rt, err := rts.New(ctx, rtName)
+			if err != nil {
+				return nil, fmt.Errorf("new %q: %w", rtName, err)
+			}
+
+			cached = &rtCacheEntry{
+				runtime: rt,
+				data: &sdkbuildfile.RuntimeData{
+					Info: sdkbuildfile.RuntimeInfo{
+						Name: sdktypes.GetRuntimeName(rt.Get()),
+					},
+				},
+			}
+		}
+
+		if err := buildWithRuntime(ctx, cached.runtime, cached.data, rootURL, path, symbols); err != nil {
+			return nil, fmt.Errorf("build error for %q: %w", path, err)
+		}
+
+		rtCache[rtName.String()] = cached
+
+		q = append(q, sdktypes.GetBuildArtifactRequirements(cached.data.Artifact)...)
+	}
+
+	rtDatas := kittehs.TransformMapToList(rtCache, func(_ string, c *rtCacheEntry) *sdkbuildfile.RuntimeData { return c.data })
+
+	if externals == nil {
+		externals = []sdktypes.Requirement{}
+	}
+
+	return &sdkbuildfile.BuildFile{
+		Info: sdkbuildfile.BuildInfo{
+			Memo: memo,
+		},
+		Runtimes:            rtDatas,
+		RuntimeRequirements: externals,
+	}, nil
+}

@@ -1,0 +1,70 @@
+syntax = "proto3";
+
+package autokitteh.sessions.v1;
+
+import "autokitteh/sessions/v1/session.proto";
+import "buf/validate/validate.proto";
+
+message StartRequest {
+  option (buf.validate.message).cel = {
+    id: "session.session_id_must_be_empty",
+    message: "session_id must not be specified",
+    expression: "has(this.session) && this.session.session_id == ''",
+  };
+
+  Session session = 1 [(buf.validate.field).required = true];
+}
+
+message StartResponse {
+  string session_id = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+message StopRequest {
+  string session_id = 1 [(buf.validate.field).string.min_len = 1];
+  string reason = 2;
+  bool terminate = 3; // non-graceful
+}
+
+message StopResponse {}
+
+message ListRequest {
+  string deployment_id = 1;
+  string env_id = 2;
+  string event_id = 3;
+  SessionStateType state_type = 4 [(buf.validate.field).enum.defined_only = true];
+  bool count_only = 5;
+
+  // TODO: Pagination.
+  // TODO: FieldMask.
+}
+
+message ListResponse {
+  repeated Session sessions = 1 [(buf.validate.field).repeated.items.required = true];
+  int32 count = 2;
+}
+
+message GetRequest {
+  string session_id = 1 [(buf.validate.field).string.min_len = 1];
+
+  // TODO: FieldMask.
+}
+
+message GetResponse {
+  Session session = 1 [(buf.validate.field).required = true];
+}
+
+message GetLogRequest {
+  string session_id = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+message GetLogResponse {
+  SessionLog log = 1 [(buf.validate.field).required = true];
+}
+
+service SessionsService {
+  rpc Start(StartRequest) returns (StartResponse);
+  rpc Stop(StopRequest) returns (StopResponse);
+  rpc List(ListRequest) returns (ListResponse);
+  rpc Get(GetRequest) returns (GetResponse);
+  rpc GetLog(GetLogRequest) returns (GetLogResponse);
+}

@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package autokitteh.integration_provider.v1;
+
+import "autokitteh/values/v1/values.proto";
+
+// TODO(ENG-112): This part of the API is still being designed.
+message Integration {
+  map<string, values.v1.Value> values = 1;
+}

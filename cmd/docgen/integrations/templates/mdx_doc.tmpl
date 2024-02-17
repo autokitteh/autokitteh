@@ -1,0 +1,116 @@
+---
+sidebar_position: {{.Pos}}
+---
+
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+
+# {{trimSpace .Int.DisplayName}}
+
+{{trimSpace .Int.Description}}
+
+{{if .Int.UserLinks}}References:{{end}}
+{{range $label, $link := .Int.UserLinks}}
+- [{{refLabel $label}}]({{trimSpace $link}})
+{{- end}}
+
+## Functions
+
+{{range $name, $func := .Int.Module.Functions -}}
+### {{funcName $name}}
+
+{{if $func.DeprecatedMessage -}}
+:::warning[Deprecated]
+
+{{trimSpace $func.DeprecatedMessage}}
+
+:::
+{{- end}}
+
+{{trimSpace $func.Description}}
+
+{{if $func.DocumentationUrl -}}
+References:
+
+- [{{trimSpace $func.DocumentationUrl}}]({{trimSpace $func.DocumentationUrl}})
+{{- end}}
+
+<Tabs defaultValue="star" groupId="lang" queryString>
+  <TabItem label="JavaScript" value="js">
+    Stay tuned!
+  </TabItem>
+
+  <TabItem label="Python" value="py">
+    #### Name
+
+    `{{trimSpace $name}}`
+
+    #### Input
+
+    {{if $func.Input -}}
+    | Name | Type | Default Value | Description |
+    | :--- | :--- | :------------ | :---------- |
+    {{- else -}}
+    None
+    {{- end}}
+
+    {{- range $input := $func.Input}}
+    | `{{trimSpace $input.Name}}` | {{trimSpace $input.Type}} | {{trimSpace $input.DefaultValue}} | {{trimSpace $input.Description}} |
+    {{- end}}
+
+    #### Output
+
+    {{if $func.Output -}}
+    | Name | Type | Default Value | Description |
+    | :--- | :--- | :------------ | :---------- |
+    {{- else -}}
+    None
+    {{- end}}
+
+    {{- range $output := $func.Output}}
+    | `{{trimSpace $output.Name}}` | {{trimSpace $output.Type}} | {{trimSpace $output.DefaultValue}} | {{trimSpace $output.Description}} |
+    {{- end}}
+  </TabItem>
+
+  <TabItem label="Starlark" value="star">
+    #### Name
+
+    `{{trimSpace $name}}`
+
+    #### Input
+
+    {{if $func.Input -}}
+    | Name | Type | Default Value | Description |
+    | :--- | :--- | :------------ | :---------- |
+    {{- else -}}
+    None
+    {{- end}}
+
+    {{- range $input := $func.Input}}
+    | `{{trimSpace $input.Name}}` | {{trimSpace $input.Type}} | {{trimSpace $input.DefaultValue}} | {{trimSpace $input.Description}} |
+    {{- end}}
+
+    #### Output
+
+    {{if $func.Output -}}
+    | Name | Type | Default Value | Description |
+    | :--- | :--- | :------------ | :---------- |
+    {{- else -}}
+    None
+    {{- end}}
+
+    {{- range $output := $func.Output}}
+    | `{{trimSpace $output.Name}}` | {{trimSpace $output.Type}} | {{trimSpace $output.DefaultValue}} | {{trimSpace $output.Description}} |
+    {{- end}}
+  </TabItem>
+
+  <TabItem label="TypeScript" value="ts">
+    Stay tuned!
+  </TabItem>
+</Tabs>
+
+{{else}}None{{end}}
+
+## Events
+
+Not documented yet. Stay tuned!

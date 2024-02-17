@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package autokitteh.program.v1;
+
+import "buf/validate/validate.proto";
+
+// A specific location in code. Might be used for errors, entry points, etc.
+// Examples:
+//   foo.kitteh
+//   foo.kitteh:12.34
+//   foo.kitteh:OnSlack
+//   foo.kitteh:12.34,OnSlack
+message CodeLocation {
+  string path = 1;
+  uint32 row = 2;
+  uint32 col = 3;
+  string name = 4;
+}
+
+message CallFrame {
+  string name = 1;
+  CodeLocation location = 2;
+}
+
+message Error {
+  string message = 1 [(buf.validate.field).string.min_len = 1];
+
+  // [0] is outermost.
+  repeated CallFrame callstack = 2 [(buf.validate.field).repeated.items.required = true];
+
+  map<string, string> extra = 3;
+}

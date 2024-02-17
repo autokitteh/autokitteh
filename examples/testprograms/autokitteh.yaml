@@ -1,0 +1,23 @@
+version: v1
+
+project:
+  name: http
+  paths:
+    - http.star
+  connections:
+    - name: http1
+      token: "meow"
+      integration: "http"
+  envs:
+    - name: prod
+      vars:
+        - name: MEOW
+          value: "meow"
+      mappings:
+        - name: http1
+          connection: http1
+          events:
+            - type: post
+              entrypoint: http.star:on_http_post
+            - type: get
+              entrypoint: http.star:on_http_get

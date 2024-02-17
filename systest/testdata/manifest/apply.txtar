@@ -1,0 +1,218 @@
+# Graceful handling of a nonexistent manifest file.
+ak manifest apply nonexistent.yaml
+output equals Error: open nonexistent.yaml: no such file or directory
+return code == 1
+
+# Graceful handling of an invalid manifest file.
+ak manifest apply invalid.yaml
+output equals file invalid_error.txt
+return code == 1
+
+# Successful application of an empty plan.
+ak manifest apply empty.yaml
+output equals file expected_on_empty.txt
+return code == 0
+
+# Successful dry run of a full project.
+ak manifest apply full.yaml --dry-run -J
+output equals file expected_on_full_dry_run.json
+return code == 0
+
+# Successful application of a full project.
+ak manifest apply full.yaml -J
+output equals file expected_on_full_apply.json
+return code == 0
+
+# Check the actual project details.
+ak project get my_project -J
+output equals file expected_project_details.json
+return code == 0
+
+ak project get p:00000000000000000000000000000001 -J
+output equals file expected_project_details.json
+return code == 0
+
+# Check the actual connection details.
+ak connection get my_project/my_connection -J
+output equals file expected_connection_details.json
+return code == 0
+
+ak connection get connection:00000000000000000000000000000002 -J
+output equals file expected_connection_details.json
+return code == 0
+
+# Check the actual environment details.
+ak env get my_project/my_env -J
+output equals file expected_env_details.json
+return code == 0
+
+ak env get e:00000000000000000000000000000003 -J
+output equals file expected_env_details.json
+return code == 0
+
+# Check the actual trigger details.
+ak mapping get m:00000000000000000000000000000004 -J
+output equals file expected_trigger_details.json
+return code == 0
+
+-- invalid.yaml --
+This is an invalid YAML file to trigger an error
+
+-- invalid_error.txt --
+Error: invalid YAML input: yaml: unmarshal errors:
+  line 1: cannot unmarshal !!str `This is...` into apply.Root
+
+-- empty.yaml --
+version: v1
+
+-- expected_on_empty.txt --
+plan: {[] []}
+apply_logs: []
+
+-- full.yaml --
+version: v1
+
+project:
+  name: my_project
+  paths:
+    - my_program.star
+  connections:
+    - name: my_connection
+      integration: http
+      token: my_path
+  envs:
+    - name: my_env
+      mappings:
+        - name: http
+          connection: my_project/my_connection
+          events:
+            - type: get
+              entrypoint: my_program.star:on_http_get
+
+-- expected_on_full_dry_run.json --
+{
+  "plan": {
+    "logs": null,
+    "operations": [
+      {
+        "description": "create project \"my_project\""
+      },
+      {
+        "description": "create connection \"my_connection\" under \"my_project\""
+      },
+      {
+        "description": "create env \"my_env\""
+      },
+      {
+        "description": "env \"my_env\": add mapping \"http\""
+      }
+    ]
+  }
+}
+
+-- expected_on_full_apply.json --
+{
+  "plan": {
+    "logs": null,
+    "operations": [
+      {
+        "description": "create project \"my_project\""
+      },
+      {
+        "description": "create connection \"my_connection\" under \"my_project\""
+      },
+      {
+        "description": "create env \"my_env\""
+      },
+      {
+        "description": "env \"my_env\": add mapping \"http\""
+      }
+    ]
+  }
+}
+{
+  "apply_logs": [
+    {
+      "msg": "created project",
+      "data": {
+        "name": "my_project",
+        "project_id": "p:00000000000000000000000000000001"
+      }
+    },
+    {
+      "msg": "connection created",
+      "data": {
+        "conn_id": "connection:00000000000000000000000000000002",
+        "conn_name": "my_connection",
+        "project_id": "p:00000000000000000000000000000001",
+        "project_name": "my_project"
+      }
+    },
+    {
+      "msg": "created env",
+      "data": {
+        "env_id": "e:00000000000000000000000000000003",
+        "name": "my_env"
+      }
+    },
+    {
+      "msg": "created mapping",
+      "data": {
+        "env_id": "e:00000000000000000000000000000003",
+        "mapping_id": "m:00000000000000000000000000000004",
+        "mapping_name": "http"
+      }
+    }
+  ]
+}
+
+-- expected_project_details.json --
+{
+  "project": {
+    "project_id": "p:00000000000000000000000000000001",
+    "name": "my_project",
+    "resources_root_url": ".",
+    "resource_paths": [
+      "my_program.star"
+    ]
+  }
+}
+
+-- expected_connection_details.json --
+{
+  "connection": {
+    "connection_id": "connection:00000000000000000000000000000002",
+    "integration_id": "integration:8000000000000000f1201a7ed83f7cd5",
+    "integration_token": "my_path",
+    "project_id": "p:00000000000000000000000000000001",
+    "name": "my_connection"
+  }
+}
+
+-- expected_env_details.json --
+{
+  "env": {
+    "env_id": "e:00000000000000000000000000000003",
+    "project_id": "p:00000000000000000000000000000001",
+    "name": "my_env"
+  }
+}
+
+-- expected_trigger_details.json --
+{
+  "mapping": {
+    "mapping_id": "m:00000000000000000000000000000004",
+    "env_id": "e:00000000000000000000000000000003",
+    "connection_id": "connection:00000000000000000000000000000002",
+    "module_name": "http",
+    "events": [
+      {
+        "event_type": "get",
+        "code_location": {
+          "path": "my_program.star",
+          "name": "on_http_get"
+        }
+      }
+    ]
+  }
+}

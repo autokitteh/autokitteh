@@ -1,0 +1,13 @@
+# The completion command exists.
+ak completion bash
+output contains bash completion for ak
+return code == 0
+
+ak completion zsh
+output contains zsh completion for ak
+return code == 0
+
+# There's an error for unrecognized shell types.
+ak completion blah
+output equals Error: invalid argument "blah" for "ak completion"
+return code == 1

@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+package autokitteh.runtimes.v1;
+
+import "autokitteh/program/v1/program.proto";
+import "buf/validate/validate.proto";
+
+message BuildArtifact {
+  repeated Requirement requirements = 1 [(buf.validate.field).repeated.items.required = true];
+  repeated Export exports = 2 [(buf.validate.field).repeated.items.required = true];
+
+  // Runtime specific build output. This essentialy the "executable".
+  // Map structure for convenience. Intended to use as a filesystem -
+  // each entry will be stored as a different file in a persistent store.
+  // This means that each key must be a relative path, no '..' or '.' allowed.
+  map<string, bytes> compiled_data = 3 [(buf.validate.field).map.keys.string.min_len = 1];
+}
+
+message Requirement {
+  option (buf.validate.message).cel = {
+    id: "url_or_member",
+    message: "at least url or symbol must be specified",
+    expression: "this.url != '' || this.symbol != ''",
+  };
+
+  program.v1.CodeLocation location = 1; // where the requirement is coming from.
+  string url = 2;
+  string symbol = 3;
+}
+
+message Export {
+  program.v1.CodeLocation location = 1; // where the export is coming from.
+  string symbol = 2;
+}

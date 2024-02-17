@@ -1,0 +1,8 @@
+# Can't start another AK server listening to the same port.
+ak up --mode=test
+output contains bind: address already in use
+return code == 1
+
+# But the first AK server is unaffected by that.
+ak integrations list
+return code == 0

@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+package autokitteh.apply.v1;
+
+import "buf/validate/validate.proto";
+
+message ApplyLog {
+  string message = 1;
+  map<string, string> data = 2;
+}
+
+message ApplyOperation {
+  string descritpion = 1;
+}
+
+message ApplyRequest {
+  string manifest = 1 [(buf.validate.field).string.min_len = 1];
+  string path = 2 [(buf.validate.field).string.min_len = 1];
+}
+
+message ApplyResponse {
+  repeated string logs = 1;
+}
+
+message PlanRequest {
+  string manifest = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+message PlanResponse {
+  repeated string logs = 1;
+}
+
+service ApplyService {
+  rpc Apply(ApplyRequest) returns (ApplyResponse);
+  rpc Plan(PlanRequest) returns (PlanResponse);
+}

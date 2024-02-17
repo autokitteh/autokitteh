@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package autokitteh.connections.v1;
+
+import "buf/validate/validate.proto";
+
+message Connection {
+  string connection_id = 1;
+
+  string integration_id = 2 [(buf.validate.field).string.min_len = 1];
+
+  // Reference to a configuration of this integration, usable by connections.
+  string integration_token = 3 [(buf.validate.field).string.min_len = 1];
+
+  string project_id = 4 [(buf.validate.field).string.min_len = 1];
+
+  string name = 5 [(buf.validate.field).string.min_len = 1];
+}

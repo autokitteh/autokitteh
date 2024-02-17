@@ -1,0 +1,67 @@
+syntax = "proto3";
+
+package autokitteh.connections.v1;
+
+import "autokitteh/connections/v1/connection.proto";
+import "buf/validate/validate.proto";
+
+message CreateRequest {
+  option (buf.validate.message).cel = {
+    id: "connection.connection_id_must_be_empty",
+    message: "connection_id must not be specified",
+    expression: "has(this.connection) && this.connection.connection_id == ''",
+  };
+
+  Connection connection = 1;
+}
+
+message CreateResponse {
+  string connection_id = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+message UpdateRequest {
+  option (buf.validate.message).cel = {
+    id: "connection.connection_id_must_not_be_empty",
+    message: "connection_id must be specified",
+    expression: "has(this.connection) && this.connection.connection_id != ''",
+  };
+
+  Connection connection = 1;
+}
+
+message UpdateResponse {}
+
+message DeleteRequest {
+  string connection_id = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+message DeleteResponse {}
+
+message GetRequest {
+  string connection_id = 1;
+}
+
+message GetResponse {
+  Connection connection = 1;
+}
+
+message ListRequest {
+  string integration_id = 1; // Optional filter.
+  string project_id = 2; // Optional filter.
+  string integration_token = 3; // Optional filter.
+  // TODO: fieldmask.
+}
+
+message ListResponse {
+  repeated Connection connections = 1 [(buf.validate.field).repeated.items.required = true];
+}
+
+// Implemented by the autokitteh server.
+service ConnectionsService {
+  // Initiated indirectly by an autokitteh user, based on an registered integration.
+  rpc Create(CreateRequest) returns (CreateResponse);
+  rpc Delete(DeleteRequest) returns (DeleteResponse);
+  rpc Update(UpdateRequest) returns (UpdateResponse);
+  rpc Get(GetRequest) returns (GetResponse);
+  rpc List(ListRequest) returns (ListResponse);
+}

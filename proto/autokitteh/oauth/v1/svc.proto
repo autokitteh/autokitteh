@@ -1,0 +1,71 @@
+syntax = "proto3";
+
+package autokitteh.oauth.v1;
+
+import "buf/validate/validate.proto";
+
+// OAuthService is a generic implementation of 3-legged OAuth v2 flows,
+// reusable by OAuth-based integrations and autokitteh user authentication.
+// It assumes that the autokitteh server has a public address for callbacks,
+// which allows callers of this service not to care about this requirement.
+service OAuthService {
+  rpc Register(RegisterRequest) returns (RegisterResponse);
+  rpc Get(GetRequest) returns (GetResponse);
+  rpc StartFlow(StartFlowRequest) returns (StartFlowResponse);
+  rpc Exchange(ExchangeRequest) returns (ExchangeResponse);
+}
+
+message RegisterRequest {
+  // The ID may be moved later to the response, i.e. this service will
+  // generate a random, unique, consistent ID instead of the caller.
+  string id = 1 [(buf.validate.field).string.min_len = 1];
+  OAuthConfig config = 2;
+}
+
+message RegisterResponse {}
+
+message GetRequest {
+  string id = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+message GetResponse {
+  OAuthConfig config = 1;
+}
+
+message StartFlowRequest {
+  string id = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+message StartFlowResponse {
+  string url = 1;
+}
+
+message ExchangeRequest {
+  string id = 1 [(buf.validate.field).string.min_len = 1];
+  string state = 2 [(buf.validate.field).string.min_len = 1];
+  string code = 3 [(buf.validate.field).string.min_len = 1];
+}
+
+message ExchangeResponse {
+  string access_token = 1;
+  string refresh_token = 2;
+  string token_type = 3;
+  int64 expiry = 4;
+}
+
+message OAuthConfig {
+  string client_id = 1 [(buf.validate.field).string.min_len = 1];
+  string client_secret = 2 [(buf.validate.field).string.min_len = 1];
+
+  string auth_url = 3 [(buf.validate.field).string.min_len = 1];
+  string device_auth_url = 4 [(buf.validate.field).string.min_len = 1];
+  string token_url = 5 [(buf.validate.field).string.min_len = 1];
+  string redirect_url = 6 [(buf.validate.field).string.min_len = 1];
+
+  // https://pkg.go.dev/golang.org/x/oauth2#AuthStyle
+  int32 auth_style = 7;
+  // https://pkg.go.dev/golang.org/x/oauth2#AuthCodeOption
+  map<string, string> options = 8;
+
+  repeated string scopes = 9;
+}

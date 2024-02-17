@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>autokitteh Slack Integration</title>
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="/static/apple-touch-icon.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="/static/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="/static/favicon-16x16.png"
+    />
+    <link rel="manifest" href="/static/site.webmanifest" />
+    <link rel="stylesheet" type="text/css" href="styles.css" />
+    <meta name="robots" content="noindex, nofollow" />
+  </head>
+
+  <body>
+    <a href="/" target="_self">
+      <img class="banner" src="/static/banner.svg" alt="autokitteh" />
+    </a>
+
+    <table class="title">
+      <td>
+        <img class="logo" src="/static/images/slack.svg" alt="Slack" />
+      </td>
+      <td><h1>Slack - Create a New Connection</h1></td>
+    </table>
+
+    <p class="info">
+      Information:
+      <a
+        href="https://api.slack.com/authentication/oauth-v2"
+        target="_blank"
+        class="info"
+      >
+        Installing Slack apps with OAuth
+      </a>
+      <br /><br />
+      Click the button below to install and authorize<br />
+      the <strong>autokitteh</strong> app in your Slack workspace
+    </p>
+    <a href="/oauth/start/slack" class="clickable">Start OAuth Flow</a>
+  </body>
+</html>

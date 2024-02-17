@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>autokitteh Scheduler (Cron) Integration</title>
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="/static/apple-touch-icon.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="/static/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="/static/favicon-16x16.png"
+    />
+    <link rel="manifest" href="/static/site.webmanifest" />
+    <link rel="stylesheet" type="text/css" href="styles.css" />
+    <meta name="robots" content="noindex, nofollow" />
+  </head>
+
+  <body>
+    <a href="/" target="_self">
+      <img class="banner" src="/static/banner.svg" alt="autokitteh" />
+    </a>
+
+    <table class="title">
+      <td>
+        <img class="logo" src="/static/images/scheduler.svg" alt="Scheduler" />
+      </td>
+      <td><h1>Scheduler (Cron) - Create a New Connection</h1></td>
+    </table>
+
+    <p class="info">Information:</p>
+    <ul class="links">
+      <li>
+        <a
+          href="https://pkg.go.dev/github.com/robfig/cron#hdr-CRON_Expression_Format"
+          target="_blank"
+          class="info"
+        >
+          Cron expression format (<code>"* * * * *"</code>)
+        </a>
+      </li>
+      <li>
+        <a
+          href="https://pkg.go.dev/github.com/robfig/cron#hdr-Predefined_schedules"
+          target="_blank"
+          class="info"
+        >
+          Predefined schedules and intervals (<code>"@"</code> format)
+        </a>
+      </li>
+      <li>
+        <a href="https://crontab.guru/" target="_blank" class="info">
+          Crontab.guru - cron schedule expression editor
+        </a>
+      </li>
+    </ul>
+
+    <form method="post" action="/scheduler/save">
+      <div class="form-group">
+        <label for="schedule">
+          Schedule (<code>"*"</code> or <code>"@"</code> format)
+        </label>
+        <input
+          type="text"
+          name="schedule"
+          autocomplete="off"
+          spellcheck="false"
+          class="text"
+          required
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="timezone">Time Zone</label>
+        <input type="radio" name="timezone" value="Local" checked />
+        Local
+        <input type="radio" name="timezone" value="UTC" />
+        UTC
+      </div>
+
+      <div class="form-group">
+        <label for="memo">Memo (optional)</label>
+        <input
+          type="text"
+          name="memo"
+          autocomplete="off"
+          spellcheck="false"
+          class="text"
+        />
+      </div>
+
+      <button type="submit" class="submit-btn">Save Connection</button>
+    </form>
+  </body>
+</html>

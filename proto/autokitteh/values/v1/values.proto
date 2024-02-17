@@ -1,0 +1,119 @@
+syntax = "proto3";
+
+package autokitteh.values.v1;
+
+import "autokitteh/program/v1/module.proto";
+import "buf/validate/validate.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
+
+// These types are heavily inspired by Starlark's values. That said, there is
+// no expectation/requirement for these to be the same in the future.
+
+message Nothing {}
+
+message String {
+  string v = 1;
+}
+
+message Integer {
+  int64 v = 1;
+}
+
+message Float {
+  double v = 1;
+}
+
+message Boolean {
+  bool v = 1;
+}
+
+message Symbol {
+  string name = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+message List {
+  repeated Value vs = 1 [(buf.validate.field).repeated.items.required = true];
+}
+
+message Set {
+  repeated Value vs = 1 [(buf.validate.field).repeated.items.required = true];
+}
+
+message Bytes {
+  bytes v = 1;
+}
+
+// Dict cannot be a simple map since the keys might be values themselves.
+message Dict {
+  message Item {
+    Value k = 1 [(buf.validate.field).required = true];
+    Value v = 2 [(buf.validate.field).required = true];
+  }
+
+  repeated Item items = 1 [(buf.validate.field).repeated.items.required = true];
+}
+
+message Time {
+  google.protobuf.Timestamp v = 1 [(buf.validate.field).required = true];
+}
+
+message Duration {
+  google.protobuf.Duration v = 1 [(buf.validate.field).required = true];
+}
+
+message Struct {
+  Value ctor = 1 [(buf.validate.field).required = true];
+  map<string, Value> fields = 2 [
+    (buf.validate.field).map.keys.string.min_len = 1,
+    (buf.validate.field).map.values.required = true
+  ];
+}
+
+message Module {
+  string name = 1 [(buf.validate.field).string.min_len = 1];
+  map<string, Value> members = 2 [
+    (buf.validate.field).map.keys.string.min_len = 1,
+    (buf.validate.field).map.values.required = true
+  ];
+}
+
+message Function {
+  // executor identifies who owns the execution of the function.
+  // essentially, where the function is defined. that entity
+  // is responsible of the execution of the function.
+  string executor_id = 1 [(buf.validate.field).string.min_len = 1];
+
+  string name = 2 [(buf.validate.field).string.min_len = 1];
+
+  program.v1.Function desc = 3 [(buf.validate.field).required = true];
+
+  // Data that is transfered along with the function itself.
+  // This can be used by the function implementing the name
+  // above, to store data in its internal scope.
+  bytes data = 4;
+
+  repeated string flags = 5;
+}
+
+message Value {
+  oneof type {
+    option (buf.validate.oneof).required = true;
+
+    Nothing nothing = 1;
+    Boolean boolean = 2;
+    String string = 3;
+    Integer integer = 4;
+    Float float = 5;
+    List list = 6;
+    Set set = 7;
+    Dict dict = 8;
+    Bytes bytes = 9;
+    Time time = 10;
+    Duration duration = 11;
+    Struct struct = 12;
+    Module module = 13;
+    Symbol symbol = 14;
+    Function function = 15;
+  }
+}

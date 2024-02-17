@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package autokitteh.runtimes.v1;
+
+import "buf/validate/validate.proto";
+
+message Runtime {
+  string name = 1 [(buf.validate.field).string.min_len = 1];
+  repeated string file_extensions = 2 [(buf.validate.field).repeated.items.string.min_len = 1];
+}

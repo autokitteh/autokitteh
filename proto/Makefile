@@ -1,0 +1,41 @@
+.PHONY: all
+all: buf-format-check buf-lint buf-gen
+
+.PHONY: buf-format-check
+buf-format-check:
+	buf format --diff --exit-code
+
+# Abort when detecting violations during local builds
+# (not a replacement for linting in the CI workflow).
+.PHONY: buf-lint
+buf-lint:
+	buf lint
+
+.PHONY: buf-build
+buf-build:
+	rm -rf gen
+	buf build
+
+.PHONY: buf-gen
+buf-gen: buf-build
+	buf generate --include-imports
+	./scripts/fixpy.sh
+
+.PHONY: clean
+clean:
+	rm -fR gen
+	rm -fR dist
+
+.PHONY: py-deps
+py-deps:
+	python3 -m pip install --upgrade poetry
+
+.PHONY: py-dist
+py-dist: py-deps
+	rm -fR dist
+	python3 -m poetry build
+
+.PHONY: py-dist-publish
+py-dist-publish-test: py-deps
+	python3 -m poetry config repositories.test-pypi https://test.pypi.org/legacy/
+	python3 -m poetry publish --repository test-pypi

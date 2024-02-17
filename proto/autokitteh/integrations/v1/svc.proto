@@ -1,0 +1,75 @@
+syntax = "proto3";
+
+package autokitteh.integrations.v1;
+
+import "autokitteh/integrations/v1/integration.proto";
+import "autokitteh/program/v1/program.proto";
+import "autokitteh/values/v1/values.proto";
+import "buf/validate/validate.proto";
+
+message GetRequest {
+  string integration_id = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+message GetResponse {
+  integrations.v1.Integration integration = 1;
+}
+
+// All filering fields are optional.
+message ListRequest {
+  string name_substring = 1;
+  reserved 2; // TODO: tag search term
+}
+
+message ListResponse {
+  repeated integrations.v1.Integration integrations = 1 [(buf.validate.field).repeated.items.required = true];
+}
+
+message CallRequest {
+  string integration_id = 1 [(buf.validate.field).string.min_len = 1];
+  values.v1.Value function = 2 [(buf.validate.field).required = true];
+  repeated values.v1.Value args = 3 [(buf.validate.field).repeated.items.required = true];
+  map<string, values.v1.Value> kwargs = 4 [(buf.validate.field).map = {
+    keys: {
+      string: {min_len: 1}
+    },
+    values: {required: true},
+  }];
+}
+
+message CallResponse {
+  values.v1.Value value = 1;
+  program.v1.Error error = 2;
+}
+
+message ConfigureRequest {
+  string integration_id = 1 [(buf.validate.field).string.min_len = 1];
+  string config = 2;
+}
+
+message ConfigureResponse {
+  map<string, values.v1.Value> values = 4 [(buf.validate.field).map = {
+    keys: {
+      string: {min_len: 1}
+    },
+    values: {required: true},
+  }];
+}
+
+message DisconnectRequest {
+  string executor_id = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+message DisconnectResponse {}
+
+// Implemented by integration providers.
+service IntegrationsService {
+  rpc Get(GetRequest) returns (GetResponse);
+  rpc List(ListRequest) returns (ListResponse);
+
+  // Get all values for a specific configuration of the integration.
+  // The returned values ExecutorIDs will be the integration id.
+  rpc Configure(ConfigureRequest) returns (ConfigureResponse);
+
+  rpc Call(CallRequest) returns (CallResponse);
+}

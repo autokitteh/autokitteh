@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>autokitteh Gmail Integration</title>
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="/static/apple-touch-icon.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="/static/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="/static/favicon-16x16.png"
+    />
+    <link rel="manifest" href="/static/site.webmanifest" />
+    <link rel="stylesheet" type="text/css" href="styles.css" />
+    <meta name="robots" content="noindex, nofollow" />
+    <script src="form.js" defer></script>
+  </head>
+
+  <body>
+    <a href="/" target="_self">
+      <img class="banner" src="/static/banner.svg" alt="autokitteh" />
+    </a>
+
+    <table class="title">
+      <td><img class="logo" src="/static/images/gmail.svg" alt="Gmail" /></td>
+      <td><h1>Gmail - Create a New Connection</h1></td>
+    </table>
+
+    <div class="toggle-container">
+      <button class="toggle" id="toggletab1" onclick="toggleTab('tab1')">
+        User (OAuth v2)
+      </button>
+      <span class="toggle-sep"></span>
+      <button class="toggle" id="toggletab2" onclick="toggleTab('tab2')">
+        Service Account (JSON Key)
+      </button>
+    </div>
+
+    <div class="tab" id="tab1">
+      <p class="info">Information:</p>
+      <ul class="links">
+        <li>
+          <a
+            href="https://developers.google.com/workspace/guides/auth-overview"
+            target="_blank"
+            class="info"
+          >
+            Learn about authentication and authorization
+          </a>
+        </li>
+        <li>
+          <a
+            href="https://developers.google.com/identity/protocols/oauth2/web-server"
+            target="_blank"
+            class="info"
+          >
+            Using OAuth 2.0 for web server applications
+          </a>
+        </li>
+      </ul>
+
+      <p class="info">
+        Click the button below to sign-in and authorize the
+        <strong>autokitteh</strong> service
+      </p>
+      <a href="/oauth/start/gmail" class="clickable">Start OAuth Flow</a>
+    </div>
+
+    <div class="tab" id="tab2">
+      <p class="info">Information:</p>
+      <ul class="links">
+        <li>
+          <a
+            href="https://cloud.google.com/iam/docs/service-account-overview"
+            target="_blank"
+            class="info"
+          >
+            GCP service accounts overview
+          </a>
+        </li>
+        <li>
+          <a
+            href="https://cloud.google.com/iam/docs/service-account-creds"
+            target="_blank"
+            class="info"
+          >
+            Service account credentials
+          </a>
+        </li>
+        <li>
+          <a
+            href="https://cloud.google.com/iam/docs/keys-create-delete"
+            target="_blank"
+            class="info"
+          >
+            Create and delete service account keys
+          </a>
+        </li>
+        <li>
+          <a
+            href="https://cloud.google.com/iam/docs/best-practices-for-managing-service-account-keys"
+            target="_blank"
+            class="info"
+          >
+            Best practices for managing service account keys
+          </a>
+        </li>
+      </ul>
+
+      <form method="post" action="/google/save_json">
+        <div class="form-group">
+          <label for="json">JSON Key</label>
+          <textarea
+            name="json"
+            rows="14"
+            cols="65"
+            wrap="soft"
+            autocomplete="off"
+            spellcheck="false"
+            required
+          ></textarea>
+        </div>
+
+        <button type="submit" class="submit-btn">Save Connection</button>
+      </form>
+    </div>
+  </body>
+</html>

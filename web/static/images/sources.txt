@@ -1,0 +1,64 @@
+AWS:
+https://commons.wikimedia.org/wiki/File:Amazon_Web_Services_Logo.svg
+https://upload.wikimedia.org/wikipedia/commons/9/93/Amazon_Web_Services_Logo.svg
+
+GitHub:
+https://commons.wikimedia.org/wiki/File:Octicons-mark-github.svg
+https://upload.wikimedia.org/wikipedia/commons/9/91/Octicons-mark-github.svg
+https://github.com/logos
+
+Google:
+https://commons.wikimedia.org/wiki/File:Google_%22G%22_Logo.svg
+https://upload.wikimedia.org/wikipedia/commons/archive/5/53/20230822192910%21Google_%22G%22_Logo.svg
+
+Google Calendar:
+https://commons.wikimedia.org/wiki/File:Google_Calendar_icon_(2020).svg
+https://upload.wikimedia.org/wikipedia/commons/a/a5/Google_Calendar_icon_%282020%29.svg
+
+Google Chat:
+https://commons.wikimedia.org/wiki/File:Google_Chat_icon_(2023).svg
+https://upload.wikimedia.org/wikipedia/commons/d/d6/Google_Chat_icon_%282023%29.svg
+
+Google Drive:
+https://commons.wikimedia.org/wiki/File:Google_Drive_icon_(2020).svg
+https://upload.wikimedia.org/wikipedia/commons/1/12/Google_Drive_icon_%282020%29.svg
+
+Google Forms:
+https://commons.wikimedia.org/wiki/File:Google_Forms_2020_Logo.svg
+https://upload.wikimedia.org/wikipedia/commons/5/5b/Google_Forms_2020_Logo.svg
+
+Google Gmail:
+https://commons.wikimedia.org/wiki/File:Gmail_icon_(2020).svg
+https://upload.wikimedia.org/wikipedia/commons/7/7e/Gmail_icon_%282020%29.svg
+
+Google Sheets:
+https://commons.wikimedia.org/wiki/File:Google_Sheets_2020_Logo.svg
+
+gRPC:
+https://seeklogo.com/images/G/grpc-logo-561C1563B1-seeklogo.com.png
+
+HTTP/REST:
+https://commons.wikimedia.org/wiki/File:HTTP_logo.svg
+https://upload.wikimedia.org/wikipedia/commons/5/5b/HTTP_logo.svg
+
+OpenAI ChatGPT:
+https://upload.wikimedia.org/wikipedia/commons/0/04/ChatGPT_logo.svg
+
+ProxySQL:
+https://github.com/ProxySQL
+https://avatars.githubusercontent.com/u/29518891?s=200&v=4
+
+Redis:
+https://redis.com/brand-guidelines/
+Download logo assets > cube > isometric > digital
+
+Scheduler:
+https://commons.wikimedia.org/wiki/File:Icons8_flat_alarm_clock.svg
+https://upload.wikimedia.org/wikipedia/commons/5/54/Icons8_flat_alarm_clock.svg
+
+Slack:
+https://commons.wikimedia.org/wiki/File:Slack_icon_2022.svg
+https://upload.wikimedia.org/wikipedia/commons/3/3b/Slack_icon_2022.svg
+
+Twilio:
+https://seeklogo.com/images/T/twilio-logo-341DD81BFB-seeklogo.com.png

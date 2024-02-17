@@ -1,0 +1,62 @@
+syntax = "proto3";
+
+package autokitteh.integration_provider.v1;
+
+import "autokitteh/integration_provider/v1/integration.proto";
+import "autokitteh/program/v1/program.proto";
+import "autokitteh/values/v1/values.proto";
+import "buf/validate/validate.proto";
+
+// Implemented by integration providers, to respond to autokitteh.
+// This service may be in charge of more than one integration, in which
+// case it's responsible for managing integration IDs and connection mappings.
+// In addition, autokitteh also implements this service - but as a router
+// for all registered integrations, instead of an actual integration.
+service IntegrationProviderService {
+  // Static declaration(s) of functions and values exposed to autokitteh.
+  rpc Get(GetRequest) returns (GetResponse);
+  rpc List(ListRequest) returns (ListResponse);
+
+  // Relay an API method call from the autokitteh runtime engine,
+  // via the autokitteh connection manager, to the integration
+  // provider, and then relay back the API's response.
+  rpc Call(CallRequest) returns (CallResponse);
+
+  // TBD: health check / telemetry / metrics in the future.
+}
+
+message GetRequest {
+  string integration_id = 1 [(buf.validate.field).string.min_len = 1];
+  // TODO(ENG-113): Is this needed / available in a remote integration?
+  string executor_id = 2 [(buf.validate.field).string.min_len = 1];
+  // TODO(ENG-113): Is this needed?
+  string connection_token = 3;
+}
+
+message GetResponse {
+  integration_provider.v1.Integration integration = 1;
+}
+
+message ListRequest {}
+
+message ListResponse {
+  repeated integration_provider.v1.Integration integrations = 1;
+}
+
+// TODO(ENG-112): This part of the API is still being designed.
+message CallRequest {
+  string integration_id = 1 [(buf.validate.field).string.min_len = 1];
+  values.v1.Value function = 2 [(buf.validate.field).required = true];
+  repeated values.v1.Value args = 3 [(buf.validate.field).repeated.items.required = true];
+  map<string, values.v1.Value> kwargs = 4 [(buf.validate.field).map = {
+    keys: {
+      string: {min_len: 1}
+    },
+    values: {required: true},
+  }];
+}
+
+message CallResponse {
+  values.v1.Value value = 1;
+  program.v1.Error error = 2;
+}

@@ -1,0 +1,4 @@
+# The manifest schema command exists.
+ak manifest schema
+output contains https://json-schema.org/
+return code == 0

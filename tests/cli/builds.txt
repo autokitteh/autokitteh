@@ -1,0 +1,64 @@
+$ tmp=$(mktemp -d)
+$ data_file_path=${tmp}/data_file
+$ echo "build_data" >> ${data_file_path}
+$ # List builds return empty list
+$ ${AK} builds list; echo $?
+0
+$ # List builds with a nonexistent project ID returns an error
+$ ${AK} builds list p:00000000000000000000000000000001; echo $?
+Error: project "p:00000000000000000000000000000001" not found
+10
+$ # get build return none if id not found
+$ ${AK} builds get b:00000000000000000000000000000001; echo $?
+0
+$ # get build fails if id not found and failure is requested
+$ ${AK} builds get b:00000000000000000000000000000001 -f; echo $?
+Error: build not found
+10
+$ # upload build without project id fail
+$ ${AK} builds upload /tmp/; echo $?
+Error: required flag(s) "project" not set
+1
+$ # upload build without data_file_path fail
+$ ${AK} builds upload --project=p:00000000000000000000000000000001; echo $?
+Error: accepts 1 arg(s), received 0
+1
+$ # upload build with invalid data file fail
+$ ${AK} builds upload --project=p:00000000000000000000000000000001 not_existing.txt; echo $?
+Error: read file: open not_existing.txt: no such file or directory
+1
+$ ${AK} p c p1; echo $?
+project_id: p:00000000000000000000000000000001
+0
+$ # upload build return build_id
+$ ${AK} -j builds upload --project=p:00000000000000000000000000000001 ${data_file_path}; echo $?
+{"build_id":"b:00000000000000000000000000000002"}
+0
+$ # get build
+$ ${AK} -j builds get b:00000000000000000000000000000002; echo $? #=> --regex {"build":\{"build_id":"b:00000000000000000000000000000002","project_id":"p:00000000000000000000000000000001","created_at":".*}}
+$ # list builds
+$ ${AK} -j builds ls ; echo $? #=> --regex {"build_id":"b:0000000000000000000000000000000[1-9]","project_id":"p:0000000000000000000000000000000[1-9]","created_at":".*}
+$ # upload another build return build_id
+$ ${AK} -j builds upload --project=p:00000000000000000000000000000001 ${data_file_path}; echo $?
+{"build_id":"b:00000000000000000000000000000003"}
+0
+$ # list builds returns 2 builds and empty line
+$ ${AK} -j builds ls ; echo $? #=> --lines 3
+$ # delete build 1
+$ ${AK} -j builds delete b:00000000000000000000000000000003; echo $?
+0
+$ # list builds returns 1 build and empty line
+$ ${AK} -j builds ls ; echo $? #=> --lines 2
+$ # get build 1 return nothing
+$ ${AK} -j builds get b:00000000000000000000000000000003; echo $?
+{"build":null}
+0
+$ # get build 1 still works
+$ ${AK} -j builds get b:00000000000000000000000000000002; echo $? #=> --regex {"build":\{"build_id":"b:00000000000000000000000000000002","project_id":"p:00000000000000000000000000000001","created_at":".*}}
+$ # download build 1
+$ ${AK} -j builds download b:00000000000000000000000000000002 --output -; echo $? 
+build_data
+0
+$ # download to file
+$ ${AK} -j builds download b:00000000000000000000000000000002 -o ${tmp}/build.file; echo $? 
+0

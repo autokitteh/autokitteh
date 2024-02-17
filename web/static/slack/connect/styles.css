@@ -1,0 +1,89 @@
+body {
+  background-color: white;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  margin-left: 50px;
+}
+
+img.banner {
+  margin: 50px 0px 32px;
+  width: 250px;
+  height: auto;
+}
+
+img.logo {
+  height: 32px;
+  width: auto;
+}
+
+table.title {
+  border: none;
+  border-collapse: collapse;
+  margin-bottom: 32px;
+}
+
+td {
+  vertical-align: middle;
+  padding-right: 16px;
+}
+
+h1 {
+  margin: 0px;
+}
+
+p.info {
+  margin: 0px;
+}
+
+a.info {
+  color: #2980b9;
+  text-decoration: none;
+}
+
+a.info:hover {
+  text-decoration: underline;
+}
+
+.clickable {
+  margin-top: 32px;
+  padding: 10px 20px;
+  display: inline-block;
+  background-color: #3498db;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background-color 0.3s;
+}
+
+.clickable:hover {
+  background-color: #2980b9;
+}
+
+.copyable {
+  display: inline-block;
+  padding: 10px 20px;
+  font-family: "Courier New", Courier, monospace;
+  background-color: #3498db;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background-color 0.3s;
+}
+
+.copyable:hover {
+  background-color: #2980b9;
+}
+
+p.notif {
+  color: green;
+  display: none;
+}
+
+p.error {
+  color: red;
+  font-family: "Courier New", Courier, monospace;
+  margin-bottom: 32px;
+}

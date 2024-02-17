@@ -1,0 +1,118 @@
+// Package test runs end-to-end "black-box" system tests on for the
+// autokitteh CLI tool, functioning both as a server and as a client.
+//
+// It can also control other tools, dependencies, and in-memory fixtures
+// (e.g. Temporal, databases, caches, and HTTP webhooks).
+//
+// Test cases are defined as [txtar] files in the [testdata] directory
+// tree. Their structure and scripting language is defined [here].
+//
+// Other than local and CI/CD testing, this may be used for benchmarking,
+// profiling, and load/stress testing.
+//
+// [txtar]: https://pkg.go.dev/golang.org/x/tools/txtar
+// [testdata]: https://github.com/autokitteh/autokitteh/tree/main/systest/testdata
+// [here]: https://github.com/autokitteh/autokitteh/tree/main/systest/README.md
+package systest
+
+import (
+	"bytes"
+	"context"
+	"io/fs"
+	"path/filepath"
+	"strings"
+	"testing"
+
+	"go.autokitteh.dev/autokitteh/cmd/ak/common"
+)
+
+const (
+	rootDir = "testdata/"
+)
+
+func TestSuite(t *testing.T) {
+	akPath := setUpSuite(t)
+
+	err := filepath.WalkDir(rootDir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			t.Fatal(err) // Abort the entire test suite on walking errors.
+		}
+		if d.IsDir() || !strings.HasSuffix(d.Name(), ".txtar") {
+			return nil // Skip directories and non-test files.
+		}
+
+		// Each .txtar file is a test-case, with potentially
+		// multiple actions, checks, and embedded files.
+		t.Run(strings.TrimPrefix(path, rootDir), func(t *testing.T) {
+			steps := readTestFile(t, path)
+			akAddr := setUpTest(t)
+			runTestSteps(t, steps, akPath, akAddr)
+		})
+
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func setUpSuite(t *testing.T) string {
+	akPath := buildClient(t)
+
+	// https://docs.temporal.io/dev-guide/go/debugging
+	t.Setenv("TEMPORAL_DEBUG", "true")
+
+	return akPath
+}
+
+func setUpTest(t *testing.T) string {
+	// TODO: Replace "/backend/internal/temporalclient/client.go"?
+
+	// Start the AK server, but in a goroutine rather than as a separate
+	// subprocess: to support breakpoint debugging, and measure test coverage.
+	ctx, cancel := context.WithCancel(context.Background())
+	combinedOutput := new(bytes.Buffer)
+	go startAKServer(ctx, combinedOutput)
+	t.Cleanup(func() {
+		cancel()                    // Stop the AK server's goroutine.
+		common.SetWriters(nil, nil) // Reset server output logging.
+	})
+
+	akAddr := waitForAKServer(t, combinedOutput)
+	return akAddr
+}
+
+func runTestSteps(t *testing.T, steps []string, akPath, akAddr string) {
+	var (
+		actionIndex int
+		ak          *akResult
+		httpResp    *string
+	)
+	for i, step := range steps {
+		// Skip empty lines and comments.
+		if step == "" {
+			continue
+		}
+
+		// Actions: ak, http.
+		if actions.MatchString(step) {
+			actionIndex = i
+			result, err := runAction(t, akPath, akAddr, step)
+			if err != nil {
+				t.Errorf("line %d: %s", i+1, step)
+				// Fail-fast, don't run subsequent test steps.
+				t.Fatalf("error: %v", err)
+			}
+			ak = result.(*akResult)
+			continue
+		}
+
+		// Checks: ak output, ak return code, http resp.
+		if err := runCheck(step, ak, httpResp); err != nil {
+			t.Errorf("line %d: %s", actionIndex+1, steps[actionIndex])
+			t.Errorf("line %d: %s", i+1, step)
+			// Fail-fast, don't run subsequent test steps.
+			t.Fatalf("error: %v", err)
+		}
+	}
+}

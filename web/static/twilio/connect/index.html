@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>autokitteh Twilio Integration</title>
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="/static/apple-touch-icon.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="/static/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="/static/favicon-16x16.png"
+    />
+    <link rel="manifest" href="/static/site.webmanifest" />
+    <link rel="stylesheet" type="text/css" href="styles.css" />
+    <meta name="robots" content="noindex, nofollow" />
+    <script src="form.js" defer></script>
+  </head>
+
+  <body>
+    <a href="/" target="_self">
+      <img class="banner" src="/static/banner.svg" alt="autokitteh" />
+    </a>
+
+    <table class="title">
+      <td><img class="logo" src="/static/images/twilio.png" alt="Twilio" /></td>
+      <td><h1>Twilio - Create a New Connection</h1></td>
+    </table>
+
+    <div class="toggle-container">
+      <button class="toggle" id="toggletab1" onclick="toggleTab('tab1')">
+        Auth Token
+      </button>
+      <span class="toggle-sep"></span>
+      <button class="toggle" id="toggletab2" onclick="toggleTab('tab2')">
+        API Key
+      </button>
+    </div>
+
+    <p class="info">Information:</p>
+    <ul class="links">
+      <li>
+        <a
+          href="https://www.twilio.com/docs/glossary/what-is-an-api-key"
+          target="_blank"
+          class="info"
+        >
+          Auth tokens and API keys
+        </a>
+      </li>
+      <li>
+        <a
+          href="https://www.twilio.com/docs/iam/api-keys"
+          target="_blank"
+          class="info"
+        >
+          API keys overview
+        </a>
+      </li>
+    </ul>
+
+    <form method="post" action="/twilio/save">
+      <div class="form-group">
+        <label for="account_sid">Account SID</label>
+        <input
+          type="text"
+          name="account_sid"
+          autocomplete="off"
+          spellcheck="false"
+          required
+        />
+      </div>
+
+      <div class="tab" id="tab1">
+        <div class="form-group">
+          <label for="auth_token">Auth Token</label>
+          <input
+            type="text"
+            id="authToken"
+            name="auth_token"
+            autocomplete="off"
+            spellcheck="false"
+          />
+        </div>
+      </div>
+
+      <div class="tab" id="tab2">
+        <div class="form-group">
+          <label for="api_key">API Key</label>
+          <input
+            type="text"
+            id="apiKey"
+            name="api_key"
+            autocomplete="off"
+            spellcheck="false"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="api_secret">API Secret</label>
+          <input
+            type="text"
+            id="apiSecret"
+            name="api_secret"
+            autocomplete="off"
+            spellcheck="false"
+          />
+        </div>
+      </div>
+
+      <button type="submit" class="submit-btn">Save Connection</button>
+    </form>
+  </body>
+</html>

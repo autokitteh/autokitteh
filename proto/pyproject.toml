@@ -1,0 +1,16 @@
+[tool.poetry]
+name = "autokitteh-pb"
+version = "0.10.11"
+description = "autokitteh protocol buffers"
+authors = ["Itay Donanhirsh <itay@autokitteh.com>"]
+readme = "README.md"
+packages = [{ include = "**/*.py*", from = "gen/py" }]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+grpcio = "^1.59.0"
+googleapis-common-protos = "^1.60.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

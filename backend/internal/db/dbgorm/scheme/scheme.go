@@ -1,0 +1,469 @@
+package scheme
+
+import (
+	"encoding/json"
+	"fmt"
+	"time"
+
+	"google.golang.org/protobuf/types/known/timestamppb"
+	"gorm.io/datatypes"
+
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
+	deploymentsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/deployments/v1"
+	eventsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/events/v1"
+	integrationsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/integrations/v1"
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
+)
+
+// TODO(ENG-192): use proper foreign keys and normalize model.
+
+// TODO: keep some log of actions performed. Something that
+// can be used for recovery from unintended/malicious actions.
+
+var Tables = []any{
+	&Build{},
+	&Connection{},
+	&Deployment{},
+	&Env{},
+	&EnvVar{},
+	&Event{},
+	&EventRecord{},
+	&Integration{},
+	&Mapping{},
+	&MappingEvent{},
+	&Project{},
+	&Session{},
+	&SessionLogRecord{},
+	&SessionCallSpec{},
+	&SessionCallAttempt{},
+	&Signal{},
+}
+
+type Build struct {
+	BuildID   string `gorm:"primaryKey"`
+	ProjectID string `gorm:"index"`
+	Project   Project
+	Data      []byte
+	CreatedAt time.Time
+}
+
+func ParseBuild(b Build) (sdktypes.Build, error) {
+	build, err := sdktypes.StrictBuildFromProto(&sdktypes.BuildPB{
+		BuildId:   b.BuildID,
+		ProjectId: b.ProjectID,
+		CreatedAt: timestamppb.New(b.CreatedAt),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("invalid record: %w", err)
+	}
+
+	return build, nil
+}
+
+type Connection struct {
+	ConnectionID  string `gorm:"primaryKey"`
+	IntegrationID string
+	// TODO(ENG-111): Integration Integration `gorm:"foreignKey:IntegrationID"`
+	// TODO(ENG-111): Also call "Preload()" where relevant
+	IntegrationToken string
+	ProjectID        string
+	Name             string
+}
+
+func ParseConnection(c Connection) (sdktypes.Connection, error) {
+	conn, err := sdktypes.StrictConnectionFromProto(&sdktypes.ConnectionPB{
+		ConnectionId:     c.ConnectionID,
+		IntegrationId:    c.IntegrationID,
+		IntegrationToken: c.IntegrationToken,
+		ProjectId:        c.ProjectID,
+		Name:             c.Name,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("invalid connection record: %w", err)
+	}
+	return conn, nil
+}
+
+type Integration struct {
+	// Unique internal identifier.
+	IntegrationID string `gorm:"primaryKey"`
+
+	// Unique external (and URL-safe) identifier.
+	UniqueName string `gorm:"uniqueIndex"`
+
+	// Optional user-facing metadata.
+
+	DisplayName string
+	Description string
+	LogoURL     string
+	UserLinks   datatypes.JSON
+	// TODO: Tags
+
+	// TODO(ENG-346): Connection UI specification instead of a URL.
+	ConnectionURL string
+
+	// TODO: Functions
+
+	// TODO: Events
+
+	// TODO(ENG-112): https://gorm.io/docs/models.html#gorm-Model?
+
+	APIKey     string
+	SigningKey string
+}
+
+func ParseIntegration(i Integration) (sdktypes.Integration, error) {
+	var uls map[string]string
+	err := json.Unmarshal(i.UserLinks, &uls)
+	if err != nil {
+		return nil, fmt.Errorf("integration user links: %w", err)
+	}
+
+	integ, err := sdktypes.StrictIntegrationFromProto(&integrationsv1.Integration{
+		IntegrationId: i.IntegrationID,
+		UniqueName:    i.UniqueName,
+		DisplayName:   i.DisplayName,
+		Description:   i.Description,
+		LogoUrl:       i.LogoURL,
+		UserLinks:     uls,
+		// TODO: Tags
+		// TODO(ENG-346): Connection UI specification instead of a URL.
+		ConnectionUrl: i.ConnectionURL,
+		// TODO: Functions
+		// TODO: Events
+	})
+	if err != nil {
+		return nil, fmt.Errorf("invalid integration record: %w", err)
+	}
+	return integ, nil
+}
+
+type Project struct {
+	ProjectID string `gorm:"primaryKey"`
+	Name      string `gorm:"uniqueIndex"`
+	RootURL   string
+	Paths     datatypes.JSON
+	Resources []byte
+}
+
+func ParseProject(r Project) (sdktypes.Project, error) {
+	var paths []string
+	if err := json.Unmarshal(r.Paths, &paths); err != nil {
+		return nil, fmt.Errorf("project paths: %w", err)
+	}
+
+	p, err := sdktypes.StrictProjectFromProto(&sdktypes.ProjectPB{
+		ProjectId:        r.ProjectID,
+		Name:             r.Name,
+		ResourcesRootUrl: r.RootURL,
+		ResourcePaths:    paths,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("invalid project record: %w", err)
+	}
+
+	return p, nil
+}
+
+type Event struct {
+	EventID          string `gorm:"uniqueIndex"`
+	IntegrationID    string `gorm:"index"`
+	IntegrationToken string `gorm:"index"`
+	OriginalEventID  string
+	EventType        string `gorm:"index:idx_connection_id_event_type_seq,priority:2;index:idx_event_type"`
+	ConnectionID     string `gorm:"index:idx_connection_id_event_type_seq,priority:1"`
+	Data             datatypes.JSON
+	Memo             datatypes.JSON
+	CreatedAt        time.Time
+	Seq              uint64 `gorm:"primaryKey;autoIncrement:true,index:idx_connection_id_event_type_seq,priority:3"`
+}
+
+func ParseEvent(e Event) (sdktypes.Event, error) {
+	var data map[string]sdktypes.Value
+	if err := json.Unmarshal(e.Data, &data); err != nil {
+		return nil, fmt.Errorf("event data: %w", err)
+	}
+
+	var memo map[string]string
+	if err := json.Unmarshal(e.Memo, &memo); err != nil {
+		return nil, fmt.Errorf("event memo: %w", err)
+	}
+
+	return sdktypes.StrictEventFromProto(&sdktypes.EventPB{
+		EventId:          e.EventID,
+		IntegrationId:    e.IntegrationID,
+		IntegrationToken: e.IntegrationToken,
+		OriginalEventId:  e.OriginalEventID,
+		EventType:        e.EventType,
+		Data:             kittehs.TransformMapValues(data, sdktypes.ToProto),
+		Memo:             memo,
+		CreatedAt:        timestamppb.New(e.CreatedAt),
+		Seq:              e.Seq,
+	})
+}
+
+type EventRecord struct {
+	Seq     uint32 `gorm:"primaryKey"`
+	EventID string `gorm:"primaryKey"`
+	// Event     Event
+	State     int32 `gorm:"index"`
+	CreatedAt time.Time
+}
+
+func ParseEventRecord(e EventRecord) (sdktypes.EventRecord, error) {
+	return sdktypes.StrictEventRecordFromProto(&sdktypes.EventRecordPB{
+		Seq:       e.Seq,
+		EventId:   e.EventID,
+		State:     eventsv1.EventState(e.State),
+		CreatedAt: timestamppb.New(e.CreatedAt),
+	})
+}
+
+type Env struct {
+	EnvID     string `gorm:"primaryKey"`
+	ProjectID string `gorm:"index"`
+	Name      string
+
+	// {pid.uuid}/{name}. easier to detect dups.
+	// See OrgMember for more.
+	MembershipID string `gorm:"uniqueIndex"`
+}
+
+func ParseEnv(r Env) (sdktypes.Env, error) {
+	return sdktypes.StrictEnvFromProto(&sdktypes.EnvPB{
+		EnvId:     r.EnvID,
+		ProjectId: r.ProjectID,
+		Name:      r.Name,
+	})
+}
+
+type EnvVar struct {
+	EnvID string `gorm:"index"`
+	Name  string
+	Value string // not set if is_secret.
+
+	// Set only if is_secret. will not be fetched by get, only by reveal.
+	SecretValue string // TODO: encrypt?
+	IsSecret    bool
+
+	// {eid.uuid}/{name}. easier to detect dups.
+	// See OrgMember for more.
+	MembershipID string `gorm:"uniqueIndex"`
+}
+
+func ParseEnvVar(r EnvVar) (sdktypes.EnvVar, error) {
+	v := r.Value
+
+	if r.IsSecret {
+		v = r.SecretValue
+	}
+
+	return sdktypes.StrictEnvVarFromProto(&sdktypes.EnvVarPB{
+		EnvId:    r.EnvID,
+		Name:     r.Name,
+		Value:    v,
+		IsSecret: r.IsSecret,
+	})
+}
+
+type Mapping struct {
+	MappingID string `gorm:"primaryKey"`
+
+	EnvID        string `gorm:"index"`
+	ConnectionID string `gorm:"index"`
+	Connection   Connection
+	ModuleName   string
+
+	// Has many
+	Events []MappingEvent `gorm:"foreignKey:MappingID;constraint:OnDelete:CASCADE;"`
+}
+
+func ParseMapping(e Mapping) (sdktypes.Mapping, error) {
+	events, err := kittehs.TransformError(e.Events, ParseMappingEvent)
+	if err != nil {
+		return nil, err
+	}
+
+	return sdktypes.StrictMappingFromProto(&sdktypes.MappingPB{
+		MappingId:    e.MappingID,
+		EnvId:        e.EnvID,
+		ConnectionId: e.ConnectionID,
+		ModuleName:   e.ModuleName,
+		Events:       kittehs.Transform(events, sdktypes.ToProto),
+	})
+}
+
+type MappingEvent struct {
+	Type         string
+	MappingID    string `gorm:"references:MappingID"`
+	CodeLocation string
+}
+
+func ParseMappingEvent(e MappingEvent) (sdktypes.MappingEvent, error) {
+	codeLoc, err := sdktypes.ParseCodeLocation(e.CodeLocation)
+	if err != nil {
+		return nil, fmt.Errorf("code loc: %w", err)
+	}
+
+	return sdktypes.StrictMappingEventFromProto(&sdktypes.MappingEventPB{
+		EventType:    e.Type,
+		CodeLocation: codeLoc.ToProto(),
+	})
+}
+
+type SessionLogRecord struct {
+	SessionID string `gorm:"index"`
+	Data      datatypes.JSON
+}
+
+func ParseSessionLogRecord(c SessionLogRecord) (spec sdktypes.SessionLogRecord, err error) {
+	err = json.Unmarshal(c.Data, &spec)
+	return
+}
+
+type SessionCallSpec struct {
+	SessionID string `gorm:"primaryKey"`
+	Seq       uint32 `gorm:"primaryKey"`
+	Data      datatypes.JSON
+}
+
+func ParseSessionCallSpec(c SessionCallSpec) (spec sdktypes.SessionCallSpec, err error) {
+	err = json.Unmarshal(c.Data, &spec)
+	return
+}
+
+type SessionCallAttempt struct {
+	SessionID string `gorm:"uniqueIndex:idx_session_id_seq_attempt,priority:1"`
+	Seq       uint32 `gorm:"uniqueIndex:idx_session_id_seq_attempt,priority:2"`
+	Attempt   uint32 `gorm:"uniqueIndex:idx_session_id_seq_attempt,priority:3"`
+	Start     datatypes.JSON
+	Complete  datatypes.JSON
+}
+
+func ParseSessionCallAttemptStart(c SessionCallAttempt) (d sdktypes.SessionCallAttemptStart, err error) {
+	err = json.Unmarshal(c.Start, &d)
+	return
+}
+
+func ParseSessionCallAttemptComplete(c SessionCallAttempt) (d sdktypes.SessionCallAttemptComplete, err error) {
+	err = json.Unmarshal(c.Complete, &d)
+	return
+}
+
+type Session struct {
+	SessionID        string `gorm:"primaryKey"`
+	DeploymentID     string `gorm:"index"`
+	EventID          string `gorm:"index"`
+	CurrentStateType int    `gorm:"index"`
+	Entrypoint       string
+	Inputs           datatypes.JSON
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
+}
+
+func ParseSession(s Session) (sdktypes.Session, error) {
+	ep, err := sdktypes.ParseCodeLocation(s.Entrypoint)
+	if err != nil {
+		return nil, fmt.Errorf("entrypoint: %w", err)
+	}
+
+	var inputs map[string]sdktypes.Value
+
+	if err := json.Unmarshal(s.Inputs, &inputs); err != nil {
+		return nil, fmt.Errorf("inputs: %w", err)
+	}
+
+	session, err := sdktypes.StrictSessionFromProto(&sdktypes.SessionPB{
+		SessionId:    s.SessionID,
+		DeploymentId: s.DeploymentID,
+		EventId:      s.EventID,
+		Entrypoint:   ep.ToProto(),
+		Inputs:       kittehs.TransformMapValues(inputs, sdktypes.ToProto),
+		CreatedAt:    timestamppb.New(s.CreatedAt),
+		UpdatedAt:    timestamppb.New(s.UpdatedAt),
+		State:        sdktypes.SessionStateType(s.CurrentStateType).ToProto(),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return session, err
+}
+
+type Deployment struct {
+	DeploymentID string `gorm:"primaryKey"`
+	EnvID        string
+	Env          Env
+	BuildID      string
+	Build        Build
+	State        int32
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
+}
+
+func ParseDeployment(d Deployment) (sdktypes.Deployment, error) {
+	deployment, err := sdktypes.StrictDeploymentFromProto(&sdktypes.DeploymentPB{
+		DeploymentId: d.DeploymentID,
+		BuildId:      d.BuildID,
+		EnvId:        d.EnvID,
+		State:        deploymentsv1.DeploymentState(d.State),
+		CreatedAt:    timestamppb.New(d.CreatedAt),
+		UpdatedAt:    timestamppb.New(d.UpdatedAt),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("invalid record: %w", err)
+	}
+
+	return deployment, nil
+}
+
+type DeploymentWithStats struct {
+	Deployment
+	Created   uint32
+	Running   uint32
+	Error     uint32
+	Completed uint32
+}
+
+func ParseDeploymentWithSessionStats(d DeploymentWithStats) (sdktypes.Deployment, error) {
+	deployment, err := sdktypes.StrictDeploymentFromProto(&sdktypes.DeploymentPB{
+		DeploymentId: d.DeploymentID,
+		BuildId:      d.BuildID,
+		EnvId:        d.EnvID,
+		State:        deploymentsv1.DeploymentState(d.State),
+		CreatedAt:    timestamppb.New(d.CreatedAt),
+		UpdatedAt:    timestamppb.New(d.UpdatedAt),
+		SessionsStats: []*sdktypes.DeploymentSessionsStats{
+			{
+				Count: d.Created,
+				State: sdktypes.CreatedSessionStateType.ToProto(),
+			},
+			{
+				Count: d.Running,
+				State: sdktypes.RunningSessionStateType.ToProto(),
+			},
+			{
+				Count: d.Error,
+				State: sdktypes.ErrorSessionStateType.ToProto(),
+			},
+			{
+				Count: d.Completed,
+				State: sdktypes.CompletedSessionStateType.ToProto(),
+			},
+		},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("invalid record: %w", err)
+	}
+
+	return deployment, nil
+}
+
+type Signal struct {
+	SignalID     string `gorm:"primaryKey"`
+	ConnectionID string `gorm:"index:idx_connection_id_event_type"`
+	Connection   Connection
+	CreatedAt    time.Time
+	WorkflowID   string
+	EventType    string `gorm:"index:idx_connection_id_event_type"`
+}

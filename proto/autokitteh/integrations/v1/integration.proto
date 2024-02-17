@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package autokitteh.integrations.v1;
+
+import "autokitteh/program/v1/module.proto";
+import "buf/validate/validate.proto";
+
+message Integration {
+  // Unique internal identifier. Required, except in creation requests.
+  string integration_id = 1;
+
+  // Unique external (and URL-safe) identifier. Required.
+  string unique_name = 2 [(buf.validate.field).string.min_len = 1];
+
+  // Optional user-facing metadata.
+
+  string display_name = 3;
+  string description = 4;
+  string logo_url = 5;
+  map<string, string> user_links = 6;
+  reserved 7; // TODO: tag(s)
+
+  // Specification for connections.
+
+  // TODO(ENG-346): Connection UI specification instead of a URL.
+  string connection_url = 8;
+
+  program.v1.Module module = 9;
+}

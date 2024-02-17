@@ -1,0 +1,43 @@
+syntax = "proto3";
+
+package autokitteh.integration_registry.v1;
+
+import "buf/validate/validate.proto";
+
+enum Visibility {
+  VISIBILITY_UNSPECIFIED = 0;
+  // Visible only to the user who registered the integration (default).
+  VISIBILITY_PRIVATE = 1;
+  // Visible to all the users in the owner organization, but only to them.
+  VISIBILITY_INTERNAL = 2;
+  // Visible to all the users in the server.
+  // TBD: May require coordination/approval with autokitteh personnel.
+  VISIBILITY_PUBLIC = 3;
+}
+
+message Integration {
+  string integration_id = 1;
+
+  // Visible (non-internal) identifier of the integration.
+  // Unique in the context of the owner's (org/user) name.
+  string name = 2;
+
+  // Owning organization or user ID.
+  string owner_id = 3;
+  Visibility visibility = 4;
+
+  // Integration gRPC service to which autokitteh can send requests.
+  string api_url = 5 [(buf.validate.field).string.uri_ref = true];
+
+  // User-visible details.
+  string display_name = 6;
+  string description = 7;
+  string logo_url = 8;
+  string homepage_url = 9;
+  string connect_url = 10;
+
+  // TODO(ENG-112): More details in future PRs.
+
+  string api_key = 11;
+  string signing_key = 12;
+}

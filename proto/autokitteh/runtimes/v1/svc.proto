@@ -1,0 +1,121 @@
+syntax = "proto3";
+
+package autokitteh.runtimes.v1;
+
+import "autokitteh/program/v1/program.proto";
+import "autokitteh/runtimes/v1/build.proto";
+import "autokitteh/runtimes/v1/run.proto";
+import "autokitteh/runtimes/v1/runtime.proto";
+import "autokitteh/values/v1/values.proto";
+import "buf/validate/validate.proto";
+
+message DescribeRequest {
+  string name = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+message DescribeResponse {
+  Runtime runtime = 1; // empty if not found.
+}
+
+message ListRequest {
+  // TODO: fieldmask.
+}
+
+message ListResponse {
+  repeated Runtime runtimes = 1 [(buf.validate.field).required = true];
+}
+
+message BuildRequest {
+  string runtime_name = 2;
+  repeated string value_names = 3;
+  string root_url = 4;
+  string path = 5;
+}
+
+message BuildResponse {
+  program.v1.Error error = 1;
+  BuildArtifact product = 2;
+}
+
+message RunRequest {
+  message Start {
+    string run_id = 1 [(buf.validate.field).string.min_len = 1];
+    string runtime_name = 2 [(buf.validate.field).string.min_len = 1];
+    string root_path = 3;
+    bytes compiled_data = 4 [(buf.validate.field).bytes.min_len = 1];
+
+    // values given as input to the program.
+    map<string, values.v1.Value> values = 5 [(buf.validate.field).map = {
+      keys: {
+        string: {min_len: 1}
+      },
+      values: {required: true},
+    }];
+  }
+
+  message LoadReturn {
+    map<string, values.v1.Value> values = 1 [(buf.validate.field) = {
+      required: true,
+      map: {
+        keys: {
+          string: {min_len: 1}
+        },
+        values: {required: true},
+      }
+    }];
+
+    program.v1.Error error = 2;
+  }
+
+  message CallReturn {
+    repeated values.v1.Value values = 1 [(buf.validate.field) = {
+      required: true,
+      repeated: {
+        items: {required: true}
+      }
+    }];
+
+    program.v1.Error error = 2;
+  }
+
+  oneof types {
+    option (buf.validate.oneof).required = true;
+
+    Start start = 1;
+    LoadReturn return_load = 2;
+    CallReturn return_call = 3;
+  }
+}
+
+message RunResponse {
+  string run_id = 1 [(buf.validate.field).string.min_len = 1];
+  RunStatus status = 2 [(buf.validate.field).required = true];
+}
+
+// Runtimes are expected to be registered during deploy (from configuration).
+// Dynamic registration of runtimes will not be supported.
+service RuntimesService {
+  rpc Describe(DescribeRequest) returns (DescribeResponse);
+
+  rpc List(ListRequest) returns (ListResponse);
+
+  // TODO: Turn this into a streaming call so there'll be no need
+  //       to pass all resources if not needed.
+  rpc Build(BuildRequest) returns (BuildResponse);
+
+  /*
+     syntax: RunStatus0 --[RunRequest]--> RunStatus1
+
+                           /-------------------<--------------------\
+                           |                                        |
+                           V                                        |
+      idle --[start]--> running ----> load_wait --[load_return]-->--+
+                           |                                        |
+                           +--------> call_wait --[call_return]-->--/
+                           |
+                           \-------> completed | error
+  */
+  // When called, wait for idle status. Then continue according
+  // to state machine above.
+  rpc Run(stream RunRequest) returns (stream RunResponse);
+}

@@ -1,0 +1,40 @@
+name: Continuous Integration - Proto
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "proto/**"
+  pull_request:
+    paths:
+      - "proto/**"
+
+jobs:
+  make:
+    name: Make
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Set up Buf
+        uses: bufbuild/buf-setup-action@v1
+        with:
+          github_token: ${{ github.token }}
+      # Create inline comments when detecting violations in PRs
+      # (not a replacement for linting in the Makefile).
+      - name: Run Buf lint
+        uses: bufbuild/buf-lint-action@v1
+        with:
+          input: proto
+      - name: Run make
+        run: make -C proto
+      - name: Detect uncommitted stub changes
+        run: |
+          git add -N .
+          git diff --name-only --exit-code

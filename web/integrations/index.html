@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>autokitteh Integrations</title>
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="/static/apple-touch-icon.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="/static/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="/static/favicon-16x16.png"
+    />
+    <link rel="manifest" href="/static/site.webmanifest" />
+    <link rel="stylesheet" type="text/css" href="/static/styles.css" />
+    <meta name="robots" content="noindex, nofollow" />
+  </head>
+
+  <body>
+    <a href="/" target="_self">
+      <img class="banner" src="/static/banner.svg" alt="autokitteh" />
+    </a>
+
+    <h1>Integrations</h1>
+
+    <table>
+      {{ range . }}
+      <tr>
+        <td>
+          {{ if .Connection }}
+          <a href="{{ .Connection }}" target="_self">
+            <img class="logo" src="{{ .Logo }}" alt="{{ .Name }}" />
+          </a>
+          {{ else }}
+          <img class="logo" src="{{ .Logo }}" alt="{{ .Name }}" />
+          {{ end }}
+        </td>
+        <td>
+          {{ if .Connection }}
+          <a href="{{ .Connection }}" target="_self">{{ .Name }}</a>
+          {{ else }} {{ .Name }} {{ end }}
+        </td>
+      </tr>
+      {{ end }}
+    </table>
+  </body>
+</html>

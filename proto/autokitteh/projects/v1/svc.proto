@@ -1,0 +1,130 @@
+syntax = "proto3";
+
+package autokitteh.projects.v1;
+
+import "autokitteh/program/v1/program.proto";
+import "autokitteh/projects/v1/project.proto";
+import "buf/validate/validate.proto";
+import "google/protobuf/field_mask.proto";
+
+message CreateRequest {
+  option (buf.validate.message).cel = {
+    id: "project.project_id_must_be_empty",
+    message: "project_id must not be specified",
+    expression: "has(this.project) && this.project.project_id == ''",
+  };
+  option (buf.validate.message).cel = {
+    id: "owner.name_required",
+    message: "name must be specified",
+    expression: "has(this.project) && this.project.name != ''",
+  };
+
+  // project.project_id is ignored.
+  // if project.owner_id is empty, it will be taken from auth.
+  Project project = 1 [(buf.validate.field).required = true];
+}
+
+message CreateResponse {
+  string project_id = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+message DeleteRequest {
+  string project_id = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+message DeleteResponse {}
+
+message GetRequest {
+  option (buf.validate.message).cel = {
+    id: "project_id_xor_name",
+    message: "project_id and name are mutually exclusive",
+    expression: "(this.project_id == '' && this.name != '') || (this.project_id != '' && this.name == '')",
+  };
+
+  option (buf.validate.message).cel = {
+    id: "owner_id_with_name_only",
+    // if owner_id is empty, it is fetched from authn.
+    message: "owner_id can be specified only if name is specified",
+    expression: "this.owner_id == '' || this.name != ''",
+  };
+
+  string project_id = 1;
+
+  string name = 2;
+  string owner_id = 3; // relevant only when name != "". optional - if not set, auth user is used.
+}
+
+message GetResponse {
+  Project project = 1; // empty if not found.
+}
+
+message UpdateRequest {
+  option (buf.validate.message).cel = {
+    id: "project.project_id_required",
+    message: "project_id must be specified",
+    expression: "has(this.project) && this.project.project_id != ''",
+  };
+
+  Project project = 1 [(buf.validate.field).required = true];
+  google.protobuf.FieldMask field_mask = 2 [(buf.validate.field).required = true];
+}
+
+message UpdateResponse {}
+
+message ListRequest {}
+
+message ListResponse {
+  repeated Project projects = 1 [(buf.validate.field).repeated.items.required = true];
+}
+
+message ListForOwnerRequest {
+  string owner_id = 1 [(buf.validate.field).string.max_len = 0];
+}
+
+message ListForOwnerResponse {
+  repeated Project projects = 1 [(buf.validate.field).repeated.items.required = true];
+}
+
+message BuildRequest {
+  string project_id = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+message BuildResponse {
+  string build_id = 1;
+  program.v1.Error error = 2;
+}
+
+message SetResourcesRequest {
+  string project_id = 1 [(buf.validate.field).string.min_len = 1];
+  map<string, bytes> resources = 2;
+}
+
+message SetResourcesResponse {}
+
+message DownloadResourcesRequest {
+  string project_id = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+message DownloadResourcesResponse {
+  map<string, bytes> resources = 2;
+}
+
+service ProjectsService {
+  rpc Create(CreateRequest) returns (CreateResponse);
+
+  rpc Delete(DeleteRequest) returns (DeleteResponse);
+
+  rpc Get(GetRequest) returns (GetResponse);
+
+  rpc Update(UpdateRequest) returns (UpdateResponse);
+
+  rpc List(ListRequest) returns (ListResponse);
+
+  rpc Build(BuildRequest) returns (BuildResponse);
+
+  // DEPRECATED. Use List instead.
+  rpc ListForOwner(ListForOwnerRequest) returns (ListForOwnerResponse);
+
+  rpc SetResources(SetResourcesRequest) returns (SetResourcesResponse);
+  rpc DownloadResources(DownloadResourcesRequest) returns (DownloadResourcesResponse);
+}

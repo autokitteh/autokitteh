@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+package autokitteh.deployments.v1;
+
+import "autokitteh/sessions/v1/session.proto";
+import "buf/validate/validate.proto";
+import "google/protobuf/timestamp.proto";
+
+enum DeploymentState {
+  DEPLOYMENT_STATE_UNSPECIFIED = 0;
+  DEPLOYMENT_STATE_ACTIVE = 1;
+  DEPLOYMENT_STATE_TESTING = 2;
+  DEPLOYMENT_STATE_DRAINING = 3;
+  DEPLOYMENT_STATE_INACTIVE = 4;
+}
+
+message Deployment {
+  // immutable fields.
+  string deployment_id = 1;
+  string env_id = 2 [(buf.validate.field).string.min_len = 1];
+  string build_id = 3 [(buf.validate.field).string.min_len = 1];
+
+  // mutable fields.
+  DeploymentState state = 4 [(buf.validate.field).enum.defined_only = true];
+
+  google.protobuf.Timestamp created_at = 10;
+  google.protobuf.Timestamp updated_at = 11;
+
+  message SessionStats {
+    sessions.v1.SessionStateType state = 1;
+    uint32 count = 2;
+  }
+
+  repeated SessionStats sessions_stats = 12;
+}

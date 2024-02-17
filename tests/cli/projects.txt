@@ -1,0 +1,45 @@
+$ tmp=$(mktemp -d)
+$ tmp2=$(mktemp -d)
+$ data_file_path=${tmp}/data_file
+$ echo "project resources" >> ${data_file_path}
+$ data_file2_path=${tmp}/data_file2
+$ echo "project resources 2" >> ${data_file2_path}
+$ # Create project p1.
+$ ${AK} p c p1; echo $?
+project_id: p:00000000000000000000000000000001
+0
+$ # Try to create a project that already exists.
+$ ${AK} p c p1; echo $?
+Error: create project: already exists: already exists ([])
+1
+$ ${AK} -j p get p1; echo $?
+{"project":{"project_id":"p:00000000000000000000000000000001","name":"p1"}}
+0
+$ # List projects.
+$ ${AK} -j p ls
+{"project_id":"p:00000000000000000000000000000001","name":"p1"}
+$ # Download resources project not found.
+$ ${AK} -j projects download-resources nonexisting -o /tmp
+Error: project nonexisting not found
+$ # Download resources project has no resources.
+$ ${AK} -j projects download-resources p1 -o /tmp
+no resources found
+$ # Set resources project not found
+$ ${AK} -j projects set-resources nonexisting -p ${tmp}
+Error: project nonexisting not found
+$ # Set resources requires --path
+$ ${AK} -j projects set-resources p1
+Error: required flag(s) "path" not set
+$ # Set resources specific file succeed
+$ ${AK} -j projects set-resources p1 -p ${data_file_path}; echo $?
+0
+$ # Download resources succeed.
+$ ${AK} -j projects download-resources p1 -o ${tmp2}/; ls ${tmp2}/
+data_file
+$ # Set resources directory file succeed
+$ ${AK} -j projects set-resources p1 -p ${tmp}; echo $?
+0
+$ # Download resources succeed.
+$ ${AK} -j projects download-resources p1 -o ${tmp2}/; ls ${tmp2}/
+data_file
+data_file2

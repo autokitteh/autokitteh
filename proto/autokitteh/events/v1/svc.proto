@@ -1,0 +1,105 @@
+syntax = "proto3";
+
+package autokitteh.events.v1;
+
+import "autokitteh/events/v1/event.proto";
+import "buf/validate/validate.proto";
+
+message SaveRequest {
+  option (buf.validate.message).cel = {
+    id: "events.missing_integration_id",
+    message: "missing integration_id",
+    expression: "has(this.event) && this.event.integration_id != ''",
+  };
+
+  option (buf.validate.message).cel = {
+    id: "events.missing_integration_token",
+    message: "missing integration_token",
+    expression: "has(this.event) && this.event.integration_token != ''",
+  };
+
+  option (buf.validate.message).cel = {
+    id: "events.missing_event_type",
+    message: "missing event_type",
+    expression: "has(this.event) && this.event.event_type != ''",
+  };
+
+  option (buf.validate.message).cel = {
+    id: "events.event_id_must_be_empty",
+    message: "event_id must not be specified",
+    expression: "has(this.event) && this.event.event_id == ''",
+  };
+
+  Event event = 1;
+
+  // TODO: auth.
+}
+
+message SaveResponse {
+  string event_id = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+message GetRequest {
+  string event_id = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+message GetResponse {
+  Event event = 1;
+}
+
+message ListRequest {
+  option (buf.validate.message).cel = {
+    id: "list.mutuals",
+    message: "integration_token and original_id must be specified with integration_id",
+    expression: "this.integration_id != '' || !(this.integration_token != '' || this.original_id != '')",
+  };
+
+  string integration_id = 1;
+  string integration_token = 2;
+  string original_id = 3;
+  string event_type = 4;
+}
+
+message ListResponse {
+  repeated Event events = 1;
+}
+
+message ListEventRecordsRequest {
+  string event_id = 1 [(buf.validate.field).string.min_len = 1];
+  EventState state = 3 [(buf.validate.field).enum.defined_only = true];
+}
+
+message ListEventRecordsResponse {
+  repeated EventRecord records = 1 [(buf.validate.field).repeated.items.required = true];
+}
+
+message AddEventRecordRequest {
+  option (buf.validate.message).cel = {
+    id: "events.event_record_must_have_event_id",
+    message: "missing event id",
+    expression: "has(this.record) && this.record.event_id != ''",
+  };
+
+  // TODO: What is "EventRecord.event_record_id"?
+  // option (buf.validate.message).cel = {
+  //   id: "events.event_record_id_must_be_empty",
+  //   message: "event_record_id must not be specified",
+  //   expression: "has(this.record) && this.record.event_record_id == ''",
+  // };
+
+  EventRecord record = 1;
+}
+
+message AddEventRecordResponse {}
+
+service EventsService {
+  rpc Save(SaveRequest) returns (SaveResponse);
+
+  rpc Get(GetRequest) returns (GetResponse);
+
+  rpc List(ListRequest) returns (ListResponse);
+
+  rpc ListEventRecords(ListEventRecordsRequest) returns (ListEventRecordsResponse);
+
+  rpc AddEventRecord(AddEventRecordRequest) returns (AddEventRecordResponse);
+}

@@ -1,0 +1,155 @@
+body {
+  background-color: white;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  margin-left: 50px;
+}
+
+img.banner {
+  margin: 50px 0px 32px;
+  width: 250px;
+  height: auto;
+}
+
+img.logo {
+  height: 32px;
+  width: auto;
+}
+
+table.title {
+  border: none;
+  border-collapse: collapse;
+  margin-bottom: 32px;
+}
+
+td {
+  vertical-align: middle;
+  padding-right: 16px;
+}
+
+h1 {
+  margin: 0px;
+}
+
+div.toggle-container {
+  max-width: 550px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 32px;
+}
+
+button.toggle {
+  flex: 1;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: medium;
+}
+
+button.toggle.active {
+  background-color: #3498db;
+  color: white;
+}
+
+span.toggle-sep {
+  width: 10px;
+}
+
+div.tab {
+  display: none;
+}
+
+div.active {
+  display: block;
+}
+
+p.info {
+  margin: 0px;
+}
+
+ul.links {
+  margin: 4px 0px 32px;
+}
+
+a.info {
+  color: #2980b9;
+  text-decoration: none;
+}
+
+a.info:hover {
+  text-decoration: underline;
+}
+
+.clickable {
+  margin-top: 32px;
+  padding: 10px 20px;
+  display: inline-block;
+  background-color: #3498db;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background-color 0.3s;
+}
+
+.clickable:hover {
+  background-color: #2980b9;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.form-group textarea {
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+.submit-btn {
+  display: inline-block;
+  margin-top: 32px;
+  padding: 10px 20px;
+  background-color: #3498db;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  font-size: medium;
+}
+
+.submit-btn:hover {
+  background-color: #2980b9;
+}
+
+.copyable {
+  display: inline-block;
+  padding: 10px 20px;
+  font-family: "Courier New", Courier, monospace;
+  background-color: #3498db;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background-color 0.3s;
+}
+
+.copyable:hover {
+  background-color: #2980b9;
+}
+
+.notif {
+  color: green;
+  display: none;
+}
+
+p.error {
+  color: red;
+  font-family: "Courier New", Courier, monospace;
+  margin-bottom: 32px;
+}

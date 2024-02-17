@@ -1,0 +1,71 @@
+# Continuous Integration workflow for Go projects. For more information see:
+# https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-go
+# https://golangci-lint.run/usage/install#github-actions
+
+name: Continuous Integration - Go
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  build-and-test:
+    name: Build + unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Download modules
+        run: go mod download
+      - name: Build
+        run: make build bin
+      - name: Test
+        run: make test-unit
+
+  static-analysis:
+    name: Static analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Detect unformatted Go
+        run: make gofmt-check
+      - name: Run Go linters
+        uses: golangci/golangci-lint-action@v3
+        with:
+          # Keep the same version in "/Makefile"!
+          # See: https://github.com/golangci/golangci-lint
+          version: v1.56.1
+          # https://github.com/golangci/golangci-lint-action/issues/244
+          skip-cache: true
+          # https://github.com/golangci/golangci-lint-action/issues/308
+          args: --timeout=5m
+
+  test-cli:
+    name: CLI integration tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: CLI integration tests
+        run: make bin/ak test-cli

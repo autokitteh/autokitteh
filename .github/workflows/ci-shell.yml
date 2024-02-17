@@ -1,0 +1,22 @@
+name: Continuous Integration - Shell
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "**.sh"
+  pull_request:
+    paths:
+      - "**.sh"
+
+jobs:
+  shellcheck:
+    name: Static analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+      - name: Run shellcheck
+        run: shellcheck -a $(find . -name '*.sh')
