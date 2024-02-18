@@ -3,8 +3,6 @@ package dbgorm
 import (
 	"context"
 
-	"gorm.io/gorm/clause"
-
 	"go.autokitteh.dev/autokitteh/backend/internal/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -17,7 +15,7 @@ func (db *gormdb) SaveSignal(ctx context.Context, signalID string, workflowID st
 		EventType:    eventName,
 	}
 
-	return signalID, db.db.Clauses(clause.OnConflict{DoNothing: true}).Create(&s).Error
+	return signalID, db.db.Create(&s).Error
 }
 
 func (db *gormdb) ListSignalsWaitingOnConnection(ctx context.Context, connectionID sdktypes.ConnectionID, eventType string) ([]scheme.Signal, error) {

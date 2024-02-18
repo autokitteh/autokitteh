@@ -24,13 +24,25 @@ func (db *gormdb) CreateMapping(ctx context.Context, mapping sdktypes.Mapping) e
 		EnvID:        sdktypes.GetMappingEnvID(mapping).String(),
 		ConnectionID: sdktypes.GetMappingConnectionID(mapping).String(),
 		ModuleName:   sdktypes.GetMappingModuleName(mapping).String(),
-		Events:       mappingEvents,
 	}
 
 	// Assuming if eventID already exists, nothing will happen and no error
-	if err := db.db.WithContext(ctx).Clauses(clause.OnConflict{DoNothing: true}).Create(&m).Error; err != nil {
+	tx := db.db.Begin()
+	if err := tx.WithContext(ctx).Create(&m).Error; err != nil {
+		tx.Rollback()
 		return translateError(err)
 	}
+
+	for _, event := range mappingEvents {
+		event.MappingID = sdktypes.GetMappingID(mapping).String()
+		if err := tx.WithContext(ctx).Clauses(clause.OnConflict{DoNothing: true}).Create(&event).Error; err != nil {
+			tx.Rollback()
+			return translateError(err)
+		}
+	}
+
+	tx.Commit()
+
 	return nil
 }
 

@@ -87,7 +87,7 @@ func (db *gormdb) SetEnvVar(ctx context.Context, ev sdktypes.EnvVar) error {
 
 	if err := db.db.
 		WithContext(ctx).
-		Clauses(clause.OnConflict{UpdateAll: true}). // upsert.
+		Clauses(clause.OnConflict{UpdateAll: true, Columns: []clause.Column{{Name: "membership_id"}}}). // upsert.
 		Create(&r).Error; err != nil {
 		return translateError(err)
 	}
