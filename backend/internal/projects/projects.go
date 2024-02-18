@@ -3,6 +3,10 @@ package projects
 import (
 	"bytes"
 	"context"
+	"errors"
+	"net/url"
+	"os"
+	"path/filepath"
 
 	"go.uber.org/fx"
 	"go.uber.org/zap"
@@ -65,10 +69,39 @@ func (o *Projects) Build(ctx context.Context, projectID sdktypes.ProjectID) (sdk
 		return nil, nil
 	}
 
+	resources, err := o.DownloadResources(ctx, projectID)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(resources) == 0 {
+		return nil, errors.New("no resources to build")
+	}
+
+	buildDir, err := os.MkdirTemp("", "")
+	if err != nil {
+		return nil, err
+	}
+	defer os.RemoveAll(buildDir)
+
+	url, err := url.Parse(buildDir)
+	if err != nil {
+		return nil, err
+	}
+
+	for name, data := range resources {
+		if err := os.MkdirAll(filepath.Dir(filepath.Join(buildDir, name)), 0700); err != nil {
+			return nil, err
+		}
+		if err := os.WriteFile(filepath.Join(buildDir, name), data, 0600); err != nil {
+			return nil, err
+		}
+	}
+
 	bi, err := sdkbuild.Build(
 		ctx,
 		o.Runtimes,
-		sdktypes.GetProjectResourcesRootURL(p),
+		url,
 		sdktypes.GetProjectResourcePaths(p),
 		nil,
 		nil,
