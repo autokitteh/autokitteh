@@ -30,6 +30,21 @@ jobs:
       - name: Test
         run: make test-unit
 
+  system-tests:
+    name: System tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Run gotestsum
+        run: go run gotest.tools/gotestsum@latest -f testname -- ./systest
+
   static-analysis:
     name: Static analysis
     runs-on: ubuntu-latest
