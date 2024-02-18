@@ -25,10 +25,8 @@ func Open(cfg *Config, f func(*gorm.Config)) (*gorm.DB, error) {
 	switch cfg.Type {
 	case "sqlite":
 		dialector = sqlite.Open(cfg.DSN)
-		break
 	case "postgres":
 		dialector = postgres.Open(cfg.DSN)
-		break
 	default:
 		return nil, ErrUnknownType
 	}
