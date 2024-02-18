@@ -8,6 +8,7 @@ import (
 	// cross compiling.
 	// See https://github.com/go-gorm/gorm/issues/4101.
 	"github.com/glebarez/sqlite"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
@@ -24,6 +25,10 @@ func Open(cfg *Config, f func(*gorm.Config)) (*gorm.DB, error) {
 	switch cfg.Type {
 	case "sqlite":
 		dialector = sqlite.Open(cfg.DSN)
+		break
+	case "postgres":
+		dialector = postgres.Open(cfg.DSN)
+		break
 	default:
 		return nil, ErrUnknownType
 	}
