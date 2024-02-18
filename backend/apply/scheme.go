@@ -61,7 +61,6 @@ func (x *Connection) name() string { return x.Name }
 
 type Project struct {
 	Name        string        `yaml:"name" json:"name" jsonschema:"required"`
-	RootPath    string        `yaml:"root_path,omitempty" json:"root_path,omitempty"`
 	Paths       []string      `yaml:"paths,omitempty" json:"paths"`
 	Connections []*Connection `yaml:"connections,omitempty" json:"connections,omitempty"`
 	Envs        []*Env        `yaml:"envs,omitempty" json:"envs,omitempty"`

@@ -141,7 +141,6 @@ func ParseIntegration(i Integration) (sdktypes.Integration, error) {
 type Project struct {
 	ProjectID string `gorm:"primaryKey"`
 	Name      string `gorm:"uniqueIndex"`
-	RootURL   string
 	Paths     datatypes.JSON
 	Resources []byte
 }
@@ -153,10 +152,9 @@ func ParseProject(r Project) (sdktypes.Project, error) {
 	}
 
 	p, err := sdktypes.StrictProjectFromProto(&sdktypes.ProjectPB{
-		ProjectId:        r.ProjectID,
-		Name:             r.Name,
-		ResourcesRootUrl: r.RootURL,
-		ResourcePaths:    paths,
+		ProjectId:     r.ProjectID,
+		Name:          r.Name,
+		ResourcePaths: paths,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("invalid project record: %w", err)

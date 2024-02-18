@@ -2,9 +2,7 @@ package apply
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"path/filepath"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -419,19 +417,9 @@ func (a *Applicator) planProject(ctx context.Context, project *Project) error {
 			&Operation{
 				Description: fmt.Sprintf("create project %q", project.Name),
 				Action: func(ctx context.Context) error {
-					rootPath := project.RootPath
-					if rootPath == "" {
-						if a.Path == "" {
-							return errors.New("project root path must be specified")
-						}
-
-						rootPath = filepath.Dir(a.Path)
-					}
-
 					sdkProject := kittehs.Must1(sdktypes.ProjectFromProto(&sdktypes.ProjectPB{
-						Name:             project.Name,
-						ResourcesRootUrl: rootPath,
-						ResourcePaths:    project.Paths,
+						Name:          project.Name,
+						ResourcePaths: project.Paths,
 					}))
 
 					pid, err := a.Svcs.Projects().Create(ctx, sdkProject)
