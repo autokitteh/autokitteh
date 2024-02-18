@@ -103,7 +103,7 @@ test: test-race test-cli
 
 .PHONY: test-unit
 test-unit:
-	$(GOTEST) ./... -skip TestSuite
+	$(GOTEST) ./...
 
 # Subset of "test-unit", for simplicity.
 .PHONY: test-system
