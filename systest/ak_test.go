@@ -16,14 +16,13 @@
 package systest
 
 import (
-	"bytes"
 	"context"
+	"io"
 	"io/fs"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"go.autokitteh.dev/autokitteh/cmd/ak/common"
 )
 
 const (
@@ -68,17 +67,31 @@ func setUpSuite(t *testing.T) string {
 func setUpTest(t *testing.T) string {
 	// TODO: Replace "/backend/internal/temporalclient/client.go"?
 
+	// Redirect the OS's stdout and stderr through a pipe, to
+	// detect when the AK server is ready for the test to begin.
+	origStdout, origStderr := os.Stdout, os.Stderr
+	combinedOutput := newMutexBuffer()
+	r, w, _ := os.Pipe()
+
+	os.Stdout = w
+	os.Stderr = w
+	go io.Copy(combinedOutput, r) //nolint:all
+
+	defer func() {
+		os.Stdout = origStdout
+		os.Stderr = origStderr
+		r.Close() // End the io.Copy goroutine.
+		w.Close()
+	}()
+
 	// Start the AK server, but in a goroutine rather than as a separate
 	// subprocess: to support breakpoint debugging, and measure test coverage.
 	ctx, cancel := context.WithCancel(context.Background())
-	combinedOutput := new(bytes.Buffer)
-	go startAKServer(ctx, combinedOutput)
-	t.Cleanup(func() {
-		cancel()                    // Stop the AK server's goroutine.
-		common.SetWriters(nil, nil) // Reset server output logging.
-	})
+	go startAKServer(ctx)
+	t.Cleanup(cancel) // Stop the AK server's goroutine.
 
 	akAddr := waitForAKServer(t, combinedOutput)
+
 	return akAddr
 }
 
