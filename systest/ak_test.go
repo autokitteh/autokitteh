@@ -1,18 +1,20 @@
-// Package test runs end-to-end "black-box" system tests on for the
-// autokitteh CLI tool, functioning both as a server and as a client.
-//
-// It can also control other tools, dependencies, and in-memory fixtures
-// (e.g. Temporal, databases, caches, and HTTP webhooks).
-//
-// Test cases are defined as [txtar] files in the [testdata] directory
-// tree. Their structure and scripting language is defined [here].
-//
-// Other than local and CI/CD testing, this may be used for benchmarking,
-// profiling, and load/stress testing.
-//
-// [txtar]: https://pkg.go.dev/golang.org/x/tools/txtar
-// [testdata]: https://github.com/autokitteh/autokitteh/tree/main/systest/testdata
-// [here]: https://github.com/autokitteh/autokitteh/tree/main/systest/README.md
+/*
+Package test runs end-to-end "black-box" system tests on for the
+autokitteh CLI tool, functioning both as a server and as a client.
+
+It can also control other tools, dependencies, and in-memory fixtures
+(e.g. Temporal, databases, caches, and HTTP webhooks).
+
+Test cases are defined as [txtar] files in the [testdata] directory
+tree. Their structure and scripting language is defined [here].
+
+Other than local and CI/CD testing, this may be used for benchmarking,
+profiling, and load/stress testing.
+
+[txtar]: https://pkg.go.dev/golang.org/x/tools/txtar
+[testdata]: https://github.com/autokitteh/autokitteh/tree/main/systest/testdata
+[here]: https://github.com/autokitteh/autokitteh/tree/main/systest/README.md
+*/
 package systest
 
 import (
@@ -99,7 +101,8 @@ func runTestSteps(t *testing.T, steps []string, akPath, akAddr string) {
 	var (
 		actionIndex int
 		ak          *akResult
-		httpResp    *string
+		pendingReq  *httpRequest
+		httpResp    *httpResponse
 	)
 	for i, step := range steps {
 		// Skip empty lines and comments.
@@ -107,8 +110,23 @@ func runTestSteps(t *testing.T, steps []string, akPath, akAddr string) {
 			continue
 		}
 
-		// Actions: ak, http.
+		// Actions: ak, http, wait.
 		if actions.MatchString(step) {
+			// Before starting a new action, if there's a pending HTTP
+			// request, send it first. We implement it this way to
+			// support optional customizations below the action.
+			if pendingReq != nil {
+				resp, err := sendRequest(akAddr, *pendingReq)
+				if err != nil {
+					t.Errorf("line %d: %s", actionIndex+1, steps[actionIndex])
+					// Fail-fast, don't run subsequent test steps.
+					t.Fatalf("error: %v", err)
+				}
+				pendingReq = nil
+				httpResp = resp
+			}
+
+			// Now start with the new action, and store its result.
 			actionIndex = i
 			result, err := runAction(t, akPath, akAddr, step)
 			if err != nil {
@@ -116,8 +134,30 @@ func runTestSteps(t *testing.T, steps []string, akPath, akAddr string) {
 				// Fail-fast, don't run subsequent test steps.
 				t.Fatalf("error: %v", err)
 			}
-			ak = result.(*akResult)
+
+			switch v := result.(type) {
+			case *akResult:
+				ak = v
+			case *httpRequest:
+				pendingReq = v
+			case string:
+				t.Log(v)
+			}
 			continue
+		}
+
+		// Before running a check, if it's an HTTP check and there's a pending
+		// HTTP request, send the request first. We implement it this way to
+		// support optional customizations between the action and its checks.
+		if httpChecks.MatchString(step) && pendingReq != nil {
+			resp, err := sendRequest(akAddr, *pendingReq)
+			if err != nil {
+				t.Errorf("line %d: %s", actionIndex+1, steps[actionIndex])
+				// Fail-fast, don't run subsequent test steps.
+				t.Fatalf("error: %v", err)
+			}
+			pendingReq = nil
+			httpResp = resp
 		}
 
 		// Checks: ak output, ak return code, http resp.

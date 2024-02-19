@@ -14,11 +14,13 @@ const (
 )
 
 var (
-	steps = regexp.MustCompile(`^(ak|http|output|req|resp|return)\s`)
+	steps = regexp.MustCompile(`^(ak|http|output|req|resp|return|wait)\s`)
 
 	// ak *
 	// http <get|post> *
-	actions = regexp.MustCompile(`^(ak|http\s+(get|post))\s+(.+)`)
+	actions = regexp.MustCompile(`^(ak|http\s+(get|post)|wait)\s+(.+)`)
+	// wait <duration> for session <session ID>
+	waitAction = regexp.MustCompile(`^wait\s+(.+)\s+for\s+session\s+(.+)`)
 
 	// output <equals|contains|regex> [file] *
 	akCheckOutput = regexp.MustCompile(`^output\s+(equals|contains|regex)\s+(file\s+)?(.+)`)
@@ -26,16 +28,17 @@ var (
 	akCheckReturn = regexp.MustCompile(`^return\s+code\s*==\s*(\d+)$`)
 
 	// req header <name> = <value>
-	httpCustom1 = regexp.MustCompile(`^req\s+header\s+([\w-]+)\s*=\s*(.+)`)
+	httpCustomHeader = regexp.MustCompile(`^req\s+header\s+([\w-]+)\s*=\s*(.+)`)
 	// req body [file] *
-	httpCustom2 = regexp.MustCompile(`^req\s+body\s+(file\s+)?(.+)`)
+	httpCustomBody = regexp.MustCompile(`^req\s+body\s+(file\s+)?(.+)`)
 
+	httpChecks = regexp.MustCompile(`^resp\s+(body|redirect|code|header)`)
 	// resp <body|redirect> <equals|contains|regex> [file] *
-	httpCheck1 = regexp.MustCompile(`^resp\s+(body|redirect)\s+(equals|contains|regex)\s+(file\s+)?(.+)`)
+	httpCheckOutput = regexp.MustCompile(`^resp\s+(body|redirect)\s+(equals|contains|regex)\s+(file\s+)?(.+)`)
 	// resp code == <int>
-	httpCheck2 = regexp.MustCompile(`^resp\s+code\s*==\s*(\d+)$`)
+	httpCheckStatus = regexp.MustCompile(`^resp\s+code\s*==\s*(\d+)$`)
 	// resp header <name> == <value>
-	httpCheck3 = regexp.MustCompile(`^resp\s+header\s+([\w-]+)\s*==\s*(.+)`)
+	httpCheckHeader = regexp.MustCompile(`^resp\s+header\s+([\w-]+)\s*==\s*(.+)`)
 )
 
 func readTestFile(t *testing.T, path string) []string {
@@ -101,7 +104,7 @@ func parseTestFile(t *testing.T, a *txtar.Archive) []string {
 			continue
 		}
 		switch match[1] {
-		case "ak", "http":
+		case "ak", "http", "wait":
 			if !actions.MatchString(line) {
 				t.Errorf("invalid action in line %d: %s", i+1, line)
 				errors++
@@ -112,12 +115,12 @@ func parseTestFile(t *testing.T, a *txtar.Archive) []string {
 				errors++
 			}
 		case "req":
-			if !httpCustom1.MatchString(line) && !httpCustom2.MatchString(line) {
+			if !httpCustomHeader.MatchString(line) && !httpCustomBody.MatchString(line) {
 				t.Errorf("invalid HTTP request customization in line %d: %s", i+1, line)
 				errors++
 			}
 		case "resp":
-			if !httpCheck1.MatchString(line) && !httpCheck2.MatchString(line) && !httpCheck3.MatchString(line) {
+			if !httpCheckOutput.MatchString(line) && !httpCheckStatus.MatchString(line) && !httpCheckHeader.MatchString(line) {
 				t.Errorf("invalid HTTP response check in line %d: %s", i+1, line)
 				errors++
 			}
