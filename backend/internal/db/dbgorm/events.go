@@ -4,8 +4,6 @@ import (
 	"context"
 	"encoding/json"
 
-	"gorm.io/gorm/clause"
-
 	"go.autokitteh.dev/autokitteh/backend/internal/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -24,7 +22,7 @@ func (db *gormdb) SaveEvent(ctx context.Context, event sdktypes.Event) error {
 		CreatedAt:        sdktypes.GetEventCreatedAt(event),
 	}
 
-	if err := db.db.WithContext(ctx).Clauses(clause.OnConflict{DoNothing: true}).Create(&e).Error; err != nil {
+	if err := db.db.WithContext(ctx).Create(&e).Error; err != nil {
 		return translateError(err)
 	}
 

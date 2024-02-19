@@ -4,8 +4,6 @@ import (
 	"context"
 	"time"
 
-	"gorm.io/gorm/clause"
-
 	"go.autokitteh.dev/autokitteh/backend/internal/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
@@ -25,9 +23,8 @@ func (db *gormdb) CreateDeployment(ctx context.Context, deployment sdktypes.Depl
 		UpdatedAt:    now,
 	}
 
-	// Assuming if buildID already exists, nothing will happen and no error
 	if err := db.locked(func(db *gormdb) error {
-		return db.db.WithContext(ctx).Clauses(clause.OnConflict{DoNothing: true}).Create(&e).Error
+		return db.db.WithContext(ctx).Create(&e).Error
 	}); err != nil {
 		return translateError(err)
 	}

@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"net/url"
 
-	"gorm.io/gorm/clause"
-
 	"go.autokitteh.dev/autokitteh/backend/internal/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -15,10 +13,7 @@ import (
 )
 
 func (db *gormdb) CreateIntegration(ctx context.Context, i sdktypes.Integration) error {
-	err := db.db.WithContext(ctx).
-		Clauses(clause.OnConflict{DoNothing: true}).
-		Create(convertTypeToRecord(i)).Error
-	if err != nil {
+	if err := db.db.WithContext(ctx).Create(convertTypeToRecord(i)).Error; err != nil {
 		return translateError(err)
 	}
 	return nil

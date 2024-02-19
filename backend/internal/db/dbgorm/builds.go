@@ -4,8 +4,6 @@ import (
 	"context"
 	"slices"
 
-	"gorm.io/gorm/clause"
-
 	"go.autokitteh.dev/autokitteh/backend/internal/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -21,8 +19,7 @@ func (db *gormdb) SaveBuild(ctx context.Context, build sdktypes.Build, data []by
 		CreatedAt: sdktypes.GetBuildCreatedAt(build),
 	}
 
-	// Assuming if buildID already exists, nothing will happen and no error
-	if err := db.db.WithContext(ctx).Clauses(clause.OnConflict{DoNothing: true}).Create(&e).Error; err != nil {
+	if err := db.db.WithContext(ctx).Create(&e).Error; err != nil {
 		return translateError(err)
 	}
 	return nil

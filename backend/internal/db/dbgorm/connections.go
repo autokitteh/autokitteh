@@ -3,8 +3,6 @@ package dbgorm
 import (
 	"context"
 
-	"gorm.io/gorm/clause"
-
 	"go.autokitteh.dev/autokitteh/backend/internal/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -20,12 +18,10 @@ func (db *gormdb) CreateConnection(ctx context.Context, conn sdktypes.Connection
 		Name:             sdktypes.GetConnectionName(conn).String(),
 	}
 
-	err := db.db.WithContext(ctx).
-		Clauses(clause.OnConflict{DoNothing: true}).
-		Create(&c).Error
-	if err != nil {
+	if err := db.db.WithContext(ctx).Create(&c).Error; err != nil {
 		return translateError(err)
 	}
+
 	return nil
 }
 
