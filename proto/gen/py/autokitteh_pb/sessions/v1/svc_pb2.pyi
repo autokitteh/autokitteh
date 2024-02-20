@@ -78,3 +78,13 @@ class GetLogResponse(_message.Message):
     LOG_FIELD_NUMBER: _ClassVar[int]
     log: _session_pb2.SessionLog
     def __init__(self, log: _Optional[_Union[_session_pb2.SessionLog, _Mapping]] = ...) -> None: ...
+
+class DeleteRequest(_message.Message):
+    __slots__ = ["session_id"]
+    SESSION_ID_FIELD_NUMBER: _ClassVar[int]
+    session_id: str
+    def __init__(self, session_id: _Optional[str] = ...) -> None: ...
+
+class DeleteResponse(_message.Message):
+    __slots__ = []
+    def __init__(self) -> None: ...
