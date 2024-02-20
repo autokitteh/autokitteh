@@ -157,7 +157,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		fx.Invoke(func(lc fx.Lifecycle, z *zap.Logger) {
 			HookSimpleOnStart(lc, func() {
 				sayHello(opts)
-				z.Info("ready")
+				z.Info("autokitteh ready")
 			})
 		}),
 	}

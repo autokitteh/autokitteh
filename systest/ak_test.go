@@ -67,8 +67,6 @@ func setUpSuite(t *testing.T) string {
 }
 
 func setUpTest(t *testing.T) string {
-	// TODO: Replace "/backend/internal/temporalclient/client.go"?
-
 	// Redirect the OS's stdout and stderr through a pipe, to
 	// detect when the AK server is ready for the test to begin.
 	origStdout, origStderr := os.Stdout, os.Stderr
@@ -86,12 +84,14 @@ func setUpTest(t *testing.T) string {
 		w.Close()
 	}()
 
-	// Start the AK server, but in a goroutine rather than as a separate
-	// subprocess: to support breakpoint debugging, and measure test coverage.
-	ctx, cancel := context.WithCancel(context.Background())
-	go startAKServer(ctx)
-	t.Cleanup(cancel) // Stop the AK server's goroutine.
+	// Start a Temporal dev server (as a subprocess),
+	// and an autokitteh server (in a goroutine).
+	temporal := startTemporalDevServer(t)
 
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+
+	go startAKServer(ctx, temporal.FrontendHostPort())
 	akAddr := waitForAKServer(t, combinedOutput)
 
 	return akAddr
