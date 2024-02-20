@@ -3,7 +3,6 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -27,7 +26,6 @@ import (
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/server"
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/sessions"
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkclients/sdkclient"
 )
 
@@ -43,29 +41,6 @@ var RootCmd = common.StandardCommand(&cobra.Command{
 	Short: "autokitteh command-line interface and local server",
 
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-		// If (and only if) a system test is running, then redirect
-		// the OS's stdout and stderr through pipes, to copy them
-		// to the autokitteh system test's combined output buffer.
-		if out, err := common.GetWriters(); out == nil && err == nil {
-			common.SetWriters(cmd.OutOrStdout(), cmd.ErrOrStderr())
-
-			r1, w1, _ := os.Pipe()
-			os.Stdout = w1
-			go func() {
-				// This is blocking for the entire duration of the process, so it's safe to
-				// ignore the error, and even to abort the goroutine with an internal panic.
-				kittehs.Must1(io.Copy(cmd.OutOrStdout(), r1))
-			}()
-
-			r2, w2, _ := os.Pipe()
-			os.Stderr = w2
-			go func() {
-				// This is blocking for the entire duration of the process, so it's safe to
-				// ignore the error, and even to abort the goroutine with an internal panic.
-				kittehs.Must1(io.Copy(cmd.ErrOrStderr(), r2))
-			}()
-		}
-
 		// Set the output renderer based on global flags.
 		if json {
 			common.SetRenderer(common.JSONRenderer)

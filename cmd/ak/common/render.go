@@ -3,30 +3,14 @@ package common
 import (
 	"encoding/json"
 	"fmt"
-	"io"
+	"os"
 )
 
 type Renderer func(any)
 
 type Texter interface{ Text() string }
 
-var (
-	// If we ever decide to make rendering stateful, i.e. pass a reference of the
-	// calling command in [Render] calls, we could use the command's [OutOrStdout]
-	// and [ErrOrStderr] functions instead of these global variables.
-	outOrStdout, errOrStderr io.Writer
-
-	renderer Renderer = TextRenderer
-)
-
-func GetWriters() (io.Writer, io.Writer) {
-	return outOrStdout, errOrStderr
-}
-
-func SetWriters(out, err io.Writer) {
-	outOrStdout = out
-	errOrStderr = err
-}
+var renderer Renderer = TextRenderer
 
 func SetRenderer(r Renderer) { renderer = r }
 
@@ -43,7 +27,7 @@ func TextRenderer(o any) {
 	}
 
 	if out != "" {
-		fmt.Fprintln(outOrStdout, out)
+		fmt.Fprintln(os.Stdout, out)
 	}
 }
 
@@ -54,7 +38,7 @@ func JSONRenderer(o any) {
 		return
 	}
 
-	fmt.Fprintln(outOrStdout, string(text))
+	fmt.Fprintln(os.Stdout, string(text))
 }
 
 func NiceJSONRenderer(o any) {
@@ -64,11 +48,11 @@ func NiceJSONRenderer(o any) {
 		return
 	}
 
-	fmt.Fprintln(outOrStdout, string(text))
+	fmt.Fprintln(os.Stdout, string(text))
 }
 
 func renderError(err error) {
-	fmt.Fprintf(errOrStderr, "error: %v", err)
+	fmt.Fprintf(os.Stderr, "error: %v", err)
 }
 
 func Render(o any) { renderer(o) }

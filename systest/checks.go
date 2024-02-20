@@ -65,8 +65,7 @@ func checkAKReturnCode(step string, ak *akResult) error {
 	}
 	if expected != ak.returnCode {
 		var sb strings.Builder
-		// Test log will already show what was expected, where, and why.
-		sb.WriteString(fmt.Sprintf("got return code %d", ak.returnCode))
+		sb.WriteString(fmt.Sprintf("got return code %d, want %d", ak.returnCode, expected))
 		// Append the AK output for context, if there is any.
 		if ak.output != "" {
 			sb.WriteString("\n" + ak.output)

@@ -25,8 +25,18 @@ var upCmd = common.StandardCommand(&cobra.Command{
 			return fmt.Errorf("mode: %w", err)
 		}
 
-		svc.New(common.Config(), basesvc.RunOptions{Mode: m}).Run()
+		ctx := cmd.Root().Context()
+		app := svc.New(common.Config(), basesvc.RunOptions{Mode: m})
+		if err := app.Start(ctx); err != nil {
+			return fmt.Errorf("fx app start: %w", err)
+		}
 
+		<-app.Wait()
+		fmt.Println() // End the output with "\n".
+
+		if err := app.Stop(ctx); err != nil {
+			return fmt.Errorf("fx app stop: %w", err)
+		}
 		return nil
 	},
 })

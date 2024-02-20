@@ -23,6 +23,8 @@ jobs:
         with:
           go-version-file: go.mod
 
+      - name: Install gotestsum
+        run: go install gotest.tools/gotestsum@latest
       - name: Download modules
         run: go mod download
       - name: Build
