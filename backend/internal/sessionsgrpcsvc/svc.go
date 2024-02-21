@@ -149,3 +149,37 @@ func (s *server) List(ctx context.Context, req *connect.Request[sessionsv1.ListR
 
 	return connect.NewResponse(&sessionsv1.ListResponse{Sessions: pbsessions, Count: int32(n)}), nil
 }
+
+func (s *server) Delete(ctx context.Context, req *connect.Request[sessionsv1.DeleteRequest]) (*connect.Response[sessionsv1.DeleteResponse], error) {
+	msg := req.Msg
+
+	if err := proto.Validate(msg); err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+
+	sessionID, err := sdktypes.ParseSessionID(msg.SessionId)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("session_id: %w", err))
+	}
+
+	session, err := s.sessions.Get(ctx, sessionID)
+	if err != nil {
+		if errors.Is(err, sdkerrors.ErrNotFound) {
+			return nil, connect.NewError(connect.CodeNotFound, err)
+		} else if errors.Is(err, sdkerrors.ErrUnauthorized) {
+			return nil, connect.NewError(connect.CodePermissionDenied, err)
+		}
+
+		return nil, connect.NewError(connect.CodeUnknown, err)
+	}
+	if session == nil { // just to ensure, Get should return an error if not found
+		return nil, connect.NewError(connect.CodeNotFound, err)
+	}
+
+	// FIXME: maybe CodeCancelled?
+	if state := sdktypes.GetSessionLatestState(session); state == sdktypes.RunningSessionStateType {
+		connect.NewError(connect.CodeFailedPrecondition, fmt.Errorf("cannot delete running session. session_id: %w", err))
+	}
+	s.sessions.Delete(ctx, sessionID)
+	return connect.NewResponse(&sessionsv1.DeleteResponse{}), nil
+}
