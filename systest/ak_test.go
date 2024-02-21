@@ -142,6 +142,9 @@ func runTestSteps(t *testing.T, steps []string, akPath, akAddr string) {
 				pendingReq = v
 			case string:
 				t.Log(v)
+			default:
+				t.Errorf("line %d: %s", i+1, step)
+				t.Fatalf("error: unhandled action result type: %T", v)
 			}
 			continue
 		}
