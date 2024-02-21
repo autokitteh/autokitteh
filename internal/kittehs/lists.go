@@ -129,3 +129,12 @@ func FoldLeft[X, A any](xs []X, f func(a A, x X) A, a A) A {
 
 	return a
 }
+
+func Head[T any](xs []T) (t T) {
+	if len(xs) == 0 {
+		return
+	}
+
+	t = xs[0]
+	return
+}

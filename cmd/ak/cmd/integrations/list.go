@@ -32,8 +32,7 @@ var listCmd = common.StandardCommand(&cobra.Command{
 		}
 
 		if len(is) == 0 {
-			var dummy *sdktypes.Integration
-			return common.FailIfNotFound(cmd, "integrations", dummy)
+			return common.FailNotFound(cmd, "integrations")
 		}
 
 		if !(withDesc && withMod && withRefs) {

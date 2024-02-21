@@ -4,20 +4,19 @@ project:
   name: http
   paths:
     - http.star
+  vars:
+    - name: MEOW
+      value: "meow1"
+    - name: WOOF
+      value: "woof"
   connections:
     - name: http1
       token: "meow"
       integration: "http"
-  envs:
-    - name: prod
-      vars:
-        - name: MEOW
-          value: "meow"
-      mappings:
-        - name: http1
-          connection: http1
-          events:
-            - type: post
-              entrypoint: http.star:on_http_post
-            - type: get
-              entrypoint: http.star:on_http_get
+  triggers:
+    - event_type: get
+      connection: http1
+      entrypoint: http.star:on_http_get
+    - event_type: post
+      connection: http1
+      entrypoint: http.star:on_http_post

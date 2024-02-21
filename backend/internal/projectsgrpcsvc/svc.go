@@ -58,6 +58,29 @@ func (s *server) Create(ctx context.Context, req *connect.Request[projectsv1.Cre
 	return connect.NewResponse(&projectsv1.CreateResponse{ProjectId: uid.String()}), nil
 }
 
+func (s *server) Update(ctx context.Context, req *connect.Request[projectsv1.UpdateRequest]) (*connect.Response[projectsv1.UpdateResponse], error) {
+	msg := req.Msg
+
+	if err := proto.Validate(msg); err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+
+	project, err := sdktypes.ProjectFromProto(msg.Project)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+
+	if err := s.projects.Update(ctx, project); err != nil {
+		if errors.Is(err, sdkerrors.ErrUnauthorized) {
+			return nil, connect.NewError(connect.CodePermissionDenied, err)
+		}
+
+		return nil, connect.NewError(connect.CodeUnknown, err)
+	}
+
+	return connect.NewResponse(&projectsv1.UpdateResponse{}), nil
+}
+
 func (s *server) Get(ctx context.Context, req *connect.Request[projectsv1.GetRequest]) (*connect.Response[projectsv1.GetResponse], error) {
 	toResponse := func(project sdktypes.Project, err error) (*connect.Response[projectsv1.GetResponse], error) {
 		if err != nil {

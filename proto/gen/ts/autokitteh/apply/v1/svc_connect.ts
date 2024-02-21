@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { ApplyRequest, ApplyResponse, PlanRequest, PlanResponse } from "./svc_pb.js";
+import { ApplyRequest, ApplyResponse } from "./svc_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -19,15 +19,6 @@ export const ApplyService = {
       name: "Apply",
       I: ApplyRequest,
       O: ApplyResponse,
-      kind: MethodKind.Unary,
-    },
-    /**
-     * @generated from rpc autokitteh.apply.v1.ApplyService.Plan
-     */
-    plan: {
-      name: "Plan",
-      I: PlanRequest,
-      O: PlanResponse,
       kind: MethodKind.Unary,
     },
   }

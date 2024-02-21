@@ -8,7 +8,6 @@ import (
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
 	"go.autokitteh.dev/autokitteh/internal/resolver"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
-	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 var listCmd = common.StandardCommand(&cobra.Command{
@@ -40,8 +39,7 @@ var listCmd = common.StandardCommand(&cobra.Command{
 		}
 
 		if len(cs) == 0 {
-			var dummy *sdktypes.Connection
-			return common.FailIfNotFound(cmd, "connections", dummy)
+			return common.FailNotFound(cmd, "connections")
 		}
 
 		common.RenderList(cs)

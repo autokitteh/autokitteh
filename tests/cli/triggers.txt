@@ -1,0 +1,55 @@
+$ # Create project p.
+$ ${AK} p c p; echo $?
+project_id: p:00000000000000000000000000000001
+0
+$ # Create env for project p.
+$ ${AK} en c -p p e1; echo $?
+env_id: e:00000000000000000000000000000002
+0
+$ # Create connection with nonexistent integration
+$ ${AK} c c name -i integration:64656164626565666465616462656566 -t token2 -p p; echo $?; 
+Error: integration "integration:64656164626565666465616462656566" not found
+10
+$ # Create connection with project as parent
+$ ${AK} c c name -i http -t token2 -p p; echo $?; 
+connection_id: connection:00000000000000000000000000000003
+0
+$ # List triggers empty list
+$ ${AK} triggers list; echo $?
+0
+$ # create trigger
+$ ${AK} triggers create --connection connection:00000000000000000000000000000003 --env=e:00000000000000000000000000000002 --event et --loc a; echo $?
+trigger_id: t:00000000000000000000000000000004
+0
+$ # get trigger
+$ ${AK} triggers get t:00000000000000000000000000000004 -j; echo $?
+{"trigger":{"trigger_id":"t:00000000000000000000000000000004","connection_id":"connection:00000000000000000000000000000003","env_id":"e:00000000000000000000000000000002","event_type":"et","code_location":{"path":"a"}}}
+0
+$ # Create connection 2
+$ ${AK} c c name -i http -t token2 -p p; echo $?; 
+connection_id: connection:00000000000000000000000000000005
+0
+$ # create trigger 2 (full code location)
+$ ${AK} triggers create --connection connection:00000000000000000000000000000005 --env=e:00000000000000000000000000000002 --event et --loc meow.kitteh:Meow; echo $?
+trigger_id: t:00000000000000000000000000000006
+0
+$ # get trigger 2
+$ ${AK} triggers get t:00000000000000000000000000000006 -j; echo $?
+{"trigger":{"trigger_id":"t:00000000000000000000000000000006","connection_id":"connection:00000000000000000000000000000005","env_id":"e:00000000000000000000000000000002","event_type":"et","code_location":{"path":"meow.kitteh","name":"Meow"}}}
+0
+$ # list trigger all
+$ ${AK} triggers list  -j; echo $?
+{"trigger_id":"t:00000000000000000000000000000004","connection_id":"connection:00000000000000000000000000000003","env_id":"e:00000000000000000000000000000002","event_type":"et","code_location":{"path":"a"}}
+{"trigger_id":"t:00000000000000000000000000000006","connection_id":"connection:00000000000000000000000000000005","env_id":"e:00000000000000000000000000000002","event_type":"et","code_location":{"path":"meow.kitteh","name":"Meow"}}
+0
+$ # list trigger connection id
+$ ${AK} triggers list --connection connection:00000000000000000000000000000005 -j; echo $?
+{"trigger_id":"t:00000000000000000000000000000006","connection_id":"connection:00000000000000000000000000000005","env_id":"e:00000000000000000000000000000002","event_type":"et","code_location":{"path":"meow.kitteh","name":"Meow"}}
+0
+$ # delete trigger 
+$ ${AK} triggers delete t:00000000000000000000000000000006; echo $?
+0
+$ # list trigger all
+$ ${AK} triggers list  -j; echo $?
+{"trigger_id":"t:00000000000000000000000000000004","connection_id":"connection:00000000000000000000000000000003","env_id":"e:00000000000000000000000000000002","event_type":"et","code_location":{"path":"a"}}
+0

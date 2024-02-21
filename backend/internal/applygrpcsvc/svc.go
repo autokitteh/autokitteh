@@ -2,10 +2,12 @@ package applygrpcsvc
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"connectrpc.com/connect"
 
+	"go.autokitteh.dev/autokitteh/internal/manifest"
 	"go.autokitteh.dev/autokitteh/proto"
 	applyv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/apply/v1"
 	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/apply/v1/applyv1connect"
@@ -13,14 +15,14 @@ import (
 )
 
 type server struct {
-	apply sdkservices.Apply
+	client sdkservices.Services
 	applyv1connect.UnimplementedApplyServiceHandler
 }
 
 var _ applyv1connect.ApplyServiceHandler = (*server)(nil)
 
-func Init(mux *http.ServeMux, apply sdkservices.Apply) {
-	srv := server{apply: apply}
+func Init(mux *http.ServeMux, client sdkservices.Services) {
+	srv := server{client: client}
 
 	path, namer := applyv1connect.NewApplyServiceHandler(&srv)
 	mux.Handle(path, namer)
@@ -33,25 +35,25 @@ func (s *server) Apply(ctx context.Context, req *connect.Request[applyv1.ApplyRe
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
-	logs, err := s.apply.Apply(ctx, msg.Manifest, msg.Path)
+	man, err := manifest.Read([]byte(msg.Manifest), msg.Path)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+
+	var logs []string
+
+	actions, err := manifest.Plan(ctx, man, s.client, manifest.WithLogger(func(msg string) {
+		logs = append(logs, fmt.Sprintf("[plan] %s", msg))
+	}))
+	if err != nil {
+		return nil, connect.NewError(connect.CodeUnknown, err)
+	}
+
+	if err = manifest.Execute(ctx, actions, s.client, func(msg string) {
+		logs = append(logs, fmt.Sprintf("[exec] %s", msg))
+	}); err != nil {
+		return nil, connect.NewError(connect.CodeUnknown, err)
 	}
 
 	return connect.NewResponse(&applyv1.ApplyResponse{Logs: logs}), nil
-}
-
-func (s *server) Plan(ctx context.Context, req *connect.Request[applyv1.PlanRequest]) (*connect.Response[applyv1.PlanResponse], error) {
-	msg := req.Msg
-
-	if err := proto.Validate(msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
-	}
-
-	logs, err := s.apply.Plan(ctx, msg.Manifest)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
-	}
-
-	return connect.NewResponse(&applyv1.PlanResponse{Logs: logs}), nil
 }

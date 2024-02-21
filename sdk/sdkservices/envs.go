@@ -16,6 +16,7 @@ type Envs interface {
 
 	SetVar(ctx context.Context, envVar sdktypes.EnvVar) error
 	RemoveVar(ctx context.Context, envID sdktypes.EnvID, name sdktypes.Symbol) error
+	// If names is empty, all vars are returned.
 	GetVars(ctx context.Context, names []sdktypes.Symbol, envID sdktypes.EnvID) ([]sdktypes.EnvVar, error)
 	RevealVar(ctx context.Context, envID sdktypes.EnvID, varName sdktypes.Symbol) (string, error)
 }

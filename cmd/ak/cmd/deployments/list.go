@@ -54,8 +54,7 @@ var listCmd = common.StandardCommand(&cobra.Command{
 		}
 
 		if len(ds) == 0 {
-			var dummy *sdktypes.Deployment
-			return common.FailIfNotFound(cmd, "deployments", dummy)
+			return common.FailNotFound(cmd, "deployments")
 		}
 
 		// Make the output deterministic during CLI integration tests.

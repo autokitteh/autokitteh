@@ -14,7 +14,7 @@ _sym_db = _symbol_database.Default()
 from buf.validate import validate_pb2 as buf_dot_validate_dot_validate__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1d\x61utokitteh/apply/v1/svc.proto\x12\x13\x61utokitteh.apply.v1\x1a\x1b\x62uf/validate/validate.proto\"\x9a\x01\n\x08\x41pplyLog\x12\x18\n\x07message\x18\x01 \x01(\tR\x07message\x12;\n\x04\x64\x61ta\x18\x02 \x03(\x0b\x32\'.autokitteh.apply.v1.ApplyLog.DataEntryR\x04\x64\x61ta\x1a\x37\n\tDataEntry\x12\x10\n\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n\x05value\x18\x02 \x01(\tR\x05value:\x02\x38\x01\"2\n\x0e\x41pplyOperation\x12 \n\x0b\x64\x65scritpion\x18\x01 \x01(\tR\x0b\x64\x65scritpion\"R\n\x0c\x41pplyRequest\x12$\n\x08manifest\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x08manifest\x12\x1c\n\x04path\x18\x02 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x04path\"#\n\rApplyResponse\x12\x12\n\x04logs\x18\x01 \x03(\tR\x04logs\"3\n\x0bPlanRequest\x12$\n\x08manifest\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x08manifest\"\"\n\x0cPlanResponse\x12\x12\n\x04logs\x18\x01 \x03(\tR\x04logs2\xab\x01\n\x0c\x41pplyService\x12N\n\x05\x41pply\x12!.autokitteh.apply.v1.ApplyRequest\x1a\".autokitteh.apply.v1.ApplyResponse\x12K\n\x04Plan\x12 .autokitteh.apply.v1.PlanRequest\x1a!.autokitteh.apply.v1.PlanResponseB\xd8\x01\n\x17\x63om.autokitteh.apply.v1B\x08SvcProtoP\x01ZEgo.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/apply/v1;applyv1\xa2\x02\x03\x41\x41X\xaa\x02\x13\x41utokitteh.Apply.V1\xca\x02\x13\x41utokitteh\\Apply\\V1\xe2\x02\x1f\x41utokitteh\\Apply\\V1\\GPBMetadata\xea\x02\x15\x41utokitteh::Apply::V1b\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1d\x61utokitteh/apply/v1/svc.proto\x12\x13\x61utokitteh.apply.v1\x1a\x1b\x62uf/validate/validate.proto\"R\n\x0c\x41pplyRequest\x12$\n\x08manifest\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x08manifest\x12\x1c\n\x04path\x18\x02 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x04path\"#\n\rApplyResponse\x12\x12\n\x04logs\x18\x01 \x03(\tR\x04logs2^\n\x0c\x41pplyService\x12N\n\x05\x41pply\x12!.autokitteh.apply.v1.ApplyRequest\x1a\".autokitteh.apply.v1.ApplyResponseB\xd8\x01\n\x17\x63om.autokitteh.apply.v1B\x08SvcProtoP\x01ZEgo.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/apply/v1;applyv1\xa2\x02\x03\x41\x41X\xaa\x02\x13\x41utokitteh.Apply.V1\xca\x02\x13\x41utokitteh\\Apply\\V1\xe2\x02\x1f\x41utokitteh\\Apply\\V1\\GPBMetadata\xea\x02\x15\x41utokitteh::Apply::V1b\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -22,28 +22,14 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'autokitteh.apply.v1.svc_pb2
 if _descriptor._USE_C_DESCRIPTORS == False:
   DESCRIPTOR._options = None
   DESCRIPTOR._serialized_options = b'\n\027com.autokitteh.apply.v1B\010SvcProtoP\001ZEgo.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/apply/v1;applyv1\242\002\003AAX\252\002\023Autokitteh.Apply.V1\312\002\023Autokitteh\\Apply\\V1\342\002\037Autokitteh\\Apply\\V1\\GPBMetadata\352\002\025Autokitteh::Apply::V1'
-  _APPLYLOG_DATAENTRY._options = None
-  _APPLYLOG_DATAENTRY._serialized_options = b'8\001'
   _APPLYREQUEST.fields_by_name['manifest']._options = None
   _APPLYREQUEST.fields_by_name['manifest']._serialized_options = b'\372\367\030\004r\002\020\001'
   _APPLYREQUEST.fields_by_name['path']._options = None
   _APPLYREQUEST.fields_by_name['path']._serialized_options = b'\372\367\030\004r\002\020\001'
-  _PLANREQUEST.fields_by_name['manifest']._options = None
-  _PLANREQUEST.fields_by_name['manifest']._serialized_options = b'\372\367\030\004r\002\020\001'
-  _globals['_APPLYLOG']._serialized_start=84
-  _globals['_APPLYLOG']._serialized_end=238
-  _globals['_APPLYLOG_DATAENTRY']._serialized_start=183
-  _globals['_APPLYLOG_DATAENTRY']._serialized_end=238
-  _globals['_APPLYOPERATION']._serialized_start=240
-  _globals['_APPLYOPERATION']._serialized_end=290
-  _globals['_APPLYREQUEST']._serialized_start=292
-  _globals['_APPLYREQUEST']._serialized_end=374
-  _globals['_APPLYRESPONSE']._serialized_start=376
-  _globals['_APPLYRESPONSE']._serialized_end=411
-  _globals['_PLANREQUEST']._serialized_start=413
-  _globals['_PLANREQUEST']._serialized_end=464
-  _globals['_PLANRESPONSE']._serialized_start=466
-  _globals['_PLANRESPONSE']._serialized_end=500
-  _globals['_APPLYSERVICE']._serialized_start=503
-  _globals['_APPLYSERVICE']._serialized_end=674
+  _globals['_APPLYREQUEST']._serialized_start=83
+  _globals['_APPLYREQUEST']._serialized_end=165
+  _globals['_APPLYRESPONSE']._serialized_start=167
+  _globals['_APPLYRESPONSE']._serialized_end=202
+  _globals['_APPLYSERVICE']._serialized_start=204
+  _globals['_APPLYSERVICE']._serialized_end=298
 # @@protoc_insertion_point(module_scope)

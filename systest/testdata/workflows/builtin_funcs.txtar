@@ -10,7 +10,7 @@ ak project build my_project
 return code == 0
 output equals build_id: b:00000000000000000000000000000005
 
-ak deployment create --build-id=b:00000000000000000000000000000005 --env=my_project/my_env --activate
+ak deployment create --build-id=b:00000000000000000000000000000005 --env=my_project/default --activate
 return code == 0
 
 # Send an HTTP GET request to trigger the deployment to start a new session.
@@ -47,14 +47,11 @@ project:
     - name: my_connection
       integration: http
       token: my_url_path
-  envs:
-    - name: my_env
-      mappings:
-        - name: http
-          connection: my_project/my_connection
-          events:
-            - type: get
-              entrypoint: my_program.star:on_http_get
+  triggers:
+    - name: http
+      connection: my_connection
+      event_type: get
+      entrypoint: my_program.star:on_http_get
 
 -- my_program.star --
 def on_http_get(data):

@@ -158,8 +158,8 @@ func StrictParseAnyID(raw string) (ID, error) {
 		return ParseConnectionID(raw)
 	case EventIDKind:
 		return ParseEventID(raw)
-	case MappingIDKind:
-		return ParseMappingID(raw)
+	case TriggerIDKind:
+		return ParseTriggerID(raw)
 	case IntegrationIDKind:
 		return ParseIntegrationID(raw)
 

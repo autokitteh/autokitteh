@@ -21,8 +21,6 @@ func (db *gormdb) CreateProject(ctx context.Context, p sdktypes.Project) error {
 		return errors.New("project id missing")
 	}
 
-	ph := sdktypes.GetProjectName(p)
-
 	paths, err := json.Marshal(sdktypes.GetProjectResourcePaths(p))
 	if err != nil {
 		return fmt.Errorf("marshal paths: %w", err)
@@ -30,11 +28,30 @@ func (db *gormdb) CreateProject(ctx context.Context, p sdktypes.Project) error {
 
 	r := scheme.Project{
 		ProjectID: sdktypes.GetProjectID(p).String(),
-		Name:      ph.String(),
+		Name:      sdktypes.GetProjectName(p).String(),
 		Paths:     paths,
 	}
 
 	if err := db.db.WithContext(ctx).Create(&r).Error; err != nil {
+		return translateError(err)
+	}
+
+	return nil
+}
+
+func (db *gormdb) UpdateProject(ctx context.Context, p sdktypes.Project) error {
+	paths, err := json.Marshal(sdktypes.GetProjectResourcePaths(p))
+	if err != nil {
+		return fmt.Errorf("marshal paths: %w", err)
+	}
+
+	r := scheme.Project{
+		ProjectID: sdktypes.GetProjectID(p).String(),
+		Name:      sdktypes.GetProjectName(p).String(),
+		Paths:     paths,
+	}
+
+	if err := db.db.WithContext(ctx).Updates(&r).Error; err != nil {
 		return translateError(err)
 	}
 

@@ -1,0 +1,63 @@
+syntax = "proto3";
+
+package autokitteh.triggers.v1;
+
+import "autokitteh/triggers/v1/trigger.proto";
+import "buf/validate/validate.proto";
+
+message CreateRequest {
+  option (buf.validate.message).cel = {
+    id: "trigger.trigger_id_must_be_empty",
+    message: "trigger_id must not be specified",
+    expression: "has(this.trigger) && this.trigger.trigger_id == ''",
+  };
+
+  Trigger trigger = 1;
+}
+
+message CreateResponse {
+  string trigger_id = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+message UpdateRequest {
+  option (buf.validate.message).cel = {
+    id: "trigger.trigger_id_required",
+    message: "trigger_id is required",
+    expression: "has(this.trigger) && this.trigger.trigger_id != ''",
+  };
+
+  Trigger trigger = 1;
+}
+
+message UpdateResponse {}
+
+message DeleteRequest {
+  string trigger_id = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+message DeleteResponse {}
+
+message GetRequest {
+  string trigger_id = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+message GetResponse {
+  Trigger trigger = 1;
+}
+
+message ListRequest {
+  string env_id = 1;
+  string connection_id = 2;
+}
+
+message ListResponse {
+  repeated Trigger triggers = 1 [(buf.validate.field).repeated.items.required = true];
+}
+
+service TriggersService {
+  rpc Create(CreateRequest) returns (CreateResponse);
+  rpc Update(UpdateRequest) returns (UpdateResponse);
+  rpc Delete(DeleteRequest) returns (DeleteResponse);
+  rpc Get(GetRequest) returns (GetResponse);
+  rpc List(ListRequest) returns (ListResponse);
+}

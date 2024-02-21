@@ -29,14 +29,13 @@ var Tables = []any{
 	&Event{},
 	&EventRecord{},
 	&Integration{},
-	&Mapping{},
-	&MappingEvent{},
 	&Project{},
 	&Session{},
-	&SessionLogRecord{},
-	&SessionCallSpec{},
 	&SessionCallAttempt{},
+	&SessionCallSpec{},
+	&SessionLogRecord{},
 	&Signal{},
+	&Trigger{},
 }
 
 type Build struct {
@@ -265,48 +264,29 @@ func ParseEnvVar(r EnvVar) (sdktypes.EnvVar, error) {
 	})
 }
 
-type Mapping struct {
-	MappingID string `gorm:"primaryKey"`
+type Trigger struct {
+	TriggerID string `gorm:"primaryKey"`
 
+	ProjectID    string `gorm:"index"`
 	EnvID        string `gorm:"index"`
 	ConnectionID string `gorm:"index"`
 	Connection   Connection
-	ModuleName   string
-
-	// Has many
-	Events []MappingEvent `gorm:"foreignKey:MappingID;constraint:OnDelete:CASCADE;"`
-}
-
-func ParseMapping(e Mapping) (sdktypes.Mapping, error) {
-	events, err := kittehs.TransformError(e.Events, ParseMappingEvent)
-	if err != nil {
-		return nil, err
-	}
-
-	return sdktypes.StrictMappingFromProto(&sdktypes.MappingPB{
-		MappingId:    e.MappingID,
-		EnvId:        e.EnvID,
-		ConnectionId: e.ConnectionID,
-		ModuleName:   e.ModuleName,
-		Events:       kittehs.Transform(events, sdktypes.ToProto),
-	})
-}
-
-type MappingEvent struct {
-	Type         string
-	MappingID    string `gorm:"references:MappingID"`
+	EventType    string
 	CodeLocation string
 }
 
-func ParseMappingEvent(e MappingEvent) (sdktypes.MappingEvent, error) {
-	codeLoc, err := sdktypes.ParseCodeLocation(e.CodeLocation)
+func ParseTrigger(e Trigger) (sdktypes.Trigger, error) {
+	loc, err := sdktypes.ParseCodeLocation(e.CodeLocation)
 	if err != nil {
-		return nil, fmt.Errorf("code loc: %w", err)
+		return nil, fmt.Errorf("loc: %w", err)
 	}
 
-	return sdktypes.StrictMappingEventFromProto(&sdktypes.MappingEventPB{
-		EventType:    e.Type,
-		CodeLocation: codeLoc.ToProto(),
+	return sdktypes.StrictTriggerFromProto(&sdktypes.TriggerPB{
+		TriggerId:    e.TriggerID,
+		EnvId:        e.EnvID,
+		ConnectionId: e.ConnectionID,
+		EventType:    e.EventType,
+		CodeLocation: loc.ToProto(),
 	})
 }
 

@@ -71,8 +71,7 @@ var listCmd = common.StandardCommand(&cobra.Command{
 		}
 
 		if len(ss) == 0 {
-			var dummy *sdktypes.Session
-			return common.FailIfNotFound(cmd, "sessions", dummy)
+			return common.FailNotFound(cmd, "sessions")
 		}
 
 		if !withInputs {

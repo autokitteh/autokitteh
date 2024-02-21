@@ -193,26 +193,16 @@ func integrationModulePrefix(name string) string { return fmt.Sprintf("__%v__", 
 func (w *sessionWorkflow) initConnections(ctx workflow.Context) error {
 	goCtx := temporalclient.NewWorkflowContextAsGOContext(ctx)
 
-	for _, m := range w.data.Mappings {
-		name := sdktypes.GetMappingModuleName(m).String()
-		connID := sdktypes.GetMappingConnectionID(m)
+	for _, conn := range w.data.Connections {
+		name := sdktypes.GetConnectionName(conn).String()
+		iid := sdktypes.GetConnectionIntegrationID(conn)
 
 		if w.executors.GetValues(name) != nil {
-			return fmt.Errorf("conflicting connection %q use in mapping %v", name, sdktypes.GetMappingID(m))
-		}
-
-		_, conn := kittehs.FindFirst(w.data.Connections, func(c sdktypes.Connection) bool {
-			return sdktypes.GetConnectionID(c).String() == connID.String()
-		})
-
-		if conn == nil {
-			return fmt.Errorf("connection %q not found", connID)
+			return fmt.Errorf("conflicting connection %q", name)
 		}
 
 		// In modules, we register the connection prefixed with its integration name.
 		// This allows us to query all connections for a given integration in the load callback.
-
-		iid := sdktypes.GetConnectionIntegrationID(conn)
 
 		intg, err := w.ws.svcs.Integrations.Get(goCtx, iid)
 		if err != nil {
