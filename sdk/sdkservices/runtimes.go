@@ -2,7 +2,7 @@ package sdkservices
 
 import (
 	"context"
-	"net/url"
+	"io/fs"
 
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkexecutor"
@@ -18,7 +18,7 @@ type Runtime interface {
 	Get() sdktypes.Runtime
 
 	// Returns sdktypes.ProgramErrorAsError if not internal error.
-	Build(ctx context.Context, rootURL *url.URL, path string, symbols []sdktypes.Symbol) (sdktypes.BuildArtifact, error)
+	Build(ctx context.Context, fs fs.FS, path string, symbols []sdktypes.Symbol) (sdktypes.BuildArtifact, error)
 
 	// Returns sdktypes.ProgramErrorAsError if not internal error.
 	Run(

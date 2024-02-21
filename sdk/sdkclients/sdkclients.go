@@ -43,7 +43,6 @@ type client struct {
 
 func New(params sdkclient.Params) sdkservices.Services {
 	return &client{
-		params:       params,
 		apply:        kittehs.Lazy1(sdkapplyclient.New, params),
 		builds:       kittehs.Lazy1(sdkbuildsclient.New, params),
 		connections:  kittehs.Lazy1(sdkconnectionsclient.New, params),
@@ -54,6 +53,7 @@ func New(params sdkclient.Params) sdkservices.Services {
 		integrations: kittehs.Lazy1(sdkintegrationsclient.New, params),
 		mappings:     kittehs.Lazy1(sdkmappingclient.New, params),
 		oauth:        kittehs.Lazy1(sdkoauthclient.New, params),
+		params:       params,
 		projects:     kittehs.Lazy1(sdkprojectsclient.New, params),
 		runtimes:     kittehs.Lazy1(sdkruntimesclient.New, params),
 		secrets:      kittehs.Lazy1(sdksecretsclient.New, params),

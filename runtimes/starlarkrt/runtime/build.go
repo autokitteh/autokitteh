@@ -5,8 +5,8 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"io/fs"
 	"net/url"
-	"os"
 	"path/filepath"
 
 	"go.starlark.net/starlark"
@@ -68,11 +68,7 @@ func getExports(path string, f *syntax.File) (exports []sdktypes.Export) {
 }
 
 // TODO: we might want to stream the build product data as it might be big? Or we just limit the build size.
-func Build(ctx context.Context, rootURL *url.URL, path string, symbols []sdktypes.Symbol) (sdktypes.BuildArtifact, error) {
-	if rootURL.Scheme != "file" && rootURL.Scheme != "" {
-		return nil, fmt.Errorf("unsupported scheme: %q", rootURL.Scheme)
-	}
-
+func Build(ctx context.Context, fs fs.FS, path string, symbols []sdktypes.Symbol) (sdktypes.BuildArtifact, error) {
 	data := make(map[string][]byte)
 
 	type external struct {
@@ -101,7 +97,6 @@ func Build(ctx context.Context, rootURL *url.URL, path string, symbols []sdktype
 
 	for q := []string{path}; len(q) != 0; q = q[1:] {
 		path := q[0]
-		fullPath := filepath.Join(rootURL.Path, path)
 
 		if visited[path] {
 			continue
@@ -109,9 +104,9 @@ func Build(ctx context.Context, rootURL *url.URL, path string, symbols []sdktype
 
 		visited[path] = true
 
-		fr, err := os.Open(fullPath)
+		fr, err := fs.Open(path)
 		if err != nil {
-			return nil, fmt.Errorf("open(%q): %w", fullPath, err)
+			return nil, fmt.Errorf("open(%q): %w", path, err)
 		}
 
 		src, err := io.ReadAll(fr)
@@ -122,7 +117,7 @@ func Build(ctx context.Context, rootURL *url.URL, path string, symbols []sdktype
 			return nil, fmt.Errorf("read(%q): %w", path, err)
 		}
 
-		f, mod, err := starlark.SourceProgramOptions(fileOptions, fullPath, src, isPredecl)
+		f, mod, err := starlark.SourceProgramOptions(fileOptions, path, src, isPredecl)
 		if err != nil {
 			return nil, translateError(err, map[string]string{
 				"source_path": path,

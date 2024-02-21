@@ -2,7 +2,7 @@ package runtime
 
 import (
 	"context"
-	"net/url"
+	"io/fs"
 
 	"go.autokitteh.dev/autokitteh/runtimes/configrt/runtime"
 	"go.autokitteh.dev/autokitteh/sdk/sdkruntimes"
@@ -21,8 +21,8 @@ func New() sdkservices.Runtime { return svc{} }
 
 func (svc) Get() sdktypes.Runtime { return desc }
 
-func (svc) Build(ctx context.Context, rootURL *url.URL, path string, _ []sdktypes.Symbol) (sdktypes.BuildArtifact, error) {
-	return runtime.Build(ctx, rootURL, path)
+func (svc) Build(ctx context.Context, fs fs.FS, path string, _ []sdktypes.Symbol) (sdktypes.BuildArtifact, error) {
+	return runtime.Build(ctx, fs, path)
 }
 
 func (svc) Run(

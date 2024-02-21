@@ -3,6 +3,8 @@ package projects
 import (
 	"bytes"
 	"context"
+	"fmt"
+	"os"
 
 	"go.uber.org/fx"
 	"go.uber.org/zap"
@@ -65,10 +67,15 @@ func (o *Projects) Build(ctx context.Context, projectID sdktypes.ProjectID) (sdk
 		return nil, nil
 	}
 
+	url := sdktypes.GetProjectResourcesRootURL(p)
+	if url.Scheme != "" && url.Scheme != "file" {
+		return nil, fmt.Errorf("%w: only file resources are supported", sdkerrors.ErrNotImplemented)
+	}
+
 	bi, err := sdkbuild.Build(
 		ctx,
 		o.Runtimes,
-		sdktypes.GetProjectResourcesRootURL(p),
+		os.DirFS(url.Path),
 		sdktypes.GetProjectResourcePaths(p),
 		nil,
 		nil,

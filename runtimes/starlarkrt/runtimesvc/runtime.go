@@ -2,7 +2,7 @@ package runtime
 
 import (
 	"context"
-	"net/url"
+	"io/fs"
 
 	"go.autokitteh.dev/autokitteh/runtimes/starlarkrt/runtime"
 	"go.autokitteh.dev/autokitteh/sdk/sdkruntimes"
@@ -22,8 +22,8 @@ func New() sdkservices.Runtime { return svc{} }
 func (svc) Get() sdktypes.Runtime { return desc }
 
 // TODO: we might want to stream the build product data as it might be big? Or we just limit the build size.
-func (svc) Build(ctx context.Context, rootURL *url.URL, path string, values []sdktypes.Symbol) (sdktypes.BuildArtifact, error) {
-	return runtime.Build(ctx, rootURL, path, values)
+func (svc) Build(ctx context.Context, fs fs.FS, path string, values []sdktypes.Symbol) (sdktypes.BuildArtifact, error) {
+	return runtime.Build(ctx, fs, path, values)
 }
 
 func (svc) Run(

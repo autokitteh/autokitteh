@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { BuildRequest, BuildResponse, DescribeRequest, DescribeResponse, ListRequest, ListResponse, RunRequest, RunResponse } from "./svc_pb.js";
+import { DescribeRequest, DescribeResponse, ListRequest, ListResponse } from "./svc_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -32,30 +32,6 @@ export const RuntimesService = {
       I: ListRequest,
       O: ListResponse,
       kind: MethodKind.Unary,
-    },
-    /**
-     * TODO: Turn this into a streaming call so there'll be no need
-     *       to pass all resources if not needed.
-     *
-     * @generated from rpc autokitteh.runtimes.v1.RuntimesService.Build
-     */
-    build: {
-      name: "Build",
-      I: BuildRequest,
-      O: BuildResponse,
-      kind: MethodKind.Unary,
-    },
-    /**
-     * When called, wait for idle status. Then continue according
-     * to state machine above.
-     *
-     * @generated from rpc autokitteh.runtimes.v1.RuntimesService.Run
-     */
-    run: {
-      name: "Run",
-      I: RunRequest,
-      O: RunResponse,
-      kind: MethodKind.BiDiStreaming,
     },
   }
 } as const;
