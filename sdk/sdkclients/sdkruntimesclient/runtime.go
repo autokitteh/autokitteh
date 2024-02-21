@@ -2,62 +2,26 @@ package sdkruntimesclient
 
 import (
 	"context"
-	"fmt"
-	"net/url"
+	"io/fs"
 
-	"connectrpc.com/connect"
-
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
-	runtimesv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/runtimes/v1"
-	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/runtimes/v1/runtimesv1connect"
-	"go.autokitteh.dev/autokitteh/sdk/sdkclients/internal"
+	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 type runtime struct {
-	desc   sdktypes.Runtime
-	client runtimesv1connect.RuntimesServiceClient
+	desc sdktypes.Runtime
 }
 
 func (r *runtime) Get() sdktypes.Runtime { return r.desc }
 
 func (r *runtime) Build(
 	ctx context.Context,
-	rootURL *url.URL,
+	fs fs.FS,
 	path string,
 	symbols []sdktypes.Symbol,
 ) (sdktypes.BuildArtifact, error) {
-	resp, err := r.client.Build(ctx, connect.NewRequest(&runtimesv1.BuildRequest{
-		RuntimeName: sdktypes.GetRuntimeName(r.desc).String(),
-		RootUrl:     rootURL.String(),
-		Path:        path,
-		ValueNames:  kittehs.Transform(symbols, func(s sdktypes.Symbol) string { return s.String() }),
-	}))
-	if err != nil {
-		return nil, err
-	}
-
-	if err := internal.Validate(resp.Msg); err != nil {
-		return nil, err
-	}
-
-	if resp.Msg.Error != nil {
-		// TODO: this takes only the first error.
-		perr, err := sdktypes.ProgramErrorFromProto(resp.Msg.Error)
-		if err != nil {
-			return nil, fmt.Errorf("invalid program error: %w", err)
-		}
-
-		return nil, sdktypes.ProgramErrorToError(perr)
-	}
-
-	a, err := sdktypes.BuildArtifactFromProto(resp.Msg.Product)
-	if err != nil {
-		return nil, err
-	}
-
-	return a, nil
+	return nil, sdkerrors.ErrNotImplemented
 }
 
 func (r *runtime) Run(
@@ -68,5 +32,5 @@ func (r *runtime) Run(
 	values map[string]sdktypes.Value,
 	cbs *sdkservices.RunCallbacks,
 ) (sdkservices.Run, error) {
-	return nil, nil
+	return nil, sdkerrors.ErrNotImplemented
 }

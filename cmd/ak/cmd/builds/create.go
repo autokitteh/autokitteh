@@ -7,6 +7,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"go.autokitteh.dev/autokitteh/backend/runtimes"
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkbuild"
@@ -40,7 +41,12 @@ var createCmd = common.StandardCommand(&cobra.Command{
 			return fmt.Errorf("invalid root dir: %w", err)
 		}
 
-		b, err := sdkbuild.Build(ctx, common.Client().Runtimes(), url, paths, vns, nil)
+		if url.Scheme != "" && url.Scheme != "file" {
+			return fmt.Errorf("invalid root dir: scheme must be empty or 'file'")
+		}
+
+		// Currently uses only local runtimes - no RPC support yet.
+		b, err := sdkbuild.Build(ctx, runtimes.New(), os.DirFS(url.Path), paths, vns, nil)
 		if err != nil {
 			return fmt.Errorf("create build: %w", err)
 		}

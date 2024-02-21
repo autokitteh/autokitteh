@@ -22,6 +22,8 @@ type svc struct {
 
 	lsOnce sync.Once
 	ls     []sdktypes.Runtime
+
+	runtimesv1connect.UnimplementedRuntimesServiceHandler
 }
 
 var _ runtimesv1connect.RuntimesServiceHandler = &svc{}

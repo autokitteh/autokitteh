@@ -56,5 +56,5 @@ func (c *client) New(ctx context.Context, name sdktypes.Name) (sdkservices.Runti
 		return nil, fmt.Errorf("invalid runtime: %w", err)
 	}
 
-	return &runtime{desc: desc, client: c.client}, nil
+	return &runtime{desc: desc}, nil
 }

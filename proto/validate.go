@@ -77,7 +77,6 @@ var fds = []protoreflect.FileDescriptor{
 	projectsv1.File_autokitteh_projects_v1_project_proto,
 	projectsv1.File_autokitteh_projects_v1_svc_proto,
 	runtimesv1.File_autokitteh_runtimes_v1_build_proto,
-	runtimesv1.File_autokitteh_runtimes_v1_run_proto,
 	runtimesv1.File_autokitteh_runtimes_v1_runtime_proto,
 	runtimesv1.File_autokitteh_runtimes_v1_svc_proto,
 	secretsv1.File_autokitteh_secrets_v1_svc_proto,

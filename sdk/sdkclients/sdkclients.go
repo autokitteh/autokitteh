@@ -43,7 +43,7 @@ type client struct {
 
 func New(params sdkclient.Params) sdkservices.Services {
 	return &client{
-		params:       params,
+		params:       params, // just a dumb struct, no need to be lazy here.
 		apply:        kittehs.Lazy1(sdkapplyclient.New, params),
 		builds:       kittehs.Lazy1(sdkbuildsclient.New, params),
 		connections:  kittehs.Lazy1(sdkconnectionsclient.New, params),

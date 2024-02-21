@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/fs"
 	"net/url"
-	"os"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkbuild/sdkbuildfile"
@@ -18,11 +17,11 @@ func buildWithRuntime(
 	ctx context.Context,
 	rt sdkservices.Runtime,
 	data *sdkbuildfile.RuntimeData,
-	rootURL *url.URL,
+	fs fs.FS,
 	path string,
 	symbols []sdktypes.Symbol,
 ) error {
-	p, err := rt.Build(ctx, rootURL, path, symbols)
+	p, err := rt.Build(ctx, fs, path, symbols)
 	if err != nil {
 		return fmt.Errorf("runtime_build: %w", err)
 	}
@@ -37,15 +36,11 @@ func buildWithRuntime(
 func Build(
 	ctx context.Context,
 	rts sdkservices.Runtimes,
-	rootURL *url.URL,
+	srcFS fs.FS,
 	pathPatterns []string,
 	symbols []sdktypes.Symbol,
 	memo map[string]string,
 ) (*sdkbuildfile.BuildFile, error) {
-	if rootURL.Scheme != "file" && rootURL.Scheme != "" {
-		return nil, fmt.Errorf("unsupported scheme: %q", rootURL.Scheme)
-	}
-
 	// requirements that are unsatisfiable at build time.
 	externals, err := kittehs.TransformError(symbols, func(sym sdktypes.Symbol) (sdktypes.Requirement, error) {
 		return sdktypes.NewRequirement(nil, nil, sym)
@@ -56,10 +51,8 @@ func Build(
 
 	var q []sdktypes.Requirement
 
-	rootFS := os.DirFS(rootURL.Path)
-
 	for _, pattern := range pathPatterns {
-		paths, err := fs.Glob(rootFS, pattern)
+		paths, err := fs.Glob(srcFS, pattern)
 		if err != nil {
 			return nil, fmt.Errorf("glob %s: %w", pattern, err)
 		}
@@ -134,7 +127,7 @@ func Build(
 			}
 		}
 
-		if err := buildWithRuntime(ctx, cached.runtime, cached.data, rootURL, path, symbols); err != nil {
+		if err := buildWithRuntime(ctx, cached.runtime, cached.data, srcFS, path, symbols); err != nil {
 			return nil, fmt.Errorf("build error for %q: %w", path, err)
 		}
 
