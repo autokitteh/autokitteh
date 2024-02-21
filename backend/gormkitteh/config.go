@@ -25,7 +25,8 @@ func (c Config) Explicit() (*Config, error) {
 			// use a temporary database.
 			c.Type = "sqlite"
 			// For in-memory, cached is required for transactions to work.
-			c.DSN = "file::memory:?cache=shared"
+			// Not using "?cache=shared", for auto-cleanup between system tests.
+			c.DSN = "file::memory:"
 		} else {
 			// This should make it easier to just specify the type in the dsn
 			// in a single env var.

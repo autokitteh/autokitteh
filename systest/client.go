@@ -89,10 +89,18 @@ func waitForSession(akPath, akAddr, step string) (string, error) {
 	}
 
 	text := fmt.Sprintf("session %s not done after %s", id, duration)
-	args = []string{"--url=http://" + akAddr, "sessions", "list", "-J"}
+
+	args = []string{"--url=http://" + akAddr, "events", "list", "--integration=http"}
 	result, err := runClient(akPath, args)
-	if err != nil {
-		text += fmt.Sprintf("\nSessions list:\n%s", result.output)
+	if err == nil {
+		text += fmt.Sprintf("\nEvents list:\n%s", result.output)
 	}
+
+	args = []string{"--url=http://" + akAddr, "sessions", "list", "-J"}
+	result, err = runClient(akPath, args)
+	if err == nil {
+		text += fmt.Sprintf("\n---\nSessions list:\n%s", result.output)
+	}
+
 	return "", errors.New(text)
 }
