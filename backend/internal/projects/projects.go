@@ -23,7 +23,6 @@ type Projects struct {
 	DB       db.DB
 	Builds   sdkservices.Builds
 	Runtimes sdkservices.Runtimes
-	Config   *Config
 }
 
 func New(p Projects) sdkservices.Projects { return &p }
