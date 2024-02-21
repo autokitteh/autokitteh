@@ -118,6 +118,7 @@ type DB interface {
 	UpdateSessionState(ctx context.Context, sessionID sdktypes.SessionID, state sdktypes.SessionState) error
 	AddSessionPrint(ctx context.Context, sessionID sdktypes.SessionID, print string) error
 	ListSessions(ctx context.Context, f sdkservices.ListSessionsFilter) ([]sdktypes.Session, int, error)
+	DeleteSession(ctx context.Context, sessionID sdktypes.SessionID) error
 
 	CreateSessionCall(ctx context.Context, sessionID sdktypes.SessionID, data sdktypes.SessionCallSpec) error
 	GetSessionCallSpec(ctx context.Context, sessionID sdktypes.SessionID, seq uint32) (sdktypes.SessionCallSpec, error)

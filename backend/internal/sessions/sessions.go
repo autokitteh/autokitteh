@@ -76,6 +76,11 @@ func (s *sessions) List(ctx context.Context, filter sdkservices.ListSessionsFilt
 	return s.svcs.DB.ListSessions(ctx, filter)
 }
 
+func (s *sessions) Delete(ctx context.Context, sessionID sdktypes.SessionID) error {
+	s.z.With(zap.String("session_id", sessionID.String())).Debug("delete")
+	return s.svcs.DB.DeleteSession(ctx, sessionID)
+}
+
 func (s *sessions) Start(ctx context.Context, session sdktypes.Session) (sdktypes.SessionID, error) {
 	sessionID := sdktypes.GetSessionID(session)
 	if sessionID != nil {
@@ -92,6 +97,8 @@ func (s *sessions) Start(ctx context.Context, session sdktypes.Session) (sdktype
 		return nil, fmt.Errorf("db.create_session: %w", err)
 	}
 
+	z := s.z.With(zap.String("session_id", sessionID.String()))
+
 	if err := s.workflows.StartWorkflow(ctx, session, s.config.Debug); err != nil {
 		if uerr := s.svcs.DB.UpdateSessionState(
 			ctx,
@@ -100,8 +107,9 @@ func (s *sessions) Start(ctx context.Context, session sdktypes.Session) (sdktype
 				sdktypes.NewErrorSessionState(fmt.Errorf("execute workflow: %w", err), nil),
 			),
 		); uerr != nil {
-			s.z.With(zap.String("session_id", sessionID.String())).Error("update session", zap.Error(err))
+			z.Error("update session", zap.Error(err))
 		}
+		z = s.z.With(zap.String("session_id", sessionID.String()))
 
 		return nil, fmt.Errorf("start workflow: %w", err)
 	}

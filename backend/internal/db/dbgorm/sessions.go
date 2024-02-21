@@ -21,6 +21,10 @@ func (db *gormdb) GetSession(ctx context.Context, sessionID sdktypes.SessionID) 
 	return get(db.db, ctx, scheme.ParseSession, "session_id = ?", sessionID.String())
 }
 
+func (db *gormdb) DeleteSession(ctx context.Context, sessionID sdktypes.SessionID) error {
+	return delete(db.db, ctx, scheme.Session{}, "session_id = ?", sessionID.String())
+}
+
 func (db *gormdb) GetSessionLog(ctx context.Context, sessionID sdktypes.SessionID) (sdktypes.SessionLog, error) {
 	var rs []scheme.SessionLogRecord
 
