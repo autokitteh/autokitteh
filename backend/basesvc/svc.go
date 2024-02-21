@@ -12,7 +12,6 @@ import (
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 
-	"go.autokitteh.dev/autokitteh/backend/apply"
 	"go.autokitteh.dev/autokitteh/backend/configset"
 	"go.autokitteh.dev/autokitteh/backend/internal/applygrpcsvc"
 	"go.autokitteh.dev/autokitteh/backend/internal/builds"
@@ -30,8 +29,6 @@ import (
 	"go.autokitteh.dev/autokitteh/backend/internal/events"
 	"go.autokitteh.dev/autokitteh/backend/internal/eventsgrpcsvc"
 	"go.autokitteh.dev/autokitteh/backend/internal/integrationsgrpcsvc"
-	"go.autokitteh.dev/autokitteh/backend/internal/mappings"
-	"go.autokitteh.dev/autokitteh/backend/internal/mappingsgrpcsvc"
 	"go.autokitteh.dev/autokitteh/backend/internal/oauth"
 	"go.autokitteh.dev/autokitteh/backend/internal/projects"
 	"go.autokitteh.dev/autokitteh/backend/internal/projectsgrpcsvc"
@@ -42,6 +39,8 @@ import (
 	"go.autokitteh.dev/autokitteh/backend/internal/store"
 	"go.autokitteh.dev/autokitteh/backend/internal/storegrpcsvc"
 	"go.autokitteh.dev/autokitteh/backend/internal/temporalclient"
+	"go.autokitteh.dev/autokitteh/backend/internal/triggers"
+	"go.autokitteh.dev/autokitteh/backend/internal/triggersgrpcsvc"
 	"go.autokitteh.dev/autokitteh/backend/logger"
 	"go.autokitteh.dev/autokitteh/backend/runtimes"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
@@ -107,14 +106,13 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 			fx.Invoke(func(lc fx.Lifecycle, s sessions.Sessions) { HookOnStart(lc, s.StartWorkers) }),
 		),
 		Component("store", store.Configs, fx.Provide(store.New)),
-		Component("apply", configset.Empty, fx.Provide(apply.NewApplySvc)),
 		Component("builds", configset.Empty, fx.Provide(builds.New)),
 		Component("connections", configset.Empty, fx.Provide(connections.New)),
 		Component("deployments", configset.Empty, fx.Provide(deployments.New)),
 		Component("projects", configset.Empty, fx.Provide(projects.New)),
 		Component("envs", configset.Empty, fx.Provide(envs.New)),
 		Component("events", configset.Empty, fx.Provide(events.New)),
-		Component("mappings", configset.Empty, fx.Provide(mappings.New)),
+		Component("triggers", configset.Empty, fx.Provide(triggers.New)),
 		Component("oauth", configset.Empty, fx.Provide(oauth.New)),
 		Component("runtimes", configset.Empty, fx.Provide(runtimes.New)),
 		Component(
@@ -137,7 +135,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		fx.Invoke(envsgrpcsvc.Init),
 		fx.Invoke(eventsgrpcsvc.Init),
 		fx.Invoke(integrationsgrpcsvc.Init),
-		fx.Invoke(mappingsgrpcsvc.Init),
+		fx.Invoke(triggersgrpcsvc.Init),
 		fx.Invoke(oauth.Init),
 		fx.Invoke(secretsgrpcsvc.Init),
 		fx.Invoke(storegrpcsvc.Init),

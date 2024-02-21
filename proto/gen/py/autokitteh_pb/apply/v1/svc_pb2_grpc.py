@@ -19,23 +19,12 @@ class ApplyServiceStub(object):
                 request_serializer=autokitteh_dot_apply_dot_v1_dot_svc__pb2.ApplyRequest.SerializeToString,
                 response_deserializer=autokitteh_dot_apply_dot_v1_dot_svc__pb2.ApplyResponse.FromString,
                 )
-        self.Plan = channel.unary_unary(
-                '/autokitteh.apply.v1.ApplyService/Plan',
-                request_serializer=autokitteh_dot_apply_dot_v1_dot_svc__pb2.PlanRequest.SerializeToString,
-                response_deserializer=autokitteh_dot_apply_dot_v1_dot_svc__pb2.PlanResponse.FromString,
-                )
 
 
 class ApplyServiceServicer(object):
     """Missing associated documentation comment in .proto file."""
 
     def Apply(self, request, context):
-        """Missing associated documentation comment in .proto file."""
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
-    def Plan(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -48,11 +37,6 @@ def add_ApplyServiceServicer_to_server(servicer, server):
                     servicer.Apply,
                     request_deserializer=autokitteh_dot_apply_dot_v1_dot_svc__pb2.ApplyRequest.FromString,
                     response_serializer=autokitteh_dot_apply_dot_v1_dot_svc__pb2.ApplyResponse.SerializeToString,
-            ),
-            'Plan': grpc.unary_unary_rpc_method_handler(
-                    servicer.Plan,
-                    request_deserializer=autokitteh_dot_apply_dot_v1_dot_svc__pb2.PlanRequest.FromString,
-                    response_serializer=autokitteh_dot_apply_dot_v1_dot_svc__pb2.PlanResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -78,22 +62,5 @@ class ApplyService(object):
         return grpc.experimental.unary_unary(request, target, '/autokitteh.apply.v1.ApplyService/Apply',
             autokitteh_dot_apply_dot_v1_dot_svc__pb2.ApplyRequest.SerializeToString,
             autokitteh_dot_apply_dot_v1_dot_svc__pb2.ApplyResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
-
-    @staticmethod
-    def Plan(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/autokitteh.apply.v1.ApplyService/Plan',
-            autokitteh_dot_apply_dot_v1_dot_svc__pb2.PlanRequest.SerializeToString,
-            autokitteh_dot_apply_dot_v1_dot_svc__pb2.PlanResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

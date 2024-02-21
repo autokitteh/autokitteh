@@ -19,7 +19,7 @@ type Svcs struct {
 	Builds       sdkservices.Builds
 	Runtimes     sdkservices.Runtimes
 	Integrations sdkservices.Integrations
-	Mappings     sdkservices.Mappings
+	Triggers     sdkservices.Triggers
 	Connections  sdkservices.Connections
 
 	RedisClient *redis.Client

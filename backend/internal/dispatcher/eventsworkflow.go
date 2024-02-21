@@ -54,78 +54,74 @@ func (d *dispatcher) getEventSessionData(ctx context.Context, event sdktypes.Eve
 		return nil, nil
 	}
 
-	mappings := make([]sdktypes.Mapping, 0, len(connections))
+	triggers := make([]sdktypes.Trigger, 0, len(connections))
 	for _, c := range connections {
-		m, err := d.services.Mappings.List(
-			ctx, sdkservices.ListMappingsFilter{ConnectionID: sdktypes.GetConnectionID(c)},
+		m, err := d.services.Triggers.List(
+			ctx, sdkservices.ListTriggersFilter{ConnectionID: sdktypes.GetConnectionID(c)},
 		)
 		if err != nil {
-			z.Panic("could not fetch mappings")
+			z.Panic("could not fetch triggers")
 		}
-		mappings = append(mappings, m...)
+		triggers = append(triggers, m...)
 	}
 
-	if len(mappings) == 0 {
-		z.Info("no mappings for eventID")
+	if len(triggers) == 0 {
+		z.Info("no triggers for eventID")
 		return nil, nil
 	}
 
 	var sds []sessionData
 
 	eventType := sdktypes.GetEventType(event)
-	for _, m := range mappings {
-		mappingName := sdktypes.GetMappingModuleName(m)
+	for _, t := range triggers {
+		envID := sdktypes.GetTriggerEnvID(t)
+		triggerEventType := sdktypes.GetTriggerEventType(t)
 
-		for _, ep := range sdktypes.GetMappingEvents(m) {
-			envID := sdktypes.GetMappingEnvID(m)
+		z := z.With(zap.String("env_id", envID.String()), zap.String("event_type", triggerEventType))
 
-			z := z.With(zap.String("env_id", envID.String()))
+		if triggerEventType != eventType {
+			z.Debug("irrelevant event type")
+			continue
+		}
 
-			epType := sdktypes.GetMappingEventType(ep)
-			if epType != eventType {
-				z.Debug("irrelevant event type")
-				continue
-			}
+		if envID != nil && opts.EnvID != nil && envID.String() != opts.EnvID.String() {
+			z.Debug("irrelevant env", zap.String("expected", opts.EnvID.String()))
+			continue
+		}
 
-			if opts.EnvID != nil && envID.String() != opts.EnvID.String() {
-				z.Debug("irrelevant env", zap.String("expected", opts.EnvID.String()))
-				continue
-			}
+		activeDeployments, err := d.services.Deployments.List(ctx, sdkservices.ListDeploymentsFilter{State: sdktypes.DeploymentStateActive, EnvID: envID})
+		if err != nil {
+			z.Panic("could not fetch active deployments", zap.Error(err))
+		}
 
-			activeDeployments, err := d.services.Deployments.List(ctx, sdkservices.ListDeploymentsFilter{State: sdktypes.DeploymentStateActive, EnvID: envID})
+		var testingDeployments []sdktypes.Deployment
+
+		if opts.EnvID != nil || opts.DeploymentID != nil {
+			testingDeployments, err = d.services.Deployments.List(ctx, sdkservices.ListDeploymentsFilter{State: sdktypes.DeploymentStateTesting, EnvID: envID})
 			if err != nil {
-				z.Panic("could not fetch active deployments", zap.Error(err))
+				z.Panic("could not fetch testing deployments", zap.Error(err))
 			}
+		}
 
-			var testingDeployments []sdktypes.Deployment
+		if len(activeDeployments)+len(testingDeployments) == 0 {
+			z.Debug("no deployments")
+			continue
+		}
 
-			if opts.EnvID != nil || opts.DeploymentID != nil {
-				testingDeployments, err = d.services.Deployments.List(ctx, sdkservices.ListDeploymentsFilter{State: sdktypes.DeploymentStateTesting, EnvID: envID})
-				if err != nil {
-					z.Panic("could not fetch testing deployments", zap.Error(err))
-				}
-			}
+		deployments := append(activeDeployments, testingDeployments...)
 
-			if len(activeDeployments)+len(testingDeployments) == 0 {
-				z.Debug("no deployments")
-				continue
-			}
+		if opts.EnvID != nil || opts.DeploymentID != nil {
+			deployments = kittehs.Filter(deployments, func(deployment sdktypes.Deployment) bool {
+				return (opts.EnvID == nil || opts.EnvID.String() == sdktypes.GetDeploymentEnvID(deployment).String()) &&
+					(opts.DeploymentID == nil || opts.DeploymentID.String() == sdktypes.GetDeploymentID(deployment).String())
+			})
+		}
 
-			deployments := append(activeDeployments, testingDeployments...)
-
-			if opts.EnvID != nil || opts.DeploymentID != nil {
-				deployments = kittehs.Filter(deployments, func(deployment sdktypes.Deployment) bool {
-					return (opts.EnvID == nil || opts.EnvID.String() == sdktypes.GetDeploymentEnvID(deployment).String()) &&
-						(opts.DeploymentID == nil || opts.DeploymentID.String() == sdktypes.GetDeploymentID(deployment).String())
-				})
-			}
-
-			cl := sdktypes.GetMappingEventCodeLocation(ep)
-			for _, dep := range deployments {
-				did := sdktypes.GetDeploymentID(dep)
-				sds = append(sds, sessionData{deploymentID: did, codeLocation: cl, mappingName: mappingName})
-				z.Debug("relevant deployment found", zap.String("deployment_id", did.String()))
-			}
+		cl := sdktypes.GetTriggerCodeLocation(t)
+		for _, dep := range deployments {
+			did := sdktypes.GetDeploymentID(dep)
+			sds = append(sds, sessionData{deploymentID: did, codeLocation: cl})
+			z.Debug("relevant deployment found", zap.String("deployment_id", did.String()))
 		}
 	}
 	return sds, nil
@@ -229,7 +225,6 @@ func (d *dispatcher) eventsWorkflow(ctx workflow.Context, input eventsWorkflowIn
 type sessionData struct {
 	deploymentID sdktypes.DeploymentID
 	codeLocation sdktypes.CodeLocation
-	mappingName  sdktypes.Symbol
 }
 
 func (d *dispatcher) startSessions(ctx workflow.Context, event sdktypes.Event, sessionsData []sessionData) {
@@ -237,8 +232,6 @@ func (d *dispatcher) startSessions(ctx workflow.Context, event sdktypes.Event, s
 	inputs := sdktypes.EventToValues(event)
 
 	for _, sd := range sessionsData {
-		inputs["src_name"] = sdktypes.NewSymbolValue(sd.mappingName)
-
 		session := sdktypes.NewSession(sd.deploymentID, nil, sdktypes.GetEventID(event), sd.codeLocation, inputs, nil)
 
 		goCtx := temporalclient.NewWorkflowContextAsGOContext(ctx)

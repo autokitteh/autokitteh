@@ -17,7 +17,6 @@ import (
 	integration_providerv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/integration_provider/v1"
 	integration_registryv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/integration_registry/v1"
 	integrationsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/integrations/v1"
-	mappingsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/mappings/v1"
 	oauthv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/oauth/v1"
 	programv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/program/v1"
 	projectsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/projects/v1"
@@ -25,6 +24,7 @@ import (
 	secretsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/secrets/v1"
 	sessionsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/sessions/v1"
 	storev1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/store/v1"
+	triggersv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/triggers/v1"
 	valuesv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/values/v1"
 )
 
@@ -69,11 +69,9 @@ var fds = []protoreflect.FileDescriptor{
 	integration_registryv1.File_autokitteh_integration_registry_v1_svc_proto,
 	integrationsv1.File_autokitteh_integrations_v1_integration_proto,
 	integrationsv1.File_autokitteh_integrations_v1_svc_proto,
-	mappingsv1.File_autokitteh_mappings_v1_mapping_proto,
-	mappingsv1.File_autokitteh_mappings_v1_svc_proto,
 	oauthv1.File_autokitteh_oauth_v1_svc_proto,
-	programv1.File_autokitteh_program_v1_program_proto,
 	programv1.File_autokitteh_program_v1_module_proto,
+	programv1.File_autokitteh_program_v1_program_proto,
 	projectsv1.File_autokitteh_projects_v1_project_proto,
 	projectsv1.File_autokitteh_projects_v1_svc_proto,
 	runtimesv1.File_autokitteh_runtimes_v1_build_proto,
@@ -82,8 +80,10 @@ var fds = []protoreflect.FileDescriptor{
 	secretsv1.File_autokitteh_secrets_v1_svc_proto,
 	sessionsv1.File_autokitteh_sessions_v1_session_proto,
 	sessionsv1.File_autokitteh_sessions_v1_svc_proto,
-	valuesv1.File_autokitteh_values_v1_values_proto,
 	storev1.File_autokitteh_store_v1_svc_proto,
+	triggersv1.File_autokitteh_triggers_v1_svc_proto,
+	triggersv1.File_autokitteh_triggers_v1_trigger_proto,
+	valuesv1.File_autokitteh_values_v1_values_proto,
 }
 
 var Validate = parse(fds)

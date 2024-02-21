@@ -43,8 +43,7 @@ var listCmd = common.StandardCommand(&cobra.Command{
 		}
 
 		if len(es) == 0 {
-			var dummy *sdktypes.Env
-			return common.FailIfNotFound(cmd, "environments", dummy)
+			return common.FailNotFound(cmd, "environments")
 		}
 
 		common.RenderList(es)

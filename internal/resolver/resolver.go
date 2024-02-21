@@ -347,28 +347,28 @@ func (r Resolver) integrationByName(name string) (sdktypes.Integration, sdktypes
 	return nil, nil, nil
 }
 
-// MappingID returns a mapping, based on the given ID.
+// TriggerID returns a trigger, based on the given ID.
 // If the input is empty, we return nil but not an error.
 //
-// Subtle note: the mapping is guaranteed to exist only if the FIRST
+// Subtle note: the trigger is guaranteed to exist only if the FIRST
 // return value is non-nil. Example: if the input is a valid ID,
 // but it doesn't actually exist, we return (nil, ID, nil).
-func (r Resolver) MappingID(id string) (sdktypes.Mapping, sdktypes.MappingID, error) {
+func (r Resolver) TriggerID(id string) (sdktypes.Trigger, sdktypes.TriggerID, error) {
 	if id == "" {
-		return nil, nil, fmt.Errorf("missing mapping ID")
+		return nil, nil, fmt.Errorf("missing trigger ID")
 	}
 
-	mid, err := sdktypes.StrictParseMappingID(id)
+	mid, err := sdktypes.StrictParseTriggerID(id)
 	if err != nil {
-		return nil, nil, fmt.Errorf("invalid mapping ID %q: %w", id, err)
+		return nil, nil, fmt.Errorf("invalid trigger ID %q: %w", id, err)
 	}
 
 	ctx, cancel := limitedContext()
 	defer cancel()
 
-	m, err := r.Client.Mappings().Get(ctx, mid)
+	m, err := r.Client.Triggers().Get(ctx, mid)
 	if err != nil {
-		return nil, nil, fmt.Errorf("get mapping ID %q: %w", id, err)
+		return nil, nil, fmt.Errorf("get trigger ID %q: %w", id, err)
 	}
 
 	return m, mid, nil

@@ -5,8 +5,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"go.autokitteh.dev/autokitteh/backend/apply"
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
+	imanifest "go.autokitteh.dev/autokitteh/internal/manifest"
 )
 
 var schemaCmd = common.StandardCommand(&cobra.Command{
@@ -16,7 +16,7 @@ var schemaCmd = common.StandardCommand(&cobra.Command{
 	Args:    cobra.NoArgs,
 
 	RunE: func(cmd *cobra.Command, args []string) error {
-		fmt.Fprintln(cmd.OutOrStdout(), apply.JSONSchemaString)
+		fmt.Fprintln(cmd.OutOrStdout(), imanifest.JSONSchemaString)
 		return nil
 	},
 })

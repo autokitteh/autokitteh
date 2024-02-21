@@ -165,6 +165,18 @@ func (o *object[T]) UpdateError(f func(T) error) (*object[T], error) {
 	return fromProto[T](pb, o.validatefn)
 }
 
+func Equal(a, b Object) bool {
+	if a == nil && b == nil {
+		return true
+	}
+
+	if a == nil || b == nil {
+		return false
+	}
+
+	return proto.Equal(a.toMessage(), b.toMessage())
+}
+
 // Initializes object with a given pb. If pb is nil, nil is returned.
 // v is the validator set on the object.
 func fromProto[T comparableProto](pb T, v func(T) error,

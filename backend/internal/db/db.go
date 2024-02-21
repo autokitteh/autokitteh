@@ -39,6 +39,8 @@ type DB interface {
 	// Returns sdkerrors.ErrAlreadyExists if either id or name is duplicate.
 	CreateProject(context.Context, sdktypes.Project) error
 
+	UpdateProject(context.Context, sdktypes.Project) error
+
 	// Returns sdkerrors.ErrNotFound if not found.
 	GetProjectByID(context.Context, sdktypes.ProjectID) (sdktypes.Project, error)
 
@@ -78,10 +80,11 @@ type DB interface {
 	ListEventRecords(context.Context, sdkservices.ListEventRecordsFilter) ([]sdktypes.EventRecord, error)
 	GetLatestEventSequence(context.Context) (uint64, error)
 
-	CreateMapping(context.Context, sdktypes.Mapping) error
-	GetMapping(context.Context, sdktypes.MappingID) (sdktypes.Mapping, error)
-	DeleteMapping(context.Context, sdktypes.MappingID) error
-	ListMappings(context.Context, sdkservices.ListMappingsFilter) ([]sdktypes.Mapping, error)
+	CreateTrigger(context.Context, sdktypes.Trigger) error
+	UpdateTrigger(context.Context, sdktypes.Trigger) error
+	GetTrigger(context.Context, sdktypes.TriggerID) (sdktypes.Trigger, error)
+	DeleteTrigger(context.Context, sdktypes.TriggerID) error
+	ListTriggers(context.Context, sdkservices.ListTriggersFilter) ([]sdktypes.Trigger, error)
 
 	GetBuild(ctx context.Context, buildID sdktypes.BuildID) (sdktypes.Build, error)
 	ListBuilds(ctx context.Context, filter sdkservices.ListBuildsFilter) ([]sdktypes.Build, error)

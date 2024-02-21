@@ -8,11 +8,11 @@ type Services interface {
 	Envs() Envs
 	Events() Events
 	Integrations() Integrations
-	Mappings() Mappings
 	OAuth() OAuth
 	Projects() Projects
 	Runtimes() Runtimes
 	Secrets() Secrets
 	Sessions() Sessions
 	Store() Store
+	Triggers() Triggers
 }

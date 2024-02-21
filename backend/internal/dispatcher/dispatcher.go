@@ -24,7 +24,7 @@ type Services struct {
 	Events       sdkservices.Events
 	Integrations sdkservices.Integrations
 	Projects     sdkservices.Projects
-	Mappings     sdkservices.Mappings
+	Triggers     sdkservices.Triggers
 	Sessions     sdkservices.Sessions
 	Envs         sdkservices.Envs
 }

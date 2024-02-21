@@ -13,7 +13,14 @@ func AddFailIfNotFoundFlag(cmd *cobra.Command) {
 }
 
 func FailIfNotFound[T any](cmd *cobra.Command, what string, v *T) error {
-	if kittehs.Must1(cmd.Flags().GetBool("fail")) && v == nil {
+	if v == nil {
+		return FailNotFound(cmd, what)
+	}
+	return nil
+}
+
+func FailNotFound(cmd *cobra.Command, what string) error {
+	if kittehs.Must1(cmd.Flags().GetBool("fail")) {
 		return NewExitCodeError(NotFoundExitCode, fmt.Errorf("%s not found", what))
 	}
 	return nil

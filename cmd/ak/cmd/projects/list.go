@@ -6,7 +6,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
-	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 var listCmd = common.StandardCommand(&cobra.Command{
@@ -25,8 +24,7 @@ var listCmd = common.StandardCommand(&cobra.Command{
 		}
 
 		if len(ps) == 0 {
-			var dummy *sdktypes.Project
-			return common.FailIfNotFound(cmd, "projects", dummy)
+			return common.FailNotFound(cmd, "projects")
 		}
 
 		common.RenderList(ps)

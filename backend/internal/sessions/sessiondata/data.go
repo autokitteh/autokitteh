@@ -24,7 +24,7 @@ type Data struct {
 	EnvVars     []sdktypes.EnvVar       `json:"env_vars"`
 	Build       sdktypes.Build          `json:"build"`
 	BuildFile   *sdkbuildfile.BuildFile `json:"build_file"`
-	Mappings    []sdktypes.Mapping      `json:"mappings"`
+	Triggers    []sdktypes.Trigger      `json:"mappings"`
 	Connections []sdktypes.Connection   `json:"connections"`
 }
 
@@ -51,29 +51,6 @@ func downloadBuild(ctx context.Context, buildID sdktypes.BuildID, builds sdkserv
 	defer r.Close()
 
 	return io.ReadAll(r)
-}
-
-func setDefaultMappings(ctx context.Context, data *Data) error {
-	maps := kittehs.FilterNils(kittehs.Transform(data.Connections, func(desc sdktypes.Connection) sdktypes.Mapping {
-		if _, m := kittehs.FindFirst(data.Mappings, func(m sdktypes.Mapping) bool {
-			sameID := sdktypes.GetConnectionID(desc).String() == sdktypes.GetMappingConnectionID(m).String()
-			sameName := sdktypes.GetConnectionName(desc).String() == sdktypes.GetMappingModuleName(m).String()
-			return sameID || sameName
-		}); m != nil {
-			return nil
-		}
-
-		return kittehs.Must1(sdktypes.MappingFromProto(&sdktypes.MappingPB{
-			MappingId:    sdktypes.NewMappingID().String(),
-			EnvId:        sdktypes.GetEnvID(data.Env).String(),
-			ConnectionId: sdktypes.GetConnectionID(desc).String(),
-			ModuleName:   sdktypes.GetConnectionName(desc).String(),
-		}))
-	}))
-
-	data.Mappings = append(data.Mappings, maps...)
-
-	return nil
 }
 
 // Get session related data using local activities in order not to expose data to Temporal.
@@ -108,12 +85,18 @@ func Get(ctx context.Context, z *zap.Logger, svcs *sessionsvcs.Svcs, sessionID s
 		return nil, fmt.Errorf("connections.list: %w", err)
 	}
 
-	if data.Mappings, err = svcs.Mappings.List(ctx, sdkservices.ListMappingsFilter{EnvID: envID}); err != nil {
-		return nil, err
-	}
+	for _, conn := range data.Connections {
+		ts, err := svcs.Triggers.List(ctx, sdkservices.ListTriggersFilter{ConnectionID: sdktypes.GetConnectionID(conn)})
+		if err != nil {
+			return nil, fmt.Errorf("triggers.list(%v): %w", sdktypes.GetConnectionID(conn), err)
+		}
 
-	if err := setDefaultMappings(ctx, &data); err != nil {
-		return nil, err
+		ts = kittehs.Filter(ts, func(t sdktypes.Trigger) bool {
+			triggerEnvID := sdktypes.GetTriggerEnvID(t)
+			return triggerEnvID == nil || triggerEnvID.String() == envID.String()
+		})
+
+		data.Triggers = append(data.Triggers, ts...)
 	}
 
 	// TODO: merge mappings?

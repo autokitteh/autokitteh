@@ -35,14 +35,11 @@ const (
 const (
 	// ApplyServiceApplyProcedure is the fully-qualified name of the ApplyService's Apply RPC.
 	ApplyServiceApplyProcedure = "/autokitteh.apply.v1.ApplyService/Apply"
-	// ApplyServicePlanProcedure is the fully-qualified name of the ApplyService's Plan RPC.
-	ApplyServicePlanProcedure = "/autokitteh.apply.v1.ApplyService/Plan"
 )
 
 // ApplyServiceClient is a client for the autokitteh.apply.v1.ApplyService service.
 type ApplyServiceClient interface {
 	Apply(context.Context, *connect.Request[v1.ApplyRequest]) (*connect.Response[v1.ApplyResponse], error)
-	Plan(context.Context, *connect.Request[v1.PlanRequest]) (*connect.Response[v1.PlanResponse], error)
 }
 
 // NewApplyServiceClient constructs a client for the autokitteh.apply.v1.ApplyService service. By
@@ -60,18 +57,12 @@ func NewApplyServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 			baseURL+ApplyServiceApplyProcedure,
 			opts...,
 		),
-		plan: connect.NewClient[v1.PlanRequest, v1.PlanResponse](
-			httpClient,
-			baseURL+ApplyServicePlanProcedure,
-			opts...,
-		),
 	}
 }
 
 // applyServiceClient implements ApplyServiceClient.
 type applyServiceClient struct {
 	apply *connect.Client[v1.ApplyRequest, v1.ApplyResponse]
-	plan  *connect.Client[v1.PlanRequest, v1.PlanResponse]
 }
 
 // Apply calls autokitteh.apply.v1.ApplyService.Apply.
@@ -79,15 +70,9 @@ func (c *applyServiceClient) Apply(ctx context.Context, req *connect.Request[v1.
 	return c.apply.CallUnary(ctx, req)
 }
 
-// Plan calls autokitteh.apply.v1.ApplyService.Plan.
-func (c *applyServiceClient) Plan(ctx context.Context, req *connect.Request[v1.PlanRequest]) (*connect.Response[v1.PlanResponse], error) {
-	return c.plan.CallUnary(ctx, req)
-}
-
 // ApplyServiceHandler is an implementation of the autokitteh.apply.v1.ApplyService service.
 type ApplyServiceHandler interface {
 	Apply(context.Context, *connect.Request[v1.ApplyRequest]) (*connect.Response[v1.ApplyResponse], error)
-	Plan(context.Context, *connect.Request[v1.PlanRequest]) (*connect.Response[v1.PlanResponse], error)
 }
 
 // NewApplyServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -101,17 +86,10 @@ func NewApplyServiceHandler(svc ApplyServiceHandler, opts ...connect.HandlerOpti
 		svc.Apply,
 		opts...,
 	)
-	applyServicePlanHandler := connect.NewUnaryHandler(
-		ApplyServicePlanProcedure,
-		svc.Plan,
-		opts...,
-	)
 	return "/autokitteh.apply.v1.ApplyService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case ApplyServiceApplyProcedure:
 			applyServiceApplyHandler.ServeHTTP(w, r)
-		case ApplyServicePlanProcedure:
-			applyServicePlanHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -123,8 +101,4 @@ type UnimplementedApplyServiceHandler struct{}
 
 func (UnimplementedApplyServiceHandler) Apply(context.Context, *connect.Request[v1.ApplyRequest]) (*connect.Response[v1.ApplyResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("autokitteh.apply.v1.ApplyService.Apply is not implemented"))
-}
-
-func (UnimplementedApplyServiceHandler) Plan(context.Context, *connect.Request[v1.PlanRequest]) (*connect.Response[v1.PlanResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("autokitteh.apply.v1.ApplyService.Plan is not implemented"))
 }

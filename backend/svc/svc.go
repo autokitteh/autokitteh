@@ -21,12 +21,12 @@ import (
 	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/envs/v1/envsv1connect"
 	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/events/v1/eventsv1connect"
 	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/integrations/v1/integrationsv1connect"
-	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/mappings/v1/mappingsv1connect"
 	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/oauth/v1/oauthv1connect"
 	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/projects/v1/projectsv1connect"
 	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/runtimes/v1/runtimesv1connect"
 	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/secrets/v1/secretsv1connect"
 	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/sessions/v1/sessionsv1connect"
+	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/triggers/v1/triggersv1connect"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 )
 
@@ -53,7 +53,7 @@ func NewOpts(cfg *basesvc.Config, ropts basesvc.RunOptions) []fx.Option {
 						envsv1connect.EnvsServiceName,
 						eventsv1connect.EventsServiceName,
 						integrationsv1connect.IntegrationsServiceName,
-						mappingsv1connect.MappingsServiceName,
+						triggersv1connect.TriggersServiceName,
 						oauthv1connect.OAuthServiceName,
 						projectsv1connect.ProjectsServiceName,
 						runtimesv1connect.RuntimesServiceName,

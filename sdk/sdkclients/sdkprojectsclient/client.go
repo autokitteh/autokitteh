@@ -44,6 +44,21 @@ func (c *client) Create(ctx context.Context, project sdktypes.Project) (sdktypes
 	return pid, nil
 }
 
+func (c *client) Update(ctx context.Context, project sdktypes.Project) error {
+	resp, err := c.client.Update(ctx, connect.NewRequest(&projectsv1.UpdateRequest{
+		Project: project.ToProto(),
+	}))
+	if err != nil {
+		return rpcerrors.TranslateError(err)
+	}
+
+	if err := internal.Validate(resp.Msg); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (c *client) GetByID(ctx context.Context, pid sdktypes.ProjectID) (sdktypes.Project, error) {
 	resp, err := c.client.Get(ctx, connect.NewRequest(
 		&projectsv1.GetRequest{ProjectId: pid.String()},

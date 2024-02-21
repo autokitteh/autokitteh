@@ -16,7 +16,7 @@ type fxServices struct {
 	Envs_         sdkservices.Envs         `optional:"true"`
 	Events_       sdkservices.Events       `optional:"true"`
 	Integrations_ sdkservices.Integrations `optional:"true"`
-	Mappings_     sdkservices.Mappings     `optional:"true"`
+	Triggers_     sdkservices.Triggers     `optional:"true"`
 	OAuth_        sdkservices.OAuth        `optional:"true"`
 	Projects_     sdkservices.Projects     `optional:"true"`
 	Runtimes_     sdkservices.Runtimes     `optional:"true"`
@@ -34,7 +34,7 @@ func (s *fxServices) Dispatcher() sdkservices.Dispatcher     { return s.Dispatch
 func (s *fxServices) Envs() sdkservices.Envs                 { return s.Envs_ }
 func (s *fxServices) Events() sdkservices.Events             { return s.Events_ }
 func (s *fxServices) Integrations() sdkservices.Integrations { return s.Integrations_ }
-func (s *fxServices) Mappings() sdkservices.Mappings         { return s.Mappings_ }
+func (s *fxServices) Triggers() sdkservices.Triggers         { return s.Triggers_ }
 func (s *fxServices) OAuth() sdkservices.OAuth               { return s.OAuth_ }
 func (s *fxServices) Projects() sdkservices.Projects         { return s.Projects_ }
 func (s *fxServices) Runtimes() sdkservices.Runtimes         { return s.Runtimes_ }

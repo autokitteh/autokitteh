@@ -20,11 +20,11 @@ import (
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/experimental"
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/integrations"
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/manifest"
-	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/mappings"
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/projects"
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/runtimes"
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/server"
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/sessions"
+	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/triggers"
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
 	"go.autokitteh.dev/autokitteh/sdk/sdkclients/sdkclient"
 )
@@ -110,11 +110,11 @@ func init() {
 	experimental.AddSubcommands(RootCmd)
 	integrations.AddSubcommands(RootCmd)
 	manifest.AddSubcommands(RootCmd)
-	mappings.AddSubcommands(RootCmd)
 	projects.AddSubcommands(RootCmd)
 	runtimes.AddSubcommands(RootCmd)
 	server.AddSubcommands(RootCmd)
 	sessions.AddSubcommands(RootCmd)
+	triggers.AddSubcommands(RootCmd)
 }
 
 func parseConfigs(pairs []string) (map[string]any, error) {

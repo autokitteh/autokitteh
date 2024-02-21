@@ -49,8 +49,7 @@ var listCmd = common.StandardCommand(&cobra.Command{
 		}
 
 		if len(bs) == 0 {
-			var dummy *sdktypes.Build
-			return common.FailIfNotFound(cmd, "builds", dummy)
+			return common.FailNotFound(cmd, "builds")
 		}
 
 		common.RenderList(bs)

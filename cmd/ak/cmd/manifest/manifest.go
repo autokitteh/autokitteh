@@ -21,5 +21,8 @@ func AddSubcommands(parentCmd *cobra.Command) {
 func init() {
 	// Subcommands.
 	manifestCmd.AddCommand(applyCmd)
+	manifestCmd.AddCommand(execCmd)
+	manifestCmd.AddCommand(planCmd)
 	manifestCmd.AddCommand(schemaCmd)
+	manifestCmd.AddCommand(validateCmd)
 }

@@ -46,6 +46,10 @@ func (ps *Projects) Create(ctx context.Context, project sdktypes.Project) (sdkty
 	return sdktypes.GetProjectID(project), nil
 }
 
+func (ps *Projects) Update(ctx context.Context, project sdktypes.Project) error {
+	return ps.DB.UpdateProject(ctx, project)
+}
+
 func (ps *Projects) GetByID(ctx context.Context, pid sdktypes.ProjectID) (sdktypes.Project, error) {
 	// TODO: Make sure somone can't get a project they don't own or member of its org.
 	return sdkerrors.IgnoreNotFoundErr(ps.DB.GetProjectByID(ctx, pid))
