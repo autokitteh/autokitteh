@@ -153,10 +153,9 @@ func ParseProject(r Project) (sdktypes.Project, error) {
 	}
 
 	p, err := sdktypes.StrictProjectFromProto(&sdktypes.ProjectPB{
-		ProjectId:        r.ProjectID,
-		Name:             r.Name,
-		ResourcesRootUrl: r.RootURL,
-		ResourcePaths:    paths,
+		ProjectId:     r.ProjectID,
+		Name:          r.Name,
+		ResourcePaths: paths,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("invalid project record: %w", err)

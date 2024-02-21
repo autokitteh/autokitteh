@@ -47,6 +47,7 @@ type DB interface {
 
 	ListProjects(context.Context) ([]sdktypes.Project, error)
 
+	// Returns nill, nil if no resources are set.
 	GetProjectResources(context.Context, sdktypes.ProjectID) (map[string][]byte, error)
 
 	SetProjectResources(context.Context, sdktypes.ProjectID, map[string][]byte) error

@@ -13,6 +13,8 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
+// TODO: Delete.
+
 func (db *gormdb) CreateProject(ctx context.Context, p sdktypes.Project) error {
 	if !sdktypes.ProjectHasID(p) {
 		db.z.DPanic("no project id supplied")
@@ -29,7 +31,6 @@ func (db *gormdb) CreateProject(ctx context.Context, p sdktypes.Project) error {
 	r := scheme.Project{
 		ProjectID: sdktypes.GetProjectID(p).String(),
 		Name:      ph.String(),
-		RootURL:   sdktypes.GetProjectResourcesRootURL(p).String(),
 		Paths:     paths,
 	}
 
@@ -60,8 +61,6 @@ func (db *gormdb) ListProjects(ctx context.Context) ([]sdktypes.Project, error) 
 	return kittehs.TransformError(rs, scheme.ParseProject)
 }
 
-// No delete project ?
-
 func (db *gormdb) GetProjectResources(ctx context.Context, pid sdktypes.ProjectID) (map[string][]byte, error) {
 	res := db.db.WithContext(ctx).Model(&scheme.Project{}).Where("project_id = ?", pid.String()).Select("resources").Row()
 	var resources []byte
@@ -70,7 +69,7 @@ func (db *gormdb) GetProjectResources(ctx context.Context, pid sdktypes.ProjectI
 	}
 
 	if len(resources) == 0 {
-		return map[string][]byte{}, nil
+		return nil, nil
 	}
 
 	t, err := tar.FromBytes(resources, true)

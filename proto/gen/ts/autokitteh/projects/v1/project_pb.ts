@@ -21,12 +21,7 @@ export class Project extends Message<Project> {
   name = "";
 
   /**
-   * @generated from field: string resources_root_url = 3;
-   */
-  resourcesRootUrl = "";
-
-  /**
-   * appended to root_url. can be globs.
+   * can be globs.
    *
    * @generated from field: repeated string resource_paths = 4;
    */
@@ -42,7 +37,6 @@ export class Project extends Message<Project> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "resources_root_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "resource_paths", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
