@@ -50,7 +50,7 @@ and each part of a test's identifier (i.e. the txtar relative path under
 `testdata`) must match the corresponding element in the sequence.
 
 For example, to run only with the txtar files in/under `testdata/*foo*/*bar*`,
-including `testdata/*foo*/*bar*.txtar`
+including `testdata/*foo*/*bar*.txtar`:
 
 ```
 gotestsum -f testname -run /foo/bar
@@ -87,7 +87,7 @@ Each command may have optional "customization" and/or "check" lines below it.
 There's no limit on the number or repeatability of checks, e.g. you may
 specify multiple `contains` or `regex` checks per command.
 
-## Action: AK Client Command
+### Action: AK Client Command
 
 `ak [CLI commands, arguments, and flags]`
 
@@ -101,7 +101,7 @@ Note: May reference filenames embedded in the same txtar file.
 
 `return code == <integer>`
 
-## Action: HTTP Transaction
+### Action: HTTP Transaction
 
 `http <get|post> <URL>`
 
@@ -131,12 +131,19 @@ test integrations and sessions.
 
 `resp body <euqals|contains|regex> file <embedded txtar filename>`
 
+### Action: Wait for Session
+
+`wait <duration> for session <session ID>`
+
+Waits up to the specified duration (e.g. `10s`) for the specified session to
+be in the state `COMPLETED` or `ERROR`.
+
 ## Syntax Summary
 
 Actions:
 
 ```
-<ak | http <get | post> > <*>
+<ak | http <get | post> | wait> <*>
 ```
 
 Customizations:

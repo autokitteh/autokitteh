@@ -18,14 +18,12 @@ func runAction(t *testing.T, akPath, akAddr, step string) (any, error) {
 		args := []string{"--url=http://" + akAddr}
 		args = append(args, strings.Fields(match[3])...)
 		return runClient(akPath, args)
-	case "http":
-		return runActionHTTP(t, match[2], match[3])
+	case "http get", "http post":
+		method := strings.ToUpper(match[2])
+		return &httpRequest{method: method, url: match[3]}, nil
+	case "wait":
+		return waitForSession(akPath, akAddr, step)
 	default:
 		return nil, errors.New("unhandled action")
 	}
-}
-
-// TODO: Return an actual HTTP response, not a dummy *string.
-func runActionHTTP(t *testing.T, method, url string) (*string, error) {
-	return nil, errors.New("not implemented yet")
 }

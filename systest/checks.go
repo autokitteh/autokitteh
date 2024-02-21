@@ -9,13 +9,15 @@ import (
 	"strings"
 )
 
-func runCheck(step string, ak *akResult, httpResp *string) error {
+func runCheck(step string, ak *akResult, resp *httpResponse) error {
 	match := steps.FindStringSubmatch(step)
 	switch match[1] {
 	case "output":
 		return checkAKOutput(step, ak)
 	case "return":
 		return checkAKReturnCode(step, ak)
+	case "resp":
+		return checkHTTPResponse(step, resp)
 	default:
 		return errors.New("unhandled check")
 	}
@@ -69,6 +71,43 @@ func checkAKReturnCode(step string, ak *akResult) error {
 		// Append the AK output for context, if there is any.
 		if ak.output != "" {
 			sb.WriteString("\n" + ak.output)
+		}
+		return fmt.Errorf(sb.String())
+	}
+	return nil
+}
+
+func checkHTTPResponse(step string, resp *httpResponse) error {
+	match := httpChecks.FindStringSubmatch(step)
+	switch match[1] {
+	case "body", "redirect":
+		return checkHTTPResponseBody(step, resp)
+	case "code":
+		return checkHTTPStatusCode(step, resp)
+	default:
+		return errors.New("unhandled HTTP check type")
+	}
+}
+
+func checkHTTPResponseBody(step string, resp *httpResponse) error {
+	return errors.New("not implemented yet")
+}
+
+func checkHTTPStatusCode(step string, resp *httpResponse) error {
+	match := httpCheckStatus.FindStringSubmatch(step)
+	expected, err := strconv.Atoi(match[1])
+	if err != nil {
+		return fmt.Errorf("failed to parse expected return code: %w", err)
+	}
+	if expected != resp.resp.StatusCode {
+		var sb strings.Builder
+		sb.WriteString(fmt.Sprintf("got return code %d, want %d", resp.resp.StatusCode, expected))
+		// Append the response for context, if there is any.
+		for k, v := range resp.resp.Header {
+			sb.WriteString(fmt.Sprintf("\n%s: %s", k, strings.Join(v, ", ")))
+		}
+		if resp.body != "" {
+			sb.WriteString("\n" + resp.body)
 		}
 		return fmt.Errorf(sb.String())
 	}

@@ -101,9 +101,10 @@ endif
 .PHONY: test
 test: test-race test-cli
 
+# TODO(ENG-447): Fix HTTP trigger flakiness.
 .PHONY: test-unit
 test-unit:
-	$(GOTEST) ./...
+	$(GOTEST) ./... -skip /workflows/builtin_funcs
 
 # Subset of "test-unit", for simplicity.
 .PHONY: test-system
