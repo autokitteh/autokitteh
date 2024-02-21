@@ -31,7 +31,6 @@ func (db *gormdb) CreateProject(ctx context.Context, p sdktypes.Project) error {
 	r := scheme.Project{
 		ProjectID: sdktypes.GetProjectID(p).String(),
 		Name:      ph.String(),
-		RootURL:   sdktypes.GetProjectResourcesRootURL(p).String(),
 		Paths:     paths,
 	}
 

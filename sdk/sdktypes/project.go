@@ -2,7 +2,6 @@ package sdktypes
 
 import (
 	"fmt"
-	"net/url"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	projectv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/projects/v1"
@@ -19,7 +18,7 @@ var (
 )
 
 func strictValidateProject(pb *projectv1.Project) error {
-	if err := ensureNotEmpty(pb.Name, pb.ProjectId, pb.ResourcesRootUrl); err != nil {
+	if err := ensureNotEmpty(pb.Name, pb.ProjectId); err != nil {
 		return err
 	}
 
@@ -31,8 +30,8 @@ func validateProject(pb *projectv1.Project) error {
 		return fmt.Errorf("project id: %w", err)
 	}
 
-	if _, err := url.Parse(pb.ResourcesRootUrl); err != nil {
-		return fmt.Errorf("root_url: %w", err)
+	if _, err := ParseName(pb.Name); err != nil {
+		return fmt.Errorf("name: %w", err)
 	}
 
 	return nil
@@ -62,12 +61,4 @@ func GetProjectResourcePaths(p Project) []string {
 	}
 
 	return p.pb.ResourcePaths
-}
-
-func GetProjectResourcesRootURL(p Project) *url.URL {
-	if p == nil {
-		return nil
-	}
-
-	return kittehs.Must1(url.Parse(p.pb.ResourcesRootUrl))
 }

@@ -171,7 +171,6 @@ project:
   "project": {
     "project_id": "p:00000000000000000000000000000001",
     "name": "my_project",
-    "resources_root_url": ".",
     "resource_paths": [
       "my_program.star"
     ]

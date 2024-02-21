@@ -5,6 +5,5 @@ package autokitteh.projects.v1;
 message Project {
   string project_id = 1;
   string name = 2;
-  string resources_root_url = 3;
-  repeated string resource_paths = 4; // appended to root_url. can be globs.
+  repeated string resource_paths = 4; // can be globs.
 }

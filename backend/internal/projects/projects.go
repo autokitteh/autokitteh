@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"fmt"
 
 	"go.uber.org/fx"
 	"go.uber.org/zap"
@@ -68,12 +67,7 @@ func (ps *Projects) Build(ctx context.Context, projectID sdktypes.ProjectID) (sd
 		return nil, nil
 	}
 
-	url := sdktypes.GetProjectResourcesRootURL(p)
-	if url.Scheme != "" && url.Scheme != "file" {
-		return nil, fmt.Errorf("%w: only file resources are supported", sdkerrors.ErrNotImplemented)
-	}
-
-	fs, err := ps.openResourcesFS(ctx, projectID, url)
+	fs, err := ps.openProjectResourcesFS(ctx, projectID)
 	if err != nil {
 		return nil, err
 	}
