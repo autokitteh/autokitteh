@@ -8,7 +8,7 @@ return code == 0
 
 ak project build my_project
 return code == 0
-output equals build_id: b:00000000000000000000000000000005
+output equals 'build_id: b:00000000000000000000000000000005'
 
 ak deployment create --build-id=b:00000000000000000000000000000005 --env=my_project/default --activate
 return code == 0
@@ -22,19 +22,19 @@ wait 5s for session s:00000000000000000000000000000008
 # Check the session's output and final state.
 ak session log -J
 return code == 0
-output contains "print": "1st random int with seed: 5"
-output contains "print": "2nd random int with seed: 2"
-output contains "print": "3rd random int with seed: 1"
-output contains "print": "Store set = OK"
-output contains "print": "Store get = value"
-output contains "Store del = 1"
-output regex "print": "\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{6} \+0000 UTC"
-output contains "print": "done"
+output contains '"print": "1st random int with seed: 5"'
+output contains '"print": "2nd random int with seed: 2"'
+output contains '"print": "3rd random int with seed: 1"'
+output contains '"print": "Store set = OK"'
+output contains '"print": "Store get = value"'
+output contains '"Store del = 1"'
+output regex '"print": "\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{6} \+0000 UTC"'
+output contains '"print": "done"'
 
 ak sessions list
 return code == 0
-output contains session_id:"s:00000000000000000000000000000008"
-output contains state:SESSION_STATE_TYPE_COMPLETED
+output contains 'session_id:"s:00000000000000000000000000000008"'
+output contains 'state:SESSION_STATE_TYPE_COMPLETED'
 
 -- project.yaml --
 version: v1

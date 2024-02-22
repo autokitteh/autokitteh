@@ -160,3 +160,15 @@ Checks:
 <return | resp> code == <integer>
 resp header <name> == <value>
 ```
+
+## Tips for Writing Tests
+
+If you're running an AK command, and checking both its return code and output:
+
+- When expecting success - check `return code == 0` first, and then
+  `output ...`, because if the AK command failed checking the output is
+  pointless
+- When expecting an error - check the `output` first, and then
+  `return code == <int>`, because if there are mismatches in any `output`
+  check, we print the actual output, but an incorrect error code is typically
+  just a minor bug or mistake
