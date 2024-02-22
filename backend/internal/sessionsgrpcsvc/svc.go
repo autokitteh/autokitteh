@@ -172,8 +172,8 @@ func (s *server) Delete(ctx context.Context, req *connect.Request[sessionsv1.Del
 		return nil, asConnectError(err)
 	}
 
-	// FIXME: maybe connect.CodeCancelled?
-	if state := sdktypes.GetSessionLatestState(session); state == sdktypes.RunningSessionStateType {
+	// FIXME: what to return? Cancelled? Aborted? FailedPrecondition?
+	if state := sdktypes.GetSessionLatestState(session); state != sdktypes.CompletedSessionStateType && state != sdktypes.ErrorSessionStateType {
 		return nil, connect.NewError(connect.CodeCanceled, fmt.Errorf("cannot delete running session. session_id: %s", sessionID))
 	}
 
