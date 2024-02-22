@@ -13,7 +13,7 @@ import (
 var deleteCmd = common.StandardCommand(&cobra.Command{
 	Use:     "delete <connection name or ID>",
 	Short:   "Discard existing connection to integration",
-	Aliases: []string{"d"},
+	Aliases: []string{"del", "d"},
 	Args:    cobra.ExactArgs(1),
 
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -26,7 +26,7 @@ var deleteCmd = common.StandardCommand(&cobra.Command{
 			return err
 		}
 		if c == nil {
-			err = fmt.Errorf("connection %q not found", args[0])
+			err = errors.New("connection not found")
 			return common.NewExitCodeError(common.NotFoundExitCode, err)
 		}
 
