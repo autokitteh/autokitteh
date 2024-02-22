@@ -24,8 +24,8 @@ var (
 	// wait <duration> for session <session ID>
 	waitAction = regexp.MustCompile(`^wait\s+(.+)\s+for\s+session\s+(.+)`)
 
-	// output <equals|contains|regex> [file] *
-	akCheckOutput = regexp.MustCompile(`^output\s+(equals|contains|regex)\s+(file\s+)?(.+|'.*')`)
+	// output <equals|equals_json|contains|regex> [file] *
+	akCheckOutput = regexp.MustCompile(`^output\s+(equals|equals_json|contains|regex)\s+(file\s+)?(.+|'.*')`)
 	// return code == <int>
 	akCheckReturn = regexp.MustCompile(`^return\s+code\s*==\s*(\d+)$`)
 
