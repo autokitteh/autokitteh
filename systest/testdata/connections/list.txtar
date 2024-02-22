@@ -1,0 +1,76 @@
+# Precondition: create project.
+ak project create my_project
+return code == 0
+output equals 'project_id: p:00000000000000000000000000000001'
+
+# Negative tests: empty connections list, with/out --fail flag.
+ak connections list
+return code == 0
+output equals ''
+
+ak connections list --fail
+output equals 'Error: connections not found'
+return code == 10
+
+# Preconditions: create connections.
+ak connection create my_connection_1 --project my_project --integration http --connection-token my_url_path_1
+return code == 0
+output equals 'connection_id: connection:00000000000000000000000000000002'
+
+ak connection create my_connection_2 --project my_project --integration http --connection-token my_url_path_2
+return code == 0
+output equals 'connection_id: connection:00000000000000000000000000000003'
+
+# List all connections, with/out JSON.
+ak connections list
+return code == 0
+output contains 'connection_id:"connection:00000000000000000000000000000002"'
+output contains 'connection_id:"connection:00000000000000000000000000000003"'
+
+ak connections list -j
+return code == 0
+output equals file expected_all_unformatted.json
+
+# List all connections after filtering.
+ak connections list --integration http -J
+return code == 0
+output equals file expected_all_formatted.json
+
+# List some connections after filtering.
+ak connections list --connection-token my_url_path_2 -J
+return code == 0
+output equals file expected_some.json
+
+# List no connections after filtering.
+ak connections list --integration scheduler -J
+return code == 0
+output equals ''
+
+-- expected_all_unformatted.json --
+{"connection_id":"connection:00000000000000000000000000000002","integration_id":"integration:8000000000000000f1201a7ed83f7cd5","integration_token":"my_url_path_1","project_id":"p:00000000000000000000000000000001","name":"my_connection_1"}
+{"connection_id":"connection:00000000000000000000000000000003","integration_id":"integration:8000000000000000f1201a7ed83f7cd5","integration_token":"my_url_path_2","project_id":"p:00000000000000000000000000000001","name":"my_connection_2"}
+
+-- expected_all_formatted.json --
+{
+  "connection_id": "connection:00000000000000000000000000000002",
+  "integration_id": "integration:8000000000000000f1201a7ed83f7cd5",
+  "integration_token": "my_url_path_1",
+  "project_id": "p:00000000000000000000000000000001",
+  "name": "my_connection_1"
+}
+{
+  "connection_id": "connection:00000000000000000000000000000003",
+  "integration_id": "integration:8000000000000000f1201a7ed83f7cd5",
+  "integration_token": "my_url_path_2",
+  "project_id": "p:00000000000000000000000000000001",
+  "name": "my_connection_2"
+}
+
+-- expected_some.json --
+{
+  "connection_id": "connection:00000000000000000000000000000003",
+  "integration_id": "integration:8000000000000000f1201a7ed83f7cd5",
+  "integration_token": "my_url_path_2",
+  "project_id": "p:00000000000000000000000000000001",
+  "name": "my_connection_2"
+}

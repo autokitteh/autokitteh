@@ -26,10 +26,10 @@ type NotFoundError struct {
 	Type, Name string
 }
 
-var NotFoundErrorType *NotFoundError
+var NotFoundErrorType = new(NotFoundError)
 
 func (e NotFoundError) Error() string {
-	return fmt.Sprintf("%s %q not found", e.Type, e.Name)
+	return e.Type + " not found"
 }
 
 func limitedContext() (context.Context, context.CancelFunc) {
