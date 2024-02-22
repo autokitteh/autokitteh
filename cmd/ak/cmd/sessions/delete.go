@@ -38,10 +38,10 @@ var deleteCmd = common.StandardCommand(&cobra.Command{
 			common.RenderKVIfV("session", s) // FIXME: should we print deleted session?
 			err = sessions().Delete(ctx, id)
 			if err != nil {
-				err = fmt.Errorf("delete session: %w", err)
+				err = fmt.Errorf("delete session - id<%q>: %w", id, err)
 			}
 		} else {
-			err = common.NewExitCodeError(common.NotFoundExitCode, fmt.Errorf("session ID %q not found", id))
+			err = common.NewExitCodeError(common.NotFoundExitCode, fmt.Errorf("session id<%q> not found", id))
 		}
 
 		if kittehs.Must1(cmd.Flags().GetBool("fail")) && err != nil {
