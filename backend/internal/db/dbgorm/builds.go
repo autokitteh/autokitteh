@@ -14,7 +14,6 @@ func (db *gormdb) SaveBuild(ctx context.Context, build sdktypes.Build, data []by
 	// TODO: add Build time
 	e := scheme.Build{
 		BuildID:   sdktypes.GetBuildID(build).String(),
-		ProjectID: sdktypes.GetBuildProjectID(build).String(),
 		Data:      data,
 		CreatedAt: sdktypes.GetBuildCreatedAt(build),
 	}
@@ -40,9 +39,6 @@ func (db *gormdb) DeleteBuild(ctx context.Context, buildID sdktypes.BuildID) err
 
 func (db *gormdb) ListBuilds(ctx context.Context, filter sdkservices.ListBuildsFilter) ([]sdktypes.Build, error) {
 	q := db.db.WithContext(ctx)
-	if filter.ProjectID != nil {
-		q = q.Where("project_id = ?", filter.ProjectID.String())
-	}
 
 	q = q.Order("created_at desc")
 

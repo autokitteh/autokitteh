@@ -65,11 +65,6 @@ func (ps *Projects) List(ctx context.Context) ([]sdktypes.Project, error) {
 }
 
 func (ps *Projects) Build(ctx context.Context, projectID sdktypes.ProjectID) (sdktypes.BuildID, error) {
-	p, err := ps.DB.GetProjectByID(ctx, projectID)
-	if err != nil {
-		return nil, nil
-	}
-
 	fs, err := ps.openProjectResourcesFS(ctx, projectID)
 	if err != nil {
 		return nil, err
@@ -83,7 +78,6 @@ func (ps *Projects) Build(ctx context.Context, projectID sdktypes.ProjectID) (sd
 		ctx,
 		ps.Runtimes,
 		fs,
-		sdktypes.GetProjectResourcePaths(p),
 		nil,
 		nil,
 	)
@@ -97,9 +91,7 @@ func (ps *Projects) Build(ctx context.Context, projectID sdktypes.ProjectID) (sd
 		return nil, err
 	}
 
-	build := kittehs.Must1(sdktypes.BuildFromProto(&sdktypes.BuildPB{
-		ProjectId: projectID.String(),
-	}))
+	build := kittehs.Must1(sdktypes.BuildFromProto(&sdktypes.BuildPB{}))
 
 	return ps.Builds.Save(ctx, build, buf.Bytes())
 }

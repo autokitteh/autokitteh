@@ -86,12 +86,7 @@ export class GetResponse extends Message<GetResponse> {
  */
 export class ListRequest extends Message<ListRequest> {
   /**
-   * @generated from field: string project_id = 1;
-   */
-  projectId = "";
-
-  /**
-   * @generated from field: uint32 limit = 2;
+   * @generated from field: uint32 limit = 1;
    */
   limit = 0;
 
@@ -103,8 +98,7 @@ export class ListRequest extends Message<ListRequest> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "autokitteh.builds.v1.ListRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "limit", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 1, name: "limit", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListRequest {

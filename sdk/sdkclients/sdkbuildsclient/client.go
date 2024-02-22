@@ -61,8 +61,7 @@ func (c *client) Get(ctx context.Context, buildID sdktypes.BuildID) (sdktypes.Bu
 // List implements sdkservices.Builds.
 func (c *client) List(ctx context.Context, filter sdkservices.ListBuildsFilter) ([]sdktypes.Build, error) {
 	resp, err := c.client.List(ctx, connect.NewRequest(&buildsv1.ListRequest{
-		ProjectId: filter.ProjectID.String(),
-		Limit:     filter.Limit,
+		Limit: filter.Limit,
 	}))
 	if err != nil {
 		return nil, rpcerrors.TranslateError(err)

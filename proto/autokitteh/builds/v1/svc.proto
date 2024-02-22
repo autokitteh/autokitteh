@@ -14,8 +14,7 @@ message GetResponse {
 }
 
 message ListRequest {
-  string project_id = 1;
-  uint32 limit = 2;
+  uint32 limit = 1;
 }
 
 message ListResponse {

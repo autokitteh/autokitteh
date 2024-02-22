@@ -2,7 +2,6 @@ package manifest
 
 import (
 	"fmt"
-	"path/filepath"
 	"strings"
 
 	"github.com/xeipuuv/gojsonschema"
@@ -15,10 +14,6 @@ func Read(data []byte, path string) (*Manifest, error) {
 	var manifest Manifest
 	if err := yaml.Unmarshal(data, &manifest); err != nil {
 		return nil, fmt.Errorf("invalid YAML input: %w", err)
-	}
-
-	if manifest.Project != nil && manifest.Project.RootURL == "" {
-		manifest.Project.RootURL = filepath.Dir(path)
 	}
 
 	res, err := gojsonschema.Validate(

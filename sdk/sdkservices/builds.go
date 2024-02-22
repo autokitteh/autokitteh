@@ -8,8 +8,7 @@ import (
 )
 
 type ListBuildsFilter struct {
-	ProjectID sdktypes.ProjectID
-	Limit     uint32
+	Limit uint32
 }
 
 type Builds interface {

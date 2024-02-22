@@ -5,5 +5,4 @@ package autokitteh.projects.v1;
 message Project {
   string project_id = 1;
   string name = 2;
-  repeated string resource_paths = 4; // can be globs.
 }

@@ -54,11 +54,3 @@ func GetProjectName(p Project) Name {
 
 	return kittehs.Must1(ParseName(p.pb.Name))
 }
-
-func GetProjectResourcePaths(p Project) []string {
-	if p == nil {
-		return nil
-	}
-
-	return p.pb.ResourcePaths
-}
