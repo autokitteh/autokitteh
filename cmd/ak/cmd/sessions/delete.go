@@ -11,20 +11,12 @@ import (
 )
 
 var deleteCmd = common.StandardCommand(&cobra.Command{
-	Use:     "delete [session ID] [--fail]",
+	Use:     "delete session ID [--fail]",
 	Short:   "Delete non-running session",
 	Aliases: []string{"d"},
 	Args:    cobra.MaximumNArgs(1),
 
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) == 0 {
-			id, err := latestSessionID()
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-
 		r := resolver.Resolver{Client: common.Client()}
 		s, id, err := r.SessionID(args[0])
 		if err != nil {
