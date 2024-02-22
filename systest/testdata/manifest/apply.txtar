@@ -11,7 +11,7 @@ return code == 1
 # Successful application of an empty plan.
 ak manifest apply empty.yaml
 return code == 0
-output equals file expected_empty_plan.txt
+output equals ''
 
 # Successful dry run of a full project.
 ak manifest apply full.yaml --dry-run -J
@@ -68,8 +68,6 @@ Error: invalid YAML input: yaml: unmarshal errors:
 
 -- empty.yaml --
 version: v1
-
--- expected_empty_plan.txt --
 
 -- full.yaml --
 version: v1
