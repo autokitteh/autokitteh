@@ -2,6 +2,7 @@ package systest
 
 import (
 	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"testing"
@@ -10,6 +11,7 @@ import (
 )
 
 const (
+	tempDirPerm  = 0o755 // drwxr-xr-x
 	tempFilePerm = 0o644 // -rw-r--r--
 )
 
@@ -22,8 +24,8 @@ var (
 	// wait <duration> for session <session ID>
 	waitAction = regexp.MustCompile(`^wait\s+(.+)\s+for\s+session\s+(.+)`)
 
-	// output <equals|contains|regex> [file] *
-	akCheckOutput = regexp.MustCompile(`^output\s+(equals|contains|regex)\s+(file\s+)?(.+|'.*')`)
+	// output <equals|equals_json|contains|regex> [file] *
+	akCheckOutput = regexp.MustCompile(`^output\s+(equals|equals_json|contains|regex)\s+(file\s+)?(.+|'.*')`)
 	// return code == <int>
 	akCheckReturn = regexp.MustCompile(`^return\s+code\s*==\s*(\d+)$`)
 
@@ -76,6 +78,10 @@ func useTempDir(t *testing.T) {
 
 func writeEmbeddedFiles(t *testing.T, fs []txtar.File) {
 	for _, f := range fs {
+		if err := os.MkdirAll(filepath.Dir(f.Name), tempDirPerm); err != nil {
+			t.Fatalf("failed to create directory for embedded file %q: %v", f.Name, err)
+		}
+
 		if err := os.WriteFile(f.Name, f.Data, tempFilePerm); err != nil {
 			t.Fatalf("failed to write embedded file %q: %v", f.Name, err)
 		}

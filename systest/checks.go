@@ -7,6 +7,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	jd "github.com/josephburnett/jd/lib"
 )
 
 func runCheck(step string, ak *akResult, resp *httpResponse) error {
@@ -39,6 +41,21 @@ func checkAKOutput(step string, ak *akResult) error {
 	}
 
 	switch match[1] {
+	case "equals_json":
+		wantJSON, err := jd.ReadJsonString(want)
+		if err != nil {
+			return fmt.Errorf("failed to parse expected JSON: %w\n%s", err, want)
+		}
+
+		gotJSON, err := jd.ReadJsonString(got)
+		if err != nil {
+			return fmt.Errorf("failed to parse actual JSON: %w\n%s", err, got)
+		}
+
+		diff := wantJSON.Diff(gotJSON)
+		if len(diff) > 0 {
+			return jsonCheckFailed(diff)
+		}
 	case "equals":
 		if want != got {
 			return stringCheckFailed(want, got)
@@ -136,4 +153,10 @@ func stringCheckFailed(want, got string) error {
 	sb.WriteString(strings.ReplaceAll(got, "\n", "\n    "))
 
 	return fmt.Errorf(sb.String())
+}
+
+func jsonCheckFailed(diff jd.Diff) error {
+	var sb strings.Builder
+	sb.WriteString(diff.Render())
+	return errors.New(sb.String())
 }
