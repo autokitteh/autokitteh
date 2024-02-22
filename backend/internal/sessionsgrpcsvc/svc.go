@@ -32,6 +32,18 @@ func Init(mux *http.ServeMux, sessions sdkservices.Sessions) {
 	mux.Handle(path, handler)
 }
 
+func wrapError(err error, code connect.Code) error {
+	if code != 0 {
+		return connect.NewError(code, err)
+	}
+	if errors.Is(err, sdkerrors.ErrNotFound) {
+		return connect.NewError(connect.CodeNotFound, err)
+	} else if errors.Is(err, sdkerrors.ErrUnauthorized) {
+		return connect.NewError(connect.CodePermissionDenied, err)
+	}
+	return connect.NewError(connect.CodeUnknown, err)
+}
+
 func (s *server) Start(ctx context.Context, req *connect.Request[sessionsv1.StartRequest]) (*connect.Response[sessionsv1.StartResponse], error) {
 	msg := req.Msg
 
@@ -154,32 +166,30 @@ func (s *server) Delete(ctx context.Context, req *connect.Request[sessionsv1.Del
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, wrapError(err, connect.CodeInvalidArgument)
 	}
 
 	sessionID, err := sdktypes.ParseSessionID(msg.SessionId)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("session_id: %w", err))
+		return nil, wrapError(fmt.Errorf("session_id: %w", err), connect.CodeInvalidArgument)
 	}
 
 	session, err := s.sessions.Get(ctx, sessionID)
 	if err != nil {
-		if errors.Is(err, sdkerrors.ErrNotFound) {
-			return nil, connect.NewError(connect.CodeNotFound, err)
-		} else if errors.Is(err, sdkerrors.ErrUnauthorized) {
-			return nil, connect.NewError(connect.CodePermissionDenied, err)
-		}
-
-		return nil, connect.NewError(connect.CodeUnknown, err)
+		return nil, wrapError(err, 0)
 	}
+
 	if session == nil { // just to ensure, Get should return an error if not found
-		return nil, connect.NewError(connect.CodeNotFound, err)
+		return nil, wrapError(err, connect.CodeNotFound)
 	}
 
-	// FIXME: maybe CodeCancelled?
+	// FIXME: maybe connect.CodeCancelled?
 	if state := sdktypes.GetSessionLatestState(session); state == sdktypes.RunningSessionStateType {
-		connect.NewError(connect.CodeFailedPrecondition, fmt.Errorf("cannot delete running session. session_id: %w", err))
+		return nil, wrapError(fmt.Errorf("cannot delete running session. session_id: %s", sessionID), connect.CodeFailedPrecondition)
 	}
-	s.sessions.Delete(ctx, sessionID)
+
+	if err = s.sessions.Delete(ctx, sessionID); err != nil {
+		return nil, wrapError(err, 0)
+	}
 	return connect.NewResponse(&sessionsv1.DeleteResponse{}), nil
 }
