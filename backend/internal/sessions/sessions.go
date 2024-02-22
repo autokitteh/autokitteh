@@ -97,8 +97,6 @@ func (s *sessions) Start(ctx context.Context, session sdktypes.Session) (sdktype
 		return nil, fmt.Errorf("db.create_session: %w", err)
 	}
 
-	z := s.z.With(zap.String("session_id", sessionID.String()))
-
 	if err := s.workflows.StartWorkflow(ctx, session, s.config.Debug); err != nil {
 		if uerr := s.svcs.DB.UpdateSessionState(
 			ctx,
@@ -107,10 +105,8 @@ func (s *sessions) Start(ctx context.Context, session sdktypes.Session) (sdktype
 				sdktypes.NewErrorSessionState(fmt.Errorf("execute workflow: %w", err), nil),
 			),
 		); uerr != nil {
-			z.Error("update session", zap.Error(err))
+			s.z.With(zap.String("session_id", sessionID.String())).Error("update session", zap.Error(err))
 		}
-		z = s.z.With(zap.String("session_id", sessionID.String()))
-
 		return nil, fmt.Errorf("start workflow: %w", err)
 	}
 
