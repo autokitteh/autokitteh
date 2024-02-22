@@ -26,6 +26,8 @@ func runCheck(step string, ak *akResult, resp *httpResponse) error {
 func checkAKOutput(step string, ak *akResult) error {
 	match := akCheckOutput.FindStringSubmatch(step)
 	want := strings.TrimSpace(match[3])
+	want = strings.TrimPrefix(want, "'")
+	want = strings.TrimSuffix(want, "'")
 	got := ak.output
 
 	if strings.HasPrefix(match[2], "file") {
