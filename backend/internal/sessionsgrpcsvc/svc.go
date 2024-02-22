@@ -8,6 +8,7 @@ import (
 
 	"connectrpc.com/connect"
 
+	protovalidate "github.com/bufbuild/protovalidate-go"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/proto"
 	sessionsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/sessions/v1"
@@ -33,35 +34,40 @@ func Init(mux *http.ServeMux, sessions sdkservices.Sessions) {
 }
 
 // re-wrap sdk as connect error
-func wrapError(err error, code connect.Code) error {
-	if code != 0 {
-		return connect.NewError(code, err)
+func asConnectError(err error) error {
+	if errors.Is(err, &protovalidate.ValidationError{}) { // FIXME: will it work?
+		return connect.NewError(connect.CodeInvalidArgument, err)
 	}
-	if errors.Is(err, sdkerrors.ErrNotFound) {
+
+	switch {
+	case errors.Is(err, sdkerrors.ErrNotFound):
 		return connect.NewError(connect.CodeNotFound, err)
-	} else if errors.Is(err, sdkerrors.ErrUnauthorized) {
+	case errors.Is(err, sdkerrors.ErrInvalidArgument):
+		return connect.NewError(connect.CodeInvalidArgument, err)
+	case errors.Is(err, sdkerrors.ErrUnauthorized):
 		return connect.NewError(connect.CodePermissionDenied, err)
-	} else if errors.Is(err, sdkerrors.ErrAlreadyExists) {
+	case errors.Is(err, sdkerrors.ErrAlreadyExists):
 		return connect.NewError(connect.CodeAlreadyExists, err)
+	default:
+		return connect.NewError(connect.CodeUnknown, err)
 	}
-	return connect.NewError(connect.CodeUnknown, err)
 }
 
 func (s *server) Start(ctx context.Context, req *connect.Request[sessionsv1.StartRequest]) (*connect.Response[sessionsv1.StartResponse], error) {
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
-		return nil, wrapError(err, connect.CodeInvalidArgument)
+		return nil, asConnectError(err)
 	}
 
 	session, err := sdktypes.SessionFromProto(msg.Session)
 	if err != nil {
-		return nil, wrapError(err, connect.CodeInvalidArgument)
+		return nil, asConnectError(err)
 	}
 
 	uid, err := s.sessions.Start(ctx, session)
 	if err != nil {
-		return nil, wrapError(err, 0)
+		return nil, asConnectError(err)
 	}
 
 	return connect.NewResponse(&sessionsv1.StartResponse{SessionId: uid.String()}), nil
@@ -71,17 +77,17 @@ func (s *server) Get(ctx context.Context, req *connect.Request[sessionsv1.GetReq
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
-		return nil, wrapError(err, connect.CodeInvalidArgument)
+		return nil, asConnectError(err)
 	}
 
 	sessionID, err := sdktypes.ParseSessionID(msg.SessionId)
 	if err != nil {
-		return nil, wrapError(fmt.Errorf("session_id: %w", err), connect.CodeInvalidArgument)
+		return nil, asConnectError(fmt.Errorf("session_id: %w", err))
 	}
 
 	session, err := s.sessions.Get(ctx, sessionID)
 	if err != nil {
-		return nil, wrapError(err, 0)
+		return nil, asConnectError(err)
 	}
 	return connect.NewResponse(&sessionsv1.GetResponse{Session: session.ToProto()}), nil
 }
@@ -90,12 +96,12 @@ func (s *server) GetLog(ctx context.Context, req *connect.Request[sessionsv1.Get
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
-		return nil, wrapError(err, connect.CodeInvalidArgument)
+		return nil, asConnectError(err)
 	}
 
 	sessionID, err := sdktypes.ParseSessionID(msg.SessionId)
 	if err != nil {
-		return nil, wrapError(fmt.Errorf("session_id: %w", err), connect.CodeInvalidArgument)
+		return nil, asConnectError(fmt.Errorf("session_id: %w", err))
 	}
 
 	hist, err := s.sessions.GetLog(ctx, sessionID)
@@ -103,7 +109,7 @@ func (s *server) GetLog(ctx context.Context, req *connect.Request[sessionsv1.Get
 		if errors.Is(err, sdkerrors.ErrNotFound) {
 			return connect.NewResponse(&sessionsv1.GetLogResponse{}), nil
 		}
-		return nil, wrapError(err, 0)
+		return nil, asConnectError(err)
 	}
 
 	return connect.NewResponse(&sessionsv1.GetLogResponse{Log: hist.ToProto()}), nil
@@ -113,7 +119,7 @@ func (s *server) List(ctx context.Context, req *connect.Request[sessionsv1.ListR
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
-		return nil, wrapError(err, connect.CodeInvalidArgument)
+		return nil, asConnectError(err)
 	}
 
 	filter := sdkservices.ListSessionsFilter{
@@ -124,20 +130,20 @@ func (s *server) List(ctx context.Context, req *connect.Request[sessionsv1.ListR
 	var err error
 
 	if filter.DeploymentID, err = sdktypes.ParseDeploymentID(req.Msg.DeploymentId); err != nil {
-		return nil, wrapError(fmt.Errorf("deployment_id: %w", err), connect.CodeInvalidArgument)
+		return nil, asConnectError(fmt.Errorf("deployment_id: %w", err))
 	}
 
 	if filter.EventID, err = sdktypes.ParseEventID(req.Msg.EventId); err != nil {
-		return nil, wrapError(fmt.Errorf("event_id: %w", err), connect.CodeInvalidArgument)
+		return nil, asConnectError(fmt.Errorf("event_id: %w", err))
 	}
 
 	if filter.EnvID, err = sdktypes.ParseEnvID(req.Msg.EnvId); err != nil {
-		return nil, wrapError(fmt.Errorf("env_id: %w", err), connect.CodeInvalidArgument)
+		return nil, asConnectError(fmt.Errorf("env_id: %w", err))
 	}
 
 	sessions, n, err := s.sessions.List(ctx, filter)
 	if err != nil {
-		return nil, wrapError(err, 0)
+		return nil, asConnectError(err)
 	}
 
 	pbsessions := kittehs.Transform(sessions, sdktypes.ToProto)
@@ -149,30 +155,30 @@ func (s *server) Delete(ctx context.Context, req *connect.Request[sessionsv1.Del
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
-		return nil, wrapError(err, connect.CodeInvalidArgument)
+		return nil, asConnectError(err)
 	}
 
 	sessionID, err := sdktypes.ParseSessionID(msg.SessionId)
 	if err != nil {
-		return nil, wrapError(fmt.Errorf("session_id: %w", err), connect.CodeInvalidArgument)
+		return nil, asConnectError(fmt.Errorf("session_id: %w", err))
 	}
 
 	session, err := s.sessions.Get(ctx, sessionID)
 	if err != nil {
-		return nil, wrapError(err, 0)
+		return nil, asConnectError(err)
 	}
 
 	if session == nil { // just to ensure, Get should return an error if not found
-		return nil, wrapError(err, connect.CodeNotFound)
+		return nil, asConnectError(err)
 	}
 
 	// FIXME: maybe connect.CodeCancelled?
 	if state := sdktypes.GetSessionLatestState(session); state == sdktypes.RunningSessionStateType {
-		return nil, wrapError(fmt.Errorf("cannot delete running session. session_id: %s", sessionID), connect.CodeFailedPrecondition)
+		return nil, connect.NewError(connect.CodeCanceled, fmt.Errorf("cannot delete running session. session_id: %s", sessionID))
 	}
 
 	if err = s.sessions.Delete(ctx, sessionID); err != nil {
-		return nil, wrapError(err, 0)
+		return nil, asConnectError(err)
 	}
 	return connect.NewResponse(&sessionsv1.DeleteResponse{}), nil
 }
