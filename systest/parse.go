@@ -23,7 +23,7 @@ var (
 	waitAction = regexp.MustCompile(`^wait\s+(.+)\s+for\s+session\s+(.+)`)
 
 	// output <equals|contains|regex> [file] *
-	akCheckOutput = regexp.MustCompile(`^output\s+(equals|contains|regex)\s+(file\s+)?(.+)`)
+	akCheckOutput = regexp.MustCompile(`^output\s+(equals|contains|regex)\s+(file\s+)?(.+|'.*')`)
 	// return code == <int>
 	akCheckReturn = regexp.MustCompile(`^return\s+code\s*==\s*(\d+)$`)
 
@@ -34,7 +34,7 @@ var (
 
 	httpChecks = regexp.MustCompile(`^resp\s+(body|redirect|code|header)`)
 	// resp <body|redirect> <equals|contains|regex> [file] *
-	httpCheckOutput = regexp.MustCompile(`^resp\s+(body|redirect)\s+(equals|contains|regex)\s+(file\s+)?(.+)`)
+	httpCheckOutput = regexp.MustCompile(`^resp\s+(body|redirect)\s+(equals|contains|regex)\s+(file\s+)?(.+|'.*')`)
 	// resp code == <int>
 	httpCheckStatus = regexp.MustCompile(`^resp\s+code\s*==\s*(\d+)$`)
 	// resp header <name> == <value>

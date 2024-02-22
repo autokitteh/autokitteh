@@ -1,13 +1,30 @@
+# Negative tests: get nonexistent integration name/ID, with/out --fail flag.
+ak integration get foo
+return code == 0
+output equals ''
+
+ak integration get integration:deadbeefdeadbeefdeadbeefdeadbeef
+return code == 0
+output equals ''
+
+ak integration get foo --fail
+output equals 'Error: integration not found'
+return code == 10
+
+ak integration get integration:deadbeefdeadbeefdeadbeefdeadbeef --fail
+output equals 'Error: integration not found'
+return code == 10
+
 # Get integration by name.
 ak integration get http
 return code == 0
-output contains key:"get"
-output contains key:"post"
+output contains 'key:"get"'
+output contains 'key:"post"'
 
 # Get integration by ID.
 ak integration get integration:8000000000000000f1201a7ed83f7cd5
 return code == 0
-output contains unique_name:"http"
-output contains display_name:"HTTP"
-output contains logo_url:
-output contains functions:
+output contains 'unique_name:"http"'
+output contains 'display_name:"HTTP"'
+output contains 'logo_url:'
+output contains 'functions:'
