@@ -9,7 +9,6 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/backend/internal/db"
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkbuild"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -91,9 +90,7 @@ func (ps *Projects) Build(ctx context.Context, projectID sdktypes.ProjectID) (sd
 		return nil, err
 	}
 
-	build := kittehs.Must1(sdktypes.BuildFromProto(&sdktypes.BuildPB{}))
-
-	return ps.Builds.Save(ctx, build, buf.Bytes())
+	return ps.Builds.Save(ctx, sdktypes.NewBuild(), buf.Bytes())
 }
 
 func (ps *Projects) SetResources(ctx context.Context, projectID sdktypes.ProjectID, resources map[string][]byte) error {

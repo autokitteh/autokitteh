@@ -18,6 +18,10 @@ var (
 	ToStrictBuild        = makeWithValidator(strictValidateBuild)
 )
 
+func NewBuild() Build {
+	return &object[*BuildPB]{pb: &buildsv1.Build{}, validatefn: validateBuild}
+}
+
 func strictValidateBuild(pb *buildsv1.Build) error {
 	if err := ensureNotEmpty(pb.BuildId); err != nil {
 		return err

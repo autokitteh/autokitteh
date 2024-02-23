@@ -22,15 +22,10 @@ var uploadCmd = common.StandardCommand(&cobra.Command{
 			return fmt.Errorf("read file: %w", err)
 		}
 
-		b, err := sdktypes.BuildFromProto(&sdktypes.BuildPB{})
-		if err != nil {
-			return fmt.Errorf("invalid build: %w", err)
-		}
-
 		ctx, cancel := common.LimitedContext()
 		defer cancel()
 
-		id, err := builds().Save(ctx, b, data)
+		id, err := builds().Save(ctx, sdktypes.NewBuild(), data)
 		if err != nil {
 			return fmt.Errorf("save build: %w", err)
 		}
