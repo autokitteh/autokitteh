@@ -11,7 +11,7 @@ import (
 )
 
 var uploadCmd = common.StandardCommand(&cobra.Command{
-	Use:     "upload <build file path> <--project=...>",
+	Use:     "upload <build file path>",
 	Short:   "Upload local build data to server",
 	Aliases: []string{"up", "u"},
 	Args:    cobra.ExactArgs(1),
