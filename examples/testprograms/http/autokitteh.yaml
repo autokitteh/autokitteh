@@ -2,8 +2,6 @@ version: v1
 
 project:
   name: http
-  paths:
-    - http.star
   vars:
     - name: MEOW
       value: "meow1"
