@@ -7,7 +7,7 @@ ak builds create --path single.star -o single.akb -d
 output equals_json file single_output.json
 return code == 0
 
-ak builds create --dir multi -o multi.akb -d
+ak builds create --dir multi -o multi.akb --describe
 output equals_json file multi_output.json
 return code == 0
 
