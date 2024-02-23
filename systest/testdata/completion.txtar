@@ -1,7 +1,7 @@
 # The completion command exists.
 ak completion bash
 return code == 0
-output contains 'bash completion for ak'
+output contains 'bash completion for axk'
 
 ak completion zsh
 return code == 0

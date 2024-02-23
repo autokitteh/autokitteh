@@ -1,9 +1,12 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
+	"os"
 
 	"github.com/spf13/cobra"
+	"go.uber.org/fx"
 
 	"go.autokitteh.dev/autokitteh/backend/basesvc"
 	"go.autokitteh.dev/autokitteh/backend/configset"
@@ -12,6 +15,8 @@ import (
 )
 
 var mode string
+
+var App *fx.App
 
 var upCmd = common.StandardCommand(&cobra.Command{
 	Use:     "up [--mode={default|dev|test}]",
@@ -26,17 +31,23 @@ var upCmd = common.StandardCommand(&cobra.Command{
 		}
 
 		ctx := cmd.Root().Context()
-		app := svc.New(common.Config(), basesvc.RunOptions{Mode: m})
-		if err := app.Start(ctx); err != nil {
-			return fmt.Errorf("fx app start: %w", err)
+		App = svc.New(common.Config(), basesvc.RunOptions{Mode: m})
+		if err := App.Start(ctx); err != nil {
+			return fmt.Errorf("fx App start: %w", err)
 		}
 
-		<-app.Wait()
-		fmt.Println() // End the output with "\n".
-
-		if err := app.Stop(ctx); err != nil {
-			return fmt.Errorf("fx app stop: %w", err)
+		select {
+		case sig := <-App.Done():
+			fmt.Fprintf(os.Stderr, "got shutdown signal: %v\n", sig)
+		case <-ctx.Done():
+			fmt.Fprintf(os.Stderr, "shutting down...\n")
+			if err := App.Stop(context.Background()); err != nil {
+				return fmt.Errorf("fx app stop: %w", err)
+			}
+			<-App.Wait()
 		}
+
+		fmt.Fprintln(os.Stderr) // End the output with "\n".
 		return nil
 	},
 })

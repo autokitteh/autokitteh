@@ -16,11 +16,15 @@ const (
 
 // Start the AK server, but in a goroutine rather than as a separate
 // subprocess: to support breakpoint debugging, and measure test coverage.
-func startAKServer(ctx context.Context) {
+func startAKServer(ctx context.Context, t *testing.T) {
 	cmd.RootCmd.SetArgs([]string{"up", "--config", "http.addr=:0", "--mode", "test"})
 
-	// We don't care about execution errors here, the test will check this.
-	cmd.RootCmd.ExecuteContext(ctx) //nolint:errcheck
+	if err := cmd.RootCmd.ExecuteContext(ctx); err != nil {
+		t.Logf("ak server error: %v", err)
+	}
+}
+
+func stopAKServer(ctx context.Context, t *testing.T) {
 }
 
 func waitForAKServer(t *testing.T, combinedOutput *mutexBuffer) string {

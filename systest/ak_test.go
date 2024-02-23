@@ -25,6 +25,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"go.autokitteh.dev/autokitteh/cmd/ak/cmd"
 )
 
 const (
@@ -89,12 +91,13 @@ func setUpTest(t *testing.T) string {
 	// Start the AK server, but in a goroutine rather than as a separate
 	// subprocess: to support breakpoint debugging, and measure test coverage.
 	ctx, cancel := context.WithCancel(context.Background())
-	go startAKServer(ctx)
-	t.Cleanup(cancel) // Stop the AK server's goroutine.
+	go startAKServer(ctx, t)
 
-	akAddr := waitForAKServer(t, combinedOutput)
+	defer cmd.App.Stop(context.Background())
 
-	return akAddr
+	t.Cleanup(cancel)
+
+	return waitForAKServer(t, combinedOutput)
 }
 
 func runTestSteps(t *testing.T, steps []string, akPath, akAddr string) {
