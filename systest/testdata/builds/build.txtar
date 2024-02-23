@@ -3,7 +3,7 @@ ak builds create --path hiss.star
 output equals file hiss_error.txt
 return code == 1
 
-ak builds create --path single.star -o single.akb -d
+ak builds create --path single.star -o single.akb --describe
 output equals_json file single_output.json
 return code == 0
 
