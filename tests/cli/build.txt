@@ -1,82 +1,6 @@
 # TODO(ENG-312): enable when done
 $ out=$(mktemp -d)
-$ ${AK} builds create --path examples/testprograms/hiss.star
-Error: create build: build error for "examples/testprograms/hiss.star": runtime_build: undefined: hisssss
- [0] examples/testprograms/hiss.star:1.1
-$ ${AK} builds create --path examples/testprograms/main.star -o ${out}/build.akb -d
-{
-  "info": {},
-  "runtimes": [
-    {
-      "info": {
-        "name": "config"
-      },
-      "artifact": {
-        "exports": [
-          {
-            "symbol": "text"
-          },
-          {
-            "symbol": "text"
-          }
-        ],
-        "compiled_data": {
-          "examples/testprograms/poem1.txt": "",
-          "examples/testprograms/poem2.txt": ""
-        }
-      }
-    },
-    {
-      "info": {
-        "name": "starlark"
-      },
-      "artifact": {
-        "requirements": [
-          {
-            "location": {
-              "path": "examples/testprograms/main.star",
-              "row": 3,
-              "col": 6
-            },
-            "url": "examples/testprograms/poem1.txt"
-          },
-          {
-            "location": {
-              "path": "examples/testprograms/main.star",
-              "row": 4,
-              "col": 6
-            },
-            "url": "examples/testprograms/poem2.txt"
-          }
-        ],
-        "exports": [
-          {
-            "location": {
-              "path": "examples/testprograms/main.star",
-              "row": 6,
-              "col": 1
-            },
-            "symbol": "num_cats"
-          },
-          {
-            "location": {
-              "path": "examples/testprograms/main.star",
-              "row": 7,
-              "col": 1
-            },
-            "symbol": "num_dogs"
-          }
-        ],
-        "compiled_data": {
-          "examples/testprograms/cats.star": "",
-          "examples/testprograms/dogs.star": "",
-          "examples/testprograms/main.star": ""
-        }
-      }
-    }
-  ],
-  "runtime_requirements": []
-}
+$ ${AK} builds create --dir examples/testprograms/multi -o ${out}/build.akb
 $ cd ${out}
 $ tar tf build.akb
 version.txt
@@ -85,14 +9,14 @@ requirements.json
 runtimes/config/info.json
 runtimes/config/requirements.json
 runtimes/config/exports.json
-runtimes/config/compiled/examples/testprograms/poem1.txt
-runtimes/config/compiled/examples/testprograms/poem2.txt
+runtimes/config/compiled/poem1.txt
+runtimes/config/compiled/poem2.txt
 runtimes/starlark/info.json
 runtimes/starlark/requirements.json
 runtimes/starlark/exports.json
-runtimes/starlark/compiled/examples/testprograms/cats.star
-runtimes/starlark/compiled/examples/testprograms/dogs.star
-runtimes/starlark/compiled/examples/testprograms/main.star
+runtimes/starlark/compiled/cats.star
+runtimes/starlark/compiled/dogs.star
+runtimes/starlark/compiled/main.star
 $ tar xf build.akb
 $ cat version.txt
 1
@@ -107,7 +31,39 @@ $ cat exports.json
 [
   {
     "location": {
-      "path": "examples/testprograms/main.star",
+      "path": "cats.star",
+      "row": 1,
+      "col": 1
+    },
+    "symbol": "cats"
+  },
+  {
+    "location": {
+      "path": "cats.star",
+      "row": 2,
+      "col": 1
+    },
+    "symbol": "vocalization"
+  },
+  {
+    "location": {
+      "path": "dogs.star",
+      "row": 1,
+      "col": 1
+    },
+    "symbol": "dogs"
+  },
+  {
+    "location": {
+      "path": "dogs.star",
+      "row": 2,
+      "col": 1
+    },
+    "symbol": "vocalization"
+  },
+  {
+    "location": {
+      "path": "main.star",
       "row": 6,
       "col": 1
     },
@@ -115,7 +71,7 @@ $ cat exports.json
   },
   {
     "location": {
-      "path": "examples/testprograms/main.star",
+      "path": "main.star",
       "row": 7,
       "col": 1
     },
@@ -126,19 +82,19 @@ $ cat requirements.json
 [
   {
     "location": {
-      "path": "examples/testprograms/main.star",
+      "path": "main.star",
       "row": 3,
       "col": 6
     },
-    "url": "examples/testprograms/poem1.txt"
+    "url": "poem1.txt"
   },
   {
     "location": {
-      "path": "examples/testprograms/main.star",
+      "path": "main.star",
       "row": 4,
       "col": 6
     },
-    "url": "examples/testprograms/poem2.txt"
+    "url": "poem2.txt"
   }
 ]
 $

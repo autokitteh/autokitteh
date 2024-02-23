@@ -2,9 +2,11 @@ package builds
 
 import (
 	"fmt"
-	"net/url"
+	"io/fs"
 	"os"
+	"path/filepath"
 
+	"github.com/psanford/memfs"
 	"github.com/spf13/cobra"
 
 	"go.autokitteh.dev/autokitteh/backend/runtimes"
@@ -36,17 +38,31 @@ var createCmd = common.StandardCommand(&cobra.Command{
 		ctx, cancel := common.LimitedContext()
 		defer cancel()
 
-		url, err := url.Parse(dir)
-		if err != nil {
-			return fmt.Errorf("invalid root dir: %w", err)
-		}
+		srcFS := os.DirFS(dir)
 
-		if url.Scheme != "" && url.Scheme != "file" {
-			return fmt.Errorf("invalid root dir: scheme must be empty or 'file'")
+		if len(paths) != 0 {
+			memfs := memfs.New()
+
+			for _, path := range paths {
+				data, err := fs.ReadFile(srcFS, path)
+				if err != nil {
+					return fmt.Errorf("read file %q: %w", path, err)
+				}
+
+				if err := memfs.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+					return fmt.Errorf("create directory %q in memory: %w", path, err)
+				}
+
+				if err := memfs.WriteFile(path, data, 0o600); err != nil {
+					return fmt.Errorf("write file %q into memory: %w", path, err)
+				}
+			}
+
+			srcFS = memfs
 		}
 
 		// Currently uses only local runtimes - no RPC support yet.
-		b, err := sdkbuild.Build(ctx, runtimes.New(), os.DirFS(url.Path), paths, vns, nil)
+		b, err := sdkbuild.Build(ctx, runtimes.New(), srcFS, vns, nil)
 		if err != nil {
 			return fmt.Errorf("create build: %w", err)
 		}
@@ -80,7 +96,6 @@ func init() {
 
 	createCmd.Flags().StringSliceVarP(&paths, "path", "p", nil, "one or more files to process")
 	kittehs.Must0(createCmd.MarkFlagFilename("path"))
-	kittehs.Must0(createCmd.MarkFlagRequired("path"))
 
 	createCmd.Flags().StringSliceVarP(&values, "values", "i", nil, "comma-separated input value names")
 

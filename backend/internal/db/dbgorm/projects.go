@@ -2,9 +2,7 @@ package dbgorm
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
-	"fmt"
 
 	"go.autokitteh.dev/autokitteh/backend/internal/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/backend/internal/tar"
@@ -21,15 +19,11 @@ func (db *gormdb) CreateProject(ctx context.Context, p sdktypes.Project) error {
 		return errors.New("project id missing")
 	}
 
-	paths, err := json.Marshal(sdktypes.GetProjectResourcePaths(p))
-	if err != nil {
-		return fmt.Errorf("marshal paths: %w", err)
-	}
+	ph := sdktypes.GetProjectName(p)
 
 	r := scheme.Project{
 		ProjectID: sdktypes.GetProjectID(p).String(),
-		Name:      sdktypes.GetProjectName(p).String(),
-		Paths:     paths,
+		Name:      ph.String(),
 	}
 
 	if err := db.db.WithContext(ctx).Create(&r).Error; err != nil {
@@ -40,15 +34,9 @@ func (db *gormdb) CreateProject(ctx context.Context, p sdktypes.Project) error {
 }
 
 func (db *gormdb) UpdateProject(ctx context.Context, p sdktypes.Project) error {
-	paths, err := json.Marshal(sdktypes.GetProjectResourcePaths(p))
-	if err != nil {
-		return fmt.Errorf("marshal paths: %w", err)
-	}
-
 	r := scheme.Project{
 		ProjectID: sdktypes.GetProjectID(p).String(),
 		Name:      sdktypes.GetProjectName(p).String(),
-		Paths:     paths,
 	}
 
 	if err := db.db.WithContext(ctx).Updates(&r).Error; err != nil {

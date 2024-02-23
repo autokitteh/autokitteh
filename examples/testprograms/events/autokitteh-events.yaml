@@ -2,8 +2,6 @@ version: v1
 
 project:
   name: events
-  paths:
-    - events.star
   connections:
     - name: http1
       token: "meow"
@@ -11,9 +9,7 @@ project:
     - name: http_event
       token: "ev"
       integration: "http"      
-  envs:
-    - name: prod
-      triggers:
-        - connection: http/http1
-          event_type: get
-          entrypoint: events.star:on_http_get
+  triggers:
+    - connection: http1
+      event_type: get
+      entrypoint: events.star:on_http_get

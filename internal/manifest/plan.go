@@ -64,8 +64,7 @@ func planProject(ctx context.Context, mproj *Project, client sdkservices.Service
 	)
 
 	desired, err := sdktypes.ProjectFromProto(&sdktypes.ProjectPB{
-		Name:          mproj.Name,
-		ResourcePaths: mproj.ResourcesPaths,
+		Name: mproj.Name,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("invalid: %w", err)

@@ -18,8 +18,12 @@ var (
 	ToStrictBuild        = makeWithValidator(strictValidateBuild)
 )
 
+func NewBuild() Build {
+	return &object[*BuildPB]{pb: &buildsv1.Build{}, validatefn: validateBuild}
+}
+
 func strictValidateBuild(pb *buildsv1.Build) error {
-	if err := ensureNotEmpty(pb.BuildId, pb.ProjectId); err != nil {
+	if err := ensureNotEmpty(pb.BuildId); err != nil {
 		return err
 	}
 
@@ -31,12 +35,6 @@ func validateBuild(pb *buildsv1.Build) error {
 		return fmt.Errorf("build ID: %w", err)
 	}
 
-	if _, err := ParseProjectID(pb.ProjectId); err != nil {
-		return fmt.Errorf("project ID: %w", err)
-	}
-
-	// TODO: validate created_at ?
-
 	return nil
 }
 
@@ -45,13 +43,6 @@ func GetBuildID(b Build) BuildID {
 		return nil
 	}
 	return kittehs.Must1(ParseBuildID(b.pb.BuildId))
-}
-
-func GetBuildProjectID(b Build) ProjectID {
-	if b == nil {
-		return nil
-	}
-	return MustParseProjectID(b.pb.ProjectId)
 }
 
 func GetBuildCreatedAt(b Build) time.Time {

@@ -76,7 +76,7 @@ $ ${AK} p c p1; echo $?
 project_id: p:00000000000000000000000000000001
 0
 $ # upload build return build-id
-$ ${AK} -j builds upload --project=p:00000000000000000000000000000001 ${data_file_path}; echo $?
+$ ${AK} -j builds upload ${data_file_path}; echo $?
 {"build_id":"b:00000000000000000000000000000002"}
 0
 $ # create deployment with invalid env fails
@@ -121,7 +121,7 @@ $ ${AK} en c -p p1 e2; echo $?
 env_id: e:00000000000000000000000000000005
 0
 $ # upload a second build 
-$ ${AK} -j builds upload --project=p:00000000000000000000000000000001 ${data_file_path}; echo $?
+$ ${AK} -j builds upload ${data_file_path}; echo $?
 {"build_id":"b:00000000000000000000000000000006"}
 0
 $ # create second deployment

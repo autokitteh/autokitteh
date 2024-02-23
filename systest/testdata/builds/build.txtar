@@ -1,0 +1,218 @@
+# Negative test: build failure due to error in code.
+ak builds create --path hiss.star
+output equals file hiss_error.txt
+return code == 1
+
+ak builds create --path single.star -o single.akb --describe
+output equals_json file single_output.json
+return code == 0
+
+ak builds create --dir multi -o multi.akb --describe
+output equals_json file multi_output.json
+return code == 0
+
+-- hiss.star --
+hisssss
+# ^ build error
+
+-- hiss_error.txt --
+Error: create build: build error for "hiss.star": runtime_build: undefined: hisssss
+ [0] hiss.star:1.1
+
+-- single.star --
+sound = "meow"
+print("{}, world!".format(sound))
+
+-- multi_output.json --
+{
+    "info": {},
+    "runtime_requirements": [],
+    "runtimes": [
+        {
+            "artifact": {
+                "compiled_data": {
+                    "poem1.txt": "",
+                    "poem2.txt": ""
+                },
+                "exports": [
+                    {
+                        "symbol": "text"
+                    },
+                    {
+                        "symbol": "text"
+                    }
+                ]
+            },
+            "info": {
+                "name": "config"
+            }
+        },
+        {
+            "artifact": {
+                "compiled_data": {
+                    "cats.star": "",
+                    "dogs.star": "",
+                    "main.star": ""
+                },
+                "exports": [
+                    {
+                        "location": {
+                            "col": 1,
+                            "path": "cats.star",
+                            "row": 1
+                        },
+                        "symbol": "cats"
+                    },
+                    {
+                        "location": {
+                            "col": 1,
+                            "path": "cats.star",
+                            "row": 2
+                        },
+                        "symbol": "vocalization"
+                    },
+                    {
+                        "location": {
+                            "col": 1,
+                            "path": "dogs.star",
+                            "row": 1
+                        },
+                        "symbol": "dogs"
+                    },
+                    {
+                        "location": {
+                            "col": 1,
+                            "path": "dogs.star",
+                            "row": 2
+                        },
+                        "symbol": "vocalization"
+                    },
+                    {
+                        "location": {
+                            "col": 1,
+                            "path": "main.star",
+                            "row": 6
+                        },
+                        "symbol": "num_cats"
+                    },
+                    {
+                        "location": {
+                            "col": 1,
+                            "path": "main.star",
+                            "row": 7
+                        },
+                        "symbol": "num_dogs"
+                    }
+                ],
+                "requirements": [
+                    {
+                        "location": {
+                            "col": 6,
+                            "path": "main.star",
+                            "row": 3
+                        },
+                        "url": "poem1.txt"
+                    },
+                    {
+                        "location": {
+                            "col": 6,
+                            "path": "main.star",
+                            "row": 4
+                        },
+                        "url": "poem2.txt"
+                    }
+                ]
+            },
+            "info": {
+                "name": "starlark"
+            }
+        }
+    ]
+}
+
+-- single_output.json --
+{
+    "info": {},
+    "runtimes": [
+        {
+            "info": {
+                "name": "starlark"
+            },
+            "artifact": {
+                "exports": [
+                    {
+                        "location": {
+                            "path": "single.star",
+                            "row": 1,
+                            "col": 1
+                        },
+                        "symbol": "sound"
+                    }
+                ],
+                "compiled_data": {
+                    "single.star": ""
+                }
+            }
+        }
+    ],
+    "runtime_requirements": []
+}
+
+-- multi/main.star --
+load("cats.star", "cats")
+load("dogs.star", "dogs")
+load("poem1.txt", poem1 = "text")
+load("poem2.txt", poem2 = "text")
+
+num_cats = len(cats)
+num_dogs = len(dogs)
+
+print(cats)
+print(dogs)
+print(poem1)
+print(poem2)
+
+-- multi/cats.star --
+cats = ["gizmo", "zumi", "pepurr", "midnight"]
+vocalization = "meow"
+
+-- multi/dogs.star --
+dogs = ["bonny", "shoogy"]
+vocalization = "woof"
+
+-- multi/poem1.txt --
+Felis catus is your taxonomic nomenclature,
+An endothermic quadruped, carnivorous by nature;
+Your visual, olfactory, and auditory senses
+Contribute to your hunting skills and natural defenses.
+
+I find myself intrigued by your subvocal oscillations,
+A singular development of cat communications
+That obviates your basic hedonistic predilection
+For a rhythmic stroking of your fur to demonstrate affection.
+
+A tail is quite essential for your acrobatic talents;
+You would not be so agile if you lacked its counterbalance.
+And when not being utilized to aid in locomotion,
+It often serves to illustrate the state of your emotion.
+
+O Spot, the complex levels of behavior you display
+Connote a fairly well-developed cognitive array.
+And though you are not sentient, Spot, and do not comprehend,
+I nonetheless consider you a true and valued friend.
+
+-- multi/poem2.txt --
+I must go down to the seas again, to the lonely sea and the sky,
+And all I ask is a tall ship and a star to steer her by;
+And the wheel’s kick and the wind’s song and the white sail’s shaking,
+And a grey mist on the sea’s face, and a grey dawn breaking.
+ 
+I must go down to the seas again, for the call of the running tide
+Is a wild call and a clear call that may not be denied;
+And all I ask is a windy day with the white clouds flying,
+And the flung spray and the blown spume, and the sea-gulls crying.
+ 
+I must go down to the seas again, to the vagrant gypsy life,
+To the gull’s way and the whale’s way where the wind’s like a whetted knife;
+And all I ask is a merry yarn from a laughing fellow-rover,
+And quiet sleep and a sweet dream when the long trick’s over.

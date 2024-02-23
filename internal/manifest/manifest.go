@@ -32,12 +32,10 @@ type Manifest struct {
 }
 
 type Project struct {
-	Name           string        `yaml:"name" json:"name" jsonschema:"required"`
-	RootURL        string        `yaml:"root_url,omitempty" json:"root_url,omitempty"`
-	ResourcesPaths []string      `yaml:"paths,omitempty" json:"paths,omitempty" jsonschema:"required"`
-	Connections    []*Connection `yaml:"connections,omitempty" json:"connections,omitempty"`
-	Triggers       []*Trigger    `yaml:"triggers,omitempty" json:"triggers,omitempty"`
-	Vars           []*EnvVar     `yaml:"vars,omitempty" json:"vars,omitempty"`
+	Name        string        `yaml:"name" json:"name" jsonschema:"required"`
+	Connections []*Connection `yaml:"connections,omitempty" json:"connections,omitempty"`
+	Triggers    []*Trigger    `yaml:"triggers,omitempty" json:"triggers,omitempty"`
+	Vars        []*EnvVar     `yaml:"vars,omitempty" json:"vars,omitempty"`
 }
 
 func (p Project) GetKey() string { return p.Name }

@@ -37,7 +37,6 @@ func Build(
 	ctx context.Context,
 	rts sdkservices.Runtimes,
 	srcFS fs.FS,
-	pathPatterns []string,
 	symbols []sdktypes.Symbol,
 	memo map[string]string,
 ) (*sdkbuildfile.BuildFile, error) {
@@ -49,31 +48,39 @@ func Build(
 		return nil, fmt.Errorf("invalid symbols: %w", err)
 	}
 
-	var q []sdktypes.Requirement
-
-	for _, pattern := range pathPatterns {
-		paths, err := fs.Glob(srcFS, pattern)
-		if err != nil {
-			return nil, fmt.Errorf("glob %s: %w", pattern, err)
-		}
-
-		if len(paths) == 0 {
-			return nil, fmt.Errorf("no files found for pattern %q", pattern)
-		}
-
-		for _, path := range paths {
-			req, err := sdktypes.NewRequirement(nil, &url.URL{Path: path}, nil)
-			if err != nil {
-				return nil, err
-			}
-
-			q = append(q, req)
-		}
-	}
-
 	rtdescs, err := rts.List(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("list: %w", err)
+	}
+
+	var q []sdktypes.Requirement
+
+	if err := fs.WalkDir(srcFS, ".", func(path string, de fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if de.IsDir() {
+			return nil
+		}
+
+		rtd := sdkruntimes.MatchRuntimeByPath(rtdescs, path)
+		if rtd == nil {
+			// ignore non-runtime digestable files. if needed later on
+			// during build, they will explicitly be added to the requirements.
+			return nil
+		}
+
+		req, err := sdktypes.NewRequirement(nil, &url.URL{Path: path}, nil)
+		if err != nil {
+			return err
+		}
+
+		q = append(q, req)
+
+		return nil
+	}); err != nil {
+		return nil, fmt.Errorf("walk dir: %w", err)
 	}
 
 	type rtCacheEntry struct {

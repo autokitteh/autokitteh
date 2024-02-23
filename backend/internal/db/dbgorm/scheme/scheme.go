@@ -40,8 +40,6 @@ var Tables = []any{
 
 type Build struct {
 	BuildID   string `gorm:"primaryKey"`
-	ProjectID string `gorm:"index"`
-	Project   Project
 	Data      []byte
 	CreatedAt time.Time
 }
@@ -49,7 +47,6 @@ type Build struct {
 func ParseBuild(b Build) (sdktypes.Build, error) {
 	build, err := sdktypes.StrictBuildFromProto(&sdktypes.BuildPB{
 		BuildId:   b.BuildID,
-		ProjectId: b.ProjectID,
 		CreatedAt: timestamppb.New(b.CreatedAt),
 	})
 	if err != nil {
@@ -141,20 +138,13 @@ type Project struct {
 	ProjectID string `gorm:"primaryKey"`
 	Name      string `gorm:"uniqueIndex"`
 	RootURL   string
-	Paths     datatypes.JSON
 	Resources []byte
 }
 
 func ParseProject(r Project) (sdktypes.Project, error) {
-	var paths []string
-	if err := json.Unmarshal(r.Paths, &paths); err != nil {
-		return nil, fmt.Errorf("project paths: %w", err)
-	}
-
 	p, err := sdktypes.StrictProjectFromProto(&sdktypes.ProjectPB{
-		ProjectId:     r.ProjectID,
-		Name:          r.Name,
-		ResourcePaths: paths,
+		ProjectId: r.ProjectID,
+		Name:      r.Name,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("invalid project record: %w", err)
