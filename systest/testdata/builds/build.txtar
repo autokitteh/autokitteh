@@ -1,3 +1,4 @@
+# Negative test: build failure due to error in code.
 ak builds create --path hiss.star
 output equals file hiss_error.txt
 return code == 1
