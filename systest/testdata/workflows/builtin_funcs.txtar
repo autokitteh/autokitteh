@@ -41,15 +41,12 @@ version: v1
 
 project:
   name: my_project
-  paths:
-    - my_program.star
   connections:
     - name: my_connection
       integration: http
       token: my_url_path
   triggers:
-    - name: http
-      connection: my_connection
+    - connection: my_connection
       event_type: get
       entrypoint: my_program.star:on_http_get
 
