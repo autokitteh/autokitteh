@@ -1,5 +1,5 @@
-# Apply, build, and deploy a project with a program that
-# runs all built-in AK functions, and an HTTP connection.
+# Apply, build, and deploy project with program that
+# runs all built-in AK functions, and HTTP connection.
 ak manifest apply project.yaml
 return code == 0
 
@@ -13,13 +13,13 @@ output equals 'build_id: bld_00000000000000000000000005'
 ak deployment create --build-id=bld_00000000000000000000000005 --env=my_project/default --activate
 return code == 0
 
-# Send an HTTP GET request to trigger the deployment to start a new session.
+# Send HTTP GET request to trigger deployment to start new session.
 http get /http/my_url_path
 resp code == 200
 
 wait 5s for session ses_00000000000000000000000008
 
-# Check the session's output and final state.
+# Check session's output and final state.
 ak session log -J
 return code == 0
 output contains '"print": "1st random int with seed: 5"'
