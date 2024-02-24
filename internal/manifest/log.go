@@ -1,6 +1,8 @@
 package manifest
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type Log func(string)
 
@@ -11,8 +13,5 @@ type keyer interface {
 }
 
 func (l Log) For(kind string, keyer keyer) Log {
-	if kind != "" {
-		kind += " "
-	}
-	return Log(func(f string) { l.Printf("%s%v: %v", kind, keyer.GetKey(), f) })
+	return Log(func(f string) { l.Printf("%s %q: %v", kind, keyer.GetKey(), f) })
 }
