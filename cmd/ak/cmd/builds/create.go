@@ -12,7 +12,7 @@ import (
 	"go.autokitteh.dev/autokitteh/backend/runtimes"
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
-	"go.autokitteh.dev/autokitteh/sdk/sdkbuild"
+	"go.autokitteh.dev/autokitteh/sdk/sdkruntimes"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
@@ -62,7 +62,7 @@ var createCmd = common.StandardCommand(&cobra.Command{
 		}
 
 		// Currently uses only local runtimes - no RPC support yet.
-		b, err := sdkbuild.Build(ctx, runtimes.New(), srcFS, vns, nil)
+		b, err := sdkruntimes.Build(ctx, runtimes.New(), srcFS, vns, nil)
 		if err != nil {
 			return fmt.Errorf("create build: %w", err)
 		}

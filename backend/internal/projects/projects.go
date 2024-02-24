@@ -9,8 +9,8 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/backend/internal/db"
-	"go.autokitteh.dev/autokitteh/sdk/sdkbuild"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
+	"go.autokitteh.dev/autokitteh/sdk/sdkruntimes"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -73,7 +73,7 @@ func (ps *Projects) Build(ctx context.Context, projectID sdktypes.ProjectID) (sd
 		return nil, errors.New("no resources set")
 	}
 
-	bi, err := sdkbuild.Build(
+	bi, err := sdkruntimes.Build(
 		ctx,
 		ps.Runtimes,
 		fs,

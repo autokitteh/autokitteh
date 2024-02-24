@@ -1,13 +1,12 @@
-package sdkrun
+package sdkruntimes
 
 import (
 	"context"
 	"errors"
 	"fmt"
 
-	"go.autokitteh.dev/autokitteh/sdk/sdkbuild/sdkbuildfile"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
-	"go.autokitteh.dev/autokitteh/sdk/sdkruntimes"
+	"go.autokitteh.dev/autokitteh/sdk/sdkruntimes/sdkbuildfile"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -89,7 +88,7 @@ func run(ctx context.Context, params RunParams, path string) (sdkservices.Run, e
 		return nil, fmt.Errorf("list runtimes: %w", err)
 	}
 
-	rtd := sdkruntimes.MatchRuntimeByPath(ls, path)
+	rtd := MatchRuntimeByPath(ls, path)
 	if rtd == nil {
 		return nil, sdkerrors.ErrNotFound
 	}

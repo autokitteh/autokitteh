@@ -1,4 +1,4 @@
-package sdkbuild
+package sdkruntimes
 
 import (
 	"context"
@@ -7,8 +7,7 @@ import (
 	"net/url"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
-	"go.autokitteh.dev/autokitteh/sdk/sdkbuild/sdkbuildfile"
-	"go.autokitteh.dev/autokitteh/sdk/sdkruntimes"
+	"go.autokitteh.dev/autokitteh/sdk/sdkruntimes/sdkbuildfile"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -64,7 +63,7 @@ func Build(
 			return nil
 		}
 
-		rtd := sdkruntimes.MatchRuntimeByPath(rtdescs, path)
+		rtd := MatchRuntimeByPath(rtdescs, path)
 		if rtd == nil {
 			// ignore non-runtime digestable files. if needed later on
 			// during build, they will explicitly be added to the requirements.
@@ -108,7 +107,7 @@ func Build(
 
 		visited[path] = true
 
-		rtd := sdkruntimes.MatchRuntimeByPath(rtdescs, path)
+		rtd := MatchRuntimeByPath(rtdescs, path)
 
 		if rtd == nil {
 			externals = append(externals, req)
