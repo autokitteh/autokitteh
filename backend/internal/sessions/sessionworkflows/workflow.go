@@ -21,7 +21,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkexecutor"
-	"go.autokitteh.dev/autokitteh/sdk/sdkrun"
+	"go.autokitteh.dev/autokitteh/sdk/sdkruntimes"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -408,9 +408,9 @@ func (w *sessionWorkflow) run(ctx workflow.Context) (prints []string, err error)
 
 	goCtx := temporalclient.NewWorkflowContextAsGOContext(ctx)
 
-	run, err := sdkrun.Run(
+	run, err := sdkruntimes.Run(
 		goCtx,
-		sdkrun.RunParams{
+		sdkruntimes.RunParams{
 			Runtimes:             w.ws.svcs.Runtimes,
 			BuildFile:            w.data.BuildFile,
 			Globals:              w.globals,
