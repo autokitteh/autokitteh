@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package autokitteh.runtimes.v1;
 
+import "autokitteh/program/v1/program.proto";
 import "autokitteh/runtimes/v1/runtime.proto";
 import "buf/validate/validate.proto";
 
@@ -21,10 +22,23 @@ message ListResponse {
   repeated Runtime runtimes = 1 [(buf.validate.field).required = true];
 }
 
+message BuildRequest {
+  map<string, bytes> resources = 1;
+  repeated string symbols = 2 [(buf.validate.field).repeated.items.string.min_len = 1];
+  map<string, string> memo = 3;
+}
+
+message BuildResponse {
+  bytes artifact = 1;
+  program.v1.Error error = 2;
+}
+
 // Runtimes are expected to be registered during deploy (from configuration).
 // Dynamic registration of runtimes will not be supported.
 service RuntimesService {
   rpc Describe(DescribeRequest) returns (DescribeResponse);
 
   rpc List(ListRequest) returns (ListResponse);
+
+  rpc Build(BuildRequest) returns (BuildResponse);
 }

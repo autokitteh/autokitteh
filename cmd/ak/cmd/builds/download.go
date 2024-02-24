@@ -58,5 +58,5 @@ var downloadCmd = common.StandardCommand(&cobra.Command{
 func init() {
 	// Command-specific flags.
 	downloadCmd.Flags().StringVarP(&output, "output", "o", defaultOutput, `output file path, or "-" for stdout`)
-	kittehs.Must0(createCmd.MarkFlagFilename("output"))
+	kittehs.Must0(downloadCmd.MarkFlagFilename("output"))
 }

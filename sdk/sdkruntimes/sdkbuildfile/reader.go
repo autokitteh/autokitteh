@@ -97,7 +97,10 @@ func readRuntimeFile(bf *BuildFile, name sdktypes.Name, path string, data *bytes
 	})
 
 	if rt == nil {
-		rt = &RuntimeData{Info: RuntimeInfo{Name: name}}
+		rt = &RuntimeData{
+			Info:     RuntimeInfo{Name: name},
+			Artifact: kittehs.Must1(sdktypes.BuildArtifactFromProto(&sdktypes.BuildArtifactPB{})),
+		}
 	}
 
 	switch path {
@@ -108,9 +111,27 @@ func readRuntimeFile(bf *BuildFile, name sdktypes.Name, path string, data *bytes
 	case filenames.resourcesIndex:
 		// nop - nothing to do with it on read.
 	case filenames.requirements:
-		// TODO
+		var reqs []*sdktypes.RequirementPB
+		err := json.NewDecoder(data).Decode(&reqs)
+		if err != nil {
+			return fmt.Errorf("requirements %q: %w", path, err)
+		}
+		if rt.Artifact, err = rt.Artifact.Update(func(pb *sdktypes.BuildArtifactPB) {
+			pb.Requirements = reqs
+		}); err != nil {
+			return fmt.Errorf("requirements %q: %w", path, err)
+		}
 	case filenames.exports:
-		// TODO
+		var exports []*sdktypes.ExportPB
+		err := json.NewDecoder(data).Decode(&exports)
+		if err != nil {
+			return fmt.Errorf("requirements %q: %w", path, err)
+		}
+		if rt.Artifact, err = rt.Artifact.Update(func(pb *sdktypes.BuildArtifactPB) {
+			pb.Exports = exports
+		}); err != nil {
+			return fmt.Errorf("requirements %q: %w", path, err)
+		}
 	default:
 		kind, rest, ok := strings.Cut(path, "/")
 		if !ok {
@@ -135,22 +156,13 @@ func readRuntimeFile(bf *BuildFile, name sdktypes.Name, path string, data *bytes
 }
 
 func readRuntimeCompiledFile(rt *RuntimeData, path string, data *bytes.Buffer) (err error) {
-	art := rt.Artifact
-	if art == nil {
-		art = kittehs.Must1(sdktypes.BuildArtifactFromProto(&sdktypes.BuildArtifactPB{}))
-	}
-
-	if art, err = art.Update(func(pb *sdktypes.BuildArtifactPB) {
+	rt.Artifact, err = rt.Artifact.Update(func(pb *sdktypes.BuildArtifactPB) {
 		if pb.CompiledData == nil {
 			pb.CompiledData = make(map[string][]byte)
 		}
 
 		pb.CompiledData[path] = data.Bytes()
-	}); err != nil {
-		return fmt.Errorf("invalid compiled file %q: %w", path, err)
-	}
-
-	rt.Artifact = art
+	})
 
 	return
 }

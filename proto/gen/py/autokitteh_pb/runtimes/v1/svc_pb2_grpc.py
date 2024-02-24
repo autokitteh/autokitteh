@@ -26,6 +26,11 @@ class RuntimesServiceStub(object):
                 request_serializer=autokitteh_dot_runtimes_dot_v1_dot_svc__pb2.ListRequest.SerializeToString,
                 response_deserializer=autokitteh_dot_runtimes_dot_v1_dot_svc__pb2.ListResponse.FromString,
                 )
+        self.Build = channel.unary_unary(
+                '/autokitteh.runtimes.v1.RuntimesService/Build',
+                request_serializer=autokitteh_dot_runtimes_dot_v1_dot_svc__pb2.BuildRequest.SerializeToString,
+                response_deserializer=autokitteh_dot_runtimes_dot_v1_dot_svc__pb2.BuildResponse.FromString,
+                )
 
 
 class RuntimesServiceServicer(object):
@@ -45,6 +50,12 @@ class RuntimesServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def Build(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_RuntimesServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -57,6 +68,11 @@ def add_RuntimesServiceServicer_to_server(servicer, server):
                     servicer.List,
                     request_deserializer=autokitteh_dot_runtimes_dot_v1_dot_svc__pb2.ListRequest.FromString,
                     response_serializer=autokitteh_dot_runtimes_dot_v1_dot_svc__pb2.ListResponse.SerializeToString,
+            ),
+            'Build': grpc.unary_unary_rpc_method_handler(
+                    servicer.Build,
+                    request_deserializer=autokitteh_dot_runtimes_dot_v1_dot_svc__pb2.BuildRequest.FromString,
+                    response_serializer=autokitteh_dot_runtimes_dot_v1_dot_svc__pb2.BuildResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -101,5 +117,22 @@ class RuntimesService(object):
         return grpc.experimental.unary_unary(request, target, '/autokitteh.runtimes.v1.RuntimesService/List',
             autokitteh_dot_runtimes_dot_v1_dot_svc__pb2.ListRequest.SerializeToString,
             autokitteh_dot_runtimes_dot_v1_dot_svc__pb2.ListResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def Build(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/autokitteh.runtimes.v1.RuntimesService/Build',
+            autokitteh_dot_runtimes_dot_v1_dot_svc__pb2.BuildRequest.SerializeToString,
+            autokitteh_dot_runtimes_dot_v1_dot_svc__pb2.BuildResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

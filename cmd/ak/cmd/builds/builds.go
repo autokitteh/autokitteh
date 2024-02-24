@@ -10,7 +10,6 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 )
 
-// Constant shared by the "create" and "download" subcommands.
 const (
 	defaultOutput = "build.akb"
 )
@@ -34,7 +33,6 @@ func AddSubcommands(parentCmd *cobra.Command) {
 
 func init() {
 	// Subcommands.
-	buildsCmd.AddCommand(createCmd)
 	buildsCmd.AddCommand(uploadCmd)
 	buildsCmd.AddCommand(getCmd)
 	buildsCmd.AddCommand(downloadCmd)

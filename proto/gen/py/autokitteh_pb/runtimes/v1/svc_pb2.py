@@ -11,11 +11,12 @@ from google.protobuf.internal import builder as _builder
 _sym_db = _symbol_database.Default()
 
 
+from autokitteh_pb.program.v1 import program_pb2 as autokitteh_dot_program_dot_v1_dot_program__pb2
 from autokitteh_pb.runtimes.v1 import runtime_pb2 as autokitteh_dot_runtimes_dot_v1_dot_runtime__pb2
 from buf.validate import validate_pb2 as buf_dot_validate_dot_validate__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n autokitteh/runtimes/v1/svc.proto\x12\x16\x61utokitteh.runtimes.v1\x1a$autokitteh/runtimes/v1/runtime.proto\x1a\x1b\x62uf/validate/validate.proto\"/\n\x0f\x44\x65scribeRequest\x12\x1c\n\x04name\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x04name\"M\n\x10\x44\x65scribeResponse\x12\x39\n\x07runtime\x18\x01 \x01(\x0b\x32\x1f.autokitteh.runtimes.v1.RuntimeR\x07runtime\"\r\n\x0bListRequest\"T\n\x0cListResponse\x12\x44\n\x08runtimes\x18\x01 \x03(\x0b\x32\x1f.autokitteh.runtimes.v1.RuntimeB\x07\xfa\xf7\x18\x03\xc8\x01\x01R\x08runtimes2\xc3\x01\n\x0fRuntimesService\x12]\n\x08\x44\x65scribe\x12\'.autokitteh.runtimes.v1.DescribeRequest\x1a(.autokitteh.runtimes.v1.DescribeResponse\x12Q\n\x04List\x12#.autokitteh.runtimes.v1.ListRequest\x1a$.autokitteh.runtimes.v1.ListResponseB\xed\x01\n\x1a\x63om.autokitteh.runtimes.v1B\x08SvcProtoP\x01ZKgo.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/runtimes/v1;runtimesv1\xa2\x02\x03\x41RX\xaa\x02\x16\x41utokitteh.Runtimes.V1\xca\x02\x16\x41utokitteh\\Runtimes\\V1\xe2\x02\"Autokitteh\\Runtimes\\V1\\GPBMetadata\xea\x02\x18\x41utokitteh::Runtimes::V1b\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n autokitteh/runtimes/v1/svc.proto\x12\x16\x61utokitteh.runtimes.v1\x1a#autokitteh/program/v1/program.proto\x1a$autokitteh/runtimes/v1/runtime.proto\x1a\x1b\x62uf/validate/validate.proto\"/\n\x0f\x44\x65scribeRequest\x12\x1c\n\x04name\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x04name\"M\n\x10\x44\x65scribeResponse\x12\x39\n\x07runtime\x18\x01 \x01(\x0b\x32\x1f.autokitteh.runtimes.v1.RuntimeR\x07runtime\"\r\n\x0bListRequest\"T\n\x0cListResponse\x12\x44\n\x08runtimes\x18\x01 \x03(\x0b\x32\x1f.autokitteh.runtimes.v1.RuntimeB\x07\xfa\xf7\x18\x03\xc8\x01\x01R\x08runtimes\"\xc5\x02\n\x0c\x42uildRequest\x12Q\n\tresources\x18\x01 \x03(\x0b\x32\x33.autokitteh.runtimes.v1.BuildRequest.ResourcesEntryR\tresources\x12\'\n\x07symbols\x18\x02 \x03(\tB\r\xfa\xf7\x18\t\x92\x01\x06\"\x04r\x02\x10\x01R\x07symbols\x12\x42\n\x04memo\x18\x03 \x03(\x0b\x32..autokitteh.runtimes.v1.BuildRequest.MemoEntryR\x04memo\x1a<\n\x0eResourcesEntry\x12\x10\n\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n\x05value\x18\x02 \x01(\x0cR\x05value:\x02\x38\x01\x1a\x37\n\tMemoEntry\x12\x10\n\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n\x05value\x18\x02 \x01(\tR\x05value:\x02\x38\x01\"_\n\rBuildResponse\x12\x1a\n\x08\x61rtifact\x18\x01 \x01(\x0cR\x08\x61rtifact\x12\x32\n\x05\x65rror\x18\x02 \x01(\x0b\x32\x1c.autokitteh.program.v1.ErrorR\x05\x65rror2\x99\x02\n\x0fRuntimesService\x12]\n\x08\x44\x65scribe\x12\'.autokitteh.runtimes.v1.DescribeRequest\x1a(.autokitteh.runtimes.v1.DescribeResponse\x12Q\n\x04List\x12#.autokitteh.runtimes.v1.ListRequest\x1a$.autokitteh.runtimes.v1.ListResponse\x12T\n\x05\x42uild\x12$.autokitteh.runtimes.v1.BuildRequest\x1a%.autokitteh.runtimes.v1.BuildResponseB\xed\x01\n\x1a\x63om.autokitteh.runtimes.v1B\x08SvcProtoP\x01ZKgo.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/runtimes/v1;runtimesv1\xa2\x02\x03\x41RX\xaa\x02\x16\x41utokitteh.Runtimes.V1\xca\x02\x16\x41utokitteh\\Runtimes\\V1\xe2\x02\"Autokitteh\\Runtimes\\V1\\GPBMetadata\xea\x02\x18\x41utokitteh::Runtimes::V1b\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -27,14 +28,28 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _DESCRIBEREQUEST.fields_by_name['name']._serialized_options = b'\372\367\030\004r\002\020\001'
   _LISTRESPONSE.fields_by_name['runtimes']._options = None
   _LISTRESPONSE.fields_by_name['runtimes']._serialized_options = b'\372\367\030\003\310\001\001'
-  _globals['_DESCRIBEREQUEST']._serialized_start=127
-  _globals['_DESCRIBEREQUEST']._serialized_end=174
-  _globals['_DESCRIBERESPONSE']._serialized_start=176
-  _globals['_DESCRIBERESPONSE']._serialized_end=253
-  _globals['_LISTREQUEST']._serialized_start=255
-  _globals['_LISTREQUEST']._serialized_end=268
-  _globals['_LISTRESPONSE']._serialized_start=270
-  _globals['_LISTRESPONSE']._serialized_end=354
-  _globals['_RUNTIMESSERVICE']._serialized_start=357
-  _globals['_RUNTIMESSERVICE']._serialized_end=552
+  _BUILDREQUEST_RESOURCESENTRY._options = None
+  _BUILDREQUEST_RESOURCESENTRY._serialized_options = b'8\001'
+  _BUILDREQUEST_MEMOENTRY._options = None
+  _BUILDREQUEST_MEMOENTRY._serialized_options = b'8\001'
+  _BUILDREQUEST.fields_by_name['symbols']._options = None
+  _BUILDREQUEST.fields_by_name['symbols']._serialized_options = b'\372\367\030\t\222\001\006\"\004r\002\020\001'
+  _globals['_DESCRIBEREQUEST']._serialized_start=164
+  _globals['_DESCRIBEREQUEST']._serialized_end=211
+  _globals['_DESCRIBERESPONSE']._serialized_start=213
+  _globals['_DESCRIBERESPONSE']._serialized_end=290
+  _globals['_LISTREQUEST']._serialized_start=292
+  _globals['_LISTREQUEST']._serialized_end=305
+  _globals['_LISTRESPONSE']._serialized_start=307
+  _globals['_LISTRESPONSE']._serialized_end=391
+  _globals['_BUILDREQUEST']._serialized_start=394
+  _globals['_BUILDREQUEST']._serialized_end=719
+  _globals['_BUILDREQUEST_RESOURCESENTRY']._serialized_start=602
+  _globals['_BUILDREQUEST_RESOURCESENTRY']._serialized_end=662
+  _globals['_BUILDREQUEST_MEMOENTRY']._serialized_start=664
+  _globals['_BUILDREQUEST_MEMOENTRY']._serialized_end=719
+  _globals['_BUILDRESPONSE']._serialized_start=721
+  _globals['_BUILDRESPONSE']._serialized_end=816
+  _globals['_RUNTIMESSERVICE']._serialized_start=819
+  _globals['_RUNTIMESSERVICE']._serialized_end=1100
 # @@protoc_insertion_point(module_scope)

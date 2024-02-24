@@ -1,13 +1,21 @@
 # Negative test: build failure due to error in code.
-ak builds create --path hiss.star
+ak runtimes build --path hiss.star
 output equals file hiss_error.txt
 return code == 1
 
-ak builds create --path single.star -o single.akb --describe
+ak runtimes build --path single.star -o single.akb --describe
 output equals_json file single_output.json
 return code == 0
 
-ak builds create --dir multi -o multi.akb --describe
+ak runtimes build --path single.star -o single.akb --describe
+output equals_json file single_output.json
+return code == 0
+
+ak runtimes build --dir multi -o multi.akb --describe
+output equals_json file multi_output.json
+return code == 0
+
+ak runtimes build --dir multi -o multi.akb --describe
 output equals_json file multi_output.json
 return code == 0
 
@@ -16,7 +24,7 @@ hisssss
 # ^ build error
 
 -- hiss_error.txt --
-Error: create build: build error for "hiss.star": runtime_build: undefined: hisssss
+Error: create build: undefined: hisssss
  [0] hiss.star:1.1
 
 -- single.star --

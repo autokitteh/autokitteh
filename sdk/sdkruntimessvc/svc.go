@@ -1,6 +1,7 @@
 package sdkruntimessvc
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"net/http"
@@ -40,7 +41,7 @@ func (s *svc) list(ctx context.Context) ([]sdktypes.Runtime, error) {
 	s.lsOnce.Do(func() { s.ls, err = s.runtimes.List(ctx) })
 
 	if err != nil {
-		return nil, fmt.Errorf("ls: %w", err)
+		return nil, connect.NewError(connect.CodeUnknown, err)
 	}
 
 	return s.ls, nil
@@ -49,7 +50,7 @@ func (s *svc) list(ctx context.Context) ([]sdktypes.Runtime, error) {
 func (s *svc) Describe(ctx context.Context, req *connect.Request[runtimesv1.DescribeRequest]) (*connect.Response[runtimesv1.DescribeResponse], error) {
 	err := akproto.Validate(req.Msg)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %v", sdkerrors.ErrRPC, err)
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
 	rts, err := s.list(ctx)
@@ -68,7 +69,7 @@ func (s *svc) Describe(ctx context.Context, req *connect.Request[runtimesv1.Desc
 
 func (s *svc) List(ctx context.Context, req *connect.Request[runtimesv1.ListRequest]) (*connect.Response[runtimesv1.ListResponse], error) {
 	if err := akproto.Validate(req.Msg); err != nil {
-		return nil, fmt.Errorf("%w: %v", sdkerrors.ErrRPC, err)
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
 	rts, err := s.list(ctx)
@@ -77,4 +78,37 @@ func (s *svc) List(ctx context.Context, req *connect.Request[runtimesv1.ListRequ
 	}
 
 	return connect.NewResponse(&runtimesv1.ListResponse{Runtimes: kittehs.Transform(rts, sdktypes.ToProto)}), nil
+}
+
+func (s *svc) Build(ctx context.Context, req *connect.Request[runtimesv1.BuildRequest]) (*connect.Response[runtimesv1.BuildResponse], error) {
+	if err := akproto.Validate(req.Msg); err != nil {
+		return nil, fmt.Errorf("%w: %v", sdkerrors.ErrRPC, err)
+	}
+
+	symbols, err := kittehs.TransformError(req.Msg.Symbols, sdktypes.StrictParseSymbol)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+
+	srcFS, err := kittehs.MapToMemFS(req.Msg.Resources)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+
+	bf, err := s.runtimes.Build(ctx, srcFS, symbols, req.Msg.Memo)
+	if err != nil {
+		if err := sdktypes.ProgramErrorFromError(err); err != nil {
+			return connect.NewResponse(&runtimesv1.BuildResponse{Error: err.ToProto()}), nil
+		}
+		return nil, connect.NewError(connect.CodeUnknown, err)
+	}
+
+	var buf bytes.Buffer
+	if err := bf.Write(&buf); err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	return connect.NewResponse(&runtimesv1.BuildResponse{
+		Artifact: buf.Bytes(),
+	}), nil
 }
