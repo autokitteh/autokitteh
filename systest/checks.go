@@ -8,6 +8,9 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/hexops/gotextdiff"
+	"github.com/hexops/gotextdiff/myers"
+	"github.com/hexops/gotextdiff/span"
 	jd "github.com/josephburnett/jd/lib"
 )
 
@@ -133,30 +136,11 @@ func checkHTTPStatusCode(step string, resp *httpResponse) error {
 	return nil
 }
 
-// We implement our own string checks and return errors on failures
-// instead of "github.com/stretchr/testify/assert" because:
-// 1. It results in shorter, simpler, more readable error messages
-// 2. Fail-fast behavior (no point in subsequent actions and checks)
 func stringCheckFailed(want, got string) error {
-	var sb strings.Builder
-
-	sb.WriteString("\n--- Expected: ")
-	if strings.Contains(want, "\n") {
-		sb.WriteString("\n    ")
-	}
-	sb.WriteString(strings.ReplaceAll(want, "\n", "\n    "))
-
-	sb.WriteString("\n+++ Actual:   ")
-	if strings.Contains(got, "\n") {
-		sb.WriteString("\n    ")
-	}
-	sb.WriteString(strings.ReplaceAll(got, "\n", "\n    "))
-
-	return fmt.Errorf(sb.String())
+	edits := myers.ComputeEdits(span.URIFromPath("want"), want, got)
+	return errors.New(fmt.Sprint(gotextdiff.ToUnified("want", "got", want, edits)))
 }
 
 func jsonCheckFailed(diff jd.Diff) error {
-	var sb strings.Builder
-	sb.WriteString(diff.Render())
-	return errors.New(sb.String())
+	return errors.New(diff.Render())
 }
