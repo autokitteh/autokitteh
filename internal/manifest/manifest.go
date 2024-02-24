@@ -26,8 +26,7 @@ type stringKeyer string
 func (s stringKeyer) GetKey() string { return string(s) }
 
 type Manifest struct {
-	Version string `yaml:"version,omitempty" json:"version,omitempty" jsonschema:"required"`
-
+	Version string   `yaml:"version,omitempty" json:"version,omitempty" jsonschema:"required"`
 	Project *Project `yaml:"project,omitempty" json:"project,omitempty"`
 }
 
@@ -64,7 +63,7 @@ func (v EnvVar) GetKey() string { return v.EnvKey + "/" + v.Name }
 type Trigger struct {
 	EnvKey string `yaml:"-" json:"-"` // associated with env.
 
-	ConnectionKey string `yaml:"connection" json:"connection" jsonschema:"required"` // comming from connection.
+	ConnectionKey string `yaml:"connection" json:"connection" jsonschema:"required"` // coming from connection.
 	EventType     string `yaml:"event_type" json:"event_type" jsonschema:"required"`
 	Entrypoint    string `yaml:"entrypoint" json:"entrypoint" jsonschema:"required"`
 }
