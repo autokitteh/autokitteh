@@ -7,6 +7,7 @@ import (
 
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"gorm.io/datatypes"
+	"gorm.io/gorm"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	deploymentsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/deployments/v1"
@@ -326,8 +327,9 @@ type Session struct {
 	CurrentStateType int    `gorm:"index"`
 	Entrypoint       string
 	Inputs           datatypes.JSON
-	CreatedAt        time.Time
-	UpdatedAt        time.Time
+	CreatedAt        time.Time      //`gorm:"default:current_timestamp"`
+	UpdatedAt        time.Time      //`gorm:"default:current_timestamp"`
+	DeletedAt        gorm.DeletedAt `gorm:"index"`
 }
 
 func ParseSession(s Session) (sdktypes.Session, error) {
