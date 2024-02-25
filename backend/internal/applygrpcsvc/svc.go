@@ -7,11 +7,13 @@ import (
 
 	"connectrpc.com/connect"
 
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/internal/manifest"
 	"go.autokitteh.dev/autokitteh/proto"
 	applyv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/apply/v1"
 	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/apply/v1/applyv1connect"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 type server struct {
@@ -49,11 +51,13 @@ func (s *server) Apply(ctx context.Context, req *connect.Request[applyv1.ApplyRe
 		return nil, connect.NewError(connect.CodeUnknown, err)
 	}
 
-	if err = manifest.Execute(ctx, actions, s.client, func(msg string) {
+	pids, err := manifest.Execute(ctx, actions, s.client, func(msg string) {
 		logs = append(logs, fmt.Sprintf("[exec] %s", msg))
-	}); err != nil {
+	})
+	if err != nil {
 		return nil, connect.NewError(connect.CodeUnknown, err)
 	}
 
-	return connect.NewResponse(&applyv1.ApplyResponse{Logs: logs}), nil
+	stringPIDs := kittehs.Transform(pids, func(pid sdktypes.ProjectID) string { return pid.String() })
+	return connect.NewResponse(&applyv1.ApplyResponse{Logs: logs, ProjectIds: stringPIDs}), nil
 }
