@@ -84,16 +84,17 @@ func (db *gormdb) listDeploymentsWithStats(ctx context.Context, filter sdkservic
 
 	if filter.IncludeSessionStats {
 		q = q.Select(`
-			deployments.*, 
-			count(case when sessions.current_state_type = ? then 1 end) as created,
-			count(case when sessions.current_state_type = ? then 1 end) as running,
-			count(case when sessions.current_state_type = ? then 1 end) as error,
-			count(case when sessions.current_state_type = ? then 1 end) as completed
+		deployments.*, 
+		COUNT(case when sessions.current_state_type = ? then 1 end) AS created,
+		COUNT(case when sessions.current_state_type = ? then 1 end) AS running,
+		COUNT(case when sessions.current_state_type = ? then 1 end) AS error,
+		COUNT(case when sessions.current_state_type = ? then 1 end) AS completed
 		`, sdktypes.CreatedSessionStateType,
 			sdktypes.RunningSessionStateType,
 			sdktypes.ErrorSessionStateType,
 			sdktypes.CompletedSessionStateType).
-			Joins("left join sessions on deployments.deployment_id = sessions.deployment_id").
+			Joins(`LEFT JOIN sessions on deployments.deployment_id = sessions.deployment_id
+		AND sessions.deleted_at IS NULL`).
 			Group("deployments.deployment_id")
 	}
 	var ds []scheme.DeploymentWithStats
