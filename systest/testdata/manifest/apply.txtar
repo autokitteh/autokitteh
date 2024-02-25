@@ -11,7 +11,7 @@ return code == 1
 # Successful application of an empty plan.
 ak manifest apply empty.yaml
 return code == 0
-output equals ''
+output equals_json '[]'
 
 # Successful dry run of a full project.
 ak manifest apply full.yaml --dry-run -J
@@ -98,6 +98,7 @@ project:
 [exec] create_env "my_project/default": created "e:00000000000000000000000000000002"
 [exec] create_connection "my_project/my_connection": created "connection:00000000000000000000000000000003"
 [exec] create_trigger "my_project/default:my_project/my_connection/get": created "t:00000000000000000000000000000004"
+[p:00000000000000000000000000000001]
 
 -- expected_project_details.json --
 {
