@@ -123,6 +123,22 @@ func get[T, R any](db *gorm.DB, ctx context.Context, f func(t T) (*R, error), wh
 	return f(r)
 }
 
+// TODO: change all get functions to use this
+func get1[T any](db *gorm.DB, ctx context.Context, t T, where string, args ...any) (*T, error) {
+	var r T
+
+	// TODO: fetch all records and report if there is more than one record
+	result := db.WithContext(ctx).Where(where, args...).Limit(1).Find(&r)
+	if result.Error != nil {
+		return nil, translateError(result.Error)
+	}
+
+	if result.RowsAffected == 0 {
+		return nil, sdkerrors.ErrNotFound
+	}
+	return &r, nil
+}
+
 func delete[T any](db *gorm.DB, ctx context.Context, t T, where string, args ...any) error {
 	var r T
 	result := db.WithContext(ctx).Where(where, args...).Delete(&r)
