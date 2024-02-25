@@ -21,8 +21,12 @@ func (db *gormdb) GetSession(ctx context.Context, sessionID sdktypes.SessionID) 
 	return get(db.db, ctx, scheme.ParseSession, "session_id = ?", sessionID.String())
 }
 
+func (db *gormdb) deleteSession(ctx context.Context, sessionID string) error {
+	return delete(db.db, ctx, scheme.Session{}, "session_id = ?", sessionID)
+}
+
 func (db *gormdb) DeleteSession(ctx context.Context, sessionID sdktypes.SessionID) error {
-	return delete(db.db, ctx, scheme.Session{}, "session_id = ?", sessionID.String())
+	return db.deleteSession(ctx, sessionID.String())
 }
 
 func (db *gormdb) GetSessionLog(ctx context.Context, sessionID sdktypes.SessionID) (sdktypes.SessionLog, error) {
@@ -37,45 +41,48 @@ func (db *gormdb) GetSessionLog(ctx context.Context, sessionID sdktypes.SessionI
 	return sdktypes.NewSessionLog(prs), err
 }
 
-func addSessionLogRecord(tx *gorm.DB, sessionID sdktypes.SessionID, logr sdktypes.SessionLogRecord) error {
+func addSessionLogRecord(tx *gorm.DB, sessionID string, logr sdktypes.SessionLogRecord) error {
 	jsonData, err := json.Marshal(logr)
 	if err != nil {
 		return fmt.Errorf("marshal session log record: %w", err)
 	}
 
 	r := scheme.SessionLogRecord{
-		SessionID: sessionID.String(),
+		SessionID: sessionID,
 		Data:      jsonData,
 	}
 
 	return tx.Create(&r).Error
 }
 
-func (db *gormdb) CreateSession(ctx context.Context, session sdktypes.Session) error {
+func (db *gormdb) createSession(ctx context.Context, session scheme.Session) error {
 	return translateError(db.transaction(ctx, func(tx *tx) error {
-		now := time.Now()
-
-		r := scheme.Session{
-			SessionID:        sdktypes.GetSessionID(session).String(),
-			DeploymentID:     sdktypes.GetSessionDeploymentID(session).String(),
-			EventID:          sdktypes.GetSessionEventID(session).String(),
-			Entrypoint:       sdktypes.GetCodeLocationCanonicalString(sdktypes.GetSessionEntryPoint(session)),
-			CurrentStateType: int(sdktypes.CreatedSessionStateType),
-			Inputs:           kittehs.Must1(json.Marshal(sdktypes.GetSessionInputs(session))),
-			CreatedAt:        now,
-			UpdatedAt:        now,
-		}
-
-		if err := tx.db.WithContext(ctx).Create(&r).Error; err != nil {
+		if err := tx.db.WithContext(ctx).Create(&session).Error; err != nil {
 			return translateError(err)
 		}
 
-		return addSessionLogRecord(tx.db, sdktypes.GetSessionID(session), sdktypes.NewStateSessionLogRecord(
+		return addSessionLogRecord(tx.db, session.SessionID, sdktypes.NewStateSessionLogRecord(
 			kittehs.Must1(sdktypes.WrapSessionState(sdktypes.NewCreatedSessionState()).Update(
 				func(pb *sdktypes.SessionStatePB) { pb.T = timestamppb.Now() },
 			)),
 		))
 	}))
+}
+
+func (db *gormdb) CreateSession(ctx context.Context, session sdktypes.Session) error {
+	now := time.Now()
+
+	s := scheme.Session{
+		SessionID:        sdktypes.GetSessionID(session).String(),
+		DeploymentID:     sdktypes.GetSessionDeploymentID(session).String(),
+		EventID:          sdktypes.GetSessionEventID(session).String(),
+		Entrypoint:       sdktypes.GetCodeLocationCanonicalString(sdktypes.GetSessionEntryPoint(session)),
+		CurrentStateType: int(sdktypes.CreatedSessionStateType),
+		Inputs:           kittehs.Must1(json.Marshal(sdktypes.GetSessionInputs(session))),
+		CreatedAt:        now,
+		UpdatedAt:        now,
+	}
+	return db.createSession(ctx, s)
 }
 
 func (db *gormdb) UpdateSessionState(ctx context.Context, sessionID sdktypes.SessionID, state sdktypes.SessionState) error {
@@ -85,13 +92,14 @@ func (db *gormdb) UpdateSessionState(ctx context.Context, sessionID sdktypes.Ses
 			UpdatedAt:        time.Now(),
 		}
 
-		if res := tx.db.Model(&r).Where("session_id = ?", sessionID.String()).Updates(r); res.Error != nil {
+		sid := sessionID.String()
+		if res := tx.db.Model(&r).Where("session_id = ?", sid).Updates(r); res.Error != nil {
 			return res.Error
 		} else if res.RowsAffected == 0 {
 			return sdkerrors.ErrNotFound
 		}
 
-		return addSessionLogRecord(tx.db, sessionID, sdktypes.NewSessionLogState(
+		return addSessionLogRecord(tx.db, sid, sdktypes.NewSessionLogState(
 			kittehs.Must1(state.Update(
 				func(pb *sdktypes.SessionStatePB) { pb.T = timestamppb.Now() },
 			)),
@@ -100,10 +108,10 @@ func (db *gormdb) UpdateSessionState(ctx context.Context, sessionID sdktypes.Ses
 }
 
 func (db *gormdb) AddSessionPrint(ctx context.Context, sessionID sdktypes.SessionID, print string) error {
-	return addSessionLogRecord(db.db, sessionID, sdktypes.NewSessionLogPrint(print))
+	return addSessionLogRecord(db.db, sessionID.String(), sdktypes.NewSessionLogPrint(print))
 }
 
-func (db *gormdb) ListSessions(ctx context.Context, f sdkservices.ListSessionsFilter) ([]sdktypes.Session, int, error) {
+func (db *gormdb) listSessions(ctx context.Context, f sdkservices.ListSessionsFilter) ([]scheme.Session, int, error) {
 	var rs []scheme.Session
 
 	q := db.db.WithContext(ctx)
@@ -130,8 +138,17 @@ func (db *gormdb) ListSessions(ctx context.Context, f sdkservices.ListSessionsFi
 		return nil, 0, translateError(err)
 	}
 
-	xs, err := kittehs.TransformError(rs, scheme.ParseSession)
-	return xs, len(xs), err
+	// REVIEW: will the count be right in case of pagination?
+	return rs, len(rs), nil
+}
+
+func (db *gormdb) ListSessions(ctx context.Context, f sdkservices.ListSessionsFilter) ([]sdktypes.Session, int, error) {
+	rs, cnt, err := db.listSessions(ctx, f)
+	if rs == nil { // no sessions to process. either error or count request
+		return nil, cnt, err
+	}
+	sessions, err := kittehs.TransformError(rs, scheme.ParseSession)
+	return sessions, len(sessions), err
 }
 
 func (db *gormdb) CreateSessionCall(ctx context.Context, sessionID sdktypes.SessionID, spec sdktypes.SessionCallSpec) error {
@@ -140,9 +157,10 @@ func (db *gormdb) CreateSessionCall(ctx context.Context, sessionID sdktypes.Sess
 		return fmt.Errorf("marshal session call: %w", err)
 	}
 
+	sid := sessionID.String()
 	return translateError(db.transaction(ctx, func(tx *tx) error {
 		r := scheme.SessionCallSpec{
-			SessionID: sessionID.String(),
+			SessionID: sid,
 			Seq:       sdktypes.GetSessionCallSpecSeq(spec),
 			Data:      jsonSpec,
 		}
@@ -151,7 +169,7 @@ func (db *gormdb) CreateSessionCall(ctx context.Context, sessionID sdktypes.Sess
 			return err
 		}
 
-		return addSessionLogRecord(tx.db, sessionID, sdktypes.NewSessionLogCallSpec(spec))
+		return addSessionLogRecord(tx.db, sid, sdktypes.NewSessionLogCallSpec(spec))
 	}))
 }
 
@@ -190,8 +208,9 @@ func (db *gormdb) StartSessionCallAttempt(ctx context.Context, sessionID sdktype
 			return err
 		}
 
+		sid := sessionID.String()
 		r := scheme.SessionCallAttempt{
-			SessionID: sessionID.String(),
+			SessionID: sid,
 			Seq:       seq,
 			Attempt:   attempt,
 			Start:     json,
@@ -201,7 +220,7 @@ func (db *gormdb) StartSessionCallAttempt(ctx context.Context, sessionID sdktype
 			return err
 		}
 
-		return addSessionLogRecord(tx.db, sessionID, sdktypes.NewSessionLogCallAttemptStart(obj))
+		return addSessionLogRecord(tx.db, sid, sdktypes.NewSessionLogCallAttemptStart(obj))
 	}))
 
 	return
@@ -224,7 +243,7 @@ func (db *gormdb) CompleteSessionCallAttempt(ctx context.Context, sessionID sdkt
 			return sdkerrors.ErrNotFound
 		}
 
-		return addSessionLogRecord(tx.db, sessionID, sdktypes.NewSessionLogCallAttemptComplete(complete))
+		return addSessionLogRecord(tx.db, sessionID.String(), sdktypes.NewSessionLogCallAttemptComplete(complete))
 	}))
 }
 
