@@ -127,13 +127,13 @@ func setKeyValue(cfg map[string]any, key, val string) error {
 
 // Validate the new configuration by reloading it from a temporary file.
 func validateConfig(data []byte) error {
-	dir, err := os.MkdirTemp("", "")
+	temp, err := os.MkdirTemp("", "")
 	if err != nil {
 		return fmt.Errorf("create temporary directory: %w", err)
 	}
-	defer os.RemoveAll(dir)
+	defer os.RemoveAll(temp)
 
-	path := filepath.Join(dir, common.ConfigYAMLFileName)
+	path := filepath.Join(temp, common.ConfigYAMLFileName)
 	if err := os.WriteFile(path, data, filePermissions); err != nil {
 		return fmt.Errorf("write file: %w", err)
 	}
@@ -145,9 +145,10 @@ func validateConfig(data []byte) error {
 		} else {
 			os.Unsetenv(config.ConfigEnvVar)
 		}
+		config.ConfigHomeDir() // Account for change in environment variable.
 	}()
 
-	os.Setenv(config.ConfigEnvVar, dir)
+	os.Setenv(config.ConfigEnvVar, temp)
 
 	if err := common.InitConfig(nil); err != nil {
 		return fmt.Errorf("init temp config: %w", err)
