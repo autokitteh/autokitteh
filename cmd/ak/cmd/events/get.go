@@ -17,7 +17,7 @@ var getCmd = common.StandardCommand(&cobra.Command{
 		r := resolver.Resolver{Client: common.Client()}
 		e, _, err := r.EventID(args[0])
 		if err != nil {
-			return err
+			return common.FailNotFound(cmd, "event")
 		}
 
 		if err := common.FailIfNotFound(cmd, "event", e.IsValid()); err != nil {
