@@ -138,7 +138,7 @@ func checkHTTPStatusCode(step string, resp *httpResponse) error {
 
 func stringCheckFailed(want, got string) error {
 	edits := myers.ComputeEdits(span.URIFromPath("want"), want, got)
-	return errors.New(fmt.Sprint(gotextdiff.ToUnified("want", "got", want, edits)))
+	return errors.New(fmt.Sprint("\n", gotextdiff.ToUnified("want", "got", want, edits)))
 }
 
 func jsonCheckFailed(diff jd.Diff) error {
