@@ -49,7 +49,11 @@ func setupDB(dbName string) *gorm.DB {
 func getZ() *zap.Logger {
 	// return zap.NewNop()
 	logger := zap.NewExample()
-	defer logger.Sync() // flushes buffer, if any
+	defer func() { // flushes buffer, if any
+		if err := logger.Sync(); err != nil {
+			log.Printf("Could not sync logger: %v", err)
+		}
+	}()
 	return logger
 }
 
@@ -59,16 +63,21 @@ func newDbFixture() *dbFixture {
 	ctx := context.Background()
 
 	gormdb := gormdb{db: db, cfg: nil, mu: nil, z: getZ()}
-	gormdb.Teardown(ctx) // delete tables if any
-	gormdb.Setup(ctx)    // ensure migration (right schema)
+	if err := gormdb.Teardown(ctx); err != nil { // delete tables if any
+		log.Printf("Failed to termdown gormdb: %v", err)
+	}
+	if err := gormdb.Setup(ctx); err != nil { // ensure migration/schemas
+		log.Fatalf("Failed to setup gormdb: %v", err)
+	}
 
 	return &dbFixture{db: db, gormdb: &gormdb, ctx: ctx}
 }
 
-func (f *dbFixture) debug() {
-	f.db = f.db.Debug()
-	f.gormdb.db = f.db
-}
+// enable SQL logging
+// func (f *dbFixture) debug() {
+// 	f.db = f.db.Debug()
+// 	f.gormdb.db = f.db
+// }
 
 var (
 	testSessionID    = "s:1234"

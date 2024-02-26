@@ -18,9 +18,6 @@ func createSessionWithTest(t *testing.T, ctx context.Context, gormdb *gormdb, se
 	assert.Equal(t, int64(1), res.RowsAffected)
 }
 
-func ttt() {
-}
-
 func TestCreateSession(t *testing.T) {
 	f := newDbFixture()
 
