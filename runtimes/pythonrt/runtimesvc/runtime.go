@@ -1,10 +1,10 @@
-package runtimesvc
+package runtime
 
 import (
 	"context"
 	"io/fs"
 
-	"go.autokitteh.dev/autokitteh/runtimes/starlarkrt/runtime"
+	"go.autokitteh.dev/autokitteh/runtimes/pythonrt/runtime"
 	"go.autokitteh.dev/autokitteh/sdk/sdkruntimes"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
