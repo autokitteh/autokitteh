@@ -4,13 +4,14 @@ import (
 	"context"
 	"fmt"
 
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/internal/manifest/internal/actions"
 	"go.autokitteh.dev/autokitteh/internal/resolver"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-func Execute(ctx context.Context, actions actions.Actions, client sdkservices.Services, log Log) error {
+func Execute(ctx context.Context, actions actions.Actions, client sdkservices.Services, log Log) ([]sdktypes.ProjectID, error) {
 	execContext := execContext{
 		client:   client,
 		log:      log,
@@ -24,10 +25,11 @@ func Execute(ctx context.Context, actions actions.Actions, client sdkservices.Se
 
 	for _, action := range actions {
 		if err := executeAction(ctx, action, &execContext); err != nil {
-			return fmt.Errorf("action %s %s: %w", action.Type(), action.GetKey(), err)
+			return nil, fmt.Errorf("action %s %s: %w", action.Type(), action.GetKey(), err)
 		}
 	}
-	return nil
+
+	return kittehs.MapValuesSortedByKeys(execContext.projects), nil
 }
 
 func executeAction(ctx context.Context, action actions.Action, execContext *execContext) error {

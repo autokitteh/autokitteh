@@ -15,7 +15,9 @@ class ApplyRequest(_message.Message):
     def __init__(self, manifest: _Optional[str] = ..., path: _Optional[str] = ...) -> None: ...
 
 class ApplyResponse(_message.Message):
-    __slots__ = ["logs"]
+    __slots__ = ["logs", "project_ids"]
     LOGS_FIELD_NUMBER: _ClassVar[int]
+    PROJECT_IDS_FIELD_NUMBER: _ClassVar[int]
     logs: _containers.RepeatedScalarFieldContainer[str]
-    def __init__(self, logs: _Optional[_Iterable[str]] = ...) -> None: ...
+    project_ids: _containers.RepeatedScalarFieldContainer[str]
+    def __init__(self, logs: _Optional[_Iterable[str]] = ..., project_ids: _Optional[_Iterable[str]] = ...) -> None: ...
