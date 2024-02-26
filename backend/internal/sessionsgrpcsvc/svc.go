@@ -36,8 +36,8 @@ func Init(mux *http.ServeMux, sessions sdkservices.Sessions) {
 // re-wrap sdk as connect error
 func asConnectError(err error) error {
 	// in protovalidate Error() is defined on pointer type and there is no error object
-	var pValidationError *protovalidate.ValidationError
-	if errors.As(err, &pValidationError) {
+	var validationError *protovalidate.ValidationError
+	if errors.As(err, &validationError) {
 		return connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
