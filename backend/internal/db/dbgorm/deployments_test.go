@@ -48,8 +48,6 @@ func TestListDeployments(t *testing.T) {
 	f := newDbFixture()
 
 	flt := sdkservices.ListDeploymentsFilter{
-		EnvID:               nil,
-		BuildID:             nil,
 		State:               sdktypes.DeploymentStateUnspecified,
 		Limit:               0,
 		IncludeSessionStats: false,
@@ -74,8 +72,6 @@ func TestListDeploymentsWithStats(t *testing.T) {
 	f := newDbFixture()
 
 	flt := sdkservices.ListDeploymentsFilter{
-		EnvID:               nil,
-		BuildID:             nil,
 		State:               sdktypes.DeploymentStateUnspecified,
 		Limit:               0,
 		IncludeSessionStats: true,

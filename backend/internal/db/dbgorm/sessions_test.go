@@ -60,11 +60,8 @@ func TestListSessions(t *testing.T) {
 	f := newDbFixture()
 
 	flt := sdkservices.ListSessionsFilter{
-		DeploymentID: nil,
-		EventID:      nil,
-		EnvID:        nil,
-		CountOnly:    false,
-		StateType:    sdktypes.UnspecifiedSessionStateType,
+		CountOnly: false,
+		StateType: sdktypes.UnspecifiedSessionStateType,
 	}
 
 	// no sessions
