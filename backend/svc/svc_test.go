@@ -17,6 +17,7 @@ func TestFxOptions(t *testing.T) {
 	if err := fx.ValidateApp(opts...); err != nil {
 		t.Logf("validate error: %v", err)
 		t.Fail()
+        // test
 	}
 }
 
