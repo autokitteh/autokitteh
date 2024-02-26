@@ -1,8 +1,10 @@
 package sdkruntimesclient
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"io/fs"
 
 	"connectrpc.com/connect"
 
@@ -12,6 +14,7 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/internal/rpcerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkclients/internal"
 	"go.autokitteh.dev/autokitteh/sdk/sdkclients/sdkclient"
+	"go.autokitteh.dev/autokitteh/sdk/sdkruntimes/sdkbuildfile"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -22,6 +25,36 @@ type client struct {
 
 func New(p sdkclient.Params) sdkservices.Runtimes {
 	return &client{client: internal.New(runtimesv1connect.NewRuntimesServiceClient, p)}
+}
+
+func (c *client) Build(ctx context.Context, fs fs.FS, symbols []sdktypes.Symbol, memo map[string]string) (*sdkbuildfile.BuildFile, error) {
+	resources, err := kittehs.FSToMap(fs)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.client.Build(ctx, connect.NewRequest(&runtimesv1.BuildRequest{
+		Resources: resources,
+		Symbols:   kittehs.TransformToStrings(symbols),
+		Memo:      memo,
+	}))
+	if err != nil {
+		return nil, rpcerrors.TranslateError(err)
+	}
+
+	if err := internal.Validate(resp.Msg); err != nil {
+		return nil, err
+	}
+
+	if resp.Msg.Error != nil {
+		perr, err := sdktypes.ProgramErrorFromProto(resp.Msg.Error)
+		if err != nil {
+			return nil, fmt.Errorf("invalid error: %w", err)
+		}
+		return nil, sdktypes.ProgramErrorToError(perr)
+	}
+
+	return sdkbuildfile.Read(bytes.NewReader(resp.Msg.Artifact))
 }
 
 func (c *client) List(ctx context.Context) ([]sdktypes.Runtime, error) {

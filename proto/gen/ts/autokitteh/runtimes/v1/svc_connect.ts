@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { DescribeRequest, DescribeResponse, ListRequest, ListResponse } from "./svc_pb.js";
+import { BuildRequest, BuildResponse, DescribeRequest, DescribeResponse, ListRequest, ListResponse } from "./svc_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -31,6 +31,15 @@ export const RuntimesService = {
       name: "List",
       I: ListRequest,
       O: ListResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * @generated from rpc autokitteh.runtimes.v1.RuntimesService.Build
+     */
+    build: {
+      name: "Build",
+      I: BuildRequest,
+      O: BuildResponse,
       kind: MethodKind.Unary,
     },
   }

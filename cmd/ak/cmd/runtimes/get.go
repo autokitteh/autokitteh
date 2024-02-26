@@ -22,7 +22,7 @@ var getCmd = common.StandardCommand(&cobra.Command{
 			return fmt.Errorf("name: %w", err)
 		}
 
-		rt, err := common.Client().Runtimes().New(context.Background(), name)
+		rt, err := runtimes().New(context.Background(), name)
 		if err != nil {
 			return err
 		}

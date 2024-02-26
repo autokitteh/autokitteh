@@ -6,12 +6,15 @@ import (
 
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkexecutor"
+	"go.autokitteh.dev/autokitteh/sdk/sdkruntimes/sdkbuildfile"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 type Runtimes interface {
 	List(ctx context.Context) ([]sdktypes.Runtime, error)
 	New(ctx context.Context, name sdktypes.Name) (Runtime, error)
+
+	Build(ctx context.Context, fs fs.FS, symbols []sdktypes.Symbol, memo map[string]string) (*sdkbuildfile.BuildFile, error)
 }
 
 type Runtime interface {
