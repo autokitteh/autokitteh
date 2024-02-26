@@ -33,10 +33,9 @@ var applyCmd = common.StandardCommand(&cobra.Command{
 			ctx, cancel := common.LimitedContext()
 			defer cancel()
 
-			pids, err := imanifest.Execute(ctx, actions, common.Client(), func(msg string) {
+			_, err := imanifest.Execute(ctx, actions, common.Client(), func(msg string) {
 				fmt.Fprintf(os.Stderr, "[exec] %s\n", msg)
 			})
-			fmt.Println(pids)
 			return err
 		}
 
