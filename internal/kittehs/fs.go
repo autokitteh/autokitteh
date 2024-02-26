@@ -8,9 +8,9 @@ import (
 	"github.com/psanford/memfs"
 )
 
-func FSToMap(in fs.FS) (out map[string][]byte, err error) {
-	out = make(map[string][]byte)
-	err = fs.WalkDir(in, ".", func(path string, d fs.DirEntry, err error) error {
+func FSToMap(in fs.FS) (map[string][]byte, error) {
+	out := make(map[string][]byte)
+	err := fs.WalkDir(in, ".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -28,7 +28,10 @@ func FSToMap(in fs.FS) (out map[string][]byte, err error) {
 
 		return nil
 	})
-	return
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func MapToMemFS(in map[string][]byte) (fs.FS, error) {

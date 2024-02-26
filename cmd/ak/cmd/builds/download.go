@@ -12,6 +12,8 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/resolver"
 )
 
+var output string
+
 var downloadCmd = common.StandardCommand(&cobra.Command{
 	Use:     "download <build ID> [--output=...]",
 	Short:   "Download build data from server",
@@ -59,4 +61,17 @@ func init() {
 	// Command-specific flags.
 	downloadCmd.Flags().StringVarP(&output, "output", "o", defaultOutput, `output file path, or "-" for stdout`)
 	kittehs.Must0(downloadCmd.MarkFlagFilename("output"))
+}
+
+func outputFile() (*os.File, error) {
+	if output == "" {
+		output = defaultOutput
+	}
+
+	f, err := os.OpenFile(output, os.O_CREATE|os.O_WRONLY, 0o600)
+	if err != nil {
+		return nil, fmt.Errorf("create file: %w", err)
+	}
+
+	return f, nil
 }

@@ -1,9 +1,6 @@
 package builds
 
 import (
-	"fmt"
-	"os"
-
 	"github.com/spf13/cobra"
 
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
@@ -12,11 +9,6 @@ import (
 
 const (
 	defaultOutput = "build.akb"
-)
-
-// Flag shared by the "create" and "download" commands.
-var (
-	output string
 )
 
 var buildsCmd = common.StandardCommand(&cobra.Command{
@@ -42,17 +34,4 @@ func init() {
 
 func builds() sdkservices.Builds {
 	return common.Client().Builds()
-}
-
-func outputFile() (*os.File, error) {
-	if output == "" {
-		output = defaultOutput
-	}
-
-	f, err := os.OpenFile(output, os.O_CREATE|os.O_WRONLY, 0o600)
-	if err != nil {
-		return nil, fmt.Errorf("create file: %w", err)
-	}
-
-	return f, nil
 }

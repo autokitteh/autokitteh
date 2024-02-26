@@ -17,7 +17,7 @@ var listCmd = common.StandardCommand(&cobra.Command{
 	Args:    cobra.NoArgs,
 
 	RunE: func(cmd *cobra.Command, args []string) error {
-		rs, err := common.Client().Runtimes().List(context.Background())
+		rs, err := runtimes().List(context.Background())
 		if err != nil {
 			return err
 		}

@@ -26,7 +26,7 @@ var (
 )
 
 var buildCmd = common.StandardCommand(&cobra.Command{
-	Use:     "build [--dir=...] <--path=...> [--output=...] [--describe]",
+	Use:     "build [--dir=...] <--path=...> [--output=...] [--values=...] [--describe]",
 	Short:   `Build program and save it locally (see also "project build" command)`,
 	Aliases: []string{"c"},
 	Args:    cobra.NoArgs,
@@ -59,7 +59,7 @@ var buildCmd = common.StandardCommand(&cobra.Command{
 			}
 		}
 
-		b, err := client().Build(ctx, srcFS, vns, nil)
+		b, err := runtimes().Build(ctx, srcFS, vns, nil)
 		if err != nil {
 			return fmt.Errorf("create build: %w", err)
 		}
