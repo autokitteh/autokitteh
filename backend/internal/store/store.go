@@ -3,7 +3,6 @@ package store
 import (
 	"context"
 	"fmt"
-	"net/url"
 	"sort"
 	"strings"
 
@@ -20,7 +19,7 @@ import (
 )
 
 type Config struct {
-	ServerURL *url.URL `koanf:"server_url"`
+	ServerURL string `koanf:"server_url"`
 }
 
 var Configs = configset.Set[Config]{
@@ -36,7 +35,7 @@ type store struct {
 func New(z *zap.Logger, cfg *Config) (sdkservices.Store, *redis.Client, error) {
 	var client *redis.Client
 
-	if cfg.ServerURL == nil {
+	if cfg.ServerURL == "" {
 		mr, err := miniredis.Run()
 		if err != nil {
 			return nil, nil, fmt.Errorf("miniredis: %w", err)
@@ -49,7 +48,7 @@ func New(z *zap.Logger, cfg *Config) (sdkservices.Store, *redis.Client, error) {
 		// TODO(ENG-160): uncomment when we have a flag to say if prod or not.
 		// z.Warn("no external redis configured, using miniredis", zap.String("addr", addr))
 	} else {
-		opts, err := redis.ParseURL(cfg.ServerURL.String())
+		opts, err := redis.ParseURL(cfg.ServerURL)
 		if err != nil {
 			return nil, nil, err
 		}
