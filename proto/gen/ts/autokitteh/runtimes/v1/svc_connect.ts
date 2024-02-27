@@ -43,8 +43,8 @@ export const RuntimesService = {
       kind: MethodKind.Unary,
     },
     /**
-     * TODO: This is a simplified version that should be used
-     *       for testing and local runs only.
+     * This is a simplified version that should be used
+     * for testing and local runs only.
      *
      * @generated from rpc autokitteh.runtimes.v1.RuntimesService.Run
      */

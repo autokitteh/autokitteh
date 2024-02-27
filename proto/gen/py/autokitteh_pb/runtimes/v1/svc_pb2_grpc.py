@@ -62,7 +62,7 @@ class RuntimesServiceServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def Run(self, request, context):
-        """TODO: This is a simplified version that should be used
+        """This is a simplified version that should be used
         for testing and local runs only.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)

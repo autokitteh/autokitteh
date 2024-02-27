@@ -49,9 +49,8 @@ type RuntimesServiceClient interface {
 	Describe(context.Context, *connect.Request[v1.DescribeRequest]) (*connect.Response[v1.DescribeResponse], error)
 	List(context.Context, *connect.Request[v1.ListRequest]) (*connect.Response[v1.ListResponse], error)
 	Build(context.Context, *connect.Request[v1.BuildRequest]) (*connect.Response[v1.BuildResponse], error)
-	// TODO: This is a simplified version that should be used
-	//
-	//	for testing and local runs only.
+	// This is a simplified version that should be used
+	// for testing and local runs only.
 	Run(context.Context, *connect.Request[v1.RunRequest]) (*connect.ServerStreamForClient[v1.RunResponse], error)
 }
 
@@ -122,9 +121,8 @@ type RuntimesServiceHandler interface {
 	Describe(context.Context, *connect.Request[v1.DescribeRequest]) (*connect.Response[v1.DescribeResponse], error)
 	List(context.Context, *connect.Request[v1.ListRequest]) (*connect.Response[v1.ListResponse], error)
 	Build(context.Context, *connect.Request[v1.BuildRequest]) (*connect.Response[v1.BuildResponse], error)
-	// TODO: This is a simplified version that should be used
-	//
-	//	for testing and local runs only.
+	// This is a simplified version that should be used
+	// for testing and local runs only.
 	Run(context.Context, *connect.Request[v1.RunRequest], *connect.ServerStream[v1.RunResponse]) error
 }
 
