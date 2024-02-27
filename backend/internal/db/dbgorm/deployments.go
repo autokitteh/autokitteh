@@ -41,11 +41,11 @@ func (db *gormdb) getDeployment(ctx context.Context, deploymentID string) (*sche
 }
 
 func (db *gormdb) GetDeployment(ctx context.Context, id sdktypes.DeploymentID) (sdktypes.Deployment, error) {
-	if d, err := db.getDeployment(ctx, id.String()); d == nil {
+	d, err := db.getDeployment(ctx, id.String())
+	if d == nil || err != nil {
 		return nil, err
-	} else {
-		return scheme.ParseDeployment(*d)
 	}
+	return scheme.ParseDeployment(*d)
 }
 
 func (db *gormdb) DeleteDeployment(ctx context.Context, id sdktypes.DeploymentID) error {
