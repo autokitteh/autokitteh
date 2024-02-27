@@ -46,13 +46,7 @@ func (s *server) Create(ctx context.Context, req *connect.Request[projectsv1.Cre
 
 	uid, err := s.projects.Create(ctx, project)
 	if err != nil {
-		if errors.Is(err, sdkerrors.ErrAlreadyExists) {
-			return nil, connect.NewError(connect.CodeAlreadyExists, err)
-		} else if errors.Is(err, sdkerrors.ErrUnauthorized) {
-			return nil, connect.NewError(connect.CodePermissionDenied, err)
-		}
-
-		return nil, connect.NewError(connect.CodeUnknown, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	return connect.NewResponse(&projectsv1.CreateResponse{ProjectId: uid.String()}), nil
@@ -71,11 +65,7 @@ func (s *server) Update(ctx context.Context, req *connect.Request[projectsv1.Upd
 	}
 
 	if err := s.projects.Update(ctx, project); err != nil {
-		if errors.Is(err, sdkerrors.ErrUnauthorized) {
-			return nil, connect.NewError(connect.CodePermissionDenied, err)
-		}
-
-		return nil, connect.NewError(connect.CodeUnknown, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	return connect.NewResponse(&projectsv1.UpdateResponse{}), nil
@@ -128,11 +118,7 @@ func (s *server) Get(ctx context.Context, req *connect.Request[projectsv1.GetReq
 func (s *server) list(ctx context.Context) ([]*sdktypes.ProjectPB, error) {
 	ps, err := s.projects.List(ctx)
 	if err != nil {
-		if errors.Is(err, sdkerrors.ErrUnauthorized) {
-			return nil, connect.NewError(connect.CodePermissionDenied, err)
-		}
-
-		return nil, connect.NewError(connect.CodeUnknown, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	return kittehs.Transform(ps, sdktypes.ToProto), nil
@@ -209,11 +195,7 @@ func (s *server) SetResources(ctx context.Context, req *connect.Request[projects
 	}
 
 	if err := s.projects.SetResources(ctx, pid, msg.Resources); err != nil {
-		if errors.Is(err, sdkerrors.ErrUnauthorized) {
-			return nil, connect.NewError(connect.CodePermissionDenied, err)
-		}
-
-		return nil, connect.NewError(connect.CodeUnknown, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	return connect.NewResponse(&projectsv1.SetResourcesResponse{}), nil
@@ -237,11 +219,7 @@ func (s *server) DownloadResources(ctx context.Context, req *connect.Request[pro
 
 	resources, err := s.projects.DownloadResources(ctx, pid)
 	if err != nil {
-		if errors.Is(err, sdkerrors.ErrUnauthorized) {
-			return nil, connect.NewError(connect.CodePermissionDenied, err)
-		}
-
-		return nil, connect.NewError(connect.CodeUnknown, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	return connect.NewResponse(&projectsv1.DownloadResourcesResponse{Resources: resources}), nil

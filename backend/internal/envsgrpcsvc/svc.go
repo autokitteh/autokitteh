@@ -46,11 +46,7 @@ func (s *server) Create(ctx context.Context, req *connect.Request[envsv1.CreateR
 
 	eid, err := s.envs.Create(ctx, env)
 	if err != nil {
-		if errors.Is(err, sdkerrors.ErrUnauthorized) {
-			return nil, connect.NewError(connect.CodePermissionDenied, err)
-		}
-
-		return nil, connect.NewError(connect.CodeUnknown, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	return connect.NewResponse(&envsv1.CreateResponse{EnvId: eid.String()}), nil
@@ -114,15 +110,7 @@ func (s *server) List(ctx context.Context, req *connect.Request[envsv1.ListReque
 
 	envs, err := s.envs.List(ctx, pid)
 	if err != nil {
-		if errors.Is(err, sdkerrors.ErrNotFound) {
-			return nil, connect.NewError(connect.CodeNotFound, err)
-		}
-
-		if errors.Is(err, sdkerrors.ErrUnauthorized) {
-			return nil, connect.NewError(connect.CodePermissionDenied, err)
-		}
-
-		return nil, connect.NewError(connect.CodeUnknown, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	pbenvs := kittehs.Transform(envs, sdktypes.ToProto)
@@ -143,15 +131,7 @@ func (s *server) SetVar(ctx context.Context, req *connect.Request[envsv1.SetVarR
 	}
 
 	if err := s.envs.SetVar(ctx, ev); err != nil {
-		if errors.Is(err, sdkerrors.ErrAlreadyExists) {
-			return nil, connect.NewError(connect.CodeAlreadyExists, err)
-		}
-
-		if errors.Is(err, sdkerrors.ErrUnauthorized) {
-			return nil, connect.NewError(connect.CodePermissionDenied, err)
-		}
-
-		return nil, connect.NewError(connect.CodeUnknown, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	return connect.NewResponse(&envsv1.SetVarResponse{}), nil
@@ -176,15 +156,7 @@ func (s *server) RevealVar(ctx context.Context, req *connect.Request[envsv1.Reve
 
 	v, err := s.envs.RevealVar(ctx, eid, vn)
 	if err != nil {
-		if errors.Is(err, sdkerrors.ErrNotFound) {
-			return nil, connect.NewError(connect.CodeNotFound, err)
-		}
-
-		if errors.Is(err, sdkerrors.ErrUnauthorized) {
-			return nil, connect.NewError(connect.CodePermissionDenied, err)
-		}
-
-		return nil, connect.NewError(connect.CodeUnknown, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	return connect.NewResponse(&envsv1.RevealVarResponse{Value: v}), nil
@@ -209,15 +181,7 @@ func (s *server) GetVars(ctx context.Context, req *connect.Request[envsv1.GetVar
 
 	evs, err := s.envs.GetVars(ctx, vns, eid)
 	if err != nil {
-		if errors.Is(err, sdkerrors.ErrNotFound) {
-			return nil, connect.NewError(connect.CodeNotFound, err)
-		}
-
-		if errors.Is(err, sdkerrors.ErrUnauthorized) {
-			return nil, connect.NewError(connect.CodePermissionDenied, err)
-		}
-
-		return nil, connect.NewError(connect.CodeUnknown, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	pbevs := kittehs.Transform(evs, sdktypes.ToProto)

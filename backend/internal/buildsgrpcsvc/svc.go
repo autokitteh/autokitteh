@@ -3,7 +3,6 @@ package buildsgrpcsvc
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 
@@ -47,10 +46,7 @@ func (s *server) Get(ctx context.Context, req *connect.Request[buildsv1.GetReque
 
 	build, err := s.builds.Get(ctx, buildID)
 	if err != nil {
-		if errors.Is(err, sdkerrors.ErrNotFound) {
-			return nil, connect.NewError(connect.CodeNotFound, err)
-		}
-		return nil, connect.NewError(connect.CodeUnknown, fmt.Errorf("server error: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	return connect.NewResponse(&buildsv1.GetResponse{Build: build.ToProto()}), nil
@@ -91,10 +87,7 @@ func (s *server) Download(ctx context.Context, req *connect.Request[buildsv1.Dow
 
 	data, err := s.builds.Download(ctx, buildID)
 	if err != nil {
-		if errors.Is(err, sdkerrors.ErrNotFound) {
-			return nil, connect.NewError(connect.CodeNotFound, err)
-		}
-		return nil, connect.NewError(connect.CodeUnknown, fmt.Errorf("server error: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 	defer data.Close()
 
@@ -115,7 +108,7 @@ func (s *server) Save(ctx context.Context, req *connect.Request[buildsv1.SaveReq
 
 	build, err := sdktypes.BuildFromProto(msg.Build)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	bid, err := s.builds.Save(ctx, build, msg.Data)
@@ -139,10 +132,7 @@ func (s *server) Remove(ctx context.Context, req *connect.Request[buildsv1.Remov
 	}
 
 	if err = s.builds.Remove(ctx, bid); err != nil {
-		if errors.Is(err, sdkerrors.ErrNotFound) {
-			return nil, connect.NewError(connect.CodeNotFound, err)
-		}
-		return nil, connect.NewError(connect.CodeUnknown, fmt.Errorf("server error: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	return connect.NewResponse(&buildsv1.RemoveResponse{}), nil

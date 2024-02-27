@@ -2,7 +2,6 @@ package deploymentsgrpcsvc
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 
@@ -107,10 +106,7 @@ func (s *server) Activate(ctx context.Context, req *connect.Request[deploymentsv
 
 	err = s.deployments.Activate(ctx, did)
 	if err != nil {
-		if errors.Is(err, sdkerrors.ErrNotFound) {
-			return nil, connect.NewError(connect.CodeNotFound, err)
-		}
-		return nil, connect.NewError(connect.CodeUnknown, fmt.Errorf("server error: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	return connect.NewResponse(&deploymentsv1.ActivateResponse{}), nil
@@ -130,10 +126,7 @@ func (s *server) Test(ctx context.Context, req *connect.Request[deploymentsv1.Te
 
 	err = s.deployments.Test(ctx, did)
 	if err != nil {
-		if errors.Is(err, sdkerrors.ErrNotFound) {
-			return nil, connect.NewError(connect.CodeNotFound, err)
-		}
-		return nil, connect.NewError(connect.CodeUnknown, fmt.Errorf("server error: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	return connect.NewResponse(&deploymentsv1.TestResponse{}), nil
@@ -153,10 +146,7 @@ func (s *server) Drain(ctx context.Context, req *connect.Request[deploymentsv1.D
 
 	err = s.deployments.Drain(ctx, did)
 	if err != nil {
-		if errors.Is(err, sdkerrors.ErrNotFound) {
-			return nil, connect.NewError(connect.CodeNotFound, err)
-		}
-		return nil, connect.NewError(connect.CodeUnknown, fmt.Errorf("server error: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	return connect.NewResponse(&deploymentsv1.DrainResponse{}), nil
@@ -176,10 +166,7 @@ func (s *server) Deactivate(ctx context.Context, req *connect.Request[deployment
 
 	err = s.deployments.Deactivate(ctx, did)
 	if err != nil {
-		if errors.Is(err, sdkerrors.ErrNotFound) {
-			return nil, connect.NewError(connect.CodeNotFound, err)
-		}
-		return nil, connect.NewError(connect.CodeUnknown, fmt.Errorf("server error: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	return connect.NewResponse(&deploymentsv1.DeactivateResponse{}), nil
@@ -199,10 +186,7 @@ func (s *server) Get(ctx context.Context, req *connect.Request[deploymentsv1.Get
 
 	deployment, err := s.deployments.Get(ctx, did)
 	if err != nil {
-		if errors.Is(err, sdkerrors.ErrNotFound) {
-			return nil, connect.NewError(connect.CodeNotFound, err)
-		}
-		return nil, connect.NewError(connect.CodeUnknown, fmt.Errorf("server error: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	return connect.NewResponse(&deploymentsv1.GetResponse{Deployment: deployment.ToProto()}), nil

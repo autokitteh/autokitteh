@@ -2,7 +2,6 @@ package storegrpcsvc
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 
@@ -51,11 +50,7 @@ func (s *server) List(ctx context.Context, req *connect.Request[storev1.ListRequ
 
 	ks, err := s.store.List(ctx, envID, projectID)
 	if err != nil {
-		if errors.Is(err, sdkerrors.ErrUnauthorized) {
-			return nil, connect.NewError(connect.CodePermissionDenied, err)
-		}
-
-		return nil, connect.NewError(connect.CodeUnknown, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	return connect.NewResponse(&storev1.ListResponse{Keys: ks}), nil
@@ -80,11 +75,7 @@ func (s *server) Get(ctx context.Context, req *connect.Request[storev1.GetReques
 
 	vs, err := s.store.Get(ctx, envID, projectID, msg.Keys)
 	if err != nil {
-		if errors.Is(err, sdkerrors.ErrUnauthorized) {
-			return nil, connect.NewError(connect.CodePermissionDenied, err)
-		}
-
-		return nil, connect.NewError(connect.CodeUnknown, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	return connect.NewResponse(&storev1.GetResponse{Values: kittehs.TransformMapValues(vs, sdktypes.ToProto)}), nil
