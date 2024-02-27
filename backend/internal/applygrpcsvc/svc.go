@@ -12,6 +12,7 @@ import (
 	"go.autokitteh.dev/autokitteh/proto"
 	applyv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/apply/v1"
 	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/apply/v1/applyv1connect"
+	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -34,7 +35,7 @@ func (s *server) Apply(ctx context.Context, req *connect.Request[applyv1.ApplyRe
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	man, err := manifest.Read([]byte(msg.Manifest), msg.Path)

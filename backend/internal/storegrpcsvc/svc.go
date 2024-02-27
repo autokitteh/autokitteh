@@ -36,7 +36,7 @@ func (s *server) List(ctx context.Context, req *connect.Request[storev1.ListRequ
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	envID, err := sdktypes.ParseEnvID(msg.EnvId)
@@ -65,7 +65,7 @@ func (s *server) Get(ctx context.Context, req *connect.Request[storev1.GetReques
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	envID, err := sdktypes.ParseEnvID(msg.EnvId)

@@ -3,7 +3,6 @@ package integrationsgrpcsvc
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 
 	"connectrpc.com/connect"
@@ -33,7 +32,7 @@ func Init(mux *http.ServeMux, integrations sdkservices.Integrations) {
 
 func (s *server) Get(ctx context.Context, req *connect.Request[integrationsv1.GetRequest]) (*connect.Response[integrationsv1.GetResponse], error) {
 	if err := proto.Validate(req.Msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 	id, err := sdktypes.StrictParseIntegrationID(req.Msg.IntegrationId)
 	if err != nil {
@@ -49,7 +48,7 @@ func (s *server) Get(ctx context.Context, req *connect.Request[integrationsv1.Ge
 
 func (s *server) List(ctx context.Context, req *connect.Request[integrationsv1.ListRequest]) (*connect.Response[integrationsv1.ListResponse], error) {
 	if err := proto.Validate(req.Msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	// TODO: Tags

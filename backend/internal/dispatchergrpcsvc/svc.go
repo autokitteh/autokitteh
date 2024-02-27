@@ -10,6 +10,7 @@ import (
 	"go.autokitteh.dev/autokitteh/proto"
 	dispatcher1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/dispatcher/v1"
 	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/dispatcher/v1/dispatcherv1connect"
+	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -33,7 +34,7 @@ func (s *server) Dispatch(ctx context.Context, req *connect.Request[dispatcher1.
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	event, err := sdktypes.EventFromProto(msg.Event)
@@ -63,7 +64,7 @@ func (s *server) Redispatch(ctx context.Context, req *connect.Request[dispatcher
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	eventID, err := sdktypes.StrictParseEventID(req.Msg.EventId)

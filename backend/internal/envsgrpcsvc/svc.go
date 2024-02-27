@@ -36,7 +36,7 @@ func (s *server) Create(ctx context.Context, req *connect.Request[envsv1.CreateR
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	env, err := sdktypes.EnvFromProto(msg.Env)
@@ -74,7 +74,7 @@ func (s *server) Get(ctx context.Context, req *connect.Request[envsv1.GetRequest
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	eid, err := sdktypes.ParseEnvID(msg.EnvId)
@@ -104,7 +104,7 @@ func (s *server) List(ctx context.Context, req *connect.Request[envsv1.ListReque
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	pid, err := sdktypes.ParseProjectID(req.Msg.ProjectId)
@@ -134,7 +134,7 @@ func (s *server) SetVar(ctx context.Context, req *connect.Request[envsv1.SetVarR
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	ev, err := sdktypes.StrictEnvVarFromProto(req.Msg.Var)
@@ -161,7 +161,7 @@ func (s *server) RevealVar(ctx context.Context, req *connect.Request[envsv1.Reve
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	eid, err := sdktypes.StrictParseEnvID(req.Msg.EnvId)
@@ -194,7 +194,7 @@ func (s *server) GetVars(ctx context.Context, req *connect.Request[envsv1.GetVar
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	eid, err := sdktypes.StrictParseEnvID(req.Msg.EnvId)

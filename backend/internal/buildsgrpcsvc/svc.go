@@ -37,7 +37,7 @@ func (s *server) Get(ctx context.Context, req *connect.Request[buildsv1.GetReque
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	buildID, err := sdktypes.StrictParseBuildID(msg.BuildId)
@@ -60,7 +60,7 @@ func (s *server) List(ctx context.Context, req *connect.Request[buildsv1.ListReq
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	filter := sdkservices.ListBuildsFilter{
@@ -81,7 +81,7 @@ func (s *server) Download(ctx context.Context, req *connect.Request[buildsv1.Dow
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	buildID, err := sdktypes.StrictParseBuildID(msg.BuildId)
@@ -110,7 +110,7 @@ func (s *server) Save(ctx context.Context, req *connect.Request[buildsv1.SaveReq
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	build, err := sdktypes.BuildFromProto(msg.Build)
@@ -130,7 +130,7 @@ func (s *server) Remove(ctx context.Context, req *connect.Request[buildsv1.Remov
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	bid, err := sdktypes.ParseBuildID(msg.BuildId)

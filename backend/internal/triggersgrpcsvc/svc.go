@@ -11,6 +11,7 @@ import (
 	"go.autokitteh.dev/autokitteh/proto"
 	triggersv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/triggers/v1"
 	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/triggers/v1/triggersv1connect"
+	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -34,7 +35,7 @@ func (s *server) Create(ctx context.Context, req *connect.Request[triggersv1.Cre
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	trigger, err := sdktypes.StrictTriggerFromProto(msg.Trigger)
@@ -54,7 +55,7 @@ func (s *server) Update(ctx context.Context, req *connect.Request[triggersv1.Upd
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	trigger, err := sdktypes.StrictTriggerFromProto(msg.Trigger)
@@ -73,7 +74,7 @@ func (s *server) Delete(ctx context.Context, req *connect.Request[triggersv1.Del
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	mid, err := sdktypes.ParseTriggerID(msg.TriggerId)
@@ -92,7 +93,7 @@ func (s *server) Get(ctx context.Context, req *connect.Request[triggersv1.GetReq
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	mid, err := sdktypes.ParseTriggerID(msg.TriggerId)
@@ -112,7 +113,7 @@ func (s *server) List(ctx context.Context, req *connect.Request[triggersv1.ListR
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	eid, err := sdktypes.ParseEnvID(msg.EnvId)

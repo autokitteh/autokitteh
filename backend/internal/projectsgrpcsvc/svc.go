@@ -36,7 +36,7 @@ func (s *server) Create(ctx context.Context, req *connect.Request[projectsv1.Cre
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	project, err := sdktypes.ProjectFromProto(msg.Project)
@@ -62,7 +62,7 @@ func (s *server) Update(ctx context.Context, req *connect.Request[projectsv1.Upd
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	project, err := sdktypes.ProjectFromProto(msg.Project)
@@ -99,7 +99,7 @@ func (s *server) Get(ctx context.Context, req *connect.Request[projectsv1.GetReq
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	uid, err := sdktypes.ParseProjectID(msg.ProjectId)
@@ -140,7 +140,7 @@ func (s *server) list(ctx context.Context) ([]*sdktypes.ProjectPB, error) {
 
 func (s *server) ListForOwner(ctx context.Context, req *connect.Request[projectsv1.ListForOwnerRequest]) (*connect.Response[projectsv1.ListForOwnerResponse], error) {
 	if err := proto.Validate(req.Msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	ps, err := s.list(ctx)
@@ -153,7 +153,7 @@ func (s *server) ListForOwner(ctx context.Context, req *connect.Request[projects
 
 func (s *server) List(ctx context.Context, req *connect.Request[projectsv1.ListRequest]) (*connect.Response[projectsv1.ListResponse], error) {
 	if err := proto.Validate(req.Msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	ps, err := s.list(ctx)
@@ -168,7 +168,7 @@ func (s *server) Build(ctx context.Context, req *connect.Request[projectsv1.Buil
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	pid, err := sdktypes.ParseProjectID(msg.ProjectId)
@@ -196,7 +196,7 @@ func (s *server) SetResources(ctx context.Context, req *connect.Request[projects
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	pid, err := sdktypes.ParseProjectID(msg.ProjectId)
@@ -223,7 +223,7 @@ func (s *server) DownloadResources(ctx context.Context, req *connect.Request[pro
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	pid, err := sdktypes.ParseProjectID(msg.ProjectId)

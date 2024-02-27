@@ -36,7 +36,7 @@ func (s *server) Create(ctx context.Context, req *connect.Request[deploymentsv1.
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	deployment, err := sdktypes.DeploymentFromProto(msg.Deployment)
@@ -56,7 +56,7 @@ func (s *server) List(ctx context.Context, req *connect.Request[deploymentsv1.Li
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 	filter := sdkservices.ListDeploymentsFilter{Limit: req.Msg.Limit}
 
@@ -97,7 +97,7 @@ func (s *server) Activate(ctx context.Context, req *connect.Request[deploymentsv
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	did, err := sdktypes.StrictParseDeploymentID(msg.DeploymentId)
@@ -120,7 +120,7 @@ func (s *server) Test(ctx context.Context, req *connect.Request[deploymentsv1.Te
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	did, err := sdktypes.StrictParseDeploymentID(msg.DeploymentId)
@@ -143,7 +143,7 @@ func (s *server) Drain(ctx context.Context, req *connect.Request[deploymentsv1.D
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	did, err := sdktypes.StrictParseDeploymentID(msg.DeploymentId)
@@ -166,7 +166,7 @@ func (s *server) Deactivate(ctx context.Context, req *connect.Request[deployment
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	did, err := sdktypes.StrictParseDeploymentID(msg.DeploymentId)
@@ -189,7 +189,7 @@ func (s *server) Get(ctx context.Context, req *connect.Request[deploymentsv1.Get
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	did, err := sdktypes.StrictParseDeploymentID(msg.DeploymentId)

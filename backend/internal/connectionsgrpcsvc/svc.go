@@ -32,7 +32,7 @@ func Init(mux *http.ServeMux, connections sdkservices.Connections) {
 
 func (s *server) Create(ctx context.Context, req *connect.Request[connectionsv1.CreateRequest]) (*connect.Response[connectionsv1.CreateResponse], error) {
 	if err := proto.Validate(req.Msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	c, err := sdktypes.StrictConnectionFromProto(req.Msg.Connection)
@@ -49,7 +49,7 @@ func (s *server) Create(ctx context.Context, req *connect.Request[connectionsv1.
 
 func (s *server) Update(ctx context.Context, req *connect.Request[connectionsv1.UpdateRequest]) (*connect.Response[connectionsv1.UpdateResponse], error) {
 	if err := proto.Validate(req.Msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	c, err := sdktypes.ConnectionFromProto(req.Msg.Connection)
@@ -65,7 +65,7 @@ func (s *server) Update(ctx context.Context, req *connect.Request[connectionsv1.
 
 func (s *server) Delete(ctx context.Context, req *connect.Request[connectionsv1.DeleteRequest]) (*connect.Response[connectionsv1.DeleteResponse], error) {
 	if err := proto.Validate(req.Msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 	id, err := sdktypes.StrictParseConnectionID(req.Msg.ConnectionId)
 	if err != nil {
@@ -81,7 +81,7 @@ func (s *server) Delete(ctx context.Context, req *connect.Request[connectionsv1.
 
 func (s *server) Get(ctx context.Context, req *connect.Request[connectionsv1.GetRequest]) (*connect.Response[connectionsv1.GetResponse], error) {
 	if err := proto.Validate(req.Msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 	id, err := sdktypes.StrictParseConnectionID(req.Msg.ConnectionId)
 	if err != nil {
@@ -102,7 +102,7 @@ func (s *server) Get(ctx context.Context, req *connect.Request[connectionsv1.Get
 
 func (s *server) List(ctx context.Context, req *connect.Request[connectionsv1.ListRequest]) (*connect.Response[connectionsv1.ListResponse], error) {
 	if err := proto.Validate(req.Msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 	f := sdkservices.ListConnectionsFilter{
 		IntegrationToken: req.Msg.IntegrationToken, // Optional
