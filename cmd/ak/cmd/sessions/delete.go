@@ -14,7 +14,7 @@ var deleteCmd = common.StandardCommand(&cobra.Command{
 	Use:     "delete session ID [--fail]",
 	Short:   "Delete non-running session",
 	Aliases: []string{"d"},
-	Args:    cobra.MaximumNArgs(1),
+	Args:    cobra.ExactArgs(1),
 
 	RunE: func(cmd *cobra.Command, args []string) error {
 		r := resolver.Resolver{Client: common.Client()}
