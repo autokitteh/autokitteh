@@ -82,21 +82,20 @@ func (db *gormdb) listDeploymentsCommonQuery(ctx context.Context, filter sdkserv
 func (db *gormdb) listDeploymentsWithStats(ctx context.Context, filter sdkservices.ListDeploymentsFilter) ([]scheme.DeploymentWithStats, error) {
 	q := db.listDeploymentsCommonQuery(ctx, filter)
 
-	if filter.IncludeSessionStats {
-		q = q.Select(`
-		deployments.*, 
-		COUNT(case when sessions.current_state_type = ? then 1 end) AS created,
-		COUNT(case when sessions.current_state_type = ? then 1 end) AS running,
-		COUNT(case when sessions.current_state_type = ? then 1 end) AS error,
-		COUNT(case when sessions.current_state_type = ? then 1 end) AS completed
-		`, sdktypes.CreatedSessionStateType,
-			sdktypes.RunningSessionStateType,
-			sdktypes.ErrorSessionStateType,
-			sdktypes.CompletedSessionStateType).
-			Joins(`LEFT JOIN sessions on deployments.deployment_id = sessions.deployment_id
-		AND sessions.deleted_at IS NULL`).
-			Group("deployments.deployment_id")
-	}
+	q = q.Select(`
+	deployments.*, 
+	COUNT(case when sessions.current_state_type = ? then 1 end) AS created,
+	COUNT(case when sessions.current_state_type = ? then 1 end) AS running,
+	COUNT(case when sessions.current_state_type = ? then 1 end) AS error,
+	COUNT(case when sessions.current_state_type = ? then 1 end) AS completed
+	`, sdktypes.CreatedSessionStateType,
+		sdktypes.RunningSessionStateType,
+		sdktypes.ErrorSessionStateType,
+		sdktypes.CompletedSessionStateType).
+		Joins(`LEFT JOIN sessions on deployments.deployment_id = sessions.deployment_id
+	AND sessions.deleted_at IS NULL`).
+		Group("deployments.deployment_id")
+
 	var ds []scheme.DeploymentWithStats
 	if err := q.Find(&ds).Error; err != nil {
 		return nil, translateError(err)
