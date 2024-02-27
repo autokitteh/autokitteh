@@ -27,7 +27,7 @@ func buildClient(t *testing.T) string {
 		}
 	}()
 
-	akRootDir := filepath.Dir(wd)
+	akRootDir := filepath.Dir(filepath.Dir(wd))
 	if err := os.Chdir(akRootDir); err != nil {
 		t.Fatalf("failed to switch to parent directory: %v", err)
 	}

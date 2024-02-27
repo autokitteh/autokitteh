@@ -109,7 +109,7 @@ test-unit:
 # Subset of "test-unit", for simplicity.
 .PHONY: test-system
 test-system:
-	$(GOTEST) ./systest
+	$(GOTEST) ./tests/system
 
 .PHONY: test-runs
 test-runs:
