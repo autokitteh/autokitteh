@@ -8,11 +8,7 @@ TESTS="${TESTS-*.txtar}"
 
 AK="../../bin/ak"
 
-run() {
-    echo "- testing $f"
-    ${AK} runtimes run --local --quiet --test "$f"
-}
-
 for f in ${TESTS}; do
-    run "$f"
+echo "- testing $f"
+    ${AK} runtimes run --local --quiet --test "$f"
 done
