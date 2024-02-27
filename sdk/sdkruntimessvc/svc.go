@@ -8,17 +8,19 @@ import (
 	"sync"
 
 	"connectrpc.com/connect"
+	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	akproto "go.autokitteh.dev/autokitteh/proto"
 	runtimesv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/runtimes/v1"
 	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/runtimes/v1/runtimesv1connect"
-	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
+	"go.autokitteh.dev/autokitteh/sdk/sdkruntimes/sdkbuildfile"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 type svc struct {
+	z        *zap.Logger
 	runtimes sdkservices.Runtimes
 
 	lsOnce sync.Once
@@ -29,7 +31,7 @@ type svc struct {
 
 var _ runtimesv1connect.RuntimesServiceHandler = &svc{}
 
-func Init(runtimes sdkservices.Runtimes, mux *http.ServeMux) {
+func Init(z *zap.Logger, runtimes sdkservices.Runtimes, mux *http.ServeMux) {
 	path, h := runtimesv1connect.NewRuntimesServiceHandler(&svc{runtimes: runtimes})
 	mux.Handle(path, h)
 }
@@ -82,7 +84,7 @@ func (s *svc) List(ctx context.Context, req *connect.Request[runtimesv1.ListRequ
 
 func (s *svc) Build(ctx context.Context, req *connect.Request[runtimesv1.BuildRequest]) (*connect.Response[runtimesv1.BuildResponse], error) {
 	if err := akproto.Validate(req.Msg); err != nil {
-		return nil, fmt.Errorf("%w: %v", sdkerrors.ErrRPC, err)
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
 	symbols, err := kittehs.TransformError(req.Msg.Symbols, sdktypes.StrictParseSymbol)
@@ -111,4 +113,49 @@ func (s *svc) Build(ctx context.Context, req *connect.Request[runtimesv1.BuildRe
 	return connect.NewResponse(&runtimesv1.BuildResponse{
 		Artifact: buf.Bytes(),
 	}), nil
+}
+
+func (s *svc) Run(ctx context.Context, req *connect.Request[runtimesv1.RunRequest], stream *connect.ServerStream[runtimesv1.RunResponse]) error {
+	msg := req.Msg
+
+	if err := akproto.Validate(msg); err != nil {
+		return connect.NewError(connect.CodeInvalidArgument, err)
+	}
+
+	rid, err := sdktypes.ParseRunID(msg.RunId)
+	if err != nil {
+		return connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("run_id: %w", err))
+	}
+
+	gs, err := kittehs.TransformMapValuesError(msg.Globals, sdktypes.StrictValueFromProto)
+	if err != nil {
+		return connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("globals: %w", err))
+	}
+
+	bf, err := sdkbuildfile.Read(bytes.NewReader(msg.Artifact))
+	if err != nil {
+		return connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("artifact: %w", err))
+	}
+
+	cbs := &sdkservices.RunCallbacks{
+		Print: func(_ context.Context, _ sdktypes.RunID, msg string) {
+			if err := stream.Send(&runtimesv1.RunResponse{Print: msg}); err != nil {
+				s.z.Error("failed to send print message", zap.Error(err))
+			}
+		},
+	}
+
+	run, err := s.runtimes.Run(ctx, rid, msg.Path, bf, gs, cbs)
+	if err != nil {
+		if err := sdktypes.ProgramErrorFromError(err); err != nil {
+			return stream.Send(&runtimesv1.RunResponse{Error: err.ToProto()})
+		}
+		return connect.NewError(connect.CodeUnknown, err)
+	}
+
+	return stream.Send(
+		&runtimesv1.RunResponse{
+			Result: kittehs.TransformMapValues(run.Values(), sdktypes.ToProto),
+		},
+	)
 }

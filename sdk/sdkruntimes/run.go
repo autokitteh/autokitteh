@@ -50,7 +50,7 @@ func Run(ctx context.Context, params RunParams) (sdkservices.Run, error) {
 			return exports, nil
 		}
 
-		loadRunID := params.FallthroughCallbacks.NewRunID()
+		loadRunID := params.FallthroughCallbacks.SafeNewRunID()
 
 		runParams := params
 		runParams.Globals = nil // TODO: globals: figure out which values to pass here.
@@ -58,8 +58,12 @@ func Run(ctx context.Context, params RunParams) (sdkservices.Run, error) {
 		runParams.FallthroughCallbacks = cbs
 
 		r, err := run(ctx, runParams, path)
-		if errors.Is(err, sdkerrors.ErrNotFound) {
-			return params.FallthroughCallbacks.SafeLoad(ctx, rid, path)
+		if err != nil {
+			if errors.Is(err, sdkerrors.ErrNotFound) {
+				return params.FallthroughCallbacks.SafeLoad(ctx, rid, path)
+			}
+
+			return nil, err
 		}
 
 		group.runs[loadRunID.String()] = r
