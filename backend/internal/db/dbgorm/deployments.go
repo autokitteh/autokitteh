@@ -37,7 +37,7 @@ func (db *gormdb) CreateDeployment(ctx context.Context, deployment sdktypes.Depl
 }
 
 func (db *gormdb) getDeployment(ctx context.Context, deploymentID string) (*scheme.Deployment, error) {
-	return get1(db.db, ctx, scheme.Deployment{}, "deployment_id = ?", deploymentID)
+	return getOne(db.db, ctx, scheme.Deployment{}, "deployment_id = ?", deploymentID)
 }
 
 func (db *gormdb) GetDeployment(ctx context.Context, id sdktypes.DeploymentID) (sdktypes.Deployment, error) {

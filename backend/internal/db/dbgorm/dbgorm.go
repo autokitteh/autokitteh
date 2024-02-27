@@ -124,7 +124,7 @@ func get[T, R any](db *gorm.DB, ctx context.Context, f func(t T) (*R, error), wh
 }
 
 // TODO: change all get functions to use this
-func get1[T any](db *gorm.DB, ctx context.Context, t T, where string, args ...any) (*T, error) {
+func getOne[T any](db *gorm.DB, ctx context.Context, t T, where string, args ...any) (*T, error) {
 	var r T
 
 	// TODO: fetch all records and report if there is more than one record
