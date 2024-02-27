@@ -53,6 +53,13 @@ func readTestFile(t *testing.T, path string) []string {
 		t.Fatalf("nothing to do in %q: txtar comment section is empty", path)
 	}
 
+	for i, f := range a.Files {
+		// Support embedded txtars.
+		if filepath.Ext(f.Name) == ".txtar" {
+			a.Files[i].Data = []byte(strings.ReplaceAll(string(f.Data), "~~", "--"))
+		}
+	}
+
 	useTempDir(t)
 	writeEmbeddedFiles(t, a.Files)
 	return parseTestFile(t, a)

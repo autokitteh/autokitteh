@@ -24,9 +24,10 @@ func AddSubcommands(parentCmd *cobra.Command) {
 
 func init() {
 	// Subcommands.
+	runtimesCmd.AddCommand(buildCmd)
 	runtimesCmd.AddCommand(getCmd)
 	runtimesCmd.AddCommand(listCmd)
-	runtimesCmd.AddCommand(buildCmd)
+	runtimesCmd.AddCommand(runCmd)
 
 	runtimesCmd.PersistentFlags().BoolVarP(&local, "local", "l", false, "execute locally")
 }

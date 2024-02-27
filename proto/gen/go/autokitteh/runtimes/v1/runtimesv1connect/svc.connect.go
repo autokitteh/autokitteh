@@ -40,6 +40,8 @@ const (
 	RuntimesServiceListProcedure = "/autokitteh.runtimes.v1.RuntimesService/List"
 	// RuntimesServiceBuildProcedure is the fully-qualified name of the RuntimesService's Build RPC.
 	RuntimesServiceBuildProcedure = "/autokitteh.runtimes.v1.RuntimesService/Build"
+	// RuntimesServiceRunProcedure is the fully-qualified name of the RuntimesService's Run RPC.
+	RuntimesServiceRunProcedure = "/autokitteh.runtimes.v1.RuntimesService/Run"
 )
 
 // RuntimesServiceClient is a client for the autokitteh.runtimes.v1.RuntimesService service.
@@ -47,6 +49,10 @@ type RuntimesServiceClient interface {
 	Describe(context.Context, *connect.Request[v1.DescribeRequest]) (*connect.Response[v1.DescribeResponse], error)
 	List(context.Context, *connect.Request[v1.ListRequest]) (*connect.Response[v1.ListResponse], error)
 	Build(context.Context, *connect.Request[v1.BuildRequest]) (*connect.Response[v1.BuildResponse], error)
+	// TODO: This is a simplified version that should be used
+	//
+	//	for testing and local runs only.
+	Run(context.Context, *connect.Request[v1.RunRequest]) (*connect.ServerStreamForClient[v1.RunResponse], error)
 }
 
 // NewRuntimesServiceClient constructs a client for the autokitteh.runtimes.v1.RuntimesService
@@ -74,6 +80,11 @@ func NewRuntimesServiceClient(httpClient connect.HTTPClient, baseURL string, opt
 			baseURL+RuntimesServiceBuildProcedure,
 			opts...,
 		),
+		run: connect.NewClient[v1.RunRequest, v1.RunResponse](
+			httpClient,
+			baseURL+RuntimesServiceRunProcedure,
+			opts...,
+		),
 	}
 }
 
@@ -82,6 +93,7 @@ type runtimesServiceClient struct {
 	describe *connect.Client[v1.DescribeRequest, v1.DescribeResponse]
 	list     *connect.Client[v1.ListRequest, v1.ListResponse]
 	build    *connect.Client[v1.BuildRequest, v1.BuildResponse]
+	run      *connect.Client[v1.RunRequest, v1.RunResponse]
 }
 
 // Describe calls autokitteh.runtimes.v1.RuntimesService.Describe.
@@ -99,12 +111,21 @@ func (c *runtimesServiceClient) Build(ctx context.Context, req *connect.Request[
 	return c.build.CallUnary(ctx, req)
 }
 
+// Run calls autokitteh.runtimes.v1.RuntimesService.Run.
+func (c *runtimesServiceClient) Run(ctx context.Context, req *connect.Request[v1.RunRequest]) (*connect.ServerStreamForClient[v1.RunResponse], error) {
+	return c.run.CallServerStream(ctx, req)
+}
+
 // RuntimesServiceHandler is an implementation of the autokitteh.runtimes.v1.RuntimesService
 // service.
 type RuntimesServiceHandler interface {
 	Describe(context.Context, *connect.Request[v1.DescribeRequest]) (*connect.Response[v1.DescribeResponse], error)
 	List(context.Context, *connect.Request[v1.ListRequest]) (*connect.Response[v1.ListResponse], error)
 	Build(context.Context, *connect.Request[v1.BuildRequest]) (*connect.Response[v1.BuildResponse], error)
+	// TODO: This is a simplified version that should be used
+	//
+	//	for testing and local runs only.
+	Run(context.Context, *connect.Request[v1.RunRequest], *connect.ServerStream[v1.RunResponse]) error
 }
 
 // NewRuntimesServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -128,6 +149,11 @@ func NewRuntimesServiceHandler(svc RuntimesServiceHandler, opts ...connect.Handl
 		svc.Build,
 		opts...,
 	)
+	runtimesServiceRunHandler := connect.NewServerStreamHandler(
+		RuntimesServiceRunProcedure,
+		svc.Run,
+		opts...,
+	)
 	return "/autokitteh.runtimes.v1.RuntimesService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case RuntimesServiceDescribeProcedure:
@@ -136,6 +162,8 @@ func NewRuntimesServiceHandler(svc RuntimesServiceHandler, opts ...connect.Handl
 			runtimesServiceListHandler.ServeHTTP(w, r)
 		case RuntimesServiceBuildProcedure:
 			runtimesServiceBuildHandler.ServeHTTP(w, r)
+		case RuntimesServiceRunProcedure:
+			runtimesServiceRunHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -155,4 +183,8 @@ func (UnimplementedRuntimesServiceHandler) List(context.Context, *connect.Reques
 
 func (UnimplementedRuntimesServiceHandler) Build(context.Context, *connect.Request[v1.BuildRequest]) (*connect.Response[v1.BuildResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("autokitteh.runtimes.v1.RuntimesService.Build is not implemented"))
+}
+
+func (UnimplementedRuntimesServiceHandler) Run(context.Context, *connect.Request[v1.RunRequest], *connect.ServerStream[v1.RunResponse]) error {
+	return connect.NewError(connect.CodeUnimplemented, errors.New("autokitteh.runtimes.v1.RuntimesService.Run is not implemented"))
 }

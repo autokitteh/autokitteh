@@ -4,6 +4,7 @@ package autokitteh.runtimes.v1;
 
 import "autokitteh/program/v1/program.proto";
 import "autokitteh/runtimes/v1/runtime.proto";
+import "autokitteh/values/v1/values.proto";
 import "buf/validate/validate.proto";
 
 message DescribeRequest {
@@ -33,6 +34,23 @@ message BuildResponse {
   program.v1.Error error = 2;
 }
 
+message RunRequest {
+  string run_id = 1 [(buf.validate.field).string.min_len = 1];
+  bytes artifact = 2;
+  string path = 3;
+  map<string, values.v1.Value> globals = 4 [
+    (buf.validate.field).map.keys.string.min_len = 1,
+    (buf.validate.field).map.values.required = true
+  ];
+}
+
+message RunResponse {
+  // either of
+  string print = 1;
+  program.v1.Error error = 2;
+  map<string, values.v1.Value> result = 3;
+}
+
 // Runtimes are expected to be registered during deploy (from configuration).
 // Dynamic registration of runtimes will not be supported.
 service RuntimesService {
@@ -41,4 +59,8 @@ service RuntimesService {
   rpc List(ListRequest) returns (ListResponse);
 
   rpc Build(BuildRequest) returns (BuildResponse);
+
+  // This is a simplified version that should be used
+  // for testing and local runs only.
+  rpc Run(RunRequest) returns (stream RunResponse);
 }

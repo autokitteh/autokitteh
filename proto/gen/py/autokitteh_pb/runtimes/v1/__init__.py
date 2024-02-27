@@ -3,8 +3,8 @@
 
 from .build_pb2 import (BuildArtifact,Requirement,Export,)
 from .runtime_pb2 import (Runtime,)
-from .svc_pb2 import (DescribeRequest,DescribeResponse,ListRequest,ListResponse,BuildRequest,BuildResponse,)
+from .svc_pb2 import (DescribeRequest,DescribeResponse,ListRequest,ListResponse,BuildRequest,BuildResponse,RunRequest,RunResponse,)
 from .svc_pb2_grpc import (RuntimesServiceStub,RuntimesServiceServicer,RuntimesService,)
 
 
-__all__ = ["RuntimesServiceStub","RuntimesServiceServicer","RuntimesService","DescribeRequest","DescribeResponse","ListRequest","ListResponse","BuildRequest","BuildResponse","Runtime","BuildArtifact","Requirement","Export",]
+__all__ = ["RuntimesServiceStub","RuntimesServiceServicer","RuntimesService","DescribeRequest","DescribeResponse","ListRequest","ListResponse","BuildRequest","BuildResponse","RunRequest","RunResponse","Runtime","BuildArtifact","Requirement","Export",]

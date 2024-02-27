@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/psanford/memfs"
+	"golang.org/x/tools/txtar"
 )
 
 func FSToMap(in fs.FS) (map[string][]byte, error) {
@@ -53,4 +54,14 @@ func MapToMemFS(in map[string][]byte) (fs.FS, error) {
 	}
 
 	return memfs, nil
+}
+
+func TxtarToFS(a *txtar.Archive) (fs.FS, error) {
+	m := make(map[string][]byte, len(a.Files))
+
+	for _, f := range a.Files {
+		m[f.Name] = f.Data
+	}
+
+	return MapToMemFS(m)
 }

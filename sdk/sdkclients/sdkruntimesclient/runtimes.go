@@ -27,6 +27,60 @@ func New(p sdkclient.Params) sdkservices.Runtimes {
 	return &client{client: internal.New(runtimesv1connect.NewRuntimesServiceClient, p)}
 }
 
+func (c *client) Run(
+	ctx context.Context,
+	rid sdktypes.RunID,
+	path string,
+	build *sdkbuildfile.BuildFile,
+	globals map[string]sdktypes.Value,
+	cbs *sdkservices.RunCallbacks,
+) (sdkservices.Run, error) {
+	var a bytes.Buffer
+	if err := build.Write(&a); err != nil {
+		return nil, fmt.Errorf("failed to write build file: %w", err)
+	}
+
+	stream, err := c.client.Run(ctx, connect.NewRequest(&runtimesv1.RunRequest{
+		RunId:    rid.String(),
+		Path:     path,
+		Globals:  kittehs.TransformMapValues(globals, sdktypes.ToProto),
+		Artifact: a.Bytes(),
+	}))
+	if err != nil {
+		return nil, rpcerrors.TranslateError(err)
+	}
+
+	var result map[string]sdktypes.Value
+
+	for stream.Receive() {
+		msg := stream.Msg()
+		if msg.Error != nil {
+			stream.Close()
+			perr, err := sdktypes.ProgramErrorFromProto(msg.Error)
+			if err != nil {
+				return nil, fmt.Errorf("invalid error: %w", err)
+			}
+			return nil, sdktypes.ProgramErrorToError(perr)
+		}
+
+		if msg.Print != "" {
+			cbs.Print(ctx, rid, msg.Print)
+		}
+
+		if msg.Result != nil {
+			result, err = kittehs.TransformMapValuesError(msg.Result, sdktypes.StrictValueFromProto)
+			if err != nil {
+				stream.Close()
+				return nil, fmt.Errorf("invalid result: %w", err)
+			}
+		}
+	}
+
+	// TODO: in the future when we'll support calling run functions
+	//       we'll pass the stream to the run object and let it handle it.
+	return &run{stream: stream, rid: rid, result: result}, nil
+}
+
 func (c *client) Build(ctx context.Context, fs fs.FS, symbols []sdktypes.Symbol, memo map[string]string) (*sdkbuildfile.BuildFile, error) {
 	resources, err := kittehs.FSToMap(fs)
 	if err != nil {

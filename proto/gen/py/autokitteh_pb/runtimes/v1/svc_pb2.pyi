@@ -1,5 +1,6 @@
 from autokitteh_pb.program.v1 import program_pb2 as _program_pb2
 from autokitteh_pb.runtimes.v1 import runtime_pb2 as _runtime_pb2
+from autokitteh_pb.values.v1 import values_pb2 as _values_pb2
 from buf.validate import validate_pb2 as _validate_pb2
 from google.protobuf.internal import containers as _containers
 from google.protobuf import descriptor as _descriptor
@@ -61,3 +62,39 @@ class BuildResponse(_message.Message):
     artifact: bytes
     error: _program_pb2.Error
     def __init__(self, artifact: _Optional[bytes] = ..., error: _Optional[_Union[_program_pb2.Error, _Mapping]] = ...) -> None: ...
+
+class RunRequest(_message.Message):
+    __slots__ = ["run_id", "artifact", "path", "globals"]
+    class GlobalsEntry(_message.Message):
+        __slots__ = ["key", "value"]
+        KEY_FIELD_NUMBER: _ClassVar[int]
+        VALUE_FIELD_NUMBER: _ClassVar[int]
+        key: str
+        value: _values_pb2.Value
+        def __init__(self, key: _Optional[str] = ..., value: _Optional[_Union[_values_pb2.Value, _Mapping]] = ...) -> None: ...
+    RUN_ID_FIELD_NUMBER: _ClassVar[int]
+    ARTIFACT_FIELD_NUMBER: _ClassVar[int]
+    PATH_FIELD_NUMBER: _ClassVar[int]
+    GLOBALS_FIELD_NUMBER: _ClassVar[int]
+    run_id: str
+    artifact: bytes
+    path: str
+    globals: _containers.MessageMap[str, _values_pb2.Value]
+    def __init__(self, run_id: _Optional[str] = ..., artifact: _Optional[bytes] = ..., path: _Optional[str] = ..., globals: _Optional[_Mapping[str, _values_pb2.Value]] = ...) -> None: ...
+
+class RunResponse(_message.Message):
+    __slots__ = ["print", "error", "result"]
+    class ResultEntry(_message.Message):
+        __slots__ = ["key", "value"]
+        KEY_FIELD_NUMBER: _ClassVar[int]
+        VALUE_FIELD_NUMBER: _ClassVar[int]
+        key: str
+        value: _values_pb2.Value
+        def __init__(self, key: _Optional[str] = ..., value: _Optional[_Union[_values_pb2.Value, _Mapping]] = ...) -> None: ...
+    PRINT_FIELD_NUMBER: _ClassVar[int]
+    ERROR_FIELD_NUMBER: _ClassVar[int]
+    RESULT_FIELD_NUMBER: _ClassVar[int]
+    print: str
+    error: _program_pb2.Error
+    result: _containers.MessageMap[str, _values_pb2.Value]
+    def __init__(self, print: _Optional[str] = ..., error: _Optional[_Union[_program_pb2.Error, _Mapping]] = ..., result: _Optional[_Mapping[str, _values_pb2.Value]] = ...) -> None: ...
