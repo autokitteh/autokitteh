@@ -29,7 +29,7 @@ jobs:
       - name: Build
         run: make build bin
       - name: Test
-        run: make test-unit
+        run: make test
 
   static-analysis:
     name: Static analysis
@@ -55,33 +55,3 @@ jobs:
           skip-cache: true
           # https://github.com/golangci/golangci-lint-action/issues/308
           args: --timeout=5m
-
-  test-cli:
-    name: CLI integration tests
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v4
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: go.mod
-
-      - name: CLI integration tests
-        run: make bin/ak test-cli
-
-  test-runs:
-    name: Run tests
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v4
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: go.mod
-
-      - name: CLI integration tests
-        run: make bin/ak test-runs
