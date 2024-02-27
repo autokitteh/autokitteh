@@ -2,6 +2,9 @@ package sdkerrors
 
 import (
 	"errors"
+
+	"connectrpc.com/connect"
+	"github.com/bufbuild/protovalidate-go"
 )
 
 var (
@@ -27,4 +30,26 @@ func IgnoreNotFoundErr[T any](t *T, err error) (*T, error) {
 	}
 
 	return t, nil
+}
+
+// re-wrap sdk as connect error
+func AsConnectError(err error) error {
+	// in protovalidate Error() is defined on pointer type and there is no error object
+	var validationError *protovalidate.ValidationError
+	if errors.As(err, &validationError) {
+		return connect.NewError(connect.CodeInvalidArgument, err)
+	}
+
+	switch {
+	case errors.Is(err, ErrNotFound):
+		return connect.NewError(connect.CodeNotFound, err)
+	case errors.Is(err, ErrInvalidArgument):
+		return connect.NewError(connect.CodeInvalidArgument, err)
+	case errors.Is(err, ErrUnauthorized):
+		return connect.NewError(connect.CodePermissionDenied, err)
+	case errors.Is(err, ErrAlreadyExists):
+		return connect.NewError(connect.CodeAlreadyExists, err)
+	default:
+		return connect.NewError(connect.CodeUnknown, err)
+	}
 }
