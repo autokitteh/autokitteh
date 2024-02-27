@@ -1,0 +1,24 @@
+["cat", "dog", "cow", "pig", "sheep", "chicken", "duck", "horse", "human"]
+["meow", "woof", "moo", "oink", "baa", "cluck", "quack", "neigh", "oi oi oi"]
+
+-- main.star --
+load("animals.star", "animals")
+load("sounds.yaml", "sounds")
+
+print(animals)
+print(sounds)
+
+-- sounds.yaml --
+sounds:
+    - meow
+    - woof
+    - moo
+    - oink
+    - baa
+    - cluck
+    - quack
+    - neigh
+    - oi oi oi
+
+-- animals.star --
+animals = ["cat", "dog", "cow", "pig", "sheep", "chicken", "duck", "horse", "human"]

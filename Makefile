@@ -99,7 +99,7 @@ ifneq ($(scripts),)
 endif
 
 .PHONY: test
-test: test-race test-cli
+test: test-race test-cli test-runs
 
 # TODO(ENG-447): Fix HTTP trigger flakiness.
 .PHONY: test-unit
@@ -110,6 +110,10 @@ test-unit:
 .PHONY: test-system
 test-system:
 	$(GOTEST) ./systest
+
+.PHONY: test-runs
+test-runs:
+	./tests/runs/run.sh
 
 .PHONY: test-cover
 test-cover:

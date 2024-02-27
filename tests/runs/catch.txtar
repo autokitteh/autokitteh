@@ -1,0 +1,9 @@
+(1.0, None)
+(None, "floating-point division by zero")
+
+-- main.star --
+def foo(x):
+    return 1/x
+
+print(catch(foo, 1))
+print(catch(foo, 0))

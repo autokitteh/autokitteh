@@ -29,10 +29,11 @@ var (
 	txtarFile  bool
 	emitValues bool
 	test       bool
+	quiet      bool
 )
 
 var runCmd = common.StandardCommand(&cobra.Command{
-	Use:     "run <build file|program file> [--txtar] [--path path] [-timeout t] [--values] [--test]",
+	Use:     "run <build file|program file> [--txtar] [--path path] [-timeout t] [--values] [--test] [--quiet]",
 	Short:   `Run a program`,
 	Aliases: []string{"r"},
 	Args:    cobra.ExactArgs(1),
@@ -131,6 +132,7 @@ func init() {
 	runCmd.Flags().BoolVar(&txtarFile, "txtar", false, "input file is a txtar archive containing program")
 	runCmd.Flags().BoolVarP(&emitValues, "values", "v", false, "emit result values")
 	runCmd.Flags().BoolVar(&test, "test", false, "fail if output is different than txtar comment. implies --txtar")
+	runCmd.Flags().BoolVarP(&test, "quiet", "q", false, "do not print anything but errors")
 }
 
 func run(ctx context.Context, b *sdkbuildfile.BuildFile, path string) (map[string]sdktypes.Value, []string, error) {
@@ -138,7 +140,9 @@ func run(ctx context.Context, b *sdkbuildfile.BuildFile, path string) (map[strin
 
 	cbs := &sdkservices.RunCallbacks{
 		Print: func(_ context.Context, _ sdktypes.RunID, msg string) {
-			fmt.Println(msg)
+			if !quiet {
+				fmt.Println(msg)
+			}
 			prints = append(prints, msg)
 		},
 	}
