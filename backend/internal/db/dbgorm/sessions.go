@@ -18,7 +18,7 @@ import (
 )
 
 func (db *gormdb) GetSession(ctx context.Context, sessionID sdktypes.SessionID) (sdktypes.Session, error) {
-	return get(db.db, ctx, scheme.ParseSession, "session_id = ?", sessionID.String())
+	return getOneWTransform(db.db, ctx, scheme.ParseSession, "session_id = ?", sessionID.String())
 }
 
 func (db *gormdb) deleteSession(ctx context.Context, sessionID string) error {

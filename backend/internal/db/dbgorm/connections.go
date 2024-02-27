@@ -55,7 +55,7 @@ func (db *gormdb) DeleteConnection(ctx context.Context, id sdktypes.ConnectionID
 }
 
 func (db *gormdb) GetConnection(ctx context.Context, id sdktypes.ConnectionID) (sdktypes.Connection, error) {
-	return get(db.db, ctx, scheme.ParseConnection, "connection_id = ?", id.String())
+	return getOneWTransform(db.db, ctx, scheme.ParseConnection, "connection_id = ?", id.String())
 }
 
 func (db *gormdb) ListConnections(ctx context.Context, filter sdkservices.ListConnectionsFilter) ([]sdktypes.Connection, error) {

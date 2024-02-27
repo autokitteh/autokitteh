@@ -41,11 +41,11 @@ func (db *gormdb) CreateEnv(ctx context.Context, env sdktypes.Env) error {
 }
 
 func (db *gormdb) GetEnvByID(ctx context.Context, eid sdktypes.EnvID) (sdktypes.Env, error) {
-	return get(db.db, ctx, scheme.ParseEnv, "env_id = ?", eid.String())
+	return getOneWTransform(db.db, ctx, scheme.ParseEnv, "env_id = ?", eid.String())
 }
 
 func (db *gormdb) GetEnvByName(ctx context.Context, pid sdktypes.ProjectID, h sdktypes.Name) (sdktypes.Env, error) {
-	return get(db.db, ctx, scheme.ParseEnv, "project_id = ? AND name = ?", pid.String(), h.String())
+	return getOneWTransform(db.db, ctx, scheme.ParseEnv, "project_id = ? AND name = ?", pid.String(), h.String())
 }
 
 func (db *gormdb) ListProjectEnvs(ctx context.Context, pid sdktypes.ProjectID) ([]sdktypes.Env, error) {

@@ -107,7 +107,7 @@ func (db *gormdb) Debug() db.DB {
 	}
 }
 
-func get[T, R any](db *gorm.DB, ctx context.Context, f func(t T) (*R, error), where string, args ...any) (*R, error) {
+func getOneWTransform[T, R any](db *gorm.DB, ctx context.Context, f func(t T) (*R, error), where string, args ...any) (*R, error) {
 	var r T
 
 	// TODO: fetch all records and report if there is more than one record
