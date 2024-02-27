@@ -94,7 +94,7 @@ func (s *server) Get(ctx context.Context, req *connect.Request[projectsv1.GetReq
 
 	uid, err := sdktypes.ParseProjectID(msg.ProjectId)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("project_id: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	if uid != nil {
@@ -103,7 +103,7 @@ func (s *server) Get(ctx context.Context, req *connect.Request[projectsv1.GetReq
 
 	n, err := sdktypes.StrictParseName(msg.Name)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("name: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	if n == nil {
@@ -159,7 +159,7 @@ func (s *server) Build(ctx context.Context, req *connect.Request[projectsv1.Buil
 
 	pid, err := sdktypes.ParseProjectID(msg.ProjectId)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("project_id: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	if pid == nil {
@@ -187,7 +187,7 @@ func (s *server) SetResources(ctx context.Context, req *connect.Request[projects
 
 	pid, err := sdktypes.ParseProjectID(msg.ProjectId)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("project_id: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	if pid == nil {
@@ -210,7 +210,7 @@ func (s *server) DownloadResources(ctx context.Context, req *connect.Request[pro
 
 	pid, err := sdktypes.ParseProjectID(msg.ProjectId)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("project_id: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	if pid == nil {

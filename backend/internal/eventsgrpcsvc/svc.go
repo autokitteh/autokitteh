@@ -40,7 +40,7 @@ func (s *server) Get(ctx context.Context, req *connect.Request[eventsv1.GetReque
 
 	eventId, err := sdktypes.StrictParseEventID(msg.EventId)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("eventId: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	event, err := s.events.Get(ctx, eventId)
@@ -60,7 +60,7 @@ func (s *server) List(ctx context.Context, req *connect.Request[eventsv1.ListReq
 
 	iid, err := sdktypes.ParseIntegrationID(msg.IntegrationId)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	filter := sdkservices.ListEventsFilter{
@@ -129,7 +129,7 @@ func (s *server) ListEventRecords(ctx context.Context, req *connect.Request[even
 
 	eid, err := sdktypes.ParseEventID(msg.EventId)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	filter := sdkservices.ListEventRecordsFilter{

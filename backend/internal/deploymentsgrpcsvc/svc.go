@@ -61,7 +61,7 @@ func (s *server) List(ctx context.Context, req *connect.Request[deploymentsv1.Li
 
 	bid, err := sdktypes.ParseBuildID(msg.BuildId)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 	if bid != nil {
 		filter.BuildID = bid
@@ -69,7 +69,7 @@ func (s *server) List(ctx context.Context, req *connect.Request[deploymentsv1.Li
 
 	eid, err := sdktypes.ParseEnvID(msg.EnvId)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 	if eid != nil {
 		filter.EnvID = eid
@@ -101,7 +101,7 @@ func (s *server) Activate(ctx context.Context, req *connect.Request[deploymentsv
 
 	did, err := sdktypes.StrictParseDeploymentID(msg.DeploymentId)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("deploymentID: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	err = s.deployments.Activate(ctx, did)
@@ -121,7 +121,7 @@ func (s *server) Test(ctx context.Context, req *connect.Request[deploymentsv1.Te
 
 	did, err := sdktypes.StrictParseDeploymentID(msg.DeploymentId)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("deploymentID: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	err = s.deployments.Test(ctx, did)
@@ -141,7 +141,7 @@ func (s *server) Drain(ctx context.Context, req *connect.Request[deploymentsv1.D
 
 	did, err := sdktypes.StrictParseDeploymentID(msg.DeploymentId)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("deploymentID: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	err = s.deployments.Drain(ctx, did)
@@ -161,7 +161,7 @@ func (s *server) Deactivate(ctx context.Context, req *connect.Request[deployment
 
 	did, err := sdktypes.StrictParseDeploymentID(msg.DeploymentId)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("deploymentID: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	err = s.deployments.Deactivate(ctx, did)
@@ -181,7 +181,7 @@ func (s *server) Get(ctx context.Context, req *connect.Request[deploymentsv1.Get
 
 	did, err := sdktypes.StrictParseDeploymentID(msg.DeploymentId)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("deploymentID: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	deployment, err := s.deployments.Get(ctx, did)

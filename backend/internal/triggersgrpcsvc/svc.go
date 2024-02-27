@@ -79,7 +79,7 @@ func (s *server) Delete(ctx context.Context, req *connect.Request[triggersv1.Del
 
 	mid, err := sdktypes.ParseTriggerID(msg.TriggerId)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	if err := s.triggers.Delete(ctx, mid); err != nil {
@@ -98,7 +98,7 @@ func (s *server) Get(ctx context.Context, req *connect.Request[triggersv1.GetReq
 
 	mid, err := sdktypes.ParseTriggerID(msg.TriggerId)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	trigger, err := s.triggers.Get(ctx, mid)
@@ -118,12 +118,12 @@ func (s *server) List(ctx context.Context, req *connect.Request[triggersv1.ListR
 
 	eid, err := sdktypes.ParseEnvID(msg.EnvId)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	cid, err := sdktypes.ParseConnectionID(msg.ConnectionId)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	filter := sdkservices.ListTriggersFilter{

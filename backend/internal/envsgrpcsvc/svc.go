@@ -75,7 +75,7 @@ func (s *server) Get(ctx context.Context, req *connect.Request[envsv1.GetRequest
 
 	eid, err := sdktypes.ParseEnvID(msg.EnvId)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("env_id: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	if eid != nil {
@@ -85,12 +85,12 @@ func (s *server) Get(ctx context.Context, req *connect.Request[envsv1.GetRequest
 	// a handle must've been supplied here.
 	n, err := sdktypes.StrictParseName(msg.Name)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("name: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	pid, err := sdktypes.ParseProjectID(msg.ProjectId)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("project_id: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	return toResponse(s.envs.GetByName(ctx, pid, n))
@@ -105,7 +105,7 @@ func (s *server) List(ctx context.Context, req *connect.Request[envsv1.ListReque
 
 	pid, err := sdktypes.ParseProjectID(req.Msg.ProjectId)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("project_id: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	envs, err := s.envs.List(ctx, pid)
@@ -146,12 +146,12 @@ func (s *server) RevealVar(ctx context.Context, req *connect.Request[envsv1.Reve
 
 	eid, err := sdktypes.StrictParseEnvID(req.Msg.EnvId)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("env_id: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	vn, err := sdktypes.ParseSymbol(req.Msg.Name)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("name: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	v, err := s.envs.RevealVar(ctx, eid, vn)
@@ -171,7 +171,7 @@ func (s *server) GetVars(ctx context.Context, req *connect.Request[envsv1.GetVar
 
 	eid, err := sdktypes.StrictParseEnvID(req.Msg.EnvId)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("owner_id: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	vns, err := kittehs.TransformError(req.Msg.Names, sdktypes.ParseSymbol)

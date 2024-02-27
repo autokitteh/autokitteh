@@ -61,7 +61,7 @@ func (s *server) Get(ctx context.Context, req *connect.Request[sessionsv1.GetReq
 
 	sessionID, err := sdktypes.ParseSessionID(msg.SessionId)
 	if err != nil {
-		return nil, sdkerrors.AsConnectError(fmt.Errorf("session_id: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	session, err := s.sessions.Get(ctx, sessionID)
@@ -80,7 +80,7 @@ func (s *server) GetLog(ctx context.Context, req *connect.Request[sessionsv1.Get
 
 	sessionID, err := sdktypes.ParseSessionID(msg.SessionId)
 	if err != nil {
-		return nil, sdkerrors.AsConnectError(fmt.Errorf("session_id: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	hist, err := s.sessions.GetLog(ctx, sessionID)
@@ -109,15 +109,15 @@ func (s *server) List(ctx context.Context, req *connect.Request[sessionsv1.ListR
 	var err error
 
 	if filter.DeploymentID, err = sdktypes.ParseDeploymentID(req.Msg.DeploymentId); err != nil {
-		return nil, sdkerrors.AsConnectError(fmt.Errorf("deployment_id: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	if filter.EventID, err = sdktypes.ParseEventID(req.Msg.EventId); err != nil {
-		return nil, sdkerrors.AsConnectError(fmt.Errorf("event_id: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	if filter.EnvID, err = sdktypes.ParseEnvID(req.Msg.EnvId); err != nil {
-		return nil, sdkerrors.AsConnectError(fmt.Errorf("env_id: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	sessions, n, err := s.sessions.List(ctx, filter)
@@ -139,7 +139,7 @@ func (s *server) Delete(ctx context.Context, req *connect.Request[sessionsv1.Del
 
 	sessionID, err := sdktypes.ParseSessionID(msg.SessionId)
 	if err != nil {
-		return nil, sdkerrors.AsConnectError(fmt.Errorf("session_id: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	if err = s.sessions.Delete(ctx, sessionID); err != nil {

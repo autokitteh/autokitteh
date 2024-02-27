@@ -69,7 +69,7 @@ func (s *server) Delete(ctx context.Context, req *connect.Request[connectionsv1.
 	}
 	id, err := sdktypes.StrictParseConnectionID(req.Msg.ConnectionId)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	err = s.connections.Delete(ctx, id)
@@ -85,7 +85,7 @@ func (s *server) Get(ctx context.Context, req *connect.Request[connectionsv1.Get
 	}
 	id, err := sdktypes.StrictParseConnectionID(req.Msg.ConnectionId)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	c, err := s.connections.Get(ctx, id)
@@ -110,13 +110,13 @@ func (s *server) List(ctx context.Context, req *connect.Request[connectionsv1.Li
 
 	iid, err := sdktypes.ParseIntegrationID(req.Msg.IntegrationId) // Optional
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("integration_id: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 	f.IntegrationID = iid
 
 	pid, err := sdktypes.ParseProjectID(req.Msg.ProjectId) // Optional
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("project_id: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 	f.ProjectID = pid
 

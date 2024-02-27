@@ -41,7 +41,7 @@ func (s *server) Get(ctx context.Context, req *connect.Request[buildsv1.GetReque
 
 	buildID, err := sdktypes.StrictParseBuildID(msg.BuildId)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("buildID: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	build, err := s.builds.Get(ctx, buildID)
@@ -82,7 +82,7 @@ func (s *server) Download(ctx context.Context, req *connect.Request[buildsv1.Dow
 
 	buildID, err := sdktypes.StrictParseBuildID(msg.BuildId)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("buildID: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	data, err := s.builds.Download(ctx, buildID)
@@ -128,7 +128,7 @@ func (s *server) Remove(ctx context.Context, req *connect.Request[buildsv1.Remov
 
 	bid, err := sdktypes.ParseBuildID(msg.BuildId)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	if err = s.builds.Remove(ctx, bid); err != nil {

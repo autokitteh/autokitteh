@@ -44,12 +44,12 @@ func (s *server) Dispatch(ctx context.Context, req *connect.Request[dispatcher1.
 
 	envID, err := sdktypes.ParseEnvID(req.Msg.EnvId)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	deploymentID, err := sdktypes.ParseDeploymentID(req.Msg.DeploymentId)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	eventID, err := s.dispatcher.Dispatch(ctx, event, &sdkservices.DispatchOptions{EnvID: envID, DeploymentID: deploymentID})
@@ -69,17 +69,17 @@ func (s *server) Redispatch(ctx context.Context, req *connect.Request[dispatcher
 
 	eventID, err := sdktypes.StrictParseEventID(req.Msg.EventId)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	envID, err := sdktypes.ParseEnvID(req.Msg.EnvId)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	deploymentID, err := sdktypes.ParseDeploymentID(req.Msg.DeploymentId)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	newEventID, err := s.dispatcher.Redispatch(ctx, eventID, &sdkservices.DispatchOptions{EnvID: envID, DeploymentID: deploymentID})

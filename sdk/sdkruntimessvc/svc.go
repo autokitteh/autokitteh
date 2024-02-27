@@ -124,7 +124,7 @@ func (s *svc) Run(ctx context.Context, req *connect.Request[runtimesv1.RunReques
 
 	rid, err := sdktypes.ParseRunID(msg.RunId)
 	if err != nil {
-		return connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("run_id: %w", err))
+		return sdkerrors.AsConnectError(err)
 	}
 
 	gs, err := kittehs.TransformMapValuesError(msg.Globals, sdktypes.StrictValueFromProto)

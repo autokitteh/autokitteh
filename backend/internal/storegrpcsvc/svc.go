@@ -2,7 +2,6 @@ package storegrpcsvc
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 
 	"connectrpc.com/connect"
@@ -40,12 +39,12 @@ func (s *server) List(ctx context.Context, req *connect.Request[storev1.ListRequ
 
 	envID, err := sdktypes.ParseEnvID(msg.EnvId)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("env_id: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	projectID, err := sdktypes.ParseProjectID(msg.ProjectId)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("project_id: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	ks, err := s.store.List(ctx, envID, projectID)
@@ -65,12 +64,12 @@ func (s *server) Get(ctx context.Context, req *connect.Request[storev1.GetReques
 
 	envID, err := sdktypes.ParseEnvID(msg.EnvId)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("env_id: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	projectID, err := sdktypes.ParseProjectID(msg.ProjectId)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("project_id: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	vs, err := s.store.Get(ctx, envID, projectID, msg.Keys)

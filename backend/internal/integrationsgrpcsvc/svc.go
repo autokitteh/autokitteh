@@ -36,7 +36,7 @@ func (s *server) Get(ctx context.Context, req *connect.Request[integrationsv1.Ge
 	}
 	id, err := sdktypes.StrictParseIntegrationID(req.Msg.IntegrationId)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("integration_id: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	i, err := s.integrations.Get(ctx, id)
