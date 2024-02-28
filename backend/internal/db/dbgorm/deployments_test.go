@@ -5,10 +5,11 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"gorm.io/gorm"
+
 	"go.autokitteh.dev/autokitteh/backend/internal/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-	"gorm.io/gorm"
 )
 
 func createDeploymentWithTest(t *testing.T, ctx context.Context, gormdb *gormdb, deployment scheme.Deployment) {

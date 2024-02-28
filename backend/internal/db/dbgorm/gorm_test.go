@@ -6,13 +6,14 @@ import (
 	"os"
 	"time"
 
-	"go.autokitteh.dev/autokitteh/backend/internal/db/dbgorm/scheme"
-	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 	"go.uber.org/zap"
 	"gorm.io/datatypes"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+
+	"go.autokitteh.dev/autokitteh/backend/internal/db/dbgorm/scheme"
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 type dbFixture struct {
