@@ -64,10 +64,10 @@ func (s *server) List(ctx context.Context, req *connect.Request[integrationsv1.L
 
 func (*server) Call(context.Context, *connect.Request[integrationsv1.CallRequest]) (*connect.Response[integrationsv1.CallResponse], error) {
 	// TODO
-	return nil, connect.NewError(connect.CodeUnimplemented, sdkerrors.ErrNotImplemented)
+	return nil, sdkerrors.AsConnectError(sdkerrors.ErrNotImplemented)
 }
 
 func (*server) Configure(context.Context, *connect.Request[integrationsv1.ConfigureRequest]) (*connect.Response[integrationsv1.ConfigureResponse], error) {
 	// TODO
-	return nil, connect.NewError(connect.CodeUnimplemented, sdkerrors.ErrNotImplemented)
+	return nil, sdkerrors.AsConnectError(sdkerrors.ErrNotImplemented)
 }
