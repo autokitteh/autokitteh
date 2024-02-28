@@ -37,7 +37,7 @@ func (s *server) Create(ctx context.Context, req *connect.Request[connectionsv1.
 
 	c, err := sdktypes.StrictConnectionFromProto(req.Msg.Connection)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	id, err := s.connections.Create(ctx, c)
@@ -54,7 +54,7 @@ func (s *server) Update(ctx context.Context, req *connect.Request[connectionsv1.
 
 	c, err := sdktypes.ConnectionFromProto(req.Msg.Connection)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	if err := s.connections.Update(ctx, c); err != nil {

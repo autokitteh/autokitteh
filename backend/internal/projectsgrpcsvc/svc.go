@@ -41,7 +41,7 @@ func (s *server) Create(ctx context.Context, req *connect.Request[projectsv1.Cre
 
 	project, err := sdktypes.ProjectFromProto(msg.Project)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	uid, err := s.projects.Create(ctx, project)
@@ -61,7 +61,7 @@ func (s *server) Update(ctx context.Context, req *connect.Request[projectsv1.Upd
 
 	project, err := sdktypes.ProjectFromProto(msg.Project)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	if err := s.projects.Update(ctx, project); err != nil {

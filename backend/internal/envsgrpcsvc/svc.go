@@ -41,7 +41,7 @@ func (s *server) Create(ctx context.Context, req *connect.Request[envsv1.CreateR
 
 	env, err := sdktypes.EnvFromProto(msg.Env)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	eid, err := s.envs.Create(ctx, env)
@@ -127,7 +127,7 @@ func (s *server) SetVar(ctx context.Context, req *connect.Request[envsv1.SetVarR
 
 	ev, err := sdktypes.StrictEnvVarFromProto(req.Msg.Var)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("var: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	if err := s.envs.SetVar(ctx, ev); err != nil {

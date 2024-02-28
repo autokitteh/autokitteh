@@ -89,7 +89,7 @@ func (s *server) Save(ctx context.Context, req *connect.Request[eventsv1.SaveReq
 
 	event, err := sdktypes.EventFromProto(msg.Event)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	eid, err := s.events.Save(ctx, event)
@@ -109,7 +109,7 @@ func (s *server) AddEventRecord(ctx context.Context, req *connect.Request[events
 
 	record, err := sdktypes.EventRecordFromProto(msg.Record)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	err = s.events.AddEventRecord(ctx, record)

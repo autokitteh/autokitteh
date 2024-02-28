@@ -39,7 +39,7 @@ func (s *server) Dispatch(ctx context.Context, req *connect.Request[dispatcher1.
 
 	event, err := sdktypes.EventFromProto(msg.Event)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	envID, err := sdktypes.ParseEnvID(req.Msg.EnvId)

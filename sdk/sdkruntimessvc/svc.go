@@ -129,7 +129,7 @@ func (s *svc) Run(ctx context.Context, req *connect.Request[runtimesv1.RunReques
 
 	gs, err := kittehs.TransformMapValuesError(msg.Globals, sdktypes.StrictValueFromProto)
 	if err != nil {
-		return connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("globals: %w", err))
+		return sdkerrors.AsConnectError(fmt.Errorf("globals: %w", err))
 	}
 
 	bf, err := sdkbuildfile.Read(bytes.NewReader(msg.Artifact))

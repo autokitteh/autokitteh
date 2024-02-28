@@ -40,7 +40,7 @@ func (s *server) Create(ctx context.Context, req *connect.Request[triggersv1.Cre
 
 	trigger, err := sdktypes.StrictTriggerFromProto(msg.Trigger)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	mid, err := s.triggers.Create(ctx, trigger)
@@ -60,7 +60,7 @@ func (s *server) Update(ctx context.Context, req *connect.Request[triggersv1.Upd
 
 	trigger, err := sdktypes.StrictTriggerFromProto(msg.Trigger)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	if err := s.triggers.Update(ctx, trigger); err != nil {

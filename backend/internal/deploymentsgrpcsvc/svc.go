@@ -40,7 +40,7 @@ func (s *server) Create(ctx context.Context, req *connect.Request[deploymentsv1.
 
 	deployment, err := sdktypes.DeploymentFromProto(msg.Deployment)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("deployment: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	did, err := s.deployments.Create(ctx, deployment)
