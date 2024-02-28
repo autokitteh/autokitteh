@@ -8,7 +8,7 @@ import (
 )
 
 var deleteCmd = common.StandardCommand(&cobra.Command{
-	Use:     "delete session ID [--fail]",
+	Use:     "delete <session ID> [--fail]",
 	Short:   "Delete non-running session",
 	Aliases: []string{"d"},
 	Args:    cobra.ExactArgs(1),
