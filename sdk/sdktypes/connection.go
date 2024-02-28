@@ -1,8 +1,6 @@
 package sdktypes
 
 import (
-	"fmt"
-
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	connectionsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/connections/v1"
 )
@@ -26,16 +24,16 @@ func strictValidateConnection(pb *connectionsv1.Connection) error {
 
 func validateConnection(pb *connectionsv1.Connection) error {
 	if _, err := ParseConnectionID(pb.ConnectionId); err != nil {
-		return fmt.Errorf("connection ID: %w", err)
+		return err
 	}
 	if _, err := ParseIntegrationID(pb.IntegrationId); err != nil {
-		return fmt.Errorf("integration ID: %w", err)
+		return err
 	}
 	if _, err := ParseProjectID(pb.ProjectId); err != nil {
-		return fmt.Errorf("project ID: %w", err)
+		return err
 	}
 	if _, err := ParseName(pb.Name); err != nil {
-		return fmt.Errorf("connection name: %w", err)
+		return err
 	}
 	return nil
 }

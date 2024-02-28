@@ -29,37 +29,37 @@ func strictValidateSession(pb *sessionsv1.Session) error {
 
 func validateSession(pb *sessionsv1.Session) error {
 	if _, err := ParseSessionID(pb.SessionId); err != nil {
-		return fmt.Errorf("session id: %w", err)
+		return err
 	}
 
 	if _, err := ParseSessionID(pb.ParentSessionId); err != nil {
-		return fmt.Errorf("parent session id: %w", err)
+		return err
 	}
 
 	if _, err := ParseDeploymentID(pb.DeploymentId); err != nil {
-		return fmt.Errorf("deployment id: %w", err)
+		return err
 	}
 
 	if _, err := ParseEventID(pb.EventId); err != nil {
-		return fmt.Errorf("event id: %w", err)
+		return err
 	}
 
 	if _, err := CodeLocationFromProto(pb.Entrypoint); err != nil {
-		return fmt.Errorf("entrypoint: %w", err)
+		return err
 	}
 
 	if err := kittehs.ValidateMap(pb.Inputs, func(k string, v *ValuePB) error {
 		if _, err := ParseSymbol(k); err != nil {
-			return fmt.Errorf("symbol: %w", err)
+			return err
 		}
 
 		if err := ValidateValuePB(v); err != nil {
-			return fmt.Errorf("value: %w", err)
+			return err
 		}
 
 		return nil
 	}); err != nil {
-		return fmt.Errorf("inputs: %w", err)
+		return fmt.Errorf("failed to validate session inputs: %w", err)
 	}
 
 	return nil

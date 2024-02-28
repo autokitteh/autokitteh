@@ -46,7 +46,7 @@ func StrictValueFromProto(pb *ValuePB) (Value, error) {
 
 func StrictValidateValuePB(pb *ValuePB) error {
 	if pb.Type == nil {
-		return fmt.Errorf("empty")
+		return fmt.Errorf("%w: empty value", sdkerrors.ErrInvalidArgument)
 	}
 
 	return ValidateValuePB(pb)

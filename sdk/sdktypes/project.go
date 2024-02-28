@@ -5,6 +5,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	projectv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/projects/v1"
+	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 )
 
 type ProjectPB = projectv1.Project
@@ -19,7 +20,7 @@ var (
 
 func strictValidateProject(pb *projectv1.Project) error {
 	if err := ensureNotEmpty(pb.Name, pb.ProjectId); err != nil {
-		return err
+		return fmt.Errorf("%w: missing name | project id", sdkerrors.ErrInvalidArgument)
 	}
 
 	return validateProject(pb)
@@ -27,11 +28,11 @@ func strictValidateProject(pb *projectv1.Project) error {
 
 func validateProject(pb *projectv1.Project) error {
 	if _, err := ParseProjectID(pb.ProjectId); err != nil {
-		return fmt.Errorf("project id: %w", err)
+		return err
 	}
 
 	if _, err := ParseName(pb.Name); err != nil {
-		return fmt.Errorf("name: %w", err)
+		return err
 	}
 
 	return nil
