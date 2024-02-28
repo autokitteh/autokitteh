@@ -50,6 +50,8 @@ func asConnectError(err error) error {
 		return connect.NewError(connect.CodePermissionDenied, err)
 	case errors.Is(err, sdkerrors.ErrAlreadyExists):
 		return connect.NewError(connect.CodeAlreadyExists, err)
+	case errors.Is(err, sdkerrors.ErrFailedPrecondition):
+		return connect.NewError(connect.CodeFailedPrecondition, err)
 	default:
 		return connect.NewError(connect.CodeUnknown, err)
 	}
