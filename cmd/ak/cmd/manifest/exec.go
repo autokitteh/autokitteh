@@ -8,7 +8,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
-	imanifest "go.autokitteh.dev/autokitteh/internal/manifest"
+	"go.autokitteh.dev/autokitteh/internal/manifest"
 )
 
 var execCmd = common.StandardCommand(&cobra.Command{
@@ -23,7 +23,7 @@ var execCmd = common.StandardCommand(&cobra.Command{
 			return err
 		}
 
-		var actions imanifest.Actions
+		var actions manifest.Actions
 
 		if err := json.Unmarshal(data, &actions); err != nil {
 			return fmt.Errorf("invalid plan input: %w", err)
@@ -32,7 +32,7 @@ var execCmd = common.StandardCommand(&cobra.Command{
 		ctx, cancel := common.LimitedContext()
 		defer cancel()
 
-		_, err = imanifest.Execute(ctx, actions, common.Client(), func(msg string) {
+		_, err = manifest.Execute(ctx, actions, common.Client(), func(msg string) {
 			fmt.Fprintf(os.Stderr, "[exec] %s\n", msg)
 		})
 		return err
