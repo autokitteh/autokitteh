@@ -19,6 +19,10 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
+const (
+	googleScope = "google"
+)
+
 type api struct {
 	Secrets sdkservices.Secrets
 	Scope   string
@@ -40,7 +44,7 @@ var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.Integrati
 }))
 
 func New(sec sdkservices.Secrets) sdkservices.Integration {
-	scope := "google"
+	scope := googleScope
 
 	opts := []sdkmodule.Optfn{sdkmodule.WithConfigAsData()}
 	opts = append(opts, ExportedFunctions(sec, scope, false)...)
