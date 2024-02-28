@@ -82,15 +82,15 @@ func (s *sessions) Delete(ctx context.Context, sessionID sdktypes.SessionID) err
 		return err
 	}
 
-	s.z.With(zap.String("session_id", sessionID.String())).Debug("delete")
-
 	// delete only failed or finished sessions
 	state := sdktypes.GetSessionLatestState(session)
 	if state != sdktypes.CompletedSessionStateType && state != sdktypes.ErrorSessionStateType {
 		return fmt.Errorf("%w: cannot delete active session: session_id: %s", sdkerrors.ErrFailedPrecondition, sessionID.String())
 	}
 
-	return s.svcs.DB.DeleteSession(ctx, sessionID)
+	err = s.svcs.DB.DeleteSession(ctx, sessionID)
+	s.z.With(zap.String("session_id", sessionID.String())).Info("delete")
+	return err
 }
 
 func (s *sessions) Start(ctx context.Context, session sdktypes.Session) (sdktypes.SessionID, error) {
