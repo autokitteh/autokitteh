@@ -7,8 +7,8 @@ import (
 	"net/http"
 
 	"connectrpc.com/connect"
-
 	protovalidate "github.com/bufbuild/protovalidate-go"
+
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/proto"
 	sessionsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/sessions/v1"
