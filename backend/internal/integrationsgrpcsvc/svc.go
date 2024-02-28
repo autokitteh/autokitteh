@@ -2,7 +2,6 @@ package integrationsgrpcsvc
 
 import (
 	"context"
-	"errors"
 	"net/http"
 
 	"connectrpc.com/connect"
@@ -41,7 +40,7 @@ func (s *server) Get(ctx context.Context, req *connect.Request[integrationsv1.Ge
 
 	i, err := s.integrations.Get(ctx, id)
 	if err != nil {
-		return nil, toConnectError(err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 	return connect.NewResponse(&integrationsv1.GetResponse{Integration: i.Get().ToProto()}), nil
 }
@@ -55,7 +54,7 @@ func (s *server) List(ctx context.Context, req *connect.Request[integrationsv1.L
 
 	is, err := s.integrations.List(ctx, req.Msg.NameSubstring)
 	if err != nil {
-		return nil, toConnectError(err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	return connect.NewResponse(&integrationsv1.ListResponse{
@@ -71,17 +70,4 @@ func (*server) Call(context.Context, *connect.Request[integrationsv1.CallRequest
 func (*server) Configure(context.Context, *connect.Request[integrationsv1.ConfigureRequest]) (*connect.Response[integrationsv1.ConfigureResponse], error) {
 	// TODO
 	return nil, connect.NewError(connect.CodeUnimplemented, sdkerrors.ErrNotImplemented)
-}
-
-func toConnectError(err error) *connect.Error {
-	switch {
-	case errors.Is(err, sdkerrors.ErrNotFound):
-		return connect.NewError(connect.CodeNotFound, err)
-	case errors.Is(err, sdkerrors.ErrUnauthenticated):
-		return connect.NewError(connect.CodeUnauthenticated, err)
-	case errors.Is(err, sdkerrors.ErrUnauthorized):
-		return connect.NewError(connect.CodePermissionDenied, err)
-	default:
-		return connect.NewError(connect.CodeUnknown, err)
-	}
 }

@@ -2,8 +2,6 @@ package connectionsgrpcsvc
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"net/http"
 
 	"connectrpc.com/connect"
@@ -42,7 +40,7 @@ func (s *server) Create(ctx context.Context, req *connect.Request[connectionsv1.
 
 	id, err := s.connections.Create(ctx, c)
 	if err != nil {
-		return nil, toConnectError(err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 	return connect.NewResponse(&connectionsv1.CreateResponse{ConnectionId: id.String()}), nil
 }
@@ -58,7 +56,7 @@ func (s *server) Update(ctx context.Context, req *connect.Request[connectionsv1.
 	}
 
 	if err := s.connections.Update(ctx, c); err != nil {
-		return nil, toConnectError(err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 	return connect.NewResponse(&connectionsv1.UpdateResponse{}), nil
 }
@@ -74,7 +72,7 @@ func (s *server) Delete(ctx context.Context, req *connect.Request[connectionsv1.
 
 	err = s.connections.Delete(ctx, id)
 	if err != nil {
-		return nil, toConnectError(err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 	return connect.NewResponse(&connectionsv1.DeleteResponse{}), nil
 }
@@ -90,7 +88,7 @@ func (s *server) Get(ctx context.Context, req *connect.Request[connectionsv1.Get
 
 	c, err := s.connections.Get(ctx, id)
 	if err != nil {
-		return nil, toConnectError(err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	if c == nil {
@@ -122,22 +120,9 @@ func (s *server) List(ctx context.Context, req *connect.Request[connectionsv1.Li
 
 	cs, err := s.connections.List(ctx, f)
 	if err != nil {
-		return nil, toConnectError(err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 	return connect.NewResponse(&connectionsv1.ListResponse{
 		Connections: kittehs.Transform(cs, sdktypes.ToProto),
 	}), nil
-}
-
-func toConnectError(err error) *connect.Error {
-	switch {
-	case errors.Is(err, sdkerrors.ErrNotFound):
-		return connect.NewError(connect.CodeNotFound, err)
-	case errors.Is(err, sdkerrors.ErrUnauthenticated):
-		return connect.NewError(connect.CodeUnauthenticated, err)
-	case errors.Is(err, sdkerrors.ErrUnauthorized):
-		return connect.NewError(connect.CodePermissionDenied, err)
-	default:
-		return connect.NewError(connect.CodeUnknown, err)
-	}
 }
