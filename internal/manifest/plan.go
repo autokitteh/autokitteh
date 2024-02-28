@@ -47,7 +47,7 @@ func planProject(ctx context.Context, mproj *Project, client sdkservices.Service
 
 	name, err := sdktypes.ParseName(mproj.Name)
 	if err != nil {
-		return nil, fmt.Errorf("invalid name: %w", err)
+		return nil, err
 	}
 
 	var curr sdktypes.Project
@@ -67,7 +67,7 @@ func planProject(ctx context.Context, mproj *Project, client sdkservices.Service
 		Name: mproj.Name,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("invalid: %w", err)
+		return nil, err
 	}
 
 	if curr == nil {
@@ -132,7 +132,7 @@ func planDefaultEnv(ctx context.Context, mvars []*EnvVar, client sdkservices.Ser
 		ProjectId: pid.String(),
 	})
 	if err != nil {
-		return nil, nil, fmt.Errorf("invalid: %w", err)
+		return nil, nil, err
 	}
 
 	var curr sdktypes.Env
