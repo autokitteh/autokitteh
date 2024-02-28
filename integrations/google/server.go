@@ -2,7 +2,6 @@ package google
 
 import (
 	"net/http"
-	"os"
 	"strings"
 
 	"go.uber.org/zap"
@@ -12,10 +11,6 @@ import (
 )
 
 func Start(l *zap.Logger, mux *http.ServeMux, s sdkservices.Secrets, o sdkservices.OAuth, d sdkservices.Dispatcher) {
-	if !checkRequiredEnvVars(l) {
-		return
-	}
-
 	// New connection UIs + handlers.
 	h := NewHTTPHandler(l, s, o, "google")
 	mux.Handle(uiPath, http.FileServer(http.FS(static.GoogleWebContent)))
@@ -41,21 +36,4 @@ func Start(l *zap.Logger, mux *http.ServeMux, s sdkservices.Secrets, o sdkservic
 	mux.Handle(urlPath, http.FileServer(http.FS(static.GoogleSheetsWebContent)))
 
 	// TODO: Event webhooks.
-}
-
-func checkRequiredEnvVars(l *zap.Logger) bool {
-	result := true
-	for _, k := range []string{
-		// OAuth
-		"GOOGLE_CLIENT_ID",
-		"GOOGLE_CLIENT_SECRET",
-	} {
-		if os.Getenv(k) == "" {
-			l.Warn("Required environment variable is missing",
-				zap.String("name", k),
-			)
-			result = false
-		}
-	}
-	return result
 }

@@ -225,32 +225,56 @@ func withOrWithout(prefix bool, s string) string {
 	return s
 }
 
-// getConnection calls the Get method in SecretsService.
-func (a api) getConnection(ctx context.Context) (*oauth2.Token, error) {
-	// Extract the connection token from the given context.
-	connToken := sdkmodule.FunctionDataFromContext(ctx)
-
-	oauthToken, err := a.Secrets.Get(ctx, a.Scope, string(connToken))
+func (a api) gmailClient(ctx context.Context) (*gmail.Service, error) {
+	data, err := a.connectionData(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	exp, err := time.Parse(time.RFC3339, oauthToken["expiry"])
+	var src oauth2.TokenSource
+	if _, ok := data["accessToken"]; ok {
+		src = a.oauthTokenSource(ctx, data)
+	} else {
+		src, err = a.jwtTokenSource(ctx, data)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	svc, err := gmail.NewService(ctx, option.WithTokenSource(src))
+	if err != nil {
+		return nil, err
+	}
+	return svc, nil
+}
+
+func (a api) connectionData(ctx context.Context) (map[string]string, error) {
+	connToken := sdkmodule.FunctionDataFromContext(ctx)
+	data, err := a.Secrets.Get(ctx, a.Scope, string(connToken))
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
+}
+
+func (a api) oauthTokenSource(ctx context.Context, data map[string]string) oauth2.TokenSource {
+	exp, err := time.Parse(time.RFC3339, data["expiry"])
 	if err != nil {
 		exp = time.Unix(0, 0)
 	}
-	return &oauth2.Token{
-		AccessToken:  oauthToken["accessToken"],
-		TokenType:    oauthToken["tokenType"],
-		RefreshToken: oauthToken["refreshToken"],
+
+	return oauthConfig(ctx).TokenSource(ctx, &oauth2.Token{
+		AccessToken:  data["accessToken"],
+		TokenType:    data["tokenType"],
+		RefreshToken: data["refreshToken"],
 		Expiry:       exp,
-	}, nil
+	})
 }
 
-// TODO(ENG-112): Use OAuth().Get() instead of defining oauth2.Config.
-func tokenSource(ctx context.Context, t *oauth2.Token) oauth2.TokenSource {
+// TODO(ENG-112): Use OAuth().Get() instead of calling this function.
+func oauthConfig(ctx context.Context) *oauth2.Config {
 	addr := os.Getenv("WEBHOOK_ADDRESS")
-	cfg := &oauth2.Config{
+	return &oauth2.Config{
 		ClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
 		ClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
 		Endpoint:     google.Endpoint,
@@ -262,19 +286,15 @@ func tokenSource(ctx context.Context, t *oauth2.Token) oauth2.TokenSource {
 			gmail.GmailModifyScope,
 		},
 	}
-	return cfg.TokenSource(ctx, t)
 }
 
-func (a api) gmailClient(ctx context.Context) (*gmail.Service, error) {
-	oauthToken, err := a.getConnection(ctx)
+func (a api) jwtTokenSource(ctx context.Context, data map[string]string) (oauth2.TokenSource, error) {
+	scopes := oauthConfig(ctx).Scopes
+
+	cfg, err := google.JWTConfigFromJSON([]byte(data["JSON"]), scopes...)
 	if err != nil {
 		return nil, err
 	}
 
-	src := tokenSource(ctx, oauthToken)
-	svc, err := gmail.NewService(ctx, option.WithTokenSource(src))
-	if err != nil {
-		return nil, err
-	}
-	return svc, nil
+	return cfg.TokenSource(ctx), nil
 }
