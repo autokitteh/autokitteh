@@ -21,7 +21,7 @@ type dbFixture struct {
 	ctx    context.Context
 }
 
-// TODO: use akgorm layer instead of gorm directly
+// TODO: use gormkitteh (and maybe test with sqlite::memory and embedded PG)
 func setupDB(dbName string) *gorm.DB {
 	logger := logger.New(
 		log.New(os.Stdout, "\r\n", log.LstdFlags), // io writer
