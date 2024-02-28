@@ -36,7 +36,7 @@ var buildCmd = common.StandardCommand(&cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		syms, err := kittehs.TransformError(values, sdktypes.ParseSymbol)
 		if err != nil {
-			return fmt.Errorf("invalid values: %w", err)
+			return err
 		}
 
 		if dir == "" {

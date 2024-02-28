@@ -3,7 +3,6 @@ package envsgrpcsvc
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 
 	"connectrpc.com/connect"
@@ -176,7 +175,7 @@ func (s *server) GetVars(ctx context.Context, req *connect.Request[envsv1.GetVar
 
 	vns, err := kittehs.TransformError(req.Msg.Names, sdktypes.ParseSymbol)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("names: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	evs, err := s.envs.GetVars(ctx, vns, eid)

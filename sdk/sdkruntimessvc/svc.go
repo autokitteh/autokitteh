@@ -89,7 +89,7 @@ func (s *svc) Build(ctx context.Context, req *connect.Request[runtimesv1.BuildRe
 
 	symbols, err := kittehs.TransformError(req.Msg.Symbols, sdktypes.StrictParseSymbol)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	srcFS, err := kittehs.MapToMemFS(req.Msg.Resources)
