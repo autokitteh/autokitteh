@@ -90,3 +90,13 @@ class GetResponse(_message.Message):
     DEPLOYMENT_FIELD_NUMBER: _ClassVar[int]
     deployment: _deployment_pb2.Deployment
     def __init__(self, deployment: _Optional[_Union[_deployment_pb2.Deployment, _Mapping]] = ...) -> None: ...
+
+class DeleteRequest(_message.Message):
+    __slots__ = ["deployment_id"]
+    DEPLOYMENT_ID_FIELD_NUMBER: _ClassVar[int]
+    deployment_id: str
+    def __init__(self, deployment_id: _Optional[str] = ...) -> None: ...
+
+class DeleteResponse(_message.Message):
+    __slots__ = []
+    def __init__(self) -> None: ...

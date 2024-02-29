@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { ActivateRequest, ActivateResponse, CreateRequest, CreateResponse, DeactivateRequest, DeactivateResponse, DrainRequest, DrainResponse, GetRequest, GetResponse, ListRequest, ListResponse, TestRequest, TestResponse } from "./svc_pb.js";
+import { ActivateRequest, ActivateResponse, CreateRequest, CreateResponse, DeactivateRequest, DeactivateResponse, DeleteRequest, DeleteResponse, DrainRequest, DrainResponse, GetRequest, GetResponse, ListRequest, ListResponse, TestRequest, TestResponse } from "./svc_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -80,6 +80,15 @@ export const DeploymentsService = {
       name: "Get",
       I: GetRequest,
       O: GetResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * @generated from rpc autokitteh.deployments.v1.DeploymentsService.Delete
+     */
+    delete: {
+      name: "Delete",
+      I: DeleteRequest,
+      O: DeleteResponse,
       kind: MethodKind.Unary,
     },
   }
