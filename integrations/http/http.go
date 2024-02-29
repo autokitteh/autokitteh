@@ -28,10 +28,9 @@ import (
 //
 // See: https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/POST
 const (
-	contentTypeMultipart = "multipart/form-data"
 	contentTypeForm      = "application/x-www-form-urlencoded"
-
-	jsonContentType = "application/json"
+	contentTypeJSON      = "application/json"
+	contentTypeMultipart = "multipart/form-data"
 )
 
 // request is a factory function for generating autokitteh
@@ -40,22 +39,22 @@ func request(method string) sdkexecutor.Function {
 	return func(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
 		// Parse the input arguments.
 		var (
-			rawURL, contentType, body string
-			headers, params, formData map[string]string
-			jsonBody                  sdktypes.Value
-			basicAuth                 [2]string
-			oauth2Config              *clientcredentials.Config
+			rawURL, contentType, rawBody string
+			headers, params, formBody    map[string]string
+			jsonBody                     sdktypes.Value
+			basicAuth                    [2]string
+			oauth2Config                 *clientcredentials.Config
 		)
 
 		err := sdkmodule.UnpackArgs(args, kwargs,
 			"url", &rawURL,
 			"params?", &params,
 			"headers?", &headers,
-			"body?", &body,
-			"form_data?", &formData,
+			"raw_body?", &rawBody,
+			"form_body?", &formBody,
+			"json_body?", &jsonBody,
 			// TODO: Content-Type is a header, also what about JSON? Charset?
 			"content_type?", &contentType,
-			"json_body?", &jsonBody,
 			"basic_auth=?", &basicAuth,
 			"oauth2=?", &oauth2Config,
 		)
@@ -87,7 +86,7 @@ func request(method string) sdkexecutor.Function {
 			httpClient = oauth2Config.Client(ctx)
 		}
 
-		if err = setBody(req, body, formData, contentType, jsonBody); err != nil {
+		if err = setBody(req, rawBody, formBody, contentType, jsonBody); err != nil {
 			return nil, err
 		}
 
@@ -97,7 +96,7 @@ func request(method string) sdkexecutor.Function {
 		}
 
 		// Parse and return the response.
-		return toStruct(ctx, res)
+		return toStruct(res)
 	}
 }
 
@@ -118,11 +117,11 @@ func setQueryParams(rawurl *string, params map[string]string) error {
 	return nil
 }
 
-func setBody(req *http.Request, rawBody string, formData map[string]string, contentType string, jsonData sdktypes.Value) error {
-	errMutuallyExclusive := errors.New("body, form_data and json_data are mutually exclusive")
+func setBody(req *http.Request, rawBody string, formBody map[string]string, contentType string, jsonBody sdktypes.Value) error {
+	errMutuallyExclusive := errors.New("raw_body, form_body, and json_body are mutually exclusive")
 
 	if rawBody != "" {
-		if (jsonData != nil && !sdktypes.IsNothingValue(jsonData)) || formData != nil {
+		if formBody != nil || (jsonBody != nil && !sdktypes.IsNothingValue(jsonBody)) {
 			return errMutuallyExclusive
 		}
 
@@ -141,18 +140,18 @@ func setBody(req *http.Request, rawBody string, formData map[string]string, cont
 		return nil
 	}
 
-	if jsonData != nil && !sdktypes.IsNothingValue(jsonData) {
-		if formData != nil {
+	if jsonBody != nil && !sdktypes.IsNothingValue(jsonBody) {
+		if formBody != nil {
 			return errMutuallyExclusive
 		}
 
 		if contentType == "" {
-			contentType = jsonContentType
+			contentType = contentTypeJSON
 		}
 
 		req.Header.Set("Content-Type", contentType)
 
-		v, err := sdkvalues.ValueWrapper{SafeForJSON: true}.Unwrap(jsonData)
+		v, err := sdkvalues.ValueWrapper{SafeForJSON: true}.Unwrap(jsonBody)
 		if err != nil {
 			return err
 		}
@@ -168,18 +167,19 @@ func setBody(req *http.Request, rawBody string, formData map[string]string, cont
 		return nil
 	}
 
-	if formData != nil {
-		var form url.Values
+	if formBody != nil {
+		form := make(url.Values)
 
-		for k, v := range formData {
+		for k, v := range formBody {
 			form.Add(k, v)
 		}
 
 		switch strings.Split(contentType, ";")[0] {
-		case contentTypeForm, "":
+		case "", contentTypeForm:
 			contentType = contentTypeForm
-			req.Body = io.NopCloser(strings.NewReader(form.Encode()))
-			req.ContentLength = int64(len(form.Encode()))
+			s := form.Encode()
+			req.Body = io.NopCloser(strings.NewReader(s))
+			req.ContentLength = int64(len(s))
 
 		case contentTypeMultipart:
 			var b bytes.Buffer
@@ -188,8 +188,8 @@ func setBody(req *http.Request, rawBody string, formData map[string]string, cont
 
 			contentType = mw.FormDataContentType()
 
-			for k, values := range form {
-				for _, v := range values {
+			for k, vs := range form {
+				for _, v := range vs {
 					w, err := mw.CreateFormField(k)
 					if err != nil {
 						return err
@@ -214,7 +214,7 @@ func setBody(req *http.Request, rawBody string, formData map[string]string, cont
 	return nil
 }
 
-func toStruct(ctx context.Context, r *http.Response) (sdktypes.Value, error) {
+func toStruct(r *http.Response) (sdktypes.Value, error) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		return nil, err

@@ -14,10 +14,11 @@ var args = sdkmodule.WithArgs(
 	"url",
 	"params?",
 	"headers?",
-	"body?",
+	"raw_body?",
 	"form_body?",
-	"form_encoding?",
 	"json_body?",
+	// TODO: Mismatched naming, see http.go lines 57-59.
+	"form_encoding?",
 	"auth?",
 )
 
@@ -36,36 +37,36 @@ func New(sec sdkservices.Secrets) sdkservices.Integration {
 		sdkmodule.ExportFunction(
 			"get",
 			request(http.MethodGet),
-			sdkmodule.WithFuncDoc("https://datatracker.ietf.org/doc/html/rfc9110#name-get"),
+			sdkmodule.WithFuncDoc("https://www.rfc-editor.org/rfc/rfc9110#GET"),
 			args),
 		sdkmodule.ExportFunction(
 			"head",
 			request(http.MethodHead),
-			sdkmodule.WithFuncDoc("https://datatracker.ietf.org/doc/html/rfc9110#name-head"),
+			sdkmodule.WithFuncDoc("https://www.rfc-editor.org/rfc/rfc9110#HEAD"),
 			args),
 		sdkmodule.ExportFunction(
 			"post",
 			request(http.MethodPost),
-			sdkmodule.WithFuncDoc("https://datatracker.ietf.org/doc/html/rfc9110#name-post"),
+			sdkmodule.WithFuncDoc("https://www.rfc-editor.org/rfc/rfc9110#POST"),
 			args),
 		sdkmodule.ExportFunction("put",
 			request(http.MethodPut),
-			sdkmodule.WithFuncDoc("https://datatracker.ietf.org/doc/html/rfc9110#name-put"),
+			sdkmodule.WithFuncDoc("https://www.rfc-editor.org/rfc/rfc9110#PUT"),
 			args),
 		sdkmodule.ExportFunction(
 			"delete",
 			request(http.MethodDelete),
-			sdkmodule.WithFuncDoc("https://datatracker.ietf.org/doc/html/rfc9110#name-delete"),
+			sdkmodule.WithFuncDoc("https://www.rfc-editor.org/rfc/rfc9110#DELETE"),
 			args),
 		sdkmodule.ExportFunction(
 			"options",
 			request(http.MethodOptions),
-			sdkmodule.WithFuncDoc("https://datatracker.ietf.org/doc/html/rfc9110#name-options"),
+			sdkmodule.WithFuncDoc("https://www.rfc-editor.org/rfc/rfc9110#OPTIONS"),
 			args),
 		sdkmodule.ExportFunction(
 			"patch",
 			request(http.MethodPatch),
-			sdkmodule.WithFuncDoc("https://datatracker.ietf.org/doc/html/rfc5789"),
+			sdkmodule.WithFuncDoc("https://www.rfc-editor.org/rfc/rfc5789"),
 			args),
 	))
 }
