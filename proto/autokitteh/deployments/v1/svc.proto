@@ -73,6 +73,12 @@ message GetResponse {
   Deployment deployment = 1;
 }
 
+message DeleteRequest {
+  string deployment_id = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+message DeleteResponse {}
+
 service DeploymentsService {
   rpc Create(CreateRequest) returns (CreateResponse);
 
@@ -91,4 +97,6 @@ service DeploymentsService {
   rpc List(ListRequest) returns (ListResponse);
 
   rpc Get(GetRequest) returns (GetResponse);
+
+  rpc Delete(DeleteRequest) returns (DeleteResponse);
 }
