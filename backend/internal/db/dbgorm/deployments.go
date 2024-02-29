@@ -9,12 +9,17 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
+	"gorm.io/gorm"
 )
+
+func (db *gormdb) createDeployment(ctx context.Context, deployment scheme.Deployment) error {
+	return db.db.WithContext(ctx).Create(&deployment).Error
+}
 
 func (db *gormdb) CreateDeployment(ctx context.Context, deployment sdktypes.Deployment) error {
 	now := time.Now()
 
-	e := scheme.Deployment{
+	d := scheme.Deployment{
 		DeploymentID: sdktypes.GetDeploymentID(deployment).String(),
 		BuildID:      sdktypes.GetDeploymentBuildID(deployment).String(),
 		EnvID:        sdktypes.GetDeploymentEnvID(deployment).String(),
@@ -24,15 +29,23 @@ func (db *gormdb) CreateDeployment(ctx context.Context, deployment sdktypes.Depl
 	}
 
 	if err := db.locked(func(db *gormdb) error {
-		return db.db.WithContext(ctx).Create(&e).Error
+		return db.createDeployment(ctx, d)
 	}); err != nil {
 		return translateError(err)
 	}
 	return nil
 }
 
+func (db *gormdb) getDeployment(ctx context.Context, deploymentID string) (*scheme.Deployment, error) {
+	return getOne(db.db, ctx, scheme.Deployment{}, "deployment_id = ?", deploymentID)
+}
+
 func (db *gormdb) GetDeployment(ctx context.Context, id sdktypes.DeploymentID) (sdktypes.Deployment, error) {
-	return get(db.db, ctx, scheme.ParseDeployment, "deployment_id = ?", id.String())
+	d, err := db.getDeployment(ctx, id.String())
+	if d == nil || err != nil {
+		return nil, err
+	}
+	return scheme.ParseDeployment(*d)
 }
 
 func (db *gormdb) DeleteDeployment(ctx context.Context, id sdktypes.DeploymentID) error {
@@ -40,11 +53,13 @@ func (db *gormdb) DeleteDeployment(ctx context.Context, id sdktypes.DeploymentID
 	if err := db.db.WithContext(ctx).Where("deployment_id = ?", id.String()).Delete(&b).Error; err != nil {
 		return translateError(err)
 	}
+	// FIXME: delete deployment sessions as well?
 
 	return nil
 }
 
-func (db *gormdb) ListDeployments(ctx context.Context, filter sdkservices.ListDeploymentsFilter) ([]sdktypes.Deployment, error) {
+// FIXME: fix generic in order to avoid all this
+func (db *gormdb) listDeploymentsCommonQuery(ctx context.Context, filter sdkservices.ListDeploymentsFilter) *gorm.DB {
 	q := db.db.WithContext(ctx).Model(&scheme.Deployment{})
 	if filter.BuildID != nil {
 		q = q.Where("deployments.build_id = ?", filter.BuildID.String())
@@ -61,34 +76,56 @@ func (db *gormdb) ListDeployments(ctx context.Context, filter sdkservices.ListDe
 	}
 
 	q = q.Order("created_at desc")
+	return q
+}
 
-	if filter.IncludeSessionStats {
-		q = q.Select(`
-			deployments.*, 
-			count(case when sessions.current_state_type = ? then 1 end) as created,
-			count(case when sessions.current_state_type = ? then 1 end) as running,
-			count(case when sessions.current_state_type = ? then 1 end) as error,
-			count(case when sessions.current_state_type = ? then 1 end) as completed
-		`, sdktypes.CreatedSessionStateType,
-			sdktypes.RunningSessionStateType,
-			sdktypes.ErrorSessionStateType,
-			sdktypes.CompletedSessionStateType).
-			Joins("left join sessions on deployments.deployment_id = sessions.deployment_id").
-			Group("deployments.deployment_id")
-		var ds []scheme.DeploymentWithStats
-		if err := q.Find(&ds).Error; err != nil {
-			return nil, translateError(err)
-		}
+func (db *gormdb) listDeploymentsWithStats(ctx context.Context, filter sdkservices.ListDeploymentsFilter) ([]scheme.DeploymentWithStats, error) {
+	q := db.listDeploymentsCommonQuery(ctx, filter)
 
-		return kittehs.TransformError(ds, scheme.ParseDeploymentWithSessionStats)
+	q = q.Select(`
+	deployments.*, 
+	COUNT(case when sessions.current_state_type = ? then 1 end) AS created,
+	COUNT(case when sessions.current_state_type = ? then 1 end) AS running,
+	COUNT(case when sessions.current_state_type = ? then 1 end) AS error,
+	COUNT(case when sessions.current_state_type = ? then 1 end) AS completed
+	`, sdktypes.CreatedSessionStateType,
+		sdktypes.RunningSessionStateType,
+		sdktypes.ErrorSessionStateType,
+		sdktypes.CompletedSessionStateType).
+		Joins(`LEFT JOIN sessions on deployments.deployment_id = sessions.deployment_id
+	AND sessions.deleted_at IS NULL`).
+		Group("deployments.deployment_id")
+
+	var ds []scheme.DeploymentWithStats
+	if err := q.Find(&ds).Error; err != nil {
+		return nil, translateError(err)
 	}
+	return ds, nil
+}
 
+func (db *gormdb) listDeployments(ctx context.Context, filter sdkservices.ListDeploymentsFilter) ([]scheme.Deployment, error) {
+	q := db.listDeploymentsCommonQuery(ctx, filter)
 	var ds []scheme.Deployment
 	if err := q.Find(&ds).Error; err != nil {
 		return nil, translateError(err)
 	}
+	return ds, nil
+}
 
-	return kittehs.TransformError(ds, scheme.ParseDeployment)
+func (db *gormdb) ListDeployments(ctx context.Context, filter sdkservices.ListDeploymentsFilter) ([]sdktypes.Deployment, error) {
+	if filter.IncludeSessionStats {
+		ds, err := db.listDeploymentsWithStats(ctx, filter)
+		if ds == nil {
+			return nil, err
+		}
+		return kittehs.TransformError(ds, scheme.ParseDeploymentWithSessionStats)
+	} else {
+		ds, err := db.listDeployments(ctx, filter)
+		if ds == nil {
+			return nil, err
+		}
+		return kittehs.TransformError(ds, scheme.ParseDeployment)
+	}
 }
 
 func (db *gormdb) UpdateDeploymentState(ctx context.Context, id sdktypes.DeploymentID, state sdktypes.DeploymentState) error {

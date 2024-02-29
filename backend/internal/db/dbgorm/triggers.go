@@ -85,7 +85,7 @@ func (db *gormdb) UpdateTrigger(ctx context.Context, trigger sdktypes.Trigger) e
 }
 
 func (db *gormdb) GetTrigger(ctx context.Context, id sdktypes.TriggerID) (sdktypes.Trigger, error) {
-	return get(db.db, ctx, scheme.ParseTrigger, "trigger_id = ?", id.String())
+	return getOneWTransform(db.db, ctx, scheme.ParseTrigger, "trigger_id = ?", id.String())
 }
 
 func (db *gormdb) DeleteTrigger(ctx context.Context, id sdktypes.TriggerID) error {

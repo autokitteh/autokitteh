@@ -47,11 +47,11 @@ func (db *gormdb) UpdateProject(ctx context.Context, p sdktypes.Project) error {
 }
 
 func (db *gormdb) GetProjectByID(ctx context.Context, pid sdktypes.ProjectID) (sdktypes.Project, error) {
-	return get(db.db, ctx, scheme.ParseProject, "project_id = ?", pid.String())
+	return getOneWTransform(db.db, ctx, scheme.ParseProject, "project_id = ?", pid.String())
 }
 
 func (db *gormdb) GetProjectByName(ctx context.Context, ph sdktypes.Name) (sdktypes.Project, error) {
-	return get(db.db, ctx, scheme.ParseProject, "name = ?", ph.String())
+	return getOneWTransform(db.db, ctx, scheme.ParseProject, "name = ?", ph.String())
 }
 
 func (db *gormdb) ListProjects(ctx context.Context) ([]sdktypes.Project, error) {

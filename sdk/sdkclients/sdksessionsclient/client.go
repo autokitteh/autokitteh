@@ -110,3 +110,16 @@ func (c *client) List(ctx context.Context, filter sdkservices.ListSessionsFilter
 	xs, err := kittehs.TransformError(resp.Msg.Sessions, sdktypes.SessionFromProto)
 	return xs, len(resp.Msg.Sessions), err
 }
+
+func (c *client) Delete(ctx context.Context, sessionID sdktypes.SessionID) error {
+	resp, err := c.client.Delete(ctx, connect.NewRequest(&sessionsv1.DeleteRequest{SessionId: sessionID.String()}))
+	if err != nil {
+		return rpcerrors.TranslateError(err)
+	}
+
+	if err := internal.Validate(resp.Msg); err != nil {
+		return err
+	}
+
+	return nil
+}

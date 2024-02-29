@@ -25,7 +25,7 @@ func (db *gormdb) SaveBuild(ctx context.Context, build sdktypes.Build, data []by
 }
 
 func (db *gormdb) GetBuild(ctx context.Context, buildID sdktypes.BuildID) (sdktypes.Build, error) {
-	return get(db.db, ctx, scheme.ParseBuild, "build_id = ?", buildID.String())
+	return getOneWTransform(db.db, ctx, scheme.ParseBuild, "build_id = ?", buildID.String())
 }
 
 func (db *gormdb) DeleteBuild(ctx context.Context, buildID sdktypes.BuildID) error {

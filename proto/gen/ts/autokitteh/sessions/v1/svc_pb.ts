@@ -415,3 +415,71 @@ export class GetLogResponse extends Message<GetLogResponse> {
   }
 }
 
+/**
+ * @generated from message autokitteh.sessions.v1.DeleteRequest
+ */
+export class DeleteRequest extends Message<DeleteRequest> {
+  /**
+   * @generated from field: string session_id = 1;
+   */
+  sessionId = "";
+
+  constructor(data?: PartialMessage<DeleteRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "autokitteh.sessions.v1.DeleteRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "session_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeleteRequest {
+    return new DeleteRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DeleteRequest {
+    return new DeleteRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DeleteRequest {
+    return new DeleteRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: DeleteRequest | PlainMessage<DeleteRequest> | undefined, b: DeleteRequest | PlainMessage<DeleteRequest> | undefined): boolean {
+    return proto3.util.equals(DeleteRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message autokitteh.sessions.v1.DeleteResponse
+ */
+export class DeleteResponse extends Message<DeleteResponse> {
+  constructor(data?: PartialMessage<DeleteResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "autokitteh.sessions.v1.DeleteResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeleteResponse {
+    return new DeleteResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DeleteResponse {
+    return new DeleteResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DeleteResponse {
+    return new DeleteResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: DeleteResponse | PlainMessage<DeleteResponse> | undefined, b: DeleteResponse | PlainMessage<DeleteResponse> | undefined): boolean {
+    return proto3.util.equals(DeleteResponse, a, b);
+  }
+}
+
