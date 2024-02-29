@@ -194,3 +194,25 @@ func (s *server) Get(ctx context.Context, req *connect.Request[deploymentsv1.Get
 
 	return connect.NewResponse(&deploymentsv1.GetResponse{Deployment: deployment.ToProto()}), nil
 }
+
+func (s *server) Delete(ctx context.Context, req *connect.Request[deploymentsv1.DeleteRequest]) (*connect.Response[deploymentsv1.DeleteResponse], error) {
+	msg := req.Msg
+
+	if err := proto.Validate(msg); err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+
+	did, err := sdktypes.StrictParseDeploymentID(msg.DeploymentId)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("deploymentID: %w", err))
+	}
+
+	if err = s.deployments.Delete(ctx, did); err != nil {
+		if errors.Is(err, sdkerrors.ErrNotFound) {
+			return nil, connect.NewError(connect.CodeNotFound, err)
+		}
+		return nil, connect.NewError(connect.CodeUnknown, fmt.Errorf("server error: %w", err))
+	}
+
+	return connect.NewResponse(&deploymentsv1.DeleteResponse{}), nil
+}
