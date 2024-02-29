@@ -61,6 +61,12 @@ message GetLogResponse {
   SessionLog log = 1 [(buf.validate.field).required = true];
 }
 
+message DeleteRequest {
+  string session_id = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+message DeleteResponse {}
+
 service SessionsService {
   rpc Start(StartRequest) returns (StartResponse);
   rpc Stop(StopRequest) returns (StopResponse);
@@ -69,9 +75,3 @@ service SessionsService {
   rpc GetLog(GetLogRequest) returns (GetLogResponse);
   rpc Delete(DeleteRequest) returns (DeleteResponse);
 }
-
-message DeleteRequest {
-  string session_id = 1 [(buf.validate.field).string.min_len = 1];
-}
-
-message DeleteResponse {}
