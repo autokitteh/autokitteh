@@ -143,3 +143,16 @@ func (c *client) List(ctx context.Context, filter sdkservices.ListDeploymentsFil
 
 	return deployments, nil
 }
+
+func (c *client) Delete(ctx context.Context, deploymentID sdktypes.DeploymentID) error {
+	resp, err := c.client.Delete(ctx, connect.NewRequest(&deploymentsv1.DeleteRequest{DeploymentId: deploymentID.String()}))
+	if err != nil {
+		return rpcerrors.TranslateError(err)
+	}
+
+	if err := internal.Validate(resp.Msg); err != nil {
+		return err
+	}
+
+	return nil
+}
