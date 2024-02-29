@@ -371,6 +371,7 @@ type Deployment struct {
 	State        int32
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
+	DeletedAt    gorm.DeletedAt `gorm:"index"`
 }
 
 func ParseDeployment(d Deployment) (sdktypes.Deployment, error) {
