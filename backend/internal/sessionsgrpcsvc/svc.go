@@ -3,7 +3,6 @@ package sessionsgrpcsvc
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 
 	"connectrpc.com/connect"
