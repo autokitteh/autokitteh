@@ -34,7 +34,7 @@ func (db *gormdb) deleteSession(ctx context.Context, sessionID string) error {
 }
 
 func (db *gormdb) DeleteSession(ctx context.Context, sessionID sdktypes.SessionID) error {
-	return db.deleteSession(ctx, sessionID.String())
+	return translateError(db.deleteSession(ctx, sessionID.String()))
 }
 
 func (db *gormdb) GetSessionLog(ctx context.Context, sessionID sdktypes.SessionID) (sdktypes.SessionLog, error) {
