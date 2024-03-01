@@ -92,10 +92,11 @@ func testDBExistsOne[T any](t *testing.T, gormdb *gormdb, schemaObj T, where str
 
 var (
 	testSessionID    = "ses_00000000000000000000000001"
+	testBuildID      = "bld_00000000000000000000000001"
 	testDeploymentID = "dep_00000000000000000000000001"
 	testEventID      = "evt_00000000000000000000000001"
-	testBuildID      = "bld_00000000000000000000000001"
 	testEnvID        = "env_00000000000000000000000001"
+	testProjectID    = "prj_00000000000000000000000001"
 )
 
 func newSession(f *dbFixture, st sdktypes.SessionStateType) scheme.Session {
@@ -114,21 +115,10 @@ func newSession(f *dbFixture, st sdktypes.SessionStateType) scheme.Session {
 	}
 }
 
-func makeSchemeBuild() scheme.Build {
+func newDeployment(buildID string, envID string) scheme.Deployment {
 	now := time.Now().UTC() // save and compare times in UTC
 
-	build := scheme.Build{
-		BuildID:   testBuildID,
-		Data:      []byte{},
-		CreatedAt: now,
-	}
-	return build
-}
-
-func makeSchemeDeployment() scheme.Deployment {
-	now := time.Now().UTC() // save and compare times in UTC
-
-	deployment := scheme.Deployment{
+	return scheme.Deployment{
 		DeploymentID: testDeploymentID,
 		BuildID:      testBuildID,
 		EnvID:        testEnvID,
@@ -136,5 +126,23 @@ func makeSchemeDeployment() scheme.Deployment {
 		CreatedAt:    now,
 		UpdatedAt:    now,
 	}
-	return deployment
+}
+
+func newEnv() scheme.Env {
+	return scheme.Env{
+		EnvID:        testEnvID,
+		ProjectID:    testProjectID,
+		Name:         "",
+		MembershipID: "",
+	}
+}
+
+func newBuild() scheme.Build {
+	now := time.Now().UTC() // save and compare times in UTC
+
+	return scheme.Build{
+		BuildID:   testBuildID,
+		Data:      []byte{},
+		CreatedAt: now,
+	}
 }
