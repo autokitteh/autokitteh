@@ -17,8 +17,16 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-func (db *gormdb) GetSession(ctx context.Context, sessionID sdktypes.SessionID) (sdktypes.Session, error) {
-	return getOneWTransform(db.db, ctx, scheme.ParseSession, "session_id = ?", sessionID.String())
+func (db *gormdb) getSession(ctx context.Context, sessionID string) (*scheme.Session, error) {
+	return getOne(db.db, ctx, scheme.Session{}, "session_id = ?", sessionID)
+}
+
+func (db *gormdb) GetSession(ctx context.Context, id sdktypes.SessionID) (sdktypes.Session, error) {
+	s, err := db.getSession(ctx, id.String())
+	if s == nil || err != nil {
+		return nil, translateError(err)
+	}
+	return scheme.ParseSession(*s)
 }
 
 func (db *gormdb) deleteSession(ctx context.Context, sessionID string) error {
