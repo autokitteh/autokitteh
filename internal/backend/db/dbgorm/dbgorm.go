@@ -143,6 +143,7 @@ func getOne[T any](db *gorm.DB, ctx context.Context, t T, where string, args ...
 	return &r, nil
 }
 
+// TODO: this not working for deployments. Consider delete this function
 func delete[T any](db *gorm.DB, ctx context.Context, t T, where string, args ...any) error {
 	var r T
 	result := db.WithContext(ctx).Where(where, args...).Delete(&r)
