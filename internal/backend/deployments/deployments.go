@@ -144,6 +144,11 @@ func (d *deployments) Drain(ctx context.Context, id sdktypes.DeploymentID) error
 	})
 }
 
+func (d *deployments) Delete(ctx context.Context, id sdktypes.DeploymentID) error {
+	// FIXME: add logic - see drain and delete
+	return d.db.DeleteDeployment(ctx, id)
+}
+
 func (d *deployments) List(ctx context.Context, filter sdkservices.ListDeploymentsFilter) ([]sdktypes.Deployment, error) {
 	return d.db.ListDeployments(ctx, filter)
 }
