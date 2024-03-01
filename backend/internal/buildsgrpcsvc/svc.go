@@ -3,7 +3,6 @@ package buildsgrpcsvc
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 
@@ -37,20 +36,17 @@ func (s *server) Get(ctx context.Context, req *connect.Request[buildsv1.GetReque
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	buildID, err := sdktypes.StrictParseBuildID(msg.BuildId)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("buildID: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	build, err := s.builds.Get(ctx, buildID)
 	if err != nil {
-		if errors.Is(err, sdkerrors.ErrNotFound) {
-			return nil, connect.NewError(connect.CodeNotFound, err)
-		}
-		return nil, connect.NewError(connect.CodeUnknown, fmt.Errorf("server error: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	return connect.NewResponse(&buildsv1.GetResponse{Build: build.ToProto()}), nil
@@ -60,7 +56,7 @@ func (s *server) List(ctx context.Context, req *connect.Request[buildsv1.ListReq
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	filter := sdkservices.ListBuildsFilter{
@@ -81,20 +77,17 @@ func (s *server) Download(ctx context.Context, req *connect.Request[buildsv1.Dow
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	buildID, err := sdktypes.StrictParseBuildID(msg.BuildId)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("buildID: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	data, err := s.builds.Download(ctx, buildID)
 	if err != nil {
-		if errors.Is(err, sdkerrors.ErrNotFound) {
-			return nil, connect.NewError(connect.CodeNotFound, err)
-		}
-		return nil, connect.NewError(connect.CodeUnknown, fmt.Errorf("server error: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 	defer data.Close()
 
@@ -110,12 +103,12 @@ func (s *server) Save(ctx context.Context, req *connect.Request[buildsv1.SaveReq
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	build, err := sdktypes.BuildFromProto(msg.Build)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	bid, err := s.builds.Save(ctx, build, msg.Data)
@@ -130,19 +123,16 @@ func (s *server) Remove(ctx context.Context, req *connect.Request[buildsv1.Remov
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	bid, err := sdktypes.ParseBuildID(msg.BuildId)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	if err = s.builds.Remove(ctx, bid); err != nil {
-		if errors.Is(err, sdkerrors.ErrNotFound) {
-			return nil, connect.NewError(connect.CodeNotFound, err)
-		}
-		return nil, connect.NewError(connect.CodeUnknown, fmt.Errorf("server error: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	return connect.NewResponse(&buildsv1.RemoveResponse{}), nil

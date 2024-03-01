@@ -1,8 +1,6 @@
 package sdktypes
 
 import (
-	"fmt"
-
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	envsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/envs/v1"
 )
@@ -27,11 +25,11 @@ func strictValidateEnv(pb *envsv1.Env) error {
 
 func validateEnv(pb *envsv1.Env) error {
 	if _, err := ParseEnvID(pb.EnvId); err != nil {
-		return fmt.Errorf("env ID: %w", err)
+		return err
 	}
 
 	if _, err := ParseProjectID(pb.ProjectId); err != nil {
-		return fmt.Errorf("project ID: %w", err)
+		return err
 	}
 
 	return nil

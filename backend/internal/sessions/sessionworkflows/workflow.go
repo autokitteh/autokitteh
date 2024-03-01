@@ -124,7 +124,7 @@ func (w *sessionWorkflow) loadIntegrationConnections(ctx context.Context, path s
 			n = strings.TrimPrefix(n, prefix)
 			sym, err := sdktypes.ParseSymbol(n)
 			if err != nil {
-				return "", nil, fmt.Errorf("invalid symbol %q: %w", n, err)
+				return "", nil, err
 			}
 
 			return n, sdktypes.NewStructValue(sdktypes.NewSymbolValue(sym), vs), nil
@@ -245,7 +245,7 @@ func (w *sessionWorkflow) initGlobalModules(ctx workflow.Context) (map[string]sd
 	for name, exec := range execs {
 		sym, err := sdktypes.StrictParseSymbol(name)
 		if err != nil {
-			return nil, fmt.Errorf("invalid symbol %q: %w", name, err)
+			return nil, err
 		}
 		vs[name] = sdktypes.NewStructValue(sdktypes.NewSymbolValue(sym), exec.Values())
 		if err := w.executors.AddExecutor(name, exec); err != nil {

@@ -29,7 +29,10 @@ func strictValidateCodeLocation(pb *programv1.CodeLocation) error {
 	return validateCodeLocation(pb)
 }
 
-func validateCodeLocation(pb *programv1.CodeLocation) error { return nil }
+func validateCodeLocation(pb *programv1.CodeLocation) error {
+	// NOTE: ensure to return correct sdk errors if any
+	return nil
+}
 
 func GetCodeLocationPath(l CodeLocation) string {
 	if l == nil {

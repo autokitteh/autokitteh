@@ -7,6 +7,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	eventsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/events/v1"
+	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 )
 
 type EventRecordPB = eventsv1.EventRecord
@@ -50,11 +51,11 @@ func strictValidateEventRecord(pb *eventsv1.EventRecord) error {
 
 func validateEventRecord(pb *eventsv1.EventRecord) error {
 	if _, err := ParseEventID(pb.EventId); err != nil {
-		return fmt.Errorf("event ID: %w", err)
+		return err
 	}
 
 	if _, ok := eventsv1.EventState_name[int32(pb.State)]; !ok {
-		return fmt.Errorf("state: invalid")
+		return fmt.Errorf("%w: invalid event state", sdkerrors.ErrInvalidArgument)
 	}
 
 	return nil

@@ -2,7 +2,6 @@ package deploymentsgrpcsvc
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 
@@ -36,12 +35,12 @@ func (s *server) Create(ctx context.Context, req *connect.Request[deploymentsv1.
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	deployment, err := sdktypes.DeploymentFromProto(msg.Deployment)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("deployment: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	did, err := s.deployments.Create(ctx, deployment)
@@ -56,13 +55,13 @@ func (s *server) List(ctx context.Context, req *connect.Request[deploymentsv1.Li
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 	filter := sdkservices.ListDeploymentsFilter{Limit: req.Msg.Limit}
 
 	bid, err := sdktypes.ParseBuildID(msg.BuildId)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 	if bid != nil {
 		filter.BuildID = bid
@@ -70,7 +69,7 @@ func (s *server) List(ctx context.Context, req *connect.Request[deploymentsv1.Li
 
 	eid, err := sdktypes.ParseEnvID(msg.EnvId)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 	if eid != nil {
 		filter.EnvID = eid
@@ -97,20 +96,17 @@ func (s *server) Activate(ctx context.Context, req *connect.Request[deploymentsv
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	did, err := sdktypes.StrictParseDeploymentID(msg.DeploymentId)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("deploymentID: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	err = s.deployments.Activate(ctx, did)
 	if err != nil {
-		if errors.Is(err, sdkerrors.ErrNotFound) {
-			return nil, connect.NewError(connect.CodeNotFound, err)
-		}
-		return nil, connect.NewError(connect.CodeUnknown, fmt.Errorf("server error: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	return connect.NewResponse(&deploymentsv1.ActivateResponse{}), nil
@@ -120,20 +116,17 @@ func (s *server) Test(ctx context.Context, req *connect.Request[deploymentsv1.Te
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	did, err := sdktypes.StrictParseDeploymentID(msg.DeploymentId)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("deploymentID: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	err = s.deployments.Test(ctx, did)
 	if err != nil {
-		if errors.Is(err, sdkerrors.ErrNotFound) {
-			return nil, connect.NewError(connect.CodeNotFound, err)
-		}
-		return nil, connect.NewError(connect.CodeUnknown, fmt.Errorf("server error: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	return connect.NewResponse(&deploymentsv1.TestResponse{}), nil
@@ -143,20 +136,17 @@ func (s *server) Drain(ctx context.Context, req *connect.Request[deploymentsv1.D
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	did, err := sdktypes.StrictParseDeploymentID(msg.DeploymentId)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("deploymentID: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	err = s.deployments.Drain(ctx, did)
 	if err != nil {
-		if errors.Is(err, sdkerrors.ErrNotFound) {
-			return nil, connect.NewError(connect.CodeNotFound, err)
-		}
-		return nil, connect.NewError(connect.CodeUnknown, fmt.Errorf("server error: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	return connect.NewResponse(&deploymentsv1.DrainResponse{}), nil
@@ -166,20 +156,17 @@ func (s *server) Deactivate(ctx context.Context, req *connect.Request[deployment
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	did, err := sdktypes.StrictParseDeploymentID(msg.DeploymentId)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("deploymentID: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	err = s.deployments.Deactivate(ctx, did)
 	if err != nil {
-		if errors.Is(err, sdkerrors.ErrNotFound) {
-			return nil, connect.NewError(connect.CodeNotFound, err)
-		}
-		return nil, connect.NewError(connect.CodeUnknown, fmt.Errorf("server error: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	return connect.NewResponse(&deploymentsv1.DeactivateResponse{}), nil
@@ -189,20 +176,17 @@ func (s *server) Get(ctx context.Context, req *connect.Request[deploymentsv1.Get
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	did, err := sdktypes.StrictParseDeploymentID(msg.DeploymentId)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("deploymentID: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	deployment, err := s.deployments.Get(ctx, did)
 	if err != nil {
-		if errors.Is(err, sdkerrors.ErrNotFound) {
-			return nil, connect.NewError(connect.CodeNotFound, err)
-		}
-		return nil, connect.NewError(connect.CodeUnknown, fmt.Errorf("server error: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	return connect.NewResponse(&deploymentsv1.GetResponse{Deployment: deployment.ToProto()}), nil

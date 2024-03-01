@@ -6,7 +6,7 @@ import (
 
 var errMissingFields = errors.New("missing fields")
 
-func ensureNotEmpty(vs ...string) error {
+func ensureNotEmpty(vs ...string) error { // TODO: map? to return which field is missing
 	for _, v := range vs {
 		if v == "" {
 			return errMissingFields

@@ -14,6 +14,7 @@ import (
 	akproto "go.autokitteh.dev/autokitteh/proto"
 	runtimesv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/runtimes/v1"
 	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/runtimes/v1/runtimesv1connect"
+	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkruntimes/sdkbuildfile"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -52,7 +53,7 @@ func (s *svc) list(ctx context.Context) ([]sdktypes.Runtime, error) {
 func (s *svc) Describe(ctx context.Context, req *connect.Request[runtimesv1.DescribeRequest]) (*connect.Response[runtimesv1.DescribeResponse], error) {
 	err := akproto.Validate(req.Msg)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	rts, err := s.list(ctx)
@@ -71,7 +72,7 @@ func (s *svc) Describe(ctx context.Context, req *connect.Request[runtimesv1.Desc
 
 func (s *svc) List(ctx context.Context, req *connect.Request[runtimesv1.ListRequest]) (*connect.Response[runtimesv1.ListResponse], error) {
 	if err := akproto.Validate(req.Msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	rts, err := s.list(ctx)
@@ -84,12 +85,12 @@ func (s *svc) List(ctx context.Context, req *connect.Request[runtimesv1.ListRequ
 
 func (s *svc) Build(ctx context.Context, req *connect.Request[runtimesv1.BuildRequest]) (*connect.Response[runtimesv1.BuildResponse], error) {
 	if err := akproto.Validate(req.Msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	symbols, err := kittehs.TransformError(req.Msg.Symbols, sdktypes.StrictParseSymbol)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	srcFS, err := kittehs.MapToMemFS(req.Msg.Resources)
@@ -119,17 +120,17 @@ func (s *svc) Run(ctx context.Context, req *connect.Request[runtimesv1.RunReques
 	msg := req.Msg
 
 	if err := akproto.Validate(msg); err != nil {
-		return connect.NewError(connect.CodeInvalidArgument, err)
+		return sdkerrors.AsConnectError(err)
 	}
 
 	rid, err := sdktypes.ParseRunID(msg.RunId)
 	if err != nil {
-		return connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("run_id: %w", err))
+		return sdkerrors.AsConnectError(err)
 	}
 
 	gs, err := kittehs.TransformMapValuesError(msg.Globals, sdktypes.StrictValueFromProto)
 	if err != nil {
-		return connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("globals: %w", err))
+		return sdkerrors.AsConnectError(fmt.Errorf("globals: %w", err))
 	}
 
 	bf, err := sdkbuildfile.Read(bytes.NewReader(msg.Artifact))

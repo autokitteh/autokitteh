@@ -2,8 +2,6 @@ package integrationsgrpcsvc
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"net/http"
 
 	"connectrpc.com/connect"
@@ -33,30 +31,30 @@ func Init(mux *http.ServeMux, integrations sdkservices.Integrations) {
 
 func (s *server) Get(ctx context.Context, req *connect.Request[integrationsv1.GetRequest]) (*connect.Response[integrationsv1.GetResponse], error) {
 	if err := proto.Validate(req.Msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 	id, err := sdktypes.StrictParseIntegrationID(req.Msg.IntegrationId)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("integration_id: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	i, err := s.integrations.Get(ctx, id)
 	if err != nil {
-		return nil, toConnectError(err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 	return connect.NewResponse(&integrationsv1.GetResponse{Integration: i.Get().ToProto()}), nil
 }
 
 func (s *server) List(ctx context.Context, req *connect.Request[integrationsv1.ListRequest]) (*connect.Response[integrationsv1.ListResponse], error) {
 	if err := proto.Validate(req.Msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	// TODO: Tags
 
 	is, err := s.integrations.List(ctx, req.Msg.NameSubstring)
 	if err != nil {
-		return nil, toConnectError(err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	return connect.NewResponse(&integrationsv1.ListResponse{
@@ -66,23 +64,10 @@ func (s *server) List(ctx context.Context, req *connect.Request[integrationsv1.L
 
 func (*server) Call(context.Context, *connect.Request[integrationsv1.CallRequest]) (*connect.Response[integrationsv1.CallResponse], error) {
 	// TODO
-	return nil, connect.NewError(connect.CodeUnimplemented, sdkerrors.ErrNotImplemented)
+	return nil, sdkerrors.AsConnectError(sdkerrors.ErrNotImplemented)
 }
 
 func (*server) Configure(context.Context, *connect.Request[integrationsv1.ConfigureRequest]) (*connect.Response[integrationsv1.ConfigureResponse], error) {
 	// TODO
-	return nil, connect.NewError(connect.CodeUnimplemented, sdkerrors.ErrNotImplemented)
-}
-
-func toConnectError(err error) *connect.Error {
-	switch {
-	case errors.Is(err, sdkerrors.ErrNotFound):
-		return connect.NewError(connect.CodeNotFound, err)
-	case errors.Is(err, sdkerrors.ErrUnauthenticated):
-		return connect.NewError(connect.CodeUnauthenticated, err)
-	case errors.Is(err, sdkerrors.ErrUnauthorized):
-		return connect.NewError(connect.CodePermissionDenied, err)
-	default:
-		return connect.NewError(connect.CodeUnknown, err)
-	}
+	return nil, sdkerrors.AsConnectError(sdkerrors.ErrNotImplemented)
 }

@@ -2,6 +2,7 @@ package sdktypes
 
 import (
 	"encoding/json"
+	"fmt"
 	"regexp"
 
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
@@ -15,7 +16,7 @@ type symbol struct{ s string }
 
 func StrictParseSymbol(s string) (Symbol, error) {
 	if !symbolRE.MatchString(s) {
-		return nil, sdkerrors.ErrInvalidArgument
+		return nil, fmt.Errorf("%w: failed to parse symbol: %s", sdkerrors.ErrInvalidArgument, s)
 	}
 	return &symbol{s: s}, nil
 }

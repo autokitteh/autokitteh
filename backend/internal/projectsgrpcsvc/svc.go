@@ -36,23 +36,17 @@ func (s *server) Create(ctx context.Context, req *connect.Request[projectsv1.Cre
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	project, err := sdktypes.ProjectFromProto(msg.Project)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	uid, err := s.projects.Create(ctx, project)
 	if err != nil {
-		if errors.Is(err, sdkerrors.ErrAlreadyExists) {
-			return nil, connect.NewError(connect.CodeAlreadyExists, err)
-		} else if errors.Is(err, sdkerrors.ErrUnauthorized) {
-			return nil, connect.NewError(connect.CodePermissionDenied, err)
-		}
-
-		return nil, connect.NewError(connect.CodeUnknown, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	return connect.NewResponse(&projectsv1.CreateResponse{ProjectId: uid.String()}), nil
@@ -62,20 +56,16 @@ func (s *server) Update(ctx context.Context, req *connect.Request[projectsv1.Upd
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	project, err := sdktypes.ProjectFromProto(msg.Project)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	if err := s.projects.Update(ctx, project); err != nil {
-		if errors.Is(err, sdkerrors.ErrUnauthorized) {
-			return nil, connect.NewError(connect.CodePermissionDenied, err)
-		}
-
-		return nil, connect.NewError(connect.CodeUnknown, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	return connect.NewResponse(&projectsv1.UpdateResponse{}), nil
@@ -99,12 +89,12 @@ func (s *server) Get(ctx context.Context, req *connect.Request[projectsv1.GetReq
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	uid, err := sdktypes.ParseProjectID(msg.ProjectId)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("project_id: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	if uid != nil {
@@ -113,7 +103,7 @@ func (s *server) Get(ctx context.Context, req *connect.Request[projectsv1.GetReq
 
 	n, err := sdktypes.StrictParseName(msg.Name)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("name: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	if n == nil {
@@ -128,11 +118,7 @@ func (s *server) Get(ctx context.Context, req *connect.Request[projectsv1.GetReq
 func (s *server) list(ctx context.Context) ([]*sdktypes.ProjectPB, error) {
 	ps, err := s.projects.List(ctx)
 	if err != nil {
-		if errors.Is(err, sdkerrors.ErrUnauthorized) {
-			return nil, connect.NewError(connect.CodePermissionDenied, err)
-		}
-
-		return nil, connect.NewError(connect.CodeUnknown, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	return kittehs.Transform(ps, sdktypes.ToProto), nil
@@ -140,7 +126,7 @@ func (s *server) list(ctx context.Context) ([]*sdktypes.ProjectPB, error) {
 
 func (s *server) ListForOwner(ctx context.Context, req *connect.Request[projectsv1.ListForOwnerRequest]) (*connect.Response[projectsv1.ListForOwnerResponse], error) {
 	if err := proto.Validate(req.Msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	ps, err := s.list(ctx)
@@ -153,7 +139,7 @@ func (s *server) ListForOwner(ctx context.Context, req *connect.Request[projects
 
 func (s *server) List(ctx context.Context, req *connect.Request[projectsv1.ListRequest]) (*connect.Response[projectsv1.ListResponse], error) {
 	if err := proto.Validate(req.Msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	ps, err := s.list(ctx)
@@ -168,12 +154,12 @@ func (s *server) Build(ctx context.Context, req *connect.Request[projectsv1.Buil
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	pid, err := sdktypes.ParseProjectID(msg.ProjectId)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("project_id: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	if pid == nil {
@@ -196,12 +182,12 @@ func (s *server) SetResources(ctx context.Context, req *connect.Request[projects
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	pid, err := sdktypes.ParseProjectID(msg.ProjectId)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("project_id: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	if pid == nil {
@@ -209,11 +195,7 @@ func (s *server) SetResources(ctx context.Context, req *connect.Request[projects
 	}
 
 	if err := s.projects.SetResources(ctx, pid, msg.Resources); err != nil {
-		if errors.Is(err, sdkerrors.ErrUnauthorized) {
-			return nil, connect.NewError(connect.CodePermissionDenied, err)
-		}
-
-		return nil, connect.NewError(connect.CodeUnknown, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	return connect.NewResponse(&projectsv1.SetResourcesResponse{}), nil
@@ -223,12 +205,12 @@ func (s *server) DownloadResources(ctx context.Context, req *connect.Request[pro
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	pid, err := sdktypes.ParseProjectID(msg.ProjectId)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("project_id: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	if pid == nil {
@@ -237,11 +219,7 @@ func (s *server) DownloadResources(ctx context.Context, req *connect.Request[pro
 
 	resources, err := s.projects.DownloadResources(ctx, pid)
 	if err != nil {
-		if errors.Is(err, sdkerrors.ErrUnauthorized) {
-			return nil, connect.NewError(connect.CodePermissionDenied, err)
-		}
-
-		return nil, connect.NewError(connect.CodeUnknown, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	return connect.NewResponse(&projectsv1.DownloadResourcesResponse{Resources: resources}), nil

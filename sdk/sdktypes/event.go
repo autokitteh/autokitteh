@@ -6,6 +6,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	eventsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/events/v1"
+	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 )
 
 type EventPB = eventsv1.Event
@@ -28,15 +29,15 @@ func strictValidateEvent(pb *eventsv1.Event) error {
 
 func validateEvent(pb *eventsv1.Event) error {
 	if _, err := ParseEventID(pb.EventId); err != nil {
-		return fmt.Errorf("event id: %w", err)
+		return err
 	}
 
 	if _, err := ParseIntegrationID(pb.IntegrationId); err != nil {
-		return fmt.Errorf("integration id: %w", err)
+		return err
 	}
 
 	if _, err := kittehs.TransformMapValuesError(pb.Data, ValueFromProto); err != nil {
-		return fmt.Errorf("data: %w", err)
+		return fmt.Errorf("%w: failed to transform data: %w", sdkerrors.ErrInvalidArgument, err)
 	}
 
 	return nil

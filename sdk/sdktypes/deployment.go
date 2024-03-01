@@ -30,7 +30,7 @@ func DeploymentStateFromProto(s deploymentsv1.DeploymentState) (DeploymentState,
 	if _, ok := deploymentsv1.DeploymentState_name[int32(s.Number())]; ok {
 		return DeploymentState(s), nil
 	}
-	return DeploymentStateUnspecified, fmt.Errorf("unknown state %v: %w", s, sdkerrors.ErrInvalidArgument)
+	return DeploymentStateUnspecified, fmt.Errorf("%w: unknown state %v", sdkerrors.ErrInvalidArgument, s)
 }
 
 func (s DeploymentState) String() string {
@@ -74,15 +74,15 @@ func strictValidateDeployment(pb *deploymentsv1.Deployment) error {
 
 func validateDeployment(pb *deploymentsv1.Deployment) error {
 	if _, err := ParseDeploymentID(pb.DeploymentId); err != nil {
-		return fmt.Errorf("Deployment id: %w", err)
+		return err
 	}
 
 	if _, err := ParseEnvID(pb.EnvId); err != nil {
-		return fmt.Errorf("env id: %w", err)
+		return err
 	}
 
 	if _, err := ParseBuildID(pb.BuildId); err != nil {
-		return fmt.Errorf("event id: %w", err)
+		return err
 	}
 
 	return nil
