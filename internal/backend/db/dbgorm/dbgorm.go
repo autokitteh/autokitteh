@@ -134,11 +134,11 @@ func getOne[T any](db *gorm.DB, ctx context.Context, t T, where string, args ...
 	// TODO: fetch all records and report if there is more than one record
 	result := db.WithContext(ctx).Where(where, args...).Limit(1).Find(&r)
 	if result.Error != nil {
-		return nil, translateError(result.Error)
+		return nil, result.Error
 	}
 
 	if result.RowsAffected == 0 {
-		return nil, sdkerrors.ErrNotFound
+		return nil, gorm.ErrRecordNotFound
 	}
 	return &r, nil
 }
