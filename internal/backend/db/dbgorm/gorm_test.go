@@ -131,6 +131,7 @@ func newDeployment(buildID string, envID string) scheme.Deployment {
 	}
 }
 
+/*
 func newEnv() scheme.Env {
 	return scheme.Env{
 		EnvID:        testEnvID,
@@ -149,3 +150,4 @@ func newBuild() scheme.Build {
 		CreatedAt: now,
 	}
 }
+*/
