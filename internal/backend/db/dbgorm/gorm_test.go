@@ -50,23 +50,12 @@ func setupDB(dbName string) *gorm.DB {
 	return db
 }
 
-func getZ() *zap.Logger {
-	// return zap.NewNop()
-	logger := zap.NewExample()
-	defer func() { // flushes buffer, if any
-		if err := logger.Sync(); err != nil {
-			log.Printf("Could not sync logger: %v", err)
-		}
-	}()
-	return logger
-}
-
 func newDbFixture() *dbFixture {
 	db := setupDB("") // in-memory db, specify filename to use file db
 
 	ctx := context.Background()
 
-	gormdb := gormdb{db: db, cfg: nil, mu: nil, z: getZ()}
+	gormdb := gormdb{db: db, cfg: nil, mu: nil, z: zap.NewExample()}
 	if err := gormdb.Teardown(ctx); err != nil { // delete tables if any
 		log.Printf("Failed to termdown gormdb: %v", err)
 	}
