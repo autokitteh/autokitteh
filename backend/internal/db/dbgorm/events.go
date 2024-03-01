@@ -30,7 +30,7 @@ func (db *gormdb) SaveEvent(ctx context.Context, event sdktypes.Event) error {
 }
 
 func (db *gormdb) GetEventByID(ctx context.Context, eventID sdktypes.EventID) (sdktypes.Event, error) {
-	return get(db.db, ctx, scheme.ParseEvent, "event_id = ?", eventID.String())
+	return getOneWTransform(db.db, ctx, scheme.ParseEvent, "event_id = ?", eventID.String())
 }
 
 func (db *gormdb) ListEvents(ctx context.Context, filter sdkservices.ListEventsFilter) ([]sdktypes.Event, error) {

@@ -20,4 +20,5 @@ type Sessions interface {
 	List(ctx context.Context, filter ListSessionsFilter) ([]sdktypes.Session, int, error)
 	Get(ctx context.Context, sessionID sdktypes.SessionID) (sdktypes.Session, error)
 	GetLog(ctx context.Context, sessionID sdktypes.SessionID) (sdktypes.SessionLog, error)
+	Delete(ctx context.Context, sessionID sdktypes.SessionID) error
 }

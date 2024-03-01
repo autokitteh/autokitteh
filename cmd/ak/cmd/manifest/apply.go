@@ -7,7 +7,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
-	imanifest "go.autokitteh.dev/autokitteh/internal/manifest"
+	"go.autokitteh.dev/autokitteh/internal/manifest"
 )
 
 var dryRun bool
@@ -33,7 +33,7 @@ var applyCmd = common.StandardCommand(&cobra.Command{
 			ctx, cancel := common.LimitedContext()
 			defer cancel()
 
-			_, err := imanifest.Execute(ctx, actions, common.Client(), func(msg string) {
+			_, err := manifest.Execute(ctx, actions, common.Client(), func(msg string) {
 				fmt.Fprintf(os.Stderr, "[exec] %s\n", msg)
 			})
 			return err

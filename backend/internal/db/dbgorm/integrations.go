@@ -80,7 +80,7 @@ func (db *gormdb) DeleteIntegration(ctx context.Context, id sdktypes.Integration
 }
 
 func (db *gormdb) GetIntegration(ctx context.Context, id sdktypes.IntegrationID) (sdktypes.Integration, error) {
-	return get(db.db, ctx, scheme.ParseIntegration, "integration_id = ?", id.String())
+	return getOneWTransform(db.db, ctx, scheme.ParseIntegration, "integration_id = ?", id.String())
 }
 
 func (db *gormdb) ListIntegrations(ctx context.Context, filter sdkservices.ListIntegrationsFilter) ([]sdktypes.Integration, error) {

@@ -5,15 +5,16 @@ import (
 )
 
 var (
-	ErrNotImplemented  = errors.New("not implemented")
-	ErrRPC             = errors.New("rpc")
-	ErrAlreadyExists   = errors.New("already exists")
-	ErrNotFound        = errors.New("not found")
-	ErrInvalidArgument = errors.New("invalid argument")
-	ErrConflict        = errors.New("conflict")
-	ErrUnauthorized    = errors.New("unauthorized")
-	ErrUnauthenticated = errors.New("unauthenticated")
-	ErrUnknown         = errors.New("unknown")
+	ErrNotImplemented     = errors.New("not implemented")
+	ErrRPC                = errors.New("rpc")
+	ErrAlreadyExists      = errors.New("already exists")
+	ErrNotFound           = errors.New("not found")
+	ErrInvalidArgument    = errors.New("invalid argument")
+	ErrConflict           = errors.New("conflict")
+	ErrUnauthorized       = errors.New("unauthorized")
+	ErrUnauthenticated    = errors.New("unauthenticated")
+	ErrUnknown            = errors.New("unknown")
+	ErrFailedPrecondition = errors.New("failed precondition")
 )
 
 func IgnoreNotFoundErr[T any](t *T, err error) (*T, error) {

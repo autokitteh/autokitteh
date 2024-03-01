@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { GetLogRequest, GetLogResponse, GetRequest, GetResponse, ListRequest, ListResponse, StartRequest, StartResponse, StopRequest, StopResponse } from "./svc_pb.js";
+import { DeleteRequest, DeleteResponse, GetLogRequest, GetLogResponse, GetRequest, GetResponse, ListRequest, ListResponse, StartRequest, StartResponse, StopRequest, StopResponse } from "./svc_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -55,6 +55,15 @@ export const SessionsService = {
       name: "GetLog",
       I: GetLogRequest,
       O: GetLogResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * @generated from rpc autokitteh.sessions.v1.SessionsService.Delete
+     */
+    delete: {
+      name: "Delete",
+      I: DeleteRequest,
+      O: DeleteResponse,
       kind: MethodKind.Unary,
     },
   }

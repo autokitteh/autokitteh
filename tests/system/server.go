@@ -17,7 +17,12 @@ const (
 // Start the AK server, but in a goroutine rather than as a separate
 // subprocess: to support breakpoint debugging, and measure test coverage.
 func startAKServer(ctx context.Context) {
-	cmd.RootCmd.SetArgs([]string{"up", "--config", "http.addr=:0", "--mode", "test"})
+	cmd.RootCmd.SetArgs([]string{
+		"up",
+		"--config", "db.dsn=sqlite:test.sqlite",
+		"--config", "http.addr=:0",
+		"--mode", "test",
+	})
 
 	// We don't care about execution errors here, the test will check this.
 	cmd.RootCmd.ExecuteContext(ctx) //nolint:errcheck

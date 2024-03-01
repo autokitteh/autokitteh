@@ -4,7 +4,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
-	imanifest "go.autokitteh.dev/autokitteh/internal/manifest"
+	"go.autokitteh.dev/autokitteh/internal/manifest"
 )
 
 var validateCmd = common.StandardCommand(&cobra.Command{
@@ -19,7 +19,7 @@ var validateCmd = common.StandardCommand(&cobra.Command{
 			return err
 		}
 
-		if _, err := imanifest.Read(data, path); err != nil {
+		if _, err := manifest.Read(data, path); err != nil {
 			return err
 		}
 
