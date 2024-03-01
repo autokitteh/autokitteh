@@ -51,6 +51,7 @@ func setupDB(dbName string) *gorm.DB {
 		},
 		Logger: logger,
 	})
+	db.Exec("PRAGMA foreign_keys = ON")
 	if err != nil {
 		log.Fatalf("failed to open database: %v", err)
 	}
