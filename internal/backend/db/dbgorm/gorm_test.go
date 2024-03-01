@@ -2,6 +2,7 @@ package dbgorm
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 	"testing"
@@ -19,9 +20,16 @@ import (
 )
 
 type dbFixture struct {
-	db     *gorm.DB
-	gormdb *gormdb
-	ctx    context.Context
+	db        *gorm.DB
+	gormdb    *gormdb
+	ctx       context.Context
+	sessionID uint
+}
+
+func (f *dbFixture) newSessionID() (id uint) {
+	id = f.sessionID
+	f.sessionID += 1
+	return id
 }
 
 // TODO: use gormkitteh (and maybe test with sqlite::memory and embedded PG)
@@ -89,20 +97,20 @@ var (
 	testEnvID        = "env_00000000000000000000000001"
 )
 
-func makeSchemeSession() scheme.Session {
+func newSession(f *dbFixture, st sdktypes.SessionStateType) scheme.Session {
 	now := time.Now().UTC() // save and compare times in UTC
+	sessionID := fmt.Sprintf("s:%04d", f.newSessionID())
 
-	session := scheme.Session{
-		SessionID:        testSessionID,
+	return scheme.Session{
+		SessionID:        sessionID,
 		DeploymentID:     testDeploymentID,
 		EventID:          testEventID,
-		CurrentStateType: int(sdktypes.SessionStateTypeCompleted.ToProto()),
+		CurrentStateType: int(st.ToProto()),
 		Entrypoint:       "testEntrypoint",
 		Inputs:           datatypes.JSON(`{"key": "value"}`),
 		CreatedAt:        now,
 		UpdatedAt:        now,
 	}
-	return session
 }
 
 func makeSchemeBuild() scheme.Build {
