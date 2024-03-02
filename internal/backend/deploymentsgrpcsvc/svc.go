@@ -199,19 +199,16 @@ func (s *server) Delete(ctx context.Context, req *connect.Request[deploymentsv1.
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	did, err := sdktypes.StrictParseDeploymentID(msg.DeploymentId)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("deploymentID: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	if err = s.deployments.Delete(ctx, did); err != nil {
-		if errors.Is(err, sdkerrors.ErrNotFound) {
-			return nil, connect.NewError(connect.CodeNotFound, err)
-		}
-		return nil, connect.NewError(connect.CodeUnknown, fmt.Errorf("server error: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	return connect.NewResponse(&deploymentsv1.DeleteResponse{}), nil
