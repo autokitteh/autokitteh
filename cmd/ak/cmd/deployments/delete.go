@@ -20,18 +20,16 @@ var deleteCmd = common.StandardCommand(&cobra.Command{
 			return common.FailIfError(cmd, err, "deployment")
 		}
 
-		if err := common.FailIfNotFound(cmd, "deployment id", d); err != nil {
+		if err := common.FailIfNotFound(cmd, "deployment", d); err != nil { // test d != nil
 			return err
 		}
 
 		ctx, cancel := common.LimitedContext()
 		defer cancel()
 		err = deployments().Delete(ctx, id)
-		if err != nil {
-			return common.FailIfError(cmd, err, "session")
+		if err != nil { // don't ignore silently any error, expect not found above
+			return common.ToExitCodeError(err, "delete deployment")
 		}
-
-		common.RenderKVIfV("deployment", d) // print deleted deployment
 		return nil
 	},
 })
