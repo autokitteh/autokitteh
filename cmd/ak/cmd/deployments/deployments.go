@@ -30,6 +30,7 @@ func init() {
 	deploymentsCmd.AddCommand(deactivateCmd)
 	deploymentsCmd.AddCommand(getCmd)
 	deploymentsCmd.AddCommand(listCmd)
+	deploymentsCmd.AddCommand(deleteCmd)
 }
 
 func deployments() sdkservices.Deployments {
