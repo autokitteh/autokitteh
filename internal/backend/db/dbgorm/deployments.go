@@ -58,7 +58,7 @@ func (db *gormdb) deleteDeployment(ctx context.Context, deploymentID string) err
 }
 
 func (db *gormdb) DeleteDeployment(ctx context.Context, deploymentID sdktypes.DeploymentID) error {
-	return translateError(db.deleteSession(ctx, deploymentID.String()))
+	return translateError(db.deleteDeployment(ctx, deploymentID.String()))
 }
 
 // TODO: rewrite generic in order to avoid splitting to Deployment and DeploymentWithStats
