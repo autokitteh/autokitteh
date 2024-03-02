@@ -145,18 +145,24 @@ func (d *deployments) Drain(ctx context.Context, id sdktypes.DeploymentID) error
 }
 
 func (d *deployments) Delete(ctx context.Context, id sdktypes.DeploymentID) error {
-	return d.db.Transaction(ctx, func(tx db.DB) error {
+	err := d.db.Transaction(ctx, func(tx db.DB) error {
 		dep, err := tx.GetDeployment(ctx, id)
 		if err != nil {
 			return err
 		}
 
-		if sdktypes.GetDeploymentState(dep) == sdktypes.DeploymentStateInactive {
-			return d.db.DeleteDeployment(ctx, id)
+		if sdktypes.GetDeploymentState(dep) != sdktypes.DeploymentStateInactive {
+			err = drain(ctx, tx, id)
 		}
-
-		return drain(ctx, tx, id)
+		return err
 	})
+
+	// NOTE: deployment is inactive, so it should be safe to delete it outside of the transaction.
+	// It seems that sqlite does not support nested transactions, so we'll fail in delete hook, since DB is locked.
+	if err == nil {
+		err = d.db.DeleteDeployment(ctx, id)
+	}
+	return err
 }
 
 func (d *deployments) List(ctx context.Context, filter sdkservices.ListDeploymentsFilter) ([]sdktypes.Deployment, error) {
