@@ -323,7 +323,7 @@ func ParseSessionCallAttemptComplete(c SessionCallAttempt) (d sdktypes.SessionCa
 
 type Session struct {
 	SessionID        string `gorm:"primaryKey"`
-	DeploymentID     string `gorm:"index;foreignKey:DeploymentID;references:DeploymentID"`
+	DeploymentID     string `gorm:"index;foreignKey:DeploymentID"`
 	EventID          string `gorm:"index"`
 	CurrentStateType int    `gorm:"index"`
 	Entrypoint       string
