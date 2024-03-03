@@ -63,25 +63,25 @@ func writeRuntime(tw *tar.Writer, root string, rt *RuntimeData) error {
 		return err
 	}
 
-	reqs := sdktypes.GetBuildArtifactRequirements(rt.Artifact)
+	reqs := rt.Artifact.Requirements()
 	if reqs == nil {
-		reqs = []sdktypes.Requirement{}
+		reqs = []sdktypes.BuildRequirement{}
 	}
 
 	if err := writeJSON(tw, filepath.Join(root, filenames.requirements), reqs); err != nil {
 		return err
 	}
 
-	exports := sdktypes.GetBuildArtifactExports(rt.Artifact)
+	exports := rt.Artifact.Exports()
 	if exports == nil {
-		exports = []sdktypes.Export{}
+		exports = []sdktypes.BuildExport{}
 	}
 
 	if err := writeJSON(tw, filepath.Join(root, filenames.exports), exports); err != nil {
 		return err
 	}
 
-	if err := writeBuildData(tw, root, sdktypes.GetBuildArtifactCompiledData(rt.Artifact)); err != nil {
+	if err := writeBuildData(tw, root, rt.Artifact.CompiledData()); err != nil {
 		return fmt.Errorf("compiled_data: %w", err)
 	}
 
@@ -105,7 +105,7 @@ func (bf *BuildFile) Write(w io.Writer) error {
 
 	reqs := bf.RuntimeRequirements
 	if reqs == nil {
-		reqs = []sdktypes.Requirement{}
+		reqs = []sdktypes.BuildRequirement{}
 	}
 
 	if err := writeJSON(tw, filenames.requirements, reqs); err != nil {

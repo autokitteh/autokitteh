@@ -22,22 +22,17 @@ func New(z *zap.Logger, db db.DB) sdkservices.Triggers {
 }
 
 func (m *triggers) Create(ctx context.Context, trigger sdktypes.Trigger) (sdktypes.TriggerID, error) {
-	if tid := sdktypes.GetTriggerID(trigger); tid != nil {
-		return nil, errors.New("trigger id already defined")
+	if trigger.ID().IsValid() {
+		return sdktypes.InvalidTriggerID, errors.New("trigger id already defined")
 	}
 
-	trigger, err := trigger.Update(func(pb *sdktypes.TriggerPB) {
-		pb.TriggerId = sdktypes.NewTriggerID().String()
-	})
-	if err != nil {
-		return nil, err
+	trigger = trigger.WithNewID()
+
+	if err := m.db.CreateTrigger(ctx, trigger); err != nil {
+		return sdktypes.InvalidTriggerID, err
 	}
 
-	if err = m.db.CreateTrigger(ctx, trigger); err != nil {
-		return nil, err
-	}
-
-	return sdktypes.GetTriggerID(trigger), nil
+	return trigger.ID(), nil
 }
 
 func (m *triggers) Update(ctx context.Context, trigger sdktypes.Trigger) error {

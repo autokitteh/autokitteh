@@ -1,55 +1,37 @@
 package sdktypes
 
 import (
-	"fmt"
 	"time"
+
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	buildsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/builds/v1"
-	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 )
+
+type Build struct{ object[*BuildPB, BuildTraits] }
 
 type BuildPB = buildsv1.Build
 
-type Build = *object[*BuildPB]
+type BuildTraits struct{}
 
-var (
-	BuildFromProto       = makeFromProto(validateBuild)
-	StrictBuildFromProto = makeFromProto(strictValidateBuild)
-	ToStrictBuild        = makeWithValidator(strictValidateBuild)
-)
+var InvalidBuild Build
 
-func NewBuild() Build {
-	return &object[*BuildPB]{pb: &buildsv1.Build{}, validatefn: validateBuild}
+func (BuildTraits) Validate(m *BuildPB) error       { return idField[BuildID]("build_id", m.BuildId) }
+func (BuildTraits) StrictValidate(m *BuildPB) error { return nil }
+
+func BuildFromProto(m *BuildPB) (Build, error)       { return FromProto[Build](m) }
+func StrictBuildFromProto(m *BuildPB) (Build, error) { return Strict(BuildFromProto(m)) }
+
+func NewBuild() Build { return kittehs.Must1(BuildFromProto(&BuildPB{})) }
+
+func (p Build) ID() (_ BuildID)      { return kittehs.Must1(ParseBuildID(p.read().BuildId)) }
+func (p Build) CreatedAt() time.Time { return p.read().CreatedAt.AsTime() }
+
+func (p Build) WithNewID() Build {
+	return Build{p.forceUpdate(func(m *BuildPB) { m.BuildId = NewBuildID().String() })}
 }
 
-func strictValidateBuild(pb *buildsv1.Build) error {
-	if err := ensureNotEmpty(pb.BuildId); err != nil {
-		return fmt.Errorf("%w: missing build id", sdkerrors.ErrInvalidArgument)
-	}
-
-	return validateBuild(pb)
-}
-
-func validateBuild(pb *buildsv1.Build) error {
-	if _, err := ParseBuildID(pb.BuildId); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func GetBuildID(b Build) BuildID {
-	if b == nil {
-		return nil
-	}
-	return kittehs.Must1(ParseBuildID(b.pb.BuildId))
-}
-
-func GetBuildCreatedAt(b Build) time.Time {
-	if b == nil {
-		return time.Time{}
-	}
-
-	return b.pb.CreatedAt.AsTime()
+func (p Build) WithCreatedAt(t time.Time) Build {
+	return Build{p.forceUpdate(func(m *BuildPB) { m.CreatedAt = timestamppb.New(t) })}
 }

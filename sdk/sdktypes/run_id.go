@@ -1,18 +1,12 @@
 package sdktypes
 
-const RunIDKind = "run"
+const runIDKind = "r"
 
-type RunID = *id[runIDTraits]
-
-var _ ID = (RunID)(nil)
+type RunID = id[runIDTraits]
 
 type runIDTraits struct{}
 
-func (runIDTraits) Kind() string                   { return RunIDKind }
-func (runIDTraits) ValidateValue(raw string) error { return validateUUID(raw) }
+func (runIDTraits) Prefix() string { return runIDKind }
 
-func ParseRunID(raw string) (RunID, error) { return parseTypedID[runIDTraits](raw) }
-
-func StrictParseRunID(raw string) (RunID, error) { return strictParseTypedID[runIDTraits](raw) }
-
-func NewRunID() RunID { return newID[runIDTraits]() }
+func NewRunID() RunID                    { return newID[RunID]() }
+func ParseRunID(s string) (RunID, error) { return ParseID[RunID](s) }

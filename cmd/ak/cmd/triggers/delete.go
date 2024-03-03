@@ -21,7 +21,7 @@ var deleteCmd = common.StandardCommand(&cobra.Command{
 		if err != nil {
 			return err
 		}
-		if t == nil {
+		if !t.IsValid() {
 			err = fmt.Errorf("trigger ID %q not found", args[0])
 			return common.NewExitCodeError(common.NotFoundExitCode, err)
 		}

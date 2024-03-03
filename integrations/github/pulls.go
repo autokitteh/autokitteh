@@ -23,18 +23,18 @@ func (i integration) getPullRequest(ctx context.Context, args []sdktypes.Value, 
 		"number", &number,
 	)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Invoke the API method.
 	gh, err := i.NewClient(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	pr, _, err := gh.PullRequests.Get(ctx, owner, repo, number)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	return sdkvalues.Wrap(pr)
@@ -61,13 +61,13 @@ func (i integration) listPullRequests(ctx context.Context, args []sdktypes.Value
 		"per_page?", &perPage,
 	)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Invoke the API method.
 	gh, err := i.NewClient(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 	opts := &github.PullRequestListOptions{
 		State:     state,
@@ -83,7 +83,7 @@ func (i integration) listPullRequests(ctx context.Context, args []sdktypes.Value
 
 	prs, _, err := gh.PullRequests.List(ctx, owner, repo, opts)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	return sdkvalues.Wrap(prs)
@@ -112,7 +112,7 @@ func (i integration) createPullRequest(ctx context.Context, args []sdktypes.Valu
 		"maintainer_can_modify?", &mcm,
 	)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	pull := github.NewPullRequest{
@@ -128,12 +128,12 @@ func (i integration) createPullRequest(ctx context.Context, args []sdktypes.Valu
 
 	gh, err := i.NewClient(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	pr, _, err := gh.PullRequests.Create(ctx, owner, repo, &pull)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	return sdkvalues.Wrap(pr)
@@ -156,17 +156,17 @@ func (i integration) requestReview(ctx context.Context, args []sdktypes.Value, k
 		"team_reviewers=?", &request.TeamReviewers,
 	)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	gh, err := i.NewClientWithInstallJWT(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	pr, _, err := gh.PullRequests.RequestReviewers(ctx, owner, repo, number, request)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	return sdkvalues.Wrap(pr)

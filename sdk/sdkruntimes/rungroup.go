@@ -12,7 +12,7 @@ import (
 // Run group. Manages all the sub-runs (loaded runtime paths).
 type group struct {
 	mainID sdktypes.RunID
-	runs   map[string]sdkservices.Run
+	runs   map[sdktypes.ExecutorID]sdkservices.Run
 }
 
 var _ sdkservices.Run = (*group)(nil)
@@ -20,7 +20,7 @@ var _ sdkservices.Run = (*group)(nil)
 func (g *group) ID() sdktypes.RunID { return g.mainID }
 
 func (g *group) Values() map[string]sdktypes.Value {
-	if r := g.runs[g.mainID.String()]; r != nil {
+	if r := g.runs[sdktypes.NewExecutorID(g.mainID)]; r != nil {
 		return r.Values()
 	}
 
@@ -36,20 +36,20 @@ func (g *group) Close() {
 func (g *group) ExecutorID() sdktypes.ExecutorID { return sdktypes.NewExecutorID(g.mainID) }
 
 func (g *group) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
-	if !sdktypes.IsFunctionValue(v) {
-		return nil, fmt.Errorf("callee must be a function value")
+	if !v.IsFunction() {
+		return sdktypes.InvalidValue, fmt.Errorf("callee must be a function value")
 	}
 
-	executorID := sdktypes.GetFunctionValueExecutorID(v)
+	executorID := v.GetFunction().ExecutorID()
 
 	runID := executorID.ToRunID()
-	if runID == nil {
-		return nil, fmt.Errorf("executor is not a run")
+	if !runID.IsValid() {
+		return sdktypes.InvalidValue, fmt.Errorf("executor is not a run")
 	}
 
-	run, ok := g.runs[runID.String()]
+	run, ok := g.runs[sdktypes.NewExecutorID(runID)]
 	if !ok {
-		return nil, fmt.Errorf("run id not found: %w", sdkerrors.ErrNotFound)
+		return sdktypes.InvalidValue, fmt.Errorf("run id not found: %w", sdkerrors.ErrNotFound)
 	}
 
 	return run.Call(ctx, v, args, kwargs)

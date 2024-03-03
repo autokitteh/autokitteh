@@ -1,49 +1,37 @@
 package sdktypes
 
 import (
+	"errors"
+
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	programv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/program/v1"
 )
 
-type (
-	ModulePB = programv1.Module
-)
-
-type Module = *object[*ModulePB]
-
-var (
-	ModuleFromProto       = makeFromProto(validateModule)
-	StrictModuleFromProto = makeFromProto(strictValidateModule)
-	ToStrictModule        = makeWithValidator(strictValidateModule)
-)
-
-func strictValidateModule(pb *programv1.Module) error {
-	return validateModule(pb)
+type Module struct {
+	object[*ModulePB, ModuleTraits]
 }
 
-func validateModule(pb *programv1.Module) error {
-	return nil
+type ModulePB = programv1.Module
+
+type ModuleTraits struct{}
+
+func (ModuleTraits) Validate(m *ModulePB) error {
+	return errors.Join(
+		objectsMapField[ModuleFunction]("functions", m.Functions),
+		objectsMapField[ModuleVariable]("variables", m.Variables),
+	)
 }
 
-func GetModuleFunctions(m Module) map[string]ModuleFunction {
-	if m == nil {
-		return nil
-	}
+func (ModuleTraits) StrictValidate(m *ModulePB) error { return nil }
 
-	return kittehs.Must1(kittehs.TransformMapValuesError(m.pb.Functions, StrictModuleFunctionFromProto))
-}
+var InvalidModule Module
 
-func GetModuleVariables(m Module) map[string]ModuleVariable {
-	if m == nil {
-		return nil
-	}
+func ModuleFromProto(m *ModulePB) (Module, error)       { return FromProto[Module](m) }
+func StrictModuleFromProto(m *ModulePB) (Module, error) { return Strict(ModuleFromProto(m)) }
 
-	return kittehs.Must1(kittehs.TransformMapValuesError(m.pb.Variables, StrictModuleVariableFromProto))
-}
-
-func NewModule(funcs map[string]ModuleFunction, vars map[string]ModuleVariable) Module {
-	return kittehs.Must1(ModuleFromProto(&programv1.Module{
-		Functions: kittehs.TransformMapValues(funcs, ToProto),
-		Variables: kittehs.TransformMapValues(vars, ToProto),
-	}))
+func NewModule(fs map[string]ModuleFunction, vs map[string]ModuleVariable) (Module, error) {
+	return FromProto[Module](&ModulePB{
+		Functions: kittehs.TransformMapValues(fs, ToProto),
+		Variables: kittehs.TransformMapValues(vs, ToProto),
+	})
 }

@@ -27,22 +27,17 @@ type Projects struct {
 func New(p Projects) sdkservices.Projects { return &p }
 
 func (ps *Projects) Create(ctx context.Context, project sdktypes.Project) (sdktypes.ProjectID, error) {
-	project, err := project.Update(func(pb *sdktypes.ProjectPB) {
-		pb.ProjectId = sdktypes.NewProjectID().String()
-	})
-	if err != nil {
-		return nil, err
-	}
+	project = project.WithNewID()
 
-	if project, err = sdktypes.ToStrictProject(project); err != nil {
-		return nil, err
+	if err := project.Strict(); err != nil {
+		return sdktypes.InvalidProjectID, err
 	}
 
 	if err := ps.DB.CreateProject(ctx, project); err != nil {
-		return nil, err
+		return sdktypes.InvalidProjectID, err
 	}
 
-	return sdktypes.GetProjectID(project), nil
+	return project.ID(), nil
 }
 
 func (ps *Projects) Update(ctx context.Context, project sdktypes.Project) error {
@@ -54,7 +49,7 @@ func (ps *Projects) GetByID(ctx context.Context, pid sdktypes.ProjectID) (sdktyp
 	return sdkerrors.IgnoreNotFoundErr(ps.DB.GetProjectByID(ctx, pid))
 }
 
-func (ps *Projects) GetByName(ctx context.Context, n sdktypes.Name) (sdktypes.Project, error) {
+func (ps *Projects) GetByName(ctx context.Context, n sdktypes.Symbol) (sdktypes.Project, error) {
 	// TODO: Make sure somone can't get a project they don't own or member of its org.
 	return sdkerrors.IgnoreNotFoundErr(ps.DB.GetProjectByName(ctx, n))
 }
@@ -66,11 +61,11 @@ func (ps *Projects) List(ctx context.Context) ([]sdktypes.Project, error) {
 func (ps *Projects) Build(ctx context.Context, projectID sdktypes.ProjectID) (sdktypes.BuildID, error) {
 	fs, err := ps.openProjectResourcesFS(ctx, projectID)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidBuildID, err
 	}
 
 	if fs == nil {
-		return nil, errors.New("no resources set")
+		return sdktypes.InvalidBuildID, errors.New("no resources set")
 	}
 
 	bi, err := sdkruntimes.Build(
@@ -81,13 +76,13 @@ func (ps *Projects) Build(ctx context.Context, projectID sdktypes.ProjectID) (sd
 		nil,
 	)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidBuildID, err
 	}
 
 	var buf bytes.Buffer
 
 	if err := bi.Write(&buf); err != nil {
-		return nil, err
+		return sdktypes.InvalidBuildID, err
 	}
 
 	return ps.Builds.Save(ctx, sdktypes.NewBuild(), buf.Bytes())

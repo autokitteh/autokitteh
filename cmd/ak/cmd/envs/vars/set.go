@@ -24,7 +24,7 @@ var setCmd = common.StandardCommand(&cobra.Command{
 		if err != nil {
 			return err
 		}
-		if e == nil {
+		if !e.IsValid() {
 			err = fmt.Errorf("environment %q not found", env)
 			return common.NewExitCodeError(common.NotFoundExitCode, err)
 		}

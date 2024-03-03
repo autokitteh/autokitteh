@@ -21,7 +21,7 @@ func (r *runtime) Build(
 	path string,
 	symbols []sdktypes.Symbol,
 ) (sdktypes.BuildArtifact, error) {
-	return nil, sdkerrors.ErrNotImplemented
+	return sdktypes.InvalidBuildArtifact, sdkerrors.ErrNotImplemented
 }
 
 func (r *runtime) Run(

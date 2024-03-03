@@ -25,7 +25,7 @@ var deleteCmd = common.StandardCommand(&cobra.Command{
 			}
 			return err
 		}
-		if c == nil {
+		if !c.IsValid() {
 			err = errors.New("connection not found")
 			return common.NewExitCodeError(common.NotFoundExitCode, err)
 		}

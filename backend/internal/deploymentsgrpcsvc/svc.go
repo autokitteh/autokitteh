@@ -63,7 +63,7 @@ func (s *server) List(ctx context.Context, req *connect.Request[deploymentsv1.Li
 	if err != nil {
 		return nil, sdkerrors.AsConnectError(err)
 	}
-	if bid != nil {
+	if bid.IsValid() {
 		filter.BuildID = bid
 	}
 
@@ -71,11 +71,14 @@ func (s *server) List(ctx context.Context, req *connect.Request[deploymentsv1.Li
 	if err != nil {
 		return nil, sdkerrors.AsConnectError(err)
 	}
-	if eid != nil {
+	if eid.IsValid() {
 		filter.EnvID = eid
 	}
 
-	state := sdktypes.DeploymentState(msg.State)
+	state, err := sdktypes.DeploymentStateFromProto(msg.State)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
 	if state != sdktypes.DeploymentStateUnspecified {
 		filter.State = state
 	}

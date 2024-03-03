@@ -17,12 +17,8 @@ import (
 )
 
 func (d *dispatcher) createEventRecord(ctx context.Context, eventID sdktypes.EventID, state sdktypes.EventState) error {
-	record, err := sdktypes.StrictEventRecordFromProto(&sdktypes.EventRecordPB{EventId: eventID.String(), State: state.ToProto()})
-	if err != nil {
-		d.z.Error("Failed updating event state record", zap.String("eventID", eventID.String()), zap.String("state", state.String()), zap.Error(err))
-		return err
-	}
-	if err = d.services.Events.AddEventRecord(ctx, record); err != nil {
+	record := sdktypes.NewEventRecord(eventID, state)
+	if err := d.services.Events.AddEventRecord(ctx, record); err != nil {
 		d.z.Panic("Failed updating event state record", zap.String("eventID", eventID.String()), zap.String("state", state.String()), zap.Error(err))
 	}
 	return nil
@@ -33,16 +29,14 @@ func (d *dispatcher) getEventSessionData(ctx context.Context, event sdktypes.Eve
 		opts = &sdkservices.DispatchOptions{}
 	}
 
-	z := d.z.With(zap.String("event_id", sdktypes.GetEventID(event).String()))
+	z := d.z.With(zap.String("event_id", event.ID().String()))
 
-	if event == nil {
+	if !event.IsValid() {
 		z.Error("could not find event")
 		return nil, sdkerrors.ErrNotFound
 	}
 
-	iid := sdktypes.GetEventIntegrationID(event)
-
-	it := sdktypes.GetEventIntegrationToken(event)
+	iid, it := event.IntegrationID(), event.IntegrationToken()
 
 	connections, err := d.services.Connections.List(ctx, sdkservices.ListConnectionsFilter{IntegrationID: iid, IntegrationToken: it})
 	if err != nil {
@@ -57,7 +51,7 @@ func (d *dispatcher) getEventSessionData(ctx context.Context, event sdktypes.Eve
 	triggers := make([]sdktypes.Trigger, 0, len(connections))
 	for _, c := range connections {
 		m, err := d.services.Triggers.List(
-			ctx, sdkservices.ListTriggersFilter{ConnectionID: sdktypes.GetConnectionID(c)},
+			ctx, sdkservices.ListTriggersFilter{ConnectionID: c.ID()},
 		)
 		if err != nil {
 			z.Panic("could not fetch triggers")
@@ -72,10 +66,10 @@ func (d *dispatcher) getEventSessionData(ctx context.Context, event sdktypes.Eve
 
 	var sds []sessionData
 
-	eventType := sdktypes.GetEventType(event)
+	eventType := event.Type()
 	for _, t := range triggers {
-		envID := sdktypes.GetTriggerEnvID(t)
-		triggerEventType := sdktypes.GetTriggerEventType(t)
+		envID := t.EnvID()
+		triggerEventType := t.EventType()
 
 		z := z.With(zap.String("env_id", envID.String()), zap.String("event_type", triggerEventType))
 
@@ -84,7 +78,7 @@ func (d *dispatcher) getEventSessionData(ctx context.Context, event sdktypes.Eve
 			continue
 		}
 
-		if envID != nil && opts.EnvID != nil && envID.String() != opts.EnvID.String() {
+		if !envID.IsValid() && opts.EnvID.IsValid() && envID != opts.EnvID {
 			z.Debug("irrelevant env", zap.String("expected", opts.EnvID.String()))
 			continue
 		}
@@ -96,7 +90,7 @@ func (d *dispatcher) getEventSessionData(ctx context.Context, event sdktypes.Eve
 
 		var testingDeployments []sdktypes.Deployment
 
-		if opts.EnvID != nil || opts.DeploymentID != nil {
+		if opts.EnvID.IsValid() || opts.DeploymentID.IsValid() {
 			testingDeployments, err = d.services.Deployments.List(ctx, sdkservices.ListDeploymentsFilter{State: sdktypes.DeploymentStateTesting, EnvID: envID})
 			if err != nil {
 				z.Panic("could not fetch testing deployments", zap.Error(err))
@@ -110,16 +104,16 @@ func (d *dispatcher) getEventSessionData(ctx context.Context, event sdktypes.Eve
 
 		deployments := append(activeDeployments, testingDeployments...)
 
-		if opts.EnvID != nil || opts.DeploymentID != nil {
+		if opts.EnvID.IsValid() || opts.DeploymentID.IsValid() {
 			deployments = kittehs.Filter(deployments, func(deployment sdktypes.Deployment) bool {
-				return (opts.EnvID == nil || opts.EnvID.String() == sdktypes.GetDeploymentEnvID(deployment).String()) &&
-					(opts.DeploymentID == nil || opts.DeploymentID.String() == sdktypes.GetDeploymentID(deployment).String())
+				return (!opts.EnvID.IsValid() || opts.EnvID == deployment.EnvID()) &&
+					(!opts.DeploymentID.IsValid() || opts.DeploymentID == deployment.ID())
 			})
 		}
 
-		cl := sdktypes.GetTriggerCodeLocation(t)
+		cl := t.CodeLocation()
 		for _, dep := range deployments {
-			did := sdktypes.GetDeploymentID(dep)
+			did := dep.ID()
 			sds = append(sds, sessionData{deploymentID: did, codeLocation: cl})
 			z.Debug("relevant deployment found", zap.String("deployment_id", did.String()))
 		}
@@ -128,18 +122,16 @@ func (d *dispatcher) getEventSessionData(ctx context.Context, event sdktypes.Eve
 }
 
 func (d *dispatcher) signalWorkflows(ctx context.Context, event sdktypes.Event, opts *sdkservices.DispatchOptions) error {
-	z := d.z.With(zap.String("event_id", sdktypes.GetEventID(event).String()))
+	eid := event.ID()
 
-	if event == nil {
+	z := d.z.With(zap.String("event_id", eid.String()))
+
+	if !event.IsValid() {
 		z.Error("could not find event")
 		return sdkerrors.ErrNotFound
 	}
 
-	eid := sdktypes.GetEventID(event)
-
-	iid := sdktypes.GetEventIntegrationID(event)
-
-	it := sdktypes.GetEventIntegrationToken(event)
+	iid, it := event.IntegrationID(), event.IntegrationToken()
 
 	connections, err := d.services.Connections.List(ctx, sdkservices.ListConnectionsFilter{IntegrationID: iid, IntegrationToken: it})
 	if err != nil {
@@ -153,7 +145,7 @@ func (d *dispatcher) signalWorkflows(ctx context.Context, event sdktypes.Event, 
 
 	connection := connections[0]
 
-	signals, err := d.db.ListSignalsWaitingOnConnection(ctx, sdktypes.GetConnectionID(connection), sdktypes.GetEventType(event))
+	signals, err := d.db.ListSignalsWaitingOnConnection(ctx, connection.ID(), event.Type())
 	if err != nil {
 		z.Error("could not fetch signals", zap.Error(err))
 		return err
@@ -188,7 +180,7 @@ func (d *dispatcher) eventsWorkflow(ctx workflow.Context, input eventsWorkflowIn
 		return nil, fmt.Errorf("get event: %w", err)
 	}
 
-	if event == nil {
+	if !event.IsValid() {
 		z.Error("could not find event")
 		return nil, sdkerrors.ErrNotFound
 	}
@@ -229,10 +221,10 @@ type sessionData struct {
 
 func (d *dispatcher) startSessions(ctx workflow.Context, event sdktypes.Event, sessionsData []sessionData) {
 	// DO NOT PASS Memo. It is not intended for automation use, just auditing.
-	inputs := sdktypes.EventToValues(event)
+	inputs := event.ToValues()
 
 	for _, sd := range sessionsData {
-		session := sdktypes.NewSession(sd.deploymentID, nil, sdktypes.GetEventID(event), sd.codeLocation, inputs, nil)
+		session := sdktypes.NewSession(sd.deploymentID, sdktypes.InvalidSessionID, event.ID(), sd.codeLocation, inputs, nil)
 
 		goCtx := temporalclient.NewWorkflowContextAsGOContext(ctx)
 

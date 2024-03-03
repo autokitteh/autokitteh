@@ -29,12 +29,12 @@ func (d *deployments) Activate(ctx context.Context, id sdktypes.DeploymentID) er
 			return fmt.Errorf("deployment: %w", err)
 		}
 
-		if sdktypes.GetDeploymentState(deployment) == sdktypes.DeploymentStateActive {
+		if deployment.State() == sdktypes.DeploymentStateActive {
 			return nil
 		}
 
 		deployments, err := tx.ListDeployments(ctx, sdkservices.ListDeploymentsFilter{
-			EnvID: sdktypes.GetDeploymentEnvID(deployment),
+			EnvID: deployment.EnvID(),
 			State: sdktypes.DeploymentStateActive,
 		})
 		if err != nil {
@@ -42,8 +42,7 @@ func (d *deployments) Activate(ctx context.Context, id sdktypes.DeploymentID) er
 		}
 
 		for _, d := range deployments {
-			id := sdktypes.GetDeploymentID(d)
-			if err := drain(ctx, tx, id); err != nil {
+			if err := drain(ctx, tx, d.ID()); err != nil {
 				return err
 			}
 		}
@@ -63,7 +62,7 @@ func (d *deployments) Test(ctx context.Context, id sdktypes.DeploymentID) error 
 			return fmt.Errorf("deployment: %w", err)
 		}
 
-		if sdktypes.GetDeploymentState(deployment) == sdktypes.DeploymentStateTesting {
+		if deployment.State() == sdktypes.DeploymentStateTesting {
 			return nil
 		}
 
@@ -76,25 +75,19 @@ func (d *deployments) Test(ctx context.Context, id sdktypes.DeploymentID) error 
 }
 
 func (d *deployments) Create(ctx context.Context, deployment sdktypes.Deployment) (sdktypes.DeploymentID, error) {
-	deployment, err := deployment.Update(func(pb *sdktypes.DeploymentPB) {
-		pb.DeploymentId = sdktypes.NewDeploymentID().String()
-		pb.State = sdktypes.DeploymentStateInactive.ToProto()
-	})
-	if err != nil {
-		return nil, err
-	}
+	deployment = deployment.WithNewID().WithState(sdktypes.DeploymentStateInactive)
 
 	if err := d.db.CreateDeployment(ctx, deployment); err != nil {
-		return nil, err
+		return sdktypes.InvalidDeploymentID, err
 	}
 
-	return sdktypes.GetDeploymentID(deployment), nil
+	return deployment.ID(), nil
 }
 
 func deactivate(ctx context.Context, tx db.DB, id sdktypes.DeploymentID) error {
 	_, nRunning, err := tx.ListSessions(ctx, sdkservices.ListSessionsFilter{
 		DeploymentID: id,
-		StateType:    sdktypes.RunningSessionStateType,
+		StateType:    sdktypes.SessionStateTypeRunning,
 		CountOnly:    true,
 	})
 	if err != nil {
@@ -103,7 +96,7 @@ func deactivate(ctx context.Context, tx db.DB, id sdktypes.DeploymentID) error {
 
 	_, nCreated, err := tx.ListSessions(ctx, sdkservices.ListSessionsFilter{
 		DeploymentID: id,
-		StateType:    sdktypes.CreatedSessionStateType,
+		StateType:    sdktypes.SessionStateTypeCreated,
 		CountOnly:    true,
 	})
 	if err != nil {
@@ -142,7 +135,8 @@ func (d *deployments) Drain(ctx context.Context, id sdktypes.DeploymentID) error
 			return err
 		}
 
-		if sdktypes.GetDeploymentState(dep) != sdktypes.DeploymentStateActive && sdktypes.GetDeploymentState(dep) != sdktypes.DeploymentStateTesting {
+		state := dep.State()
+		if state != sdktypes.DeploymentStateActive && state != sdktypes.DeploymentStateTesting {
 			return sdkerrors.ErrConflict
 		}
 

@@ -20,7 +20,7 @@ var getCmd = common.StandardCommand(&cobra.Command{
 			return err
 		}
 
-		if err := common.FailIfNotFound(cmd, "build", b); err != nil {
+		if err := common.FailIfNotFound(cmd, "build", b.IsValid()); err != nil {
 			return err
 		}
 

@@ -13,9 +13,9 @@ import (
 )
 
 func createDeploymentWithTest(t *testing.T, ctx context.Context, gormdb *gormdb, deployment scheme.Deployment) {
-	assert.Nil(t, gormdb.createDeployment(ctx, deployment))
+	assert.NoError(t, gormdb.createDeployment(ctx, deployment))
 	res := gormdb.db.First(&scheme.Deployment{}, "deployment_id = ?", deployment.DeploymentID)
-	assert.Nil(t, res.Error)
+	assert.NoError(t, res.Error)
 	assert.Equal(t, int64(1), res.RowsAffected)
 }
 
@@ -27,7 +27,7 @@ func TestCreateDeployment(t *testing.T) {
 
 	// obtain all deployments records from the deployments table
 	var deployments []scheme.Deployment
-	assert.Nil(t, f.db.Find(&deployments).Error)
+	assert.NoError(t, f.db.Find(&deployments).Error)
 	assert.Equal(t, int(1), len(deployments))
 	assert.Equal(t, deployment, deployments[0])
 }
@@ -39,7 +39,7 @@ func TestGetDeployment(t *testing.T) {
 	createDeploymentWithTest(t, f.ctx, f.gormdb, deployment)
 
 	d, err := f.gormdb.getDeployment(f.ctx, deployment.DeploymentID)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, d.DeploymentID, deployment.DeploymentID)
 
 	// TODO: check after delete
@@ -56,7 +56,7 @@ func TestListDeployments(t *testing.T) {
 
 	// no deployments
 	deployments, err := f.gormdb.listDeployments(f.ctx, flt)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, 0, len(deployments))
 
 	// create deployment and obtain it via list
@@ -64,7 +64,7 @@ func TestListDeployments(t *testing.T) {
 	createDeploymentWithTest(t, f.ctx, f.gormdb, deployment)
 
 	deployments, err = f.gormdb.listDeployments(f.ctx, flt)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, 1, len(deployments))
 	assert.Equal(t, deployment.DeploymentID, deployments[0].DeploymentID)
 }
@@ -80,7 +80,7 @@ func TestListDeploymentsWithStats(t *testing.T) {
 
 	// no deployments
 	deployments, err := f.gormdb.listDeploymentsWithStats(f.ctx, flt)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, 0, len(deployments))
 
 	// create deployment and obtain it via list
@@ -88,7 +88,7 @@ func TestListDeploymentsWithStats(t *testing.T) {
 	createDeploymentWithTest(t, f.ctx, f.gormdb, deployment)
 
 	deployments, err = f.gormdb.listDeploymentsWithStats(f.ctx, flt)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, 1, len(deployments))
 	assert.Equal(t, deployment.DeploymentID, deployments[0].DeploymentID)
 
@@ -100,7 +100,7 @@ func TestListDeploymentsWithStats(t *testing.T) {
 	createSessionWithTest(t, f.ctx, f.gormdb, session)
 
 	deployments, err = f.gormdb.listDeploymentsWithStats(f.ctx, flt)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, 1, len(deployments))
 	assert.Equal(t, deployment.DeploymentID, deployments[0].DeploymentID)
 
@@ -108,14 +108,14 @@ func TestListDeploymentsWithStats(t *testing.T) {
 	assert.Equal(t, deploymentWS, deployments[0])
 
 	// selete session and check that deployment stats are updated
-	assert.Nil(t, f.gormdb.deleteSession(f.ctx, session.SessionID))
+	assert.NoError(t, f.gormdb.deleteSession(f.ctx, session.SessionID))
 
 	// session creation was tested in createSessionWithTest
 	res := f.db.First(&scheme.Session{}, "session_id = ?", session.SessionID)
 	assert.Equal(t, res.Error, gorm.ErrRecordNotFound)
 
 	deployments, err = f.gormdb.listDeploymentsWithStats(f.ctx, flt)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, 1, len(deployments))
 	assert.Equal(t, deployment.DeploymentID, deployments[0].DeploymentID)
 	deploymentWS.Completed = 0 // completed session was deleted

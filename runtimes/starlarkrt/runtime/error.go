@@ -46,12 +46,8 @@ func translateError(err error, extra map[string]string) error {
 			extra,
 		)
 
-		perr, cerr := sdktypes.NewProgramError(resolveError.Msg, []sdktypes.CallFrame{f}, extra)
-		if cerr != nil {
-			return convErr(cerr, err)
-		}
-
-		return sdktypes.ProgramErrorToError(perr)
+		perr := sdktypes.NewProgramError(resolveError.Msg, []sdktypes.CallFrame{f}, extra)
+		return perr.ToError()
 	} else if evalErr := (&starlark.EvalError{}); errors.As(err, &evalErr) {
 		callstack, cerr := kittehs.TransformError(
 			evalErr.CallStack,
@@ -80,12 +76,8 @@ func translateError(err error, extra map[string]string) error {
 			extra,
 		)
 
-		perr, cerr := sdktypes.NewProgramError(evalErr.Msg, callstack, extra)
-		if cerr != nil {
-			return convErr(cerr, err)
-		}
-
-		return sdktypes.ProgramErrorToError(perr)
+		perr := sdktypes.NewProgramError(evalErr.Msg, callstack, extra)
+		return perr.ToError()
 	}
 
 	return err

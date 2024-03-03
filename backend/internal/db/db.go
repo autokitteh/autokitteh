@@ -45,7 +45,7 @@ type DB interface {
 	GetProjectByID(context.Context, sdktypes.ProjectID) (sdktypes.Project, error)
 
 	// Returns sdkerrors.ErrNotFound if not found.
-	GetProjectByName(context.Context, sdktypes.Name) (sdktypes.Project, error)
+	GetProjectByName(context.Context, sdktypes.Symbol) (sdktypes.Project, error)
 
 	ListProjects(context.Context) ([]sdktypes.Project, error)
 
@@ -61,7 +61,7 @@ type DB interface {
 	GetEnvByID(context.Context, sdktypes.EnvID) (sdktypes.Env, error)
 
 	// Returns sdkerrors.ErrNotFound if name is not found.
-	GetEnvByName(context.Context, sdktypes.ProjectID, sdktypes.Name) (sdktypes.Env, error)
+	GetEnvByName(context.Context, sdktypes.ProjectID, sdktypes.Symbol) (sdktypes.Env, error)
 
 	ListProjectEnvs(context.Context, sdktypes.ProjectID) ([]sdktypes.Env, error)
 

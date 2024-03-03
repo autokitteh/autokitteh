@@ -18,8 +18,8 @@ func AddFailIfError(cmd *cobra.Command) {
 	cmd.Flags().BoolP("fail", "f", false, "fail if error")
 }
 
-func FailIfNotFound[T any](cmd *cobra.Command, what string, v *T) error {
-	if v == nil {
+func FailIfNotFound(cmd *cobra.Command, what string, found bool) error {
+	if !found {
 		return FailNotFound(cmd, what)
 	}
 	return nil

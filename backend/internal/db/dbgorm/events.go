@@ -12,14 +12,14 @@ import (
 
 func (db *gormdb) SaveEvent(ctx context.Context, event sdktypes.Event) error {
 	e := scheme.Event{
-		EventID:          sdktypes.GetEventID(event).String(),
-		IntegrationID:    sdktypes.GetEventIntegrationID(event).String(), // TODO(ENG-158): need to verify integration id
-		IntegrationToken: sdktypes.GetEventIntegrationToken(event),
-		OriginalEventID:  sdktypes.GetOriginalEventID(event),
-		EventType:        sdktypes.GetEventType(event),
-		Data:             kittehs.Must1(json.Marshal(sdktypes.GetEventData(event))),
-		Memo:             kittehs.Must1(json.Marshal(sdktypes.GetEventMemo(event))),
-		CreatedAt:        sdktypes.GetEventCreatedAt(event),
+		EventID:          event.ID().String(),
+		IntegrationID:    event.IntegrationID().String(), // TODO(ENG-158): need to verify integration id
+		IntegrationToken: event.IntegrationToken(),
+		OriginalEventID:  event.OriginalEventID(),
+		EventType:        event.Type(),
+		Data:             kittehs.Must1(json.Marshal(event.Data())),
+		Memo:             kittehs.Must1(json.Marshal(event.Memo())),
+		CreatedAt:        event.CreatedAt(),
 	}
 
 	if err := db.db.WithContext(ctx).Create(&e).Error; err != nil {
@@ -35,7 +35,7 @@ func (db *gormdb) GetEventByID(ctx context.Context, eventID sdktypes.EventID) (s
 
 func (db *gormdb) ListEvents(ctx context.Context, filter sdkservices.ListEventsFilter) ([]sdktypes.Event, error) {
 	q := db.db.WithContext(ctx)
-	if filter.IntegrationID != nil {
+	if filter.IntegrationID.IsValid() {
 		q = q.Where("integration_id = ?", filter.IntegrationID.String())
 	}
 

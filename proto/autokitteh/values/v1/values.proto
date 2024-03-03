@@ -97,23 +97,20 @@ message Function {
 }
 
 message Value {
-  oneof type {
-    option (buf.validate.oneof).required = true;
-
-    Nothing nothing = 1;
-    Boolean boolean = 2;
-    String string = 3;
-    Integer integer = 4;
-    Float float = 5;
-    List list = 6;
-    Set set = 7;
-    Dict dict = 8;
-    Bytes bytes = 9;
-    Time time = 10;
-    Duration duration = 11;
-    Struct struct = 12;
-    Module module = 13;
-    Symbol symbol = 14;
-    Function function = 15;
-  }
+  // one of the following fields must be set.
+  Nothing nothing = 1;
+  Boolean boolean = 2;
+  String string = 3;
+  Integer integer = 4;
+  Float float = 5;
+  List list = 6;
+  Set set = 7;
+  Dict dict = 8;
+  Bytes bytes = 9;
+  Time time = 10;
+  Duration duration = 11;
+  Struct struct = 12;
+  Module module = 13;
+  Symbol symbol = 14;
+  Function function = 15;
 }

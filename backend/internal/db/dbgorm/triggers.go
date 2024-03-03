@@ -12,34 +12,34 @@ import (
 )
 
 func triggerToRecord(ctx context.Context, tx *tx, trigger sdktypes.Trigger) (*scheme.Trigger, error) {
-	connID := sdktypes.GetTriggerConnectionID(trigger)
+	connID := trigger.ConnectionID()
 
 	conn, err := tx.GetConnection(ctx, connID)
 	if err != nil {
 		return nil, fmt.Errorf("get trigger connection: %w", err)
 	}
 
-	projID := sdktypes.GetConnectionProjectID(conn)
+	projID := conn.ProjectID()
 
-	envID := sdktypes.GetTriggerEnvID(trigger)
-	if envID != nil {
+	envID := trigger.EnvID()
+	if envID.IsValid() {
 		env, err := tx.GetEnvByID(ctx, envID)
 		if err != nil {
 			return nil, fmt.Errorf("get trigger env: %w", err)
 		}
 
-		if projID.String() != sdktypes.GetEnvProjectID(env).String() {
-			return nil, fmt.Errorf("env and connection project mismatch: %s != %s", projID.String(), sdktypes.GetEnvProjectID(env).String())
+		if projID != env.ProjectID() {
+			return nil, fmt.Errorf("env and connection project mismatch: %v != %v", projID, env.ProjectID())
 		}
 	}
 
 	return &scheme.Trigger{
-		TriggerID:    sdktypes.GetTriggerID(trigger).String(),
+		TriggerID:    trigger.ID().String(),
 		EnvID:        envID.String(),
 		ProjectID:    projID.String(),
 		ConnectionID: connID.String(),
-		EventType:    sdktypes.GetTriggerEventType(trigger),
-		CodeLocation: sdktypes.GetCodeLocationCanonicalString(sdktypes.GetTriggerCodeLocation(trigger)),
+		EventType:    trigger.EventType(),
+		CodeLocation: trigger.CodeLocation().CanonicalString(),
 	}, nil
 }
 
@@ -59,16 +59,16 @@ func (db *gormdb) CreateTrigger(ctx context.Context, trigger sdktypes.Trigger) e
 
 func (db *gormdb) UpdateTrigger(ctx context.Context, trigger sdktypes.Trigger) error {
 	return db.transaction(ctx, func(tx *tx) error {
-		curr, err := tx.GetTrigger(ctx, sdktypes.GetTriggerID(trigger))
+		curr, err := tx.GetTrigger(ctx, trigger.ID())
 		if err != nil {
 			return err
 		}
 
-		if envID := sdktypes.GetTriggerEnvID(trigger); envID != nil && sdktypes.GetTriggerEnvID(curr).String() != envID.String() {
+		if envID := trigger.EnvID(); envID.IsValid() && curr.EnvID() != envID {
 			return sdkerrors.ErrConflict
 		}
 
-		if connID := sdktypes.GetTriggerConnectionID(trigger); connID != nil && sdktypes.GetTriggerConnectionID(curr).String() != connID.String() {
+		if connID := trigger.ConnectionID(); connID.IsValid() && curr.ConnectionID() != connID {
 			return sdkerrors.ErrConflict
 		}
 
@@ -99,15 +99,15 @@ func (db *gormdb) DeleteTrigger(ctx context.Context, id sdktypes.TriggerID) erro
 
 func (db *gormdb) ListTriggers(ctx context.Context, filter sdkservices.ListTriggersFilter) ([]sdktypes.Trigger, error) {
 	q := db.db.WithContext(ctx)
-	if filter.EnvID != nil {
+	if filter.EnvID.IsValid() {
 		q = q.Where("env_id = ?", filter.EnvID.String())
 	}
 
-	if filter.ConnectionID != nil {
+	if filter.ConnectionID.IsValid() {
 		q = q.Where("connection_id = ?", filter.ConnectionID.String())
 	}
 
-	if filter.ProjectID != nil {
+	if filter.ProjectID.IsValid() {
 		q = q.Where("project_id = ?", filter.ProjectID.String())
 	}
 

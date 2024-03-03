@@ -1,22 +1,15 @@
 package sdktypes
 
-const SessionIDKind = "s"
+const sessionIDKind = "session"
 
-type SessionID = *id[SessionIDTraits]
+type SessionID = id[sessionIDTraits]
 
-var _ ID = (SessionID)(nil)
+type sessionIDTraits struct{}
 
-type SessionIDTraits struct{}
+func (sessionIDTraits) Prefix() string { return sessionIDKind }
 
-func (SessionIDTraits) Kind() string                   { return SessionIDKind }
-func (SessionIDTraits) ValidateValue(raw string) error { return validateUUID(raw) }
+func NewSessionID() SessionID                          { return newID[SessionID]() }
+func ParseSessionID(s string) (SessionID, error)       { return ParseID[SessionID](s) }
+func StrictParseSessionID(s string) (SessionID, error) { return Strict(ParseSessionID(s)) }
 
-func ParseSessionID(raw string) (SessionID, error) {
-	return parseTypedID[SessionIDTraits](raw)
-}
-
-func StrictParseSessionID(raw string) (SessionID, error) {
-	return strictParseTypedID[SessionIDTraits](raw)
-}
-
-func NewSessionID() SessionID { return newID[SessionIDTraits]() }
+var InvalidSessionID SessionID

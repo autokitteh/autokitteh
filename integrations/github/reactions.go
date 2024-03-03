@@ -21,18 +21,18 @@ func (i integration) createReactionForCommitComment(ctx context.Context, args []
 		"id", &id,
 		"content", &content,
 	); err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Invoke the API method.
 	gh, err := i.NewClient(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	r, _, err := gh.Reactions.CreateCommentReaction(ctx, owner, repo, id, content)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	return sdkvalues.Wrap(r)
@@ -51,18 +51,18 @@ func (i integration) createReactionForIssue(ctx context.Context, args []sdktypes
 		"number", &number,
 		"content", &content,
 	); err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Invoke the API method.
 	gh, err := i.NewClient(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	r, _, err := gh.Reactions.CreateIssueReaction(ctx, owner, repo, number, content)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	return sdkvalues.Wrap(r)
@@ -81,17 +81,17 @@ func (i integration) createReactionForIssueComment(ctx context.Context, args []s
 		"id", &id,
 		"content", &content,
 	); err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Invoke the API method.
 	gh, err := i.NewClient(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 	r, _, err := gh.Reactions.CreateIssueCommentReaction(ctx, owner, repo, id, content)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	return sdkvalues.Wrap(r)
@@ -110,18 +110,18 @@ func (i integration) createReactionForPullRequestReviewComment(ctx context.Conte
 		"id", &id,
 		"content", &content,
 	); err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Invoke the API method.
 	gh, err := i.NewClient(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	r, _, err := gh.Reactions.CreatePullRequestCommentReaction(ctx, owner, repo, id, content)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	return sdkvalues.Wrap(r)

@@ -29,7 +29,7 @@ var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.Integrati
 }))
 
 func New(sec sdkservices.Secrets) sdkservices.Integration {
-	i := integration{secrets: sec, scope: sdktypes.GetIntegrationUniqueName(desc).String()}
+	i := integration{secrets: sec, scope: desc.UniqueName().String()}
 	return sdkintegrations.NewIntegration(desc, sdkmodule.New(
 		sdkmodule.WithConfigAsData(),
 

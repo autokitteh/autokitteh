@@ -10,7 +10,7 @@ type BuildFile struct {
 	Runtimes []*RuntimeData `json:"runtimes"`
 
 	// requirements that are not satisfiable at build time.
-	RuntimeRequirements []sdktypes.Requirement `json:"runtime_requirements"`
+	RuntimeRequirements []sdktypes.BuildRequirement `json:"runtime_requirements"`
 }
 
 type BuildInfo struct {
@@ -28,43 +28,19 @@ func (bf *BuildFile) OmitContent() {
 	measure := func(bs []byte) []byte { return nil }
 
 	for _, rt := range bf.Runtimes {
-		rt.Artifact = sdktypes.BuildArtifactReplaceCompiledData(rt.Artifact, measure)
+		all := rt.Artifact.CompiledData()
+		rt.Artifact = rt.Artifact.WithCompiledData(kittehs.TransformMapValues(all, measure))
 	}
 }
 
 // This does not overwrite Info.
 func (d *RuntimeData) MergeFrom(other *RuntimeData) error {
-	var err error
-
-	if other.Artifact != nil {
-		if d.Artifact == nil {
-			d.Artifact = other.Artifact
-		} else if d.Artifact, err = d.Artifact.UpdateError(func(pb *sdktypes.BuildArtifactPB) error {
-			otherpb := other.Artifact.ToProto()
-
-			// var overwrites map[string]bool
-			pb.CompiledData, _ /* overwrites */ = kittehs.JoinMaps(pb.CompiledData, otherpb.CompiledData)
-
-			/*TODO(ENG-154): Make sure not to enter dups. See also relevant comment in build_resources.go.
-			if kittehs.Any(kittehs.MapValues(overwrites)...) {
-				return errors.New("compiled data conflict")
-			}
-			*/
-
-			pb.Exports = append(pb.Exports, otherpb.Exports...)
-			pb.Requirements = append(pb.Requirements, otherpb.Requirements...)
-
-			return nil
-		}); err != nil {
-			return err
-		}
-	}
-
+	d.Artifact = d.Artifact.MergeFrom(other.Artifact)
 	return nil
 }
 
 type RuntimeInfo struct {
-	Name sdktypes.Name `json:"name"`
+	Name sdktypes.Symbol `json:"name"`
 }
 
 type ResourceInfo struct {

@@ -50,14 +50,14 @@ func returnCmd[R any, C resulter[R]](cmd C) (sdktypes.Value, error) {
 	ret, err := cmd.Result()
 	switch {
 	case err == redis.Nil:
-		return sdktypes.NewNothingValue(), nil
+		return sdktypes.Nothing, nil
 	case err != nil:
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	wrapped, err := sdkvalues.DefaultValueWrapper.Wrap(ret)
 	if err != nil {
-		return nil, fmt.Errorf("wrap: %w", err)
+		return sdktypes.InvalidValue, fmt.Errorf("wrap: %w", err)
 	}
 
 	return wrapped, nil

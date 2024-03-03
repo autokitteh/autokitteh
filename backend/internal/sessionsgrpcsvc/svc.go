@@ -3,6 +3,7 @@ package sessionsgrpcsvc
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 
 	"connectrpc.com/connect"
@@ -100,12 +101,15 @@ func (s *server) List(ctx context.Context, req *connect.Request[sessionsv1.ListR
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	filter := sdkservices.ListSessionsFilter{
-		StateType: sdktypes.SessionStateType(req.Msg.StateType),
-		CountOnly: msg.CountOnly,
+	stateType, err := sdktypes.SessionStateTypeFromProto(msg.StateType)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("state_type: %w", err))
 	}
 
-	var err error
+	filter := sdkservices.ListSessionsFilter{
+		StateType: stateType,
+		CountOnly: msg.CountOnly,
+	}
 
 	if filter.DeploymentID, err = sdktypes.ParseDeploymentID(req.Msg.DeploymentId); err != nil {
 		return nil, sdkerrors.AsConnectError(err)

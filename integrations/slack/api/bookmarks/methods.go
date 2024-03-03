@@ -35,14 +35,14 @@ func (a API) Add(ctx context.Context, args []sdktypes.Value, kwargs map[string]s
 		"parent_id?", &req.ParentID,
 	)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Invoke the API method.
 	resp := &AddResponse{}
 	err = api.PostJSON(ctx, a.Secrets, a.Scope, req, resp, "bookmarks.add")
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Parse and return the response.
@@ -66,14 +66,14 @@ func (a API) Edit(ctx context.Context, args []sdktypes.Value, kwargs map[string]
 		"title?", &req.Title,
 	)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Invoke the API method.
 	resp := &EditResponse{}
 	err = api.PostJSON(ctx, a.Secrets, a.Scope, req, resp, "bookmarks.edit")
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Parse and return the response.
@@ -93,14 +93,14 @@ func (a API) List(ctx context.Context, args []sdktypes.Value, kwargs map[string]
 		"channel_id", &req.ChannelID,
 	)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Invoke the API method.
 	resp := &ListResponse{}
 	err = api.PostJSON(ctx, a.Secrets, a.Scope, req, resp, "bookmarks.list")
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Parse and return the response.
@@ -122,14 +122,14 @@ func (a API) Remove(ctx context.Context, args []sdktypes.Value, kwargs map[strin
 		"quip_section_id?", &req.QuipSectionID,
 	)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Invoke the API method.
 	resp := &RemoveResponse{}
 	err = api.PostJSON(ctx, a.Secrets, a.Scope, req, resp, "bookmarks.remove")
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Parse and return the response.

@@ -24,7 +24,7 @@ var fileOptions = &syntax.FileOptions{
 	Recursion: true,
 }
 
-func makeExport(path, name string, pos syntax.Position) sdktypes.Export {
+func makeExport(path, name string, pos syntax.Position) sdktypes.BuildExport {
 	loc := sdktypes.CodeLocationPB{
 		Path: path,
 	}
@@ -34,18 +34,18 @@ func makeExport(path, name string, pos syntax.Position) sdktypes.Export {
 		loc.Col = uint32(pos.Col)
 	}
 
-	exp, err := sdktypes.ExportFromProto(&sdktypes.ExportPB{
+	exp, err := sdktypes.BuildExportFromProto(&sdktypes.BuildExportPB{
 		Location: &loc,
 		Symbol:   name,
 	})
 	if err != nil {
-		return nil
+		return sdktypes.InvalidBuildExport
 	}
 
 	return exp
 }
 
-func getExports(path string, f *syntax.File) (exports []sdktypes.Export) {
+func getExports(path string, f *syntax.File) (exports []sdktypes.BuildExport) {
 	for _, stmt := range f.Stmts {
 		switch stmt := stmt.(type) {
 		case *syntax.DefStmt:
@@ -93,7 +93,7 @@ func Build(ctx context.Context, fs fs.FS, path string, symbols []sdktypes.Symbol
 
 	visited := make(map[string]bool)
 
-	var exports []sdktypes.Export
+	var exports []sdktypes.BuildExport
 
 	for q := []string{path}; len(q) != 0; q = q[1:] {
 		path := q[0]
@@ -106,7 +106,7 @@ func Build(ctx context.Context, fs fs.FS, path string, symbols []sdktypes.Symbol
 
 		fr, err := fs.Open(path)
 		if err != nil {
-			return nil, fmt.Errorf("open(%q): %w", path, err)
+			return sdktypes.InvalidBuildArtifact, fmt.Errorf("open(%q): %w", path, err)
 		}
 
 		src, err := io.ReadAll(fr)
@@ -114,12 +114,12 @@ func Build(ctx context.Context, fs fs.FS, path string, symbols []sdktypes.Symbol
 		_ = fr.Close()
 
 		if err != nil {
-			return nil, fmt.Errorf("read(%q): %w", path, err)
+			return sdktypes.InvalidBuildArtifact, fmt.Errorf("read(%q): %w", path, err)
 		}
 
 		f, mod, err := starlark.SourceProgramOptions(fileOptions, path, src, isPredecl)
 		if err != nil {
-			return nil, translateError(err, map[string]string{
+			return sdktypes.InvalidBuildArtifact, translateError(err, map[string]string{
 				"source_path": path,
 			})
 		}
@@ -130,7 +130,7 @@ func Build(ctx context.Context, fs fs.FS, path string, symbols []sdktypes.Symbol
 
 		var modBuf bytes.Buffer
 		if err := mod.Write(&modBuf); err != nil {
-			return nil, fmt.Errorf("mod.write: %w", err)
+			return sdktypes.InvalidBuildArtifact, fmt.Errorf("mod.write: %w", err)
 		}
 
 		data[path] = modBuf.Bytes()
@@ -155,7 +155,7 @@ func Build(ctx context.Context, fs fs.FS, path string, symbols []sdktypes.Symbol
 		&sdktypes.BuildArtifactPB{
 			CompiledData: data,
 			Exports:      kittehs.Transform(exports, sdktypes.ToProto),
-			Requirements: kittehs.Transform(externals, func(x *external) *sdktypes.RequirementPB {
+			Requirements: kittehs.Transform(externals, func(x *external) *sdktypes.BuildRequirementPB {
 				var loc *sdktypes.CodeLocationPB
 
 				if x.pos != nil {
@@ -166,7 +166,7 @@ func Build(ctx context.Context, fs fs.FS, path string, symbols []sdktypes.Symbol
 					}
 				}
 
-				return &sdktypes.RequirementPB{
+				return &sdktypes.BuildRequirementPB{
 					Url:      x.url.String(),
 					Symbol:   x.sym.String(),
 					Location: loc,

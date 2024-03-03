@@ -122,7 +122,7 @@ func dispatchEvents(ctx context.Context, l *zap.Logger, d sdkservices.Dispatcher
 			)
 			return
 		}
-		data, err := sdktypes.ValueToStringValuesMap(wrapped)
+		data, err := wrapped.ToStringValuesMap()
 		if err != nil {
 			l.Error("Failed to convert wrapped cron event",
 				zap.Any("event", e),

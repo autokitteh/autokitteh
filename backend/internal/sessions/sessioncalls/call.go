@@ -18,18 +18,18 @@ func (cs *calls) checkPollPolicy(ctx context.Context, pollfn, result sdktypes.Va
 		return
 	}
 
-	if sdktypes.IsNothingValue(pollRet) {
+	if pollRet.IsNothing() {
 		// Nothing: no retry.
 		return
 	}
 
-	if isBool := sdktypes.IsBooleanValue(pollRet); isBool {
+	if isBool := pollRet.IsBoolean(); isBool {
 		// True: no retry. False: immediate retry.
-		return !sdktypes.GetBooleanValue(pollRet), 0, nil
+		return !pollRet.GetBoolean().Value(), 0, nil
 	}
 
 	// Duration: retry with specified interval.
-	if interval, err = sdktypes.ValueToDuration(pollRet); err != nil {
+	if interval, err = pollRet.ToDuration(); err != nil {
 		err = fmt.Errorf("poller return value must be either a boolean or convertible to duration: %w", err)
 		return
 	}
@@ -39,14 +39,14 @@ func (cs *calls) checkPollPolicy(ctx context.Context, pollfn, result sdktypes.Va
 }
 
 func (cs *calls) callIntegration(ctx context.Context, callv sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value, executors *sdkexecutor.Executors) (sdktypes.SessionCallAttemptResult, error) {
-	xid := sdktypes.GetFunctionValueExecutorID(callv)
-	if xid.Kind() != sdktypes.IntegrationIDKind {
-		return nil, fmt.Errorf("call function must be an integration function, got %q", xid)
+	xid := callv.GetFunction().ExecutorID()
+	if !xid.IsIntegrationID() {
+		return sdktypes.InvalidSessionCallAttemptResult, fmt.Errorf("call function must be an integration function, got %q", xid)
 	}
 
 	intg, err := cs.svcs.Integrations.Get(ctx, xid.ToIntegrationID())
 	if err != nil {
-		return nil, fmt.Errorf("get integration: %w", err)
+		return sdktypes.InvalidSessionCallAttemptResult, fmt.Errorf("get integration: %w", err)
 	}
 
 	var caller sdkexecutor.Caller = intg
@@ -56,7 +56,7 @@ func (cs *calls) callIntegration(ctx context.Context, callv sdktypes.Value, args
 	}
 
 	if caller == nil {
-		return nil, fmt.Errorf("executor not found: %q", xid)
+		return sdktypes.InvalidSessionCallAttemptResult, fmt.Errorf("executor not found: %q", xid)
 	}
 
 	return sdktypes.NewSessionCallAttemptResult(caller.Call(ctx, callv, args, kwargs)), nil
@@ -76,13 +76,13 @@ func (cs *calls) executeCall(ctx context.Context, sessionID sdktypes.SessionID, 
 		last     bool
 	)
 
-	callv, args, kwargs := sdktypes.GetSessionCallSpecData(call)
+	callv, args, kwargs := call.Data()
 
 	z = z.With(zap.Any("function", callv))
 
-	if poller != nil && sdktypes.FunctionValueHasFlag(callv, sdktypes.DisablePollingFunctionFlag) {
+	if poller.IsValid() && callv.GetFunction().HasFlag(sdktypes.DisablePollingFunctionFlag) {
 		z.Debug("poller exists, but function is not pollable")
-		poller = nil
+		poller = sdktypes.InvalidValue
 	}
 
 	for !last {
@@ -110,7 +110,7 @@ func (cs *calls) executeCall(ctx context.Context, sessionID sdktypes.SessionID, 
 		func() {
 			defer func() {
 				if reason := recover(); reason != nil {
-					result = sdktypes.NewSessionCallAttemptErrorResult(fmt.Errorf("panic: %v", reason))
+					result = sdktypes.NewSessionCallAttemptResult(sdktypes.InvalidValue, fmt.Errorf("panic: %v", reason))
 					return
 				}
 			}()
@@ -120,19 +120,19 @@ func (cs *calls) executeCall(ctx context.Context, sessionID sdktypes.SessionID, 
 			}
 		}()
 
-		if err := sdktypes.GetSessionCallResultError(result); err != nil {
+		if err := result.GetError(); err != nil {
 			last = true
 			z.Debug("call returned an error", zap.Error(err))
 		} else {
 			z.Debug("call returned a value")
 
-			if poller == nil {
+			if !poller.IsValid() {
 				last = true
 			} else {
 				var retry bool
 
-				if retry, interval, err = cs.checkPollPolicy(ctx, poller, sdktypes.GetSessionCallResultValue(result), executors); err != nil {
-					result = sdktypes.NewSessionCallAttemptErrorResult(fmt.Errorf("poll function: %w", err))
+				if retry, interval, err = cs.checkPollPolicy(ctx, poller, result.GetValue(), executors); err != nil {
+					result = sdktypes.NewSessionCallAttemptResult(sdktypes.InvalidValue, fmt.Errorf("poll function: %w", err))
 					last = true
 				} else {
 					last = !retry

@@ -12,9 +12,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/resolver"
 )
 
-var (
-	outputDirectory string
-)
+var outputDirectory string
 
 var downloadResourcesCmd = common.StandardCommand(&cobra.Command{
 	Use:   "download-resources <project name or ID> [--output-dir=...]",
@@ -28,7 +26,7 @@ var downloadResourcesCmd = common.StandardCommand(&cobra.Command{
 			return err
 		}
 
-		if pid == nil {
+		if !pid.IsValid() {
 			return fmt.Errorf("project %s not found", args[0])
 		}
 

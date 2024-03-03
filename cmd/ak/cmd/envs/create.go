@@ -22,7 +22,7 @@ var createCmd = common.StandardCommand(&cobra.Command{
 		if err != nil {
 			return err
 		}
-		if p == nil {
+		if !p.IsValid() {
 			err = fmt.Errorf("project %q not found", project)
 			return common.NewExitCodeError(common.NotFoundExitCode, err)
 		}

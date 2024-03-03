@@ -53,38 +53,26 @@ proto3.util.setEnumType(SessionStateType, "autokitteh.sessions.v1.SessionStateTy
  */
 export class SessionState extends Message<SessionState> {
   /**
-   * @generated from field: google.protobuf.Timestamp t = 1;
+   * one of the following is required.
+   *
+   * @generated from field: autokitteh.sessions.v1.SessionState.Created created = 10;
    */
-  t?: Timestamp;
+  created?: SessionState_Created;
 
   /**
-   * @generated from oneof autokitteh.sessions.v1.SessionState.states
+   * @generated from field: autokitteh.sessions.v1.SessionState.Running running = 11;
    */
-  states: {
-    /**
-     * @generated from field: autokitteh.sessions.v1.SessionState.Created created = 10;
-     */
-    value: SessionState_Created;
-    case: "created";
-  } | {
-    /**
-     * @generated from field: autokitteh.sessions.v1.SessionState.Running running = 11;
-     */
-    value: SessionState_Running;
-    case: "running";
-  } | {
-    /**
-     * @generated from field: autokitteh.sessions.v1.SessionState.Error error = 12;
-     */
-    value: SessionState_Error;
-    case: "error";
-  } | {
-    /**
-     * @generated from field: autokitteh.sessions.v1.SessionState.Completed completed = 13;
-     */
-    value: SessionState_Completed;
-    case: "completed";
-  } | { case: undefined; value?: undefined } = { case: undefined };
+  running?: SessionState_Running;
+
+  /**
+   * @generated from field: autokitteh.sessions.v1.SessionState.Error error = 12;
+   */
+  error?: SessionState_Error;
+
+  /**
+   * @generated from field: autokitteh.sessions.v1.SessionState.Completed completed = 13;
+   */
+  completed?: SessionState_Completed;
 
   constructor(data?: PartialMessage<SessionState>) {
     super();
@@ -94,11 +82,10 @@ export class SessionState extends Message<SessionState> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "autokitteh.sessions.v1.SessionState";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "t", kind: "message", T: Timestamp },
-    { no: 10, name: "created", kind: "message", T: SessionState_Created, oneof: "states" },
-    { no: 11, name: "running", kind: "message", T: SessionState_Running, oneof: "states" },
-    { no: 12, name: "error", kind: "message", T: SessionState_Error, oneof: "states" },
-    { no: 13, name: "completed", kind: "message", T: SessionState_Completed, oneof: "states" },
+    { no: 10, name: "created", kind: "message", T: SessionState_Created },
+    { no: 11, name: "running", kind: "message", T: SessionState_Running },
+    { no: 12, name: "error", kind: "message", T: SessionState_Error },
+    { no: 13, name: "completed", kind: "message", T: SessionState_Completed },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SessionState {
@@ -432,21 +419,16 @@ export class Call_Attempt extends Message<Call_Attempt> {
  */
 export class Call_Attempt_Result extends Message<Call_Attempt_Result> {
   /**
-   * @generated from oneof autokitteh.sessions.v1.Call.Attempt.Result.result
+   * one of the following is required.
+   *
+   * @generated from field: autokitteh.values.v1.Value value = 10;
    */
-  result: {
-    /**
-     * @generated from field: autokitteh.values.v1.Value value = 10;
-     */
-    value: Value;
-    case: "value";
-  } | {
-    /**
-     * @generated from field: autokitteh.program.v1.Error error = 11;
-     */
-    value: Error;
-    case: "error";
-  } | { case: undefined; value?: undefined } = { case: undefined };
+  value?: Value;
+
+  /**
+   * @generated from field: autokitteh.program.v1.Error error = 11;
+   */
+  error?: Error;
 
   constructor(data?: PartialMessage<Call_Attempt_Result>) {
     super();
@@ -456,8 +438,8 @@ export class Call_Attempt_Result extends Message<Call_Attempt_Result> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "autokitteh.sessions.v1.Call.Attempt.Result";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 10, name: "value", kind: "message", T: Value, oneof: "result" },
-    { no: 11, name: "error", kind: "message", T: Error, oneof: "result" },
+    { no: 10, name: "value", kind: "message", T: Value },
+    { no: 11, name: "error", kind: "message", T: Error },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Call_Attempt_Result {
@@ -585,39 +567,31 @@ export class SessionLogRecord extends Message<SessionLogRecord> {
   t?: Timestamp;
 
   /**
-   * @generated from oneof autokitteh.sessions.v1.SessionLogRecord.data
+   * one of the following is required.
+   *
+   * @generated from field: string print = 10;
    */
-  data: {
-    /**
-     * @generated from field: string print = 10;
-     */
-    value: string;
-    case: "print";
-  } | {
-    /**
-     * @generated from field: autokitteh.sessions.v1.Call.Spec call_spec = 11;
-     */
-    value: Call_Spec;
-    case: "callSpec";
-  } | {
-    /**
-     * @generated from field: autokitteh.sessions.v1.Call.Attempt.Start call_attempt_start = 12;
-     */
-    value: Call_Attempt_Start;
-    case: "callAttemptStart";
-  } | {
-    /**
-     * @generated from field: autokitteh.sessions.v1.Call.Attempt.Complete call_attempt_complete = 13;
-     */
-    value: Call_Attempt_Complete;
-    case: "callAttemptComplete";
-  } | {
-    /**
-     * @generated from field: autokitteh.sessions.v1.SessionState state = 14;
-     */
-    value: SessionState;
-    case: "state";
-  } | { case: undefined; value?: undefined } = { case: undefined };
+  print = "";
+
+  /**
+   * @generated from field: autokitteh.sessions.v1.Call.Spec call_spec = 11;
+   */
+  callSpec?: Call_Spec;
+
+  /**
+   * @generated from field: autokitteh.sessions.v1.Call.Attempt.Start call_attempt_start = 12;
+   */
+  callAttemptStart?: Call_Attempt_Start;
+
+  /**
+   * @generated from field: autokitteh.sessions.v1.Call.Attempt.Complete call_attempt_complete = 13;
+   */
+  callAttemptComplete?: Call_Attempt_Complete;
+
+  /**
+   * @generated from field: autokitteh.sessions.v1.SessionState state = 14;
+   */
+  state?: SessionState;
 
   constructor(data?: PartialMessage<SessionLogRecord>) {
     super();
@@ -628,11 +602,11 @@ export class SessionLogRecord extends Message<SessionLogRecord> {
   static readonly typeName = "autokitteh.sessions.v1.SessionLogRecord";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "t", kind: "message", T: Timestamp },
-    { no: 10, name: "print", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "data" },
-    { no: 11, name: "call_spec", kind: "message", T: Call_Spec, oneof: "data" },
-    { no: 12, name: "call_attempt_start", kind: "message", T: Call_Attempt_Start, oneof: "data" },
-    { no: 13, name: "call_attempt_complete", kind: "message", T: Call_Attempt_Complete, oneof: "data" },
-    { no: 14, name: "state", kind: "message", T: SessionState, oneof: "data" },
+    { no: 10, name: "print", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 11, name: "call_spec", kind: "message", T: Call_Spec },
+    { no: 12, name: "call_attempt_start", kind: "message", T: Call_Attempt_Start },
+    { no: 13, name: "call_attempt_complete", kind: "message", T: Call_Attempt_Complete },
+    { no: 14, name: "state", kind: "message", T: SessionState },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SessionLogRecord {

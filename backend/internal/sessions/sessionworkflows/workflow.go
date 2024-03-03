@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"time"
 
 	"go.temporal.io/sdk/workflow"
 	"go.uber.org/zap"
@@ -65,7 +64,7 @@ func runWorkflow(
 	w := &sessionWorkflow{
 		z:       z,
 		data:    data,
-		poller:  sdktypes.NewNothingValue(),
+		poller:  sdktypes.Nothing,
 		ws:      ws,
 		fakers:  make(map[string]sdktypes.Value),
 		debug:   debug,
@@ -76,17 +75,17 @@ func runWorkflow(
 
 	var err error
 	if w.globals, err = w.initGlobalModules(ctx); err != nil {
-		w.updateState(ctx, sdktypes.NewErrorSessionState(err, nil))
+		w.updateState(ctx, sdktypes.NewSessionStateError(err, nil))
 		return err // definitely an infra error.
 	}
 
 	if err := w.initConnections(ctx); err != nil {
-		w.updateState(ctx, sdktypes.NewErrorSessionState(err, nil))
+		w.updateState(ctx, sdktypes.NewSessionStateError(err, nil))
 		return nil // not an infra error.
 	}
 
 	if prints, err := w.run(ctx); err != nil {
-		w.updateState(ctx, sdktypes.NewErrorSessionState(err, prints))
+		w.updateState(ctx, sdktypes.NewSessionStateError(err, prints))
 		return nil // not an infra error.
 	}
 
@@ -101,12 +100,10 @@ func (w *sessionWorkflow) addPrint(ctx workflow.Context, print string) {
 	}
 }
 
-func (w *sessionWorkflow) updateState(ctx workflow.Context, state sdktypes.Object) {
-	wrapped := sdktypes.SessionStateWithTimestamp(sdktypes.WrapSessionState(state), time.Now())
+func (w *sessionWorkflow) updateState(ctx workflow.Context, state sdktypes.SessionState) {
+	w.z.Debug("update state", zap.Any("state", state))
 
-	w.z.Debug("update state", zap.Any("state", wrapped))
-
-	if err := workflow.ExecuteLocalActivity(ctx, w.ws.svcs.DB.UpdateSessionState, w.data.SessionID, wrapped).Get(ctx, nil); err != nil {
+	if err := workflow.ExecuteLocalActivity(ctx, w.ws.svcs.DB.UpdateSessionState, w.data.SessionID, state).Get(ctx, nil); err != nil {
 		w.z.Panic("update session", zap.Error(err))
 	}
 }
@@ -124,10 +121,10 @@ func (w *sessionWorkflow) loadIntegrationConnections(ctx context.Context, path s
 			n = strings.TrimPrefix(n, prefix)
 			sym, err := sdktypes.ParseSymbol(n)
 			if err != nil {
-				return "", nil, err
+				return "", sdktypes.InvalidValue, fmt.Errorf("invalid symbol %q: %w", n, err)
 			}
 
-			return n, sdktypes.NewStructValue(sdktypes.NewSymbolValue(sym), vs), nil
+			return n, kittehs.Must1(sdktypes.NewStructValue(sdktypes.NewSymbolValue(sym), vs)), nil
 		},
 	)
 }
@@ -153,7 +150,7 @@ func (w *sessionWorkflow) call(ctx workflow.Context, runID sdktypes.RunID, v sdk
 	z.Debug("call requested")
 
 	// TODO: make sure that fake is pure starlark.
-	callvID := sdktypes.GetFunctionValueUniqueID(v)
+	callvID := v.GetFunction().UniqueID()
 	fake, useFake := w.fakers[callvID]
 	if useFake {
 		z.With(zap.Any("fake", fake))
@@ -173,7 +170,7 @@ func (w *sessionWorkflow) call(ctx workflow.Context, runID sdktypes.RunID, v sdk
 		z.Panic("call", zap.Error(err))
 	}
 
-	return sdktypes.SessionCallResultAsPair(result)
+	return result.ToPair()
 }
 
 func (w *sessionWorkflow) initEnvModule() {
@@ -181,7 +178,7 @@ func (w *sessionWorkflow) initEnvModule() {
 		nil, // no calls will be ever made to env.
 		envVarsExecutorID,
 		kittehs.ListToMap(w.data.EnvVars, func(v sdktypes.EnvVar) (string, sdktypes.Value) {
-			return sdktypes.GetEnvVarName(v).String(), sdktypes.NewStringValue(sdktypes.GetEnvVarValue(v))
+			return v.Symbol().String(), sdktypes.NewStringValue(v.Value())
 		}),
 	)
 
@@ -194,8 +191,8 @@ func (w *sessionWorkflow) initConnections(ctx workflow.Context) error {
 	goCtx := temporalclient.NewWorkflowContextAsGOContext(ctx)
 
 	for _, conn := range w.data.Connections {
-		name := sdktypes.GetConnectionName(conn).String()
-		iid := sdktypes.GetConnectionIntegrationID(conn)
+		name := conn.Name().String()
+		iid := conn.IntegrationID()
 
 		if w.executors.GetValues(name) != nil {
 			return fmt.Errorf("conflicting connection %q", name)
@@ -218,12 +215,12 @@ func (w *sessionWorkflow) initConnections(ctx workflow.Context) error {
 		}
 
 		// mod's executor id is the integration id.
-		vs, err := intg.Configure(goCtx, sdktypes.GetConnectionIntegrationToken(conn))
+		vs, err := intg.Configure(goCtx, conn.IntegrationToken())
 		if err != nil {
 			return fmt.Errorf("connect to integration %q: %w", iid, err)
 		}
 
-		scope := integrationModulePrefix(sdktypes.GetIntegrationUniqueName(intg.Get()).String()) + name
+		scope := integrationModulePrefix(intg.Get().UniqueName().String()) + name
 
 		if err := w.executors.AddValues(scope, vs); err != nil {
 			return err
@@ -237,7 +234,7 @@ func (w *sessionWorkflow) initGlobalModules(ctx workflow.Context) (map[string]sd
 	execs := map[string]sdkexecutor.Executor{
 		"ak":    ak.New(w.syscall),
 		"time":  timemodule.New(),
-		"store": store.New(sdktypes.GetEnvID(w.data.Env), w.data.ProjectID, w.ws.svcs.RedisClient),
+		"store": store.New(w.data.Env.ID(), w.data.ProjectID, w.ws.svcs.RedisClient),
 	}
 
 	vs := make(map[string]sdktypes.Value, len(execs))
@@ -247,7 +244,7 @@ func (w *sessionWorkflow) initGlobalModules(ctx workflow.Context) (map[string]sd
 		if err != nil {
 			return nil, err
 		}
-		vs[name] = sdktypes.NewStructValue(sdktypes.NewSymbolValue(sym), exec.Values())
+		vs[name] = kittehs.Must1(sdktypes.NewStructValue(sdktypes.NewSymbolValue(sym), exec.Values()))
 		if err := w.executors.AddExecutor(name, exec); err != nil {
 			return nil, err
 		}
@@ -262,14 +259,14 @@ func (w *sessionWorkflow) createEventSubscription(ctx context.Context, connectio
 	signalID := fmt.Sprintf("wid_%s_cn_%s_et_%s", workflowID, connectionName, eventType)
 
 	_, connection := kittehs.FindFirst(w.data.Connections, func(c sdktypes.Connection) bool {
-		return sdktypes.GetConnectionName(c).String() == connectionName
+		return c.Name().String() == connectionName
 	})
 
-	if connection == nil {
+	if !connection.IsValid() {
 		return "", fmt.Errorf("connection %q not found", connectionName)
 	}
 
-	cid := sdktypes.GetConnectionID(connection)
+	cid := connection.ID()
 	if err := workflow.ExecuteLocalActivity(wctx, w.ws.svcs.DB.SaveSignal, signalID, workflowID, cid, eventType).Get(wctx, nil); err != nil {
 		w.z.Panic("save signal", zap.Error(err))
 	}
@@ -336,19 +333,19 @@ func (w *sessionWorkflow) getNextEvent(ctx context.Context, signalID string) (ma
 	if err := workflow.ExecuteLocalActivity(wctx, func(ctx context.Context) (sdktypes.EventID, error) {
 		evs, err := w.ws.svcs.DB.ListEvents(ctx, filter)
 		if err != nil {
-			return nil, err
+			return sdktypes.InvalidEventID, err
 		}
 
 		if len(evs) == 0 {
-			return nil, nil
+			return sdktypes.InvalidEventID, nil
 		}
 
-		return sdktypes.GetEventID(evs[0]), nil
+		return evs[0].ID(), nil
 	}).Get(wctx, &eventID); err != nil {
 		w.z.Panic("get signal", zap.Error(err))
 	}
 
-	if eventID == nil {
+	if !eventID.IsValid() {
 		return nil, nil
 	}
 
@@ -357,9 +354,9 @@ func (w *sessionWorkflow) getNextEvent(ctx context.Context, signalID string) (ma
 		w.z.Panic("get event", zap.Error(err))
 	}
 
-	w.signals[signalID] = sdktypes.GetEventSequenceNumber(event) + 1
+	w.signals[signalID] = event.Seq() + 1
 
-	return sdktypes.GetEventData(event), nil
+	return event.Data(), nil
 }
 
 func (w *sessionWorkflow) removeEventSubscription(ctx context.Context, signalID string) {
@@ -402,9 +399,9 @@ func (w *sessionWorkflow) run(ctx workflow.Context) (prints []string, err error)
 
 	runID := newRunID()
 
-	w.updateState(ctx, sdktypes.NewRunningSessionState(runID, nil))
+	w.updateState(ctx, sdktypes.NewSessionStateRunning(runID, sdktypes.InvalidValue))
 
-	entryPoint := sdktypes.GetSessionEntryPoint(w.data.Session)
+	entryPoint := w.data.Session.EntryPoint()
 
 	goCtx := temporalclient.NewWorkflowContextAsGOContext(ctx)
 
@@ -416,7 +413,7 @@ func (w *sessionWorkflow) run(ctx workflow.Context) (prints []string, err error)
 			Globals:              w.globals,
 			RunID:                runID,
 			FallthroughCallbacks: cbs,
-			EntryPointPath:       sdktypes.GetCodeLocationPath(entryPoint),
+			EntryPointPath:       entryPoint.Path(),
 		},
 	)
 	if err != nil {
@@ -426,26 +423,26 @@ func (w *sessionWorkflow) run(ctx workflow.Context) (prints []string, err error)
 
 	kittehs.Must0(w.executors.AddExecutor(fmt.Sprintf("run_%s", run.ID().Value()), run))
 
-	epName := sdktypes.GetCodeLocationName(entryPoint)
+	epName := entryPoint.Name()
 
 	callValue, ok := run.Values()[epName]
 	if !ok {
 		return prints, fmt.Errorf("entry point not found after evaluation")
 	}
 
-	if !sdktypes.IsFunctionValue(callValue) {
+	if !callValue.IsFunction() {
 		return prints, fmt.Errorf("entry point is not a function")
 	}
 
-	if sdktypes.GetFunctionValueExecutorID(callValue).String() != runID.String() {
+	if callValue.GetFunction().ExecutorID().ToRunID() != runID {
 		return prints, fmt.Errorf("entry point does not belong to main run")
 	}
 
-	w.updateState(ctx, sdktypes.NewRunningSessionState(runID, callValue))
+	w.updateState(ctx, sdktypes.NewSessionStateRunning(runID, callValue))
 
-	argNames := sdktypes.GetFunctionValueArgsNames(callValue)
+	argNames := callValue.GetFunction().ArgNames() // sdktypes.GetFunctionValueArgsNames(callValue)
 	kwargs := kittehs.FilterMapKeys(
-		sdktypes.GetSessionInputs(w.data.Session),
+		w.data.Session.Inputs(),
 		kittehs.ContainedIn(argNames...),
 	)
 
@@ -454,10 +451,7 @@ func (w *sessionWorkflow) run(ctx workflow.Context) (prints []string, err error)
 		return prints, err
 	}
 
-	state, err := sdktypes.NewCompletedSessionState(prints, run.Values(), ret)
-	if err != nil {
-		return prints, err
-	}
+	state := sdktypes.NewSessionStateCompleted(prints, run.Values(), ret)
 
 	w.updateState(ctx, state)
 

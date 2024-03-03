@@ -41,19 +41,19 @@ func (c *client) Download(ctx context.Context, buildID sdktypes.BuildID) (io.Rea
 func (c *client) Get(ctx context.Context, buildID sdktypes.BuildID) (sdktypes.Build, error) {
 	resp, err := c.client.Get(ctx, connect.NewRequest(&buildsv1.GetRequest{BuildId: buildID.String()}))
 	if err != nil {
-		return nil, rpcerrors.TranslateError(err)
+		return sdktypes.InvalidBuild, rpcerrors.TranslateError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {
-		return nil, err
+		return sdktypes.InvalidBuild, err
 	}
 	if resp.Msg.Build == nil {
-		return nil, nil
+		return sdktypes.InvalidBuild, nil
 	}
 
 	build, err := sdktypes.StrictBuildFromProto(resp.Msg.Build)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidBuild, err
 	}
 	return build, nil
 }
@@ -96,16 +96,16 @@ func (c *client) Remove(ctx context.Context, buildID sdktypes.BuildID) error {
 func (c *client) Save(ctx context.Context, build sdktypes.Build, data []byte) (sdktypes.BuildID, error) {
 	resp, err := c.client.Save(ctx, connect.NewRequest(&buildsv1.SaveRequest{Build: build.ToProto(), Data: data}))
 	if err != nil {
-		return nil, rpcerrors.TranslateError(err)
+		return sdktypes.InvalidBuildID, rpcerrors.TranslateError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {
-		return nil, err
+		return sdktypes.InvalidBuildID, err
 	}
 
 	buildID, err := sdktypes.StrictParseBuildID(resp.Msg.BuildId)
 	if err != nil {
-		return nil, fmt.Errorf("invalid build: %w", err)
+		return sdktypes.InvalidBuildID, fmt.Errorf("invalid build: %w", err)
 	}
 	return buildID, nil
 }

@@ -1,57 +1,52 @@
 package sdktypes
 
 import (
-	"fmt"
+	"errors"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	projectv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/projects/v1"
-	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 )
+
+type Project struct {
+	object[*ProjectPB, ProjectTraits]
+}
+
+var InvalidProject Project
 
 type ProjectPB = projectv1.Project
 
-type Project = *object[*ProjectPB]
+type ProjectTraits struct{}
 
-var (
-	ProjectFromProto       = makeFromProto(validateProject)
-	StrictProjectFromProto = makeFromProto(strictValidateProject)
-	ToStrictProject        = makeWithValidator(strictValidateProject)
-)
-
-func strictValidateProject(pb *projectv1.Project) error {
-	if err := ensureNotEmpty(pb.Name, pb.ProjectId); err != nil {
-		return fmt.Errorf("%w: missing name | project id", sdkerrors.ErrInvalidArgument)
-	}
-
-	return validateProject(pb)
+func (ProjectTraits) Validate(m *ProjectPB) error {
+	return errors.Join(
+		nameField("name", m.Name),
+		idField[ProjectID]("project_id", m.ProjectId),
+	)
 }
 
-func validateProject(pb *projectv1.Project) error {
-	if _, err := ParseProjectID(pb.ProjectId); err != nil {
-		return err
-	}
-
-	if _, err := ParseName(pb.Name); err != nil {
-		return err
-	}
-
-	return nil
+func (ProjectTraits) StrictValidate(m *ProjectPB) error {
+	return mandatory("name", m.Name)
 }
 
-func ProjectHasID(p Project) bool { return p.pb.ProjectId != "" }
+func ProjectFromProto(m *ProjectPB) (Project, error)       { return FromProto[Project](m) }
+func StrictProjectFromProto(m *ProjectPB) (Project, error) { return Strict(ProjectFromProto(m)) }
 
-func GetProjectID(p Project) ProjectID {
-	if p == nil {
-		return nil
-	}
+func (p Project) ID() ProjectID { return kittehs.Must1(ParseProjectID(p.read().ProjectId)) }
+func (p Project) Name() Symbol  { return kittehs.Must1(ParseSymbol(p.read().Name)) }
 
-	return MustParseProjectID(p.pb.ProjectId)
+func NewProject(id ProjectID, name Symbol) Project {
+	return kittehs.Must1(ProjectFromProto(&ProjectPB{
+		ProjectId: id.String(),
+		Name:      name.String(),
+	}))
 }
 
-func GetProjectName(p Project) Name {
-	if p == nil {
-		return nil
-	}
+func (p Project) WithName(name Symbol) Project {
+	return Project{p.forceUpdate(func(pb *ProjectPB) { pb.Name = name.String() })}
+}
 
-	return kittehs.Must1(ParseName(p.pb.Name))
+func (p Project) WithNewID() Project { return p.WithID(NewProjectID()) }
+
+func (p Project) WithID(id ProjectID) Project {
+	return Project{p.forceUpdate(func(pb *ProjectPB) { pb.ProjectId = id.String() })}
 }

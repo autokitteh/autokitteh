@@ -37,14 +37,14 @@ func (a API) Delete(ctx context.Context, args []sdktypes.Value, kwargs map[strin
 		"ts", &req.TS,
 	)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Invoke the API method.
 	resp := &DeleteResponse{}
 	err = api.PostJSON(ctx, a.Secrets, a.Scope, req, resp, "chat.delete")
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Parse and return the response.
@@ -83,14 +83,14 @@ func (a API) PostEphemeral(ctx context.Context, args []sdktypes.Value, kwargs ma
 		"thread_ts?", &req.ThreadTS,
 	)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Invoke the API method.
 	resp := &PostEphemeralResponse{}
 	err = api.PostJSON(ctx, a.Secrets, a.Scope, req, resp, "chat.postEphemeral")
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Parse and return the response.
@@ -122,14 +122,14 @@ func (a API) PostMessage(ctx context.Context, args []sdktypes.Value, kwargs map[
 		"reply_broadcast?", &req.ReplyBroadcast,
 	)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Invoke the API method.
 	resp := &PostMessageResponse{}
 	err = api.PostJSON(ctx, a.Secrets, a.Scope, req, resp, "chat.postMessage")
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Parse and return the response.
@@ -161,14 +161,14 @@ func (a API) Update(ctx context.Context, args []sdktypes.Value, kwargs map[strin
 		"reply_broadcast?", &req.ReplyBroadcast,
 	)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Invoke the API method.
 	resp := &UpdateResponse{}
 	err = api.PostJSON(ctx, a.Secrets, a.Scope, req, resp, "chat.update")
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Parse and return the response.
@@ -192,14 +192,14 @@ func (a API) SendTextMessage(ctx context.Context, args []sdktypes.Value, kwargs 
 		"reply_broadcast?", &req.ReplyBroadcast,
 	)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Invoke the API method.
 	resp := &PostMessageResponse{}
 	err = api.PostJSON(ctx, a.Secrets, a.Scope, req, resp, "chat.postMessage")
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Parse and return the response.
@@ -229,7 +229,7 @@ func (a API) SendApprovalMessage(ctx context.Context, args []sdktypes.Value, kwa
 		"reply_broadcast?", &req.ReplyBroadcast,
 	)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 	if greenButton == "" {
 		greenButton = DefaultApprovalGreenButton
@@ -292,7 +292,7 @@ func (a API) SendApprovalMessage(ctx context.Context, args []sdktypes.Value, kwa
 	resp := &PostMessageResponse{}
 	err = api.PostJSON(ctx, a.Secrets, a.Scope, req, resp, "chat.postMessage")
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Parse and return the response.

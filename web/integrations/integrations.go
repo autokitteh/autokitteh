@@ -10,7 +10,6 @@ import (
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
-	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 const (
@@ -41,15 +40,15 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	data := []tableRow{}
 	for _, i := range is {
-		tr := tableRow{Name: sdktypes.GetIntegrationDisplayName(i)}
+		tr := tableRow{Name: i.DisplayName()}
 
-		u := sdktypes.GetIntegrationLogoURL(i)
+		u := i.LogoURL()
 		if u == nil {
 			u = kittehs.Must1(url.Parse(defaultLogo))
 		}
 		tr.Logo = u.String()
 
-		u = sdktypes.GetIntegrationConnectionURL(i)
+		u = i.ConnectionURL()
 		if u == nil {
 			u = &url.URL{}
 		}

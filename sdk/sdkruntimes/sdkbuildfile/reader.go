@@ -77,7 +77,7 @@ func Read(r io.Reader) (*BuildFile, error) {
 
 			name, rest := parts[1], parts[2]
 
-			n, err := sdktypes.ParseName(name)
+			n, err := sdktypes.ParseSymbol(name)
 			if err != nil {
 				return nil, fmt.Errorf("invalid runtime name: %w", err)
 			}
@@ -91,7 +91,7 @@ func Read(r io.Reader) (*BuildFile, error) {
 	return &bf, nil
 }
 
-func readRuntimeFile(bf *BuildFile, name sdktypes.Name, path string, data *bytes.Buffer) error {
+func readRuntimeFile(bf *BuildFile, name sdktypes.Symbol, path string, data *bytes.Buffer) error {
 	rtIndex, rt := kittehs.FindFirst(bf.Runtimes, func(rt *RuntimeData) bool {
 		return rt.Info.Name.String() == name.String()
 	})
@@ -111,27 +111,19 @@ func readRuntimeFile(bf *BuildFile, name sdktypes.Name, path string, data *bytes
 	case filenames.resourcesIndex:
 		// nop - nothing to do with it on read.
 	case filenames.requirements:
-		var reqs []*sdktypes.RequirementPB
+		var reqs []sdktypes.BuildRequirement
 		err := json.NewDecoder(data).Decode(&reqs)
 		if err != nil {
 			return fmt.Errorf("requirements %q: %w", path, err)
 		}
-		if rt.Artifact, err = rt.Artifact.Update(func(pb *sdktypes.BuildArtifactPB) {
-			pb.Requirements = reqs
-		}); err != nil {
-			return fmt.Errorf("requirements %q: %w", path, err)
-		}
+		rt.Artifact = rt.Artifact.WithRequirements(reqs)
 	case filenames.exports:
-		var exports []*sdktypes.ExportPB
+		var exports []sdktypes.BuildExport
 		err := json.NewDecoder(data).Decode(&exports)
 		if err != nil {
-			return fmt.Errorf("requirements %q: %w", path, err)
+			return fmt.Errorf("exports %q: %w", path, err)
 		}
-		if rt.Artifact, err = rt.Artifact.Update(func(pb *sdktypes.BuildArtifactPB) {
-			pb.Exports = exports
-		}); err != nil {
-			return fmt.Errorf("requirements %q: %w", path, err)
-		}
+		rt.Artifact = rt.Artifact.WithExports(exports)
 	default:
 		kind, rest, ok := strings.Cut(path, "/")
 		if !ok {
@@ -156,13 +148,11 @@ func readRuntimeFile(bf *BuildFile, name sdktypes.Name, path string, data *bytes
 }
 
 func readRuntimeCompiledFile(rt *RuntimeData, path string, data *bytes.Buffer) (err error) {
-	rt.Artifact, err = rt.Artifact.Update(func(pb *sdktypes.BuildArtifactPB) {
-		if pb.CompiledData == nil {
-			pb.CompiledData = make(map[string][]byte)
-		}
-
-		pb.CompiledData[path] = data.Bytes()
-	})
-
+	all := rt.Artifact.CompiledData()
+	if all == nil {
+		all = make(map[string][]byte)
+	}
+	all[path] = data.Bytes()
+	rt.Artifact = rt.Artifact.WithCompiledData(all)
 	return
 }

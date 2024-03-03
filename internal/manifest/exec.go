@@ -42,7 +42,7 @@ func executeAction(ctx context.Context, action actions.Action, execContext *exec
 			return err
 		}
 
-		execContext.projects[sdktypes.GetProjectName(action.Project).String()] = pid
+		execContext.projects[action.Project.Name().String()] = pid
 
 		log.Printf("created %q", pid)
 	case actions.UpdateProjectAction:
@@ -62,20 +62,14 @@ func executeAction(ctx context.Context, action actions.Action, execContext *exec
 			return err
 		}
 
-		conn, err := action.Connection.Update(func(pb *sdktypes.ConnectionPB) {
-			pb.ProjectId = pid.String()
-			pb.IntegrationId = iid.String()
-		})
-		if err != nil {
-			return err
-		}
+		conn := action.Connection.WithProjectID(pid).WithIntegrationID(iid)
 
 		cid, err := execContext.client.Connections().Create(ctx, conn)
 		if err != nil {
 			return err
 		}
 
-		execContext.connections[sdktypes.GetConnectionName(conn).String()] = cid
+		execContext.connections[conn.Name().String()] = cid
 
 		log.Printf("created %q", cid)
 	case actions.UpdateConnectionAction:
@@ -98,19 +92,14 @@ func executeAction(ctx context.Context, action actions.Action, execContext *exec
 			return err
 		}
 
-		env, err := action.Env.Update(func(pb *sdktypes.EnvPB) {
-			pb.ProjectId = pid.String()
-		})
-		if err != nil {
-			return err
-		}
+		env := action.Env.WithProjectID(pid)
 
 		eid, err := execContext.client.Envs().Create(ctx, env)
 		if err != nil {
 			return err
 		}
 
-		execContext.envs[sdktypes.GetEnvName(env).String()] = eid
+		execContext.envs[env.Name().String()] = eid
 
 		log.Printf("created %q", eid)
 	case actions.UpdateEnvAction:
@@ -132,12 +121,7 @@ func executeAction(ctx context.Context, action actions.Action, execContext *exec
 			return err
 		}
 
-		v, err := action.EnvVar.Update(func(pb *sdktypes.EnvVarPB) {
-			pb.EnvId = eid.String()
-		})
-		if err != nil {
-			return err
-		}
+		v := action.EnvVar.WithEnvID(eid)
 
 		if err = execContext.client.Envs().SetVar(ctx, v); err != nil {
 			return err
@@ -164,13 +148,7 @@ func executeAction(ctx context.Context, action actions.Action, execContext *exec
 			return err
 		}
 
-		t, err := action.Trigger.Update(func(pb *sdktypes.TriggerPB) {
-			pb.EnvId = eid.String()
-			pb.ConnectionId = cid.String()
-		})
-		if err != nil {
-			return err
-		}
+		t := action.Trigger.WithEnvID(eid).WithConnectionID(cid)
 
 		tid, err := execContext.client.Triggers().Create(ctx, t)
 		if err != nil {

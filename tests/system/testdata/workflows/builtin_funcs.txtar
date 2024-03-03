@@ -8,16 +8,16 @@ return code == 0
 
 ak project build my_project
 return code == 0
-output equals 'build_id: b:00000000000000000000000000000005'
+output equals 'build_id: build_00000000000000000000000005'
 
-ak deployment create --build-id=b:00000000000000000000000000000005 --env=my_project/default --activate
+ak deployment create --build-id=build_00000000000000000000000005 --env=my_project/default --activate
 return code == 0
 
 # Send an HTTP GET request to trigger the deployment to start a new session.
 http get /http/my_url_path
 resp code == 200
 
-wait 5s for session s:00000000000000000000000000000008
+wait 5s for session session_00000000000000000000000008
 
 # Check the session's output and final state.
 ak session log -J
@@ -33,7 +33,7 @@ output contains '"print": "done"'
 
 ak sessions list
 return code == 0
-output contains 'session_id:"s:00000000000000000000000000000008"'
+output contains 'session_id:"session_00000000000000000000000008"'
 output contains 'state:SESSION_STATE_TYPE_COMPLETED'
 
 -- project.yaml --

@@ -81,7 +81,7 @@ golangci_lint=$(shell which golangci-lint)
 $(OUTDIR)/tools/golangci-lint:
 	mkdir -p $(OUTDIR)/tools
 ifeq ($(golangci_lint),)
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b "$(OUTDIR)/tools" v1.56.1
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b "$(OUTDIR)/tools" v1.56.2
 else
 	ln -fs $(golangci_lint) $(OUTDIR)/tools/golangci-lint
 endif

@@ -35,7 +35,7 @@ var logCmd = common.StandardCommand(&cobra.Command{
 			return err
 		}
 
-		if err := common.FailIfNotFound(cmd, "session", s); err != nil {
+		if err := common.FailIfNotFound(cmd, "session", s.IsValid()); err != nil {
 			return err
 		}
 
@@ -47,24 +47,22 @@ var logCmd = common.StandardCommand(&cobra.Command{
 			return fmt.Errorf("session log: %w", err)
 		}
 
-		if filterInput || filterOutput {
-			l, err = l.Update(func(pb *sdktypes.SessionLogPB) {
-				for _, r := range pb.Records {
-					if filterInput {
-						f := r.GetCallSpec().GetFunction().GetFunction()
-						if f != nil {
-							f.Data = nil
-							f.Desc = nil
-						}
-					}
-					if filterOutput {
-						r.GetCallAttemptComplete().Result = nil
-					}
+		pb := l.ToProto()
+		for _, r := range pb.Records {
+			if filterInput {
+				f := r.GetCallSpec().GetFunction().GetFunction()
+				if f != nil {
+					f.Data = nil
+					f.Desc = nil
 				}
-			})
-			if err != nil {
-				return fmt.Errorf("omit extra details: %w", err)
 			}
+			if filterOutput {
+				r.GetCallAttemptComplete().Result = nil
+			}
+		}
+
+		if l, err = sdktypes.SessionLogFromProto(pb); err != nil {
+			return fmt.Errorf("omit extra details: %w", err)
 		}
 
 		common.RenderKVIfV("log", l)

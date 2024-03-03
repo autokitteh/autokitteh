@@ -1,50 +1,57 @@
 package sdktypes
 
 import (
+	"errors"
 	"time"
 
 	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
-	sessionsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/sessions/v1"
+	sessionv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/sessions/v1"
 )
 
-type (
-	SessionCallAttemptCompletePB = sessionsv1.Call_Attempt_Complete
-	SessionCallAttemptComplete   = *object[*SessionCallAttemptCompletePB]
-)
-
-var (
-	SessionCallAttemptCompleteFromProto       = makeFromProto(validateSessionCallAttemptComplete)
-	StrictSessionCallAttemptCompleteFromProto = makeFromProto(strictValidateSessionCallAttemptComplete)
-	ToStrictSessionCallAttemptComplete        = makeWithValidator(strictValidateSessionCallAttemptComplete)
-)
-
-func strictValidateSessionCallAttemptComplete(pb *SessionCallAttemptCompletePB) error {
-	return validateSessionCallAttemptComplete(pb)
+type SessionCallAttemptComplete struct {
+	object[*SessionCallAttemptCompletePB, SessionCallAttemptCompleteTraits]
 }
 
-func validateSessionCallAttemptComplete(pb *SessionCallAttemptCompletePB) error {
-	return validateSessionCallAttemptResult(pb.GetResult())
+var InvalidSessionCallAttemptComplete SessionCallAttemptComplete
+
+type SessionCallAttemptCompletePB = sessionv1.Call_Attempt_Complete
+
+type SessionCallAttemptCompleteTraits struct{}
+
+func (SessionCallAttemptCompleteTraits) Validate(m *SessionCallAttemptCompletePB) error {
+	return objectField[SessionCallAttemptResult]("result", m.Result)
 }
 
-func GetSessionCallAttemptCompleteResult(c SessionCallAttemptComplete) SessionCallAttemptResult {
-	if c == nil {
-		return nil
-	}
-
-	res := c.pb.GetResult()
-	if res == nil {
-		return nil
-	}
-
-	return kittehs.Must1(SessionCallAttemptResultFromProto(res))
+func (SessionCallAttemptCompleteTraits) StrictValidate(m *SessionCallAttemptCompletePB) error {
+	return errors.Join(
+		mandatory("completed_at", m.CompletedAt),
+		mandatory("result", m.Result),
+	)
 }
 
-func NewSessionCallAttemptComplete(last bool, retryInterval time.Duration, result SessionCallAttemptResult) SessionCallAttemptComplete {
-	return kittehs.Must1(SessionCallAttemptCompleteFromProto(&SessionCallAttemptCompletePB{
-		Result:        result.ToProto(),
+func SessionCallAttemptCompleteFromProto(m *SessionCallAttemptCompletePB) (SessionCallAttemptComplete, error) {
+	return FromProto[SessionCallAttemptComplete](m)
+}
+
+func StrictSessionCallAttemptCompleteFromProto(m *SessionCallAttemptCompletePB) (SessionCallAttemptComplete, error) {
+	return Strict(SessionCallAttemptCompleteFromProto(m))
+}
+
+func (p SessionCallAttemptComplete) Result() SessionCallAttemptResult {
+	return forceFromProto[SessionCallAttemptResult](p.read().Result)
+}
+
+func NewSessionLogCallAttemptComplete(complete SessionCallAttemptComplete) SessionCallAttemptComplete {
+	return forceFromProto[SessionCallAttemptComplete](&SessionCallAttemptCompletePB{Result: ToProto(complete.Result())})
+}
+
+func NewSessionCallAttemptComplete(last bool, interval time.Duration, result SessionCallAttemptResult) SessionCallAttemptComplete {
+	return forceFromProto[SessionCallAttemptComplete](&SessionCallAttemptCompletePB{
 		IsLast:        last,
-		RetryInterval: durationpb.New(retryInterval),
-	}))
+		RetryInterval: durationpb.New(interval),
+		CompletedAt:   timestamppb.Now(),
+		Result:        result.ToProto(),
+	})
 }

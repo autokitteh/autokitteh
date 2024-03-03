@@ -13,23 +13,23 @@ import (
 )
 
 func envMembershipID(e sdktypes.Env) string {
-	return fmt.Sprintf("%s/%s", sdktypes.GetEnvProjectID(e).Value(), sdktypes.GetEnvName(e).String())
+	return fmt.Sprintf("%s/%s", e.ProjectID().Value(), e.Name().String())
 }
 
 func envVarMembershipID(ev sdktypes.EnvVar) string {
-	return fmt.Sprintf("%s/%s", sdktypes.GetEnvVarEnvID(ev).Value(), sdktypes.GetEnvVarName(ev).String())
+	return fmt.Sprintf("%s/%s", ev.EnvID().Value(), ev.Symbol().String())
 }
 
 func (db *gormdb) CreateEnv(ctx context.Context, env sdktypes.Env) error {
-	if !sdktypes.EnvHasID(env) {
+	if !env.ID().IsValid() {
 		db.z.DPanic("no env id supplied")
 		return errors.New("env missing id")
 	}
 
 	r := scheme.Env{
-		EnvID:        sdktypes.GetEnvID(env).String(),
-		ProjectID:    sdktypes.GetEnvProjectID(env).String(), // TODO(ENG-136): need to verify parent id
-		Name:         sdktypes.GetEnvName(env).String(),
+		EnvID:        env.ID().String(),
+		ProjectID:    env.ProjectID().String(), // TODO(ENG-136): need to verify parent id
+		Name:         env.Name().String(),
 		MembershipID: envMembershipID(env),
 	}
 
@@ -44,7 +44,7 @@ func (db *gormdb) GetEnvByID(ctx context.Context, eid sdktypes.EnvID) (sdktypes.
 	return getOneWTransform(db.db, ctx, scheme.ParseEnv, "env_id = ?", eid.String())
 }
 
-func (db *gormdb) GetEnvByName(ctx context.Context, pid sdktypes.ProjectID, h sdktypes.Name) (sdktypes.Env, error) {
+func (db *gormdb) GetEnvByName(ctx context.Context, pid sdktypes.ProjectID, h sdktypes.Symbol) (sdktypes.Env, error) {
 	return getOneWTransform(db.db, ctx, scheme.ParseEnv, "project_id = ? AND name = ?", pid.String(), h.String())
 }
 
@@ -53,7 +53,7 @@ func (db *gormdb) ListProjectEnvs(ctx context.Context, pid sdktypes.ProjectID) (
 
 	q := db.db.WithContext(ctx).Order("env_id")
 
-	if pid != nil {
+	if pid.IsValid() {
 		q = q.Where("project_id = ?", pid.String())
 	}
 
@@ -73,16 +73,16 @@ func (db *gormdb) ListProjectEnvs(ctx context.Context, pid sdktypes.ProjectID) (
 
 func (db *gormdb) SetEnvVar(ctx context.Context, ev sdktypes.EnvVar) error {
 	r := scheme.EnvVar{
-		EnvID:        sdktypes.GetEnvVarEnvID(ev).String(), // need to verify envID ? where is envvar id ?
-		Name:         sdktypes.GetEnvVarName(ev).String(),
-		IsSecret:     sdktypes.IsEnvVarSecret(ev),
+		EnvID:        ev.EnvID().String(), // need to verify envID ? where is envvar id ?
+		Name:         ev.Symbol().String(),
+		IsSecret:     ev.IsSecret(),
 		MembershipID: envVarMembershipID(ev),
 	}
 
 	if r.IsSecret {
-		r.SecretValue = sdktypes.GetEnvVarValue(ev)
+		r.SecretValue = ev.Value()
 	} else {
-		r.Value = sdktypes.GetEnvVarValue(ev)
+		r.Value = ev.Value()
 	}
 
 	if err := db.db.

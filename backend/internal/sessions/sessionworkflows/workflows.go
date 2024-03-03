@@ -68,7 +68,7 @@ func New(z *zap.Logger, cfg Config, sessions sdkservices.Sessions, svcs *session
 func (ws *workflows) StartWorkers(ctx context.Context) error { return ws.worker.Start() }
 
 func (ws *workflows) StartWorkflow(ctx context.Context, session sdktypes.Session, debug bool) error {
-	sessionID := sdktypes.GetSessionID(session)
+	sessionID := session.ID()
 
 	wid := workflowID(sessionID)
 
@@ -80,10 +80,10 @@ func (ws *workflows) StartWorkflow(ctx context.Context, session sdktypes.Session
 
 	memo, _ := kittehs.JoinMaps(map[string]string{
 		"session_id":    sessionID.Value(),
-		"deployment_id": sdktypes.GetSessionDeploymentID(session).String(),
-		"entrypoint":    sdktypes.GetCodeLocationCanonicalString(sdktypes.GetSessionEntryPoint(session)),
+		"deployment_id": session.DeploymentID().String(),
+		"entrypoint":    session.EntryPoint().CanonicalString(),
 		"workflow_id":   wid,
-	}, sdktypes.GetSessionMemo(session))
+	}, session.Memo())
 
 	swopts := client.StartWorkflowOptions{
 		ID:                  workflowID(sessionID),
@@ -127,7 +127,7 @@ func (ws *workflows) cleanupSession(ctx workflow.Context, data *sessiondata.Data
 		if err := workflow.ExecuteLocalActivity(
 			ctx,
 			ws.deactivateDrainedDeployment,
-			sdktypes.GetDeploymentID(data.Deployment),
+			data.Deployment.ID(),
 		).Get(ctx, nil); err != nil {
 			z.Error("deactivate drained deployment failed", zap.Error(err))
 		}
@@ -137,7 +137,9 @@ func (ws *workflows) cleanupSession(ctx workflow.Context, data *sessiondata.Data
 func (ws *workflows) getSessionDebugData(ctx workflow.Context, data *sessiondata.Data) any {
 	z := ws.z.With(zap.String("session_id", data.SessionID.String()))
 
-	history, err := ws.sessions.GetLog(context.Background(), data.SessionID)
+	goCtx := temporalclient.NewWorkflowContextAsGOContext(ctx)
+
+	history, err := ws.sessions.GetLog(goCtx, data.SessionID)
 	if err != nil {
 		z.Warn("get history failed", zap.Error(err))
 		return "error retreiving history"
@@ -184,10 +186,10 @@ func (ws *workflows) deactivateDrainedDeployment(ctx context.Context, deployment
 			return fmt.Errorf("deployments.get: %w", err)
 		}
 
-		if sdktypes.GetDeploymentState(dep) == sdktypes.DeploymentStateDraining {
+		if dep.State() == sdktypes.DeploymentStateDraining {
 			_, nRunning, err := tx.ListSessions(ctx, sdkservices.ListSessionsFilter{
 				DeploymentID: deploymentID,
-				StateType:    sdktypes.CreatedSessionStateType,
+				StateType:    sdktypes.SessionStateTypeCreated,
 				CountOnly:    true,
 			})
 			if err != nil {
@@ -196,7 +198,7 @@ func (ws *workflows) deactivateDrainedDeployment(ctx context.Context, deployment
 
 			_, nCreated, err := tx.ListSessions(ctx, sdkservices.ListSessionsFilter{
 				DeploymentID: deploymentID,
-				StateType:    sdktypes.RunningSessionStateType,
+				StateType:    sdktypes.SessionStateTypeRunning,
 				CountOnly:    true,
 			})
 			if err != nil {
@@ -234,7 +236,7 @@ func (ws *workflows) StopWorkflow(ctx context.Context, sessionID sdktypes.Sessio
 		//       we can avoid a dirty state if the terminator crashes between the temporal termination
 		//       and the state update. Another way is to periodically check on all workflows and make sure
 		//       that they are indeed running in termporal once in a while.
-		return ws.updateSessionState(ctx, sessionID, sdktypes.NewErrorSessionState(fmt.Errorf("terminated: %s", reason), nil))
+		return ws.updateSessionState(ctx, sessionID, sdktypes.NewSessionStateError(fmt.Errorf("terminated: %s", reason), nil))
 	}
 
 	if err := ws.svcs.Temporal.CancelWorkflow(ctx, wid, ""); err != nil {
@@ -245,8 +247,8 @@ func (ws *workflows) StopWorkflow(ctx context.Context, sessionID sdktypes.Sessio
 	return nil
 }
 
-func (ws *workflows) updateSessionState(ctx context.Context, sessionID sdktypes.SessionID, state sdktypes.Object) error {
-	if err := ws.svcs.DB.UpdateSessionState(ctx, sessionID, sdktypes.WrapSessionState(state)); err != nil {
+func (ws *workflows) updateSessionState(ctx context.Context, sessionID sdktypes.SessionID, state sdktypes.SessionState) error {
+	if err := ws.svcs.DB.UpdateSessionState(ctx, sessionID, state); err != nil {
 		ws.z.With(zap.String("session_id", sessionID.String())).Error("update session", zap.Error(err))
 		return err
 	}

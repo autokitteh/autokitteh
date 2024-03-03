@@ -1,128 +1,47 @@
 package sdktypes
 
 import (
-	"encoding/json"
+	"go.jetpack.io/typeid"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 )
 
-type ExecutorID = *executorID
+type ExecutorID struct{ id[typeid.AnyPrefix] }
 
-type executorID struct{ id ID }
-
-var _ ID = (ExecutorID)(nil)
-
-func (id *executorID) isID()         {}
-func (id *executorID) Kind() string  { return id.id.Kind() }
-func (id *executorID) Value() string { return id.id.Value() }
-
-func (id *executorID) MarshalJSON() ([]byte, error) {
-	if id == nil {
-		return []byte("null"), nil
-	}
-
-	return id.id.MarshalJSON()
-}
-
-func (id *executorID) UnmarshalJSON(data []byte) error {
-	var text string
-	if err := json.Unmarshal(data, &text); err != nil {
-		return err
-	}
-
-	id1, err := StrictParseExecutorID(text)
-	if err != nil {
-		return err
-	}
-
-	*id = *id1
-	return nil
-}
-
-func (id *executorID) String() string {
-	if id == nil {
-		return ""
-	}
-
-	return id.id.String()
-}
-
-func (id *executorID) ToRunID() RunID {
-	if id == nil {
-		return nil
-	}
-
-	if rid, ok := id.id.(RunID); ok {
-		return rid
-	}
-
-	return nil
-}
-
-func (id *executorID) ToIntegrationID() IntegrationID {
-	if id == nil {
-		return nil
-	}
-
-	if rid, ok := id.id.(IntegrationID); ok {
-		return rid
-	}
-
-	return nil
-}
-
-func toExecutorID(id ID) ExecutorID {
-	if id == nil {
-		return nil
-	}
-
-	return &executorID{id: id}
-}
-
-func (id *executorID) ID() ID { return id.id }
-
-type executorIDConstraint interface {
+type concreteExecutorID interface {
 	RunID | IntegrationID
 	ID
 }
 
-func NewExecutorID[T executorIDConstraint](id T) ExecutorID {
-	if id == nil {
-		return nil
-	}
-	return &executorID{id: id}
+func NewExecutorID[T concreteExecutorID](in T) ExecutorID {
+	parsed := kittehs.Must1(ParseID[id[typeid.AnyPrefix]](in.String()))
+	return ExecutorID{parsed}
 }
 
-func StrictParseExecutorID(raw string) (ExecutorID, error) {
-	k, _, _ := SplitRawID(raw)
-
-	if k == RunIDKind {
-		rid, err := ParseRunID(raw)
-		return toExecutorID(rid), err
+func ParseExecutorID(s string) (ExecutorID, error) {
+	parsed, err := ParseID[id[typeid.AnyPrefix]](s)
+	if err != nil {
+		return ExecutorID{}, err
 	}
 
-	if k == IntegrationIDKind {
-		rid, err := ParseIntegrationID(raw)
-		return toExecutorID(rid), err
+	switch parsed.Kind() {
+	case runIDKind, integrationIDKind:
+		return ExecutorID{parsed}, nil
+	default:
+		return ExecutorID{}, sdkerrors.NewInvalidArgumentError("invalid executor id")
 	}
-
-	if k == ConnectionIDKind {
-		rid, err := ParseConnectionID(raw)
-		return toExecutorID(rid), err
-	}
-
-	return nil, sdkerrors.ErrInvalidArgument
 }
 
-func ParseExecutorID(raw string) (ExecutorID, error) {
-	if raw == "" {
-		return nil, nil
-	}
-
-	return StrictParseExecutorID(raw)
+func (e ExecutorID) ToRunID() RunID {
+	id, _ := ParseRunID(e.String())
+	return id
 }
 
-func MustParseExecutorID(raw string) ExecutorID {
-	return kittehs.Must1(ParseExecutorID(raw))
+func (e ExecutorID) ToIntegrationID() IntegrationID {
+	id, _ := ParseIntegrationID(e.String())
+	return id
 }
+
+func (e ExecutorID) IsRunID() bool         { return e.Kind() == runIDKind }
+func (e ExecutorID) IsIntegrationID() bool { return e.Kind() == integrationIDKind }

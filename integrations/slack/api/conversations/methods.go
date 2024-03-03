@@ -34,14 +34,14 @@ func (a API) Archive(ctx context.Context, args []sdktypes.Value, kwargs map[stri
 		"channel", &req.Channel,
 	)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Invoke the API method.
 	resp := &ArchiveResponse{}
 	err = api.PostJSON(ctx, a.Secrets, a.Scope, req, resp, "conversations.archive")
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Parse and return the response.
@@ -64,14 +64,14 @@ func (a API) Close(ctx context.Context, args []sdktypes.Value, kwargs map[string
 		"channel", &req.Channel,
 	)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Invoke the API method.
 	resp := &CloseResponse{}
 	err = api.PostJSON(ctx, a.Secrets, a.Scope, req, resp, "conversations.close")
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Parse and return the response.
@@ -99,14 +99,14 @@ func (a API) Create(ctx context.Context, args []sdktypes.Value, kwargs map[strin
 		"team_id?", &req.TeamID,
 	)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Invoke the API method.
 	resp := &CreateResponse{}
 	err = api.PostJSON(ctx, a.Secrets, a.Scope, req, resp, "conversations.create")
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Parse and return the response.
@@ -136,14 +136,14 @@ func (a API) History(ctx context.Context, args []sdktypes.Value, kwargs map[stri
 		"latest?", &req.Latest,
 	)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Invoke the API method.
 	resp := &HistoryResponse{}
 	err = api.PostJSON(ctx, a.Secrets, a.Scope, req, resp, "conversations.history")
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Parse and return the response.
@@ -171,7 +171,7 @@ func (a API) Info(ctx context.Context, args []sdktypes.Value, kwargs map[string]
 		"include_num_members?", &includeNumMembers,
 	)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 	req := url.Values{}
 	req.Set("channel", channel)
@@ -187,7 +187,7 @@ func (a API) Info(ctx context.Context, args []sdktypes.Value, kwargs map[string]
 	resp := &InfoResponse{}
 	err = api.PostForm(ctx, a.Secrets, a.Scope, req, resp, "conversations.info")
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Parse and return the response.
@@ -215,14 +215,14 @@ func (a API) Invite(ctx context.Context, args []sdktypes.Value, kwargs map[strin
 		"force?", &req.Force,
 	)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Invoke the API method.
 	resp := &InviteResponse{}
 	err = api.PostJSON(ctx, a.Secrets, a.Scope, req, resp, "conversations.invite")
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Parse and return the response.
@@ -253,7 +253,7 @@ func (a API) List(ctx context.Context, args []sdktypes.Value, kwargs map[string]
 		"types?", &types,
 	)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 	req := url.Values{}
 	if cursor != "" {
@@ -277,7 +277,7 @@ func (a API) List(ctx context.Context, args []sdktypes.Value, kwargs map[string]
 	resp := &ListResponse{}
 	err = api.PostForm(ctx, a.Secrets, a.Scope, req, resp, "conversations.list")
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Parse and return the response.
@@ -305,7 +305,7 @@ func (a API) Members(ctx context.Context, args []sdktypes.Value, kwargs map[stri
 		"limit?", &limit,
 	)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 	req := url.Values{}
 	req.Set("channel", channel)
@@ -321,7 +321,7 @@ func (a API) Members(ctx context.Context, args []sdktypes.Value, kwargs map[stri
 	resp := &MembersResponse{}
 	err = api.PostForm(ctx, a.Secrets, a.Scope, req, resp, "conversations.members")
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Parse and return the response.
@@ -346,14 +346,14 @@ func (a API) Open(ctx context.Context, args []sdktypes.Value, kwargs map[string]
 		"prevent_creation?", &req.PreventCreation,
 	)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Invoke the API method.
 	resp := &OpenResponse{}
 	err = api.PostJSON(ctx, a.Secrets, a.Scope, req, resp, "conversations.open")
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Parse and return the response.
@@ -380,14 +380,14 @@ func (a API) Rename(ctx context.Context, args []sdktypes.Value, kwargs map[strin
 		"name", &req.Name,
 	)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Invoke the API method.
 	resp := &RenameResponse{}
 	err = api.PostJSON(ctx, a.Secrets, a.Scope, req, resp, "conversations.rename")
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Parse and return the response.
@@ -421,7 +421,7 @@ func (a API) Replies(ctx context.Context, args []sdktypes.Value, kwargs map[stri
 		"latest?", &latest,
 	)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 	req := url.Values{}
 	req.Set("channel", channel)
@@ -450,7 +450,7 @@ func (a API) Replies(ctx context.Context, args []sdktypes.Value, kwargs map[stri
 	resp := &RepliesResponse{}
 	err = api.PostForm(ctx, a.Secrets, a.Scope, req, resp, "conversations.replies")
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Parse and return the response.
@@ -477,14 +477,14 @@ func (a API) SetPurpose(ctx context.Context, args []sdktypes.Value, kwargs map[s
 		"purpose", &req.Purpose,
 	)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Invoke the API method.
 	resp := &SetPurposeResponse{}
 	err = api.PostJSON(ctx, a.Secrets, a.Scope, req, resp, "conversations.setPurpose")
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Parse and return the response.
@@ -511,14 +511,14 @@ func (a API) SetTopic(ctx context.Context, args []sdktypes.Value, kwargs map[str
 		"topic", &req.Topic,
 	)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Invoke the API method.
 	resp := &SetTopicResponse{}
 	err = api.PostJSON(ctx, a.Secrets, a.Scope, req, resp, "conversations.setTopic")
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Parse and return the response.
@@ -541,14 +541,14 @@ func (a API) Unarchive(ctx context.Context, args []sdktypes.Value, kwargs map[st
 		"channel", &req.Channel,
 	)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Invoke the API method.
 	resp := &UnarchiveResponse{}
 	err = api.PostJSON(ctx, a.Secrets, a.Scope, req, resp, "conversations.unarchive")
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Parse and return the response.

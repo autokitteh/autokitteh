@@ -28,7 +28,7 @@ ak project get my_project -J
 return code == 0
 output equals file expected_project_details.json
 
-ak project get p:00000000000000000000000000000001 -J
+ak project get project_00000000000000000000000001 -J
 return code == 0
 output equals file expected_project_details.json
 
@@ -41,7 +41,7 @@ output equals file expected_connection_details.json
 # - Specifying an env name  
 # - This command's flags  
 # - Other manifest commands since PR #6  
-ak connection get connection:00000000000000000000000000000003 -J
+ak connection get connection_00000000000000000000000003 -J
 return code == 0
 output equals file expected_connection_details.json
 
@@ -50,12 +50,12 @@ ak env get my_project/default -J
 return code == 0
 output equals file expected_env_details.json
 
-ak env get e:00000000000000000000000000000002 -J
+ak env get env_00000000000000000000000002 -J
 return code == 0
 output equals file expected_env_details.json
 
 # Check the actual trigger details.
-ak trigger get t:00000000000000000000000000000004 -J
+ak trigger get trigger_00000000000000000000000004 -J
 return code == 0
 output equals file expected_trigger_details.json
 
@@ -94,15 +94,15 @@ project:
 [plan] env "my_project/default": not found, will create
 [plan] connection "my_project/my_connection": not found, will create
 [plan] trigger "my_project/default:my_project/my_connection/get": not found, will create
-[exec] create_project "my_project": created "p:00000000000000000000000000000001"
-[exec] create_env "my_project/default": created "e:00000000000000000000000000000002"
-[exec] create_connection "my_project/my_connection": created "connection:00000000000000000000000000000003"
-[exec] create_trigger "my_project/default:my_project/my_connection/get": created "t:00000000000000000000000000000004"
+[exec] create_project "my_project": created "project_00000000000000000000000001"
+[exec] create_env "my_project/default": created "env_00000000000000000000000002"
+[exec] create_connection "my_project/my_connection": created "connection_00000000000000000000000003"
+[exec] create_trigger "my_project/default:my_project/my_connection/get": created "trigger_00000000000000000000000004"
 
 -- expected_project_details.json --
 {
   "project": {
-    "project_id": "p:00000000000000000000000000000001",
+    "project_id": "project_00000000000000000000000001",
     "name": "my_project"
   }
 }
@@ -110,10 +110,10 @@ project:
 -- expected_connection_details.json --
 {
   "connection": {
-    "connection_id": "connection:00000000000000000000000000000003",
-    "integration_id": "integration:8000000000000000f1201a7ed83f7cd5",
+    "connection_id": "connection_00000000000000000000000003",
+    "integration_id": "integration_0000000000f1201a7ed83f7cd5",
     "integration_token": "my_path",
-    "project_id": "p:00000000000000000000000000000001",
+    "project_id": "project_00000000000000000000000001",
     "name": "my_connection"
   }
 }
@@ -121,8 +121,8 @@ project:
 -- expected_env_details.json --
 {
   "env": {
-    "env_id": "e:00000000000000000000000000000002",
-    "project_id": "p:00000000000000000000000000000001",
+    "env_id": "env_00000000000000000000000002",
+    "project_id": "project_00000000000000000000000001",
     "name": "default"
   }
 }
@@ -130,9 +130,9 @@ project:
 -- expected_trigger_details.json --
 {
   "trigger": {
-    "trigger_id": "t:00000000000000000000000000000004",
-    "connection_id": "connection:00000000000000000000000000000003",
-    "env_id": "e:00000000000000000000000000000002",
+    "trigger_id": "trigger_00000000000000000000000004",
+    "connection_id": "connection_00000000000000000000000003",
+    "env_id": "env_00000000000000000000000002",
     "event_type": "get",
     "code_location": {
       "path": "my_program.star",

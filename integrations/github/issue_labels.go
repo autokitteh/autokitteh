@@ -21,17 +21,17 @@ func (i integration) addIssueLabels(ctx context.Context, args []sdktypes.Value, 
 		"number", &number,
 		"labels", &labels,
 	); err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	gh, err := i.NewClient(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	c, _, err := gh.Issues.AddLabelsToIssue(ctx, owner, repo, number, labels)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	return sdkvalues.Wrap(c)
@@ -49,17 +49,17 @@ func (i integration) removeIssueLabel(ctx context.Context, args []sdktypes.Value
 		"number", &number,
 		"label", &label,
 	); err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	gh, err := i.NewClient(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	c, err := gh.Issues.RemoveLabelForIssue(ctx, owner, repo, number, label)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	return sdkvalues.Wrap(c)

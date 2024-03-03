@@ -16,15 +16,14 @@ type Executors struct {
 }
 
 func (ms *Executors) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
-	if !sdktypes.IsFunctionValue(v) {
-		return nil, sdkerrors.ErrInvalidArgument
+	if !v.IsFunction() {
+		return sdktypes.InvalidValue, sdkerrors.ErrInvalidArgument{}
 	}
 
-	xid := sdktypes.GetFunctionValueExecutorID(v)
-
+	xid := v.GetFunction().ExecutorID()
 	c := ms.GetCaller(xid)
 	if c == nil {
-		return nil, fmt.Errorf("executor not found: %w", sdkerrors.ErrNotFound)
+		return sdktypes.InvalidValue, fmt.Errorf("executor not found: %w", sdkerrors.ErrNotFound)
 	}
 
 	return c.Call(ctx, v, args, kwargs)

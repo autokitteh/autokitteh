@@ -20,7 +20,7 @@ var getCmd = common.StandardCommand(&cobra.Command{
 		c, _, err := r.ConnectionNameOrID(args[0])
 		if err != nil {
 			if errors.As(err, resolver.NotFoundErrorType) {
-				if err := common.FailIfNotFound(cmd, "connection", c); err != nil {
+				if err := common.FailIfNotFound(cmd, "connection", c.IsValid()); err != nil {
 					return err
 				}
 				return nil
@@ -28,7 +28,7 @@ var getCmd = common.StandardCommand(&cobra.Command{
 			return err
 		}
 
-		if err := common.FailIfNotFound(cmd, "connection", c); err != nil {
+		if err := common.FailIfNotFound(cmd, "connection", c.IsValid()); err != nil {
 			return err
 		}
 

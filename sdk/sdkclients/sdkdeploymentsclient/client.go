@@ -24,19 +24,19 @@ type client struct {
 func (c *client) Get(ctx context.Context, id sdktypes.DeploymentID) (sdktypes.Deployment, error) {
 	resp, err := c.client.Get(ctx, connect.NewRequest(&deploymentsv1.GetRequest{DeploymentId: id.String()}))
 	if err != nil {
-		return nil, rpcerrors.TranslateError(err)
+		return sdktypes.InvalidDeployment, rpcerrors.TranslateError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {
-		return nil, err
+		return sdktypes.InvalidDeployment, err
 	}
 	if resp.Msg.Deployment == nil {
-		return nil, nil
+		return sdktypes.InvalidDeployment, nil
 	}
 
 	deployment, err := sdktypes.StrictDeploymentFromProto(resp.Msg.Deployment)
 	if err != nil {
-		return nil, fmt.Errorf("invalid deployment: %w", err)
+		return sdktypes.InvalidDeployment, fmt.Errorf("invalid deployment: %w", err)
 	}
 	return deployment, nil
 }
@@ -73,16 +73,16 @@ func (c *client) Test(ctx context.Context, id sdktypes.DeploymentID) error {
 func (c *client) Create(ctx context.Context, deployment sdktypes.Deployment) (sdktypes.DeploymentID, error) {
 	resp, err := c.client.Create(ctx, connect.NewRequest(&deploymentsv1.CreateRequest{Deployment: deployment.ToProto()}))
 	if err != nil {
-		return nil, rpcerrors.TranslateError(err)
+		return sdktypes.InvalidDeploymentID, rpcerrors.TranslateError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {
-		return nil, err
+		return sdktypes.InvalidDeploymentID, err
 	}
 
 	id, err := sdktypes.StrictParseDeploymentID(resp.Msg.DeploymentId)
 	if err != nil {
-		return nil, fmt.Errorf("invalid deployment id: %w", err)
+		return sdktypes.InvalidDeploymentID, fmt.Errorf("invalid deployment id: %w", err)
 	}
 	return id, nil
 }
@@ -120,7 +120,7 @@ func (c *client) List(ctx context.Context, filter sdkservices.ListDeploymentsFil
 	resp, err := c.client.List(ctx, connect.NewRequest(&deploymentsv1.ListRequest{
 		EnvId:               filter.EnvID.String(),
 		BuildId:             filter.BuildID.String(),
-		State:               deploymentsv1.DeploymentState(filter.State),
+		State:               filter.State.ToProto(),
 		Limit:               filter.Limit,
 		IncludeSessionStats: filter.IncludeSessionStats,
 	}))

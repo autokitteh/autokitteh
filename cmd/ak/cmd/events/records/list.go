@@ -8,7 +8,6 @@ import (
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
 	"go.autokitteh.dev/autokitteh/internal/resolver"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
-	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 var listCmd = common.StandardCommand(&cobra.Command{
@@ -23,7 +22,7 @@ var listCmd = common.StandardCommand(&cobra.Command{
 		if err != nil {
 			return err
 		}
-		if e == nil {
+		if !e.IsValid() {
 			err = fmt.Errorf("event ID %q not found", args[0])
 			return common.NewExitCodeError(common.NotFoundExitCode, err)
 		}
@@ -38,9 +37,8 @@ var listCmd = common.StandardCommand(&cobra.Command{
 			return err
 		}
 
-		if len(ers) == 0 {
-			var dummy *sdktypes.EventRecord
-			return common.FailIfNotFound(cmd, "event records", dummy)
+		if err := common.FailIfNotFound(cmd, "event records", len(ers) > 0); err != nil {
+			return err
 		}
 
 		common.RenderList(ers)

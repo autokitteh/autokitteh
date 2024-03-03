@@ -31,26 +31,21 @@ var listCmd = common.StandardCommand(&cobra.Command{
 			return fmt.Errorf("list integrations: %w", err)
 		}
 
-		if len(is) == 0 {
-			return common.FailNotFound(cmd, "integrations")
+		if err := common.FailIfNotFound(cmd, "integrations", len(is) > 0); err != nil {
+			return err
 		}
 
-		if !(withDesc && withMod && withRefs) {
-			for idx, integ := range is {
-				is[idx], err = integ.Update(func(pb *sdktypes.IntegrationPB) {
-					if !withDesc {
-						pb.Description = ""
-					}
-					if !withRefs {
-						pb.UserLinks = nil
-					}
-					if !withMod {
-						pb.Module = nil
-					}
-				})
-				if err != nil {
-					return fmt.Errorf("omit extra details: %w", err)
-				}
+		for idx := range is {
+			if !withDesc {
+				is[idx] = is[idx].WithDescription("")
+			}
+
+			if !withRefs {
+				is[idx] = is[idx].WithUserLinks(nil)
+			}
+
+			if !withMod {
+				is[idx] = is[idx].WithModule(sdktypes.InvalidModule)
 			}
 		}
 

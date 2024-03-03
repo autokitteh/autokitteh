@@ -23,18 +23,18 @@ func (i integration) listCollaborators(ctx context.Context, args []sdktypes.Valu
 		"affiliation=?", &opts.Affiliation,
 		"permission=?", &opts.Permission,
 	); err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Invoke the API method.
 	gh, err := i.NewClientWithInstallJWT(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	c, _, err := gh.Repositories.ListCollaborators(ctx, owner, repo, &opts)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	return sdkvalues.Wrap(c)

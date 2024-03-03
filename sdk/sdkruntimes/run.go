@@ -26,14 +26,13 @@ type RunParams struct {
 func Run(ctx context.Context, params RunParams) (sdkservices.Run, error) {
 	group := &group{
 		mainID: params.RunID,
-		runs:   make(map[string]sdkservices.Run),
+		runs:   make(map[sdktypes.ExecutorID]sdkservices.Run),
 	}
 
 	cbs := sdkservices.RunCallbacks{
 		Print: params.FallthroughCallbacks.SafePrint,
 		Call: func(ctx context.Context, runID sdktypes.RunID, v sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
-			if !sdktypes.FunctionValueHasExecutorID(v) ||
-				group.runs[sdktypes.GetFunctionValueExecutorID(v).ToRunID().String()] == nil {
+			if xid := v.GetFunction().ExecutorID(); xid.IsValid() || group.runs[xid] == nil {
 				return params.FallthroughCallbacks.SafeCall(ctx, runID, v, args, kwargs)
 			}
 
@@ -66,7 +65,7 @@ func Run(ctx context.Context, params RunParams) (sdkservices.Run, error) {
 			return nil, err
 		}
 
-		group.runs[loadRunID.String()] = r
+		group.runs[sdktypes.NewExecutorID(loadRunID)] = r
 
 		cache[path] = r.Values()
 
@@ -81,7 +80,7 @@ func Run(ctx context.Context, params RunParams) (sdkservices.Run, error) {
 		r.Close()
 	}
 
-	group.runs[group.mainID.String()] = r
+	group.runs[sdktypes.NewExecutorID(group.mainID)] = r
 
 	return group, err
 }
@@ -92,15 +91,15 @@ func run(ctx context.Context, params RunParams, path string) (sdkservices.Run, e
 		return nil, fmt.Errorf("list runtimes: %w", err)
 	}
 
-	rtd := MatchRuntimeByPath(ls, path)
-	if rtd == nil {
+	rtd, ok := MatchRuntimeByPath(ls, path)
+	if !ok {
 		return nil, sdkerrors.ErrNotFound
 	}
 
 	found := -1
 
 	for i, brt := range params.BuildFile.Runtimes {
-		if brt.Info.Name.String() == sdktypes.GetRuntimeName(rtd).String() {
+		if brt.Info.Name == rtd.Name() {
 			found = i
 			break
 		}
@@ -121,7 +120,7 @@ func run(ctx context.Context, params RunParams, path string) (sdkservices.Run, e
 		ctx,
 		params.RunID,
 		path,
-		sdktypes.GetBuildArtifactCompiledData(brt.Artifact),
+		brt.Artifact.CompiledData(),
 		params.Globals,
 		&params.FallthroughCallbacks,
 	)

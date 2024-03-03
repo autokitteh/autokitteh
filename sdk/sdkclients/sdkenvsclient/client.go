@@ -40,16 +40,16 @@ func (c *client) List(ctx context.Context, pid sdktypes.ProjectID) ([]sdktypes.E
 func (c *client) Create(ctx context.Context, env sdktypes.Env) (sdktypes.EnvID, error) {
 	resp, err := c.client.Create(ctx, connect.NewRequest(&envsv1.CreateRequest{Env: env.ToProto()}))
 	if err != nil {
-		return nil, rpcerrors.TranslateError(err)
+		return sdktypes.InvalidEnvID, rpcerrors.TranslateError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {
-		return nil, err
+		return sdktypes.InvalidEnvID, err
 	}
 
 	eid, err := sdktypes.StrictParseEnvID(resp.Msg.EnvId)
 	if err != nil {
-		return nil, fmt.Errorf("invalid env id: %w", err)
+		return sdktypes.InvalidEnvID, fmt.Errorf("invalid env id: %w", err)
 	}
 
 	return eid, nil
@@ -60,22 +60,22 @@ func (c *client) GetByID(ctx context.Context, eid sdktypes.EnvID) (sdktypes.Env,
 		&envsv1.GetRequest{EnvId: eid.String()},
 	))
 	if err != nil {
-		return nil, rpcerrors.TranslateError(err)
+		return sdktypes.InvalidEnv, rpcerrors.TranslateError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {
-		return nil, err
+		return sdktypes.InvalidEnv, err
 	}
 
 	env, err := sdktypes.StrictEnvFromProto(resp.Msg.Env)
 	if err != nil {
-		return nil, fmt.Errorf("invalid env: %w", err)
+		return sdktypes.InvalidEnv, fmt.Errorf("invalid env: %w", err)
 	}
 
 	return env, nil
 }
 
-func (c *client) GetByName(ctx context.Context, pid sdktypes.ProjectID, en sdktypes.Name) (sdktypes.Env, error) {
+func (c *client) GetByName(ctx context.Context, pid sdktypes.ProjectID, en sdktypes.Symbol) (sdktypes.Env, error) {
 	resp, err := c.client.Get(ctx, connect.NewRequest(
 		&envsv1.GetRequest{
 			Name:      en.String(),
@@ -83,20 +83,20 @@ func (c *client) GetByName(ctx context.Context, pid sdktypes.ProjectID, en sdkty
 		},
 	))
 	if err != nil {
-		return nil, rpcerrors.TranslateError(err)
+		return sdktypes.InvalidEnv, rpcerrors.TranslateError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {
-		return nil, err
+		return sdktypes.InvalidEnv, err
 	}
 
 	if resp.Msg.Env == nil {
-		return nil, nil
+		return sdktypes.InvalidEnv, nil
 	}
 
 	env, err := sdktypes.StrictEnvFromProto(resp.Msg.Env)
 	if err != nil {
-		return nil, fmt.Errorf("invalid env: %w", err)
+		return sdktypes.InvalidEnv, fmt.Errorf("invalid env: %w", err)
 	}
 
 	return env, nil

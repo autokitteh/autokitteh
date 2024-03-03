@@ -29,7 +29,7 @@ func (w ValueWrapper) Wrap(v any) (sdktypes.Value, error) {
 	if msg, ok := v.(json.RawMessage); ok {
 		var vv sdktypes.Value
 		if err := json.Unmarshal(msg, &vv); err != nil {
-			return nil, fmt.Errorf("unmarshal value error: %w", err)
+			return sdktypes.InvalidValue, fmt.Errorf("unmarshal value error: %w", err)
 		}
 		return vv, nil
 	}
@@ -41,20 +41,20 @@ func (w ValueWrapper) Wrap(v any) (sdktypes.Value, error) {
 		fallthrough
 
 	case reflect.Invalid:
-		return nil, sdkerrors.ErrInvalidArgument
+		return sdktypes.InvalidValue, sdkerrors.ErrInvalidArgument{}
 
 	case reflect.Ptr:
 		if !vv.IsNil() {
 			return w.Wrap(vv.Elem().Interface())
 		}
 
-		return sdktypes.NewNothingValue(), nil
+		return sdktypes.Nothing, nil
 
 	case reflect.Struct:
 		vt := reflect.TypeOf(v)
 
 		if vt.Size() == 0 {
-			return sdktypes.NewNothingValue(), nil
+			return sdktypes.Nothing, nil
 		}
 
 		fs := make(map[string]sdktypes.Value)
@@ -68,7 +68,7 @@ func (w ValueWrapper) Wrap(v any) (sdktypes.Value, error) {
 
 			wfv, err := w.Wrap(fv.Interface())
 			if err != nil {
-				return nil, fmt.Errorf("unable to convert struct field: %w", err)
+				return sdktypes.InvalidValue, fmt.Errorf("unable to convert struct field: %w", err)
 			}
 
 			n := w.fromStructCaser(vfs.Name)
@@ -86,10 +86,10 @@ func (w ValueWrapper) Wrap(v any) (sdktypes.Value, error) {
 
 			sym, err := sdktypes.ParseSymbol(n)
 			if err != nil {
-				return nil, fmt.Errorf("wrapping invalid name %q: %w", n, err)
+				return sdktypes.InvalidValue, fmt.Errorf("wrapping invalid name %q: %w", n, err)
 			}
 
-			return sdktypes.NewStructValue(sdktypes.NewSymbolValue(sym), fs), nil
+			return sdktypes.NewStructValue(sdktypes.NewSymbolValue(sym), fs)
 		}
 
 	case reflect.Array, reflect.Slice:
@@ -101,33 +101,33 @@ func (w ValueWrapper) Wrap(v any) (sdktypes.Value, error) {
 		for i := 0; i < vv.Len(); i++ {
 			var err error
 			if vs[i], err = w.Wrap(vv.Index(i).Interface()); err != nil {
-				return nil, fmt.Errorf("%d: %w", i, err)
+				return sdktypes.InvalidValue, fmt.Errorf("%d: %w", i, err)
 			}
 		}
 
 		return sdktypes.NewListValue(vs), nil
 
 	case reflect.Map:
-		vs := make([]*sdktypes.DictValueItem, 0, vv.Len())
+		vs := make([]sdktypes.DictItem, 0, vv.Len())
 		for i := vv.MapRange(); i.Next(); {
 			k, v := i.Key(), i.Value()
 
-			di := &sdktypes.DictValueItem{}
+			var di sdktypes.DictItem
 
 			var err error
 
 			if di.K, err = w.Wrap(k.Interface()); err != nil {
-				return nil, fmt.Errorf("key %v: %w", k, err)
+				return sdktypes.InvalidValue, fmt.Errorf("key %v: %w", k, err)
 			}
 
 			if di.V, err = w.Wrap(v.Interface()); err != nil {
-				return nil, fmt.Errorf("key %v: %w", k, err)
+				return sdktypes.InvalidValue, fmt.Errorf("key %v: %w", k, err)
 			}
 
 			vs = append(vs, di)
 		}
 
-		return sdktypes.NewDictValue(vs), nil
+		return sdktypes.NewDictValue(vs)
 
 	default:
 		if num, ok := v.(json.Number); ok {
@@ -174,6 +174,6 @@ func (w ValueWrapper) Wrap(v any) (sdktypes.Value, error) {
 			return sdktypes.NewStringValue(vv.Convert(strType).Interface().(string)), nil
 		}
 
-		return nil, fmt.Errorf("unhandled type: %q/%q", vk, reflect.TypeOf(v))
+		return sdktypes.InvalidValue, fmt.Errorf("unhandled type: %q/%q", vk, reflect.TypeOf(v))
 	}
 }

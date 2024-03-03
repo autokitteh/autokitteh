@@ -38,16 +38,11 @@ message SessionState {
     values.v1.Value return_value = 3 [(buf.validate.field).required = true];
   }
 
-  google.protobuf.Timestamp t = 1;
-
-  oneof states {
-    option (buf.validate.oneof).required = true;
-
-    Created created = 10;
-    Running running = 11;
-    Error error = 12;
-    Completed completed = 13;
-  }
+  // one of the following is required.
+  Created created = 10;
+  Running running = 11;
+  Error error = 12;
+  Completed completed = 13;
 }
 
 message Call {
@@ -64,12 +59,9 @@ message Call {
 
   message Attempt {
     message Result {
-      oneof result {
-        option (buf.validate.oneof).required = true;
-
-        values.v1.Value value = 10;
-        program.v1.Error error = 11;
-      }
+      // one of the following is required.
+      values.v1.Value value = 10;
+      program.v1.Error error = 11;
     }
 
     message Start {
@@ -95,15 +87,12 @@ message Call {
 message SessionLogRecord {
   google.protobuf.Timestamp t = 1;
 
-  oneof data {
-    option (buf.validate.oneof).required = true;
-
-    string print = 10;
-    Call.Spec call_spec = 11;
-    Call.Attempt.Start call_attempt_start = 12;
-    Call.Attempt.Complete call_attempt_complete = 13;
-    SessionState state = 14;
-  }
+  // one of the following is required.
+  string print = 10;
+  Call.Spec call_spec = 11;
+  Call.Attempt.Start call_attempt_start = 12;
+  Call.Attempt.Complete call_attempt_complete = 13;
+  SessionState state = 14;
 }
 
 message SessionLog {

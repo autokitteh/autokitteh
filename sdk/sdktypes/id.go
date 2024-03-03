@@ -2,176 +2,103 @@ package sdktypes
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
-	"regexp"
-	"strings"
 
+	"go.jetpack.io/typeid"
+	"google.golang.org/protobuf/types/known/wrapperspb"
+
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 )
 
-const idDelim = ":"
-
-var validIDRe = regexp.MustCompile(`^\w+:[0-9a-f]+$`)
-
-// IsID returns if s might be an ID, not a valid ID.
-//
-// In the CLI, UI, or even some routes we might want to get a ref by either a
-// handle or an ID. For that, we need to understand what the user intended to
-// put, and if it's an invalid ID - still treat it as an ID and say "this is an
-// invalid ID".
-func IsID(s string) bool { return strings.Contains(s, idDelim) }
-
-func IsValidID(s string) bool { return validIDRe.MatchString(s) }
+type idTraits = typeid.PrefixType
 
 type ID interface {
-	fmt.Stringer
 	json.Marshaler
-	json.Unmarshaler
+	fmt.Stringer
+	isValider
+	stricter
 
+	// Kind returns the type kind, which is the id prefix.
 	Kind() string
+
+	// Value returns the id value, meaning without the prefix.
 	Value() string
 
 	isID()
 }
 
-// idTraits define the expected format for the ID.
-type idTraits interface {
-	Kind() string
-	ValidateValue(string) error
-}
+// TypeID is not embedded in order not to expose it outside.
+// Its behaviour is not exactly what we want, eg. String() on
+// its zero value will return a zeroed out id instead of just
+// the empty string.
+// TODO: Replace typeid with our own implementation.
+type id[T idTraits] struct{ tid typeid.TypeID[T] }
 
-type id[T idTraits] struct{ kind, value string }
+func (i id[T]) isID()         {}
+func (i id[T]) IsValid() bool { var zero id[T]; return i != zero }
+func (i id[T]) Hash() string  { return hash(wrapperspb.String(i.String())) }
 
-func (id *id[T]) isID() {}
-
-func (id *id[T]) String() string {
-	if id == nil {
-		return ""
+func (i id[T]) Strict() error {
+	if !i.IsValid() {
+		return sdkerrors.NewInvalidArgumentError("invalid")
 	}
 
-	return fmt.Sprintf("%s%s%s", id.kind, idDelim, id.value)
-}
-
-func (id *id[T]) MarshalJSON() ([]byte, error) {
-	return []byte(fmt.Sprintf(`"%s"`, id.String())), nil
-}
-
-func (id *id[T]) Kind() string {
-	if id == nil {
-		return ""
-	}
-	return id.kind
-}
-
-func (id *id[T]) UnmarshalJSON(data []byte) error {
-	var text string
-	if err := json.Unmarshal(data, &text); err != nil {
-		return err
-	}
-
-	id1, err := strictParseTypedID[T](text)
-	if err != nil {
-		return err
-	}
-
-	*id = *id1
 	return nil
 }
 
-func (id *id[T]) Value() string {
-	if id == nil {
+func (i id[T]) String() string {
+	if !i.IsValid() {
 		return ""
 	}
-	return id.value
+
+	return i.tid.String()
 }
 
-func SplitRawID(raw string) (kind, data string, ok bool) {
-	kind, data, ok = strings.Cut(raw, idDelim)
-	return
-}
-
-// If raw == "", returns nil, nil.
-func parseTypedID[T idTraits](raw string) (*id[T], error) {
-	if raw == "" {
-		return nil, nil
+func (i id[T]) Kind() string {
+	if !i.IsValid() {
+		return ""
 	}
 
-	return strictParseTypedID[T](raw)
+	return i.tid.Prefix()
 }
 
-func strictParseTypedID[T idTraits](raw string) (*id[T], error) {
-	kind, value, ok := SplitRawID(raw)
-	if !ok {
-		return nil, fmt.Errorf("%w: no delimiter", sdkerrors.ErrInvalidArgument)
+func (i id[T]) Value() string {
+	if !i.IsValid() {
+		return ""
 	}
 
+	return i.tid.Suffix()
+}
+
+func (i id[T]) MarshalJSON() ([]byte, error)           { return json.Marshal(i.tid) }
+func (i *id[T]) UnmarshalJSON(data []byte) (err error) { err = json.Unmarshal(data, &i.tid); return }
+
+func newID[ID id[T], T idTraits]() ID {
 	var t T
+	tid := kittehs.Must1(typeid.FromUUIDBytes[typeid.TypeID[T]](t.Prefix(), newUUID()))
 
-	if kind != t.Kind() {
-		return nil, fmt.Errorf("%q != expected %q: %w", kind, t.Kind(), sdkerrors.ErrInvalidArgument)
-	}
-
-	if err := t.ValidateValue(value); err != nil {
-		err = errors.Join(sdkerrors.ErrInvalidArgument, err)
-		return nil, fmt.Errorf("id value (%v): %w", value, err)
-	}
-
-	return &id[T]{
-		kind:  t.Kind(),
-		value: value,
-	}, nil
+	return ID(id[T]{tid: tid})
 }
 
-func parseIDOrName[T idTraits](raw string) (h Name, id *id[T], err error) {
-	if raw == "" {
-		return nil, nil, fmt.Errorf("must not be empty: %w", sdkerrors.ErrInvalidArgument)
+func ParseID[ID id[T], T idTraits](s string) (ID, error) {
+	var zero ID
+
+	if s == "" {
+		return zero, nil
 	}
 
-	if _, _, ok := SplitRawID(raw); ok {
-		id, err = parseTypedID[T](raw)
-		return
+	tid, err := typeid.Parse[typeid.TypeID[T]](s)
+	if err != nil {
+		return zero, err
 	}
 
-	h, err = ParseName(raw)
-	return
+	return ID(id[T]{tid: tid}), nil
 }
 
-func StrictParseAnyID(raw string) (ID, error) {
-	kind, _, ok := SplitRawID(raw)
-	if !ok {
-		return nil, sdkerrors.ErrInvalidArgument
-	}
-
-	switch kind {
-	case ProjectIDKind:
-		return ParseProjectID(raw)
-	case EnvIDKind:
-		return ParseEnvID(raw)
-	case DeploymentIDKind:
-		return ParseDeploymentID(raw)
-	case SessionIDKind:
-		return ParseSessionID(raw)
-	case BuildIDKind:
-		return ParseBuildID(raw)
-	case ConnectionIDKind:
-		return ParseConnectionID(raw)
-	case EventIDKind:
-		return ParseEventID(raw)
-	case TriggerIDKind:
-		return ParseTriggerID(raw)
-	case IntegrationIDKind:
-		return ParseIntegrationID(raw)
-
-	default:
-		return nil, fmt.Errorf("unrecognized kind %q: %w", kind, sdkerrors.ErrInvalidArgument)
-	}
+func IsIDOf[T idTraits](s string) bool {
+	_, err := typeid.Parse[typeid.TypeID[T]](s)
+	return err == nil
 }
 
-func ParseAnyID(raw string) (ID, error) {
-	if raw == "" {
-		return nil, nil
-	}
-
-	return StrictParseAnyID(raw)
-}
+func IsID(s string) bool { return IsIDOf[typeid.AnyPrefix](s) }

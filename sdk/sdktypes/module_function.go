@@ -1,34 +1,35 @@
 package sdktypes
 
 import (
+	"errors"
+
 	programv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/program/v1"
 )
 
-type (
-	ModuleFunctionPB      = programv1.Function
-	ModuleFunctionFieldPB = programv1.FunctionField
-)
-
-type ModuleFunction = *object[*ModuleFunctionPB]
-
-var (
-	ModuleFunctionFromProto       = makeFromProto(validateModuleFunction)
-	StrictModuleFunctionFromProto = makeFromProto(strictValidateModuleFunction)
-	ToStrictModuleFunction        = makeWithValidator(strictValidateModuleFunction)
-)
-
-func strictValidateModuleFunction(pb *programv1.Function) error {
-	return validateModuleFunction(pb)
+type ModuleFunction struct {
+	object[*ModuleFunctionPB, ModuleFunctionTraits]
 }
 
-func validateModuleFunction(pb *programv1.Function) error {
+type ModuleFunctionPB = programv1.Function
+
+type ModuleFunctionTraits struct{}
+
+func (ModuleFunctionTraits) Validate(m *ModuleFunctionPB) error {
+	return errors.Join(
+		urlField("url", m.DocumentationUrl),
+		objectsSliceField[ModuleFunctionField]("input", m.Input),
+		objectsSliceField[ModuleFunctionField]("output", m.Output),
+	)
+}
+
+func (ModuleFunctionTraits) StrictValidate(m *ModuleFunctionPB) error {
 	return nil
 }
 
-func GetModuleFunctionDescription(i ModuleFunction) string {
-	if i == nil {
-		return ""
-	}
+func ModuleFunctionFromProto(m *ModuleFunctionPB) (ModuleFunction, error) {
+	return FromProto[ModuleFunction](m)
+}
 
-	return i.pb.Description
+func StrictModuleFunctionFromProto(m *ModuleFunctionPB) (ModuleFunction, error) {
+	return Strict(ModuleFunctionFromProto(m))
 }

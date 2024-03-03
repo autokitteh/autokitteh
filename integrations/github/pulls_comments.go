@@ -27,13 +27,13 @@ func (i integration) listPullRequestReviewComments(ctx context.Context, args []s
 		"direction?", &direction,
 		"since?", &since,
 	); err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Invoke the API method.
 	gh, err := i.NewClient(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	opts := &github.PullRequestListCommentsOptions{}
@@ -49,14 +49,14 @@ func (i integration) listPullRequestReviewComments(ctx context.Context, args []s
 	if since != "" {
 		t, err := time.Parse(time.RFC3339, since)
 		if err == nil {
-			return nil, err
+			return sdktypes.InvalidValue, err
 		}
 		opts.Since = t
 	}
 
 	cs, _, err := gh.PullRequests.ListComments(ctx, owner, repo, number, opts)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	return sdkvalues.Wrap(cs)

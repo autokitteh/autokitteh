@@ -61,7 +61,7 @@ func TestCodeLocation(t *testing.T) {
 
 			if test.err {
 				assert.Error(t, err)
-				assert.Nil(t, l)
+				assert.Zero(t, l)
 				return
 			}
 
@@ -69,14 +69,14 @@ func TestCodeLocation(t *testing.T) {
 				return
 			}
 
-			assert.Equal(t, test.path, GetCodeLocationPath(l))
-			assert.Equal(t, test.name, GetCodeLocationName(l))
+			assert.Equal(t, test.path, l.Path())
+			assert.Equal(t, test.name, l.Name())
 
-			r, c := GetCodeLocationRowCol(l)
+			r, c := l.Row(), l.Col()
 			assert.Equal(t, test.row, r)
 			assert.Equal(t, test.col, c)
 
-			assert.Equal(t, test.s, GetCodeLocationCanonicalString(l))
+			assert.Equal(t, test.s, l.CanonicalString())
 		})
 	}
 }

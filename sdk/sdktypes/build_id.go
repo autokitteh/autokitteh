@@ -1,18 +1,15 @@
 package sdktypes
 
-const BuildIDKind = "b"
+const buildIDKind = "build"
 
-type BuildID = *id[BuildIDTraits]
+type BuildID = id[buildIDTraits]
 
-var _ ID = (BuildID)(nil)
+type buildIDTraits struct{}
 
-type BuildIDTraits struct{}
+func (buildIDTraits) Prefix() string { return buildIDKind }
 
-func (BuildIDTraits) Kind() string                   { return BuildIDKind }
-func (BuildIDTraits) ValidateValue(raw string) error { return validateUUID(raw) }
+func NewBuildID() BuildID                          { return newID[BuildID]() }
+func ParseBuildID(s string) (BuildID, error)       { return ParseID[BuildID](s) }
+func StrictParseBuildID(s string) (BuildID, error) { return Strict(ParseBuildID(s)) }
 
-func ParseBuildID(raw string) (BuildID, error) { return parseTypedID[BuildIDTraits](raw) }
-
-func StrictParseBuildID(raw string) (BuildID, error) { return strictParseTypedID[BuildIDTraits](raw) }
-
-func NewBuildID() BuildID { return newID[BuildIDTraits]() }
+var InvalidBuildID BuildID

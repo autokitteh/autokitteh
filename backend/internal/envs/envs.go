@@ -2,7 +2,6 @@ package envs
 
 import (
 	"context"
-	"fmt"
 
 	"go.uber.org/zap"
 
@@ -23,39 +22,30 @@ func New(z *zap.Logger, db db.DB) sdkservices.Envs {
 }
 
 func (e *envs) Create(ctx context.Context, env sdktypes.Env) (sdktypes.EnvID, error) {
-	if sdktypes.GetEnvProjectID(env) == nil {
-		return nil, fmt.Errorf("%w: missing project ID", sdkerrors.ErrInvalidArgument)
+	if !env.ProjectID().IsValid() {
+		return sdktypes.InvalidEnvID, sdkerrors.NewInvalidArgumentError("missing project ID")
 	}
 
-	env, err := env.Update(func(pb *sdktypes.EnvPB) {
-		pb.EnvId = sdktypes.NewEnvID().String()
-	})
-	if err != nil {
-		return nil, err
-	}
+	env = env.WithNewID()
 
-	if sdktypes.GetEnvProjectID(env) == nil {
-		return nil, fmt.Errorf("%w: owner must be specified", sdkerrors.ErrInvalidArgument)
-	}
-
-	if env, err = sdktypes.ToStrictEnv(env); err != nil {
-		return nil, err
+	if err := env.Strict(); err != nil {
+		return sdktypes.InvalidEnvID, err
 	}
 
 	if err := e.db.CreateEnv(ctx, env); err != nil {
-		return nil, err
+		return sdktypes.InvalidEnvID, err
 	}
 
-	return sdktypes.GetEnvID(env), nil
+	return env.ID(), nil
 }
 
 func (e *envs) GetByID(ctx context.Context, eid sdktypes.EnvID) (sdktypes.Env, error) {
 	return sdkerrors.IgnoreNotFoundErr(e.db.GetEnvByID(ctx, eid))
 }
 
-func (e *envs) GetByName(ctx context.Context, pid sdktypes.ProjectID, en sdktypes.Name) (sdktypes.Env, error) {
-	if pid == nil {
-		return nil, fmt.Errorf("%w: missing project ID", sdkerrors.ErrInvalidArgument)
+func (e *envs) GetByName(ctx context.Context, pid sdktypes.ProjectID, en sdktypes.Symbol) (sdktypes.Env, error) {
+	if !pid.IsValid() {
+		return sdktypes.InvalidEnv, sdkerrors.NewInvalidArgumentError("missing project ID")
 	}
 
 	return sdkerrors.IgnoreNotFoundErr(e.db.GetEnvByName(ctx, pid, en))
@@ -77,7 +67,7 @@ func (e *envs) GetVars(ctx context.Context, vns []sdktypes.Symbol, eid sdktypes.
 
 		vs = kittehs.Filter(
 			vs,
-			func(v sdktypes.EnvVar) bool { return has(sdktypes.GetEnvVarName(v).String()) },
+			func(v sdktypes.EnvVar) bool { return has(v.Symbol().String()) },
 		)
 	}
 

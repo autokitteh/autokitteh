@@ -25,7 +25,7 @@ SESSION_STATE_TYPE_ERROR: SessionStateType
 SESSION_STATE_TYPE_COMPLETED: SessionStateType
 
 class SessionState(_message.Message):
-    __slots__ = ["t", "created", "running", "error", "completed"]
+    __slots__ = ["created", "running", "error", "completed"]
     class Created(_message.Message):
         __slots__ = []
         def __init__(self) -> None: ...
@@ -59,17 +59,15 @@ class SessionState(_message.Message):
         exports: _containers.MessageMap[str, _values_pb2.Value]
         return_value: _values_pb2.Value
         def __init__(self, prints: _Optional[_Iterable[str]] = ..., exports: _Optional[_Mapping[str, _values_pb2.Value]] = ..., return_value: _Optional[_Union[_values_pb2.Value, _Mapping]] = ...) -> None: ...
-    T_FIELD_NUMBER: _ClassVar[int]
     CREATED_FIELD_NUMBER: _ClassVar[int]
     RUNNING_FIELD_NUMBER: _ClassVar[int]
     ERROR_FIELD_NUMBER: _ClassVar[int]
     COMPLETED_FIELD_NUMBER: _ClassVar[int]
-    t: _timestamp_pb2.Timestamp
     created: SessionState.Created
     running: SessionState.Running
     error: SessionState.Error
     completed: SessionState.Completed
-    def __init__(self, t: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ..., created: _Optional[_Union[SessionState.Created, _Mapping]] = ..., running: _Optional[_Union[SessionState.Running, _Mapping]] = ..., error: _Optional[_Union[SessionState.Error, _Mapping]] = ..., completed: _Optional[_Union[SessionState.Completed, _Mapping]] = ...) -> None: ...
+    def __init__(self, created: _Optional[_Union[SessionState.Created, _Mapping]] = ..., running: _Optional[_Union[SessionState.Running, _Mapping]] = ..., error: _Optional[_Union[SessionState.Error, _Mapping]] = ..., completed: _Optional[_Union[SessionState.Completed, _Mapping]] = ...) -> None: ...
 
 class Call(_message.Message):
     __slots__ = ["spec", "attempts"]
