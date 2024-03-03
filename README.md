@@ -4,7 +4,8 @@
 # autokitteh
 
 autokitteh is an open-source platform for developing and managing automated,
-reliable, long-running workflows with simple tools and familiar languages.
+reliable, durable, long-running workflows with simple tools and familiar
+languages.
 
 It is an alternative to both no-code/low-code platforms (such as Zapier and
 make.com) and complex durable execution systems (such as Temporal.io), with
