@@ -7,7 +7,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
-	imanifest "go.autokitteh.dev/autokitteh/internal/manifest"
+	"go.autokitteh.dev/autokitteh/internal/manifest"
 )
 
 var noValidate, fromScratch bool
@@ -40,8 +40,8 @@ func init() {
 	planCmd.Flags().BoolVarP(&fromScratch, "from-scratch", "s", false, "assume no existing setup")
 }
 
-func plan(data []byte, path string) (imanifest.Actions, error) {
-	manifest, err := imanifest.Read(data, path)
+func plan(data []byte, path string) (manifest.Actions, error) {
+	m, err := manifest.Read(data, path)
 	if err != nil {
 		return nil, err
 	}
@@ -49,11 +49,11 @@ func plan(data []byte, path string) (imanifest.Actions, error) {
 	ctx, cancel := common.LimitedContext()
 	defer cancel()
 
-	return imanifest.Plan(
+	return manifest.Plan(
 		ctx,
-		manifest,
+		m,
 		common.Client(),
-		imanifest.WithLogger(func(msg string) { fmt.Fprintf(os.Stderr, "[plan] %s\n", msg) }),
-		imanifest.WithFromScratch(fromScratch),
+		manifest.WithLogger(func(msg string) { fmt.Fprintf(os.Stderr, "[plan] %s\n", msg) }),
+		manifest.WithFromScratch(fromScratch),
 	)
 }

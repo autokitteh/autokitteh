@@ -58,6 +58,11 @@ export class ApplyResponse extends Message<ApplyResponse> {
    */
   logs: string[] = [];
 
+  /**
+   * @generated from field: repeated string project_ids = 2;
+   */
+  projectIds: string[] = [];
+
   constructor(data?: PartialMessage<ApplyResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -67,6 +72,7 @@ export class ApplyResponse extends Message<ApplyResponse> {
   static readonly typeName = "autokitteh.apply.v1.ApplyResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "logs", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 2, name: "project_ids", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ApplyResponse {

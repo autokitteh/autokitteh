@@ -13,7 +13,6 @@ import (
 	"go.autokitteh.dev/autokitteh/integrations/google/gmail"
 	"go.autokitteh.dev/autokitteh/integrations/google/sheets"
 	httpint "go.autokitteh.dev/autokitteh/integrations/http"
-	"go.autokitteh.dev/autokitteh/integrations/proxysql"
 	"go.autokitteh.dev/autokitteh/integrations/redis"
 	"go.autokitteh.dev/autokitteh/integrations/scheduler"
 	"go.autokitteh.dev/autokitteh/integrations/slack"
@@ -32,8 +31,7 @@ func New(s sdkservices.Secrets) sdkservices.Integrations {
 		sheets.New(s),
 		// TODO: gRPC
 		httpint.New(s),
-		proxysql.New(), // TODO: Secrets
-		redis.New(),    // TODO: Secrets
+		redis.New(), // TODO: Secrets
 		scheduler.New(s),
 		slack.New(s),
 		twilio.New(s),

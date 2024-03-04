@@ -6,6 +6,8 @@
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
 import { Message, proto3 } from "@bufbuild/protobuf";
 import { Runtime } from "./runtime_pb.js";
+import { Error } from "../../program/v1/program_pb.js";
+import { Value } from "../../values/v1/values_pb.js";
 
 /**
  * @generated from message autokitteh.runtimes.v1.DescribeRequest
@@ -150,6 +152,204 @@ export class ListResponse extends Message<ListResponse> {
 
   static equals(a: ListResponse | PlainMessage<ListResponse> | undefined, b: ListResponse | PlainMessage<ListResponse> | undefined): boolean {
     return proto3.util.equals(ListResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message autokitteh.runtimes.v1.BuildRequest
+ */
+export class BuildRequest extends Message<BuildRequest> {
+  /**
+   * @generated from field: map<string, bytes> resources = 1;
+   */
+  resources: { [key: string]: Uint8Array } = {};
+
+  /**
+   * @generated from field: repeated string symbols = 2;
+   */
+  symbols: string[] = [];
+
+  /**
+   * @generated from field: map<string, string> memo = 3;
+   */
+  memo: { [key: string]: string } = {};
+
+  constructor(data?: PartialMessage<BuildRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "autokitteh.runtimes.v1.BuildRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "resources", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 12 /* ScalarType.BYTES */} },
+    { no: 2, name: "symbols", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 3, name: "memo", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): BuildRequest {
+    return new BuildRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): BuildRequest {
+    return new BuildRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): BuildRequest {
+    return new BuildRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: BuildRequest | PlainMessage<BuildRequest> | undefined, b: BuildRequest | PlainMessage<BuildRequest> | undefined): boolean {
+    return proto3.util.equals(BuildRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message autokitteh.runtimes.v1.BuildResponse
+ */
+export class BuildResponse extends Message<BuildResponse> {
+  /**
+   * @generated from field: bytes artifact = 1;
+   */
+  artifact = new Uint8Array(0);
+
+  /**
+   * @generated from field: autokitteh.program.v1.Error error = 2;
+   */
+  error?: Error;
+
+  constructor(data?: PartialMessage<BuildResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "autokitteh.runtimes.v1.BuildResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "artifact", kind: "scalar", T: 12 /* ScalarType.BYTES */ },
+    { no: 2, name: "error", kind: "message", T: Error },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): BuildResponse {
+    return new BuildResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): BuildResponse {
+    return new BuildResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): BuildResponse {
+    return new BuildResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: BuildResponse | PlainMessage<BuildResponse> | undefined, b: BuildResponse | PlainMessage<BuildResponse> | undefined): boolean {
+    return proto3.util.equals(BuildResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message autokitteh.runtimes.v1.RunRequest
+ */
+export class RunRequest extends Message<RunRequest> {
+  /**
+   * @generated from field: string run_id = 1;
+   */
+  runId = "";
+
+  /**
+   * @generated from field: bytes artifact = 2;
+   */
+  artifact = new Uint8Array(0);
+
+  /**
+   * @generated from field: string path = 3;
+   */
+  path = "";
+
+  /**
+   * @generated from field: map<string, autokitteh.values.v1.Value> globals = 4;
+   */
+  globals: { [key: string]: Value } = {};
+
+  constructor(data?: PartialMessage<RunRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "autokitteh.runtimes.v1.RunRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "run_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "artifact", kind: "scalar", T: 12 /* ScalarType.BYTES */ },
+    { no: 3, name: "path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "globals", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: Value} },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RunRequest {
+    return new RunRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): RunRequest {
+    return new RunRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): RunRequest {
+    return new RunRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: RunRequest | PlainMessage<RunRequest> | undefined, b: RunRequest | PlainMessage<RunRequest> | undefined): boolean {
+    return proto3.util.equals(RunRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message autokitteh.runtimes.v1.RunResponse
+ */
+export class RunResponse extends Message<RunResponse> {
+  /**
+   * either of
+   *
+   * @generated from field: string print = 1;
+   */
+  print = "";
+
+  /**
+   * @generated from field: autokitteh.program.v1.Error error = 2;
+   */
+  error?: Error;
+
+  /**
+   * @generated from field: map<string, autokitteh.values.v1.Value> result = 3;
+   */
+  result: { [key: string]: Value } = {};
+
+  constructor(data?: PartialMessage<RunResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "autokitteh.runtimes.v1.RunResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "print", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "error", kind: "message", T: Error },
+    { no: 3, name: "result", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: Value} },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RunResponse {
+    return new RunResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): RunResponse {
+    return new RunResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): RunResponse {
+    return new RunResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: RunResponse | PlainMessage<RunResponse> | undefined, b: RunResponse | PlainMessage<RunResponse> | undefined): boolean {
+    return proto3.util.equals(RunResponse, a, b);
   }
 }
 

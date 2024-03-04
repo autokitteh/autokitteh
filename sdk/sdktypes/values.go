@@ -87,7 +87,7 @@ func getValue(pb *ValuePB) (Object, error) {
 	case *valuesv1.Value_Function:
 		return FunctionValueFromProto(pb.Function)
 	default:
-		return nil, fmt.Errorf("unrecognized type: %w", sdkerrors.ErrInvalidArgument)
+		return nil, fmt.Errorf("%w: unrecognized type: %T", sdkerrors.ErrInvalidArgument, pb)
 	}
 }
 

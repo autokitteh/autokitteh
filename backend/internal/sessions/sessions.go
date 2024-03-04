@@ -76,6 +76,23 @@ func (s *sessions) List(ctx context.Context, filter sdkservices.ListSessionsFilt
 	return s.svcs.DB.ListSessions(ctx, filter)
 }
 
+func (s *sessions) Delete(ctx context.Context, sessionID sdktypes.SessionID) error {
+	session, err := s.Get(ctx, sessionID)
+	if err != nil {
+		return err
+	}
+
+	// delete only failed or finished sessions
+	state := sdktypes.GetSessionLatestState(session)
+	if state != sdktypes.CompletedSessionStateType && state != sdktypes.ErrorSessionStateType {
+		return fmt.Errorf("%w: cannot delete active session: session_id: %s", sdkerrors.ErrFailedPrecondition, sessionID.String())
+	}
+
+	err = s.svcs.DB.DeleteSession(ctx, sessionID)
+	s.z.With(zap.String("session_id", sessionID.String())).Info("delete")
+	return err
+}
+
 func (s *sessions) Start(ctx context.Context, session sdktypes.Session) (sdktypes.SessionID, error) {
 	sessionID := sdktypes.GetSessionID(session)
 	if sessionID != nil {
@@ -102,7 +119,6 @@ func (s *sessions) Start(ctx context.Context, session sdktypes.Session) (sdktype
 		); uerr != nil {
 			s.z.With(zap.String("session_id", sessionID.String())).Error("update session", zap.Error(err))
 		}
-
 		return nil, fmt.Errorf("start workflow: %w", err)
 	}
 

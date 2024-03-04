@@ -11,6 +11,7 @@ import (
 	"go.autokitteh.dev/autokitteh/proto"
 	eventsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/events/v1"
 	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/events/v1/eventsv1connect"
+	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -34,12 +35,12 @@ func (s *server) Get(ctx context.Context, req *connect.Request[eventsv1.GetReque
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	eventId, err := sdktypes.StrictParseEventID(msg.EventId)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("eventId: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	event, err := s.events.Get(ctx, eventId)
@@ -54,12 +55,12 @@ func (s *server) List(ctx context.Context, req *connect.Request[eventsv1.ListReq
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	iid, err := sdktypes.ParseIntegrationID(msg.IntegrationId)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	filter := sdkservices.ListEventsFilter{
@@ -83,12 +84,12 @@ func (s *server) Save(ctx context.Context, req *connect.Request[eventsv1.SaveReq
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	event, err := sdktypes.EventFromProto(msg.Event)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	eid, err := s.events.Save(ctx, event)
@@ -103,12 +104,12 @@ func (s *server) AddEventRecord(ctx context.Context, req *connect.Request[events
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	record, err := sdktypes.EventRecordFromProto(msg.Record)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	err = s.events.AddEventRecord(ctx, record)
@@ -123,12 +124,12 @@ func (s *server) ListEventRecords(ctx context.Context, req *connect.Request[even
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	eid, err := sdktypes.ParseEventID(msg.EventId)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	filter := sdkservices.ListEventRecordsFilter{

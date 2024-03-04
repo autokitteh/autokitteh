@@ -3,9 +3,11 @@ package sdkruntimes
 import (
 	"context"
 	"fmt"
+	"io/fs"
 	"strings"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
+	"go.autokitteh.dev/autokitteh/sdk/sdkruntimes/sdkbuildfile"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -35,6 +37,32 @@ func New(rts []*Runtime) (sdkservices.Runtimes, error) {
 	}
 
 	return runtimes(rts), nil
+}
+
+func (s runtimes) Run(
+	ctx context.Context,
+	rid sdktypes.RunID,
+	path string,
+	build *sdkbuildfile.BuildFile,
+	globals map[string]sdktypes.Value,
+	cbs *sdkservices.RunCallbacks,
+) (sdkservices.Run, error) {
+	if cbs == nil {
+		cbs = &sdkservices.RunCallbacks{}
+	}
+
+	return Run(ctx, RunParams{
+		Runtimes:             s,
+		RunID:                rid,
+		EntryPointPath:       path,
+		BuildFile:            build,
+		Globals:              globals,
+		FallthroughCallbacks: *cbs,
+	})
+}
+
+func (s runtimes) Build(ctx context.Context, fs fs.FS, symbols []sdktypes.Symbol, memo map[string]string) (*sdkbuildfile.BuildFile, error) {
+	return Build(ctx, s, fs, symbols, memo)
 }
 
 func (s runtimes) List(context.Context) ([]sdktypes.Runtime, error) {

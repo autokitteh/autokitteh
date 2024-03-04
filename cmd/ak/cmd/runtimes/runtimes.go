@@ -3,8 +3,12 @@ package runtimes
 import (
 	"github.com/spf13/cobra"
 
+	backendRuntimes "go.autokitteh.dev/autokitteh/backend/runtimes"
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
+	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 )
+
+var local bool
 
 var runtimesCmd = common.StandardCommand(&cobra.Command{
 	Use:     "runtimes",
@@ -20,6 +24,17 @@ func AddSubcommands(parentCmd *cobra.Command) {
 
 func init() {
 	// Subcommands.
+	runtimesCmd.AddCommand(buildCmd)
 	runtimesCmd.AddCommand(getCmd)
 	runtimesCmd.AddCommand(listCmd)
+	runtimesCmd.AddCommand(runCmd)
+
+	runtimesCmd.PersistentFlags().BoolVarP(&local, "local", "l", false, "execute locally")
+}
+
+func runtimes() sdkservices.Runtimes {
+	if local {
+		return backendRuntimes.New()
+	}
+	return common.Client().Runtimes()
 }

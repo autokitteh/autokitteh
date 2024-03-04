@@ -53,7 +53,7 @@ func (c *client) Get(ctx context.Context, buildID sdktypes.BuildID) (sdktypes.Bu
 
 	build, err := sdktypes.StrictBuildFromProto(resp.Msg.Build)
 	if err != nil {
-		return nil, fmt.Errorf("invalid build: %w", err)
+		return nil, err
 	}
 	return build, nil
 }

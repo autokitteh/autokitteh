@@ -33,6 +33,7 @@ func init() {
 	sessionsCmd.AddCommand(startCmd)
 	sessionsCmd.AddCommand(restartCmd)
 	sessionsCmd.AddCommand(stopCmd)
+	sessionsCmd.AddCommand(deleteCmd)
 }
 
 func sessions() sdkservices.Sessions {

@@ -3,6 +3,8 @@ package common
 const (
 	NotFoundExitCode   = 10
 	NotAMemberExitCode = NotFoundExitCode
+	FailedPrecondition = 64
+	GenericFailure     = 1
 )
 
 type ExitCodeError struct {

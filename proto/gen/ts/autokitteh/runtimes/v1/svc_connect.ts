@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { DescribeRequest, DescribeResponse, ListRequest, ListResponse } from "./svc_pb.js";
+import { BuildRequest, BuildResponse, DescribeRequest, DescribeResponse, ListRequest, ListResponse, RunRequest, RunResponse } from "./svc_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -32,6 +32,27 @@ export const RuntimesService = {
       I: ListRequest,
       O: ListResponse,
       kind: MethodKind.Unary,
+    },
+    /**
+     * @generated from rpc autokitteh.runtimes.v1.RuntimesService.Build
+     */
+    build: {
+      name: "Build",
+      I: BuildRequest,
+      O: BuildResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * This is a simplified version that should be used
+     * for testing and local runs only.
+     *
+     * @generated from rpc autokitteh.runtimes.v1.RuntimesService.Run
+     */
+    run: {
+      name: "Run",
+      I: RunRequest,
+      O: RunResponse,
+      kind: MethodKind.ServerStreaming,
     },
   }
 } as const;

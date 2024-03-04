@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"path/filepath"
 	"strings"
 
 	"go.starlark.net/starlark"
@@ -55,7 +56,7 @@ func Run(
 		return nil, fmt.Errorf("invalid compiled program: %w", err)
 	}
 	if prog == nil {
-		return nil, fmt.Errorf("main path not found: %q", mainPath)
+		return nil, fmt.Errorf("not found: %q", mainPath)
 	}
 
 	vctx := &values.Context{Call: cbs.SafeCall, RunID: runID}
@@ -89,6 +90,8 @@ func Run(
 		Name:  mainPath,
 		Print: func(_ *starlark.Thread, text string) { cbs.SafePrint(ctx, runID, text) },
 		Load: func(th *starlark.Thread, path string) (starlark.StringDict, error) {
+			path = filepath.Join(filepath.Dir(th.Name), path)
+
 			prog, err := getProgram(compiled, path)
 			if err != nil {
 				return nil, err

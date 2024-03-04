@@ -1,11 +1,11 @@
 package sdktypes
 
 import (
-	"errors"
 	"fmt"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	triggersv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/triggers/v1"
+	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 )
 
 type TriggerPB = triggersv1.Trigger
@@ -20,11 +20,11 @@ var (
 
 func strictValidateTrigger(pb *triggersv1.Trigger) error {
 	if err := ensureNotEmpty(pb.ConnectionId); err != nil {
-		return err
+		return fmt.Errorf("%w: missing connection id", sdkerrors.ErrInvalidArgument)
 	}
 
 	if pb.CodeLocation == nil {
-		return errors.New("missing code location")
+		return fmt.Errorf("%w: missing code location", sdkerrors.ErrInvalidArgument)
 	}
 
 	return validateTrigger(pb)
@@ -32,19 +32,19 @@ func strictValidateTrigger(pb *triggersv1.Trigger) error {
 
 func validateTrigger(pb *triggersv1.Trigger) error {
 	if _, err := ParseTriggerID(pb.TriggerId); err != nil {
-		return fmt.Errorf("trigger id: %w", err)
+		return err
 	}
 
 	if _, err := ParseEnvID(pb.EnvId); err != nil {
-		return fmt.Errorf("env id: %w", err)
+		return err
 	}
 
 	if _, err := ParseConnectionID(pb.ConnectionId); err != nil {
-		return fmt.Errorf("connection id: %w", err)
+		return err
 	}
 
 	if err := validateCodeLocation(pb.CodeLocation); err != nil {
-		return fmt.Errorf("code location: %w", err)
+		return err
 	}
 
 	return nil

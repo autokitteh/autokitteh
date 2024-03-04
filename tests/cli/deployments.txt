@@ -130,7 +130,7 @@ deployment_id: d:00000000000000000000000000000007
 0
 $ # drain deployment
 $ ${AK} deployments drain d:00000000000000000000000000000007 -j; echo $?
-Error: drain deployment: rpc: server error: db: conflict ([])
+Error: drain deployment: rpc: db: conflict ([])
 1
 $ # List deployments by env id
 $ alias omit_deployment_ts="jq -c 'del(.updated_at,.created_at)'"

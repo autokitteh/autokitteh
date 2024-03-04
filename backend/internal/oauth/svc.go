@@ -11,6 +11,7 @@ import (
 	"go.autokitteh.dev/autokitteh/proto"
 	oauthv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/oauth/v1"
 	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/oauth/v1/oauthv1connect"
+	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 )
 
@@ -32,7 +33,7 @@ func Init(mux *http.ServeMux, l *zap.Logger, oauth sdkservices.OAuth) {
 func (s *server) Register(ctx context.Context, req *connect.Request[oauthv1.RegisterRequest]) (*connect.Response[oauthv1.RegisterResponse], error) {
 	// Validate & parse the request.
 	if err := proto.Validate(req.Msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 	cfg := &oauth2.Config{
 		ClientID:     req.Msg.Config.ClientId,
@@ -58,7 +59,7 @@ func (s *server) Register(ctx context.Context, req *connect.Request[oauthv1.Regi
 func (s *server) Get(ctx context.Context, req *connect.Request[oauthv1.GetRequest]) (*connect.Response[oauthv1.GetResponse], error) {
 	// Validate the request.
 	if err := proto.Validate(req.Msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	// Return the requested OAuth handler configuration.
@@ -85,7 +86,7 @@ func (s *server) Get(ctx context.Context, req *connect.Request[oauthv1.GetReques
 func (s *server) StartFlow(ctx context.Context, req *connect.Request[oauthv1.StartFlowRequest]) (*connect.Response[oauthv1.StartFlowResponse], error) {
 	// Validate the request.
 	if err := proto.Validate(req.Msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	// Redirect the caller to the URL that starts the OAuth flow.
@@ -99,7 +100,7 @@ func (s *server) StartFlow(ctx context.Context, req *connect.Request[oauthv1.Sta
 func (s *server) Exchange(ctx context.Context, req *connect.Request[oauthv1.ExchangeRequest]) (*connect.Response[oauthv1.ExchangeResponse], error) {
 	// Validate the request.
 	if err := proto.Validate(req.Msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	// Return the exchanged OAuth token, based on the authorization code.

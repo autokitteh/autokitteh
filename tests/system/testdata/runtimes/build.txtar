@@ -1,14 +1,26 @@
 # Negative test: build failure due to error in code.
-ak builds create --path hiss.star
+ak runtimes build hiss.star
 output equals file hiss_error.txt
 return code == 1
 
-ak builds create --path single.star -o single.akb --describe
+ak runtimes build single.star -o single.akb --describe --local
 output equals_json file single_output.json
 return code == 0
 
-ak builds create --dir multi -o multi.akb --describe
+ak runtimes build single.star -o single.akb --describe
+output equals_json file single_output.json
+return code == 0
+
+ak runtimes build --dir multi -o multi.akb --describe --local
 output equals_json file multi_output.json
+return code == 0
+
+ak runtimes build --dir multi -o multi.akb --describe
+output equals_json file multi_output.json
+return code == 0
+
+ak runtimes build test.txtar --txtar -o multi.akb --describe
+output equals_json file test_output.json
 return code == 0
 
 -- hiss.star --
@@ -16,7 +28,7 @@ hisssss
 # ^ build error
 
 -- hiss_error.txt --
-Error: create build: build error for "hiss.star": runtime_build: undefined: hisssss
+Error: create build: undefined: hisssss
  [0] hiss.star:1.1
 
 -- single.star --
@@ -216,3 +228,56 @@ I must go down to the seas again, to the vagrant gypsy life,
 To the gull’s way and the whale’s way where the wind’s like a whetted knife;
 And all I ask is a merry yarn from a laughing fellow-rover,
 And quiet sleep and a sweet dream when the long trick’s over.
+
+-- test.txtar --
+~~ main.star ~~
+load("sounds.json", "cat")
+print("{}, world!".format(cat))
+
+~~ sounds.json ~~
+{
+    "cat": "meow"
+}
+
+-- test_output.json --
+{
+    "info": {},
+    "runtime_requirements": [],
+    "runtimes": [
+        {
+            "artifact": {
+                "compiled_data": {
+                    "sounds.json": ""
+                },
+                "exports": [
+                    {
+                        "symbol": "cat"
+                    }
+                ]
+            },
+            "info": {
+                "name": "config"
+            }
+        },
+        {
+            "artifact": {
+                "compiled_data": {
+                    "main.star": ""
+                },
+                "requirements": [
+                    {
+                        "location": {
+                            "col": 6,
+                            "path": "main.star",
+                            "row": 1
+                        },
+                        "url": "sounds.json"
+                    }
+                ]
+            },
+            "info": {
+                "name": "starlark"
+            }
+        }
+    ]
+}

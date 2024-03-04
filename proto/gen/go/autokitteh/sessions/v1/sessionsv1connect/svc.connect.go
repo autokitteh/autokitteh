@@ -43,6 +43,8 @@ const (
 	SessionsServiceGetProcedure = "/autokitteh.sessions.v1.SessionsService/Get"
 	// SessionsServiceGetLogProcedure is the fully-qualified name of the SessionsService's GetLog RPC.
 	SessionsServiceGetLogProcedure = "/autokitteh.sessions.v1.SessionsService/GetLog"
+	// SessionsServiceDeleteProcedure is the fully-qualified name of the SessionsService's Delete RPC.
+	SessionsServiceDeleteProcedure = "/autokitteh.sessions.v1.SessionsService/Delete"
 )
 
 // SessionsServiceClient is a client for the autokitteh.sessions.v1.SessionsService service.
@@ -52,6 +54,7 @@ type SessionsServiceClient interface {
 	List(context.Context, *connect.Request[v1.ListRequest]) (*connect.Response[v1.ListResponse], error)
 	Get(context.Context, *connect.Request[v1.GetRequest]) (*connect.Response[v1.GetResponse], error)
 	GetLog(context.Context, *connect.Request[v1.GetLogRequest]) (*connect.Response[v1.GetLogResponse], error)
+	Delete(context.Context, *connect.Request[v1.DeleteRequest]) (*connect.Response[v1.DeleteResponse], error)
 }
 
 // NewSessionsServiceClient constructs a client for the autokitteh.sessions.v1.SessionsService
@@ -89,6 +92,11 @@ func NewSessionsServiceClient(httpClient connect.HTTPClient, baseURL string, opt
 			baseURL+SessionsServiceGetLogProcedure,
 			opts...,
 		),
+		delete: connect.NewClient[v1.DeleteRequest, v1.DeleteResponse](
+			httpClient,
+			baseURL+SessionsServiceDeleteProcedure,
+			opts...,
+		),
 	}
 }
 
@@ -99,6 +107,7 @@ type sessionsServiceClient struct {
 	list   *connect.Client[v1.ListRequest, v1.ListResponse]
 	get    *connect.Client[v1.GetRequest, v1.GetResponse]
 	getLog *connect.Client[v1.GetLogRequest, v1.GetLogResponse]
+	delete *connect.Client[v1.DeleteRequest, v1.DeleteResponse]
 }
 
 // Start calls autokitteh.sessions.v1.SessionsService.Start.
@@ -126,6 +135,11 @@ func (c *sessionsServiceClient) GetLog(ctx context.Context, req *connect.Request
 	return c.getLog.CallUnary(ctx, req)
 }
 
+// Delete calls autokitteh.sessions.v1.SessionsService.Delete.
+func (c *sessionsServiceClient) Delete(ctx context.Context, req *connect.Request[v1.DeleteRequest]) (*connect.Response[v1.DeleteResponse], error) {
+	return c.delete.CallUnary(ctx, req)
+}
+
 // SessionsServiceHandler is an implementation of the autokitteh.sessions.v1.SessionsService
 // service.
 type SessionsServiceHandler interface {
@@ -134,6 +148,7 @@ type SessionsServiceHandler interface {
 	List(context.Context, *connect.Request[v1.ListRequest]) (*connect.Response[v1.ListResponse], error)
 	Get(context.Context, *connect.Request[v1.GetRequest]) (*connect.Response[v1.GetResponse], error)
 	GetLog(context.Context, *connect.Request[v1.GetLogRequest]) (*connect.Response[v1.GetLogResponse], error)
+	Delete(context.Context, *connect.Request[v1.DeleteRequest]) (*connect.Response[v1.DeleteResponse], error)
 }
 
 // NewSessionsServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -167,6 +182,11 @@ func NewSessionsServiceHandler(svc SessionsServiceHandler, opts ...connect.Handl
 		svc.GetLog,
 		opts...,
 	)
+	sessionsServiceDeleteHandler := connect.NewUnaryHandler(
+		SessionsServiceDeleteProcedure,
+		svc.Delete,
+		opts...,
+	)
 	return "/autokitteh.sessions.v1.SessionsService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case SessionsServiceStartProcedure:
@@ -179,6 +199,8 @@ func NewSessionsServiceHandler(svc SessionsServiceHandler, opts ...connect.Handl
 			sessionsServiceGetHandler.ServeHTTP(w, r)
 		case SessionsServiceGetLogProcedure:
 			sessionsServiceGetLogHandler.ServeHTTP(w, r)
+		case SessionsServiceDeleteProcedure:
+			sessionsServiceDeleteHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -206,4 +228,8 @@ func (UnimplementedSessionsServiceHandler) Get(context.Context, *connect.Request
 
 func (UnimplementedSessionsServiceHandler) GetLog(context.Context, *connect.Request[v1.GetLogRequest]) (*connect.Response[v1.GetLogResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("autokitteh.sessions.v1.SessionsService.GetLog is not implemented"))
+}
+
+func (UnimplementedSessionsServiceHandler) Delete(context.Context, *connect.Request[v1.DeleteRequest]) (*connect.Response[v1.DeleteResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("autokitteh.sessions.v1.SessionsService.Delete is not implemented"))
 }

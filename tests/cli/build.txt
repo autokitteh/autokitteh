@@ -1,6 +1,6 @@
 # TODO(ENG-312): enable when done
 $ out=$(mktemp -d)
-$ ${AK} builds create --dir examples/testprograms/multi -o ${out}/build.akb
+$ ${AK} runtimes build --dir examples/testprograms/multi -o ${out}/build.akb
 $ cd ${out}
 $ tar tf build.akb
 version.txt

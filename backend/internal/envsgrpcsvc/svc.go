@@ -3,7 +3,6 @@ package envsgrpcsvc
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 
 	"connectrpc.com/connect"
@@ -36,21 +35,17 @@ func (s *server) Create(ctx context.Context, req *connect.Request[envsv1.CreateR
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	env, err := sdktypes.EnvFromProto(msg.Env)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	eid, err := s.envs.Create(ctx, env)
 	if err != nil {
-		if errors.Is(err, sdkerrors.ErrUnauthorized) {
-			return nil, connect.NewError(connect.CodePermissionDenied, err)
-		}
-
-		return nil, connect.NewError(connect.CodeUnknown, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	return connect.NewResponse(&envsv1.CreateResponse{EnvId: eid.String()}), nil
@@ -74,12 +69,12 @@ func (s *server) Get(ctx context.Context, req *connect.Request[envsv1.GetRequest
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	eid, err := sdktypes.ParseEnvID(msg.EnvId)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("env_id: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	if eid != nil {
@@ -89,12 +84,12 @@ func (s *server) Get(ctx context.Context, req *connect.Request[envsv1.GetRequest
 	// a handle must've been supplied here.
 	n, err := sdktypes.StrictParseName(msg.Name)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("name: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	pid, err := sdktypes.ParseProjectID(msg.ProjectId)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("project_id: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	return toResponse(s.envs.GetByName(ctx, pid, n))
@@ -104,25 +99,17 @@ func (s *server) List(ctx context.Context, req *connect.Request[envsv1.ListReque
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	pid, err := sdktypes.ParseProjectID(req.Msg.ProjectId)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("project_id: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	envs, err := s.envs.List(ctx, pid)
 	if err != nil {
-		if errors.Is(err, sdkerrors.ErrNotFound) {
-			return nil, connect.NewError(connect.CodeNotFound, err)
-		}
-
-		if errors.Is(err, sdkerrors.ErrUnauthorized) {
-			return nil, connect.NewError(connect.CodePermissionDenied, err)
-		}
-
-		return nil, connect.NewError(connect.CodeUnknown, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	pbenvs := kittehs.Transform(envs, sdktypes.ToProto)
@@ -134,24 +121,16 @@ func (s *server) SetVar(ctx context.Context, req *connect.Request[envsv1.SetVarR
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	ev, err := sdktypes.StrictEnvVarFromProto(req.Msg.Var)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("var: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	if err := s.envs.SetVar(ctx, ev); err != nil {
-		if errors.Is(err, sdkerrors.ErrAlreadyExists) {
-			return nil, connect.NewError(connect.CodeAlreadyExists, err)
-		}
-
-		if errors.Is(err, sdkerrors.ErrUnauthorized) {
-			return nil, connect.NewError(connect.CodePermissionDenied, err)
-		}
-
-		return nil, connect.NewError(connect.CodeUnknown, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	return connect.NewResponse(&envsv1.SetVarResponse{}), nil
@@ -161,30 +140,22 @@ func (s *server) RevealVar(ctx context.Context, req *connect.Request[envsv1.Reve
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	eid, err := sdktypes.StrictParseEnvID(req.Msg.EnvId)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("env_id: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	vn, err := sdktypes.ParseSymbol(req.Msg.Name)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("name: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	v, err := s.envs.RevealVar(ctx, eid, vn)
 	if err != nil {
-		if errors.Is(err, sdkerrors.ErrNotFound) {
-			return nil, connect.NewError(connect.CodeNotFound, err)
-		}
-
-		if errors.Is(err, sdkerrors.ErrUnauthorized) {
-			return nil, connect.NewError(connect.CodePermissionDenied, err)
-		}
-
-		return nil, connect.NewError(connect.CodeUnknown, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	return connect.NewResponse(&envsv1.RevealVarResponse{Value: v}), nil
@@ -194,30 +165,22 @@ func (s *server) GetVars(ctx context.Context, req *connect.Request[envsv1.GetVar
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	eid, err := sdktypes.StrictParseEnvID(req.Msg.EnvId)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("owner_id: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	vns, err := kittehs.TransformError(req.Msg.Names, sdktypes.ParseSymbol)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("names: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	evs, err := s.envs.GetVars(ctx, vns, eid)
 	if err != nil {
-		if errors.Is(err, sdkerrors.ErrNotFound) {
-			return nil, connect.NewError(connect.CodeNotFound, err)
-		}
-
-		if errors.Is(err, sdkerrors.ErrUnauthorized) {
-			return nil, connect.NewError(connect.CodePermissionDenied, err)
-		}
-
-		return nil, connect.NewError(connect.CodeUnknown, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	pbevs := kittehs.Transform(evs, sdktypes.ToProto)

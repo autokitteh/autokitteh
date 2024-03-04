@@ -67,4 +67,11 @@ service SessionsService {
   rpc List(ListRequest) returns (ListResponse);
   rpc Get(GetRequest) returns (GetResponse);
   rpc GetLog(GetLogRequest) returns (GetLogResponse);
+  rpc Delete(DeleteRequest) returns (DeleteResponse);
 }
+
+message DeleteRequest {
+  string session_id = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+message DeleteResponse {}
