@@ -50,7 +50,7 @@ class Transformer(ast.NodeTransformer):
     """Replace 'fn(a, b)' with '_ak_call(fn, a, b)'"""
     def visit_Call(self, node):
         name = name_of(node.func)
-        print('call:', name)
+        # ast.Transformer does not recurse to args
         node.args = [self.visit(a) for a in node.args]
 
         if not name or is_internal(name):
