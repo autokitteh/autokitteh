@@ -27,7 +27,7 @@ var deleteCmd = common.StandardCommand(&cobra.Command{
 		ctx, cancel := common.LimitedContext()
 		defer cancel()
 		err = deployments().Delete(ctx, id)
-		if err != nil { // don't ignore silently any error, expect not found above
+		if err != nil { // report any other than "not found" error (which was handled above)
 			return common.ToExitCodeError(err, "delete deployment")
 		}
 		return nil
