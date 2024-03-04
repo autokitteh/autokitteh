@@ -116,8 +116,7 @@ func Test_pySVC_Run(t *testing.T) {
 			v sdktypes.Value,
 			args []sdktypes.Value,
 			kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
-			return nil, nil
-
+			return svc.Call(ctx, v, args, kwargs)
 		},
 	}
 
