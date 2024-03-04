@@ -11,6 +11,8 @@ import (
 	"testing"
 	"time"
 
+	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 	"go.uber.org/zap"
 
 	"github.com/stretchr/testify/require"
@@ -25,10 +27,9 @@ func validateTar(t *testing.T, tarData []byte, fsys fs.FS) {
 		if errors.Is(err, io.EOF) {
 			break
 		}
+
 		require.NoError(t, err, "iterate tar")
-
 		require.Truef(t, isFile(fsys, hdr.Name), "%q - not on fs", hdr.Name)
-
 		inTar[hdr.Name] = true
 	}
 
@@ -87,4 +88,45 @@ func testCtx(t *testing.T) (context.Context, context.CancelFunc) {
 	}
 
 	return context.WithDeadline(context.Background(), d)
+}
+
+func Test_pySVC_Run(t *testing.T) {
+	rt, err := New()
+	require.NoError(t, err, "New")
+	svc, ok := rt.(*pySVC)
+	require.True(t, ok, "type assertion failed")
+	require.NotNil(t, svc.log, "nil logger")
+
+	fsys := os.DirFS("testdata/simple")
+	tarData, err := createTar(fsys)
+	require.NoError(t, err, "create tar")
+
+	ctx, cancel := testCtx(t)
+	defer cancel()
+	runID := sdktypes.NewRunID()
+	mainPath := "simple.py:greet"
+	compiled := map[string][]byte{
+		archiveKey: tarData,
+	}
+
+	cbs := sdkservices.RunCallbacks{
+		Call: func(
+			ctx context.Context,
+			rid sdktypes.RunID,
+			v sdktypes.Value,
+			args []sdktypes.Value,
+			kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
+			return nil, nil
+
+		},
+	}
+
+	run, err := svc.Run(ctx, runID, mainPath, compiled, nil, &cbs)
+	require.NoError(t, err, "run")
+
+	xid := sdktypes.NewExecutorID(sdktypes.NewRunID())
+	fn := sdktypes.NewFunctionValue(xid, "greet", nil, nil, nil)
+
+	_, err = run.Call(ctx, fn, nil, nil)
+	require.NoError(t, err, "call")
 }

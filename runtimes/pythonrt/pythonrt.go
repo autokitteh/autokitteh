@@ -68,7 +68,7 @@ func (py *pySVC) Build(ctx context.Context, fs fs.FS, path string, values []sdkt
 
 	data, err := createTar(fs)
 	if err != nil {
-		py.log.Error("build", zap.Error(err))
+		py.log.Error("create tar", zap.Error(err))
 		return nil, err
 	}
 
@@ -151,12 +151,14 @@ func (py *pySVC) Run(
 		py.log.Error("wrong initial message type from python", zap.String("type", msg.Type))
 		return nil, fmt.Errorf("wrong initial message: type=%q", msg.Type)
 	}
+	py.log.Info("module loaded")
 
 	var entries []string
 	if err := json.Unmarshal(msg.Payload, &entries); err != nil {
 		py.log.Error("can't parse module entries", zap.Error(err))
 		return nil, fmt.Errorf("can't parse module entries: %w", err)
 	}
+	py.log.Info("module entries", zap.Any("entries", entries))
 
 	killPy = false
 	py.run = ri
