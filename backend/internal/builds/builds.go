@@ -53,6 +53,6 @@ func (b *Builds) Save(ctx context.Context, build sdktypes.Build, data []byte) (s
 	return build.ID(), nil
 }
 
-func (b *Builds) Remove(ctx context.Context, id sdktypes.BuildID) error {
+func (b *Builds) Delete(ctx context.Context, id sdktypes.BuildID) error {
 	return b.DB.DeleteBuild(ctx, id)
 }

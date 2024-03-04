@@ -15,7 +15,7 @@ from autokitteh_pb.builds.v1 import build_pb2 as autokitteh_dot_builds_dot_v1_do
 from buf.validate import validate_pb2 as buf_dot_validate_dot_validate__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1e\x61utokitteh/builds/v1/svc.proto\x12\x14\x61utokitteh.builds.v1\x1a autokitteh/builds/v1/build.proto\x1a\x1b\x62uf/validate/validate.proto\"1\n\nGetRequest\x12#\n\x08\x62uild_id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x07\x62uildId\"@\n\x0bGetResponse\x12\x31\n\x05\x62uild\x18\x01 \x01(\x0b\x32\x1b.autokitteh.builds.v1.BuildR\x05\x62uild\"#\n\x0bListRequest\x12\x14\n\x05limit\x18\x01 \x01(\rR\x05limit\"Q\n\x0cListResponse\x12\x41\n\x06\x62uilds\x18\x01 \x03(\x0b\x32\x1b.autokitteh.builds.v1.BuildB\x0c\xfa\xf7\x18\x08\x92\x01\x05\"\x03\xc8\x01\x01R\x06\x62uilds\"\xd3\x01\n\x0bSaveRequest\x12\x31\n\x05\x62uild\x18\x01 \x01(\x0b\x32\x1b.autokitteh.builds.v1.BuildR\x05\x62uild\x12\x1c\n\x04\x64\x61ta\x18\x02 \x01(\x0c\x42\x08\xfa\xf7\x18\x04z\x02\x10\x01R\x04\x64\x61ta:s\xfa\xf7\x18o\x1am\n\x1d\x62uilds.build_id_must_be_empty\x12\x1e\x62uild_id must not be specified\x1a,has(this.build) && this.build.build_id == \'\'\")\n\x0cSaveResponse\x12\x19\n\x08\x62uild_id\x18\x01 \x01(\tR\x07\x62uildId\"4\n\rRemoveRequest\x12#\n\x08\x62uild_id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x07\x62uildId\"\x10\n\x0eRemoveResponse\"6\n\x0f\x44ownloadRequest\x12#\n\x08\x62uild_id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x07\x62uildId\"&\n\x10\x44ownloadResponse\x12\x12\n\x04\x64\x61ta\x18\x01 \x01(\x0cR\x04\x64\x61ta2\xa9\x03\n\rBuildsService\x12J\n\x03Get\x12 .autokitteh.builds.v1.GetRequest\x1a!.autokitteh.builds.v1.GetResponse\x12M\n\x04List\x12!.autokitteh.builds.v1.ListRequest\x1a\".autokitteh.builds.v1.ListResponse\x12M\n\x04Save\x12!.autokitteh.builds.v1.SaveRequest\x1a\".autokitteh.builds.v1.SaveResponse\x12S\n\x06Remove\x12#.autokitteh.builds.v1.RemoveRequest\x1a$.autokitteh.builds.v1.RemoveResponse\x12Y\n\x08\x44ownload\x12%.autokitteh.builds.v1.DownloadRequest\x1a&.autokitteh.builds.v1.DownloadResponseB\xdf\x01\n\x18\x63om.autokitteh.builds.v1B\x08SvcProtoP\x01ZGgo.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/builds/v1;buildsv1\xa2\x02\x03\x41\x42X\xaa\x02\x14\x41utokitteh.Builds.V1\xca\x02\x14\x41utokitteh\\Builds\\V1\xe2\x02 Autokitteh\\Builds\\V1\\GPBMetadata\xea\x02\x16\x41utokitteh::Builds::V1b\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1e\x61utokitteh/builds/v1/svc.proto\x12\x14\x61utokitteh.builds.v1\x1a autokitteh/builds/v1/build.proto\x1a\x1b\x62uf/validate/validate.proto\"1\n\nGetRequest\x12#\n\x08\x62uild_id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x07\x62uildId\"@\n\x0bGetResponse\x12\x31\n\x05\x62uild\x18\x01 \x01(\x0b\x32\x1b.autokitteh.builds.v1.BuildR\x05\x62uild\"#\n\x0bListRequest\x12\x14\n\x05limit\x18\x01 \x01(\rR\x05limit\"Q\n\x0cListResponse\x12\x41\n\x06\x62uilds\x18\x01 \x03(\x0b\x32\x1b.autokitteh.builds.v1.BuildB\x0c\xfa\xf7\x18\x08\x92\x01\x05\"\x03\xc8\x01\x01R\x06\x62uilds\"\xd3\x01\n\x0bSaveRequest\x12\x31\n\x05\x62uild\x18\x01 \x01(\x0b\x32\x1b.autokitteh.builds.v1.BuildR\x05\x62uild\x12\x1c\n\x04\x64\x61ta\x18\x02 \x01(\x0c\x42\x08\xfa\xf7\x18\x04z\x02\x10\x01R\x04\x64\x61ta:s\xfa\xf7\x18o\x1am\n\x1d\x62uilds.build_id_must_be_empty\x12\x1e\x62uild_id must not be specified\x1a,has(this.build) && this.build.build_id == \'\'\")\n\x0cSaveResponse\x12\x19\n\x08\x62uild_id\x18\x01 \x01(\tR\x07\x62uildId\"4\n\rDeleteRequest\x12#\n\x08\x62uild_id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x07\x62uildId\"\x10\n\x0e\x44\x65leteResponse\"6\n\x0f\x44ownloadRequest\x12#\n\x08\x62uild_id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x07\x62uildId\"&\n\x10\x44ownloadResponse\x12\x12\n\x04\x64\x61ta\x18\x01 \x01(\x0cR\x04\x64\x61ta2\xa9\x03\n\rBuildsService\x12J\n\x03Get\x12 .autokitteh.builds.v1.GetRequest\x1a!.autokitteh.builds.v1.GetResponse\x12M\n\x04List\x12!.autokitteh.builds.v1.ListRequest\x1a\".autokitteh.builds.v1.ListResponse\x12M\n\x04Save\x12!.autokitteh.builds.v1.SaveRequest\x1a\".autokitteh.builds.v1.SaveResponse\x12S\n\x06\x44\x65lete\x12#.autokitteh.builds.v1.DeleteRequest\x1a$.autokitteh.builds.v1.DeleteResponse\x12Y\n\x08\x44ownload\x12%.autokitteh.builds.v1.DownloadRequest\x1a&.autokitteh.builds.v1.DownloadResponseB\xdf\x01\n\x18\x63om.autokitteh.builds.v1B\x08SvcProtoP\x01ZGgo.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/builds/v1;buildsv1\xa2\x02\x03\x41\x42X\xaa\x02\x14\x41utokitteh.Builds.V1\xca\x02\x14\x41utokitteh\\Builds\\V1\xe2\x02 Autokitteh\\Builds\\V1\\GPBMetadata\xea\x02\x16\x41utokitteh::Builds::V1b\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -31,8 +31,8 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _SAVEREQUEST.fields_by_name['data']._serialized_options = b'\372\367\030\004z\002\020\001'
   _SAVEREQUEST._options = None
   _SAVEREQUEST._serialized_options = b'\372\367\030o\032m\n\035builds.build_id_must_be_empty\022\036build_id must not be specified\032,has(this.build) && this.build.build_id == \'\''
-  _REMOVEREQUEST.fields_by_name['build_id']._options = None
-  _REMOVEREQUEST.fields_by_name['build_id']._serialized_options = b'\372\367\030\004r\002\020\001'
+  _DELETEREQUEST.fields_by_name['build_id']._options = None
+  _DELETEREQUEST.fields_by_name['build_id']._serialized_options = b'\372\367\030\004r\002\020\001'
   _DOWNLOADREQUEST.fields_by_name['build_id']._options = None
   _DOWNLOADREQUEST.fields_by_name['build_id']._serialized_options = b'\372\367\030\004r\002\020\001'
   _globals['_GETREQUEST']._serialized_start=119
@@ -47,10 +47,10 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _globals['_SAVEREQUEST']._serialized_end=568
   _globals['_SAVERESPONSE']._serialized_start=570
   _globals['_SAVERESPONSE']._serialized_end=611
-  _globals['_REMOVEREQUEST']._serialized_start=613
-  _globals['_REMOVEREQUEST']._serialized_end=665
-  _globals['_REMOVERESPONSE']._serialized_start=667
-  _globals['_REMOVERESPONSE']._serialized_end=683
+  _globals['_DELETEREQUEST']._serialized_start=613
+  _globals['_DELETEREQUEST']._serialized_end=665
+  _globals['_DELETERESPONSE']._serialized_start=667
+  _globals['_DELETERESPONSE']._serialized_end=683
   _globals['_DOWNLOADREQUEST']._serialized_start=685
   _globals['_DOWNLOADREQUEST']._serialized_end=739
   _globals['_DOWNLOADRESPONSE']._serialized_start=741

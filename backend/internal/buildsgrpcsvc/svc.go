@@ -119,7 +119,7 @@ func (s *server) Save(ctx context.Context, req *connect.Request[buildsv1.SaveReq
 	return connect.NewResponse(&buildsv1.SaveResponse{BuildId: bid.String()}), nil
 }
 
-func (s *server) Remove(ctx context.Context, req *connect.Request[buildsv1.RemoveRequest]) (*connect.Response[buildsv1.RemoveResponse], error) {
+func (s *server) Delete(ctx context.Context, req *connect.Request[buildsv1.DeleteRequest]) (*connect.Response[buildsv1.DeleteResponse], error) {
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
@@ -131,9 +131,9 @@ func (s *server) Remove(ctx context.Context, req *connect.Request[buildsv1.Remov
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	if err = s.builds.Remove(ctx, bid); err != nil {
+	if err = s.builds.Delete(ctx, bid); err != nil {
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	return connect.NewResponse(&buildsv1.RemoveResponse{}), nil
+	return connect.NewResponse(&buildsv1.DeleteResponse{}), nil
 }

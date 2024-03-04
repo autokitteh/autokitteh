@@ -79,8 +79,8 @@ func (c *client) List(ctx context.Context, filter sdkservices.ListBuildsFilter) 
 }
 
 // Remove implements sdkservices.Builds.
-func (c *client) Remove(ctx context.Context, buildID sdktypes.BuildID) error {
-	resp, err := c.client.Remove(ctx, connect.NewRequest(&buildsv1.RemoveRequest{BuildId: buildID.String()}))
+func (c *client) Delete(ctx context.Context, buildID sdktypes.BuildID) error {
+	resp, err := c.client.Delete(ctx, connect.NewRequest(&buildsv1.DeleteRequest{BuildId: buildID.String()}))
 	if err != nil {
 		return rpcerrors.TranslateError(err)
 	}

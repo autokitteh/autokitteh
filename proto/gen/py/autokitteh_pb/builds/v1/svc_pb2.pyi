@@ -45,13 +45,13 @@ class SaveResponse(_message.Message):
     build_id: str
     def __init__(self, build_id: _Optional[str] = ...) -> None: ...
 
-class RemoveRequest(_message.Message):
+class DeleteRequest(_message.Message):
     __slots__ = ["build_id"]
     BUILD_ID_FIELD_NUMBER: _ClassVar[int]
     build_id: str
     def __init__(self, build_id: _Optional[str] = ...) -> None: ...
 
-class RemoveResponse(_message.Message):
+class DeleteResponse(_message.Message):
     __slots__ = []
     def __init__(self) -> None: ...
 
