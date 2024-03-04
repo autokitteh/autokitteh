@@ -45,15 +45,15 @@ def is_internal(name):
     return '.' not in name
 
 
+# FIXME: print('INFO: HOME:', os.getenv('HOME'))
 class Transformer(ast.NodeTransformer):
     """Replace 'fn(a, b)' with '_ak_call(fn, a, b)'"""
     def visit_Call(self, node):
         name = name_of(node.func)
-        # TODO: Find out of name is internal or not
-        if not name:
-            return node
+        print('call:', name)
+        node.args = [self.visit(a) for a in node.args]
 
-        if is_internal(name):
+        if not name or is_internal(name):
             return node
 
         logging.info('patching %s with action', name)
@@ -211,24 +211,33 @@ def file_type(value):
 
 
 def encode_msg(typ, function, payload):
+    if isinstance(payload, str):
+        payload = payload.encode('utf-8')
     data = b64encode(payload)
 
-    return json.dumps({
+    data = json.dumps({
         'type': typ,
         'function': function,
         'payload': data.decode('utf-8'),
-    })
+    }) + '\n'
+    return data.encode('utf-8')
 
 
 def decode_msg(data):
+    logging.info('data: %r', data)
     obj = json.loads(data)
-    obj['payload'] = b64decode(obj['payload'])
+    if obj.get('payload'):
+        obj['payload'] = b64decode(obj['payload'])
 
     return obj
 
 
 def module_entries(mod):
-    return [name for name in dir(mod) if callable(getattr(mod, name, None))]
+    return [
+        name
+        for name in dir(mod)
+        if name != ACTION_NAME and callable(getattr(mod, name, None))
+    ]
 
 
 if __name__ == '__main__':
@@ -255,8 +264,8 @@ if __name__ == '__main__':
     logging.info('loading %r', module_name)
     mod = load_code(code_dir, ak_action, module_name)
     entries = module_entries(mod)
-    data = encode_msg('module', '', json.dumps(entries)) + '\n'
-    sock.sendall(data.encode('utf-8'))
+    data = encode_msg('module', '', json.dumps(entries))
+    sock.sendall(data)
 
     # Initial call
     request = decode_msg(rdr.readline())
@@ -272,8 +281,7 @@ if __name__ == '__main__':
     data = {} if data is None else json.loads(data)
 
     rw = RunWrapper(mod)
-    args = (code_dir, ak_action, func_name, data)
-    Thread(target=rw.run, args=args, daemon=True).start()
+    Thread(target=rw.run, args=(func_name, data), daemon=True).start()
     logging.info('execution thread started')
 
     while True:
@@ -283,9 +291,9 @@ if __name__ == '__main__':
 
         # Use protocol 0 since it's less version specific
         payload = pickle.dumps(request, protocol=0)
-        msg = encode_msg('activity', '', payload) + '\n'
+        msg = encode_msg('activity', '', payload)
         logging.info('sending activity request')
-        sock.sendall(msg.encode('utf-8'))
+        sock.sendall(msg)
         data = rdr.readline()
         logging.info('got activity response')
         resp = decode_msg(data)
@@ -294,10 +302,10 @@ if __name__ == '__main__':
         logging.info('activity request: %s %r', fn, args)
         out = fn(*args)
         payload = pickle.dumps(out, protocol=0)
-        msg = encode_msg('response', '', payload) + '\n'
-        sock.sendall(msg.encode('utf-8'))
+        msg = encode_msg('response', '', payload)
+        sock.sendall(msg)
         activity_response.put(out)
 
     # TODO: Send value back
-    msg = encode_msg('done', '', '') + '\n'
-    sock.sendall(msg.encode('utf-8'))
+    msg = encode_msg('done', '', '')
+    sock.sendall(msg)
