@@ -25,19 +25,21 @@ $ # Download resources project has no resources.
 $ ${AK} -j projects download-resources p1 -o /tmp
 no resources found
 $ # Set resources project not found
-$ ${AK} -j projects set-resources nonexisting -p ${tmp}
-Error: project nonexisting not found
+$ ${AK} projects build nonexisting -f ${tmp}
+Error: project "nonexisting" not found
 $ # Set resources requires --path
-$ ${AK} -j projects set-resources p1
-Error: required flag(s) "path" not set
+$ ${AK} projects build p1
+Error: required flag(s) "from" not set
 $ # Set resources specific file succeed
-$ ${AK} -j projects set-resources p1 -p ${data_file_path}; echo $?
+$ ${AK} projects build p1 -f ${data_file_path}; echo $?
+build_id: b:00000000000000000000000000000003
 0
 $ # Download resources succeed.
 $ ${AK} -j projects download-resources p1 -o ${tmp2}/; ls ${tmp2}/
 data_file
 $ # Set resources directory file succeed
-$ ${AK} -j projects set-resources p1 -p ${tmp}; echo $?
+$ ${AK} projects build p1 -f ${tmp}; echo $?
+build_id: b:00000000000000000000000000000004
 0
 $ # Download resources succeed.
 $ ${AK} -j projects download-resources p1 -o ${tmp2}/; ls ${tmp2}/
