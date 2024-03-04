@@ -1,6 +1,5 @@
-* @itayd
 /cmd/ak/ @daabr
-/docs/ @daabr @haimzlato @itayd
-/backend/internal/db/ @efiShtain @itayd
-/integrations/ @daabr @itayd
+/docs/ @daabr @haimzlato
+/backend/internal/db/ @efiShtain
+/integrations/ @daabr
 /systest/ @daabr
