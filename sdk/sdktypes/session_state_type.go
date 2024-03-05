@@ -22,7 +22,7 @@ func sessionStateTypeFromProto(e sessionsv1.SessionStateType) SessionStateType {
 }
 
 var (
-	PossibleSessionStateTypesStrings = AllEnumStrings[sessionStateTypeTraits]()
+	PossibleSessionStateTypesNames = AllEnumNames[sessionStateTypeTraits]()
 
 	SessionStateTypeUnspecified = sessionStateTypeFromProto(sessionsv1.SessionStateType_SESSION_STATE_TYPE_UNSPECIFIED)
 	SessionStateTypeCreated     = sessionStateTypeFromProto(sessionsv1.SessionStateType_SESSION_STATE_TYPE_CREATED)

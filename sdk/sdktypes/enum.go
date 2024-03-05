@@ -13,7 +13,7 @@ type enumTraits interface {
 	Values() map[string]int32
 }
 
-func AllEnumStrings[T enumTraits]() (values []string) {
+func AllEnumNames[T enumTraits]() (values []string) {
 	var t T
 	for _, s := range t.Names() {
 		values = append(values, strings.TrimPrefix(s, t.Prefix()))

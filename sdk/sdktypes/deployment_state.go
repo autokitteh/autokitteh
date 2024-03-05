@@ -22,7 +22,7 @@ func deploymentStateFromProto(e deploymentsv1.DeploymentState) DeploymentState {
 }
 
 var (
-	PossibleDeploymentStatesStrings = AllEnumStrings[deploymentStateTraits]()
+	PossibleDeploymentStatesNames = AllEnumNames[deploymentStateTraits]()
 
 	DeploymentStateUnspecified = deploymentStateFromProto(deploymentsv1.DeploymentState_DEPLOYMENT_STATE_UNSPECIFIED)
 	DeploymentStateActive      = deploymentStateFromProto(deploymentsv1.DeploymentState_DEPLOYMENT_STATE_ACTIVE)

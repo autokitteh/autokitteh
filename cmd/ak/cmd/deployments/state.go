@@ -9,7 +9,7 @@ import (
 
 type stateString string
 
-var possibleStates = sdktypes.PossibleDeploymentStatesStrings
+var possibleStates = sdktypes.PossibleDeploymentStatesNames
 
 // Type is only used in help text.
 func (s *stateString) Type() string {

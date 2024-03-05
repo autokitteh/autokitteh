@@ -22,7 +22,7 @@ func eventStateFromProto(e eventsv1.EventState) EventState {
 }
 
 var (
-	PossibleEventStatesStrings = AllEnumStrings[eventStateTraits]()
+	PossibleEventStatesNames = AllEnumNames[eventStateTraits]()
 
 	EventStateUnspecified = eventStateFromProto(eventsv1.EventState_EVENT_STATE_UNSPECIFIED)
 	EventStateSaved       = eventStateFromProto(eventsv1.EventState_EVENT_STATE_SAVED)
