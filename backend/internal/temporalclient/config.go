@@ -15,6 +15,7 @@ type tlsConfig struct {
 	CertFilePath string `koanf:"cert_file_path"`
 	KeyFilePath  string `koanf:"key_file_path"`
 }
+
 type Config struct {
 	AlwaysStartDevServer  bool            `koanf:"always_start_dev_server"`
 	StartDevServerIfNotUp bool            `koanf:"start_dev_server_if_not_up"`
