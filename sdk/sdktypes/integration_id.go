@@ -6,7 +6,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 )
 
-const integrationIDKind = "integration"
+const integrationIDKind = "int"
 
 type IntegrationID = id[integrationIDTraits]
 

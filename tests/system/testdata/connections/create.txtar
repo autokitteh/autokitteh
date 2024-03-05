@@ -1,7 +1,7 @@
 # Precondition: create project.
 ak project create my_project
 return code == 0
-output equals 'project_id: project_00000000000000000000000001'
+output equals 'project_id: prj_00000000000000000000000001'
 
 # Negative test: create connection without name.
 ak connection create --project my_project --integration http --connection-token my_url_path
@@ -32,4 +32,4 @@ return code == 1
 # Create connection.
 ak connection create my_connection --project my_project --integration http --connection-token my_url_path
 return code == 0
-output equals 'connection_id: connection_00000000000000000000000002'
+output equals 'connection_id: con_00000000000000000000000002'

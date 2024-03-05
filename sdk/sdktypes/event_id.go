@@ -1,6 +1,6 @@
 package sdktypes
 
-const eventIDKind = "event"
+const eventIDKind = "evt"
 
 type EventID = id[eventIDTraits]
 

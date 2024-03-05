@@ -82,10 +82,10 @@ func newDbFixture() *dbFixture {
 // }
 
 var (
-	testSessionID    = "session_00000000000000000000000001"
-	testDeploymentID = "deployment_00000000000000000000000001"
-	testEventID      = "event_00000000000000000000000001"
-	testBuildID      = "build_00000000000000000000000001"
+	testSessionID    = "ses_00000000000000000000000001"
+	testDeploymentID = "dep_00000000000000000000000001"
+	testEventID      = "evt_00000000000000000000000001"
+	testBuildID      = "bld_00000000000000000000000001"
 	testEnvID        = "env_00000000000000000000000001"
 )
 

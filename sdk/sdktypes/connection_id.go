@@ -1,6 +1,6 @@
 package sdktypes
 
-const connectionIDKind = "connection"
+const connectionIDKind = "con"
 
 type ConnectionID = id[connectionIDTraits]
 

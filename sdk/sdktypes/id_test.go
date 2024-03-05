@@ -14,8 +14,8 @@ import (
 var _ sdktypes.ID = sdktypes.InvalidProjectID
 
 const (
-	pidStr = "project_01hqmf3sesfg0ayxnfqyraxn7n"
-	hash   = "18a8ec816b28fd792232a2d827982423591f189c52b1e22d6742ad93c3ea40dd"
+	pidStr = "prj_01hqmf3sesfg0ayxnfqyraxn7n"
+	hash   = "f562c1923f5bc759f218236917107e3abbc5da65515d459c4fa91d624c3e739e"
 )
 
 func TestSequentialID(t *testing.T) {
@@ -25,7 +25,7 @@ func TestSequentialID(t *testing.T) {
 	for i := range chars {
 		assert.Equal(
 			t,
-			fmt.Sprintf("project_000000000000000000000000%c%c", chars[(i+1)/n], chars[(i+1)%n]),
+			fmt.Sprintf("prj_000000000000000000000000%c%c", chars[(i+1)/n], chars[(i+1)%n]),
 			sdktypes.NewProjectID().String(),
 		)
 	}
@@ -44,7 +44,7 @@ func TestID(t *testing.T) {
 	assert.Error(t, err)
 	assert.False(t, z.IsValid())
 
-	pid, err := sdktypes.ParseProjectID("project_01hqmf3sesfg0ayxnfqyraxn7n")
+	pid, err := sdktypes.ParseProjectID("prj_01hqmf3sesfg0ayxnfqyraxn7n")
 	if assert.NoError(t, err) {
 		assert.Equal(t, hash, pid.Hash())
 	}

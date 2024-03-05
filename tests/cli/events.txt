@@ -7,12 +7,12 @@ $ ${AK} events list --event-type t1; echo $?
 0
 $ # Save Event return event id
 $ ${AK} events save -j --event-type t1 --integration=http --connection-token=1234; echo $?
-{"event_id":"event_00000000000000000000000001"}
+{"event_id":"evt_00000000000000000000000001"}
 0
 $ # List events with filter type t1 return 1 event.
-$ ${AK} events list -j --event-type t1; echo $? #=> --regex {"event_id":"event_00000000000000000000000001","integration_id":"integration_0000000000f1201a7ed83f7cd5","integration_token":"1234","event_type":"t1","created_at":".*?"}
+$ ${AK} events list -j --event-type t1; echo $? #=> --regex {"event_id":"evt_00000000000000000000000001","integration_id":"int_0000000000f1201a7ed83f7cd5","integration_token":"1234","event_type":"t1","created_at":".*?"}
 $ # List events with filter type t2 return 0 event.
 $ ${AK} events list --event-type t2; echo $?
 0
 $ # Get event by id
-$ ${AK} events get -j event_00000000000000000000000001; echo $? #=> --regex {"event":{"event_id":"event_00000000000000000000000001","integration_id":"integration_0000000000f1201a7ed83f7cd5","integration_token":"1234","event_type":"t1","created_at":".*?"}}
+$ ${AK} events get -j evt_00000000000000000000000001; echo $? #=> --regex {"event":{"event_id":"evt_00000000000000000000000001","integration_id":"int_0000000000f1201a7ed83f7cd5","integration_token":"1234","event_type":"t1","created_at":".*?"}}

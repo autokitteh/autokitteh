@@ -1,6 +1,6 @@
 package sdktypes
 
-const projectIDKind = "project"
+const projectIDKind = "prj"
 
 type ProjectID = id[projectIDTraits]
 

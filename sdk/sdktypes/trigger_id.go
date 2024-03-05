@@ -1,6 +1,6 @@
 package sdktypes
 
-const triggerIDKind = "trigger"
+const triggerIDKind = "trg"
 
 type TriggerID = id[triggerIDTraits]
 

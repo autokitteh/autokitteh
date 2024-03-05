@@ -1,6 +1,6 @@
 package sdktypes
 
-const sessionIDKind = "session"
+const sessionIDKind = "ses"
 
 type SessionID = id[sessionIDTraits]
 

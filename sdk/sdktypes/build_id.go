@@ -1,6 +1,6 @@
 package sdktypes
 
-const buildIDKind = "build"
+const buildIDKind = "bld"
 
 type BuildID = id[buildIDTraits]
 

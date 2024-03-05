@@ -22,7 +22,7 @@ output contains 'key:"get"'
 output contains 'key:"post"'
 
 # Get integration by ID.
-ak integration get integration_0000000000f1201a7ed83f7cd5
+ak integration get int_0000000000f1201a7ed83f7cd5
 return code == 0
 output contains 'unique_name:"http"'
 output contains 'display_name:"HTTP"'

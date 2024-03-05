@@ -6,54 +6,54 @@ $ ${AK} deployments list; echo $?
 0
 $ # get deployment with inavlid id 1 return error
 $ ${AK} deployments get 1; echo $?
-Error: invalid deployment ID "1": invalid prefix: ''. Subtype requires prefix to match 'deployment'
+Error: invalid deployment ID "1": invalid prefix: ''. Subtype requires prefix to match 'dep'
 1
-$ # get deployment with inavlid id deployment_1 return error
-$ ${AK} deployments get deployment_1; echo $? 
-Error: invalid deployment ID "deployment_1": invalid suffix: 1. Suffix length is 1, expected 26
+$ # get deployment with inavlid id dep_1 return error
+$ ${AK} deployments get dep_1; echo $? 
+Error: invalid deployment ID "dep_1": invalid suffix: 1. Suffix length is 1, expected 26
 1
 $ # get deployment with nonexistent id return nothing
-$ ${AK} deployments get deployment_00000000000000000000000001; echo $?
+$ ${AK} deployments get dep_00000000000000000000000001; echo $?
 0
 $ # get deployment with nonexistent id fails if requested
-$ ${AK} deployments get deployment_00000000000000000000000001 -f; echo $?
+$ ${AK} deployments get dep_00000000000000000000000001 -f; echo $?
 Error: deployment not found
 10
 $ # activate deployment with inavlid id 1 return error
 $ ${AK} deployments activate 1; echo $?
-Error: invalid deployment ID "1": invalid prefix: ''. Subtype requires prefix to match 'deployment'
+Error: invalid deployment ID "1": invalid prefix: ''. Subtype requires prefix to match 'dep'
 1
-$ # activate deployment with inavlid id deployment_1 return error
-$ ${AK} deployments activate deployment_1; echo $? 
-Error: invalid deployment ID "deployment_1": invalid suffix: 1. Suffix length is 1, expected 26
+$ # activate deployment with inavlid id dep_1 return error
+$ ${AK} deployments activate dep_1; echo $? 
+Error: invalid deployment ID "dep_1": invalid suffix: 1. Suffix length is 1, expected 26
 1
 $ # activate deployment with not existing id return not found
-$ ${AK} deployments activate deployment_00000000000000000000000001; echo $?
-Error: deployment "deployment_00000000000000000000000001" not found
+$ ${AK} deployments activate dep_00000000000000000000000001; echo $?
+Error: deployment "dep_00000000000000000000000001" not found
 10
 $ # drain deployment with inavlid id 1 return error
 $ ${AK} deployments drain 1; echo $?
-Error: invalid deployment ID "1": invalid prefix: ''. Subtype requires prefix to match 'deployment'
+Error: invalid deployment ID "1": invalid prefix: ''. Subtype requires prefix to match 'dep'
 1
-$ # drain deployment with inavlid id deployment_1 return error
-$ ${AK} deployments drain deployment_1; echo $? 
-Error: invalid deployment ID "deployment_1": invalid suffix: 1. Suffix length is 1, expected 26
+$ # drain deployment with inavlid id dep_1 return error
+$ ${AK} deployments drain dep_1; echo $? 
+Error: invalid deployment ID "dep_1": invalid suffix: 1. Suffix length is 1, expected 26
 1
 $ # drain deployment with not existing id return not found
-$ ${AK} deployments drain deployment_00000000000000000000000001; echo $?
-Error: deployment "deployment_00000000000000000000000001" not found
+$ ${AK} deployments drain dep_00000000000000000000000001; echo $?
+Error: deployment "dep_00000000000000000000000001" not found
 10
 $ # deactivate deployment with inavlid id 1 return error
 $ ${AK} deployments deactivate 1; echo $?
-Error: invalid deployment ID "1": invalid prefix: ''. Subtype requires prefix to match 'deployment'
+Error: invalid deployment ID "1": invalid prefix: ''. Subtype requires prefix to match 'dep'
 1
-$ # deactivate deployment with inavlid id deployment_1 return error
-$ ${AK} deployments deactivate deployment_1; echo $? 
-Error: invalid deployment ID "deployment_1": invalid suffix: 1. Suffix length is 1, expected 26
+$ # deactivate deployment with inavlid id dep_1 return error
+$ ${AK} deployments deactivate dep_1; echo $? 
+Error: invalid deployment ID "dep_1": invalid suffix: 1. Suffix length is 1, expected 26
 1
 $ # deactivate deployment with not existing id return not found
-$ ${AK} deployments deactivate deployment_00000000000000000000000001; echo $?
-Error: deployment "deployment_00000000000000000000000001" not found
+$ ${AK} deployments deactivate dep_00000000000000000000000001; echo $?
+Error: deployment "dep_00000000000000000000000001" not found
 10
 $ # create deployment without build-id or env fails
 $ ${AK} deployments create; echo $?
@@ -61,22 +61,22 @@ Error: required flag(s) "build-id", "env" not set
 1
 $ # create deployment with invalid build-id fails
 $ ${AK} deployments create --build-id 1 --env=2; echo $?
-Error: invalid build ID "1": invalid prefix: ''. Subtype requires prefix to match 'build'
+Error: invalid build ID "1": invalid prefix: ''. Subtype requires prefix to match 'bld'
 1
 $ # create deployment with nonexistent build fails
-$ ${AK} deployments create --build-id build_00000000000000000000000001 --env=2; echo $?
-Error: build ID "build_00000000000000000000000001" not found
+$ ${AK} deployments create --build-id bld_00000000000000000000000001 --env=2; echo $?
+Error: build ID "bld_00000000000000000000000001" not found
 10
 $ # Create project p1.
 $ ${AK} p c p1; echo $?
-project_id: project_00000000000000000000000001
+project_id: prj_00000000000000000000000001
 0
 $ # upload build return build-id
 $ ${AK} -j builds upload ${data_file_path}; echo $?
-{"build_id":"build_00000000000000000000000002"}
+{"build_id":"bld_00000000000000000000000002"}
 0
 $ # create deployment with invalid env fails
-$ ${AK} deployments create --build-id build_00000000000000000000000002 --env=2; echo $?
+$ ${AK} deployments create --build-id bld_00000000000000000000000002 --env=2; echo $?
 Error: invalid environment name "2": missing project prefix
 1
 $ # Create env for project p.
@@ -84,33 +84,33 @@ $ ${AK} en c -p p1 e1; echo $?
 env_id: env_00000000000000000000000003
 0
 $ # create deployment
-$ ${AK} deployments create --build-id build_00000000000000000000000002 --env=env_00000000000000000000000003; echo $?
-deployment_id: deployment_00000000000000000000000004
+$ ${AK} deployments create --build-id bld_00000000000000000000000002 --env=env_00000000000000000000000003; echo $?
+deployment_id: dep_00000000000000000000000004
 0
 $ alias omit_nested_deployment_ts="jq -c 'del(.deployment.updated_at,.deployment.created_at)'"
 $ # get deployment
-$ ${AK} deployments get deployment_00000000000000000000000004 -j | omit_nested_deployment_ts; echo $?
-{"deployment":{"deployment_id":"deployment_00000000000000000000000004","env_id":"env_00000000000000000000000003","build_id":"build_00000000000000000000000002","state":"DEPLOYMENT_STATE_INACTIVE"}}
+$ ${AK} deployments get dep_00000000000000000000000004 -j | omit_nested_deployment_ts; echo $?
+{"deployment":{"deployment_id":"dep_00000000000000000000000004","env_id":"env_00000000000000000000000003","build_id":"bld_00000000000000000000000002","state":"DEPLOYMENT_STATE_INACTIVE"}}
 0
 $ # activate deployment
-$ ${AK} deployments activate deployment_00000000000000000000000004 -j; echo $?
+$ ${AK} deployments activate dep_00000000000000000000000004 -j; echo $?
 0
 $ # get deployment
-$ ${AK} deployments get deployment_00000000000000000000000004 -j | omit_nested_deployment_ts; echo $?
-{"deployment":{"deployment_id":"deployment_00000000000000000000000004","env_id":"env_00000000000000000000000003","build_id":"build_00000000000000000000000002","state":"DEPLOYMENT_STATE_ACTIVE"}}
+$ ${AK} deployments get dep_00000000000000000000000004 -j | omit_nested_deployment_ts; echo $?
+{"deployment":{"deployment_id":"dep_00000000000000000000000004","env_id":"env_00000000000000000000000003","build_id":"bld_00000000000000000000000002","state":"DEPLOYMENT_STATE_ACTIVE"}}
 0
 $ # drain deployment
-$ ${AK} deployments drain deployment_00000000000000000000000004 -j; echo $?
+$ ${AK} deployments drain dep_00000000000000000000000004 -j; echo $?
 0
 $ # auto switch to inactive due to nothing to drain.
-$ ${AK} deployments get deployment_00000000000000000000000004 -j | omit_nested_deployment_ts; echo $?
-{"deployment":{"deployment_id":"deployment_00000000000000000000000004","env_id":"env_00000000000000000000000003","build_id":"build_00000000000000000000000002","state":"DEPLOYMENT_STATE_INACTIVE"}}
+$ ${AK} deployments get dep_00000000000000000000000004 -j | omit_nested_deployment_ts; echo $?
+{"deployment":{"deployment_id":"dep_00000000000000000000000004","env_id":"env_00000000000000000000000003","build_id":"bld_00000000000000000000000002","state":"DEPLOYMENT_STATE_INACTIVE"}}
 0
 $ # deactivate deployment
-$ ${AK} deployments deactivate deployment_00000000000000000000000004 -j; echo $?
+$ ${AK} deployments deactivate dep_00000000000000000000000004 -j; echo $?
 0
-$ ${AK} deployments get deployment_00000000000000000000000004 -j | omit_nested_deployment_ts; echo $?
-{"deployment":{"deployment_id":"deployment_00000000000000000000000004","env_id":"env_00000000000000000000000003","build_id":"build_00000000000000000000000002","state":"DEPLOYMENT_STATE_INACTIVE"}}
+$ ${AK} deployments get dep_00000000000000000000000004 -j | omit_nested_deployment_ts; echo $?
+{"deployment":{"deployment_id":"dep_00000000000000000000000004","env_id":"env_00000000000000000000000003","build_id":"bld_00000000000000000000000002","state":"DEPLOYMENT_STATE_INACTIVE"}}
 0
 $ # Create second env for project p.
 $ ${AK} en c -p p1 e2; echo $?
@@ -118,54 +118,54 @@ env_id: env_00000000000000000000000005
 0
 $ # upload a second build 
 $ ${AK} -j builds upload ${data_file_path}; echo $?
-{"build_id":"build_00000000000000000000000006"}
+{"build_id":"bld_00000000000000000000000006"}
 0
 $ # create second deployment
-$ ${AK} deployments create --build-id build_00000000000000000000000006 --env=env_00000000000000000000000005; echo $?
-deployment_id: deployment_00000000000000000000000007
+$ ${AK} deployments create --build-id bld_00000000000000000000000006 --env=env_00000000000000000000000005; echo $?
+deployment_id: dep_00000000000000000000000007
 0
 $ # drain deployment
-$ ${AK} deployments drain deployment_00000000000000000000000007 -j; echo $?
+$ ${AK} deployments drain dep_00000000000000000000000007 -j; echo $?
 Error: drain deployment: rpc: db: conflict ([])
 1
 $ # List deployments by env id
 $ alias omit_deployment_ts="jq -c 'del(.updated_at,.created_at)'"
 $ ${AK} deployments list -j --env env_00000000000000000000000003 | omit_deployment_ts; echo $?
-{"deployment_id":"deployment_00000000000000000000000004","env_id":"env_00000000000000000000000003","build_id":"build_00000000000000000000000002","state":"DEPLOYMENT_STATE_INACTIVE"}
+{"deployment_id":"dep_00000000000000000000000004","env_id":"env_00000000000000000000000003","build_id":"bld_00000000000000000000000002","state":"DEPLOYMENT_STATE_INACTIVE"}
 0
 $ # List deployments by build id
-$ ${AK} deployments list -j --build-id build_00000000000000000000000006 | omit_deployment_ts; echo $?
-{"deployment_id":"deployment_00000000000000000000000007","env_id":"env_00000000000000000000000005","build_id":"build_00000000000000000000000006","state":"DEPLOYMENT_STATE_INACTIVE"}
+$ ${AK} deployments list -j --build-id bld_00000000000000000000000006 | omit_deployment_ts; echo $?
+{"deployment_id":"dep_00000000000000000000000007","env_id":"env_00000000000000000000000005","build_id":"bld_00000000000000000000000006","state":"DEPLOYMENT_STATE_INACTIVE"}
 0
 $ # create third deployment
-$ ${AK} deployments create --build-id build_00000000000000000000000002 --env=env_00000000000000000000000003; echo $?
-deployment_id: deployment_00000000000000000000000008
+$ ${AK} deployments create --build-id bld_00000000000000000000000002 --env=env_00000000000000000000000003; echo $?
+deployment_id: dep_00000000000000000000000008
 0
 $ # create deployment
-$ ${AK} deployments create --build-id build_00000000000000000000000002 --env=env_00000000000000000000000003; echo $?
-deployment_id: deployment_00000000000000000000000009
+$ ${AK} deployments create --build-id bld_00000000000000000000000002 --env=env_00000000000000000000000003; echo $?
+deployment_id: dep_00000000000000000000000009
 0
 $ # List deployments by env id - multiple
 $ ${AK} deployments list -j --env env_00000000000000000000000003 | omit_deployment_ts; echo $?
-{"deployment_id":"deployment_00000000000000000000000009","env_id":"env_00000000000000000000000003","build_id":"build_00000000000000000000000002","state":"DEPLOYMENT_STATE_INACTIVE"}
-{"deployment_id":"deployment_00000000000000000000000008","env_id":"env_00000000000000000000000003","build_id":"build_00000000000000000000000002","state":"DEPLOYMENT_STATE_INACTIVE"}
-{"deployment_id":"deployment_00000000000000000000000004","env_id":"env_00000000000000000000000003","build_id":"build_00000000000000000000000002","state":"DEPLOYMENT_STATE_INACTIVE"}
+{"deployment_id":"dep_00000000000000000000000009","env_id":"env_00000000000000000000000003","build_id":"bld_00000000000000000000000002","state":"DEPLOYMENT_STATE_INACTIVE"}
+{"deployment_id":"dep_00000000000000000000000008","env_id":"env_00000000000000000000000003","build_id":"bld_00000000000000000000000002","state":"DEPLOYMENT_STATE_INACTIVE"}
+{"deployment_id":"dep_00000000000000000000000004","env_id":"env_00000000000000000000000003","build_id":"bld_00000000000000000000000002","state":"DEPLOYMENT_STATE_INACTIVE"}
 0
 $ # activate deployment
-$ ${AK} deployments activate deployment_00000000000000000000000009 -j; echo $?
+$ ${AK} deployments activate dep_00000000000000000000000009 -j; echo $?
 0
 $ # Verify active in list
 $ ${AK} deployments list -j --env env_00000000000000000000000003 | omit_deployment_ts; echo $?
-{"deployment_id":"deployment_00000000000000000000000009","env_id":"env_00000000000000000000000003","build_id":"build_00000000000000000000000002","state":"DEPLOYMENT_STATE_ACTIVE"}
-{"deployment_id":"deployment_00000000000000000000000008","env_id":"env_00000000000000000000000003","build_id":"build_00000000000000000000000002","state":"DEPLOYMENT_STATE_INACTIVE"}
-{"deployment_id":"deployment_00000000000000000000000004","env_id":"env_00000000000000000000000003","build_id":"build_00000000000000000000000002","state":"DEPLOYMENT_STATE_INACTIVE"}
+{"deployment_id":"dep_00000000000000000000000009","env_id":"env_00000000000000000000000003","build_id":"bld_00000000000000000000000002","state":"DEPLOYMENT_STATE_ACTIVE"}
+{"deployment_id":"dep_00000000000000000000000008","env_id":"env_00000000000000000000000003","build_id":"bld_00000000000000000000000002","state":"DEPLOYMENT_STATE_INACTIVE"}
+{"deployment_id":"dep_00000000000000000000000004","env_id":"env_00000000000000000000000003","build_id":"bld_00000000000000000000000002","state":"DEPLOYMENT_STATE_INACTIVE"}
 0
 $ # activate deployment
-$ ${AK} deployments activate deployment_00000000000000000000000004 -j; echo $?
+$ ${AK} deployments activate dep_00000000000000000000000004 -j; echo $?
 0
 $ # verify 1 => active, 3 => same 4 => draining
 $ ${AK} deployments list -j --env env_00000000000000000000000003 | omit_deployment_ts; echo $?
-{"deployment_id":"deployment_00000000000000000000000009","env_id":"env_00000000000000000000000003","build_id":"build_00000000000000000000000002","state":"DEPLOYMENT_STATE_INACTIVE"}
-{"deployment_id":"deployment_00000000000000000000000008","env_id":"env_00000000000000000000000003","build_id":"build_00000000000000000000000002","state":"DEPLOYMENT_STATE_INACTIVE"}
-{"deployment_id":"deployment_00000000000000000000000004","env_id":"env_00000000000000000000000003","build_id":"build_00000000000000000000000002","state":"DEPLOYMENT_STATE_ACTIVE"}
+{"deployment_id":"dep_00000000000000000000000009","env_id":"env_00000000000000000000000003","build_id":"bld_00000000000000000000000002","state":"DEPLOYMENT_STATE_INACTIVE"}
+{"deployment_id":"dep_00000000000000000000000008","env_id":"env_00000000000000000000000003","build_id":"bld_00000000000000000000000002","state":"DEPLOYMENT_STATE_INACTIVE"}
+{"deployment_id":"dep_00000000000000000000000004","env_id":"env_00000000000000000000000003","build_id":"bld_00000000000000000000000002","state":"DEPLOYMENT_STATE_ACTIVE"}
 0

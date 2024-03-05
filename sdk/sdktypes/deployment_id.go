@@ -1,6 +1,6 @@
 package sdktypes
 
-const deploymentIDKind = "deployment"
+const deploymentIDKind = "dep"
 
 type DeploymentID = id[deploymentIDTraits]
 
