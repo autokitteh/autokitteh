@@ -29,10 +29,10 @@ class BuildsServiceStub(object):
                 request_serializer=autokitteh_dot_builds_dot_v1_dot_svc__pb2.SaveRequest.SerializeToString,
                 response_deserializer=autokitteh_dot_builds_dot_v1_dot_svc__pb2.SaveResponse.FromString,
                 )
-        self.Remove = channel.unary_unary(
-                '/autokitteh.builds.v1.BuildsService/Remove',
-                request_serializer=autokitteh_dot_builds_dot_v1_dot_svc__pb2.RemoveRequest.SerializeToString,
-                response_deserializer=autokitteh_dot_builds_dot_v1_dot_svc__pb2.RemoveResponse.FromString,
+        self.Delete = channel.unary_unary(
+                '/autokitteh.builds.v1.BuildsService/Delete',
+                request_serializer=autokitteh_dot_builds_dot_v1_dot_svc__pb2.DeleteRequest.SerializeToString,
+                response_deserializer=autokitteh_dot_builds_dot_v1_dot_svc__pb2.DeleteResponse.FromString,
                 )
         self.Download = channel.unary_unary(
                 '/autokitteh.builds.v1.BuildsService/Download',
@@ -62,7 +62,7 @@ class BuildsServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def Remove(self, request, context):
+    def Delete(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -92,10 +92,10 @@ def add_BuildsServiceServicer_to_server(servicer, server):
                     request_deserializer=autokitteh_dot_builds_dot_v1_dot_svc__pb2.SaveRequest.FromString,
                     response_serializer=autokitteh_dot_builds_dot_v1_dot_svc__pb2.SaveResponse.SerializeToString,
             ),
-            'Remove': grpc.unary_unary_rpc_method_handler(
-                    servicer.Remove,
-                    request_deserializer=autokitteh_dot_builds_dot_v1_dot_svc__pb2.RemoveRequest.FromString,
-                    response_serializer=autokitteh_dot_builds_dot_v1_dot_svc__pb2.RemoveResponse.SerializeToString,
+            'Delete': grpc.unary_unary_rpc_method_handler(
+                    servicer.Delete,
+                    request_deserializer=autokitteh_dot_builds_dot_v1_dot_svc__pb2.DeleteRequest.FromString,
+                    response_serializer=autokitteh_dot_builds_dot_v1_dot_svc__pb2.DeleteResponse.SerializeToString,
             ),
             'Download': grpc.unary_unary_rpc_method_handler(
                     servicer.Download,
@@ -164,7 +164,7 @@ class BuildsService(object):
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
-    def Remove(request,
+    def Delete(request,
             target,
             options=(),
             channel_credentials=None,
@@ -174,9 +174,9 @@ class BuildsService(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/autokitteh.builds.v1.BuildsService/Remove',
-            autokitteh_dot_builds_dot_v1_dot_svc__pb2.RemoveRequest.SerializeToString,
-            autokitteh_dot_builds_dot_v1_dot_svc__pb2.RemoveResponse.FromString,
+        return grpc.experimental.unary_unary(request, target, '/autokitteh.builds.v1.BuildsService/Delete',
+            autokitteh_dot_builds_dot_v1_dot_svc__pb2.DeleteRequest.SerializeToString,
+            autokitteh_dot_builds_dot_v1_dot_svc__pb2.DeleteResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 

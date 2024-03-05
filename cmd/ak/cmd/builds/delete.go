@@ -29,7 +29,7 @@ var deleteCmd = common.StandardCommand(&cobra.Command{
 		ctx, cancel := common.LimitedContext()
 		defer cancel()
 
-		if err := builds().Remove(ctx, id); err != nil {
+		if err := builds().Delete(ctx, id); err != nil {
 			return fmt.Errorf("delete build: %w", err)
 		}
 

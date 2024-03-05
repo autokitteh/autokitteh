@@ -58,7 +58,7 @@ func addSessionLogRecord(tx *gorm.DB, sessionID sdktypes.SessionID, logr sdktype
 func (db *gormdb) createSession(ctx context.Context, session scheme.Session) error {
 	return translateError(db.transaction(ctx, func(tx *tx) error {
 		if err := tx.db.WithContext(ctx).Create(&session).Error; err != nil {
-			return translateError(err)
+			return err
 		}
 
 		sid, err := sdktypes.ParseSessionID(session.SessionID)
@@ -87,7 +87,7 @@ func (db *gormdb) CreateSession(ctx context.Context, session sdktypes.Session) e
 		CreatedAt:        now,
 		UpdatedAt:        now,
 	}
-	return db.createSession(ctx, s)
+	return translateError(db.createSession(ctx, s))
 }
 
 func (db *gormdb) UpdateSessionState(ctx context.Context, sessionID sdktypes.SessionID, state sdktypes.SessionState) error {
@@ -136,7 +136,7 @@ func (db *gormdb) listSessions(ctx context.Context, f sdkservices.ListSessionsFi
 	}
 
 	if err := q.Order("created_at desc").Find(&rs).Error; err != nil {
-		return nil, 0, translateError(err)
+		return nil, 0, err
 	}
 
 	// REVIEW: will the count be right in case of pagination?
@@ -146,7 +146,7 @@ func (db *gormdb) listSessions(ctx context.Context, f sdkservices.ListSessionsFi
 func (db *gormdb) ListSessions(ctx context.Context, f sdkservices.ListSessionsFilter) ([]sdktypes.Session, int, error) {
 	rs, cnt, err := db.listSessions(ctx, f)
 	if rs == nil { // no sessions to process. either error or count request
-		return nil, cnt, err
+		return nil, cnt, translateError(err)
 	}
 	sessions, err := kittehs.TransformError(rs, scheme.ParseSession)
 	return sessions, len(sessions), err

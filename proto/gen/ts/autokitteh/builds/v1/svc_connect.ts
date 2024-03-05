@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { DownloadRequest, DownloadResponse, GetRequest, GetResponse, ListRequest, ListResponse, RemoveRequest, RemoveResponse, SaveRequest, SaveResponse } from "./svc_pb.js";
+import { DeleteRequest, DeleteResponse, DownloadRequest, DownloadResponse, GetRequest, GetResponse, ListRequest, ListResponse, SaveRequest, SaveResponse } from "./svc_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -40,12 +40,12 @@ export const BuildsService = {
       kind: MethodKind.Unary,
     },
     /**
-     * @generated from rpc autokitteh.builds.v1.BuildsService.Remove
+     * @generated from rpc autokitteh.builds.v1.BuildsService.Delete
      */
-    remove: {
-      name: "Remove",
-      I: RemoveRequest,
-      O: RemoveResponse,
+    delete: {
+      name: "Delete",
+      I: DeleteRequest,
+      O: DeleteResponse,
       kind: MethodKind.Unary,
     },
     /**

@@ -4,8 +4,10 @@ import (
 	"context"
 	"log"
 	"os"
+	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"gorm.io/datatypes"
 	"gorm.io/driver/sqlite"
@@ -81,6 +83,15 @@ func newDbFixture() *dbFixture {
 // 	f.gormdb.db = f.db
 // }
 
+func testDBExistsOne[T any](t *testing.T, gormdb *gormdb, schemaObj T, where string, args ...any) {
+	var r []T
+	res := gormdb.db.Where(where, args...).Find(&r)
+	require.Nil(t, res.Error)
+	require.Equal(t, 1, len(r))
+	require.Equal(t, int64(1), res.RowsAffected)
+	require.Equal(t, schemaObj, r[0])
+}
+
 var (
 	testSessionID    = "ses_00000000000000000000000001"
 	testDeploymentID = "dep_00000000000000000000000001"
@@ -103,6 +114,17 @@ func makeSchemeSession() scheme.Session {
 		UpdatedAt:        now,
 	}
 	return session
+}
+
+func makeSchemeBuild() scheme.Build {
+	now := time.Now().UTC() // save and compare times in UTC
+
+	build := scheme.Build{
+		BuildID:   testBuildID,
+		Data:      []byte{},
+		CreatedAt: now,
+	}
+	return build
 }
 
 func makeSchemeDeployment() scheme.Deployment {
