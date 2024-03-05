@@ -1,12 +1,15 @@
 all:
 	$(error please pick a target)
 
-test-py:
+
+ci: deps test
+
+test:
 	ruff ak_runner.py
 	python -m pytest \
 		--doctest-modules \
 		--ignore testdata \
 		-v .
 
-dev-deps:
+deps:
 	python -m pip install -r dev-requirements.txt

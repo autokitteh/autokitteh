@@ -42,7 +42,7 @@ Go                              Python
 ### Communication Protocol
 
 We're using JSON over Unix domain socket, one JSON object per line.
-The reason do this is that that `ak_runner.py` should not have any external dependencies outside of the standard library.
+The reason do this is that `ak_runner.py` should not have any external dependencies outside of the standard library.
 Once we introduce an external dependency, it will conflict with the user dependencies.
 
 The message payload is handled by Python and is opaque to AutoKitteh.
