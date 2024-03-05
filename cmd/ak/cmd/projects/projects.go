@@ -23,11 +23,9 @@ func init() {
 	// Subcommands.
 	projectsCmd.AddCommand(buildCmd)
 	projectsCmd.AddCommand(createCmd)
+	projectsCmd.AddCommand(downloadResourcesCmd)
 	projectsCmd.AddCommand(getCmd)
 	projectsCmd.AddCommand(listCmd)
-
-	projectsCmd.AddCommand(downloadResourcesCmd)
-	projectsCmd.AddCommand(setResourcesCmd)
 }
 
 func projects() sdkservices.Projects {
