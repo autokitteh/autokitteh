@@ -249,7 +249,12 @@ if __name__ == '__main__':
     parser.add_argument('path', help='file.py:function')
     args = parser.parse_args()
 
-    module_name, _ = parse_path(args.path)
+    # TODO: Ask Itay why AK does not pass entry point
+    if ':' in args.path:
+        module_name, _ = parse_path(args.path)
+    else:
+        module_name = args.path[:-3]
+
 
     # TODO: Catch exceptions? Currently have the server crash is OK
     logging.info('sock: %r, tar: %r, module: %r', args.sock, args.tar, module_name)

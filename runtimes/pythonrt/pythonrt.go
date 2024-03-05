@@ -154,6 +154,7 @@ func (py *pySVC) Run(
 		return nil, fmt.Errorf("wrong initial message: type=%q", msg.Type)
 	}
 	py.log.Info("module loaded")
+	py.xid = sdktypes.NewExecutorID(runID)
 
 	var entries []string
 	if err := json.Unmarshal(msg.Payload, &entries); err != nil {
@@ -171,7 +172,6 @@ func (py *pySVC) Run(
 	killPy = false
 	py.run = ri
 	py.cbs = cbs
-	py.xid = sdktypes.NewExecutorID(runID)
 	py.exports = exports
 	py.firstCall = true
 	py.dec = dec
