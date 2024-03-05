@@ -32,14 +32,14 @@ $ ${AK} projects build p1
 Error: required flag(s) "from" not set
 $ # Set resources specific file succeed
 $ ${AK} projects build p1 -f ${data_file_path}; echo $?
-build_id: b:00000000000000000000000000000003
+build_id: bld_00000000000000000000000003
 0
 $ # Download resources succeed.
 $ ${AK} -j projects download-resources p1 -o ${tmp2}/; ls ${tmp2}/
 data_file
 $ # Set resources directory file succeed
 $ ${AK} projects build p1 -f ${tmp}; echo $?
-build_id: b:00000000000000000000000000000004
+build_id: bld_00000000000000000000000004
 0
 $ # Download resources succeed.
 $ ${AK} -j projects download-resources p1 -o ${tmp2}/; ls ${tmp2}/
