@@ -24,7 +24,7 @@ func (db *gormdb) getSession(ctx context.Context, sessionID string) (*scheme.Ses
 func (db *gormdb) GetSession(ctx context.Context, id sdktypes.SessionID) (sdktypes.Session, error) {
 	s, err := db.getSession(ctx, id.String())
 	if s == nil || err != nil {
-		return nil, translateError(err)
+		return sdktypes.InvalidSession, translateError(err)
 	}
 	return scheme.ParseSession(*s)
 }
@@ -41,7 +41,7 @@ func (db *gormdb) GetSessionLog(ctx context.Context, sessionID sdktypes.SessionI
 	var rs []scheme.SessionLogRecord
 
 	if err := db.db.WithContext(ctx).Where("session_id = ?", sessionID.String()).Find(&rs).Error; err != nil {
-		return sdktypes.InvalidSessionLog, err
+		return sdktypes.InvalidSessionLog, translateError(err)
 	}
 
 	prs, err := kittehs.TransformError(rs, scheme.ParseSessionLogRecord)
@@ -49,37 +49,17 @@ func (db *gormdb) GetSessionLog(ctx context.Context, sessionID sdktypes.SessionI
 	return sdktypes.NewSessionLog(prs), err
 }
 
-func addSessionLogRecord(tx *gorm.DB, sessionID sdktypes.SessionID, logr sdktypes.SessionLogRecord) error {
-	jsonData, err := json.Marshal(logr)
-	if err != nil {
-		return fmt.Errorf("marshal session log record: %w", err)
-	}
-
-	r := scheme.SessionLogRecord{
-		SessionID: sessionID.String(),
-		Data:      jsonData,
-	}
-
-	return tx.Create(&r).Error
-}
-
 func (db *gormdb) createSession(ctx context.Context, session scheme.Session) error {
-	return translateError(db.transaction(ctx, func(tx *tx) error {
+	return db.transaction(ctx, func(tx *tx) error {
 		if err := tx.db.WithContext(ctx).Create(&session).Error; err != nil {
 			return err
 		}
-
-		sid, err := sdktypes.ParseSessionID(session.SessionID)
-		if err != nil {
-			return err
-		}
-
 		return addSessionLogRecord(
 			tx.db,
-			sid,
+			session.SessionID,
 			sdktypes.NewStateSessionLogRecord(sdktypes.NewSessionStateCreated()),
 		)
-	}))
+	})
 }
 
 func (db *gormdb) CreateSession(ctx context.Context, session sdktypes.Session) error {
@@ -112,12 +92,23 @@ func (db *gormdb) UpdateSessionState(ctx context.Context, sessionID sdktypes.Ses
 			return sdkerrors.ErrNotFound
 		}
 
-		return addSessionLogRecord(tx.db, sessionID, sdktypes.NewStateSessionLogRecord(state))
+		return addSessionLogRecord(tx.db, sid, sdktypes.NewStateSessionLogRecord(state))
 	}))
 }
 
+func addSessionLogRecord(tx *gorm.DB, sessionID string, logr sdktypes.SessionLogRecord) error {
+	jsonData, err := json.Marshal(logr)
+	if err != nil {
+		return fmt.Errorf("marshal session log record: %w", err)
+	}
+
+	r := scheme.SessionLogRecord{SessionID: sessionID, Data: jsonData}
+	return tx.Create(&r).Error
+}
+
 func (db *gormdb) AddSessionPrint(ctx context.Context, sessionID sdktypes.SessionID, print string) error {
-	return addSessionLogRecord(db.db, sessionID, sdktypes.NewPrintSessionLogRecord(print))
+	return translateError(
+		addSessionLogRecord(db.db, sessionID.String(), sdktypes.NewPrintSessionLogRecord(print)))
 }
 
 func (db *gormdb) listSessions(ctx context.Context, f sdkservices.ListSessionsFilter) ([]scheme.Session, int, error) {
@@ -177,7 +168,7 @@ func (db *gormdb) CreateSessionCall(ctx context.Context, sessionID sdktypes.Sess
 			return err
 		}
 
-		return addSessionLogRecord(tx.db, sessionID, sdktypes.NewCallSpecSessionLogRecord(spec))
+		return addSessionLogRecord(tx.db, sessionID.String(), sdktypes.NewCallSpecSessionLogRecord(spec))
 	}))
 }
 
@@ -228,7 +219,7 @@ func (db *gormdb) StartSessionCallAttempt(ctx context.Context, sessionID sdktype
 			return err
 		}
 
-		return addSessionLogRecord(tx.db, sessionID, sdktypes.NewCallAttemptStartSessionLogRecord(obj))
+		return addSessionLogRecord(tx.db, sessionID.String(), sdktypes.NewCallAttemptStartSessionLogRecord(obj))
 	}))
 
 	return
@@ -251,7 +242,7 @@ func (db *gormdb) CompleteSessionCallAttempt(ctx context.Context, sessionID sdkt
 			return sdkerrors.ErrNotFound
 		}
 
-		return addSessionLogRecord(tx.db, sessionID, sdktypes.NewCallAttemptCompleteSessionLogRecord(complete))
+		return addSessionLogRecord(tx.db, sessionID.String(), sdktypes.NewCallAttemptCompleteSessionLogRecord(complete))
 	}))
 }
 

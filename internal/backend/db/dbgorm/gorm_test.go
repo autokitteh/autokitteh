@@ -19,6 +19,12 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
+var now time.Time
+
+func init() {
+	now = time.Now().UTC() // save and compare times in UTC
+}
+
 type dbFixture struct {
 	db        *gorm.DB
 	gormdb    *gormdb
@@ -60,7 +66,7 @@ func setupDB(dbName string) *gorm.DB {
 }
 
 func newDbFixture(withoutForeignKeys bool) *dbFixture {
-	db := setupDB("") // in-memory db, specify filename to use file db
+	db := setupDB("/tmp/ak.db") // in-memory db, specify filename to use file db
 	if withoutForeignKeys {
 		db.Exec("PRAGMA foreign_keys = OFF")
 	}
@@ -84,13 +90,18 @@ func newDbFixture(withoutForeignKeys bool) *dbFixture {
 // 	f.gormdb.db = f.db
 // }
 
-func testDBExistsOne[T any](t *testing.T, gormdb *gormdb, schemaObj T, where string, args ...any) {
-	var r []T
-	res := gormdb.db.Where(where, args...).Find(&r)
-	require.Nil(t, res.Error)
-	require.Equal(t, 1, len(r))
-	require.Equal(t, int64(1), res.RowsAffected)
-	require.Equal(t, schemaObj, r[0])
+func findAndAssertCount[T any](t *testing.T, f *dbFixture, schemaObj T, expected int, where string, args ...any) []T {
+	var objs []T
+	res := f.gormdb.db.Where(where, args...).Find(&objs)
+	require.NoError(t, res.Error)
+	require.Equal(t, expected, len(objs))
+	require.Equal(t, int64(expected), res.RowsAffected)
+	return objs
+}
+
+func findAndAssertOne[T any](t *testing.T, f *dbFixture, schemaObj T, where string, args ...any) {
+	res := findAndAssertCount(t, f, schemaObj, 1, where, args...)
+	require.Equal(t, schemaObj, res[0])
 }
 
 var (
@@ -103,8 +114,7 @@ var (
 )
 
 func newSession(f *dbFixture, st sdktypes.SessionStateType) scheme.Session {
-	now := time.Now().UTC() // save and compare times in UTC
-	sessionID := fmt.Sprintf("s:%04d", f.newSessionID())
+	sessionID := fmt.Sprintf("ses_%026d", f.newSessionID())
 
 	return scheme.Session{
 		SessionID:        sessionID,
@@ -118,9 +128,15 @@ func newSession(f *dbFixture, st sdktypes.SessionStateType) scheme.Session {
 	}
 }
 
-func newDeployment(buildID string, envID string) scheme.Deployment {
-	now := time.Now().UTC() // save and compare times in UTC
+func newBuild() scheme.Build {
+	return scheme.Build{
+		BuildID:   testBuildID,
+		Data:      []byte{},
+		CreatedAt: now,
+	}
+}
 
+func newDeployment(buildID string, envID string) scheme.Deployment {
 	return scheme.Deployment{
 		DeploymentID: testDeploymentID,
 		BuildID:      testBuildID,
@@ -138,16 +154,6 @@ func newEnv() scheme.Env {
 		ProjectID:    testProjectID,
 		Name:         "",
 		MembershipID: "",
-	}
-}
-
-func newBuild() scheme.Build {
-	now := time.Now().UTC() // save and compare times in UTC
-
-	return scheme.Build{
-		BuildID:   testBuildID,
-		Data:      []byte{},
-		CreatedAt: now,
 	}
 }
 */

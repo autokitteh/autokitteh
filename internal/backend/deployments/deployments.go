@@ -150,7 +150,7 @@ func (d *deployments) Delete(ctx context.Context, id sdktypes.DeploymentID) erro
 		return err
 	}
 
-	if sdktypes.GetDeploymentState(dep) != sdktypes.DeploymentStateInactive {
+	if dep.State() != sdktypes.DeploymentStateInactive {
 		return sdkerrors.ErrConflict
 	}
 
