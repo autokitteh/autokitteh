@@ -221,13 +221,16 @@ func (py *pySVC) initialCall(ctx context.Context, funcName string, payload []byt
 			break
 		}
 
-		// Generate activity, it'll call Python with the result
 		var modFn sdktypes.ModuleFunction
+		// Generate activity, it'll call Python with the result
+		// The function name is irrelevant, all the information Python needs is in the Payload
 		fn, err := sdktypes.NewFunctionValue(py.xid, "activity", msg.Payload, nil, modFn)
 		if err != nil {
+			py.log.Error("create function", zap.Error(err))
 			return sdktypes.InvalidValue, err
 		}
 
+		py.log.Info("callback")
 		py.cbs.Call(
 			ctx,
 			py.xid.ToRunID(),
@@ -238,26 +241,39 @@ func (py *pySVC) initialCall(ctx context.Context, funcName string, payload []byt
 		)
 	}
 
+	py.log.Info("python done, killing")
+	py.run.proc.Kill() // FIXME: We run only once
+	py.run.proc = nil
+
 	// TODO: Return value
 	return sdktypes.Nothing, nil
 }
 
 func (py *pySVC) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
+	if py.run.proc == nil {
+		py.log.Error("call - python not running")
+		return sdktypes.InvalidValue, fmt.Errorf("python not running")
+	}
+
 	fn := v.GetFunction()
 	if !fn.IsValid() {
+		py.log.Error("call - invalid function", zap.Any("function", v))
 		return sdktypes.InvalidValue, fmt.Errorf("%#v is not a function", v)
 
 	}
 
+	fnName := fn.Name().String()
+	py.log.Info("call", zap.String("function", fnName))
 	if py.firstCall { // TODO: mutex?
 		py.firstCall = false
-		return py.initialCall(ctx, fn.Name().String(), fn.Data())
+		return py.initialCall(ctx, fnName, fn.Data())
 	}
 
 	msg := PyMessage{
 		Type:    "callback",
 		Payload: fn.Data(),
 	}
+	py.log.Info("callback to Python", zap.Any("message", msg))
 
 	if err := py.enc.Encode(msg); err != nil {
 		py.log.Error("send to python", zap.Error(err))
@@ -269,6 +285,7 @@ func (py *pySVC) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 		py.log.Error("from python", zap.Error(err))
 		return sdktypes.InvalidValue, err
 	}
+	py.log.Info("python return", zap.Any("message", reply))
 
 	return sdktypes.NewBytesValue(reply.Payload), nil
 }
