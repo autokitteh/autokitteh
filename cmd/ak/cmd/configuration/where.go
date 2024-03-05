@@ -5,8 +5,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"go.autokitteh.dev/autokitteh/backend/config"
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
+	"go.autokitteh.dev/autokitteh/internal/xdg"
 )
 
 var whereCmd = common.StandardCommand(&cobra.Command{
@@ -16,12 +16,12 @@ var whereCmd = common.StandardCommand(&cobra.Command{
 	Args:    cobra.NoArgs,
 
 	RunE: func(cmd *cobra.Command, args []string) error {
-		fmt.Println("Config home directory:", config.ConfigHomeDir())
-		fmt.Println("Data home directory:  ", config.DataHomeDir())
+		fmt.Println("Config home directory:", xdg.ConfigHomeDir())
+		fmt.Println("Data home directory:  ", xdg.DataHomeDir())
 		fmt.Println()
 		fmt.Println("Override environment variable names:")
-		fmt.Println(config.ConfigEnvVar)
-		fmt.Println(config.DataEnvVar)
+		fmt.Println(xdg.ConfigEnvVar)
+		fmt.Println(xdg.DataEnvVar)
 
 		return nil
 	},
