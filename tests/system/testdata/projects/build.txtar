@@ -1,0 +1,42 @@
+# Precondition: create project.
+ak project create my_project
+return code == 0
+output equals 'project_id: prj_00000000000000000000000001'
+
+# Negative tests: build nonexistent project.
+ak project build bad_project --from program.star
+output equals 'Error: project not found'
+return code == 10
+
+ak project build prj_deadbeef0deadbeef0deadbeef --from program.star
+output equals 'Error: project not found'
+return code == 10
+
+# Negative test: build project without required flag.
+ak project build my_project
+output equals 'Error: required flag(s) "from" not set'
+return code == 1
+
+# Build project from a single file.
+ak project build my_project --from single_file
+return code == 0
+
+# Build project from a directory tree with multiple files.
+ak project build my_project --from directory
+return code == 0
+
+# Build project from both, alongside each other.
+ak project build my_project --from single_file --from directory
+return code == 0
+
+-- single_file --
+print("single_file")
+
+-- directory/file1.star --
+print("directory/file1.star")
+
+-- directory/subdirectory/file1.star --
+print("directory/subdirectory/file1.star")
+
+-- directory/subdirectory/file2.star --
+print("directory/subdirectory/file2.star")

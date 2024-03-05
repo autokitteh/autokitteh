@@ -23,7 +23,7 @@ func init() {
 	// Subcommands.
 	projectsCmd.AddCommand(buildCmd)
 	projectsCmd.AddCommand(createCmd)
-	projectsCmd.AddCommand(downloadResourcesCmd)
+	projectsCmd.AddCommand(downloadCmd)
 	projectsCmd.AddCommand(getCmd)
 	projectsCmd.AddCommand(listCmd)
 }

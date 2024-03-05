@@ -3,10 +3,7 @@
 ak manifest apply project.yaml
 return code == 0
 
-ak project set-resources my_project --path my_program.star
-return code == 0
-
-ak project build my_project
+ak project build my_project --from my_program.star
 return code == 0
 output equals 'build_id: bld_00000000000000000000000005'
 
