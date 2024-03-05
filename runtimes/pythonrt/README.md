@@ -38,3 +38,12 @@ Go                              Python
 <------ Call result (value) ----
 
 ```
+
+### Communication Protocol
+
+We're using JSON over Unix domain socket, one JSON object per line.
+The reason do this is that that `ak_runner.py` should not have any external dependencies outside of the standard library.
+Once we introduce an external dependency, it will conflict with the user dependencies.
+
+The message payload is handled by Python and is opaque to AutoKitteh.
+Currently it's base64 of a pickle.
