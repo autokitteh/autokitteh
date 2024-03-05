@@ -45,7 +45,6 @@ def is_internal(name):
     return '.' not in name
 
 
-# FIXME: print('INFO: HOME:', os.getenv('HOME'))
 class Transformer(ast.NodeTransformer):
     """Replace 'fn(a, b)' with '_ak_call(fn, a, b)'"""
     def visit_Call(self, node):

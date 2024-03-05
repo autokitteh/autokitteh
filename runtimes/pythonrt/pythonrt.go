@@ -234,7 +234,7 @@ func (py *pySVC) initialCall(ctx context.Context, funcName string, payload []byt
 		py.cbs.Call(
 			ctx,
 			py.xid.ToRunID(),
-			// The function to call is encoded in the payload
+			// The Python function to call is encoded in the payload
 			fn,
 			nil,
 			nil,
