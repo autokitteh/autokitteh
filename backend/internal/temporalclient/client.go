@@ -31,8 +31,8 @@ type impl struct {
 
 func New(cfg *Config, z *zap.Logger) (Client, error) {
 	var tlsConfig *tls.Config
-	if cfg.TLSEnabled {
-		cert, err := tls.LoadX509KeyPair(cfg.TLSCertFilePath, cfg.TLSKeyFilePath)
+	if cfg.TLS.Enabled {
+		cert, err := tls.LoadX509KeyPair(cfg.TLS.CertFilePath, cfg.TLS.KeyFilePath)
 		if err != nil {
 			return nil, fmt.Errorf("load x509 key pair: %w", err)
 		}

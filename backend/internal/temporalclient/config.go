@@ -10,6 +10,11 @@ import (
 	"go.autokitteh.dev/autokitteh/backend/configset"
 )
 
+type tlsConfig struct {
+	Enabled      bool   `koanf:"enabled"`
+	CertFilePath string `koanf:"cert_file_path"`
+	KeyFilePath  string `koanf:"key_file_path"`
+}
 type Config struct {
 	AlwaysStartDevServer  bool            `koanf:"always_start_dev_server"`
 	StartDevServerIfNotUp bool            `koanf:"start_dev_server_if_not_up"`
@@ -20,10 +25,8 @@ type Config struct {
 	LogLevel              zap.AtomicLevel `koanf:"log_level"`
 
 	// DevServer.ClientOptions is not used.
-	DevServer       testsuite.DevServerOptions `koanf:"dev_server"`
-	TLSEnabled      bool                       `koanf:"tls"`
-	TLSCertFilePath string                     `koanf:"tls_cert_file_path"`
-	TLSKeyFilePath  string                     `koanf:"tls_key_file_path"`
+	DevServer testsuite.DevServerOptions `koanf:"dev_server"`
+	TLS       tlsConfig                  `koanf:"tls"`
 }
 
 var Configs = configset.Set[Config]{
