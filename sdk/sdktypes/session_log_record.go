@@ -1,109 +1,94 @@
 package sdktypes
 
 import (
-	"fmt"
-	"time"
+	"errors"
 
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
-	sessionsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/sessions/v1"
+	"google.golang.org/protobuf/types/known/timestamppb"
+
+	sessionv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/sessions/v1"
 )
 
-type (
-	SessionLogRecordPB = sessionsv1.SessionLogRecord
-	SessionLogRecord   = *object[*SessionLogRecordPB]
-)
-
-var (
-	SessionLogRecordFromProto       = makeFromProto(validateSessionLogRecord)
-	StrictSessionLogRecordFromProto = makeFromProto(strictValidateSessionLogRecord)
-	ToStrictSessionLogRecord        = makeWithValidator(strictValidateSessionLogRecord)
-)
-
-func strictValidateSessionLogRecord(pb *sessionsv1.SessionLogRecord) error {
-	return validateSessionLogRecord(pb)
+type SessionLogRecord struct {
+	object[*SessionLogRecordPB, SessionLogRecordTraits]
 }
 
-func validateSessionLogRecord(pb *sessionsv1.SessionLogRecord) error {
-	if _, err := getSessionLogRecordData(pb); err != nil {
-		return err
-	}
+var InvalidSessionLogRecord SessionLogRecord
 
-	return nil
+type SessionLogRecordPB = sessionv1.SessionLogRecord
+
+type SessionLogRecordTraits struct{}
+
+func (SessionLogRecordTraits) Validate(m *SessionLogRecordPB) error {
+	return errors.Join(
+		objectField[SessionCallAttemptStart]("call_attempt_start", m.CallAttemptStart),
+		objectField[SessionCallAttemptComplete]("call_attempt_complete", m.CallAttemptComplete),
+		objectField[SessionCallSpec]("call_spec", m.CallSpec),
+		objectField[SessionState]("state", m.State),
+	)
 }
 
-func NewPrintSessionLogRecord(print string) SessionLogRecord {
-	return kittehs.Must1(SessionLogRecordFromProto(&SessionLogRecordPB{
-		Data: &sessionsv1.SessionLogRecord_Print{
-			Print: print,
-		},
-	}))
+func (SessionLogRecordTraits) StrictValidate(m *SessionLogRecordPB) error {
+	return errors.Join(
+		mandatory("t", m.T),
+		oneOfMessage(m /* ignore: */, "t"),
+	)
 }
 
-func NewCallSpecSessionLogRecord(spec SessionCallSpec) SessionLogRecord {
-	return kittehs.Must1(SessionLogRecordFromProto(&SessionLogRecordPB{
-		Data: &sessionsv1.SessionLogRecord_CallSpec{
-			CallSpec: spec.ToProto(),
-		},
-	}))
+func SessionLogRecordFromProto(m *SessionLogRecordPB) (SessionLogRecord, error) {
+	return FromProto[SessionLogRecord](m)
 }
 
-func NewCallAttemptStartSessionLogRecord(start SessionCallAttemptStart) SessionLogRecord {
-	return kittehs.Must1(SessionLogRecordFromProto(&SessionLogRecordPB{
-		Data: &sessionsv1.SessionLogRecord_CallAttemptStart{
-			CallAttemptStart: start.ToProto(),
-		},
-	}))
+func StrictSessionLogRecordFromProto(m *SessionLogRecordPB) (SessionLogRecord, error) {
+	return Strict(SessionLogRecordFromProto(m))
 }
 
-func NewCallAttemptCompleteSessionLogRecord(complete SessionCallAttemptComplete) SessionLogRecord {
-	return kittehs.Must1(SessionLogRecordFromProto(&SessionLogRecordPB{
-		Data: &sessionsv1.SessionLogRecord_CallAttemptComplete{
-			CallAttemptComplete: complete.ToProto(),
-		},
-	}))
+func NewPrintSessionLogRecord(msg string) SessionLogRecord {
+	return forceFromProto[SessionLogRecord](&SessionLogRecordPB{
+		T:     timestamppb.Now(),
+		Print: msg,
+	})
 }
 
 func NewStateSessionLogRecord(state SessionState) SessionLogRecord {
-	return kittehs.Must1(SessionLogRecordFromProto(&SessionLogRecordPB{
-		Data: &sessionsv1.SessionLogRecord_State{
-			State: state.ToProto(),
-		},
-	}))
-}
-
-func GetSessionLogRecordTimestamp(record SessionLogRecord) time.Time {
-	return record.pb.T.AsTime()
-}
-
-func getSessionLogRecordData(pb *SessionLogRecordPB) (any, error) {
-	switch data := pb.Data.(type) {
-	case *sessionsv1.SessionLogRecord_Print:
-		return data.Print, nil
-	case *sessionsv1.SessionLogRecord_CallSpec:
-		return SessionCallSpecFromProto(data.CallSpec)
-	case *sessionsv1.SessionLogRecord_CallAttemptStart:
-		return SessionCallAttemptStartFromProto(data.CallAttemptStart)
-	case *sessionsv1.SessionLogRecord_CallAttemptComplete:
-		return SessionCallAttemptCompleteFromProto(data.CallAttemptComplete)
-	case *sessionsv1.SessionLogRecord_State:
-		return SessionStateFromProto(data.State)
-	default:
-		return nil, fmt.Errorf("unknown session log record data type: %T", data)
-	}
-}
-
-func GetSessionLogRecordData(r SessionLogRecord) any {
-	if r == nil {
-		return nil
+	if !state.IsValid() {
+		return InvalidSessionLogRecord
 	}
 
-	return kittehs.Must1(getSessionLogRecordData(r.pb))
+	return forceFromProto[SessionLogRecord](&SessionLogRecordPB{
+		T:     timestamppb.Now(),
+		State: state.ToProto(),
+	})
 }
 
-func GetSessionLogRecordState(r SessionLogRecord) SessionState {
-	return GetSessionLogRecordData(r).(SessionState)
+func NewCallAttemptStartSessionLogRecord(s SessionCallAttemptStart) SessionLogRecord {
+	if !s.IsValid() {
+		return InvalidSessionLogRecord
+	}
+
+	return forceFromProto[SessionLogRecord](&SessionLogRecordPB{
+		T:                timestamppb.Now(),
+		CallAttemptStart: s.ToProto(),
+	})
 }
 
-func GetSessionLogRecordPrint(r SessionLogRecord) string {
-	return GetSessionLogRecordData(r).(string)
+func NewCallAttemptCompleteSessionLogRecord(s SessionCallAttemptComplete) SessionLogRecord {
+	if !s.IsValid() {
+		return InvalidSessionLogRecord
+	}
+
+	return forceFromProto[SessionLogRecord](&SessionLogRecordPB{
+		T:                   timestamppb.Now(),
+		CallAttemptComplete: s.ToProto(),
+	})
+}
+
+func NewCallSpecSessionLogRecord(s SessionCallSpec) SessionLogRecord {
+	if !s.IsValid() {
+		return InvalidSessionLogRecord
+	}
+
+	return forceFromProto[SessionLogRecord](&SessionLogRecordPB{
+		T:        timestamppb.Now(),
+		CallSpec: s.ToProto(),
+	})
 }

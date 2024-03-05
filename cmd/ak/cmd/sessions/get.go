@@ -28,7 +28,7 @@ var getCmd = common.StandardCommand(&cobra.Command{
 			return err
 		}
 
-		if err := common.FailIfNotFound(cmd, "session", s); err != nil {
+		if err := common.FailIfNotFound(cmd, "session", s.IsValid()); err != nil {
 			return err
 		}
 

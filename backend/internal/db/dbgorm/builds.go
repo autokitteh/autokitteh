@@ -13,9 +13,9 @@ import (
 func (db *gormdb) SaveBuild(ctx context.Context, build sdktypes.Build, data []byte) error {
 	// TODO: add Build time
 	e := scheme.Build{
-		BuildID:   sdktypes.GetBuildID(build).String(),
+		BuildID:   build.ID().String(),
 		Data:      data,
-		CreatedAt: sdktypes.GetBuildCreatedAt(build),
+		CreatedAt: build.CreatedAt(),
 	}
 
 	if err := db.db.WithContext(ctx).Create(&e).Error; err != nil {

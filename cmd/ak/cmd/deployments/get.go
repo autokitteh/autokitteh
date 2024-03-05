@@ -5,7 +5,6 @@ import (
 
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
 	"go.autokitteh.dev/autokitteh/internal/resolver"
-	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 var getCmd = common.StandardCommand(&cobra.Command{
@@ -21,13 +20,13 @@ var getCmd = common.StandardCommand(&cobra.Command{
 			return err
 		}
 
-		if err := common.FailIfNotFound(cmd, "deployment", d); err != nil {
+		if err := common.FailIfNotFound(cmd, "deployment", d.IsValid()); err != nil {
 			return err
 		}
 
 		// Make the output deterministic during CLI integration tests.
 		if test, err := cmd.Root().PersistentFlags().GetBool("test"); err == nil && test {
-			d = sdktypes.DeploymentWithoutTimes(d)
+			d = d.WithoutTimestamps()
 		}
 
 		common.RenderKVIfV("deployment", d)

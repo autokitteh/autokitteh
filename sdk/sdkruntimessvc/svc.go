@@ -100,8 +100,8 @@ func (s *svc) Build(ctx context.Context, req *connect.Request[runtimesv1.BuildRe
 
 	bf, err := s.runtimes.Build(ctx, srcFS, symbols, req.Msg.Memo)
 	if err != nil {
-		if err := sdktypes.ProgramErrorFromError(err); err != nil {
-			return connect.NewResponse(&runtimesv1.BuildResponse{Error: err.ToProto()}), nil
+		if perr, ok := sdktypes.FromError(err); ok {
+			return connect.NewResponse(&runtimesv1.BuildResponse{Error: perr.ToProto()}), nil
 		}
 		return nil, connect.NewError(connect.CodeUnknown, err)
 	}
@@ -148,8 +148,8 @@ func (s *svc) Run(ctx context.Context, req *connect.Request[runtimesv1.RunReques
 
 	run, err := s.runtimes.Run(ctx, rid, msg.Path, bf, gs, cbs)
 	if err != nil {
-		if err := sdktypes.ProgramErrorFromError(err); err != nil {
-			return stream.Send(&runtimesv1.RunResponse{Error: err.ToProto()})
+		if perr, ok := sdktypes.FromError(err); ok {
+			return stream.Send(&runtimesv1.RunResponse{Error: perr.ToProto()})
 		}
 		return connect.NewError(connect.CodeUnknown, err)
 	}

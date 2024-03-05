@@ -26,7 +26,7 @@ var downloadCmd = common.StandardCommand(&cobra.Command{
 		if err != nil {
 			return err
 		}
-		if b == nil {
+		if !b.IsValid() {
 			err = fmt.Errorf("build ID %q not found", args[0])
 			return common.NewExitCodeError(common.NotFoundExitCode, err)
 		}

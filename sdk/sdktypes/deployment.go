@@ -1,129 +1,63 @@
 package sdktypes
 
 import (
-	"fmt"
-	"strings"
+	"errors"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
-	deploymentsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/deployments/v1"
-	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
+	deploymentv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/deployments/v1"
 )
 
-type (
-	DeploymentPB = deploymentsv1.Deployment
-	Deployment   = *object[*DeploymentPB]
-)
-
-type DeploymentState deploymentsv1.DeploymentState
-
-type DeploymentSessionsStats = deploymentsv1.Deployment_SessionStats
-
-const (
-	DeploymentStateUnspecified = DeploymentState(deploymentsv1.DeploymentState_DEPLOYMENT_STATE_UNSPECIFIED)
-	DeploymentStateActive      = DeploymentState(deploymentsv1.DeploymentState_DEPLOYMENT_STATE_ACTIVE)
-	DeploymentStateDraining    = DeploymentState(deploymentsv1.DeploymentState_DEPLOYMENT_STATE_DRAINING)
-	DeploymentStateInactive    = DeploymentState(deploymentsv1.DeploymentState_DEPLOYMENT_STATE_INACTIVE)
-	DeploymentStateTesting     = DeploymentState(deploymentsv1.DeploymentState_DEPLOYMENT_STATE_TESTING)
-)
-
-func DeploymentStateFromProto(s deploymentsv1.DeploymentState) (DeploymentState, error) {
-	if _, ok := deploymentsv1.DeploymentState_name[int32(s.Number())]; ok {
-		return DeploymentState(s), nil
-	}
-	return DeploymentStateUnspecified, fmt.Errorf("%w: unknown state %v", sdkerrors.ErrInvalidArgument, s)
+type Deployment struct {
+	object[*DeploymentPB, DeploymentTraits]
 }
 
-func (s DeploymentState) String() string {
-	return strings.TrimPrefix(deploymentsv1.DeploymentState_name[int32(s)], "DEPLOYMENT_STATE_")
+var InvalidDeployment Deployment
+
+type DeploymentPB = deploymentv1.Deployment
+
+type DeploymentTraits struct{}
+
+func (DeploymentTraits) Validate(m *DeploymentPB) error {
+	return errors.Join(
+		idField[DeploymentID]("deployment_id", m.DeploymentId),
+		idField[EnvID]("env_id", m.EnvId),
+		idField[BuildID]("build_id", m.BuildId),
+		enumField[DeploymentState]("state", m.State),
+	)
 }
 
-func (s DeploymentState) ToProto() deploymentsv1.DeploymentState {
-	return deploymentsv1.DeploymentState(s)
+func (DeploymentTraits) StrictValidate(m *DeploymentPB) error {
+	return errors.Join(
+		mandatory("deployment_id", m.DeploymentId),
+		mandatory("env_id", m.EnvId),
+		mandatory("build_id", m.BuildId),
+	)
 }
 
-func ParseDeploymentState(raw string) DeploymentState {
-	if raw == "" {
-		return DeploymentStateUnspecified
-	}
-	upper := strings.ToUpper(raw)
-	if !strings.HasPrefix(upper, "DEPLOYMENT_STATE_") {
-		upper = "DEPLOYMENT_STATE_" + upper
-	}
-
-	state, ok := deploymentsv1.DeploymentState_value[upper]
-	if !ok {
-		return DeploymentStateUnspecified
-	}
-
-	return DeploymentState(state)
+func DeploymentFromProto(m *DeploymentPB) (Deployment, error) { return FromProto[Deployment](m) }
+func StrictDeploymentFromProto(m *DeploymentPB) (Deployment, error) {
+	return Strict(DeploymentFromProto(m))
 }
 
-var (
-	DeploymentFromProto       = makeFromProto(validateDeployment)
-	StrictDeploymentFromProto = makeFromProto(strictValidateDeployment)
-	ToStrictDeployment        = makeWithValidator(strictValidateDeployment)
-)
+func (p Deployment) ID() DeploymentID { return kittehs.Must1(ParseDeploymentID(p.read().DeploymentId)) }
 
-func strictValidateDeployment(pb *deploymentsv1.Deployment) error {
-	if err := ensureNotEmpty(pb.DeploymentId, pb.EnvId, pb.BuildId); err != nil {
-		return err
-	}
-
-	return validateDeployment(pb)
+func (p Deployment) WithNewID() Deployment {
+	return Deployment{p.forceUpdate(func(pb *DeploymentPB) { pb.DeploymentId = NewDeploymentID().String() })}
 }
 
-func validateDeployment(pb *deploymentsv1.Deployment) error {
-	if _, err := ParseDeploymentID(pb.DeploymentId); err != nil {
-		return err
-	}
-
-	if _, err := ParseEnvID(pb.EnvId); err != nil {
-		return err
-	}
-
-	if _, err := ParseBuildID(pb.BuildId); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func GetDeploymentID(e Deployment) DeploymentID {
-	if e == nil {
-		return nil
-	}
-	return kittehs.Must1(ParseDeploymentID(e.pb.DeploymentId))
-}
-
-func GetDeploymentEnvID(e Deployment) EnvID {
-	if e == nil {
-		return nil
-	}
-	return kittehs.Must1(ParseEnvID(e.pb.EnvId))
-}
-
-func GetDeploymentBuildID(e Deployment) BuildID {
-	if e == nil {
-		return nil
-	}
-	return kittehs.Must1(ParseBuildID(e.pb.BuildId))
-}
-
-func GetDeploymentState(e Deployment) DeploymentState {
-	return DeploymentState(e.pb.State)
-}
-
-var PossibleDeploymentStates = kittehs.Transform(kittehs.MapValuesSortedByKeys(deploymentsv1.DeploymentState_name), func(name string) string {
-	return strings.TrimPrefix(name, "DEPLOYMENT_STATE_")
-})
-
-func DeploymentWithoutTimes(d Deployment) Deployment {
-	if d == nil {
-		return nil
-	}
-
-	return kittehs.Must1(d.Update(func(pb *DeploymentPB) {
+func (p Deployment) EnvID() EnvID     { return kittehs.Must1(ParseEnvID(p.read().EnvId)) }
+func (p Deployment) BuildID() BuildID { return kittehs.Must1(ParseBuildID(p.read().BuildId)) }
+func (p Deployment) WithoutTimestamps() Deployment {
+	return Deployment{p.forceUpdate(func(pb *DeploymentPB) {
 		pb.CreatedAt = nil
 		pb.UpdatedAt = nil
-	}))
+	})}
+}
+
+func (p Deployment) State() DeploymentState {
+	return forceEnumFromProto[DeploymentState](p.read().State)
+}
+
+func (p Deployment) WithState(s DeploymentState) Deployment {
+	return Deployment{p.forceUpdate(func(pb *DeploymentPB) { pb.State = s.ToProto() })}
 }

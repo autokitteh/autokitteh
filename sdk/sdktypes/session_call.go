@@ -1,26 +1,33 @@
 package sdktypes
 
 import (
-	sessionsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/sessions/v1"
+	"errors"
+
+	sessionv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/sessions/v1"
 )
 
-type (
-	SessionCallPB = sessionsv1.Call
-	SessionCall   = *object[*SessionCallPB]
-)
-
-var (
-	SessionCallFromProto       = makeFromProto(validateSessionCall)
-	StrictSessionCallFromProto = makeFromProto(strictValidateSessionCall)
-	ToStrictSessionCall        = makeWithValidator(strictValidateSessionCall)
-)
-
-func strictValidateSessionCall(pb *sessionsv1.Call) error {
-	// TODO
-	return validateSessionCall(pb)
+type SessionCall struct {
+	object[*SessionCallPB, SessionCallTraits]
 }
 
-func validateSessionCall(pb *sessionsv1.Call) error {
-	// TODO
-	return nil
+var InvalidSessionCall SessionCall
+
+type SessionCallPB = sessionv1.Call
+
+type SessionCallTraits struct{}
+
+func (SessionCallTraits) Validate(m *SessionCallPB) error {
+	return errors.Join(
+		objectField[SessionCallSpec]("spec", m.Spec),
+		objectsSliceField[SessionCallAttempt]("attempt", m.Attempts),
+	)
+}
+
+func (SessionCallTraits) StrictValidate(m *SessionCallPB) error {
+	return mandatory("spec", m.Spec)
+}
+
+func SessionCallFromProto(m *SessionCallPB) (SessionCall, error) { return FromProto[SessionCall](m) }
+func StrictSessionCallFromProto(m *SessionCallPB) (SessionCall, error) {
+	return Strict(SessionCallFromProto(m))
 }

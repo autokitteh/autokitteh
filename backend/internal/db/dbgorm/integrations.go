@@ -31,26 +31,26 @@ func (db *gormdb) UpdateIntegration(ctx context.Context, i sdktypes.Integration)
 }
 
 func convertTypeToRecord(i sdktypes.Integration) *scheme.Integration {
-	l := sdktypes.GetIntegrationLogoURL(i)
+	l := i.LogoURL()
 	if l == nil {
 		l = &url.URL{}
 	}
 
-	uls, err := json.Marshal(sdktypes.GetIntegrationUserLinks(i))
+	uls, err := json.Marshal(i.UserLinks())
 	if err != nil {
 		uls = []byte{}
 	}
 
-	c := sdktypes.GetIntegrationConnectionURL(i)
+	c := i.ConnectionURL()
 	if c == nil {
 		c = &url.URL{}
 	}
 
 	return &scheme.Integration{
-		IntegrationID: sdktypes.GetIntegrationID(i).String(),
-		UniqueName:    sdktypes.GetIntegrationUniqueName(i).String(),
-		DisplayName:   sdktypes.GetIntegrationDisplayName(i),
-		Description:   sdktypes.GetIntegrationDescription(i),
+		IntegrationID: i.ID().String(),
+		UniqueName:    i.UniqueName().String(),
+		DisplayName:   i.DisplayName(),
+		Description:   i.Description(),
 		LogoURL:       l.String(),
 		UserLinks:     uls,
 		// TODO: Tags

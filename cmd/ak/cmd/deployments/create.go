@@ -25,7 +25,7 @@ var createCmd = common.StandardCommand(&cobra.Command{
 		if err != nil {
 			return err
 		}
-		if b == nil {
+		if !b.IsValid() {
 			err = fmt.Errorf("build ID %q not found", buildID)
 			return common.NewExitCodeError(common.NotFoundExitCode, err)
 		}
@@ -34,7 +34,7 @@ var createCmd = common.StandardCommand(&cobra.Command{
 		if err != nil {
 			return err
 		}
-		if e == nil {
+		if !e.IsValid() {
 			err = fmt.Errorf("environment %q not found", env)
 			return common.NewExitCodeError(common.NotFoundExitCode, err)
 		}

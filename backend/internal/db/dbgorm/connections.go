@@ -11,11 +11,11 @@ import (
 
 func (db *gormdb) CreateConnection(ctx context.Context, conn sdktypes.Connection) error {
 	c := scheme.Connection{
-		ConnectionID:     sdktypes.GetConnectionID(conn).String(),
-		IntegrationID:    sdktypes.GetConnectionIntegrationID(conn).String(), // TODO(ENG-158): need to verify integration id
-		IntegrationToken: sdktypes.GetConnectionIntegrationToken(conn),
-		ProjectID:        sdktypes.GetConnectionProjectID(conn).String(), // TODO(ENG-136): need to verify parent id
-		Name:             sdktypes.GetConnectionName(conn).String(),
+		ConnectionID:     conn.ID().String(),
+		IntegrationID:    conn.IntegrationID().String(), // TODO(ENG-158): need to verify integration id
+		IntegrationToken: conn.IntegrationToken(),
+		ProjectID:        conn.ProjectID().String(), // TODO(ENG-136): need to verify parent id
+		Name:             conn.Name().String(),
 	}
 
 	if err := db.db.WithContext(ctx).Create(&c).Error; err != nil {
@@ -27,15 +27,15 @@ func (db *gormdb) CreateConnection(ctx context.Context, conn sdktypes.Connection
 
 func (db *gormdb) UpdateConnection(ctx context.Context, conn sdktypes.Connection) error {
 	c := scheme.Connection{
-		ConnectionID:     sdktypes.GetConnectionID(conn).String(),
-		IntegrationID:    sdktypes.GetConnectionIntegrationID(conn).String(), // TODO(ENG-158): verify integration id
-		IntegrationToken: sdktypes.GetConnectionIntegrationToken(conn),
-		ProjectID:        sdktypes.GetConnectionProjectID(conn).String(), // TODO(ENG-136): need to verify parent id
-		Name:             sdktypes.GetConnectionName(conn).String(),
+		ConnectionID:     conn.ID().String(),
+		IntegrationID:    conn.IntegrationID().String(), // TODO(ENG-158): need to verify integration id
+		IntegrationToken: conn.IntegrationToken(),
+		ProjectID:        conn.ProjectID().String(), // TODO(ENG-136): need to verify parent id
+		Name:             conn.Name().String(),
 	}
 
 	err := db.db.WithContext(ctx).
-		Where("connection_id = ?", sdktypes.GetConnectionID(conn).String()).
+		Where("connection_id = ?", conn.ID().String()).
 		Updates(&c).Error
 	if err != nil {
 		return translateError(err)
@@ -60,13 +60,13 @@ func (db *gormdb) GetConnection(ctx context.Context, id sdktypes.ConnectionID) (
 
 func (db *gormdb) ListConnections(ctx context.Context, filter sdkservices.ListConnectionsFilter) ([]sdktypes.Connection, error) {
 	q := db.db.WithContext(ctx)
-	if filter.IntegrationID != nil {
+	if filter.IntegrationID.IsValid() {
 		q = q.Where("integration_id = ?", filter.IntegrationID.String())
 	}
 	if filter.IntegrationToken != "" {
 		q = q.Where("integration_token = ?", filter.IntegrationToken)
 	}
-	if filter.ProjectID != nil {
+	if filter.ProjectID.IsValid() {
 		q = q.Where("project_id = ?", filter.ProjectID.String())
 	}
 

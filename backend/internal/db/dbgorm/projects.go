@@ -14,15 +14,15 @@ import (
 // TODO: Delete.
 
 func (db *gormdb) CreateProject(ctx context.Context, p sdktypes.Project) error {
-	if !sdktypes.ProjectHasID(p) {
+	if !p.ID().IsValid() {
 		db.z.DPanic("no project id supplied")
 		return errors.New("project id missing")
 	}
 
-	ph := sdktypes.GetProjectName(p)
+	ph := p.Name()
 
 	r := scheme.Project{
-		ProjectID: sdktypes.GetProjectID(p).String(),
+		ProjectID: p.ID().String(),
 		Name:      ph.String(),
 	}
 
@@ -35,8 +35,8 @@ func (db *gormdb) CreateProject(ctx context.Context, p sdktypes.Project) error {
 
 func (db *gormdb) UpdateProject(ctx context.Context, p sdktypes.Project) error {
 	r := scheme.Project{
-		ProjectID: sdktypes.GetProjectID(p).String(),
-		Name:      sdktypes.GetProjectName(p).String(),
+		ProjectID: p.ID().String(),
+		Name:      p.Name().String(),
 	}
 
 	if err := db.db.WithContext(ctx).Updates(&r).Error; err != nil {
@@ -50,7 +50,7 @@ func (db *gormdb) GetProjectByID(ctx context.Context, pid sdktypes.ProjectID) (s
 	return getOneWTransform(db.db, ctx, scheme.ParseProject, "project_id = ?", pid.String())
 }
 
-func (db *gormdb) GetProjectByName(ctx context.Context, ph sdktypes.Name) (sdktypes.Project, error) {
+func (db *gormdb) GetProjectByName(ctx context.Context, ph sdktypes.Symbol) (sdktypes.Project, error) {
 	return getOneWTransform(db.db, ctx, scheme.ParseProject, "name = ?", ph.String())
 }
 

@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	programv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/program/v1"
-	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 )
 
 const (
@@ -15,73 +14,43 @@ const (
 	rowColSeparator = "."
 )
 
+type CodeLocation struct {
+	object[*CodeLocationPB, CodeLocationTraits]
+}
+
 type CodeLocationPB = programv1.CodeLocation
 
-type CodeLocation = *object[*CodeLocationPB]
+type CodeLocationTraits struct{}
 
-var (
-	CodeLocationFromProto       = makeFromProto(validateCodeLocation)
-	StrictCodeLocationFromProto = makeFromProto(strictValidateCodeLocation)
-	ToStrictCodeLocation        = makeWithValidator(strictValidateCodeLocation)
-)
-
-func strictValidateCodeLocation(pb *programv1.CodeLocation) error {
-	return validateCodeLocation(pb)
+func (CodeLocationTraits) Validate(m *CodeLocationPB) error {
+	return nameField("name", m.Name)
 }
 
-func validateCodeLocation(pb *programv1.CodeLocation) error {
-	// NOTE: ensure to return correct sdk errors if any
-	return nil
+func (t CodeLocationTraits) StrictValidate(m *CodeLocationPB) error {
+	return nonzeroMessage(m)
 }
 
-func GetCodeLocationPath(l CodeLocation) string {
-	if l == nil {
-		return ""
-	}
+func (l CodeLocation) Path() string { return l.read().Path }
+func (l CodeLocation) Col() uint32  { return l.read().Col }
+func (l CodeLocation) Row() uint32  { return l.read().Row }
+func (l CodeLocation) Name() string { return l.read().Name }
 
-	return l.pb.Path
-}
-
-func GetCodeLocationRowCol(l CodeLocation) (uint32, uint32) {
-	if l == nil {
-		return 0, 0
-	}
-
-	return l.pb.Row, l.pb.Col
-}
-
-func GetCodeLocationName(l CodeLocation) string {
-	if l == nil {
-		return ""
-	}
-
-	return l.pb.Name
-}
-
-func GetCodeLocationCanonicalString(l CodeLocation) string {
-	if l == nil {
-		return ""
-	}
-
-	return getCodeLocationPBCanonicalString(l.pb)
-}
-
-func getCodeLocationPBCanonicalString(pb *CodeLocationPB) string {
-	if pb == nil {
+func canonicalString(m *CodeLocationPB) string {
+	if m == nil {
 		return ""
 	}
 
 	var b strings.Builder
 
-	b.WriteString(pb.Path)
+	b.WriteString(m.Path)
 
-	name := pb.Name
+	name := m.Name
 
-	if pb.Row != 0 || pb.Col != 0 {
-		b.WriteString(fmt.Sprintf("%s%d", pathSeparator, pb.Row))
+	if m.Row != 0 || m.Col != 0 {
+		b.WriteString(fmt.Sprintf("%s%d", pathSeparator, m.Row))
 
-		if pb.Col != 0 {
-			b.WriteString(fmt.Sprintf("%s%d", rowColSeparator, pb.Col))
+		if m.Col != 0 {
+			b.WriteString(fmt.Sprintf("%s%d", rowColSeparator, m.Col))
 		}
 
 		if name != "" {
@@ -98,17 +67,19 @@ func getCodeLocationPBCanonicalString(pb *CodeLocationPB) string {
 	return b.String()
 }
 
-func StrictParseCodeLocation(s string) (CodeLocation, error) {
-	if s == "" {
-		return nil, sdkerrors.ErrInvalidArgument
-	}
+func (l CodeLocation) CanonicalString() string { return canonicalString(l.m) }
 
-	return ParseCodeLocation(s)
+func CodeLocationFromProto(m *CodeLocationPB) (CodeLocation, error) {
+	return FromProto[CodeLocation](m)
+}
+
+func StrictParseCodeLocation(s string) (CodeLocation, error) {
+	return Strict(ParseCodeLocation(s))
 }
 
 func ParseCodeLocation(s string) (CodeLocation, error) {
 	if s == "" {
-		return nil, nil
+		return CodeLocation{}, nil
 	}
 
 	path, after, ok := strings.Cut(s, pathSeparator)
@@ -142,7 +113,7 @@ func ParseCodeLocation(s string) (CodeLocation, error) {
 		if _, err := strconv.Atoi(a); strings.Contains(a, rowColSeparator) || err == nil {
 			r, c, err := rowCol(a)
 			if err != nil {
-				return nil, err
+				return CodeLocation{}, err
 			}
 
 			return CodeLocationFromProto(&CodeLocationPB{
@@ -162,7 +133,7 @@ func ParseCodeLocation(s string) (CodeLocation, error) {
 	if _, err := strconv.Atoi(a); strings.Contains(a, rowColSeparator) || err == nil {
 		r, c, err := rowCol(a)
 		if err != nil {
-			return nil, err
+			return CodeLocation{}, err
 		}
 
 		return CodeLocationFromProto(&CodeLocationPB{

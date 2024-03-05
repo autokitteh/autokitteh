@@ -131,20 +131,20 @@ func makeOpts(m *module) []sdkmodule.Optfn {
 // This function is not included in the integration when used as an internal client. See `NewModule`.
 func do(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
 	if len(kwargs) != 0 {
-		return nil, fmt.Errorf("not expecting kwargs")
+		return sdktypes.InvalidValue, fmt.Errorf("not expecting kwargs")
 	}
 
 	unwrappedArgs := make([]any, len(args))
 	for i, v := range args {
 		var err error
 		if unwrappedArgs[i], err = unwrap(v); err != nil {
-			return nil, fmt.Errorf("arg %d: %w", i, err)
+			return sdktypes.InvalidValue, fmt.Errorf("arg %d: %w", i, err)
 		}
 	}
 
 	client, err := externalClient(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	return returnCmd(client.Do(ctx, unwrappedArgs...))
@@ -157,12 +157,12 @@ func (m *module) del(ctx context.Context, args []sdktypes.Value, kwargs map[stri
 		"*keys", &ks,
 	)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	client, keyfn, err := m.client(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	return returnCmd(client.Del(ctx, kittehs.Transform(ks, keyfn)...))
@@ -185,12 +185,12 @@ func (m *module) expire(ctx context.Context, args []sdktypes.Value, kwargs map[s
 		"lt?", &lt,
 	)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	client, keyfn, err := m.client(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	switch {
@@ -215,17 +215,17 @@ func (m *module) set(ctx context.Context, args []sdktypes.Value, kwargs map[stri
 	)
 
 	if err := sdkmodule.UnpackArgs(args, kwargs, "key", &k, "value", &v, "ttl?", &ttl); err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	client, keyfn, err := m.client(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	u, err := unwrap(v)
 	if err != nil {
-		return nil, fmt.Errorf("value: %w", err)
+		return sdktypes.InvalidValue, fmt.Errorf("value: %w", err)
 	}
 
 	return returnCmd(client.Set(ctx, keyfn(k), u, ttl))
@@ -235,12 +235,12 @@ func (m *module) get(ctx context.Context, args []sdktypes.Value, kwargs map[stri
 	var k string
 
 	if err := sdkmodule.UnpackArgs(args, kwargs, "key", &k); err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	client, keyfn, err := m.client(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	return returnCmd(client.Get(ctx, keyfn(k)))
@@ -253,12 +253,12 @@ func (m *module) incr(ctx context.Context, args []sdktypes.Value, kwargs map[str
 	)
 
 	if err := sdkmodule.UnpackArgs(args, kwargs, "key", &k, "by?", &by); err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	client, keyfn, err := m.client(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	return returnCmd(client.IncrBy(ctx, keyfn(k), by))
@@ -271,12 +271,12 @@ func (m *module) decr(ctx context.Context, args []sdktypes.Value, kwargs map[str
 	)
 
 	if err := sdkmodule.UnpackArgs(args, kwargs, "key", &k, "by?", &by); err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	client, keyfn, err := m.client(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	return returnCmd(client.DecrBy(ctx, keyfn(k), by))
@@ -289,12 +289,12 @@ func (m *module) lpos(ctx context.Context, args []sdktypes.Value, kwargs map[str
 	)
 
 	if err := sdkmodule.UnpackArgs(args, kwargs, "key", &k, "value", &v, "rank?", &rank, "max_len", &maxLen); err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	client, keyfn, err := m.client(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	return returnCmd(client.LPos(ctx, keyfn(k), v, redis.LPosArgs{Rank: rank, MaxLen: maxLen}))
@@ -304,12 +304,12 @@ func (m *module) llen(ctx context.Context, args []sdktypes.Value, kwargs map[str
 	var k string
 
 	if err := sdkmodule.UnpackArgs(args, kwargs, "key", &k); err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	client, keyfn, err := m.client(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	return returnCmd(client.LLen(ctx, keyfn(k)))
@@ -323,12 +323,12 @@ func (m *module) lset(ctx context.Context, args []sdktypes.Value, kwargs map[str
 	)
 
 	if err := sdkmodule.UnpackArgs(args, kwargs, "key", &k, "index", &index, "value", &v); err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	client, keyfn, err := m.client(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	return returnCmd(client.LSet(ctx, keyfn(k), index, v))
@@ -342,12 +342,12 @@ func (m *module) lrem(ctx context.Context, args []sdktypes.Value, kwargs map[str
 	)
 
 	if err := sdkmodule.UnpackArgs(args, kwargs, "key", &k, "value", &v); err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	client, keyfn, err := m.client(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	return returnCmd(client.LRem(ctx, keyfn(k), count, v))
@@ -357,12 +357,12 @@ func (m *module) rpoplpush(ctx context.Context, args []sdktypes.Value, kwargs ma
 	var src, dst string
 
 	if err := sdkmodule.UnpackArgs(args, kwargs, "src", &src, "dst", &dst); err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	client, keyfn, err := m.client(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	return returnCmd(client.RPopLPush(ctx, keyfn(src), keyfn(dst)))
@@ -375,12 +375,12 @@ func (m *module) brpoplpush(ctx context.Context, args []sdktypes.Value, kwargs m
 	)
 
 	if err := sdkmodule.UnpackArgs(args, kwargs, "src", &src, "dst", &dst, "timeout", &t); err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	client, keyfn, err := m.client(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	return returnCmd(client.BRPopLPush(ctx, keyfn(src), keyfn(dst), t))
@@ -393,12 +393,12 @@ func (m *module) lpush(ctx context.Context, args []sdktypes.Value, kwargs map[st
 	)
 
 	if err := sdkmodule.UnpackArgs(args, kwargs, "key", &k, "*vs", &vs); err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	client, keyfn, err := m.client(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	return returnCmd(client.LPush(ctx, keyfn(k), vs...))
@@ -411,12 +411,12 @@ func (m *module) lpushx(ctx context.Context, args []sdktypes.Value, kwargs map[s
 	)
 
 	if err := sdkmodule.UnpackArgs(args, kwargs, "key", &k, "*vs", &vs); err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	client, keyfn, err := m.client(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	return returnCmd(client.LPushX(ctx, keyfn(k), vs...))
@@ -426,12 +426,12 @@ func (m *module) lpop(ctx context.Context, args []sdktypes.Value, kwargs map[str
 	var k string
 
 	if err := sdkmodule.UnpackArgs(args, kwargs, "key", &k); err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	client, keyfn, err := m.client(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	return returnCmd(client.LPop(ctx, keyfn(k)))
@@ -444,12 +444,12 @@ func (m *module) lrange(ctx context.Context, args []sdktypes.Value, kwargs map[s
 	)
 
 	if err := sdkmodule.UnpackArgs(args, kwargs, "key", &k, "start", &start, "stop", &stop); err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	client, keyfn, err := m.client(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	return returnCmd(client.LRange(ctx, keyfn(k), start, stop))
@@ -462,12 +462,12 @@ func (m *module) ltrim(ctx context.Context, args []sdktypes.Value, kwargs map[st
 	)
 
 	if err := sdkmodule.UnpackArgs(args, kwargs, "key", &k, "start", &start, "stop", &stop); err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	client, keyfn, err := m.client(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	return returnCmd(client.LTrim(ctx, keyfn(k), start, stop))
@@ -480,12 +480,12 @@ func (m *module) rpush(ctx context.Context, args []sdktypes.Value, kwargs map[st
 	)
 
 	if err := sdkmodule.UnpackArgs(args, kwargs, "key", &k, "*vs", &vs); err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	client, keyfn, err := m.client(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	return returnCmd(client.RPush(ctx, keyfn(k), vs...))
@@ -498,12 +498,12 @@ func (m *module) rpushx(ctx context.Context, args []sdktypes.Value, kwargs map[s
 	)
 
 	if err := sdkmodule.UnpackArgs(args, kwargs, "key", &k, "*vs", &vs); err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	client, keyfn, err := m.client(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	return returnCmd(client.RPushX(ctx, keyfn(k), vs...))
@@ -513,12 +513,12 @@ func (m *module) rpop(ctx context.Context, args []sdktypes.Value, kwargs map[str
 	var k string
 
 	if err := sdkmodule.UnpackArgs(args, kwargs, "key", &k); err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	client, keyfn, err := m.client(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	return returnCmd(client.RPop(ctx, keyfn(k)))
@@ -531,12 +531,12 @@ func (m *module) brpop(ctx context.Context, args []sdktypes.Value, kwargs map[st
 	)
 
 	if err := sdkmodule.UnpackArgs(args, kwargs, "timeout", &t, "*keys", &ks); err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	client, keyfn, err := m.client(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	return returnCmd(client.BRPop(ctx, t, kittehs.Transform(ks, keyfn)...))
@@ -549,12 +549,12 @@ func (m *module) blpop(ctx context.Context, args []sdktypes.Value, kwargs map[st
 	)
 
 	if err := sdkmodule.UnpackArgs(args, kwargs, "timeout", &t, "*keys", &ks); err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	client, keyfn, err := m.client(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	return returnCmd(client.BLPop(ctx, t, kittehs.Transform(ks, keyfn)...))
@@ -567,12 +567,12 @@ func (m *module) lindex(ctx context.Context, args []sdktypes.Value, kwargs map[s
 	)
 
 	if err := sdkmodule.UnpackArgs(args, kwargs, "key", &k, "index", &index); err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	client, keyfn, err := m.client(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	return returnCmd(client.LIndex(ctx, keyfn(k), index))
@@ -585,12 +585,12 @@ func (m *module) linsert(ctx context.Context, args []sdktypes.Value, kwargs map[
 	)
 
 	if err := sdkmodule.UnpackArgs(args, kwargs, "key", &k, "op", &op, "pivot", &pivot, "value", &v); err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	client, keyfn, err := m.client(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	return returnCmd(client.LInsert(ctx, keyfn(k), op, pivot, v))

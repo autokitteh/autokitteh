@@ -25,7 +25,7 @@ var getCmd = common.StandardCommand(&cobra.Command{
 			return err
 		}
 
-		if err := common.FailIfNotFound(cmd, "integration", i); err != nil {
+		if err := common.FailIfNotFound(cmd, "integration", i.IsValid()); err != nil {
 			return err
 		}
 

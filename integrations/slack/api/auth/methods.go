@@ -23,7 +23,7 @@ func (a API) Test(ctx context.Context, args []sdktypes.Value, kwargs map[string]
 	resp := &TestResponse{}
 	err := api.PostJSON(ctx, a.Secrets, a.Scope, struct{}{}, resp, "auth.test")
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Parse and return the response.

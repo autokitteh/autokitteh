@@ -33,7 +33,7 @@ var listCmd = common.StandardCommand(&cobra.Command{
 			if err != nil {
 				return err
 			}
-			if d == nil {
+			if !d.IsValid() {
 				err = fmt.Errorf("deployment ID %q not found", deploymentID)
 				return common.NewExitCodeError(common.NotFoundExitCode, err)
 			}
@@ -45,7 +45,7 @@ var listCmd = common.StandardCommand(&cobra.Command{
 			if err != nil {
 				return err
 			}
-			f.EnvID = sdktypes.GetEnvID(e)
+			f.EnvID = e.ID()
 		}
 
 		if eventID != "" {
@@ -53,14 +53,17 @@ var listCmd = common.StandardCommand(&cobra.Command{
 			if err != nil {
 				return err
 			}
-			if e == nil {
+			if !e.IsValid() {
 				err = fmt.Errorf("event ID %q not found", eventID)
 				return common.NewExitCodeError(common.NotFoundExitCode, err)
 			}
 			f.EventID = eid
 		}
 
-		f.StateType = sdktypes.ParseSessionStateType(stateType.String())
+		var err error
+		if f.StateType, err = sdktypes.ParseSessionStateType(stateType.String()); err != nil {
+			return fmt.Errorf("invalid state %q: %w", stateType, err)
+		}
 
 		ctx, cancel := common.LimitedContext()
 		defer cancel()
@@ -70,18 +73,13 @@ var listCmd = common.StandardCommand(&cobra.Command{
 			return fmt.Errorf("list sessions: %w", err)
 		}
 
-		if len(ss) == 0 {
-			return common.FailNotFound(cmd, "sessions")
+		if err := common.FailIfNotFound(cmd, "sessions", len(ss) > 0); err != nil {
+			return err
 		}
 
 		if !withInputs {
-			for i, s := range ss {
-				ss[i], err = s.Update(func(pb *sdktypes.SessionPB) {
-					pb.Inputs = nil
-				})
-				if err != nil {
-					return fmt.Errorf("omit extra details: %w", err)
-				}
+			for i := range ss {
+				ss[i] = ss[i].WithInputs(nil)
 			}
 		}
 

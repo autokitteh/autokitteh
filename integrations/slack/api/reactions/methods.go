@@ -31,7 +31,7 @@ func (a API) Add(ctx context.Context, args []sdktypes.Value, kwargs map[string]s
 		"timestamp", &timestamp,
 	)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 	req := AddRequest{
 		Channel:   channel,
@@ -43,7 +43,7 @@ func (a API) Add(ctx context.Context, args []sdktypes.Value, kwargs map[string]s
 	resp := &AddResponse{}
 	err = api.PostJSON(ctx, a.Secrets, a.Scope, req, resp, "reactions.add")
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Parse and return the response.

@@ -28,14 +28,16 @@ type Data struct {
 	Connections []sdktypes.Connection   `json:"connections"`
 }
 
-func retrieve[I sdktypes.ID, R any](ctx context.Context, z *zap.Logger, id I, f func(context.Context, I) (*R, error)) (*R, error) {
+func retrieve[I sdktypes.ID, R sdktypes.Object](ctx context.Context, z *zap.Logger, id I, f func(context.Context, I) (R, error)) (R, error) {
+	var invalid R
+
 	r, err := f(ctx, id)
 
 	if err != nil {
 		z.DPanic("get", zap.Error(err), zap.String("id", id.String()))
-		return nil, fmt.Errorf("get %q: %w", id, err)
-	} else if r == nil {
-		return nil, fmt.Errorf("%q not found", id)
+		return invalid, fmt.Errorf("get %q: %w", id, err)
+	} else if !r.IsValid() {
+		return invalid, fmt.Errorf("%q not found", id)
 	}
 
 	return r, nil
@@ -67,17 +69,17 @@ func Get(ctx context.Context, z *zap.Logger, svcs *sessionsvcs.Svcs, sessionID s
 		return nil, err
 	}
 
-	if data.Deployment, err = retrieve(ctx, z, sdktypes.GetSessionDeploymentID(data.Session), svcs.Deployments.Get); err != nil {
+	if data.Deployment, err = retrieve(ctx, z, data.Session.DeploymentID(), svcs.Deployments.Get); err != nil {
 		return nil, err
 	}
 
-	envID := sdktypes.GetDeploymentEnvID(data.Deployment)
+	envID := data.Deployment.EnvID()
 
 	if data.Env, err = retrieve(ctx, z, envID, svcs.Envs.GetByID); err != nil {
 		return nil, err
 	}
 
-	if data.ProjectID = sdktypes.GetEnvProjectID(data.Env); data.ProjectID == nil {
+	if data.ProjectID = data.Env.ProjectID(); !data.ProjectID.IsValid() {
 		return nil, fmt.Errorf("sessions can only run on projects")
 	}
 
@@ -86,14 +88,14 @@ func Get(ctx context.Context, z *zap.Logger, svcs *sessionsvcs.Svcs, sessionID s
 	}
 
 	for _, conn := range data.Connections {
-		ts, err := svcs.Triggers.List(ctx, sdkservices.ListTriggersFilter{ConnectionID: sdktypes.GetConnectionID(conn)})
+		ts, err := svcs.Triggers.List(ctx, sdkservices.ListTriggersFilter{ConnectionID: conn.ID()})
 		if err != nil {
-			return nil, fmt.Errorf("triggers.list(%v): %w", sdktypes.GetConnectionID(conn), err)
+			return nil, fmt.Errorf("triggers.list(%v): %w", conn.ID(), err)
 		}
 
 		ts = kittehs.Filter(ts, func(t sdktypes.Trigger) bool {
-			triggerEnvID := sdktypes.GetTriggerEnvID(t)
-			return triggerEnvID == nil || triggerEnvID.String() == envID.String()
+			triggerEnvID := t.EnvID()
+			return !triggerEnvID.IsValid() || triggerEnvID == envID
 		})
 
 		data.Triggers = append(data.Triggers, ts...)
@@ -105,7 +107,7 @@ func Get(ctx context.Context, z *zap.Logger, svcs *sessionsvcs.Svcs, sessionID s
 		return nil, fmt.Errorf("get vars: %w", err)
 	}
 
-	buildID := sdktypes.GetDeploymentBuildID(data.Deployment)
+	buildID := data.Deployment.BuildID()
 
 	if data.Build, err = retrieve(ctx, z, buildID, svcs.Builds.Get); err != nil {
 		return nil, err

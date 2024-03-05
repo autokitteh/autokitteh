@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"reflect"
 )
 
 type Renderer func(any)
@@ -77,11 +78,11 @@ func RenderKV(k string, v any) { Render(KV{K: k, V: v}) }
 // TODO: should we even care for non-json output parsing?
 type KVIfV[T any] struct {
 	K string
-	V *T
+	V T
 }
 
 func (kv KVIfV[T]) Text() string {
-	if kv.V == nil {
+	if reflect.ValueOf(kv.V).IsZero() {
 		return ""
 	}
 
@@ -95,7 +96,7 @@ var (
 	_ json.Marshaler = KV{}
 )
 
-func RenderKVIfV[T any](k string, v *T) {
+func RenderKVIfV[T any](k string, v T) {
 	Render(KVIfV[T]{K: k, V: v})
 }
 

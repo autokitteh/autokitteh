@@ -5,7 +5,7 @@ package autokitteh.runtimes.v1;
 import "autokitteh/program/v1/program.proto";
 import "buf/validate/validate.proto";
 
-message BuildArtifact {
+message Artifact {
   repeated Requirement requirements = 1 [(buf.validate.field).repeated.items.required = true];
   repeated Export exports = 2 [(buf.validate.field).repeated.items.required = true];
 

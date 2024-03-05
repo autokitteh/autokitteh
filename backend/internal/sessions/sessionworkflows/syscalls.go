@@ -27,13 +27,13 @@ const (
 
 func (w *sessionWorkflow) syscall(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
 	if len(args) == 0 {
-		return nil, fmt.Errorf("expecting syscall operation name as first argument")
+		return sdktypes.InvalidValue, fmt.Errorf("expecting syscall operation name as first argument")
 	}
 
 	var op string
 
 	if err := sdkvalues.DefaultValueWrapper.UnwrapInto(&op, args[0]); err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	args = args[1:]
@@ -54,7 +54,7 @@ func (w *sessionWorkflow) syscall(ctx context.Context, args []sdktypes.Value, kw
 	case unsubscribeOp:
 		return w.unsubscribe(ctx, args, kwargs)
 	default:
-		return nil, fmt.Errorf("unknown op %q", op)
+		return sdktypes.InvalidValue, fmt.Errorf("unknown op %q", op)
 	}
 }
 
@@ -62,25 +62,25 @@ func (w *sessionWorkflow) fake(args []sdktypes.Value, kwargs map[string]sdktypes
 	var orig, fake sdktypes.Value
 
 	if err := sdkmodule.UnpackArgs(args, kwargs, "orig", &orig, "fake", &fake); err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// TODO: better make sure `orig` is an action call and `fake` is a runner call.
-	if !sdktypes.IsFunctionValue(orig) {
-		return nil, fmt.Errorf("orig must be a function value")
+	if !orig.IsFunction() {
+		return sdktypes.InvalidValue, fmt.Errorf("orig must be a function value")
 	}
 
-	del := fake == nil || sdktypes.IsNothingValue(fake)
+	del := !fake.IsValid() || fake.IsNothing()
 
-	if !del && !sdktypes.IsFunctionValue(fake) {
-		return nil, fmt.Errorf("fake must be a function value")
+	if !del && !fake.IsFunction() {
+		return sdktypes.InvalidValue, fmt.Errorf("fake must be a function value")
 	}
 
-	id := sdktypes.GetFunctionValueUniqueID(orig)
+	id := orig.GetFunction().UniqueID()
 
 	prev := w.fakers[id]
-	if prev == nil {
-		prev = sdktypes.NewNothingValue()
+	if !prev.IsValid() {
+		prev = sdktypes.Nothing
 	}
 
 	if del {
@@ -96,17 +96,17 @@ func (w *sessionWorkflow) setPoller(args []sdktypes.Value, kwargs map[string]sdk
 	var fn sdktypes.Value
 
 	if err := sdkmodule.UnpackArgs(args, kwargs, "fn", &fn); err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
-	if fn != nil && !sdktypes.IsFunctionValue(fn) && !sdktypes.IsNothingValue(fn) {
-		return nil, fmt.Errorf("value must be either a function or nothing")
+	if fn.IsValid() && !fn.IsFunction() && !fn.IsNothing() {
+		return sdktypes.InvalidValue, fmt.Errorf("value must be either a function or nothing")
 	}
 
 	prev := w.poller
 
-	if fn == nil {
-		fn = sdktypes.NewNothingValue()
+	if !fn.IsValid() {
+		fn = sdktypes.Nothing
 	}
 
 	w.poller = fn
@@ -115,8 +115,8 @@ func (w *sessionWorkflow) setPoller(args []sdktypes.Value, kwargs map[string]sdk
 }
 
 func (w *sessionWorkflow) getPoller() sdktypes.Value {
-	if sdktypes.IsNothingValue(w.poller) {
-		return nil
+	if w.poller.IsNothing() {
+		return sdktypes.InvalidValue
 	}
 
 	return w.poller
@@ -126,16 +126,16 @@ func (w *sessionWorkflow) sleep(ctx context.Context, args []sdktypes.Value, kwar
 	var duration time.Duration
 
 	if err := sdkmodule.UnpackArgs(args, kwargs, "duration", &duration); err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	wctx := sessioncontext.GetWorkflowContext(ctx)
 
 	if err := workflow.Sleep(wctx, duration); err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
-	return sdktypes.NewNothingValue(), nil
+	return sdktypes.Nothing, nil
 }
 
 func (w *sessionWorkflow) start(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
@@ -146,18 +146,18 @@ func (w *sessionWorkflow) start(ctx context.Context, args []sdktypes.Value, kwar
 	)
 
 	if err := sdkmodule.UnpackArgs(args, kwargs, "loc", &loc, "data?", &data, "memo?", &memo); err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	cl, err := sdktypes.ParseCodeLocation(loc)
 	if err != nil {
-		return nil, fmt.Errorf("invalid location: %w", err)
+		return sdktypes.InvalidValue, fmt.Errorf("invalid location: %w", err)
 	}
 
 	session := sdktypes.NewSession(
-		sdktypes.GetDeploymentID(w.data.Deployment),
+		w.data.Deployment.ID(),
 		w.data.SessionID,
-		nil,
+		sdktypes.InvalidEventID,
 		cl,
 		data,
 		memo,
@@ -165,7 +165,7 @@ func (w *sessionWorkflow) start(ctx context.Context, args []sdktypes.Value, kwar
 
 	sessionID, err := w.ws.sessions.Start(ctx, session)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	return sdktypes.NewStringValue(sessionID.String()), nil
@@ -178,12 +178,12 @@ func (w *sessionWorkflow) subscribe(ctx context.Context, args []sdktypes.Value, 
 	)
 
 	if err := sdkmodule.UnpackArgs(args, kwargs, "connection_name", &connectionName, "event_name", &eventName); err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	signalID, err := w.createEventSubscription(ctx, connectionName, eventName)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	return sdkvalues.DefaultValueWrapper.Wrap(signalID)
@@ -204,20 +204,20 @@ return this event
 */
 func (w *sessionWorkflow) nextEvent(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
 	if len(kwargs) > 0 {
-		return nil, errors.New("unexpected keyword arguments")
+		return sdktypes.InvalidValue, errors.New("unexpected keyword arguments")
 	}
 
 	if len(args) == 0 {
-		return nil, errors.New("expecting at least one signal")
+		return sdktypes.InvalidValue, errors.New("expecting at least one signal")
 	}
 
-	signals := kittehs.Transform(args, func(v sdktypes.Value) string { return sdktypes.GetStringValue(v) })
+	signals := kittehs.Transform(args, func(v sdktypes.Value) string { return v.GetString().Value() })
 
 	// check if there is an event already in one of the signals
 	for _, signalID := range signals {
 		event, err := w.getNextEvent(ctx, signalID)
 		if err != nil {
-			return nil, err
+			return sdktypes.InvalidValue, err
 		}
 		if event != nil {
 			return sdkvalues.DefaultValueWrapper.Wrap(event)
@@ -227,19 +227,19 @@ func (w *sessionWorkflow) nextEvent(ctx context.Context, args []sdktypes.Value, 
 	// no event, wait for first signal
 	signalID, err := w.waitOnFirstSignal(ctx, signals)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// get next event on this signal
 	event, err := w.getNextEvent(ctx, signalID)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// should never happen, since we got a signal on this signalID
 	// meaning there is an event waiting for us
 	if event == nil {
-		return nil, fmt.Errorf("no event received")
+		return sdktypes.InvalidValue, fmt.Errorf("no event received")
 	}
 
 	return sdkvalues.DefaultValueWrapper.Wrap(event)
@@ -249,10 +249,10 @@ func (w *sessionWorkflow) unsubscribe(ctx context.Context, args []sdktypes.Value
 	var signalID string
 
 	if err := sdkmodule.UnpackArgs(args, kwargs, "signal_id", &signalID); err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	w.removeEventSubscription(ctx, signalID)
 
-	return sdktypes.NewNothingValue(), nil
+	return sdktypes.Nothing, nil
 }

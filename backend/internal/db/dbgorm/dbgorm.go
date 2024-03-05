@@ -14,6 +14,7 @@ import (
 	"go.autokitteh.dev/autokitteh/backend/internal/db"
 	"go.autokitteh.dev/autokitteh/backend/internal/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 type Config = gormkitteh.Config
@@ -107,20 +108,23 @@ func (db *gormdb) Debug() db.DB {
 	}
 }
 
-func getOneWTransform[T, R any](db *gorm.DB, ctx context.Context, f func(t T) (*R, error), where string, args ...any) (*R, error) {
-	var r T
+func getOneWTransform[T any, R sdktypes.Object](db *gorm.DB, ctx context.Context, f func(t T) (R, error), where string, args ...any) (R, error) {
+	var (
+		rec     T
+		invalid R
+	)
 
 	// TODO: fetch all records and report if there is more than one record
-	result := db.WithContext(ctx).Where(where, args...).Limit(1).Find(&r)
+	result := db.WithContext(ctx).Where(where, args...).Limit(1).Find(&rec)
 	if result.Error != nil {
-		return nil, translateError(result.Error)
+		return invalid, translateError(result.Error)
 	}
 
 	if result.RowsAffected == 0 {
-		return nil, sdkerrors.ErrNotFound
+		return invalid, sdkerrors.ErrNotFound
 	}
 
-	return f(r)
+	return f(rec)
 }
 
 // TODO: change all get functions to use this

@@ -1,37 +1,33 @@
 package sdktypes
 
 import (
-	"fmt"
+	"errors"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
-	runtimesv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/runtimes/v1"
+	runtimev1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/runtimes/v1"
 )
 
-type RuntimePB = runtimesv1.Runtime
-
-type Runtime = *object[*RuntimePB]
-
-var (
-	RuntimeFromProto       = makeFromProto(validateRuntime)
-	StrictRuntimeFromProto = makeFromProto(strictValidateRuntime)
-	ToStrictRuntime        = makeWithValidator(strictValidateRuntime)
-)
-
-func strictValidateRuntime(pb *runtimesv1.Runtime) error {
-	if err := ensureNotEmpty(pb.Name); err != nil {
-		return err
-	}
-
-	return validateRuntime(pb)
+type Runtime struct {
+	object[*RuntimePB, RuntimeTraits]
 }
 
-func validateRuntime(pb *runtimesv1.Runtime) error {
-	if _, err := ParseName(pb.Name); err != nil {
-		return fmt.Errorf("name: %w", err)
-	}
+type RuntimePB = runtimev1.Runtime
 
-	return nil
+type RuntimeTraits struct{}
+
+func (RuntimeTraits) Validate(m *RuntimePB) error {
+	return nameField("name", m.Name)
 }
 
-func GetRuntimeName(r Runtime) Name               { return kittehs.Must1(ParseName(r.pb.Name)) }
-func GetRuntimeFileExtensions(r Runtime) []string { return r.pb.FileExtensions }
+func (RuntimeTraits) StrictValidate(m *RuntimePB) error {
+	return errors.Join(
+		mandatory("name", m.Name),
+		mandatorySlice("file_extensions", m.FileExtensions),
+	)
+}
+
+func RuntimeFromProto(m *RuntimePB) (Runtime, error)       { return FromProto[Runtime](m) }
+func StrictRuntimeFromProto(m *RuntimePB) (Runtime, error) { return Strict(RuntimeFromProto(m)) }
+
+func (r Runtime) Name() Symbol             { return kittehs.Must1(ParseSymbol(r.read().Name)) }
+func (r Runtime) FileExtensions() []string { return r.read().FileExtensions }

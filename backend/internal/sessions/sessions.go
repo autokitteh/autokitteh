@@ -11,7 +11,6 @@ import (
 	"go.autokitteh.dev/autokitteh/backend/internal/sessions/sessioncalls"
 	"go.autokitteh.dev/autokitteh/backend/internal/sessions/sessionsvcs"
 	"go.autokitteh.dev/autokitteh/backend/internal/sessions/sessionworkflows"
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -83,8 +82,8 @@ func (s *sessions) Delete(ctx context.Context, sessionID sdktypes.SessionID) err
 	}
 
 	// delete only failed or finished sessions
-	state := sdktypes.GetSessionLatestState(session)
-	if state != sdktypes.CompletedSessionStateType && state != sdktypes.ErrorSessionStateType {
+	state := session.State()
+	if state != sdktypes.SessionStateTypeCompleted && state != sdktypes.SessionStateTypeError {
 		return fmt.Errorf("%w: cannot delete active session: session_id: %s", sdkerrors.ErrFailedPrecondition, sessionID.String())
 	}
 
@@ -94,32 +93,27 @@ func (s *sessions) Delete(ctx context.Context, sessionID sdktypes.SessionID) err
 }
 
 func (s *sessions) Start(ctx context.Context, session sdktypes.Session) (sdktypes.SessionID, error) {
-	sessionID := sdktypes.GetSessionID(session)
-	if sessionID != nil {
-		return nil, fmt.Errorf("session id is not nil: %w", sdkerrors.ErrInvalidArgument)
+	sessionID := session.ID()
+	if sessionID.IsValid() {
+		return sdktypes.InvalidSessionID, sdkerrors.NewInvalidArgumentError("session id is not nil")
 	}
 
-	sessionID = sdktypes.NewSessionID()
-
-	session = kittehs.Must1(session.Update(func(pb *sdktypes.SessionPB) {
-		pb.SessionId = sessionID.String()
-	}))
+	session = session.WithNewID()
 
 	if err := s.svcs.DB.CreateSession(ctx, session); err != nil {
-		return nil, fmt.Errorf("db.create_session: %w", err)
+		return sdktypes.InvalidSessionID, fmt.Errorf("db.create_session: %w", err)
 	}
 
 	if err := s.workflows.StartWorkflow(ctx, session, s.config.Debug); err != nil {
 		if uerr := s.svcs.DB.UpdateSessionState(
 			ctx,
 			sessionID,
-			sdktypes.WrapSessionState(
-				sdktypes.NewErrorSessionState(fmt.Errorf("execute workflow: %w", err), nil),
-			),
+			sdktypes.NewSessionStateError(fmt.Errorf("execute workflow: %w", err), nil),
 		); uerr != nil {
 			s.z.With(zap.String("session_id", sessionID.String())).Error("update session", zap.Error(err))
 		}
-		return nil, fmt.Errorf("start workflow: %w", err)
+
+		return sdktypes.InvalidSessionID, fmt.Errorf("start workflow: %w", err)
 	}
 
 	return sessionID, nil

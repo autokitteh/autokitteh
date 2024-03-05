@@ -1,20 +1,15 @@
 package sdktypes
 
-const TriggerIDKind = "t"
+const triggerIDKind = "trg"
 
-type TriggerID = *id[triggerIDTraits]
-
-var _ ID = (TriggerID)(nil)
+type TriggerID = id[triggerIDTraits]
 
 type triggerIDTraits struct{}
 
-func (triggerIDTraits) Kind() string                   { return TriggerIDKind }
-func (triggerIDTraits) ValidateValue(raw string) error { return validateUUID(raw) }
+func (triggerIDTraits) Prefix() string { return triggerIDKind }
 
-func ParseTriggerID(raw string) (TriggerID, error) { return parseTypedID[triggerIDTraits](raw) }
+func NewTriggerID() TriggerID                          { return newID[TriggerID]() }
+func ParseTriggerID(s string) (TriggerID, error)       { return ParseID[TriggerID](s) }
+func StrictParseTriggerID(s string) (TriggerID, error) { return Strict(ParseTriggerID(s)) }
 
-func StrictParseTriggerID(raw string) (TriggerID, error) {
-	return strictParseTypedID[triggerIDTraits](raw)
-}
-
-func NewTriggerID() TriggerID { return newID[triggerIDTraits]() }
+var InvalidTriggerID TriggerID

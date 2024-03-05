@@ -160,11 +160,11 @@ func Run(
 func (r *run) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
 	fv, err := r.vctx.ToStarlarkValue(v)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	th := &starlark.Thread{
-		Name:  sdktypes.GetFunctionValueUniqueID(v),
+		Name:  v.GetFunction().UniqueID(),
 		Print: func(_ *starlark.Thread, text string) { r.cbs.SafePrint(ctx, r.runID, text) },
 	}
 
@@ -175,14 +175,14 @@ func (r *run) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Value,
 
 	slargs, err := kittehs.TransformError(args, r.vctx.ToStarlarkValue)
 	if err != nil {
-		return nil, fmt.Errorf("args transform: %w", err)
+		return sdktypes.InvalidValue, fmt.Errorf("args transform: %w", err)
 	}
 
 	slkwargs := make([]starlark.Tuple, 0, len(kwargs))
 	for k, v := range kwargs {
 		slv, err := r.vctx.ToStarlarkValue(v)
 		if err != nil {
-			return nil, fmt.Errorf("kwarg with key %q transform: %w", k, err)
+			return sdktypes.InvalidValue, fmt.Errorf("kwarg with key %q transform: %w", k, err)
 		}
 
 		slkwargs = append(slkwargs, starlark.Tuple([]starlark.Value{
@@ -193,17 +193,17 @@ func (r *run) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Value,
 
 	slretv, err := starlark.Call(th, fv, slargs, slkwargs)
 	if err != nil {
-		return nil, translateError(err, nil)
+		return sdktypes.InvalidValue, translateError(err, nil)
 	}
 
 	if len(errorReporter.errs) > 0 {
 		// TODO(ENG-196): make program errors.
-		return nil, fmt.Errorf("%s", errorReporter.Report())
+		return sdktypes.InvalidValue, fmt.Errorf("%s", errorReporter.Report())
 	}
 
 	retv, err := r.vctx.FromStarlarkValue(slretv)
 	if err != nil {
-		return nil, fmt.Errorf("return value transform: %w", err)
+		return sdktypes.InvalidValue, fmt.Errorf("return value transform: %w", err)
 	}
 
 	return retv, nil

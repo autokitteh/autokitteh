@@ -20,14 +20,13 @@ var deleteCmd = common.StandardCommand(&cobra.Command{
 			return common.FailIfError(cmd, err, "session")
 		}
 
-		if err := common.FailIfNotFound(cmd, "session id", s); err != nil {
+		if err := common.FailIfNotFound(cmd, "session id", s.IsValid()); err != nil {
 			return err
 		}
 
 		ctx, cancel := common.LimitedContext()
 		defer cancel()
 		err = sessions().Delete(ctx, id)
-
 		if err != nil {
 			return common.FailIfError(cmd, err, "session")
 		}

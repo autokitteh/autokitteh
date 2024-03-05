@@ -1,127 +1,71 @@
 package sdktypes
 
 import (
-	"fmt"
-
-	sessionsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/sessions/v1"
+	"errors"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
+	sessionv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/sessions/v1"
 )
 
-type (
-	SessionPB = sessionsv1.Session
-	Session   = *object[*SessionPB]
-)
-
-var (
-	SessionFromProto       = makeFromProto(validateSession)
-	StrictSessionFromProto = makeFromProto(strictValidateSession)
-	ToStrictSession        = makeWithValidator(strictValidateSession)
-)
-
-func strictValidateSession(pb *sessionsv1.Session) error {
-	if err := ensureNotEmpty(pb.SessionId, pb.DeploymentId); err != nil {
-		return err
-	}
-
-	return validateSession(pb)
+type Session struct {
+	object[*SessionPB, SessionTraits]
 }
 
-func validateSession(pb *sessionsv1.Session) error {
-	if _, err := ParseSessionID(pb.SessionId); err != nil {
-		return err
-	}
+var InvalidSession Session
 
-	if _, err := ParseSessionID(pb.ParentSessionId); err != nil {
-		return err
-	}
+type SessionPB = sessionv1.Session
 
-	if _, err := ParseDeploymentID(pb.DeploymentId); err != nil {
-		return err
-	}
+type SessionTraits struct{}
 
-	if _, err := ParseEventID(pb.EventId); err != nil {
-		return err
-	}
-
-	if _, err := CodeLocationFromProto(pb.Entrypoint); err != nil {
-		return err
-	}
-
-	if err := kittehs.ValidateMap(pb.Inputs, func(k string, v *ValuePB) error {
-		if _, err := ParseSymbol(k); err != nil {
-			return err
-		}
-
-		if err := ValidateValuePB(v); err != nil {
-			return err
-		}
-
-		return nil
-	}); err != nil {
-		return fmt.Errorf("failed to validate session inputs: %w", err)
-	}
-
-	return nil
+func (SessionTraits) Validate(m *SessionPB) error {
+	return errors.Join(
+		enumField[SessionStateType]("state", m.State),
+		idField[DeploymentID]("deployment_id", m.DeploymentId),
+		idField[EventID]("event_id", m.EventId),
+		idField[SessionID]("parent_session_id", m.ParentSessionId),
+		idField[SessionID]("session_id", m.SessionId),
+		objectField[CodeLocation]("entrypoint", m.Entrypoint),
+		valuesMapField("inputs", m.Inputs),
+	)
 }
 
-func GetSessionID(e Session) SessionID {
-	if e == nil {
-		return nil
-	}
-	return kittehs.Must1(ParseSessionID(e.pb.SessionId))
+func (SessionTraits) StrictValidate(m *SessionPB) error {
+	return errors.Join(
+		mandatory("created_at", m.CreatedAt),
+		mandatory("deployment_id", m.DeploymentId),
+		mandatory("entrypoint", m.Entrypoint),
+		mandatory("event_id", m.EventId),
+		mandatory("session_id", m.SessionId),
+		mandatory("state", m.State),
+	)
 }
 
-func GetParentSessionID(e Session) SessionID {
-	if e == nil {
-		return nil
-	}
-	return kittehs.Must1(ParseSessionID(e.pb.ParentSessionId))
+func SessionFromProto(m *SessionPB) (Session, error) { return FromProto[Session](m) }
+func StrictSessionFromProto(m *SessionPB) (Session, error) {
+	return Strict(SessionFromProto(m))
 }
 
-func GetSessionDeploymentID(e Session) DeploymentID {
-	if e == nil {
-		return nil
-	}
-	return kittehs.Must1(ParseDeploymentID(e.pb.DeploymentId))
+func (p Session) WithNewID() Session {
+	return Session{p.forceUpdate(func(pb *SessionPB) { pb.SessionId = NewSessionID().String() })}
 }
 
-func GetSessionEventID(e Session) EventID {
-	if e == nil || e.pb.EventId == "" {
-		return nil
-	}
-	return kittehs.Must1(ParseEventID(e.pb.EventId))
+func (p Session) ID() SessionID { return kittehs.Must1(ParseSessionID(p.read().SessionId)) }
+func (p Session) DeploymentID() DeploymentID {
+	return kittehs.Must1(ParseDeploymentID(p.read().DeploymentId))
+}
+func (p Session) EventID() EventID         { return kittehs.Must1(ParseEventID(p.read().EventId)) }
+func (p Session) EntryPoint() CodeLocation { return forceFromProto[CodeLocation](p.read().Entrypoint) }
+func (p Session) Memo() map[string]string  { return p.read().Memo }
+func (p Session) Inputs() map[string]Value {
+	return kittehs.TransformMapValues(p.read().Inputs, forceFromProto[Value])
 }
 
-func GetSessionEntryPoint(e Session) CodeLocation {
-	if e == nil {
-		return nil
-	}
-	return kittehs.Must1(CodeLocationFromProto(e.pb.Entrypoint))
+func (p Session) State() SessionStateType {
+	return forceEnumFromProto[SessionStateType](p.read().State)
 }
 
-func GetSessionInputs(e Session) map[string]Value {
-	if e == nil {
-		return nil
-	}
-
-	return kittehs.Must1(kittehs.TransformMapValuesError(e.pb.Inputs, ValueFromProto))
-}
-
-func GetSessionMemo(e Session) map[string]string {
-	if e == nil {
-		return nil
-	}
-
-	return e.pb.Memo
-}
-
-func GetSessionLatestState(e Session) SessionStateType {
-	if e == nil {
-		return UnspecifiedSessionStateType
-	}
-
-	return SessionStateType(e.pb.State)
+func (p Session) WithInputs(inputs map[string]Value) Session {
+	return Session{p.forceUpdate(func(pb *SessionPB) { pb.Inputs = kittehs.TransformMapValues(inputs, ToProto) })}
 }
 
 func NewSession(deploymentID DeploymentID, parentSessionID SessionID, eventID EventID, ep CodeLocation, inputs map[string]Value, memo map[string]string) Session {

@@ -10,7 +10,7 @@ type Projects interface {
 	Create(ctx context.Context, project sdktypes.Project) (sdktypes.ProjectID, error)
 	Update(ctx context.Context, project sdktypes.Project) error
 	GetByID(ctx context.Context, projectID sdktypes.ProjectID) (sdktypes.Project, error)
-	GetByName(ctx context.Context, name sdktypes.Name) (sdktypes.Project, error)
+	GetByName(ctx context.Context, name sdktypes.Symbol) (sdktypes.Project, error)
 	List(ctx context.Context) ([]sdktypes.Project, error)
 	Build(ctx context.Context, projectID sdktypes.ProjectID) (sdktypes.BuildID, error)
 	SetResources(ctx context.Context, projectID sdktypes.ProjectID, resources map[string][]byte) error

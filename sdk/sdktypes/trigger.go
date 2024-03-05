@@ -1,86 +1,63 @@
 package sdktypes
 
 import (
-	"fmt"
+	"errors"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
-	triggersv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/triggers/v1"
-	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
+	triggerv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/triggers/v1"
 )
 
-type TriggerPB = triggersv1.Trigger
-
-type Trigger = *object[*TriggerPB]
-
-var (
-	TriggerFromProto       = makeFromProto(validateTrigger)
-	StrictTriggerFromProto = makeFromProto(strictValidateTrigger)
-	ToStrictTrigger        = makeWithValidator(strictValidateTrigger)
-)
-
-func strictValidateTrigger(pb *triggersv1.Trigger) error {
-	if err := ensureNotEmpty(pb.ConnectionId); err != nil {
-		return fmt.Errorf("%w: missing connection id", sdkerrors.ErrInvalidArgument)
-	}
-
-	if pb.CodeLocation == nil {
-		return fmt.Errorf("%w: missing code location", sdkerrors.ErrInvalidArgument)
-	}
-
-	return validateTrigger(pb)
+type Trigger struct {
+	object[*TriggerPB, TriggerTraits]
 }
 
-func validateTrigger(pb *triggersv1.Trigger) error {
-	if _, err := ParseTriggerID(pb.TriggerId); err != nil {
-		return err
-	}
+var InvalidTrigger Trigger
 
-	if _, err := ParseEnvID(pb.EnvId); err != nil {
-		return err
-	}
+type TriggerPB = triggerv1.Trigger
 
-	if _, err := ParseConnectionID(pb.ConnectionId); err != nil {
-		return err
-	}
+type TriggerTraits struct{}
 
-	if err := validateCodeLocation(pb.CodeLocation); err != nil {
-		return err
-	}
-
-	return nil
+func (TriggerTraits) Validate(m *TriggerPB) error {
+	return errors.Join(
+		idField[TriggerID]("trigger_id", m.TriggerId),
+		idField[ConnectionID]("connection_id", m.ConnectionId),
+		idField[EnvID]("env_id", m.EnvId),
+		objectField[CodeLocation]("code_location", m.CodeLocation),
+	)
 }
 
-func GetTriggerID(t Trigger) TriggerID {
-	if t == nil {
-		return nil
-	}
-	return kittehs.Must1(ParseTriggerID(t.pb.TriggerId))
+func (TriggerTraits) StrictValidate(m *TriggerPB) error {
+	return errors.Join(
+		mandatory("env_id", m.EnvId),
+		mandatory("connection_id", m.ConnectionId),
+		mandatory("event_type", m.EventType),
+	)
 }
 
-func GetTriggerEnvID(t Trigger) EnvID {
-	if t == nil {
-		return nil
-	}
-	return kittehs.Must1(ParseEnvID(t.pb.EnvId))
+func TriggerFromProto(m *TriggerPB) (Trigger, error)       { return FromProto[Trigger](m) }
+func StrictTriggerFromProto(m *TriggerPB) (Trigger, error) { return Strict(TriggerFromProto(m)) }
+
+func (p Trigger) ID() TriggerID { return kittehs.Must1(ParseTriggerID(p.read().TriggerId)) }
+
+func (p Trigger) WithNewID() Trigger { return p.WithID(NewTriggerID()) }
+
+func (p Trigger) WithID(id TriggerID) Trigger {
+	return Trigger{p.forceUpdate(func(m *TriggerPB) { m.TriggerId = id.String() })}
 }
 
-func GetTriggerConnectionID(t Trigger) ConnectionID {
-	if t == nil {
-		return nil
-	}
-	return kittehs.Must1(ParseConnectionID(t.pb.ConnectionId))
+func (p Trigger) WithEnvID(id EnvID) Trigger {
+	return Trigger{p.forceUpdate(func(m *TriggerPB) { m.EnvId = id.String() })}
 }
 
-func GetTriggerCodeLocation(t Trigger) CodeLocation {
-	if t == nil {
-		return nil
-	}
-	return kittehs.Must1(CodeLocationFromProto(t.pb.CodeLocation))
+func (p Trigger) WithConnectionID(id ConnectionID) Trigger {
+	return Trigger{p.forceUpdate(func(m *TriggerPB) { m.ConnectionId = id.String() })}
 }
 
-func GetTriggerEventType(t Trigger) string {
-	if t == nil {
-		return ""
-	}
-	return t.pb.EventType
+func (p Trigger) ConnectionID() ConnectionID {
+	return kittehs.Must1(ParseConnectionID(p.read().ConnectionId))
+}
+func (p Trigger) EnvID() EnvID      { return kittehs.Must1(ParseEnvID(p.read().EnvId)) }
+func (p Trigger) EventType() string { return p.read().EventType }
+func (p Trigger) CodeLocation() CodeLocation {
+	return forceFromProto[CodeLocation](p.read().CodeLocation)
 }

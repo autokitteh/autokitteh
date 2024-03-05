@@ -1,90 +1,76 @@
 package sdktypes
 
 import (
-	"fmt"
-	"path/filepath"
+	"errors"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	runtimesv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/runtimes/v1"
 )
 
-type BuildArtifactPB = runtimesv1.BuildArtifact
+type BuildArtifact struct {
+	object[*BuildArtifactPB, BuildArtifactTraits]
+}
 
-type BuildArtifact = *object[*BuildArtifactPB]
+var InvalidBuildArtifact BuildArtifact
 
-var (
-	BuildArtifactFromProto       = makeFromProto(validateBuildArtifact)
-	StrictBuildArtifactFromProto = makeFromProto(strictValidateBuildArtifact)
-	ToStrictBuildArtifact        = makeWithValidator(strictValidateBuildArtifact)
+type BuildArtifactPB = runtimesv1.Artifact
 
-	strictValidateBuildArtifact = validateBuildArtifact
-)
+type BuildArtifactTraits struct{}
 
-func validateBuildArtifact(pb *runtimesv1.BuildArtifact) error {
-	if _, err := kittehs.TransformError(pb.Exports, StrictExportFromProto); err != nil {
-		return fmt.Errorf("exports: %w", err)
+func (BuildArtifactTraits) Validate(m *BuildArtifactPB) error {
+	return errors.Join(
+		objectsSliceField[BuildRequirement]("requirements", m.Requirements),
+		objectsSliceField[BuildExport]("exports", m.Exports),
+	)
+}
+
+func (BuildArtifactTraits) StrictValidate(m *BuildArtifactPB) error { return nil }
+
+func BuildArtifactFromProto(m *BuildArtifactPB) (BuildArtifact, error) {
+	return FromProto[BuildArtifact](m)
+}
+
+func (a BuildArtifact) CompiledData() map[string][]byte { return a.read().CompiledData }
+
+func (a BuildArtifact) Requirements() []BuildRequirement {
+	return kittehs.Transform(a.read().Requirements, forceFromProto[BuildRequirement])
+}
+
+func (a BuildArtifact) Exports() []BuildExport {
+	return kittehs.Transform(a.read().Exports, forceFromProto[BuildExport])
+}
+
+func (r BuildArtifact) WithExports(exports []BuildExport) BuildArtifact {
+	return BuildArtifact{r.forceUpdate(func(pb *BuildArtifactPB) { pb.Exports = kittehs.Transform(exports, ToProto) })}
+}
+
+func (r BuildArtifact) WithRequirements(reqs []BuildRequirement) BuildArtifact {
+	return BuildArtifact{r.forceUpdate(func(pb *BuildArtifactPB) { pb.Requirements = kittehs.Transform(reqs, ToProto) })}
+}
+
+func (r BuildArtifact) WithCompiledData(data map[string][]byte) BuildArtifact {
+	return BuildArtifact{r.forceUpdate(func(pb *BuildArtifactPB) { pb.CompiledData = data })}
+}
+
+func (r BuildArtifact) MergeFrom(other BuildArtifact) BuildArtifact {
+	if !r.IsValid() {
+		return other
 	}
 
-	if _, err := kittehs.TransformError(pb.Requirements, StrictRequirementFromProto); err != nil {
-		return fmt.Errorf("requirements: %w", err)
+	if !other.IsValid() {
+		return r
 	}
 
-	err := kittehs.ValidateMap(pb.CompiledData, func(k string, _ []byte) error {
-		if !filepath.IsLocal(k) {
-			return fmt.Errorf("%q is not local", k)
-		}
-
-		return nil
-	})
-	if err != nil {
-		return err
+	/*TODO(ENG-154): Make sure not to enter dups.
+	if kittehs.Any(kittehs.MapValues(overwrites)...) {
+		return errors.New("compiled data conflict")
 	}
-
-	/* TODO(ENG-141,ENG-154): Fail on duplicates. See also relevant comment in buildfile.go.
-
-	if !kittehs.IsUnique(pb.Exports, func(x *ExportPB) string { return x.Symbol }) {
-		return fmt.Errorf("exports conflict: %v", pb.Exports)
-	}
-
 	*/
 
-	/* TODO(ENG-154): Fail on duplicates. See also relevant comment in buildfile.go.
+	compiledData, _ /* overwrites */ := kittehs.JoinMaps(r.CompiledData(), other.CompiledData())
 
-	if !kittehs.IsUnique(pb.Requirements, func(r *RequirementPB) string {
-		return fmt.Sprintf("%s/%s", r.Path, getCodeLocationPBCanonicalString(r.Location))
-	}) {
-		return errors.New("requirements conflict")
-	}
-	*/
-
-	return nil
-}
-
-func GetBuildArtifactRequirements(p BuildArtifact) []Requirement {
-	if p == nil {
-		return nil
-	}
-	return kittehs.Transform(p.pb.Requirements, kittehs.Must11(RequirementFromProto))
-}
-
-func GetBuildArtifactExports(p BuildArtifact) []Export {
-	if p == nil {
-		return nil
-	}
-	return kittehs.Transform(p.pb.Exports, kittehs.Must11(ExportFromProto))
-}
-
-func GetBuildArtifactCompiledData(p BuildArtifact) map[string][]byte {
-	if p == nil {
-		return nil
-	}
-	return p.pb.CompiledData
-}
-
-func BuildArtifactReplaceCompiledData(p BuildArtifact, f func([]byte) []byte) BuildArtifact {
-	return kittehs.Must1(p.Update(func(a *BuildArtifactPB) {
-		for k, v := range a.CompiledData {
-			a.CompiledData[k] = f(v)
-		}
-	}))
+	return r.
+		WithExports(append(r.Exports(), other.Exports()...)).
+		WithRequirements(append(r.Requirements(), other.Requirements()...)).
+		WithCompiledData(compiledData)
 }

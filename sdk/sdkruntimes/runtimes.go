@@ -27,7 +27,7 @@ func New(rts []*Runtime) (sdkservices.Runtimes, error) {
 	exts := make(map[string]bool)
 
 	for _, rt := range rts {
-		for _, ext := range sdktypes.GetRuntimeFileExtensions(rt.Desc) {
+		for _, ext := range rt.Desc.FileExtensions() {
 			if exts[ext] {
 				return nil, fmt.Errorf("duplicate extension found: %q", ext)
 			}
@@ -74,15 +74,15 @@ func (s runtimes) get(f func(sdktypes.Runtime) bool) *Runtime {
 	return rt
 }
 
-func (s runtimes) New(ctx context.Context, n sdktypes.Name) (sdkservices.Runtime, error) {
-	if rt := s.get(func(rt sdktypes.Runtime) bool { return sdktypes.GetRuntimeName(rt).String() == n.String() }); rt != nil {
+func (s runtimes) New(ctx context.Context, n sdktypes.Symbol) (sdkservices.Runtime, error) {
+	if rt := s.get(func(rt sdktypes.Runtime) bool { return rt.Name() == n }); rt != nil {
 		return rt.New()
 	}
 
 	return nil, nil
 }
 
-func MatchRuntimeByPath(rts []sdktypes.Runtime, path string) sdktypes.Runtime {
+func MatchRuntimeByPath(rts []sdktypes.Runtime, path string) (sdktypes.Runtime, bool) {
 	// find longest match (the most specific) between all registered extensions.
 
 	var (
@@ -91,8 +91,7 @@ func MatchRuntimeByPath(rts []sdktypes.Runtime, path string) sdktypes.Runtime {
 	)
 
 	for _, rt := range rts {
-		exts := sdktypes.GetRuntimeFileExtensions(rt)
-		for _, ext := range exts {
+		for _, ext := range rt.FileExtensions() {
 			if strings.HasSuffix(path, "."+ext) {
 				if len(lastExt) < len(ext) {
 					lastExt, lastRT = ext, rt
@@ -101,5 +100,5 @@ func MatchRuntimeByPath(rts []sdktypes.Runtime, path string) sdktypes.Runtime {
 		}
 	}
 
-	return lastRT
+	return lastRT, lastRT.IsValid()
 }

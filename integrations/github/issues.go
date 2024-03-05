@@ -26,18 +26,18 @@ func (i integration) createIssue(ctx context.Context, args []sdktypes.Value, kwa
 		"labels?", &issue.Labels,
 		"assignees?", &issue.Assignees,
 	); err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Invoke the API method.
 	gh, err := i.NewClient(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	resp, _, err := gh.Issues.Create(ctx, owner, repo, &issue)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	return sdkvalues.Wrap(resp)
@@ -55,18 +55,18 @@ func (i integration) getIssue(ctx context.Context, args []sdktypes.Value, kwargs
 		"repo", &repo,
 		"number", &number,
 	); err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Invoke the API method.
 	gh, err := i.NewClient(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	resp, _, err := gh.Issues.Get(ctx, owner, repo, number)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	return sdkvalues.Wrap(resp)
@@ -94,18 +94,18 @@ func (i integration) updateIssue(ctx context.Context, args []sdktypes.Value, kwa
 		"labels?", &issue.Labels,
 		"assignees?", &issue.Assignees,
 	); err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Invoke the API method.
 	gh, err := i.NewClient(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	resp, _, err := gh.Issues.Edit(ctx, owner, repo, number, &issue)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	return sdkvalues.Wrap(resp)
@@ -132,18 +132,18 @@ func (i integration) listRepositoryIssues(ctx context.Context, args []sdktypes.V
 		"direction?", &opts.Direction,
 		"since?", &opts.Since,
 	); err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Invoke the API method.
 	gh, err := i.NewClient(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	is, _, err := gh.Issues.ListByRepo(ctx, owner, repo, &opts)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Parse and return the response.

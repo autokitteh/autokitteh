@@ -15,17 +15,17 @@ func (i integration) getUser(ctx context.Context, args []sdktypes.Value, kwargs 
 		"username", &username,
 	)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	gh, err := i.NewClient(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	resp, _, err := gh.Users.Get(ctx, username)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	return sdkvalues.Wrap(resp)

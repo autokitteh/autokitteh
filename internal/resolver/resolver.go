@@ -42,25 +42,26 @@ func limitedContext() (context.Context, context.CancelFunc) {
 // Subtle note: the build is guaranteed to exist only if the FIRST
 // return value is non-nil. Example: if the input is a valid ID,
 // but it doesn't actually exist, we return (nil, ID, nil).
-func (r Resolver) BuildID(id string) (sdktypes.Build, sdktypes.BuildID, error) {
+func (r Resolver) BuildID(id string) (b sdktypes.Build, bid sdktypes.BuildID, err error) {
 	if id == "" {
-		return nil, nil, errors.New("missing build ID")
+		err = errors.New("missing build ID")
+		return
 	}
 
-	bid, err := sdktypes.StrictParseBuildID(id)
-	if err != nil {
-		return nil, nil, fmt.Errorf("invalid build ID %q: %w", id, err)
+	if bid, err = sdktypes.StrictParseBuildID(id); err != nil {
+		err = fmt.Errorf("invalid build ID %q: %w", id, err)
+		return
 	}
 
 	ctx, cancel := limitedContext()
 	defer cancel()
 
-	b, err := r.Client.Builds().Get(ctx, bid)
-	if err != nil {
-		return nil, nil, fmt.Errorf("get build ID %q: %w", id, err)
+	if b, err = r.Client.Builds().Get(ctx, bid); err != nil {
+		err = fmt.Errorf("get build ID %q: %w", id, err)
+		return
 	}
 
-	return b, bid, nil
+	return
 }
 
 // ConnectionNameOrID returns a connection, based on the given name or
@@ -69,50 +70,52 @@ func (r Resolver) BuildID(id string) (sdktypes.Build, sdktypes.BuildID, error) {
 // Subtle note: the connection is guaranteed to exist only if the FIRST
 // return value is non-nil. Example: if the input is a valid ID,
 // but it doesn't actually exist, we return (nil, ID, nil).
-func (r Resolver) ConnectionNameOrID(nameOrID string) (sdktypes.Connection, sdktypes.ConnectionID, error) {
+func (r Resolver) ConnectionNameOrID(nameOrID string) (c sdktypes.Connection, cid sdktypes.ConnectionID, err error) {
 	if nameOrID == "" {
-		return nil, nil, nil
+		return
 	}
 
-	if sdktypes.IsID(nameOrID) {
+	if sdktypes.IsConnectionID(nameOrID) {
 		return r.connectionByID(nameOrID)
 	}
 
 	parts := strings.Split(nameOrID, separator)
 	switch len(parts) {
 	case 1:
-		return nil, nil, fmt.Errorf("invalid connection name %q: missing project prefix", nameOrID)
+		err = fmt.Errorf("invalid connection name %q: missing project prefix", nameOrID)
+		return
 	case 2:
 		return r.connectionByFullName(parts[0], parts[1], nameOrID)
 	default:
-		return nil, nil, fmt.Errorf("invalid connection name %q: too many parts", nameOrID)
+		err = fmt.Errorf("invalid connection name %q: too many parts", nameOrID)
+		return
 	}
 }
 
-func (r Resolver) connectionByID(id string) (sdktypes.Connection, sdktypes.ConnectionID, error) {
-	cid, err := sdktypes.StrictParseConnectionID(id)
-	if err != nil {
-		return nil, nil, fmt.Errorf("invalid connection ID %q: %w", id, err)
+func (r Resolver) connectionByID(id string) (c sdktypes.Connection, cid sdktypes.ConnectionID, err error) {
+	if cid, err = sdktypes.StrictParseConnectionID(id); err != nil {
+		err = fmt.Errorf("invalid connection ID %q: %w", id, err)
+		return
 	}
 
 	ctx, cancel := limitedContext()
 	defer cancel()
 
-	c, err := r.Client.Connections().Get(ctx, cid)
-	if err != nil {
-		return nil, nil, fmt.Errorf("get connection ID %q: %w", id, err)
+	if c, err = r.Client.Connections().Get(ctx, cid); err != nil {
+		err = fmt.Errorf("get connection ID %q: %w", id, err)
+		return
 	}
 
-	return c, cid, nil
+	return
 }
 
 func (r Resolver) connectionByFullName(projNameOrID, connName, fullName string) (sdktypes.Connection, sdktypes.ConnectionID, error) {
 	p, pid, err := r.ProjectNameOrID(projNameOrID)
 	if err != nil {
-		return nil, nil, err
+		return sdktypes.InvalidConnection, sdktypes.InvalidConnectionID, err
 	}
-	if p == nil {
-		return nil, nil, NotFoundError{Type: "project", Name: projNameOrID}
+	if !p.IsValid() {
+		return sdktypes.InvalidConnection, sdktypes.InvalidConnectionID, NotFoundError{Type: "project", Name: projNameOrID}
 	}
 
 	ctx, cancel := limitedContext()
@@ -121,16 +124,16 @@ func (r Resolver) connectionByFullName(projNameOrID, connName, fullName string) 
 	f := sdkservices.ListConnectionsFilter{ProjectID: pid}
 	cs, err := r.Client.Connections().List(ctx, f)
 	if err != nil {
-		return nil, nil, fmt.Errorf("list connections: %w", err)
+		return sdktypes.InvalidConnection, sdktypes.InvalidConnectionID, fmt.Errorf("list connections: %w", err)
 	}
 
 	for _, c := range cs {
-		if sdktypes.GetConnectionName(c).String() == connName {
-			return c, sdktypes.GetConnectionID(c), nil
+		if c.Name().String() == connName {
+			return c, c.ID(), nil
 		}
 	}
 
-	return nil, nil, NotFoundError{Type: "connection", Name: fullName}
+	return sdktypes.InvalidConnection, sdktypes.InvalidConnectionID, NotFoundError{Type: "connection", Name: fullName}
 }
 
 // DeploymentID returns a deployment, based on the given ID.
@@ -139,25 +142,26 @@ func (r Resolver) connectionByFullName(projNameOrID, connName, fullName string) 
 // Subtle note: the deployment is guaranteed to exist only if the FIRST
 // return value is non-nil. Example: if the input is a valid ID,
 // but it doesn't actually exist, we return (nil, ID, nil).
-func (r Resolver) DeploymentID(id string) (sdktypes.Deployment, sdktypes.DeploymentID, error) {
+func (r Resolver) DeploymentID(id string) (d sdktypes.Deployment, did sdktypes.DeploymentID, err error) {
 	if id == "" {
-		return nil, nil, errors.New("missing deployment ID")
+		err = errors.New("missing deployment ID")
+		return
 	}
 
-	did, err := sdktypes.StrictParseDeploymentID(id)
-	if err != nil {
-		return nil, nil, fmt.Errorf("invalid deployment ID %q: %w", id, err)
+	if did, err = sdktypes.StrictParseDeploymentID(id); err != nil {
+		err = fmt.Errorf("invalid deployment ID %q: %w", id, err)
+		return
 	}
 
 	ctx, cancel := limitedContext()
 	defer cancel()
 
-	d, err := r.Client.Deployments().Get(ctx, did)
-	if err != nil {
-		return nil, nil, fmt.Errorf("get deployment ID %q: %w", id, err)
+	if d, err = r.Client.Deployments().Get(ctx, did); err != nil {
+		err = fmt.Errorf("get deployment ID %q: %w", id, err)
+		return
 	}
 
-	return d, did, nil
+	return
 }
 
 // EnvNameOrID returns an environment, based on the given environment
@@ -176,41 +180,42 @@ func (r Resolver) DeploymentID(id string) (sdktypes.Deployment, sdktypes.Deploym
 // but it doesn't actually exist, we return (nil, ID, nil).
 func (r Resolver) EnvNameOrID(envNameOrID, projNameOrID string) (sdktypes.Env, sdktypes.EnvID, error) {
 	if envNameOrID == "" {
-		return nil, nil, nil
+		return sdktypes.InvalidEnv, sdktypes.InvalidEnvID, nil
 	}
 
 	// Project.
 	_, pid, err := r.ProjectNameOrID(projNameOrID)
 	if err != nil {
-		return nil, nil, err
+		return sdktypes.InvalidEnv, sdktypes.InvalidEnvID, err
 	}
 
 	// Environment.
-	if sdktypes.IsID(envNameOrID) {
+	if sdktypes.IsEnvID(envNameOrID) {
 		return r.envByID(envNameOrID, projNameOrID, pid)
 	}
 	return r.envByName(envNameOrID, projNameOrID, pid)
 }
 
-func (r Resolver) envByID(envID, projNameOrID string, pid sdktypes.ProjectID) (sdktypes.Env, sdktypes.EnvID, error) {
-	eid, err := sdktypes.StrictParseEnvID(envID)
-	if err != nil {
-		return nil, nil, fmt.Errorf("invalid environment ID %q: %w", envID, err)
+func (r Resolver) envByID(envID, projNameOrID string, pid sdktypes.ProjectID) (e sdktypes.Env, eid sdktypes.EnvID, err error) {
+	if eid, err = sdktypes.StrictParseEnvID(envID); err != nil {
+		err = fmt.Errorf("invalid environment ID %q: %w", envID, err)
+		return
 	}
 
 	ctx, cancel := limitedContext()
 	defer cancel()
 
-	e, err := r.Client.Envs().GetByID(ctx, eid)
-	if err != nil {
-		return nil, eid, fmt.Errorf("get environment ID %q: %w", envID, err)
+	if e, err = r.Client.Envs().GetByID(ctx, eid); err != nil {
+		err = fmt.Errorf("get environment ID %q: %w", envID, err)
+		return
 	}
 
-	if pid != nil && pid.String() != sdktypes.GetEnvProjectID(e).String() {
-		return nil, eid, fmt.Errorf("env ID %q doesn't belong to project %q", envID, projNameOrID)
+	if pid.IsValid() && pid != e.ProjectID() {
+		err = fmt.Errorf("env ID %q doesn't belong to project %q", envID, projNameOrID)
+		return
 	}
 
-	return e, eid, nil
+	return
 }
 
 func (r Resolver) envByName(envName, projNameOrID string, pid sdktypes.ProjectID) (sdktypes.Env, sdktypes.EnvID, error) {
@@ -221,41 +226,44 @@ func (r Resolver) envByName(envName, projNameOrID string, pid sdktypes.ProjectID
 	return r.envByFullName(parts, projNameOrID, pid)
 }
 
-func (r Resolver) envByShortName(envName, projNameOrID string, pid sdktypes.ProjectID) (sdktypes.Env, sdktypes.EnvID, error) {
-	if pid == nil {
-		return nil, nil, fmt.Errorf("invalid environment name %q: missing project prefix", envName)
+func (r Resolver) envByShortName(envName, projNameOrID string, pid sdktypes.ProjectID) (e sdktypes.Env, eid sdktypes.EnvID, err error) {
+	if !pid.IsValid() {
+		err = fmt.Errorf("invalid environment name %q: missing project prefix", envName)
+		return
 	}
 
-	n, err := sdktypes.StrictParseName(envName)
+	var n sdktypes.Symbol
+	n, err = sdktypes.StrictParseSymbol(envName)
 	if err != nil {
-		return nil, nil, fmt.Errorf("invalid environment name %q: %w", envName, err)
+		err = fmt.Errorf("invalid environment name %q: %w", envName, err)
+		return
 	}
 
 	ctx, cancel := limitedContext()
 	defer cancel()
 
-	e, err := r.Client.Envs().GetByName(ctx, pid, n)
-	if err != nil {
-		return nil, nil, fmt.Errorf("get environment name %q: %w", envName, err)
+	if e, err = r.Client.Envs().GetByName(ctx, pid, n); err != nil {
+		err = fmt.Errorf("get environment name %q: %w", envName, err)
 	}
 
-	return e, sdktypes.GetEnvID(e), nil
+	eid = e.ID()
+	return
 }
 
-func (r Resolver) envByFullName(parts []string, projNameOrID string, pid sdktypes.ProjectID) (sdktypes.Env, sdktypes.EnvID, error) {
+func (r Resolver) envByFullName(parts []string, projNameOrID string, pid sdktypes.ProjectID) (e sdktypes.Env, eid sdktypes.EnvID, err error) {
 	prefix, envName := strings.Join(parts[:len(parts)-1], separator), parts[len(parts)-1]
 
-	e, eid, err := r.EnvNameOrID(envName, prefix)
-	if err != nil {
-		return nil, nil, err
+	if e, eid, err = r.EnvNameOrID(envName, prefix); err != nil {
+		return
 	}
 
 	// Sanity check: the original project must match the prefix.
-	if pid != nil && pid.String() != sdktypes.GetEnvProjectID(e).String() {
-		return nil, eid, fmt.Errorf("env %q doesn't belong to project %q", prefix, projNameOrID)
+	if pid.IsValid() && pid != e.ProjectID() {
+		err = fmt.Errorf("env %q doesn't belong to project %q", prefix, projNameOrID)
+		return
 	}
 
-	return e, eid, nil
+	return
 }
 
 // EventID returns an event, based on the given ID.
@@ -264,25 +272,26 @@ func (r Resolver) envByFullName(parts []string, projNameOrID string, pid sdktype
 // Subtle note: the event is guaranteed to exist only if the FIRST
 // return value is non-nil. Example: if the input is a valid ID,
 // but it doesn't actually exist, we return (nil, ID, nil).
-func (r Resolver) EventID(id string) (sdktypes.Event, sdktypes.EventID, error) {
+func (r Resolver) EventID(id string) (e sdktypes.Event, eid sdktypes.EventID, err error) {
 	if id == "" {
-		return nil, nil, errors.New("missing event ID")
+		err = errors.New("missing event ID")
+		return
 	}
 
-	eid, err := sdktypes.StrictParseEventID(id)
-	if err != nil {
-		return nil, nil, fmt.Errorf("invalid event ID %q: %w", id, err)
+	if eid, err = sdktypes.StrictParseEventID(id); err != nil {
+		err = fmt.Errorf("invalid event ID %q: %w", id, err)
+		return
 	}
 
 	ctx, cancel := limitedContext()
 	defer cancel()
 
-	e, err := r.Client.Events().Get(ctx, eid)
-	if err != nil {
-		return nil, nil, fmt.Errorf("get event ID %q: %w", id, err)
+	if e, err = r.Client.Events().Get(ctx, eid); err != nil {
+		err = fmt.Errorf("get event ID %q: %w", id, err)
+		return
 	}
 
-	return e, eid, nil
+	return
 }
 
 // IntegrationNameOrID returns an integration, based on the given
@@ -293,10 +302,10 @@ func (r Resolver) EventID(id string) (sdktypes.Event, sdktypes.EventID, error) {
 // but it doesn't actually exist, we return (nil, ID, nil).
 func (r Resolver) IntegrationNameOrID(nameOrID string) (sdktypes.Integration, sdktypes.IntegrationID, error) {
 	if nameOrID == "" {
-		return nil, nil, nil
+		return sdktypes.InvalidIntegration, sdktypes.InvalidIntegrationID, nil
 	}
 
-	if sdktypes.IsID(nameOrID) {
+	if sdktypes.IsIntegrationID(nameOrID) {
 		return r.integrationByID(nameOrID)
 	}
 
@@ -306,7 +315,7 @@ func (r Resolver) IntegrationNameOrID(nameOrID string) (sdktypes.Integration, sd
 func (r Resolver) integrationByID(id string) (sdktypes.Integration, sdktypes.IntegrationID, error) {
 	iid, err := sdktypes.StrictParseIntegrationID(id)
 	if err != nil {
-		return nil, nil, fmt.Errorf("invalid integration ID %q: %w", id, err)
+		return sdktypes.InvalidIntegration, sdktypes.InvalidIntegrationID, fmt.Errorf("invalid integration ID %q: %w", id, err)
 	}
 
 	ctx, cancel := limitedContext()
@@ -314,16 +323,16 @@ func (r Resolver) integrationByID(id string) (sdktypes.Integration, sdktypes.Int
 
 	is, err := r.Client.Integrations().List(ctx, "")
 	if err != nil {
-		return nil, nil, fmt.Errorf("list integrations: %w", err)
+		return sdktypes.InvalidIntegration, sdktypes.InvalidIntegrationID, fmt.Errorf("list integrations: %w", err)
 	}
 
 	for _, i := range is {
-		if sdktypes.GetIntegrationID(i).String() == iid.String() {
+		if i.ID() == iid {
 			return i, iid, nil
 		}
 	}
 
-	return nil, iid, nil
+	return sdktypes.InvalidIntegration, iid, nil
 }
 
 func (r Resolver) integrationByName(name string) (sdktypes.Integration, sdktypes.IntegrationID, error) {
@@ -332,19 +341,19 @@ func (r Resolver) integrationByName(name string) (sdktypes.Integration, sdktypes
 
 	is, err := r.Client.Integrations().List(ctx, name)
 	if err != nil {
-		return nil, nil, fmt.Errorf("list integrations: %w", err)
+		return sdktypes.InvalidIntegration, sdktypes.InvalidIntegrationID, fmt.Errorf("list integrations: %w", err)
 	}
 
 	for _, i := range is {
-		if sdktypes.GetIntegrationUniqueName(i).String() == name {
-			return i, sdktypes.GetIntegrationID(i), nil
+		if i.UniqueName().String() == name {
+			return i, i.ID(), nil
 		}
-		if sdktypes.GetIntegrationDisplayName(i) == name {
-			return i, sdktypes.GetIntegrationID(i), nil
+		if i.DisplayName() == name {
+			return i, i.ID(), nil
 		}
 	}
 
-	return nil, nil, nil
+	return sdktypes.InvalidIntegration, sdktypes.InvalidIntegrationID, nil
 }
 
 // TriggerID returns a trigger, based on the given ID.
@@ -353,25 +362,26 @@ func (r Resolver) integrationByName(name string) (sdktypes.Integration, sdktypes
 // Subtle note: the trigger is guaranteed to exist only if the FIRST
 // return value is non-nil. Example: if the input is a valid ID,
 // but it doesn't actually exist, we return (nil, ID, nil).
-func (r Resolver) TriggerID(id string) (sdktypes.Trigger, sdktypes.TriggerID, error) {
+func (r Resolver) TriggerID(id string) (t sdktypes.Trigger, tid sdktypes.TriggerID, err error) {
 	if id == "" {
-		return nil, nil, fmt.Errorf("missing trigger ID")
+		err = errors.New("missing trigger ID")
+		return
 	}
 
-	mid, err := sdktypes.StrictParseTriggerID(id)
-	if err != nil {
-		return nil, nil, fmt.Errorf("invalid trigger ID %q: %w", id, err)
+	if tid, err = sdktypes.StrictParseTriggerID(id); err != nil {
+		err = fmt.Errorf("invalid trigger ID %q: %w", id, err)
+		return
 	}
 
 	ctx, cancel := limitedContext()
 	defer cancel()
 
-	m, err := r.Client.Triggers().Get(ctx, mid)
-	if err != nil {
-		return nil, nil, fmt.Errorf("get trigger ID %q: %w", id, err)
+	if t, err = r.Client.Triggers().Get(ctx, tid); err != nil {
+		err = fmt.Errorf("get trigger ID %q: %w", id, err)
+		return
 	}
 
-	return m, mid, nil
+	return
 }
 
 // ProjectNameOrID returns a project, based on the given name or ID.
@@ -382,48 +392,50 @@ func (r Resolver) TriggerID(id string) (sdktypes.Trigger, sdktypes.TriggerID, er
 // but it doesn't actually exist, we return (nil, ID, nil).
 func (r Resolver) ProjectNameOrID(nameOrID string) (sdktypes.Project, sdktypes.ProjectID, error) {
 	if nameOrID == "" {
-		return nil, nil, nil
+		return sdktypes.InvalidProject, sdktypes.InvalidProjectID, nil
 	}
 
-	if sdktypes.IsID(nameOrID) {
+	if sdktypes.IsProjectID(nameOrID) {
 		return r.projectByID(nameOrID)
 	}
 
 	return r.projectByName(nameOrID)
 }
 
-func (r Resolver) projectByID(id string) (sdktypes.Project, sdktypes.ProjectID, error) {
-	pid, err := sdktypes.StrictParseProjectID(id)
-	if err != nil {
-		return nil, nil, fmt.Errorf("invalid project ID %q: %w", id, err)
+func (r Resolver) projectByID(id string) (p sdktypes.Project, pid sdktypes.ProjectID, err error) {
+	if pid, err = sdktypes.StrictParseProjectID(id); err != nil {
+		err = fmt.Errorf("invalid project ID %q: %w", id, err)
+		return
 	}
 
 	ctx, cancel := limitedContext()
 	defer cancel()
 
-	p, err := r.Client.Projects().GetByID(ctx, pid)
+	p, err = r.Client.Projects().GetByID(ctx, pid)
 	if err != nil {
-		return nil, pid, fmt.Errorf("get project ID %q: %w", id, err)
+		err = fmt.Errorf("get project ID %q: %w", id, err)
+		return
 	}
 
-	return p, pid, nil
+	return
 }
 
-func (r Resolver) projectByName(name string) (sdktypes.Project, sdktypes.ProjectID, error) {
-	n, err := sdktypes.StrictParseName(name)
-	if err != nil {
-		return nil, nil, fmt.Errorf("invalid project name %q: %w", name, err)
+func (r Resolver) projectByName(name string) (p sdktypes.Project, pid sdktypes.ProjectID, err error) {
+	var n sdktypes.Symbol
+	if n, err = sdktypes.StrictParseSymbol(name); err != nil {
+		err = fmt.Errorf("invalid project name %q: %w", name, err)
+		return
 	}
 
 	ctx, cancel := limitedContext()
 	defer cancel()
 
-	p, err := r.Client.Projects().GetByName(ctx, n)
-	if err != nil {
-		return nil, nil, fmt.Errorf("get project name %q: %w", name, err)
+	if p, err = r.Client.Projects().GetByName(ctx, n); err != nil {
+		err = fmt.Errorf("get project name %q: %w", name, err)
 	}
 
-	return p, sdktypes.GetProjectID(p), nil
+	pid = p.ID()
+	return
 }
 
 // SessionID returns a session, based on the given ID.
@@ -432,23 +444,23 @@ func (r Resolver) projectByName(name string) (sdktypes.Project, sdktypes.Project
 // Subtle note: the session is guaranteed to exist only if the FIRST
 // return value is non-nil. Example: if the input is a valid ID,
 // but it doesn't actually exist, we return (nil, ID, nil).
-func (r Resolver) SessionID(id string) (sdktypes.Session, sdktypes.SessionID, error) {
+func (r Resolver) SessionID(id string) (s sdktypes.Session, sid sdktypes.SessionID, err error) {
 	if id == "" {
-		return nil, nil, errors.New("missing session ID")
+		err = errors.New("missing session ID")
+		return
 	}
 
-	sid, err := sdktypes.StrictParseSessionID(id)
-	if err != nil {
-		return nil, nil, fmt.Errorf("invalid session ID %q: %w", id, err)
+	if sid, err = sdktypes.StrictParseSessionID(id); err != nil {
+		err = fmt.Errorf("invalid session ID %q: %w", id, err)
+		return
 	}
 
 	ctx, cancel := limitedContext()
 	defer cancel()
 
-	s, err := r.Client.Sessions().Get(ctx, sid)
-	if err != nil {
-		return nil, nil, fmt.Errorf("get session ID %q: %w", id, err)
+	if s, err = r.Client.Sessions().Get(ctx, sid); err != nil {
+		err = fmt.Errorf("get session ID %q: %w", id, err)
 	}
 
-	return s, sid, nil
+	return
 }

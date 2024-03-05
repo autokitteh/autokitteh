@@ -60,7 +60,7 @@ func (c *client) Run(
 			if err != nil {
 				return nil, fmt.Errorf("invalid error: %w", err)
 			}
-			return nil, sdktypes.ProgramErrorToError(perr)
+			return nil, perr.ToError()
 		}
 
 		if msg.Print != "" {
@@ -105,7 +105,7 @@ func (c *client) Build(ctx context.Context, fs fs.FS, symbols []sdktypes.Symbol,
 		if err != nil {
 			return nil, fmt.Errorf("invalid error: %w", err)
 		}
-		return nil, sdktypes.ProgramErrorToError(perr)
+		return nil, perr.ToError()
 	}
 
 	return sdkbuildfile.Read(bytes.NewReader(resp.Msg.Artifact))
@@ -124,7 +124,7 @@ func (c *client) List(ctx context.Context) ([]sdktypes.Runtime, error) {
 	return kittehs.TransformError(resp.Msg.Runtimes, sdktypes.StrictRuntimeFromProto)
 }
 
-func (c *client) New(ctx context.Context, name sdktypes.Name) (sdkservices.Runtime, error) {
+func (c *client) New(ctx context.Context, name sdktypes.Symbol) (sdkservices.Runtime, error) {
 	resp, err := c.client.Describe(ctx, connect.NewRequest(&runtimesv1.DescribeRequest{Name: name.String()}))
 	if err != nil {
 		return nil, rpcerrors.TranslateError(err)

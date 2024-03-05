@@ -28,29 +28,29 @@ func (r *run) getFunc(ctx context.Context, args []sdktypes.Value, kwargs map[str
 	var key string
 
 	if err := sdkmodule.UnpackArgs(args, kwargs, "key", &key); err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	v, ok := r.exports[key]
 	if !ok {
-		return sdktypes.NewNothingValue(), nil
+		return sdktypes.Nothing, nil
 	}
 
 	return v, nil
 }
 
 func (r *run) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
-	if !sdktypes.IsFunctionValue(v) {
-		return nil, sdkerrors.ErrInvalidArgument
+	if !v.IsFunction() {
+		return sdktypes.InvalidValue, sdkerrors.NewInvalidArgumentError("not a function")
 	}
 
-	name := sdktypes.GetFunctionValueName(v)
+	name := v.GetFunction().Name()
 
 	switch name.String() {
 	case "get":
 		return r.getFunc(ctx, args, kwargs)
 	default:
-		return nil, fmt.Errorf("unrecognized function name %q", name)
+		return sdktypes.InvalidValue, fmt.Errorf("unrecognized function name %q", name)
 	}
 }
 
@@ -92,11 +92,11 @@ func evaluateBytes(data []byte) (map[string]sdktypes.Value, error) {
 func evaluateValue(v sdktypes.Value) (map[string]sdktypes.Value, error) {
 	var exports map[string]sdktypes.Value
 
-	switch sdktypes.GetValue(v).(type) {
+	switch v := v.Concrete().(type) {
 	case sdktypes.ListValue:
 		i := 0
 		exports = kittehs.ListToMap(
-			sdktypes.GetListValue(v),
+			v.Values(),
 			func(v sdktypes.Value) (string, sdktypes.Value) {
 				i++
 				return fmt.Sprintf("_%d", i), v
@@ -105,7 +105,7 @@ func evaluateValue(v sdktypes.Value) (map[string]sdktypes.Value, error) {
 	case sdktypes.SetValue:
 		i := 0
 		exports = kittehs.ListToMap(
-			sdktypes.GetListValue(v),
+			v.Values(),
 			func(v sdktypes.Value) (string, sdktypes.Value) {
 				i++
 				return fmt.Sprintf("_%d", i), v
@@ -114,21 +114,21 @@ func evaluateValue(v sdktypes.Value) (map[string]sdktypes.Value, error) {
 	case sdktypes.DictValue:
 		var err error
 		exports, err = kittehs.ListToMapError(
-			sdktypes.GetDictValue(v),
-			func(it *sdktypes.DictValueItem) (string, sdktypes.Value, error) {
-				if !sdktypes.IsStringValue(it.K) {
-					return "", nil, fmt.Errorf("dict key is not a string")
+			v.Items(),
+			func(it sdktypes.DictItem) (string, sdktypes.Value, error) {
+				if !it.K.IsString() {
+					return "", sdktypes.InvalidValue, fmt.Errorf("dict key is not a string")
 				}
-				return sdktypes.GetStringValue(it.K), it.V, nil
+				return it.K.GetString().Value(), it.V, nil
 			},
 		)
 		if err != nil {
 			return nil, err
 		}
 	case sdktypes.StructValue:
-		_, exports = sdktypes.GetStructValue(v)
+		exports = v.Fields()
 	case sdktypes.ModuleValue:
-		_, exports = sdktypes.GetModuleValue(v)
+		exports = v.Members()
 	default:
 		return nil, fmt.Errorf("unhandled value type")
 	}

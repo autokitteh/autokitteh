@@ -29,16 +29,16 @@ func (c *client) Create(ctx context.Context, project sdktypes.Project) (sdktypes
 		Project: project.ToProto(),
 	}))
 	if err != nil {
-		return nil, rpcerrors.TranslateError(err)
+		return sdktypes.InvalidProjectID, rpcerrors.TranslateError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {
-		return nil, err
+		return sdktypes.InvalidProjectID, err
 	}
 
 	pid, err := sdktypes.StrictParseProjectID(resp.Msg.ProjectId)
 	if err != nil {
-		return nil, fmt.Errorf("invalid project id: %w", err)
+		return sdktypes.InvalidProjectID, fmt.Errorf("invalid project id: %w", err)
 	}
 
 	return pid, nil
@@ -64,42 +64,42 @@ func (c *client) GetByID(ctx context.Context, pid sdktypes.ProjectID) (sdktypes.
 		&projectsv1.GetRequest{ProjectId: pid.String()},
 	))
 	if err != nil {
-		return nil, rpcerrors.TranslateError(err)
+		return sdktypes.InvalidProject, rpcerrors.TranslateError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {
-		return nil, err
+		return sdktypes.InvalidProject, err
 	}
 
 	project, err := sdktypes.StrictProjectFromProto(resp.Msg.Project)
 	if err != nil {
-		return nil, fmt.Errorf("invalid project: %w", err)
+		return sdktypes.InvalidProject, fmt.Errorf("invalid project: %w", err)
 	}
 
 	return project, nil
 }
 
-func (c *client) GetByName(ctx context.Context, n sdktypes.Name) (sdktypes.Project, error) {
+func (c *client) GetByName(ctx context.Context, n sdktypes.Symbol) (sdktypes.Project, error) {
 	resp, err := c.client.Get(ctx, connect.NewRequest(
 		&projectsv1.GetRequest{
 			Name: n.String(),
 		},
 	))
 	if err != nil {
-		return nil, rpcerrors.TranslateError(err)
+		return sdktypes.InvalidProject, rpcerrors.TranslateError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {
-		return nil, err
+		return sdktypes.InvalidProject, err
 	}
 
 	if resp.Msg.Project == nil {
-		return nil, nil
+		return sdktypes.InvalidProject, nil
 	}
 
 	project, err := sdktypes.ProjectFromProto(resp.Msg.Project)
 	if err != nil {
-		return nil, fmt.Errorf("invalid project: %w", err)
+		return sdktypes.InvalidProject, fmt.Errorf("invalid project: %w", err)
 	}
 
 	return project, nil
@@ -123,11 +123,11 @@ func (c *client) Build(ctx context.Context, pid sdktypes.ProjectID) (sdktypes.Bu
 		&projectsv1.BuildRequest{ProjectId: pid.String()},
 	))
 	if err != nil {
-		return nil, rpcerrors.TranslateError(err)
+		return sdktypes.InvalidBuildID, rpcerrors.TranslateError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {
-		return nil, err
+		return sdktypes.InvalidBuildID, err
 	}
 
 	if resp.Msg.Error == nil {
@@ -136,10 +136,10 @@ func (c *client) Build(ctx context.Context, pid sdktypes.ProjectID) (sdktypes.Bu
 
 	perr, err := sdktypes.ProgramErrorFromProto(resp.Msg.Error)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidBuildID, err
 	}
 
-	return nil, sdktypes.ProgramErrorToError(perr)
+	return sdktypes.InvalidBuildID, perr.ToError()
 }
 
 func (c *client) SetResources(ctx context.Context, pid sdktypes.ProjectID, resources map[string][]byte) error {

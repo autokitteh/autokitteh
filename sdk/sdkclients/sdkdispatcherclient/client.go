@@ -39,16 +39,16 @@ func (c *client) Redispatch(ctx context.Context, eventID sdktypes.EventID, opts 
 		),
 	)
 	if err != nil {
-		return nil, rpcerrors.TranslateError(err)
+		return sdktypes.InvalidEventID, rpcerrors.TranslateError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {
-		return nil, err
+		return sdktypes.InvalidEventID, err
 	}
 
 	eventId, err := sdktypes.StrictParseEventID(resp.Msg.EventId)
 	if err != nil {
-		return nil, fmt.Errorf("invalid event id: %w", err)
+		return sdktypes.InvalidEventID, fmt.Errorf("invalid event id: %w", err)
 	}
 
 	return eventId, nil
@@ -65,16 +65,16 @@ func (c *client) Dispatch(ctx context.Context, event sdktypes.Event, opts *sdkse
 		EnvId:        opts.EnvID.String(),
 	}))
 	if err != nil {
-		return nil, rpcerrors.TranslateError(err)
+		return sdktypes.InvalidEventID, rpcerrors.TranslateError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {
-		return nil, err
+		return sdktypes.InvalidEventID, err
 	}
 
 	eventId, err := sdktypes.StrictParseEventID(resp.Msg.EventId)
 	if err != nil {
-		return nil, fmt.Errorf("invalid event id: %w", err)
+		return sdktypes.InvalidEventID, fmt.Errorf("invalid event id: %w", err)
 	}
 
 	return eventId, nil

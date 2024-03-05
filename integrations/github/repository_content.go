@@ -28,7 +28,7 @@ func (i integration) createOrUpdateFile(ctx context.Context, args []sdktypes.Val
 		"committer?", &committer,
 	)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	var opts github.RepositoryContentFileOptions
@@ -58,12 +58,12 @@ func (i integration) createOrUpdateFile(ctx context.Context, args []sdktypes.Val
 
 	gh, err := i.NewClient(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	c, _, err := gh.Repositories.CreateFile(ctx, owner, repo, path, &opts)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	return sdkvalues.Wrap(c)
@@ -80,12 +80,12 @@ func (i integration) getContents(ctx context.Context, args []sdktypes.Value, kwa
 		"ref?", &ref,
 	)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	gh, err := i.NewClient(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	fileContent, directoryContent, _, err := gh.Repositories.GetContents(
@@ -96,7 +96,7 @@ func (i integration) getContents(ctx context.Context, args []sdktypes.Value, kwa
 		&github.RepositoryContentGetOptions{Ref: ref},
 	)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	if directoryContent == nil && fileContent != nil {

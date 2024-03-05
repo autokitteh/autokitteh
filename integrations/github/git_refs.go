@@ -21,7 +21,7 @@ func (i integration) createRef(ctx context.Context, args []sdktypes.Value, kwarg
 		"sha", &sha,
 	)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	ghRef := github.Reference{
@@ -34,12 +34,12 @@ func (i integration) createRef(ctx context.Context, args []sdktypes.Value, kwarg
 	// Invoke the API method.
 	gh, err := i.NewClient(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	c, _, err := gh.Git.CreateRef(ctx, owner, repo, &ghRef)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	return sdkvalues.Wrap(c)
@@ -55,18 +55,18 @@ func (i integration) getRef(ctx context.Context, args []sdktypes.Value, kwargs m
 		"ref", &ref,
 	)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Invoke the API method.
 	gh, err := i.NewClient(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	c, _, err := gh.Git.GetRef(ctx, owner, repo, ref)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	return sdkvalues.Wrap(c)

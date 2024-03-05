@@ -66,9 +66,9 @@ func New(z *zap.Logger, config Config, svcs *sessionsvcs.Svcs) Calls {
 func (cs *calls) StartWorkers(ctx context.Context) error { return cs.worker.Start() }
 
 func (cs *calls) Call(ctx workflow.Context, params *CallParams) (sdktypes.SessionCallAttemptResult, error) {
-	fnv, _, _ := sdktypes.GetSessionCallSpecData(params.CallSpec)
+	fnv, _, _ := params.CallSpec.Data()
 
-	seq := sdktypes.GetSessionCallSpecSeq(params.CallSpec)
+	seq := params.CallSpec.Seq()
 
 	z := cs.z.With(zap.String("session_id", params.SessionID.String()), zap.Uint32("seq", seq), zap.Any("v", fnv))
 
@@ -76,24 +76,24 @@ func (cs *calls) Call(ctx workflow.Context, params *CallParams) (sdktypes.Sessio
 	if err := workflow.ExecuteLocalActivity(
 		ctx, cs.svcs.DB.CreateSessionCall, params.SessionID, params.CallSpec,
 	).Get(ctx, nil); err != nil {
-		return nil, fmt.Errorf("db.create_call: %w", err)
+		return sdktypes.InvalidSessionCallAttemptResult, fmt.Errorf("db.create_call: %w", err)
 	}
 
 	var attempt uint32
 
 	goCtx := temporalclient.NewWorkflowContextAsGOContext(ctx)
 
-	if params.ForceInternal || sdktypes.FunctionValueHasFlag(fnv, sdktypes.PureFunctionFlag) {
+	if params.ForceInternal || fnv.GetFunction().HasFlag(sdktypes.PureFunctionFlag) {
 		z.Debug("function call outside activity")
 
 		var err error
 
-		if sdktypes.FunctionValueHasFlag(fnv, sdktypes.PrivilidgedFunctionFlag) {
+		if fnv.GetFunction().HasFlag(sdktypes.PrivilidgedFunctionFlag) {
 			goCtx = sessioncontext.WithWorkflowContext(goCtx, ctx)
 		}
 
 		if _, attempt, err = cs.executeCall(goCtx, params.SessionID, seq, params.Poller, params.Executors); err != nil {
-			return sdktypes.NewSessionCallAttemptErrorResult(fmt.Errorf("internal call: %w", err)), nil
+			return sdktypes.NewSessionCallAttemptResult(sdktypes.InvalidValue, fmt.Errorf("internal call: %w", err)), nil
 		}
 	} else {
 		executorsForSessions[params.SessionID.String()] = params.Executors // HACK
@@ -121,7 +121,7 @@ func (cs *calls) Call(ctx workflow.Context, params *CallParams) (sdktypes.Sessio
 					Poller:    params.Poller,
 				},
 			).Get(ctx, &ret); err != nil {
-				return nil, fmt.Errorf("call activity error: %w", err)
+				return sdktypes.InvalidSessionCallAttemptResult, fmt.Errorf("call activity error: %w", err)
 			}
 
 			if ret.Retry {
@@ -135,7 +135,7 @@ func (cs *calls) Call(ctx workflow.Context, params *CallParams) (sdktypes.Sessio
 	// Do not execute in an activity: we don't want to expose the activity result to Temporal.
 	result, err := cs.svcs.DB.GetSessionCallAttemptResult(goCtx, params.SessionID, seq, int64(attempt))
 	if err != nil {
-		return nil, fmt.Errorf("db.get_session_call_attempt: %w", err)
+		return sdktypes.InvalidSessionCallAttemptResult, fmt.Errorf("db.get_session_call_attempt: %w", err)
 	}
 
 	z.Debug("call returned", zap.Uint32("attempts", attempt+1), zap.Any("result", result))

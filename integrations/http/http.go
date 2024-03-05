@@ -59,17 +59,17 @@ func request(method string) sdkexecutor.Function {
 			"oauth2=?", &oauth2Config,
 		)
 		if err != nil {
-			return nil, err
+			return sdktypes.InvalidValue, err
 		}
 
 		if err := setQueryParams(&rawURL, params); err != nil {
-			return nil, err
+			return sdktypes.InvalidValue, err
 		}
 
 		// Construct and send HTTP request.
 		req, err := http.NewRequest(method, rawURL, nil)
 		if err != nil {
-			return nil, err
+			return sdktypes.InvalidValue, err
 		}
 
 		for k, v := range headers {
@@ -87,12 +87,12 @@ func request(method string) sdkexecutor.Function {
 		}
 
 		if err = setBody(req, rawBody, formBody, contentType, jsonBody); err != nil {
-			return nil, err
+			return sdktypes.InvalidValue, err
 		}
 
 		res, err := httpClient.Do(req)
 		if err != nil {
-			return nil, err
+			return sdktypes.InvalidValue, err
 		}
 
 		// Parse and return the response.
@@ -121,7 +121,7 @@ func setBody(req *http.Request, rawBody string, formBody map[string]string, cont
 	errMutuallyExclusive := errors.New("raw_body, form_body, and json_body are mutually exclusive")
 
 	if rawBody != "" {
-		if formBody != nil || (jsonBody != nil && !sdktypes.IsNothingValue(jsonBody)) {
+		if formBody != nil || (jsonBody.IsValid() && !jsonBody.IsNothing()) {
 			return errMutuallyExclusive
 		}
 
@@ -140,7 +140,7 @@ func setBody(req *http.Request, rawBody string, formBody map[string]string, cont
 		return nil
 	}
 
-	if jsonBody != nil && !sdktypes.IsNothingValue(jsonBody) {
+	if jsonBody.IsValid() && !jsonBody.IsNothing() {
 		if formBody != nil {
 			return errMutuallyExclusive
 		}
@@ -217,7 +217,7 @@ func setBody(req *http.Request, rawBody string, formBody map[string]string, cont
 func toStruct(r *http.Response) (sdktypes.Value, error) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 	r.Body.Close()
 
@@ -233,8 +233,8 @@ func toStruct(r *http.Response) (sdktypes.Value, error) {
 		jsonValue, _ = sdkvalues.Wrap(data)
 	}
 
-	if jsonValue == nil {
-		jsonValue = sdktypes.NewNothingValue()
+	if !jsonValue.IsValid() {
+		jsonValue = sdktypes.Nothing
 	}
 
 	return sdktypes.NewStructValue(
@@ -242,18 +242,18 @@ func toStruct(r *http.Response) (sdktypes.Value, error) {
 		map[string]sdktypes.Value{
 			"url":         sdktypes.NewStringValue(r.Request.URL.String()),
 			"status_code": sdktypes.NewIntegerValue(int64(r.StatusCode)),
-			"headers": sdktypes.NewDictValue(
-				kittehs.TransformMapToList(r.Header, func(k string, vs []string) *sdktypes.DictValueItem {
-					return &sdktypes.DictValueItem{
+			"headers": kittehs.Must1(sdktypes.NewDictValue(
+				kittehs.TransformMapToList(r.Header, func(k string, vs []string) sdktypes.DictItem {
+					return sdktypes.DictItem{
 						K: sdktypes.NewStringValue(k),
 						V: sdktypes.NewStringValue(strings.Join(vs, ",")),
 					}
 				}),
-			),
+			)),
 			"encoding":    sdktypes.NewStringValue(strings.Join(r.TransferEncoding, ",")),
 			"body_bytes":  sdktypes.NewBytesValue(body),
 			"body_json":   jsonValue,
 			"body_string": sdktypes.NewStringValue(string(body)),
 			"body":        sdktypes.NewStringValue(string(body)),
-		}), nil
+		})
 }

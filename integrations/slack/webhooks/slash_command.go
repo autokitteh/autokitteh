@@ -154,7 +154,7 @@ func transformCommand(l *zap.Logger, w http.ResponseWriter, cmd SlashCommand) (m
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return nil, err
 	}
-	data, err := sdktypes.ValueToStringValuesMap(wrapped)
+	data, err := wrapped.ToStringValuesMap()
 	if err != nil {
 		l.Error("Failed to convert wrapped Slack event",
 			zap.Error(err),

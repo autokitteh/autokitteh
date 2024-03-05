@@ -41,7 +41,7 @@ func (h HTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := map[string]sdktypes.Value{
-		"url": sdktypes.NewStructValue(
+		"url": kittehs.Must1(sdktypes.NewStructValue(
 			sdktypes.NewStringValue("url"),
 			map[string]sdktypes.Value{
 				"scheme":       sdktypes.NewStringValue(r.URL.Scheme),
@@ -58,7 +58,7 @@ func (h HTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					}),
 				),
 			},
-		),
+		)),
 		"method": sdktypes.NewStringValue(r.Method),
 		"header": sdktypes.NewDictValueFromStringMap(
 			kittehs.TransformMapValues(r.Header, func(vs []string) sdktypes.Value {

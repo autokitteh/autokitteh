@@ -17,7 +17,7 @@ var getCmd = common.StandardCommand(&cobra.Command{
 	Aliases: []string{"g"},
 
 	RunE: func(cmd *cobra.Command, args []string) error {
-		name, err := sdktypes.ParseName(args[0])
+		name, err := sdktypes.ParseSymbol(args[0])
 		if err != nil {
 			return fmt.Errorf("name: %w", err)
 		}

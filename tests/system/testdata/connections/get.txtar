@@ -1,18 +1,18 @@
 # Preconditions: create project and connection.
 ak project create my_project
 return code == 0
-output equals 'project_id: p:00000000000000000000000000000001'
+output equals 'project_id: prj_00000000000000000000000001'
 
 ak connection create my_connection --project my_project --integration http --connection-token my_url_path
 return code == 0
-output equals 'connection_id: connection:00000000000000000000000000000002'
+output equals 'connection_id: con_00000000000000000000000002'
 
 # Negative tests: get nonexistent connection name/ID, with/out --fail flag.
 ak connection get my_project/bad_connection
 return code == 0
 output equals ''
 
-ak connection get connection:deadbeefdeadbeefdeadbeefdeadbeef
+ak connection get con_0000000000000000000000dead
 return code == 0
 output equals ''
 
@@ -20,7 +20,7 @@ ak connection get my_project/bad_connection --fail
 output equals 'Error: connection not found'
 return code == 10
 
-ak connection get connection:deadbeefdeadbeefdeadbeefdeadbeef --fail
+ak connection get con_0000000000000000000000dead --fail
 output equals 'Error: connection not found'
 return code == 10
 
@@ -32,23 +32,23 @@ return code == 1
 # Get connection by name/ID, with/out JSON flag.
 ak connection get my_project/my_connection
 return code == 0
-output contains 'connection_id:"connection:00000000000000000000000000000002"'
-output contains 'project_id:"p:00000000000000000000000000000001"'
-output contains 'integration_id:"integration:8000000000000000f1201a7ed83f7cd5"'
+output contains 'connection_id:"con_00000000000000000000000002"'
+output contains 'project_id:"prj_00000000000000000000000001"'
+output contains 'integration_id:"int_0000000000f1201a7ed83f7cd5"'
 output contains 'integration_token:"my_url_path"'
 output contains 'name:"my_connection"'
 
-ak connection get connection:00000000000000000000000000000002 -J
+ak connection get con_00000000000000000000000002 -J
 return code == 0
 output equals file expected_connection.json
 
 -- expected_connection.json --
 {
   "connection": {
-    "connection_id": "connection:00000000000000000000000000000002",
-    "integration_id": "integration:8000000000000000f1201a7ed83f7cd5",
+    "connection_id": "con_00000000000000000000000002",
+    "integration_id": "int_0000000000f1201a7ed83f7cd5",
     "integration_token": "my_url_path",
-    "project_id": "p:00000000000000000000000000000001",
+    "project_id": "prj_00000000000000000000000001",
     "name": "my_connection"
   }
 }

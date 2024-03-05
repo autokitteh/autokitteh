@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
@@ -24,9 +25,9 @@ func TestModule(t *testing.T) {
 			return sdktypes.NewStructValue(
 				sdktypes.NewStringValue("dog"),
 				map[string]sdktypes.Value{
-					"say": sdktypes.NewFunctionValue(xid, "say", []byte("woof"), nil, nil),
+					"say": kittehs.Must1(sdktypes.NewFunctionValue(xid, "say", []byte("woof"), nil, sdktypes.ModuleFunction{})),
 				},
-			), nil
+			)
 		})),
 	)
 
@@ -43,14 +44,14 @@ func TestModule(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, v)
 
-	assert.Equal(t, "meow", sdktypes.GetStringValue(v))
+	assert.Equal(t, "meow", v.GetString().Value())
 
-	_, dog := sdktypes.GetStructValue(vs["dog"])
+	dog := vs["dog"].GetStruct().Fields()
 	sayv = dog["say"]
 
 	v, err = mod.Call(context.Background(), sayv, nil, nil)
 	require.NoError(t, err)
 	require.NotNil(t, v)
 
-	assert.Equal(t, "woof", sdktypes.GetStringValue(v))
+	assert.Equal(t, "woof", v.GetString().Value())
 }

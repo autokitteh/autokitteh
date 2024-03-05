@@ -135,7 +135,7 @@ func TestGetEventSessionDataZeroConnections(t *testing.T) {
 
 	connections := mockConnections{
 		list: func(ctx context.Context, filter sdkservices.ListConnectionsFilter) ([]sdktypes.Connection, error) {
-			return []sdktypes.Connection{}, nil
+			return []sdktypes.InvalidConnection, nil
 		},
 	}
 

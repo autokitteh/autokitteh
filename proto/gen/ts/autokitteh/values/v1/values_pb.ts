@@ -650,99 +650,81 @@ export class Function extends Message<Function> {
  */
 export class Value extends Message<Value> {
   /**
-   * @generated from oneof autokitteh.values.v1.Value.type
+   * one of the following fields must be set.
+   *
+   * @generated from field: autokitteh.values.v1.Nothing nothing = 1;
    */
-  type: {
-    /**
-     * @generated from field: autokitteh.values.v1.Nothing nothing = 1;
-     */
-    value: Nothing;
-    case: "nothing";
-  } | {
-    /**
-     * @generated from field: autokitteh.values.v1.Boolean boolean = 2;
-     */
-    value: Boolean;
-    case: "boolean";
-  } | {
-    /**
-     * @generated from field: autokitteh.values.v1.String string = 3;
-     */
-    value: String;
-    case: "string";
-  } | {
-    /**
-     * @generated from field: autokitteh.values.v1.Integer integer = 4;
-     */
-    value: Integer;
-    case: "integer";
-  } | {
-    /**
-     * @generated from field: autokitteh.values.v1.Float float = 5;
-     */
-    value: Float;
-    case: "float";
-  } | {
-    /**
-     * @generated from field: autokitteh.values.v1.List list = 6;
-     */
-    value: List;
-    case: "list";
-  } | {
-    /**
-     * @generated from field: autokitteh.values.v1.Set set = 7;
-     */
-    value: Set;
-    case: "set";
-  } | {
-    /**
-     * @generated from field: autokitteh.values.v1.Dict dict = 8;
-     */
-    value: Dict;
-    case: "dict";
-  } | {
-    /**
-     * @generated from field: autokitteh.values.v1.Bytes bytes = 9;
-     */
-    value: Bytes;
-    case: "bytes";
-  } | {
-    /**
-     * @generated from field: autokitteh.values.v1.Time time = 10;
-     */
-    value: Time;
-    case: "time";
-  } | {
-    /**
-     * @generated from field: autokitteh.values.v1.Duration duration = 11;
-     */
-    value: Duration;
-    case: "duration";
-  } | {
-    /**
-     * @generated from field: autokitteh.values.v1.Struct struct = 12;
-     */
-    value: Struct;
-    case: "struct";
-  } | {
-    /**
-     * @generated from field: autokitteh.values.v1.Module module = 13;
-     */
-    value: Module;
-    case: "module";
-  } | {
-    /**
-     * @generated from field: autokitteh.values.v1.Symbol symbol = 14;
-     */
-    value: Symbol;
-    case: "symbol";
-  } | {
-    /**
-     * @generated from field: autokitteh.values.v1.Function function = 15;
-     */
-    value: Function;
-    case: "function";
-  } | { case: undefined; value?: undefined } = { case: undefined };
+  nothing?: Nothing;
+
+  /**
+   * @generated from field: autokitteh.values.v1.Boolean boolean = 2;
+   */
+  boolean?: Boolean;
+
+  /**
+   * @generated from field: autokitteh.values.v1.String string = 3;
+   */
+  string?: String;
+
+  /**
+   * @generated from field: autokitteh.values.v1.Integer integer = 4;
+   */
+  integer?: Integer;
+
+  /**
+   * @generated from field: autokitteh.values.v1.Float float = 5;
+   */
+  float?: Float;
+
+  /**
+   * @generated from field: autokitteh.values.v1.List list = 6;
+   */
+  list?: List;
+
+  /**
+   * @generated from field: autokitteh.values.v1.Set set = 7;
+   */
+  set?: Set;
+
+  /**
+   * @generated from field: autokitteh.values.v1.Dict dict = 8;
+   */
+  dict?: Dict;
+
+  /**
+   * @generated from field: autokitteh.values.v1.Bytes bytes = 9;
+   */
+  bytes?: Bytes;
+
+  /**
+   * @generated from field: autokitteh.values.v1.Time time = 10;
+   */
+  time?: Time;
+
+  /**
+   * @generated from field: autokitteh.values.v1.Duration duration = 11;
+   */
+  duration?: Duration;
+
+  /**
+   * @generated from field: autokitteh.values.v1.Struct struct = 12;
+   */
+  struct?: Struct;
+
+  /**
+   * @generated from field: autokitteh.values.v1.Module module = 13;
+   */
+  module?: Module;
+
+  /**
+   * @generated from field: autokitteh.values.v1.Symbol symbol = 14;
+   */
+  symbol?: Symbol;
+
+  /**
+   * @generated from field: autokitteh.values.v1.Function function = 15;
+   */
+  function?: Function;
 
   constructor(data?: PartialMessage<Value>) {
     super();
@@ -752,21 +734,21 @@ export class Value extends Message<Value> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "autokitteh.values.v1.Value";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "nothing", kind: "message", T: Nothing, oneof: "type" },
-    { no: 2, name: "boolean", kind: "message", T: Boolean, oneof: "type" },
-    { no: 3, name: "string", kind: "message", T: String, oneof: "type" },
-    { no: 4, name: "integer", kind: "message", T: Integer, oneof: "type" },
-    { no: 5, name: "float", kind: "message", T: Float, oneof: "type" },
-    { no: 6, name: "list", kind: "message", T: List, oneof: "type" },
-    { no: 7, name: "set", kind: "message", T: Set, oneof: "type" },
-    { no: 8, name: "dict", kind: "message", T: Dict, oneof: "type" },
-    { no: 9, name: "bytes", kind: "message", T: Bytes, oneof: "type" },
-    { no: 10, name: "time", kind: "message", T: Time, oneof: "type" },
-    { no: 11, name: "duration", kind: "message", T: Duration, oneof: "type" },
-    { no: 12, name: "struct", kind: "message", T: Struct, oneof: "type" },
-    { no: 13, name: "module", kind: "message", T: Module, oneof: "type" },
-    { no: 14, name: "symbol", kind: "message", T: Symbol, oneof: "type" },
-    { no: 15, name: "function", kind: "message", T: Function, oneof: "type" },
+    { no: 1, name: "nothing", kind: "message", T: Nothing },
+    { no: 2, name: "boolean", kind: "message", T: Boolean },
+    { no: 3, name: "string", kind: "message", T: String },
+    { no: 4, name: "integer", kind: "message", T: Integer },
+    { no: 5, name: "float", kind: "message", T: Float },
+    { no: 6, name: "list", kind: "message", T: List },
+    { no: 7, name: "set", kind: "message", T: Set },
+    { no: 8, name: "dict", kind: "message", T: Dict },
+    { no: 9, name: "bytes", kind: "message", T: Bytes },
+    { no: 10, name: "time", kind: "message", T: Time },
+    { no: 11, name: "duration", kind: "message", T: Duration },
+    { no: 12, name: "struct", kind: "message", T: Struct },
+    { no: 13, name: "module", kind: "message", T: Module },
+    { no: 14, name: "symbol", kind: "message", T: Symbol },
+    { no: 15, name: "function", kind: "message", T: Function },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Value {

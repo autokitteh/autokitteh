@@ -42,10 +42,10 @@ func (c *client) Create(ctx context.Context, conn sdktypes.Connection) (sdktypes
 		Connection: conn.ToProto(),
 	}))
 	if err != nil {
-		return nil, rpcerrors.TranslateError(err)
+		return sdktypes.InvalidConnectionID, rpcerrors.TranslateError(err)
 	}
 	if err := internal.Validate(resp.Msg); err != nil {
-		return nil, err
+		return sdktypes.InvalidConnectionID, err
 	}
 
 	return sdktypes.StrictParseConnectionID(resp.Msg.ConnectionId)
@@ -70,15 +70,15 @@ func (c *client) Get(ctx context.Context, id sdktypes.ConnectionID) (sdktypes.Co
 		ConnectionId: id.String(),
 	}))
 	if err != nil {
-		return nil, rpcerrors.TranslateError(err)
+		return sdktypes.InvalidConnection, rpcerrors.TranslateError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {
-		return nil, err
+		return sdktypes.InvalidConnection, err
 	}
 
 	if resp.Msg.Connection == nil {
-		return nil, nil
+		return sdktypes.InvalidConnection, nil
 	}
 
 	return sdktypes.StrictConnectionFromProto(resp.Msg.Connection)

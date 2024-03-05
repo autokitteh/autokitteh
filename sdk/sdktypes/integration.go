@@ -1,146 +1,79 @@
 package sdktypes
 
 import (
-	"fmt"
+	"errors"
 	"net/url"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
-	integrationsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/integrations/v1"
+	integrationv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/integrations/v1"
 )
 
-type IntegrationPB = integrationsv1.Integration
-
-type Integration = *object[*IntegrationPB]
-
-var (
-	IntegrationFromProto       = makeFromProto(validateIntegration)
-	StrictIntegrationFromProto = makeFromProto(strictValidateIntegration)
-	ToStrictIntegration        = makeWithValidator(strictValidateIntegration)
-)
-
-func strictValidateIntegration(pb *integrationsv1.Integration) error {
-	if err := ensureNotEmpty(pb.IntegrationId, pb.UniqueName); err != nil {
-		return err
-	}
-	return validateIntegration(pb)
+type Integration struct {
+	object[*IntegrationPB, IntegrationTraits]
 }
 
-func validateIntegration(pb *integrationsv1.Integration) error {
-	// Required fields.
-	if _, err := ParseIntegrationID(pb.IntegrationId); err != nil {
-		return fmt.Errorf("integration ID: %w", err)
-	}
+var InvalidIntegration Integration
 
-	if _, err := ParseName(pb.UniqueName); err != nil {
-		return fmt.Errorf("integration's unique name: %w", err)
-	}
+type IntegrationPB = integrationv1.Integration
 
-	// TODO(ENG-346): Connection UI specification instead of a URL.
-	if _, err := url.Parse(pb.ConnectionUrl); err != nil {
-		return fmt.Errorf("integration's connection URL: %w", err)
-	}
+type IntegrationTraits struct{}
 
-	// TODO: Methods.
-
-	// TODO: Events.
-
-	// Optional fields (must be valid if present).
-	if _, err := url.Parse(pb.LogoUrl); err != nil {
-		return fmt.Errorf("integration's logo URL: %w", err)
-	}
-
-	for _, v := range pb.UserLinks {
-		if _, err := url.Parse(v); err != nil {
-			return fmt.Errorf("integration user link %q: %w", v, err)
-		}
-	}
-
-	return nil
+func (IntegrationTraits) Validate(m *IntegrationPB) error {
+	return errors.Join(
+		idField[IntegrationID]("integration_id", m.IntegrationId),
+		nameField("unique_name", m.UniqueName),
+		objectField[Module]("module", m.Module),
+		urlField("logo_url", m.LogoUrl),
+		urlField("connection_url", m.ConnectionUrl),
+	)
 }
 
-func GetIntegrationID(i Integration) IntegrationID {
-	if i == nil {
+func (IntegrationTraits) StrictValidate(m *IntegrationPB) error {
+	return errors.Join(
+		mandatory("integration_id", m.IntegrationId),
+		mandatory("unique_name", m.UniqueName),
+	)
+}
+
+func IntegrationFromProto(m *IntegrationPB) (Integration, error) { return FromProto[Integration](m) }
+func StrictIntegrationFromProto(m *IntegrationPB) (Integration, error) {
+	return Strict(IntegrationFromProto(m))
+}
+
+func (p Integration) ID() IntegrationID {
+	return kittehs.Must1(ParseIntegrationID(p.read().IntegrationId))
+}
+func (p Integration) DisplayName() string          { return p.read().DisplayName }
+func (p Integration) UniqueName() Symbol           { return forceSymbol(p.read().UniqueName) }
+func (p Integration) Description() string          { return p.read().Description }
+func (p Integration) UserLinks() map[string]string { return p.read().UserLinks }
+
+func (p Integration) LogoURL() *url.URL {
+	if p.m == nil {
 		return nil
 	}
-
-	return kittehs.Must1(ParseIntegrationID(i.pb.IntegrationId))
+	return kittehs.Must1(url.Parse(p.m.LogoUrl))
 }
 
-func GetIntegrationUniqueName(i Integration) Name {
-	if i == nil {
+func (p Integration) ConnectionURL() *url.URL {
+	if p.m == nil {
 		return nil
 	}
-
-	return kittehs.Must1(ParseName(i.pb.UniqueName))
+	return kittehs.Must1(url.Parse(p.m.ConnectionUrl))
 }
 
-func GetIntegrationDisplayName(i Integration) string {
-	if i == nil {
-		return ""
-	}
-
-	if i.pb.DisplayName != "" {
-		return i.pb.DisplayName
-	}
-	return i.pb.UniqueName
+func (p Integration) UpdateModule(m Module) Integration {
+	return Integration{p.forceUpdate(func(pb *IntegrationPB) { pb.Module = m.ToProto() })}
 }
 
-func GetIntegrationDescription(i Integration) string {
-	if i == nil {
-		return ""
-	}
-
-	return i.pb.Description
+func (p Integration) WithDescription(s string) Integration {
+	return Integration{p.forceUpdate(func(pb *IntegrationPB) { pb.Description = s })}
 }
 
-func GetIntegrationLogoURL(i Integration) *url.URL {
-	if i == nil {
-		return nil
-	}
-
-	u, err := url.ParseRequestURI(i.pb.LogoUrl)
-	if err != nil {
-		return nil
-	}
-	return u
+func (p Integration) WithUserLinks(links map[string]string) Integration {
+	return Integration{p.forceUpdate(func(pb *IntegrationPB) { pb.UserLinks = links })}
 }
 
-func GetIntegrationUserLinks(i Integration) map[string]*url.URL {
-	if i == nil {
-		return nil
-	}
-
-	m := map[string]*url.URL{}
-	for k, v := range i.pb.UserLinks {
-		if u, err := url.ParseRequestURI(v); err == nil {
-			m[k] = u
-		}
-	}
-	return m
+func (p Integration) WithModule(m Module) Integration {
+	return Integration{p.forceUpdate(func(pb *IntegrationPB) { pb.Module = m.ToProto() })}
 }
-
-// TODO: func GetIntegrationTag/s
-
-// TODO(ENG-346): Connection UI specification instead of a URL.
-func GetIntegrationConnectionURL(i Integration) *url.URL {
-	if i == nil {
-		return nil
-	}
-
-	u, err := url.ParseRequestURI(i.pb.ConnectionUrl)
-	if err != nil {
-		return nil
-	}
-	return u
-}
-
-func GetIntegrationModule(i Integration) Module {
-	if i == nil {
-		return nil
-	}
-
-	return kittehs.Must1(ModuleFromProto(i.pb.Module))
-}
-
-// TODO: Methods.
-// TODO: Events.

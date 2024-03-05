@@ -38,8 +38,8 @@ var listCmd = common.StandardCommand(&cobra.Command{
 			return fmt.Errorf("list connections: %w", err)
 		}
 
-		if len(cs) == 0 {
-			return common.FailNotFound(cmd, "connections")
+		if err := common.FailIfNotFound(cmd, "connections", len(cs) > 0); err != nil {
+			return err
 		}
 
 		common.RenderList(cs)

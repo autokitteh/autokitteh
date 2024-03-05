@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"go.uber.org/zap"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"go.autokitteh.dev/autokitteh/backend/internal/db"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -30,37 +29,26 @@ func (e *events) List(ctx context.Context, filter sdkservices.ListEventsFilter) 
 }
 
 func (e *events) Save(ctx context.Context, event sdktypes.Event) (sdktypes.EventID, error) {
-	event, err := event.Update(func(pb *sdktypes.EventPB) {
-		pb.EventId = sdktypes.NewEventID().String()
-		pb.CreatedAt = timestamppb.New(time.Now())
-	})
-	if err != nil {
-		return nil, err
-	}
+	event = event.WithNewID().WithCreatedAt(time.Now())
 
 	if err := e.db.SaveEvent(ctx, event); err != nil {
-		return nil, err
+		return sdktypes.InvalidEventID, err
 	}
 
-	return sdktypes.GetEventID(event), nil
+	return event.ID(), nil
 }
 
 // Save implements sdkservices.EventRecords.
 func (e *events) AddEventRecord(ctx context.Context, eventRecord sdktypes.EventRecord) error {
 	return e.db.Transaction(ctx, func(tx db.DB) error {
-		eventID := sdktypes.GetEventRecordEventID(eventRecord)
+		eventID := eventRecord.EventID()
 		records, err := tx.ListEventRecords(ctx, sdkservices.ListEventRecordsFilter{EventID: eventID})
 		if err != nil {
 			return err
 		}
 
-		eventRecord, err := eventRecord.Update(func(pb *sdktypes.EventRecordPB) {
-			pb.Seq = uint32(len(records))
-			pb.CreatedAt = timestamppb.New(time.Now())
-		})
-		if err != nil {
-			return err
-		}
+		eventRecord = eventRecord.WithSeq(uint32(len(records))).WithCreatedAt(time.Now())
+
 		if err := tx.AddEventRecord(ctx, eventRecord); err != nil {
 			return err
 		}
