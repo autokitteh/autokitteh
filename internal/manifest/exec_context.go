@@ -41,14 +41,14 @@ func (c *execContext) resolveProjectID(ctx context.Context, name string) (sdktyp
 	return pid, nil
 }
 
-func (c *execContext) resolveIntegrationID(ctx context.Context, name string) (sdktypes.IntegrationID, error) {
+func (c *execContext) resolveIntegrationID(name string) (sdktypes.IntegrationID, error) {
 	in, _, err := c.resolver.IntegrationNameOrID(name)
 	iid := in.ID()
 	c.integrations[name] = iid
 	return iid, err
 }
 
-func (c *execContext) resolveEnvID(ctx context.Context, envID string) (sdktypes.EnvID, error) {
+func (c *execContext) resolveEnvID(envID string) (sdktypes.EnvID, error) {
 	if eid, ok := c.envs[envID]; ok {
 		return eid, nil
 	}
@@ -68,7 +68,7 @@ func (c *execContext) resolveEnvID(ctx context.Context, envID string) (sdktypes.
 	return eid, nil
 }
 
-func (c *execContext) resolveConnectionID(ctx context.Context, connID string) (sdktypes.ConnectionID, error) {
+func (c *execContext) resolveConnectionID(connID string) (sdktypes.ConnectionID, error) {
 	if cid, ok := c.connections[connID]; ok {
 		return cid, nil
 	}

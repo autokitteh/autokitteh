@@ -57,7 +57,7 @@ func executeAction(ctx context.Context, action actions.Action, execContext *exec
 			return err
 		}
 
-		iid, err := execContext.resolveIntegrationID(ctx, action.IntegrationKey)
+		iid, err := execContext.resolveIntegrationID(action.IntegrationKey)
 		if err != nil {
 			return err
 		}
@@ -116,7 +116,7 @@ func executeAction(ctx context.Context, action actions.Action, execContext *exec
 
 		log.Printf("deleted")
 	case actions.SetEnvVarAction:
-		eid, err := execContext.resolveEnvID(ctx, action.EnvKey)
+		eid, err := execContext.resolveEnvID(action.EnvKey)
 		if err != nil {
 			return err
 		}
@@ -138,12 +138,12 @@ func executeAction(ctx context.Context, action actions.Action, execContext *exec
 		}
 		log.Printf("deleted")
 	case actions.CreateTriggerAction:
-		eid, err := execContext.resolveEnvID(ctx, action.EnvKey)
+		eid, err := execContext.resolveEnvID(action.EnvKey)
 		if err != nil {
 			return err
 		}
 
-		cid, err := execContext.resolveConnectionID(ctx, action.ConnectionKey)
+		cid, err := execContext.resolveConnectionID(action.ConnectionKey)
 		if err != nil {
 			return err
 		}
