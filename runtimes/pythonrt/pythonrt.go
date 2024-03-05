@@ -188,9 +188,12 @@ func (py *pySVC) Values() map[string]sdktypes.Value {
 }
 
 func (py *pySVC) Close() {
+	py.log.Info("closing")
+	/* FIXME: AK calls Close after `Run`, but we need this for `Call` as well.
 	if py.run != nil {
 		py.run.proc.Kill()
 	}
+	*/
 }
 
 func (py *pySVC) initialCall(ctx context.Context, funcName string, payload []byte) (sdktypes.Value, error) {
@@ -200,7 +203,7 @@ func (py *pySVC) initialCall(ctx context.Context, funcName string, payload []byt
 		Function: funcName,
 		Payload:  payload,
 	}
-	py.log.Info("run", zap.Any("message", msg))
+	py.log.Info("initial call", zap.Any("message", msg))
 	if err := py.enc.Encode(msg); err != nil {
 		return sdktypes.InvalidValue, err
 	}

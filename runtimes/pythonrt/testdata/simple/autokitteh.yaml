@@ -7,8 +7,6 @@ project:
       integration: http
       token: trigger_url_path_py # http://<autokitteh address>/http/<token>
   triggers:
-    # More HTTP methods are supported as event types:
-    # head, put, delete, options, and patch.
     - connection: http
       event_type: post
       entrypoint: simple.py:greet
