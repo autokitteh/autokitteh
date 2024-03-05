@@ -1,4 +1,4 @@
-// This package contains the types used by the SDK.
+// Package sdktypes contains all the data types used by the autokitteh SDK.
 //
 // All the types represent data structures that are defined in the proto package.
 // The underlying data is either a protobuf message or a primitive that can be

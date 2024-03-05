@@ -12,7 +12,7 @@ ak connection get my_project/bad_connection
 return code == 0
 output equals ''
 
-ak connection get connection_00000000000000000000000666
+ak connection get connection_deadbeefdeadbeefdeadbeefde
 return code == 0
 output equals ''
 
@@ -20,7 +20,7 @@ ak connection get my_project/bad_connection --fail
 output equals 'Error: connection not found'
 return code == 10
 
-ak connection get connection_00000000000000000000000666 --fail
+ak connection get connection_deadbeefdeadbeefdeadbeefde --fail
 output equals 'Error: connection not found'
 return code == 10
 

@@ -25,7 +25,7 @@ var uploadCmd = common.StandardCommand(&cobra.Command{
 		ctx, cancel := common.LimitedContext()
 		defer cancel()
 
-		id, err := builds().Save(ctx, sdktypes.InvalidBuild, data)
+		id, err := builds().Save(ctx, sdktypes.NewBuild(), data)
 		if err != nil {
 			return fmt.Errorf("save build: %w", err)
 		}
