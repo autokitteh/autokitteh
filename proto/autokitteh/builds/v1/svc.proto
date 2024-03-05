@@ -38,11 +38,11 @@ message SaveResponse {
   string build_id = 1;
 }
 
-message RemoveRequest {
+message DeleteRequest {
   string build_id = 1 [(buf.validate.field).string.min_len = 1];
 }
 
-message RemoveResponse {}
+message DeleteResponse {}
 
 message DownloadRequest {
   string build_id = 1 [(buf.validate.field).string.min_len = 1];
@@ -54,12 +54,8 @@ message DownloadResponse {
 
 service BuildsService {
   rpc Get(GetRequest) returns (GetResponse);
-
   rpc List(ListRequest) returns (ListResponse);
-
   rpc Save(SaveRequest) returns (SaveResponse);
-
-  rpc Remove(RemoveRequest) returns (RemoveResponse);
-
+  rpc Delete(DeleteRequest) returns (DeleteResponse);
   rpc Download(DownloadRequest) returns (DownloadResponse);
 }

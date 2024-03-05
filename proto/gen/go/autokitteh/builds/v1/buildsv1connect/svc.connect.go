@@ -39,8 +39,8 @@ const (
 	BuildsServiceListProcedure = "/autokitteh.builds.v1.BuildsService/List"
 	// BuildsServiceSaveProcedure is the fully-qualified name of the BuildsService's Save RPC.
 	BuildsServiceSaveProcedure = "/autokitteh.builds.v1.BuildsService/Save"
-	// BuildsServiceRemoveProcedure is the fully-qualified name of the BuildsService's Remove RPC.
-	BuildsServiceRemoveProcedure = "/autokitteh.builds.v1.BuildsService/Remove"
+	// BuildsServiceDeleteProcedure is the fully-qualified name of the BuildsService's Delete RPC.
+	BuildsServiceDeleteProcedure = "/autokitteh.builds.v1.BuildsService/Delete"
 	// BuildsServiceDownloadProcedure is the fully-qualified name of the BuildsService's Download RPC.
 	BuildsServiceDownloadProcedure = "/autokitteh.builds.v1.BuildsService/Download"
 )
@@ -50,7 +50,7 @@ type BuildsServiceClient interface {
 	Get(context.Context, *connect.Request[v1.GetRequest]) (*connect.Response[v1.GetResponse], error)
 	List(context.Context, *connect.Request[v1.ListRequest]) (*connect.Response[v1.ListResponse], error)
 	Save(context.Context, *connect.Request[v1.SaveRequest]) (*connect.Response[v1.SaveResponse], error)
-	Remove(context.Context, *connect.Request[v1.RemoveRequest]) (*connect.Response[v1.RemoveResponse], error)
+	Delete(context.Context, *connect.Request[v1.DeleteRequest]) (*connect.Response[v1.DeleteResponse], error)
 	Download(context.Context, *connect.Request[v1.DownloadRequest]) (*connect.Response[v1.DownloadResponse], error)
 }
 
@@ -79,9 +79,9 @@ func NewBuildsServiceClient(httpClient connect.HTTPClient, baseURL string, opts 
 			baseURL+BuildsServiceSaveProcedure,
 			opts...,
 		),
-		remove: connect.NewClient[v1.RemoveRequest, v1.RemoveResponse](
+		delete: connect.NewClient[v1.DeleteRequest, v1.DeleteResponse](
 			httpClient,
-			baseURL+BuildsServiceRemoveProcedure,
+			baseURL+BuildsServiceDeleteProcedure,
 			opts...,
 		),
 		download: connect.NewClient[v1.DownloadRequest, v1.DownloadResponse](
@@ -97,7 +97,7 @@ type buildsServiceClient struct {
 	get      *connect.Client[v1.GetRequest, v1.GetResponse]
 	list     *connect.Client[v1.ListRequest, v1.ListResponse]
 	save     *connect.Client[v1.SaveRequest, v1.SaveResponse]
-	remove   *connect.Client[v1.RemoveRequest, v1.RemoveResponse]
+	delete   *connect.Client[v1.DeleteRequest, v1.DeleteResponse]
 	download *connect.Client[v1.DownloadRequest, v1.DownloadResponse]
 }
 
@@ -116,9 +116,9 @@ func (c *buildsServiceClient) Save(ctx context.Context, req *connect.Request[v1.
 	return c.save.CallUnary(ctx, req)
 }
 
-// Remove calls autokitteh.builds.v1.BuildsService.Remove.
-func (c *buildsServiceClient) Remove(ctx context.Context, req *connect.Request[v1.RemoveRequest]) (*connect.Response[v1.RemoveResponse], error) {
-	return c.remove.CallUnary(ctx, req)
+// Delete calls autokitteh.builds.v1.BuildsService.Delete.
+func (c *buildsServiceClient) Delete(ctx context.Context, req *connect.Request[v1.DeleteRequest]) (*connect.Response[v1.DeleteResponse], error) {
+	return c.delete.CallUnary(ctx, req)
 }
 
 // Download calls autokitteh.builds.v1.BuildsService.Download.
@@ -131,7 +131,7 @@ type BuildsServiceHandler interface {
 	Get(context.Context, *connect.Request[v1.GetRequest]) (*connect.Response[v1.GetResponse], error)
 	List(context.Context, *connect.Request[v1.ListRequest]) (*connect.Response[v1.ListResponse], error)
 	Save(context.Context, *connect.Request[v1.SaveRequest]) (*connect.Response[v1.SaveResponse], error)
-	Remove(context.Context, *connect.Request[v1.RemoveRequest]) (*connect.Response[v1.RemoveResponse], error)
+	Delete(context.Context, *connect.Request[v1.DeleteRequest]) (*connect.Response[v1.DeleteResponse], error)
 	Download(context.Context, *connect.Request[v1.DownloadRequest]) (*connect.Response[v1.DownloadResponse], error)
 }
 
@@ -156,9 +156,9 @@ func NewBuildsServiceHandler(svc BuildsServiceHandler, opts ...connect.HandlerOp
 		svc.Save,
 		opts...,
 	)
-	buildsServiceRemoveHandler := connect.NewUnaryHandler(
-		BuildsServiceRemoveProcedure,
-		svc.Remove,
+	buildsServiceDeleteHandler := connect.NewUnaryHandler(
+		BuildsServiceDeleteProcedure,
+		svc.Delete,
 		opts...,
 	)
 	buildsServiceDownloadHandler := connect.NewUnaryHandler(
@@ -174,8 +174,8 @@ func NewBuildsServiceHandler(svc BuildsServiceHandler, opts ...connect.HandlerOp
 			buildsServiceListHandler.ServeHTTP(w, r)
 		case BuildsServiceSaveProcedure:
 			buildsServiceSaveHandler.ServeHTTP(w, r)
-		case BuildsServiceRemoveProcedure:
-			buildsServiceRemoveHandler.ServeHTTP(w, r)
+		case BuildsServiceDeleteProcedure:
+			buildsServiceDeleteHandler.ServeHTTP(w, r)
 		case BuildsServiceDownloadProcedure:
 			buildsServiceDownloadHandler.ServeHTTP(w, r)
 		default:
@@ -199,8 +199,8 @@ func (UnimplementedBuildsServiceHandler) Save(context.Context, *connect.Request[
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("autokitteh.builds.v1.BuildsService.Save is not implemented"))
 }
 
-func (UnimplementedBuildsServiceHandler) Remove(context.Context, *connect.Request[v1.RemoveRequest]) (*connect.Response[v1.RemoveResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("autokitteh.builds.v1.BuildsService.Remove is not implemented"))
+func (UnimplementedBuildsServiceHandler) Delete(context.Context, *connect.Request[v1.DeleteRequest]) (*connect.Response[v1.DeleteResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("autokitteh.builds.v1.BuildsService.Delete is not implemented"))
 }
 
 func (UnimplementedBuildsServiceHandler) Download(context.Context, *connect.Request[v1.DownloadRequest]) (*connect.Response[v1.DownloadResponse], error) {

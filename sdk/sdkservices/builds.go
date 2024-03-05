@@ -16,5 +16,5 @@ type Builds interface {
 	List(ctx context.Context, filter ListBuildsFilter) ([]sdktypes.Build, error)
 	Download(ctx context.Context, id sdktypes.BuildID) (io.ReadCloser, error)
 	Save(ctx context.Context, build sdktypes.Build, data []byte) (sdktypes.BuildID, error)
-	Remove(ctx context.Context, id sdktypes.BuildID) error
+	Delete(ctx context.Context, id sdktypes.BuildID) error
 }
