@@ -20,7 +20,10 @@ type Config struct {
 	LogLevel              zap.AtomicLevel `koanf:"log_level"`
 
 	// DevServer.ClientOptions is not used.
-	DevServer testsuite.DevServerOptions `koanf:"dev_server"`
+	DevServer       testsuite.DevServerOptions `koanf:"dev_server"`
+	TLSEnabled      bool                       `koanf:"tls_enabled"`
+	TLSCertFilePath string                     `koanf:"tls_cert_file_path"`
+	TLSKeyFilePath  string                     `koanf:"tls_key_file_path"`
 }
 
 var Configs = configset.Set[Config]{
@@ -28,6 +31,7 @@ var Configs = configset.Set[Config]{
 		CheckHealthInterval: time.Minute,
 		CheckHealthTimeout:  10 * time.Second,
 		LogLevel:            zap.NewAtomicLevelAt(zapcore.WarnLevel),
+		TLSEnabled:          false,
 	},
 	Dev: &Config{
 		CheckHealthInterval: time.Minute,

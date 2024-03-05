@@ -2,6 +2,7 @@ package temporalclient
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"time"
@@ -29,10 +30,23 @@ type impl struct {
 }
 
 func New(cfg *Config, z *zap.Logger) (Client, error) {
+	var tlsConfig *tls.Config
+	if cfg.TLSEnabled {
+		cert, err := tls.LoadX509KeyPair(cfg.TLSCertFilePath, cfg.TLSKeyFilePath)
+		if err != nil {
+			return nil, fmt.Errorf("load x509 key pair: %w", err)
+		}
+
+		tlsConfig = &tls.Config{Certificates: []tls.Certificate{cert}}
+	}
+
 	opts := client.Options{
 		HostPort:  cfg.HostPort,
 		Namespace: cfg.Namespace,
 		Logger:    logur.LoggerToKV(zapadapter.New(z.WithOptions(zap.IncreaseLevel(cfg.LogLevel)))),
+		ConnectionOptions: client.ConnectionOptions{
+			TLS: tlsConfig,
+		},
 	}
 
 	impl := &impl{z: z, cfg: cfg, done: make(chan struct{})}
@@ -91,7 +105,6 @@ func (c *impl) Temporal() client.Client { return c.client }
 
 func (c *impl) Stop(context.Context) error {
 	close(c.done)
-
 	if c.srv != nil {
 		if err := c.srv.Stop(); err != nil {
 			return fmt.Errorf("stop dev server: %w", err)
@@ -114,7 +127,6 @@ func (c *impl) healthcheck(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-
 	c.z.Debug("temporal reports healthy")
 
 	return nil
