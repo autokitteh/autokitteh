@@ -23,13 +23,13 @@ func (i integration) createIssueComment(ctx context.Context, args []sdktypes.Val
 		"number", &number,
 		"body", &body,
 	); err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Invoke the API method.
 	gh, err := i.NewClient(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	comment := &github.IssueComment{
@@ -38,7 +38,7 @@ func (i integration) createIssueComment(ctx context.Context, args []sdktypes.Val
 
 	c, _, err := gh.Issues.CreateComment(ctx, owner, repo, number, comment)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	return sdkvalues.Wrap(c)

@@ -26,20 +26,20 @@ func (i integration) createMessage(ctx context.Context, args []sdktypes.Value, k
 		"content_sid?", &contentSID,
 	)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 	if from == "" && messagingServiceSID == "" {
-		return nil, errors.New(`required: "from_number", or "messaging_service_sid"`)
+		return sdktypes.InvalidValue, errors.New(`required: "from_number", or "messaging_service_sid"`)
 	}
 	if body == "" && len(mediaURL) == 0 && contentSID == "" {
-		return nil, errors.New(`required: "body", "media_url", or "content_sid"`)
+		return sdktypes.InvalidValue, errors.New(`required: "body", "media_url", or "content_sid"`)
 	}
 
 	// Get auth details from secrets manager.
 	token := sdkmodule.FunctionDataFromContext(ctx)
 	auth, err := i.secrets.Get(context.Background(), i.scope, string(token))
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Invoke the API method.
@@ -68,7 +68,7 @@ func (i integration) createMessage(ctx context.Context, args []sdktypes.Value, k
 	// TODO: params.SetStatusCallback("https://.../twilio/xyz?")
 	resp, err := client.Api.CreateMessage(params)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Parse and return the response.

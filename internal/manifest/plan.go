@@ -45,7 +45,7 @@ func planProject(ctx context.Context, mproj *Project, client sdkservices.Service
 	opts := applyOptions(optfns)
 	log := opts.log.For("project", mproj)
 
-	name, err := sdktypes.ParseName(mproj.Name)
+	name, err := sdktypes.ParseSymbol(mproj.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -70,19 +70,17 @@ func planProject(ctx context.Context, mproj *Project, client sdkservices.Service
 		return nil, err
 	}
 
-	if curr == nil {
+	if !curr.IsValid() {
 		log.Printf("not found, will create")
 		add(actions.CreateProjectAction{Key: mproj.GetKey(), Project: desired})
 	} else {
-		pid = sdktypes.GetProjectID(curr)
+		pid = curr.ID()
 
 		log.Printf("found, id=%q", pid)
 
-		desired = kittehs.Must1(desired.Update(func(p *sdktypes.ProjectPB) {
-			p.ProjectId = pid.String()
-		}))
+		desired = desired.WithID(pid)
 
-		if sdktypes.Equal(curr, desired) {
+		if curr.Equal(desired) {
 			log.Printf("no changes needed")
 		} else {
 			log.Printf("not as desired, will update")
@@ -121,25 +119,25 @@ func planDefaultEnv(ctx context.Context, mvars []*EnvVar, client sdkservices.Ser
 	opts := applyOptions(optfns)
 	log := opts.log.For("env", envKeyer)
 
-	if pid == nil && projName == "" {
-		return nil, nil, errors.New("project must be set")
+	if !pid.IsValid() && projName == "" {
+		return nil, sdktypes.InvalidEnvID, errors.New("project must be set")
 	}
 
-	name := kittehs.Must1(sdktypes.ParseName(defaultEnvName))
+	name := kittehs.Must1(sdktypes.ParseSymbol(defaultEnvName))
 
 	desired, err := sdktypes.EnvFromProto(&sdktypes.EnvPB{
 		Name:      name.String(),
 		ProjectId: pid.String(),
 	})
 	if err != nil {
-		return nil, nil, err
+		return nil, sdktypes.InvalidEnvID, err
 	}
 
 	var curr sdktypes.Env
 
-	if pid != nil {
+	if pid.IsValid() {
 		if curr, err = client.Envs().GetByName(ctx, pid, name); err != nil {
-			return nil, nil, fmt.Errorf("get env: %w", err)
+			return nil, sdktypes.InvalidEnvID, fmt.Errorf("get env: %w", err)
 		}
 	}
 
@@ -149,20 +147,18 @@ func planDefaultEnv(ctx context.Context, mvars []*EnvVar, client sdkservices.Ser
 		envID sdktypes.EnvID
 	)
 
-	if curr == nil {
+	if !curr.IsValid() {
 		log.Printf("not found, will create")
 
 		add(actions.CreateEnvAction{Key: envKeyer.GetKey(), ProjectKey: projName, Env: desired})
 	} else {
-		envID = sdktypes.GetEnvID(curr)
+		envID = curr.ID()
 
 		log.Printf("found, id=%q", envID)
 
-		desired = kittehs.Must1(desired.Update(func(p *sdktypes.EnvPB) {
-			p.EnvId = envID.String()
-		}))
+		desired = desired.WithID(envID)
 
-		if sdktypes.Equal(curr, desired) {
+		if curr.Equal(desired) {
 			log.Printf("no changes needed")
 		} else {
 			log.Printf("not as desired, will update")
@@ -173,9 +169,9 @@ func planDefaultEnv(ctx context.Context, mvars []*EnvVar, client sdkservices.Ser
 
 	var vars []sdktypes.EnvVar
 
-	if envID != nil {
+	if envID.IsValid() {
 		if vars, err = client.Envs().GetVars(ctx, nil, envID); err != nil {
-			return nil, nil, fmt.Errorf("get vars: %w", err)
+			return nil, sdktypes.InvalidEnvID, fmt.Errorf("get vars: %w", err)
 		}
 	}
 
@@ -187,7 +183,7 @@ func planDefaultEnv(ctx context.Context, mvars []*EnvVar, client sdkservices.Ser
 		mvarNames = append(mvarNames, mvar.Name)
 
 		_, v := kittehs.FindFirst(vars, func(v sdktypes.EnvVar) bool {
-			return sdktypes.GetEnvVarName(v).String() == mvar.Name
+			return v.Symbol().String() == mvar.Name
 		})
 
 		val := mvar.Value
@@ -204,25 +200,25 @@ func planDefaultEnv(ctx context.Context, mvars []*EnvVar, client sdkservices.Ser
 			IsSecret: mvar.IsSecret,
 		})
 		if err != nil {
-			return nil, nil, fmt.Errorf("invalid var: %w", err)
+			return nil, sdktypes.InvalidEnvID, fmt.Errorf("invalid var: %w", err)
 		}
 
 		setAction := actions.SetEnvVarAction{Key: mvar.GetKey(), EnvKey: envKeyer.GetKey(), EnvVar: desired}
 
 		log := opts.log.For("var", mvar)
 
-		if v == nil {
+		if !v.IsValid() {
 			log("not found, will set")
 			add(setAction)
-		} else if envID == nil {
+		} else if !envID.IsValid() {
 			// var was found, hence we must have an envID.
 			sdklogger.Panic("envID is nil")
 		} else {
-			currVal := sdktypes.GetEnvVarValue(v)
+			currVal := v.Value()
 
-			if sdktypes.IsEnvVarSecret(v) {
-				if currVal, err = client.Envs().RevealVar(ctx, envID, sdktypes.GetEnvVarName(v)); err != nil {
-					return nil, nil, fmt.Errorf("reveal var: %w", err)
+			if v.IsSecret() {
+				if currVal, err = client.Envs().RevealVar(ctx, envID, v.Symbol()); err != nil {
+					return nil, sdktypes.InvalidEnvID, fmt.Errorf("reveal var: %w", err)
 				}
 			}
 
@@ -235,7 +231,7 @@ func planDefaultEnv(ctx context.Context, mvars []*EnvVar, client sdkservices.Ser
 
 	hasVar := kittehs.ContainedIn(mvarNames...)
 	for _, v := range vars {
-		if name := sdktypes.GetEnvVarName(v).String(); !hasVar(name) {
+		if name := v.Symbol().String(); !hasVar(name) {
 			log.Printf("env var %q is not in the manifest, will delete", name)
 			add(actions.DeleteEnvVarAction{Key: envKeyer.GetKey() + "/" + name, EnvID: envID, Name: name})
 		}
@@ -256,7 +252,7 @@ func planConnections(ctx context.Context, mconns []*Connection, client sdkservic
 		err       error
 	)
 
-	if pid != nil && !opts.fromScratch {
+	if pid.IsValid() && !opts.fromScratch {
 		if conns, err = client.Connections().List(ctx, sdkservices.ListConnectionsFilter{ProjectID: pid}); err != nil {
 			return nil, nil, fmt.Errorf("list connections: %w", err)
 		}
@@ -275,7 +271,7 @@ func planConnections(ctx context.Context, mconns []*Connection, client sdkservic
 		mconn.ProjectKey = projName
 
 		_, curr := kittehs.FindFirst(conns, func(c sdktypes.Connection) bool {
-			return sdktypes.GetConnectionName(c).String() == mconn.Name
+			return c.Name().String() == mconn.Name
 		})
 
 		as, err := planConnection(ctx, &mconn, client, curr, optfns...)
@@ -286,13 +282,13 @@ func planConnections(ctx context.Context, mconns []*Connection, client sdkservic
 		add(as...)
 	}
 
-	if pid != nil {
+	if pid.IsValid() {
 		hasConn := kittehs.ContainedIn(connNames...)
 
 		for _, conn := range conns {
-			if name := sdktypes.GetConnectionName(conn); !hasConn(name.String()) {
+			if name := conn.Name(); !hasConn(name.String()) {
 				log.Printf("connection %q is not in the manifest, will delete", name)
-				add(actions.DeleteConnectionAction{Key: projName + "/" + name.String(), ConnectionID: sdktypes.GetConnectionID(conn)})
+				add(actions.DeleteConnectionAction{Key: projName + "/" + name.String(), ConnectionID: conn.ID()})
 			}
 		}
 	}
@@ -304,7 +300,7 @@ func planConnection(ctx context.Context, mconn *Connection, client sdkservices.S
 	opts := applyOptions(optfns)
 	log := opts.log.For("connection", mconn)
 
-	if curr == nil && mconn.ProjectKey == "" {
+	if !curr.IsValid() && mconn.ProjectKey == "" {
 		return nil, errors.New("project must be set")
 	}
 
@@ -316,18 +312,17 @@ func planConnection(ctx context.Context, mconn *Connection, client sdkservices.S
 		return nil, fmt.Errorf("invalid: %w", err)
 	}
 
-	if curr == nil {
+	if !curr.IsValid() {
 		log.Printf("not found, will create")
 		return []actions.Action{actions.CreateConnectionAction{Key: mconn.GetKey(), ProjectKey: mconn.ProjectKey, IntegrationKey: mconn.IntegrationKey, Connection: desired}}, nil
 	}
 
-	desired = kittehs.Must1(desired.Update(func(pb *sdktypes.ConnectionPB) {
-		pb.ConnectionId = sdktypes.GetConnectionID(curr).String()
-		pb.IntegrationId = sdktypes.GetConnectionIntegrationID(curr).String()
-		pb.ProjectId = sdktypes.GetConnectionProjectID(curr).String()
-	}))
+	desired = desired.
+		WithID(curr.ID()).
+		WithIntegrationID(curr.IntegrationID()).
+		WithProjectID(curr.ProjectID())
 
-	if sdktypes.Equal(curr, desired) {
+	if curr.Equal(desired) {
 		log.Printf("no changes needed")
 		return nil, nil
 	}
@@ -346,7 +341,7 @@ func planTriggers(ctx context.Context, mtriggers []*Trigger, client sdkservices.
 		triggers []sdktypes.Trigger
 	)
 
-	if pid != nil && !opts.fromScratch {
+	if pid.IsValid() && !opts.fromScratch {
 		var err error
 		if triggers, err = client.Triggers().List(ctx, sdkservices.ListTriggersFilter{ProjectID: pid}); err != nil {
 			return nil, fmt.Errorf("list triggers: %w", err)
@@ -356,7 +351,7 @@ func planTriggers(ctx context.Context, mtriggers []*Trigger, client sdkservices.
 	}
 
 	connIDToName := kittehs.ListToMap(conns, func(c sdktypes.Connection) (string, string) {
-		return sdktypes.GetConnectionID(c).String(), projName + "/" + sdktypes.GetConnectionName(c).String()
+		return c.ID().String(), projName + "/" + c.Name().String()
 	})
 
 	var matchedTriggerIDs []string
@@ -369,16 +364,16 @@ func planTriggers(ctx context.Context, mtriggers []*Trigger, client sdkservices.
 		log := log.For("trigger", mtrigger)
 
 		_, curr := kittehs.FindFirst(triggers, func(t sdktypes.Trigger) bool {
-			connName, ok := connIDToName[sdktypes.GetTriggerConnectionID(t).String()]
+			connName, ok := connIDToName[t.ConnectionID().String()]
 			if !ok {
 				return false
 			}
 
-			if defaultEnvID == nil || sdktypes.GetTriggerEnvID(t).String() != defaultEnvID.String() {
+			if !defaultEnvID.IsValid() || t.EnvID() != defaultEnvID {
 				return false
 			}
 
-			return sdktypes.GetTriggerEventType(t) == mtrigger.EventType && connName == mtrigger.ConnectionKey
+			return t.EventType() == mtrigger.EventType && connName == mtrigger.ConnectionKey
 		})
 
 		loc, err := sdktypes.ParseCodeLocation(mtrigger.Entrypoint)
@@ -394,21 +389,20 @@ func planTriggers(ctx context.Context, mtriggers []*Trigger, client sdkservices.
 			return nil, fmt.Errorf("trigger %q: invalid: %w", mtrigger.GetKey(), err)
 		}
 
-		if curr == nil {
+		if !curr.IsValid() {
 			log.Printf("not found, will create")
 			add(actions.CreateTriggerAction{Key: mtrigger.GetKey(), ConnectionKey: mtrigger.ConnectionKey, EnvKey: mtrigger.EnvKey, Trigger: desired})
 		} else {
-			matchedTriggerIDs = append(matchedTriggerIDs, sdktypes.GetTriggerID(curr).String())
+			matchedTriggerIDs = append(matchedTriggerIDs, curr.ID().String())
 
-			log.Printf("found, id=%q", sdktypes.GetTriggerID(curr))
+			log.Printf("found, id=%q", curr.ID())
 
-			desired = kittehs.Must1(desired.Update(func(pb *sdktypes.TriggerPB) {
-				pb.TriggerId = sdktypes.GetTriggerID(curr).String()
-				pb.ConnectionId = sdktypes.GetTriggerConnectionID(curr).String()
-				pb.EnvId = sdktypes.GetTriggerEnvID(curr).String()
-			}))
+			desired = desired.
+				WithID(curr.ID()).
+				WithConnectionID(curr.ConnectionID()).
+				WithEnvID(curr.EnvID())
 
-			if sdktypes.Equal(curr, desired) {
+			if curr.Equal(desired) {
 				log.Printf("no changes needed")
 			} else {
 				log.Printf("not as desired, will update")
@@ -420,7 +414,7 @@ func planTriggers(ctx context.Context, mtriggers []*Trigger, client sdkservices.
 	hasTrigger := kittehs.ContainedIn(matchedTriggerIDs...)
 
 	for _, trigger := range triggers {
-		if tid := sdktypes.GetTriggerID(trigger); !hasTrigger(tid.String()) {
+		if tid := trigger.ID(); !hasTrigger(tid.String()) {
 			log.Printf("trigger %q is not in the manifest, will delete", tid)
 			add(actions.DeleteTriggerAction{Key: projName + "/" + tid.String(), TriggerID: tid})
 		}

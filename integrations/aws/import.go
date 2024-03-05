@@ -87,21 +87,21 @@ func importServiceMethods(moduleName string, connect any) ([]sdkmodule.Optfn, er
 			paramsValue := reflect.New(pt.Elem())
 
 			if err := sdkmodule.UnpackArgs(args, kwargs, "params", paramsValue.Interface()); err != nil {
-				return nil, err
+				return sdktypes.InvalidValue, err
 			}
 
 			cfg, err := getAWSConfig(sdkmodule.FunctionDataFromContext(ctx))
 			if err != nil {
-				return nil, fmt.Errorf("token: %w", err)
+				return sdktypes.InvalidValue, fmt.Errorf("token: %w", err)
 			}
 
 			if cfg == nil {
-				return nil, fmt.Errorf("no config specified")
+				return sdktypes.InvalidValue, fmt.Errorf("no config specified")
 			}
 
 			connectrets := connectv.Call([]reflect.Value{reflect.ValueOf(*cfg)})
 			if len(connectrets) != 1 {
-				return nil, fmt.Errorf("new client returned invalid values")
+				return sdktypes.InvalidValue, fmt.Errorf("new client returned invalid values")
 			}
 
 			method := connectrets[0].MethodByName(m.Name) // must be original name.
@@ -112,22 +112,22 @@ func importServiceMethods(moduleName string, connect any) ([]sdkmodule.Optfn, er
 			})
 
 			if len(retvs) != 2 {
-				return nil, fmt.Errorf("call returned %d values != expected 2", len(retvs))
+				return sdktypes.InvalidValue, fmt.Errorf("call returned %d values != expected 2", len(retvs))
 			}
 
 			outv, errv := retvs[0], retvs[1]
 
 			if !errv.IsNil() {
 				if err, ok := errv.Interface().(error); ok {
-					return nil, err
+					return sdktypes.InvalidValue, err
 				}
 
-				return nil, fmt.Errorf("invalid error return")
+				return sdktypes.InvalidValue, fmt.Errorf("invalid error return")
 			}
 
 			out, err := sdkvalues.Wrap(outv.Interface())
 			if err != nil {
-				return nil, fmt.Errorf("return value conversion error: %w", err)
+				return sdktypes.InvalidValue, fmt.Errorf("return value conversion error: %w", err)
 			}
 
 			return out, nil

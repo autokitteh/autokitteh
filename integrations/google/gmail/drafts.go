@@ -22,7 +22,7 @@ func (a api) draftsCreate(ctx context.Context, args []sdktypes.Value, kwargs map
 		"raw", &raw,
 	)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 	encoded := base64.URLEncoding.EncodeToString([]byte(raw))
 	draft := &gmail.Draft{Message: &gmail.Message{Raw: encoded}}
@@ -30,7 +30,7 @@ func (a api) draftsCreate(ctx context.Context, args []sdktypes.Value, kwargs map
 	// Invoke the API method.
 	client, err := a.gmailClient(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 	draft, err = client.Users.Drafts.Create("me", draft).Do()
 
@@ -61,13 +61,13 @@ func (a api) draftsDelete(ctx context.Context, args []sdktypes.Value, kwargs map
 		"id", &id,
 	)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Invoke the API method.
 	client, err := a.gmailClient(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 	err = client.Users.Drafts.Delete("me", id).Do()
 
@@ -89,13 +89,13 @@ func (a api) draftsGet(ctx context.Context, args []sdktypes.Value, kwargs map[st
 		"format?", &format,
 	)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Invoke the API method.
 	client, err := a.gmailClient(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 	draft, err := client.Users.Drafts.Get("me", id).Format(format).Do()
 
@@ -131,13 +131,13 @@ func (a api) draftsList(ctx context.Context, args []sdktypes.Value, kwargs map[s
 		"include_spam_trash?", &includeSpamTrash,
 	)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Invoke the API method.
 	client, err := a.gmailClient(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 	drafts, err := client.Users.Drafts.List("me").
 		MaxResults(int64(maxResults)).PageToken(pageToken).
@@ -170,7 +170,7 @@ func (a api) draftsSend(ctx context.Context, args []sdktypes.Value, kwargs map[s
 		"raw", &raw,
 	)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 	encoded := base64.URLEncoding.EncodeToString([]byte(raw))
 	draft := &gmail.Draft{Message: &gmail.Message{Raw: encoded}}
@@ -178,7 +178,7 @@ func (a api) draftsSend(ctx context.Context, args []sdktypes.Value, kwargs map[s
 	// Invoke the API method.
 	client, err := a.gmailClient(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 	msg, err := client.Users.Drafts.Send("me", draft).Do()
 
@@ -210,7 +210,7 @@ func (a api) draftsUpdate(ctx context.Context, args []sdktypes.Value, kwargs map
 		"raw", &raw,
 	)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 	encoded := base64.URLEncoding.EncodeToString([]byte(raw))
 	draft := &gmail.Draft{Message: &gmail.Message{Raw: encoded}}
@@ -218,7 +218,7 @@ func (a api) draftsUpdate(ctx context.Context, args []sdktypes.Value, kwargs map
 	// Invoke the API method.
 	client, err := a.gmailClient(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 	draft, err = client.Users.Drafts.Update("me", id, draft).Do()
 

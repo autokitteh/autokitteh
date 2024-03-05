@@ -33,7 +33,7 @@ var stopCmd = common.StandardCommand(&cobra.Command{
 		if err != nil {
 			return err
 		}
-		if s == nil {
+		if !s.IsValid() {
 			err = fmt.Errorf("session ID %q not found", args[0])
 			return common.NewExitCodeError(common.NotFoundExitCode, err)
 		}

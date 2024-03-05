@@ -13,6 +13,7 @@ import (
 	deploymentsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/deployments/v1"
 	eventsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/events/v1"
 	integrationsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/integrations/v1"
+	sessionsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/sessions/v1"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
@@ -51,7 +52,7 @@ func ParseBuild(b Build) (sdktypes.Build, error) {
 		CreatedAt: timestamppb.New(b.CreatedAt),
 	})
 	if err != nil {
-		return nil, fmt.Errorf("invalid record: %w", err)
+		return sdktypes.InvalidBuild, fmt.Errorf("invalid record: %w", err)
 	}
 
 	return build, nil
@@ -76,7 +77,7 @@ func ParseConnection(c Connection) (sdktypes.Connection, error) {
 		Name:             c.Name,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("invalid connection record: %w", err)
+		return sdktypes.InvalidConnection, fmt.Errorf("invalid connection record: %w", err)
 	}
 	return conn, nil
 }
@@ -113,7 +114,7 @@ func ParseIntegration(i Integration) (sdktypes.Integration, error) {
 	var uls map[string]string
 	err := json.Unmarshal(i.UserLinks, &uls)
 	if err != nil {
-		return nil, fmt.Errorf("integration user links: %w", err)
+		return sdktypes.InvalidIntegration, fmt.Errorf("integration user links: %w", err)
 	}
 
 	integ, err := sdktypes.StrictIntegrationFromProto(&integrationsv1.Integration{
@@ -130,7 +131,7 @@ func ParseIntegration(i Integration) (sdktypes.Integration, error) {
 		// TODO: Events
 	})
 	if err != nil {
-		return nil, fmt.Errorf("invalid integration record: %w", err)
+		return sdktypes.InvalidIntegration, fmt.Errorf("invalid integration record: %w", err)
 	}
 	return integ, nil
 }
@@ -148,7 +149,7 @@ func ParseProject(r Project) (sdktypes.Project, error) {
 		Name:      r.Name,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("invalid project record: %w", err)
+		return sdktypes.InvalidProject, fmt.Errorf("invalid project record: %w", err)
 	}
 
 	return p, nil
@@ -170,12 +171,12 @@ type Event struct {
 func ParseEvent(e Event) (sdktypes.Event, error) {
 	var data map[string]sdktypes.Value
 	if err := json.Unmarshal(e.Data, &data); err != nil {
-		return nil, fmt.Errorf("event data: %w", err)
+		return sdktypes.InvalidEvent, fmt.Errorf("event data: %w", err)
 	}
 
 	var memo map[string]string
 	if err := json.Unmarshal(e.Memo, &memo); err != nil {
-		return nil, fmt.Errorf("event memo: %w", err)
+		return sdktypes.InvalidEvent, fmt.Errorf("event memo: %w", err)
 	}
 
 	return sdktypes.StrictEventFromProto(&sdktypes.EventPB{
@@ -269,7 +270,7 @@ type Trigger struct {
 func ParseTrigger(e Trigger) (sdktypes.Trigger, error) {
 	loc, err := sdktypes.ParseCodeLocation(e.CodeLocation)
 	if err != nil {
-		return nil, fmt.Errorf("loc: %w", err)
+		return sdktypes.InvalidTrigger, fmt.Errorf("loc: %w", err)
 	}
 
 	return sdktypes.StrictTriggerFromProto(&sdktypes.TriggerPB{
@@ -335,13 +336,13 @@ type Session struct {
 func ParseSession(s Session) (sdktypes.Session, error) {
 	ep, err := sdktypes.ParseCodeLocation(s.Entrypoint)
 	if err != nil {
-		return nil, fmt.Errorf("entrypoint: %w", err)
+		return sdktypes.InvalidSession, fmt.Errorf("entrypoint: %w", err)
 	}
 
 	var inputs map[string]sdktypes.Value
 
 	if err := json.Unmarshal(s.Inputs, &inputs); err != nil {
-		return nil, fmt.Errorf("inputs: %w", err)
+		return sdktypes.InvalidSession, fmt.Errorf("inputs: %w", err)
 	}
 
 	session, err := sdktypes.StrictSessionFromProto(&sdktypes.SessionPB{
@@ -352,10 +353,10 @@ func ParseSession(s Session) (sdktypes.Session, error) {
 		Inputs:       kittehs.TransformMapValues(inputs, sdktypes.ToProto),
 		CreatedAt:    timestamppb.New(s.CreatedAt),
 		UpdatedAt:    timestamppb.New(s.UpdatedAt),
-		State:        sdktypes.SessionStateType(s.CurrentStateType).ToProto(),
+		State:        sessionsv1.SessionStateType(s.CurrentStateType),
 	})
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidSession, err
 	}
 
 	return session, err
@@ -382,7 +383,7 @@ func ParseDeployment(d Deployment) (sdktypes.Deployment, error) {
 		UpdatedAt:    timestamppb.New(d.UpdatedAt),
 	})
 	if err != nil {
-		return nil, fmt.Errorf("invalid record: %w", err)
+		return sdktypes.InvalidDeployment, fmt.Errorf("invalid record: %w", err)
 	}
 
 	return deployment, nil
@@ -404,27 +405,27 @@ func ParseDeploymentWithSessionStats(d DeploymentWithStats) (sdktypes.Deployment
 		State:        deploymentsv1.DeploymentState(d.State),
 		CreatedAt:    timestamppb.New(d.CreatedAt),
 		UpdatedAt:    timestamppb.New(d.UpdatedAt),
-		SessionsStats: []*sdktypes.DeploymentSessionsStats{
+		SessionsStats: []*deploymentsv1.Deployment_SessionStats{
 			{
 				Count: d.Created,
-				State: sdktypes.CreatedSessionStateType.ToProto(),
+				State: sdktypes.SessionStateTypeCreated.ToProto(),
 			},
 			{
 				Count: d.Running,
-				State: sdktypes.RunningSessionStateType.ToProto(),
+				State: sdktypes.SessionStateTypeRunning.ToProto(),
 			},
 			{
 				Count: d.Error,
-				State: sdktypes.ErrorSessionStateType.ToProto(),
+				State: sdktypes.SessionStateTypeError.ToProto(),
 			},
 			{
 				Count: d.Completed,
-				State: sdktypes.CompletedSessionStateType.ToProto(),
+				State: sdktypes.SessionStateTypeCompleted.ToProto(),
 			},
 		},
 	})
 	if err != nil {
-		return nil, fmt.Errorf("invalid record: %w", err)
+		return sdktypes.InvalidDeployment, fmt.Errorf("invalid record: %w", err)
 	}
 
 	return deployment, nil

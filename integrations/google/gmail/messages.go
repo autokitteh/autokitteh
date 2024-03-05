@@ -24,13 +24,13 @@ func (a api) messagesBatchModify(ctx context.Context, args []sdktypes.Value, kwa
 		"remove_label_ids?", &removeLabelIDs,
 	)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Invoke the API method.
 	client, err := a.gmailClient(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 	err = client.Users.Messages.BatchModify("me", &gmail.BatchModifyMessagesRequest{
 		Ids:            ids,
@@ -58,13 +58,13 @@ func (a api) messagesGet(ctx context.Context, args []sdktypes.Value, kwargs map[
 		"metadata_headers?", &metadataHeaders,
 	)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Invoke the API method.
 	client, err := a.gmailClient(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 	msg, err := client.Users.Messages.Get("me", id).
 		Format(format).MetadataHeaders(metadataHeaders...).Do()
@@ -104,7 +104,7 @@ func (a api) messagesImport(ctx context.Context, args []sdktypes.Value, kwargs m
 		"deleted?", &deleted,
 	)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 	encoded := base64.URLEncoding.EncodeToString([]byte(raw))
 	msg := &gmail.Message{Raw: encoded}
@@ -112,7 +112,7 @@ func (a api) messagesImport(ctx context.Context, args []sdktypes.Value, kwargs m
 	// Invoke the API method.
 	client, err := a.gmailClient(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 	msg, err = client.Users.Messages.Import("me", msg).
 		InternalDateSource(internalDateSource).Deleted(deleted).Do()
@@ -148,7 +148,7 @@ func (a api) messagesInsert(ctx context.Context, args []sdktypes.Value, kwargs m
 		"deleted?", &deleted,
 	)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 	encoded := base64.URLEncoding.EncodeToString([]byte(raw))
 	msg := &gmail.Message{Raw: encoded}
@@ -156,7 +156,7 @@ func (a api) messagesInsert(ctx context.Context, args []sdktypes.Value, kwargs m
 	// Invoke the API method.
 	client, err := a.gmailClient(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 	msg, err = client.Users.Messages.Insert("me", msg).
 		InternalDateSource(internalDateSource).Deleted(deleted).Do()
@@ -195,13 +195,13 @@ func (a api) messagesList(ctx context.Context, args []sdktypes.Value, kwargs map
 		"include_spam_trash?", &includeSpamTrash,
 	)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Invoke the API method.
 	client, err := a.gmailClient(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 	msgs, err := client.Users.Messages.List("me").
 		MaxResults(int64(maxResults)).PageToken(pageToken).Q(q).
@@ -238,13 +238,13 @@ func (a api) messagesModify(ctx context.Context, args []sdktypes.Value, kwargs m
 		"remove_label_ids?", &removeLabelIDs,
 	)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Invoke the API method.
 	client, err := a.gmailClient(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 	msg, err := client.Users.Messages.Modify("me", id, &gmail.ModifyMessageRequest{
 		AddLabelIds:    addLabelIDs,
@@ -278,7 +278,7 @@ func (a api) messagesSend(ctx context.Context, args []sdktypes.Value, kwargs map
 		"raw", &raw,
 	)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 	encoded := base64.URLEncoding.EncodeToString([]byte(raw))
 	msg := &gmail.Message{Raw: encoded}
@@ -286,7 +286,7 @@ func (a api) messagesSend(ctx context.Context, args []sdktypes.Value, kwargs map
 	// Invoke the API method.
 	client, err := a.gmailClient(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 	msg, err = client.Users.Messages.Send("me", msg).Do()
 
@@ -317,13 +317,13 @@ func (a api) messagesTrash(ctx context.Context, args []sdktypes.Value, kwargs ma
 		"id", &id,
 	)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Invoke the API method.
 	client, err := a.gmailClient(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 	msg, err := client.Users.Messages.Trash("me", id).Do()
 
@@ -354,13 +354,13 @@ func (a api) messagesUntrash(ctx context.Context, args []sdktypes.Value, kwargs 
 		"id", &id,
 	)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Invoke the API method.
 	client, err := a.gmailClient(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 	msg, err := client.Users.Messages.Untrash("me", id).Do()
 
@@ -392,13 +392,13 @@ func (a api) messagesAttachmentsGet(ctx context.Context, args []sdktypes.Value, 
 		"id", &id,
 	)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Invoke the API method.
 	client, err := a.gmailClient(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 	mpb, err := client.Users.Messages.Attachments.Get("me", messageID, id).Do()
 

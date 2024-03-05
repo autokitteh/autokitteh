@@ -8,9 +8,9 @@ import { Message, proto3 } from "@bufbuild/protobuf";
 import { CodeLocation } from "../../program/v1/program_pb.js";
 
 /**
- * @generated from message autokitteh.runtimes.v1.BuildArtifact
+ * @generated from message autokitteh.runtimes.v1.Artifact
  */
-export class BuildArtifact extends Message<BuildArtifact> {
+export class Artifact extends Message<Artifact> {
   /**
    * @generated from field: repeated autokitteh.runtimes.v1.Requirement requirements = 1;
    */
@@ -31,33 +31,33 @@ export class BuildArtifact extends Message<BuildArtifact> {
    */
   compiledData: { [key: string]: Uint8Array } = {};
 
-  constructor(data?: PartialMessage<BuildArtifact>) {
+  constructor(data?: PartialMessage<Artifact>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "autokitteh.runtimes.v1.BuildArtifact";
+  static readonly typeName = "autokitteh.runtimes.v1.Artifact";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "requirements", kind: "message", T: Requirement, repeated: true },
     { no: 2, name: "exports", kind: "message", T: Export, repeated: true },
     { no: 3, name: "compiled_data", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 12 /* ScalarType.BYTES */} },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): BuildArtifact {
-    return new BuildArtifact().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Artifact {
+    return new Artifact().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): BuildArtifact {
-    return new BuildArtifact().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): Artifact {
+    return new Artifact().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): BuildArtifact {
-    return new BuildArtifact().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): Artifact {
+    return new Artifact().fromJsonString(jsonString, options);
   }
 
-  static equals(a: BuildArtifact | PlainMessage<BuildArtifact> | undefined, b: BuildArtifact | PlainMessage<BuildArtifact> | undefined): boolean {
-    return proto3.util.equals(BuildArtifact, a, b);
+  static equals(a: Artifact | PlainMessage<Artifact> | undefined, b: Artifact | PlainMessage<Artifact> | undefined): boolean {
+    return proto3.util.equals(Artifact, a, b);
   }
 }
 

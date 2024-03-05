@@ -23,18 +23,18 @@ func (i integration) listCommits(ctx context.Context, args []sdktypes.Value, kwa
 		"opts?", &opts,
 	)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Invoke the API method.
 	gh, err := i.NewClient(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	resp, _, err := gh.Repositories.ListCommits(ctx, owner, repo, &opts)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	return sdkvalues.Wrap(resp)

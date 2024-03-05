@@ -4,12 +4,13 @@ import (
 	"context"
 	"time"
 
+	"gorm.io/gorm"
+
 	"go.autokitteh.dev/autokitteh/backend/internal/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-	"gorm.io/gorm"
 )
 
 func (db *gormdb) createDeployment(ctx context.Context, deployment scheme.Deployment) error {
@@ -20,10 +21,10 @@ func (db *gormdb) CreateDeployment(ctx context.Context, deployment sdktypes.Depl
 	now := time.Now()
 
 	d := scheme.Deployment{
-		DeploymentID: sdktypes.GetDeploymentID(deployment).String(),
-		BuildID:      sdktypes.GetDeploymentBuildID(deployment).String(),
-		EnvID:        sdktypes.GetDeploymentEnvID(deployment).String(),
-		State:        int32(sdktypes.GetDeploymentState(deployment)),
+		DeploymentID: deployment.ID().String(),
+		BuildID:      deployment.BuildID().String(),
+		EnvID:        deployment.EnvID().String(),
+		State:        int32(deployment.State().ToProto()),
 		CreatedAt:    now,
 		UpdatedAt:    now,
 	}
@@ -43,7 +44,7 @@ func (db *gormdb) getDeployment(ctx context.Context, deploymentID string) (*sche
 func (db *gormdb) GetDeployment(ctx context.Context, id sdktypes.DeploymentID) (sdktypes.Deployment, error) {
 	d, err := db.getDeployment(ctx, id.String())
 	if d == nil || err != nil {
-		return nil, err
+		return sdktypes.InvalidDeployment, err
 	}
 	return scheme.ParseDeployment(*d)
 }
@@ -61,14 +62,14 @@ func (db *gormdb) DeleteDeployment(ctx context.Context, id sdktypes.DeploymentID
 // FIXME: fix generic in order to avoid all this
 func (db *gormdb) listDeploymentsCommonQuery(ctx context.Context, filter sdkservices.ListDeploymentsFilter) *gorm.DB {
 	q := db.db.WithContext(ctx).Model(&scheme.Deployment{})
-	if filter.BuildID != nil {
+	if filter.BuildID.IsValid() {
 		q = q.Where("deployments.build_id = ?", filter.BuildID.String())
 	}
-	if filter.EnvID != nil {
+	if filter.EnvID.IsValid() {
 		q = q.Where("deployments.env_id = ?", filter.EnvID.String())
 	}
 	if filter.State != sdktypes.DeploymentStateUnspecified {
-		q = q.Where("deployments.state = ?", int32(filter.State))
+		q = q.Where("deployments.state = ?", filter.State.ToProto())
 	}
 
 	if filter.Limit > 0 {
@@ -88,10 +89,10 @@ func (db *gormdb) listDeploymentsWithStats(ctx context.Context, filter sdkservic
 	COUNT(case when sessions.current_state_type = ? then 1 end) AS running,
 	COUNT(case when sessions.current_state_type = ? then 1 end) AS error,
 	COUNT(case when sessions.current_state_type = ? then 1 end) AS completed
-	`, sdktypes.CreatedSessionStateType,
-		sdktypes.RunningSessionStateType,
-		sdktypes.ErrorSessionStateType,
-		sdktypes.CompletedSessionStateType).
+	`, sdktypes.SessionStateTypeCreated.ToProto(),
+		sdktypes.SessionStateTypeRunning.ToProto(),
+		sdktypes.SessionStateTypeError.ToProto(),
+		sdktypes.SessionStateTypeCompleted.ToProto()).
 		Joins(`LEFT JOIN sessions on deployments.deployment_id = sessions.deployment_id
 	AND sessions.deleted_at IS NULL`).
 		Group("deployments.deployment_id")
@@ -132,7 +133,7 @@ func (db *gormdb) UpdateDeploymentState(ctx context.Context, id sdktypes.Deploym
 	d := &scheme.Deployment{DeploymentID: id.String()}
 
 	return db.locked(func(db *gormdb) error {
-		result := db.db.WithContext(ctx).Model(d).Updates(map[string]any{"state": int32(state), "updated_at": time.Now()})
+		result := db.db.WithContext(ctx).Model(d).Updates(map[string]any{"state": state.ToProto(), "updated_at": time.Now()})
 		if result.Error != nil {
 			return translateError(result.Error)
 		}

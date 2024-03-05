@@ -1,22 +1,17 @@
 package sdktypes
 
-const ConnectionIDKind = "connection"
+const connectionIDKind = "con"
 
-type ConnectionID = *id[connectionIDTraits]
-
-var _ ID = (ConnectionID)(nil)
+type ConnectionID = id[connectionIDTraits]
 
 type connectionIDTraits struct{}
 
-func (connectionIDTraits) Kind() string                   { return ConnectionIDKind }
-func (connectionIDTraits) ValidateValue(raw string) error { return validateUUID(raw) }
+func (connectionIDTraits) Prefix() string { return connectionIDKind }
 
-func ParseConnectionID(raw string) (ConnectionID, error) {
-	return parseTypedID[connectionIDTraits](raw)
-}
+func NewConnectionID() ConnectionID                          { return newID[ConnectionID]() }
+func ParseConnectionID(s string) (ConnectionID, error)       { return ParseID[ConnectionID](s) }
+func StrictParseConnectionID(s string) (ConnectionID, error) { return Strict(ParseConnectionID(s)) }
 
-func StrictParseConnectionID(raw string) (ConnectionID, error) {
-	return strictParseTypedID[connectionIDTraits](raw)
-}
+func IsConnectionID(s string) bool { return IsIDOf[connectionIDTraits](s) }
 
-func NewConnectionID() ConnectionID { return newID[connectionIDTraits]() }
+var InvalidConnectionID ConnectionID

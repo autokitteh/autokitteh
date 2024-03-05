@@ -17,7 +17,7 @@ func TranslateError(err error) error {
 	case connect.CodeNotFound:
 		err1 = sdkerrors.ErrNotFound
 	case connect.CodeInvalidArgument:
-		err1 = sdkerrors.ErrInvalidArgument
+		err1 = sdkerrors.ErrInvalidArgument{Underlying: err}
 	case connect.CodeUnimplemented:
 		err1 = sdkerrors.ErrNotImplemented
 	case connect.CodeUnauthenticated:

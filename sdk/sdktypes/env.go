@@ -1,56 +1,60 @@
 package sdktypes
 
 import (
+	"errors"
+
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
-	envsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/envs/v1"
+	envv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/envs/v1"
 )
 
-type EnvPB = envsv1.Env
+type Env struct{ object[*EnvPB, EnvTraits] }
 
-type Env = *object[*EnvPB]
+var InvalidEnv Env
 
-var (
-	EnvFromProto       = makeFromProto(validateEnv)
-	StrictEnvFromProto = makeFromProto(strictValidateEnv)
-	ToStrictEnv        = makeWithValidator(strictValidateEnv)
-)
+type EnvPB = envv1.Env
 
-func strictValidateEnv(pb *envsv1.Env) error {
-	if err := ensureNotEmpty(pb.EnvId, pb.ProjectId, pb.Name); err != nil {
-		return err
-	}
+type EnvTraits struct{}
 
-	return validateEnv(pb)
+func (EnvTraits) Validate(m *EnvPB) error {
+	return errors.Join(
+		idField[EnvID]("env_id", m.EnvId),
+		nameField("name", m.Name),
+		idField[ProjectID]("project_id", m.ProjectId),
+	)
 }
 
-func validateEnv(pb *envsv1.Env) error {
-	if _, err := ParseEnvID(pb.EnvId); err != nil {
-		return err
-	}
-
-	if _, err := ParseProjectID(pb.ProjectId); err != nil {
-		return err
-	}
-
-	return nil
+func (EnvTraits) StrictValidate(m *EnvPB) error {
+	return errors.Join(
+		mandatory("env_id", m.EnvId),
+		mandatory("name", m.Name),
+		mandatory("project_id", m.ProjectId),
+	)
 }
 
-func EnvHasID(e Env) bool { return e.pb.EnvId != "" }
+func EnvFromProto(m *EnvPB) (Env, error)       { return FromProto[Env](m) }
+func StrictEnvFromProto(m *EnvPB) (Env, error) { return Strict(EnvFromProto(m)) }
 
-func GetEnvID(e Env) EnvID {
-	if e == nil {
-		return nil
-	}
+func (p Env) ID() EnvID            { return kittehs.Must1(ParseEnvID(p.read().EnvId)) }
+func (p Env) ProjectID() ProjectID { return kittehs.Must1(ParseProjectID(p.read().ProjectId)) }
+func (p Env) Name() Symbol         { return forceSymbol(p.read().Name) }
 
-	return kittehs.Must1(ParseEnvID(e.pb.EnvId))
+func NewEnv(id EnvID, name Symbol) Env {
+	return kittehs.Must1(EnvFromProto(&EnvPB{
+		EnvId: id.String(),
+		Name:  name.String(),
+	}))
 }
 
-func GetEnvProjectID(e Env) ProjectID {
-	if e == nil {
-		return nil
-	}
-
-	return kittehs.Must1(ParseProjectID(e.pb.ProjectId))
+func (p Env) WithName(name Symbol) Env {
+	return Env{p.forceUpdate(func(pb *EnvPB) { pb.Name = name.String() })}
 }
 
-func GetEnvName(e Env) Name { return kittehs.Must1(ParseName(e.pb.Name)) }
+func (p Env) WithNewID() Env { return p.WithID(NewEnvID()) }
+
+func (p Env) WithID(id EnvID) Env {
+	return Env{p.forceUpdate(func(pb *EnvPB) { pb.EnvId = id.String() })}
+}
+
+func (p Env) WithProjectID(id ProjectID) Env {
+	return Env{p.forceUpdate(func(pb *EnvPB) { pb.ProjectId = id.String() })}
+}

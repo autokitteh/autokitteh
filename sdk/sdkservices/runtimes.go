@@ -12,7 +12,7 @@ import (
 
 type Runtimes interface {
 	List(ctx context.Context) ([]sdktypes.Runtime, error)
-	New(ctx context.Context, name sdktypes.Name) (Runtime, error)
+	New(ctx context.Context, name sdktypes.Symbol) (Runtime, error)
 
 	Build(ctx context.Context, fs fs.FS, symbols []sdktypes.Symbol, memo map[string]string) (*sdkbuildfile.BuildFile, error)
 
@@ -80,7 +80,7 @@ func (rc *RunCallbacks) SafeLoad(ctx context.Context, rid sdktypes.RunID, path s
 
 func (rc *RunCallbacks) SafeCall(ctx context.Context, rid sdktypes.RunID, v sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
 	if rc == nil || rc.Call == nil {
-		return nil, sdkerrors.ErrNotImplemented
+		return sdktypes.InvalidValue, sdkerrors.ErrNotImplemented
 	}
 
 	return rc.Call(ctx, rid, v, args, kwargs)

@@ -16,7 +16,7 @@ var (
 	w = sdkvalues.DefaultValueWrapper
 
 	iv           = sdktypes.NewIntegerValue(42)
-	nothing      = sdktypes.NewNothingValue()
+	nothing      = sdktypes.Nothing
 	intsList     = sdktypes.NewListValue([]sdktypes.Value{sdktypes.NewIntegerValue(1), sdktypes.NewIntegerValue(2), sdktypes.NewIntegerValue(3)})
 	intsSet      = sdktypes.NewSetValue([]sdktypes.Value{sdktypes.NewIntegerValue(1), sdktypes.NewIntegerValue(2), sdktypes.NewIntegerValue(3)})
 	mixedList    = sdktypes.NewListValue([]sdktypes.Value{sdktypes.NewIntegerValue(1), sdktypes.NewStringValue("meow"), sdktypes.NewFloatValue(1.2)})
@@ -32,7 +32,7 @@ var (
 		sdktypes.NewListValue([]sdktypes.Value{sdktypes.NewIntegerValue(0), sdktypes.NewIntegerValue(1), sdktypes.NewIntegerValue(2)}),
 	})
 
-	stringIntStruct = sdktypes.NewStructValue(sdktypes.NewStringValue("ctor"), stringIntMap)
+	stringIntStruct = kittehs.Must1(sdktypes.NewStructValue(sdktypes.NewStringValue("ctor"), stringIntMap))
 )
 
 // TODO: These tests are not exhaustive.
@@ -68,7 +68,7 @@ func TestValueWrapper(t *testing.T) {
 		},
 		{
 			in:  struct{}{},
-			w:   sdktypes.NewNothingValue(),
+			w:   sdktypes.Nothing,
 			unw: struct{}{},
 		},
 		{
@@ -107,7 +107,7 @@ func TestValueWrapper(t *testing.T) {
 		},
 		{
 			in: map[string]int{"meow": 1, "woof": 2},
-			w: sdktypes.NewDictValue([]*sdktypes.DictValueItem{
+			w: kittehs.Must1(sdktypes.NewDictValue([]sdktypes.DictItem{
 				{
 					K: sdktypes.NewStringValue("meow"),
 					V: sdktypes.NewIntegerValue(1),
@@ -116,7 +116,7 @@ func TestValueWrapper(t *testing.T) {
 					K: sdktypes.NewStringValue("woof"),
 					V: sdktypes.NewIntegerValue(2),
 				},
-			}),
+			})),
 			unw: map[any]any{"meow": int64(1), "woof": int64(2)},
 		},
 	}
@@ -229,7 +229,7 @@ func TestUnwrapIntoCollections(t *testing.T) {
 
 	var v sdktypes.Value
 	if assert.NoError(t, w.UnwrapInto(&v, iv)) {
-		assert.Equal(t, int64(42), sdktypes.GetIntegerValue(v))
+		assert.Equal(t, int64(42), v.GetInteger().Value())
 	}
 
 	var a any
@@ -290,7 +290,7 @@ func TestUnwrapIntoValue(t *testing.T) {
 	var d sdktypes.DictValue
 	if assert.NoError(t, w.UnwrapInto(&d, stringIntDict)) {
 		var m map[string]int
-		if assert.NoError(t, w.UnwrapInto(&m, kittehs.Must1(sdktypes.NewValue(d)))) {
+		if assert.NoError(t, w.UnwrapInto(&m, sdktypes.NewValue(d))) {
 			assert.Equal(t, map[string]int{"one": 1, "two": 2, "three": 3}, m)
 		}
 	}

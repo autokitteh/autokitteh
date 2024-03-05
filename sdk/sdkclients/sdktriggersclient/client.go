@@ -27,16 +27,16 @@ func New(p sdkclient.Params) sdkservices.Triggers {
 func (c *client) Create(ctx context.Context, trigger sdktypes.Trigger) (sdktypes.TriggerID, error) {
 	resp, err := c.client.Create(ctx, connect.NewRequest(&triggersv1.CreateRequest{Trigger: trigger.ToProto()}))
 	if err != nil {
-		return nil, rpcerrors.TranslateError(err)
+		return sdktypes.InvalidTriggerID, rpcerrors.TranslateError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {
-		return nil, err
+		return sdktypes.InvalidTriggerID, err
 	}
 
 	triggerID, err := sdktypes.StrictParseTriggerID(resp.Msg.TriggerId)
 	if err != nil {
-		return nil, fmt.Errorf("invalid trigger id: %w", err)
+		return sdktypes.InvalidTriggerID, fmt.Errorf("invalid trigger id: %w", err)
 	}
 
 	return triggerID, nil
@@ -75,11 +75,11 @@ func (c *client) Get(ctx context.Context, triggerID sdktypes.TriggerID) (sdktype
 		&triggersv1.GetRequest{TriggerId: triggerID.String()},
 	))
 	if err != nil {
-		return nil, rpcerrors.TranslateError(err)
+		return sdktypes.InvalidTrigger, rpcerrors.TranslateError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {
-		return nil, err
+		return sdktypes.InvalidTrigger, err
 	}
 
 	return sdktypes.TriggerFromProto(resp.Msg.Trigger)

@@ -2,6 +2,8 @@ package sdkerrors
 
 import (
 	"errors"
+	"fmt"
+	"strings"
 
 	"connectrpc.com/connect"
 	"github.com/bufbuild/protovalidate-go"
@@ -12,7 +14,6 @@ var (
 	ErrRPC                = errors.New("rpc")
 	ErrAlreadyExists      = errors.New("already exists")
 	ErrNotFound           = errors.New("not found")
-	ErrInvalidArgument    = errors.New("invalid argument")
 	ErrConflict           = errors.New("conflict")
 	ErrUnauthorized       = errors.New("unauthorized")
 	ErrUnauthenticated    = errors.New("unauthenticated")
@@ -20,16 +21,34 @@ var (
 	ErrFailedPrecondition = errors.New("failed precondition")
 )
 
-func IgnoreNotFoundErr[T any](t *T, err error) (*T, error) {
+func IgnoreNotFoundErr[T any](in T, err error) (T, error) {
+	var zero T
+
 	if err != nil && !errors.Is(err, ErrNotFound) {
-		return nil, err
+		return zero, err
 	}
 
-	if t == nil {
-		return nil, nil
-	}
+	return in, nil
+}
 
-	return t, nil
+type ErrInvalidArgument struct {
+	Underlying error
+}
+
+func (e ErrInvalidArgument) Error() string {
+	var b strings.Builder
+	b.WriteString("invalid argument")
+	if e.Underlying != nil {
+		b.WriteString(": ")
+		b.WriteString(e.Underlying.Error())
+	}
+	return b.String()
+}
+
+func (e ErrInvalidArgument) Unwrap() error { return e.Underlying }
+
+func NewInvalidArgumentError(f string, vs ...any) error {
+	return ErrInvalidArgument{Underlying: fmt.Errorf(f, vs...)}
 }
 
 // re-wrap sdk as connect error
@@ -40,10 +59,12 @@ func AsConnectError(err error) error {
 		return connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
+	var invalidArg ErrInvalidArgument
+
 	switch {
 	case errors.Is(err, ErrNotFound):
 		return connect.NewError(connect.CodeNotFound, err)
-	case errors.Is(err, ErrInvalidArgument):
+	case errors.As(err, &invalidArg):
 		return connect.NewError(connect.CodeInvalidArgument, err)
 	case errors.Is(err, ErrUnauthorized):
 		return connect.NewError(connect.CodePermissionDenied, err)

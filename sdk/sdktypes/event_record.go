@@ -1,111 +1,60 @@
 package sdktypes
 
 import (
-	"fmt"
-	"strings"
+	"errors"
 	"time"
 
+	"google.golang.org/protobuf/types/known/timestamppb"
+
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
-	eventsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/events/v1"
-	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
+	eventv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/events/v1"
 )
 
-type EventRecordPB = eventsv1.EventRecord
-
-type EventRecord = *object[*EventRecordPB]
-
-type EventState eventsv1.EventState
-
-// Event Record State Enum
-const (
-	EventStateUnspecified = EventState(eventsv1.EventState_EVENT_STATE_UNSPECIFIED)
-	EventStateSaved       = EventState(eventsv1.EventState_EVENT_STATE_SAVED)
-	EventStateProcessing  = EventState(eventsv1.EventState_EVENT_STATE_PROCESSING)
-	EventStateCompleted   = EventState(eventsv1.EventState_EVENT_STATE_COMPLETED)
-	EventStateFailed      = EventState(eventsv1.EventState_EVENT_STATE_FAILED)
-)
-
-func (s EventState) String() string {
-	return strings.TrimPrefix(eventsv1.EventState_name[int32(s)], "STATE_")
+type EventRecord struct {
+	object[*EventRecordPB, EventRecordTraits]
 }
 
-func (s EventState) ToProto() eventsv1.EventState {
-	return eventsv1.EventState(s)
+type EventRecordPB = eventv1.EventRecord
+
+type EventRecordTraits struct{}
+
+func (EventRecordTraits) Validate(m *EventRecordPB) error {
+	return errors.Join(
+		idField[EventID]("event_id", m.EventId),
+		enumField[EventState]("state", m.State),
+	)
 }
 
-// Event Record
-
-var (
-	EventRecordFromProto       = makeFromProto(validateEventRecord)
-	StrictEventRecordFromProto = makeFromProto(strictValidateEventRecord)
-	ToStrictEventRecord        = makeWithValidator(strictValidateEventRecord)
-)
-
-func strictValidateEventRecord(pb *eventsv1.EventRecord) error {
-	if err := ensureNotEmpty(pb.EventId); err != nil {
-		return err
-	}
-
-	return validateEventRecord(pb)
+func (t EventRecordTraits) StrictValidate(m *EventRecordPB) error {
+	return errors.Join(
+		mandatory("event_id", m.EventId),
+		mandatory("state", m.State),
+		mandatory("created_at", m.CreatedAt),
+	)
 }
 
-func validateEventRecord(pb *eventsv1.EventRecord) error {
-	if _, err := ParseEventID(pb.EventId); err != nil {
-		return err
-	}
-
-	if _, ok := eventsv1.EventState_name[int32(pb.State)]; !ok {
-		return fmt.Errorf("%w: invalid event state", sdkerrors.ErrInvalidArgument)
-	}
-
-	return nil
+func EventRecordFromProto(m *EventRecordPB) (EventRecord, error) { return FromProto[EventRecord](m) }
+func StrictEventRecordFromProto(m *EventRecordPB) (EventRecord, error) {
+	return Strict(EventRecordFromProto(m))
 }
 
-func GetEventRecordState(er EventRecord) EventState {
-	return EventState(er.pb.State)
+func (p EventRecord) EventID() (_ EventID) { return kittehs.Must1(ParseEventID(p.read().EventId)) }
+
+func (p EventRecord) WithSeq(seq uint32) EventRecord {
+	return EventRecord{p.forceUpdate(func(pb *EventRecordPB) { pb.Seq = seq })}
 }
 
-func GetEventRecordEventID(er EventRecord) EventID {
-	if er == nil {
-		return nil
-	}
-
-	return kittehs.Must1(ParseEventID(er.pb.EventId))
+func (p EventRecord) WithCreatedAt(createdAt time.Time) EventRecord {
+	return EventRecord{p.forceUpdate(func(pb *EventRecordPB) { pb.CreatedAt = timestamppb.New(createdAt) })}
 }
 
-func GetEventRecordSeq(er EventRecord) uint32 {
-	if er == nil {
-		return 0
-	}
+func (p EventRecord) Seq() uint32       { return p.read().Seq }
+func (p EventRecord) State() EventState { return forceEnumFromProto[EventState](p.read().State) }
 
-	return er.pb.Seq
-}
-
-func ParseEventRecordState(raw string) EventState {
-	if raw == "" {
-		return EventStateUnspecified
-	}
-	upper := strings.ToUpper(raw)
-	if !strings.HasPrefix(upper, "EVENT_STATE_") {
-		upper = "EVENT_STATE_" + upper
-	}
-
-	state, ok := eventsv1.EventState_value[upper]
-	if !ok {
-		return EventStateUnspecified
-	}
-
-	return EventState(state)
-}
-
-var PossibleEventRecordStates = kittehs.Transform(kittehs.MapValuesSortedByKeys(eventsv1.EventState_name), func(name string) string {
-	return strings.TrimPrefix(name, "EVENT_STATE_")
-})
-
-func GetEventRecordCreatedAt(er EventRecord) time.Time {
-	if er == nil {
-		return time.Time{}
-	}
-
-	return er.pb.CreatedAt.AsTime()
+func NewEventRecord(eventID EventID, state EventState) EventRecord {
+	return kittehs.Must1(EventRecordFromProto(&EventRecordPB{
+		EventId:   eventID.String(),
+		State:     state.ToProto(),
+		CreatedAt: timestamppb.New(time.Now()),
+	}))
 }

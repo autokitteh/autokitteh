@@ -82,11 +82,11 @@ func newDbFixture() *dbFixture {
 // }
 
 var (
-	testSessionID    = "s:1234"
-	testDeploymentID = "d:1234"
-	testEventID      = "ev:1234"
-	testBuildID      = "b:1234"
-	testEnvID        = "env:1234"
+	testSessionID    = "ses_00000000000000000000000001"
+	testDeploymentID = "dep_00000000000000000000000001"
+	testEventID      = "evt_00000000000000000000000001"
+	testBuildID      = "bld_00000000000000000000000001"
+	testEnvID        = "env_00000000000000000000000001"
 )
 
 func makeSchemeSession() scheme.Session {
@@ -96,7 +96,7 @@ func makeSchemeSession() scheme.Session {
 		SessionID:        testSessionID,
 		DeploymentID:     testDeploymentID,
 		EventID:          testEventID,
-		CurrentStateType: int(sdktypes.CompletedSessionStateType),
+		CurrentStateType: int(sdktypes.SessionStateTypeCompleted.ToProto()),
 		Entrypoint:       "testEntrypoint",
 		Inputs:           datatypes.JSON(`{"key": "value"}`),
 		CreatedAt:        now,
@@ -112,7 +112,7 @@ func makeSchemeDeployment() scheme.Deployment {
 		DeploymentID: testDeploymentID,
 		BuildID:      testBuildID,
 		EnvID:        testEnvID,
-		State:        int32(sdktypes.DeploymentStateUnspecified),
+		State:        int32(sdktypes.DeploymentStateUnspecified.ToProto()),
 		CreatedAt:    now,
 		UpdatedAt:    now,
 	}

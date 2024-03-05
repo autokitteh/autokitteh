@@ -6,6 +6,8 @@ func Filter[T any](ts []T, f func(T) bool) []T {
 
 func FilterNils[T any](ts []*T) []*T { return Filter(ts, IsNotNil) }
 
+func FilterZeroes[T comparable](ts []T) []T { return Filter(ts, IsNotZero) }
+
 func NewFilter[T any](f func(T) bool) func([]T) []T {
 	return func(xs []T) []T {
 		if xs == nil {
@@ -67,9 +69,9 @@ func ListToMapError[T any, K comparable, V any](ts []T, f func(T) (K, V, error))
 }
 
 // Returns first index with error.
-func ValidateList[T any](vs []T, f func(T) error) (int, error) {
+func ValidateList[T any](vs []T, f func(int, T) error) (int, error) {
 	for i, v := range vs {
-		if err := f(v); err != nil {
+		if err := f(i, v); err != nil {
 			return i, err
 		}
 	}

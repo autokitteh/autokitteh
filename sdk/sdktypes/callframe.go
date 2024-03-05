@@ -1,29 +1,34 @@
 package sdktypes
 
 import (
-	"fmt"
+	"errors"
 
 	programv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/program/v1"
 )
 
-type CallFramePB = programv1.CallFrame
-
-type CallFrame = *object[*CallFramePB]
-
-var (
-	CallFrameFromProto       = makeFromProto(validateCallFrame)
-	StrictCallFrameFromProto = makeFromProto(strictValidateCallFrame)
-	ToStrictCallFrame        = makeWithValidator(strictValidateCallFrame)
-)
-
-func strictValidateCallFrame(pb *programv1.CallFrame) error {
-	return validateCallFrame(pb)
+type CallFrame struct {
+	object[*CallFramePB, CallFrameTraits]
 }
 
-func validateCallFrame(pb *programv1.CallFrame) error {
-	if _, err := CodeLocationFromProto(pb.Location); err != nil {
-		return fmt.Errorf("location: %w", err)
-	}
+type CallFramePB = programv1.CallFrame
 
-	return nil
+type CallFrameTraits struct{}
+
+func (CallFrameTraits) Validate(m *CallFramePB) error {
+	return errors.Join(
+		nameField("name", m.Name),
+		objectField[CodeLocation]("location", m.Location),
+	)
+}
+
+func (CallFrameTraits) StrictValidate(m *CallFramePB) error {
+	return nonzeroMessage(m)
+}
+
+func (f CallFrame) Name() string { return f.read().Name }
+
+func (f CallFrame) Location() CodeLocation { return forceFromProto[CodeLocation](f.read().Location) }
+
+func CallFrameFromProto(m *CallFramePB) (CallFrame, error) {
+	return FromProto[CallFrame](m)
 }

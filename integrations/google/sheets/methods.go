@@ -24,13 +24,13 @@ func (a api) a1Range(ctx context.Context, args []sdktypes.Value, kwargs map[stri
 		"to?", &to,
 	)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 	if sheetName == "" && from == "" && to == "" {
-		return nil, errors.New("no input")
+		return sdktypes.InvalidValue, errors.New("no input")
 	}
 	if from == "" && to != "" {
-		return nil, errors.New("to without from")
+		return sdktypes.InvalidValue, errors.New("to without from")
 	}
 
 	// Return the response.
@@ -66,13 +66,13 @@ func (a api) readCell(ctx context.Context, args []sdktypes.Value, kwargs map[str
 		"value_render_option?", &valueRenderOption,
 	)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 	if rowIndex < 0 {
-		return nil, fmt.Errorf("invalid row index: %d < 0", rowIndex)
+		return sdktypes.InvalidValue, fmt.Errorf("invalid row index: %d < 0", rowIndex)
 	}
 	if colIndex < 0 {
-		return nil, fmt.Errorf("invalid column index: %d < 0", colIndex)
+		return sdktypes.InvalidValue, fmt.Errorf("invalid column index: %d < 0", colIndex)
 	}
 
 	// Read a single-cell range of cells.
@@ -82,7 +82,7 @@ func (a api) readCell(ctx context.Context, args []sdktypes.Value, kwargs map[str
 	}
 	singleCellRange, err := a.a1Range(ctx, []sdktypes.Value{}, kwargs)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 	kwargs = map[string]sdktypes.Value{
 		"spreadsheet_id":      sdktypes.NewStringValue(spreadsheetID),
@@ -91,10 +91,9 @@ func (a api) readCell(ctx context.Context, args []sdktypes.Value, kwargs map[str
 	}
 	v, err := a.readRange(ctx, []sdktypes.Value{}, kwargs)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
-	v = sdktypes.GetListValue(v)[0]
-	v = sdktypes.GetListValue(v)[0]
+	v = v.GetList().Values()[0]
 	return v, nil
 }
 
@@ -109,13 +108,13 @@ func (a api) readRange(ctx context.Context, args []sdktypes.Value, kwargs map[st
 		"value_render_option?", &valueRenderOption,
 	)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Invoke the API method.
 	client, err := a.sheetsClient(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 	call := client.Spreadsheets.Values.Get(spreadsheetID, a1Range)
 	if valueRenderOption != "" {
@@ -123,7 +122,7 @@ func (a api) readRange(ctx context.Context, args []sdktypes.Value, kwargs map[st
 	}
 	resp, err := call.Do()
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Normalize and return the response.
@@ -156,13 +155,13 @@ func (a api) writeCell(ctx context.Context, args []sdktypes.Value, kwargs map[st
 		"value", &value,
 	)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 	if rowIndex < 0 {
-		return nil, fmt.Errorf("invalid row index: %d < 0", rowIndex)
+		return sdktypes.InvalidValue, fmt.Errorf("invalid row index: %d < 0", rowIndex)
 	}
 	if colIndex < 0 {
-		return nil, fmt.Errorf("invalid column index: %d < 0", colIndex)
+		return sdktypes.InvalidValue, fmt.Errorf("invalid column index: %d < 0", colIndex)
 	}
 
 	// Write a single-cell range of cells.
@@ -172,11 +171,11 @@ func (a api) writeCell(ctx context.Context, args []sdktypes.Value, kwargs map[st
 	}
 	singleCellRange, err := a.a1Range(ctx, []sdktypes.Value{}, kwargs)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 	data, err := sdkvalues.Wrap([][]any{{value}})
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 	kwargs = map[string]sdktypes.Value{
 		"spreadsheet_id": sdktypes.NewStringValue(spreadsheetID),
@@ -198,32 +197,32 @@ func (a api) writeRange(ctx context.Context, args []sdktypes.Value, kwargs map[s
 		"data", &wrappedData,
 	)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Unwrap input data to a 2D matrix that is acceptable by the API
 	// ("sdkmodule.UnpackArgs()" directly into "[][]any" doesn't work).
-	if !sdktypes.IsListValue(wrappedData) {
-		return nil, errors.New("invalid data")
+	if !wrappedData.IsList() {
+		return sdktypes.InvalidValue, errors.New("invalid data")
 	}
-	rows := sdktypes.GetListValue(wrappedData)
+	rows := wrappedData.GetList().Values()
 	data, err := kittehs.TransformError(rows, func(row sdktypes.Value) ([]any, error) {
-		if !sdktypes.IsListValue(row) {
+		if !row.IsList() {
 			return nil, errors.New("invalid data")
 		}
-		cols := sdktypes.GetListValue(row)
+		cols := row.GetList().Values()
 		return kittehs.TransformError(cols, func(col sdktypes.Value) (any, error) {
 			return sdkvalues.Unwrap(col)
 		})
 	})
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Invoke the API method.
 	client, err := a.sheetsClient(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 	call := client.Spreadsheets.Values.Update(spreadsheetID, a1Range, &sheets.ValueRange{
 		Range:  a1Range,
@@ -231,7 +230,7 @@ func (a api) writeRange(ctx context.Context, args []sdktypes.Value, kwargs map[s
 	})
 	resp, err := call.ValueInputOption("USER_ENTERED").Do()
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Parse and return the response.
@@ -254,21 +253,21 @@ func (a api) setBackgroundColor(ctx context.Context, args []sdktypes.Value, kwar
 		"color", &color,
 	)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Invoke the API method.
 	client, err := a.sheetsClient(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 	gr, err := a1RangeToGridRange(client, spreadsheetID, a1Range)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 	alpha, red, green, blue, err := hexToRGB(color)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 	resp, err := client.Spreadsheets.BatchUpdate(spreadsheetID,
 		&sheets.BatchUpdateSpreadsheetRequest{
@@ -292,7 +291,7 @@ func (a api) setBackgroundColor(ctx context.Context, args []sdktypes.Value, kwar
 			}},
 		}).Do()
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Parse and return the response.
@@ -319,21 +318,21 @@ func (a api) setTextFormat(ctx context.Context, args []sdktypes.Value, kwargs ma
 		"underline?", underline,
 	)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Invoke the API method.
 	client, err := a.sheetsClient(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 	gr, err := a1RangeToGridRange(client, spreadsheetID, a1Range)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 	alpha, red, green, blue, err := hexToRGB(color)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 	resp, err := client.Spreadsheets.BatchUpdate(spreadsheetID,
 		&sheets.BatchUpdateSpreadsheetRequest{
@@ -363,7 +362,7 @@ func (a api) setTextFormat(ctx context.Context, args []sdktypes.Value, kwargs ma
 			}},
 		}).Do()
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Parse and return the response.

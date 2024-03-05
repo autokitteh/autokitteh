@@ -42,7 +42,7 @@ func ParseJSON(r io.Reader) (sdktypes.Value, error) {
 
 	if err := json.NewDecoder(r).Decode(&m); err != nil {
 		// TODO: ProgramError.
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	return sdkvalues.DefaultValueWrapper.Wrap(m)
@@ -54,7 +54,7 @@ func ParseRawJSON(r io.Reader) (sdktypes.Value, error) {
 	// TODO: there are some stuff that must not be allowed to be parseled, such as Functions.
 	if err := json.NewDecoder(r).Decode(&v); err != nil {
 		// TODO: ProgramError.
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	return v, nil
@@ -67,7 +67,7 @@ func ParseYAML(r io.Reader) (sdktypes.Value, error) {
 
 	if err := yaml.NewDecoder(r).Decode(&m); err != nil {
 		// TODO: ProgramError.
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	return sdkvalues.DefaultValueWrapper.Wrap(m)
@@ -79,7 +79,7 @@ func ParseRawYAML(r io.Reader) (sdktypes.Value, error) {
 	// TODO: there are some stuff that must not be allowed to be parseled, such as Functions.
 	if err := yaml.NewDecoder(r).Decode(&v); err != nil {
 		// TODO: ProgramError.
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	return v, nil
@@ -92,7 +92,7 @@ func ParseXML(r io.Reader) (sdktypes.Value, error) {
 
 	if err := xml.NewDecoder(r).Decode(&m); err != nil {
 		// TODO: ProgramError.
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	return sdkvalues.DefaultValueWrapper.Wrap(m)
@@ -101,7 +101,7 @@ func ParseXML(r io.Reader) (sdktypes.Value, error) {
 func ParseText(r io.Reader) (sdktypes.Value, error) {
 	data, err := io.ReadAll(r)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	return sdktypes.NewDictValueFromStringMap(map[string]sdktypes.Value{
@@ -112,7 +112,7 @@ func ParseText(r io.Reader) (sdktypes.Value, error) {
 func ParseCSV(r io.Reader) (sdktypes.Value, error) {
 	rs, err := csv.NewReader(r).ReadAll()
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	v := kittehs.Must1(sdkvalues.DefaultValueWrapper.Wrap(rs))
@@ -125,12 +125,12 @@ func ParseCSV(r io.Reader) (sdktypes.Value, error) {
 func ParseHex(r io.Reader) (sdktypes.Value, error) {
 	encoded, err := io.ReadAll(r)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	decoded, err := hex.DecodeString(string(encoded))
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	return sdktypes.NewDictValueFromStringMap(map[string]sdktypes.Value{
@@ -141,12 +141,12 @@ func ParseHex(r io.Reader) (sdktypes.Value, error) {
 func ParseBase64(r io.Reader) (sdktypes.Value, error) {
 	encoded, err := io.ReadAll(r)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	decoded, err := base64.StdEncoding.DecodeString(string(encoded))
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	return sdktypes.NewDictValueFromStringMap(map[string]sdktypes.Value{
@@ -157,7 +157,7 @@ func ParseBase64(r io.Reader) (sdktypes.Value, error) {
 func ParseTxTar(r io.Reader) (sdktypes.Value, error) {
 	data, err := io.ReadAll(r)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	archive := txtar.Parse(data)

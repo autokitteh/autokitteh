@@ -27,16 +27,16 @@ func New(p sdkclient.Params) sdkservices.Events {
 func (c *client) Save(ctx context.Context, event sdktypes.Event) (sdktypes.EventID, error) {
 	resp, err := c.client.Save(ctx, connect.NewRequest(&eventsv1.SaveRequest{Event: event.ToProto()}))
 	if err != nil {
-		return nil, rpcerrors.TranslateError(err)
+		return sdktypes.InvalidEventID, rpcerrors.TranslateError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {
-		return nil, err
+		return sdktypes.InvalidEventID, err
 	}
 
 	eventId, err := sdktypes.StrictParseEventID(resp.Msg.EventId)
 	if err != nil {
-		return nil, fmt.Errorf("invalid event id: %w", err)
+		return sdktypes.InvalidEventID, fmt.Errorf("invalid event id: %w", err)
 	}
 
 	return eventId, nil
@@ -47,16 +47,16 @@ func (c *client) Get(ctx context.Context, eventId sdktypes.EventID) (sdktypes.Ev
 		&eventsv1.GetRequest{EventId: eventId.String()},
 	))
 	if err != nil {
-		return nil, rpcerrors.TranslateError(err)
+		return sdktypes.InvalidEvent, rpcerrors.TranslateError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {
-		return nil, err
+		return sdktypes.InvalidEvent, err
 	}
 
 	event, err := sdktypes.EventFromProto(resp.Msg.Event)
 	if err != nil {
-		return nil, fmt.Errorf("invalid event: %w", err)
+		return sdktypes.InvalidEvent, fmt.Errorf("invalid event: %w", err)
 	}
 	return event, nil
 }

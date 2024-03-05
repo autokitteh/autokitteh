@@ -42,7 +42,7 @@ func New() sdkexecutor.Executor {
 
 func now(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
 	if err := sdkmodule.UnpackArgs(args, kwargs); err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	wctx := sessioncontext.GetWorkflowContext(ctx)
@@ -52,7 +52,7 @@ func now(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.
 	if err := workflow.SideEffect(wctx, func(workflow.Context) any {
 		return time.Now()
 	}).Get(&t); err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	return sdktypes.NewTimeValue(t), nil
@@ -75,14 +75,14 @@ func newTime(_ context.Context, args []sdktypes.Value, kwargs map[string]sdktype
 		"nanosecond?", &nsec,
 		"location?", &loc,
 	); err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 	if len(args) > 0 {
-		return nil, fmt.Errorf("time: unexpected positional arguments")
+		return sdktypes.InvalidValue, fmt.Errorf("time: unexpected positional arguments")
 	}
 	location, err := time.LoadLocation(loc)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 	return sdktypes.NewTimeValue(time.Date(year, time.Month(month), day, hour, min, sec, nsec, location)), nil
 }
@@ -90,14 +90,14 @@ func newTime(_ context.Context, args []sdktypes.Value, kwargs map[string]sdktype
 func parseTime(_ context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
 	var s, location, format string
 	if err := sdkmodule.UnpackArgs(args, kwargs, "s", &s, "format?", &format, "location?", &location); err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	if location == "" && format == "" {
 		var t time.Time
 
 		if err := sdkvalues.DefaultValueWrapper.UnwrapInto(&t, args[0]); err != nil {
-			return nil, err
+			return sdktypes.InvalidValue, err
 		}
 
 		return sdktypes.NewTimeValue(t), nil
@@ -114,19 +114,19 @@ func parseTime(_ context.Context, args []sdktypes.Value, kwargs map[string]sdkty
 	if location == "UTC" {
 		t, err := time.Parse(format, s)
 		if err != nil {
-			return nil, err
+			return sdktypes.InvalidValue, err
 		}
 		return sdktypes.NewTimeValue(t), nil
 	}
 
 	loc, err := time.LoadLocation(location)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	t, err := time.ParseInLocation(format, s, loc)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	return sdktypes.NewTimeValue(t), nil
@@ -135,7 +135,7 @@ func parseTime(_ context.Context, args []sdktypes.Value, kwargs map[string]sdkty
 func parseDuration(_ context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
 	var d time.Duration
 	if err := sdkmodule.UnpackArgs(args, kwargs, "s", &d); err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	return sdktypes.NewDurationValue(d), nil
@@ -145,7 +145,7 @@ func fromTimestamp(_ context.Context, args []sdktypes.Value, kwargs map[string]s
 	var sec, nsec int64
 
 	if err := sdkmodule.UnpackArgs(args, kwargs, "sec", &sec, "nsec?", &nsec); err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	return sdktypes.NewTimeValue(time.Unix(sec, nsec)), nil
@@ -154,7 +154,7 @@ func fromTimestamp(_ context.Context, args []sdktypes.Value, kwargs map[string]s
 func isValidTimezone(_ context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
 	var s string
 	if err := sdkmodule.UnpackArgs(args, kwargs, "tz", &s); err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 	_, err := time.LoadLocation(s)
 	return sdktypes.NewBooleanValue(err == nil), nil

@@ -21,7 +21,7 @@ var redispatchCmd = common.StandardCommand(&cobra.Command{
 		if err != nil {
 			return err
 		}
-		if e == nil {
+		if !e.IsValid() {
 			err = fmt.Errorf("event ID %q not found", args[0])
 			return common.NewExitCodeError(common.NotFoundExitCode, err)
 		}

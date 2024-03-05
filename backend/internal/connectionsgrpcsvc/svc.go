@@ -91,7 +91,7 @@ func (s *server) Get(ctx context.Context, req *connect.Request[connectionsv1.Get
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	if c == nil {
+	if !c.IsValid() {
 		return connect.NewResponse(&connectionsv1.GetResponse{}), nil
 	}
 

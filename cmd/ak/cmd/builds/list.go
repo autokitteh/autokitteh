@@ -24,8 +24,8 @@ var listCmd = common.StandardCommand(&cobra.Command{
 			return fmt.Errorf("list builds: %w", err)
 		}
 
-		if len(bs) == 0 {
-			return common.FailNotFound(cmd, "builds")
+		if err := common.FailIfNotFound(cmd, "builds", len(bs) > 0); err != nil {
+			return err
 		}
 
 		common.RenderList(bs)

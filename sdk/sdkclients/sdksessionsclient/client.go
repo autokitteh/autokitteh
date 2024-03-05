@@ -29,16 +29,16 @@ func (c *client) Start(ctx context.Context, session sdktypes.Session) (sdktypes.
 		Session: session.ToProto(),
 	}))
 	if err != nil {
-		return nil, rpcerrors.TranslateError(err)
+		return sdktypes.InvalidSessionID, rpcerrors.TranslateError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {
-		return nil, err
+		return sdktypes.InvalidSessionID, err
 	}
 
 	pid, err := sdktypes.StrictParseSessionID(resp.Msg.SessionId)
 	if err != nil {
-		return nil, fmt.Errorf("invalid session id: %w", err)
+		return sdktypes.InvalidSessionID, fmt.Errorf("invalid session id: %w", err)
 	}
 
 	return pid, nil
@@ -66,11 +66,11 @@ func (c *client) Get(ctx context.Context, sessionID sdktypes.SessionID) (sdktype
 		SessionId: sessionID.String(),
 	}))
 	if err != nil {
-		return nil, rpcerrors.TranslateError(err)
+		return sdktypes.InvalidSession, rpcerrors.TranslateError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {
-		return nil, err
+		return sdktypes.InvalidSession, err
 	}
 
 	return sdktypes.SessionFromProto(resp.Msg.Session)
@@ -81,11 +81,11 @@ func (c *client) GetLog(ctx context.Context, sessionID sdktypes.SessionID) (sdkt
 		SessionId: sessionID.String(),
 	}))
 	if err != nil {
-		return nil, rpcerrors.TranslateError(err)
+		return sdktypes.InvalidSessionLog, rpcerrors.TranslateError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {
-		return nil, err
+		return sdktypes.InvalidSessionLog, err
 	}
 
 	return sdktypes.SessionLogFromProto(resp.Msg.Log)

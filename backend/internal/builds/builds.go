@@ -8,7 +8,6 @@ import (
 
 	"go.uber.org/fx"
 	"go.uber.org/zap"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"go.autokitteh.dev/autokitteh/backend/internal/db"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
@@ -43,19 +42,15 @@ func (b *Builds) Download(ctx context.Context, id sdktypes.BuildID) (io.ReadClos
 }
 
 func (b *Builds) Save(ctx context.Context, build sdktypes.Build, data []byte) (sdktypes.BuildID, error) {
-	build, err := build.Update(func(pb *sdktypes.BuildPB) {
-		pb.BuildId = sdktypes.NewBuildID().String()
-		pb.CreatedAt = timestamppb.New(time.Now())
-	})
-	if err != nil {
-		return nil, err
-	}
+	build = build.
+		WithNewID().
+		WithCreatedAt(time.Now())
 
 	if err := b.DB.SaveBuild(ctx, build, data); err != nil {
-		return nil, err
+		return sdktypes.InvalidBuildID, err
 	}
 
-	return sdktypes.GetBuildID(build), nil
+	return build.ID(), nil
 }
 
 func (b *Builds) Remove(ctx context.Context, id sdktypes.BuildID) error {

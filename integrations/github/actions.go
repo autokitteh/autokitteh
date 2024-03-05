@@ -29,18 +29,18 @@ func (i integration) listWorkflowRuns(ctx context.Context, args []sdktypes.Value
 		"exclude_pull_requests=?", &opts.ExcludePullRequests,
 		"check_suite_id=?", &opts.CheckSuiteID,
 	); err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Invoke the API method.
 	gh, err := i.NewClientWithInstallJWT(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	c, _, err := gh.Actions.ListRepositoryWorkflowRuns(ctx, owner, repo, &opts)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	return sdkvalues.Wrap(c)

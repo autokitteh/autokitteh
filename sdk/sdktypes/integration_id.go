@@ -6,29 +6,24 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 )
 
-const IntegrationIDKind = "integration"
+const integrationIDKind = "int"
 
-type IntegrationID = *id[integrationIDTraits]
+type IntegrationID = id[integrationIDTraits]
 
-var _ ID = (IntegrationID)(nil)
+var InvalidIntegrationID IntegrationID
 
 type integrationIDTraits struct{}
 
-func (integrationIDTraits) Kind() string                   { return IntegrationIDKind }
-func (integrationIDTraits) ValidateValue(raw string) error { return validateUUID(raw) }
+func (integrationIDTraits) Prefix() string { return integrationIDKind }
 
-func ParseIntegrationID(raw string) (IntegrationID, error) {
-	return parseTypedID[integrationIDTraits](raw)
-}
+func NewIntegrationID() IntegrationID                          { return newID[IntegrationID]() }
+func ParseIntegrationID(s string) (IntegrationID, error)       { return ParseID[IntegrationID](s) }
+func StrictParseIntegrationID(s string) (IntegrationID, error) { return Strict(ParseIntegrationID(s)) }
 
-func StrictParseIntegrationID(raw string) (IntegrationID, error) {
-	return strictParseTypedID[integrationIDTraits](raw)
-}
-
-func NewIntegrationID() IntegrationID { return newID[integrationIDTraits]() }
+func IsIntegrationID(s string) bool { return IsIDOf[integrationIDTraits](s) }
 
 func IntegrationIDFromName(name string) IntegrationID {
-	txt := fmt.Sprintf("%s:8%031x", IntegrationIDKind, kittehs.HashString64(name))
+	txt := fmt.Sprintf("%s_%026x", integrationIDKind, kittehs.HashString64(name))
 
 	return kittehs.Must1(ParseIntegrationID(txt))
 }

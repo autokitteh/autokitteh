@@ -6,18 +6,18 @@ $ data_file2_path=${tmp}/data_file2
 $ echo "project resources 2" >> ${data_file2_path}
 $ # Create project p1.
 $ ${AK} p c p1; echo $?
-project_id: p:00000000000000000000000000000001
+project_id: prj_00000000000000000000000001
 0
 $ # Try to create a project that already exists.
 $ ${AK} p c p1; echo $?
 Error: create project: already exists: already exists ([])
 1
 $ ${AK} -j p get p1; echo $?
-{"project":{"project_id":"p:00000000000000000000000000000001","name":"p1"}}
+{"project":{"project_id":"prj_00000000000000000000000001","name":"p1"}}
 0
 $ # List projects.
 $ ${AK} -j p ls
-{"project_id":"p:00000000000000000000000000000001","name":"p1"}
+{"project_id":"prj_00000000000000000000000001","name":"p1"}
 $ # Download resources project not found.
 $ ${AK} -j projects download-resources nonexisting -o /tmp
 Error: project nonexisting not found
@@ -32,14 +32,14 @@ $ ${AK} projects build p1
 Error: required flag(s) "from" not set
 $ # Set resources specific file succeed
 $ ${AK} projects build p1 -f ${data_file_path}; echo $?
-build_id: b:00000000000000000000000000000003
+build_id: bld_00000000000000000000000003
 0
 $ # Download resources succeed.
 $ ${AK} -j projects download-resources p1 -o ${tmp2}/; ls ${tmp2}/
 data_file
 $ # Set resources directory file succeed
 $ ${AK} projects build p1 -f ${tmp}; echo $?
-build_id: b:00000000000000000000000000000004
+build_id: bld_00000000000000000000000004
 0
 $ # Download resources succeed.
 $ ${AK} -j projects download-resources p1 -o ${tmp2}/; ls ${tmp2}/

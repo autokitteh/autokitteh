@@ -1,8 +1,8 @@
 package sdktypes
 
 import (
-	"crypto/sha512"
-	"encoding/hex"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"reflect"
 
@@ -13,207 +13,193 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	akproto "go.autokitteh.dev/autokitteh/proto"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
-	"go.autokitteh.dev/autokitteh/sdk/sdklogger"
 )
 
-var protoMarshal = protojson.MarshalOptions{
-	UseProtoNames: true,
-}.Marshal
-
 type Object interface {
-	// all methods must be unexported.
-	// we want all nil guards effective for outsiders.
-	// this interface is just to form an algebric data type.
+	json.Marshaler
+	fmt.Stringer
+	isValider
+	stricter
 
 	isObject()
-	toMessage() proto.Message
-	toString() string
 }
 
-type comparableProto interface {
-	comparable
+type objectTraits[M interface{ proto.Message }] interface {
+	// Validate is used to validate all fields in the given
+	// message. If a field is missing, it can be ignored.
+	Validate(m M) error
+
+	// StrictValidate is used to validate that all mandatory
+	// fields are specified. It does not need to call Validate,
+	// the underlying object will do it.
+	StrictValidate(m M) error
+}
+
+type nopObjectTraits[M proto.Message] struct{}
+
+func (nopObjectTraits[M]) Validate(m M) error       { return nil }
+func (nopObjectTraits[M]) StrictValidate(m M) error { return nil }
+
+var _ objectTraits[proto.Message] = nopObjectTraits[proto.Message]{}
+
+type comparableMessage interface {
 	proto.Message
+	comparable // for comparison to nil (proto.Message will always be a ptr).
 }
 
-// object makes a protobuf present as an immutable object
-// then can be extended upon.
-type object[T comparableProto] struct {
-	pb T // must never be nil.
+type object[M comparableMessage, T objectTraits[M]] struct {
+	kittehs.DoNotCompare
 
-	// TODO: this can actually alter the content of the object (see BuildResources),
-	// rename to "prepare"?
-	validatefn func(pb T) error // must never be nil.
+	m M
 }
 
-func (*object[T]) isObject() {}
+func clone[M proto.Message](m M) M { return proto.Clone(m).(M) }
 
-func ObjectToString(o Object) string {
-	if o == nil {
+func (o object[T, M]) isObject()              {}
+func (o object[M, T]) IsValid() bool          { var zero M; return o.m != zero }
+func (o object[M, T]) ToProto() M             { return clone(o.m) }
+func (o object[M, T]) Message() proto.Message { return o.ToProto() }
+
+// the returned message will not always be the message stored in the object.
+func (o *object[M, T]) read() M {
+	if o.IsValid() {
+		return o.m
+	}
+
+	return reflect.New(reflect.TypeOf(o.m).Elem()).Interface().(M)
+}
+
+// sets the message is nil. this mutates the object.
+func (o *object[M, T]) reset() { var zero M; o.m = zero }
+
+func (o object[M, T]) String() string {
+	if !o.IsValid() {
 		return ""
 	}
 
-	return o.toString()
+	return string(kittehs.Must1(prototext.Marshal(o.m)))
 }
 
-func (o *object[T]) toString() string { return o.String() }
-
-func (o *object[T]) String() string {
-	if o == nil {
-		return ""
-	}
-
-	txt, err := prototext.Marshal(o.pb)
-	if err != nil {
-		sdklogger.DPanic("prototext marshal error", "err", err)
-		return "error"
-	}
-
-	return string(txt)
+// forceUpdate replaces the message without validation.
+// This can be called only and only if the message is known to be valid.
+func (o object[M, T]) forceUpdate(f func(M)) object[M, T] {
+	m := proto.Clone(o.read()).(M)
+	f(m)
+	return object[M, T]{m: m}
 }
 
-func (o *object[T]) toMessage() proto.Message { return proto.Clone(o.pb) }
+var protoMarshal = protojson.MarshalOptions{UseProtoNames: true}.Marshal
 
-func (o *object[T]) MarshalJSON() ([]byte, error) { return protoMarshal(o.pb) }
+func (o object[M, T]) MarshalJSON() ([]byte, error) {
+	// The object can be marshalled as a pointer, so if it's null, we just
+	// specify null in JSON.
+	if !o.IsValid() {
+		return []byte("null"), nil
+	}
+	return protoMarshal(o.m)
+}
 
-func (o *object[T]) UnmarshalJSON(data []byte) error {
-	// OMG this is ugly, but works.
-	pb := reflect.New(reflect.TypeOf(o.pb).Elem()).Interface().(T)
-
-	if err := protojson.Unmarshal(data, pb); err != nil {
-		return err
+func (o *object[M, T]) UnmarshalJSON(b []byte) (err error) {
+	// The object can be marshalled as a pointer, so if it's null, we reset the object.
+	// (ie. we got an invalid/nil object)
+	if string(b) == "null" {
+		o.reset()
+		return
 	}
 
-	oo, err := fromProto(pb, o.validatefn)
-	if err != nil {
-		return err
+	o.m = o.read()
+
+	if err = protojson.Unmarshal(b, o.m); err != nil {
+		return
 	}
 
-	*o = *oo
+	if err = validate[M, T](o.m); err != nil {
+		o.reset()
+		return
+	}
+
+	return
+}
+
+func (o object[M, T]) Strict() error {
+	if !o.IsValid() {
+		return sdkerrors.NewInvalidArgumentError("zero object")
+	}
+
+	var t T
+	return t.StrictValidate(o.m)
+}
+
+func (o object[M, T]) Hash() string { return hash(o.m) }
+
+func (o object[M, T]) Equal(other interface{ ToProto() M }) bool {
+	return proto.Equal(o.m, other.ToProto())
+}
+
+func strictValidate[M proto.Message, T objectTraits[M]](m M) error {
+	var zero M
+	if proto.Equal(zero, m) {
+		return errors.New("empty")
+	}
+
+	var t T
+	if err := t.StrictValidate(m); err != nil {
+		return sdkerrors.ErrInvalidArgument{Underlying: err}
+	}
+
+	return validate[M, T](m)
+}
+
+func validate[M proto.Message, T objectTraits[M]](m M) error {
+	var zero M
+	if proto.Equal(zero, m) {
+		return nil
+	}
+
+	if err := akproto.Validate(m); err != nil {
+		return sdkerrors.ErrInvalidArgument{Underlying: err}
+	}
+
+	var t T
+	if err := t.Validate(m); err != nil {
+		return sdkerrors.ErrInvalidArgument{Underlying: err}
+	}
 
 	return nil
 }
 
-func (o *object[T]) clone() *object[T] { return &object[T]{pb: proto.Clone(o.pb).(T)} }
-
-func ToProto[T comparableProto](o *object[T]) T { return o.ToProto() }
-
-func ToMessage(obj Object) proto.Message {
-	if obj == nil {
-		return nil
+func fromProto[M comparableMessage, T objectTraits[M]](m M) (o object[M, T], err error) {
+	if err = validate[M, T](m); err != nil {
+		return
 	}
 
-	return obj.toMessage()
+	o = object[M, T]{m: clone(m)}
+	return
 }
 
-func (o *object[T]) ToProto() T {
-	if o == nil {
-		return *new(T) // nil for ptrs.
+func forceFromProto[W ~struct{ object[M, T] }, M comparableMessage, T objectTraits[M]](m M) W {
+	var zero M
+	if proto.Equal(m, zero) {
+		return W{}
+	}
+	return W{object[M, T]{m: clone(m)}}
+}
+
+func FromProto[W ~struct{ object[M, T] }, M comparableMessage, T objectTraits[M]](m M) (w W, err error) {
+	var o object[M, T]
+	if o, err = fromProto[M, T](m); err != nil {
+		return
 	}
 
-	return o.clone().pb
+	w = W{o}
+	return
 }
 
-func (o *object[T]) withValidator(v func(T) error) (*object[T], error) {
-	oo := *o
-	oo.validatefn = v
-
-	if err := oo.validate(); err != nil {
-		return nil, err
-	}
-
-	return &oo, nil
+// Use this to create a valid, but empty object.
+func zeroObject[W ~struct{ object[M, T] }, M comparableMessage, T objectTraits[M]]() W {
+	o := object[M, T]{}
+	o.m = o.read()
+	return W{o}
 }
 
-func (o *object[T]) validate() error {
-	err := func() error {
-		if proto.MessageName(o.pb) == "" || o.validatefn == nil {
-			// must never happen.
-			sdklogger.Panic("invalid object")
-		}
-
-		if err := akproto.Validate(o.pb); err != nil {
-			return err
-		}
-
-		return o.validatefn(o.pb)
-	}()
-	if err != nil {
-		return fmt.Errorf("%w: %w", sdkerrors.ErrInvalidArgument, err)
-	}
-
-	return nil
-}
-
-func (o *object[T]) Update(f func(T)) (*object[T], error) {
-	return o.UpdateError(func(t T) error {
-		f(t)
-		return nil
-	})
-}
-
-func (o *object[T]) UpdateError(f func(T) error) (*object[T], error) {
-	if o == nil {
-		sdklogger.DPanic("cannot update nil object")
-		return nil, fmt.Errorf("cannot update nil object")
-	}
-
-	pb := o.clone().pb
-	if err := f(pb); err != nil {
-		return nil, err
-	}
-
-	return fromProto[T](pb, o.validatefn)
-}
-
-func Equal(a, b Object) bool {
-	if a == nil && b == nil {
-		return true
-	}
-
-	if a == nil || b == nil {
-		return false
-	}
-
-	return proto.Equal(a.toMessage(), b.toMessage())
-}
-
-// Initializes object with a given pb. If pb is nil, nil is returned.
-// v is the validator set on the object.
-func fromProto[T comparableProto](pb T, v func(T) error,
-) (*object[T], error) {
-	var zero T // nil for ptrs
-	if pb == zero {
-		return nil, nil
-	}
-
-	if v == nil {
-		v = func(T) error { return nil }
-	}
-
-	if err := v(pb); err != nil {
-		return nil, err
-	}
-
-	return &object[T]{pb: pb, validatefn: v}, nil
-}
-
-func makeMustFromProto[T comparableProto](v func(T) error) func(T) *object[T] {
-	return func(pb T) *object[T] { return kittehs.Must1(fromProto(pb, v)) }
-}
-
-func makeFromProto[T comparableProto](v func(T) error) func(T) (*object[T], error) {
-	return func(pb T) (*object[T], error) { return fromProto(pb, v) }
-}
-
-func makeWithValidator[T comparableProto](v func(T) error) func(o *object[T]) (*object[T], error) {
-	return func(o *object[T]) (*object[T], error) { return o.withValidator(v) }
-}
-
-func GetObjectHash(o Object) string {
-	if o == nil {
-		return ""
-	}
-
-	hash := sha512.Sum512_256(kittehs.Must1(proto.Marshal(o.toMessage())))
-	return hex.EncodeToString(hash[:])
-}
+func ToProto[O interface{ ToProto() M }, M proto.Message](o O) M { return o.ToProto() }

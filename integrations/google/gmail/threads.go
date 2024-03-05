@@ -24,13 +24,13 @@ func (a api) threadsGet(ctx context.Context, args []sdktypes.Value, kwargs map[s
 		"metadata_headers?", &metadataHeaders,
 	)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Invoke the API method.
 	client, err := a.gmailClient(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 	thread, err := client.Users.Threads.Get("me", id).
 		Format(format).MetadataHeaders(metadataHeaders...).Do()
@@ -69,13 +69,13 @@ func (a api) threadsList(ctx context.Context, args []sdktypes.Value, kwargs map[
 		"include_spam_trash?", &includeSpamTrash,
 	)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Invoke the API method.
 	client, err := a.gmailClient(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 	threads, err := client.Users.Threads.List("me").
 		MaxResults(int64(maxResults)).PageToken(pageToken).Q(q).
@@ -112,13 +112,13 @@ func (a api) threadsModify(ctx context.Context, args []sdktypes.Value, kwargs ma
 		"remove_label_ids?", &removeLabelIDs,
 	)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Invoke the API method.
 	client, err := a.gmailClient(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 	thread, err := client.Users.Threads.Modify("me", id, &gmail.ModifyThreadRequest{
 		AddLabelIds:    addLabelIDs,
@@ -152,13 +152,13 @@ func (a api) threadsTrash(ctx context.Context, args []sdktypes.Value, kwargs map
 		"id", &id,
 	)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Invoke the API method.
 	client, err := a.gmailClient(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 	thread, err := client.Users.Threads.Trash("me", id).Do()
 
@@ -189,13 +189,13 @@ func (a api) threadsUntrash(ctx context.Context, args []sdktypes.Value, kwargs m
 		"id", &id,
 	)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Invoke the API method.
 	client, err := a.gmailClient(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 	thread, err := client.Users.Threads.Untrash("me", id).Do()
 

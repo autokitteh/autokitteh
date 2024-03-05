@@ -15,7 +15,7 @@ from autokitteh_pb.program.v1 import program_pb2 as autokitteh_dot_program_dot_v
 from buf.validate import validate_pb2 as buf_dot_validate_dot_validate__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\"autokitteh/runtimes/v1/build.proto\x12\x16\x61utokitteh.runtimes.v1\x1a#autokitteh/program/v1/program.proto\x1a\x1b\x62uf/validate/validate.proto\"\xdc\x02\n\rBuildArtifact\x12U\n\x0crequirements\x18\x01 \x03(\x0b\x32#.autokitteh.runtimes.v1.RequirementB\x0c\xfa\xf7\x18\x08\x92\x01\x05\"\x03\xc8\x01\x01R\x0crequirements\x12\x46\n\x07\x65xports\x18\x02 \x03(\x0b\x32\x1e.autokitteh.runtimes.v1.ExportB\x0c\xfa\xf7\x18\x08\x92\x01\x05\"\x03\xc8\x01\x01R\x07\x65xports\x12k\n\rcompiled_data\x18\x03 \x03(\x0b\x32\x37.autokitteh.runtimes.v1.BuildArtifact.CompiledDataEntryB\r\xfa\xf7\x18\t\x9a\x01\x06\"\x04r\x02\x10\x01R\x0c\x63ompiledData\x1a?\n\x11\x43ompiledDataEntry\x12\x10\n\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n\x05value\x18\x02 \x01(\x0cR\x05value:\x02\x38\x01\"\xde\x01\n\x0bRequirement\x12?\n\x08location\x18\x01 \x01(\x0b\x32#.autokitteh.program.v1.CodeLocationR\x08location\x12\x10\n\x03url\x18\x02 \x01(\tR\x03url\x12\x16\n\x06symbol\x18\x03 \x01(\tR\x06symbol:d\xfa\xf7\x18`\x1a^\n\rurl_or_member\x12(at least url or symbol must be specified\x1a#this.url != \'\' || this.symbol != \'\'\"a\n\x06\x45xport\x12?\n\x08location\x18\x01 \x01(\x0b\x32#.autokitteh.program.v1.CodeLocationR\x08location\x12\x16\n\x06symbol\x18\x02 \x01(\tR\x06symbolB\xef\x01\n\x1a\x63om.autokitteh.runtimes.v1B\nBuildProtoP\x01ZKgo.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/runtimes/v1;runtimesv1\xa2\x02\x03\x41RX\xaa\x02\x16\x41utokitteh.Runtimes.V1\xca\x02\x16\x41utokitteh\\Runtimes\\V1\xe2\x02\"Autokitteh\\Runtimes\\V1\\GPBMetadata\xea\x02\x18\x41utokitteh::Runtimes::V1b\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\"autokitteh/runtimes/v1/build.proto\x12\x16\x61utokitteh.runtimes.v1\x1a#autokitteh/program/v1/program.proto\x1a\x1b\x62uf/validate/validate.proto\"\xd2\x02\n\x08\x41rtifact\x12U\n\x0crequirements\x18\x01 \x03(\x0b\x32#.autokitteh.runtimes.v1.RequirementB\x0c\xfa\xf7\x18\x08\x92\x01\x05\"\x03\xc8\x01\x01R\x0crequirements\x12\x46\n\x07\x65xports\x18\x02 \x03(\x0b\x32\x1e.autokitteh.runtimes.v1.ExportB\x0c\xfa\xf7\x18\x08\x92\x01\x05\"\x03\xc8\x01\x01R\x07\x65xports\x12\x66\n\rcompiled_data\x18\x03 \x03(\x0b\x32\x32.autokitteh.runtimes.v1.Artifact.CompiledDataEntryB\r\xfa\xf7\x18\t\x9a\x01\x06\"\x04r\x02\x10\x01R\x0c\x63ompiledData\x1a?\n\x11\x43ompiledDataEntry\x12\x10\n\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n\x05value\x18\x02 \x01(\x0cR\x05value:\x02\x38\x01\"\xde\x01\n\x0bRequirement\x12?\n\x08location\x18\x01 \x01(\x0b\x32#.autokitteh.program.v1.CodeLocationR\x08location\x12\x10\n\x03url\x18\x02 \x01(\tR\x03url\x12\x16\n\x06symbol\x18\x03 \x01(\tR\x06symbol:d\xfa\xf7\x18`\x1a^\n\rurl_or_member\x12(at least url or symbol must be specified\x1a#this.url != \'\' || this.symbol != \'\'\"a\n\x06\x45xport\x12?\n\x08location\x18\x01 \x01(\x0b\x32#.autokitteh.program.v1.CodeLocationR\x08location\x12\x16\n\x06symbol\x18\x02 \x01(\tR\x06symbolB\xef\x01\n\x1a\x63om.autokitteh.runtimes.v1B\nBuildProtoP\x01ZKgo.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/runtimes/v1;runtimesv1\xa2\x02\x03\x41RX\xaa\x02\x16\x41utokitteh.Runtimes.V1\xca\x02\x16\x41utokitteh\\Runtimes\\V1\xe2\x02\"Autokitteh\\Runtimes\\V1\\GPBMetadata\xea\x02\x18\x41utokitteh::Runtimes::V1b\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -23,22 +23,22 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'autokitteh.runtimes.v1.buil
 if _descriptor._USE_C_DESCRIPTORS == False:
   DESCRIPTOR._options = None
   DESCRIPTOR._serialized_options = b'\n\032com.autokitteh.runtimes.v1B\nBuildProtoP\001ZKgo.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/runtimes/v1;runtimesv1\242\002\003ARX\252\002\026Autokitteh.Runtimes.V1\312\002\026Autokitteh\\Runtimes\\V1\342\002\"Autokitteh\\Runtimes\\V1\\GPBMetadata\352\002\030Autokitteh::Runtimes::V1'
-  _BUILDARTIFACT_COMPILEDDATAENTRY._options = None
-  _BUILDARTIFACT_COMPILEDDATAENTRY._serialized_options = b'8\001'
-  _BUILDARTIFACT.fields_by_name['requirements']._options = None
-  _BUILDARTIFACT.fields_by_name['requirements']._serialized_options = b'\372\367\030\010\222\001\005\"\003\310\001\001'
-  _BUILDARTIFACT.fields_by_name['exports']._options = None
-  _BUILDARTIFACT.fields_by_name['exports']._serialized_options = b'\372\367\030\010\222\001\005\"\003\310\001\001'
-  _BUILDARTIFACT.fields_by_name['compiled_data']._options = None
-  _BUILDARTIFACT.fields_by_name['compiled_data']._serialized_options = b'\372\367\030\t\232\001\006\"\004r\002\020\001'
+  _ARTIFACT_COMPILEDDATAENTRY._options = None
+  _ARTIFACT_COMPILEDDATAENTRY._serialized_options = b'8\001'
+  _ARTIFACT.fields_by_name['requirements']._options = None
+  _ARTIFACT.fields_by_name['requirements']._serialized_options = b'\372\367\030\010\222\001\005\"\003\310\001\001'
+  _ARTIFACT.fields_by_name['exports']._options = None
+  _ARTIFACT.fields_by_name['exports']._serialized_options = b'\372\367\030\010\222\001\005\"\003\310\001\001'
+  _ARTIFACT.fields_by_name['compiled_data']._options = None
+  _ARTIFACT.fields_by_name['compiled_data']._serialized_options = b'\372\367\030\t\232\001\006\"\004r\002\020\001'
   _REQUIREMENT._options = None
   _REQUIREMENT._serialized_options = b'\372\367\030`\032^\n\rurl_or_member\022(at least url or symbol must be specified\032#this.url != \'\' || this.symbol != \'\''
-  _globals['_BUILDARTIFACT']._serialized_start=129
-  _globals['_BUILDARTIFACT']._serialized_end=477
-  _globals['_BUILDARTIFACT_COMPILEDDATAENTRY']._serialized_start=414
-  _globals['_BUILDARTIFACT_COMPILEDDATAENTRY']._serialized_end=477
-  _globals['_REQUIREMENT']._serialized_start=480
-  _globals['_REQUIREMENT']._serialized_end=702
-  _globals['_EXPORT']._serialized_start=704
-  _globals['_EXPORT']._serialized_end=801
+  _globals['_ARTIFACT']._serialized_start=129
+  _globals['_ARTIFACT']._serialized_end=467
+  _globals['_ARTIFACT_COMPILEDDATAENTRY']._serialized_start=404
+  _globals['_ARTIFACT_COMPILEDDATAENTRY']._serialized_end=467
+  _globals['_REQUIREMENT']._serialized_start=470
+  _globals['_REQUIREMENT']._serialized_end=692
+  _globals['_EXPORT']._serialized_start=694
+  _globals['_EXPORT']._serialized_end=791
 # @@protoc_insertion_point(module_scope)

@@ -27,7 +27,7 @@ var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.Integrati
 }))
 
 func New(sec sdkservices.Secrets) sdkservices.Integration {
-	scope := sdktypes.GetIntegrationUniqueName(desc).String()
+	scope := desc.UniqueName().String()
 	opts := []sdkmodule.Optfn{sdkmodule.WithConfigAsData()}
 
 	// TODO: Calendar.

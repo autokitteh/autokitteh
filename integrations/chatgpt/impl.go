@@ -30,11 +30,11 @@ func (i integration) createChatCompletion(ctx context.Context, args []sdktypes.V
 		"messages?", &req.Messages,
 	)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	if msg != "" && len(req.Messages) > 0 {
-		return nil, errors.New("cannot specify both 'message' and 'messages'")
+		return sdktypes.InvalidValue, errors.New("cannot specify both 'message' and 'messages'")
 	}
 
 	if req.Model == "" {
@@ -51,7 +51,7 @@ func (i integration) createChatCompletion(ctx context.Context, args []sdktypes.V
 	token := sdkmodule.FunctionDataFromContext(ctx)
 	auth, err := i.secrets.Get(ctx, i.scope, string(token))
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Invoke the API method.

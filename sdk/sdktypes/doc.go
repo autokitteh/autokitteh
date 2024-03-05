@@ -1,15 +1,33 @@
-// Exposes types that are used in the SDK.
-// Those types are mostly an immutable boxes for proto defined types.
-// The idea behind hiding behind a box is twofold:
-// 1. Make the data immutable.
-// 2. Make invalid data unrepresantble.
-// There must be no way to instansiate an object or an id outside
-// of the SDK, other than other via SDK methods, such as <Object>FromProto or New<Object>ID.
+// Package sdktypes contains all the data types used by the autokitteh SDK.
 //
-// Strict* versions of object functions do not allow for missing required fields.
-// They do allow, though, for missing the entire object entirely (nil input).
+// All the types represent data structures that are defined in the proto package.
+// The underlying data is either a protobuf message or a primitive that can be
+// set as a field in other messages. The main idea is that it should be
+// impossible to have a object that contains a malform/unvalidated values.
+// An object is either valid with valid information, or invalid with a nil
+// message.
 //
-// Strict* versions of ids and handles (non-objects) do not allow for missing values at all.
+// There are three main types of underlying data:
+//  1. Messages, which are also called "objects" here, which are structs that
+//     contain other fields. These are implemented using the `object` struct.
+//     Examples: Project, Session, etc.
+//  2. Validated strings, which are Names and Symbols, implemented using the
+//     `validatedString` struct.
+//     Examples: Name and Symbol.
+//  3. Enumerations, which are implemented using the `enum` struct.
+//     Examples: DeployentState, SessionStateType, etc.
+//
+// Specific objects are defined like so:
+//
+//	  type Project struct { object[pb.Project, projectTraits] }
+//	  type projectTraits struct {}
+//	  func (projectTraits) Validate(m *pb.Project) error {
+//	    // Validates all fields are correct. Each field is permitted to be empty.
+//		 }
+//	  func (projectTraits) StrictValidate(m *pb.Project) error {
+//	    // Validates all mandatory fields are specified.
+//	  }
+//
+// IDs and Names are kind of the same thing, but with different types. See examples
+// mentioned above for more information.
 package sdktypes
-
-// TODO: Strict by default, non-strict on request?

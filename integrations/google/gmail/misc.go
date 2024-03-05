@@ -16,7 +16,7 @@ func (a api) getProfile(ctx context.Context, args []sdktypes.Value, kwargs map[s
 	// Invoke the API method.
 	client, err := a.gmailClient(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 	profile, err := client.Users.GetProfile("me").Do()
 
@@ -55,13 +55,13 @@ func (a api) historyList(ctx context.Context, args []sdktypes.Value, kwargs map[
 		"history_types?", &historyTypes,
 	)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Invoke the API method.
 	client, err := a.gmailClient(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 	history, err := client.Users.History.List("me").
 		MaxResults(int64(maxResults)).PageToken(pageToken).

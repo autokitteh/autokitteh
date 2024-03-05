@@ -24,7 +24,7 @@ var getCmd = common.StandardCommand(&cobra.Command{
 		if err != nil {
 			return err
 		}
-		if e == nil {
+		if !e.IsValid() {
 			err = fmt.Errorf("environment %q not found", env)
 			return common.NewExitCodeError(common.NotFoundExitCode, err)
 		}
@@ -52,11 +52,11 @@ type V struct{ sdktypes.EnvVar }
 func (v V) Text() string {
 	vv := "<secret>"
 
-	if !sdktypes.IsEnvVarSecret(v.EnvVar) {
-		vv = strconv.Quote(sdktypes.GetEnvVarValue(v.EnvVar))
+	if !v.EnvVar.IsSecret() {
+		vv = strconv.Quote(v.EnvVar.Value())
 	}
 
-	return fmt.Sprintf("%s=%s", sdktypes.GetEnvVarName(v.EnvVar), vv)
+	return fmt.Sprintf("%v=%s", v.EnvVar.Symbol(), vv)
 }
 
 var _ common.Texter = V{}

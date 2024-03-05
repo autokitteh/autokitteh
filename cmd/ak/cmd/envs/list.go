@@ -28,7 +28,7 @@ var listCmd = common.StandardCommand(&cobra.Command{
 			if err != nil {
 				return err
 			}
-			if p == nil {
+			if !p.IsValid() {
 				err = fmt.Errorf("project %q not found", project)
 				return common.NewExitCodeError(common.NotFoundExitCode, err)
 			}
@@ -42,8 +42,8 @@ var listCmd = common.StandardCommand(&cobra.Command{
 			return fmt.Errorf("list environments: %w", err)
 		}
 
-		if len(es) == 0 {
-			return common.FailNotFound(cmd, "environments")
+		if err := common.FailIfNotFound(cmd, "environments", len(es) > 0); err != nil {
+			return err
 		}
 
 		common.RenderList(es)

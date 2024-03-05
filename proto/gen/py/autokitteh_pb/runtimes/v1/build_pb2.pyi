@@ -7,7 +7,7 @@ from typing import ClassVar as _ClassVar, Iterable as _Iterable, Mapping as _Map
 
 DESCRIPTOR: _descriptor.FileDescriptor
 
-class BuildArtifact(_message.Message):
+class Artifact(_message.Message):
     __slots__ = ["requirements", "exports", "compiled_data"]
     class CompiledDataEntry(_message.Message):
         __slots__ = ["key", "value"]

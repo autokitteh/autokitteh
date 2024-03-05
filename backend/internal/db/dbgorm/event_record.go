@@ -11,9 +11,9 @@ import (
 
 func (db *gormdb) AddEventRecord(ctx context.Context, er sdktypes.EventRecord) error {
 	e := scheme.EventRecord{
-		Seq:     sdktypes.GetEventRecordSeq(er),
-		EventID: sdktypes.GetEventRecordEventID(er).String(),
-		State:   int32(sdktypes.GetEventRecordState(er)),
+		Seq:     er.Seq(),
+		EventID: er.EventID().String(),
+		State:   int32(er.State().ToProto()),
 	}
 
 	if err := db.db.WithContext(ctx).Create(&e).Error; err != nil {
@@ -24,7 +24,7 @@ func (db *gormdb) AddEventRecord(ctx context.Context, er sdktypes.EventRecord) e
 
 func (db *gormdb) ListEventRecords(ctx context.Context, filter sdkservices.ListEventRecordsFilter) ([]sdktypes.EventRecord, error) {
 	q := db.db.WithContext(ctx)
-	if filter.EventID != nil {
+	if filter.EventID.IsValid() {
 		q = q.Where("event_id = ?", filter.EventID.String())
 	}
 

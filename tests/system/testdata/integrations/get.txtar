@@ -3,7 +3,7 @@ ak integration get foo
 return code == 0
 output equals ''
 
-ak integration get integration:deadbeefdeadbeefdeadbeefdeadbeef
+ak integration get integration_deadbeefdeadbeefdeadbe
 return code == 0
 output equals ''
 
@@ -11,7 +11,7 @@ ak integration get foo --fail
 output equals 'Error: integration not found'
 return code == 10
 
-ak integration get integration:deadbeefdeadbeefdeadbeefdeadbeef --fail
+ak integration get integration_deadbeefdeadbeefdeadbe --fail
 output equals 'Error: integration not found'
 return code == 10
 
@@ -22,7 +22,7 @@ output contains 'key:"get"'
 output contains 'key:"post"'
 
 # Get integration by ID.
-ak integration get integration:8000000000000000f1201a7ed83f7cd5
+ak integration get int_0000000000f1201a7ed83f7cd5
 return code == 0
 output contains 'unique_name:"http"'
 output contains 'display_name:"HTTP"'

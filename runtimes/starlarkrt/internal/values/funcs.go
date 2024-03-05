@@ -12,12 +12,14 @@ import (
 )
 
 func (vctx *Context) functionToStarlark(v sdktypes.Value) (starlark.Value, error) {
-	fid := sdktypes.GetFunctionValueUniqueID(v)
+	fv := v.GetFunction()
 
-	if sdktypes.GetFunctionValueExecutorID(v).String() == vctx.RunID.String() {
+	fid := fv.UniqueID()
+
+	if fv.ExecutorID().ToRunID() == vctx.RunID {
 		// internal function.
 
-		f := vctx.internalFuncs[string(sdktypes.GetFunctionValueData(v))]
+		f := vctx.internalFuncs[string(fv.Data())]
 		if f == nil {
 			return nil, fmt.Errorf("unregistered function id %q", fid)
 		}
@@ -113,7 +115,7 @@ func (vctx *Context) fromStarlarkFunction(v *starlark.Function) (sdktypes.Value,
 		}),
 	})
 	if err != nil {
-		return nil, fmt.Errorf("invalid function: %w", err)
+		return sdktypes.InvalidValue, fmt.Errorf("invalid function: %w", err)
 	}
 
 	return sdktypes.NewFunctionValue(
@@ -122,13 +124,13 @@ func (vctx *Context) fromStarlarkFunction(v *starlark.Function) (sdktypes.Value,
 		[]byte(sig),
 		nil,
 		desc,
-	), nil
+	)
 }
 
 func (vctx *Context) fromStarlarkBuiltin(b *starlark.Builtin) (sdktypes.Value, error) {
 	v, ok := vctx.externalFuncs[b.Name()]
 	if !ok {
-		return nil, fmt.Errorf("unregistered external function %q: %w", b.Name(), sdkerrors.ErrNotFound)
+		return sdktypes.InvalidValue, fmt.Errorf("unregistered external function %q: %w", b.Name(), sdkerrors.ErrNotFound)
 	}
 
 	return v, nil

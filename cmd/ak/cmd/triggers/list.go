@@ -36,7 +36,7 @@ var listCmd = common.StandardCommand(&cobra.Command{
 			}
 			return err
 		}
-		if cid != nil && c == nil {
+		if cid.IsValid() && !c.IsValid() {
 			err = fmt.Errorf("connection ID %q not found", connection)
 			return common.NewExitCodeError(common.NotFoundExitCode, err)
 		}
@@ -50,8 +50,8 @@ var listCmd = common.StandardCommand(&cobra.Command{
 			return err
 		}
 
-		if len(ts) == 0 {
-			return common.FailNotFound(cmd, "triggers")
+		if err := common.FailIfNotFound(cmd, "triggers", len(ts) > 0); err != nil {
+			return err
 		}
 
 		common.RenderList(ts)

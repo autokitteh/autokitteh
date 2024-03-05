@@ -23,5 +23,5 @@ func (r *run) Close()                            { r.stream.Close() }
 
 func (r *run) Call(context.Context, sdktypes.Value, []sdktypes.Value, map[string]sdktypes.Value) (sdktypes.Value, error) {
 	// Need a way to pass this to the server - will do when the stream will be bidi.
-	return nil, sdkerrors.ErrNotImplemented
+	return sdktypes.InvalidValue, sdkerrors.ErrNotImplemented
 }

@@ -1,18 +1,15 @@
 package sdktypes
 
-const EventIDKind = "event"
+const eventIDKind = "evt"
 
-type EventID = *id[eventIDTraits]
-
-var _ ID = (EventID)(nil)
+type EventID = id[eventIDTraits]
 
 type eventIDTraits struct{}
 
-func (eventIDTraits) Kind() string                   { return EventIDKind }
-func (eventIDTraits) ValidateValue(raw string) error { return validateUUID(raw) }
+func (eventIDTraits) Prefix() string { return eventIDKind }
 
-func ParseEventID(raw string) (EventID, error) { return parseTypedID[eventIDTraits](raw) }
+func NewEventID() EventID                          { return newID[EventID]() }
+func ParseEventID(s string) (EventID, error)       { return ParseID[EventID](s) }
+func StrictParseEventID(s string) (EventID, error) { return Strict(ParseEventID(s)) }
 
-func StrictParseEventID(raw string) (EventID, error) { return strictParseTypedID[eventIDTraits](raw) }
-
-func NewEventID() EventID { return newID[eventIDTraits]() }
+var InvalidEventID EventID

@@ -1,22 +1,17 @@
 package sdktypes
 
-const EnvIDKind = "e"
+const envIDKind = "env"
 
-type EnvID = *id[envIDTraits]
-
-var _ ID = (EnvID)(nil)
+type EnvID = id[envIDTraits]
 
 type envIDTraits struct{}
 
-func (envIDTraits) Kind() string                   { return EnvIDKind }
-func (envIDTraits) ValidateValue(raw string) error { return validateUUID(raw) }
+func (envIDTraits) Prefix() string { return envIDKind }
 
-func ParseEnvID(raw string) (EnvID, error) { return parseTypedID[envIDTraits](raw) }
+func NewEnvID() EnvID                          { return newID[EnvID]() }
+func ParseEnvID(s string) (EnvID, error)       { return ParseID[EnvID](s) }
+func StrictParseEnvID(s string) (EnvID, error) { return Strict(ParseEnvID(s)) }
 
-func StrictParseEnvID(raw string) (EnvID, error) { return strictParseTypedID[envIDTraits](raw) }
+func IsEnvID(s string) bool { return IsIDOf[envIDTraits](s) }
 
-func NewEnvID() EnvID { return newID[envIDTraits]() }
-
-func ParseEnvIDOrName(raw string) (Name, EnvID, error) {
-	return parseIDOrName[envIDTraits](raw)
-}
+var InvalidEnvID EnvID

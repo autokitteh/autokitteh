@@ -33,7 +33,7 @@ func (a API) GetPresence(ctx context.Context, args []sdktypes.Value, kwargs map[
 	// Parse the input arguments.
 	var user string
 	if err := sdkmodule.UnpackArgs(args, kwargs, "user?", &user); err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 	req := url.Values{}
 	req.Set("user", user)
@@ -42,7 +42,7 @@ func (a API) GetPresence(ctx context.Context, args []sdktypes.Value, kwargs map[
 	resp := &GetPresenceResponse{}
 	err := api.PostForm(ctx, a.Secrets, a.Scope, req, resp, "users.getPresence")
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Parse and return the response.
@@ -66,7 +66,7 @@ func (a API) Info(ctx context.Context, args []sdktypes.Value, kwargs map[string]
 		"include_locale?", &includeLocale,
 	)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 	req := url.Values{}
 	req.Set("user", user)
@@ -78,7 +78,7 @@ func (a API) Info(ctx context.Context, args []sdktypes.Value, kwargs map[string]
 	resp := &InfoResponse{}
 	err = api.PostForm(ctx, a.Secrets, a.Scope, req, resp, "users.info")
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Parse and return the response.
@@ -104,7 +104,7 @@ func (a API) List(ctx context.Context, args []sdktypes.Value, kwargs map[string]
 		"team_id?", &teamID,
 	)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 	req := url.Values{}
 	if cursor != "" {
@@ -124,7 +124,7 @@ func (a API) List(ctx context.Context, args []sdktypes.Value, kwargs map[string]
 	resp := &ListResponse{}
 	err = api.PostForm(ctx, a.Secrets, a.Scope, req, resp, "users.list")
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Parse and return the response.
@@ -143,7 +143,7 @@ func (a API) LookupByEmail(ctx context.Context, args []sdktypes.Value, kwargs ma
 	// Parse the input arguments.
 	var email string
 	if err := sdkmodule.UnpackArgs(args, kwargs, "email", &email); err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 	req := url.Values{}
 	req.Set("email", email)
@@ -152,7 +152,7 @@ func (a API) LookupByEmail(ctx context.Context, args []sdktypes.Value, kwargs ma
 	resp := &LookupByEmailResponse{}
 	err := api.PostForm(ctx, a.Secrets, a.Scope, req, resp, "users.lookupByEmail")
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Parse and return the response.

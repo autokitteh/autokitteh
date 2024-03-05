@@ -32,9 +32,9 @@ func FunctionValueFromContext(ctx context.Context) sdktypes.Value {
 }
 
 func FunctionDataFromContext(ctx context.Context) []byte {
-	fnv := FunctionValueFromContext(ctx)
-	if fnv == nil {
-		return nil
+	if fnv := FunctionValueFromContext(ctx); fnv.IsValid() {
+		return fnv.GetFunction().Data()
 	}
-	return sdktypes.GetFunctionValueData(fnv)
+
+	return nil
 }

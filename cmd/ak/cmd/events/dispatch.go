@@ -40,7 +40,7 @@ var dispatchCmd = common.StandardCommand(&cobra.Command{
 			if err != nil {
 				return err
 			}
-			if i == nil {
+			if !i.IsValid() {
 				return fmt.Errorf("integration %q not found", integration)
 			}
 			pb.IntegrationId = iid.String()

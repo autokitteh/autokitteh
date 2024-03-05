@@ -1,30 +1,17 @@
 package sdktypes
 
-import (
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
-)
+const projectIDKind = "prj"
 
-const ProjectIDKind = "p"
-
-type ProjectID = *id[projectIDTraits]
-
-var _ ID = (ProjectID)(nil)
+type ProjectID = id[projectIDTraits]
 
 type projectIDTraits struct{}
 
-func (projectIDTraits) Kind() string                   { return ProjectIDKind }
-func (projectIDTraits) ValidateValue(raw string) error { return validateUUID(raw) }
+func (projectIDTraits) Prefix() string { return projectIDKind }
 
-func ParseProjectID(raw string) (ProjectID, error) { return parseTypedID[projectIDTraits](raw) }
+func NewProjectID() ProjectID                          { return newID[ProjectID]() }
+func ParseProjectID(s string) (ProjectID, error)       { return ParseID[ProjectID](s) }
+func StrictParseProjectID(s string) (ProjectID, error) { return Strict(ParseProjectID(s)) }
 
-func StrictParseProjectID(raw string) (ProjectID, error) {
-	return strictParseTypedID[projectIDTraits](raw)
-}
+func IsProjectID(s string) bool { return IsIDOf[projectIDTraits](s) }
 
-func MustParseProjectID(raw string) ProjectID { return kittehs.Must1(ParseProjectID(raw)) }
-
-func NewProjectID() ProjectID { return newID[projectIDTraits]() }
-
-func ParseProjectIDOrName(raw string) (Name, ProjectID, error) {
-	return parseIDOrName[projectIDTraits](raw)
-}
+var InvalidProjectID ProjectID

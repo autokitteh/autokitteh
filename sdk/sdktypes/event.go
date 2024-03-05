@@ -1,125 +1,87 @@
 package sdktypes
 
 import (
-	"fmt"
+	"errors"
 	"time"
 
+	"google.golang.org/protobuf/types/known/timestamppb"
+
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
-	eventsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/events/v1"
-	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
+	eventv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/events/v1"
 )
 
-type EventPB = eventsv1.Event
+type Event struct{ object[*EventPB, EventTraits] }
 
-type Event = *object[*EventPB]
+var InvalidEvent Event
 
-var (
-	EventFromProto       = makeFromProto(validateEvent)
-	StrictEventFromProto = makeFromProto(strictValidateEvent)
-	ToStrictEvent        = makeWithValidator(strictValidateEvent)
-)
+type EventPB = eventv1.Event
 
-func strictValidateEvent(pb *eventsv1.Event) error {
-	if err := ensureNotEmpty(pb.EventId, pb.EventType, pb.IntegrationId, pb.IntegrationToken); err != nil {
-		return err
-	}
+type EventTraits struct{}
 
-	return validateEvent(pb)
+func (EventTraits) Validate(m *EventPB) error {
+	return errors.Join(
+		idField[EventID]("event_id", m.EventId),
+		idField[IntegrationID]("integration_id", m.IntegrationId),
+	)
 }
 
-func validateEvent(pb *eventsv1.Event) error {
-	if _, err := ParseEventID(pb.EventId); err != nil {
-		return err
-	}
-
-	if _, err := ParseIntegrationID(pb.IntegrationId); err != nil {
-		return err
-	}
-
-	if _, err := kittehs.TransformMapValuesError(pb.Data, ValueFromProto); err != nil {
-		return fmt.Errorf("%w: failed to transform data: %w", sdkerrors.ErrInvalidArgument, err)
-	}
-
-	return nil
+func (EventTraits) StrictValidate(m *EventPB) error {
+	return errors.Join(
+		mandatory("event_id", m.EventId),
+		mandatory("event_type", m.EventType),
+		mandatory("integration_id", m.IntegrationId),
+		mandatory("created_at", m.CreatedAt),
+	)
 }
 
-func GetEventID(e Event) EventID {
-	if e == nil {
-		return nil
-	}
-	return kittehs.Must1(ParseEventID(e.pb.EventId))
+func EventFromProto(m *EventPB) (Event, error)       { return FromProto[Event](m) }
+func StrictEventFromProto(m *EventPB) (Event, error) { return Strict(EventFromProto(m)) }
+
+func (p Event) ID() EventID { return kittehs.Must1(ParseEventID(p.read().EventId)) }
+
+func (e Event) WithNewID() Event {
+	return Event{e.forceUpdate(func(m *EventPB) { m.EventId = NewEventID().String() })}
 }
 
-func GetEventIntegrationID(e Event) IntegrationID {
-	if e == nil {
-		return nil
-	}
-	return kittehs.Must1(ParseIntegrationID(e.pb.IntegrationId))
+func (e Event) WithCreatedAt(t time.Time) Event {
+	return Event{e.forceUpdate(func(m *EventPB) { m.CreatedAt = timestamppb.New(t) })}
 }
 
-func GetEventIntegrationToken(e Event) string {
-	if e == nil {
-		return ""
-	}
-	return e.pb.IntegrationToken
+func (e Event) WithMemo(memo map[string]string) Event {
+	return Event{e.forceUpdate(func(m *EventPB) { m.Memo = memo })}
 }
 
-func GetEventMemo(e Event) map[string]string {
-	if e == nil {
-		return nil
-	}
-	return e.pb.Memo
+func (e Event) Memo() map[string]string { return e.read().Memo }
+
+func (e Event) IntegrationID() IntegrationID {
+	return kittehs.Must1(ParseIntegrationID(e.read().IntegrationId))
 }
 
-func GetEventType(e Event) string {
-	if e == nil {
-		return ""
-	}
-	return e.pb.EventType
-}
+func (e Event) IntegrationToken() string { return e.read().IntegrationToken }
 
-func GetEventData(e Event) map[string]Value {
-	if e == nil {
-		return nil
-	}
-	return kittehs.TransformMapValues(e.pb.Data, MustValueFromProto)
-}
+func (e Event) Type() string { return e.read().EventType }
 
-func GetOriginalEventID(e Event) string {
-	if e == nil {
-		return ""
-	}
-	return e.pb.OriginalEventId
-}
+func (e Event) ToValues() map[string]Value {
+	pb := e.read()
 
-func GetEventCreatedAt(e Event) time.Time {
-	if e == nil {
-		return time.Time{}
-	}
-
-	return e.pb.CreatedAt.AsTime()
-}
-
-func GetEventSequenceNumber(e Event) uint64 {
-	if e == nil {
-		return 0
-	}
-
-	return e.pb.Seq
-}
-
-func EventToValues(e Event) map[string]Value {
 	return map[string]Value{
-		"event_type":        NewStringValue(GetEventType(e)),
-		"event_id":          NewStringValue(GetEventID(e).String()),
-		"original_event_id": NewStringValue(GetOriginalEventID(e)),
-		"integration_id":    NewStringValue(GetEventIntegrationID(e).String()),
-		"data": NewStructValue(
+		"event_type":        NewStringValue(pb.EventType),
+		"event_id":          NewStringValue(pb.EventId),
+		"original_event_id": NewStringValue(pb.OriginalEventId),
+		"integration_id":    NewStringValue(pb.IntegrationId),
+		"data": kittehs.Must1(NewStructValue(
 			NewStringValue("event_data"),
-			kittehs.FilterMapKeys(GetEventData(e), func(k string) bool {
-				_, err := StrictParseSymbol(k)
-				return err == nil
-			}),
-		),
+			kittehs.TransformMapValues(
+				kittehs.FilterMapKeys(pb.Data, IsValidSymbol),
+				forceFromProto[Value],
+			),
+		)),
 	}
 }
+
+func (e Event) OriginalEventID() string { return e.read().OriginalEventId }
+func (e Event) CreatedAt() time.Time    { return e.read().CreatedAt.AsTime() }
+func (e Event) Data() map[string]Value {
+	return kittehs.TransformMapValues(e.read().Data, forceFromProto[Value])
+}
+func (e Event) Seq() uint64 { return e.read().Seq }

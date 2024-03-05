@@ -39,10 +39,13 @@ var listCmd = common.StandardCommand(&cobra.Command{
 			if err != nil {
 				return err
 			}
-			f.EnvID = sdktypes.GetEnvID(e)
+			f.EnvID = e.ID()
 		}
 
-		f.State = sdktypes.ParseDeploymentState(state.String())
+		if f.State, err = sdktypes.ParseDeploymentState(state.String()); err != nil {
+			return fmt.Errorf("invalid state %q: %w", state, err)
+		}
+
 		f.IncludeSessionStats = includeSessionStats
 
 		ctx, cancel := common.LimitedContext()
@@ -53,13 +56,13 @@ var listCmd = common.StandardCommand(&cobra.Command{
 			return fmt.Errorf("list deployments: %w", err)
 		}
 
-		if len(ds) == 0 {
-			return common.FailNotFound(cmd, "deployments")
+		if err := common.FailIfNotFound(cmd, "deployments", len(ds) > 0); err != nil {
+			return err
 		}
 
 		// Make the output deterministic during CLI integration tests.
 		if test, err := cmd.Root().PersistentFlags().GetBool("test"); err == nil && test {
-			ds = kittehs.Transform(ds, sdktypes.DeploymentWithoutTimes)
+			ds = kittehs.Transform(ds, func(d sdktypes.Deployment) sdktypes.Deployment { return d.WithoutTimestamps() })
 		}
 
 		common.RenderList(ds)

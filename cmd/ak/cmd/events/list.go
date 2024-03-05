@@ -29,7 +29,7 @@ var listCmd = common.StandardCommand(&cobra.Command{
 			if err != nil {
 				return err
 			}
-			if i == nil {
+			if !i.IsValid() {
 				return fmt.Errorf("integration %q not found", integration)
 			}
 			f.IntegrationID = iid
@@ -43,8 +43,8 @@ var listCmd = common.StandardCommand(&cobra.Command{
 			return fmt.Errorf("list events: %w", err)
 		}
 
-		if len(es) == 0 {
-			return common.FailNotFound(cmd, "events")
+		if err := common.FailIfNotFound(cmd, "events", len(es) > 0); err != nil {
+			return err
 		}
 
 		common.RenderList(es)

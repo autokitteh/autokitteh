@@ -27,7 +27,7 @@ func ParseMode(s string) (Mode, error) {
 	case string(Test):
 		return Test, nil
 	default:
-		return "", sdkerrors.ErrInvalidArgument
+		return "", sdkerrors.NewInvalidArgumentError("invalid mode %q", s)
 	}
 }
 
@@ -61,6 +61,6 @@ func (set *Set[T]) Choose(mode Mode) (zero T, err error) {
 		}
 		return *set.Test, nil
 	default:
-		return zero, sdkerrors.ErrInvalidArgument
+		return zero, sdkerrors.NewInvalidArgumentError("invalid mode %q", mode)
 	}
 }

@@ -26,24 +26,24 @@ func (c *execContext) resolveProjectID(ctx context.Context, name string) (sdktyp
 		return pid, nil
 	}
 
-	sdkName, err := sdktypes.ParseName(name)
+	sdkName, err := sdktypes.ParseSymbol(name)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidProjectID, err
 	}
 
 	p, err := c.client.Projects().GetByName(ctx, sdkName)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidProjectID, err
 	}
 
-	pid := sdktypes.GetProjectID(p)
+	pid := p.ID()
 	c.projects[name] = pid
 	return pid, nil
 }
 
 func (c *execContext) resolveIntegrationID(ctx context.Context, name string) (sdktypes.IntegrationID, error) {
 	in, _, err := c.resolver.IntegrationNameOrID(name)
-	iid := sdktypes.GetIntegrationID(in)
+	iid := in.ID()
 	c.integrations[name] = iid
 	return iid, err
 }
@@ -55,18 +55,16 @@ func (c *execContext) resolveEnvID(ctx context.Context, envID string) (sdktypes.
 
 	proj, env, ok := strings.Cut(envID, "/")
 	if !ok {
-		return nil, fmt.Errorf("invalid env id %q", envID)
+		return sdktypes.InvalidEnvID, fmt.Errorf("invalid env id %q", envID)
 	}
 
 	sdkEnv, _, err := c.resolver.EnvNameOrID(env, proj)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidEnvID, err
 	}
 
-	eid := sdktypes.GetEnvID(sdkEnv)
-
+	eid := sdkEnv.ID()
 	c.envs[envID] = eid
-
 	return eid, nil
 }
 
@@ -77,12 +75,10 @@ func (c *execContext) resolveConnectionID(ctx context.Context, connID string) (s
 
 	conn, _, err := c.resolver.ConnectionNameOrID(connID)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidConnectionID, err
 	}
 
-	cid := sdktypes.GetConnectionID(conn)
-
+	cid := conn.ID()
 	c.connections[connID] = cid
-
 	return cid, nil
 }

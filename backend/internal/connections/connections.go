@@ -24,30 +24,16 @@ type Connections struct {
 func New(c Connections) sdkservices.Connections { return &c }
 
 func (c *Connections) Create(ctx context.Context, conn sdktypes.Connection) (sdktypes.ConnectionID, error) {
-	conn, err := conn.Update(func(pb *sdktypes.ConnectionPB) {
-		pb.ConnectionId = sdktypes.NewConnectionID().String()
-	})
-	if err != nil {
-		return nil, err
-	}
+	conn = conn.WithNewID()
 
 	if err := c.DB.CreateConnection(ctx, conn); err != nil {
-		return nil, err
+		return sdktypes.InvalidConnectionID, err
 	}
 
-	return sdktypes.GetConnectionID(conn), nil
+	return conn.ID(), nil
 }
 
 func (c *Connections) Update(ctx context.Context, conn sdktypes.Connection) error {
-	conn, err := conn.Update(func(pb *sdktypes.ConnectionPB) {
-		if tok := sdktypes.GetConnectionIntegrationToken(conn); tok != "" {
-			pb.IntegrationToken = tok
-		}
-	})
-	if err != nil {
-		return err
-	}
-
 	if err := c.DB.UpdateConnection(ctx, conn); err != nil {
 		return err
 	}
@@ -63,10 +49,10 @@ func (c *Connections) Get(ctx context.Context, id sdktypes.ConnectionID) (sdktyp
 	desc, err := c.DB.GetConnection(ctx, id)
 	if err != nil {
 		if errors.Is(err, sdkerrors.ErrNotFound) {
-			return nil, nil
+			return sdktypes.InvalidConnection, nil
 		}
 
-		return nil, err
+		return sdktypes.InvalidConnection, err
 	}
 
 	return desc, nil

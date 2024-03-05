@@ -77,12 +77,12 @@ func (s *server) Get(ctx context.Context, req *connect.Request[envsv1.GetRequest
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	if eid != nil {
+	if eid.IsValid() {
 		return toResponse(s.envs.GetByID(ctx, eid))
 	}
 
 	// a handle must've been supplied here.
-	n, err := sdktypes.StrictParseName(msg.Name)
+	n, err := sdktypes.StrictParseSymbol(msg.Name)
 	if err != nil {
 		return nil, sdkerrors.AsConnectError(err)
 	}

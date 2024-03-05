@@ -21,7 +21,7 @@ var activateCmd = common.StandardCommand(&cobra.Command{
 		if err != nil {
 			return err
 		}
-		if d == nil {
+		if !d.IsValid() {
 			err = fmt.Errorf("deployment %q not found", args[0])
 			return common.NewExitCodeError(common.NotFoundExitCode, err)
 		}

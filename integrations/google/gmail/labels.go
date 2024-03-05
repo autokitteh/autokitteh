@@ -21,13 +21,13 @@ func (a api) labelsCreate(ctx context.Context, args []sdktypes.Value, kwargs map
 		"label", &label,
 	)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Invoke the API method.
 	client, err := a.gmailClient(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 	label, err = client.Users.Labels.Create("me", label).Do()
 
@@ -58,13 +58,13 @@ func (a api) labelsDelete(ctx context.Context, args []sdktypes.Value, kwargs map
 		"id", &id,
 	)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Invoke the API method.
 	client, err := a.gmailClient(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 	err = client.Users.Labels.Delete("me", id).Do()
 
@@ -85,13 +85,13 @@ func (a api) labelsGet(ctx context.Context, args []sdktypes.Value, kwargs map[st
 		"id", &id,
 	)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Invoke the API method.
 	client, err := a.gmailClient(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 	label, err := client.Users.Labels.Get("me", id).Do()
 
@@ -116,13 +116,13 @@ func (a api) labelsGet(ctx context.Context, args []sdktypes.Value, kwargs map[st
 func (a api) labelsList(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
 	// Parse the input arguments.
 	if err := sdkmodule.UnpackArgs(args, kwargs); err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Invoke the API method.
 	client, err := a.gmailClient(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 	labels, err := client.Users.Labels.List("me").Do()
 
@@ -155,13 +155,13 @@ func (a api) labelsPatch(ctx context.Context, args []sdktypes.Value, kwargs map[
 		"label", &label,
 	)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Invoke the API method.
 	client, err := a.gmailClient(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 	label, err = client.Users.Labels.Patch("me", id, label).Do()
 
@@ -194,13 +194,13 @@ func (a api) labelsUpdate(ctx context.Context, args []sdktypes.Value, kwargs map
 		"label", &label,
 	)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Invoke the API method.
 	client, err := a.gmailClient(ctx)
 	if err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 	label, err = client.Users.Labels.Update("me", id, label).Do()
 

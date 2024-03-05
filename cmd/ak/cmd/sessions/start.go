@@ -36,7 +36,7 @@ var startCmd = common.StandardCommand(&cobra.Command{
 		if err != nil {
 			return err
 		}
-		if d == nil {
+		if !d.IsValid() {
 			err = fmt.Errorf("deployment ID %q not found", deploymentID)
 			return common.NewExitCodeError(common.NotFoundExitCode, err)
 		}
@@ -45,7 +45,7 @@ var startCmd = common.StandardCommand(&cobra.Command{
 		if err != nil {
 			return err
 		}
-		if e == nil {
+		if !e.IsValid() {
 			err = fmt.Errorf("event ID %q not found", eventID)
 			return common.NewExitCodeError(common.NotFoundExitCode, err)
 		}
@@ -58,7 +58,7 @@ var startCmd = common.StandardCommand(&cobra.Command{
 		ctx, cancel := common.LimitedContext()
 		defer cancel()
 
-		s := sdktypes.NewSession(did, nil, eid, ep, sdktypes.EventToValues(e), nil)
+		s := sdktypes.NewSession(did, sdktypes.InvalidSessionID, eid, ep, e.ToValues(), nil)
 		sid, err := sessions().Start(ctx, s)
 		if err != nil {
 			return fmt.Errorf("start session: %w", err)
@@ -106,8 +106,8 @@ func init() {
 // with a time ticker. Session retrieval errors and session failures are
 // both reported as errors by the CLI.
 func waitForSession(id sdktypes.SessionID, e chan<- error, done chan<- bool, state chan<- string) {
-	errorState := sdktypes.ErrorSessionStateType.ToProto()
-	completedState := sdktypes.CompletedSessionStateType.ToProto()
+	errorState := sdktypes.SessionStateTypeError.ToProto()
+	completedState := sdktypes.SessionStateTypeCompleted.ToProto()
 	startTime := time.Now()
 
 	for {
