@@ -124,7 +124,9 @@ func Test_pySVC_Run(t *testing.T) {
 	require.NoError(t, err, "run")
 
 	xid := sdktypes.NewExecutorID(sdktypes.NewRunID())
-	fn := sdktypes.NewFunctionValue(xid, "greet", nil, nil, nil)
+	var modFn sdktypes.ModuleFunction
+	fn, err := sdktypes.NewFunctionValue(xid, "greet", nil, nil, modFn)
+	require.NoError(t, err, "new function")
 
 	_, err = run.Call(ctx, fn, nil, nil)
 	require.NoError(t, err, "call")

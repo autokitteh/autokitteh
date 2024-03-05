@@ -30,7 +30,7 @@ type pySVC struct {
 	run       *pyRunInfo
 	xid       sdktypes.ExecutorID
 	cbs       *sdkservices.RunCallbacks
-	values    map[string]sdktypes.Value
+	exports   map[string]sdktypes.Value
 	firstCall bool
 	dec       *json.Decoder
 	enc       *json.Encoder
@@ -69,18 +69,15 @@ func (py *pySVC) Build(ctx context.Context, fs fs.FS, path string, values []sdkt
 	data, err := createTar(fs)
 	if err != nil {
 		py.log.Error("create tar", zap.Error(err))
-		return nil, err
+		return sdktypes.InvalidBuildArtifact, err
 	}
 
-	art, err := sdktypes.BuildArtifactFromProto(&sdktypes.BuildArtifactPB{
-		CompiledData: map[string][]byte{
+	var art sdktypes.BuildArtifact
+	art = art.WithCompiledData(
+		map[string][]byte{
 			archiveKey: data,
 		},
-	})
-
-	if err != nil {
-		return nil, err
-	}
+	)
 
 	return art, nil
 }
@@ -91,13 +88,18 @@ type PyMessage struct {
 	Payload  []byte `json:"payload"`
 }
 
-func entriesToValues(xid sdktypes.ExecutorID, entries []string) map[string]sdktypes.Value {
+func entriesToValues(xid sdktypes.ExecutorID, entries []string) (map[string]sdktypes.Value, error) {
 	values := make(map[string]sdktypes.Value)
+	var modFn sdktypes.ModuleFunction // TODO
 	for _, name := range entries {
-		values[name] = sdktypes.NewFunctionValue(xid, name, nil, nil, nil)
+		fn, err := sdktypes.NewFunctionValue(xid, name, nil, nil, modFn)
+		if err != nil {
+			return nil, err
+		}
+		values[name] = fn
 	}
 
-	return values
+	return values, nil
 }
 
 /*
@@ -160,11 +162,17 @@ func (py *pySVC) Run(
 	}
 	py.log.Info("module entries", zap.Any("entries", entries))
 
+	exports, err := entriesToValues(py.xid, entries)
+	if err != nil {
+		py.log.Error("can't create module entries", zap.Error(err))
+		return nil, fmt.Errorf("can't create module entries: %w", err)
+	}
+
 	killPy = false
 	py.run = ri
 	py.cbs = cbs
 	py.xid = sdktypes.NewExecutorID(runID)
-	py.values = entriesToValues(py.xid, entries)
+	py.exports = exports
 	py.firstCall = true
 	py.dec = dec
 	py.enc = json.NewEncoder(conn)
@@ -176,7 +184,7 @@ func (py *pySVC) ID() sdktypes.RunID              { return py.xid.ToRunID() }
 func (py *pySVC) ExecutorID() sdktypes.ExecutorID { return py.xid }
 
 func (py *pySVC) Values() map[string]sdktypes.Value {
-	return py.values
+	return py.exports
 }
 
 func (py *pySVC) Close() {
@@ -194,7 +202,7 @@ func (py *pySVC) initialCall(ctx context.Context, funcName string, payload []byt
 	}
 	py.log.Info("run", zap.Any("message", msg))
 	if err := py.enc.Encode(msg); err != nil {
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	// Callbacks
@@ -202,7 +210,7 @@ func (py *pySVC) initialCall(ctx context.Context, funcName string, payload []byt
 		var msg PyMessage
 		if err := py.dec.Decode(&msg); err != nil {
 			py.log.Error("communication error", zap.Error(err))
-			return nil, err
+			return sdktypes.InvalidValue, err
 		}
 		py.log.Info("from python", zap.Any("message", msg))
 
@@ -211,41 +219,52 @@ func (py *pySVC) initialCall(ctx context.Context, funcName string, payload []byt
 		}
 
 		// Generate activity, it'll call Python with the result
+		var modFn sdktypes.ModuleFunction
+		fn, err := sdktypes.NewFunctionValue(py.xid, "activity", msg.Payload, nil, modFn)
+		if err != nil {
+			return sdktypes.InvalidValue, err
+		}
+
 		py.cbs.Call(
 			ctx,
 			py.xid.ToRunID(),
 			// The function to call is encoded in the payload
-			sdktypes.NewFunctionValue(py.xid, "activity", msg.Payload, nil, nil),
+			fn,
 			nil,
 			nil,
 		)
 	}
 
 	// TODO: Return value
-	return nil, nil
+	return sdktypes.Nothing, nil
 }
 
 func (py *pySVC) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
-	fn := sdktypes.GetFunctionValue(v).ToProto()
+	fn := v.GetFunction()
+	if !fn.IsValid() {
+		return sdktypes.InvalidValue, fmt.Errorf("%#v is not a function", v)
+
+	}
+
 	if py.firstCall { // TODO: mutex?
 		py.firstCall = false
-		return py.initialCall(ctx, fn.Name, fn.Data)
+		return py.initialCall(ctx, fn.Name().String(), fn.Data())
 	}
 
 	msg := PyMessage{
 		Type:    "callback",
-		Payload: fn.Data,
+		Payload: fn.Data(),
 	}
 
 	if err := py.enc.Encode(msg); err != nil {
 		py.log.Error("send to python", zap.Error(err))
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	var reply PyMessage
 	if err := py.dec.Decode(&reply); err != nil {
 		py.log.Error("from python", zap.Error(err))
-		return nil, err
+		return sdktypes.InvalidValue, err
 	}
 
 	return sdktypes.NewBytesValue(reply.Payload), nil
