@@ -47,3 +47,22 @@ Once we introduce an external dependency, it will conflict with the user depende
 
 The message payload is handled by Python and is opaque to AutoKitteh.
 Currently it's base64 of a pickle.
+
+### Integration Testing
+
+If you run `ak` with a database, then run `./testdata/create-workflow.sh` once. 
+Otherwise run it every time.
+This will create a deployment for `testdata/simple/`
+
+Then run `make run-workflow`
+
+
+### `ak` with database
+
+Look for the `config.yaml` in `ak config where` directory. Then add the following
+
+```yaml
+db:
+  dsn: /tmp/ak.db  # Pick any other location
+  type: sqlite
+```
