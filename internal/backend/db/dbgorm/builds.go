@@ -10,11 +10,8 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-func (db *gormdb) saveBuild(ctx context.Context, build scheme.Build, data []byte) error {
-	if err := db.db.WithContext(ctx).Create(&build).Error; err != nil {
-		return translateError(err)
-	}
-	return nil
+func (db *gormdb) saveBuild(ctx context.Context, build scheme.Build) error {
+	return db.db.WithContext(ctx).Create(&build).Error
 }
 
 func (db *gormdb) SaveBuild(ctx context.Context, build sdktypes.Build, data []byte) error {
@@ -24,7 +21,7 @@ func (db *gormdb) SaveBuild(ctx context.Context, build sdktypes.Build, data []by
 		Data:      data,
 		CreatedAt: build.CreatedAt(),
 	}
-	return translateError(db.saveBuild(ctx, b, data))
+	return translateError(db.saveBuild(ctx, b))
 }
 
 func (db *gormdb) GetBuild(ctx context.Context, buildID sdktypes.BuildID) (sdktypes.Build, error) {

@@ -20,24 +20,23 @@ func envVarMembershipID(ev sdktypes.EnvVar) string {
 	return fmt.Sprintf("%s/%s", ev.EnvID().Value(), ev.Symbol().String())
 }
 
+func (db *gormdb) createEnv(ctx context.Context, env scheme.Env) error {
+	return db.db.WithContext(ctx).Create(&env).Error
+}
+
 func (db *gormdb) CreateEnv(ctx context.Context, env sdktypes.Env) error {
 	if !env.ID().IsValid() {
 		db.z.DPanic("no env id supplied")
 		return errors.New("env missing id")
 	}
 
-	r := scheme.Env{
+	e := scheme.Env{
 		EnvID:        env.ID().String(),
 		ProjectID:    env.ProjectID().String(), // TODO(ENG-136): need to verify parent id
 		Name:         env.Name().String(),
 		MembershipID: envMembershipID(env),
 	}
-
-	if err := db.db.WithContext(ctx).Create(&r).Error; err != nil {
-		return translateError(err)
-	}
-
-	return nil
+	return translateError(db.createEnv(ctx, e))
 }
 
 func (db *gormdb) GetEnvByID(ctx context.Context, eid sdktypes.EnvID) (sdktypes.Env, error) {

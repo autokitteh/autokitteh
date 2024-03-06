@@ -323,7 +323,7 @@ func ParseSessionCallAttemptComplete(c SessionCallAttempt) (d sdktypes.SessionCa
 
 type Session struct {
 	SessionID        string `gorm:"primaryKey"`
-	DeploymentID     string `gorm:"index"`
+	DeploymentID     string `gorm:"index;foreignKey:DeploymentID"`
 	EventID          string `gorm:"index"`
 	CurrentStateType int    `gorm:"index"`
 	Entrypoint       string
@@ -371,6 +371,10 @@ type Deployment struct {
 	State        int32
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
+	DeletedAt    gorm.DeletedAt `gorm:"index"`
+
+	// just for foreign key constraint. Without it gorm won't enforce it
+	Sessions []*Session `gorm:"foreignKey:DeploymentID"`
 }
 
 func ParseDeployment(d Deployment) (sdktypes.Deployment, error) {
@@ -387,6 +391,11 @@ func ParseDeployment(d Deployment) (sdktypes.Deployment, error) {
 	}
 
 	return deployment, nil
+}
+
+// gorm don't cascade soft deletes. hook is transactional.
+func (d *Deployment) AfterDelete(db *gorm.DB) error {
+	return db.Where("deployment_id = ?", d.DeploymentID).Delete(&Session{}).Error
 }
 
 type DeploymentWithStats struct {

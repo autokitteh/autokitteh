@@ -44,22 +44,24 @@ func (db *gormdb) getDeployment(ctx context.Context, deploymentID string) (*sche
 func (db *gormdb) GetDeployment(ctx context.Context, id sdktypes.DeploymentID) (sdktypes.Deployment, error) {
 	d, err := db.getDeployment(ctx, id.String())
 	if d == nil || err != nil {
-		return sdktypes.InvalidDeployment, err
+		return sdktypes.InvalidDeployment, translateError(err)
 	}
 	return scheme.ParseDeployment(*d)
 }
 
-func (db *gormdb) DeleteDeployment(ctx context.Context, id sdktypes.DeploymentID) error {
-	var b scheme.Deployment
-	if err := db.db.WithContext(ctx).Where("deployment_id = ?", id.String()).Delete(&b).Error; err != nil {
-		return translateError(err)
-	}
-	// FIXME: delete deployment sessions as well?
+func (db *gormdb) deleteDeployment(ctx context.Context, deploymentID string) error {
+	// TODO: this won't work. Consider removing generic delete function.
+	// return delete(db.db, ctx, scheme.Deployment{}, "deployment_id = ?", deploymentID)
 
-	return nil
+	var b scheme.Deployment = scheme.Deployment{DeploymentID: deploymentID}
+	return db.db.WithContext(ctx).Delete(&b).Error
 }
 
-// FIXME: fix generic in order to avoid all this
+func (db *gormdb) DeleteDeployment(ctx context.Context, deploymentID sdktypes.DeploymentID) error {
+	return translateError(db.deleteDeployment(ctx, deploymentID.String()))
+}
+
+// TODO: rewrite generic in order to avoid splitting to Deployment and DeploymentWithStats
 func (db *gormdb) listDeploymentsCommonQuery(ctx context.Context, filter sdkservices.ListDeploymentsFilter) *gorm.DB {
 	q := db.db.WithContext(ctx).Model(&scheme.Deployment{})
 	if filter.BuildID.IsValid() {
@@ -99,7 +101,7 @@ func (db *gormdb) listDeploymentsWithStats(ctx context.Context, filter sdkservic
 
 	var ds []scheme.DeploymentWithStats
 	if err := q.Find(&ds).Error; err != nil {
-		return nil, translateError(err)
+		return nil, err
 	}
 	return ds, nil
 }
@@ -108,7 +110,7 @@ func (db *gormdb) listDeployments(ctx context.Context, filter sdkservices.ListDe
 	q := db.listDeploymentsCommonQuery(ctx, filter)
 	var ds []scheme.Deployment
 	if err := q.Find(&ds).Error; err != nil {
-		return nil, translateError(err)
+		return nil, err
 	}
 	return ds, nil
 }
@@ -117,13 +119,13 @@ func (db *gormdb) ListDeployments(ctx context.Context, filter sdkservices.ListDe
 	if filter.IncludeSessionStats {
 		ds, err := db.listDeploymentsWithStats(ctx, filter)
 		if ds == nil {
-			return nil, err
+			return nil, translateError(err)
 		}
 		return kittehs.TransformError(ds, scheme.ParseDeploymentWithSessionStats)
 	} else {
 		ds, err := db.listDeployments(ctx, filter)
 		if ds == nil {
-			return nil, err
+			return nil, translateError(err)
 		}
 		return kittehs.TransformError(ds, scheme.ParseDeployment)
 	}

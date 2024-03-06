@@ -2,6 +2,7 @@ package dbgorm
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 	"testing"
@@ -18,10 +19,23 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
+var now time.Time
+
+func init() {
+	now = time.Now().UTC() // save and compare times in UTC
+}
+
 type dbFixture struct {
-	db     *gorm.DB
-	gormdb *gormdb
-	ctx    context.Context
+	db        *gorm.DB
+	gormdb    *gormdb
+	ctx       context.Context
+	sessionID uint
+}
+
+func (f *dbFixture) newSessionID() (id uint) {
+	id = f.sessionID
+	f.sessionID += 1
+	return id
 }
 
 // TODO: use gormkitteh (and maybe test with sqlite::memory and embedded PG)
@@ -43,6 +57,7 @@ func setupDB(dbName string) *gorm.DB {
 		},
 		Logger: logger,
 	})
+	db.Exec("PRAGMA foreign_keys = ON")
 	if err != nil {
 		log.Fatalf("failed to open database: %v", err)
 	}
@@ -50,23 +65,15 @@ func setupDB(dbName string) *gorm.DB {
 	return db
 }
 
-func getZ() *zap.Logger {
-	// return zap.NewNop()
-	logger := zap.NewExample()
-	defer func() { // flushes buffer, if any
-		if err := logger.Sync(); err != nil {
-			log.Printf("Could not sync logger: %v", err)
-		}
-	}()
-	return logger
-}
-
-func newDbFixture() *dbFixture {
+func newDbFixture(withoutForeignKeys bool) *dbFixture {
 	db := setupDB("") // in-memory db, specify filename to use file db
+	if withoutForeignKeys {
+		db.Exec("PRAGMA foreign_keys = OFF")
+	}
 
 	ctx := context.Background()
 
-	gormdb := gormdb{db: db, cfg: nil, mu: nil, z: getZ()}
+	gormdb := gormdb{db: db, cfg: nil, mu: nil, z: zap.NewExample()}
 	if err := gormdb.Teardown(ctx); err != nil { // delete tables if any
 		log.Printf("Failed to termdown gormdb: %v", err)
 	}
@@ -83,54 +90,54 @@ func newDbFixture() *dbFixture {
 // 	f.gormdb.db = f.db
 // }
 
-func testDBExistsOne[T any](t *testing.T, gormdb *gormdb, schemaObj T, where string, args ...any) {
-	var r []T
-	res := gormdb.db.Where(where, args...).Find(&r)
-	require.Nil(t, res.Error)
-	require.Equal(t, 1, len(r))
-	require.Equal(t, int64(1), res.RowsAffected)
-	require.Equal(t, schemaObj, r[0])
+func findAndAssertCount[T any](t *testing.T, f *dbFixture, schemaObj T, expected int, where string, args ...any) []T {
+	var objs []T
+	res := f.gormdb.db.Where(where, args...).Find(&objs)
+	require.NoError(t, res.Error)
+	require.Equal(t, expected, len(objs))
+	require.Equal(t, int64(expected), res.RowsAffected)
+	return objs
+}
+
+func findAndAssertOne[T any](t *testing.T, f *dbFixture, schemaObj T, where string, args ...any) {
+	res := findAndAssertCount(t, f, schemaObj, 1, where, args...)
+	require.Equal(t, schemaObj, res[0])
 }
 
 var (
-	testSessionID    = "ses_00000000000000000000000001"
+	// testSessionID    = "ses_00000000000000000000000001"
+	testBuildID      = "bld_00000000000000000000000001"
 	testDeploymentID = "dep_00000000000000000000000001"
 	testEventID      = "evt_00000000000000000000000001"
-	testBuildID      = "bld_00000000000000000000000001"
 	testEnvID        = "env_00000000000000000000000001"
+	// testProjectID    = "prj_00000000000000000000000001"
 )
 
-func makeSchemeSession() scheme.Session {
-	now := time.Now().UTC() // save and compare times in UTC
+func newSession(f *dbFixture, st sdktypes.SessionStateType) scheme.Session {
+	sessionID := fmt.Sprintf("ses_%026d", f.newSessionID())
 
-	session := scheme.Session{
-		SessionID:        testSessionID,
+	return scheme.Session{
+		SessionID:        sessionID,
 		DeploymentID:     testDeploymentID,
 		EventID:          testEventID,
-		CurrentStateType: int(sdktypes.SessionStateTypeCompleted.ToProto()),
+		CurrentStateType: int(st.ToProto()),
 		Entrypoint:       "testEntrypoint",
 		Inputs:           datatypes.JSON(`{"key": "value"}`),
 		CreatedAt:        now,
 		UpdatedAt:        now,
 	}
-	return session
 }
 
-func makeSchemeBuild() scheme.Build {
-	now := time.Now().UTC() // save and compare times in UTC
-
-	build := scheme.Build{
+func newBuild() scheme.Build {
+	return scheme.Build{
 		BuildID:   testBuildID,
 		Data:      []byte{},
 		CreatedAt: now,
 	}
-	return build
 }
 
-func makeSchemeDeployment() scheme.Deployment {
-	now := time.Now().UTC() // save and compare times in UTC
-
-	deployment := scheme.Deployment{
+func newDeployment(buildID string, envID string) scheme.Deployment {
+	return scheme.Deployment{
 		DeploymentID: testDeploymentID,
 		BuildID:      testBuildID,
 		EnvID:        testEnvID,
@@ -138,5 +145,15 @@ func makeSchemeDeployment() scheme.Deployment {
 		CreatedAt:    now,
 		UpdatedAt:    now,
 	}
-	return deployment
 }
+
+/*
+func newEnv() scheme.Env {
+	return scheme.Env{
+		EnvID:        testEnvID,
+		ProjectID:    testProjectID,
+		Name:         "",
+		MembershipID: "",
+	}
+}
+*/

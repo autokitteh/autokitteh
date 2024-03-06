@@ -1,7 +1,6 @@
 package dbgorm
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -11,57 +10,53 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 )
 
-func testSaveBuild(t *testing.T, ctx context.Context, gormdb *gormdb, build scheme.Build) {
-	assert.Nil(t, gormdb.saveBuild(ctx, build, []byte{}))
-	testDBExistsOne(t, gormdb, build, "build_id = ?", build.BuildID)
+func saveBuildAndAssert(t *testing.T, f *dbFixture, build scheme.Build) {
+	assert.NoError(t, f.gormdb.saveBuild(f.ctx, build))
+	findAndAssertOne(t, f, build, "build_id = ?", build.BuildID)
 }
 
 func TestSaveBuild(t *testing.T) {
-	f := newDbFixture()
-
-	build := makeSchemeBuild()
-	testSaveBuild(t, f.ctx, f.gormdb, build)
-
-	testDBExistsOne(t, f.gormdb, build, "") // check there is only single build in DB
+	f := newDbFixture(true)
+	build := newBuild()
+	saveBuildAndAssert(t, f, build)
+	findAndAssertOne(t, f, build, "") // check there is only single build in DB
 }
 
 func TestDeleteBuild(t *testing.T) {
-	f := newDbFixture()
+	f := newDbFixture(true)
+	build := newBuild()
+	saveBuildAndAssert(t, f, build)
 
-	build := makeSchemeBuild()
-	testSaveBuild(t, f.ctx, f.gormdb, build)
-
-	// delete
-	assert.Nil(t, f.gormdb.deleteBuild(f.ctx, build.BuildID))
-
-	// ensure that build is completely deleted (use Unscoped to check that it is not just soft-deleted)
+	// delete build and ensure it's completely deleted (use Unscoped to check it's not just soft deleted)
+	assert.NoError(t, f.gormdb.deleteBuild(f.ctx, build.BuildID))
 	res := f.db.Unscoped().First(&scheme.Build{}, "build_id = ?", build.BuildID)
-	assert.Equal(t, res.Error, gorm.ErrRecordNotFound)
+	assert.ErrorAs(t, gorm.ErrRecordNotFound, &res.Error)
 }
 
 func TestListBuild(t *testing.T) {
-	f := newDbFixture()
-
+	f := newDbFixture(true)
 	flt := sdkservices.ListBuildsFilter{} // no Limit
 
 	// no builds
 	builds, err := f.gormdb.listBuilds(f.ctx, flt)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, 0, len(builds))
 
 	// create build and obtain it via list
-	build := makeSchemeBuild()
-	testSaveBuild(t, f.ctx, f.gormdb, build)
+	build := newBuild()
+	saveBuildAndAssert(t, f, build)
 
+	// check listBuilds API
 	builds, err = f.gormdb.listBuilds(f.ctx, flt)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, 1, len(builds))
 	assert.Equal(t, build, builds[0])
 
-	// delete and ensure that list is empty
-	assert.Nil(t, f.gormdb.deleteBuild(f.ctx, build.BuildID))
+	// delete build
+	assert.NoError(t, f.gormdb.deleteBuild(f.ctx, build.BuildID))
 
+	// check listBuilds API - ensure no builds are found
 	builds, err = f.gormdb.listBuilds(f.ctx, flt)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, 0, len(builds))
 }

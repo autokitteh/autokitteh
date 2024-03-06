@@ -24,10 +24,11 @@ func AddSubcommands(parentCmd *cobra.Command) {
 
 func init() {
 	// Subcommands.
-	deploymentsCmd.AddCommand(createCmd)
 	deploymentsCmd.AddCommand(activateCmd)
-	deploymentsCmd.AddCommand(drainCmd)
+	deploymentsCmd.AddCommand(createCmd)
 	deploymentsCmd.AddCommand(deactivateCmd)
+	deploymentsCmd.AddCommand(deleteCmd)
+	deploymentsCmd.AddCommand(drainCmd)
 	deploymentsCmd.AddCommand(getCmd)
 	deploymentsCmd.AddCommand(listCmd)
 }
