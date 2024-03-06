@@ -42,10 +42,10 @@ func StrictSessionLogRecordFromProto(m *SessionLogRecordPB) (SessionLogRecord, e
 	return Strict(SessionLogRecordFromProto(m))
 }
 
-func NewPrintSessionLogRecord(msg string) SessionLogRecord {
+func NewPrintSessionLogRecord(text string) SessionLogRecord {
 	return forceFromProto[SessionLogRecord](&SessionLogRecordPB{
 		T:     timestamppb.Now(),
-		Print: msg,
+		Print: &sessionv1.SessionLogRecord_Print{Text: text},
 	})
 }
 
