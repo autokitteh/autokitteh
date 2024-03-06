@@ -15,7 +15,7 @@ func AddFailIfNotFoundFlag(cmd *cobra.Command) {
 }
 
 func AddFailIfError(cmd *cobra.Command) {
-	cmd.Flags().BoolP("fail", "f", false, "fail if error")
+	cmd.Flags().BoolP("fail", "f", false, "fail on error")
 }
 
 func FailIfNotFound(cmd *cobra.Command, what string, found bool) error {
