@@ -29,6 +29,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/envsgrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/events"
 	"go.autokitteh.dev/autokitteh/internal/backend/eventsgrpcsvc"
+	"go.autokitteh.dev/autokitteh/internal/backend/httpsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/integrationsgrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/logger"
 	"go.autokitteh.dev/autokitteh/internal/backend/oauth"
@@ -152,9 +153,9 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 			mux.Handle("/favicon-32x32.png", srv)
 			mux.Handle("/favicon-16x16.png", srv)
 		}),
-		fx.Invoke(func(lc fx.Lifecycle, z *zap.Logger) {
+		fx.Invoke(func(lc fx.Lifecycle, z *zap.Logger, httpsvc httpsvc.Svc) {
 			HookSimpleOnStart(lc, func() {
-				sayHello(opts)
+				sayHello(opts, httpsvc.Addr())
 				z.Info("ready")
 			})
 		}),

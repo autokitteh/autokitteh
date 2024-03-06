@@ -8,7 +8,6 @@ import (
 
 	"github.com/fatih/color"
 
-	"go.autokitteh.dev/autokitteh/internal/backend/httpsvc"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/internal/version"
 )
@@ -18,7 +17,7 @@ var hello string
 
 var helloTemplate = template.Must(template.New("hello").Parse(hello))
 
-func sayHello(opts RunOptions) {
+func sayHello(opts RunOptions, addr string) {
 	fieldColor := color.New(color.FgBlue).Add(color.Bold).SprintFunc()
 	eyeColor := color.New(color.FgGreen).Add(color.Bold).SprintFunc()
 
@@ -36,7 +35,7 @@ func sayHello(opts RunOptions) {
 	}{
 		Version: fieldColor(version.Version),
 		PID:     fieldColor(fmt.Sprintf("%d", os.Getpid())),
-		Addr:    fieldColor(httpsvc.ListenAddr()),
+		Addr:    fieldColor(addr),
 		Eye:     eyeColor("▀"),
 		Mode:    mode,
 	}))
