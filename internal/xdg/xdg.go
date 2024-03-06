@@ -1,5 +1,5 @@
 /*
-This manages autokitteh's configuration and data directories,
+Package XDG manages autokitteh's configuration and data directories,
 which are used to store optional files such as ".env", "config.yaml"
 (see the CLI command "ak config"), "fake_secrets_manager.json" (if you
 opt-out of using a real secrets manager), SaaS client credentials, etc.

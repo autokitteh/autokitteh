@@ -14,12 +14,12 @@ return code == 0
 output equals ''
 
 # Successful dry run of a full project.
-ak manifest apply full.yaml --dry-run -J
+ak manifest apply full.yaml --dry-run
 return code == 0
 output equals file expected_on_full_dry_run.txt
 
 # Successful application of a full project.
-ak manifest apply full.yaml -J
+ak manifest apply full.yaml
 return code == 0
 output equals file expected_on_full_apply.txt
 
