@@ -42,8 +42,8 @@ func NewOpts(cfg *basesvc.Config, ropts basesvc.RunOptions) []fx.Option {
 		basesvc.Component(
 			"http",
 			httpsvc.Configs,
-			fx.Provide(func(lc fx.Lifecycle, z *zap.Logger, cfg *httpsvc.Config) (*http.ServeMux, error) {
-				return httpsvc.New(
+			fx.Provide(func(lc fx.Lifecycle, z *zap.Logger, cfg *httpsvc.Config) (httpsvc.Svc, *http.ServeMux, error) {
+				svc, err := httpsvc.New(
 					lc, z, cfg,
 					[]string{
 						buildsv1connect.BuildsServiceName,
@@ -62,6 +62,11 @@ func NewOpts(cfg *basesvc.Config, ropts basesvc.RunOptions) []fx.Option {
 					},
 					nil,
 				)
+				if err != nil {
+					return nil, nil, err
+				}
+
+				return svc, svc.Mux(), nil
 			}),
 		),
 		basesvc.Component("integrations", configset.Empty, fx.Provide(integrations.New)),

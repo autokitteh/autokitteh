@@ -49,6 +49,7 @@ func GetConfig[T any](c *Config, path string, def T) (*T, error) {
 const Delim = "."
 
 // TODO: make sure confmapvs maps to real pre-registered keys.
+// If envVarPrefix is nil, do not load from environment.
 func LoadConfig(envVarPrefix string, confmapvs map[string]any, yamlPath string) (*Config, error) {
 	k := koanf.NewWithConf(koanf.Conf{Delim: Delim, StrictMerge: true})
 
@@ -60,13 +61,15 @@ func LoadConfig(envVarPrefix string, confmapvs map[string]any, yamlPath string) 
 		}
 	}
 
-	// Env variables shuold have the following convention to support hierarchical keys:
-	// PREFIX_PARENT1__CHILD1__REQUIRED_KEY_NAME
-	// meaning heirarchy is separated by `__` and the name it self use one `_``.
-	if err := k.Load(env.Provider(envVarPrefix, "__", func(s string) string {
-		return strings.ToLower(strings.TrimPrefix(s, envVarPrefix))
-	}), nil); err != nil {
-		return nil, fmt.Errorf("load env: %w", err)
+	if envVarPrefix != "" {
+		// Env variables should have the following convention to support hierarchical keys:
+		// PREFIX_PARENT1__CHILD1__REQUIRED_KEY_NAME
+		// meaning heirarchy is separated by `__` and the name it self use one `_``.
+		if err := k.Load(env.Provider(envVarPrefix, "__", func(s string) string {
+			return strings.ToLower(strings.TrimPrefix(s, envVarPrefix))
+		}), nil); err != nil {
+			return nil, fmt.Errorf("load env: %w", err)
+		}
 	}
 
 	if err := k.Load(confmap.Provider(confmapvs, "."), nil); err != nil {

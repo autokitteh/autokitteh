@@ -34,11 +34,9 @@ var upCmd = common.StandardCommand(&cobra.Command{
 		}
 
 		<-app.Wait()
+
 		fmt.Println() // End the output with "\n".
 
-		if err := app.Stop(ctx); err != nil {
-			return fmt.Errorf("fx app stop: %w", err)
-		}
 		return nil
 	},
 })

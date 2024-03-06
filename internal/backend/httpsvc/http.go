@@ -18,11 +18,20 @@ import (
 	"golang.org/x/net/http2/h2c"
 )
 
-var listenAddr string
+type Svc interface {
+	Mux() *http.ServeMux
+	Addr() string // available only after start.
+}
 
-func ListenAddr() string { return listenAddr }
+type svc struct {
+	mux  *http.ServeMux
+	addr string
+}
 
-func New(lc fx.Lifecycle, z *zap.Logger, cfg *Config, reflectors []string, extractors []RequestLogExtractor) (*http.ServeMux, error) {
+func (s *svc) Mux() *http.ServeMux { return s.mux }
+func (s *svc) Addr() string        { return s.addr }
+
+func New(lc fx.Lifecycle, z *zap.Logger, cfg *Config, reflectors []string, extractors []RequestLogExtractor) (Svc, error) {
 	rootMux := http.NewServeMux()
 
 	cors := cors.New(cors.Options{
@@ -58,6 +67,8 @@ func New(lc fx.Lifecycle, z *zap.Logger, cfg *Config, reflectors []string, extra
 		server.Handler = h2c.NewHandler(rootMux, &http2.Server{})
 	}
 
+	svc := &svc{mux: interceptedMux}
+
 	lc.Append(fx.Hook{
 		OnStart: func(context.Context) error {
 			var (
@@ -91,12 +102,12 @@ func New(lc fx.Lifecycle, z *zap.Logger, cfg *Config, reflectors []string, extra
 				return fmt.Errorf("listen: %w", err)
 			}
 
-			listenAddr = ln.Addr().String()
+			svc.addr = ln.Addr().String()
 
-			z.Debug("listening", zap.String("addr", listenAddr))
+			z.Debug("listening", zap.String("addr", svc.addr))
 
 			if cfg.AddrFilename != "" {
-				if err := os.WriteFile(cfg.AddrFilename, []byte(listenAddr), 0o600); err != nil {
+				if err := os.WriteFile(cfg.AddrFilename, []byte(svc.addr), 0o600); err != nil {
 					z.Panic("write to addr file failed", zap.Error(err), zap.String("filename", cfg.AddrFilename))
 				}
 			}
@@ -117,5 +128,5 @@ func New(lc fx.Lifecycle, z *zap.Logger, cfg *Config, reflectors []string, extra
 		},
 	})
 
-	return interceptedMux, nil
+	return svc, nil
 }
