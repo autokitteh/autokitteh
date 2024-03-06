@@ -49,7 +49,8 @@ func GetConfig[T any](c *Config, path string, def T) (*T, error) {
 const Delim = "."
 
 // TODO: make sure confmapvs maps to real pre-registered keys.
-// If envVarPrefix is nil, do not load from environment.
+// If envVarPrefix is empty, do not load from environment.
+// If yamlPath is empty, do not load from file.
 func LoadConfig(envVarPrefix string, confmapvs map[string]any, yamlPath string) (*Config, error) {
 	k := koanf.NewWithConf(koanf.Conf{Delim: Delim, StrictMerge: true})
 

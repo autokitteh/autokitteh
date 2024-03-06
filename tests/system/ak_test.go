@@ -89,7 +89,7 @@ func setUpTest(t *testing.T) string {
 		w.Close()
 	}()
 
-	// Start the AK server, but embedded rather than as a separate
+	// Start the AK server, but in-process rather than as a separate
 	// subprocess: to support breakpoint debugging, and measure test coverage.
 	svc, err := startAKServer(context.Background())
 	if err != nil {
