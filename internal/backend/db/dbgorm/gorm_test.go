@@ -105,12 +105,12 @@ func findAndAssertOne[T any](t *testing.T, f *dbFixture, schemaObj T, where stri
 }
 
 var (
-	testSessionID    = "ses_00000000000000000000000001"
+	// testSessionID    = "ses_00000000000000000000000001"
 	testBuildID      = "bld_00000000000000000000000001"
 	testDeploymentID = "dep_00000000000000000000000001"
 	testEventID      = "evt_00000000000000000000000001"
 	testEnvID        = "env_00000000000000000000000001"
-	testProjectID    = "prj_00000000000000000000000001"
+	// testProjectID    = "prj_00000000000000000000000001"
 )
 
 func newSession(f *dbFixture, st sdktypes.SessionStateType) scheme.Session {
