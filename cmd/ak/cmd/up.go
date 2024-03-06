@@ -24,7 +24,11 @@ var upCmd = common.StandardCommand(&cobra.Command{
 		}
 
 		ctx := cmd.Root().Context()
-		app := svc.New(common.Config(), svc.RunOptions{Mode: m})
+		app, err := svc.New(common.Config(), svc.RunOptions{Mode: m})
+		if err != nil {
+			return fmt.Errorf("new service: %w", err)
+		}
+
 		if err := app.Start(ctx); err != nil {
 			return fmt.Errorf("fx app start: %w", err)
 		}
