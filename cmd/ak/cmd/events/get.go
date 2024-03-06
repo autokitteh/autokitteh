@@ -1,10 +1,13 @@
 package events
 
 import (
+	"errors"
+
 	"github.com/spf13/cobra"
 
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
 	"go.autokitteh.dev/autokitteh/internal/resolver"
+	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 )
 
 var getCmd = common.StandardCommand(&cobra.Command{
@@ -17,6 +20,9 @@ var getCmd = common.StandardCommand(&cobra.Command{
 		r := resolver.Resolver{Client: common.Client()}
 		e, _, err := r.EventID(args[0])
 		if err != nil {
+			if errors.Is(err, sdkerrors.ErrNotFound) {
+				return common.FailNotFound(cmd, "event")
+			}
 			return err
 		}
 
