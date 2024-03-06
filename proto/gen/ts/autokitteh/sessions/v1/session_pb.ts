@@ -569,9 +569,9 @@ export class SessionLogRecord extends Message<SessionLogRecord> {
   /**
    * one of the following is required.
    *
-   * @generated from field: string print = 10;
+   * @generated from field: autokitteh.sessions.v1.SessionLogRecord.Print print = 10;
    */
-  print = "";
+  print?: SessionLogRecord_Print;
 
   /**
    * @generated from field: autokitteh.sessions.v1.Call.Spec call_spec = 11;
@@ -602,7 +602,7 @@ export class SessionLogRecord extends Message<SessionLogRecord> {
   static readonly typeName = "autokitteh.sessions.v1.SessionLogRecord";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "t", kind: "message", T: Timestamp },
-    { no: 10, name: "print", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 10, name: "print", kind: "message", T: SessionLogRecord_Print },
     { no: 11, name: "call_spec", kind: "message", T: Call_Spec },
     { no: 12, name: "call_attempt_start", kind: "message", T: Call_Attempt_Start },
     { no: 13, name: "call_attempt_complete", kind: "message", T: Call_Attempt_Complete },
@@ -623,6 +623,43 @@ export class SessionLogRecord extends Message<SessionLogRecord> {
 
   static equals(a: SessionLogRecord | PlainMessage<SessionLogRecord> | undefined, b: SessionLogRecord | PlainMessage<SessionLogRecord> | undefined): boolean {
     return proto3.util.equals(SessionLogRecord, a, b);
+  }
+}
+
+/**
+ * @generated from message autokitteh.sessions.v1.SessionLogRecord.Print
+ */
+export class SessionLogRecord_Print extends Message<SessionLogRecord_Print> {
+  /**
+   * @generated from field: string text = 1;
+   */
+  text = "";
+
+  constructor(data?: PartialMessage<SessionLogRecord_Print>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "autokitteh.sessions.v1.SessionLogRecord.Print";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "text", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SessionLogRecord_Print {
+    return new SessionLogRecord_Print().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SessionLogRecord_Print {
+    return new SessionLogRecord_Print().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SessionLogRecord_Print {
+    return new SessionLogRecord_Print().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SessionLogRecord_Print | PlainMessage<SessionLogRecord_Print> | undefined, b: SessionLogRecord_Print | PlainMessage<SessionLogRecord_Print> | undefined): boolean {
+    return proto3.util.equals(SessionLogRecord_Print, a, b);
   }
 }
 
