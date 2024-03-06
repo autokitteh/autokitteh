@@ -36,6 +36,7 @@ type DB interface {
 
 	Transaction(context.Context, func(tx DB) error) error
 
+	// -----------------------------------------------------------------------
 	// Returns sdkerrors.ErrAlreadyExists if either id or name is duplicate.
 	CreateProject(context.Context, sdktypes.Project) error
 
@@ -54,6 +55,7 @@ type DB interface {
 
 	SetProjectResources(context.Context, sdktypes.ProjectID, map[string][]byte) error
 
+	// -----------------------------------------------------------------------
 	// Returns sdkerrors.ErrAlreadyExists if either id or name is duplicate.
 	CreateEnv(context.Context, sdktypes.Env) error
 
@@ -72,6 +74,7 @@ type DB interface {
 	// Return sdkerrors.ErrNotFound if var not found.
 	RevealEnvVar(context.Context, sdktypes.EnvID, sdktypes.Symbol) (string, error)
 
+	// -----------------------------------------------------------------------
 	// This is idempotent.
 	SaveEvent(context.Context, sdktypes.Event) error
 	GetEventByID(context.Context, sdktypes.EventID) (sdktypes.Event, error)
@@ -80,24 +83,28 @@ type DB interface {
 	ListEventRecords(context.Context, sdkservices.ListEventRecordsFilter) ([]sdktypes.EventRecord, error)
 	GetLatestEventSequence(context.Context) (uint64, error)
 
+	// -----------------------------------------------------------------------
 	CreateTrigger(context.Context, sdktypes.Trigger) error
 	UpdateTrigger(context.Context, sdktypes.Trigger) error
 	GetTrigger(context.Context, sdktypes.TriggerID) (sdktypes.Trigger, error)
 	DeleteTrigger(context.Context, sdktypes.TriggerID) error
 	ListTriggers(context.Context, sdkservices.ListTriggersFilter) ([]sdktypes.Trigger, error)
 
+	// -----------------------------------------------------------------------
 	GetBuild(ctx context.Context, buildID sdktypes.BuildID) (sdktypes.Build, error)
 	ListBuilds(ctx context.Context, filter sdkservices.ListBuildsFilter) ([]sdktypes.Build, error)
 	GetBuildData(ctx context.Context, id sdktypes.BuildID) ([]byte, error)
 	SaveBuild(ctx context.Context, Build sdktypes.Build, data []byte) error
 	DeleteBuild(ctx context.Context, buildID sdktypes.BuildID) error
 
+	// -----------------------------------------------------------------------
 	CreateConnection(ctx context.Context, conn sdktypes.Connection) error
 	UpdateConnection(ctx context.Context, conn sdktypes.Connection) error
 	DeleteConnection(ctx context.Context, id sdktypes.ConnectionID) error
 	GetConnection(ctx context.Context, id sdktypes.ConnectionID) (sdktypes.Connection, error)
 	ListConnections(ctx context.Context, filter sdkservices.ListConnectionsFilter) ([]sdktypes.Connection, error)
 
+	// -----------------------------------------------------------------------
 	GetDeployment(ctx context.Context, id sdktypes.DeploymentID) (sdktypes.Deployment, error)
 
 	// Returns deployments in ascending order by creation time.
@@ -106,12 +113,14 @@ type DB interface {
 	CreateDeployment(ctx context.Context, deployment sdktypes.Deployment) error
 	DeleteDeployment(ctx context.Context, deploymentID sdktypes.DeploymentID) error
 
+	// -----------------------------------------------------------------------
 	CreateIntegration(ctx context.Context, i sdktypes.Integration) error
 	UpdateIntegration(ctx context.Context, i sdktypes.Integration) error
 	DeleteIntegration(ctx context.Context, id sdktypes.IntegrationID) error
 	GetIntegration(ctx context.Context, id sdktypes.IntegrationID) (sdktypes.Integration, error)
 	ListIntegrations(ctx context.Context, filter sdkservices.ListIntegrationsFilter) ([]sdktypes.Integration, error)
 
+	// -----------------------------------------------------------------------
 	CreateSession(ctx context.Context, session sdktypes.Session) error
 	GetSession(ctx context.Context, sessionID sdktypes.SessionID) (sdktypes.Session, error)
 	GetSessionLog(ctx context.Context, sessionID sdktypes.SessionID) (sdktypes.SessionLog, error)
@@ -120,6 +129,7 @@ type DB interface {
 	ListSessions(ctx context.Context, f sdkservices.ListSessionsFilter) ([]sdktypes.Session, int, error)
 	DeleteSession(ctx context.Context, sessionID sdktypes.SessionID) error
 
+	// -----------------------------------------------------------------------
 	CreateSessionCall(ctx context.Context, sessionID sdktypes.SessionID, data sdktypes.SessionCallSpec) error
 	GetSessionCallSpec(ctx context.Context, sessionID sdktypes.SessionID, seq uint32) (sdktypes.SessionCallSpec, error)
 
@@ -127,6 +137,7 @@ type DB interface {
 	CompleteSessionCallAttempt(ctx context.Context, sessionID sdktypes.SessionID, seq, attempt uint32, complete sdktypes.SessionCallAttemptComplete) error
 	GetSessionCallAttemptResult(ctx context.Context, sessionID sdktypes.SessionID, seq uint32, attempt int64 /* <0 for last */) (sdktypes.SessionCallAttemptResult, error)
 
+	// -----------------------------------------------------------------------
 	SaveSignal(ctx context.Context, signalID string, workflowID string, connectionID sdktypes.ConnectionID, eventName string) (string, error)
 	GetSignal(ctx context.Context, signalID string) (scheme.Signal, error)
 	RemoveSignal(ctx context.Context, signalID string) error
