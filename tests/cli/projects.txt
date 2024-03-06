@@ -1,9 +1,12 @@
 $ tmp=$(mktemp -d)
 $ tmp2=$(mktemp -d)
+$ tmp_large=$(mktemp -d)
 $ data_file_path=${tmp}/data_file
+$ large_file=${tmp_large}/large_file
 $ echo "project resources" >> ${data_file_path}
 $ data_file2_path=${tmp}/data_file2
 $ echo "project resources 2" >> ${data_file2_path}
+$ dd if=/dev/zero of=${large_file} bs=1M count=3 &> /dev/null
 $ # Create project p1.
 $ ${AK} p c p1; echo $?
 project_id: prj_00000000000000000000000001
@@ -45,3 +48,5 @@ $ # Download resources succeed.
 $ ${AK} -j projects download-resources p1 -o ${tmp2}/; ls ${tmp2}/
 data_file
 data_file2
+$ # Set resources large file fail (default is 1mb, large file is 3mb)
+$ ${AK} projects build p1 -f ${large_file}; echo $?  #=> --regex Error: set resources: rpc: message size [0-9]+ is larger than configured max [0-9]+ 

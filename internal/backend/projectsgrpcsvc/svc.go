@@ -8,6 +8,7 @@ import (
 
 	"connectrpc.com/connect"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/configset"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/proto"
 	projectsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/projects/v1"
@@ -17,22 +18,35 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-type server struct {
+type Config struct {
+	MaxUploadSize int `koanf:"max_upload_size"`
+}
+
+var Configs = configset.Set[Config]{
+	Default: &Config{
+		MaxUploadSize: 1 * 1024 * 1024, //1MB
+	},
+}
+
+type Server struct {
 	projects sdkservices.Projects
 
 	projectsv1connect.UnimplementedProjectsServiceHandler
+
+	cfg *Config
 }
 
-var _ projectsv1connect.ProjectsServiceHandler = (*server)(nil)
+func New(cfg *Config, projects sdkservices.Projects) *Server {
+	return &Server{cfg: cfg, projects: projects}
+}
 
-func Init(mux *http.ServeMux, projects sdkservices.Projects) {
-	srv := server{projects: projects}
+var _ projectsv1connect.ProjectsServiceHandler = (*Server)(nil)
 
-	path, namer := projectsv1connect.NewProjectsServiceHandler(&srv)
+func (s *Server) Init(mux *http.ServeMux) {
+	path, namer := projectsv1connect.NewProjectsServiceHandler(s, connect.WithReadMaxBytes(s.cfg.MaxUploadSize))
 	mux.Handle(path, namer)
 }
-
-func (s *server) Create(ctx context.Context, req *connect.Request[projectsv1.CreateRequest]) (*connect.Response[projectsv1.CreateResponse], error) {
+func (s *Server) Create(ctx context.Context, req *connect.Request[projectsv1.CreateRequest]) (*connect.Response[projectsv1.CreateResponse], error) {
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
@@ -52,7 +66,7 @@ func (s *server) Create(ctx context.Context, req *connect.Request[projectsv1.Cre
 	return connect.NewResponse(&projectsv1.CreateResponse{ProjectId: uid.String()}), nil
 }
 
-func (s *server) Update(ctx context.Context, req *connect.Request[projectsv1.UpdateRequest]) (*connect.Response[projectsv1.UpdateResponse], error) {
+func (s *Server) Update(ctx context.Context, req *connect.Request[projectsv1.UpdateRequest]) (*connect.Response[projectsv1.UpdateResponse], error) {
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
@@ -71,7 +85,7 @@ func (s *server) Update(ctx context.Context, req *connect.Request[projectsv1.Upd
 	return connect.NewResponse(&projectsv1.UpdateResponse{}), nil
 }
 
-func (s *server) Get(ctx context.Context, req *connect.Request[projectsv1.GetRequest]) (*connect.Response[projectsv1.GetResponse], error) {
+func (s *Server) Get(ctx context.Context, req *connect.Request[projectsv1.GetRequest]) (*connect.Response[projectsv1.GetResponse], error) {
 	toResponse := func(project sdktypes.Project, err error) (*connect.Response[projectsv1.GetResponse], error) {
 		if err != nil {
 			if errors.Is(err, sdkerrors.ErrNotFound) {
@@ -115,7 +129,7 @@ func (s *server) Get(ctx context.Context, req *connect.Request[projectsv1.GetReq
 	return toResponse(s.projects.GetByName(ctx, n))
 }
 
-func (s *server) list(ctx context.Context) ([]*sdktypes.ProjectPB, error) {
+func (s *Server) list(ctx context.Context) ([]*sdktypes.ProjectPB, error) {
 	ps, err := s.projects.List(ctx)
 	if err != nil {
 		return nil, sdkerrors.AsConnectError(err)
@@ -124,7 +138,7 @@ func (s *server) list(ctx context.Context) ([]*sdktypes.ProjectPB, error) {
 	return kittehs.Transform(ps, sdktypes.ToProto), nil
 }
 
-func (s *server) ListForOwner(ctx context.Context, req *connect.Request[projectsv1.ListForOwnerRequest]) (*connect.Response[projectsv1.ListForOwnerResponse], error) {
+func (s *Server) ListForOwner(ctx context.Context, req *connect.Request[projectsv1.ListForOwnerRequest]) (*connect.Response[projectsv1.ListForOwnerResponse], error) {
 	if err := proto.Validate(req.Msg); err != nil {
 		return nil, sdkerrors.AsConnectError(err)
 	}
@@ -137,7 +151,7 @@ func (s *server) ListForOwner(ctx context.Context, req *connect.Request[projects
 	return connect.NewResponse(&projectsv1.ListForOwnerResponse{Projects: ps}), nil
 }
 
-func (s *server) List(ctx context.Context, req *connect.Request[projectsv1.ListRequest]) (*connect.Response[projectsv1.ListResponse], error) {
+func (s *Server) List(ctx context.Context, req *connect.Request[projectsv1.ListRequest]) (*connect.Response[projectsv1.ListResponse], error) {
 	if err := proto.Validate(req.Msg); err != nil {
 		return nil, sdkerrors.AsConnectError(err)
 	}
@@ -150,7 +164,7 @@ func (s *server) List(ctx context.Context, req *connect.Request[projectsv1.ListR
 	return connect.NewResponse(&projectsv1.ListResponse{Projects: ps}), nil
 }
 
-func (s *server) Build(ctx context.Context, req *connect.Request[projectsv1.BuildRequest]) (*connect.Response[projectsv1.BuildResponse], error) {
+func (s *Server) Build(ctx context.Context, req *connect.Request[projectsv1.BuildRequest]) (*connect.Response[projectsv1.BuildResponse], error) {
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
@@ -178,7 +192,7 @@ func (s *server) Build(ctx context.Context, req *connect.Request[projectsv1.Buil
 	return connect.NewResponse(&projectsv1.BuildResponse{BuildId: bid.String()}), nil
 }
 
-func (s *server) SetResources(ctx context.Context, req *connect.Request[projectsv1.SetResourcesRequest]) (*connect.Response[projectsv1.SetResourcesResponse], error) {
+func (s *Server) SetResources(ctx context.Context, req *connect.Request[projectsv1.SetResourcesRequest]) (*connect.Response[projectsv1.SetResourcesResponse], error) {
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
@@ -201,7 +215,7 @@ func (s *server) SetResources(ctx context.Context, req *connect.Request[projects
 	return connect.NewResponse(&projectsv1.SetResourcesResponse{}), nil
 }
 
-func (s *server) DownloadResources(ctx context.Context, req *connect.Request[projectsv1.DownloadResourcesRequest]) (*connect.Response[projectsv1.DownloadResourcesResponse], error) {
+func (s *Server) DownloadResources(ctx context.Context, req *connect.Request[projectsv1.DownloadResourcesRequest]) (*connect.Response[projectsv1.DownloadResourcesResponse], error) {
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
