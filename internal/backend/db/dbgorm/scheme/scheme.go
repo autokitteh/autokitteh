@@ -394,7 +394,7 @@ func ParseDeployment(d Deployment) (sdktypes.Deployment, error) {
 }
 
 // gorm don't cascade soft deletes. hook is transactional.
-func (d *Deployment) AfterDelete(db *gorm.DB) (err error) {
+func (d *Deployment) AfterDelete(db *gorm.DB) error {
 	return db.Where("deployment_id = ?", d.DeploymentID).Delete(&Session{}).Error
 }
 

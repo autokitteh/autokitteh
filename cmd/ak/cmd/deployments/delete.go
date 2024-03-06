@@ -10,7 +10,7 @@ import (
 var deleteCmd = common.StandardCommand(&cobra.Command{
 	Use:     "delete <deployment ID> [--fail]",
 	Short:   "Delete inactive deployment",
-	Aliases: []string{"d"},
+	Aliases: []string{"del"},
 	Args:    cobra.ExactArgs(1),
 
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -26,11 +26,9 @@ var deleteCmd = common.StandardCommand(&cobra.Command{
 
 		ctx, cancel := common.LimitedContext()
 		defer cancel()
+
 		err = deployments().Delete(ctx, id)
-		if err != nil { // report any other than "not found" error (which was handled above)
-			return common.ToExitCodeError(err, "delete deployment")
-		}
-		return nil
+		return common.ToExitCodeError(err, "delete deployment")
 	},
 })
 
