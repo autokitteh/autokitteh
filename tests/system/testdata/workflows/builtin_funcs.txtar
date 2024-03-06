@@ -3,10 +3,7 @@
 ak manifest apply project.yaml
 return code == 0
 
-ak project set-resources my_project --path my_program.star
-return code == 0
-
-ak project build my_project
+ak project build my_project --from my_program.star
 return code == 0
 output equals 'build_id: bld_00000000000000000000000005'
 
@@ -22,14 +19,14 @@ wait 5s for session ses_00000000000000000000000008
 # Check session's output and final state.
 ak session log -J
 return code == 0
-output contains '"print": "1st random int with seed: 5"'
-output contains '"print": "2nd random int with seed: 2"'
-output contains '"print": "3rd random int with seed: 1"'
-output contains '"print": "Store set = OK"'
-output contains '"print": "Store get = value"'
+output contains '"text": "1st random int with seed: 5"'
+output contains '"text": "2nd random int with seed: 2"'
+output contains '"text": "3rd random int with seed: 1"'
+output contains '"text": "Store set = OK"'
+output contains '"text": "Store get = value"'
 output contains '"Store del = 1"'
-output regex '"print": "\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{6} \+0000 UTC"'
-output contains '"print": "done"'
+output regex '"text": "\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{6} \+0000 UTC"'
+output contains '"text": "done"'
 
 ak sessions list
 return code == 0

@@ -1,9 +1,9 @@
 # Negative tests: get nonexistent event, with/out --fail flag.
-ak event get evt_deadbeef0deadbeef0deadbeef
+ak event get evt_000000000000000n0nex1stent
 return code == 0
 output equals ''
 
-ak event get evt_deadbeef0deadbeef0deadbeef --fail
+ak event get evt_000000000000000n0nex1stent --fail
 output equals 'Error: event not found'
 return code == 10
 
