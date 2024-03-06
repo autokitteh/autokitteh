@@ -24,6 +24,8 @@ func TranslateError(err error) error {
 		err1 = sdkerrors.ErrUnauthenticated
 	case connect.CodePermissionDenied:
 		err1 = sdkerrors.ErrUnauthorized
+	case connect.CodeResourceExhausted:
+		err1 = sdkerrors.ErrLimitExceeded
 	default:
 		err1 = sdkerrors.ErrRPC
 	}
