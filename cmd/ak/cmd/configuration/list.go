@@ -28,7 +28,9 @@ var listCmd = common.StandardCommand(&cobra.Command{
 
 		// Initialize the service so that configs would be populated.
 		// Configset modes don't matter since all modes share the same keys.
-		svc.New(common.Config(), svc.RunOptions{})
+		if _, err := svc.New(common.Config(), svc.RunOptions{}); err != nil {
+			return err
+		}
 
 		// TODO: Fix this to return real values ASAP, see PR #323
 		cs := kittehs.Transform(common.Config().ListAll(), formatConfig)
