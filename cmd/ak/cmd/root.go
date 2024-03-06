@@ -10,7 +10,6 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/spf13/cobra"
 
-	"go.autokitteh.dev/autokitteh/backend/config"
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/builds"
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/configuration"
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/connections"
@@ -26,6 +25,7 @@ import (
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/sessions"
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/triggers"
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
+	"go.autokitteh.dev/autokitteh/internal/xdg"
 	"go.autokitteh.dev/autokitteh/sdk/sdkclients/sdkclient"
 )
 
@@ -50,7 +50,7 @@ var RootCmd = common.StandardCommand(&cobra.Command{
 		}
 
 		// Initialize all the configurations.
-		path := filepath.Join(config.ConfigHomeDir(), ".env")
+		path := filepath.Join(xdg.ConfigHomeDir(), ".env")
 		if err := godotenv.Load(path); err != nil {
 			if !errors.Is(err, os.ErrNotExist) {
 				return fmt.Errorf(".env loading error: %w", err)

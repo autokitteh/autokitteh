@@ -7,7 +7,6 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"go.autokitteh.dev/autokitteh/backend/basesvc"
 	"go.autokitteh.dev/autokitteh/backend/svc"
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
@@ -29,7 +28,7 @@ var listCmd = common.StandardCommand(&cobra.Command{
 
 		// Initialize the service so that configs would be populated.
 		// Configset modes don't matter since all modes share the same keys.
-		svc.New(common.Config(), basesvc.RunOptions{})
+		svc.New(common.Config(), svc.RunOptions{})
 
 		// TODO: Fix this to return real values ASAP, see PR #323
 		cs := kittehs.Transform(common.Config().ListAll(), formatConfig)

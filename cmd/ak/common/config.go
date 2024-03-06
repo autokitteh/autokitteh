@@ -3,8 +3,8 @@ package common
 import (
 	"path/filepath"
 
-	"go.autokitteh.dev/autokitteh/backend/basesvc"
-	"go.autokitteh.dev/autokitteh/backend/config"
+	"go.autokitteh.dev/autokitteh/backend/svc"
+	"go.autokitteh.dev/autokitteh/internal/xdg"
 )
 
 const (
@@ -12,16 +12,16 @@ const (
 	ConfigYAMLFileName = "config.yaml"
 )
 
-var cfg *basesvc.Config
+var cfg *svc.Config
 
 func ConfigYAMLFilePath() string {
-	return filepath.Join(config.ConfigHomeDir(), ConfigYAMLFileName)
+	return filepath.Join(xdg.ConfigHomeDir(), ConfigYAMLFileName)
 }
 
 func InitConfig(confmap map[string]any) (err error) {
 	// Reminder: cfg is a package-scoped variable, not function-scoped.
-	cfg, err = basesvc.LoadConfig(EnvVarPrefix, confmap, ConfigYAMLFilePath())
+	cfg, err = svc.LoadConfig(EnvVarPrefix, confmap, ConfigYAMLFilePath())
 	return
 }
 
-func Config() *basesvc.Config { return cfg }
+func Config() *svc.Config { return cfg }

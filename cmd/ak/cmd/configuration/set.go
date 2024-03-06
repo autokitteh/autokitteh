@@ -12,10 +12,9 @@ import (
 	"go.uber.org/dig"
 	"gopkg.in/yaml.v3"
 
-	"go.autokitteh.dev/autokitteh/backend/basesvc"
-	"go.autokitteh.dev/autokitteh/backend/config"
 	"go.autokitteh.dev/autokitteh/backend/svc"
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
+	"go.autokitteh.dev/autokitteh/internal/xdg"
 )
 
 const filePermissions = 0o600
@@ -29,7 +28,7 @@ var setCmd = common.StandardCommand(&cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// Required to check current configuration is valid
 		// and load all possible configuration keys.
-		if err := svc.New(common.Config(), basesvc.RunOptions{Silent: true}).Err(); err != nil {
+		if err := svc.New(common.Config(), svc.RunOptions{Silent: true}).Err(); err != nil {
 			filename := common.ConfigYAMLFilePath()
 			err = dig.RootCause(err)
 			return fmt.Errorf("%q: invalid configuration: %w", filename, err)
@@ -104,7 +103,7 @@ func currentConfig() (map[string]any, error) {
 }
 
 func setKeyValue(cfg map[string]any, key, val string) error {
-	keyFields := strings.Split(key, basesvc.Delim)
+	keyFields := strings.Split(key, svc.ConfigDelim)
 
 	cfgPtr := cfg
 	for i, field := range keyFields {
@@ -138,23 +137,23 @@ func validateConfig(data []byte) error {
 		return fmt.Errorf("write file: %w", err)
 	}
 
-	path = os.Getenv(config.ConfigEnvVar)
+	path = os.Getenv(xdg.ConfigEnvVar)
 	defer func() {
 		if path != "" {
-			os.Setenv(config.ConfigEnvVar, path)
+			os.Setenv(xdg.ConfigEnvVar, path)
 		} else {
-			os.Unsetenv(config.ConfigEnvVar)
+			os.Unsetenv(xdg.ConfigEnvVar)
 		}
-		config.ConfigHomeDir() // Account for change in environment variable.
+		xdg.Reload() // Account for change in environment variable.
 	}()
 
-	os.Setenv(config.ConfigEnvVar, temp)
+	os.Setenv(xdg.ConfigEnvVar, temp)
 
 	if err := common.InitConfig(nil); err != nil {
 		return fmt.Errorf("init temp config: %w", err)
 	}
 
-	if err := svc.New(common.Config(), basesvc.RunOptions{Silent: true}).Err(); err != nil {
+	if err := svc.New(common.Config(), svc.RunOptions{Silent: true}).Err(); err != nil {
 		err = dig.RootCause(err)
 		return fmt.Errorf("configuration is invalid: %w", err)
 	}

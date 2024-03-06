@@ -5,8 +5,6 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"go.autokitteh.dev/autokitteh/backend/basesvc"
-	"go.autokitteh.dev/autokitteh/backend/configset"
 	"go.autokitteh.dev/autokitteh/backend/svc"
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
 )
@@ -20,13 +18,13 @@ var upCmd = common.StandardCommand(&cobra.Command{
 	Args:    cobra.NoArgs,
 
 	RunE: func(cmd *cobra.Command, args []string) error {
-		m, err := configset.ParseMode(mode)
+		m, err := svc.ParseMode(mode)
 		if err != nil {
 			return fmt.Errorf("mode: %w", err)
 		}
 
 		ctx := cmd.Root().Context()
-		app := svc.New(common.Config(), basesvc.RunOptions{Mode: m})
+		app := svc.New(common.Config(), svc.RunOptions{Mode: m})
 		if err := app.Start(ctx); err != nil {
 			return fmt.Errorf("fx app start: %w", err)
 		}
