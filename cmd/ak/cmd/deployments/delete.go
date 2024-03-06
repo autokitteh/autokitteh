@@ -20,7 +20,7 @@ var deleteCmd = common.StandardCommand(&cobra.Command{
 			return common.FailIfError(cmd, err, "deployment")
 		}
 
-		if err := common.FailIfNotFound(cmd, "deployment", d.IsValid()); err != nil { // test d != nil
+		if err := common.FailIfNotFound(cmd, "deployment", d.IsValid()); err != nil {
 			return err
 		}
 

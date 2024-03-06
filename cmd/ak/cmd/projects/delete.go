@@ -20,17 +20,15 @@ var deleteCmd = common.StandardCommand(&cobra.Command{
 			return common.FailIfError(cmd, err, "project")
 		}
 
-		if err := common.FailIfNotFound(cmd, "project", p); err != nil { // test p != nil
+		if err := common.FailIfNotFound(cmd, "project", p.IsValid()); err != nil {
 			return err
 		}
 
 		ctx, cancel := common.LimitedContext()
 		defer cancel()
+
 		err = projects().Delete(ctx, id)
-		if err != nil { // report any other than "not found" error (which was handled above)
-			return common.ToExitCodeError(err, "delete project")
-		}
-		return nil
+		return common.ToExitCodeError(err, "delete project")
 	},
 })
 
