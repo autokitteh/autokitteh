@@ -221,12 +221,12 @@ func (r Resolver) envByID(envID, projNameOrID string, pid sdktypes.ProjectID) (e
 func (r Resolver) envByName(envName, projNameOrID string, pid sdktypes.ProjectID) (sdktypes.Env, sdktypes.EnvID, error) {
 	parts := strings.Split(envName, separator)
 	if len(parts) == 1 {
-		return r.envByShortName(envName, projNameOrID, pid)
+		return r.envByShortName(envName, pid)
 	}
 	return r.envByFullName(parts, projNameOrID, pid)
 }
 
-func (r Resolver) envByShortName(envName, projNameOrID string, pid sdktypes.ProjectID) (e sdktypes.Env, eid sdktypes.EnvID, err error) {
+func (r Resolver) envByShortName(envName string, pid sdktypes.ProjectID) (e sdktypes.Env, eid sdktypes.EnvID, err error) {
 	if !pid.IsValid() {
 		err = fmt.Errorf("invalid environment name %q: missing project prefix", envName)
 		return
