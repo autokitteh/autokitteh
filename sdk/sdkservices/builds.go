@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 
+	"go.autokitteh.dev/autokitteh/sdk/sdkbuildfile"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
@@ -17,4 +18,5 @@ type Builds interface {
 	Download(ctx context.Context, id sdktypes.BuildID) (io.ReadCloser, error)
 	Save(ctx context.Context, build sdktypes.Build, data []byte) (sdktypes.BuildID, error)
 	Delete(ctx context.Context, id sdktypes.BuildID) error
+	Describe(ctx context.Context, id sdktypes.BuildID) (*sdkbuildfile.BuildFile, error)
 }

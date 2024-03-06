@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"path/filepath"
@@ -13,6 +14,65 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
+
+func decodeVersion(s string) (string, error) {
+	if !strings.HasPrefix(s, versionPrefix) {
+		return "", errors.New("invalid version prefix")
+	}
+
+	return strings.TrimSpace(s[len(versionPrefix):]), nil
+}
+
+func IsBuildFile(r io.Reader) bool {
+	gr, err := gzip.NewReader(r)
+	if err != nil {
+		return false
+	}
+
+	defer gr.Close()
+
+	tr := tar.NewReader(gr)
+
+	hdr, err := tr.Next()
+	if err != nil {
+		return false
+	}
+
+	return hdr.Name == filenames.version
+}
+
+func ReadVersion(r io.Reader) (string, error) {
+	gr, err := gzip.NewReader(r)
+	if err != nil {
+		return "", fmt.Errorf("gzip: %w", err)
+	}
+
+	defer gr.Close()
+
+	tr := tar.NewReader(gr)
+
+	hdr, err := tr.Next()
+	if err != nil {
+		return "", fmt.Errorf("read tar header: %w", err)
+	}
+
+	if hdr.Name != filenames.version {
+		return "", fmt.Errorf("unexpected file %q", hdr.Name)
+	}
+
+	buf := *bytes.NewBuffer(make([]byte, 0, len(version)+len(versionPrefix)+2))
+
+	if _, err := io.CopyN(&buf, tr, int64(buf.Cap())); err != nil && err != io.EOF {
+		return "", err
+	}
+
+	v, err := decodeVersion(buf.String())
+	if err != nil {
+		return "", fmt.Errorf("decode version: %w", err)
+	}
+
+	return v, nil
+}
 
 // Reads a build file from given reader.
 // This does not make sure that all fields in BuildFile
@@ -54,7 +114,9 @@ func Read(r io.Reader) (*BuildFile, error) {
 
 		switch path {
 		case filenames.version:
-			if v := strings.TrimSpace(buf.String()); v != version {
+			if v, err := decodeVersion(buf.String()); err != nil {
+				return nil, fmt.Errorf("decode version: %w", err)
+			} else if v != version {
 				return nil, fmt.Errorf("unsupported build file format version %q != %q", v, version)
 			}
 		case filenames.info:

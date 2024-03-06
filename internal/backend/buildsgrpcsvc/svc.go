@@ -3,6 +3,7 @@ package buildsgrpcsvc
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -136,4 +137,29 @@ func (s *server) Delete(ctx context.Context, req *connect.Request[buildsv1.Delet
 	}
 
 	return connect.NewResponse(&buildsv1.DeleteResponse{}), nil
+}
+
+func (s *server) Describe(ctx context.Context, req *connect.Request[buildsv1.DescribeRequest]) (*connect.Response[buildsv1.DescribeResponse], error) {
+	msg := req.Msg
+
+	if err := proto.Validate(msg); err != nil {
+		return nil, sdkerrors.AsConnectError(err)
+	}
+
+	bid, err := sdktypes.ParseBuildID(msg.BuildId)
+	if err != nil {
+		return nil, sdkerrors.AsConnectError(err)
+	}
+
+	bf, err := s.builds.Describe(ctx, bid)
+	if err != nil {
+		return nil, sdkerrors.AsConnectError(err)
+	}
+
+	desc, err := json.Marshal(bf)
+	if err != nil {
+		return nil, sdkerrors.AsConnectError(fmt.Errorf("marshal: %w", err))
+	}
+
+	return connect.NewResponse(&buildsv1.DescribeResponse{DescriptionJson: string(desc)}), nil
 }

@@ -10,6 +10,7 @@ package sdkbuildfile
 	Tree structure:
 
 		- version.txt             # build file format version.
+		                          #  must be the first file in the tar.
 		- info.json               # general info, including the root path.
 		- runtimes/               # outputs from multiple runtimes.
 		  - name/                 # runtime name
@@ -22,7 +23,8 @@ package sdkbuildfile
 */
 
 const (
-	version = "1"
+	versionPrefix = "=^.^= autokitteh-build-file-v"
+	version       = "1"
 )
 
 var filenames = struct {

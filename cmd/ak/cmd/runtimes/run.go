@@ -18,7 +18,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
-	"go.autokitteh.dev/autokitteh/sdk/sdkruntimes/sdkbuildfile"
+	"go.autokitteh.dev/autokitteh/sdk/sdkbuildfile"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -164,15 +164,13 @@ func run(ctx context.Context, b *sdkbuildfile.BuildFile, path string) (map[strin
 }
 
 func isBuildFile(f *os.File) (bool, error) {
-	var hdr [2]byte
-	if _, err := f.Read(hdr[:]); err != nil {
-		return false, fmt.Errorf("read: %w", err)
+	if !sdkbuildfile.IsBuildFile(f) {
+		return false, nil
 	}
 
 	if _, err := f.Seek(0, 0); err != nil {
 		return false, fmt.Errorf("seek: %w", err)
 	}
 
-	// check for gzip magic, identifies a build file.
-	return hdr[0] == 0x1f && hdr[1] == 0x8b, nil
+	return true, nil
 }

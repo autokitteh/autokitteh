@@ -39,6 +39,11 @@ class BuildsServiceStub(object):
                 request_serializer=autokitteh_dot_builds_dot_v1_dot_svc__pb2.DownloadRequest.SerializeToString,
                 response_deserializer=autokitteh_dot_builds_dot_v1_dot_svc__pb2.DownloadResponse.FromString,
                 )
+        self.Describe = channel.unary_unary(
+                '/autokitteh.builds.v1.BuildsService/Describe',
+                request_serializer=autokitteh_dot_builds_dot_v1_dot_svc__pb2.DescribeRequest.SerializeToString,
+                response_deserializer=autokitteh_dot_builds_dot_v1_dot_svc__pb2.DescribeResponse.FromString,
+                )
 
 
 class BuildsServiceServicer(object):
@@ -74,6 +79,12 @@ class BuildsServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def Describe(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_BuildsServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -101,6 +112,11 @@ def add_BuildsServiceServicer_to_server(servicer, server):
                     servicer.Download,
                     request_deserializer=autokitteh_dot_builds_dot_v1_dot_svc__pb2.DownloadRequest.FromString,
                     response_serializer=autokitteh_dot_builds_dot_v1_dot_svc__pb2.DownloadResponse.SerializeToString,
+            ),
+            'Describe': grpc.unary_unary_rpc_method_handler(
+                    servicer.Describe,
+                    request_deserializer=autokitteh_dot_builds_dot_v1_dot_svc__pb2.DescribeRequest.FromString,
+                    response_serializer=autokitteh_dot_builds_dot_v1_dot_svc__pb2.DescribeResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -194,5 +210,22 @@ class BuildsService(object):
         return grpc.experimental.unary_unary(request, target, '/autokitteh.builds.v1.BuildsService/Download',
             autokitteh_dot_builds_dot_v1_dot_svc__pb2.DownloadRequest.SerializeToString,
             autokitteh_dot_builds_dot_v1_dot_svc__pb2.DownloadResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def Describe(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/autokitteh.builds.v1.BuildsService/Describe',
+            autokitteh_dot_builds_dot_v1_dot_svc__pb2.DescribeRequest.SerializeToString,
+            autokitteh_dot_builds_dot_v1_dot_svc__pb2.DescribeResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

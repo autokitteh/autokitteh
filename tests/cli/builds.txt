@@ -1,6 +1,6 @@
 $ tmp=$(mktemp -d)
-$ data_file_path=${tmp}/data_file
-$ echo "build_data" >> ${data_file_path}
+$ build_file_path=${tmp}/build.akb
+$ ${AK} runtimes build --dir examples/testprograms/multi -o ${build_file_path}
 $ # List builds return empty list
 $ ${AK} builds list; echo $?
 0
@@ -11,7 +11,11 @@ $ # get build fails if id not found and failure is requested
 $ ${AK} builds get bld_00000000000000000000000001 -f; echo $?
 Error: build not found
 10
-$ # upload build without data_file_path fail
+$ echo hissss > ${tmp}/hissss
+$ ${AK} builds upload ${tmp}/hissss; echo $?
+Error: save build: rpc: server error: read version: gzip: unexpected EOF ([])
+1
+$ # upload build without build_file_path fail
 $ ${AK} builds upload; echo $?
 Error: accepts 1 arg(s), received 0
 1
@@ -20,15 +24,125 @@ $ ${AK} builds upload not_existing.txt; echo $?
 Error: read file: open not_existing.txt: no such file or directory
 1
 $ # upload build return build_id
-$ ${AK} -j builds upload ${data_file_path}; echo $?
+$ ${AK} -j builds upload ${build_file_path}; echo $?
 {"build_id":"bld_00000000000000000000000001"}
 0
 $ # get build
 $ ${AK} -j builds get bld_00000000000000000000000001; echo $? #=> --regex {"build":\{"build_id":"bld_00000000000000000000000001","created_at":".*}}
 $ # list builds
+$ # describe build
+$ ${AK} -J builds describe bld_00000000000000000000000001; echo $?
+{
+  "build": {
+    "info": {},
+    "runtimes": [
+      {
+        "info": {
+          "name": "config"
+        },
+        "artifact": {
+          "exports": [
+            {
+              "symbol": "text"
+            },
+            {
+              "symbol": "text"
+            }
+          ],
+          "compiled_data": {
+            "poem1.txt": "",
+            "poem2.txt": ""
+          }
+        }
+      },
+      {
+        "info": {
+          "name": "starlark"
+        },
+        "artifact": {
+          "requirements": [
+            {
+              "location": {
+                "path": "main.star",
+                "row": 3,
+                "col": 6
+              },
+              "url": "poem1.txt"
+            },
+            {
+              "location": {
+                "path": "main.star",
+                "row": 4,
+                "col": 6
+              },
+              "url": "poem2.txt"
+            }
+          ],
+          "exports": [
+            {
+              "location": {
+                "path": "cats.star",
+                "row": 1,
+                "col": 1
+              },
+              "symbol": "cats"
+            },
+            {
+              "location": {
+                "path": "cats.star",
+                "row": 2,
+                "col": 1
+              },
+              "symbol": "vocalization"
+            },
+            {
+              "location": {
+                "path": "dogs.star",
+                "row": 1,
+                "col": 1
+              },
+              "symbol": "dogs"
+            },
+            {
+              "location": {
+                "path": "dogs.star",
+                "row": 2,
+                "col": 1
+              },
+              "symbol": "vocalization"
+            },
+            {
+              "location": {
+                "path": "main.star",
+                "row": 6,
+                "col": 1
+              },
+              "symbol": "num_cats"
+            },
+            {
+              "location": {
+                "path": "main.star",
+                "row": 7,
+                "col": 1
+              },
+              "symbol": "num_dogs"
+            }
+          ],
+          "compiled_data": {
+            "cats.star": "",
+            "dogs.star": "",
+            "main.star": ""
+          }
+        }
+      }
+    ],
+    "runtime_requirements": []
+  }
+}
+0
 $ ${AK} -j builds ls ; echo $? #=> --regex {"build_id":"bld_0000000000000000000000000[1-9]","created_at":".*}
 $ # upload another build return build_id
-$ ${AK} -j builds upload ${data_file_path}; echo $?
+$ ${AK} -j builds upload ${build_file_path}; echo $?
 {"build_id":"bld_00000000000000000000000002"}
 0
 $ # list builds returns 2 builds and empty line
@@ -45,9 +159,12 @@ $ ${AK} -j builds get bld_00000000000000000000000002; echo $?
 $ # get build 1 still works
 $ ${AK} -j builds get bld_00000000000000000000000001; echo $? #=> --regex {"build":\{"build_id":"bld_00000000000000000000000001","created_at":".*}}
 $ # download build 1
-$ ${AK} -j builds download bld_00000000000000000000000001 --output -; echo $? 
-build_data
+$ ${AK} -j builds download bld_00000000000000000000000001 --output - > ${tmp}/got; echo $? 
+0
+$ cmp ${tmp}/got ${build_file_path}; echo $?
 0
 $ # download to file
 $ ${AK} -j builds download bld_00000000000000000000000001 -o ${tmp}/build.file; echo $? 
+0
+$ cmp ${tmp}/build.file ${build_file_path}; echo $?
 0
