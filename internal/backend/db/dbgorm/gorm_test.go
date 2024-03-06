@@ -66,7 +66,7 @@ func setupDB(dbName string) *gorm.DB {
 }
 
 func newDbFixture(withoutForeignKeys bool) *dbFixture {
-	db := setupDB("/tmp/ak.db") // in-memory db, specify filename to use file db
+	db := setupDB("") // in-memory db, specify filename to use file db
 	if withoutForeignKeys {
 		db.Exec("PRAGMA foreign_keys = OFF")
 	}
