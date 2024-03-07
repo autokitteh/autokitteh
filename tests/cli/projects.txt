@@ -43,5 +43,5 @@ $ ${AK} p c -j; echo $?
 {"project_id":"prj_00000000000000000000000005"}
 0
 $ ${AK} p g prj_00000000000000000000000005 -j; echo $?
-{"project":{"project_id":"prj_00000000000000000000000005","name":"Amelia_the_Beautiful_0008"}}
+{"project":{"project_id":"prj_00000000000000000000000005","name":"Anxious_Amethyst_0008"}}
 0
