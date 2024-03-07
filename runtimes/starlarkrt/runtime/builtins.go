@@ -38,6 +38,10 @@ var builtins = map[string]func(thread *starlark.Thread, fn *starlark.Builtin, ar
 	"fail": func(thread *starlark.Thread, bi *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
 		vctx := values.Context{}
 
+		if len(args) != 0 && len(kwargs) != 0 {
+			return nil, fmt.Errorf("cannot specify both positional and keyword arguments")
+		}
+
 		if len(args) == 1 {
 			v, err := vctx.FromStarlarkValue(args[0])
 			if err != nil {
@@ -57,7 +61,7 @@ var builtins = map[string]func(thread *starlark.Thread, fn *starlark.Builtin, ar
 		}
 
 		if len(kwargs) == 0 {
-			return nil, fmt.Errorf("fail: cannot specify both positional and keyword arguments")
+			return nil, sdktypes.NewProgramError(sdktypes.NewStringValue("user triggered error"), nil, nil).ToError()
 		}
 
 		vs, err := kittehs.ListToMapError(kwargs, func(t starlark.Tuple) (string, sdktypes.Value, error) {
