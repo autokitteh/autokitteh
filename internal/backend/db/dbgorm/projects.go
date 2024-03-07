@@ -11,7 +11,9 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-// TODO: Delete.
+func (db *gormdb) createProject(ctx context.Context, p scheme.Project) error {
+	return db.db.WithContext(ctx).Create(&p).Error
+}
 
 func (db *gormdb) CreateProject(ctx context.Context, p sdktypes.Project) error {
 	if !p.ID().IsValid() {
@@ -19,18 +21,11 @@ func (db *gormdb) CreateProject(ctx context.Context, p sdktypes.Project) error {
 		return errors.New("project id missing")
 	}
 
-	ph := p.Name()
-
-	r := scheme.Project{
+	project := scheme.Project{
 		ProjectID: p.ID().String(),
-		Name:      ph.String(),
+		Name:      p.Name().String(),
 	}
-
-	if err := db.db.WithContext(ctx).Create(&r).Error; err != nil {
-		return translateError(err)
-	}
-
-	return nil
+	return translateError(db.createProject(ctx, project))
 }
 
 func (db *gormdb) UpdateProject(ctx context.Context, p sdktypes.Project) error {
