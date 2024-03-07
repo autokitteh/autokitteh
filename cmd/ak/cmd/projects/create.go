@@ -18,14 +18,12 @@ var createCmd = common.StandardCommand(&cobra.Command{
 	Args:    cobra.NoArgs,
 
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if _, err := sdktypes.ParseSymbol(name); err != nil {
-			return fmt.Errorf("invalid project name: %w", err)
+		nameSym, err := sdktypes.ParseSymbol(name)
+		if err != nil {
+			return fmt.Errorf("parse project name: %w", err)
 		}
 
-		p, err := sdktypes.ProjectFromProto(&sdktypes.ProjectPB{Name: name})
-		if err != nil {
-			return err
-		}
+		p := sdktypes.NewProject().WithName(nameSym)
 
 		ctx, cancel := common.LimitedContext()
 		defer cancel()
@@ -35,16 +33,7 @@ var createCmd = common.StandardCommand(&cobra.Command{
 			return fmt.Errorf("create project: %w", err)
 		}
 
-		if name != "" {
-			common.RenderKV("project_id", id)
-			return nil
-		}
-
-		if p, err = projects().GetByID(ctx, id); err != nil {
-			return fmt.Errorf("get project: %w", err)
-		}
-
-		common.RenderKV("project", p)
+		common.RenderKV("project_id", id)
 		return nil
 	},
 })

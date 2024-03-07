@@ -35,8 +35,8 @@ var generateSymbolString = catnames.NewGenerator(intn)
 func NewRandomSymbol() Symbol {
 	return forceSymbol(
 		fmt.Sprintf(
-			"%s%4.4d",
-			strings.ReplaceAll(generateSymbolString(), " ", ""),
+			"%s_%4.4d",
+			strings.ReplaceAll(generateSymbolString(), " ", "_"),
 			intn(1000),
 		),
 	)
