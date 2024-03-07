@@ -13,12 +13,12 @@ func TestPick(t *testing.T) {
 	gen := NewGenerator(pick)
 
 	expected := []string{
-		"Alexis the Agile",
-		"Allie the Alert",
-		"Ambra the Anxious",
-		"Amethyst the Behavioral",
-		"Andy the Best",
-		"Angelica the Bossy",
+		"Affectionate Alice",
+		"Agreeable Amber",
+		"Amusing Amelia",
+		"Beautiful Andreas",
+		"Beloved Angel",
+		"Big Angelina",
 	}
 
 	gens := make([]string, len(expected))

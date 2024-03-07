@@ -13,9 +13,9 @@ func NewGenerator(pick func(int) int) func() string {
 
 	return func() string {
 		return fmt.Sprintf(
-			"%s the %s",
-			names[pick(len(names))],
+			"%s %s",
 			adjectives[pick(len(adjectives))],
+			names[pick(len(names))],
 		)
 	}
 }
