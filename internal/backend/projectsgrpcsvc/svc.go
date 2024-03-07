@@ -88,13 +88,14 @@ func (s *Server) Update(ctx context.Context, req *connect.Request[projectsv1.Upd
 func (s *Server) Get(ctx context.Context, req *connect.Request[projectsv1.GetRequest]) (*connect.Response[projectsv1.GetResponse], error) {
 	toResponse := func(project sdktypes.Project, err error) (*connect.Response[projectsv1.GetResponse], error) {
 		if err != nil {
-			if errors.Is(err, sdkerrors.ErrNotFound) {
-				return connect.NewResponse(&projectsv1.GetResponse{}), nil
-			} else if errors.Is(err, sdkerrors.ErrUnauthorized) {
+			switch {
+			case errors.Is(err, sdkerrors.ErrNotFound):
+				return nil, connect.NewError(connect.CodeNotFound, err)
+			case errors.Is(err, sdkerrors.ErrUnauthorized):
 				return nil, connect.NewError(connect.CodePermissionDenied, err)
+			default:
+				return nil, connect.NewError(connect.CodeUnknown, err)
 			}
-
-			return nil, connect.NewError(connect.CodeUnknown, err)
 		}
 
 		return connect.NewResponse(&projectsv1.GetResponse{Project: project.ToProto()}), nil

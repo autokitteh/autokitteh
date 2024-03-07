@@ -73,7 +73,11 @@ func (c *client) GetByID(ctx context.Context, pid sdktypes.ProjectID) (sdktypes.
 
 	project, err := sdktypes.StrictProjectFromProto(resp.Msg.Project)
 	if err != nil {
-		return sdktypes.InvalidProject, fmt.Errorf("invalid project: %w", err)
+		// TODO: "errors.Is(err, sdkerrors.ErrInvalidArgument)" doesn't work.
+		if err.Error() == "invalid argument: zero object" {
+			return sdktypes.InvalidProject, nil
+		}
+		return sdktypes.InvalidProject, err
 	}
 
 	return project, nil
