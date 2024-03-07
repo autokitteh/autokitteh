@@ -34,15 +34,15 @@ var downloadCmd = common.StandardCommand(&cobra.Command{
 		ctx, cancel := common.LimitedContext()
 		defer cancel()
 
-		rs, err := projects().DownloadResources(ctx, pid)
+		resources, err := projects().DownloadResources(ctx, pid)
 		if err != nil {
 			return err
 		}
-		if err := common.FailIfNotFound(cmd, "resources", len(rs) > 0); err != nil {
+		if err := common.FailIfNotFound(cmd, "resources", len(resources) > 0); err != nil {
 			return err
 		}
 
-		for filename, data := range rs {
+		for filename, data := range resources {
 			fulllPath := filepath.Join(outputDirectory, filename)
 
 			if err := os.MkdirAll(path.Dir(fulllPath), 0o755); err != nil {
