@@ -11,7 +11,6 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	valuesv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/values/v1"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-	"go.autokitteh.dev/autokitteh/sdk/sdkvalues"
 
 	"go.autokitteh.dev/autokitteh/integrations/slack/api"
 )
@@ -145,7 +144,7 @@ func (h handler) HandleSlashCommand(w http.ResponseWriter, r *http.Request) {
 
 // transformCommand transforms a received Slack event into an autokitteh event.
 func transformCommand(l *zap.Logger, w http.ResponseWriter, cmd SlashCommand) (map[string]*valuesv1.Value, error) {
-	wrapped, err := sdkvalues.DefaultValueWrapper.Wrap(cmd)
+	wrapped, err := sdktypes.DefaultValueWrapper.Wrap(cmd)
 	if err != nil {
 		l.Error("Failed to wrap Slack event",
 			zap.Error(err),

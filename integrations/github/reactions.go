@@ -5,7 +5,6 @@ import (
 
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-	"go.autokitteh.dev/autokitteh/sdk/sdkvalues"
 )
 
 // https://docs.github.com/en/rest/reactions/reactions#create-reaction-for-a-commit-comment
@@ -35,7 +34,7 @@ func (i integration) createReactionForCommitComment(ctx context.Context, args []
 		return sdktypes.InvalidValue, err
 	}
 
-	return sdkvalues.Wrap(r)
+	return sdktypes.WrapValue(r)
 }
 
 // https://docs.github.com/en/rest/reactions/reactions#create-reaction-for-an-issue
@@ -65,7 +64,7 @@ func (i integration) createReactionForIssue(ctx context.Context, args []sdktypes
 		return sdktypes.InvalidValue, err
 	}
 
-	return sdkvalues.Wrap(r)
+	return sdktypes.WrapValue(r)
 }
 
 // https://docs.github.com/en/rest/reactions/reactions#create-reaction-for-an-issue-comment
@@ -94,7 +93,7 @@ func (i integration) createReactionForIssueComment(ctx context.Context, args []s
 		return sdktypes.InvalidValue, err
 	}
 
-	return sdkvalues.Wrap(r)
+	return sdktypes.WrapValue(r)
 }
 
 // https://docs.github.com/en/rest/reactions/reactions#create-reaction-for-a-pull-request-review-comment
@@ -124,5 +123,5 @@ func (i integration) createReactionForPullRequestReviewComment(ctx context.Conte
 		return sdktypes.InvalidValue, err
 	}
 
-	return sdkvalues.Wrap(r)
+	return sdktypes.WrapValue(r)
 }

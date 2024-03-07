@@ -5,7 +5,6 @@ import (
 
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-	"go.autokitteh.dev/autokitteh/sdk/sdkvalues"
 )
 
 // https://docs.github.com/en/rest/users#get-a-user
@@ -28,5 +27,5 @@ func (i integration) getUser(ctx context.Context, args []sdktypes.Value, kwargs 
 		return sdktypes.InvalidValue, err
 	}
 
-	return sdkvalues.Wrap(resp)
+	return sdktypes.WrapValue(resp)
 }

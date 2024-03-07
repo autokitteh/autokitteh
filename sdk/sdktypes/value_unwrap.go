@@ -1,4 +1,4 @@
-package sdkvalues
+package sdktypes
 
 import (
 	"encoding/json"
@@ -8,13 +8,12 @@ import (
 	"time"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
-	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-func Unwrap(v sdktypes.Value) (any, error) { return DefaultValueWrapper.Unwrap(v) }
+func UnwrapValue(v Value) (any, error) { return DefaultValueWrapper.Unwrap(v) }
 
 // Unwraps a value, converting it to a native go type.
-func (w ValueWrapper) Unwrap(v sdktypes.Value) (any, error) {
+func (w ValueWrapper) Unwrap(v Value) (any, error) {
 	if w.Preunwrap != nil {
 		var err error
 		if v, err = w.Preunwrap(v); err != nil {
@@ -25,41 +24,41 @@ func (w ValueWrapper) Unwrap(v sdktypes.Value) (any, error) {
 	return w.unwrap(v)
 }
 
-func (w *ValueWrapper) unwrap(v sdktypes.Value) (any, error) {
+func (w *ValueWrapper) unwrap(v Value) (any, error) {
 	if !v.IsValid() {
 		return nil, nil
 	}
 
 	switch v := v.Concrete().(type) {
-	case sdktypes.NothingValue:
+	case NothingValue:
 		return struct{}{}, nil
-	case sdktypes.FunctionValue:
+	case FunctionValue:
 		return nil, errors.New("function values are not supported")
-	case sdktypes.StringValue:
+	case StringValue:
 		return v.Value(), nil
-	case sdktypes.IntegerValue:
+	case IntegerValue:
 		return v.Value(), nil
-	case sdktypes.FloatValue:
+	case FloatValue:
 		return v.Value(), nil
-	case sdktypes.BooleanValue:
+	case BooleanValue:
 		return v.Value(), nil
-	case sdktypes.BytesValue:
+	case BytesValue:
 		return v.Value(), nil
-	case sdktypes.TimeValue:
+	case TimeValue:
 		return v.Value(), nil
-	case sdktypes.DurationValue:
+	case DurationValue:
 		d := v.Value()
 		if w.RawDuration {
 			return d, nil
 		}
 		return d, nil
-	case sdktypes.SymbolValue:
+	case SymbolValue:
 		return v.Symbol().String(), nil
-	case sdktypes.ListValue:
+	case ListValue:
 		return kittehs.TransformError(v.Values(), w.Unwrap)
-	case sdktypes.SetValue:
+	case SetValue:
 		return kittehs.TransformError(v.Values(), w.Unwrap)
-	case sdktypes.StructValue:
+	case StructValue:
 		if w.UnwrapStructsAsJSON {
 			// nop - will marshal to JSON below.
 			break
@@ -78,7 +77,7 @@ func (w *ValueWrapper) unwrap(v sdktypes.Value) (any, error) {
 		}
 		return m, nil
 
-	case sdktypes.DictValue:
+	case DictValue:
 		d := v.Items()
 		if w.SafeForJSON {
 			if len(d) == 0 {
@@ -128,7 +127,7 @@ func (w *ValueWrapper) unwrap(v sdktypes.Value) (any, error) {
 	return json.Marshal(v)
 }
 
-func toJSONMap[K comparable](items []sdktypes.DictItem, w *ValueWrapper) (map[K]any, error) {
+func toJSONMap[K comparable](items []DictItem, w *ValueWrapper) (map[K]any, error) {
 	vs := make(map[K]any, len(items))
 
 	for _, kv := range items {
@@ -144,11 +143,11 @@ func toJSONMap[K comparable](items []sdktypes.DictItem, w *ValueWrapper) (map[K]
 	return vs, nil
 }
 
-func (w ValueWrapper) UnwrapInto(dst any, v sdktypes.Value) error {
+func (w ValueWrapper) UnwrapInto(dst any, v Value) error {
 	return w.unwrapInto("", reflect.ValueOf(dst), v)
 }
 
-func (w ValueWrapper) unwrapInto(path string, dstv reflect.Value, v sdktypes.Value) error {
+func (w ValueWrapper) unwrapInto(path string, dstv reflect.Value, v Value) error {
 	if w.Preunwrap != nil {
 		v, err := w.Preunwrap(v)
 		if err != nil {
@@ -172,13 +171,13 @@ func (w ValueWrapper) unwrapInto(path string, dstv reflect.Value, v sdktypes.Val
 		return errors.New("dst is not settable")
 	}
 
-	if _, ok := dstv.Interface().(sdktypes.Value); ok {
+	if _, ok := dstv.Interface().(Value); ok {
 		// Target is a Value, just assign it directly.
 		dstv.Set(reflect.ValueOf(v))
 		return nil
 	}
 
-	if sdktypes.IsConcreteValue(dstv.Interface()) {
+	if IsConcreteValue(dstv.Interface()) {
 		// Target is a concrete value which contains the actual value inside.
 		// extract the actual value and assign it.
 
@@ -203,7 +202,7 @@ func (w ValueWrapper) unwrapInto(path string, dstv reflect.Value, v sdktypes.Val
 	return fmt.Errorf("%scannot unwrap into %v", path, dstv.Type())
 }
 
-func (w ValueWrapper) unwrapPtrInto(path string, dstv reflect.Value, v sdktypes.Value) error {
+func (w ValueWrapper) unwrapPtrInto(path string, dstv reflect.Value, v Value) error {
 	if v.IsNothing() && dstv.CanSet() {
 		// Target is a ptr and settable, and we need to
 		// set nothing, so just set to nil.
@@ -220,7 +219,7 @@ func (w ValueWrapper) unwrapPtrInto(path string, dstv reflect.Value, v sdktypes.
 	return w.unwrapInto(path, dstv.Elem(), v)
 }
 
-func (w ValueWrapper) unwrapScalarInto(path string, dstv reflect.Value, v sdktypes.Value) (bool, error) {
+func (w ValueWrapper) unwrapScalarInto(path string, dstv reflect.Value, v Value) (bool, error) {
 	switch dstv.Interface().(type) {
 	case time.Duration:
 		d, err := v.ToDuration()
@@ -246,7 +245,7 @@ func (w ValueWrapper) unwrapScalarInto(path string, dstv reflect.Value, v sdktyp
 			return true, fmt.Errorf("unwrap: %w", err)
 		}
 
-		if sym, ok := u.(sdktypes.Symbol); ok {
+		if sym, ok := u.(Symbol); ok {
 			u = sym.String()
 		}
 
@@ -267,7 +266,7 @@ func (w ValueWrapper) unwrapScalarInto(path string, dstv reflect.Value, v sdktyp
 	}
 }
 
-func (w ValueWrapper) unwrapContainerInto(path string, dstv reflect.Value, v sdktypes.Value) (bool, error) {
+func (w ValueWrapper) unwrapContainerInto(path string, dstv reflect.Value, v Value) (bool, error) {
 	// path to supply to recurrent unwrapInto to indicate new value name.
 	pathf := func(f string, xs ...any) string {
 		p := path
@@ -282,13 +281,13 @@ func (w ValueWrapper) unwrapContainerInto(path string, dstv reflect.Value, v sdk
 	dstk := dstt.Kind()
 
 	switch v := v.Concrete().(type) {
-	case sdktypes.ListValue, sdktypes.SetValue:
+	case ListValue, SetValue:
 		var isSet bool
-		var vs []sdktypes.Value
-		if lv, ok := v.(sdktypes.ListValue); ok {
+		var vs []Value
+		if lv, ok := v.(ListValue); ok {
 			vs = lv.Values()
 		} else {
-			vs = v.(sdktypes.SetValue).Values()
+			vs = v.(SetValue).Values()
 			isSet = true
 		}
 
@@ -340,17 +339,17 @@ func (w ValueWrapper) unwrapContainerInto(path string, dstv reflect.Value, v sdk
 			return true, nil
 		}
 
-	case sdktypes.DictValue, sdktypes.StructValue:
-		var items []sdktypes.DictItem
+	case DictValue, StructValue:
+		var items []DictItem
 
-		if dv, ok := v.(sdktypes.DictValue); ok {
+		if dv, ok := v.(DictValue); ok {
 			items = dv.Items()
 		} else {
-			fields := v.(sdktypes.StructValue).Fields()
+			fields := v.(StructValue).Fields()
 
-			items = kittehs.TransformMapToList(fields, func(n string, v sdktypes.Value) sdktypes.DictItem {
-				return sdktypes.DictItem{
-					K: sdktypes.NewStringValue(n),
+			items = kittehs.TransformMapToList(fields, func(n string, v Value) DictItem {
+				return DictItem{
+					K: NewStringValue(n),
 					V: v,
 				}
 			})

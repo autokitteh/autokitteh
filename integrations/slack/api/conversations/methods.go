@@ -8,7 +8,6 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-	"go.autokitteh.dev/autokitteh/sdk/sdkvalues"
 
 	"go.autokitteh.dev/autokitteh/integrations/slack/api"
 )
@@ -45,7 +44,7 @@ func (a API) Archive(ctx context.Context, args []sdktypes.Value, kwargs map[stri
 	}
 
 	// Parse and return the response.
-	return sdkvalues.Wrap(resp)
+	return sdktypes.WrapValue(resp)
 }
 
 // Close a direct message or multi-person direct message.
@@ -75,7 +74,7 @@ func (a API) Close(ctx context.Context, args []sdktypes.Value, kwargs map[string
 	}
 
 	// Parse and return the response.
-	return sdkvalues.Wrap(resp)
+	return sdktypes.WrapValue(resp)
 }
 
 // Create initiates a public or private channel-based conversation.
@@ -110,7 +109,7 @@ func (a API) Create(ctx context.Context, args []sdktypes.Value, kwargs map[strin
 	}
 
 	// Parse and return the response.
-	return sdkvalues.Wrap(resp)
+	return sdktypes.WrapValue(resp)
 }
 
 // History returns the history of a conversation's (channel's)
@@ -147,7 +146,7 @@ func (a API) History(ctx context.Context, args []sdktypes.Value, kwargs map[stri
 	}
 
 	// Parse and return the response.
-	return sdkvalues.Wrap(resp)
+	return sdktypes.WrapValue(resp)
 }
 
 // Info returns information about a conversation (channel).
@@ -191,7 +190,7 @@ func (a API) Info(ctx context.Context, args []sdktypes.Value, kwargs map[string]
 	}
 
 	// Parse and return the response.
-	return sdkvalues.Wrap(resp)
+	return sdktypes.WrapValue(resp)
 }
 
 // Invite invites users to a channel.
@@ -226,7 +225,7 @@ func (a API) Invite(ctx context.Context, args []sdktypes.Value, kwargs map[strin
 	}
 
 	// Parse and return the response.
-	return sdkvalues.Wrap(resp)
+	return sdktypes.WrapValue(resp)
 }
 
 // List lists all the channels in a Slack team.
@@ -281,7 +280,7 @@ func (a API) List(ctx context.Context, args []sdktypes.Value, kwargs map[string]
 	}
 
 	// Parse and return the response.
-	return sdkvalues.Wrap(resp)
+	return sdktypes.WrapValue(resp)
 }
 
 // Members retrieves all the members of a conversation (channel).
@@ -325,7 +324,7 @@ func (a API) Members(ctx context.Context, args []sdktypes.Value, kwargs map[stri
 	}
 
 	// Parse and return the response.
-	return sdkvalues.Wrap(resp)
+	return sdktypes.WrapValue(resp)
 }
 
 // Open opens or resumes a direct message or multi-person direct message.
@@ -357,7 +356,7 @@ func (a API) Open(ctx context.Context, args []sdktypes.Value, kwargs map[string]
 	}
 
 	// Parse and return the response.
-	return sdkvalues.Wrap(resp)
+	return sdktypes.WrapValue(resp)
 }
 
 // Rename a conversation (channel).
@@ -391,7 +390,7 @@ func (a API) Rename(ctx context.Context, args []sdktypes.Value, kwargs map[strin
 	}
 
 	// Parse and return the response.
-	return sdkvalues.Wrap(resp)
+	return sdktypes.WrapValue(resp)
 }
 
 // Replies retrieves a thread of messages posted to a conversation (channel).
@@ -454,7 +453,7 @@ func (a API) Replies(ctx context.Context, args []sdktypes.Value, kwargs map[stri
 	}
 
 	// Parse and return the response.
-	return sdkvalues.Wrap(resp)
+	return sdktypes.WrapValue(resp)
 }
 
 // SetPurpose sets the purpose (description) for a conversation (channel).
@@ -488,7 +487,7 @@ func (a API) SetPurpose(ctx context.Context, args []sdktypes.Value, kwargs map[s
 	}
 
 	// Parse and return the response.
-	return sdkvalues.Wrap(resp)
+	return sdktypes.WrapValue(resp)
 }
 
 // SetTopic sets the topic for a conversation (channel).
@@ -522,7 +521,7 @@ func (a API) SetTopic(ctx context.Context, args []sdktypes.Value, kwargs map[str
 	}
 
 	// Parse and return the response.
-	return sdkvalues.Wrap(resp)
+	return sdktypes.WrapValue(resp)
 }
 
 // Unarchive reverses conversation (channel) archival.
@@ -552,5 +551,5 @@ func (a API) Unarchive(ctx context.Context, args []sdktypes.Value, kwargs map[st
 	}
 
 	// Parse and return the response.
-	return sdkvalues.Wrap(resp)
+	return sdktypes.WrapValue(resp)
 }

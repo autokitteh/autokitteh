@@ -1,9 +1,7 @@
-package sdkvalues
+package sdktypes
 
 import (
 	"github.com/iancoleman/strcase"
-
-	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 // CAVEATS:
@@ -21,7 +19,7 @@ type ValueWrapper struct {
 	SafeForJSON bool
 
 	// Wrap: Used for functions that are wrapped using this wrapper.
-	ExecutorID sdktypes.ExecutorID
+	ExecutorID ExecutorID
 
 	FromStructFieldNameCaser func(string) string
 	ToStructFieldNameCaser   func(string) string
@@ -33,10 +31,10 @@ type ValueWrapper struct {
 	RawDuration bool
 
 	// Unwrap: Tranform value before unwrapping. If returns nil, ignore value.
-	Preunwrap func(sdktypes.Value) (sdktypes.Value, error)
+	Preunwrap func(Value) (Value, error)
 
 	// Unwrap: if not handled, use this unwrapper.
-	UnwrapUnknown func(sdktypes.Value) (any, error)
+	UnwrapUnknown func(Value) (any, error)
 }
 
 var DefaultValueWrapper ValueWrapper

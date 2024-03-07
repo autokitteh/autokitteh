@@ -14,7 +14,6 @@ import (
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-	"go.autokitteh.dev/autokitteh/sdk/sdkvalues"
 )
 
 var (
@@ -45,7 +44,7 @@ func ParseJSON(r io.Reader) (sdktypes.Value, error) {
 		return sdktypes.InvalidValue, err
 	}
 
-	return sdkvalues.DefaultValueWrapper.Wrap(m)
+	return sdktypes.DefaultValueWrapper.Wrap(m)
 }
 
 func ParseRawJSON(r io.Reader) (sdktypes.Value, error) {
@@ -70,7 +69,7 @@ func ParseYAML(r io.Reader) (sdktypes.Value, error) {
 		return sdktypes.InvalidValue, err
 	}
 
-	return sdkvalues.DefaultValueWrapper.Wrap(m)
+	return sdktypes.DefaultValueWrapper.Wrap(m)
 }
 
 func ParseRawYAML(r io.Reader) (sdktypes.Value, error) {
@@ -95,7 +94,7 @@ func ParseXML(r io.Reader) (sdktypes.Value, error) {
 		return sdktypes.InvalidValue, err
 	}
 
-	return sdkvalues.DefaultValueWrapper.Wrap(m)
+	return sdktypes.DefaultValueWrapper.Wrap(m)
 }
 
 func ParseText(r io.Reader) (sdktypes.Value, error) {
@@ -115,7 +114,7 @@ func ParseCSV(r io.Reader) (sdktypes.Value, error) {
 		return sdktypes.InvalidValue, err
 	}
 
-	v := kittehs.Must1(sdkvalues.DefaultValueWrapper.Wrap(rs))
+	v := kittehs.Must1(sdktypes.DefaultValueWrapper.Wrap(rs))
 
 	return sdktypes.NewDictValueFromStringMap(map[string]sdktypes.Value{
 		"data": v,

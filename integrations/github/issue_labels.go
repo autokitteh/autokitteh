@@ -5,7 +5,6 @@ import (
 
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-	"go.autokitteh.dev/autokitteh/sdk/sdkvalues"
 )
 
 func (i integration) addIssueLabels(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
@@ -34,7 +33,7 @@ func (i integration) addIssueLabels(ctx context.Context, args []sdktypes.Value, 
 		return sdktypes.InvalidValue, err
 	}
 
-	return sdkvalues.Wrap(c)
+	return sdktypes.WrapValue(c)
 }
 
 func (i integration) removeIssueLabel(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
@@ -62,5 +61,5 @@ func (i integration) removeIssueLabel(ctx context.Context, args []sdktypes.Value
 		return sdktypes.InvalidValue, err
 	}
 
-	return sdkvalues.Wrap(c)
+	return sdktypes.WrapValue(c)
 }

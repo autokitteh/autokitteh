@@ -7,7 +7,6 @@ import (
 
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-	"go.autokitteh.dev/autokitteh/sdk/sdkvalues"
 )
 
 // https://docs.github.com/en/rest/commits/commits#list-commits
@@ -37,5 +36,5 @@ func (i integration) listCommits(ctx context.Context, args []sdktypes.Value, kwa
 		return sdktypes.InvalidValue, err
 	}
 
-	return sdkvalues.Wrap(resp)
+	return sdktypes.WrapValue(resp)
 }

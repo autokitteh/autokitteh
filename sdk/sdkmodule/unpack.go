@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-	"go.autokitteh.dev/autokitteh/sdk/sdkvalues"
 )
 
 // UnpackArgs unpacks the positional and keyword arguments into the supplied parameter
@@ -53,14 +52,14 @@ func UnpackArgs(args []sdktypes.Value, kwargs map[string]sdktypes.Value, dsts ..
 		}
 
 		if strings.HasPrefix(name, "**") {
-			if err := sdkvalues.DefaultValueWrapper.UnwrapInto(dst, sdktypes.NewDictValueFromStringMap(kwargs)); err != nil {
+			if err := sdktypes.DefaultValueWrapper.UnwrapInto(dst, sdktypes.NewDictValueFromStringMap(kwargs)); err != nil {
 				return fmt.Errorf("dst %q: %w", name, err)
 			}
 
 			kwargs = nil
 			continue
 		} else if strings.HasPrefix(name, "*") {
-			if err := sdkvalues.DefaultValueWrapper.UnwrapInto(dst, sdktypes.NewListValue(args)); err != nil {
+			if err := sdktypes.DefaultValueWrapper.UnwrapInto(dst, sdktypes.NewListValue(args)); err != nil {
 				return fmt.Errorf("dst %q: %w", name, err)
 			}
 
@@ -87,7 +86,7 @@ func UnpackArgs(args []sdktypes.Value, kwargs map[string]sdktypes.Value, dsts ..
 			}
 		}
 
-		if err := sdkvalues.DefaultValueWrapper.UnwrapInto(dst, v); err != nil {
+		if err := sdktypes.DefaultValueWrapper.UnwrapInto(dst, v); err != nil {
 			return fmt.Errorf("dst %q: %w", name, err)
 		}
 	}

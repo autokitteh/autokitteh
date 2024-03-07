@@ -8,7 +8,6 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-	"go.autokitteh.dev/autokitteh/sdk/sdkvalues"
 
 	"go.autokitteh.dev/autokitteh/integrations/slack/api"
 )
@@ -46,7 +45,7 @@ func (a API) GetPresence(ctx context.Context, args []sdktypes.Value, kwargs map[
 	}
 
 	// Parse and return the response.
-	return sdkvalues.Wrap(resp)
+	return sdktypes.WrapValue(resp)
 }
 
 // Info returns information about a user based on their Slack user ID, e.g.
@@ -82,7 +81,7 @@ func (a API) Info(ctx context.Context, args []sdktypes.Value, kwargs map[string]
 	}
 
 	// Parse and return the response.
-	return sdkvalues.Wrap(resp)
+	return sdktypes.WrapValue(resp)
 }
 
 // List returns information about all active and inactive users and apps/bots.
@@ -128,7 +127,7 @@ func (a API) List(ctx context.Context, args []sdktypes.Value, kwargs map[string]
 	}
 
 	// Parse and return the response.
-	return sdkvalues.Wrap(resp)
+	return sdktypes.WrapValue(resp)
 }
 
 // LookupByEmail returns information about a user based on their email address,
@@ -156,5 +155,5 @@ func (a API) LookupByEmail(ctx context.Context, args []sdktypes.Value, kwargs ma
 	}
 
 	// Parse and return the response.
-	return sdkvalues.Wrap(resp)
+	return sdktypes.WrapValue(resp)
 }

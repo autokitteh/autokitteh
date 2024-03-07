@@ -9,7 +9,6 @@ import (
 
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-	"go.autokitteh.dev/autokitteh/sdk/sdkvalues"
 )
 
 // https://www.twilio.com/docs/messaging/api/message-resource#create-a-message-resource
@@ -72,5 +71,5 @@ func (i integration) createMessage(ctx context.Context, args []sdktypes.Value, k
 	}
 
 	// Parse and return the response.
-	return sdkvalues.Wrap(resp)
+	return sdktypes.WrapValue(resp)
 }

@@ -1,7 +1,7 @@
 package grpc
 
 /*
-var safeForJsonWrapper = sdkvalues.ValueWrapper{SafeForJSON: true}
+var safeForJsonWrapper = sdktypes.ValueWrapper{SafeForJSON: true}
 
 func parsePayload(args []sdktypes.Value, kwargs map[string]sdktypes.Value) (map[string]any, error) {
 	if len(args) > 1 {
@@ -59,7 +59,7 @@ func createGRPCCallWrapper(functionName string) sdkexecutor.Function {
 			return nil, err
 		}
 
-		return sdkvalues.DefaultValueWrapper.Wrap(res)
+		return sdktypes.DefaultValueWrapper.Wrap(res)
 	}
 }
 
@@ -101,7 +101,7 @@ func newGRPCModule(xid sdktypes.ExecutorID) sdkmodule.Module {
 
 	for _, f := range fns {
 		opts = append(opts, kittehs.Transform(f.Constants, func(c string) sdkmodule.Optfn {
-			return sdkmodule.ExportValue(c, sdkmodule.WithValue(kittehs.Must1(sdkvalues.Wrap(c))))
+			return sdkmodule.ExportValue(c, sdkmodule.WithValue(kittehs.Must1(sdktypes.WrapValue(c))))
 		})...)
 	}
 
