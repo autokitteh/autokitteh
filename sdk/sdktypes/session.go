@@ -18,6 +18,10 @@ type SessionPB = sessionv1.Session
 type SessionTraits struct{}
 
 func (SessionTraits) Validate(m *SessionPB) error {
+	if m.BuildId != "" && m.DeploymentId != "" {
+		return errors.New("session cannot have both build_id and deployment_id")
+	}
+
 	return errors.Join(
 		enumField[SessionStateType]("state", m.State),
 		idField[DeploymentID]("deployment_id", m.DeploymentId),
@@ -30,11 +34,13 @@ func (SessionTraits) Validate(m *SessionPB) error {
 }
 
 func (SessionTraits) StrictValidate(m *SessionPB) error {
+	if m.BuildId == "" && m.DeploymentId == "" {
+		return errors.New("session must have either build_id or deployment_id")
+	}
+
 	return errors.Join(
 		mandatory("created_at", m.CreatedAt),
-		mandatory("deployment_id", m.DeploymentId),
 		mandatory("entrypoint", m.Entrypoint),
-		mandatory("event_id", m.EventId),
 		mandatory("session_id", m.SessionId),
 		mandatory("state", m.State),
 	)
@@ -50,12 +56,16 @@ func (p Session) WithNewID() Session {
 }
 
 func (p Session) ID() SessionID { return kittehs.Must1(ParseSessionID(p.read().SessionId)) }
-func (p Session) DeploymentID() DeploymentID {
-	return kittehs.Must1(ParseDeploymentID(p.read().DeploymentId))
-}
+
+func (p Session) BuildID() BuildID         { return kittehs.Must1(ParseBuildID(p.read().BuildId)) }
 func (p Session) EventID() EventID         { return kittehs.Must1(ParseEventID(p.read().EventId)) }
 func (p Session) EntryPoint() CodeLocation { return forceFromProto[CodeLocation](p.read().Entrypoint) }
 func (p Session) Memo() map[string]string  { return p.read().Memo }
+
+func (p Session) DeploymentID() DeploymentID {
+	return kittehs.Must1(ParseDeploymentID(p.read().DeploymentId))
+}
+
 func (p Session) Inputs() map[string]Value {
 	return kittehs.TransformMapValues(p.read().Inputs, forceFromProto[Value])
 }
@@ -68,10 +78,11 @@ func (p Session) WithInputs(inputs map[string]Value) Session {
 	return Session{p.forceUpdate(func(pb *SessionPB) { pb.Inputs = kittehs.TransformMapValues(inputs, ToProto) })}
 }
 
-func NewSession(deploymentID DeploymentID, parentSessionID SessionID, eventID EventID, ep CodeLocation, inputs map[string]Value, memo map[string]string) Session {
+func NewSession(deploymentID DeploymentID, buildID BuildID, parentSessionID SessionID, eventID EventID, ep CodeLocation, inputs map[string]Value, memo map[string]string) Session {
 	return kittehs.Must1(SessionFromProto(
 		&SessionPB{
 			DeploymentId:    deploymentID.String(),
+			BuildId:         buildID.String(),
 			EventId:         eventID.String(),
 			Entrypoint:      ToProto(ep),
 			Inputs:          kittehs.TransformMapValues(inputs, ToProto),

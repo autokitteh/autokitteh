@@ -717,29 +717,34 @@ export class Session extends Message<Session> {
   deploymentId = "";
 
   /**
+   * @generated from field: string build_id = 3;
+   */
+  buildId = "";
+
+  /**
    * TODO: eliminate? move to inputs? or memo?
    *
-   * @generated from field: string event_id = 3;
+   * @generated from field: string event_id = 4;
    */
   eventId = "";
 
   /**
-   * @generated from field: autokitteh.program.v1.CodeLocation entrypoint = 4;
+   * @generated from field: autokitteh.program.v1.CodeLocation entrypoint = 5;
    */
   entrypoint?: CodeLocation;
 
   /**
-   * @generated from field: map<string, autokitteh.values.v1.Value> inputs = 5;
+   * @generated from field: map<string, autokitteh.values.v1.Value> inputs = 6;
    */
   inputs: { [key: string]: Value } = {};
 
   /**
-   * @generated from field: string parent_session_id = 6;
+   * @generated from field: string parent_session_id = 7;
    */
   parentSessionId = "";
 
   /**
-   * @generated from field: map<string, string> memo = 7;
+   * @generated from field: map<string, string> memo = 8;
    */
   memo: { [key: string]: string } = {};
 
@@ -768,11 +773,12 @@ export class Session extends Message<Session> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "session_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "deployment_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "event_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "entrypoint", kind: "message", T: CodeLocation },
-    { no: 5, name: "inputs", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: Value} },
-    { no: 6, name: "parent_session_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 7, name: "memo", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 3, name: "build_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "event_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "entrypoint", kind: "message", T: CodeLocation },
+    { no: 6, name: "inputs", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: Value} },
+    { no: 7, name: "parent_session_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 8, name: "memo", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 10, name: "created_at", kind: "message", T: Timestamp },
     { no: 11, name: "updated_at", kind: "message", T: Timestamp },
     { no: 12, name: "state", kind: "enum", T: proto3.getEnumType(SessionStateType) },

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"go.temporal.io/sdk/workflow"
 	"go.uber.org/zap"
@@ -103,12 +104,23 @@ func (w *sessionWorkflow) addPrint(ctx workflow.Context, print string) {
 func (w *sessionWorkflow) updateState(ctx workflow.Context, state sdktypes.SessionState) {
 	w.z.Debug("update state", zap.Any("state", state))
 
+	if ctx.Err() == workflow.ErrCanceled {
+		goCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		if err := w.ws.svcs.DB.UpdateSessionState(goCtx, w.data.SessionID, state); err != nil {
+			w.z.Error("update session state", zap.Error(err))
+		}
+
+		return
+	}
+
 	if err := workflow.ExecuteLocalActivity(ctx, w.ws.svcs.DB.UpdateSessionState, w.data.SessionID, state).Get(ctx, nil); err != nil {
 		w.z.Panic("update session", zap.Error(err))
 	}
 }
 
-func (w *sessionWorkflow) loadIntegrationConnections(ctx context.Context, path string) (map[string]sdktypes.Value, error) {
+func (w *sessionWorkflow) loadIntegrationConnections(path string) (map[string]sdktypes.Value, error) {
 	// Since the load callback does not inform us which member exactly from the integration it wishes
 	// to load, we must return all relevant connections.
 
@@ -131,7 +143,7 @@ func (w *sessionWorkflow) loadIntegrationConnections(ctx context.Context, path s
 
 func (w *sessionWorkflow) load(ctx context.Context, _ sdktypes.RunID, path string) (map[string]sdktypes.Value, error) {
 	if strings.HasPrefix(path, integrationPathPrefix) {
-		return w.loadIntegrationConnections(ctx, path[1:])
+		return w.loadIntegrationConnections(path[1:])
 	}
 
 	vs := w.executors.GetValues(path)
@@ -370,9 +382,6 @@ func (w *sessionWorkflow) removeEventSubscription(ctx context.Context, signalID 
 }
 
 func (w *sessionWorkflow) run(ctx workflow.Context) (prints []string, err error) {
-	// set before r.Call is called.
-	var callValue sdktypes.Value
-
 	newRunID := func() (runID sdktypes.RunID) {
 		if err := workflow.SideEffect(ctx, func(workflow.Context) any {
 			return sdktypes.NewRunID()
@@ -423,35 +432,36 @@ func (w *sessionWorkflow) run(ctx workflow.Context) (prints []string, err error)
 
 	kittehs.Must0(w.executors.AddExecutor(fmt.Sprintf("run_%s", run.ID().Value()), run))
 
-	epName := entryPoint.Name()
+	var retValue sdktypes.Value
 
-	callValue, ok := run.Values()[epName]
-	if !ok {
-		return prints, fmt.Errorf("entry point not found after evaluation")
+	if epName := entryPoint.Name(); epName != "" {
+		callValue, ok := run.Values()[epName]
+		if !ok {
+			return prints, fmt.Errorf("entry point not found after evaluation")
+		}
+
+		if !callValue.IsFunction() {
+			return prints, fmt.Errorf("entry point is not a function")
+		}
+
+		if callValue.GetFunction().ExecutorID().ToRunID() != runID {
+			return prints, fmt.Errorf("entry point does not belong to main run")
+		}
+
+		w.updateState(ctx, sdktypes.NewSessionStateRunning(runID, callValue))
+
+		argNames := callValue.GetFunction().ArgNames()
+		kwargs := kittehs.FilterMapKeys(
+			w.data.Session.Inputs(),
+			kittehs.ContainedIn(argNames...),
+		)
+
+		if retValue, err = run.Call(goCtx, callValue, nil, kwargs); err != nil {
+			return prints, err
+		}
 	}
 
-	if !callValue.IsFunction() {
-		return prints, fmt.Errorf("entry point is not a function")
-	}
-
-	if callValue.GetFunction().ExecutorID().ToRunID() != runID {
-		return prints, fmt.Errorf("entry point does not belong to main run")
-	}
-
-	w.updateState(ctx, sdktypes.NewSessionStateRunning(runID, callValue))
-
-	argNames := callValue.GetFunction().ArgNames() // sdktypes.GetFunctionValueArgsNames(callValue)
-	kwargs := kittehs.FilterMapKeys(
-		w.data.Session.Inputs(),
-		kittehs.ContainedIn(argNames...),
-	)
-
-	ret, err := run.Call(goCtx, callValue, nil, kwargs)
-	if err != nil {
-		return prints, err
-	}
-
-	state := sdktypes.NewSessionStateCompleted(prints, run.Values(), ret)
+	state := sdktypes.NewSessionStateCompleted(prints, run.Values(), retValue)
 
 	w.updateState(ctx, state)
 

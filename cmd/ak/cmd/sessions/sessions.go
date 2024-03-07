@@ -27,13 +27,14 @@ func AddSubcommands(parentCmd *cobra.Command) {
 
 func init() {
 	// Subcommands.
-	sessionsCmd.AddCommand(getCmd)
-	sessionsCmd.AddCommand(logCmd)
-	sessionsCmd.AddCommand(listCmd)
-	sessionsCmd.AddCommand(startCmd)
-	sessionsCmd.AddCommand(restartCmd)
-	sessionsCmd.AddCommand(stopCmd)
 	sessionsCmd.AddCommand(deleteCmd)
+	sessionsCmd.AddCommand(getCmd)
+	sessionsCmd.AddCommand(listCmd)
+	sessionsCmd.AddCommand(logCmd)
+	sessionsCmd.AddCommand(restartCmd)
+	sessionsCmd.AddCommand(startCmd)
+	sessionsCmd.AddCommand(stopCmd)
+	sessionsCmd.AddCommand(watchCmd)
 }
 
 func sessions() sdkservices.Sessions {

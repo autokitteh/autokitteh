@@ -28,3 +28,7 @@ func StrictSessionLogFromProto(m *SessionLogPB) (SessionLog, error) {
 func NewSessionLog(rs []SessionLogRecord) SessionLog {
 	return forceFromProto[SessionLog](&SessionLogPB{Records: kittehs.Transform(rs, ToProto)})
 }
+
+func (l SessionLog) Records() []SessionLogRecord {
+	return kittehs.Transform(l.read().Records, forceFromProto[SessionLogRecord])
+}

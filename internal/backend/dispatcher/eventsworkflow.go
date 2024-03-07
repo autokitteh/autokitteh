@@ -224,7 +224,7 @@ func (d *dispatcher) startSessions(ctx workflow.Context, event sdktypes.Event, s
 	inputs := event.ToValues()
 
 	for _, sd := range sessionsData {
-		session := sdktypes.NewSession(sd.deploymentID, sdktypes.InvalidSessionID, event.ID(), sd.codeLocation, inputs, nil)
+		session := sdktypes.NewSession(sd.deploymentID, sdktypes.InvalidBuildID, sdktypes.InvalidSessionID, event.ID(), sd.codeLocation, inputs, nil)
 
 		goCtx := temporalclient.NewWorkflowContextAsGOContext(ctx)
 

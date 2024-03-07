@@ -44,9 +44,7 @@ const (
 	sessionWorkflowName = "session_workflow"
 )
 
-func workflowID(sessionID sdktypes.SessionID) string {
-	return fmt.Sprintf("session_%s", sessionID.Value())
-}
+func workflowID(sessionID sdktypes.SessionID) string { return sessionID.String() }
 
 func New(z *zap.Logger, cfg Config, sessions sdkservices.Sessions, svcs *sessionsvcs.Svcs, calls sessioncalls.Calls) Workflows {
 	opts := cfg.Temporal.Worker
@@ -81,6 +79,7 @@ func (ws *workflows) StartWorkflow(ctx context.Context, session sdktypes.Session
 	memo, _ := kittehs.JoinMaps(map[string]string{
 		"session_id":    sessionID.Value(),
 		"deployment_id": session.DeploymentID().String(),
+		"build_id":      session.BuildID().String(),
 		"entrypoint":    session.EntryPoint().CanonicalString(),
 		"workflow_id":   wid,
 	}, session.Memo())

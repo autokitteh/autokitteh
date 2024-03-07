@@ -62,17 +62,19 @@ func (e Event) IntegrationToken() string { return e.read().IntegrationToken }
 func (e Event) Type() string { return e.read().EventType }
 
 func (e Event) ToValues() map[string]Value {
-	pb := e.read()
+	if !e.IsValid() {
+		return nil
+	}
 
 	return map[string]Value{
-		"event_type":        NewStringValue(pb.EventType),
-		"event_id":          NewStringValue(pb.EventId),
-		"original_event_id": NewStringValue(pb.OriginalEventId),
-		"integration_id":    NewStringValue(pb.IntegrationId),
+		"event_type":        NewStringValue(e.m.EventType),
+		"event_id":          NewStringValue(e.m.EventId),
+		"original_event_id": NewStringValue(e.m.OriginalEventId),
+		"integration_id":    NewStringValue(e.m.IntegrationId),
 		"data": kittehs.Must1(NewStructValue(
 			NewStringValue("event_data"),
 			kittehs.TransformMapValues(
-				kittehs.FilterMapKeys(pb.Data, IsValidSymbol),
+				kittehs.FilterMapKeys(e.m.Data, IsValidSymbol),
 				forceFromProto[Value],
 			),
 		)),

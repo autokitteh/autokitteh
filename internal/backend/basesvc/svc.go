@@ -87,6 +87,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		DBFxOpt(),
 		fx.Invoke(func(lc fx.Lifecycle, db db.DB) {
 			HookOnStart(lc, db.Setup)
+			HookOnStop(lc, db.Disconnect)
 		}),
 		Component(
 			"temporalclient",

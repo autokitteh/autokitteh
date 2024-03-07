@@ -44,12 +44,12 @@ func (s *server) Start(ctx context.Context, req *connect.Request[sessionsv1.Star
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	uid, err := s.sessions.Start(ctx, session)
+	sid, err := s.sessions.Start(ctx, session)
 	if err != nil {
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	return connect.NewResponse(&sessionsv1.StartResponse{SessionId: uid.String()}), nil
+	return connect.NewResponse(&sessionsv1.StartResponse{SessionId: sid.String()}), nil
 }
 
 func (s *server) Get(ctx context.Context, req *connect.Request[sessionsv1.GetRequest]) (*connect.Response[sessionsv1.GetResponse], error) {
@@ -149,4 +149,22 @@ func (s *server) Delete(ctx context.Context, req *connect.Request[sessionsv1.Del
 		return nil, sdkerrors.AsConnectError(err)
 	}
 	return connect.NewResponse(&sessionsv1.DeleteResponse{}), nil
+}
+
+func (s *server) Stop(ctx context.Context, req *connect.Request[sessionsv1.StopRequest]) (*connect.Response[sessionsv1.StopResponse], error) {
+	msg := req.Msg
+
+	if err := proto.Validate(msg); err != nil {
+		return nil, sdkerrors.AsConnectError(err)
+	}
+
+	sessionID, err := sdktypes.StrictParseSessionID(msg.SessionId)
+	if err != nil {
+		return nil, sdkerrors.AsConnectError(err)
+	}
+
+	if err = s.sessions.Stop(ctx, sessionID, msg.Reason, msg.Terminate); err != nil {
+		return nil, sdkerrors.AsConnectError(err)
+	}
+	return connect.NewResponse(&sessionsv1.StopResponse{}), nil
 }

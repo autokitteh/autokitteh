@@ -105,19 +105,26 @@ message SessionLog {
 }
 
 message Session {
-  string session_id = 1;
-  string deployment_id = 2 [(buf.validate.field).string.min_len = 1];
-  string event_id = 3; // TODO: eliminate? move to inputs? or memo?
-  program.v1.CodeLocation entrypoint = 4 [(buf.validate.field).required = true];
+  option (buf.validate.message).cel = {
+    id: "session.deployment_and_build_exclusive",
+    message: "deployment_id and build_id are mutually exclusive",
+    expression: "!(this.deployment_id != '' && this.build_id != '')"
+  };
 
-  map<string, values.v1.Value> inputs = 5 [
+  string session_id = 1;
+  string deployment_id = 2;
+  string build_id = 3;
+  string event_id = 4; // TODO: eliminate? move to inputs? or memo?
+  program.v1.CodeLocation entrypoint = 5 [(buf.validate.field).required = true];
+
+  map<string, values.v1.Value> inputs = 6 [
     (buf.validate.field).map.keys.string.min_len = 1,
     (buf.validate.field).map.values.required = true
   ];
 
-  string parent_session_id = 6;
+  string parent_session_id = 7;
 
-  map<string, string> memo = 7;
+  map<string, string> memo = 8;
 
   google.protobuf.Timestamp created_at = 10;
   google.protobuf.Timestamp updated_at = 11;

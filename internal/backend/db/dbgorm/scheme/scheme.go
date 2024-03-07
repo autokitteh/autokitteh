@@ -323,7 +323,8 @@ func ParseSessionCallAttemptComplete(c SessionCallAttempt) (d sdktypes.SessionCa
 
 type Session struct {
 	SessionID        string `gorm:"primaryKey"`
-	DeploymentID     string `gorm:"index;foreignKey:DeploymentID"`
+	DeploymentID     string `gorm:"index"`
+	BuildID          string `gorm:"index"`
 	EventID          string `gorm:"index"`
 	CurrentStateType int    `gorm:"index"`
 	Entrypoint       string
@@ -348,6 +349,7 @@ func ParseSession(s Session) (sdktypes.Session, error) {
 	session, err := sdktypes.StrictSessionFromProto(&sdktypes.SessionPB{
 		SessionId:    s.SessionID,
 		DeploymentId: s.DeploymentID,
+		BuildId:      s.BuildID,
 		EventId:      s.EventID,
 		Entrypoint:   ep.ToProto(),
 		Inputs:       kittehs.TransformMapValues(inputs, sdktypes.ToProto),

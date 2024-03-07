@@ -92,3 +92,9 @@ func NewCallSpecSessionLogRecord(s SessionCallSpec) SessionLogRecord {
 		CallSpec: s.ToProto(),
 	})
 }
+
+func (r SessionLogRecord) WithoutTimestamp() SessionLogRecord {
+	m := r.read()
+	m.T = nil
+	return forceFromProto[SessionLogRecord](m)
+}

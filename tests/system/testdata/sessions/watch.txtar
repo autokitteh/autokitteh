@@ -1,0 +1,92 @@
+ak runtimes build hello.star -o hello.akb
+return code == 0
+
+ak builds upload hello.akb
+return code == 0
+output equals 'build_id: bld_00000000000000000000000001'
+
+ak sessions start --build-id=bld_00000000000000000000000001 --entrypoint hello.star --watch --no-timestamps -J
+return code == 0
+output equals file run-build.txt
+
+ak manifest apply project.yaml
+return code == 0
+
+ak project build my_project --from hello.star
+return code == 0
+output equals 'build_id: bld_00000000000000000000000006'
+
+ak deployments create --build-id=bld_00000000000000000000000006 --env my_project/default --activate
+return code == 0
+output equals 'deployment_id: dep_00000000000000000000000007'
+
+ak sessions start --deployment-id=dep_00000000000000000000000007 --entrypoint hello.star --watch --no-timestamps -J
+return code == 0
+output equals file run-deployment.txt
+
+-- hello.star --
+print("Meow, world!")
+
+-- project.yaml --
+version: v1
+
+project:
+  name: my_project
+
+-- run-deployment.txt --
+{
+  "session_id": "ses_00000000000000000000000008"
+}
+{
+  "state": {
+    "created": {}
+  }
+}
+{
+  "state": {
+    "running": {
+      "run_id": "run_00000000000000000000000009"
+    }
+  }
+}
+{
+  "print": "Meow, world!"
+}
+{
+  "state": {
+    "completed": {
+      "prints": [
+        "Meow, world!"
+      ]
+    }
+  }
+}
+
+-- run-build.txt --
+{
+  "session_id": "ses_00000000000000000000000002"
+}
+{
+  "state": {
+    "created": {}
+  }
+}
+{
+  "state": {
+    "running": {
+      "run_id": "run_00000000000000000000000003"
+    }
+  }
+}
+{
+  "print": "Meow, world!"
+}
+{
+  "state": {
+    "completed": {
+      "prints": [
+        "Meow, world!"
+      ]
+    }
+  }
+}

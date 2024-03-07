@@ -93,8 +93,7 @@ func (s *sessions) Delete(ctx context.Context, sessionID sdktypes.SessionID) err
 }
 
 func (s *sessions) Start(ctx context.Context, session sdktypes.Session) (sdktypes.SessionID, error) {
-	sessionID := session.ID()
-	if sessionID.IsValid() {
+	if session.ID().IsValid() {
 		return sdktypes.InvalidSessionID, sdkerrors.NewInvalidArgumentError("session id is not nil")
 	}
 
@@ -107,14 +106,14 @@ func (s *sessions) Start(ctx context.Context, session sdktypes.Session) (sdktype
 	if err := s.workflows.StartWorkflow(ctx, session, s.config.Debug); err != nil {
 		if uerr := s.svcs.DB.UpdateSessionState(
 			ctx,
-			sessionID,
+			session.ID(),
 			sdktypes.NewSessionStateError(fmt.Errorf("execute workflow: %w", err), nil),
 		); uerr != nil {
-			s.z.With(zap.String("session_id", sessionID.String())).Error("update session", zap.Error(err))
+			s.z.With(zap.String("session_id", session.ID().String())).Error("update session", zap.Error(err))
 		}
 
 		return sdktypes.InvalidSessionID, fmt.Errorf("start workflow: %w", err)
 	}
 
-	return sessionID, nil
+	return session.ID(), nil
 }

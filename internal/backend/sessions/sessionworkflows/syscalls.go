@@ -156,6 +156,7 @@ func (w *sessionWorkflow) start(ctx context.Context, args []sdktypes.Value, kwar
 
 	session := sdktypes.NewSession(
 		w.data.Deployment.ID(),
+		w.data.Build.ID(),
 		w.data.SessionID,
 		sdktypes.InvalidEventID,
 		cl,

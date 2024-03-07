@@ -47,10 +47,9 @@ var Configs = configset.Set[Config]{
 		},
 	},
 	Test: &Config{
-		CheckHealthInterval: time.Minute,
-		CheckHealthTimeout:  10 * time.Second,
-		LogLevel:            zap.NewAtomicLevelAt(zapcore.WarnLevel),
-
+		CheckHealthInterval:  time.Minute,
+		CheckHealthTimeout:   10 * time.Second,
+		LogLevel:             zap.NewAtomicLevelAt(zapcore.WarnLevel),
 		AlwaysStartDevServer: true,
 		DevServer: testsuite.DevServerOptions{
 			LogLevel: zapcore.WarnLevel.String(),

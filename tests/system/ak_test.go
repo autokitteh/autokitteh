@@ -45,6 +45,11 @@ func TestSuite(t *testing.T) {
 			return nil // Skip directories and non-test files.
 		}
 
+		if strings.HasSuffix(path, ".disabled") {
+			t.Log("ignoring disabled test:", path)
+			return nil
+		}
+
 		// Each .txtar file is a test-case, with potentially
 		// multiple actions, checks, and embedded files.
 		t.Run(strings.TrimPrefix(path, rootDir), func(t *testing.T) {

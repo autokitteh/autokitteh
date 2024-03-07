@@ -49,7 +49,22 @@ func New(z *zap.Logger, cfg *Config) (db.DB, error) {
 	return db, nil
 }
 
+func (db *gormdb) Disconnect(ctx context.Context) error {
+	sqlDB, err := db.db.DB()
+	if err != nil {
+		return err
+	}
+
+	db.db = nil
+
+	return sqlDB.Close()
+}
+
 func (db *gormdb) Connect(ctx context.Context) error {
+	if db.db != nil {
+		return nil
+	}
+
 	client, err := gormkitteh.OpenZ(db.z.Named("gorm"), db.cfg, func(cfg *gorm.Config) {
 		cfg.SkipDefaultTransaction = true
 		cfg.Logger = logger.Default

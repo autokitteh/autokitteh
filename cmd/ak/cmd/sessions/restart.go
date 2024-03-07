@@ -7,10 +7,11 @@ import (
 
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
 	"go.autokitteh.dev/autokitteh/internal/resolver"
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 var restartCmd = common.StandardCommand(&cobra.Command{
-	Use:   "restart [session ID] [--wait]",
+	Use:   "restart [session ID] [--watch] [--poll-interval] [--watch-timeout DURARTION]",
 	Short: "Start new instance of existing session",
 	Args:  cobra.MaximumNArgs(1),
 
@@ -43,19 +44,8 @@ var restartCmd = common.StandardCommand(&cobra.Command{
 
 		common.RenderKVIfV("session_id", sid)
 
-		if wait {
-			fmt.Println()
-			e := make(chan error)
-			done := make(chan bool)
-			state := make(chan string)
-			go waitForSession(sid, e, done, state)
-			go updateStateTicker(e, done, state)
-			select {
-			case err := <-e:
-				return err
-			case <-done:
-				break
-			}
+		if track {
+			return sessionWatch(sid, sdktypes.SessionStateTypeUnspecified)
 		}
 
 		return nil
@@ -64,6 +54,7 @@ var restartCmd = common.StandardCommand(&cobra.Command{
 
 func init() {
 	// Command-specific flags.
-	restartCmd.Flags().BoolVarP(&wait, "wait", "w", false, "wait for session to complete")
-	restartCmd.Flags().DurationVarP(&waitInterval, "wait-interval", "i", defaultWait, "wait interval")
+	restartCmd.Flags().BoolVarP(&track, "watch", "w", false, "watch session to completion")
+	restartCmd.Flags().DurationVar(&pollInterval, "poll-interval", defaultPollInterval, "poll interval")
+	restartCmd.Flags().DurationVar(&watchTimeout, "watch-timeout", 0, "watch time out duration")
 }

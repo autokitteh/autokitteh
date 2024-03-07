@@ -69,45 +69,48 @@ func Get(ctx context.Context, z *zap.Logger, svcs *sessionsvcs.Svcs, sessionID s
 		return nil, err
 	}
 
-	if data.Deployment, err = retrieve(ctx, z, data.Session.DeploymentID(), svcs.Deployments.Get); err != nil {
-		return nil, err
-	}
+	buildID := data.Session.BuildID()
 
-	envID := data.Deployment.EnvID()
-
-	if data.Env, err = retrieve(ctx, z, envID, svcs.Envs.GetByID); err != nil {
-		return nil, err
-	}
-
-	if data.ProjectID = data.Env.ProjectID(); !data.ProjectID.IsValid() {
-		return nil, fmt.Errorf("sessions can only run on projects")
-	}
-
-	if data.Connections, err = svcs.Connections.List(ctx, sdkservices.ListConnectionsFilter{ProjectID: data.ProjectID}); err != nil {
-		return nil, fmt.Errorf("connections.list: %w", err)
-	}
-
-	for _, conn := range data.Connections {
-		ts, err := svcs.Triggers.List(ctx, sdkservices.ListTriggersFilter{ConnectionID: conn.ID()})
-		if err != nil {
-			return nil, fmt.Errorf("triggers.list(%v): %w", conn.ID(), err)
+	if deploymentID := data.Session.DeploymentID(); deploymentID.IsValid() {
+		if data.Deployment, err = retrieve(ctx, z, deploymentID, svcs.Deployments.Get); err != nil {
+			return nil, err
 		}
 
-		ts = kittehs.Filter(ts, func(t sdktypes.Trigger) bool {
-			triggerEnvID := t.EnvID()
-			return !triggerEnvID.IsValid() || triggerEnvID == envID
-		})
+		buildID = data.Deployment.BuildID()
+		envID := data.Deployment.EnvID()
 
-		data.Triggers = append(data.Triggers, ts...)
+		if data.Env, err = retrieve(ctx, z, envID, svcs.Envs.GetByID); err != nil {
+			return nil, err
+		}
+
+		if data.ProjectID = data.Env.ProjectID(); !data.ProjectID.IsValid() {
+			return nil, fmt.Errorf("sessions can only run on projects")
+		}
+
+		if data.Connections, err = svcs.Connections.List(ctx, sdkservices.ListConnectionsFilter{ProjectID: data.ProjectID}); err != nil {
+			return nil, fmt.Errorf("connections.list: %w", err)
+		}
+
+		for _, conn := range data.Connections {
+			ts, err := svcs.Triggers.List(ctx, sdkservices.ListTriggersFilter{ConnectionID: conn.ID()})
+			if err != nil {
+				return nil, fmt.Errorf("triggers.list(%v): %w", conn.ID(), err)
+			}
+
+			ts = kittehs.Filter(ts, func(t sdktypes.Trigger) bool {
+				triggerEnvID := t.EnvID()
+				return !triggerEnvID.IsValid() || triggerEnvID == envID
+			})
+
+			data.Triggers = append(data.Triggers, ts...)
+		}
+
+		// TODO: merge mappings?
+
+		if data.EnvVars, err = svcs.Envs.GetVars(ctx, nil, envID); err != nil {
+			return nil, fmt.Errorf("get vars: %w", err)
+		}
 	}
-
-	// TODO: merge mappings?
-
-	if data.EnvVars, err = svcs.Envs.GetVars(ctx, nil, envID); err != nil {
-		return nil, fmt.Errorf("get vars: %w", err)
-	}
-
-	buildID := data.Deployment.BuildID()
 
 	if data.Build, err = retrieve(ctx, z, buildID, svcs.Builds.Get); err != nil {
 		return nil, err
