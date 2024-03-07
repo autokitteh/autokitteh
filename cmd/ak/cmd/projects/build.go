@@ -21,7 +21,8 @@ var (
 
 var buildCmd = common.StandardCommand(&cobra.Command{
 	Use:   "build <project name or ID> --from <file or directory> [--from ...]",
-	Short: `Build project (see also the "build" commands)`,
+	Short: "Build project",
+	Long:  `Build project - see also the "build" sibling command`,
 	Args:  cobra.ExactArgs(1),
 
 	RunE: func(cmd *cobra.Command, args []string) error {

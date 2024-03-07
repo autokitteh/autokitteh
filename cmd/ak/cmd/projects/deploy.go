@@ -16,13 +16,14 @@ var env string
 
 var deployCmd = common.StandardCommand(&cobra.Command{
 	Use:   "deploy <project name or ID> --from <file or directory> [--from ...] [--env <name or ID>]",
-	Short: `Build and deploy project (see also "build" and "deploy" commands)`,
+	Short: "Build, deploy, and activate project",
+	Long:  `Build, deploy, and activate project - see also the "build" and "deployment" parent commands`,
 	Args:  cobra.ExactArgs(1),
 
 	RunE: func(cmd *cobra.Command, args []string) error {
 		r := resolver.Resolver{Client: common.Client()}
 
-		// First, build the project (see the "build" command).
+		// First, build the project (see the "build" sibling command).
 		buildID, err := buildProject(args)
 		if err != nil {
 			return err
@@ -38,7 +39,7 @@ var deployCmd = common.StandardCommand(&cobra.Command{
 			return common.NewExitCodeError(common.NotFoundExitCode, err)
 		}
 
-		// Finally, deploy and activate it (see the "deploy" commands).
+		// Finally, deploy and activate it (see the "deployment" parent command).
 		deployment, err := sdktypes.DeploymentFromProto(&sdktypes.DeploymentPB{
 			EnvId:   eid.String(),
 			BuildId: buildID,
