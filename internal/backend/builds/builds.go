@@ -3,6 +3,7 @@ package builds
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"time"
 
@@ -10,6 +11,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
+	"go.autokitteh.dev/autokitteh/sdk/sdkbuildfile"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -42,6 +44,11 @@ func (b *Builds) Download(ctx context.Context, id sdktypes.BuildID) (io.ReadClos
 }
 
 func (b *Builds) Save(ctx context.Context, build sdktypes.Build, data []byte) (sdktypes.BuildID, error) {
+	// make sure this at least tries to pretend to be a build file.
+	if _, err := sdkbuildfile.ReadVersion(bytes.NewReader(data)); err != nil {
+		return sdktypes.InvalidBuildID, fmt.Errorf("read version: %w", err)
+	}
+
 	build = build.
 		WithNewID().
 		WithCreatedAt(time.Now())
@@ -55,4 +62,21 @@ func (b *Builds) Save(ctx context.Context, build sdktypes.Build, data []byte) (s
 
 func (b *Builds) Delete(ctx context.Context, id sdktypes.BuildID) error {
 	return b.DB.DeleteBuild(ctx, id)
+}
+
+func (b *Builds) Describe(ctx context.Context, bid sdktypes.BuildID) (*sdkbuildfile.BuildFile, error) {
+	r, err := b.Download(ctx, bid)
+	if err != nil {
+		return nil, fmt.Errorf("download: %w", err)
+	}
+	defer r.Close()
+
+	bf, err := sdkbuildfile.Read(r)
+	if err != nil {
+		return nil, fmt.Errorf("read: %w", err)
+	}
+
+	bf.OmitContent()
+
+	return bf, nil
 }

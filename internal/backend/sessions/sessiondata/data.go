@@ -10,7 +10,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionsvcs"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
-	"go.autokitteh.dev/autokitteh/sdk/sdkruntimes/sdkbuildfile"
+	"go.autokitteh.dev/autokitteh/sdk/sdkbuildfile"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )

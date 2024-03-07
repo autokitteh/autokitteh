@@ -66,3 +66,15 @@ class DownloadResponse(_message.Message):
     DATA_FIELD_NUMBER: _ClassVar[int]
     data: bytes
     def __init__(self, data: _Optional[bytes] = ...) -> None: ...
+
+class DescribeRequest(_message.Message):
+    __slots__ = ["build_id"]
+    BUILD_ID_FIELD_NUMBER: _ClassVar[int]
+    build_id: str
+    def __init__(self, build_id: _Optional[str] = ...) -> None: ...
+
+class DescribeResponse(_message.Message):
+    __slots__ = ["description_json"]
+    DESCRIPTION_JSON_FIELD_NUMBER: _ClassVar[int]
+    description_json: str
+    def __init__(self, description_json: _Optional[str] = ...) -> None: ...

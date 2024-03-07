@@ -95,7 +95,7 @@ func (bf *BuildFile) Write(w io.Writer) error {
 	tw := tar.NewWriter(gw)
 	defer tw.Close()
 
-	if err := writeString(tw, filenames.version, version+"\n"); err != nil {
+	if err := writeString(tw, filenames.version, versionPrefix+version+"\n"); err != nil {
 		return err
 	}
 

@@ -379,3 +379,77 @@ export class DownloadResponse extends Message<DownloadResponse> {
   }
 }
 
+/**
+ * @generated from message autokitteh.builds.v1.DescribeRequest
+ */
+export class DescribeRequest extends Message<DescribeRequest> {
+  /**
+   * @generated from field: string build_id = 1;
+   */
+  buildId = "";
+
+  constructor(data?: PartialMessage<DescribeRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "autokitteh.builds.v1.DescribeRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "build_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DescribeRequest {
+    return new DescribeRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DescribeRequest {
+    return new DescribeRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DescribeRequest {
+    return new DescribeRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: DescribeRequest | PlainMessage<DescribeRequest> | undefined, b: DescribeRequest | PlainMessage<DescribeRequest> | undefined): boolean {
+    return proto3.util.equals(DescribeRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message autokitteh.builds.v1.DescribeResponse
+ */
+export class DescribeResponse extends Message<DescribeResponse> {
+  /**
+   * @generated from field: string description_json = 1;
+   */
+  descriptionJson = "";
+
+  constructor(data?: PartialMessage<DescribeResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "autokitteh.builds.v1.DescribeResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "description_json", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DescribeResponse {
+    return new DescribeResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DescribeResponse {
+    return new DescribeResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DescribeResponse {
+    return new DescribeResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: DescribeResponse | PlainMessage<DescribeResponse> | undefined, b: DescribeResponse | PlainMessage<DescribeResponse> | undefined): boolean {
+    return proto3.util.equals(DescribeResponse, a, b);
+  }
+}
+

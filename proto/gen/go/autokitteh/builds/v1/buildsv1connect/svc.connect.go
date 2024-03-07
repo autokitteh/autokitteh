@@ -43,6 +43,8 @@ const (
 	BuildsServiceDeleteProcedure = "/autokitteh.builds.v1.BuildsService/Delete"
 	// BuildsServiceDownloadProcedure is the fully-qualified name of the BuildsService's Download RPC.
 	BuildsServiceDownloadProcedure = "/autokitteh.builds.v1.BuildsService/Download"
+	// BuildsServiceDescribeProcedure is the fully-qualified name of the BuildsService's Describe RPC.
+	BuildsServiceDescribeProcedure = "/autokitteh.builds.v1.BuildsService/Describe"
 )
 
 // BuildsServiceClient is a client for the autokitteh.builds.v1.BuildsService service.
@@ -52,6 +54,7 @@ type BuildsServiceClient interface {
 	Save(context.Context, *connect.Request[v1.SaveRequest]) (*connect.Response[v1.SaveResponse], error)
 	Delete(context.Context, *connect.Request[v1.DeleteRequest]) (*connect.Response[v1.DeleteResponse], error)
 	Download(context.Context, *connect.Request[v1.DownloadRequest]) (*connect.Response[v1.DownloadResponse], error)
+	Describe(context.Context, *connect.Request[v1.DescribeRequest]) (*connect.Response[v1.DescribeResponse], error)
 }
 
 // NewBuildsServiceClient constructs a client for the autokitteh.builds.v1.BuildsService service. By
@@ -89,6 +92,11 @@ func NewBuildsServiceClient(httpClient connect.HTTPClient, baseURL string, opts 
 			baseURL+BuildsServiceDownloadProcedure,
 			opts...,
 		),
+		describe: connect.NewClient[v1.DescribeRequest, v1.DescribeResponse](
+			httpClient,
+			baseURL+BuildsServiceDescribeProcedure,
+			opts...,
+		),
 	}
 }
 
@@ -99,6 +107,7 @@ type buildsServiceClient struct {
 	save     *connect.Client[v1.SaveRequest, v1.SaveResponse]
 	delete   *connect.Client[v1.DeleteRequest, v1.DeleteResponse]
 	download *connect.Client[v1.DownloadRequest, v1.DownloadResponse]
+	describe *connect.Client[v1.DescribeRequest, v1.DescribeResponse]
 }
 
 // Get calls autokitteh.builds.v1.BuildsService.Get.
@@ -126,6 +135,11 @@ func (c *buildsServiceClient) Download(ctx context.Context, req *connect.Request
 	return c.download.CallUnary(ctx, req)
 }
 
+// Describe calls autokitteh.builds.v1.BuildsService.Describe.
+func (c *buildsServiceClient) Describe(ctx context.Context, req *connect.Request[v1.DescribeRequest]) (*connect.Response[v1.DescribeResponse], error) {
+	return c.describe.CallUnary(ctx, req)
+}
+
 // BuildsServiceHandler is an implementation of the autokitteh.builds.v1.BuildsService service.
 type BuildsServiceHandler interface {
 	Get(context.Context, *connect.Request[v1.GetRequest]) (*connect.Response[v1.GetResponse], error)
@@ -133,6 +147,7 @@ type BuildsServiceHandler interface {
 	Save(context.Context, *connect.Request[v1.SaveRequest]) (*connect.Response[v1.SaveResponse], error)
 	Delete(context.Context, *connect.Request[v1.DeleteRequest]) (*connect.Response[v1.DeleteResponse], error)
 	Download(context.Context, *connect.Request[v1.DownloadRequest]) (*connect.Response[v1.DownloadResponse], error)
+	Describe(context.Context, *connect.Request[v1.DescribeRequest]) (*connect.Response[v1.DescribeResponse], error)
 }
 
 // NewBuildsServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -166,6 +181,11 @@ func NewBuildsServiceHandler(svc BuildsServiceHandler, opts ...connect.HandlerOp
 		svc.Download,
 		opts...,
 	)
+	buildsServiceDescribeHandler := connect.NewUnaryHandler(
+		BuildsServiceDescribeProcedure,
+		svc.Describe,
+		opts...,
+	)
 	return "/autokitteh.builds.v1.BuildsService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case BuildsServiceGetProcedure:
@@ -178,6 +198,8 @@ func NewBuildsServiceHandler(svc BuildsServiceHandler, opts ...connect.HandlerOp
 			buildsServiceDeleteHandler.ServeHTTP(w, r)
 		case BuildsServiceDownloadProcedure:
 			buildsServiceDownloadHandler.ServeHTTP(w, r)
+		case BuildsServiceDescribeProcedure:
+			buildsServiceDescribeHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -205,4 +227,8 @@ func (UnimplementedBuildsServiceHandler) Delete(context.Context, *connect.Reques
 
 func (UnimplementedBuildsServiceHandler) Download(context.Context, *connect.Request[v1.DownloadRequest]) (*connect.Response[v1.DownloadResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("autokitteh.builds.v1.BuildsService.Download is not implemented"))
+}
+
+func (UnimplementedBuildsServiceHandler) Describe(context.Context, *connect.Request[v1.DescribeRequest]) (*connect.Response[v1.DescribeResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("autokitteh.builds.v1.BuildsService.Describe is not implemented"))
 }

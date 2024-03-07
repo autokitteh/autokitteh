@@ -41,6 +41,7 @@ func TestSuite(t *testing.T) {
 		if err != nil {
 			t.Fatal(err) // Abort the entire test suite on walking errors.
 		}
+
 		if d.IsDir() || !strings.HasSuffix(d.Name(), ".txtar") {
 			return nil // Skip directories and non-test files.
 		}

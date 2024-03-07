@@ -52,10 +52,19 @@ message DownloadResponse {
   bytes data = 1;
 }
 
+message DescribeRequest {
+  string build_id = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+message DescribeResponse {
+  string description_json = 1;
+}
+
 service BuildsService {
   rpc Get(GetRequest) returns (GetResponse);
   rpc List(ListRequest) returns (ListResponse);
   rpc Save(SaveRequest) returns (SaveResponse);
   rpc Delete(DeleteRequest) returns (DeleteResponse);
   rpc Download(DownloadRequest) returns (DownloadResponse);
+  rpc Describe(DescribeRequest) returns (DescribeResponse);
 }
