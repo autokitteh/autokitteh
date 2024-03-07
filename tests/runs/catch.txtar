@@ -5,6 +5,8 @@
 (None, [1, 2])
 (None, [1, 2])
 (None, {"dog": "woof", "cat": "meow"})
+(None, {"dog": "woof", "cat": "meow"})
+(None, "cannot specify both positional and keyword arguments")
 
 -- main.star --
 def foo(x):
@@ -17,3 +19,5 @@ print(catch(fail, "hissss"))
 print(catch(fail, 1, 2))
 print(catch(fail, [1, 2]))
 print(catch(fail, {"cat": "meow", "dog": "woof"}))
+print(catch(fail, cat="meow", dog="woof"))
+print(catch(fail, "hiss", cat="meow"))
