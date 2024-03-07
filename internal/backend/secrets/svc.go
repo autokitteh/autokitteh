@@ -3,7 +3,6 @@ package secrets
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/lithammer/shortuuid"
@@ -16,8 +15,9 @@ import (
 )
 
 type Config struct {
-	ManagerURL      string `koanf:"manager_url"`
-	TimeoutDuration string `koanf:"timeout_duration"`
+	Type     string        `koanf:"type"`
+	VaultURL string        `koanf:"vault_url"`
+	Timeout  time.Duration `koanf:"timeout_duration"`
 }
 
 var Configs = configset.Set[Config]{
@@ -30,10 +30,11 @@ func New(l *zap.Logger, cfg *Config) (sdkservices.Secrets, error) {
 	var impl Secrets
 	var err error
 
-	switch {
-	case strings.ToLower(cfg.ManagerURL) == "aws":
-		impl, err = NewAmazonSecrets(l, cfg)
-	case strings.HasPrefix(cfg.ManagerURL, "http"):
+	switch cfg.Type {
+	case "aws":
+		impl, err = NewAWSSecrets(l, cfg)
+	// TODO: case "db"
+	case "vault":
 		impl, err = NewVaultSecrets(l, cfg)
 	default:
 		impl, err = NewFileSecrets(l, xdg.DataHomeDir())
@@ -122,19 +123,6 @@ func (s secrets) List(ctx context.Context, scope, key string) ([]string, error) 
 
 	// Success.
 	return maps.Keys(data), nil
-}
-
-func parseTimeout(l *zap.Logger, s string) time.Duration {
-	if s == "" {
-		return defaultTimeout
-	}
-
-	d, err := time.ParseDuration(s)
-	if err != nil {
-		l.Error("Timeout initialization error", zap.Error(err))
-		return defaultTimeout
-	}
-	return d
 }
 
 func limitedContext(timeout time.Duration) (context.Context, context.CancelFunc) {
