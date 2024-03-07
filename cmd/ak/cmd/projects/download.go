@@ -1,6 +1,7 @@
 package projects
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path"
@@ -14,20 +15,20 @@ import (
 
 var outputDirectory string
 
-var downloadResourcesCmd = common.StandardCommand(&cobra.Command{
-	Use:   "download-resources <project name or ID> [--output-dir=...]",
-	Short: "Download the project's resources",
+var downloadCmd = common.StandardCommand(&cobra.Command{
+	Use:   "download <project name or ID> [--output-dir <path>] [--fail]",
+	Short: "Download project resources",
 	Args:  cobra.ExactArgs(1),
 
 	RunE: func(cmd *cobra.Command, args []string) error {
 		r := resolver.Resolver{Client: common.Client()}
-		_, pid, err := r.ProjectNameOrID(args[0])
+		p, pid, err := r.ProjectNameOrID(args[0])
 		if err != nil {
-			return err
+			return common.FailIfError(cmd, err, "project")
 		}
-
-		if !pid.IsValid() {
-			return fmt.Errorf("project %s not found", args[0])
+		if !p.IsValid() {
+			err = errors.New("project not found")
+			return common.NewExitCodeError(common.NotFoundExitCode, err)
 		}
 
 		ctx, cancel := common.LimitedContext()
@@ -35,12 +36,10 @@ var downloadResourcesCmd = common.StandardCommand(&cobra.Command{
 
 		resources, err := projects().DownloadResources(ctx, pid)
 		if err != nil {
-			return fmt.Errorf("download resources: %w", err)
+			return err
 		}
-
-		if len(resources) == 0 {
-			fmt.Println("no resources found")
-			return nil
+		if err := common.FailIfNotFound(cmd, "resources", len(resources) > 0); err != nil {
+			return err
 		}
 
 		for filename, data := range resources {
@@ -61,5 +60,7 @@ var downloadResourcesCmd = common.StandardCommand(&cobra.Command{
 
 func init() {
 	// Command-specific flags.
-	downloadResourcesCmd.Flags().StringVarP(&outputDirectory, "output-dir", "o", ".", "path to output directory")
+	downloadCmd.Flags().StringVarP(&outputDirectory, "output-dir", "o", ".", "path to output directory")
+
+	common.AddFailIfNotFoundFlag(downloadCmd)
 }

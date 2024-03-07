@@ -1,6 +1,7 @@
 package projects
 
 import (
+	"errors"
 	"fmt"
 	"io/fs"
 	"os"
@@ -30,7 +31,7 @@ var buildCmd = common.StandardCommand(&cobra.Command{
 			return err
 		}
 		if !p.IsValid() {
-			err = fmt.Errorf("project %q not found", args[0])
+			err = errors.New("project not found")
 			return common.NewExitCodeError(common.NotFoundExitCode, err)
 		}
 

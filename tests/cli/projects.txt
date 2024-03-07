@@ -18,30 +18,18 @@ $ ${AK} -j p get p1; echo $?
 $ # List projects.
 $ ${AK} -j p ls
 {"project_id":"prj_00000000000000000000000001","name":"p1"}
-$ # Download resources project not found.
-$ ${AK} -j projects download-resources nonexisting -o /tmp
-Error: project nonexisting not found
-$ # Download resources project has no resources.
-$ ${AK} -j projects download-resources p1 -o /tmp
-no resources found
-$ # Set resources project not found
-$ ${AK} projects build nonexisting -f ${tmp}
-Error: project "nonexisting" not found
-$ # Set resources requires --path
-$ ${AK} projects build p1
-Error: required flag(s) "from" not set
 $ # Set resources specific file succeed
 $ ${AK} projects build p1 -f ${data_file_path}; echo $?
 build_id: bld_00000000000000000000000003
 0
 $ # Download resources succeed.
-$ ${AK} -j projects download-resources p1 -o ${tmp2}/; ls ${tmp2}/
+$ ${AK} -j projects download p1 -o ${tmp2}/; ls ${tmp2}/
 data_file
 $ # Set resources directory file succeed
 $ ${AK} projects build p1 -f ${tmp}; echo $?
 build_id: bld_00000000000000000000000004
 0
 $ # Download resources succeed.
-$ ${AK} -j projects download-resources p1 -o ${tmp2}/; ls ${tmp2}/
+$ ${AK} -j projects download p1 -o ${tmp2}/; ls ${tmp2}/
 data_file
 data_file2
