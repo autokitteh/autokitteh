@@ -69,7 +69,6 @@ func (b *Builds) Describe(ctx context.Context, bid sdktypes.BuildID) (*sdkbuildf
 	if err != nil {
 		return nil, fmt.Errorf("download: %w", err)
 	}
-
 	defer r.Close()
 
 	bf, err := sdkbuildfile.Read(r)

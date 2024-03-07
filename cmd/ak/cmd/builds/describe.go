@@ -10,10 +10,9 @@ import (
 )
 
 var describeCmd = common.StandardCommand(&cobra.Command{
-	Use:     "describe <build ID> [--fail]",
-	Short:   "Get build details from server",
-	Aliases: []string{"g"},
-	Args:    cobra.ExactArgs(1),
+	Use:   "describe <build ID> [--fail]",
+	Short: "Describe build file stored in the server",
+	Args:  cobra.ExactArgs(1),
 
 	RunE: func(cmd *cobra.Command, args []string) error {
 		r := resolver.Resolver{Client: common.Client()}
