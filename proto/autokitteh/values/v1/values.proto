@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package autokitteh.values.v1;
 
-import "autokitteh/program/v1/module.proto";
+import "autokitteh/module/v1/module.proto";
 import "buf/validate/validate.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
@@ -86,7 +86,7 @@ message Function {
 
   string name = 2 [(buf.validate.field).string.min_len = 1];
 
-  program.v1.Function desc = 3 [(buf.validate.field).required = true];
+  module.v1.Function desc = 3 [(buf.validate.field).required = true];
 
   // Data that is transfered along with the function itself.
   // This can be used by the function implementing the name

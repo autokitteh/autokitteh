@@ -5,6 +5,7 @@
 
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
 import { Message, proto3 } from "@bufbuild/protobuf";
+import { Value } from "../../values/v1/values_pb.js";
 
 /**
  * A specific location in code. Might be used for errors, entry points, etc.
@@ -116,9 +117,9 @@ export class CallFrame extends Message<CallFrame> {
  */
 export class Error extends Message<Error> {
   /**
-   * @generated from field: string message = 1;
+   * @generated from field: autokitteh.values.v1.Value value = 1;
    */
-  message = "";
+  value?: Value;
 
   /**
    * [0] is outermost.
@@ -140,7 +141,7 @@ export class Error extends Message<Error> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "autokitteh.program.v1.Error";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "message", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: "value", kind: "message", T: Value },
     { no: 2, name: "callstack", kind: "message", T: CallFrame, repeated: true },
     { no: 3, name: "extra", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
   ]);

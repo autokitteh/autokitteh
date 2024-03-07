@@ -3,14 +3,14 @@ package sdktypes
 import (
 	"strings"
 
-	programv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/program/v1"
+	modulev1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/module/v1"
 )
 
 type ModuleFunctionField struct {
 	object[*ModuleFunctionFieldPB, ModuleFunctionFieldTraits]
 }
 
-type ModuleFunctionFieldPB = programv1.FunctionField
+type ModuleFunctionFieldPB = modulev1.FunctionField
 
 type ModuleFunctionFieldTraits struct{}
 

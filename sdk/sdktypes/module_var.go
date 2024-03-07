@@ -1,14 +1,14 @@
 package sdktypes
 
 import (
-	programv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/program/v1"
+	modulev1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/module/v1"
 )
 
 type ModuleVariable struct {
 	object[*ModuleVariablePB, ModuleVariableTraits]
 }
 
-type ModuleVariablePB = programv1.Variable
+type ModuleVariablePB = modulev1.Variable
 
 type ModuleVariableTraits struct{}
 

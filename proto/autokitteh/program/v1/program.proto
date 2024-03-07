@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package autokitteh.program.v1;
 
+import "autokitteh/values/v1/values.proto";
 import "buf/validate/validate.proto";
 
 // A specific location in code. Might be used for errors, entry points, etc.
@@ -23,7 +24,7 @@ message CallFrame {
 }
 
 message Error {
-  string message = 1 [(buf.validate.field).string.min_len = 1];
+  values.v1.Value value = 1;
 
   // [0] is outermost.
   repeated CallFrame callstack = 2 [(buf.validate.field).repeated.items.required = true];

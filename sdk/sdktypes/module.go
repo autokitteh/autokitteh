@@ -4,14 +4,14 @@ import (
 	"errors"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
-	programv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/program/v1"
+	modulev1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/module/v1"
 )
 
 type Module struct {
 	object[*ModulePB, ModuleTraits]
 }
 
-type ModulePB = programv1.Module
+type ModulePB = modulev1.Module
 
 type ModuleTraits struct{}
 
