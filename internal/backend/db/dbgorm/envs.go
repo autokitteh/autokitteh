@@ -39,6 +39,11 @@ func (db *gormdb) CreateEnv(ctx context.Context, env sdktypes.Env) error {
 	return translateError(db.createEnv(ctx, e))
 }
 
+func (db *gormdb) deleteEnv(ctx context.Context, envID string) error {
+	e := scheme.Env{EnvID: envID}
+	return db.db.WithContext(ctx).Delete(&e).Error
+}
+
 func (db *gormdb) GetEnvByID(ctx context.Context, eid sdktypes.EnvID) (sdktypes.Env, error) {
 	return getOneWTransform(db.db, ctx, scheme.ParseEnv, "env_id = ?", eid.String())
 }

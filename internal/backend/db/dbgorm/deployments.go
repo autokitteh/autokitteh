@@ -29,12 +29,9 @@ func (db *gormdb) CreateDeployment(ctx context.Context, deployment sdktypes.Depl
 		UpdatedAt:    now,
 	}
 
-	if err := db.locked(func(db *gormdb) error {
-		return db.createDeployment(ctx, d)
-	}); err != nil {
-		return translateError(err)
-	}
-	return nil
+	return db.locked(func(db *gormdb) error {
+		return translateError(db.createDeployment(ctx, d))
+	})
 }
 
 func (db *gormdb) getDeployment(ctx context.Context, deploymentID string) (*scheme.Deployment, error) {
@@ -50,11 +47,9 @@ func (db *gormdb) GetDeployment(ctx context.Context, id sdktypes.DeploymentID) (
 }
 
 func (db *gormdb) deleteDeployment(ctx context.Context, deploymentID string) error {
-	// TODO: this won't work. Consider removing generic delete function.
-	// return delete(db.db, ctx, scheme.Deployment{}, "deployment_id = ?", deploymentID)
-
-	var b scheme.Deployment = scheme.Deployment{DeploymentID: deploymentID}
-	return db.db.WithContext(ctx).Delete(&b).Error
+	// delete deployment with cascading to sessions (AfterDelete hook)
+	d := scheme.Deployment{DeploymentID: deploymentID}
+	return db.db.WithContext(ctx).Delete(&d).Error
 }
 
 func (db *gormdb) DeleteDeployment(ctx context.Context, deploymentID sdktypes.DeploymentID) error {
