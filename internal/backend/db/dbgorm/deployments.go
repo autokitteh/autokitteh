@@ -52,8 +52,6 @@ func (db *gormdb) deleteDeployment(ctx context.Context, deploymentID string) err
 	return db.db.WithContext(ctx).Delete(&d).Error
 }
 
-}
-
 func (db *gormdb) DeleteDeployment(ctx context.Context, deploymentID sdktypes.DeploymentID) error {
 	return translateError(db.deleteDeployment(ctx, deploymentID.String()))
 }
