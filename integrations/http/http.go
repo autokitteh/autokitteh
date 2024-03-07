@@ -91,6 +91,23 @@ func request(method string) sdkexecutor.Function {
 
 		res, err := httpClient.Do(req)
 		if err != nil {
+			if uerr := new(url.Error); errors.As(err, &uerr) {
+				return sdktypes.InvalidValue, sdktypes.NewProgramError(
+					kittehs.Must1(sdktypes.NewStructValue(
+						sdktypes.NewStringValue("url_error"),
+						map[string]sdktypes.Value{
+							"url":       sdktypes.NewStringValue(uerr.URL),
+							"op":        sdktypes.NewStringValue(uerr.Op),
+							"temporary": sdktypes.NewBooleanValue(uerr.Temporary()),
+							"timeout":   sdktypes.NewBooleanValue(uerr.Timeout()),
+							"error":     sdktypes.NewStringValue(uerr.Err.Error()),
+						},
+					)),
+					nil,
+					nil,
+				).ToError()
+			}
+
 			return sdktypes.InvalidValue, err
 		}
 

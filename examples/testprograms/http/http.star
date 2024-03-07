@@ -4,8 +4,9 @@ load("env", "MEOW")
 print(MEOW)
 
 def on_http_get():
-    resp = http1.get("http://example.com")
-    print(resp)
+    resp, err = catch(lambda: http1.get("https://httpbin3212.org/status/404"))
+    print(resp, err)
+    print(err.op)
 
 def on_http_post(data):
     def again(x):
