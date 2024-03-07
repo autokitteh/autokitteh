@@ -36,10 +36,6 @@ var builtins = map[string]func(thread *starlark.Thread, fn *starlark.Builtin, ar
 		return starlark.Tuple{value, starlark.None}, nil
 	},
 	"fail": func(thread *starlark.Thread, bi *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
-		if len(args) > 0 && len(kwargs) > 0 {
-			return nil, fmt.Errorf("fail: cannot specify both positional and keyword arguments")
-		}
-
 		vctx := values.Context{}
 
 		if len(args) == 1 {
@@ -48,7 +44,9 @@ var builtins = map[string]func(thread *starlark.Thread, fn *starlark.Builtin, ar
 				return nil, fmt.Errorf("cannot convert value from starlark: %w", err)
 			}
 			return nil, sdktypes.NewProgramError(v, nil, nil).ToError()
-		} else if len(args) > 1 {
+		}
+
+		if len(args) > 1 {
 			vs, err := kittehs.TransformError(args, vctx.FromStarlarkValue)
 			if err != nil {
 				return nil, fmt.Errorf("cannot convert values from starlark: %w", err)
@@ -58,33 +56,33 @@ var builtins = map[string]func(thread *starlark.Thread, fn *starlark.Builtin, ar
 			return nil, sdktypes.NewProgramError(v, nil, nil).ToError()
 		}
 
-		if len(kwargs) > 0 {
-			vs, err := kittehs.ListToMapError(kwargs, func(t starlark.Tuple) (string, sdktypes.Value, error) {
-				if len(t) != 2 {
-					return "", sdktypes.InvalidValue, fmt.Errorf("expected 2 elements, got %d", len(t))
-				}
-
-				k, ok := t[0].(starlark.String)
-				if !ok {
-					return "", sdktypes.InvalidValue, fmt.Errorf("expected string, got %T", t[0])
-				}
-
-				v, err := vctx.FromStarlarkValue(t[1])
-				if err != nil {
-					return "", sdktypes.InvalidValue, fmt.Errorf("cannot convert value from starlark: %w", err)
-				}
-
-				return k.GoString(), v, nil
-			})
-			if err != nil {
-				return nil, fmt.Errorf("cannot convert values from starlark: %w", err)
-			}
-
-			v := sdktypes.NewDictValueFromStringMap(vs)
-			return nil, sdktypes.NewProgramError(v, nil, nil).ToError()
+		if len(kwargs) == 0 {
+			return nil, fmt.Errorf("fail: cannot specify both positional and keyword arguments")
 		}
 
-		return nil, errors.New("user triggered error")
+		vs, err := kittehs.ListToMapError(kwargs, func(t starlark.Tuple) (string, sdktypes.Value, error) {
+			if len(t) != 2 {
+				return "", sdktypes.InvalidValue, fmt.Errorf("expected 2 elements, got %d", len(t))
+			}
+
+			k, ok := t[0].(starlark.String)
+			if !ok {
+				return "", sdktypes.InvalidValue, fmt.Errorf("expected string, got %T", t[0])
+			}
+
+			v, err := vctx.FromStarlarkValue(t[1])
+			if err != nil {
+				return "", sdktypes.InvalidValue, fmt.Errorf("cannot convert value from starlark: %w", err)
+			}
+
+			return k.GoString(), v, nil
+		})
+		if err != nil {
+			return nil, fmt.Errorf("cannot convert values from starlark: %w", err)
+		}
+
+		v := sdktypes.NewDictValueFromStringMap(vs)
+		return nil, sdktypes.NewProgramError(v, nil, nil).ToError()
 	},
 	"globals": func(thread *starlark.Thread, bi *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
 		if err := starlark.UnpackArgs(bi.Name(), args, kwargs); err != nil {
