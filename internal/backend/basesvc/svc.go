@@ -111,6 +111,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		Component("connections", configset.Empty, fx.Provide(connections.New)),
 		Component("deployments", configset.Empty, fx.Provide(deployments.New)),
 		Component("projects", configset.Empty, fx.Provide(projects.New)),
+		Component("projectsgrpcsvc", projectsgrpcsvc.Configs, fx.Provide(projectsgrpcsvc.New)),
 		Component("envs", configset.Empty, fx.Provide(envs.New)),
 		Component("events", configset.Empty, fx.Provide(events.New)),
 		Component("triggers", configset.Empty, fx.Provide(triggers.New)),
@@ -128,7 +129,9 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 
 		fx.Invoke(sdkruntimessvc.Init),
 		fx.Invoke(applygrpcsvc.Init),
-		fx.Invoke(projectsgrpcsvc.Init),
+		fx.Invoke(func(p *projectsgrpcsvc.Server, mux *http.ServeMux) {
+			p.Init(mux)
+		}),
 		fx.Invoke(buildsgrpcsvc.Init),
 		fx.Invoke(connectionsgrpcsvc.Init),
 		fx.Invoke(deploymentsgrpcsvc.Init),

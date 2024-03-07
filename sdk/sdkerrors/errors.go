@@ -19,6 +19,7 @@ var (
 	ErrUnauthenticated    = errors.New("unauthenticated")
 	ErrUnknown            = errors.New("unknown")
 	ErrFailedPrecondition = errors.New("failed precondition")
+	ErrLimitExceeded      = errors.New("limit exceeded")
 )
 
 func IgnoreNotFoundErr[T any](in T, err error) (T, error) {
