@@ -112,6 +112,7 @@ func assertSoftDeleted[T any](t *testing.T, f *dbFixture, m T) {
 	require.Equal(t, int64(1), res.RowsAffected)
 	res.Scan(&m)
 
+	// Use reflection to access the DeletedAt field
 	deletedAtField := reflect.ValueOf(&m).Elem().FieldByName("DeletedAt")
 	require.NotNil(t, deletedAtField.Interface())
 }
