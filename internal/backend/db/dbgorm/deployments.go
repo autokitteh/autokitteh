@@ -48,8 +48,7 @@ func (db *gormdb) GetDeployment(ctx context.Context, id sdktypes.DeploymentID) (
 
 func (db *gormdb) deleteDeployment(ctx context.Context, deploymentID string) error {
 	// delete deployment with cascading to sessions (AfterDelete hook)
-	d := scheme.Deployment{DeploymentID: deploymentID}
-	return db.db.WithContext(ctx).Delete(&d).Error
+	return db.db.WithContext(ctx).Delete(&scheme.Deployment{DeploymentID: deploymentID}).Error
 }
 
 func (db *gormdb) DeleteDeployment(ctx context.Context, deploymentID sdktypes.DeploymentID) error {
