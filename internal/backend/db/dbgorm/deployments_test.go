@@ -42,6 +42,10 @@ func listDeploymentsWithStatsAndAssert(t *testing.T, f *dbFixture, expected int)
 	return deployments
 }
 
+func assertDeploymentDeleted(t *testing.T, f *dbFixture, deploymentID string) {
+	assertSoftDeleted(t, f, scheme.Deployment{DeploymentID: deploymentID})
+}
+
 func TestCreateDeployment(t *testing.T) {
 	f := newDbFixture(true)           // no foreign keys
 	listDeploymentsAndAssert(t, f, 0) // no deployments
@@ -49,6 +53,24 @@ func TestCreateDeployment(t *testing.T) {
 	d := newDeployment(testBuildID, testEnvID)
 	// test createDeployment
 	createDeploymentAndAssert(t, f, d)
+}
+
+func TestCreateDeploymentsForeignKeys(t *testing.T) {
+	f := newDbFixture(false) // with foreign keys
+	deployment := newDeployment("unexistingBuildID", "unexistingEnvID")
+
+	err := f.gormdb.createDeployment(f.ctx, deployment)
+	assert.ErrorContains(t, err, "FOREIGN KEY")
+
+	p := newProject()
+	e := newEnv()
+	b := newBuild()
+	createProjectAndAssert(t, f, p)
+	createEnvAndAssert(t, f, e)
+	saveBuildAndAssert(t, f, b)
+
+	deployment = newDeployment(testBuildID, testEnvID)
+	createDeploymentAndAssert(t, f, deployment)
 }
 
 func TestGetDeployment(t *testing.T) {
@@ -110,7 +132,7 @@ func TestListDeploymentsWithStats(t *testing.T) {
 	assert.Equal(t, dWS, deployments[0])
 }
 
-func TestDeleteDeployments(t *testing.T) {
+func TestDeleteDeployment(t *testing.T) {
 	f := newDbFixture(true)           // no foreign keys
 	listDeploymentsAndAssert(t, f, 0) // ensure no deployments
 
@@ -127,17 +149,11 @@ func TestDeleteDeployments(t *testing.T) {
 	deployments := listDeploymentsWithStatsAndAssert(t, f, 1)
 	assert.Equal(t, dWS, deployments[0])
 
-	// delete deployment and check sessions are marked as deleted as well
+	// delete deployment. Ensure deployment sessions are marked as deleted as well
 	assert.NoError(t, f.gormdb.deleteDeployment(f.ctx, d.DeploymentID))
+	assertDeploymentDeleted(t, f, d.DeploymentID)
 
 	listDeploymentsWithStatsAndAssert(t, f, 0)
 	assertSessionDeleted(t, f, session1.SessionID)
 	assertSessionDeleted(t, f, session2.SessionID)
-}
-
-func TestForeignKeysDeployments(t *testing.T) {
-	f := newDbFixture(false) // with foreign keys
-	deployment := newDeployment("unexistingBuildID", "unexistingEnvID")
-	err := f.gormdb.createDeployment(f.ctx, deployment)
-	assert.ErrorContains(t, err, "FOREIGN KEY")
 }

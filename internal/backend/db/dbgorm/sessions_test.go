@@ -31,19 +31,8 @@ func listSessionsAndAssert(t *testing.T, f *dbFixture, expected int) []scheme.Se
 	return sessions
 }
 
-// check session status directly via GORM (not via our gormdb API)
 func assertSessionDeleted(t *testing.T, f *dbFixture, sessionID string) {
-	// check that session is not found without unscoped
-	res := f.db.First(&scheme.Session{}, "session_id = ?", sessionID)
-	assert.ErrorAs(t, gorm.ErrRecordNotFound, &res.Error)
-
-	// check that session is marked as deleted
-	res = f.db.Unscoped().First(&scheme.Session{}, "session_id = ?", sessionID)
-	assert.NoError(t, res.Error)
-	assert.Equal(t, int64(1), res.RowsAffected)
-	var session scheme.Session
-	res.Scan(&session)
-	assert.NotNil(t, session.DeletedAt)
+	assertSoftDeleted(t, f, scheme.Session{SessionID: sessionID})
 }
 
 func TestCreateSession(t *testing.T) {
@@ -56,6 +45,15 @@ func TestCreateSession(t *testing.T) {
 
 	logs := findAndAssertCount(t, f, scheme.SessionLogRecord{}, 1, "session_id = ?", s.SessionID)
 	assert.Equal(t, s.SessionID, logs[0].SessionID) // compare only ids, since actual log isn't empty
+}
+
+func TestCreateSessionForeignKeys(t *testing.T) {
+	f := newDbFixture(false)       // with foreign keys
+	listSessionsAndAssert(t, f, 0) // no sessions
+
+	s := newSession(f, sdktypes.SessionStateTypeCompleted)
+	err := f.gormdb.createSession(f.ctx, s) // should fail since there is no deployment
+	assert.ErrorContains(t, err, "FOREIGN KEY")
 }
 
 func TestGetSession(t *testing.T) {
@@ -101,13 +99,4 @@ func TestDeleteSession(t *testing.T) {
 	assert.NoError(t, f.gormdb.deleteSession(f.ctx, s.SessionID))
 	listSessionsAndAssert(t, f, 0)
 	assertSessionDeleted(t, f, s.SessionID)
-}
-
-func TestForeignKeysSession(t *testing.T) {
-	f := newDbFixture(false)       // with foreign keys
-	listSessionsAndAssert(t, f, 0) // no sessions
-
-	s := newSession(f, sdktypes.SessionStateTypeCompleted)
-	err := f.gormdb.createSession(f.ctx, s) // should fail since there is no deployment
-	assert.ErrorContains(t, err, "FOREIGN KEY")
 }

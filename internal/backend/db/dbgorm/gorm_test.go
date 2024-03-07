@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"reflect"
 	"testing"
 	"time"
 
@@ -26,16 +27,11 @@ func init() {
 }
 
 type dbFixture struct {
-	db        *gorm.DB
-	gormdb    *gormdb
-	ctx       context.Context
-	sessionID uint
-}
+	db     *gorm.DB
+	gormdb *gormdb
+	ctx    context.Context
 
-func (f *dbFixture) newSessionID() (id uint) {
-	id = f.sessionID
-	f.sessionID += 1
-	return id
+	sessionID uint
 }
 
 // TODO: use gormkitteh (and maybe test with sqlite::memory and embedded PG)
@@ -104,17 +100,36 @@ func findAndAssertOne[T any](t *testing.T, f *dbFixture, schemaObj T, where stri
 	require.Equal(t, schemaObj, res[0])
 }
 
+// check obj is soft-deleted in gorm
+func assertSoftDeleted[T any](t *testing.T, f *dbFixture, m T) {
+	// check that object is not found without unscoped (due to deleted_at)
+	res := f.db.First(&m)
+	require.ErrorAs(t, gorm.ErrRecordNotFound, &res.Error)
+
+	// check that object is marked as deleted
+	res = f.db.Unscoped().First(&m)
+	require.NoError(t, res.Error)
+	require.Equal(t, int64(1), res.RowsAffected)
+	res.Scan(&m)
+
+	// Use reflection to access the DeletedAt field
+	deletedAtField := reflect.ValueOf(&m).Elem().FieldByName("DeletedAt")
+	require.NotNil(t, deletedAtField.Interface())
+}
+
 var (
 	// testSessionID    = "ses_00000000000000000000000001"
 	testBuildID      = "bld_00000000000000000000000001"
 	testDeploymentID = "dep_00000000000000000000000001"
 	testEventID      = "evt_00000000000000000000000001"
 	testEnvID        = "env_00000000000000000000000001"
-	// testProjectID    = "prj_00000000000000000000000001"
+	testProjectID    = "prj_00000000000000000000000001"
+	testProjectName  = "testProject"
 )
 
 func newSession(f *dbFixture, st sdktypes.SessionStateType) scheme.Session {
-	sessionID := fmt.Sprintf("ses_%026d", f.newSessionID())
+	f.sessionID += 1
+	sessionID := fmt.Sprintf("ses_%026d", f.sessionID)
 
 	return scheme.Session{
 		SessionID:        sessionID,
@@ -139,15 +154,23 @@ func newBuild() scheme.Build {
 func newDeployment(buildID string, envID string) scheme.Deployment {
 	return scheme.Deployment{
 		DeploymentID: testDeploymentID,
-		BuildID:      testBuildID,
-		EnvID:        testEnvID,
+		BuildID:      buildID,
+		EnvID:        envID,
 		State:        int32(sdktypes.DeploymentStateUnspecified.ToProto()),
 		CreatedAt:    now,
 		UpdatedAt:    now,
 	}
 }
 
-/*
+func newProject() scheme.Project {
+	return scheme.Project{
+		ProjectID: testProjectID,
+		Name:      testProjectName,
+		RootURL:   "",
+		Resources: []byte{},
+	}
+}
+
 func newEnv() scheme.Env {
 	return scheme.Env{
 		EnvID:        testEnvID,
@@ -156,4 +179,3 @@ func newEnv() scheme.Env {
 		MembershipID: "",
 	}
 }
-*/
