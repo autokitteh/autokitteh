@@ -8,7 +8,7 @@ output equals 'Error: events not found'
 return code == 10
 
 # Preconditions: create project and connection.
-ak project create my_project
+ak project create --name my_project
 return code == 0
 output equals project_id: prj_00000000000000000000000001
 

@@ -9,14 +9,20 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
+var name string
+
 var createCmd = common.StandardCommand(&cobra.Command{
-	Use:     "create <project name>",
+	Use:     "create [--name project-name]",
 	Short:   "Create new project",
 	Aliases: []string{"c"},
-	Args:    cobra.ExactArgs(1),
+	Args:    cobra.NoArgs,
 
 	RunE: func(cmd *cobra.Command, args []string) error {
-		p, err := sdktypes.ProjectFromProto(&sdktypes.ProjectPB{Name: args[0]})
+		if _, err := sdktypes.ParseSymbol(name); err != nil {
+			return fmt.Errorf("invalid project name: %w", err)
+		}
+
+		p, err := sdktypes.ProjectFromProto(&sdktypes.ProjectPB{Name: name})
 		if err != nil {
 			return err
 		}
@@ -29,7 +35,20 @@ var createCmd = common.StandardCommand(&cobra.Command{
 			return fmt.Errorf("create project: %w", err)
 		}
 
-		common.RenderKV("project_id", id)
+		if name != "" {
+			common.RenderKV("project_id", id)
+			return nil
+		}
+
+		if p, err = projects().GetByID(ctx, id); err != nil {
+			return fmt.Errorf("get project: %w", err)
+		}
+
+		common.RenderKV("project", p)
 		return nil
 	},
 })
+
+func init() {
+	createCmd.Flags().StringVarP(&name, "name", "n", "", "project name")
+}

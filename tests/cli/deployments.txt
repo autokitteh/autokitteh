@@ -68,7 +68,7 @@ $ ${AK} deployments create --build-id bld_00000000000000000000000001 --env=2; ec
 Error: build ID "bld_00000000000000000000000001" not found
 10
 $ # Create project p1.
-$ ${AK} p c p1; echo $?
+$ ${AK} p c --name p1; echo $?
 project_id: prj_00000000000000000000000001
 0
 $ # upload build return build-id
