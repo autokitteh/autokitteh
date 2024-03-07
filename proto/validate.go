@@ -17,6 +17,7 @@ import (
 	integration_providerv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/integration_provider/v1"
 	integration_registryv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/integration_registry/v1"
 	integrationsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/integrations/v1"
+	modulev1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/module/v1"
 	oauthv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/oauth/v1"
 	programv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/program/v1"
 	projectsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/projects/v1"
@@ -70,7 +71,7 @@ var fds = []protoreflect.FileDescriptor{
 	integrationsv1.File_autokitteh_integrations_v1_integration_proto,
 	integrationsv1.File_autokitteh_integrations_v1_svc_proto,
 	oauthv1.File_autokitteh_oauth_v1_svc_proto,
-	programv1.File_autokitteh_program_v1_module_proto,
+	modulev1.File_autokitteh_module_v1_module_proto,
 	programv1.File_autokitteh_program_v1_program_proto,
 	projectsv1.File_autokitteh_projects_v1_project_proto,
 	projectsv1.File_autokitteh_projects_v1_svc_proto,

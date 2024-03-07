@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package autokitteh.program.v1;
+package autokitteh.module.v1;
 
 import "buf/validate/validate.proto";
 

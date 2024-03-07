@@ -5,7 +5,7 @@
 
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
 import { Duration as Duration$1, Message, proto3, protoInt64, Timestamp } from "@bufbuild/protobuf";
-import { Function as Function$1 } from "../../program/v1/module_pb.js";
+import { Function as Function$1 } from "../../module/v1/module_pb.js";
 
 /**
  * @generated from message autokitteh.values.v1.Nothing
@@ -595,7 +595,7 @@ export class Function extends Message<Function> {
   name = "";
 
   /**
-   * @generated from field: autokitteh.program.v1.Function desc = 3;
+   * @generated from field: autokitteh.module.v1.Function desc = 3;
    */
   desc?: Function$1;
 

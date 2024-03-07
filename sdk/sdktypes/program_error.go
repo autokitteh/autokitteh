@@ -19,7 +19,10 @@ type ProgramErrorPB = programv1.Error
 type ProgramErrorTraits struct{}
 
 func (ProgramErrorTraits) Validate(m *ProgramErrorPB) error {
-	return objectsSliceField[CallFrame]("callstack", m.Callstack)
+	return errors.Join(
+		objectField[Value]("value", m.Value),
+		objectsSliceField[CallFrame]("callstack", m.Callstack),
+	)
 }
 
 func (ProgramErrorTraits) StrictValidate(m *ProgramErrorPB) error { return nil }
@@ -31,6 +34,8 @@ func (e ProgramError) Extra() map[string]string { return e.read().Extra }
 func (e ProgramError) CallStack() []CallFrame {
 	return kittehs.Transform(e.m.Callstack, forceFromProto[CallFrame])
 }
+
+func (e ProgramError) Value() Value { return forceFromProto[Value](e.read().Value) }
 
 func (p ProgramError) ToError() (err error) {
 	if !p.IsValid() {
@@ -56,11 +61,11 @@ func StrictProgramErrorFromProto(m *ProgramErrorPB) (ProgramError, error) {
 	return Strict(ProgramErrorFromProto(m))
 }
 
-func NewProgramError(msg string, callstack []CallFrame, extra map[string]string) ProgramError {
+func NewProgramError(v Value, callstack []CallFrame, extra map[string]string) ProgramError {
 	return kittehs.Must1(ProgramErrorFromProto(
 		&ProgramErrorPB{
-			Message:   msg,
 			Extra:     extra,
+			Value:     v.ToProto(),
 			Callstack: kittehs.Transform(callstack, func(f CallFrame) *CallFramePB { return f.ToProto() }),
 		},
 	))
@@ -83,7 +88,7 @@ func WrapError(err error) ProgramError {
 		return perr
 	}
 
-	return NewProgramError(err.Error(), nil, nil)
+	return NewProgramError(NewStringValue(err.Error()), nil, nil)
 }
 
 type programError ProgramError
@@ -96,7 +101,16 @@ func (e programError) Error() string {
 
 	var b strings.Builder
 
-	b.WriteString(e.m.Message)
+	if e.m.Value != nil {
+		v := forceFromProto[Value](e.m.Value)
+
+		u, err := v.Unwrap()
+		if err != nil {
+			u = v
+		}
+
+		b.WriteString(fmt.Sprint(u))
+	}
 
 	for i, f := range e.m.Callstack {
 		b.WriteString(fmt.Sprintf("\n [%d]", i))

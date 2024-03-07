@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
-	programv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/program/v1"
+	modulev1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/module/v1"
 	valuev1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/values/v1"
 )
 
@@ -48,7 +48,7 @@ func (f FunctionValue) ArgNames() []string {
 	if fdesc == nil {
 		return nil
 	}
-	return kittehs.Transform(fdesc.Input, func(f *programv1.FunctionField) string { return f.Name })
+	return kittehs.Transform(fdesc.Input, func(f *modulev1.FunctionField) string { return f.Name })
 }
 
 func (f FunctionValue) Name() Symbol     { return kittehs.Must1(ParseSymbol(f.read().Name)) }
