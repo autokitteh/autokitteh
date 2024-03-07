@@ -40,5 +40,5 @@ $ # Set resources large file fail (default is 1mb, large file is 3mb)
 $ ${AK} projects build p1 -f ${large_file}; echo $?  #=> --regex Error: set resources: limit exceeded: message size [0-9]+ is larger than configured max [0-9]+
 $ # Generate random project name
 $ ${AK} p c -j; echo $?
-{"project":{"project_id":"prj_00000000000000000000000005","name":"AmeliaTheBeautiful"}}
+{"project":{"project_id":"prj_00000000000000000000000005","name":"AmeliaTheBeautiful0008"}}
 0

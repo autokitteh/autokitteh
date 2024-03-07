@@ -2,6 +2,7 @@ package sdktypes
 
 import (
 	"errors"
+	"fmt"
 	"regexp"
 	"strings"
 
@@ -32,5 +33,11 @@ func forceSymbol(s string) Symbol { return forceValidatedString[Symbol](s) }
 var generateSymbolString = catnames.NewGenerator(intn)
 
 func NewRandomSymbol() Symbol {
-	return forceSymbol(strings.ReplaceAll(generateSymbolString(), " ", ""))
+	return forceSymbol(
+		fmt.Sprintf(
+			"%s%4.4d",
+			strings.ReplaceAll(generateSymbolString(), " ", ""),
+			intn(1000),
+		),
+	)
 }
