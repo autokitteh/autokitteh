@@ -4,7 +4,9 @@ load("env", "MEOW")
 print(MEOW)
 
 def on_http_get():
-    resp = http1.get("http://example.com")
+    resp = http1.get("https://httpbin3212.org/status/404")
+    if resp.status_code != 200:
+        print("oh noes")
     print(resp)
 
 def on_http_post(data):
