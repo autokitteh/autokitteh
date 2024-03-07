@@ -9,11 +9,10 @@ import (
 	"github.com/redis/go-redis/v9"
 
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-	"go.autokitteh.dev/autokitteh/sdk/sdkvalues"
 )
 
 func unwrap(v sdktypes.Value) (any, error) {
-	u, err := sdkvalues.DefaultValueWrapper.Unwrap(v)
+	u, err := sdktypes.DefaultValueWrapper.Unwrap(v)
 	if err != nil {
 		return nil, err
 	}
@@ -55,7 +54,7 @@ func returnCmd[R any, C resulter[R]](cmd C) (sdktypes.Value, error) {
 		return sdktypes.InvalidValue, err
 	}
 
-	wrapped, err := sdkvalues.DefaultValueWrapper.Wrap(ret)
+	wrapped, err := sdktypes.DefaultValueWrapper.Wrap(ret)
 	if err != nil {
 		return sdktypes.InvalidValue, fmt.Errorf("wrap: %w", err)
 	}

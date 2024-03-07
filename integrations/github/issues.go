@@ -7,7 +7,6 @@ import (
 
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-	"go.autokitteh.dev/autokitteh/sdk/sdkvalues"
 )
 
 // https://docs.github.com/en/rest/issues/issues#create-an-issue
@@ -40,7 +39,7 @@ func (i integration) createIssue(ctx context.Context, args []sdktypes.Value, kwa
 		return sdktypes.InvalidValue, err
 	}
 
-	return sdkvalues.Wrap(resp)
+	return sdktypes.WrapValue(resp)
 }
 
 // https://docs.github.com/en/rest/issues/issues#get-an-issue
@@ -69,7 +68,7 @@ func (i integration) getIssue(ctx context.Context, args []sdktypes.Value, kwargs
 		return sdktypes.InvalidValue, err
 	}
 
-	return sdkvalues.Wrap(resp)
+	return sdktypes.WrapValue(resp)
 }
 
 // https://docs.github.com/en/rest/issues/issues#update-an-issue
@@ -108,7 +107,7 @@ func (i integration) updateIssue(ctx context.Context, args []sdktypes.Value, kwa
 		return sdktypes.InvalidValue, err
 	}
 
-	return sdkvalues.Wrap(resp)
+	return sdktypes.WrapValue(resp)
 }
 
 // https://docs.github.com/en/rest/issues/issues#list-repository-issues
@@ -147,5 +146,5 @@ func (i integration) listRepositoryIssues(ctx context.Context, args []sdktypes.V
 	}
 
 	// Parse and return the response.
-	return sdkvalues.Wrap(is)
+	return sdktypes.WrapValue(is)
 }

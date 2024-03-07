@@ -6,7 +6,6 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-	"go.autokitteh.dev/autokitteh/sdk/sdkvalues"
 
 	"go.autokitteh.dev/autokitteh/integrations/slack/api"
 )
@@ -47,5 +46,5 @@ func (a API) Add(ctx context.Context, args []sdktypes.Value, kwargs map[string]s
 	}
 
 	// Parse and return the response.
-	return sdkvalues.Wrap(resp)
+	return sdktypes.WrapValue(resp)
 }

@@ -8,7 +8,6 @@ import (
 
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-	"go.autokitteh.dev/autokitteh/sdk/sdkvalues"
 )
 
 // https://developers.google.com/gmail/api/reference/rest/v1/users/getProfile
@@ -34,7 +33,7 @@ func (a api) getProfile(ctx context.Context, args []sdktypes.Value, kwargs map[s
 		profile,
 		err.Error(),
 	}
-	return sdkvalues.Wrap(resp)
+	return sdktypes.WrapValue(resp)
 }
 
 // TODO: https://developers.google.com/gmail/api/reference/rest/v1/users/history/list
@@ -82,5 +81,5 @@ func (a api) historyList(ctx context.Context, args []sdktypes.Value, kwargs map[
 		history,
 		err.Error(),
 	}
-	return sdkvalues.Wrap(resp)
+	return sdktypes.WrapValue(resp)
 }

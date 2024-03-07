@@ -6,7 +6,6 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-	"go.autokitteh.dev/autokitteh/sdk/sdkvalues"
 
 	"go.autokitteh.dev/autokitteh/integrations/slack/api"
 )
@@ -46,7 +45,7 @@ func (a API) Add(ctx context.Context, args []sdktypes.Value, kwargs map[string]s
 	}
 
 	// Parse and return the response.
-	return sdkvalues.Wrap(resp)
+	return sdktypes.WrapValue(resp)
 }
 
 // Edit a bookmark in a channel.
@@ -77,7 +76,7 @@ func (a API) Edit(ctx context.Context, args []sdktypes.Value, kwargs map[string]
 	}
 
 	// Parse and return the response.
-	return sdkvalues.Wrap(resp)
+	return sdktypes.WrapValue(resp)
 }
 
 // List bookmarks for a channel.
@@ -104,7 +103,7 @@ func (a API) List(ctx context.Context, args []sdktypes.Value, kwargs map[string]
 	}
 
 	// Parse and return the response.
-	return sdkvalues.Wrap(resp)
+	return sdktypes.WrapValue(resp)
 }
 
 // Remove a bookmark from a channel.
@@ -133,5 +132,5 @@ func (a API) Remove(ctx context.Context, args []sdktypes.Value, kwargs map[strin
 	}
 
 	// Parse and return the response.
-	return sdkvalues.Wrap(resp)
+	return sdktypes.WrapValue(resp)
 }

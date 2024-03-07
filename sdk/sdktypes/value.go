@@ -160,3 +160,5 @@ func (v Value) ToStringValuesMap() (map[string]Value, error) {
 		return nil, errors.New("not convertible to map")
 	}
 }
+
+func (v Value) Unwrap() (any, error) { return UnwrapValue(v) }

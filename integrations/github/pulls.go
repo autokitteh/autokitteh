@@ -7,7 +7,6 @@ import (
 
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-	"go.autokitteh.dev/autokitteh/sdk/sdkvalues"
 )
 
 // https://docs.github.com/en/rest/pulls/pulls#get-a-pull-request
@@ -37,7 +36,7 @@ func (i integration) getPullRequest(ctx context.Context, args []sdktypes.Value, 
 		return sdktypes.InvalidValue, err
 	}
 
-	return sdkvalues.Wrap(pr)
+	return sdktypes.WrapValue(pr)
 }
 
 // https://docs.github.com/en/rest/pulls/pulls#list-pull-requests
@@ -86,7 +85,7 @@ func (i integration) listPullRequests(ctx context.Context, args []sdktypes.Value
 		return sdktypes.InvalidValue, err
 	}
 
-	return sdkvalues.Wrap(prs)
+	return sdktypes.WrapValue(prs)
 }
 
 // https://docs.github.com/en/rest/pulls/pulls#get-a-pull-request
@@ -136,7 +135,7 @@ func (i integration) createPullRequest(ctx context.Context, args []sdktypes.Valu
 		return sdktypes.InvalidValue, err
 	}
 
-	return sdkvalues.Wrap(pr)
+	return sdktypes.WrapValue(pr)
 }
 
 // https://docs.github.com/en/rest/pulls/review-requests#request-reviewers-for-a-pull-request
@@ -169,5 +168,5 @@ func (i integration) requestReview(ctx context.Context, args []sdktypes.Value, k
 		return sdktypes.InvalidValue, err
 	}
 
-	return sdkvalues.Wrap(pr)
+	return sdktypes.WrapValue(pr)
 }

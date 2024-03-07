@@ -19,7 +19,6 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdkexecutor"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-	"go.autokitteh.dev/autokitteh/sdk/sdkvalues"
 )
 
 // TODO(ENG-242): limit outreach ("RequestGuard" at https://github.com/qri-io/starlib/blob/master/http/http.go#L59)
@@ -151,7 +150,7 @@ func setBody(req *http.Request, rawBody string, formBody map[string]string, cont
 
 		req.Header.Set("Content-Type", contentType)
 
-		v, err := sdkvalues.ValueWrapper{SafeForJSON: true}.Unwrap(jsonBody)
+		v, err := sdktypes.ValueWrapper{SafeForJSON: true}.Unwrap(jsonBody)
 		if err != nil {
 			return err
 		}
@@ -230,7 +229,7 @@ func toStruct(r *http.Response) (sdktypes.Value, error) {
 	)
 
 	if err := json.Unmarshal(body, &data); err == nil {
-		jsonValue, _ = sdkvalues.Wrap(data)
+		jsonValue, _ = sdktypes.WrapValue(data)
 	}
 
 	if !jsonValue.IsValid() {

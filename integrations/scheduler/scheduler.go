@@ -12,7 +12,6 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-	"go.autokitteh.dev/autokitteh/sdk/sdkvalues"
 )
 
 const (
@@ -114,7 +113,7 @@ func dispatchEvents(ctx context.Context, l *zap.Logger, d sdkservices.Dispatcher
 			Second: now.Second(),
 		}
 
-		wrapped, err := sdkvalues.DefaultValueWrapper.Wrap(e)
+		wrapped, err := sdktypes.DefaultValueWrapper.Wrap(e)
 		if err != nil {
 			l.Error("Failed to wrap cron event",
 				zap.Any("event", e),

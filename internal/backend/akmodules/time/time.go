@@ -13,7 +13,6 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdkexecutor"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-	"go.autokitteh.dev/autokitteh/sdk/sdkvalues"
 )
 
 func New() sdkexecutor.Executor {
@@ -96,7 +95,7 @@ func parseTime(_ context.Context, args []sdktypes.Value, kwargs map[string]sdkty
 	if location == "" && format == "" {
 		var t time.Time
 
-		if err := sdkvalues.DefaultValueWrapper.UnwrapInto(&t, args[0]); err != nil {
+		if err := sdktypes.DefaultValueWrapper.UnwrapInto(&t, args[0]); err != nil {
 			return sdktypes.InvalidValue, err
 		}
 

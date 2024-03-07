@@ -8,7 +8,6 @@ import (
 
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-	"go.autokitteh.dev/autokitteh/sdk/sdkvalues"
 )
 
 const (
@@ -59,7 +58,7 @@ func (i integration) createChatCompletion(ctx context.Context, args []sdktypes.V
 	resp, err := client.CreateChatCompletion(ctx, req)
 	if err != nil {
 		jsonResp := ChatCompletionResponse{Error: err.Error()}
-		return sdkvalues.Wrap(jsonResp)
+		return sdktypes.WrapValue(jsonResp)
 	}
 
 	// Parse and return the response.
@@ -78,7 +77,7 @@ func (i integration) createChatCompletion(ctx context.Context, args []sdktypes.V
 			FinishReason: string(c.FinishReason),
 		})
 	}
-	return sdkvalues.Wrap(jsonResp)
+	return sdktypes.WrapValue(jsonResp)
 }
 
 // Workaround for a JSON conversion issue in the client library,

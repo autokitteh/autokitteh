@@ -15,7 +15,6 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdklogger"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-	"go.autokitteh.dev/autokitteh/sdk/sdkvalues"
 )
 
 func getAWSConfig(cfg []byte) (*aws.Config, error) {
@@ -125,7 +124,7 @@ func importServiceMethods(moduleName string, connect any) ([]sdkmodule.Optfn, er
 				return sdktypes.InvalidValue, fmt.Errorf("invalid error return")
 			}
 
-			out, err := sdkvalues.Wrap(outv.Interface())
+			out, err := sdktypes.WrapValue(outv.Interface())
 			if err != nil {
 				return sdktypes.InvalidValue, fmt.Errorf("return value conversion error: %w", err)
 			}

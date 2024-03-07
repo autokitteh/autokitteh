@@ -14,7 +14,6 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	valuesv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/values/v1"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-	"go.autokitteh.dev/autokitteh/sdk/sdkvalues"
 
 	"go.autokitteh.dev/autokitteh/integrations/internal/extrazap"
 	"go.autokitteh.dev/autokitteh/integrations/slack/api"
@@ -184,7 +183,7 @@ func (h handler) HandleInteraction(w http.ResponseWriter, r *http.Request) {
 
 // transformPayload transforms a received Slack event into an autokitteh event.
 func transformPayload(l *zap.Logger, w http.ResponseWriter, payload *BlockActionsPayload) (map[string]*valuesv1.Value, error) {
-	wrapped, err := sdkvalues.DefaultValueWrapper.Wrap(payload)
+	wrapped, err := sdktypes.DefaultValueWrapper.Wrap(payload)
 	if err != nil {
 		l.Error("Failed to wrap Slack event",
 			zap.Error(err),

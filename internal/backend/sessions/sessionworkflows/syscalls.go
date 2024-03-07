@@ -12,7 +12,6 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-	"go.autokitteh.dev/autokitteh/sdk/sdkvalues"
 )
 
 const (
@@ -32,7 +31,7 @@ func (w *sessionWorkflow) syscall(ctx context.Context, args []sdktypes.Value, kw
 
 	var op string
 
-	if err := sdkvalues.DefaultValueWrapper.UnwrapInto(&op, args[0]); err != nil {
+	if err := sdktypes.DefaultValueWrapper.UnwrapInto(&op, args[0]); err != nil {
 		return sdktypes.InvalidValue, err
 	}
 
@@ -186,7 +185,7 @@ func (w *sessionWorkflow) subscribe(ctx context.Context, args []sdktypes.Value, 
 		return sdktypes.InvalidValue, err
 	}
 
-	return sdkvalues.DefaultValueWrapper.Wrap(signalID)
+	return sdktypes.DefaultValueWrapper.Wrap(signalID)
 }
 
 /*
@@ -220,7 +219,7 @@ func (w *sessionWorkflow) nextEvent(ctx context.Context, args []sdktypes.Value, 
 			return sdktypes.InvalidValue, err
 		}
 		if event != nil {
-			return sdkvalues.DefaultValueWrapper.Wrap(event)
+			return sdktypes.DefaultValueWrapper.Wrap(event)
 		}
 	}
 
@@ -242,7 +241,7 @@ func (w *sessionWorkflow) nextEvent(ctx context.Context, args []sdktypes.Value, 
 		return sdktypes.InvalidValue, fmt.Errorf("no event received")
 	}
 
-	return sdkvalues.DefaultValueWrapper.Wrap(event)
+	return sdktypes.DefaultValueWrapper.Wrap(event)
 }
 
 func (w *sessionWorkflow) unsubscribe(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {

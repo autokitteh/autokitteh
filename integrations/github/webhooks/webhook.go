@@ -17,7 +17,6 @@ import (
 	valuesv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/values/v1"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-	"go.autokitteh.dev/autokitteh/sdk/sdkvalues"
 
 	"go.autokitteh.dev/autokitteh/integrations/internal/extrazap"
 )
@@ -180,7 +179,7 @@ func extractInstallationID(l *zap.Logger, event any, eventType string) string {
 
 // transformEvent transforms a received GitHub event into an autokitteh event.
 func transformEvent(l *zap.Logger, w http.ResponseWriter, event any) (map[string]*valuesv1.Value, error) {
-	wrapped, err := sdkvalues.DefaultValueWrapper.Wrap(event)
+	wrapped, err := sdktypes.DefaultValueWrapper.Wrap(event)
 	if err != nil {
 		l.Error("Failed to wrap GitHub event",
 			zap.Error(err),

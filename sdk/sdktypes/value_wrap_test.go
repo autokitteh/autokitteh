@@ -1,4 +1,4 @@
-package sdkvalues_test
+package sdktypes_test
 
 import (
 	"fmt"
@@ -9,11 +9,10 @@ import (
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-	"go.autokitteh.dev/autokitteh/sdk/sdkvalues"
 )
 
 var (
-	w = sdkvalues.DefaultValueWrapper
+	w = sdktypes.DefaultValueWrapper
 
 	iv           = sdktypes.NewIntegerValue(42)
 	nothing      = sdktypes.Nothing
@@ -123,7 +122,7 @@ func TestValueWrapper(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(fmt.Sprintf("%v", test.in), func(t *testing.T) {
-			var w sdkvalues.ValueWrapper
+			var w sdktypes.ValueWrapper
 			v, err := w.Wrap(test.in)
 			if !assert.NoError(t, err) {
 				return
@@ -343,7 +342,7 @@ func TestUnwrapIntoKitchenSink(t *testing.T) {
 		InS:   struct{ T time.Time }{T: time.Date(2023, time.January, 1, 18, 32, 0, 0, time.UTC)},
 	}
 
-	w := sdkvalues.DefaultValueWrapper
+	w := sdktypes.DefaultValueWrapper
 
 	var x X
 

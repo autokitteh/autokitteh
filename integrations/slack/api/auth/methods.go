@@ -5,7 +5,6 @@ import (
 
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-	"go.autokitteh.dev/autokitteh/sdk/sdkvalues"
 
 	"go.autokitteh.dev/autokitteh/integrations/slack/api"
 )
@@ -27,7 +26,7 @@ func (a API) Test(ctx context.Context, args []sdktypes.Value, kwargs map[string]
 	}
 
 	// Parse and return the response.
-	return sdkvalues.Wrap(resp)
+	return sdktypes.WrapValue(resp)
 }
 
 // TestWithToken is only used internally, when the context doesn't store a

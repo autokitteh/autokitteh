@@ -6,7 +6,6 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-	"go.autokitteh.dev/autokitteh/sdk/sdkvalues"
 
 	"go.autokitteh.dev/autokitteh/integrations/slack/api"
 )
@@ -48,7 +47,7 @@ func (a API) Delete(ctx context.Context, args []sdktypes.Value, kwargs map[strin
 	}
 
 	// Parse and return the response.
-	return sdkvalues.Wrap(resp)
+	return sdktypes.WrapValue(resp)
 }
 
 // PostEphemeral sends an ephemeral message to a user in a group/channel
@@ -94,7 +93,7 @@ func (a API) PostEphemeral(ctx context.Context, args []sdktypes.Value, kwargs ma
 	}
 
 	// Parse and return the response.
-	return sdkvalues.Wrap(resp)
+	return sdktypes.WrapValue(resp)
 }
 
 // PostMessage sends a message to a user/group/channel. For text formatting
@@ -133,7 +132,7 @@ func (a API) PostMessage(ctx context.Context, args []sdktypes.Value, kwargs map[
 	}
 
 	// Parse and return the response.
-	return sdkvalues.Wrap(resp)
+	return sdktypes.WrapValue(resp)
 }
 
 // Update an existing message sent by the caller. For text formatting tips,
@@ -172,7 +171,7 @@ func (a API) Update(ctx context.Context, args []sdktypes.Value, kwargs map[strin
 	}
 
 	// Parse and return the response.
-	return sdkvalues.Wrap(resp)
+	return sdktypes.WrapValue(resp)
 }
 
 // SendTextMessage sends a message to a user/group/channel. For text formatting
@@ -203,7 +202,7 @@ func (a API) SendTextMessage(ctx context.Context, args []sdktypes.Value, kwargs 
 	}
 
 	// Parse and return the response.
-	return sdkvalues.Wrap(resp)
+	return sdktypes.WrapValue(resp)
 }
 
 // SendApprovalMessage sends an interactive message to a user/group/channel,
@@ -296,5 +295,5 @@ func (a API) SendApprovalMessage(ctx context.Context, args []sdktypes.Value, kwa
 	}
 
 	// Parse and return the response.
-	return sdkvalues.Wrap(resp)
+	return sdktypes.WrapValue(resp)
 }

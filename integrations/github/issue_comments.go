@@ -7,7 +7,6 @@ import (
 
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-	"go.autokitteh.dev/autokitteh/sdk/sdkvalues"
 )
 
 // https://docs.github.com/en/rest/issues/comments#create-an-issue-comment
@@ -41,5 +40,5 @@ func (i integration) createIssueComment(ctx context.Context, args []sdktypes.Val
 		return sdktypes.InvalidValue, err
 	}
 
-	return sdkvalues.Wrap(c)
+	return sdktypes.WrapValue(c)
 }

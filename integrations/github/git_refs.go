@@ -7,7 +7,6 @@ import (
 
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-	"go.autokitteh.dev/autokitteh/sdk/sdkvalues"
 )
 
 // https://docs.github.com/en/rest/git/refs#create-a-reference
@@ -42,7 +41,7 @@ func (i integration) createRef(ctx context.Context, args []sdktypes.Value, kwarg
 		return sdktypes.InvalidValue, err
 	}
 
-	return sdkvalues.Wrap(c)
+	return sdktypes.WrapValue(c)
 }
 
 // https://docs.github.com/en/rest/git/refs#get-a-reference
@@ -69,5 +68,5 @@ func (i integration) getRef(ctx context.Context, args []sdktypes.Value, kwargs m
 		return sdktypes.InvalidValue, err
 	}
 
-	return sdkvalues.Wrap(c)
+	return sdktypes.WrapValue(c)
 }

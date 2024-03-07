@@ -7,7 +7,6 @@ import (
 
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-	"go.autokitteh.dev/autokitteh/sdk/sdkvalues"
 )
 
 // https://docs.github.com/en/rest/collaborators/collaborators#list-repository-collaborators
@@ -37,5 +36,5 @@ func (i integration) listCollaborators(ctx context.Context, args []sdktypes.Valu
 		return sdktypes.InvalidValue, err
 	}
 
-	return sdkvalues.Wrap(c)
+	return sdktypes.WrapValue(c)
 }
