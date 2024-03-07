@@ -1,5 +1,22 @@
 package catnames
 
+import (
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
+)
+
+func init() {
+	title := cases.Title(language.English).String
+
+	for i, n := range names {
+		names[i] = title(n)
+	}
+
+	for i, a := range adjectives {
+		adjectives[i] = title(a)
+	}
+}
+
 var names = []string{
 	"alexa",
 	"alexis",

@@ -21,9 +21,9 @@ func TestPick(t *testing.T) {
 		"Angelica The Bossy",
 	}
 
-	var gens []string
-	for range len(expected) {
-		gens = append(gens, gen())
+	gens := make([]string, len(expected))
+	for i := range len(expected) {
+		gens[i] = gen()
 	}
 
 	assert.Equal(t, expected, gens)
