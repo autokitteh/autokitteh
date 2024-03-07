@@ -3,27 +3,52 @@ package secrets
 import (
 	"context"
 	"fmt"
+	"strings"
+	"time"
 
 	"github.com/lithammer/shortuuid"
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/configset"
 	"go.autokitteh.dev/autokitteh/internal/xdg"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 )
 
-type secrets struct {
-	impl   Secrets
-	logger *zap.Logger
+type Config struct {
+	ManagerURL      string `koanf:"manager_url"`
+	TimeoutDuration string `koanf:"timeout_duration"`
 }
 
-func New(l *zap.Logger) (sdkservices.Secrets, error) {
-	// TODO(ENG-145): Allow the user to select the implementation via CLI.
-	impl, err := NewFileSecrets(l, xdg.DataHomeDir())
+var Configs = configset.Set[Config]{
+	Default: &Config{},
+}
+
+var defaultTimeout = 1 * time.Minute
+
+func New(l *zap.Logger, cfg *Config) (sdkservices.Secrets, error) {
+	var impl Secrets
+	var err error
+
+	switch {
+	case strings.ToLower(cfg.ManagerURL) == "aws":
+		impl, err = NewAmazonSecrets(l, cfg)
+	case strings.HasPrefix(cfg.ManagerURL, "http"):
+		impl, err = NewVaultSecrets(l, cfg)
+	default:
+		impl, err = NewFileSecrets(l, xdg.DataHomeDir())
+	}
+
 	if err != nil {
 		return nil, err
 	}
+
 	return &secrets{impl: impl, logger: l}, nil
+}
+
+type secrets struct {
+	impl   Secrets
+	logger *zap.Logger
 }
 
 func (s secrets) Create(ctx context.Context, scope string, data map[string]string, key string) (string, error) {
@@ -97,6 +122,23 @@ func (s secrets) List(ctx context.Context, scope, key string) ([]string, error) 
 
 	// Success.
 	return maps.Keys(data), nil
+}
+
+func parseTimeout(l *zap.Logger, s string) time.Duration {
+	if s == "" {
+		return defaultTimeout
+	}
+
+	d, err := time.ParseDuration(s)
+	if err != nil {
+		l.Error("Timeout initialization error", zap.Error(err))
+		return defaultTimeout
+	}
+	return d
+}
+
+func limitedContext(timeout time.Duration) (context.Context, context.CancelFunc) {
+	return context.WithTimeout(context.Background(), timeout)
 }
 
 func newConnectionToken() string {
