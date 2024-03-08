@@ -142,6 +142,7 @@ type Project struct {
 	Name      string `gorm:"uniqueIndex"`
 	RootURL   string
 	Resources []byte
+	DeletedAt gorm.DeletedAt `gorm:"index"`
 }
 
 func ParseProject(r Project) (sdktypes.Project, error) {
