@@ -62,7 +62,7 @@ func (db *gormdb) AppendSecret(ctx context.Context, name, token string) error {
 }
 
 func (db *gormdb) DeleteSecret(ctx context.Context, name string) error {
-	// Reminder: Delete() is idempotent, i.e. no error if not found.
+	// Reminder: Delete() is idempotent, i.e. no error if PK not found.
 	result := db.db.WithContext(ctx).Delete(&scheme.Secret{}, "name = ?", name)
 	if result.Error != nil {
 		return translateError(result.Error)
