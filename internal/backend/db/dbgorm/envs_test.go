@@ -20,7 +20,7 @@ func assertEnvDeleted(t *testing.T, f *dbFixture, envID string) {
 }
 
 func TestCreateEnv(t *testing.T) {
-	f := newDbFixture(true)                       // no foreign keys
+	f := newDBFixture(true)                       // no foreign keys
 	findAndAssertCount(t, f, scheme.Env{}, 0, "") // no envs
 
 	e := newEnv(f)
@@ -29,7 +29,7 @@ func TestCreateEnv(t *testing.T) {
 }
 
 func TestDeleteEnv(t *testing.T) {
-	f := newDbFixture(true)                       // no foreign keys
+	f := newDBFixture(true)                       // no foreign keys
 	findAndAssertCount(t, f, scheme.Env{}, 0, "") // no envs
 
 	e := newEnv(f)

@@ -36,7 +36,7 @@ func assertSessionDeleted(t *testing.T, f *dbFixture, sessionID string) {
 }
 
 func TestCreateSession(t *testing.T) {
-	f := newDbFixture(true)        // no foreign keys
+	f := newDBFixture(true)        // no foreign keys
 	listSessionsAndAssert(t, f, 0) // no sessions
 
 	s := newSession(f, sdktypes.SessionStateTypeCompleted)
@@ -48,7 +48,7 @@ func TestCreateSession(t *testing.T) {
 }
 
 func TestCreateSessionForeignKeys(t *testing.T) {
-	f := newDbFixture(false)       // with foreign keys
+	f := newDBFixture(false)       // with foreign keys
 	listSessionsAndAssert(t, f, 0) // no sessions
 
 	s := newSession(f, sdktypes.SessionStateTypeCompleted)
@@ -57,7 +57,7 @@ func TestCreateSessionForeignKeys(t *testing.T) {
 }
 
 func TestGetSession(t *testing.T) {
-	f := newDbFixture(true)        // no foreign keys
+	f := newDBFixture(true)        // no foreign keys
 	listSessionsAndAssert(t, f, 0) // no sessions
 
 	s := newSession(f, sdktypes.SessionStateTypeCompleted)
@@ -75,7 +75,7 @@ func TestGetSession(t *testing.T) {
 }
 
 func TestListSessions(t *testing.T) {
-	f := newDbFixture(true)        // no foreign keys
+	f := newDBFixture(true)        // no foreign keys
 	listSessionsAndAssert(t, f, 0) // no sessions
 
 	s := newSession(f, sdktypes.SessionStateTypeCompleted)
@@ -90,7 +90,7 @@ func TestListSessions(t *testing.T) {
 }
 
 func TestDeleteSession(t *testing.T) {
-	f := newDbFixture(true)        // no foreign keys
+	f := newDBFixture(true)        // no foreign keys
 	listSessionsAndAssert(t, f, 0) // no sessions
 
 	s := newSession(f, sdktypes.SessionStateTypeCompleted)

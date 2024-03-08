@@ -49,7 +49,7 @@ func assertDeploymentDeleted(t *testing.T, f *dbFixture, deploymentID string) {
 }
 
 func TestCreateDeployment(t *testing.T) {
-	f := newDbFixture(true)           // no foreign keys
+	f := newDBFixture(true)           // no foreign keys
 	listDeploymentsAndAssert(t, f, 0) // no deployments
 
 	d := newDeployment(f)
@@ -58,7 +58,7 @@ func TestCreateDeployment(t *testing.T) {
 }
 
 func TestCreateDeploymentsForeignKeys(t *testing.T) {
-	f := newDbFixture(false) // with foreign keys
+	f := newDBFixture(false) // with foreign keys
 	d := newDeployment(f)
 	d.BuildID = "unexistingBuildID"
 	d.EnvID = "unexistingEnvID"
@@ -78,7 +78,7 @@ func TestCreateDeploymentsForeignKeys(t *testing.T) {
 }
 
 func TestGetDeployment(t *testing.T) {
-	f := newDbFixture(true)           // no foreign keys
+	f := newDBFixture(true)           // no foreign keys
 	listDeploymentsAndAssert(t, f, 0) // no deployments
 
 	d := newDeployment(f)
@@ -95,7 +95,7 @@ func TestGetDeployment(t *testing.T) {
 }
 
 func TestListDeployments(t *testing.T) {
-	f := newDbFixture(true)           // no foreign keys
+	f := newDBFixture(true)           // no foreign keys
 	listDeploymentsAndAssert(t, f, 0) // no deployments
 
 	d := newDeployment(f)
@@ -106,7 +106,7 @@ func TestListDeployments(t *testing.T) {
 }
 
 func TestListDeploymentsWithStats(t *testing.T) {
-	f := newDbFixture(true)           // no foreign keys
+	f := newDBFixture(true)           // no foreign keys
 	listDeploymentsAndAssert(t, f, 0) // ensure no deployments
 
 	// create deployment and ensure there are no stats
@@ -137,7 +137,7 @@ func TestListDeploymentsWithStats(t *testing.T) {
 }
 
 func TestDeleteDeployment(t *testing.T) {
-	f := newDbFixture(true)           // no foreign keys
+	f := newDBFixture(true)           // no foreign keys
 	listDeploymentsAndAssert(t, f, 0) // ensure no deployments
 
 	b := newBuild()
