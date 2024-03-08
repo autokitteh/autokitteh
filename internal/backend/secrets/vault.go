@@ -1,6 +1,7 @@
 package secrets
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -32,8 +33,8 @@ func NewVaultSecrets(l *zap.Logger, c *Config) (Secrets, error) {
 
 // The data size limit is 0.5 or 1 MiB, according to this link:
 // https://developer.hashicorp.com/vault/docs/internals/limits
-func (s *vaultSecrets) Set(scope, name string, data map[string]string) error {
-	ctx, cancel := limitedContext(s.timeout)
+func (s *vaultSecrets) Set(ctx context.Context, scope, name string, data map[string]string) error {
+	ctx, cancel := limitContext(ctx, s.timeout)
 	defer cancel()
 
 	d := kittehs.TransformMapValues(data, func(s string) any { return s })
@@ -43,8 +44,8 @@ func (s *vaultSecrets) Set(scope, name string, data map[string]string) error {
 	return nil
 }
 
-func (s *vaultSecrets) Get(scope, name string) (map[string]string, error) {
-	ctx, cancel := limitedContext(s.timeout)
+func (s *vaultSecrets) Get(ctx context.Context, scope, name string) (map[string]string, error) {
+	ctx, cancel := limitContext(ctx, s.timeout)
 	defer cancel()
 
 	sec, err := s.client.Get(ctx, secretPath(scope, name))
@@ -59,8 +60,8 @@ func (s *vaultSecrets) Get(scope, name string) (map[string]string, error) {
 	return data, nil
 }
 
-func (s *vaultSecrets) Append(scope, name, token string) error {
-	ctx, cancel := limitedContext(s.timeout)
+func (s *vaultSecrets) Append(ctx context.Context, scope, name, token string) error {
+	ctx, cancel := limitContext(ctx, s.timeout)
 	defer cancel()
 
 	data := map[string]any{token: time.Now().UTC().Format(time.RFC3339)}
@@ -70,8 +71,8 @@ func (s *vaultSecrets) Append(scope, name, token string) error {
 	return nil
 }
 
-func (s *vaultSecrets) Delete(scope, name string) error {
-	ctx, cancel := limitedContext(s.timeout)
+func (s *vaultSecrets) Delete(ctx context.Context, scope, name string) error {
+	ctx, cancel := limitContext(ctx, s.timeout)
 	defer cancel()
 
 	if err := s.client.DeleteMetadata(ctx, secretPath(scope, name)); err != nil {

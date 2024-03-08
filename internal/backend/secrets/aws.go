@@ -31,8 +31,8 @@ func NewAWSSecrets(l *zap.Logger, c *Config) (Secrets, error) {
 
 // The data size limit is 64 KiB, according to this link:
 // https://docs.aws.amazon.com/secretsmanager/latest/apireference/API_CreateSecret.html
-func (s *awsSecrets) Set(scope, name string, data map[string]string) error {
-	ctx, cancel := limitedContext(s.timeout)
+func (s *awsSecrets) Set(ctx context.Context, scope, name string, data map[string]string) error {
+	ctx, cancel := limitContext(ctx, s.timeout)
 	defer cancel()
 
 	d, err := json.MarshalIndent(data, "", "  ")
@@ -50,8 +50,8 @@ func (s *awsSecrets) Set(scope, name string, data map[string]string) error {
 	return nil
 }
 
-func (s *awsSecrets) Get(scope, name string) (map[string]string, error) {
-	ctx, cancel := limitedContext(s.timeout)
+func (s *awsSecrets) Get(ctx context.Context, scope, name string) (map[string]string, error) {
+	ctx, cancel := limitContext(ctx, s.timeout)
 	defer cancel()
 
 	sec, err := s.client.GetSecretValue(ctx, &secretsmanager.GetSecretValueInput{
@@ -68,11 +68,11 @@ func (s *awsSecrets) Get(scope, name string) (map[string]string, error) {
 	return data, nil
 }
 
-func (s *awsSecrets) Append(scope, name, token string) error {
-	ctx, cancel := limitedContext(s.timeout)
+func (s *awsSecrets) Append(ctx context.Context, scope, name, token string) error {
+	ctx, cancel := limitContext(ctx, s.timeout)
 	defer cancel()
 
-	data, err := s.Get(scope, name)
+	data, err := s.Get(ctx, scope, name)
 	if err != nil {
 		return err
 	}
@@ -93,8 +93,8 @@ func (s *awsSecrets) Append(scope, name, token string) error {
 	return nil
 }
 
-func (s *awsSecrets) Delete(scope, name string) error {
-	ctx, cancel := limitedContext(s.timeout)
+func (s *awsSecrets) Delete(ctx context.Context, scope, name string) error {
+	ctx, cancel := limitContext(ctx, s.timeout)
 	defer cancel()
 
 	_, err := s.client.DeleteSecret(ctx, &secretsmanager.DeleteSecretInput{

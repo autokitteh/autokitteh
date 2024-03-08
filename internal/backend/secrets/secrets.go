@@ -1,6 +1,7 @@
 package secrets
 
 import (
+	"context"
 	"fmt"
 )
 
@@ -23,17 +24,17 @@ type Secrets interface {
 	//   - https://docs.aws.amazon.com/secretsmanager/latest/userguide/reference_limits.html
 	//   - https://cloud.google.com/secret-manager/quotas
 	//   - https://learn.microsoft.com/en-us/azure/key-vault/secrets/about-secrets
-	Set(scope, name string, data map[string]string) error
+	Set(ctx context.Context, scope, name string, data map[string]string) error
 	// Get retrieves the key-value data associated with a named secret.
 	// If the name does not exist then we return nothing, not an error.
-	Get(scope, name string) (map[string]string, error)
+	Get(ctx context.Context, scope, name string) (map[string]string, error)
 	// Append a token (as a key, with the current timestamp as the value)
 	// to an existing secret, or create it if it doesn't exist already.
-	Append(scope, name, token string) error
+	Append(ctx context.Context, scope, name, token string) error
 	// Delete permanently deletes all the metadata and versions of key-value
 	// data of a named secret. Deleting a nonexistent name has no effect,
 	// but isn't considered an error.
-	Delete(scope, name string) error
+	Delete(ctx context.Context, scope, name string) error
 }
 
 func secretPath(prefix, name string) string {

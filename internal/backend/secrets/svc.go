@@ -58,7 +58,7 @@ func (s secrets) Create(ctx context.Context, scope string, data map[string]strin
 
 	// Connection token --> OAUth token, etc. (to call API methods).
 	name := connectionSecretName(token)
-	if err := s.impl.Set(scope, name, data); err != nil {
+	if err := s.impl.Set(ctx, scope, name, data); err != nil {
 		l.Error("Failed to save connection",
 			zap.String("secretName", name),
 			zap.Error(err),
@@ -67,13 +67,13 @@ func (s secrets) Create(ctx context.Context, scope string, data map[string]strin
 	}
 
 	// Integration-specific key --> connection token(s) (to dispatch API events).
-	if err := s.impl.Append(scope, key, token); err != nil {
+	if err := s.impl.Append(ctx, scope, key, token); err != nil {
 		l.Error("Failed to save reverse connection mapping",
 			zap.String("secretName", key),
 			zap.Error(err),
 		)
 		name = connectionSecretName(token)
-		if err := s.impl.Delete(scope, name); err != nil {
+		if err := s.impl.Delete(ctx, scope, name); err != nil {
 			l.Error("Dangling connection mapping",
 				zap.String("secretName", name),
 				zap.Error(err),
@@ -90,7 +90,7 @@ func (s secrets) Get(ctx context.Context, scope, token string) (map[string]strin
 	l := s.logger.With(zap.String("integration", scope))
 
 	name := connectionSecretName(token)
-	data, err := s.impl.Get(scope, name)
+	data, err := s.impl.Get(ctx, scope, name)
 	if err != nil {
 		l.Error("Failed to load connection",
 			zap.String("secretName", name),
@@ -109,7 +109,7 @@ func (s secrets) Get(ctx context.Context, scope, token string) (map[string]strin
 func (s secrets) List(ctx context.Context, scope, key string) ([]string, error) {
 	l := s.logger.With(zap.String("scope", scope))
 
-	data, err := s.impl.Get(scope, key)
+	data, err := s.impl.Get(ctx, scope, key)
 	if err != nil {
 		l.Error("Failed to list connections",
 			zap.String("secretName", key),
@@ -125,8 +125,8 @@ func (s secrets) List(ctx context.Context, scope, key string) ([]string, error) 
 	return maps.Keys(data), nil
 }
 
-func limitedContext(timeout time.Duration) (context.Context, context.CancelFunc) {
-	return context.WithTimeout(context.Background(), timeout)
+func limitContext(ctx context.Context, timeout time.Duration) (context.Context, context.CancelFunc) {
+	return context.WithTimeout(ctx, timeout)
 }
 
 func newConnectionToken() string {
