@@ -21,10 +21,10 @@ type Config struct {
 }
 
 var Configs = configset.Set[Config]{
-	Default: &Config{},
+	Default: &Config{
+		Timeout: 1 * time.Minute,
+	},
 }
-
-var defaultTimeout = 1 * time.Minute
 
 func New(l *zap.Logger, cfg *Config) (sdkservices.Secrets, error) {
 	var impl Secrets
@@ -33,7 +33,7 @@ func New(l *zap.Logger, cfg *Config) (sdkservices.Secrets, error) {
 	switch cfg.Type {
 	case "aws":
 		impl, err = NewAWSSecrets(l, cfg)
-	// TODO: case "db"
+	// TODO(ENG-508): case "db"
 	case "vault":
 		impl, err = NewVaultSecrets(l, cfg)
 	default:
