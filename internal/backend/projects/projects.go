@@ -29,6 +29,10 @@ func New(p Projects) sdkservices.Projects { return &p }
 func (ps *Projects) Create(ctx context.Context, project sdktypes.Project) (sdktypes.ProjectID, error) {
 	project = project.WithNewID()
 
+	if !project.Name().IsValid() {
+		project = project.WithName(sdktypes.NewRandomSymbol())
+	}
+
 	if err := project.Strict(); err != nil {
 		return sdktypes.InvalidProjectID, err
 	}

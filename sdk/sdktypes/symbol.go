@@ -2,8 +2,11 @@ package sdktypes
 
 import (
 	"errors"
+	"fmt"
 	"regexp"
+	"strings"
 
+	"go.autokitteh.dev/autokitteh/internal/catnames"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 )
 
@@ -26,3 +29,15 @@ func StrictParseSymbol(s string) (Symbol, error) { return Strict(ParseSymbol(s))
 func IsValidSymbol(s string) bool { _, err := StrictParseSymbol(s); return err == nil }
 
 func forceSymbol(s string) Symbol { return forceValidatedString[Symbol](s) }
+
+var generateSymbolString = catnames.NewGenerator(intn)
+
+func NewRandomSymbol() Symbol {
+	return forceSymbol(
+		fmt.Sprintf(
+			"%s_%4.4d",
+			strings.ReplaceAll(generateSymbolString(), " ", "_"),
+			intn(1000),
+		),
+	)
+}
