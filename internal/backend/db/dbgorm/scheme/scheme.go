@@ -32,6 +32,7 @@ var Tables = []any{
 	&EventRecord{},
 	&Integration{},
 	&Project{},
+	&Secret{},
 	&Session{},
 	&SessionCallAttempt{},
 	&SessionCallSpec{},
@@ -155,6 +156,15 @@ func ParseProject(r Project) (sdktypes.Project, error) {
 	}
 
 	return p, nil
+}
+
+// Secret is a database table that simply stores sensitive key-value
+// pairs, for usage by the "db" mode of autokitteh's secrets manager.
+// WARNING: This is not secure in any way, and not durable by default.
+// It is intended only for temporary, local, non-production purposes.
+type Secret struct {
+	Name string `gorm:"primaryKey"`
+	Data datatypes.JSON
 }
 
 type Event struct {
