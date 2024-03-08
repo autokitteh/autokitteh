@@ -27,11 +27,13 @@ func init() {
 }
 
 type dbFixture struct {
-	db     *gorm.DB
-	gormdb *gormdb
-	ctx    context.Context
-
-	sessionID uint
+	db           *gorm.DB
+	gormdb       *gormdb
+	ctx          context.Context
+	sessionID    uint
+	deploymentID uint
+	envID        uint
+	projectID    uint
 }
 
 // TODO: use gormkitteh (and maybe test with sqlite::memory and embedded PG)
@@ -150,31 +152,47 @@ func newBuild() scheme.Build {
 	}
 }
 
-func newDeployment(buildID string, envID string) scheme.Deployment {
+func newDeployment(f *dbFixture) scheme.Deployment {
+	f.deploymentID += 1
+	deploymentID := fmt.Sprintf("dep_%026d", f.deploymentID)
+
 	return scheme.Deployment{
-		DeploymentID: testDeploymentID,
-		BuildID:      buildID,
-		EnvID:        envID,
+		DeploymentID: deploymentID,
+		BuildID:      testBuildID,
+		EnvID:        testEnvID,
 		State:        int32(sdktypes.DeploymentStateUnspecified.ToProto()),
 		CreatedAt:    now,
 		UpdatedAt:    now,
 	}
 }
 
-func newProject() scheme.Project {
+func newDeploymentWithBuildAndEnv(f *dbFixture, b scheme.Build, e scheme.Env) scheme.Deployment {
+	d := newDeployment(f)
+	d.BuildID = b.BuildID
+	d.EnvID = e.EnvID
+	return d
+}
+
+func newProject(f *dbFixture) scheme.Project {
+	f.projectID += 1
+	projectID := fmt.Sprintf("prj_%026d", f.projectID)
+
 	return scheme.Project{
-		ProjectID: testProjectID,
-		Name:      testProjectName,
+		ProjectID: projectID,
+		Name:      projectID, // must be unique
 		RootURL:   "",
 		Resources: []byte{},
 	}
 }
 
-func newEnv() scheme.Env {
+func newEnv(f *dbFixture) scheme.Env {
+	f.envID += 1
+	envID := fmt.Sprintf("env_%026d", f.envID)
+
 	return scheme.Env{
-		EnvID:        testEnvID,
+		EnvID:        envID,
 		ProjectID:    testProjectID,
 		Name:         "",
-		MembershipID: "",
+		MembershipID: envID, // must be unique
 	}
 }

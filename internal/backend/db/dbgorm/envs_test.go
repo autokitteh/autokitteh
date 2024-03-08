@@ -21,7 +21,7 @@ func TestCreateEnv(t *testing.T) {
 	f := newDbFixture(true)                       // no foreign keys
 	findAndAssertCount(t, f, scheme.Env{}, 0, "") // no envs
 
-	e := newEnv()
+	e := newEnv(f)
 	// test createEnv
 	createEnvAndAssert(t, f, e)
 }
@@ -30,7 +30,7 @@ func TestDeleteEnv(t *testing.T) {
 	f := newDbFixture(true)                       // no foreign keys
 	findAndAssertCount(t, f, scheme.Env{}, 0, "") // no envs
 
-	e := newEnv()
+	e := newEnv(f)
 	createEnvAndAssert(t, f, e)
 
 	// test deleteEnv
@@ -43,10 +43,10 @@ func TestDeleteEnvForeignKeys(t *testing.T) {
 	findAndAssertCount(t, f, scheme.Env{}, 0, "") // no envs
 
 	b := newBuild()
-	p := newProject()
-	e := newEnv()
+	p := newProject(f)
+	e := newEnv(f)
 	e.ProjectID = p.ProjectID
-	d := newDeployment(b.BuildID, e.EnvID)
+	d := newDeploymentWithBuildAndEnv(f, b, e)
 
 	saveBuildAndAssert(t, f, b)
 	createProjectAndAssert(t, f, p)

@@ -50,34 +50,36 @@ func TestCreateDeployment(t *testing.T) {
 	f := newDbFixture(true)           // no foreign keys
 	listDeploymentsAndAssert(t, f, 0) // no deployments
 
-	d := newDeployment(testBuildID, testEnvID)
+	d := newDeployment(f)
 	// test createDeployment
 	createDeploymentAndAssert(t, f, d)
 }
 
 func TestCreateDeploymentsForeignKeys(t *testing.T) {
 	f := newDbFixture(false) // with foreign keys
-	deployment := newDeployment("unexistingBuildID", "unexistingEnvID")
+	d := newDeployment(f)
+	d.BuildID = "unexistingBuildID"
+	d.EnvID = "unexistingEnvID"
 
-	err := f.gormdb.createDeployment(f.ctx, deployment)
+	err := f.gormdb.createDeployment(f.ctx, d)
 	assert.ErrorContains(t, err, "FOREIGN KEY")
 
-	p := newProject()
-	e := newEnv()
+	p := newProject(f)
+	e := newEnv(f)
 	b := newBuild()
 	createProjectAndAssert(t, f, p)
 	createEnvAndAssert(t, f, e)
 	saveBuildAndAssert(t, f, b)
 
-	deployment = newDeployment(testBuildID, testEnvID)
-	createDeploymentAndAssert(t, f, deployment)
+	d = newDeployment(f)
+	createDeploymentAndAssert(t, f, d)
 }
 
 func TestGetDeployment(t *testing.T) {
 	f := newDbFixture(true)           // no foreign keys
 	listDeploymentsAndAssert(t, f, 0) // no deployments
 
-	d := newDeployment(testBuildID, testEnvID)
+	d := newDeployment(f)
 	createDeploymentAndAssert(t, f, d)
 
 	// check getDeployment
@@ -94,7 +96,7 @@ func TestListDeployments(t *testing.T) {
 	f := newDbFixture(true)           // no foreign keys
 	listDeploymentsAndAssert(t, f, 0) // no deployments
 
-	d := newDeployment(testBuildID, testEnvID)
+	d := newDeployment(f)
 	createDeploymentAndAssert(t, f, d)
 
 	deployments := listDeploymentsAndAssert(t, f, 1)
@@ -106,7 +108,7 @@ func TestListDeploymentsWithStats(t *testing.T) {
 	listDeploymentsAndAssert(t, f, 0) // ensure no deployments
 
 	// create deployment and ensure there are no stats
-	d := newDeployment(testBuildID, testEnvID)
+	d := newDeployment(f)
 	createDeploymentAndAssert(t, f, d)
 
 	dWS := scheme.DeploymentWithStats{Deployment: d} // no stats, all zeros
@@ -136,7 +138,7 @@ func TestDeleteDeployment(t *testing.T) {
 	f := newDbFixture(true)           // no foreign keys
 	listDeploymentsAndAssert(t, f, 0) // ensure no deployments
 
-	d := newDeployment(testBuildID, testEnvID)
+	d := newDeployment(f)
 	createDeploymentAndAssert(t, f, d)
 
 	// add sessions and check that deployment stats are updated
