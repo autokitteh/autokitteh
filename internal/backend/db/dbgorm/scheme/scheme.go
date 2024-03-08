@@ -44,6 +44,7 @@ type Build struct {
 	BuildID   string `gorm:"primaryKey"`
 	Data      []byte
 	CreatedAt time.Time
+	DeletedAt gorm.DeletedAt `gorm:"index"`
 }
 
 func ParseBuild(b Build) (sdktypes.Build, error) {
@@ -211,12 +212,16 @@ func ParseEventRecord(e EventRecord) (sdktypes.EventRecord, error) {
 
 type Env struct {
 	EnvID     string `gorm:"primaryKey"`
-	ProjectID string `gorm:"index"`
+	ProjectID string `gorm:"index;foreignKey"`
 	Name      string
+	DeletedAt gorm.DeletedAt
 
 	// {pid.uuid}/{name}. easier to detect dups.
 	// See OrgMember for more.
 	MembershipID string `gorm:"uniqueIndex"`
+
+	// just for the foreign key. Wihtout it gorm won't enforce it
+	Project Project
 }
 
 func ParseEnv(r Env) (sdktypes.Env, error) {
