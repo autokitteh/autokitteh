@@ -89,7 +89,7 @@ func TestGetDeployment(t *testing.T) {
 
 	assert.NoError(t, f.gormdb.deleteDeployment(f.ctx, d.DeploymentID))
 	_, err = f.gormdb.getDeployment(f.ctx, d.DeploymentID)
-	assert.ErrorAs(t, err, &gorm.ErrRecordNotFound)
+	assert.ErrorIs(t, err, gorm.ErrRecordNotFound)
 }
 
 func TestListDeployments(t *testing.T) {
