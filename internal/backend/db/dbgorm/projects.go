@@ -56,10 +56,8 @@ func (db *gormdb) deleteProjectAndDependents(ctx context.Context, projectID stri
 			return err
 		}
 
-		for _, eid := range envIDs {
-			if err = db.deleteEnv(ctx, eid); err != nil {
-				return err
-			}
+		if err = db.deleteEnvs(ctx, envIDs); err != nil {
+			return err
 		}
 
 		return db.deleteProject(ctx, projectID)

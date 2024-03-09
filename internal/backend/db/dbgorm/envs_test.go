@@ -38,6 +38,20 @@ func TestDeleteEnv(t *testing.T) {
 	assertEnvDeleted(t, f, e.EnvID)
 }
 
+func TestDeleteEnvs(t *testing.T) {
+	f := newDbFixture(true)                       // no foreign keys
+	findAndAssertCount(t, f, scheme.Env{}, 0, "") // no envs
+
+	e1, e2 := newEnv(f), newEnv(f)
+	createEnvAndAssert(t, f, e1)
+	createEnvAndAssert(t, f, e2)
+
+	// test deleteEnvs
+	assert.NoError(t, f.gormdb.deleteEnvs(f.ctx, []string{e1.EnvID, e2.EnvID}))
+	assertEnvDeleted(t, f, e1.EnvID)
+	assertEnvDeleted(t, f, e2.EnvID)
+}
+
 func TestDeleteEnvForeignKeys(t *testing.T) {
 	f := newDbFixture(false)
 	findAndAssertCount(t, f, scheme.Env{}, 0, "") // no envs
