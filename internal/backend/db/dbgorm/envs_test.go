@@ -35,7 +35,7 @@ func TestDeleteEnv(t *testing.T) {
 
 	// test deleteEnv
 	assert.NoError(t, f.gormdb.deleteEnv(f.ctx, e.EnvID))
-	findAndAssertCount(t, f, scheme.Env{}, 0, "") // no envs
+	assertEnvDeleted(t, f, e.EnvID)
 }
 
 func TestDeleteEnvForeignKeys(t *testing.T) {
