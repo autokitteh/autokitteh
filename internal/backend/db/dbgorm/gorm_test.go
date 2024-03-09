@@ -106,13 +106,12 @@ func findAndAssertOne[T any](t *testing.T, f *dbFixture, schemaObj T, where stri
 func assertSoftDeleted[T any](t *testing.T, f *dbFixture, m T) {
 	// check that object is not found without unscoped (due to deleted_at)
 	res := f.db.First(&m)
-	require.ErrorAs(t, gorm.ErrRecordNotFound, &res.Error)
+	require.ErrorIs(t, res.Error, gorm.ErrRecordNotFound)
 
 	// check that object is marked as deleted
 	res = f.db.Unscoped().First(&m)
 	require.NoError(t, res.Error)
 	require.Equal(t, int64(1), res.RowsAffected)
-	res.Scan(&m)
 
 	deletedAtField := reflect.ValueOf(&m).Elem().FieldByName("DeletedAt")
 	require.NotNil(t, deletedAtField.Interface())
