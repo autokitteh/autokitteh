@@ -55,6 +55,9 @@ type DB interface {
 
 	SetProjectResources(context.Context, sdktypes.ProjectID, map[string][]byte) error
 
+	// deletes a project and all its resources
+	DeleteProject(context.Context, sdktypes.ProjectID) error
+
 	// -----------------------------------------------------------------------
 	// Returns sdkerrors.ErrAlreadyExists if either id or name is duplicate.
 	CreateEnv(context.Context, sdktypes.Env) error

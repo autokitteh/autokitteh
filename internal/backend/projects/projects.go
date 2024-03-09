@@ -46,7 +46,7 @@ func (ps *Projects) Create(ctx context.Context, project sdktypes.Project) (sdkty
 
 func (ps *Projects) Delete(ctx context.Context, pid sdktypes.ProjectID) error {
 	// TODO: Make sure somone can't delete a project they don't own or member of its org.
-	return nil
+	return ps.DB.DeleteProject(ctx, pid)
 }
 
 func (ps *Projects) Update(ctx context.Context, project sdktypes.Project) error {

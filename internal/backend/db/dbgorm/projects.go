@@ -65,7 +65,7 @@ func (db *gormdb) deleteProjectAndDependents(ctx context.Context, projectID stri
 }
 
 func (db *gormdb) DeleteProject(ctx context.Context, projectID sdktypes.ProjectID) error {
-	return translateError(db.deleteProject(ctx, projectID.String()))
+	return translateError(db.deleteProjectAndDependents(ctx, projectID.String()))
 }
 
 func (db *gormdb) UpdateProject(ctx context.Context, p sdktypes.Project) error {
@@ -112,7 +112,7 @@ type DepEnv struct {
 
 func (db *gormdb) getProjectDeployments(ctx context.Context, pid string) ([]DepEnv, error) {
 	var pds []DepEnv
-	res := db.db.Model(&scheme.Deployment{}).
+	res := db.db.WithContext(ctx).Model(&scheme.Deployment{}).
 		Joins("join Envs on Envs.env_id = Deployments.env_id").
 		Where("Envs.project_id = ?", pid).
 		Select("Deployments.deployment_id, Deployments.state, Envs.env_id").
