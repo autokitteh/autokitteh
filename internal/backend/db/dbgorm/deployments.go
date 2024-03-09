@@ -55,7 +55,6 @@ func (db *gormdb) DeleteDeployment(ctx context.Context, deploymentID sdktypes.De
 	return translateError(db.deleteDeployment(ctx, deploymentID.String()))
 }
 
-// TODO: rewrite generic in order to avoid splitting to Deployment and DeploymentWithStats
 func (db *gormdb) listDeploymentsCommonQuery(ctx context.Context, filter sdkservices.ListDeploymentsFilter) *gorm.DB {
 	q := db.db.WithContext(ctx).Model(&scheme.Deployment{})
 	if filter.BuildID.IsValid() {
@@ -125,11 +124,12 @@ func (db *gormdb) ListDeployments(ctx context.Context, filter sdkservices.ListDe
 	}
 }
 
-func (db *gormdb) UpdateDeploymentState(ctx context.Context, id sdktypes.DeploymentID, state sdktypes.DeploymentState) error {
-	d := &scheme.Deployment{DeploymentID: id.String()}
+func (db *gormdb) updateDeploymentState(ctx context.Context, id string, state sdktypes.DeploymentState) error {
+	d := &scheme.Deployment{DeploymentID: id}
 
 	return db.locked(func(db *gormdb) error {
-		result := db.db.WithContext(ctx).Model(d).Updates(map[string]any{"state": state.ToProto(), "updated_at": time.Now()})
+		result := db.db.WithContext(ctx).Model(d).Updates(
+			map[string]any{"state": state.ToProto(), "updated_at": time.Now()})
 		if result.Error != nil {
 			return translateError(result.Error)
 		}
@@ -139,4 +139,8 @@ func (db *gormdb) UpdateDeploymentState(ctx context.Context, id sdktypes.Deploym
 
 		return nil
 	})
+}
+
+func (db *gormdb) UpdateDeploymentState(ctx context.Context, id sdktypes.DeploymentID, state sdktypes.DeploymentState) error {
+	return db.updateDeploymentState(ctx, id.String(), state)
 }
