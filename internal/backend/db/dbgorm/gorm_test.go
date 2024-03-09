@@ -47,7 +47,7 @@ func setupDB(dbName string) *gorm.DB {
 		},
 	)
 	if dbName == "" {
-		dbName = ":memory:"
+		dbName = "file::memory:?cache=shared"
 	}
 	db, err := gorm.Open(sqlite.Open(dbName), &gorm.Config{
 		NowFunc: func() time.Time { // operate always in UTC to simplify object comparison upon creation and fetching
