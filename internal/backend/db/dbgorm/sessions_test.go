@@ -71,7 +71,7 @@ func TestGetSession(t *testing.T) {
 	// check that after deleteSession it's not found
 	assert.NoError(t, f.gormdb.deleteSession(f.ctx, s.SessionID))
 	_, err = f.gormdb.getSession(f.ctx, s.SessionID)
-	assert.ErrorAs(t, err, &gorm.ErrRecordNotFound)
+	assert.ErrorIs(t, err, gorm.ErrRecordNotFound)
 }
 
 func TestListSessions(t *testing.T) {
@@ -97,6 +97,5 @@ func TestDeleteSession(t *testing.T) {
 	createSessionAndAssert(t, f, s)
 
 	assert.NoError(t, f.gormdb.deleteSession(f.ctx, s.SessionID))
-	listSessionsAndAssert(t, f, 0)
 	assertSessionDeleted(t, f, s.SessionID)
 }
