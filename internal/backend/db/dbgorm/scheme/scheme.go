@@ -225,7 +225,7 @@ type Env struct {
 	EnvID     string `gorm:"primaryKey"`
 	ProjectID string `gorm:"index;foreignKey"`
 	Name      string
-	DeletedAt gorm.DeletedAt
+	DeletedAt gorm.DeletedAt `gorm:"index"`
 
 	// {pid.uuid}/{name}. easier to detect dups.
 	// See OrgMember for more.
@@ -393,7 +393,7 @@ func ParseSession(s Session) (sdktypes.Session, error) {
 
 type Deployment struct {
 	DeploymentID string `gorm:"primaryKey"`
-	EnvID        string `gorm:"foreignKey"`
+	EnvID        string `gorm:"index;foreignKey"`
 	BuildID      string `gorm:"foreignKey"`
 	State        int32
 	CreatedAt    time.Time
