@@ -9,7 +9,7 @@ import (
 
 var deleteCmd = common.StandardCommand(&cobra.Command{
 	Use:     "delete <project ID> [--fail]",
-	Short:   "Delete inactive project",
+	Short:   "Delete project",
 	Aliases: []string{"d"},
 	Args:    cobra.ExactArgs(1),
 
