@@ -235,16 +235,6 @@ type Env struct {
 	Project Project
 }
 
-// enforce foreign keys constrains while soft-deleting
-func (e *Env) BeforeDelete(db *gorm.DB) error {
-	var count int64
-	db.Model(&Deployment{}).Where("deleted_at is NULL and env_id = ?", e.EnvID).Count(&count)
-	if count > 0 {
-		return fmt.Errorf("FOREIGN KEY: %w", gorm.ErrForeignKeyViolated)
-	}
-	return nil
-}
-
 func ParseEnv(r Env) (sdktypes.Env, error) {
 	return sdktypes.StrictEnvFromProto(&sdktypes.EnvPB{
 		EnvId:     r.EnvID,

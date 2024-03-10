@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
@@ -40,11 +41,24 @@ func (db *gormdb) CreateEnv(ctx context.Context, env sdktypes.Env) error {
 }
 
 func (db *gormdb) deleteEnvs(ctx context.Context, ids []string) error {
-	return db.db.WithContext(ctx).Where("env_id IN ?", ids).Delete(&scheme.Env{}).Error
+	return db.transaction(ctx, func(tx *tx) error {
+		db := tx.db.WithContext(ctx)
+		d := scheme.Deployment{}
+		e := scheme.Env{}
+		var count int64
+
+		// enforce foreign keys constrains while soft-deleting
+		db.Model(&d).Where("deleted_at is NULL and env_id IN ?", ids).Count(&count)
+		if count > 0 {
+			return fmt.Errorf("FOREIGN KEY: %w", gorm.ErrForeignKeyViolated)
+		}
+
+		return db.Model(&e).Where("env_id IN ?", ids).Delete(&e).Error
+	})
 }
 
 func (db *gormdb) deleteEnv(ctx context.Context, envID string) error {
-	return db.db.WithContext(ctx).Delete(&scheme.Env{EnvID: envID}).Error
+	return db.deleteEnvs(ctx, []string{envID})
 }
 
 func (db *gormdb) GetEnvByID(ctx context.Context, eid sdktypes.EnvID) (sdktypes.Env, error) {
