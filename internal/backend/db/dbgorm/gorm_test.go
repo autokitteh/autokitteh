@@ -124,7 +124,6 @@ var (
 	testEventID      = "evt_00000000000000000000000001"
 	testEnvID        = "env_00000000000000000000000001"
 	testProjectID    = "prj_00000000000000000000000001"
-	testProjectName  = "testProject"
 )
 
 func newSession(f *dbFixture, st sdktypes.SessionStateType) scheme.Session {
