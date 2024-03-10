@@ -105,7 +105,7 @@ func (db *gormdb) GetProjectByName(ctx context.Context, ph sdktypes.Symbol) (sdk
 }
 
 type DepEnv struct {
-	DeploymentID string `gorm:"primaryKey"`
+	DeploymentID string
 	State        int32
 	EnvID        string
 }
