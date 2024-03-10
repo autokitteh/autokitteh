@@ -52,19 +52,18 @@ func (db *gormdb) deleteDeployment(ctx context.Context, deploymentID string) err
 }
 
 func (db *gormdb) deleteDeploymentsAndDependents(ctx context.Context, ids []string) error {
+	// NOTE: should be transactional
+
 	// delete deployments and related sessions
 	if len(ids) == 0 {
 		return nil
 	}
 
-	return db.transaction(ctx, func(tx *tx) error {
-		db := tx.db.WithContext(ctx)
-		if err := db.Where("deployment_id IN ?", ids).Delete(&scheme.Session{}).Error; err != nil {
-			return err
-		}
-
-		return db.Where("deployment_id IN ?", ids).Delete(&scheme.Deployment{}).Error
-	})
+	gormDb := db.db.WithContext(ctx)
+	if err := gormDb.Where("deployment_id IN ?", ids).Delete(&scheme.Session{}).Error; err != nil {
+		return err
+	}
+	return gormDb.Where("deployment_id IN ?", ids).Delete(&scheme.Deployment{}).Error
 }
 
 func (db *gormdb) DeleteDeployment(ctx context.Context, deploymentID sdktypes.DeploymentID) error {

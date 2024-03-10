@@ -36,36 +36,37 @@ func (db *gormdb) deleteProject(ctx context.Context, projectID string) error {
 }
 
 func (db *gormdb) deleteProjectAndDependents(ctx context.Context, projectID string) error {
-	return db.transaction(ctx, func(tx *tx) error {
-		depsEnvs, err := db.getProjectDeployments(ctx, projectID)
-		if err != nil {
-			return err
+	// NOTE: should be transactional
+	depsEnvs, err := db.getProjectDeployments(ctx, projectID)
+	if err != nil {
+		return err
+	}
+	var deplIDs, envIDs []string
+	for _, de := range depsEnvs {
+		if de.State != int32(sdktypes.DeploymentStateInactive.ToProto()) {
+			return fmt.Errorf("%w: project <%s>: cannot delete non-inactive deployment <%s> in state <%s>",
+				sdkerrors.ErrFailedPrecondition, projectID, de.DeploymentID,
+				deploymentsv1.DeploymentState(de.State).String())
 		}
-		var deplIDs, envIDs []string
-		for _, de := range depsEnvs {
-			if de.State != int32(sdktypes.DeploymentStateInactive.ToProto()) {
-				return fmt.Errorf("%w: project <%s>: cannot delete non-inactive deployment <%s> in state <%s>",
-					sdkerrors.ErrFailedPrecondition, projectID, de.DeploymentID,
-					deploymentsv1.DeploymentState(de.State).String())
-			}
-			deplIDs = append(deplIDs, de.DeploymentID)
-			envIDs = append(envIDs, de.EnvID)
-		}
+		deplIDs = append(deplIDs, de.DeploymentID)
+		envIDs = append(envIDs, de.EnvID)
+	}
 
-		if err = db.deleteDeploymentsAndDependents(ctx, deplIDs); err != nil {
-			return err
-		}
+	if err = db.deleteDeploymentsAndDependents(ctx, deplIDs); err != nil {
+		return err
+	}
 
-		if err = db.deleteEnvs(ctx, envIDs); err != nil {
-			return err
-		}
+	if err = db.deleteEnvs(ctx, envIDs); err != nil {
+		return err
+	}
 
-		return db.deleteProject(ctx, projectID)
-	})
+	return db.deleteProject(ctx, projectID)
 }
 
 func (db *gormdb) DeleteProject(ctx context.Context, projectID sdktypes.ProjectID) error {
-	return translateError(db.deleteProjectAndDependents(ctx, projectID.String()))
+	return db.transaction(ctx, func(tx *tx) error {
+		return translateError(tx.deleteProjectAndDependents(ctx, projectID.String()))
+	})
 }
 
 func (db *gormdb) UpdateProject(ctx context.Context, p sdktypes.Project) error {

@@ -41,24 +41,25 @@ func (db *gormdb) CreateEnv(ctx context.Context, env sdktypes.Env) error {
 }
 
 func (db *gormdb) deleteEnvs(ctx context.Context, ids []string) error {
-	return db.transaction(ctx, func(tx *tx) error {
-		db := tx.db.WithContext(ctx)
-		d := scheme.Deployment{}
-		e := scheme.Env{}
-		var count int64
+	// NOTE: should be transactional
+	d := scheme.Deployment{}
+	e := scheme.Env{}
+	gormDB := db.db.WithContext(ctx)
 
-		// enforce foreign keys constrains while soft-deleting
-		db.Model(&d).Where("deleted_at is NULL and env_id IN ?", ids).Count(&count)
-		if count > 0 {
-			return fmt.Errorf("FOREIGN KEY: %w", gorm.ErrForeignKeyViolated)
-		}
+	// enforce foreign keys constrains while soft-deleting
+	var count int64
+	gormDB.Model(&d).Where("deleted_at is NULL and env_id IN ?", ids).Count(&count)
+	if count > 0 {
+		return fmt.Errorf("FOREIGN KEY: %w", gorm.ErrForeignKeyViolated)
+	}
 
-		return db.Model(&e).Where("env_id IN ?", ids).Delete(&e).Error
-	})
+	return gormDB.Model(&e).Where("env_id IN ?", ids).Delete(&e).Error
 }
 
 func (db *gormdb) deleteEnv(ctx context.Context, envID string) error {
-	return db.deleteEnvs(ctx, []string{envID})
+	return db.transaction(ctx, func(tx *tx) error {
+		return tx.deleteEnvs(ctx, []string{envID})
+	})
 }
 
 func (db *gormdb) GetEnvByID(ctx context.Context, eid sdktypes.EnvID) (sdktypes.Env, error) {
