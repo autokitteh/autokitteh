@@ -128,7 +128,7 @@ func (s *Server) Get(ctx context.Context, req *connect.Request[projectsv1.GetReq
 	}
 
 	if pid.IsValid() {
-		return toResponse(s.projects.GetByID(ctx, uid))
+		return toResponse(s.projects.GetByID(ctx, pid))
 	}
 
 	n, err := sdktypes.StrictParseSymbol(msg.Name)
