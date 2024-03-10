@@ -47,27 +47,28 @@ func (db *gormdb) GetDeployment(ctx context.Context, id sdktypes.DeploymentID) (
 }
 
 func (db *gormdb) deleteDeployment(ctx context.Context, deploymentID string) error {
-	// delete deployment with cascading to sessions (AfterDelete hook)
-	return db.db.WithContext(ctx).Delete(&scheme.Deployment{DeploymentID: deploymentID}).Error
+	// delete deployment and relevant sessions
+	return db.deleteDeploymentsAndDependents(ctx, []string{deploymentID})
 }
 
 func (db *gormdb) deleteDeploymentsAndDependents(ctx context.Context, ids []string) error {
 	// NOTE: should be transactional
 
-	// delete deployments and related sessions
 	if len(ids) == 0 {
 		return nil
 	}
+	gormDB := db.db.WithContext(ctx)
 
-	gormDb := db.db.WithContext(ctx)
-	if err := gormDb.Where("deployment_id IN ?", ids).Delete(&scheme.Session{}).Error; err != nil {
+	if err := gormDB.Where("deployment_id IN ?", ids).Delete(&scheme.Session{}).Error; err != nil {
 		return err
 	}
-	return gormDb.Where("deployment_id IN ?", ids).Delete(&scheme.Deployment{}).Error
+	return gormDB.Where("deployment_id IN ?", ids).Delete(&scheme.Deployment{}).Error
 }
 
 func (db *gormdb) DeleteDeployment(ctx context.Context, deploymentID sdktypes.DeploymentID) error {
-	return translateError(db.deleteDeployment(ctx, deploymentID.String()))
+	return db.transaction(ctx, func(tx *tx) error {
+		return translateError(tx.deleteDeployment(ctx, deploymentID.String()))
+	})
 }
 
 func (db *gormdb) listDeploymentsCommonQuery(ctx context.Context, filter sdkservices.ListDeploymentsFilter) *gorm.DB {

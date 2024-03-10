@@ -31,8 +31,7 @@ func (db *gormdb) CreateProject(ctx context.Context, p sdktypes.Project) error {
 }
 
 func (db *gormdb) deleteProject(ctx context.Context, projectID string) error {
-	p := scheme.Project{ProjectID: projectID}
-	return db.db.WithContext(ctx).Delete(&p).Error
+	return db.deleteProjectAndDependents(ctx, projectID)
 }
 
 func (db *gormdb) deleteProjectAndDependents(ctx context.Context, projectID string) error {
@@ -60,12 +59,12 @@ func (db *gormdb) deleteProjectAndDependents(ctx context.Context, projectID stri
 		return err
 	}
 
-	return db.deleteProject(ctx, projectID)
+	return db.db.WithContext(ctx).Delete(&scheme.Project{ProjectID: projectID}).Error
 }
 
 func (db *gormdb) DeleteProject(ctx context.Context, projectID sdktypes.ProjectID) error {
 	return db.transaction(ctx, func(tx *tx) error {
-		return translateError(tx.deleteProjectAndDependents(ctx, projectID.String()))
+		return translateError(tx.deleteProject(ctx, projectID.String()))
 	})
 }
 
