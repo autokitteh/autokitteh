@@ -57,13 +57,13 @@ func (db *gormdb) deleteDeploymentsAndDependents(ctx context.Context, ids []stri
 		return nil
 	}
 
-	dbb := db.db.WithContext(ctx)
 	return db.transaction(ctx, func(tx *tx) error {
-		if err := dbb.Where("deployment_id IN ?", ids).Delete(&scheme.Session{}).Error; err != nil {
+		db := tx.db.WithContext(ctx)
+		if err := db.Where("deployment_id IN ?", ids).Delete(&scheme.Session{}).Error; err != nil {
 			return err
 		}
 
-		return dbb.Where("deployment_id IN ?", ids).Delete(&scheme.Deployment{}).Error
+		return db.Where("deployment_id IN ?", ids).Delete(&scheme.Deployment{}).Error
 	})
 }
 
