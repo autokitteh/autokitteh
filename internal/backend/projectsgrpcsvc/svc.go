@@ -24,7 +24,7 @@ type Config struct {
 
 var Configs = configset.Set[Config]{
 	Default: &Config{
-		MaxUploadSize: 1 * 1024 * 1024, //1MB
+		MaxUploadSize: 1 * 1024 * 1024, // 1MB
 	},
 }
 
@@ -46,6 +46,7 @@ func (s *Server) Init(mux *http.ServeMux) {
 	path, namer := projectsv1connect.NewProjectsServiceHandler(s, connect.WithReadMaxBytes(s.cfg.MaxUploadSize))
 	mux.Handle(path, namer)
 }
+
 func (s *Server) Create(ctx context.Context, req *connect.Request[projectsv1.CreateRequest]) (*connect.Response[projectsv1.CreateResponse], error) {
 	msg := req.Msg
 
@@ -64,6 +65,25 @@ func (s *Server) Create(ctx context.Context, req *connect.Request[projectsv1.Cre
 	}
 
 	return connect.NewResponse(&projectsv1.CreateResponse{ProjectId: uid.String()}), nil
+}
+
+func (s *Server) Delete(ctx context.Context, req *connect.Request[projectsv1.DeleteRequest]) (*connect.Response[projectsv1.DeleteResponse], error) {
+	msg := req.Msg
+
+	if err := proto.Validate(msg); err != nil {
+		return nil, sdkerrors.AsConnectError(err)
+	}
+
+	pid, err := sdktypes.ParseProjectID(msg.ProjectId)
+	if err != nil {
+		return nil, sdkerrors.AsConnectError(err)
+	}
+
+	if err := s.projects.Delete(ctx, pid); err != nil {
+		return nil, sdkerrors.AsConnectError(err)
+	}
+
+	return connect.NewResponse(&projectsv1.DeleteResponse{}), nil
 }
 
 func (s *Server) Update(ctx context.Context, req *connect.Request[projectsv1.UpdateRequest]) (*connect.Response[projectsv1.UpdateResponse], error) {
@@ -88,16 +108,11 @@ func (s *Server) Update(ctx context.Context, req *connect.Request[projectsv1.Upd
 func (s *Server) Get(ctx context.Context, req *connect.Request[projectsv1.GetRequest]) (*connect.Response[projectsv1.GetResponse], error) {
 	toResponse := func(project sdktypes.Project, err error) (*connect.Response[projectsv1.GetResponse], error) {
 		if err != nil {
-			switch {
-			case errors.Is(err, sdkerrors.ErrNotFound):
-				return nil, connect.NewError(connect.CodeNotFound, err)
-			case errors.Is(err, sdkerrors.ErrUnauthorized):
-				return nil, connect.NewError(connect.CodePermissionDenied, err)
-			default:
-				return nil, connect.NewError(connect.CodeUnknown, err)
+			if errors.Is(err, sdkerrors.ErrNotFound) {
+				return connect.NewResponse(&projectsv1.GetResponse{}), nil
 			}
+			return nil, sdkerrors.AsConnectError(err)
 		}
-
 		return connect.NewResponse(&projectsv1.GetResponse{Project: project.ToProto()}), nil
 	}
 
@@ -107,13 +122,13 @@ func (s *Server) Get(ctx context.Context, req *connect.Request[projectsv1.GetReq
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	uid, err := sdktypes.ParseProjectID(msg.ProjectId)
+	pid, err := sdktypes.ParseProjectID(msg.ProjectId)
 	if err != nil {
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	if uid.IsValid() {
-		return toResponse(s.projects.GetByID(ctx, uid))
+	if pid.IsValid() {
+		return toResponse(s.projects.GetByID(ctx, pid))
 	}
 
 	n, err := sdktypes.StrictParseSymbol(msg.Name)

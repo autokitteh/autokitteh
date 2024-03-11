@@ -44,6 +44,7 @@ type Build struct {
 	BuildID   string `gorm:"primaryKey"`
 	Data      []byte
 	CreatedAt time.Time
+	DeletedAt gorm.DeletedAt `gorm:"index"`
 }
 
 func ParseBuild(b Build) (sdktypes.Build, error) {
@@ -141,6 +142,7 @@ type Project struct {
 	Name      string `gorm:"uniqueIndex"`
 	RootURL   string
 	Resources []byte
+	DeletedAt gorm.DeletedAt `gorm:"index"`
 }
 
 func ParseProject(r Project) (sdktypes.Project, error) {
@@ -211,12 +213,16 @@ func ParseEventRecord(e EventRecord) (sdktypes.EventRecord, error) {
 
 type Env struct {
 	EnvID     string `gorm:"primaryKey"`
-	ProjectID string `gorm:"index"`
+	ProjectID string `gorm:"index;foreignKey"`
 	Name      string
+	DeletedAt gorm.DeletedAt `gorm:"index"`
 
 	// {pid.uuid}/{name}. easier to detect dups.
 	// See OrgMember for more.
 	MembershipID string `gorm:"uniqueIndex"`
+
+	// just for the foreign key. Wihtout it gorm won't enforce it
+	Project Project
 }
 
 func ParseEnv(r Env) (sdktypes.Env, error) {
@@ -367,7 +373,7 @@ func ParseSession(s Session) (sdktypes.Session, error) {
 
 type Deployment struct {
 	DeploymentID string `gorm:"primaryKey"`
-	EnvID        string `gorm:"foreignKey"`
+	EnvID        string `gorm:"index;foreignKey"`
 	BuildID      string `gorm:"foreignKey"`
 	State        int32
 	CreatedAt    time.Time
@@ -393,11 +399,6 @@ func ParseDeployment(d Deployment) (sdktypes.Deployment, error) {
 	}
 
 	return deployment, nil
-}
-
-// gorm don't cascade soft deletes. hook is transactional.
-func (d *Deployment) AfterDelete(db *gorm.DB) error {
-	return db.Where("deployment_id = ?", d.DeploymentID).Delete(&Session{}).Error
 }
 
 type DeploymentWithStats struct {

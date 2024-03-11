@@ -3,10 +3,12 @@ package dbgorm
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/internal/backend/tar"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
+	deploymentsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/deployments/v1"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -28,6 +30,50 @@ func (db *gormdb) CreateProject(ctx context.Context, p sdktypes.Project) error {
 	return translateError(db.createProject(ctx, project))
 }
 
+func (db *gormdb) deleteProject(ctx context.Context, projectID string) error {
+	return db.deleteProjectAndDependents(ctx, projectID)
+}
+
+// delete project, its envs, deployments, sessions and build
+func (db *gormdb) deleteProjectAndDependents(ctx context.Context, projectID string) error {
+	// NOTE: should be transactional
+
+	deploymentStates, err := db.getProjectDeployments(ctx, projectID)
+	if err != nil {
+		return err
+	}
+	var deplIDs []string
+	for _, de := range deploymentStates {
+		if de.State != int32(sdktypes.DeploymentStateInactive.ToProto()) {
+			return fmt.Errorf("%w: project <%s>: cannot delete non-inactive deployment <%s> in state <%s>",
+				sdkerrors.ErrFailedPrecondition, projectID, de.DeploymentID,
+				deploymentsv1.DeploymentState(de.State).String())
+		}
+		deplIDs = append(deplIDs, de.DeploymentID)
+	}
+
+	// TODO: consider deleting deployments from envs
+	if err = db.deleteDeploymentsAndDependents(ctx, deplIDs); err != nil {
+		return err
+	}
+
+	envIDs, err := db.getProjectEnvs(ctx, projectID)
+	if err != nil {
+		return err
+	}
+	if err = db.deleteEnvs(ctx, envIDs); err != nil {
+		return err
+	}
+
+	return db.db.WithContext(ctx).Delete(&scheme.Project{ProjectID: projectID}).Error
+}
+
+func (db *gormdb) DeleteProject(ctx context.Context, projectID sdktypes.ProjectID) error {
+	return db.transaction(ctx, func(tx *tx) error {
+		return translateError(tx.deleteProject(ctx, projectID.String()))
+	})
+}
+
 func (db *gormdb) UpdateProject(ctx context.Context, p sdktypes.Project) error {
 	r := scheme.Project{
 		ProjectID: p.ID().String(),
@@ -41,24 +87,65 @@ func (db *gormdb) UpdateProject(ctx context.Context, p sdktypes.Project) error {
 	return nil
 }
 
+func (db *gormdb) getProject(ctx context.Context, projectID string) (*scheme.Project, error) {
+	return getOne(db.db, ctx, scheme.Project{}, "project_id = ?", projectID)
+}
+
+func (db *gormdb) getProjectByName(ctx context.Context, projectName string) (*scheme.Project, error) {
+	return getOne(db.db, ctx, scheme.Project{}, "name = ?", projectName)
+}
+
+func schemaToSDKProject(p *scheme.Project, err error) (sdktypes.Project, error) {
+	if p == nil || err != nil {
+		return sdktypes.InvalidProject, translateError(err)
+	}
+	return scheme.ParseProject(*p)
+}
+
 func (db *gormdb) GetProjectByID(ctx context.Context, pid sdktypes.ProjectID) (sdktypes.Project, error) {
-	return getOneWTransform(db.db, ctx, scheme.ParseProject, "project_id = ?", pid.String())
+	return schemaToSDKProject(db.getProject(ctx, pid.String()))
 }
 
 func (db *gormdb) GetProjectByName(ctx context.Context, ph sdktypes.Symbol) (sdktypes.Project, error) {
-	return getOneWTransform(db.db, ctx, scheme.ParseProject, "name = ?", ph.String())
+	return schemaToSDKProject(db.getProjectByName(ctx, ph.String()))
+}
+
+type DeploymentState struct {
+	DeploymentID string
+	State        int32
+}
+
+func (db *gormdb) getProjectDeployments(ctx context.Context, pid string) ([]DeploymentState, error) {
+	var pds []DeploymentState
+	res := db.db.WithContext(ctx).Model(&scheme.Deployment{}).
+		Joins("join Envs on Envs.env_id = Deployments.env_id").
+		Where("Envs.project_id = ?", pid).
+		Select("DISTINCT Deployments.deployment_id, Deployments.state").
+		Find(&pds)
+	return pds, res.Error
+}
+
+func (db *gormdb) getProjectEnvs(ctx context.Context, pid string) (envIDs []string, err error) {
+	err = db.db.WithContext(ctx).Model(&scheme.Env{}).Where("project_id = ?", pid).Pluck("env_id", &envIDs).Error
+	return envIDs, err
+}
+
+func (db *gormdb) listProjects(ctx context.Context) ([]scheme.Project, error) {
+	q := db.db.WithContext(ctx).Order("project_id")
+
+	var ps []scheme.Project
+	if err := q.Find(&ps).Error; err != nil {
+		return nil, err
+	}
+	return ps, nil
 }
 
 func (db *gormdb) ListProjects(ctx context.Context) ([]sdktypes.Project, error) {
-	var rs []scheme.Project
-	q := db.db.WithContext(ctx)
-
-	err := q.Order("project_id").Find(&rs).Error
-	if err != nil {
+	ps, err := db.listProjects(ctx)
+	if ps == nil || err != nil {
 		return nil, translateError(err)
 	}
-
-	return kittehs.TransformError(rs, scheme.ParseProject)
+	return kittehs.TransformError(ps, scheme.ParseProject)
 }
 
 func (db *gormdb) GetProjectResources(ctx context.Context, pid sdktypes.ProjectID) (map[string][]byte, error) {

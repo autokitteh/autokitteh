@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"gorm.io/gorm"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -13,6 +12,10 @@ import (
 func saveBuildAndAssert(t *testing.T, f *dbFixture, build scheme.Build) {
 	assert.NoError(t, f.gormdb.saveBuild(f.ctx, build))
 	findAndAssertOne(t, f, build, "build_id = ?", build.BuildID)
+}
+
+func assertBuildDeleted(t *testing.T, f *dbFixture, buildID string) {
+	assertSoftDeleted(t, f, scheme.Build{BuildID: buildID})
 }
 
 func TestSaveBuild(t *testing.T) {
@@ -27,10 +30,8 @@ func TestDeleteBuild(t *testing.T) {
 	build := newBuild()
 	saveBuildAndAssert(t, f, build)
 
-	// delete build and ensure it's completely deleted (use Unscoped to check it's not just soft deleted)
 	assert.NoError(t, f.gormdb.deleteBuild(f.ctx, build.BuildID))
-	res := f.db.Unscoped().First(&scheme.Build{}, "build_id = ?", build.BuildID)
-	assert.ErrorAs(t, gorm.ErrRecordNotFound, &res.Error)
+	assertBuildDeleted(t, f, build.BuildID)
 }
 
 func TestListBuild(t *testing.T) {

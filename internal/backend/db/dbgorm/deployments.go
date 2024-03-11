@@ -47,16 +47,37 @@ func (db *gormdb) GetDeployment(ctx context.Context, id sdktypes.DeploymentID) (
 }
 
 func (db *gormdb) deleteDeployment(ctx context.Context, deploymentID string) error {
-	// delete deployment with cascading to sessions (AfterDelete hook)
-	d := scheme.Deployment{DeploymentID: deploymentID}
-	return db.db.WithContext(ctx).Delete(&d).Error
+	return db.deleteDeploymentsAndDependents(ctx, []string{deploymentID})
+}
+
+// delete deployments and relevant sessions
+func (db *gormdb) deleteDeploymentsAndDependents(ctx context.Context, depIDs []string) error {
+	// NOTE: should be transactional
+
+	if len(depIDs) == 0 {
+		return nil
+	}
+	gormDB := db.db.WithContext(ctx)
+
+	if err := gormDB.Delete(&scheme.Session{}, "deployment_id IN ?", depIDs).Error; err != nil {
+		return err
+	}
+
+	// FIXME: do not delete deployment
+	// buildIDs := gormDB.Model(&scheme.Deployment{}).Select("build_id").Where("deployment_id IN (?)", depIDs)
+	// if err := gormDB.Delete(&scheme.Build{}, "build_id IN (?)", buildIDs).Error; err != nil {
+	// 	return err
+	// }
+
+	return gormDB.Delete(&scheme.Deployment{}, "deployment_id IN ?", depIDs).Error
 }
 
 func (db *gormdb) DeleteDeployment(ctx context.Context, deploymentID sdktypes.DeploymentID) error {
-	return translateError(db.deleteDeployment(ctx, deploymentID.String()))
+	return db.transaction(ctx, func(tx *tx) error {
+		return translateError(tx.deleteDeployment(ctx, deploymentID.String()))
+	})
 }
 
-// TODO: rewrite generic in order to avoid splitting to Deployment and DeploymentWithStats
 func (db *gormdb) listDeploymentsCommonQuery(ctx context.Context, filter sdkservices.ListDeploymentsFilter) *gorm.DB {
 	q := db.db.WithContext(ctx).Model(&scheme.Deployment{})
 	if filter.BuildID.IsValid() {
@@ -126,11 +147,12 @@ func (db *gormdb) ListDeployments(ctx context.Context, filter sdkservices.ListDe
 	}
 }
 
-func (db *gormdb) UpdateDeploymentState(ctx context.Context, id sdktypes.DeploymentID, state sdktypes.DeploymentState) error {
-	d := &scheme.Deployment{DeploymentID: id.String()}
+func (db *gormdb) updateDeploymentState(ctx context.Context, id string, state sdktypes.DeploymentState) error {
+	d := &scheme.Deployment{DeploymentID: id}
 
 	return db.locked(func(db *gormdb) error {
-		result := db.db.WithContext(ctx).Model(d).Updates(map[string]any{"state": state.ToProto(), "updated_at": time.Now()})
+		result := db.db.WithContext(ctx).Model(d).Updates(
+			map[string]any{"state": state.ToProto(), "updated_at": time.Now()})
 		if result.Error != nil {
 			return translateError(result.Error)
 		}
@@ -140,4 +162,8 @@ func (db *gormdb) UpdateDeploymentState(ctx context.Context, id sdktypes.Deploym
 
 		return nil
 	})
+}
+
+func (db *gormdb) UpdateDeploymentState(ctx context.Context, id sdktypes.DeploymentID, state sdktypes.DeploymentState) error {
+	return db.updateDeploymentState(ctx, id.String(), state)
 }

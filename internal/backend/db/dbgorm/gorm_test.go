@@ -27,11 +27,13 @@ func init() {
 }
 
 type dbFixture struct {
-	db     *gorm.DB
-	gormdb *gormdb
-	ctx    context.Context
-
-	sessionID uint
+	db           *gorm.DB
+	gormdb       *gormdb
+	ctx          context.Context
+	sessionID    uint
+	deploymentID uint
+	envID        uint
+	projectID    uint
 }
 
 // TODO: use gormkitteh (and maybe test with sqlite::memory and embedded PG)
@@ -45,7 +47,7 @@ func setupDB(dbName string) *gorm.DB {
 		},
 	)
 	if dbName == "" {
-		dbName = ":memory:"
+		dbName = "file::memory:"
 	}
 	db, err := gorm.Open(sqlite.Open(dbName), &gorm.Config{
 		NowFunc: func() time.Time { // operate always in UTC to simplify object comparison upon creation and fetching
@@ -62,7 +64,7 @@ func setupDB(dbName string) *gorm.DB {
 }
 
 func newDbFixture(withoutForeignKeys bool) *dbFixture {
-	db := setupDB("") // in-memory db, specify filename to use file db
+	db := setupDB("/tmp/ak.db") // in-memory db, specify filename to use file db
 	if withoutForeignKeys {
 		db.Exec("PRAGMA foreign_keys = OFF")
 	}
@@ -104,13 +106,12 @@ func findAndAssertOne[T any](t *testing.T, f *dbFixture, schemaObj T, where stri
 func assertSoftDeleted[T any](t *testing.T, f *dbFixture, m T) {
 	// check that object is not found without unscoped (due to deleted_at)
 	res := f.db.First(&m)
-	require.ErrorAs(t, gorm.ErrRecordNotFound, &res.Error)
+	require.ErrorIs(t, res.Error, gorm.ErrRecordNotFound)
 
 	// check that object is marked as deleted
 	res = f.db.Unscoped().First(&m)
 	require.NoError(t, res.Error)
 	require.Equal(t, int64(1), res.RowsAffected)
-	res.Scan(&m)
 
 	deletedAtField := reflect.ValueOf(&m).Elem().FieldByName("DeletedAt")
 	require.NotNil(t, deletedAtField.Interface())
@@ -123,7 +124,6 @@ var (
 	testEventID      = "evt_00000000000000000000000001"
 	testEnvID        = "env_00000000000000000000000001"
 	testProjectID    = "prj_00000000000000000000000001"
-	testProjectName  = "testProject"
 )
 
 func newSession(f *dbFixture, st sdktypes.SessionStateType) scheme.Session {
@@ -150,31 +150,40 @@ func newBuild() scheme.Build {
 	}
 }
 
-func newDeployment(buildID string, envID string) scheme.Deployment {
+func newDeployment(f *dbFixture) scheme.Deployment {
+	f.deploymentID += 1
+	deploymentID := fmt.Sprintf("dep_%026d", f.deploymentID)
+
 	return scheme.Deployment{
-		DeploymentID: testDeploymentID,
-		BuildID:      buildID,
-		EnvID:        envID,
+		DeploymentID: deploymentID,
+		BuildID:      testBuildID,
+		EnvID:        testEnvID,
 		State:        int32(sdktypes.DeploymentStateUnspecified.ToProto()),
 		CreatedAt:    now,
 		UpdatedAt:    now,
 	}
 }
 
-func newProject() scheme.Project {
+func newProject(f *dbFixture) scheme.Project {
+	f.projectID += 1
+	projectID := fmt.Sprintf("prj_%026d", f.projectID)
+
 	return scheme.Project{
-		ProjectID: testProjectID,
-		Name:      testProjectName,
+		ProjectID: projectID,
+		Name:      projectID, // must be unique
 		RootURL:   "",
 		Resources: []byte{},
 	}
 }
 
-func newEnv() scheme.Env {
+func newEnv(f *dbFixture) scheme.Env {
+	f.envID += 1
+	envID := fmt.Sprintf("env_%026d", f.envID)
+
 	return scheme.Env{
-		EnvID:        testEnvID,
+		EnvID:        envID,
 		ProjectID:    testProjectID,
 		Name:         "",
-		MembershipID: "",
+		MembershipID: envID, // must be unique
 	}
 }
