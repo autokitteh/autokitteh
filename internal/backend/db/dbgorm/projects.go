@@ -37,19 +37,19 @@ func (db *gormdb) deleteProject(ctx context.Context, projectID string) error {
 // delete project, its envs, deployments, sessions and build
 func (db *gormdb) deleteProjectAndDependents(ctx context.Context, projectID string) error {
 	// NOTE: should be transactional
-	depsEnvs, err := db.getProjectDeploymentsAndEnvs(ctx, projectID)
+
+	deploymentStates, err := db.getProjectDeployments(ctx, projectID)
 	if err != nil {
 		return err
 	}
-	var deplIDs, envIDs []string
-	for _, de := range depsEnvs {
+	var deplIDs []string
+	for _, de := range deploymentStates {
 		if de.State != int32(sdktypes.DeploymentStateInactive.ToProto()) {
 			return fmt.Errorf("%w: project <%s>: cannot delete non-inactive deployment <%s> in state <%s>",
 				sdkerrors.ErrFailedPrecondition, projectID, de.DeploymentID,
 				deploymentsv1.DeploymentState(de.State).String())
 		}
 		deplIDs = append(deplIDs, de.DeploymentID)
-		envIDs = append(envIDs, de.EnvID)
 	}
 
 	// TODO: consider deleting deployments from envs
@@ -57,6 +57,10 @@ func (db *gormdb) deleteProjectAndDependents(ctx context.Context, projectID stri
 		return err
 	}
 
+	envIDs, err := db.getProjectEnvs(ctx, projectID)
+	if err != nil {
+		return err
+	}
 	if err = db.deleteEnvs(ctx, envIDs); err != nil {
 		return err
 	}
@@ -106,20 +110,24 @@ func (db *gormdb) GetProjectByName(ctx context.Context, ph sdktypes.Symbol) (sdk
 	return schemaToSDKProject(db.getProjectByName(ctx, ph.String()))
 }
 
-type DepEnv struct {
+type DeploymentState struct {
 	DeploymentID string
 	State        int32
-	EnvID        string
 }
 
-func (db *gormdb) getProjectDeploymentsAndEnvs(ctx context.Context, pid string) ([]DepEnv, error) {
-	var pds []DepEnv
+func (db *gormdb) getProjectDeployments(ctx context.Context, pid string) ([]DeploymentState, error) {
+	var pds []DeploymentState
 	res := db.db.WithContext(ctx).Model(&scheme.Deployment{}).
 		Joins("join Envs on Envs.env_id = Deployments.env_id").
 		Where("Envs.project_id = ?", pid).
-		Select("Deployments.deployment_id, Deployments.state, Envs.env_id").
+		Select("DISTINCT Deployments.deployment_id, Deployments.state").
 		Find(&pds)
 	return pds, res.Error
+}
+
+func (db *gormdb) getProjectEnvs(ctx context.Context, pid string) (envIDs []string, err error) {
+	err = db.db.WithContext(ctx).Model(&scheme.Env{}).Where("project_id = ?", pid).Pluck("env_id", &envIDs).Error
+	return envIDs, err
 }
 
 func (db *gormdb) listProjects(ctx context.Context) ([]scheme.Project, error) {

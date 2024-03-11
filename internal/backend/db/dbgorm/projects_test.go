@@ -7,6 +7,7 @@ import (
 	"gorm.io/gorm"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -96,12 +97,64 @@ func TestDeleteProject(t *testing.T) {
 	assertProjectDeleted(t, f, p.ProjectID)
 }
 
+func TestGetProjectDeployments(t *testing.T) {
+	f := newDbFixture(true)                           // no foreign keys
 	findAndAssertCount(t, f, scheme.Project{}, 0, "") // no projects
 
+	// create 4 envs. E1 with 3 deployments, E2 with 1 (dupl with E1) and E3 with 0.
+	// p1:
+	// - e1: (d1, d2)
+	// - e2: (d3)
+	// - e3
+	//
+	// p2:
+	// - e4: (d4)
+	p1, p2 := newProject(f), newProject(f)
+	e1, e2, e3, e4 := newEnv(f), newEnv(f), newEnv(f), newEnv(f)
+	d1, d2, d3, d4 := newDeployment(f), newDeployment(f), newDeployment(f), newDeployment(f)
 
+	e1.ProjectID = p1.ProjectID
+	e2.ProjectID = p1.ProjectID
+	e3.ProjectID = p1.ProjectID
+	e4.ProjectID = p2.ProjectID
 
+	d1.EnvID = e1.EnvID
+	d2.EnvID = e1.EnvID
+	d3.EnvID = e2.EnvID
+	d4.EnvID = e4.EnvID
+
+	createProjectsAndAssert(t, f, p1, p2)
+	createEnvsAndAssert(t, f, e1, e2, e3, e4)
+	createDeploymentsAndAssert(t, f, d1, d2, d3, d4)
+
+	ds, err := f.gormdb.getProjectDeployments(f.ctx, p1.ProjectID)
+	assert.NoError(t, err)
+	assert.Equal(t, []string{d1.DeploymentID, d2.DeploymentID, d3.DeploymentID},
+		kittehs.Transform(ds, func(d DeploymentState) string { return d.DeploymentID }))
 }
 
+func TestGetProjectEnvs(t *testing.T) {
+	f := newDbFixture(true)                           // no foreign keys
+	findAndAssertCount(t, f, scheme.Project{}, 0, "") // no projects
+
+	// create two envs - one with deployment and second without
+	p := newProject(f)
+	e1, e2 := newEnv(f), newEnv(f)
+	d := newDeployment(f)
+
+	e1.ProjectID = p.ProjectID
+	e2.ProjectID = p.ProjectID
+	d.EnvID = e1.EnvID
+
+	createProjectsAndAssert(t, f, p)
+	createEnvsAndAssert(t, f, e1, e2)
+	createDeploymentsAndAssert(t, f, d)
+
+	envIDs, err := f.gormdb.getProjectEnvs(f.ctx, p.ProjectID)
+	assert.NoError(t, err)
+	// ensure that we got both envs - even of there is no deployments attached
+	assert.Equal(t, []string{e1.EnvID, e2.EnvID}, envIDs)
+}
 
 func TestDeleteProjectAndDependents(t *testing.T) {
 	f := newDbFixture(true)                           // no foreign keys
