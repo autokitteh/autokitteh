@@ -37,7 +37,7 @@ func (db *gormdb) deleteProject(ctx context.Context, projectID string) error {
 // delete project, its envs, deployments, sessions and build
 func (db *gormdb) deleteProjectAndDependents(ctx context.Context, projectID string) error {
 	// NOTE: should be transactional
-	depsEnvs, err := db.getProjectDeployments(ctx, projectID)
+	depsEnvs, err := db.getProjectDeploymentsAndEnvs(ctx, projectID)
 	if err != nil {
 		return err
 	}
@@ -112,7 +112,7 @@ type DepEnv struct {
 	EnvID        string
 }
 
-func (db *gormdb) getProjectDeployments(ctx context.Context, pid string) ([]DepEnv, error) {
+func (db *gormdb) getProjectDeploymentsAndEnvs(ctx context.Context, pid string) ([]DepEnv, error) {
 	var pds []DepEnv
 	res := db.db.WithContext(ctx).Model(&scheme.Deployment{}).
 		Joins("join Envs on Envs.env_id = Deployments.env_id").
