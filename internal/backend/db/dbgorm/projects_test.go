@@ -11,9 +11,11 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-func createProjectAndAssert(t *testing.T, f *dbFixture, project scheme.Project) {
-	assert.NoError(t, f.gormdb.createProject(f.ctx, project))
-	findAndAssertOne(t, f, project, "project_id = ?", project.ProjectID)
+func createProjectsAndAssert(t *testing.T, f *dbFixture, projects ...scheme.Project) {
+	for _, project := range projects {
+		assert.NoError(t, f.gormdb.createProject(f.ctx, project))
+		findAndAssertOne(t, f, project, "project_id = ?", project.ProjectID)
+	}
 }
 
 func listProjectsAndAssert(t *testing.T, f *dbFixture, expected int) []scheme.Project {
@@ -33,7 +35,7 @@ func TestCreateProject(t *testing.T) {
 
 	p := newProject(f)
 	// test createProject
-	createProjectAndAssert(t, f, p)
+	createProjectsAndAssert(t, f, p)
 }
 
 func TestGetProjects(t *testing.T) {
@@ -41,7 +43,7 @@ func TestGetProjects(t *testing.T) {
 	findAndAssertCount(t, f, scheme.Project{}, 0, "") // no projects
 
 	p := newProject(f)
-	createProjectAndAssert(t, f, p)
+	createProjectsAndAssert(t, f, p)
 
 	// test getProjectByID
 	project, err := f.gormdb.getProject(f.ctx, p.ProjectID)
@@ -70,7 +72,7 @@ func TestListProjects(t *testing.T) {
 	findAndAssertCount(t, f, scheme.Project{}, 0, "") // no projects
 
 	p := newProject(f)
-	createProjectAndAssert(t, f, p)
+	createProjectsAndAssert(t, f, p)
 
 	// test listProjects
 	projects := listProjectsAndAssert(t, f, 1)
@@ -86,7 +88,7 @@ func TestDeleteProject(t *testing.T) {
 	findAndAssertCount(t, f, scheme.Project{}, 0, "") // no projects
 
 	p := newProject(f)
-	createProjectAndAssert(t, f, p)
+	createProjectsAndAssert(t, f, p)
 
 	// delete project
 	assert.NoError(t, f.gormdb.deleteProject(f.ctx, p.ProjectID))
@@ -115,16 +117,16 @@ func TestDeleteProjectAndDependents(t *testing.T) {
 	//   - e1
 	//     - d1 (s3)
 	p1, p2 := newProject(f), newProject(f)
-	createProjectAndAssert(t, f, p1)
-	createProjectAndAssert(t, f, p2)
+	createProjectsAndAssert(t, f, p1)
+	createProjectsAndAssert(t, f, p2)
 
 	e1p1, e2p1, e1p2 := newEnv(f), newEnv(f), newEnv(f)
 	e1p1.ProjectID = p1.ProjectID
 	e2p1.ProjectID = p1.ProjectID
 	e1p2.ProjectID = p2.ProjectID
-	createEnvAndAssert(t, f, e1p1)
-	createEnvAndAssert(t, f, e2p1)
-	createEnvAndAssert(t, f, e1p2)
+	createEnvsAndAssert(t, f, e1p1)
+	createEnvsAndAssert(t, f, e2p1)
+	createEnvsAndAssert(t, f, e1p2)
 
 	d1e1p1 := newDeployment(f)
 	d2e1p1 := newDeployment(f)
@@ -134,10 +136,10 @@ func TestDeleteProjectAndDependents(t *testing.T) {
 	d2e1p1.EnvID = e1p1.EnvID
 	d1e2p1.EnvID = e2p1.EnvID
 	d1e1p2.EnvID = e1p2.EnvID
-	createDeploymentAndAssert(t, f, d1e1p1)
-	createDeploymentAndAssert(t, f, d2e1p1)
-	createDeploymentAndAssert(t, f, d1e2p1)
-	createDeploymentAndAssert(t, f, d1e1p2)
+	createDeploymentsAndAssert(t, f, d1e1p1)
+	createDeploymentsAndAssert(t, f, d2e1p1)
+	createDeploymentsAndAssert(t, f, d1e2p1)
+	createDeploymentsAndAssert(t, f, d1e1p2)
 
 	s1d1e1p1 := newSession(f, sdktypes.SessionStateTypeCompleted)
 	s2d1e2p1 := newSession(f, sdktypes.SessionStateTypeError)
