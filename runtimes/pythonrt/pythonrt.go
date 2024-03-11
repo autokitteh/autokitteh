@@ -7,7 +7,7 @@ import (
 	"io/fs"
 	"time"
 
-	"go.autokitteh.dev/autokitteh/backend/logger"
+	"go.autokitteh.dev/autokitteh/internal/backend/logger"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkruntimes"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
