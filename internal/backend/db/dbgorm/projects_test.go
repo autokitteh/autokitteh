@@ -94,31 +94,12 @@ func TestDeleteProject(t *testing.T) {
 	assertProjectDeleted(t, f, p.ProjectID)
 }
 
-func TestDeleteProjectForeignKeys(t *testing.T) {
-	f := newDbFixture(false)
 	findAndAssertCount(t, f, scheme.Project{}, 0, "") // no projects
-	findAndAssertCount(t, f, scheme.Env{}, 0, "")     // no envs
 
-	p := newProject(f)
-	e := newEnv(f)
-	createProjectAndAssert(t, f, p)
-	createEnvAndAssert(t, f, e)
 
-	// delete project while env is references it
-	// TODO: connection as well
-	err := f.gormdb.deleteProject(f.ctx, p.ProjectID)
-	assert.ErrorContains(t, err, "FOREIGN KEY")
 
-	// delete env and then project
-	assert.NoError(t, f.gormdb.deleteEnv(f.ctx, e.EnvID))
-	assert.NoError(t, f.gormdb.deleteProject(f.ctx, p.ProjectID))
-	assertProjectDeleted(t, f, p.ProjectID)
 }
 
-// FIXME: test that all dependencies are deleted
-// FIXME: we need to fetch env ids as well to delete envs
-// and before that we need to delete deployments and builds
-// maybe I need to add deleteDeploymentForeignKey and check
 
 func TestDeleteProjectAndDependents(t *testing.T) {
 	f := newDbFixture(true)                           // no foreign keys

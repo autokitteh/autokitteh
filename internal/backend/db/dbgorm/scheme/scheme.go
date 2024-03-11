@@ -145,16 +145,6 @@ type Project struct {
 	DeletedAt gorm.DeletedAt `gorm:"index"`
 }
 
-// enforce foreign keys constrains while soft-deleting
-func (p *Project) BeforeDelete(db *gorm.DB) error {
-	var count int64
-	db.Model(&Env{}).Where("deleted_at is NULL and project_id = ?", p.ProjectID).Count(&count)
-	if count > 0 {
-		return fmt.Errorf("FOREIGN KEY: %w", gorm.ErrForeignKeyViolated)
-	}
-	return nil
-}
-
 func ParseProject(r Project) (sdktypes.Project, error) {
 	p, err := sdktypes.StrictProjectFromProto(&sdktypes.ProjectPB{
 		ProjectId: r.ProjectID,
