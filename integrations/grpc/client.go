@@ -1,6 +1,21 @@
 package grpc
 
-/*
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+
+	"github.com/fullstorydev/grpcurl"
+	"github.com/iancoleman/strcase"
+	"github.com/jhump/protoreflect/desc"
+	"github.com/jhump/protoreflect/grpcreflect"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/protobuf/types/descriptorpb"
+)
+
 type method struct {
 	Name      string
 	Inputs    []string
@@ -140,4 +155,3 @@ func (r *grpcclient) invoke(method string, payload map[string]any) (map[string]i
 
 	return t, nil
 }
-*/

@@ -4,7 +4,6 @@ package grpc
 // mainly a copy paste from grpcurl
 // https://github.com/fullstorydev/grpcurl/blob/70c215f7e2c272fdccb9386bbbff5dbc49fdd4fb/cmd/grpcurl/grpcurl.go#L236
 
-/*
 import (
 	"github.com/fullstorydev/grpcurl"
 	"github.com/jhump/protoreflect/desc"
@@ -54,4 +53,3 @@ func (cs compositeSource) AllExtensionsForType(typeName string) ([]*desc.FieldDe
 	}
 	return exts, nil
 }
-*/
