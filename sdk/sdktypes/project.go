@@ -34,11 +34,8 @@ func StrictProjectFromProto(m *ProjectPB) (Project, error) { return Strict(Proje
 func (p Project) ID() ProjectID { return kittehs.Must1(ParseProjectID(p.read().ProjectId)) }
 func (p Project) Name() Symbol  { return kittehs.Must1(ParseSymbol(p.read().Name)) }
 
-func NewProject(id ProjectID, name Symbol) Project {
-	return kittehs.Must1(ProjectFromProto(&ProjectPB{
-		ProjectId: id.String(),
-		Name:      name.String(),
-	}))
+func NewProject() Project {
+	return kittehs.Must1(ProjectFromProto(&ProjectPB{}))
 }
 
 func (p Project) WithName(name Symbol) Project {

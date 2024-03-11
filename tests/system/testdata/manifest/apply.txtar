@@ -14,14 +14,14 @@ return code == 0
 output equals ''
 
 # Successful dry run of a full project.
-ak manifest apply full.yaml --dry-run -J
+ak manifest apply full.yaml --dry-run
 return code == 0
-output equals file expected_on_full_dry_run.json
+output equals file expected_on_full_dry_run.txt
 
 # Successful application of a full project.
-ak manifest apply full.yaml -J
+ak manifest apply full.yaml
 return code == 0
-output equals file expected_on_full_apply.json
+output equals file expected_on_full_apply.txt
 
 # Check the actual project details.
 ak project get my_project -J
@@ -83,13 +83,13 @@ project:
       event_type: get
       entrypoint: my_program.star:on_http_get
 
--- expected_on_full_dry_run.json --
+-- expected_on_full_dry_run.txt --
 [plan] project "my_project": not found, will create
 [plan] env "my_project/default": not found, will create
 [plan] connection "my_project/my_connection": not found, will create
 [plan] trigger "my_project/default:my_project/my_connection/get": not found, will create
 
--- expected_on_full_apply.json --
+-- expected_on_full_apply.txt --
 [plan] project "my_project": not found, will create
 [plan] env "my_project/default": not found, will create
 [plan] connection "my_project/my_connection": not found, will create

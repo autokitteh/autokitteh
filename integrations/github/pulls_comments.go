@@ -8,7 +8,6 @@ import (
 
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-	"go.autokitteh.dev/autokitteh/sdk/sdkvalues"
 )
 
 // https://docs.github.com/en/rest/pulls/comments#list-review-comments-on-a-pull-request
@@ -59,5 +58,5 @@ func (i integration) listPullRequestReviewComments(ctx context.Context, args []s
 		return sdktypes.InvalidValue, err
 	}
 
-	return sdkvalues.Wrap(cs)
+	return sdktypes.WrapValue(cs)
 }

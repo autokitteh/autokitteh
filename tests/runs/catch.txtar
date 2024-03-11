@@ -1,5 +1,12 @@
 (1.0, None)
 (None, "floating-point division by zero")
+(None, "user triggered error")
+(None, "hissss")
+(None, [1, 2])
+(None, [1, 2])
+(None, {"dog": "woof", "cat": "meow"})
+(None, {"dog": "woof", "cat": "meow"})
+(None, "cannot specify both positional and keyword arguments")
 
 -- main.star --
 def foo(x):
@@ -7,3 +14,10 @@ def foo(x):
 
 print(catch(foo, 1))
 print(catch(foo, 0))
+print(catch(fail))
+print(catch(fail, "hissss"))
+print(catch(fail, 1, 2))
+print(catch(fail, [1, 2]))
+print(catch(fail, {"cat": "meow", "dog": "woof"}))
+print(catch(fail, cat="meow", dog="woof"))
+print(catch(fail, "hiss", cat="meow"))

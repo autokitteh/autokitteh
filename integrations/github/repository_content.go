@@ -7,7 +7,6 @@ import (
 
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-	"go.autokitteh.dev/autokitteh/sdk/sdkvalues"
 )
 
 // https://docs.github.com/en/rest/repos/contents#create-or-update-file-contents
@@ -66,7 +65,7 @@ func (i integration) createOrUpdateFile(ctx context.Context, args []sdktypes.Val
 		return sdktypes.InvalidValue, err
 	}
 
-	return sdkvalues.Wrap(c)
+	return sdktypes.WrapValue(c)
 }
 
 // https://docs.github.com/en/rest/repos/contents#get-repository-content
@@ -103,5 +102,5 @@ func (i integration) getContents(ctx context.Context, args []sdktypes.Value, kwa
 		directoryContent = []*github.RepositoryContent{fileContent}
 	}
 
-	return sdkvalues.Wrap(directoryContent)
+	return sdktypes.WrapValue(directoryContent)
 }

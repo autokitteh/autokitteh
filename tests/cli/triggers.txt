@@ -1,5 +1,5 @@
 $ # Create project p.
-$ ${AK} p c p; echo $?
+$ ${AK} p c --name p; echo $?
 project_id: prj_00000000000000000000000001
 0
 $ # Create env for project p.

@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package autokitteh.integrations.v1;
 
-import "autokitteh/program/v1/module.proto";
+import "autokitteh/module/v1/module.proto";
 import "buf/validate/validate.proto";
 
 message Integration {
@@ -25,5 +25,5 @@ message Integration {
   // TODO(ENG-346): Connection UI specification instead of a URL.
   string connection_url = 8;
 
-  program.v1.Module module = 9;
+  module.v1.Module module = 9;
 }

@@ -11,7 +11,6 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-	"go.autokitteh.dev/autokitteh/sdk/sdkvalues"
 )
 
 // https://developers.google.com/sheets/api/guides/concepts#expandable-1
@@ -41,7 +40,7 @@ func (a api) a1Range(ctx context.Context, args []sdktypes.Value, kwargs map[stri
 		r = fmt.Sprintf("'%s'", sheetName)
 		if from == "" && to == "" {
 			// Example: "Sheet1" - all the cells in "Sheet1".
-			return sdkvalues.Wrap(r)
+			return sdktypes.WrapValue(r)
 		}
 		r += "!" // Possible to specify to/from cells without a sheet name.
 	}
@@ -49,7 +48,7 @@ func (a api) a1Range(ctx context.Context, args []sdktypes.Value, kwargs map[stri
 	if to != "" {
 		r = fmt.Sprintf("%s:%s", r, to)
 	}
-	return sdkvalues.Wrap(r)
+	return sdktypes.WrapValue(r)
 }
 
 // Read a single cell.
@@ -137,7 +136,7 @@ func (a api) readRange(ctx context.Context, args []sdktypes.Value, kwargs map[st
 			resp.Values[i] = append(resp.Values[i], "")
 		}
 	}
-	return sdkvalues.Wrap(resp.Values)
+	return sdktypes.WrapValue(resp.Values)
 }
 
 // Write a single cell.
@@ -173,7 +172,7 @@ func (a api) writeCell(ctx context.Context, args []sdktypes.Value, kwargs map[st
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
-	data, err := sdkvalues.Wrap([][]any{{value}})
+	data, err := sdktypes.WrapValue([][]any{{value}})
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
@@ -212,7 +211,7 @@ func (a api) writeRange(ctx context.Context, args []sdktypes.Value, kwargs map[s
 		}
 		cols := row.GetList().Values()
 		return kittehs.TransformError(cols, func(col sdktypes.Value) (any, error) {
-			return sdkvalues.Unwrap(col)
+			return col.Unwrap()
 		})
 	})
 	if err != nil {
@@ -234,7 +233,7 @@ func (a api) writeRange(ctx context.Context, args []sdktypes.Value, kwargs map[s
 	}
 
 	// Parse and return the response.
-	return sdkvalues.Wrap(resp)
+	return sdktypes.WrapValue(resp)
 }
 
 // Set the background color in a range of cells.
@@ -295,7 +294,7 @@ func (a api) setBackgroundColor(ctx context.Context, args []sdktypes.Value, kwar
 	}
 
 	// Parse and return the response.
-	return sdkvalues.Wrap(resp)
+	return sdktypes.WrapValue(resp)
 }
 
 // Set the text format in a range of cells.
@@ -366,5 +365,5 @@ func (a api) setTextFormat(ctx context.Context, args []sdktypes.Value, kwargs ma
 	}
 
 	// Parse and return the response.
-	return sdkvalues.Wrap(resp)
+	return sdktypes.WrapValue(resp)
 }

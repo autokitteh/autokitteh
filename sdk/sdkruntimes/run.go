@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 
+	"go.autokitteh.dev/autokitteh/sdk/sdkbuildfile"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
-	"go.autokitteh.dev/autokitteh/sdk/sdkruntimes/sdkbuildfile"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )

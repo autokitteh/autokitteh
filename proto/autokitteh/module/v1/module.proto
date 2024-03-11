@@ -1,0 +1,45 @@
+syntax = "proto3";
+
+package autokitteh.module.v1;
+
+import "buf/validate/validate.proto";
+
+message Module {
+  map<string, Function> functions = 1 [
+    (buf.validate.field).map.keys.string.min_len = 1,
+    (buf.validate.field).map.values.required = true
+  ];
+
+  map<string, Variable> variables = 2 [
+    (buf.validate.field).map.keys.string.min_len = 1,
+    (buf.validate.field).map.values.required = true
+  ];
+}
+
+message Variable {
+  string description = 1;
+}
+
+message Function {
+  string description = 1;
+  string documentation_url = 2;
+  repeated FunctionField input = 3;
+  repeated FunctionField output = 4;
+  repeated Example examples = 5;
+  string deprecated_message = 6;
+}
+
+message FunctionField {
+  string name = 1 [(buf.validate.field).string.min_len = 1];
+  string description = 2;
+  string type = 3; // Flexible informative annotation, not parsed.
+  bool optional = 4;
+  string default_value = 5;
+  bool kwarg = 6;
+  repeated Example examples = 7;
+}
+
+message Example {
+  string code = 1;
+  string explanation = 2; // Optional.
+}

@@ -19,7 +19,7 @@ runtimes/starlark/compiled/dogs.star
 runtimes/starlark/compiled/main.star
 $ tar xf build.akb
 $ cat version.txt
-1
+=^.^= autokitteh-build-file-v1
 $ cat info.json
 {}
 $ cd runtimes/starlark

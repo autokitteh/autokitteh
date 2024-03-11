@@ -9,7 +9,6 @@ import (
 
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-	"go.autokitteh.dev/autokitteh/sdk/sdkvalues"
 )
 
 // https://developers.google.com/gmail/api/reference/rest/v1/users.messages/batchModify
@@ -42,7 +41,7 @@ func (a api) messagesBatchModify(ctx context.Context, args []sdktypes.Value, kwa
 	if err == nil {
 		err = errors.New("")
 	}
-	return sdkvalues.Wrap(err)
+	return sdktypes.WrapValue(err)
 }
 
 // https://developers.google.com/gmail/api/reference/rest/v1/users.messages/get
@@ -83,7 +82,7 @@ func (a api) messagesGet(ctx context.Context, args []sdktypes.Value, kwargs map[
 		msg,
 		err.Error(),
 	}
-	return sdkvalues.Wrap(resp)
+	return sdktypes.WrapValue(resp)
 }
 
 // https://developers.google.com/gmail/api/reference/rest/v1/users.messages/import
@@ -131,7 +130,7 @@ func (a api) messagesImport(ctx context.Context, args []sdktypes.Value, kwargs m
 		msg,
 		err.Error(),
 	}
-	return sdkvalues.Wrap(resp)
+	return sdktypes.WrapValue(resp)
 }
 
 // https://developers.google.com/gmail/api/reference/rest/v1/users.messages/insert
@@ -175,7 +174,7 @@ func (a api) messagesInsert(ctx context.Context, args []sdktypes.Value, kwargs m
 		msg,
 		err.Error(),
 	}
-	return sdkvalues.Wrap(resp)
+	return sdktypes.WrapValue(resp)
 }
 
 // https://developers.google.com/gmail/api/reference/rest/v1/users.messages/list
@@ -221,7 +220,7 @@ func (a api) messagesList(ctx context.Context, args []sdktypes.Value, kwargs map
 		msgs,
 		err.Error(),
 	}
-	return sdkvalues.Wrap(resp)
+	return sdktypes.WrapValue(resp)
 }
 
 // https://developers.google.com/gmail/api/reference/rest/v1/users.messages/modify
@@ -265,7 +264,7 @@ func (a api) messagesModify(ctx context.Context, args []sdktypes.Value, kwargs m
 		msg,
 		err.Error(),
 	}
-	return sdkvalues.Wrap(resp)
+	return sdktypes.WrapValue(resp)
 }
 
 // https://developers.google.com/gmail/api/reference/rest/v1/users.messages/send
@@ -304,7 +303,7 @@ func (a api) messagesSend(ctx context.Context, args []sdktypes.Value, kwargs map
 		msg,
 		err.Error(),
 	}
-	return sdkvalues.Wrap(resp)
+	return sdktypes.WrapValue(resp)
 }
 
 // https://developers.google.com/gmail/api/reference/rest/v1/users.messages/trash
@@ -341,7 +340,7 @@ func (a api) messagesTrash(ctx context.Context, args []sdktypes.Value, kwargs ma
 		msg,
 		err.Error(),
 	}
-	return sdkvalues.Wrap(resp)
+	return sdktypes.WrapValue(resp)
 }
 
 // https://developers.google.com/gmail/api/reference/rest/v1/users.messages/untrash
@@ -378,7 +377,7 @@ func (a api) messagesUntrash(ctx context.Context, args []sdktypes.Value, kwargs 
 		msg,
 		err.Error(),
 	}
-	return sdkvalues.Wrap(resp)
+	return sdktypes.WrapValue(resp)
 }
 
 // https://developers.google.com/gmail/api/reference/rest/v1/users.messages.attachments/get
@@ -416,5 +415,5 @@ func (a api) messagesAttachmentsGet(ctx context.Context, args []sdktypes.Value, 
 		mpb,
 		err.Error(),
 	}
-	return sdkvalues.Wrap(resp)
+	return sdktypes.WrapValue(resp)
 }

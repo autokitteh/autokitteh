@@ -19,16 +19,19 @@ package systest
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 const (
-	rootDir = "testdata/"
+	rootDir     = "testdata/"
+	stopTimeout = 3 * time.Second
 )
 
 func TestSuite(t *testing.T) {
@@ -38,6 +41,7 @@ func TestSuite(t *testing.T) {
 		if err != nil {
 			t.Fatal(err) // Abort the entire test suite on walking errors.
 		}
+
 		if d.IsDir() || !strings.HasSuffix(d.Name(), ".txtar") {
 			return nil // Skip directories and non-test files.
 		}
@@ -86,15 +90,22 @@ func setUpTest(t *testing.T) string {
 		w.Close()
 	}()
 
-	// Start the AK server, but in a goroutine rather than as a separate
+	// Start the AK server, but in-process rather than as a separate
 	// subprocess: to support breakpoint debugging, and measure test coverage.
-	ctx, cancel := context.WithCancel(context.Background())
-	go startAKServer(ctx)
-	t.Cleanup(cancel) // Stop the AK server's goroutine.
+	svc, err := startAKServer(context.Background())
+	if err != nil {
+		t.Fatalf("error: %v", err)
+	}
 
-	akAddr := waitForAKServer(t, combinedOutput)
+	t.Cleanup(func() {
+		ctx, cancel := context.WithTimeout(context.Background(), stopTimeout)
+		defer cancel()
+		if err := svc.Stop(ctx); err != nil {
+			t.Log(fmt.Errorf("fx app stop: %w", err))
+		}
+	})
 
-	return akAddr
+	return svc.Addr()
 }
 
 func runTestSteps(t *testing.T, steps []string, akPath, akAddr string) {

@@ -129,6 +129,11 @@ class Call(_message.Message):
 
 class SessionLogRecord(_message.Message):
     __slots__ = ["t", "print", "call_spec", "call_attempt_start", "call_attempt_complete", "state"]
+    class Print(_message.Message):
+        __slots__ = ["text"]
+        TEXT_FIELD_NUMBER: _ClassVar[int]
+        text: str
+        def __init__(self, text: _Optional[str] = ...) -> None: ...
     T_FIELD_NUMBER: _ClassVar[int]
     PRINT_FIELD_NUMBER: _ClassVar[int]
     CALL_SPEC_FIELD_NUMBER: _ClassVar[int]
@@ -136,12 +141,12 @@ class SessionLogRecord(_message.Message):
     CALL_ATTEMPT_COMPLETE_FIELD_NUMBER: _ClassVar[int]
     STATE_FIELD_NUMBER: _ClassVar[int]
     t: _timestamp_pb2.Timestamp
-    print: str
+    print: SessionLogRecord.Print
     call_spec: Call.Spec
     call_attempt_start: Call.Attempt.Start
     call_attempt_complete: Call.Attempt.Complete
     state: SessionState
-    def __init__(self, t: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ..., print: _Optional[str] = ..., call_spec: _Optional[_Union[Call.Spec, _Mapping]] = ..., call_attempt_start: _Optional[_Union[Call.Attempt.Start, _Mapping]] = ..., call_attempt_complete: _Optional[_Union[Call.Attempt.Complete, _Mapping]] = ..., state: _Optional[_Union[SessionState, _Mapping]] = ...) -> None: ...
+    def __init__(self, t: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ..., print: _Optional[_Union[SessionLogRecord.Print, _Mapping]] = ..., call_spec: _Optional[_Union[Call.Spec, _Mapping]] = ..., call_attempt_start: _Optional[_Union[Call.Attempt.Start, _Mapping]] = ..., call_attempt_complete: _Optional[_Union[Call.Attempt.Complete, _Mapping]] = ..., state: _Optional[_Union[SessionState, _Mapping]] = ...) -> None: ...
 
 class SessionLog(_message.Message):
     __slots__ = ["records"]

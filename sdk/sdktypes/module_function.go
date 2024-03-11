@@ -3,14 +3,14 @@ package sdktypes
 import (
 	"errors"
 
-	programv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/program/v1"
+	modulev1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/module/v1"
 )
 
 type ModuleFunction struct {
 	object[*ModuleFunctionPB, ModuleFunctionTraits]
 }
 
-type ModuleFunctionPB = programv1.Function
+type ModuleFunctionPB = modulev1.Function
 
 type ModuleFunctionTraits struct{}
 

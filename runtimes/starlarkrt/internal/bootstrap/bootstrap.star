@@ -3,10 +3,11 @@
 # All exported symbols must be declared using "# EXPORT:" comments.
 
 # The followings are always supplied by the runtime: {
-# EXPORT: struct
-# EXPORT: module
 # EXPORT: catch
+# EXPORT: fail
 # EXPORT: globals
+# EXPORT: module
+# EXPORT: struct
 # }
 #
 # TODO: Move the below to be supplied by the project build.

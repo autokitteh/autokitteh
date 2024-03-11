@@ -9,7 +9,6 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	valuesv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/values/v1"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-	"go.autokitteh.dev/autokitteh/sdk/sdkvalues"
 
 	"go.autokitteh.dev/autokitteh/integrations/slack/api"
 	"go.autokitteh.dev/autokitteh/integrations/slack/events"
@@ -130,7 +129,7 @@ func (h handler) HandleBotEvent(w http.ResponseWriter, r *http.Request) {
 
 // transformEvent transforms a received Slack event into an autokitteh event.
 func transformEvent(l *zap.Logger, w http.ResponseWriter, event any) (map[string]*valuesv1.Value, error) {
-	wrapped, err := sdkvalues.DefaultValueWrapper.Wrap(event)
+	wrapped, err := sdktypes.DefaultValueWrapper.Wrap(event)
 	if err != nil {
 		l.Error("Failed to wrap Slack event",
 			zap.Error(err),

@@ -4,9 +4,9 @@ import (
 	"context"
 	"io/fs"
 
+	"go.autokitteh.dev/autokitteh/sdk/sdkbuildfile"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkexecutor"
-	"go.autokitteh.dev/autokitteh/sdk/sdkruntimes/sdkbuildfile"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 

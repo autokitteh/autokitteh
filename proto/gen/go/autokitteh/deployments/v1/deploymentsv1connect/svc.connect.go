@@ -51,6 +51,9 @@ const (
 	DeploymentsServiceListProcedure = "/autokitteh.deployments.v1.DeploymentsService/List"
 	// DeploymentsServiceGetProcedure is the fully-qualified name of the DeploymentsService's Get RPC.
 	DeploymentsServiceGetProcedure = "/autokitteh.deployments.v1.DeploymentsService/Get"
+	// DeploymentsServiceDeleteProcedure is the fully-qualified name of the DeploymentsService's Delete
+	// RPC.
+	DeploymentsServiceDeleteProcedure = "/autokitteh.deployments.v1.DeploymentsService/Delete"
 )
 
 // DeploymentsServiceClient is a client for the autokitteh.deployments.v1.DeploymentsService
@@ -67,6 +70,7 @@ type DeploymentsServiceClient interface {
 	Test(context.Context, *connect.Request[v1.TestRequest]) (*connect.Response[v1.TestResponse], error)
 	List(context.Context, *connect.Request[v1.ListRequest]) (*connect.Response[v1.ListResponse], error)
 	Get(context.Context, *connect.Request[v1.GetRequest]) (*connect.Response[v1.GetResponse], error)
+	Delete(context.Context, *connect.Request[v1.DeleteRequest]) (*connect.Response[v1.DeleteResponse], error)
 }
 
 // NewDeploymentsServiceClient constructs a client for the
@@ -115,6 +119,11 @@ func NewDeploymentsServiceClient(httpClient connect.HTTPClient, baseURL string, 
 			baseURL+DeploymentsServiceGetProcedure,
 			opts...,
 		),
+		delete: connect.NewClient[v1.DeleteRequest, v1.DeleteResponse](
+			httpClient,
+			baseURL+DeploymentsServiceDeleteProcedure,
+			opts...,
+		),
 	}
 }
 
@@ -127,6 +136,7 @@ type deploymentsServiceClient struct {
 	test       *connect.Client[v1.TestRequest, v1.TestResponse]
 	list       *connect.Client[v1.ListRequest, v1.ListResponse]
 	get        *connect.Client[v1.GetRequest, v1.GetResponse]
+	delete     *connect.Client[v1.DeleteRequest, v1.DeleteResponse]
 }
 
 // Create calls autokitteh.deployments.v1.DeploymentsService.Create.
@@ -164,6 +174,11 @@ func (c *deploymentsServiceClient) Get(ctx context.Context, req *connect.Request
 	return c.get.CallUnary(ctx, req)
 }
 
+// Delete calls autokitteh.deployments.v1.DeploymentsService.Delete.
+func (c *deploymentsServiceClient) Delete(ctx context.Context, req *connect.Request[v1.DeleteRequest]) (*connect.Response[v1.DeleteResponse], error) {
+	return c.delete.CallUnary(ctx, req)
+}
+
 // DeploymentsServiceHandler is an implementation of the
 // autokitteh.deployments.v1.DeploymentsService service.
 type DeploymentsServiceHandler interface {
@@ -178,6 +193,7 @@ type DeploymentsServiceHandler interface {
 	Test(context.Context, *connect.Request[v1.TestRequest]) (*connect.Response[v1.TestResponse], error)
 	List(context.Context, *connect.Request[v1.ListRequest]) (*connect.Response[v1.ListResponse], error)
 	Get(context.Context, *connect.Request[v1.GetRequest]) (*connect.Response[v1.GetResponse], error)
+	Delete(context.Context, *connect.Request[v1.DeleteRequest]) (*connect.Response[v1.DeleteResponse], error)
 }
 
 // NewDeploymentsServiceHandler builds an HTTP handler from the service implementation. It returns
@@ -221,6 +237,11 @@ func NewDeploymentsServiceHandler(svc DeploymentsServiceHandler, opts ...connect
 		svc.Get,
 		opts...,
 	)
+	deploymentsServiceDeleteHandler := connect.NewUnaryHandler(
+		DeploymentsServiceDeleteProcedure,
+		svc.Delete,
+		opts...,
+	)
 	return "/autokitteh.deployments.v1.DeploymentsService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case DeploymentsServiceCreateProcedure:
@@ -237,6 +258,8 @@ func NewDeploymentsServiceHandler(svc DeploymentsServiceHandler, opts ...connect
 			deploymentsServiceListHandler.ServeHTTP(w, r)
 		case DeploymentsServiceGetProcedure:
 			deploymentsServiceGetHandler.ServeHTTP(w, r)
+		case DeploymentsServiceDeleteProcedure:
+			deploymentsServiceDeleteHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -272,4 +295,8 @@ func (UnimplementedDeploymentsServiceHandler) List(context.Context, *connect.Req
 
 func (UnimplementedDeploymentsServiceHandler) Get(context.Context, *connect.Request[v1.GetRequest]) (*connect.Response[v1.GetResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("autokitteh.deployments.v1.DeploymentsService.Get is not implemented"))
+}
+
+func (UnimplementedDeploymentsServiceHandler) Delete(context.Context, *connect.Request[v1.DeleteRequest]) (*connect.Response[v1.DeleteResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("autokitteh.deployments.v1.DeploymentsService.Delete is not implemented"))
 }

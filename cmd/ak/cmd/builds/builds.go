@@ -25,11 +25,12 @@ func AddSubcommands(parentCmd *cobra.Command) {
 
 func init() {
 	// Subcommands.
-	buildsCmd.AddCommand(uploadCmd)
-	buildsCmd.AddCommand(getCmd)
-	buildsCmd.AddCommand(downloadCmd)
 	buildsCmd.AddCommand(deleteCmd)
+	buildsCmd.AddCommand(describeCmd)
+	buildsCmd.AddCommand(downloadCmd)
+	buildsCmd.AddCommand(getCmd)
 	buildsCmd.AddCommand(listCmd)
+	buildsCmd.AddCommand(uploadCmd)
 }
 
 func builds() sdkservices.Builds {

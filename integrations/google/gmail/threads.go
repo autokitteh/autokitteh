@@ -8,7 +8,6 @@ import (
 
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-	"go.autokitteh.dev/autokitteh/sdk/sdkvalues"
 )
 
 // https://developers.google.com/gmail/api/reference/rest/v1/users.threads/get
@@ -49,7 +48,7 @@ func (a api) threadsGet(ctx context.Context, args []sdktypes.Value, kwargs map[s
 		thread,
 		err.Error(),
 	}
-	return sdkvalues.Wrap(resp)
+	return sdktypes.WrapValue(resp)
 }
 
 // https://developers.google.com/gmail/api/reference/rest/v1/users.threads/list
@@ -95,7 +94,7 @@ func (a api) threadsList(ctx context.Context, args []sdktypes.Value, kwargs map[
 		threads,
 		err.Error(),
 	}
-	return sdkvalues.Wrap(resp)
+	return sdktypes.WrapValue(resp)
 }
 
 // https://developers.google.com/gmail/api/reference/rest/v1/users.threads/modify
@@ -139,7 +138,7 @@ func (a api) threadsModify(ctx context.Context, args []sdktypes.Value, kwargs ma
 		thread,
 		err.Error(),
 	}
-	return sdkvalues.Wrap(resp)
+	return sdktypes.WrapValue(resp)
 }
 
 // https://developers.google.com/gmail/api/reference/rest/v1/users.threads/trash
@@ -176,7 +175,7 @@ func (a api) threadsTrash(ctx context.Context, args []sdktypes.Value, kwargs map
 		thread,
 		err.Error(),
 	}
-	return sdkvalues.Wrap(resp)
+	return sdktypes.WrapValue(resp)
 }
 
 // https://developers.google.com/gmail/api/reference/rest/v1/users.threads/untrash
@@ -213,5 +212,5 @@ func (a api) threadsUntrash(ctx context.Context, args []sdktypes.Value, kwargs m
 		thread,
 		err.Error(),
 	}
-	return sdkvalues.Wrap(resp)
+	return sdktypes.WrapValue(resp)
 }

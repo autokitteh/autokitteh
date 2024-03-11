@@ -1,6 +1,6 @@
 $ tmp=$(mktemp -d)
-$ data_file_path=${tmp}/data_file
-$ echo "build_data" >> ${data_file_path}
+$ build_file_path=${tmp}/build.akb
+$ ${AK} runtimes build --dir examples/testprograms/multi -o ${build_file_path}
 $ # List deployments return empty list
 $ ${AK} deployments list; echo $?
 0
@@ -68,11 +68,11 @@ $ ${AK} deployments create --build-id bld_00000000000000000000000001 --env=2; ec
 Error: build ID "bld_00000000000000000000000001" not found
 10
 $ # Create project p1.
-$ ${AK} p c p1; echo $?
+$ ${AK} p c --name p1; echo $?
 project_id: prj_00000000000000000000000001
 0
 $ # upload build return build-id
-$ ${AK} -j builds upload ${data_file_path}; echo $?
+$ ${AK} -j builds upload ${build_file_path}; echo $?
 {"build_id":"bld_00000000000000000000000002"}
 0
 $ # create deployment with invalid env fails
@@ -117,7 +117,7 @@ $ ${AK} en c -p p1 e2; echo $?
 env_id: env_00000000000000000000000005
 0
 $ # upload a second build 
-$ ${AK} -j builds upload ${data_file_path}; echo $?
+$ ${AK} -j builds upload ${build_file_path}; echo $?
 {"build_id":"bld_00000000000000000000000006"}
 0
 $ # create second deployment

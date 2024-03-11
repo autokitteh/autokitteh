@@ -32,3 +32,9 @@ func NewSequentialIDGeneratorForTesting(init uint64) func() UUID {
 		return b
 	}
 }
+
+func intn(n int) int {
+	uuid := newUUID()
+	ui64 := binary.BigEndian.Uint64(uuid[8:])
+	return int(ui64 % uint64(n))
+}

@@ -3,6 +3,7 @@ package sdkbuildsclient
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 
@@ -12,6 +13,7 @@ import (
 	buildsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/builds/v1"
 	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/builds/v1/buildsv1connect"
 	"go.autokitteh.dev/autokitteh/sdk/internal/rpcerrors"
+	"go.autokitteh.dev/autokitteh/sdk/sdkbuildfile"
 	"go.autokitteh.dev/autokitteh/sdk/sdkclients/internal"
 	"go.autokitteh.dev/autokitteh/sdk/sdkclients/sdkclient"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -108,6 +110,25 @@ func (c *client) Save(ctx context.Context, build sdktypes.Build, data []byte) (s
 		return sdktypes.InvalidBuildID, fmt.Errorf("invalid build: %w", err)
 	}
 	return buildID, nil
+}
+
+func (c *client) Describe(ctx context.Context, buildID sdktypes.BuildID) (*sdkbuildfile.BuildFile, error) {
+	resp, err := c.client.Describe(ctx, connect.NewRequest(&buildsv1.DescribeRequest{BuildId: buildID.String()}))
+	if err != nil {
+		return nil, rpcerrors.TranslateError(err)
+	}
+
+	if err := internal.Validate(resp.Msg); err != nil {
+		return nil, err
+	}
+
+	var bf sdkbuildfile.BuildFile
+
+	if err := json.Unmarshal([]byte(resp.Msg.DescriptionJson), &bf); err != nil {
+		return nil, fmt.Errorf("invalid description: %w", err)
+	}
+
+	return &bf, nil
 }
 
 func New(p sdkclient.Params) sdkservices.Builds {

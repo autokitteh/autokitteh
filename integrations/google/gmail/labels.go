@@ -8,7 +8,6 @@ import (
 
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-	"go.autokitteh.dev/autokitteh/sdk/sdkvalues"
 )
 
 // https://developers.google.com/gmail/api/reference/rest/v1/users.labels/create
@@ -45,7 +44,7 @@ func (a api) labelsCreate(ctx context.Context, args []sdktypes.Value, kwargs map
 		label,
 		err.Error(),
 	}
-	return sdkvalues.Wrap(resp)
+	return sdktypes.WrapValue(resp)
 }
 
 // https://developers.google.com/gmail/api/reference/rest/v1/users.labels/delete
@@ -72,7 +71,7 @@ func (a api) labelsDelete(ctx context.Context, args []sdktypes.Value, kwargs map
 	if err == nil {
 		err = errors.New("")
 	}
-	return sdkvalues.Wrap(err)
+	return sdktypes.WrapValue(err)
 }
 
 // https://developers.google.com/gmail/api/reference/rest/v1/users.labels/get
@@ -109,7 +108,7 @@ func (a api) labelsGet(ctx context.Context, args []sdktypes.Value, kwargs map[st
 		label,
 		err.Error(),
 	}
-	return sdkvalues.Wrap(resp)
+	return sdktypes.WrapValue(resp)
 }
 
 // https://developers.google.com/gmail/api/reference/rest/v1/users.labels/list
@@ -140,7 +139,7 @@ func (a api) labelsList(ctx context.Context, args []sdktypes.Value, kwargs map[s
 		labels,
 		err.Error(),
 	}
-	return sdkvalues.Wrap(resp)
+	return sdktypes.WrapValue(resp)
 }
 
 // https://developers.google.com/gmail/api/reference/rest/v1/users.labels/patch
@@ -179,7 +178,7 @@ func (a api) labelsPatch(ctx context.Context, args []sdktypes.Value, kwargs map[
 		label,
 		err.Error(),
 	}
-	return sdkvalues.Wrap(resp)
+	return sdktypes.WrapValue(resp)
 }
 
 // https://developers.google.com/gmail/api/reference/rest/v1/users.labels/update
@@ -218,5 +217,5 @@ func (a api) labelsUpdate(ctx context.Context, args []sdktypes.Value, kwargs map
 		label,
 		err.Error(),
 	}
-	return sdkvalues.Wrap(resp)
+	return sdktypes.WrapValue(resp)
 }

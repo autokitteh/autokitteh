@@ -5,7 +5,7 @@
 
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
 import { Message, proto3 } from "@bufbuild/protobuf";
-import { Module } from "../../program/v1/module_pb.js";
+import { Module } from "../../module/v1/module_pb.js";
 
 /**
  * @generated from message autokitteh.integrations.v1.Integration
@@ -53,7 +53,7 @@ export class Integration extends Message<Integration> {
   connectionUrl = "";
 
   /**
-   * @generated from field: autokitteh.program.v1.Module module = 9;
+   * @generated from field: autokitteh.module.v1.Module module = 9;
    */
   module?: Module;
 

@@ -10,7 +10,7 @@ import (
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
 	valuesv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/values/v1"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
-	"go.autokitteh.dev/autokitteh/sdk/sdkvalues"
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 // Flags shared by the "create", "dispatch", and "list" subcommands.
@@ -53,7 +53,7 @@ func parseDataKeyValue(kv string) (string, *valuesv1.Value, error) {
 		return "", nil, fmt.Errorf(`invalid data pair %q, expected "key=value"`, kv)
 	}
 
-	vw := sdkvalues.ValueWrapper{}
+	vw := sdktypes.ValueWrapper{}
 	value, err := vw.Wrap(v)
 	if err != nil {
 		return "", nil, fmt.Errorf("invalid data value %q: %w", v, err)

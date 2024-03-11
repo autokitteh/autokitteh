@@ -168,6 +168,8 @@ func (r Resolver) DeploymentID(id string) (d sdktypes.Deployment, did sdktypes.D
 // and project names or IDs.
 //
 //   - If the input is empty, we return nil but not an error
+//   - If the environment is empty but the project isn't, we try to
+//     resolve the environment as the default one for the project
 //   - If the environment is specified as a name, the project is required
 //   - If the environment is specified as a *full* name, the project is
 //     optional, but if specified it must concur with the project prefix
@@ -180,7 +182,11 @@ func (r Resolver) DeploymentID(id string) (d sdktypes.Deployment, did sdktypes.D
 // but it doesn't actually exist, we return (nil, ID, nil).
 func (r Resolver) EnvNameOrID(envNameOrID, projNameOrID string) (sdktypes.Env, sdktypes.EnvID, error) {
 	if envNameOrID == "" {
-		return sdktypes.InvalidEnv, sdktypes.InvalidEnvID, nil
+		if projNameOrID == "" {
+			return sdktypes.InvalidEnv, sdktypes.InvalidEnvID, nil
+		} else {
+			envNameOrID = "default"
+		}
 	}
 
 	// Project.
@@ -221,12 +227,12 @@ func (r Resolver) envByID(envID, projNameOrID string, pid sdktypes.ProjectID) (e
 func (r Resolver) envByName(envName, projNameOrID string, pid sdktypes.ProjectID) (sdktypes.Env, sdktypes.EnvID, error) {
 	parts := strings.Split(envName, separator)
 	if len(parts) == 1 {
-		return r.envByShortName(envName, projNameOrID, pid)
+		return r.envByShortName(envName, pid)
 	}
 	return r.envByFullName(parts, projNameOrID, pid)
 }
 
-func (r Resolver) envByShortName(envName, projNameOrID string, pid sdktypes.ProjectID) (e sdktypes.Env, eid sdktypes.EnvID, err error) {
+func (r Resolver) envByShortName(envName string, pid sdktypes.ProjectID) (e sdktypes.Env, eid sdktypes.EnvID, err error) {
 	if !pid.IsValid() {
 		err = fmt.Errorf("invalid environment name %q: missing project prefix", envName)
 		return
@@ -259,7 +265,7 @@ func (r Resolver) envByFullName(parts []string, projNameOrID string, pid sdktype
 
 	// Sanity check: the original project must match the prefix.
 	if pid.IsValid() && pid != e.ProjectID() {
-		err = fmt.Errorf("env %q doesn't belong to project %q", prefix, projNameOrID)
+		err = fmt.Errorf("env %q doesn't belong to project %q", envName, projNameOrID)
 		return
 	}
 

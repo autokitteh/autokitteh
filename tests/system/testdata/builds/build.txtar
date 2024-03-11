@@ -1,0 +1,59 @@
+# Precondition: create project.
+ak project create --name my_project
+return code == 0
+output equals 'project_id: prj_00000000000000000000000001'
+
+# Build project from a single file.
+ak project build my_project --from meow.star
+return code == 0
+output equals 'build_id: bld_00000000000000000000000002'
+
+ak builds describe bld_00000000000000000000000002 -j
+return code == 0
+output equals_json file build.json
+
+-- meow.star --
+print("meow")
+
+def on_meow():
+    pass
+
+this_is_exported = True
+
+-- build.json --
+{
+    "build": {
+        "info": {},
+        "runtime_requirements": [],
+        "runtimes": [
+            {
+                "artifact": {
+                    "compiled_data": {
+                        "meow.star": ""
+                    },
+                    "exports": [
+                        {
+                            "location": {
+                                "col": 1,
+                                "path": "meow.star",
+                                "row": 3
+                            },
+                            "symbol": "on_meow"
+                        },
+                        {
+                            "location": {
+                                "col": 1,
+                                "path": "meow.star",
+                                "row": 6
+                            },
+                            "symbol": "this_is_exported"
+                        }
+                    ]
+                },
+                "info": {
+                    "name": "starlark"
+                }
+            }
+        ]
+    }
+}

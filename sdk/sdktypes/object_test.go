@@ -69,6 +69,6 @@ func TestMisc(t *testing.T) {
 // If this test fails, the hash function changed. This will cause incompability with existing data.
 func TestStableObjectHash(t *testing.T) {
 	n := kittehs.Must1(sdktypes.ParseSymbol("test"))
-	p := sdktypes.NewProject(sdktypes.InvalidProjectID, n)
+	p := sdktypes.NewProject().WithName(n)
 	assert.Equal(t, "357785dbbe12ae6fa6b63134a5163e5ea70db04ae8b151864a5b1e72c3a5bd6e", p.Hash())
 }

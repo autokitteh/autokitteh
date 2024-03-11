@@ -49,6 +49,11 @@ class DeploymentsServiceStub(object):
                 request_serializer=autokitteh_dot_deployments_dot_v1_dot_svc__pb2.GetRequest.SerializeToString,
                 response_deserializer=autokitteh_dot_deployments_dot_v1_dot_svc__pb2.GetResponse.FromString,
                 )
+        self.Delete = channel.unary_unary(
+                '/autokitteh.deployments.v1.DeploymentsService/Delete',
+                request_serializer=autokitteh_dot_deployments_dot_v1_dot_svc__pb2.DeleteRequest.SerializeToString,
+                response_deserializer=autokitteh_dot_deployments_dot_v1_dot_svc__pb2.DeleteResponse.FromString,
+                )
 
 
 class DeploymentsServiceServicer(object):
@@ -100,6 +105,12 @@ class DeploymentsServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def Delete(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_DeploymentsServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -137,6 +148,11 @@ def add_DeploymentsServiceServicer_to_server(servicer, server):
                     servicer.Get,
                     request_deserializer=autokitteh_dot_deployments_dot_v1_dot_svc__pb2.GetRequest.FromString,
                     response_serializer=autokitteh_dot_deployments_dot_v1_dot_svc__pb2.GetResponse.SerializeToString,
+            ),
+            'Delete': grpc.unary_unary_rpc_method_handler(
+                    servicer.Delete,
+                    request_deserializer=autokitteh_dot_deployments_dot_v1_dot_svc__pb2.DeleteRequest.FromString,
+                    response_serializer=autokitteh_dot_deployments_dot_v1_dot_svc__pb2.DeleteResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -264,5 +280,22 @@ class DeploymentsService(object):
         return grpc.experimental.unary_unary(request, target, '/autokitteh.deployments.v1.DeploymentsService/Get',
             autokitteh_dot_deployments_dot_v1_dot_svc__pb2.GetRequest.SerializeToString,
             autokitteh_dot_deployments_dot_v1_dot_svc__pb2.GetResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def Delete(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/autokitteh.deployments.v1.DeploymentsService/Delete',
+            autokitteh_dot_deployments_dot_v1_dot_svc__pb2.DeleteRequest.SerializeToString,
+            autokitteh_dot_deployments_dot_v1_dot_svc__pb2.DeleteResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

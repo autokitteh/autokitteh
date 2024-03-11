@@ -85,10 +85,14 @@ message Call {
 }
 
 message SessionLogRecord {
+  message Print {
+    string text = 1;
+  }
+
   google.protobuf.Timestamp t = 1;
 
   // one of the following is required.
-  string print = 10;
+  Print print = 10;
   Call.Spec call_spec = 11;
   Call.Attempt.Start call_attempt_start = 12;
   Call.Attempt.Complete call_attempt_complete = 13;
