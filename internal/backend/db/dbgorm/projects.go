@@ -34,6 +34,7 @@ func (db *gormdb) deleteProject(ctx context.Context, projectID string) error {
 	return db.deleteProjectAndDependents(ctx, projectID)
 }
 
+// delete project, its envs, deployments, sessions and build
 func (db *gormdb) deleteProjectAndDependents(ctx context.Context, projectID string) error {
 	// NOTE: should be transactional
 	depsEnvs, err := db.getProjectDeployments(ctx, projectID)

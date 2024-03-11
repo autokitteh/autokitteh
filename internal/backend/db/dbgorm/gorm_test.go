@@ -164,13 +164,6 @@ func newDeployment(f *dbFixture) scheme.Deployment {
 	}
 }
 
-func newDeploymentWithBuildAndEnv(f *dbFixture, b scheme.Build, e scheme.Env) scheme.Deployment {
-	d := newDeployment(f)
-	d.BuildID = b.BuildID
-	d.EnvID = e.EnvID
-	return d
-}
-
 func newProject(f *dbFixture) scheme.Project {
 	f.projectID += 1
 	projectID := fmt.Sprintf("prj_%026d", f.projectID)

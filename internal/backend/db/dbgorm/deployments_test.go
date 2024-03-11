@@ -138,7 +138,10 @@ func TestDeleteDeployment(t *testing.T) {
 	f := newDbFixture(true)           // no foreign keys
 	listDeploymentsAndAssert(t, f, 0) // ensure no deployments
 
+	b := newBuild()
+	saveBuildAndAssert(t, f, b)
 	d := newDeployment(f)
+	d.BuildID = b.BuildID
 	createDeploymentAndAssert(t, f, d)
 
 	// add sessions and check that deployment stats are updated
@@ -158,4 +161,6 @@ func TestDeleteDeployment(t *testing.T) {
 	listDeploymentsWithStatsAndAssert(t, f, 0)
 	assertSessionDeleted(t, f, session1.SessionID)
 	assertSessionDeleted(t, f, session2.SessionID)
+
+	assertBuildDeleted(t, f, b.BuildID)
 }

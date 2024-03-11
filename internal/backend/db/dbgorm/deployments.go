@@ -47,22 +47,31 @@ func (db *gormdb) GetDeployment(ctx context.Context, id sdktypes.DeploymentID) (
 }
 
 func (db *gormdb) deleteDeployment(ctx context.Context, deploymentID string) error {
-	// delete deployment and relevant sessions
 	return db.deleteDeploymentsAndDependents(ctx, []string{deploymentID})
 }
 
-func (db *gormdb) deleteDeploymentsAndDependents(ctx context.Context, ids []string) error {
+// delete deployments and relevant sessions
+func (db *gormdb) deleteDeploymentsAndDependents(ctx context.Context, depIDs []string) error {
 	// NOTE: should be transactional
 
-	if len(ids) == 0 {
+	if len(depIDs) == 0 {
 		return nil
 	}
 	gormDB := db.db.WithContext(ctx)
+	s := scheme.Session{}
+	b := scheme.Build{}
+	d := scheme.Deployment{}
 
-	if err := gormDB.Where("deployment_id IN ?", ids).Delete(&scheme.Session{}).Error; err != nil {
+	if err := gormDB.Delete(&s, "deployment_id IN ?", depIDs).Error; err != nil {
 		return err
 	}
-	return gormDB.Where("deployment_id IN ?", ids).Delete(&scheme.Deployment{}).Error
+
+	buildIDs := gormDB.Model(&d).Select("build_id").Where("deployment_id IN (?)", depIDs)
+	if err := gormDB.Delete(&b, "build_id IN (?)", buildIDs).Error; err != nil {
+		return err
+	}
+
+	return gormDB.Delete(&d, "deployment_id IN ?", depIDs).Error
 }
 
 func (db *gormdb) DeleteDeployment(ctx context.Context, deploymentID sdktypes.DeploymentID) error {

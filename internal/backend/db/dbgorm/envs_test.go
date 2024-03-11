@@ -60,7 +60,9 @@ func TestDeleteEnvForeignKeys(t *testing.T) {
 	p := newProject(f)
 	e := newEnv(f)
 	e.ProjectID = p.ProjectID
-	d := newDeploymentWithBuildAndEnv(f, b, e)
+	d := newDeployment(f)
+	d.BuildID = b.BuildID
+	d.EnvID = e.EnvID
 
 	saveBuildAndAssert(t, f, b)
 	createProjectAndAssert(t, f, p)
@@ -71,9 +73,8 @@ func TestDeleteEnvForeignKeys(t *testing.T) {
 	err := f.gormdb.deleteEnv(f.ctx, e.EnvID)
 	assert.ErrorContains(t, err, "FOREIGN KEY")
 
-	// delete deployment (referencing build), then build , then env
+	// delete deployment (referencing build), then env
 	assert.NoError(t, f.gormdb.deleteDeployment(f.ctx, d.DeploymentID))
-	assert.NoError(t, f.gormdb.deleteBuild(f.ctx, b.BuildID))
 	assert.NoError(t, f.gormdb.deleteEnv(f.ctx, e.EnvID))
 	assertEnvDeleted(t, f, e.EnvID)
 }
