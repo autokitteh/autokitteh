@@ -52,6 +52,7 @@ func (db *gormdb) deleteProjectAndDependents(ctx context.Context, projectID stri
 		envIDs = append(envIDs, de.EnvID)
 	}
 
+	// TODO: consider deleting deployments from envs
 	if err = db.deleteDeploymentsAndDependents(ctx, deplIDs); err != nil {
 		return err
 	}

@@ -58,20 +58,17 @@ func (db *gormdb) deleteDeploymentsAndDependents(ctx context.Context, depIDs []s
 		return nil
 	}
 	gormDB := db.db.WithContext(ctx)
-	s := scheme.Session{}
-	b := scheme.Build{}
-	d := scheme.Deployment{}
 
-	if err := gormDB.Delete(&s, "deployment_id IN ?", depIDs).Error; err != nil {
+	if err := gormDB.Delete(&scheme.Session{}, "deployment_id IN ?", depIDs).Error; err != nil {
 		return err
 	}
 
-	buildIDs := gormDB.Model(&d).Select("build_id").Where("deployment_id IN (?)", depIDs)
-	if err := gormDB.Delete(&b, "build_id IN (?)", buildIDs).Error; err != nil {
+	buildIDs := gormDB.Model(&scheme.Deployment{}).Select("build_id").Where("deployment_id IN (?)", depIDs)
+	if err := gormDB.Delete(&scheme.Build{}, "build_id IN (?)", buildIDs).Error; err != nil {
 		return err
 	}
 
-	return gormDB.Delete(&d, "deployment_id IN ?", depIDs).Error
+	return gormDB.Delete(&scheme.Deployment{}, "deployment_id IN ?", depIDs).Error
 }
 
 func (db *gormdb) DeleteDeployment(ctx context.Context, deploymentID sdktypes.DeploymentID) error {
