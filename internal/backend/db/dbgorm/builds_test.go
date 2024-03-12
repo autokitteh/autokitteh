@@ -10,7 +10,7 @@ import (
 )
 
 func saveBuildAndAssert(t *testing.T, f *dbFixture, build scheme.Build) {
-	assert.NoError(t, f.gormdb.saveBuild(f.ctx, build))
+	assert.NoError(t, f.gormdb.saveBuild(f.ctx, &build))
 	findAndAssertOne(t, f, build, "build_id = ?", build.BuildID)
 }
 

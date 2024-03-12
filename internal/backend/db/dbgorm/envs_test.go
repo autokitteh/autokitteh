@@ -10,7 +10,7 @@ import (
 
 func createEnvsAndAssert(t *testing.T, f *dbFixture, envs ...scheme.Env) {
 	for _, env := range envs {
-		assert.NoError(t, f.gormdb.createEnv(f.ctx, env))
+		assert.NoError(t, f.gormdb.createEnv(f.ctx, &env))
 		findAndAssertOne(t, f, env, "env_id = ?", env.EnvID)
 	}
 }

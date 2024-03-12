@@ -13,8 +13,8 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-func (db *gormdb) createProject(ctx context.Context, p scheme.Project) error {
-	return db.db.WithContext(ctx).Create(&p).Error
+func (db *gormdb) createProject(ctx context.Context, p *scheme.Project) error {
+	return db.db.WithContext(ctx).Create(p).Error
 }
 
 func (db *gormdb) CreateProject(ctx context.Context, p sdktypes.Project) error {
@@ -27,7 +27,7 @@ func (db *gormdb) CreateProject(ctx context.Context, p sdktypes.Project) error {
 		ProjectID: p.ID().String(),
 		Name:      p.Name().String(),
 	}
-	return translateError(db.createProject(ctx, project))
+	return translateError(db.createProject(ctx, &project))
 }
 
 func (db *gormdb) deleteProject(ctx context.Context, projectID string) error {

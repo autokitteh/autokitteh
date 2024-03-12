@@ -13,7 +13,7 @@ import (
 )
 
 func createSessionAndAssert(t *testing.T, f *dbFixture, session scheme.Session) {
-	assert.NoError(t, f.gormdb.createSession(f.ctx, session))
+	assert.NoError(t, f.gormdb.createSession(f.ctx, &session))
 	findAndAssertOne(t, f, session, "session_id = ?", session.SessionID)
 }
 
@@ -52,7 +52,7 @@ func TestCreateSessionForeignKeys(t *testing.T) {
 	listSessionsAndAssert(t, f, 0) // no sessions
 
 	s := newSession(f, sdktypes.SessionStateTypeCompleted)
-	err := f.gormdb.createSession(f.ctx, s) // should fail since there is no deployment
+	err := f.gormdb.createSession(f.ctx, &s) // should fail since there is no deployment
 	assert.ErrorContains(t, err, "FOREIGN KEY")
 }
 

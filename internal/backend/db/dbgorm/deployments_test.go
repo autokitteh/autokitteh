@@ -13,7 +13,7 @@ import (
 
 func createDeploymentsAndAssert(t *testing.T, f *dbFixture, deployments ...scheme.Deployment) {
 	for _, deployment := range deployments {
-		assert.NoError(t, f.gormdb.createDeployment(f.ctx, deployment))
+		assert.NoError(t, f.gormdb.createDeployment(f.ctx, &deployment))
 		findAndAssertOne(t, f, deployment, "deployment_id = ?", deployment.DeploymentID)
 	}
 }
@@ -63,7 +63,7 @@ func TestCreateDeploymentsForeignKeys(t *testing.T) {
 	d.BuildID = "unexistingBuildID"
 	d.EnvID = "unexistingEnvID"
 
-	err := f.gormdb.createDeployment(f.ctx, d)
+	err := f.gormdb.createDeployment(f.ctx, &d)
 	assert.ErrorContains(t, err, "FOREIGN KEY")
 
 	p := newProject(f)

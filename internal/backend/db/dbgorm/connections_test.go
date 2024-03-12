@@ -10,7 +10,7 @@ import (
 
 func createConnectionsAndAssert(t *testing.T, f *dbFixture, connections ...scheme.Connection) {
 	for _, conn := range connections {
-		assert.NoError(t, f.gormdb.createConnection(f.ctx, conn))
+		assert.NoError(t, f.gormdb.createConnection(f.ctx, &conn))
 		findAndAssertOne(t, f, conn, "connection_id = ?", conn.ConnectionID)
 	}
 }

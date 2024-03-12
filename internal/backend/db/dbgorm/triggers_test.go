@@ -10,7 +10,7 @@ import (
 
 func createTriggersAndAssert(t *testing.T, f *dbFixture, triggers ...scheme.Trigger) {
 	for _, trigger := range triggers {
-		assert.NoError(t, f.gormdb.createTrigger(f.ctx, trigger))
+		assert.NoError(t, f.gormdb.createTrigger(f.ctx, &trigger))
 		findAndAssertOne(t, f, trigger, "trigger_id = ?", trigger.TriggerID)
 	}
 }

@@ -13,8 +13,8 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-func (db *gormdb) createDeployment(ctx context.Context, deployment scheme.Deployment) error {
-	return db.db.WithContext(ctx).Create(&deployment).Error
+func (db *gormdb) createDeployment(ctx context.Context, deployment *scheme.Deployment) error {
+	return db.db.WithContext(ctx).Create(deployment).Error
 }
 
 func (db *gormdb) CreateDeployment(ctx context.Context, deployment sdktypes.Deployment) error {
@@ -30,7 +30,7 @@ func (db *gormdb) CreateDeployment(ctx context.Context, deployment sdktypes.Depl
 	}
 
 	return db.locked(func(db *gormdb) error {
-		return translateError(db.createDeployment(ctx, d))
+		return translateError(db.createDeployment(ctx, &d))
 	})
 }
 

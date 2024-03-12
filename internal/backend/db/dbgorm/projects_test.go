@@ -14,7 +14,7 @@ import (
 
 func createProjectsAndAssert(t *testing.T, f *dbFixture, projects ...scheme.Project) {
 	for _, project := range projects {
-		assert.NoError(t, f.gormdb.createProject(f.ctx, project))
+		assert.NoError(t, f.gormdb.createProject(f.ctx, &project))
 		findAndAssertOne(t, f, project, "project_id = ?", project.ProjectID)
 	}
 }
