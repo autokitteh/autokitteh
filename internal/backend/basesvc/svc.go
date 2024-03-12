@@ -98,7 +98,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 				HookOnStop(lc, c.Stop)
 			}),
 		),
-		Component("secrets", configset.Empty, fx.Provide(secrets.New)),
+		Component("secrets", secrets.Configs, fx.Provide(secrets.New)),
 		Component(
 			"sessions",
 			sessions.Configs,

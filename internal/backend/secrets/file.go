@@ -1,6 +1,7 @@
 package secrets
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -34,12 +35,12 @@ func NewFileSecrets(l *zap.Logger, dataDir string) (Secrets, error) {
 	return s, nil
 }
 
-func (s *fileSecrets) Set(scope, name string, data map[string]string) error {
+func (s *fileSecrets) Set(_ context.Context, scope, name string, data map[string]string) error {
 	s.secrets[secretPath(scope, name)] = data
 	return s.updateFile()
 }
 
-func (s *fileSecrets) Get(scope, name string) (map[string]string, error) {
+func (s *fileSecrets) Get(_ context.Context, scope, name string) (map[string]string, error) {
 	data, ok := s.secrets[secretPath(scope, name)]
 	if !ok {
 		return nil, nil
@@ -47,8 +48,8 @@ func (s *fileSecrets) Get(scope, name string) (map[string]string, error) {
 	return data, nil
 }
 
-func (s *fileSecrets) Append(scope, name, token string) error {
-	data, err := s.Get(scope, name)
+func (s *fileSecrets) Append(ctx context.Context, scope, name, token string) error {
+	data, err := s.Get(ctx, scope, name)
 	if err != nil {
 		return err
 	}
@@ -57,7 +58,7 @@ func (s *fileSecrets) Append(scope, name, token string) error {
 		data = map[string]string{}
 	}
 	data[token] = time.Now().UTC().Format(time.RFC3339)
-	err = s.Set(scope, name, data)
+	err = s.Set(ctx, scope, name, data)
 	if err != nil {
 		return err
 	}
@@ -65,7 +66,7 @@ func (s *fileSecrets) Append(scope, name, token string) error {
 	return nil
 }
 
-func (s *fileSecrets) Delete(scope, name string) error {
+func (s *fileSecrets) Delete(_ context.Context, scope, name string) error {
 	delete(s.secrets, secretPath(scope, name))
 	return s.updateFile()
 }
