@@ -26,8 +26,10 @@ func listProjectsAndAssert(t *testing.T, f *dbFixture, expected int) []scheme.Pr
 	return projects
 }
 
-func assertProjectDeleted(t *testing.T, f *dbFixture, projectID string) {
-	assertSoftDeleted(t, f, scheme.Project{ProjectID: projectID})
+func assertProjectDeleted(t *testing.T, f *dbFixture, projects ...scheme.Project) {
+	for _, project := range projects {
+		assertSoftDeleted(t, f, scheme.Project{ProjectID: project.ProjectID})
+	}
 }
 
 func TestCreateProject(t *testing.T) {
@@ -220,16 +222,11 @@ func TestDeleteProjectAndDependents(t *testing.T) {
 	err = f.gormdb.deleteProjectAndDependents(f.ctx, p1.ProjectID)
 	assert.NoError(t, err)
 
-	assertDeploymentDeleted(t, f, d1e1p1.DeploymentID)
-	assertDeploymentDeleted(t, f, d2e1p1.DeploymentID)
-	assertDeploymentDeleted(t, f, d1e2p1.DeploymentID)
+	assertDeploymentsDeleted(t, f, d1e1p1, d2e1p1, d1e2p1)
 
-	assertEnvDeleted(t, f, e1p1.EnvID)
-	assertEnvDeleted(t, f, e2p1.EnvID)
-	assertProjectDeleted(t, f, p1.ProjectID)
+	assertEnvDeleted(t, f, e1p1, e2p1)
+	assertProjectDeleted(t, f, p1)
 
-	assertSessionDeleted(t, f, s1d1e1p1.SessionID)
-	assertSessionDeleted(t, f, s2d1e2p1.SessionID)
-
+	assertSessionsDeleted(t, f, s1d1e1p1, s2d1e2p1)
 	assertTriggersDeleted(t, f, t1, t2)
 }

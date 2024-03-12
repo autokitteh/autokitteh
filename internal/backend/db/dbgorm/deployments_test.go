@@ -44,8 +44,10 @@ func listDeploymentsWithStatsAndAssert(t *testing.T, f *dbFixture, expected int)
 	return deployments
 }
 
-func assertDeploymentDeleted(t *testing.T, f *dbFixture, deploymentID string) {
-	assertSoftDeleted(t, f, scheme.Deployment{DeploymentID: deploymentID})
+func assertDeploymentsDeleted(t *testing.T, f *dbFixture, deployments ...scheme.Deployment) {
+	for _, deployment := range deployments {
+		assertSoftDeleted(t, f, scheme.Deployment{DeploymentID: deployment.DeploymentID})
+	}
 }
 
 func TestCreateDeployment(t *testing.T) {
@@ -128,7 +130,7 @@ func TestListDeploymentsWithStats(t *testing.T) {
 
 	// delete session
 	assert.NoError(t, f.gormdb.deleteSession(f.ctx, s.SessionID))
-	assertSessionDeleted(t, f, s.SessionID)
+	assertSessionsDeleted(t, f, s)
 
 	// check that deployment stats are updated
 	deployments = listDeploymentsWithStatsAndAssert(t, f, 1)
@@ -157,11 +159,10 @@ func TestDeleteDeployment(t *testing.T) {
 
 	// delete deployment. Ensure deployment sessions are marked as deleted as well
 	assert.NoError(t, f.gormdb.deleteDeployment(f.ctx, d.DeploymentID))
-	assertDeploymentDeleted(t, f, d.DeploymentID)
+	assertDeploymentsDeleted(t, f, d)
 
 	listDeploymentsWithStatsAndAssert(t, f, 0)
-	assertSessionDeleted(t, f, s1.SessionID)
-	assertSessionDeleted(t, f, s2.SessionID)
+	assertSessionsDeleted(t, f, s1, s2)
 
 	// TODO: meanwhile builds are not deleted when deployment is deleted
 	// assertBuildDeleted(t, f, b.BuildID)
