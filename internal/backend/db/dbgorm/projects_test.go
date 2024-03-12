@@ -209,15 +209,15 @@ func TestDeleteProjectAndDependents(t *testing.T) {
 	createEnvsAndAssert(t, f, e1p2)
 	createTriggersAndAssert(t, f, t1, t2)
 
-	saveBuildAndAssert(t, f, b)
+	saveBuildsAndAssert(t, f, b)
 	createDeploymentsAndAssert(t, f, d1e1p1)
 	createDeploymentsAndAssert(t, f, d2e1p1)
 	createDeploymentsAndAssert(t, f, d1e2p1)
 	createDeploymentsAndAssert(t, f, d1e1p2)
 
-	createSessionAndAssert(t, f, s1d1e1p1)
-	createSessionAndAssert(t, f, s2d1e2p1)
-	createSessionAndAssert(t, f, s3d1e1p2)
+	createSessionsAndAssert(t, f, s1d1e1p1)
+	createSessionsAndAssert(t, f, s2d1e2p1)
+	createSessionsAndAssert(t, f, s3d1e1p2)
 
 	// ensure failure if deployments are not inactive
 	err := f.gormdb.deleteProjectAndDependents(f.ctx, p1.ProjectID)

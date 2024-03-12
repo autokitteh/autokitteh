@@ -71,7 +71,7 @@ func TestCreateDeploymentsForeignKeys(t *testing.T) {
 	b := newBuild()
 	createProjectsAndAssert(t, f, p)
 	createEnvsAndAssert(t, f, e)
-	saveBuildAndAssert(t, f, b)
+	saveBuildsAndAssert(t, f, b)
 
 	d = newDeployment(f)
 	createDeploymentsAndAssert(t, f, d)
@@ -119,7 +119,7 @@ func TestListDeploymentsWithStats(t *testing.T) {
 
 	// add session for the stats
 	s := newSession(f, sdktypes.SessionStateTypeCompleted)
-	createSessionAndAssert(t, f, s)
+	createSessionsAndAssert(t, f, s)
 
 	// ensure that new session is included in stats
 	dWS.Completed = 1
@@ -141,16 +141,16 @@ func TestDeleteDeployment(t *testing.T) {
 	listDeploymentsAndAssert(t, f, 0) // ensure no deployments
 
 	b := newBuild()
-	saveBuildAndAssert(t, f, b)
+	saveBuildsAndAssert(t, f, b)
 	d := newDeployment(f)
 	d.BuildID = b.BuildID
 	createDeploymentsAndAssert(t, f, d)
 
 	// add sessions and check that deployment stats are updated
 	session1 := newSession(f, sdktypes.SessionStateTypeCompleted)
-	createSessionAndAssert(t, f, session1)
+	createSessionsAndAssert(t, f, session1)
 	session2 := newSession(f, sdktypes.SessionStateTypeError)
-	createSessionAndAssert(t, f, session2)
+	createSessionsAndAssert(t, f, session2)
 
 	dWS := scheme.DeploymentWithStats{Deployment: d, Completed: 1, Error: 1}
 	deployments := listDeploymentsWithStatsAndAssert(t, f, 1)
