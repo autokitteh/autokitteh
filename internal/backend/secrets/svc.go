@@ -3,27 +3,53 @@ package secrets
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/lithammer/shortuuid"
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/configset"
 	"go.autokitteh.dev/autokitteh/internal/xdg"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 )
 
-type secrets struct {
-	impl   Secrets
-	logger *zap.Logger
+type Config struct {
+	Type     string        `koanf:"type"`
+	VaultURL string        `koanf:"vault_url"`
+	Timeout  time.Duration `koanf:"timeout_duration"`
 }
 
-func New(l *zap.Logger) (sdkservices.Secrets, error) {
-	// TODO(ENG-145): Allow the user to select the implementation via CLI.
-	impl, err := NewFileSecrets(l, xdg.DataHomeDir())
+var Configs = configset.Set[Config]{
+	Default: &Config{
+		Timeout: 1 * time.Minute,
+	},
+}
+
+func New(l *zap.Logger, cfg *Config) (sdkservices.Secrets, error) {
+	var impl Secrets
+	var err error
+
+	switch cfg.Type {
+	case "aws":
+		impl, err = NewAWSSecrets(l, cfg)
+	// TODO(ENG-508): case "db"
+	case "vault":
+		impl, err = NewVaultSecrets(l, cfg)
+	default:
+		impl, err = NewFileSecrets(l, xdg.DataHomeDir())
+	}
+
 	if err != nil {
 		return nil, err
 	}
+
 	return &secrets{impl: impl, logger: l}, nil
+}
+
+type secrets struct {
+	impl   Secrets
+	logger *zap.Logger
 }
 
 func (s secrets) Create(ctx context.Context, scope string, data map[string]string, key string) (string, error) {
@@ -32,7 +58,7 @@ func (s secrets) Create(ctx context.Context, scope string, data map[string]strin
 
 	// Connection token --> OAUth token, etc. (to call API methods).
 	name := connectionSecretName(token)
-	if err := s.impl.Set(scope, name, data); err != nil {
+	if err := s.impl.Set(ctx, scope, name, data); err != nil {
 		l.Error("Failed to save connection",
 			zap.String("secretName", name),
 			zap.Error(err),
@@ -41,13 +67,13 @@ func (s secrets) Create(ctx context.Context, scope string, data map[string]strin
 	}
 
 	// Integration-specific key --> connection token(s) (to dispatch API events).
-	if err := s.impl.Append(scope, key, token); err != nil {
+	if err := s.impl.Append(ctx, scope, key, token); err != nil {
 		l.Error("Failed to save reverse connection mapping",
 			zap.String("secretName", key),
 			zap.Error(err),
 		)
 		name = connectionSecretName(token)
-		if err := s.impl.Delete(scope, name); err != nil {
+		if err := s.impl.Delete(ctx, scope, name); err != nil {
 			l.Error("Dangling connection mapping",
 				zap.String("secretName", name),
 				zap.Error(err),
@@ -64,7 +90,7 @@ func (s secrets) Get(ctx context.Context, scope, token string) (map[string]strin
 	l := s.logger.With(zap.String("integration", scope))
 
 	name := connectionSecretName(token)
-	data, err := s.impl.Get(scope, name)
+	data, err := s.impl.Get(ctx, scope, name)
 	if err != nil {
 		l.Error("Failed to load connection",
 			zap.String("secretName", name),
@@ -83,7 +109,7 @@ func (s secrets) Get(ctx context.Context, scope, token string) (map[string]strin
 func (s secrets) List(ctx context.Context, scope, key string) ([]string, error) {
 	l := s.logger.With(zap.String("scope", scope))
 
-	data, err := s.impl.Get(scope, key)
+	data, err := s.impl.Get(ctx, scope, key)
 	if err != nil {
 		l.Error("Failed to list connections",
 			zap.String("secretName", key),
@@ -97,6 +123,10 @@ func (s secrets) List(ctx context.Context, scope, key string) ([]string, error) 
 
 	// Success.
 	return maps.Keys(data), nil
+}
+
+func limitContext(ctx context.Context, timeout time.Duration) (context.Context, context.CancelFunc) {
+	return context.WithTimeout(ctx, timeout)
 }
 
 func newConnectionToken() string {

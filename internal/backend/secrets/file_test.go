@@ -1,6 +1,7 @@
 package secrets
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -9,6 +10,7 @@ import (
 
 func TestFileSecretsSet(t *testing.T) {
 	sec, _ := NewFakeSecrets(zap.L())
+	ctx := context.Background()
 
 	tests := []struct {
 		name    string
@@ -26,11 +28,11 @@ func TestFileSecretsSet(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := sec.Set("prefix", "name", tt.data); (err != nil) != tt.wantErr {
+			if err := sec.Set(ctx, "prefix", "name", tt.data); (err != nil) != tt.wantErr {
 				t.Errorf("fileSecrets.Set() error = %v, wantErr %v", err, false)
 			}
 
-			got, err := sec.Get("prefix", "name")
+			got, err := sec.Get(ctx, "prefix", "name")
 			if err != nil {
 				t.Fatalf("fileSecrets.Get() error = %v, wantErr %v", err, false)
 			}
@@ -57,14 +59,15 @@ func TestFileSecretsGet(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sec, _ := NewFakeSecrets(zap.L())
+			ctx := context.Background()
 
 			if tt.want != nil {
-				if err := sec.Set("prefix", tt.name, tt.want); err != nil {
+				if err := sec.Set(ctx, "prefix", tt.name, tt.want); err != nil {
 					t.Fatalf("fileSecrets.Set() error = %v, wantErr %v", err, false)
 				}
 			}
 
-			got, err := sec.Get("prefix", tt.name)
+			got, err := sec.Get(ctx, "prefix", tt.name)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("fileSecrets.Get() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -91,19 +94,20 @@ func TestFileSecretsDelete(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sec, _ := NewFakeSecrets(zap.L())
+			ctx := context.Background()
 
 			if tt.data != nil {
-				if err := sec.Set("prefix", tt.name, tt.data); err != nil {
+				if err := sec.Set(ctx, "prefix", tt.name, tt.data); err != nil {
 					t.Fatalf("fileSecrets.Set() error = %v, wantErr %v", err, false)
 				}
 			}
 
-			err := sec.Delete("prefix", tt.name)
+			err := sec.Delete(ctx, "prefix", tt.name)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("fileSecrets.Delete() error = %v, wantErr %v", err, tt.wantErr)
 			}
 
-			got, err := sec.Get("prefix", tt.name)
+			got, err := sec.Get(ctx, "prefix", tt.name)
 			if err != nil {
 				t.Fatalf("fileSecrets.Get() error = %v, wantErr %v", err, false)
 			}
