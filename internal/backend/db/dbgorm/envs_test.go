@@ -8,7 +8,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 )
 
-func createEnvsAndAssert(t *testing.T, f *dbFixture, envs ...scheme.Env) {
+func (f *dbFixture) createEnvsAndAssert(t *testing.T, envs ...scheme.Env) {
 	for _, env := range envs {
 		assert.NoError(t, f.gormdb.createEnv(f.ctx, &env))
 		findAndAssertOne(t, f, env, "env_id = ?", env.EnvID)
@@ -27,7 +27,7 @@ func TestCreateEnv(t *testing.T) {
 
 	e := newEnv(f)
 	// test createEnv
-	createEnvsAndAssert(t, f, e)
+	f.createEnvsAndAssert(t, e)
 }
 
 func TestDeleteEnv(t *testing.T) {
@@ -35,7 +35,7 @@ func TestDeleteEnv(t *testing.T) {
 	findAndAssertCount(t, f, scheme.Env{}, 0, "") // no envs
 
 	e := newEnv(f)
-	createEnvsAndAssert(t, f, e)
+	f.createEnvsAndAssert(t, e)
 
 	// test deleteEnv
 	assert.NoError(t, f.gormdb.deleteEnv(f.ctx, e.EnvID))
@@ -47,7 +47,7 @@ func TestDeleteEnvs(t *testing.T) {
 	findAndAssertCount(t, f, scheme.Env{}, 0, "") // no envs
 
 	e1, e2 := newEnv(f), newEnv(f)
-	createEnvsAndAssert(t, f, e1, e2)
+	f.createEnvsAndAssert(t, e1, e2)
 
 	// test deleteEnvs
 	assert.NoError(t, f.gormdb.deleteEnvs(f.ctx, []string{e1.EnvID, e2.EnvID}))
@@ -66,10 +66,10 @@ func TestDeleteEnvForeignKeys(t *testing.T) {
 	d.BuildID = b.BuildID
 	d.EnvID = e.EnvID
 
-	saveBuildsAndAssert(t, f, b)
-	createProjectsAndAssert(t, f, p)
-	createEnvsAndAssert(t, f, e)
-	createDeploymentsAndAssert(t, f, d)
+	f.saveBuildsAndAssert(t, b)
+	f.createProjectsAndAssert(t, p)
+	f.createEnvsAndAssert(t, e)
+	f.createDeploymentsAndAssert(t, d)
 
 	// cannot delete env, since deployment referencing it
 	err := f.gormdb.deleteEnv(f.ctx, e.EnvID)

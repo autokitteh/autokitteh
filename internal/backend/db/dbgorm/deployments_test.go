@@ -11,7 +11,7 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-func createDeploymentsAndAssert(t *testing.T, f *dbFixture, deployments ...scheme.Deployment) {
+func (f *dbFixture) createDeploymentsAndAssert(t *testing.T, deployments ...scheme.Deployment) {
 	for _, deployment := range deployments {
 		assert.NoError(t, f.gormdb.createDeployment(f.ctx, &deployment))
 		findAndAssertOne(t, f, deployment, "deployment_id = ?", deployment.DeploymentID)
@@ -56,7 +56,7 @@ func TestCreateDeployment(t *testing.T) {
 
 	d := newDeployment(f)
 	// test createDeployment
-	createDeploymentsAndAssert(t, f, d)
+	f.createDeploymentsAndAssert(t, d)
 }
 
 func TestCreateDeploymentsForeignKeys(t *testing.T) {
@@ -71,12 +71,12 @@ func TestCreateDeploymentsForeignKeys(t *testing.T) {
 	p := newProject(f)
 	e := newEnv(f)
 	b := newBuild()
-	createProjectsAndAssert(t, f, p)
-	createEnvsAndAssert(t, f, e)
-	saveBuildsAndAssert(t, f, b)
+	f.createProjectsAndAssert(t, p)
+	f.createEnvsAndAssert(t, e)
+	f.saveBuildsAndAssert(t, b)
 
 	d = newDeployment(f)
-	createDeploymentsAndAssert(t, f, d)
+	f.createDeploymentsAndAssert(t, d)
 }
 
 func TestGetDeployment(t *testing.T) {
@@ -84,7 +84,7 @@ func TestGetDeployment(t *testing.T) {
 	listDeploymentsAndAssert(t, f, 0) // no deployments
 
 	d := newDeployment(f)
-	createDeploymentsAndAssert(t, f, d)
+	f.createDeploymentsAndAssert(t, d)
 
 	// check getDeployment
 	deployment, err := f.gormdb.getDeployment(f.ctx, d.DeploymentID)
@@ -101,7 +101,7 @@ func TestListDeployments(t *testing.T) {
 	listDeploymentsAndAssert(t, f, 0) // no deployments
 
 	d := newDeployment(f)
-	createDeploymentsAndAssert(t, f, d)
+	f.createDeploymentsAndAssert(t, d)
 
 	deployments := listDeploymentsAndAssert(t, f, 1)
 	assert.Equal(t, d, deployments[0])
@@ -113,7 +113,7 @@ func TestListDeploymentsWithStats(t *testing.T) {
 
 	// create deployment and ensure there are no stats
 	d := newDeployment(f)
-	createDeploymentsAndAssert(t, f, d)
+	f.createDeploymentsAndAssert(t, d)
 
 	dWS := scheme.DeploymentWithStats{Deployment: d} // no stats, all zeros
 	deployments := listDeploymentsWithStatsAndAssert(t, f, 1)
@@ -121,7 +121,7 @@ func TestListDeploymentsWithStats(t *testing.T) {
 
 	// add session for the stats
 	s := newSession(f, sdktypes.SessionStateTypeCompleted)
-	createSessionsAndAssert(t, f, s)
+	f.createSessionsAndAssert(t, s)
 
 	// ensure that new session is included in stats
 	dWS.Completed = 1
@@ -145,13 +145,13 @@ func TestDeleteDeployment(t *testing.T) {
 	b := newBuild()
 	d := newDeployment(f)
 	d.BuildID = b.BuildID
-	saveBuildsAndAssert(t, f, b)
-	createDeploymentsAndAssert(t, f, d)
+	f.saveBuildsAndAssert(t, b)
+	f.createDeploymentsAndAssert(t, d)
 
 	// add sessions and check that deployment stats are updated
 	s1 := newSession(f, sdktypes.SessionStateTypeCompleted)
 	s2 := newSession(f, sdktypes.SessionStateTypeError)
-	createSessionsAndAssert(t, f, s1, s2)
+	f.createSessionsAndAssert(t, s1, s2)
 
 	dWS := scheme.DeploymentWithStats{Deployment: d, Completed: 1, Error: 1}
 	deployments := listDeploymentsWithStatsAndAssert(t, f, 1)

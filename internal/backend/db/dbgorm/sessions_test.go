@@ -12,7 +12,7 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-func createSessionsAndAssert(t *testing.T, f *dbFixture, sessions ...scheme.Session) {
+func (f *dbFixture) createSessionsAndAssert(t *testing.T, sessions ...scheme.Session) {
 	for _, session := range sessions {
 		assert.NoError(t, f.gormdb.createSession(f.ctx, &session))
 		findAndAssertOne(t, f, session, "session_id = ?", session.SessionID)
@@ -45,7 +45,7 @@ func TestCreateSession(t *testing.T) {
 
 	s := newSession(f, sdktypes.SessionStateTypeCompleted)
 	// test createSession
-	createSessionsAndAssert(t, f, s)
+	f.createSessionsAndAssert(t, s)
 
 	logs := findAndAssertCount(t, f, scheme.SessionLogRecord{}, 1, "session_id = ?", s.SessionID)
 	assert.Equal(t, s.SessionID, logs[0].SessionID) // compare only ids, since actual log isn't empty
@@ -65,7 +65,7 @@ func TestGetSession(t *testing.T) {
 	listSessionsAndAssert(t, f, 0) // no sessions
 
 	s := newSession(f, sdktypes.SessionStateTypeCompleted)
-	createSessionsAndAssert(t, f, s)
+	f.createSessionsAndAssert(t, s)
 
 	// check getSession
 	session, err := f.gormdb.getSession(f.ctx, s.SessionID)
@@ -83,7 +83,7 @@ func TestListSessions(t *testing.T) {
 	listSessionsAndAssert(t, f, 0) // no sessions
 
 	s := newSession(f, sdktypes.SessionStateTypeCompleted)
-	createSessionsAndAssert(t, f, s)
+	f.createSessionsAndAssert(t, s)
 
 	sessions := listSessionsAndAssert(t, f, 1)
 	assert.Equal(t, s, sessions[0])
@@ -98,7 +98,7 @@ func TestDeleteSession(t *testing.T) {
 	listSessionsAndAssert(t, f, 0) // no sessions
 
 	s := newSession(f, sdktypes.SessionStateTypeCompleted)
-	createSessionsAndAssert(t, f, s)
+	f.createSessionsAndAssert(t, s)
 
 	assert.NoError(t, f.gormdb.deleteSession(f.ctx, s.SessionID))
 	assertSessionsDeleted(t, f, s)

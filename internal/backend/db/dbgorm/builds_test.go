@@ -9,7 +9,7 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 )
 
-func saveBuildsAndAssert(t *testing.T, f *dbFixture, builds ...scheme.Build) {
+func (f *dbFixture) saveBuildsAndAssert(t *testing.T, builds ...scheme.Build) {
 	for _, build := range builds {
 		assert.NoError(t, f.gormdb.saveBuild(f.ctx, &build))
 		findAndAssertOne(t, f, build, "build_id = ?", build.BuildID)
@@ -23,14 +23,14 @@ func assertBuildDeleted(t *testing.T, f *dbFixture, buildID string) {
 func TestSaveBuild(t *testing.T) {
 	f := newDBFixture(true)
 	b := newBuild()
-	saveBuildsAndAssert(t, f, b)
+	f.saveBuildsAndAssert(t, b)
 	findAndAssertOne(t, f, b, "") // check there is only single build in DB
 }
 
 func TestDeleteBuild(t *testing.T) {
 	f := newDBFixture(true)
 	b := newBuild()
-	saveBuildsAndAssert(t, f, b)
+	f.saveBuildsAndAssert(t, b)
 
 	assert.NoError(t, f.gormdb.deleteBuild(f.ctx, b.BuildID))
 	assertBuildDeleted(t, f, b.BuildID)
@@ -47,7 +47,7 @@ func TestListBuild(t *testing.T) {
 
 	// create build and obtain it via list
 	b := newBuild()
-	saveBuildsAndAssert(t, f, b)
+	f.saveBuildsAndAssert(t, b)
 
 	// check listBuilds API
 	builds, err = f.gormdb.listBuilds(f.ctx, flt)
