@@ -141,7 +141,7 @@ var (
 	testIntegrationID = "int_00000000000000000000000001"
 )
 
-func newSession(f *dbFixture, st sdktypes.SessionStateType) scheme.Session {
+func (f *dbFixture) newSession(st sdktypes.SessionStateType) scheme.Session {
 	f.sessionID += 1
 	sessionID := fmt.Sprintf("ses_%026d", f.sessionID)
 
@@ -157,7 +157,7 @@ func newSession(f *dbFixture, st sdktypes.SessionStateType) scheme.Session {
 	}
 }
 
-func newBuild() scheme.Build {
+func (f *dbFixture) newBuild() scheme.Build {
 	return scheme.Build{
 		BuildID:   testBuildID,
 		Data:      []byte{},
@@ -165,7 +165,7 @@ func newBuild() scheme.Build {
 	}
 }
 
-func newDeployment(f *dbFixture) scheme.Deployment {
+func (f *dbFixture) newDeployment() scheme.Deployment {
 	f.deploymentID += 1
 	deploymentID := fmt.Sprintf("dep_%026d", f.deploymentID)
 
@@ -179,7 +179,7 @@ func newDeployment(f *dbFixture) scheme.Deployment {
 	}
 }
 
-func newProject(f *dbFixture) scheme.Project {
+func (f *dbFixture) newProject() scheme.Project {
 	f.projectID += 1
 	projectID := fmt.Sprintf("prj_%026d", f.projectID)
 
@@ -191,7 +191,7 @@ func newProject(f *dbFixture) scheme.Project {
 	}
 }
 
-func newEnv(f *dbFixture) scheme.Env {
+func (f *dbFixture) newEnv() scheme.Env {
 	f.envID += 1
 	envID := fmt.Sprintf("env_%026d", f.envID)
 
@@ -203,7 +203,7 @@ func newEnv(f *dbFixture) scheme.Env {
 	}
 }
 
-func newTrigger(f *dbFixture) scheme.Trigger {
+func (f *dbFixture) newTrigger() scheme.Trigger {
 	f.triggerID += 1
 	triggerID := fmt.Sprintf("trg_%026d", f.triggerID)
 
@@ -216,7 +216,7 @@ func newTrigger(f *dbFixture) scheme.Trigger {
 	}
 }
 
-func newConnection() scheme.Connection {
+func (f *dbFixture) newConnection() scheme.Connection {
 	return scheme.Connection{
 		ConnectionID:     testConnectionID,
 		IntegrationID:    testIntegrationID,
@@ -226,7 +226,7 @@ func newConnection() scheme.Connection {
 	}
 }
 
-func newIntegration() scheme.Integration {
+func (f *dbFixture) newIntegration() scheme.Integration {
 	return scheme.Integration{
 		IntegrationID: testIntegrationID,
 		UniqueName:    "",

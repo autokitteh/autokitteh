@@ -11,14 +11,14 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-func createDeploymentsAndAssert(t *testing.T, f *dbFixture, deployments ...scheme.Deployment) {
+func (f *dbFixture) createDeploymentsAndAssert(t *testing.T, deployments ...scheme.Deployment) {
 	for _, deployment := range deployments {
-		assert.NoError(t, f.gormdb.createDeployment(f.ctx, deployment))
+		assert.NoError(t, f.gormdb.createDeployment(f.ctx, &deployment))
 		findAndAssertOne(t, f, deployment, "deployment_id = ?", deployment.DeploymentID)
 	}
 }
 
-func listDeploymentsAndAssert(t *testing.T, f *dbFixture, expected int) []scheme.Deployment {
+func (f *dbFixture) listDeploymentsAndAssert(t *testing.T, expected int) []scheme.Deployment {
 	flt := sdkservices.ListDeploymentsFilter{
 		State:               sdktypes.DeploymentStateUnspecified,
 		Limit:               0,
@@ -44,45 +44,47 @@ func listDeploymentsWithStatsAndAssert(t *testing.T, f *dbFixture, expected int)
 	return deployments
 }
 
-func assertDeploymentDeleted(t *testing.T, f *dbFixture, deploymentID string) {
-	assertSoftDeleted(t, f, scheme.Deployment{DeploymentID: deploymentID})
+func (f *dbFixture) assertDeploymentsDeleted(t *testing.T, deployments ...scheme.Deployment) {
+	for _, deployment := range deployments {
+		assertSoftDeleted(t, f, scheme.Deployment{DeploymentID: deployment.DeploymentID})
+	}
 }
 
 func TestCreateDeployment(t *testing.T) {
-	f := newDBFixture(true)           // no foreign keys
-	listDeploymentsAndAssert(t, f, 0) // no deployments
+	f := newDBFixture(true)          // no foreign keys
+	f.listDeploymentsAndAssert(t, 0) // no deployments
 
-	d := newDeployment(f)
+	d := f.newDeployment()
 	// test createDeployment
-	createDeploymentsAndAssert(t, f, d)
+	f.createDeploymentsAndAssert(t, d)
 }
 
 func TestCreateDeploymentsForeignKeys(t *testing.T) {
 	f := newDBFixture(false) // with foreign keys
-	d := newDeployment(f)
+	d := f.newDeployment()
 	d.BuildID = "unexistingBuildID"
 	d.EnvID = "unexistingEnvID"
 
-	err := f.gormdb.createDeployment(f.ctx, d)
+	err := f.gormdb.createDeployment(f.ctx, &d)
 	assert.ErrorContains(t, err, "FOREIGN KEY")
 
-	p := newProject(f)
-	e := newEnv(f)
-	b := newBuild()
-	createProjectsAndAssert(t, f, p)
-	createEnvsAndAssert(t, f, e)
-	saveBuildAndAssert(t, f, b)
+	p := f.newProject()
+	e := f.newEnv()
+	b := f.newBuild()
+	f.createProjectsAndAssert(t, p)
+	f.createEnvsAndAssert(t, e)
+	f.saveBuildsAndAssert(t, b)
 
-	d = newDeployment(f)
-	createDeploymentsAndAssert(t, f, d)
+	d = f.newDeployment()
+	f.createDeploymentsAndAssert(t, d)
 }
 
 func TestGetDeployment(t *testing.T) {
-	f := newDBFixture(true)           // no foreign keys
-	listDeploymentsAndAssert(t, f, 0) // no deployments
+	f := newDBFixture(true)          // no foreign keys
+	f.listDeploymentsAndAssert(t, 0) // no deployments
 
-	d := newDeployment(f)
-	createDeploymentsAndAssert(t, f, d)
+	d := f.newDeployment()
+	f.createDeploymentsAndAssert(t, d)
 
 	// check getDeployment
 	deployment, err := f.gormdb.getDeployment(f.ctx, d.DeploymentID)
@@ -95,31 +97,31 @@ func TestGetDeployment(t *testing.T) {
 }
 
 func TestListDeployments(t *testing.T) {
-	f := newDBFixture(true)           // no foreign keys
-	listDeploymentsAndAssert(t, f, 0) // no deployments
+	f := newDBFixture(true)          // no foreign keys
+	f.listDeploymentsAndAssert(t, 0) // no deployments
 
-	d := newDeployment(f)
-	createDeploymentsAndAssert(t, f, d)
+	d := f.newDeployment()
+	f.createDeploymentsAndAssert(t, d)
 
-	deployments := listDeploymentsAndAssert(t, f, 1)
+	deployments := f.listDeploymentsAndAssert(t, 1)
 	assert.Equal(t, d, deployments[0])
 }
 
 func TestListDeploymentsWithStats(t *testing.T) {
-	f := newDBFixture(true)           // no foreign keys
-	listDeploymentsAndAssert(t, f, 0) // ensure no deployments
+	f := newDBFixture(true)          // no foreign keys
+	f.listDeploymentsAndAssert(t, 0) // ensure no deployments
 
 	// create deployment and ensure there are no stats
-	d := newDeployment(f)
-	createDeploymentsAndAssert(t, f, d)
+	d := f.newDeployment()
+	f.createDeploymentsAndAssert(t, d)
 
 	dWS := scheme.DeploymentWithStats{Deployment: d} // no stats, all zeros
 	deployments := listDeploymentsWithStatsAndAssert(t, f, 1)
 	assert.Equal(t, dWS, deployments[0])
 
 	// add session for the stats
-	s := newSession(f, sdktypes.SessionStateTypeCompleted)
-	createSessionAndAssert(t, f, s)
+	s := f.newSession(sdktypes.SessionStateTypeCompleted)
+	f.createSessionsAndAssert(t, s)
 
 	// ensure that new session is included in stats
 	dWS.Completed = 1
@@ -128,7 +130,7 @@ func TestListDeploymentsWithStats(t *testing.T) {
 
 	// delete session
 	assert.NoError(t, f.gormdb.deleteSession(f.ctx, s.SessionID))
-	assertSessionDeleted(t, f, s.SessionID)
+	f.assertSessionsDeleted(t, s)
 
 	// check that deployment stats are updated
 	deployments = listDeploymentsWithStatsAndAssert(t, f, 1)
@@ -137,20 +139,19 @@ func TestListDeploymentsWithStats(t *testing.T) {
 }
 
 func TestDeleteDeployment(t *testing.T) {
-	f := newDBFixture(true)           // no foreign keys
-	listDeploymentsAndAssert(t, f, 0) // ensure no deployments
+	f := newDBFixture(true)          // no foreign keys
+	f.listDeploymentsAndAssert(t, 0) // ensure no deployments
 
-	b := newBuild()
-	saveBuildAndAssert(t, f, b)
-	d := newDeployment(f)
+	b := f.newBuild()
+	d := f.newDeployment()
 	d.BuildID = b.BuildID
-	createDeploymentsAndAssert(t, f, d)
+	f.saveBuildsAndAssert(t, b)
+	f.createDeploymentsAndAssert(t, d)
 
 	// add sessions and check that deployment stats are updated
-	session1 := newSession(f, sdktypes.SessionStateTypeCompleted)
-	createSessionAndAssert(t, f, session1)
-	session2 := newSession(f, sdktypes.SessionStateTypeError)
-	createSessionAndAssert(t, f, session2)
+	s1 := f.newSession(sdktypes.SessionStateTypeCompleted)
+	s2 := f.newSession(sdktypes.SessionStateTypeError)
+	f.createSessionsAndAssert(t, s1, s2)
 
 	dWS := scheme.DeploymentWithStats{Deployment: d, Completed: 1, Error: 1}
 	deployments := listDeploymentsWithStatsAndAssert(t, f, 1)
@@ -158,11 +159,10 @@ func TestDeleteDeployment(t *testing.T) {
 
 	// delete deployment. Ensure deployment sessions are marked as deleted as well
 	assert.NoError(t, f.gormdb.deleteDeployment(f.ctx, d.DeploymentID))
-	assertDeploymentDeleted(t, f, d.DeploymentID)
+	f.assertDeploymentsDeleted(t, d)
 
 	listDeploymentsWithStatsAndAssert(t, f, 0)
-	assertSessionDeleted(t, f, session1.SessionID)
-	assertSessionDeleted(t, f, session2.SessionID)
+	f.assertSessionsDeleted(t, s1, s2)
 
 	// TODO: meanwhile builds are not deleted when deployment is deleted
 	// assertBuildDeleted(t, f, b.BuildID)

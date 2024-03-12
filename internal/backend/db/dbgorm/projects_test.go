@@ -12,39 +12,41 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-func createProjectsAndAssert(t *testing.T, f *dbFixture, projects ...scheme.Project) {
+func (f *dbFixture) createProjectsAndAssert(t *testing.T, projects ...scheme.Project) {
 	for _, project := range projects {
-		assert.NoError(t, f.gormdb.createProject(f.ctx, project))
+		assert.NoError(t, f.gormdb.createProject(f.ctx, &project))
 		findAndAssertOne(t, f, project, "project_id = ?", project.ProjectID)
 	}
 }
 
-func listProjectsAndAssert(t *testing.T, f *dbFixture, expected int) []scheme.Project {
+func (f *dbFixture) listProjectsAndAssert(t *testing.T, expected int) []scheme.Project {
 	projects, err := f.gormdb.listProjects(f.ctx)
 	assert.NoError(t, err)
 	assert.Equal(t, expected, len(projects))
 	return projects
 }
 
-func assertProjectDeleted(t *testing.T, f *dbFixture, projectID string) {
-	assertSoftDeleted(t, f, scheme.Project{ProjectID: projectID})
+func (f *dbFixture) assertProjectDeleted(t *testing.T, projects ...scheme.Project) {
+	for _, project := range projects {
+		assertSoftDeleted(t, f, scheme.Project{ProjectID: project.ProjectID})
+	}
 }
 
 func TestCreateProject(t *testing.T) {
 	f := newDBFixture(true)                           // no foreign keys
 	findAndAssertCount(t, f, scheme.Project{}, 0, "") // no projects
 
-	p := newProject(f)
+	p := f.newProject()
 	// test createProject
-	createProjectsAndAssert(t, f, p)
+	f.createProjectsAndAssert(t, p)
 }
 
 func TestGetProjects(t *testing.T) {
 	f := newDBFixture(true)                           // no foreign keys
 	findAndAssertCount(t, f, scheme.Project{}, 0, "") // no projects
 
-	p := newProject(f)
-	createProjectsAndAssert(t, f, p)
+	p := f.newProject()
+	f.createProjectsAndAssert(t, p)
 
 	// test getProjectByID
 	project, err := f.gormdb.getProject(f.ctx, p.ProjectID)
@@ -72,16 +74,16 @@ func TestListProjects(t *testing.T) {
 	f := newDBFixture(true)                           // no foreign keys
 	findAndAssertCount(t, f, scheme.Project{}, 0, "") // no projects
 
-	p := newProject(f)
-	createProjectsAndAssert(t, f, p)
+	p := f.newProject()
+	f.createProjectsAndAssert(t, p)
 
 	// test listProjects
-	projects := listProjectsAndAssert(t, f, 1)
+	projects := f.listProjectsAndAssert(t, 1)
 	assert.Equal(t, p, projects[0])
 
 	// test listProjects after delete
 	assert.NoError(t, f.gormdb.deleteProject(f.ctx, p.ProjectID))
-	listProjectsAndAssert(t, f, 0)
+	f.listProjectsAndAssert(t, 0)
 }
 
 func TestGetProjectDeployments(t *testing.T) {
@@ -96,9 +98,9 @@ func TestGetProjectDeployments(t *testing.T) {
 	//
 	// p2:
 	// - e4: (d4)
-	p1, p2 := newProject(f), newProject(f)
-	e1, e2, e3, e4 := newEnv(f), newEnv(f), newEnv(f), newEnv(f)
-	d1, d2, d3, d4 := newDeployment(f), newDeployment(f), newDeployment(f), newDeployment(f)
+	p1, p2 := f.newProject(), f.newProject()
+	e1, e2, e3, e4 := f.newEnv(), f.newEnv(), f.newEnv(), f.newEnv()
+	d1, d2, d3, d4 := f.newDeployment(), f.newDeployment(), f.newDeployment(), f.newDeployment()
 
 	e1.ProjectID = p1.ProjectID
 	e2.ProjectID = p1.ProjectID
@@ -110,9 +112,9 @@ func TestGetProjectDeployments(t *testing.T) {
 	d3.EnvID = e2.EnvID
 	d4.EnvID = e4.EnvID
 
-	createProjectsAndAssert(t, f, p1, p2)
-	createEnvsAndAssert(t, f, e1, e2, e3, e4)
-	createDeploymentsAndAssert(t, f, d1, d2, d3, d4)
+	f.createProjectsAndAssert(t, p1, p2)
+	f.createEnvsAndAssert(t, e1, e2, e3, e4)
+	f.createDeploymentsAndAssert(t, d1, d2, d3, d4)
 
 	ds, err := f.gormdb.getProjectDeployments(f.ctx, p1.ProjectID)
 	assert.NoError(t, err)
@@ -125,17 +127,17 @@ func TestGetProjectEnvs(t *testing.T) {
 	findAndAssertCount(t, f, scheme.Project{}, 0, "") // no projects
 
 	// create two envs - one with deployment and second without
-	p := newProject(f)
-	e1, e2 := newEnv(f), newEnv(f)
-	d := newDeployment(f)
+	p := f.newProject()
+	e1, e2 := f.newEnv(), f.newEnv()
+	d := f.newDeployment()
 
 	e1.ProjectID = p.ProjectID
 	e2.ProjectID = p.ProjectID
 	d.EnvID = e1.EnvID
 
-	createProjectsAndAssert(t, f, p)
-	createEnvsAndAssert(t, f, e1, e2)
-	createDeploymentsAndAssert(t, f, d)
+	f.createProjectsAndAssert(t, p)
+	f.createEnvsAndAssert(t, e1, e2)
+	f.createDeploymentsAndAssert(t, d)
 
 	envIDs, err := f.gormdb.getProjectEnvs(f.ctx, p.ProjectID)
 	assert.NoError(t, err)
@@ -157,19 +159,19 @@ func TestDeleteProjectAndDependents(t *testing.T) {
 	// - p2
 	//   - e1
 	//     - d1 (s3)
-	p1, p2 := newProject(f), newProject(f)
+	p1, p2 := f.newProject(), f.newProject()
 
-	i := newIntegration()
-	c := newConnection()
+	i := f.newIntegration()
+	c := f.newConnection()
 	c.IntegrationID = i.IntegrationID
 	c.ProjectID = p1.ProjectID
 
-	e1p1, e2p1, e1p2 := newEnv(f), newEnv(f), newEnv(f)
+	e1p1, e2p1, e1p2 := f.newEnv(), f.newEnv(), f.newEnv()
 	e1p1.ProjectID = p1.ProjectID
 	e2p1.ProjectID = p1.ProjectID
 	e1p2.ProjectID = p2.ProjectID
 
-	t1, t2 := newTrigger(f), newTrigger(f)
+	t1, t2 := f.newTrigger(), f.newTrigger()
 	t1.ProjectID = p1.ProjectID
 	t1.EnvID = e1p1.EnvID
 	t1.ConnectionID = c.ConnectionID
@@ -177,12 +179,9 @@ func TestDeleteProjectAndDependents(t *testing.T) {
 	t2.EnvID = e2p1.EnvID
 	t1.ConnectionID = c.ConnectionID
 
-	b := newBuild()
+	b := f.newBuild()
 
-	d1e1p1 := newDeployment(f)
-	d2e1p1 := newDeployment(f)
-	d1e2p1 := newDeployment(f)
-	d1e1p2 := newDeployment(f)
+	d1e1p1, d2e1p1, d1e2p1, d1e1p2 := f.newDeployment(), f.newDeployment(), f.newDeployment(), f.newDeployment()
 	d1e1p1.EnvID = e1p1.EnvID
 	d2e1p1.EnvID = e1p1.EnvID
 	d1e2p1.EnvID = e2p1.EnvID
@@ -192,32 +191,21 @@ func TestDeleteProjectAndDependents(t *testing.T) {
 	d1e2p1.BuildID = b.BuildID
 	d1e1p2.BuildID = b.BuildID
 
-	s1d1e1p1 := newSession(f, sdktypes.SessionStateTypeCompleted)
-	s2d1e2p1 := newSession(f, sdktypes.SessionStateTypeError)
-	s3d1e1p2 := newSession(f, sdktypes.SessionStateTypeCompleted)
+	s1d1e1p1 := f.newSession(sdktypes.SessionStateTypeCompleted)
+	s2d1e2p1 := f.newSession(sdktypes.SessionStateTypeError)
+	s3d1e1p2 := f.newSession(sdktypes.SessionStateTypeCompleted)
 	s1d1e1p1.DeploymentID = d1e1p1.DeploymentID
 	s2d1e2p1.DeploymentID = d1e2p1.DeploymentID
 	s3d1e1p2.DeploymentID = d1e1p2.DeploymentID
 
-	createProjectsAndAssert(t, f, p1)
-	createProjectsAndAssert(t, f, p2)
-	createIntegrationsAndAssert(t, f, i)
-	createConnectionsAndAssert(t, f, c)
-
-	createEnvsAndAssert(t, f, e1p1)
-	createEnvsAndAssert(t, f, e2p1)
-	createEnvsAndAssert(t, f, e1p2)
-	createTriggersAndAssert(t, f, t1, t2)
-
-	saveBuildAndAssert(t, f, b)
-	createDeploymentsAndAssert(t, f, d1e1p1)
-	createDeploymentsAndAssert(t, f, d2e1p1)
-	createDeploymentsAndAssert(t, f, d1e2p1)
-	createDeploymentsAndAssert(t, f, d1e1p2)
-
-	createSessionAndAssert(t, f, s1d1e1p1)
-	createSessionAndAssert(t, f, s2d1e2p1)
-	createSessionAndAssert(t, f, s3d1e1p2)
+	f.createProjectsAndAssert(t, p1, p2)
+	f.createIntegrationsAndAssert(t, i)
+	f.createConnectionsAndAssert(t, c)
+	f.createEnvsAndAssert(t, e1p1, e2p1, e1p2)
+	f.createTriggersAndAssert(t, t1, t2)
+	f.saveBuildsAndAssert(t, b)
+	f.createDeploymentsAndAssert(t, d1e1p1, d2e1p1, d1e2p1, d1e1p2)
+	f.createSessionsAndAssert(t, s1d1e1p1, s2d1e2p1, s3d1e1p2)
 
 	// ensure failure if deployments are not inactive
 	err := f.gormdb.deleteProjectAndDependents(f.ctx, p1.ProjectID)
@@ -231,16 +219,9 @@ func TestDeleteProjectAndDependents(t *testing.T) {
 	err = f.gormdb.deleteProjectAndDependents(f.ctx, p1.ProjectID)
 	assert.NoError(t, err)
 
-	assertDeploymentDeleted(t, f, d1e1p1.DeploymentID)
-	assertDeploymentDeleted(t, f, d2e1p1.DeploymentID)
-	assertDeploymentDeleted(t, f, d1e2p1.DeploymentID)
-
-	assertEnvDeleted(t, f, e1p1.EnvID)
-	assertEnvDeleted(t, f, e2p1.EnvID)
-	assertProjectDeleted(t, f, p1.ProjectID)
-
-	assertSessionDeleted(t, f, s1d1e1p1.SessionID)
-	assertSessionDeleted(t, f, s2d1e2p1.SessionID)
-
-	assertTriggersDeleted(t, f, t1, t2)
+	f.assertDeploymentsDeleted(t, d1e1p1, d2e1p1, d1e2p1)
+	f.assertEnvDeleted(t, e1p1, e2p1)
+	f.assertProjectDeleted(t, p1)
+	f.assertSessionsDeleted(t, s1d1e1p1, s2d1e2p1)
+	f.assertTriggersDeleted(t, t1, t2)
 }

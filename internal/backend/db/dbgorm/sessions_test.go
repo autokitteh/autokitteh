@@ -12,12 +12,14 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-func createSessionAndAssert(t *testing.T, f *dbFixture, session scheme.Session) {
-	assert.NoError(t, f.gormdb.createSession(f.ctx, session))
-	findAndAssertOne(t, f, session, "session_id = ?", session.SessionID)
+func (f *dbFixture) createSessionsAndAssert(t *testing.T, sessions ...scheme.Session) {
+	for _, session := range sessions {
+		assert.NoError(t, f.gormdb.createSession(f.ctx, &session))
+		findAndAssertOne(t, f, session, "session_id = ?", session.SessionID)
+	}
 }
 
-func listSessionsAndAssert(t *testing.T, f *dbFixture, expected int) []scheme.Session {
+func (f *dbFixture) listSessionsAndAssert(t *testing.T, expected int) []scheme.Session {
 	flt := sdkservices.ListSessionsFilter{
 		CountOnly: false,
 		StateType: sdktypes.SessionStateTypeUnspecified, // fetch all sesssions
@@ -31,37 +33,39 @@ func listSessionsAndAssert(t *testing.T, f *dbFixture, expected int) []scheme.Se
 	return sessions
 }
 
-func assertSessionDeleted(t *testing.T, f *dbFixture, sessionID string) {
-	assertSoftDeleted(t, f, scheme.Session{SessionID: sessionID})
+func (f *dbFixture) assertSessionsDeleted(t *testing.T, sessions ...scheme.Session) {
+	for _, session := range sessions {
+		assertSoftDeleted(t, f, scheme.Session{SessionID: session.SessionID})
+	}
 }
 
 func TestCreateSession(t *testing.T) {
-	f := newDBFixture(true)        // no foreign keys
-	listSessionsAndAssert(t, f, 0) // no sessions
+	f := newDBFixture(true)       // no foreign keys
+	f.listSessionsAndAssert(t, 0) // no sessions
 
-	s := newSession(f, sdktypes.SessionStateTypeCompleted)
+	s := f.newSession(sdktypes.SessionStateTypeCompleted)
 	// test createSession
-	createSessionAndAssert(t, f, s)
+	f.createSessionsAndAssert(t, s)
 
 	logs := findAndAssertCount(t, f, scheme.SessionLogRecord{}, 1, "session_id = ?", s.SessionID)
 	assert.Equal(t, s.SessionID, logs[0].SessionID) // compare only ids, since actual log isn't empty
 }
 
 func TestCreateSessionForeignKeys(t *testing.T) {
-	f := newDBFixture(false)       // with foreign keys
-	listSessionsAndAssert(t, f, 0) // no sessions
+	f := newDBFixture(false)      // with foreign keys
+	f.listSessionsAndAssert(t, 0) // no sessions
 
-	s := newSession(f, sdktypes.SessionStateTypeCompleted)
-	err := f.gormdb.createSession(f.ctx, s) // should fail since there is no deployment
+	s := f.newSession(sdktypes.SessionStateTypeCompleted)
+	err := f.gormdb.createSession(f.ctx, &s) // should fail since there is no deployment
 	assert.ErrorContains(t, err, "FOREIGN KEY")
 }
 
 func TestGetSession(t *testing.T) {
-	f := newDBFixture(true)        // no foreign keys
-	listSessionsAndAssert(t, f, 0) // no sessions
+	f := newDBFixture(true)       // no foreign keys
+	f.listSessionsAndAssert(t, 0) // no sessions
 
-	s := newSession(f, sdktypes.SessionStateTypeCompleted)
-	createSessionAndAssert(t, f, s)
+	s := f.newSession(sdktypes.SessionStateTypeCompleted)
+	f.createSessionsAndAssert(t, s)
 
 	// check getSession
 	session, err := f.gormdb.getSession(f.ctx, s.SessionID)
@@ -75,27 +79,27 @@ func TestGetSession(t *testing.T) {
 }
 
 func TestListSessions(t *testing.T) {
-	f := newDBFixture(true)        // no foreign keys
-	listSessionsAndAssert(t, f, 0) // no sessions
+	f := newDBFixture(true)       // no foreign keys
+	f.listSessionsAndAssert(t, 0) // no sessions
 
-	s := newSession(f, sdktypes.SessionStateTypeCompleted)
-	createSessionAndAssert(t, f, s)
+	s := f.newSession(sdktypes.SessionStateTypeCompleted)
+	f.createSessionsAndAssert(t, s)
 
-	sessions := listSessionsAndAssert(t, f, 1)
+	sessions := f.listSessionsAndAssert(t, 1)
 	assert.Equal(t, s, sessions[0])
 
 	// deleteSession and ensure that listSessions is empty
 	assert.NoError(t, f.gormdb.deleteSession(f.ctx, s.SessionID))
-	listSessionsAndAssert(t, f, 0)
+	f.listSessionsAndAssert(t, 0)
 }
 
 func TestDeleteSession(t *testing.T) {
-	f := newDBFixture(true)        // no foreign keys
-	listSessionsAndAssert(t, f, 0) // no sessions
+	f := newDBFixture(true)       // no foreign keys
+	f.listSessionsAndAssert(t, 0) // no sessions
 
-	s := newSession(f, sdktypes.SessionStateTypeCompleted)
-	createSessionAndAssert(t, f, s)
+	s := f.newSession(sdktypes.SessionStateTypeCompleted)
+	f.createSessionsAndAssert(t, s)
 
 	assert.NoError(t, f.gormdb.deleteSession(f.ctx, s.SessionID))
-	assertSessionDeleted(t, f, s.SessionID)
+	f.assertSessionsDeleted(t, s)
 }

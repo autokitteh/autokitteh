@@ -43,8 +43,8 @@ func triggerToRecord(ctx context.Context, tx *tx, trigger sdktypes.Trigger) (*sc
 	}, nil
 }
 
-func (db *gormdb) createTrigger(ctx context.Context, trigger scheme.Trigger) error {
-	return db.db.WithContext(ctx).Create(&trigger).Error
+func (db *gormdb) createTrigger(ctx context.Context, trigger *scheme.Trigger) error {
+	return db.db.WithContext(ctx).Create(trigger).Error
 }
 
 func (db *gormdb) CreateTrigger(ctx context.Context, trigger sdktypes.Trigger) error {
@@ -54,7 +54,7 @@ func (db *gormdb) CreateTrigger(ctx context.Context, trigger sdktypes.Trigger) e
 			return err
 		}
 
-		return translateError(tx.createTrigger(ctx, *t))
+		return translateError(tx.createTrigger(ctx, t))
 	})
 }
 

@@ -9,8 +9,8 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-func (db *gormdb) createConnection(ctx context.Context, conn scheme.Connection) error {
-	return db.db.WithContext(ctx).Create(&conn).Error
+func (db *gormdb) createConnection(ctx context.Context, conn *scheme.Connection) error {
+	return db.db.WithContext(ctx).Create(conn).Error
 }
 
 func (db *gormdb) CreateConnection(ctx context.Context, conn sdktypes.Connection) error {
@@ -22,7 +22,7 @@ func (db *gormdb) CreateConnection(ctx context.Context, conn sdktypes.Connection
 		Name:             conn.Name().String(),
 	}
 
-	return translateError(db.createConnection(ctx, c))
+	return translateError(db.createConnection(ctx, &c))
 }
 
 func (db *gormdb) UpdateConnection(ctx context.Context, conn sdktypes.Connection) error {
