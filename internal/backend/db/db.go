@@ -124,6 +124,12 @@ type DB interface {
 	ListIntegrations(ctx context.Context, filter sdkservices.ListIntegrationsFilter) ([]sdktypes.Integration, error)
 
 	// -----------------------------------------------------------------------
+	SetSecret(ctx context.Context, name string, data map[string]string) error
+	GetSecret(ctx context.Context, name string) (map[string]string, error)
+	AppendSecret(ctx context.Context, name, token string) error
+	DeleteSecret(ctx context.Context, name string) error
+
+	// -----------------------------------------------------------------------
 	CreateSession(ctx context.Context, session sdktypes.Session) error
 	GetSession(ctx context.Context, sessionID sdktypes.SessionID) (sdktypes.Session, error)
 	GetSessionLog(ctx context.Context, sessionID sdktypes.SessionID) (sdktypes.SessionLog, error)
