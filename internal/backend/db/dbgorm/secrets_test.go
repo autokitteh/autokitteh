@@ -8,7 +8,7 @@ import (
 )
 
 func TestSetGetSecret(t *testing.T) {
-	db := newDbFixture(true) // No foreign keys.
+	db := newDBFixture(true) // No foreign keys.
 
 	want := map[string]string{"key": "value"}
 	err := db.gormdb.SetSecret(db.ctx, "name", want)
@@ -20,7 +20,7 @@ func TestSetGetSecret(t *testing.T) {
 }
 
 func TestGetSecretError(t *testing.T) {
-	db := newDbFixture(true) // No foreign keys.
+	db := newDBFixture(true) // No foreign keys.
 
 	got, err := db.gormdb.GetSecret(db.ctx, "name")
 	assert.ErrorIs(t, err, sdkerrors.ErrNotFound)
@@ -28,7 +28,7 @@ func TestGetSecretError(t *testing.T) {
 }
 
 func TestSetAppendGetSecret(t *testing.T) {
-	db := newDbFixture(true) // No foreign keys.
+	db := newDBFixture(true) // No foreign keys.
 
 	data := map[string]string{"key1": "value1"}
 	err := db.gormdb.SetSecret(db.ctx, "name", data)
@@ -43,7 +43,7 @@ func TestSetAppendGetSecret(t *testing.T) {
 }
 
 func TestSetDeleteGetSecret(t *testing.T) {
-	db := newDbFixture(true) // No foreign keys.
+	db := newDBFixture(true) // No foreign keys.
 
 	data := map[string]string{"key": "value"}
 	err := db.gormdb.SetSecret(db.ctx, "name", data)
@@ -58,7 +58,7 @@ func TestSetDeleteGetSecret(t *testing.T) {
 }
 
 func TestDeleteSecretError(t *testing.T) {
-	db := newDbFixture(true) // No foreign keys.
+	db := newDBFixture(true) // No foreign keys.
 
 	err := db.gormdb.DeleteSecret(db.ctx, "name")
 	assert.NoError(t, err)

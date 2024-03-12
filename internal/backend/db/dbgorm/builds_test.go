@@ -19,14 +19,14 @@ func assertBuildDeleted(t *testing.T, f *dbFixture, buildID string) {
 }
 
 func TestSaveBuild(t *testing.T) {
-	f := newDbFixture(true)
+	f := newDBFixture(true)
 	build := newBuild()
 	saveBuildAndAssert(t, f, build)
 	findAndAssertOne(t, f, build, "") // check there is only single build in DB
 }
 
 func TestDeleteBuild(t *testing.T) {
-	f := newDbFixture(true)
+	f := newDBFixture(true)
 	build := newBuild()
 	saveBuildAndAssert(t, f, build)
 
@@ -35,7 +35,7 @@ func TestDeleteBuild(t *testing.T) {
 }
 
 func TestListBuild(t *testing.T) {
-	f := newDbFixture(true)
+	f := newDBFixture(true)
 	flt := sdkservices.ListBuildsFilter{} // no Limit
 
 	// no builds

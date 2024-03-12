@@ -31,7 +31,7 @@ func assertProjectDeleted(t *testing.T, f *dbFixture, projectID string) {
 }
 
 func TestCreateProject(t *testing.T) {
-	f := newDbFixture(true)                           // no foreign keys
+	f := newDBFixture(true)                           // no foreign keys
 	findAndAssertCount(t, f, scheme.Project{}, 0, "") // no projects
 
 	p := newProject(f)
@@ -40,7 +40,7 @@ func TestCreateProject(t *testing.T) {
 }
 
 func TestGetProjects(t *testing.T) {
-	f := newDbFixture(true)                           // no foreign keys
+	f := newDBFixture(true)                           // no foreign keys
 	findAndAssertCount(t, f, scheme.Project{}, 0, "") // no projects
 
 	p := newProject(f)
@@ -69,7 +69,7 @@ func TestGetProjects(t *testing.T) {
 }
 
 func TestListProjects(t *testing.T) {
-	f := newDbFixture(true)                           // no foreign keys
+	f := newDBFixture(true)                           // no foreign keys
 	findAndAssertCount(t, f, scheme.Project{}, 0, "") // no projects
 
 	p := newProject(f)
@@ -85,7 +85,7 @@ func TestListProjects(t *testing.T) {
 }
 
 func TestDeleteProject(t *testing.T) {
-	f := newDbFixture(true)                           // no foreign keys
+	f := newDBFixture(true)                           // no foreign keys
 	findAndAssertCount(t, f, scheme.Project{}, 0, "") // no projects
 
 	p := newProject(f)
@@ -98,7 +98,7 @@ func TestDeleteProject(t *testing.T) {
 }
 
 func TestGetProjectDeployments(t *testing.T) {
-	f := newDbFixture(true)                           // no foreign keys
+	f := newDBFixture(true)                           // no foreign keys
 	findAndAssertCount(t, f, scheme.Project{}, 0, "") // no projects
 
 	// create 4 envs. E1 with 3 deployments, E2 with 1 (dupl with E1) and E3 with 0.
@@ -134,7 +134,7 @@ func TestGetProjectDeployments(t *testing.T) {
 }
 
 func TestGetProjectEnvs(t *testing.T) {
-	f := newDbFixture(true)                           // no foreign keys
+	f := newDBFixture(true)                           // no foreign keys
 	findAndAssertCount(t, f, scheme.Project{}, 0, "") // no projects
 
 	// create two envs - one with deployment and second without
@@ -157,7 +157,7 @@ func TestGetProjectEnvs(t *testing.T) {
 }
 
 func TestDeleteProjectAndDependents(t *testing.T) {
-	f := newDbFixture(true)                           // no foreign keys
+	f := newDBFixture(true)                           // no foreign keys
 	findAndAssertCount(t, f, scheme.Project{}, 0, "") // no projects
 
 	// initialize:
