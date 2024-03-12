@@ -64,7 +64,7 @@ func setupDB(dbName string) *gorm.DB {
 	return db
 }
 
-func newDBFixture(withoutForeignKeys bool) *dbFixture {
+func newDbFixture(withoutForeignKeys bool) *dbFixture {
 	db := setupDB("") // in-memory db, specify filename to use file db
 	if withoutForeignKeys {
 		db.Exec("PRAGMA foreign_keys = OFF")
@@ -131,12 +131,12 @@ func assertDeleted[T any](t *testing.T, f *dbFixture, m T) {
 
 var (
 	// testSessionID    = "ses_00000000000000000000000001"
-	testBuildID       = "bld_00000000000000000000000001"
-	testDeploymentID  = "dep_00000000000000000000000001"
-	testEventID       = "evt_00000000000000000000000001"
-	testEnvID         = "env_00000000000000000000000001"
-	testProjectID     = "prj_00000000000000000000000001"
-	testTriggerID     = "trg_00000000000000000000000001"
+	testBuildID      = "bld_00000000000000000000000001"
+	testDeploymentID = "dep_00000000000000000000000001"
+	testEventID      = "evt_00000000000000000000000001"
+	testEnvID        = "env_00000000000000000000000001"
+	testProjectID    = "prj_00000000000000000000000001"
+	// testTriggerID     = "trg_00000000000000000000000001"
 	testConnectionID  = "con_00000000000000000000000001"
 	testIntegrationID = "int_00000000000000000000000001"
 )
