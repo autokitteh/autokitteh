@@ -144,12 +144,9 @@ func (c *impl) Start(context.Context) error {
 		for {
 			if err := c.healthcheck(context.Background()); err != nil {
 				// TODO: stats.
-
 				ok = false
 				c.z.Error("temporal check health error", zap.Error(err))
-			}
-
-			if !ok {
+			} else if !ok {
 				ok = true
 				c.z.Info("temporal reports healthy")
 			}
