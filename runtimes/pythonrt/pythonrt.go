@@ -118,6 +118,8 @@ func (py *pySVC) Run(
 	values map[string]sdktypes.Value,
 	cbs *sdkservices.RunCallbacks,
 ) (sdkservices.Run, error) {
+	py.log.Info("run", zap.String("id", runID.String()), zap.String("path", mainPath))
+
 	tarData := compiled[archiveKey]
 	if tarData == nil {
 		return nil, fmt.Errorf("%q note found in compiled data", archiveKey)
@@ -128,9 +130,11 @@ func (py *pySVC) Run(
 		return nil, err
 	}
 
+	// Cleanup in case we had errors
 	killPy := true
 	defer func() {
 		if killPy {
+			py.log.Error("killing Python", zap.Int("pid", ri.proc.Pid))
 			ri.proc.Kill()
 		}
 	}()
@@ -154,7 +158,9 @@ func (py *pySVC) Run(
 		return nil, fmt.Errorf("wrong initial message: type=%q", msg.Type)
 	}
 	py.log.Info("module loaded")
+
 	py.xid = sdktypes.NewExecutorID(runID)
+	py.log.Info("executor", zap.String("id", py.xid.String()))
 
 	var entries []string
 	if err := json.Unmarshal(msg.Payload, &entries); err != nil {
@@ -211,6 +217,7 @@ func (py *pySVC) initialCall(ctx context.Context, funcName string, payload []byt
 	// Callbacks
 	for {
 		var msg PyMessage
+		py.log.Info("waiting for Python call")
 		if err := py.dec.Decode(&msg); err != nil {
 			py.log.Error("communication error", zap.Error(err))
 			return sdktypes.InvalidValue, err
@@ -250,6 +257,7 @@ func (py *pySVC) initialCall(ctx context.Context, funcName string, payload []byt
 }
 
 func (py *pySVC) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
+	py.log.Info("call", zap.String("func", v.String()))
 	if py.run.proc == nil {
 		py.log.Error("call - python not running")
 		return sdktypes.InvalidValue, fmt.Errorf("python not running")
