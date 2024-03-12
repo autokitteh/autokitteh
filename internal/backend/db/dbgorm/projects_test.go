@@ -84,19 +84,6 @@ func TestListProjects(t *testing.T) {
 	listProjectsAndAssert(t, f, 0)
 }
 
-func TestDeleteProject(t *testing.T) {
-	f := newDBFixture(true)                           // no foreign keys
-	findAndAssertCount(t, f, scheme.Project{}, 0, "") // no projects
-
-	p := newProject(f)
-	createProjectsAndAssert(t, f, p)
-
-	// delete project
-	assert.NoError(t, f.gormdb.deleteProject(f.ctx, p.ProjectID))
-	findAndAssertCount(t, f, scheme.Project{}, 0, "") // no projects
-	assertProjectDeleted(t, f, p.ProjectID)
-}
-
 func TestGetProjectDeployments(t *testing.T) {
 	f := newDBFixture(true)                           // no foreign keys
 	findAndAssertCount(t, f, scheme.Project{}, 0, "") // no projects
@@ -157,7 +144,7 @@ func TestGetProjectEnvs(t *testing.T) {
 }
 
 func TestDeleteProjectAndDependents(t *testing.T) {
-	f := newDBFixture(true)                           // no foreign keys
+	f := newDbFixture(false)
 	findAndAssertCount(t, f, scheme.Project{}, 0, "") // no projects
 
 	// initialize:
@@ -166,20 +153,31 @@ func TestDeleteProjectAndDependents(t *testing.T) {
 	//     - d1 (s1), d2
 	//   - e2
 	//     - d1 (s2)
+	//   - t1, t2
 	// - p2
 	//   - e1
 	//     - d1 (s3)
 	p1, p2 := newProject(f), newProject(f)
-	createProjectsAndAssert(t, f, p1)
-	createProjectsAndAssert(t, f, p2)
+
+	i := newIntegration()
+	c := newConnection()
+	c.IntegrationID = i.IntegrationID
+	c.ProjectID = p1.ProjectID
 
 	e1p1, e2p1, e1p2 := newEnv(f), newEnv(f), newEnv(f)
 	e1p1.ProjectID = p1.ProjectID
 	e2p1.ProjectID = p1.ProjectID
 	e1p2.ProjectID = p2.ProjectID
-	createEnvsAndAssert(t, f, e1p1)
-	createEnvsAndAssert(t, f, e2p1)
-	createEnvsAndAssert(t, f, e1p2)
+
+	t1, t2 := newTrigger(f), newTrigger(f)
+	t1.ProjectID = p1.ProjectID
+	t1.EnvID = e1p1.EnvID
+	t1.ConnectionID = c.ConnectionID
+	t2.ProjectID = p1.ProjectID
+	t2.EnvID = e2p1.EnvID
+	t1.ConnectionID = c.ConnectionID
+
+	b := newBuild()
 
 	d1e1p1 := newDeployment(f)
 	d2e1p1 := newDeployment(f)
@@ -189,10 +187,10 @@ func TestDeleteProjectAndDependents(t *testing.T) {
 	d2e1p1.EnvID = e1p1.EnvID
 	d1e2p1.EnvID = e2p1.EnvID
 	d1e1p2.EnvID = e1p2.EnvID
-	createDeploymentsAndAssert(t, f, d1e1p1)
-	createDeploymentsAndAssert(t, f, d2e1p1)
-	createDeploymentsAndAssert(t, f, d1e2p1)
-	createDeploymentsAndAssert(t, f, d1e1p2)
+	d1e1p1.BuildID = b.BuildID
+	d2e1p1.BuildID = b.BuildID
+	d1e2p1.BuildID = b.BuildID
+	d1e1p2.BuildID = b.BuildID
 
 	s1d1e1p1 := newSession(f, sdktypes.SessionStateTypeCompleted)
 	s2d1e2p1 := newSession(f, sdktypes.SessionStateTypeError)
@@ -200,6 +198,23 @@ func TestDeleteProjectAndDependents(t *testing.T) {
 	s1d1e1p1.DeploymentID = d1e1p1.DeploymentID
 	s2d1e2p1.DeploymentID = d1e2p1.DeploymentID
 	s3d1e1p2.DeploymentID = d1e1p2.DeploymentID
+
+	createProjectsAndAssert(t, f, p1)
+	createProjectsAndAssert(t, f, p2)
+	createIntegrationsAndAssert(t, f, i)
+	createConnectionsAndAssert(t, f, c)
+
+	createEnvsAndAssert(t, f, e1p1)
+	createEnvsAndAssert(t, f, e2p1)
+	createEnvsAndAssert(t, f, e1p2)
+	createTriggersAndAssert(t, f, t1, t2)
+
+	saveBuildAndAssert(t, f, b)
+	createDeploymentsAndAssert(t, f, d1e1p1)
+	createDeploymentsAndAssert(t, f, d2e1p1)
+	createDeploymentsAndAssert(t, f, d1e2p1)
+	createDeploymentsAndAssert(t, f, d1e1p2)
+
 	createSessionAndAssert(t, f, s1d1e1p1)
 	createSessionAndAssert(t, f, s2d1e2p1)
 	createSessionAndAssert(t, f, s3d1e1p2)
@@ -219,10 +234,13 @@ func TestDeleteProjectAndDependents(t *testing.T) {
 	assertDeploymentDeleted(t, f, d1e1p1.DeploymentID)
 	assertDeploymentDeleted(t, f, d2e1p1.DeploymentID)
 	assertDeploymentDeleted(t, f, d1e2p1.DeploymentID)
+
 	assertEnvDeleted(t, f, e1p1.EnvID)
 	assertEnvDeleted(t, f, e2p1.EnvID)
 	assertProjectDeleted(t, f, p1.ProjectID)
 
 	assertSessionDeleted(t, f, s1d1e1p1.SessionID)
 	assertSessionDeleted(t, f, s2d1e2p1.SessionID)
+
+	assertTriggersDeleted(t, f, t1, t2)
 }
