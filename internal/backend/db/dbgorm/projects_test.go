@@ -19,7 +19,7 @@ func (f *dbFixture) createProjectsAndAssert(t *testing.T, projects ...scheme.Pro
 	}
 }
 
-func listProjectsAndAssert(t *testing.T, f *dbFixture, expected int) []scheme.Project {
+func (f *dbFixture) listProjectsAndAssert(t *testing.T, expected int) []scheme.Project {
 	projects, err := f.gormdb.listProjects(f.ctx)
 	assert.NoError(t, err)
 	assert.Equal(t, expected, len(projects))
@@ -78,12 +78,12 @@ func TestListProjects(t *testing.T) {
 	f.createProjectsAndAssert(t, p)
 
 	// test listProjects
-	projects := listProjectsAndAssert(t, f, 1)
+	projects := f.listProjectsAndAssert(t, 1)
 	assert.Equal(t, p, projects[0])
 
 	// test listProjects after delete
 	assert.NoError(t, f.gormdb.deleteProject(f.ctx, p.ProjectID))
-	listProjectsAndAssert(t, f, 0)
+	f.listProjectsAndAssert(t, 0)
 }
 
 func TestGetProjectDeployments(t *testing.T) {
