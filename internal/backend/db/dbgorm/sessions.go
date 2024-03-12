@@ -51,7 +51,7 @@ func (db *gormdb) GetSessionLog(ctx context.Context, sessionID sdktypes.SessionI
 
 func (db *gormdb) createSession(ctx context.Context, session scheme.Session) error {
 	return db.transaction(ctx, func(tx *tx) error {
-		if err := tx.db.WithContext(ctx).Create(&session).Error; err != nil {
+		if err := tx.db.Create(&session).Error; err != nil {
 			return err
 		}
 		return addSessionLogRecord(
