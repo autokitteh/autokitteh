@@ -15,7 +15,7 @@ func (f *dbFixture) createTriggersAndAssert(t *testing.T, triggers ...scheme.Tri
 	}
 }
 
-func assertTriggersDeleted(t *testing.T, f *dbFixture, triggers ...scheme.Trigger) {
+func (f *dbFixture) assertTriggersDeleted(t *testing.T, triggers ...scheme.Trigger) {
 	for _, trigger := range triggers {
 		assertDeleted(t, f, scheme.Trigger{TriggerID: trigger.TriggerID})
 	}
@@ -39,5 +39,5 @@ func TestDeleteTrigger(t *testing.T) {
 
 	// test deleteTrigger
 	assert.NoError(t, f.gormdb.deleteTrigger(f.ctx, tr.TriggerID))
-	assertTriggersDeleted(t, f, tr)
+	f.assertTriggersDeleted(t, tr)
 }

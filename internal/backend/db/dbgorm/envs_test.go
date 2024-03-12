@@ -15,7 +15,7 @@ func (f *dbFixture) createEnvsAndAssert(t *testing.T, envs ...scheme.Env) {
 	}
 }
 
-func assertEnvDeleted(t *testing.T, f *dbFixture, envs ...scheme.Env) {
+func (f *dbFixture) assertEnvDeleted(t *testing.T, envs ...scheme.Env) {
 	for _, env := range envs {
 		assertSoftDeleted(t, f, scheme.Env{EnvID: env.EnvID})
 	}
@@ -39,7 +39,7 @@ func TestDeleteEnv(t *testing.T) {
 
 	// test deleteEnv
 	assert.NoError(t, f.gormdb.deleteEnv(f.ctx, e.EnvID))
-	assertEnvDeleted(t, f, e)
+	f.assertEnvDeleted(t, e)
 }
 
 func TestDeleteEnvs(t *testing.T) {
@@ -51,7 +51,7 @@ func TestDeleteEnvs(t *testing.T) {
 
 	// test deleteEnvs
 	assert.NoError(t, f.gormdb.deleteEnvs(f.ctx, []string{e1.EnvID, e2.EnvID}))
-	assertEnvDeleted(t, f, e1, e2)
+	f.assertEnvDeleted(t, e1, e2)
 }
 
 func TestDeleteEnvForeignKeys(t *testing.T) {
@@ -78,5 +78,5 @@ func TestDeleteEnvForeignKeys(t *testing.T) {
 	// delete deployment (referencing build), then env
 	assert.NoError(t, f.gormdb.deleteDeployment(f.ctx, d.DeploymentID))
 	assert.NoError(t, f.gormdb.deleteEnv(f.ctx, e.EnvID))
-	assertEnvDeleted(t, f, e)
+	f.assertEnvDeleted(t, e)
 }

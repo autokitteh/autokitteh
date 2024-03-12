@@ -33,7 +33,7 @@ func listSessionsAndAssert(t *testing.T, f *dbFixture, expected int) []scheme.Se
 	return sessions
 }
 
-func assertSessionsDeleted(t *testing.T, f *dbFixture, sessions ...scheme.Session) {
+func (f *dbFixture) assertSessionsDeleted(t *testing.T, sessions ...scheme.Session) {
 	for _, session := range sessions {
 		assertSoftDeleted(t, f, scheme.Session{SessionID: session.SessionID})
 	}
@@ -101,5 +101,5 @@ func TestDeleteSession(t *testing.T) {
 	f.createSessionsAndAssert(t, s)
 
 	assert.NoError(t, f.gormdb.deleteSession(f.ctx, s.SessionID))
-	assertSessionsDeleted(t, f, s)
+	f.assertSessionsDeleted(t, s)
 }
