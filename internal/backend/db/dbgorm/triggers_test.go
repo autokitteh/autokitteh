@@ -25,7 +25,7 @@ func TestCreateTrigger(t *testing.T) {
 	f := newDBFixture(true)                           // no foreign keys
 	findAndAssertCount(t, f, scheme.Trigger{}, 0, "") // no trigger
 
-	tr := newTrigger(f)
+	tr := f.newTrigger()
 	// test createTrigger
 	f.createTriggersAndAssert(t, tr)
 }
@@ -34,7 +34,7 @@ func TestDeleteTrigger(t *testing.T) {
 	f := newDBFixture(true)                           // no foreign keys
 	findAndAssertCount(t, f, scheme.Trigger{}, 0, "") // no trigger
 
-	tr := newTrigger(f)
+	tr := f.newTrigger()
 	f.createTriggersAndAssert(t, tr)
 
 	// test deleteTrigger

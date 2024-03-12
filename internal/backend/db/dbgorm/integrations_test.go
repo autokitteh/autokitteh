@@ -19,7 +19,7 @@ func TestCreateIntegration(t *testing.T) {
 	f := newDBFixture(true)                               // no foreign keys
 	findAndAssertCount(t, f, scheme.Integration{}, 0, "") // no integrations
 
-	i := newIntegration()
+	i := f.newIntegration()
 	// test createIntegration
 	f.createIntegrationsAndAssert(t, i)
 }

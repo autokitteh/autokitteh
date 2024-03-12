@@ -36,7 +36,7 @@ func TestCreateProject(t *testing.T) {
 	f := newDBFixture(true)                           // no foreign keys
 	findAndAssertCount(t, f, scheme.Project{}, 0, "") // no projects
 
-	p := newProject(f)
+	p := f.newProject()
 	// test createProject
 	f.createProjectsAndAssert(t, p)
 }
@@ -45,7 +45,7 @@ func TestGetProjects(t *testing.T) {
 	f := newDBFixture(true)                           // no foreign keys
 	findAndAssertCount(t, f, scheme.Project{}, 0, "") // no projects
 
-	p := newProject(f)
+	p := f.newProject()
 	f.createProjectsAndAssert(t, p)
 
 	// test getProjectByID
@@ -74,7 +74,7 @@ func TestListProjects(t *testing.T) {
 	f := newDBFixture(true)                           // no foreign keys
 	findAndAssertCount(t, f, scheme.Project{}, 0, "") // no projects
 
-	p := newProject(f)
+	p := f.newProject()
 	f.createProjectsAndAssert(t, p)
 
 	// test listProjects
@@ -98,9 +98,9 @@ func TestGetProjectDeployments(t *testing.T) {
 	//
 	// p2:
 	// - e4: (d4)
-	p1, p2 := newProject(f), newProject(f)
-	e1, e2, e3, e4 := newEnv(f), newEnv(f), newEnv(f), newEnv(f)
-	d1, d2, d3, d4 := newDeployment(f), newDeployment(f), newDeployment(f), newDeployment(f)
+	p1, p2 := f.newProject(), f.newProject()
+	e1, e2, e3, e4 := f.newEnv(), f.newEnv(), f.newEnv(), f.newEnv()
+	d1, d2, d3, d4 := f.newDeployment(), f.newDeployment(), f.newDeployment(), f.newDeployment()
 
 	e1.ProjectID = p1.ProjectID
 	e2.ProjectID = p1.ProjectID
@@ -127,9 +127,9 @@ func TestGetProjectEnvs(t *testing.T) {
 	findAndAssertCount(t, f, scheme.Project{}, 0, "") // no projects
 
 	// create two envs - one with deployment and second without
-	p := newProject(f)
-	e1, e2 := newEnv(f), newEnv(f)
-	d := newDeployment(f)
+	p := f.newProject()
+	e1, e2 := f.newEnv(), f.newEnv()
+	d := f.newDeployment()
 
 	e1.ProjectID = p.ProjectID
 	e2.ProjectID = p.ProjectID
@@ -159,19 +159,19 @@ func TestDeleteProjectAndDependents(t *testing.T) {
 	// - p2
 	//   - e1
 	//     - d1 (s3)
-	p1, p2 := newProject(f), newProject(f)
+	p1, p2 := f.newProject(), f.newProject()
 
-	i := newIntegration()
-	c := newConnection()
+	i := f.newIntegration()
+	c := f.newConnection()
 	c.IntegrationID = i.IntegrationID
 	c.ProjectID = p1.ProjectID
 
-	e1p1, e2p1, e1p2 := newEnv(f), newEnv(f), newEnv(f)
+	e1p1, e2p1, e1p2 := f.newEnv(), f.newEnv(), f.newEnv()
 	e1p1.ProjectID = p1.ProjectID
 	e2p1.ProjectID = p1.ProjectID
 	e1p2.ProjectID = p2.ProjectID
 
-	t1, t2 := newTrigger(f), newTrigger(f)
+	t1, t2 := f.newTrigger(), f.newTrigger()
 	t1.ProjectID = p1.ProjectID
 	t1.EnvID = e1p1.EnvID
 	t1.ConnectionID = c.ConnectionID
@@ -179,12 +179,9 @@ func TestDeleteProjectAndDependents(t *testing.T) {
 	t2.EnvID = e2p1.EnvID
 	t1.ConnectionID = c.ConnectionID
 
-	b := newBuild()
+	b := f.newBuild()
 
-	d1e1p1 := newDeployment(f)
-	d2e1p1 := newDeployment(f)
-	d1e2p1 := newDeployment(f)
-	d1e1p2 := newDeployment(f)
+	d1e1p1, d2e1p1, d1e2p1, d1e1p2 := f.newDeployment(), f.newDeployment(), f.newDeployment(), f.newDeployment()
 	d1e1p1.EnvID = e1p1.EnvID
 	d2e1p1.EnvID = e1p1.EnvID
 	d1e2p1.EnvID = e2p1.EnvID
@@ -194,9 +191,9 @@ func TestDeleteProjectAndDependents(t *testing.T) {
 	d1e2p1.BuildID = b.BuildID
 	d1e1p2.BuildID = b.BuildID
 
-	s1d1e1p1 := newSession(f, sdktypes.SessionStateTypeCompleted)
-	s2d1e2p1 := newSession(f, sdktypes.SessionStateTypeError)
-	s3d1e1p2 := newSession(f, sdktypes.SessionStateTypeCompleted)
+	s1d1e1p1 := f.newSession(sdktypes.SessionStateTypeCompleted)
+	s2d1e2p1 := f.newSession(sdktypes.SessionStateTypeError)
+	s3d1e1p2 := f.newSession(sdktypes.SessionStateTypeCompleted)
 	s1d1e1p1.DeploymentID = d1e1p1.DeploymentID
 	s2d1e2p1.DeploymentID = d1e2p1.DeploymentID
 	s3d1e1p2.DeploymentID = d1e1p2.DeploymentID

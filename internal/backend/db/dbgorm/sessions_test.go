@@ -43,7 +43,7 @@ func TestCreateSession(t *testing.T) {
 	f := newDBFixture(true)       // no foreign keys
 	f.listSessionsAndAssert(t, 0) // no sessions
 
-	s := newSession(f, sdktypes.SessionStateTypeCompleted)
+	s := f.newSession(sdktypes.SessionStateTypeCompleted)
 	// test createSession
 	f.createSessionsAndAssert(t, s)
 
@@ -55,7 +55,7 @@ func TestCreateSessionForeignKeys(t *testing.T) {
 	f := newDBFixture(false)      // with foreign keys
 	f.listSessionsAndAssert(t, 0) // no sessions
 
-	s := newSession(f, sdktypes.SessionStateTypeCompleted)
+	s := f.newSession(sdktypes.SessionStateTypeCompleted)
 	err := f.gormdb.createSession(f.ctx, &s) // should fail since there is no deployment
 	assert.ErrorContains(t, err, "FOREIGN KEY")
 }
@@ -64,7 +64,7 @@ func TestGetSession(t *testing.T) {
 	f := newDBFixture(true)       // no foreign keys
 	f.listSessionsAndAssert(t, 0) // no sessions
 
-	s := newSession(f, sdktypes.SessionStateTypeCompleted)
+	s := f.newSession(sdktypes.SessionStateTypeCompleted)
 	f.createSessionsAndAssert(t, s)
 
 	// check getSession
@@ -82,7 +82,7 @@ func TestListSessions(t *testing.T) {
 	f := newDBFixture(true)       // no foreign keys
 	f.listSessionsAndAssert(t, 0) // no sessions
 
-	s := newSession(f, sdktypes.SessionStateTypeCompleted)
+	s := f.newSession(sdktypes.SessionStateTypeCompleted)
 	f.createSessionsAndAssert(t, s)
 
 	sessions := f.listSessionsAndAssert(t, 1)
@@ -97,7 +97,7 @@ func TestDeleteSession(t *testing.T) {
 	f := newDBFixture(true)       // no foreign keys
 	f.listSessionsAndAssert(t, 0) // no sessions
 
-	s := newSession(f, sdktypes.SessionStateTypeCompleted)
+	s := f.newSession(sdktypes.SessionStateTypeCompleted)
 	f.createSessionsAndAssert(t, s)
 
 	assert.NoError(t, f.gormdb.deleteSession(f.ctx, s.SessionID))

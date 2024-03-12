@@ -54,28 +54,28 @@ func TestCreateDeployment(t *testing.T) {
 	f := newDBFixture(true)          // no foreign keys
 	f.listDeploymentsAndAssert(t, 0) // no deployments
 
-	d := newDeployment(f)
+	d := f.newDeployment()
 	// test createDeployment
 	f.createDeploymentsAndAssert(t, d)
 }
 
 func TestCreateDeploymentsForeignKeys(t *testing.T) {
 	f := newDBFixture(false) // with foreign keys
-	d := newDeployment(f)
+	d := f.newDeployment()
 	d.BuildID = "unexistingBuildID"
 	d.EnvID = "unexistingEnvID"
 
 	err := f.gormdb.createDeployment(f.ctx, &d)
 	assert.ErrorContains(t, err, "FOREIGN KEY")
 
-	p := newProject(f)
-	e := newEnv(f)
-	b := newBuild()
+	p := f.newProject()
+	e := f.newEnv()
+	b := f.newBuild()
 	f.createProjectsAndAssert(t, p)
 	f.createEnvsAndAssert(t, e)
 	f.saveBuildsAndAssert(t, b)
 
-	d = newDeployment(f)
+	d = f.newDeployment()
 	f.createDeploymentsAndAssert(t, d)
 }
 
@@ -83,7 +83,7 @@ func TestGetDeployment(t *testing.T) {
 	f := newDBFixture(true)          // no foreign keys
 	f.listDeploymentsAndAssert(t, 0) // no deployments
 
-	d := newDeployment(f)
+	d := f.newDeployment()
 	f.createDeploymentsAndAssert(t, d)
 
 	// check getDeployment
@@ -100,7 +100,7 @@ func TestListDeployments(t *testing.T) {
 	f := newDBFixture(true)          // no foreign keys
 	f.listDeploymentsAndAssert(t, 0) // no deployments
 
-	d := newDeployment(f)
+	d := f.newDeployment()
 	f.createDeploymentsAndAssert(t, d)
 
 	deployments := f.listDeploymentsAndAssert(t, 1)
@@ -112,7 +112,7 @@ func TestListDeploymentsWithStats(t *testing.T) {
 	f.listDeploymentsAndAssert(t, 0) // ensure no deployments
 
 	// create deployment and ensure there are no stats
-	d := newDeployment(f)
+	d := f.newDeployment()
 	f.createDeploymentsAndAssert(t, d)
 
 	dWS := scheme.DeploymentWithStats{Deployment: d} // no stats, all zeros
@@ -120,7 +120,7 @@ func TestListDeploymentsWithStats(t *testing.T) {
 	assert.Equal(t, dWS, deployments[0])
 
 	// add session for the stats
-	s := newSession(f, sdktypes.SessionStateTypeCompleted)
+	s := f.newSession(sdktypes.SessionStateTypeCompleted)
 	f.createSessionsAndAssert(t, s)
 
 	// ensure that new session is included in stats
@@ -142,15 +142,15 @@ func TestDeleteDeployment(t *testing.T) {
 	f := newDBFixture(true)          // no foreign keys
 	f.listDeploymentsAndAssert(t, 0) // ensure no deployments
 
-	b := newBuild()
-	d := newDeployment(f)
+	b := f.newBuild()
+	d := f.newDeployment()
 	d.BuildID = b.BuildID
 	f.saveBuildsAndAssert(t, b)
 	f.createDeploymentsAndAssert(t, d)
 
 	// add sessions and check that deployment stats are updated
-	s1 := newSession(f, sdktypes.SessionStateTypeCompleted)
-	s2 := newSession(f, sdktypes.SessionStateTypeError)
+	s1 := f.newSession(sdktypes.SessionStateTypeCompleted)
+	s2 := f.newSession(sdktypes.SessionStateTypeError)
 	f.createSessionsAndAssert(t, s1, s2)
 
 	dWS := scheme.DeploymentWithStats{Deployment: d, Completed: 1, Error: 1}

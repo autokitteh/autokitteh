@@ -22,14 +22,14 @@ func assertBuildDeleted(t *testing.T, f *dbFixture, buildID string) {
 
 func TestSaveBuild(t *testing.T) {
 	f := newDBFixture(true)
-	b := newBuild()
+	b := f.newBuild()
 	f.saveBuildsAndAssert(t, b)
 	findAndAssertOne(t, f, b, "") // check there is only single build in DB
 }
 
 func TestDeleteBuild(t *testing.T) {
 	f := newDBFixture(true)
-	b := newBuild()
+	b := f.newBuild()
 	f.saveBuildsAndAssert(t, b)
 
 	assert.NoError(t, f.gormdb.deleteBuild(f.ctx, b.BuildID))
@@ -46,7 +46,7 @@ func TestListBuild(t *testing.T) {
 	assert.Equal(t, 0, len(builds))
 
 	// create build and obtain it via list
-	b := newBuild()
+	b := f.newBuild()
 	f.saveBuildsAndAssert(t, b)
 
 	// check listBuilds API
