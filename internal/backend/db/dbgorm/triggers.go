@@ -43,6 +43,10 @@ func triggerToRecord(ctx context.Context, tx *tx, trigger sdktypes.Trigger) (*sc
 	}, nil
 }
 
+func (db *gormdb) createTrigger(ctx context.Context, trigger scheme.Trigger) error {
+	return db.db.WithContext(ctx).Create(&trigger).Error
+}
+
 func (db *gormdb) CreateTrigger(ctx context.Context, trigger sdktypes.Trigger) error {
 	return db.transaction(ctx, func(tx *tx) error {
 		t, err := triggerToRecord(ctx, tx, trigger)
@@ -50,10 +54,7 @@ func (db *gormdb) CreateTrigger(ctx context.Context, trigger sdktypes.Trigger) e
 			return err
 		}
 
-		if err := tx.db.Create(t).Error; err != nil {
-			return translateError(err)
-		}
-		return nil
+		return translateError(tx.createTrigger(ctx, *t))
 	})
 }
 
@@ -88,13 +89,12 @@ func (db *gormdb) GetTrigger(ctx context.Context, id sdktypes.TriggerID) (sdktyp
 	return getOneWTransform(db.db, ctx, scheme.ParseTrigger, "trigger_id = ?", id.String())
 }
 
-func (db *gormdb) DeleteTrigger(ctx context.Context, id sdktypes.TriggerID) error {
-	var m scheme.Trigger
-	if err := db.db.WithContext(ctx).Where("trigger_id = ?", id.String()).Delete(&m).Error; err != nil {
-		return translateError(err)
-	}
+func (db *gormdb) deleteTrigger(ctx context.Context, id string) error {
+	return db.db.WithContext(ctx).Delete(&scheme.Trigger{TriggerID: id}).Error
+}
 
-	return nil
+func (db *gormdb) DeleteTrigger(ctx context.Context, id sdktypes.TriggerID) error {
+	return translateError(db.deleteTrigger(ctx, id.String()))
 }
 
 func (db *gormdb) ListTriggers(ctx context.Context, filter sdkservices.ListTriggersFilter) ([]sdktypes.Trigger, error) {

@@ -34,6 +34,7 @@ type dbFixture struct {
 	deploymentID uint
 	envID        uint
 	projectID    uint
+	triggerID    uint
 }
 
 // TODO: use gormkitteh (and maybe test with sqlite::memory and embedded PG)
@@ -117,6 +118,17 @@ func assertSoftDeleted[T any](t *testing.T, f *dbFixture, m T) {
 	require.NotNil(t, deletedAtField.Interface())
 }
 
+// check obj is soft-deleted in gorm
+func assertDeleted[T any](t *testing.T, f *dbFixture, m T) {
+	// check that object is not found both scoped and unscoped
+	res := f.db.First(&m)
+	require.ErrorIs(t, res.Error, gorm.ErrRecordNotFound)
+
+	// check that object is marked as deleted
+	res = f.db.Unscoped().First(&m)
+	require.ErrorIs(t, res.Error, gorm.ErrRecordNotFound)
+}
+
 var (
 	// testSessionID    = "ses_00000000000000000000000001"
 	testBuildID      = "bld_00000000000000000000000001"
@@ -124,6 +136,9 @@ var (
 	testEventID      = "evt_00000000000000000000000001"
 	testEnvID        = "env_00000000000000000000000001"
 	testProjectID    = "prj_00000000000000000000000001"
+	// testTriggerID     = "trg_00000000000000000000000001"
+	testConnectionID  = "con_00000000000000000000000001"
+	testIntegrationID = "int_00000000000000000000000001"
 )
 
 func newSession(f *dbFixture, st sdktypes.SessionStateType) scheme.Session {
@@ -185,5 +200,42 @@ func newEnv(f *dbFixture) scheme.Env {
 		ProjectID:    testProjectID,
 		Name:         "",
 		MembershipID: envID, // must be unique
+	}
+}
+
+func newTrigger(f *dbFixture) scheme.Trigger {
+	f.triggerID += 1
+	triggerID := fmt.Sprintf("trg_%026d", f.triggerID)
+
+	return scheme.Trigger{
+		TriggerID:    triggerID,
+		EnvID:        testEnvID,
+		ConnectionID: testConnectionID,
+		EventType:    "",
+		CodeLocation: "",
+	}
+}
+
+func newConnection() scheme.Connection {
+	return scheme.Connection{
+		ConnectionID:     testConnectionID,
+		IntegrationID:    testIntegrationID,
+		ProjectID:        testProjectID,
+		IntegrationToken: "",
+		Name:             "",
+	}
+}
+
+func newIntegration() scheme.Integration {
+	return scheme.Integration{
+		IntegrationID: testIntegrationID,
+		UniqueName:    "",
+		DisplayName:   "",
+		Description:   "",
+		LogoURL:       "",
+		UserLinks:     nil,
+		ConnectionURL: "",
+		APIKey:        "",
+		SigningKey:    "",
 	}
 }

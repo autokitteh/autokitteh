@@ -9,6 +9,10 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
+func (db *gormdb) createConnection(ctx context.Context, conn scheme.Connection) error {
+	return db.db.WithContext(ctx).Create(&conn).Error
+}
+
 func (db *gormdb) CreateConnection(ctx context.Context, conn sdktypes.Connection) error {
 	c := scheme.Connection{
 		ConnectionID:     conn.ID().String(),
@@ -18,11 +22,7 @@ func (db *gormdb) CreateConnection(ctx context.Context, conn sdktypes.Connection
 		Name:             conn.Name().String(),
 	}
 
-	if err := db.db.WithContext(ctx).Create(&c).Error; err != nil {
-		return translateError(err)
-	}
-
-	return nil
+	return translateError(db.createConnection(ctx, c))
 }
 
 func (db *gormdb) UpdateConnection(ctx context.Context, conn sdktypes.Connection) error {
@@ -43,15 +43,12 @@ func (db *gormdb) UpdateConnection(ctx context.Context, conn sdktypes.Connection
 	return nil
 }
 
+func (db *gormdb) deleteConnection(ctx context.Context, id string) error {
+	return db.db.WithContext(ctx).Delete(&scheme.Connection{ConnectionID: id}).Error
+}
+
 func (db *gormdb) DeleteConnection(ctx context.Context, id sdktypes.ConnectionID) error {
-	var c scheme.Connection
-	err := db.db.WithContext(ctx).
-		Where("connection_id = ?", id.String()).
-		Delete(&c).Error
-	if err != nil {
-		return translateError(err)
-	}
-	return nil
+	return translateError(db.deleteConnection(ctx, id.String()))
 }
 
 func (db *gormdb) GetConnection(ctx context.Context, id sdktypes.ConnectionID) (sdktypes.Connection, error) {
