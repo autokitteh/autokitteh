@@ -141,16 +141,15 @@ func TestDeleteDeployment(t *testing.T) {
 	listDeploymentsAndAssert(t, f, 0) // ensure no deployments
 
 	b := newBuild()
-	saveBuildsAndAssert(t, f, b)
 	d := newDeployment(f)
 	d.BuildID = b.BuildID
+	saveBuildsAndAssert(t, f, b)
 	createDeploymentsAndAssert(t, f, d)
 
 	// add sessions and check that deployment stats are updated
-	session1 := newSession(f, sdktypes.SessionStateTypeCompleted)
-	createSessionsAndAssert(t, f, session1)
-	session2 := newSession(f, sdktypes.SessionStateTypeError)
-	createSessionsAndAssert(t, f, session2)
+	s1 := newSession(f, sdktypes.SessionStateTypeCompleted)
+	s2 := newSession(f, sdktypes.SessionStateTypeError)
+	createSessionsAndAssert(t, f, s1, s2)
 
 	dWS := scheme.DeploymentWithStats{Deployment: d, Completed: 1, Error: 1}
 	deployments := listDeploymentsWithStatsAndAssert(t, f, 1)
@@ -161,8 +160,8 @@ func TestDeleteDeployment(t *testing.T) {
 	assertDeploymentDeleted(t, f, d.DeploymentID)
 
 	listDeploymentsWithStatsAndAssert(t, f, 0)
-	assertSessionDeleted(t, f, session1.SessionID)
-	assertSessionDeleted(t, f, session2.SessionID)
+	assertSessionDeleted(t, f, s1.SessionID)
+	assertSessionDeleted(t, f, s2.SessionID)
 
 	// TODO: meanwhile builds are not deleted when deployment is deleted
 	// assertBuildDeleted(t, f, b.BuildID)

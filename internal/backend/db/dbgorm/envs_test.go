@@ -45,8 +45,7 @@ func TestDeleteEnvs(t *testing.T) {
 	findAndAssertCount(t, f, scheme.Env{}, 0, "") // no envs
 
 	e1, e2 := newEnv(f), newEnv(f)
-	createEnvsAndAssert(t, f, e1)
-	createEnvsAndAssert(t, f, e2)
+	createEnvsAndAssert(t, f, e1, e2)
 
 	// test deleteEnvs
 	assert.NoError(t, f.gormdb.deleteEnvs(f.ctx, []string{e1.EnvID, e2.EnvID}))
