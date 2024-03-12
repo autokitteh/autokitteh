@@ -144,7 +144,7 @@ func TestGetProjectEnvs(t *testing.T) {
 }
 
 func TestDeleteProjectAndDependents(t *testing.T) {
-	f := newDbFixture(false)
+	f := newDBFixture(false)
 	findAndAssertCount(t, f, scheme.Project{}, 0, "") // no projects
 
 	// initialize:

@@ -16,7 +16,7 @@ func createConnectionsAndAssert(t *testing.T, f *dbFixture, connections ...schem
 }
 
 func TestCreateConnection(t *testing.T) {
-	f := newDbFixture(true)                              // no foreign keys
+	f := newDBFixture(true)                              // no foreign keys
 	findAndAssertCount(t, f, scheme.Connection{}, 0, "") // no connections
 
 	tr := newConnection()
