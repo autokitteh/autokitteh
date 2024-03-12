@@ -41,7 +41,6 @@ func New() (sdkservices.Runtime, error) {
 	if err != nil {
 		return nil, err
 	}
-	log = log.With(zap.String("runtime", "python"))
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
@@ -202,7 +201,7 @@ func (py *pySVC) Close() {
 	*/
 }
 
-func (py *pySVC) initialCall(ctx context.Context, xid sdktypes.ExecutorID, funcName string, payload []byte) (sdktypes.Value, error) {
+func (py *pySVC) initialCall(ctx context.Context, funcName string, payload []byte) (sdktypes.Value, error) {
 	// Initial run cal
 	msg := PyMessage{
 		Type:     "run",
@@ -240,7 +239,7 @@ func (py *pySVC) initialCall(ctx context.Context, xid sdktypes.ExecutorID, funcN
 		py.log.Info("callback")
 		py.cbs.Call(
 			ctx,
-			xid.ToRunID(),
+			py.xid.ToRunID(),
 			// The Python function to call is encoded in the payload
 			fn,
 			nil,
@@ -274,7 +273,7 @@ func (py *pySVC) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 	py.log.Info("call", zap.String("function", fnName))
 	if py.firstCall { // TODO: mutex?
 		py.firstCall = false
-		return py.initialCall(ctx, fn.ExecutorID(), fnName, fn.Data())
+		return py.initialCall(ctx, fnName, fn.Data())
 	}
 
 	msg := PyMessage{
