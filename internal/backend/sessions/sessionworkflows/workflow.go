@@ -74,7 +74,7 @@ func runWorkflow(
 	w.initEnvModule()
 
 	var err error
-	if w.globals, err = w.initGlobalModules(ctx); err != nil {
+	if w.globals, err = w.initGlobalModules(); err != nil {
 		w.updateState(ctx, sdktypes.NewSessionStateError(err, nil))
 		return err // definitely an infra error.
 	}
@@ -230,7 +230,7 @@ func (w *sessionWorkflow) initConnections(ctx workflow.Context) error {
 	return nil
 }
 
-func (w *sessionWorkflow) initGlobalModules(ctx workflow.Context) (map[string]sdktypes.Value, error) {
+func (w *sessionWorkflow) initGlobalModules() (map[string]sdktypes.Value, error) {
 	execs := map[string]sdkexecutor.Executor{
 		"ak":    ak.New(w.syscall),
 		"time":  timemodule.New(),
