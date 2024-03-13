@@ -59,9 +59,9 @@ func NewValue(cv concreteValue) Value {
 	case SymbolValue:
 		return NewSymbolValue(cv.Symbol())
 	case ListValue:
-		return NewListValue(cv.Values())
+		return kittehs.Must1(NewListValue(cv.Values()))
 	case SetValue:
-		return NewSetValue(cv.Values())
+		return kittehs.Must1(NewSetValue(cv.Values()))
 	case DictValue:
 		return kittehs.Must1(NewDictValue(cv.Items()))
 	case StructValue:
@@ -161,4 +161,5 @@ func (v Value) ToStringValuesMap() (map[string]Value, error) {
 	}
 }
 
-func (v Value) Unwrap() (any, error) { return UnwrapValue(v) }
+func (v Value) Unwrap() (any, error)     { return UnwrapValue(v) }
+func (v Value) UnwrapInto(dst any) error { return UnwrapValueInto(dst, v) }

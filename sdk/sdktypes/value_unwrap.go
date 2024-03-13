@@ -147,6 +147,8 @@ func (w ValueWrapper) UnwrapInto(dst any, v Value) error {
 	return w.unwrapInto("", reflect.ValueOf(dst), v)
 }
 
+func UnwrapValueInto(dst any, v Value) error { return DefaultValueWrapper.UnwrapInto(dst, v) }
+
 func (w ValueWrapper) unwrapInto(path string, dstv reflect.Value, v Value) error {
 	if w.Preunwrap != nil {
 		v, err := w.Preunwrap(v)

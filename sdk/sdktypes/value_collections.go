@@ -52,8 +52,8 @@ type ListValue struct {
 
 func (ListValue) isConcreteValue() {}
 
-func NewListValue(vs []Value) Value {
-	return forceFromProto[Value](&ValuePB{List: &ListValuePB{Vs: kittehs.Transform(vs, ToProto)}})
+func NewListValue(vs []Value) (Value, error) {
+	return FromProto[Value](&ValuePB{List: &ListValuePB{Vs: kittehs.Transform(vs, ToProto)}})
 }
 
 func (l ListValue) Values() []Value { return kittehs.Transform(l.read().Vs, forceFromProto[Value]) }
@@ -87,13 +87,13 @@ type SetValue struct {
 
 func (SetValue) isConcreteValue() {}
 
-func NewSetValue(vs []Value) Value {
+func NewSetValue(vs []Value) (Value, error) {
 	vs = slices.Clone(vs)
 
 	// Make item order deterministic.
 	sort.Slice(vs, func(i, j int) bool { return vs[i].Hash() < vs[j].Hash() })
 
-	return forceFromProto[Value](&ValuePB{Set: &SetValuePB{Vs: kittehs.Transform(vs, ToProto)}})
+	return FromProto[Value](&ValuePB{Set: &SetValuePB{Vs: kittehs.Transform(vs, ToProto)}})
 }
 
 func (l SetValue) Values() []Value { return kittehs.Transform(l.read().Vs, forceFromProto[Value]) }
