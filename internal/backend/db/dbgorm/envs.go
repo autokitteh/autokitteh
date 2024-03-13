@@ -21,8 +21,8 @@ func envVarMembershipID(ev sdktypes.EnvVar) string {
 	return fmt.Sprintf("%s/%s", ev.EnvID().Value(), ev.Symbol().String())
 }
 
-func (db *gormdb) createEnv(ctx context.Context, env scheme.Env) error {
-	return db.db.WithContext(ctx).Create(&env).Error
+func (db *gormdb) createEnv(ctx context.Context, env *scheme.Env) error {
+	return db.db.WithContext(ctx).Create(env).Error
 }
 
 func (db *gormdb) CreateEnv(ctx context.Context, env sdktypes.Env) error {
@@ -37,7 +37,7 @@ func (db *gormdb) CreateEnv(ctx context.Context, env sdktypes.Env) error {
 		Name:         env.Name().String(),
 		MembershipID: envMembershipID(env),
 	}
-	return translateError(db.createEnv(ctx, e))
+	return translateError(db.createEnv(ctx, &e))
 }
 
 func (db *gormdb) deleteEnvs(ctx context.Context, ids []string) error {

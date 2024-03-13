@@ -34,6 +34,7 @@ type dbFixture struct {
 	deploymentID uint
 	envID        uint
 	projectID    uint
+	triggerID    uint
 }
 
 // TODO: use gormkitteh (and maybe test with sqlite::memory and embedded PG)
@@ -63,8 +64,8 @@ func setupDB(dbName string) *gorm.DB {
 	return db
 }
 
-func newDbFixture(withoutForeignKeys bool) *dbFixture {
-	db := setupDB("/tmp/ak.db") // in-memory db, specify filename to use file db
+func newDBFixture(withoutForeignKeys bool) *dbFixture {
+	db := setupDB("") // in-memory db, specify filename to use file db
 	if withoutForeignKeys {
 		db.Exec("PRAGMA foreign_keys = OFF")
 	}
@@ -117,6 +118,17 @@ func assertSoftDeleted[T any](t *testing.T, f *dbFixture, m T) {
 	require.NotNil(t, deletedAtField.Interface())
 }
 
+// check obj is soft-deleted in gorm
+func assertDeleted[T any](t *testing.T, f *dbFixture, m T) {
+	// check that object is not found both scoped and unscoped
+	res := f.db.First(&m)
+	require.ErrorIs(t, res.Error, gorm.ErrRecordNotFound)
+
+	// check that object is marked as deleted
+	res = f.db.Unscoped().First(&m)
+	require.ErrorIs(t, res.Error, gorm.ErrRecordNotFound)
+}
+
 var (
 	// testSessionID    = "ses_00000000000000000000000001"
 	testBuildID      = "bld_00000000000000000000000001"
@@ -124,9 +136,12 @@ var (
 	testEventID      = "evt_00000000000000000000000001"
 	testEnvID        = "env_00000000000000000000000001"
 	testProjectID    = "prj_00000000000000000000000001"
+	// testTriggerID     = "trg_00000000000000000000000001"
+	testConnectionID  = "con_00000000000000000000000001"
+	testIntegrationID = "int_00000000000000000000000001"
 )
 
-func newSession(f *dbFixture, st sdktypes.SessionStateType) scheme.Session {
+func (f *dbFixture) newSession(st sdktypes.SessionStateType) scheme.Session {
 	f.sessionID += 1
 	sessionID := fmt.Sprintf("ses_%026d", f.sessionID)
 
@@ -142,7 +157,7 @@ func newSession(f *dbFixture, st sdktypes.SessionStateType) scheme.Session {
 	}
 }
 
-func newBuild() scheme.Build {
+func (f *dbFixture) newBuild() scheme.Build {
 	return scheme.Build{
 		BuildID:   testBuildID,
 		Data:      []byte{},
@@ -150,7 +165,7 @@ func newBuild() scheme.Build {
 	}
 }
 
-func newDeployment(f *dbFixture) scheme.Deployment {
+func (f *dbFixture) newDeployment() scheme.Deployment {
 	f.deploymentID += 1
 	deploymentID := fmt.Sprintf("dep_%026d", f.deploymentID)
 
@@ -164,7 +179,7 @@ func newDeployment(f *dbFixture) scheme.Deployment {
 	}
 }
 
-func newProject(f *dbFixture) scheme.Project {
+func (f *dbFixture) newProject() scheme.Project {
 	f.projectID += 1
 	projectID := fmt.Sprintf("prj_%026d", f.projectID)
 
@@ -176,7 +191,7 @@ func newProject(f *dbFixture) scheme.Project {
 	}
 }
 
-func newEnv(f *dbFixture) scheme.Env {
+func (f *dbFixture) newEnv() scheme.Env {
 	f.envID += 1
 	envID := fmt.Sprintf("env_%026d", f.envID)
 
@@ -185,5 +200,42 @@ func newEnv(f *dbFixture) scheme.Env {
 		ProjectID:    testProjectID,
 		Name:         "",
 		MembershipID: envID, // must be unique
+	}
+}
+
+func (f *dbFixture) newTrigger() scheme.Trigger {
+	f.triggerID += 1
+	triggerID := fmt.Sprintf("trg_%026d", f.triggerID)
+
+	return scheme.Trigger{
+		TriggerID:    triggerID,
+		EnvID:        testEnvID,
+		ConnectionID: testConnectionID,
+		EventType:    "",
+		CodeLocation: "",
+	}
+}
+
+func (f *dbFixture) newConnection() scheme.Connection {
+	return scheme.Connection{
+		ConnectionID:     testConnectionID,
+		IntegrationID:    testIntegrationID,
+		ProjectID:        testProjectID,
+		IntegrationToken: "",
+		Name:             "",
+	}
+}
+
+func (f *dbFixture) newIntegration() scheme.Integration {
+	return scheme.Integration{
+		IntegrationID: testIntegrationID,
+		UniqueName:    "",
+		DisplayName:   "",
+		Description:   "",
+		LogoURL:       "",
+		UserLinks:     nil,
+		ConnectionURL: "",
+		APIKey:        "",
+		SigningKey:    "",
 	}
 }

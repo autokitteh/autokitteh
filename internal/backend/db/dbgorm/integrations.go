@@ -12,11 +12,12 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
+func (db *gormdb) createIntegration(ctx context.Context, i *scheme.Integration) error {
+	return db.db.WithContext(ctx).Create(i).Error
+}
+
 func (db *gormdb) CreateIntegration(ctx context.Context, i sdktypes.Integration) error {
-	if err := db.db.WithContext(ctx).Create(convertTypeToRecord(i)).Error; err != nil {
-		return translateError(err)
-	}
-	return nil
+	return translateError(db.createIntegration(ctx, convertTypeToRecord(i)))
 }
 
 func (db *gormdb) UpdateIntegration(ctx context.Context, i sdktypes.Integration) error {

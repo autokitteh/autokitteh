@@ -29,6 +29,13 @@ type impl struct {
 	done   chan struct{}
 }
 
+func NewFromClient(cfg *MonitorConfig, z *zap.Logger, tclient client.Client) (Client, error) {
+	if cfg == nil {
+		cfg = &MonitorConfig{}
+	}
+	return &impl{z: z, cfg: &Config{Monitor: *cfg}, client: tclient, done: make(chan struct{})}, nil
+}
+
 func New(cfg *Config, z *zap.Logger) (Client, error) {
 	var tlsConfig *tls.Config
 	if cfg.TLS.Enabled {
@@ -43,7 +50,7 @@ func New(cfg *Config, z *zap.Logger) (Client, error) {
 	opts := client.Options{
 		HostPort:  cfg.HostPort,
 		Namespace: cfg.Namespace,
-		Logger:    logur.LoggerToKV(zapadapter.New(z.WithOptions(zap.IncreaseLevel(cfg.LogLevel)))),
+		Logger:    logur.LoggerToKV(zapadapter.New(z.WithOptions(zap.IncreaseLevel(cfg.Monitor.LogLevel)))),
 		ConnectionOptions: client.ConnectionOptions{
 			TLS: tlsConfig,
 		},
@@ -117,7 +124,7 @@ func (c *impl) Stop(context.Context) error {
 func (c *impl) healthcheck(ctx context.Context) error {
 	c.z.Debug("checking health")
 
-	if c.cfg.CheckHealthTimeout != 0 {
+	if c.cfg.Monitor.CheckHealthTimeout != 0 {
 		var cancel context.CancelFunc
 		ctx, cancel = context.WithTimeout(ctx, 5*time.Second)
 		defer cancel()
@@ -133,7 +140,7 @@ func (c *impl) healthcheck(ctx context.Context) error {
 }
 
 func (c *impl) Start(context.Context) error {
-	if c.cfg.CheckHealthInterval == 0 {
+	if c.cfg.Monitor.CheckHealthInterval == 0 {
 		c.z.Warn("periodical check health is disabled")
 		return nil
 	}
@@ -144,18 +151,15 @@ func (c *impl) Start(context.Context) error {
 		for {
 			if err := c.healthcheck(context.Background()); err != nil {
 				// TODO: stats.
-
 				ok = false
 				c.z.Error("temporal check health error", zap.Error(err))
-			}
-
-			if !ok {
+			} else if !ok {
 				ok = true
 				c.z.Info("temporal reports healthy")
 			}
 
 			select {
-			case <-time.After(c.cfg.CheckHealthInterval):
+			case <-time.After(c.cfg.Monitor.CheckHealthInterval):
 				// nop
 			case <-c.done:
 				return

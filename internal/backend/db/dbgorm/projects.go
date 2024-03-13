@@ -13,8 +13,8 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-func (db *gormdb) createProject(ctx context.Context, p scheme.Project) error {
-	return db.db.WithContext(ctx).Create(&p).Error
+func (db *gormdb) createProject(ctx context.Context, p *scheme.Project) error {
+	return db.db.WithContext(ctx).Create(p).Error
 }
 
 func (db *gormdb) CreateProject(ctx context.Context, p sdktypes.Project) error {
@@ -27,7 +27,7 @@ func (db *gormdb) CreateProject(ctx context.Context, p sdktypes.Project) error {
 		ProjectID: p.ID().String(),
 		Name:      p.Name().String(),
 	}
-	return translateError(db.createProject(ctx, project))
+	return translateError(db.createProject(ctx, &project))
 }
 
 func (db *gormdb) deleteProject(ctx context.Context, projectID string) error {
@@ -57,6 +57,13 @@ func (db *gormdb) deleteProjectAndDependents(ctx context.Context, projectID stri
 		return err
 	}
 
+	gormDB := db.db.WithContext(ctx)
+
+	// delete triggers
+	if err = gormDB.Delete(&scheme.Trigger{}, "project_id = ?", projectID).Error; err != nil {
+		return err
+	}
+
 	envIDs, err := db.getProjectEnvs(ctx, projectID)
 	if err != nil {
 		return err
@@ -65,7 +72,7 @@ func (db *gormdb) deleteProjectAndDependents(ctx context.Context, projectID stri
 		return err
 	}
 
-	return db.db.WithContext(ctx).Delete(&scheme.Project{ProjectID: projectID}).Error
+	return gormDB.Delete(&scheme.Project{ProjectID: projectID}).Error
 }
 
 func (db *gormdb) DeleteProject(ctx context.Context, projectID sdktypes.ProjectID) error {

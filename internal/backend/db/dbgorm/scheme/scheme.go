@@ -32,6 +32,7 @@ var Tables = []any{
 	&EventRecord{},
 	&Integration{},
 	&Project{},
+	&Secret{},
 	&Session{},
 	&SessionCallAttempt{},
 	&SessionCallSpec{},
@@ -60,13 +61,16 @@ func ParseBuild(b Build) (sdktypes.Build, error) {
 }
 
 type Connection struct {
-	ConnectionID  string `gorm:"primaryKey"`
-	IntegrationID string
-	// TODO(ENG-111): Integration Integration `gorm:"foreignKey:IntegrationID"`
-	// TODO(ENG-111): Also call "Preload()" where relevant
+	ConnectionID     string `gorm:"primaryKey"`
+	IntegrationID    string
 	IntegrationToken string
 	ProjectID        string
 	Name             string
+
+	// IntegrationID is a foreign key, but gorm won't add and enforce a constraint till we uncomment
+	// Integration Integration `gorm:"foreignKey:IntegrationID"` // TODO(ENG-111)
+
+	// TODO(ENG-111): Also call "Preload()" where relevant
 }
 
 func ParseConnection(c Connection) (sdktypes.Connection, error) {
@@ -155,6 +159,15 @@ func ParseProject(r Project) (sdktypes.Project, error) {
 	}
 
 	return p, nil
+}
+
+// Secret is a database table that simply stores sensitive key-value
+// pairs, for usage by the "db" mode of autokitteh's secrets manager.
+// WARNING: This is not secure in any way, and not durable by default.
+// It is intended only for temporary, local, non-production purposes.
+type Secret struct {
+	Name string `gorm:"primaryKey"`
+	Data datatypes.JSON
 }
 
 type Event struct {
@@ -268,9 +281,11 @@ type Trigger struct {
 	ProjectID    string `gorm:"index"`
 	EnvID        string `gorm:"index"`
 	ConnectionID string `gorm:"index"`
-	Connection   Connection
 	EventType    string
 	CodeLocation string
+
+	// just for the foreign keys
+	Connection Connection
 }
 
 func ParseTrigger(e Trigger) (sdktypes.Trigger, error) {

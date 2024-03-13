@@ -16,44 +16,49 @@ type tlsConfig struct {
 	KeyFilePath  string `koanf:"key_file_path"`
 }
 
+type MonitorConfig struct {
+	CheckHealthInterval time.Duration   `koanf:"check_health_interval"`
+	CheckHealthTimeout  time.Duration   `koanf:"check_health_timeout"`
+	LogLevel            zap.AtomicLevel `koanf:"log_level"`
+}
+
 type Config struct {
-	AlwaysStartDevServer  bool            `koanf:"always_start_dev_server"`
-	StartDevServerIfNotUp bool            `koanf:"start_dev_server_if_not_up"`
-	HostPort              string          `koanf:"hostport"`
-	Namespace             string          `koanf:"namespace"`
-	CheckHealthInterval   time.Duration   `koanf:"check_health_interval"`
-	CheckHealthTimeout    time.Duration   `koanf:"check_health_timeout"`
-	LogLevel              zap.AtomicLevel `koanf:"log_level"`
+	Monitor MonitorConfig `koanf:"monitor"`
+
+	AlwaysStartDevServer  bool   `koanf:"always_start_dev_server"`
+	StartDevServerIfNotUp bool   `koanf:"start_dev_server_if_not_up"`
+	HostPort              string `koanf:"hostport"`
+	Namespace             string `koanf:"namespace"`
 
 	// DevServer.ClientOptions is not used.
 	DevServer testsuite.DevServerOptions `koanf:"dev_server"`
 	TLS       tlsConfig                  `koanf:"tls"`
 }
 
-var Configs = configset.Set[Config]{
-	Default: &Config{
+var (
+	defaultMonitorConfig = MonitorConfig{
 		CheckHealthInterval: time.Minute,
 		CheckHealthTimeout:  10 * time.Second,
 		LogLevel:            zap.NewAtomicLevelAt(zapcore.WarnLevel),
-	},
-	Dev: &Config{
-		CheckHealthInterval: time.Minute,
-		CheckHealthTimeout:  10 * time.Second,
-		LogLevel:            zap.NewAtomicLevelAt(zapcore.WarnLevel),
+	}
 
-		StartDevServerIfNotUp: true,
-		DevServer: testsuite.DevServerOptions{
-			LogLevel: zapcore.WarnLevel.String(),
+	Configs = configset.Set[Config]{
+		Default: &Config{
+			Monitor: defaultMonitorConfig,
 		},
-	},
-	Test: &Config{
-		CheckHealthInterval: time.Minute,
-		CheckHealthTimeout:  10 * time.Second,
-		LogLevel:            zap.NewAtomicLevelAt(zapcore.WarnLevel),
-
-		AlwaysStartDevServer: true,
-		DevServer: testsuite.DevServerOptions{
-			LogLevel: zapcore.WarnLevel.String(),
+		Dev: &Config{
+			Monitor:               defaultMonitorConfig,
+			StartDevServerIfNotUp: true,
+			DevServer: testsuite.DevServerOptions{
+				LogLevel: zapcore.WarnLevel.String(),
+			},
 		},
-	},
-}
+		Test: &Config{
+			Monitor:              defaultMonitorConfig,
+			AlwaysStartDevServer: true,
+			DevServer: testsuite.DevServerOptions{
+				LogLevel: zapcore.WarnLevel.String(),
+			},
+		},
+	}
+)

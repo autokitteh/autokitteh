@@ -34,7 +34,6 @@ func (SessionTraits) StrictValidate(m *SessionPB) error {
 		mandatory("created_at", m.CreatedAt),
 		mandatory("deployment_id", m.DeploymentId),
 		mandatory("entrypoint", m.Entrypoint),
-		mandatory("event_id", m.EventId),
 		mandatory("session_id", m.SessionId),
 		mandatory("state", m.State),
 	)
