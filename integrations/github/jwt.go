@@ -109,7 +109,10 @@ func (i integration) NewClientWithAppJWTFromGitHubID(appID int64) (*github.Clien
 	// Initialize a client with the generated JWT injected into outbound requests.
 	client := github.NewClient(&http.Client{Transport: atr})
 	if enterpriseURL := os.Getenv(enterpriseURLEnvVar); enterpriseURL != "" {
-		client.WithEnterpriseURLs(enterpriseURL, enterpriseURL)
+		client, err = client.WithEnterpriseURLs(enterpriseURL, enterpriseURL)
+		if err != nil {
+			return nil, err
+		}
 	}
 	return client, nil
 }
@@ -130,7 +133,10 @@ func (i integration) NewClientWithInstallJWTFromGitHubIDs(appID, installID int64
 	// Initialize a client with the generated JWT injected into outbound requests.
 	client := github.NewClient(&http.Client{Transport: itr})
 	if enterpriseURL := os.Getenv(enterpriseURLEnvVar); enterpriseURL != "" {
-		client.WithEnterpriseURLs(enterpriseURL, enterpriseURL)
+		client, err = client.WithEnterpriseURLs(enterpriseURL, enterpriseURL)
+		if err != nil {
+			return nil, err
+		}
 	}
 	return client, nil
 }
