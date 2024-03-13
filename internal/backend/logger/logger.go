@@ -44,13 +44,29 @@ func (c *Config) WithDebug(debug bool) *Config {
 	return c
 }
 
+type onFatalHook struct{}
+
+func (onFatalHook) OnWrite(ce *zapcore.CheckedEntry, fs []zapcore.Field) {
+	// This is a useful place for a breakpoint to catch all fatals.
+	zapcore.WriteThenGoexit.OnWrite(ce, fs)
+}
+
+type onPanicHook struct{}
+
+func (onPanicHook) OnWrite(ce *zapcore.CheckedEntry, fs []zapcore.Field) {
+	// This is a useful place for a breakpoint to catch all panics.
+	zapcore.WriteThenPanic.OnWrite(ce, fs)
+}
+
 func New(cfg *Config) (*zap.Logger, error) {
-	z, err := cfg.Zap.Build()
+	z, err := cfg.Zap.Build(
+		zap.WithFatalHook(onFatalHook{}),
+		zap.WithPanicHook(onPanicHook{}),
+		zap.AddStacktrace(zap.ErrorLevel),
+	)
 	if err != nil {
 		return nil, err
 	}
-
-	z = z.WithOptions(zap.AddStacktrace(zap.ErrorLevel))
 
 	zap.ReplaceGlobals(z)
 
