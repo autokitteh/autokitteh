@@ -43,21 +43,6 @@ type run struct {
 
 func (r *run) ID() sdktypes.RunID { return r.runID }
 
-func makeStruct(th *starlark.Thread, b *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
-	var ctor starlark.Value
-
-	switch len(args) {
-	case 0:
-		// nop
-	case 1:
-		ctor = args[0]
-	default:
-		return nil, fmt.Errorf("struct: unexpected positional arguments")
-	}
-
-	return starlarkstruct.FromKeywords(ctor, kwargs), nil
-}
-
 func Run(
 	ctx context.Context,
 	runID sdktypes.RunID,
@@ -82,7 +67,7 @@ func Run(
 	}
 
 	if _, ok := predeclared["struct"]; !ok {
-		predeclared["struct"] = starlark.NewBuiltin("struct", makeStruct)
+		predeclared["struct"] = starlark.NewBuiltin("struct", starlarkstruct.Make)
 	}
 
 	if _, ok := predeclared["module"]; !ok {
