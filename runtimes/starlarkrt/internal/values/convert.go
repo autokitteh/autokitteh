@@ -141,9 +141,9 @@ func (vctx *Context) FromStarlarkValue(v starlark.Value) (sdktypes.Value, error)
 	case starlarktime.Time:
 		return sdktypes.NewTimeValue(time.Time(v)), nil
 	case *starlark.List, starlark.Tuple:
-		return vctx.fromSequence(v.(starlark.Sequence), sdktypes.NewListValue)
+		return vctx.fromSequence(v.(starlark.Sequence), kittehs.Must11(sdktypes.NewListValue))
 	case *starlark.Set:
-		return vctx.fromSequence(v, sdktypes.NewSetValue)
+		return vctx.fromSequence(v, kittehs.Must11(sdktypes.NewSetValue))
 	case *starlark.Dict:
 		ks := v.Keys()
 		items := make([]sdktypes.DictItem, len(ks))
@@ -210,5 +210,5 @@ func (vctx *Context) fromSequence(seq starlark.Sequence, f func([]sdktypes.Value
 		}
 	}
 
-	return sdktypes.NewListValue(vs), nil
+	return sdktypes.NewListValue(vs)
 }

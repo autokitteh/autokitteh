@@ -16,20 +16,20 @@ var (
 
 	iv           = sdktypes.NewIntegerValue(42)
 	nothing      = sdktypes.Nothing
-	intsList     = sdktypes.NewListValue([]sdktypes.Value{sdktypes.NewIntegerValue(1), sdktypes.NewIntegerValue(2), sdktypes.NewIntegerValue(3)})
-	intsSet      = sdktypes.NewSetValue([]sdktypes.Value{sdktypes.NewIntegerValue(1), sdktypes.NewIntegerValue(2), sdktypes.NewIntegerValue(3)})
-	mixedList    = sdktypes.NewListValue([]sdktypes.Value{sdktypes.NewIntegerValue(1), sdktypes.NewStringValue("meow"), sdktypes.NewFloatValue(1.2)})
+	intsList     = kittehs.Must1(sdktypes.NewListValue([]sdktypes.Value{sdktypes.NewIntegerValue(1), sdktypes.NewIntegerValue(2), sdktypes.NewIntegerValue(3)}))
+	intsSet      = kittehs.Must1(sdktypes.NewSetValue([]sdktypes.Value{sdktypes.NewIntegerValue(1), sdktypes.NewIntegerValue(2), sdktypes.NewIntegerValue(3)}))
+	mixedList    = kittehs.Must1(sdktypes.NewListValue([]sdktypes.Value{sdktypes.NewIntegerValue(1), sdktypes.NewStringValue("meow"), sdktypes.NewFloatValue(1.2)}))
 	stringIntMap = map[string]sdktypes.Value{
 		"one":   sdktypes.NewIntegerValue(1),
 		"two":   sdktypes.NewIntegerValue(2),
 		"three": sdktypes.NewIntegerValue(3),
 	}
 	stringIntDict = sdktypes.NewDictValueFromStringMap(stringIntMap)
-	intsListList  = sdktypes.NewListValue([]sdktypes.Value{
-		sdktypes.NewListValue([]sdktypes.Value{sdktypes.NewIntegerValue(1)}),
-		sdktypes.NewListValue([]sdktypes.Value{sdktypes.NewIntegerValue(1), sdktypes.NewIntegerValue(2)}),
-		sdktypes.NewListValue([]sdktypes.Value{sdktypes.NewIntegerValue(0), sdktypes.NewIntegerValue(1), sdktypes.NewIntegerValue(2)}),
-	})
+	intsListList  = kittehs.Must1(sdktypes.NewListValue([]sdktypes.Value{
+		kittehs.Must1(sdktypes.NewListValue([]sdktypes.Value{sdktypes.NewIntegerValue(1)})),
+		kittehs.Must1(sdktypes.NewListValue([]sdktypes.Value{sdktypes.NewIntegerValue(1), sdktypes.NewIntegerValue(2)})),
+		kittehs.Must1(sdktypes.NewListValue([]sdktypes.Value{sdktypes.NewIntegerValue(0), sdktypes.NewIntegerValue(1), sdktypes.NewIntegerValue(2)})),
+	}))
 
 	stringIntStruct = kittehs.Must1(sdktypes.NewStructValue(sdktypes.NewStringValue("ctor"), stringIntMap))
 )
@@ -97,11 +97,11 @@ func TestValueWrapper(t *testing.T) {
 		},
 		{
 			in: []int{1, 2, 3},
-			w: sdktypes.NewListValue([]sdktypes.Value{
+			w: kittehs.Must1(sdktypes.NewListValue([]sdktypes.Value{
 				sdktypes.NewIntegerValue(1),
 				sdktypes.NewIntegerValue(2),
 				sdktypes.NewIntegerValue(3),
-			}),
+			})),
 			unw: []any{int64(1), int64(2), int64(3)},
 		},
 		{

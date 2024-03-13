@@ -104,7 +104,7 @@ func (w ValueWrapper) Wrap(v any) (Value, error) {
 			}
 		}
 
-		return NewListValue(vs), nil
+		return NewListValue(vs)
 
 	case reflect.Map:
 		vs := make([]DictItem, 0, vv.Len())
