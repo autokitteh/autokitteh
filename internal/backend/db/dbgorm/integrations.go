@@ -64,20 +64,17 @@ func convertTypeToRecord(i sdktypes.Integration) *scheme.Integration {
 	}
 }
 
+func (db *gormdb) deleteIntegration(ctx context.Context, id string) error {
+	return db.db.WithContext(ctx).Delete(&scheme.Integration{IntegrationID: id}).Error
+}
+
 func (db *gormdb) DeleteIntegration(ctx context.Context, id sdktypes.IntegrationID) error {
 	// Desired product behavior: if user tries to delete an integration which
 	// already has associated connections, AK should confirm with the user
 	// what they want to do - abort, or cascade the deletion.
 	// Note that a similar decision exists when deleting connections that
 	// have active project mappings.
-	var i scheme.Integration
-	err := db.db.WithContext(ctx).
-		Where("integration_id = ?", id.String()).
-		Delete(&i).Error
-	if err != nil {
-		return translateError(err)
-	}
-	return nil
+	return translateError(db.deleteIntegration(ctx, id.String()))
 }
 
 func (db *gormdb) GetIntegration(ctx context.Context, id sdktypes.IntegrationID) (sdktypes.Integration, error) {
