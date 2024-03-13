@@ -239,3 +239,11 @@ func (f *dbFixture) newIntegration() scheme.Integration {
 		SigningKey:    "",
 	}
 }
+
+func (f *dbFixture) newEvent() scheme.Event {
+	return scheme.Event{
+		EventID:          testEventID,
+		IntegrationID:    testIntegrationID,
+		IntegrationToken: "",
+	}
+}

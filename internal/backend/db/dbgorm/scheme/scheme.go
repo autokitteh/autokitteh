@@ -181,6 +181,8 @@ type Event struct {
 	Memo             datatypes.JSON
 	CreatedAt        time.Time
 	Seq              uint64 `gorm:"primaryKey;autoIncrement:true,index:idx_connection_id_event_type_seq,priority:3"`
+
+	DeletedAt gorm.DeletedAt `gorm:"index"`
 }
 
 func ParseEvent(e Event) (sdktypes.Event, error) {
