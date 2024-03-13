@@ -17,7 +17,7 @@ func (f *dbFixture) createTriggersAndAssert(t *testing.T, triggers ...scheme.Tri
 
 func (f *dbFixture) assertTriggersDeleted(t *testing.T, triggers ...scheme.Trigger) {
 	for _, trigger := range triggers {
-		assertDeleted(t, f, scheme.Trigger{TriggerID: trigger.TriggerID})
+		assertDeleted(t, f, trigger)
 	}
 }
 
