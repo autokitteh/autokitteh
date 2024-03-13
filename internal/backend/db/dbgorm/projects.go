@@ -59,8 +59,11 @@ func (db *gormdb) deleteProjectAndDependents(ctx context.Context, projectID stri
 
 	gormDB := db.db.WithContext(ctx)
 
-	// delete triggers
 	if err = gormDB.Delete(&scheme.Trigger{}, "project_id = ?", projectID).Error; err != nil {
+		return err
+	}
+
+	if err = gormDB.Delete(&scheme.Connection{}, "project_id = ?", projectID).Error; err != nil {
 		return err
 	}
 

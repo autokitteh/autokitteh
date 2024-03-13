@@ -220,8 +220,9 @@ func TestDeleteProjectAndDependents(t *testing.T) {
 	assert.NoError(t, err)
 
 	f.assertDeploymentsDeleted(t, d1e1p1, d2e1p1, d1e2p1)
-	f.assertEnvDeleted(t, e1p1, e2p1)
-	f.assertProjectDeleted(t, p1)
 	f.assertSessionsDeleted(t, s1d1e1p1, s2d1e2p1)
+	f.assertEnvDeleted(t, e1p1, e2p1)
 	f.assertTriggersDeleted(t, t1, t2)
+	f.assertConnectionDeleted(t, c)
+	f.assertProjectDeleted(t, p1)
 }
