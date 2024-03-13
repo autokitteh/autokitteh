@@ -7,7 +7,18 @@ def foo(x):
     return "meow, " + x
 
 def on_http_get():
-    print(activity(lambda: foo("mooo")))
+    resp, err = http1.get("https://httpbin3212.org/status/404", ak.callopts(catch=True))
+
+    # also works:
+    # resp, err = catch(lambda: http1.get("https://httpbin3212.org/status/404"))
+    # resp, err = catch(http1.get, "https://httpbin3212.org/status/404")
+    # resp, err = http1.get("https://httpbin3212.org/status/404", ak = ak.callopts(catch=True))
+    # resp, err = http1.get("https://httpbin3212.org/status/404", ak_catch=True)
+    # resp, err = http1.get("https://httpbin3212.org/status/404", ak = {"catch": True})
+
+    print(resp, err)
+    print(err.op)
+
 
 def on_http_post(data):
     def again(x):

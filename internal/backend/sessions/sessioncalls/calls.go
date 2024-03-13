@@ -66,15 +66,17 @@ func New(z *zap.Logger, config Config, svcs *sessionsvcs.Svcs) Calls {
 func (cs *calls) StartWorkers(ctx context.Context) error { return cs.worker.Start() }
 
 func (cs *calls) Call(ctx workflow.Context, params *CallParams) (sdktypes.SessionCallAttemptResult, error) {
-	fnv, _, _ := params.CallSpec.Data()
+	spec := params.CallSpec
 
-	seq := params.CallSpec.Seq()
+	fnv, _, _ := spec.Data()
+
+	seq := spec.Seq()
 
 	z := cs.z.With(zap.String("session_id", params.SessionID.String()), zap.Uint32("seq", seq), zap.Any("v", fnv))
 
 	// TODO: If replaying, make sure arguments are the same?
 	if err := workflow.ExecuteLocalActivity(
-		ctx, cs.svcs.DB.CreateSessionCall, params.SessionID, params.CallSpec,
+		ctx, cs.svcs.DB.CreateSessionCall, params.SessionID, spec,
 	).Get(ctx, nil); err != nil {
 		return sdktypes.InvalidSessionCallAttemptResult, fmt.Errorf("db.create_call: %w", err)
 	}
