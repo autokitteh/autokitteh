@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
+	"go.autokitteh.dev/autokitteh/internal/resolver"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 )
 
@@ -45,10 +46,10 @@ func ToExitCodeError(err error, what string) error {
 	case errors.Is(err, sdkerrors.ErrFailedPrecondition):
 		msg = fmt.Sprintf("on %s", what)
 		code = FailedPrecondition
-	case errors.As(err, resolver.NotFoundErrorType) {
+	case errors.As(err, resolver.NotFoundErrorType):
 		msg = fmt.Sprintf("%s not found", what)
 		code = NotFoundExitCode
-    }
+	}
 	return NewExitCodeError(code, fmt.Errorf("%w: %s", err, msg))
 }
 
