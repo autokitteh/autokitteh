@@ -41,6 +41,11 @@ func New(l *zap.Logger) sdkservices.OAuth {
 	// TODO(ENG-112): Remove (see Register below).
 	redirectURL := fmt.Sprintf("https://%s/oauth/redirect/", os.Getenv("WEBHOOK_ADDRESS"))
 
+	githubBaseURL := os.Getenv("GITHUB_ENTERPRISE_URL")
+	if githubBaseURL == "" {
+		githubBaseURL = "https://github.com"
+	}
+
 	return &oauth{
 		logger: l,
 		// TODO(ENG-112): Construct the following 2 maps with dynamic integration
@@ -55,7 +60,7 @@ func New(l *zap.Logger) sdkservices.OAuth {
 				Endpoint: oauth2.Endpoint{
 					// AuthURL:  endpoints.GitHub.AuthURL,
 					// https://docs.github.com/en/apps/using-github-apps/installing-a-github-app-from-a-third-party#installing-a-github-app
-					AuthURL: fmt.Sprintf("https://github.com/apps/%s/installations/new", os.Getenv("GITHUB_APP_NAME")),
+					AuthURL: fmt.Sprintf("%s/apps/%s/installations/new", githubBaseURL, os.Getenv("GITHUB_APP_NAME")),
 					// https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps#device-flow
 					DeviceAuthURL: endpoints.GitHub.DeviceAuthURL,
 					TokenURL:      endpoints.GitHub.TokenURL,
