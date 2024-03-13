@@ -12,7 +12,7 @@ import (
 	"strings"
 
 	ghinstallation "github.com/bradleyfalzon/ghinstallation/v2"
-	"github.com/google/go-github/v54/github"
+	"github.com/google/go-github/v60/github"
 
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 )
@@ -21,6 +21,12 @@ const (
 	// privateKeyEnvVar is the name of an environment variable that contains a
 	// SECRET PEM-encoded GitHub private key which is required to sign JWTs.
 	privateKeyEnvVar = "GITHUB_PRIVATE_KEY"
+
+	// enterpriseURLEnvVar is the name of an environment variable that contains
+	// the (cloud or on-prem) base URL of a GitHub Enterprise Server instance.
+	// This URL should not have a path suffix like "/api/v3" or "/api/uploads",
+	// autokitteh will append those as needed.
+	enterpriseURLEnvVar = "GITHUB_ENTERPRISE_URL"
 )
 
 func (i integration) NewClient(ctx context.Context) (*github.Client, error) {
@@ -101,7 +107,14 @@ func (i integration) NewClientWithAppJWTFromGitHubID(appID int64) (*github.Clien
 	}
 
 	// Initialize a client with the generated JWT injected into outbound requests.
-	return github.NewClient(&http.Client{Transport: atr}), nil
+	client := github.NewClient(&http.Client{Transport: atr})
+	if enterpriseURL := os.Getenv(enterpriseURLEnvVar); enterpriseURL != "" {
+		client, err = client.WithEnterpriseURLs(enterpriseURL, enterpriseURL)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return client, nil
 }
 
 // NewClientWithInstallJWTFromGitHubIDs generates a GitHub app
@@ -118,7 +131,14 @@ func (i integration) NewClientWithInstallJWTFromGitHubIDs(appID, installID int64
 	}
 
 	// Initialize a client with the generated JWT injected into outbound requests.
-	return github.NewClient(&http.Client{Transport: itr}), nil
+	client := github.NewClient(&http.Client{Transport: itr})
+	if enterpriseURL := os.Getenv(enterpriseURLEnvVar); enterpriseURL != "" {
+		client, err = client.WithEnterpriseURLs(enterpriseURL, enterpriseURL)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return client, nil
 }
 
 func getPrivateKey() []byte {
