@@ -91,7 +91,13 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		Component(
 			"temporalclient",
 			temporalclient.Configs,
-			fx.Provide(temporalclient.New),
+			fx.Provide(func(cfg *temporalclient.Config, z *zap.Logger) (temporalclient.Client, error) {
+				if opts.TemporalClient != nil {
+					return temporalclient.NewFromClient(&cfg.Monitor, z, opts.TemporalClient)
+				}
+
+				return temporalclient.New(cfg, z)
+			}),
 			fx.Provide(func(c temporalclient.Client) client.Client { return c.Temporal() }),
 			fx.Invoke(func(lc fx.Lifecycle, c temporalclient.Client) {
 				HookOnStart(lc, c.Start)
@@ -166,8 +172,9 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 }
 
 type RunOptions struct {
-	Mode   configset.Mode
-	Silent bool // No logs at all
+	Mode           configset.Mode
+	Silent         bool          // No logs at all
+	TemporalClient client.Client // use this instead of creating a new temporal client.
 }
 
 func NewCommonOpts(cfg *Config, ropts RunOptions) []fx.Option {
