@@ -56,7 +56,10 @@ var builtins = map[string]func(thread *starlark.Thread, fn *starlark.Builtin, ar
 				return nil, fmt.Errorf("cannot convert values from starlark: %w", err)
 			}
 
-			v := sdktypes.NewListValue(vs)
+			v, err := sdktypes.NewListValue(vs)
+			if err != nil {
+				return nil, fmt.Errorf("cannot create list value: %w", err)
+			}
 			return nil, sdktypes.NewProgramError(v, nil, nil).ToError()
 		}
 

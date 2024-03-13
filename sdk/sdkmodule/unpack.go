@@ -5,6 +5,7 @@ import (
 	"maps"
 	"strings"
 
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
@@ -59,7 +60,7 @@ func UnpackArgs(args []sdktypes.Value, kwargs map[string]sdktypes.Value, dsts ..
 			kwargs = nil
 			continue
 		} else if strings.HasPrefix(name, "*") {
-			if err := sdktypes.DefaultValueWrapper.UnwrapInto(dst, sdktypes.NewListValue(args)); err != nil {
+			if err := sdktypes.DefaultValueWrapper.UnwrapInto(dst, kittehs.Must1(sdktypes.NewListValue(args))); err != nil {
 				return fmt.Errorf("dst %q: %w", name, err)
 			}
 

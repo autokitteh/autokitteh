@@ -35,7 +35,9 @@ func (e ProgramError) CallStack() []CallFrame {
 	return kittehs.Transform(e.m.Callstack, forceFromProto[CallFrame])
 }
 
-func (e ProgramError) Value() Value { return forceFromProto[Value](e.read().Value) }
+func (e ProgramError) Value() Value {
+	return forceFromProto[Value](e.read().Value)
+}
 
 func (p ProgramError) ToError() (err error) {
 	if !p.IsValid() {
