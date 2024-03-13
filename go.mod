@@ -59,7 +59,7 @@ require (
 	go.temporal.io/sdk v1.25.1
 	go.uber.org/dig v1.17.1
 	go.uber.org/fx v1.20.1
-	go.uber.org/zap v1.26.0
+	go.uber.org/zap v1.27.0
 	golang.ngrok.com/ngrok v1.8.0
 	golang.org/x/exp v0.0.0-20240205201215-2c58cdc269a3
 	golang.org/x/net v0.21.0
