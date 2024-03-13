@@ -64,7 +64,7 @@ type Connection struct {
 	ConnectionID     string `gorm:"primaryKey"`
 	IntegrationID    string
 	IntegrationToken string
-	ProjectID        string
+	ProjectID        string `gorm:"index"`
 	Name             string
 
 	// IntegrationID is a foreign key, but gorm won't add and enforce a constraint till we uncomment
