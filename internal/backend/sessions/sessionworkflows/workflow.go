@@ -52,6 +52,8 @@ type sessionWorkflow struct {
 	callSeq uint32
 
 	signals map[string]uint64 // map signals to next sequence number
+
+	state sdktypes.SessionState
 }
 
 func runWorkflow(
@@ -102,6 +104,8 @@ func (w *sessionWorkflow) addPrint(ctx workflow.Context, print string) {
 
 func (w *sessionWorkflow) updateState(ctx workflow.Context, state sdktypes.SessionState) {
 	w.z.Debug("update state", zap.Any("state", state))
+
+	w.state = state
 
 	if err := workflow.ExecuteLocalActivity(ctx, w.ws.svcs.DB.UpdateSessionState, w.data.SessionID, state).Get(ctx, nil); err != nil {
 		w.z.Panic("update session", zap.Error(err))
@@ -369,12 +373,12 @@ func (w *sessionWorkflow) removeEventSubscription(ctx context.Context, signalID 
 	delete(w.signals, signalID)
 }
 
-func (w *sessionWorkflow) run(ctx workflow.Context) (prints []string, err error) {
-	// set before r.Call is called.
-	var callValue sdktypes.Value
+func (w *sessionWorkflow) run(wctx workflow.Context) (prints []string, err error) {
+	type contextKey string
+	workflowContextKey := contextKey("autokitteh_workflow_context")
 
 	newRunID := func() (runID sdktypes.RunID) {
-		if err := workflow.SideEffect(ctx, func(workflow.Context) any {
+		if err := workflow.SideEffect(wctx, func(workflow.Context) any {
 			return sdktypes.NewRunID()
 		}).Get(&runID); err != nil {
 			w.z.Panic("new run id side effect", zap.Error(err))
@@ -385,25 +389,33 @@ func (w *sessionWorkflow) run(ctx workflow.Context) (prints []string, err error)
 	cbs := sdkservices.RunCallbacks{
 		NewRunID: newRunID,
 		Load:     w.load,
-		Call: func(_ context.Context, rid sdktypes.RunID, v sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
-			return w.call(ctx, rid, v, args, kwargs)
+		Call: func(callCtx context.Context, rid sdktypes.RunID, v sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
+			if callCtx.Value(workflowContextKey) == nil {
+				return sdktypes.InvalidValue, fmt.Errorf("nested activities are not supported")
+			}
+
+			return w.call(wctx, rid, v, args, kwargs)
 		},
 		Print: func(_ context.Context, runID sdktypes.RunID, text string) {
 			w.z.Debug("print", zap.String("run_id", runID.String()), zap.String("text", text))
 
 			prints = append(prints, text)
 
-			w.addPrint(ctx, text)
+			w.addPrint(wctx, text)
 		},
 	}
 
 	runID := newRunID()
 
-	w.updateState(ctx, sdktypes.NewSessionStateRunning(runID, sdktypes.InvalidValue))
+	w.updateState(wctx, sdktypes.NewSessionStateRunning(runID, sdktypes.InvalidValue))
 
 	entryPoint := w.data.Session.EntryPoint()
 
-	goCtx := temporalclient.NewWorkflowContextAsGOContext(ctx)
+	goCtx := temporalclient.NewWorkflowContextAsGOContext(wctx)
+
+	// This will allow us to identify if the call context is from a workflow (script code run), or
+	// some other thing that calls the Call callback from within an acitivity. The latter is not supported.
+	goCtx = context.WithValue(goCtx, workflowContextKey, wctx)
 
 	run, err := sdkruntimes.Run(
 		goCtx,
@@ -438,7 +450,7 @@ func (w *sessionWorkflow) run(ctx workflow.Context) (prints []string, err error)
 		return prints, fmt.Errorf("entry point does not belong to main run")
 	}
 
-	w.updateState(ctx, sdktypes.NewSessionStateRunning(runID, callValue))
+	w.updateState(wctx, sdktypes.NewSessionStateRunning(runID, callValue))
 
 	argNames := callValue.GetFunction().ArgNames() // sdktypes.GetFunctionValueArgsNames(callValue)
 	kwargs := kittehs.FilterMapKeys(
@@ -453,7 +465,7 @@ func (w *sessionWorkflow) run(ctx workflow.Context) (prints []string, err error)
 
 	state := sdktypes.NewSessionStateCompleted(prints, run.Values(), ret)
 
-	w.updateState(ctx, state)
+	w.updateState(wctx, state)
 
 	return prints, nil
 }

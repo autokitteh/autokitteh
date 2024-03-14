@@ -3,6 +3,7 @@
 # All exported symbols must be declared using "# EXPORT:" comments.
 
 # The followings are always supplied by the runtime: {
+# EXPORT: activity
 # EXPORT: catch
 # EXPORT: fail
 # EXPORT: globals

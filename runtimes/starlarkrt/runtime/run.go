@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"go.starlark.net/starlark"
-	"go.starlark.net/starlarkstruct"
 	"go.starlark.net/starlarktest"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
@@ -21,11 +20,19 @@ import (
 )
 
 const (
-	globalsTLSKey = "globals"
+	tlsKey = "autokitteh"
 
 	// TODO: https://linear.app/autokitteh/issue/ENG-241/decide-how-to-fix-pr-250
 	// testsGlobalName = "tests"
 )
+
+type tlsContext struct {
+	goCtx   context.Context
+	runID   sdktypes.RunID
+	cbs     *sdkservices.RunCallbacks
+	vctx    *values.Context
+	globals starlark.StringDict
+}
 
 type run struct {
 	runID    sdktypes.RunID
@@ -66,25 +73,12 @@ func Run(
 		return nil, fmt.Errorf("converting values to starlark: %w", err)
 	}
 
-	if _, ok := predeclared["struct"]; !ok {
-		predeclared["struct"] = starlark.NewBuiltin("struct", starlarkstruct.Make)
-	}
+	// preload all  modules
+	libs := libs.LoadModules(int64(kittehs.HashString64(runID.String())))
 
-	if _, ok := predeclared["module"]; !ok {
-		predeclared["module"] = starlark.NewBuiltin("module", starlarkstruct.MakeModule)
-	}
-
-	for name, fn := range builtins {
-		if _, ok := predeclared[name]; !ok {
-			predeclared[name] = starlark.NewBuiltin(name, fn)
-		}
-	}
-
-	// preload all starlib modules
-	symImplMap := libs.LoadModules(int64(kittehs.HashString64(runID.String())))
-	for sym, v := range symImplMap {
-		predeclared[sym] = v
-	}
+	// order matters here - builtins are the least important. predeclared can override them.
+	// then we have the starlib libs, which can override both.
+	predeclared, _ = kittehs.JoinMaps(builtins, predeclared, libs)
 
 	th := &starlark.Thread{
 		Name:  mainPath,
@@ -113,6 +107,13 @@ func Run(
 			return prog.Init(th, predeclared)
 		},
 	}
+
+	th.SetLocal(tlsKey, &tlsContext{
+		goCtx: ctx,
+		runID: runID,
+		cbs:   cbs,
+		vctx:  vctx,
+	})
 
 	var errorReporter errorReporter
 	starlarktest.SetReporter(th, &errorReporter)
@@ -168,7 +169,13 @@ func (r *run) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Value,
 		Print: func(_ *starlark.Thread, text string) { r.cbs.SafePrint(ctx, r.runID, text) },
 	}
 
-	th.SetLocal(globalsTLSKey, r.globals)
+	th.SetLocal(tlsKey, &tlsContext{
+		goCtx:   ctx,
+		runID:   r.runID,
+		globals: r.globals,
+		cbs:     r.cbs,
+		vctx:    r.vctx,
+	})
 
 	var errorReporter errorReporter
 	starlarktest.SetReporter(th, &errorReporter)

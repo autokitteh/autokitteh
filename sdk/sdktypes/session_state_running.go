@@ -37,6 +37,10 @@ func StrictSessionStateRunningFromProto(m *SessionStateRunningPB) (SessionStateR
 	return Strict(SessionStateRunningFromProto(m))
 }
 
+func (s SessionStateRunning) Call() Value {
+	return forceFromProto[Value](s.read().Call)
+}
+
 func (s SessionState) GetRunning() SessionStateRunning {
 	return forceFromProto[SessionStateRunning](s.read().Running)
 }

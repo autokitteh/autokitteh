@@ -3,10 +3,11 @@ load("env", "MEOW")
 
 print(MEOW)
 
+def foo(x):
+    return "meow, " + x
+
 def on_http_get():
-    resp, err = catch(lambda: http1.get("https://httpbin3212.org/status/404"))
-    print(resp, err)
-    print(err.op)
+    print(activity(lambda: foo("mooo")))
 
 def on_http_post(data):
     def again(x):
