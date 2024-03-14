@@ -8,6 +8,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/backend/svc"
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
 )
 
 var (
@@ -39,7 +40,7 @@ var upCmd = common.StandardCommand(&cobra.Command{
 
 		if readyFile != "" {
 			if err := os.WriteFile(readyFile, []byte("ready"), 0o644); err != nil {
-				fmt.Fprintf(os.Stderr, "write ready file: %v\n", err)
+				fmt.Fprintf(cmd.ErrOrStderr(), "write ready file: %v\n", err)
 			}
 		}
 
@@ -54,5 +55,7 @@ var upCmd = common.StandardCommand(&cobra.Command{
 func init() {
 	// Command-specific flags.
 	upCmd.Flags().StringVarP(&mode, "mode", "m", "", "run mode: {default|dev|test}")
+
 	upCmd.Flags().StringVarP(&readyFile, "ready-file", "r", "", "write a file when the server is ready")
+	kittehs.Must0(upCmd.MarkFlagFilename("ready-file"))
 }
