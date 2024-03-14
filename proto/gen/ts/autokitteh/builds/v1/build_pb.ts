@@ -16,6 +16,13 @@ export class Build extends Message<Build> {
   buildId = "";
 
   /**
+   * relevant only for ee.
+   *
+   * @generated from field: string owner_id = 2;
+   */
+  ownerId = "";
+
+  /**
    * @generated from field: google.protobuf.Timestamp created_at = 3;
    */
   createdAt?: Timestamp;
@@ -29,6 +36,7 @@ export class Build extends Message<Build> {
   static readonly typeName = "autokitteh.builds.v1.Build";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "build_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "owner_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "created_at", kind: "message", T: Timestamp },
   ]);
 

@@ -6,6 +6,7 @@ import "google/protobuf/timestamp.proto";
 
 message Build {
   string build_id = 1;
+  string owner_id = 2; // relevant only for ee.
 
   google.protobuf.Timestamp created_at = 3;
 }

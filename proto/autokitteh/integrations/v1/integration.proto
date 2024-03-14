@@ -26,4 +26,6 @@ message Integration {
   string connection_url = 8;
 
   module.v1.Module module = 9;
+
+  string owner_id = 10; // relevant only for ee.
 }

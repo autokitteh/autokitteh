@@ -13,7 +13,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n$autokitteh/projects/v1/project.proto\x12\x16\x61utokitteh.projects.v1\"<\n\x07Project\x12\x1d\n\nproject_id\x18\x01 \x01(\tR\tprojectId\x12\x12\n\x04name\x18\x02 \x01(\tR\x04nameB\xf1\x01\n\x1a\x63om.autokitteh.projects.v1B\x0cProjectProtoP\x01ZKgo.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/projects/v1;projectsv1\xa2\x02\x03\x41PX\xaa\x02\x16\x41utokitteh.Projects.V1\xca\x02\x16\x41utokitteh\\Projects\\V1\xe2\x02\"Autokitteh\\Projects\\V1\\GPBMetadata\xea\x02\x18\x41utokitteh::Projects::V1b\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n$autokitteh/projects/v1/project.proto\x12\x16\x61utokitteh.projects.v1\"W\n\x07Project\x12\x1d\n\nproject_id\x18\x01 \x01(\tR\tprojectId\x12\x12\n\x04name\x18\x02 \x01(\tR\x04name\x12\x19\n\x08owner_id\x18\x03 \x01(\tR\x07ownerIdB\xf1\x01\n\x1a\x63om.autokitteh.projects.v1B\x0cProjectProtoP\x01ZKgo.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/projects/v1;projectsv1\xa2\x02\x03\x41PX\xaa\x02\x16\x41utokitteh.Projects.V1\xca\x02\x16\x41utokitteh\\Projects\\V1\xe2\x02\"Autokitteh\\Projects\\V1\\GPBMetadata\xea\x02\x18\x41utokitteh::Projects::V1b\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -22,5 +22,5 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   DESCRIPTOR._options = None
   DESCRIPTOR._serialized_options = b'\n\032com.autokitteh.projects.v1B\014ProjectProtoP\001ZKgo.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/projects/v1;projectsv1\242\002\003APX\252\002\026Autokitteh.Projects.V1\312\002\026Autokitteh\\Projects\\V1\342\002\"Autokitteh\\Projects\\V1\\GPBMetadata\352\002\030Autokitteh::Projects::V1'
   _globals['_PROJECT']._serialized_start=64
-  _globals['_PROJECT']._serialized_end=124
+  _globals['_PROJECT']._serialized_end=151
 # @@protoc_insertion_point(module_scope)

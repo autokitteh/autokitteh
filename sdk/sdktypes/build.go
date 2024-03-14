@@ -35,3 +35,7 @@ func (p Build) WithNewID() Build {
 func (p Build) WithCreatedAt(t time.Time) Build {
 	return Build{p.forceUpdate(func(m *BuildPB) { m.CreatedAt = timestamppb.New(t) })}
 }
+
+func (p Build) OwnerID() OwnerID {
+	return kittehs.Must1(ParseOwnerID(p.read().OwnerId))
+}

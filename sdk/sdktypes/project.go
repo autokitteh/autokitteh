@@ -47,3 +47,11 @@ func (p Project) WithNewID() Project { return p.WithID(NewProjectID()) }
 func (p Project) WithID(id ProjectID) Project {
 	return Project{p.forceUpdate(func(pb *ProjectPB) { pb.ProjectId = id.String() })}
 }
+
+func (p Project) OwnerID() OwnerID {
+	return kittehs.Must1(ParseOwnerID(p.read().OwnerId))
+}
+
+func (p Project) WithOwnerID(id OwnerID) Project {
+	return Project{p.forceUpdate(func(pb *ProjectPB) { pb.OwnerId = id.String() })}
+}

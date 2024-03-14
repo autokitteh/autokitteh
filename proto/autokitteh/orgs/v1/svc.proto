@@ -1,0 +1,125 @@
+syntax = "proto3";
+
+package autokitteh.orgs.v1;
+
+import "autokitteh/orgs/v1/org.proto";
+import "autokitteh/users/v1/user.proto";
+import "buf/validate/validate.proto";
+import "google/protobuf/field_mask.proto";
+
+message CreateRequest {
+  option (buf.validate.message).cel = {
+    id: "org.org_id_must_be_empty",
+    message: "org_id must not be specified",
+    expression: "has(this.org) && this.org.org_id == ''",
+  };
+  option (buf.validate.message).cel = {
+    id: "org.name_required",
+    message: "name must be specified",
+    expression: "has(this.org) && this.org.name != ''",
+  };
+
+  // org.org_id is ignored.
+  Org org = 1 [(buf.validate.field).required = true];
+}
+
+message CreateResponse {
+  string org_id = 1;
+}
+
+message DeleteRequest {
+  string org_id = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+message DeleteResponse {}
+
+message GetRequest {
+  option (buf.validate.message).cel = {
+    id: "org_id_xor_name",
+    message: "org_id and name are mutually exclusive",
+    expression: "(this.org_id == '' && this.name != '') || (this.org_id != '' && this.name == '')",
+  };
+
+  // org_id and name are mutually exclusive.
+  string org_id = 1;
+  string name = 2;
+}
+
+message GetResponse {
+  Org org = 1; // empty if not found.
+}
+
+message UpdateRequest {
+  option (buf.validate.message).cel = {
+    id: "org.org_id_required",
+    message: "org_id must be specified",
+    expression: "has(this.org) && this.org.org_id == ''",
+  };
+
+  Org org = 1 [(buf.validate.field).required = true];
+  google.protobuf.FieldMask field_mask = 2 [(buf.validate.field).required = true];
+}
+
+message UpdateResponse {}
+
+message AddMemberRequest {
+  string org_id = 1 [(buf.validate.field).string.min_len = 1];
+  string user_id = 2 [(buf.validate.field).string.min_len = 1];
+}
+
+message AddMemberResponse {}
+
+message RemoveMemberRequest {
+  string org_id = 1 [(buf.validate.field).string.min_len = 1];
+  string user_id = 2 [(buf.validate.field).string.min_len = 1];
+}
+
+message RemoveMemberResponse {}
+
+message ListMembersRequest {
+  string org_id = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+message ListMembersResponse {
+  // TODO: pagination.
+  repeated users.v1.User users = 1 [(buf.validate.field).repeated.items.required = true];
+}
+
+message IsMemberRequest {
+  string org_id = 1 [(buf.validate.field).string.min_len = 1];
+  string user_id = 2 [(buf.validate.field).string.min_len = 1];
+}
+
+message IsMemberResponse {
+  bool is_member = 1;
+}
+
+message ListUserMembershipsRequest {
+  string user_id = 1; // if empty, taken from auth.
+}
+
+message ListUserMembershipsResponse {
+  // TODO: pagination.
+  repeated Org orgs = 1 [(buf.validate.field).repeated.items.required = true];
+}
+
+service OrgsService {
+  rpc Create(CreateRequest) returns (CreateResponse);
+
+  rpc Delete(DeleteRequest) returns (DeleteResponse);
+
+  rpc Get(GetRequest) returns (GetResponse);
+
+  rpc Update(UpdateRequest) returns (UpdateResponse);
+
+  rpc ListMembers(ListMembersRequest) returns (ListMembersResponse);
+
+  // TODO(ENG-9): This should be InviteMember and a user should AcceptInvitation.
+  rpc AddMember(AddMemberRequest) returns (AddMemberResponse);
+
+  rpc RemoveMember(RemoveMemberRequest) returns (RemoveMemberResponse);
+
+  rpc IsMember(IsMemberRequest) returns (IsMemberResponse);
+
+  rpc ListUserMemberships(ListUserMembershipsRequest) returns (ListUserMembershipsResponse);
+}

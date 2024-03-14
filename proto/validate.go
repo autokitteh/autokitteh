@@ -8,6 +8,7 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 
 	applyv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/apply/v1"
+	authv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/auth/v1"
 	buildsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/builds/v1"
 	connectionsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/connections/v1"
 	deploymentsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/deployments/v1"
@@ -19,6 +20,7 @@ import (
 	integrationsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/integrations/v1"
 	modulev1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/module/v1"
 	oauthv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/oauth/v1"
+	orgsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/orgs/v1"
 	programv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/program/v1"
 	projectsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/projects/v1"
 	runtimesv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/runtimes/v1"
@@ -26,6 +28,7 @@ import (
 	sessionsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/sessions/v1"
 	storev1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/store/v1"
 	triggersv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/triggers/v1"
+	usersv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/users/v1"
 	valuesv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/values/v1"
 )
 
@@ -53,6 +56,7 @@ func parse(fds []protoreflect.FileDescriptor) func(proto.Message) error {
 
 var fds = []protoreflect.FileDescriptor{
 	applyv1.File_autokitteh_apply_v1_svc_proto,
+	authv1.File_autokitteh_auth_v1_svc_proto,
 	buildsv1.File_autokitteh_builds_v1_build_proto,
 	buildsv1.File_autokitteh_builds_v1_svc_proto,
 	connectionsv1.File_autokitteh_connections_v1_connection_proto,
@@ -70,8 +74,10 @@ var fds = []protoreflect.FileDescriptor{
 	integration_registryv1.File_autokitteh_integration_registry_v1_svc_proto,
 	integrationsv1.File_autokitteh_integrations_v1_integration_proto,
 	integrationsv1.File_autokitteh_integrations_v1_svc_proto,
-	oauthv1.File_autokitteh_oauth_v1_svc_proto,
 	modulev1.File_autokitteh_module_v1_module_proto,
+	oauthv1.File_autokitteh_oauth_v1_svc_proto,
+	orgsv1.File_autokitteh_orgs_v1_org_proto,
+	orgsv1.File_autokitteh_orgs_v1_svc_proto,
 	programv1.File_autokitteh_program_v1_program_proto,
 	projectsv1.File_autokitteh_projects_v1_project_proto,
 	projectsv1.File_autokitteh_projects_v1_svc_proto,
@@ -84,6 +90,8 @@ var fds = []protoreflect.FileDescriptor{
 	storev1.File_autokitteh_store_v1_svc_proto,
 	triggersv1.File_autokitteh_triggers_v1_svc_proto,
 	triggersv1.File_autokitteh_triggers_v1_trigger_proto,
+	usersv1.File_autokitteh_users_v1_svc_proto,
+	usersv1.File_autokitteh_users_v1_user_proto,
 	valuesv1.File_autokitteh_values_v1_values_proto,
 }
 

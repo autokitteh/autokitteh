@@ -57,6 +57,13 @@ export class Integration extends Message<Integration> {
    */
   module?: Module;
 
+  /**
+   * relevant only for ee.
+   *
+   * @generated from field: string owner_id = 10;
+   */
+  ownerId = "";
+
   constructor(data?: PartialMessage<Integration>) {
     super();
     proto3.util.initPartial(data, this);
@@ -73,6 +80,7 @@ export class Integration extends Message<Integration> {
     { no: 6, name: "user_links", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 8, name: "connection_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 9, name: "module", kind: "message", T: Module },
+    { no: 10, name: "owner_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Integration {

@@ -8,7 +8,7 @@ from typing import ClassVar as _ClassVar, Mapping as _Mapping, Optional as _Opti
 DESCRIPTOR: _descriptor.FileDescriptor
 
 class Integration(_message.Message):
-    __slots__ = ["integration_id", "unique_name", "display_name", "description", "logo_url", "user_links", "connection_url", "module"]
+    __slots__ = ["integration_id", "unique_name", "display_name", "description", "logo_url", "user_links", "connection_url", "module", "owner_id"]
     class UserLinksEntry(_message.Message):
         __slots__ = ["key", "value"]
         KEY_FIELD_NUMBER: _ClassVar[int]
@@ -24,6 +24,7 @@ class Integration(_message.Message):
     USER_LINKS_FIELD_NUMBER: _ClassVar[int]
     CONNECTION_URL_FIELD_NUMBER: _ClassVar[int]
     MODULE_FIELD_NUMBER: _ClassVar[int]
+    OWNER_ID_FIELD_NUMBER: _ClassVar[int]
     integration_id: str
     unique_name: str
     display_name: str
@@ -32,4 +33,5 @@ class Integration(_message.Message):
     user_links: _containers.ScalarMap[str, str]
     connection_url: str
     module: _module_pb2.Module
-    def __init__(self, integration_id: _Optional[str] = ..., unique_name: _Optional[str] = ..., display_name: _Optional[str] = ..., description: _Optional[str] = ..., logo_url: _Optional[str] = ..., user_links: _Optional[_Mapping[str, str]] = ..., connection_url: _Optional[str] = ..., module: _Optional[_Union[_module_pb2.Module, _Mapping]] = ...) -> None: ...
+    owner_id: str
+    def __init__(self, integration_id: _Optional[str] = ..., unique_name: _Optional[str] = ..., display_name: _Optional[str] = ..., description: _Optional[str] = ..., logo_url: _Optional[str] = ..., user_links: _Optional[_Mapping[str, str]] = ..., connection_url: _Optional[str] = ..., module: _Optional[_Union[_module_pb2.Module, _Mapping]] = ..., owner_id: _Optional[str] = ...) -> None: ...

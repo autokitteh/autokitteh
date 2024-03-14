@@ -77,3 +77,7 @@ func (p Integration) WithUserLinks(links map[string]string) Integration {
 func (p Integration) WithModule(m Module) Integration {
 	return Integration{p.forceUpdate(func(pb *IntegrationPB) { pb.Module = m.ToProto() })}
 }
+
+func (p Integration) OwnerID() OwnerID {
+	return kittehs.Must1(ParseOwnerID(p.read().OwnerId))
+}
