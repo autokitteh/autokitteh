@@ -24,6 +24,10 @@ type module struct {
 
 func (m *module) client(ctx context.Context) (*redis.Client, func(string) string, error) {
 	if m != nil {
+		if m.internalClient == nil {
+			return nil, nil, errors.New("store not configured")
+		}
+
 		return m.internalClient, m.keyfn, nil
 	}
 
