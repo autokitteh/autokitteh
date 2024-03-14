@@ -175,12 +175,11 @@ type Event struct {
 	IntegrationID    string `gorm:"index"`
 	IntegrationToken string `gorm:"index"`
 	OriginalEventID  string
-	EventType        string `gorm:"index:idx_connection_id_event_type_seq,priority:2;index:idx_event_type"`
-	ConnectionID     string `gorm:"index:idx_connection_id_event_type_seq,priority:1"`
+	EventType        string `gorm:"index:idx_event_type_seq,priority:1;index:idx_event_type"`
 	Data             datatypes.JSON
 	Memo             datatypes.JSON
 	CreatedAt        time.Time
-	Seq              uint64 `gorm:"primaryKey;autoIncrement:true,index:idx_connection_id_event_type_seq,priority:3"`
+	Seq              uint64 `gorm:"primaryKey;autoIncrement:true,index:idx_event_type_seq,priority:2"`
 
 	DeletedAt gorm.DeletedAt `gorm:"index"`
 }
