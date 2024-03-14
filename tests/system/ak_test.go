@@ -50,7 +50,7 @@ func TestSuite(t *testing.T) {
 		// multiple actions, checks, and embedded files.
 		t.Run(strings.TrimPrefix(path, rootDir), func(t *testing.T) {
 			steps := readTestFile(t, path)
-			akAddr := setUpTest(t)
+			akAddr := setUpTest(t, akPath)
 			runTestSteps(t, steps, akPath, akAddr)
 		})
 
@@ -70,7 +70,7 @@ func setUpSuite(t *testing.T) string {
 	return akPath
 }
 
-func setUpTest(t *testing.T) string {
+func setUpTest(t *testing.T, akPath string) string {
 	// TODO: Replace "/backend/internal/temporalclient/client.go"?
 
 	// Redirect the OS's stdout and stderr through a pipe, to
@@ -92,7 +92,7 @@ func setUpTest(t *testing.T) string {
 
 	// Start the AK server, but in-process rather than as a separate
 	// subprocess: to support breakpoint debugging, and measure test coverage.
-	svc, err := startAKServer(context.Background())
+	svc, err := startAKServer(context.Background(), akPath)
 	if err != nil {
 		t.Fatalf("error: %v", err)
 	}
