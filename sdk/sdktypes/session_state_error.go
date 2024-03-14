@@ -33,7 +33,11 @@ func StrictSessionStateErrorFromProto(m *SessionStateErrorPB) (SessionStateError
 }
 
 func (s SessionState) GetError() SessionStateError {
-	return forceFromProto[SessionStateError](s.read().Error)
+	if s.m == nil {
+		return InvalidSessionStateError
+	}
+
+	return forceFromProto[SessionStateError](s.m.Error)
 }
 
 func NewSessionStateError(err error, prints []string) SessionState {
