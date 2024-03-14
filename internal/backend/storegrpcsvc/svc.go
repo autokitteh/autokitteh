@@ -16,7 +16,7 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-var errNotConfigured = connect.NewError(http.StatusNotImplemented, fmt.Errorf("store service not configured"))
+var errNotConfigured = connect.NewError(connect.CodeUnimplemented, fmt.Errorf("store service not configured"))
 
 type server struct {
 	store sdkservices.Store
