@@ -2,6 +2,7 @@ package storegrpcsvc
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"connectrpc.com/connect"
@@ -14,6 +15,8 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
+
+var errNotConfigured = connect.NewError(connect.CodeUnimplemented, fmt.Errorf("store service not configured"))
 
 type server struct {
 	store sdkservices.Store
@@ -31,6 +34,10 @@ func Init(mux *http.ServeMux, store sdkservices.Store) {
 }
 
 func (s *server) List(ctx context.Context, req *connect.Request[storev1.ListRequest]) (*connect.Response[storev1.ListResponse], error) {
+	if s.store == nil {
+		return nil, errNotConfigured
+	}
+
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
@@ -56,6 +63,10 @@ func (s *server) List(ctx context.Context, req *connect.Request[storev1.ListRequ
 }
 
 func (s *server) Get(ctx context.Context, req *connect.Request[storev1.GetRequest]) (*connect.Response[storev1.GetResponse], error) {
+	if s.store == nil {
+		return nil, errNotConfigured
+	}
+
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {

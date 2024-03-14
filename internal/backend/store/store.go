@@ -17,12 +17,17 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
+const miniredisURL = "miniredis"
+
 type Config struct {
 	ServerURL string `koanf:"server_url"`
 }
 
 var Configs = configset.Set[Config]{
 	Default: &Config{},
+	Dev: &Config{
+		ServerURL: miniredisURL,
+	},
 }
 
 type store struct {
@@ -35,6 +40,11 @@ func New(z *zap.Logger, cfg *Config) (sdkservices.Store, *redis.Client, error) {
 	var client *redis.Client
 
 	if cfg.ServerURL == "" {
+		z.Warn("redis not configured, will not be available")
+		return nil, nil, nil
+	}
+
+	if cfg.ServerURL == miniredisURL {
 		mr, err := miniredis.Run()
 		if err != nil {
 			return nil, nil, fmt.Errorf("miniredis: %w", err)
@@ -43,9 +53,6 @@ func New(z *zap.Logger, cfg *Config) (sdkservices.Store, *redis.Client, error) {
 		addr := mr.Addr()
 
 		client = redis.NewClient(&redis.Options{Addr: addr})
-
-		// TODO(ENG-160): uncomment when we have a flag to say if prod or not.
-		// z.Warn("no external redis configured, using miniredis", zap.String("addr", addr))
 	} else {
 		opts, err := redis.ParseURL(cfg.ServerURL)
 		if err != nil {
