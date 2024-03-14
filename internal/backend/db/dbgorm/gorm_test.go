@@ -186,7 +186,6 @@ func (f *dbFixture) newProject() scheme.Project {
 	return scheme.Project{
 		ProjectID: projectID,
 		Name:      projectID, // must be unique
-		RootURL:   "",
 		Resources: []byte{},
 	}
 }
@@ -198,7 +197,6 @@ func (f *dbFixture) newEnv() scheme.Env {
 	return scheme.Env{
 		EnvID:        envID,
 		ProjectID:    testProjectID,
-		Name:         "",
 		MembershipID: envID, // must be unique
 	}
 }
@@ -211,39 +209,26 @@ func (f *dbFixture) newTrigger() scheme.Trigger {
 		TriggerID:    triggerID,
 		EnvID:        testEnvID,
 		ConnectionID: testConnectionID,
-		EventType:    "",
-		CodeLocation: "",
 	}
 }
 
 func (f *dbFixture) newConnection() scheme.Connection {
 	return scheme.Connection{
-		ConnectionID:     testConnectionID,
-		IntegrationID:    testIntegrationID,
-		ProjectID:        testProjectID,
-		IntegrationToken: "",
-		Name:             "",
+		ConnectionID:  testConnectionID,
+		IntegrationID: testIntegrationID,
+		ProjectID:     testProjectID,
 	}
 }
 
 func (f *dbFixture) newIntegration() scheme.Integration {
 	return scheme.Integration{
 		IntegrationID: testIntegrationID,
-		UniqueName:    "",
-		DisplayName:   "",
-		Description:   "",
-		LogoURL:       "",
-		UserLinks:     nil,
-		ConnectionURL: "",
-		APIKey:        "",
-		SigningKey:    "",
 	}
 }
 
 func (f *dbFixture) newEvent() scheme.Event {
 	return scheme.Event{
-		EventID:          testEventID,
-		IntegrationID:    testIntegrationID,
-		IntegrationToken: "",
+		EventID:       testEventID,
+		IntegrationID: testIntegrationID,
 	}
 }
