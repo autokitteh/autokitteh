@@ -50,11 +50,11 @@ Currently it's base64 of a pickle.
 
 ### Integration Testing
 
-If you run `ak` with a database, then run `./testdata/create-workflow.sh` once. 
+If you run `ak` with a database, then run `make create-workflow` once. 
 Otherwise run it every time.
 This will create a deployment for `testdata/simple/`
 
-Then run `make run-workflow`
+Then run `make run-workflow`.
 
 
 ### `ak` with database
