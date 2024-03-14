@@ -3,11 +3,11 @@ load("env", "MEOW")
 
 print(MEOW)
 
-def foo():
-    return "meow"
+def foo(x):
+    return "meow, " + x
 
 def on_http_get():
-    print(activity(foo))
+    print(activity(lambda: foo("mooo")))
 
 def on_http_post(data):
     def again(x):

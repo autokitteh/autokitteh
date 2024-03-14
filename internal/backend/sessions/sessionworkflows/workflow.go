@@ -52,6 +52,8 @@ type sessionWorkflow struct {
 	callSeq uint32
 
 	signals map[string]uint64 // map signals to next sequence number
+
+	state sdktypes.SessionState
 }
 
 func runWorkflow(
@@ -102,6 +104,8 @@ func (w *sessionWorkflow) addPrint(ctx workflow.Context, print string) {
 
 func (w *sessionWorkflow) updateState(ctx workflow.Context, state sdktypes.SessionState) {
 	w.z.Debug("update state", zap.Any("state", state))
+
+	w.state = state
 
 	if err := workflow.ExecuteLocalActivity(ctx, w.ws.svcs.DB.UpdateSessionState, w.data.SessionID, state).Get(ctx, nil); err != nil {
 		w.z.Panic("update session", zap.Error(err))
@@ -370,8 +374,7 @@ func (w *sessionWorkflow) removeEventSubscription(ctx context.Context, signalID 
 }
 
 func (w *sessionWorkflow) run(ctx workflow.Context) (prints []string, err error) {
-	// set before r.Call is called.
-	var callValue sdktypes.Value
+	workflowContextKey := struct{ _ string }{"autokitteh_workflow_context"}
 
 	newRunID := func() (runID sdktypes.RunID) {
 		if err := workflow.SideEffect(ctx, func(workflow.Context) any {
@@ -385,7 +388,11 @@ func (w *sessionWorkflow) run(ctx workflow.Context) (prints []string, err error)
 	cbs := sdkservices.RunCallbacks{
 		NewRunID: newRunID,
 		Load:     w.load,
-		Call: func(_ context.Context, rid sdktypes.RunID, v sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
+		Call: func(callCtx context.Context, rid sdktypes.RunID, v sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
+			if callCtx.Value(workflowContextKey) == nil {
+				return sdktypes.InvalidValue, fmt.Errorf("nested activities are not supported")
+			}
+
 			return w.call(ctx, rid, v, args, kwargs)
 		},
 		Print: func(_ context.Context, runID sdktypes.RunID, text string) {
@@ -404,6 +411,10 @@ func (w *sessionWorkflow) run(ctx workflow.Context) (prints []string, err error)
 	entryPoint := w.data.Session.EntryPoint()
 
 	goCtx := temporalclient.NewWorkflowContextAsGOContext(ctx)
+
+	// This will allow us to identify if the call context is from a workflow (script code run), or
+	// some other thing that calls the Call callback from within an acitivity. The latter is not supported.
+	goCtx = context.WithValue(goCtx, workflowContextKey, ctx)
 
 	run, err := sdkruntimes.Run(
 		goCtx,

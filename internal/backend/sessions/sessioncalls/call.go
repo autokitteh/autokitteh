@@ -12,11 +12,16 @@ import (
 )
 
 func (cs *calls) checkPollPolicy(ctx context.Context, pollfn, result sdktypes.Value, executors *sdkexecutor.Executors) (retry bool, interval time.Duration, err error) {
-	pollRet, err := executors.Call(ctx, pollfn, []sdktypes.Value{result}, nil)
-	if err != nil {
-		err = fmt.Errorf("poll function: %w", err)
+	var res sdktypes.SessionCallAttemptResult
+	if res, err = cs.invoke(ctx, pollfn, []sdktypes.Value{result}, nil, executors); err != nil {
+		err = fmt.Errorf("poll function invoke: %w", err)
+		return
+	} else if err = res.GetError(); err != nil {
+		err = fmt.Errorf("poll function error: %w", err)
 		return
 	}
+
+	pollRet := res.GetValue()
 
 	if pollRet.IsNothing() {
 		// Nothing: no retry.
@@ -38,21 +43,22 @@ func (cs *calls) checkPollPolicy(ctx context.Context, pollfn, result sdktypes.Va
 	return
 }
 
-func (cs *calls) callIntegration(ctx context.Context, callv sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value, executors *sdkexecutor.Executors) (sdktypes.SessionCallAttemptResult, error) {
+func (cs *calls) invoke(ctx context.Context, callv sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value, executors *sdkexecutor.Executors) (sdktypes.SessionCallAttemptResult, error) {
 	xid := callv.GetFunction().ExecutorID()
-	if !xid.IsIntegrationID() {
-		return sdktypes.InvalidSessionCallAttemptResult, fmt.Errorf("call function must be an integration function, got %q", xid)
-	}
 
-	intg, err := cs.svcs.Integrations.Get(ctx, xid.ToIntegrationID())
-	if err != nil {
-		return sdktypes.InvalidSessionCallAttemptResult, fmt.Errorf("get integration: %w", err)
-	}
+	var caller sdkexecutor.Caller
 
-	var caller sdkexecutor.Caller = intg
+	if xid.IsIntegrationID() {
+		intg, err := cs.svcs.Integrations.Get(ctx, xid.ToIntegrationID())
+		if err != nil {
+			return sdktypes.InvalidSessionCallAttemptResult, fmt.Errorf("get integration: %w", err)
+		}
 
-	if caller == nil {
+		caller = intg
+	} else if xid.IsRunID() {
 		caller = executors.GetCaller(xid)
+	} else {
+		return sdktypes.InvalidSessionCallAttemptResult, fmt.Errorf("could not determine executor for %q", xid)
 	}
 
 	if caller == nil {
@@ -62,7 +68,6 @@ func (cs *calls) callIntegration(ctx context.Context, callv sdktypes.Value, args
 	return sdktypes.NewSessionCallAttemptResult(caller.Call(ctx, callv, args, kwargs)), nil
 }
 
-// called from `sessions.sessionCallActivity`.
 func (cs *calls) executeCall(ctx context.Context, sessionID sdktypes.SessionID, seq uint32, poller sdktypes.Value, executors *sdkexecutor.Executors) (debug any, attempt uint32, _ error) {
 	z := cs.z.With(zap.Uint32("seq", seq))
 
@@ -115,7 +120,7 @@ func (cs *calls) executeCall(ctx context.Context, sessionID sdktypes.SessionID, 
 				}
 			}()
 
-			if result, err = cs.callIntegration(ctx, callv, args, kwargs, executors); err != nil {
+			if result, err = cs.invoke(ctx, callv, args, kwargs, executors); err != nil {
 				z.Panic("call integration", zap.Error(err))
 			}
 		}()
