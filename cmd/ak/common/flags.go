@@ -41,14 +41,12 @@ func ToExitCodeError(err error, what string) error {
 	var code int = GenericFailure
 	switch {
 	case errors.Is(err, sdkerrors.ErrNotFound):
-		msg = fmt.Sprintf("%s not found", what)
-		code = NotFoundExitCode
+		return NewExitCodeError(NotFoundExitCode, fmt.Errorf("%s not found", what))
 	case errors.Is(err, sdkerrors.ErrFailedPrecondition):
 		msg = fmt.Sprintf("on %s", what)
 		code = FailedPrecondition
 	case errors.As(err, resolver.NotFoundErrorType):
-		msg = fmt.Sprintf("%s not found", what)
-		code = NotFoundExitCode
+		return NewExitCodeError(NotFoundExitCode, fmt.Errorf("%s not found", what))
 	}
 	return NewExitCodeError(code, fmt.Errorf("%w: %s", err, msg))
 }
