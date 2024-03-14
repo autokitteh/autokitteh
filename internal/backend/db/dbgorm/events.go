@@ -10,6 +10,10 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
+func (db *gormdb) saveEvent(ctx context.Context, event *scheme.Event) error {
+	return db.db.WithContext(ctx).Create(&event).Error
+}
+
 func (db *gormdb) SaveEvent(ctx context.Context, event sdktypes.Event) error {
 	e := scheme.Event{
 		EventID:          event.ID().String(),
@@ -21,12 +25,11 @@ func (db *gormdb) SaveEvent(ctx context.Context, event sdktypes.Event) error {
 		Memo:             kittehs.Must1(json.Marshal(event.Memo())),
 		CreatedAt:        event.CreatedAt(),
 	}
+	return translateError(db.saveEvent(ctx, &e))
+}
 
-	if err := db.db.WithContext(ctx).Create(&e).Error; err != nil {
-		return translateError(err)
-	}
-
-	return nil
+func (db *gormdb) deleteEvent(ctx context.Context, id string) error {
+	return db.db.WithContext(ctx).Delete(&scheme.Event{}, "event_id = ?", id).Error
 }
 
 func (db *gormdb) GetEventByID(ctx context.Context, eventID sdktypes.EventID) (sdktypes.Event, error) {

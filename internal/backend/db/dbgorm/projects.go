@@ -59,8 +59,24 @@ func (db *gormdb) deleteProjectAndDependents(ctx context.Context, projectID stri
 
 	gormDB := db.db.WithContext(ctx)
 
-	// delete triggers
+	// Connection is referenced by signals and triggers, so delete them first.
+	// NOTE that signals, triggers and connections are hard-deleted now
 	if err = gormDB.Delete(&scheme.Trigger{}, "project_id = ?", projectID).Error; err != nil {
+		return err
+	}
+
+	var signalIDs []string
+	if err := gormDB.Model(&scheme.Signal{}).
+		Joins("join Connections on Connections.connection_id = Signals.connection_id").
+		Where("Connections.project_id = ?", projectID).
+		Pluck("Signals.signal_id", &signalIDs).Error; err != nil {
+		return err
+	}
+	if err = gormDB.Delete(&scheme.Signal{}, "signal_id IN ?", signalIDs).Error; err != nil {
+		return err
+	}
+
+	if err = gormDB.Delete(&scheme.Connection{}, "project_id = ?", projectID).Error; err != nil {
 		return err
 	}
 
