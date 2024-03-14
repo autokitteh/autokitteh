@@ -139,6 +139,7 @@ var (
 	// testTriggerID     = "trg_00000000000000000000000001"
 	testConnectionID  = "con_00000000000000000000000001"
 	testIntegrationID = "int_00000000000000000000000001"
+	testSignalID      = "sig_00000000000000000000000001"
 )
 
 func (f *dbFixture) newSession(st sdktypes.SessionStateType) scheme.Session {
@@ -230,5 +231,11 @@ func (f *dbFixture) newEvent() scheme.Event {
 	return scheme.Event{
 		EventID:       testEventID,
 		IntegrationID: testIntegrationID,
+	}
+}
+
+func (f *dbFixture) newSignal() scheme.Signal {
+	return scheme.Signal{
+		SignalID: testSignalID,
 	}
 }

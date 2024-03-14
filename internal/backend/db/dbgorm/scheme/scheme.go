@@ -463,8 +463,10 @@ func ParseDeploymentWithSessionStats(d DeploymentWithStats) (sdktypes.Deployment
 type Signal struct {
 	SignalID     string `gorm:"primaryKey"`
 	ConnectionID string `gorm:"index:idx_connection_id_event_type"`
-	Connection   Connection
 	CreatedAt    time.Time
 	WorkflowID   string
 	EventType    string `gorm:"index:idx_connection_id_event_type"`
+
+	// enforce foreign key
+	Connection Connection
 }

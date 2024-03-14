@@ -7,6 +7,10 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
+func (db *gormdb) saveSignal(ctx context.Context, signal *scheme.Signal) error {
+	return db.db.WithContext(ctx).Create(signal).Error
+}
+
 func (db *gormdb) SaveSignal(ctx context.Context, signalID string, workflowID string, connectionID sdktypes.ConnectionID, eventName string) (string, error) {
 	s := scheme.Signal{
 		ConnectionID: connectionID.String(),
@@ -15,7 +19,7 @@ func (db *gormdb) SaveSignal(ctx context.Context, signalID string, workflowID st
 		EventType:    eventName,
 	}
 
-	return signalID, db.db.Create(&s).Error
+	return signalID, translateError(db.saveSignal(ctx, &s))
 }
 
 func (db *gormdb) ListSignalsWaitingOnConnection(ctx context.Context, connectionID sdktypes.ConnectionID, eventType string) ([]scheme.Signal, error) {
@@ -28,7 +32,7 @@ func (db *gormdb) ListSignalsWaitingOnConnection(ctx context.Context, connection
 }
 
 func (db *gormdb) RemoveSignal(ctx context.Context, signalID string) error {
-	return db.db.WithContext(ctx).Where("signal_id = ?", signalID).Delete(&scheme.Signal{}).Error
+	return db.db.WithContext(ctx).Delete(&scheme.Signal{SignalID: signalID}).Error
 }
 
 func (db *gormdb) GetSignal(ctx context.Context, signalID string) (scheme.Signal, error) {
