@@ -8,6 +8,8 @@ import (
 	"go.starlark.net/starlarkstruct"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
+	"go.autokitteh.dev/autokitteh/runtimes/starlarkrt/internal/tls"
+	"go.autokitteh.dev/autokitteh/runtimes/starlarkrt/internal/values"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
@@ -33,17 +35,22 @@ func activityBuiltinFunc(th *starlark.Thread, _ *starlark.Builtin, args starlark
 		return nil, fmt.Errorf("missing function argument")
 	}
 
-	tlsContext, ok := th.Local(tlsKey).(*tlsContext)
-	if !ok {
+	tlsContext := tls.Get(th)
+	if tlsContext == nil {
 		return nil, fmt.Errorf("context is not set")
 	}
 
-	akV, err := tlsContext.vctx.FromStarlarkValue(args[0])
+	vctx := values.FromTLS(th)
+	if vctx == nil {
+		return nil, fmt.Errorf("value context is not set")
+	}
+
+	akV, err := vctx.FromStarlarkValue(args[0])
 	if err != nil {
 		return nil, fmt.Errorf("cannot convert function from starlark: %w", err)
 	}
 
-	akArgs, err := kittehs.TransformError(args[1:], tlsContext.vctx.FromStarlarkValue)
+	akArgs, err := kittehs.TransformError(args[1:], vctx.FromStarlarkValue)
 	if err != nil {
 		return nil, fmt.Errorf("cannot convert args from starlark: %w", err)
 	}
@@ -58,7 +65,7 @@ func activityBuiltinFunc(th *starlark.Thread, _ *starlark.Builtin, args starlark
 			return "", sdktypes.InvalidValue, fmt.Errorf("expected string, got %T", t[0])
 		}
 
-		v, err := tlsContext.vctx.FromStarlarkValue(t[1])
+		v, err := vctx.FromStarlarkValue(t[1])
 		if err != nil {
 			return "", sdktypes.InvalidValue, fmt.Errorf("cannot convert value from starlark: %w", err)
 		}
@@ -69,12 +76,12 @@ func activityBuiltinFunc(th *starlark.Thread, _ *starlark.Builtin, args starlark
 		return nil, err
 	}
 
-	rv, err := tlsContext.cbs.Call(tlsContext.goCtx, tlsContext.runID, akV, akArgs, akKwArgs)
+	rv, err := tlsContext.Callbacks.Call(tlsContext.GoCtx, tlsContext.RunID, akV, akArgs, akKwArgs)
 	if err != nil {
 		return nil, err
 	}
 
-	return tlsContext.vctx.ToStarlarkValue(rv)
+	return vctx.ToStarlarkValue(rv)
 }
 
 func catchBuiltinFunc(th *starlark.Thread, _ *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
@@ -85,15 +92,15 @@ func catchBuiltinFunc(th *starlark.Thread, _ *starlark.Builtin, args starlark.Tu
 		return nil, errors.New("first argument must be a function")
 	}
 
-	tlsContext, ok := th.Local(tlsKey).(*tlsContext)
-	if !ok {
-		return nil, fmt.Errorf("context is not set")
+	vctx := values.FromTLS(th)
+	if vctx == nil {
+		return nil, fmt.Errorf("value context is not set")
 	}
 
 	value, err := starlark.Call(th, fn, args[1:], kwargs)
 	if err != nil {
 		if perr, ok := sdktypes.FromError(err); ok {
-			if slv, cerr := tlsContext.vctx.ToStarlarkValue(perr.Value()); cerr == nil {
+			if slv, cerr := vctx.ToStarlarkValue(perr.Value()); cerr == nil {
 				return starlark.Tuple{starlark.None, slv}, nil
 			}
 		}
@@ -105,9 +112,9 @@ func catchBuiltinFunc(th *starlark.Thread, _ *starlark.Builtin, args starlark.Tu
 }
 
 func failBuiltinFunc(th *starlark.Thread, bi *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
-	tlsContext, ok := th.Local(tlsKey).(*tlsContext)
-	if !ok {
-		return nil, fmt.Errorf("context is not set")
+	vctx := values.FromTLS(th)
+	if vctx == nil {
+		return nil, fmt.Errorf("value context is not set")
 	}
 
 	if len(args) != 0 && len(kwargs) != 0 {
@@ -115,7 +122,7 @@ func failBuiltinFunc(th *starlark.Thread, bi *starlark.Builtin, args starlark.Tu
 	}
 
 	if len(args) == 1 {
-		v, err := tlsContext.vctx.FromStarlarkValue(args[0])
+		v, err := vctx.FromStarlarkValue(args[0])
 		if err != nil {
 			return nil, fmt.Errorf("cannot convert value from starlark: %w", err)
 		}
@@ -123,7 +130,7 @@ func failBuiltinFunc(th *starlark.Thread, bi *starlark.Builtin, args starlark.Tu
 	}
 
 	if len(args) > 1 {
-		vs, err := kittehs.TransformError(args, tlsContext.vctx.FromStarlarkValue)
+		vs, err := kittehs.TransformError(args, vctx.FromStarlarkValue)
 		if err != nil {
 			return nil, fmt.Errorf("cannot convert values from starlark: %w", err)
 		}
@@ -149,7 +156,7 @@ func failBuiltinFunc(th *starlark.Thread, bi *starlark.Builtin, args starlark.Tu
 			return "", sdktypes.InvalidValue, fmt.Errorf("expected string, got %T", t[0])
 		}
 
-		v, err := tlsContext.vctx.FromStarlarkValue(t[1])
+		v, err := vctx.FromStarlarkValue(t[1])
 		if err != nil {
 			return "", sdktypes.InvalidValue, fmt.Errorf("cannot convert value from starlark: %w", err)
 		}
@@ -169,15 +176,13 @@ func globalsBuiltinFunc(th *starlark.Thread, bi *starlark.Builtin, args starlark
 		return nil, err
 	}
 
-	tlsContext, ok := th.Local(tlsKey).(*tlsContext)
-	if !ok || tlsContext.globals == nil {
+	tlsContext := tls.Get(th)
+	if tlsContext == nil {
 		return nil, fmt.Errorf("context is not set")
 	}
 
-	globals := tlsContext.globals
-
-	d := starlark.NewDict(len(globals))
-	for k, v := range globals {
+	d := starlark.NewDict(len(tlsContext.Globals))
+	for k, v := range tlsContext.Globals {
 		kittehs.Must0(d.SetKey(starlark.String(k), v))
 	}
 

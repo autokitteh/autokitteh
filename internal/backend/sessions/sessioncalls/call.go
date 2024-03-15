@@ -54,8 +54,16 @@ func (cs *calls) invoke(ctx context.Context, callv sdktypes.Value, args []sdktyp
 			return sdktypes.InvalidSessionCallAttemptResult, fmt.Errorf("get integration: %w", err)
 		}
 
-		caller = intg
+		if intg == nil {
+			// The executor is probably a builtin. In that case, it's not registered in the integrations
+			// service, but does exist in the executors map.
+			caller = executors.GetCaller(xid)
+		} else {
+			caller = intg
+		}
 	} else if xid.IsRunID() {
+		// HACK(ENG-335): In the future, we need to call back directly to the originating workflow
+		//                and ask it to process the call.
 		caller = executors.GetCaller(xid)
 	} else {
 		return sdktypes.InvalidSessionCallAttemptResult, fmt.Errorf("could not determine executor for %q", xid)

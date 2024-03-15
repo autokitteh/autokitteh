@@ -13,26 +13,15 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/runtimes/starlarkrt/internal/bootstrap"
 	"go.autokitteh.dev/autokitteh/runtimes/starlarkrt/internal/libs"
+	"go.autokitteh.dev/autokitteh/runtimes/starlarkrt/internal/tls"
 	"go.autokitteh.dev/autokitteh/runtimes/starlarkrt/internal/values"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-const (
-	tlsKey = "autokitteh"
-
-	// TODO: https://linear.app/autokitteh/issue/ENG-241/decide-how-to-fix-pr-250
-	// testsGlobalName = "tests"
-)
-
-type tlsContext struct {
-	goCtx   context.Context
-	runID   sdktypes.RunID
-	cbs     *sdkservices.RunCallbacks
-	vctx    *values.Context
-	globals starlark.StringDict
-}
+// TODO: https://linear.app/autokitteh/issue/ENG-241/decide-how-to-fix-pr-250
+// const testsGlobalName = "tests"
 
 type run struct {
 	runID    sdktypes.RunID
@@ -108,11 +97,11 @@ func Run(
 		},
 	}
 
-	th.SetLocal(tlsKey, &tlsContext{
-		goCtx: ctx,
-		runID: runID,
-		cbs:   cbs,
-		vctx:  vctx,
+	vctx.SetTLS(th)
+	tls.Set(th, &tls.Context{
+		GoCtx:     ctx,
+		RunID:     runID,
+		Callbacks: cbs,
 	})
 
 	var errorReporter errorReporter
@@ -169,12 +158,12 @@ func (r *run) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Value,
 		Print: func(_ *starlark.Thread, text string) { r.cbs.SafePrint(ctx, r.runID, text) },
 	}
 
-	th.SetLocal(tlsKey, &tlsContext{
-		goCtx:   ctx,
-		runID:   r.runID,
-		globals: r.globals,
-		cbs:     r.cbs,
-		vctx:    r.vctx,
+	r.vctx.SetTLS(th)
+	tls.Set(th, &tls.Context{
+		GoCtx:     ctx,
+		RunID:     r.runID,
+		Globals:   r.globals,
+		Callbacks: r.cbs,
 	})
 
 	var errorReporter errorReporter
