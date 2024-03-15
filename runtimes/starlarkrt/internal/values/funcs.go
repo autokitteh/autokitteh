@@ -7,6 +7,7 @@ import (
 	"go.starlark.net/starlark"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
+	"go.autokitteh.dev/autokitteh/runtimes/starlarkrt/internal/tls"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -61,8 +62,14 @@ func (vctx *Context) functionToStarlark(v sdktypes.Value) (starlark.Value, error
 				}
 			}
 
+			tlsContext := tls.Get(th)
+			ctx := context.Background()
+			if tlsContext != nil && tlsContext.GoCtx != nil {
+				ctx = tlsContext.GoCtx
+			}
+
 			akret, err := vctx.Call(
-				context.Background(), // TODO: extract context from thread. Put context in its tls?
+				ctx,
 				vctx.RunID,
 				v,
 				akargs,

@@ -16,3 +16,17 @@ type Context struct {
 	// Used to deterministically set internal function signatures.
 	funcSeq uint
 }
+
+type tlsKeyType string
+
+const tlsKey = tlsKeyType("autokitteh-vctx")
+
+func (c *Context) SetTLS(th *starlark.Thread) { th.SetLocal(string(tlsKey), c) }
+
+func FromTLS(th *starlark.Thread) *Context {
+	ctx, ok := th.Local(string(tlsKey)).(*Context)
+	if !ok {
+		return nil
+	}
+	return ctx
+}
