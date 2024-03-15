@@ -1,4 +1,4 @@
-package svc
+package svcproc
 
 import (
 	"context"
@@ -12,16 +12,17 @@ import (
 
 	"go.uber.org/fx"
 
+	"go.autokitteh.dev/autokitteh/backend/svc"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 )
 
 type svcProc struct {
 	binPath string
-	ropts   RunOptions
-	cfg     *Config
+	ropts   svc.RunOptions
+	cfg     *svc.Config
 	addr    string
 	cmd     *exec.Cmd
-	wait    chan ShutdownSignal
+	wait    chan svc.ShutdownSignal
 }
 
 func (s *svcProc) Start(ctx context.Context) error {
@@ -67,7 +68,7 @@ func (s *svcProc) Start(ctx context.Context) error {
 		}
 
 		// TODO: pass which signal killed it somehow?
-		wait <- ShutdownSignal{ExitCode: rc}
+		wait <- svc.ShutdownSignal{ExitCode: rc}
 	}()
 
 	timeout := time.After(5 * time.Second)
@@ -102,11 +103,11 @@ func (s *svcProc) Stop(ctx context.Context) error {
 	return s.cmd.Process.Kill()
 }
 
-func (s *svcProc) Wait() <-chan ShutdownSignal { return s.wait }
+func (s *svcProc) Wait() <-chan svc.ShutdownSignal { return s.wait }
 
 func (s *svcProc) Addr() string { return s.addr }
 
-func NewSvcProc(binPath string, cfg *Config, ropts RunOptions) (Service, error) {
+func NewSvcProc(binPath string, cfg *svc.Config, ropts svc.RunOptions) (svc.Service, error) {
 	if ropts.TemporalClient != nil {
 		return nil, sdkerrors.ErrNotImplemented
 	}

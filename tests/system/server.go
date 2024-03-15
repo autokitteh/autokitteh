@@ -8,6 +8,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/backend/svc"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
+	"go.autokitteh.dev/autokitteh/tests/internal/svcproc"
 )
 
 var useProcSvc, _ = strconv.ParseBool(os.Getenv("AK_SYSTEST_USE_PROC_SVC"))
@@ -28,7 +29,7 @@ func startAKServer(ctx context.Context, akPath string) (svc.Service, error) {
 	)
 
 	if useProcSvc {
-		service, err = svc.NewSvcProc(akPath, cfg, runOpts)
+		service, err = svcproc.NewSvcProc(akPath, cfg, runOpts)
 	} else {
 		service, err = svc.New(cfg, runOpts)
 	}
