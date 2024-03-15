@@ -34,7 +34,7 @@ ak connection get my_project/my_connection
 return code == 0
 output contains 'connection_id:"con_00000000000000000000000002"'
 output contains 'project_id:"prj_00000000000000000000000001"'
-output contains 'integration_id:"int_0000000000f1201a7ed83f7cd5"'
+output contains 'integration_id:"int_3kth000000000000000000http"'
 output contains 'integration_token:"my_url_path"'
 output contains 'name:"my_connection"'
 
@@ -46,7 +46,7 @@ output equals file expected_connection.json
 {
   "connection": {
     "connection_id": "con_00000000000000000000000002",
-    "integration_id": "int_0000000000f1201a7ed83f7cd5",
+    "integration_id": "int_3kth000000000000000000http",
     "integration_token": "my_url_path",
     "project_id": "prj_00000000000000000000000001",
     "name": "my_connection"

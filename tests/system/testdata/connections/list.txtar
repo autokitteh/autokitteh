@@ -47,20 +47,20 @@ return code == 0
 output equals ''
 
 -- expected_all_unformatted.json --
-{"connection_id":"con_00000000000000000000000002","integration_id":"int_0000000000f1201a7ed83f7cd5","integration_token":"my_url_path_1","project_id":"prj_00000000000000000000000001","name":"my_connection_1"}
-{"connection_id":"con_00000000000000000000000003","integration_id":"int_0000000000f1201a7ed83f7cd5","integration_token":"my_url_path_2","project_id":"prj_00000000000000000000000001","name":"my_connection_2"}
+{"connection_id":"con_00000000000000000000000002","integration_id":"int_3kth000000000000000000http","integration_token":"my_url_path_1","project_id":"prj_00000000000000000000000001","name":"my_connection_1"}
+{"connection_id":"con_00000000000000000000000003","integration_id":"int_3kth000000000000000000http","integration_token":"my_url_path_2","project_id":"prj_00000000000000000000000001","name":"my_connection_2"}
 
 -- expected_all_formatted.json --
 {
   "connection_id": "con_00000000000000000000000002",
-  "integration_id": "int_0000000000f1201a7ed83f7cd5",
+  "integration_id": "int_3kth000000000000000000http",
   "integration_token": "my_url_path_1",
   "project_id": "prj_00000000000000000000000001",
   "name": "my_connection_1"
 }
 {
   "connection_id": "con_00000000000000000000000003",
-  "integration_id": "int_0000000000f1201a7ed83f7cd5",
+  "integration_id": "int_3kth000000000000000000http",
   "integration_token": "my_url_path_2",
   "project_id": "prj_00000000000000000000000001",
   "name": "my_connection_2"
@@ -69,7 +69,7 @@ output equals ''
 -- expected_some.json --
 {
   "connection_id": "con_00000000000000000000000003",
-  "integration_id": "int_0000000000f1201a7ed83f7cd5",
+  "integration_id": "int_3kth000000000000000000http",
   "integration_token": "my_url_path_2",
   "project_id": "prj_00000000000000000000000001",
   "name": "my_connection_2"

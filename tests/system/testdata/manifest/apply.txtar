@@ -111,7 +111,7 @@ project:
 {
   "connection": {
     "connection_id": "con_00000000000000000000000003",
-    "integration_id": "int_0000000000f1201a7ed83f7cd5",
+    "integration_id": "int_3kth000000000000000000http",
     "integration_token": "my_path",
     "project_id": "prj_00000000000000000000000001",
     "name": "my_connection"
