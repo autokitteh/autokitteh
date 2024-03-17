@@ -21,15 +21,15 @@ ak runtimes run --txtar test.txtar -J
 return code == 0
 output equals meow, world!
 
-ak runtimes run --local --test test.txtar -J
+ak runtimes test --local test.txtar -J
 return code == 0
 output equals meow, world!
 
-ak runtimes run --test failing_test.txtar -J
+ak runtimes test failing_test.txtar -J
 return code == 1
 output equals file failing_test_output.txt
 
-ak runtimes run --local --test failing_test.txtar -J
+ak runtimes test --local failing_test.txtar -J
 return code == 1
 output equals file failing_test_output.txt
 
