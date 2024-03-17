@@ -5,14 +5,12 @@ import (
 	"io"
 	"io/fs"
 	"os"
-	"path/filepath"
 
 	"github.com/spf13/cobra"
 	"golang.org/x/tools/txtar"
 
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
-	"go.autokitteh.dev/autokitteh/sdk/sdkbuildfile"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
@@ -80,7 +78,7 @@ var buildCmd = common.StandardCommand(&cobra.Command{
 			args = nil
 		}
 
-		b, err := build(srcFS, args, syms)
+		b, err := common.Build(runtimes(), srcFS, args, syms)
 		if err != nil {
 			return err
 		}
@@ -132,34 +130,4 @@ func outputFile() (*os.File, error) {
 	}
 
 	return f, nil
-}
-
-func build(srcFS fs.FS, paths []string, syms []sdktypes.Symbol) (*sdkbuildfile.BuildFile, error) {
-	ctx, cancel := common.LimitedContext()
-	defer cancel()
-
-	if len(paths) != 0 {
-		files := make(map[string][]byte, len(paths))
-
-		for _, path := range paths {
-			data, err := fs.ReadFile(srcFS, filepath.Clean(path))
-			if err != nil {
-				return nil, fmt.Errorf("read file %q: %w", path, err)
-			}
-
-			files[path] = data
-		}
-
-		var err error
-		if srcFS, err = kittehs.MapToMemFS(files); err != nil {
-			return nil, fmt.Errorf("create memory filesystem: %w", err)
-		}
-	}
-
-	b, err := runtimes().Build(ctx, srcFS, syms, nil)
-	if err != nil {
-		return nil, fmt.Errorf("create build: %w", err)
-	}
-
-	return b, nil
 }

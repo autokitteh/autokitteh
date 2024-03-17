@@ -7,12 +7,8 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
-	"github.com/hexops/gotextdiff"
-	"github.com/hexops/gotextdiff/myers"
-	"github.com/hexops/gotextdiff/span"
 	"github.com/spf13/cobra"
 	"golang.org/x/tools/txtar"
 
@@ -28,7 +24,6 @@ var (
 	tmo        time.Duration
 	txtarFile  bool
 	emitValues bool
-	test       bool
 	quiet      bool
 )
 
@@ -48,9 +43,7 @@ var runCmd = common.StandardCommand(&cobra.Command{
 
 		var b *sdkbuildfile.BuildFile
 
-		var expectedPrints string
-
-		if txtarFile || test {
+		if txtarFile {
 			bs, err := io.ReadAll(f)
 			if err != nil {
 				return fmt.Errorf("read: %w", err)
@@ -61,14 +54,12 @@ var runCmd = common.StandardCommand(&cobra.Command{
 				return fmt.Errorf("empty txtar archive")
 			}
 
-			expectedPrints = strings.TrimRight(string(a.Comment), "\n")
-
 			fs, err := kittehs.TxtarToFS(a)
 			if err != nil {
 				return fmt.Errorf("internal error: %w", err)
 			}
 
-			if b, err = build(fs, nil, nil); err != nil {
+			if b, err = common.Build(runtimes(), fs, nil, nil); err != nil {
 				return err
 			}
 
@@ -100,26 +91,18 @@ var runCmd = common.StandardCommand(&cobra.Command{
 			}
 
 			var err error
-			if b, err = build(os.DirFS("."), buildPaths, nil); err != nil {
+			if b, err = common.Build(runtimes(), os.DirFS("."), buildPaths, nil); err != nil {
 				return err
 			}
 		}
 
-		vs, prints, err := run(cmd.Context(), b, path)
+		vs, _, err := run(cmd.Context(), b, path)
 		if err != nil {
 			return err
 		}
 
 		if emitValues {
 			common.RenderKV("values", vs)
-		}
-
-		if test {
-			actual := strings.Join(prints, "\n")
-			if actual != expectedPrints {
-				edits := myers.ComputeEdits(span.URIFromPath("want"), expectedPrints, actual)
-				return errors.New(fmt.Sprint(gotextdiff.ToUnified("want", "got", expectedPrints, edits)))
-			}
 		}
 
 		return nil
@@ -131,8 +114,7 @@ func init() {
 	runCmd.Flags().DurationVarP(&tmo, "timeout", "t", 0, "timeout")
 	runCmd.Flags().BoolVar(&txtarFile, "txtar", false, "input file is a txtar archive containing program")
 	runCmd.Flags().BoolVarP(&emitValues, "values", "v", false, "emit result values")
-	runCmd.Flags().BoolVar(&test, "test", false, "fail if output is different than txtar comment. implies --txtar")
-	runCmd.Flags().BoolVarP(&test, "quiet", "q", false, "do not print anything but errors")
+	runCmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "do not print anything but errors")
 }
 
 func run(ctx context.Context, b *sdkbuildfile.BuildFile, path string) (map[string]sdktypes.Value, []string, error) {
