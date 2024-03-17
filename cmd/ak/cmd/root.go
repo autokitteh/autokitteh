@@ -33,8 +33,9 @@ var (
 	json, niceJSON bool
 
 	configs []string
-	url     string
 )
+
+const serviceUrlConfigKey = "http.service_url"
 
 var RootCmd = common.StandardCommand(&cobra.Command{
 	Use:   "ak",
@@ -65,6 +66,12 @@ var RootCmd = common.StandardCommand(&cobra.Command{
 		if err := common.InitConfig(confmap); err != nil {
 			return fmt.Errorf("root init config: %w", err)
 		}
+		cfg := common.Config()
+
+		url := sdkclient.DefaultLocalURL
+		if _, err := cfg.Get(serviceUrlConfigKey, &url); err != nil {
+			return fmt.Errorf("failed parse config: %w", err)
+		} // if not overriden by config, then url will remain default
 
 		common.InitRPCClient(url, "")
 
@@ -93,7 +100,6 @@ func init() {
 	RootCmd.MarkFlagsMutuallyExclusive("json", "nice_json")
 
 	RootCmd.PersistentFlags().StringArrayVarP(&configs, "config", "c", nil, `temporary "key=value" configurations`)
-	RootCmd.PersistentFlags().StringVar(&url, "url", sdkclient.DefaultLocalURL, "autokitteh service URL")
 
 	// Top-level standalone commands.
 	RootCmd.AddCommand(completionCmd)
