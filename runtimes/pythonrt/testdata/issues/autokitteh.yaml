@@ -1,0 +1,18 @@
+---
+version: v1
+
+project:
+  name: notify_issue
+  connections:
+    - name: github
+      integration: github
+      token: TODO  # FIXME
+  triggers:
+    - connection: github
+      event_type: issues
+      entrypoint: issuse.py:on_issue
+  vars:
+    - name: SLACK_TOKEN
+      value: baz00ka  # FIXME
+    - name: SLACK_CHANNEL_ID
+      value: C05QK6B1DS6
