@@ -100,7 +100,7 @@ func newSocket() (string, error) {
 	return file.Name(), nil
 }
 
-func runPython(log *zap.Logger, tarData []byte, rootPath string) (*pyRunInfo, error) {
+func runPython(log *zap.Logger, tarData []byte, rootPath string, env map[string]string) (*pyRunInfo, error) {
 	tarPath, err := writeTar(tarData)
 	if err != nil {
 		return nil, err
@@ -127,6 +127,7 @@ func runPython(log *zap.Logger, tarData []byte, rootPath string) (*pyRunInfo, er
 	// TODO: Hook cmd.Stdout & cmd.Stderr to logs
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+	cmd.Env = overrideEnv(env)
 
 	if err := cmd.Start(); err != nil {
 		lis.Close()
@@ -154,4 +155,14 @@ func writeTar(data []byte) (string, error) {
 	}
 
 	return file.Name(), err
+}
+
+func overrideEnv(envMap map[string]string) []string {
+	env := os.Environ()
+	// Append AK values to end to override (see Env docs in https://pkg.go.dev/os/exec#Cmd)
+	for k, v := range envMap {
+		env = append(env, fmt.Sprintf("%s=%s", k, v))
+	}
+
+	return env
 }

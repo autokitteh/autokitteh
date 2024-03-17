@@ -82,9 +82,9 @@ func (py *pySVC) Build(ctx context.Context, fs fs.FS, path string, values []sdkt
 }
 
 type PyMessage struct {
-	Type     string `json:"type"`
-	Function string `json:"function"`
-	Payload  []byte `json:"payload"`
+	Type    string `json:"type"`
+	Name    string `json:"name"`
+	Payload []byte `json:"payload"`
 }
 
 func entriesToValues(xid sdktypes.ExecutorID, entries []string) (map[string]sdktypes.Value, error) {
@@ -119,12 +119,21 @@ func (py *pySVC) Run(
 ) (sdkservices.Run, error) {
 	py.log.Info("run", zap.String("id", runID.String()), zap.String("path", mainPath))
 
+	env, err := cbs.Load(ctx, runID, "env")
+	if err != nil {
+		return nil, fmt.Errorf("can't load env - %w", err)
+	}
+	envMap := kittehs.TransformMap(env, func(key string, value sdktypes.Value) (string, string) {
+		return key, value.GetString().Value()
+	})
+	py.log.Info("env", zap.Any("env", envMap))
+
 	tarData := compiled[archiveKey]
 	if tarData == nil {
 		return nil, fmt.Errorf("%q note found in compiled data", archiveKey)
 	}
 
-	ri, err := runPython(py.log, tarData, mainPath)
+	ri, err := runPython(py.log, tarData, mainPath, envMap)
 	if err != nil {
 		return nil, err
 	}
@@ -204,9 +213,9 @@ func (py *pySVC) Close() {
 func (py *pySVC) initialCall(ctx context.Context, funcName string, payload []byte) (sdktypes.Value, error) {
 	// Initial run cal
 	msg := PyMessage{
-		Type:     "run",
-		Function: funcName,
-		Payload:  payload,
+		Type:    "run",
+		Name:    funcName,
+		Payload: payload,
 	}
 	py.log.Info("initial call", zap.Any("message", msg))
 	if err := py.enc.Encode(msg); err != nil {
@@ -225,6 +234,10 @@ func (py *pySVC) initialCall(ctx context.Context, funcName string, payload []byt
 
 		if msg.Type == "done" {
 			break
+		}
+
+		if msg.Type == "env" {
+
 		}
 
 		var modFn sdktypes.ModuleFunction

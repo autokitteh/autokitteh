@@ -209,14 +209,14 @@ def file_type(value):
     raise ValueError(f'{value!r} - not a file')
 
 
-def encode_msg(typ, function, payload):
+def encode_msg(typ, name, payload):
     if isinstance(payload, str):
         payload = payload.encode('utf-8')
     data = b64encode(payload)
 
     data = json.dumps({
         'type': typ,
-        'function': function,
+        'name': name,
         'payload': data.decode('utf-8'),
     }) + '\n'
     return data.encode('utf-8')
@@ -277,7 +277,7 @@ if __name__ == '__main__':
         logging.error('bad initial request: %r', request)
         raise SystemExit(1)
 
-    func_name = request.get('function')
+    func_name = request.get('name')
     if func_name is None:
         logging.error('no function name in %r', request)
         raise SystemExit(1)

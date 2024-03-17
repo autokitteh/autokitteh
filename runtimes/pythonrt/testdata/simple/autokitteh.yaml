@@ -1,3 +1,4 @@
+---
 version: v1
 
 project:
@@ -5,8 +6,11 @@ project:
   connections:
     - name: http
       integration: http
-      token: trigger_url_path_py # http://<autokitteh address>/http/<token>
+      token: trigger_url_path_py  # http://<autokitteh address>/http/<token>
   triggers:
     - connection: http
       event_type: post
       entrypoint: simple.py:greet
+  vars:
+    - name: ZOO
+      value: MONKEY

@@ -118,6 +118,9 @@ func Test_pySVC_Run(t *testing.T) {
 			kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
 			return svc.Call(ctx, v, args, kwargs)
 		},
+		Load: func(ctx context.Context, rid sdktypes.RunID, path string) (map[string]sdktypes.Value, error) {
+			return map[string]sdktypes.Value{}, nil
+		},
 	}
 
 	run, err := svc.Run(ctx, runID, mainPath, compiled, nil, &cbs)
