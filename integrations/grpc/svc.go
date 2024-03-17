@@ -18,5 +18,5 @@ var description = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.In
 }))
 
 func New(sec sdkservices.Secrets) sdkservices.Integration {
-	return sdkintegrations.NewIntegration(description, sdkmodule.New(sdkmodule.ExportFunction("call", createGRPCCallWrapper("call"))))
+	return sdkintegrations.NewIntegration(description, sdkmodule.New(sdkmodule.ExportFunction("call", handleGenericGRPCCall())))
 }
