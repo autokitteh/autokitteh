@@ -16,6 +16,10 @@ const (
 	waitInterval = 100 * time.Millisecond
 )
 
+func ServiceUrlArg(akAddr string) []string {
+	return []string{"--config", "http.service_url=http://" + akAddr}
+}
+
 func buildClient(t *testing.T) string {
 	wd, err := os.Getwd()
 	if err != nil {
@@ -73,7 +77,7 @@ func waitForSession(akPath, akAddr, step string) (string, error) {
 
 	// Check the session state with the AK client.
 	state := regexp.MustCompile(`state:SESSION_STATE_TYPE_(COMPLETED|ERROR)`)
-	args := []string{"--url=http://" + akAddr, "session", "get", id}
+	args := append(ServiceUrlArg(akAddr), "session", "get", id)
 	startTime := time.Now()
 
 	for time.Since(startTime) < duration {
@@ -90,13 +94,13 @@ func waitForSession(akPath, akAddr, step string) (string, error) {
 
 	text := fmt.Sprintf("session %s not done after %s", id, duration)
 
-	args = []string{"--url=http://" + akAddr, "events", "list", "--integration=http"}
+	args = append(ServiceUrlArg(akAddr), "events", "list", "--integration=http")
 	result, err := runClient(akPath, args)
 	if err == nil {
 		text += fmt.Sprintf("\nEvents list:\n%s", result.output)
 	}
 
-	args = []string{"--url=http://" + akAddr, "sessions", "list", "-J"}
+	args = append(ServiceUrlArg(akAddr), "sessions", "list", "-J")
 	result, err = runClient(akPath, args)
 	if err == nil {
 		text += fmt.Sprintf("\n---\nSessions list:\n%s", result.output)

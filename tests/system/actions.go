@@ -15,8 +15,7 @@ func runAction(t *testing.T, akPath, akAddr, step string) (any, error) {
 	match := actions.FindStringSubmatch(step)
 	switch match[1] {
 	case "ak":
-		args := []string{"--url=http://" + akAddr}
-		args = append(args, strings.Fields(match[3])...)
+		args := append(ServiceUrlArg(akAddr), strings.Fields(match[3])...)
 		return runClient(akPath, args)
 	case "http get", "http post":
 		method := strings.ToUpper(match[2])
