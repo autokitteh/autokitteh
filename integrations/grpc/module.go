@@ -14,7 +14,7 @@ import (
 
 var safeForJsonWrapper = sdktypes.ValueWrapper{SafeForJSON: true}
 
-func parsePayload(args []sdktypes.Value, kwargs map[string]sdktypes.Value) (map[string]any, error) {
+func parseArgs(args []sdktypes.Value, kwargs map[string]sdktypes.Value) (map[string]any, error) {
 	if len(args) > 1 {
 		return nil, errors.New("args len should be 0 or 1")
 	}
@@ -47,12 +47,12 @@ func parsePayload(args []sdktypes.Value, kwargs map[string]sdktypes.Value) (map[
 
 func handleGenericGRPCCall() sdkexecutor.Function {
 	return func(ctx context.Context, v []sdktypes.Value, m map[string]sdktypes.Value) (sdktypes.Value, error) {
-		payload, err := parsePayload(v, m)
+		args, err := parseArgs(v, m)
 		if err != nil {
 			return sdktypes.Nothing, err
 		}
 
-		hostport, ok := payload["host"].(string)
+		hostport, ok := args["host"].(string)
 		if !ok {
 			return sdktypes.Nothing, errors.New("host is required")
 		}
@@ -68,19 +68,24 @@ func handleGenericGRPCCall() sdkexecutor.Function {
 			return sdktypes.Nothing, err
 		}
 
-		service, ok := payload["service"].(string)
+		service, ok := args["service"].(string)
 		if !ok {
 			return sdktypes.Nothing, errors.New("service is required")
 		}
-		method, ok := payload["method"].(string)
+		method, ok := args["method"].(string)
 		if !ok {
 			return sdktypes.Nothing, errors.New("method is required")
 		}
 
-		funcName := fmt.Sprintf("%s.%s", service, method)
-		data, ok := payload["payload"].(map[string]any)
+		payload := map[string]any{}
+		if data, ok := args["payload"]; ok {
+			if payload, ok = data.(map[string]any); !ok {
+				return sdktypes.Nothing, errors.New("payload has to be dict")
+			}
+		}
 
-		res, err := s.invoke(funcName, data)
+		funcName := fmt.Sprintf("%s.%s", service, method)
+		res, err := s.invoke(funcName, payload)
 		if err != nil {
 			return sdktypes.Nothing, err
 		}
