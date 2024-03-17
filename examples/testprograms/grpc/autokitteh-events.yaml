@@ -4,7 +4,7 @@ project:
   name: grpc
   connections:
     - name: grpc1
-      token: "localhost:9980"
+      token: ""
       integration: "grpc"
     - name: http_event
       token: "ev"
