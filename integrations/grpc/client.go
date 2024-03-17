@@ -75,6 +75,7 @@ func newGRPCClientWithProtos(conn *grpc.ClientConn, protos protoFiles) (*grpccli
 	return c, nil
 }
 
+//lint:ignore U1000 Ignore unused to keep this code until we decide if we need it
 func (r *grpcclient) getServiceDescriptor(service string) (*desc.ServiceDescriptor, error) {
 	d, err := r.descSource.FindSymbol(service)
 	if err != nil {
@@ -89,6 +90,7 @@ func (r *grpcclient) getServiceDescriptor(service string) (*desc.ServiceDescript
 	return svc, nil
 }
 
+//lint:ignore U1000 Ignore unused to keep this code until we decide if we need it
 func (r *grpcclient) listMethods(service string) ([]method, error) {
 	svc, err := r.getServiceDescriptor(service)
 	if err != nil {
