@@ -67,9 +67,9 @@ trap ontrap 0
 export AK
 
 for f in tests/cli/${TESTS}; do
-    up "$(basename "${f}")"
+    up "${f##*/}"
 
-    AK="${PWD}/${ak_filename} --url http://$(cat ${addr_filename})"
+    AK="${PWD}/${ak_filename} -c http.service_url=http://$(< ${addr_filename})"
 
     echo "--- ${f} ---"
     ./scripts/clitest -1 "${f}"
