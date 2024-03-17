@@ -236,10 +236,6 @@ func (py *pySVC) initialCall(ctx context.Context, funcName string, payload []byt
 			break
 		}
 
-		if msg.Type == "env" {
-
-		}
-
 		var modFn sdktypes.ModuleFunction
 		// Generate activity, it'll call Python with the result
 		// The function name is irrelevant, all the information Python needs is in the Payload
