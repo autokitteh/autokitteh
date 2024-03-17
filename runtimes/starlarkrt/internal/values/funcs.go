@@ -20,6 +20,14 @@ func (vctx *Context) functionToStarlark(v sdktypes.Value) (starlark.Value, error
 	if fv.ExecutorID().ToRunID() == vctx.RunID {
 		// internal function.
 
+		if len(fv.Data()) == 0 {
+			if bi := starlark.Universe[fv.Name().String()]; bi != nil {
+				return bi, nil
+			}
+
+			return nil, fmt.Errorf("unregistered builtin function %q", fv.Name())
+		}
+
 		f := vctx.internalFuncs[string(fv.Data())]
 		if f == nil {
 			return nil, fmt.Errorf("unregistered function id %q", fid)
@@ -135,6 +143,16 @@ func (vctx *Context) fromStarlarkFunction(v *starlark.Function) (sdktypes.Value,
 }
 
 func (vctx *Context) fromStarlarkBuiltin(b *starlark.Builtin) (sdktypes.Value, error) {
+	if starlark.Universe.Has(b.Name()) {
+		return sdktypes.NewFunctionValue(
+			sdktypes.NewExecutorID(vctx.RunID),
+			b.Name(),
+			nil,
+			nil,
+			sdktypes.InvalidModuleFunction,
+		)
+	}
+
 	v, ok := vctx.externalFuncs[b.Name()]
 	if !ok {
 		return sdktypes.InvalidValue, fmt.Errorf("unregistered external function %q: %w", b.Name(), sdkerrors.ErrNotFound)

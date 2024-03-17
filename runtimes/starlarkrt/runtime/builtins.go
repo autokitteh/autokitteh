@@ -21,16 +21,16 @@ var (
 	})
 
 	builinsFuncs = map[string]starlarkBuiltinFunc{
-		"activity": activityBuiltinFunc,
-		"catch":    catchBuiltinFunc,
-		"fail":     failBuiltinFunc,
-		"globals":  globalsBuiltinFunc,
-		"module":   starlarkstruct.MakeModule,
-		"struct":   starlarkstruct.Make,
+		"run_activity": runActivityBuiltinFunc,
+		"catch":        catchBuiltinFunc,
+		"fail":         failBuiltinFunc,
+		"globals":      globalsBuiltinFunc,
+		"module":       starlarkstruct.MakeModule,
+		"struct":       starlarkstruct.Make,
 	}
 )
 
-func activityBuiltinFunc(th *starlark.Thread, _ *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
+func runActivityBuiltinFunc(th *starlark.Thread, _ *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
 	if len(args) == 0 {
 		return nil, fmt.Errorf("missing function argument")
 	}

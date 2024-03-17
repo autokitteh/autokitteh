@@ -18,22 +18,24 @@ var (
 	source string
 
 	Module  *starlark.Program
-	Exports []sdktypes.Symbol // generated from all lines in source thart being with exportPrefix.
+	Exports []sdktypes.Symbol // generated from all lines in source that begin with `exportPrefix`.
 )
 
 func init() {
-	_, Module = kittehs.Must2(starlark.SourceProgramOptions(
-		&syntax.FileOptions{},
-		"__bootstrap__",
-		source,
-		func(name string) bool { return name == "globals" || name == "ak" },
-	))
-
 	Exports = kittehs.Transform(kittehs.Filter(strings.Split(source, "\n"), func(s string) bool {
 		return strings.HasPrefix(s, exportPrefix)
 	}), func(s string) sdktypes.Symbol {
 		return kittehs.Must1(sdktypes.StrictParseSymbol(strings.TrimSpace(s[len(exportPrefix):])))
 	})
+
+	isExport := kittehs.ContainedIn(kittehs.Transform(Exports, kittehs.ToString)...)
+
+	_, Module = kittehs.Must2(starlark.SourceProgramOptions(
+		&syntax.FileOptions{},
+		"__bootstrap__",
+		source,
+		isExport,
+	))
 }
 
 func Run(th *starlark.Thread, predecls starlark.StringDict) (starlark.StringDict, error) {
