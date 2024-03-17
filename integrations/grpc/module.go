@@ -75,7 +75,7 @@ func createGRPCCallWrapper(functionName string) sdkexecutor.Function {
 	}
 }
 
-func newGRPCModule(xid sdktypes.ExecutorID) sdkmodule.Module {
+func newGRPCModule(config string) ([]sdkmodule.Optfn, error) {
 	addr := string(config)
 
 	conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
@@ -121,5 +121,5 @@ func newGRPCModule(xid sdktypes.ExecutorID) sdkmodule.Module {
 		return sdkmodule.ExportFunction(f.Name, createGRPCCallWrapper(f.Fullname), sdkmodule.WithArgs(f.Inputs...))
 	})...)
 
-	return sdkmodule.New(opts...)
+	return opts, err
 }
