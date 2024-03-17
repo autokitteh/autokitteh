@@ -19,8 +19,8 @@ deps:
 	python -m pip install -r dev-requirements.txt
 
 
-create-workflow:
-	./testdata/create-workflow.sh
+deploy-workflow:
+	go run testdata/deploy.go -- ./testdata/simple/
 
 run-workflow:
 	curl -i -X POST http://localhost:9980/http/trigger_url_path_py
