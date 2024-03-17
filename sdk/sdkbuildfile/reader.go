@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -132,7 +133,7 @@ func Read(r io.Reader) (*BuildFile, error) {
 			// example: runtimes/name/compiled/examples/teststarlark/cats.star
 			//   name = "name"
 			//   rest = "compiled/examples/teststarlark/cats.star"
-			parts := strings.SplitN(path, "/", 3)
+			parts := strings.SplitN(path, string(os.PathSeparator), 3)
 			if len(parts) < 3 || parts[0] != filenames.runtimes {
 				return nil, fmt.Errorf("unexpected path %q", path)
 			}
@@ -187,7 +188,7 @@ func readRuntimeFile(bf *BuildFile, name sdktypes.Symbol, path string, data *byt
 		}
 		rt.Artifact = rt.Artifact.WithExports(exports)
 	default:
-		kind, rest, ok := strings.Cut(path, "/")
+		kind, rest, ok := strings.Cut(path, string(os.PathSeparator))
 		if !ok {
 			return fmt.Errorf("unexpected path %q", path)
 		}
