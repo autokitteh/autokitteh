@@ -12,22 +12,10 @@ import (
 	"google.golang.org/grpc/codes"
 )
 
-type method struct {
-	Name      string
-	Inputs    []string
-	Fullname  string
-	Constants []string
-}
-
 type grpcclient struct {
 	conn             *grpc.ClientConn
 	reflectionClient *grpcreflect.Client
 	descSource       grpcurl.DescriptorSource
-}
-
-type protoFiles struct {
-	paths []string
-	names []string
 }
 
 func newGRPCClient(conn *grpc.ClientConn) (*grpcclient, error) {
