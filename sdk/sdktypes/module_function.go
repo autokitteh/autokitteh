@@ -14,6 +14,8 @@ type ModuleFunctionPB = modulev1.Function
 
 type ModuleFunctionTraits struct{}
 
+var InvalidModuleFunction ModuleFunction
+
 func (ModuleFunctionTraits) Validate(m *ModuleFunctionPB) error {
 	return errors.Join(
 		urlField("url", m.DocumentationUrl),
