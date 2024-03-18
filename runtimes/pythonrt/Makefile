@@ -18,7 +18,6 @@ test:
 deps:
 	python -m pip install -r dev-requirements.txt
 
-
 deploy-workflow:
 	go run testdata/deploy.go -- ./testdata/simple/
 
