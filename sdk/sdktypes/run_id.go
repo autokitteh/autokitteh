@@ -1,6 +1,6 @@
 package sdktypes
 
-const runIDKind = "r"
+const runIDKind = "run"
 
 type RunID = id[runIDTraits]
 
