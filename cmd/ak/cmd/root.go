@@ -25,6 +25,7 @@ import (
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/sessions"
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/triggers"
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
+	"go.autokitteh.dev/autokitteh/config"
 	"go.autokitteh.dev/autokitteh/internal/xdg"
 	"go.autokitteh.dev/autokitteh/sdk/sdkclients/sdkclient"
 )
@@ -33,7 +34,6 @@ var (
 	json, niceJSON bool
 
 	configs []string
-	url     string
 )
 
 var RootCmd = common.StandardCommand(&cobra.Command{
@@ -65,6 +65,15 @@ var RootCmd = common.StandardCommand(&cobra.Command{
 		if err := common.InitConfig(confmap); err != nil {
 			return fmt.Errorf("root init config: %w", err)
 		}
+		cfg := common.Config()
+
+		url := sdkclient.DefaultLocalURL
+		if _, err := cfg.Get(config.ServiceUrlConfigKey, &url); err != nil {
+			return fmt.Errorf("failed parse config: %w", err)
+		} // if not overriden by config, then url will remain default
+		if !strings.HasPrefix(url, "http") {
+			url = "http://" + url
+		}
 
 		common.InitRPCClient(url, "")
 
@@ -93,7 +102,6 @@ func init() {
 	RootCmd.MarkFlagsMutuallyExclusive("json", "nice_json")
 
 	RootCmd.PersistentFlags().StringArrayVarP(&configs, "config", "c", nil, `temporary "key=value" configurations`)
-	RootCmd.PersistentFlags().StringVar(&url, "url", sdkclient.DefaultLocalURL, "autokitteh service URL")
 
 	// Top-level standalone commands.
 	RootCmd.AddCommand(completionCmd)
