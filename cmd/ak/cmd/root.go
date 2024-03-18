@@ -71,6 +71,9 @@ var RootCmd = common.StandardCommand(&cobra.Command{
 		if _, err := cfg.Get(config.ServiceUrlConfigKey, &url); err != nil {
 			return fmt.Errorf("failed parse config: %w", err)
 		} // if not overriden by config, then url will remain default
+		if !strings.HasPrefix(url, "http") {
+			url = "http://" + url
+		}
 
 		common.InitRPCClient(url, "")
 
