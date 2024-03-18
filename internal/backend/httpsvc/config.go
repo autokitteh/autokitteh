@@ -35,8 +35,13 @@ type CORSConfig struct {
 }
 
 type Config struct {
-	Addr string        `koanf:"addr"`
-	H2C  httpH2CConfig `koanf:"h2c"`
+	// local server address, set to run server on different port
+	Addr string `koanf:"addr"`
+
+	// ak service url, used in client to connect to connect to specific ak server
+	ServiceUrl string `koanf:"service_url"`
+
+	H2C httpH2CConfig `koanf:"h2c"`
 
 	// If not empty, write HTTP port to this file.
 	// This is useful when starting with port 0, which means to get
@@ -55,6 +60,7 @@ type Config struct {
 var Configs = configset.Set[Config]{
 	Default: &Config{
 		Addr:                 "0.0.0.0:" + sdkclient.DefaultPort,
+		ServiceUrl:           sdkclient.DefaultLocalURL,
 		H2C:                  httpH2CConfig{Enable: true},
 		EnableGRPCReflection: true,
 		CORS: CORSConfig{
