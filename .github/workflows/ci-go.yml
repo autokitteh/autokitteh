@@ -30,8 +30,6 @@ jobs:
         run: make build bin
       - name: Test
         run: make test-unit
-        env:
-          AK_SYSTEST_USE_PROC_SVC: 1
 
   static-analysis:
     name: Static analysis
