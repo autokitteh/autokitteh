@@ -94,14 +94,6 @@ func runWorkflow(
 	return nil
 }
 
-func (w *sessionWorkflow) addPrint(ctx workflow.Context, print string) {
-	w.z.Debug("add print", zap.String("print", print))
-
-	if err := workflow.ExecuteLocalActivity(ctx, w.ws.svcs.DB.AddSessionPrint, w.data.SessionID, print).Get(ctx, nil); err != nil {
-		w.z.Panic("add print", zap.Error(err))
-	}
-}
-
 func (w *sessionWorkflow) updateState(ctx workflow.Context, state sdktypes.SessionState) {
 	w.z.Debug("update state", zap.Any("state", state))
 
@@ -151,10 +143,12 @@ func (w *sessionWorkflow) call(ctx workflow.Context, runID sdktypes.RunID, v sdk
 
 	z := w.z.With(zap.Any("run_id", runID), zap.Any("v", v), zap.Uint32("seq", w.callSeq))
 
+	f := v.GetFunction()
+
 	z.Debug("call requested")
 
-	// TODO: make sure that fake is pure starlark.
-	callvID := v.GetFunction().UniqueID()
+	// TODO: make sure that fake is pure starlark?
+	callvID := f.UniqueID()
 	fake, useFake := w.fakers[callvID]
 	if useFake {
 		z.With(zap.Any("fake", fake))
@@ -377,6 +371,13 @@ func (w *sessionWorkflow) run(wctx workflow.Context) (prints []string, err error
 	type contextKey string
 	workflowContextKey := contextKey("autokitteh_workflow_context")
 
+	goCtx := temporalclient.NewWorkflowContextAsGOContext(wctx)
+
+	// This will allow us to identify if the call context is from a workflow (script code run), or
+	// some other thing that calls the Call callback from within an activity. The latter is not supported.
+	goCtx = context.WithValue(goCtx, workflowContextKey, wctx)
+	isFromActivity := func(ctx context.Context) bool { return ctx.Value(workflowContextKey) == nil }
+
 	newRunID := func() (runID sdktypes.RunID) {
 		if err := workflow.SideEffect(wctx, func(workflow.Context) any {
 			return sdktypes.NewRunID()
@@ -389,19 +390,37 @@ func (w *sessionWorkflow) run(wctx workflow.Context) (prints []string, err error
 	cbs := sdkservices.RunCallbacks{
 		NewRunID: newRunID,
 		Load:     w.load,
-		Call: func(callCtx context.Context, rid sdktypes.RunID, v sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
-			if callCtx.Value(workflowContextKey) == nil {
+		Call: func(callCtx context.Context, runID sdktypes.RunID, v sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
+			if xid := v.GetFunction().ExecutorID(); xid.ToRunID() == runID && w.executors.GetCaller(xid) == nil {
+				// This happens only during initial evaluation (the first run because invoking the entrypoint function),
+				// and the runtime tries to call itself in order to start an activity with its own functions.
+				return sdktypes.InvalidValue, fmt.Errorf("cannot call self during initial evaluation")
+			}
+
+			if isFromActivity(callCtx) {
 				return sdktypes.InvalidValue, fmt.Errorf("nested activities are not supported")
 			}
 
-			return w.call(wctx, rid, v, args, kwargs)
+			return w.call(wctx, runID, v, args, kwargs)
 		},
-		Print: func(_ context.Context, runID sdktypes.RunID, text string) {
+		Print: func(printCtx context.Context, runID sdktypes.RunID, text string) {
 			w.z.Debug("print", zap.String("run_id", runID.String()), zap.String("text", text))
 
 			prints = append(prints, text)
 
-			w.addPrint(wctx, text)
+			if isFromActivity(printCtx) {
+				// TODO: We do this since we're already in an activity. We need to either
+				//       manually retry this (maybe even using the heartbeat to know if it's
+				//       already been processed), or we need to aggregate the prints
+				//       and just perform them in the workflow after the activity is done.
+				err = w.ws.svcs.DB.AddSessionPrint(printCtx, w.data.SessionID, text)
+			} else {
+				err = workflow.ExecuteLocalActivity(wctx, w.ws.svcs.DB.AddSessionPrint, w.data.SessionID, text).Get(wctx, nil)
+			}
+
+			if err != nil {
+				w.z.Panic("add print", zap.Error(err))
+			}
 		},
 	}
 
@@ -410,12 +429,6 @@ func (w *sessionWorkflow) run(wctx workflow.Context) (prints []string, err error
 	w.updateState(wctx, sdktypes.NewSessionStateRunning(runID, sdktypes.InvalidValue))
 
 	entryPoint := w.data.Session.EntryPoint()
-
-	goCtx := temporalclient.NewWorkflowContextAsGOContext(wctx)
-
-	// This will allow us to identify if the call context is from a workflow (script code run), or
-	// some other thing that calls the Call callback from within an acitivity. The latter is not supported.
-	goCtx = context.WithValue(goCtx, workflowContextKey, wctx)
 
 	run, err := sdkruntimes.Run(
 		goCtx,
