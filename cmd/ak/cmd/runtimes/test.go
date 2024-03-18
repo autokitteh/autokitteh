@@ -20,7 +20,7 @@ import (
 )
 
 var testCmd = common.StandardCommand(&cobra.Command{
-	Use:     "test <txtar-path> [-timeout t] [--quiet]",
+	Use:     "test <txtar-path> [--timeout <t>] [--quiet]",
 	Short:   `Test a program`,
 	Aliases: []string{"t"},
 	Args:    cobra.ExactArgs(1),
