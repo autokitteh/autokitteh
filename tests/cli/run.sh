@@ -67,7 +67,7 @@ trap ontrap 0
 export AK
 
 for f in tests/cli/${TESTS}; do
-    up "${f##*/}"
+    up "$(basename "${f}")"
 
     AK="${PWD}/${ak_filename} -c http.service_url=http://$(< ${addr_filename})"
 
