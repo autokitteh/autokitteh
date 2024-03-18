@@ -392,8 +392,8 @@ func (w *sessionWorkflow) run(wctx workflow.Context) (prints []string, err error
 		Load:     w.load,
 		Call: func(callCtx context.Context, runID sdktypes.RunID, v sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
 			if xid := v.GetFunction().ExecutorID(); xid.ToRunID() == runID && w.executors.GetCaller(xid) == nil {
-				// This happens only when we are during initial evaluation (the first run because invoking the entrypoint function),
-				// and the runtimes tries to call itself in order to start an activity with its own functions.
+				// This happens only during initial evaluation (the first run because invoking the entrypoint function),
+				// and the runtime tries to call itself in order to start an activity with its own functions.
 				return sdktypes.InvalidValue, fmt.Errorf("cannot call self during initial evaluation")
 			}
 
