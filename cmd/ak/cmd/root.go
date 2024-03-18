@@ -25,6 +25,7 @@ import (
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/sessions"
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/triggers"
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
+	"go.autokitteh.dev/autokitteh/config"
 	"go.autokitteh.dev/autokitteh/internal/xdg"
 	"go.autokitteh.dev/autokitteh/sdk/sdkclients/sdkclient"
 )
@@ -34,8 +35,6 @@ var (
 
 	configs []string
 )
-
-const serviceUrlConfigKey = "http.service_url"
 
 var RootCmd = common.StandardCommand(&cobra.Command{
 	Use:   "ak",
@@ -69,7 +68,7 @@ var RootCmd = common.StandardCommand(&cobra.Command{
 		cfg := common.Config()
 
 		url := sdkclient.DefaultLocalURL
-		if _, err := cfg.Get(serviceUrlConfigKey, &url); err != nil {
+		if _, err := cfg.Get(config.ServiceUrlConfigKey, &url); err != nil {
 			return fmt.Errorf("failed parse config: %w", err)
 		} // if not overriden by config, then url will remain default
 
