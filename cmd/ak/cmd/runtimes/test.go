@@ -39,7 +39,7 @@ var testCmd = common.StandardCommand(&cobra.Command{
 
 		bs, err := io.ReadAll(f)
 		if err != nil {
-			return fmt.Errorf("read: %w", err)
+			return err
 		}
 
 		a := txtar.Parse(bs)
