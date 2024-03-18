@@ -38,6 +38,7 @@ def name_of(node):
 
 
 ACTION_NAME = '_ak_call'
+MODULE_NAME = ''
 
 
 def is_internal(name):
@@ -136,7 +137,7 @@ def patch_import_hooks(user_dir, action_fn):
 
 def load_code(root_path, action_fn, module_name):
     patch_import_hooks(root_path, action_fn)
-    sys.path.append(str(root_path))
+    sys.path.insert(0, str(root_path))
     logging.info('importing %r', module_name)
     mod = __import__(module_name)
     return mod
@@ -154,9 +155,13 @@ def run_code(mod, entry_point, data):
 
 activity_request, activity_response = Queue(), Queue()
 
-
-def ak_action(func, *args, **kw):
+# TODO: Make this an object with MODULE_NAME as attribute?
+def ak_call(func, *args, **kw):
     logging.info('ACTION: calling %s (args=%r, kw=%r)', func.__name__, args, kw)
+    # Internal function, no need to patch
+    if func.__module__ == MODULE_NAME:
+        return func(*args, **kw)
+
     request = (func, args)
     activity_request.put(request)
     response = activity_response.get()
@@ -266,7 +271,8 @@ if __name__ == '__main__':
     logging.info('connected to %r', args.sock)
 
     logging.info('loading %r', module_name)
-    mod = load_code(code_dir, ak_action, module_name)
+    mod = load_code(code_dir, ak_call, module_name)
+    MODULE_NAME = mod.__name__
     entries = module_entries(mod)
     data = encode_msg('module', '', json.dumps(entries))
     sock.sendall(data)

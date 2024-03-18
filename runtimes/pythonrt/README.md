@@ -27,9 +27,11 @@ _ak_call(urlopen, url)
 
 ### Detecting External Function Calls
 
-We'd like to patch only external functions calls, ones that are outside the user code.
-Currently, the `is_internal` function checks for `.` in the name.
-It's not a good indication but for now should be fine.
+When the user module is loaded, we set `MODULE_NAME` the name of the loaded module.
+When `ak_call` is invoked with a function it compares the function module name with `MODULE_NAME`,
+if they are the same, it's an internal function and `ak_call` will return the invocation of the function.
+Otherwise, `ak_call` will call the Go process that will invoke an activity.
+
 See [ENG-495](https://linear.app/autokitteh/issue/ENG-495/better-detection-of-external-functions).
 
 ## Go ↔ Python Communication Flow
