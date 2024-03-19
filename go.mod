@@ -25,6 +25,7 @@ require (
 	github.com/bufbuild/protovalidate-go v0.6.0
 	github.com/fatih/color v1.16.0
 	github.com/flosch/pongo2/v6 v6.0.0
+	github.com/fullstorydev/grpcurl v1.8.9
 	github.com/glebarez/sqlite v1.10.0
 	github.com/google/go-cmp v0.6.0
 	github.com/google/go-github/v60 v60.0.0
@@ -34,6 +35,7 @@ require (
 	github.com/hexops/gotextdiff v1.0.3
 	github.com/iancoleman/strcase v0.3.0
 	github.com/invopop/jsonschema v0.12.0
+	github.com/jhump/protoreflect v1.15.6
 	github.com/joho/godotenv v1.5.1
 	github.com/josephburnett/jd v1.8.1
 	github.com/knadh/koanf/parsers/yaml v0.1.0
@@ -67,6 +69,7 @@ require (
 	golang.org/x/text v0.14.0
 	golang.org/x/tools v0.19.0
 	google.golang.org/api v0.169.0
+	google.golang.org/grpc v1.62.1
 	google.golang.org/protobuf v1.33.0
 	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/yaml.v3 v3.0.1
@@ -103,6 +106,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sts v1.28.4 // indirect
 	github.com/aws/smithy-go v1.20.1 // indirect
 	github.com/bahlo/generic-list-go v0.2.0 // indirect
+	github.com/bufbuild/protocompile v0.8.0 // indirect
 	github.com/buger/jsonparser v1.1.1 // indirect
 	github.com/cenkalti/backoff/v3 v3.2.2 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
@@ -198,7 +202,6 @@ require (
 	google.golang.org/appengine v1.6.8 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240311173647-c811ad7063a7 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240311173647-c811ad7063a7 // indirect
-	google.golang.org/grpc v1.62.1 // indirect
 	gorm.io/driver/mysql v1.5.4 // indirect
 	modernc.org/libc v1.44.1 // indirect
 	modernc.org/mathutil v1.6.0 // indirect
