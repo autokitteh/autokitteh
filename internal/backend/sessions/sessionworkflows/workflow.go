@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"go.temporal.io/sdk/workflow"
 	"go.uber.org/zap"
@@ -98,6 +99,17 @@ func (w *sessionWorkflow) updateState(ctx workflow.Context, state sdktypes.Sessi
 	w.z.Debug("update state", zap.Any("state", state))
 
 	w.state = state
+
+	if ctx.Err() == workflow.ErrCanceled {
+		goCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		if err := w.ws.svcs.DB.UpdateSessionState(goCtx, w.data.SessionID, state); err != nil {
+			w.z.Error("update session state", zap.Error(err))
+		}
+
+		return
+	}
 
 	if err := workflow.ExecuteLocalActivity(ctx, w.ws.svcs.DB.UpdateSessionState, w.data.SessionID, state).Get(ctx, nil); err != nil {
 		w.z.Panic("update session", zap.Error(err))
