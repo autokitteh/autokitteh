@@ -32,19 +32,6 @@ func createTar(fs fs.FS) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func checkDir(path string) error {
-	finfo, err := os.Stat(path)
-	if err != nil {
-		return err
-	}
-
-	if !finfo.IsDir() {
-		return fmt.Errorf("%q - not a directory", path)
-	}
-
-	return nil
-}
-
 type execInfo struct {
 	Exe     string
 	Version string

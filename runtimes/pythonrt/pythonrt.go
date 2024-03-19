@@ -143,7 +143,9 @@ func (py *pySVC) Run(
 	defer func() {
 		if killPy {
 			py.log.Error("killing Python", zap.Int("pid", ri.proc.Pid))
-			ri.proc.Kill()
+			if err := ri.proc.Kill(); err != nil {
+				py.log.Warn("kill", zap.Int("pid", ri.proc.Pid), zap.Error(err))
+			}
 		}
 	}()
 
@@ -246,7 +248,7 @@ func (py *pySVC) initialCall(ctx context.Context, funcName string, payload []byt
 		}
 
 		py.log.Info("callback")
-		py.cbs.Call(
+		_, err = py.cbs.Call(
 			ctx,
 			py.xid.ToRunID(),
 			// The Python function to call is encoded in the payload
@@ -254,10 +256,16 @@ func (py *pySVC) initialCall(ctx context.Context, funcName string, payload []byt
 			nil,
 			nil,
 		)
+		if err != nil {
+			py.log.Error("callback", zap.Error(err))
+			return sdktypes.InvalidValue, err
+		}
 	}
 
 	py.log.Info("python done, killing")
-	py.run.proc.Kill() // FIXME: We run only once
+	if err := py.run.proc.Kill(); err != nil { // FIXME: We run only once
+		py.log.Warn("kill", zap.Int("pid", py.run.proc.Pid), zap.Error(err))
+	}
 	py.run.proc = nil
 
 	// TODO: Return value
