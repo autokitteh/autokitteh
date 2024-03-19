@@ -70,7 +70,7 @@ func sessionWatch(sid sdktypes.SessionID, endState sdktypes.SessionStateType) ([
 	var state sdktypes.SessionStateType
 	var rs []sdktypes.SessionLogRecord
 
-	var ctx context.Context
+	ctx := context.Background()
 	if watchTimeout > 0 {
 		var cancel func()
 		ctx, cancel = context.WithTimeout(context.Background(), watchTimeout)
@@ -82,17 +82,9 @@ func sessionWatch(sid sdktypes.SessionID, endState sdktypes.SessionStateType) ([
 			time.Sleep(pollInterval)
 		}
 
-		cancel := func() {}
-		if ctx == nil {
-			var lcCancel func()
-			ctx, lcCancel = common.LimitedContext()
-			cancel = func() {
-				lcCancel()
-				ctx = nil
-			}
-		}
+		currCtx, cancel := common.WithLimitedContext(ctx)
 
-		s, err := sessions().Get(ctx, sid)
+		s, err := sessions().Get(currCtx, sid)
 		if err != nil {
 			cancel()
 			return nil, fmt.Errorf("get session: %w", err)
@@ -100,7 +92,7 @@ func sessionWatch(sid sdktypes.SessionID, endState sdktypes.SessionStateType) ([
 
 		state = s.State()
 
-		if rs, err = sessionLog(ctx, sid, last); err != nil {
+		if rs, err = sessionLog(currCtx, sid, last); err != nil {
 			cancel()
 			return nil, err
 		}
