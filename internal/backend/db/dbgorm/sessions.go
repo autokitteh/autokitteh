@@ -126,6 +126,10 @@ func (db *gormdb) listSessions(ctx context.Context, f sdkservices.ListSessionsFi
 		q = q.Where("event_id = ?", f.EventID.String())
 	}
 
+	if f.BuildID.IsValid() {
+		q = q.Where("build_id = ?", f.BuildID.String())
+	}
+
 	if f.StateType != sdktypes.SessionStateTypeUnspecified {
 		q = q.Where("current_state_type = ?", f.StateType.ToProto())
 	}

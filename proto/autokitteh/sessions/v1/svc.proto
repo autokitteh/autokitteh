@@ -31,8 +31,10 @@ message ListRequest {
   string deployment_id = 1;
   string env_id = 2;
   string event_id = 3;
-  SessionStateType state_type = 4 [(buf.validate.field).enum.defined_only = true];
-  bool count_only = 5;
+  string build_id = 4;
+  SessionStateType state_type = 5 [(buf.validate.field).enum.defined_only = true];
+
+  bool count_only = 10;
 
   // TODO: Pagination.
   // TODO: FieldMask.

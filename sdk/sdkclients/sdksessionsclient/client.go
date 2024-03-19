@@ -96,6 +96,7 @@ func (c *client) List(ctx context.Context, filter sdkservices.ListSessionsFilter
 		DeploymentId: filter.DeploymentID.String(),
 		EnvId:        filter.EnvID.String(),
 		EventId:      filter.EventID.String(),
+		BuildId:      filter.BuildID.String(),
 		StateType:    filter.StateType.ToProto(),
 		CountOnly:    filter.CountOnly,
 	}))

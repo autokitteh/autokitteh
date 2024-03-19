@@ -345,10 +345,10 @@ func ParseSessionCallAttemptComplete(c SessionCallAttempt) (d sdktypes.SessionCa
 
 type Session struct {
 	SessionID        string `gorm:"primaryKey"`
-	BuildID          string `gorm:"index"`
-	EnvID            string `gorm:"index"`
-	DeploymentID     string `gorm:"index"`
-	EventID          string `gorm:"index"`
+	BuildID          string `gorm:"index"` // TODO(ENG-547): constraint.
+	EnvID            string `gorm:"index"` // TODO(ENG-547): constraint.
+	DeploymentID     string `gorm:"index"` // TODO(ENG-547): constraint.
+	EventID          string `gorm:"index"` // TODO(ENG-547): constraint.
 	CurrentStateType int    `gorm:"index"`
 	Entrypoint       string
 	Inputs           datatypes.JSON

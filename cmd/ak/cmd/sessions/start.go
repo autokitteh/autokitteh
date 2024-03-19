@@ -20,7 +20,7 @@ const (
 var (
 	entryPoint string
 	memos      []string
-	build      string
+	buildID    string
 	deployID   string
 )
 
@@ -30,11 +30,11 @@ var startCmd = common.StandardCommand(&cobra.Command{
 	Args:  cobra.NoArgs,
 
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if deployID == "" && build == "" {
+		if deployID == "" && buildID == "" {
 			return errors.New("either --deployment-id or --build-id must be provided")
 		}
 
-		if deployID != "" && (build != "" || env != "") {
+		if deployID != "" && (buildID != "" || env != "") {
 			return errors.New("--deployment-id cannot be used with --build-id or --env")
 		}
 
@@ -70,7 +70,7 @@ var startCmd = common.StandardCommand(&cobra.Command{
 func init() {
 	// Command-specific flags.
 	startCmd.Flags().StringVarP(&deployID, "deployment-id", "d", "", "deployment ID, mutually exclusive with --build-id and --env")
-	startCmd.Flags().StringVarP(&build, "build-id", "b", "", "build ID")
+	startCmd.Flags().StringVarP(&buildID, "build-id", "b", "", "build ID")
 	startCmd.Flags().StringVar(&env, "env", "", "env")
 
 	startCmd.Flags().StringVarP(&entryPoint, "entrypoint", "p", "", `entry point ("file:function")`)
@@ -102,13 +102,13 @@ func sessionArgs() (did sdktypes.DeploymentID, eid sdktypes.EnvID, bid sdktypes.
 		bid, eid = d.BuildID(), d.EnvID()
 	}
 
-	if build != "" {
+	if buildID != "" {
 		var b sdktypes.Build
-		if b, bid, err = r.BuildID(build); err != nil {
+		if b, bid, err = r.BuildID(buildID); err != nil {
 			return
 		}
 		if !b.IsValid() {
-			err = fmt.Errorf("build %q not found", build)
+			err = fmt.Errorf("build %q not found", buildID)
 			err = common.NewExitCodeError(common.NotFoundExitCode, err)
 			return
 		}
