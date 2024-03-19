@@ -70,8 +70,8 @@ def activity(fn):
         run=lambda *args, **kwargs: run_activity(fn, *args, **kwargs),
     )
 
-# EXPORT: withargs
-def withargs(f, *args, **kwargs):
+# EXPORT: partial
+def partial(f, *args, **kwargs):
     def wrapper(*args2, **kwargs2):
         kwargs.update(kwargs2)
         return f(*(args + args2), **kwargs)

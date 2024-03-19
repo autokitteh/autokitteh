@@ -14,7 +14,7 @@ def dump(*args, **kwargs):
     print(sorted(kwargs.items()))
     return len(args) + len(kwargs)
 
-f = withargs(dump, 1, 2, a=4, b=5)
+f = partial(dump, 1, 2, a=4, b=5)
 
 print(f())
 print(f(3, c=6))
