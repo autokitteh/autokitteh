@@ -29,6 +29,8 @@ import (
 const (
 	envVarsModuleName     = "env"
 	integrationPathPrefix = "@"
+
+	limittedTimeout = 5 * time.Second
 )
 
 var envVarsExecutorID = sdktypes.NewExecutorID(fixtures.NewBuiltinIntegrationID(envVarsModuleName))
@@ -101,7 +103,7 @@ func (w *sessionWorkflow) updateState(ctx workflow.Context, state sdktypes.Sessi
 	w.state = state
 
 	if ctx.Err() == workflow.ErrCanceled {
-		goCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		goCtx, cancel := context.WithTimeout(context.Background(), limittedTimeout)
 		defer cancel()
 
 		if err := w.ws.svcs.DB.UpdateSessionState(goCtx, w.data.SessionID, state); err != nil {
@@ -116,7 +118,7 @@ func (w *sessionWorkflow) updateState(ctx workflow.Context, state sdktypes.Sessi
 	}
 }
 
-func (w *sessionWorkflow) loadIntegrationConnections(ctx context.Context, path string) (map[string]sdktypes.Value, error) {
+func (w *sessionWorkflow) loadIntegrationConnections(path string) (map[string]sdktypes.Value, error) {
 	// Since the load callback does not inform us which member exactly from the integration it wishes
 	// to load, we must return all relevant connections.
 
@@ -139,7 +141,7 @@ func (w *sessionWorkflow) loadIntegrationConnections(ctx context.Context, path s
 
 func (w *sessionWorkflow) load(ctx context.Context, _ sdktypes.RunID, path string) (map[string]sdktypes.Value, error) {
 	if strings.HasPrefix(path, integrationPathPrefix) {
-		return w.loadIntegrationConnections(ctx, path[1:])
+		return w.loadIntegrationConnections(path[1:])
 	}
 
 	vs := w.executors.GetValues(path)
