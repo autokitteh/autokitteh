@@ -345,7 +345,9 @@ func ParseSessionCallAttemptComplete(c SessionCallAttempt) (d sdktypes.SessionCa
 
 type Session struct {
 	SessionID        string `gorm:"primaryKey"`
-	DeploymentID     string `gorm:"index;foreignKey"`
+	BuildID          string `gorm:"index"`
+	EnvID            string `gorm:"index"`
+	DeploymentID     string `gorm:"index"`
 	EventID          string `gorm:"index"`
 	CurrentStateType int    `gorm:"index"`
 	Entrypoint       string
@@ -353,9 +355,6 @@ type Session struct {
 	CreatedAt        time.Time      //`gorm:"default:current_timestamp"`
 	UpdatedAt        time.Time      //`gorm:"default:current_timestamp"`
 	DeletedAt        gorm.DeletedAt `gorm:"index"`
-
-	// just for foreign key constraint. Without it gorm won't enforce it
-	Deployment *Deployment
 }
 
 func ParseSession(s Session) (sdktypes.Session, error) {
@@ -372,6 +371,8 @@ func ParseSession(s Session) (sdktypes.Session, error) {
 
 	session, err := sdktypes.StrictSessionFromProto(&sdktypes.SessionPB{
 		SessionId:    s.SessionID,
+		BuildId:      s.BuildID,
+		EnvId:        s.EnvID,
 		DeploymentId: s.DeploymentID,
 		EventId:      s.EventID,
 		Entrypoint:   ep.ToProto(),

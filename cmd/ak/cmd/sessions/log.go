@@ -1,6 +1,7 @@
 package sessions
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/spf13/cobra"
@@ -10,13 +11,10 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-var (
-	filterInput  bool
-	filterOutput bool
-)
+var skip int
 
 var logCmd = common.StandardCommand(&cobra.Command{
-	Use:   "log [sessions ID] [--fail] [--filter-input] [--filter-output]",
+	Use:   "log [sessions ID] [--fail] [--skip N] [--no-timestamps]",
 	Short: "Get session runtime logs (prints, calls, errors, state changes)",
 	Args:  cobra.MaximumNArgs(1),
 
@@ -42,38 +40,47 @@ var logCmd = common.StandardCommand(&cobra.Command{
 		ctx, cancel := common.LimitedContext()
 		defer cancel()
 
-		l, err := sessions().GetLog(ctx, id)
-		if err != nil {
-			return fmt.Errorf("session log: %w", err)
-		}
+		_, err = sessionLog(ctx, id, skip)
 
-		pb := l.ToProto()
-		for _, r := range pb.Records {
-			if filterInput {
-				f := r.GetCallSpec().GetFunction().GetFunction()
-				if f != nil {
-					f.Data = nil
-					f.Desc = nil
-				}
-			}
-			if filterOutput {
-				r.GetCallAttemptComplete().Result = nil
-			}
-		}
-
-		if l, err = sdktypes.SessionLogFromProto(pb); err != nil {
-			return fmt.Errorf("omit extra details: %w", err)
-		}
-
-		common.RenderKVIfV("log", l)
-		return nil
+		return err
 	},
 })
 
 func init() {
 	// Command-specific flags.
-	logCmd.Flags().BoolVar(&filterInput, "filter-input", false, "filter input details")
-	logCmd.Flags().BoolVar(&filterOutput, "filter-output", false, "filter output details")
+	logCmd.Flags().IntVar(&skip, "skip", 0, "number of entries to skip")
+	logCmd.Flags().BoolVar(&noTimestamps, "no-timestamps", false, "omit timestamps from track output")
 
 	common.AddFailIfNotFoundFlag(logCmd)
+}
+
+// skip >= 0: skip first records
+// skip < 0: skip all up to last |skip| records.
+func sessionLog(ctx context.Context, sid sdktypes.SessionID, skip int) ([]sdktypes.SessionLogRecord, error) {
+	l, err := sessions().GetLog(ctx, sid)
+	if err != nil {
+		return nil, fmt.Errorf("get log: %w", err)
+	}
+
+	rs := l.Records()
+
+	var fresh []sdktypes.SessionLogRecord
+
+	if skip < 0 {
+		fresh = rs[len(rs)+skip:]
+	} else if len(rs) > skip {
+		fresh = rs[skip:]
+	}
+
+	for _, r := range fresh {
+		if noTimestamps {
+			r = r.WithoutTimestamp()
+		}
+
+		if !quiet {
+			common.Render(r)
+		}
+	}
+
+	return rs, nil
 }

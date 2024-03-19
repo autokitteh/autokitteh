@@ -19,7 +19,6 @@ type Data struct {
 	SessionID   sdktypes.SessionID      `json:"session_id"`
 	ProjectID   sdktypes.ProjectID      `json:"project_id"`
 	Session     sdktypes.Session        `json:"session"`
-	Deployment  sdktypes.Deployment     `json:"deployment"`
 	Env         sdktypes.Env            `json:"env"`
 	EnvVars     []sdktypes.EnvVar       `json:"env_vars"`
 	Build       sdktypes.Build          `json:"build"`
@@ -69,45 +68,41 @@ func Get(ctx context.Context, z *zap.Logger, svcs *sessionsvcs.Svcs, sessionID s
 		return nil, err
 	}
 
-	if data.Deployment, err = retrieve(ctx, z, data.Session.DeploymentID(), svcs.Deployments.Get); err != nil {
-		return nil, err
-	}
-
-	envID := data.Deployment.EnvID()
-
-	if data.Env, err = retrieve(ctx, z, envID, svcs.Envs.GetByID); err != nil {
-		return nil, err
-	}
-
-	if data.ProjectID = data.Env.ProjectID(); !data.ProjectID.IsValid() {
-		return nil, fmt.Errorf("sessions can only run on projects")
-	}
-
-	if data.Connections, err = svcs.Connections.List(ctx, sdkservices.ListConnectionsFilter{ProjectID: data.ProjectID}); err != nil {
-		return nil, fmt.Errorf("connections.list: %w", err)
-	}
-
-	for _, conn := range data.Connections {
-		ts, err := svcs.Triggers.List(ctx, sdkservices.ListTriggersFilter{ConnectionID: conn.ID()})
-		if err != nil {
-			return nil, fmt.Errorf("triggers.list(%v): %w", conn.ID(), err)
+	if envID := data.Session.EnvID(); envID.IsValid() {
+		if data.Env, err = retrieve(ctx, z, envID, svcs.Envs.GetByID); err != nil {
+			return nil, err
 		}
 
-		ts = kittehs.Filter(ts, func(t sdktypes.Trigger) bool {
-			triggerEnvID := t.EnvID()
-			return !triggerEnvID.IsValid() || triggerEnvID == envID
-		})
+		if data.ProjectID = data.Env.ProjectID(); !data.ProjectID.IsValid() {
+			return nil, fmt.Errorf("sessions can only run on projects")
+		}
 
-		data.Triggers = append(data.Triggers, ts...)
+		if data.Connections, err = svcs.Connections.List(ctx, sdkservices.ListConnectionsFilter{ProjectID: data.ProjectID}); err != nil {
+			return nil, fmt.Errorf("connections.list: %w", err)
+		}
+
+		for _, conn := range data.Connections {
+			ts, err := svcs.Triggers.List(ctx, sdkservices.ListTriggersFilter{ConnectionID: conn.ID()})
+			if err != nil {
+				return nil, fmt.Errorf("triggers.list(%v): %w", conn.ID(), err)
+			}
+
+			ts = kittehs.Filter(ts, func(t sdktypes.Trigger) bool {
+				triggerEnvID := t.EnvID()
+				return !triggerEnvID.IsValid() || triggerEnvID == envID
+			})
+
+			data.Triggers = append(data.Triggers, ts...)
+		}
+
+		// TODO: merge mappings?
+
+		if data.EnvVars, err = svcs.Envs.GetVars(ctx, nil, envID); err != nil {
+			return nil, fmt.Errorf("get vars: %w", err)
+		}
 	}
 
-	// TODO: merge mappings?
-
-	if data.EnvVars, err = svcs.Envs.GetVars(ctx, nil, envID); err != nil {
-		return nil, fmt.Errorf("get vars: %w", err)
-	}
-
-	buildID := data.Deployment.BuildID()
+	buildID := data.Session.BuildID()
 
 	if data.Build, err = retrieve(ctx, z, buildID, svcs.Builds.Get); err != nil {
 		return nil, err

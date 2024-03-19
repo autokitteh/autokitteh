@@ -97,11 +97,11 @@ scripts=$(shell find . -name \*.sh)
 .PHONY: shellcheck
 shellcheck:
 ifneq ($(scripts),)
-	docker run --rm -v $(shell pwd):/src -w /src koalaman/shellcheck:stable -a $(scripts)
+	docker run --rm -v $(shell pwd):/src -w /src koalaman/shellcheck:stable -a $(scripts) -x
 endif
 
 .PHONY: test
-test: test-race test-cli test-runs
+test: test-race test-cli test-runs test-sessions
 
 # TODO(ENG-427): Fix E2E test's data race.
 # TODO(ENG-447): Fix HTTP trigger flakiness.
@@ -117,6 +117,10 @@ test-system:
 .PHONY: test-runs
 test-runs:
 	./tests/runs/run.sh
+
+.PHONY: test-sessions
+test-sessions:
+	./tests/sessions/run.sh
 
 .PHONY: test-cover
 test-cover:

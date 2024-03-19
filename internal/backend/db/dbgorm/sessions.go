@@ -67,6 +67,8 @@ func (db *gormdb) CreateSession(ctx context.Context, session sdktypes.Session) e
 
 	s := scheme.Session{
 		SessionID:        session.ID().String(),
+		BuildID:          session.BuildID().String(),
+		EnvID:            session.EnvID().String(),
 		DeploymentID:     session.DeploymentID().String(),
 		EventID:          session.EventID().String(),
 		Entrypoint:       session.EntryPoint().CanonicalString(),

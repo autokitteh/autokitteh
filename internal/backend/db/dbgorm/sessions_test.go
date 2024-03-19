@@ -51,15 +51,6 @@ func TestCreateSession(t *testing.T) {
 	assert.Equal(t, s.SessionID, logs[0].SessionID) // compare only ids, since actual log isn't empty
 }
 
-func TestCreateSessionForeignKeys(t *testing.T) {
-	f := newDBFixture(false)      // with foreign keys
-	f.listSessionsAndAssert(t, 0) // no sessions
-
-	s := f.newSession(sdktypes.SessionStateTypeCompleted)
-	err := f.gormdb.createSession(f.ctx, &s) // should fail since there is no deployment
-	assert.ErrorContains(t, err, "FOREIGN KEY")
-}
-
 func TestGetSession(t *testing.T) {
 	f := newDBFixture(true)       // no foreign keys
 	f.listSessionsAndAssert(t, 0) // no sessions
