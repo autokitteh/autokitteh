@@ -1,0 +1,21 @@
+(1, 2)
+[("a", 4), ("b", 5)]
+4
+(1, 2, 3)
+[("a", 4), ("b", 5), ("c", 6)]
+6
+(1, 2, 1)
+[("a", 4), ("b", 9), ("c", 6)]
+6
+
+-- main.star --
+def dump(*args, **kwargs):
+    print(args)
+    print(sorted(kwargs.items()))
+    return len(args) + len(kwargs)
+
+f = withargs(dump, 1, 2, a=4, b=5)
+
+print(f())
+print(f(3, c=6))
+print(f(1, b=9))
