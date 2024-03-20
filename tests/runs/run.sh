@@ -10,5 +10,5 @@ AK="../../bin/ak"
 
 for f in ${TESTS}; do
     echo "- testing $f"
-    ${AK} runtimes run --local --quiet --test "$f"
+    ${AK} runtimes test --local --quiet "$f" && echo PASS || echo FAIL
 done

@@ -28,6 +28,7 @@ func init() {
 	runtimesCmd.AddCommand(getCmd)
 	runtimesCmd.AddCommand(listCmd)
 	runtimesCmd.AddCommand(runCmd)
+	runtimesCmd.AddCommand(testCmd)
 
 	runtimesCmd.PersistentFlags().BoolVarP(&local, "local", "l", false, "execute locally")
 }

@@ -12,6 +12,7 @@ import (
 	"go.autokitteh.dev/autokitteh/integrations/google"
 	"go.autokitteh.dev/autokitteh/integrations/google/gmail"
 	"go.autokitteh.dev/autokitteh/integrations/google/sheets"
+	"go.autokitteh.dev/autokitteh/integrations/grpc"
 	httpint "go.autokitteh.dev/autokitteh/integrations/http"
 	"go.autokitteh.dev/autokitteh/integrations/redis"
 	"go.autokitteh.dev/autokitteh/integrations/scheduler"
@@ -35,6 +36,7 @@ func New(s sdkservices.Secrets) sdkservices.Integrations {
 		scheduler.New(s),
 		slack.New(s),
 		twilio.New(s),
+		grpc.New(s),
 	})
 }
 

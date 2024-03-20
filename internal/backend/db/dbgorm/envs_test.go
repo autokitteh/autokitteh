@@ -17,7 +17,7 @@ func (f *dbFixture) createEnvsAndAssert(t *testing.T, envs ...scheme.Env) {
 
 func (f *dbFixture) assertEnvDeleted(t *testing.T, envs ...scheme.Env) {
 	for _, env := range envs {
-		assertSoftDeleted(t, f, scheme.Env{EnvID: env.EnvID})
+		assertSoftDeleted(t, f, env)
 	}
 }
 

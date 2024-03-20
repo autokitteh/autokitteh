@@ -54,8 +54,16 @@ func (cs *calls) invoke(ctx context.Context, callv sdktypes.Value, args []sdktyp
 			return sdktypes.InvalidSessionCallAttemptResult, fmt.Errorf("get integration: %w", err)
 		}
 
-		caller = intg
+		if intg == nil {
+			// The executor is probably a builtin. In that case, it's not registered in the integrations
+			// service, but does exist in the executors map.
+			caller = executors.GetCaller(xid)
+		} else {
+			caller = intg
+		}
 	} else if xid.IsRunID() {
+		// HACK(ENG-335): In the future, we need to call back directly to the originating workflow
+		//                and ask it to process the call.
 		caller = executors.GetCaller(xid)
 	} else {
 		return sdktypes.InvalidSessionCallAttemptResult, fmt.Errorf("could not determine executor for %q", xid)
@@ -68,6 +76,7 @@ func (cs *calls) invoke(ctx context.Context, callv sdktypes.Value, args []sdktyp
 	return sdktypes.NewSessionCallAttemptResult(caller.Call(ctx, callv, args, kwargs)), nil
 }
 
+// This is executed either in an activity (for regular calls) or directly in a workflow (for internal calls).
 func (cs *calls) executeCall(ctx context.Context, sessionID sdktypes.SessionID, seq uint32, poller sdktypes.Value, executors *sdkexecutor.Executors) (debug any, attempt uint32, _ error) {
 	z := cs.z.With(zap.Uint32("seq", seq))
 
@@ -76,12 +85,15 @@ func (cs *calls) executeCall(ctx context.Context, sessionID sdktypes.SessionID, 
 		return nil, 0, fmt.Errorf("db.get_call: %w", err)
 	}
 
+	callv, args, kwargs, opts, err := parseCallSpec(call)
+	if err != nil {
+		return nil, 0, err
+	}
+
 	var (
 		interval time.Duration
 		last     bool
 	)
-
-	callv, args, kwargs := call.Data()
 
 	z = z.With(zap.Any("function", callv))
 
@@ -145,6 +157,10 @@ func (cs *calls) executeCall(ctx context.Context, sessionID sdktypes.SessionID, 
 
 				z.Debug("poll results", zap.Bool("last", last), zap.Duration("t", interval))
 			}
+		}
+
+		if opts.Catch {
+			result = sdktypes.NewSessionCallAttemptResult(result.ToValueTuple(), nil)
 		}
 
 		// TODO: this is an error in db access inside the activity. If this fails we might be in a troubling state.

@@ -1,13 +1,11 @@
 package connections
 
 import (
-	"errors"
-	"fmt"
-
 	"github.com/spf13/cobra"
 
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
 	"go.autokitteh.dev/autokitteh/internal/resolver"
+	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 )
 
 var deleteCmd = common.StandardCommand(&cobra.Command{
@@ -20,23 +18,16 @@ var deleteCmd = common.StandardCommand(&cobra.Command{
 		r := resolver.Resolver{Client: common.Client()}
 		c, id, err := r.ConnectionNameOrID(args[0])
 		if err != nil {
-			if errors.As(err, resolver.NotFoundErrorType) {
-				err = common.NewExitCodeError(common.NotFoundExitCode, err)
-			}
-			return err
+			return common.ToExitCodeError(err, "connection")
 		}
 		if !c.IsValid() {
-			err = errors.New("connection not found")
-			return common.NewExitCodeError(common.NotFoundExitCode, err)
+			return common.ToExitCodeError(sdkerrors.ErrNotFound, "connection")
 		}
 
 		ctx, cancel := common.LimitedContext()
 		defer cancel()
 
-		if err = connections().Delete(ctx, id); err != nil {
-			return fmt.Errorf("delete connection: %w", err)
-		}
-
-		return nil
+		err = connections().Delete(ctx, id)
+		return common.ToExitCodeError(err, "delete connection")
 	},
 })

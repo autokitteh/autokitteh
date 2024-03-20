@@ -64,7 +64,7 @@ type Connection struct {
 	ConnectionID     string `gorm:"primaryKey"`
 	IntegrationID    string
 	IntegrationToken string
-	ProjectID        string
+	ProjectID        string `gorm:"index"`
 	Name             string
 
 	// IntegrationID is a foreign key, but gorm won't add and enforce a constraint till we uncomment
@@ -175,12 +175,13 @@ type Event struct {
 	IntegrationID    string `gorm:"index"`
 	IntegrationToken string `gorm:"index"`
 	OriginalEventID  string
-	EventType        string `gorm:"index:idx_connection_id_event_type_seq,priority:2;index:idx_event_type"`
-	ConnectionID     string `gorm:"index:idx_connection_id_event_type_seq,priority:1"`
+	EventType        string `gorm:"index:idx_event_type_seq,priority:1;index:idx_event_type"`
 	Data             datatypes.JSON
 	Memo             datatypes.JSON
 	CreatedAt        time.Time
-	Seq              uint64 `gorm:"primaryKey;autoIncrement:true,index:idx_connection_id_event_type_seq,priority:3"`
+	Seq              uint64 `gorm:"primaryKey;autoIncrement:true,index:idx_event_type_seq,priority:2"`
+
+	DeletedAt gorm.DeletedAt `gorm:"index"`
 }
 
 func ParseEvent(e Event) (sdktypes.Event, error) {
@@ -461,8 +462,10 @@ func ParseDeploymentWithSessionStats(d DeploymentWithStats) (sdktypes.Deployment
 type Signal struct {
 	SignalID     string `gorm:"primaryKey"`
 	ConnectionID string `gorm:"index:idx_connection_id_event_type"`
-	Connection   Connection
 	CreatedAt    time.Time
 	WorkflowID   string
 	EventType    string `gorm:"index:idx_connection_id_event_type"`
+
+	// enforce foreign key
+	Connection Connection
 }

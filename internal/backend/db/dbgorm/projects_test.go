@@ -28,7 +28,7 @@ func (f *dbFixture) listProjectsAndAssert(t *testing.T, expected int) []scheme.P
 
 func (f *dbFixture) assertProjectDeleted(t *testing.T, projects ...scheme.Project) {
 	for _, project := range projects {
-		assertSoftDeleted(t, f, scheme.Project{ProjectID: project.ProjectID})
+		assertSoftDeleted(t, f, project)
 	}
 }
 
@@ -179,6 +179,9 @@ func TestDeleteProjectAndDependents(t *testing.T) {
 	t2.EnvID = e2p1.EnvID
 	t1.ConnectionID = c.ConnectionID
 
+	sig := f.newSignal()
+	sig.ConnectionID = c.ConnectionID
+
 	b := f.newBuild()
 
 	d1e1p1, d2e1p1, d1e2p1, d1e1p2 := f.newDeployment(), f.newDeployment(), f.newDeployment(), f.newDeployment()
@@ -203,6 +206,7 @@ func TestDeleteProjectAndDependents(t *testing.T) {
 	f.createConnectionsAndAssert(t, c)
 	f.createEnvsAndAssert(t, e1p1, e2p1, e1p2)
 	f.createTriggersAndAssert(t, t1, t2)
+	f.saveSignalsAndAssert(t, sig)
 	f.saveBuildsAndAssert(t, b)
 	f.createDeploymentsAndAssert(t, d1e1p1, d2e1p1, d1e2p1, d1e1p2)
 	f.createSessionsAndAssert(t, s1d1e1p1, s2d1e2p1, s3d1e1p2)
@@ -220,8 +224,10 @@ func TestDeleteProjectAndDependents(t *testing.T) {
 	assert.NoError(t, err)
 
 	f.assertDeploymentsDeleted(t, d1e1p1, d2e1p1, d1e2p1)
-	f.assertEnvDeleted(t, e1p1, e2p1)
-	f.assertProjectDeleted(t, p1)
 	f.assertSessionsDeleted(t, s1d1e1p1, s2d1e2p1)
+	f.assertEnvDeleted(t, e1p1, e2p1)
 	f.assertTriggersDeleted(t, t1, t2)
+	f.assertSignalsDeleted(t, sig)
+	f.assertConnectionDeleted(t, c)
+	f.assertProjectDeleted(t, p1)
 }

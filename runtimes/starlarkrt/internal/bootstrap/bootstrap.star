@@ -3,7 +3,7 @@
 # All exported symbols must be declared using "# EXPORT:" comments.
 
 # The followings are always supplied by the runtime: {
-# EXPORT: activity
+# EXPORT: run_activity
 # EXPORT: catch
 # EXPORT: fail
 # EXPORT: globals
@@ -63,3 +63,9 @@ def test():
         print("TEST: {}".format(name))
         fn()
         # TODO: report only errors in this step.
+
+# EXPORT: activity
+def activity(fn):
+    return struct(
+        run=lambda *args, **kwargs: run_activity(fn, *args, **kwargs),
+    )
