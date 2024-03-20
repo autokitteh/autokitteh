@@ -421,7 +421,9 @@ func (w *sessionWorkflow) run(wctx workflow.Context) (prints []string, err error
 
 	runID := newRunID()
 
-	w.updateState(wctx, sdktypes.NewSessionStateRunning(runID, sdktypes.InvalidValue))
+	if err := w.updateState(wctx, sdktypes.NewSessionStateRunning(runID, sdktypes.InvalidValue)); err != nil {
+		return prints, err
+	}
 
 	entryPoint := w.data.Session.EntryPoint()
 
@@ -460,7 +462,9 @@ func (w *sessionWorkflow) run(wctx workflow.Context) (prints []string, err error
 			return prints, fmt.Errorf("entry point does not belong to main run")
 		}
 
-		w.updateState(wctx, sdktypes.NewSessionStateRunning(runID, callValue))
+		if err := w.updateState(wctx, sdktypes.NewSessionStateRunning(runID, callValue)); err != nil {
+			return prints, err
+		}
 
 		argNames := callValue.GetFunction().ArgNames() // sdktypes.GetFunctionValueArgsNames(callValue)
 		kwargs := kittehs.FilterMapKeys(
@@ -475,7 +479,9 @@ func (w *sessionWorkflow) run(wctx workflow.Context) (prints []string, err error
 
 	state := sdktypes.NewSessionStateCompleted(prints, run.Values(), retVal)
 
-	w.updateState(wctx, state)
+	if err := w.updateState(wctx, state); err != nil {
+		return prints, err
+	}
 
 	return prints, nil
 }
