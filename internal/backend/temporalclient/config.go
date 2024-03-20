@@ -14,6 +14,8 @@ type tlsConfig struct {
 	Enabled      bool   `koanf:"enabled"`
 	CertFilePath string `koanf:"cert_file_path"`
 	KeyFilePath  string `koanf:"key_file_path"`
+	Certificate  string `koanf:"certificate"`
+	Key          string `koanf:"key"`
 }
 
 type MonitorConfig struct {
