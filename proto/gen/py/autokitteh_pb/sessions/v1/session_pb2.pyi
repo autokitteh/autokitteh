@@ -18,14 +18,16 @@ class SessionStateType(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
     SESSION_STATE_TYPE_RUNNING: _ClassVar[SessionStateType]
     SESSION_STATE_TYPE_ERROR: _ClassVar[SessionStateType]
     SESSION_STATE_TYPE_COMPLETED: _ClassVar[SessionStateType]
+    SESSION_STATE_TYPE_STOPPED: _ClassVar[SessionStateType]
 SESSION_STATE_TYPE_UNSPECIFIED: SessionStateType
 SESSION_STATE_TYPE_CREATED: SessionStateType
 SESSION_STATE_TYPE_RUNNING: SessionStateType
 SESSION_STATE_TYPE_ERROR: SessionStateType
 SESSION_STATE_TYPE_COMPLETED: SessionStateType
+SESSION_STATE_TYPE_STOPPED: SessionStateType
 
 class SessionState(_message.Message):
-    __slots__ = ["created", "running", "error", "completed"]
+    __slots__ = ["created", "running", "error", "completed", "stopped"]
     class Created(_message.Message):
         __slots__ = []
         def __init__(self) -> None: ...
@@ -59,15 +61,22 @@ class SessionState(_message.Message):
         exports: _containers.MessageMap[str, _values_pb2.Value]
         return_value: _values_pb2.Value
         def __init__(self, prints: _Optional[_Iterable[str]] = ..., exports: _Optional[_Mapping[str, _values_pb2.Value]] = ..., return_value: _Optional[_Union[_values_pb2.Value, _Mapping]] = ...) -> None: ...
+    class Stopped(_message.Message):
+        __slots__ = ["reason"]
+        REASON_FIELD_NUMBER: _ClassVar[int]
+        reason: str
+        def __init__(self, reason: _Optional[str] = ...) -> None: ...
     CREATED_FIELD_NUMBER: _ClassVar[int]
     RUNNING_FIELD_NUMBER: _ClassVar[int]
     ERROR_FIELD_NUMBER: _ClassVar[int]
     COMPLETED_FIELD_NUMBER: _ClassVar[int]
+    STOPPED_FIELD_NUMBER: _ClassVar[int]
     created: SessionState.Created
     running: SessionState.Running
     error: SessionState.Error
     completed: SessionState.Completed
-    def __init__(self, created: _Optional[_Union[SessionState.Created, _Mapping]] = ..., running: _Optional[_Union[SessionState.Running, _Mapping]] = ..., error: _Optional[_Union[SessionState.Error, _Mapping]] = ..., completed: _Optional[_Union[SessionState.Completed, _Mapping]] = ...) -> None: ...
+    stopped: SessionState.Stopped
+    def __init__(self, created: _Optional[_Union[SessionState.Created, _Mapping]] = ..., running: _Optional[_Union[SessionState.Running, _Mapping]] = ..., error: _Optional[_Union[SessionState.Error, _Mapping]] = ..., completed: _Optional[_Union[SessionState.Completed, _Mapping]] = ..., stopped: _Optional[_Union[SessionState.Stopped, _Mapping]] = ...) -> None: ...
 
 class Call(_message.Message):
     __slots__ = ["spec", "attempts"]
@@ -128,25 +137,32 @@ class Call(_message.Message):
     def __init__(self, spec: _Optional[_Union[Call.Spec, _Mapping]] = ..., attempts: _Optional[_Iterable[_Union[Call.Attempt, _Mapping]]] = ...) -> None: ...
 
 class SessionLogRecord(_message.Message):
-    __slots__ = ["t", "print", "call_spec", "call_attempt_start", "call_attempt_complete", "state"]
+    __slots__ = ["t", "print", "call_spec", "call_attempt_start", "call_attempt_complete", "state", "stop_requested"]
     class Print(_message.Message):
         __slots__ = ["text"]
         TEXT_FIELD_NUMBER: _ClassVar[int]
         text: str
         def __init__(self, text: _Optional[str] = ...) -> None: ...
+    class StopRequested(_message.Message):
+        __slots__ = ["reason"]
+        REASON_FIELD_NUMBER: _ClassVar[int]
+        reason: str
+        def __init__(self, reason: _Optional[str] = ...) -> None: ...
     T_FIELD_NUMBER: _ClassVar[int]
     PRINT_FIELD_NUMBER: _ClassVar[int]
     CALL_SPEC_FIELD_NUMBER: _ClassVar[int]
     CALL_ATTEMPT_START_FIELD_NUMBER: _ClassVar[int]
     CALL_ATTEMPT_COMPLETE_FIELD_NUMBER: _ClassVar[int]
     STATE_FIELD_NUMBER: _ClassVar[int]
+    STOP_REQUESTED_FIELD_NUMBER: _ClassVar[int]
     t: _timestamp_pb2.Timestamp
     print: SessionLogRecord.Print
     call_spec: Call.Spec
     call_attempt_start: Call.Attempt.Start
     call_attempt_complete: Call.Attempt.Complete
     state: SessionState
-    def __init__(self, t: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ..., print: _Optional[_Union[SessionLogRecord.Print, _Mapping]] = ..., call_spec: _Optional[_Union[Call.Spec, _Mapping]] = ..., call_attempt_start: _Optional[_Union[Call.Attempt.Start, _Mapping]] = ..., call_attempt_complete: _Optional[_Union[Call.Attempt.Complete, _Mapping]] = ..., state: _Optional[_Union[SessionState, _Mapping]] = ...) -> None: ...
+    stop_requested: SessionLogRecord.StopRequested
+    def __init__(self, t: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ..., print: _Optional[_Union[SessionLogRecord.Print, _Mapping]] = ..., call_spec: _Optional[_Union[Call.Spec, _Mapping]] = ..., call_attempt_start: _Optional[_Union[Call.Attempt.Start, _Mapping]] = ..., call_attempt_complete: _Optional[_Union[Call.Attempt.Complete, _Mapping]] = ..., state: _Optional[_Union[SessionState, _Mapping]] = ..., stop_requested: _Optional[_Union[SessionLogRecord.StopRequested, _Mapping]] = ...) -> None: ...
 
 class SessionLog(_message.Message):
     __slots__ = ["records"]

@@ -135,6 +135,7 @@ type DB interface {
 	GetSessionLog(ctx context.Context, sessionID sdktypes.SessionID) (sdktypes.SessionLog, error)
 	UpdateSessionState(ctx context.Context, sessionID sdktypes.SessionID, state sdktypes.SessionState) error
 	AddSessionPrint(ctx context.Context, sessionID sdktypes.SessionID, print string) error
+	AddSessionStopRequested(ctx context.Context, sessionID sdktypes.SessionID, reason string) error
 	ListSessions(ctx context.Context, f sdkservices.ListSessionsFilter) ([]sdktypes.Session, int, error)
 	DeleteSession(ctx context.Context, sessionID sdktypes.SessionID) error
 

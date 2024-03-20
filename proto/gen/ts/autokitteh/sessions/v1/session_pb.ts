@@ -38,6 +38,11 @@ export enum SessionStateType {
    * @generated from enum value: SESSION_STATE_TYPE_COMPLETED = 4;
    */
   COMPLETED = 4,
+
+  /**
+   * @generated from enum value: SESSION_STATE_TYPE_STOPPED = 5;
+   */
+  STOPPED = 5,
 }
 // Retrieve enum metadata with: proto3.getEnumType(SessionStateType)
 proto3.util.setEnumType(SessionStateType, "autokitteh.sessions.v1.SessionStateType", [
@@ -46,6 +51,7 @@ proto3.util.setEnumType(SessionStateType, "autokitteh.sessions.v1.SessionStateTy
   { no: 2, name: "SESSION_STATE_TYPE_RUNNING" },
   { no: 3, name: "SESSION_STATE_TYPE_ERROR" },
   { no: 4, name: "SESSION_STATE_TYPE_COMPLETED" },
+  { no: 5, name: "SESSION_STATE_TYPE_STOPPED" },
 ]);
 
 /**
@@ -74,6 +80,11 @@ export class SessionState extends Message<SessionState> {
    */
   completed?: SessionState_Completed;
 
+  /**
+   * @generated from field: autokitteh.sessions.v1.SessionState.Stopped stopped = 14;
+   */
+  stopped?: SessionState_Stopped;
+
   constructor(data?: PartialMessage<SessionState>) {
     super();
     proto3.util.initPartial(data, this);
@@ -86,6 +97,7 @@ export class SessionState extends Message<SessionState> {
     { no: 11, name: "running", kind: "message", T: SessionState_Running },
     { no: 12, name: "error", kind: "message", T: SessionState_Error },
     { no: 13, name: "completed", kind: "message", T: SessionState_Completed },
+    { no: 14, name: "stopped", kind: "message", T: SessionState_Stopped },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SessionState {
@@ -270,6 +282,43 @@ export class SessionState_Completed extends Message<SessionState_Completed> {
 
   static equals(a: SessionState_Completed | PlainMessage<SessionState_Completed> | undefined, b: SessionState_Completed | PlainMessage<SessionState_Completed> | undefined): boolean {
     return proto3.util.equals(SessionState_Completed, a, b);
+  }
+}
+
+/**
+ * @generated from message autokitteh.sessions.v1.SessionState.Stopped
+ */
+export class SessionState_Stopped extends Message<SessionState_Stopped> {
+  /**
+   * @generated from field: string reason = 1;
+   */
+  reason = "";
+
+  constructor(data?: PartialMessage<SessionState_Stopped>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "autokitteh.sessions.v1.SessionState.Stopped";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "reason", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SessionState_Stopped {
+    return new SessionState_Stopped().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SessionState_Stopped {
+    return new SessionState_Stopped().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SessionState_Stopped {
+    return new SessionState_Stopped().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SessionState_Stopped | PlainMessage<SessionState_Stopped> | undefined, b: SessionState_Stopped | PlainMessage<SessionState_Stopped> | undefined): boolean {
+    return proto3.util.equals(SessionState_Stopped, a, b);
   }
 }
 
@@ -593,6 +642,11 @@ export class SessionLogRecord extends Message<SessionLogRecord> {
    */
   state?: SessionState;
 
+  /**
+   * @generated from field: autokitteh.sessions.v1.SessionLogRecord.StopRequested stop_requested = 15;
+   */
+  stopRequested?: SessionLogRecord_StopRequested;
+
   constructor(data?: PartialMessage<SessionLogRecord>) {
     super();
     proto3.util.initPartial(data, this);
@@ -607,6 +661,7 @@ export class SessionLogRecord extends Message<SessionLogRecord> {
     { no: 12, name: "call_attempt_start", kind: "message", T: Call_Attempt_Start },
     { no: 13, name: "call_attempt_complete", kind: "message", T: Call_Attempt_Complete },
     { no: 14, name: "state", kind: "message", T: SessionState },
+    { no: 15, name: "stop_requested", kind: "message", T: SessionLogRecord_StopRequested },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SessionLogRecord {
@@ -660,6 +715,43 @@ export class SessionLogRecord_Print extends Message<SessionLogRecord_Print> {
 
   static equals(a: SessionLogRecord_Print | PlainMessage<SessionLogRecord_Print> | undefined, b: SessionLogRecord_Print | PlainMessage<SessionLogRecord_Print> | undefined): boolean {
     return proto3.util.equals(SessionLogRecord_Print, a, b);
+  }
+}
+
+/**
+ * @generated from message autokitteh.sessions.v1.SessionLogRecord.StopRequested
+ */
+export class SessionLogRecord_StopRequested extends Message<SessionLogRecord_StopRequested> {
+  /**
+   * @generated from field: string reason = 2;
+   */
+  reason = "";
+
+  constructor(data?: PartialMessage<SessionLogRecord_StopRequested>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "autokitteh.sessions.v1.SessionLogRecord.StopRequested";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 2, name: "reason", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SessionLogRecord_StopRequested {
+    return new SessionLogRecord_StopRequested().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SessionLogRecord_StopRequested {
+    return new SessionLogRecord_StopRequested().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SessionLogRecord_StopRequested {
+    return new SessionLogRecord_StopRequested().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SessionLogRecord_StopRequested | PlainMessage<SessionLogRecord_StopRequested> | undefined, b: SessionLogRecord_StopRequested | PlainMessage<SessionLogRecord_StopRequested> | undefined): boolean {
+    return proto3.util.equals(SessionLogRecord_StopRequested, a, b);
   }
 }
 

@@ -18,6 +18,7 @@ type SessionStateTraits struct{}
 
 func (SessionStateTraits) Validate(m *SessionStatePB) error {
 	return errors.Join(
+		objectField[SessionStateStopped]("canceled", m.Stopped),
 		objectField[SessionStateCompleted]("completed", m.Completed),
 		objectField[SessionStateCreated]("created", m.Created),
 		objectField[SessionStateError]("error", m.Error),
@@ -47,6 +48,8 @@ func NewSessionState(t time.Time, concrete concreteSessionState) SessionState {
 		pb.Created = concrete.ToProto()
 	case *SessionStateError:
 		pb.Error = concrete.ToProto()
+	case *SessionStateStopped:
+		pb.Stopped = concrete.ToProto()
 	default:
 		sdklogger.Panic("invalid session concrete state")
 	}
@@ -73,6 +76,10 @@ func (p SessionState) Type() SessionStateType {
 		return SessionStateTypeRunning
 	}
 
+	if pb.Stopped != nil {
+		return SessionStateTypeStopped
+	}
+
 	return SessionStateTypeUnspecified
 }
 
@@ -92,6 +99,8 @@ func (p SessionState) Concrete() concreteSessionState {
 		return p.GetError()
 	case SessionStateTypeRunning:
 		return p.GetRunning()
+	case SessionStateTypeStopped:
+		return p.GetStopped()
 	}
 
 	return nil

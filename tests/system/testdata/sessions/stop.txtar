@@ -18,6 +18,10 @@ return code == 0
 ak sessions watch ses_00000000000000000000000003 --no-timestamps --timeout 5s
 return code == 0
 
+ak sessions log ses_00000000000000000000000003 --no-timestamps -j
+return code == 0
+output contains "stop_requested"
+
 ak sessions log ses_00000000000000000000000003 --skip -1 --no-timestamps -j
 return code == 0
 output equals_json file last.json
@@ -30,14 +34,8 @@ def main():
 -- last.json --
 {
   "state": {
-    "error": {
-      "error": {
-        "value": {
-          "string": {
-            "v": "canceled"
-          }
-        }
-      }
+    "stopped": {
+      "reason": "test"
     }
   }
 }

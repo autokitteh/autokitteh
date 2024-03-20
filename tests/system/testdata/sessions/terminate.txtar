@@ -30,14 +30,8 @@ def main():
 -- last.json --
 {
   "state": {
-    "error": {
-      "error": {
-        "value": {
-          "string": {
-            "v": "terminated: test"
-          }
-        }
-      }
+    "stopped": {
+      "reason": "test"
     }
   }
 }

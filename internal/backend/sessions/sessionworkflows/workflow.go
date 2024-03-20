@@ -65,7 +65,7 @@ func runWorkflow(
 	ws *workflows,
 	data *sessiondata.Data,
 	debug bool,
-) error {
+) (prints []string, err error) {
 	w := &sessionWorkflow{
 		z:       z,
 		data:    data,
@@ -78,44 +78,25 @@ func runWorkflow(
 
 	w.initEnvModule()
 
-	var err error
 	if w.globals, err = w.initGlobalModules(); err != nil {
-		w.updateState(ctx, sdktypes.NewSessionStateError(err, nil))
-		return err // definitely an infra error.
+		return
 	}
 
-	if err := w.initConnections(ctx); err != nil {
-		w.updateState(ctx, sdktypes.NewSessionStateError(err, nil))
-		return nil // not an infra error.
+	if err = w.initConnections(ctx); err != nil {
+		return
 	}
 
-	if prints, err := w.run(ctx); err != nil {
-		w.updateState(ctx, sdktypes.NewSessionStateError(err, prints))
-		return nil // not an infra error.
-	}
+	prints, err = w.run(ctx)
 
-	return nil
+	return
 }
 
-func (w *sessionWorkflow) updateState(ctx workflow.Context, state sdktypes.SessionState) {
+func (w *sessionWorkflow) updateState(ctx workflow.Context, state sdktypes.SessionState) error {
 	w.z.Debug("update state", zap.Any("state", state))
 
 	w.state = state
 
-	if ctx.Err() == workflow.ErrCanceled {
-		goCtx, cancel := context.WithTimeout(context.Background(), limittedTimeout)
-		defer cancel()
-
-		if err := w.ws.svcs.DB.UpdateSessionState(goCtx, w.data.SessionID, state); err != nil {
-			w.z.Error("update session state", zap.Error(err))
-		}
-
-		return
-	}
-
-	if err := workflow.ExecuteLocalActivity(ctx, w.ws.svcs.DB.UpdateSessionState, w.data.SessionID, state).Get(ctx, nil); err != nil {
-		w.z.Panic("update session", zap.Error(err))
-	}
+	return workflow.ExecuteLocalActivity(ctx, w.ws.svcs.DB.UpdateSessionState, w.data.SessionID, state).Get(ctx, nil)
 }
 
 func (w *sessionWorkflow) loadIntegrationConnections(path string) (map[string]sdktypes.Value, error) {
