@@ -2,11 +2,11 @@ package auth
 
 import (
 	"context"
-
-	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
-	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
+	"errors"
 
 	"go.autokitteh.dev/autokitteh/integrations/slack/api"
+	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 type API struct {
@@ -37,6 +37,9 @@ func TestWithToken(ctx context.Context, secrets sdkservices.Secrets, scope, oaut
 	err := api.PostJSON(ctx, secrets, scope, struct{}{}, resp, "auth.test")
 	if err != nil {
 		return nil, err
+	}
+	if !resp.OK {
+		return nil, errors.New(resp.Error)
 	}
 	return resp, nil
 }

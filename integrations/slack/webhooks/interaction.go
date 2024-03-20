@@ -11,15 +11,14 @@ import (
 
 	"go.uber.org/zap"
 
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
-	valuesv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/values/v1"
-	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-
 	"go.autokitteh.dev/autokitteh/integrations/internal/extrazap"
 	"go.autokitteh.dev/autokitteh/integrations/slack/api"
 	"go.autokitteh.dev/autokitteh/integrations/slack/api/chat"
 	"go.autokitteh.dev/autokitteh/integrations/slack/api/conversations"
 	"go.autokitteh.dev/autokitteh/integrations/slack/api/users"
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
+	valuesv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/values/v1"
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 const (

@@ -30,8 +30,46 @@ h1 {
   margin: 0px;
 }
 
+div.toggle-container {
+  max-width: 350px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 32px;
+}
+
+button.toggle {
+  flex: 1;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: medium;
+}
+
+button.toggle.active {
+  background-color: #3498db;
+  color: white;
+}
+
+span.toggle-sep {
+  width: 10px;
+}
+
+div.tab {
+  display: none;
+}
+
+div.active {
+  display: block;
+}
+
 p.info {
   margin: 0px;
+}
+
+ul.links {
+  margin: 4px 0px 32px;
 }
 
 a.info {
@@ -57,6 +95,38 @@ a.info:hover {
 }
 
 .clickable:hover {
+  background-color: #2980b9;
+}
+
+.form-group {
+  margin-bottom: 32px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.form-group input {
+  width: 335px;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+.submit-btn {
+  display: inline-block;
+  padding: 10px 20px;
+  background-color: #3498db;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  font-size: medium;
+}
+
+.submit-btn:hover {
   background-color: #2980b9;
 }
 
