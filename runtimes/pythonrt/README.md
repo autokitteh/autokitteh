@@ -7,6 +7,17 @@ Currently, we don't support 3rd party packages (e.g. `pip install`) for the user
 See [ENG-538](https://linear.app/autokitteh/issue/ENG-538/support-python-dependencies) for more details.
 For a realistic POC/demo, we'll pre-install the packages the user code requires (e.g. `slack-sdk`).
 
+## Python Handler Function
+
+Python's handler functions should receive a single `dict` value which is the triggering event.
+This event has the following keys:
+
+- `event_type` (str): The event type
+- `event_id` (str): The event ID
+- `original_event_id` (str): The original event ID
+- `integration_id` (str): The ID of the integration that fired the event
+- `data` (dict): The event payload (integration specific)
+
 ## Patching User Code
 
 The Python code (`ak_runner.py`) loads the user code and patches every function call.
