@@ -1,10 +1,10 @@
 import os
 
 
-def greet(name):
+def greet(event):
     print('INFO: simple: HOME:', os.getenv('HOME'))
-    print(f'INFO: simple: greeting {name!r}')
-    return 'Hello ' + str(name)
+    print(f'INFO: simple: event_id: {event["event_id"]}')
+    return 'Hello stranger'
 
 
 if __name__ == '__main__':

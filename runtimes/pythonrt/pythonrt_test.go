@@ -131,6 +131,9 @@ func Test_pySVC_Run(t *testing.T) {
 	fn, err := sdktypes.NewFunctionValue(xid, "greet", nil, nil, modFn)
 	require.NoError(t, err, "new function")
 
-	_, err = run.Call(ctx, fn, nil, nil)
+	kwargs := map[string]sdktypes.Value{
+		"event_id": sdktypes.NewStringValue("007"),
+	}
+	_, err = run.Call(ctx, fn, nil, kwargs)
 	require.NoError(t, err, "call")
 }

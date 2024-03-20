@@ -87,11 +87,21 @@ type PyMessage struct {
 	Payload []byte `json:"payload"`
 }
 
+// All Python handler function get all event information.
+var pyModuleFunc = kittehs.Must1(sdktypes.ModuleFunctionFromProto(&sdktypes.ModuleFunctionPB{
+	Input: []*sdktypes.ModuleFunctionFieldPB{
+		{Name: "event_type"},
+		{Name: "event_id"},
+		{Name: "original_event_id"},
+		{Name: "integration_id"},
+		{Name: "data"},
+	},
+}))
+
 func entriesToValues(xid sdktypes.ExecutorID, entries []string) (map[string]sdktypes.Value, error) {
 	values := make(map[string]sdktypes.Value)
-	var modFn sdktypes.ModuleFunction // TODO
 	for _, name := range entries {
-		fn, err := sdktypes.NewFunctionValue(xid, name, nil, nil, modFn)
+		fn, err := sdktypes.NewFunctionValue(xid, name, nil, nil, pyModuleFunc)
 		if err != nil {
 			return nil, err
 		}
@@ -272,11 +282,84 @@ func (py *pySVC) initialCall(ctx context.Context, funcName string, payload []byt
 	return sdktypes.Nothing, nil
 }
 
+// TODO: We just want the JSON of kwargs, this seems excessive
+func valueToGo(v sdktypes.Value) (any, error) {
+	switch {
+	case v.IsBoolean():
+		return v.GetBoolean().Value(), nil
+	case v.IsBytes():
+		return v.GetBytes().Value(), nil
+	case v.IsDict():
+		d := v.GetDict()
+		items := d.Items()
+		m := make(map[string]any, len(items))
+		for _, i := range items {
+			if !i.K.IsString() {
+				return nil, fmt.Errorf("non string key: %#v", i.K)
+			}
+			gv, err := valueToGo(i.V)
+			if err != nil {
+				return nil, err
+			}
+			m[i.K.GetString().Value()] = gv
+		}
+		return m, nil
+	case v.IsDuration():
+		return v.GetDuration().Value(), nil
+	case v.IsFloat():
+		return v.GetFloat().Value(), nil
+	case v.IsInteger():
+		return v.GetInteger().Value(), nil
+	case v.IsList():
+		values := v.GetList().Values()
+		lst := make([]any, len(values))
+		for i, v := range values {
+			gv, err := valueToGo(v)
+			if err != nil {
+				return nil, err
+			}
+			lst[i] = gv
+		}
+	case v.IsNothing():
+		return nil, nil
+	case v.IsString():
+		return v.GetString().Value(), nil
+	case v.IsStruct():
+		// convert struct to map
+		fields := v.GetStruct().Fields()
+		m := make(map[string]any, len(fields))
+		for name, val := range fields {
+			gv, err := valueToGo(val)
+			if err != nil {
+				return nil, err
+			}
+			m[name] = gv
+		}
+		return m, nil
+	case v.IsSymbol():
+		return v.GetSymbol().ToProto().Name, nil
+	case v.IsTime():
+		return v.GetTime().Value(), nil
+	}
+
+	return nil, fmt.Errorf("unsupported type: %#v", v)
+}
+
 func (py *pySVC) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
 	py.log.Info("call", zap.String("func", v.String()))
 	if py.run.proc == nil {
 		py.log.Error("call - python not running")
 		return sdktypes.InvalidValue, fmt.Errorf("python not running")
+	}
+
+	event := make(map[string]any, len(kwargs))
+	for k, v := range kwargs {
+		gv, err := valueToGo(v)
+		if err != nil {
+			py.log.Error("can't convert to Go", zap.Any("value", v), zap.Error(err))
+			return sdktypes.InvalidValue, err
+		}
+		event[k] = gv
 	}
 
 	fn := v.GetFunction()
@@ -286,11 +369,17 @@ func (py *pySVC) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 
 	}
 
+	payload, err := json.Marshal(event)
+	if err != nil {
+		py.log.Error("can't marshal kwargs", zap.Error(err))
+		return sdktypes.InvalidValue, err
+	}
+
 	fnName := fn.Name().String()
 	py.log.Info("call", zap.String("function", fnName))
 	if py.firstCall { // TODO: mutex?
 		py.firstCall = false
-		return py.initialCall(ctx, fnName, fn.Data())
+		return py.initialCall(ctx, fnName, payload)
 	}
 
 	msg := PyMessage{

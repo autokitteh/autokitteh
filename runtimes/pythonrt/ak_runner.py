@@ -228,7 +228,6 @@ def encode_msg(typ, name, payload):
 
 
 def decode_msg(data):
-    logging.info('data: %r', data)
     obj = json.loads(data)
     if obj.get('payload'):
         obj['payload'] = b64decode(obj['payload'])
@@ -274,8 +273,8 @@ if __name__ == '__main__':
     mod = load_code(code_dir, ak_call, module_name)
     MODULE_NAME = mod.__name__
     entries = module_entries(mod)
-    data = encode_msg('module', '', json.dumps(entries))
-    sock.sendall(data)
+    event = encode_msg('module', '', json.dumps(entries))
+    sock.sendall(event)
 
     # Initial call
     request = decode_msg(rdr.readline())
@@ -287,11 +286,12 @@ if __name__ == '__main__':
     if func_name is None:
         logging.error('no function name in %r', request)
         raise SystemExit(1)
-    data = request.get('payload')
-    data = {} if data is None else json.loads(data)
+
+    event = request.get('payload')
+    event = {} if event is None else json.loads(event)
 
     rw = RunWrapper(mod)
-    Thread(target=rw.run, args=(func_name, data), daemon=True).start()
+    Thread(target=rw.run, args=(func_name, event), daemon=True).start()
     logging.info('execution thread started')
 
     while True:
@@ -300,19 +300,19 @@ if __name__ == '__main__':
             break
 
         # Use protocol 0 since it's less version specific
-        payload = pickle.dumps(request, protocol=0)
-        msg = encode_msg('activity', '', payload)
+        event = pickle.dumps(request, protocol=0)
+        msg = encode_msg('activity', '', event)
         logging.info('sending activity request')
         sock.sendall(msg)
-        data = rdr.readline()
+        event = rdr.readline()
         logging.info('got activity response')
-        resp = decode_msg(data)
+        resp = decode_msg(event)
         logging.info('activity response: %r', resp)
         fn, args = pickle.loads(resp['payload'])
         logging.info('activity request: %s %r', fn, args)
         out = fn(*args)
-        payload = pickle.dumps(out, protocol=0)
-        msg = encode_msg('response', '', payload)
+        event = pickle.dumps(out, protocol=0)
+        msg = encode_msg('response', '', event)
         sock.sendall(msg)
         activity_response.put(out)
 
