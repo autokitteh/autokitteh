@@ -20,7 +20,7 @@ from socket import AF_UNIX, SOCK_STREAM, socket
 from tempfile import mkdtemp
 from threading import Thread
 
-# TODO: Log to AutoKitteh
+# TODO: Log to AutoKitteh (ENG-552)
 logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s',
     datefmt='%Y-%M-%DT%H:%M:%S',
@@ -41,11 +41,6 @@ ACTION_NAME = '_ak_call'
 MODULE_NAME = ''
 
 
-def is_internal(name):
-    # TODO: A better way to identify internal vs external?
-    return '.' not in name
-
-
 class Transformer(ast.NodeTransformer):
     """Replace 'fn(a, b)' with '_ak_call(fn, a, b)'"""
     def visit_Call(self, node):
@@ -53,7 +48,7 @@ class Transformer(ast.NodeTransformer):
         # ast.Transformer does not recurse to args
         node.args = [self.visit(a) for a in node.args]
 
-        if not name or is_internal(name):
+        if not name:
             return node
 
         logging.info('patching %s with action', name)
@@ -155,7 +150,6 @@ def run_code(mod, entry_point, data):
 
 activity_request, activity_response = Queue(), Queue()
 
-# TODO: Make this an object with MODULE_NAME as attribute?
 def ak_call(func, *args, **kw):
     logging.info('ACTION: calling %s (args=%r, kw=%r)', func.__name__, args, kw)
     # Internal function, no need to patch
@@ -258,8 +252,6 @@ if __name__ == '__main__':
     else:
         module_name = args.path[:-3]
 
-
-    # TODO: Catch exceptions? Currently have the server crash is OK
     logging.info('sock: %r, tar: %r, module: %r', args.sock, args.tar, module_name)
     code_dir = extract_code(args.tar)
     logging.info('code dir: %r', code_dir)
@@ -316,6 +308,5 @@ if __name__ == '__main__':
         sock.sendall(msg)
         activity_response.put(out)
 
-    # TODO: Send value back
     msg = encode_msg('done', '', '')
     sock.sendall(msg)

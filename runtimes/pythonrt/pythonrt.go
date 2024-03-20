@@ -37,7 +37,7 @@ type pySVC struct {
 }
 
 func New() (sdkservices.Runtime, error) {
-	log, err := logger.New(logger.Configs.Dev) // TODO: From configuration
+	log, err := logger.New(logger.Configs.Dev) // TODO: From configuration (ENG-553)
 	if err != nil {
 		return nil, err
 	}
@@ -215,14 +215,19 @@ func (py *pySVC) Values() map[string]sdktypes.Value {
 
 func (py *pySVC) Close() {
 	py.log.Info("closing")
-	/* FIXME: AK calls Close after `Run`, but we need this for `Call` as well.
-	if py.run != nil {
-		py.run.proc.Kill()
-	}
-	*/
+	// AK calls Close after `Run`, but we need the Python process running for `Call` as well.
+	// We kill the Python process once the initial `Call` is completed.
 }
 
 func (py *pySVC) initialCall(ctx context.Context, funcName string, payload []byte) (sdktypes.Value, error) {
+	defer func() {
+		py.log.Info("python done, killing")
+		if err := py.run.proc.Kill(); err != nil {
+			py.log.Warn("kill", zap.Int("pid", py.run.proc.Pid), zap.Error(err))
+		}
+		py.run.proc = nil
+	}()
+
 	// Initial run cal
 	msg := PyMessage{
 		Type:    "run",
@@ -272,17 +277,10 @@ func (py *pySVC) initialCall(ctx context.Context, funcName string, payload []byt
 		}
 	}
 
-	py.log.Info("python done, killing")
-	if err := py.run.proc.Kill(); err != nil { // FIXME: We run only once
-		py.log.Warn("kill", zap.Int("pid", py.run.proc.Pid), zap.Error(err))
-	}
-	py.run.proc = nil
-
-	// TODO: Return value
 	return sdktypes.Nothing, nil
 }
 
-// TODO: We just want the JSON of kwargs, this seems excessive
+// TODO: We just want the JSON of kwargs, this seems excessive. Ask Itay
 func valueToGo(v sdktypes.Value) (any, error) {
 	switch {
 	case v.IsBoolean():
@@ -377,8 +375,9 @@ func (py *pySVC) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 
 	fnName := fn.Name().String()
 	py.log.Info("call", zap.String("function", fnName))
-	if py.firstCall { // TODO: mutex?
+	if py.firstCall { // TODO: mutex. Ask Itay
 		py.firstCall = false
+
 		return py.initialCall(ctx, fnName, payload)
 	}
 

@@ -69,7 +69,6 @@ func extractRunner() (string, error) {
 	return file.Name(), nil
 }
 
-// TODO: Do we want to have the communication API here?
 type pyRunInfo struct {
 	sockPath string
 	lis      net.Listener
@@ -111,7 +110,7 @@ func runPython(log *zap.Logger, tarData []byte, rootPath string, env map[string]
 	}
 
 	cmd := exec.Command("python", runnerPath, sockPath, tarPath, rootPath)
-	// TODO: Hook cmd.Stdout & cmd.Stderr to logs
+	// TODO: Hook cmd.Stdout & cmd.Stderr to logs (ENG-552)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Env = overrideEnv(env)

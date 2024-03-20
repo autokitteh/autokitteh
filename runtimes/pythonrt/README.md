@@ -18,6 +18,8 @@ This event has the following keys:
 - `integration_id` (str): The ID of the integration that fired the event
 - `data` (dict): The event payload (integration specific)
 
+The return value from Python entry points is ignored and is not passed back to autokitteh.
+
 ## Patching User Code
 
 The Python code (`ak_runner.py`) loads the user code and patches every function call.
@@ -51,7 +53,7 @@ A run calls start a Python server with:
 - Tar file containing user code
 - Entry point (e.g. `review.py:on_github_pull_request`)
 
-It's will also inject `vars` definition from the manifest to the Python process environment.
+It will also inject `vars` definition from the manifest to the Python process environment.
 
 The Python server returns a list of exported symbols from the user code.
 
@@ -86,7 +88,7 @@ We're using JSON over Unix domain socket, one JSON object per line.
 The reason do this is that `ak_runner.py` should not have any external dependencies outside the standard library.
 Once we introduce an external dependency, it will conflict with the user dependencies.
 
-The message payload is handled by Python and is opaque to AutoKitteh.
+The message payload is handled by Python and is opaque to autokitteh.
 Currently, it's base64 of a pickle.
 
 
