@@ -24,6 +24,15 @@ deploy-workflow:
 run-workflow:
 	curl -i -X POST http://localhost:9980/http/trigger_url_path_py
 
+deploy-issues:
+	go run testdata/deploy.go -- ./testdata/issues/
+
+
 temporal-ui:
 	$(open) http://localhost:8233
 
+ngrok:
+	ngrok http --domain autokitteh-miki.ngrok.dev 9980
+
+ngrok-prod:
+	ngrok http --domain autokitteh.ngrok.dev 9980
