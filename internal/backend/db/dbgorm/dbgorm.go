@@ -85,9 +85,11 @@ func translateError(err error) error {
 }
 
 func (db *gormdb) Setup(ctx context.Context) error {
+	db.db.Exec("PRAGMA foreign_keys = OFF")
 	if err := db.db.WithContext(ctx).AutoMigrate(scheme.Tables...); err != nil {
 		return fmt.Errorf("automigrate: %w", err)
 	}
+	db.db.Exec("PRAGMA foreign_keys = ON")
 
 	return nil
 }
