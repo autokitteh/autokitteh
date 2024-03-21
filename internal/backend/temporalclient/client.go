@@ -39,11 +39,19 @@ func NewFromClient(cfg *MonitorConfig, z *zap.Logger, tclient client.Client) (Cl
 func New(cfg *Config, z *zap.Logger) (Client, error) {
 	var tlsConfig *tls.Config
 	if cfg.TLS.Enabled {
-		cert, err := tls.LoadX509KeyPair(cfg.TLS.CertFilePath, cfg.TLS.KeyFilePath)
+		var cert tls.Certificate
+		var err error
+		if cfg.TLS.CertFilePath != "" && cfg.TLS.KeyFilePath != "" {
+			cert, err = tls.LoadX509KeyPair(cfg.TLS.CertFilePath, cfg.TLS.KeyFilePath)
+		} else if cfg.TLS.Certificate != "" && cfg.TLS.Key != "" {
+			cert, err = tls.X509KeyPair([]byte(cfg.TLS.Certificate), []byte(cfg.TLS.Key))
+		} else {
+			return nil, errors.New("tls enabled but no certificate or key")
+		}
+
 		if err != nil {
 			return nil, fmt.Errorf("load x509 key pair: %w", err)
 		}
-
 		tlsConfig = &tls.Config{Certificates: []tls.Certificate{cert}}
 	}
 
