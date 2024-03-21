@@ -85,7 +85,7 @@ func translateError(err error) error {
 }
 
 func (db *gormdb) Setup(ctx context.Context) error {
-	isSqlite := db.db.Dialector.Name() == "sqlite"
+	isSqlite := db.cfg.Type == "sqlite"
 	if isSqlite {
 		db.db.Exec("PRAGMA foreign_keys = OFF")
 	}
@@ -100,7 +100,7 @@ func (db *gormdb) Setup(ctx context.Context) error {
 }
 
 func (db *gormdb) Teardown(ctx context.Context) error {
-	isSqlite := db.db.Dialector.Name() == "sqlite"
+	isSqlite := db.cfg.Type == "sqlite"
 	if isSqlite {
 		db.db.Exec("PRAGMA foreign_keys = OFF")
 	}

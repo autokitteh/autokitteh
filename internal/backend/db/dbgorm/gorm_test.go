@@ -17,6 +17,7 @@ import (
 	"gorm.io/gorm/logger"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
+	"go.autokitteh.dev/autokitteh/internal/backend/gormkitteh"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
@@ -47,9 +48,7 @@ func setupDB(dbName string) *gorm.DB {
 			Colorful:      false,         // Disable color
 		},
 	)
-	if dbName == "" {
-		dbName = "file::memory:"
-	}
+
 	db, err := gorm.Open(sqlite.Open(dbName), &gorm.Config{
 		NowFunc: func() time.Time { // operate always in UTC to simplify object comparison upon creation and fetching
 			return time.Now().UTC()
@@ -65,11 +64,13 @@ func setupDB(dbName string) *gorm.DB {
 }
 
 func newDBFixture(withoutForeignKeys bool) *dbFixture {
-	db := setupDB("") // in-memory db, specify filename to use file db
+	dsn := "file::memory:"
+	db := setupDB(dsn) // in-memory db, specify filename to use file db
 
 	ctx := context.Background()
+	cfg := gormkitteh.Config{Type: "sqlite", DSN: dsn}
 
-	gormdb := gormdb{db: db, cfg: nil, mu: nil, z: zap.NewExample()}
+	gormdb := gormdb{db: db, cfg: &cfg, mu: nil, z: zap.NewExample()}
 	if err := gormdb.Teardown(ctx); err != nil { // delete tables if any
 		log.Printf("Failed to termdown gormdb: %v", err)
 	}
