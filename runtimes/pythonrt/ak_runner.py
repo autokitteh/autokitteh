@@ -13,6 +13,7 @@ from base64 import b64decode, b64encode
 from functools import wraps
 from importlib.abc import Loader
 from importlib.machinery import SourceFileLoader
+from inspect import isbuiltin
 from os import mkdir
 from pathlib import Path
 from queue import Queue
@@ -148,18 +149,32 @@ def run_code(mod, entry_point, data):
 
 
 
+# Queue for passing requests from execution thread to main working with Go.
 activity_request, activity_response = Queue(), Queue()
 
-def ak_call(func, *args, **kw):
-    logging.info('ACTION: calling %s (args=%r, kw=%r)', func.__name__, args, kw)
-    # Internal function, no need to patch
-    if func.__module__ == MODULE_NAME:
-        return func(*args, **kw)
+class AKCall:
+    """Callable wrapping functions with activities."""
+    def __init__(self, module_name):
+        self.module_name = module_name
 
-    request = (func, args)
-    activity_request.put(request)
-    response = activity_response.get()
-    return response
+    def ignore(self, fn):
+        if isbuiltin(fn):
+            return True
+        
+        if fn.__module__ == self.module_name:
+            return True
+
+        return False
+
+    def __call__(self, func, *args, **kw):
+        if self.ignore(func):
+            return func(*args, **kw)
+
+        logging.info('ACTION: calling %s (args=%r, kw=%r)', func.__name__, args, kw)
+        request = (func, args)
+        activity_request.put(request)
+        response = activity_response.get()
+        return response
 
 
 class RunWrapper:
@@ -262,6 +277,7 @@ if __name__ == '__main__':
     logging.info('connected to %r', args.sock)
 
     logging.info('loading %r', module_name)
+    ak_call = AKCall(module_name)
     mod = load_code(code_dir, ak_call, module_name)
     MODULE_NAME = mod.__name__
     entries = module_entries(mod)

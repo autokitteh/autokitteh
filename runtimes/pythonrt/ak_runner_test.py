@@ -12,12 +12,18 @@ test_dir = Path(__file__).absolute().parent
 def test_load_code():
     calls = []
 
-    def action_fn(fn, *args, **kw):
-        calls.append((fn, args, kw))
-        return fn(*args, **kw)
-
     mod_name = 'mod'
-    mod = ak_runner.load_code('testdata', action_fn, mod_name)
+    class MockCall(ak_runner.AKCall):
+        def __call__(self, fn, *args, **kw):
+            if self.ignore(fn):
+                return fn(*args, **kw)
+
+            if fn.__module__ != mod_name:
+                calls.append((fn, args, kw))
+            return fn(*args, **kw)
+    ak_call = MockCall(mod_name)
+
+    mod = ak_runner.load_code('testdata', ak_call, mod_name)
     fn = getattr(mod, 'parse', None)
     assert fn, 'parse not found'
 
