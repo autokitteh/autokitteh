@@ -18,7 +18,6 @@ from os import mkdir
 from pathlib import Path
 from queue import Queue
 from socket import AF_UNIX, SOCK_STREAM, socket
-from tempfile import mkdtemp
 from threading import Thread
 
 # TODO: Log to AutoKitteh (ENG-552)
@@ -189,8 +188,8 @@ class RunWrapper:
 
 
 def extract_code(tar_path):
-    tmp_dir = mkdtemp()
-    code_dir = f'{tmp_dir}/code'
+    root_dir = Path(tar_path).absolute().parent
+    code_dir = f'{root_dir}/code'
     mkdir(code_dir)
     with tarfile.open(tar_path) as tf:
         tf.extractall(code_dir)

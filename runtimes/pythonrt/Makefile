@@ -10,7 +10,7 @@ all:
 ci: deps test
 
 test:
-	ruff ak_runner.py
+	ruff check ak_runner.py
 	python -m pytest \
 		--doctest-modules \
 		--ignore testdata \

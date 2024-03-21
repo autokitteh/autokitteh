@@ -11,6 +11,7 @@ import (
 	"net"
 	"os"
 	"os/exec"
+	"path"
 	"strings"
 
 	"go.uber.org/zap"
@@ -55,8 +56,9 @@ func pyExecInfo(ctx context.Context) (execInfo, error) {
 	return execInfo{Exe: exePath, Version: version}, nil
 }
 
-func extractRunner() (string, error) {
-	file, err := os.CreateTemp("", "*.py")
+func extractRunner(rootDir string) (string, error) {
+	fileName := path.Join(rootDir, "ak_runner.py")
+	file, err := os.Create(fileName)
 	if err != nil {
 		return "", err
 	}
@@ -66,42 +68,34 @@ func extractRunner() (string, error) {
 		return "", fmt.Errorf("can't copy python code to %s - %w", file.Name(), err)
 	}
 
-	return file.Name(), nil
+	return fileName, nil
 }
 
 type pyRunInfo struct {
+	rootDir  string
 	sockPath string
 	lis      net.Listener
 	proc     *os.Process
 }
 
-func newSocket() (string, error) {
-	file, err := os.CreateTemp("", "*.sock")
-	if err != nil {
-		return "", err
-	}
-	file.Close()
-
-	os.RemoveAll(file.Name())
-	return file.Name(), nil
-}
-
 func runPython(log *zap.Logger, tarData []byte, rootPath string, env map[string]string) (*pyRunInfo, error) {
-	tarPath, err := writeTar(tarData)
+	rootDir, err := os.MkdirTemp("", "ak-")
 	if err != nil {
 		return nil, err
 	}
 
-	runnerPath, err := extractRunner()
+	tarPath, err := writeTar(rootDir, tarData)
+	if err != nil {
+		return nil, err
+	}
+
+	runnerPath, err := extractRunner(rootDir)
 	if err != nil {
 		return nil, err
 	}
 	log.Info("python runner", zap.String("path", runnerPath))
 
-	sockPath, err := newSocket()
-	if err != nil {
-		return nil, err
-	}
+	sockPath := path.Join(rootDir, "ak.sock")
 	log.Info("socket", zap.String("path", sockPath))
 
 	lis, err := net.Listen("unix", sockPath)
@@ -110,10 +104,11 @@ func runPython(log *zap.Logger, tarData []byte, rootPath string, env map[string]
 	}
 
 	cmd := exec.Command("python", runnerPath, sockPath, tarPath, rootPath)
+	cmd.Dir = rootDir
+	cmd.Env = overrideEnv(env)
 	// TODO: Hook cmd.Stdout & cmd.Stderr to logs (ENG-552)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	cmd.Env = overrideEnv(env)
 
 	if err := cmd.Start(); err != nil {
 		lis.Close()
@@ -129,8 +124,9 @@ func runPython(log *zap.Logger, tarData []byte, rootPath string, env map[string]
 	return &info, nil
 }
 
-func writeTar(data []byte) (string, error) {
-	file, err := os.CreateTemp("", "*.tar")
+func writeTar(rootDir string, data []byte) (string, error) {
+	tarName := path.Join(rootDir, "code.tar")
+	file, err := os.Create(tarName)
 	if err != nil {
 		return "", err
 	}
@@ -140,7 +136,7 @@ func writeTar(data []byte) (string, error) {
 		return "", err
 	}
 
-	return file.Name(), err
+	return tarName, err
 }
 
 func overrideEnv(envMap map[string]string) []string {
