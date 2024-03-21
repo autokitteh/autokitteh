@@ -18,6 +18,8 @@ import (
 // See https://api.slack.com/apis/connections/events-api#responding.
 // Compare this function with the [webhooks.HandleBotEvent] implementation.
 func (h handler) handleBotEvent(e *socketmode.Event, c *socketmode.Client) {
+	defer c.Ack(*e.Request)
+
 	// Reuse the Slack event's JSON payload instead of the struct.
 	body, err := e.Request.Payload.MarshalJSON()
 	if err != nil {
@@ -91,6 +93,4 @@ func (h handler) handleBotEvent(e *socketmode.Event, c *socketmode.Client) {
 
 	// Dispatch the event to all of them, for asynchronous handling.
 	h.dispatchAsyncEventsToConnections(connTokens, akEvent)
-
-	c.Ack(*e.Request)
 }

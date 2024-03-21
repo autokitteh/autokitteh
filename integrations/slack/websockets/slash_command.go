@@ -49,6 +49,7 @@ func (h handler) handleSlashCommand(e *socketmode.Event, c *socketmode.Client) {
 			zap.Any("cmd", cmd),
 			zap.Error(err),
 		)
+		c.Ack(*e.Request)
 		return
 	}
 
@@ -58,6 +59,7 @@ func (h handler) handleSlashCommand(e *socketmode.Event, c *socketmode.Client) {
 			zap.Any("cmd", cmd),
 			zap.Error(err),
 		)
+		c.Ack(*e.Request)
 		return
 	}
 
@@ -73,6 +75,7 @@ func (h handler) handleSlashCommand(e *socketmode.Event, c *socketmode.Client) {
 	connTokens, err := h.secrets.List(context.Background(), h.scope, "websockets")
 	if err != nil {
 		h.logger.Error("Failed to retrieve connection tokens", zap.Error(err))
+		c.Ack(*e.Request)
 		return
 	}
 
@@ -82,6 +85,7 @@ func (h handler) handleSlashCommand(e *socketmode.Event, c *socketmode.Client) {
 	// https://api.slack.com/apis/connections/socket#acknowledge
 	if len(cmd.Text) == 0 {
 		c.Ack(*e.Request)
+		return
 	}
 
 	// https://api.slack.com/apis/connections/socket#command

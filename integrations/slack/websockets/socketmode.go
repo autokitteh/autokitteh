@@ -78,6 +78,9 @@ func (h handler) socketModeHandler(e *socketmode.Event, c *socketmode.Client) {
 	case "events_api":
 		h.logger.Debug(msg, zap.Any("data", e.Data), zap.Any("request", e.Request))
 		h.handleBotEvent(e, c)
+	case "interactive":
+		h.logger.Debug(msg, zap.Any("data", e.Data), zap.Any("request", e.Request))
+		h.handleInteractiveEvent(e, c)
 	case "slash_commands":
 		h.logger.Debug(msg, zap.Any("data", e.Data), zap.Any("request", e.Request))
 		h.handleSlashCommand(e, c)
