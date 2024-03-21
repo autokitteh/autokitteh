@@ -52,11 +52,12 @@ func (h handler) OpenSocketModeConnection(appID, botToken, appToken string) {
 		for {
 			smh := socketmode.NewSocketmodeHandler(webSocketClients[appID])
 			smh.HandleDefault(h.socketModeHandler)
+
 			err := smh.RunEventLoop()
-			if err != nil {
-				h.logger.Error("Slack Socket Mode (re)connection error", zap.Error(err))
+			if err == nil {
+				return // Normal process termination.
 			}
-			return
+			h.logger.Error("Slack Socket Mode (re)connection error", zap.Error(err))
 		}
 	}()
 }
