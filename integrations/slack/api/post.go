@@ -212,6 +212,14 @@ func getConnection(ctx context.Context, sec sdkservices.Secrets, scope string) (
 		return nil, err
 	}
 
+	// Socket mode connection.
+	if c["botToken"] != "" {
+		return &oauth2.Token{
+			AccessToken: c["botToken"],
+		}, nil
+	}
+
+	// OAuth connection.
 	exp, err := time.Parse(time.RFC3339, c["expiry"])
 	if err != nil {
 		exp = time.Unix(0, 0)
