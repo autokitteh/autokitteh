@@ -7,14 +7,20 @@ endif
 all:
 	$(error please pick a target)
 
-ci: deps test
+ci: deps test-py
 
-test:
-	ruff check ak_runner.py
+test: test-py test-go
+
+test-py:
+	ruff check .
 	python -m pytest \
 		--doctest-modules \
 		--ignore testdata \
 		-v .
+test-go:
+	golangci-lint run ./...
+	go test -v
+
 deps:
 	python -m pip install -r dev-requirements.txt
 

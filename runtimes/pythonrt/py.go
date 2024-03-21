@@ -116,6 +116,7 @@ func runPython(log *zap.Logger, tarData []byte, rootPath string, env map[string]
 	}
 
 	info := pyRunInfo{
+		rootDir:  rootPath,
 		sockPath: sockPath,
 		lis:      lis,
 		proc:     cmd.Process,
