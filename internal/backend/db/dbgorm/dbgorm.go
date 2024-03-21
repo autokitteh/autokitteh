@@ -85,18 +85,30 @@ func translateError(err error) error {
 }
 
 func (db *gormdb) Setup(ctx context.Context) error {
-	db.db.Exec("PRAGMA foreign_keys = OFF")
+	isSqlite := db.db.Dialector.Name() == "sqlite"
+	if isSqlite {
+		db.db.Exec("PRAGMA foreign_keys = OFF")
+	}
 	if err := db.db.WithContext(ctx).AutoMigrate(scheme.Tables...); err != nil {
 		return fmt.Errorf("automigrate: %w", err)
 	}
-	db.db.Exec("PRAGMA foreign_keys = ON")
+	if isSqlite {
+		db.db.Exec("PRAGMA foreign_keys = ON")
+	}
 
 	return nil
 }
 
 func (db *gormdb) Teardown(ctx context.Context) error {
+	isSqlite := db.db.Dialector.Name() == "sqlite"
+	if isSqlite {
+		db.db.Exec("PRAGMA foreign_keys = OFF")
+	}
 	if err := db.db.WithContext(ctx).Migrator().DropTable(scheme.Tables...); err != nil {
 		return fmt.Errorf("droptable: %w", err)
+	}
+	if isSqlite {
+		db.db.Exec("PRAGMA foreign_keys = ON")
 	}
 
 	return nil
