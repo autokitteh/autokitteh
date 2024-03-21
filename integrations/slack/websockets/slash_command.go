@@ -3,7 +3,6 @@ package websockets
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/slack-go/slack"
 	"github.com/slack-go/slack/socketmode"
@@ -100,10 +99,4 @@ func (h handler) handleSlashCommand(e *socketmode.Event, c *socketmode.Client) {
 			},
 		},
 	})
-}
-
-func appSecretName(appID, enterpriseID, teamID string) string {
-	s := fmt.Sprintf("apps/%s/%s/%s", appID, enterpriseID, teamID)
-	// Slack enterprise ID is allowed to be empty.
-	return strings.ReplaceAll(s, "//", "/")
 }

@@ -26,6 +26,7 @@ func (h handler) handleBotEvent(e *socketmode.Event, c *socketmode.Client) {
 		h.logger.Error("Bad request from Slack websocket",
 			zap.Any("payload", e.Request.Payload),
 		)
+		return
 	}
 
 	// Parse the inbound request (no need to validate authenticity, unlike webhooks).

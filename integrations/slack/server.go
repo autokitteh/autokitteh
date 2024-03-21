@@ -42,6 +42,7 @@ func Start(l *zap.Logger, mux *http.ServeMux, s sdkservices.Secrets, d sdkservic
 		data, err := s.Get(context.Background(), "slack", connToken)
 		if err != nil {
 			l.Error("Missing data for Slack Socket Mode app", zap.Error(err))
+			continue
 		}
 
 		wsh.OpenSocketModeConnection(data["appID"], data["botToken"], data["appLevelToken"])

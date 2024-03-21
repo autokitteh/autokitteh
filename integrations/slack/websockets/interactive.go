@@ -31,6 +31,7 @@ func (h handler) handleInteractiveEvent(e *socketmode.Event, c *socketmode.Clien
 		h.logger.Error("Bad request from Slack websocket",
 			zap.Any("payload", e.Request.Payload),
 		)
+		return
 	}
 
 	// Parse the inbound request (no need to validate authenticity, unlike webhooks).
@@ -83,13 +84,13 @@ func (h handler) handleInteractiveEvent(e *socketmode.Event, c *socketmode.Clien
 	// It's a Slack best practice to update an interactive message after the interaction,
 	// to prevent further interaction with the same message, and to reflect the user actions.
 	// See: https://api.slack.com/interactivity/handling#updating_message_response.
-	h.updateMessage(payload)
+	h.updateMessage(payload, connTokens)
 }
 
 // updateMessage updates an interactive message after the interaction, to prevent
 // further interaction with the same message, and to reflect the user actions.
 // See: https://api.slack.com/interactivity/handling#updating_message_response.
-func (h handler) updateMessage(payload *webhooks.BlockActionsPayload) {
+func (h handler) updateMessage(payload *webhooks.BlockActionsPayload, connTokens []string) {
 	resp := webhooks.Response{
 		Text:            payload.Message.Text,
 		ResponseType:    "in_channel",
@@ -131,8 +132,10 @@ func (h handler) updateMessage(payload *webhooks.BlockActionsPayload) {
 	}
 
 	// Send the update to Slack's webhook.
+	appToken := h.firstBotToken(connTokens)
 	meta := &chat.UpdateResponse{}
 	ctx := extrazap.AttachLoggerToContext(h.logger, context.Background())
+	ctx = context.WithValue(ctx, api.OAuthTokenContextKey{}, appToken)
 	err := api.PostJSON(ctx, h.secrets, h.scope, resp, meta, payload.ResponseURL)
 	if err != nil {
 		h.logger.Warn("Error in reply to user via interaction webhook",
@@ -141,4 +144,16 @@ func (h handler) updateMessage(payload *webhooks.BlockActionsPayload) {
 			zap.Error(err),
 		)
 	}
+}
+
+// Return the Slack bot token of the first connection, if there is any.
+func (h handler) firstBotToken(connTokens []string) string {
+	for _, connToken := range connTokens {
+		if data, err := h.secrets.Get(context.Background(), h.scope, connToken); err == nil {
+			return data["bot_token"]
+		}
+	}
+	// This will result in a warning in the server's log,
+	// but the caller (updateMessage()) should still work.
+	return ""
 }
