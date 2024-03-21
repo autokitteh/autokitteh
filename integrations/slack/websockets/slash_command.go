@@ -9,19 +9,17 @@ import (
 	"github.com/slack-go/slack/socketmode"
 	"go.uber.org/zap"
 
-	"go.autokitteh.dev/autokitteh/integrations/internal/extrazap"
 	"go.autokitteh.dev/autokitteh/integrations/slack/api/chat"
 	"go.autokitteh.dev/autokitteh/integrations/slack/webhooks"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
-	eventsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/events/v1"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 // HandleSlashCommand dispatches and acknowledges a user's slash command registered by our
 // Slack app. See https://api.slack.com/interactivity/slash-commands#responding_to_commands.
 // Compare this function with the [webhooks.HandleSlashCommand] implementation.
-func (h handler) HandleSlashCommand(e *socketmode.Event, c *socketmode.Client) {
-	// This data casting is guaranteed to work because we're handling a "slash_commands" event.
+func (h handler) handleSlashCommand(e *socketmode.Event, c *socketmode.Client) {
+	// This data casting is guaranteed to work, so no need to check it
 	d := e.Data.(slack.SlashCommand)
 
 	// Transform the received Slack event into an autokitteh slash command struct.
@@ -72,8 +70,7 @@ func (h handler) HandleSlashCommand(e *socketmode.Event, c *socketmode.Client) {
 	}
 
 	// Retrieve all the relevant connections for this event.
-	k := appSecretName(cmd.APIAppID, cmd.EnterpriseID, cmd.TeamID)
-	connTokens, err := h.secrets.List(context.Background(), h.scope, k)
+	connTokens, err := h.secrets.List(context.Background(), h.scope, "websockets")
 	if err != nil {
 		h.logger.Error("Failed to retrieve connection tokens", zap.Error(err))
 		return
@@ -105,24 +102,4 @@ func appSecretName(appID, enterpriseID, teamID string) string {
 	s := fmt.Sprintf("apps/%s/%s/%s", appID, enterpriseID, teamID)
 	// Slack enterprise ID is allowed to be empty.
 	return strings.ReplaceAll(s, "//", "/")
-}
-
-func (h handler) dispatchAsyncEventsToConnections(tokens []string, event *eventsv1.Event) {
-	ctx := extrazap.AttachLoggerToContext(h.logger, context.Background())
-	for _, connToken := range tokens {
-		event.IntegrationToken = connToken
-		event := kittehs.Must1(sdktypes.EventFromProto(event))
-		eventID, err := h.dispatcher.Dispatch(ctx, event, nil)
-		if err != nil {
-			h.logger.Error("Dispatch failed",
-				zap.String("connectionToken", connToken),
-				zap.Error(err),
-			)
-			return
-		}
-		h.logger.Debug("Dispatched",
-			zap.String("connectionToken", connToken),
-			zap.String("eventID", eventID.String()),
-		)
-	}
 }

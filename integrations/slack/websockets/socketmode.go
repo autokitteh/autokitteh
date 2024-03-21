@@ -1,12 +1,16 @@
 package websockets
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/slack-go/slack"
 	"github.com/slack-go/slack/socketmode"
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/integrations/internal/extrazap"
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
+	eventsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/events/v1"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -70,9 +74,12 @@ func (h handler) socketModeHandler(e *socketmode.Event, c *socketmode.Client) {
 	// at all (https://api.slack.com/apis/connections/socket#disconnect).
 
 	// Events.
+	case "events_api":
+		h.logger.Debug(msg, zap.Any("data", e.Data), zap.Any("request", e.Request))
+		h.handleBotEvent(e, c)
 	case "slash_commands":
 		h.logger.Debug(msg, zap.Any("data", e.Data), zap.Any("request", e.Request))
-		h.HandleSlashCommand(e, c)
+		h.handleSlashCommand(e, c)
 
 	// Errors.
 	case "connection_error", "incoming_error":
@@ -83,6 +90,26 @@ func (h handler) socketModeHandler(e *socketmode.Event, c *socketmode.Client) {
 			zap.String("type", string(e.Type)),
 			zap.Any("data", e.Data),
 			zap.Any("request", e.Request),
+		)
+	}
+}
+
+func (h handler) dispatchAsyncEventsToConnections(tokens []string, event *eventsv1.Event) {
+	ctx := extrazap.AttachLoggerToContext(h.logger, context.Background())
+	for _, connToken := range tokens {
+		event.IntegrationToken = connToken
+		event := kittehs.Must1(sdktypes.EventFromProto(event))
+		eventID, err := h.dispatcher.Dispatch(ctx, event, nil)
+		if err != nil {
+			h.logger.Error("Dispatch failed",
+				zap.String("connectionToken", connToken),
+				zap.Error(err),
+			)
+			return
+		}
+		h.logger.Debug("Dispatched",
+			zap.String("connectionToken", connToken),
+			zap.String("eventID", eventID.String()),
 		)
 	}
 }
