@@ -22,6 +22,7 @@
     <link rel="manifest" href="/static/site.webmanifest" />
     <link rel="stylesheet" type="text/css" href="styles.css" />
     <meta name="robots" content="noindex, nofollow" />
+    <script src="form.js" defer></script>
   </head>
 
   <body>
@@ -30,25 +31,98 @@
     </a>
 
     <table class="title">
-      <td>
-        <img class="logo" src="/static/images/slack.svg" alt="Slack" />
-      </td>
+      <td><img class="logo" src="/static/images/slack.svg" alt="Slack" /></td>
       <td><h1>Slack - Create a New Connection</h1></td>
     </table>
 
-    <p class="info">
-      Information:
-      <a
-        href="https://api.slack.com/authentication/oauth-v2"
-        target="_blank"
-        class="info"
-      >
-        Installing Slack apps with OAuth
-      </a>
-      <br /><br />
-      Click the button below to install and authorize<br />
-      the <strong>autokitteh</strong> app in your Slack workspace
-    </p>
-    <a href="/oauth/start/slack" class="clickable">Start OAuth Flow</a>
+    <div class="toggle-container">
+      <button class="toggle" id="toggletab1" onclick="toggleTab('tab1')">
+        Socket Mode
+      </button>
+      <span class="toggle-sep"></span>
+      <button class="toggle" id="toggletab2" onclick="toggleTab('tab2')">
+        OAuth v2
+      </button>
+    </div>
+
+    <div class="tab" id="tab1">
+      <p class="info">Information:</p>
+      <ul class="links">
+        <li>
+          <a
+            href="https://docs.autokitteh.com/tutorials/new_connections/slack"
+            target="_blank"
+            class="info"
+          >
+            autokitteh tutorial: creating a Socket-Mode Slack connection
+          </a>
+        </li>
+        <li>
+          <a
+            href="https://api.slack.com/apis/connections/socket"
+            target="_blank"
+            class="info"
+          >
+            Details about Slack's Socket Mode
+          </a>
+        </li>
+      </ul>
+
+      <form method="post" action="/slack/save_tokens">
+        <div class="form-group">
+          <label for="bot_token">Bot Token ("<samp>xoxb</samp>")</label>
+          <input
+            type="text"
+            name="bot_token"
+            autocomplete="off"
+            spellcheck="false"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="app_token">App-Level Token ("<samp>xapp</samp>")</label>
+          <input
+            type="text"
+            name="app_token"
+            autocomplete="off"
+            spellcheck="false"
+            required
+          />
+        </div>
+
+        <button type="submit" class="submit-btn">Save Connection</button>
+      </form>
+    </div>
+
+    <div class="tab" id="tab2">
+      <p class="info">Information:</p>
+      <ul class="links">
+        <li>
+          <a
+            href="https://docs.autokitteh.com/config/integrations/slack"
+            target="_blank"
+            class="info"
+          >
+            autokitteh guide: configuring the Slack integration
+          </a>
+        </li>
+        <li>
+          <a
+            href="https://api.slack.com/authentication/oauth-v2"
+            target="_blank"
+            class="info"
+          >
+            Background about installing Slack apps with OAuth
+          </a>
+        </li>
+      </ul>
+
+      <p class="info">
+        Click the button below to install and authorize<br />
+        the <b>autokitteh</b> app in your Slack workspace
+      </p>
+      <a href="/oauth/start/slack" class="clickable">Start OAuth Flow</a>
+    </div>
   </body>
 </html>

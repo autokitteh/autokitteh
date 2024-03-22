@@ -1,48 +1,50 @@
 package slack
 
 import (
+	"context"
 	"net/http"
-	"os"
 
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/integrations/slack/webhooks"
+	"go.autokitteh.dev/autokitteh/integrations/slack/websockets"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/web/static"
 )
 
+const (
+	// formPath is the URL path for our handler to save a new
+	// autokitteh connection, based on a user-submitted form.
+	formPath = "/slack/save_tokens"
+)
+
 func Start(l *zap.Logger, mux *http.ServeMux, s sdkservices.Secrets, d sdkservices.Dispatcher) {
-	if !checkRequiredEnvVars(l) {
+	// Connection UI + save handlers.
+	wsh := websockets.NewHandler(l, s, d, "slack", integrationID)
+	mux.Handle(uiPath, http.FileServer(http.FS(static.SlackWebContent)))
+	mux.Handle(oauthPath, NewHandler(l, s, "slack"))
+	mux.HandleFunc(formPath, wsh.HandleForm)
+
+	// Event webhooks.
+	whh := webhooks.NewHandler(l, s, d, "slack", integrationID)
+	mux.HandleFunc(webhooks.BotEventPath, whh.HandleBotEvent)
+	mux.HandleFunc(webhooks.SlashCommandPath, whh.HandleSlashCommand)
+	mux.HandleFunc(webhooks.InteractionPath, whh.HandleInteraction)
+
+	// Initialize WebSocket pool.
+	tokens, err := s.List(context.Background(), "slack", "websockets")
+	if err != nil {
+		l.Error("Failed to list WebSocket tokens", zap.Error(err))
 		return
 	}
 
-	// Connection UI + handler.
-	mux.Handle(uiPath, http.FileServer(http.FS(static.SlackWebContent)))
-	mux.Handle(oauthPath, NewHandler(l, s, "slack"))
-
-	// Event webhooks.
-	h := webhooks.NewHandler(l, s, d, "slack", integrationID)
-	mux.HandleFunc(webhooks.BotEventPath, h.HandleBotEvent)
-	mux.HandleFunc(webhooks.SlashCommandPath, h.HandleSlashCommand)
-	mux.HandleFunc(webhooks.InteractionPath, h.HandleInteraction)
-}
-
-func checkRequiredEnvVars(l *zap.Logger) bool {
-	result := true
-	for _, k := range []string{
-		// OAuth
-		"SLACK_APP_ID",
-		"SLACK_CLIENT_ID",
-		"SLACK_CLIENT_SECRET",
-		// webhooks/webhook.go
-		"SLACK_SIGNING_SECRET",
-	} {
-		if os.Getenv(k) == "" {
-			l.Warn("Required environment variable is missing",
-				zap.String("name", k),
-			)
-			result = false
+	for _, connToken := range tokens {
+		data, err := s.Get(context.Background(), "slack", connToken)
+		if err != nil {
+			l.Error("Missing data for Slack Socket Mode app", zap.Error(err))
+			continue
 		}
+
+		wsh.OpenSocketModeConnection(data["appID"], data["botToken"], data["appLevelToken"])
 	}
-	return result
 }

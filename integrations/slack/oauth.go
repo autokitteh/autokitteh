@@ -6,17 +6,16 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
 	"time"
 
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
 
-	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
-
 	"go.autokitteh.dev/autokitteh/integrations/internal/extrazap"
 	"go.autokitteh.dev/autokitteh/integrations/slack/api/auth"
+	"go.autokitteh.dev/autokitteh/integrations/slack/api/bots"
+	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 )
 
 const (
@@ -28,11 +27,6 @@ const (
 	// oauthPath is the URL path for our handler to save
 	// new OAuth-based connections.
 	oauthPath = "/slack/oauth"
-
-	// appIDEnvVar is the name of an environment variable that contains a
-	// NON-SECRET Slack app ID. When we create a new autokitteh connection
-	// token, we assume that its Slack workspace has this app installed.
-	appIDEnvVar = "SLACK_APP_ID"
 )
 
 // handler is an autokitteh webhook which implements [http.Handler]
@@ -62,7 +56,7 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		l.Warn("OAuth redirect request reported an error",
 			zap.Error(errors.New(e)),
 		)
-		u := fmt.Sprintf("%serror.html?error=%s", uiPath, e)
+		u := uiPath + "error.html?error=" + url.QueryEscape(e)
 		http.Redirect(w, r, u, http.StatusFound)
 		return
 	}
@@ -87,23 +81,29 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// Test the OAuth token's usability and get authoritative installation details.
 	ctx := extrazap.AttachLoggerToContext(l, r.Context())
-	resp, err := auth.TestWithToken(ctx, h.secrets, h.scope, oauthToken.AccessToken)
+	authTest, err := auth.TestWithToken(ctx, h.secrets, h.scope, oauthToken.AccessToken)
 	if err != nil {
-		l.Warn("OAuth token test error",
-			zap.Error(err),
-		)
-		http.Error(w, "Internal Server Error: auth test", http.StatusInternalServerError)
+		e := "OAuth token test failed: " + err.Error()
+		u := uiPath + "error.html?error=" + url.QueryEscape(e)
+		http.Redirect(w, r, u, http.StatusFound)
+		return
+	}
+
+	botInfo, err := bots.InfoWithToken(ctx, h.secrets, h.scope, oauthToken.AccessToken, authTest)
+	if err != nil {
+		e := "Bot info request failed: " + err.Error()
+		u := uiPath + "error.html?error=" + url.QueryEscape(e)
+		http.Redirect(w, r, u, http.StatusFound)
 		return
 	}
 
 	// Save the OAuth token, and return to the user an autokitteh connection token.
-	// TODO: Support non-empty enterprise IDs once we have a sample.
-	connToken, err := h.createConnection(ctx, "", resp.TeamID, oauthToken)
+	connToken, err := h.createOAuthConnection(ctx, authTest, botInfo, oauthToken)
 	if err != nil {
-		l.Warn("Failed to save new connection secrets",
-			zap.Error(err),
-		)
-		http.Error(w, "Internal Server Error: create connection", http.StatusInternalServerError)
+		l.Warn("Failed to save new connection secrets", zap.Error(err))
+		e := "Connection saving error: " + err.Error()
+		u := uiPath + "error.html?error=" + url.QueryEscape(e)
+		http.Redirect(w, r, u, http.StatusFound)
 		return
 	}
 
@@ -123,14 +123,14 @@ func unescape(r *http.Request, key string) string {
 	return s
 }
 
-func (h handler) createConnection(ctx context.Context, enterpriseID, teamID string, oauthToken *oauth2.Token) (string, error) {
+func (h handler) createOAuthConnection(ctx context.Context, authTest *auth.TestResponse, botInfo *bots.InfoResponse, oauthToken *oauth2.Token) (string, error) {
 	token, err := h.secrets.Create(ctx, h.scope,
 		// Connection token --> OAUth token (to call API methods).
 		map[string]string{
 			// Slack.
-			"appID":        os.Getenv(appIDEnvVar),
-			"enterpriseID": enterpriseID,
-			"teamID":       teamID,
+			"appID":        botInfo.Bot.AppID,
+			"enterpriseID": authTest.EnterpriseID,
+			"teamID":       authTest.TeamID,
 			// OAuth token.
 			"accessToken":  oauthToken.AccessToken,
 			"tokenType":    oauthToken.TokenType,
@@ -138,7 +138,7 @@ func (h handler) createConnection(ctx context.Context, enterpriseID, teamID stri
 			"expiry":       oauthToken.Expiry.Format(time.RFC3339),
 		},
 		// Slack app IDs --> connection token(s) (to dispatch API events).
-		appSecretName(os.Getenv(appIDEnvVar), enterpriseID, teamID),
+		appSecretName(botInfo.Bot.AppID, authTest.EnterpriseID, authTest.TeamID),
 	)
 	if err != nil {
 		return "", err

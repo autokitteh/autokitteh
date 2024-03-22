@@ -42,11 +42,7 @@ func AppMentionHandler(l *zap.Logger, w http.ResponseWriter, body []byte, cb *Ca
 	// Parse and return the inner event details.
 	j := &appMentionContainer{}
 	if err := json.Unmarshal(body, j); err != nil {
-		l.Error("Failed to parse JSON payload",
-			zap.Error(err),
-			zap.ByteString("json", body),
-		)
-		http.Error(w, "Bad Request", http.StatusBadRequest)
+		invalidEventError(l, w, body, err)
 		return nil
 	}
 	return j.Event

@@ -11,15 +11,14 @@ import (
 
 	"go.uber.org/zap"
 
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
-	valuesv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/values/v1"
-	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-
 	"go.autokitteh.dev/autokitteh/integrations/internal/extrazap"
 	"go.autokitteh.dev/autokitteh/integrations/slack/api"
 	"go.autokitteh.dev/autokitteh/integrations/slack/api/chat"
 	"go.autokitteh.dev/autokitteh/integrations/slack/api/conversations"
 	"go.autokitteh.dev/autokitteh/integrations/slack/api/users"
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
+	valuesv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/values/v1"
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 const (
@@ -116,7 +115,8 @@ type Response struct {
 // HandleInteraction dispatches and acknowledges a user interaction callback
 // from Slack, e.g. shortcuts, interactive components in messages and modals,
 // and Slack workflow steps. See https://api.slack.com/messaging/interactivity
-// and https://api.slack.com/interactivity/handling.
+// and https://api.slack.com/interactivity/handling. Compare this function
+// with the [websockets.HandleInteractiveEvent] implementation.
 func (h handler) HandleInteraction(w http.ResponseWriter, r *http.Request) {
 	l := h.logger.With(zap.String("urlPath", InteractionPath))
 
@@ -175,9 +175,9 @@ func (h handler) HandleInteraction(w http.ResponseWriter, r *http.Request) {
 	// Dispatch the event to all of them, for asynchronous handling.
 	h.dispatchAsyncEventsToConnections(l, connTokens, akEvent)
 
-	// It's a Slack best practice to update an interactive message after the interaction, to
-	// prevent further interaction with the same message, and to reflect the user actions. See:
-	// https://api.slack.com/interactivity/handling#updating_message_response.
+	// It's a Slack best practice to update an interactive message after the interaction,
+	// to prevent further interaction with the same message, and to reflect the user actions.
+	// See: https://api.slack.com/interactivity/handling#updating_message_response.
 	h.updateMessage(l, payload)
 }
 
@@ -205,8 +205,8 @@ func transformPayload(l *zap.Logger, w http.ResponseWriter, payload *BlockAction
 }
 
 // updateMessage updates an interactive message after the interaction, to prevent
-// further interaction with the same message, and to reflect the user actions. See:
-// https://api.slack.com/interactivity/handling#updating_message_response.
+// further interaction with the same message, and to reflect the user actions.
+// See: https://api.slack.com/interactivity/handling#updating_message_response.
 func (h handler) updateMessage(l *zap.Logger, payload *BlockActionsPayload) {
 	resp := Response{
 		Text:            payload.Message.Text,

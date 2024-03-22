@@ -59,6 +59,7 @@ type SlashCommand struct {
 
 // HandleSlashCommand dispatches and acknowledges a user's slash command registered by our
 // Slack app. See https://api.slack.com/interactivity/slash-commands#responding_to_commands.
+// Compare this function with the [websockets.HandleSlashCommand] implementation.
 func (h handler) HandleSlashCommand(w http.ResponseWriter, r *http.Request) {
 	l := h.logger.With(zap.String("urlPath", SlashCommandPath))
 

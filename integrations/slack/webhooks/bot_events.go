@@ -6,21 +6,20 @@ import (
 
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/integrations/slack/api"
+	"go.autokitteh.dev/autokitteh/integrations/slack/events"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	valuesv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/values/v1"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-
-	"go.autokitteh.dev/autokitteh/integrations/slack/api"
-	"go.autokitteh.dev/autokitteh/integrations/slack/events"
 )
 
 const (
 	BotEventPath = "/slack/event"
 )
 
-type botEventHandler = func(*zap.Logger, http.ResponseWriter, []byte, *events.Callback) any
+type BotEventHandler = func(*zap.Logger, http.ResponseWriter, []byte, *events.Callback) any
 
-var botEventHandlers = map[string]botEventHandler{
+var BotEventHandlers = map[string]BotEventHandler{
 	"app_mention": events.AppMentionHandler,
 	// TODO: app_rate_limit
 	// TODO: app_uninstalled
@@ -59,6 +58,7 @@ var botEventHandlers = map[string]botEventHandler{
 // HandleBotEvent routes all asynchronous bot event notifications that our Slack
 // app subscribed to, to specific event handlers based on the event type.
 // See https://api.slack.com/apis/connections/events-api#responding.
+// Compare this function with the [websockets.HandleBotEvent] implementation.
 func (h handler) HandleBotEvent(w http.ResponseWriter, r *http.Request) {
 	l := h.logger.With(zap.String("urlPath", BotEventPath))
 
@@ -84,7 +84,7 @@ func (h handler) HandleBotEvent(w http.ResponseWriter, r *http.Request) {
 		t = cb.Event.Type
 	}
 	l = l.With(zap.String("event", t))
-	f, ok := botEventHandlers[t]
+	f, ok := BotEventHandlers[t]
 	if !ok {
 		l.Error("Received unsupported bot event",
 			zap.ByteString("body", body),
