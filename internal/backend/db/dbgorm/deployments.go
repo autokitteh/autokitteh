@@ -106,7 +106,7 @@ func (db *gormdb) listDeploymentsWithStats(ctx context.Context, filter sdkservic
 	COUNT(case when sessions.current_state_type = ? then 1 end) AS created,
 	COUNT(case when sessions.current_state_type = ? then 1 end) AS running,
 	COUNT(case when sessions.current_state_type = ? then 1 end) AS error,
-	COUNT(case when sessions.current_state_type = ? then 1 end) AS completed
+	COUNT(case when sessions.current_state_type = ? then 1 end) AS completed,
 	COUNT(case when sessions.current_state_type = ? then 1 end) AS stopped
 	`, sdktypes.SessionStateTypeCreated.ToProto(),
 		sdktypes.SessionStateTypeRunning.ToProto(),
