@@ -18,7 +18,7 @@ type SessionStateTraits struct{}
 
 func (SessionStateTraits) Validate(m *SessionStatePB) error {
 	return errors.Join(
-		objectField[SessionStateStopped]("canceled", m.Stopped),
+		objectField[SessionStateStopped]("stopped", m.Stopped),
 		objectField[SessionStateCompleted]("completed", m.Completed),
 		objectField[SessionStateCreated]("created", m.Created),
 		objectField[SessionStateError]("error", m.Error),

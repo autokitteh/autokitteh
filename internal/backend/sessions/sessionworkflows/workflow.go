@@ -33,6 +33,10 @@ const (
 	limittedTimeout = 5 * time.Second
 )
 
+func withLimittedTimeout(ctx context.Context) (context.Context, func()) {
+	return context.WithTimeout(ctx, limittedTimeout)
+}
+
 var envVarsExecutorID = sdktypes.NewExecutorID(fixtures.NewBuiltinIntegrationID(envVarsModuleName))
 
 type sessionWorkflow struct {
@@ -479,9 +483,5 @@ func (w *sessionWorkflow) run(wctx workflow.Context) (prints []string, err error
 
 	state := sdktypes.NewSessionStateCompleted(prints, run.Values(), retVal)
 
-	if err := w.updateState(wctx, state); err != nil {
-		return prints, err
-	}
-
-	return prints, nil
+	return prints, w.updateState(wctx, state)
 }

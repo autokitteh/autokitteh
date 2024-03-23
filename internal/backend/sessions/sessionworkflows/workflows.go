@@ -126,7 +126,7 @@ func (ws *workflows) cleanupSession(data *sessiondata.Data) {
 	if depID := data.Session.DeploymentID(); depID.IsValid() {
 		// We cannot rely on workflow context here as it might have been cancelled.
 		go func() {
-			ctx, cancel := context.WithTimeout(context.Background(), limittedTimeout)
+			ctx, cancel := withLimittedTimeout(context.Background())
 			defer cancel()
 
 			if err := ws.deactivateDrainedDeployment(ctx, depID); err != nil {
@@ -140,7 +140,7 @@ func (ws *workflows) getSessionDebugData(data *sessiondata.Data, prints []string
 	z := ws.z.With(zap.String("session_id", data.SessionID.String()))
 
 	// We use background as the workflow might have been cancelled.
-	ctx, cancel := context.WithTimeout(context.Background(), limittedTimeout)
+	ctx, cancel := withLimittedTimeout(context.Background())
 	defer cancel()
 
 	history, err := ws.sessions.GetLog(ctx, data.SessionID)
@@ -197,7 +197,7 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 func (ws *workflows) stopped(sessionID sdktypes.SessionID) {
 	z := ws.z.With(zap.String("session_id", sessionID.String()))
 
-	ctx, cancel := context.WithTimeout(context.Background(), limittedTimeout)
+	ctx, cancel := withLimittedTimeout(context.Background())
 	defer cancel()
 
 	reason := "<unknown>"
@@ -219,7 +219,7 @@ func (ws *workflows) stopped(sessionID sdktypes.SessionID) {
 func (ws *workflows) errored(sessionID sdktypes.SessionID, err error, prints []string) {
 	z := ws.z.With(zap.String("session_id", sessionID.String()))
 
-	ctx, cancel := context.WithTimeout(context.Background(), limittedTimeout)
+	ctx, cancel := withLimittedTimeout(context.Background())
 	defer cancel()
 
 	if err := ws.svcs.DB.UpdateSessionState(ctx, sessionID, sdktypes.NewSessionStateError(err, prints)); err != nil {
