@@ -1,0 +1,8 @@
+woof, world!
+meow, world!
+
+-- main.star:main --
+def main():
+    print("meow, world!")
+
+print("woof, world!")

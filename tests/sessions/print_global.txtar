@@ -1,0 +1,4 @@
+meow, world!
+
+-- main.star --
+print("meow, world!")

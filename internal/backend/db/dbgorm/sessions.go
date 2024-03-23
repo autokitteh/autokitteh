@@ -67,6 +67,8 @@ func (db *gormdb) CreateSession(ctx context.Context, session sdktypes.Session) e
 
 	s := scheme.Session{
 		SessionID:        session.ID().String(),
+		BuildID:          session.BuildID().String(),
+		EnvID:            session.EnvID().String(),
 		DeploymentID:     session.DeploymentID().String(),
 		EventID:          session.EventID().String(),
 		Entrypoint:       session.EntryPoint().CanonicalString(),
@@ -122,6 +124,10 @@ func (db *gormdb) listSessions(ctx context.Context, f sdkservices.ListSessionsFi
 
 	if f.EventID.IsValid() {
 		q = q.Where("event_id = ?", f.EventID.String())
+	}
+
+	if f.BuildID.IsValid() {
+		q = q.Where("build_id = ?", f.BuildID.String())
 	}
 
 	if f.StateType != sdktypes.SessionStateTypeUnspecified {

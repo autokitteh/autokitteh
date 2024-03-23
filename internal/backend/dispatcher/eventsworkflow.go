@@ -113,9 +113,8 @@ func (d *dispatcher) getEventSessionData(ctx context.Context, event sdktypes.Eve
 
 		cl := t.CodeLocation()
 		for _, dep := range deployments {
-			did := dep.ID()
-			sds = append(sds, sessionData{deploymentID: did, codeLocation: cl})
-			z.Debug("relevant deployment found", zap.String("deployment_id", did.String()))
+			sds = append(sds, sessionData{deployment: dep, codeLocation: cl})
+			z.Debug("relevant deployment found", zap.String("deployment_id", dep.ID().String()))
 		}
 	}
 	return sds, nil
@@ -215,7 +214,7 @@ func (d *dispatcher) eventsWorkflow(ctx workflow.Context, input eventsWorkflowIn
 }
 
 type sessionData struct {
-	deploymentID sdktypes.DeploymentID
+	deployment   sdktypes.Deployment
 	codeLocation sdktypes.CodeLocation
 }
 
@@ -224,7 +223,12 @@ func (d *dispatcher) startSessions(ctx workflow.Context, event sdktypes.Event, s
 	inputs := event.ToValues()
 
 	for _, sd := range sessionsData {
-		session := sdktypes.NewSession(sd.deploymentID, sdktypes.InvalidSessionID, event.ID(), sd.codeLocation, inputs, nil)
+		dep := sd.deployment
+
+		session := sdktypes.NewSession(dep.BuildID(), sd.codeLocation, inputs, nil).
+			WithDeploymentID(dep.ID()).
+			WithEventID(event.ID()).
+			WithEnvID(dep.EnvID())
 
 		goCtx := temporalclient.NewWorkflowContextAsGOContext(ctx)
 

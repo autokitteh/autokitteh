@@ -42,6 +42,14 @@ func StrictSessionLogRecordFromProto(m *SessionLogRecordPB) (SessionLogRecord, e
 	return Strict(SessionLogRecordFromProto(m))
 }
 
+func (s SessionLogRecord) GetPrint() (string, bool) {
+	if m := s.read(); m.Print != nil {
+		return m.Print.Text, true
+	}
+
+	return "", false
+}
+
 func NewPrintSessionLogRecord(text string) SessionLogRecord {
 	return forceFromProto[SessionLogRecord](&SessionLogRecordPB{
 		T:     timestamppb.Now(),
@@ -91,4 +99,10 @@ func NewCallSpecSessionLogRecord(s SessionCallSpec) SessionLogRecord {
 		T:        timestamppb.Now(),
 		CallSpec: s.ToProto(),
 	})
+}
+
+func (r SessionLogRecord) WithoutTimestamp() SessionLogRecord {
+	m := r.read()
+	m.T = nil
+	return forceFromProto[SessionLogRecord](m)
 }

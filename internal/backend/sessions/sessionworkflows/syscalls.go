@@ -153,14 +153,10 @@ func (w *sessionWorkflow) start(ctx context.Context, args []sdktypes.Value, kwar
 		return sdktypes.InvalidValue, fmt.Errorf("invalid location: %w", err)
 	}
 
-	session := sdktypes.NewSession(
-		w.data.Deployment.ID(),
-		w.data.SessionID,
-		sdktypes.InvalidEventID,
-		cl,
-		data,
-		memo,
-	)
+	session := sdktypes.NewSession(w.data.Build.ID(), cl, data, memo).
+		WithParentSessionID(w.data.SessionID).
+		WithDeploymentID(w.data.Session.DeploymentID()).
+		WithEnvID(w.data.Env.ID())
 
 	sessionID, err := w.ws.sessions.Start(ctx, session)
 	if err != nil {
