@@ -11,4 +11,5 @@ message Trigger {
   string env_id = 3; // if empty, applies to all envs.
   string event_type = 4 [(buf.validate.field).string.min_len = 1];
   program.v1.CodeLocation code_location = 5 [(buf.validate.field).required = true];
+  string filter = 6;
 }

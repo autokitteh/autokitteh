@@ -13,7 +13,7 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-var event, loc string
+var event, filter, loc string
 
 var createCmd = common.StandardCommand(&cobra.Command{
 	Use:     "create <--env=...> <--connection=...> <--event=...> <--loc=...>",
@@ -53,6 +53,7 @@ var createCmd = common.StandardCommand(&cobra.Command{
 			EnvId:        eid.String(),
 			ConnectionId: cid.String(),
 			EventType:    event,
+			Filter:       filter,
 			CodeLocation: cl.ToProto(),
 		})
 		if err != nil {
@@ -79,6 +80,7 @@ func init() {
 
 	createCmd.Flags().StringVarP(&event, "event", "E", "", "event type")
 	kittehs.Must0(createCmd.MarkFlagRequired("event"))
+	createCmd.Flags().StringVarP(&filter, "filter", "f", "", "event filter")
 
 	createCmd.Flags().StringVarP(&loc, "loc", "l", "", "entrypoint code location")
 	kittehs.Must0(createCmd.MarkFlagRequired("loc"))

@@ -11,20 +11,20 @@ func (db *gormdb) saveSignal(ctx context.Context, signal *scheme.Signal) error {
 	return db.db.WithContext(ctx).Create(signal).Error
 }
 
-func (db *gormdb) SaveSignal(ctx context.Context, signalID string, workflowID string, connectionID sdktypes.ConnectionID, eventName string) (string, error) {
+func (db *gormdb) SaveSignal(ctx context.Context, signalID string, workflowID string, connectionID sdktypes.ConnectionID, filter string) (string, error) {
 	s := scheme.Signal{
 		ConnectionID: connectionID.String(),
 		SignalID:     signalID,
 		WorkflowID:   workflowID,
-		EventType:    eventName,
+		Filter:       filter,
 	}
 
 	return signalID, translateError(db.saveSignal(ctx, &s))
 }
 
-func (db *gormdb) ListSignalsWaitingOnConnection(ctx context.Context, connectionID sdktypes.ConnectionID, eventType string) ([]scheme.Signal, error) {
+func (db *gormdb) ListSignalsWaitingOnConnection(ctx context.Context, connectionID sdktypes.ConnectionID) ([]scheme.Signal, error) {
 	var signals []scheme.Signal
-	q := db.db.WithContext(ctx).Where("connection_id = ?", connectionID.String()).Where("event_type = ?", eventType)
+	q := db.db.WithContext(ctx).Where("connection_id = ?", connectionID.String())
 	if err := q.Find(&signals).Error; err != nil {
 		return nil, err
 	}

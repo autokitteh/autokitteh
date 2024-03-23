@@ -2,8 +2,11 @@ package sdktypes
 
 import (
 	"errors"
+	"fmt"
+	"reflect"
 	"time"
 
+	"github.com/google/cel-go/cel"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
@@ -28,7 +31,6 @@ func (EventTraits) Validate(m *EventPB) error {
 func (EventTraits) StrictValidate(m *EventPB) error {
 	return errors.Join(
 		mandatory("event_id", m.EventId),
-		mandatory("event_type", m.EventType),
 		mandatory("integration_id", m.IntegrationId),
 		mandatory("created_at", m.CreatedAt),
 	)
@@ -87,3 +89,53 @@ func (e Event) Data() map[string]Value {
 	return kittehs.TransformMapValues(e.read().Data, forceFromProto[Value])
 }
 func (e Event) Seq() uint64 { return e.read().Seq }
+
+var eventFilterEnv = kittehs.Must1(cel.NewEnv(
+	cel.Variable("data", cel.MapType(cel.StringType, cel.AnyType)),
+))
+
+func eventFilterField(name string, expr string) error {
+	if expr == "" {
+		return nil
+	}
+
+	_, issues := eventFilterEnv.Compile(expr)
+	if err := issues.Err(); err != nil {
+		return fmt.Errorf("%s: %w", name, err)
+	}
+
+	return nil
+}
+
+func (e Event) Matches(expr string) (bool, error) {
+	if expr == "" {
+		return true, nil
+	}
+
+	ast, issues := eventFilterEnv.Compile(expr)
+	if err := issues.Err(); err != nil {
+		return false, fmt.Errorf("compile: %w", err)
+	}
+
+	prg, err := eventFilterEnv.Program(ast)
+	if err != nil {
+		return false, fmt.Errorf("program: %w", err)
+	}
+
+	data, err := kittehs.TransformMapValuesError(e.Data(), UnwrapValue)
+	if err != nil {
+		return false, fmt.Errorf("convert: %w", err)
+	}
+
+	out, _, err := prg.Eval(map[string]any{"data": data})
+	if err != nil {
+		return false, fmt.Errorf("eval: %w", err)
+	}
+
+	b, err := out.ConvertToNative(reflect.TypeOf(true))
+	if err != nil {
+		return false, fmt.Errorf("expression result is not a boolean: %w", err)
+	}
+
+	return b.(bool), nil
+}
