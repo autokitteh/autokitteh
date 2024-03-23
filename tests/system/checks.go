@@ -29,6 +29,8 @@ func runCheck(step string, ak *akResult, resp *httpResponse) error {
 }
 
 func checkAKOutput(step string, ak *akResult) error {
+	// FIXME: should we check only actual outputs (prints) in equals/contains/regexp?
+
 	match := akCheckOutput.FindStringSubmatch(step)
 	want := strings.TrimSpace(match[3])
 	want = strings.TrimPrefix(want, "'")
