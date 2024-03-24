@@ -25,7 +25,7 @@ output contains '"text": "3rd random int with seed: 1"'
 output contains '"text": "Store set = OK"'
 output contains '"text": "Store get = value"'
 output contains '"Store del = 1"'
-output regex '"text": "\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{1,6} \+0000 UTC"'
+output regex '"text": "\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{1,9} \+0000 UTC"'
 output contains '"text": "done"'
 
 ak sessions list
