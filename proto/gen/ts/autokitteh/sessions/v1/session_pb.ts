@@ -712,16 +712,14 @@ export class Session extends Message<Session> {
   sessionId = "";
 
   /**
-   * @generated from field: string deployment_id = 2;
+   * @generated from field: string build_id = 2;
    */
-  deploymentId = "";
+  buildId = "";
 
   /**
-   * TODO: eliminate? move to inputs? or memo?
-   *
-   * @generated from field: string event_id = 3;
+   * @generated from field: string env_id = 3;
    */
-  eventId = "";
+  envId = "";
 
   /**
    * @generated from field: autokitteh.program.v1.CodeLocation entrypoint = 4;
@@ -758,6 +756,18 @@ export class Session extends Message<Session> {
    */
   state = SessionStateType.UNSPECIFIED;
 
+  /**
+   * These are for auditing/searches only.
+   *
+   * @generated from field: string deployment_id = 20;
+   */
+  deploymentId = "";
+
+  /**
+   * @generated from field: string event_id = 21;
+   */
+  eventId = "";
+
   constructor(data?: PartialMessage<Session>) {
     super();
     proto3.util.initPartial(data, this);
@@ -767,8 +777,8 @@ export class Session extends Message<Session> {
   static readonly typeName = "autokitteh.sessions.v1.Session";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "session_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "deployment_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "event_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "build_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "env_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "entrypoint", kind: "message", T: CodeLocation },
     { no: 5, name: "inputs", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: Value} },
     { no: 6, name: "parent_session_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
@@ -776,6 +786,8 @@ export class Session extends Message<Session> {
     { no: 10, name: "created_at", kind: "message", T: Timestamp },
     { no: 11, name: "updated_at", kind: "message", T: Timestamp },
     { no: 12, name: "state", kind: "enum", T: proto3.getEnumType(SessionStateType) },
+    { no: 20, name: "deployment_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 21, name: "event_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Session {

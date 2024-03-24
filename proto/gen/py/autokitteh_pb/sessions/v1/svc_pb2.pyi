@@ -34,18 +34,20 @@ class StopResponse(_message.Message):
     def __init__(self) -> None: ...
 
 class ListRequest(_message.Message):
-    __slots__ = ["deployment_id", "env_id", "event_id", "state_type", "count_only"]
+    __slots__ = ["deployment_id", "env_id", "event_id", "build_id", "state_type", "count_only"]
     DEPLOYMENT_ID_FIELD_NUMBER: _ClassVar[int]
     ENV_ID_FIELD_NUMBER: _ClassVar[int]
     EVENT_ID_FIELD_NUMBER: _ClassVar[int]
+    BUILD_ID_FIELD_NUMBER: _ClassVar[int]
     STATE_TYPE_FIELD_NUMBER: _ClassVar[int]
     COUNT_ONLY_FIELD_NUMBER: _ClassVar[int]
     deployment_id: str
     env_id: str
     event_id: str
+    build_id: str
     state_type: _session_pb2.SessionStateType
     count_only: bool
-    def __init__(self, deployment_id: _Optional[str] = ..., env_id: _Optional[str] = ..., event_id: _Optional[str] = ..., state_type: _Optional[_Union[_session_pb2.SessionStateType, str]] = ..., count_only: bool = ...) -> None: ...
+    def __init__(self, deployment_id: _Optional[str] = ..., env_id: _Optional[str] = ..., event_id: _Optional[str] = ..., build_id: _Optional[str] = ..., state_type: _Optional[_Union[_session_pb2.SessionStateType, str]] = ..., count_only: bool = ...) -> None: ...
 
 class ListResponse(_message.Message):
     __slots__ = ["sessions", "count"]

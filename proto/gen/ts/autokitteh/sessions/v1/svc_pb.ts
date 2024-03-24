@@ -183,12 +183,17 @@ export class ListRequest extends Message<ListRequest> {
   eventId = "";
 
   /**
-   * @generated from field: autokitteh.sessions.v1.SessionStateType state_type = 4;
+   * @generated from field: string build_id = 4;
+   */
+  buildId = "";
+
+  /**
+   * @generated from field: autokitteh.sessions.v1.SessionStateType state_type = 5;
    */
   stateType = SessionStateType.UNSPECIFIED;
 
   /**
-   * @generated from field: bool count_only = 5;
+   * @generated from field: bool count_only = 10;
    */
   countOnly = false;
 
@@ -203,8 +208,9 @@ export class ListRequest extends Message<ListRequest> {
     { no: 1, name: "deployment_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "env_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "event_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "state_type", kind: "enum", T: proto3.getEnumType(SessionStateType) },
-    { no: 5, name: "count_only", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 4, name: "build_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "state_type", kind: "enum", T: proto3.getEnumType(SessionStateType) },
+    { no: 10, name: "count_only", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListRequest {

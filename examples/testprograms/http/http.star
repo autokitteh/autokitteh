@@ -7,7 +7,7 @@ def foo(x):
     return "meow, " + x
 
 def on_http_get():
-    resp, err = http1.get("https://httpbin3212.org/status/404", ak.callopts(catch=True))
+    resp, err = http1.get("https://httpbin.org/status/404", ak.callopts(catch=True))
 
     # also works:
     # resp, err = catch(lambda: http1.get("https://httpbin3212.org/status/404"))
@@ -17,7 +17,8 @@ def on_http_get():
     # resp, err = http1.get("https://httpbin3212.org/status/404", ak = {"catch": True})
 
     print(resp, err)
-    print(err.op)
+    if err:
+        print(err.op)
 
 
 def on_http_post(data):

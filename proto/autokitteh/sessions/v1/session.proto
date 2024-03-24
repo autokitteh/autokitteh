@@ -106,8 +106,9 @@ message SessionLog {
 
 message Session {
   string session_id = 1;
-  string deployment_id = 2 [(buf.validate.field).string.min_len = 1];
-  string event_id = 3; // TODO: eliminate? move to inputs? or memo?
+  string build_id = 2;
+  string env_id = 3;
+
   program.v1.CodeLocation entrypoint = 4 [(buf.validate.field).required = true];
 
   map<string, values.v1.Value> inputs = 5 [
@@ -123,4 +124,8 @@ message Session {
   google.protobuf.Timestamp updated_at = 11;
 
   SessionStateType state = 12;
+
+  // These are for auditing/searches only.
+  string deployment_id = 20;
+  string event_id = 21;
 }

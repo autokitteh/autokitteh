@@ -122,16 +122,18 @@ func (ws *workflows) getSessionData(ctx workflow.Context, sessionID sdktypes.Ses
 func (ws *workflows) cleanupSession(ctx workflow.Context, data *sessiondata.Data) {
 	z := ws.z.With(zap.String("session_id", data.SessionID.String()))
 
-	workflow.Go(ctx, func(ctx workflow.Context) {
-		// TODO: can this be done async? do we care?
-		if err := workflow.ExecuteLocalActivity(
-			ctx,
-			ws.deactivateDrainedDeployment,
-			data.Deployment.ID(),
-		).Get(ctx, nil); err != nil {
-			z.Error("deactivate drained deployment failed", zap.Error(err))
-		}
-	})
+	if depID := data.Session.DeploymentID(); depID.IsValid() {
+		workflow.Go(ctx, func(ctx workflow.Context) {
+			// TODO: can this be done async? do we care?
+			if err := workflow.ExecuteLocalActivity(
+				ctx,
+				ws.deactivateDrainedDeployment,
+				depID,
+			).Get(ctx, nil); err != nil {
+				z.Error("deactivate drained deployment failed", zap.Error(err))
+			}
+		})
+	}
 }
 
 func (ws *workflows) getSessionDebugData(ctx workflow.Context, data *sessiondata.Data) any {

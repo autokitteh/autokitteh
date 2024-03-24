@@ -20,7 +20,11 @@ func init() {
 	}
 }
 
-// TODO(ENG-320): Configuration to disable timeout for debugging.
 func LimitedContext() (context.Context, context.CancelFunc) {
-	return context.WithTimeout(context.Background(), timeout)
+	return WithLimitedContext(context.Background())
+}
+
+// TODO(ENG-320): Configuration to disable timeout for debugging.
+func WithLimitedContext(ctx context.Context) (context.Context, context.CancelFunc) {
+	return context.WithTimeout(ctx, timeout)
 }

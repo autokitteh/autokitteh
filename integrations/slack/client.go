@@ -1,18 +1,18 @@
 package slack
 
 import (
+	"go.autokitteh.dev/autokitteh/integrations/slack/api/auth"
+	"go.autokitteh.dev/autokitteh/integrations/slack/api/bookmarks"
+	"go.autokitteh.dev/autokitteh/integrations/slack/api/bots"
+	"go.autokitteh.dev/autokitteh/integrations/slack/api/chat"
+	"go.autokitteh.dev/autokitteh/integrations/slack/api/conversations"
+	"go.autokitteh.dev/autokitteh/integrations/slack/api/reactions"
+	"go.autokitteh.dev/autokitteh/integrations/slack/api/users"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-
-	"go.autokitteh.dev/autokitteh/integrations/slack/api/auth"
-	"go.autokitteh.dev/autokitteh/integrations/slack/api/bookmarks"
-	"go.autokitteh.dev/autokitteh/integrations/slack/api/chat"
-	"go.autokitteh.dev/autokitteh/integrations/slack/api/conversations"
-	"go.autokitteh.dev/autokitteh/integrations/slack/api/reactions"
-	"go.autokitteh.dev/autokitteh/integrations/slack/api/users"
 )
 
 var integrationID = sdktypes.IntegrationIDFromName("slack")
@@ -34,6 +34,7 @@ func New(sec sdkservices.Secrets) sdkservices.Integration {
 	scope := desc.UniqueName().String()
 	authAPI := auth.API{Secrets: sec, Scope: scope}
 	bookmarksAPI := bookmarks.API{Secrets: sec, Scope: scope}
+	botsAPI := bots.API{Secrets: sec, Scope: scope}
 	chatAPI := chat.API{Secrets: sec, Scope: scope}
 	conversationsAPI := conversations.API{Secrets: sec, Scope: scope}
 	reactionsAPI := reactions.API{Secrets: sec, Scope: scope}
@@ -73,6 +74,14 @@ func New(sec sdkservices.Secrets) sdkservices.Integration {
 			bookmarksAPI.Remove,
 			sdkmodule.WithFuncDoc("https://api.slack.com/methods/bookmarks.remove"),
 			sdkmodule.WithArgs("bookmark_id", "channel_id", "quip_section_id?"),
+		),
+
+		// Bots.
+		sdkmodule.ExportFunction(
+			"bots_info",
+			botsAPI.Info,
+			sdkmodule.WithFuncDoc("https://api.slack.com/methods/bots.info"),
+			sdkmodule.WithArgs("bot", "team_id?"),
 		),
 
 		// Chat.

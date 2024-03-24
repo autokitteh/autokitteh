@@ -15,13 +15,11 @@ import (
 
 	"go.uber.org/zap"
 
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
+	"go.autokitteh.dev/autokitteh/integrations/internal/extrazap"
+	"go.autokitteh.dev/autokitteh/integrations/slack/api"
 	eventsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/events/v1"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-
-	"go.autokitteh.dev/autokitteh/integrations/internal/extrazap"
-	"go.autokitteh.dev/autokitteh/integrations/slack/api"
 )
 
 const (
@@ -165,7 +163,15 @@ func (h handler) dispatchAsyncEventsToConnections(l *zap.Logger, tokens []string
 	ctx := extrazap.AttachLoggerToContext(l, context.Background())
 	for _, connToken := range tokens {
 		event.IntegrationToken = connToken
-		event := kittehs.Must1(sdktypes.EventFromProto(event))
+		event, err := sdktypes.EventFromProto(event)
+		if err != nil {
+			h.logger.Error("Failed to convert protocol buffer to SDK event",
+				zap.Any("event", event),
+				zap.Error(err),
+			)
+			return
+		}
+
 		eventID, err := h.dispatcher.Dispatch(ctx, event, nil)
 		if err != nil {
 			l.Error("Dispatch failed",

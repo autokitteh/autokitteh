@@ -10,6 +10,7 @@ type ListSessionsFilter struct {
 	DeploymentID sdktypes.DeploymentID
 	EnvID        sdktypes.EnvID
 	EventID      sdktypes.EventID
+	BuildID      sdktypes.BuildID
 	StateType    sdktypes.SessionStateType
 	CountOnly    bool
 }

@@ -1,0 +1,11 @@
+meow, world
+5
+
+-- main.star:main --
+def foo(name):
+    print("meow, " + name)
+    return len(name)
+
+def main():
+    ret = activity(foo).run("world")
+    print(ret)

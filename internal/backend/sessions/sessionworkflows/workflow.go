@@ -448,35 +448,37 @@ func (w *sessionWorkflow) run(wctx workflow.Context) (prints []string, err error
 
 	kittehs.Must0(w.executors.AddExecutor(fmt.Sprintf("run_%s", run.ID().Value()), run))
 
-	epName := entryPoint.Name()
+	var retVal sdktypes.Value
 
-	callValue, ok := run.Values()[epName]
-	if !ok {
-		return prints, fmt.Errorf("entry point not found after evaluation")
+	// Run call only if the entrypoint includes a name.
+	if epName := entryPoint.Name(); epName != "" {
+		callValue, ok := run.Values()[epName]
+		if !ok {
+			return prints, fmt.Errorf("entry point not found after evaluation")
+		}
+
+		if !callValue.IsFunction() {
+			return prints, fmt.Errorf("entry point is not a function")
+		}
+
+		if callValue.GetFunction().ExecutorID().ToRunID() != runID {
+			return prints, fmt.Errorf("entry point does not belong to main run")
+		}
+
+		w.updateState(wctx, sdktypes.NewSessionStateRunning(runID, callValue))
+
+		argNames := callValue.GetFunction().ArgNames() // sdktypes.GetFunctionValueArgsNames(callValue)
+		kwargs := kittehs.FilterMapKeys(
+			w.data.Session.Inputs(),
+			kittehs.ContainedIn(argNames...),
+		)
+
+		if retVal, err = run.Call(goCtx, callValue, nil, kwargs); err != nil {
+			return prints, err
+		}
 	}
 
-	if !callValue.IsFunction() {
-		return prints, fmt.Errorf("entry point is not a function")
-	}
-
-	if callValue.GetFunction().ExecutorID().ToRunID() != runID {
-		return prints, fmt.Errorf("entry point does not belong to main run")
-	}
-
-	w.updateState(wctx, sdktypes.NewSessionStateRunning(runID, callValue))
-
-	argNames := callValue.GetFunction().ArgNames() // sdktypes.GetFunctionValueArgsNames(callValue)
-	kwargs := kittehs.FilterMapKeys(
-		w.data.Session.Inputs(),
-		kittehs.ContainedIn(argNames...),
-	)
-
-	ret, err := run.Call(goCtx, callValue, nil, kwargs)
-	if err != nil {
-		return prints, err
-	}
-
-	state := sdktypes.NewSessionStateCompleted(prints, run.Values(), ret)
+	state := sdktypes.NewSessionStateCompleted(prints, run.Values(), retVal)
 
 	w.updateState(wctx, state)
 

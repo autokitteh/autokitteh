@@ -1,0 +1,9 @@
+hello, george
+
+-- main.star:main --
+def foo(name):
+    return "hello, " + name
+
+def main():
+    ret = activity(foo).run("george")
+    print(ret)
