@@ -124,9 +124,9 @@ func (ws *workflows) cleanupSession(data *sessiondata.Data) {
 	z := ws.z.With(zap.String("session_id", data.SessionID.String()))
 
 	if depID := data.Session.DeploymentID(); depID.IsValid() {
-		// We cannot rely on workflow context here as it might have been cancelled.
+		// We cannot rely on workflow context here as it might have been canceled.
 		go func() {
-			ctx, cancel := withLimittedTimeout(context.Background())
+			ctx, cancel := withLimitedTimeout(context.Background())
 			defer cancel()
 
 			if err := ws.deactivateDrainedDeployment(ctx, depID); err != nil {
@@ -139,8 +139,8 @@ func (ws *workflows) cleanupSession(data *sessiondata.Data) {
 func (ws *workflows) getSessionDebugData(data *sessiondata.Data, prints []string) any {
 	z := ws.z.With(zap.String("session_id", data.SessionID.String()))
 
-	// We use background as the workflow might have been cancelled.
-	ctx, cancel := withLimittedTimeout(context.Background())
+	// We use background as the workflow might have been canceled.
+	ctx, cancel := withLimitedTimeout(context.Background())
 	defer cancel()
 
 	history, err := ws.sessions.GetLog(ctx, data.SessionID)
@@ -197,14 +197,14 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 func (ws *workflows) stopped(sessionID sdktypes.SessionID) {
 	z := ws.z.With(zap.String("session_id", sessionID.String()))
 
-	ctx, cancel := withLimittedTimeout(context.Background())
+	ctx, cancel := withLimitedTimeout(context.Background())
 	defer cancel()
 
 	reason := "<unknown>"
 
 	if log, err := ws.svcs.DB.GetSessionLog(ctx, sessionID); err == nil {
 		for _, rec := range log.Records() {
-			if r, ok := rec.GetStopRequested(); ok {
+			if r, ok := rec.GetStopRequest(); ok {
 				reason = r
 				break
 			}
@@ -219,7 +219,7 @@ func (ws *workflows) stopped(sessionID sdktypes.SessionID) {
 func (ws *workflows) errored(sessionID sdktypes.SessionID, err error, prints []string) {
 	z := ws.z.With(zap.String("session_id", sessionID.String()))
 
-	ctx, cancel := withLimittedTimeout(context.Background())
+	ctx, cancel := withLimitedTimeout(context.Background())
 	defer cancel()
 
 	if err := ws.svcs.DB.UpdateSessionState(ctx, sessionID, sdktypes.NewSessionStateError(err, prints)); err != nil {
@@ -291,7 +291,7 @@ func (ws *workflows) StopWorkflow(ctx context.Context, sessionID sdktypes.Sessio
 
 	// In case of non-forceful termination, we log the request politely. This will also
 	// let the workflow know what the reason is.
-	if err := ws.svcs.DB.AddSessionStopRequested(ctx, sessionID, reason); err != nil {
+	if err := ws.svcs.DB.AddSessionStopRequest(ctx, sessionID, reason); err != nil {
 		return err
 	}
 

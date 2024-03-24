@@ -95,7 +95,7 @@ message SessionLogRecord {
     string text = 1;
   }
 
-  message StopRequested {
+  message StopRequest {
     string reason = 2;
   }
 
@@ -107,7 +107,7 @@ message SessionLogRecord {
   Call.Attempt.Start call_attempt_start = 12;
   Call.Attempt.Complete call_attempt_complete = 13;
   SessionState state = 14;
-  StopRequested stop_requested = 15;
+  StopRequest stop_request = 15;
 }
 
 message SessionLog {

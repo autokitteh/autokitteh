@@ -30,11 +30,11 @@ const (
 	envVarsModuleName     = "env"
 	integrationPathPrefix = "@"
 
-	limittedTimeout = 5 * time.Second
+	limitedTimeout = 5 * time.Second
 )
 
-func withLimittedTimeout(ctx context.Context) (context.Context, func()) {
-	return context.WithTimeout(ctx, limittedTimeout)
+func withLimitedTimeout(ctx context.Context) (context.Context, func()) {
+	return context.WithTimeout(ctx, limitedTimeout)
 }
 
 var envVarsExecutorID = sdktypes.NewExecutorID(fixtures.NewBuiltinIntegrationID(envVarsModuleName))

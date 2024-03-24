@@ -50,9 +50,9 @@ func (s SessionLogRecord) GetPrint() (string, bool) {
 	return "", false
 }
 
-func (s SessionLogRecord) GetStopRequested() (string, bool) {
-	if m := s.read(); m.StopRequested != nil {
-		return m.StopRequested.Reason, true
+func (s SessionLogRecord) GetStopRequest() (string, bool) {
+	if m := s.read(); m.StopRequest != nil {
+		return m.StopRequest.Reason, true
 	}
 
 	return "", false
@@ -65,10 +65,10 @@ func NewPrintSessionLogRecord(text string) SessionLogRecord {
 	})
 }
 
-func NewStopRequestedSessionLogRecord(reason string) SessionLogRecord {
+func NewStopRequestSessionLogRecord(reason string) SessionLogRecord {
 	return forceFromProto[SessionLogRecord](&SessionLogRecordPB{
-		T:             timestamppb.Now(),
-		StopRequested: &sessionv1.SessionLogRecord_StopRequested{Reason: reason},
+		T:           timestamppb.Now(),
+		StopRequest: &sessionv1.SessionLogRecord_StopRequest{Reason: reason},
 	})
 }
 

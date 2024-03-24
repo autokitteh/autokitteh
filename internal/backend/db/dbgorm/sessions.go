@@ -114,9 +114,9 @@ func (db *gormdb) AddSessionPrint(ctx context.Context, sessionID sdktypes.Sessio
 	)
 }
 
-func (db *gormdb) AddSessionStopRequested(ctx context.Context, sessionID sdktypes.SessionID, reason string) error {
+func (db *gormdb) AddSessionStopRequest(ctx context.Context, sessionID sdktypes.SessionID, reason string) error {
 	return translateError(
-		addSessionLogRecord(db.db, sessionID.String(), sdktypes.NewStopRequestedSessionLogRecord(reason)),
+		addSessionLogRecord(db.db, sessionID.String(), sdktypes.NewStopRequestSessionLogRecord(reason)),
 	)
 }
 

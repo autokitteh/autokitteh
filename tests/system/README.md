@@ -136,7 +136,7 @@ test integrations and sessions.
 `wait <duration> for session <session ID>`
 
 Waits up to the specified duration (e.g. `10s`) for the specified session to
-be in the state `COMPLETED` or `ERROR`.
+be in the state `COMPLETED`, `STOPPED` or `ERROR`.
 
 ## Syntax Summary
 
