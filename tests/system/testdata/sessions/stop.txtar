@@ -20,7 +20,7 @@ return code == 0
 
 ak sessions log ses_00000000000000000000000003 --no-timestamps -j
 return code == 0
-output contains "stop_requested"
+output contains "stop_request"
 
 ak sessions log ses_00000000000000000000000003 --skip -1 --no-timestamps -j
 return code == 0
