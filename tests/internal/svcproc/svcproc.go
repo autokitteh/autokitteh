@@ -111,8 +111,6 @@ func (s *svcProc) Stop(ctx context.Context) error {
 	if err != nil { // if anything was wrong just kill ak
 		_ = s.cmd.Process.Kill()
 	}
-
-	_, _ = s.cmd.Process.Wait()
 	return err
 }
 
