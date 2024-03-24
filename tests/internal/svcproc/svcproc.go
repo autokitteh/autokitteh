@@ -109,7 +109,7 @@ func (s *svcProc) Stop(ctx context.Context) error {
 		err = syscall.Kill(-pgid, syscall.SIGTERM)
 	}
 	if err != nil { // if anything was wrong just kill ak
-		s.cmd.Process.Kill()
+		_ = s.cmd.Process.Kill()
 	}
 
 	_, _ = s.cmd.Process.Wait()
