@@ -80,7 +80,7 @@ func (d *dispatcher) getEventSessionData(ctx context.Context, event sdktypes.Eve
 
 		if relevant, err := event.Matches(t.Filter()); err != nil {
 			z.Debug("filter error", zap.Error(err))
-			// TODO: alert user their filter is bad. Integrate with alerting and monitoring.
+			// TODO(ENG-566): alert user their filter is bad. Integrate with alerting and monitoring.
 			continue
 		} else if !relevant {
 			z.Debug("irrelevant event")

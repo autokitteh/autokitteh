@@ -256,7 +256,7 @@ func (w *sessionWorkflow) createEventSubscription(ctx context.Context, connectio
 
 	var minSequence uint64
 	if err := workflow.ExecuteLocalActivity(wctx, w.ws.svcs.DB.GetLatestEventSequence).Get(wctx, &minSequence); err != nil {
-		w.z.Panic("get current sequence", zap.Error(err))
+		return "", fmt.Errorf("get current sequence: %w", err)
 	}
 
 	signalID := fmt.Sprintf("wid_%s_cn_%s_seq_%d", workflowID, connectionName, minSequence)
@@ -271,12 +271,12 @@ func (w *sessionWorkflow) createEventSubscription(ctx context.Context, connectio
 
 	cid := connection.ID()
 	if err := workflow.ExecuteLocalActivity(wctx, w.ws.svcs.DB.SaveSignal, signalID, workflowID, cid, filter).Get(wctx, nil); err != nil {
-		w.z.Panic("save signal", zap.Error(err))
+		return "", fmt.Errorf("save signal: %w", err)
 	}
 
 	var c sdktypes.Connection
 	if err := workflow.ExecuteLocalActivity(wctx, w.ws.svcs.Connections.Get, cid).Get(wctx, &c); err != nil {
-		w.z.Panic("get connection", zap.Error(err))
+		return "", fmt.Errorf("get connection: %w", err)
 	}
 
 	w.signals[signalID] = minSequence
