@@ -71,6 +71,25 @@ func (s *server) Get(ctx context.Context, req *connect.Request[sessionsv1.GetReq
 	return connect.NewResponse(&sessionsv1.GetResponse{Session: session.ToProto()}), nil
 }
 
+func (s *server) Stop(ctx context.Context, req *connect.Request[sessionsv1.StopRequest]) (*connect.Response[sessionsv1.StopResponse], error) {
+	msg := req.Msg
+
+	if err := proto.Validate(msg); err != nil {
+		return nil, sdkerrors.AsConnectError(err)
+	}
+
+	sessionID, err := sdktypes.ParseSessionID(msg.SessionId)
+	if err != nil {
+		return nil, sdkerrors.AsConnectError(err)
+	}
+
+	if err := s.sessions.Stop(ctx, sessionID, msg.Reason, msg.Terminate); err != nil {
+		return nil, sdkerrors.AsConnectError(err)
+	}
+
+	return connect.NewResponse(&sessionsv1.StopResponse{}), nil
+}
+
 func (s *server) GetLog(ctx context.Context, req *connect.Request[sessionsv1.GetLogRequest]) (*connect.Response[sessionsv1.GetLogResponse], error) {
 	msg := req.Msg
 

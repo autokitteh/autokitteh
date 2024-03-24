@@ -110,7 +110,14 @@ func addSessionLogRecord(tx *gorm.DB, sessionID string, logr sdktypes.SessionLog
 
 func (db *gormdb) AddSessionPrint(ctx context.Context, sessionID sdktypes.SessionID, print string) error {
 	return translateError(
-		addSessionLogRecord(db.db, sessionID.String(), sdktypes.NewPrintSessionLogRecord(print)))
+		addSessionLogRecord(db.db, sessionID.String(), sdktypes.NewPrintSessionLogRecord(print)),
+	)
+}
+
+func (db *gormdb) AddSessionStopRequest(ctx context.Context, sessionID sdktypes.SessionID, reason string) error {
+	return translateError(
+		addSessionLogRecord(db.db, sessionID.String(), sdktypes.NewStopRequestSessionLogRecord(reason)),
+	)
 }
 
 func (db *gormdb) listSessions(ctx context.Context, f sdkservices.ListSessionsFilter) ([]scheme.Session, int, error) {

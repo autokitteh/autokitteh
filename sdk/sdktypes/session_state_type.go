@@ -29,6 +29,7 @@ var (
 	SessionStateTypeRunning     = sessionStateTypeFromProto(sessionsv1.SessionStateType_SESSION_STATE_TYPE_RUNNING)
 	SessionStateTypeError       = sessionStateTypeFromProto(sessionsv1.SessionStateType_SESSION_STATE_TYPE_ERROR)
 	SessionStateTypeCompleted   = sessionStateTypeFromProto(sessionsv1.SessionStateType_SESSION_STATE_TYPE_COMPLETED)
+	SessionStateTypeStopped     = sessionStateTypeFromProto(sessionsv1.SessionStateType_SESSION_STATE_TYPE_STOPPED)
 )
 
 func SessionStateTypeFromProto(e sessionsv1.SessionStateType) (SessionStateType, error) {
@@ -38,7 +39,9 @@ func SessionStateTypeFromProto(e sessionsv1.SessionStateType) (SessionStateType,
 func ParseSessionStateType(raw string) (SessionStateType, error) {
 	return ParseEnum[SessionStateType](raw)
 }
+
 func (e SessionStateType) IsFinal() bool {
 	return e.v == sessionsv1.SessionStateType_SESSION_STATE_TYPE_ERROR ||
-		e.v == sessionsv1.SessionStateType_SESSION_STATE_TYPE_COMPLETED
+		e.v == sessionsv1.SessionStateType_SESSION_STATE_TYPE_COMPLETED ||
+		e.v == sessionsv1.SessionStateType_SESSION_STATE_TYPE_STOPPED
 }
