@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"time"
 
 	"go.uber.org/fx"
@@ -49,6 +50,8 @@ func (s *svcProc) Start(ctx context.Context) error {
 		"-m", string(s.ropts.Mode),
 		"-r", readyFilePath,
 	)
+	// use same system group to kill ak + all children (temporal, etc.)
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 
 	if err := cmd.Start(); err != nil {
 		return fmt.Errorf("start: %w", err)
@@ -100,7 +103,15 @@ func (s *svcProc) Start(ctx context.Context) error {
 
 func (s *svcProc) Stop(ctx context.Context) error {
 	// TODO: wait until verified stopped?
-	return s.cmd.Process.Kill()
+
+	pgid, err := syscall.Getpgid(s.cmd.Process.Pid)
+	if err == nil {
+		err = syscall.Kill(-pgid, syscall.SIGTERM)
+	}
+	if err != nil { // if anything was wrong just kill ak
+		_ = s.cmd.Process.Kill()
+	}
+	return err
 }
 
 func (s *svcProc) Wait() <-chan svc.ShutdownSignal { return s.wait }

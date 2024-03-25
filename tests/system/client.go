@@ -74,7 +74,7 @@ func waitForSession(akPath, akAddr, step string) (string, error) {
 	id := match[2]
 
 	// Check the session state with the AK client.
-	state := regexp.MustCompile(`state:SESSION_STATE_TYPE_(COMPLETED|ERROR)`)
+	state := regexp.MustCompile(`state:SESSION_STATE_TYPE_(COMPLETED|ERROR|STOPPED)`)
 	args := append(config.ServiceUrlArg(akAddr), "session", "get", id)
 	startTime := time.Now()
 

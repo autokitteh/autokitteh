@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"go.temporal.io/sdk/workflow"
 	"go.uber.org/zap"
@@ -28,7 +29,13 @@ import (
 const (
 	envVarsModuleName     = "env"
 	integrationPathPrefix = "@"
+
+	limitedTimeout = 5 * time.Second
 )
+
+func withLimitedTimeout(ctx context.Context) (context.Context, func()) {
+	return context.WithTimeout(ctx, limitedTimeout)
+}
 
 var envVarsExecutorID = sdktypes.NewExecutorID(fixtures.NewBuiltinIntegrationID(envVarsModuleName))
 
@@ -62,7 +69,7 @@ func runWorkflow(
 	ws *workflows,
 	data *sessiondata.Data,
 	debug bool,
-) error {
+) (prints []string, err error) {
 	w := &sessionWorkflow{
 		z:       z,
 		data:    data,
@@ -75,36 +82,28 @@ func runWorkflow(
 
 	w.initEnvModule()
 
-	var err error
 	if w.globals, err = w.initGlobalModules(); err != nil {
-		w.updateState(ctx, sdktypes.NewSessionStateError(err, nil))
-		return err // definitely an infra error.
+		return
 	}
 
-	if err := w.initConnections(ctx); err != nil {
-		w.updateState(ctx, sdktypes.NewSessionStateError(err, nil))
-		return nil // not an infra error.
+	if err = w.initConnections(ctx); err != nil {
+		return
 	}
 
-	if prints, err := w.run(ctx); err != nil {
-		w.updateState(ctx, sdktypes.NewSessionStateError(err, prints))
-		return nil // not an infra error.
-	}
+	prints, err = w.run(ctx)
 
-	return nil
+	return
 }
 
-func (w *sessionWorkflow) updateState(ctx workflow.Context, state sdktypes.SessionState) {
+func (w *sessionWorkflow) updateState(ctx workflow.Context, state sdktypes.SessionState) error {
 	w.z.Debug("update state", zap.Any("state", state))
 
 	w.state = state
 
-	if err := workflow.ExecuteLocalActivity(ctx, w.ws.svcs.DB.UpdateSessionState, w.data.SessionID, state).Get(ctx, nil); err != nil {
-		w.z.Panic("update session", zap.Error(err))
-	}
+	return workflow.ExecuteLocalActivity(ctx, w.ws.svcs.DB.UpdateSessionState, w.data.SessionID, state).Get(ctx, nil)
 }
 
-func (w *sessionWorkflow) loadIntegrationConnections(ctx context.Context, path string) (map[string]sdktypes.Value, error) {
+func (w *sessionWorkflow) loadIntegrationConnections(path string) (map[string]sdktypes.Value, error) {
 	// Since the load callback does not inform us which member exactly from the integration it wishes
 	// to load, we must return all relevant connections.
 
@@ -127,7 +126,7 @@ func (w *sessionWorkflow) loadIntegrationConnections(ctx context.Context, path s
 
 func (w *sessionWorkflow) load(ctx context.Context, _ sdktypes.RunID, path string) (map[string]sdktypes.Value, error) {
 	if strings.HasPrefix(path, integrationPathPrefix) {
-		return w.loadIntegrationConnections(ctx, path[1:])
+		return w.loadIntegrationConnections(path[1:])
 	}
 
 	vs := w.executors.GetValues(path)
@@ -426,7 +425,9 @@ func (w *sessionWorkflow) run(wctx workflow.Context) (prints []string, err error
 
 	runID := newRunID()
 
-	w.updateState(wctx, sdktypes.NewSessionStateRunning(runID, sdktypes.InvalidValue))
+	if err := w.updateState(wctx, sdktypes.NewSessionStateRunning(runID, sdktypes.InvalidValue)); err != nil {
+		return prints, err
+	}
 
 	entryPoint := w.data.Session.EntryPoint()
 
@@ -465,7 +466,9 @@ func (w *sessionWorkflow) run(wctx workflow.Context) (prints []string, err error
 			return prints, fmt.Errorf("entry point does not belong to main run")
 		}
 
-		w.updateState(wctx, sdktypes.NewSessionStateRunning(runID, callValue))
+		if err := w.updateState(wctx, sdktypes.NewSessionStateRunning(runID, callValue)); err != nil {
+			return prints, err
+		}
 
 		argNames := callValue.GetFunction().ArgNames() // sdktypes.GetFunctionValueArgsNames(callValue)
 		kwargs := kittehs.FilterMapKeys(
@@ -480,7 +483,5 @@ func (w *sessionWorkflow) run(wctx workflow.Context) (prints []string, err error
 
 	state := sdktypes.NewSessionStateCompleted(prints, run.Values(), retVal)
 
-	w.updateState(wctx, state)
-
-	return prints, nil
+	return prints, w.updateState(wctx, state)
 }

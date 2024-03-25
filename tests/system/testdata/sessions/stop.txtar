@@ -1,0 +1,41 @@
+ak project create --name my_project
+return code == 0
+
+ak project build my_project --from main.star
+return code == 0
+output equals 'build_id: bld_00000000000000000000000002'
+
+ak sessions start --build-id bld_00000000000000000000000002 --entrypoint main.star:main
+return code == 0
+output equals 'session_id: ses_00000000000000000000000003'
+
+ak sessions watch ses_00000000000000000000000003 --no-timestamps --end-state RUNNING --timeout 5s
+return code == 0
+
+ak sessions stop ses_00000000000000000000000003 --reason test
+return code == 0
+
+ak sessions watch ses_00000000000000000000000003 --no-timestamps --timeout 5s
+return code == 0
+
+ak sessions log ses_00000000000000000000000003 --no-timestamps -j
+return code == 0
+output contains "stop_request"
+
+ak sessions log ses_00000000000000000000000003 --skip -1 --no-timestamps -j
+return code == 0
+output equals_json file last.json
+
+-- main.star --
+def main():
+  sleep(20)
+  print("finished")
+
+-- last.json --
+{
+  "state": {
+    "stopped": {
+      "reason": "test"
+    }
+  }
+}
