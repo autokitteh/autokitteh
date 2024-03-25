@@ -23,6 +23,7 @@ func (TriggerTraits) Validate(m *TriggerPB) error {
 		idField[ConnectionID]("connection_id", m.ConnectionId),
 		idField[EnvID]("env_id", m.EnvId),
 		objectField[CodeLocation]("code_location", m.CodeLocation),
+		eventFilterField("filter", m.Filter),
 	)
 }
 
@@ -30,7 +31,6 @@ func (TriggerTraits) StrictValidate(m *TriggerPB) error {
 	return errors.Join(
 		mandatory("env_id", m.EnvId),
 		mandatory("connection_id", m.ConnectionId),
-		mandatory("event_type", m.EventType),
 	)
 }
 
@@ -58,6 +58,7 @@ func (p Trigger) ConnectionID() ConnectionID {
 }
 func (p Trigger) EnvID() EnvID      { return kittehs.Must1(ParseEnvID(p.read().EnvId)) }
 func (p Trigger) EventType() string { return p.read().EventType }
+func (p Trigger) Filter() string    { return p.read().Filter }
 func (p Trigger) CodeLocation() CodeLocation {
 	return forceFromProto[CodeLocation](p.read().CodeLocation)
 }

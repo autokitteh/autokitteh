@@ -15,6 +15,6 @@ project:
     - event_type: get
       connection: http1
       entrypoint: http.star:on_http_get
-    - event_type: post
+    - filter: "data.method == 'POST'"
       connection: http1
       entrypoint: http.star:on_http_post

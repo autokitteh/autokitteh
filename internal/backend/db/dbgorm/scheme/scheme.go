@@ -283,6 +283,7 @@ type Trigger struct {
 	EnvID        string `gorm:"index"`
 	ConnectionID string `gorm:"index"`
 	EventType    string
+	Filter       string
 	CodeLocation string
 
 	// just for the foreign keys
@@ -300,6 +301,7 @@ func ParseTrigger(e Trigger) (sdktypes.Trigger, error) {
 		EnvId:        e.EnvID,
 		ConnectionId: e.ConnectionID,
 		EventType:    e.EventType,
+		Filter:       e.Filter,
 		CodeLocation: loc.ToProto(),
 	})
 }
@@ -465,7 +467,7 @@ type Signal struct {
 	ConnectionID string `gorm:"index:idx_connection_id_event_type"`
 	CreatedAt    time.Time
 	WorkflowID   string
-	EventType    string `gorm:"index:idx_connection_id_event_type"`
+	Filter       string
 
 	// enforce foreign key
 	Connection Connection

@@ -48,9 +48,6 @@ var saveCmd = common.StandardCommand(&cobra.Command{
 		if connectionToken != "" {
 			pb.IntegrationToken = connectionToken
 		}
-		if eventType != "" {
-			pb.EventType = eventType
-		}
 		if originalEventID != "" {
 			pb.OriginalEventId = originalEventID
 		}

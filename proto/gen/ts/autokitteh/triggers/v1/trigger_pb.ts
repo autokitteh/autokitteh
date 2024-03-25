@@ -38,6 +38,11 @@ export class Trigger extends Message<Trigger> {
    */
   codeLocation?: CodeLocation;
 
+  /**
+   * @generated from field: string filter = 6;
+   */
+  filter = "";
+
   constructor(data?: PartialMessage<Trigger>) {
     super();
     proto3.util.initPartial(data, this);
@@ -51,6 +56,7 @@ export class Trigger extends Message<Trigger> {
     { no: 3, name: "env_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "event_type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "code_location", kind: "message", T: CodeLocation },
+    { no: 6, name: "filter", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Trigger {

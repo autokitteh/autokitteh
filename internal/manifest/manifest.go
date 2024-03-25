@@ -64,14 +64,25 @@ type Trigger struct {
 	EnvKey string `yaml:"-" json:"-"` // associated with env.
 
 	ConnectionKey string `yaml:"connection" json:"connection" jsonschema:"required"` // coming from connection.
-	EventType     string `yaml:"event_type" json:"event_type" jsonschema:"required"`
+	EventType     string `yaml:"event_type" json:"event_type"`
 	Entrypoint    string `yaml:"entrypoint" json:"entrypoint" jsonschema:"required"`
+	Filter        string `yaml:"filter,omitempty" json:"filter,omitempty"`
 }
 
 func (t Trigger) GetKey() string {
-	id := t.ConnectionKey + "/" + t.EventType
+	var id string
 	if t.EnvKey != "" {
-		id = t.EnvKey + ":" + id
+		id = t.EnvKey + ":"
+	}
+
+	id += t.ConnectionKey + "/"
+
+	if t.EventType != "" {
+		id += t.EventType
+	}
+
+	if t.Filter != "" {
+		id += "," + t.Filter
 	}
 
 	return id

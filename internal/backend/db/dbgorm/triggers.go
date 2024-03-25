@@ -39,6 +39,7 @@ func triggerToRecord(ctx context.Context, tx *tx, trigger sdktypes.Trigger) (*sc
 		ProjectID:    projID.String(),
 		ConnectionID: connID.String(),
 		EventType:    trigger.EventType(),
+		Filter:       trigger.Filter(),
 		CodeLocation: trigger.CodeLocation().CanonicalString(),
 	}, nil
 }

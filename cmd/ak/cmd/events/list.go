@@ -20,7 +20,6 @@ var listCmd = common.StandardCommand(&cobra.Command{
 		f := sdkservices.ListEventsFilter{
 			IntegrationToken: connectionToken,
 			OriginalID:       originalEventID,
-			EventType:        eventType,
 		}
 
 		if integration != "" {
@@ -59,7 +58,7 @@ func init() {
 	listCmd.Flags().StringVarP(&eventType, "event-type", "e", "", "event type")
 	listCmd.Flags().StringVarP(&originalEventID, "original-event-id", "o", "", "original event ID")
 
-	listCmd.MarkFlagsOneRequired("integration", "connection-token", "event-type", "original-event-id")
+	listCmd.MarkFlagsOneRequired("integration", "connection-token", "original-event-id")
 
 	common.AddFailIfNotFoundFlag(listCmd)
 }

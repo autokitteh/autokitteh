@@ -169,14 +169,14 @@ func (w *sessionWorkflow) start(ctx context.Context, args []sdktypes.Value, kwar
 func (w *sessionWorkflow) subscribe(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
 	var (
 		connectionName string
-		eventName      string
+		filter         string
 	)
 
-	if err := sdkmodule.UnpackArgs(args, kwargs, "connection_name", &connectionName, "event_name", &eventName); err != nil {
+	if err := sdkmodule.UnpackArgs(args, kwargs, "connection_name", &connectionName, "filter", &filter); err != nil {
 		return sdktypes.InvalidValue, err
 	}
 
-	signalID, err := w.createEventSubscription(ctx, connectionName, eventName)
+	signalID, err := w.createEventSubscription(ctx, connectionName, filter)
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}

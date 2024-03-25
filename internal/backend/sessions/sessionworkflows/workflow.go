@@ -250,10 +250,16 @@ func (w *sessionWorkflow) initGlobalModules() (map[string]sdktypes.Value, error)
 	return vs, nil
 }
 
-func (w *sessionWorkflow) createEventSubscription(ctx context.Context, connectionName, eventType string) (string, error) {
+func (w *sessionWorkflow) createEventSubscription(ctx context.Context, connectionName, filter string) (string, error) {
 	wctx := sessioncontext.GetWorkflowContext(ctx)
 	workflowID := workflow.GetInfo(wctx).WorkflowExecution.ID
-	signalID := fmt.Sprintf("wid_%s_cn_%s_et_%s", workflowID, connectionName, eventType)
+
+	var minSequence uint64
+	if err := workflow.ExecuteLocalActivity(wctx, w.ws.svcs.DB.GetLatestEventSequence).Get(wctx, &minSequence); err != nil {
+		return "", fmt.Errorf("get current sequence: %w", err)
+	}
+
+	signalID := fmt.Sprintf("wid_%s_cn_%s_seq_%d", workflowID, connectionName, minSequence)
 
 	_, connection := kittehs.FindFirst(w.data.Connections, func(c sdktypes.Connection) bool {
 		return c.Name().String() == connectionName
@@ -264,18 +270,13 @@ func (w *sessionWorkflow) createEventSubscription(ctx context.Context, connectio
 	}
 
 	cid := connection.ID()
-	if err := workflow.ExecuteLocalActivity(wctx, w.ws.svcs.DB.SaveSignal, signalID, workflowID, cid, eventType).Get(wctx, nil); err != nil {
-		w.z.Panic("save signal", zap.Error(err))
+	if err := workflow.ExecuteLocalActivity(wctx, w.ws.svcs.DB.SaveSignal, signalID, workflowID, cid, filter).Get(wctx, nil); err != nil {
+		return "", fmt.Errorf("save signal: %w", err)
 	}
 
 	var c sdktypes.Connection
 	if err := workflow.ExecuteLocalActivity(wctx, w.ws.svcs.Connections.Get, cid).Get(wctx, &c); err != nil {
-		w.z.Panic("get connection", zap.Error(err))
-	}
-
-	var minSequence uint64
-	if err := workflow.ExecuteLocalActivity(wctx, w.ws.svcs.DB.GetLatestEventSequence).Get(wctx, &minSequence); err != nil {
-		w.z.Panic("get current sequence", zap.Error(err))
+		return "", fmt.Errorf("get connection: %w", err)
 	}
 
 	w.signals[signalID] = minSequence
@@ -321,7 +322,6 @@ func (w *sessionWorkflow) getNextEvent(ctx context.Context, signalID string) (ma
 	filter := sdkservices.ListEventsFilter{
 		IntegrationID:     iid,
 		IntegrationToken:  signal.Connection.IntegrationToken,
-		EventType:         signal.EventType,
 		Limit:             1,
 		MinSequenceNumber: minSequenceNumber,
 	}
