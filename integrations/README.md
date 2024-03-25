@@ -1,9 +1,16 @@
 # Core Integrations
 
-This repository contains all the third-party service API adapters/integrations
-which are built into the autokitteh system by default, to encapsulate connection
-details (such as obtaining and storing authentication secrets), and to relay
-method calls and event notifications from/to autokitteh runtime sessions.
+This directory contains all the third-party service API adapters/integrations
+which are built into autokitteh by default.
+
+See these documentation pages:
+
+- https://docs.autokitteh.com/concepts/integration
+- https://docs.autokitteh.com/config/integrations
+- https://docs.autokitteh.com/tutorials/new_connections
+
+TODO(ENG-567): Move **relevant** links below to each integration's `client.go` links,
+and to its future Docusaurus pages.
 
 ## GitHub App
 
@@ -24,8 +31,6 @@ method calls and event notifications from/to autokitteh runtime sessions.
 - [Google Calendar API overview](https://developers.google.com/calendar/api/guides/overview)
 - [Google Calendar Go client library](https://pkg.go.dev/google.golang.org/api/calendar/v3)
 
-### Drive
-
 ### Gmail
 
 - [Gmail API overview](https://developers.google.com/gmail/api/guides)
@@ -35,25 +40,6 @@ method calls and event notifications from/to autokitteh runtime sessions.
 
 - [Google Sheets API overview](https://developers.google.com/sheets/api/guides/concepts)
 - [Google Sheets Go client library](https://pkg.go.dev/google.golang.org/api/sheets/v4)
-
-## gRPC
-
-## HTTP / REST
-
-## OpenAI ChatGPT
-
-- [OpenAI developer platform]()
-- [chatGPT API](https://platform.openai.com/docs/guides/text-generation)
-
-- [OpenAI developer platform](https://platform.openai.com/)
-- [Go client library](https://pkg.go.dev/github.com/sashabaranov/go-openai)
-
-## Slack App
-
-- [autokitteh's Slack app](https://slack.com/apps/A05F30M6W3H-autokitteh)
-- [Slack web API](https://api.slack.com/web)
-- [Slack events API](https://api.slack.com/apis/connections/events-api)
-- [Slack slash commands](https://api.slack.com/interactivity/slash-commands)
 
 ## Twilio
 
