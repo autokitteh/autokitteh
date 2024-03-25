@@ -7,14 +7,9 @@ project:
       value: "meow1"
     - name: WOOF
       value: "woof"
-  connections:
-    - name: http1
-      token: "meow"
-      integration: "http"
-  triggers:
-    - event_type: get
-      connection: http1
-      entrypoint: http.star:on_http_get
-    - filter: "data.method == 'POST'"
-      connection: http1
-      entrypoint: http.star:on_http_post
+  http:
+    routes:
+      - path: meow/:who/:where/*
+        name: meow
+        method: get
+        call: http.star:on_http_get_meow

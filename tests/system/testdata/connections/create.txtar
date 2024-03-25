@@ -4,32 +4,28 @@ return code == 0
 output equals 'project_id: prj_00000000000000000000000001'
 
 # Negative test: create connection without name.
-ak connection create --project my_project --integration http --connection-token my_url_path
+ak connection create --project my_project --integration http --connection-token tok
 output equals 'Error: accepts 1 arg(s), received 0'
 return code == 1
 
 # Negative tests: create connection without required flags.
 ak connection create my_connection
-output equals 'Error: required flag(s) "project", "integration", "connection-token" not set'
+output equals 'Error: required flag(s) "project", "integration" not set'
 return code == 1
 
 ak connection create my_connection --project my_project
-output equals 'Error: required flag(s) "integration", "connection-token" not set'
-return code == 1
-
-ak connection create my_connection --integration http --connection-token my_url_path
-output equals 'Error: required flag(s) "project" not set'
-return code == 1
-
-ak connection create my_connection --project my_project --connection-token my_url_path
 output equals 'Error: required flag(s) "integration" not set'
 return code == 1
 
-ak connection create my_connection --project my_project --integration http
-output equals 'Error: required flag(s) "connection-token" not set'
+ak connection create my_connection --integration http --connection-token tok
+output equals 'Error: required flag(s) "project" not set'
+return code == 1
+
+ak connection create my_connection --project my_project --connection-token tok
+output equals 'Error: required flag(s) "integration" not set'
 return code == 1
 
 # Create connection.
-ak connection create my_connection --project my_project --integration http --connection-token my_url_path
+ak connection create my_connection --project my_project --integration http --connection-token tok
 return code == 0
 output equals 'connection_id: con_00000000000000000000000002'

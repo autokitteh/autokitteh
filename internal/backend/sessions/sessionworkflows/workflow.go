@@ -19,6 +19,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessiondata"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
+	"go.autokitteh.dev/autokitteh/internal/manifest"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkexecutor"
 	"go.autokitteh.dev/autokitteh/sdk/sdkruntimes"
@@ -88,6 +89,27 @@ func runWorkflow(
 
 	if err = w.initConnections(ctx); err != nil {
 		return
+	}
+
+	// if an http connection is present, we load it into the globals.
+	var conns map[string]sdktypes.Value
+	if conns, err = w.loadIntegrationConnections("http"); err != nil {
+		return
+	}
+
+	// "default_http" is set to the default_http connection if exists, else Nothing.
+	// "http" is set to http connection if exists, else to default_http.
+
+	defaultHTTPConn := sdktypes.Nothing
+	if conn, ok := conns[manifest.DefaultHTTPConnectionName]; ok {
+		defaultHTTPConn = conn
+	}
+	w.globals[manifest.DefaultHTTPConnectionName] = defaultHTTPConn
+
+	if conn, ok := conns["http"]; ok {
+		w.globals["http"] = conn
+	} else {
+		w.globals["http"] = defaultHTTPConn
 	}
 
 	prints, err = w.run(ctx)
@@ -191,13 +213,6 @@ func (w *sessionWorkflow) initConnections(ctx workflow.Context) error {
 		name := conn.Name().String()
 		iid := conn.IntegrationID()
 
-		if w.executors.GetValues(name) != nil {
-			return fmt.Errorf("conflicting connection %q", name)
-		}
-
-		// In modules, we register the connection prefixed with its integration name.
-		// This allows us to query all connections for a given integration in the load callback.
-
 		intg, err := w.ws.svcs.Integrations.Get(goCtx, iid)
 		if err != nil {
 			return fmt.Errorf("get integration %q: %w", iid, err)
@@ -205,6 +220,13 @@ func (w *sessionWorkflow) initConnections(ctx workflow.Context) error {
 
 		if intg == nil {
 			return fmt.Errorf("integration %q not found", iid)
+		}
+
+		// In modules, we register the connection prefixed with its integration name.
+		// This allows us to query all connections for a given integration in the load callback.
+		scope := integrationModulePrefix(intg.Get().UniqueName().String()) + name
+		if w.executors.GetValues(scope) != nil {
+			return fmt.Errorf("conflicting connection %q", name)
 		}
 
 		if xid := sdktypes.NewExecutorID(iid); w.executors.GetCaller(xid) == nil {
@@ -216,8 +238,6 @@ func (w *sessionWorkflow) initConnections(ctx workflow.Context) error {
 		if err != nil {
 			return fmt.Errorf("connect to integration %q: %w", iid, err)
 		}
-
-		scope := integrationModulePrefix(intg.Get().UniqueName().String()) + name
 
 		if err := w.executors.AddValues(scope, vs); err != nil {
 			return err

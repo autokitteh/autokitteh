@@ -1,6 +1,7 @@
 package http
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -12,7 +13,12 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-const routePrefix = "/http/"
+// ns can be either:
+// - "project": means project "project" with env "default".
+// - "project.env": means project "project" with env "env".
+func routePrefix(ns string) string {
+	return fmt.Sprintf("/http/%s/", ns)
+}
 
 // HTTPHandler is an autokitteh webhook which implements [http.Handler] to
 // receive and dispatch asynchronous event notifications.
@@ -23,16 +29,21 @@ type HTTPHandler struct {
 
 func Start(l *zap.Logger, mux *http.ServeMux, d sdkservices.Dispatcher) {
 	h := HTTPHandler{dispatcher: d, logger: l}
-	mux.Handle(routePrefix, http.StripPrefix(routePrefix, h))
+	mux.Handle(routePrefix("{ns}")+"*", h)
 }
 
 func (h HTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	l := h.logger.With(zap.String("url", r.URL.String()))
 
-	l.Info("Incoming request")
+	l.Info("incoming request")
 
-	// TODO: Use a real connection token.
-	token, _, _ := strings.Cut(r.URL.Path, "/")
+	ns := r.PathValue("ns")
+	env := strings.ReplaceAll(ns, ".", "/")
+	prefix := routePrefix(ns)
+
+	url := *r.URL
+	url.Path = strings.TrimPrefix(url.Path, prefix)
+	url.RawPath = strings.TrimPrefix(url.RawPath, prefix)
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -44,16 +55,16 @@ func (h HTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		"url": kittehs.Must1(sdktypes.NewStructValue(
 			sdktypes.NewStringValue("url"),
 			map[string]sdktypes.Value{
-				"scheme":       sdktypes.NewStringValue(r.URL.Scheme),
-				"opaque":       sdktypes.NewStringValue(r.URL.Opaque),
-				"host":         sdktypes.NewStringValue(r.URL.Host),
-				"fragment":     sdktypes.NewStringValue(r.URL.Fragment),
-				"raw_fragment": sdktypes.NewStringValue(r.URL.RawFragment),
-				"raw":          sdktypes.NewStringValue(r.URL.RawPath),
-				"path":         sdktypes.NewStringValue(r.URL.Path),
-				"raw_query":    sdktypes.NewStringValue(r.URL.RawQuery),
+				"scheme":       sdktypes.NewStringValue(url.Scheme),
+				"opaque":       sdktypes.NewStringValue(url.Opaque),
+				"host":         sdktypes.NewStringValue(url.Host),
+				"fragment":     sdktypes.NewStringValue(url.Fragment),
+				"raw_fragment": sdktypes.NewStringValue(url.RawFragment),
+				"raw":          sdktypes.NewStringValue(url.RawPath),
+				"path":         sdktypes.NewStringValue(url.Path),
+				"raw_query":    sdktypes.NewStringValue(url.RawQuery),
 				"query": sdktypes.NewDictValueFromStringMap(
-					kittehs.TransformMapValues(r.URL.Query(), func(vs []string) sdktypes.Value {
+					kittehs.TransformMapValues(url.Query(), func(vs []string) sdktypes.Value {
 						return sdktypes.NewStringValue(strings.Join(vs, ","))
 					}),
 				),
@@ -72,18 +83,17 @@ func (h HTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	event, err := sdktypes.EventFromProto(&sdktypes.EventPB{
-		IntegrationId:    integrationID.String(),
-		IntegrationToken: token,
-		OriginalEventId:  r.URL.String(),
-		EventType:        strings.ToLower(r.Method),
-		Data:             kittehs.TransformMapValues(data, sdktypes.ToProto),
+		IntegrationId:   integrationID.String(),
+		OriginalEventId: r.URL.String(),
+		EventType:       strings.ToLower(r.Method),
+		Data:            kittehs.TransformMapValues(data, sdktypes.ToProto),
 	})
 	if err != nil {
 		l.Error("create event error", zap.Error(err))
 		return
 	}
 
-	eid, err := h.dispatcher.Dispatch(r.Context(), event, nil)
+	eid, err := h.dispatcher.Dispatch(r.Context(), event, &sdkservices.DispatchOptions{Env: env})
 	if err != nil {
 		l.Error("dispatch error", zap.Error(err))
 	}

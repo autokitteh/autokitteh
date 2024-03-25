@@ -27,6 +27,9 @@ type ValueWrapper struct {
 	// Unwrap: if a struct, marshal it to JSON directly, do not convert to map.
 	UnwrapStructsAsJSON bool
 
+	// Error out when trying to unwrap into a struct and the struct has fields that do not exist in the value.
+	UnwrapErrorOnNonexistentStructFields bool
+
 	// Unwrap: transform duration into microseconds, do not convert to string.
 	RawDuration bool
 

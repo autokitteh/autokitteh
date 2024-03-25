@@ -16,6 +16,12 @@ func translateError(err error, extra map[string]string) error {
 		return nil
 	}
 
+	if extra == nil {
+		extra = map[string]string{
+			"raw": err.Error(),
+		}
+	}
+
 	convErr := func(cerr, err error) error {
 		return fmt.Errorf("[cannot convert to program error: %v] %w", cerr, err)
 	}
@@ -38,13 +44,7 @@ func translateError(err error, extra map[string]string) error {
 			return convErr(cerr, err)
 		}
 
-		extra, _ := kittehs.JoinMaps(
-			map[string]string{
-				"raw":  resolveError.Error(),
-				"type": "resolve",
-			},
-			extra,
-		)
+		extra["type"] = "resolve"
 
 		perr := sdktypes.NewProgramError(sdktypes.NewStringValue(resolveError.Msg), []sdktypes.CallFrame{f}, extra)
 		return perr.ToError()
@@ -67,14 +67,8 @@ func translateError(err error, extra map[string]string) error {
 			return convErr(cerr, err)
 		}
 
-		extra, _ := kittehs.JoinMaps(
-			map[string]string{
-				"raw":   evalErr.Error(),
-				"type":  "eval",
-				"cause": fmt.Sprintf("%v", evalErr.Unwrap()),
-			},
-			extra,
-		)
+		extra["type"] = "eval"
+		extra["cause"] = fmt.Sprintf("%v", evalErr.Unwrap())
 
 		perr := sdktypes.NewProgramError(sdktypes.NewStringValue(evalErr.Msg), callstack, extra)
 		return perr.ToError()

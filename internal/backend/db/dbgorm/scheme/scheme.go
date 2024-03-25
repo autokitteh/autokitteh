@@ -285,6 +285,9 @@ type Trigger struct {
 	EventType    string
 	Filter       string
 	CodeLocation string
+	Name         string
+	Data         datatypes.JSON
+	Type         string
 
 	// just for the foreign keys
 	Connection Connection
@@ -296,6 +299,11 @@ func ParseTrigger(e Trigger) (sdktypes.Trigger, error) {
 		return sdktypes.InvalidTrigger, fmt.Errorf("loc: %w", err)
 	}
 
+	var data map[string]sdktypes.Value
+	if err := json.Unmarshal(e.Data, &data); err != nil {
+		return sdktypes.InvalidTrigger, fmt.Errorf("data: %w", err)
+	}
+
 	return sdktypes.StrictTriggerFromProto(&sdktypes.TriggerPB{
 		TriggerId:    e.TriggerID,
 		EnvId:        e.EnvID,
@@ -303,6 +311,9 @@ func ParseTrigger(e Trigger) (sdktypes.Trigger, error) {
 		EventType:    e.EventType,
 		Filter:       e.Filter,
 		CodeLocation: loc.ToProto(),
+		Name:         e.Name,
+		Data:         kittehs.TransformMapValues(data, sdktypes.ToProto),
+		TriggerType:  e.Type,
 	})
 }
 
