@@ -381,6 +381,7 @@ func (py *pySVC) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 		return py.initialCall(ctx, fnName, payload)
 	}
 
+	// Activity call
 	msg := PyMessage{
 		Type:    "callback",
 		Payload: fn.Data(),
