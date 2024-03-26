@@ -149,13 +149,8 @@ func (f *dbFixture) newSession(st sdktypes.SessionStateType) scheme.Session {
 
 	return scheme.Session{
 		SessionID:        sessionID,
-		DeploymentID:     testDeploymentID,
-		EventID:          testEventID,
 		CurrentStateType: int(st.ToProto()),
-		Entrypoint:       "testEntrypoint",
 		Inputs:           datatypes.JSON(`{"key": "value"}`),
-		CreatedAt:        now,
-		UpdatedAt:        now,
 	}
 }
 
@@ -173,8 +168,6 @@ func (f *dbFixture) newDeployment() scheme.Deployment {
 
 	return scheme.Deployment{
 		DeploymentID: deploymentID,
-		BuildID:      testBuildID,
-		EnvID:        testEnvID,
 		State:        int32(sdktypes.DeploymentStateUnspecified.ToProto()),
 		CreatedAt:    now,
 		UpdatedAt:    now,
