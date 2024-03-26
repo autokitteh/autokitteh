@@ -34,7 +34,7 @@ type deviceCodeHandler struct {
 	mu    sync.Mutex
 }
 
-func (d *deviceCodeHandler) registerRoutes(muxes muxes.Muxes) {
+func (d *deviceCodeHandler) registerRoutes(muxes *muxes.Muxes) {
 	muxes.Auth.HandleFunc("/auth/device/code", d.deviceCodeHandler)
 	muxes.NoAuth.HandleFunc("/auth/device/exchange", d.exchangeCodeHandler)
 }

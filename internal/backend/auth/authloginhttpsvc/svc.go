@@ -32,7 +32,7 @@ type externalIDDataExtractorFunc func(req *http.Request) (*externalIdentity, err
 type Deps struct {
 	fx.In
 
-	Muxes    muxes.Muxes
+	Muxes    *muxes.Muxes
 	Z        *zap.Logger
 	Cfg      *Config
 	DB       db.DB
@@ -61,7 +61,7 @@ func Init(deps Deps) error {
 	return svc.registerRoutes(deps.Muxes)
 }
 
-func (a *svc) registerRoutes(muxes muxes.Muxes) error {
+func (a *svc) registerRoutes(muxes *muxes.Muxes) error {
 	if a.Cfg.GoogleOAuth.Enabled {
 		if err := registerGoogleOAuthRoutes(muxes.NoAuth, a.Deps.Cfg.GoogleOAuth, a.newSuccessLoginHandler(getGoogleUserDataFromRequest)); err != nil {
 			return err

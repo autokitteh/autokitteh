@@ -262,6 +262,8 @@ type RunOptions struct {
 }
 
 func NewOpts(cfg *Config, ropts RunOptions) []fx.Option {
+	setFXRunOpts(ropts)
+
 	opts := makeFxOpts(cfg, ropts)
 
 	if ropts.Silent {
