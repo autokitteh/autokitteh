@@ -191,7 +191,6 @@ func (f *dbFixture) newEnv() scheme.Env {
 
 	return scheme.Env{
 		EnvID:        envID,
-		ProjectID:    testProjectID,
 		MembershipID: envID, // must be unique
 	}
 }
