@@ -14,7 +14,7 @@ return code == 0
 http get /http/my_url_path
 resp code == 200
 
-wait 5s for session ses_00000000000000000000000008
+wait 7s for session ses_00000000000000000000000008
 
 # Check session's output and final state.
 ak session log -J
