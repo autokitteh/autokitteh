@@ -1,0 +1,23 @@
+baz qux foo bar
+
+-- main.star --
+load("baz.star", "baz")
+load("foo/foo.star", "foo")
+
+print(baz, foo)
+
+-- baz.star --
+load("qux.star", "qux")
+
+baz = "baz " + qux
+
+-- qux.star --
+qux = "qux"
+
+-- foo/foo.star --
+load("bar.star", "bar")
+
+foo = "foo " + bar
+
+-- foo/bar.star --
+bar = "bar"

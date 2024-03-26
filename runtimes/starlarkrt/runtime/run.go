@@ -73,7 +73,11 @@ func Run(
 		Name:  mainPath,
 		Print: func(_ *starlark.Thread, text string) { cbs.SafePrint(ctx, runID, text) },
 		Load: func(th *starlark.Thread, path string) (starlark.StringDict, error) {
-			path = filepath.Join(filepath.Dir(th.Name), path)
+			if len(th.CallStack()) > 0 {
+				// Path is relative to the file that called load.
+				pos := th.CallFrame(0).Pos.Filename()
+				path = filepath.Join(filepath.Dir(pos), path)
+			}
 
 			prog, err := getProgram(compiled, path)
 			if err != nil {
