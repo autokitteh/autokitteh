@@ -107,10 +107,10 @@ func TestGetProjectDeployments(t *testing.T) {
 	e3.ProjectID = p1.ProjectID
 	e4.ProjectID = p2.ProjectID
 
-	d1.EnvID = e1.EnvID
-	d2.EnvID = e1.EnvID
-	d3.EnvID = e2.EnvID
-	d4.EnvID = e4.EnvID
+	d1.EnvID = &e1.EnvID
+	d2.EnvID = &e1.EnvID
+	d3.EnvID = &e2.EnvID
+	d4.EnvID = &e4.EnvID
 
 	f.createProjectsAndAssert(t, p1, p2)
 	f.createEnvsAndAssert(t, e1, e2, e3, e4)
@@ -133,7 +133,7 @@ func TestGetProjectEnvs(t *testing.T) {
 
 	e1.ProjectID = p.ProjectID
 	e2.ProjectID = p.ProjectID
-	d.EnvID = e1.EnvID
+	d.EnvID = &e1.EnvID
 
 	f.createProjectsAndAssert(t, p)
 	f.createEnvsAndAssert(t, e1, e2)
@@ -185,14 +185,14 @@ func TestDeleteProjectAndDependents(t *testing.T) {
 	b := f.newBuild()
 
 	d1e1p1, d2e1p1, d1e2p1, d1e1p2 := f.newDeployment(), f.newDeployment(), f.newDeployment(), f.newDeployment()
-	d1e1p1.EnvID = e1p1.EnvID
-	d2e1p1.EnvID = e1p1.EnvID
-	d1e2p1.EnvID = e2p1.EnvID
-	d1e1p2.EnvID = e1p2.EnvID
-	d1e1p1.BuildID = b.BuildID
-	d2e1p1.BuildID = b.BuildID
-	d1e2p1.BuildID = b.BuildID
-	d1e1p2.BuildID = b.BuildID
+	d1e1p1.EnvID = &e1p1.EnvID
+	d2e1p1.EnvID = &e1p1.EnvID
+	d1e2p1.EnvID = &e2p1.EnvID
+	d1e1p2.EnvID = &e1p2.EnvID
+	d1e1p1.BuildID = &b.BuildID
+	d2e1p1.BuildID = &b.BuildID
+	d1e2p1.BuildID = &b.BuildID
+	d1e1p2.BuildID = &b.BuildID
 
 	s1d1e1p1 := f.newSession(sdktypes.SessionStateTypeCompleted)
 	s2d1e2p1 := f.newSession(sdktypes.SessionStateTypeError)

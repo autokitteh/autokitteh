@@ -389,24 +389,24 @@ func ParseSession(s Session) (sdktypes.Session, error) {
 }
 
 type Deployment struct {
-	DeploymentID string `gorm:"primaryKey"`
-	EnvID        string `gorm:"index;foreignKey"`
-	BuildID      string `gorm:"foreignKey"`
+	DeploymentID string  `gorm:"primaryKey"`
+	EnvID        *string `gorm:"index;foreignKey"`
+	BuildID      *string `gorm:"foreignKey"`
 	State        int32
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
 	DeletedAt    gorm.DeletedAt `gorm:"index"`
 
 	// just for foreign key constraint. Without it gorm won't enforce it
-	Env   Env
-	Build Build
+	Env   *Env
+	Build *Build
 }
 
 func ParseDeployment(d Deployment) (sdktypes.Deployment, error) {
 	deployment, err := sdktypes.StrictDeploymentFromProto(&sdktypes.DeploymentPB{
 		DeploymentId: d.DeploymentID,
-		BuildId:      d.BuildID,
-		EnvId:        d.EnvID,
+		BuildId:      *d.BuildID,
+		EnvId:        *d.EnvID,
 		State:        deploymentsv1.DeploymentState(d.State),
 		CreatedAt:    timestamppb.New(d.CreatedAt),
 		UpdatedAt:    timestamppb.New(d.UpdatedAt),
@@ -429,8 +429,8 @@ type DeploymentWithStats struct {
 func ParseDeploymentWithSessionStats(d DeploymentWithStats) (sdktypes.Deployment, error) {
 	deployment, err := sdktypes.StrictDeploymentFromProto(&sdktypes.DeploymentPB{
 		DeploymentId: d.DeploymentID,
-		BuildId:      d.BuildID,
-		EnvId:        d.EnvID,
+		BuildId:      *d.BuildID,
+		EnvId:        *d.EnvID,
 		State:        deploymentsv1.DeploymentState(d.State),
 		CreatedAt:    timestamppb.New(d.CreatedAt),
 		UpdatedAt:    timestamppb.New(d.UpdatedAt),
