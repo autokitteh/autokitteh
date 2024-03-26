@@ -1,0 +1,2 @@
+proto/gen/**    linguist-generated
+proto/gen	text -diff
