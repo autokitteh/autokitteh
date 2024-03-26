@@ -224,8 +224,8 @@ func ParseEventRecord(e EventRecord) (sdktypes.EventRecord, error) {
 }
 
 type Env struct {
-	EnvID     string `gorm:"primaryKey"`
-	ProjectID string `gorm:"index;foreignKey"`
+	EnvID     string  `gorm:"primaryKey"`
+	ProjectID *string `gorm:"index;foreignKey"`
 	Name      string
 	DeletedAt gorm.DeletedAt `gorm:"index"`
 
@@ -234,13 +234,13 @@ type Env struct {
 	MembershipID string `gorm:"uniqueIndex"`
 
 	// just for the foreign key. Wihtout it gorm won't enforce it
-	Project Project
+	Project *Project
 }
 
 func ParseEnv(r Env) (sdktypes.Env, error) {
 	return sdktypes.StrictEnvFromProto(&sdktypes.EnvPB{
 		EnvId:     r.EnvID,
-		ProjectId: r.ProjectID,
+		ProjectId: *r.ProjectID,
 		Name:      r.Name,
 	})
 }

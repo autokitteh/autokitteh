@@ -75,17 +75,16 @@ func TestCreateSessionForeignKeys(t *testing.T) {
 	s.EventID = nil
 
 	b := f.newBuild()
-	// env := f.newEnv()
+	env := f.newEnv()
 	d := f.newDeployment()
 	// ev := f.newEvent()
 
 	f.saveBuildsAndAssert(t, b)
-	// f.createEnvsAndAssert(t, env)
-	// FIXME: add env and event
+	f.createEnvsAndAssert(t, env)
 	f.createDeploymentsAndAssert(t, d)
 
 	s.BuildID = &b.BuildID
-	// s.EnvID = &env.EnvID
+	s.EnvID = &env.EnvID
 	s.DeploymentID = &d.DeploymentID
 	// s.EventID = &ev.EventID
 	f.createSessionsAndAssert(t, s)
