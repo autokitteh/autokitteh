@@ -15,7 +15,7 @@ from autokitteh_pb.connections.v1 import connection_pb2 as autokitteh_dot_connec
 from buf.validate import validate_pb2 as buf_dot_validate_dot_validate__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n#autokitteh/connections/v1/svc.proto\x12\x19\x61utokitteh.connections.v1\x1a*autokitteh/connections/v1/connection.proto\x1a\x1b\x62uf/validate/validate.proto\"\xeb\x01\n\rCreateRequest\x12\x45\n\nconnection\x18\x01 \x01(\x0b\x32%.autokitteh.connections.v1.ConnectionR\nconnection:\x92\x01\xfa\xf7\x18\x8d\x01\x1a\x8a\x01\n&connection.connection_id_must_be_empty\x12#connection_id must not be specified\x1a;has(this.connection) && this.connection.connection_id == \'\'\"?\n\x0e\x43reateResponse\x12-\n\rconnection_id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x0c\x63onnectionId\"\xeb\x01\n\rUpdateRequest\x12\x45\n\nconnection\x18\x01 \x01(\x0b\x32%.autokitteh.connections.v1.ConnectionR\nconnection:\x92\x01\xfa\xf7\x18\x8d\x01\x1a\x8a\x01\n*connection.connection_id_must_not_be_empty\x12\x1f\x63onnection_id must be specified\x1a;has(this.connection) && this.connection.connection_id != \'\'\"\x10\n\x0eUpdateResponse\">\n\rDeleteRequest\x12-\n\rconnection_id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x0c\x63onnectionId\"\x10\n\x0e\x44\x65leteResponse\"1\n\nGetRequest\x12#\n\rconnection_id\x18\x01 \x01(\tR\x0c\x63onnectionId\"T\n\x0bGetResponse\x12\x45\n\nconnection\x18\x01 \x01(\x0b\x32%.autokitteh.connections.v1.ConnectionR\nconnection\"\x80\x01\n\x0bListRequest\x12%\n\x0eintegration_id\x18\x01 \x01(\tR\rintegrationId\x12\x1d\n\nproject_id\x18\x02 \x01(\tR\tprojectId\x12+\n\x11integration_token\x18\x03 \x01(\tR\x10integrationToken\"e\n\x0cListResponse\x12U\n\x0b\x63onnections\x18\x01 \x03(\x0b\x32%.autokitteh.connections.v1.ConnectionB\x0c\xfa\xf7\x18\x08\x92\x01\x05\"\x03\xc8\x01\x01R\x0b\x63onnections2\xe0\x03\n\x12\x43onnectionsService\x12]\n\x06\x43reate\x12(.autokitteh.connections.v1.CreateRequest\x1a).autokitteh.connections.v1.CreateResponse\x12]\n\x06\x44\x65lete\x12(.autokitteh.connections.v1.DeleteRequest\x1a).autokitteh.connections.v1.DeleteResponse\x12]\n\x06Update\x12(.autokitteh.connections.v1.UpdateRequest\x1a).autokitteh.connections.v1.UpdateResponse\x12T\n\x03Get\x12%.autokitteh.connections.v1.GetRequest\x1a&.autokitteh.connections.v1.GetResponse\x12W\n\x04List\x12&.autokitteh.connections.v1.ListRequest\x1a\'.autokitteh.connections.v1.ListResponseB\x82\x02\n\x1d\x63om.autokitteh.connections.v1B\x08SvcProtoP\x01ZQgo.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/connections/v1;connectionsv1\xa2\x02\x03\x41\x43X\xaa\x02\x19\x41utokitteh.Connections.V1\xca\x02\x19\x41utokitteh\\Connections\\V1\xe2\x02%Autokitteh\\Connections\\V1\\GPBMetadata\xea\x02\x1b\x41utokitteh::Connections::V1b\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n#autokitteh/connections/v1/svc.proto\x12\x19\x61utokitteh.connections.v1\x1a*autokitteh/connections/v1/connection.proto\x1a\x1b\x62uf/validate/validate.proto\"\xeb\x01\n\rCreateRequest\x12\x45\n\nconnection\x18\x01 \x01(\x0b\x32%.autokitteh.connections.v1.ConnectionR\nconnection:\x92\x01\xfa\xf7\x18\x8d\x01\x1a\x8a\x01\n&connection.connection_id_must_be_empty\x12#connection_id must not be specified\x1a;has(this.connection) && this.connection.connection_id == \'\'\"?\n\x0e\x43reateResponse\x12-\n\rconnection_id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x0c\x63onnectionId\"\xeb\x01\n\rUpdateRequest\x12\x45\n\nconnection\x18\x01 \x01(\x0b\x32%.autokitteh.connections.v1.ConnectionR\nconnection:\x92\x01\xfa\xf7\x18\x8d\x01\x1a\x8a\x01\n*connection.connection_id_must_not_be_empty\x12\x1f\x63onnection_id must be specified\x1a;has(this.connection) && this.connection.connection_id != \'\'\"\x10\n\x0eUpdateResponse\">\n\rDeleteRequest\x12-\n\rconnection_id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x0c\x63onnectionId\"\x10\n\x0e\x44\x65leteResponse\"?\n\x0e\x44\x65lete1Request\x12-\n\rconnection_id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x0c\x63onnectionId\"\x11\n\x0f\x44\x65lete1Response\"1\n\nGetRequest\x12#\n\rconnection_id\x18\x01 \x01(\tR\x0c\x63onnectionId\"T\n\x0bGetResponse\x12\x45\n\nconnection\x18\x01 \x01(\x0b\x32%.autokitteh.connections.v1.ConnectionR\nconnection\"\x80\x01\n\x0bListRequest\x12%\n\x0eintegration_id\x18\x01 \x01(\tR\rintegrationId\x12\x1d\n\nproject_id\x18\x02 \x01(\tR\tprojectId\x12+\n\x11integration_token\x18\x03 \x01(\tR\x10integrationToken\"e\n\x0cListResponse\x12U\n\x0b\x63onnections\x18\x01 \x03(\x0b\x32%.autokitteh.connections.v1.ConnectionB\x0c\xfa\xf7\x18\x08\x92\x01\x05\"\x03\xc8\x01\x01R\x0b\x63onnections2\xc2\x04\n\x12\x43onnectionsService\x12]\n\x06\x43reate\x12(.autokitteh.connections.v1.CreateRequest\x1a).autokitteh.connections.v1.CreateResponse\x12]\n\x06\x44\x65lete\x12(.autokitteh.connections.v1.DeleteRequest\x1a).autokitteh.connections.v1.DeleteResponse\x12]\n\x06Update\x12(.autokitteh.connections.v1.UpdateRequest\x1a).autokitteh.connections.v1.UpdateResponse\x12T\n\x03Get\x12%.autokitteh.connections.v1.GetRequest\x1a&.autokitteh.connections.v1.GetResponse\x12W\n\x04List\x12&.autokitteh.connections.v1.ListRequest\x1a\'.autokitteh.connections.v1.ListResponse\x12`\n\x07\x44\x65lete1\x12).autokitteh.connections.v1.Delete1Request\x1a*.autokitteh.connections.v1.Delete1ResponseB\x82\x02\n\x1d\x63om.autokitteh.connections.v1B\x08SvcProtoP\x01ZQgo.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/connections/v1;connectionsv1\xa2\x02\x03\x41\x43X\xaa\x02\x19\x41utokitteh.Connections.V1\xca\x02\x19\x41utokitteh\\Connections\\V1\xe2\x02%Autokitteh\\Connections\\V1\\GPBMetadata\xea\x02\x1b\x41utokitteh::Connections::V1b\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -31,6 +31,8 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _UPDATEREQUEST._serialized_options = b'\372\367\030\215\001\032\212\001\n*connection.connection_id_must_not_be_empty\022\037connection_id must be specified\032;has(this.connection) && this.connection.connection_id != \'\''
   _DELETEREQUEST.fields_by_name['connection_id']._options = None
   _DELETEREQUEST.fields_by_name['connection_id']._serialized_options = b'\372\367\030\004r\002\020\001'
+  _DELETE1REQUEST.fields_by_name['connection_id']._options = None
+  _DELETE1REQUEST.fields_by_name['connection_id']._serialized_options = b'\372\367\030\004r\002\020\001'
   _LISTRESPONSE.fields_by_name['connections']._options = None
   _LISTRESPONSE.fields_by_name['connections']._serialized_options = b'\372\367\030\010\222\001\005\"\003\310\001\001'
   _globals['_CREATEREQUEST']._serialized_start=140
@@ -45,14 +47,18 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _globals['_DELETEREQUEST']._serialized_end=760
   _globals['_DELETERESPONSE']._serialized_start=762
   _globals['_DELETERESPONSE']._serialized_end=778
-  _globals['_GETREQUEST']._serialized_start=780
-  _globals['_GETREQUEST']._serialized_end=829
-  _globals['_GETRESPONSE']._serialized_start=831
-  _globals['_GETRESPONSE']._serialized_end=915
-  _globals['_LISTREQUEST']._serialized_start=918
-  _globals['_LISTREQUEST']._serialized_end=1046
-  _globals['_LISTRESPONSE']._serialized_start=1048
-  _globals['_LISTRESPONSE']._serialized_end=1149
-  _globals['_CONNECTIONSSERVICE']._serialized_start=1152
-  _globals['_CONNECTIONSSERVICE']._serialized_end=1632
+  _globals['_DELETE1REQUEST']._serialized_start=780
+  _globals['_DELETE1REQUEST']._serialized_end=843
+  _globals['_DELETE1RESPONSE']._serialized_start=845
+  _globals['_DELETE1RESPONSE']._serialized_end=862
+  _globals['_GETREQUEST']._serialized_start=864
+  _globals['_GETREQUEST']._serialized_end=913
+  _globals['_GETRESPONSE']._serialized_start=915
+  _globals['_GETRESPONSE']._serialized_end=999
+  _globals['_LISTREQUEST']._serialized_start=1002
+  _globals['_LISTREQUEST']._serialized_end=1130
+  _globals['_LISTRESPONSE']._serialized_start=1132
+  _globals['_LISTRESPONSE']._serialized_end=1233
+  _globals['_CONNECTIONSSERVICE']._serialized_start=1236
+  _globals['_CONNECTIONSSERVICE']._serialized_end=1814
 # @@protoc_insertion_point(module_scope)

@@ -2,8 +2,8 @@
 
 
 from .connection_pb2 import (Connection,)
-from .svc_pb2 import (CreateRequest,CreateResponse,UpdateRequest,UpdateResponse,DeleteRequest,DeleteResponse,GetRequest,GetResponse,ListRequest,ListResponse,)
+from .svc_pb2 import (CreateRequest,CreateResponse,UpdateRequest,UpdateResponse,DeleteRequest,DeleteResponse,Delete1Request,Delete1Response,GetRequest,GetResponse,ListRequest,ListResponse,)
 from .svc_pb2_grpc import (ConnectionsServiceStub,ConnectionsServiceServicer,ConnectionsService,)
 
 
-__all__ = ["ConnectionsServiceStub","ConnectionsServiceServicer","ConnectionsService","CreateRequest","CreateResponse","UpdateRequest","UpdateResponse","DeleteRequest","DeleteResponse","GetRequest","GetResponse","ListRequest","ListResponse","Connection",]
+__all__ = ["ConnectionsServiceStub","ConnectionsServiceServicer","ConnectionsService","CreateRequest","CreateResponse","UpdateRequest","UpdateResponse","DeleteRequest","DeleteResponse","Delete1Request","Delete1Response","GetRequest","GetResponse","ListRequest","ListResponse","Connection",]

@@ -46,6 +46,9 @@ const (
 	ConnectionsServiceGetProcedure = "/autokitteh.connections.v1.ConnectionsService/Get"
 	// ConnectionsServiceListProcedure is the fully-qualified name of the ConnectionsService's List RPC.
 	ConnectionsServiceListProcedure = "/autokitteh.connections.v1.ConnectionsService/List"
+	// ConnectionsServiceDelete1Procedure is the fully-qualified name of the ConnectionsService's
+	// Delete1 RPC.
+	ConnectionsServiceDelete1Procedure = "/autokitteh.connections.v1.ConnectionsService/Delete1"
 )
 
 // ConnectionsServiceClient is a client for the autokitteh.connections.v1.ConnectionsService
@@ -57,6 +60,7 @@ type ConnectionsServiceClient interface {
 	Update(context.Context, *connect.Request[v1.UpdateRequest]) (*connect.Response[v1.UpdateResponse], error)
 	Get(context.Context, *connect.Request[v1.GetRequest]) (*connect.Response[v1.GetResponse], error)
 	List(context.Context, *connect.Request[v1.ListRequest]) (*connect.Response[v1.ListResponse], error)
+	Delete1(context.Context, *connect.Request[v1.Delete1Request]) (*connect.Response[v1.Delete1Response], error)
 }
 
 // NewConnectionsServiceClient constructs a client for the
@@ -95,16 +99,22 @@ func NewConnectionsServiceClient(httpClient connect.HTTPClient, baseURL string, 
 			baseURL+ConnectionsServiceListProcedure,
 			opts...,
 		),
+		delete1: connect.NewClient[v1.Delete1Request, v1.Delete1Response](
+			httpClient,
+			baseURL+ConnectionsServiceDelete1Procedure,
+			opts...,
+		),
 	}
 }
 
 // connectionsServiceClient implements ConnectionsServiceClient.
 type connectionsServiceClient struct {
-	create *connect.Client[v1.CreateRequest, v1.CreateResponse]
-	delete *connect.Client[v1.DeleteRequest, v1.DeleteResponse]
-	update *connect.Client[v1.UpdateRequest, v1.UpdateResponse]
-	get    *connect.Client[v1.GetRequest, v1.GetResponse]
-	list   *connect.Client[v1.ListRequest, v1.ListResponse]
+	create  *connect.Client[v1.CreateRequest, v1.CreateResponse]
+	delete  *connect.Client[v1.DeleteRequest, v1.DeleteResponse]
+	update  *connect.Client[v1.UpdateRequest, v1.UpdateResponse]
+	get     *connect.Client[v1.GetRequest, v1.GetResponse]
+	list    *connect.Client[v1.ListRequest, v1.ListResponse]
+	delete1 *connect.Client[v1.Delete1Request, v1.Delete1Response]
 }
 
 // Create calls autokitteh.connections.v1.ConnectionsService.Create.
@@ -132,6 +142,11 @@ func (c *connectionsServiceClient) List(ctx context.Context, req *connect.Reques
 	return c.list.CallUnary(ctx, req)
 }
 
+// Delete1 calls autokitteh.connections.v1.ConnectionsService.Delete1.
+func (c *connectionsServiceClient) Delete1(ctx context.Context, req *connect.Request[v1.Delete1Request]) (*connect.Response[v1.Delete1Response], error) {
+	return c.delete1.CallUnary(ctx, req)
+}
+
 // ConnectionsServiceHandler is an implementation of the
 // autokitteh.connections.v1.ConnectionsService service.
 type ConnectionsServiceHandler interface {
@@ -141,6 +156,7 @@ type ConnectionsServiceHandler interface {
 	Update(context.Context, *connect.Request[v1.UpdateRequest]) (*connect.Response[v1.UpdateResponse], error)
 	Get(context.Context, *connect.Request[v1.GetRequest]) (*connect.Response[v1.GetResponse], error)
 	List(context.Context, *connect.Request[v1.ListRequest]) (*connect.Response[v1.ListResponse], error)
+	Delete1(context.Context, *connect.Request[v1.Delete1Request]) (*connect.Response[v1.Delete1Response], error)
 }
 
 // NewConnectionsServiceHandler builds an HTTP handler from the service implementation. It returns
@@ -174,6 +190,11 @@ func NewConnectionsServiceHandler(svc ConnectionsServiceHandler, opts ...connect
 		svc.List,
 		opts...,
 	)
+	connectionsServiceDelete1Handler := connect.NewUnaryHandler(
+		ConnectionsServiceDelete1Procedure,
+		svc.Delete1,
+		opts...,
+	)
 	return "/autokitteh.connections.v1.ConnectionsService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case ConnectionsServiceCreateProcedure:
@@ -186,6 +207,8 @@ func NewConnectionsServiceHandler(svc ConnectionsServiceHandler, opts ...connect
 			connectionsServiceGetHandler.ServeHTTP(w, r)
 		case ConnectionsServiceListProcedure:
 			connectionsServiceListHandler.ServeHTTP(w, r)
+		case ConnectionsServiceDelete1Procedure:
+			connectionsServiceDelete1Handler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -213,4 +236,8 @@ func (UnimplementedConnectionsServiceHandler) Get(context.Context, *connect.Requ
 
 func (UnimplementedConnectionsServiceHandler) List(context.Context, *connect.Request[v1.ListRequest]) (*connect.Response[v1.ListResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("autokitteh.connections.v1.ConnectionsService.List is not implemented"))
+}
+
+func (UnimplementedConnectionsServiceHandler) Delete1(context.Context, *connect.Request[v1.Delete1Request]) (*connect.Response[v1.Delete1Response], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("autokitteh.connections.v1.ConnectionsService.Delete1 is not implemented"))
 }

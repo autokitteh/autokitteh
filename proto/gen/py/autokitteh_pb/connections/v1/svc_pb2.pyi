@@ -39,6 +39,16 @@ class DeleteResponse(_message.Message):
     __slots__ = []
     def __init__(self) -> None: ...
 
+class Delete1Request(_message.Message):
+    __slots__ = ["connection_id"]
+    CONNECTION_ID_FIELD_NUMBER: _ClassVar[int]
+    connection_id: str
+    def __init__(self, connection_id: _Optional[str] = ...) -> None: ...
+
+class Delete1Response(_message.Message):
+    __slots__ = []
+    def __init__(self) -> None: ...
+
 class GetRequest(_message.Message):
     __slots__ = ["connection_id"]
     CONNECTION_ID_FIELD_NUMBER: _ClassVar[int]

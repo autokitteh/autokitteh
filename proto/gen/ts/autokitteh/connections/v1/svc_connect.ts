@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { CreateRequest, CreateResponse, DeleteRequest, DeleteResponse, GetRequest, GetResponse, ListRequest, ListResponse, UpdateRequest, UpdateResponse } from "./svc_pb.js";
+import { CreateRequest, CreateResponse, Delete1Request, Delete1Response, DeleteRequest, DeleteResponse, GetRequest, GetResponse, ListRequest, ListResponse, UpdateRequest, UpdateResponse } from "./svc_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -59,6 +59,15 @@ export const ConnectionsService = {
       name: "List",
       I: ListRequest,
       O: ListResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * @generated from rpc autokitteh.connections.v1.ConnectionsService.Delete1
+     */
+    delete1: {
+      name: "Delete1",
+      I: Delete1Request,
+      O: Delete1Response,
       kind: MethodKind.Unary,
     },
   }

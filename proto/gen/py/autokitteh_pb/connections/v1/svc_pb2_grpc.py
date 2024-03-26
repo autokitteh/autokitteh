@@ -40,6 +40,11 @@ class ConnectionsServiceStub(object):
                 request_serializer=autokitteh_dot_connections_dot_v1_dot_svc__pb2.ListRequest.SerializeToString,
                 response_deserializer=autokitteh_dot_connections_dot_v1_dot_svc__pb2.ListResponse.FromString,
                 )
+        self.Delete1 = channel.unary_unary(
+                '/autokitteh.connections.v1.ConnectionsService/Delete1',
+                request_serializer=autokitteh_dot_connections_dot_v1_dot_svc__pb2.Delete1Request.SerializeToString,
+                response_deserializer=autokitteh_dot_connections_dot_v1_dot_svc__pb2.Delete1Response.FromString,
+                )
 
 
 class ConnectionsServiceServicer(object):
@@ -77,6 +82,12 @@ class ConnectionsServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def Delete1(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_ConnectionsServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -104,6 +115,11 @@ def add_ConnectionsServiceServicer_to_server(servicer, server):
                     servicer.List,
                     request_deserializer=autokitteh_dot_connections_dot_v1_dot_svc__pb2.ListRequest.FromString,
                     response_serializer=autokitteh_dot_connections_dot_v1_dot_svc__pb2.ListResponse.SerializeToString,
+            ),
+            'Delete1': grpc.unary_unary_rpc_method_handler(
+                    servicer.Delete1,
+                    request_deserializer=autokitteh_dot_connections_dot_v1_dot_svc__pb2.Delete1Request.FromString,
+                    response_serializer=autokitteh_dot_connections_dot_v1_dot_svc__pb2.Delete1Response.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -198,5 +214,22 @@ class ConnectionsService(object):
         return grpc.experimental.unary_unary(request, target, '/autokitteh.connections.v1.ConnectionsService/List',
             autokitteh_dot_connections_dot_v1_dot_svc__pb2.ListRequest.SerializeToString,
             autokitteh_dot_connections_dot_v1_dot_svc__pb2.ListResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def Delete1(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/autokitteh.connections.v1.ConnectionsService/Delete1',
+            autokitteh_dot_connections_dot_v1_dot_svc__pb2.Delete1Request.SerializeToString,
+            autokitteh_dot_connections_dot_v1_dot_svc__pb2.Delete1Response.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

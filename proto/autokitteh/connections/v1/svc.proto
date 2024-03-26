@@ -37,6 +37,12 @@ message DeleteRequest {
 
 message DeleteResponse {}
 
+message Delete1Request {
+  string connection_id = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+message Delete1Response {}
+
 message GetRequest {
   string connection_id = 1;
 }
@@ -64,4 +70,5 @@ service ConnectionsService {
   rpc Update(UpdateRequest) returns (UpdateResponse);
   rpc Get(GetRequest) returns (GetResponse);
   rpc List(ListRequest) returns (ListResponse);
+  rpc Delete1(Delete1Request) returns (Delete1Response);
 }
