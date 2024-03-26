@@ -344,17 +344,23 @@ func ParseSessionCallAttemptComplete(c SessionCallAttempt) (d sdktypes.SessionCa
 }
 
 type Session struct {
-	SessionID        string `gorm:"primaryKey"`
-	BuildID          string `gorm:"index"` // TODO(ENG-547): constraint.
-	EnvID            string `gorm:"index"` // TODO(ENG-547): constraint.
-	DeploymentID     string `gorm:"index"` // TODO(ENG-547): constraint.
-	EventID          string `gorm:"index"` // TODO(ENG-547): constraint.
-	CurrentStateType int    `gorm:"index"`
+	SessionID        string  `gorm:"primaryKey"`
+	BuildID          *string `gorm:"index"` // TODO(ENG-547): constraint.
+	EnvID            *string `gorm:"index"` // TODO(ENG-547): constraint.
+	DeploymentID     *string `gorm:"index"` // TODO(ENG-547): constraint.
+	EventID          *string `gorm:"index"` // TODO(ENG-547): constraint.
+	CurrentStateType int     `gorm:"index"`
 	Entrypoint       string
 	Inputs           datatypes.JSON
-	CreatedAt        time.Time      //`gorm:"default:current_timestamp"`
-	UpdatedAt        time.Time      //`gorm:"default:current_timestamp"`
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
 	DeletedAt        gorm.DeletedAt `gorm:"index"`
+
+	// just for the foreign keys. Without it gorm won't enforce it
+	Build      *Build
+	Env        *Env
+	Deployment *Deployment
+	Event      *Event
 }
 
 func ParseSession(s Session) (sdktypes.Session, error) {
@@ -371,10 +377,10 @@ func ParseSession(s Session) (sdktypes.Session, error) {
 
 	session, err := sdktypes.StrictSessionFromProto(&sdktypes.SessionPB{
 		SessionId:    s.SessionID,
-		BuildId:      s.BuildID,
-		EnvId:        s.EnvID,
-		DeploymentId: s.DeploymentID,
-		EventId:      s.EventID,
+		BuildId:      *s.BuildID,
+		EnvId:        *s.EnvID,
+		DeploymentId: *s.DeploymentID,
+		EventId:      *s.EventID,
 		Entrypoint:   ep.ToProto(),
 		Inputs:       kittehs.TransformMapValues(inputs, sdktypes.ToProto),
 		CreatedAt:    timestamppb.New(s.CreatedAt),

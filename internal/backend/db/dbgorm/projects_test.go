@@ -197,9 +197,9 @@ func TestDeleteProjectAndDependents(t *testing.T) {
 	s1d1e1p1 := f.newSession(sdktypes.SessionStateTypeCompleted)
 	s2d1e2p1 := f.newSession(sdktypes.SessionStateTypeError)
 	s3d1e1p2 := f.newSession(sdktypes.SessionStateTypeCompleted)
-	s1d1e1p1.DeploymentID = d1e1p1.DeploymentID
-	s2d1e2p1.DeploymentID = d1e2p1.DeploymentID
-	s3d1e1p2.DeploymentID = d1e1p2.DeploymentID
+	s1d1e1p1.DeploymentID = &d1e1p1.DeploymentID
+	s2d1e2p1.DeploymentID = &d1e2p1.DeploymentID
+	s3d1e1p2.DeploymentID = &d1e1p2.DeploymentID
 
 	f.createProjectsAndAssert(t, p1, p2)
 	f.createIntegrationsAndAssert(t, i)
