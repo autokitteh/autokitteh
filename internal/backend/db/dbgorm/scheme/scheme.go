@@ -39,6 +39,8 @@ var Tables = []any{
 	&SessionLogRecord{},
 	&Signal{},
 	&Trigger{},
+	&User{},
+	&UserExternalIdentitiy{},
 }
 
 type Build struct {
@@ -471,4 +473,27 @@ type Signal struct {
 
 	// enforce foreign key
 	Connection Connection
+}
+
+type User struct {
+	UserID      string `gorm:"primaryKey"`
+	Name        string `gorm:"uniqueIndex"`
+	DisplayName string
+}
+
+func ParseUser(r User) (sdktypes.User, error) {
+	return sdktypes.StrictUserFromProto(&sdktypes.UserPB{
+		UserId: r.UserID,
+		Name:   r.Name,
+	})
+}
+
+type UserExternalIdentitiy struct {
+	UserExternalIdentitiyID string `gorm:"primaryKey"`
+	ExternalID              string `gorm:"uniqueIndex"`
+	IdentityType            string
+	Email                   string
+	Name                    string
+	UserID                  string
+	User                    User `gorm:"references:UserID"`
 }

@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+package autokitteh.users.v1;
+
+message User {
+  string user_id = 1; // not updatable.
+  string name = 2;
+}

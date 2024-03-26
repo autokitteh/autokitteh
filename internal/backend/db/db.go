@@ -153,4 +153,16 @@ type DB interface {
 	GetSignal(ctx context.Context, signalID string) (scheme.Signal, error)
 	RemoveSignal(ctx context.Context, signalID string) error
 	ListSignalsWaitingOnConnection(ctx context.Context, connectionID sdktypes.ConnectionID) ([]scheme.Signal, error)
+
+	// Returns sdkerrors.ErrAlreadyExists if either id or name is duplicate.
+	CreateUser(context.Context, sdktypes.User) error
+
+	// Returns sdkerrors.ErrNotFound if not found.
+	GetUserByID(context.Context, sdktypes.UserID) (sdktypes.User, error)
+
+	// Returns sdkerrors.ErrNotFound if not found.
+	GetUserByName(context.Context, sdktypes.Symbol) (sdktypes.User, error)
+
+	GetUserByExternalID(ctx context.Context, eid string) (sdktypes.User, error)
+	AddExternalIDToUser(ctx context.Context, uid sdktypes.UserID, externalID, idType, idEmail string) error
 }

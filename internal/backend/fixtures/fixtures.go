@@ -2,11 +2,17 @@ package fixtures
 
 import (
 	"context"
+	"fmt"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkexecutor"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
+)
+
+var (
+	AutokittehAnonymousUserName = "anonymous"
+	AutokittehAnonymousUserID   = kittehs.Must1(sdktypes.ParseUserID(fmt.Sprintf("usr_%026x", 0)))
 )
 
 func NewBuiltinIntegrationID(name string) sdktypes.IntegrationID {

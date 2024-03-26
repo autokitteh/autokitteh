@@ -1,0 +1,83 @@
+syntax = "proto3";
+
+package autokitteh.users.v1;
+
+import "autokitteh/users/v1/user.proto";
+import "buf/validate/validate.proto";
+import "google/protobuf/field_mask.proto";
+
+message CreateRequest {
+  option (buf.validate.message).cel = {
+    id: "user.user_id_must_be_empty",
+    message: "user_id must not be specified",
+    expression: "has(this.user) && this.user.user_id == ''",
+  };
+  option (buf.validate.message).cel = {
+    id: "user.name_required",
+    message: "name must be specified",
+    expression: "has(this.user) && this.user.name != ''",
+  };
+
+  // org.org_id is ignored.
+  User user = 1 [(buf.validate.field).required = true];
+}
+
+message CreateResponse {
+  string user_id = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+message DeleteRequest {
+  string user_id = 1;
+}
+
+message DeleteResponse {}
+
+message GetRequest {
+  option (buf.validate.message).cel = {
+    id: "user_id_xor_name",
+    message: "user_id and name are mutually exclusive",
+    expression: "(this.user_id == '' && this.name != '') || (this.user_id != '' && this.name == '')",
+  };
+
+  string user_id = 1;
+  string name = 2;
+}
+
+message GetResponse {
+  User user = 1;
+}
+
+message BatchGetRequest {
+  repeated string user_ids = 1;
+  google.protobuf.FieldMask field_mask = 2;
+}
+
+message BatchGetResponse {
+  // TODO: pagniation.
+  repeated User user = 1 [(buf.validate.field).repeated.items.required = true];
+}
+
+message UpdateRequest {
+  option (buf.validate.message).cel = {
+    id: "user.user_id_required",
+    message: "user_id must be specified",
+    expression: "has(this.user) && this.user.user_id == ''",
+  };
+
+  User user = 1 [(buf.validate.field).required = true];
+  google.protobuf.FieldMask field_mask = 2;
+}
+
+message UpdateResponse {}
+
+service UsersService {
+  rpc Create(CreateRequest) returns (CreateResponse);
+
+  rpc Delete(DeleteRequest) returns (DeleteResponse);
+
+  rpc Get(GetRequest) returns (GetResponse);
+
+  rpc BatchGet(BatchGetRequest) returns (BatchGetResponse);
+
+  rpc Update(UpdateRequest) returns (UpdateResponse);
+}
