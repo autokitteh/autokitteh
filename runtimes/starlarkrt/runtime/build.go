@@ -134,15 +134,20 @@ func Build(ctx context.Context, fs fs.FS, path string, symbols []sdktypes.Symbol
 		}
 
 		data[path] = modBuf.Bytes()
+		dir := filepath.Dir(path)
 
 		for i := 0; i < mod.NumLoads(); i++ {
 			lpath, pos := mod.Load(i)
 
-			if path != "" {
-				lpath = filepath.Join(filepath.Dir(path), lpath)
+			if lpath == "" {
+				return sdktypes.InvalidBuildArtifact, fmt.Errorf("empty load path: %v", pos)
 			}
 
-			if isStarlarkPath(lpath) {
+			if path != "" {
+				lpath = filepath.Join(dir, lpath)
+			}
+
+			if isStarlarkPath(lpath) && lpath[0] != '@' {
 				q = append(q, lpath)
 				continue
 			}
