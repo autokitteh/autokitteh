@@ -51,7 +51,7 @@ func (f *dbFixture) assertDeploymentsDeleted(t *testing.T, deployments ...scheme
 }
 
 func TestCreateDeployment(t *testing.T) {
-	f := newDBFixture(true)          // no foreign keys
+	f := newDBFixture(false)
 	f.listDeploymentsAndAssert(t, 0) // no deployments
 
 	d := f.newDeployment()
@@ -60,10 +60,12 @@ func TestCreateDeployment(t *testing.T) {
 }
 
 func TestCreateDeploymentsForeignKeys(t *testing.T) {
-	f := newDBFixture(false) // with foreign keys
+	f := newDBFixture(false)
 	d := f.newDeployment()
-	d.BuildID = "unexistingBuildID"
-	d.EnvID = "unexistingEnvID"
+	unexistingBuildID := "unexistingBuildID"
+	unexistingEnvID := "unexistingEnvID"
+	d.BuildID = &unexistingBuildID
+	d.EnvID = &unexistingEnvID
 
 	err := f.gormdb.createDeployment(f.ctx, &d)
 	assert.ErrorContains(t, err, "FOREIGN KEY")
@@ -76,6 +78,8 @@ func TestCreateDeploymentsForeignKeys(t *testing.T) {
 	f.saveBuildsAndAssert(t, b)
 
 	d = f.newDeployment()
+	d.BuildID = &b.BuildID
+	d.EnvID = &e.EnvID
 	f.createDeploymentsAndAssert(t, d)
 }
 
@@ -144,7 +148,7 @@ func TestDeleteDeployment(t *testing.T) {
 
 	b := f.newBuild()
 	d := f.newDeployment()
-	d.BuildID = b.BuildID
+	d.BuildID = &b.BuildID
 	f.saveBuildsAndAssert(t, b)
 	f.createDeploymentsAndAssert(t, d)
 

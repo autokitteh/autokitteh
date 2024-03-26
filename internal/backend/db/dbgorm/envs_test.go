@@ -63,8 +63,8 @@ func TestDeleteEnvForeignKeys(t *testing.T) {
 	e := f.newEnv()
 	e.ProjectID = p.ProjectID
 	d := f.newDeployment()
-	d.BuildID = b.BuildID
-	d.EnvID = e.EnvID
+	d.BuildID = &b.BuildID
+	d.EnvID = &e.EnvID
 
 	f.saveBuildsAndAssert(t, b)
 	f.createProjectsAndAssert(t, p)
