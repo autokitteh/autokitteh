@@ -53,7 +53,14 @@ For example, to run only with the txtar files in/under `testdata/*foo*/*bar*`,
 including `testdata/*foo*/*bar*.txtar`:
 
 ```
-gotestsum -f testname -run /foo/bar
+gotestsum -f testname ./tests/system -run /foo/bar
+```
+
+To repeat a test `N` times when investigating flakiness, append the `-count`
+flag:
+
+```
+gotestsum -f testname ./tests/system -run /foo/bar -count N
 ```
 
 ## Txtar File Structure
