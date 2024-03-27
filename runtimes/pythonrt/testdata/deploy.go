@@ -15,6 +15,15 @@ import (
 )
 
 func defaultEnvID() (string, error) {
+	var buf bytes.Buffer
+
+	cmd := exec.Command("ak", "-j", "env", "list")
+	cmd.Stdout = &buf
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return "", fmt.Errorf("env list - %w", err)
+	}
+
 	dec := json.NewDecoder(&buf)
 	var env struct {
 		ID   string `json:"env_id"`
@@ -68,12 +77,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	envID, err := defaultEnvID()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "error: can't find default env - %s\n", err)
-		os.Exit(1)
-	}
-
 	cmd := exec.Command("ak", "manifest", "apply", mfstFile)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -101,6 +104,12 @@ func main() {
 		os.Exit(1)
 	}
 	fmt.Println("build ID:", build.ID)
+
+	envID, err := defaultEnvID()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error: can't find default env - %s\n", err)
+		os.Exit(1)
+	}
 
 	cmd = exec.Command("ak", "deployment", "create", "--build-id", build.ID, "--env", envID, "--activate")
 	cmd.Stdout = os.Stdout
