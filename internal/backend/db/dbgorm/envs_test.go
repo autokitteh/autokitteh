@@ -35,9 +35,9 @@ func TestCreateEnvForeignKeys(t *testing.T) {
 	findAndAssertCount(t, f, scheme.Env{}, 0, "") // no envs
 
 	e := f.newEnv()
-	id := "nonexisting"
+	unexisting := "unexisting"
 
-	e.ProjectID = &id
+	e.ProjectID = &unexisting
 	assert.ErrorContains(t, f.gormdb.createEnv(f.ctx, &e), "FOREIGN KEY")
 
 	p := f.newProject()

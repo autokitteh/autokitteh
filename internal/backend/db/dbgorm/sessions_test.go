@@ -56,37 +56,38 @@ func TestCreateSessionForeignKeys(t *testing.T) {
 	f.listSessionsAndAssert(t, 0) // no sessions
 
 	s := f.newSession(sdktypes.SessionStateTypeCompleted)
-	id := "nonexisting"
+	unexisting := "unexisting"
 
-	s.BuildID = &id
+	s.BuildID = &unexisting
 	assert.ErrorContains(t, f.gormdb.createSession(f.ctx, &s), "FOREIGN KEY")
 	s.BuildID = nil
 
-	s.EnvID = &id
+	s.EnvID = &unexisting
 	assert.ErrorContains(t, f.gormdb.createSession(f.ctx, &s), "FOREIGN KEY")
 	s.EnvID = nil
 
-	s.DeploymentID = &id
+	s.DeploymentID = &unexisting
 	assert.ErrorContains(t, f.gormdb.createSession(f.ctx, &s), "FOREIGN KEY")
 	s.DeploymentID = nil
 
-	s.EventID = &id
+	s.EventID = &unexisting
 	assert.ErrorContains(t, f.gormdb.createSession(f.ctx, &s), "FOREIGN KEY")
 	s.EventID = nil
 
 	b := f.newBuild()
 	env := f.newEnv()
 	d := f.newDeployment()
-	// ev := f.newEvent()
+	ev := f.newEvent()
 
 	f.saveBuildsAndAssert(t, b)
 	f.createEnvsAndAssert(t, env)
 	f.createDeploymentsAndAssert(t, d)
+	f.createEventsAndAssert(t, ev)
 
 	s.BuildID = &b.BuildID
 	s.EnvID = &env.EnvID
 	s.DeploymentID = &d.DeploymentID
-	// s.EventID = &ev.EventID
+	// s.EventID = &ev.EventID // FIXME: event_id is not a foreign key now, see ENG-569
 	f.createSessionsAndAssert(t, s)
 }
 
