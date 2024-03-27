@@ -73,8 +73,17 @@ func (d *dispatcher) getEventSessionData(ctx context.Context, event sdktypes.Eve
 
 		z := z.With(zap.String("env_id", envID.String()), zap.String("event_type", triggerEventType))
 
-		if triggerEventType != eventType {
+		if triggerEventType != "" && eventType != triggerEventType {
 			z.Debug("irrelevant event type")
+			continue
+		}
+
+		if relevant, err := event.Matches(t.Filter()); err != nil {
+			z.Debug("filter error", zap.Error(err))
+			// TODO(ENG-566): alert user their filter is bad. Integrate with alerting and monitoring.
+			continue
+		} else if !relevant {
+			z.Debug("irrelevant event")
 			continue
 		}
 
@@ -144,14 +153,15 @@ func (d *dispatcher) signalWorkflows(ctx context.Context, event sdktypes.Event, 
 
 	connection := connections[0]
 
-	signals, err := d.db.ListSignalsWaitingOnConnection(ctx, connection.ID(), event.Type())
+	signals, err := d.db.ListSignalsWaitingOnConnection(ctx, connection.ID())
 	if err != nil {
 		z.Error("could not fetch signals", zap.Error(err))
 		return err
 	}
 
-	z.Debug("found signals", zap.Int("count", len(signals)))
+	z.Debug("found signal candidates", zap.Int("count", len(signals)))
 	for _, signal := range signals {
+
 		if err := d.temporal.SignalWorkflow(ctx, signal.WorkflowID, "", signal.SignalID, eid); err != nil {
 			var nferr *serviceerror.NotFound
 			if !errors.As(err, &nferr) {

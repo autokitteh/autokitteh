@@ -26,7 +26,7 @@ var (
 )
 
 var buildCmd = common.StandardCommand(&cobra.Command{
-	Use:     "build [<path> [<path> [...]] [--dir=...] [--output=...] [--values=...] [--describe]",
+	Use:     "build [<path> [<path> [...]] [--dir=...] [--output=...] [--values=...] [--describe] [--txtar]",
 	Short:   `Build program and save it locally (see also "project build" command)`,
 	Aliases: []string{"b"},
 	Args:    cobra.ArbitraryArgs,

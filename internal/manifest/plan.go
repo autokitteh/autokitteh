@@ -373,7 +373,7 @@ func planTriggers(ctx context.Context, mtriggers []*Trigger, client sdkservices.
 				return false
 			}
 
-			return t.EventType() == mtrigger.EventType && connName == mtrigger.ConnectionKey
+			return t.Filter() == mtrigger.Filter && t.EventType() == mtrigger.EventType && connName == mtrigger.ConnectionKey
 		})
 
 		loc, err := sdktypes.ParseCodeLocation(mtrigger.Entrypoint)
@@ -382,6 +382,7 @@ func planTriggers(ctx context.Context, mtriggers []*Trigger, client sdkservices.
 		}
 
 		desired, err := sdktypes.TriggerFromProto(&sdktypes.TriggerPB{
+			Filter:       mtrigger.Filter,
 			EventType:    mtrigger.EventType,
 			CodeLocation: loc.ToProto(),
 		})

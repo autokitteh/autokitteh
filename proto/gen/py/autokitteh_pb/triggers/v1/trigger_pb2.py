@@ -15,7 +15,7 @@ from autokitteh_pb.program.v1 import program_pb2 as autokitteh_dot_program_dot_v
 from buf.validate import validate_pb2 as buf_dot_validate_dot_validate__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n$autokitteh/triggers/v1/trigger.proto\x12\x16\x61utokitteh.triggers.v1\x1a#autokitteh/program/v1/program.proto\x1a\x1b\x62uf/validate/validate.proto\"\xe0\x01\n\x07Trigger\x12\x1d\n\ntrigger_id\x18\x01 \x01(\tR\ttriggerId\x12#\n\rconnection_id\x18\x02 \x01(\tR\x0c\x63onnectionId\x12\x15\n\x06\x65nv_id\x18\x03 \x01(\tR\x05\x65nvId\x12\'\n\nevent_type\x18\x04 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\teventType\x12Q\n\rcode_location\x18\x05 \x01(\x0b\x32#.autokitteh.program.v1.CodeLocationB\x07\xfa\xf7\x18\x03\xc8\x01\x01R\x0c\x63odeLocationB\xf1\x01\n\x1a\x63om.autokitteh.triggers.v1B\x0cTriggerProtoP\x01ZKgo.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/triggers/v1;triggersv1\xa2\x02\x03\x41TX\xaa\x02\x16\x41utokitteh.Triggers.V1\xca\x02\x16\x41utokitteh\\Triggers\\V1\xe2\x02\"Autokitteh\\Triggers\\V1\\GPBMetadata\xea\x02\x18\x41utokitteh::Triggers::V1b\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n$autokitteh/triggers/v1/trigger.proto\x12\x16\x61utokitteh.triggers.v1\x1a#autokitteh/program/v1/program.proto\x1a\x1b\x62uf/validate/validate.proto\"\xf8\x01\n\x07Trigger\x12\x1d\n\ntrigger_id\x18\x01 \x01(\tR\ttriggerId\x12#\n\rconnection_id\x18\x02 \x01(\tR\x0c\x63onnectionId\x12\x15\n\x06\x65nv_id\x18\x03 \x01(\tR\x05\x65nvId\x12\'\n\nevent_type\x18\x04 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\teventType\x12Q\n\rcode_location\x18\x05 \x01(\x0b\x32#.autokitteh.program.v1.CodeLocationB\x07\xfa\xf7\x18\x03\xc8\x01\x01R\x0c\x63odeLocation\x12\x16\n\x06\x66ilter\x18\x06 \x01(\tR\x06\x66ilterB\xf1\x01\n\x1a\x63om.autokitteh.triggers.v1B\x0cTriggerProtoP\x01ZKgo.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/triggers/v1;triggersv1\xa2\x02\x03\x41TX\xaa\x02\x16\x41utokitteh.Triggers.V1\xca\x02\x16\x41utokitteh\\Triggers\\V1\xe2\x02\"Autokitteh\\Triggers\\V1\\GPBMetadata\xea\x02\x18\x41utokitteh::Triggers::V1b\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -28,5 +28,5 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _TRIGGER.fields_by_name['code_location']._options = None
   _TRIGGER.fields_by_name['code_location']._serialized_options = b'\372\367\030\003\310\001\001'
   _globals['_TRIGGER']._serialized_start=131
-  _globals['_TRIGGER']._serialized_end=355
+  _globals['_TRIGGER']._serialized_end=379
 # @@protoc_insertion_point(module_scope)
