@@ -40,7 +40,7 @@ gotestsum -f testname
 When running from the repo's root directory, you need to specify the go path:
 
 ```
-gotestsum -f testname ./tests/system
+gotestsum -f testsum ./systest
 ```
 
 To run only a specific subset of test-case txtar files, append the flag
@@ -53,14 +53,7 @@ For example, to run only with the txtar files in/under `testdata/*foo*/*bar*`,
 including `testdata/*foo*/*bar*.txtar`:
 
 ```
-gotestsum -f testname -- -run /foo/bar
-```
-
-To repeat a test when in investigating flakiness, use this command:
-
-```
-gotestsum -f testname --rerun-fails=0 --packages="./tests/system" -- \
-    -run /foo/bar -count 10
+gotestsum -f testname -run /foo/bar
 ```
 
 ## Txtar File Structure
