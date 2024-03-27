@@ -31,13 +31,13 @@ func Test_createVEnv(t *testing.T) {
 var (
 	//go:embed testdata/simple.tar
 	tarData []byte
-	envRe   = regexp.MustCompile(`([A-Z]+)=([^ ]+)`)
+	envRe   = regexp.MustCompile(`([A-Z]+)=([^ ]+)`) //nolint:all (see TODO below)
 )
 
 // func runPython(log *zap.Logger, tarData []byte, rootPath string, env map[string]string) (*pyRunInfo, error) {
 func Test_runPython(t *testing.T) {
 	log := zap.NewExample()
-	defer log.Sync()
+	defer log.Sync() //nolint:all
 
 	envKey := "AK_TEST_ENV"
 	t.Setenv(envKey, "A")
@@ -47,7 +47,7 @@ func Test_runPython(t *testing.T) {
 
 	ri, err := runPython(log, tarData, "simple.py:greet", env)
 	require.NoError(t, err)
-	defer ri.proc.Kill()
+	defer ri.proc.Kill() //nolint:all
 
 	/* TODO: There's a buf in processEnv
 	procEnv := processEnv(t, ri.proc.Pid)
@@ -55,7 +55,7 @@ func Test_runPython(t *testing.T) {
 	*/
 }
 
-func processEnv(t *testing.T, pid int) map[string]string {
+func processEnv(t *testing.T, pid int) map[string]string { //nolint:all
 	var buf bytes.Buffer
 	cmd := exec.Command("ps", "e", "-ww", "-p", fmt.Sprintf("%d", pid))
 	cmd.Stdout = &buf
