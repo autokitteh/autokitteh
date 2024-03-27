@@ -62,18 +62,19 @@ func TestCreateDeployment(t *testing.T) {
 func TestCreateDeploymentsForeignKeys(t *testing.T) {
 	f := newDBFixture(false)
 	d := f.newDeployment()
-	unexistingBuildID := "unexistingBuildID"
-	unexistingEnvID := "unexistingEnvID"
-	d.BuildID = &unexistingBuildID
-	d.EnvID = &unexistingEnvID
 
-	err := f.gormdb.createDeployment(f.ctx, &d)
-	assert.ErrorContains(t, err, "FOREIGN KEY")
+	unexisting := "unexisting"
 
-	p := f.newProject()
+	d.BuildID = &unexisting
+	assert.ErrorContains(t, f.gormdb.createDeployment(f.ctx, &d), "FOREIGN KEY")
+	d.BuildID = nil
+
+	d.EnvID = &unexisting
+	assert.ErrorContains(t, f.gormdb.createDeployment(f.ctx, &d), "FOREIGN KEY")
+	d.EnvID = nil
+
 	e := f.newEnv()
 	b := f.newBuild()
-	f.createProjectsAndAssert(t, p)
 	f.createEnvsAndAssert(t, e)
 	f.saveBuildsAndAssert(t, b)
 

@@ -171,17 +171,21 @@ type Secret struct {
 }
 
 type Event struct {
-	EventID          string `gorm:"uniqueIndex"`
-	IntegrationID    string `gorm:"index"`
-	IntegrationToken string `gorm:"index"`
-	OriginalEventID  string
-	EventType        string `gorm:"index:idx_event_type_seq,priority:1;index:idx_event_type"`
+	EventID          string  `gorm:"uniqueIndex"`
+	IntegrationID    *string `gorm:"index"`
+	IntegrationToken string  `gorm:"index"`
+	OriginalEventID  *string //`gorm:"foreignKey:EventID"`
+	EventType        string  `gorm:"index:idx_event_type_seq,priority:1;index:idx_event_type"`
 	Data             datatypes.JSON
 	Memo             datatypes.JSON
 	CreatedAt        time.Time
 	Seq              uint64 `gorm:"primaryKey;autoIncrement:true,index:idx_event_type_seq,priority:2"`
 
 	DeletedAt gorm.DeletedAt `gorm:"index"`
+
+	// enforce foreign keys
+	Integration *Integration
+	// OriginalEvent *Event // FIXME: ENG-569
 }
 
 func ParseEvent(e Event) (sdktypes.Event, error) {
@@ -197,9 +201,9 @@ func ParseEvent(e Event) (sdktypes.Event, error) {
 
 	return sdktypes.StrictEventFromProto(&sdktypes.EventPB{
 		EventId:          e.EventID,
-		IntegrationId:    e.IntegrationID,
+		IntegrationId:    *e.IntegrationID,
 		IntegrationToken: e.IntegrationToken,
-		OriginalEventId:  e.OriginalEventID,
+		OriginalEventId:  *e.OriginalEventID,
 		EventType:        e.EventType,
 		Data:             kittehs.TransformMapValues(data, sdktypes.ToProto),
 		Memo:             memo,
@@ -209,11 +213,13 @@ func ParseEvent(e Event) (sdktypes.Event, error) {
 }
 
 type EventRecord struct {
-	Seq     uint32 `gorm:"primaryKey"`
-	EventID string `gorm:"primaryKey"`
-	// Event     Event
-	State     int32 `gorm:"index"`
+	Seq       uint32 `gorm:"primaryKey"`
+	EventID   string `gorm:"primaryKey"`
+	State     int32  `gorm:"index"`
 	CreatedAt time.Time
+
+	// enforce foreign keys
+	// Event *Event
 }
 
 func ParseEventRecord(e EventRecord) (sdktypes.EventRecord, error) {
@@ -286,7 +292,7 @@ type Trigger struct {
 	Filter       string
 	CodeLocation string
 
-	// just for the foreign keys
+	// enforce foreign keys
 	Connection Connection
 }
 
@@ -347,10 +353,10 @@ func ParseSessionCallAttemptComplete(c SessionCallAttempt) (d sdktypes.SessionCa
 
 type Session struct {
 	SessionID        string  `gorm:"primaryKey"`
-	BuildID          *string `gorm:"index"` // TODO(ENG-547): constraint.
-	EnvID            *string `gorm:"index"` // TODO(ENG-547): constraint.
-	DeploymentID     *string `gorm:"index"` // TODO(ENG-547): constraint.
-	EventID          *string `gorm:"index"` // TODO(ENG-547): constraint.
+	BuildID          *string `gorm:"index"`
+	EnvID            *string `gorm:"index"`
+	DeploymentID     *string `gorm:"index"`
+	EventID          *string `gorm:"index"`
 	CurrentStateType int     `gorm:"index"`
 	Entrypoint       string
 	Inputs           datatypes.JSON
@@ -358,11 +364,11 @@ type Session struct {
 	UpdatedAt        time.Time
 	DeletedAt        gorm.DeletedAt `gorm:"index"`
 
-	// just for the foreign keys. Without it gorm won't enforce it
+	// enforce foreign keys
 	Build      *Build
 	Env        *Env
 	Deployment *Deployment
-	Event      *Event
+	// Event      *Event  // ENG-569
 }
 
 func ParseSession(s Session) (sdktypes.Session, error) {

@@ -36,6 +36,7 @@ type dbFixture struct {
 	envID        uint
 	projectID    uint
 	triggerID    uint
+	eventID      uint
 }
 
 // TODO: use gormkitteh (and maybe test with sqlite::memory and embedded PG)
@@ -221,9 +222,11 @@ func (f *dbFixture) newIntegration() scheme.Integration {
 }
 
 func (f *dbFixture) newEvent() scheme.Event {
+	f.eventID += 1
+	eventID := fmt.Sprintf("evt_%026d", f.eventID)
+
 	return scheme.Event{
-		EventID:       testEventID,
-		IntegrationID: testIntegrationID,
+		EventID: eventID,
 	}
 }
 
