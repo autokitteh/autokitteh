@@ -20,6 +20,9 @@ import (
 var (
 	//go:embed ak_runner.py
 	runnerPyCode []byte
+
+	//go:embed requirements.txt
+	requirementsData []byte
 )
 
 func createTar(fs fs.FS) ([]byte, error) {
@@ -148,4 +151,36 @@ func overrideEnv(envMap map[string]string) []string {
 	}
 
 	return env
+}
+
+func createVEnv(pyExe string, venvPath string) error {
+	cmd := exec.Command(pyExe, "-m", "venv", venvPath)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("create venv - %w", err)
+	}
+
+	file, err := os.CreateTemp("", "")
+	if err != nil {
+		return err
+	}
+
+	if _, err := io.Copy(file, bytes.NewReader(requirementsData)); err != nil {
+		file.Close()
+		return fmt.Errorf("copy requirements to %q - %s", file.Name(), err)
+	}
+	file.Close()
+
+	venvPy := path.Join(venvPath, "bin", "python")
+	cmd = exec.Command(venvPy, "-m", "pip", "install", "-r", file.Name())
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("install dependencies from %q - %w", file.Name(), err)
+	}
+
+	return nil
 }
