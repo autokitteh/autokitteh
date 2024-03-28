@@ -31,7 +31,7 @@ func Test_createVEnv(t *testing.T) {
 var (
 	//go:embed testdata/simple.tar
 	tarData []byte
-	envRe   = regexp.MustCompile(`([A-Z]+)=([^ ]+)`) //nolint:all (see TODO below)
+	envRe   = regexp.MustCompile(`([^ ]+)=([^ \n]+)`)
 )
 
 // func runPython(log *zap.Logger, tarData []byte, rootPath string, env map[string]string) (*pyRunInfo, error) {
@@ -49,23 +49,21 @@ func Test_runPython(t *testing.T) {
 	require.NoError(t, err)
 	defer ri.proc.Kill() //nolint:all
 
-	/* TODO: There's a buf in processEnv
 	procEnv := processEnv(t, ri.proc.Pid)
 	require.Equal(t, env[envKey], procEnv[envKey], "env override")
-	*/
 }
 
-func processEnv(t *testing.T, pid int) map[string]string { //nolint:all
+func processEnv(t *testing.T, pid int) map[string]string {
 	var buf bytes.Buffer
 	cmd := exec.Command("ps", "e", "-ww", "-p", fmt.Sprintf("%d", pid))
 	cmd.Stdout = &buf
 	cmd.Stderr = os.Stderr
 
 	require.NoError(t, cmd.Run())
+
 	env := make(map[string]string)
 	for _, match := range envRe.FindAllStringSubmatch(buf.String(), -1) {
-		t.Logf("ENV: %q -> %q", match[0], match[1])
-		env[match[0]] = match[1]
+		env[match[1]] = match[2]
 	}
 	return env
 }
