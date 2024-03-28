@@ -12,5 +12,5 @@ project:
       event_type: post
       entrypoint: simple.py:greet
   vars:
-    - name: ZOO
-      value: MONKEY
+    - name: USER
+      value: Garfield

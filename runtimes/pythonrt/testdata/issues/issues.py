@@ -1,4 +1,4 @@
-from os import environ
+from os import getenv
 
 from slack_sdk import WebClient
 
@@ -19,8 +19,8 @@ def on_issue(event):
     print(f'issue: {issue}')
     text = format_message(issue)
 
-    channel_id = environ.get('SLACK_CHANNEL_ID')
-    slack_token = environ.get('SLACK_TOKEN')
+    channel_id = getenv('SLACK_CHANNEL_ID')
+    slack_token = getenv('SLACK_TOKEN')
 
     if not channel_id and slack_token:
         print('missing environment: SLACK_CHANNEL_ID, SLACK_TOKEN')
