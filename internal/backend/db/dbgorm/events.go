@@ -15,13 +15,11 @@ func (db *gormdb) saveEvent(ctx context.Context, event *scheme.Event) error {
 }
 
 func (db *gormdb) SaveEvent(ctx context.Context, event sdktypes.Event) error {
-	integrationID := event.IntegrationID().String()
-	origEventID := event.OriginalEventID()
 	e := scheme.Event{
 		EventID:          event.ID().String(),
-		IntegrationID:    &integrationID, // TODO(ENG-158): need to verify integration id
+		IntegrationID:    scheme.PtrOrNil(event.IntegrationID().String()), // TODO(ENG-158): need to verify integration id
 		IntegrationToken: event.IntegrationToken(),
-		OriginalEventID:  &origEventID,
+		OriginalEventID:  scheme.PtrOrNil(event.OriginalEventID()),
 		EventType:        event.Type(),
 		Data:             kittehs.Must1(json.Marshal(event.Data())),
 		Memo:             kittehs.Must1(json.Marshal(event.Memo())),

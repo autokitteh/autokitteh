@@ -20,13 +20,10 @@ func (db *gormdb) createDeployment(ctx context.Context, deployment *scheme.Deplo
 func (db *gormdb) CreateDeployment(ctx context.Context, deployment sdktypes.Deployment) error {
 	now := time.Now()
 
-	buildID := deployment.BuildID().String()
-	envID := deployment.EnvID().String()
-
 	d := scheme.Deployment{
 		DeploymentID: deployment.ID().String(),
-		BuildID:      &buildID,
-		EnvID:        &envID,
+		BuildID:      scheme.PtrOrNil(deployment.BuildID().String()),
+		EnvID:        scheme.PtrOrNil(deployment.EnvID().String()),
 		State:        int32(deployment.State().ToProto()),
 		CreatedAt:    now,
 		UpdatedAt:    now,

@@ -31,10 +31,9 @@ func (db *gormdb) CreateEnv(ctx context.Context, env sdktypes.Env) error {
 		return errors.New("env missing id")
 	}
 
-	projectID := env.ProjectID().String()
 	e := scheme.Env{
 		EnvID:        env.ID().String(),
-		ProjectID:    &projectID, // TODO(ENG-136): need to verify parent id
+		ProjectID:    scheme.PtrOrNil(env.ProjectID().String()), // TODO(ENG-136): need to verify parent id
 		Name:         env.Name().String(),
 		MembershipID: envMembershipID(env),
 	}

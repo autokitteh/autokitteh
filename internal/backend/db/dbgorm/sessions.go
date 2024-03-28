@@ -65,17 +65,12 @@ func (db *gormdb) createSession(ctx context.Context, session *scheme.Session) er
 func (db *gormdb) CreateSession(ctx context.Context, session sdktypes.Session) error {
 	now := time.Now()
 
-	buildID := session.BuildID().String()
-	envID := session.EnvID().String()
-	deploymentID := session.DeploymentID().String()
-	eventID := session.EventID().String()
-
 	s := scheme.Session{
 		SessionID:        session.ID().String(),
-		BuildID:          &buildID,
-		EnvID:            &envID,
-		DeploymentID:     &deploymentID,
-		EventID:          &eventID,
+		BuildID:          scheme.PtrOrNil(session.BuildID().String()),
+		EnvID:            scheme.PtrOrNil(session.EnvID().String()),
+		DeploymentID:     scheme.PtrOrNil(session.DeploymentID().String()),
+		EventID:          scheme.PtrOrNil(session.EventID().String()),
 		Entrypoint:       session.EntryPoint().CanonicalString(),
 		CurrentStateType: int(sdktypes.SessionStateTypeCreated.ToProto()),
 		Inputs:           kittehs.Must1(json.Marshal(session.Inputs())),
