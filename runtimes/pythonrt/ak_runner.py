@@ -11,7 +11,6 @@ import pickle
 import sys
 import tarfile
 from base64 import b64decode, b64encode
-from collections import namedtuple
 from functools import wraps
 from importlib.abc import Loader
 from importlib.machinery import SourceFileLoader
