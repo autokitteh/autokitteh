@@ -186,10 +186,10 @@ type Secret struct {
 }
 
 type Event struct {
-	EventID          string  `gorm:"uniqueIndex"`
+	EventID          string  `gorm:"unique;uniqueIndex"`
 	IntegrationID    *string `gorm:"index"`
 	IntegrationToken string  `gorm:"index"`
-	OriginalEventID  *string //`gorm:"foreignKey:EventID"`
+	OriginalEventID  *string `gorm:"foreignKey"`
 	EventType        string  `gorm:"index:idx_event_type_seq,priority:1;index:idx_event_type"`
 	Data             datatypes.JSON
 	Memo             datatypes.JSON
@@ -200,7 +200,7 @@ type Event struct {
 
 	// enforce foreign keys
 	// Integration *Integration // FIXME: ENG-571
-	// OriginalEvent *Event // FIXME: ENG-569
+	OriginalEvent *Event `gorm:"foreignKey:OriginalEventID;references:EventID"`
 }
 
 func ParseEvent(e Event) (sdktypes.Event, error) {
@@ -234,7 +234,7 @@ type EventRecord struct {
 	CreatedAt time.Time
 
 	// enforce foreign keys
-	// Event *Event
+	Event *Event `gorm:"references:EventID"`
 }
 
 func ParseEventRecord(e EventRecord) (sdktypes.EventRecord, error) {
@@ -397,7 +397,7 @@ type Session struct {
 	Build      *Build
 	Env        *Env
 	Deployment *Deployment
-	// Event      *Event  // FIXME: ENG-569
+	Event      *Event `gorm:"references:EventID"`
 }
 
 func ParseSession(s Session) (sdktypes.Session, error) {
