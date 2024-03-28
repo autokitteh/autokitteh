@@ -17,6 +17,21 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
+// aux methods to convert nil <-> empty strting
+func PtrOrNil(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
+}
+
+func stringFromPtrOrEmpty(s *string) string {
+	if s == nil {
+		return ""
+	}
+	return *s
+}
+
 // TODO(ENG-192): use proper foreign keys and normalize model.
 
 // TODO: keep some log of actions performed. Something that
@@ -183,7 +198,7 @@ type Event struct {
 	DeletedAt gorm.DeletedAt `gorm:"index"`
 
 	// enforce foreign keys
-	Integration *Integration
+	// Integration *Integration // FIXME: ENG-571
 	// OriginalEvent *Event // FIXME: ENG-569
 }
 
@@ -200,7 +215,7 @@ func ParseEvent(e Event) (sdktypes.Event, error) {
 
 	return sdktypes.StrictEventFromProto(&sdktypes.EventPB{
 		EventId:          e.EventID,
-		IntegrationId:    *e.IntegrationID,
+		IntegrationId:    stringFromPtrOrEmpty(e.IntegrationID),
 		IntegrationToken: e.IntegrationToken,
 		EventType:        e.EventType,
 		Data:             kittehs.TransformMapValues(data, sdktypes.ToProto),
@@ -239,15 +254,15 @@ type Env struct {
 	// See OrgMember for more.
 	MembershipID string `gorm:"uniqueIndex"`
 
-	// just for the foreign key. Wihtout it gorm won't enforce it
+	// ensure foreign keys
 	Project *Project
 }
 
-func ParseEnv(r Env) (sdktypes.Env, error) {
+func ParseEnv(e Env) (sdktypes.Env, error) {
 	return sdktypes.StrictEnvFromProto(&sdktypes.EnvPB{
-		EnvId:     r.EnvID,
-		ProjectId: *r.ProjectID,
-		Name:      r.Name,
+		EnvId:     e.EnvID,
+		ProjectId: stringFromPtrOrEmpty(e.ProjectID),
+		Name:      e.Name,
 	})
 }
 
@@ -366,7 +381,7 @@ type Session struct {
 	Build      *Build
 	Env        *Env
 	Deployment *Deployment
-	// Event      *Event  // ENG-569
+	// Event      *Event  // FIXME: ENG-569
 }
 
 func ParseSession(s Session) (sdktypes.Session, error) {
@@ -383,10 +398,10 @@ func ParseSession(s Session) (sdktypes.Session, error) {
 
 	session, err := sdktypes.StrictSessionFromProto(&sdktypes.SessionPB{
 		SessionId:    s.SessionID,
-		BuildId:      *s.BuildID,
-		EnvId:        *s.EnvID,
-		DeploymentId: *s.DeploymentID,
-		EventId:      *s.EventID,
+		BuildId:      stringFromPtrOrEmpty(s.BuildID),
+		EnvId:        stringFromPtrOrEmpty(s.EnvID),
+		DeploymentId: stringFromPtrOrEmpty(s.DeploymentID),
+		EventId:      stringFromPtrOrEmpty(s.EventID),
 		Entrypoint:   ep.ToProto(),
 		Inputs:       kittehs.TransformMapValues(inputs, sdktypes.ToProto),
 		CreatedAt:    timestamppb.New(s.CreatedAt),
@@ -409,7 +424,7 @@ type Deployment struct {
 	UpdatedAt    time.Time
 	DeletedAt    gorm.DeletedAt `gorm:"index"`
 
-	// just for foreign key constraint. Without it gorm won't enforce it
+	// enforce foreign keys
 	Env   *Env
 	Build *Build
 }
@@ -417,8 +432,8 @@ type Deployment struct {
 func ParseDeployment(d Deployment) (sdktypes.Deployment, error) {
 	deployment, err := sdktypes.StrictDeploymentFromProto(&sdktypes.DeploymentPB{
 		DeploymentId: d.DeploymentID,
-		BuildId:      *d.BuildID,
-		EnvId:        *d.EnvID,
+		BuildId:      stringFromPtrOrEmpty(d.BuildID),
+		EnvId:        stringFromPtrOrEmpty(d.EnvID),
 		State:        deploymentsv1.DeploymentState(d.State),
 		CreatedAt:    timestamppb.New(d.CreatedAt),
 		UpdatedAt:    timestamppb.New(d.UpdatedAt),
