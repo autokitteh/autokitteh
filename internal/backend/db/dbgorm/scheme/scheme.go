@@ -309,7 +309,9 @@ type Trigger struct {
 	CodeLocation string
 
 	// enforce foreign keys
-	Connection Connection
+	Project    *Project
+	Env        *Env
+	Connection *Connection
 }
 
 func ParseTrigger(e Trigger) (sdktypes.Trigger, error) {
