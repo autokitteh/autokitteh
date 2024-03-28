@@ -22,11 +22,27 @@ func (f *dbFixture) assertEnvDeleted(t *testing.T, envs ...scheme.Env) {
 }
 
 func TestCreateEnv(t *testing.T) {
-	f := newDBFixture(true)                       // no foreign keys
+	f := newDBFixture(false)
 	findAndAssertCount(t, f, scheme.Env{}, 0, "") // no envs
 
 	e := f.newEnv()
 	// test createEnv
+	f.createEnvsAndAssert(t, e)
+}
+
+func TestCreateEnvForeignKeys(t *testing.T) {
+	f := newDBFixture(false)
+	findAndAssertCount(t, f, scheme.Env{}, 0, "") // no envs
+
+	e := f.newEnv()
+	unexisting := "unexisting"
+
+	e.ProjectID = &unexisting
+	assert.ErrorContains(t, f.gormdb.createEnv(f.ctx, &e), "FOREIGN KEY")
+
+	p := f.newProject()
+	e.ProjectID = &p.ProjectID
+	f.createProjectsAndAssert(t, p)
 	f.createEnvsAndAssert(t, e)
 }
 
@@ -61,10 +77,10 @@ func TestDeleteEnvForeignKeys(t *testing.T) {
 	b := f.newBuild()
 	p := f.newProject()
 	e := f.newEnv()
-	e.ProjectID = p.ProjectID
+	e.ProjectID = &p.ProjectID
 	d := f.newDeployment()
-	d.BuildID = b.BuildID
-	d.EnvID = e.EnvID
+	d.BuildID = &b.BuildID
+	d.EnvID = &e.EnvID
 
 	f.saveBuildsAndAssert(t, b)
 	f.createProjectsAndAssert(t, p)

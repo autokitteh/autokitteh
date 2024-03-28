@@ -40,7 +40,7 @@ func (f *dbFixture) assertSessionsDeleted(t *testing.T, sessions ...scheme.Sessi
 }
 
 func TestCreateSession(t *testing.T) {
-	f := newDBFixture(true)       // no foreign keys
+	f := newDBFixture(false)
 	f.listSessionsAndAssert(t, 0) // no sessions
 
 	s := f.newSession(sdktypes.SessionStateTypeCompleted)
@@ -49,6 +49,46 @@ func TestCreateSession(t *testing.T) {
 
 	logs := findAndAssertCount(t, f, scheme.SessionLogRecord{}, 1, "session_id = ?", s.SessionID)
 	assert.Equal(t, s.SessionID, logs[0].SessionID) // compare only ids, since actual log isn't empty
+}
+
+func TestCreateSessionForeignKeys(t *testing.T) {
+	f := newDBFixture(false)
+	f.listSessionsAndAssert(t, 0) // no sessions
+
+	s := f.newSession(sdktypes.SessionStateTypeCompleted)
+	unexisting := "unexisting"
+
+	s.BuildID = &unexisting
+	assert.ErrorContains(t, f.gormdb.createSession(f.ctx, &s), "FOREIGN KEY")
+	s.BuildID = nil
+
+	s.EnvID = &unexisting
+	assert.ErrorContains(t, f.gormdb.createSession(f.ctx, &s), "FOREIGN KEY")
+	s.EnvID = nil
+
+	s.DeploymentID = &unexisting
+	assert.ErrorContains(t, f.gormdb.createSession(f.ctx, &s), "FOREIGN KEY")
+	s.DeploymentID = nil
+
+	s.EventID = &unexisting
+	assert.ErrorContains(t, f.gormdb.createSession(f.ctx, &s), "FOREIGN KEY")
+	s.EventID = nil
+
+	b := f.newBuild()
+	env := f.newEnv()
+	d := f.newDeployment()
+	ev := f.newEvent()
+
+	f.saveBuildsAndAssert(t, b)
+	f.createEnvsAndAssert(t, env)
+	f.createDeploymentsAndAssert(t, d)
+	f.createEventsAndAssert(t, ev)
+
+	s.BuildID = &b.BuildID
+	s.EnvID = &env.EnvID
+	s.DeploymentID = &d.DeploymentID
+	s.EventID = &ev.EventID
+	f.createSessionsAndAssert(t, s)
 }
 
 func TestGetSession(t *testing.T) {

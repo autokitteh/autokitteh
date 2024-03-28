@@ -36,6 +36,7 @@ type dbFixture struct {
 	envID        uint
 	projectID    uint
 	triggerID    uint
+	eventID      uint
 }
 
 // TODO: use gormkitteh (and maybe test with sqlite::memory and embedded PG)
@@ -132,11 +133,11 @@ func assertDeleted[T any](t *testing.T, f *dbFixture, m T) {
 
 var (
 	// testSessionID    = "ses_00000000000000000000000001"
-	testBuildID      = "bld_00000000000000000000000001"
-	testDeploymentID = "dep_00000000000000000000000001"
-	testEventID      = "evt_00000000000000000000000001"
-	testEnvID        = "env_00000000000000000000000001"
-	testProjectID    = "prj_00000000000000000000000001"
+	testBuildID = "bld_00000000000000000000000001"
+	// testDeploymentID = "dep_00000000000000000000000001"
+	// testEventID      = "evt_00000000000000000000000001"
+	testEnvID     = "env_00000000000000000000000001"
+	testProjectID = "prj_00000000000000000000000001"
 	// testTriggerID     = "trg_00000000000000000000000001"
 	testConnectionID  = "con_00000000000000000000000001"
 	testIntegrationID = "int_00000000000000000000000001"
@@ -149,10 +150,7 @@ func (f *dbFixture) newSession(st sdktypes.SessionStateType) scheme.Session {
 
 	return scheme.Session{
 		SessionID:        sessionID,
-		DeploymentID:     testDeploymentID,
-		EventID:          testEventID,
 		CurrentStateType: int(st.ToProto()),
-		Entrypoint:       "testEntrypoint",
 		Inputs:           datatypes.JSON(`{"key": "value"}`),
 		CreatedAt:        now,
 		UpdatedAt:        now,
@@ -173,8 +171,6 @@ func (f *dbFixture) newDeployment() scheme.Deployment {
 
 	return scheme.Deployment{
 		DeploymentID: deploymentID,
-		BuildID:      testBuildID,
-		EnvID:        testEnvID,
 		State:        int32(sdktypes.DeploymentStateUnspecified.ToProto()),
 		CreatedAt:    now,
 		UpdatedAt:    now,
@@ -198,7 +194,6 @@ func (f *dbFixture) newEnv() scheme.Env {
 
 	return scheme.Env{
 		EnvID:        envID,
-		ProjectID:    testProjectID,
 		MembershipID: envID, // must be unique
 	}
 }
@@ -229,9 +224,18 @@ func (f *dbFixture) newIntegration() scheme.Integration {
 }
 
 func (f *dbFixture) newEvent() scheme.Event {
+	f.eventID += 1
+	eventID := fmt.Sprintf("evt_%026d", f.eventID)
+
 	return scheme.Event{
-		EventID:       testEventID,
-		IntegrationID: testIntegrationID,
+		EventID: eventID,
+	}
+}
+
+func (f *dbFixture) newEventRecord() scheme.EventRecord {
+	eventID := fmt.Sprintf("evt_%026d", f.eventID)
+	return scheme.EventRecord{
+		EventID: eventID,
 	}
 }
 

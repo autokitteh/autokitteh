@@ -67,10 +67,10 @@ func (db *gormdb) CreateSession(ctx context.Context, session sdktypes.Session) e
 
 	s := scheme.Session{
 		SessionID:        session.ID().String(),
-		BuildID:          session.BuildID().String(),
-		EnvID:            session.EnvID().String(),
-		DeploymentID:     session.DeploymentID().String(),
-		EventID:          session.EventID().String(),
+		BuildID:          scheme.PtrOrNil(session.BuildID().String()),
+		EnvID:            scheme.PtrOrNil(session.EnvID().String()),
+		DeploymentID:     scheme.PtrOrNil(session.DeploymentID().String()),
+		EventID:          scheme.PtrOrNil(session.EventID().String()),
 		Entrypoint:       session.EntryPoint().CanonicalString(),
 		CurrentStateType: int(sdktypes.SessionStateTypeCreated.ToProto()),
 		Inputs:           kittehs.Must1(json.Marshal(session.Inputs())),
