@@ -46,7 +46,7 @@ func New(cfg *Config, z *zap.Logger) (Client, error) {
 		} else if cfg.TLS.CertFilePath != "" && cfg.TLS.KeyFilePath != "" {
 			cert, err = tls.X509KeyPair([]byte(cfg.TLS.Certificate), []byte(cfg.TLS.Key))
 		} else {
-			return nil, errors.New("tls enabled but no certificate or key")
+			return nil, errors.New("tls enabled without certificate or key")
 		}
 
 		if err != nil {
@@ -69,24 +69,8 @@ func New(cfg *Config, z *zap.Logger) (Client, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute*10)
 	defer cancel()
 
-	startDevServer := func() error {
-		dscfg := cfg.DevServer
-		dscfg.ClientOptions = &opts
-
-		var err error
-		if impl.srv, err = testsuite.StartDevServer(ctx, dscfg); err != nil {
-			return fmt.Errorf("start dev server: %w", err)
-		}
-
-		z.Info("started temporal dev server", zap.String("address", impl.srv.FrontendHostPort()))
-
-		impl.client = impl.srv.Client()
-
-		return nil
-	}
-
 	if cfg.AlwaysStartDevServer {
-		if err := startDevServer(); err != nil {
+		if err := impl.startDevServer(ctx, cfg, opts); err != nil {
 			return nil, err
 		}
 	} else {
@@ -98,15 +82,15 @@ func New(cfg *Config, z *zap.Logger) (Client, error) {
 		}
 
 		if cfg.StartDevServerIfNotUp {
-			if err := impl.healthcheck(ctx); err != nil {
+			if err := impl.healthCheck(ctx); err != nil {
 				var unavailable *serviceerror.Unavailable
 				if !errors.As(err, &unavailable) {
 					return nil, fmt.Errorf("temporal client: %w", err)
 				}
 
-				z.Info("cannot connect to server, starting dev server")
+				z.Info("Cannot connect to Temporal, starting Temporal dev server")
 
-				if err := startDevServer(); err != nil {
+				if err := impl.startDevServer(ctx, cfg, opts); err != nil {
 					return nil, err
 				}
 			}
@@ -116,21 +100,45 @@ func New(cfg *Config, z *zap.Logger) (Client, error) {
 	return impl, nil
 }
 
+func (c *impl) startDevServer(ctx context.Context, cfg *Config, opts client.Options) error {
+	cfg.DevServer.ClientOptions = &opts
+
+	var err error
+	if c.srv, err = testsuite.StartDevServer(ctx, cfg.DevServer); err != nil {
+		return fmt.Errorf("start Temporal dev server: %w", err)
+	}
+	c.z.Info("Started Temporal dev server", zap.String("address", c.srv.FrontendHostPort()))
+
+	c.client = c.srv.Client()
+
+	return nil
+}
+
 func (c *impl) Temporal() client.Client { return c.client }
 
 func (c *impl) Stop(context.Context) error {
 	close(c.done)
+
+	if c.client != nil {
+		c.client.Close()
+	}
+
 	if c.srv != nil {
 		if err := c.srv.Stop(); err != nil {
-			return fmt.Errorf("stop dev server: %w", err)
+			// This is an ugly but reasonable hack: we can't do anything
+			// at this point if the Temporal server's pipe is broken.
+			if err.Error() == "signal: broken pipe" {
+				return nil
+			}
+			return fmt.Errorf("stop Temporal dev server: %w", err)
 		}
 	}
 
 	return nil
 }
 
-func (c *impl) healthcheck(ctx context.Context) error {
-	c.z.Debug("checking health")
+func (c *impl) healthCheck(ctx context.Context) error {
+	c.z.Debug("Checking Temporal connection health")
 
 	if c.cfg.Monitor.CheckHealthTimeout != 0 {
 		var cancel context.CancelFunc
@@ -142,28 +150,27 @@ func (c *impl) healthcheck(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	c.z.Debug("temporal reports healthy")
+	c.z.Debug("Connection to Temporal is healthy")
 
 	return nil
 }
 
 func (c *impl) Start(context.Context) error {
 	if c.cfg.Monitor.CheckHealthInterval == 0 {
-		c.z.Warn("periodical check health is disabled")
+		c.z.Warn("Periodic Temporal health checks are disabled")
 		return nil
 	}
 
-	var ok bool
-
 	go func() {
+		ok := false
 		for {
-			if err := c.healthcheck(context.Background()); err != nil {
-				// TODO: stats.
-				ok = false
-				c.z.Error("temporal check health error", zap.Error(err))
-			} else if !ok {
+			err := c.healthCheck(context.Background())
+			if err == nil && !ok {
+				c.z.Info("Connection to Temporal is healthy")
 				ok = true
-				c.z.Info("temporal reports healthy")
+			} else if err != nil {
+				// TODO: stats.
+				c.z.Error("Temporal health check error", zap.Error(err))
 			}
 
 			select {
