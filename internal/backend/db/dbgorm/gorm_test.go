@@ -157,6 +157,13 @@ func (f *dbFixture) newSession(st sdktypes.SessionStateType) scheme.Session {
 	}
 }
 
+func (f *dbFixture) newSessionLogRecord() scheme.SessionLogRecord {
+	sessionID := fmt.Sprintf("ses_%026d", f.sessionID)
+	return scheme.SessionLogRecord{
+		SessionID: sessionID,
+	}
+}
+
 func (f *dbFixture) newBuild() scheme.Build {
 	return scheme.Build{
 		BuildID:   testBuildID,

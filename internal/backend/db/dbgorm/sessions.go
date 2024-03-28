@@ -98,14 +98,16 @@ func (db *gormdb) UpdateSessionState(ctx context.Context, sessionID sdktypes.Ses
 	}))
 }
 
+func addSessionLogRecordDB(tx *gorm.DB, logr *scheme.SessionLogRecord) error {
+	return tx.Create(logr).Error
+}
+
 func addSessionLogRecord(tx *gorm.DB, sessionID string, logr sdktypes.SessionLogRecord) error {
 	jsonData, err := json.Marshal(logr)
 	if err != nil {
 		return fmt.Errorf("marshal session log record: %w", err)
 	}
-
-	r := scheme.SessionLogRecord{SessionID: sessionID, Data: jsonData}
-	return tx.Create(&r).Error
+	return addSessionLogRecordDB(tx, &scheme.SessionLogRecord{SessionID: sessionID, Data: jsonData})
 }
 
 func (db *gormdb) AddSessionPrint(ctx context.Context, sessionID sdktypes.SessionID, print string) error {

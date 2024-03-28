@@ -19,6 +19,11 @@ func (f *dbFixture) createSessionsAndAssert(t *testing.T, sessions ...scheme.Ses
 	}
 }
 
+func (f *dbFixture) addSessionLogRecordAndAssert(t *testing.T, logr scheme.SessionLogRecord, expected int) {
+	assert.NoError(t, addSessionLogRecordDB(f.gormdb.db, &logr))
+	findAndAssertCount(t, f, logr, expected, "session_id = ?", logr.SessionID)
+}
+
 func (f *dbFixture) listSessionsAndAssert(t *testing.T, expected int) []scheme.Session {
 	flt := sdkservices.ListSessionsFilter{
 		CountOnly: false,
@@ -39,12 +44,18 @@ func (f *dbFixture) assertSessionsDeleted(t *testing.T, sessions ...scheme.Sessi
 	}
 }
 
-func TestCreateSession(t *testing.T) {
+func preSessionTest(t *testing.T) *dbFixture {
 	f := newDBFixture(false)
 	f.listSessionsAndAssert(t, 0) // no sessions
+	findAndAssertCount(t, f, scheme.SessionLogRecord{}, 0, "")
+	return f
+}
+
+func TestCreateSession(t *testing.T) {
+	f := preSessionTest(t)
 
 	s := f.newSession(sdktypes.SessionStateTypeCompleted)
-	// test createSession
+	// test createSession without any assets session depends on, since they are soft-foreign keys and could be nil
 	f.createSessionsAndAssert(t, s)
 
 	logs := findAndAssertCount(t, f, scheme.SessionLogRecord{}, 1, "session_id = ?", s.SessionID)
@@ -52,9 +63,10 @@ func TestCreateSession(t *testing.T) {
 }
 
 func TestCreateSessionForeignKeys(t *testing.T) {
-	f := newDBFixture(false)
-	f.listSessionsAndAssert(t, 0) // no sessions
+	// check session creation if foreign keys are not nil
+	f := preSessionTest(t)
 
+	// negative test with non-existing assets
 	s := f.newSession(sdktypes.SessionStateTypeCompleted)
 	unexisting := "unexisting"
 
@@ -74,6 +86,7 @@ func TestCreateSessionForeignKeys(t *testing.T) {
 	assert.ErrorContains(t, f.gormdb.createSession(f.ctx, &s), "FOREIGN KEY")
 	s.EventID = nil
 
+	// test with existing assets
 	b := f.newBuild()
 	env := f.newEnv()
 	d := f.newDeployment()
@@ -92,8 +105,7 @@ func TestCreateSessionForeignKeys(t *testing.T) {
 }
 
 func TestGetSession(t *testing.T) {
-	f := newDBFixture(true)       // no foreign keys
-	f.listSessionsAndAssert(t, 0) // no sessions
+	f := preSessionTest(t)
 
 	s := f.newSession(sdktypes.SessionStateTypeCompleted)
 	f.createSessionsAndAssert(t, s)
@@ -110,8 +122,7 @@ func TestGetSession(t *testing.T) {
 }
 
 func TestListSessions(t *testing.T) {
-	f := newDBFixture(true)       // no foreign keys
-	f.listSessionsAndAssert(t, 0) // no sessions
+	f := preSessionTest(t)
 
 	s := f.newSession(sdktypes.SessionStateTypeCompleted)
 	f.createSessionsAndAssert(t, s)
@@ -125,12 +136,30 @@ func TestListSessions(t *testing.T) {
 }
 
 func TestDeleteSession(t *testing.T) {
-	f := newDBFixture(true)       // no foreign keys
-	f.listSessionsAndAssert(t, 0) // no sessions
+	f := preSessionTest(t)
 
 	s := f.newSession(sdktypes.SessionStateTypeCompleted)
 	f.createSessionsAndAssert(t, s)
 
 	assert.NoError(t, f.gormdb.deleteSession(f.ctx, s.SessionID))
 	f.assertSessionsDeleted(t, s)
+}
+
+/*
+func TestDeleteSessionForeignKeys(t *testing.T) {
+    // session is soft-deleted, so no need to check foreign keys meanwhile
+}
+*/
+
+func TestCreateSessionLogRecordForeignKeys(t *testing.T) {
+	f := preSessionTest(t)
+
+	s := f.newSession(sdktypes.SessionStateTypeCompleted)
+	logr := f.newSessionLogRecord()
+	assert.ErrorContains(t, addSessionLogRecordDB(f.gormdb.db, &logr), "FOREIGN KEY")
+
+	f.createSessionsAndAssert(t, s) // will create session and session record as well
+
+	// test createSessionLogRecord
+	f.addSessionLogRecordAndAssert(t, logr, 2) // one log record was already created due to session creation
 }
