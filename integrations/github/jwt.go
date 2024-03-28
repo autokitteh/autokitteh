@@ -109,7 +109,11 @@ func (i integration) NewClientWithAppJWTFromGitHubID(appID int64) (*github.Clien
 
 	// Initialize a client with the generated JWT injected into outbound requests.
 	client := github.NewClient(&http.Client{Transport: atr})
-	if u := enterpriseURL(); u != "" {
+	u, err := enterpriseURL()
+	if err != nil {
+		return nil, err
+	}
+	if u != "" {
 		client, err = client.WithEnterpriseURLs(u, u)
 		if err != nil {
 			return nil, err
@@ -133,7 +137,11 @@ func (i integration) NewClientWithInstallJWTFromGitHubIDs(appID, installID int64
 
 	// Initialize a client with the generated JWT injected into outbound requests.
 	client := github.NewClient(&http.Client{Transport: itr})
-	if u := enterpriseURL(); u != "" {
+	u, err := enterpriseURL()
+	if err != nil {
+		return nil, err
+	}
+	if u != "" {
 		client, err = client.WithEnterpriseURLs(u, u)
 		if err != nil {
 			return nil, err
@@ -160,15 +168,11 @@ func getPrivateKey() []byte {
 	return pem.EncodeToMemory(b)
 }
 
-func enterpriseURL() string {
+func enterpriseURL() (string, error) {
 	u := os.Getenv(enterpriseURLEnvVar)
 	if u == "" {
-		return u
+		return u, nil
 	}
 
-	u, err := kittehs.NormalizeURL(u, true)
-	if err != nil {
-		return ""
-	}
-	return u
+	return kittehs.NormalizeURL(u, true)
 }
