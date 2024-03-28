@@ -1,4 +1,4 @@
-package runtime
+package runtimesvc
 
 import (
 	"go.autokitteh.dev/autokitteh/internal/kittehs"

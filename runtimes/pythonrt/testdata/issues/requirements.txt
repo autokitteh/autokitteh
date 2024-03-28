@@ -1,0 +1,2 @@
+# PyGithub ~= 2.2
+slack-sdk ~= 3.27
