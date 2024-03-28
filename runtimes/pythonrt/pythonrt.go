@@ -27,6 +27,7 @@ var (
 		New: New,
 	}
 	venvPath = path.Join(xdg.DataHomeDir(), "venv")
+	venvPy   = path.Join(venvPath, "bin", "python")
 )
 
 type pySVC struct {
@@ -54,9 +55,11 @@ func New() (sdkservices.Runtime, error) {
 	}
 
 	log.Info("system python info", zap.String("exe", info.Exe), zap.String("version", info.Version))
-	if err := validateVEnv(log, info.Exe); err != nil {
+	if err := ensureVEnv(log, info.Exe); err != nil {
 		return nil, fmt.Errorf("create venv - %w", err)
 	}
+
+	log.Info("venv python", zap.String("exe", venvPy))
 
 	svc := pySVC{
 		log: log,
@@ -74,7 +77,7 @@ func dirExists(path string) bool {
 	return info.IsDir()
 }
 
-func validateVEnv(log *zap.Logger, pyExe string) error {
+func ensureVEnv(log *zap.Logger, pyExe string) error {
 	if dirExists(venvPath) {
 		return nil
 	}
@@ -168,7 +171,6 @@ func (py *pySVC) Run(
 		return nil, fmt.Errorf("%q note found in compiled data", archiveKey)
 	}
 
-	venvPy := path.Join(venvPath, "bin", "python")
 	ri, err := runPython(py.log, venvPy, tarData, mainPath, envMap)
 	if err != nil {
 		return nil, err
