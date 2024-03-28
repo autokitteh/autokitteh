@@ -21,9 +21,14 @@ func (f *dbFixture) assertConnectionDeleted(t *testing.T, connections ...scheme.
 	}
 }
 
-func TestCreateConnection(t *testing.T) {
-	f := newDBFixture(true)                              // no foreign keys
+func preConnectionTest(t *testing.T) *dbFixture {
+	f := newDBFixture()
 	findAndAssertCount(t, f, scheme.Connection{}, 0, "") // no connections
+	return f
+}
+
+func TestCreateConnection(t *testing.T) {
+	f := preConnectionTest(t)
 
 	tr := f.newConnection()
 	// test createConnection
@@ -31,8 +36,7 @@ func TestCreateConnection(t *testing.T) {
 }
 
 func TestDeleteConnection(t *testing.T) {
-	f := newDBFixture(true)                              // no foreign keys
-	findAndAssertCount(t, f, scheme.Connection{}, 0, "") // no connections
+	f := preConnectionTest(t)
 
 	c := f.newConnection()
 	f.createConnectionsAndAssert(t, c)

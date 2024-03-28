@@ -32,9 +32,14 @@ func (f *dbFixture) assertProjectDeleted(t *testing.T, projects ...scheme.Projec
 	}
 }
 
-func TestCreateProject(t *testing.T) {
-	f := newDBFixture(true)                           // no foreign keys
+func preProjectTest(t *testing.T) *dbFixture {
+	f := newDBFixture()
 	findAndAssertCount(t, f, scheme.Project{}, 0, "") // no projects
+	return f
+}
+
+func TestCreateProject(t *testing.T) {
+	f := preProjectTest(t)
 
 	p := f.newProject()
 	// test createProject
@@ -42,8 +47,7 @@ func TestCreateProject(t *testing.T) {
 }
 
 func TestGetProjects(t *testing.T) {
-	f := newDBFixture(true)                           // no foreign keys
-	findAndAssertCount(t, f, scheme.Project{}, 0, "") // no projects
+	f := preProjectTest(t)
 
 	p := f.newProject()
 	f.createProjectsAndAssert(t, p)
@@ -71,8 +75,7 @@ func TestGetProjects(t *testing.T) {
 }
 
 func TestListProjects(t *testing.T) {
-	f := newDBFixture(true)                           // no foreign keys
-	findAndAssertCount(t, f, scheme.Project{}, 0, "") // no projects
+	f := preProjectTest(t)
 
 	p := f.newProject()
 	f.createProjectsAndAssert(t, p)
@@ -87,8 +90,7 @@ func TestListProjects(t *testing.T) {
 }
 
 func TestGetProjectDeployments(t *testing.T) {
-	f := newDBFixture(true)                           // no foreign keys
-	findAndAssertCount(t, f, scheme.Project{}, 0, "") // no projects
+	f := preProjectTest(t)
 
 	// create 4 envs. E1 with 3 deployments, E2 with 1 (dupl with E1) and E3 with 0.
 	// p1:
@@ -123,8 +125,7 @@ func TestGetProjectDeployments(t *testing.T) {
 }
 
 func TestGetProjectEnvs(t *testing.T) {
-	f := newDBFixture(true)                           // no foreign keys
-	findAndAssertCount(t, f, scheme.Project{}, 0, "") // no projects
+	f := preProjectTest(t)
 
 	// create two envs - one with deployment and second without
 	p := f.newProject()
@@ -146,8 +147,7 @@ func TestGetProjectEnvs(t *testing.T) {
 }
 
 func TestDeleteProjectAndDependents(t *testing.T) {
-	f := newDBFixture(false)
-	findAndAssertCount(t, f, scheme.Project{}, 0, "") // no projects
+	f := preProjectTest(t)
 
 	// initialize:
 	// - p1

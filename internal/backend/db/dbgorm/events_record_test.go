@@ -16,7 +16,7 @@ func (f *dbFixture) createEventRecordsAndAssert(t *testing.T, eventRecords ...sc
 }
 
 func TestCreateEventRecordForeignKeys(t *testing.T) {
-	f := newDBFixture(false)
+	f := newDBFixture()
 	findAndAssertCount(t, f, scheme.EventRecord{}, 0, "") // no events
 
 	evt := f.newEvent()

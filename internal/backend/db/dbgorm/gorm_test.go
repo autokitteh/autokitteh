@@ -64,9 +64,9 @@ func setupDB(dbName string) *gorm.DB {
 	return db
 }
 
-func newDBFixture(withoutForeignKeys bool) *dbFixture {
-	dsn := "file::memory:"
-	db := setupDB(dsn) // in-memory db, specify filename to use file db
+func newDBFixture() *dbFixture {
+	dsn := "file::memory:" // "/tmp/ak.db"
+	db := setupDB(dsn)     // in-memory db, specify filename to use file db
 
 	ctx := context.Background()
 	cfg := gormkitteh.Config{Type: "sqlite", DSN: dsn}
@@ -78,11 +78,15 @@ func newDBFixture(withoutForeignKeys bool) *dbFixture {
 	if err := gormdb.Setup(ctx); err != nil { // ensure migration/schemas
 		log.Fatalf("Failed to setup gormdb: %v", err)
 	}
-	if withoutForeignKeys { // run after setup, since this pragma may be reset by setup
-		db.Exec("PRAGMA foreign_keys = OFF")
-	}
-
 	return &dbFixture{db: db, gormdb: &gormdb, ctx: ctx}
+}
+
+func newDBFixtureFK(withoutForeignKeys bool) *dbFixture {
+	f := newDBFixture()
+	if withoutForeignKeys { // run after setup, since this pragma may be reset by setup
+		f.db.Exec("PRAGMA foreign_keys = OFF")
+	}
+	return f
 }
 
 // enable SQL logging

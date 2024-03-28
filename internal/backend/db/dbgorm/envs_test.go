@@ -21,9 +21,14 @@ func (f *dbFixture) assertEnvDeleted(t *testing.T, envs ...scheme.Env) {
 	}
 }
 
-func TestCreateEnv(t *testing.T) {
-	f := newDBFixture(false)
+func preEnvTest(t *testing.T) *dbFixture {
+	f := newDBFixture()
 	findAndAssertCount(t, f, scheme.Env{}, 0, "") // no envs
+	return f
+}
+
+func TestCreateEnv(t *testing.T) {
+	f := preEnvTest(t)
 
 	e := f.newEnv()
 	// test createEnv
@@ -31,8 +36,7 @@ func TestCreateEnv(t *testing.T) {
 }
 
 func TestCreateEnvForeignKeys(t *testing.T) {
-	f := newDBFixture(false)
-	findAndAssertCount(t, f, scheme.Env{}, 0, "") // no envs
+	f := preEnvTest(t)
 
 	e := f.newEnv()
 	unexisting := "unexisting"
@@ -47,8 +51,7 @@ func TestCreateEnvForeignKeys(t *testing.T) {
 }
 
 func TestDeleteEnv(t *testing.T) {
-	f := newDBFixture(true)                       // no foreign keys
-	findAndAssertCount(t, f, scheme.Env{}, 0, "") // no envs
+	f := preEnvTest(t)
 
 	e := f.newEnv()
 	f.createEnvsAndAssert(t, e)
@@ -59,8 +62,7 @@ func TestDeleteEnv(t *testing.T) {
 }
 
 func TestDeleteEnvs(t *testing.T) {
-	f := newDBFixture(true)                       // no foreign keys
-	findAndAssertCount(t, f, scheme.Env{}, 0, "") // no envs
+	f := preEnvTest(t)
 
 	e1, e2 := f.newEnv(), f.newEnv()
 	f.createEnvsAndAssert(t, e1, e2)
@@ -71,8 +73,7 @@ func TestDeleteEnvs(t *testing.T) {
 }
 
 func TestDeleteEnvForeignKeys(t *testing.T) {
-	f := newDBFixture(false)
-	findAndAssertCount(t, f, scheme.Env{}, 0, "") // no envs
+	f := preEnvTest(t)
 
 	b := f.newBuild()
 	p := f.newProject()

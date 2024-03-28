@@ -21,9 +21,14 @@ func (f *dbFixture) assertSignalsDeleted(t *testing.T, signals ...scheme.Signal)
 	}
 }
 
-func TestSaveSignal(t *testing.T) {
-	f := newDBFixture(true)                          // no foreign keys
+func preSignalTest(t *testing.T) *dbFixture {
+	f := newDBFixtureFK(true)
 	findAndAssertCount(t, f, scheme.Signal{}, 0, "") // no signals
+	return f
+}
+
+func TestSaveSignal(t *testing.T) {
+	f := preSignalTest(t)
 
 	sig := f.newSignal()
 	// test createSignal
@@ -31,8 +36,7 @@ func TestSaveSignal(t *testing.T) {
 }
 
 func TestDeleteSignal(t *testing.T) {
-	f := newDBFixture(true)                          // no foreign keys
-	findAndAssertCount(t, f, scheme.Signal{}, 0, "") // no Signal
+	f := preSignalTest(t)
 
 	sig := f.newSignal()
 	f.saveSignalsAndAssert(t, sig)

@@ -45,7 +45,7 @@ func (f *dbFixture) assertSessionsDeleted(t *testing.T, sessions ...scheme.Sessi
 }
 
 func preSessionTest(t *testing.T) *dbFixture {
-	f := newDBFixture(false)
+	f := newDBFixture()
 	f.listSessionsAndAssert(t, 0) // no sessions
 	findAndAssertCount(t, f, scheme.SessionLogRecord{}, 0, "")
 	return f
