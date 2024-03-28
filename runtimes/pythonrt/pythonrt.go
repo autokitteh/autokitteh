@@ -5,10 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/fs"
+	"os"
+	"path"
 	"time"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/logger"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
+	"go.autokitteh.dev/autokitteh/internal/xdg"
 	"go.autokitteh.dev/autokitteh/sdk/sdkruntimes"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -23,6 +26,7 @@ var (
 		})),
 		New: New,
 	}
+	venvPath = path.Join(xdg.DataHomeDir(), "venv")
 )
 
 type pySVC struct {
@@ -46,16 +50,37 @@ func New() (sdkservices.Runtime, error) {
 	defer cancel()
 	info, err := pyExecInfo(ctx)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("python info - %w", err)
 	}
 
-	log.Info("python info", zap.String("exe", info.Exe), zap.String("version", info.Version))
+	log.Info("system python info", zap.String("exe", info.Exe), zap.String("version", info.Version))
+	if err := validateVEnv(log, info.Exe); err != nil {
+		return nil, fmt.Errorf("create venv - %w", err)
+	}
 
 	svc := pySVC{
 		log: log,
 	}
 
 	return &svc, nil
+}
+
+func dirExists(path string) bool {
+	info, err := os.Stat(path)
+	if err != nil {
+		return false
+	}
+
+	return info.IsDir()
+}
+
+func validateVEnv(log *zap.Logger, pyExe string) error {
+	if dirExists(venvPath) {
+		return nil
+	}
+
+	log.Info("creating venv", zap.String("path", venvPath))
+	return createVEnv(pyExe, venvPath)
 }
 
 func (*pySVC) Get() sdktypes.Runtime { return Runtime.Desc }
@@ -143,7 +168,8 @@ func (py *pySVC) Run(
 		return nil, fmt.Errorf("%q note found in compiled data", archiveKey)
 	}
 
-	ri, err := runPython(py.log, tarData, mainPath, envMap)
+	venvPy := path.Join(venvPath, "bin", "python")
+	ri, err := runPython(py.log, venvPy, tarData, mainPath, envMap)
 	if err != nil {
 		return nil, err
 	}

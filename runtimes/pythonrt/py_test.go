@@ -28,13 +28,9 @@ func Test_createVEnv(t *testing.T) {
 	require.NoError(t, err)
 }
 
-var (
-	//go:embed testdata/simple.tar
-	tarData []byte
-	envRe   = regexp.MustCompile(`([^ ]+)=([^ \n]+)`)
-)
+//go:embed testdata/simple.tar
+var tarData []byte
 
-// func runPython(log *zap.Logger, tarData []byte, rootPath string, env map[string]string) (*pyRunInfo, error) {
 func Test_runPython(t *testing.T) {
 	log := zap.NewExample()
 	defer log.Sync() //nolint:all
@@ -45,13 +41,15 @@ func Test_runPython(t *testing.T) {
 		envKey: "B",
 	}
 
-	ri, err := runPython(log, tarData, "simple.py:greet", env)
+	ri, err := runPython(log, "python", tarData, "simple.py:greet", env)
 	require.NoError(t, err)
 	defer ri.proc.Kill() //nolint:all
 
 	procEnv := processEnv(t, ri.proc.Pid)
 	require.Equal(t, env[envKey], procEnv[envKey], "env override")
 }
+
+var envRe = regexp.MustCompile(`([^ ]+)=([^ \n]+)`)
 
 func processEnv(t *testing.T, pid int) map[string]string {
 	var buf bytes.Buffer
