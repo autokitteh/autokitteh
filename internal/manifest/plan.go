@@ -13,7 +13,10 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-const defaultEnvName = "default"
+const (
+	defaultEnvName            = "default"
+	DefaultHTTPConnectionName = "default_http"
+)
 
 var ErrUnsupportedManifestVersion = errors.New("unsupported manifest version")
 
@@ -90,21 +93,39 @@ func planProject(ctx context.Context, mproj *Project, client sdkservices.Service
 	}
 
 	// TODO: Remove all non-default environments.
-	envActions, defaultEnvID, err := planDefaultEnv(ctx, mproj.Vars, client, mproj.Name, pid, optfns...)
+	envActions, err := planDefaultEnv(ctx, mproj.Vars, client, mproj.Name, pid, optfns...)
 	if err != nil {
 		return nil, fmt.Errorf("envs: %w", err)
 	}
 
 	add(envActions...)
 
-	connActions, conns, err := planConnections(ctx, mproj.Connections, client, mproj.Name, pid, optfns...)
+	connections := mproj.Connections
+
+	if mproj.HTTP != nil && !mproj.HTTP.Disabled {
+		if _, c := kittehs.FindFirst(connections, func(c *Connection) bool { return c.Name == "http" }); c == nil {
+			connections = append(connections, &Connection{
+				Name:           DefaultHTTPConnectionName,
+				IntegrationKey: "http",
+			})
+		}
+	}
+
+	connActions, err := planConnections(ctx, connections, client, mproj.Name, pid, optfns...)
 	if err != nil {
 		return nil, fmt.Errorf("connections: %w", err)
 	}
 
 	add(connActions...)
 
-	triggerActions, err := planTriggers(ctx, mproj.Triggers, client, mproj.Name, pid, conns, defaultEnvID, optfns...)
+	triggers, err := httpTriggers(mproj.HTTP)
+	if err != nil {
+		return nil, fmt.Errorf("http: %w", err)
+	}
+
+	triggers = append(triggers, mproj.Triggers...)
+
+	triggerActions, err := planTriggers(ctx, triggers, client, mproj.Name, pid, optfns...)
 	if err != nil {
 		return nil, fmt.Errorf("triggers: %w", err)
 	}
@@ -114,13 +135,13 @@ func planProject(ctx context.Context, mproj *Project, client sdkservices.Service
 	return acc, nil
 }
 
-func planDefaultEnv(ctx context.Context, mvars []*EnvVar, client sdkservices.Services, projName string, pid sdktypes.ProjectID, optfns ...Option) ([]actions.Action, sdktypes.EnvID, error) {
+func planDefaultEnv(ctx context.Context, mvars []*EnvVar, client sdkservices.Services, projName string, pid sdktypes.ProjectID, optfns ...Option) ([]actions.Action, error) {
 	envKeyer := stringKeyer(projName + "/" + defaultEnvName)
 	opts := applyOptions(optfns)
 	log := opts.log.For("env", envKeyer)
 
 	if !pid.IsValid() && projName == "" {
-		return nil, sdktypes.InvalidEnvID, errors.New("project must be set")
+		return nil, errors.New("project must be set")
 	}
 
 	name := kittehs.Must1(sdktypes.ParseSymbol(defaultEnvName))
@@ -130,14 +151,14 @@ func planDefaultEnv(ctx context.Context, mvars []*EnvVar, client sdkservices.Ser
 		ProjectId: pid.String(),
 	})
 	if err != nil {
-		return nil, sdktypes.InvalidEnvID, err
+		return nil, err
 	}
 
 	var curr sdktypes.Env
 
 	if pid.IsValid() {
 		if curr, err = client.Envs().GetByName(ctx, pid, name); err != nil {
-			return nil, sdktypes.InvalidEnvID, fmt.Errorf("get env: %w", err)
+			return nil, fmt.Errorf("get env: %w", err)
 		}
 	}
 
@@ -171,7 +192,7 @@ func planDefaultEnv(ctx context.Context, mvars []*EnvVar, client sdkservices.Ser
 
 	if envID.IsValid() {
 		if vars, err = client.Envs().GetVars(ctx, nil, envID); err != nil {
-			return nil, sdktypes.InvalidEnvID, fmt.Errorf("get vars: %w", err)
+			return nil, fmt.Errorf("get vars: %w", err)
 		}
 	}
 
@@ -200,7 +221,7 @@ func planDefaultEnv(ctx context.Context, mvars []*EnvVar, client sdkservices.Ser
 			IsSecret: mvar.IsSecret,
 		})
 		if err != nil {
-			return nil, sdktypes.InvalidEnvID, fmt.Errorf("invalid var: %w", err)
+			return nil, fmt.Errorf("invalid var: %w", err)
 		}
 
 		setAction := actions.SetEnvVarAction{Key: mvar.GetKey(), EnvKey: envKeyer.GetKey(), EnvVar: desired}
@@ -218,7 +239,7 @@ func planDefaultEnv(ctx context.Context, mvars []*EnvVar, client sdkservices.Ser
 
 			if v.IsSecret() {
 				if currVal, err = client.Envs().RevealVar(ctx, envID, v.Symbol()); err != nil {
-					return nil, sdktypes.InvalidEnvID, fmt.Errorf("reveal var: %w", err)
+					return nil, fmt.Errorf("reveal var: %w", err)
 				}
 			}
 
@@ -237,10 +258,10 @@ func planDefaultEnv(ctx context.Context, mvars []*EnvVar, client sdkservices.Ser
 		}
 	}
 
-	return acc, envID, nil
+	return acc, nil
 }
 
-func planConnections(ctx context.Context, mconns []*Connection, client sdkservices.Services, projName string, pid sdktypes.ProjectID, optfns ...Option) ([]actions.Action, []sdktypes.Connection, error) {
+func planConnections(ctx context.Context, mconns []*Connection, client sdkservices.Services, projName string, pid sdktypes.ProjectID, optfns ...Option) ([]actions.Action, error) {
 	opts := applyOptions(optfns)
 	log := opts.log.For("project", stringKeyer(projName))
 
@@ -254,7 +275,7 @@ func planConnections(ctx context.Context, mconns []*Connection, client sdkservic
 
 	if pid.IsValid() && !opts.fromScratch {
 		if conns, err = client.Connections().List(ctx, sdkservices.ListConnectionsFilter{ProjectID: pid}); err != nil {
-			return nil, nil, fmt.Errorf("list connections: %w", err)
+			return nil, fmt.Errorf("list connections: %w", err)
 		}
 
 		log.Printf("found %d connections", len(conns))
@@ -264,7 +285,7 @@ func planConnections(ctx context.Context, mconns []*Connection, client sdkservic
 		connNames = append(connNames, mconn.Name)
 
 		if mconn.ProjectKey != "" {
-			return nil, nil, errors.New("project must be empty")
+			return nil, errors.New("project must be empty")
 		}
 
 		mconn := *mconn
@@ -274,9 +295,9 @@ func planConnections(ctx context.Context, mconns []*Connection, client sdkservic
 			return c.Name().String() == mconn.Name
 		})
 
-		as, err := planConnection(ctx, &mconn, client, curr, optfns...)
+		as, err := planConnection(&mconn, curr, optfns...)
 		if err != nil {
-			return nil, nil, fmt.Errorf("connection %q: %w", mconn.GetKey(), err)
+			return nil, fmt.Errorf("connection %q: %w", mconn.GetKey(), err)
 		}
 
 		add(as...)
@@ -293,10 +314,10 @@ func planConnections(ctx context.Context, mconns []*Connection, client sdkservic
 		}
 	}
 
-	return acc, conns, nil
+	return acc, nil
 }
 
-func planConnection(ctx context.Context, mconn *Connection, client sdkservices.Services, curr sdktypes.Connection, optfns ...Option) ([]actions.Action, error) {
+func planConnection(mconn *Connection, curr sdktypes.Connection, optfns ...Option) ([]actions.Action, error) {
 	opts := applyOptions(optfns)
 	log := opts.log.For("connection", mconn)
 
@@ -331,7 +352,28 @@ func planConnection(ctx context.Context, mconn *Connection, client sdkservices.S
 	return []actions.Action{actions.UpdateConnectionAction{Key: mconn.GetKey(), Connection: desired}}, nil
 }
 
-func planTriggers(ctx context.Context, mtriggers []*Trigger, client sdkservices.Services, projName string, pid sdktypes.ProjectID, conns []sdktypes.Connection, defaultEnvID sdktypes.EnvID, optfns ...Option) ([]actions.Action, error) {
+func httpTriggers(http *HTTP) ([]*Trigger, error) {
+	if http == nil || http.Disabled {
+		return nil, nil
+	}
+
+	return kittehs.TransformError(http.Routes, func(hr *HTTPRoute) (*Trigger, error) {
+		return &Trigger{
+			Name:          hr.Name,
+			ConnectionKey: DefaultHTTPConnectionName,
+			EventType:     hr.Method,
+			Call:          hr.Call,
+			Entrypoint:    hr.Entrypoint,
+			Data: map[string]any{
+				"method": hr.Method,
+				"path":   hr.Path,
+			},
+			Type: "http_route",
+		}, nil
+	})
+}
+
+func planTriggers(ctx context.Context, mtriggers []*Trigger, client sdkservices.Services, projName string, pid sdktypes.ProjectID, optfns ...Option) ([]actions.Action, error) {
 	opts := applyOptions(optfns)
 	log := opts.log
 
@@ -350,10 +392,6 @@ func planTriggers(ctx context.Context, mtriggers []*Trigger, client sdkservices.
 		log.For("project", stringKeyer(projName)).Printf("found %d triggers", len(triggers))
 	}
 
-	connIDToName := kittehs.ListToMap(conns, func(c sdktypes.Connection) (string, string) {
-		return c.ID().String(), projName + "/" + c.Name().String()
-	})
-
 	var matchedTriggerIDs []string
 
 	for _, mtrigger := range mtriggers {
@@ -364,27 +402,30 @@ func planTriggers(ctx context.Context, mtriggers []*Trigger, client sdkservices.
 		log := log.For("trigger", mtrigger)
 
 		_, curr := kittehs.FindFirst(triggers, func(t sdktypes.Trigger) bool {
-			connName, ok := connIDToName[t.ConnectionID().String()]
-			if !ok {
-				return false
-			}
-
-			if !defaultEnvID.IsValid() || t.EnvID() != defaultEnvID {
-				return false
-			}
-
-			return t.Filter() == mtrigger.Filter && t.EventType() == mtrigger.EventType && connName == mtrigger.ConnectionKey
+			return t.Name() == mtrigger.Name
 		})
 
-		loc, err := sdktypes.ParseCodeLocation(mtrigger.Entrypoint)
+		ep := mtrigger.Entrypoint
+		if ep == "" {
+			ep = mtrigger.Call
+		}
+		loc, err := sdktypes.ParseCodeLocation(ep)
 		if err != nil {
 			return nil, fmt.Errorf("trigger %q: invalid entrypoint: %w", mtrigger.GetKey(), err)
+		}
+
+		data, err := kittehs.TransformMapValuesError(mtrigger.Data, sdktypes.WrapValue)
+		if err != nil {
+			return nil, fmt.Errorf("trigger %q: invalid additional data: %w", mtrigger.GetKey(), err)
 		}
 
 		desired, err := sdktypes.TriggerFromProto(&sdktypes.TriggerPB{
 			Filter:       mtrigger.Filter,
 			EventType:    mtrigger.EventType,
 			CodeLocation: loc.ToProto(),
+			Data:         kittehs.TransformMapValues(data, sdktypes.ToProto),
+			TriggerType:  mtrigger.Type,
+			Name:         mtrigger.Name,
 		})
 		if err != nil {
 			return nil, fmt.Errorf("trigger %q: invalid: %w", mtrigger.GetKey(), err)
@@ -407,6 +448,7 @@ func planTriggers(ctx context.Context, mtriggers []*Trigger, client sdkservices.
 				log.Printf("no changes needed")
 			} else {
 				log.Printf("not as desired, will update")
+
 				add(actions.UpdateTriggerAction{Key: mtrigger.GetKey(), ConnectionKey: mtrigger.ConnectionKey, EnvKey: mtrigger.EnvKey, Trigger: desired})
 			}
 		}

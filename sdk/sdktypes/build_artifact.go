@@ -2,6 +2,7 @@ package sdktypes
 
 import (
 	"errors"
+	"maps"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	runtimesv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/runtimes/v1"
@@ -67,7 +68,8 @@ func (r BuildArtifact) MergeFrom(other BuildArtifact) BuildArtifact {
 	}
 	*/
 
-	compiledData, _ /* overwrites */ := kittehs.JoinMaps(r.CompiledData(), other.CompiledData())
+	compiledData := r.CompiledData()
+	maps.Copy(compiledData, other.CompiledData())
 
 	return r.
 		WithExports(append(r.Exports(), other.Exports()...)).

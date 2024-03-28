@@ -71,5 +71,4 @@ func init() {
 	kittehs.Must0(createCmd.MarkFlagRequired("integration"))
 
 	createCmd.Flags().StringVarP(&connectionToken, "connection-token", "t", "", "connection token")
-	kittehs.Must0(createCmd.MarkFlagRequired("connection-token"))
 }

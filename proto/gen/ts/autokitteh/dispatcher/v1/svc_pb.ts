@@ -22,9 +22,11 @@ export class DispatchRequest extends Message<DispatchRequest> {
   deploymentId = "";
 
   /**
-   * @generated from field: string env_id = 3;
+   * either env_id or full env path.
+   *
+   * @generated from field: string env = 3;
    */
-  envId = "";
+  env = "";
 
   constructor(data?: PartialMessage<DispatchRequest>) {
     super();
@@ -36,7 +38,7 @@ export class DispatchRequest extends Message<DispatchRequest> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "event", kind: "message", T: Event },
     { no: 2, name: "deployment_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "env_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "env", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DispatchRequest {

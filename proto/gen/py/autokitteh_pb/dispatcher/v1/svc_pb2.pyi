@@ -7,14 +7,14 @@ from typing import ClassVar as _ClassVar, Mapping as _Mapping, Optional as _Opti
 DESCRIPTOR: _descriptor.FileDescriptor
 
 class DispatchRequest(_message.Message):
-    __slots__ = ["event", "deployment_id", "env_id"]
+    __slots__ = ["event", "deployment_id", "env"]
     EVENT_FIELD_NUMBER: _ClassVar[int]
     DEPLOYMENT_ID_FIELD_NUMBER: _ClassVar[int]
-    ENV_ID_FIELD_NUMBER: _ClassVar[int]
+    ENV_FIELD_NUMBER: _ClassVar[int]
     event: _event_pb2.Event
     deployment_id: str
-    env_id: str
-    def __init__(self, event: _Optional[_Union[_event_pb2.Event, _Mapping]] = ..., deployment_id: _Optional[str] = ..., env_id: _Optional[str] = ...) -> None: ...
+    env: str
+    def __init__(self, event: _Optional[_Union[_event_pb2.Event, _Mapping]] = ..., deployment_id: _Optional[str] = ..., env: _Optional[str] = ...) -> None: ...
 
 class DispatchResponse(_message.Message):
     __slots__ = ["event_id"]

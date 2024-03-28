@@ -394,7 +394,11 @@ func (w ValueWrapper) unwrapContainerInto(path string, dstv reflect.Value, v Val
 					if k != fn {
 						fv = sv.Elem().FieldByName(k)
 						if fv.Kind() == reflect.Invalid {
-							return true, fmt.Errorf("%s field %q or %q does not exit", pathf(""), fn, k)
+							if w.UnwrapErrorOnNonexistentStructFields {
+								return true, fmt.Errorf("%s field %q or %q does not exit", pathf(""), fn, k)
+							}
+
+							continue
 						}
 					}
 

@@ -1,6 +1,8 @@
 package manifest
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	"encoding/json"
 
 	"github.com/invopop/jsonschema"
@@ -31,10 +33,14 @@ type Manifest struct {
 }
 
 type Project struct {
-	Name        string        `yaml:"name" json:"name" jsonschema:"required"`
+	Name string `yaml:"name" json:"name" jsonschema:"required"`
+
+	Vars []*EnvVar `yaml:"vars,omitempty" json:"vars,omitempty"`
+
 	Connections []*Connection `yaml:"connections,omitempty" json:"connections,omitempty"`
-	Triggers    []*Trigger    `yaml:"triggers,omitempty" json:"triggers,omitempty"`
-	Vars        []*EnvVar     `yaml:"vars,omitempty" json:"vars,omitempty"`
+
+	Triggers []*Trigger `yaml:"triggers,omitempty" json:"triggers,omitempty"`
+	HTTP     *HTTP      `yaml:"http,omitempty" json:"http,omitempty"`
 }
 
 func (p Project) GetKey() string { return p.Name }
@@ -43,7 +49,7 @@ type Connection struct {
 	ProjectKey string `yaml:"-" json:"-"` // belongs to project.
 
 	Name           string `yaml:"name" json:"name" jsonschema:"required"`
-	Token          string `yaml:"token" json:"token" jsonschema:"required"`
+	Token          string `yaml:"token" json:"token"`
 	IntegrationKey string `yaml:"integration" json:"integration" jsonschema:"required"`
 }
 
@@ -63,10 +69,15 @@ func (v EnvVar) GetKey() string { return v.EnvKey + "/" + v.Name }
 type Trigger struct {
 	EnvKey string `yaml:"-" json:"-"` // associated with env.
 
-	ConnectionKey string `yaml:"connection" json:"connection" jsonschema:"required"` // coming from connection.
-	EventType     string `yaml:"event_type" json:"event_type"`
-	Entrypoint    string `yaml:"entrypoint" json:"entrypoint" jsonschema:"required"`
-	Filter        string `yaml:"filter,omitempty" json:"filter,omitempty"`
+	ConnectionKey string         `yaml:"connection" json:"connection" jsonschema:"required"` // coming from connection.
+	Name          string         `yaml:"name,omitempty" json:"name,omitempty"`
+	EventType     string         `yaml:"event_type,omitempty" json:"event_type,omitempty"`
+	Filter        string         `yaml:"filter,omitempty" json:"filter,omitempty"`
+	Data          map[string]any `yaml:"data,omitempty" json:"additional_data,omitempty"`
+	Type          string         `yaml:"type" json:"type,omitempty"`
+
+	Call       string `yaml:"call,omitempty" json:"call,omitempty" jsonschema:"oneof_required=call"`
+	Entrypoint string `yaml:"entrypoint,omitempty" json:"entrypoint,omitempty" jsonschema:"oneof_required=entrypoint"`
 }
 
 func (t Trigger) GetKey() string {
@@ -77,13 +88,24 @@ func (t Trigger) GetKey() string {
 
 	id += t.ConnectionKey + "/"
 
-	if t.EventType != "" {
-		id += t.EventType
+	if t.Name == "" {
+		hash := md5.Sum(kittehs.Must1(json.Marshal(t)))
+		return id + hex.EncodeToString(hash[:])
 	}
 
-	if t.Filter != "" {
-		id += "," + t.Filter
-	}
+	return id + t.Name
+}
 
-	return id
+type HTTP struct {
+	Disabled bool         `yaml:"disable,omitempty" json:"disable,omitempty"`
+	Routes   []*HTTPRoute `yaml:"routes,omitempty" json:"routes,omitempty"`
+}
+
+type HTTPRoute struct {
+	Name   string `yaml:"name,omitempty" json:"name,omitempty"`
+	Path   string `yaml:"path,omitempty" json:"path,omitempty"`
+	Method string `yaml:"method,omitempty" json:"method,omitempty"`
+
+	Call       string `yaml:"call,omitempty" json:"call,omitempty" jsonschema:"oneof_required=call"`
+	Entrypoint string `yaml:"entrypoint,omitempty" json:"entrypoint,omitempty" jsonschema:"oneof_required=entrypoint"`
 }
