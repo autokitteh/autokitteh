@@ -1,9 +1,7 @@
 package sessions
 
 import (
-	"errors"
 	"fmt"
-	"time"
 
 	"github.com/spf13/cobra"
 
@@ -13,38 +11,21 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-const (
-	defaultPollInterval = 1 * time.Second
-)
-
 var (
+	buildID    string
 	entryPoint string
 	memos      []string
-	buildID    string
-	deployID   string
 )
 
 var startCmd = common.StandardCommand(&cobra.Command{
-	Use:   "start [--build-id=...] [--env=...] [--deployment-id=...] <--entrypoint=...> [--memo=...] [--watch] [--watch-timeout=...] [--poll-interval=...] [--no-timestamps] [--quiet]",
+	Use:   "start {--deployment-id <ID>|--build-id <ID> --env <name or ID>} --entrypoint <...> [--memo <...>] [--watch [--watch-timeout <duration>] [--poll-interval <duration>] [--no-timestamps] [--quiet]]",
 	Short: "Start new session",
 	Args:  cobra.NoArgs,
 
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if deployID == "" && buildID == "" {
-			return errors.New("either --deployment-id or --build-id must be provided")
-		}
-
-		if deployID != "" && (buildID != "" || env != "") {
-			return errors.New("--deployment-id cannot be used with --build-id or --env")
-		}
-
 		did, eid, bid, ep, err := sessionArgs()
 		if err != nil {
 			return err
-		}
-
-		if !ep.IsValid() {
-			return errors.New("--entrypoint must be specified")
 		}
 
 		ctx, cancel := common.LimitedContext()
@@ -58,7 +39,7 @@ var startCmd = common.StandardCommand(&cobra.Command{
 
 		common.RenderKVIfV("session_id", sid)
 
-		if track {
+		if watch {
 			_, err := sessionWatch(sid, sdktypes.SessionStateTypeUnspecified)
 			return err
 		}
@@ -69,32 +50,35 @@ var startCmd = common.StandardCommand(&cobra.Command{
 
 func init() {
 	// Command-specific flags.
-	startCmd.Flags().StringVarP(&deployID, "deployment-id", "d", "", "deployment ID, mutually exclusive with --build-id and --env")
-	startCmd.Flags().StringVarP(&buildID, "build-id", "b", "", "build ID")
-	startCmd.Flags().StringVar(&env, "env", "", "env")
+	startCmd.Flags().StringVarP(&deploymentID, "deployment-id", "d", "", "deployment ID, mutually exclusive with --build-id and --env")
+	startCmd.Flags().StringVarP(&buildID, "build-id", "b", "", "build ID, mutually exclusive with --deployment-id")
+	startCmd.Flags().StringVarP(&env, "env", "e", "", "environment name or ID, mutually exclusive with --deployment-id")
+	startCmd.MarkFlagsOneRequired("deployment-id", "build-id")
+	startCmd.MarkFlagsRequiredTogether("build-id", "env")
 
 	startCmd.Flags().StringVarP(&entryPoint, "entrypoint", "p", "", `entry point ("file:function")`)
 	kittehs.Must0(startCmd.MarkFlagRequired("entrypoint"))
 
 	startCmd.Flags().StringSliceVarP(&memos, "memo", "m", nil, `zero or more "key=value" pairs`)
-	startCmd.Flags().BoolVarP(&track, "watch", "w", false, "watch session to completion")
-	startCmd.Flags().DurationVar(&pollInterval, "poll-interval", defaultPollInterval, "poll interval")
 
-	startCmd.Flags().BoolVar(&noTimestamps, "no-timestamps", false, "omit timestamps from track output")
-	startCmd.Flags().DurationVar(&watchTimeout, "watch-timeout", 0, "watch time out duration")
-	startCmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "do not print anything, just wait to finish")
+	startCmd.Flags().BoolVarP(&watch, "watch", "w", false, "watch session to completion")
+
+	startCmd.Flags().DurationVarP(&watchTimeout, "watch-timeout", "t", 0, "watch timeout duration")
+	startCmd.Flags().DurationVarP(&pollInterval, "poll-interval", "i", defaultPollInterval, "watch poll interval")
+	startCmd.Flags().BoolVarP(&noTimestamps, "no-timestamps", "n", false, "omit timestamps from watch output")
+	startCmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "don't print anything, just wait to finish")
 }
 
 func sessionArgs() (did sdktypes.DeploymentID, eid sdktypes.EnvID, bid sdktypes.BuildID, ep sdktypes.CodeLocation, err error) {
 	r := resolver.Resolver{Client: common.Client()}
 
-	if deployID != "" {
+	if deploymentID != "" {
 		var d sdktypes.Deployment
-		if d, did, err = r.DeploymentID(deployID); err != nil {
+		if d, did, err = r.DeploymentID(deploymentID); err != nil {
 			return
 		}
 		if !d.IsValid() {
-			err = fmt.Errorf("deployment %q not found", deployID)
+			err = fmt.Errorf("deployment %q not found", deploymentID)
 			err = common.NewExitCodeError(common.NotFoundExitCode, err)
 			return
 		}

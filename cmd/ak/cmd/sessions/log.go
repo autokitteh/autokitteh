@@ -14,7 +14,7 @@ import (
 var skip int
 
 var logCmd = common.StandardCommand(&cobra.Command{
-	Use:   "log [sessions ID] [--fail] [--skip N] [--no-timestamps]",
+	Use:   "log [sessions ID] [--fail] [--skip <N>] [--no-timestamps]",
 	Short: "Get session runtime logs (prints, calls, errors, state changes)",
 	Args:  cobra.MaximumNArgs(1),
 
@@ -48,8 +48,8 @@ var logCmd = common.StandardCommand(&cobra.Command{
 
 func init() {
 	// Command-specific flags.
-	logCmd.Flags().IntVar(&skip, "skip", 0, "number of entries to skip")
-	logCmd.Flags().BoolVar(&noTimestamps, "no-timestamps", false, "omit timestamps from track output")
+	logCmd.Flags().IntVarP(&skip, "skip", "s", 0, "number of entries to skip")
+	logCmd.Flags().BoolVarP(&noTimestamps, "no-timestamps", "n", false, "omit timestamps from track output")
 
 	common.AddFailIfNotFoundFlag(logCmd)
 }

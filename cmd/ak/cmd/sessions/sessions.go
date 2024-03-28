@@ -3,6 +3,7 @@ package sessions
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/spf13/cobra"
 
@@ -10,8 +11,21 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 )
 
-// Flags shared by the "list" and "start" subcommands.
-var deploymentID, eventID string
+// Default flag value shared by the "start", "restart", and "watch" subcommands.
+const (
+	defaultPollInterval = 1 * time.Second
+)
+
+var (
+	// Flags shared by the "list" and "start" subcommands.
+	deploymentID, env, eventID string
+
+	// Flags shared by the "start", "restart", and "watch" subcommands.
+	pollInterval time.Duration
+	watchTimeout time.Duration
+	watch, quiet bool
+	noTimestamps bool
+)
 
 var sessionsCmd = common.StandardCommand(&cobra.Command{
 	Use:     "sessions",
