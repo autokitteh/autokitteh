@@ -331,8 +331,11 @@ func ParseTrigger(e Trigger) (sdktypes.Trigger, error) {
 }
 
 type SessionLogRecord struct {
-	SessionID string `gorm:"index"`
+	SessionID string `gorm:"index;foreignKey:SessionID"`
 	Data      datatypes.JSON
+
+	// enforce foreign keys
+	Session *Session
 }
 
 func ParseSessionLogRecord(c SessionLogRecord) (spec sdktypes.SessionLogRecord, err error) {
@@ -341,9 +344,12 @@ func ParseSessionLogRecord(c SessionLogRecord) (spec sdktypes.SessionLogRecord, 
 }
 
 type SessionCallSpec struct {
-	SessionID string `gorm:"primaryKey"`
+	SessionID string `gorm:"primaryKey;foreignKey:SessionID"`
 	Seq       uint32 `gorm:"primaryKey"`
 	Data      datatypes.JSON
+
+	// enforce foreign keys
+	Session *Session
 }
 
 func ParseSessionCallSpec(c SessionCallSpec) (spec sdktypes.SessionCallSpec, err error) {
@@ -352,11 +358,14 @@ func ParseSessionCallSpec(c SessionCallSpec) (spec sdktypes.SessionCallSpec, err
 }
 
 type SessionCallAttempt struct {
-	SessionID string `gorm:"uniqueIndex:idx_session_id_seq_attempt,priority:1"`
+	SessionID string `gorm:"uniqueIndex:idx_session_id_seq_attempt,priority:1;foreignKey:SessionID"`
 	Seq       uint32 `gorm:"uniqueIndex:idx_session_id_seq_attempt,priority:2"`
 	Attempt   uint32 `gorm:"uniqueIndex:idx_session_id_seq_attempt,priority:3"`
 	Start     datatypes.JSON
 	Complete  datatypes.JSON
+
+	// enforce foreign keys
+	Session *Session
 }
 
 func ParseSessionCallAttemptStart(c SessionCallAttempt) (d sdktypes.SessionCallAttemptStart, err error) {
@@ -500,5 +509,5 @@ type Signal struct {
 	Filter       string
 
 	// enforce foreign key
-	Connection Connection
+	Connection *Connection
 }
