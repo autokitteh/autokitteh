@@ -114,8 +114,9 @@ type PyMessage struct {
 	Name    string `json:"name"`
 	Payload []byte `json:"payload"`
 	Func    struct {
-		Name string   `json:"name"`
-		Args []string `json:"args"`
+		Name string            `json:"name"`
+		Args []string          `json:"args"`
+		Kw   map[string]string `json:"kw"`
 	} `json:"func"`
 }
 
@@ -300,7 +301,9 @@ func (py *pySVC) initialCall(ctx context.Context, funcName string, payload []byt
 			// The Python function to call is encoded in the payload
 			fn,
 			kittehs.Transform(msg.Func.Args, sdktypes.NewStringValue),
-			nil,
+			kittehs.TransformMap(msg.Func.Kw, func(key, val string) (string, sdktypes.Value) {
+				return key, sdktypes.NewStringValue(val)
+			}),
 		)
 		if err != nil {
 			py.log.Error("callback", zap.Error(err))

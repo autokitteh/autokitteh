@@ -153,7 +153,6 @@ def run_code(mod, entry_point, data):
 
 # Queue for passing requests from execution thread to main working with Go.
 activity_request, activity_response = Queue(), Queue()
-Call = namedtuple('Call', 'func args')
 
 class AKCall:
     """Callable wrapping functions with activities."""
@@ -174,7 +173,7 @@ class AKCall:
             return func(*args, **kw)
 
         logging.info('ACTION: calling %s (args=%r, kw=%r)', func.__name__, args, kw)
-        request = Call(func, args)
+        request = (func, args, kw)
         activity_request.put(request)
         response = activity_response.get()
         return response
@@ -226,7 +225,7 @@ def file_type(value):
     raise ValueError(f'{value!r} - not a file')
 
 
-def encode_msg(typ, name, payload, func_name="", func_args=None):
+def encode_msg(typ, name, payload, func_name="", func_args=None, kw=None):
     if isinstance(payload, str):
         payload = payload.encode('utf-8')
     data = b64encode(payload)
@@ -238,6 +237,7 @@ def encode_msg(typ, name, payload, func_name="", func_args=None):
         'func': {
             'name': func_name,
             'args': func_args or [],
+            'kw': kw or {},
         },
     }) + '\n'
     return data.encode('utf-8')
@@ -319,17 +319,19 @@ if __name__ == '__main__':
 
         # Use protocol 0 since it's less Python version specific
         event = pickle.dumps(request, protocol=0)
-        fn, args = request
-        msg = encode_msg('activity', '', event, fn.__name__, [str(a) for a in args])
+        fn, args, kw = request
+        args = [str(a) for a in args]
+        kw = {k: str(v) for k, v in kw.items()}
+        msg = encode_msg('activity', '', event, fn.__name__, args, kw)
         logging.info('sending activity request')
         sock.sendall(msg)
         event = rdr.readline()
         logging.info('got activity response')
         resp = decode_msg(event)
         logging.info('activity response: %r', resp)
-        fn, args = pickle.loads(resp['payload'])
-        logging.info('activity request: %s %r', fn, args)
-        out = fn(*args)
+        fn, args, kw = pickle.loads(resp['payload'])
+        logging.info('activity request: %s args=%r, kw=%r', fn, args, kw)
+        out = fn(*args, **kw)
         event = pickle.dumps(out, protocol=0)
         msg = encode_msg('response', '', event)
         sock.sendall(msg)
