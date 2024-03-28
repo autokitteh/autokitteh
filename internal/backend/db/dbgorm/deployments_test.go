@@ -50,19 +50,26 @@ func (f *dbFixture) assertDeploymentsDeleted(t *testing.T, deployments ...scheme
 	}
 }
 
-func TestCreateDeployment(t *testing.T) {
+func preDeploymentTest(t *testing.T) *dbFixture {
 	f := newDBFixture(false)
 	f.listDeploymentsAndAssert(t, 0) // no deployments
+	return f
+}
+
+func TestCreateDeployment(t *testing.T) {
+	f := preDeploymentTest(t)
 
 	d := f.newDeployment()
-	// test createDeployment
+	// test createDeployment without any assets deployment depends on, since they are soft-foreign keys and could be nil
 	f.createDeploymentsAndAssert(t, d)
 }
 
 func TestCreateDeploymentsForeignKeys(t *testing.T) {
-	f := newDBFixture(false)
-	d := f.newDeployment()
+	// check session creation if foreign keys are not nil
+	f := preDeploymentTest(t)
 
+	// negative test with non-existing assets
+	d := f.newDeployment()
 	unexisting := "unexisting"
 
 	d.BuildID = &unexisting
@@ -73,6 +80,7 @@ func TestCreateDeploymentsForeignKeys(t *testing.T) {
 	assert.ErrorContains(t, f.gormdb.createDeployment(f.ctx, &d), "FOREIGN KEY")
 	d.EnvID = nil
 
+	// test with existing assets
 	e := f.newEnv()
 	b := f.newBuild()
 	f.createEnvsAndAssert(t, e)
@@ -85,8 +93,7 @@ func TestCreateDeploymentsForeignKeys(t *testing.T) {
 }
 
 func TestGetDeployment(t *testing.T) {
-	f := newDBFixture(true)          // no foreign keys
-	f.listDeploymentsAndAssert(t, 0) // no deployments
+	f := preDeploymentTest(t)
 
 	d := f.newDeployment()
 	f.createDeploymentsAndAssert(t, d)
@@ -102,8 +109,7 @@ func TestGetDeployment(t *testing.T) {
 }
 
 func TestListDeployments(t *testing.T) {
-	f := newDBFixture(true)          // no foreign keys
-	f.listDeploymentsAndAssert(t, 0) // no deployments
+	f := preDeploymentTest(t)
 
 	d := f.newDeployment()
 	f.createDeploymentsAndAssert(t, d)
@@ -113,8 +119,7 @@ func TestListDeployments(t *testing.T) {
 }
 
 func TestListDeploymentsWithStats(t *testing.T) {
-	f := newDBFixture(true)          // no foreign keys
-	f.listDeploymentsAndAssert(t, 0) // ensure no deployments
+	f := preDeploymentTest(t)
 
 	// create deployment and ensure there are no stats
 	d := f.newDeployment()
@@ -145,8 +150,7 @@ func TestListDeploymentsWithStats(t *testing.T) {
 }
 
 func TestDeleteDeployment(t *testing.T) {
-	f := newDBFixture(true)          // no foreign keys
-	f.listDeploymentsAndAssert(t, 0) // ensure no deployments
+	f := preDeploymentTest(t)
 
 	b := f.newBuild()
 	d := f.newDeployment()
@@ -175,3 +179,9 @@ func TestDeleteDeployment(t *testing.T) {
 	// TODO: meanwhile builds are not deleted when deployment is deleted
 	// assertBuildDeleted(t, f, b.BuildID)
 }
+
+/*
+func TestDeleteDeploymentForeignKeys(t *testing.T) {
+	// deployment is soft-deleted, so no need to check foreign keys meanwhile
+}
+*/
