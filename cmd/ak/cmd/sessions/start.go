@@ -54,7 +54,6 @@ func init() {
 	startCmd.Flags().StringVarP(&buildID, "build-id", "b", "", "build ID, mutually exclusive with --deployment-id")
 	startCmd.Flags().StringVarP(&env, "env", "e", "", "environment name or ID, mutually exclusive with --deployment-id")
 	startCmd.MarkFlagsOneRequired("deployment-id", "build-id")
-	startCmd.MarkFlagsRequiredTogether("build-id", "env")
 
 	startCmd.Flags().StringVarP(&entryPoint, "entrypoint", "p", "", `entry point ("file:function")`)
 	kittehs.Must0(startCmd.MarkFlagRequired("entrypoint"))
