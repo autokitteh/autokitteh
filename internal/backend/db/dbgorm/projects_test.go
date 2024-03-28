@@ -163,8 +163,8 @@ func TestDeleteProjectAndDependents(t *testing.T) {
 
 	i := f.newIntegration()
 	c := f.newConnection()
-	c.IntegrationID = i.IntegrationID
-	c.ProjectID = p1.ProjectID
+	c.IntegrationID = &i.IntegrationID
+	c.ProjectID = &p1.ProjectID
 
 	e1p1, e2p1, e1p2 := f.newEnv(), f.newEnv(), f.newEnv()
 	e1p1.ProjectID = &p1.ProjectID

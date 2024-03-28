@@ -222,9 +222,7 @@ func (f *dbFixture) newTrigger() scheme.Trigger {
 
 func (f *dbFixture) newConnection() scheme.Connection {
 	return scheme.Connection{
-		ConnectionID:  testConnectionID,
-		IntegrationID: testIntegrationID,
-		ProjectID:     testProjectID,
+		ConnectionID: testConnectionID,
 	}
 }
 

@@ -77,13 +77,14 @@ func ParseBuild(b Build) (sdktypes.Build, error) {
 
 type Connection struct {
 	ConnectionID     string `gorm:"primaryKey"`
-	IntegrationID    string
+	IntegrationID    *string
 	IntegrationToken string
-	ProjectID        string `gorm:"index"`
+	ProjectID        *string `gorm:"index"`
 	Name             string
 
-	// IntegrationID is a foreign key, but gorm won't add and enforce a constraint till we uncomment
-	// Integration Integration `gorm:"foreignKey:IntegrationID"` // TODO(ENG-111)
+	// enforce foreign keys
+	// Integration *Integration
+	Project *Project
 
 	// TODO(ENG-111): Also call "Preload()" where relevant
 }
@@ -91,9 +92,9 @@ type Connection struct {
 func ParseConnection(c Connection) (sdktypes.Connection, error) {
 	conn, err := sdktypes.StrictConnectionFromProto(&sdktypes.ConnectionPB{
 		ConnectionId:     c.ConnectionID,
-		IntegrationId:    c.IntegrationID,
+		IntegrationId:    stringFromPtrOrEmpty(c.IntegrationID),
 		IntegrationToken: c.IntegrationToken,
-		ProjectId:        c.ProjectID,
+		ProjectId:        stringFromPtrOrEmpty(c.ProjectID),
 		Name:             c.Name,
 	})
 	if err != nil {
