@@ -133,11 +133,11 @@ func assertDeleted[T any](t *testing.T, f *dbFixture, m T) {
 
 var (
 	// testSessionID    = "ses_00000000000000000000000001"
-	testBuildID      = "bld_00000000000000000000000001"
-	testDeploymentID = "dep_00000000000000000000000001"
-	testEventID      = "evt_00000000000000000000000001"
-	testEnvID        = "env_00000000000000000000000001"
-	testProjectID    = "prj_00000000000000000000000001"
+	testBuildID = "bld_00000000000000000000000001"
+	// testDeploymentID = "dep_00000000000000000000000001"
+	// testEventID      = "evt_00000000000000000000000001"
+	testEnvID     = "env_00000000000000000000000001"
+	testProjectID = "prj_00000000000000000000000001"
 	// testTriggerID     = "trg_00000000000000000000000001"
 	testConnectionID  = "con_00000000000000000000000001"
 	testIntegrationID = "int_00000000000000000000000001"
@@ -152,6 +152,8 @@ func (f *dbFixture) newSession(st sdktypes.SessionStateType) scheme.Session {
 		SessionID:        sessionID,
 		CurrentStateType: int(st.ToProto()),
 		Inputs:           datatypes.JSON(`{"key": "value"}`),
+		CreatedAt:        now,
+		UpdatedAt:        now,
 	}
 }
 

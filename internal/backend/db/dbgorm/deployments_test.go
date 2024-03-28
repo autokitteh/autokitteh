@@ -126,6 +126,7 @@ func TestListDeploymentsWithStats(t *testing.T) {
 
 	// add session for the stats
 	s := f.newSession(sdktypes.SessionStateTypeCompleted)
+	s.DeploymentID = &d.DeploymentID
 	f.createSessionsAndAssert(t, s)
 
 	// ensure that new session is included in stats
@@ -156,6 +157,8 @@ func TestDeleteDeployment(t *testing.T) {
 	// add sessions and check that deployment stats are updated
 	s1 := f.newSession(sdktypes.SessionStateTypeCompleted)
 	s2 := f.newSession(sdktypes.SessionStateTypeError)
+	s1.DeploymentID = &d.DeploymentID
+	s2.DeploymentID = &d.DeploymentID
 	f.createSessionsAndAssert(t, s1, s2)
 
 	dWS := scheme.DeploymentWithStats{Deployment: d, Completed: 1, Error: 1}
