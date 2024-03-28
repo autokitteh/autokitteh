@@ -1,18 +1,6 @@
-import logging
-import os
+from os import environ
 
 from slack_sdk import WebClient
-
-CHANNEL_ID = os.getenv('SLACK_CHANNEL_ID')
-SLACK_TOKEN = os.getenv('SLACK_TOKEN')
-
-
-logging.basicConfig(
-    format='%(asctime)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s',
-    datefmt='%Y-%M-%DT%H:%M:%S',
-    level=logging.INFO,
-)
-
 
 def format_message(issue):
     title, number, login, url = \
@@ -24,12 +12,18 @@ def format_message(issue):
 def on_issue(event):
     event = event['data']
     if event['action'] != 'opened':
-        logging.info('skipping event of type %r', event['action'])
+        print(f'skipping event of type {event["action"]!r}')
         return
 
     issue = event['issue']
-    logging.info('issue %r:', issue)
+    print(f'issue: {issue}')
     text = format_message(issue)
 
-    client = WebClient(token=SLACK_TOKEN)
-    client.chat_postMessage(channel=CHANNEL_ID, text=text)
+    channel_id = environ.get('SLACK_CHANNEL_ID')
+    slack_token = environ.get('SLACK_TOKEN')
+
+    if not channel_id and slack_token:
+        print('missing environment: SLACK_CHANNEL_ID, SLACK_TOKEN')
+
+    client = WebClient(token=slack_token)
+    client.chat_postMessage(channel=channel_id, text=text)
