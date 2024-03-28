@@ -120,7 +120,7 @@ var testCmd = common.StandardCommand(&cobra.Command{
 })
 
 func init() {
-	testCmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "do not print anything, just wait to finish")
-	testCmd.Flags().BoolVar(&noTimestamps, "no-timestamps", false, "omit timestamps from track output")
-	testCmd.Flags().DurationVar(&watchTimeout, "timeout", 0, "watch time out duration")
+	testCmd.Flags().DurationVarP(&watchTimeout, "timeout", "t", 0, "watch timeout duration")
+	testCmd.Flags().BoolVar(&noTimestamps, "no-timestamps", false, "omit timestamps from watch output")
+	testCmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "don't print anything, just wait to finish")
 }

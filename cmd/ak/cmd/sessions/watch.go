@@ -12,18 +12,11 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-var (
-	track        bool
-	pollInterval time.Duration
-	noTimestamps bool
-	endState     string
-	watchTimeout time.Duration
-	quiet        bool
-)
+var endState string
 
 var watchCmd = common.StandardCommand(&cobra.Command{
-	Use:   "watch [sessions ID] [--fail] [--no-timestamps] [--poll-interval] [--end-state STATE] [--timeout DURATION] [--quiet]",
-	Short: "Watch for session runtime logs (prints, calls, errors, state changes)",
+	Use:   "watch [sessions ID] [--fail] [--end-state <state>] [--timeout <duration>] [--poll-interval <duration>] [--no-timestamps] [--quiet]",
+	Short: "Watch session runtime logs (prints, calls, errors, state changes)",
 	Args:  cobra.MaximumNArgs(1),
 
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -57,11 +50,12 @@ var watchCmd = common.StandardCommand(&cobra.Command{
 
 func init() {
 	// Command-specific flags.
-	watchCmd.Flags().DurationVar(&pollInterval, "poll-interval", defaultPollInterval, "poll interval")
-	watchCmd.Flags().BoolVar(&noTimestamps, "no-timestamps", false, "omit timestamps from track output")
-	watchCmd.Flags().StringVar(&endState, "end-state", "", "stop watching when state is reached")
-	watchCmd.Flags().DurationVar(&watchTimeout, "timeout", 0, "time out duration")
-	watchCmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "do not print anything, just wait to finish")
+	watchCmd.Flags().StringVarP(&endState, "end-state", "e", "", "stop watching when state is reached")
+
+	watchCmd.Flags().DurationVarP(&watchTimeout, "timeout", "t", 0, "timeout duration")
+	watchCmd.Flags().DurationVarP(&pollInterval, "poll-interval", "i", defaultPollInterval, "poll interval")
+	watchCmd.Flags().BoolVarP(&noTimestamps, "no-timestamps", "n", false, "omit timestamps from output")
+	watchCmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "don't print anything, just wait to finish")
 
 	common.AddFailIfNotFoundFlag(watchCmd)
 }
