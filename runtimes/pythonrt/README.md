@@ -20,6 +20,14 @@ This event has the following keys:
 
 The return value from Python entry points is ignored and is not passed back to autokitteh.
 
+### Limitations
+
+You can't issue function calls at module level (e.g. `TOKEN = os.getenv('TOKEN')`)
+
+Python serializes function calls using `pickle`, some callables can't be pickled:
+- lambda
+- dynamically generate functions (notably os.environ.get)
+
 ## Patching User Code
 
 The Python code (`ak_runner.py`) loads the user code and patches every function call.
@@ -89,7 +97,7 @@ The reason do this is that `ak_runner.py` should not have any external dependenc
 Once we introduce an external dependency, it will conflict with the user dependencies.
 
 The message payload is handled by Python and is opaque to autokitteh.
-Currently, it's base64 of a pickle.
+Currently, it's base64 of a pickle. We're using pickle protocol 0 which is text based and mostly Python version agnostic.
 
 
 ### Integration Testing
