@@ -19,6 +19,7 @@ import (
 	googleoauth2 "google.golang.org/api/oauth2/v2"
 	"google.golang.org/api/sheets/v4"
 
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 )
@@ -44,6 +45,14 @@ func New(l *zap.Logger) sdkservices.OAuth {
 	githubBaseURL := os.Getenv("GITHUB_ENTERPRISE_URL")
 	if githubBaseURL == "" {
 		githubBaseURL = "https://github.com"
+	}
+	var err error
+	githubBaseURL, err = kittehs.NormalizeURL(githubBaseURL, true)
+	if err != nil {
+		l.Fatal("Invalid environment variable value",
+			zap.String("name", "GITHUB_ENTERPRISE_URL"),
+			zap.Error(err),
+		)
 	}
 
 	return &oauth{

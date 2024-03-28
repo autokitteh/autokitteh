@@ -14,6 +14,7 @@ import (
 	ghinstallation "github.com/bradleyfalzon/ghinstallation/v2"
 	"github.com/google/go-github/v60/github"
 
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 )
 
@@ -108,8 +109,8 @@ func (i integration) NewClientWithAppJWTFromGitHubID(appID int64) (*github.Clien
 
 	// Initialize a client with the generated JWT injected into outbound requests.
 	client := github.NewClient(&http.Client{Transport: atr})
-	if enterpriseURL := os.Getenv(enterpriseURLEnvVar); enterpriseURL != "" {
-		client, err = client.WithEnterpriseURLs(enterpriseURL, enterpriseURL)
+	if u := enterpriseURL(); u != "" {
+		client, err = client.WithEnterpriseURLs(u, u)
 		if err != nil {
 			return nil, err
 		}
@@ -132,8 +133,8 @@ func (i integration) NewClientWithInstallJWTFromGitHubIDs(appID, installID int64
 
 	// Initialize a client with the generated JWT injected into outbound requests.
 	client := github.NewClient(&http.Client{Transport: itr})
-	if enterpriseURL := os.Getenv(enterpriseURLEnvVar); enterpriseURL != "" {
-		client, err = client.WithEnterpriseURLs(enterpriseURL, enterpriseURL)
+	if u := enterpriseURL(); u != "" {
+		client, err = client.WithEnterpriseURLs(u, u)
 		if err != nil {
 			return nil, err
 		}
@@ -157,4 +158,17 @@ func getPrivateKey() []byte {
 		Bytes: x509.MarshalPKCS1PrivateKey(k),
 	}
 	return pem.EncodeToMemory(b)
+}
+
+func enterpriseURL() string {
+	u := os.Getenv(enterpriseURLEnvVar)
+	if u == "" {
+		return u
+	}
+
+	u, err := kittehs.NormalizeURL(u, true)
+	if err != nil {
+		return ""
+	}
+	return u
 }
