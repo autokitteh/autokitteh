@@ -1,8 +1,8 @@
 package svc
 
 import (
-	"go.autokitteh.dev/autokitteh/internal/backend/basesvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/configset"
+	"go.autokitteh.dev/autokitteh/internal/backend/svc"
 )
 
 const (
@@ -13,4 +13,4 @@ const (
 
 var ParseMode = configset.ParseMode
 
-const ConfigDelim = basesvc.Delim
+const ConfigDelim = svc.Delim

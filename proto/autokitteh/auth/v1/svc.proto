@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package autokitteh.auth.v1;
+
+import "autokitteh/users/v1/user.proto";
+
+message WhoAmIRequest {}
+
+message WhoAmIResponse {
+  users.v1.User user = 1;
+}
+
+message CreateTokenRequest {}
+
+message CreateTokenResponse {
+  string token = 1;
+}
+
+service AuthService {
+  rpc WhoAmI(WhoAmIRequest) returns (WhoAmIResponse);
+  rpc CreateToken(CreateTokenRequest) returns (CreateTokenResponse);
+}
