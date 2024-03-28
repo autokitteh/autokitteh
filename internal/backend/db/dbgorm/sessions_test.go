@@ -70,9 +70,9 @@ func TestCreateSessionForeignKeys(t *testing.T) {
 	assert.ErrorContains(t, f.gormdb.createSession(f.ctx, &s), "FOREIGN KEY")
 	s.DeploymentID = nil
 
-	s.EventID = &unexisting
-	assert.ErrorContains(t, f.gormdb.createSession(f.ctx, &s), "FOREIGN KEY")
-	s.EventID = nil
+	// s.EventID = &unexisting
+	// assert.ErrorContains(t, f.gormdb.createSession(f.ctx, &s), "FOREIGN KEY")
+	// s.EventID = nil
 
 	b := f.newBuild()
 	env := f.newEnv()

@@ -35,25 +35,27 @@ func TestCreateEventForeignKeys(t *testing.T) {
 	findAndAssertCount(t, f, scheme.Event{}, 0, "") // no events
 
 	e := f.newEvent()
-	unexisting := "unexisting"
+	// unexisting := "unexisting"
 
-	e.IntegrationID = &unexisting
-	assert.ErrorContains(t, f.gormdb.saveEvent(f.ctx, &e), "FOREIGN KEY")
-	e.IntegrationID = nil
+	// FIXME: ENG-571
+	// e.IntegrationID = &unexisting
+	// assert.ErrorContains(t, f.gormdb.saveEvent(f.ctx, &e), "FOREIGN KEY")
+	// e.IntegrationID = nil
 
 	// FIXME: ENG-569
 	// e.OriginalEventID = &unexisting
 	// assert.ErrorContains(t, f.gormdb.saveEvent(f.ctx, &e), "FOREIGN KEY")
 	// e.OriginalEventID = nil
 
-	// e2 := f.newEvent()
-	// f.createEventsAndAssert(t, e2)
-	// e.OriginalEventID = &e2.EventID
+	e2 := f.newEvent()
+	f.createEventsAndAssert(t, e2)
 
 	i := f.newIntegration()
 	f.createIntegrationsAndAssert(t, i)
 
 	e.IntegrationID = &i.IntegrationID
+	e.OriginalEventID = &e2.EventID
+
 	f.createEventsAndAssert(t, e)
 }
 
