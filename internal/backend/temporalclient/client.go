@@ -88,7 +88,7 @@ func New(cfg *Config, z *zap.Logger) (Client, error) {
 					return nil, fmt.Errorf("temporal client: %w", err)
 				}
 
-				z.Info("cannot connect to temporal, starting dev server")
+				z.Info("Cannot connect to Temporal, starting Temporal dev server")
 
 				if err := impl.startDevServer(ctx, cfg, opts); err != nil {
 					return nil, err
@@ -107,7 +107,7 @@ func (c *impl) startDevServer(ctx context.Context, cfg *Config, opts client.Opti
 	if c.srv, err = testsuite.StartDevServer(ctx, cfg.DevServer); err != nil {
 		return fmt.Errorf("start Temporal dev server: %w", err)
 	}
-	c.z.Info("started Temporal dev server", zap.String("address", c.srv.FrontendHostPort()))
+	c.z.Info("Started Temporal dev server", zap.String("address", c.srv.FrontendHostPort()))
 
 	c.client = c.srv.Client()
 
@@ -162,8 +162,13 @@ func (c *impl) Start(context.Context) error {
 	}
 
 	go func() {
+		ok := false
 		for {
-			if err := c.healthCheck(context.Background()); err != nil {
+			err := c.healthCheck(context.Background())
+			if err == nil && !ok {
+				c.z.Info("Connection to Temporal is healthy")
+				ok = true
+			} else if err != nil {
 				// TODO: stats.
 				c.z.Error("Temporal health check error", zap.Error(err))
 			}
