@@ -9,6 +9,10 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
+func (db *gormdb) addEventRecord(ctx context.Context, er *scheme.EventRecord) error {
+	return db.db.WithContext(ctx).Create(&er).Error
+}
+
 func (db *gormdb) AddEventRecord(ctx context.Context, er sdktypes.EventRecord) error {
 	e := scheme.EventRecord{
 		Seq:     er.Seq(),
@@ -16,10 +20,7 @@ func (db *gormdb) AddEventRecord(ctx context.Context, er sdktypes.EventRecord) e
 		State:   int32(er.State().ToProto()),
 	}
 
-	if err := db.db.WithContext(ctx).Create(&e).Error; err != nil {
-		return translateError(err)
-	}
-	return nil
+	return translateError(db.addEventRecord(ctx, &e))
 }
 
 func (db *gormdb) ListEventRecords(ctx context.Context, filter sdkservices.ListEventRecordsFilter) ([]sdktypes.EventRecord, error) {

@@ -232,6 +232,13 @@ func (f *dbFixture) newEvent() scheme.Event {
 	}
 }
 
+func (f *dbFixture) newEventRecord() scheme.EventRecord {
+	eventID := fmt.Sprintf("evt_%026d", f.eventID)
+	return scheme.EventRecord{
+		EventID: eventID,
+	}
+}
+
 func (f *dbFixture) newSignal() scheme.Signal {
 	return scheme.Signal{
 		SignalID: testSignalID,

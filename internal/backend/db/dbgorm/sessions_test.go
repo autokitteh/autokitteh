@@ -70,9 +70,9 @@ func TestCreateSessionForeignKeys(t *testing.T) {
 	assert.ErrorContains(t, f.gormdb.createSession(f.ctx, &s), "FOREIGN KEY")
 	s.DeploymentID = nil
 
-	// s.EventID = &unexisting
-	// assert.ErrorContains(t, f.gormdb.createSession(f.ctx, &s), "FOREIGN KEY")
-	// s.EventID = nil
+	s.EventID = &unexisting
+	assert.ErrorContains(t, f.gormdb.createSession(f.ctx, &s), "FOREIGN KEY")
+	s.EventID = nil
 
 	b := f.newBuild()
 	env := f.newEnv()
@@ -87,7 +87,7 @@ func TestCreateSessionForeignKeys(t *testing.T) {
 	s.BuildID = &b.BuildID
 	s.EnvID = &env.EnvID
 	s.DeploymentID = &d.DeploymentID
-	// s.EventID = &ev.EventID // FIXME: event_id is not a foreign key now, see ENG-569
+	s.EventID = &ev.EventID
 	f.createSessionsAndAssert(t, s)
 }
 
