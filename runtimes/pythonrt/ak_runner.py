@@ -4,6 +4,7 @@
 # running it.
 
 import ast
+import builtins
 import json
 import logging
 import pickle
@@ -39,6 +40,7 @@ def name_of(node):
 
 ACTION_NAME = '_ak_call'
 MODULE_NAME = ''
+BUILTIN = {v for v in dir(builtins) if callable(getattr(builtins, v))}
 
 
 class Transformer(ast.NodeTransformer):
@@ -48,7 +50,7 @@ class Transformer(ast.NodeTransformer):
         # ast.Transformer does not recurse to args
         node.args = [self.visit(a) for a in node.args]
 
-        if not name:
+        if not name or name in BUILTIN:
             return node
 
         logging.info('patching %s with action', name)
@@ -253,6 +255,7 @@ def module_entries(mod):
 
 if __name__ == '__main__':
     from argparse import ArgumentParser
+    import sys
 
     parser = ArgumentParser(description='autokitteh Python runner')
     parser.add_argument('sock', help='path to unix domain socket', type=file_type)
@@ -266,6 +269,8 @@ if __name__ == '__main__':
     else:
         module_name = args.path[:-3]
 
+    py_version = '{}.{}'.format(*sys.version_info[:2])
+    logging.info('python: %r, version: %r', sys.executable, py_version)
     logging.info('sock: %r, tar: %r, module: %r', args.sock, args.tar, module_name)
     code_dir = extract_code(args.tar)
     logging.info('code dir: %r', code_dir)
