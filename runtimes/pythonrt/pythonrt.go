@@ -113,6 +113,10 @@ type PyMessage struct {
 	Type    string `json:"type"`
 	Name    string `json:"name"`
 	Payload []byte `json:"payload"`
+	Func    struct {
+		Name string   `json:"name"`
+		Args []string `json:"args"`
+	} `json:"func"`
 }
 
 // All Python handler function get all event information.
@@ -281,10 +285,9 @@ func (py *pySVC) initialCall(ctx context.Context, funcName string, payload []byt
 			break
 		}
 
-		var modFn sdktypes.ModuleFunction
 		// Generate activity, it'll call Python with the result
 		// The function name is irrelevant, all the information Python needs is in the Payload
-		fn, err := sdktypes.NewFunctionValue(py.xid, "activity", msg.Payload, nil, modFn)
+		fn, err := sdktypes.NewFunctionValue(py.xid, msg.Func.Name, msg.Payload, nil, pyModuleFunc)
 		if err != nil {
 			py.log.Error("create function", zap.Error(err))
 			return sdktypes.InvalidValue, err
@@ -296,7 +299,7 @@ func (py *pySVC) initialCall(ctx context.Context, funcName string, payload []byt
 			py.xid.ToRunID(),
 			// The Python function to call is encoded in the payload
 			fn,
-			nil,
+			kittehs.Transform(msg.Func.Args, sdktypes.NewStringValue),
 			nil,
 		)
 		if err != nil {

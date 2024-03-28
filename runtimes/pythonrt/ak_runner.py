@@ -11,6 +11,7 @@ import pickle
 import sys
 import tarfile
 from base64 import b64decode, b64encode
+from collections import namedtuple
 from functools import wraps
 from importlib.abc import Loader
 from importlib.machinery import SourceFileLoader
@@ -152,6 +153,7 @@ def run_code(mod, entry_point, data):
 
 # Queue for passing requests from execution thread to main working with Go.
 activity_request, activity_response = Queue(), Queue()
+Call = namedtuple('Call', 'func args')
 
 class AKCall:
     """Callable wrapping functions with activities."""
@@ -172,7 +174,7 @@ class AKCall:
             return func(*args, **kw)
 
         logging.info('ACTION: calling %s (args=%r, kw=%r)', func.__name__, args, kw)
-        request = (func, args)
+        request = Call(func, args)
         activity_request.put(request)
         response = activity_response.get()
         return response
@@ -224,7 +226,7 @@ def file_type(value):
     raise ValueError(f'{value!r} - not a file')
 
 
-def encode_msg(typ, name, payload):
+def encode_msg(typ, name, payload, func_name="", func_args=None):
     if isinstance(payload, str):
         payload = payload.encode('utf-8')
     data = b64encode(payload)
@@ -233,6 +235,10 @@ def encode_msg(typ, name, payload):
         'type': typ,
         'name': name,
         'payload': data.decode('utf-8'),
+        'func': {
+            'name': func_name,
+            'args': func_args or [],
+        },
     }) + '\n'
     return data.encode('utf-8')
 
@@ -311,9 +317,10 @@ if __name__ == '__main__':
         if request is None:  # Done
             break
 
-        # Use protocol 0 since it's less version specific
+        # Use protocol 0 since it's less Python version specific
         event = pickle.dumps(request, protocol=0)
-        msg = encode_msg('activity', '', event)
+        fn, args = request
+        msg = encode_msg('activity', '', event, fn.__name__, [str(a) for a in args])
         logging.info('sending activity request')
         sock.sendall(msg)
         event = rdr.readline()
