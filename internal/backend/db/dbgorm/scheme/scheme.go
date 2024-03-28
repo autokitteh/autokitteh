@@ -254,7 +254,7 @@ type Env struct {
 	// See OrgMember for more.
 	MembershipID string `gorm:"uniqueIndex"`
 
-	// ensure foreign keys
+	// enforce foreign keys
 	Project *Project
 }
 
@@ -278,6 +278,9 @@ type EnvVar struct {
 	// {eid.uuid}/{name}. easier to detect dups.
 	// See OrgMember for more.
 	MembershipID string `gorm:"uniqueIndex"`
+
+	// enforce foreign keys
+	Env *Env
 }
 
 func ParseEnvVar(r EnvVar) (sdktypes.EnvVar, error) {
