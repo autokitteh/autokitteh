@@ -200,7 +200,9 @@ type Event struct {
 
 	// enforce foreign keys
 	// Integration *Integration // FIXME: ENG-571
-	OriginalEvent *Event `gorm:"foreignKey:OriginalEventID;references:EventID"`
+
+	// FIXME: original_event_id is actually path to URL?
+	// OriginalEvent *Event `gorm:"foreignKey:OriginalEventID;references:EventID"`
 }
 
 func ParseEvent(e Event) (sdktypes.Event, error) {
