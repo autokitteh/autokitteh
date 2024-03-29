@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"maps"
 	"path/filepath"
 	"strings"
 
@@ -57,7 +58,7 @@ func Run(
 
 	vctx := &values.Context{Call: cbs.SafeCall, RunID: runID}
 
-	predeclared, err := kittehs.TransformMapValuesError(givenValues, vctx.ToStarlarkValue)
+	givens, err := kittehs.TransformMapValuesError(givenValues, vctx.ToStarlarkValue)
 	if err != nil {
 		return nil, fmt.Errorf("converting values to starlark: %w", err)
 	}
@@ -65,9 +66,11 @@ func Run(
 	// preload all  modules
 	libs := libs.LoadModules(int64(kittehs.HashString64(runID.String())))
 
-	// order matters here - builtins are the least important. predeclared can override them.
+	// order matters here - builtins are the least important. givens can override them.
 	// then we have the starlib libs, which can override both.
-	predeclared, _ = kittehs.JoinMaps(builtins, predeclared, libs)
+	predeclared := maps.Clone(builtins)
+	maps.Copy(predeclared, givens)
+	maps.Copy(predeclared, libs)
 
 	th := &starlark.Thread{
 		Name:  mainPath,
@@ -121,7 +124,7 @@ func Run(
 	})
 
 	// We treat the bootstrap exported values as predeclared values in the actual program.
-	predeclared, _ = kittehs.JoinMaps(predeclared, bootstrappedValues)
+	maps.Copy(predeclared, bootstrappedValues)
 
 	globals, err := prog.Init(th, predeclared)
 	if err != nil {

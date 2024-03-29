@@ -27,20 +27,6 @@ func MapValuesSortedByKeys[A cmp.Ordered, B any](m map[A]B) []B {
 	return vs
 }
 
-func JoinMaps[K comparable, V any](ms ...map[K]V) (map[K]V, map[K]bool) {
-	m := make(map[K]V)
-	overrides := make(map[K]bool)
-	for _, m1 := range ms {
-		for k, v := range m1 {
-			if _, ok := m[k]; ok {
-				overrides[k] = true
-			}
-			m[k] = v
-		}
-	}
-	return m, overrides
-}
-
 func MapFilter[K comparable, V any](m map[K]V, f func(K, V) bool) map[K]V {
 	return NewMapFilter(f)(m)
 }
