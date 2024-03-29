@@ -206,6 +206,7 @@ func (py *pySVC) Run(
 		return nil, err
 	}
 
+	// FIXME (ENG-577) We might get activity calls before module is loaded if there are module level function calls.
 	if msg.Type != "module" {
 		py.log.Error("wrong initial message type from python", zap.String("type", msg.Type))
 		return nil, fmt.Errorf("wrong initial message: type=%q", msg.Type)

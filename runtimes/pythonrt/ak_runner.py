@@ -150,13 +150,13 @@ def run_code(mod, entry_point, data):
 
 
 
-# Queue for passing requests from execution thread to main working with Go.
-activity_request, activity_response = Queue(), Queue()
-
 class AKCall:
     """Callable wrapping functions with activities."""
     def __init__(self, module_name):
         self.module_name = module_name
+        self.in_activity = False
+        # Queue for passing requests from execution thread to main working with Go.
+        self.activity_request, self.activity_response = Queue(), Queue()
 
     def ignore(self, fn):
         if isbuiltin(fn):
@@ -168,25 +168,28 @@ class AKCall:
         return False
 
     def __call__(self, func, *args, **kw):
-        if self.ignore(func):
+        if self.in_activity or self.ignore(func):
             return func(*args, **kw)
 
         logging.info('ACTION: calling %s (args=%r, kw=%r)', func.__name__, args, kw)
+        self.in_activity = True
         request = (func, args, kw)
-        activity_request.put(request)
-        response = activity_response.get()
+        self.activity_request.put(request)
+        response = self.activity_response.get()
+        self.in_activity = False
         return response
 
 
 class RunWrapper:
     """Wrapper that captures the module so we can access it outside the running
     thread. And also send sentinel to activity_request queue to signal we're done."""
-    def __init__(self, mod):
+    def __init__(self, mod, queue):
         self.mod = mod
+        self.queue = queue
 
     def run(self, func_name, data):
         run_code(self.mod, func_name, data)
-        activity_request.put(None)  # Signal we're done
+        self.queue.put(None)  # Signal we're done
 
 
 def extract_code(tar_path):
@@ -307,12 +310,12 @@ if __name__ == '__main__':
     event = request.get('payload')
     event = {} if event is None else json.loads(event)
 
-    rw = RunWrapper(mod)
+    rw = RunWrapper(mod, ak_call.activity_request)
     Thread(target=rw.run, args=(func_name, event), daemon=True).start()
     logging.info('execution thread started')
 
     while True:
-        request = activity_request.get()
+        request = ak_call.activity_request.get()
         if request is None:  # Done
             break
 
@@ -334,7 +337,7 @@ if __name__ == '__main__':
         event = pickle.dumps(out, protocol=0)
         msg = encode_msg('response', '', event)
         sock.sendall(msg)
-        activity_response.put(out)
+        ak_call.activity_response.put(out)
 
     msg = encode_msg('done', '', '')
     sock.sendall(msg)

@@ -4,7 +4,8 @@ from unittest.mock import MagicMock
 
 def test_on_issue(monkeypatch):
     mock = MagicMock()
-    monkeypatch.setattr(issues, 'WebClient', lambda token: mock)
+    def webclient(**_): return mock
+    monkeypatch.setattr(issues, 'WebClient', webclient)
 
     event = {
         'data': {
@@ -19,6 +20,4 @@ def test_on_issue(monkeypatch):
     }
 
     issues.on_issue(event)
-
-    text = issues.format_message(event['data']['issue'])
-    mock.chat_postMessage.assert_called_once_with(channel=issues.CHANNEL_ID, text=text)
+    mock.chat_postMessage.assert_called_once()

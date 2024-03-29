@@ -1,10 +1,11 @@
-import ak_runner
 import json
 import sys
-from subprocess import run
-from pathlib import Path
 import types
+from pathlib import Path
+from subprocess import run
+from threading import Thread
 
+import ak_runner
 
 test_dir = Path(__file__).absolute().parent
 
@@ -52,3 +53,22 @@ def test_module_entries():
 
     entries = ak_runner.module_entries(mod)
     assert names == sorted(entries)
+
+
+def test_nested():
+    ak = ak_runner.AKCall('mod1')
+    val = 7
+
+    def outer():
+        return ak(inner)
+
+    def inner():
+        return val
+
+    thr = Thread(target=ak, args=(outer,), daemon=True)
+    thr.start()
+    fn, args, kw = ak.activity_request.get()
+    out = fn(*args, **kw)
+    assert val == out
+    ak.activity_response.put(out)
+    thr.join(0.1)  # Will raise if ak still waits
