@@ -177,7 +177,6 @@ func TestDeleteDeployment(t *testing.T) {
 	f.assertSessionsDeleted(t, s1, s2)
 
 	// TODO: meanwhile builds are not deleted when deployment is deleted
-	// assertBuildDeleted(t, f, b.BuildID)
 }
 
 /*
