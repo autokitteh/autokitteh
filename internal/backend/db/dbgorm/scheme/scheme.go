@@ -83,7 +83,7 @@ type Connection struct {
 	Name             string
 
 	// enforce foreign keys
-	// Integration *Integration
+	// Integration *Integration FIXME: ENG-571
 	Project *Project
 
 	// TODO(ENG-111): Also call "Preload()" where relevant
