@@ -21,22 +21,44 @@ func (f *dbFixture) assertSignalsDeleted(t *testing.T, signals ...scheme.Signal)
 	}
 }
 
-func preSignalTest(t *testing.T) *dbFixture {
-	f := newDBFixtureFK(true)
+func preSignalTest(t *testing.T, no_foreign_keys bool) *dbFixture {
+	f := newDBFixtureFK(no_foreign_keys)
 	findAndAssertCount(t, f, scheme.Signal{}, 0, "") // no signals
 	return f
 }
 
 func TestSaveSignal(t *testing.T) {
-	f := preSignalTest(t)
+	f := preSignalTest(t, true) // no foreign keys
 
 	sig := f.newSignal()
 	// test createSignal
 	f.saveSignalsAndAssert(t, sig)
 }
 
+func TestSaveSignelForeignKeys(t *testing.T) {
+	f := preSignalTest(t, false) // with foreign keys
+
+	// prepare
+	sig := f.newSignal()
+	conn := f.newConnection()
+
+	sig.ConnectionID = conn.ConnectionID
+
+	f.createConnectionsAndAssert(t, conn)
+
+	// negative test with non-existing assets
+	unexisting := "unexisting"
+
+	sig.ConnectionID = unexisting
+	assert.ErrorContains(t, f.gormdb.saveSignal(f.ctx, &sig), "FOREIGN KEY")
+	sig.ConnectionID = conn.ConnectionID
+
+	// test with existing assets
+	f.saveSignalsAndAssert(t, sig)
+}
+
 func TestDeleteSignal(t *testing.T) {
-	f := preSignalTest(t)
+	f := preSignalTest(t, true) // no foreign keys
 
 	sig := f.newSignal()
 	f.saveSignalsAndAssert(t, sig)
