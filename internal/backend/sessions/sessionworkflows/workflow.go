@@ -310,7 +310,7 @@ func (w *sessionWorkflow) getNextEvent(ctx context.Context, signalID string) (ma
 		w.z.Panic("get signal", zap.Error(err))
 	}
 
-	iid := kittehs.Must1(sdktypes.ParseIntegrationID(signal.Connection.IntegrationID))
+	iid := kittehs.Must1(sdktypes.ParseIntegrationID(*signal.Connection.IntegrationID))
 
 	minSequenceNumber, ok := w.signals[signalID]
 	if !ok {
