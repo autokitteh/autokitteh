@@ -191,13 +191,6 @@ func (w *sessionWorkflow) initConnections(ctx workflow.Context) error {
 		name := conn.Name().String()
 		iid := conn.IntegrationID()
 
-		if w.executors.GetValues(name) != nil {
-			return fmt.Errorf("conflicting connection %q", name)
-		}
-
-		// In modules, we register the connection prefixed with its integration name.
-		// This allows us to query all connections for a given integration in the load callback.
-
 		intg, err := w.ws.svcs.Integrations.Get(goCtx, iid)
 		if err != nil {
 			return fmt.Errorf("get integration %q: %w", iid, err)
@@ -205,6 +198,13 @@ func (w *sessionWorkflow) initConnections(ctx workflow.Context) error {
 
 		if intg == nil {
 			return fmt.Errorf("integration %q not found", iid)
+		}
+
+		// In modules, we register the connection prefixed with its integration name.
+		// This allows us to query all connections for a given integration in the load callback.
+		scope := integrationModulePrefix(intg.Get().UniqueName().String()) + name
+		if w.executors.GetValues(scope) != nil {
+			return fmt.Errorf("conflicting connection %q", name)
 		}
 
 		if xid := sdktypes.NewExecutorID(iid); w.executors.GetCaller(xid) == nil {
@@ -216,8 +216,6 @@ func (w *sessionWorkflow) initConnections(ctx workflow.Context) error {
 		if err != nil {
 			return fmt.Errorf("connect to integration %q: %w", iid, err)
 		}
-
-		scope := integrationModulePrefix(intg.Get().UniqueName().String()) + name
 
 		if err := w.executors.AddValues(scope, vs); err != nil {
 			return err
