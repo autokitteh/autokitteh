@@ -83,7 +83,7 @@ type Connection struct {
 	Name             string
 
 	// enforce foreign keys
-	// Integration *Integration FIXME: ENG-571
+	// Integration *Integration FIXME: ENG-590
 	Project *Project
 
 	// TODO(ENG-111): Also call "Preload()" where relevant
@@ -199,7 +199,7 @@ type Event struct {
 	DeletedAt gorm.DeletedAt `gorm:"index"`
 
 	// enforce foreign keys
-	// Integration *Integration // FIXME: ENG-571
+	// Integration *Integration // FIXME: ENG-590
 
 	// FIXME: original_event_id is actually path to URL?
 	// OriginalEvent *Event `gorm:"foreignKey:OriginalEventID;references:EventID"`
