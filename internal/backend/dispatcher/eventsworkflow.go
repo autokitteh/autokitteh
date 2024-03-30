@@ -315,6 +315,4 @@ func (d *dispatcher) startSessions(ctx workflow.Context, event sdktypes.Event, s
 		}
 		d.z.Info("started session", zap.String("session_id", sessionID.String()))
 	}
-
-	return
 }
