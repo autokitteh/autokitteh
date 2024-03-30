@@ -39,7 +39,7 @@ func (s *server) Get(ctx context.Context, req *connect.Request[eventsv1.GetReque
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	eventId, err := sdktypes.StrictParseEventID(msg.EventId)
+	eventId, err := sdktypes.Strict(sdktypes.ParseEventID(msg.EventId))
 	if err != nil {
 		return nil, sdkerrors.AsConnectError(err)
 	}

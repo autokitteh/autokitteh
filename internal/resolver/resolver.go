@@ -148,7 +148,7 @@ func (r Resolver) DeploymentID(id string) (d sdktypes.Deployment, did sdktypes.D
 		return
 	}
 
-	if did, err = sdktypes.StrictParseDeploymentID(id); err != nil {
+	if did, err = sdktypes.Strict(sdktypes.ParseDeploymentID(id)); err != nil {
 		err = fmt.Errorf("invalid deployment ID %q: %w", id, err)
 		return
 	}
@@ -284,7 +284,7 @@ func (r Resolver) EventID(id string) (e sdktypes.Event, eid sdktypes.EventID, er
 		return
 	}
 
-	if eid, err = sdktypes.StrictParseEventID(id); err != nil {
+	if eid, err = sdktypes.Strict(sdktypes.ParseEventID(id)); err != nil {
 		err = fmt.Errorf("invalid event ID %q: %w", id, err)
 		return
 	}
