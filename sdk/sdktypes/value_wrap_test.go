@@ -2,6 +2,7 @@ package sdktypes_test
 
 import (
 	"fmt"
+	"maps"
 	"testing"
 	"time"
 
@@ -257,6 +258,14 @@ func TestUnwrapIntoStructs(t *testing.T) {
 		assert.Equal(t, 2, st1.Two)
 		assert.Equal(t, 3, st1.Three)
 	}
+
+	m := maps.Clone(stringIntMap)
+	m["four"] = sdktypes.NewIntegerValue(4)
+	assert.NoError(t, w.UnwrapInto(&st1, sdktypes.NewDictValueFromStringMap(m)))
+
+	ww := w
+	ww.UnwrapErrorOnNonexistentStructFields = true
+	assert.Error(t, ww.UnwrapInto(&st1, sdktypes.NewDictValueFromStringMap(m)))
 }
 
 func TestUnwrapIntoSpecials(t *testing.T) {
