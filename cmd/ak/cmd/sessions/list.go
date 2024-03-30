@@ -13,7 +13,6 @@ import (
 )
 
 var (
-	env        string
 	stateType  stateString
 	withInputs bool
 )
