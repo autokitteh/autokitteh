@@ -122,32 +122,27 @@ export class Event extends Message<Event> {
   integrationToken = "";
 
   /**
-   * @generated from field: string original_event_id = 4;
-   */
-  originalEventId = "";
-
-  /**
-   * @generated from field: string event_type = 5;
+   * @generated from field: string event_type = 4;
    */
   eventType = "";
 
   /**
-   * @generated from field: map<string, autokitteh.values.v1.Value> data = 6;
+   * @generated from field: map<string, autokitteh.values.v1.Value> data = 5;
    */
   data: { [key: string]: Value } = {};
 
   /**
-   * @generated from field: map<string, string> memo = 7;
+   * @generated from field: map<string, string> memo = 6;
    */
   memo: { [key: string]: string } = {};
 
   /**
-   * @generated from field: google.protobuf.Timestamp created_at = 8;
+   * @generated from field: google.protobuf.Timestamp created_at = 7;
    */
   createdAt?: Timestamp;
 
   /**
-   * @generated from field: uint64 seq = 9;
+   * @generated from field: uint64 seq = 8;
    */
   seq = protoInt64.zero;
 
@@ -162,12 +157,11 @@ export class Event extends Message<Event> {
     { no: 1, name: "event_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "integration_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "integration_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "original_event_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "event_type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 6, name: "data", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: Value} },
-    { no: 7, name: "memo", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
-    { no: 8, name: "created_at", kind: "message", T: Timestamp },
-    { no: 9, name: "seq", kind: "scalar", T: 4 /* ScalarType.UINT64 */ },
+    { no: 4, name: "event_type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "data", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: Value} },
+    { no: 6, name: "memo", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 7, name: "created_at", kind: "message", T: Timestamp },
+    { no: 8, name: "seq", kind: "scalar", T: 4 /* ScalarType.UINT64 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Event {

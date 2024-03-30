@@ -74,7 +74,6 @@ func (h HTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	event, err := sdktypes.EventFromProto(&sdktypes.EventPB{
 		IntegrationId:    integrationID.String(),
 		IntegrationToken: token,
-		OriginalEventId:  r.URL.String(),
 		EventType:        strings.ToLower(r.Method),
 		Data:             kittehs.TransformMapValues(data, sdktypes.ToProto),
 	})

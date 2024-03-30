@@ -138,10 +138,9 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	akEvent := &sdktypes.EventPB{
-		IntegrationId:   h.integrationID.String(),
-		OriginalEventId: github.DeliveryID(r),
-		EventType:       eventType,
-		Data:            data,
+		IntegrationId: h.integrationID.String(),
+		EventType:     eventType,
+		Data:          data,
 	}
 
 	// Retrieve all the relevant connections for this event.

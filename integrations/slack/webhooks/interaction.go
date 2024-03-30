@@ -152,10 +152,9 @@ func (h handler) HandleInteraction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	akEvent := &sdktypes.EventPB{
-		IntegrationId:   h.integrationID.String(),
-		OriginalEventId: payload.TriggerID,
-		EventType:       "interaction",
-		Data:            data,
+		IntegrationId: h.integrationID.String(),
+		EventType:     "interaction",
+		Data:          data,
 	}
 
 	// Retrieve all the relevant connections for this event.

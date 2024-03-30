@@ -1,7 +1,6 @@
 package webhooks
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/iancoleman/strcase"
@@ -43,10 +42,9 @@ func (h handler) HandleMessage(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	akEvent := &sdktypes.EventPB{
-		IntegrationId:   h.integrationID.String(),
-		OriginalEventId: fmt.Sprintf("%s/%s", aid, mid),
-		EventType:       "message",
-		Data:            kittehs.TransformMapValues(data, sdktypes.ToProto),
+		IntegrationId: h.integrationID.String(),
+		EventType:     "message",
+		Data:          kittehs.TransformMapValues(data, sdktypes.ToProto),
 	}
 
 	// Retrieve all the relevant connections for this event.
