@@ -79,8 +79,7 @@ project:
       integration: http
       token: my_path
   triggers:
-    - name: get
-      connection: my_connection
+    - connection: my_connection
       event_type: get
       entrypoint: my_program.star:on_http_get
 
@@ -129,7 +128,6 @@ project:
 {
   "trigger": {
     "trigger_id": "trg_00000000000000000000000004",
-    "name": "get",
     "connection_id": "con_00000000000000000000000003",
     "env_id": "env_00000000000000000000000002",
     "event_type": "get",
