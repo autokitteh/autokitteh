@@ -18,7 +18,7 @@ func (db *gormdb) CreateConnection(ctx context.Context, conn sdktypes.Connection
 		ConnectionID:     conn.ID().String(),
 		IntegrationID:    scheme.PtrOrNil(conn.IntegrationID().String()), // TODO(ENG-158): need to verify integration id
 		IntegrationToken: conn.IntegrationToken(),
-		ProjectID:        scheme.PtrOrNil(conn.ProjectID().String()), // TODO(ENG-136): need to verify parent id
+		ProjectID:        scheme.PtrOrNil(conn.ProjectID().String()),
 		Name:             conn.Name().String(),
 	}
 
@@ -30,7 +30,7 @@ func (db *gormdb) UpdateConnection(ctx context.Context, conn sdktypes.Connection
 		ConnectionID:     conn.ID().String(),
 		IntegrationID:    scheme.PtrOrNil(conn.IntegrationID().String()), // TODO(ENG-158): need to verify integration id
 		IntegrationToken: conn.IntegrationToken(),
-		ProjectID:        scheme.PtrOrNil(conn.ProjectID().String()), // TODO(ENG-136): need to verify parent id
+		ProjectID:        scheme.PtrOrNil(conn.ProjectID().String()),
 		Name:             conn.Name().String(),
 	}
 

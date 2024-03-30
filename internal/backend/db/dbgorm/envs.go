@@ -33,7 +33,7 @@ func (db *gormdb) CreateEnv(ctx context.Context, env sdktypes.Env) error {
 
 	e := scheme.Env{
 		EnvID:        env.ID().String(),
-		ProjectID:    scheme.PtrOrNil(env.ProjectID().String()), // TODO(ENG-136): need to verify parent id
+		ProjectID:    scheme.PtrOrNil(env.ProjectID().String()),
 		Name:         env.Name().String(),
 		MembershipID: envMembershipID(env),
 	}
