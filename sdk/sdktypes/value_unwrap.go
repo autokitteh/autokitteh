@@ -19,6 +19,9 @@ func (w ValueWrapper) Unwrap(v Value) (any, error) {
 		if v, err = w.Preunwrap(v); err != nil {
 			return nil, err
 		}
+		if !v.IsValid() {
+			return nil, nil
+		}
 	}
 
 	return w.unwrap(v)
@@ -154,6 +157,9 @@ func (w ValueWrapper) unwrapInto(path string, dstv reflect.Value, v Value) error
 		v, err := w.Preunwrap(v)
 		if err != nil {
 			return err
+		}
+		if !v.IsValid() {
+			return nil
 		}
 
 		return w.unwrapInto(path, dstv, v)

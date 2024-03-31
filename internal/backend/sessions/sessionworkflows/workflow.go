@@ -138,6 +138,10 @@ func (w *sessionWorkflow) load(ctx context.Context, _ sdktypes.RunID, path strin
 }
 
 func (w *sessionWorkflow) call(ctx workflow.Context, runID sdktypes.RunID, v sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
+	if f := v.GetFunction(); f.HasFlag(sdktypes.ConstFunctionFlag) {
+		return f.ConstValue()
+	}
+
 	w.callSeq++
 
 	z := w.z.With(zap.Any("run_id", runID), zap.Any("v", v), zap.Uint32("seq", w.callSeq))
