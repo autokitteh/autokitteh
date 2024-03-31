@@ -21,9 +21,14 @@ func (f *dbFixture) assertIntegrationsDeleted(t *testing.T, integrations ...sche
 	}
 }
 
-func TestCreateIntegration(t *testing.T) {
-	f := newDBFixture(true)                               // no foreign keys
+func preIntegrationTest(t *testing.T) *dbFixture {
+	f := newDBFixture()
 	findAndAssertCount(t, f, scheme.Integration{}, 0, "") // no integrations
+	return f
+}
+
+func TestCreateIntegration(t *testing.T) {
+	f := preIntegrationTest(t)
 
 	i := f.newIntegration()
 	// test createIntegration
@@ -31,8 +36,7 @@ func TestCreateIntegration(t *testing.T) {
 }
 
 func TestDeleteIntegration(t *testing.T) {
-	f := newDBFixture(true)                               // no foreign keys
-	findAndAssertCount(t, f, scheme.Integration{}, 0, "") // no integrations
+	f := preIntegrationTest(t)
 
 	i := f.newIntegration()
 	f.createIntegrationsAndAssert(t, i)

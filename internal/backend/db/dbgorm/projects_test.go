@@ -32,9 +32,14 @@ func (f *dbFixture) assertProjectDeleted(t *testing.T, projects ...scheme.Projec
 	}
 }
 
-func TestCreateProject(t *testing.T) {
-	f := newDBFixture(true)                           // no foreign keys
+func preProjectTest(t *testing.T) *dbFixture {
+	f := newDBFixture()
 	findAndAssertCount(t, f, scheme.Project{}, 0, "") // no projects
+	return f
+}
+
+func TestCreateProject(t *testing.T) {
+	f := preProjectTest(t)
 
 	p := f.newProject()
 	// test createProject
@@ -42,8 +47,7 @@ func TestCreateProject(t *testing.T) {
 }
 
 func TestGetProjects(t *testing.T) {
-	f := newDBFixture(true)                           // no foreign keys
-	findAndAssertCount(t, f, scheme.Project{}, 0, "") // no projects
+	f := preProjectTest(t)
 
 	p := f.newProject()
 	f.createProjectsAndAssert(t, p)
@@ -71,8 +75,7 @@ func TestGetProjects(t *testing.T) {
 }
 
 func TestListProjects(t *testing.T) {
-	f := newDBFixture(true)                           // no foreign keys
-	findAndAssertCount(t, f, scheme.Project{}, 0, "") // no projects
+	f := preProjectTest(t)
 
 	p := f.newProject()
 	f.createProjectsAndAssert(t, p)
@@ -87,8 +90,7 @@ func TestListProjects(t *testing.T) {
 }
 
 func TestGetProjectDeployments(t *testing.T) {
-	f := newDBFixture(true)                           // no foreign keys
-	findAndAssertCount(t, f, scheme.Project{}, 0, "") // no projects
+	f := preProjectTest(t)
 
 	// create 4 envs. E1 with 3 deployments, E2 with 1 (dupl with E1) and E3 with 0.
 	// p1:
@@ -102,15 +104,15 @@ func TestGetProjectDeployments(t *testing.T) {
 	e1, e2, e3, e4 := f.newEnv(), f.newEnv(), f.newEnv(), f.newEnv()
 	d1, d2, d3, d4 := f.newDeployment(), f.newDeployment(), f.newDeployment(), f.newDeployment()
 
-	e1.ProjectID = p1.ProjectID
-	e2.ProjectID = p1.ProjectID
-	e3.ProjectID = p1.ProjectID
-	e4.ProjectID = p2.ProjectID
+	e1.ProjectID = &p1.ProjectID
+	e2.ProjectID = &p1.ProjectID
+	e3.ProjectID = &p1.ProjectID
+	e4.ProjectID = &p2.ProjectID
 
-	d1.EnvID = e1.EnvID
-	d2.EnvID = e1.EnvID
-	d3.EnvID = e2.EnvID
-	d4.EnvID = e4.EnvID
+	d1.EnvID = &e1.EnvID
+	d2.EnvID = &e1.EnvID
+	d3.EnvID = &e2.EnvID
+	d4.EnvID = &e4.EnvID
 
 	f.createProjectsAndAssert(t, p1, p2)
 	f.createEnvsAndAssert(t, e1, e2, e3, e4)
@@ -123,17 +125,16 @@ func TestGetProjectDeployments(t *testing.T) {
 }
 
 func TestGetProjectEnvs(t *testing.T) {
-	f := newDBFixture(true)                           // no foreign keys
-	findAndAssertCount(t, f, scheme.Project{}, 0, "") // no projects
+	f := preProjectTest(t)
 
 	// create two envs - one with deployment and second without
 	p := f.newProject()
 	e1, e2 := f.newEnv(), f.newEnv()
 	d := f.newDeployment()
 
-	e1.ProjectID = p.ProjectID
-	e2.ProjectID = p.ProjectID
-	d.EnvID = e1.EnvID
+	e1.ProjectID = &p.ProjectID
+	e2.ProjectID = &p.ProjectID
+	d.EnvID = &e1.EnvID
 
 	f.createProjectsAndAssert(t, p)
 	f.createEnvsAndAssert(t, e1, e2)
@@ -146,8 +147,7 @@ func TestGetProjectEnvs(t *testing.T) {
 }
 
 func TestDeleteProjectAndDependents(t *testing.T) {
-	f := newDBFixture(false)
-	findAndAssertCount(t, f, scheme.Project{}, 0, "") // no projects
+	f := preProjectTest(t)
 
 	// initialize:
 	// - p1
@@ -163,13 +163,13 @@ func TestDeleteProjectAndDependents(t *testing.T) {
 
 	i := f.newIntegration()
 	c := f.newConnection()
-	c.IntegrationID = i.IntegrationID
-	c.ProjectID = p1.ProjectID
+	c.IntegrationID = &i.IntegrationID
+	c.ProjectID = &p1.ProjectID
 
 	e1p1, e2p1, e1p2 := f.newEnv(), f.newEnv(), f.newEnv()
-	e1p1.ProjectID = p1.ProjectID
-	e2p1.ProjectID = p1.ProjectID
-	e1p2.ProjectID = p2.ProjectID
+	e1p1.ProjectID = &p1.ProjectID
+	e2p1.ProjectID = &p1.ProjectID
+	e1p2.ProjectID = &p2.ProjectID
 
 	t1, t2 := f.newTrigger(), f.newTrigger()
 	t1.ProjectID = p1.ProjectID
@@ -185,21 +185,21 @@ func TestDeleteProjectAndDependents(t *testing.T) {
 	b := f.newBuild()
 
 	d1e1p1, d2e1p1, d1e2p1, d1e1p2 := f.newDeployment(), f.newDeployment(), f.newDeployment(), f.newDeployment()
-	d1e1p1.EnvID = e1p1.EnvID
-	d2e1p1.EnvID = e1p1.EnvID
-	d1e2p1.EnvID = e2p1.EnvID
-	d1e1p2.EnvID = e1p2.EnvID
-	d1e1p1.BuildID = b.BuildID
-	d2e1p1.BuildID = b.BuildID
-	d1e2p1.BuildID = b.BuildID
-	d1e1p2.BuildID = b.BuildID
+	d1e1p1.EnvID = &e1p1.EnvID
+	d2e1p1.EnvID = &e1p1.EnvID
+	d1e2p1.EnvID = &e2p1.EnvID
+	d1e1p2.EnvID = &e1p2.EnvID
+	d1e1p1.BuildID = &b.BuildID
+	d2e1p1.BuildID = &b.BuildID
+	d1e2p1.BuildID = &b.BuildID
+	d1e1p2.BuildID = &b.BuildID
 
 	s1d1e1p1 := f.newSession(sdktypes.SessionStateTypeCompleted)
 	s2d1e2p1 := f.newSession(sdktypes.SessionStateTypeError)
 	s3d1e1p2 := f.newSession(sdktypes.SessionStateTypeCompleted)
-	s1d1e1p1.DeploymentID = d1e1p1.DeploymentID
-	s2d1e2p1.DeploymentID = d1e2p1.DeploymentID
-	s3d1e1p2.DeploymentID = d1e1p2.DeploymentID
+	s1d1e1p1.DeploymentID = &d1e1p1.DeploymentID
+	s2d1e2p1.DeploymentID = &d1e2p1.DeploymentID
+	s3d1e1p2.DeploymentID = &d1e1p2.DeploymentID
 
 	f.createProjectsAndAssert(t, p1, p2)
 	f.createIntegrationsAndAssert(t, i)

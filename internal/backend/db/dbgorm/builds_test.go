@@ -20,27 +20,36 @@ func assertBuildDeleted(t *testing.T, f *dbFixture, buildID string) {
 	assertSoftDeleted(t, f, scheme.Build{BuildID: buildID})
 }
 
+func preBuildTest(t *testing.T) *dbFixture {
+	f := newDBFixture()
+	findAndAssertCount(t, f, scheme.Build{}, 0, "")
+	return f
+}
+
 func TestSaveBuild(t *testing.T) {
-	f := newDBFixture(true)
+	f := preBuildTest(t)
+
 	b := f.newBuild()
+	// test saveBuid
 	f.saveBuildsAndAssert(t, b)
-	findAndAssertOne(t, f, b, "") // check there is only single build in DB
 }
 
 func TestDeleteBuild(t *testing.T) {
-	f := newDBFixture(true)
+	f := preBuildTest(t)
+
 	b := f.newBuild()
 	f.saveBuildsAndAssert(t, b)
 
+	// test deleteBuild
 	assert.NoError(t, f.gormdb.deleteBuild(f.ctx, b.BuildID))
 	assertBuildDeleted(t, f, b.BuildID)
 }
 
 func TestListBuild(t *testing.T) {
-	f := newDBFixture(true)
-	flt := sdkservices.ListBuildsFilter{} // no Limit
+	f := preBuildTest(t)
 
 	// no builds
+	flt := sdkservices.ListBuildsFilter{} // no Limit
 	builds, err := f.gormdb.listBuilds(f.ctx, flt)
 	assert.NoError(t, err)
 	assert.Equal(t, 0, len(builds))
