@@ -34,7 +34,7 @@ func (c *client) Save(ctx context.Context, event sdktypes.Event) (sdktypes.Event
 		return sdktypes.InvalidEventID, err
 	}
 
-	eventId, err := sdktypes.StrictParseEventID(resp.Msg.EventId)
+	eventId, err := sdktypes.Strict(sdktypes.ParseEventID(resp.Msg.EventId))
 	if err != nil {
 		return sdktypes.InvalidEventID, fmt.Errorf("invalid event id: %w", err)
 	}

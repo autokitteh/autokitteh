@@ -33,7 +33,7 @@ message DispatchRequest {
   events.v1.Event event = 1;
 
   string deployment_id = 2;
-  string env_id = 3;
+  string env = 3; // either env_id or full env path.
 
   // TODO: auth.
 }
