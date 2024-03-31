@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 
 	"go.temporal.io/api/serviceerror"
 	"go.temporal.io/sdk/workflow"
@@ -25,62 +24,6 @@ func (d *dispatcher) createEventRecord(ctx context.Context, eventID sdktypes.Eve
 	return nil
 }
 
-func (d *dispatcher) resolveEnv(ctx context.Context, env string) (envID sdktypes.EnvID, err error) {
-	if env == "" {
-		return sdktypes.InvalidEnvID, nil
-	}
-
-	parts := strings.Split(env, "/")
-	switch len(parts) {
-	case 1:
-		if sdktypes.IsEnvID(parts[0]) {
-			return sdktypes.ParseEnvID(parts[0])
-		}
-	case 2:
-		var pid sdktypes.ProjectID
-		if sdktypes.IsProjectID(parts[0]) {
-			pid, err = sdktypes.ParseProjectID(parts[0])
-		} else {
-			var name sdktypes.Symbol
-			if name, err = sdktypes.ParseSymbol(parts[0]); err != nil {
-				return
-			}
-
-			var p sdktypes.Project
-			if p, err = d.services.Projects.GetByName(context.Background(), name); p.IsValid() {
-				pid = p.ID()
-			}
-		}
-
-		if err != nil {
-			return
-		}
-
-		if !pid.IsValid() {
-			return sdktypes.InvalidEnvID, sdkerrors.ErrNotFound
-		}
-
-		var name sdktypes.Symbol
-		if name, err = sdktypes.ParseSymbol(parts[1]); err != nil {
-			return
-		}
-
-		var env sdktypes.Env
-		if env, err = d.services.Envs.GetByName(ctx, pid, name); err != nil {
-			return
-		}
-
-		if !env.IsValid() {
-			err = sdkerrors.ErrNotFound
-			return
-		}
-
-		return env.ID(), err
-	}
-
-	return
-}
-
 func (d *dispatcher) getEventSessionData(ctx context.Context, event sdktypes.Event, opts *sdkservices.DispatchOptions) ([]sessionData, error) {
 	if opts == nil {
 		opts = &sdkservices.DispatchOptions{}
@@ -93,7 +36,7 @@ func (d *dispatcher) getEventSessionData(ctx context.Context, event sdktypes.Eve
 		return nil, sdkerrors.ErrNotFound
 	}
 
-	optsEnvID, err := d.resolveEnv(ctx, opts.Env)
+	optsEnvID, err := resolveEnv(ctx, &d.services, opts.Env)
 	if err != nil {
 		return nil, fmt.Errorf("env: %w", err)
 	}
