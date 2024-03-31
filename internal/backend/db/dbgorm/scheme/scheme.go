@@ -302,9 +302,9 @@ type Trigger struct {
 	TriggerID string `gorm:"primaryKey"`
 
 	ProjectID    string `gorm:"index"`
-	EnvID        string `gorm:"index"`
 	ConnectionID string `gorm:"index"`
-	Name         string `gorm:"index"`
+	EnvID        string `gorm:"index"`
+	Name         string
 	EventType    string
 	Filter       string
 	CodeLocation string
@@ -314,6 +314,10 @@ type Trigger struct {
 	Project    *Project
 	Env        *Env
 	Connection *Connection
+
+	// Makes sure name is unique - this is the env_id with name.
+	// If name is emptyy, will be env_id with a random string.
+	UniqueName string `gorm:"uniqueIndex"`
 }
 
 func ParseTrigger(e Trigger) (sdktypes.Trigger, error) {
