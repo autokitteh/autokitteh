@@ -304,9 +304,11 @@ type Trigger struct {
 	ProjectID    string `gorm:"index"`
 	EnvID        string `gorm:"index"`
 	ConnectionID string `gorm:"index"`
+	Name         string `gorm:"index"`
 	EventType    string
 	Filter       string
 	CodeLocation string
+	Data         datatypes.JSON
 
 	// enforce foreign keys
 	Project    *Project
@@ -320,6 +322,11 @@ func ParseTrigger(e Trigger) (sdktypes.Trigger, error) {
 		return sdktypes.InvalidTrigger, fmt.Errorf("loc: %w", err)
 	}
 
+	var data map[string]sdktypes.Value
+	if err := json.Unmarshal(e.Data, &data); err != nil {
+		return sdktypes.InvalidTrigger, fmt.Errorf("data: %w", err)
+	}
+
 	return sdktypes.StrictTriggerFromProto(&sdktypes.TriggerPB{
 		TriggerId:    e.TriggerID,
 		EnvId:        e.EnvID,
@@ -327,6 +334,8 @@ func ParseTrigger(e Trigger) (sdktypes.Trigger, error) {
 		EventType:    e.EventType,
 		Filter:       e.Filter,
 		CodeLocation: loc.ToProto(),
+		Name:         e.Name,
+		Data:         kittehs.TransformMapValues(data, sdktypes.ToProto),
 	})
 }
 

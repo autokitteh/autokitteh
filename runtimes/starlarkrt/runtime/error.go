@@ -17,6 +17,12 @@ func translateError(err error, extra map[string]string) error {
 		return nil
 	}
 
+	if extra == nil {
+		extra = map[string]string{
+			"raw": err.Error(),
+		}
+	}
+
 	convErr := func(cerr, err error) error {
 		return fmt.Errorf("[cannot convert to program error: %v] %w", cerr, err)
 	}
@@ -40,7 +46,6 @@ func translateError(err error, extra map[string]string) error {
 		}
 
 		resolveExtra := map[string]string{
-			"raw":  resolveError.Error(),
 			"type": "resolve",
 		}
 
@@ -68,7 +73,6 @@ func translateError(err error, extra map[string]string) error {
 		}
 
 		evalExtra := map[string]string{
-			"raw":   evalErr.Error(),
 			"type":  "eval",
 			"cause": fmt.Sprintf("%v", evalErr.Unwrap()),
 		}

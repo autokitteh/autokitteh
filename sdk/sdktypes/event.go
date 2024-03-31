@@ -69,8 +69,8 @@ func (e Event) ToValues() map[string]Value {
 	}
 
 	return map[string]Value{
-		"event_type":     NewStringValue(e.m.EventType),
-		"event_id":       NewStringValue(e.m.EventId),
+		"type":           NewStringValue(e.m.EventType),
+		"id":             NewStringValue(e.m.EventId),
 		"integration_id": NewStringValue(e.m.IntegrationId),
 		"data": kittehs.Must1(NewStructValue(
 			NewStringValue("event_data"),

@@ -22,10 +22,10 @@ var args = sdkmodule.WithArgs(
 	"auth?",
 )
 
-var integrationID = sdktypes.IntegrationIDFromName("http")
+var IntegrationID = sdktypes.IntegrationIDFromName("http")
 
 var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
-	IntegrationId: integrationID.String(),
+	IntegrationId: IntegrationID.String(),
 	UniqueName:    "http",
 	DisplayName:   "HTTP",
 	LogoUrl:       "/static/images/http.svg",

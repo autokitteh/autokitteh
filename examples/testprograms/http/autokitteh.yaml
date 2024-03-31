@@ -2,19 +2,19 @@ version: v1
 
 project:
   name: http
-  vars:
-    - name: MEOW
-      value: "meow1"
-    - name: WOOF
-      value: "woof"
   connections:
-    - name: http1
-      token: "meow"
+    - name: myhttp
       integration: "http"
   triggers:
     - event_type: get
-      connection: http1
+      connection: myhttp
       entrypoint: http.star:on_http_get
+      data:
+        pattern: "get"
     - filter: "data.method == 'POST'"
-      connection: http1
+      connection: myhttp
       entrypoint: http.star:on_http_post
+    - connection: myhttp
+      call: http.star:on_http_test
+      data:
+        pattern: "/test/{a}/{b...}"

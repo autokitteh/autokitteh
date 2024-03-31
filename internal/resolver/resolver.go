@@ -239,7 +239,7 @@ func (r Resolver) envByShortName(envName string, pid sdktypes.ProjectID) (e sdkt
 	}
 
 	var n sdktypes.Symbol
-	n, err = sdktypes.StrictParseSymbol(envName)
+	n, err = sdktypes.Strict(sdktypes.ParseSymbol(envName))
 	if err != nil {
 		err = fmt.Errorf("invalid environment name %q: %w", envName, err)
 		return
@@ -428,7 +428,7 @@ func (r Resolver) projectByID(id string) (p sdktypes.Project, pid sdktypes.Proje
 
 func (r Resolver) projectByName(name string) (p sdktypes.Project, pid sdktypes.ProjectID, err error) {
 	var n sdktypes.Symbol
-	if n, err = sdktypes.StrictParseSymbol(name); err != nil {
+	if n, err = sdktypes.Strict(sdktypes.ParseSymbol(name)); err != nil {
 		err = fmt.Errorf("invalid project name %q: %w", name, err)
 		return
 	}
