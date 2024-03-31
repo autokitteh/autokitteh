@@ -1,12 +1,12 @@
 
-        _..--~~~~--.._             autokitteh {{ .Version }}
-     _--              --_          PID:       {{ .PID }}
-    '                    `         gRPC/HTTP: {{ .Addr }}
-   '                      `        {{ .Mode }}
-  '                        `      
+        _..--~~~~--.._             autokitteh   {{ .Version }}
+     _--              --_          PID:         {{ .PID }}
+    '                    `         gRPC/HTTP:   {{ .Addr }}
+   '                      `        UI:          {{ .UIAddr }}
+  '                        `       {{ .Mode }}
  |                    |\   |       
- |                    | \  | 
- |          .,    _,-~   \ | 
+ |                    | \  |       {{ .Temporal1 }}
+ |          .,    _,-~   \ |       {{ .Temporal2 }}
   \         \ `.-'        \/ 
    `         \        {{ .Eye }}
     \         \    {{ .Eye }}         

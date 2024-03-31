@@ -163,8 +163,12 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 			mux.Handle("/favicon-32x32.png", srv)
 			mux.Handle("/favicon-16x16.png", srv)
 		}),
-		fx.Invoke(func(lc fx.Lifecycle, httpsvc httpsvc.Svc) {
-			HookSimpleOnStart(lc, func() { sayHello(opts, httpsvc.Addr()) })
+		fx.Invoke(func(lc fx.Lifecycle, httpsvc httpsvc.Svc, tclient temporalclient.Client) {
+			temporalFrontendAddr, temporalUIAddr := tclient.TemporalAddr()
+
+			HookSimpleOnStart(lc, func() {
+				sayHello(opts, httpsvc.Addr(), temporalFrontendAddr, temporalUIAddr)
+			})
 		}),
 		fx.Invoke(func(z *zap.Logger, lc fx.Lifecycle, mux *http.ServeMux) {
 			var ready atomic.Bool

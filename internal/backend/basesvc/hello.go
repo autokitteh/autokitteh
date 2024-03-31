@@ -17,26 +17,39 @@ var hello string
 
 var helloTemplate = template.Must(template.New("hello").Parse(hello))
 
-func sayHello(opts RunOptions, addr string) {
+func sayHello(opts RunOptions, addr, temporalFrontendAddr, temporalUIAddr string) {
 	fieldColor := color.New(color.FgBlue).Add(color.Bold).SprintFunc()
 	eyeColor := color.New(color.FgGreen).Add(color.Bold).SprintFunc()
 
 	var mode string
 	if opts.Mode != "" {
-		mode = "Mode:      " + fieldColor(opts.Mode) + " "
+		mode = "Mode:        " + fieldColor(opts.Mode) + " "
+	}
+
+	if temporalFrontendAddr != "" {
+		temporalFrontendAddr = "Temporal:    " + fieldColor(temporalFrontendAddr) + " "
+	}
+
+	if temporalUIAddr != "" {
+		temporalUIAddr = "Temporal UI: " + fieldColor(temporalUIAddr) + " "
 	}
 
 	kittehs.Must0(helloTemplate.Execute(os.Stderr, struct {
-		Version string
-		PID     string
-		Addr    string
-		Eye     string
-		Mode    string
+		Version              string
+		PID                  string
+		Addr                 string
+		Eye                  string
+		UIAddr               string
+		Mode                 string
+		Temporal1, Temporal2 string
 	}{
-		Version: fieldColor(version.Version),
-		PID:     fieldColor(fmt.Sprintf("%d", os.Getpid())),
-		Addr:    fieldColor(addr),
-		Eye:     eyeColor("▀"),
-		Mode:    mode,
+		Version:   fieldColor(version.Version),
+		PID:       fieldColor(fmt.Sprintf("%d", os.Getpid())),
+		Addr:      fieldColor(addr),
+		UIAddr:    fieldColor(fmt.Sprintf("http://%s", addr)),
+		Eye:       eyeColor("▀"),
+		Mode:      mode,
+		Temporal1: temporalFrontendAddr,
+		Temporal2: temporalUIAddr,
 	}))
 }

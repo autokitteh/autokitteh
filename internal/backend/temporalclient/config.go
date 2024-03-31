@@ -38,6 +38,11 @@ type Config struct {
 }
 
 var (
+	defaultTemporalDevServerConfig = testsuite.DevServerOptions{
+		LogLevel: zapcore.WarnLevel.String(),
+		EnableUI: true,
+	}
+
 	defaultMonitorConfig = MonitorConfig{
 		CheckHealthInterval: time.Minute,
 		CheckHealthTimeout:  10 * time.Second,
@@ -51,16 +56,12 @@ var (
 		Dev: &Config{
 			Monitor:               defaultMonitorConfig,
 			StartDevServerIfNotUp: true,
-			DevServer: testsuite.DevServerOptions{
-				LogLevel: zapcore.WarnLevel.String(),
-			},
+			DevServer:             defaultTemporalDevServerConfig,
 		},
 		Test: &Config{
 			Monitor:              defaultMonitorConfig,
 			AlwaysStartDevServer: true,
-			DevServer: testsuite.DevServerOptions{
-				LogLevel: zapcore.WarnLevel.String(),
-			},
+			DevServer:            defaultTemporalDevServerConfig,
 		},
 	}
 )
