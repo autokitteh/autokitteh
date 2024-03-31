@@ -8,8 +8,7 @@ type deploymentIDTraits struct{}
 
 func (deploymentIDTraits) Prefix() string { return deploymentIDKind }
 
-func NewDeploymentID() DeploymentID                          { return newID[DeploymentID]() }
-func ParseDeploymentID(s string) (DeploymentID, error)       { return ParseID[DeploymentID](s) }
-func StrictParseDeploymentID(s string) (DeploymentID, error) { return Strict(ParseDeploymentID(s)) }
+func NewDeploymentID() DeploymentID                    { return newID[DeploymentID]() }
+func ParseDeploymentID(s string) (DeploymentID, error) { return ParseID[DeploymentID](s) }
 
 var InvalidDeploymentID DeploymentID

@@ -34,7 +34,7 @@ func (c *client) Redispatch(ctx context.Context, eventID sdktypes.EventID, opts 
 			&dispatcherv1.RedispatchRequest{
 				EventId:      eventID.String(),
 				DeploymentId: opts.DeploymentID.String(),
-				EnvId:        opts.EnvID.String(),
+				EnvId:        opts.Env,
 			},
 		),
 	)
@@ -46,7 +46,7 @@ func (c *client) Redispatch(ctx context.Context, eventID sdktypes.EventID, opts 
 		return sdktypes.InvalidEventID, err
 	}
 
-	eventId, err := sdktypes.StrictParseEventID(resp.Msg.EventId)
+	eventId, err := sdktypes.Strict(sdktypes.ParseEventID(resp.Msg.EventId))
 	if err != nil {
 		return sdktypes.InvalidEventID, fmt.Errorf("invalid event id: %w", err)
 	}
@@ -62,7 +62,7 @@ func (c *client) Dispatch(ctx context.Context, event sdktypes.Event, opts *sdkse
 	resp, err := c.client.Dispatch(ctx, connect.NewRequest(&dispatcherv1.DispatchRequest{
 		Event:        event.ToProto(),
 		DeploymentId: opts.DeploymentID.String(),
-		EnvId:        opts.EnvID.String(),
+		Env:          opts.Env,
 	}))
 	if err != nil {
 		return sdktypes.InvalidEventID, rpcerrors.TranslateError(err)
@@ -72,7 +72,7 @@ func (c *client) Dispatch(ctx context.Context, event sdktypes.Event, opts *sdkse
 		return sdktypes.InvalidEventID, err
 	}
 
-	eventId, err := sdktypes.StrictParseEventID(resp.Msg.EventId)
+	eventId, err := sdktypes.Strict(sdktypes.ParseEventID(resp.Msg.EventId))
 	if err != nil {
 		return sdktypes.InvalidEventID, fmt.Errorf("invalid event id: %w", err)
 	}

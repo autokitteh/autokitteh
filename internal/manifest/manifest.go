@@ -43,7 +43,7 @@ type Connection struct {
 	ProjectKey string `yaml:"-" json:"-"` // belongs to project.
 
 	Name           string `yaml:"name" json:"name" jsonschema:"required"`
-	Token          string `yaml:"token" json:"token" jsonschema:"required"`
+	Token          string `yaml:"token" json:"token"`
 	IntegrationKey string `yaml:"integration" json:"integration" jsonschema:"required"`
 }
 

@@ -36,6 +36,14 @@ func (d *dispatcher) getEventSessionData(ctx context.Context, event sdktypes.Eve
 		return nil, sdkerrors.ErrNotFound
 	}
 
+	optsEnvID, err := resolveEnv(ctx, &d.services, opts.Env)
+	if err != nil {
+		return nil, fmt.Errorf("env: %w", err)
+	}
+	if optsEnvID.IsValid() {
+		z = z.With(zap.String("env_id", optsEnvID.String()))
+	}
+
 	iid, it := event.IntegrationID(), event.IntegrationToken()
 
 	connections, err := d.services.Connections.List(ctx, sdkservices.ListConnectionsFilter{IntegrationID: iid, IntegrationToken: it})
@@ -78,17 +86,17 @@ func (d *dispatcher) getEventSessionData(ctx context.Context, event sdktypes.Eve
 			continue
 		}
 
+		if !envID.IsValid() && optsEnvID.IsValid() && envID != optsEnvID {
+			z.Debug("irrelevant env", zap.String("expected", optsEnvID.String()))
+			continue
+		}
+
 		if relevant, err := event.Matches(t.Filter()); err != nil {
 			z.Debug("filter error", zap.Error(err))
 			// TODO(ENG-566): alert user their filter is bad. Integrate with alerting and monitoring.
 			continue
 		} else if !relevant {
 			z.Debug("irrelevant event")
-			continue
-		}
-
-		if !envID.IsValid() && opts.EnvID.IsValid() && envID != opts.EnvID {
-			z.Debug("irrelevant env", zap.String("expected", opts.EnvID.String()))
 			continue
 		}
 
@@ -99,7 +107,7 @@ func (d *dispatcher) getEventSessionData(ctx context.Context, event sdktypes.Eve
 
 		var testingDeployments []sdktypes.Deployment
 
-		if opts.EnvID.IsValid() || opts.DeploymentID.IsValid() {
+		if optsEnvID.IsValid() || opts.DeploymentID.IsValid() {
 			testingDeployments, err = d.services.Deployments.List(ctx, sdkservices.ListDeploymentsFilter{State: sdktypes.DeploymentStateTesting, EnvID: envID})
 			if err != nil {
 				z.Panic("could not fetch testing deployments", zap.Error(err))
@@ -113,9 +121,9 @@ func (d *dispatcher) getEventSessionData(ctx context.Context, event sdktypes.Eve
 
 		deployments := append(activeDeployments, testingDeployments...)
 
-		if opts.EnvID.IsValid() || opts.DeploymentID.IsValid() {
+		if optsEnvID.IsValid() || opts.DeploymentID.IsValid() {
 			deployments = kittehs.Filter(deployments, func(deployment sdktypes.Deployment) bool {
-				return (!opts.EnvID.IsValid() || opts.EnvID == deployment.EnvID()) &&
+				return (!optsEnvID.IsValid() || optsEnvID == deployment.EnvID()) &&
 					(!opts.DeploymentID.IsValid() || opts.DeploymentID == deployment.ID())
 			})
 		}

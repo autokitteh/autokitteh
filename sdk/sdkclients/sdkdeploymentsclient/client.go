@@ -35,7 +35,7 @@ func (c *client) Create(ctx context.Context, deployment sdktypes.Deployment) (sd
 		return sdktypes.InvalidDeploymentID, err
 	}
 
-	id, err := sdktypes.StrictParseDeploymentID(resp.Msg.DeploymentId)
+	id, err := sdktypes.Strict(sdktypes.ParseDeploymentID(resp.Msg.DeploymentId))
 	if err != nil {
 		return sdktypes.InvalidDeploymentID, fmt.Errorf("invalid deployment id: %w", err)
 	}
