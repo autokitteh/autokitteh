@@ -48,9 +48,6 @@ var saveCmd = common.StandardCommand(&cobra.Command{
 		if connectionToken != "" {
 			pb.IntegrationToken = connectionToken
 		}
-		if originalEventID != "" {
-			pb.OriginalEventId = originalEventID
-		}
 		if len(data) > 0 {
 			m, err := kittehs.ListToMapError(data, parseDataKeyValue)
 			if err != nil {
@@ -92,7 +89,6 @@ func init() {
 	saveCmd.Flags().StringVarP(&integration, "integration", "i", "", "integration name or ID")
 	saveCmd.Flags().StringVarP(&connectionToken, "connection-token", "t", "", "connection token")
 	saveCmd.Flags().StringVarP(&eventType, "event-type", "e", "", "event type")
-	saveCmd.Flags().StringVarP(&originalEventID, "original-event-id", "o", "", "original event ID")
 	saveCmd.Flags().StringSliceVarP(&data, "data", "d", nil, `zero or more "key=value" pairs`)
 	saveCmd.Flags().StringSliceVarP(&memos, "memo", "m", nil, `zero or more "key=value" pairs`)
 }

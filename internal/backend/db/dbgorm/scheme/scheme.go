@@ -174,7 +174,6 @@ type Event struct {
 	EventID          string `gorm:"uniqueIndex"`
 	IntegrationID    string `gorm:"index"`
 	IntegrationToken string `gorm:"index"`
-	OriginalEventID  string
 	EventType        string `gorm:"index:idx_event_type_seq,priority:1;index:idx_event_type"`
 	Data             datatypes.JSON
 	Memo             datatypes.JSON
@@ -199,7 +198,6 @@ func ParseEvent(e Event) (sdktypes.Event, error) {
 		EventId:          e.EventID,
 		IntegrationId:    e.IntegrationID,
 		IntegrationToken: e.IntegrationToken,
-		OriginalEventId:  e.OriginalEventID,
 		EventType:        e.EventType,
 		Data:             kittehs.TransformMapValues(data, sdktypes.ToProto),
 		Memo:             memo,

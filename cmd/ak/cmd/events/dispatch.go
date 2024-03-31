@@ -51,9 +51,6 @@ var dispatchCmd = common.StandardCommand(&cobra.Command{
 		if eventType != "" {
 			pb.EventType = eventType
 		}
-		if originalEventID != "" {
-			pb.OriginalEventId = originalEventID
-		}
 		if len(data) > 0 {
 			m, err := kittehs.ListToMapError(data, parseDataKeyValue)
 			if err != nil {
@@ -95,7 +92,6 @@ func init() {
 	dispatchCmd.Flags().StringVarP(&integration, "integration", "i", "", "integration name or ID")
 	dispatchCmd.Flags().StringVarP(&connectionToken, "connection-token", "t", "", "connection token")
 	dispatchCmd.Flags().StringVarP(&eventType, "event-type", "e", "", "event type")
-	dispatchCmd.Flags().StringVarP(&originalEventID, "original-event-id", "o", "", "original event ID")
 	dispatchCmd.Flags().StringSliceVarP(&data, "data", "d", nil, `zero or more "key=value" pairs`)
 	dispatchCmd.Flags().StringSliceVarP(&memos, "memo", "m", nil, `zero or more "key=value" pairs`)
 }

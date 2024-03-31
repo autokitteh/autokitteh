@@ -69,10 +69,9 @@ func (e Event) ToValues() map[string]Value {
 	}
 
 	return map[string]Value{
-		"event_type":        NewStringValue(e.m.EventType),
-		"event_id":          NewStringValue(e.m.EventId),
-		"original_event_id": NewStringValue(e.m.OriginalEventId),
-		"integration_id":    NewStringValue(e.m.IntegrationId),
+		"event_type":     NewStringValue(e.m.EventType),
+		"event_id":       NewStringValue(e.m.EventId),
+		"integration_id": NewStringValue(e.m.IntegrationId),
 		"data": kittehs.Must1(NewStructValue(
 			NewStringValue("event_data"),
 			kittehs.TransformMapValues(
@@ -83,8 +82,7 @@ func (e Event) ToValues() map[string]Value {
 	}
 }
 
-func (e Event) OriginalEventID() string { return e.read().OriginalEventId }
-func (e Event) CreatedAt() time.Time    { return e.read().CreatedAt.AsTime() }
+func (e Event) CreatedAt() time.Time { return e.read().CreatedAt.AsTime() }
 func (e Event) Data() map[string]Value {
 	return kittehs.TransformMapValues(e.read().Data, forceFromProto[Value])
 }

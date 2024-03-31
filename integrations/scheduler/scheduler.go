@@ -3,7 +3,6 @@ package scheduler
 import (
 	"context"
 	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/robfig/cron/v3"
@@ -132,7 +131,6 @@ func dispatchEvents(ctx context.Context, l *zap.Logger, d sdkservices.Dispatcher
 		proto := &sdktypes.EventPB{
 			IntegrationId:    integrationID.String(),
 			IntegrationToken: token,
-			OriginalEventId:  strconv.FormatInt(now.UnixNano(), 10),
 			EventType:        "cron_trigger",
 			Data:             kittehs.TransformMapValues(data, sdktypes.ToProto),
 		}

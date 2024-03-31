@@ -170,11 +170,6 @@ export class ListRequest extends Message<ListRequest> {
   integrationToken = "";
 
   /**
-   * @generated from field: string original_id = 3;
-   */
-  originalId = "";
-
-  /**
    * @generated from field: string event_type = 4;
    */
   eventType = "";
@@ -189,7 +184,6 @@ export class ListRequest extends Message<ListRequest> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "integration_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "integration_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "original_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "event_type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 

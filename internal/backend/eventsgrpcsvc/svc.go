@@ -70,7 +70,6 @@ func (s *server) List(ctx context.Context, req *connect.Request[eventsv1.ListReq
 	filter := sdkservices.ListEventsFilter{
 		IntegrationID:    iid,
 		IntegrationToken: msg.IntegrationToken,
-		OriginalID:       msg.OriginalId,
 		EventType:        msg.EventType,
 	}
 
