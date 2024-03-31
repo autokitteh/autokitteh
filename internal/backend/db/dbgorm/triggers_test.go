@@ -1,16 +1,28 @@
 package dbgorm
 
 import (
+	"context"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 )
 
+func createTrigger(ctx context.Context, db *gormdb, trigger *scheme.Trigger) error {
+	if trigger.Name == "" {
+		// This protects against triggers with empty names, which will cause unique validation.
+		// Happens mostly in testing.
+		trigger.UniqueName = uuid.New().String()
+	}
+
+	return db.createTrigger(ctx, trigger)
+}
+
 func (f *dbFixture) createTriggersAndAssert(t *testing.T, triggers ...scheme.Trigger) {
 	for _, trigger := range triggers {
-		assert.NoError(t, f.gormdb.createTrigger(f.ctx, &trigger))
+		assert.NoError(t, createTrigger(f.ctx, f.gormdb, &trigger))
 		findAndAssertOne(t, f, trigger, "trigger_id = ?", trigger.TriggerID)
 	}
 }
@@ -56,15 +68,15 @@ func TestCreateTriggerForeignKeys(t *testing.T) {
 	unexisting := "unexisting"
 
 	tr.ProjectID = unexisting
-	assert.ErrorContains(t, f.gormdb.createTrigger(f.ctx, &tr), "FOREIGN KEY")
+	assert.ErrorContains(t, createTrigger(f.ctx, f.gormdb, &tr), "FOREIGN KEY")
 	tr.ProjectID = p.ProjectID
 
 	tr.EnvID = unexisting
-	assert.ErrorContains(t, f.gormdb.createTrigger(f.ctx, &tr), "FOREIGN KEY")
+	assert.ErrorContains(t, createTrigger(f.ctx, f.gormdb, &tr), "FOREIGN KEY")
 	tr.EnvID = env.EnvID
 
 	tr.ConnectionID = unexisting
-	assert.ErrorContains(t, f.gormdb.createTrigger(f.ctx, &tr), "FOREIGN KEY")
+	assert.ErrorContains(t, createTrigger(f.ctx, f.gormdb, &tr), "FOREIGN KEY")
 	tr.ConnectionID = conn.ConnectionID
 
 	// test with existing assets
