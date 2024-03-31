@@ -12,10 +12,6 @@ ak project create --name my_project
 return code == 0
 output equals 'project_id: prj_00000000000000000000000001'
 
-ak env create default --project my_project
-return code == 0
-output equals 'env_id: env_00000000000000000000000002'
-
 # Negative test: deploy project without required flag.
 ak project deploy my_project
 output equals 'Error: required flag(s) "from" not set'

@@ -85,17 +85,14 @@ project:
 
 -- expected_on_full_dry_run.txt --
 [plan] project "my_project": not found, will create
-[plan] env "my_project/default": not found, will create
 [plan] connection "my_project/my_connection": not found, will create
 [plan] trigger "my_project/default:my_project/my_connection/get": not found, will create
 
 -- expected_on_full_apply.txt --
 [plan] project "my_project": not found, will create
-[plan] env "my_project/default": not found, will create
 [plan] connection "my_project/my_connection": not found, will create
 [plan] trigger "my_project/default:my_project/my_connection/get": not found, will create
 [exec] create_project "my_project": created "prj_00000000000000000000000001"
-[exec] create_env "my_project/default": created "env_00000000000000000000000002"
 [exec] create_connection "my_project/my_connection": created "con_00000000000000000000000003"
 [exec] create_trigger "my_project/default:my_project/my_connection/get": created "trg_00000000000000000000000004"
 

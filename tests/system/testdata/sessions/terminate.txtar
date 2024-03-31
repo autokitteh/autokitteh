@@ -3,22 +3,22 @@ return code == 0
 
 ak project build my_project --from main.star
 return code == 0
-output equals 'build_id: bld_00000000000000000000000002'
+output equals 'build_id: bld_00000000000000000000000003'
 
-ak sessions start --build-id bld_00000000000000000000000002 --entrypoint main.star:main
+ak sessions start --build-id bld_00000000000000000000000003 --entrypoint main.star:main
 return code == 0
-output equals 'session_id: ses_00000000000000000000000003'
+output equals 'session_id: ses_00000000000000000000000004'
 
-ak sessions watch ses_00000000000000000000000003 --no-timestamps --end-state RUNNING --timeout 7s
+ak sessions watch ses_00000000000000000000000004 --no-timestamps --end-state RUNNING --timeout 7s
 return code == 0
 
-ak sessions stop ses_00000000000000000000000003 --reason test --force
+ak sessions stop ses_00000000000000000000000004 --reason test --force
 return code == 0
 
 # no need to wait for session to be done - it should already be terminated
 # after the command above.
 
-ak sessions log ses_00000000000000000000000003 --skip -1 --no-timestamps -j
+ak sessions log ses_00000000000000000000000004 --skip -1 --no-timestamps -j
 return code == 0
 output equals_json file last.json
 
