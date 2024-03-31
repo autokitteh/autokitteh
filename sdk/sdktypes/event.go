@@ -105,6 +105,16 @@ func eventFilterField(name string, expr string) error {
 	return nil
 }
 
+var matchUnwrapper = ValueWrapper{
+	Preunwrap: func(v Value) (Value, error) {
+		// Ignore functions.
+		if v.IsFunction() {
+			return InvalidValue, nil
+		}
+		return v, nil
+	},
+}
+
 func (e Event) Matches(expr string) (bool, error) {
 	if expr == "" {
 		return true, nil
@@ -120,7 +130,7 @@ func (e Event) Matches(expr string) (bool, error) {
 		return false, fmt.Errorf("program: %w", err)
 	}
 
-	data, err := kittehs.TransformMapValuesError(e.Data(), UnwrapValue)
+	data, err := kittehs.TransformMapValuesError(e.Data(), matchUnwrapper.Unwrap)
 	if err != nil {
 		return false, fmt.Errorf("convert: %w", err)
 	}

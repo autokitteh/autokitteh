@@ -1,6 +1,7 @@
 package http
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"net/http"
@@ -50,6 +51,8 @@ func (h HTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		l.Error("body read error", zap.Error(err))
 		// no return
 	}
+	r.Body = io.NopCloser(bytes.NewReader(body))
+	_ = r.ParseForm()
 
 	data := map[string]sdktypes.Value{
 		"url": kittehs.Must1(sdktypes.NewStructValue(
@@ -76,10 +79,7 @@ func (h HTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				return sdktypes.NewStringValue(strings.Join(vs, ","))
 			}),
 		),
-		// TODO(ENG-294): return an object that can has various decoding methods.
-		"body_bytes":  sdktypes.NewBytesValue(body),
-		"body_string": sdktypes.NewStringValue(string(body)),
-		"body":        sdktypes.NewStringValue(string(body)),
+		"body": bodyToStruct(body, r.Form),
 	}
 
 	event, err := sdktypes.EventFromProto(&sdktypes.EventPB{

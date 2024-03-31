@@ -9,6 +9,8 @@ import (
 
 type ExecutorID struct{ id[typeid.AnyPrefix] }
 
+var InvalidExecutorID ExecutorID
+
 type concreteExecutorID interface {
 	RunID | IntegrationID
 	ID
@@ -20,16 +22,20 @@ func NewExecutorID[T concreteExecutorID](in T) ExecutorID {
 }
 
 func ParseExecutorID(s string) (ExecutorID, error) {
+	if s == "" {
+		return InvalidExecutorID, nil
+	}
+
 	parsed, err := ParseID[id[typeid.AnyPrefix]](s)
 	if err != nil {
-		return ExecutorID{}, err
+		return InvalidExecutorID, err
 	}
 
 	switch parsed.Kind() {
 	case runIDKind, integrationIDKind:
 		return ExecutorID{parsed}, nil
 	default:
-		return ExecutorID{}, sdkerrors.NewInvalidArgumentError("invalid executor id")
+		return InvalidExecutorID, sdkerrors.NewInvalidArgumentError("invalid executor id")
 	}
 }
 

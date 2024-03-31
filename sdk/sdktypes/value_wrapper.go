@@ -33,7 +33,7 @@ type ValueWrapper struct {
 	// Unwrap: transform duration into microseconds, do not convert to string.
 	RawDuration bool
 
-	// Unwrap: Tranform value before unwrapping. If returns nil, ignore value.
+	// Unwrap: Tranform value before unwrapping. If returns InvalidValue, ignore value.
 	Preunwrap func(Value) (Value, error)
 
 	// Unwrap: if not handled, use this unwrapper.
