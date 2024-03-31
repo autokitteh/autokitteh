@@ -19,7 +19,8 @@ def on_http_get():
     print(resp, err)
     if err:
         print(err.op)
-
+    else:
+        print(resp.body.text())
 
 def on_http_post(data):
     def again(x):
@@ -37,3 +38,4 @@ def on_http_post(data):
     sleep(3)
     resp = http1.get("http://example.com")
     print(resp)
+    print(resp.body.text())

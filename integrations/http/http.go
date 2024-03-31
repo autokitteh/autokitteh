@@ -240,19 +240,6 @@ func toStruct(r *http.Response) (sdktypes.Value, error) {
 	// reset reader to allow multiple calls
 	r.Body = io.NopCloser(bytes.NewReader(body))
 
-	var (
-		jsonValue sdktypes.Value
-		data      any
-	)
-
-	if err := json.Unmarshal(body, &data); err == nil {
-		jsonValue, _ = sdktypes.WrapValue(data)
-	}
-
-	if !jsonValue.IsValid() {
-		jsonValue = sdktypes.Nothing
-	}
-
 	return sdktypes.NewStructValue(
 		sdktypes.NewStringValue("http_response"),
 		map[string]sdktypes.Value{
@@ -266,10 +253,41 @@ func toStruct(r *http.Response) (sdktypes.Value, error) {
 					}
 				}),
 			)),
-			"encoding":    sdktypes.NewStringValue(strings.Join(r.TransferEncoding, ",")),
-			"body_bytes":  sdktypes.NewBytesValue(body),
-			"body_json":   jsonValue,
-			"body_string": sdktypes.NewStringValue(string(body)),
-			"body":        sdktypes.NewStringValue(string(body)),
+			"encoding": sdktypes.NewStringValue(strings.Join(r.TransferEncoding, ",")),
+			"body":     bodyToStruct(body, nil),
 		})
+}
+
+func bodyToStruct(body []byte, form url.Values) sdktypes.Value {
+	var (
+		v        any
+		formBody sdktypes.Value = sdktypes.Nothing
+		jsonBody sdktypes.Value
+	)
+
+	if err := json.Unmarshal(body, &v); err != nil {
+		jsonBody = kittehs.Must1(sdktypes.NewConstFunctionError("json", err))
+	} else if vv, err := sdktypes.WrapValue(v); err != nil {
+		jsonBody = kittehs.Must1(sdktypes.NewConstFunctionError("json", err))
+	} else {
+		jsonBody = kittehs.Must1(sdktypes.NewConstFunctionValue("json", vv))
+	}
+
+	if form != nil {
+		formBody = kittehs.Must1(sdktypes.NewConstFunctionValue("form", sdktypes.NewDictValueFromStringMap(
+			kittehs.TransformMapValues(form, func(vs []string) sdktypes.Value {
+				return sdktypes.NewStringValue(strings.Join(vs, ","))
+			}),
+		)))
+	}
+
+	return kittehs.Must1(sdktypes.NewStructValue(
+		sdktypes.NewStringValue("body"),
+		map[string]sdktypes.Value{
+			"text":  kittehs.Must1(sdktypes.NewConstFunctionValue("text", sdktypes.NewStringValue(string(body)))),
+			"bytes": kittehs.Must1(sdktypes.NewConstFunctionValue("bytes", sdktypes.NewBytesValue(body))),
+			"json":  jsonBody,
+			"form":  formBody,
+		},
+	))
 }
