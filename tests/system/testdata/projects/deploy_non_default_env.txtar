@@ -5,13 +5,7 @@ output equals 'project_id: prj_00000000000000000000000001'
 
 ak env create my_env --project my_project
 return code == 0
-output equals 'env_id: env_00000000000000000000000002'
-
-# Negative test: deploy project without required flag.
-ak project deploy my_project --from program.star
-output contains 'build_id: bld_00000000000000000000000003'
-output contains 'Error: environment "" not found'
-return code == 10
+output equals 'env_id: env_00000000000000000000000003'
 
 # Deploy project to non-default environment, by name/ID.
 ak project deploy my_project --from program.star --env my_env
@@ -24,7 +18,7 @@ return code == 0
 output contains 'build_id: bld_00000000000000000000000006'
 output contains 'deployment_id: dep_00000000000000000000000007'
 
-ak project deploy my_project --from program.star --env env_00000000000000000000000002
+ak project deploy my_project --from program.star --env env_00000000000000000000000003
 return code == 0
 output contains 'build_id: bld_00000000000000000000000008'
 output contains 'deployment_id: dep_00000000000000000000000009'

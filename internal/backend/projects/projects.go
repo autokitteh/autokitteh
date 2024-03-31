@@ -9,6 +9,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkruntimes"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -37,7 +38,20 @@ func (ps *Projects) Create(ctx context.Context, project sdktypes.Project) (sdkty
 		return sdktypes.InvalidProjectID, err
 	}
 
-	if err := ps.DB.CreateProject(ctx, project); err != nil {
+	env := kittehs.Must1(sdktypes.EnvFromProto(&sdktypes.EnvPB{ProjectId: project.ID().String(), Name: "default"}))
+	env = env.WithNewID()
+
+	if err := ps.DB.Transaction(ctx, func(tx db.DB) error {
+		if err := tx.CreateProject(ctx, project); err != nil {
+			return err
+		}
+
+		if err := tx.CreateEnv(ctx, env); err != nil {
+			return err
+		}
+
+		return nil
+	}); err != nil {
 		return sdktypes.InvalidProjectID, err
 	}
 

@@ -6,9 +6,9 @@ output equals 'project_id: prj_00000000000000000000000001'
 # Build project from a single file.
 ak project build my_project --from meow.star
 return code == 0
-output equals 'build_id: bld_00000000000000000000000002'
+output equals 'build_id: bld_00000000000000000000000003'
 
-ak builds describe bld_00000000000000000000000002 -j
+ak builds describe bld_00000000000000000000000003 -j
 return code == 0
 output equals_json file build.json
 

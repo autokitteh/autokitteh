@@ -5,23 +5,23 @@ output equals 'project_id: prj_00000000000000000000000001'
 
 ak connection create my_connection_1 --project my_project --integration http --connection-token my_url_path_1
 return code == 0
-output equals 'connection_id: con_00000000000000000000000002'
+output equals 'connection_id: con_00000000000000000000000003'
 
 ak connection create my_connection_2 --project my_project --integration http --connection-token my_url_path_2
 return code == 0
-output equals 'connection_id: con_00000000000000000000000003'
+output equals 'connection_id: con_00000000000000000000000004'
 
 # Delete 1st connection by name.
 ak connection delete my_project/my_connection_1
 return code == 0
 
 # Negative test: delete same connection again, now by ID.
-ak connection delete con_00000000000000000000000002
+ak connection delete con_00000000000000000000000003
 output equals 'Error: connection not found'
 return code == 10
 
 # Delete 2nd connection by ID.
-ak connection delete con_00000000000000000000000003
+ak connection delete con_00000000000000000000000004
 return code == 0
 
 # Negative test: delete same connection again, now by name.
