@@ -88,5 +88,5 @@ func deployments() sdkservices.Deployments {
 }
 
 func log(cmd *cobra.Command, msg string) {
-	fmt.Fprintf(cmd.OutOrStdout(), fmt.Sprintf("[exec] %s\n", msg))
+	fmt.Fprintf(cmd.OutOrStdout(), "[exec] %s\n", msg)
 }

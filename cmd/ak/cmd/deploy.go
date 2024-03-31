@@ -143,6 +143,6 @@ func applyManifest(cmd *cobra.Command, manifestPath string) (string, error) {
 
 func logFunc(cmd *cobra.Command, prefix string) func(string) {
 	return func(msg string) {
-		fmt.Fprintf(cmd.OutOrStdout(), fmt.Sprintf("[%s] %s\n", prefix, msg))
+		fmt.Fprintf(cmd.OutOrStdout(), "[%s] %s\n", prefix, msg)
 	}
 }
