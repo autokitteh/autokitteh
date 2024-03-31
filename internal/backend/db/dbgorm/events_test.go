@@ -42,11 +42,6 @@ func TestCreateEventForeignKeys(t *testing.T) {
 	// assert.ErrorContains(t, f.gormdb.saveEvent(f.ctx, &e), "FOREIGN KEY")
 	// e.IntegrationID = nil
 
-	// FIXME: originalEventID is not event ID?
-	// e.OriginalEventID = &unexisting
-	// assert.ErrorContains(t, f.gormdb.saveEvent(f.ctx, &e), "FOREIGN KEY")
-	// e.OriginalEventID = nil
-
 	e2 := f.newEvent()
 	f.createEventsAndAssert(t, e2)
 
@@ -54,8 +49,6 @@ func TestCreateEventForeignKeys(t *testing.T) {
 	f.createIntegrationsAndAssert(t, i)
 
 	e.IntegrationID = &i.IntegrationID
-	e.OriginalEventID = &e2.EventID
-
 	f.createEventsAndAssert(t, e)
 }
 
