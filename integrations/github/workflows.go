@@ -32,10 +32,36 @@ func (i integration) triggerWorkflow(ctx context.Context, args []sdktypes.Value,
 		return sdktypes.InvalidValue, err
 	}
 
-	resp, err := gh.Actions.CreateWorkflowDispatchEventByFileName(ctx, owner, repo, workflowName, req)
+	_, err = gh.Actions.CreateWorkflowDispatchEventByFileName(ctx, owner, repo, workflowName, req)
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
 
-	return sdktypes.WrapValue(resp)
+	return sdktypes.Nothing, nil
+}
+
+func (i integration) listWorkflows(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
+	var (
+		owner, repo string
+	)
+
+	if err := sdkmodule.UnpackArgs(args, kwargs,
+		"owner", &owner,
+		"repo", &repo,
+	); err != nil {
+		return sdktypes.InvalidValue, err
+	}
+
+	// Invoke the API method.
+	gh, err := i.NewClient(ctx)
+	if err != nil {
+		return sdktypes.InvalidValue, err
+	}
+
+	workflows, _, err := gh.Actions.ListWorkflows(ctx, owner, repo, nil)
+	if err != nil {
+		return sdktypes.InvalidValue, err
+	}
+
+	return sdktypes.WrapValue(workflows)
 }

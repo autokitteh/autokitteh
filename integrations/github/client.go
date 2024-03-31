@@ -248,6 +248,12 @@ func New(sec sdkservices.Secrets) sdkservices.Integration {
 		),
 		// Actions
 		sdkmodule.ExportFunction(
+			"list_workflows",
+			i.listWorkflows,
+			sdkmodule.WithFuncDoc("https://docs.github.com/en/rest/actions/workflows#create-a-workflow-dispatch-event"),
+			sdkmodule.WithArgs("owner", "repo"),
+		),
+		sdkmodule.ExportFunction(
 			"trigger_workflow",
 			i.triggerWorkflow,
 			sdkmodule.WithFuncDoc("https://docs.github.com/en/rest/actions/workflows#create-a-workflow-dispatch-event"),
