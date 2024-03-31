@@ -23,14 +23,14 @@ $ ${AK} -j p ls
 {"project_id":"prj_00000000000000000000000001","name":"p1"}
 $ # Set resources specific file succeed
 $ ${AK} projects build p1 -f ${data_file_path}; echo $?
-build_id: bld_00000000000000000000000003
+build_id: bld_00000000000000000000000005
 0
 $ # Download resources succeed.
 $ ${AK} -j projects download p1 -o ${tmp2}/; ls ${tmp2}/
 data_file
 $ # Set resources directory file succeed
 $ ${AK} projects build p1 -f ${tmp}; echo $?
-build_id: bld_00000000000000000000000004
+build_id: bld_00000000000000000000000006
 0
 $ # Download resources succeed.
 $ ${AK} -j projects download p1 -o ${tmp2}/; ls ${tmp2}/
@@ -40,8 +40,8 @@ $ # Set resources large file fail (default is 1mb, large file is 3mb)
 $ ${AK} projects build p1 -f ${large_file}; echo $?  #=> --regex Error: set resources: limit exceeded: message size [0-9]+ is larger than configured max [0-9]+
 $ # Generate random project name
 $ ${AK} p c -j; echo $?
-{"project_id":"prj_00000000000000000000000005"}
+{"project_id":"prj_00000000000000000000000007"}
 0
-$ ${AK} p g prj_00000000000000000000000005 -j; echo $?
-{"project":{"project_id":"prj_00000000000000000000000005","name":"Anxious_Amethyst_0008"}}
+$ ${AK} p g prj_00000000000000000000000007 -j; echo $?
+{"project":{"project_id":"prj_00000000000000000000000007","name":"Behavioral_Andy_0010"}}
 0
