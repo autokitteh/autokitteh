@@ -14,7 +14,7 @@ output equals project_id: prj_00000000000000000000000001
 
 ak connection create my_connection --project my_project --integration http --connection-token my_url_path
 return code == 0
-output equals 'connection_id: con_00000000000000000000000002'
+output equals 'connection_id: con_00000000000000000000000003'
 
 # Send HTTP GET request to create new events.
 http get /http/my_url_path
@@ -33,6 +33,6 @@ output equals 'Error: at least one of the flags in the group [integration connec
 
 # List all events, with multiple filters.
 ak events list --integration http --connection-token my_url_path --event-type get
-output contains 'event_id:"evt_00000000000000000000000003"'
 output contains 'event_id:"evt_00000000000000000000000004"'
 output contains 'event_id:"evt_00000000000000000000000005"'
+output contains 'event_id:"evt_00000000000000000000000006"'
