@@ -147,11 +147,8 @@ func planDefaultEnv(ctx context.Context, mvars []*EnvVar, client sdkservices.Ser
 		envID sdktypes.EnvID
 	)
 
-	if !curr.IsValid() {
-		log.Printf("not found, will create")
+	if curr.IsValid() {
 
-		add(actions.CreateEnvAction{Key: envKeyer.GetKey(), ProjectKey: projName, Env: desired})
-	} else {
 		envID = curr.ID()
 
 		log.Printf("found, id=%q", envID)
