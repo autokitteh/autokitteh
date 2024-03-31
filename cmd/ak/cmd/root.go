@@ -31,9 +31,9 @@ import (
 )
 
 var (
-	json, niceJSON bool
-
 	configs []string
+
+	json, niceJSON bool
 )
 
 var RootCmd = common.StandardCommand(&cobra.Command{
@@ -97,14 +97,15 @@ func Execute() {
 
 func init() {
 	// Global flags for all commands.
+	RootCmd.PersistentFlags().StringArrayVarP(&configs, "config", "c", nil, `temporary "key=value" configurations`)
+
 	RootCmd.PersistentFlags().BoolVarP(&json, "json", "j", false, "print output in compact JSON format")
 	RootCmd.PersistentFlags().BoolVarP(&niceJSON, "nice_json", "J", false, "print output in readable JSON format")
 	RootCmd.MarkFlagsMutuallyExclusive("json", "nice_json")
 
-	RootCmd.PersistentFlags().StringArrayVarP(&configs, "config", "c", nil, `temporary "key=value" configurations`)
-
 	// Top-level standalone commands.
 	RootCmd.AddCommand(completionCmd)
+	RootCmd.AddCommand(deployCmd)
 	RootCmd.AddCommand(upCmd)
 	RootCmd.AddCommand(versionCmd)
 

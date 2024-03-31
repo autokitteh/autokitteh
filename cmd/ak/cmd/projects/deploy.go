@@ -15,21 +15,26 @@ import (
 var env string
 
 var deployCmd = common.StandardCommand(&cobra.Command{
-	Use:   "deploy <project name or ID> --from <file or directory> [--from ...] [--env <name or ID>]",
+	Use:   "deploy <project name or ID> [--dir <path> [...]] [--file <path> [...]] [--env <name or ID>]",
 	Short: "Build, deploy, and activate project",
-	Long:  `Build, deploy, and activate project - see also the "build" and "deployment" parent commands`,
+	Long:  `Build, deploy, and activate project - see also the "build" sibling and "deployment" parent commands`,
 	Args:  cobra.ExactArgs(1),
 
 	RunE: func(cmd *cobra.Command, args []string) error {
 		r := resolver.Resolver{Client: common.Client()}
+		p, pid, _ := r.ProjectNameOrID(args[0])
+		if p.IsValid() {
+			log(cmd, fmt.Sprintf("project %q: found, id=%q", args[0], pid))
+		}
 
-		// First, build the project (see the "build" sibling command).
-		buildID, err := buildProject(args)
+		// Step 1: build the project (see the "build" sibling command).
+		bid, err := common.BuildProject(args[0], dirPaths, filePaths)
 		if err != nil {
 			return err
 		}
+		log(cmd, fmt.Sprintf("create_build: created %q", bid))
 
-		// Then, parse the optional environment argument.
+		// Step 2: parse the optional environment argument.
 		e, eid, err := r.EnvNameOrID(env, args[0])
 		if err != nil {
 			return err
@@ -39,10 +44,10 @@ var deployCmd = common.StandardCommand(&cobra.Command{
 			return common.NewExitCodeError(common.NotFoundExitCode, err)
 		}
 
-		// Finally, deploy and activate it (see the "deployment" parent command).
+		// Step 3: deploy the build (see the "deployment" parent command).
 		deployment, err := sdktypes.DeploymentFromProto(&sdktypes.DeploymentPB{
 			EnvId:   eid.String(),
-			BuildId: buildID,
+			BuildId: bid.String(),
 		})
 		if err != nil {
 			return fmt.Errorf("invalid deployment: %w", err)
@@ -55,12 +60,13 @@ var deployCmd = common.StandardCommand(&cobra.Command{
 		if err != nil {
 			return fmt.Errorf("create deployment: %w", err)
 		}
+		log(cmd, fmt.Sprintf("create_deployment: created %q", did))
 
-		common.RenderKV("deployment_id", did)
-
+		// Step 4: activate the deployment (see the "deployment" parent command).
 		if err := deployments().Activate(ctx, did); err != nil {
 			return fmt.Errorf("activate deployment: %w", err)
 		}
+		log(cmd, "activate_deployment: activated")
 
 		return nil
 	},
@@ -68,12 +74,19 @@ var deployCmd = common.StandardCommand(&cobra.Command{
 
 func init() {
 	// Command-specific flags.
-	deployCmd.Flags().StringArrayVarP(&paths, "from", "f", []string{}, "1 or more file or directory paths")
-	kittehs.Must0(deployCmd.MarkFlagRequired("from"))
+	deployCmd.Flags().StringArrayVarP(&dirPaths, "dir", "d", []string{}, "0 or more directory paths")
+	deployCmd.Flags().StringArrayVarP(&filePaths, "file", "f", []string{}, "0 or more file paths")
+	kittehs.Must0(deployCmd.MarkFlagDirname("dir"))
+	kittehs.Must0(deployCmd.MarkFlagFilename("file"))
+	deployCmd.MarkFlagsOneRequired("dir", "file")
 
 	deployCmd.Flags().StringVarP(&env, "env", "e", "", "environment name or ID")
 }
 
 func deployments() sdkservices.Deployments {
 	return common.Client().Deployments()
+}
+
+func log(cmd *cobra.Command, msg string) {
+	fmt.Fprintf(cmd.OutOrStdout(), fmt.Sprintf("[exec] %s\n", msg))
 }
