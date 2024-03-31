@@ -10,7 +10,13 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-func resolveEnv(ctx context.Context, svcs *Services, env string) (envID sdktypes.EnvID, err error) {
+// Resolve an env string into an EnvID.
+//   - If the env string is empty, it will return an InvalidEnvID.
+//   - If the env string contains only a project name, it will return the default env for
+//     that project. If the project does not have a default env, but have a single env,
+//     it will return that env. If the project has more than a single env, it will fail.
+//   - If the env string is of the form 'project/env', it will return that env.
+func resolveEnv(ctx context.Context, svcs *Services, env string) (sdktypes.EnvID, error) {
 	if env == "" {
 		return sdktypes.InvalidEnvID, nil
 	}
@@ -18,95 +24,74 @@ func resolveEnv(ctx context.Context, svcs *Services, env string) (envID sdktypes
 	parts := strings.SplitN(env, "/", 2)
 
 	if len(parts) == 1 {
-		if sdktypes.IsEnvID(parts[0]) {
-			return sdktypes.ParseEnvID(parts[0])
+		// Only a single part, meaning it's a project name.
+
+		name, err := sdktypes.ParseSymbol(parts[0])
+		if err != nil {
+			return sdktypes.InvalidEnvID, err
 		}
 
-		var pid sdktypes.ProjectID
-
-		if sdktypes.IsProjectID(parts[0]) {
-			if pid, err = sdktypes.ParseProjectID(parts[0]); err != nil {
-				return
-			}
-		} else {
-			var name sdktypes.Symbol
-			if name, err = sdktypes.ParseSymbol(parts[0]); err != nil {
-				return
-			}
-
-			var p sdktypes.Project
-			if p, err = svcs.Projects.GetByName(context.Background(), name); err != nil {
-				return
-			} else if !p.IsValid() {
-				err = fmt.Errorf("project: %w", sdkerrors.ErrNotFound)
-				return
-			}
-
-			pid = p.ID()
+		p, err := svcs.Projects.GetByName(context.Background(), name)
+		if err != nil {
+			return sdktypes.InvalidEnvID, err
+		}
+		if !p.IsValid() {
+			return sdktypes.InvalidEnvID, fmt.Errorf("project: %w", sdkerrors.ErrNotFound)
 		}
 
-		var envs []sdktypes.Env
-		if envs, err = svcs.Envs.List(ctx, pid); err != nil {
-			return
+		envs, err := svcs.Envs.List(ctx, p.ID())
+		if err != nil {
+			return sdktypes.InvalidEnvID, err
 		}
 
 		switch len(envs) {
 		case 0:
-			err = fmt.Errorf("env: %w", sdkerrors.ErrNotFound)
+			// No env, nothing to return.
+			return sdktypes.InvalidEnvID, fmt.Errorf("env: %w", sdkerrors.ErrNotFound)
 		case 1:
-			envID = envs[0].ID()
+			// Single env, return it.
+			return envs[0].ID(), nil
 		default:
+			// More than one env, try to find the default one.
 			_, env := kittehs.FindFirst(envs, func(env sdktypes.Env) bool {
 				return env.Name().String() == "default"
 			})
-			if env.IsValid() {
-				envID = env.ID()
-			} else {
-				err = fmt.Errorf("env: %w", sdkerrors.ErrNotFound)
+
+			if !env.IsValid() {
+				return sdktypes.InvalidEnvID, fmt.Errorf("env: %w", sdkerrors.ErrNotFound)
 			}
-		}
-		return
-	}
 
-	var pid sdktypes.ProjectID
-
-	if sdktypes.IsProjectID(parts[0]) {
-		pid, err = sdktypes.ParseProjectID(parts[0])
-	} else {
-		var name sdktypes.Symbol
-		if name, err = sdktypes.ParseSymbol(parts[0]); err != nil {
-			return
-		}
-
-		var p sdktypes.Project
-		if p, err = svcs.Projects.GetByName(context.Background(), name); p.IsValid() {
-			pid = p.ID()
+			return env.ID(), nil
 		}
 	}
 
+	// Two parts, project and env.
+
+	name, err := sdktypes.ParseSymbol(parts[0])
 	if err != nil {
-		return
+		return sdktypes.InvalidEnvID, err
 	}
 
-	if !pid.IsValid() {
+	p, err := svcs.Projects.GetByName(context.Background(), name)
+	if err != nil {
+		return sdktypes.InvalidEnvID, err
+	}
+	if !p.IsValid() {
 		return sdktypes.InvalidEnvID, sdkerrors.ErrNotFound
 	}
 
-	var name sdktypes.Symbol
 	if name, err = sdktypes.ParseSymbol(parts[1]); err != nil {
-		return
+		return sdktypes.InvalidEnvID, err
 	}
 
-	var e sdktypes.Env
-	if e, err = svcs.Envs.GetByName(ctx, pid, name); err != nil {
-		return
+	e, err := svcs.Envs.GetByName(ctx, p.ID(), name)
+	if err != nil {
+		return sdktypes.InvalidEnvID, err
 	}
 
 	if !e.IsValid() {
-		err = sdkerrors.ErrNotFound
-		return
+		return sdktypes.InvalidEnvID, sdkerrors.ErrNotFound
 	}
 
-	envID = e.ID()
-	return
+	return e.ID(), nil
 }
