@@ -2,6 +2,7 @@ package dispatcher
 
 import (
 	"errors"
+	"strings"
 
 	httpint "go.autokitteh.dev/autokitteh/integrations/http"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
@@ -40,7 +41,7 @@ func processHTTPTrigger(trigger sdktypes.Trigger, event sdktypes.Event) (bool, m
 		return true, nil, nil
 	}
 
-	if triggerPath[0] != '/' {
+	if !strings.HasPrefix(triggerPath, "/") {
 		triggerPath = "/" + triggerPath
 	}
 
