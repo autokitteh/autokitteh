@@ -17,11 +17,11 @@ var (
 	buildID    string
 	entryPoint string
 	memos      []string
-	values     []string
+	inputs     []string
 )
 
 var startCmd = common.StandardCommand(&cobra.Command{
-	Use:   "start {--deployment-id <ID>|--build-id <ID> --env <name or ID>} --entrypoint <...> [--memo <...>] [--watch [--watch-timeout <duration>] [--poll-interval <duration>] [--no-timestamps] [--quiet]]",
+	Use:   "start {--deployment-id <ID>|--build-id <ID> --env <name or ID>} --entrypoint <...> [--memo <...>] [--input <JSON> [...]] [--watch [--watch-timeout <duration>] [--poll-interval <duration>] [--no-timestamps] [--quiet]]",
 	Short: "Start new session",
 	Args:  cobra.NoArgs,
 
@@ -34,7 +34,7 @@ var startCmd = common.StandardCommand(&cobra.Command{
 		ctx, cancel := common.LimitedContext()
 		defer cancel()
 
-		inputs, err := parseValues()
+		inputs, err := parseinputs()
 		if err != nil {
 			return err
 		}
@@ -75,12 +75,12 @@ func init() {
 	startCmd.Flags().BoolVarP(&noTimestamps, "no-timestamps", "n", false, "omit timestamps from watch output")
 	startCmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "don't print anything, just wait to finish")
 
-	startCmd.Flags().StringArrayVarP(&values, "value", "v", nil, `zero or more "key=value" pairs, where value is a JSON value`)
+	startCmd.Flags().StringArrayVarP(&inputs, "input", "I", nil, `zero or more "key=value" pairs, where value is a JSON value`)
 }
 
-func parseValues() (map[string]sdktypes.Value, error) {
-	m := make(map[string]sdktypes.Value, len(values))
-	for _, v := range values {
+func parseinputs() (map[string]sdktypes.Value, error) {
+	m := make(map[string]sdktypes.Value, len(inputs))
+	for _, v := range inputs {
 		k, v, ok := strings.Cut(v, "=")
 		if !ok {
 			return nil, fmt.Errorf("invalid value %q", v)

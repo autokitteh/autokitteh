@@ -13,11 +13,11 @@ import (
 
 var (
 	skip       int
-	justPrints bool
+	printsOnly bool
 )
 
 var logCmd = common.StandardCommand(&cobra.Command{
-	Use:   "log [sessions ID] [--fail] [--skip <N>] [--no-timestamps] [--prints]",
+	Use:   "log [sessions ID] [--fail] [--skip <N>] [--no-timestamps] [--prints-only]",
 	Short: "Get session runtime logs (prints, calls, errors, state changes)",
 	Args:  cobra.MaximumNArgs(1),
 
@@ -52,8 +52,8 @@ var logCmd = common.StandardCommand(&cobra.Command{
 func init() {
 	// Command-specific flags.
 	logCmd.Flags().IntVarP(&skip, "skip", "s", 0, "number of entries to skip")
-	logCmd.Flags().BoolVarP(&noTimestamps, "no-timestamps", "n", false, "omit timestamps from track output")
-	logCmd.Flags().BoolVarP(&justPrints, "just-prints", "p", false, "print only log entries with print messages")
+	logCmd.Flags().BoolVarP(&noTimestamps, "no-timestamps", "n", false, "omit timestamps from watch output")
+	logCmd.Flags().BoolVarP(&printsOnly, "prints-only", "p", false, "output only session print messages")
 
 	common.AddFailIfNotFoundFlag(logCmd)
 }
@@ -81,7 +81,7 @@ func sessionLog(ctx context.Context, sid sdktypes.SessionID, skip int) ([]sdktyp
 			r = r.WithoutTimestamp()
 		}
 
-		if justPrints {
+		if printsOnly {
 			if txt, ok := r.GetPrint(); ok {
 				if !noTimestamps {
 					fmt.Printf("[%s] ", r.Timestamp().String())
