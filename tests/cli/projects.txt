@@ -13,7 +13,7 @@ project_id: prj_00000000000000000000000001
 0
 $ # Try to create a project that already exists.
 $ ${AK} p c --name p1; echo $?
-Error: create project: already exists: db: already exists ([])
+Error: create project: already exists
 1
 $ ${AK} -j p get p1; echo $?
 {"project":{"project_id":"prj_00000000000000000000000001","name":"p1"}}
