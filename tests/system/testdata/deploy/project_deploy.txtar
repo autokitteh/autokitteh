@@ -22,7 +22,7 @@ ak project deploy my_project --file bad_filename
 output equals 'Error: stat bad_filename: no such file or directory'
 return code == 10
 
-ak project build my_project --dir bad_dir_name
+ak project deploy my_project --dir bad_dir_name
 output equals 'Error: stat bad_dir_name: no such file or directory'
 return code == 10
 
@@ -33,13 +33,13 @@ output contains 'build_id: bld_00000000000000000000000003'
 output contains 'deployment_id: dep_00000000000000000000000004'
 
 # Deploy project from a directory tree with multiple files.
-ak project deploy my_project --file directory
+ak project deploy my_project --dir directory
 return code == 0
 output contains 'build_id: bld_00000000000000000000000005'
 output contains 'deployment_id: dep_00000000000000000000000006'
 
 # Deploy project from both, alongside each other.
-ak project deploy my_project --file single_file.star --file directory
+ak project deploy my_project --file single_file.star --dir directory
 return code == 0
 output contains 'build_id: bld_00000000000000000000000007'
 output contains 'deployment_id: dep_00000000000000000000000008'

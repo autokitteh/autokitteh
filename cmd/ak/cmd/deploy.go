@@ -117,7 +117,7 @@ func applyManifest(cmd *cobra.Command, manifestPath string) (string, error) {
 	// Read and parse the manifest file.
 	data, err := os.ReadFile(manifestPath)
 	if err != nil {
-		return "", err
+		return "", common.NewExitCodeError(common.NotFoundExitCode, err)
 	}
 
 	m, err := manifest.Read(data, manifestPath)
