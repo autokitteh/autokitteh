@@ -179,6 +179,16 @@ func planDefaultEnv(ctx context.Context, mvars []*EnvVar, client sdkservices.Ser
 		mvar := *mvar
 		mvar.EnvKey = projName + "/" + defaultEnvName
 
+		if mvar.IsSecret {
+			if mvar.Value != "" {
+				return nil, fmt.Errorf("var %q: value must be empty if is_secret is set", mvar.GetKey())
+			}
+
+			if mvar.EnvVar == "" {
+				mvar.EnvVar = mvar.Name
+			}
+		}
+
 		mvarNames = append(mvarNames, mvar.Name)
 
 		_, v := kittehs.FindFirst(vars, func(v sdktypes.EnvVar) bool {

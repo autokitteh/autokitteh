@@ -41,3 +41,4 @@ def on_http_test(data, event, trigger):
     print(data)
     print(event)
     print(trigger)
+    print(resp.body.text())
