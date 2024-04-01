@@ -45,7 +45,7 @@ type Connection struct {
 	ProjectKey string `yaml:"-" json:"-"` // belongs to project.
 
 	Name           string `yaml:"name" json:"name" jsonschema:"required"`
-	Token          string `yaml:"token" json:"token"`
+	Token          string `yaml:"token,omitempty" json:"token,omitempty"`
 	IntegrationKey string `yaml:"integration" json:"integration" jsonschema:"required"`
 }
 
@@ -73,7 +73,7 @@ type Trigger struct {
 	// Arbitrary data to be passed with the trigger.
 	// The dispatcher can use this data, for example, to extract HTTP path parameters.
 	// For example: `data: { "path": "/a/{b}/{c...}"}`, if the connection is an HTTP connection.
-	Data map[string]any `yaml:"data,omitempty" json:"additional_data,omitempty"`
+	Data map[string]any `yaml:"data,omitempty" json:"data,omitempty"`
 
 	Call       string `yaml:"call,omitempty" json:"call,omitempty" jsonschema:"oneof_required=call"`
 	Entrypoint string `yaml:"entrypoint,omitempty" json:"entrypoint,omitempty" jsonschema:"oneof_required=entrypoint"`
