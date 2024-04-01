@@ -4,7 +4,7 @@ return code == 0
 output equals 'project_id: prj_00000000000000000000000001'
 
 # Build project from a single file.
-ak project build my_project --from meow.star
+ak project build my_project --file meow.star
 return code == 0
 output equals 'build_id: bld_00000000000000000000000003'
 
