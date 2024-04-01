@@ -1,6 +1,7 @@
 package rpcerrors
 
 import (
+	"errors"
 	"fmt"
 
 	"connectrpc.com/connect"
@@ -9,18 +10,19 @@ import (
 )
 
 func ToSDKError(err error) error {
-	connectErrorCode := connect.CodeOf(err)
 	if err == nil {
 		return err
 	}
 
-	if connectErrorCode == connect.CodeUnknown { // not a connect error?
+	var sdkErr error
+	var connectErr *connect.Error
+
+	if !errors.As(err, &connectErr) { // not a connect error?
 		return err
 	}
 
 	// convert connect errors to sdk. Their strings are almost identical
-	var sdkErr error
-	switch connectErrorCode {
+	switch connectErr.Code() {
 	case connect.CodeAlreadyExists:
 		sdkErr = sdkerrors.ErrAlreadyExists
 	case connect.CodeNotFound:
@@ -35,6 +37,8 @@ func ToSDKError(err error) error {
 		sdkErr = sdkerrors.ErrUnauthorized
 	case connect.CodeResourceExhausted:
 		sdkErr = sdkerrors.ErrLimitExceeded
+	case connect.CodeUnknown: // returned as connect.Error, but unrelated to RPC, just unwrap underlying error
+		return connectErr.Unwrap()
 	default:
 		sdkErr = sdkerrors.ErrRPC
 	}
