@@ -21,7 +21,8 @@ func ToSDKError(err error) error {
 		return err
 	}
 
-	// convert connect errors to sdk. Their strings are almost identical
+	// convert connect errors to sdk ones. Their strings are almost identical
+	errMsg := ""
 	switch connectErr.Code() {
 	case connect.CodeAlreadyExists:
 		sdkErr = sdkerrors.ErrAlreadyExists
@@ -37,6 +38,7 @@ func ToSDKError(err error) error {
 		sdkErr = sdkerrors.ErrUnauthorized
 	case connect.CodeResourceExhausted:
 		sdkErr = sdkerrors.ErrLimitExceeded
+		errMsg = connectErr.Message()
 	case connect.CodeUnknown: // returned as connect.Error, but unrelated to RPC, just unwrap underlying error
 		return connectErr.Unwrap()
 	default:
@@ -45,7 +47,10 @@ func ToSDKError(err error) error {
 
 	// err is a connect error (checked in connect.CodeOf), so we can safely cast it
 	if len(connectErr.Details()) != 0 {
-		return fmt.Errorf("%w: (%v)", sdkErr, connectErr.Details())
+		errMsg = errMsg + fmt.Sprintf(" (%v)", connectErr.Details())
+	}
+	if len(errMsg) != 0 {
+		return fmt.Errorf("%w: %s", sdkErr, errMsg)
 	}
 	return sdkErr
 }
