@@ -5,8 +5,8 @@
    '                      `        UI:          {{ .UIAddr }}
   '                        `       {{ .Mode }}
  |                    |\   |       
- |                    | \  |       {{ .Temporal1 }}
- |          .,    _,-~   \ |       {{ .Temporal2 }}
+ |                    | \  |       {{ .Temporal }}
+ |          .,    _,-~   \ |       {{ .TemporalUI }}
   \         \ `.-'        \/ 
    `         \        {{ .Eye }}
     \         \    {{ .Eye }}         

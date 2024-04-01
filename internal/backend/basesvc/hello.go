@@ -41,15 +41,15 @@ func sayHello(opts RunOptions, addr, temporalFrontendAddr, temporalUIAddr string
 		Eye                  string
 		UIAddr               string
 		Mode                 string
-		Temporal1, Temporal2 string
+		Temporal, TemporalUI string
 	}{
-		Version:   fieldColor(version.Version),
-		PID:       fieldColor(fmt.Sprintf("%d", os.Getpid())),
-		Addr:      fieldColor(addr),
-		UIAddr:    fieldColor(fmt.Sprintf("http://%s", addr)),
-		Eye:       eyeColor("▀"),
-		Mode:      mode,
-		Temporal1: temporalFrontendAddr,
-		Temporal2: temporalUIAddr,
+		Version:    fieldColor(version.Version),
+		PID:        fieldColor(fmt.Sprintf("%d", os.Getpid())),
+		Addr:       fieldColor(addr),
+		UIAddr:     fieldColor(fmt.Sprintf("http://%s", addr)),
+		Eye:        eyeColor("▀"),
+		Mode:       mode,
+		Temporal:   temporalFrontendAddr,
+		TemporalUI: temporalUIAddr,
 	}))
 }

@@ -127,7 +127,7 @@ func (c *impl) TemporalAddr() (frontend, ui string) {
 		if frontend = c.cfg.HostPort; frontend == "" || frontend == "localhost" {
 			// known temporal defaults.
 			frontend = "localhost:7233"
-			ui = fmt.Sprintf("http://%s:%d", "localhost", 8233)
+			ui = "http://localhost:8233"
 		}
 		return
 	}

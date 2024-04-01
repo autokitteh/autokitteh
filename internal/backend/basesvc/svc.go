@@ -165,12 +165,13 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		}),
 		fx.Invoke(func(mux *http.ServeMux, tclient temporalclient.Client) {
 			_, uiAddr := tclient.TemporalAddr()
-
-			if uiAddr != "" {
-				mux.HandleFunc("/temporal", func(w http.ResponseWriter, r *http.Request) {
-					http.Redirect(w, r, uiAddr, http.StatusFound)
-				})
+			if uiAddr == "" {
+				return
 			}
+
+			mux.HandleFunc("/temporal", func(w http.ResponseWriter, r *http.Request) {
+				http.Redirect(w, r, uiAddr, http.StatusFound)
+			})
 		}),
 		fx.Invoke(func(lc fx.Lifecycle, z *zap.Logger, httpsvc httpsvc.Svc, tclient temporalclient.Client) {
 			temporalFrontendAddr, temporalUIAddr := tclient.TemporalAddr()
