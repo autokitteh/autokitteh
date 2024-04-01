@@ -44,11 +44,14 @@ func (i integration) triggerWorkflow(ctx context.Context, args []sdktypes.Value,
 func (i integration) listWorkflows(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
 	var (
 		owner, repo string
+		listOptions github.ListOptions
 	)
 
 	if err := sdkmodule.UnpackArgs(args, kwargs,
 		"owner", &owner,
 		"repo", &repo,
+		"per_page?", &listOptions.PerPage,
+		"page?", &listOptions.Page,
 	); err != nil {
 		return sdktypes.InvalidValue, err
 	}
@@ -59,7 +62,7 @@ func (i integration) listWorkflows(ctx context.Context, args []sdktypes.Value, k
 		return sdktypes.InvalidValue, err
 	}
 
-	workflows, _, err := gh.Actions.ListWorkflows(ctx, owner, repo, nil)
+	workflows, _, err := gh.Actions.ListWorkflows(ctx, owner, repo, &listOptions)
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
