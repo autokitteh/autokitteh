@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sync/atomic"
 
 	"github.com/fatih/color"
 	"go.temporal.io/sdk/client"
@@ -162,9 +163,28 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 			mux.Handle("/favicon-32x32.png", srv)
 			mux.Handle("/favicon-16x16.png", srv)
 		}),
-		fx.Invoke(func(lc fx.Lifecycle, z *zap.Logger, httpsvc httpsvc.Svc) {
+		fx.Invoke(func(lc fx.Lifecycle, httpsvc httpsvc.Svc) {
+			HookSimpleOnStart(lc, func() { sayHello(opts, httpsvc.Addr()) })
+		}),
+		fx.Invoke(func(z *zap.Logger, lc fx.Lifecycle, mux *http.ServeMux) {
+			var ready atomic.Bool
+
+			mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+				// TODO(ENG-530): check db, temporal, etc.
+				w.WriteHeader(http.StatusOK)
+			})
+
+			mux.HandleFunc("/readyz", func(w http.ResponseWriter, r *http.Request) {
+				if !ready.Load() {
+					w.WriteHeader(http.StatusServiceUnavailable)
+					return
+				}
+
+				w.WriteHeader(http.StatusOK)
+			})
+
 			HookSimpleOnStart(lc, func() {
-				sayHello(opts, httpsvc.Addr())
+				ready.Store(true)
 				z.Info("ready")
 			})
 		}),
