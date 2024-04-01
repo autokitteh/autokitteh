@@ -49,42 +49,4 @@ func ToSDKError(err error) error {
 		return fmt.Errorf("%w: (%v)", sdkErr, connErr.Details())
 	}
 	return sdkErr
-
-	/*
-	   case connect.CodeAlreadyExists:
-	   	err1 = sdkerrors.ErrAlreadyExists
-	   // ErrAlreadyExists      = errors.New("already exists")
-	   	// 		return
-
-	   case connect.CodeNotFound:
-	   	err1 = sdkerrors.ErrNotFound
-	   // ErrNotFound           = errors.New("not found")
-	   // 		return "not_found"
-
-	   case connect.CodeInvalidArgument:
-	   	err1 = sdkerrors.ErrInvalidArgument{Underlying: err}
-	   b.WriteString("invalid argument")
-	   // 		return "invalid_argument"
-
-	   case connect.CodeUnimplemented:
-	   	err1 = sdkerrors.ErrNotImplemented
-	   	ErrNotImplemented     = errors.New("not implemented")
-	   // 		return "unimplemented"
-
-	   case connect.CodeUnauthenticated:
-	   	err1 = sdkerrors.ErrUnauthenticated
-	   // ErrUnauthenticated    = errors.New("unauthenticated")
-	   // 		return "unauthenticated"
-
-	   case connect.CodePermissionDenied:
-	   	err1 = sdkerrors.ErrUnauthorized
-	   // ErrUnauthorized       = errors.New("unauthorized")
-	   // 		return "permission_denied"
-
-	   case connect.CodeResourceExhausted:
-	   	err1 = sdkerrors.ErrLimitExceeded
-	   ErrLimitExceeded      = errors.New("limit exceeded")
-	   // 		return "resource_exhausted"
-
-	*/
 }
