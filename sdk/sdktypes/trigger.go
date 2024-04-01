@@ -19,11 +19,12 @@ type TriggerTraits struct{}
 
 func (TriggerTraits) Validate(m *TriggerPB) error {
 	return errors.Join(
-		idField[TriggerID]("trigger_id", m.TriggerId),
+		eventFilterField("filter", m.Filter),
 		idField[ConnectionID]("connection_id", m.ConnectionId),
 		idField[EnvID]("env_id", m.EnvId),
+		idField[TriggerID]("trigger_id", m.TriggerId),
 		objectField[CodeLocation]("code_location", m.CodeLocation),
-		eventFilterField("filter", m.Filter),
+		valuesMapField("data", m.Data),
 	)
 }
 
@@ -56,9 +57,41 @@ func (p Trigger) WithConnectionID(id ConnectionID) Trigger {
 func (p Trigger) ConnectionID() ConnectionID {
 	return kittehs.Must1(ParseConnectionID(p.read().ConnectionId))
 }
+
+func (p Trigger) Data() map[string]Value {
+	return kittehs.TransformMapValues(p.read().Data, forceFromProto[Value])
+}
+
+func (p Trigger) Name() string { return p.read().Name }
+func (p Trigger) WithName(s string) Trigger {
+	return Trigger{p.forceUpdate(func(m *TriggerPB) { m.Name = s })}
+}
+
 func (p Trigger) EnvID() EnvID      { return kittehs.Must1(ParseEnvID(p.read().EnvId)) }
 func (p Trigger) EventType() string { return p.read().EventType }
 func (p Trigger) Filter() string    { return p.read().Filter }
+
+func (p Trigger) WithFilter(f string) Trigger {
+	return Trigger{p.forceUpdate(func(m *TriggerPB) { m.Filter = f })}
+}
+
 func (p Trigger) CodeLocation() CodeLocation {
 	return forceFromProto[CodeLocation](p.read().CodeLocation)
+}
+
+func (p Trigger) ToValues() map[string]Value {
+	if !p.IsValid() {
+		return nil
+	}
+
+	return map[string]Value{
+		"name": NewStringValue(p.read().Name),
+		"data": kittehs.Must1(NewStructValue(
+			NewStringValue("event_data"),
+			kittehs.TransformMapValues(
+				p.read().Data,
+				forceFromProto[Value],
+			),
+		)),
+	}
 }

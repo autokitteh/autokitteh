@@ -43,8 +43,14 @@ func (h HTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	prefix := routePrefix(ns)
 
 	url := *r.URL
-	url.Path = strings.TrimPrefix(url.Path, prefix)
-	url.RawPath = strings.TrimPrefix(url.RawPath, prefix)
+
+	if strings.HasPrefix(url.Path, prefix) {
+		url.Path = "/" + strings.TrimPrefix(url.Path, prefix)
+	}
+
+	if strings.HasPrefix(url.RawPath, prefix) {
+		url.RawPath = "/" + strings.TrimPrefix(url.RawPath, prefix)
+	}
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -83,7 +89,7 @@ func (h HTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	event, err := sdktypes.EventFromProto(&sdktypes.EventPB{
-		IntegrationId: integrationID.String(),
+		IntegrationId: IntegrationID.String(),
 		EventType:     strings.ToLower(r.Method),
 		Data:          kittehs.TransformMapValues(data, sdktypes.ToProto),
 	})
