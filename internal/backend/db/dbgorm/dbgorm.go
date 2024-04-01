@@ -79,6 +79,10 @@ func translateError(err error) error {
 		return sdkerrors.ErrNotFound
 	case errors.Is(err, gorm.ErrDuplicatedKey):
 		return sdkerrors.ErrAlreadyExists
+	case errors.Is(err, sdkerrors.ErrAlreadyExists):
+		return err
+	case errors.Is(err, sdkerrors.ErrNotFound):
+		return err
 	default:
 		return fmt.Errorf("db: %w", err)
 	}
