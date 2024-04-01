@@ -31,19 +31,6 @@ var Configs = configset.Set[Config]{
 	},
 }
 
-func (c *Config) WithDebug(debug bool) *Config {
-	cc := *c
-	c = &cc
-
-	if debug {
-		c.Zap.Level = zap.NewAtomicLevelAt(zap.DebugLevel)
-	} else {
-		c.Zap.Level = defaultZapLevel
-	}
-
-	return c
-}
-
 type onFatalHook struct{}
 
 func (onFatalHook) OnWrite(ce *zapcore.CheckedEntry, fs []zapcore.Field) {
