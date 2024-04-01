@@ -15,7 +15,7 @@ import (
 var endState string
 
 var watchCmd = common.StandardCommand(&cobra.Command{
-	Use:   "watch [sessions ID] [--fail] [--end-state <state>] [--timeout <duration>] [--poll-interval <duration>] [--no-timestamps] [--quiet]",
+	Use:   "watch [sessions ID] [--fail] [--end-state <state>] [--timeout <duration>] [--poll-interval <duration>] [--no-timestamps] [--quiet] [--prints-only]",
 	Short: "Watch session runtime logs (prints, calls, errors, state changes)",
 	Args:  cobra.MaximumNArgs(1),
 
@@ -56,6 +56,7 @@ func init() {
 	watchCmd.Flags().DurationVarP(&pollInterval, "poll-interval", "i", defaultPollInterval, "poll interval")
 	watchCmd.Flags().BoolVarP(&noTimestamps, "no-timestamps", "n", false, "omit timestamps from output")
 	watchCmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "don't print anything, just wait to finish")
+	watchCmd.Flags().BoolVarP(&printsOnly, "just-prints", "p", false, "output only session print messages")
 
 	common.AddFailIfNotFoundFlag(watchCmd)
 }

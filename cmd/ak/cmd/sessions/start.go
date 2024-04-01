@@ -1,7 +1,9 @@
 package sessions
 
 import (
+	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -15,10 +17,11 @@ var (
 	buildID    string
 	entryPoint string
 	memos      []string
+	inputs     []string
 )
 
 var startCmd = common.StandardCommand(&cobra.Command{
-	Use:   "start {--deployment-id <ID>|--build-id <ID> --env <name or ID>} --entrypoint <...> [--memo <...>] [--watch [--watch-timeout <duration>] [--poll-interval <duration>] [--no-timestamps] [--quiet]]",
+	Use:   "start {--deployment-id <ID>|--build-id <ID> --env <name or ID>} --entrypoint <...> [--memo <...>] [--input <JSON> [...]] [--watch [--watch-timeout <duration>] [--poll-interval <duration>] [--no-timestamps] [--quiet]]",
 	Short: "Start new session",
 	Args:  cobra.NoArgs,
 
@@ -31,7 +34,12 @@ var startCmd = common.StandardCommand(&cobra.Command{
 		ctx, cancel := common.LimitedContext()
 		defer cancel()
 
-		s := sdktypes.NewSession(bid, ep, nil, nil).WithEnvID(eid).WithDeploymentID(did)
+		inputs, err := parseinputs()
+		if err != nil {
+			return err
+		}
+
+		s := sdktypes.NewSession(bid, ep, nil, nil).WithEnvID(eid).WithDeploymentID(did).WithInputs(inputs)
 		sid, err := sessions().Start(ctx, s)
 		if err != nil {
 			return fmt.Errorf("start session: %w", err)
@@ -66,6 +74,35 @@ func init() {
 	startCmd.Flags().DurationVarP(&pollInterval, "poll-interval", "i", defaultPollInterval, "watch poll interval")
 	startCmd.Flags().BoolVarP(&noTimestamps, "no-timestamps", "n", false, "omit timestamps from watch output")
 	startCmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "don't print anything, just wait to finish")
+
+	startCmd.Flags().StringArrayVarP(&inputs, "input", "I", nil, `zero or more "key=value" pairs, where value is a JSON value`)
+}
+
+func parseinputs() (map[string]sdktypes.Value, error) {
+	m := make(map[string]sdktypes.Value, len(inputs))
+	for _, v := range inputs {
+		k, v, ok := strings.Cut(v, "=")
+		if !ok {
+			return nil, fmt.Errorf("invalid value %q", v)
+		}
+
+		decoder := json.NewDecoder(strings.NewReader(v))
+		decoder.UseNumber()
+
+		var jv any
+		if err := decoder.Decode(&jv); err != nil {
+			return nil, fmt.Errorf("invalid value %q: %w", v, err)
+		}
+
+		wv, err := sdktypes.WrapValue(jv)
+		if err != nil {
+			return nil, fmt.Errorf("unhandled value type for %q: %w", v, err)
+		}
+
+		m[k] = wv
+	}
+
+	return m, nil
 }
 
 func sessionArgs() (did sdktypes.DeploymentID, eid sdktypes.EnvID, bid sdktypes.BuildID, ep sdktypes.CodeLocation, err error) {
