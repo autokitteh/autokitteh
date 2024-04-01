@@ -27,6 +27,7 @@ require (
 	github.com/flosch/pongo2/v6 v6.0.0
 	github.com/fullstorydev/grpcurl v1.8.9
 	github.com/glebarez/sqlite v1.10.0
+	github.com/google/cel-go v0.20.1
 	github.com/google/go-cmp v0.6.0
 	github.com/google/go-github/v60 v60.0.0
 	github.com/google/uuid v1.6.0
@@ -133,7 +134,6 @@ require (
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/mock v1.6.0 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
-	github.com/google/cel-go v0.20.1 // indirect
 	github.com/google/go-github/v57 v57.0.0 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/s2a-go v0.1.7 // indirect

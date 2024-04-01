@@ -2,7 +2,10 @@ package dbgorm
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+
+	"github.com/google/uuid"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
@@ -33,6 +36,17 @@ func triggerToRecord(ctx context.Context, tx *tx, trigger sdktypes.Trigger) (*sc
 		}
 	}
 
+	data, err := json.Marshal(trigger.Data())
+	if err != nil {
+		return nil, fmt.Errorf("marshal trigger data: %w", err)
+	}
+
+	name := trigger.Name()
+	if name == "" {
+		name = uuid.New().String()
+	}
+	uniqueName := fmt.Sprintf("%s/%s", envID.String(), name)
+
 	return &scheme.Trigger{
 		TriggerID:    trigger.ID().String(),
 		EnvID:        envID.String(),
@@ -41,6 +55,9 @@ func triggerToRecord(ctx context.Context, tx *tx, trigger sdktypes.Trigger) (*sc
 		EventType:    trigger.EventType(),
 		Filter:       trigger.Filter(),
 		CodeLocation: trigger.CodeLocation().CanonicalString(),
+		Name:         trigger.Name(),
+		Data:         data,
+		UniqueName:   uniqueName,
 	}, nil
 }
 
