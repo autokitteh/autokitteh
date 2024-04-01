@@ -2,6 +2,7 @@ package sdktypes
 
 import (
 	"errors"
+	"time"
 
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -120,4 +121,8 @@ func (r SessionLogRecord) WithoutTimestamp() SessionLogRecord {
 	m := r.read()
 	m.T = nil
 	return forceFromProto[SessionLogRecord](m)
+}
+
+func (r SessionLogRecord) Timestamp() time.Time {
+	return r.read().T.AsTime()
 }

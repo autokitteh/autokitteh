@@ -11,10 +11,13 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-var skip int
+var (
+	skip       int
+	justPrints bool
+)
 
 var logCmd = common.StandardCommand(&cobra.Command{
-	Use:   "log [sessions ID] [--fail] [--skip <N>] [--no-timestamps]",
+	Use:   "log [sessions ID] [--fail] [--skip <N>] [--no-timestamps] [--prints]",
 	Short: "Get session runtime logs (prints, calls, errors, state changes)",
 	Args:  cobra.MaximumNArgs(1),
 
@@ -50,6 +53,7 @@ func init() {
 	// Command-specific flags.
 	logCmd.Flags().IntVarP(&skip, "skip", "s", 0, "number of entries to skip")
 	logCmd.Flags().BoolVarP(&noTimestamps, "no-timestamps", "n", false, "omit timestamps from track output")
+	logCmd.Flags().BoolVarP(&justPrints, "just-prints", "p", false, "print only log entries with print messages")
 
 	common.AddFailIfNotFoundFlag(logCmd)
 }
@@ -75,6 +79,18 @@ func sessionLog(ctx context.Context, sid sdktypes.SessionID, skip int) ([]sdktyp
 	for _, r := range fresh {
 		if noTimestamps {
 			r = r.WithoutTimestamp()
+		}
+
+		if justPrints {
+			if txt, ok := r.GetPrint(); ok {
+				if !noTimestamps {
+					fmt.Printf("[%s] ", r.Timestamp().String())
+				}
+
+				fmt.Println(txt)
+			}
+
+			continue
 		}
 
 		if !quiet {
