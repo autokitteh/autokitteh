@@ -44,9 +44,8 @@ func ToSDKError(err error) error {
 	}
 
 	// err is a connect error (checked in connect.CodeOf), so we can safely cast it
-	connErr := err.(*connect.Error)
-	if len(connErr.Details()) != 0 {
-		return fmt.Errorf("%w: (%v)", sdkErr, connErr.Details())
+	if len(connectErr.Details()) != 0 {
+		return fmt.Errorf("%w: (%v)", sdkErr, connectErr.Details())
 	}
 	return sdkErr
 }
