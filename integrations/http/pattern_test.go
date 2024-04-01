@@ -3,8 +3,54 @@ package http
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 )
+
+func TestExtractPathKeys(t *testing.T) {
+	tests := []struct {
+		path string
+		want []string
+	}{
+		{},
+		{
+			path: "/a",
+		},
+		{
+			path: "/a/{b}/c",
+			want: []string{"b"},
+		},
+		{
+			path: "/a/{b...}",
+			want: []string{"b"},
+		},
+		{
+			path: "/{meow}/moo/{woof}/x",
+			want: []string{"meow", "woof"},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.path, func(t *testing.T) {
+			got, err := extractPathKeys(test.path)
+			if assert.NoError(t, err) {
+				return
+			}
+
+			assert.Equal(t, test.want, got)
+		})
+	}
+
+	_, err := extractPathKeys("{")
+	assert.Error(t, err)
+
+	_, err = extractPathKeys("a/{}")
+	assert.Error(t, err)
+
+	_, err = extractPathKeys("a/{...}")
+	assert.Error(t, err)
+}
 
 func TestMatchPattern(t *testing.T) {
 	// Test cases

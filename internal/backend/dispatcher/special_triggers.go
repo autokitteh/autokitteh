@@ -23,7 +23,7 @@ func processSpecialTrigger(t sdktypes.Trigger, iid sdktypes.IntegrationID, event
 
 func processHTTPTrigger(trigger sdktypes.Trigger, event sdktypes.Event) (bool, map[string]sdktypes.Value, error) {
 	// Get expected path pattern from the trigger.
-	pathValue, ok := trigger.Data()["pattern"]
+	pathValue, ok := trigger.Data()["path"]
 	if !ok {
 		// No pattern means we don't need to match anything.
 		return true, nil, nil

@@ -65,11 +65,15 @@ func (v EnvVar) GetKey() string { return v.EnvKey + "/" + v.Name }
 type Trigger struct {
 	EnvKey string `yaml:"-" json:"-"` // associated with env.
 
-	ConnectionKey string         `yaml:"connection" json:"connection" jsonschema:"required"` // coming from connection.
-	Name          string         `yaml:"name,omitempty" json:"name,omitempty"`
-	EventType     string         `yaml:"event_type,omitempty" json:"event_type,omitempty"`
-	Filter        string         `yaml:"filter,omitempty" json:"filter,omitempty"`
-	Data          map[string]any `yaml:"data,omitempty" json:"additional_data,omitempty"`
+	ConnectionKey string `yaml:"connection" json:"connection" jsonschema:"required"` // coming from connection.
+	Name          string `yaml:"name,omitempty" json:"name,omitempty"`
+	EventType     string `yaml:"event_type,omitempty" json:"event_type,omitempty"`
+	Filter        string `yaml:"filter,omitempty" json:"filter,omitempty"`
+
+	// Arbitrary data to be passed with the trigger.
+	// The dispatcher can use this data, for example, to extract HTTP path parameters.
+	// For example: `data: { "path": "/a/{b}/{c...}"}`, if the connection is an HTTP connection.
+	Data map[string]any `yaml:"data,omitempty" json:"additional_data,omitempty"`
 
 	Call       string `yaml:"call,omitempty" json:"call,omitempty" jsonschema:"oneof_required=call"`
 	Entrypoint string `yaml:"entrypoint,omitempty" json:"entrypoint,omitempty" jsonschema:"oneof_required=entrypoint"`

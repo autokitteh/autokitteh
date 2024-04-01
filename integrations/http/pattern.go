@@ -11,7 +11,11 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 )
 
-func extractKeys(s string) (keys []string, err error) {
+// Extract path keys from path. This follows Go's convention for paths
+// as described in https://pkg.go.dev/net/http#ServeMux.
+// Essentially, extract the content of any curly braces in the path.
+// If a key has a "..." suffix, it is removed.
+func extractPathKeys(s string) (keys []string, err error) {
 	var (
 		curr   strings.Builder
 		inside bool
@@ -22,7 +26,11 @@ func extractKeys(s string) (keys []string, err error) {
 			if r != '}' {
 				curr.WriteRune(r)
 			} else {
-				keys = append(keys, strings.TrimSuffix(curr.String(), "..."))
+				key := strings.TrimSuffix(curr.String(), "...")
+				if key == "" {
+					return nil, sdkerrors.NewInvalidArgumentError("empty key")
+				}
+				keys = append(keys, key)
 				curr.Reset()
 				inside = false
 			}
@@ -38,6 +46,9 @@ func extractKeys(s string) (keys []string, err error) {
 	return
 }
 
+// Match request path against pattern. This uses go's http.ServeMux as described
+// in https://pkg.go.dev/net/http#ServeMux. It will return a map of path keys
+// to their values if the request path matches the pattern.
 func MatchPattern(pattern string, req string) (vs map[string]string, err error) {
 	err = sdkerrors.ErrNotFound
 
@@ -45,7 +56,7 @@ func MatchPattern(pattern string, req string) (vs map[string]string, err error) 
 
 	mux.Handle(pattern, http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 		var keys []string
-		if keys, err = extractKeys(pattern); err == nil {
+		if keys, err = extractPathKeys(pattern); err == nil {
 			vs = kittehs.ListToMap(keys, func(k string) (string, string) {
 				return k, r.PathValue(k)
 			})

@@ -10,11 +10,11 @@ project:
       connection: myhttp
       entrypoint: http.star:on_http_get
       data:
-        pattern: "get"
+        path: "get"
     - filter: "data.method == 'POST'"
       connection: myhttp
       entrypoint: http.star:on_http_post
     - connection: myhttp
       call: http.star:on_http_test
       data:
-        pattern: "/test/{a}/{b...}"
+        path: "/test/{a}/{b...}"
