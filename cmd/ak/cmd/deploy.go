@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
 
@@ -28,7 +29,8 @@ var deployCmd = common.StandardCommand(&cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		r := resolver.Resolver{Client: common.Client()}
 
-		// Step 1: apply the manifest file, if provided.
+		// Step 1: apply the manifest file, if provided
+		// (see also the "manifest" parent command).
 		if manifestPath != "" {
 			var err error
 			project, err = applyManifest(cmd, manifestPath)
@@ -42,7 +44,14 @@ var deployCmd = common.StandardCommand(&cobra.Command{
 			}
 		}
 
-		// Step 2: build the project.
+		// Step 2: build the project (see also the "build" and "project" parent commands).
+		if len(dirPaths) == 0 && len(filePaths) == 0 {
+			if manifestPath == "" {
+				return fmt.Errorf("no dir/file paths provided")
+			}
+			dirPaths = append(dirPaths, filepath.Dir(manifestPath))
+		}
+
 		bid, err := common.BuildProject(project, dirPaths, filePaths)
 		if err != nil {
 			return err
@@ -59,7 +68,8 @@ var deployCmd = common.StandardCommand(&cobra.Command{
 			return common.NewExitCodeError(common.NotFoundExitCode, err)
 		}
 
-		// Step 4: deploy the build (see the "deployment" parent command).
+		// Step 4: deploy the build
+		// (see also the "deployment" and "project" parent commands).
 		deployment, err := sdktypes.DeploymentFromProto(&sdktypes.DeploymentPB{
 			EnvId:   eid.String(),
 			BuildId: bid.String(),
@@ -78,7 +88,7 @@ var deployCmd = common.StandardCommand(&cobra.Command{
 		}
 		logFunc(cmd, "exec")(fmt.Sprintf("create_deployment: created %q", did))
 
-		// Step 5: activate the deployment (see the "deployment" parent command).
+		// Step 5: activate the deployment (see also the "deployment" parent command).
 		if err := dep.Activate(ctx, did); err != nil {
 			return fmt.Errorf("activate deployment: %w", err)
 		}
@@ -95,11 +105,10 @@ func init() {
 	deployCmd.MarkFlagsOneRequired("manifest", "project")
 	deployCmd.MarkFlagsMutuallyExclusive("manifest", "project")
 
-	deployCmd.Flags().StringArrayVarP(&dirPaths, "dir", "d", []string{}, "0 or more directory paths")
+	deployCmd.Flags().StringArrayVarP(&dirPaths, "dir", "d", []string{}, "0 or more directory paths (default = manifest directory)")
 	deployCmd.Flags().StringArrayVarP(&filePaths, "file", "f", []string{}, "0 or more file paths")
 	kittehs.Must0(deployCmd.MarkFlagDirname("dir"))
 	kittehs.Must0(deployCmd.MarkFlagFilename("file"))
-	deployCmd.MarkFlagsOneRequired("dir", "file")
 
 	deployCmd.Flags().StringVarP(&env, "env", "e", "", "environment name or ID")
 }
