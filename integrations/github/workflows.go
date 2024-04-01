@@ -40,6 +40,7 @@ func (i integration) triggerWorkflow(ctx context.Context, args []sdktypes.Value,
 	return sdktypes.Nothing, nil
 }
 
+// https://docs.github.com/en/rest/actions/workflows#list-repository-workflows
 func (i integration) listWorkflows(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
 	var (
 		owner, repo string
