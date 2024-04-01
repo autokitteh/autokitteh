@@ -82,17 +82,6 @@ project:
 [exec] create_deployment: created "dep_00000000000000000000000008"
 [exec] activate_deployment: activated
 
-        -[plan] trigger "my_project/default:my_project/my_connection/get": found, id="trg_00000000000000000000000004"
-        -[plan] trigger "my_project/default:my_project/my_connection/get": no changes needed
-        -[exec] create_build: created "bld_00000000000000000000000007"
-        -[exec] create_deployment: created "dep_00000000000000000000000008"
-        +[plan] trigger "my_project/default:my_project/my_connection/53f06e095e86a9cc69b37741ab9278e4": not found, will create
-        +[plan] trigger "trg_00000000000000000000000004" is not in the manifest, will delete
-        +[exec] create_trigger "my_project/default:my_project/my_connection/53f06e095e86a9cc69b37741ab9278e4": created "trg_00000000000000000000000007"
-        +[exec] delete_trigger "my_project/trg_00000000000000000000000004": deleted
-        +[exec] create_build: created "bld_00000000000000000000000008"
-        +[exec] create_deployment: created "dep_00000000000000000000000009"
-
 -- single_file.star --
 print("single_file.star")
 
