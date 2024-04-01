@@ -2,6 +2,7 @@ package dispatcher
 
 import (
 	"errors"
+	"strings"
 
 	httpint "go.autokitteh.dev/autokitteh/integrations/http"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
@@ -25,7 +26,7 @@ func processHTTPTrigger(trigger sdktypes.Trigger, event sdktypes.Event) (bool, m
 	// Get expected path pattern from the trigger.
 	pathValue, ok := trigger.Data()["path"]
 	if !ok {
-		// No pattern means we don't need to match anything.
+		// No path means we don't need to match anything.
 		return true, nil, nil
 	}
 
@@ -34,6 +35,15 @@ func processHTTPTrigger(trigger sdktypes.Trigger, event sdktypes.Event) (bool, m
 	}
 
 	triggerPath := pathValue.GetString().Value()
+
+	if triggerPath == "" {
+		// Empty path means we don't need to match anything.
+		return true, nil, nil
+	}
+
+	if !strings.HasPrefix(triggerPath, "/") {
+		triggerPath = "/" + triggerPath
+	}
 
 	// Get actual URL from the event.
 	urlValue, ok := event.Data()["url"]

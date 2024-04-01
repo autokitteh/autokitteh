@@ -38,6 +38,14 @@ func (d *dispatcher) getEventSessionData(ctx context.Context, event sdktypes.Eve
 
 	z := d.z.With(zap.String("event_id", event.ID().String()))
 
+	if opts.Env != "" {
+		z = z.With(zap.String("env", opts.Env))
+	}
+
+	if opts.DeploymentID.IsValid() {
+		z = z.With(zap.String("deployment_id", opts.DeploymentID.String()))
+	}
+
 	if !event.IsValid() {
 		z.Error("could not find event")
 		return nil, sdkerrors.ErrNotFound
@@ -45,6 +53,10 @@ func (d *dispatcher) getEventSessionData(ctx context.Context, event sdktypes.Eve
 
 	optsEnvID, err := resolveEnv(ctx, &d.services, opts.Env)
 	if err != nil {
+		if errors.Is(err, sdkerrors.ErrNotFound) {
+			z.Info("env is not configured")
+			return nil, nil
+		}
 		return nil, fmt.Errorf("env: %w", err)
 	}
 	if optsEnvID.IsValid() {
