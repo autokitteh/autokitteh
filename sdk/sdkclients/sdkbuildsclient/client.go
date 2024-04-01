@@ -28,7 +28,7 @@ type client struct {
 func (c *client) Download(ctx context.Context, buildID sdktypes.BuildID) (io.ReadCloser, error) {
 	resp, err := c.client.Download(ctx, connect.NewRequest(&buildsv1.DownloadRequest{BuildId: buildID.String()}))
 	if err != nil {
-		return nil, rpcerrors.TranslateError(err)
+		return nil, rpcerrors.ToSDKError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {
@@ -43,7 +43,7 @@ func (c *client) Download(ctx context.Context, buildID sdktypes.BuildID) (io.Rea
 func (c *client) Get(ctx context.Context, buildID sdktypes.BuildID) (sdktypes.Build, error) {
 	resp, err := c.client.Get(ctx, connect.NewRequest(&buildsv1.GetRequest{BuildId: buildID.String()}))
 	if err != nil {
-		return sdktypes.InvalidBuild, rpcerrors.TranslateError(err)
+		return sdktypes.InvalidBuild, rpcerrors.ToSDKError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {
@@ -66,7 +66,7 @@ func (c *client) List(ctx context.Context, filter sdkservices.ListBuildsFilter) 
 		Limit: filter.Limit,
 	}))
 	if err != nil {
-		return nil, rpcerrors.TranslateError(err)
+		return nil, rpcerrors.ToSDKError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {
@@ -84,7 +84,7 @@ func (c *client) List(ctx context.Context, filter sdkservices.ListBuildsFilter) 
 func (c *client) Delete(ctx context.Context, buildID sdktypes.BuildID) error {
 	resp, err := c.client.Delete(ctx, connect.NewRequest(&buildsv1.DeleteRequest{BuildId: buildID.String()}))
 	if err != nil {
-		return rpcerrors.TranslateError(err)
+		return rpcerrors.ToSDKError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {
@@ -98,7 +98,7 @@ func (c *client) Delete(ctx context.Context, buildID sdktypes.BuildID) error {
 func (c *client) Save(ctx context.Context, build sdktypes.Build, data []byte) (sdktypes.BuildID, error) {
 	resp, err := c.client.Save(ctx, connect.NewRequest(&buildsv1.SaveRequest{Build: build.ToProto(), Data: data}))
 	if err != nil {
-		return sdktypes.InvalidBuildID, rpcerrors.TranslateError(err)
+		return sdktypes.InvalidBuildID, rpcerrors.ToSDKError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {
@@ -115,7 +115,7 @@ func (c *client) Save(ctx context.Context, build sdktypes.Build, data []byte) (s
 func (c *client) Describe(ctx context.Context, buildID sdktypes.BuildID) (*sdkbuildfile.BuildFile, error) {
 	resp, err := c.client.Describe(ctx, connect.NewRequest(&buildsv1.DescribeRequest{BuildId: buildID.String()}))
 	if err != nil {
-		return nil, rpcerrors.TranslateError(err)
+		return nil, rpcerrors.ToSDKError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {

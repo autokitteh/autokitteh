@@ -27,7 +27,7 @@ func New(p sdkclient.Params) sdkservices.Envs {
 func (c *client) List(ctx context.Context, pid sdktypes.ProjectID) ([]sdktypes.Env, error) {
 	resp, err := c.client.List(ctx, connect.NewRequest(&envsv1.ListRequest{ProjectId: pid.String()}))
 	if err != nil {
-		return nil, rpcerrors.TranslateError(err)
+		return nil, rpcerrors.ToSDKError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {
@@ -40,7 +40,7 @@ func (c *client) List(ctx context.Context, pid sdktypes.ProjectID) ([]sdktypes.E
 func (c *client) Create(ctx context.Context, env sdktypes.Env) (sdktypes.EnvID, error) {
 	resp, err := c.client.Create(ctx, connect.NewRequest(&envsv1.CreateRequest{Env: env.ToProto()}))
 	if err != nil {
-		return sdktypes.InvalidEnvID, rpcerrors.TranslateError(err)
+		return sdktypes.InvalidEnvID, rpcerrors.ToSDKError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {
@@ -60,7 +60,7 @@ func (c *client) GetByID(ctx context.Context, eid sdktypes.EnvID) (sdktypes.Env,
 		&envsv1.GetRequest{EnvId: eid.String()},
 	))
 	if err != nil {
-		return sdktypes.InvalidEnv, rpcerrors.TranslateError(err)
+		return sdktypes.InvalidEnv, rpcerrors.ToSDKError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {
@@ -83,7 +83,7 @@ func (c *client) GetByName(ctx context.Context, pid sdktypes.ProjectID, en sdkty
 		},
 	))
 	if err != nil {
-		return sdktypes.InvalidEnv, rpcerrors.TranslateError(err)
+		return sdktypes.InvalidEnv, rpcerrors.ToSDKError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {
@@ -107,7 +107,7 @@ func (c *client) Remove(ctx context.Context, eid sdktypes.EnvID) error {
 		&envsv1.RemoveRequest{EnvId: eid.String()},
 	))
 	if err != nil {
-		return rpcerrors.TranslateError(err)
+		return rpcerrors.ToSDKError(err)
 	}
 
 	return internal.Validate(resp.Msg)
@@ -116,7 +116,7 @@ func (c *client) Remove(ctx context.Context, eid sdktypes.EnvID) error {
 func (c *client) Update(ctx context.Context, env sdktypes.Env) error {
 	resp, err := c.client.Update(ctx, connect.NewRequest(&envsv1.UpdateRequest{Env: env.ToProto()}))
 	if err != nil {
-		return rpcerrors.TranslateError(err)
+		return rpcerrors.ToSDKError(err)
 	}
 
 	return internal.Validate(resp.Msg)
@@ -125,7 +125,7 @@ func (c *client) Update(ctx context.Context, env sdktypes.Env) error {
 func (c *client) SetVar(ctx context.Context, ev sdktypes.EnvVar) error {
 	resp, err := c.client.SetVar(ctx, connect.NewRequest(&envsv1.SetVarRequest{Var: ev.ToProto()}))
 	if err != nil {
-		return rpcerrors.TranslateError(err)
+		return rpcerrors.ToSDKError(err)
 	}
 
 	return internal.Validate(resp.Msg)
@@ -142,7 +142,7 @@ func (c *client) RemoveVar(ctx context.Context, eid sdktypes.EnvID, vn sdktypes.
 		),
 	)
 	if err != nil {
-		return rpcerrors.TranslateError(err)
+		return rpcerrors.ToSDKError(err)
 	}
 
 	return internal.Validate(resp.Msg)
@@ -156,7 +156,7 @@ func (c *client) GetVars(ctx context.Context, vns []sdktypes.Symbol, eid sdktype
 		},
 	))
 	if err != nil {
-		return nil, rpcerrors.TranslateError(err)
+		return nil, rpcerrors.ToSDKError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {
@@ -174,7 +174,7 @@ func (c *client) RevealVar(ctx context.Context, eid sdktypes.EnvID, vn sdktypes.
 		},
 	))
 	if err != nil {
-		return "", rpcerrors.TranslateError(err)
+		return "", rpcerrors.ToSDKError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {

@@ -27,7 +27,7 @@ func New(p sdkclient.Params) sdkservices.Triggers {
 func (c *client) Create(ctx context.Context, trigger sdktypes.Trigger) (sdktypes.TriggerID, error) {
 	resp, err := c.client.Create(ctx, connect.NewRequest(&triggersv1.CreateRequest{Trigger: trigger.ToProto()}))
 	if err != nil {
-		return sdktypes.InvalidTriggerID, rpcerrors.TranslateError(err)
+		return sdktypes.InvalidTriggerID, rpcerrors.ToSDKError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {
@@ -45,7 +45,7 @@ func (c *client) Create(ctx context.Context, trigger sdktypes.Trigger) (sdktypes
 func (c *client) Update(ctx context.Context, trigger sdktypes.Trigger) error {
 	resp, err := c.client.Update(ctx, connect.NewRequest(&triggersv1.UpdateRequest{Trigger: trigger.ToProto()}))
 	if err != nil {
-		return rpcerrors.TranslateError(err)
+		return rpcerrors.ToSDKError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {
@@ -60,7 +60,7 @@ func (c *client) Delete(ctx context.Context, triggerID sdktypes.TriggerID) error
 		&triggersv1.DeleteRequest{TriggerId: triggerID.String()},
 	))
 	if err != nil {
-		return rpcerrors.TranslateError(err)
+		return rpcerrors.ToSDKError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {
@@ -75,7 +75,7 @@ func (c *client) Get(ctx context.Context, triggerID sdktypes.TriggerID) (sdktype
 		&triggersv1.GetRequest{TriggerId: triggerID.String()},
 	))
 	if err != nil {
-		return sdktypes.InvalidTrigger, rpcerrors.TranslateError(err)
+		return sdktypes.InvalidTrigger, rpcerrors.ToSDKError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {
@@ -90,7 +90,7 @@ func (c *client) List(ctx context.Context, filter sdkservices.ListTriggersFilter
 		&triggersv1.ListRequest{EnvId: filter.EnvID.String(), ConnectionId: filter.ConnectionID.String()},
 	))
 	if err != nil {
-		return nil, rpcerrors.TranslateError(err)
+		return nil, rpcerrors.ToSDKError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {

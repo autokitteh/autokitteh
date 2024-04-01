@@ -27,7 +27,7 @@ func (i *integration) Configure(ctx context.Context, config string) (map[string]
 		Config:        config,
 	}))
 	if err != nil {
-		return nil, rpcerrors.TranslateError(err)
+		return nil, rpcerrors.ToSDKError(err)
 	}
 	if err := internal.Validate(resp.Msg); err != nil {
 		return nil, err
@@ -56,7 +56,7 @@ func (i *integration) Call(ctx context.Context, v sdktypes.Value, args []sdktype
 	})
 	resp, err := i.client.Call(ctx, req)
 	if err != nil {
-		return sdktypes.InvalidValue, rpcerrors.TranslateError(err)
+		return sdktypes.InvalidValue, rpcerrors.ToSDKError(err)
 	}
 	if err := internal.Validate(resp.Msg); err != nil {
 		return sdktypes.InvalidValue, err

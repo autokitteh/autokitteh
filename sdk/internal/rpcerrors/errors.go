@@ -8,7 +8,7 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 )
 
-func TranslateError(err error) error {
+func ToSDKError(err error) error {
 	connectErrorCode := connect.CodeOf(err)
 	if err == nil {
 		return err

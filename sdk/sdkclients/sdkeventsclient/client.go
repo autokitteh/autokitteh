@@ -27,7 +27,7 @@ func New(p sdkclient.Params) sdkservices.Events {
 func (c *client) Save(ctx context.Context, event sdktypes.Event) (sdktypes.EventID, error) {
 	resp, err := c.client.Save(ctx, connect.NewRequest(&eventsv1.SaveRequest{Event: event.ToProto()}))
 	if err != nil {
-		return sdktypes.InvalidEventID, rpcerrors.TranslateError(err)
+		return sdktypes.InvalidEventID, rpcerrors.ToSDKError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {
@@ -47,7 +47,7 @@ func (c *client) Get(ctx context.Context, eventId sdktypes.EventID) (sdktypes.Ev
 		&eventsv1.GetRequest{EventId: eventId.String()},
 	))
 	if err != nil {
-		return sdktypes.InvalidEvent, rpcerrors.TranslateError(err)
+		return sdktypes.InvalidEvent, rpcerrors.ToSDKError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {
@@ -66,7 +66,7 @@ func (c *client) List(ctx context.Context, filter sdkservices.ListEventsFilter) 
 		&eventsv1.ListRequest{IntegrationId: filter.IntegrationID.String(), EventType: filter.EventType, IntegrationToken: filter.IntegrationToken},
 	))
 	if err != nil {
-		return nil, rpcerrors.TranslateError(err)
+		return nil, rpcerrors.ToSDKError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {
@@ -79,7 +79,7 @@ func (c *client) List(ctx context.Context, filter sdkservices.ListEventsFilter) 
 func (c *client) ListEventRecords(ctx context.Context, filter sdkservices.ListEventRecordsFilter) ([]sdktypes.EventRecord, error) {
 	resp, err := c.client.ListEventRecords(ctx, connect.NewRequest(&eventsv1.ListEventRecordsRequest{EventId: filter.EventID.String()}))
 	if err != nil {
-		return nil, rpcerrors.TranslateError(err)
+		return nil, rpcerrors.ToSDKError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {
@@ -93,7 +93,7 @@ func (c *client) ListEventRecords(ctx context.Context, filter sdkservices.ListEv
 func (c *client) AddEventRecord(ctx context.Context, eventRecord sdktypes.EventRecord) error {
 	resp, err := c.client.AddEventRecord(ctx, connect.NewRequest(&eventsv1.AddEventRecordRequest{Record: eventRecord.ToProto()}))
 	if err != nil {
-		return rpcerrors.TranslateError(err)
+		return rpcerrors.ToSDKError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {

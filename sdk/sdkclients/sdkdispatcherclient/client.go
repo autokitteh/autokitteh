@@ -39,7 +39,7 @@ func (c *client) Redispatch(ctx context.Context, eventID sdktypes.EventID, opts 
 		),
 	)
 	if err != nil {
-		return sdktypes.InvalidEventID, rpcerrors.TranslateError(err)
+		return sdktypes.InvalidEventID, rpcerrors.ToSDKError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {
@@ -65,7 +65,7 @@ func (c *client) Dispatch(ctx context.Context, event sdktypes.Event, opts *sdkse
 		Env:          opts.Env,
 	}))
 	if err != nil {
-		return sdktypes.InvalidEventID, rpcerrors.TranslateError(err)
+		return sdktypes.InvalidEventID, rpcerrors.ToSDKError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {
