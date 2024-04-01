@@ -29,7 +29,7 @@ func (c *client) Create(ctx context.Context, project sdktypes.Project) (sdktypes
 		Project: project.ToProto(),
 	}))
 	if err != nil {
-		return sdktypes.InvalidProjectID, rpcerrors.TranslateError(err)
+		return sdktypes.InvalidProjectID, rpcerrors.ToSDKError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {
@@ -47,7 +47,7 @@ func (c *client) Create(ctx context.Context, project sdktypes.Project) (sdktypes
 func (c *client) Delete(ctx context.Context, projectID sdktypes.ProjectID) error {
 	resp, err := c.client.Delete(ctx, connect.NewRequest(&projectsv1.DeleteRequest{ProjectId: projectID.String()}))
 	if err != nil {
-		return rpcerrors.TranslateError(err)
+		return rpcerrors.ToSDKError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {
@@ -62,7 +62,7 @@ func (c *client) Update(ctx context.Context, project sdktypes.Project) error {
 		Project: project.ToProto(),
 	}))
 	if err != nil {
-		return rpcerrors.TranslateError(err)
+		return rpcerrors.ToSDKError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {
@@ -77,7 +77,7 @@ func (c *client) GetByID(ctx context.Context, pid sdktypes.ProjectID) (sdktypes.
 		&projectsv1.GetRequest{ProjectId: pid.String()},
 	))
 	if err != nil {
-		return sdktypes.InvalidProject, rpcerrors.TranslateError(err)
+		return sdktypes.InvalidProject, rpcerrors.ToSDKError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {
@@ -103,7 +103,7 @@ func (c *client) GetByName(ctx context.Context, n sdktypes.Symbol) (sdktypes.Pro
 		},
 	))
 	if err != nil {
-		return sdktypes.InvalidProject, rpcerrors.TranslateError(err)
+		return sdktypes.InvalidProject, rpcerrors.ToSDKError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {
@@ -125,7 +125,7 @@ func (c *client) GetByName(ctx context.Context, n sdktypes.Symbol) (sdktypes.Pro
 func (c *client) List(ctx context.Context) ([]sdktypes.Project, error) {
 	resp, err := c.client.List(ctx, connect.NewRequest(&projectsv1.ListRequest{}))
 	if err != nil {
-		return nil, rpcerrors.TranslateError(err)
+		return nil, rpcerrors.ToSDKError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {
@@ -140,7 +140,7 @@ func (c *client) Build(ctx context.Context, pid sdktypes.ProjectID) (sdktypes.Bu
 		&projectsv1.BuildRequest{ProjectId: pid.String()},
 	))
 	if err != nil {
-		return sdktypes.InvalidBuildID, rpcerrors.TranslateError(err)
+		return sdktypes.InvalidBuildID, rpcerrors.ToSDKError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {
@@ -167,7 +167,7 @@ func (c *client) SetResources(ctx context.Context, pid sdktypes.ProjectID, resou
 		},
 	))
 	if err != nil {
-		return rpcerrors.TranslateError(err)
+		return rpcerrors.ToSDKError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {
@@ -182,7 +182,7 @@ func (c *client) DownloadResources(ctx context.Context, pid sdktypes.ProjectID) 
 		&projectsv1.DownloadResourcesRequest{ProjectId: pid.String()},
 	))
 	if err != nil {
-		return nil, rpcerrors.TranslateError(err)
+		return nil, rpcerrors.ToSDKError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {

@@ -9,33 +9,48 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 )
 
-func TranslateError(err error) error {
-	var err1 error
-	switch connect.CodeOf(err) {
+func ToSDKError(err error) error {
+	if err == nil {
+		return err
+	}
+
+	var sdkErr error
+	var connectErr *connect.Error
+
+	if !errors.As(err, &connectErr) { // not a connect error?
+		return err
+	}
+
+	// convert connect errors to sdk ones. Their strings are almost identical
+	errMsg := ""
+	switch connectErr.Code() {
 	case connect.CodeAlreadyExists:
-		err1 = sdkerrors.ErrAlreadyExists
+		sdkErr = sdkerrors.ErrAlreadyExists
 	case connect.CodeNotFound:
-		err1 = sdkerrors.ErrNotFound
+		sdkErr = sdkerrors.ErrNotFound
 	case connect.CodeInvalidArgument:
-		err1 = sdkerrors.ErrInvalidArgument{Underlying: err}
+		sdkErr = sdkerrors.ErrInvalidArgument{Underlying: err}
 	case connect.CodeUnimplemented:
-		err1 = sdkerrors.ErrNotImplemented
+		sdkErr = sdkerrors.ErrNotImplemented
 	case connect.CodeUnauthenticated:
-		err1 = sdkerrors.ErrUnauthenticated
+		sdkErr = sdkerrors.ErrUnauthenticated
 	case connect.CodePermissionDenied:
-		err1 = sdkerrors.ErrUnauthorized
+		sdkErr = sdkerrors.ErrUnauthorized
 	case connect.CodeResourceExhausted:
-		err1 = sdkerrors.ErrLimitExceeded
+		sdkErr = sdkerrors.ErrLimitExceeded
+		errMsg = connectErr.Message()
+	case connect.CodeUnknown: // returned as connect.Error, but unrelated to RPC, just unwrap underlying error
+		return connectErr.Unwrap()
 	default:
-		err1 = sdkerrors.ErrRPC
+		sdkErr = sdkerrors.ErrRPC
 	}
 
-	if cerr := new(connect.Error); errors.As(err, &cerr) {
-		return fmt.Errorf("%w: %s (%v)", err1, cerr.Message(), cerr.Details())
+	// err is a connect error (checked in connect.CodeOf), so we can safely cast it
+	if len(connectErr.Details()) != 0 {
+		errMsg = errMsg + fmt.Sprintf(" (%v)", connectErr.Details())
 	}
-
-	// TODO: This creates double printing of the error code (at least in the CLI). Find a way to get rid of it.
-	// eg. "error: create: already exists: already exists: a user with the same handle already exists ([])"
-	//                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-	return fmt.Errorf("%w: %s", err1, err.Error())
+	if len(errMsg) != 0 {
+		return fmt.Errorf("%w: %s", sdkErr, errMsg)
+	}
+	return sdkErr
 }

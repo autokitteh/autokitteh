@@ -28,7 +28,7 @@ func New(p sdkclient.Params) sdkservices.Deployments {
 func (c *client) Create(ctx context.Context, deployment sdktypes.Deployment) (sdktypes.DeploymentID, error) {
 	resp, err := c.client.Create(ctx, connect.NewRequest(&deploymentsv1.CreateRequest{Deployment: deployment.ToProto()}))
 	if err != nil {
-		return sdktypes.InvalidDeploymentID, rpcerrors.TranslateError(err)
+		return sdktypes.InvalidDeploymentID, rpcerrors.ToSDKError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {
@@ -46,7 +46,7 @@ func (c *client) Create(ctx context.Context, deployment sdktypes.Deployment) (sd
 func (c *client) Activate(ctx context.Context, id sdktypes.DeploymentID) error {
 	resp, err := c.client.Activate(ctx, connect.NewRequest(&deploymentsv1.ActivateRequest{DeploymentId: id.String()}))
 	if err != nil {
-		return rpcerrors.TranslateError(err)
+		return rpcerrors.ToSDKError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {
@@ -60,7 +60,7 @@ func (c *client) Activate(ctx context.Context, id sdktypes.DeploymentID) error {
 func (c *client) Deactivate(ctx context.Context, id sdktypes.DeploymentID) error {
 	resp, err := c.client.Deactivate(ctx, connect.NewRequest(&deploymentsv1.DeactivateRequest{DeploymentId: id.String()}))
 	if err != nil {
-		return rpcerrors.TranslateError(err)
+		return rpcerrors.ToSDKError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {
@@ -74,7 +74,7 @@ func (c *client) Deactivate(ctx context.Context, id sdktypes.DeploymentID) error
 func (c *client) Drain(ctx context.Context, id sdktypes.DeploymentID) error {
 	resp, err := c.client.Drain(ctx, connect.NewRequest(&deploymentsv1.DrainRequest{DeploymentId: id.String()}))
 	if err != nil {
-		return rpcerrors.TranslateError(err)
+		return rpcerrors.ToSDKError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {
@@ -88,7 +88,7 @@ func (c *client) Drain(ctx context.Context, id sdktypes.DeploymentID) error {
 func (c *client) Test(ctx context.Context, id sdktypes.DeploymentID) error {
 	resp, err := c.client.Test(ctx, connect.NewRequest(&deploymentsv1.TestRequest{DeploymentId: id.String()}))
 	if err != nil {
-		return rpcerrors.TranslateError(err)
+		return rpcerrors.ToSDKError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {
@@ -102,7 +102,7 @@ func (c *client) Test(ctx context.Context, id sdktypes.DeploymentID) error {
 func (c *client) Get(ctx context.Context, id sdktypes.DeploymentID) (sdktypes.Deployment, error) {
 	resp, err := c.client.Get(ctx, connect.NewRequest(&deploymentsv1.GetRequest{DeploymentId: id.String()}))
 	if err != nil {
-		return sdktypes.InvalidDeployment, rpcerrors.TranslateError(err)
+		return sdktypes.InvalidDeployment, rpcerrors.ToSDKError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {
@@ -129,7 +129,7 @@ func (c *client) List(ctx context.Context, filter sdkservices.ListDeploymentsFil
 		IncludeSessionStats: filter.IncludeSessionStats,
 	}))
 	if err != nil {
-		return nil, rpcerrors.TranslateError(err)
+		return nil, rpcerrors.ToSDKError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {
@@ -147,7 +147,7 @@ func (c *client) List(ctx context.Context, filter sdkservices.ListDeploymentsFil
 func (c *client) Delete(ctx context.Context, deploymentID sdktypes.DeploymentID) error {
 	resp, err := c.client.Delete(ctx, connect.NewRequest(&deploymentsv1.DeleteRequest{DeploymentId: deploymentID.String()}))
 	if err != nil {
-		return rpcerrors.TranslateError(err)
+		return rpcerrors.ToSDKError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {

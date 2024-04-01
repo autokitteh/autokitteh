@@ -29,7 +29,7 @@ func (c *client) List(ctx context.Context, envID sdktypes.EnvID, projectID sdkty
 		ProjectId: projectID.String(),
 	}))
 	if err != nil {
-		return nil, rpcerrors.TranslateError(err)
+		return nil, rpcerrors.ToSDKError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {
@@ -46,7 +46,7 @@ func (c *client) Get(ctx context.Context, envID sdktypes.EnvID, projectID sdktyp
 		Keys:      keys,
 	}))
 	if err != nil {
-		return nil, rpcerrors.TranslateError(err)
+		return nil, rpcerrors.ToSDKError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {
