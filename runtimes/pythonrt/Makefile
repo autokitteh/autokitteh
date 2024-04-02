@@ -17,6 +17,7 @@ test-py:
 		--doctest-modules \
 		--ignore testdata \
 		-v .
+
 test-go:
 	golangci-lint run ./...
 	go test -v
@@ -32,8 +33,6 @@ run-workflow:
 
 deploy-issues:
 	go run testdata/deploy.go -- ./testdata/issues/
-
-
 temporal-ui:
 	$(open) http://localhost:8233
 

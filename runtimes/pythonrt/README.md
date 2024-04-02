@@ -47,7 +47,7 @@ _ak_call(urlopen, url)
 
 ### Detecting External Function Calls
 
-When the user module is loaded, we set `MODULE_NAME` the name of the loaded module.
+When the user module is loaded, we set `MODULE_NAME` to the name of the loaded module.
 When `ak_call` is invoked with a function it compares the function module name with `MODULE_NAME`,
 if they are the same, it's an internal function and `ak_call` will return the invocation of the function.
 Otherwise, `ak_call` will call the Go process that will invoke an activity.
@@ -99,8 +99,6 @@ Once we introduce an external dependency, it will conflict with the user depende
 
 The message payload is handled by Python and is opaque to autokitteh.
 Currently, it's base64 of a pickle. We're using pickle protocol 0 which is text based and mostly Python version agnostic.
-
-
 ### Integration Testing
 
 If you run `ak` with a database, then run `make create-workflow` once. 
