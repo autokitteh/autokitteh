@@ -177,7 +177,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 			temporalFrontendAddr, temporalUIAddr := tclient.TemporalAddr()
 
 			HookSimpleOnStart(lc, func() {
-				sayHello(opts, httpsvc.Addr(), temporalFrontendAddr, temporalUIAddr)
+				printBanner(opts, httpsvc.Addr(), temporalFrontendAddr, temporalUIAddr)
 			})
 		}),
 		fx.Invoke(func(z *zap.Logger, lc fx.Lifecycle, mux *http.ServeMux) {

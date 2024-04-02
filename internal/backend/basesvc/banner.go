@@ -12,12 +12,12 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/version"
 )
 
-//go:embed hello.txt
-var hello string
+//go:embed banner.txt
+var banner string
 
-var helloTemplate = template.Must(template.New("hello").Parse(hello))
+var bannerTemplate = template.Must(template.New("banner").Parse(banner))
 
-func sayHello(opts RunOptions, addr, temporalFrontendAddr, temporalUIAddr string) {
+func printBanner(opts RunOptions, addr, temporalFrontendAddr, temporalUIAddr string) {
 	fieldColor := color.New(color.FgBlue).Add(color.Bold).SprintFunc()
 	eyeColor := color.New(color.FgGreen).Add(color.Bold).SprintFunc()
 
@@ -34,7 +34,7 @@ func sayHello(opts RunOptions, addr, temporalFrontendAddr, temporalUIAddr string
 		temporalUIAddr = "Temporal UI: " + fieldColor(temporalUIAddr) + " "
 	}
 
-	kittehs.Must0(helloTemplate.Execute(os.Stderr, struct {
+	kittehs.Must0(bannerTemplate.Execute(os.Stderr, struct {
 		Version              string
 		PID                  string
 		Addr                 string
