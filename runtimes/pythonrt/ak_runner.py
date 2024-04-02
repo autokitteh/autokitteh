@@ -21,7 +21,7 @@ from queue import Queue
 from socket import AF_UNIX, SOCK_STREAM, socket
 from threading import Thread
 
-# TODO: Log to AutoKitteh (ENG-552)
+# TODO(ENG-552): Log to AutoKitteh
 logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s',
     datefmt='%Y-%M-%DT%H:%M:%S',
