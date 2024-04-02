@@ -138,6 +138,10 @@ func (w *sessionWorkflow) load(ctx context.Context, _ sdktypes.RunID, path strin
 }
 
 func (w *sessionWorkflow) call(ctx workflow.Context, runID sdktypes.RunID, v sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
+	if f := v.GetFunction(); f.HasFlag(sdktypes.ConstFunctionFlag) {
+		return f.ConstValue()
+	}
+
 	w.callSeq++
 
 	z := w.z.With(zap.Any("run_id", runID), zap.Any("v", v), zap.Uint32("seq", w.callSeq))
@@ -191,13 +195,6 @@ func (w *sessionWorkflow) initConnections(ctx workflow.Context) error {
 		name := conn.Name().String()
 		iid := conn.IntegrationID()
 
-		if w.executors.GetValues(name) != nil {
-			return fmt.Errorf("conflicting connection %q", name)
-		}
-
-		// In modules, we register the connection prefixed with its integration name.
-		// This allows us to query all connections for a given integration in the load callback.
-
 		intg, err := w.ws.svcs.Integrations.Get(goCtx, iid)
 		if err != nil {
 			return fmt.Errorf("get integration %q: %w", iid, err)
@@ -205,6 +202,13 @@ func (w *sessionWorkflow) initConnections(ctx workflow.Context) error {
 
 		if intg == nil {
 			return fmt.Errorf("integration %q not found", iid)
+		}
+
+		// In modules, we register the connection prefixed with its integration name.
+		// This allows us to query all connections for a given integration in the load callback.
+		scope := integrationModulePrefix(intg.Get().UniqueName().String()) + name
+		if w.executors.GetValues(scope) != nil {
+			return fmt.Errorf("conflicting connection %q", name)
 		}
 
 		if xid := sdktypes.NewExecutorID(iid); w.executors.GetCaller(xid) == nil {
@@ -216,8 +220,6 @@ func (w *sessionWorkflow) initConnections(ctx workflow.Context) error {
 		if err != nil {
 			return fmt.Errorf("connect to integration %q: %w", iid, err)
 		}
-
-		scope := integrationModulePrefix(intg.Get().UniqueName().String()) + name
 
 		if err := w.executors.AddValues(scope, vs); err != nil {
 			return err
@@ -312,7 +314,7 @@ func (w *sessionWorkflow) getNextEvent(ctx context.Context, signalID string) (ma
 		w.z.Panic("get signal", zap.Error(err))
 	}
 
-	iid := kittehs.Must1(sdktypes.ParseIntegrationID(signal.Connection.IntegrationID))
+	iid := kittehs.Must1(sdktypes.ParseIntegrationID(*signal.Connection.IntegrationID))
 
 	minSequenceNumber, ok := w.signals[signalID]
 	if !ok {

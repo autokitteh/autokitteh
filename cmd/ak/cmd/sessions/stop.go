@@ -15,7 +15,7 @@ var (
 )
 
 var stopCmd = common.StandardCommand(&cobra.Command{
-	Use:   "stop [session ID] [--reason=...] [--force]",
+	Use:   "stop [session ID] [--reason <...>] [--force]",
 	Short: "Stop running session",
 	Args:  cobra.MaximumNArgs(1),
 

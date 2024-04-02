@@ -109,6 +109,9 @@ func (c *impl) startDevServer(ctx context.Context, cfg *Config, opts client.Opti
 	}
 	c.z.Info("Started Temporal dev server", zap.String("address", c.srv.FrontendHostPort()))
 
+	if c.client != nil {
+		c.client.Close()
+	}
 	c.client = c.srv.Client()
 
 	return nil

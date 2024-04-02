@@ -17,6 +17,21 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
+// aux methods to convert nil <-> empty strting
+func PtrOrNil(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
+}
+
+func stringFromPtrOrEmpty(s *string) string {
+	if s == nil {
+		return ""
+	}
+	return *s
+}
+
 // TODO(ENG-192): use proper foreign keys and normalize model.
 
 // TODO: keep some log of actions performed. Something that
@@ -62,13 +77,14 @@ func ParseBuild(b Build) (sdktypes.Build, error) {
 
 type Connection struct {
 	ConnectionID     string `gorm:"primaryKey"`
-	IntegrationID    string
+	IntegrationID    *string
 	IntegrationToken string
-	ProjectID        string `gorm:"index"`
+	ProjectID        *string `gorm:"index"`
 	Name             string
 
-	// IntegrationID is a foreign key, but gorm won't add and enforce a constraint till we uncomment
-	// Integration Integration `gorm:"foreignKey:IntegrationID"` // TODO(ENG-111)
+	// enforce foreign keys
+	// Integration *Integration FIXME: ENG-590
+	Project *Project
 
 	// TODO(ENG-111): Also call "Preload()" where relevant
 }
@@ -76,9 +92,9 @@ type Connection struct {
 func ParseConnection(c Connection) (sdktypes.Connection, error) {
 	conn, err := sdktypes.StrictConnectionFromProto(&sdktypes.ConnectionPB{
 		ConnectionId:     c.ConnectionID,
-		IntegrationId:    c.IntegrationID,
+		IntegrationId:    stringFromPtrOrEmpty(c.IntegrationID),
 		IntegrationToken: c.IntegrationToken,
-		ProjectId:        c.ProjectID,
+		ProjectId:        stringFromPtrOrEmpty(c.ProjectID),
 		Name:             c.Name,
 	})
 	if err != nil {
@@ -171,17 +187,19 @@ type Secret struct {
 }
 
 type Event struct {
-	EventID          string `gorm:"uniqueIndex"`
-	IntegrationID    string `gorm:"index"`
-	IntegrationToken string `gorm:"index"`
-	OriginalEventID  string
-	EventType        string `gorm:"index:idx_event_type_seq,priority:1;index:idx_event_type"`
+	EventID          string  `gorm:"uniqueIndex"`
+	IntegrationID    *string `gorm:"index"`
+	IntegrationToken string  `gorm:"index"`
+	EventType        string  `gorm:"index:idx_event_type_seq,priority:1;index:idx_event_type"`
 	Data             datatypes.JSON
 	Memo             datatypes.JSON
 	CreatedAt        time.Time
 	Seq              uint64 `gorm:"primaryKey;autoIncrement:true,index:idx_event_type_seq,priority:2"`
 
 	DeletedAt gorm.DeletedAt `gorm:"index"`
+
+	// enforce foreign keys
+	// Integration *Integration // FIXME: ENG-590
 }
 
 func ParseEvent(e Event) (sdktypes.Event, error) {
@@ -197,9 +215,8 @@ func ParseEvent(e Event) (sdktypes.Event, error) {
 
 	return sdktypes.StrictEventFromProto(&sdktypes.EventPB{
 		EventId:          e.EventID,
-		IntegrationId:    e.IntegrationID,
+		IntegrationId:    stringFromPtrOrEmpty(e.IntegrationID),
 		IntegrationToken: e.IntegrationToken,
-		OriginalEventId:  e.OriginalEventID,
 		EventType:        e.EventType,
 		Data:             kittehs.TransformMapValues(data, sdktypes.ToProto),
 		Memo:             memo,
@@ -209,11 +226,13 @@ func ParseEvent(e Event) (sdktypes.Event, error) {
 }
 
 type EventRecord struct {
-	Seq     uint32 `gorm:"primaryKey"`
-	EventID string `gorm:"primaryKey"`
-	// Event     Event
-	State     int32 `gorm:"index"`
+	Seq       uint32 `gorm:"primaryKey"`
+	EventID   string `gorm:"primaryKey"`
+	State     int32  `gorm:"index"`
 	CreatedAt time.Time
+
+	// enforce foreign keys
+	Event *Event `gorm:"references:EventID"`
 }
 
 func ParseEventRecord(e EventRecord) (sdktypes.EventRecord, error) {
@@ -226,8 +245,8 @@ func ParseEventRecord(e EventRecord) (sdktypes.EventRecord, error) {
 }
 
 type Env struct {
-	EnvID     string `gorm:"primaryKey"`
-	ProjectID string `gorm:"index;foreignKey"`
+	EnvID     string  `gorm:"primaryKey"`
+	ProjectID *string `gorm:"index;foreignKey"`
 	Name      string
 	DeletedAt gorm.DeletedAt `gorm:"index"`
 
@@ -235,15 +254,15 @@ type Env struct {
 	// See OrgMember for more.
 	MembershipID string `gorm:"uniqueIndex"`
 
-	// just for the foreign key. Wihtout it gorm won't enforce it
-	Project Project
+	// enforce foreign keys
+	Project *Project
 }
 
-func ParseEnv(r Env) (sdktypes.Env, error) {
+func ParseEnv(e Env) (sdktypes.Env, error) {
 	return sdktypes.StrictEnvFromProto(&sdktypes.EnvPB{
-		EnvId:     r.EnvID,
-		ProjectId: r.ProjectID,
-		Name:      r.Name,
+		EnvId:     e.EnvID,
+		ProjectId: stringFromPtrOrEmpty(e.ProjectID),
+		Name:      e.Name,
 	})
 }
 
@@ -259,6 +278,9 @@ type EnvVar struct {
 	// {eid.uuid}/{name}. easier to detect dups.
 	// See OrgMember for more.
 	MembershipID string `gorm:"uniqueIndex"`
+
+	// enforce foreign keys
+	Env *Env
 }
 
 func ParseEnvVar(r EnvVar) (sdktypes.EnvVar, error) {
@@ -280,20 +302,33 @@ type Trigger struct {
 	TriggerID string `gorm:"primaryKey"`
 
 	ProjectID    string `gorm:"index"`
-	EnvID        string `gorm:"index"`
 	ConnectionID string `gorm:"index"`
+	EnvID        string `gorm:"index"`
+	Name         string
 	EventType    string
 	Filter       string
 	CodeLocation string
+	Data         datatypes.JSON
 
-	// just for the foreign keys
-	Connection Connection
+	// enforce foreign keys
+	Project    *Project
+	Env        *Env
+	Connection *Connection
+
+	// Makes sure name is unique - this is the env_id with name.
+	// If name is emptyy, will be env_id with a random string.
+	UniqueName string `gorm:"uniqueIndex"`
 }
 
 func ParseTrigger(e Trigger) (sdktypes.Trigger, error) {
 	loc, err := sdktypes.ParseCodeLocation(e.CodeLocation)
 	if err != nil {
 		return sdktypes.InvalidTrigger, fmt.Errorf("loc: %w", err)
+	}
+
+	var data map[string]sdktypes.Value
+	if err := json.Unmarshal(e.Data, &data); err != nil {
+		return sdktypes.InvalidTrigger, fmt.Errorf("data: %w", err)
 	}
 
 	return sdktypes.StrictTriggerFromProto(&sdktypes.TriggerPB{
@@ -303,12 +338,17 @@ func ParseTrigger(e Trigger) (sdktypes.Trigger, error) {
 		EventType:    e.EventType,
 		Filter:       e.Filter,
 		CodeLocation: loc.ToProto(),
+		Name:         e.Name,
+		Data:         kittehs.TransformMapValues(data, sdktypes.ToProto),
 	})
 }
 
 type SessionLogRecord struct {
-	SessionID string `gorm:"index"`
+	SessionID string `gorm:"index;foreignKey:SessionID"`
 	Data      datatypes.JSON
+
+	// enforce foreign keys
+	Session *Session
 }
 
 func ParseSessionLogRecord(c SessionLogRecord) (spec sdktypes.SessionLogRecord, err error) {
@@ -317,9 +357,12 @@ func ParseSessionLogRecord(c SessionLogRecord) (spec sdktypes.SessionLogRecord, 
 }
 
 type SessionCallSpec struct {
-	SessionID string `gorm:"primaryKey"`
+	SessionID string `gorm:"primaryKey;foreignKey:SessionID"`
 	Seq       uint32 `gorm:"primaryKey"`
 	Data      datatypes.JSON
+
+	// enforce foreign keys
+	Session *Session
 }
 
 func ParseSessionCallSpec(c SessionCallSpec) (spec sdktypes.SessionCallSpec, err error) {
@@ -328,11 +371,14 @@ func ParseSessionCallSpec(c SessionCallSpec) (spec sdktypes.SessionCallSpec, err
 }
 
 type SessionCallAttempt struct {
-	SessionID string `gorm:"uniqueIndex:idx_session_id_seq_attempt,priority:1"`
+	SessionID string `gorm:"uniqueIndex:idx_session_id_seq_attempt,priority:1;foreignKey:SessionID"`
 	Seq       uint32 `gorm:"uniqueIndex:idx_session_id_seq_attempt,priority:2"`
 	Attempt   uint32 `gorm:"uniqueIndex:idx_session_id_seq_attempt,priority:3"`
 	Start     datatypes.JSON
 	Complete  datatypes.JSON
+
+	// enforce foreign keys
+	Session *Session
 }
 
 func ParseSessionCallAttemptStart(c SessionCallAttempt) (d sdktypes.SessionCallAttemptStart, err error) {
@@ -346,17 +392,23 @@ func ParseSessionCallAttemptComplete(c SessionCallAttempt) (d sdktypes.SessionCa
 }
 
 type Session struct {
-	SessionID        string `gorm:"primaryKey"`
-	BuildID          string `gorm:"index"` // TODO(ENG-547): constraint.
-	EnvID            string `gorm:"index"` // TODO(ENG-547): constraint.
-	DeploymentID     string `gorm:"index"` // TODO(ENG-547): constraint.
-	EventID          string `gorm:"index"` // TODO(ENG-547): constraint.
-	CurrentStateType int    `gorm:"index"`
+	SessionID        string  `gorm:"primaryKey"`
+	BuildID          *string `gorm:"index"`
+	EnvID            *string `gorm:"index"`
+	DeploymentID     *string `gorm:"index"`
+	EventID          *string `gorm:"index"`
+	CurrentStateType int     `gorm:"index"`
 	Entrypoint       string
 	Inputs           datatypes.JSON
-	CreatedAt        time.Time      //`gorm:"default:current_timestamp"`
-	UpdatedAt        time.Time      //`gorm:"default:current_timestamp"`
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
 	DeletedAt        gorm.DeletedAt `gorm:"index"`
+
+	// enforce foreign keys
+	Build      *Build
+	Env        *Env
+	Deployment *Deployment
+	Event      *Event `gorm:"references:EventID"`
 }
 
 func ParseSession(s Session) (sdktypes.Session, error) {
@@ -373,10 +425,10 @@ func ParseSession(s Session) (sdktypes.Session, error) {
 
 	session, err := sdktypes.StrictSessionFromProto(&sdktypes.SessionPB{
 		SessionId:    s.SessionID,
-		BuildId:      s.BuildID,
-		EnvId:        s.EnvID,
-		DeploymentId: s.DeploymentID,
-		EventId:      s.EventID,
+		BuildId:      stringFromPtrOrEmpty(s.BuildID),
+		EnvId:        stringFromPtrOrEmpty(s.EnvID),
+		DeploymentId: stringFromPtrOrEmpty(s.DeploymentID),
+		EventId:      stringFromPtrOrEmpty(s.EventID),
 		Entrypoint:   ep.ToProto(),
 		Inputs:       kittehs.TransformMapValues(inputs, sdktypes.ToProto),
 		CreatedAt:    timestamppb.New(s.CreatedAt),
@@ -391,24 +443,24 @@ func ParseSession(s Session) (sdktypes.Session, error) {
 }
 
 type Deployment struct {
-	DeploymentID string `gorm:"primaryKey"`
-	EnvID        string `gorm:"index;foreignKey"`
-	BuildID      string `gorm:"foreignKey"`
+	DeploymentID string  `gorm:"primaryKey"`
+	EnvID        *string `gorm:"index;foreignKey"`
+	BuildID      *string `gorm:"foreignKey"`
 	State        int32
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
 	DeletedAt    gorm.DeletedAt `gorm:"index"`
 
-	// just for foreign key constraint. Without it gorm won't enforce it
-	Env   Env
-	Build Build
+	// enforce foreign keys
+	Env   *Env
+	Build *Build
 }
 
 func ParseDeployment(d Deployment) (sdktypes.Deployment, error) {
 	deployment, err := sdktypes.StrictDeploymentFromProto(&sdktypes.DeploymentPB{
 		DeploymentId: d.DeploymentID,
-		BuildId:      d.BuildID,
-		EnvId:        d.EnvID,
+		BuildId:      stringFromPtrOrEmpty(d.BuildID),
+		EnvId:        stringFromPtrOrEmpty(d.EnvID),
 		State:        deploymentsv1.DeploymentState(d.State),
 		CreatedAt:    timestamppb.New(d.CreatedAt),
 		UpdatedAt:    timestamppb.New(d.UpdatedAt),
@@ -431,8 +483,8 @@ type DeploymentWithStats struct {
 func ParseDeploymentWithSessionStats(d DeploymentWithStats) (sdktypes.Deployment, error) {
 	deployment, err := sdktypes.StrictDeploymentFromProto(&sdktypes.DeploymentPB{
 		DeploymentId: d.DeploymentID,
-		BuildId:      d.BuildID,
-		EnvId:        d.EnvID,
+		BuildId:      *d.BuildID,
+		EnvId:        *d.EnvID,
 		State:        deploymentsv1.DeploymentState(d.State),
 		CreatedAt:    timestamppb.New(d.CreatedAt),
 		UpdatedAt:    timestamppb.New(d.UpdatedAt),
@@ -470,5 +522,5 @@ type Signal struct {
 	Filter       string
 
 	// enforce foreign key
-	Connection Connection
+	Connection *Connection
 }

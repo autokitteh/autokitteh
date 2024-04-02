@@ -67,10 +67,10 @@ func (db *gormdb) CreateSession(ctx context.Context, session sdktypes.Session) e
 
 	s := scheme.Session{
 		SessionID:        session.ID().String(),
-		BuildID:          session.BuildID().String(),
-		EnvID:            session.EnvID().String(),
-		DeploymentID:     session.DeploymentID().String(),
-		EventID:          session.EventID().String(),
+		BuildID:          scheme.PtrOrNil(session.BuildID().String()),
+		EnvID:            scheme.PtrOrNil(session.EnvID().String()),
+		DeploymentID:     scheme.PtrOrNil(session.DeploymentID().String()),
+		EventID:          scheme.PtrOrNil(session.EventID().String()),
 		Entrypoint:       session.EntryPoint().CanonicalString(),
 		CurrentStateType: int(sdktypes.SessionStateTypeCreated.ToProto()),
 		Inputs:           kittehs.Must1(json.Marshal(session.Inputs())),
@@ -98,14 +98,16 @@ func (db *gormdb) UpdateSessionState(ctx context.Context, sessionID sdktypes.Ses
 	}))
 }
 
+func addSessionLogRecordDB(tx *gorm.DB, logr *scheme.SessionLogRecord) error {
+	return tx.Create(logr).Error
+}
+
 func addSessionLogRecord(tx *gorm.DB, sessionID string, logr sdktypes.SessionLogRecord) error {
 	jsonData, err := json.Marshal(logr)
 	if err != nil {
 		return fmt.Errorf("marshal session log record: %w", err)
 	}
-
-	r := scheme.SessionLogRecord{SessionID: sessionID, Data: jsonData}
-	return tx.Create(&r).Error
+	return addSessionLogRecordDB(tx, &scheme.SessionLogRecord{SessionID: sessionID, Data: jsonData})
 }
 
 func (db *gormdb) AddSessionPrint(ctx context.Context, sessionID sdktypes.SessionID, print string) error {

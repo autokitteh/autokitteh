@@ -28,7 +28,7 @@ func (c *client) Get(ctx context.Context, id sdktypes.IntegrationID) (sdkservice
 		IntegrationId: id.String(),
 	}))
 	if err != nil {
-		return nil, rpcerrors.TranslateError(err)
+		return nil, rpcerrors.ToSDKError(err)
 	}
 	if err := internal.Validate(resp.Msg); err != nil {
 		return nil, err
@@ -51,7 +51,7 @@ func (c *client) List(ctx context.Context, nameSubstring string) ([]sdktypes.Int
 		NameSubstring: nameSubstring,
 	}))
 	if err != nil {
-		return nil, rpcerrors.TranslateError(err)
+		return nil, rpcerrors.ToSDKError(err)
 	}
 	if err := internal.Validate(resp.Msg); err != nil {
 		return nil, err

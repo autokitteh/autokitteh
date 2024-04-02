@@ -29,7 +29,7 @@ func (c *client) Start(ctx context.Context, session sdktypes.Session) (sdktypes.
 		Session: session.ToProto(),
 	}))
 	if err != nil {
-		return sdktypes.InvalidSessionID, rpcerrors.TranslateError(err)
+		return sdktypes.InvalidSessionID, rpcerrors.ToSDKError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {
@@ -51,7 +51,7 @@ func (c *client) Stop(ctx context.Context, sessionID sdktypes.SessionID, reason 
 		Terminate: force,
 	}))
 	if err != nil {
-		return rpcerrors.TranslateError(err)
+		return rpcerrors.ToSDKError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {
@@ -66,7 +66,7 @@ func (c *client) Get(ctx context.Context, sessionID sdktypes.SessionID) (sdktype
 		SessionId: sessionID.String(),
 	}))
 	if err != nil {
-		return sdktypes.InvalidSession, rpcerrors.TranslateError(err)
+		return sdktypes.InvalidSession, rpcerrors.ToSDKError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {
@@ -81,7 +81,7 @@ func (c *client) GetLog(ctx context.Context, sessionID sdktypes.SessionID) (sdkt
 		SessionId: sessionID.String(),
 	}))
 	if err != nil {
-		return sdktypes.InvalidSessionLog, rpcerrors.TranslateError(err)
+		return sdktypes.InvalidSessionLog, rpcerrors.ToSDKError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {
@@ -101,7 +101,7 @@ func (c *client) List(ctx context.Context, filter sdkservices.ListSessionsFilter
 		CountOnly:    filter.CountOnly,
 	}))
 	if err != nil {
-		return nil, 0, rpcerrors.TranslateError(err)
+		return nil, 0, rpcerrors.ToSDKError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {
@@ -115,7 +115,7 @@ func (c *client) List(ctx context.Context, filter sdkservices.ListSessionsFilter
 func (c *client) Delete(ctx context.Context, sessionID sdktypes.SessionID) error {
 	resp, err := c.client.Delete(ctx, connect.NewRequest(&sessionsv1.DeleteRequest{SessionId: sessionID.String()}))
 	if err != nil {
-		return rpcerrors.TranslateError(err)
+		return rpcerrors.ToSDKError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {

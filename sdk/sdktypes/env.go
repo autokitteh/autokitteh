@@ -38,11 +38,8 @@ func (p Env) ID() EnvID            { return kittehs.Must1(ParseEnvID(p.read().En
 func (p Env) ProjectID() ProjectID { return kittehs.Must1(ParseProjectID(p.read().ProjectId)) }
 func (p Env) Name() Symbol         { return forceSymbol(p.read().Name) }
 
-func NewEnv(id EnvID, name Symbol) Env {
-	return kittehs.Must1(EnvFromProto(&EnvPB{
-		EnvId: id.String(),
-		Name:  name.String(),
-	}))
+func NewEnv() Env {
+	return kittehs.Must1(EnvFromProto(&EnvPB{}))
 }
 
 func (p Env) WithName(name Symbol) Env {

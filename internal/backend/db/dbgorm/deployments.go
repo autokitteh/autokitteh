@@ -22,8 +22,8 @@ func (db *gormdb) CreateDeployment(ctx context.Context, deployment sdktypes.Depl
 
 	d := scheme.Deployment{
 		DeploymentID: deployment.ID().String(),
-		BuildID:      deployment.BuildID().String(),
-		EnvID:        deployment.EnvID().String(),
+		BuildID:      scheme.PtrOrNil(deployment.BuildID().String()),
+		EnvID:        scheme.PtrOrNil(deployment.EnvID().String()),
 		State:        int32(deployment.State().ToProto()),
 		CreatedAt:    now,
 		UpdatedAt:    now,

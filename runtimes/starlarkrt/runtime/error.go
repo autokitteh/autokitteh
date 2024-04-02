@@ -3,6 +3,7 @@ package runtime
 import (
 	"errors"
 	"fmt"
+	"maps"
 
 	"go.starlark.net/resolve"
 	"go.starlark.net/starlark"
@@ -14,6 +15,12 @@ import (
 func translateError(err error, extra map[string]string) error {
 	if err == nil {
 		return nil
+	}
+
+	if extra == nil {
+		extra = map[string]string{
+			"raw": err.Error(),
+		}
 	}
 
 	convErr := func(cerr, err error) error {
@@ -38,15 +45,13 @@ func translateError(err error, extra map[string]string) error {
 			return convErr(cerr, err)
 		}
 
-		extra, _ := kittehs.JoinMaps(
-			map[string]string{
-				"raw":  resolveError.Error(),
-				"type": "resolve",
-			},
-			extra,
-		)
+		resolveExtra := map[string]string{
+			"type": "resolve",
+		}
 
-		perr := sdktypes.NewProgramError(sdktypes.NewStringValue(resolveError.Msg), []sdktypes.CallFrame{f}, extra)
+		maps.Copy(resolveExtra, extra)
+
+		perr := sdktypes.NewProgramError(sdktypes.NewStringValue(resolveError.Msg), []sdktypes.CallFrame{f}, resolveExtra)
 		return perr.ToError()
 	} else if evalErr := (&starlark.EvalError{}); errors.As(err, &evalErr) {
 		callstack, cerr := kittehs.TransformError(
@@ -67,16 +72,14 @@ func translateError(err error, extra map[string]string) error {
 			return convErr(cerr, err)
 		}
 
-		extra, _ := kittehs.JoinMaps(
-			map[string]string{
-				"raw":   evalErr.Error(),
-				"type":  "eval",
-				"cause": fmt.Sprintf("%v", evalErr.Unwrap()),
-			},
-			extra,
-		)
+		evalExtra := map[string]string{
+			"type":  "eval",
+			"cause": fmt.Sprintf("%v", evalErr.Unwrap()),
+		}
 
-		perr := sdktypes.NewProgramError(sdktypes.NewStringValue(evalErr.Msg), callstack, extra)
+		maps.Copy(evalExtra, extra)
+
+		perr := sdktypes.NewProgramError(sdktypes.NewStringValue(evalErr.Msg), callstack, evalExtra)
 		return perr.ToError()
 	}
 

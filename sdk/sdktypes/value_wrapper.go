@@ -27,10 +27,13 @@ type ValueWrapper struct {
 	// Unwrap: if a struct, marshal it to JSON directly, do not convert to map.
 	UnwrapStructsAsJSON bool
 
+	// Error out when trying to unwrap into a struct and the struct has fields that do not exist in the value.
+	UnwrapErrorOnNonexistentStructFields bool
+
 	// Unwrap: transform duration into microseconds, do not convert to string.
 	RawDuration bool
 
-	// Unwrap: Tranform value before unwrapping. If returns nil, ignore value.
+	// Unwrap: Tranform value before unwrapping. If returns InvalidValue, ignore value.
 	Preunwrap func(Value) (Value, error)
 
 	// Unwrap: if not handled, use this unwrapper.

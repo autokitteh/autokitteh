@@ -13,7 +13,7 @@ Error: build not found
 10
 $ echo hissss > ${tmp}/hissss
 $ ${AK} builds upload ${tmp}/hissss; echo $?
-Error: save build: rpc: server error: read version: gzip: unexpected EOF ([])
+Error: save build: server error: read version: gzip: unexpected EOF
 1
 $ # upload build without build_file_path fail
 $ ${AK} builds upload; echo $?

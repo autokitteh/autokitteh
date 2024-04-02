@@ -79,10 +79,9 @@ func (h handler) handleBotEvent(e *socketmode.Event, c *socketmode.Client) {
 
 	pb := kittehs.TransformMapValues(m, sdktypes.ToProto)
 	akEvent := &sdktypes.EventPB{
-		IntegrationId:   h.integrationID.String(),
-		OriginalEventId: cb.EventID,
-		EventType:       cb.Event.Type,
-		Data:            pb,
+		IntegrationId: h.integrationID.String(),
+		EventType:     cb.Event.Type,
+		Data:          pb,
 	}
 
 	// Retrieve all the relevant connections for this event.

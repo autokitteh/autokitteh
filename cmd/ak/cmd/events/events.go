@@ -15,7 +15,7 @@ import (
 
 // Flags shared by the "create", "dispatch", and "list" subcommands.
 var (
-	filename, integration, connectionToken, eventType, originalEventID string
+	filename, integration, connectionToken, eventType string
 
 	data, memos []string
 )

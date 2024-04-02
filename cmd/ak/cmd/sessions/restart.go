@@ -11,7 +11,7 @@ import (
 )
 
 var restartCmd = common.StandardCommand(&cobra.Command{
-	Use:   "restart [session ID] [--watch] [--poll-interval] [--watch-timeout DURARTION] [--no-timestamps] [--quiet]",
+	Use:   "restart [session ID] [--watch [--watch-timeout <duration>] [--poll-interval <duration>] [--no-timestamps] [--quiet]]",
 	Short: "Start new instance of existing session",
 	Args:  cobra.MaximumNArgs(1),
 
@@ -44,7 +44,7 @@ var restartCmd = common.StandardCommand(&cobra.Command{
 
 		common.RenderKVIfV("session_id", sid)
 
-		if track {
+		if watch {
 			_, err := sessionWatch(sid, sdktypes.SessionStateTypeUnspecified)
 			return err
 		}
@@ -55,8 +55,10 @@ var restartCmd = common.StandardCommand(&cobra.Command{
 
 func init() {
 	// Command-specific flags.
-	restartCmd.Flags().BoolVarP(&track, "watch", "w", false, "watch session to completion")
-	restartCmd.Flags().DurationVar(&pollInterval, "poll-interval", defaultPollInterval, "poll interval")
-	restartCmd.Flags().DurationVar(&watchTimeout, "watch-timeout", 0, "watch time out duration")
-	restartCmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "do not print anything, just wait to finish")
+	restartCmd.Flags().BoolVarP(&watch, "watch", "w", false, "watch session to completion")
+
+	restartCmd.Flags().DurationVarP(&watchTimeout, "watch-timeout", "t", 0, "watch timeout duration")
+	restartCmd.Flags().DurationVarP(&pollInterval, "poll-interval", "i", defaultPollInterval, "watch poll interval")
+	restartCmd.Flags().BoolVarP(&noTimestamps, "no-timestamps", "n", false, "omit timestamps from watch output")
+	restartCmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "don't print anything, just wait to finish")
 }

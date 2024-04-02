@@ -69,10 +69,9 @@ func (e Event) ToValues() map[string]Value {
 	}
 
 	return map[string]Value{
-		"event_type":        NewStringValue(e.m.EventType),
-		"event_id":          NewStringValue(e.m.EventId),
-		"original_event_id": NewStringValue(e.m.OriginalEventId),
-		"integration_id":    NewStringValue(e.m.IntegrationId),
+		"type":           NewStringValue(e.m.EventType),
+		"id":             NewStringValue(e.m.EventId),
+		"integration_id": NewStringValue(e.m.IntegrationId),
 		"data": kittehs.Must1(NewStructValue(
 			NewStringValue("event_data"),
 			kittehs.TransformMapValues(
@@ -83,8 +82,7 @@ func (e Event) ToValues() map[string]Value {
 	}
 }
 
-func (e Event) OriginalEventID() string { return e.read().OriginalEventId }
-func (e Event) CreatedAt() time.Time    { return e.read().CreatedAt.AsTime() }
+func (e Event) CreatedAt() time.Time { return e.read().CreatedAt.AsTime() }
 func (e Event) Data() map[string]Value {
 	return kittehs.TransformMapValues(e.read().Data, forceFromProto[Value])
 }
@@ -107,6 +105,16 @@ func eventFilterField(name string, expr string) error {
 	return nil
 }
 
+var matchUnwrapper = ValueWrapper{
+	Preunwrap: func(v Value) (Value, error) {
+		// Ignore functions.
+		if v.IsFunction() {
+			return InvalidValue, nil
+		}
+		return v, nil
+	},
+}
+
 func (e Event) Matches(expr string) (bool, error) {
 	if expr == "" {
 		return true, nil
@@ -122,7 +130,7 @@ func (e Event) Matches(expr string) (bool, error) {
 		return false, fmt.Errorf("program: %w", err)
 	}
 
-	data, err := kittehs.TransformMapValuesError(e.Data(), UnwrapValue)
+	data, err := kittehs.TransformMapValuesError(e.Data(), matchUnwrapper.Unwrap)
 	if err != nil {
 		return false, fmt.Errorf("convert: %w", err)
 	}

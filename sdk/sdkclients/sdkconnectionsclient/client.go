@@ -28,7 +28,7 @@ func (c *client) Update(ctx context.Context, conn sdktypes.Connection) error {
 		Connection: conn.ToProto(),
 	}))
 	if err != nil {
-		return rpcerrors.TranslateError(err)
+		return rpcerrors.ToSDKError(err)
 	}
 	if err := internal.Validate(resp.Msg); err != nil {
 		return err
@@ -42,7 +42,7 @@ func (c *client) Create(ctx context.Context, conn sdktypes.Connection) (sdktypes
 		Connection: conn.ToProto(),
 	}))
 	if err != nil {
-		return sdktypes.InvalidConnectionID, rpcerrors.TranslateError(err)
+		return sdktypes.InvalidConnectionID, rpcerrors.ToSDKError(err)
 	}
 	if err := internal.Validate(resp.Msg); err != nil {
 		return sdktypes.InvalidConnectionID, err
@@ -56,7 +56,7 @@ func (c *client) Delete(ctx context.Context, id sdktypes.ConnectionID) error {
 		ConnectionId: id.String(),
 	}))
 	if err != nil {
-		return rpcerrors.TranslateError(err)
+		return rpcerrors.ToSDKError(err)
 	}
 	if err := internal.Validate(resp.Msg); err != nil {
 		return err
@@ -70,7 +70,7 @@ func (c *client) Get(ctx context.Context, id sdktypes.ConnectionID) (sdktypes.Co
 		ConnectionId: id.String(),
 	}))
 	if err != nil {
-		return sdktypes.InvalidConnection, rpcerrors.TranslateError(err)
+		return sdktypes.InvalidConnection, rpcerrors.ToSDKError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {
@@ -91,7 +91,7 @@ func (c *client) List(ctx context.Context, filter sdkservices.ListConnectionsFil
 		ProjectId:        filter.ProjectID.String(),
 	}))
 	if err != nil {
-		return nil, rpcerrors.TranslateError(err)
+		return nil, rpcerrors.ToSDKError(err)
 	}
 	if err := internal.Validate(resp.Msg); err != nil {
 		return nil, err

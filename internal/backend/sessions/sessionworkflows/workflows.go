@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/worker"
@@ -79,12 +80,13 @@ func (ws *workflows) StartWorkflow(ctx context.Context, session sdktypes.Session
 	//       we might have a zombie session id. It should be ok as it is rare
 	//       and the user will get a 501.
 
-	memo, _ := kittehs.JoinMaps(map[string]string{
+	memo := map[string]string{
 		"session_id":    sessionID.Value(),
 		"deployment_id": session.DeploymentID().String(),
 		"entrypoint":    session.EntryPoint().CanonicalString(),
 		"workflow_id":   wid,
-	}, session.Memo())
+	}
+	maps.Copy(memo, session.Memo())
 
 	swopts := client.StartWorkflowOptions{
 		ID:                  workflowID(sessionID),

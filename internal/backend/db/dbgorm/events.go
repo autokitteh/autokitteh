@@ -17,9 +17,8 @@ func (db *gormdb) saveEvent(ctx context.Context, event *scheme.Event) error {
 func (db *gormdb) SaveEvent(ctx context.Context, event sdktypes.Event) error {
 	e := scheme.Event{
 		EventID:          event.ID().String(),
-		IntegrationID:    event.IntegrationID().String(), // TODO(ENG-158): need to verify integration id
+		IntegrationID:    scheme.PtrOrNil(event.IntegrationID().String()), // TODO(ENG-158): need to verify integration id
 		IntegrationToken: event.IntegrationToken(),
-		OriginalEventID:  event.OriginalEventID(),
 		EventType:        event.Type(),
 		Data:             kittehs.Must1(json.Marshal(event.Data())),
 		Memo:             kittehs.Must1(json.Marshal(event.Memo())),
@@ -48,10 +47,6 @@ func (db *gormdb) ListEvents(ctx context.Context, filter sdkservices.ListEventsF
 
 	if filter.EventType != "" {
 		q = q.Where("event_type = ?", filter.EventType)
-	}
-
-	if filter.OriginalID != "" {
-		q = q.Where("original_id = ?", filter.OriginalID)
 	}
 
 	if filter.CreatedAfter != nil {

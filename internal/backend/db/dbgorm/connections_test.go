@@ -21,18 +21,51 @@ func (f *dbFixture) assertConnectionDeleted(t *testing.T, connections ...scheme.
 	}
 }
 
-func TestCreateConnection(t *testing.T) {
-	f := newDBFixture(true)                              // no foreign keys
+func preConnectionTest(t *testing.T) *dbFixture {
+	f := newDBFixture()
 	findAndAssertCount(t, f, scheme.Connection{}, 0, "") // no connections
+	return f
+}
 
-	tr := f.newConnection()
+func TestCreateConnection(t *testing.T) {
+	// test createConneciton without any dependencies, since they are soft-foreign keys and could be nil
+	f := preConnectionTest(t)
+
+	c := f.newConnection()
 	// test createConnection
-	f.createConnectionsAndAssert(t, tr)
+	f.createConnectionsAndAssert(t, c)
+}
+
+func TestCreateConnectionForeignKeys(t *testing.T) {
+	// test createConnection if foreign keys are not nil
+	f := preConnectionTest(t)
+
+	// negative test with non-existing assets
+	c := f.newConnection()
+	unexisting := "unexisting"
+
+	// FIXME: ENG-571
+	// c.IntegrationID = &unexisting
+	// assert.ErrorContains(t, f.gormdb.createConnection(f.ctx, &c), "FOREIGN KEY")
+	// c.IntegrationID = nil
+
+	c.ProjectID = &unexisting
+	assert.ErrorContains(t, f.gormdb.createConnection(f.ctx, &c), "FOREIGN KEY")
+	c.ProjectID = nil
+
+	// test with existing assets
+	p := f.newProject()
+	i := f.newIntegration()
+	f.createProjectsAndAssert(t, p)
+	f.createIntegrationsAndAssert(t, i)
+
+	c.IntegrationID = &i.IntegrationID
+	c.ProjectID = &p.ProjectID
+	f.createConnectionsAndAssert(t, c)
 }
 
 func TestDeleteConnection(t *testing.T) {
-	f := newDBFixture(true)                              // no foreign keys
-	findAndAssertCount(t, f, scheme.Connection{}, 0, "") // no connections
+	f := preConnectionTest(t)
 
 	c := f.newConnection()
 	f.createConnectionsAndAssert(t, c)

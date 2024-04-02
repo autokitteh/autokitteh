@@ -3,6 +3,7 @@ package kittehs
 import (
 	"fmt"
 	"hash/fnv"
+	"net/url"
 	"strings"
 )
 
@@ -51,4 +52,30 @@ func PadLeft(s string, r rune, n int) string {
 	}
 
 	return strings.Repeat(string(r), n-len(s)) + s
+}
+
+// NormalizeURL ensures that the given URL has the right scheme
+// prefix, and no suffix (e.g. path) after the host address.
+func NormalizeURL(rawURL string, secure bool) (string, error) {
+	// Normalize the URL's scheme prefix.
+	scheme := "http://"
+	if secure {
+		scheme = "https://"
+		rawURL = strings.TrimPrefix(rawURL, "http://")
+	}
+	if !strings.HasPrefix(rawURL, scheme) {
+		rawURL = scheme + rawURL
+	}
+
+	// Parse the input URL.
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return "", err
+	}
+	if u.Host == "" {
+		return "", fmt.Errorf("no host in URL %q", rawURL)
+	}
+
+	// Reconstruct the URL with only the scheme and the host.
+	return fmt.Sprintf("%s://%s", u.Scheme, u.Host), nil
 }

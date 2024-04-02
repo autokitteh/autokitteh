@@ -65,10 +65,9 @@ func (h handler) handleInteractiveEvent(e *socketmode.Event, c *socketmode.Clien
 
 	pb := kittehs.TransformMapValues(m, sdktypes.ToProto)
 	akEvent := &sdktypes.EventPB{
-		IntegrationId:   h.integrationID.String(),
-		OriginalEventId: payload.TriggerID,
-		EventType:       "interaction",
-		Data:            pb,
+		IntegrationId: h.integrationID.String(),
+		EventType:     "interaction",
+		Data:          pb,
 	}
 
 	// Retrieve all the relevant connections for this event.

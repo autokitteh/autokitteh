@@ -25,15 +25,13 @@ message Event {
   string integration_id = 2;
   string integration_token = 3; // TODO: think of a name that does not hint authn.
 
-  string original_event_id = 4;
+  string event_type = 4;
 
-  string event_type = 5;
+  map<string, values.v1.Value> data = 5;
 
-  map<string, values.v1.Value> data = 6;
+  map<string, string> memo = 6;
 
-  map<string, string> memo = 7;
+  google.protobuf.Timestamp created_at = 7;
 
-  google.protobuf.Timestamp created_at = 8;
-
-  uint64 seq = 9;
+  uint64 seq = 8;
 }

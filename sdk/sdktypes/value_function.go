@@ -1,8 +1,11 @@
 package sdktypes
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
+
+	"google.golang.org/protobuf/proto"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	modulev1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/module/v1"
@@ -24,7 +27,6 @@ func (functionValueTraits) Validate(m *FunctionValuePB) error {
 
 func (functionValueTraits) StrictValidate(m *FunctionValuePB) error {
 	return errors.Join(
-		mandatory("executor_id", m.ExecutorId),
 		mandatory("name", m.Name),
 	)
 }
@@ -75,6 +77,7 @@ const (
 	PrivilidgedFunctionFlag    FunctionFlag = "privilidged" // pass workflow context.
 	PureFunctionFlag           FunctionFlag = "pure"        // do not run in an activity.
 	DisablePollingFunctionFlag FunctionFlag = "no-poll"     // do not poll.
+	ConstFunctionFlag          FunctionFlag = "const"       // result is serialized in data.
 )
 
 func (ff FunctionFlag) String() string { return string(ff) }
@@ -106,4 +109,84 @@ func NewFunctionValue(xid ExecutorID, name string, data []byte, flags []Function
 			},
 		},
 	)
+}
+
+const (
+	dataHeader  = 'D'
+	errorHeader = 'E'
+)
+
+func NewConstFunctionValue(name string, data Value) (Value, error) {
+	bs, err := proto.Marshal(data.ToProto())
+	if err != nil {
+		return InvalidValue, err
+	}
+
+	buf := bytes.NewBuffer([]byte{dataHeader})
+	if _, err := buf.Write(bs); err != nil {
+		return InvalidValue, err
+	}
+
+	return NewFunctionValue(
+		InvalidExecutorID,
+		name,
+		buf.Bytes(),
+		[]FunctionFlag{ConstFunctionFlag},
+		ModuleFunction{},
+	)
+}
+
+func NewConstFunctionError(name string, in error) (Value, error) {
+	perr := WrapError(in)
+	bs, err := proto.Marshal(perr.ToProto())
+	if err != nil {
+		return InvalidValue, err
+	}
+
+	buf := bytes.NewBuffer([]byte{errorHeader})
+	if _, err := buf.Write(bs); err != nil {
+		return InvalidValue, err
+	}
+
+	return NewFunctionValue(
+		InvalidExecutorID,
+		name,
+		buf.Bytes(),
+		[]FunctionFlag{ConstFunctionFlag},
+		ModuleFunction{},
+	)
+}
+
+func (f FunctionValue) ConstValue() (Value, error) {
+	if !f.HasFlag(ConstFunctionFlag) {
+		return InvalidValue, fmt.Errorf("function is not a const")
+	}
+
+	bs := f.m.Data
+	if len(bs) == 0 {
+		return InvalidValue, errors.New("empty data")
+	}
+
+	k, bs := bs[0], bs[1:]
+	if k == dataHeader {
+		var pb ValuePB
+		if err := proto.Unmarshal(bs, &pb); err != nil {
+			return InvalidValue, err
+		}
+		return ValueFromProto(&pb)
+	} else if k == errorHeader {
+		var pb ProgramErrorPB
+		if err := proto.Unmarshal(bs, &pb); err != nil {
+			return InvalidValue, err
+		}
+
+		perr, err := ProgramErrorFromProto(&pb)
+		if err != nil {
+			return InvalidValue, err
+		}
+
+		return InvalidValue, perr.ToError()
+	}
+
+	return InvalidValue, fmt.Errorf("invalid data type %q", k)
 }

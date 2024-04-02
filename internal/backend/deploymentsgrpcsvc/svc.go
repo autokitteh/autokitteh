@@ -102,7 +102,7 @@ func (s *server) Activate(ctx context.Context, req *connect.Request[deploymentsv
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	did, err := sdktypes.StrictParseDeploymentID(msg.DeploymentId)
+	did, err := sdktypes.Strict(sdktypes.ParseDeploymentID(msg.DeploymentId))
 	if err != nil {
 		return nil, sdkerrors.AsConnectError(err)
 	}
@@ -122,7 +122,7 @@ func (s *server) Test(ctx context.Context, req *connect.Request[deploymentsv1.Te
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	did, err := sdktypes.StrictParseDeploymentID(msg.DeploymentId)
+	did, err := sdktypes.Strict(sdktypes.ParseDeploymentID(msg.DeploymentId))
 	if err != nil {
 		return nil, sdkerrors.AsConnectError(err)
 	}
@@ -142,7 +142,7 @@ func (s *server) Drain(ctx context.Context, req *connect.Request[deploymentsv1.D
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	did, err := sdktypes.StrictParseDeploymentID(msg.DeploymentId)
+	did, err := sdktypes.Strict(sdktypes.ParseDeploymentID(msg.DeploymentId))
 	if err != nil {
 		return nil, sdkerrors.AsConnectError(err)
 	}
@@ -162,7 +162,7 @@ func (s *server) Deactivate(ctx context.Context, req *connect.Request[deployment
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	did, err := sdktypes.StrictParseDeploymentID(msg.DeploymentId)
+	did, err := sdktypes.Strict(sdktypes.ParseDeploymentID(msg.DeploymentId))
 	if err != nil {
 		return nil, sdkerrors.AsConnectError(err)
 	}
@@ -182,7 +182,7 @@ func (s *server) Get(ctx context.Context, req *connect.Request[deploymentsv1.Get
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	did, err := sdktypes.StrictParseDeploymentID(msg.DeploymentId)
+	did, err := sdktypes.Strict(sdktypes.ParseDeploymentID(msg.DeploymentId))
 	if err != nil {
 		return nil, sdkerrors.AsConnectError(err)
 	}
@@ -202,7 +202,7 @@ func (s *server) Delete(ctx context.Context, req *connect.Request[deploymentsv1.
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	did, err := sdktypes.StrictParseDeploymentID(msg.DeploymentId)
+	did, err := sdktypes.Strict(sdktypes.ParseDeploymentID(msg.DeploymentId))
 	if err != nil {
 		return nil, sdkerrors.AsConnectError(err)
 	}

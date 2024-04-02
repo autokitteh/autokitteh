@@ -64,10 +64,9 @@ func (h handler) handleSlashCommand(e *socketmode.Event, c *socketmode.Client) {
 
 	pb := kittehs.TransformMapValues(m, sdktypes.ToProto)
 	akEvent := &sdktypes.EventPB{
-		IntegrationId:   h.integrationID.String(),
-		OriginalEventId: cmd.TriggerID,
-		EventType:       "slash_command",
-		Data:            pb,
+		IntegrationId: h.integrationID.String(),
+		EventType:     "slash_command",
+		Data:          pb,
 	}
 
 	// Retrieve all the relevant connections for this event.

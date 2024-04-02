@@ -2,10 +2,6 @@ $ # Create project p.
 $ ${AK} p c --name p; echo $?
 project_id: prj_00000000000000000000000001
 0
-$ # Create env for project p.
-$ ${AK} en c -p p e1; echo $?
-env_id: env_00000000000000000000000002
-0
 $ # Create connection with nonexistent integration
 $ ${AK} c c name -i integration:64656164626565666465616462656566 -t token2 -p p; echo $?; 
 Error: integration "integration:64656164626565666465616462656566" not found

@@ -47,7 +47,7 @@ func (c *client) Run(
 		Artifact: a.Bytes(),
 	}))
 	if err != nil {
-		return nil, rpcerrors.TranslateError(err)
+		return nil, rpcerrors.ToSDKError(err)
 	}
 
 	var result map[string]sdktypes.Value
@@ -93,7 +93,7 @@ func (c *client) Build(ctx context.Context, fs fs.FS, symbols []sdktypes.Symbol,
 		Memo:      memo,
 	}))
 	if err != nil {
-		return nil, rpcerrors.TranslateError(err)
+		return nil, rpcerrors.ToSDKError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {
@@ -114,7 +114,7 @@ func (c *client) Build(ctx context.Context, fs fs.FS, symbols []sdktypes.Symbol,
 func (c *client) List(ctx context.Context) ([]sdktypes.Runtime, error) {
 	resp, err := c.client.List(ctx, connect.NewRequest(&runtimesv1.ListRequest{}))
 	if err != nil {
-		return nil, rpcerrors.TranslateError(err)
+		return nil, rpcerrors.ToSDKError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {
@@ -127,7 +127,7 @@ func (c *client) List(ctx context.Context) ([]sdktypes.Runtime, error) {
 func (c *client) New(ctx context.Context, name sdktypes.Symbol) (sdkservices.Runtime, error) {
 	resp, err := c.client.Describe(ctx, connect.NewRequest(&runtimesv1.DescribeRequest{Name: name.String()}))
 	if err != nil {
-		return nil, rpcerrors.TranslateError(err)
+		return nil, rpcerrors.ToSDKError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {

@@ -148,7 +148,7 @@ func (r Resolver) DeploymentID(id string) (d sdktypes.Deployment, did sdktypes.D
 		return
 	}
 
-	if did, err = sdktypes.StrictParseDeploymentID(id); err != nil {
+	if did, err = sdktypes.Strict(sdktypes.ParseDeploymentID(id)); err != nil {
 		err = fmt.Errorf("invalid deployment ID %q: %w", id, err)
 		return
 	}
@@ -239,7 +239,7 @@ func (r Resolver) envByShortName(envName string, pid sdktypes.ProjectID) (e sdkt
 	}
 
 	var n sdktypes.Symbol
-	n, err = sdktypes.StrictParseSymbol(envName)
+	n, err = sdktypes.Strict(sdktypes.ParseSymbol(envName))
 	if err != nil {
 		err = fmt.Errorf("invalid environment name %q: %w", envName, err)
 		return
@@ -284,7 +284,7 @@ func (r Resolver) EventID(id string) (e sdktypes.Event, eid sdktypes.EventID, er
 		return
 	}
 
-	if eid, err = sdktypes.StrictParseEventID(id); err != nil {
+	if eid, err = sdktypes.Strict(sdktypes.ParseEventID(id)); err != nil {
 		err = fmt.Errorf("invalid event ID %q: %w", id, err)
 		return
 	}
@@ -428,7 +428,7 @@ func (r Resolver) projectByID(id string) (p sdktypes.Project, pid sdktypes.Proje
 
 func (r Resolver) projectByName(name string) (p sdktypes.Project, pid sdktypes.ProjectID, err error) {
 	var n sdktypes.Symbol
-	if n, err = sdktypes.StrictParseSymbol(name); err != nil {
+	if n, err = sdktypes.Strict(sdktypes.ParseSymbol(name)); err != nil {
 		err = fmt.Errorf("invalid project name %q: %w", name, err)
 		return
 	}

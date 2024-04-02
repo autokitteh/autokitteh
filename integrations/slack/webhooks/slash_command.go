@@ -114,10 +114,9 @@ func (h handler) HandleSlashCommand(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	akEvent := &sdktypes.EventPB{
-		IntegrationId:   h.integrationID.String(),
-		OriginalEventId: cmd.TriggerID,
-		EventType:       "slash_command",
-		Data:            data,
+		IntegrationId: h.integrationID.String(),
+		EventType:     "slash_command",
+		Data:          data,
 	}
 
 	// Retrieve all the relevant connections for this event.
