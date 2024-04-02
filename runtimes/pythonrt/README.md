@@ -98,8 +98,6 @@ Once we introduce an external dependency, it will conflict with the user depende
 
 The message payload is handled by Python and is opaque to autokitteh.
 Currently, it's base64 of a pickle. We're using pickle protocol 0 which is text based and mostly Python version agnostic.
-
-
 ### Integration Testing
 
 If you run `ak` with a database, then run `make create-workflow` once. 
