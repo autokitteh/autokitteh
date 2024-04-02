@@ -32,8 +32,6 @@ run-workflow:
 
 deploy-issues:
 	go run testdata/deploy.go -- ./testdata/issues/
-
-
 temporal-ui:
 	$(open) http://localhost:8233
 
