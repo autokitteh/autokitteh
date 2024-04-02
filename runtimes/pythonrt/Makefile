@@ -17,6 +17,7 @@ test-py:
 		--doctest-modules \
 		--ignore testdata \
 		-v .
+
 test-go:
 	golangci-lint run ./...
 	go test -v
