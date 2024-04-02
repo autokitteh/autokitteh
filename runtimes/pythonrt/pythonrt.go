@@ -42,6 +42,7 @@ type pySVC struct {
 }
 
 func New() (sdkservices.Runtime, error) {
+	// Use sdklogger
 	log, err := logger.New(logger.Configs.Dev) // TODO: From configuration (ENG-553)
 	if err != nil {
 		return nil, err

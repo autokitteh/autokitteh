@@ -14,7 +14,6 @@ This event has the following keys:
 
 - `event_type` (str): The event type
 - `event_id` (str): The event ID
-- `original_event_id` (str): The original event ID
 - `integration_id` (str): The ID of the integration that fired the event
 - `data` (dict): The event payload (integration specific)
 
@@ -68,6 +67,8 @@ The Python server returns a list of exported symbols from the user code.
 ### Communication sequence
 
 A call with function and payload:
+
+<!-- TODO: https://github.blog/2022-02-14-include-diagrams-markdown-files-mermaid/ -->
 
 ```
 Go                              Python

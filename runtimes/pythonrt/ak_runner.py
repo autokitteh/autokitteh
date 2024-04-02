@@ -2,6 +2,7 @@
 
 # This file is long, but keeping it a single file helps with embedding it in Go and
 # running it.
+# It also helps that we embed a single file inside Go.
 
 import ast
 import builtins
@@ -44,7 +45,7 @@ BUILTIN = {v for v in dir(builtins) if callable(getattr(builtins, v))}
 
 
 class Transformer(ast.NodeTransformer):
-    """Replace 'fn(a, b)' with '_ak_call(fn, a, b)'"""
+    """Replace 'fn(a, b)' with '_ak_call(fn, a, b)'."""
     def visit_Call(self, node):
         name = name_of(node.func)
         # ast.Transformer does not recurse to args
