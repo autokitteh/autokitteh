@@ -43,7 +43,7 @@ type pySVC struct {
 
 func New() (sdkservices.Runtime, error) {
 	// Use sdklogger
-	log, err := logger.New(logger.Configs.Dev) // TODO: From configuration (ENG-553)
+	log, err := logger.New(logger.Configs.Dev) // TODO (ENG-553): From configuration
 	if err != nil {
 		return nil, err
 	}
@@ -357,6 +357,7 @@ func valueToGo(v sdktypes.Value) (any, error) {
 		return v.GetFloat().Value(), nil
 	case v.IsFunction():
 		fnName := v.GetFunction().Name().String()
+		// TODO (ENG-624): We somehow need to make these callbacks from Python
 		return fmt.Sprintf("fn:%s", fnName), nil
 	case v.IsInteger():
 		return v.GetInteger().Value(), nil

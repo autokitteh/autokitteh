@@ -109,7 +109,7 @@ func runPython(log *zap.Logger, pyExe string, tarData []byte, rootPath string, e
 	cmd := exec.Command(pyExe, runnerPath, sockPath, tarPath, rootPath)
 	cmd.Dir = rootDir
 	cmd.Env = overrideEnv(env)
-	// TODO: Hook cmd.Stdout & cmd.Stderr to logs (ENG-552)
+	// TODO (ENG-552): Hook cmd.Stdout & cmd.Stderr to logs
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
