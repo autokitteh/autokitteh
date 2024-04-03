@@ -355,6 +355,9 @@ func valueToGo(v sdktypes.Value) (any, error) {
 		return v.GetDuration().Value(), nil
 	case v.IsFloat():
 		return v.GetFloat().Value(), nil
+	case v.IsFunction():
+		fnName := v.GetFunction().Name().String()
+		return fmt.Sprintf("fn:%s", fnName), nil
 	case v.IsInteger():
 		return v.GetInteger().Value(), nil
 	case v.IsList():
