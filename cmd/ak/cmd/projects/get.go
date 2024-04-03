@@ -1,6 +1,8 @@
 package projects
 
 import (
+	"fmt"
+
 	"github.com/spf13/cobra"
 
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
@@ -20,7 +22,7 @@ var getCmd = common.StandardCommand(&cobra.Command{
 			return err
 		}
 
-		if err := common.FailIfNotFound(cmd, "project", p.IsValid()); err != nil {
+		if err := common.FailIfNotFound(cmd, fmt.Sprintf("project <%s>", args[0]), p.IsValid()); err != nil {
 			return err
 		}
 
