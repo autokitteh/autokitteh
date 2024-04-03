@@ -17,7 +17,7 @@ var (
 		Default: &Config{
 			Enabled:  true,
 			Endpoint: "http://localhost:9980",
-			Interval: time.Second * 10,
+			Interval: time.Hour * 24,
 		},
 		Test: &Config{
 			Enabled: false,
