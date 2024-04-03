@@ -18,7 +18,7 @@ var symbolRE = kittehs.Must1(regexp.Compile(`^[a-zA-Z_][\w]*$`))
 
 func (symbolTraits) Validate(s string) error {
 	if s != "" && !symbolRE.MatchString(s) {
-		return errors.New("invalid")
+		return errors.New("illegal symbol (expected [a-zA-Z_][\\w]*)")
 	}
 	return nil
 }
