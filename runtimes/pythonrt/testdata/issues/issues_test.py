@@ -14,7 +14,7 @@ def test_on_issue(monkeypatch):
                 'title': 'Fix url',
                 'number': 1,
                 'user': {'login': 'tebeka'},
-                'html_url': 'https://api.github.com/repos/tebeka/toggl/issues/1',
+                'htmlurl': 'https://api.github.com/repos/tebeka/toggl/issues/1',
             },
         },
     }
