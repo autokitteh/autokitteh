@@ -4,12 +4,9 @@ else
 	open=open
 endif
 
-all:
-	$(error please pick a target)
+test: test-py test-go
 
 ci: deps test-py
-
-test: test-py test-go
 
 test-py:
 	ruff check .
@@ -25,6 +22,8 @@ test-go:
 deps:
 	python -m pip install -r dev-requirements.txt
 
+# The below targets are for local testing.
+
 deploy-workflow:
 	ak deploy -m ./testdata/simple/autokitteh.yaml -d ./testdata/simple/
 
@@ -32,7 +31,8 @@ run-workflow:
 	curl -i -X POST -d HELLO http://localhost:9980/http/py_simple/trigger_url_path_py
 
 deploy-issues:
-	go run testdata/deploy.go -- ./testdata/issues/
+	ak deploy -m ./testdata/issues/autokitteh.yaml -d ./testdata/issues/
+
 temporal-ui:
 	$(open) http://localhost:8233
 

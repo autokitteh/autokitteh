@@ -68,7 +68,7 @@ func extractRunner(rootDir string) (string, error) {
 	defer file.Close()
 
 	if _, err := io.Copy(file, bytes.NewReader(runnerPyCode)); err != nil {
-		return "", fmt.Errorf("can't copy python code to %s - %w", file.Name(), err)
+		return "", fmt.Errorf("can't copy python code to %s: %w", file.Name(), err)
 	}
 
 	return fileName, nil
@@ -159,7 +159,7 @@ func createVEnv(pyExe string, venvPath string) error {
 	cmd.Stderr = os.Stderr
 
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("create venv - %w", err)
+		return fmt.Errorf("create venv: %w", err)
 	}
 
 	file, err := os.CreateTemp("", "")
@@ -169,7 +169,7 @@ func createVEnv(pyExe string, venvPath string) error {
 
 	if _, err := io.Copy(file, bytes.NewReader(requirementsData)); err != nil {
 		file.Close()
-		return fmt.Errorf("copy requirements to %q - %s", file.Name(), err)
+		return fmt.Errorf("copy requirements to %q: %w", file.Name(), err)
 	}
 	file.Close()
 
@@ -179,7 +179,7 @@ func createVEnv(pyExe string, venvPath string) error {
 	cmd.Stderr = os.Stderr
 
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("install dependencies from %q - %w", file.Name(), err)
+		return fmt.Errorf("install dependencies from %q: %w", file.Name(), err)
 	}
 
 	return nil

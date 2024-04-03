@@ -68,7 +68,7 @@ The Python server returns a list of exported symbols from the user code.
 
 A call with function and payload:
 
-<!-- TODO: https://github.blog/2022-02-14-include-diagrams-markdown-files-mermaid/ -->
+<!-- TODO (ENG-627): Use mermaid for diagram below -->
 
 ```
 Go                              Python

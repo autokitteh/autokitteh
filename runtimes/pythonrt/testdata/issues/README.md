@@ -30,5 +30,4 @@ $ ngrok http --domain autokitteh-miki.ngrok.dev 9980
 
 
 
-[ghs]: https://github.com/organizations/testkitteh/settings/apps/autokitteh-miki
-[new]: https://github.com/testkitteh/miki/issues/
+[issue]: https://github.com/testkitteh/miki/issues/

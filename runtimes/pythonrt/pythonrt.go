@@ -52,12 +52,12 @@ func New() (sdkservices.Runtime, error) {
 	defer cancel()
 	info, err := pyExecInfo(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("python info - %w", err)
+		return nil, fmt.Errorf("python info: %w", err)
 	}
 
 	log.Info("system python info", zap.String("exe", info.Exe), zap.String("version", info.Version))
 	if err := ensureVEnv(log, info.Exe); err != nil {
-		return nil, fmt.Errorf("create venv - %w", err)
+		return nil, fmt.Errorf("create venv: %w", err)
 	}
 
 	log.Info("venv python", zap.String("exe", venvPy))
@@ -165,7 +165,7 @@ func (py *pySVC) Run(
 
 	env, err := cbs.Load(ctx, runID, "env")
 	if err != nil {
-		return nil, fmt.Errorf("can't load env - %w", err)
+		return nil, fmt.Errorf("can't load env : %w", err)
 	}
 	envMap := kittehs.TransformMap(env, func(key string, value sdktypes.Value) (string, string) {
 		return key, value.GetString().Value()
