@@ -4,7 +4,7 @@ from slack_sdk import WebClient
 
 def format_message(issue):
     title, number, login, url = \
-        issue['title'], issue['number'], issue['user']['login'], issue['html_url']
+        issue['title'], issue['number'], issue['user']['login'], issue['htmlurl']
 
     return f'Issue #{number}: {title} opened by {login}, see {url}'
 

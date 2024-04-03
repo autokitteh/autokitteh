@@ -316,6 +316,19 @@ func (py *pySVC) initialCall(ctx context.Context, funcName string, payload []byt
 	return sdktypes.Nothing, nil
 }
 
+func sliceToGo(values []sdktypes.Value) ([]any, error) {
+	out := make([]any, len(values))
+	for i, v := range values {
+		gv, err := valueToGo(v)
+		if err != nil {
+			return nil, err
+		}
+		out[i] = gv
+	}
+
+	return out, nil
+}
+
 // TODO: We just want the JSON of kwargs, this seems excessive. Ask Itay
 func valueToGo(v sdktypes.Value) (any, error) {
 	switch {
@@ -346,16 +359,12 @@ func valueToGo(v sdktypes.Value) (any, error) {
 		return v.GetInteger().Value(), nil
 	case v.IsList():
 		values := v.GetList().Values()
-		lst := make([]any, len(values))
-		for i, v := range values {
-			gv, err := valueToGo(v)
-			if err != nil {
-				return nil, err
-			}
-			lst[i] = gv
-		}
+		return sliceToGo(values)
 	case v.IsNothing():
 		return nil, nil
+	case v.IsSet():
+		values := v.GetSet().Values()
+		return sliceToGo(values)
 	case v.IsString():
 		return v.GetString().Value(), nil
 	case v.IsStruct():
