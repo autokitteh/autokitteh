@@ -6,13 +6,13 @@ project:
   connections:
     - name: github
       integration: github
-      token: hello
+      token: CHANGE_ME
   triggers:
     - connection: github
       event_type: issues
       entrypoint: issues.py:on_issue
   vars:
     - name: SLACK_TOKEN
-      value: baz00ka  # FIXME
+      value: CHANGE_ME
     - name: SLACK_CHANNEL_ID
       value: C05QK6B1DS6  # slack-test
