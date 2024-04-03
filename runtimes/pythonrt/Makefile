@@ -26,7 +26,7 @@ deps:
 	python -m pip install -r dev-requirements.txt
 
 deploy-workflow:
-	go run testdata/deploy.go -- ./testdata/simple/
+	ak deploy -m ./testdata/simple/autokitteh.yaml -d ./testdata/simple/
 
 run-workflow:
 	curl -i -X POST http://localhost:9980/http/trigger_url_path_py
