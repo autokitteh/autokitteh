@@ -93,7 +93,7 @@ class AKLoader(Loader):
 
 # There is an established way to add import hooks, but we want to change the behavior of
 # the current PathFinder found in sys.import_hooks so it'll call our code when importing
-# form the user directory. This is why you'll sell all these monkey patches below.
+# form the user directory. This is why you'll see all these monkey patches below.
 
 def patch_finder(finder, action):
     """Patches the finder to use a custom source loader."""
@@ -148,7 +148,6 @@ def run_code(mod, entry_point, data):
 
     logging.info('calling %s.%s', mod.__name__, entry_point)
     return fn(data)
-
 
 
 class AKCall:
@@ -216,7 +215,6 @@ def parse_path(root_path):
         raise ValueError(f'{root_path!r} - not a Python file')
 
     return file_name[:-3], func_name
-
 
 
 # argparse.FileType will open the file
