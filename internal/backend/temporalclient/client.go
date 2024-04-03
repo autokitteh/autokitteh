@@ -124,30 +124,35 @@ func (c *impl) Temporal() client.Client { return c.client }
 
 func (c *impl) TemporalAddr() (frontend, ui string) {
 	if c.srv == nil {
-		if frontend = c.cfg.HostPort; frontend == "" || frontend == "localhost" {
+		frontend = c.cfg.HostPort
+
+		if frontend == "" {
 			// known temporal defaults.
 			frontend = "localhost:7233"
 			ui = "http://localhost:8233"
 		}
+
 		return
 	}
 
 	frontend = c.srv.FrontendHostPort()
 
-	host, port, err := net.SplitHostPort(frontend)
-	if err != nil {
-		return
+	if c.cfg.DevServer.EnableUI {
+		host, port, err := net.SplitHostPort(frontend)
+		if err != nil {
+			return
+		}
+
+		nport, err := strconv.Atoi(port)
+		if err != nil {
+			return
+		}
+
+		// temporal's default is frontend+1000 for dev server.
+		nport += 1000
+
+		ui = fmt.Sprintf("http://%s:%d", host, nport)
 	}
-
-	nport, err := strconv.Atoi(port)
-	if err != nil {
-		return
-	}
-
-	// temporal's default is frontend+1000 for dev server.
-	nport += 1000
-
-	ui = fmt.Sprintf("http://%s:%d", host, nport)
 
 	return
 }
