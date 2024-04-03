@@ -64,7 +64,6 @@ func Test_pySVC_Get(t *testing.T) {
 	require.NotNil(t, rt)
 }
 
-// func (p pySVC) Build(ctx context.Context, fs fs.FS, path string, values []sdktypes.Symbol) (sdktypes.BuildArtifact, error) {
 func Test_pySVC_Build(t *testing.T) {
 	svc := newSVC(t)
 
