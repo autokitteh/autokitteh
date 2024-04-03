@@ -217,7 +217,6 @@ def parse_path(root_path):
     return file_name[:-3], func_name
 
 
-
 # argparse.FileType will open the file
 def file_type(value):
     path = Path(value)
