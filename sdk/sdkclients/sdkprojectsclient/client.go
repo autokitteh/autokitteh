@@ -2,6 +2,7 @@ package sdkprojectsclient
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"connectrpc.com/connect"
@@ -12,6 +13,7 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/internal/rpcerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkclients/internal"
 	"go.autokitteh.dev/autokitteh/sdk/sdkclients/sdkclient"
+	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -86,8 +88,9 @@ func (c *client) GetByID(ctx context.Context, pid sdktypes.ProjectID) (sdktypes.
 
 	project, err := sdktypes.StrictProjectFromProto(resp.Msg.Project)
 	if err != nil {
-		// TODO: "errors.Is(err, sdkerrors.ErrInvalidArgument)" doesn't work.
-		if err.Error() == "invalid argument: zero object" {
+		// FIXME: ENG-626: why we check and override errInvalid for project only?
+		var errInvalid sdkerrors.ErrInvalidArgument
+		if err.Error() == "zero object" && errors.As(err, &errInvalid) {
 			return sdktypes.InvalidProject, nil
 		}
 		return sdktypes.InvalidProject, err
