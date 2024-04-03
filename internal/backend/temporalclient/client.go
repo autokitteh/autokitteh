@@ -5,6 +5,8 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"net"
+	"strconv"
 	"time"
 
 	"go.temporal.io/api/serviceerror"
@@ -19,6 +21,7 @@ type Client interface {
 	Start(context.Context) error
 	Stop(context.Context) error
 	Temporal() client.Client
+	TemporalAddr() (frontend, ui string)
 }
 
 type impl struct {
@@ -118,6 +121,41 @@ func (c *impl) startDevServer(ctx context.Context, cfg *Config, opts client.Opti
 }
 
 func (c *impl) Temporal() client.Client { return c.client }
+
+func (c *impl) TemporalAddr() (frontend, ui string) {
+	if c.srv == nil {
+		frontend = c.cfg.HostPort
+
+		if frontend == "" {
+			// known temporal defaults.
+			frontend = "localhost:7233"
+			ui = "http://localhost:8233"
+		}
+
+		return
+	}
+
+	frontend = c.srv.FrontendHostPort()
+
+	if c.cfg.DevServer.EnableUI {
+		host, port, err := net.SplitHostPort(frontend)
+		if err != nil {
+			return
+		}
+
+		nport, err := strconv.Atoi(port)
+		if err != nil {
+			return
+		}
+
+		// temporal's default is frontend+1000 for dev server.
+		nport += 1000
+
+		ui = fmt.Sprintf("http://%s:%d", host, nport)
+	}
+
+	return
+}
 
 func (c *impl) Stop(context.Context) error {
 	close(c.done)

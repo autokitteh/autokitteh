@@ -103,6 +103,18 @@ func New(lc fx.Lifecycle, z *zap.Logger, cfg *Config, reflectors []string, extra
 			}
 
 			svc.addr = ln.Addr().String()
+			if host, port, err := net.SplitHostPort(svc.addr); err == nil {
+				ip := net.ParseIP(host)
+
+				var addr string
+				if ip.IsUnspecified() {
+					addr = "localhost"
+				} else {
+					addr = ip.To4().String()
+				}
+
+				svc.addr = fmt.Sprintf("%s:%s", addr, port)
+			}
 
 			z.Debug("listening", zap.String("addr", svc.addr))
 

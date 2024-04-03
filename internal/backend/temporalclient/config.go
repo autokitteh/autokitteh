@@ -53,6 +53,7 @@ var (
 			StartDevServerIfNotUp: true,
 			DevServer: testsuite.DevServerOptions{
 				LogLevel: zapcore.WarnLevel.String(),
+				EnableUI: true,
 			},
 		},
 		Test: &Config{

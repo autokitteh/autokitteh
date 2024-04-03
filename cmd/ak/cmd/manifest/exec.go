@@ -3,7 +3,6 @@ package manifest
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 
 	"github.com/spf13/cobra"
 
@@ -32,9 +31,7 @@ var execCmd = common.StandardCommand(&cobra.Command{
 		ctx, cancel := common.LimitedContext()
 		defer cancel()
 
-		_, err = manifest.Execute(ctx, actions, common.Client(), func(msg string) {
-			fmt.Fprintf(os.Stderr, "[exec] %s\n", msg)
-		})
+		_, err = manifest.Execute(ctx, actions, common.Client(), logFunc(cmd, "exec"))
 		return err
 	},
 })

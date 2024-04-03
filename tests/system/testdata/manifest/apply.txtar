@@ -1,7 +1,7 @@
 # Graceful handling of a nonexistent manifest file.
 ak manifest apply nonexistent.yaml
 output equals 'Error: open nonexistent.yaml: no such file or directory'
-return code == 1
+return code == 10
 
 # Graceful handling of an invalid manifest file.
 ak manifest apply invalid.yaml

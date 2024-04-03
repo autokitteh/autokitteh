@@ -1,0 +1,15 @@
+
+        _..--~~~~--.._             autokitteh   {{ .Version }}
+     _--              --_          PID:         {{ .PID }}
+    '                    `         gRPC/HTTP:   {{ .Addr }}
+   '                      `        UI:          {{ .UIAddr }}
+  '                        `       {{ .Mode }}
+ |                    |\   |       
+ |                    | \  |       {{ .Temporal }}
+ |          .,    _,-~   \ |       {{ .TemporalUI }}
+  \         \ `.-'        \/ 
+   `         \        {{ .Eye }}
+    \         \    {{ .Eye }}         
+     `._       \             
+        `---____\            
+

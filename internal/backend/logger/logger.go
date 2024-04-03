@@ -15,7 +15,7 @@ type Config struct {
 	Zap zap.Config `koanf:"zap"`
 }
 
-var defaultZapLevel = zap.NewAtomicLevelAt(zap.InfoLevel)
+var defaultZapLevel = zap.NewAtomicLevelAt(zap.DebugLevel)
 
 var Configs = configset.Set[Config]{
 	Default: &Config{Zap: zap.NewProductionConfig()},
@@ -29,19 +29,6 @@ var Configs = configset.Set[Config]{
 			return
 		})(),
 	},
-}
-
-func (c *Config) WithDebug(debug bool) *Config {
-	cc := *c
-	c = &cc
-
-	if debug {
-		c.Zap.Level = zap.NewAtomicLevelAt(zap.DebugLevel)
-	} else {
-		c.Zap.Level = defaultZapLevel
-	}
-
-	return c
 }
 
 type onFatalHook struct{}
