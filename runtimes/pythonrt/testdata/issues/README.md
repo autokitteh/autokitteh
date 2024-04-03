@@ -1,6 +1,7 @@
 # issues Workflow
 
-**WARNING: WIP**
+> [!WARNING]
+> This code is work in progress.
 
 When GitHub issue is opened, notify on slack.
 
