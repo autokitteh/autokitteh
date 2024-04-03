@@ -68,7 +68,8 @@ project:
     - name: my_connection
       integration: http
   triggers:
-    - connection: my_connection
+    - name: get
+      connection: my_connection
       event_type: get
       entrypoint: my_program.star:on_http_get
 
