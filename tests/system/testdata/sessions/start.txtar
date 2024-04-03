@@ -1,7 +1,7 @@
 ak project create --name my_project
 return code == 0
 
-ak project build my_project --from main.star
+ak project build my_project --file main.star
 return code == 0
 output equals 'build_id: bld_00000000000000000000000003'
 

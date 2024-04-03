@@ -1,9 +1,6 @@
 package manifest
 
 import (
-	"fmt"
-	"os"
-
 	"github.com/spf13/cobra"
 
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
@@ -24,7 +21,7 @@ var planCmd = common.StandardCommand(&cobra.Command{
 			return err
 		}
 
-		actions, err := plan(data, path)
+		actions, err := plan(cmd, data, path)
 		if err != nil {
 			return err
 		}
@@ -40,7 +37,7 @@ func init() {
 	planCmd.Flags().BoolVarP(&fromScratch, "from-scratch", "s", false, "assume no existing setup")
 }
 
-func plan(data []byte, path string) (manifest.Actions, error) {
+func plan(cmd *cobra.Command, data []byte, path string) (manifest.Actions, error) {
 	m, err := manifest.Read(data, path)
 	if err != nil {
 		return nil, err
@@ -50,10 +47,8 @@ func plan(data []byte, path string) (manifest.Actions, error) {
 	defer cancel()
 
 	return manifest.Plan(
-		ctx,
-		m,
-		common.Client(),
-		manifest.WithLogger(func(msg string) { fmt.Fprintf(os.Stderr, "[plan] %s\n", msg) }),
+		ctx, m, common.Client(),
+		manifest.WithLogger(logFunc(cmd, "plan")),
 		manifest.WithFromScratch(fromScratch),
 	)
 }

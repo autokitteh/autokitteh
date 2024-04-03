@@ -1,9 +1,6 @@
 package manifest
 
 import (
-	"fmt"
-	"os"
-
 	"github.com/spf13/cobra"
 
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
@@ -24,7 +21,7 @@ var applyCmd = common.StandardCommand(&cobra.Command{
 			return err
 		}
 
-		actions, err := plan(data, path)
+		actions, err := plan(cmd, data, path)
 		if err != nil {
 			return err
 		}
@@ -33,9 +30,7 @@ var applyCmd = common.StandardCommand(&cobra.Command{
 			ctx, cancel := common.LimitedContext()
 			defer cancel()
 
-			_, err := manifest.Execute(ctx, actions, common.Client(), func(msg string) {
-				fmt.Fprintf(os.Stderr, "[exec] %s\n", msg)
-			})
+			_, err := manifest.Execute(ctx, actions, common.Client(), logFunc(cmd, "exec"))
 			return err
 		}
 

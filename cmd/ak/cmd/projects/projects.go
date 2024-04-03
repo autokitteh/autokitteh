@@ -7,6 +7,11 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 )
 
+// Flags shared by the "build" and "deploy" subcommands.
+var (
+	dirPaths, filePaths []string
+)
+
 var projectsCmd = common.StandardCommand(&cobra.Command{
 	Use:     "projects",
 	Short:   "Project management commands",

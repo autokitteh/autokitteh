@@ -13,7 +13,7 @@ var buildID, env string
 var deploymentsCmd = common.StandardCommand(&cobra.Command{
 	Use:     "deployments",
 	Short:   "Build deployment management commands",
-	Aliases: []string{"deployment", "deploy", "dep", "d"},
+	Aliases: []string{"deployment"},
 	Args:    cobra.NoArgs,
 })
 

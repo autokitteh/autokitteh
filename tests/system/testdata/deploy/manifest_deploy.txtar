@@ -1,0 +1,96 @@
+# Negative test: deploy nonexistent manifest file.
+ak manifest deploy bad_filename.yaml
+output equals 'Error: open bad_filename.yaml: no such file or directory'
+return code == 10
+
+# Deploy based on new manifest.
+ak manifest deploy my_project/manifest.yaml
+return code == 0
+output equals file expected_output_1st_deploy.txt
+
+# Redeploy the same manifest.
+ak manifest deploy my_project/manifest.yaml
+return code == 0
+output equals file expected_output_2nd_deploy.txt
+
+# Negative test: deploy project with nonexistent files and directories.
+ak manifest deploy my_project/manifest.yaml --file bad_filename
+output contains 'Error: stat bad_filename: no such file or directory'
+return code == 10
+
+ak manifest deploy my_project/manifest.yaml --dir bad_dir_name
+output contains 'Error: stat bad_dir_name: no such file or directory'
+return code == 10
+
+# Deploy project from a single file.
+ak manifest deploy my_project/manifest.yaml --file single_file.star
+return code == 0
+
+# Deploy project from a directory tree with multiple files.
+ak manifest deploy my_project/manifest.yaml --dir directory
+return code == 0
+
+# Deploy project from both, alongside each other.
+ak manifest deploy my_project/manifest.yaml --file single_file.star --dir directory
+return code == 0
+
+# Deploy project to default environment, by name/ID.
+ak manifest deploy my_project/manifest.yaml --file single_file.star --env default
+return code == 0
+
+ak manifest deploy my_project/manifest.yaml --file single_file.star --env my_project/default
+return code == 0
+
+ak manifest deploy my_project/manifest.yaml --file single_file.star --env env_00000000000000000000000002
+return code == 0
+
+-- my_project/manifest.yaml --
+version: v1
+
+project:
+  name: my_project
+  connections:
+    - name: my_connection
+      integration: http
+  triggers:
+    - name: get
+      connection: my_connection
+      event_type: get
+      entrypoint: my_program.star:on_http_get
+
+-- expected_output_1st_deploy.txt --
+[plan] project "my_project": not found, will create
+[plan] connection "my_project/my_connection": not found, will create
+[plan] trigger "my_project/default:my_project/my_connection/get": not found, will create
+[exec] create_project "my_project": created "prj_00000000000000000000000001"
+[exec] create_connection "my_project/my_connection": created "con_00000000000000000000000003"
+[exec] create_trigger "my_project/default:my_project/my_connection/get": created "trg_00000000000000000000000004"
+[exec] create_build: created "bld_00000000000000000000000005"
+[exec] create_deployment: created "dep_00000000000000000000000006"
+[exec] activate_deployment: activated
+
+-- expected_output_2nd_deploy.txt --
+[plan] project "my_project": found, id="prj_00000000000000000000000001"
+[plan] project "my_project": no changes needed
+[plan] env "my_project/default": found, id="env_00000000000000000000000002"
+[plan] env "my_project/default": no changes needed
+[plan] project "my_project": found 1 connections
+[plan] connection "my_project/my_connection": no changes needed
+[plan] project "my_project": found 1 triggers
+[plan] trigger "my_project/default:my_project/my_connection/get": found, id="trg_00000000000000000000000004"
+[plan] trigger "my_project/default:my_project/my_connection/get": no changes needed
+[exec] create_build: created "bld_00000000000000000000000007"
+[exec] create_deployment: created "dep_00000000000000000000000008"
+[exec] activate_deployment: activated
+
+-- single_file.star --
+print("single_file.star")
+
+-- directory/file1.star --
+print("directory/file1.star")
+
+-- directory/subdirectory/file1.star --
+print("directory/subdirectory/file1.star")
+
+-- directory/subdirectory/file2.star --
+print("directory/subdirectory/file2.star")

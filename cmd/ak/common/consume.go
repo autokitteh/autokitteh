@@ -16,6 +16,9 @@ func Consume(args []string) (data []byte, path string, err error) {
 	case 1:
 		path = args[0]
 		data, err = os.ReadFile(path)
+		if err != nil {
+			err = NewExitCodeError(NotFoundExitCode, err)
+		}
 	default:
 		return nil, "", fmt.Errorf("too many arguments")
 	}

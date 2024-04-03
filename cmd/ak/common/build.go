@@ -3,9 +3,11 @@ package common
 import (
 	"fmt"
 	"io/fs"
+	"os"
 	"path/filepath"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
+	"go.autokitteh.dev/autokitteh/internal/resolver"
 	"go.autokitteh.dev/autokitteh/sdk/sdkbuildfile"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -39,4 +41,80 @@ func Build(rts sdkservices.Runtimes, srcFS fs.FS, paths []string, syms []sdktype
 	}
 
 	return b, nil
+}
+
+func BuildProject(project string, dirPaths, filePaths []string) (sdktypes.BuildID, error) {
+	r := resolver.Resolver{Client: Client()}
+	p, pid, err := r.ProjectNameOrID(project)
+	if err != nil {
+		return sdktypes.InvalidBuildID, err
+	}
+	if !p.IsValid() {
+		err := fmt.Errorf("project %q not found", project)
+		return sdktypes.InvalidBuildID, NewExitCodeError(NotFoundExitCode, err)
+	}
+
+	uploads := make(map[string][]byte)
+	for _, path := range append(dirPaths, filePaths...) {
+		fi, err := os.Stat(path)
+		if err != nil {
+			return sdktypes.InvalidBuildID, NewExitCodeError(NotFoundExitCode, err)
+		}
+
+		// Upload an entire directory tree.
+		if fi.IsDir() {
+			err := filepath.WalkDir(path, walk(path, uploads))
+			if err != nil {
+				return sdktypes.InvalidBuildID, err
+			}
+			continue
+		}
+
+		// Upload a single file.
+		contents, err := os.ReadFile(path)
+		if err != nil {
+			return sdktypes.InvalidBuildID, err
+		}
+		uploads[fi.Name()] = contents
+	}
+
+	ctx, cancel := LimitedContext()
+	defer cancel()
+
+	// Communicate with the server in 2 steps.
+	if err := Client().Projects().SetResources(ctx, pid, uploads); err != nil {
+		return sdktypes.InvalidBuildID, fmt.Errorf("set resources: %w", err)
+	}
+
+	bid, err := Client().Projects().Build(ctx, pid)
+	if err != nil {
+		return sdktypes.InvalidBuildID, fmt.Errorf("build project: %w", err)
+	}
+
+	return bid, nil
+}
+
+func walk(basePath string, uploads map[string][]byte) fs.WalkDirFunc {
+	return func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err // Abort the entire walk.
+		}
+		if d.IsDir() {
+			return nil // Skip directory analysis, focus on files.
+		}
+
+		// Upload a single file, relative to the base path.
+		relPath, err := filepath.Rel(basePath, path)
+		if err != nil {
+			return fmt.Errorf("relative path: %w", err)
+		}
+
+		contents, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+
+		uploads[relPath] = contents
+		return nil
+	}
 }
