@@ -67,7 +67,7 @@ func Test_pySVC_Get(t *testing.T) {
 func Test_pySVC_Build(t *testing.T) {
 	svc := newSVC(t)
 
-	rootPath := "testdata/review/"
+	rootPath := "testdata/simple/"
 	fsys := os.DirFS(rootPath)
 
 	ctx, cancel := testCtx(t)

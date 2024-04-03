@@ -17,6 +17,10 @@ import (
 )
 
 func Test_createVEnv(t *testing.T) {
+	if testing.Short() {
+		t.Skip("short mode")
+	}
+
 	info, err := pyExecInfo(context.Background())
 	if errors.Is(errors.Unwrap(err), exec.ErrNotFound) {
 		t.Skipf("python not found")
