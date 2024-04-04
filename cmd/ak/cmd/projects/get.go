@@ -24,7 +24,7 @@ var getCmd = common.StandardCommand(&cobra.Command{
 		}
 
 		if !p.IsValid() {
-			return common.FailIfError(cmd, sdkerrors.ErrNotFound, fmt.Sprintf("project <%s>", args[0]))
+			return common.FailIfError(cmd, sdkerrors.ErrNotFound, fmt.Sprintf("project <%q>", args[0]))
 		}
 
 		common.RenderKVIfV("project", p)
