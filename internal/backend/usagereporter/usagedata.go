@@ -30,7 +30,7 @@ type usageReporter struct {
 	installationID uuid.UUID
 	updateInterval time.Duration
 	shutdownChan   chan struct{}
-	poster         poster
+	endpoint       string
 	logger         *zap.Logger
 }
 
@@ -97,7 +97,7 @@ func New(z *zap.Logger, cfg *Config) (UsageReporter, error) {
 		installationID: id,
 		updateInterval: cfg.Interval,
 		shutdownChan:   make(chan struct{}),
-		poster:         poster{endpoint: cfg.Endpoint},
+		endpoint:       cfg.Endpoint,
 		logger:         z,
 	}, nil
 }
@@ -117,7 +117,7 @@ func (d *usageReporter) report() {
 		return
 	}
 
-	if err := d.poster.post(data); err != nil {
+	if err := post(d.endpoint, data); err != nil {
 		d.logger.Debug("faild report usage data", zap.Error(err))
 		return
 	}
