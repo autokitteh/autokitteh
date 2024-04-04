@@ -8,9 +8,10 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"go.uber.org/zap"
+
 	"go.autokitteh.dev/autokitteh/internal/version"
 	"go.autokitteh.dev/autokitteh/internal/xdg"
-	"go.uber.org/zap"
 )
 
 type reportRequest struct {
@@ -36,7 +37,7 @@ type usageReporter struct {
 
 func generateInstallIDFile(path string) error {
 	id := uuid.New()
-	if err := os.WriteFile(path, []byte(id.String()), 0600); err != nil {
+	if err := os.WriteFile(path, []byte(id.String()), 0o600); err != nil {
 		return err
 	}
 	return nil
@@ -72,7 +73,7 @@ func New(z *zap.Logger, cfg *Config) (UsageReporter, error) {
 		return &nopUpdater{}, nil
 	}
 
-	installationIDFile := filepath.Join(xdg.ConfigHomeDir(), "installID")
+	installationIDFile := filepath.Join(xdg.DataHomeDir(), "installID")
 	data, err := ensureAndReadInstallationIDFile(installationIDFile)
 	if err != nil {
 		return nil, err
@@ -80,9 +81,6 @@ func New(z *zap.Logger, cfg *Config) (UsageReporter, error) {
 
 	id, err := uuid.Parse(data)
 	if err != nil {
-		if err := os.Remove(installationIDFile); err != nil {
-			return nil, err
-		}
 		data, err = ensureAndReadInstallationIDFile(installationIDFile)
 		if err != nil {
 			return nil, err
@@ -113,12 +111,12 @@ func (d *usageReporter) report() {
 
 	data, err := json.Marshal(r)
 	if err != nil {
-		d.logger.Debug("faild report usage data", zap.Error(err))
+		d.logger.Debug("report usage data failed", zap.Error(err))
 		return
 	}
 
 	if err := post(d.endpoint, data); err != nil {
-		d.logger.Debug("faild report usage data", zap.Error(err))
+		d.logger.Debug("report usage data failed", zap.Error(err))
 		return
 	}
 	d.logger.Debug("report usage data succeed")
