@@ -1,0 +1,92 @@
+# Currently only v1 is supported.
+version: v1
+
+# Project configuration.
+project:
+  # Project name is used to identify a specific project.
+  # Unique system wide.
+  name: http
+  # Variables are used to store project specific configuration, which
+  # can be accessed from the project's code using:
+  #  load("env", "<ENV_VAR_NAME>")
+  # example:
+  #  load("env", "myvar")
+  vars:
+    - # Variable name.
+      name: myvar
+      # Variable value.
+      value: "myvalue"
+    - name: myvar2
+      # This value is used if env_var is not set in the OS.
+      value: "default"
+      env_var: "MY_VAR2"
+    - name: airshield_combination_code
+      # This is a secret, so the value is taken from the OS environment
+      # variable named in `env_var`. If `env_var` is not specified,
+      # it is considered to be the upper case of the variable name.
+      is_secret: true
+      env_var: "AIRSHIELD_COMBINATION_CODE"
+  # Connections map integrations to a specific project.
+  # A connection is used in project code using:
+  #  load("@<integration_name>", "<connection_name>")
+  # example:
+  #  load("@http", "myhttp")
+  connections:
+    # HTTP: Allows to fire triggers when an incoming HTTP request
+    #       is received on <autokitteh_base_url>/http/<project_name>/...
+    - # Connection name. Unique project-wide.
+      name: myhttp
+      # Integration name to use for this connection.
+      integration: "http"
+    # Redis
+    - name: myredis
+      integration: "redis"
+      # A token is an connection specific configuration that its
+      # structured is defined by the integration.
+      token: "redis://user:password@localhost:6789/3?dial_timeout=3&db=1&read_timeout=6s&max_retries=2"
+    # gRPC
+    - name: grpc
+      integration: "grpc"
+    # AWS
+    - name: aws
+      integration: "aws"
+      # If token is not provided, AWS default config means are used.
+      token: "region,access_key_id,secret_key[,token]"
+    # GitHub
+    - name: github
+      integration: "github"
+      # Generated from <autokitteh_base_url>/i/github.
+      token: "xxxx_xxxx_xxxx"
+    # Slack
+    - name: slack
+      integration: "slack"
+      # Generated from <autokitteh_base_url>/i/slack.
+      token: "xxxx_xxxx_xxxx"
+    # Twilio
+    - name: twilio
+      integration: "twilio"
+      # Generated from <autokitteh_base_url>/i/twilio.
+      token: "xxxx_xxxx_xxxx"
+    # Google
+    - name: google
+      integration: "google"
+      # Generated from <autokitteh_base_url>/i/google.
+      token: "xxxx_xxxx_xxxx"
+  # Triggers specify how to route incoming events generated from the connections to this project.
+  triggers:
+    - # Optional: event_type. For HTTP this is the method.
+      event_type: get
+      # Optional: event filter.
+      filter: "data.method == 'GET'"
+      # Name of the connection the event originated from.
+      connection: myhttp
+      # Function to call when the event is received.
+      call: http.star:on_http_get
+      data:
+        # Optional: path pattern. Can include named parameters.
+        # Each parameter is enclosed in {}. Last parameter
+        # can be suffixed with "..."", which will cause it to
+        # capture the rest of the path.
+        # Last parameter can also be "{$}", which specifies
+        # it expects an exact match.
+        path: "/test/{a}/{b...}"
