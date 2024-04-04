@@ -3,6 +3,7 @@ package usageupdater
 import (
 	"bytes"
 	"crypto/tls"
+	"fmt"
 	"net/http"
 )
 
@@ -28,19 +29,20 @@ func newPoster(endpoint string) poster {
 	}
 }
 
-func (p poster) post(data []byte) {
+func (p poster) post(data []byte) error {
 	req, err := http.NewRequest("POST", p.endpoint, bytes.NewReader(data))
 	if err != nil {
-		return
+		return fmt.Errorf("constructing request: %w", err)
 	}
 
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := p.client.Do(req)
 	if err != nil {
-		return
+		return err
 	}
 	if resp.StatusCode != 200 {
-		return
+		return fmt.Errorf("invalid status code: %d", resp.StatusCode)
 	}
 	defer resp.Body.Close()
+	return nil
 }

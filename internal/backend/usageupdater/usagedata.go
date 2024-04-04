@@ -31,6 +31,7 @@ type usageUpdater struct {
 	updateInterval time.Duration
 	shutdownChan   chan struct{}
 	poster         poster
+	logger         *zap.Logger
 }
 
 func New(z *zap.Logger, cfg *Config) (UsageUpdater, error) {
@@ -62,6 +63,7 @@ func New(z *zap.Logger, cfg *Config) (UsageUpdater, error) {
 		updateInterval: cfg.Interval,
 		shutdownChan:   make(chan struct{}),
 		poster:         poster{endpoint: cfg.Endpoint},
+		logger:         z,
 	}, nil
 }
 
@@ -79,7 +81,9 @@ func (d *usageUpdater) update() {
 		return
 	}
 
-	d.poster.post(data)
+	if err := d.poster.post(data); err != nil {
+		d.logger.Debug("faild updated usage data", zap.Error(err))
+	}
 
 }
 
@@ -88,10 +92,12 @@ func (d *usageUpdater) Start() {
 		timer := time.NewTicker(d.updateInterval)
 		defer timer.Stop()
 
+		d.logger.Debug("start usage updating loop")
 		d.update()
 		for {
 			select {
 			case <-d.shutdownChan:
+				d.logger.Debug("stopped usage updating loop")
 				return
 			case <-timer.C:
 				d.update()
