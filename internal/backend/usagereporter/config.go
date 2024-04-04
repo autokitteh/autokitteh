@@ -15,12 +15,12 @@ type Config struct {
 var (
 	Configs = configset.Set[Config]{
 		Default: &Config{
+			Enabled: false,
+		},
+		Dev: &Config{
 			Enabled:  true,
 			Endpoint: "http://localhost:9980",
 			Interval: time.Hour * 24,
-		},
-		Test: &Config{
-			Enabled: false,
 		},
 	}
 )

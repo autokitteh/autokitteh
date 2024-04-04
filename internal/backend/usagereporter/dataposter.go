@@ -40,9 +40,11 @@ func (p poster) post(data []byte) error {
 	if err != nil {
 		return err
 	}
+	defer resp.Body.Close()
+
 	if resp.StatusCode != 200 {
 		return fmt.Errorf("invalid status code: %d", resp.StatusCode)
 	}
-	defer resp.Body.Close()
+
 	return nil
 }
