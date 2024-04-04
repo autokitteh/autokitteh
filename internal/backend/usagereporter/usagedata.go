@@ -113,20 +113,19 @@ func (d *usageReporter) report() {
 
 	data, err := json.Marshal(r)
 	if err != nil {
+		d.logger.Debug("faild report usage data", zap.Error(err))
 		return
 	}
 
 	if err := d.poster.post(data); err != nil {
-		d.logger.Debug("faild updated usage data", zap.Error(err))
+		d.logger.Debug("faild report usage data", zap.Error(err))
+		return
 	}
-
+	d.logger.Debug("report usage data succeed")
 }
 
 func (d *usageReporter) Start() {
 	go func() {
-		timer := time.NewTicker(d.updateInterval)
-		defer timer.Stop()
-
 		d.logger.Debug("start usage updating loop")
 		d.report()
 		for {
@@ -134,7 +133,7 @@ func (d *usageReporter) Start() {
 			case <-d.shutdownChan:
 				d.logger.Debug("stopped usage updating loop")
 				return
-			case <-timer.C:
+			case <-time.After(d.updateInterval):
 				d.report()
 			}
 		}
