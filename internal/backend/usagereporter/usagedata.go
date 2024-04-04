@@ -14,7 +14,7 @@ import (
 )
 
 type reportRequest struct {
-	InstallationID string `json:"installationID"`
+	InstallationID string `json:"installation_id"`
 	Version        string `json:"version"`
 	Commit         string `json:"commit"`
 	OS             string `json:"os"`
