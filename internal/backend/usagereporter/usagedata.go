@@ -42,13 +42,7 @@ func generateInstallIDFile(path string) error {
 	return nil
 }
 
-func New(z *zap.Logger, cfg *Config) (UsageReporter, error) {
-	if !cfg.Enabled {
-		return &nopUpdater{}, nil
-	}
-
-	installationIDFile := filepath.Join(xdg.ConfigHomeDir(), "installID")
-
+func ensureAndReadInstallationIDFile(installationIDFile string) (string, error) {
 	// Try read installationID file,
 	// if there is an error and the file exists, try to remove it and fail if cant
 	// generate a new file
@@ -57,22 +51,46 @@ func New(z *zap.Logger, cfg *Config) (UsageReporter, error) {
 	if err != nil {
 		if !os.IsNotExist(err) {
 			if err := os.Remove(installationIDFile); err != nil {
-				return nil, err
+				return "", err
 			}
 		}
 
 		if err := generateInstallIDFile(installationIDFile); err != nil {
-			return nil, err
+			return "", err
 		}
 		if data, err = os.ReadFile(installationIDFile); err != nil {
-			return nil, err
+			return "", err
 		}
 
 	}
 
-	id, err := uuid.Parse(string(data))
+	return string(data), nil
+}
+
+func New(z *zap.Logger, cfg *Config) (UsageReporter, error) {
+	if !cfg.Enabled {
+		return &nopUpdater{}, nil
+	}
+
+	installationIDFile := filepath.Join(xdg.ConfigHomeDir(), "installID")
+	data, err := ensureAndReadInstallationIDFile(installationIDFile)
 	if err != nil {
 		return nil, err
+	}
+
+	id, err := uuid.Parse(data)
+	if err != nil {
+		if err := os.Remove(installationIDFile); err != nil {
+			return nil, err
+		}
+		data, err = ensureAndReadInstallationIDFile(installationIDFile)
+		if err != nil {
+			return nil, err
+		}
+		id, err = uuid.Parse(data)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return &usageReporter{
