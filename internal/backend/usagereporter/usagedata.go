@@ -1,4 +1,4 @@
-package usageupdater
+package usagereporter
 
 import (
 	"encoding/json"
@@ -13,7 +13,7 @@ import (
 	"go.uber.org/zap"
 )
 
-type updateRequest struct {
+type reportRequest struct {
 	InstallationID string `json:"installationID"`
 	Version        string `json:"version"`
 	Commit         string `json:"commit"`
@@ -21,12 +21,12 @@ type updateRequest struct {
 	Arch           string `json:"arch"`
 }
 
-type UsageUpdater interface {
+type UsageReporter interface {
 	Start()
 	Stop()
 }
 
-type usageUpdater struct {
+type usageReporter struct {
 	installationID uuid.UUID
 	updateInterval time.Duration
 	shutdownChan   chan struct{}
@@ -34,23 +34,40 @@ type usageUpdater struct {
 	logger         *zap.Logger
 }
 
-func New(z *zap.Logger, cfg *Config) (UsageUpdater, error) {
+func generateInstallIDFile(path string) error {
+	id := uuid.New()
+	if err := os.WriteFile(path, []byte(id.String()), 0600); err != nil {
+		return err
+	}
+	return nil
+}
+
+func New(z *zap.Logger, cfg *Config) (UsageReporter, error) {
 	if !cfg.Enabled {
 		return &nopUpdater{}, nil
 	}
 
 	installationIDFile := filepath.Join(xdg.ConfigHomeDir(), "installID")
 
-	if _, err := os.Stat(installationIDFile); os.IsNotExist(err) {
-		id := uuid.New()
-		if err := os.WriteFile(installationIDFile, []byte(id.String()), 0600); err != nil {
-			return nil, err
-		}
-	}
-
+	// Try read installationID file,
+	// if there is an error and the file exists, try to remove it and fail if cant
+	// generate a new file
+	// try read the data again
 	data, err := os.ReadFile(installationIDFile)
 	if err != nil {
-		return nil, err
+		if !os.IsNotExist(err) {
+			if err := os.Remove(installationIDFile); err != nil {
+				return nil, err
+			}
+		}
+
+		if err := generateInstallIDFile(installationIDFile); err != nil {
+			return nil, err
+		}
+		if data, err = os.ReadFile(installationIDFile); err != nil {
+			return nil, err
+		}
+
 	}
 
 	id, err := uuid.Parse(string(data))
@@ -58,7 +75,7 @@ func New(z *zap.Logger, cfg *Config) (UsageUpdater, error) {
 		return nil, err
 	}
 
-	return &usageUpdater{
+	return &usageReporter{
 		installationID: id,
 		updateInterval: cfg.Interval,
 		shutdownChan:   make(chan struct{}),
@@ -67,8 +84,8 @@ func New(z *zap.Logger, cfg *Config) (UsageUpdater, error) {
 	}, nil
 }
 
-func (d *usageUpdater) update() {
-	r := updateRequest{
+func (d *usageReporter) report() {
+	r := reportRequest{
 		InstallationID: d.installationID.String(),
 		Version:        version.Version,
 		Commit:         version.Commit,
@@ -87,25 +104,25 @@ func (d *usageUpdater) update() {
 
 }
 
-func (d *usageUpdater) Start() {
+func (d *usageReporter) Start() {
 	go func() {
 		timer := time.NewTicker(d.updateInterval)
 		defer timer.Stop()
 
 		d.logger.Debug("start usage updating loop")
-		d.update()
+		d.report()
 		for {
 			select {
 			case <-d.shutdownChan:
 				d.logger.Debug("stopped usage updating loop")
 				return
 			case <-timer.C:
-				d.update()
+				d.report()
 			}
 		}
 	}()
 }
 
-func (d *usageUpdater) Stop() {
+func (d *usageReporter) Stop() {
 	close(d.shutdownChan)
 }

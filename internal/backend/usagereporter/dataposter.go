@@ -1,4 +1,4 @@
-package usageupdater
+package usagereporter
 
 import (
 	"bytes"
