@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>autokitteh HTTP/REST Integration</title>
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="/static/apple-touch-icon.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="/static/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="/static/favicon-16x16.png"
+    />
+    <link rel="manifest" href="/static/site.webmanifest" />
+    <link rel="stylesheet" type="text/css" href="styles.css" />
+    <meta name="robots" content="noindex, nofollow" />
+    <script src="form.js" defer></script>
+  </head>
+
+  <body>
+    <a href="/" target="_self">
+      <img class="banner" src="/static/banner.svg" alt="autokitteh" />
+    </a>
+
+    <table class="title">
+      <td><img class="logo" src="/static/images/http.svg" alt="Logo" /></td>
+      <td><h1>HTTP / REST - Create a New Connection</h1></td>
+    </table>
+
+    <div class="toggle-container">
+      <button class="toggle" id="toggletab1" onclick="toggleTab('tab1')">
+        No Auth
+      </button>
+      <span class="toggle-sep"></span>
+      <button class="toggle" id="toggletab2" onclick="toggleTab('tab2')">
+        Basic
+      </button>
+      <span class="toggle-sep"></span>
+      <button class="toggle" id="toggletab3" onclick="toggleTab('tab3')">
+        Bearer
+      </button>
+    </div>
+
+    <form method="post" action="/httprest/save">
+      <div class="tab" id="tab1"></div>
+
+      <div class="tab" id="tab2">
+        <p class="info">
+          Information:
+          <a
+            href="https://datatracker.ietf.org/doc/html/rfc7617"
+            target="_blank"
+            class="info"
+          >
+            RFC 7617
+          </a>
+          <br /><br /><br />
+        </p>
+
+        <div class="form-group">
+          <label for="basic_username">Username</label>
+          <input
+            type="text"
+            id="basicUsername"
+            name="basic_username"
+            autocomplete="off"
+            spellcheck="false"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="basic_password">Password</label>
+          <input
+            type="text"
+            id="basicPassword"
+            name="basic_password"
+            autocomplete="off"
+            spellcheck="false"
+          />
+        </div>
+      </div>
+
+      <div class="tab" id="tab3">
+        <p class="info">
+          Information:
+          <a
+            href="https://datatracker.ietf.org/doc/html/rfc6750"
+            target="_blank"
+            class="info"
+          >
+            RFC 6750
+          </a>
+          <br /><br /><br />
+        </p>
+
+        <div class="form-group">
+          <label for="bearer_access_token">Access Token</label>
+          <input
+            type="text"
+            id="bearerAccessToken"
+            name="bearer_access_token"
+            autocomplete="off"
+            spellcheck="false"
+          />
+        </div>
+      </div>
+
+      <button type="submit" class="submit-btn">Save Connection</button>
+    </form>
+  </body>
+</html>
