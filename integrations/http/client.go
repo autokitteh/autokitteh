@@ -27,9 +27,9 @@ var IntegrationID = sdktypes.IntegrationIDFromName("http")
 var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
 	IntegrationId: IntegrationID.String(),
 	UniqueName:    "http",
-	DisplayName:   "HTTP",
+	DisplayName:   "HTTP / REST",
 	LogoUrl:       "/static/images/http.svg",
-	// TODO: Integration documentation link.
+	ConnectionUrl: "/httprest/connect",
 }))
 
 func New(sec sdkservices.Secrets) sdkservices.Integration {

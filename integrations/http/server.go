@@ -12,6 +12,12 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
+	"go.autokitteh.dev/autokitteh/web/static"
+)
+
+const (
+	// Save new autokitteh connections with user-submitted secrets.
+	uiPath = "/httprest/connect/"
 )
 
 // ns can be either:
@@ -28,9 +34,12 @@ type HTTPHandler struct {
 	logger     *zap.Logger
 }
 
-func Start(l *zap.Logger, mux *http.ServeMux, d sdkservices.Dispatcher) {
+func Start(l *zap.Logger, mux *http.ServeMux, s sdkservices.Secrets, d sdkservices.Dispatcher) {
 	h := HTTPHandler{dispatcher: d, logger: l}
 	mux.Handle(routePrefix("{ns}")+"*", h)
+
+	// Save new autokitteh connections with user-submitted Twilio secrets.
+	mux.Handle(uiPath, http.FileServer(http.FS(static.HTTPWebContent)))
 }
 
 func (h HTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
