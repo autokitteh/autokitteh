@@ -38,12 +38,12 @@ func NewHandler(l *zap.Logger, s sdkservices.Secrets, o sdkservices.OAuth, scope
 	return handler{logger: l, secrets: s, oauth: o, scope: scope}
 }
 
-// HandleOAuth receives an inbound redirect request from autokitteh's OAuth
+// handleOAuth receives an inbound redirect request from autokitteh's OAuth
 // management service. This request contains an OAuth token (if the OAuth
 // flow was successful) and form parameters for debugging and validation
 // (either way). If all is well, it saves a new autokitteh connection.
 // Either way, it redirects the user to success or failure webpages.
-func (h handler) HandleOAuth(w http.ResponseWriter, r *http.Request) {
+func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 	l := h.logger.With(zap.String("urlPath", r.URL.Path))
 
 	// Handle errors (e.g. the user didn't authorize us) based on:

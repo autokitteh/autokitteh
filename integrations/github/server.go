@@ -29,8 +29,8 @@ func Start(l *zap.Logger, mux *http.ServeMux, s sdkservices.Secrets, o sdkservic
 	mux.Handle(kittehs.Must1(url.JoinPath(uiPath, "success.html")), staticFiles)
 	mux.Handle(kittehs.Must1(url.JoinPath(uiPath, "success.js")), staticFiles)
 	h := NewHandler(l, s, o, "github")
-	mux.HandleFunc(patPath, h.HandlePAT)
-	mux.HandleFunc(oauthPath, h.HandleOAuth)
+	mux.HandleFunc(patPath, h.handlePAT)
+	mux.HandleFunc(oauthPath, h.handleOAuth)
 
 	// Event webhooks.
 	eventHandler := webhooks.NewHandler(l, s, d, "github", integrationID)
