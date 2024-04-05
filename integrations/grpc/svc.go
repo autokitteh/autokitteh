@@ -14,7 +14,7 @@ var description = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.In
 	IntegrationId: integrationID.String(),
 	UniqueName:    "grpc",
 	DisplayName:   "GRPC",
-	LogoUrl:       "/static/images/http.svg",
+	LogoUrl:       "/static/images/grpc.png",
 }))
 
 func New(sec sdkservices.Secrets) sdkservices.Integration {
