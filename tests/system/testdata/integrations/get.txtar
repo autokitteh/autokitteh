@@ -25,6 +25,6 @@ output contains 'key:"post"'
 ak integration get int_0000000000f1201a7ed83f7cd5
 return code == 0
 output contains 'unique_name:"http"'
-output contains 'display_name:"HTTP"'
+output contains 'display_name:"HTTP / REST"'
 output contains 'logo_url:'
 output contains 'functions:'

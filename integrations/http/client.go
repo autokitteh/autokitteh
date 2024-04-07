@@ -10,18 +10,6 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-var args = sdkmodule.WithArgs(
-	"url",
-	"params?",
-	"headers?",
-	"raw_body?",
-	"form_body?",
-	"json_body?",
-	// TODO: Mismatched naming, see http.go lines 57-59.
-	"form_encoding?",
-	"auth?",
-)
-
 var IntegrationID = sdktypes.IntegrationIDFromName("http")
 
 var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
@@ -32,40 +20,46 @@ var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.Integrati
 	ConnectionUrl: "/httprest/connect",
 }))
 
+type integration struct {
+	secrets sdkservices.Secrets
+	scope   string
+}
+
 func New(sec sdkservices.Secrets) sdkservices.Integration {
+	i := integration{secrets: sec, scope: desc.UniqueName().String()}
 	return sdkintegrations.NewIntegration(desc, sdkmodule.New(
 		sdkmodule.ExportFunction(
 			"get",
-			request(http.MethodGet),
+			i.request(http.MethodGet),
 			sdkmodule.WithFuncDoc("https://www.rfc-editor.org/rfc/rfc9110#GET"),
 			args),
 		sdkmodule.ExportFunction(
 			"head",
-			request(http.MethodHead),
+			i.request(http.MethodHead),
 			sdkmodule.WithFuncDoc("https://www.rfc-editor.org/rfc/rfc9110#HEAD"),
 			args),
 		sdkmodule.ExportFunction(
 			"post",
-			request(http.MethodPost),
+			i.request(http.MethodPost),
 			sdkmodule.WithFuncDoc("https://www.rfc-editor.org/rfc/rfc9110#POST"),
 			args),
 		sdkmodule.ExportFunction("put",
-			request(http.MethodPut),
+			i.request(http.MethodPut),
 			sdkmodule.WithFuncDoc("https://www.rfc-editor.org/rfc/rfc9110#PUT"),
 			args),
 		sdkmodule.ExportFunction(
 			"delete",
-			request(http.MethodDelete),
+			i.request(http.MethodDelete),
 			sdkmodule.WithFuncDoc("https://www.rfc-editor.org/rfc/rfc9110#DELETE"),
 			args),
 		sdkmodule.ExportFunction(
 			"options",
-			request(http.MethodOptions),
+			i.request(http.MethodOptions),
 			sdkmodule.WithFuncDoc("https://www.rfc-editor.org/rfc/rfc9110#OPTIONS"),
 			args),
 		sdkmodule.ExportFunction(
 			"patch",
-			request(http.MethodPatch),
+			i.request(http.MethodPatch),
 			sdkmodule.WithFuncDoc("https://www.rfc-editor.org/rfc/rfc5789"),
 			args),
 	))
