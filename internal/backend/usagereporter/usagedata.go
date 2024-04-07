@@ -100,6 +100,8 @@ func New(z *zap.Logger, cfg *Config) (UsageReporter, error) {
 	}, nil
 }
 
+// https://github.com/search?q=repo%3Aautokitteh%2Fautokitteh%20ldflags&type=code
+// https://github.com/autokitteh/homebrew-tap/blob/main/Formula/autokitteh.rb#L14
 func (d *usageReporter) report() {
 	r := reportRequest{
 		InstallationID: d.installationID.String(),
