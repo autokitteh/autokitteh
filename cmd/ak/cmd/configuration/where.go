@@ -27,12 +27,12 @@ var whereCmd = common.StandardCommand(&cobra.Command{
 			data = `"` + data + `"`
 		}
 
-		fmt.Println("Config home directory:", cfg)
-		fmt.Println("Data home directory:  ", data)
-		fmt.Println()
-		fmt.Println("Override environment variable names:")
-		fmt.Println(xdg.ConfigEnvVar)
-		fmt.Println(xdg.DataEnvVar)
+		fmt.Fprintln(cmd.OutOrStdout(), "Config home directory:", cfg)
+		fmt.Fprintln(cmd.OutOrStdout(), "Data home directory:  ", data)
+		fmt.Fprintln(cmd.OutOrStdout(), "")
+		fmt.Fprintln(cmd.OutOrStdout(), "Override environment variable names:")
+		fmt.Fprintln(cmd.OutOrStdout(), xdg.ConfigEnvVar)
+		fmt.Fprintln(cmd.OutOrStdout(), xdg.DataEnvVar)
 
 		return nil
 	},
