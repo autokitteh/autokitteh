@@ -50,10 +50,9 @@ func (h handler) HandleOAuth(w http.ResponseWriter, r *http.Request) {
 	// https://developers.google.com/identity/protocols/oauth2/web-server#handlingresponse
 	e := r.FormValue("error")
 	if e != "" {
-		l.Warn("OAuth redirect request reported an error",
-			zap.Error(errors.New(e)),
-		)
-		http.Redirect(w, r, uiPath+"error.html", http.StatusFound)
+		l.Warn("OAuth redirect request reported an error", zap.Error(errors.New(e)))
+		u := uiPath + "error.html?error=" + url.QueryEscape(e)
+		http.Redirect(w, r, u, http.StatusFound)
 		return
 	}
 
@@ -61,7 +60,8 @@ func (h handler) HandleOAuth(w http.ResponseWriter, r *http.Request) {
 	v := r.FormValue("installation_id")
 	if v == "" {
 		l.Warn("OAuth redirect request without installation_id parameter")
-		http.Error(w, "Bad Request", http.StatusBadRequest)
+		u := uiPath + "error.html?error=" + url.QueryEscape("missing installation ID")
+		http.Redirect(w, r, u, http.StatusFound)
 		return
 	}
 	id, err := strconv.ParseInt(v, 10, 64)
@@ -70,7 +70,7 @@ func (h handler) HandleOAuth(w http.ResponseWriter, r *http.Request) {
 			zap.String("installationID", v),
 			zap.String("setupAction", r.FormValue("setup_action")),
 		)
-		u := fmt.Sprintf("%serror.html?error=%s", uiPath, e)
+		u := uiPath + "error.html?error=" + url.QueryEscape("invalid installation ID")
 		http.Redirect(w, r, u, http.StatusFound)
 		return
 	}
@@ -99,12 +99,31 @@ func (h handler) HandleOAuth(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	src := h.tokenSource(ctx, oauthToken)
 	gh := github.NewClient(oauth2.NewClient(ctx, src))
+	u, err := enterpriseURL()
+	if err != nil {
+		l.Warn("Enterprise URL error", zap.Error(err))
+		u := uiPath + "error.html?error=" + url.QueryEscape(err.Error())
+		http.Redirect(w, r, u, http.StatusFound)
+		return
+	}
+	if u != "" {
+		gh, err = gh.WithEnterpriseURLs(u, u)
+		if err != nil {
+			l.Warn("Enterprise URL error",
+				zap.String("url", u),
+				zap.Error(err),
+			)
+			u := uiPath + "error.html?error=" + url.QueryEscape(err.Error())
+			http.Redirect(w, r, u, http.StatusFound)
+			return
+		}
+	}
+
 	is, _, err := gh.Apps.ListUserInstallations(ctx, &github.ListOptions{})
 	if err != nil {
-		l.Warn("OAuth user token source error",
-			zap.Error(err),
-		)
-		http.Error(w, "Internal Server Error: token source", http.StatusInternalServerError)
+		l.Warn("OAuth user token source error", zap.Error(err))
+		u := uiPath + "error.html?error=" + url.QueryEscape(err.Error())
+		http.Redirect(w, r, u, http.StatusFound)
 		return
 	}
 	foundInstallation := false
@@ -143,8 +162,7 @@ func (h handler) HandleOAuth(w http.ResponseWriter, r *http.Request) {
 
 	// Redirect the user to a success page: give them the connection token.
 	l.Debug("Completed OAuth flow")
-	u := fmt.Sprintf("%ssuccess.html?token=%s", uiPath, connToken)
-	http.Redirect(w, r, u, http.StatusFound)
+	http.Redirect(w, r, uiPath+"success.html?token="+connToken, http.StatusFound)
 }
 
 // unescape returns a named URL-unescaped query parameter value,
