@@ -70,7 +70,7 @@ class AKLoader(Loader):
         self.module_name = src_loader.name
         self.action = action
 
-    def create_module(self, _):
+    def create_module(self, spec):
         # Must be defined since it's an abstract method
         return None  # Use default module
 
@@ -311,7 +311,7 @@ if __name__ == '__main__':
 
     rw = RunWrapper(mod, ak_call.activity_request)
     Thread(target=rw.run, args=(func_name, event), daemon=True).start()
-    logging.info('execution thread started')
+    logging.info('execution thread started, func=%r, event=%r', func_name, event)
 
     while True:
         request = ak_call.activity_request.get()

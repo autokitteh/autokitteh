@@ -49,22 +49,22 @@ func isFile(fsys fs.FS, path string) bool {
 	return !info.IsDir()
 }
 
-func newSVC(t *testing.T) pySVC {
+func newSVC(t *testing.T) pySvc {
 	logger, err := zap.NewDevelopment()
 	require.NoError(t, err, "create logger")
 
-	return pySVC{
+	return pySvc{
 		log: logger,
 	}
 }
 
-func Test_pySVC_Get(t *testing.T) {
+func Test_pySvc_Get(t *testing.T) {
 	svc := newSVC(t)
 	rt := svc.Get()
 	require.NotNil(t, rt)
 }
 
-func Test_pySVC_Build(t *testing.T) {
+func Test_pySvc_Build(t *testing.T) {
 	svc := newSVC(t)
 
 	rootPath := "testdata/simple/"
@@ -89,10 +89,10 @@ func testCtx(t *testing.T) (context.Context, context.CancelFunc) {
 	return context.WithDeadline(context.Background(), d)
 }
 
-func Test_pySVC_Run(t *testing.T) {
+func Test_pySvc_Run(t *testing.T) {
 	rt, err := New()
 	require.NoError(t, err, "New")
-	svc, ok := rt.(*pySVC)
+	svc, ok := rt.(*pySvc)
 	require.True(t, ok, "type assertion failed")
 	require.NotNil(t, svc.log, "nil logger")
 
