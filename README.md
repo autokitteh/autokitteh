@@ -37,7 +37,7 @@ Here's a [detailed look at how autokitteh works](https://docs.autokitteh.com/how
 
 - [Installation](https://docs.autokitteh.com/get_started/install)
 - [Starting a self-hosted server](https://docs.autokitteh.com/get_started/start_server)
-- [CLI quickstart tutorial](https://docs.autokitteh.com/get_started/client/cli/quickstart)
+- [CLI quickstart guide](https://docs.autokitteh.com/get_started/client/cli/quickstart)
 - [VS Code extension](https://docs.autokitteh.com/get_started/client/vscode)
 
 This open-source project can be used mostly for self-hosted and on-prem
