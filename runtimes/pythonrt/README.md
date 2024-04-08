@@ -68,27 +68,15 @@ The Python server returns a list of exported symbols from the user code.
 
 A call with function and payload:
 
-<!-- TODO (ENG-627): Use mermaid for diagram below -->
-
-```
-Go                              Python
-
------- Call (function, payload) ------->
-
-<--- Activity request (payload) ----
-----> Activity call (payload) --->
-<---- Activity result (value) -----
------ Activity result  ----->
-
-<--- Activity request (payload) ----
-----> Activity call (payload) --->
-<---- Activity result (value) -----
------ Activity result  ----->
-
-...
-
-<------ Call result (value) ----
-
+```mermaid
+sequenceDiagram
+    Python-->>Go: Module loaded (exports)
+    Go->>Python: Run(function, payload)
+    loop
+        Python-->>Go: Activity request (function name, args, payload)
+        Go ->>Python: Activity call (payload)
+    end
+    Python-->>Go: Run return (None)
 ```
 
 ### Communication Protocol
