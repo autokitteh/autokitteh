@@ -20,6 +20,8 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version-file: tests/go.mod
+      - name: Get autokitteh
+        run: curl -sSL https://get.autokitteh.sh | bash
       - name: Test
         working-directory: test
         run: go test -v .
