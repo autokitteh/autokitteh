@@ -24,7 +24,6 @@ var whereCmd = common.StandardCommand(&cobra.Command{
 
 		data := xdg.DataHomeDir()
 		if strings.Contains(data, " ") {
-			data = fmt.Sprintf("%q", data)
 			data = `"` + data + `"`
 		}
 
