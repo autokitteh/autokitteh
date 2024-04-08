@@ -36,10 +36,9 @@ Here's a [detailed look at how autokitteh works](https://docs.autokitteh.com/how
 [Getting started](https://docs.autokitteh.com/get_started):
 
 - [Installation](https://docs.autokitteh.com/get_started/install)
-- [Starting a local server](https://docs.autokitteh.com/get_started/start_server)
-- [Running workflows](https://docs.autokitteh.com/get_started/run_workflows)
-  (with a CLI)
-- [VS Code extension](https://docs.autokitteh.com/get_started/vscode_extension)
+- [Starting a self-hosted server](https://docs.autokitteh.com/get_started/start_server)
+- [CLI quickstart tutorial](https://docs.autokitteh.com/get_started/client/cli/quickstart)
+- [VS Code extension](https://docs.autokitteh.com/get_started/client/vscode)
 
 This open-source project can be used mostly for self-hosted and on-prem
 installations. Our managed cloud iPaaS offering is currently in beta - for
