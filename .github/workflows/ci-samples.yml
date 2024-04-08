@@ -1,0 +1,25 @@
+name: Samples End to End Test
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  build-and-test:
+    name: Samples e2e
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          repository: https://github.com/autokitteh/samples.git
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: tests/go.mod
+      - name: Test
+        working-directory: test
+        run: go test -v .
