@@ -2,6 +2,7 @@ package configuration
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -16,8 +17,19 @@ var whereCmd = common.StandardCommand(&cobra.Command{
 	Args:    cobra.NoArgs,
 
 	RunE: func(cmd *cobra.Command, args []string) error {
-		fmt.Println("Config home directory:", xdg.ConfigHomeDir())
-		fmt.Println("Data home directory:  ", xdg.DataHomeDir())
+		cfg := xdg.ConfigHomeDir()
+		if strings.Contains(cfg, " ") {
+			cfg = `"` + cfg + `"`
+		}
+
+		data := xdg.DataHomeDir()
+		if strings.Contains(data, " ") {
+			data = fmt.Sprintf("%q", data)
+			data = `"` + data + `"`
+		}
+
+		fmt.Println("Config home directory:", cfg)
+		fmt.Println("Data home directory:  ", data)
 		fmt.Println()
 		fmt.Println("Override environment variable names:")
 		fmt.Println(xdg.ConfigEnvVar)
