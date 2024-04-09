@@ -100,19 +100,22 @@ func (i integration) getConnection(ctx context.Context) (map[string]string, erro
 func (i integration) NewClientWithAppJWTFromGitHubID(appID int64) (*github.Client, error) {
 	// Shared transport to reuse TCP connections.
 	tr := http.DefaultTransport
+	u, err := enterpriseURL()
+	if err != nil {
+		return nil, err
+	}
 
 	// Wrap the shared transport.
 	atr, err := ghinstallation.NewAppsTransport(tr, appID, getPrivateKey())
 	if err != nil {
 		return nil, err
 	}
+	if u != "" {
+		atr.BaseURL = u + "/api/v3"
+	}
 
 	// Initialize a client with the generated JWT injected into outbound requests.
 	client := github.NewClient(&http.Client{Transport: atr})
-	u, err := enterpriseURL()
-	if err != nil {
-		return nil, err
-	}
 	if u != "" {
 		client, err = client.WithEnterpriseURLs(u, u)
 		if err != nil {
@@ -128,19 +131,22 @@ func (i integration) NewClientWithAppJWTFromGitHubID(appID int64) (*github.Clien
 func (i integration) NewClientWithInstallJWTFromGitHubIDs(appID, installID int64) (*github.Client, error) {
 	// Shared transport to reuse TCP connections.
 	tr := http.DefaultTransport
+	u, err := enterpriseURL()
+	if err != nil {
+		return nil, err
+	}
 
 	// Wrap the shared transport.
 	itr, err := ghinstallation.New(tr, appID, installID, getPrivateKey())
 	if err != nil {
 		return nil, err
 	}
+	if u != "" {
+		itr.BaseURL = u + "/api/v3"
+	}
 
 	// Initialize a client with the generated JWT injected into outbound requests.
 	client := github.NewClient(&http.Client{Transport: itr})
-	u, err := enterpriseURL()
-	if err != nil {
-		return nil, err
-	}
 	if u != "" {
 		client, err = client.WithEnterpriseURLs(u, u)
 		if err != nil {
