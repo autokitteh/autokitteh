@@ -135,7 +135,7 @@ func (e Event) Matches(expr string) (bool, error) {
 		return false, fmt.Errorf("convert: %w", err)
 	}
 
-	out, _, err := prg.Eval(map[string]any{"data": data})
+	out, _, err := prg.Eval(map[string]any{"data": data, "type": e.Type()})
 	if err != nil {
 		return false, fmt.Errorf("eval: %w", err)
 	}

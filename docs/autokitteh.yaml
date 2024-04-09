@@ -76,8 +76,10 @@ project:
   triggers:
     - # Optional: event_type. For HTTP this is the method.
       event_type: get
-      # Optional: event filter.
-      filter: "data.method == 'GET'"
+      # Optional: event filter, specified in CEL (https://github.com/google/cel-spec).
+      # All event data is available to the filter via the `data` field.
+      # The event type is available via the `type` field.
+      filter: "data.path == 'meow' && type == 'GET'"
       # Name of the connection the event originated from.
       connection: myhttp
       # Function to call when the event is received.
