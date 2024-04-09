@@ -100,7 +100,7 @@ func (i integration) getConnection(ctx context.Context) (map[string]string, erro
 func (i integration) NewClientWithAppJWTFromGitHubID(appID int64) (*github.Client, error) {
 	// Shared transport to reuse TCP connections.
 	tr := http.DefaultTransport
-	entURL, err := enterpriseURL()
+	enterpriseURL, err := enterpriseURL()
 	if err != nil {
 		return nil, err
 	}
@@ -110,14 +110,14 @@ func (i integration) NewClientWithAppJWTFromGitHubID(appID int64) (*github.Clien
 	if err != nil {
 		return nil, err
 	}
-	if entURL != "" {
-		atr.BaseURL = entURL + "/api/v3"
+	if enterpriseURL != "" {
+		atr.BaseURL = enterpriseURL + "/api/v3"
 	}
 
 	// Initialize a client with the generated JWT injected into outbound requests.
 	client := github.NewClient(&http.Client{Transport: atr})
-	if entURL != "" {
-		client, err = client.WithEnterpriseURLs(entURL, entURL)
+	if enterpriseURL != "" {
+		client, err = client.WithEnterpriseURLs(enterpriseURL, enterpriseURL)
 		if err != nil {
 			return nil, err
 		}
@@ -131,7 +131,7 @@ func (i integration) NewClientWithAppJWTFromGitHubID(appID int64) (*github.Clien
 func (i integration) NewClientWithInstallJWTFromGitHubIDs(appID, installID int64) (*github.Client, error) {
 	// Shared transport to reuse TCP connections.
 	tr := http.DefaultTransport
-	entURL, err := enterpriseURL()
+	enterpriseURL, err := enterpriseURL()
 	if err != nil {
 		return nil, err
 	}
@@ -141,14 +141,14 @@ func (i integration) NewClientWithInstallJWTFromGitHubIDs(appID, installID int64
 	if err != nil {
 		return nil, err
 	}
-	if entURL != "" {
-		itr.BaseURL = entURL + "/api/v3"
+	if enterpriseURL != "" {
+		itr.BaseURL = enterpriseURL + "/api/v3"
 	}
 
 	// Initialize a client with the generated JWT injected into outbound requests.
 	client := github.NewClient(&http.Client{Transport: itr})
-	if entURL != "" {
-		client, err = client.WithEnterpriseURLs(entURL, entURL)
+	if enterpriseURL != "" {
+		client, err = client.WithEnterpriseURLs(enterpriseURL, enterpriseURL)
 		if err != nil {
 			return nil, err
 		}
