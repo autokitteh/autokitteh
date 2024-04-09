@@ -1,10 +1,13 @@
 package projects
 
 import (
+	"fmt"
+
 	"github.com/spf13/cobra"
 
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
 	"go.autokitteh.dev/autokitteh/internal/resolver"
+	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 )
 
 var getCmd = common.StandardCommand(&cobra.Command{
@@ -20,8 +23,8 @@ var getCmd = common.StandardCommand(&cobra.Command{
 			return err
 		}
 
-		if err := common.FailIfNotFound(cmd, "project", p.IsValid()); err != nil {
-			return err
+		if !p.IsValid() {
+			return common.FailIfError(cmd, sdkerrors.ErrNotFound, fmt.Sprintf("project <%q>", args[0]))
 		}
 
 		common.RenderKVIfV("project", p)
