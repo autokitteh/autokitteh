@@ -151,7 +151,6 @@ func planDefaultEnv(ctx context.Context, mvars []*EnvVar, client sdkservices.Ser
 	)
 
 	if curr.IsValid() {
-
 		envID = curr.ID()
 
 		log.Printf("found, id=%q", envID)
@@ -200,10 +199,10 @@ func planDefaultEnv(ctx context.Context, mvars []*EnvVar, client sdkservices.Ser
 		}
 
 		if envVar != "" {
-			if envVal, ok := os.LookupEnv(mvar.EnvVar); ok {
+			if envVal, ok := os.LookupEnv(envVar); ok {
 				val = envVal
 			} else if mvar.IsSecret {
-				return nil, fmt.Errorf("env var %q is secret and not found in the environment", mvar.EnvVar)
+				return nil, fmt.Errorf("env var %q is secret and not found in the environment", envVar)
 			}
 		}
 

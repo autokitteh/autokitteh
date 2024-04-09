@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -105,4 +106,27 @@ func waitForSession(akPath, akAddr, step string) (string, error) {
 	}
 
 	return "", errors.New(text)
+}
+
+func setEnv(args string) error {
+	n, v, ok := strings.Cut(args, " ")
+	if !ok {
+		return errors.New("invalid setenv action")
+	}
+
+	n = strings.TrimSpace(n)
+	v = strings.TrimSpace(v)
+
+	if strings.HasPrefix(v, "\"") {
+		var err error
+		if v, err = strconv.Unquote(v); err != nil {
+			return fmt.Errorf("failed to unquote value: %w", err)
+		}
+	}
+
+	if err := os.Setenv(n, v); err != nil {
+		return fmt.Errorf("failed to set environment variable: %w", err)
+	}
+
+	return nil
 }

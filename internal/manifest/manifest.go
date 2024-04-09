@@ -1,3 +1,4 @@
+// Description of the manifest schema. For detailed field explanations, see /docs/autokitteh.yaml.
 package manifest
 
 import (

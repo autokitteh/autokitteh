@@ -16,10 +16,6 @@ project:
       name: myvar
       # Variable value.
       value: "myvalue"
-    - name: myvar2
-      # This value is used if env_var is not set in the OS.
-      value: "default"
-      env_var: "MY_VAR2"
     - name: airshield_combination_code
       # This is a secret, so the value is taken from the OS environment
       # variable named in `env_var`. If `env_var` is not specified,

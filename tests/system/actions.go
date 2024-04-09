@@ -16,6 +16,8 @@ type akResult struct {
 func runAction(t *testing.T, akPath, akAddr, step string) (any, error) {
 	match := actions.FindStringSubmatch(step)
 	switch match[1] {
+	case "setenv":
+		return nil, setEnv(strings.TrimSpace(strings.TrimPrefix(step, match[1])))
 	case "ak":
 		args := append(config.ServiceUrlArg(akAddr), strings.Fields(match[3])...)
 		return runClient(akPath, args)
