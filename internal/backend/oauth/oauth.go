@@ -54,9 +54,9 @@ func New(l *zap.Logger) sdkservices.OAuth {
 		)
 	}
 
-	githubAppsURLPart := os.Getenv("GITHUB_APPS_URL_PART")
-	if githubAppsURLPart == "" {
-		githubAppsURLPart = "apps"
+	appsDir := "apps"
+	if os.Getenv("GITHUB_ENTERPRISE_URL") != "" {
+		appsDir = "github-apps"
 	}
 
 	return &oauth{
@@ -72,7 +72,7 @@ func New(l *zap.Logger) sdkservices.OAuth {
 				ClientSecret: os.Getenv("GITHUB_CLIENT_SECRET"),
 				Endpoint: oauth2.Endpoint{
 					// https://docs.github.com/en/apps/using-github-apps/installing-a-github-app-from-a-third-party#installing-a-github-app
-					AuthURL: fmt.Sprintf("%s/%s/%s/installations/new", githubBaseURL, githubAppsURLPart, os.Getenv("GITHUB_APP_NAME")),
+					AuthURL: fmt.Sprintf("%s/%s/%s/installations/new", githubBaseURL, appsDir, os.Getenv("GITHUB_APP_NAME")),
 					// https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps#device-flow
 					DeviceAuthURL: fmt.Sprintf("%s/login/device/code", githubBaseURL),
 					// https://docs.github.com/en/enterprise-server/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps#2-users-are-redirected-back-to-your-site-by-github
