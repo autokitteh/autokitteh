@@ -8,6 +8,8 @@ import (
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
 )
 
+var quiet bool
+
 var manifestCmd = common.StandardCommand(&cobra.Command{
 	Use:     "manifest",
 	Short:   "Manifest file commands",
@@ -31,6 +33,10 @@ func init() {
 }
 
 func logFunc(cmd *cobra.Command, prefix string) func(string) {
+	if quiet {
+		return func(string) {}
+	}
+
 	return func(msg string) {
 		fmt.Fprintf(cmd.OutOrStdout(), "[%s] %s\n", prefix, msg)
 	}
