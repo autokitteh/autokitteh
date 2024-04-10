@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang=en>
+
+<head>
+	<meta charset=UTF-8 />
+	<meta name=viewport content="width=device-width, initial-scale=1, user-scalable=no" />
+	<meta http-equiv=x-ua-compatible content=ie=edge />
+
+	<meta name="msapplication-TileColor" content="#20201f">
+	<meta name="theme-color" content="#20201f">
+
+	<title>Terminal</title>
+	<link href=./css/style.css rel=stylesheet />
+</head>
+
+<body>
+	<div class=wrapper>
+		<stdout id=stdout></stdout>
+		<div class="command" id=input-cont>
+			<div class=prompt>
+				<span id=main-stdin-msg class=prompt-msg></span>
+				<span id=main-stdin-symbol class=prompt-symbol></span>
+			</div>
+			<input type=text id=main-stdin class=stdin autofocus autocomplete spellcheck=false />
+		</div>
+		<div id=bottom-offset></div>
+	</div>
+	<script data-main="js/initialize.js" src="js/require.js"></script>
+</body>
+
+</html>
