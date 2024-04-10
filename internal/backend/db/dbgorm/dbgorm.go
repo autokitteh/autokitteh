@@ -134,7 +134,7 @@ func (db *gormdb) MigrationRequired(ctx context.Context) (bool, int64, error) {
 
 	migrationsDir := db.cfg.Type
 	requiredMigrations, err := goose.CollectMigrations(migrationsDir, dbversion, int64((1<<63)-1))
-	if err != nil && !errors.Is(err, goose.ErrNoMigrationFiles){
+	if err != nil && !errors.Is(err, goose.ErrNoMigrationFiles) {
 		return false, 0, err
 	}
 
