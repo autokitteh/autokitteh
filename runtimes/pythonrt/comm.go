@@ -8,8 +8,6 @@ import (
 
 // Messages should be in sync with MesssageType in ak_runner.py
 
-const callbackType = "callback"
-
 type CallbackMessage struct {
 	Name string            `json:"name"`
 	Args []string          `json:"args"`

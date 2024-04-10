@@ -129,7 +129,7 @@ def test_comm():
     assert data, 'no data'
     message = json.loads(data)
     assert message['type'] == ak_runner.MessageType.module
-    assert message['payload']['names'] == names
+    assert message['payload']['entries'] == names
 
 
     # Done
