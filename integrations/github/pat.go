@@ -24,7 +24,7 @@ const (
 )
 
 // HandlePAT saves a new autokitteh connection with a user-submitted token.
-func (h handler) HandlePAT(w http.ResponseWriter, r *http.Request) {
+func (h handler) handlePAT(w http.ResponseWriter, r *http.Request) {
 	l := h.logger.With(zap.String("urlPath", r.URL.Path))
 
 	// Check "Content-Type" header.
