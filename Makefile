@@ -149,3 +149,9 @@ proto:
 .PHONY: pythonrt
 pythonrt:
 	make -C runtimes/pythonrt/
+
+.PHONY: generate-migrations
+generate-migrations:
+	@read -p "Enter migration name: " migration_name; \
+	atlas migrate diff migration_name --env sqlite
+	atlas migrate diff migration_name --env postgres
