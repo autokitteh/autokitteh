@@ -4,7 +4,11 @@ on:
   push:
     branches:
       - main
+    paths:
+      - "internal/backend/db/dbgorm/scheme/**"
   pull_request:
+    paths:
+      - "internal/backend/db/dbgorm/scheme/**"
 
 jobs:
   validate:
