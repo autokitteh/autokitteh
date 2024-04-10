@@ -216,11 +216,11 @@ class Comm:
         message = self._recv(MessageType.run)
         return message['payload']
 
-    def send_response(self, data):
+    def send_response(self, value):
         message = {
             'type': MessageType.response,
             'payload': {
-                'value': self._picklize(data),
+                'value': self._picklize(value),
             }
         }
         self._send(message)
@@ -243,15 +243,17 @@ class AKCall:
         return False
 
     def __call__(self, func, *args, **kw):
+        logging.info('ACTION: calling %s (args=%r, kw=%r)', func.__name__, args, kw)
         if self.in_activity or self.ignore(func):
             return func(*args, **kw)
 
-        logging.info('ACTION: calling %s (args=%r, kw=%r)', func.__name__, args, kw)
         self.in_activity = True
         self.comm.send_activity(func, args, kw)
         message = self.comm.receive_activity()
         fn, args, kw = message['data']
-        return fn(*args, **kw)
+        value = fn(*args, **kw)
+        self.comm.send_response(value)
+        return value
 
 
 def extract_code(tar_path):
@@ -357,39 +359,19 @@ if __name__ == '__main__':
     comm.send_exported(entries)
 
     # Initial call
-    request = comm.receive_run()
-    func_name = request.get('func_name')
+    message = comm.receive_run()
+    func_name = message.get('func_name')
     if func_name is None:
-        logging.error('no function name in %r', request)
+        logging.error('no function name in %r', message)
         raise SystemExit(1)
 
-    event = request.get('event')
-    event = {} if event is None else json.loads(event)
+    fn = getattr(mod, func_name, None)
+    if fn is None:
+        logging.error('%r has no function %r', module_name, func_name)
+        raise SystemExit(1)
+        
+    event = message.get('event')
+    event = {} if event is None else event
 
-    while True:
-        request = ak_call.activity_request.get()
-        if request is None:  # Done
-            break
-
-        # Use protocol 0 since it's less Python version specific
-        event = pickle.dumps(request, protocol=0)
-        fn, args, kw = request
-        args = [str(a) for a in args]
-        kw = {k: str(v) for k, v in kw.items()}
-        msg = encode_msg('activity', '', event, fn.__name__, args, kw)
-        logging.info('sending activity request')
-        sock.sendall(msg)
-        event = rdr.readline()
-        logging.info('got activity response')
-        resp = decode_msg(event)
-        logging.info('activity response: %r', resp)
-        fn, args, kw = pickle.loads(resp['payload'])
-        logging.info('activity request: %s args=%r, kw=%r', fn, args, kw)
-        out = fn(*args, **kw)
-        event = pickle.dumps(out, protocol=0)
-        msg = encode_msg('response', '', event)
-        sock.sendall(msg)
-        ak_call.activity_response.put(out)
-
-    msg = encode_msg('done', '', '')
-    sock.sendall(msg)
+    fn(event)
+    comm.send_done()
