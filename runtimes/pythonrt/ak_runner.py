@@ -44,6 +44,9 @@ BUILTIN = {v for v in dir(builtins) if callable(getattr(builtins, v))}
 
 class Transformer(ast.NodeTransformer):
     """Replace 'fn(a, b)' with '_ak_call(fn, a, b)'."""
+    def __init__(self, file_name):
+        self.file_name = file_name
+
     def visit_Call(self, node):
         name = name_of(node.func)
         # ast.Transformer does not recurse to args
@@ -52,7 +55,7 @@ class Transformer(ast.NodeTransformer):
         if not name or name in BUILTIN:
             return node
 
-        logging.info('patching %s with action', name)
+        logging.info('%s:%d: patching %s with action', self.file_name, node.lineno, name)
         call = ast.Call(
             func=ast.Name(id=ACTION_NAME, ctx=ast.Load()),
             args=[node.func] + node.args,
@@ -80,7 +83,7 @@ class AKLoader(Loader):
             raise ImportError(f'cannot read {self.module_name!r} - {err}')
 
         mod = ast.parse(src, self.file_name, 'exec')
-        trans = Transformer()
+        trans = Transformer(self.file_name)
         out = trans.visit(mod)
         ast.fix_missing_locations(out)
 
@@ -167,6 +170,9 @@ class Comm:
 
     def _recv(self, expected_type):
         data = self.rdr.readline()
+        if not data:
+            raise ValueError('connection closed')
+
         message = json.loads(data)
         if (typ := message['type']) != expected_type:
             raise ValueError(f'message type: expected {expected_type!r}, got {typ!r}')
@@ -203,7 +209,7 @@ class Comm:
         message = {
             'type': MessageType.module,
             'payload': {
-                'names': entries,
+                'entries': entries,
             }
         }
         self._send(message)
