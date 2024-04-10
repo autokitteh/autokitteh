@@ -50,7 +50,7 @@ func TestSaveSignelForeignKeys(t *testing.T) {
 	unexisting := "unexisting"
 
 	sig.ConnectionID = unexisting
-	assert.ErrorContains(t, f.gormdb.saveSignal(f.ctx, &sig), "FOREIGN KEY")
+	assertErrorContainsIgnoreCase(t, f.gormdb.saveSignal(f.ctx, &sig), "FOREIGN KEY")
 	sig.ConnectionID = conn.ConnectionID
 
 	// test with existing assets

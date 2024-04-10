@@ -68,15 +68,15 @@ func TestCreateTriggerForeignKeys(t *testing.T) {
 	unexisting := "unexisting"
 
 	tr.ProjectID = unexisting
-	assert.ErrorContains(t, createTrigger(f.ctx, f.gormdb, &tr), "FOREIGN KEY")
+	assertErrorContainsIgnoreCase(t, createTrigger(f.ctx, f.gormdb, &tr), "FOREIGN KEY")
 	tr.ProjectID = p.ProjectID
 
 	tr.EnvID = unexisting
-	assert.ErrorContains(t, createTrigger(f.ctx, f.gormdb, &tr), "FOREIGN KEY")
+	assertErrorContainsIgnoreCase(t, createTrigger(f.ctx, f.gormdb, &tr), "FOREIGN KEY")
 	tr.EnvID = env.EnvID
 
 	tr.ConnectionID = unexisting
-	assert.ErrorContains(t, createTrigger(f.ctx, f.gormdb, &tr), "FOREIGN KEY")
+	assertErrorContainsIgnoreCase(t, createTrigger(f.ctx, f.gormdb, &tr), "FOREIGN KEY")
 	tr.ConnectionID = conn.ConnectionID
 
 	// test with existing assets

@@ -42,7 +42,7 @@ func TestCreateEnvForeignKeys(t *testing.T) {
 	unexisting := "unexisting"
 
 	e.ProjectID = &unexisting
-	assert.ErrorContains(t, f.gormdb.createEnv(f.ctx, &e), "FOREIGN KEY")
+	assertErrorContainsIgnoreCase(t, f.gormdb.createEnv(f.ctx, &e), "FOREIGN KEY")
 
 	p := f.newProject()
 	e.ProjectID = &p.ProjectID
@@ -89,8 +89,7 @@ func TestDeleteEnvForeignKeys(t *testing.T) {
 	f.createDeploymentsAndAssert(t, d)
 
 	// cannot delete env, since deployment referencing it
-	err := f.gormdb.deleteEnv(f.ctx, e.EnvID)
-	assert.ErrorContains(t, err, "FOREIGN KEY")
+	assertErrorContainsIgnoreCase(t, f.gormdb.deleteEnv(f.ctx, e.EnvID), "FOREIGN KEY")
 
 	// delete deployment (referencing build), then env
 	assert.NoError(t, f.gormdb.deleteDeployment(f.ctx, d.DeploymentID))

@@ -21,7 +21,7 @@ func TestCreateEventRecordForeignKeys(t *testing.T) {
 
 	evt := f.newEvent()
 	er := f.newEventRecord()
-	assert.ErrorContains(t, f.gormdb.addEventRecord(f.ctx, &er), "FOREIGN KEY")
+	assertErrorContainsIgnoreCase(t, f.gormdb.addEventRecord(f.ctx, &er), "FOREIGN KEY")
 
 	f.createEventsAndAssert(t, evt)
 	// test createEventRecord

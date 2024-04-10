@@ -46,11 +46,11 @@ func TestCreateConnectionForeignKeys(t *testing.T) {
 
 	// FIXME: ENG-571
 	// c.IntegrationID = &unexisting
-	// assert.ErrorContains(t, f.gormdb.createConnection(f.ctx, &c), "FOREIGN KEY")
+	// assertErrorContainsIgnoreCase(t, f.gormdb.createConnection(f.ctx, &c), "FOREIGN KEY")
 	// c.IntegrationID = nil
 
 	c.ProjectID = &unexisting
-	assert.ErrorContains(t, f.gormdb.createConnection(f.ctx, &c), "FOREIGN KEY")
+	assertErrorContainsIgnoreCase(t, f.gormdb.createConnection(f.ctx, &c), "FOREIGN KEY")
 	c.ProjectID = nil
 
 	// test with existing assets

@@ -23,7 +23,7 @@ import (
 
 var now time.Time
 
-func assertErrorContainsNoCase(t *testing.T, err error, contains string) {
+func assertErrorContainsIgnoreCase(t *testing.T, err error, contains string) {
 	assert.Contains(t, strings.ToUpper(err.Error()), strings.ToUpper(contains))
 }
 
