@@ -23,6 +23,10 @@ import (
 
 var now time.Time
 
+func assertErrorContainsNoCase(t *testing.T, err error, contains string) {
+	assert.Contains(t, strings.ToUpper(err.Error()), strings.ToUpper(contains))
+}
+
 func init() {
 	now = time.Now().UTC() // save and compare times in UTC
 }
