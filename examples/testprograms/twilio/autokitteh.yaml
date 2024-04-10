@@ -1,0 +1,25 @@
+version: v1
+
+project:
+  name: twilio
+  vars:
+    - name: TWILIO_ACCOUNT_SID
+      is_secret: true
+    - name: TWILIO_AUTH_TOKEN
+      is_secret: true
+    - name: TWILIO_MSG_SERVICE_SID
+      is_secret: true
+  connections:
+    - name: twiliohttp
+      integration: http
+  triggers:
+    - name: send
+      connection: twiliohttp
+      call: main.star:on_http_send
+      data:
+        pattern: /twilio/send
+    - name: webhook
+      connection: twiliohttp
+      call: main.star:on_twilio_webhook
+      data:
+        pattern: /twilio/webhook

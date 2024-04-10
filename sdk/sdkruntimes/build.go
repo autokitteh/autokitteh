@@ -6,7 +6,10 @@ import (
 	"io/fs"
 	"net/url"
 
+	"github.com/yalue/merged_fs"
+
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
+	"go.autokitteh.dev/autokitteh/libs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkbuildfile"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -50,6 +53,8 @@ func Build(
 	}
 
 	var q []sdktypes.BuildRequirement
+
+	srcFS = merged_fs.NewMergedFS(srcFS, libs.Libs)
 
 	if err := fs.WalkDir(srcFS, ".", func(path string, de fs.DirEntry, err error) error {
 		if err != nil {
