@@ -69,6 +69,7 @@ $ ak version
 - gofumpt
 - gotestsum (used by Makefile intead of "go test" if detected)
 - jq (for advanced output formatting)
+- atlasgo (for new db migrations)
 
 ## Contact Us
 

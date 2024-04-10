@@ -20,6 +20,7 @@ type Config struct {
 	Debug bool   `koanf:"debug"`
 
 	SlowQueryThreshold time.Duration `koanf:"slow_query_threshold"`
+	AutoMigrate        bool          `koanf:"auto_migrate"`
 }
 
 func (c Config) Explicit() (*Config, error) {

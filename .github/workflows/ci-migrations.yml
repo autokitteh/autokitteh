@@ -1,0 +1,36 @@
+name: Validate Migration Files
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  validate:
+    name: Validate Migrations
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+      - uses: ariga/setup-atlas@v0
+        name: Setup Atlas
+      - name: Validate Sqlite Migrations
+        run: |
+          OUTPUT=$(atlas migrate diff --env sqlite)
+
+          if [[ $OUTPUT != "The migration directory is synced with the desired state, no changes to be made" ]]; then
+              echo "Migration files are not in sync"
+              echo $OUTPUT
+              exit 1
+          fi
+      - name: Validate Postgres Migrations
+        run: |
+          OUTPUT=$(atlas migrate diff --env postgres)
+
+          if [[ $OUTPUT != "The migration directory is synced with the desired state, no changes to be made" ]]; then
+              echo "Migration files are not in sync"
+              echo $OUTPUT
+              exit 1
+          fi
