@@ -15,6 +15,7 @@ import (
 // as described in https://pkg.go.dev/net/http#ServeMux.
 // Essentially, extract the content of any curly braces in the path.
 // If a key has a "..." suffix, it is removed.
+// If a key is "$", it is ignored.
 func extractPathKeys(s string) (keys []string, err error) {
 	var (
 		curr   strings.Builder
@@ -30,7 +31,9 @@ func extractPathKeys(s string) (keys []string, err error) {
 				if key == "" {
 					return nil, sdkerrors.NewInvalidArgumentError("empty key")
 				}
-				keys = append(keys, key)
+				if key != "$" {
+					keys = append(keys, key)
+				}
 				curr.Reset()
 				inside = false
 			}

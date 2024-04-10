@@ -20,6 +20,10 @@ def on_http_get():
         print(resp.body.text())
 
 def on_http_post(data):
+    addr = data.body.text()
+    if not addr:
+        addr = "main"
+
     def again(x):
         return x < 50
 
@@ -28,14 +32,17 @@ def on_http_post(data):
     print("zzzz1", n, time.now())
     sleep(1)
     n += 1000
+
+    print(catch(lambda: myhttp.post('http://localhost:9980/webtools/api/msgs/' + addr, raw_body="woof")))
+
     print("zzzz2", n, time.now())
     sleep(2)
+
     n += 1000
     print("zzzz3", n, time.now())
     sleep(3)
-    resp = myhttp.get("http://example.com")
-    print(resp)
-    print(resp.body.text())
+
+    print(catch(lambda: myhttp.post('http://localhost:9980/webtools/api/msgs/' + addr, raw_body="meow")))
 
 def on_http_test(data, event, trigger):
     print(data)
