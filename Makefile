@@ -145,3 +145,7 @@ proto:
 	make -C proto
 	$(GO) build -v $(GO_BUILD_OPTS) ./proto/...
 	$(GOTEST) ./proto
+
+.PHONY: pythonrt
+pythonrt:
+	make -C runtimes/pythonrt/
