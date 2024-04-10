@@ -85,8 +85,33 @@ We're using JSON over Unix domain socket, one JSON object per line.
 The reason do this is that `ak_runner.py` should not have any external dependencies outside the standard library.
 Once we introduce an external dependency, it will conflict with the user dependencies.
 
-The message payload is handled by Python and is opaque to autokitteh.
-Currently, it's base64 of a pickle. We're using pickle protocol 0 which is text based and mostly Python version agnostic.
+All messages have top level `type` and `payload`, the `payload` changes depending on the `type`.
+
+**run**
+
+- func_name: Function name (string)
+- event: Data payload (map)
+
+**module**
+
+- entries: List of exported functions (array of strings)
+
+**callback**
+
+- name: Function name (string)
+- args: Function args (array of strings)
+- kw: Mapping of name → value (both strings)
+- data: Pickled (protocol 0) tuple of `(func, args, kw)` encoded in base64
+
+**response**
+
+- value: Return type from Python (base64 of Python's pickle protocol 0)
+
+**done**
+
+- No fields
+
+
 ### Integration Testing
 
 If you run `ak` with a database, then run `make create-workflow` once. 
