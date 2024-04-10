@@ -2,6 +2,7 @@ package configuration
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -19,12 +20,12 @@ var whereCmd = common.StandardCommand(&cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cfg := xdg.ConfigHomeDir()
 		if strings.Contains(cfg, " ") {
-			cfg = `"` + cfg + `"`
+			cfg = strconv.Quote(cfg)
 		}
 
 		data := xdg.DataHomeDir()
 		if strings.Contains(data, " ") {
-			data = `"` + data + `"`
+			data = strconv.Quote(data)
 		}
 
 		fmt.Fprintln(cmd.OutOrStdout(), "Config home directory:", cfg)
