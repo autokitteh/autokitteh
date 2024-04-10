@@ -478,6 +478,7 @@ type DeploymentWithStats struct {
 	Running   uint32
 	Error     uint32
 	Completed uint32
+	Stopped   uint32
 }
 
 func ParseDeploymentWithSessionStats(d DeploymentWithStats) (sdktypes.Deployment, error) {
@@ -504,6 +505,10 @@ func ParseDeploymentWithSessionStats(d DeploymentWithStats) (sdktypes.Deployment
 			{
 				Count: d.Completed,
 				State: sdktypes.SessionStateTypeCompleted.ToProto(),
+			},
+			{
+				Count: d.Stopped,
+				State: sdktypes.SessionStateTypeStopped.ToProto(),
 			},
 		},
 	})

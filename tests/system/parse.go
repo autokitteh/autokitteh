@@ -16,11 +16,11 @@ const (
 )
 
 var (
-	steps = regexp.MustCompile(`^(ak|http|output|req|resp|return|wait)\s`)
+	steps = regexp.MustCompile(`^(ak|http|output|req|resp|return|wait|setenv)\s`)
 
 	// ak *
 	// http <get|post> *
-	actions = regexp.MustCompile(`^(ak|http\s+(get|post)|wait)\s+(.+)`)
+	actions = regexp.MustCompile(`^(ak|http\s+(get|post)|wait|setenv)\s+(.+)`)
 	// wait <duration> for session <session ID>
 	waitAction = regexp.MustCompile(`^wait\s+(.+)\s+for\s+session\s+(.+)`)
 

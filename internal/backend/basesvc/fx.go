@@ -59,3 +59,7 @@ func HookOnStop(lc fx.Lifecycle, f func(context.Context) error)  { lc.Append(fx.
 func HookSimpleOnStart(lc fx.Lifecycle, f func()) {
 	HookOnStart(lc, func(context.Context) error { f(); return nil })
 }
+
+func HookSimpleOnStop(lc fx.Lifecycle, f func()) {
+	HookOnStop(lc, func(context.Context) error { f(); return nil })
+}

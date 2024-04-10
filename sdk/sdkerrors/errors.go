@@ -3,7 +3,6 @@ package sdkerrors
 import (
 	"errors"
 	"fmt"
-	"strings"
 
 	"connectrpc.com/connect"
 	"github.com/bufbuild/protovalidate-go"
@@ -37,13 +36,10 @@ type ErrInvalidArgument struct {
 }
 
 func (e ErrInvalidArgument) Error() string {
-	var b strings.Builder
-	b.WriteString("invalid argument")
 	if e.Underlying != nil {
-		b.WriteString(": ")
-		b.WriteString(e.Underlying.Error())
+		return e.Underlying.Error()
 	}
-	return b.String()
+	return "invalid argument"
 }
 
 func (e ErrInvalidArgument) Unwrap() error { return e.Underlying }

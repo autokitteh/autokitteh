@@ -7,10 +7,8 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/manifest"
 )
 
-var dryRun bool
-
 var applyCmd = common.StandardCommand(&cobra.Command{
-	Use:     "apply [file] [--no-validate] [--from-scratch] [--dry-run]",
+	Use:     "apply [file] [--no-validate] [--from-scratch] [--quiet]",
 	Short:   "Apply project configuration from file or stdin",
 	Aliases: []string{"a"},
 	Args:    cobra.MaximumNArgs(1),
@@ -26,11 +24,10 @@ var applyCmd = common.StandardCommand(&cobra.Command{
 			return err
 		}
 
-		if !dryRun {
-			ctx, cancel := common.LimitedContext()
-			defer cancel()
+		ctx, cancel := common.LimitedContext()
+		defer cancel()
 
-			_, err := manifest.Execute(ctx, actions, common.Client(), logFunc(cmd, "exec"))
+		if _, err := manifest.Execute(ctx, actions, common.Client(), logFunc(cmd, "exec")); err != nil {
 			return err
 		}
 
@@ -40,7 +37,7 @@ var applyCmd = common.StandardCommand(&cobra.Command{
 
 func init() {
 	// Command-specific flags.
-	applyCmd.Flags().BoolVarP(&dryRun, "dry-run", "d", false, "only show plan, don't apply")
 	applyCmd.Flags().BoolVarP(&noValidate, "no-validate", "n", false, "do not validate")
 	applyCmd.Flags().BoolVarP(&fromScratch, "from-scratch", "s", false, "assume no existing setup")
+	applyCmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "only show errors, if any")
 }
