@@ -76,7 +76,7 @@ func NewOpts(cfg *basesvc.Config, ropts basesvc.RunOptions) []fx.Option {
 			})
 		}),
 		fx.Invoke(func(z *zap.Logger, mux *http.ServeMux) {
-			mux.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			mux.Handle("/{$}", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				fmt.Fprint(w, indexHTML)
 			}))
 		}),

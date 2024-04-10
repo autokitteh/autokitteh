@@ -1,0 +1,19 @@
+---
+version: v1
+
+project:
+  name: py_simple
+  connections:
+    - name: http_trigger
+      integration: http
+      token: event
+  triggers:
+    - connection: http_trigger
+      event_type: post
+      entrypoint: simple.py:greet
+  vars:
+    - name: USER
+      value: Garfield
+
+# Invoke the trigger with:
+#   curl -d HELLO http://localhost:9980/http/py_simple/event

@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"go.uber.org/zap"
+	"gorm.io/gorm"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -30,6 +31,8 @@ type DB interface {
 	Teardown(context.Context) error
 
 	Debug() DB
+
+	GormDB() *gorm.DB
 
 	// Begina a transaction.
 	Begin(context.Context) (Transaction, error)

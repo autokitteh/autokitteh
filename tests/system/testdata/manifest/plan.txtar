@@ -1,0 +1,185 @@
+ak manifest plan empty.yaml -qJ
+return code == 0
+output equals_json '[]'
+
+ak manifest plan a.yaml -qJ
+return code == 0
+output equals_json file a.json
+
+setenv TEST_SECRET_VAR1 "woof"
+setenv TEST_SECRET_VAR2_FROM_ENV "moo"
+
+ak manifest plan b.yaml -qJ
+return code == 0
+output equals_json file b.json
+
+ak manifest plan c.yaml -qJ
+return code == 1
+output equals file c.txt
+
+ak manifest plan d.yaml -q
+return code == 1
+output equals file d.txt
+
+ak manifest plan e.yaml -q
+return code == 1
+output equals file e.txt
+
+-- empty.yaml --
+version: v1
+
+-- a.yaml --
+version: v1
+
+project:
+  name: my_project
+  connections:
+    - name: my_connection
+      integration: http
+      token: my_path
+  triggers:
+    - name: get
+      connection: my_connection
+      event_type: get
+      entrypoint: my_program.star:on_http_get
+
+-- a.json --
+[
+  {
+    "type": "create_project",
+    "action": {
+      "key": "my_project",
+      "project": {
+        "name": "my_project"
+      }
+    }
+  },
+  {
+    "type": "create_connection",
+    "action": {
+      "key": "my_project/my_connection",
+      "connection": {
+        "integration_token": "my_path",
+        "name": "my_connection"
+      },
+      "project": "my_project",
+      "integration": "http"
+    }
+  },
+  {
+    "type": "create_trigger",
+    "action": {
+      "key": "my_project/default:my_project/my_connection/get",
+      "connection": "my_project/my_connection",
+      "env": "my_project/default",
+      "trigger": {
+        "name": "get",
+        "event_type": "get",
+        "code_location": {
+          "path": "my_program.star",
+          "name": "on_http_get"
+        }
+      }
+    }
+  }
+]
+
+-- b.yaml --
+version: v1
+
+project:
+  name: my_project
+  vars:
+    - name: TEST_VAR
+      value: "meow"
+    - name: TEST_SECRET_VAR1
+      is_secret: true
+    - name: TEST_SECRET_VAR2
+      is_secret: true
+      env_var: TEST_SECRET_VAR2_FROM_ENV
+
+-- b.json --
+[
+  {
+    "type": "create_project",
+    "action": {
+      "key": "my_project",
+      "project": {
+        "name": "my_project"
+      }
+    }
+  },
+  {
+    "type": "set_env_var",
+    "action": {
+      "key": "my_project/default/TEST_VAR",
+      "env": "my_project/default",
+      "env_var": {
+        "name": "TEST_VAR",
+        "value": "meow"
+      }
+    }
+  },
+  {
+    "type": "set_env_var",
+    "action": {
+      "key": "my_project/default/TEST_SECRET_VAR1",
+      "env": "my_project/default",
+      "env_var": {
+        "name": "TEST_SECRET_VAR1",
+        "value": "woof",
+        "is_secret": true
+      }
+    }
+  },
+  {
+    "type": "set_env_var",
+    "action": {
+      "key": "my_project/default/TEST_SECRET_VAR2",
+      "env": "my_project/default",
+      "env_var": {
+        "name": "TEST_SECRET_VAR2",
+        "value": "moo",
+        "is_secret": true
+      }
+    }
+  }
+]
+
+-- c.yaml --
+version: v1
+
+project:
+  name: my_project
+  vars:
+    - name: TEST_VAR
+      is_secret: true
+      value: "meow"
+
+-- c.txt --
+Error: project "my_project": envs: value cannot be specified for secrets
+
+-- d.yaml --
+version: v1
+
+project:
+  name: my_project
+  vars:
+    - name: TEST_VAR
+      is_secret: true
+      env_var: NOT_SET
+
+-- d.txt --
+Error: project "my_project": envs: env var "NOT_SET" is secret and not found in the environment
+
+-- e.yaml --
+version: v1
+
+project:
+  name: my_project
+  vars:
+    - name: TEST_VAR
+      is_secret: true
+
+-- e.txt --
+Error: project "my_project": envs: env var "TEST_VAR" is secret and not found in the environment

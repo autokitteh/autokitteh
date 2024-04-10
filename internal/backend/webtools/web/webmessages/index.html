@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Messages</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+  <div class="chat-container">
+    <form class="chat-input-form">
+      <div class="chat-input-path">
+        <span id="path-prefix" class="prefix">/http/{addr}/</span>
+        <input id="chat-input-path-actual" placeholder="Path" />
+      </div>
+
+      <input type="text" class="chat-input-body" required placeholder="Body" />
+      <button type="submit" class="button send-button">POST</button>
+    </form>
+
+    <div class="chat-messages"></div>
+
+    <button class="button clear-chat-button">Delete All</button>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+
+</html>

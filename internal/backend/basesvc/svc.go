@@ -45,6 +45,8 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	"go.autokitteh.dev/autokitteh/internal/backend/triggers"
 	"go.autokitteh.dev/autokitteh/internal/backend/triggersgrpcsvc"
+	"go.autokitteh.dev/autokitteh/internal/backend/usagereporter"
+	"go.autokitteh.dev/autokitteh/internal/backend/webtools"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkruntimessvc"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -124,12 +126,26 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		Component("triggers", configset.Empty, fx.Provide(triggers.New)),
 		Component("oauth", configset.Empty, fx.Provide(oauth.New)),
 		Component("runtimes", configset.Empty, fx.Provide(runtimes.New)),
+		Component("usagereporter", usagereporter.Configs, fx.Provide(usagereporter.New),
+			fx.Invoke(func(lc fx.Lifecycle, u usagereporter.UsageReporter) {
+				HookSimpleOnStart(lc, u.Start)
+				HookSimpleOnStop(lc, u.Stop)
+			})),
 		Component(
 			"dispatcher",
 			configset.Empty,
 			fx.Provide(dispatcher.New),
 			fx.Provide(func(d dispatcher.Dispatcher) sdkservices.Dispatcher { return d }),
 			fx.Invoke(func(lc fx.Lifecycle, d dispatcher.Dispatcher) { HookOnStart(lc, d.Start) }),
+		),
+		Component(
+			"webtools",
+			webtools.Configs,
+			fx.Provide(webtools.New),
+			fx.Invoke(func(lc fx.Lifecycle, mux *http.ServeMux, t webtools.Svc) {
+				t.Init(mux)
+				HookOnStart(lc, t.Setup)
+			}),
 		),
 
 		fx.Provide(func(s fxServices) sdkservices.Services { return &s }),

@@ -146,17 +146,20 @@ func runTestSteps(t *testing.T, steps []string, akPath, akAddr string) {
 				t.Fatalf("error: %v", err)
 			}
 
-			switch v := result.(type) {
-			case *akResult:
-				ak = v
-			case *httpRequest:
-				pendingReq = v
-			case string:
-				t.Log(v)
-			default:
-				t.Errorf("line %d: %s", i+1, step)
-				t.Fatalf("error: unhandled action result type: %T", v)
+			if result != nil {
+				switch v := result.(type) {
+				case *akResult:
+					ak = v
+				case *httpRequest:
+					pendingReq = v
+				case string:
+					t.Log(v)
+				default:
+					t.Errorf("line %d: %s", i+1, step)
+					t.Fatalf("error: unhandled action result type: %T", v)
+				}
 			}
+
 			continue
 		}
 

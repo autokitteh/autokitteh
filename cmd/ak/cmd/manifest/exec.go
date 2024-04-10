@@ -11,7 +11,7 @@ import (
 )
 
 var execCmd = common.StandardCommand(&cobra.Command{
-	Use:     "execute [file]",
+	Use:     "execute [file] [--quiet]",
 	Short:   "Execute plan output from file or stdin",
 	Aliases: []string{"exec", "x"},
 	Args:    cobra.MaximumNArgs(1),
@@ -35,3 +35,7 @@ var execCmd = common.StandardCommand(&cobra.Command{
 		return err
 	},
 })
+
+func init() {
+	execCmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "only show errors, if any")
+}

@@ -65,7 +65,7 @@ bin/ak:
 .PHONY: build
 build:
 	mkdir -p $(OUTDIR)
-	$(GO) build -v $(GO_BUILD_OPTS) ./...
+	$(GO) build $(GO_BUILD_OPTS) ./...
 
 .PHONY: debug
 debug:
@@ -145,3 +145,7 @@ proto:
 	make -C proto
 	$(GO) build -v $(GO_BUILD_OPTS) ./proto/...
 	$(GOTEST) ./proto
+
+.PHONY: pythonrt
+pythonrt:
+	make -C runtimes/pythonrt/
