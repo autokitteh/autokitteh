@@ -10,6 +10,7 @@ import (
 	"golang.org/x/exp/maps"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/configset"
+	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/xdg"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 )
@@ -26,18 +27,19 @@ var Configs = configset.Set[Config]{
 	},
 }
 
-func New(l *zap.Logger, cfg *Config) (sdkservices.Secrets, error) {
+func New(l *zap.Logger, db db.DB, cfg *Config) (sdkservices.Secrets, error) {
 	var impl Secrets
 	var err error
 
 	switch cfg.Type {
 	case "aws":
 		impl, err = NewAWSSecrets(l, cfg)
-	// TODO(ENG-508): case "db"
+	case "file":
+		impl, err = NewFileSecrets(l, xdg.DataHomeDir())
 	case "vault":
 		impl, err = NewVaultSecrets(l, cfg)
 	default:
-		impl, err = NewFileSecrets(l, xdg.DataHomeDir())
+		impl, err = NewDatabaseSecrets(l, db)
 	}
 
 	if err != nil {

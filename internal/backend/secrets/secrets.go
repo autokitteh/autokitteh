@@ -2,7 +2,7 @@ package secrets
 
 import (
 	"context"
-	"fmt"
+	"path"
 )
 
 const (
@@ -38,5 +38,5 @@ type Secrets interface {
 }
 
 func secretPath(prefix, name string) string {
-	return fmt.Sprintf("%s/%s/%s", basePath, prefix, name)
+	return path.Join(basePath, prefix, name)
 }
