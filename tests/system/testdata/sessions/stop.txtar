@@ -26,6 +26,22 @@ ak sessions log ses_00000000000000000000000004 --skip -1 --no-timestamps -j
 return code == 0
 output equals_json file last.json
 
+ak deploy --manifest test.yaml --file test.star
+return code == 0
+
+ak sessions start --deployment-id dep_0000000000000000000000000a --entrypoint test.star:test
+return code == 0
+
+ak sessions watch ses_0000000000000000000000000b --no-timestamps --end-state RUNNING --timeout 7s
+return code == 0
+
+ak sessions stop ses_0000000000000000000000000b --reason test
+return code == 0
+
+ak sessions log ses_0000000000000000000000000b --no-timestamps -j
+return code == 0
+output equals file test.txt
+
 -- main.star --
 def main():
   sleep(20)
@@ -39,3 +55,30 @@ def main():
     }
   }
 }
+
+-- test.yaml --
+version: v1
+
+project:
+  name: test
+  connections:
+    - name: mytest
+      integration: test
+
+-- test.star --
+load("@test", "mytest")
+
+def test():
+  print("started")
+  mytest.freeze(10, True)
+  print("finished")
+
+-- test.txt --
+{"state":{"created":{}}}
+{"state":{"running":{"run_id":"run_0000000000000000000000000c"}}}
+{"state":{"running":{"run_id":"run_0000000000000000000000000c","call":{"function":{"executor_id":"run_0000000000000000000000000c","name":"test","desc":{},"data":"dGVzdCMx"}}}}}
+{"print":{"text":"started"}}
+{"call_spec":{"function":{"function":{"executor_id":"int_00000000008c093f7e9fccbf69","name":"freeze","desc":{"input":[{"name":"duration","optional":true},{"name":"allow_cancel","optional":true}]}}},"args":[{"integer":{"v":"10"}},{"boolean":{"v":true}}],"seq":1}}
+{"call_attempt_start":{}}
+{"stop_request":{"reason":"test"}}
+{"state":{"stopped":{"reason":"test"}}}

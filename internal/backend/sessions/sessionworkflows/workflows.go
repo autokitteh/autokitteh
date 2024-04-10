@@ -182,6 +182,11 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 			ws.stopped(params.SessionID)
 		} else {
 			ws.errored(params.SessionID, err, prints)
+
+			if _, ok := sdktypes.FromError(err); ok {
+				// User level error, no need to indicate the workflow as errored.
+				err = nil
+			}
 		}
 	}
 

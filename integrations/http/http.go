@@ -66,7 +66,7 @@ func request(method string) sdkexecutor.Function {
 		}
 
 		// Construct and send HTTP request.
-		req, err := http.NewRequest(method, rawURL, nil)
+		req, err := http.NewRequestWithContext(ctx, method, rawURL, nil)
 		if err != nil {
 			return sdktypes.InvalidValue, err
 		}

@@ -120,6 +120,15 @@ func NewCallSpecSessionLogRecord(s SessionCallSpec) SessionLogRecord {
 func (r SessionLogRecord) WithoutTimestamp() SessionLogRecord {
 	m := r.read()
 	m.T = nil
+
+	if m.CallAttemptStart != nil {
+		m.CallAttemptStart.StartedAt = nil
+	}
+
+	if m.CallAttemptComplete != nil {
+		m.CallAttemptComplete.CompletedAt = nil
+	}
+
 	return forceFromProto[SessionLogRecord](m)
 }
 
