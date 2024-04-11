@@ -13,7 +13,7 @@ var integrationID = sdktypes.IntegrationIDFromName("grpc")
 var description = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
 	IntegrationId: integrationID.String(),
 	UniqueName:    "grpc",
-	DisplayName:   "GRPC",
+	DisplayName:   "gRPC",
 	LogoUrl:       "/static/images/grpc.png",
 }))
 
