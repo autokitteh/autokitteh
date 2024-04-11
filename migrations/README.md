@@ -7,7 +7,7 @@ We use [Atlas](http://atlasgo.io/) to generate migrations based on GORM's models
 - Run `make generate-migrations`, give a meaningful name to the migration (i.e. `add-created-at-to-projects`)
 
 ### Resolving conflicts in migrations
-In case there are migrations created on two different branches there would be a conflict which should be resolved
+In case there are migrations created on two different branches there would be a conflict which should be resolved.
 
 First branch merging to main would work fine. Second branch would have to rebase from main and run ```atlas migrate rebase <versions>``` from the problematic versions
 . Consule [Atlas Docs](https://atlasgo.io/versioned/apply) for further explanations.
