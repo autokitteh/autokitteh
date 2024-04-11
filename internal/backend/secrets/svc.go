@@ -34,12 +34,14 @@ func New(l *zap.Logger, db db.DB, cfg *Config) (sdkservices.Secrets, error) {
 	switch cfg.Type {
 	case "aws":
 		impl, err = NewAWSSecrets(l, cfg)
+	case "database", "db", "":
+		impl, err = NewDatabaseSecrets(l, db)
 	case "file":
 		impl, err = NewFileSecrets(l, xdg.DataHomeDir())
 	case "vault":
 		impl, err = NewVaultSecrets(l, cfg)
 	default:
-		impl, err = NewDatabaseSecrets(l, db)
+		err = fmt.Errorf("unrecognized secrets manager: %s", cfg.Type)
 	}
 
 	if err != nil {
