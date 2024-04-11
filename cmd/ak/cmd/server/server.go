@@ -26,8 +26,8 @@ func Remove(parentCmd *cobra.Command) {
 
 func init() {
 	// Subcommands.
-	serverCmd.AddCommand(setupCmd)
 	serverCmd.AddCommand(migrateCmd)
+	serverCmd.AddCommand(setupCmd)
 	serverCmd.AddCommand(teardownCmd)
 
 	serverCmd.PersistentFlags().StringVarP(&mode, "mode", "m", "", "run mode")
