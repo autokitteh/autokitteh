@@ -124,6 +124,7 @@ func setEnv(args string) error {
 		}
 	}
 
+	// TODO: Use t.Setenv() instead of os.Setenv().
 	if err := os.Setenv(n, v); err != nil {
 		return fmt.Errorf("failed to set environment variable: %w", err)
 	}
