@@ -1,6 +1,6 @@
 # Database Migrations
 
-We use atalsgo (http://atlasgo.io/) to generate migrations based on gorm's models
+We use [Atlas](http://atlasgo.io/) to generate migrations based on GORM's models.
 
 ## How to generate a new migration
 - Update the db models that you need
