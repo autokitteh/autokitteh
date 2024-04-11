@@ -9,6 +9,9 @@ import (
 type Config struct {
 	Temporal TemporalConfig `koanf:"temporal"`
 	Workflow WorkflowConfig `koanf:"workflow"`
+
+	// Enable internal test functionality.
+	Test bool `koanf:"test"`
 }
 
 type TemporalConfig struct {

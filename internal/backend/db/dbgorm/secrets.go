@@ -23,13 +23,17 @@ func (db *gormdb) SetSecret(ctx context.Context, name string, data map[string]st
 }
 
 func (db *gormdb) GetSecret(ctx context.Context, name string) (map[string]string, error) {
-	// Why Take() and not First()? We don't care about order because at
-	// most a single record exists (we retrieve based on the primary key).
-	// Also, if the primary key isn't found, Take() returns an error
+	// Why not First()? We don't care about order because at most a single
+	// record exists (we retrieve based on the primary key). Why not Take()?
+	// If the primary key isn't found, Take() returns ErrRecordNotFound.
 	s := scheme.Secret{}
-	result := db.db.WithContext(ctx).Take(&s, "name = ?", name)
+	result := db.db.WithContext(ctx).Limit(1).Find(&s, "name = ?", name)
 	if result.Error != nil {
 		return nil, translateError(result.Error)
+	}
+
+	if result.RowsAffected == 0 {
+		return nil, nil
 	}
 
 	data := make(map[string]string)
@@ -41,11 +45,15 @@ func (db *gormdb) GetSecret(ctx context.Context, name string) (map[string]string
 }
 
 func (db *gormdb) AppendSecret(ctx context.Context, name, token string) error {
-	// No need to combine both queries into a single transaction,
-	// because only the last one affects the data.
+	// TODO(ENG-508): Combine into a single transaction, to prevent race conditions.
+	// See also https://gorm.io/docs/create.html#Upsert-On-Conflict.
 	data, err := db.GetSecret(ctx, name)
 	if err != nil {
 		return err
+	}
+
+	if data == nil {
+		data = make(map[string]string)
 	}
 
 	data[token] = time.Now().UTC().Format(time.RFC3339)
@@ -57,6 +65,14 @@ func (db *gormdb) AppendSecret(ctx context.Context, name, token string) error {
 	result := db.db.WithContext(ctx).Model(&scheme.Secret{}).Where("name = ?", name).Update("data", jsonData)
 	if result.Error != nil {
 		return translateError(result.Error)
+	}
+
+	if result.RowsAffected == 0 {
+		s := scheme.Secret{Name: name, Data: jsonData}
+		result = db.db.WithContext(ctx).Create(&s)
+		if result.Error != nil {
+			return translateError(result.Error)
+		}
 	}
 	return nil
 }

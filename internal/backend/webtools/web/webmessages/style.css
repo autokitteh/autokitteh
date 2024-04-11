@@ -6,6 +6,16 @@ body {
   margin: 1em 1em 1em 1em;
 }
 
+.header {
+  margin: 1em 1em 1em 1em;
+  padding: 5px;
+  border-radius: 0.5em;
+
+  text-align: center;
+  background: gray;
+  color: white;
+}
+
 .button {
   border: none;
   padding: 0.625em;
