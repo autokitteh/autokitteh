@@ -13,7 +13,7 @@ First branch merging to main would work fine. Second branch would have to rebase
 . Consule [Atlas Docs](https://atlasgo.io/versioned/apply) for further explanations.
 
 ## Running migrations
-if ```AK_DB__AUTO_MIGRATE=true``` migrations would run automatically first time you start the server
+if you set `AK_DB__AUTO_MIGRATE=true` then migrations will run automatically on the first time you start the server.
 
 Otherwise, starting the server will fail if there are pending migrations, so you should run `ak server migrate` explicitly to run them.
 
