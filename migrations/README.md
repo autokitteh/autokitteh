@@ -15,9 +15,7 @@ First branch merging to main would work fine. Second branch would have to rebase
 ## Running migrations
 if ```AK_DB__AUTO_MIGRATE=true``` migrations would run automatically first time you start the server
 
-
-otherwise, starting the server would fail if there are pending migrations and you should run ```ak server migrate``` explicitly to run them
-
+Otherwise, starting the server will fail if there are pending migrations, so you should run `ak server migrate` explicitly to run them.
 
 ## CI Verification
 On each PR where the GORM scheme file was changed, a CI job will run to verify the migration files are synced to the GORM model. If the files are synced, the job will pass, otherwise the job will fail and the developer has to generate the relevant migrations and add them to the PR.
