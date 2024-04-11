@@ -44,7 +44,7 @@ func Start(l *zap.Logger, mux *http.ServeMux, s sdkservices.Secrets, d sdkservic
 	h := handler{logger: l, secrets: s, dispatcher: d, scope: "http"}
 	mux.Handle(routePrefix("{ns}")+"*", h)
 
-	// Save new autokitteh connections with user-submitted Twilio secrets.
+	// Save new autokitteh connections with user-submitted HTTP secrets.
 	mux.Handle(uiPath, http.FileServer(http.FS(static.HTTPWebContent)))
 	mux.HandleFunc(savePath, h.handleAuth)
 }
