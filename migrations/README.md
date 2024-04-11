@@ -9,8 +9,7 @@ We use [Atlas](http://atlasgo.io/) to generate migrations based on GORM's models
 ### Resolving conflicts in migrations
 In case there are migrations created on two different branches there would be a conflict which should be resolved.
 
-First branch merging to main would work fine. Second branch would have to rebase from main and run ```atlas migrate rebase <versions>``` from the problematic versions
-. Consule [Atlas Docs](https://atlasgo.io/versioned/apply) for further explanations.
+The first branch merging to `main` should work fine. The second branch will have to rebase from `main` and run `atlas migrate rebase <versions>` from the problematic versions. Consult the [Atlas documentation](https://atlasgo.io/versioned/apply) for further explanations.
 
 ## Running migrations
 if you set `AK_DB__AUTO_MIGRATE=true` then migrations will run automatically on the first time you start the server.
