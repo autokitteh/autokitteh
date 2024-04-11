@@ -194,7 +194,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 				wrapped := http.NewServeMux()
 
 				wrap := func(h http.Handler) http.Handler {
-					// TODO: Wrap the handler with auth middleware.
+					// TODO(ENG-3): Wrap the handler with auth middleware.
 					return h
 				}
 
