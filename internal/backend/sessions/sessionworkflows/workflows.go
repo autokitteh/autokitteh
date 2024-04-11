@@ -178,7 +178,10 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 	}
 
 	if err != nil {
+		z := z.With(zap.Error(err))
+
 		if errors.Is(err, workflow.ErrCanceled) || errors.Is(wctx.Err(), workflow.ErrCanceled) {
+			z.Debug("workflow canceled")
 			ws.stopped(params.SessionID)
 		} else {
 			ws.errored(params.SessionID, err, prints)
@@ -186,6 +189,10 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 			if _, ok := sdktypes.FromError(err); ok {
 				// User level error, no need to indicate the workflow as errored.
 				err = nil
+
+				z.Debug("program error")
+			} else {
+				z.Error("workflow error")
 			}
 		}
 	}
