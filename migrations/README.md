@@ -3,7 +3,7 @@
 We use [Atlas](http://atlasgo.io/) to generate migrations based on GORM's models.
 
 ## How to generate a new migration
-- Update the db models that you need
+- Update the DB models that you need
 - Run `make generate-migrations`, give a meaningful name to the migration (i.e. `add-created-at-to-projects`)
 
 ### Resolving conflicts in migrations
