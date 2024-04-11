@@ -2,15 +2,19 @@
 package gormkitteh
 
 import (
+	"errors"
 	"strings"
 	"time"
 )
+
+const RequireExplicitDSNType = "require"
 
 type Config struct {
 	// If `Type` is empty, `DSN` must be in the form of "type:actual_dsn".
 	// If both `Type` and `DSN` are empty, `Type` will be considered "sqlite"
 	// with an empty DSN, which will make sqlite use a temporary database
 	// (see https://www.sqlite.org/inmemorydb.html).
+	// If `Type` is "require" (RequireExplicitDSNType), `DSN` must be specified.
 	Type  string `koanf:"type"`
 	DSN   string `koanf:"dsn"`
 	Debug bool   `koanf:"debug"`
@@ -19,6 +23,14 @@ type Config struct {
 }
 
 func (c Config) Explicit() (*Config, error) {
+	if c.Type == RequireExplicitDSNType {
+		if c.DSN == "" {
+			return nil, errors.New("db config must be specified")
+		}
+
+		c.Type = ""
+	}
+
 	if c.Type == "" {
 		if c.DSN == "" {
 			// With empty DSN, assume type is "sqlite". Will make sqlite

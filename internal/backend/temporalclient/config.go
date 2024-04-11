@@ -1,6 +1,7 @@
 package temporalclient
 
 import (
+	"path/filepath"
 	"time"
 
 	"go.temporal.io/sdk/testsuite"
@@ -8,6 +9,7 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/configset"
+	"go.autokitteh.dev/autokitteh/internal/xdg"
 )
 
 type tlsConfig struct {
@@ -52,8 +54,9 @@ var (
 			Monitor:               defaultMonitorConfig,
 			StartDevServerIfNotUp: true,
 			DevServer: testsuite.DevServerOptions{
-				LogLevel: zapcore.WarnLevel.String(),
-				EnableUI: true,
+				LogLevel:   zapcore.WarnLevel.String(),
+				EnableUI:   true,
+				DBFilename: filepath.Join(xdg.DataHomeDir(), "temporal_dev.sqlite"),
 			},
 		},
 		Test: &Config{
