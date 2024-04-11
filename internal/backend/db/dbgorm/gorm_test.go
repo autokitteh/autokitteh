@@ -28,7 +28,8 @@ func assertErrorContainsIgnoreCase(t *testing.T, err error, contains string) {
 }
 
 func init() {
-	now = time.Now().UTC() // save and compare times in UTC
+	now = time.Now().UTC()               // save and compare times in UTC
+	now = now.Truncate(time.Microsecond) // PG default resolution is microseconds
 }
 
 type dbFixture struct {
