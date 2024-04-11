@@ -20,4 +20,4 @@ otherwise, starting the server would fail if there are pending migrations and yo
 
 
 ## CI Verification
-On each PR where gorm scheme file was changed, a CI job would run to verify the migration files are synced to the gorm model, if the files are synced, job would pass, otherwise, the job fail and the developer has to generate the relevant migrations and add them to the PR
+On each PR where the GORM scheme file was changed, a CI job will run to verify the migration files are synced to the GORM model. If the files are synced, the job will pass, otherwise the job will fail and the developer has to generate the relevant migrations and add them to the PR.
