@@ -18,9 +18,7 @@ from importlib.machinery import SourceFileLoader
 from inspect import isbuiltin
 from os import mkdir
 from pathlib import Path
-from queue import Queue
 from socket import AF_UNIX, SOCK_STREAM, socket
-from threading import Thread
 
 # TODO(ENG-552): Log to AutoKitteh
 logging.basicConfig(
@@ -46,6 +44,9 @@ BUILTIN = {v for v in dir(builtins) if callable(getattr(builtins, v))}
 
 class Transformer(ast.NodeTransformer):
     """Replace 'fn(a, b)' with '_ak_call(fn, a, b)'."""
+    def __init__(self, file_name):
+        self.file_name = file_name
+
     def visit_Call(self, node):
         name = name_of(node.func)
         # ast.Transformer does not recurse to args
@@ -54,7 +55,7 @@ class Transformer(ast.NodeTransformer):
         if not name or name in BUILTIN:
             return node
 
-        logging.info('patching %s with action', name)
+        logging.info('%s:%d: patching %s with action', self.file_name, node.lineno, name)
         call = ast.Call(
             func=ast.Name(id=ACTION_NAME, ctx=ast.Load()),
             args=[node.func] + node.args,
@@ -82,7 +83,7 @@ class AKLoader(Loader):
             raise ImportError(f'cannot read {self.module_name!r} - {err}')
 
         mod = ast.parse(src, self.file_name, 'exec')
-        trans = Transformer()
+        trans = Transformer(self.file_name)
         out = trans.visit(mod)
         ast.fix_missing_locations(out)
 
@@ -150,13 +151,93 @@ def run_code(mod, entry_point, data):
     return fn(data)
 
 
+class MessageType:
+    callback = 'callback'
+    done = 'done'
+    module = 'module'
+    response = 'response'
+    run = 'run'
+    
+
+class Comm:
+    def __init__(self, sock):
+        self.sock = sock
+        self.rdr = sock.makefile('r')
+
+    def _send(self, message):
+        data = json.dumps(message) + '\n'
+        self.sock.sendall(data.encode('utf-8'))
+
+    def _recv(self, expected_type):
+        data = self.rdr.readline()
+        if not data:
+            raise ValueError('connection closed')
+
+        message = json.loads(data)
+        if (typ := message['type']) != expected_type:
+            raise ValueError(f'message type: expected {expected_type!r}, got {typ!r}')
+        return message
+
+    def _picklize(self, data):
+        data = pickle.dumps(data, protocol=0)
+        return b64encode(data).decode('utf-8')
+
+    def send_activity(self, fn, args, kw):
+        args = [str(a) for a in args]
+        kw = {k: str(v) for k, v in kw.items()}
+        data = (fn, args, kw)
+        message = {
+            'type': MessageType.callback,
+            'payload': {
+                'name': fn.__name__,
+                'args': args,
+                'kw': kw or {},
+                'data': self._picklize(data),
+            },
+        }
+        self._send(message)
+
+    def receive_activity(self):
+        message = self._recv(MessageType.callback)
+
+        payload = message['payload']
+        data = b64decode(payload['data'])
+        payload['data'] = pickle.loads(data)
+        return payload
+
+    def send_exported(self, entries):
+        message = {
+            'type': MessageType.module,
+            'payload': {
+                'entries': entries,
+            }
+        }
+        self._send(message)
+
+    def send_done(self):
+        message = {'type': MessageType.done}
+        self._send(message)
+
+    def receive_run(self):
+        message = self._recv(MessageType.run)
+        return message['payload']
+
+    def send_response(self, value):
+        message = {
+            'type': MessageType.response,
+            'payload': {
+                'value': self._picklize(value),
+            }
+        }
+        self._send(message)
+
+
 class AKCall:
     """Callable wrapping functions with activities."""
-    def __init__(self, module_name):
+    def __init__(self, module_name, comm: Comm):
         self.module_name = module_name
         self.in_activity = False
-        # Queue for passing requests from execution thread to main working with Go.
-        self.activity_request, self.activity_response = Queue(), Queue()
+        self.comm = comm
 
     def ignore(self, fn):
         if isbuiltin(fn):
@@ -168,28 +249,17 @@ class AKCall:
         return False
 
     def __call__(self, func, *args, **kw):
+        logging.info('ACTION: calling %s (args=%r, kw=%r)', func.__name__, args, kw)
         if self.in_activity or self.ignore(func):
             return func(*args, **kw)
 
-        logging.info('ACTION: calling %s (args=%r, kw=%r)', func.__name__, args, kw)
         self.in_activity = True
-        request = (func, args, kw)
-        self.activity_request.put(request)
-        response = self.activity_response.get()
-        self.in_activity = False
-        return response
-
-
-class RunWrapper:
-    """Wrapper that captures the module so we can access it outside the running
-    thread. And also send sentinel to activity_request queue to signal we're done."""
-    def __init__(self, mod, queue):
-        self.mod = mod
-        self.queue = queue
-
-    def run(self, func_name, data):
-        run_code(self.mod, func_name, data)
-        self.queue.put(None)  # Signal we're done
+        self.comm.send_activity(func, args, kw)
+        message = self.comm.receive_activity()
+        fn, args, kw = message['data']
+        value = fn(*args, **kw)
+        self.comm.send_response(value)
+        return value
 
 
 def extract_code(tar_path):
@@ -284,59 +354,30 @@ if __name__ == '__main__':
 
     sock = socket(AF_UNIX, SOCK_STREAM)
     sock.connect(args.sock)
-    rdr = sock.makefile('r')
     logging.info('connected to %r', args.sock)
 
     logging.info('loading %r', module_name)
-    ak_call = AKCall(module_name)
+    comm = Comm(sock)
+    ak_call = AKCall(module_name, comm)
     mod = load_code(code_dir, ak_call, module_name)
     MODULE_NAME = mod.__name__
     entries = module_entries(mod)
-    event = encode_msg('module', '', json.dumps(entries))
-    sock.sendall(event)
+    comm.send_exported(entries)
 
     # Initial call
-    request = decode_msg(rdr.readline())
-    if request['type'] != 'run':
-        logging.error('bad initial request: %r', request)
-        raise SystemExit(1)
-
-    func_name = request.get('name')
+    message = comm.receive_run()
+    func_name = message.get('func_name')
     if func_name is None:
-        logging.error('no function name in %r', request)
+        logging.error('no function name in %r', message)
         raise SystemExit(1)
 
-    event = request.get('payload')
-    event = {} if event is None else json.loads(event)
+    fn = getattr(mod, func_name, None)
+    if fn is None:
+        logging.error('%r has no function %r', module_name, func_name)
+        raise SystemExit(1)
+        
+    event = message.get('event')
+    event = {} if event is None else event
 
-    rw = RunWrapper(mod, ak_call.activity_request)
-    Thread(target=rw.run, args=(func_name, event), daemon=True).start()
-    logging.info('execution thread started, func=%r, event=%r', func_name, event)
-
-    while True:
-        request = ak_call.activity_request.get()
-        if request is None:  # Done
-            break
-
-        # Use protocol 0 since it's less Python version specific
-        event = pickle.dumps(request, protocol=0)
-        fn, args, kw = request
-        args = [str(a) for a in args]
-        kw = {k: str(v) for k, v in kw.items()}
-        msg = encode_msg('activity', '', event, fn.__name__, args, kw)
-        logging.info('sending activity request')
-        sock.sendall(msg)
-        event = rdr.readline()
-        logging.info('got activity response')
-        resp = decode_msg(event)
-        logging.info('activity response: %r', resp)
-        fn, args, kw = pickle.loads(resp['payload'])
-        logging.info('activity request: %s args=%r, kw=%r', fn, args, kw)
-        out = fn(*args, **kw)
-        event = pickle.dumps(out, protocol=0)
-        msg = encode_msg('response', '', event)
-        sock.sendall(msg)
-        ak_call.activity_response.put(out)
-
-    msg = encode_msg('done', '', '')
-    sock.sendall(msg)
+    fn(event)
+    comm.send_done()

@@ -2,6 +2,7 @@ import json
 import sys
 import types
 from pathlib import Path
+from socket import socket, socketpair
 from subprocess import run
 from threading import Thread
 
@@ -22,7 +23,7 @@ def test_load_code():
             if fn.__module__ != mod_name:
                 calls.append((fn, args, kw))
             return fn(*args, **kw)
-    ak_call = MockCall(mod_name)
+    ak_call = MockCall(mod_name, ak_runner.Comm(socket()))
 
     mod = ak_runner.load_code('testdata', ak_call, mod_name)
     fn = getattr(mod, 'parse', None)
@@ -49,26 +50,91 @@ def test_module_entries():
     names = ['a', 'b']
     for name in names:
         setattr(mod, name, lambda: None)
-    mod.c = 7
+    setattr(mod, 'c', 7)  # Not a callable
 
     entries = ak_runner.module_entries(mod)
     assert names == sorted(entries)
 
+# Used by test_nested, must be global to be pickled.
+def ak(fn): pass
+
+val = 7
+def outer():
+    return ak(inner)
+
+def inner():
+    return val
+
 
 def test_nested():
-    ak = ak_runner.AKCall('mod1')
-    val = 7
+    global ak
 
-    def outer():
-        return ak(inner)
+    go, py = socketpair()
+    rdr = go.makefile('r')
+    comm = ak_runner.Comm(py)
 
-    def inner():
-        return val
+    ak = ak_runner.AKCall('mod1', comm)
 
-    thr = Thread(target=ak, args=(outer,), daemon=True)
+    def run():
+        outer()
+        comm.send_done()
+
+    thr = Thread(target=run, daemon=True)
     thr.start()
-    fn, args, kw = ak.activity_request.get()
-    out = fn(*args, **kw)
-    assert val == out
-    ak.activity_response.put(out)
-    thr.join(0.1)  # Will raise if ak still waits
+
+    n = 0
+    while True:
+        data = rdr.readline()
+        request = json.loads(data)
+        if request['type'] == 'done':
+            break
+
+        n += 1
+        go.sendall((data + '\n').encode('utf-8'))
+        rdr.readline()  # response
+
+    assert n == 1
+
+
+def sub(a, b, *, verbose=False):
+    if verbose:
+        print(f'{a} - {b}')
+    return a - b
+
+
+def test_comm():
+    go, py = socketpair()
+
+    # Callback
+    comm = ak_runner.Comm(py)
+    args, kw = (1, 7), {'verbose': False}
+    comm.send_activity(sub, args, kw)
+    data = go.recv(2048)
+    assert data, 'no data'
+
+    go.sendall(data)
+    message = comm.receive_activity()
+    assert message['name'] == sub.__name__
+    assert message['args'] == [str(v) for v in args]
+    assert message['kw'] == {k: str(v) for k, v in kw.items()}
+    fn, args, kw = message['data']
+    assert fn == sub
+    assert args == args
+    assert kw == kw
+
+    # Module
+    names = ['a', 'c', 'f']
+    comm.send_exported(names)
+    data = go.recv(2048)
+    assert data, 'no data'
+    message = json.loads(data)
+    assert message['type'] == ak_runner.MessageType.module
+    assert message['payload']['entries'] == names
+
+
+    # Done
+    comm.send_done()
+    data = go.recv(2048)
+    assert data, 'no data'
+    message = json.loads(data)
+    assert message['type'] == ak_runner.MessageType.done
