@@ -1,4 +1,4 @@
-# Migrations
+# Database Migrations
 
 We use atalsgo (http://atlasgo.io/) to generate migrations based on gorm's models
 
