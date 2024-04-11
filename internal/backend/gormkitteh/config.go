@@ -20,9 +20,9 @@ type Config struct {
 	Debug bool   `koanf:"debug"`
 
 	SlowQueryThreshold time.Duration `koanf:"slow_query_threshold"`
-	// If true, db migrations would run automatically
-	// If false, server would fail to start if a migration is required
-	// and user has to run 'ak server migrate' explicitly
+	// If true, DB migrations will run automatically.
+	// If false, the server will fail to start if a migration is required,
+	// and the user has to run 'ak server migrate' explicitly.
 	AutoMigrate bool `koanf:"auto_migrate"`
 }
 
