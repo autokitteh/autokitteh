@@ -20,7 +20,10 @@ type Config struct {
 	Debug bool   `koanf:"debug"`
 
 	SlowQueryThreshold time.Duration `koanf:"slow_query_threshold"`
-	AutoMigrate        bool          `koanf:"auto_migrate"`
+	// If true, db migrations would run automatically
+	// If false, server would fail to start if a migration is required
+	// and user has to run 'ak server migrate' explicitly
+	AutoMigrate bool `koanf:"auto_migrate"`
 }
 
 func (c Config) Explicit() (*Config, error) {
