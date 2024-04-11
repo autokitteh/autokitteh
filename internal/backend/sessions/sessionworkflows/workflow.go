@@ -168,7 +168,7 @@ func (w *sessionWorkflow) call(ctx workflow.Context, runID sdktypes.RunID, v sdk
 		Executors:     &w.executors, // HACK
 	})
 	if err != nil {
-		z.Panic("call", zap.Error(err))
+		return sdktypes.InvalidValue, err
 	}
 
 	return result.ToPair()

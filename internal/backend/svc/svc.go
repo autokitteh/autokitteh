@@ -10,7 +10,6 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/basesvc"
-	"go.autokitteh.dev/autokitteh/internal/backend/configset"
 	"go.autokitteh.dev/autokitteh/internal/backend/dispatcher"
 	"go.autokitteh.dev/autokitteh/internal/backend/httpsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/integrations"
@@ -69,7 +68,7 @@ func NewOpts(cfg *basesvc.Config, ropts basesvc.RunOptions) []fx.Option {
 				return svc, svc.Mux(), nil
 			}),
 		),
-		basesvc.Component("integrations", configset.Empty, fx.Provide(integrations.New)),
+		basesvc.Component("integrations", integrations.Configs, fx.Provide(integrations.New)),
 		fx.Invoke(func(lc fx.Lifecycle, l *zap.Logger, mux *http.ServeMux, s sdkservices.Secrets, o sdkservices.OAuth, d dispatcher.Dispatcher) {
 			basesvc.HookOnStart(lc, func(ctx context.Context) error {
 				return integrations.Start(ctx, l, mux, s, o, d)

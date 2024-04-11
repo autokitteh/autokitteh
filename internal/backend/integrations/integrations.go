@@ -18,12 +18,22 @@ import (
 	"go.autokitteh.dev/autokitteh/integrations/scheduler"
 	"go.autokitteh.dev/autokitteh/integrations/slack"
 	"go.autokitteh.dev/autokitteh/integrations/twilio"
+	"go.autokitteh.dev/autokitteh/internal/backend/configset"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 )
 
-func New(s sdkservices.Secrets) sdkservices.Integrations {
-	return sdkintegrations.New([]sdkservices.Integration{
+type Config struct {
+	Test bool `koanf:"test"`
+}
+
+var Configs = configset.Set[Config]{
+	Default: &Config{},
+	Dev:     &Config{Test: true},
+}
+
+func New(cfg *Config, s sdkservices.Secrets) sdkservices.Integrations {
+	ints := []sdkservices.Integration{
 		aws.New(), // TODO: Secrets
 		chatgpt.New(s),
 		github.New(s),
@@ -37,7 +47,13 @@ func New(s sdkservices.Secrets) sdkservices.Integrations {
 		slack.New(s),
 		twilio.New(s),
 		grpc.New(s),
-	})
+	}
+
+	if cfg.Test {
+		ints = append(ints, newTestIntegration())
+	}
+
+	return sdkintegrations.New(ints)
 }
 
 func Start(_ context.Context, l *zap.Logger, mux *http.ServeMux, s sdkservices.Secrets, o sdkservices.OAuth, d sdkservices.Dispatcher) error {
