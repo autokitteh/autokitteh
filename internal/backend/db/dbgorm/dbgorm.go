@@ -104,7 +104,7 @@ func foreignKeys(gormdb *gormdb, enable bool) {
 		valMap = map[bool]string{true: "ON", false: "OFF"}
 	} else if gormdb.cfg.Type == "postgres" {
 		stmt = "SET session_replication_role = %s;"
-		valMap = map[bool]string{true: "replica", false: "DEFAULT"}
+		valMap = map[bool]string{true: "DEFAULT", false: "replica"}
 	}
 	gormdb.db.Exec(fmt.Sprintf(stmt, valMap[enable]))
 
