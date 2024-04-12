@@ -265,7 +265,10 @@ func bodyToStruct(body []byte, form url.Values) sdktypes.Value {
 		jsonBody sdktypes.Value
 	)
 
-	if err := json.Unmarshal(body, &v); err != nil {
+	jsonDecoder := json.NewDecoder(bytes.NewReader(body))
+	jsonDecoder.UseNumber()
+
+	if err := jsonDecoder.Decode(&v); err != nil {
 		jsonBody = kittehs.Must1(sdktypes.NewConstFunctionError("json", err))
 	} else if vv, err := sdktypes.WrapValue(v); err != nil {
 		jsonBody = kittehs.Must1(sdktypes.NewConstFunctionError("json", err))
