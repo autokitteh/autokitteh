@@ -18,7 +18,20 @@ import (
 	"golang.org/x/net/http2/h2c"
 )
 
-func New(lc fx.Lifecycle, z *zap.Logger, cfg *Config, reflectors []string, extractors []RequestLogExtractor) (addr string, _ *http.ServeMux, _ error) {
+type Svc interface {
+	Mux() *http.ServeMux
+	Addr() string // available only after start.
+}
+
+type svc struct {
+	mux  *http.ServeMux
+	addr string
+}
+
+func (s *svc) Mux() *http.ServeMux { return s.mux }
+func (s *svc) Addr() string        { return s.addr }
+
+func New(lc fx.Lifecycle, z *zap.Logger, cfg *Config, reflectors []string, extractors []RequestLogExtractor) (Svc, error) {
 	rootMux := http.NewServeMux()
 
 	cors := cors.New(cors.Options{
@@ -32,7 +45,7 @@ func New(lc fx.Lifecycle, z *zap.Logger, cfg *Config, reflectors []string, extra
 
 	interceptor, err := intercept(z, &cfg.Logger, extractors, interceptedMux)
 	if err != nil {
-		return "", nil, fmt.Errorf("interceptor: %w", err)
+		return nil, fmt.Errorf("interceptor: %w", err)
 	}
 
 	rootMux.Handle("/", cors.Handler(interceptor))
@@ -53,6 +66,8 @@ func New(lc fx.Lifecycle, z *zap.Logger, cfg *Config, reflectors []string, extra
 		z.Debug("using h2c")
 		server.Handler = h2c.NewHandler(rootMux, &http2.Server{})
 	}
+
+	svc := &svc{mux: interceptedMux}
 
 	lc.Append(fx.Hook{
 		OnStart: func(context.Context) error {
@@ -87,23 +102,24 @@ func New(lc fx.Lifecycle, z *zap.Logger, cfg *Config, reflectors []string, extra
 				return fmt.Errorf("listen: %w", err)
 			}
 
-			addr = ln.Addr().String()
-			if host, port, err := net.SplitHostPort(addr); err == nil {
+			svc.addr = ln.Addr().String()
+			if host, port, err := net.SplitHostPort(svc.addr); err == nil {
 				ip := net.ParseIP(host)
 
+				var addr string
 				if ip.IsUnspecified() {
 					addr = "localhost"
 				} else {
 					addr = ip.To4().String()
 				}
 
-				addr = fmt.Sprintf("%s:%s", addr, port)
+				svc.addr = fmt.Sprintf("%s:%s", addr, port)
 			}
 
-			z.Debug("listening", zap.String("addr", addr))
+			z.Debug("listening", zap.String("addr", svc.addr))
 
 			if cfg.AddrFilename != "" {
-				if err := os.WriteFile(cfg.AddrFilename, []byte(addr), 0o600); err != nil {
+				if err := os.WriteFile(cfg.AddrFilename, []byte(svc.addr), 0o600); err != nil {
 					z.Panic("write to addr file failed", zap.Error(err), zap.String("filename", cfg.AddrFilename))
 				}
 			}
@@ -124,5 +140,5 @@ func New(lc fx.Lifecycle, z *zap.Logger, cfg *Config, reflectors []string, extra
 		},
 	})
 
-	return addr, interceptedMux, nil
+	return svc, nil
 }
