@@ -108,11 +108,11 @@ func (db *gormdb) listDeploymentsWithStats(ctx context.Context, filter sdkservic
 	COUNT(case when sessions.current_state_type = ? then 1 end) AS error,
 	COUNT(case when sessions.current_state_type = ? then 1 end) AS completed,
 	COUNT(case when sessions.current_state_type = ? then 1 end) AS stopped
-	`, sdktypes.SessionStateTypeCreated.ToProto(),
-		sdktypes.SessionStateTypeRunning.ToProto(),
-		sdktypes.SessionStateTypeError.ToProto(),
-		sdktypes.SessionStateTypeCompleted.ToProto(),
-		sdktypes.SessionStateTypeStopped.ToProto()).
+	`, int32(sdktypes.SessionStateTypeCreated.ToProto()),
+		int32(sdktypes.SessionStateTypeRunning.ToProto()),
+		int32(sdktypes.SessionStateTypeError.ToProto()),
+		int32(sdktypes.SessionStateTypeCompleted.ToProto()),
+		int32(sdktypes.SessionStateTypeStopped.ToProto())).
 		Joins(`LEFT JOIN sessions on deployments.deployment_id = sessions.deployment_id
 	AND sessions.deleted_at IS NULL`).
 		Group("deployments.deployment_id")
