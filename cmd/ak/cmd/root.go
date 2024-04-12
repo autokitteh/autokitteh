@@ -33,7 +33,7 @@ import (
 var (
 	configs []string
 
-	json, niceJSON bool
+	debugLogs, json, niceJSON bool
 )
 
 var RootCmd = common.StandardCommand(&cobra.Command{
@@ -60,6 +60,10 @@ var RootCmd = common.StandardCommand(&cobra.Command{
 		confmap, err := parseConfigs(configs)
 		if err != nil {
 			return err
+		}
+
+		if debugLogs {
+			confmap["logger.zap.level"] = "debug"
 		}
 
 		if err := common.InitConfig(confmap); err != nil {
@@ -98,6 +102,7 @@ func Execute() {
 func init() {
 	// Global flags for all commands.
 	RootCmd.PersistentFlags().StringArrayVarP(&configs, "config", "c", nil, `temporary "key=value" configurations`)
+	RootCmd.PersistentFlags().BoolVarP(&debugLogs, "debug", "d", false, `emit debug logs`)
 
 	RootCmd.PersistentFlags().BoolVarP(&json, "json", "j", false, "print output in compact JSON format")
 	RootCmd.PersistentFlags().BoolVarP(&niceJSON, "nice_json", "J", false, "print output in readable JSON format")
