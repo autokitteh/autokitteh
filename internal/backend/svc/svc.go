@@ -209,7 +209,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		fx.Invoke(func(mux *http.ServeMux, l *zap.Logger, s sdkservices.Services) {
 			mux.Handle("/oauth/", oauth.NewWebhook(l, s))
 		}),
-		Component("integrations", configset.Empty, fx.Provide(integrations.New)),
+		Component("integrations", integrations.Configs, fx.Provide(integrations.New)),
 		fx.Invoke(func(lc fx.Lifecycle, l *zap.Logger, muxes *muxes.Muxes, s sdkservices.Secrets, o sdkservices.OAuth, d dispatcher.Dispatcher) {
 			HookOnStart(lc, func(ctx context.Context) error {
 				return integrations.Start(ctx, l, muxes.NoAuth, s, o, d)
