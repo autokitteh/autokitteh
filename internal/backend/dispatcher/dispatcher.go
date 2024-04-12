@@ -100,7 +100,7 @@ func (d *dispatcher) Start(context.Context) error {
 
 func (d *dispatcher) startWorkflow(ctx context.Context, eventID sdktypes.EventID, opts *sdkservices.DispatchOptions) error {
 	options := client.StartWorkflowOptions{
-		ID:        fmt.Sprintf("%s_%s", workflowName, eventID.Value()),
+		ID:        eventID.String(),
 		TaskQueue: taskQueueName,
 	}
 	input := eventsWorkflowInput{
