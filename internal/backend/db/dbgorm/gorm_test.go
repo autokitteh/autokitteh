@@ -61,12 +61,15 @@ func setupDB(dbName string) *gorm.DB {
 		},
 		Logger: logger,
 	})
-	db.Exec("PRAGMA foreign_keys = ON")
 	if err != nil {
 		log.Fatalf("failed to open database: %v", err)
 	}
 
 	return db
+	if config.Type == "sqlite" {
+		db.Exec("PRAGMA foreign_keys = ON")
+	}
+
 }
 
 func newDBFixture() *dbFixture {
@@ -95,7 +98,7 @@ func newDBFixture() *dbFixture {
 func newDBFixtureFK(withoutForeignKeys bool) *dbFixture {
 	f := newDBFixture()
 	if withoutForeignKeys { // run after setup, since this pragma may be reset by setup
-		f.db.Exec("PRAGMA foreign_keys = OFF")
+		foreignKeys(f.gormdb, false)
 	}
 	return f
 }

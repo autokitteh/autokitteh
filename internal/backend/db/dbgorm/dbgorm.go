@@ -96,6 +96,20 @@ func translateError(err error) error {
 	}
 }
 
+func foreignKeys(gormdb *gormdb, enable bool) {
+	var stmt string
+	var valMap map[bool]string
+	if gormdb.cfg.Type == "sqlite" {
+		stmt = "PRAGMA foreign_keys = %s"
+		valMap = map[bool]string{true: "ON", false: "OFF"}
+	} else if gormdb.cfg.Type == "postgres" {
+		stmt = "SET session_replication_role = %s;"
+		valMap = map[bool]string{true: "replica", false: "DEFAULT"}
+	}
+	gormdb.db.Exec(fmt.Sprintf(stmt, valMap[enable]))
+
+}
+
 func initGoose(client *sql.DB, dialect string) error {
 	goose.SetBaseFS(migrations.Migrations)
 
@@ -158,23 +172,19 @@ func (db *gormdb) Setup(ctx context.Context) error {
 		return nil
 	}
 
-	if db.cfg.AutoMigrate || dbVersion == 0 {
-		return db.Migrate(ctx)
-	}
-
 	return errors.New("db migrations required") //TODO: maybe more details
 }
 
 func (db *gormdb) Teardown(ctx context.Context) error {
 	isSqlite := db.cfg.Type == "sqlite"
 	if isSqlite {
-		db.db.Exec("PRAGMA foreign_keys = OFF")
+		foreignKeys(db, false)
 	}
 	if err := db.db.WithContext(ctx).Migrator().DropTable(scheme.Tables...); err != nil {
 		return fmt.Errorf("droptable: %w", err)
 	}
 	if isSqlite {
-		db.db.Exec("PRAGMA foreign_keys = ON")
+		foreignKeys(db, true)
 	}
 
 	return nil
