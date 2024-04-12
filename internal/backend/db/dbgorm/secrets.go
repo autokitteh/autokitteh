@@ -16,10 +16,7 @@ func (db *gormdb) SetSecret(ctx context.Context, name string, data map[string]st
 
 	s := scheme.Secret{Name: name, Data: jsonData}
 	result := db.db.WithContext(ctx).Create(&s)
-	if result.Error != nil {
-		return translateError(result.Error)
-	}
-	return nil
+	return translateError(result.Error)
 }
 
 func (db *gormdb) GetSecret(ctx context.Context, name string) (map[string]string, error) {
@@ -70,9 +67,7 @@ func (db *gormdb) AppendSecret(ctx context.Context, name, token string) error {
 	if result.RowsAffected == 0 {
 		s := scheme.Secret{Name: name, Data: jsonData}
 		result = db.db.WithContext(ctx).Create(&s)
-		if result.Error != nil {
-			return translateError(result.Error)
-		}
+		return translateError(result.Error)
 	}
 	return nil
 }
@@ -80,8 +75,5 @@ func (db *gormdb) AppendSecret(ctx context.Context, name, token string) error {
 func (db *gormdb) DeleteSecret(ctx context.Context, name string) error {
 	// Reminder: Delete() is idempotent, i.e. no error if PK not found.
 	result := db.db.WithContext(ctx).Delete(&scheme.Secret{}, "name = ?", name)
-	if result.Error != nil {
-		return translateError(result.Error)
-	}
-	return nil
+	return translateError(result.Error)
 }
