@@ -251,19 +251,22 @@ func (f *dbFixture) newEvent() scheme.Event {
 	eventID := fmt.Sprintf("evt_%026d", f.eventID)
 
 	return scheme.Event{
-		EventID: eventID,
+		EventID:   eventID,
+		CreatedAt: now,
 	}
 }
 
 func (f *dbFixture) newEventRecord() scheme.EventRecord {
 	eventID := fmt.Sprintf("evt_%026d", f.eventID)
 	return scheme.EventRecord{
-		EventID: eventID,
+		EventID:   eventID,
+		CreatedAt: now,
 	}
 }
 
 func (f *dbFixture) newSignal() scheme.Signal {
 	return scheme.Signal{
-		SignalID: testSignalID,
+		SignalID:  testSignalID,
+		CreatedAt: now,
 	}
 }
