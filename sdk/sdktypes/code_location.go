@@ -22,13 +22,8 @@ type CodeLocationPB = programv1.CodeLocation
 
 type CodeLocationTraits struct{}
 
-func (CodeLocationTraits) Validate(m *CodeLocationPB) error {
-	return nameField("name", m.Name)
-}
-
-func (t CodeLocationTraits) StrictValidate(m *CodeLocationPB) error {
-	return nonzeroMessage(m)
-}
+func (CodeLocationTraits) Validate(m *CodeLocationPB) error         { return nil }
+func (t CodeLocationTraits) StrictValidate(m *CodeLocationPB) error { return nonzeroMessage(m) }
 
 func (l CodeLocation) Path() string { return l.read().Path }
 func (l CodeLocation) Col() uint32  { return l.read().Col }
