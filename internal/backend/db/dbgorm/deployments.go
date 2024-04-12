@@ -154,7 +154,7 @@ func (db *gormdb) updateDeploymentState(ctx context.Context, id string, state sd
 
 	return db.locked(func(db *gormdb) error {
 		result := db.db.WithContext(ctx).Model(d).Updates(
-			map[string]any{"state": state.ToProto(), "updated_at": time.Now()})
+			map[string]any{"state": int32(state.ToProto()), "updated_at": time.Now()})
 		if result.Error != nil {
 			return translateError(result.Error)
 		}
