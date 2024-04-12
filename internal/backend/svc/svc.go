@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sync/atomic"
 
 	"github.com/fatih/color"
 	"go.temporal.io/sdk/client"
@@ -46,6 +47,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	"go.autokitteh.dev/autokitteh/internal/backend/triggers"
 	"go.autokitteh.dev/autokitteh/internal/backend/triggersgrpcsvc"
+	"go.autokitteh.dev/autokitteh/internal/backend/webtools"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/builds/v1/buildsv1connect"
 	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/connections/v1/connectionsv1connect"
@@ -147,6 +149,15 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 			fx.Provide(func(d dispatcher.Dispatcher) sdkservices.Dispatcher { return d }),
 			fx.Invoke(func(lc fx.Lifecycle, d dispatcher.Dispatcher) { HookOnStart(lc, d.Start) }),
 		),
+		Component(
+			"webtools",
+			webtools.Configs,
+			fx.Provide(webtools.New),
+			fx.Invoke(func(lc fx.Lifecycle, mux *http.ServeMux, t webtools.Svc) {
+				t.Init(mux)
+				HookOnStart(lc, t.Setup)
+			}),
+		),
 		fx.Provide(func(s fxServices) sdkservices.Services { return &s }),
 		fx.Invoke(sdkruntimessvc.Init),
 		fx.Invoke(applygrpcsvc.Init),
@@ -230,6 +241,27 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 			HookSimpleOnStart(lc, func() {
 				temporalFrontendAddr, temporalUIAddr := tclient.TemporalAddr()
 				printBanner(opts, httpsvc.Addr(), temporalFrontendAddr, temporalUIAddr)
+			})
+		}),
+		fx.Invoke(func(z *zap.Logger, lc fx.Lifecycle, mux *http.ServeMux) {
+			var ready atomic.Bool
+
+			mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+				// TODO(ENG-530): check db, temporal, etc.
+				w.WriteHeader(http.StatusOK)
+			})
+
+			mux.HandleFunc("/readyz", func(w http.ResponseWriter, r *http.Request) {
+				if !ready.Load() {
+					w.WriteHeader(http.StatusServiceUnavailable)
+					return
+				}
+
+				w.WriteHeader(http.StatusOK)
+			})
+
+			HookSimpleOnStart(lc, func() {
+				ready.Store(true)
 				z.Info("ready")
 			})
 		}),

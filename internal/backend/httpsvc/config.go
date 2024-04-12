@@ -76,6 +76,9 @@ var Configs = configset.Set[Config]{
 			NonimportantRegexes: []string{
 				`.*/List.*`,
 				`.*/Get.*`,
+				`/healthz`,
+				`/readyz`,
+				`/`,
 			},
 		},
 	},
