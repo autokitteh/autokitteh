@@ -28,7 +28,7 @@ func assertErrorContainsIgnoreCase(t *testing.T, err error, contains string) {
 }
 
 func init() {
-	now = time.Now().UTC()               // save and compare times in UTC
+	now = time.Now()
 	now = now.Truncate(time.Microsecond) // PG default resolution is microseconds
 }
 
@@ -82,6 +82,12 @@ func newDBFixture() *dbFixture {
 	}
 	if err := gormdb.Setup(ctx); err != nil { // ensure migration/schemas
 		log.Fatalf("Failed to setup gormdb: %v", err)
+	}
+
+	// PG saves dates in UTC. Gorm converts them back to local TZ on read
+	// SQLite has no dedicated time format and uses strings, so gorm will read them as UTC
+	if dbType == "sqlite" {
+		now = now.UTC()
 	}
 	return &dbFixture{db: db, gormdb: &gormdb, ctx: ctx}
 }
