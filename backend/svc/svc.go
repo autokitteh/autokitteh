@@ -2,10 +2,10 @@ package svc
 
 import (
 	"context"
-	"net/http"
 
 	"go.uber.org/fx"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/httpsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/svc"
 )
 
@@ -29,23 +29,21 @@ type Service interface {
 }
 
 type service struct {
-	app  *fx.App
-	mux  *http.ServeMux
-	addr svc.HTTPServerAddr
+	app     *fx.App
+	httpSvc httpsvc.Svc
 }
 
 func (s *service) Start(ctx context.Context) error { return s.app.Start(ctx) }
 func (s *service) Stop(ctx context.Context) error  { return s.app.Stop(ctx) }
 func (s *service) Wait() <-chan ShutdownSignal     { return s.app.Wait() }
-func (s *service) Addr() string                    { return string(s.addr) }
+func (s *service) Addr() string                    { return s.httpSvc.Addr() }
 
 func New(cfg *Config, ropts RunOptions) (Service, error) {
 	var service service
 
 	opts := append(
 		svc.NewOpts(cfg, ropts),
-		fx.Populate(&service.mux),
-		fx.Populate(&service.addr),
+		fx.Populate(&service.httpSvc),
 	)
 
 	service.app = fx.New(opts...)

@@ -166,8 +166,8 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		Component(
 			"http",
 			httpsvc.Configs,
-			fx.Provide(func(lc fx.Lifecycle, z *zap.Logger, cfg *httpsvc.Config) (HTTPServerAddr, *http.ServeMux, *muxes.Muxes, error) {
-				addr, mux, err := httpsvc.New(
+			fx.Provide(func(lc fx.Lifecycle, z *zap.Logger, cfg *httpsvc.Config) (svc httpsvc.Svc, mux *http.ServeMux, all *muxes.Muxes, err error) {
+				svc, err = httpsvc.New(
 					lc, z, cfg,
 					[]string{
 						buildsv1connect.BuildsServiceName,
@@ -187,20 +187,24 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 					nil,
 				)
 				if err != nil {
-					return "", nil, nil, err
+					return
 				}
 
 				// Replace the original mux with a main mux and also expose the original mux as the no-auth one.
-				wrapped := http.NewServeMux()
+				authed := http.NewServeMux()
 
 				wrap := func(h http.Handler) http.Handler {
 					// TODO(ENG-3): Wrap the handler with auth middleware.
 					return h
 				}
 
-				mux.Handle("/", wrap(wrapped))
+				mux = svc.Mux()
 
-				return HTTPServerAddr(addr), wrapped, &muxes.Muxes{Auth: wrapped, NoAuth: mux}, nil
+				mux.Handle("/", wrap(authed))
+
+				all = &muxes.Muxes{Auth: authed, NoAuth: mux}
+
+				return
 			}),
 		),
 		fx.Invoke(func(mux *http.ServeMux, h integrationsweb.Handler) {
@@ -222,10 +226,10 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 			mux.Handle("/favicon-32x32.png", srv)
 			mux.Handle("/favicon-16x16.png", srv)
 		}),
-		fx.Invoke(func(lc fx.Lifecycle, z *zap.Logger, addr HTTPServerAddr, tclient temporalclient.Client) {
+		fx.Invoke(func(lc fx.Lifecycle, z *zap.Logger, httpsvc httpsvc.Svc, tclient temporalclient.Client) {
 			HookSimpleOnStart(lc, func() {
 				temporalFrontendAddr, temporalUIAddr := tclient.TemporalAddr()
-				printBanner(opts, string(addr), temporalFrontendAddr, temporalUIAddr)
+				printBanner(opts, httpsvc.Addr(), temporalFrontendAddr, temporalUIAddr)
 				z.Info("ready")
 			})
 		}),
