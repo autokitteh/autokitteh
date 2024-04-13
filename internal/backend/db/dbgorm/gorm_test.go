@@ -2,16 +2,21 @@ package dbgorm
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"log"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
+	embedPG "github.com/fergusstrange/embedded-postgres"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"gorm.io/datatypes"
+	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -21,9 +26,33 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-var now time.Time
+var (
+	now    time.Time
+	dbType string
+)
+
+func TestMain(m *testing.M) {
+	flag.StringVar(&dbType, "dbtype", "sqlite", "Database type to use for tests (e.g., sqlite, postgres)")
+	flag.Parse()
+
+	var exitCode int
+	if dbType == "postgres" {
+		pg := embedPG.NewDatabase() // embeddedpostgres.DefaultConfig.RuntimePath("/tmp"))
+		if err := pg.Start(); err != nil {
+			log.Fatalf("failed to start postgres: %v", err)
+		}
+		fmt.Println("Started PG..")
+		exitCode = m.Run()
+		fmt.Println("Stopping PG...")
+		pg.Stop()
+	} else {
+		exitCode = m.Run()
+	}
+	os.Exit(exitCode)
+}
 
 func assertErrorContainsIgnoreCase(t *testing.T, err error, contains string) {
+	require.Error(t, err)
 	assert.Contains(t, strings.ToUpper(err.Error()), strings.ToUpper(contains))
 }
 
@@ -45,7 +74,24 @@ type dbFixture struct {
 }
 
 // TODO: use gormkitteh (and maybe test with sqlite::memory and embedded PG)
-func setupDB(dbName string) *gorm.DB {
+func setupDB(config *gormkitteh.Config) *gorm.DB {
+	var dialector gorm.Dialector
+	switch config.Type {
+	case "sqlite":
+		if config.DSN == "" {
+			config.DSN = ":memory:"
+		}
+		dialector = sqlite.Open(config.DSN)
+	case "postgres":
+		dsn := "user=postgres password=postgres dbname=postgres host=localhost sslmode=disable"
+		dialector = postgres.New(postgres.Config{
+			DSN:                  dsn,
+			PreferSimpleProtocol: true, // disables implicit prepared statement usage. By default pgx automatically uses the extended protocol
+		})
+	default:
+		log.Fatalf("unsuppported DBtype - <%s>", config.Type)
+	}
+
 	logger := logger.New(
 		log.New(os.Stdout, "\r\n", log.LstdFlags), // io writer
 		logger.Config{
@@ -55,33 +101,31 @@ func setupDB(dbName string) *gorm.DB {
 		},
 	)
 
-	db, err := gorm.Open(sqlite.Open(dbName), &gorm.Config{
+	db, err := gorm.Open(dialector, &gorm.Config{
 		NowFunc: func() time.Time { // operate always in UTC to simplify object comparison upon creation and fetching
 			return time.Now().UTC()
 		},
 		Logger: logger,
+		// DriverName:
 	})
 	if err != nil {
 		log.Fatalf("failed to open database: %v", err)
 	}
-
-	return db
 	if config.Type == "sqlite" {
 		db.Exec("PRAGMA foreign_keys = ON")
 	}
-
+	return db
 }
 
 func newDBFixture() *dbFixture {
-	dsn := "file::memory:" // "/tmp/ak.db"
-	db := setupDB(dsn)     // in-memory db, specify filename to use file db
-
-	ctx := context.Background()
-	cfg := gormkitteh.Config{Type: "sqlite", DSN: dsn}
+	cfg := gormkitteh.Config{Type: dbType, DSN: ""} // in-memory, or specify a file
+	db := setupDB(&cfg)
 
 	gormdb := gormdb{db: db, cfg: &cfg, mu: nil, z: zap.NewExample()}
+
+	ctx := context.Background()
 	if err := gormdb.Teardown(ctx); err != nil { // delete tables if any
-		log.Printf("Failed to termdown gormdb: %v", err)
+		log.Printf("Failed to teardown gormdb: %v", err)
 	}
 	if err := gormdb.Setup(ctx); err != nil { // ensure migration/schemas
 		log.Fatalf("Failed to setup gormdb: %v", err)
