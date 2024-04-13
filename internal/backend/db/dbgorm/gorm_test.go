@@ -44,7 +44,9 @@ func TestMain(m *testing.M) {
 		fmt.Println("Started PG..")
 		exitCode = m.Run()
 		fmt.Println("Stopping PG...")
-		pg.Stop()
+		if err := pg.Stop(); err != nil {
+			log.Fatalf("failed to stop postgres: %v", err)
+		}
 	} else {
 		exitCode = m.Run()
 	}
