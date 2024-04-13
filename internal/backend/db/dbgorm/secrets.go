@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
+	"gorm.io/gorm"
 )
 
 func (db *gormdb) SetSecret(ctx context.Context, name string, data map[string]string) error {
@@ -59,7 +60,7 @@ func (db *gormdb) AppendSecret(ctx context.Context, name, token string) error {
 		return err
 	}
 
-	result := db.db.WithContext(ctx).Model(&scheme.Secret{}).Where("name = ?", name).Update("data", jsonData)
+	result := db.db.WithContext(ctx).Model(&scheme.Secret{}).Where("name = ?", name).Update("data", gorm.Expr("?", string(jsonData)))
 	if result.Error != nil {
 		return translateError(result.Error)
 	}
