@@ -24,6 +24,7 @@ require (
 	github.com/bradleyfalzon/ghinstallation/v2 v2.9.0
 	github.com/bufbuild/protovalidate-go v0.6.0
 	github.com/fatih/color v1.16.0
+	github.com/fergusstrange/embedded-postgres v1.26.0
 	github.com/flosch/pongo2/v6 v6.0.0
 	github.com/fullstorydev/grpcurl v1.8.9
 	github.com/glebarez/sqlite v1.10.0
@@ -168,6 +169,7 @@ require (
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/jpillora/backoff v1.0.0 // indirect
 	github.com/knadh/koanf/maps v0.1.1 // indirect
+	github.com/lib/pq v1.10.9 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
@@ -195,6 +197,7 @@ require (
 	github.com/wk8/go-ordered-map/v2 v2.1.8 // indirect
 	github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb // indirect
 	github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 // indirect
+	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8 // indirect
 	github.com/yuin/gopher-lua v1.1.1 // indirect
 	go.mongodb.org/mongo-driver v1.14.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
