@@ -5,6 +5,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/backend/svc"
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
+	"go.autokitteh.dev/autokitteh/internal/backend/configset"
 )
 
 type db interface {
@@ -13,5 +14,5 @@ type db interface {
 }
 
 func InitDB(mode string) (db, error) {
-	return svc.StartDB(context.Background(), common.Config())
+	return svc.StartDB(context.Background(), common.Config(), svc.RunOptions{Mode: configset.Mode(mode)})
 }

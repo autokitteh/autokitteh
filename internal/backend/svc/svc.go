@@ -298,10 +298,13 @@ func NewOpts(cfg *Config, ropts RunOptions) []fx.Option {
 	return append(opts, fx.Populate(svcs))
 }
 
-func StartDB(ctx context.Context, cfg *Config) (db.DB, error) {
+func StartDB(ctx context.Context, cfg *Config, ropts RunOptions) (db.DB, error) {
+	setFXRunOpts(ropts)
+
 	var db db.DB
 
 	if err := fx.New(
+		fx.NopLogger,
 		fx.Supply(cfg),
 		LoggerFxOpt(),
 		DBFxOpt(),
