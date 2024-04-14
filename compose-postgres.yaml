@@ -1,0 +1,66 @@
+# Comments are provided throughout this file to help you get started.
+# If you need more help, visit the Docker compose reference guide at
+# https://docs.docker.com/compose/compose-file/
+
+# Here the instructions define your application as a service called "server".
+# This service is built from the Dockerfile in the current directory.
+# You can add other services your application may depend on here, such as a
+# database or a cache. For examples, see the Awesome Compose repository:
+# https://github.com/docker/awesome-compose
+services:
+  db:
+    image: postgres:16.1-alpine
+    restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+  nginx:
+    image: nginx:latest
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - server
+    ports:
+      - "9980:9980"
+  server:
+    build:
+      context: .
+      target: final
+    command: ["up"]
+    depends_on:
+      db:
+        condition: service_healthy
+      temporal:
+        condition: service_started
+    ports:
+      - 9980
+    environment:
+      AK_TEMPORALCLIENT__HOSTPORT: "temporal:7233"
+      AK_DB__TYPE: "postgres"
+      AK_DB__DSN: "host=db dbname=postgres user=postgres password=postgres"
+  temporal:
+    build:
+      context: .
+      target: final
+    command: ["up"]
+    ports:
+      - 7233
+    depends_on:
+      db: 
+        condition: service_healthy
+    environment:
+      AK_TEMPORALCLIENT__HOSTPORT: "0.0.0.0:7233"
+      AK_DB__TYPE: "postgres"
+      AK_DB__DSN: "host=db dbname=postgres user=postgres password=postgres"
+volumes:
+  db:
+    driver: local
