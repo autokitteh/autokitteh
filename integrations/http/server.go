@@ -96,7 +96,7 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			},
 		)),
 		"method": sdktypes.NewStringValue(r.Method),
-		"header": sdktypes.NewDictValueFromStringMap(
+		"headers": sdktypes.NewDictValueFromStringMap(
 			kittehs.TransformMapValues(r.Header, func(vs []string) sdktypes.Value {
 				return sdktypes.NewStringValue(strings.Join(vs, ","))
 			}),

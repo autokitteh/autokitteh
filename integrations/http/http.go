@@ -67,7 +67,7 @@ func (i integration) request(method string) sdkexecutor.Function {
 		}
 
 		// Add the Authorization HTTP header?
-		if auth := i.getConnection(ctx)[authHeader]; auth != "" {
+		if auth := i.getConnection(ctx)["authorization"]; auth != "" {
 			// If the Authorization header is set explicitly, it
 			// should override the connection's default authorization.
 			if _, ok := headers[authHeader]; !ok {
