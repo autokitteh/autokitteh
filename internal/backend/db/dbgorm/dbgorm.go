@@ -2,17 +2,23 @@ package dbgorm
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"sync"
 
+	"github.com/pressly/goose/v3"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 
+	_ "ariga.io/atlas-provider-gorm/gormschema"
+
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/internal/backend/gormkitteh"
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
+	"go.autokitteh.dev/autokitteh/migrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -90,19 +96,73 @@ func translateError(err error) error {
 	}
 }
 
+func initGoose(client *sql.DB, dialect string) error {
+	goose.SetBaseFS(migrations.Migrations)
+
+	if err := goose.SetDialect(dialect); err != nil {
+		return err
+	}
+
+	if _, err := goose.EnsureDBVersion(client); err != nil {
+		return fmt.Errorf("failed to ensure DB version: %w", err)
+	}
+	return nil
+}
+
+func (db *gormdb) Migrate(ctx context.Context) error {
+
+	client := db.client()
+
+	if err := initGoose(client, db.cfg.Type); err != nil {
+		return err
+	}
+
+	migrationsDir := db.cfg.Type
+	return goose.Up(client, migrationsDir)
+}
+
+func (db *gormdb) MigrationRequired(ctx context.Context) (bool, int64, error) {
+	client := db.client()
+	if err := initGoose(client, db.cfg.Type); err != nil {
+		return false, 0, err
+	}
+
+	dbversion, err := goose.GetDBVersion(client)
+	if err != nil {
+		return false, 0, err
+	}
+
+	migrationsDir := db.cfg.Type
+	requiredMigrations, err := goose.CollectMigrations(migrationsDir, dbversion, int64((1<<63)-1))
+	if err != nil && !errors.Is(err, goose.ErrNoMigrationFiles) {
+		return false, 0, err
+	}
+
+	return len(requiredMigrations) > 0, dbversion, nil
+}
+
 func (db *gormdb) Setup(ctx context.Context) error {
 	isSqlite := db.cfg.Type == "sqlite"
 	if isSqlite {
 		db.db.Exec("PRAGMA foreign_keys = OFF")
-	}
-	if err := db.db.WithContext(ctx).AutoMigrate(scheme.Tables...); err != nil {
-		return fmt.Errorf("automigrate: %w", err)
-	}
-	if isSqlite {
-		db.db.Exec("PRAGMA foreign_keys = ON")
+		defer func() {
+			db.db.Exec("PRAGMA foreign_keys = ON")
+		}()
 	}
 
-	return nil
+	required, dbVersion, err := db.MigrationRequired(ctx)
+	if err != nil {
+		return err
+	}
+	if !required {
+		return nil
+	}
+
+	if db.cfg.AutoMigrate || dbVersion == 0 {
+		return db.Migrate(ctx)
+	}
+
+	return errors.New("db migrations required") //TODO: maybe more details
 }
 
 func (db *gormdb) Teardown(ctx context.Context) error {
@@ -176,4 +236,8 @@ func delete[T any](db *gorm.DB, ctx context.Context, t T, where string, args ...
 	}
 
 	return nil
+}
+
+func (db *gormdb) client() *sql.DB {
+	return kittehs.Must1(db.db.DB())
 }

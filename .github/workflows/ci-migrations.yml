@@ -1,0 +1,44 @@
+name: Validate Migration Files
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "internal/backend/db/dbgorm/scheme/**"
+  pull_request:
+    paths:
+      - "internal/backend/db/dbgorm/scheme/**"
+
+jobs:
+  validate:
+    name: Validate Migrations
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - uses: ariga/setup-atlas@v0
+        name: Setup Atlas
+      - name: Validate Sqlite Migrations
+        run: |
+          OUTPUT=$(atlas migrate diff --env sqlite)
+
+          if [[ $OUTPUT != "The migration directory is synced with the desired state, no changes to be made" ]]; then
+              echo "Migration files are not in sync"
+              echo $OUTPUT
+              exit 1
+          fi
+      - name: Validate Postgres Migrations
+        run: |
+          OUTPUT=$(atlas migrate diff --env postgres)
+
+          if [[ $OUTPUT != "The migration directory is synced with the desired state, no changes to be made" ]]; then
+              echo "Migration files are not in sync"
+              echo $OUTPUT
+              exit 1
+          fi

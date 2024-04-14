@@ -26,6 +26,7 @@ func Remove(parentCmd *cobra.Command) {
 
 func init() {
 	// Subcommands.
+	serverCmd.AddCommand(migrateCmd)
 	serverCmd.AddCommand(setupCmd)
 	serverCmd.AddCommand(teardownCmd)
 

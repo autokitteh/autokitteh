@@ -10,6 +10,7 @@ import (
 type db interface {
 	Setup(context.Context) error
 	Teardown(context.Context) error
+	Migrate(context.Context) error
 }
 
 func InitDB(mode string) (db, error) {
