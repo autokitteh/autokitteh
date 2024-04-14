@@ -97,18 +97,20 @@ func translateError(err error) error {
 	}
 }
 
-func foreignKeys(gormdb *gormdb, enable bool) {
-	var stmt string
-	var valMap map[bool]string
-	if gormdb.cfg.Type == "sqlite" {
-		stmt = "PRAGMA foreign_keys = %s"
-		valMap = map[bool]string{true: "ON", false: "OFF"}
-	} else if gormdb.cfg.Type == "postgres" {
-		stmt = "SET session_replication_role = %s;"
-		valMap = map[bool]string{true: "DEFAULT", false: "replica"}
-	}
-	gormdb.db.Exec(fmt.Sprintf(stmt, valMap[enable]))
+var fkStmtByDB = map[string]map[bool]string{
+	"sqlite": {
+		true:  "PRAGMA foreign_keys = ON",
+		false: "PRAGMA foreign_keys = OFF",
+	},
+	"postgres": {
+		true:  "SET session_replication_role = DEFAULT",
+		false: "SET session_replication_role = replica",
+	},
+}
 
+func foreignKeys(gormdb *gormdb, enable bool) {
+	stmt := fkStmtByDB[gormdb.cfg.Type][enable]
+	gormdb.db.Exec(stmt)
 }
 
 func initGoose(client *sql.DB, dialect string) error {
