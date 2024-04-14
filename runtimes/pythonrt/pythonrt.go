@@ -111,11 +111,10 @@ func (py *pySvc) Build(ctx context.Context, fs fs.FS, path string, values []sdkt
 // All Python handler function get all event information.
 var pyModuleFunc = kittehs.Must1(sdktypes.ModuleFunctionFromProto(&sdktypes.ModuleFunctionPB{
 	Input: []*sdktypes.ModuleFunctionFieldPB{
-		{Name: "event_type"},
-		{Name: "event_id"},
-		{Name: "original_event_id"},
-		{Name: "integration_id"},
+		{Name: "created_at"},
 		{Name: "data"},
+		{Name: "event_id"},
+		{Name: "integration_id"},
 	},
 }))
 
@@ -312,45 +311,6 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, event map[str
 	return sdktypes.Nothing, nil
 }
 
-// unFunc removes functions from val, since they can't be unwrapped.
-func unFunc(val sdktypes.Value) (sdktypes.Value, error) {
-	switch {
-	case val.IsDict():
-		d := val.GetDict()
-		m, err := d.ToStringValuesMap()
-		if err != nil {
-			return sdktypes.InvalidValue, err
-		}
-
-		for k, v := range m {
-			v, err := unFunc(v)
-			if err != nil {
-				return sdktypes.InvalidValue, err
-			}
-			m[k] = v
-		}
-		return sdktypes.NewDictValueFromStringMap(m), nil
-	case val.IsFunction():
-		fnName := val.GetFunction().Name().String()
-		return sdktypes.NewStringValue(fmt.Sprintf("func:%s", fnName)), nil
-	case val.IsList():
-		items := val.GetList().Values()
-		vs := make([]sdktypes.Value, len(items))
-		for i, v := range items {
-			v, err := unFunc(v)
-			if err != nil {
-				return sdktypes.InvalidValue, err
-			}
-
-			vs[i] = v
-		}
-
-		return sdktypes.NewListValue(vs)
-	}
-
-	return val, nil
-}
-
 // Call handles a function call from autokitteh.
 // First used of Call start a workflow, later invocations are activity calls.
 func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
@@ -368,13 +328,12 @@ func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 
 	// Convert event to JSON
 	event := make(map[string]any, len(kwargs))
-	for k, v := range kwargs {
-		gv, err := unFunc(v)
+	for key, val := range kwargs {
+		goVal, err := unwrap(val)
 		if err != nil {
-			py.log.Error("can't convert to Go", zap.Any("value", v), zap.Error(err))
 			return sdktypes.InvalidValue, err
 		}
-		event[k] = gv
+		event[key] = goVal
 	}
 
 	fnName := fn.Name().String()
