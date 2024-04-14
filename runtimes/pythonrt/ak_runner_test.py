@@ -138,3 +138,12 @@ def test_comm():
     assert data, 'no data'
     message = json.loads(data)
     assert message['type'] == ak_runner.MessageType.done
+
+
+def test_load_simple():
+    root_path = str(test_dir / 'testdata/simple')
+
+    def action_fn(*args, **kw):
+        pass
+
+    ak_runner.load_code(root_path, action_fn, 'simple')

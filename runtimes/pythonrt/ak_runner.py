@@ -33,6 +33,9 @@ def name_of(node):
     if isinstance(node, ast.Name):
         return node.id
 
+    if isinstance(node, ast.Call):
+        return node.func.value.id
+
     prefix = name_of(node.value)
     return f'{prefix}.{node.attr}'
 
@@ -378,6 +381,15 @@ if __name__ == '__main__':
         
     event = message.get('event')
     event = {} if event is None else event
+
+    # Inject HTTP body
+    # TODO (ENG-624) change this once we support callbacks to autokitteh
+    body = event.get('data', {}).get('body')
+    if isinstance(body, str):
+        try:
+            event['data']['body'] = b64decode(body)
+        except ValueError:
+            pass
 
     fn(event)
     comm.send_done()

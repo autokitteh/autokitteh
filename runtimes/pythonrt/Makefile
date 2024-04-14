@@ -17,7 +17,7 @@ test-py:
 
 test-go:
 	golangci-lint run ./...
-	go test -v
+	go test $(SHORT) -v
 
 deps:
 	python -m pip install -r dev-requirements.txt
