@@ -2,6 +2,7 @@ package dbfactory
 
 import (
 	"context"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -11,6 +12,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm"
 	"go.autokitteh.dev/autokitteh/internal/backend/gormkitteh"
+	"go.autokitteh.dev/autokitteh/internal/xdg"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
@@ -19,7 +21,13 @@ type Config = gormkitteh.Config
 var Configs = configset.Set[Config]{
 	Default: &Config{
 		SlowQueryThreshold: 300 * time.Millisecond,
+		Type:               gormkitteh.RequireExplicitDSNType,
 	},
+	Dev: &Config{
+		Type: "sqlite",
+		DSN:  "file:" + filepath.Join(xdg.DataHomeDir(), "autokitteh.sqlite"),
+	},
+	Test: &Config{},
 }
 
 func New(z *zap.Logger, cfg *Config) (db.DB, error) {

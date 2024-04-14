@@ -1,4 +1,4 @@
-package basesvc
+package svc
 
 import (
 	"context"
@@ -15,7 +15,7 @@ import (
 // TODO: need this so RunOptions would not needed to be passed every time Component is called. This is ugly, fix.
 var fxRunOpts RunOptions
 
-func SetFXRunOpts(opts RunOptions) { fxRunOpts = opts }
+func setFXRunOpts(opts RunOptions) { fxRunOpts = opts }
 
 func fxGetConfig[T any](path string, def T) func(c *Config) (*T, error) {
 	return func(c *Config) (*T, error) {

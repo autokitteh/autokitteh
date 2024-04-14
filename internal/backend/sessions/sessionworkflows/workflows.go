@@ -46,9 +46,7 @@ const (
 	sessionWorkflowName = "session_workflow"
 )
 
-func workflowID(sessionID sdktypes.SessionID) string {
-	return fmt.Sprintf("session_%s", sessionID.Value())
-}
+func workflowID(sessionID sdktypes.SessionID) string { return sessionID.String() }
 
 func New(z *zap.Logger, cfg Config, sessions sdkservices.Sessions, svcs *sessionsvcs.Svcs, calls sessioncalls.Calls) Workflows {
 	opts := cfg.Temporal.Worker
@@ -178,10 +176,22 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 	}
 
 	if err != nil {
+		z := z.With(zap.Error(err))
+
 		if errors.Is(err, workflow.ErrCanceled) || errors.Is(wctx.Err(), workflow.ErrCanceled) {
+			z.Debug("workflow canceled")
 			ws.stopped(params.SessionID)
 		} else {
 			ws.errored(params.SessionID, err, prints)
+
+			if _, ok := sdktypes.FromError(err); ok {
+				// User level error, no need to indicate the workflow as errored.
+				err = nil
+
+				z.Debug("program error")
+			} else {
+				z.Error("workflow error")
+			}
 		}
 	}
 

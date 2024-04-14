@@ -1,4 +1,4 @@
-package basesvc
+package svc
 
 import (
 	_ "embed"

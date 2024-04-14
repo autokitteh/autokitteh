@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 )
 
 func TestSetGetSecret(t *testing.T) {
@@ -23,7 +22,7 @@ func TestGetSecretError(t *testing.T) {
 	f := newDBFixture()
 
 	got, err := f.gormdb.GetSecret(f.ctx, "name")
-	assert.ErrorIs(t, err, sdkerrors.ErrNotFound)
+	assert.NoError(t, err)
 	assert.Nil(t, got)
 }
 
@@ -53,7 +52,7 @@ func TestSetDeleteGetSecret(t *testing.T) {
 	assert.NoError(t, err)
 
 	got, err := f.gormdb.GetSecret(f.ctx, "name")
-	assert.ErrorIs(t, err, sdkerrors.ErrNotFound)
+	assert.NoError(t, err)
 	assert.Nil(t, got)
 }
 

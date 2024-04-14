@@ -2,7 +2,6 @@ package pythonrt
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io/fs"
 	"os"
@@ -37,8 +36,7 @@ type pySvc struct {
 	cbs       *sdkservices.RunCallbacks
 	exports   map[string]sdktypes.Value
 	firstCall bool
-	dec       *json.Decoder
-	enc       *json.Encoder
+	comm      *Comm
 }
 
 func New() (sdkservices.Runtime, error) {
@@ -110,25 +108,13 @@ func (py *pySvc) Build(ctx context.Context, fs fs.FS, path string, values []sdkt
 	return art, nil
 }
 
-type PyMessage struct {
-	Type    string `json:"type"`
-	Name    string `json:"name"`
-	Payload []byte `json:"payload"`
-	Func    struct {
-		Name string            `json:"name"`
-		Args []string          `json:"args"`
-		Kw   map[string]string `json:"kw"`
-	} `json:"func"`
-}
-
 // All Python handler function get all event information.
 var pyModuleFunc = kittehs.Must1(sdktypes.ModuleFunctionFromProto(&sdktypes.ModuleFunctionPB{
 	Input: []*sdktypes.ModuleFunctionFieldPB{
-		{Name: "event_type"},
-		{Name: "event_id"},
-		{Name: "original_event_id"},
-		{Name: "integration_id"},
+		{Name: "created_at"},
 		{Name: "data"},
+		{Name: "event_id"},
+		{Name: "integration_id"},
 	},
 }))
 
@@ -144,12 +130,6 @@ func entriesToValues(xid sdktypes.ExecutorID, entries []string) (map[string]sdkt
 
 	return values, nil
 }
-
-const (
-	callbackType = "callback"
-	doneType     = "done"
-	moduleType   = "module"
-)
 
 /*
 Run starts a Python workflow.
@@ -208,33 +188,28 @@ func (py *pySvc) Run(
 		return nil, err
 	}
 	py.log.Info("python connected", zap.String("peer", conn.RemoteAddr().String()))
+	comm := NewComm(conn)
 
-	// Initial message from Python is list of exported callables.
-	dec := json.NewDecoder(conn)
-	var msg PyMessage
-	if err := dec.Decode(&msg); err != nil {
+	// FIXME (ENG-577) We might get activity calls before module is loaded if there are module level function calls.
+
+	msg, err := comm.Recv()
+	if err != nil {
+		py.log.Error("initial message from python", zap.Error(err))
+		return nil, err
+	}
+	mod, err := extractMessage[ModuleMessage](msg)
+	if err != nil {
 		py.log.Error("initial message from python", zap.Error(err))
 		return nil, err
 	}
 
-	// FIXME (ENG-577) We might get activity calls before module is loaded if there are module level function calls.
-	if msg.Type != moduleType {
-		py.log.Error("wrong initial message type from python", zap.String("type", msg.Type))
-		return nil, fmt.Errorf("wrong initial message: type=%q", msg.Type)
-	}
 	py.log.Info("module loaded")
 
-	py.xid = sdktypes.NewExecutorID(runID)
-	py.log.Info("executor", zap.String("id", py.xid.String()))
+	xid := sdktypes.NewExecutorID(runID)
+	py.log.Info("executor", zap.String("id", xid.String()))
 
-	var entries []string
-	if err := json.Unmarshal(msg.Payload, &entries); err != nil {
-		py.log.Error("can't parse module entries", zap.Error(err))
-		return nil, fmt.Errorf("can't parse module entries: %w", err)
-	}
-	py.log.Info("module entries", zap.Any("entries", entries))
-
-	exports, err := entriesToValues(py.xid, entries)
+	py.log.Info("module entries", zap.Any("entries", mod.Entries))
+	exports, err := entriesToValues(xid, mod.Entries)
 	if err != nil {
 		py.log.Error("can't create module entries", zap.Error(err))
 		return nil, fmt.Errorf("can't create module entries: %w", err)
@@ -242,12 +217,12 @@ func (py *pySvc) Run(
 
 	killPy = false // All is good, don't kill Python subprocess.
 
-	py.run = ri
 	py.cbs = cbs
+	py.comm = comm
 	py.exports = exports
 	py.firstCall = true
-	py.dec = dec
-	py.enc = json.NewEncoder(conn)
+	py.run = ri
+	py.xid = xid
 
 	return py, nil
 }
@@ -260,63 +235,70 @@ func (py *pySvc) Values() map[string]sdktypes.Value {
 }
 
 func (py *pySvc) Close() {
-	py.log.Info("closing")
+	py.log.Info("closing (not really)")
 	// AK calls Close after `Run`, but we need the Python process running for `Call` as well.
 	// We kill the Python process once the initial `Call` is completed.
 }
 
 // initialCall handles initial call from autokitteh.
 // We split it from Call since Call is also used to execute activities.
-func (py *pySvc) initialCall(ctx context.Context, funcName string, payload []byte) (sdktypes.Value, error) {
+func (py *pySvc) initialCall(ctx context.Context, funcName string, event map[string]any) (sdktypes.Value, error) {
 	defer func() {
 		py.log.Info("python done, killing")
+		py.comm.Close()
 		if err := py.run.proc.Kill(); err != nil {
 			py.log.Warn("kill", zap.Int("pid", py.run.proc.Pid), zap.Error(err))
 		}
 		py.run.proc = nil
 	}()
 
-	// Initial run cal.
-	msg := PyMessage{
-		Type:    "run",
-		Name:    funcName,
-		Payload: payload,
+	py.log.Info("initial call", zap.Any("func", funcName))
+
+	// Initial run call.
+	msg := RunMessage{
+		FuncName: funcName,
+		Event:    event,
 	}
-	py.log.Info("initial call", zap.Any("message", msg))
-	if err := py.enc.Encode(msg); err != nil {
+	if err := py.comm.Send(msg); err != nil {
 		return sdktypes.InvalidValue, err
 	}
 
 	// Activity callback loop.
 	for {
-		var msg PyMessage
 		py.log.Info("waiting for Python call")
-		if err := py.dec.Decode(&msg); err != nil {
+		msg, err := py.comm.Recv()
+		if err != nil {
 			py.log.Error("communication error", zap.Error(err))
 			return sdktypes.InvalidValue, err
 		}
 		py.log.Info("from python", zap.Any("message", msg))
 
-		if msg.Type == doneType {
+		if msg.Type == "done" {
 			break
+		}
+
+		cbm, err := extractMessage[CallbackMessage](msg)
+		if err != nil {
+			py.log.Error("callback", zap.Error(err))
+			return sdktypes.InvalidValue, err
 		}
 
 		// Generate activity, it'll call Python with the result
 		// The function name is irrelevant, all the information Python needs is in the Payload
-		fn, err := sdktypes.NewFunctionValue(py.xid, msg.Func.Name, msg.Payload, nil, pyModuleFunc)
+		fn, err := sdktypes.NewFunctionValue(py.xid, cbm.Name, cbm.Data, nil, pyModuleFunc)
 		if err != nil {
 			py.log.Error("create function", zap.Error(err))
 			return sdktypes.InvalidValue, err
 		}
 
-		py.log.Info("callback", zap.String("func", msg.Func.Name))
+		py.log.Info("callback", zap.String("func", cbm.Name))
 		_, err = py.cbs.Call(
 			ctx,
 			py.xid.ToRunID(),
 			// The Python function to call is encoded in the payload
 			fn,
-			kittehs.Transform(msg.Func.Args, sdktypes.NewStringValue),
-			kittehs.TransformMap(msg.Func.Kw, func(key, val string) (string, sdktypes.Value) {
+			kittehs.Transform(cbm.Args, sdktypes.NewStringValue),
+			kittehs.TransformMap(cbm.Kw, func(key, val string) (string, sdktypes.Value) {
 				return key, sdktypes.NewStringValue(val)
 			}),
 		)
@@ -346,19 +328,12 @@ func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 
 	// Convert event to JSON
 	event := make(map[string]any, len(kwargs))
-	for k, v := range kwargs {
-		gv, err := v.Unwrap()
+	for key, val := range kwargs {
+		goVal, err := unwrap(val)
 		if err != nil {
-			py.log.Error("can't convert to Go", zap.Any("value", v), zap.Error(err))
 			return sdktypes.InvalidValue, err
 		}
-		event[k] = gv
-	}
-
-	payload, err := json.Marshal(event)
-	if err != nil {
-		py.log.Error("can't marshal kwargs", zap.Error(err))
-		return sdktypes.InvalidValue, err
+		event[key] = goVal
 	}
 
 	fnName := fn.Name().String()
@@ -366,27 +341,33 @@ func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 	if py.firstCall { // TODO: mutex. Ask Itay
 		py.firstCall = false
 
-		return py.initialCall(ctx, fnName, payload)
+		return py.initialCall(ctx, fnName, event)
 	}
 
 	// Activity call
-	msg := PyMessage{
-		Type:    callbackType,
-		Payload: fn.Data(),
+	cbm := CallbackMessage{
+		Name: fnName,
+		Data: fn.Data(),
 	}
-	py.log.Info("callback to Python", zap.Any("message", msg))
+	py.log.Info("callback to Python", zap.Any("message", cbm))
 
-	if err := py.enc.Encode(msg); err != nil {
+	if err := py.comm.Send(cbm); err != nil {
 		py.log.Error("send to python", zap.Error(err))
 		return sdktypes.InvalidValue, err
 	}
 
-	var reply PyMessage
-	if err := py.dec.Decode(&reply); err != nil {
+	msg, err := py.comm.Recv()
+	if err != nil {
 		py.log.Error("from python", zap.Error(err))
 		return sdktypes.InvalidValue, err
 	}
-	py.log.Info("python return", zap.Any("message", reply))
 
-	return sdktypes.NewBytesValue(reply.Payload), nil
+	rm, err := extractMessage[ResponseMessage](msg)
+	if err != nil {
+		py.log.Error("from python", zap.Error(err))
+		return sdktypes.InvalidValue, err
+	}
+	py.log.Info("python return", zap.Any("message", rm))
+
+	return sdktypes.NewBytesValue(rm.Value), nil
 }

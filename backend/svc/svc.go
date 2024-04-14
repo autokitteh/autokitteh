@@ -5,19 +5,18 @@ import (
 
 	"go.uber.org/fx"
 
-	"go.autokitteh.dev/autokitteh/internal/backend/basesvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/httpsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/svc"
 )
 
 type (
-	RunOptions = basesvc.RunOptions
-	Config     = basesvc.Config
+	RunOptions = svc.RunOptions
+	Config     = svc.Config
 )
 
 var (
-	LoadConfig = basesvc.LoadConfig
-	StartDB    = basesvc.StartDB
+	LoadConfig = svc.LoadConfig
+	StartDB    = svc.StartDB
 )
 
 type ShutdownSignal = fx.ShutdownSignal

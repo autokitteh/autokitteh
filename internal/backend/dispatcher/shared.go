@@ -5,10 +5,7 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-const (
-	workflowName  = "event"
-	taskQueueName = "events-task-queue"
-)
+const taskQueueName = "events-task-queue"
 
 // Events Workflow
 type eventsWorkflowInput struct {

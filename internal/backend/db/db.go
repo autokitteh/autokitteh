@@ -29,7 +29,8 @@ type DB interface {
 	Connect(context.Context) error
 	Setup(context.Context) error
 	Teardown(context.Context) error
-
+	MigrationRequired(context.Context) (bool, int64, error)
+	Migrate(context.Context) error
 	Debug() DB
 
 	GormDB() *gorm.DB
