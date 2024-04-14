@@ -16,6 +16,13 @@ import (
 	"go.uber.org/zap"
 )
 
+func skipIfNoPython(t *testing.T) {
+	_, err := exec.LookPath("python")
+	if err != nil {
+		t.Skip("no python installed")
+	}
+}
+
 func Test_createVEnv(t *testing.T) {
 	if testing.Short() {
 		t.Skip("short mode")
@@ -23,7 +30,7 @@ func Test_createVEnv(t *testing.T) {
 
 	info, err := pyExecInfo(context.Background())
 	if errors.Is(errors.Unwrap(err), exec.ErrNotFound) {
-		t.Skipf("python not found")
+		t.Skip("python not found")
 	}
 	require.NoError(t, err)
 
@@ -36,6 +43,8 @@ func Test_createVEnv(t *testing.T) {
 var tarData []byte
 
 func Test_runPython(t *testing.T) {
+	skipIfNoPython(t)
+
 	log := zap.NewExample()
 	defer log.Sync() //nolint:all
 

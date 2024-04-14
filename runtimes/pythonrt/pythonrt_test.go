@@ -90,6 +90,8 @@ func testCtx(t *testing.T) (context.Context, context.CancelFunc) {
 }
 
 func Test_pySvc_Run(t *testing.T) {
+	skipIfNoPython(t)
+
 	rt, err := New()
 	require.NoError(t, err, "New")
 	svc, ok := rt.(*pySvc)
