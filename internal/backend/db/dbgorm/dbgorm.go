@@ -158,9 +158,9 @@ func (db *gormdb) MigrationRequired(ctx context.Context) (bool, int64, error) {
 func (db *gormdb) Setup(ctx context.Context) error {
 	isSqlite := db.cfg.Type == "sqlite"
 	if isSqlite {
-		db.db.Exec("PRAGMA foreign_keys = OFF")
+		foreignKeys(db, false)
 		defer func() {
-			db.db.Exec("PRAGMA foreign_keys = ON")
+			foreignKeys(db, true)
 		}()
 	}
 
@@ -170,6 +170,10 @@ func (db *gormdb) Setup(ctx context.Context) error {
 	}
 	if !required {
 		return nil
+	}
+
+	if db.cfg.AutoMigrate || dbVersion == 0 {
+		return db.Migrate(ctx)
 	}
 
 	return errors.New("db migrations required") //TODO: maybe more details
