@@ -12,7 +12,26 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
+	"go.autokitteh.dev/autokitteh/web/static"
 )
+
+const (
+	// Save new autokitteh connections with user-submitted secrets.
+	uiPath = "/i/http/connect/"
+
+	// savePath is the URL path for our handler to save a new autokitteh
+	// connection, after the user submits its details via a web form.
+	savePath = "/i/http/save"
+)
+
+// handler is an autokitteh webhook which implements [http.Handler] to
+// receive, dispatch, and acknowledge asynchronous event notifications.
+type handler struct {
+	logger     *zap.Logger
+	secrets    sdkservices.Secrets
+	dispatcher sdkservices.Dispatcher
+	scope      string
+}
 
 // ns can be either:
 // - "project": means project "project" with env "default".
@@ -21,19 +40,16 @@ func routePrefix(ns string) string {
 	return fmt.Sprintf("/http/%s/", ns)
 }
 
-// HTTPHandler is an autokitteh webhook which implements [http.Handler] to
-// receive and dispatch asynchronous event notifications.
-type HTTPHandler struct {
-	dispatcher sdkservices.Dispatcher
-	logger     *zap.Logger
-}
-
-func Start(l *zap.Logger, mux *http.ServeMux, d sdkservices.Dispatcher) {
-	h := HTTPHandler{dispatcher: d, logger: l}
+func Start(l *zap.Logger, mux *http.ServeMux, s sdkservices.Secrets, d sdkservices.Dispatcher) {
+	h := handler{logger: l, secrets: s, dispatcher: d, scope: "http"}
 	mux.Handle(routePrefix("{ns}")+"*", h)
+
+	// Save new autokitteh connections with user-submitted HTTP secrets.
+	mux.Handle(uiPath, http.FileServer(http.FS(static.HTTPWebContent)))
+	mux.HandleFunc(savePath, h.handleAuth)
 }
 
-func (h HTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	l := h.logger.With(zap.String("url", r.URL.String()))
 
 	l.Info("incoming request")
@@ -80,7 +96,7 @@ func (h HTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			},
 		)),
 		"method": sdktypes.NewStringValue(r.Method),
-		"header": sdktypes.NewDictValueFromStringMap(
+		"headers": sdktypes.NewDictValueFromStringMap(
 			kittehs.TransformMapValues(r.Header, func(vs []string) sdktypes.Value {
 				return sdktypes.NewStringValue(strings.Join(vs, ","))
 			}),
