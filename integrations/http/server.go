@@ -17,11 +17,11 @@ import (
 
 const (
 	// Save new autokitteh connections with user-submitted secrets.
-	uiPath = "/httprest/connect/"
+	uiPath = "/i/http/connect/"
 
 	// savePath is the URL path for our handler to save a new autokitteh
 	// connection, after the user submits its details via a web form.
-	savePath = "/httprest/save"
+	savePath = "/i/http/save"
 )
 
 // handler is an autokitteh webhook which implements [http.Handler] to

@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>autokitteh HTTP/REST Integration - Success!</title>
+    <title>autokitteh HTTP Integration - Error!</title>
     <link
       rel="apple-touch-icon"
       sizes="180x180"
@@ -22,7 +22,7 @@
     <link rel="manifest" href="/static/site.webmanifest" />
     <link rel="stylesheet" type="text/css" href="styles.css" />
     <meta name="robots" content="noindex, nofollow" />
-    <script src="success.js" defer></script>
+    <script src="error.js" defer></script>
   </head>
 
   <body>
@@ -34,12 +34,13 @@
       <td>
         <img class="logo" src="/static/images/http.svg" alt="Logo" />
       </td>
-      <td><h1>HTTP / REST - Connection Created</h1></td>
+      <td><h1>HTTP - Connection Error</h1></td>
     </table>
 
-    <p class="info">Your <strong>autokitteh</strong> connection token is:</p>
-    <p><span id="token" class="copyable"></span></p>
+    <p class="error" id="error"></p>
 
-    <p class="notif" id="notif">Copied into the clipboard</p>
+    <p class="info">
+      <a href="../connect" class="info">Try to create another connection</a>
+    </p>
   </body>
 </html>

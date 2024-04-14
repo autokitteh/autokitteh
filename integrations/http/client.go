@@ -15,9 +15,9 @@ var IntegrationID = sdktypes.IntegrationIDFromName("http")
 var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
 	IntegrationId: IntegrationID.String(),
 	UniqueName:    "http",
-	DisplayName:   "HTTP / REST",
+	DisplayName:   "HTTP",
 	LogoUrl:       "/static/images/http.svg",
-	ConnectionUrl: "/httprest/connect",
+	ConnectionUrl: "/i/http/connect",
 }))
 
 type integration struct {
