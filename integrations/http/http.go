@@ -23,7 +23,7 @@ import (
 // https://github.com/qri-io/starlib/blob/master/http/http.go#L59)
 
 const (
-	authzHeader       = "Authorization"
+	authHeader        = "Authorization"
 	contentTypeHeader = "Content-Type"
 
 	contentTypeForm      = "application/x-www-form-urlencoded"
@@ -67,11 +67,11 @@ func (i integration) request(method string) sdkexecutor.Function {
 		}
 
 		// Add the Authorization HTTP header?
-		if authz := i.getConnection(ctx)[authzHeader]; authz != "" {
+		if auth := i.getConnection(ctx)[authHeader]; auth != "" {
 			// If the Authorization header is set explicitly, it
 			// should override the connection's default authorization.
-			if _, ok := headers[authzHeader]; !ok {
-				headers[authzHeader] = authz
+			if _, ok := headers[authHeader]; !ok {
+				headers[authHeader] = auth
 			}
 		}
 

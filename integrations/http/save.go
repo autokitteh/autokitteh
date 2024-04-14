@@ -47,16 +47,16 @@ func (h handler) handleAuth(w http.ResponseWriter, r *http.Request) {
 	basic := r.Form.Get("basic_username") + ":" + r.Form.Get("basic_password")
 	bearer := r.Form.Get("bearer_access_token")
 
-	authz := ""
+	auth := ""
 	switch {
 	case basic != ":":
-		authz = "Basic " + base64.StdEncoding.EncodeToString([]byte(basic))
+		auth = "Basic " + base64.StdEncoding.EncodeToString([]byte(basic))
 	case bearer != "":
-		authz = "Bearer " + bearer
+		auth = "Bearer " + bearer
 	}
 
 	// Save a new connection, and return to the user an autokitteh connection token.
-	connToken, err := h.createConnection(authz)
+	connToken, err := h.createConnection(auth)
 	if err != nil {
 		l.Warn("Failed to save new connection secrets", zap.Error(err))
 		e := "Connection saving error: " + err.Error()
@@ -71,11 +71,11 @@ func (h handler) handleAuth(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, u, http.StatusFound)
 }
 
-func (h handler) createConnection(authz string) (string, error) {
+func (h handler) createConnection(auth string) (string, error) {
 	token, err := h.secrets.Create(context.Background(), h.scope,
 		// Connection token --> authorization HTTP header.
 		map[string]string{
-			"authorization": authz,
+			"authorization": auth,
 		},
 		// List of all connection tokens.
 		"tokens",
