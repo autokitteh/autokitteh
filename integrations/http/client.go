@@ -28,6 +28,8 @@ type integration struct {
 func New(sec sdkservices.Secrets) sdkservices.Integration {
 	i := integration{secrets: sec, scope: desc.UniqueName().String()}
 	return sdkintegrations.NewIntegration(desc, sdkmodule.New(
+		sdkmodule.WithConfigAsData(),
+
 		sdkmodule.ExportFunction(
 			"get",
 			i.request(http.MethodGet),

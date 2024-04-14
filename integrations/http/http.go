@@ -62,6 +62,10 @@ func (i integration) request(method string) sdkexecutor.Function {
 			return sdktypes.InvalidValue, err
 		}
 
+		if headers == nil {
+			headers = make(map[string]string)
+		}
+
 		if err := setQueryParams(&rawURL, params); err != nil {
 			return sdktypes.InvalidValue, err
 		}
