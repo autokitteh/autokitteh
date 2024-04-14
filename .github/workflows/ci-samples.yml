@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Check out code
+      - name: Check out samples repo
         uses: actions/checkout@v4
         with:
           repository: https://github.com/autokitteh/samples.git
