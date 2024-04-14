@@ -29,27 +29,58 @@ import (
 var (
 	now    time.Time
 	dbType string
+	gormDB gormdb
 )
 
 func TestMain(m *testing.M) {
 	flag.StringVar(&dbType, "dbtype", "sqlite", "Database type to use for tests (e.g., sqlite, postgres)")
 	flag.Parse()
 
-	var exitCode int
+	var pg *embedPG.EmbeddedPostgres
+
 	if dbType == "postgres" {
-		pg := embedPG.NewDatabase()
+		pg = embedPG.NewDatabase()
 		if err := pg.Start(); err != nil {
 			log.Fatalf("failed to start postgres: %v", err)
 		}
 		fmt.Println("Started PG..")
-		exitCode = m.Run()
+	}
+
+	// setup test bench - gorm, schemas, migrations, etc
+	cfg := gormkitteh.Config{Type: dbType, DSN: ""} // "" for in-memory, or specify a file
+	db := setupDB(&cfg)
+	gormDB = gormdb{db: db, cfg: &cfg, mu: nil, z: zap.NewExample()}
+
+	ctx := context.Background()
+	if err := gormDB.Setup(ctx); err != nil { // ensure migration/schemas
+		log.Fatalf("Failed to setup gormdb: %v", err)
+	}
+
+	now = time.Now()
+	now = now.Truncate(time.Microsecond) // PG default resolution is microseconds
+
+	// PG saves dates in UTC. Gorm converts them back to local TZ on read
+	// SQLite has no dedicated time format and uses strings, so gorm will read them as UTC, thus we need to write them in UTC
+	if dbType == "sqlite" {
+		now = now.UTC()
+	}
+
+	// run tests
+	exitCode := m.Run()
+
+	// teardown test bench
+	if err := gormDB.Teardown(ctx); err != nil { // delete tables if any
+		log.Printf("Failed to teardown gormdb: %v", err)
+	}
+
+	if dbType == "postgres" && pg != nil {
+		// don't run this in defer to keep logs
 		fmt.Println("Stopping PG...")
 		if err := pg.Stop(); err != nil {
 			log.Fatalf("failed to stop postgres: %v", err)
 		}
-	} else {
-		exitCode = m.Run()
 	}
+
 	os.Exit(exitCode)
 }
 
@@ -120,25 +151,11 @@ func setupDB(config *gormkitteh.Config) *gorm.DB {
 }
 
 func newDBFixture() *dbFixture {
-	cfg := gormkitteh.Config{Type: dbType, DSN: ""} // in-memory, or specify a file
-	db := setupDB(&cfg)
-
-	gormdb := gormdb{db: db, cfg: &cfg, mu: nil, z: zap.NewExample()}
-
 	ctx := context.Background()
-	if err := gormdb.Teardown(ctx); err != nil { // delete tables if any
-		log.Printf("Failed to teardown gormdb: %v", err)
+	if err := gormDB.Cleanup(ctx); err != nil { // ensure migration/schemas
+		log.Fatalf("Failed to cleanup gormdb: %v", err)
 	}
-	if err := gormdb.Setup(ctx); err != nil { // ensure migration/schemas
-		log.Fatalf("Failed to setup gormdb: %v", err)
-	}
-
-	// PG saves dates in UTC. Gorm converts them back to local TZ on read
-	// SQLite has no dedicated time format and uses strings, so gorm will read them as UTC
-	if dbType == "sqlite" {
-		now = now.UTC()
-	}
-	return &dbFixture{db: db, gormdb: &gormdb, ctx: ctx}
+	return &dbFixture{db: gormDB.db, gormdb: &gormDB, ctx: ctx}
 }
 
 func newDBFixtureFK(withoutForeignKeys bool) *dbFixture {
