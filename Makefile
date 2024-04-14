@@ -106,7 +106,7 @@ test: test-race test-cli test-runs test-sessions
 .PHONY: test-dbgorm
 test-dbgorm:
 	for dbtype in sqlite postgres; do \
-	echo running for $$dbtype; \
+		echo running for $$dbtype; \
 	go test -v ./internal/backend/db/dbgorm -dbtype $$dbtype ; \
 	done
 
