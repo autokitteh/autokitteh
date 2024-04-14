@@ -37,7 +37,7 @@ func TestMain(m *testing.M) {
 
 	var exitCode int
 	if dbType == "postgres" {
-		pg := embedPG.NewDatabase() // embeddedpostgres.DefaultConfig.RuntimePath("/tmp"))
+		pg := embedPG.NewDatabase()
 		if err := pg.Start(); err != nil {
 			log.Fatalf("failed to start postgres: %v", err)
 		}
