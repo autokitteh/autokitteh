@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"reflect"
 	"sync"
 
 	"github.com/pressly/goose/v3"
@@ -191,6 +192,22 @@ func (db *gormdb) Teardown(ctx context.Context) error {
 		foreignKeys(db, true)
 	}
 
+	return nil
+}
+
+func (gormdb *gormdb) Cleanup(ctx context.Context) error {
+	foreignKeys(gormdb, false) // disable foreign keys
+
+	db := gormdb.db.WithContext(ctx).Unscoped().Session(&gorm.Session{AllowGlobalUpdate: true})
+	for _, model := range scheme.Tables {
+		modelType := reflect.TypeOf(model)
+		model := reflect.New(modelType).Interface()
+		if err := db.Delete(model).Error; err != nil {
+			return fmt.Errorf("cleanup data for table %s: %w", modelType.Name(), err)
+		}
+	}
+
+	foreignKeys(gormdb, true) // re-enable foreign keys
 	return nil
 }
 
