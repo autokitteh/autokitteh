@@ -44,7 +44,7 @@ func TestCreateConnectionForeignKeys(t *testing.T) {
 	c := f.newConnection()
 	unexisting := "unexisting"
 
-	// FIXME: ENG-571
+	// FIXME: ENG-571 - integration table
 	// c.IntegrationID = &unexisting
 	// assertErrorContainsIgnoreCase(t, f.gormdb.createConnection(f.ctx, &c), "FOREIGN KEY")
 	// c.IntegrationID = nil
