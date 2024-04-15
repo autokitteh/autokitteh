@@ -12,6 +12,8 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 )
 
+const defaultAddr = "default"
+
 type Svc interface {
 	Init(mux *http.ServeMux)
 	Setup(ctx context.Context) error
@@ -45,12 +47,14 @@ func (svc *svc) Init(mux *http.ServeMux) {
 
 	// messages api paths.
 	mux.HandleFunc("GET /webtools/api/msgs/{addr}", svc.getMessages)
+	mux.HandleFunc("GET /webtools/api/msgs", svc.getMessages)
 	mux.HandleFunc("POST /webtools/api/msgs/{addr}", svc.postMessage)
+	mux.HandleFunc("POST /webtools/api/msgs", svc.postMessage)
 	mux.HandleFunc("DELETE /webtools/api/msgs/{addr}/{id}", svc.deleteMessage)
 	mux.HandleFunc("DELETE /webtools/api/msgs/{addr}", svc.deleteMessage)
 
 	// messages app paths.
-	mux.Handle("/webtools/msgs", http.RedirectHandler("/webtools/msgs/main", http.StatusFound))
+	mux.Handle("/webtools/msgs", http.RedirectHandler("/webtools/msgs/"+defaultAddr, http.StatusFound))
 	mux.Handle("/webtools/msgs/{addr}/*", kittehs.StripWildcardPrefix("/webtools/msgs/{addr}", http.FileServer(http.FS(web.Messages))))
 
 	mux.HandleFunc("GET /webtools/msgs/{addr}/msgs", svc.getMessages)
@@ -59,7 +63,7 @@ func (svc *svc) Init(mux *http.ServeMux) {
 	mux.HandleFunc("DELETE /webtools/msgs/{addr}/msgs", svc.deleteMessage)
 
 	// terminal paths.
-	mux.Handle("/webtools/terminal", http.RedirectHandler("/webtools/terminal/main", http.StatusFound))
+	mux.Handle("/webtools/terminal", http.RedirectHandler("/webtools/terminal/"+defaultAddr, http.StatusFound))
 	mux.Handle("/webtools/terminal/{addr}/*", kittehs.StripWildcardPrefix("/webtools/terminal/{addr}", http.FileServer(http.FS(web.Terminal))))
 
 	mux.HandleFunc("GET /webtools/terminal/{addr}/msgs", svc.getMessages)
@@ -69,7 +73,12 @@ func (svc *svc) Init(mux *http.ServeMux) {
 }
 
 func (s *svc) getMessages(w http.ResponseWriter, r *http.Request) {
-	msgs, err := s.db.GetMessages(r.Context(), r.PathValue("addr"))
+	addr := r.PathValue("addr")
+	if addr == "" {
+		addr = defaultAddr
+	}
+
+	msgs, err := s.db.GetMessages(r.Context(), addr)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -90,7 +99,12 @@ func (s *svc) postMessage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, err := s.db.AddMessage(r.Context(), r.PathValue("addr"), string(body))
+	addr := r.PathValue("addr")
+	if addr == "" {
+		addr = defaultAddr
+	}
+
+	id, err := s.db.AddMessage(r.Context(), addr, string(body))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

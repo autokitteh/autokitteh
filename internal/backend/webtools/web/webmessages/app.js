@@ -11,7 +11,7 @@ const inputForm = document.querySelector('.chat-input-form')
 
 const addr = document.location.pathname.split('/').slice(-2)[0]
 const host = document.location.host
-const pathPrefixURL = `http://${host}/http/${addr}/`
+const pathPrefixURL = `http://${host}/http/`
 
 const createChatMessageElement = (message) => {
   const t = (message.created_at ? new Date(message.created_at) : new Date()).toLocaleString({ hour: 'numeric', minute: 'numeric', hour12: true })
