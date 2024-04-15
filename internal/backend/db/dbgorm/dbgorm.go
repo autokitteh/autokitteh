@@ -112,7 +112,7 @@ var fkStmtByDB = map[string]map[bool]string{
 
 func foreignKeys(gormdb *gormdb, enable bool) {
 	if _, found := fkStmtByDB[gormdb.cfg.Type]; !found {
-		panic(fmt.Errorf("Unknown DB type: %s", gormdb.cfg.Type))
+		panic(fmt.Errorf("unknown DB type: %s", gormdb.cfg.Type))
 	}
 	stmt := fkStmtByDB[gormdb.cfg.Type][enable]
 	gormdb.db.Exec(stmt)
