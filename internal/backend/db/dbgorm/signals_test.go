@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"gorm.io/gorm"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 )
@@ -50,7 +51,7 @@ func TestSaveSignelForeignKeys(t *testing.T) {
 	unexisting := "unexisting"
 
 	sig.ConnectionID = unexisting
-	assertErrorContainsIgnoreCase(t, f.gormdb.saveSignal(f.ctx, &sig), "FOREIGN KEY")
+	assert.ErrorIs(t, f.gormdb.saveSignal(f.ctx, &sig), gorm.ErrForeignKeyViolated)
 	sig.ConnectionID = conn.ConnectionID
 
 	// test with existing assets

@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"gorm.io/gorm"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 )
@@ -42,7 +43,7 @@ func TestCreateEnvForeignKeys(t *testing.T) {
 	unexisting := "unexisting"
 
 	e.ProjectID = &unexisting
-	assertErrorContainsIgnoreCase(t, f.gormdb.createEnv(f.ctx, &e), "FOREIGN KEY")
+	assert.ErrorIs(t, f.gormdb.createEnv(f.ctx, &e), gorm.ErrForeignKeyViolated)
 
 	p := f.newProject()
 	e.ProjectID = &p.ProjectID
@@ -89,7 +90,7 @@ func TestDeleteEnvForeignKeys(t *testing.T) {
 	f.createDeploymentsAndAssert(t, d)
 
 	// cannot delete env, since deployment referencing it
-	assertErrorContainsIgnoreCase(t, f.gormdb.deleteEnv(f.ctx, e.EnvID), "FOREIGN KEY")
+	assert.ErrorIs(t, f.gormdb.deleteEnv(f.ctx, e.EnvID), gorm.ErrForeignKeyViolated)
 
 	// delete deployment (referencing build), then env
 	assert.NoError(t, f.gormdb.deleteDeployment(f.ctx, d.DeploymentID))

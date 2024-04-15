@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"gorm.io/gorm"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 )
@@ -46,11 +47,11 @@ func TestCreateConnectionForeignKeys(t *testing.T) {
 
 	// FIXME: ENG-571 - integration table
 	// c.IntegrationID = &unexisting
-	// assertErrorContainsIgnoreCase(t, f.gormdb.createConnection(f.ctx, &c), "FOREIGN KEY")
+	//assert.ErrorIs(t, f.gormdb.createConnection(f.ctx, &c), gorm.ErrForeignKeyViolated)
 	// c.IntegrationID = nil
 
 	c.ProjectID = &unexisting
-	assertErrorContainsIgnoreCase(t, f.gormdb.createConnection(f.ctx, &c), "FOREIGN KEY")
+	assert.ErrorIs(t, f.gormdb.createConnection(f.ctx, &c), gorm.ErrForeignKeyViolated)
 	c.ProjectID = nil
 
 	// test with existing assets

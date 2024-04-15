@@ -7,12 +7,10 @@ import (
 	"log"
 	"os"
 	"reflect"
-	"strings"
 	"testing"
 	"time"
 
 	embedPG "github.com/fergusstrange/embedded-postgres"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"gorm.io/datatypes"
@@ -84,11 +82,6 @@ func TestMain(m *testing.M) {
 	os.Exit(exitCode)
 }
 
-func assertErrorContainsIgnoreCase(t *testing.T, err error, contains string) {
-	require.Error(t, err)
-	assert.Contains(t, strings.ToUpper(err.Error()), strings.ToUpper(contains))
-}
-
 func init() {
 	now = time.Now()
 	now = now.Truncate(time.Microsecond) // PG default resolution is microseconds
@@ -138,7 +131,8 @@ func setupDB(config *gormkitteh.Config) *gorm.DB {
 		NowFunc: func() time.Time { // operate always in UTC to simplify object comparison upon creation and fetching
 			return time.Now().UTC()
 		},
-		Logger: logger,
+		Logger:         logger,
+		TranslateError: true,
 		// DriverName:
 	})
 	if err != nil {
