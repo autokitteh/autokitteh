@@ -15,7 +15,6 @@ import (
 	_ "ariga.io/atlas-provider-gorm/gormschema"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
-	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/internal/backend/gormkitteh"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/migrations"
@@ -184,21 +183,6 @@ func (db *gormdb) Setup(ctx context.Context) error {
 	}
 
 	return errors.New("db migrations required") //TODO: maybe more details
-}
-
-func (db *gormdb) Teardown(ctx context.Context) error {
-	isSqlite := db.cfg.Type == "sqlite"
-	if isSqlite {
-		foreignKeys(db, false)
-	}
-	if err := db.db.WithContext(ctx).Migrator().DropTable(scheme.Tables...); err != nil {
-		return fmt.Errorf("droptable: %w", err)
-	}
-	if isSqlite {
-		foreignKeys(db, true)
-	}
-
-	return nil
 }
 
 // TODO: not sure this will work with the connect method

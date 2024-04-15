@@ -67,7 +67,7 @@ func TestMain(m *testing.M) {
 	exitCode := m.Run()
 
 	// teardown test bench
-	if err := gormDB.Teardown(ctx); err != nil { // delete tables if any
+	if err := TeardownDB(&gormDB, ctx); err != nil { // delete tables if any
 		log.Printf("Failed to teardown gormdb: %v", err)
 	}
 
@@ -142,6 +142,21 @@ func setupDB(config *gormkitteh.Config) *gorm.DB {
 		db.Exec("PRAGMA foreign_keys = ON")
 	}
 	return db
+}
+
+func TeardownDB(gormdb *gormdb, ctx context.Context) error {
+	isSqlite := gormdb.cfg.Type == "sqlite"
+	if isSqlite {
+		foreignKeys(gormdb, false)
+	}
+	if err := gormdb.db.WithContext(ctx).Migrator().DropTable(scheme.Tables...); err != nil {
+		return fmt.Errorf("droptable: %w", err)
+	}
+	if isSqlite {
+		foreignKeys(gormdb, true)
+	}
+
+	return nil
 }
 
 func CleanupDB(gormdb *gormdb, ctx context.Context) error {
