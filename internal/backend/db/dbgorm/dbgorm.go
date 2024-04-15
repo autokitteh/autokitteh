@@ -103,6 +103,8 @@ var fkStmtByDB = map[string]map[bool]string{
 		false: "PRAGMA foreign_keys = OFF",
 	},
 	"postgres": {
+		// in PG foreign keys implemented as triggers. Setting `session_replication_role'
+		// to `replica' prevents firing triggers, thus effectively disables foreign keys
 		true:  "SET session_replication_role = DEFAULT",
 		false: "SET session_replication_role = replica",
 	},
