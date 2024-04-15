@@ -144,9 +144,25 @@ func setupDB(config *gormkitteh.Config) *gorm.DB {
 	return db
 }
 
+func CleanupDB(gormdb *gormdb, ctx context.Context) error {
+	foreignKeys(gormdb, false) // disable foreign keys
+
+	db := gormdb.db.WithContext(ctx).Unscoped().Session(&gorm.Session{AllowGlobalUpdate: true})
+	for _, model := range scheme.Tables {
+		modelType := reflect.TypeOf(model)
+		model := reflect.New(modelType).Interface()
+		if err := db.Delete(model).Error; err != nil {
+			return fmt.Errorf("cleanup data for table %s: %w", modelType.Name(), err)
+		}
+	}
+
+	foreignKeys(gormdb, true) // re-enable foreign keys
+	return nil
+}
+
 func newDBFixture() *dbFixture {
 	ctx := context.Background()
-	if err := gormDB.Cleanup(ctx); err != nil { // ensure migration/schemas
+	if err := CleanupDB(&gormDB, ctx); err != nil { // ensure migration/schemas
 		log.Fatalf("Failed to cleanup gormdb: %v", err)
 	}
 	return &dbFixture{db: gormDB.db, gormdb: &gormDB, ctx: ctx}
