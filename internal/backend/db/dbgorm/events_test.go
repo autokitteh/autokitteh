@@ -39,7 +39,7 @@ func TestCreateEventForeignKeys(t *testing.T) {
 
 	// FIXME: ENG-571
 	// e.IntegrationID = &unexisting
-	// assert.ErrorContains(t, f.gormdb.saveEvent(f.ctx, &e), "FOREIGN KEY")
+	// assert.ErrorIs(t, f.gormdb.saveEvent(f.ctx, &e), gorm.ErrForeignKeyViolated)
 	// e.IntegrationID = nil
 
 	e2 := f.newEvent()

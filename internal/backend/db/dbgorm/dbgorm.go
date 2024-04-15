@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"reflect"
 	"sync"
 
 	"github.com/pressly/goose/v3"
@@ -96,6 +97,27 @@ func translateError(err error) error {
 	}
 }
 
+var fkStmtByDB = map[string]map[bool]string{
+	"sqlite": {
+		true:  "PRAGMA foreign_keys = ON",
+		false: "PRAGMA foreign_keys = OFF",
+	},
+	"postgres": {
+		// in PG foreign keys implemented as triggers. Setting `session_replication_role'
+		// to `replica' prevents firing triggers, thus effectively disables foreign keys
+		true:  "SET session_replication_role = DEFAULT",
+		false: "SET session_replication_role = replica",
+	},
+}
+
+func foreignKeys(gormdb *gormdb, enable bool) {
+	if _, found := fkStmtByDB[gormdb.cfg.Type]; !found {
+		panic(fmt.Errorf("unknown DB type: %s", gormdb.cfg.Type))
+	}
+	stmt := fkStmtByDB[gormdb.cfg.Type][enable]
+	gormdb.db.Exec(stmt)
+}
+
 func initGoose(client *sql.DB, dialect string) error {
 	goose.SetBaseFS(migrations.Migrations)
 
@@ -144,9 +166,9 @@ func (db *gormdb) MigrationRequired(ctx context.Context) (bool, int64, error) {
 func (db *gormdb) Setup(ctx context.Context) error {
 	isSqlite := db.cfg.Type == "sqlite"
 	if isSqlite {
-		db.db.Exec("PRAGMA foreign_keys = OFF")
+		foreignKeys(db, false)
 		defer func() {
-			db.db.Exec("PRAGMA foreign_keys = ON")
+			foreignKeys(db, true)
 		}()
 	}
 
@@ -168,15 +190,31 @@ func (db *gormdb) Setup(ctx context.Context) error {
 func (db *gormdb) Teardown(ctx context.Context) error {
 	isSqlite := db.cfg.Type == "sqlite"
 	if isSqlite {
-		db.db.Exec("PRAGMA foreign_keys = OFF")
+		foreignKeys(db, false)
 	}
 	if err := db.db.WithContext(ctx).Migrator().DropTable(scheme.Tables...); err != nil {
 		return fmt.Errorf("droptable: %w", err)
 	}
 	if isSqlite {
-		db.db.Exec("PRAGMA foreign_keys = ON")
+		foreignKeys(db, true)
 	}
 
+	return nil
+}
+
+func (gormdb *gormdb) Cleanup(ctx context.Context) error {
+	foreignKeys(gormdb, false) // disable foreign keys
+
+	db := gormdb.db.WithContext(ctx).Unscoped().Session(&gorm.Session{AllowGlobalUpdate: true})
+	for _, model := range scheme.Tables {
+		modelType := reflect.TypeOf(model)
+		model := reflect.New(modelType).Interface()
+		if err := db.Delete(model).Error; err != nil {
+			return fmt.Errorf("cleanup data for table %s: %w", modelType.Name(), err)
+		}
+	}
+
+	foreignKeys(gormdb, true) // re-enable foreign keys
 	return nil
 }
 

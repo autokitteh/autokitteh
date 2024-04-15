@@ -103,6 +103,13 @@ endif
 .PHONY: test
 test: test-race test-cli test-runs test-sessions
 
+.PHONY: test-dbgorm
+test-dbgorm:
+	for dbtype in sqlite postgres; do \
+		echo running for $$dbtype; \
+	go test -v ./internal/backend/db/dbgorm -dbtype $$dbtype ; \
+	done
+
 # TODO(ENG-427): Fix E2E test's data race.
 # TODO(ENG-447): Fix HTTP trigger flakiness.
 .PHONY: test-unit

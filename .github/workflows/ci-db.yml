@@ -1,0 +1,26 @@
+name: DBGorm tests (all supported engines)
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "internal/backend/db/dbgorm/**"
+  pull_request:
+    paths:
+      - "internal/backend/db/dbgorm/**"
+
+jobs:
+  validate:
+    name: DBGorm tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Run DBGorm tests on all engines
+        run: make test-dbgorm

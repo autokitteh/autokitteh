@@ -67,9 +67,9 @@ func (db *gormdb) deleteProjectAndDependents(ctx context.Context, projectID stri
 
 	var signalIDs []string
 	if err := gormDB.Model(&scheme.Signal{}).
-		Joins("join Connections on Connections.connection_id = Signals.connection_id").
-		Where("Connections.project_id = ?", projectID).
-		Pluck("Signals.signal_id", &signalIDs).Error; err != nil {
+		Joins("join connections on connections.connection_id = signals.connection_id").
+		Where("connections.project_id = ?", projectID).
+		Pluck("signals.signal_id", &signalIDs).Error; err != nil {
 		return err
 	}
 	if err = gormDB.Delete(&scheme.Signal{}, "signal_id IN ?", signalIDs).Error; err != nil {

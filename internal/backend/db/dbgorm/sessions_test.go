@@ -71,19 +71,19 @@ func TestCreateSessionForeignKeys(t *testing.T) {
 	unexisting := "unexisting"
 
 	s.BuildID = &unexisting
-	assert.ErrorContains(t, f.gormdb.createSession(f.ctx, &s), "FOREIGN KEY")
+	assert.ErrorIs(t, f.gormdb.createSession(f.ctx, &s), gorm.ErrForeignKeyViolated)
 	s.BuildID = nil
 
 	s.EnvID = &unexisting
-	assert.ErrorContains(t, f.gormdb.createSession(f.ctx, &s), "FOREIGN KEY")
+	assert.ErrorIs(t, f.gormdb.createSession(f.ctx, &s), gorm.ErrForeignKeyViolated)
 	s.EnvID = nil
 
 	s.DeploymentID = &unexisting
-	assert.ErrorContains(t, f.gormdb.createSession(f.ctx, &s), "FOREIGN KEY")
+	assert.ErrorIs(t, f.gormdb.createSession(f.ctx, &s), gorm.ErrForeignKeyViolated)
 	s.DeploymentID = nil
 
 	s.EventID = &unexisting
-	assert.ErrorContains(t, f.gormdb.createSession(f.ctx, &s), "FOREIGN KEY")
+	assert.ErrorIs(t, f.gormdb.createSession(f.ctx, &s), gorm.ErrForeignKeyViolated)
 	s.EventID = nil
 
 	// test with existing assets
@@ -156,7 +156,7 @@ func TestCreateSessionLogRecordForeignKeys(t *testing.T) {
 
 	s := f.newSession(sdktypes.SessionStateTypeCompleted)
 	logr := f.newSessionLogRecord()
-	assert.ErrorContains(t, addSessionLogRecordDB(f.gormdb.db, &logr), "FOREIGN KEY")
+	assert.ErrorIs(t, addSessionLogRecordDB(f.gormdb.db, &logr), gorm.ErrForeignKeyViolated)
 
 	f.createSessionsAndAssert(t, s) // will create session and session record as well
 
