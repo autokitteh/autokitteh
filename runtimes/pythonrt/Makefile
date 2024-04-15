@@ -15,9 +15,10 @@ test-py:
 		--ignore testdata \
 		-v .
 
+# You can set the TESTOPTS to pass options to `go test`
 test-go:
 	golangci-lint run ./...
-	go test $(SHORT) -v
+	go test $(TESTOPTS) -v
 
 deps:
 	python -m pip install -r dev-requirements.txt
