@@ -15,7 +15,6 @@ import (
 	_ "ariga.io/atlas-provider-gorm/gormschema"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
-	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/internal/backend/gormkitteh"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/migrations"
@@ -96,6 +95,27 @@ func translateError(err error) error {
 	}
 }
 
+var fkStmtByDB = map[string]map[bool]string{
+	"sqlite": {
+		true:  "PRAGMA foreign_keys = ON",
+		false: "PRAGMA foreign_keys = OFF",
+	},
+	"postgres": {
+		// in PG foreign keys implemented as triggers. Setting `session_replication_role'
+		// to `replica' prevents firing triggers, thus effectively disables foreign keys
+		true:  "SET session_replication_role = DEFAULT",
+		false: "SET session_replication_role = replica",
+	},
+}
+
+func foreignKeys(gormdb *gormdb, enable bool) {
+	if _, found := fkStmtByDB[gormdb.cfg.Type]; !found {
+		panic(fmt.Errorf("unknown DB type: %s", gormdb.cfg.Type))
+	}
+	stmt := fkStmtByDB[gormdb.cfg.Type][enable]
+	gormdb.db.Exec(stmt)
+}
+
 func initGoose(client *sql.DB, dialect string) error {
 	goose.SetBaseFS(migrations.Migrations)
 
@@ -144,9 +164,9 @@ func (db *gormdb) MigrationRequired(ctx context.Context) (bool, int64, error) {
 func (db *gormdb) Setup(ctx context.Context) error {
 	isSqlite := db.cfg.Type == "sqlite"
 	if isSqlite {
-		db.db.Exec("PRAGMA foreign_keys = OFF")
+		foreignKeys(db, false)
 		defer func() {
-			db.db.Exec("PRAGMA foreign_keys = ON")
+			foreignKeys(db, true)
 		}()
 	}
 
@@ -163,21 +183,6 @@ func (db *gormdb) Setup(ctx context.Context) error {
 	}
 
 	return errors.New("db migrations required") //TODO: maybe more details
-}
-
-func (db *gormdb) Teardown(ctx context.Context) error {
-	isSqlite := db.cfg.Type == "sqlite"
-	if isSqlite {
-		db.db.Exec("PRAGMA foreign_keys = OFF")
-	}
-	if err := db.db.WithContext(ctx).Migrator().DropTable(scheme.Tables...); err != nil {
-		return fmt.Errorf("droptable: %w", err)
-	}
-	if isSqlite {
-		db.db.Exec("PRAGMA foreign_keys = ON")
-	}
-
-	return nil
 }
 
 // TODO: not sure this will work with the connect method

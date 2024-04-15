@@ -2,6 +2,7 @@ package dbgorm
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -9,9 +10,11 @@ import (
 	"testing"
 	"time"
 
+	embedPG "github.com/fergusstrange/embedded-postgres"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"gorm.io/datatypes"
+	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -21,10 +24,67 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-var now time.Time
+var (
+	now    time.Time
+	dbType string
+	gormDB gormdb
+)
+
+func TestMain(m *testing.M) {
+	flag.StringVar(&dbType, "dbtype", "sqlite", "Database type to use for tests (e.g., sqlite, postgres)")
+	flag.Parse()
+
+	var pg *embedPG.EmbeddedPostgres
+
+	if dbType == "postgres" {
+		pg = embedPG.NewDatabase()
+		if err := pg.Start(); err != nil {
+			log.Fatalf("failed to start postgres: %v", err)
+		}
+		fmt.Println("Started PG..")
+	}
+
+	// setup test bench - gorm, schemas, migrations, etc
+	cfg := gormkitteh.Config{Type: dbType, DSN: ""} // "" for in-memory, or specify a file
+	db := setupDB(&cfg)
+	gormDB = gormdb{db: db, cfg: &cfg, mu: nil, z: zap.NewExample()}
+
+	ctx := context.Background()
+	if err := gormDB.Setup(ctx); err != nil { // ensure migration/schemas
+		log.Fatalf("Failed to setup gormdb: %v", err)
+	}
+
+	now = time.Now()
+	now = now.Truncate(time.Microsecond) // PG default resolution is microseconds
+
+	// PG saves dates in UTC. Gorm converts them back to local TZ on read
+	// SQLite has no dedicated time format and uses strings, so gorm will read them as UTC, thus we need to write them in UTC
+	if dbType == "sqlite" {
+		now = now.UTC()
+	}
+
+	// run tests
+	exitCode := m.Run()
+
+	// teardown test bench
+	if err := TeardownDB(&gormDB, ctx); err != nil { // delete tables if any
+		log.Printf("Failed to teardown gormdb: %v", err)
+	}
+
+	if dbType == "postgres" && pg != nil {
+		// don't run this in defer to keep logs
+		fmt.Println("Stopping PG...")
+		if err := pg.Stop(); err != nil {
+			log.Fatalf("failed to stop postgres: %v", err)
+		}
+	}
+
+	os.Exit(exitCode)
+}
 
 func init() {
-	now = time.Now().UTC() // save and compare times in UTC
+	now = time.Now()
+	now = now.Truncate(time.Microsecond) // PG default resolution is microseconds
 }
 
 type dbFixture struct {
@@ -40,7 +100,24 @@ type dbFixture struct {
 }
 
 // TODO: use gormkitteh (and maybe test with sqlite::memory and embedded PG)
-func setupDB(dbName string) *gorm.DB {
+func setupDB(config *gormkitteh.Config) *gorm.DB {
+	var dialector gorm.Dialector
+	switch config.Type {
+	case "sqlite":
+		if config.DSN == "" {
+			config.DSN = ":memory:"
+		}
+		dialector = sqlite.Open(config.DSN)
+	case "postgres":
+		dsn := "user=postgres password=postgres dbname=postgres host=localhost sslmode=disable"
+		dialector = postgres.New(postgres.Config{
+			DSN:                  dsn,
+			PreferSimpleProtocol: true, // disables implicit prepared statement usage. By default pgx automatically uses the extended protocol
+		})
+	default:
+		log.Fatalf("unsuppported DBtype - <%s>", config.Type)
+	}
+
 	logger := logger.New(
 		log.New(os.Stdout, "\r\n", log.LstdFlags), // io writer
 		logger.Config{
@@ -50,41 +127,66 @@ func setupDB(dbName string) *gorm.DB {
 		},
 	)
 
-	db, err := gorm.Open(sqlite.Open(dbName), &gorm.Config{
+	db, err := gorm.Open(dialector, &gorm.Config{
 		NowFunc: func() time.Time { // operate always in UTC to simplify object comparison upon creation and fetching
 			return time.Now().UTC()
 		},
-		Logger: logger,
+		Logger:         logger,
+		TranslateError: true,
+		// DriverName:
 	})
-	db.Exec("PRAGMA foreign_keys = ON")
 	if err != nil {
 		log.Fatalf("failed to open database: %v", err)
 	}
-
+	if config.Type == "sqlite" {
+		db.Exec("PRAGMA foreign_keys = ON")
+	}
 	return db
 }
 
+func TeardownDB(gormdb *gormdb, ctx context.Context) error {
+	isSqlite := gormdb.cfg.Type == "sqlite"
+	if isSqlite {
+		foreignKeys(gormdb, false)
+	}
+	if err := gormdb.db.WithContext(ctx).Migrator().DropTable(scheme.Tables...); err != nil {
+		return fmt.Errorf("droptable: %w", err)
+	}
+	if isSqlite {
+		foreignKeys(gormdb, true)
+	}
+
+	return nil
+}
+
+func CleanupDB(gormdb *gormdb, ctx context.Context) error {
+	foreignKeys(gormdb, false) // disable foreign keys
+
+	db := gormdb.db.WithContext(ctx).Unscoped().Session(&gorm.Session{AllowGlobalUpdate: true})
+	for _, model := range scheme.Tables {
+		modelType := reflect.TypeOf(model)
+		model := reflect.New(modelType).Interface()
+		if err := db.Delete(model).Error; err != nil {
+			return fmt.Errorf("cleanup data for table %s: %w", modelType.Name(), err)
+		}
+	}
+
+	foreignKeys(gormdb, true) // re-enable foreign keys
+	return nil
+}
+
 func newDBFixture() *dbFixture {
-	dsn := "file::memory:" // "/tmp/ak.db"
-	db := setupDB(dsn)     // in-memory db, specify filename to use file db
-
 	ctx := context.Background()
-	cfg := gormkitteh.Config{Type: "sqlite", DSN: dsn}
-
-	gormdb := gormdb{db: db, cfg: &cfg, mu: nil, z: zap.NewExample()}
-	if err := gormdb.Teardown(ctx); err != nil { // delete tables if any
-		log.Printf("Failed to termdown gormdb: %v", err)
+	if err := CleanupDB(&gormDB, ctx); err != nil { // ensure migration/schemas
+		log.Fatalf("Failed to cleanup gormdb: %v", err)
 	}
-	if err := gormdb.Setup(ctx); err != nil { // ensure migration/schemas
-		log.Fatalf("Failed to setup gormdb: %v", err)
-	}
-	return &dbFixture{db: db, gormdb: &gormdb, ctx: ctx}
+	return &dbFixture{db: gormDB.db, gormdb: &gormDB, ctx: ctx}
 }
 
 func newDBFixtureFK(withoutForeignKeys bool) *dbFixture {
 	f := newDBFixture()
 	if withoutForeignKeys { // run after setup, since this pragma may be reset by setup
-		f.db.Exec("PRAGMA foreign_keys = OFF")
+		foreignKeys(f.gormdb, false)
 	}
 	return f
 }
@@ -237,19 +339,22 @@ func (f *dbFixture) newEvent() scheme.Event {
 	eventID := fmt.Sprintf("evt_%026d", f.eventID)
 
 	return scheme.Event{
-		EventID: eventID,
+		EventID:   eventID,
+		CreatedAt: now,
 	}
 }
 
 func (f *dbFixture) newEventRecord() scheme.EventRecord {
 	eventID := fmt.Sprintf("evt_%026d", f.eventID)
 	return scheme.EventRecord{
-		EventID: eventID,
+		EventID:   eventID,
+		CreatedAt: now,
 	}
 }
 
 func (f *dbFixture) newSignal() scheme.Signal {
 	return scheme.Signal{
-		SignalID: testSignalID,
+		SignalID:  testSignalID,
+		CreatedAt: now,
 	}
 }

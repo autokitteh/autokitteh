@@ -73,11 +73,11 @@ func TestCreateDeploymentsForeignKeys(t *testing.T) {
 	unexisting := "unexisting"
 
 	d.BuildID = &unexisting
-	assert.ErrorContains(t, f.gormdb.createDeployment(f.ctx, &d), "FOREIGN KEY")
+	assert.ErrorIs(t, f.gormdb.createDeployment(f.ctx, &d), gorm.ErrForeignKeyViolated)
 	d.BuildID = nil
 
 	d.EnvID = &unexisting
-	assert.ErrorContains(t, f.gormdb.createDeployment(f.ctx, &d), "FOREIGN KEY")
+	assert.ErrorIs(t, f.gormdb.createDeployment(f.ctx, &d), gorm.ErrForeignKeyViolated)
 	d.EnvID = nil
 
 	// test with existing assets

@@ -3,7 +3,6 @@ package github
 import (
 	"net/http"
 	"net/url"
-	"os"
 
 	"go.uber.org/zap"
 
@@ -15,10 +14,6 @@ import (
 )
 
 func Start(l *zap.Logger, mux *http.ServeMux, s sdkservices.Secrets, o sdkservices.OAuth, d sdkservices.Dispatcher) {
-	if !checkRequiredEnvVars(l) {
-		return
-	}
-
 	// Connection UI + handler.
 	mux.HandleFunc(uiPath, connect.ServeHTTP)
 	staticFiles := http.FileServer(http.FS(static.GitHubWebContent))
@@ -36,26 +31,4 @@ func Start(l *zap.Logger, mux *http.ServeMux, s sdkservices.Secrets, o sdkservic
 	eventHandler := webhooks.NewHandler(l, s, d, "github", integrationID)
 	mux.Handle(webhooks.WebhookPath+"/", eventHandler) // User events.
 	mux.Handle(webhooks.WebhookPath, eventHandler)     // App events.
-}
-
-func checkRequiredEnvVars(l *zap.Logger) bool {
-	result := true
-	for _, k := range []string{
-		// OAuth
-		"GITHUB_APP_NAME",
-		"GITHUB_CLIENT_ID",
-		"GITHUB_CLIENT_SECRET",
-		// oauth/jwt.go
-		"GITHUB_PRIVATE_KEY",
-		// webhooks/webhook.go
-		"GITHUB_WEBHOOK_SECRET",
-	} {
-		if os.Getenv(k) == "" {
-			l.Warn("Required environment variable is missing",
-				zap.String("name", k),
-			)
-			result = false
-		}
-	}
-	return result
 }

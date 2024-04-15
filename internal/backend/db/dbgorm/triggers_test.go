@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"gorm.io/gorm"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 )
@@ -68,15 +69,15 @@ func TestCreateTriggerForeignKeys(t *testing.T) {
 	unexisting := "unexisting"
 
 	tr.ProjectID = unexisting
-	assert.ErrorContains(t, createTrigger(f.ctx, f.gormdb, &tr), "FOREIGN KEY")
+	assert.ErrorIs(t, createTrigger(f.ctx, f.gormdb, &tr), gorm.ErrForeignKeyViolated)
 	tr.ProjectID = p.ProjectID
 
 	tr.EnvID = unexisting
-	assert.ErrorContains(t, createTrigger(f.ctx, f.gormdb, &tr), "FOREIGN KEY")
+	assert.ErrorIs(t, createTrigger(f.ctx, f.gormdb, &tr), gorm.ErrForeignKeyViolated)
 	tr.EnvID = env.EnvID
 
 	tr.ConnectionID = unexisting
-	assert.ErrorContains(t, createTrigger(f.ctx, f.gormdb, &tr), "FOREIGN KEY")
+	assert.ErrorIs(t, createTrigger(f.ctx, f.gormdb, &tr), gorm.ErrForeignKeyViolated)
 	tr.ConnectionID = conn.ConnectionID
 
 	// test with existing assets

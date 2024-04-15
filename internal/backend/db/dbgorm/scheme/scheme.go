@@ -182,8 +182,8 @@ func ParseProject(r Project) (sdktypes.Project, error) {
 // WARNING: This is not secure in any way, and not durable by default.
 // It is intended only for temporary, local, non-production purposes.
 type Secret struct {
-	Name string `gorm:"primaryKey"`
-	Data datatypes.JSON
+	Name string         `gorm:"primaryKey"`
+	Data datatypes.JSON `gorm:"type:json"`
 }
 
 type Event struct {

@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"gorm.io/gorm"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 )
@@ -21,7 +22,7 @@ func TestCreateEventRecordForeignKeys(t *testing.T) {
 
 	evt := f.newEvent()
 	er := f.newEventRecord()
-	assert.ErrorContains(t, f.gormdb.addEventRecord(f.ctx, &er), "FOREIGN KEY")
+	assert.ErrorIs(t, f.gormdb.addEventRecord(f.ctx, &er), gorm.ErrForeignKeyViolated)
 
 	f.createEventsAndAssert(t, evt)
 	// test createEventRecord
