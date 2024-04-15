@@ -9,7 +9,6 @@ import (
 
 type db interface {
 	Setup(context.Context) error
-	Teardown(context.Context) error
 	Migrate(context.Context) error
 }
 

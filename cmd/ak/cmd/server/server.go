@@ -28,7 +28,6 @@ func init() {
 	// Subcommands.
 	serverCmd.AddCommand(migrateCmd)
 	serverCmd.AddCommand(setupCmd)
-	serverCmd.AddCommand(teardownCmd)
 
 	serverCmd.PersistentFlags().StringVarP(&mode, "mode", "m", "", "run mode")
 }

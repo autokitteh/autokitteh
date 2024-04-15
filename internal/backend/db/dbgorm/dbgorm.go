@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"reflect"
 	"sync"
 
 	"github.com/pressly/goose/v3"
@@ -16,7 +15,6 @@ import (
 	_ "ariga.io/atlas-provider-gorm/gormschema"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
-	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/internal/backend/gormkitteh"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/migrations"
@@ -185,37 +183,6 @@ func (db *gormdb) Setup(ctx context.Context) error {
 	}
 
 	return errors.New("db migrations required") //TODO: maybe more details
-}
-
-func (db *gormdb) Teardown(ctx context.Context) error {
-	isSqlite := db.cfg.Type == "sqlite"
-	if isSqlite {
-		foreignKeys(db, false)
-	}
-	if err := db.db.WithContext(ctx).Migrator().DropTable(scheme.Tables...); err != nil {
-		return fmt.Errorf("droptable: %w", err)
-	}
-	if isSqlite {
-		foreignKeys(db, true)
-	}
-
-	return nil
-}
-
-func (gormdb *gormdb) Cleanup(ctx context.Context) error {
-	foreignKeys(gormdb, false) // disable foreign keys
-
-	db := gormdb.db.WithContext(ctx).Unscoped().Session(&gorm.Session{AllowGlobalUpdate: true})
-	for _, model := range scheme.Tables {
-		modelType := reflect.TypeOf(model)
-		model := reflect.New(modelType).Interface()
-		if err := db.Delete(model).Error; err != nil {
-			return fmt.Errorf("cleanup data for table %s: %w", modelType.Name(), err)
-		}
-	}
-
-	foreignKeys(gormdb, true) // re-enable foreign keys
-	return nil
 }
 
 // TODO: not sure this will work with the connect method
