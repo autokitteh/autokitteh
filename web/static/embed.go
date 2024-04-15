@@ -34,6 +34,9 @@ var GoogleFormsWebContent embed.FS
 //go:embed googlesheets/connect
 var GoogleSheetsWebContent embed.FS
 
+//go:embed i/http/connect
+var HTTPWebContent embed.FS
+
 //go:embed scheduler/connect
 var SchedulerWebContent embed.FS
 

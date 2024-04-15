@@ -39,11 +39,11 @@ func New(cfg *Config, s sdkservices.Secrets) sdkservices.Integrations {
 		github.New(s),
 		gmail.New(s),
 		google.New(s),
-		sheets.New(s),
 		// TODO: gRPC
 		httpint.New(s),
 		redis.New(), // TODO: Secrets
 		scheduler.New(s),
+		sheets.New(s),
 		slack.New(s),
 		twilio.New(s),
 		grpc.New(s),
@@ -61,8 +61,7 @@ func Start(_ context.Context, l *zap.Logger, mux *http.ServeMux, s sdkservices.S
 	chatgpt.Start(l, mux, s)
 	github.Start(l, mux, s, o, d)
 	google.Start(l, mux, s, o, d)
-	httpint.Start(l, mux, d)
-	// TODO: ProxySQL
+	httpint.Start(l, mux, s, d)
 	// TODO: Redis
 	scheduler.Start(l, mux, s, d)
 	slack.Start(l, mux, s, d)
