@@ -197,6 +197,12 @@ func (py *pySvc) Run(
 		py.log.Error("initial message from python", zap.Error(err))
 		return nil, err
 	}
+
+	if msg.Type == "" {
+		py.log.Error("python can't load module", zap.String("module", mainPath))
+		return nil, fmt.Errorf("python can't load %q", mainPath)
+	}
+
 	mod, err := extractMessage[ModuleMessage](msg)
 	if err != nil {
 		py.log.Error("initial message from python", zap.Error(err))
@@ -277,6 +283,11 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, event map[str
 			break
 		}
 
+		if msg.Type == "" {
+			py.log.Error("empty message from python, probably error", zap.Any("message", msg))
+			return sdktypes.InvalidValue, fmt.Errorf("empty message from Python")
+		}
+
 		cbm, err := extractMessage[CallbackMessage](msg)
 		if err != nil {
 			py.log.Error("callback", zap.Error(err))
@@ -311,6 +322,53 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, event map[str
 	return sdktypes.Nothing, nil
 }
 
+// TODO (ENG-624) Remove this once we support callbacks to autokitteh
+func (py *pySvc) injectHTTPBody(ctx context.Context, data sdktypes.Value, event map[string]any, cbs *sdkservices.RunCallbacks) error {
+	if !data.IsStruct() {
+		return nil
+	}
+
+	evtData, ok := event["data"]
+	if !ok {
+		return nil
+	}
+
+	fields := data.GetStruct().Fields()
+	body, ok := fields["body"]
+	if !ok {
+		return nil
+	}
+
+	if !body.IsStruct() {
+		return nil
+	}
+
+	fields = body.GetStruct().Fields()
+	fn, ok := fields["bytes"]
+	if !ok || !fn.IsFunction() {
+		return nil
+	}
+
+	out, err := cbs.Call(ctx, py.xid.ToRunID(), fn, nil, nil)
+	if err != nil {
+		return err
+	}
+
+	if !out.IsBytes() {
+		return nil
+	}
+
+	bodyData := out.GetBytes().Value()
+
+	m, ok := evtData.(map[string]any)
+	if !ok {
+		return nil
+	}
+
+	m["body"] = bodyData
+	return nil
+}
+
 // Call handles a function call from autokitteh.
 // First used of Call start a workflow, later invocations are activity calls.
 func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
@@ -334,6 +392,10 @@ func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 			return sdktypes.InvalidValue, err
 		}
 		event[key] = goVal
+	}
+
+	if err := py.injectHTTPBody(ctx, kwargs["data"], event, py.cbs); err != nil {
+		return sdktypes.InvalidValue, err
 	}
 
 	fnName := fn.Name().String()
