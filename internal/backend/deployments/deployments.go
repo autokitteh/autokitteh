@@ -85,7 +85,7 @@ func (d *deployments) Create(ctx context.Context, deployment sdktypes.Deployment
 }
 
 func deactivate(ctx context.Context, tx db.DB, id sdktypes.DeploymentID) error {
-	_, nRunning, err := tx.ListSessions(ctx, sdkservices.ListSessionsFilter{
+	resultRunning, err := tx.ListSessions(ctx, sdkservices.ListSessionsFilter{
 		DeploymentID: id,
 		StateType:    sdktypes.SessionStateTypeRunning,
 		CountOnly:    true,
@@ -94,7 +94,7 @@ func deactivate(ctx context.Context, tx db.DB, id sdktypes.DeploymentID) error {
 		return fmt.Errorf("sessions.count: %w", err)
 	}
 
-	_, nCreated, err := tx.ListSessions(ctx, sdkservices.ListSessionsFilter{
+	resultCreated, err := tx.ListSessions(ctx, sdkservices.ListSessionsFilter{
 		DeploymentID: id,
 		StateType:    sdktypes.SessionStateTypeCreated,
 		CountOnly:    true,
@@ -103,7 +103,7 @@ func deactivate(ctx context.Context, tx db.DB, id sdktypes.DeploymentID) error {
 		return fmt.Errorf("sessions.count: %w", err)
 	}
 
-	if nRunning+nCreated > 0 {
+	if resultRunning.TotalCount+resultCreated.TotalCount > 0 {
 		return fmt.Errorf("deployment still has pending sessions, drain first: %w", sdkerrors.ErrConflict)
 	}
 

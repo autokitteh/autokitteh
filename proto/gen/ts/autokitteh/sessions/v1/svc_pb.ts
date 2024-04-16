@@ -197,6 +197,21 @@ export class ListRequest extends Message<ListRequest> {
    */
   countOnly = false;
 
+  /**
+   * @generated from field: int32 page_size = 20;
+   */
+  pageSize = 0;
+
+  /**
+   * @generated from field: int32 skip = 21;
+   */
+  skip = 0;
+
+  /**
+   * @generated from field: string page_token = 22;
+   */
+  pageToken = "";
+
   constructor(data?: PartialMessage<ListRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -211,6 +226,9 @@ export class ListRequest extends Message<ListRequest> {
     { no: 4, name: "build_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "state_type", kind: "enum", T: proto3.getEnumType(SessionStateType) },
     { no: 10, name: "count_only", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 20, name: "page_size", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 21, name: "skip", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 22, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListRequest {
@@ -244,6 +262,11 @@ export class ListResponse extends Message<ListResponse> {
    */
   count = 0;
 
+  /**
+   * @generated from field: string next_page_token = 10;
+   */
+  nextPageToken = "";
+
   constructor(data?: PartialMessage<ListResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -254,6 +277,7 @@ export class ListResponse extends Message<ListResponse> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "sessions", kind: "message", T: Session, repeated: true },
     { no: 2, name: "count", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 10, name: "next_page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListResponse {

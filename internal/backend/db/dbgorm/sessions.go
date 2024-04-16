@@ -150,7 +150,23 @@ func (db *gormdb) listSessions(ctx context.Context, f sdkservices.ListSessionsFi
 		return nil, int(n), err
 	}
 
-	if err := q.Order("created_at desc").Find(&rs).Error; err != nil {
+	if f.PageSize != 0 {
+		q = q.Limit(int(f.PageSize))
+	}
+
+	if f.Skip != 0 {
+		q = q.Offset(int(f.Skip))
+	}
+
+	if f.PageToken != "" {
+		q = q.Where("session_id < ?", f.PageToken)
+	}
+
+	// Double order in case we have two rows with the same created_at, then solve order by session_id
+	if err := q.
+		Order(clause.OrderByColumn{Column: clause.Column{Name: "created_at"}, Desc: true}).
+		Order(clause.OrderByColumn{Column: clause.Column{Name: "session_id"}, Desc: true}).
+		Find(&rs).Error; err != nil {
 		return nil, 0, err
 	}
 
@@ -158,13 +174,25 @@ func (db *gormdb) listSessions(ctx context.Context, f sdkservices.ListSessionsFi
 	return rs, len(rs), nil
 }
 
-func (db *gormdb) ListSessions(ctx context.Context, f sdkservices.ListSessionsFilter) ([]sdktypes.Session, int, error) {
+func (db *gormdb) ListSessions(ctx context.Context, f sdkservices.ListSessionsFilter) (sdkservices.ListSessionResult, error) {
 	rs, cnt, err := db.listSessions(ctx, f)
 	if rs == nil { // no sessions to process. either error or count request
-		return nil, cnt, translateError(err)
+		return sdkservices.ListSessionResult{}, translateError(err)
 	}
 	sessions, err := kittehs.TransformError(rs, scheme.ParseSession)
-	return sessions, len(sessions), err
+
+	// Only if we have a full page, there might be more sessions
+	nextPageToken := ""
+	if len(sessions) == int(f.PageSize) {
+		nextPageToken = sessions[len(sessions)-1].ID().UUIDValue().String()
+	}
+
+	res := sdkservices.ListSessionResult{
+		Sessions:         sessions,
+		PaginationResult: sdktypes.PaginationResult{TotalCount: cnt, NextPageToken: nextPageToken},
+	}
+
+	return res, err
 }
 
 func (db *gormdb) CreateSessionCall(ctx context.Context, sessionID sdktypes.SessionID, spec sdktypes.SessionCallSpec) error {

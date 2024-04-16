@@ -91,7 +91,7 @@ func (c *client) GetLog(ctx context.Context, sessionID sdktypes.SessionID) (sdkt
 	return sdktypes.SessionLogFromProto(resp.Msg.Log)
 }
 
-func (c *client) List(ctx context.Context, filter sdkservices.ListSessionsFilter) ([]sdktypes.Session, int, error) {
+func (c *client) List(ctx context.Context, filter sdkservices.ListSessionsFilter) (sdkservices.ListSessionResult, error) {
 	resp, err := c.client.List(ctx, connect.NewRequest(&sessionsv1.ListRequest{
 		DeploymentId: filter.DeploymentID.String(),
 		EnvId:        filter.EnvID.String(),
@@ -99,17 +99,28 @@ func (c *client) List(ctx context.Context, filter sdkservices.ListSessionsFilter
 		BuildId:      filter.BuildID.String(),
 		StateType:    filter.StateType.ToProto(),
 		CountOnly:    filter.CountOnly,
+		PageSize:     filter.PageSize,
+		Skip:         filter.Skip,
+		PageToken:    filter.PageToken,
 	}))
 	if err != nil {
-		return nil, 0, rpcerrors.ToSDKError(err)
+		return sdkservices.ListSessionResult{}, rpcerrors.ToSDKError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {
-		return nil, 0, err
+		return sdkservices.ListSessionResult{}, err
 	}
 
 	xs, err := kittehs.TransformError(resp.Msg.Sessions, sdktypes.SessionFromProto)
-	return xs, len(resp.Msg.Sessions), err
+
+	res := sdkservices.ListSessionResult{
+		Sessions: xs,
+		PaginationResult: sdktypes.PaginationResult{
+			TotalCount:    int(resp.Msg.Count),
+			NextPageToken: resp.Msg.NextPageToken,
+		},
+	}
+	return res, err
 }
 
 func (c *client) Delete(ctx context.Context, sessionID sdktypes.SessionID) error {

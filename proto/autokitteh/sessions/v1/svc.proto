@@ -38,11 +38,27 @@ message ListRequest {
 
   // TODO: Pagination.
   // TODO: FieldMask.
+
+  int32 page_size = 20 [(buf.validate.field).cel = {
+    id: "session.list.page_size",
+    message: "Must be between 10 and 100",
+    expression: "this >= 10 && this <= 100"
+  }];
+
+  int32 skip = 21 [(buf.validate.field).cel = {
+    id: "session.list.skip",
+    message: "Must be >= 0",
+    expression: "this >= 0"
+  }];
+
+  string page_token = 22;
 }
 
 message ListResponse {
   repeated Session sessions = 1 [(buf.validate.field).repeated.items.required = true];
   int32 count = 2;
+
+  string next_page_token = 10;
 }
 
 message GetRequest {
