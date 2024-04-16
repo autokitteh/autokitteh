@@ -2,7 +2,6 @@
 
 # This file is long, but keeping it a single file helps with embedding it in Go and
 # running it.
-# It also helps that we embed a single file inside Go.
 
 import ast
 import builtins
@@ -22,7 +21,7 @@ from socket import AF_UNIX, SOCK_STREAM, socket
 
 # TODO(ENG-552): Log to AutoKitteh
 logging.basicConfig(
-    format='%(asctime)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s',
+    format='[PYTHON] %(asctime)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s',
     datefmt='%Y-%M-%DT%H:%M:%S',
     level=logging.INFO,
 )
@@ -252,17 +251,23 @@ class AKCall:
         return False
 
     def __call__(self, func, *args, **kw):
-        logging.info('ACTION: calling %s (args=%r, kw=%r)', func.__name__, args, kw)
         if self.in_activity or self.ignore(func):
+            logging.info(
+                'calling %s (args=%r, kw=%r) directly (in_activity=%s)', 
+                func.__name__, args, kw, self.in_activity)
             return func(*args, **kw)
 
+        logging.info('ACTION: calling %s (args=%r, kw=%r)', func.__name__, args, kw)
         self.in_activity = True
-        self.comm.send_activity(func, args, kw)
-        message = self.comm.receive_activity()
-        fn, args, kw = message['data']
-        value = fn(*args, **kw)
-        self.comm.send_response(value)
-        return value
+        try:
+            self.comm.send_activity(func, args, kw)
+            message = self.comm.receive_activity()
+            fn, args, kw = message['data']
+            value = fn(*args, **kw)
+            self.comm.send_response(value)
+            return value
+        finally:
+            self.in_activity = False
 
 
 def extract_code(tar_path):
