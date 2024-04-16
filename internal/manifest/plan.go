@@ -48,6 +48,14 @@ func planProject(ctx context.Context, mproj *Project, client sdkservices.Service
 	opts := applyOptions(optfns)
 	log := opts.log.For("project", mproj)
 
+	if opts.projectName != "" {
+		mproj.Name = opts.projectName
+	}
+
+	if mproj.Name == "" {
+		return nil, errors.New("project name must be specified")
+	}
+
 	name, err := sdktypes.ParseSymbol(mproj.Name)
 	if err != nil {
 		return nil, err

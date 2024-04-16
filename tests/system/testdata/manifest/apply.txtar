@@ -54,6 +54,10 @@ ak trigger get trg_00000000000000000000000004 -J
 return code == 0
 output equals file expected_trigger_details.json
 
+ak manifest apply full.yaml --project-name their_project
+return code == 0
+output equals file expected_on_full_apply_their.txt
+
 -- invalid.yaml --
 This is an invalid YAML file to trigger an error
 
@@ -86,6 +90,14 @@ project:
 [exec] create_project "my_project": created "prj_00000000000000000000000001"
 [exec] create_connection "my_project/my_connection": created "con_00000000000000000000000003"
 [exec] create_trigger "my_project/default:my_project/my_connection/get": created "trg_00000000000000000000000004"
+
+-- expected_on_full_apply_their.txt --
+[plan] project "their_project": not found, will create
+[plan] connection "their_project/my_connection": not found, will create
+[plan] trigger "their_project/default:their_project/my_connection/get": not found, will create
+[exec] create_project "their_project": created "prj_00000000000000000000000005"
+[exec] create_connection "their_project/my_connection": created "con_00000000000000000000000007"
+[exec] create_trigger "their_project/default:their_project/my_connection/get": created "trg_00000000000000000000000008"
 
 -- expected_project_details.json --
 {

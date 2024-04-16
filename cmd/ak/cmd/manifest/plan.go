@@ -10,7 +10,7 @@ import (
 var noValidate, fromScratch bool
 
 var planCmd = common.StandardCommand(&cobra.Command{
-	Use:     "plan [file] [--no-validate] [--from-scratch] [--quiet]",
+	Use:     "plan [file] [--project-name <name>] [--no-validate] [--from-scratch] [--quiet]",
 	Short:   "Dry-run for applying a YAML manifest, from a file or stdin",
 	Aliases: []string{"p"},
 	Args:    cobra.MaximumNArgs(1),
@@ -21,7 +21,7 @@ var planCmd = common.StandardCommand(&cobra.Command{
 			return err
 		}
 
-		actions, err := plan(cmd, data, path)
+		actions, err := plan(cmd, data, path, projectName)
 		if err != nil {
 			return err
 		}
@@ -33,12 +33,13 @@ var planCmd = common.StandardCommand(&cobra.Command{
 })
 
 func init() {
-	planCmd.Flags().BoolVarP(&noValidate, "no-validate", "n", false, "do not validate")
+	planCmd.Flags().BoolVar(&noValidate, "no-validate", false, "do not validate")
 	planCmd.Flags().BoolVarP(&fromScratch, "from-scratch", "s", false, "assume no existing setup")
 	planCmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "only show errors, if any")
+	planCmd.Flags().StringVarP(&projectName, "project-name", "n", "", "project name")
 }
 
-func plan(cmd *cobra.Command, data []byte, path string) (manifest.Actions, error) {
+func plan(cmd *cobra.Command, data []byte, path, projectName string) (manifest.Actions, error) {
 	m, err := manifest.Read(data, path)
 	if err != nil {
 		return nil, err
@@ -51,5 +52,6 @@ func plan(cmd *cobra.Command, data []byte, path string) (manifest.Actions, error
 		ctx, m, common.Client(),
 		manifest.WithLogger(logFunc(cmd, "plan")),
 		manifest.WithFromScratch(fromScratch),
+		manifest.WithProjectName(projectName),
 	)
 }
