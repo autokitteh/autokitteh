@@ -7,6 +7,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 func (f *dbFixture) saveBuildsAndAssert(t *testing.T, builds ...scheme.Build) {
@@ -16,7 +17,7 @@ func (f *dbFixture) saveBuildsAndAssert(t *testing.T, builds ...scheme.Build) {
 	}
 }
 
-func assertBuildDeleted(t *testing.T, f *dbFixture, buildID string) {
+func assertBuildDeleted(t *testing.T, f *dbFixture, buildID sdktypes.UUID) {
 	assertSoftDeleted(t, f, scheme.Build{BuildID: buildID})
 }
 

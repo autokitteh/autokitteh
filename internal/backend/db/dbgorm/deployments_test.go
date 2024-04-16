@@ -70,13 +70,14 @@ func TestCreateDeploymentsForeignKeys(t *testing.T) {
 
 	// negative test with non-existing assets
 	d := f.newDeployment()
-	unexisting := "unexisting"
+	unexistingBuildID := sdktypes.NewBuildID().Value()
 
-	d.BuildID = &unexisting
+	d.BuildID = unexistingBuildID
 	assert.ErrorIs(t, f.gormdb.createDeployment(f.ctx, &d), gorm.ErrForeignKeyViolated)
 	d.BuildID = nil
 
-	d.EnvID = &unexisting
+	unexistingEnvID := sdktypes.NewEnvID().Value()
+	d.EnvID = unexistingEnvID
 	assert.ErrorIs(t, f.gormdb.createDeployment(f.ctx, &d), gorm.ErrForeignKeyViolated)
 	d.EnvID = nil
 

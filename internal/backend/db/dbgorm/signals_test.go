@@ -3,6 +3,7 @@ package dbgorm
 import (
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
 
@@ -48,7 +49,7 @@ func TestSaveSignelForeignKeys(t *testing.T) {
 	f.createConnectionsAndAssert(t, conn)
 
 	// negative test with non-existing assets
-	unexisting := "unexisting"
+	unexisting := uuid.New()
 
 	sig.ConnectionID = unexisting
 	assert.ErrorIs(t, f.gormdb.saveSignal(f.ctx, &sig), gorm.ErrForeignKeyViolated)

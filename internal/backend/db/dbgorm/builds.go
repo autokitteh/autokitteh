@@ -17,7 +17,7 @@ func (db *gormdb) saveBuild(ctx context.Context, build *scheme.Build) error {
 func (db *gormdb) SaveBuild(ctx context.Context, build sdktypes.Build, data []byte) error {
 	// TODO: add Build time
 	b := scheme.Build{
-		BuildID:   build.ID().String(),
+		BuildID:   *build.ID().Value(),
 		Data:      data,
 		CreatedAt: build.CreatedAt(),
 	}
@@ -25,15 +25,15 @@ func (db *gormdb) SaveBuild(ctx context.Context, build sdktypes.Build, data []by
 }
 
 func (db *gormdb) GetBuild(ctx context.Context, buildID sdktypes.BuildID) (sdktypes.Build, error) {
-	return getOneWTransform(db.db, ctx, scheme.ParseBuild, "build_id = ?", buildID.String())
+	return getOneWTransform(db.db, ctx, scheme.ParseBuild, "build_id = ?", buildID.Value())
 }
 
-func (db *gormdb) deleteBuild(ctx context.Context, buildID string) error {
+func (db *gormdb) deleteBuild(ctx context.Context, buildID sdktypes.UUID) error {
 	return delete(db.db, ctx, scheme.Build{}, "build_id = ?", buildID)
 }
 
 func (db *gormdb) DeleteBuild(ctx context.Context, buildID sdktypes.BuildID) error {
-	return db.deleteBuild(ctx, buildID.String())
+	return db.deleteBuild(ctx, *buildID.Value())
 }
 
 func (db *gormdb) listBuilds(ctx context.Context, filter sdkservices.ListBuildsFilter) ([]scheme.Build, error) {
@@ -61,7 +61,7 @@ func (db *gormdb) ListBuilds(ctx context.Context, filter sdkservices.ListBuildsF
 
 func (db *gormdb) GetBuildData(ctx context.Context, id sdktypes.BuildID) ([]byte, error) {
 	var b scheme.Build
-	if err := db.db.WithContext(ctx).Where("build_id = ?", id.String()).First(&b).Error; err != nil {
+	if err := db.db.WithContext(ctx).Where("build_id = ?", id.Value()).First(&b).Error; err != nil {
 		return nil, translateError(err)
 	}
 

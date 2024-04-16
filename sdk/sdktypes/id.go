@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/google/uuid"
 	"go.jetpack.io/typeid"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
@@ -25,7 +26,7 @@ type ID interface {
 	Kind() string
 
 	// Value returns the id value, meaning without the prefix.
-	Value() string
+	Value() *UUID
 
 	isID()
 }
@@ -65,12 +66,13 @@ func (i id[T]) Kind() string {
 	return i.tid.Prefix()
 }
 
-func (i id[T]) Value() string {
+func (i id[T]) Value() *UUID {
 	if !i.IsValid() {
-		return ""
+		return nil
 	}
 
-	return i.tid.Suffix()
+	u := uuid.UUID(i.tid.UUIDBytes())
+	return &u
 }
 
 func (i id[T]) MarshalJSON() ([]byte, error)           { return json.Marshal(i.tid) }
@@ -79,6 +81,17 @@ func (i *id[T]) UnmarshalJSON(data []byte) (err error) { err = json.Unmarshal(da
 func newID[ID id[T], T idTraits]() ID {
 	var t T
 	tid := kittehs.Must1(typeid.FromUUIDBytes[typeid.TypeID[T]](t.Prefix(), newUUID()))
+
+	return ID(id[T]{tid: tid})
+}
+
+func FromUUID[ID id[T], T idTraits](uuid *UUID) ID {
+	if uuid == nil {
+		var zero ID
+		return zero
+	}
+	var t T
+	tid := kittehs.Must1(typeid.FromUUIDBytes[typeid.TypeID[T]](t.Prefix(), uuid[:]))
 
 	return ID(id[T]{tid: tid})
 }
