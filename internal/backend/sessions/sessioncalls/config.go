@@ -16,5 +16,10 @@ type TemporalConfig struct {
 	ActivityScheduleToCloseTimeout time.Duration `koanf:"activity_schedule_to_close_timeout"`
 	ActivityStartToCloseTimeout    time.Duration `koanf:"activity_start_to_close_timeout"`
 	LocalScheduleToCloseTimeout    time.Duration `koanf:"local_schedule_to_close_timeout"`
-	Worker                         worker.Options
+
+	// This is used only for activities that are scheduled
+	// on unique workers.
+	ActivityScheduleToStartTimeout time.Duration `koanf:"activity_schedule_to_start_timeout"`
+
+	Worker worker.Options
 }

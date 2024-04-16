@@ -2,11 +2,13 @@ package sessioncalls
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/akmodules"
 	"go.autokitteh.dev/autokitteh/sdk/sdkexecutor"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -48,25 +50,27 @@ func (cs *calls) invoke(ctx context.Context, callv sdktypes.Value, args []sdktyp
 
 	var caller sdkexecutor.Caller
 
-	if xid.IsIntegrationID() {
-		intg, err := cs.svcs.Integrations.Get(ctx, xid.ToIntegrationID())
-		if err != nil {
+	f := callv.GetFunction()
+
+	if iid := xid.ToIntegrationID(); iid.IsValid() && !f.HasFlag(sdktypes.PureFunctionFlag) && !akmodules.IsAKModuleExecutorID(xid) {
+		// The executor is an integration, and not a pure function or a session module that must run in a session workflow,
+		// so it can run in any worker and using a stateless integration.
+
+		var err error
+		if caller, err = cs.svcs.Integrations.Get(ctx, iid); err != nil {
 			return sdktypes.InvalidSessionCallAttemptResult, fmt.Errorf("get integration: %w", err)
 		}
-
-		if intg == nil {
-			// The executor is probably a builtin. In that case, it's not registered in the integrations
-			// service, but does exist in the executors map.
-			caller = executors.GetCaller(xid)
-		} else {
-			caller = intg
-		}
-	} else if xid.IsRunID() {
-		// HACK(ENG-335): In the future, we need to call back directly to the originating workflow
-		//                and ask it to process the call.
-		caller = executors.GetCaller(xid)
 	} else {
-		return sdktypes.InvalidSessionCallAttemptResult, fmt.Errorf("could not determine executor for %q", xid)
+		// Function required to run in the same worker as the workflow.
+		// In these cases, it's not registered in the integrations
+		// service, but must exist in the executors map, since the activity
+		// must have been executed in the same worker as the originating workflow.
+
+		if executors == nil {
+			return sdktypes.InvalidSessionCallAttemptResult, errors.New("no registered executors")
+		}
+
+		caller = executors.GetCaller(xid)
 	}
 
 	if caller == nil {

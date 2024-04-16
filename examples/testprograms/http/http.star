@@ -4,6 +4,9 @@ def foo(x):
     return "meow, " + x
 
 def on_http_get():
+    print(time.now())
+    print(store.set("x", "meow"))
+
     resp, err = myhttp.get("https://httpbin.org/status/404", ak.callopts(catch=True))
 
     # also works:

@@ -78,7 +78,7 @@ func sessionLog(ctx context.Context, sid sdktypes.SessionID, skip int) ([]sdktyp
 
 	for _, r := range fresh {
 		if noTimestamps {
-			r = r.WithoutTimestamp()
+			r = r.WithoutTimestamp().WithProcessID("")
 		}
 
 		if printsOnly {

@@ -26,8 +26,9 @@ var defaultConfig = Config{
 			ActivityHeartbeatInterval:      time.Second * 1,
 			ActivityHeartbeatTimeout:       time.Second * 3,
 			ActivityScheduleToCloseTimeout: time.Hour,
-			ActivityStartToCloseTimeout:    time.Minute * 30,
+			ActivityStartToCloseTimeout:    time.Minute * 45,
 			LocalScheduleToCloseTimeout:    time.Second * 5,
+			ActivityScheduleToStartTimeout: time.Second * 5,
 		},
 	},
 }

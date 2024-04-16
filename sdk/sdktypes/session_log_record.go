@@ -31,7 +31,7 @@ func (SessionLogRecordTraits) Validate(m *SessionLogRecordPB) error {
 func (SessionLogRecordTraits) StrictValidate(m *SessionLogRecordPB) error {
 	return errors.Join(
 		mandatory("t", m.T),
-		oneOfMessage(m /* ignore: */, "t"),
+		oneOfMessage(m /* ignore: */, "t", "process_id"),
 	)
 }
 
@@ -134,4 +134,10 @@ func (r SessionLogRecord) WithoutTimestamp() SessionLogRecord {
 
 func (r SessionLogRecord) Timestamp() time.Time {
 	return r.read().T.AsTime()
+}
+
+func (r SessionLogRecord) WithProcessID(pid string) SessionLogRecord {
+	m := r.read()
+	m.ProcessId = pid
+	return forceFromProto[SessionLogRecord](m)
 }

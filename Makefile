@@ -35,7 +35,7 @@ VERSION=dev
 endif
 
 VERSION_PKG_PATH="go.autokitteh.dev/autokitteh/internal/version"
-LDFLAGS+=-X '${VERSION_PKG_PATH}.Version=${VERSION}' -X '${VERSION_PKG_PATH}.Time=${TIMESTAMP}' -X '${VERSION_PKG_PATH}.Commit=${COMMIT}$(shell git diff --quiet || echo '(dirty)')' -X '${VERSION_PKG_PATH}.User=$(shell whoami)' -X '${VERSION_PKG_PATH}.Host=$(shell hostname)'
+LDFLAGS+=-X '${VERSION_PKG_PATH}.Version=${VERSION}' -X '${VERSION_PKG_PATH}.Time=${TIMESTAMP}' -X '${VERSION_PKG_PATH}.Commit=${COMMIT}$(shell git diff --quiet || echo '_dirty')' -X '${VERSION_PKG_PATH}.User=$(shell whoami)' -X '${VERSION_PKG_PATH}.Host=$(shell hostname)'
 
 export AK_SYSTEST_USE_PROC_SVC=1
 

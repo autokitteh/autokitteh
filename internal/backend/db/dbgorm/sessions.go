@@ -11,6 +11,7 @@ import (
 	"gorm.io/gorm/clause"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
+	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -57,7 +58,7 @@ func (db *gormdb) createSession(ctx context.Context, session *scheme.Session) er
 		return addSessionLogRecord(
 			tx.db,
 			session.SessionID,
-			sdktypes.NewStateSessionLogRecord(sdktypes.NewSessionStateCreated()),
+			sdktypes.NewStateSessionLogRecord(sdktypes.NewSessionStateCreated()).WithProcessID(fixtures.ProcessID()),
 		)
 	})
 }
@@ -94,7 +95,7 @@ func (db *gormdb) UpdateSessionState(ctx context.Context, sessionID sdktypes.Ses
 			return sdkerrors.ErrNotFound
 		}
 
-		return addSessionLogRecord(tx.db, sid, sdktypes.NewStateSessionLogRecord(state))
+		return addSessionLogRecord(tx.db, sid, sdktypes.NewStateSessionLogRecord(state).WithProcessID(fixtures.ProcessID()))
 	}))
 }
 
@@ -112,13 +113,13 @@ func addSessionLogRecord(tx *gorm.DB, sessionID string, logr sdktypes.SessionLog
 
 func (db *gormdb) AddSessionPrint(ctx context.Context, sessionID sdktypes.SessionID, print string) error {
 	return translateError(
-		addSessionLogRecord(db.db, sessionID.String(), sdktypes.NewPrintSessionLogRecord(print)),
+		addSessionLogRecord(db.db, sessionID.String(), sdktypes.NewPrintSessionLogRecord(print).WithProcessID(fixtures.ProcessID())),
 	)
 }
 
 func (db *gormdb) AddSessionStopRequest(ctx context.Context, sessionID sdktypes.SessionID, reason string) error {
 	return translateError(
-		addSessionLogRecord(db.db, sessionID.String(), sdktypes.NewStopRequestSessionLogRecord(reason)),
+		addSessionLogRecord(db.db, sessionID.String(), sdktypes.NewStopRequestSessionLogRecord(reason).WithProcessID(fixtures.ProcessID())),
 	)
 }
 
@@ -183,7 +184,7 @@ func (db *gormdb) CreateSessionCall(ctx context.Context, sessionID sdktypes.Sess
 			return err
 		}
 
-		return addSessionLogRecord(tx.db, sessionID.String(), sdktypes.NewCallSpecSessionLogRecord(spec))
+		return addSessionLogRecord(tx.db, sessionID.String(), sdktypes.NewCallSpecSessionLogRecord(spec).WithProcessID(fixtures.ProcessID()))
 	}))
 }
 
@@ -234,7 +235,7 @@ func (db *gormdb) StartSessionCallAttempt(ctx context.Context, sessionID sdktype
 			return err
 		}
 
-		return addSessionLogRecord(tx.db, sessionID.String(), sdktypes.NewCallAttemptStartSessionLogRecord(obj))
+		return addSessionLogRecord(tx.db, sessionID.String(), sdktypes.NewCallAttemptStartSessionLogRecord(obj).WithProcessID(fixtures.ProcessID()))
 	}))
 
 	return
@@ -257,7 +258,7 @@ func (db *gormdb) CompleteSessionCallAttempt(ctx context.Context, sessionID sdkt
 			return sdkerrors.ErrNotFound
 		}
 
-		return addSessionLogRecord(tx.db, sessionID.String(), sdktypes.NewCallAttemptCompleteSessionLogRecord(complete))
+		return addSessionLogRecord(tx.db, sessionID.String(), sdktypes.NewCallAttemptCompleteSessionLogRecord(complete).WithProcessID(fixtures.ProcessID()))
 	}))
 }
 

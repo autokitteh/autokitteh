@@ -15,9 +15,11 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
+var ExecutorID = sdktypes.NewExecutorID(fixtures.NewBuiltinIntegrationID("time"))
+
 func New() sdkexecutor.Executor {
 	return fixtures.NewBuiltinExecutor(
-		"time",
+		ExecutorID,
 		sdkmodule.ExportValue("nanosecond", sdkmodule.WithValue(sdktypes.NewIntegerValue(int64(time.Nanosecond)))),
 		sdkmodule.ExportValue("microsecond", sdkmodule.WithValue(sdktypes.NewIntegerValue(int64(time.Microsecond)))),
 		sdkmodule.ExportValue("millisecond", sdkmodule.WithValue(sdktypes.NewIntegerValue(int64(time.Millisecond)))),
