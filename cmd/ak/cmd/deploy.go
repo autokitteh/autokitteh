@@ -15,13 +15,13 @@ import (
 )
 
 var (
-	manifestPath, project, env string
+	manifestPath, project, env, projectName string
 
 	filePaths, dirPaths []string
 )
 
 var deployCmd = common.StandardCommand(&cobra.Command{
-	Use:   "deploy {--manifest <file>|--project <name or ID>} [--dir <path> [...]] [--file <path> [...]] [--env <name or ID>]",
+	Use:   "deploy {--manifest <file> [--project-name <name>]|--project <name or ID>} [--dir <path> [...]] [--file <path> [...]] [--env <name or ID>]",
 	Short: "Create, configure, build, deploy, and activate project",
 	Long:  `Create, configure, build, deploy, and activate project - see also the "manifest", "build", "deployment", and "project" parent commands`,
 	Args:  cobra.NoArgs,
@@ -33,11 +33,15 @@ var deployCmd = common.StandardCommand(&cobra.Command{
 		// (see also the "manifest" parent command).
 		if manifestPath != "" {
 			var err error
-			project, err = applyManifest(cmd, manifestPath)
+			project, err = applyManifest(cmd, manifestPath, projectName)
 			if err != nil {
 				return err
 			}
 		} else {
+			if projectName != "" {
+				return fmt.Errorf("project name provided without manifest")
+			}
+
 			p, pid, _ := r.ProjectNameOrID(project)
 			if p.IsValid() {
 				logFunc(cmd, "plan")(fmt.Sprintf("project %q: found, id=%q", project, pid))
@@ -101,6 +105,7 @@ var deployCmd = common.StandardCommand(&cobra.Command{
 func init() {
 	// Command-specific flags.
 	deployCmd.Flags().StringVarP(&manifestPath, "manifest", "m", "", "YAML manifest file containing project settings")
+	deployCmd.Flags().StringVarP(&projectName, "project-name", "n", "", "project name to use for manifest")
 	deployCmd.Flags().StringVarP(&project, "project", "p", "", "existing project name or ID")
 	deployCmd.MarkFlagsOneRequired("manifest", "project")
 	deployCmd.MarkFlagsMutuallyExclusive("manifest", "project")
@@ -113,7 +118,7 @@ func init() {
 	deployCmd.Flags().StringVarP(&env, "env", "e", "", "environment name or ID")
 }
 
-func applyManifest(cmd *cobra.Command, manifestPath string) (string, error) {
+func applyManifest(cmd *cobra.Command, manifestPath, projectName string) (string, error) {
 	// Read and parse the manifest file.
 	data, err := os.ReadFile(manifestPath)
 	if err != nil {
@@ -130,7 +135,7 @@ func applyManifest(cmd *cobra.Command, manifestPath string) (string, error) {
 	defer cancel()
 
 	// Plan the actions to execute.
-	actions, err := manifest.Plan(ctx, m, client, manifest.WithLogger(logFunc(cmd, "plan")))
+	actions, err := manifest.Plan(ctx, m, client, manifest.WithLogger(logFunc(cmd, "plan")), manifest.WithProjectName(projectName))
 	if err != nil {
 		return "", err
 	}

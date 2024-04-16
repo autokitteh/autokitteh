@@ -47,7 +47,7 @@ func (s *server) Apply(ctx context.Context, req *connect.Request[applyv1.ApplyRe
 
 	actions, err := manifest.Plan(ctx, man, s.client, manifest.WithLogger(func(msg string) {
 		logs = append(logs, fmt.Sprintf("[plan] %s", msg))
-	}))
+	}), manifest.WithProjectName(msg.ProjectName))
 	if err != nil {
 		return nil, connect.NewError(connect.CodeUnknown, err)
 	}

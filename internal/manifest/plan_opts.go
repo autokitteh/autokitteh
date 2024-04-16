@@ -3,6 +3,7 @@ package manifest
 type opts struct {
 	fromScratch bool
 	log         Log
+	projectName string
 }
 
 func applyOptions(optfns []Option) (opts opts) {
@@ -23,5 +24,11 @@ func WithFromScratch(s bool) Option {
 func WithLogger(l Log) Option {
 	return func(o *opts) {
 		o.log = l
+	}
+}
+
+func WithProjectName(n string) Option {
+	return func(o *opts) {
+		o.projectName = n
 	}
 }

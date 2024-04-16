@@ -22,7 +22,7 @@ var (
 // Allow no dir/file - use manifest dir by default
 
 var deployCmd = common.StandardCommand(&cobra.Command{
-	Use:   "deploy <manifest file> [--dir <path> [...]] [--file <path> [...]] [--env <name or ID>] [--quiet]",
+	Use:   "deploy <manifest file> [--project-name <name>] [--dir <path> [...]] [--file <path> [...]] [--env <name or ID>] [--quiet]",
 	Short: "Create, configure, build, deploy, and activate project",
 	Long:  `Create, configure, build, deploy, and activate project - see also the "build", "deployment", and "project" parent commands`,
 	Args:  cobra.ExactArgs(1),
@@ -97,6 +97,7 @@ func init() {
 	kittehs.Must0(deployCmd.MarkFlagFilename("file"))
 	deployCmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "only show errors, if any")
 	deployCmd.Flags().StringVarP(&env, "env", "e", "", "environment name or ID")
+	deployCmd.Flags().StringVarP(&projectName, "project-name", "n", "", "project name")
 }
 
 func applyManifest(cmd *cobra.Command, args []string) (string, error) {
@@ -106,7 +107,7 @@ func applyManifest(cmd *cobra.Command, args []string) (string, error) {
 		return "", err
 	}
 
-	actions, err := plan(cmd, data, path)
+	actions, err := plan(cmd, data, path, projectName)
 	if err != nil {
 		return "", err
 	}

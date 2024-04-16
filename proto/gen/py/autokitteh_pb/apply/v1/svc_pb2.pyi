@@ -7,12 +7,14 @@ from typing import ClassVar as _ClassVar, Iterable as _Iterable, Optional as _Op
 DESCRIPTOR: _descriptor.FileDescriptor
 
 class ApplyRequest(_message.Message):
-    __slots__ = ["manifest", "path"]
+    __slots__ = ["manifest", "path", "project_name"]
     MANIFEST_FIELD_NUMBER: _ClassVar[int]
     PATH_FIELD_NUMBER: _ClassVar[int]
+    PROJECT_NAME_FIELD_NUMBER: _ClassVar[int]
     manifest: str
     path: str
-    def __init__(self, manifest: _Optional[str] = ..., path: _Optional[str] = ...) -> None: ...
+    project_name: str
+    def __init__(self, manifest: _Optional[str] = ..., path: _Optional[str] = ..., project_name: _Optional[str] = ...) -> None: ...
 
 class ApplyResponse(_message.Message):
     __slots__ = ["logs", "project_ids"]
