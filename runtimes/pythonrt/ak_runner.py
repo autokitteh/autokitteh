@@ -185,15 +185,13 @@ class Comm:
         return b64encode(data).decode('utf-8')
 
     def send_activity(self, fn, args, kw):
-        args = [str(a) for a in args]
-        kw = {k: str(v) for k, v in kw.items()}
         data = (fn, args, kw)
         message = {
             'type': MessageType.callback,
             'payload': {
                 'name': fn.__name__,
-                'args': args,
-                'kw': kw or {},
+                'args': [str(a) for a in args],
+                'kw': {k: str(v) for k, v in kw.items()},
                 'data': self._picklize(data),
             },
         }

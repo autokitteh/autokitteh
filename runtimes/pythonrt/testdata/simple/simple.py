@@ -1,4 +1,5 @@
 from os import getenv
+import json
 
 
 def greet(event):
@@ -6,10 +7,10 @@ def greet(event):
     print('INFO: simple: USER:', getenv('USER'))
     print(f'INFO: simple: event: {event!r}')
 
-    body = event.get('data', {}).get('body')
-    if body:
-        print(f'BODY: {body!r}')
-    return 'Hello stranger'
+    body = event['data']['body']
+    print(f'BODY: {body!r}')
+    request = json.loads(body)
+    print(f'REQUEST: {request!r}')
 
 
 if __name__ == '__main__':
