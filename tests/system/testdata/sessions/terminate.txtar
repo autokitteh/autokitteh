@@ -1,3 +1,4 @@
+# Preconditions: create & build project.
 ak project create --name my_project
 return code == 0
 
@@ -5,29 +6,31 @@ ak project build my_project --file main.star
 return code == 0
 output equals 'build_id: bld_00000000000000000000000003'
 
-ak sessions start --build-id bld_00000000000000000000000003 --entrypoint main.star:main
+# Preconditions: start a slow session, and wait for it to start running.
+ak session start --build-id bld_00000000000000000000000003 --entrypoint main.star:main
 return code == 0
 output equals 'session_id: ses_00000000000000000000000004'
 
-ak sessions watch ses_00000000000000000000000004 --no-timestamps --end-state RUNNING --timeout 7s
+ak session watch ses_00000000000000000000000004 --fail --end-state RUNNING --timeout 5s
 return code == 0
 
-ak sessions stop ses_00000000000000000000000004 --reason test --force
+# Terminate the session forcefully.
+ak session stop ses_00000000000000000000000004 --reason test --force
 return code == 0
 
-# no need to wait for session to be done - it should already be terminated
-# after the command above.
+# No need to wait for the session to be done - it should
+# already be terminated after the command above.
 
-ak sessions log ses_00000000000000000000000004 --skip -1 --no-timestamps -j
+ak session log ses_00000000000000000000000004 --skip -1 --no-timestamps -j
 return code == 0
-output equals_json file last.json
+output equals_json file last_state.json
 
 -- main.star --
 def main():
   sleep(20)
   print("finished")
 
--- last.json --
+-- last_state.json --
 {
   "state": {
     "stopped": {

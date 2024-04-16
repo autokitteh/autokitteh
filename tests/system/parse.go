@@ -81,6 +81,11 @@ func useTempDir(t *testing.T) {
 	if err := os.Chdir(td); err != nil {
 		t.Fatalf("failed to switch to temporary directory: %v", err)
 	}
+
+	// Don't use the user's "config.yaml" file, it may violate isolation
+	// by forcing tests to use shared and/or persistent resources.
+	t.Setenv("XDG_CONFIG_HOME", td)
+	t.Setenv("XDG_DATA_HOME", td)
 }
 
 func writeEmbeddedFiles(t *testing.T, fs []txtar.File) {

@@ -75,6 +75,7 @@ func setUpTest(t *testing.T, akPath string) string {
 
 	// Redirect the OS's stdout and stderr through a pipe, to
 	// detect when the AK server is ready for the test to begin.
+	// TODO(ENG-693): Replace with /readyz.
 	origStdout, origStderr := os.Stdout, os.Stderr
 	combinedOutput := newMutexBuffer()
 	r, w, _ := os.Pipe()

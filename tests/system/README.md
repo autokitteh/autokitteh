@@ -49,11 +49,18 @@ be split by slash characters (`/`) into a sequence of regular expressions,
 and each part of a test's identifier (i.e. the txtar relative path under
 `testdata`) must match the corresponding element in the sequence.
 
-For example, to run only with the txtar files in/under `testdata/*foo*/*bar*`,
-including `testdata/*foo*/*bar*.txtar`:
+For example, to run only with the txtar files in/under `testdata/*subdir*/*filename*`,
+including `testdata/*subdir*/*filename*.txtar`:
 
 ```
-gotestsum -f testname -run /foo/bar
+gotestsum -f testname ./tests/system -run /subdir/filename
+```
+
+To repeat a test `N` times when investigating flakiness, append the `-count`
+flag:
+
+```
+gotestsum -f testname ./tests/system -run /subdir/filename -count N
 ```
 
 ## Txtar File Structure
