@@ -48,13 +48,13 @@ CREATE TABLE `deployments` (
   `updated_at` datetime NULL,
   `deleted_at` datetime NULL,
   PRIMARY KEY (`deployment_id`),
-  CONSTRAINT `fk_deployments_env` FOREIGN KEY (`env_id`) REFERENCES `envs` (`env_id`) ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT `fk_deployments_build` FOREIGN KEY (`build_id`) REFERENCES `builds` (`build_id`) ON UPDATE NO ACTION ON DELETE NO ACTION
+  CONSTRAINT `fk_deployments_build` FOREIGN KEY (`build_id`) REFERENCES `builds` (`build_id`) ON UPDATE NO ACTION ON DELETE NO ACTION,
+  CONSTRAINT `fk_deployments_env` FOREIGN KEY (`env_id`) REFERENCES `envs` (`env_id`) ON UPDATE NO ACTION ON DELETE NO ACTION
 );
--- create index "idx_deployments_env_id" to table: "deployments"
-CREATE INDEX `idx_deployments_env_id` ON `deployments` (`env_id`);
 -- create index "idx_deployments_deleted_at" to table: "deployments"
 CREATE INDEX `idx_deployments_deleted_at` ON `deployments` (`deleted_at`);
+-- create index "idx_deployments_env_id" to table: "deployments"
+CREATE INDEX `idx_deployments_env_id` ON `deployments` (`env_id`);
 -- create "connections" table
 CREATE TABLE `connections` (
   `connection_id` uuid NULL,
@@ -67,6 +67,18 @@ CREATE TABLE `connections` (
 );
 -- create index "idx_connections_project_id" to table: "connections"
 CREATE INDEX `idx_connections_project_id` ON `connections` (`project_id`);
+-- create "signals" table
+CREATE TABLE `signals` (
+  `signal_id` text NULL,
+  `connection_id` uuid NULL,
+  `created_at` datetime NULL,
+  `workflow_id` text NULL,
+  `filter` text NULL,
+  PRIMARY KEY (`signal_id`),
+  CONSTRAINT `fk_signals_connection` FOREIGN KEY (`connection_id`) REFERENCES `connections` (`connection_id`) ON UPDATE NO ACTION ON DELETE NO ACTION
+);
+-- create index "idx_connection_id_event_type" to table: "signals"
+CREATE INDEX `idx_connection_id_event_type` ON `signals` (`connection_id`);
 -- create "events" table
 CREATE TABLE `events` (
   `event_id` uuid NULL,
@@ -110,6 +122,10 @@ CREATE TABLE `sessions` (
   CONSTRAINT `fk_sessions_env` FOREIGN KEY (`env_id`) REFERENCES `envs` (`env_id`) ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT `fk_sessions_build` FOREIGN KEY (`build_id`) REFERENCES `builds` (`build_id`) ON UPDATE NO ACTION ON DELETE NO ACTION
 );
+-- create index "idx_sessions_build_id" to table: "sessions"
+CREATE INDEX `idx_sessions_build_id` ON `sessions` (`build_id`);
+-- create index "idx_sessions_deleted_at" to table: "sessions"
+CREATE INDEX `idx_sessions_deleted_at` ON `sessions` (`deleted_at`);
 -- create index "idx_sessions_current_state_type" to table: "sessions"
 CREATE INDEX `idx_sessions_current_state_type` ON `sessions` (`current_state_type`);
 -- create index "idx_sessions_event_id" to table: "sessions"
@@ -118,21 +134,35 @@ CREATE INDEX `idx_sessions_event_id` ON `sessions` (`event_id`);
 CREATE INDEX `idx_sessions_deployment_id` ON `sessions` (`deployment_id`);
 -- create index "idx_sessions_env_id" to table: "sessions"
 CREATE INDEX `idx_sessions_env_id` ON `sessions` (`env_id`);
--- create index "idx_sessions_build_id" to table: "sessions"
-CREATE INDEX `idx_sessions_build_id` ON `sessions` (`build_id`);
--- create index "idx_sessions_deleted_at" to table: "sessions"
-CREATE INDEX `idx_sessions_deleted_at` ON `sessions` (`deleted_at`);
--- create "session_call_attempts" table
-CREATE TABLE `session_call_attempts` (
+-- create "session_call_specs" table
+CREATE TABLE `session_call_specs` (
   `session_id` uuid NULL,
   `seq` integer NULL,
-  `attempt` integer NULL,
-  `start` json NULL,
-  `complete` json NULL,
-  CONSTRAINT `fk_session_call_attempts_session` FOREIGN KEY (`session_id`) REFERENCES `sessions` (`session_id`) ON UPDATE NO ACTION ON DELETE NO ACTION
+  `data` json NULL,
+  PRIMARY KEY (`session_id`, `seq`),
+  CONSTRAINT `fk_session_call_specs_session` FOREIGN KEY (`session_id`) REFERENCES `sessions` (`session_id`) ON UPDATE NO ACTION ON DELETE NO ACTION
 );
--- create index "idx_session_id_seq_attempt" to table: "session_call_attempts"
-CREATE UNIQUE INDEX `idx_session_id_seq_attempt` ON `session_call_attempts` (`session_id`, `seq`, `attempt`);
+-- create "integrations" table
+CREATE TABLE `integrations` (
+  `integration_id` uuid NULL,
+  `unique_name` text NULL,
+  `display_name` text NULL,
+  `description` text NULL,
+  `logo_url` text NULL,
+  `user_links` json NULL,
+  `connection_url` text NULL,
+  `api_key` text NULL,
+  `signing_key` text NULL,
+  PRIMARY KEY (`integration_id`)
+);
+-- create index "idx_integrations_unique_name" to table: "integrations"
+CREATE UNIQUE INDEX `idx_integrations_unique_name` ON `integrations` (`unique_name`);
+-- create "secrets" table
+CREATE TABLE `secrets` (
+  `name` text NULL,
+  `data` json NULL,
+  PRIMARY KEY (`name`)
+);
 -- create "triggers" table
 CREATE TABLE `triggers` (
   `trigger_id` uuid NULL,
@@ -150,14 +180,35 @@ CREATE TABLE `triggers` (
   CONSTRAINT `fk_triggers_env` FOREIGN KEY (`env_id`) REFERENCES `envs` (`env_id`) ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT `fk_triggers_project` FOREIGN KEY (`project_id`) REFERENCES `projects` (`project_id`) ON UPDATE NO ACTION ON DELETE NO ACTION
 );
+-- create index "idx_triggers_unique_name" to table: "triggers"
+CREATE UNIQUE INDEX `idx_triggers_unique_name` ON `triggers` (`unique_name`);
 -- create index "idx_triggers_env_id" to table: "triggers"
 CREATE INDEX `idx_triggers_env_id` ON `triggers` (`env_id`);
 -- create index "idx_triggers_connection_id" to table: "triggers"
 CREATE INDEX `idx_triggers_connection_id` ON `triggers` (`connection_id`);
 -- create index "idx_triggers_project_id" to table: "triggers"
 CREATE INDEX `idx_triggers_project_id` ON `triggers` (`project_id`);
--- create index "idx_triggers_unique_name" to table: "triggers"
-CREATE UNIQUE INDEX `idx_triggers_unique_name` ON `triggers` (`unique_name`);
+-- create "session_call_attempts" table
+CREATE TABLE `session_call_attempts` (
+  `session_id` uuid NULL,
+  `seq` integer NULL,
+  `attempt` integer NULL,
+  `start` json NULL,
+  `complete` json NULL,
+  CONSTRAINT `fk_session_call_attempts_session` FOREIGN KEY (`session_id`) REFERENCES `sessions` (`session_id`) ON UPDATE NO ACTION ON DELETE NO ACTION
+);
+-- create index "idx_session_id_seq_attempt" to table: "session_call_attempts"
+CREATE UNIQUE INDEX `idx_session_id_seq_attempt` ON `session_call_attempts` (`session_id`, `seq`, `attempt`);
+-- create "event_records" table
+CREATE TABLE `event_records` (
+  `seq` integer NULL PRIMARY KEY AUTOINCREMENT,
+  `event_id` uuid NULL,
+  `state` integer NULL,
+  `created_at` datetime NULL,
+  CONSTRAINT `fk_event_records_event` FOREIGN KEY (`event_id`) REFERENCES `events` (`event_id`) ON UPDATE NO ACTION ON DELETE NO ACTION
+);
+-- create index "idx_event_records_state" to table: "event_records"
+CREATE INDEX `idx_event_records_state` ON `event_records` (`state`);
 -- create "session_log_records" table
 CREATE TABLE `session_log_records` (
   `session_id` uuid NULL,
@@ -166,20 +217,6 @@ CREATE TABLE `session_log_records` (
 );
 -- create index "idx_session_log_records_session_id" to table: "session_log_records"
 CREATE INDEX `idx_session_log_records_session_id` ON `session_log_records` (`session_id`);
--- create "session_call_specs" table
-CREATE TABLE `session_call_specs` (
-  `session_id` uuid NULL,
-  `seq` integer NULL,
-  `data` json NULL,
-  PRIMARY KEY (`session_id`, `seq`),
-  CONSTRAINT `fk_session_call_specs_session` FOREIGN KEY (`session_id`) REFERENCES `sessions` (`session_id`) ON UPDATE NO ACTION ON DELETE NO ACTION
-);
--- create "secrets" table
-CREATE TABLE `secrets` (
-  `name` text NULL,
-  `data` json NULL,
-  PRIMARY KEY (`name`)
-);
 -- create "env_vars" table
 CREATE TABLE `env_vars` (
   `env_id` uuid NULL,
@@ -194,89 +231,44 @@ CREATE TABLE `env_vars` (
 CREATE UNIQUE INDEX `idx_env_vars_membership_id` ON `env_vars` (`membership_id`);
 -- create index "idx_env_vars_env_id" to table: "env_vars"
 CREATE INDEX `idx_env_vars_env_id` ON `env_vars` (`env_id`);
--- create "signals" table
-CREATE TABLE `signals` (
-  `signal_id` text NULL,
-  `connection_id` uuid NULL,
-  `created_at` datetime NULL,
-  `workflow_id` text NULL,
-  `filter` text NULL,
-  PRIMARY KEY (`signal_id`),
-  CONSTRAINT `fk_signals_connection` FOREIGN KEY (`connection_id`) REFERENCES `connections` (`connection_id`) ON UPDATE NO ACTION ON DELETE NO ACTION
-);
--- create index "idx_connection_id_event_type" to table: "signals"
-CREATE INDEX `idx_connection_id_event_type` ON `signals` (`connection_id`);
--- create "event_records" table
-CREATE TABLE `event_records` (
-  `seq` integer NULL PRIMARY KEY AUTOINCREMENT,
-  `event_id` uuid NULL,
-  `state` integer NULL,
-  `created_at` datetime NULL,
-  CONSTRAINT `fk_event_records_event` FOREIGN KEY (`event_id`) REFERENCES `events` (`event_id`) ON UPDATE NO ACTION ON DELETE NO ACTION
-);
--- create index "idx_event_records_state" to table: "event_records"
-CREATE INDEX `idx_event_records_state` ON `event_records` (`state`);
--- create "integrations" table
-CREATE TABLE `integrations` (
-  `integration_id` uuid NULL,
-  `unique_name` text NULL,
-  `display_name` text NULL,
-  `description` text NULL,
-  `logo_url` text NULL,
-  `user_links` json NULL,
-  `connection_url` text NULL,
-  `api_key` text NULL,
-  `signing_key` text NULL,
-  PRIMARY KEY (`integration_id`)
-);
--- create index "idx_integrations_unique_name" to table: "integrations"
-CREATE UNIQUE INDEX `idx_integrations_unique_name` ON `integrations` (`unique_name`);
 
 -- +goose Down
--- reverse: create index "idx_integrations_unique_name" to table: "integrations"
-DROP INDEX `idx_integrations_unique_name`;
--- reverse: create "integrations" table
-DROP TABLE `integrations`;
--- reverse: create index "idx_event_records_state" to table: "event_records"
-DROP INDEX `idx_event_records_state`;
--- reverse: create "event_records" table
-DROP TABLE `event_records`;
--- reverse: create index "idx_connection_id_event_type" to table: "signals"
-DROP INDEX `idx_connection_id_event_type`;
--- reverse: create "signals" table
-DROP TABLE `signals`;
 -- reverse: create index "idx_env_vars_env_id" to table: "env_vars"
 DROP INDEX `idx_env_vars_env_id`;
 -- reverse: create index "idx_env_vars_membership_id" to table: "env_vars"
 DROP INDEX `idx_env_vars_membership_id`;
 -- reverse: create "env_vars" table
 DROP TABLE `env_vars`;
--- reverse: create "secrets" table
-DROP TABLE `secrets`;
--- reverse: create "session_call_specs" table
-DROP TABLE `session_call_specs`;
 -- reverse: create index "idx_session_log_records_session_id" to table: "session_log_records"
 DROP INDEX `idx_session_log_records_session_id`;
 -- reverse: create "session_log_records" table
 DROP TABLE `session_log_records`;
--- reverse: create index "idx_triggers_unique_name" to table: "triggers"
-DROP INDEX `idx_triggers_unique_name`;
+-- reverse: create index "idx_event_records_state" to table: "event_records"
+DROP INDEX `idx_event_records_state`;
+-- reverse: create "event_records" table
+DROP TABLE `event_records`;
+-- reverse: create index "idx_session_id_seq_attempt" to table: "session_call_attempts"
+DROP INDEX `idx_session_id_seq_attempt`;
+-- reverse: create "session_call_attempts" table
+DROP TABLE `session_call_attempts`;
 -- reverse: create index "idx_triggers_project_id" to table: "triggers"
 DROP INDEX `idx_triggers_project_id`;
 -- reverse: create index "idx_triggers_connection_id" to table: "triggers"
 DROP INDEX `idx_triggers_connection_id`;
 -- reverse: create index "idx_triggers_env_id" to table: "triggers"
 DROP INDEX `idx_triggers_env_id`;
+-- reverse: create index "idx_triggers_unique_name" to table: "triggers"
+DROP INDEX `idx_triggers_unique_name`;
 -- reverse: create "triggers" table
 DROP TABLE `triggers`;
--- reverse: create index "idx_session_id_seq_attempt" to table: "session_call_attempts"
-DROP INDEX `idx_session_id_seq_attempt`;
--- reverse: create "session_call_attempts" table
-DROP TABLE `session_call_attempts`;
--- reverse: create index "idx_sessions_deleted_at" to table: "sessions"
-DROP INDEX `idx_sessions_deleted_at`;
--- reverse: create index "idx_sessions_build_id" to table: "sessions"
-DROP INDEX `idx_sessions_build_id`;
+-- reverse: create "secrets" table
+DROP TABLE `secrets`;
+-- reverse: create index "idx_integrations_unique_name" to table: "integrations"
+DROP INDEX `idx_integrations_unique_name`;
+-- reverse: create "integrations" table
+DROP TABLE `integrations`;
+-- reverse: create "session_call_specs" table
+DROP TABLE `session_call_specs`;
 -- reverse: create index "idx_sessions_env_id" to table: "sessions"
 DROP INDEX `idx_sessions_env_id`;
 -- reverse: create index "idx_sessions_deployment_id" to table: "sessions"
@@ -285,6 +277,10 @@ DROP INDEX `idx_sessions_deployment_id`;
 DROP INDEX `idx_sessions_event_id`;
 -- reverse: create index "idx_sessions_current_state_type" to table: "sessions"
 DROP INDEX `idx_sessions_current_state_type`;
+-- reverse: create index "idx_sessions_deleted_at" to table: "sessions"
+DROP INDEX `idx_sessions_deleted_at`;
+-- reverse: create index "idx_sessions_build_id" to table: "sessions"
+DROP INDEX `idx_sessions_build_id`;
 -- reverse: create "sessions" table
 DROP TABLE `sessions`;
 -- reverse: create index "idx_events_event_id" to table: "events"
@@ -301,14 +297,18 @@ DROP INDEX `idx_event_type`;
 DROP INDEX `idx_events_deleted_at`;
 -- reverse: create "events" table
 DROP TABLE `events`;
+-- reverse: create index "idx_connection_id_event_type" to table: "signals"
+DROP INDEX `idx_connection_id_event_type`;
+-- reverse: create "signals" table
+DROP TABLE `signals`;
 -- reverse: create index "idx_connections_project_id" to table: "connections"
 DROP INDEX `idx_connections_project_id`;
 -- reverse: create "connections" table
 DROP TABLE `connections`;
--- reverse: create index "idx_deployments_deleted_at" to table: "deployments"
-DROP INDEX `idx_deployments_deleted_at`;
 -- reverse: create index "idx_deployments_env_id" to table: "deployments"
 DROP INDEX `idx_deployments_env_id`;
+-- reverse: create index "idx_deployments_deleted_at" to table: "deployments"
+DROP INDEX `idx_deployments_deleted_at`;
 -- reverse: create "deployments" table
 DROP TABLE `deployments`;
 -- reverse: create index "idx_builds_deleted_at" to table: "builds"

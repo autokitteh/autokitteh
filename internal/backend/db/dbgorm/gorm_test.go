@@ -253,16 +253,16 @@ func assertDeleted[T any](t *testing.T, f *dbFixture, m T) {
 
 var (
 	// testSessionID    = "ses_00000000000000000000000001"
-	testBuildID = kittehs.Must1(uuid.FromBytes([]byte("00000000000000000000000001")))
+	testBuildID = kittehs.Must1(uuid.FromBytes([]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}))
 	// testDeploymentID = "dep_00000000000000000000000001"
 	// testEventID      = "evt_00000000000000000000000001"
-	testEnvID = kittehs.Must1(uuid.FromBytes([]byte("00000000000000000000000001")))
+	testEnvID = kittehs.Must1(uuid.FromBytes([]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}))
 	// testProjectID = "prj_00000000000000000000000001"
 	// testTriggerID     = "trg_00000000000000000000000001"
-	testConnectionID   = kittehs.Must1(uuid.FromBytes([]byte("00000000000000000000000001")))
-	testIntegrationID  = kittehs.Must1(uuid.FromBytes([]byte("00000000000000000000000001")))
+	testConnectionID   = kittehs.Must1(uuid.FromBytes([]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}))
+	testIntegrationID  = kittehs.Must1(uuid.FromBytes([]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}))
 	testSignalID       = "00000000000000000000000001"
-	oneIncSixteenBytes = []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+	oneIncSixteenBytes = []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}
 )
 
 func (f *dbFixture) newSession(st sdktypes.SessionStateType) scheme.Session {

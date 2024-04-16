@@ -65,7 +65,7 @@ func (db *gormdb) deleteProjectAndDependents(ctx context.Context, projectID sdkt
 		return err
 	}
 
-	var signalIDs []sdktypes.UUID
+	var signalIDs []string
 	if err := gormDB.Model(&scheme.Signal{}).
 		Joins("join connections on connections.connection_id = signals.connection_id").
 		Where("connections.project_id = ?", projectID).
