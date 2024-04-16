@@ -224,6 +224,10 @@ func (w *sessionWorkflow) initConnections(ctx workflow.Context) error {
 		if err := w.executors.AddValues(scope, vs); err != nil {
 			return err
 		}
+
+		if err := w.executors.AddValues(conn.ID().String(), vs); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -477,6 +481,21 @@ func (w *sessionWorkflow) run(wctx workflow.Context) (prints []string, err error
 			w.data.Session.Inputs(),
 			kittehs.ContainedIn(argNames...),
 		)
+
+		// If session was triggered by a connection, pass the connection to the entrypoint.
+		var trigger struct{ ConnectionId string }
+		if err := w.data.Session.Inputs()["trigger"].UnwrapInto(&trigger); err == nil && trigger.ConnectionId != "" {
+			if _, conn := kittehs.FindFirst(w.data.Connections, func(c sdktypes.Connection) bool {
+				return c.ID().String() == trigger.ConnectionId
+			}); conn.IsValid() {
+				if kwargs["conn"], err = sdktypes.NewModuleValue(
+					conn.Name(),
+					w.executors.GetValues(conn.ID().String()),
+				); err != nil {
+					return prints, err
+				}
+			}
+		}
 
 		if retVal, err = run.Call(goCtx, callValue, nil, kwargs); err != nil {
 			return prints, err

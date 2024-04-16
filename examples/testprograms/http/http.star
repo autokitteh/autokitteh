@@ -3,11 +3,12 @@ load("@http", "myhttp")
 def foo(x):
     return "meow, " + x
 
-def on_http_get():
+def on_http_get(conn):
+    print(conn)
     print(time.now())
     print(store.set("x", "meow"))
 
-    resp, err = myhttp.get("https://httpbin.org/status/404", ak.callopts(catch=True))
+    resp, err = conn.get("https://httpbin.org/status/404", ak.callopts(catch=True))
 
     # also works:
     # resp, err = catch(lambda: myhttp.get("https://httpbin3212.org/status/404"))
