@@ -214,7 +214,7 @@ func setBody(req *http.Request, rawBody string, formBody map[string]string, json
 
 		// Ignore (but allow the user to set) the charset in the Content-Type header.
 		switch strings.Split(contentType, ";")[0] {
-		case contentTypeForm:
+		case "", contentTypeForm:
 			s := form.Encode()
 			req.Body = io.NopCloser(strings.NewReader(s))
 			req.ContentLength = int64(len(s))
