@@ -1,0 +1,6 @@
+done
+
+-- main.star:main --
+def main():
+    sleep(1)
+    print("done")

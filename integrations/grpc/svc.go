@@ -8,7 +8,7 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-var integrationID = sdktypes.IntegrationIDFromName("grpc")
+var integrationID = sdktypes.NewIntegrationIDFromName("grpc")
 
 var description = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
 	IntegrationId: integrationID.String(),

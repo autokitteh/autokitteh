@@ -40,7 +40,7 @@ func (m *module) client(ctx context.Context) (*redis.Client, func(string) string
 }
 
 var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
-	IntegrationId: sdktypes.IntegrationIDFromName("redis").String(),
+	IntegrationId: sdktypes.NewIntegrationIDFromName("redis").String(),
 	UniqueName:    "redis",
 	DisplayName:   "Redis",
 	Description:   "Redis is an open-source, in-memory data structure store, used as a database, cache, and message broker.",
