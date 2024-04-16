@@ -30,6 +30,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/envsgrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/events"
 	"go.autokitteh.dev/autokitteh/internal/backend/eventsgrpcsvc"
+	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
 	"go.autokitteh.dev/autokitteh/internal/backend/httpsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/integrations"
 	"go.autokitteh.dev/autokitteh/internal/backend/integrationsgrpcsvc"
@@ -243,6 +244,11 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 				printBanner(opts, httpsvc.Addr(), temporalFrontendAddr, temporalUIAddr)
 			})
 		}),
+		fx.Invoke(func(mux *http.ServeMux) {
+			mux.HandleFunc("/id", func(w http.ResponseWriter, r *http.Request) {
+				fmt.Fprint(w, fixtures.ProcessID())
+			})
+		}),
 		fx.Invoke(func(z *zap.Logger, lc fx.Lifecycle, mux *http.ServeMux) {
 			var ready atomic.Bool
 
@@ -262,7 +268,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 
 			HookSimpleOnStart(lc, func() {
 				ready.Store(true)
-				z.Info("ready")
+				z.Info("ready", zap.String("id", fixtures.ProcessID()))
 			})
 		}),
 	}

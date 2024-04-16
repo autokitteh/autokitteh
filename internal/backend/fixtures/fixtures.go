@@ -17,8 +17,8 @@ func NewBuiltinIntegrationExecutorID(name string) sdktypes.ExecutorID {
 	return sdktypes.NewExecutorID(NewBuiltinIntegrationID(name))
 }
 
-func NewBuiltinExecutor(name string, opts ...sdkmodule.Optfn) sdkexecutor.Executor {
+func NewBuiltinExecutor(xid sdktypes.ExecutorID, opts ...sdkmodule.Optfn) sdkexecutor.Executor {
 	mod := sdkmodule.New(opts...)
-	vs := kittehs.Must1(mod.Configure(context.TODO(), NewBuiltinIntegrationExecutorID(name), ""))
-	return sdkexecutor.NewExecutor(mod, NewBuiltinIntegrationExecutorID(name), vs)
+	vs := kittehs.Must1(mod.Configure(context.TODO(), xid, ""))
+	return sdkexecutor.NewExecutor(mod, xid, vs)
 }

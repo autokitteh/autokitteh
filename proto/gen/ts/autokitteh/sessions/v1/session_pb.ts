@@ -616,6 +616,11 @@ export class SessionLogRecord extends Message<SessionLogRecord> {
   t?: Timestamp;
 
   /**
+   * @generated from field: string process_id = 2;
+   */
+  processId = "";
+
+  /**
    * one of the following is required.
    *
    * @generated from field: autokitteh.sessions.v1.SessionLogRecord.Print print = 10;
@@ -656,6 +661,7 @@ export class SessionLogRecord extends Message<SessionLogRecord> {
   static readonly typeName = "autokitteh.sessions.v1.SessionLogRecord";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "t", kind: "message", T: Timestamp },
+    { no: 2, name: "process_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "print", kind: "message", T: SessionLogRecord_Print },
     { no: 11, name: "call_spec", kind: "message", T: Call_Spec },
     { no: 12, name: "call_attempt_start", kind: "message", T: Call_Attempt_Start },

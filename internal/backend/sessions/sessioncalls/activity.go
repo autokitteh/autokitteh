@@ -3,8 +3,6 @@ package sessioncalls
 import (
 	"context"
 
-	"go.uber.org/zap"
-
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
@@ -19,7 +17,7 @@ type callActivityOutputs struct {
 	Debug   any
 	Attempt uint32
 
-	// HACK: Ask for a manual retry. This is used when executorsForSessions are not
+	// Ask for a manual retry. This is used when executorsForSessions are not
 	// initialized in case the temporal workflow replays AFTER the activity respawns.
 	// The manual retry will instruct the workflow to retry it with the correct
 	// executorsForSessions is initialized.
@@ -28,10 +26,6 @@ type callActivityOutputs struct {
 
 func (cs *calls) sessionCallActivity(ctx context.Context, params *callActivityInputs) (*callActivityOutputs, error) {
 	executors := executorsForSessions[params.SessionID.String()]
-	if executors == nil {
-		cs.z.Warn("no executors for session", zap.Stringer("session_id", params.SessionID))
-		return &callActivityOutputs{Retry: true}, nil
-	}
 
 	ctx, done := BeginHeartbeat(ctx, cs.config.Temporal.ActivityHeartbeatInterval)
 	defer done()

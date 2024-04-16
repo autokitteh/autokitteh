@@ -13,9 +13,11 @@ import (
 
 var CallOptsCtorSymbol = kittehs.Must1(sdktypes.ParseSymbol("callopts"))
 
+var ExecutorID = sdktypes.NewExecutorID(fixtures.NewBuiltinIntegrationID("ak"))
+
 func New(syscall sdkexecutor.Function) sdkexecutor.Executor {
 	return fixtures.NewBuiltinExecutor(
-		"ak",
+		ExecutorID,
 		sdkmodule.ExportFunction(
 			"syscall",
 			syscall,
