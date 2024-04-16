@@ -134,6 +134,9 @@ func Test_pySvc_Run(t *testing.T) {
 
 	kwargs := map[string]sdktypes.Value{
 		"event_id": sdktypes.NewStringValue("007"),
+		"data": sdktypes.NewDictValueFromStringMap(map[string]sdktypes.Value{
+			"body": sdktypes.NewBytesValue([]byte(`{"user": "joe", "id": 7}`)),
+		}),
 	}
 	_, err = run.Call(ctx, fn, nil, kwargs)
 	require.NoError(t, err, "call")
