@@ -1,3 +1,6 @@
+# This is used by Test_pySvc_Run above, if you make any changes, make sure to run the
+# test
+
 from os import getenv
 import json
 
