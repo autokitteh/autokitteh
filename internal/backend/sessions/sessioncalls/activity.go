@@ -25,7 +25,9 @@ type callActivityOutputs struct {
 }
 
 func (cs *calls) sessionCallActivity(ctx context.Context, params *callActivityInputs) (*callActivityOutputs, error) {
-	executors := executorsForSessions[params.SessionID.String()]
+	cs.executorsForSessionsMu.RLock()
+	executors := cs.executorsForSessions[params.SessionID]
+	cs.executorsForSessionsMu.RUnlock()
 
 	ctx, done := BeginHeartbeat(ctx, cs.config.Temporal.ActivityHeartbeatInterval)
 	defer done()
