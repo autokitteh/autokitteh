@@ -40,10 +40,10 @@ func NewIntegrationIDFromName(name string) IntegrationID {
 		}
 	}, name)
 
-	idName = fmt.Sprintf("%06s", idName)
 	if len(idName) > 6 {
 		idName = idName[:6]
 	}
+	idName = fmt.Sprintf("%06s", idName)
 
 	txt := fmt.Sprintf("%s_%s%06s%016x", integrationIDKind, integrationIDFromNamePrefix, idName, kittehs.HashString64(name))
 
