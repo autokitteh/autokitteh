@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
 
 	enumspb "go.temporal.io/api/enums/v1"
 	"go.temporal.io/sdk/activity"
@@ -58,6 +59,7 @@ type calls struct {
 	//                 user script.
 	generalWorker worker.Worker
 	uniqueWorker  worker.Worker
+	mu            *sync.Mutex
 }
 
 const (
@@ -150,8 +152,14 @@ func (cs *calls) Call(ctx workflow.Context, params *CallParams) (sdktypes.Sessio
 		local := !xid.IsIntegrationID() || akmodules.IsAKModuleExecutorID(xid)
 
 		if local {
+			cs.mu.Lock()
 			executorsForSessions[params.SessionID.String()] = params.Executors
-			defer func() { delete(executorsForSessions, params.SessionID.String()) }()
+			cs.mu.Unlock()
+			defer func() {
+				cs.mu.Lock()
+				delete(executorsForSessions, params.SessionID.String())
+				cs.mu.Unlock()
+			}()
 		}
 
 		for retry := true; retry; {
