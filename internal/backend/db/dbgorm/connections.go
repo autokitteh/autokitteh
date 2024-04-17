@@ -15,10 +15,10 @@ func (db *gormdb) createConnection(ctx context.Context, conn *scheme.Connection)
 
 func (db *gormdb) CreateConnection(ctx context.Context, conn sdktypes.Connection) error {
 	c := scheme.Connection{
-		ConnectionID:     *conn.ID().Value(),
-		IntegrationID:    conn.ProjectID().Value(),
+		ConnectionID:     *conn.ID().UUIDValue(),
+		IntegrationID:    conn.ProjectID().UUIDValue(),
 		IntegrationToken: conn.IntegrationToken(),
-		ProjectID:        conn.ProjectID().Value(),
+		ProjectID:        conn.ProjectID().UUIDValue(),
 		Name:             conn.Name().String(),
 	}
 
@@ -27,15 +27,15 @@ func (db *gormdb) CreateConnection(ctx context.Context, conn sdktypes.Connection
 
 func (db *gormdb) UpdateConnection(ctx context.Context, conn sdktypes.Connection) error {
 	c := scheme.Connection{
-		ConnectionID:     *conn.ID().Value(),
-		IntegrationID:    conn.IntegrationID().Value(),
+		ConnectionID:     *conn.ID().UUIDValue(),
+		IntegrationID:    conn.IntegrationID().UUIDValue(),
 		IntegrationToken: conn.IntegrationToken(),
-		ProjectID:        conn.ProjectID().Value(),
+		ProjectID:        conn.ProjectID().UUIDValue(),
 		Name:             conn.Name().String(),
 	}
 
 	err := db.db.WithContext(ctx).
-		Where("connection_id = ?", conn.ID().Value()).
+		Where("connection_id = ?", conn.ID().UUIDValue()).
 		Updates(&c).Error
 	if err != nil {
 		return translateError(err)
@@ -48,23 +48,23 @@ func (db *gormdb) deleteConnection(ctx context.Context, id sdktypes.UUID) error 
 }
 
 func (db *gormdb) DeleteConnection(ctx context.Context, id sdktypes.ConnectionID) error {
-	return translateError(db.deleteConnection(ctx, *id.Value()))
+	return translateError(db.deleteConnection(ctx, *id.UUIDValue()))
 }
 
 func (db *gormdb) GetConnection(ctx context.Context, id sdktypes.ConnectionID) (sdktypes.Connection, error) {
-	return getOneWTransform(db.db, ctx, scheme.ParseConnection, "connection_id = ?", id.Value())
+	return getOneWTransform(db.db, ctx, scheme.ParseConnection, "connection_id = ?", id.UUIDValue())
 }
 
 func (db *gormdb) ListConnections(ctx context.Context, filter sdkservices.ListConnectionsFilter) ([]sdktypes.Connection, error) {
 	q := db.db.WithContext(ctx)
 	if filter.IntegrationID.IsValid() {
-		q = q.Where("integration_id = ?", filter.IntegrationID.Value())
+		q = q.Where("integration_id = ?", filter.IntegrationID.UUIDValue())
 	}
 	if filter.IntegrationToken != "" {
 		q = q.Where("integration_token = ?", filter.IntegrationToken)
 	}
 	if filter.ProjectID.IsValid() {
-		q = q.Where("project_id = ?", filter.ProjectID.Value())
+		q = q.Where("project_id = ?", filter.ProjectID.UUIDValue())
 	}
 
 	var cs []scheme.Connection

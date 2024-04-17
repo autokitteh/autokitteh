@@ -17,8 +17,8 @@ func (db *gormdb) saveEvent(ctx context.Context, event *scheme.Event) error {
 func (db *gormdb) SaveEvent(ctx context.Context, event sdktypes.Event) error {
 
 	e := scheme.Event{
-		EventID:          *event.ID().Value(),
-		IntegrationID:    event.IntegrationID().Value(),
+		EventID:          *event.ID().UUIDValue(),
+		IntegrationID:    event.IntegrationID().UUIDValue(),
 		IntegrationToken: event.IntegrationToken(),
 		EventType:        event.Type(),
 		Data:             kittehs.Must1(json.Marshal(event.Data())),
@@ -33,13 +33,13 @@ func (db *gormdb) deleteEvent(ctx context.Context, id sdktypes.UUID) error {
 }
 
 func (db *gormdb) GetEventByID(ctx context.Context, eventID sdktypes.EventID) (sdktypes.Event, error) {
-	return getOneWTransform(db.db, ctx, scheme.ParseEvent, "event_id = ?", eventID.Value())
+	return getOneWTransform(db.db, ctx, scheme.ParseEvent, "event_id = ?", eventID.UUIDValue())
 }
 
 func (db *gormdb) ListEvents(ctx context.Context, filter sdkservices.ListEventsFilter) ([]sdktypes.Event, error) {
 	q := db.db.WithContext(ctx)
 	if filter.IntegrationID.IsValid() {
-		q = q.Where("integration_id = ?", filter.IntegrationID.Value())
+		q = q.Where("integration_id = ?", filter.IntegrationID.UUIDValue())
 	}
 
 	if filter.IntegrationToken != "" {

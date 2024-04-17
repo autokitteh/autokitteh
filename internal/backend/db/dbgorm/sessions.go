@@ -23,7 +23,7 @@ func (db *gormdb) getSession(ctx context.Context, sessionID sdktypes.UUID) (*sch
 }
 
 func (db *gormdb) GetSession(ctx context.Context, id sdktypes.SessionID) (sdktypes.Session, error) {
-	s, err := db.getSession(ctx, *id.Value())
+	s, err := db.getSession(ctx, *id.UUIDValue())
 	if s == nil || err != nil {
 		return sdktypes.InvalidSession, translateError(err)
 	}
@@ -35,13 +35,13 @@ func (db *gormdb) deleteSession(ctx context.Context, sessionID sdktypes.UUID) er
 }
 
 func (db *gormdb) DeleteSession(ctx context.Context, sessionID sdktypes.SessionID) error {
-	return translateError(db.deleteSession(ctx, *sessionID.Value()))
+	return translateError(db.deleteSession(ctx, *sessionID.UUIDValue()))
 }
 
 func (db *gormdb) GetSessionLog(ctx context.Context, sessionID sdktypes.SessionID) (sdktypes.SessionLog, error) {
 	var rs []scheme.SessionLogRecord
 
-	if err := db.db.WithContext(ctx).Where("session_id = ?", sessionID.Value()).Find(&rs).Error; err != nil {
+	if err := db.db.WithContext(ctx).Where("session_id = ?", sessionID.UUIDValue()).Find(&rs).Error; err != nil {
 		return sdktypes.InvalidSessionLog, translateError(err)
 	}
 
@@ -67,11 +67,11 @@ func (db *gormdb) CreateSession(ctx context.Context, session sdktypes.Session) e
 	now := time.Now()
 
 	s := scheme.Session{
-		SessionID:        *session.ID().Value(),
-		BuildID:          session.BuildID().Value(),
-		EnvID:            session.EnvID().Value(),
-		DeploymentID:     session.DeploymentID().Value(),
-		EventID:          session.EventID().Value(),
+		SessionID:        *session.ID().UUIDValue(),
+		BuildID:          session.BuildID().UUIDValue(),
+		EnvID:            session.EnvID().UUIDValue(),
+		DeploymentID:     session.DeploymentID().UUIDValue(),
+		EventID:          session.EventID().UUIDValue(),
 		Entrypoint:       session.EntryPoint().CanonicalString(),
 		CurrentStateType: int(sdktypes.SessionStateTypeCreated.ToProto()),
 		Inputs:           kittehs.Must1(json.Marshal(session.Inputs())),
@@ -88,7 +88,7 @@ func (db *gormdb) UpdateSessionState(ctx context.Context, sessionID sdktypes.Ses
 			UpdatedAt:        time.Now(),
 		}
 
-		sid := *sessionID.Value()
+		sid := *sessionID.UUIDValue()
 		if res := tx.db.Model(&r).Where("session_id = ?", sid).Updates(r); res.Error != nil {
 			return res.Error
 		} else if res.RowsAffected == 0 {
@@ -113,13 +113,13 @@ func addSessionLogRecord(tx *gorm.DB, sessionID sdktypes.UUID, logr sdktypes.Ses
 
 func (db *gormdb) AddSessionPrint(ctx context.Context, sessionID sdktypes.SessionID, print string) error {
 	return translateError(
-		addSessionLogRecord(db.db, *sessionID.Value(), sdktypes.NewPrintSessionLogRecord(print).WithProcessID(fixtures.ProcessID())),
+		addSessionLogRecord(db.db, *sessionID.UUIDValue(), sdktypes.NewPrintSessionLogRecord(print).WithProcessID(fixtures.ProcessID())),
 	)
 }
 
 func (db *gormdb) AddSessionStopRequest(ctx context.Context, sessionID sdktypes.SessionID, reason string) error {
 	return translateError(
-		addSessionLogRecord(db.db, *sessionID.Value(), sdktypes.NewStopRequestSessionLogRecord(reason).WithProcessID(fixtures.ProcessID())),
+		addSessionLogRecord(db.db, *sessionID.UUIDValue(), sdktypes.NewStopRequestSessionLogRecord(reason).WithProcessID(fixtures.ProcessID())),
 	)
 }
 
@@ -129,15 +129,15 @@ func (db *gormdb) listSessions(ctx context.Context, f sdkservices.ListSessionsFi
 	q := db.db.WithContext(ctx)
 
 	if f.DeploymentID.IsValid() {
-		q = q.Where("deployment_id = ?", f.DeploymentID.Value())
+		q = q.Where("deployment_id = ?", f.DeploymentID.UUIDValue())
 	}
 
 	if f.EventID.IsValid() {
-		q = q.Where("event_id = ?", f.EventID.Value())
+		q = q.Where("event_id = ?", f.EventID.UUIDValue())
 	}
 
 	if f.BuildID.IsValid() {
-		q = q.Where("build_id = ?", f.BuildID.Value())
+		q = q.Where("build_id = ?", f.BuildID.UUIDValue())
 	}
 
 	if f.StateType != sdktypes.SessionStateTypeUnspecified {
@@ -175,7 +175,7 @@ func (db *gormdb) CreateSessionCall(ctx context.Context, sessionID sdktypes.Sess
 
 	return translateError(db.transaction(ctx, func(tx *tx) error {
 		r := scheme.SessionCallSpec{
-			SessionID: *sessionID.Value(),
+			SessionID: *sessionID.UUIDValue(),
 			Seq:       spec.Seq(),
 			Data:      jsonSpec,
 		}
@@ -184,14 +184,14 @@ func (db *gormdb) CreateSessionCall(ctx context.Context, sessionID sdktypes.Sess
 			return err
 		}
 
-		return addSessionLogRecord(tx.db, *sessionID.Value(), sdktypes.NewCallSpecSessionLogRecord(spec).WithProcessID(fixtures.ProcessID()))
+		return addSessionLogRecord(tx.db, *sessionID.UUIDValue(), sdktypes.NewCallSpecSessionLogRecord(spec).WithProcessID(fixtures.ProcessID()))
 	}))
 }
 
 func (db *gormdb) GetSessionCallSpec(ctx context.Context, sessionID sdktypes.SessionID, seq uint32) (sdktypes.SessionCallSpec, error) {
 	var r scheme.SessionCallSpec
 	if err := db.db.
-		Where("session_id = ?", sessionID.Value()).
+		Where("session_id = ?", sessionID.UUIDValue()).
 		Where("seq = ?", seq).
 		First(&r).
 		Error; err != nil {
@@ -223,7 +223,7 @@ func (db *gormdb) StartSessionCallAttempt(ctx context.Context, sessionID sdktype
 			return err
 		}
 
-		sid := *sessionID.Value()
+		sid := *sessionID.UUIDValue()
 		r := scheme.SessionCallAttempt{
 			SessionID: sid,
 			Seq:       seq,
@@ -252,20 +252,20 @@ func (db *gormdb) CompleteSessionCallAttempt(ctx context.Context, sessionID sdkt
 			Complete: json,
 		}
 
-		if res := tx.db.Model(&r).Where("session_id = ? AND seq = ? AND attempt = ?", *sessionID.Value(), seq, attempt).Updates(r); res.Error != nil {
+		if res := tx.db.Model(&r).Where("session_id = ? AND seq = ? AND attempt = ?", *sessionID.UUIDValue(), seq, attempt).Updates(r); res.Error != nil {
 			return res.Error
 		} else if res.RowsAffected == 0 {
 			return sdkerrors.ErrNotFound
 		}
 
-		return addSessionLogRecord(tx.db, *sessionID.Value(), sdktypes.NewCallAttemptCompleteSessionLogRecord(complete).WithProcessID(fixtures.ProcessID()))
+		return addSessionLogRecord(tx.db, *sessionID.UUIDValue(), sdktypes.NewCallAttemptCompleteSessionLogRecord(complete).WithProcessID(fixtures.ProcessID()))
 	}))
 }
 
 // attempt = -1: latest.
 // attempt >= 0: specific attempt.
 func (db *gormdb) GetSessionCallAttemptResult(ctx context.Context, sessionID sdktypes.SessionID, seq uint32, attempt int64) (sdktypes.SessionCallAttemptResult, error) {
-	q := db.db.Where("session_id = ? AND seq = ?", sessionID.Value(), seq)
+	q := db.db.Where("session_id = ? AND seq = ?", sessionID.UUIDValue(), seq)
 
 	if attempt == -1 {
 		q = q.Order(clause.OrderByColumn{Column: clause.Column{Name: "attempt"}, Desc: true})
@@ -297,7 +297,7 @@ func countCallAttemps(db *gorm.DB, sessionID sdktypes.SessionID, seq uint32) (ui
 
 	if err := db.
 		Model(&scheme.SessionCallAttempt{}).
-		Where("session_id = ? AND seq = ?", sessionID.Value(), seq).
+		Where("session_id = ? AND seq = ?", sessionID.UUIDValue(), seq).
 		Count(&n).
 		Error; err != nil {
 		return 0, err

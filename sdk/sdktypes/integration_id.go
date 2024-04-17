@@ -50,6 +50,6 @@ func NewIntegrationIDFromName(name string) IntegrationID {
 	return kittehs.Must1(ParseIntegrationID(txt))
 }
 
-func IsIntegrationIDFromName(id IntegrationID) bool {
-	return strings.HasPrefix(id.Value(), integrationIDFromNamePrefix)
-}
+// func IsIntegrationIDFromName(id IntegrationID) bool {
+// 	return strings.HasPrefix(id.Value(), integrationIDFromNamePrefix)
+// }

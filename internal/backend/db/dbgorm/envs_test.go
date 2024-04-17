@@ -41,7 +41,7 @@ func TestCreateEnvForeignKeys(t *testing.T) {
 	f := preEnvTest(t)
 
 	e := f.newEnv()
-	unexisting := sdktypes.NewProjectID().Value()
+	unexisting := sdktypes.NewProjectID().UUIDValue()
 
 	e.ProjectID = unexisting
 	assert.ErrorIs(t, f.gormdb.createEnv(f.ctx, &e), gorm.ErrForeignKeyViolated)

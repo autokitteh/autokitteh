@@ -26,7 +26,9 @@ type ID interface {
 	Kind() string
 
 	// Value returns the id value, meaning without the prefix.
-	Value() *UUID
+	Value() string
+
+	UUIDValue() *UUID
 
 	isID()
 }
@@ -66,7 +68,16 @@ func (i id[T]) Kind() string {
 	return i.tid.Prefix()
 }
 
-func (i id[T]) Value() *UUID {
+func (i id[T]) Value() string {
+	if !i.IsValid() {
+		return ""
+	}
+
+	return i.tid.Suffix()
+}
+
+func (i id[T]) UUIDValue() *UUID {
+
 	if !i.IsValid() {
 		return nil
 	}
@@ -85,7 +96,7 @@ func newID[ID id[T], T idTraits]() ID {
 	return ID(id[T]{tid: tid})
 }
 
-func FromUUID[ID id[T], T idTraits](uuid *UUID) ID {
+func NewIDFromUUID[ID id[T], T idTraits](uuid *UUID) ID {
 	if uuid == nil {
 		var zero ID
 		return zero

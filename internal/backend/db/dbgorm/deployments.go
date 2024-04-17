@@ -21,9 +21,9 @@ func (db *gormdb) CreateDeployment(ctx context.Context, deployment sdktypes.Depl
 	now := time.Now()
 
 	d := scheme.Deployment{
-		DeploymentID: *deployment.ID().Value(),
-		BuildID:      deployment.BuildID().Value(),
-		EnvID:        deployment.EnvID().Value(),
+		DeploymentID: *deployment.ID().UUIDValue(),
+		BuildID:      deployment.BuildID().UUIDValue(),
+		EnvID:        deployment.EnvID().UUIDValue(),
 		State:        int32(deployment.State().ToProto()),
 		CreatedAt:    now,
 		UpdatedAt:    now,
@@ -39,7 +39,7 @@ func (db *gormdb) getDeployment(ctx context.Context, deploymentID sdktypes.UUID)
 }
 
 func (db *gormdb) GetDeployment(ctx context.Context, id sdktypes.DeploymentID) (sdktypes.Deployment, error) {
-	d, err := db.getDeployment(ctx, *id.Value())
+	d, err := db.getDeployment(ctx, *id.UUIDValue())
 	if d == nil || err != nil {
 		return sdktypes.InvalidDeployment, translateError(err)
 	}
@@ -74,17 +74,17 @@ func (db *gormdb) deleteDeploymentsAndDependents(ctx context.Context, depIDs []s
 
 func (db *gormdb) DeleteDeployment(ctx context.Context, deploymentID sdktypes.DeploymentID) error {
 	return db.transaction(ctx, func(tx *tx) error {
-		return translateError(tx.deleteDeployment(ctx, *deploymentID.Value()))
+		return translateError(tx.deleteDeployment(ctx, *deploymentID.UUIDValue()))
 	})
 }
 
 func (db *gormdb) listDeploymentsCommonQuery(ctx context.Context, filter sdkservices.ListDeploymentsFilter) *gorm.DB {
 	q := db.db.WithContext(ctx).Model(&scheme.Deployment{})
 	if filter.BuildID.IsValid() {
-		q = q.Where("deployments.build_id = ?", filter.BuildID.Value())
+		q = q.Where("deployments.build_id = ?", filter.BuildID.UUIDValue())
 	}
 	if filter.EnvID.IsValid() {
-		q = q.Where("deployments.env_id = ?", filter.EnvID.Value())
+		q = q.Where("deployments.env_id = ?", filter.EnvID.UUIDValue())
 	}
 	if filter.State != sdktypes.DeploymentStateUnspecified {
 		q = q.Where("deployments.state = ?", filter.State.ToProto())
@@ -167,5 +167,5 @@ func (db *gormdb) updateDeploymentState(ctx context.Context, id sdktypes.UUID, s
 }
 
 func (db *gormdb) UpdateDeploymentState(ctx context.Context, id sdktypes.DeploymentID, state sdktypes.DeploymentState) error {
-	return db.updateDeploymentState(ctx, *id.Value(), state)
+	return db.updateDeploymentState(ctx, *id.UUIDValue(), state)
 }

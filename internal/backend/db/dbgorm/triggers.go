@@ -48,10 +48,10 @@ func triggerToRecord(ctx context.Context, tx *tx, trigger sdktypes.Trigger) (*sc
 	uniqueName := fmt.Sprintf("%s/%s", envID.String(), name)
 
 	return &scheme.Trigger{
-		TriggerID:    *trigger.ID().Value(),
-		EnvID:        *envID.Value(),
-		ProjectID:    *projID.Value(),
-		ConnectionID: *connID.Value(),
+		TriggerID:    *trigger.ID().UUIDValue(),
+		EnvID:        *envID.UUIDValue(),
+		ProjectID:    *projID.UUIDValue(),
+		ConnectionID: *connID.UUIDValue(),
 		EventType:    trigger.EventType(),
 		Filter:       trigger.Filter(),
 		CodeLocation: trigger.CodeLocation().CanonicalString(),
@@ -104,7 +104,7 @@ func (db *gormdb) UpdateTrigger(ctx context.Context, trigger sdktypes.Trigger) e
 }
 
 func (db *gormdb) GetTrigger(ctx context.Context, id sdktypes.TriggerID) (sdktypes.Trigger, error) {
-	return getOneWTransform(db.db, ctx, scheme.ParseTrigger, "trigger_id = ?", id.Value())
+	return getOneWTransform(db.db, ctx, scheme.ParseTrigger, "trigger_id = ?", id.UUIDValue())
 }
 
 func (db *gormdb) deleteTrigger(ctx context.Context, id sdktypes.UUID) error {
@@ -112,21 +112,21 @@ func (db *gormdb) deleteTrigger(ctx context.Context, id sdktypes.UUID) error {
 }
 
 func (db *gormdb) DeleteTrigger(ctx context.Context, id sdktypes.TriggerID) error {
-	return translateError(db.deleteTrigger(ctx, *id.Value()))
+	return translateError(db.deleteTrigger(ctx, *id.UUIDValue()))
 }
 
 func (db *gormdb) ListTriggers(ctx context.Context, filter sdkservices.ListTriggersFilter) ([]sdktypes.Trigger, error) {
 	q := db.db.WithContext(ctx)
 	if filter.EnvID.IsValid() {
-		q = q.Where("env_id = ?", filter.EnvID.Value())
+		q = q.Where("env_id = ?", filter.EnvID.UUIDValue())
 	}
 
 	if filter.ConnectionID.IsValid() {
-		q = q.Where("connection_id = ?", filter.ConnectionID.Value())
+		q = q.Where("connection_id = ?", filter.ConnectionID.UUIDValue())
 	}
 
 	if filter.ProjectID.IsValid() {
-		q = q.Where("project_id = ?", filter.ProjectID.Value())
+		q = q.Where("project_id = ?", filter.ProjectID.UUIDValue())
 	}
 
 	var es []scheme.Trigger

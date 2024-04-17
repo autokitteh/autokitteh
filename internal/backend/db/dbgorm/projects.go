@@ -24,7 +24,7 @@ func (db *gormdb) CreateProject(ctx context.Context, p sdktypes.Project) error {
 	}
 
 	project := scheme.Project{
-		ProjectID: *p.ID().Value(),
+		ProjectID: *p.ID().UUIDValue(),
 		Name:      p.Name().String(),
 	}
 	return translateError(db.createProject(ctx, &project))
@@ -93,13 +93,13 @@ func (db *gormdb) deleteProjectAndDependents(ctx context.Context, projectID sdkt
 
 func (db *gormdb) DeleteProject(ctx context.Context, projectID sdktypes.ProjectID) error {
 	return db.transaction(ctx, func(tx *tx) error {
-		return translateError(tx.deleteProject(ctx, *projectID.Value()))
+		return translateError(tx.deleteProject(ctx, *projectID.UUIDValue()))
 	})
 }
 
 func (db *gormdb) UpdateProject(ctx context.Context, p sdktypes.Project) error {
 	r := scheme.Project{
-		ProjectID: *p.ID().Value(),
+		ProjectID: *p.ID().UUIDValue(),
 		Name:      p.Name().String(),
 	}
 
@@ -126,7 +126,7 @@ func schemaToSDKProject(p *scheme.Project, err error) (sdktypes.Project, error) 
 }
 
 func (db *gormdb) GetProjectByID(ctx context.Context, pid sdktypes.ProjectID) (sdktypes.Project, error) {
-	return schemaToSDKProject(db.getProject(ctx, *pid.Value()))
+	return schemaToSDKProject(db.getProject(ctx, *pid.UUIDValue()))
 }
 
 func (db *gormdb) GetProjectByName(ctx context.Context, ph sdktypes.Symbol) (sdktypes.Project, error) {
@@ -172,7 +172,7 @@ func (db *gormdb) ListProjects(ctx context.Context) ([]sdktypes.Project, error) 
 }
 
 func (db *gormdb) GetProjectResources(ctx context.Context, pid sdktypes.ProjectID) (map[string][]byte, error) {
-	res := db.db.WithContext(ctx).Model(&scheme.Project{}).Where("project_id = ?", pid.Value()).Select("resources").Row()
+	res := db.db.WithContext(ctx).Model(&scheme.Project{}).Where("project_id = ?", pid.UUIDValue()).Select("resources").Row()
 	var resources []byte
 	if err := res.Scan(&resources); err != nil {
 		return nil, translateError(err)
@@ -200,7 +200,7 @@ func (db *gormdb) SetProjectResources(ctx context.Context, pid sdktypes.ProjectI
 		return err
 	}
 
-	res := db.db.WithContext(ctx).Model(&scheme.Project{}).Where("project_id = ?", pid.Value()).Update("resources", resourcesBytes)
+	res := db.db.WithContext(ctx).Model(&scheme.Project{}).Where("project_id = ?", pid.UUIDValue()).Update("resources", resourcesBytes)
 	if res.Error != nil {
 		return translateError(res.Error)
 	}

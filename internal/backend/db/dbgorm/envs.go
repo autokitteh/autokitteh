@@ -14,11 +14,11 @@ import (
 )
 
 func envMembershipID(e sdktypes.Env) string {
-	return fmt.Sprintf("%s/%s", e.ProjectID().Value(), e.Name().String())
+	return fmt.Sprintf("%s/%s", e.ProjectID().UUIDValue(), e.Name().String())
 }
 
 func envVarMembershipID(ev sdktypes.EnvVar) string {
-	return fmt.Sprintf("%s/%s", ev.EnvID().Value(), ev.Symbol().String())
+	return fmt.Sprintf("%s/%s", ev.EnvID().UUIDValue(), ev.Symbol().String())
 }
 
 func (db *gormdb) createEnv(ctx context.Context, env *scheme.Env) error {
@@ -32,8 +32,8 @@ func (db *gormdb) CreateEnv(ctx context.Context, env sdktypes.Env) error {
 	}
 
 	e := scheme.Env{
-		EnvID:        *env.ID().Value(),
-		ProjectID:    env.ProjectID().Value(),
+		EnvID:        *env.ID().UUIDValue(),
+		ProjectID:    env.ProjectID().UUIDValue(),
 		Name:         env.Name().String(),
 		MembershipID: envMembershipID(env),
 	}
@@ -61,11 +61,11 @@ func (db *gormdb) deleteEnv(ctx context.Context, envID sdktypes.UUID) error {
 }
 
 func (db *gormdb) GetEnvByID(ctx context.Context, eid sdktypes.EnvID) (sdktypes.Env, error) {
-	return getOneWTransform(db.db, ctx, scheme.ParseEnv, "env_id = ?", eid.Value())
+	return getOneWTransform(db.db, ctx, scheme.ParseEnv, "env_id = ?", eid.UUIDValue())
 }
 
 func (db *gormdb) GetEnvByName(ctx context.Context, pid sdktypes.ProjectID, h sdktypes.Symbol) (sdktypes.Env, error) {
-	return getOneWTransform(db.db, ctx, scheme.ParseEnv, "project_id = ? AND name = ?", pid.Value(), h.String())
+	return getOneWTransform(db.db, ctx, scheme.ParseEnv, "project_id = ? AND name = ?", pid.UUIDValue(), h.String())
 }
 
 func (db *gormdb) ListProjectEnvs(ctx context.Context, pid sdktypes.ProjectID) ([]sdktypes.Env, error) {
@@ -74,7 +74,7 @@ func (db *gormdb) ListProjectEnvs(ctx context.Context, pid sdktypes.ProjectID) (
 	q := db.db.WithContext(ctx).Order("env_id")
 
 	if pid.IsValid() {
-		q = q.Where("project_id = ?", pid.Value())
+		q = q.Where("project_id = ?", pid.UUIDValue())
 	}
 
 	err := q.Find(&rs).Error
@@ -84,8 +84,8 @@ func (db *gormdb) ListProjectEnvs(ctx context.Context, pid sdktypes.ProjectID) (
 
 	return kittehs.TransformError(rs, func(r scheme.Env) (sdktypes.Env, error) {
 		return sdktypes.StrictEnvFromProto(&sdktypes.EnvPB{
-			EnvId:     sdktypes.FromUUID[sdktypes.EnvID](&r.EnvID).String(),
-			ProjectId: sdktypes.FromUUID[sdktypes.ProjectID](r.ProjectID).String(),
+			EnvId:     sdktypes.NewIDFromUUID[sdktypes.EnvID](&r.EnvID).String(),
+			ProjectId: sdktypes.NewIDFromUUID[sdktypes.ProjectID](r.ProjectID).String(),
 			Name:      r.Name,
 		})
 	})
@@ -93,7 +93,7 @@ func (db *gormdb) ListProjectEnvs(ctx context.Context, pid sdktypes.ProjectID) (
 
 func (db *gormdb) SetEnvVar(ctx context.Context, ev sdktypes.EnvVar) error {
 	r := scheme.EnvVar{
-		EnvID:        *ev.EnvID().Value(), // need to verify envID ? where is envvar id ?
+		EnvID:        *ev.EnvID().UUIDValue(), // need to verify envID ? where is envvar id ?
 		Name:         ev.Symbol().String(),
 		IsSecret:     ev.IsSecret(),
 		MembershipID: envVarMembershipID(ev),
@@ -118,7 +118,7 @@ func (db *gormdb) SetEnvVar(ctx context.Context, ev sdktypes.EnvVar) error {
 func (db *gormdb) GetEnvVars(ctx context.Context, eid sdktypes.EnvID) ([]sdktypes.EnvVar, error) {
 	var rs []scheme.EnvVar
 	err := db.db.WithContext(ctx).
-		Where("env_id = ?", eid.Value()).
+		Where("env_id = ?", eid.UUIDValue()).
 		Select("env_id", "name", "value", "is_secret"). // exclude secret_value.
 		Order("name").
 		Find(&rs).Error
@@ -131,7 +131,7 @@ func (db *gormdb) GetEnvVars(ctx context.Context, eid sdktypes.EnvID) ([]sdktype
 
 func (db *gormdb) RevealEnvVar(ctx context.Context, eid sdktypes.EnvID, vn sdktypes.Symbol) (string, error) {
 	var r scheme.EnvVar
-	if err := db.db.WithContext(ctx).Where("env_id = ? and name = ?", eid.Value(), vn.String()).First(&r).Error; err != nil {
+	if err := db.db.WithContext(ctx).Where("env_id = ? and name = ?", eid.UUIDValue(), vn.String()).First(&r).Error; err != nil {
 		return "", translateError(err)
 	}
 

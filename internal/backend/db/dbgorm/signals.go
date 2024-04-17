@@ -13,7 +13,7 @@ func (db *gormdb) saveSignal(ctx context.Context, signal *scheme.Signal) error {
 
 func (db *gormdb) SaveSignal(ctx context.Context, signalID string, workflowID string, connectionID sdktypes.ConnectionID, filter string) (string, error) {
 	s := scheme.Signal{
-		ConnectionID: *connectionID.Value(),
+		ConnectionID: *connectionID.UUIDValue(),
 		SignalID:     signalID,
 		WorkflowID:   workflowID,
 		Filter:       filter,
@@ -24,7 +24,7 @@ func (db *gormdb) SaveSignal(ctx context.Context, signalID string, workflowID st
 
 func (db *gormdb) ListSignalsWaitingOnConnection(ctx context.Context, connectionID sdktypes.ConnectionID) ([]scheme.Signal, error) {
 	var signals []scheme.Signal
-	q := db.db.WithContext(ctx).Where("connection_id = ?", connectionID.Value())
+	q := db.db.WithContext(ctx).Where("connection_id = ?", connectionID.UUIDValue())
 	if err := q.Find(&signals).Error; err != nil {
 		return nil, err
 	}

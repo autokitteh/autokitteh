@@ -79,7 +79,7 @@ func (ws *workflows) StartWorkflow(ctx context.Context, session sdktypes.Session
 	//       and the user will get a 501.
 
 	memo := map[string]string{
-		"session_id":    sessionID.Value().String(),
+		"session_id":    sessionID.Value(),
 		"deployment_id": session.DeploymentID().String(),
 		"entrypoint":    session.EntryPoint().CanonicalString(),
 		"workflow_id":   wid,
