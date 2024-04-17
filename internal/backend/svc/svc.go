@@ -2,6 +2,7 @@ package svc
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -50,6 +51,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/triggersgrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/webtools"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
+	"go.autokitteh.dev/autokitteh/internal/version"
 	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/builds/v1/buildsv1connect"
 	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/connections/v1/connectionsv1connect"
 	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/deployments/v1/deploymentsv1connect"
@@ -247,6 +249,20 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		fx.Invoke(func(mux *http.ServeMux) {
 			mux.HandleFunc("/id", func(w http.ResponseWriter, r *http.Request) {
 				fmt.Fprint(w, fixtures.ProcessID())
+			})
+			mux.HandleFunc("/version", func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				json.NewEncoder(w).Encode(version.Version)
+			})
+		}),
+		fx.Invoke(func(mux *http.ServeMux, tclient temporalclient.Client) {
+			_, uiAddr := tclient.TemporalAddr()
+			if uiAddr == "" {
+				return
+			}
+
+			mux.HandleFunc("/temporal", func(w http.ResponseWriter, r *http.Request) {
+				http.Redirect(w, r, uiAddr, http.StatusFound)
 			})
 		}),
 		fx.Invoke(func(z *zap.Logger, lc fx.Lifecycle, mux *http.ServeMux) {
