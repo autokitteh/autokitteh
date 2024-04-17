@@ -13,7 +13,7 @@ import (
 
 type test struct{}
 
-var integrationID = sdktypes.IntegrationIDFromName("test")
+var integrationID = sdktypes.NewIntegrationIDFromName("test")
 
 var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
 	IntegrationId: integrationID.String(),

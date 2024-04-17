@@ -76,7 +76,7 @@ func initConfig() {
 func New() sdkservices.Integration {
 	return sdkintegrations.NewIntegration(
 		kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
-			IntegrationId: sdktypes.IntegrationIDFromName("aws").String(),
+			IntegrationId: sdktypes.NewIntegrationIDFromName("aws").String(),
 			UniqueName:    "aws",
 			DisplayName:   "AWS (All APIs)",
 			Description:   "Aggregation of all available Amazon Web Services (AWS) APIs.",

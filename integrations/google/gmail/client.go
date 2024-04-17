@@ -28,7 +28,7 @@ type api struct {
 	Scope   string
 }
 
-var integrationID = sdktypes.IntegrationIDFromName("gmail")
+var integrationID = sdktypes.NewIntegrationIDFromName("gmail")
 
 var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
 	IntegrationId: integrationID.String(),

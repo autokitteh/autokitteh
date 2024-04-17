@@ -10,7 +10,7 @@ import (
 )
 
 func NewBuiltinIntegrationID(name string) sdktypes.IntegrationID {
-	return sdktypes.IntegrationIDFromName(name)
+	return sdktypes.NewIntegrationIDFromName(name)
 }
 
 func NewBuiltinIntegrationExecutorID(name string) sdktypes.ExecutorID {

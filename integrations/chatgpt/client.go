@@ -13,7 +13,7 @@ type integration struct {
 	scope   string
 }
 
-var integrationID = sdktypes.IntegrationIDFromName("chatgpt")
+var integrationID = sdktypes.NewIntegrationIDFromName("chatgpt")
 
 var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
 	IntegrationId: integrationID.String(),
