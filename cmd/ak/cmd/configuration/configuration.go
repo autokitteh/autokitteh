@@ -21,6 +21,7 @@ func AddSubcommands(parentCmd *cobra.Command) {
 func init() {
 	// Subcommands.
 	configurationCmd.AddCommand(listCmd)
+	configurationCmd.AddCommand(resetCmd)
 	configurationCmd.AddCommand(setCmd)
 	configurationCmd.AddCommand(whereCmd)
 }

@@ -20,6 +20,8 @@ import (
 	"path/filepath"
 
 	"github.com/adrg/xdg"
+
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
 )
 
 const (
@@ -32,25 +34,40 @@ const (
 
 // ConfigHomeDir returns the XDG config-home directory for autokitteh,
 // and guarantees that it exists, so callers can use it safely.
-func ConfigHomeDir() string { return homeDir(xdg.ConfigHome) }
+func ConfigHomeDir() string { config, _ := dirs(); return config }
 
 // DataHomeDir returns the XDG config-home directory for autokitteh,
 // and guarantees that it exists, so callers can use it safely.
-func DataHomeDir() string { return homeDir(xdg.DataHome) }
+func DataHomeDir() string { _, data := dirs(); return data }
 
-func homeDir(baseDir string) string {
+func homeDir(baseDir string) string { return filepath.Join(baseDir, appName) }
+
+func ensure(path string) {
+	// An error here is permanent, unfixable automatically, and without a
+	// workaround. Examples: no write permission, exists but as a file.
+	kittehs.Must0(os.MkdirAll(path, perm))
+}
+
+func dirs() (config, data string) {
 	xdg.Reload() // Account for changes in environment variables.
 
-	dir := filepath.Join(baseDir, appName)
-	if err := os.MkdirAll(dir, perm); err != nil {
-		// An error here is permanent, unfixable automatically, and without a
-		// workaround. Examples: no write permission, exists but as a file.
-		panic(err)
+	// These are used in github.com/adrg/xdg to explicitly set the paths.
+	_, explicit := os.LookupEnv(ConfigEnvVar)
+	if !explicit {
+		_, explicit = os.LookupEnv(DataEnvVar)
 	}
-	return dir
+
+	config, data = homeDir(xdg.ConfigHome), homeDir(xdg.DataHome)
+	if config == data && !explicit {
+		// Both paths are the same, we better separate them.
+		config = filepath.Join(config, "config")
+		data = filepath.Join(data, "data")
+	}
+
+	ensure(config)
+	ensure(data)
+
+	return
 }
 
-func Reload() {
-	ConfigHomeDir()
-	DataHomeDir()
-}
+func Reload() { _, _ = dirs() }
