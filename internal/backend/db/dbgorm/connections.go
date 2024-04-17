@@ -16,7 +16,7 @@ func (db *gormdb) createConnection(ctx context.Context, conn *scheme.Connection)
 func (db *gormdb) CreateConnection(ctx context.Context, conn sdktypes.Connection) error {
 	c := scheme.Connection{
 		ConnectionID:     *conn.ID().UUIDValue(),
-		IntegrationID:    conn.ProjectID().UUIDValue(),
+		IntegrationID:    conn.IntegrationID().UUIDValue(),
 		IntegrationToken: conn.IntegrationToken(),
 		ProjectID:        conn.ProjectID().UUIDValue(),
 		Name:             conn.Name().String(),
