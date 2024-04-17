@@ -4,8 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
-	"strings"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/internal/manifest/internal/actions"
@@ -193,31 +191,10 @@ func planDefaultEnv(ctx context.Context, mvars []*EnvVar, client sdkservices.Ser
 			return v.Symbol().String() == mvar.Name
 		})
 
-		val := mvar.Value
-		envVar := mvar.EnvVar
-
-		if mvar.IsSecret {
-			if val != "" {
-				return nil, errors.New("value cannot be specified for secrets")
-			}
-
-			if envVar == "" {
-				envVar = strings.ToUpper(mvar.Name)
-			}
-		}
-
-		if envVar != "" {
-			if envVal, ok := os.LookupEnv(envVar); ok {
-				val = envVal
-			} else if mvar.IsSecret {
-				return nil, fmt.Errorf("env var %q is secret and not found in the environment", envVar)
-			}
-		}
-
 		desired, err := sdktypes.EnvVarFromProto(&sdktypes.EnvVarPB{
 			EnvId:    envID.String(),
 			Name:     mvar.Name,
-			Value:    val,
+			Value:    mvar.Value,
 			IsSecret: mvar.IsSecret,
 		})
 		if err != nil {
