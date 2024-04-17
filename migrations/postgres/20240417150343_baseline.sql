@@ -129,11 +129,11 @@ CREATE INDEX "idx_events_integration_id" ON "events" ("integration_id");
 CREATE INDEX "idx_events_integration_token" ON "events" ("integration_token");
 -- create "event_records" table
 CREATE TABLE "event_records" (
-  "seq" bigserial NOT NULL,
-  "event_id" uuid NULL,
+  "seq" bigint NOT NULL,
+  "event_id" uuid NOT NULL,
   "state" integer NULL,
   "created_at" timestamptz NULL,
-  PRIMARY KEY ("seq"),
+  PRIMARY KEY ("seq", "event_id"),
   CONSTRAINT "fk_event_records_event" FOREIGN KEY ("event_id") REFERENCES "events" ("event_id") ON UPDATE NO ACTION ON DELETE NO ACTION
 );
 -- create index "idx_event_records_state" to table: "event_records"

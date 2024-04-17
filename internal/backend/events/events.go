@@ -47,7 +47,7 @@ func (e *events) AddEventRecord(ctx context.Context, eventRecord sdktypes.EventR
 			return err
 		}
 
-		eventRecord = eventRecord.WithSeq(uint32(len(records) + 1)).WithCreatedAt(time.Now())
+		eventRecord = eventRecord.WithSeq(uint32(len(records))).WithCreatedAt(time.Now())
 
 		if err := tx.AddEventRecord(ctx, eventRecord); err != nil {
 			return err
