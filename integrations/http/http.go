@@ -185,7 +185,7 @@ func (i integration) getConnection(ctx context.Context) map[string]string {
 func setBody(req *http.Request, rawBody string, formBody map[string]string, jsonBody sdktypes.Value) error {
 	errMutuallyExclusive := errors.New("raw_body, form_body, and json_body are mutually exclusive")
 
-	// Raw body with unknown content type.
+	// Raw body
 	if rawBody != "" {
 		if formBody != nil || (jsonBody.IsValid() && !jsonBody.IsNothing()) {
 			return errMutuallyExclusive
@@ -198,6 +198,12 @@ func setBody(req *http.Request, rawBody string, formBody map[string]string, json
 		// This is required when using ioutil.NopCloser method for the request body
 		// (see ShouldSendChunkedRequestBody() in the library mentioned above).
 		req.ContentLength = int64(len(rawBody))
+
+		// Set the Content-Type header only if it's not already set.
+		if req.Header.Get(contentTypeHeader) == "" {
+			req.Header.Set(contentTypeHeader, "text/plain") // or "application/octet-stream"
+		}
+
 		return nil
 	}
 
