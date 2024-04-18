@@ -1,0 +1,32 @@
+name: Validate Manifest Schema Is Updated
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "manifest.schema.yaml"
+      - "internal/manifest/manifest.go"
+  pull_request:
+    paths:
+      - "manifest.schema.yaml"
+      - "internal/manifest/manifest.go"
+
+jobs:
+  test-schema:
+    name: Test Manifest Schema
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Build AK
+        run: make bin/ak
+      - name: Verify Schema
+        run: |
+          ./bin/ak manifest schema > tmp.schema.yaml
+          diff manifest.schema.yaml tmp.schema.yaml
