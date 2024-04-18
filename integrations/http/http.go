@@ -58,6 +58,8 @@ func (i integration) request(method string) sdkexecutor.Function {
 			"form_body?", &formBody,
 			"json_body?", &jsonBody,
 		)
+		// NOTE: for HTTP.GET {raw,form,json}_body will be ignored
+
 		if err != nil {
 			return sdktypes.InvalidValue, err
 		}
