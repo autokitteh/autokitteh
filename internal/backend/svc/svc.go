@@ -252,7 +252,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 			})
 			mux.HandleFunc("/version", func(w http.ResponseWriter, r *http.Request) {
 				w.Header().Set("Content-Type", "application/json")
-				json.NewEncoder(w).Encode(version.Version)
+				_ = json.NewEncoder(w).Encode(version.Version)
 			})
 		}),
 		fx.Invoke(func(mux *http.ServeMux, tclient temporalclient.Client) {
