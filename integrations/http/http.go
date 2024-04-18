@@ -46,22 +46,47 @@ func (i integration) request(method string) sdkexecutor.Function {
 	return func(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
 		// Parse the input arguments.
 		var (
-			rawURL, rawBody           string
+			rawURL, rawBody, bodyType string
 			headers, params, formBody map[string]string
-			jsonBody                  sdktypes.Value
+			jsonBody, body            sdktypes.Value
 		)
-		err := sdkmodule.UnpackArgs(args, kwargs,
+
+		// if body, found := kwargs["body"]; found {
+		// 	delete(kwargs, "body")
+		// } else if len(args) > 4 {
+		// 	body = args[5]
+
+		if err := sdkmodule.UnpackArgs(args, kwargs,
 			"url", &rawURL,
 			"params?", &params,
 			"headers?", &headers,
-			"raw_body?", &rawBody,
-			"form_body?", &formBody,
-			"json_body?", &jsonBody,
-		)
-		// NOTE: for HTTP.GET {raw,form,json}_body will be ignored
-
-		if err != nil {
+			"body_type?", &bodyType,
+			"body?", &body,
+		); err != nil {
 			return sdktypes.InvalidValue, err
+		}
+
+		// GET request doesn't have user-defined body
+		if method != http.MethodGet && body.IsValid() {
+			if bodyType == "" {
+				bodyType = "missing"
+			}
+
+			var err error
+			bodyType = strings.ToLower(bodyType)
+			switch bodyType {
+			case "form":
+				err = body.UnwrapInto(&formBody)
+			case "json":
+				jsonBody = body
+			case "raw":
+				err = body.UnwrapInto(&rawBody)
+			default:
+				err = errors.New("body_type must be one of <form|json|raw>")
+			}
+			if err != nil {
+				return sdktypes.InvalidValue, err
+			}
 		}
 
 		if headers == nil {
