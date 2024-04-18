@@ -56,9 +56,8 @@ type EnvVar struct {
 	EnvKey string `yaml:"-" json:"-"` // associated with env.
 
 	Name     string `yaml:"name" json:"name" jsonschema:"required"`
-	Value    string `yaml:"value,omitempty" json:"value,omitempty"` // if EnvVar is set, used as default value if env not found.
+	Value    string `yaml:"value,omitempty" json:"value,omitempty"`
 	IsSecret bool   `yaml:"is_secret,omitempty" json:"is_secret,omitempty"`
-	EnvVar   string `yaml:"env_var,omitempty" json:"env_var,omitempty"` // if set, value is fetched from env.
 }
 
 func (v EnvVar) GetKey() string { return v.EnvKey + "/" + v.Name }
