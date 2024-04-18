@@ -16,7 +16,7 @@ func (db *gormdb) createConnection(ctx context.Context, conn *scheme.Connection)
 func (db *gormdb) CreateConnection(ctx context.Context, conn sdktypes.Connection) error {
 	c := scheme.Connection{
 		ConnectionID:     *conn.ID().UUIDValue(),
-		IntegrationID:    conn.IntegrationID().UUIDValue(),
+		IntegrationID:    conn.IntegrationID().UUIDValue(), // TODO(ENG-158): need to verify integration id
 		IntegrationToken: conn.IntegrationToken(),
 		ProjectID:        conn.ProjectID().UUIDValue(),
 		Name:             conn.Name().String(),
@@ -28,7 +28,7 @@ func (db *gormdb) CreateConnection(ctx context.Context, conn sdktypes.Connection
 func (db *gormdb) UpdateConnection(ctx context.Context, conn sdktypes.Connection) error {
 	c := scheme.Connection{
 		ConnectionID:     *conn.ID().UUIDValue(),
-		IntegrationID:    conn.IntegrationID().UUIDValue(),
+		IntegrationID:    conn.IntegrationID().UUIDValue(), // TODO(ENG-158): need to verify integration id
 		IntegrationToken: conn.IntegrationToken(),
 		ProjectID:        conn.ProjectID().UUIDValue(),
 		Name:             conn.Name().String(),
