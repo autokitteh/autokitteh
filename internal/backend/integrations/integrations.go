@@ -23,13 +23,10 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 )
 
-type Config struct {
-	Test bool `koanf:"test"`
-}
+type Config struct{}
 
 var Configs = configset.Set[Config]{
 	Default: &Config{},
-	Dev:     &Config{Test: true},
 }
 
 func New(cfg *Config, s sdkservices.Secrets) sdkservices.Integrations {
@@ -47,10 +44,6 @@ func New(cfg *Config, s sdkservices.Secrets) sdkservices.Integrations {
 		slack.New(s),
 		twilio.New(s),
 		grpc.New(s),
-	}
-
-	if cfg.Test {
-		ints = append(ints, newTestIntegration())
 	}
 
 	return sdkintegrations.New(ints)

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	enumspb "go.temporal.io/api/enums/v1"
 	"go.temporal.io/sdk/activity"
@@ -17,9 +18,15 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessioncontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionsvcs"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
+	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkexecutor"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
+
+var localRetryPolicy = kittehs.RetryPolicy{
+	MaxAttempts: 3,
+}
 
 // Pass executors for session specific calls (functions that are
 // defined in runtime script, as opposed to integrations).
@@ -110,6 +117,28 @@ func (cs *calls) StartWorkers(ctx context.Context) error {
 	return cs.uniqueWorker.Start()
 }
 
+func (cs *calls) createSessionCall(ctx context.Context, sessionID sdktypes.SessionID, spec sdktypes.SessionCallSpec, t time.Time) (already bool, err error) {
+	err = cs.svcs.DB.CreateSessionCall(ctx, sessionID, spec, t)
+	if err != nil && errors.Is(err, sdkerrors.ErrAlreadyExists) {
+		err = nil
+		already = true
+	}
+
+	return
+}
+
+func (cs *calls) getLastSessionCallAttemptResult(wctx workflow.Context, sessionID sdktypes.SessionID, seq uint32) (result sdktypes.SessionCallAttemptResult, err error) {
+	goCtx := temporalclient.NewWorkflowContextAsGOContext(wctx)
+
+	err = localRetryPolicy.Execute(goCtx, func(int) (err error) {
+		// Do not execute in an activity: we don't want to expose the activity result to Temporal.
+		result, err = cs.svcs.DB.GetSessionCallAttemptResult(goCtx, sessionID, seq, -1)
+		return
+	})
+
+	return result, err
+}
+
 func (cs *calls) Call(ctx workflow.Context, params *CallParams) (sdktypes.SessionCallAttemptResult, error) {
 	spec := params.CallSpec
 
@@ -120,11 +149,33 @@ func (cs *calls) Call(ctx workflow.Context, params *CallParams) (sdktypes.Sessio
 
 	z := cs.z.With(zap.String("session_id", params.SessionID.String()), zap.Uint32("seq", seq), zap.Any("v", fnv))
 
-	// TODO: If replaying, make sure arguments are the same?
+	var already bool
+
 	if err := workflow.ExecuteLocalActivity(
-		ctx, cs.svcs.DB.CreateSessionCall, params.SessionID, spec,
-	).Get(ctx, nil); err != nil {
+		ctx, cs.createSessionCall, params.SessionID, spec, workflow.Now(ctx),
+	).Get(ctx, &already); err != nil {
 		return sdktypes.InvalidSessionCallAttemptResult, fmt.Errorf("db.create_call: %w", err)
+	}
+
+	if already {
+		hasPoller := params.Poller.IsValid()
+
+		z.Debug("call already began", zap.Bool("has_poller", hasPoller))
+
+		// If call has a poller, no problem running the call again and let
+		// the poller function sort out if it's done. Otherwise, if no poller
+		// and the call finished, we will just return the result.
+		if !hasPoller {
+			result, err := cs.getLastSessionCallAttemptResult(ctx, params.SessionID, seq)
+			if err != nil {
+				return sdktypes.InvalidSessionCallAttemptResult, err
+			}
+
+			if result.IsValid() {
+				z.Debug("call already executed", zap.Any("result", result))
+				return result, nil
+			}
+		}
 	}
 
 	var attempt uint32
@@ -140,7 +191,9 @@ func (cs *calls) Call(ctx workflow.Context, params *CallParams) (sdktypes.Sessio
 			goCtx = sessioncontext.WithWorkflowContext(goCtx, ctx)
 		}
 
-		if _, attempt, err = cs.executeCall(goCtx, params.SessionID, seq, params.Poller, params.Executors); err != nil {
+		if _, attempt, err = cs.executeCall(goCtx, params.SessionID, seq, params.Poller, params.Executors, func() time.Time {
+			return workflow.Now(ctx)
+		}); err != nil {
 			return sdktypes.NewSessionCallAttemptResult(sdktypes.InvalidValue, fmt.Errorf("internal call: %w", err)), nil
 		}
 	} else {
@@ -160,6 +213,10 @@ func (cs *calls) Call(ctx workflow.Context, params *CallParams) (sdktypes.Sessio
 				ActivityID:             fmt.Sprintf("session_call_%s_%d", params.SessionID.Value(), seq),
 				ScheduleToCloseTimeout: cs.config.Temporal.ActivityScheduleToCloseTimeout,
 				HeartbeatTimeout:       cs.config.Temporal.ActivityHeartbeatTimeout,
+			}
+
+			if fnvf.HasFlag(sdktypes.ShortHeartbeatTimeout) && cs.config.Temporal.ShortActivityHeartbeatTimeout > 0 {
+				aopts.HeartbeatTimeout = cs.config.Temporal.ShortActivityHeartbeatTimeout
 			}
 
 			if local {
@@ -186,10 +243,11 @@ func (cs *calls) Call(ctx workflow.Context, params *CallParams) (sdktypes.Sessio
 				actx,
 				callActivityName,
 				&callActivityInputs{
-					SessionID: params.SessionID,
-					Seq:       seq,
-					Debug:     params.Debug,
-					Poller:    params.Poller,
+					SessionID:     params.SessionID,
+					Seq:           seq,
+					Debug:         params.Debug,
+					Poller:        params.Poller,
+					AutoHeartbeat: !fnvf.HasFlag(sdktypes.DisableAutoHeartbeatFlag),
 				},
 			)
 			if err := future.Get(ctx, &ret); err != nil {
@@ -216,10 +274,9 @@ func (cs *calls) Call(ctx workflow.Context, params *CallParams) (sdktypes.Sessio
 		}
 	}
 
-	// Do not execute in an activity: we don't want to expose the activity result to Temporal.
-	result, err := cs.svcs.DB.GetSessionCallAttemptResult(goCtx, params.SessionID, seq, int64(attempt))
+	result, err := cs.getLastSessionCallAttemptResult(ctx, params.SessionID, seq)
 	if err != nil {
-		return sdktypes.InvalidSessionCallAttemptResult, fmt.Errorf("db.get_session_call_attempt: %w", err)
+		return sdktypes.InvalidSessionCallAttemptResult, err
 	}
 
 	z.Debug("call returned", zap.Uint32("attempts", attempt+1), zap.Any("result", result))

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"time"
 
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/worker"
@@ -180,9 +181,9 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 
 		if errors.Is(err, workflow.ErrCanceled) || errors.Is(wctx.Err(), workflow.ErrCanceled) {
 			z.Debug("workflow canceled")
-			ws.stopped(params.SessionID)
+			ws.stopped(wctx, params.SessionID)
 		} else {
-			ws.errored(params.SessionID, err, prints)
+			ws.errored(wctx, params.SessionID, err, prints)
 
 			if _, ok := sdktypes.FromError(err); ok {
 				// User level error, no need to indicate the workflow as errored.
@@ -206,7 +207,7 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 	return debug, err
 }
 
-func (ws *workflows) stopped(sessionID sdktypes.SessionID) {
+func (ws *workflows) stopped(wctx workflow.Context, sessionID sdktypes.SessionID) {
 	z := ws.z.With(zap.String("session_id", sessionID.String()))
 
 	ctx, cancel := withLimitedTimeout(context.Background())
@@ -223,18 +224,18 @@ func (ws *workflows) stopped(sessionID sdktypes.SessionID) {
 		}
 	}
 
-	if err := ws.svcs.DB.UpdateSessionState(ctx, sessionID, sdktypes.NewSessionStateStopped(reason)); err != nil {
+	if err := ws.svcs.DB.UpdateSessionState(ctx, sessionID, sdktypes.NewSessionStateStopped(reason), workflow.Now(wctx)); err != nil {
 		z.Error("update session", zap.Error(err))
 	}
 }
 
-func (ws *workflows) errored(sessionID sdktypes.SessionID, err error, prints []string) {
+func (ws *workflows) errored(wctx workflow.Context, sessionID sdktypes.SessionID, err error, prints []string) {
 	z := ws.z.With(zap.String("session_id", sessionID.String()))
 
 	ctx, cancel := withLimitedTimeout(context.Background())
 	defer cancel()
 
-	if err := ws.svcs.DB.UpdateSessionState(ctx, sessionID, sdktypes.NewSessionStateError(err, prints)); err != nil {
+	if err := ws.svcs.DB.UpdateSessionState(ctx, sessionID, sdktypes.NewSessionStateError(err, prints), workflow.Now(wctx)); err != nil {
 		z.Error("update session", zap.Error(err))
 	}
 }
@@ -298,26 +299,22 @@ func (ws *workflows) StopWorkflow(ctx context.Context, sessionID sdktypes.Sessio
 		//       we can avoid a dirty state if the terminator crashes between the temporal termination
 		//       and the state update. Another way is to periodically check on all workflows and make sure
 		//       that they are indeed running in termporal once in a while.
-		return ws.updateSessionState(ctx, sessionID, sdktypes.NewSessionStateStopped(reason))
+		if err := ws.svcs.DB.UpdateSessionState(ctx, sessionID, sdktypes.NewSessionStateStopped(reason), time.Now()); err != nil {
+			ws.z.With(zap.String("session_id", sessionID.String())).Error("update session", zap.Error(err))
+			return err
+		}
+
+		return nil
 	}
 
 	// In case of non-forceful termination, we log the request politely. This will also
 	// let the workflow know what the reason is.
-	if err := ws.svcs.DB.AddSessionStopRequest(ctx, sessionID, reason); err != nil {
+	if err := ws.svcs.DB.AddSessionStopRequest(ctx, sessionID, reason, time.Now()); err != nil {
 		return err
 	}
 
 	if err := ws.svcs.Temporal.CancelWorkflow(ctx, wid, ""); err != nil {
 		// TODO: translate errors.
-		return err
-	}
-
-	return nil
-}
-
-func (ws *workflows) updateSessionState(ctx context.Context, sessionID sdktypes.SessionID, state sdktypes.SessionState) error {
-	if err := ws.svcs.DB.UpdateSessionState(ctx, sessionID, state); err != nil {
-		ws.z.With(zap.String("session_id", sessionID.String())).Error("update session", zap.Error(err))
 		return err
 	}
 

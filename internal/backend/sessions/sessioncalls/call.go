@@ -9,6 +9,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/akmodules"
+	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkexecutor"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -81,7 +82,7 @@ func (cs *calls) invoke(ctx context.Context, callv sdktypes.Value, args []sdktyp
 }
 
 // This is executed either in an activity (for regular calls) or directly in a workflow (for internal calls).
-func (cs *calls) executeCall(ctx context.Context, sessionID sdktypes.SessionID, seq uint32, poller sdktypes.Value, executors *sdkexecutor.Executors) (debug any, attempt uint32, _ error) {
+func (cs *calls) executeCall(ctx context.Context, sessionID sdktypes.SessionID, seq uint32, poller sdktypes.Value, executors *sdkexecutor.Executors, now func() time.Time) (debug any, attempt uint32, _ error) {
 	z := cs.z.With(zap.Uint32("seq", seq))
 
 	call, err := cs.svcs.DB.GetSessionCallSpec(ctx, sessionID, seq)
@@ -109,7 +110,7 @@ func (cs *calls) executeCall(ctx context.Context, sessionID sdktypes.SessionID, 
 	for !last {
 		z := z.With(zap.Uint32("attempt", attempt))
 
-		attempt, err = cs.svcs.DB.StartSessionCallAttempt(ctx, sessionID, seq)
+		attempt, err = cs.svcs.DB.StartSessionCallAttempt(ctx, sessionID, seq, now())
 		if err != nil {
 			return nil, attempt, err
 		}
@@ -167,12 +168,19 @@ func (cs *calls) executeCall(ctx context.Context, sessionID sdktypes.SessionID, 
 			result = sdktypes.NewSessionCallAttemptResult(result.ToValueTuple(), nil)
 		}
 
-		// TODO: this is an error in db access inside the activity. If this fails we might be in a troubling state.
-		//       need to at least manually retry this.
-		if err := cs.svcs.DB.CompleteSessionCallAttempt(
-			ctx, sessionID, seq, attempt,
-			sdktypes.NewSessionCallAttemptComplete(last, interval, result),
-		); err != nil {
+		t := now()
+		err := localRetryPolicy.Execute(ctx, func(int) error {
+			err := cs.svcs.DB.CompleteSessionCallAttempt(
+				ctx, sessionID, seq, attempt,
+				sdktypes.NewSessionCallAttemptComplete(last, interval, result),
+				t,
+			)
+			if err != nil && errors.Is(err, sdkerrors.ErrAlreadyExists) {
+				return nil
+			}
+			return err
+		})
+		if err != nil {
 			return nil, attempt, err
 		}
 	}

@@ -16,8 +16,7 @@ var CallOptsCtorSymbol = kittehs.Must1(sdktypes.ParseSymbol("callopts"))
 var ExecutorID = sdktypes.NewExecutorID(fixtures.NewBuiltinIntegrationID("ak"))
 
 func New(syscall sdkexecutor.Function) sdkexecutor.Executor {
-	return fixtures.NewBuiltinExecutor(
-		ExecutorID,
+	opts := []sdkmodule.Optfn{
 		sdkmodule.ExportFunction(
 			"syscall",
 			syscall,
@@ -35,7 +34,9 @@ func New(syscall sdkexecutor.Function) sdkexecutor.Executor {
 				sdktypes.DisablePollingFunctionFlag, // no polling.
 			),
 		),
-	)
+	}
+
+	return fixtures.NewBuiltinExecutor(ExecutorID, opts...)
 }
 
 func callopts(_ context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {

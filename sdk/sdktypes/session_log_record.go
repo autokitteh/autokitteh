@@ -79,7 +79,6 @@ func NewStateSessionLogRecord(state SessionState) SessionLogRecord {
 	}
 
 	return forceFromProto[SessionLogRecord](&SessionLogRecordPB{
-		T:     timestamppb.Now(),
 		State: state.ToProto(),
 	})
 }
@@ -115,6 +114,12 @@ func NewCallSpecSessionLogRecord(s SessionCallSpec) SessionLogRecord {
 		T:        timestamppb.Now(),
 		CallSpec: s.ToProto(),
 	})
+}
+
+func (r SessionLogRecord) WithTimestamp(t time.Time) SessionLogRecord {
+	m := r.read()
+	m.T = timestamppb.New(t)
+	return forceFromProto[SessionLogRecord](m)
 }
 
 func (r SessionLogRecord) WithoutTimestamp() SessionLogRecord {

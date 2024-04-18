@@ -10,6 +10,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/akmodules/ak"
+	aktest "go.autokitteh.dev/autokitteh/internal/backend/akmodules/aktest"
 	"go.autokitteh.dev/autokitteh/internal/backend/akmodules/store"
 	timemodule "go.autokitteh.dev/autokitteh/internal/backend/akmodules/time"
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
@@ -32,6 +33,11 @@ const (
 
 	limitedTimeout = 5 * time.Second
 )
+
+var localRetryPolicy = kittehs.RetryPolicy{
+	Interval:    1 * time.Second,
+	MaxAttempts: 10,
+}
 
 func withLimitedTimeout(ctx context.Context) (context.Context, func()) {
 	return context.WithTimeout(ctx, limitedTimeout)
@@ -100,7 +106,7 @@ func (w *sessionWorkflow) updateState(ctx workflow.Context, state sdktypes.Sessi
 
 	w.state = state
 
-	return workflow.ExecuteLocalActivity(ctx, w.ws.svcs.DB.UpdateSessionState, w.data.SessionID, state).Get(ctx, nil)
+	return workflow.ExecuteLocalActivity(ctx, w.ws.svcs.DB.UpdateSessionState, w.data.SessionID, state, workflow.Now(ctx)).Get(ctx, nil)
 }
 
 func (w *sessionWorkflow) loadIntegrationConnections(path string) (map[string]sdktypes.Value, error) {
@@ -237,6 +243,12 @@ func (w *sessionWorkflow) initGlobalModules() (map[string]sdktypes.Value, error)
 	}
 
 	vs := make(map[string]sdktypes.Value, len(execs))
+
+	if w.ws.cfg.Test {
+		execs["aktest"] = aktest.New()
+	} else {
+		vs["aktest"] = sdktypes.Nothing
+	}
 
 	for name, exec := range execs {
 		sym, err := sdktypes.StrictParseSymbol(name)
@@ -414,9 +426,9 @@ func (w *sessionWorkflow) run(wctx workflow.Context) (prints []string, err error
 				//       manually retry this (maybe even using the heartbeat to know if it's
 				//       already been processed), or we need to aggregate the prints
 				//       and just perform them in the workflow after the activity is done.
-				err = w.ws.svcs.DB.AddSessionPrint(printCtx, w.data.SessionID, text)
+				err = w.ws.svcs.DB.AddSessionPrint(printCtx, w.data.SessionID, text, workflow.Now(wctx))
 			} else {
-				err = workflow.ExecuteLocalActivity(wctx, w.ws.svcs.DB.AddSessionPrint, w.data.SessionID, text).Get(wctx, nil)
+				err = workflow.ExecuteLocalActivity(wctx, w.ws.svcs.DB.AddSessionPrint, w.data.SessionID, text, time.Now()).Get(wctx, nil)
 			}
 
 			if err != nil {

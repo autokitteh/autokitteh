@@ -73,6 +73,14 @@ func (i id[T]) Value() string {
 	return i.tid.Suffix()
 }
 
+func (i id[T]) UUID() string {
+	if !i.IsValid() {
+		return ""
+	}
+
+	return i.tid.UUID()
+}
+
 func (i id[T]) MarshalJSON() ([]byte, error)           { return json.Marshal(i.tid) }
 func (i *id[T]) UnmarshalJSON(data []byte) (err error) { err = json.Unmarshal(data, &i.tid); return }
 

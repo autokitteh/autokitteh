@@ -48,15 +48,7 @@ func now(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.
 
 	wctx := sessioncontext.GetWorkflowContext(ctx)
 
-	var t time.Time
-
-	if err := workflow.SideEffect(wctx, func(workflow.Context) any {
-		return time.Now()
-	}).Get(&t); err != nil {
-		return sdktypes.InvalidValue, err
-	}
-
-	return sdktypes.NewTimeValue(t), nil
+	return sdktypes.NewTimeValue(workflow.Now(wctx)), nil
 }
 
 func newTime(_ context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {

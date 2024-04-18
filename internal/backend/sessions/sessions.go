@@ -3,6 +3,7 @@ package sessions
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"go.temporal.io/sdk/client"
 	"go.uber.org/zap"
@@ -99,7 +100,7 @@ func (s *sessions) Start(ctx context.Context, session sdktypes.Session) (sdktype
 
 	session = session.WithNewID()
 
-	if err := s.svcs.DB.CreateSession(ctx, session); err != nil {
+	if err := s.svcs.DB.CreateSession(ctx, session, time.Now()); err != nil {
 		return sdktypes.InvalidSessionID, fmt.Errorf("db.create_session: %w", err)
 	}
 
@@ -108,6 +109,7 @@ func (s *sessions) Start(ctx context.Context, session sdktypes.Session) (sdktype
 			ctx,
 			session.ID(),
 			sdktypes.NewSessionStateError(fmt.Errorf("execute workflow: %w", err), nil),
+			time.Now(),
 		); uerr != nil {
 			s.z.With(zap.String("session_id", session.ID().String())).Error("update session", zap.Error(err))
 		}

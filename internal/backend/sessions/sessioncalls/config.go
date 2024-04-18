@@ -21,5 +21,8 @@ type TemporalConfig struct {
 	// on unique workers.
 	ActivityScheduleToStartTimeout time.Duration `koanf:"activity_schedule_to_start_timeout"`
 
+	// Used for testing, used instead of ActivityHeartbeatTimeout when ShortHeartbeatTimeout function flag is set.
+	ShortActivityHeartbeatTimeout time.Duration `koanf:"short_activity_heartbeat_timeout"`
+
 	Worker worker.Options
 }

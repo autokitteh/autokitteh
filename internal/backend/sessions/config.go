@@ -38,7 +38,9 @@ var Configs = configset.Set[Config]{
 	Dev: func() *Config {
 		c := defaultConfig
 		c.Calls.Temporal.ActivityHeartbeatTimeout = time.Minute * 3
+		c.Calls.Temporal.ShortActivityHeartbeatTimeout = time.Second * 3
 		c.Debug = true
+		c.Workflows.Test = true
 		return &c
 	}(),
 }

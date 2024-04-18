@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"time"
 
 	"go.uber.org/zap"
 	"gorm.io/gorm"
@@ -133,21 +134,21 @@ type DB interface {
 	DeleteSecret(ctx context.Context, name string) error
 
 	// -----------------------------------------------------------------------
-	CreateSession(ctx context.Context, session sdktypes.Session) error
+	CreateSession(ctx context.Context, session sdktypes.Session, t time.Time) error
 	GetSession(ctx context.Context, sessionID sdktypes.SessionID) (sdktypes.Session, error)
 	GetSessionLog(ctx context.Context, sessionID sdktypes.SessionID) (sdktypes.SessionLog, error)
-	UpdateSessionState(ctx context.Context, sessionID sdktypes.SessionID, state sdktypes.SessionState) error
-	AddSessionPrint(ctx context.Context, sessionID sdktypes.SessionID, print string) error
-	AddSessionStopRequest(ctx context.Context, sessionID sdktypes.SessionID, reason string) error
+	UpdateSessionState(ctx context.Context, sessionID sdktypes.SessionID, state sdktypes.SessionState, t time.Time) error
+	AddSessionPrint(ctx context.Context, sessionID sdktypes.SessionID, print string, t time.Time) error
+	AddSessionStopRequest(ctx context.Context, sessionID sdktypes.SessionID, reason string, t time.Time) error
 	ListSessions(ctx context.Context, f sdkservices.ListSessionsFilter) ([]sdktypes.Session, int, error)
 	DeleteSession(ctx context.Context, sessionID sdktypes.SessionID) error
 
 	// -----------------------------------------------------------------------
-	CreateSessionCall(ctx context.Context, sessionID sdktypes.SessionID, data sdktypes.SessionCallSpec) error
+	CreateSessionCall(ctx context.Context, sessionID sdktypes.SessionID, data sdktypes.SessionCallSpec, t time.Time) error
 	GetSessionCallSpec(ctx context.Context, sessionID sdktypes.SessionID, seq uint32) (sdktypes.SessionCallSpec, error)
 
-	StartSessionCallAttempt(ctx context.Context, sessionID sdktypes.SessionID, seq uint32) (uint32, error)
-	CompleteSessionCallAttempt(ctx context.Context, sessionID sdktypes.SessionID, seq, attempt uint32, complete sdktypes.SessionCallAttemptComplete) error
+	StartSessionCallAttempt(ctx context.Context, sessionID sdktypes.SessionID, seq uint32, t time.Time) (uint32, error)
+	CompleteSessionCallAttempt(ctx context.Context, sessionID sdktypes.SessionID, seq, attempt uint32, complete sdktypes.SessionCallAttemptComplete, t time.Time) error
 	GetSessionCallAttemptResult(ctx context.Context, sessionID sdktypes.SessionID, seq uint32, attempt int64 /* <0 for last */) (sdktypes.SessionCallAttemptResult, error)
 
 	// -----------------------------------------------------------------------

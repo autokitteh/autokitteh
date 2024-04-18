@@ -2,6 +2,7 @@ package dbgorm
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -14,7 +15,7 @@ import (
 
 func (f *dbFixture) createSessionsAndAssert(t *testing.T, sessions ...scheme.Session) {
 	for _, session := range sessions {
-		assert.NoError(t, f.gormdb.createSession(f.ctx, &session))
+		assert.NoError(t, f.gormdb.createSession(f.ctx, &session, time.Now()))
 		findAndAssertOne(t, f, session, "session_id = ?", session.SessionID)
 	}
 }
@@ -71,19 +72,19 @@ func TestCreateSessionForeignKeys(t *testing.T) {
 	unexisting := "unexisting"
 
 	s.BuildID = &unexisting
-	assert.ErrorIs(t, f.gormdb.createSession(f.ctx, &s), gorm.ErrForeignKeyViolated)
+	assert.ErrorIs(t, f.gormdb.createSession(f.ctx, &s, time.Now()), gorm.ErrForeignKeyViolated)
 	s.BuildID = nil
 
 	s.EnvID = &unexisting
-	assert.ErrorIs(t, f.gormdb.createSession(f.ctx, &s), gorm.ErrForeignKeyViolated)
+	assert.ErrorIs(t, f.gormdb.createSession(f.ctx, &s, time.Now()), gorm.ErrForeignKeyViolated)
 	s.EnvID = nil
 
 	s.DeploymentID = &unexisting
-	assert.ErrorIs(t, f.gormdb.createSession(f.ctx, &s), gorm.ErrForeignKeyViolated)
+	assert.ErrorIs(t, f.gormdb.createSession(f.ctx, &s, time.Now()), gorm.ErrForeignKeyViolated)
 	s.DeploymentID = nil
 
 	s.EventID = &unexisting
-	assert.ErrorIs(t, f.gormdb.createSession(f.ctx, &s), gorm.ErrForeignKeyViolated)
+	assert.ErrorIs(t, f.gormdb.createSession(f.ctx, &s, time.Now()), gorm.ErrForeignKeyViolated)
 	s.EventID = nil
 
 	// test with existing assets

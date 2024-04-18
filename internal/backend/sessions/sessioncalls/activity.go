@@ -2,15 +2,17 @@ package sessioncalls
 
 import (
 	"context"
+	"time"
 
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 type callActivityInputs struct {
-	SessionID sdktypes.SessionID
-	Seq       uint32
-	Debug     bool
-	Poller    sdktypes.Value
+	SessionID     sdktypes.SessionID
+	Seq           uint32
+	Debug         bool
+	Poller        sdktypes.Value
+	AutoHeartbeat bool
 }
 
 type callActivityOutputs struct {
@@ -27,15 +29,18 @@ type callActivityOutputs struct {
 func (cs *calls) sessionCallActivity(ctx context.Context, params *callActivityInputs) (*callActivityOutputs, error) {
 	executors := executorsForSessions[params.SessionID.String()]
 
-	ctx, done := BeginHeartbeat(ctx, cs.config.Temporal.ActivityHeartbeatInterval)
-	defer done()
+	if params.AutoHeartbeat {
+		var done func()
+		ctx, done = BeginHeartbeat(ctx, cs.config.Temporal.ActivityHeartbeatInterval)
+		defer done()
+	}
 
 	var (
 		ret callActivityOutputs
 		err error
 	)
 
-	ret.Debug, ret.Attempt, err = cs.executeCall(ctx, params.SessionID, params.Seq, params.Poller, executors)
+	ret.Debug, ret.Attempt, err = cs.executeCall(ctx, params.SessionID, params.Seq, params.Poller, executors, time.Now)
 
 	if !params.Debug {
 		// don't let temporal know about the debug data.

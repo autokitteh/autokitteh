@@ -32,16 +32,16 @@ output equals_json file last_state.json
 ak deploy --manifest test.yaml --file test.star
 return code == 0
 
-ak sessions start --deployment-id dep_0000000000000000000000000a --entrypoint test.star:test
+ak sessions start --deployment-id dep_00000000000000000000000009 --entrypoint test.star:test
 return code == 0
 
-ak sessions watch ses_0000000000000000000000000b --no-timestamps --end-state RUNNING --timeout 7s
+ak sessions watch ses_0000000000000000000000000a --no-timestamps --end-state RUNNING --timeout 7s
 return code == 0
 
-ak sessions stop ses_0000000000000000000000000b --reason test
+ak sessions stop ses_0000000000000000000000000a --reason test
 return code == 0
 
-ak sessions log ses_0000000000000000000000000b --no-timestamps -j
+ak sessions log ses_0000000000000000000000000a --no-timestamps -j
 return code == 0
 output equals file test.txt
 
@@ -64,24 +64,19 @@ version: v1
 
 project:
   name: test
-  connections:
-    - name: mytest
-      integration: test
 
 -- test.star --
-load("@test", "mytest")
-
 def test():
   print("started")
-  mytest.freeze(10, True)
+  ak.freeze_activity(duration=10, allow_cancel=True, heartbeat=True)
   print("finished")
 
 -- test.txt --
 {"state":{"created":{}}}
-{"state":{"running":{"run_id":"run_0000000000000000000000000c"}}}
-{"state":{"running":{"run_id":"run_0000000000000000000000000c","call":{"function":{"executor_id":"run_0000000000000000000000000c","name":"test","desc":{},"data":"dGVzdCMx"}}}}}
+{"state":{"running":{"run_id":"run_0000000000000000000000000b"}}}
+{"state":{"running":{"run_id":"run_0000000000000000000000000b","call":{"function":{"executor_id":"run_0000000000000000000000000b","name":"test","desc":{},"data":"dGVzdCMx"}}}}}
 {"print":{"text":"started"}}
-{"call_spec":{"function":{"function":{"executor_id":"int_3kth00test8c093f7e9fccbf69","name":"freeze","desc":{"input":[{"name":"duration","optional":true},{"name":"allow_cancel","optional":true}]}}},"args":[{"integer":{"v":"10"}},{"boolean":{"v":true}}],"seq":1}}
+{"call_spec":{"function":{"function":{"executor_id":"int_3kth0000ak08326707b4eb37b1","name":"freeze_activity","desc":{"input":[{"name":"duration","optional":true},{"name":"allow_cancel","optional":true},{"name":"n","optional":true}]},"flags":["disable-auto-heartbeat","short-heartbeat"]}},"kwargs":{"allow_cancel":{"boolean":{"v":true}},"duration":{"integer":{"v":"10"}},"heartbeat":{"boolean":{"v":true}}},"seq":1}}
 {"call_attempt_start":{}}
 {"stop_request":{"reason":"test"}}
 {"state":{"stopped":{"reason":"test"}}}

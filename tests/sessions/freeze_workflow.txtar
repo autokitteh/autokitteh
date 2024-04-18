@@ -1,0 +1,8 @@
+started
+finished
+
+-- main.star:main --
+def main():
+    print("started")
+    aktest.freeze_workflow(n=1)
+    print("finished")

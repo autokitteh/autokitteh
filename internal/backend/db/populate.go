@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"time"
 
 	"go.autokitteh.dev/autokitteh/sdk/sdklogger"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -27,7 +28,7 @@ func Populate(ctx context.Context, db DB, objs ...sdktypes.Object) (err error) {
 		case sdktypes.Integration:
 			err = db.CreateIntegration(ctx, obj)
 		case sdktypes.Session:
-			err = db.CreateSession(ctx, obj)
+			err = db.CreateSession(ctx, obj, time.Now())
 		default:
 			sdklogger.Panic("unknown object type")
 		}
