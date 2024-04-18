@@ -287,9 +287,9 @@ func ParseEnvVar(r EnvVar) (sdktypes.EnvVar, error) {
 type Trigger struct {
 	TriggerID sdktypes.UUID `gorm:"primaryKey;type:uuid"`
 
-	ProjectID    sdktypes.UUID `gorm:"index;type:uuid;foreignKey"`
-	ConnectionID sdktypes.UUID `gorm:"index;type:uuid;foreignKey"`
-	EnvID        sdktypes.UUID `gorm:"index;type:uuid;foreignKey"`
+	ProjectID    sdktypes.UUID `gorm:"index;type:uuid"`
+	ConnectionID sdktypes.UUID `gorm:"index;type:uuid"`
+	EnvID        sdktypes.UUID `gorm:"index;type:uuid"`
 	Name         string
 	EventType    string
 	Filter       string
@@ -343,7 +343,7 @@ func ParseSessionLogRecord(c SessionLogRecord) (spec sdktypes.SessionLogRecord, 
 }
 
 type SessionCallSpec struct {
-	SessionID sdktypes.UUID `gorm:"primaryKey;foreignKey:SessionID;type:uuid"`
+	SessionID sdktypes.UUID `gorm:"primaryKey:SessionID;type:uuid"`
 	Seq       uint32        `gorm:"primaryKey"`
 	Data      datatypes.JSON
 
@@ -357,7 +357,7 @@ func ParseSessionCallSpec(c SessionCallSpec) (spec sdktypes.SessionCallSpec, err
 }
 
 type SessionCallAttempt struct {
-	SessionID sdktypes.UUID `gorm:"uniqueIndex:idx_session_id_seq_attempt,priority:1;foreignKey:SessionID;type:uuid"`
+	SessionID sdktypes.UUID `gorm:"uniqueIndex:idx_session_id_seq_attempt,priority:1;type:uuid"`
 	Seq       uint32        `gorm:"uniqueIndex:idx_session_id_seq_attempt,priority:2"`
 	Attempt   uint32        `gorm:"uniqueIndex:idx_session_id_seq_attempt,priority:3"`
 	Start     datatypes.JSON
@@ -430,8 +430,8 @@ func ParseSession(s Session) (sdktypes.Session, error) {
 
 type Deployment struct {
 	DeploymentID sdktypes.UUID  `gorm:"primaryKey;type:uuid"`
-	EnvID        *sdktypes.UUID `gorm:"index;foreignKey;type:uuid"`
-	BuildID      *sdktypes.UUID `gorm:"foreignKey;type:uuid"`
+	EnvID        *sdktypes.UUID `gorm:"index;type:uuid"`
+	BuildID      *sdktypes.UUID `gorm:"type:uuid"`
 	State        int32
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
