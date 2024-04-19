@@ -35,9 +35,8 @@ var args = sdkmodule.WithArgs(
 	"url",
 	"params?",
 	"headers?",
-	"raw_body?",
-	"form_body?",
-	"json_body?",
+	"body_type?",
+	"body?",
 )
 
 // request is a factory function for generating autokitteh
