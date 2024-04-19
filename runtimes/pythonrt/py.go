@@ -41,8 +41,20 @@ type execInfo struct {
 	Version string
 }
 
+func findPython() (string, error) {
+	names := []string{"python3", "python"}
+	for _, name := range names {
+		exePath, err := exec.LookPath(name)
+		if err == nil {
+			return exePath, nil
+		}
+	}
+
+	return "", fmt.Errorf("non of %v found in PATH", names)
+}
+
 func pyExecInfo(ctx context.Context) (execInfo, error) {
-	exePath, err := exec.LookPath("python")
+	exePath, err := findPython()
 	if err != nil {
 		return execInfo{}, err
 	}

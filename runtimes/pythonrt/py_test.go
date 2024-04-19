@@ -78,3 +78,34 @@ func processEnv(t *testing.T, pid int) map[string]string {
 	}
 	return env
 }
+
+func genExe(t *testing.T, name string) {
+	file, err := os.Create(name)
+	require.NoError(t, err)
+	file.Close()
+	err = os.Chmod(name, 0o766)
+	require.NoError(t, err)
+}
+
+func Test_findPython(t *testing.T) {
+	dirName := t.TempDir()
+	t.Setenv("PATH", dirName)
+
+	// No Python
+	_, err := findPython()
+	require.Error(t, err)
+
+	// python
+	pyExe := path.Join(dirName, "python")
+	genExe(t, pyExe)
+	out, err := findPython()
+	require.NoError(t, err)
+	require.Equal(t, pyExe, out)
+
+	// python & python3, should be python3
+	pyExe = path.Join(dirName, "python3")
+	genExe(t, pyExe)
+	out, err = findPython()
+	require.NoError(t, err)
+	require.Equal(t, pyExe, out)
+}
