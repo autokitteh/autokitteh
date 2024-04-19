@@ -39,6 +39,12 @@ var args = sdkmodule.WithArgs(
 	"body?",
 )
 
+const (
+	bodyTypeRaw  = "raw"
+	bodyTypeJSON = "json"
+	bodyTypeForm = "form"
+)
+
 // request is a factory function for generating autokitteh
 // functions for different HTTP request methods.
 func (i integration) request(method string) sdkexecutor.Function {
@@ -74,11 +80,11 @@ func (i integration) request(method string) sdkexecutor.Function {
 			var err error
 			bodyType = strings.ToLower(bodyType)
 			switch bodyType {
-			case "form":
+			case bodyTypeForm:
 				err = body.UnwrapInto(&formBody)
-			case "json":
+			case bodyTypeJSON:
 				jsonBody = body
-			case "raw":
+			case bodyTypeRaw:
 				err = body.UnwrapInto(&rawBody)
 			default:
 				err = errors.New("body_type must be one of <form|json|raw>")
@@ -183,7 +189,7 @@ func (i integration) getConnection(ctx context.Context) map[string]string {
 
 func setBody(req *http.Request, bodyType string, rawBody string, formBody map[string]string, jsonBody sdktypes.Value) error {
 	switch bodyType {
-	case "raw":
+	case bodyTypeRaw:
 		if rawBody == "" {
 			return nil
 		}
@@ -202,7 +208,7 @@ func setBody(req *http.Request, bodyType string, rawBody string, formBody map[st
 		}
 		return nil
 
-	case "json":
+	case bodyTypeJSON:
 		if !jsonBody.IsValid() || jsonBody.IsNothing() {
 			return nil
 		}
@@ -225,7 +231,7 @@ func setBody(req *http.Request, bodyType string, rawBody string, formBody map[st
 		req.ContentLength = int64(len(data))
 		return nil
 
-	case "form":
+	case bodyTypeForm:
 		if formBody == nil {
 			return nil
 		}
