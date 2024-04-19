@@ -115,7 +115,7 @@ func (i integration) request(method string) sdkexecutor.Function {
 			req.Header.Set(k, v)
 		}
 
-		if err = setBody(req, rawBody, formBody, jsonBody); err != nil {
+		if err = setBody(req, bodyType, rawBody, formBody, jsonBody); err != nil {
 			return sdktypes.InvalidValue, err
 		}
 
@@ -181,13 +181,11 @@ func (i integration) getConnection(ctx context.Context) map[string]string {
 	return c
 }
 
-func setBody(req *http.Request, rawBody string, formBody map[string]string, jsonBody sdktypes.Value) error {
-	errMutuallyExclusive := errors.New("raw_body, form_body, and json_body are mutually exclusive")
-
-	// Raw body
-	if rawBody != "" {
-		if formBody != nil || (jsonBody.IsValid() && !jsonBody.IsNothing()) {
-			return errMutuallyExclusive
+func setBody(req *http.Request, bodyType string, rawBody string, formBody map[string]string, jsonBody sdktypes.Value) error {
+	switch bodyType {
+	case "raw":
+		if rawBody == "" {
+			return nil
 		}
 
 		req.Body = io.NopCloser(strings.NewReader(rawBody))
@@ -202,16 +200,12 @@ func setBody(req *http.Request, rawBody string, formBody map[string]string, json
 		if req.Header.Get(contentTypeHeader) == "" {
 			req.Header.Set(contentTypeHeader, "text/plain") // or "application/octet-stream"
 		}
-
 		return nil
-	}
 
-	// JSON body.
-	if jsonBody.IsValid() && !jsonBody.IsNothing() {
-		if formBody != nil {
-			return errMutuallyExclusive
+	case "json":
+		if !jsonBody.IsValid() || jsonBody.IsNothing() {
+			return nil
 		}
-
 		// Set the Content-Type header only if it's not already set.
 		if req.Header.Get(contentTypeHeader) == "" {
 			req.Header.Set(contentTypeHeader, contentTypeJSON)
@@ -230,9 +224,11 @@ func setBody(req *http.Request, rawBody string, formBody map[string]string, json
 		req.Body = io.NopCloser(bytes.NewBuffer(data))
 		req.ContentLength = int64(len(data))
 		return nil
-	}
 
-	if formBody != nil {
+	case "form":
+		if formBody == nil {
+			return nil
+		}
 		form := make(url.Values)
 		for k, v := range formBody {
 			form.Add(k, v)
