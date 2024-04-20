@@ -6,16 +6,20 @@ import (
 	"fmt"
 	"time"
 
+	"go.temporal.io/sdk/activity"
+	"go.temporal.io/sdk/workflow"
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/akmodules"
+	akmodule "go.autokitteh.dev/autokitteh/internal/backend/akmodules/ak"
+	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessioncontext"
 	"go.autokitteh.dev/autokitteh/sdk/sdkexecutor"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 func (cs *calls) checkPollPolicy(ctx context.Context, pollfn, result sdktypes.Value, executors *sdkexecutor.Executors) (retry bool, interval time.Duration, err error) {
 	var res sdktypes.SessionCallAttemptResult
-	if res, err = cs.invoke(ctx, pollfn, []sdktypes.Value{result}, nil, executors); err != nil {
+	if res, err = cs.invoke(ctx, pollfn, []sdktypes.Value{result}, nil, executors, 0); err != nil {
 		err = fmt.Errorf("poll function invoke: %w", err)
 		return
 	} else if err = res.GetError(); err != nil {
@@ -45,7 +49,7 @@ func (cs *calls) checkPollPolicy(ctx context.Context, pollfn, result sdktypes.Va
 	return
 }
 
-func (cs *calls) invoke(ctx context.Context, callv sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value, executors *sdkexecutor.Executors) (sdktypes.SessionCallAttemptResult, error) {
+func (cs *calls) invoke(ctx context.Context, callv sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value, executors *sdkexecutor.Executors, timeout time.Duration) (sdktypes.SessionCallAttemptResult, error) {
 	xid := callv.GetFunction().ExecutorID()
 
 	var caller sdkexecutor.Caller
@@ -77,7 +81,41 @@ func (cs *calls) invoke(ctx context.Context, callv sdktypes.Value, args []sdktyp
 		return sdktypes.InvalidSessionCallAttemptResult, fmt.Errorf("executor not found: %q", xid)
 	}
 
-	return sdktypes.NewSessionCallAttemptResult(caller.Call(ctx, callv, args, kwargs)), nil
+	if timeout != 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, timeout)
+		defer cancel()
+
+		if !activity.IsActivity(ctx) {
+			if wctx := sessioncontext.GetWorkflowContext(ctx); wctx != nil {
+				wctx, cancel := workflow.WithCancel(wctx)
+				ctx = sessioncontext.WithWorkflowContext(ctx, wctx)
+				go func() {
+					<-ctx.Done()
+					cancel()
+				}()
+			}
+		}
+	}
+
+	v, err := caller.Call(ctx, callv, args, kwargs)
+
+	if err != nil && errors.Is(err, workflow.ErrCanceled) && errors.Is(ctx.Err(), context.DeadlineExceeded) {
+		err = context.DeadlineExceeded
+	}
+
+	if err != nil && errors.Is(err, context.DeadlineExceeded) {
+		v = sdktypes.InvalidValue
+		err = sdktypes.NewProgramError(
+			akmodule.TimeoutError,
+			nil,
+			map[string]string{
+				"duration": timeout.String(),
+			},
+		).ToError()
+	}
+
+	return sdktypes.NewSessionCallAttemptResult(v, err), nil
 }
 
 // This is executed either in an activity (for regular calls) or directly in a workflow (for internal calls).
@@ -136,7 +174,7 @@ func (cs *calls) executeCall(ctx context.Context, sessionID sdktypes.SessionID, 
 				}
 			}()
 
-			if result, err = cs.invoke(ctx, callv, args, kwargs, executors); err != nil {
+			if result, err = cs.invoke(ctx, callv, args, kwargs, executors, opts.Timeout); err != nil {
 				z.Panic("call integration", zap.Error(err))
 			}
 		}()

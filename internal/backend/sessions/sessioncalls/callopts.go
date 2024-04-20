@@ -3,6 +3,7 @@ package sessioncalls
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/akmodules/ak"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -11,7 +12,8 @@ import (
 const callOptsArgName = "ak"
 
 type CallOpts struct {
-	Catch bool `json:"catch"`
+	Catch   bool          `json:"catch"`
+	Timeout time.Duration `json:"timeout"`
 }
 
 // NOTE: If err is not nil, this might still have valid values in the other return values.
@@ -69,6 +71,10 @@ func parseCallSpec(spec sdktypes.SessionCallSpec) (v sdktypes.Value, args []sdkt
 		case "catch":
 			if err = v.UnwrapInto(&opts.Catch); err != nil {
 				err = fmt.Errorf("invalid call option catch value: %w", err)
+			}
+		case "timeout":
+			if err = v.UnwrapInto(&opts.Timeout); err != nil {
+				err = fmt.Errorf("invalid call option timeout value: %w", err)
 			}
 		default:
 			err = fmt.Errorf("invalid call option: %s", k)

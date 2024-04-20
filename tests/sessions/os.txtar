@@ -1,0 +1,10 @@
+["meow\n", 0]
+["/bin/sh: bla: command not found\n", 127]
+["woof\n", 0]
+[None, timeout]
+
+-- main.star --
+print(os.command('/bin/sh', '-c', 'echo meow'))
+print(os.command('/bin/sh', '-c', 'bla'))
+print(os.shell('echo woof'))
+print(os.shell('echo meow; sleep 50', ak_timeout=2, ak_catch=True))

@@ -15,5 +15,10 @@ func WithWorkflowContext(ctx context.Context, wctx workflow.Context) context.Con
 }
 
 func GetWorkflowContext(ctx context.Context) workflow.Context {
-	return ctx.Value(workflowContextKey).(workflow.Context)
+	v := ctx.Value(workflowContextKey)
+	if v == nil {
+		return nil
+	}
+
+	return v.(workflow.Context)
 }
