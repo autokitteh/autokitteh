@@ -58,8 +58,8 @@ type calls struct {
 
 	// Pass executors for session specific calls (functions that are
 	// defined in runtime script, as opposed to integrations).
-	executorsForSessions   map[sdktypes.SessionID]*sdkexecutor.Executors
 	executorsForSessionsMu sync.RWMutex
+	executorsForSessions   map[sdktypes.SessionID]*sdkexecutor.Executors
 }
 
 const (
