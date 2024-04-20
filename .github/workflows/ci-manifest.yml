@@ -1,16 +1,20 @@
-name: Validate Manifest Schema Is Updated
+name: Validate Manifest Schema is Up-to-Date
 
 on:
   push:
     branches:
       - main
     paths:
+      - ".github/workflows/ci-manifest.yml"
       - "manifest.schema.yaml"
       - "internal/manifest/manifest.go"
+      - "docs/autokitteh.yaml"
   pull_request:
     paths:
+      - ".github/workflows/ci-manifest.yml"
       - "manifest.schema.yaml"
       - "internal/manifest/manifest.go"
+      - "docs/autokitteh.yaml"
 
 jobs:
   test-schema:
@@ -28,5 +32,6 @@ jobs:
         run: make bin/ak
       - name: Verify Schema
         run: |
-          ./bin/ak manifest schema > tmp.schema.yaml
-          diff manifest.schema.yaml tmp.schema.yaml
+          ./bin/ak manifest schema > /tmp/schema.yaml
+          diff manifest.schema.yaml /tmp/schema.yaml
+          ./bin/ak manifest validate docs/autokitteh.yaml
