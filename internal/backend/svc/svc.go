@@ -143,7 +143,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		Component("envs", configset.Empty, fx.Provide(envs.New)),
 		Component("events", configset.Empty, fx.Provide(events.New)),
 		Component("triggers", configset.Empty, fx.Provide(triggers.New)),
-		Component("oauth", configset.Empty, fx.Provide(oauth.New)),
+		Component("oauth", oauth.Configs, fx.Provide(oauth.New)),
 		Component("runtimes", configset.Empty, fx.Provide(runtimes.New)),
 		Component(
 			"dispatcher",

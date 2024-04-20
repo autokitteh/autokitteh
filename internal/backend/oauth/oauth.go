@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/lithammer/shortuuid/v4"
+	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
@@ -24,6 +25,8 @@ import (
 )
 
 type oauth struct {
+	cfg *Config
+
 	logger *zap.Logger
 
 	// Configs and opts store registration data together.
@@ -32,12 +35,11 @@ type oauth struct {
 	configs map[string]*oauth2.Config
 	opts    map[string]map[string]string
 
-	// States is a collection of authentication flows currently in-progress.
-	// TODO(ENG-177): Use a database table instead of an in-memory map.
-	states map[string]bool
+	// Used to manage the collection of authentication flows currently in-progress.
+	redis *redis.Client
 }
 
-func New(l *zap.Logger) sdkservices.OAuth {
+func New(l *zap.Logger, cfg *Config, redis *redis.Client) sdkservices.OAuth {
 	// TODO(ENG-112): Remove (see Register below).
 	redirectURL := fmt.Sprintf("https://%s/oauth/redirect/", os.Getenv("WEBHOOK_ADDRESS"))
 
@@ -61,6 +63,8 @@ func New(l *zap.Logger) sdkservices.OAuth {
 
 	return &oauth{
 		logger: l,
+		cfg:    cfg,
+		redis:  redis,
 		// TODO(ENG-112): Construct the following 2 maps with dynamic integration
 		// registrations, where each integration registration will call Register
 		// below (if it uses OAuth). This hard-coding is EXTREMELY TEMPORARY!
@@ -300,7 +304,6 @@ func New(l *zap.Logger) sdkservices.OAuth {
 				"prompt":      "consent", // oauth2.ApprovalForce
 			},
 		},
-		states: make(map[string]bool),
 	}
 }
 
@@ -319,6 +322,28 @@ func (o *oauth) Get(ctx context.Context, id string) (*oauth2.Config, map[string]
 	return cfg, o.opts[id], nil
 }
 
+func (o *oauth) stateKey(state string) string { return o.cfg.State.Prefix + "/" + state }
+
+func (o *oauth) setState(ctx context.Context, state string) error {
+	return o.redis.Set(ctx, o.stateKey(state), "", o.cfg.State.TTL).Err()
+}
+
+func (o *oauth) validateState(ctx context.Context, l *zap.Logger, state string) error {
+	key := o.stateKey(state)
+
+	if v, err := o.redis.Get(ctx, key).Result(); err != nil {
+		return fmt.Errorf("failed to retrieve state parameter: %w", err)
+	} else if v != "" {
+		return errors.New("oauth redirect request with unrecognized state parameter")
+	}
+
+	if err := o.redis.Del(ctx, key).Err(); err != nil {
+		l.Error("Failed to delete state parameter", zap.Error(err))
+	}
+
+	return nil
+}
+
 func (o *oauth) StartFlow(ctx context.Context, id string) (string, error) {
 	cfg, opts, err := o.Get(ctx, id)
 	if err != nil {
@@ -328,17 +353,23 @@ func (o *oauth) StartFlow(ctx context.Context, id string) (string, error) {
 	// state parameter (to validate the origin of a soon-to-be-received OAuth redirect
 	// request, to protect against CSRF attacks).
 	state := shortuuid.New()
-	o.states[state] = true
+
+	if err := o.setState(ctx, state); err != nil {
+		return "", fmt.Errorf("failed to store state parameter: %w", err)
+	}
+
 	return cfg.AuthCodeURL(state, authCode(opts)...), nil
 }
 
 func (o *oauth) Exchange(ctx context.Context, id, state, code string) (*oauth2.Token, error) {
+	l := o.logger.With(zap.String("id", id), zap.String("state", state), zap.String("code", code))
+
+	l.Debug("exchanging")
+
 	// Validate that the request was really initiated by us (i.e. its state
 	// parameter is recognized, as protection against CSRF attacks).
-	ok := o.states[state]
-	delete(o.states, state)
-	if !ok {
-		return nil, errors.New("oauth redirect request with unrecognized state parameter")
+	if err := o.validateState(ctx, l, state); err != nil {
+		return nil, fmt.Errorf("failed to validate state parameter: %w", err)
 	}
 
 	// Convert the received temporary authorization code
