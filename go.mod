@@ -3,6 +3,7 @@ module go.autokitteh.dev/autokitteh
 go 1.22
 
 require (
+	ariga.io/atlas-provider-gorm v0.3.2
 	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.33.0-20240221180331-f05a6f4403ce.1
 	connectrpc.com/connect v1.15.0
 	connectrpc.com/grpcreflect v1.2.0
@@ -47,6 +48,7 @@ require (
 	github.com/knadh/koanf/v2 v2.1.0
 	github.com/lithammer/shortuuid v3.0.0+incompatible
 	github.com/lithammer/shortuuid/v4 v4.0.0
+	github.com/pressly/goose/v3 v3.19.2
 	github.com/psanford/memfs v0.0.0-20230130182539-4dbf7e3e865e
 	github.com/qri-io/starlib v0.5.0
 	github.com/redis/go-redis/v9 v9.5.1
@@ -67,7 +69,7 @@ require (
 	go.uber.org/zap v1.27.0
 	golang.ngrok.com/ngrok v1.9.1
 	golang.org/x/exp v0.0.0-20240222234643-814bf88cf225
-	golang.org/x/net v0.22.0
+	golang.org/x/net v0.23.0
 	golang.org/x/oauth2 v0.18.0
 	golang.org/x/text v0.14.0
 	golang.org/x/tools v0.19.0
@@ -87,7 +89,6 @@ require (
 
 require (
 	ariga.io/atlas-go-sdk v0.2.3 // indirect
-	ariga.io/atlas-provider-gorm v0.3.2 // indirect
 	cloud.google.com/go/compute v1.25.0 // indirect
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
 	filippo.io/edwards25519 v1.1.0 // indirect
@@ -186,7 +187,6 @@ require (
 	github.com/pborman/uuid v1.2.1 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/pressly/goose/v3 v3.19.2 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/robfig/cron v1.2.0 // indirect
 	github.com/ryanuber/go-glob v1.0.0 // indirect
