@@ -18,7 +18,7 @@ const (
 	savePath = "/chatgpt/save"
 )
 
-func Start(l *zap.Logger, mux *http.ServeMux, s sdkservices.Secrets) {
+func InitServer(l *zap.Logger, mux *http.ServeMux, s sdkservices.Secrets) {
 	// New connection UI + form submission handler.
 	mux.Handle(uiPath, http.FileServer(http.FS(static.ChatGPTWebContent)))
 	mux.Handle(savePath, NewHTTPHandler(l, s, "chatgpt"))

@@ -33,7 +33,6 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/eventsgrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
 	"go.autokitteh.dev/autokitteh/internal/backend/httpsvc"
-	"go.autokitteh.dev/autokitteh/internal/backend/integrations"
 	"go.autokitteh.dev/autokitteh/internal/backend/integrationsgrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/logger"
 	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
@@ -143,7 +142,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		Component("envs", configset.Empty, fx.Provide(envs.New)),
 		Component("events", configset.Empty, fx.Provide(events.New)),
 		Component("triggers", configset.Empty, fx.Provide(triggers.New)),
-		Component("oauth", configset.Empty, fx.Provide(oauth.New)),
+		Component("oauth", oauth.Configs, fx.Provide(oauth.New)),
 		Component("runtimes", configset.Empty, fx.Provide(runtimes.New)),
 		Component(
 			"dispatcher",
@@ -161,6 +160,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 				HookOnStart(lc, t.Setup)
 			}),
 		),
+		fx.Options(newIntegrationsOpts(opts)...),
 		fx.Provide(func(s fxServices) sdkservices.Services { return &s }),
 		fx.Invoke(sdkruntimessvc.Init),
 		fx.Invoke(applygrpcsvc.Init),
@@ -226,12 +226,6 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		}),
 		fx.Invoke(func(mux *http.ServeMux, l *zap.Logger, s sdkservices.Services) {
 			mux.Handle("/oauth/", oauth.NewWebhook(l, s))
-		}),
-		Component("integrations", integrations.Configs, fx.Provide(integrations.New)),
-		fx.Invoke(func(lc fx.Lifecycle, l *zap.Logger, muxes *muxes.Muxes, s sdkservices.Secrets, o sdkservices.OAuth, d dispatcher.Dispatcher) {
-			HookOnStart(lc, func(ctx context.Context) error {
-				return integrations.Start(ctx, l, muxes.NoAuth, s, o, d)
-			})
 		}),
 		indexOption(),
 		fx.Invoke(func(z *zap.Logger, mux *http.ServeMux) {

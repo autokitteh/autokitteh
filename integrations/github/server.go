@@ -13,7 +13,7 @@ import (
 	"go.autokitteh.dev/autokitteh/web/static"
 )
 
-func Start(l *zap.Logger, mux *http.ServeMux, s sdkservices.Secrets, o sdkservices.OAuth, d sdkservices.Dispatcher) {
+func InitServer(l *zap.Logger, mux *http.ServeMux, s sdkservices.Secrets, o sdkservices.OAuth, d sdkservices.Dispatcher) {
 	// Connection UI + handler.
 	mux.HandleFunc(uiPath, connect.ServeHTTP)
 	staticFiles := http.FileServer(http.FS(static.GitHubWebContent))

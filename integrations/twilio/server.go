@@ -15,7 +15,7 @@ const (
 	uiPath = "/twilio/connect/"
 )
 
-func Start(l *zap.Logger, mux *http.ServeMux, s sdkservices.Secrets, d sdkservices.Dispatcher) {
+func InitServer(l *zap.Logger, mux *http.ServeMux, s sdkservices.Secrets, d sdkservices.Dispatcher) {
 	h := webhooks.NewHandler(l, s, d, "twilio", integrationID)
 
 	// Save new autokitteh connections with user-submitted Twilio secrets.

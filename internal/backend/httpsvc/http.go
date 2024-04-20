@@ -80,9 +80,6 @@ func New(lc fx.Lifecycle, z *zap.Logger, cfg *Config, reflectors []string, extra
 				z.Info("using ngrok to serve apis")
 
 				token := cfg.Ngrok.AuthToken
-				if token == "" {
-					token = os.Getenv("NGROK_AUTHTOKEN")
-				}
 
 				var tun ngrok.Tunnel
 				if tun, err = ngrok.Listen(

@@ -138,7 +138,7 @@ func (a api) oauthTokenSource(ctx context.Context, data map[string]string) oauth
 		exp = time.Unix(0, 0)
 	}
 
-	return oauthConfig(ctx).TokenSource(ctx, &oauth2.Token{
+	return oauthConfig().TokenSource(ctx, &oauth2.Token{
 		AccessToken:  data["accessToken"],
 		TokenType:    data["tokenType"],
 		RefreshToken: data["refreshToken"],
@@ -147,7 +147,7 @@ func (a api) oauthTokenSource(ctx context.Context, data map[string]string) oauth
 }
 
 // TODO(ENG-112): Use OAuth().Get() instead of calling this function.
-func oauthConfig(ctx context.Context) *oauth2.Config {
+func oauthConfig() *oauth2.Config {
 	addr := os.Getenv("WEBHOOK_ADDRESS")
 	return &oauth2.Config{
 		ClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
@@ -164,7 +164,7 @@ func oauthConfig(ctx context.Context) *oauth2.Config {
 }
 
 func (a api) jwtTokenSource(ctx context.Context, data map[string]string) (oauth2.TokenSource, error) {
-	scopes := oauthConfig(ctx).Scopes
+	scopes := oauthConfig().Scopes
 
 	cfg, err := google.JWTConfigFromJSON([]byte(data["JSON"]), scopes...)
 	if err != nil {

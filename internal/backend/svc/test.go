@@ -1,4 +1,4 @@
-package integrations
+package svc
 
 import (
 	"context"
@@ -13,10 +13,10 @@ import (
 
 type test struct{}
 
-var integrationID = sdktypes.NewIntegrationIDFromName("test")
+var testIntegrationID = sdktypes.NewIntegrationIDFromName("test")
 
 var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
-	IntegrationId: integrationID.String(),
+	IntegrationId: testIntegrationID.String(),
 	UniqueName:    "test",
 	DisplayName:   "Test",
 	Description:   "Test integration",

@@ -26,7 +26,7 @@ const (
 
 // handler is an autokitteh webhook which implements [http.Handler] to
 // receive, dispatch, and acknowledge asynchronous event notifications.
-type handler struct {
+type httpHandler struct {
 	logger     *zap.Logger
 	secrets    sdkservices.Secrets
 	dispatcher sdkservices.Dispatcher
@@ -40,8 +40,13 @@ func routePrefix(ns string) string {
 	return fmt.Sprintf("/http/%s/", ns)
 }
 
-func Start(l *zap.Logger, mux *http.ServeMux, s sdkservices.Secrets, d sdkservices.Dispatcher) {
-	h := handler{logger: l, secrets: s, dispatcher: d, scope: "http"}
+func InitServer(d sdkservices.Dispatcher, l *zap.Logger, mux *http.ServeMux) {
+	h := &httpHandler{
+		dispatcher: d,
+		logger:     l,
+		scope:      "http",
+	}
+
 	mux.Handle(routePrefix("{ns}")+"*", h)
 
 	// Save new autokitteh connections with user-submitted HTTP secrets.
@@ -49,7 +54,7 @@ func Start(l *zap.Logger, mux *http.ServeMux, s sdkservices.Secrets, d sdkservic
 	mux.HandleFunc(savePath, h.handleAuth)
 }
 
-func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *httpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	l := h.logger.With(zap.String("url", r.URL.String()))
 
 	l.Info("incoming request")

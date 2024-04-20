@@ -16,7 +16,7 @@ const (
 )
 
 // handleAuth saves a new autokitteh connection with user-submitted data.
-func (h handler) handleAuth(w http.ResponseWriter, r *http.Request) {
+func (h httpHandler) handleAuth(w http.ResponseWriter, r *http.Request) {
 	l := h.logger.With(zap.String("urlPath", r.URL.Path))
 
 	// Check "Content-Type" header.
@@ -71,7 +71,7 @@ func (h handler) handleAuth(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, u, http.StatusFound)
 }
 
-func (h handler) createConnection(auth string) (string, error) {
+func (h httpHandler) createConnection(auth string) (string, error) {
 	token, err := h.secrets.Create(context.Background(), h.scope,
 		// Connection token --> authorization HTTP header.
 		map[string]string{

@@ -19,11 +19,13 @@ const (
 	savePath = "/scheduler/save"
 )
 
-func Start(l *zap.Logger, mux *http.ServeMux, s sdkservices.Secrets, d sdkservices.Dispatcher) {
+func InitServer(l *zap.Logger, mux *http.ServeMux, s sdkservices.Secrets, d sdkservices.Dispatcher) {
 	// New connection UI + form submission handler.
 	mux.Handle(uiPath, http.FileServer(http.FS(static.SchedulerWebContent)))
 	mux.Handle(savePath, NewHTTPHandler(l, s, "scheduler"))
+}
 
+func StartEventSource(l *zap.Logger, s sdkservices.Secrets, d sdkservices.Dispatcher) {
 	// In-memory cron table to dispatch events.
 	go func() {
 		ticker := time.NewTicker(initInterval)

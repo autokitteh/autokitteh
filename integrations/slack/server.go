@@ -18,33 +18,54 @@ const (
 	formPath = "/slack/save_tokens"
 )
 
-func Start(l *zap.Logger, mux *http.ServeMux, s sdkservices.Secrets, d sdkservices.Dispatcher) {
-	// Connection UI + save handlers.
-	wsh := websockets.NewHandler(l, s, d, "slack", integrationID)
-	mux.Handle(uiPath, http.FileServer(http.FS(static.SlackWebContent)))
-	mux.Handle(oauthPath, NewHandler(l, s, "slack"))
-	mux.HandleFunc(formPath, wsh.HandleForm)
-
+func InitServer(l *zap.Logger, mux *http.ServeMux, s sdkservices.Secrets, d sdkservices.Dispatcher) {
 	// Event webhooks.
 	whh := webhooks.NewHandler(l, s, d, "slack", integrationID)
 	mux.HandleFunc(webhooks.BotEventPath, whh.HandleBotEvent)
 	mux.HandleFunc(webhooks.SlashCommandPath, whh.HandleSlashCommand)
 	mux.HandleFunc(webhooks.InteractionPath, whh.HandleInteraction)
 
+	// Connection UI + save handlers.
+	mux.Handle(uiPath, http.FileServer(http.FS(static.SlackWebContent)))
+	mux.Handle(oauthPath, NewHandler(l, s, "slack"))
+}
+
+type EventSource struct {
+	l                        *zap.Logger
+	mux                      *http.ServeMux
+	s                        sdkservices.Secrets
+	d                        sdkservices.Dispatcher
+	openSocketModeConnection func(appID, botToken, appToken string)
+}
+
+func InitEventSource(l *zap.Logger, mux *http.ServeMux, s sdkservices.Secrets, d sdkservices.Dispatcher) *EventSource {
+	wsh := websockets.NewHandler(l, s, d, "slack", integrationID)
+	mux.HandleFunc(formPath, wsh.HandleForm)
+
+	return &EventSource{
+		l:                        l,
+		mux:                      mux,
+		s:                        s,
+		d:                        d,
+		openSocketModeConnection: wsh.OpenSocketModeConnection,
+	}
+}
+
+func (s *EventSource) Start() {
 	// Initialize WebSocket pool.
-	tokens, err := s.List(context.Background(), "slack", "websockets")
+	tokens, err := s.s.List(context.Background(), "slack", "websockets")
 	if err != nil {
-		l.Error("Failed to list WebSocket tokens", zap.Error(err))
+		s.l.Error("Failed to list WebSocket tokens", zap.Error(err))
 		return
 	}
 
 	for _, connToken := range tokens {
-		data, err := s.Get(context.Background(), "slack", connToken)
+		data, err := s.s.Get(context.Background(), "slack", connToken)
 		if err != nil {
-			l.Error("Missing data for Slack Socket Mode app", zap.Error(err))
+			s.l.Error("Missing data for Slack Socket Mode app", zap.Error(err))
 			continue
 		}
 
-		wsh.OpenSocketModeConnection(data["appID"], data["botToken"], data["appLevelToken"])
+		s.openSocketModeConnection(data["appID"], data["botToken"], data["appLevelToken"])
 	}
 }
