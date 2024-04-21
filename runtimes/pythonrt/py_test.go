@@ -17,9 +17,13 @@ import (
 )
 
 func skipIfNoPython(t *testing.T) {
-	_, err := exec.LookPath("python")
-	if err != nil {
+	_, err := pyExecInfo(context.Background())
+	if errors.Is(err, exec.ErrNotFound) {
 		t.Skip("no python installed")
+	}
+
+	if err != nil {
+		t.Logf("error getting Python info: %s", err)
 	}
 }
 
