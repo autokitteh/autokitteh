@@ -5,7 +5,6 @@ from pathlib import Path
 import pickle
 from socket import socket, socketpair
 from subprocess import run
-from threading import Thread
 from unittest.mock import MagicMock
 
 import ak_runner
@@ -174,6 +173,9 @@ def test_in_activity():
 
         def send_response(self, value):
             self.values.append(value)
+
+        def extract_response(self, msg):
+            return msg['payload']['value']
 
         def recv(self, *types):
             self.n += 1
