@@ -56,11 +56,6 @@ func (i integration) request(method string) sdkexecutor.Function {
 			jsonBody, body            sdktypes.Value
 		)
 
-		// if body, found := kwargs["body"]; found {
-		// 	delete(kwargs, "body")
-		// } else if len(args) > 4 {
-		// 	body = args[5]
-
 		if err := sdkmodule.UnpackArgs(args, kwargs,
 			"url", &rawURL,
 			"params?", &params,
