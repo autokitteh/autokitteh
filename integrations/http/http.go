@@ -65,32 +65,37 @@ func (i integration) request(method string) sdkexecutor.Function {
 			"params?", &params,
 			"headers?", &headers,
 			"body?", &body,
-			"body_type?", &bodyType,
 		); err != nil {
 			return sdktypes.InvalidValue, err
 		}
 
-		// GET request doesn't have user-defined body
-		if method != http.MethodGet && body.IsValid() {
-			var err error
-			bodyType = strings.ToLower(bodyType)
-			switch bodyType {
-			case "", bodyTypeRaw:
-				err = body.UnwrapInto(&rawBody)
-			case bodyTypeJSON:
-				jsonBody = body
-			case bodyTypeForm:
-				err = body.UnwrapInto(&formBody)
-			default:
-				err = errors.New("body_type must be one of <form|json|raw>")
-			}
-			if err != nil {
-				return sdktypes.InvalidValue, err
-			}
-		}
-
 		if headers == nil {
 			headers = make(map[string]string)
+		}
+
+		// GET request doesn't have user-defined body
+		if method != http.MethodGet && body.IsValid() {
+
+			// parse as RAW
+			bodyType = bodyTypeRaw
+			if err := body.UnwrapInto(&rawBody); err != nil {
+
+				// parse as FORM. Check Content-Type header, if present to distinguish between form and simple JSON
+				bodyType = bodyTypeForm
+				asJSON := false
+				if contentType, ok := headers[contentTypeHeader]; ok {
+					asJSON = contentType == contentTypeJSON
+				}
+				if err = body.UnwrapInto(&formBody); err != nil || asJSON {
+
+					// finally, parse as JSON
+					bodyType = bodyTypeJSON
+					err = body.UnwrapInto(&jsonBody)
+				}
+				if err != nil {
+					return sdktypes.InvalidValue, errors.New("body must be one of <string|form|json>")
+				}
+			}
 		}
 
 		if err := setQueryParams(&rawURL, params); err != nil {
