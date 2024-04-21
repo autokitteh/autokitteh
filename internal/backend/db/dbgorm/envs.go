@@ -32,8 +32,8 @@ func (db *gormdb) CreateEnv(ctx context.Context, env sdktypes.Env) error {
 	}
 
 	e := scheme.Env{
-		EnvID:        *env.ID().UUIDValue(),
-		ProjectID:    env.ProjectID().UUIDValue(),
+		EnvID:        env.ID().UUIDValue(),
+		ProjectID:    scheme.UUIDOrNil(env.ProjectID().UUIDValue()),
 		Name:         env.Name().String(),
 		MembershipID: envMembershipID(env),
 	}
@@ -93,7 +93,7 @@ func (db *gormdb) ListProjectEnvs(ctx context.Context, pid sdktypes.ProjectID) (
 
 func (db *gormdb) SetEnvVar(ctx context.Context, ev sdktypes.EnvVar) error {
 	r := scheme.EnvVar{
-		EnvID:        *ev.EnvID().UUIDValue(), // need to verify envID ? where is envvar id ?
+		EnvID:        ev.EnvID().UUIDValue(), // need to verify envID ? where is envvar id ?
 		Name:         ev.Symbol().String(),
 		IsSecret:     ev.IsSecret(),
 		MembershipID: envVarMembershipID(ev),

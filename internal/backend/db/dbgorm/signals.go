@@ -13,7 +13,7 @@ func (db *gormdb) saveSignal(ctx context.Context, signal *scheme.Signal) error {
 
 func (db *gormdb) SaveSignal(ctx context.Context, signalID string, workflowID string, connectionID sdktypes.ConnectionID, filter string) (string, error) {
 	s := scheme.Signal{
-		ConnectionID: *connectionID.UUIDValue(),
+		ConnectionID: connectionID.UUIDValue(),
 		SignalID:     signalID,
 		WorkflowID:   workflowID,
 		Filter:       filter,

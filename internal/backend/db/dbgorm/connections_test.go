@@ -50,7 +50,7 @@ func TestCreateConnectionForeignKeys(t *testing.T) {
 	//assert.ErrorIs(t, f.gormdb.createConnection(f.ctx, &c), gorm.ErrForeignKeyViolated)
 	// c.IntegrationID = nil
 
-	c.ProjectID = sdktypes.NewProjectID().UUIDValue()
+	c.ProjectID = scheme.UUIDOrNil(sdktypes.NewProjectID().UUIDValue())
 	assert.ErrorIs(t, f.gormdb.createConnection(f.ctx, &c), gorm.ErrForeignKeyViolated)
 	c.ProjectID = nil
 

@@ -48,7 +48,7 @@ func convertTypeToRecord(i sdktypes.Integration) *scheme.Integration {
 	}
 
 	return &scheme.Integration{
-		IntegrationID: *i.ID().UUIDValue(),
+		IntegrationID: i.ID().UUIDValue(),
 		UniqueName:    i.UniqueName().String(),
 		DisplayName:   i.DisplayName(),
 		Description:   i.Description(),
@@ -74,7 +74,7 @@ func (db *gormdb) DeleteIntegration(ctx context.Context, id sdktypes.Integration
 	// what they want to do - abort, or cascade the deletion.
 	// Note that a similar decision exists when deleting connections that
 	// have active project mappings.
-	return translateError(db.deleteIntegration(ctx, *id.UUIDValue()))
+	return translateError(db.deleteIntegration(ctx, id.UUIDValue()))
 }
 
 func (db *gormdb) GetIntegration(ctx context.Context, id sdktypes.IntegrationID) (sdktypes.Integration, error) {

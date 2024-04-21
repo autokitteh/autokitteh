@@ -17,7 +17,7 @@ func (db *gormdb) saveBuild(ctx context.Context, build *scheme.Build) error {
 func (db *gormdb) SaveBuild(ctx context.Context, build sdktypes.Build, data []byte) error {
 	// TODO: add Build time
 	b := scheme.Build{
-		BuildID:   *build.ID().UUIDValue(),
+		BuildID:   build.ID().UUIDValue(),
 		Data:      data,
 		CreatedAt: build.CreatedAt(),
 	}
@@ -33,7 +33,7 @@ func (db *gormdb) deleteBuild(ctx context.Context, buildID sdktypes.UUID) error 
 }
 
 func (db *gormdb) DeleteBuild(ctx context.Context, buildID sdktypes.BuildID) error {
-	return db.deleteBuild(ctx, *buildID.UUIDValue())
+	return db.deleteBuild(ctx, buildID.UUIDValue())
 }
 
 func (db *gormdb) listBuilds(ctx context.Context, filter sdkservices.ListBuildsFilter) ([]scheme.Build, error) {

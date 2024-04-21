@@ -15,10 +15,10 @@ func (db *gormdb) createConnection(ctx context.Context, conn *scheme.Connection)
 
 func (db *gormdb) CreateConnection(ctx context.Context, conn sdktypes.Connection) error {
 	c := scheme.Connection{
-		ConnectionID:     *conn.ID().UUIDValue(),
-		IntegrationID:    conn.IntegrationID().UUIDValue(), // TODO(ENG-158): need to verify integration id
+		ConnectionID:     conn.ID().UUIDValue(),
+		IntegrationID:    scheme.UUIDOrNil(conn.IntegrationID().UUIDValue()), // TODO(ENG-158): need to verify integration id
 		IntegrationToken: conn.IntegrationToken(),
-		ProjectID:        conn.ProjectID().UUIDValue(),
+		ProjectID:        scheme.UUIDOrNil(conn.ProjectID().UUIDValue()),
 		Name:             conn.Name().String(),
 	}
 
@@ -27,10 +27,10 @@ func (db *gormdb) CreateConnection(ctx context.Context, conn sdktypes.Connection
 
 func (db *gormdb) UpdateConnection(ctx context.Context, conn sdktypes.Connection) error {
 	c := scheme.Connection{
-		ConnectionID:     *conn.ID().UUIDValue(),
-		IntegrationID:    conn.IntegrationID().UUIDValue(), // TODO(ENG-158): need to verify integration id
+		ConnectionID:     conn.ID().UUIDValue(),
+		IntegrationID:    scheme.UUIDOrNil(conn.IntegrationID().UUIDValue()), // TODO(ENG-158): need to verify integration id
 		IntegrationToken: conn.IntegrationToken(),
-		ProjectID:        conn.ProjectID().UUIDValue(),
+		ProjectID:        scheme.UUIDOrNil(conn.ProjectID().UUIDValue()),
 		Name:             conn.Name().String(),
 	}
 
@@ -48,7 +48,7 @@ func (db *gormdb) deleteConnection(ctx context.Context, id sdktypes.UUID) error 
 }
 
 func (db *gormdb) DeleteConnection(ctx context.Context, id sdktypes.ConnectionID) error {
-	return translateError(db.deleteConnection(ctx, *id.UUIDValue()))
+	return translateError(db.deleteConnection(ctx, id.UUIDValue()))
 }
 
 func (db *gormdb) GetConnection(ctx context.Context, id sdktypes.ConnectionID) (sdktypes.Connection, error) {

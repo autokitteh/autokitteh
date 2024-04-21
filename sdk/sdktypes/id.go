@@ -28,7 +28,7 @@ type ID interface {
 	// Value returns the id value, meaning without the prefix.
 	Value() string
 
-	UUIDValue() *UUID
+	UUIDValue() UUID
 
 	isID()
 }
@@ -76,13 +76,12 @@ func (i id[T]) Value() string {
 	return i.tid.Suffix()
 }
 
-func (i id[T]) UUIDValue() *UUID {
+func (i id[T]) UUIDValue() UUID {
 	if !i.IsValid() {
-		return nil
+		return UUID{}
 	}
 
-	u := uuid.UUID(i.tid.UUIDBytes())
-	return &u
+	return uuid.UUID(i.tid.UUIDBytes())
 }
 
 func (i id[T]) MarshalJSON() ([]byte, error)           { return json.Marshal(i.tid) }

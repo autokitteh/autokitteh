@@ -22,6 +22,15 @@ import (
 // TODO: keep some log of actions performed. Something that
 // can be used for recovery from unintended/malicious actions.
 
+func UUIDOrNil(uuid sdktypes.UUID) *sdktypes.UUID {
+	zero := sdktypes.UUID{}
+	if uuid == zero {
+		return nil
+	}
+
+	return &uuid
+}
+
 var Tables = []any{
 	&Build{},
 	&Connection{},

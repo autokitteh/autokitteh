@@ -21,9 +21,9 @@ func (db *gormdb) CreateDeployment(ctx context.Context, deployment sdktypes.Depl
 	now := time.Now()
 
 	d := scheme.Deployment{
-		DeploymentID: *deployment.ID().UUIDValue(),
-		BuildID:      deployment.BuildID().UUIDValue(),
-		EnvID:        deployment.EnvID().UUIDValue(),
+		DeploymentID: deployment.ID().UUIDValue(),
+		BuildID:      scheme.UUIDOrNil(deployment.BuildID().UUIDValue()),
+		EnvID:        scheme.UUIDOrNil(deployment.EnvID().UUIDValue()),
 		State:        int32(deployment.State().ToProto()),
 		CreatedAt:    now,
 		UpdatedAt:    now,
@@ -39,7 +39,7 @@ func (db *gormdb) getDeployment(ctx context.Context, deploymentID sdktypes.UUID)
 }
 
 func (db *gormdb) GetDeployment(ctx context.Context, id sdktypes.DeploymentID) (sdktypes.Deployment, error) {
-	d, err := db.getDeployment(ctx, *id.UUIDValue())
+	d, err := db.getDeployment(ctx, id.UUIDValue())
 	if d == nil || err != nil {
 		return sdktypes.InvalidDeployment, translateError(err)
 	}
@@ -74,7 +74,7 @@ func (db *gormdb) deleteDeploymentsAndDependents(ctx context.Context, depIDs []s
 
 func (db *gormdb) DeleteDeployment(ctx context.Context, deploymentID sdktypes.DeploymentID) error {
 	return db.transaction(ctx, func(tx *tx) error {
-		return translateError(tx.deleteDeployment(ctx, *deploymentID.UUIDValue()))
+		return translateError(tx.deleteDeployment(ctx, deploymentID.UUIDValue()))
 	})
 }
 
@@ -167,5 +167,5 @@ func (db *gormdb) updateDeploymentState(ctx context.Context, id sdktypes.UUID, s
 }
 
 func (db *gormdb) UpdateDeploymentState(ctx context.Context, id sdktypes.DeploymentID, state sdktypes.DeploymentState) error {
-	return db.updateDeploymentState(ctx, *id.UUIDValue(), state)
+	return db.updateDeploymentState(ctx, id.UUIDValue(), state)
 }

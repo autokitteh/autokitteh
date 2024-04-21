@@ -48,10 +48,10 @@ func triggerToRecord(ctx context.Context, tx *tx, trigger sdktypes.Trigger) (*sc
 	uniqueName := fmt.Sprintf("%s/%s", envID.String(), name)
 
 	return &scheme.Trigger{
-		TriggerID:    *trigger.ID().UUIDValue(),
-		EnvID:        *envID.UUIDValue(),
-		ProjectID:    *projID.UUIDValue(),
-		ConnectionID: *connID.UUIDValue(),
+		TriggerID:    trigger.ID().UUIDValue(),
+		EnvID:        envID.UUIDValue(),
+		ProjectID:    projID.UUIDValue(),
+		ConnectionID: connID.UUIDValue(),
 		EventType:    trigger.EventType(),
 		Filter:       trigger.Filter(),
 		CodeLocation: trigger.CodeLocation().CanonicalString(),
@@ -112,7 +112,7 @@ func (db *gormdb) deleteTrigger(ctx context.Context, id sdktypes.UUID) error {
 }
 
 func (db *gormdb) DeleteTrigger(ctx context.Context, id sdktypes.TriggerID) error {
-	return translateError(db.deleteTrigger(ctx, *id.UUIDValue()))
+	return translateError(db.deleteTrigger(ctx, id.UUIDValue()))
 }
 
 func (db *gormdb) ListTriggers(ctx context.Context, filter sdkservices.ListTriggersFilter) ([]sdktypes.Trigger, error) {

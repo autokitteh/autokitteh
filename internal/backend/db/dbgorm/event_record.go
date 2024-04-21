@@ -16,7 +16,7 @@ func (db *gormdb) addEventRecord(ctx context.Context, er *scheme.EventRecord) er
 func (db *gormdb) AddEventRecord(ctx context.Context, er sdktypes.EventRecord) error {
 	e := scheme.EventRecord{
 		Seq:     er.Seq(),
-		EventID: *er.EventID().UUIDValue(),
+		EventID: er.EventID().UUIDValue(),
 		State:   int32(er.State().ToProto()),
 	}
 
