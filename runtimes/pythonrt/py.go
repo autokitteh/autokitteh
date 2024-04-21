@@ -54,7 +54,7 @@ func findPython() (string, error) {
 }
 
 func pyExeInfo(ctx context.Context) (exeInfo, error) {
-	exePath, err := exec.LookPath("python")
+	exePath, err := findPython()
 	if err != nil {
 		return exeInfo{}, err
 	}
