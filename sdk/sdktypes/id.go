@@ -77,7 +77,6 @@ func (i id[T]) Value() string {
 }
 
 func (i id[T]) UUIDValue() *UUID {
-
 	if !i.IsValid() {
 		return nil
 	}
