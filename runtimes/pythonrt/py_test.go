@@ -108,9 +108,23 @@ func Test_findPython(t *testing.T) {
 	require.Equal(t, pyExe, out)
 
 	// python & python3, should be python3
-	pyExe = path.Join(dirName, "python3")
-	genExe(t, pyExe)
+	py3Exe := path.Join(dirName, "python3")
+	genExe(t, py3Exe)
 	out, err = findPython()
 	require.NoError(t, err)
-	require.Equal(t, pyExe, out)
+	require.Equal(t, py3Exe, out)
+
+	// Symlink
+	for _, name := range []string{pyExe, py3Exe} {
+		err = os.Remove(name)
+		require.NoError(t, err)
+	}
+
+	exe := path.Join(dirName, "python3.12")
+	genExe(t, exe)
+	link := path.Join(dirName, "python3")
+	err = os.Symlink(exe, link)
+	out, err = findPython()
+	require.NoError(t, err)
+	require.Equal(t, link, out)
 }
