@@ -17,7 +17,7 @@ import (
 )
 
 func skipIfNoPython(t *testing.T) {
-	_, err := pyExecInfo(context.Background())
+	_, err := pyExeInfo(context.Background())
 	if errors.Is(err, exec.ErrNotFound) {
 		t.Skip("no python installed")
 	}
