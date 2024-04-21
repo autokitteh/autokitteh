@@ -14,7 +14,3 @@ def greet(event):
     print(f'BODY: {body!r}')
     request = json.loads(body)
     print(f'REQUEST: {request!r}')
-
-
-if __name__ == '__main__':
-    print(greet('garfield'))
