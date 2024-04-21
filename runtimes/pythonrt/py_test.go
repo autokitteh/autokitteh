@@ -86,6 +86,8 @@ func genExe(t *testing.T, name string) {
 	file, err := os.Create(name)
 	require.NoError(t, err)
 	file.Close()
+
+	// We must set executable bit on the file otherwise exec.LookPath will ignore it.
 	err = os.Chmod(name, 0o766)
 	require.NoError(t, err)
 }
