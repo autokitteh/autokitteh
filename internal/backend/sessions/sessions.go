@@ -84,7 +84,7 @@ func (s *sessions) Delete(ctx context.Context, sessionID sdktypes.SessionID) err
 	// delete only failed or finished sessions
 	state := session.State()
 	if state != sdktypes.SessionStateTypeCompleted && state != sdktypes.SessionStateTypeError {
-		return fmt.Errorf("%w: cannot delete active session: session_id: %s", sdkerrors.ErrFailedPrecondition, sessionID.String())
+		return fmt.Errorf("%w: cannot delete session, invalid state: %s, session_id: %s", sdkerrors.ErrFailedPrecondition, session.State(), sessionID.String())
 	}
 
 	err = s.svcs.DB.DeleteSession(ctx, sessionID)
