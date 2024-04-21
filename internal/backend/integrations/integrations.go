@@ -28,8 +28,8 @@ type Config struct {
 }
 
 var Configs = configset.Set[Config]{
-	Default: &Config{},
-	Dev:     &Config{Test: true},
+	Default:     &Config{},
+	VolatileDev: &Config{Test: true},
 }
 
 func New(cfg *Config, s sdkservices.Secrets) sdkservices.Integrations {

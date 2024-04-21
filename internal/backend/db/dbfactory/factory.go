@@ -23,6 +23,7 @@ var Configs = configset.Set[Config]{
 		SlowQueryThreshold: 300 * time.Millisecond,
 		Type:               gormkitteh.RequireExplicitDSNType,
 	},
+	VolatileDev: &Config{},
 	Dev: &Config{
 		Type: "sqlite",
 		DSN:  "file:" + filepath.Join(xdg.DataHomeDir(), "autokitteh.sqlite"),

@@ -9,6 +9,6 @@ type Config struct {
 }
 
 var Configs = configset.Set[Config]{
-	Default: &Config{},
-	Dev:     &Config{Enabled: true},
+	Default:     &Config{},
+	VolatileDev: &Config{Enabled: true},
 }

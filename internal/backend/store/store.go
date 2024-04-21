@@ -25,7 +25,7 @@ type Config struct {
 
 var Configs = configset.Set[Config]{
 	Default: &Config{},
-	Dev: &Config{
+	VolatileDev: &Config{
 		ServerURL: miniredisURL,
 	},
 }

@@ -19,7 +19,7 @@ var defaultZapLevel = zap.NewAtomicLevelAt(zap.InfoLevel)
 
 var Configs = configset.Set[Config]{
 	Default: &Config{Zap: zap.NewProductionConfig()},
-	Dev: &Config{
+	VolatileDev: &Config{
 		Zap: (func() (cfg zap.Config) {
 			cfg = zap.NewDevelopmentConfig()
 			cfg.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder

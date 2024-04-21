@@ -9,19 +9,23 @@ import (
 type Mode string
 
 const (
-	Default Mode = "default"
-	Dev     Mode = "dev"
-	Test    Mode = "test"
+	Default     Mode = "default"
+	VolatileDev Mode = "vdev"
+	Dev         Mode = "dev"
+	Test        Mode = "test"
 )
 
-func (m Mode) IsDefault() bool { return m == "" || m == Default }
-func (m Mode) IsDev() bool     { return m == Dev }
-func (m Mode) IsTest() bool    { return m == Test }
+func (m Mode) IsDefault() bool     { return m == "" || m == Default }
+func (m Mode) IsVolatileDev() bool { return m == VolatileDev }
+func (m Mode) IsDev() bool         { return m == Dev }
+func (m Mode) IsTest() bool        { return m == Test }
 
 func ParseMode(s string) (Mode, error) {
 	switch s {
 	case "", string(Default):
 		return Default, nil
+	case string(VolatileDev):
+		return VolatileDev, nil
 	case string(Dev):
 		return Dev, nil
 	case string(Test):
@@ -32,7 +36,7 @@ func ParseMode(s string) (Mode, error) {
 }
 
 type Set[T any] struct {
-	Default, Dev, Test *T
+	Default, VolatileDev, Dev, Test *T
 }
 
 var Empty = Set[struct{}]{
@@ -50,9 +54,14 @@ func (set *Set[T]) Choose(mode Mode) (zero T, err error) {
 			return zero, fmt.Errorf("config mode %q: %w", mode, sdkerrors.ErrNotFound)
 		}
 		return *set.Default, nil
+	case VolatileDev:
+		if set.VolatileDev == nil {
+			return set.Choose(Default)
+		}
+		return *set.VolatileDev, nil
 	case Dev:
 		if set.Dev == nil {
-			return set.Choose(Default)
+			return set.Choose(VolatileDev)
 		}
 		return *set.Dev, nil
 	case Test:

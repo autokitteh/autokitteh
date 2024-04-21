@@ -12,15 +12,13 @@ type Config struct {
 	Interval time.Duration `koadnf:"interval_seconds"`
 }
 
-var (
-	Configs = configset.Set[Config]{
-		Default: &Config{
-			Enabled: false,
-		},
-		Dev: &Config{
-			Enabled:  true,
-			Endpoint: "http://localhost:9980",
-			Interval: time.Hour * 24,
-		},
-	}
-)
+var Configs = configset.Set[Config]{
+	Default: &Config{
+		Enabled: false,
+	},
+	VolatileDev: &Config{
+		Enabled:  true,
+		Endpoint: "http://localhost:9980",
+		Interval: time.Hour * 24,
+	},
+}

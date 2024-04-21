@@ -35,7 +35,7 @@ var defaultConfig = Config{
 
 var Configs = configset.Set[Config]{
 	Default: &defaultConfig,
-	Dev: func() *Config {
+	VolatileDev: func() *Config {
 		c := defaultConfig
 		c.Calls.Temporal.ActivityHeartbeatTimeout = time.Minute * 3
 		c.Debug = true

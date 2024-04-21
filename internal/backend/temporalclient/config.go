@@ -50,6 +50,14 @@ var (
 		Default: &Config{
 			Monitor: defaultMonitorConfig,
 		},
+		VolatileDev: &Config{
+			Monitor:               defaultMonitorConfig,
+			StartDevServerIfNotUp: true,
+			DevServer: testsuite.DevServerOptions{
+				LogLevel: zapcore.WarnLevel.String(),
+				EnableUI: true,
+			},
+		},
 		Dev: &Config{
 			Monitor:               defaultMonitorConfig,
 			StartDevServerIfNotUp: true,

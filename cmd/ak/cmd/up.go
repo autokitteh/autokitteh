@@ -17,7 +17,7 @@ var (
 )
 
 var upCmd = common.StandardCommand(&cobra.Command{
-	Use:     "up [--mode={default|dev|test}] [--ready-file=FILE]",
+	Use:     "up [--mode={default|vdev|dev|test}] [--ready-file=FILE]",
 	Short:   "Start local server",
 	Aliases: []string{"u"},
 	Args:    cobra.NoArgs,
@@ -54,7 +54,7 @@ var upCmd = common.StandardCommand(&cobra.Command{
 
 func init() {
 	// Command-specific flags.
-	upCmd.Flags().StringVarP(&mode, "mode", "m", "", "run mode: {default|dev|test}")
+	upCmd.Flags().StringVarP(&mode, "mode", "m", "", "run mode: {default|vdev|dev|test}")
 
 	upCmd.Flags().StringVarP(&readyFile, "ready-file", "r", "", "write a file when the server is ready")
 	kittehs.Must0(upCmd.MarkFlagFilename("ready-file"))
