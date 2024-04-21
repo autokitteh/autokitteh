@@ -14,7 +14,6 @@ from base64 import b64decode, b64encode
 from functools import wraps
 from importlib.abc import Loader
 from importlib.machinery import SourceFileLoader
-from inspect import isbuiltin
 from os import mkdir
 from pathlib import Path
 from socket import AF_UNIX, SOCK_STREAM, socket
@@ -240,7 +239,7 @@ class AKCall:
         self.comm = comm
 
     def ignore(self, fn):
-        if isbuiltin(fn):
+        if fn.__module__ == 'builtins':
             return True
         
         if fn.__module__ == self.module_name:

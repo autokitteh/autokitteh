@@ -32,8 +32,8 @@ def test_load_code():
     obj = {'x': 1, 'y': 2}
     out = fn(json.dumps(obj))
     assert out == obj, 'parse fail'
-    assert len(calls) == 1, 'calls'
-    fn = calls[0][0]
+    assert len(calls) == 2, 'calls'
+    fn = calls[1][0]
     name = fn.__module__ + '.' + fn.__name__
     assert name == 'json.loads'
 
