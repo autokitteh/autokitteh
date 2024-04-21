@@ -74,7 +74,9 @@ sequenceDiagram
     Go->>Python: Run(function, payload)
     loop
         Python-->>Go: Activity request (function name, args, payload)
-        Go ->>Python: Activity call (payload)
+        Go ->>Python: Activity call (payload, skipped in reply)
+        Python-->>Go: Activity value (skipped in reply)
+        Go ->>Python: Activity Value
     end
     Python-->>Go: Run return (None)
 ```
@@ -129,3 +131,7 @@ db:
   dsn: /tmp/ak.db  # Pick any other location
   type: sqlite
 ```
+
+## Hacking
+
+Since `ak_runner.py` is embedded in `ak`, you'll need to build it (`make bin` from root of project) every time you change Python code and want to run workflows.

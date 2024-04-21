@@ -170,14 +170,15 @@ class Comm:
         data = json.dumps(message) + '\n'
         self.sock.sendall(data.encode('utf-8'))
 
-    def _recv(self, expected_type):
+    def recv(self, *msg_types):
         data = self.rdr.readline()
         if not data:
             raise ValueError('connection closed')
 
         message = json.loads(data)
-        if (typ := message['type']) != expected_type:
-            raise ValueError(f'message type: expected {expected_type!r}, got {typ!r}')
+        if (typ := message['type']) not in msg_types:
+            typs = ', '.join(msg_types)
+            raise ValueError(f'message type: expected one of {typs!r}, got {typ!r}')
         return message
 
     def _picklize(self, data):
@@ -197,9 +198,7 @@ class Comm:
         }
         self._send(message)
 
-    def receive_activity(self):
-        message = self._recv(MessageType.callback)
-
+    def extract_activity(self, message):
         payload = message['payload']
         data = b64decode(payload['data'])
         payload['data'] = pickle.loads(data)
@@ -219,7 +218,7 @@ class Comm:
         self._send(message)
 
     def receive_run(self):
-        message = self._recv(MessageType.run)
+        message = self.recv(MessageType.run)
         return message['payload']
 
     def send_response(self, value):
@@ -230,6 +229,10 @@ class Comm:
             }
         }
         self._send(message)
+
+    def extract_response(self, message):
+        data = message['payload']['value']
+        return pickle.loads(b64decode(data))
 
 
 class AKCall:
@@ -259,11 +262,17 @@ class AKCall:
         self.in_activity = True
         try:
             self.comm.send_activity(func, args, kw)
-            message = self.comm.receive_activity()
-            fn, args, kw = message['data']
-            value = fn(*args, **kw)
-            self.comm.send_response(value)
-            return value
+            message = self.comm.recv(MessageType.callback, MessageType.response)
+            
+            if message['type'] == MessageType.callback:
+                payload = self.comm.extract_activity(message)
+                fn, args, kw = payload['data']
+                value = fn(*args, **kw)
+                self.comm.send_response(value)
+                message = self.comm.recv(MessageType.response)
+
+            # Reply message, either from current call or playback
+            return self.comm.extract_response(message)
         finally:
             self.in_activity = False
 
