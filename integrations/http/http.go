@@ -68,19 +68,16 @@ func (i integration) request(method string) sdkexecutor.Function {
 
 		// GET request doesn't have user-defined body
 		if method != http.MethodGet && body.IsValid() {
-			if bodyType == "" {
-				bodyType = "missing"
-			}
 
 			var err error
 			bodyType = strings.ToLower(bodyType)
 			switch bodyType {
-			case bodyTypeForm:
-				err = body.UnwrapInto(&formBody)
+			case "", bodyTypeRaw:
+				err = body.UnwrapInto(&rawBody)
 			case bodyTypeJSON:
 				jsonBody = body
-			case bodyTypeRaw:
-				err = body.UnwrapInto(&rawBody)
+			case bodyTypeForm:
+				err = body.UnwrapInto(&formBody)
 			default:
 				err = errors.New("body_type must be one of <form|json|raw>")
 			}
@@ -184,7 +181,7 @@ func (i integration) getConnection(ctx context.Context) map[string]string {
 
 func setBody(req *http.Request, bodyType string, rawBody string, formBody map[string]string, jsonBody sdktypes.Value) error {
 	switch bodyType {
-	case bodyTypeRaw:
+	case "", bodyTypeRaw:
 		if rawBody == "" {
 			return nil
 		}
