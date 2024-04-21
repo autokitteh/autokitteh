@@ -1,0 +1,136 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://go.autokitteh.dev/autokitteh/internal/manifest/manifest",
+  "$ref": "#/$defs/Manifest",
+  "$defs": {
+    "Connection": {
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "token": {
+          "type": "string"
+        },
+        "integration": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "name",
+        "integration"
+      ]
+    },
+    "EnvVar": {
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        },
+        "is_secret": {
+          "type": "boolean"
+        },
+        "env_var": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "name"
+      ]
+    },
+    "Manifest": {
+      "properties": {
+        "version": {
+          "type": "string"
+        },
+        "project": {
+          "$ref": "#/$defs/Project"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "version"
+      ]
+    },
+    "Project": {
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "connections": {
+          "items": {
+            "$ref": "#/$defs/Connection"
+          },
+          "type": "array"
+        },
+        "triggers": {
+          "items": {
+            "$ref": "#/$defs/Trigger"
+          },
+          "type": "array"
+        },
+        "vars": {
+          "items": {
+            "$ref": "#/$defs/EnvVar"
+          },
+          "type": "array"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "name"
+      ]
+    },
+    "Trigger": {
+      "oneOf": [
+        {
+          "required": [
+            "call"
+          ],
+          "title": "call"
+        },
+        {
+          "required": [
+            "entrypoint"
+          ],
+          "title": "entrypoint"
+        }
+      ],
+      "properties": {
+        "connection": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "event_type": {
+          "type": "string"
+        },
+        "filter": {
+          "type": "string"
+        },
+        "data": {
+          "type": "object"
+        },
+        "call": {
+          "type": "string"
+        },
+        "entrypoint": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "connection"
+      ]
+    }
+  }
+}

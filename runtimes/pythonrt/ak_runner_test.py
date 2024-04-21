@@ -147,3 +147,38 @@ def test_load_simple():
         pass
 
     ak_runner.load_code(root_path, action_fn, 'simple')
+
+
+def in_act_2(v):
+    print(f'in_act_2: {v}')
+
+def in_act_1(v):
+    print('in_act_1: in')
+    in_act_2(v)
+    print('in_act_2: in')
+
+
+def test_in_activity():
+    class Comm:
+        def __init__(self):
+            self.values = []
+            self.num_activities = 0
+
+        def send_activity(self, func, args, kw):
+            self.num_activities += 1
+            self.message = {'data': (func, args, kw)}
+
+        def send_response(self, value):
+            self.values.append(value)
+
+        def receive_activity(self):
+            return self.message
+
+    comm = Comm()
+    ak = ak_runner.AKCall('meow', comm)
+    ak(in_act_1, 7)
+    assert comm.num_activities == 1
+
+    ak(in_act_1, 6)
+    assert comm.num_activities == 2
+    

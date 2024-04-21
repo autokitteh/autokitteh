@@ -246,7 +246,7 @@ var (
 	// testProjectID = "prj_00000000000000000000000001"
 	// testTriggerID     = "trg_00000000000000000000000001"
 	testConnectionID  = "con_00000000000000000000000001"
-	testIntegrationID = "int_00000000000000000000000001"
+	testIntegrationID = "int_3kth00000000000000000000001"
 	testSignalID      = "sig_00000000000000000000000001"
 )
 

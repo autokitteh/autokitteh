@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
 
 	enumspb "go.temporal.io/api/enums/v1"
 	"go.temporal.io/sdk/activity"
@@ -20,10 +21,6 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdkexecutor"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
-
-// Pass executors for session specific calls (functions that are
-// defined in runtime script, as opposed to integrations).
-var executorsForSessions = make(map[string]*sdkexecutor.Executors, 16)
 
 type CallParams struct {
 	SessionID     sdktypes.SessionID
@@ -58,6 +55,11 @@ type calls struct {
 	//                 user script.
 	generalWorker worker.Worker
 	uniqueWorker  worker.Worker
+
+	// Pass executors for session specific calls (functions that are
+	// defined in runtime script, as opposed to integrations).
+	executorsForSessionsMu sync.RWMutex
+	executorsForSessions   map[sdktypes.SessionID]*sdkexecutor.Executors
 }
 
 const (
@@ -76,11 +78,12 @@ func New(z *zap.Logger, config Config, svcs *sessionsvcs.Svcs) Calls {
 	opts.DisableWorkflowWorker = true // these workers serve only activities.
 
 	cs := calls{
-		z:             z,
-		config:        config,
-		svcs:          svcs,
-		generalWorker: worker.New(svcs.Temporal, taskQueueName, opts),
-		uniqueWorker:  worker.New(svcs.Temporal, uniqueWorkerCallTaskQueueName(), opts),
+		z:                    z,
+		config:               config,
+		svcs:                 svcs,
+		generalWorker:        worker.New(svcs.Temporal, taskQueueName, opts),
+		uniqueWorker:         worker.New(svcs.Temporal, uniqueWorkerCallTaskQueueName(), opts),
+		executorsForSessions: make(map[sdktypes.SessionID]*sdkexecutor.Executors, 16),
 	}
 
 	cs.generalWorker.RegisterActivityWithOptions(
@@ -150,8 +153,15 @@ func (cs *calls) Call(ctx workflow.Context, params *CallParams) (sdktypes.Sessio
 		local := !xid.IsIntegrationID() || akmodules.IsAKModuleExecutorID(xid)
 
 		if local {
-			executorsForSessions[params.SessionID.String()] = params.Executors
-			defer func() { delete(executorsForSessions, params.SessionID.String()) }()
+			cs.executorsForSessionsMu.Lock()
+			cs.executorsForSessions[params.SessionID] = params.Executors
+			cs.executorsForSessionsMu.Unlock()
+
+			defer func() {
+				cs.executorsForSessionsMu.Lock()
+				delete(cs.executorsForSessions, params.SessionID)
+				cs.executorsForSessionsMu.Unlock()
+			}()
 		}
 
 		for retry := true; retry; {

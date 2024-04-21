@@ -10,7 +10,7 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-var IntegrationID = sdktypes.IntegrationIDFromName("http")
+var IntegrationID = sdktypes.NewIntegrationIDFromName("http")
 
 var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
 	IntegrationId: IntegrationID.String(),

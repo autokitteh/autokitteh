@@ -11,7 +11,7 @@ import (
 	"go.autokitteh.dev/autokitteh/integrations/google/sheets"
 )
 
-var integrationID = sdktypes.IntegrationIDFromName("google")
+var integrationID = sdktypes.NewIntegrationIDFromName("google")
 
 var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
 	IntegrationId: integrationID.String(),

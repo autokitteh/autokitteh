@@ -8,7 +8,7 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-var integrationID = sdktypes.IntegrationIDFromName("scheduler")
+var integrationID = sdktypes.NewIntegrationIDFromName("scheduler")
 
 var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
 	IntegrationId: integrationID.String(),

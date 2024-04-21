@@ -13,7 +13,7 @@ type integration struct {
 	scope   string
 }
 
-var integrationID = sdktypes.IntegrationIDFromName("twilio")
+var integrationID = sdktypes.NewIntegrationIDFromName("twilio")
 
 var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
 	IntegrationId: integrationID.String(),
