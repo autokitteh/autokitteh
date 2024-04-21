@@ -28,14 +28,13 @@ func skipIfNoPython(t *testing.T) {
 }
 
 func Test_createVEnv(t *testing.T) {
+	skipIfNoPython(t)
+
 	if testing.Short() {
 		t.Skip("short mode")
 	}
 
 	info, err := pyExeInfo(context.Background())
-	if errors.Is(errors.Unwrap(err), exec.ErrNotFound) {
-		t.Skip("python not found")
-	}
 	require.NoError(t, err)
 
 	venvPath := path.Join(t.TempDir(), "venv")
