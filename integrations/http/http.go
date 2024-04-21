@@ -194,7 +194,6 @@ func setBody(req *http.Request, bodyType string, rawBody string, formBody map[st
 		// (see ShouldSendChunkedRequestBody() in the library mentioned above).
 		req.ContentLength = int64(len(rawBody))
 
-		// Set the Content-Type header only if it's not already set.
 		if req.Header.Get(contentTypeHeader) == "" {
 			req.Header.Set(contentTypeHeader, "text/plain") // or "application/octet-stream"
 		}
@@ -204,7 +203,7 @@ func setBody(req *http.Request, bodyType string, rawBody string, formBody map[st
 		if !jsonBody.IsValid() || jsonBody.IsNothing() {
 			return nil
 		}
-		// Set the Content-Type header only if it's not already set.
+
 		if req.Header.Get(contentTypeHeader) == "" {
 			req.Header.Set(contentTypeHeader, contentTypeJSON)
 		}
@@ -232,7 +231,6 @@ func setBody(req *http.Request, bodyType string, rawBody string, formBody map[st
 			form.Add(k, v)
 		}
 
-		// Set the Content-Type header only if it's not already set.
 		contentType := req.Header.Get(contentTypeHeader)
 		if contentType == "" {
 			req.Header.Set(contentTypeHeader, contentTypeForm)
