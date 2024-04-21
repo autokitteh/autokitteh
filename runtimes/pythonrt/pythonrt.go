@@ -48,7 +48,7 @@ func New() (sdkservices.Runtime, error) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
-	info, err := pyExecInfo(ctx)
+	info, err := pyExeInfo(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("python info: %w", err)
 	}

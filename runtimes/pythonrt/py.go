@@ -36,15 +36,15 @@ func createTar(fs fs.FS) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-type execInfo struct {
+type exeInfo struct {
 	Exe     string
 	Version string
 }
 
-func pyExecInfo(ctx context.Context) (execInfo, error) {
+func pyExeInfo(ctx context.Context) (exeInfo, error) {
 	exePath, err := exec.LookPath("python")
 	if err != nil {
-		return execInfo{}, err
+		return exeInfo{}, err
 	}
 
 	cmd := exec.CommandContext(ctx, exePath, "--version")
@@ -52,11 +52,11 @@ func pyExecInfo(ctx context.Context) (execInfo, error) {
 	cmd.Stdout = &buf
 
 	if err := cmd.Run(); err != nil {
-		return execInfo{}, fmt.Errorf("%q --version: %w", exePath, err)
+		return exeInfo{}, fmt.Errorf("%q --version: %w", exePath, err)
 	}
 
 	version := strings.TrimSpace(buf.String())
-	return execInfo{Exe: exePath, Version: version}, nil
+	return exeInfo{Exe: exePath, Version: version}, nil
 }
 
 func extractRunner(rootDir string) (string, error) {
