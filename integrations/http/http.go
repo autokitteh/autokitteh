@@ -56,19 +56,22 @@ func (i integration) request(method string) sdkexecutor.Function {
 			jsonBody, body            sdktypes.Value
 		)
 
+		if len(args) > 1 {
+			return sdktypes.InvalidValue, errors.New("pass non-URL arguments as kwargs only")
+		}
+
 		if err := sdkmodule.UnpackArgs(args, kwargs,
 			"url", &rawURL,
 			"params?", &params,
 			"headers?", &headers,
-			"body_type?", &bodyType,
 			"body?", &body,
+			"body_type?", &bodyType,
 		); err != nil {
 			return sdktypes.InvalidValue, err
 		}
 
 		// GET request doesn't have user-defined body
 		if method != http.MethodGet && body.IsValid() {
-
 			var err error
 			bodyType = strings.ToLower(bodyType)
 			switch bodyType {
