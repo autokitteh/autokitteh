@@ -71,7 +71,7 @@ func (s *sessions) Stop(ctx context.Context, sessionID sdktypes.SessionID, reaso
 	return s.workflows.StopWorkflow(ctx, sessionID, reason, force)
 }
 
-func (s *sessions) List(ctx context.Context, filter sdkservices.ListSessionsFilter) ([]sdktypes.Session, int, error) {
+func (s *sessions) List(ctx context.Context, filter sdkservices.ListSessionsFilter) (sdkservices.ListSessionResult, error) {
 	return s.svcs.DB.ListSessions(ctx, filter)
 }
 

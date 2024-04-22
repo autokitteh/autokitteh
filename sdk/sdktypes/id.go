@@ -26,7 +26,7 @@ type ID interface {
 	Kind() string
 
 	// Value returns the id value, meaning without the prefix.
-	Value() string
+	Value() *UUID
 
 	UUIDValue() UUID
 
@@ -68,12 +68,13 @@ func (i id[T]) Kind() string {
 	return i.tid.Prefix()
 }
 
-func (i id[T]) Value() string {
+func (i id[T]) Value() *UUID {
 	if !i.IsValid() {
-		return ""
+		return nil
 	}
 
-	return i.tid.Suffix()
+	u := uuid.UUID(i.tid.UUIDBytes())
+	return &u
 }
 
 func (i id[T]) UUIDValue() UUID {
