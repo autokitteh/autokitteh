@@ -38,34 +38,13 @@ func (i integration) NewClient(ctx context.Context) (*github.Client, error) {
 	if pat, ok := data["PAT"]; ok {
 		return github.NewTokenClient(ctx, pat), nil
 	} else {
-		return i.NewClientWithInstallJWT(ctx)
+		return i.newClientWithInstallJWT(data)
 	}
-}
-
-// NewClientWithAppJWT returns a GitHub client
-// that uses a newly-generated GitHub app JWT.
-func (i integration) NewClientWithAppJWT(ctx context.Context) (*github.Client, error) {
-	data, err := i.getConnection(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	// Initialize and return a GitHub client with a JWT.
-	aid, err := strconv.ParseInt(data["appID"], 10, 64)
-	if err != nil {
-		return nil, err
-	}
-	return i.NewClientWithAppJWTFromGitHubID(aid)
 }
 
 // NewClientWithInstallJWT returns a GitHub client that
 // uses a newly-generated GitHub app installation JWT.
-func (i integration) NewClientWithInstallJWT(ctx context.Context) (*github.Client, error) {
-	data, err := i.getConnection(ctx)
-	if err != nil {
-		return nil, err
-	}
-
+func (i integration) newClientWithInstallJWT(data map[string]string) (*github.Client, error) {
 	// Initialize and return a GitHub client with a JWT.
 	aid, err := strconv.ParseInt(data["appID"], 10, 64)
 	if err != nil {
@@ -75,7 +54,7 @@ func (i integration) NewClientWithInstallJWT(ctx context.Context) (*github.Clien
 	if err != nil {
 		return nil, err
 	}
-	return i.NewClientWithInstallJWTFromGitHubIDs(aid, iid)
+	return i.newClientWithInstallJWTFromGitHubIDs(aid, iid)
 }
 
 // getConnection calls the Get method in SecretsService.
@@ -86,49 +65,17 @@ func (i integration) getConnection(ctx context.Context) (map[string]string, erro
 		cfg = []byte{}
 	}
 
-	c, err := i.secrets.Get(context.Background(), i.scope, string(cfg))
+	c, err := i.secrets.Get(ctx, i.scope, string(cfg))
 	if err != nil {
 		return nil, err
 	}
 	return c, nil
 }
 
-// NewClientWithAppJWTFromGitHubID generates a GitHub app JWT based on the
-// given GitHub app ID, and returns a GitHub client that uses it. Based on:
-//   - https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/authenticating-as-a-github-app
-//   - https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/generating-a-json-web-token-jwt-for-a-github-app
-func (i integration) NewClientWithAppJWTFromGitHubID(appID int64) (*github.Client, error) {
-	// Shared transport to reuse TCP connections.
-	tr := http.DefaultTransport
-	enterpriseURL, err := enterpriseURL()
-	if err != nil {
-		return nil, err
-	}
-
-	// Wrap the shared transport.
-	atr, err := ghinstallation.NewAppsTransport(tr, appID, getPrivateKey())
-	if err != nil {
-		return nil, err
-	}
-	if enterpriseURL != "" {
-		atr.BaseURL = enterpriseURL + "/api/v3"
-	}
-
-	// Initialize a client with the generated JWT injected into outbound requests.
-	client := github.NewClient(&http.Client{Transport: atr})
-	if enterpriseURL != "" {
-		client, err = client.WithEnterpriseURLs(enterpriseURL, enterpriseURL)
-		if err != nil {
-			return nil, err
-		}
-	}
-	return client, nil
-}
-
-// NewClientWithInstallJWTFromGitHubIDs generates a GitHub app
+// newClientWithInstallJWTFromGitHubIDs generates a GitHub app
 // installation JWT based on the given GitHub app ID and installation ID. See:
 // https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/authenticating-as-a-github-app-installation
-func (i integration) NewClientWithInstallJWTFromGitHubIDs(appID, installID int64) (*github.Client, error) {
+func (i integration) newClientWithInstallJWTFromGitHubIDs(appID, installID int64) (*github.Client, error) {
 	// Shared transport to reuse TCP connections.
 	tr := http.DefaultTransport
 	enterpriseURL, err := enterpriseURL()
