@@ -18,17 +18,24 @@ import (
 
 type Config = gormkitteh.Config
 
+const slowQueryThreshold = 300 * time.Millisecond
+
 var Configs = configset.Set[Config]{
 	Default: &Config{
-		SlowQueryThreshold: 300 * time.Millisecond,
+		SlowQueryThreshold: slowQueryThreshold,
 		Type:               gormkitteh.RequireExplicitDSNType,
 	},
-	VolatileDev: &Config{},
-	Dev: &Config{
-		Type: "sqlite",
-		DSN:  "file:" + filepath.Join(xdg.DataHomeDir(), "autokitteh.sqlite"),
+	VolatileDev: &Config{
+		SlowQueryThreshold: slowQueryThreshold,
 	},
-	Test: &Config{},
+	Dev: &Config{
+		SlowQueryThreshold: slowQueryThreshold,
+		Type:               "sqlite",
+		DSN:                "file:" + filepath.Join(xdg.DataHomeDir(), "autokitteh.sqlite"),
+	},
+	Test: &Config{
+		SlowQueryThreshold: slowQueryThreshold,
+	},
 }
 
 func New(z *zap.Logger, cfg *Config) (db.DB, error) {
