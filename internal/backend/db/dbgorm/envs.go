@@ -145,6 +145,6 @@ func (db *gormdb) deleteEnvVar(ctx context.Context, envID sdktypes.UUID, varName
 	return db.db.WithContext(ctx).Delete(scheme.EnvVar{EnvID: envID, Name: varName}).Error
 }
 
-func (db *gormdb) DeleteEnvVar(ctx context.Context, eid sdktypes.EnvID, vn sdktypes.Symbol) error {
+func (db *gormdb) RemoveEnvVar(ctx context.Context, eid sdktypes.EnvID, vn sdktypes.Symbol) error {
 	return translateError(db.deleteEnvVar(ctx, eid.UUIDValue(), vn.String()))
 }

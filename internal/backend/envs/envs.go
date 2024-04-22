@@ -78,7 +78,10 @@ func (e *envs) RevealVar(ctx context.Context, eid sdktypes.EnvID, vn sdktypes.Sy
 	return e.db.RevealEnvVar(ctx, eid, vn)
 }
 
+func (e *envs) RemoveVar(ctx context.Context, eid sdktypes.EnvID, vn sdktypes.Symbol) error {
+	return e.db.RemoveEnvVar(ctx, eid, vn)
+}
+
 // TODO
-func (e *envs) Remove(context.Context, sdktypes.EnvID) error                     { return nil }
-func (e *envs) Update(context.Context, sdktypes.Env) error                       { return nil }
-func (e *envs) RemoveVar(context.Context, sdktypes.EnvID, sdktypes.Symbol) error { return nil }
+func (e *envs) Remove(context.Context, sdktypes.EnvID) error { return nil }
+func (e *envs) Update(context.Context, sdktypes.Env) error   { return nil }
