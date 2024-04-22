@@ -323,6 +323,14 @@ func (f *dbFixture) newEnv() scheme.Env {
 	}
 }
 
+func (f *dbFixture) newEnvVar(name string, val string) scheme.EnvVar {
+	return scheme.EnvVar{
+		EnvID: f.envID,
+		Name:  name,
+		Value: val,
+	}
+}
+
 func (f *dbFixture) newTrigger() scheme.Trigger {
 	f.triggerID = incByOne(f.triggerID)
 
