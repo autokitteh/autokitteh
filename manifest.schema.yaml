@@ -32,9 +32,6 @@
         },
         "is_secret": {
           "type": "boolean"
-        },
-        "env_var": {
-          "type": "string"
         }
       },
       "additionalProperties": false,
