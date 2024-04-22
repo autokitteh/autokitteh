@@ -1,7 +1,7 @@
 -- +goose Up
 -- create "integrations" table
 CREATE TABLE "integrations" (
-  "integration_id" text NOT NULL,
+  "integration_id" uuid NOT NULL,
   "unique_name" text NULL,
   "display_name" text NULL,
   "description" text NULL,
@@ -22,7 +22,7 @@ CREATE TABLE "secrets" (
 );
 -- create "projects" table
 CREATE TABLE "projects" (
-  "project_id" text NOT NULL,
+  "project_id" uuid NOT NULL,
   "name" text NULL,
   "root_url" text NULL,
   "resources" bytea NULL,
@@ -35,10 +35,10 @@ CREATE INDEX "idx_projects_deleted_at" ON "projects" ("deleted_at");
 CREATE UNIQUE INDEX "idx_projects_name" ON "projects" ("name");
 -- create "connections" table
 CREATE TABLE "connections" (
-  "connection_id" text NOT NULL,
-  "integration_id" text NULL,
+  "connection_id" uuid NOT NULL,
+  "integration_id" uuid NULL,
   "integration_token" text NULL,
-  "project_id" text NULL,
+  "project_id" uuid NULL,
   "name" text NULL,
   PRIMARY KEY ("connection_id"),
   CONSTRAINT "fk_connections_project" FOREIGN KEY ("project_id") REFERENCES "projects" ("project_id") ON UPDATE NO ACTION ON DELETE NO ACTION
@@ -47,7 +47,7 @@ CREATE TABLE "connections" (
 CREATE INDEX "idx_connections_project_id" ON "connections" ("project_id");
 -- create "builds" table
 CREATE TABLE "builds" (
-  "build_id" text NOT NULL,
+  "build_id" uuid NOT NULL,
   "data" bytea NULL,
   "created_at" timestamptz NULL,
   "deleted_at" timestamptz NULL,
@@ -57,8 +57,8 @@ CREATE TABLE "builds" (
 CREATE INDEX "idx_builds_deleted_at" ON "builds" ("deleted_at");
 -- create "envs" table
 CREATE TABLE "envs" (
-  "env_id" text NOT NULL,
-  "project_id" text NULL,
+  "env_id" uuid NOT NULL,
+  "project_id" uuid NULL,
   "name" text NULL,
   "deleted_at" timestamptz NULL,
   "membership_id" text NULL,
@@ -73,9 +73,9 @@ CREATE UNIQUE INDEX "idx_envs_membership_id" ON "envs" ("membership_id");
 CREATE INDEX "idx_envs_project_id" ON "envs" ("project_id");
 -- create "deployments" table
 CREATE TABLE "deployments" (
-  "deployment_id" text NOT NULL,
-  "env_id" text NULL,
-  "build_id" text NULL,
+  "deployment_id" uuid NOT NULL,
+  "env_id" uuid NULL,
+  "build_id" uuid NULL,
   "state" integer NULL,
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
@@ -90,7 +90,7 @@ CREATE INDEX "idx_deployments_deleted_at" ON "deployments" ("deleted_at");
 CREATE INDEX "idx_deployments_env_id" ON "deployments" ("env_id");
 -- create "env_vars" table
 CREATE TABLE "env_vars" (
-  "env_id" text NULL,
+  "env_id" uuid NULL,
   "name" text NULL,
   "value" text NULL,
   "secret_value" text NULL,
@@ -104,7 +104,7 @@ CREATE INDEX "idx_env_vars_env_id" ON "env_vars" ("env_id");
 CREATE UNIQUE INDEX "idx_env_vars_membership_id" ON "env_vars" ("membership_id");
 -- create "events" table
 CREATE TABLE "events" (
-  "event_id" text NULL,
+  "event_id" uuid NULL,
   "integration_id" text NULL,
   "integration_token" text NULL,
   "event_type" text NULL,
@@ -130,7 +130,7 @@ CREATE INDEX "idx_events_integration_token" ON "events" ("integration_token");
 -- create "event_records" table
 CREATE TABLE "event_records" (
   "seq" bigint NOT NULL,
-  "event_id" text NOT NULL,
+  "event_id" uuid NOT NULL,
   "state" integer NULL,
   "created_at" timestamptz NULL,
   PRIMARY KEY ("seq", "event_id"),
@@ -140,11 +140,11 @@ CREATE TABLE "event_records" (
 CREATE INDEX "idx_event_records_state" ON "event_records" ("state");
 -- create "sessions" table
 CREATE TABLE "sessions" (
-  "session_id" text NOT NULL,
-  "build_id" text NULL,
-  "env_id" text NULL,
-  "deployment_id" text NULL,
-  "event_id" text NULL,
+  "session_id" uuid NOT NULL,
+  "build_id" uuid NULL,
+  "env_id" uuid NULL,
+  "deployment_id" uuid NULL,
+  "event_id" uuid NULL,
   "current_state_type" bigint NULL,
   "entrypoint" text NULL,
   "inputs" jsonb NULL,
@@ -171,7 +171,7 @@ CREATE INDEX "idx_sessions_env_id" ON "sessions" ("env_id");
 CREATE INDEX "idx_sessions_event_id" ON "sessions" ("event_id");
 -- create "session_call_attempts" table
 CREATE TABLE "session_call_attempts" (
-  "session_id" text NULL,
+  "session_id" uuid NULL,
   "seq" bigint NULL,
   "attempt" bigint NULL,
   "start" jsonb NULL,
@@ -182,7 +182,7 @@ CREATE TABLE "session_call_attempts" (
 CREATE UNIQUE INDEX "idx_session_id_seq_attempt" ON "session_call_attempts" ("session_id", "seq", "attempt");
 -- create "session_call_specs" table
 CREATE TABLE "session_call_specs" (
-  "session_id" text NOT NULL,
+  "session_id" uuid NOT NULL,
   "seq" bigint NOT NULL,
   "data" jsonb NULL,
   PRIMARY KEY ("session_id", "seq"),
@@ -190,7 +190,7 @@ CREATE TABLE "session_call_specs" (
 );
 -- create "session_log_records" table
 CREATE TABLE "session_log_records" (
-  "session_id" text NULL,
+  "session_id" uuid NULL,
   "data" jsonb NULL,
   CONSTRAINT "fk_session_log_records_session" FOREIGN KEY ("session_id") REFERENCES "sessions" ("session_id") ON UPDATE NO ACTION ON DELETE NO ACTION
 );
@@ -199,7 +199,7 @@ CREATE INDEX "idx_session_log_records_session_id" ON "session_log_records" ("ses
 -- create "signals" table
 CREATE TABLE "signals" (
   "signal_id" text NOT NULL,
-  "connection_id" text NULL,
+  "connection_id" uuid NULL,
   "created_at" timestamptz NULL,
   "workflow_id" text NULL,
   "filter" text NULL,
@@ -210,10 +210,10 @@ CREATE TABLE "signals" (
 CREATE INDEX "idx_connection_id_event_type" ON "signals" ("connection_id");
 -- create "triggers" table
 CREATE TABLE "triggers" (
-  "trigger_id" text NOT NULL,
-  "project_id" text NULL,
-  "connection_id" text NULL,
-  "env_id" text NULL,
+  "trigger_id" uuid NOT NULL,
+  "project_id" uuid NULL,
+  "connection_id" uuid NULL,
+  "env_id" uuid NULL,
   "name" text NULL,
   "event_type" text NULL,
   "filter" text NULL,

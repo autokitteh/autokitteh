@@ -70,7 +70,7 @@ func TestGetProjects(t *testing.T) {
 	assert.ErrorIs(t, err, gorm.ErrRecordNotFound)
 
 	// test getProjectByName after delete
-	_, err = f.gormdb.getProject(f.ctx, p.Name)
+	_, err = f.gormdb.getProjectByName(f.ctx, p.Name)
 	assert.ErrorIs(t, err, gorm.ErrRecordNotFound)
 }
 
@@ -120,8 +120,8 @@ func TestGetProjectDeployments(t *testing.T) {
 
 	ds, err := f.gormdb.getProjectDeployments(f.ctx, p1.ProjectID)
 	assert.NoError(t, err)
-	assert.Equal(t, []string{d1.DeploymentID, d2.DeploymentID, d3.DeploymentID},
-		kittehs.Transform(ds, func(d DeploymentState) string { return d.DeploymentID }))
+	assert.Equal(t, []sdktypes.UUID{d1.DeploymentID, d2.DeploymentID, d3.DeploymentID},
+		kittehs.Transform(ds, func(d DeploymentState) sdktypes.UUID { return d.DeploymentID }))
 }
 
 func TestGetProjectEnvs(t *testing.T) {
@@ -143,7 +143,7 @@ func TestGetProjectEnvs(t *testing.T) {
 	envIDs, err := f.gormdb.getProjectEnvs(f.ctx, p.ProjectID)
 	assert.NoError(t, err)
 	// ensure that we got both envs - even of there is no deployments attached
-	assert.Equal(t, []string{e1.EnvID, e2.EnvID}, envIDs)
+	assert.Equal(t, []sdktypes.UUID{e1.EnvID, e2.EnvID}, envIDs)
 }
 
 func TestDeleteProjectAndDependents(t *testing.T) {

@@ -7,6 +7,7 @@ import (
 	"gorm.io/gorm"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 func (f *dbFixture) createConnectionsAndAssert(t *testing.T, connections ...scheme.Connection) {
@@ -43,14 +44,13 @@ func TestCreateConnectionForeignKeys(t *testing.T) {
 
 	// negative test with non-existing assets
 	c := f.newConnection()
-	unexisting := "unexisting"
 
 	// FIXME: ENG-571 - integration table
 	// c.IntegrationID = &unexisting
 	//assert.ErrorIs(t, f.gormdb.createConnection(f.ctx, &c), gorm.ErrForeignKeyViolated)
 	// c.IntegrationID = nil
 
-	c.ProjectID = &unexisting
+	c.ProjectID = scheme.UUIDOrNil(sdktypes.NewProjectID().UUIDValue())
 	assert.ErrorIs(t, f.gormdb.createConnection(f.ctx, &c), gorm.ErrForeignKeyViolated)
 	c.ProjectID = nil
 

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	embedPG "github.com/fergusstrange/embedded-postgres"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"gorm.io/datatypes"
@@ -21,6 +22,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/internal/backend/gormkitteh"
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
@@ -91,12 +93,24 @@ type dbFixture struct {
 	db           *gorm.DB
 	gormdb       *gormdb
 	ctx          context.Context
-	sessionID    uint
-	deploymentID uint
-	envID        uint
-	projectID    uint
-	triggerID    uint
-	eventID      uint
+	sessionID    sdktypes.UUID
+	deploymentID sdktypes.UUID
+	envID        sdktypes.UUID
+	projectID    sdktypes.UUID
+	triggerID    sdktypes.UUID
+	eventID      sdktypes.UUID
+}
+
+func incByOne(id sdktypes.UUID) sdktypes.UUID {
+	bytes := kittehs.Must1(id.MarshalBinary())
+
+	var newVal [16]byte
+	for i := range bytes {
+		newVal[i] = bytes[i] + oneIncSixteenBytes[i]
+	}
+
+	return kittehs.Must1(uuid.FromBytes(newVal[:]))
+
 }
 
 // TODO: use gormkitteh (and maybe test with sqlite::memory and embedded PG)
@@ -239,23 +253,23 @@ func assertDeleted[T any](t *testing.T, f *dbFixture, m T) {
 
 var (
 	// testSessionID    = "ses_00000000000000000000000001"
-	testBuildID = "bld_00000000000000000000000001"
+	testBuildID = kittehs.Must1(uuid.FromBytes([]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}))
 	// testDeploymentID = "dep_00000000000000000000000001"
 	// testEventID      = "evt_00000000000000000000000001"
-	testEnvID = "env_00000000000000000000000001"
+	testEnvID = kittehs.Must1(uuid.FromBytes([]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}))
 	// testProjectID = "prj_00000000000000000000000001"
 	// testTriggerID     = "trg_00000000000000000000000001"
-	testConnectionID  = "con_00000000000000000000000001"
-	testIntegrationID = "int_3kth00000000000000000000001"
-	testSignalID      = "sig_00000000000000000000000001"
+	testConnectionID   = kittehs.Must1(uuid.FromBytes([]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}))
+	testIntegrationID  = kittehs.Must1(uuid.FromBytes([]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}))
+	testSignalID       = "00000000000000000000000001"
+	oneIncSixteenBytes = []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}
 )
 
 func (f *dbFixture) newSession(st sdktypes.SessionStateType) scheme.Session {
-	f.sessionID += 1
-	sessionID := fmt.Sprintf("ses_%026d", f.sessionID)
+	f.sessionID = incByOne(f.sessionID)
 
 	return scheme.Session{
-		SessionID:        sessionID,
+		SessionID:        f.sessionID,
 		CurrentStateType: int(st.ToProto()),
 		Inputs:           datatypes.JSON(`{"key": "value"}`),
 		CreatedAt:        now,
@@ -264,9 +278,8 @@ func (f *dbFixture) newSession(st sdktypes.SessionStateType) scheme.Session {
 }
 
 func (f *dbFixture) newSessionLogRecord() scheme.SessionLogRecord {
-	sessionID := fmt.Sprintf("ses_%026d", f.sessionID)
 	return scheme.SessionLogRecord{
-		SessionID: sessionID,
+		SessionID: f.sessionID,
 	}
 }
 
@@ -279,11 +292,10 @@ func (f *dbFixture) newBuild() scheme.Build {
 }
 
 func (f *dbFixture) newDeployment() scheme.Deployment {
-	f.deploymentID += 1
-	deploymentID := fmt.Sprintf("dep_%026d", f.deploymentID)
+	f.deploymentID = incByOne(f.deploymentID)
 
 	return scheme.Deployment{
-		DeploymentID: deploymentID,
+		DeploymentID: f.deploymentID,
 		State:        int32(sdktypes.DeploymentStateUnspecified.ToProto()),
 		CreatedAt:    now,
 		UpdatedAt:    now,
@@ -291,32 +303,31 @@ func (f *dbFixture) newDeployment() scheme.Deployment {
 }
 
 func (f *dbFixture) newProject() scheme.Project {
-	f.projectID += 1
+	f.projectID = incByOne(f.projectID)
 	projectID := fmt.Sprintf("prj_%026d", f.projectID)
 
 	return scheme.Project{
-		ProjectID: projectID,
+		ProjectID: f.projectID,
 		Name:      projectID, // must be unique
 		Resources: []byte{},
 	}
 }
 
 func (f *dbFixture) newEnv() scheme.Env {
-	f.envID += 1
+	f.envID = incByOne(f.envID)
 	envID := fmt.Sprintf("env_%026d", f.envID)
 
 	return scheme.Env{
-		EnvID:        envID,
+		EnvID:        f.envID,
 		MembershipID: envID, // must be unique
 	}
 }
 
 func (f *dbFixture) newTrigger() scheme.Trigger {
-	f.triggerID += 1
-	triggerID := fmt.Sprintf("trg_%026d", f.triggerID)
+	f.triggerID = incByOne(f.triggerID)
 
 	return scheme.Trigger{
-		TriggerID:    triggerID,
+		TriggerID:    f.triggerID,
 		EnvID:        testEnvID,
 		ConnectionID: testConnectionID,
 	}
@@ -335,19 +346,17 @@ func (f *dbFixture) newIntegration() scheme.Integration {
 }
 
 func (f *dbFixture) newEvent() scheme.Event {
-	f.eventID += 1
-	eventID := fmt.Sprintf("evt_%026d", f.eventID)
+	f.eventID = incByOne(f.eventID)
 
 	return scheme.Event{
-		EventID:   eventID,
+		EventID:   f.eventID,
 		CreatedAt: now,
 	}
 }
 
 func (f *dbFixture) newEventRecord() scheme.EventRecord {
-	eventID := fmt.Sprintf("evt_%026d", f.eventID)
 	return scheme.EventRecord{
-		EventID:   eventID,
+		EventID:   f.eventID,
 		CreatedAt: now,
 	}
 }

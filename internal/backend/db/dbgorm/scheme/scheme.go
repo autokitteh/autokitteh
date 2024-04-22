@@ -17,25 +17,19 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-// aux methods to convert nil <-> empty strting
-func PtrOrNil(s string) *string {
-	if s == "" {
-		return nil
-	}
-	return &s
-}
-
-func stringFromPtrOrEmpty(s *string) string {
-	if s == nil {
-		return ""
-	}
-	return *s
-}
-
 // TODO(ENG-192): use proper foreign keys and normalize model.
 
 // TODO: keep some log of actions performed. Something that
 // can be used for recovery from unintended/malicious actions.
+
+func UUIDOrNil(uuid sdktypes.UUID) *sdktypes.UUID {
+	zero := sdktypes.UUID{}
+	if uuid == zero {
+		return nil
+	}
+
+	return &uuid
+}
 
 var Tables = []any{
 	&Build{},
@@ -57,7 +51,7 @@ var Tables = []any{
 }
 
 type Build struct {
-	BuildID   string `gorm:"primaryKey"`
+	BuildID   sdktypes.UUID `gorm:"primaryKey;type:uuid"`
 	Data      []byte
 	CreatedAt time.Time
 	DeletedAt gorm.DeletedAt `gorm:"index"`
@@ -65,7 +59,7 @@ type Build struct {
 
 func ParseBuild(b Build) (sdktypes.Build, error) {
 	build, err := sdktypes.StrictBuildFromProto(&sdktypes.BuildPB{
-		BuildId:   b.BuildID,
+		BuildId:   sdktypes.NewIDFromUUID[sdktypes.BuildID](&b.BuildID).String(),
 		CreatedAt: timestamppb.New(b.CreatedAt),
 	})
 	if err != nil {
@@ -76,10 +70,10 @@ func ParseBuild(b Build) (sdktypes.Build, error) {
 }
 
 type Connection struct {
-	ConnectionID     string `gorm:"primaryKey"`
-	IntegrationID    *string
+	ConnectionID     sdktypes.UUID  `gorm:"primaryKey;type:uuid"`
+	IntegrationID    *sdktypes.UUID `gorm:"type:uuid"`
 	IntegrationToken string
-	ProjectID        *string `gorm:"index"`
+	ProjectID        *sdktypes.UUID `gorm:"index;type:uuid"`
 	Name             string
 
 	// enforce foreign keys
@@ -91,12 +85,13 @@ type Connection struct {
 
 func ParseConnection(c Connection) (sdktypes.Connection, error) {
 	conn, err := sdktypes.StrictConnectionFromProto(&sdktypes.ConnectionPB{
-		ConnectionId:     c.ConnectionID,
-		IntegrationId:    stringFromPtrOrEmpty(c.IntegrationID),
+		ConnectionId:     sdktypes.NewIDFromUUID[sdktypes.ConnectionID](&c.ConnectionID).String(),
+		IntegrationId:    sdktypes.NewIDFromUUID[sdktypes.IntegrationID](c.IntegrationID).String(),
 		IntegrationToken: c.IntegrationToken,
-		ProjectId:        stringFromPtrOrEmpty(c.ProjectID),
+		ProjectId:        sdktypes.NewIDFromUUID[sdktypes.ProjectID](c.ProjectID).String(),
 		Name:             c.Name,
 	})
+
 	if err != nil {
 		return sdktypes.InvalidConnection, fmt.Errorf("invalid connection record: %w", err)
 	}
@@ -105,7 +100,7 @@ func ParseConnection(c Connection) (sdktypes.Connection, error) {
 
 type Integration struct {
 	// Unique internal identifier.
-	IntegrationID string `gorm:"primaryKey"`
+	IntegrationID sdktypes.UUID `gorm:"primaryKey;type:uuid"`
 
 	// Unique external (and URL-safe) identifier.
 	UniqueName string `gorm:"uniqueIndex"`
@@ -139,7 +134,7 @@ func ParseIntegration(i Integration) (sdktypes.Integration, error) {
 	}
 
 	integ, err := sdktypes.StrictIntegrationFromProto(&integrationsv1.Integration{
-		IntegrationId: i.IntegrationID,
+		IntegrationId: sdktypes.NewIDFromUUID[sdktypes.IntegrationID](&i.IntegrationID).String(),
 		UniqueName:    i.UniqueName,
 		DisplayName:   i.DisplayName,
 		Description:   i.Description,
@@ -158,8 +153,8 @@ func ParseIntegration(i Integration) (sdktypes.Integration, error) {
 }
 
 type Project struct {
-	ProjectID string `gorm:"primaryKey"`
-	Name      string `gorm:"uniqueIndex"`
+	ProjectID sdktypes.UUID `gorm:"primaryKey;type:uuid"`
+	Name      string        `gorm:"uniqueIndex"`
 	RootURL   string
 	Resources []byte
 	DeletedAt gorm.DeletedAt `gorm:"index"`
@@ -167,7 +162,7 @@ type Project struct {
 
 func ParseProject(r Project) (sdktypes.Project, error) {
 	p, err := sdktypes.StrictProjectFromProto(&sdktypes.ProjectPB{
-		ProjectId: r.ProjectID,
+		ProjectId: sdktypes.NewIDFromUUID[sdktypes.ProjectID](&r.ProjectID).String(),
 		Name:      r.Name,
 	})
 	if err != nil {
@@ -187,10 +182,10 @@ type Secret struct {
 }
 
 type Event struct {
-	EventID          string  `gorm:"uniqueIndex"`
-	IntegrationID    *string `gorm:"index"`
-	IntegrationToken string  `gorm:"index"`
-	EventType        string  `gorm:"index:idx_event_type_seq,priority:1;index:idx_event_type"`
+	EventID          sdktypes.UUID  `gorm:"uniqueIndex;type:uuid"`
+	IntegrationID    *sdktypes.UUID `gorm:"index"`
+	IntegrationToken string         `gorm:"index"`
+	EventType        string         `gorm:"index:idx_event_type_seq,priority:1;index:idx_event_type"`
 	Data             datatypes.JSON
 	Memo             datatypes.JSON
 	CreatedAt        time.Time
@@ -214,8 +209,8 @@ func ParseEvent(e Event) (sdktypes.Event, error) {
 	}
 
 	return sdktypes.StrictEventFromProto(&sdktypes.EventPB{
-		EventId:          e.EventID,
-		IntegrationId:    stringFromPtrOrEmpty(e.IntegrationID),
+		EventId:          sdktypes.NewIDFromUUID[sdktypes.EventID](&e.EventID).String(),
+		IntegrationId:    sdktypes.NewIDFromUUID[sdktypes.IntegrationID](e.IntegrationID).String(),
 		IntegrationToken: e.IntegrationToken,
 		EventType:        e.EventType,
 		Data:             kittehs.TransformMapValues(data, sdktypes.ToProto),
@@ -226,9 +221,9 @@ func ParseEvent(e Event) (sdktypes.Event, error) {
 }
 
 type EventRecord struct {
-	Seq       uint32 `gorm:"primaryKey"`
-	EventID   string `gorm:"primaryKey"`
-	State     int32  `gorm:"index"`
+	Seq       uint32        `gorm:"primaryKey"`
+	EventID   sdktypes.UUID `gorm:"primaryKey;type:uuid"`
+	State     int32         `gorm:"index"`
 	CreatedAt time.Time
 
 	// enforce foreign keys
@@ -238,15 +233,15 @@ type EventRecord struct {
 func ParseEventRecord(e EventRecord) (sdktypes.EventRecord, error) {
 	return sdktypes.StrictEventRecordFromProto(&sdktypes.EventRecordPB{
 		Seq:       e.Seq,
-		EventId:   e.EventID,
+		EventId:   sdktypes.NewIDFromUUID[sdktypes.EventID](&e.EventID).String(),
 		State:     eventsv1.EventState(e.State),
 		CreatedAt: timestamppb.New(e.CreatedAt),
 	})
 }
 
 type Env struct {
-	EnvID     string  `gorm:"primaryKey"`
-	ProjectID *string `gorm:"index;foreignKey"`
+	EnvID     sdktypes.UUID  `gorm:"primaryKey;type:uuid"`
+	ProjectID *sdktypes.UUID `gorm:"index;type:uuid"`
 	Name      string
 	DeletedAt gorm.DeletedAt `gorm:"index"`
 
@@ -260,14 +255,14 @@ type Env struct {
 
 func ParseEnv(e Env) (sdktypes.Env, error) {
 	return sdktypes.StrictEnvFromProto(&sdktypes.EnvPB{
-		EnvId:     e.EnvID,
-		ProjectId: stringFromPtrOrEmpty(e.ProjectID),
+		EnvId:     sdktypes.NewIDFromUUID[sdktypes.EnvID](&e.EnvID).String(),
+		ProjectId: sdktypes.NewIDFromUUID[sdktypes.ProjectID](e.ProjectID).String(),
 		Name:      e.Name,
 	})
 }
 
 type EnvVar struct {
-	EnvID string `gorm:"index"`
+	EnvID sdktypes.UUID `gorm:"index;type:uuid"`
 	Name  string
 	Value string // not set if is_secret.
 
@@ -291,7 +286,7 @@ func ParseEnvVar(r EnvVar) (sdktypes.EnvVar, error) {
 	}
 
 	return sdktypes.StrictEnvVarFromProto(&sdktypes.EnvVarPB{
-		EnvId:    r.EnvID,
+		EnvId:    sdktypes.NewIDFromUUID[sdktypes.EnvID](&r.EnvID).String(),
 		Name:     r.Name,
 		Value:    v,
 		IsSecret: r.IsSecret,
@@ -299,11 +294,11 @@ func ParseEnvVar(r EnvVar) (sdktypes.EnvVar, error) {
 }
 
 type Trigger struct {
-	TriggerID string `gorm:"primaryKey"`
+	TriggerID sdktypes.UUID `gorm:"primaryKey;type:uuid"`
 
-	ProjectID    string `gorm:"index"`
-	ConnectionID string `gorm:"index"`
-	EnvID        string `gorm:"index"`
+	ProjectID    sdktypes.UUID `gorm:"index;type:uuid"`
+	ConnectionID sdktypes.UUID `gorm:"index;type:uuid"`
+	EnvID        sdktypes.UUID `gorm:"index;type:uuid"`
 	Name         string
 	EventType    string
 	Filter       string
@@ -332,9 +327,9 @@ func ParseTrigger(e Trigger) (sdktypes.Trigger, error) {
 	}
 
 	return sdktypes.StrictTriggerFromProto(&sdktypes.TriggerPB{
-		TriggerId:    e.TriggerID,
-		EnvId:        e.EnvID,
-		ConnectionId: e.ConnectionID,
+		TriggerId:    sdktypes.NewIDFromUUID[sdktypes.TriggerID](&e.TriggerID).String(),
+		EnvId:        sdktypes.NewIDFromUUID[sdktypes.EnvID](&e.EnvID).String(),
+		ConnectionId: sdktypes.NewIDFromUUID[sdktypes.ConnectionID](&e.ConnectionID).String(),
 		EventType:    e.EventType,
 		Filter:       e.Filter,
 		CodeLocation: loc.ToProto(),
@@ -344,7 +339,7 @@ func ParseTrigger(e Trigger) (sdktypes.Trigger, error) {
 }
 
 type SessionLogRecord struct {
-	SessionID string `gorm:"index;foreignKey:SessionID"`
+	SessionID sdktypes.UUID `gorm:"index;type:uuid"`
 	Data      datatypes.JSON
 
 	// enforce foreign keys
@@ -357,8 +352,8 @@ func ParseSessionLogRecord(c SessionLogRecord) (spec sdktypes.SessionLogRecord, 
 }
 
 type SessionCallSpec struct {
-	SessionID string `gorm:"primaryKey;foreignKey:SessionID"`
-	Seq       uint32 `gorm:"primaryKey"`
+	SessionID sdktypes.UUID `gorm:"primaryKey:SessionID;type:uuid"`
+	Seq       uint32        `gorm:"primaryKey"`
 	Data      datatypes.JSON
 
 	// enforce foreign keys
@@ -371,9 +366,9 @@ func ParseSessionCallSpec(c SessionCallSpec) (spec sdktypes.SessionCallSpec, err
 }
 
 type SessionCallAttempt struct {
-	SessionID string `gorm:"uniqueIndex:idx_session_id_seq_attempt,priority:1;foreignKey:SessionID"`
-	Seq       uint32 `gorm:"uniqueIndex:idx_session_id_seq_attempt,priority:2"`
-	Attempt   uint32 `gorm:"uniqueIndex:idx_session_id_seq_attempt,priority:3"`
+	SessionID sdktypes.UUID `gorm:"uniqueIndex:idx_session_id_seq_attempt,priority:1;type:uuid"`
+	Seq       uint32        `gorm:"uniqueIndex:idx_session_id_seq_attempt,priority:2"`
+	Attempt   uint32        `gorm:"uniqueIndex:idx_session_id_seq_attempt,priority:3"`
 	Start     datatypes.JSON
 	Complete  datatypes.JSON
 
@@ -392,12 +387,12 @@ func ParseSessionCallAttemptComplete(c SessionCallAttempt) (d sdktypes.SessionCa
 }
 
 type Session struct {
-	SessionID        string  `gorm:"primaryKey"`
-	BuildID          *string `gorm:"index"`
-	EnvID            *string `gorm:"index"`
-	DeploymentID     *string `gorm:"index"`
-	EventID          *string `gorm:"index"`
-	CurrentStateType int     `gorm:"index"`
+	SessionID        sdktypes.UUID  `gorm:"primaryKey;type:uuid"`
+	BuildID          *sdktypes.UUID `gorm:"index;type:uuid"`
+	EnvID            *sdktypes.UUID `gorm:"index;type:uuid"`
+	DeploymentID     *sdktypes.UUID `gorm:"index;type:uuid"`
+	EventID          *sdktypes.UUID `gorm:"index;type:uuid"`
+	CurrentStateType int            `gorm:"index"`
 	Entrypoint       string
 	Inputs           datatypes.JSON
 	CreatedAt        time.Time
@@ -424,11 +419,11 @@ func ParseSession(s Session) (sdktypes.Session, error) {
 	}
 
 	session, err := sdktypes.StrictSessionFromProto(&sdktypes.SessionPB{
-		SessionId:    s.SessionID,
-		BuildId:      stringFromPtrOrEmpty(s.BuildID),
-		EnvId:        stringFromPtrOrEmpty(s.EnvID),
-		DeploymentId: stringFromPtrOrEmpty(s.DeploymentID),
-		EventId:      stringFromPtrOrEmpty(s.EventID),
+		SessionId:    sdktypes.NewIDFromUUID[sdktypes.SessionID](&s.SessionID).String(),
+		BuildId:      sdktypes.NewIDFromUUID[sdktypes.BuildID](s.BuildID).String(),
+		EnvId:        sdktypes.NewIDFromUUID[sdktypes.EnvID](s.EnvID).String(),
+		DeploymentId: sdktypes.NewIDFromUUID[sdktypes.DeploymentID](s.DeploymentID).String(),
+		EventId:      sdktypes.NewIDFromUUID[sdktypes.EventID](s.EventID).String(),
 		Entrypoint:   ep.ToProto(),
 		Inputs:       kittehs.TransformMapValues(inputs, sdktypes.ToProto),
 		CreatedAt:    timestamppb.New(s.CreatedAt),
@@ -443,9 +438,9 @@ func ParseSession(s Session) (sdktypes.Session, error) {
 }
 
 type Deployment struct {
-	DeploymentID string  `gorm:"primaryKey"`
-	EnvID        *string `gorm:"index;foreignKey"`
-	BuildID      *string `gorm:"foreignKey"`
+	DeploymentID sdktypes.UUID  `gorm:"primaryKey;type:uuid"`
+	EnvID        *sdktypes.UUID `gorm:"index;type:uuid"`
+	BuildID      *sdktypes.UUID `gorm:"type:uuid"`
 	State        int32
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
@@ -458,9 +453,9 @@ type Deployment struct {
 
 func ParseDeployment(d Deployment) (sdktypes.Deployment, error) {
 	deployment, err := sdktypes.StrictDeploymentFromProto(&sdktypes.DeploymentPB{
-		DeploymentId: d.DeploymentID,
-		BuildId:      stringFromPtrOrEmpty(d.BuildID),
-		EnvId:        stringFromPtrOrEmpty(d.EnvID),
+		DeploymentId: sdktypes.NewIDFromUUID[sdktypes.DeploymentID](&d.DeploymentID).String(),
+		BuildId:      sdktypes.NewIDFromUUID[sdktypes.BuildID](d.BuildID).String(),
+		EnvId:        sdktypes.NewIDFromUUID[sdktypes.EnvID](d.EnvID).String(),
 		State:        deploymentsv1.DeploymentState(d.State),
 		CreatedAt:    timestamppb.New(d.CreatedAt),
 		UpdatedAt:    timestamppb.New(d.UpdatedAt),
@@ -483,9 +478,9 @@ type DeploymentWithStats struct {
 
 func ParseDeploymentWithSessionStats(d DeploymentWithStats) (sdktypes.Deployment, error) {
 	deployment, err := sdktypes.StrictDeploymentFromProto(&sdktypes.DeploymentPB{
-		DeploymentId: d.DeploymentID,
-		BuildId:      *d.BuildID,
-		EnvId:        *d.EnvID,
+		DeploymentId: sdktypes.NewIDFromUUID[sdktypes.DeploymentID](&d.DeploymentID).String(),
+		BuildId:      sdktypes.NewIDFromUUID[sdktypes.BuildID](d.BuildID).String(),
+		EnvId:        sdktypes.NewIDFromUUID[sdktypes.EnvID](d.EnvID).String(),
 		State:        deploymentsv1.DeploymentState(d.State),
 		CreatedAt:    timestamppb.New(d.CreatedAt),
 		UpdatedAt:    timestamppb.New(d.UpdatedAt),
@@ -520,8 +515,8 @@ func ParseDeploymentWithSessionStats(d DeploymentWithStats) (sdktypes.Deployment
 }
 
 type Signal struct {
-	SignalID     string `gorm:"primaryKey"`
-	ConnectionID string `gorm:"index:idx_connection_id_event_type"`
+	SignalID     string        `gorm:"primaryKey"`
+	ConnectionID sdktypes.UUID `gorm:"index:idx_connection_id_event_type;type:uuid"`
 	CreatedAt    time.Time
 	WorkflowID   string
 	Filter       string

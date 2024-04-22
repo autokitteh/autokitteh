@@ -7,6 +7,7 @@ import (
 	"gorm.io/gorm"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 func (f *dbFixture) createEnvsAndAssert(t *testing.T, envs ...scheme.Env) {
@@ -40,9 +41,9 @@ func TestCreateEnvForeignKeys(t *testing.T) {
 	f := preEnvTest(t)
 
 	e := f.newEnv()
-	unexisting := "unexisting"
+	unexisting := scheme.UUIDOrNil(sdktypes.NewProjectID().UUIDValue())
 
-	e.ProjectID = &unexisting
+	e.ProjectID = unexisting
 	assert.ErrorIs(t, f.gormdb.createEnv(f.ctx, &e), gorm.ErrForeignKeyViolated)
 
 	p := f.newProject()
@@ -69,7 +70,7 @@ func TestDeleteEnvs(t *testing.T) {
 	f.createEnvsAndAssert(t, e1, e2)
 
 	// test deleteEnvs
-	assert.NoError(t, f.gormdb.deleteEnvs(f.ctx, []string{e1.EnvID, e2.EnvID}))
+	assert.NoError(t, f.gormdb.deleteEnvs(f.ctx, []sdktypes.UUID{e1.EnvID, e2.EnvID}))
 	f.assertEnvDeleted(t, e1, e2)
 }
 

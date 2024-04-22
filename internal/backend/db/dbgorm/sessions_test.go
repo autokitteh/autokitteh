@@ -3,6 +3,7 @@ package dbgorm
 import (
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
@@ -68,7 +69,7 @@ func TestCreateSessionForeignKeys(t *testing.T) {
 
 	// negative test with non-existing assets
 	s := f.newSession(sdktypes.SessionStateTypeCompleted)
-	unexisting := "unexisting"
+	unexisting := uuid.New()
 
 	s.BuildID = &unexisting
 	assert.ErrorIs(t, f.gormdb.createSession(f.ctx, &s), gorm.ErrForeignKeyViolated)
