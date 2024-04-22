@@ -8,13 +8,14 @@ import (
 	"path"
 	"time"
 
+	"go.uber.org/zap"
+
 	"go.autokitteh.dev/autokitteh/internal/backend/logger"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/internal/xdg"
 	"go.autokitteh.dev/autokitteh/sdk/sdkruntimes"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-	"go.uber.org/zap"
 )
 
 var (
@@ -41,7 +42,7 @@ type pySvc struct {
 
 func New() (sdkservices.Runtime, error) {
 	// Use sdklogger
-	log, err := logger.New(logger.Configs.Dev) // TODO (ENG-553): From configuration
+	log, err := logger.New(logger.Configs.VolatileDev) // TODO (ENG-553): From configuration
 	if err != nil {
 		return nil, err
 	}
