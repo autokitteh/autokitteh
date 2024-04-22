@@ -29,7 +29,7 @@ var revealCmd = common.StandardCommand(&cobra.Command{
 
 		k, err := sdktypes.StrictParseSymbol(args[0])
 		if err != nil {
-			return fmt.Errorf("invalid value name %q: %w", args[0], err)
+			return fmt.Errorf("invalid variable name %q: %w", args[0], err)
 		}
 
 		ctx, cancel := common.LimitedContext()
