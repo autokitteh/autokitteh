@@ -262,9 +262,9 @@ func ParseEnv(e Env) (sdktypes.Env, error) {
 }
 
 type EnvVar struct {
-	EnvID sdktypes.UUID `gorm:"index;type:uuid"`
-	Name  string
-	Value string // not set if is_secret.
+	EnvID sdktypes.UUID `gorm:"primaryKey;index;type:uuid"`
+	Name  string        `gorm:"primaryKey"`
+	Value string        // not set if is_secret.
 
 	// Set only if is_secret. will not be fetched by get, only by reveal.
 	SecretValue string // TODO: encrypt?
