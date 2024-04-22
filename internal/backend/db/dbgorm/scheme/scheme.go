@@ -17,8 +17,6 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-// TODO(ENG-192): use proper foreign keys and normalize model.
-
 // TODO: keep some log of actions performed. Something that
 // can be used for recovery from unintended/malicious actions.
 
