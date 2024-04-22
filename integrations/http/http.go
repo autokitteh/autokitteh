@@ -56,15 +56,15 @@ func (i integration) request(method string) sdkexecutor.Function {
 			jsonBody, body            sdktypes.Value
 		)
 
-		if len(args) > 1 {
+		if len(args) > 1 { // just to have a better error message
 			return sdktypes.InvalidValue, errors.New("pass non-URL arguments as kwargs only")
 		}
 
 		if err := sdkmodule.UnpackArgs(args, kwargs,
 			"url", &rawURL,
-			"params?", &params,
-			"headers?", &headers,
-			"body?", &body,
+			"params=?", &params,
+			"headers=?", &headers,
+			"body=?", &body,
 		); err != nil {
 			return sdktypes.InvalidValue, err
 		}
