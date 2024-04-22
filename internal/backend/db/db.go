@@ -72,13 +72,12 @@ type DB interface {
 	GetEnvByName(context.Context, sdktypes.ProjectID, sdktypes.Symbol) (sdktypes.Env, error)
 
 	ListProjectEnvs(context.Context, sdktypes.ProjectID) ([]sdktypes.Env, error)
-
 	SetEnvVar(context.Context, sdktypes.EnvVar) error
-
 	GetEnvVars(context.Context, sdktypes.EnvID) ([]sdktypes.EnvVar, error)
 
 	// Return sdkerrors.ErrNotFound if var not found.
 	RevealEnvVar(context.Context, sdktypes.EnvID, sdktypes.Symbol) (string, error)
+	RemoveEnvVar(context.Context, sdktypes.EnvID, sdktypes.Symbol) error
 
 	// -----------------------------------------------------------------------
 	// This is idempotent.

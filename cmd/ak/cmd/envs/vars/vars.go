@@ -47,6 +47,7 @@ func init() {
 	varsCmd.AddCommand(setCmd)
 	varsCmd.AddCommand(getCmd)
 	varsCmd.AddCommand(revealCmd)
+	varsCmd.AddCommand(removeCmd)
 }
 
 func envs() sdkservices.Envs {

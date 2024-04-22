@@ -91,28 +91,27 @@ func (db *gormdb) ListProjectEnvs(ctx context.Context, pid sdktypes.ProjectID) (
 	})
 }
 
+// --------------------------------------------------------------------------------
+func (db *gormdb) setEnvVar(ctx context.Context, envar *scheme.EnvVar) error {
+	return db.db.WithContext(ctx).
+		Clauses(clause.OnConflict{UpdateAll: true, Columns: []clause.Column{{Name: "membership_id"}}}). // upsert.
+		Create(&envar).Error
+}
+
 func (db *gormdb) SetEnvVar(ctx context.Context, ev sdktypes.EnvVar) error {
-	r := scheme.EnvVar{
+	envar := scheme.EnvVar{
 		EnvID:        ev.EnvID().UUIDValue(), // need to verify envID ? where is envvar id ?
 		Name:         ev.Symbol().String(),
 		IsSecret:     ev.IsSecret(),
 		MembershipID: envVarMembershipID(ev),
 	}
 
-	if r.IsSecret {
-		r.SecretValue = ev.Value()
+	if envar.IsSecret {
+		envar.SecretValue = ev.Value()
 	} else {
-		r.Value = ev.Value()
+		envar.Value = ev.Value()
 	}
-
-	if err := db.db.
-		WithContext(ctx).
-		Clauses(clause.OnConflict{UpdateAll: true, Columns: []clause.Column{{Name: "membership_id"}}}). // upsert.
-		Create(&r).Error; err != nil {
-		return translateError(err)
-	}
-
-	return nil
+	return translateError(db.setEnvVar(ctx, &envar))
 }
 
 func (db *gormdb) GetEnvVars(ctx context.Context, eid sdktypes.EnvID) ([]sdktypes.EnvVar, error) {
@@ -140,4 +139,12 @@ func (db *gormdb) RevealEnvVar(ctx context.Context, eid sdktypes.EnvID, vn sdkty
 	}
 
 	return r.Value, nil
+}
+
+func (db *gormdb) deleteEnvVar(ctx context.Context, envID sdktypes.UUID, varName string) error {
+	return db.db.WithContext(ctx).Delete(scheme.EnvVar{EnvID: envID, Name: varName}).Error
+}
+
+func (db *gormdb) RemoveEnvVar(ctx context.Context, eid sdktypes.EnvID, vn sdktypes.Symbol) error {
+	return translateError(db.deleteEnvVar(ctx, eid.UUIDValue(), vn.String()))
 }

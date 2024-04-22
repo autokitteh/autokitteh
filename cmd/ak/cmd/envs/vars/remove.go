@@ -10,10 +10,10 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-var revealCmd = common.StandardCommand(&cobra.Command{
-	Use:     "reveal <key> <--env=...> [--project=...]",
-	Short:   "Reveal secret environment variable",
-	Aliases: []string{"r"},
+var removeCmd = common.StandardCommand(&cobra.Command{
+	Use:     "remove <key> <--env=...> [--project=...]",
+	Short:   "Remove environment variable",
+	Aliases: []string{"rm"},
 	Args:    cobra.ExactArgs(1),
 
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -35,12 +35,10 @@ var revealCmd = common.StandardCommand(&cobra.Command{
 		ctx, cancel := common.LimitedContext()
 		defer cancel()
 
-		v, err := envs().RevealVar(ctx, id, k)
-		if err != nil {
-			return fmt.Errorf("reveal environment variable: %w", err)
+		if err := envs().RemoveVar(ctx, id, k); err != nil {
+			return fmt.Errorf("remove environment variable: %w", err)
 		}
 
-		common.Render(v)
 		return nil
 	},
 })
