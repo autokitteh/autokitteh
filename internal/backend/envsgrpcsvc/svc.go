@@ -161,6 +161,30 @@ func (s *server) RevealVar(ctx context.Context, req *connect.Request[envsv1.Reve
 	return connect.NewResponse(&envsv1.RevealVarResponse{Value: v}), nil
 }
 
+func (s *server) RemoveVar(ctx context.Context, req *connect.Request[envsv1.RemoveVarRequest]) (*connect.Response[envsv1.RemoveVarResponse], error) {
+	msg := req.Msg
+
+	if err := proto.Validate(msg); err != nil {
+		return nil, sdkerrors.AsConnectError(err)
+	}
+
+	eid, err := sdktypes.StrictParseEnvID(req.Msg.EnvId)
+	if err != nil {
+		return nil, sdkerrors.AsConnectError(err)
+	}
+
+	vn, err := sdktypes.ParseSymbol(req.Msg.Name)
+	if err != nil {
+		return nil, sdkerrors.AsConnectError(err)
+	}
+
+	if err := s.envs.RemoveVar(ctx, eid, vn); err != nil {
+		return nil, sdkerrors.AsConnectError(err)
+	}
+
+	return connect.NewResponse(&envsv1.RemoveVarResponse{}), nil
+}
+
 func (s *server) GetVars(ctx context.Context, req *connect.Request[envsv1.GetVarsRequest]) (*connect.Response[envsv1.GetVarsResponse], error) {
 	msg := req.Msg
 
