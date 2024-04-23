@@ -66,7 +66,7 @@ func (set *Set[T]) Choose(mode Mode) (zero T, err error) {
 		return *set.Dev, nil
 	case Test:
 		if set.Test == nil {
-			return set.Choose(Dev)
+			return set.Choose(VolatileDev)
 		}
 		return *set.Test, nil
 	default:

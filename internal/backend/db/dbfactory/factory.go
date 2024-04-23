@@ -33,9 +33,6 @@ var Configs = configset.Set[Config]{
 		Type:               "sqlite",
 		DSN:                "file:" + filepath.Join(xdg.DataHomeDir(), "autokitteh.sqlite"),
 	},
-	Test: &Config{
-		SlowQueryThreshold: slowQueryThreshold,
-	},
 }
 
 func New(z *zap.Logger, cfg *Config) (db.DB, error) {
