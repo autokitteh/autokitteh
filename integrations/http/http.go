@@ -326,7 +326,6 @@ func toStruct(r *http.Response) (sdktypes.Value, error) {
 func bodyToStruct(body []byte, form url.Values) sdktypes.Value {
 	var (
 		v        any
-		formBody sdktypes.Value = sdktypes.Nothing
 		jsonBody sdktypes.Value
 	)
 
@@ -343,20 +342,27 @@ func bodyToStruct(body []byte, form url.Values) sdktypes.Value {
 
 	// Right now, form is always nil. We need to handle this case.
 	if form != nil {
-		formBody = kittehs.Must1(sdktypes.NewConstFunctionValue("form", sdktypes.NewDictValueFromStringMap(
+		formBody := kittehs.Must1(sdktypes.NewConstFunctionValue("form", sdktypes.NewDictValueFromStringMap(
 			kittehs.TransformMapValues(form, func(vs []string) sdktypes.Value {
 				return sdktypes.NewStringValue(strings.Join(vs, ","))
 			}),
 		)))
+		return kittehs.Must1(sdktypes.NewStructValue(
+			sdktypes.NewStringValue("body"),
+			map[string]sdktypes.Value{
+				"text":  kittehs.Must1(sdktypes.NewConstFunctionValue("text", sdktypes.NewStringValue(string(body)))),
+				"bytes": kittehs.Must1(sdktypes.NewConstFunctionValue("bytes", sdktypes.NewBytesValue(body))),
+				"json":  jsonBody,
+				"form":  formBody,
+			},
+		))
 	}
-
 	return kittehs.Must1(sdktypes.NewStructValue(
 		sdktypes.NewStringValue("body"),
 		map[string]sdktypes.Value{
 			"text":  kittehs.Must1(sdktypes.NewConstFunctionValue("text", sdktypes.NewStringValue(string(body)))),
 			"bytes": kittehs.Must1(sdktypes.NewConstFunctionValue("bytes", sdktypes.NewBytesValue(body))),
 			"json":  jsonBody,
-			"form":  formBody,
 		},
 	))
 }
