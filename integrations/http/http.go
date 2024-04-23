@@ -45,6 +45,37 @@ const (
 	bodyTypeForm = "form"
 )
 
+func parseBody(body sdktypes.Value, headers map[string]string, rawBody *string, formBody *map[string]string, jsonBody *sdktypes.Value) (err error, bodyType string) {
+	bodyType = bodyTypeRaw // assume RAW type initially
+
+	if contentType, ok := headers[contentTypeHeader]; ok { // use content type, if provided
+		switch contentType {
+		case contentTypeJSON:
+			bodyType = bodyTypeJSON
+		case contentTypeForm, contentTypeMultipart:
+			bodyType = bodyTypeForm
+		}
+	}
+
+	if bodyType == bodyTypeRaw { // try to parse as RAW
+		err = body.UnwrapInto(rawBody)
+	}
+
+	if err != nil || bodyType == bodyTypeForm { // then as FORM
+		if err = body.UnwrapInto(&formBody); err == nil {
+			bodyType = bodyTypeForm
+		}
+	}
+
+	if err != nil || bodyType == bodyTypeJSON { // then as JSON
+		if err = body.UnwrapInto(&jsonBody); err == nil {
+			bodyType = bodyTypeJSON
+		}
+	}
+
+	return err, bodyType
+}
+
 // request is a factory function for generating autokitteh
 // functions for different HTTP request methods.
 func (i integration) request(method string) sdkexecutor.Function {
@@ -54,13 +85,14 @@ func (i integration) request(method string) sdkexecutor.Function {
 			rawURL, rawBody, bodyType string
 			headers, params, formBody map[string]string
 			jsonBody, body            sdktypes.Value
+			err                       error
 		)
 
 		if len(args) > 1 { // just to have a better error message
 			return sdktypes.InvalidValue, errors.New("pass non-URL arguments as kwargs only")
 		}
 
-		if err := sdkmodule.UnpackArgs(args, kwargs,
+		if err = sdkmodule.UnpackArgs(args, kwargs,
 			"url", &rawURL,
 			"params=?", &params,
 			"headers=?", &headers,
@@ -73,28 +105,10 @@ func (i integration) request(method string) sdkexecutor.Function {
 			headers = make(map[string]string)
 		}
 
-		// GET request doesn't have user-defined body
-		if method != http.MethodGet && body.IsValid() {
-
-			// parse as RAW
-			bodyType = bodyTypeRaw
-			if err := body.UnwrapInto(&rawBody); err != nil {
-
-				// parse as FORM. Check Content-Type header, if present to distinguish between form and simple JSON
-				bodyType = bodyTypeForm
-				asJSON := false
-				if contentType, ok := headers[contentTypeHeader]; ok {
-					asJSON = contentType == contentTypeJSON
-				}
-				if err = body.UnwrapInto(&formBody); err != nil || asJSON {
-
-					// finally, parse as JSON
-					bodyType = bodyTypeJSON
-					err = body.UnwrapInto(&jsonBody)
-				}
-				if err != nil {
-					return sdktypes.InvalidValue, errors.New("body must be one of <string|form|json>")
-				}
+		if method != http.MethodGet && body.IsValid() { // NOTE: GET request shouldn't have user-defined body
+			err, bodyType = parseBody(body, headers, &rawBody, &formBody, &jsonBody)
+			if err != nil {
+				return sdktypes.InvalidValue, errors.New("body must be one of <string|form|json>")
 			}
 		}
 
