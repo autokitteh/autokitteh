@@ -1,10 +1,14 @@
 package http
 
 import (
+	"fmt"
+	"io"
+	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 func TestBodyToStructJSON(t *testing.T) {
@@ -85,6 +89,83 @@ func TestSetQueryParams(t *testing.T) {
 			if tt.rawURL != tt.wantURL {
 				t.Errorf("setQueryParams() got URL %q, want %q", tt.rawURL, tt.wantURL)
 			}
+		})
+	}
+}
+
+func TestParseBody(t *testing.T) {
+	tests := []struct {
+		name     string
+		body     interface{}       // body to warp as sdktypes.Value and parse
+		headers  map[string]string // optional headers
+		bodyType string            // parsed body type
+		reqBody  string            // body extracted from resulting request
+	}{
+		{
+			name:     "empty body",
+			body:     sdktypes.NewStringValue(""),
+			bodyType: bodyTypeRaw,
+			reqBody:  "",
+		},
+		{
+			name:     "string",
+			body:     sdktypes.NewStringValue("meow"),
+			bodyType: bodyTypeRaw,
+			reqBody:  "meow",
+		},
+		{
+			name:     "json as string => raw",
+			body:     sdktypes.NewStringValue(`{"k":"v"}`),
+			bodyType: bodyTypeRaw,
+			reqBody:  `{"k":"v"}`,
+		},
+		{
+			name:     "map[string]string => form",
+			body:     map[string]string{"k": "v"},
+			bodyType: bodyTypeForm,
+			reqBody:  "k=v",
+		},
+		{
+			name:     "map[string]string + contentTypeJSON => json",
+			body:     map[string]string{"k": "v"},
+			headers:  map[string]string{contentTypeHeader: contentTypeJSON},
+			bodyType: bodyTypeJSON,
+			reqBody:  `{"k":"v"}`,
+		},
+		{
+			name:     "unmarshal(json string) => json",
+			body:     map[string]interface{}{"k": "v", "t": true},
+			headers:  map[string]string{contentTypeHeader: contentTypeJSON},
+			bodyType: bodyTypeJSON,
+			reqBody:  `{"k":"v","t":true}`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var rawBody string
+			var jsonBody sdktypes.Value
+			var formBody map[string]string
+
+			bodyToParse, err := sdktypes.WrapValue(tt.body) // warp into sdktypes.Value
+			assert.NoError(t, err)
+			fmt.Printf("%v\n", bodyToParse)
+
+			err, bodyType := parseBody(bodyToParse, tt.headers, &rawBody, &formBody, &jsonBody)
+			assert.NoError(t, err)
+			req, err := http.NewRequest("POST", "http://dummy.url", nil) // create dummy request
+			assert.NoError(t, err)
+
+			var body []byte = nil
+			err = setBody(req, bodyType, rawBody, formBody, jsonBody)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.bodyType, bodyType)
+
+			if req.Body != nil {
+				body, err = io.ReadAll(req.Body)
+				assert.NoError(t, err)
+			}
+			assert.Equal(t, tt.reqBody, string(body))
 		})
 	}
 }
