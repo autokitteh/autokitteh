@@ -124,6 +124,7 @@ func Test_findPython(t *testing.T) {
 	genExe(t, exe)
 	link := path.Join(dirName, "python3")
 	err = os.Symlink(exe, link)
+	require.NoError(t, err)
 	out, err = findPython()
 	require.NoError(t, err)
 	require.Equal(t, link, out)
