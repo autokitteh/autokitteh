@@ -7,6 +7,7 @@ import (
 	"gorm.io/gorm"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 func (f *dbFixture) createEnvsAndAssert(t *testing.T, envs ...scheme.Env) {
@@ -16,15 +17,29 @@ func (f *dbFixture) createEnvsAndAssert(t *testing.T, envs ...scheme.Env) {
 	}
 }
 
+func (f *dbFixture) setEnvVarsAndAssert(t *testing.T, envars ...scheme.EnvVar) {
+	for _, envar := range envars {
+		assert.NoError(t, f.gormdb.setEnvVar(f.ctx, &envar))
+		findAndAssertOne(t, f, envar, "env_id = ? and name = ?", envar.EnvID, envar.Name)
+	}
+}
+
 func (f *dbFixture) assertEnvDeleted(t *testing.T, envs ...scheme.Env) {
 	for _, env := range envs {
 		assertSoftDeleted(t, f, env)
 	}
 }
 
+func (f *dbFixture) assertEnvVarDeleted(t *testing.T, envars ...scheme.EnvVar) {
+	for _, envar := range envars {
+		assertDeleted(t, f, envar)
+	}
+}
+
 func preEnvTest(t *testing.T) *dbFixture {
 	f := newDBFixture()
-	findAndAssertCount(t, f, scheme.Env{}, 0, "") // no envs
+	findAndAssertCount(t, f, scheme.Env{}, 0, "")    // no envs
+	findAndAssertCount(t, f, scheme.EnvVar{}, 0, "") // no env vars
 	return f
 }
 
@@ -40,9 +55,9 @@ func TestCreateEnvForeignKeys(t *testing.T) {
 	f := preEnvTest(t)
 
 	e := f.newEnv()
-	unexisting := "unexisting"
+	unexisting := scheme.UUIDOrNil(sdktypes.NewProjectID().UUIDValue())
 
-	e.ProjectID = &unexisting
+	e.ProjectID = unexisting
 	assert.ErrorIs(t, f.gormdb.createEnv(f.ctx, &e), gorm.ErrForeignKeyViolated)
 
 	p := f.newProject()
@@ -69,7 +84,7 @@ func TestDeleteEnvs(t *testing.T) {
 	f.createEnvsAndAssert(t, e1, e2)
 
 	// test deleteEnvs
-	assert.NoError(t, f.gormdb.deleteEnvs(f.ctx, []string{e1.EnvID, e2.EnvID}))
+	assert.NoError(t, f.gormdb.deleteEnvs(f.ctx, []sdktypes.UUID{e1.EnvID, e2.EnvID}))
 	f.assertEnvDeleted(t, e1, e2)
 }
 
@@ -96,4 +111,31 @@ func TestDeleteEnvForeignKeys(t *testing.T) {
 	assert.NoError(t, f.gormdb.deleteDeployment(f.ctx, d.DeploymentID))
 	assert.NoError(t, f.gormdb.deleteEnv(f.ctx, e.EnvID))
 	f.assertEnvDeleted(t, e)
+}
+
+func TestSetEnvVar(t *testing.T) {
+	f := preEnvTest(t)
+	e := f.newEnv()
+	f.createEnvsAndAssert(t, e)
+
+	v := f.newEnvVar("foo", "bar")
+	// test setEnvVar
+	f.setEnvVarsAndAssert(t, v)
+
+	// test modify
+	v.Value = "baz"
+	f.setEnvVarsAndAssert(t, v)
+}
+
+func TestDeleteEnvVar(t *testing.T) {
+	f := preEnvTest(t)
+	e := f.newEnv()
+	f.createEnvsAndAssert(t, e)
+
+	v := f.newEnvVar("foo", "bar")
+	f.setEnvVarsAndAssert(t, v)
+
+	// test deleteEnvVar
+	assert.NoError(t, f.gormdb.deleteEnvVar(f.ctx, v.EnvID, v.Name))
+	f.assertEnvVarDeleted(t, v)
 }

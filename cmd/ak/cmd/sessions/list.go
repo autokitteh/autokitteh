@@ -13,8 +13,11 @@ import (
 )
 
 var (
-	stateType  stateString
-	withInputs bool
+	stateType     stateString
+	withInputs    bool
+	nextPageToken string
+	pageSize      int
+	skipRows      int
 )
 
 var listCmd = common.StandardCommand(&cobra.Command{
@@ -59,6 +62,18 @@ var listCmd = common.StandardCommand(&cobra.Command{
 			f.EventID = eid
 		}
 
+		if nextPageToken != "" {
+			f.PageToken = nextPageToken
+		}
+
+		if pageSize > 0 {
+			f.PageSize = int32(pageSize)
+		}
+
+		if skipRows > 0 {
+			f.Skip = int32(skipRows)
+		}
+
 		var err error
 		if f.StateType, err = sdktypes.ParseSessionStateType(stateType.String()); err != nil {
 			return fmt.Errorf("invalid state %q: %w", stateType, err)
@@ -67,22 +82,26 @@ var listCmd = common.StandardCommand(&cobra.Command{
 		ctx, cancel := common.LimitedContext()
 		defer cancel()
 
-		ss, _, err := sessions().List(ctx, f)
+		result, err := sessions().List(ctx, f)
 		if err != nil {
 			return fmt.Errorf("list sessions: %w", err)
 		}
 
-		if err := common.FailIfNotFound(cmd, "sessions", len(ss) > 0); err != nil {
+		if err := common.FailIfNotFound(cmd, "sessions", len(result.Sessions) > 0); err != nil {
 			return err
 		}
 
 		if !withInputs {
-			for i := range ss {
-				ss[i] = ss[i].WithInputs(nil)
+			for i := range result.Sessions {
+				result.Sessions[i] = result.Sessions[i].WithInputs(nil)
 			}
 		}
 
-		common.RenderList(ss)
+		common.RenderList(result.Sessions)
+
+		if result.NextPageToken != "" {
+			common.RenderKV("next-page-token", result.NextPageToken)
+		}
 		return nil
 	},
 })
@@ -94,6 +113,9 @@ func init() {
 	listCmd.Flags().StringVar(&eventID, "event-id", "", "event ID")
 	listCmd.Flags().VarP(&stateType, "state-type", "s", strings.Join(possibleStates, "|"))
 	listCmd.Flags().BoolVarP(&withInputs, "with-inputs", "i", false, "include input details")
+	listCmd.Flags().StringVar(&nextPageToken, "next-page-token", "", "provide the returnred page token to get next")
+	listCmd.Flags().IntVar(&pageSize, "page-size", 20, "page size")
+	listCmd.Flags().IntVar(&skipRows, "skip-rows", 0, "skip rows")
 
 	common.AddFailIfNotFoundFlag(listCmd)
 }

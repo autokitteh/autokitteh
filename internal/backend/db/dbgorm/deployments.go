@@ -21,9 +21,9 @@ func (db *gormdb) CreateDeployment(ctx context.Context, deployment sdktypes.Depl
 	now := time.Now()
 
 	d := scheme.Deployment{
-		DeploymentID: deployment.ID().String(),
-		BuildID:      scheme.PtrOrNil(deployment.BuildID().String()),
-		EnvID:        scheme.PtrOrNil(deployment.EnvID().String()),
+		DeploymentID: deployment.ID().UUIDValue(),
+		BuildID:      scheme.UUIDOrNil(deployment.BuildID().UUIDValue()),
+		EnvID:        scheme.UUIDOrNil(deployment.EnvID().UUIDValue()),
 		State:        int32(deployment.State().ToProto()),
 		CreatedAt:    now,
 		UpdatedAt:    now,
@@ -34,24 +34,24 @@ func (db *gormdb) CreateDeployment(ctx context.Context, deployment sdktypes.Depl
 	})
 }
 
-func (db *gormdb) getDeployment(ctx context.Context, deploymentID string) (*scheme.Deployment, error) {
+func (db *gormdb) getDeployment(ctx context.Context, deploymentID sdktypes.UUID) (*scheme.Deployment, error) {
 	return getOne(db.db, ctx, scheme.Deployment{}, "deployment_id = ?", deploymentID)
 }
 
 func (db *gormdb) GetDeployment(ctx context.Context, id sdktypes.DeploymentID) (sdktypes.Deployment, error) {
-	d, err := db.getDeployment(ctx, id.String())
+	d, err := db.getDeployment(ctx, id.UUIDValue())
 	if d == nil || err != nil {
 		return sdktypes.InvalidDeployment, translateError(err)
 	}
 	return scheme.ParseDeployment(*d)
 }
 
-func (db *gormdb) deleteDeployment(ctx context.Context, deploymentID string) error {
-	return db.deleteDeploymentsAndDependents(ctx, []string{deploymentID})
+func (db *gormdb) deleteDeployment(ctx context.Context, deploymentID sdktypes.UUID) error {
+	return db.deleteDeploymentsAndDependents(ctx, []sdktypes.UUID{deploymentID})
 }
 
 // delete deployments and relevant sessions
-func (db *gormdb) deleteDeploymentsAndDependents(ctx context.Context, depIDs []string) error {
+func (db *gormdb) deleteDeploymentsAndDependents(ctx context.Context, depIDs []sdktypes.UUID) error {
 	// NOTE: should be transactional
 
 	if len(depIDs) == 0 {
@@ -74,17 +74,17 @@ func (db *gormdb) deleteDeploymentsAndDependents(ctx context.Context, depIDs []s
 
 func (db *gormdb) DeleteDeployment(ctx context.Context, deploymentID sdktypes.DeploymentID) error {
 	return db.transaction(ctx, func(tx *tx) error {
-		return translateError(tx.deleteDeployment(ctx, deploymentID.String()))
+		return translateError(tx.deleteDeployment(ctx, deploymentID.UUIDValue()))
 	})
 }
 
 func (db *gormdb) listDeploymentsCommonQuery(ctx context.Context, filter sdkservices.ListDeploymentsFilter) *gorm.DB {
 	q := db.db.WithContext(ctx).Model(&scheme.Deployment{})
 	if filter.BuildID.IsValid() {
-		q = q.Where("deployments.build_id = ?", filter.BuildID.String())
+		q = q.Where("deployments.build_id = ?", filter.BuildID.UUIDValue())
 	}
 	if filter.EnvID.IsValid() {
-		q = q.Where("deployments.env_id = ?", filter.EnvID.String())
+		q = q.Where("deployments.env_id = ?", filter.EnvID.UUIDValue())
 	}
 	if filter.State != sdktypes.DeploymentStateUnspecified {
 		q = q.Where("deployments.state = ?", filter.State.ToProto())
@@ -149,7 +149,7 @@ func (db *gormdb) ListDeployments(ctx context.Context, filter sdkservices.ListDe
 	}
 }
 
-func (db *gormdb) updateDeploymentState(ctx context.Context, id string, state sdktypes.DeploymentState) error {
+func (db *gormdb) updateDeploymentState(ctx context.Context, id sdktypes.UUID, state sdktypes.DeploymentState) error {
 	d := &scheme.Deployment{DeploymentID: id}
 
 	return db.locked(func(db *gormdb) error {
@@ -167,5 +167,5 @@ func (db *gormdb) updateDeploymentState(ctx context.Context, id string, state sd
 }
 
 func (db *gormdb) UpdateDeploymentState(ctx context.Context, id sdktypes.DeploymentID, state sdktypes.DeploymentState) error {
-	return db.updateDeploymentState(ctx, id.String(), state)
+	return db.updateDeploymentState(ctx, id.UUIDValue(), state)
 }

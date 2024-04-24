@@ -16,7 +16,7 @@ func (db *gormdb) addEventRecord(ctx context.Context, er *scheme.EventRecord) er
 func (db *gormdb) AddEventRecord(ctx context.Context, er sdktypes.EventRecord) error {
 	e := scheme.EventRecord{
 		Seq:     er.Seq(),
-		EventID: er.EventID().String(),
+		EventID: er.EventID().UUIDValue(),
 		State:   int32(er.State().ToProto()),
 	}
 
@@ -26,7 +26,7 @@ func (db *gormdb) AddEventRecord(ctx context.Context, er sdktypes.EventRecord) e
 func (db *gormdb) ListEventRecords(ctx context.Context, filter sdkservices.ListEventRecordsFilter) ([]sdktypes.EventRecord, error) {
 	q := db.db.WithContext(ctx)
 	if filter.EventID.IsValid() {
-		q = q.Where("event_id = ?", filter.EventID.String())
+		q = q.Where("event_id = ?", filter.EventID.UUIDValue())
 	}
 
 	q.Order("event_id DESC, seq DESC")
