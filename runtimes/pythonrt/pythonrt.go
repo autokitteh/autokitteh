@@ -320,7 +320,7 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, event map[str
 		}
 
 		py.log.Info("callback", zap.String("func", cbm.Name))
-		_, err = py.cbs.Call(
+		val, err := py.cbs.Call(
 			ctx,
 			py.xid.ToRunID(),
 			// The Python function to call is encoded in the payload
@@ -332,6 +332,19 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, event map[str
 		)
 		if err != nil {
 			py.log.Error("callback", zap.Error(err))
+			return sdktypes.InvalidValue, err
+		}
+
+		if !val.IsBytes() {
+			py.log.Error("activity result should be bytes", zap.Any("value", val))
+			return sdktypes.InvalidValue, err
+		}
+
+		reply := ResponseMessage{
+			Value: val.GetBytes().Value(),
+		}
+		if err := py.comm.Send(reply); err != nil {
+			py.log.Error("send value to Python", zap.Error(err))
 			return sdktypes.InvalidValue, err
 		}
 	}

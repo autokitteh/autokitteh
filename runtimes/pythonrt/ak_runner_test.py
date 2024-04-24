@@ -2,9 +2,10 @@ import json
 import sys
 import types
 from pathlib import Path
+import pickle
 from socket import socket, socketpair
 from subprocess import run
-from threading import Thread
+from unittest.mock import MagicMock
 
 import ak_runner
 
@@ -69,31 +70,31 @@ def inner():
 def test_nested():
     global ak
 
-    go, py = socketpair()
-    rdr = go.makefile('r')
-    comm = ak_runner.Comm(py)
+    comm = MagicMock()
+    comm.recv.side_effect = [
+        {
+            'type': ak_runner.MessageType.callback,
+        },
+        {
+            'type': ak_runner.MessageType.response,
+            'payload': {
+                'value': pickle.dumps(val),
+            }
+        }
+    ]
+    comm.extract_activity.side_effect = [
+        {
+            'name': 'outer',
+            'args': [],
+            'kw': {},
+            'data': (outer, (), {}),
+        },
+    ]
 
     ak = ak_runner.AKCall('mod1', comm)
+    ak(outer)
 
-    def run():
-        outer()
-        comm.send_done()
-
-    thr = Thread(target=run, daemon=True)
-    thr.start()
-
-    n = 0
-    while True:
-        data = rdr.readline()
-        request = json.loads(data)
-        if request['type'] == 'done':
-            break
-
-        n += 1
-        go.sendall((data + '\n').encode('utf-8'))
-        rdr.readline()  # response
-
-    assert n == 1
+    comm.send_activity.assert_called_once()
 
 
 def sub(a, b, *, verbose=False):
@@ -113,11 +114,12 @@ def test_comm():
     assert data, 'no data'
 
     go.sendall(data)
-    message = comm.receive_activity()
-    assert message['name'] == sub.__name__
-    assert message['args'] == [str(v) for v in args]
-    assert message['kw'] == {k: str(v) for k, v in kw.items()}
-    fn, args, kw = message['data']
+    message = comm.recv(ak_runner.MessageType.callback)
+    payload = comm.extract_activity(message)
+    assert payload['name'] == sub.__name__
+    assert payload['args'] == [str(v) for v in args]
+    assert payload['kw'] == {k: str(v) for k, v in kw.items()}
+    fn, args, kw = payload['data']
     assert fn == sub
     assert args == args
     assert kw == kw
@@ -163,6 +165,7 @@ def test_in_activity():
         def __init__(self):
             self.values = []
             self.num_activities = 0
+            self.n = 0
 
         def send_activity(self, func, args, kw):
             self.num_activities += 1
@@ -171,8 +174,26 @@ def test_in_activity():
         def send_response(self, value):
             self.values.append(value)
 
-        def receive_activity(self):
-            return self.message
+        def extract_response(self, msg):
+            return msg['payload']['value']
+
+        def recv(self, *types):
+            self.n += 1
+
+            if self.n == 1:
+                return {
+                    'type': ak_runner.MessageType.callback,
+                    'payload': self.message,
+                }
+
+            return {
+                'type': ak_runner.MessageType.response,
+                'payload': {'value': pickle.dumps(self.values[0])},
+            }
+        
+        def extract_activity(self, msg):
+            return msg['payload']
+
 
     comm = Comm()
     ak = ak_runner.AKCall('meow', comm)
