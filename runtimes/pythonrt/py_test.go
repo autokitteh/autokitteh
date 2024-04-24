@@ -78,3 +78,29 @@ func processEnv(t *testing.T, pid int) map[string]string {
 	}
 	return env
 }
+
+var pyVersionCases = []struct {
+	version string
+	major   int
+	minor   int
+	err     bool
+}{
+	{"Python 3.12.2", 3, 12, false},
+	{"Python 2.7.18", 2, 7, false},
+	{"Python 3", 0, 0, true},
+	{"", 0, 0, true},
+}
+
+func Test_parsePyVersion(t *testing.T) {
+	for _, tc := range pyVersionCases {
+		major, minor, err := parsePyVersion(tc.version)
+		if tc.err {
+			require.Error(t, err)
+			continue
+		}
+
+		require.NoError(t, err)
+		require.Equal(t, tc.major, major)
+		require.Equal(t, tc.minor, minor)
+	}
+}

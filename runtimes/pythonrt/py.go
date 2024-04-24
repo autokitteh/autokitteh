@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"strconv"
 	"strings"
 
 	"go.uber.org/zap"
@@ -36,9 +37,40 @@ func createTar(fs fs.FS) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+type Version struct {
+	Major int
+	Minor int
+}
+
 type exeInfo struct {
 	Exe     string
-	Version string
+	Version Version
+}
+
+func parsePyVersion(s string) (major, minor int, err error) {
+	// Python 3.12.2
+	const prefix = "Python "
+	if len(s) < len(prefix) {
+		return 0, 0, fmt.Errorf("version string too short: %q", s)
+	}
+
+	s = s[len(prefix):]
+	fields := strings.SplitN(s, ".", 3)
+	if len(fields) < 2 {
+		return 0, 0, fmt.Errorf("version string too short: %q", s)
+	}
+
+	major, err = strconv.Atoi(fields[0])
+	if err != nil {
+		return 0, 0, err
+	}
+
+	minor, err = strconv.Atoi(fields[1])
+	if err != nil {
+		return 0, 0, err
+	}
+
+	return
 }
 
 func pyExeInfo(ctx context.Context) (exeInfo, error) {
@@ -56,7 +88,19 @@ func pyExeInfo(ctx context.Context) (exeInfo, error) {
 	}
 
 	version := strings.TrimSpace(buf.String())
-	return exeInfo{Exe: exePath, Version: version}, nil
+	major, minor, err := parsePyVersion(version)
+	if err != nil {
+		return exeInfo{}, fmt.Errorf("can't parse version %q: %w", version, err)
+	}
+
+	info := exeInfo{
+		Exe: exePath,
+		Version: Version{
+			Major: major,
+			Minor: minor,
+		},
+	}
+	return info, nil
 }
 
 func extractRunner(rootDir string) (string, error) {

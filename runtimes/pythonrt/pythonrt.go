@@ -39,6 +39,19 @@ type pySvc struct {
 	comm      *Comm
 }
 
+var minPyVersion = Version{
+	Major: 3,
+	Minor: 11,
+}
+
+func isGoodVersion(v Version) bool {
+	if v.Major < minPyVersion.Major {
+		return false
+	}
+
+	return v.Minor >= minPyVersion.Minor
+}
+
 func New() (sdkservices.Runtime, error) {
 	// Use sdklogger
 	log, err := logger.New(logger.Configs.Dev) // TODO (ENG-553): From configuration
@@ -53,7 +66,11 @@ func New() (sdkservices.Runtime, error) {
 		return nil, fmt.Errorf("python info: %w", err)
 	}
 
-	log.Info("system python info", zap.String("exe", info.Exe), zap.String("version", info.Version))
+	log.Info("system python info", zap.String("exe", info.Exe), zap.Any("version", info.Version))
+	if !isGoodVersion(info.Version) {
+		return nil, fmt.Errorf("python version %d.%d is too old, min is %d.%d", info.Version.Major, info.Version.Minor, minPyVersion.Major, minPyVersion.Minor)
+	}
+
 	if err := ensureVEnv(log, info.Exe); err != nil {
 		return nil, fmt.Errorf("create venv: %w", err)
 	}
