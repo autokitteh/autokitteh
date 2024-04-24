@@ -66,7 +66,7 @@ func TestCreateTriggerForeignKeys(t *testing.T) {
 	f.createConnectionsAndAssert(t, conn)
 
 	// negative test with non-existing assets
-	unexisting := "unexisting"
+	unexisting := uuid.New()
 
 	tr.ProjectID = unexisting
 	assert.ErrorIs(t, createTrigger(f.ctx, f.gormdb, &tr), gorm.ErrForeignKeyViolated)

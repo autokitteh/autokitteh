@@ -72,13 +72,12 @@ type DB interface {
 	GetEnvByName(context.Context, sdktypes.ProjectID, sdktypes.Symbol) (sdktypes.Env, error)
 
 	ListProjectEnvs(context.Context, sdktypes.ProjectID) ([]sdktypes.Env, error)
-
 	SetEnvVar(context.Context, sdktypes.EnvVar) error
-
 	GetEnvVars(context.Context, sdktypes.EnvID) ([]sdktypes.EnvVar, error)
 
 	// Return sdkerrors.ErrNotFound if var not found.
 	RevealEnvVar(context.Context, sdktypes.EnvID, sdktypes.Symbol) (string, error)
+	RemoveEnvVar(context.Context, sdktypes.EnvID, sdktypes.Symbol) error
 
 	// -----------------------------------------------------------------------
 	// This is idempotent.
@@ -139,7 +138,7 @@ type DB interface {
 	UpdateSessionState(ctx context.Context, sessionID sdktypes.SessionID, state sdktypes.SessionState) error
 	AddSessionPrint(ctx context.Context, sessionID sdktypes.SessionID, print string) error
 	AddSessionStopRequest(ctx context.Context, sessionID sdktypes.SessionID, reason string) error
-	ListSessions(ctx context.Context, f sdkservices.ListSessionsFilter) ([]sdktypes.Session, int, error)
+	ListSessions(ctx context.Context, f sdkservices.ListSessionsFilter) (sdkservices.ListSessionResult, error)
 	DeleteSession(ctx context.Context, sessionID sdktypes.SessionID) error
 
 	// -----------------------------------------------------------------------

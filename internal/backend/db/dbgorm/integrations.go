@@ -48,7 +48,7 @@ func convertTypeToRecord(i sdktypes.Integration) *scheme.Integration {
 	}
 
 	return &scheme.Integration{
-		IntegrationID: i.ID().String(),
+		IntegrationID: i.ID().UUIDValue(),
 		UniqueName:    i.UniqueName().String(),
 		DisplayName:   i.DisplayName(),
 		Description:   i.Description(),
@@ -64,7 +64,7 @@ func convertTypeToRecord(i sdktypes.Integration) *scheme.Integration {
 	}
 }
 
-func (db *gormdb) deleteIntegration(ctx context.Context, id string) error {
+func (db *gormdb) deleteIntegration(ctx context.Context, id sdktypes.UUID) error {
 	return db.db.WithContext(ctx).Delete(&scheme.Integration{IntegrationID: id}).Error
 }
 
@@ -74,11 +74,11 @@ func (db *gormdb) DeleteIntegration(ctx context.Context, id sdktypes.Integration
 	// what they want to do - abort, or cascade the deletion.
 	// Note that a similar decision exists when deleting connections that
 	// have active project mappings.
-	return translateError(db.deleteIntegration(ctx, id.String()))
+	return translateError(db.deleteIntegration(ctx, id.UUIDValue()))
 }
 
 func (db *gormdb) GetIntegration(ctx context.Context, id sdktypes.IntegrationID) (sdktypes.Integration, error) {
-	return getOneWTransform(db.db, ctx, scheme.ParseIntegration, "integration_id = ?", id.String())
+	return getOneWTransform(db.db, ctx, scheme.ParseIntegration, "integration_id = ?", id.UUIDValue())
 }
 
 func (db *gormdb) ListIntegrations(ctx context.Context, filter sdkservices.ListIntegrationsFilter) ([]sdktypes.Integration, error) {

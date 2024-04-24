@@ -15,7 +15,9 @@ func SetIDGenerator(f func() UUID) { uuidGenerator = f }
 
 func newUUID() []byte { id := uuidGenerator(); return id[:] }
 
-func UUIDGenerator() UUID { return uuid.Must(uuid.NewUUID()) }
+func UUIDGenerator() UUID {
+	return uuid.Must(uuid.NewV7())
+}
 
 // To be used for testing only, when we expect a certain ID.
 // First ID generated will be init+1.

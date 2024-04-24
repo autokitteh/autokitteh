@@ -128,6 +128,19 @@ func (s *server) List(ctx context.Context, req *connect.Request[sessionsv1.ListR
 	filter := sdkservices.ListSessionsFilter{
 		StateType: stateType,
 		CountOnly: msg.CountOnly,
+		PaginationRequest: sdktypes.PaginationRequest{
+			Skip:      msg.Skip,
+			PageToken: msg.PageToken,
+		},
+	}
+
+	filter.PageSize = msg.PageSize
+	if filter.PageSize > 100 {
+		filter.PageSize = 100
+	}
+
+	if filter.PageSize < 10 {
+		filter.PageSize = 10
 	}
 
 	if filter.DeploymentID, err = sdktypes.ParseDeploymentID(req.Msg.DeploymentId); err != nil {
@@ -142,14 +155,14 @@ func (s *server) List(ctx context.Context, req *connect.Request[sessionsv1.ListR
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	sessions, n, err := s.sessions.List(ctx, filter)
+	result, err := s.sessions.List(ctx, filter)
 	if err != nil {
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	pbsessions := kittehs.Transform(sessions, sdktypes.ToProto)
+	pbsessions := kittehs.Transform(result.Sessions, sdktypes.ToProto)
 
-	return connect.NewResponse(&sessionsv1.ListResponse{Sessions: pbsessions, Count: int32(n)}), nil
+	return connect.NewResponse(&sessionsv1.ListResponse{Sessions: pbsessions, Count: int32(result.TotalCount), NextPageToken: result.NextPageToken}), nil
 }
 
 func (s *server) Delete(ctx context.Context, req *connect.Request[sessionsv1.DeleteRequest]) (*connect.Response[sessionsv1.DeleteResponse], error) {

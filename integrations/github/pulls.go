@@ -158,7 +158,7 @@ func (i integration) requestReview(ctx context.Context, args []sdktypes.Value, k
 		return sdktypes.InvalidValue, err
 	}
 
-	gh, err := i.NewClientWithInstallJWT(ctx)
+	gh, err := i.NewClient(ctx)
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}

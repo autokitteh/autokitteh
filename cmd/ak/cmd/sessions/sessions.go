@@ -60,17 +60,17 @@ func latestSessionID() (string, error) {
 	ctx, cancel := common.LimitedContext()
 	defer cancel()
 
-	ss, _, err := sessions().List(ctx, sdkservices.ListSessionsFilter{})
+	result, err := sessions().List(ctx, sdkservices.ListSessionsFilter{})
 	if err != nil {
 		return "", fmt.Errorf("list sessions: %w", err)
 	}
 
-	if len(ss) == 0 {
+	if len(result.Sessions) == 0 {
 		return "", common.NewExitCodeError(common.NotFoundExitCode, errors.New("sessions not found"))
 	}
 
-	latest := ss[0]
-	for _, s := range ss[1:] {
+	latest := result.Sessions[0]
+	for _, s := range result.Sessions[1:] {
 		if s.ToProto().CreatedAt.AsTime().After(latest.ToProto().CreatedAt.AsTime()) {
 			latest = s
 		}
