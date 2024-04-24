@@ -31,7 +31,7 @@ jobs:
       - name: Install Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version-file: 'runtimes/pythonrt/.python-version'
       - name: Test
         run: make test-unit
 
