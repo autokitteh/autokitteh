@@ -103,19 +103,19 @@ func TestParseBody(t *testing.T) {
 	}{
 		{
 			name:     "empty body",
-			body:     sdktypes.NewStringValue(""),
+			body:     "",
 			bodyType: bodyTypeRaw,
 			reqBody:  "",
 		},
 		{
 			name:     "string",
-			body:     sdktypes.NewStringValue("meow"),
+			body:     "meow",
 			bodyType: bodyTypeRaw,
 			reqBody:  "meow",
 		},
 		{
 			name:     "json as string => raw",
-			body:     sdktypes.NewStringValue(`{"k":"v"}`),
+			body:     `{"k":"v"}`,
 			bodyType: bodyTypeRaw,
 			reqBody:  `{"k":"v"}`,
 		},
