@@ -79,7 +79,7 @@ func (ws *workflows) StartWorkflow(ctx context.Context, session sdktypes.Session
 	//       and the user will get a 501.
 
 	memo := map[string]string{
-		"session_id":    sessionID.Value(),
+		"session_id":    sessionID.Value().String(),
 		"deployment_id": session.DeploymentID().String(),
 		"entrypoint":    session.EntryPoint().CanonicalString(),
 		"workflow_id":   wid,
@@ -249,7 +249,7 @@ func (ws *workflows) deactivateDrainedDeployment(ctx context.Context, deployment
 		}
 
 		if dep.State() == sdktypes.DeploymentStateDraining {
-			_, nRunning, err := tx.ListSessions(ctx, sdkservices.ListSessionsFilter{
+			resultRunning, err := tx.ListSessions(ctx, sdkservices.ListSessionsFilter{
 				DeploymentID: deploymentID,
 				StateType:    sdktypes.SessionStateTypeCreated,
 				CountOnly:    true,
@@ -258,7 +258,7 @@ func (ws *workflows) deactivateDrainedDeployment(ctx context.Context, deployment
 				return fmt.Errorf("sessions.count: %w", err)
 			}
 
-			_, nCreated, err := tx.ListSessions(ctx, sdkservices.ListSessionsFilter{
+			resultCreated, err := tx.ListSessions(ctx, sdkservices.ListSessionsFilter{
 				DeploymentID: deploymentID,
 				StateType:    sdktypes.SessionStateTypeRunning,
 				CountOnly:    true,
@@ -267,7 +267,7 @@ func (ws *workflows) deactivateDrainedDeployment(ctx context.Context, deployment
 				return fmt.Errorf("sessions.count: %w", err)
 			}
 
-			deactivate = nRunning+nCreated == 0
+			deactivate = resultRunning.TotalCount+resultCreated.TotalCount == 0
 		}
 		return nil
 	}); err != nil {

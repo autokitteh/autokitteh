@@ -16,12 +16,6 @@ project:
       name: myvar
       # Variable value.
       value: "myvalue"
-    - name: airshield_combination_code
-      # This is a secret, so the value is taken from the OS environment
-      # variable named in `env_var`. If `env_var` is not specified,
-      # it is considered to be the upper case of the variable name.
-      is_secret: true
-      env_var: "AIRSHIELD_COMBINATION_CODE"
   # Connections map integrations to a specific project.
   # A connection is used in project code using:
   #  load("@<integration_name>", "<connection_name>")

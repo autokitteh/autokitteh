@@ -24,25 +24,25 @@ func (db *gormdb) CreateProject(ctx context.Context, p sdktypes.Project) error {
 	}
 
 	project := scheme.Project{
-		ProjectID: p.ID().String(),
+		ProjectID: p.ID().UUIDValue(),
 		Name:      p.Name().String(),
 	}
 	return translateError(db.createProject(ctx, &project))
 }
 
-func (db *gormdb) deleteProject(ctx context.Context, projectID string) error {
+func (db *gormdb) deleteProject(ctx context.Context, projectID sdktypes.UUID) error {
 	return db.deleteProjectAndDependents(ctx, projectID)
 }
 
 // delete project, its envs, deployments, sessions and build
-func (db *gormdb) deleteProjectAndDependents(ctx context.Context, projectID string) error {
+func (db *gormdb) deleteProjectAndDependents(ctx context.Context, projectID sdktypes.UUID) error {
 	// NOTE: should be transactional
 
 	deploymentStates, err := db.getProjectDeployments(ctx, projectID)
 	if err != nil {
 		return err
 	}
-	var deplIDs []string
+	var deplIDs []sdktypes.UUID
 	for _, de := range deploymentStates {
 		if de.State != int32(sdktypes.DeploymentStateInactive.ToProto()) {
 			return fmt.Errorf("%w: project <%s>: cannot delete non-inactive deployment <%s> in state <%s>",
@@ -93,13 +93,13 @@ func (db *gormdb) deleteProjectAndDependents(ctx context.Context, projectID stri
 
 func (db *gormdb) DeleteProject(ctx context.Context, projectID sdktypes.ProjectID) error {
 	return db.transaction(ctx, func(tx *tx) error {
-		return translateError(tx.deleteProject(ctx, projectID.String()))
+		return translateError(tx.deleteProject(ctx, projectID.UUIDValue()))
 	})
 }
 
 func (db *gormdb) UpdateProject(ctx context.Context, p sdktypes.Project) error {
 	r := scheme.Project{
-		ProjectID: p.ID().String(),
+		ProjectID: p.ID().UUIDValue(),
 		Name:      p.Name().String(),
 	}
 
@@ -110,7 +110,7 @@ func (db *gormdb) UpdateProject(ctx context.Context, p sdktypes.Project) error {
 	return nil
 }
 
-func (db *gormdb) getProject(ctx context.Context, projectID string) (*scheme.Project, error) {
+func (db *gormdb) getProject(ctx context.Context, projectID sdktypes.UUID) (*scheme.Project, error) {
 	return getOne(db.db, ctx, scheme.Project{}, "project_id = ?", projectID)
 }
 
@@ -126,7 +126,7 @@ func schemaToSDKProject(p *scheme.Project, err error) (sdktypes.Project, error) 
 }
 
 func (db *gormdb) GetProjectByID(ctx context.Context, pid sdktypes.ProjectID) (sdktypes.Project, error) {
-	return schemaToSDKProject(db.getProject(ctx, pid.String()))
+	return schemaToSDKProject(db.getProject(ctx, pid.UUIDValue()))
 }
 
 func (db *gormdb) GetProjectByName(ctx context.Context, ph sdktypes.Symbol) (sdktypes.Project, error) {
@@ -134,11 +134,11 @@ func (db *gormdb) GetProjectByName(ctx context.Context, ph sdktypes.Symbol) (sdk
 }
 
 type DeploymentState struct {
-	DeploymentID string
+	DeploymentID sdktypes.UUID
 	State        int32
 }
 
-func (db *gormdb) getProjectDeployments(ctx context.Context, pid string) ([]DeploymentState, error) {
+func (db *gormdb) getProjectDeployments(ctx context.Context, pid sdktypes.UUID) ([]DeploymentState, error) {
 	var pds []DeploymentState
 	res := db.db.WithContext(ctx).Model(&scheme.Deployment{}).
 		Joins("join Envs on Envs.env_id = Deployments.env_id").
@@ -148,7 +148,7 @@ func (db *gormdb) getProjectDeployments(ctx context.Context, pid string) ([]Depl
 	return pds, res.Error
 }
 
-func (db *gormdb) getProjectEnvs(ctx context.Context, pid string) (envIDs []string, err error) {
+func (db *gormdb) getProjectEnvs(ctx context.Context, pid sdktypes.UUID) (envIDs []sdktypes.UUID, err error) {
 	err = db.db.WithContext(ctx).Model(&scheme.Env{}).Where("project_id = ?", pid).Pluck("env_id", &envIDs).Error
 	return envIDs, err
 }
@@ -172,7 +172,7 @@ func (db *gormdb) ListProjects(ctx context.Context) ([]sdktypes.Project, error) 
 }
 
 func (db *gormdb) GetProjectResources(ctx context.Context, pid sdktypes.ProjectID) (map[string][]byte, error) {
-	res := db.db.WithContext(ctx).Model(&scheme.Project{}).Where("project_id = ?", pid.String()).Select("resources").Row()
+	res := db.db.WithContext(ctx).Model(&scheme.Project{}).Where("project_id = ?", pid.UUIDValue()).Select("resources").Row()
 	var resources []byte
 	if err := res.Scan(&resources); err != nil {
 		return nil, translateError(err)
@@ -200,7 +200,7 @@ func (db *gormdb) SetProjectResources(ctx context.Context, pid sdktypes.ProjectI
 		return err
 	}
 
-	res := db.db.WithContext(ctx).Model(&scheme.Project{}).Where("project_id = ?", pid.String()).Update("resources", resourcesBytes)
+	res := db.db.WithContext(ctx).Model(&scheme.Project{}).Where("project_id = ?", pid.UUIDValue()).Update("resources", resourcesBytes)
 	if res.Error != nil {
 		return translateError(res.Error)
 	}
