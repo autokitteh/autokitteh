@@ -6,6 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"go.autokitteh.dev/autokitteh/backend/svc"
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
 )
 
@@ -16,19 +17,16 @@ var migrateCmd = common.StandardCommand(&cobra.Command{
 	Args:    cobra.NoArgs,
 
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return Setup()
+		m, err := svc.ParseMode(mode)
+		if err != nil {
+			return fmt.Errorf("mode: %w", err)
+		}
+
+		db, err := InitDB(common.Config(), m)
+		if err := db.Migrate(context.Background()); err != nil {
+			return fmt.Errorf("migrate: %w", err)
+		}
+
+		return nil
 	},
 })
-
-func Migrate() error {
-	db, err := InitDB(mode)
-	if err != nil {
-		return err
-	}
-
-	if err := db.Migrate(context.Background()); err != nil {
-		return fmt.Errorf("migrate: %w", err)
-	}
-
-	return nil
-}

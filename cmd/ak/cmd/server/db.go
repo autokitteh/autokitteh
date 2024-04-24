@@ -3,8 +3,8 @@ package server
 import (
 	"context"
 
-	"go.autokitteh.dev/autokitteh/backend/svc"
-	"go.autokitteh.dev/autokitteh/cmd/ak/common"
+	"go.autokitteh.dev/autokitteh/internal/backend/configset"
+	"go.autokitteh.dev/autokitteh/internal/backend/svc"
 )
 
 type db interface {
@@ -12,6 +12,6 @@ type db interface {
 	Migrate(context.Context) error
 }
 
-func InitDB(mode string) (db, error) {
-	return svc.StartDB(context.Background(), common.Config())
+func InitDB(cfg *svc.Config, mode configset.Mode) (db, error) {
+	return svc.StartDB(context.Background(), cfg, svc.RunOptions{Mode: mode})
 }
