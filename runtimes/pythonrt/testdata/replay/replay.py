@@ -7,4 +7,4 @@ def on_event(event):
 
     now = datetime.now()
     print(f'NOW: {now}')
-    sleep(1000)
+    sleep(10*60)

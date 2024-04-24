@@ -14,7 +14,6 @@ from base64 import b64decode, b64encode
 from functools import wraps
 from importlib.abc import Loader
 from importlib.machinery import SourceFileLoader
-from inspect import isbuiltin
 from os import mkdir
 from pathlib import Path
 from socket import AF_UNIX, SOCK_STREAM, socket
@@ -243,7 +242,7 @@ class AKCall:
         self.comm = comm
 
     def ignore(self, fn):
-        if isbuiltin(fn):
+        if fn.__module__ == 'builtins':
             return True
         
         if fn.__module__ == self.module_name:
@@ -258,7 +257,7 @@ class AKCall:
                 func.__name__, args, kw, self.in_activity)
             return func(*args, **kw)
 
-        logging.info('ACTION: calling %s (args=%r, kw=%r)', func.__name__, args, kw)
+        logging.info('ACTION: calling %s via activity (args=%r, kw=%r)', func.__name__, args, kw)
         self.in_activity = True
         try:
             self.comm.send_activity(func, args, kw)
