@@ -8,6 +8,7 @@ import (
 
 // Messages should be in sync with MesssageType in ak_runner.py
 
+// py -> go
 type CallbackMessage struct {
 	Name string            `json:"name"`
 	Args []string          `json:"args"`
@@ -21,18 +22,21 @@ func (CallbackMessage) Type() string {
 
 // There's no data in the done message
 
+// py -> go
 type ModuleMessage struct {
 	Entries []string `json:"entries"`
 }
 
 func (ModuleMessage) Type() string { return "module" }
 
+// py -> go & go -> python
 type ResponseMessage struct {
 	Value []byte `json:"value"`
 }
 
 func (ResponseMessage) Type() string { return "response" }
 
+// go -> python
 type RunMessage struct {
 	FuncName string         `json:"func_name"`
 	Event    map[string]any `json:"event"`
@@ -41,7 +45,7 @@ type RunMessage struct {
 func (RunMessage) Type() string { return "run" }
 
 type SubMessage interface {
-	CallbackMessage | ModuleMessage | ResponseMessage
+	CallbackMessage | ModuleMessage | ResponseMessage | RunMessage
 
 	Type() string
 }
