@@ -23,6 +23,10 @@ var migrateCmd = common.StandardCommand(&cobra.Command{
 		}
 
 		db, err := InitDB(common.Config(), m)
+		if err != nil {
+			return fmt.Errorf("init db: %w", err)
+		}
+
 		if err := db.Migrate(context.Background()); err != nil {
 			return fmt.Errorf("migrate: %w", err)
 		}
