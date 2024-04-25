@@ -46,8 +46,6 @@ const (
 )
 
 func parseBody(body sdktypes.Value, headers map[string]string, rawBody *string, formBody *map[string]string, jsonBody *sdktypes.Value) (err error, bodyType string) {
-	bodyType = bodyTypeRaw // assume RAW type initially
-
 	if contentType, ok := headers[contentTypeHeader]; ok { // use content type, if provided
 		switch contentType {
 		case contentTypeJSON:
@@ -57,22 +55,23 @@ func parseBody(body sdktypes.Value, headers map[string]string, rawBody *string, 
 		}
 	}
 
-	if bodyType == bodyTypeRaw { // try to parse as RAW
-		err = body.UnwrapInto(rawBody)
+	if bodyType == "" { // try to parse as RAW
+		if err = body.UnwrapInto(rawBody); err == nil {
+			bodyType = bodyTypeRaw
+		}
 	}
 
-	if err != nil || bodyType == bodyTypeForm { // then as FORM
+	if (err != nil && bodyType == "") || bodyType == bodyTypeForm { // then as FORM
 		if err = body.UnwrapInto(&formBody); err == nil {
 			bodyType = bodyTypeForm
 		}
 	}
 
-	if err != nil || bodyType == bodyTypeJSON { // then as JSON
+	if (err != nil && bodyType == "") || bodyType == bodyTypeJSON { // then as JSON
 		if err = body.UnwrapInto(&jsonBody); err == nil {
 			bodyType = bodyTypeJSON
 		}
 	}
-
 	return err, bodyType
 }
 
