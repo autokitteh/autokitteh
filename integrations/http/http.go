@@ -36,6 +36,7 @@ var args = sdkmodule.WithArgs(
 	"params?",
 	"headers?",
 	"data?",
+	"json?",
 )
 
 const (

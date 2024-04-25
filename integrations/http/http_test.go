@@ -5,6 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
@@ -159,6 +160,84 @@ func TestParseBody(t *testing.T) {
 				body = req.body.String()
 			}
 			assert.Equal(t, tt.reqBody, body)
+		})
+	}
+}
+
+func TestUnpackAndParseArgs(t *testing.T) {
+	tests := []struct {
+		name   string
+		method string
+		args   []interface{}
+		kwargs map[string]interface{}
+		errStr string
+		body   string
+	}{
+		{
+			name:   "disallow any args except URL",
+			method: "GET",
+			args:   []interface{}{"http://dummy.url", "meow"},
+			errStr: "pass non-URL arguments as kwargs only",
+		},
+		{
+			name:   "don't ignore data= in POST",
+			method: "POST",
+			args:   []interface{}{"http://dummy.url"},
+			kwargs: map[string]interface{}{"data": "meow"},
+			body:   "meow",
+		},
+		{
+			name:   "ignore data= in GET",
+			method: "GET",
+			args:   []interface{}{"http://dummy.url"},
+			kwargs: map[string]interface{}{"data": "meow"},
+			body:   "",
+		},
+		{
+			name:   "passing json",
+			method: "POST",
+			args:   []interface{}{"http://dummy.url"},
+			kwargs: map[string]interface{}{"json": "woof"},
+			body:   "woof",
+		},
+		{
+			name:   "passing json + body #1. json ignored",
+			method: "POST",
+			args:   []interface{}{"http://dummy.url"},
+			kwargs: map[string]interface{}{"data": "meow", "json": "woof"},
+			body:   "meow",
+		},
+		{
+			name:   "passing json + body #2. json ignored",
+			method: "POST",
+			args:   []interface{}{"http://dummy.url"},
+			kwargs: map[string]interface{}{"json": "woof", "data": "meow"},
+			body:   "meow",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var req request
+
+			sdkArgs, err := kittehs.TransformError(tt.args, sdktypes.WrapValue)
+			assert.NoError(t, err)
+			sdkKwargs, err := kittehs.TransformMapValuesError(tt.kwargs, sdktypes.WrapValue)
+			assert.NoError(t, err)
+
+			err = unpackAndParseArgs(&req, tt.method, sdkArgs, sdkKwargs)
+			if tt.errStr != "" {
+				assert.ErrorContains(t, err, tt.errStr)
+				return
+			} else {
+				assert.NoError(t, err)
+			}
+
+			reqBody := ""
+			if req.body != nil {
+				reqBody = req.body.String()
+			}
+			assert.Equal(t, tt.body, reqBody)
 		})
 	}
 }
