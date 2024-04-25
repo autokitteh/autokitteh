@@ -65,7 +65,7 @@ func unpackAndParseArgs(req *request, method string, args []sdktypes.Value, kwar
 		"params=?", &req.params,
 		"headers=?", &req.headers,
 		"json=?", &data, // alias for data
-		"data=?", &data, // will override json, if both are provided
+		"data=?", &data, // will override json, if both json and data are provided
 	); err != nil {
 		return err
 	}
@@ -76,6 +76,14 @@ func unpackAndParseArgs(req *request, method string, args []sdktypes.Value, kwar
 	// NOTE: GET request shouldn't have user-defined body.
 	// Python's requests lib will ignore body on GET as well
 	if method != http.MethodGet && data.IsValid() {
+
+		// if data passed as JSON and data is not passed, then request to parse as JSON content
+		if _, isJson := kwargs["json"]; isJson {
+			if _, isData := kwargs["data"]; !isData {
+				req.headers[contentTypeHeader] = contentTypeJSON
+			}
+		}
+
 		if err = parseBody(req, data); err != nil {
 			return err
 		}
