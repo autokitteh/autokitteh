@@ -118,7 +118,7 @@ func parseBody(req *request, body sdktypes.Value) (err error) {
 		if err = body.UnwrapInto(&formBody); err == nil {
 			req.bodyType = bodyTypeForm
 			if contentType == "" {
-				req.headers[contentTypeHeader] = contentTypeJSON
+				req.headers[contentTypeHeader] = contentTypeForm
 			}
 		}
 	}
@@ -126,7 +126,7 @@ func parseBody(req *request, body sdktypes.Value) (err error) {
 		if err = body.UnwrapInto(&jsonBody); err == nil {
 			req.bodyType = bodyTypeJSON
 			if contentType == "" {
-				req.headers[contentTypeHeader] = contentTypeForm
+				req.headers[contentTypeHeader] = contentTypeJSON
 			}
 		}
 	}
