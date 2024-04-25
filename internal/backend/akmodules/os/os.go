@@ -44,14 +44,14 @@ func execute(ctx context.Context, name string, args ...string) (sdktypes.Value, 
 		}
 	}
 
-	if err == nil {
-		return kittehs.Must1(sdktypes.NewListValue([]sdktypes.Value{
-			sdktypes.NewStringValue(string(out)),
-			sdktypes.NewIntegerValue(int64(rc)),
-		})), nil
+	if err != nil {
+		return sdktypes.InvalidValue, err
 	}
 
-	return sdktypes.InvalidValue, err
+	return kittehs.Must1(sdktypes.NewListValue([]sdktypes.Value{
+		sdktypes.NewStringValue(string(out)),
+		sdktypes.NewIntegerValue(int64(rc)),
+	})), nil
 }
 
 func command(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {

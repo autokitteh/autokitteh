@@ -99,20 +99,21 @@ func (cs *calls) invoke(ctx context.Context, callv sdktypes.Value, args []sdktyp
 	}
 
 	v, err := caller.Call(ctx, callv, args, kwargs)
+	if err != nil {
+		if errors.Is(err, workflow.ErrCanceled) && errors.Is(ctx.Err(), context.DeadlineExceeded) {
+			err = context.DeadlineExceeded
+		}
 
-	if err != nil && errors.Is(err, workflow.ErrCanceled) && errors.Is(ctx.Err(), context.DeadlineExceeded) {
-		err = context.DeadlineExceeded
-	}
-
-	if err != nil && errors.Is(err, context.DeadlineExceeded) {
-		v = sdktypes.InvalidValue
-		err = sdktypes.NewProgramError(
-			akmodule.TimeoutError,
-			nil,
-			map[string]string{
-				"duration": timeout.String(),
-			},
-		).ToError()
+		if errors.Is(err, context.DeadlineExceeded) {
+			v = sdktypes.InvalidValue
+			err = sdktypes.NewProgramError(
+				akmodule.TimeoutError,
+				nil,
+				map[string]string{
+					"duration": timeout.String(),
+				},
+			).ToError()
+		}
 	}
 
 	return sdktypes.NewSessionCallAttemptResult(v, err), nil
