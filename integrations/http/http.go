@@ -35,8 +35,7 @@ var args = sdkmodule.WithArgs(
 	"url",
 	"params?",
 	"headers?",
-	"body_type?",
-	"body?",
+	"data?",
 )
 
 const (
@@ -260,7 +259,7 @@ func (i integration) request(method string) sdkexecutor.Function {
 	return func(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
 		// Parse the input arguments.
 		var (
-			body sdktypes.Value
+			data sdktypes.Value
 			err  error
 			req  request
 		)
@@ -273,7 +272,7 @@ func (i integration) request(method string) sdkexecutor.Function {
 			"url", &req.url,
 			"params=?", &req.params,
 			"headers=?", &req.headers,
-			"body=?", &body,
+			"data=?", &data,
 		); err != nil {
 			return sdktypes.InvalidValue, err
 		}
@@ -284,8 +283,8 @@ func (i integration) request(method string) sdkexecutor.Function {
 
 		// NOTE: GET request shouldn't have user-defined body.
 		// Python's requests lib will ignore body on GET as well
-		if method != http.MethodGet && body.IsValid() {
-			if err = parseBody(&req, body); err != nil {
+		if method != http.MethodGet && data.IsValid() {
+			if err = parseBody(&req, data); err != nil {
 				return sdktypes.InvalidValue, err
 			}
 		}
