@@ -198,7 +198,7 @@ func TestUnpackAndParseArgs(t *testing.T) {
 			method: "POST",
 			args:   []interface{}{"http://dummy.url"},
 			kwargs: map[string]interface{}{"json": "woof"},
-			body:   "woof",
+			body:   `"woof"`,
 		},
 		{
 			name:   "passing json + body #1. json ignored",
