@@ -88,7 +88,10 @@ var pyVersionCases = []struct {
 	{"Python 3.12.2", 3, 12, false},
 	{"Python 2.7.18", 2, 7, false},
 	{"Python 3", 0, 0, true},
+	{"Python", 0, 0, true},
+	{"sl 1.2.3", 0, 0, true},
 	{"", 0, 0, true},
+	{"Python 3.10.13 (fc59e61cfbff, Jan 17 2024, 05:35:45)", 3, 10, false},
 }
 
 func Test_parsePyVersion(t *testing.T) {

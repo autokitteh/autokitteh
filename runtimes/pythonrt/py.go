@@ -12,7 +12,6 @@ import (
 	"os"
 	"os/exec"
 	"path"
-	"strconv"
 	"strings"
 
 	"go.uber.org/zap"
@@ -43,29 +42,20 @@ type Version struct {
 }
 
 type exeInfo struct {
-	Exe     string
-	Version Version
+	Exe           string
+	VersionString string
+	Version       Version
 }
 
 func parsePyVersion(s string) (major, minor int, err error) {
 	// Python 3.12.2
 	const prefix = "Python "
 	if len(s) < len(prefix) {
-		return 0, 0, fmt.Errorf("version string too short: %q", s)
+		return 0, 0, fmt.Errorf("python version string too short: %q", s)
 	}
 
 	s = s[len(prefix):]
-	fields := strings.SplitN(s, ".", 3)
-	if len(fields) < 2 {
-		return 0, 0, fmt.Errorf("version string too short: %q", s)
-	}
-
-	major, err = strconv.Atoi(fields[0])
-	if err != nil {
-		return 0, 0, err
-	}
-
-	minor, err = strconv.Atoi(fields[1])
+	_, err = fmt.Sscanf(s, "%d.%d", &major, &minor)
 	if err != nil {
 		return 0, 0, err
 	}
@@ -90,11 +80,12 @@ func pyExeInfo(ctx context.Context) (exeInfo, error) {
 	version := strings.TrimSpace(buf.String())
 	major, minor, err := parsePyVersion(version)
 	if err != nil {
-		return exeInfo{}, fmt.Errorf("can't parse version %q: %w", version, err)
+		return exeInfo{}, fmt.Errorf("failed to parse Python version %q: %w", version, err)
 	}
 
 	info := exeInfo{
-		Exe: exePath,
+		Exe:           exePath,
+		VersionString: version,
 		Version: Version{
 			Major: major,
 			Minor: minor,

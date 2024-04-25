@@ -68,7 +68,8 @@ func New() (sdkservices.Runtime, error) {
 
 	log.Info("system python info", zap.String("exe", info.Exe), zap.Any("version", info.Version))
 	if !isGoodVersion(info.Version) {
-		return nil, fmt.Errorf("python version %d.%d is too old, min is %d.%d", info.Version.Major, info.Version.Minor, minPyVersion.Major, minPyVersion.Minor)
+		const format = "python >= %d.%d required, found %q"
+		return nil, fmt.Errorf(format, minPyVersion.Major, minPyVersion.Minor, info.VersionString)
 	}
 
 	if err := ensureVEnv(log, info.Exe); err != nil {
