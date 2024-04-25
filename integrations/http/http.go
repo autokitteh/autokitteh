@@ -54,7 +54,7 @@ type request struct {
 }
 
 // parses provided body and updates headers accordingly
-func parseBody(req request, body sdktypes.Value) (err error) {
+func parseBody(req *request, body sdktypes.Value) (err error) {
 	var (
 		rawBody, contentType string
 		formBody             map[string]string
@@ -285,7 +285,7 @@ func (i integration) request(method string) sdkexecutor.Function {
 		// NOTE: GET request shouldn't have user-defined body.
 		// Python's requests lib will ignore body on GET as well
 		if method != http.MethodGet && body.IsValid() {
-			if err = parseBody(req, body); err != nil {
+			if err = parseBody(&req, body); err != nil {
 				return sdktypes.InvalidValue, err
 			}
 		}

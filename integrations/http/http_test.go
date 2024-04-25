@@ -1,9 +1,6 @@
 package http
 
 import (
-	"fmt"
-	"io"
-	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -143,29 +140,25 @@ func TestParseBody(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var rawBody string
-			var jsonBody sdktypes.Value
-			var formBody map[string]string
+			var req request
+			var body string
 
 			bodyToParse, err := sdktypes.WrapValue(tt.body) // warp into sdktypes.Value
 			assert.NoError(t, err)
-			fmt.Printf("%v\n", bodyToParse)
 
-			err, bodyType := parseBody(bodyToParse, tt.headers, &rawBody, &formBody, &jsonBody)
-			assert.NoError(t, err)
-			req, err := http.NewRequest("POST", "http://dummy.url", nil) // create dummy request
-			assert.NoError(t, err)
-
-			var body []byte = nil
-			err = setBody(req, bodyType, rawBody, formBody, jsonBody)
-			assert.NoError(t, err)
-			assert.Equal(t, tt.bodyType, bodyType)
-
-			if req.Body != nil {
-				body, err = io.ReadAll(req.Body)
-				assert.NoError(t, err)
+			if tt.headers != nil {
+				req.headers = tt.headers
+			} else {
+				req.headers = make(map[string]string)
 			}
-			assert.Equal(t, tt.reqBody, string(body))
+			err = parseBody(&req, bodyToParse)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.bodyType, req.bodyType)
+
+			if req.body != nil {
+				body = req.body.String()
+			}
+			assert.Equal(t, tt.reqBody, body)
 		})
 	}
 }
