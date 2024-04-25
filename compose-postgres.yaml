@@ -47,6 +47,7 @@ services:
       AK_TEMPORALCLIENT__HOSTPORT: "temporal:7233"
       AK_DB__TYPE: "postgres"
       AK_DB__DSN: "host=db dbname=postgres user=postgres password=postgres"
+      AK_STORE__SERVER_URL: "redis:6379"
     restart: unless-stopped
   temporal:
     build:
@@ -62,11 +63,22 @@ services:
       AK_TEMPORALCLIENT__HOSTPORT: "0.0.0.0:7233"
       AK_DB__TYPE: "postgres"
       AK_DB__DSN: "host=db dbname=postgres user=postgres password=postgres"
+      AK_STORE__SERVER_URL: "redis:6379"
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider http://localhost:9980"]
       interval: 1s
       timeout: 5s
       retries: 5
+  redis:
+    image: redis:7.2.4-alpine
+    restart: always
+    ports:
+      - '6379:6379'
+    command: redis-server --save 20 1 --loglevel warning
+    volumes: 
+      - redis:/data
 volumes:
   db:
+    driver: local
+  redis:
     driver: local
