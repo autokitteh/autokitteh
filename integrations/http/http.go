@@ -52,6 +52,40 @@ type request struct {
 	contentLen      int64
 }
 
+func unpackAndParseArgs(req *request, method string, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (err error) {
+	var data sdktypes.Value
+
+	if len(args) > 1 { // just to have a better error message instead of "not all args consumed"
+		return errors.New("pass non-URL arguments as kwargs only")
+	}
+
+	if err = sdkmodule.UnpackArgs(args, kwargs,
+		"url", &req.url,
+		"params=?", &req.params,
+		"headers=?", &req.headers,
+		"json=?", &data, // alias for data
+		"data=?", &data, // will override json, if both are provided
+	); err != nil {
+		return err
+	}
+	if req.headers == nil {
+		req.headers = make(map[string]string)
+	}
+
+	// NOTE: GET request shouldn't have user-defined body.
+	// Python's requests lib will ignore body on GET as well
+	if method != http.MethodGet && data.IsValid() {
+		if err = parseBody(req, data); err != nil {
+			return err
+		}
+	}
+
+	if err := setQueryParams(&req.url, req.params); err != nil {
+		return err
+	}
+	return nil
+}
+
 // parses provided body and updates headers accordingly
 func parseBody(req *request, body sdktypes.Value) (err error) {
 	var (
@@ -259,37 +293,12 @@ func (i integration) request(method string) sdkexecutor.Function {
 	return func(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
 		// Parse the input arguments.
 		var (
-			data sdktypes.Value
-			err  error
-			req  request
+			err error
+			req request
 		)
 
-		if len(args) > 1 { // just to have a better error message
-			return sdktypes.InvalidValue, errors.New("pass non-URL arguments as kwargs only")
-		}
-
-		if err = sdkmodule.UnpackArgs(args, kwargs,
-			"url", &req.url,
-			"params=?", &req.params,
-			"headers=?", &req.headers,
-			"data=?", &data,
-		); err != nil {
-			return sdktypes.InvalidValue, err
-		}
-
-		if req.headers == nil {
-			req.headers = make(map[string]string)
-		}
-
-		// NOTE: GET request shouldn't have user-defined body.
-		// Python's requests lib will ignore body on GET as well
-		if method != http.MethodGet && data.IsValid() {
-			if err = parseBody(&req, data); err != nil {
-				return sdktypes.InvalidValue, err
-			}
-		}
-
-		if err := setQueryParams(&req.url, req.params); err != nil {
+		// parse args and kwargs
+		if err = unpackAndParseArgs(&req, method, args, kwargs); err != nil {
 			return sdktypes.InvalidValue, err
 		}
 
