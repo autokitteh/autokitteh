@@ -26,7 +26,7 @@ var (
 func New() sdkexecutor.Executor {
 	return fixtures.NewBuiltinExecutor(
 		ExecutorID,
-		sdkmodule.ExportFunction("command", command, sdkmodule.WithArgs("cmd", "*args")),
+		sdkmodule.ExportFunction("command", command, sdkmodule.WithArgs("cmd", "*args", "write=?", "read=?")),
 		sdkmodule.ExportFunction("shell", shell, sdkmodule.WithArgs("cmd", "sh=?", "write=?", "read=?")),
 	)
 }
@@ -131,14 +131,16 @@ func command(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdkty
 	var (
 		cmd     string
 		cmdArgs []string
+		write   map[string]any
+		read    []string
 	)
 
-	err := sdkmodule.UnpackArgs(args, kwargs, "cmd", &cmd, "*args", &cmdArgs)
+	err := sdkmodule.UnpackArgs(args, kwargs, "cmd", &cmd, "*args", &cmdArgs, "write=?", &write, "read=?", &read)
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
 
-	return execute(ctx, cmd, cmdArgs, nil, nil)
+	return execute(ctx, cmd, cmdArgs, write, read)
 }
 
 func shell(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
