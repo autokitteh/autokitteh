@@ -1,10 +1,20 @@
-["meow\n", 0]
-["hiss\n", 1]
-["woof\n", 0]
+exec(exitcode = 0, files = {}, output = "meow\n")
+exec(exitcode = 1, files = {}, output = "hiss\n")
+exec(exitcode = 0, files = {}, output = "woof\n")
+exec(exitcode = 0, files = {}, output = "meow, world!")
+exec(exitcode = 0, files = {"woof.txt": b"woof\n"}, output = "")
 [None, timeout]
+[exec(exitcode = 0, files = {}, output = "meow\n"), None]
+[None, "write key must not contain '..'"]
+[None, "write key must be a relative path"]
 
 -- main.star --
 print(os.command('/bin/sh', '-c', 'echo meow'))
 print(os.command('/bin/sh', '-c', 'echo hiss; exit 1'))
 print(os.shell('echo woof'))
+print(os.shell('cat meow.txt', write={'meow.txt': 'meow, world!'}))
+print(os.shell('echo woof > woof.txt', read=['woof.txt']))
 print(os.shell('echo meow; sleep 50', ak_timeout=2, ak_catch=True))
+print(os.shell('echo meow', ak_timeout=2, ak_catch=True))
+print(os.shell('cat meow.txt', write={'../meow.txt': 'meow, world!'}, ak_catch=True))
+print(os.shell('cat meow.txt', write={'/meow.txt': 'meow, world!'}, ak_catch=True))
