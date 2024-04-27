@@ -112,16 +112,30 @@ func TestParseBodyForRequest(t *testing.T) {
 			reqBody:  "",
 		},
 		{
-			name:     "string + contentTypeJson => raw",
+			name:     "string",
 			body:     "meow",
 			bodyType: bodyTypeRaw,
 			reqBody:  "meow",
 		},
 		{
-			name:     "json string => raw (string)",
+			name:     "string + contentTypeJson => json",
+			body:     "meow",
+			headers:  jsonContentHeader,
+			bodyType: bodyTypeJSON,
+			reqBody:  `"meow"`,
+		},
+		{
+			name:     "json string => raw",
 			body:     `{"k":"v"}`,
 			bodyType: bodyTypeRaw,
 			reqBody:  `{"k":"v"}`,
+		},
+		{
+			name:     "json string + contentTypeJson => json",
+			body:     `{"k":"v"}`,
+			headers:  jsonContentHeader,
+			bodyType: bodyTypeJSON,
+			reqBody:  `"{\"k\":\"v\"}"`,
 		},
 		{
 			// NOTE: different behavior then python's requests.
