@@ -1,6 +1,9 @@
 package http
 
 import (
+	"context"
+	"encoding/json"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -251,6 +254,112 @@ func TestUnpackAndParseArgs(t *testing.T) {
 				reqBody = req.body.String()
 			}
 			assert.Equal(t, tt.body, reqBody)
+		})
+	}
+}
+
+func TestPythonRequestsCompatibility(t *testing.T) {
+	if os.Getenv("CI") != "" {
+		t.Skip("skipping actual http requests test in CI")
+	}
+
+	type expected struct {
+		data        string
+		json        interface{}
+		form        map[string]interface{}
+		contentType string
+	}
+
+	sdkArgs := []sdktypes.Value{sdktypes.NewStringValue("http://httpbin.org/post")}
+	method := "POST"
+	nilForm := map[string]interface{}{}
+	j1 := map[string]interface{}{"k": "v"}
+	// jsonContentHeader := map[string]string{contentTypeHeader: contentTypeJSON}
+
+	tests := []struct {
+		name   string
+		kwargs map[string]interface{}
+		exp    expected
+	}{
+		{
+			name:   "data = string",
+			kwargs: map[string]interface{}{"data": "meow"},
+			exp:    expected{data: "meow", form: nilForm, json: nil},
+		},
+		{
+			name:   "data = not a json string",
+			kwargs: map[string]interface{}{"data": `{'k':'v'}`},
+			exp:    expected{data: `{'k':'v'}`, form: nilForm, json: nil},
+		},
+		{
+			name:   "data = a json string. Apperar in data and in json",
+			kwargs: map[string]interface{}{"data": `{"k":"v"}`},
+			exp:    expected{data: "{\"k\":\"v\"}", form: nilForm, json: j1},
+		},
+		{
+			name:   "data = dict. Form-encode the body and set the Content-Type",
+			kwargs: map[string]interface{}{"data": j1},
+			exp:    expected{data: "", form: j1, json: nil, contentType: contentTypeForm},
+		},
+
+		// NOTE: corner-case/library-dependent behavior?
+		// Python's requests will first form encode dictionary passed via data=, even if
+		// content-type = applicattion/json is specified. JS axious on the other hand will convert to json.
+		// Meanwhile if content-type is explicitly set to JSON, we will convert to JSON as well
+		// {
+		// 	name:   "data = dict + content-type=json. Server will fail to recognize the form",
+		// 	kwargs: map[string]interface{}{"data": jsonData, "headers": jsonContentHeader},
+		// 	exp:    expected{data: "", form: jsonData, json: nil, contentType: contentTypeForm},
+		// },
+
+		{
+			name:   "json = string => data=string + content-type",
+			kwargs: map[string]interface{}{"json": "meow"},
+			exp:    expected{data: `"meow"`, form: nilForm, json: `meow`, contentType: contentTypeJSON},
+		},
+		{
+			name:   "json = `not a json string` => data=string + content-type",
+			kwargs: map[string]interface{}{"json": `{'k':'v'}`},
+			exp:    expected{data: `"{'k':'v'}"`, form: nilForm, json: `{'k':'v'}`, contentType: contentTypeJSON},
+		},
+		{
+			// Although it's a vlid json string, it shouldn't be parsed as json.
+			// json= should accept only valid json dict, not string. So passing json string should be treated as string
+			name:   "json = `a json string` => data=string(!json) + content-type",
+			kwargs: map[string]interface{}{"json": `{"k":"v"}`},
+			exp:    expected{data: `"{\"k\":\"v\"}"`, form: nilForm, json: `{"k":"v"}`, contentType: contentTypeJSON},
+		},
+
+		// NOTE: python requests will escape the quotes in data. But this is not required
+		{
+			name:   "json = dict => data=json + json + content-type",
+			kwargs: map[string]interface{}{"json": j1},
+			exp:    expected{data: `{"k":"v"}`, form: nilForm, json: j1, contentType: contentTypeJSON},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var req request
+			sdkKwargs, err := kittehs.TransformMapValuesError(tt.kwargs, sdktypes.WrapValue)
+			assert.NoError(t, err)
+
+			err = unpackAndParseArgs(&req, method, sdkArgs, sdkKwargs)
+			assert.NoError(t, err)
+
+			resp, err := sendHttpRequest(context.Background(), req, method)
+			assert.NoError(t, err)
+
+			var respJson map[string]interface{}
+			err = json.NewDecoder(resp.Body).Decode(&respJson)
+			assert.NoError(t, err)
+
+			assert.Equal(t, tt.exp.data, respJson["data"])
+			assert.Equal(t, tt.exp.json, respJson["json"])
+			assert.Equal(t, tt.exp.form, respJson["form"])
+
+			conentType, _ := respJson["headers"].(map[string]interface{})["Content-Type"].(string)
+			assert.Equal(t, tt.exp.contentType, conentType)
 		})
 	}
 }
