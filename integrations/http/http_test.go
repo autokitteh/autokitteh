@@ -176,41 +176,41 @@ func TestUnpackAndParseArgs(t *testing.T) {
 		{
 			name:   "disallow any args except URL",
 			method: "GET",
-			args:   []interface{}{"http://dummy.url", "meow"},
+			args:   []interface{}{"meow"},
 			errStr: "pass non-URL arguments as kwargs only",
 		},
 		{
 			name:   "don't ignore data= in POST",
 			method: "POST",
-			args:   []interface{}{"http://dummy.url"},
+			// args:   []interface{}{"http://dummy.url"},
 			kwargs: map[string]interface{}{"data": "meow"},
 			body:   "meow",
 		},
 		{
 			name:   "ignore data= in GET",
 			method: "GET",
-			args:   []interface{}{"http://dummy.url"},
+			// args:   []interface{}{"http://dummy.url"},
 			kwargs: map[string]interface{}{"data": "meow"},
 			body:   "",
 		},
 		{
 			name:   "passing json",
 			method: "POST",
-			args:   []interface{}{"http://dummy.url"},
+			// args:   []interface{}{"http://dummy.url"},
 			kwargs: map[string]interface{}{"json": "woof"},
 			body:   `"woof"`,
 		},
 		{
 			name:   "passing json + body #1. json ignored",
 			method: "POST",
-			args:   []interface{}{"http://dummy.url"},
+			// args:   []interface{}{"http://dummy.url"},
 			kwargs: map[string]interface{}{"data": "meow", "json": "woof"},
 			body:   "meow",
 		},
 		{
 			name:   "passing json + body #2. json ignored",
 			method: "POST",
-			args:   []interface{}{"http://dummy.url"},
+			// args:   []interface{}{"http://dummy.url"},
 			kwargs: map[string]interface{}{"json": "woof", "data": "meow"},
 			body:   "meow",
 		},
@@ -220,7 +220,10 @@ func TestUnpackAndParseArgs(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var req request
 
-			sdkArgs, err := kittehs.TransformError(tt.args, sdktypes.WrapValue)
+			args := []interface{}{"http://dummy.url"}
+			args = append(args, tt.args...)
+
+			sdkArgs, err := kittehs.TransformError(args, sdktypes.WrapValue)
 			assert.NoError(t, err)
 			sdkKwargs, err := kittehs.TransformMapValuesError(tt.kwargs, sdktypes.WrapValue)
 			assert.NoError(t, err)
