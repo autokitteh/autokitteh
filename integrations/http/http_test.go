@@ -38,6 +38,86 @@ func TestBodyToStructJSON(t *testing.T) {
 	}
 }
 
+func TestBodyToStruct(t *testing.T) {
+	// TODO: test parse form as well
+
+	type JSN map[interface{}]interface{}
+
+	type expected struct {
+		text    string
+		textErr bool
+		json    JSN
+		jsonErr bool
+	}
+
+	tests := []struct {
+		name string
+		body []byte
+		exp  expected
+	}{
+		{
+			name: "simle string",
+			body: []byte(`meow`),
+			exp:  expected{`meow`, false, JSN{}, true},
+		},
+		{
+			name: "simple form",
+			body: []byte(`k=v`),
+			exp:  expected{`k=v`, false, JSN{}, true},
+		},
+		{
+			name: "complex form", // {"k":"v", "i": 1, "b": True, "l": [1,2]}
+			body: []byte(`k=v&i=1&b=True&l=1&l=2`),
+			exp:  expected{`k=v&i=1&b=True&l=1&l=2`, false, JSN{}, true},
+		},
+		{
+			name: "empty json",
+			body: []byte(`{}`),
+			exp:  expected{`{}`, false, JSN{}, false},
+		},
+		{
+			name: "simple json",
+			body: []byte(`{"k":"v"}`),
+			exp:  expected{`{"k":"v"}`, false, JSN{"k": "v"}, false},
+		},
+		{
+			name: "complex json",
+			body: []byte(`{"k":"v", "i":1, "b":true, "l":["1","2"]}`),
+			exp: expected{
+				`{"k":"v", "i":1, "b":true, "l":["1","2"]}`,
+				false,
+				JSN{"k": "v", "i": int64(1), "b": true, "l": []interface{}{"1", "2"}},
+				false,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			v := bodyToStruct(tt.body, nil)
+			text, textErr := v.GetStruct().Fields()["text"].GetFunction().ConstValue()
+			json, jsonErr := v.GetStruct().Fields()["json"].GetFunction().ConstValue()
+
+			txt, _ := text.ToString()
+			if !tt.exp.textErr {
+				assert.Equal(t, tt.exp.text, txt)
+				assert.NoError(t, textErr)
+			} else {
+				assert.Error(t, textErr)
+				assert.Equal(t, "", txt)
+			}
+
+			jsn, _ := sdktypes.UnwrapValue(json)
+			if !tt.exp.jsonErr {
+				assert.Equal(t, tt.exp.json, JSN(jsn.(map[interface{}]interface{})))
+				assert.NoError(t, jsonErr)
+			} else {
+				assert.Error(t, jsonErr)
+				assert.Equal(t, nil, jsn)
+			}
+		})
+	}
+}
+
 var jsonContentHeader = map[string]string{contentTypeHeader: contentTypeJSON}
 
 func TestSetQueryParams(t *testing.T) {
