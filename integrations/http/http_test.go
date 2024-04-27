@@ -449,8 +449,8 @@ func TestPythonRequestsCompatibility(t *testing.T) {
 			assert.Equal(t, tt.exp.json, respJson["json"])
 			assert.Equal(t, tt.exp.form, respJson["form"])
 
-			conentType, _ := respJson["headers"].(map[string]interface{})["Content-Type"].(string)
-			assert.Equal(t, tt.exp.contentType, conentType)
+			contentType, _ := respJson["headers"].(map[string]interface{})["Content-Type"].(string)
+			assert.Equal(t, tt.exp.contentType, contentType)
 		})
 	}
 }
