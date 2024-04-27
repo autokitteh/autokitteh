@@ -38,6 +38,8 @@ func TestBodyToStructJSON(t *testing.T) {
 	}
 }
 
+var jsonContentHeader = map[string]string{contentTypeHeader: contentTypeJSON}
+
 func TestSetQueryParams(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -110,7 +112,7 @@ func TestParseBodyForRequest(t *testing.T) {
 			reqBody:  "",
 		},
 		{
-			name:     "string",
+			name:     "string + contentTypeJson => raw",
 			body:     "meow",
 			bodyType: bodyTypeRaw,
 			reqBody:  "meow",
@@ -135,7 +137,7 @@ func TestParseBodyForRequest(t *testing.T) {
 			// Pyhton lib will form encode although content-type is set to json
 			name:           "dict (map[string]string) + contentTypeJSON => json",
 			body:           map[string]string{"k": "v"},
-			headers:        map[string]string{contentTypeHeader: contentTypeJSON},
+			headers:        jsonContentHeader,
 			bodyType:       bodyTypeJSON,
 			reqBody:        `{"k":"v"}`,
 			reqContentType: contentTypeJSON,
@@ -143,7 +145,7 @@ func TestParseBodyForRequest(t *testing.T) {
 		{
 			name:           "dict (map[string]interface{}) => json",
 			body:           map[string]interface{}{"k": "v", "t": true},
-			headers:        map[string]string{contentTypeHeader: contentTypeJSON},
+			headers:        jsonContentHeader,
 			bodyType:       bodyTypeJSON,
 			reqBody:        `{"k":"v","t":true}`,
 			reqContentType: contentTypeJSON,
@@ -275,7 +277,6 @@ func TestPythonRequestsCompatibility(t *testing.T) {
 	method := "POST"
 	nilForm := map[string]interface{}{}
 	j1 := map[string]interface{}{"k": "v"}
-	// jsonContentHeader := map[string]string{contentTypeHeader: contentTypeJSON}
 
 	tests := []struct {
 		name   string
