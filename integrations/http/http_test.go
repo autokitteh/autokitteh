@@ -91,13 +91,14 @@ func TestSetQueryParams(t *testing.T) {
 	}
 }
 
-func TestParseBody(t *testing.T) {
+func TestParseBodyForRequest(t *testing.T) {
 	tests := []struct {
-		name     string
-		body     interface{}       // body to warp as sdktypes.Value and parse
-		headers  map[string]string // optional headers
-		bodyType string            // parsed body type
-		reqBody  string            // body extracted from resulting request
+		name           string
+		body           interface{}       // body to warp as sdktypes.Value and parse
+		headers        map[string]string // optional headers
+		bodyType       string            // parsed body type
+		reqBody        string            // body extracted from resulting request
+		reqContentType string
 	}{
 		{
 			name:     "empty body",
@@ -112,30 +113,36 @@ func TestParseBody(t *testing.T) {
 			reqBody:  "meow",
 		},
 		{
-			name:     "json as string => raw",
+			name:     "json string => raw (string)",
 			body:     `{"k":"v"}`,
 			bodyType: bodyTypeRaw,
 			reqBody:  `{"k":"v"}`,
 		},
 		{
-			name:     "map[string]string => form",
-			body:     map[string]string{"k": "v"},
-			bodyType: bodyTypeForm,
-			reqBody:  "k=v",
+			// NOTE: different behavior then python's requests.
+			// Requests will form encode map[string]interface{} as well
+			name:           "dict (map[string]string) => form",
+			body:           map[string]string{"k": "v"},
+			bodyType:       bodyTypeForm,
+			reqBody:        "k=v",
+			reqContentType: contentTypeForm,
 		},
 		{
-			name:     "map[string]string + contentTypeJSON => json",
-			body:     map[string]string{"k": "v"},
-			headers:  map[string]string{contentTypeHeader: contentTypeJSON},
-			bodyType: bodyTypeJSON,
-			reqBody:  `{"k":"v"}`,
+			// NOTE: different behavior then python's requests. See compatibility test
+			name:           "dict (map[string]string) + contentTypeJSON => json",
+			body:           map[string]string{"k": "v"},
+			headers:        map[string]string{contentTypeHeader: contentTypeJSON},
+			bodyType:       bodyTypeJSON,
+			reqBody:        `{"k":"v"}`,
+			reqContentType: contentTypeJSON,
 		},
 		{
-			name:     "unmarshal(json string) => json",
-			body:     map[string]interface{}{"k": "v", "t": true},
-			headers:  map[string]string{contentTypeHeader: contentTypeJSON},
-			bodyType: bodyTypeJSON,
-			reqBody:  `{"k":"v","t":true}`,
+			name:           "dict (map[string]interface{}) => json",
+			body:           map[string]interface{}{"k": "v", "t": true},
+			headers:        map[string]string{contentTypeHeader: contentTypeJSON},
+			bodyType:       bodyTypeJSON,
+			reqBody:        `{"k":"v","t":true}`,
+			reqContentType: contentTypeJSON,
 		},
 	}
 
@@ -160,6 +167,9 @@ func TestParseBody(t *testing.T) {
 				body = req.body.String()
 			}
 			assert.Equal(t, tt.reqBody, body)
+			if tt.reqContentType != "" {
+				assert.Equal(t, tt.reqContentType, req.headers[contentTypeHeader])
+			}
 		})
 	}
 }
