@@ -123,7 +123,7 @@ func TestParseBodyForRequest(t *testing.T) {
 		},
 		{
 			// NOTE: different behavior then python's requests.
-			// Requests will form encode map[string]interface{} as well
+			// Python lib will form encode map[string]interface{} as well
 			name:           "dict (map[string]string) => form",
 			body:           map[string]string{"k": "v"},
 			bodyType:       bodyTypeForm,
@@ -132,6 +132,7 @@ func TestParseBodyForRequest(t *testing.T) {
 		},
 		{
 			// NOTE: different behavior then python's requests. See compatibility test
+			// Pyhton lib will form encode although content-type is set to json
 			name:           "dict (map[string]string) + contentTypeJSON => json",
 			body:           map[string]string{"k": "v"},
 			headers:        map[string]string{contentTypeHeader: contentTypeJSON},
