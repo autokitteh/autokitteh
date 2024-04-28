@@ -5,9 +5,11 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"io/fs"
 	"os"
+	"path"
 	"testing"
 	"time"
 
@@ -140,4 +142,48 @@ func Test_pySvc_Run(t *testing.T) {
 	}
 	_, err = run.Call(ctx, fn, nil, kwargs)
 	require.NoError(t, err, "call")
+}
+
+var isGoodVersionCasess = []struct {
+	version Version
+	ok      bool
+}{
+	{Version{2, 6}, false},
+	{Version{3, minPyVersion.Minor - 1}, false},
+	{Version{3, minPyVersion.Minor}, true},
+	{Version{3, minPyVersion.Minor + 1}, true},
+}
+
+func Test_isGoodVersion(t *testing.T) {
+	for _, tc := range isGoodVersionCasess {
+		name := fmt.Sprintf("%d.%d", tc.version.Major, tc.version.Minor)
+		t.Run(name, func(t *testing.T) {
+			ok := isGoodVersion(tc.version)
+			require.Equal(t, tc.ok, ok)
+		})
+	}
+}
+
+const exeCodeTemplate = `#!/bin/bash
+
+echo Python %d.%d.7
+`
+
+func TestNewBadVersion(t *testing.T) {
+	dirName := t.TempDir()
+	exe := path.Join(dirName, "python")
+	file, err := os.Create(exe)
+	require.NoError(t, err)
+
+	exeCode := fmt.Sprintf(exeCodeTemplate, minPyVersion.Major, minPyVersion.Minor-1)
+	_, err = file.Write([]byte(exeCode))
+	require.NoError(t, err)
+	file.Close()
+
+	err = os.Chmod(exe, 0755)
+	require.NoError(t, err)
+	t.Setenv("PATH", dirName)
+
+	_, err = New()
+	require.Error(t, err)
 }

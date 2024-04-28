@@ -28,6 +28,10 @@ jobs:
         run: go mod download
       - name: Build
         run: make build bin
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'  # Should be in sync with runtimes/pythonrt/pythonrt.go:minPyVersion
       - name: Test
         run: make test-unit
 
