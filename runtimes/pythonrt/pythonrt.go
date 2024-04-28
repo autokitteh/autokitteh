@@ -264,6 +264,30 @@ func (py *pySvc) Close() {
 	// We kill the Python process once the initial `Call` is completed.
 }
 
+func (py *pySvc) handleLog(msg Message) error {
+	log, err := extractMessage[LogMessage](msg)
+	if err != nil {
+		return err
+	}
+
+	var fn func(string, ...zap.Field)
+	switch log.Level {
+	case "DEBUG":
+		fn = py.log.Debug
+	case "INFO":
+		fn = py.log.Info
+	case "WARN":
+		fn = py.log.Warn
+	case "ERROR":
+		fn = py.log.Error
+	default:
+		return fmt.Errorf("unknown log level in %#v", log)
+	}
+
+	fn(log.Message, zap.String("runtime", "python"), zap.String("type", "log"))
+	return nil
+}
+
 // initialCall handles initial call from autokitteh.
 // We split it from Call since Call is also used to execute activities.
 func (py *pySvc) initialCall(ctx context.Context, funcName string, event map[string]any) (sdktypes.Value, error) {
@@ -295,15 +319,23 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, event map[str
 			py.log.Error("communication error", zap.Error(err))
 			return sdktypes.InvalidValue, err
 		}
-		py.log.Info("from python", zap.Any("message", msg))
-
-		if msg.Type == "done" {
-			break
-		}
+		py.log.Debug("from python", zap.Any("message", msg))
 
 		if msg.Type == "" {
 			py.log.Error("empty message from python, probably error", zap.Any("message", msg))
 			return sdktypes.InvalidValue, fmt.Errorf("empty message from Python")
+		}
+
+		if msg.Type == MessageType[DoneMessage]() {
+			break
+		}
+
+		if msg.Type == MessageType[LogMessage]() {
+			if err := py.handleLog(msg); err != nil {
+				py.log.Error("handle log", zap.Error(err))
+				return sdktypes.InvalidValue, fmt.Errorf("bad log message: %w", err)
+			}
+			continue
 		}
 
 		cbm, err := extractMessage[CallbackMessage](msg)
@@ -449,18 +481,28 @@ func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 		return sdktypes.InvalidValue, err
 	}
 
-	msg, err := py.comm.Recv()
-	if err != nil {
-		py.log.Error("from python", zap.Error(err))
-		return sdktypes.InvalidValue, err
-	}
+	for {
+		msg, err := py.comm.Recv()
+		if err != nil {
+			py.log.Error("from python", zap.Error(err))
+			return sdktypes.InvalidValue, err
+		}
 
-	rm, err := extractMessage[ResponseMessage](msg)
-	if err != nil {
-		py.log.Error("from python", zap.Error(err))
-		return sdktypes.InvalidValue, err
-	}
-	py.log.Info("python return", zap.Any("message", rm))
+		if msg.Type == MessageType[LogMessage]() {
+			if err := py.handleLog(msg); err != nil {
+				py.log.Error("handle log", zap.Error(err))
+				return sdktypes.InvalidValue, err
+			}
+			continue
+		}
 
-	return sdktypes.NewBytesValue(rm.Value), nil
+		rm, err := extractMessage[ResponseMessage](msg)
+		if err != nil {
+			py.log.Error("from python", zap.Error(err))
+			return sdktypes.InvalidValue, err
+		}
+		py.log.Info("python return", zap.Any("message", rm))
+
+		return sdktypes.NewBytesValue(rm.Value), nil
+	}
 }

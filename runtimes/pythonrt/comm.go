@@ -6,9 +6,9 @@ import (
 	"net"
 )
 
-// Messages should be in sync with MesssageType in ak_runner.py
+// Messages should be in sync with MessageType in ak_runner.py
 
-// py -> go
+// py <-> go
 type CallbackMessage struct {
 	Name string            `json:"name"`
 	Args []string          `json:"args"`
@@ -29,7 +29,7 @@ type ModuleMessage struct {
 
 func (ModuleMessage) Type() string { return "module" }
 
-// py -> go & go -> python
+// py <-> go
 type ResponseMessage struct {
 	Value []byte `json:"value"`
 }
@@ -44,10 +44,33 @@ type RunMessage struct {
 
 func (RunMessage) Type() string { return "run" }
 
+// python -> go
+type LogMessage struct {
+	Level   string `json:"level"`
+	Message string `json:"message"`
+}
+
+func (LogMessage) Type() string { return "log" }
+
+type DoneMessage struct{}
+
+func (DoneMessage) Type() string { return "done" }
+
 type SubMessage interface {
-	CallbackMessage | ModuleMessage | ResponseMessage | RunMessage
+	CallbackMessage |
+		DoneMessage |
+		LogMessage |
+		ModuleMessage |
+		ResponseMessage |
+		RunMessage
 
 	Type() string
+}
+
+func MessageType[T SubMessage]() string {
+	var m T
+	return m.Type()
+
 }
 
 type Message struct {
