@@ -90,6 +90,11 @@ func TestBodyToStruct(t *testing.T) {
 				false,
 			},
 		},
+		{
+			name: "json with null",
+			body: []byte(`{"json": null}`),
+			exp:  expected{`{"json": null}`, false, JSN{"json": nil}, false},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -108,8 +113,8 @@ func TestBodyToStruct(t *testing.T) {
 
 			jsn, _ := sdktypes.UnwrapValue(json)
 			if !tt.exp.jsonErr {
-				assert.Equal(t, tt.exp.json, JSN(jsn.(map[interface{}]interface{})))
 				assert.NoError(t, jsonErr)
+				assert.Equal(t, tt.exp.json, JSN(jsn.(map[interface{}]interface{})))
 			} else {
 				assert.Error(t, jsonErr)
 				assert.Equal(t, nil, jsn)
