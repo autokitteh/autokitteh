@@ -66,10 +66,15 @@ func TestValueWrapper(t *testing.T) {
 			w:   sdktypes.NewStringValue("meow"),
 			unw: "meow",
 		},
+		// {
+		// 	in:  struct{}{},
+		// 	w:   sdktypes.Nothing,
+		// 	unw: struct{}{},
+		// },
 		{
-			in:  struct{}{},
+			in:  nil,
 			w:   sdktypes.Nothing,
-			unw: struct{}{},
+			unw: nil,
 		},
 		{
 			in:  9.0,

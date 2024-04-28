@@ -17,6 +17,10 @@ func (w ValueWrapper) Wrap(v any) (Value, error) {
 		return v, nil
 	}
 
+	if v == nil {
+		return Nothing, nil
+	}
+
 	if t, ok := v.(time.Time); ok {
 		return NewTimeValue(t), nil
 	}

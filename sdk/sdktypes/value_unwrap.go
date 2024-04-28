@@ -34,7 +34,7 @@ func (w *ValueWrapper) unwrap(v Value) (any, error) {
 
 	switch v := v.Concrete().(type) {
 	case NothingValue:
-		return struct{}{}, nil
+		return nil, nil
 	case FunctionValue:
 		return nil, errors.New("function values are not supported")
 	case StringValue:
