@@ -36,9 +36,31 @@ func createTar(fs fs.FS) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+type Version struct {
+	Major int
+	Minor int
+}
+
 type exeInfo struct {
-	Exe     string
-	Version string
+	Exe           string
+	VersionString string
+	Version       Version
+}
+
+func parsePyVersion(s string) (major, minor int, err error) {
+	// Python 3.12.2
+	const prefix = "Python "
+	if !strings.HasPrefix(s, prefix) {
+		return 0, 0, fmt.Errorf("bad python version prefix in: %q", s)
+	}
+
+	s = s[len(prefix):]
+	_, err = fmt.Sscanf(s, "%d.%d", &major, &minor)
+	if err != nil {
+		return 0, 0, err
+	}
+
+	return
 }
 
 func findPython() (string, error) {
@@ -68,7 +90,20 @@ func pyExeInfo(ctx context.Context) (exeInfo, error) {
 	}
 
 	version := strings.TrimSpace(buf.String())
-	return exeInfo{Exe: exePath, Version: version}, nil
+	major, minor, err := parsePyVersion(version)
+	if err != nil {
+		return exeInfo{}, fmt.Errorf("failed to parse Python version %q: %w", version, err)
+	}
+
+	info := exeInfo{
+		Exe:           exePath,
+		VersionString: version,
+		Version: Version{
+			Major: major,
+			Minor: minor,
+		},
+	}
+	return info, nil
 }
 
 func extractRunner(rootDir string) (string, error) {
