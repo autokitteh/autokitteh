@@ -36,7 +36,7 @@ def on_http_post(data):
     sleep(1)
     n += 1000
 
-    print(catch(lambda: myhttp.post('http://localhost:9980/webtools/api/msgs/' + addr, raw_body="woof")))
+    print(catch(lambda: myhttp.post('http://localhost:9980/webtools/api/msgs/' + addr, data="woof")))
 
     print("zzzz2", n, time.now())
     sleep(2)
@@ -45,7 +45,7 @@ def on_http_post(data):
     print("zzzz3", n, time.now())
     sleep(3)
 
-    print(catch(lambda: myhttp.post('http://localhost:9980/webtools/api/msgs/' + addr, raw_body="meow")))
+    print(catch(lambda: myhttp.post('http://localhost:9980/webtools/api/msgs/' + addr, data="meow")))
 
 def on_http_test(data, event, trigger):
     print(data)

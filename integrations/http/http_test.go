@@ -5,6 +5,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 func TestBodyToStructJSON(t *testing.T) {
@@ -85,6 +87,157 @@ func TestSetQueryParams(t *testing.T) {
 			if tt.rawURL != tt.wantURL {
 				t.Errorf("setQueryParams() got URL %q, want %q", tt.rawURL, tt.wantURL)
 			}
+		})
+	}
+}
+
+func TestParseBody(t *testing.T) {
+	tests := []struct {
+		name     string
+		body     interface{}       // body to warp as sdktypes.Value and parse
+		headers  map[string]string // optional headers
+		bodyType string            // parsed body type
+		reqBody  string            // body extracted from resulting request
+	}{
+		{
+			name:     "empty body",
+			body:     "",
+			bodyType: bodyTypeRaw,
+			reqBody:  "",
+		},
+		{
+			name:     "string",
+			body:     "meow",
+			bodyType: bodyTypeRaw,
+			reqBody:  "meow",
+		},
+		{
+			name:     "json as string => raw",
+			body:     `{"k":"v"}`,
+			bodyType: bodyTypeRaw,
+			reqBody:  `{"k":"v"}`,
+		},
+		{
+			name:     "map[string]string => form",
+			body:     map[string]string{"k": "v"},
+			bodyType: bodyTypeForm,
+			reqBody:  "k=v",
+		},
+		{
+			name:     "map[string]string + contentTypeJSON => json",
+			body:     map[string]string{"k": "v"},
+			headers:  map[string]string{contentTypeHeader: contentTypeJSON},
+			bodyType: bodyTypeJSON,
+			reqBody:  `{"k":"v"}`,
+		},
+		{
+			name:     "unmarshal(json string) => json",
+			body:     map[string]interface{}{"k": "v", "t": true},
+			headers:  map[string]string{contentTypeHeader: contentTypeJSON},
+			bodyType: bodyTypeJSON,
+			reqBody:  `{"k":"v","t":true}`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var req request
+			var body string
+
+			bodyToParse, err := sdktypes.WrapValue(tt.body) // warp into sdktypes.Value
+			assert.NoError(t, err)
+
+			if tt.headers != nil {
+				req.headers = tt.headers
+			} else {
+				req.headers = make(map[string]string)
+			}
+			err = parseBody(&req, bodyToParse)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.bodyType, req.bodyType)
+
+			if req.body != nil {
+				body = req.body.String()
+			}
+			assert.Equal(t, tt.reqBody, body)
+		})
+	}
+}
+
+func TestUnpackAndParseArgs(t *testing.T) {
+	tests := []struct {
+		name   string
+		method string
+		args   []interface{}
+		kwargs map[string]interface{}
+		errStr string
+		body   string
+	}{
+		{
+			name:   "disallow any args except URL",
+			method: "GET",
+			args:   []interface{}{"http://dummy.url", "meow"},
+			errStr: "pass non-URL arguments as kwargs only",
+		},
+		{
+			name:   "don't ignore data= in POST",
+			method: "POST",
+			args:   []interface{}{"http://dummy.url"},
+			kwargs: map[string]interface{}{"data": "meow"},
+			body:   "meow",
+		},
+		{
+			name:   "ignore data= in GET",
+			method: "GET",
+			args:   []interface{}{"http://dummy.url"},
+			kwargs: map[string]interface{}{"data": "meow"},
+			body:   "",
+		},
+		{
+			name:   "passing json",
+			method: "POST",
+			args:   []interface{}{"http://dummy.url"},
+			kwargs: map[string]interface{}{"json": "woof"},
+			body:   `"woof"`,
+		},
+		{
+			name:   "passing json + body #1. json ignored",
+			method: "POST",
+			args:   []interface{}{"http://dummy.url"},
+			kwargs: map[string]interface{}{"data": "meow", "json": "woof"},
+			body:   "meow",
+		},
+		{
+			name:   "passing json + body #2. json ignored",
+			method: "POST",
+			args:   []interface{}{"http://dummy.url"},
+			kwargs: map[string]interface{}{"json": "woof", "data": "meow"},
+			body:   "meow",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var req request
+
+			sdkArgs, err := kittehs.TransformError(tt.args, sdktypes.WrapValue)
+			assert.NoError(t, err)
+			sdkKwargs, err := kittehs.TransformMapValuesError(tt.kwargs, sdktypes.WrapValue)
+			assert.NoError(t, err)
+
+			err = unpackAndParseArgs(&req, tt.method, sdkArgs, sdkKwargs)
+			if tt.errStr != "" {
+				assert.ErrorContains(t, err, tt.errStr)
+				return
+			} else {
+				assert.NoError(t, err)
+			}
+
+			reqBody := ""
+			if req.body != nil {
+				reqBody = req.body.String()
+			}
+			assert.Equal(t, tt.body, reqBody)
 		})
 	}
 }
