@@ -17,6 +17,6 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.11'  # Should be in sync with runtimes/pythonrt/pythonrt.go:minPyVersion
       - name: Test
         run: cd runtimes/pythonrt && make ci
