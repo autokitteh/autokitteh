@@ -17,6 +17,6 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version-file: 'runtimes/pythonrt/.python-version'
+          python-version: '3.11'
       - name: Test
         run: cd runtimes/pythonrt && make ci

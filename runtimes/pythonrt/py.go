@@ -50,8 +50,8 @@ type exeInfo struct {
 func parsePyVersion(s string) (major, minor int, err error) {
 	// Python 3.12.2
 	const prefix = "Python "
-	if len(s) < len(prefix) {
-		return 0, 0, fmt.Errorf("python version string too short: %q", s)
+	if !strings.HasPrefix(s, prefix) {
+		return 0, 0, fmt.Errorf("bad python version prefix in: %q", s)
 	}
 
 	s = s[len(prefix):]
