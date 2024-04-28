@@ -9,9 +9,10 @@ import (
 	"strconv"
 	"time"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient/devserver"
+
 	"go.temporal.io/api/serviceerror"
 	"go.temporal.io/sdk/client"
-	"go.temporal.io/sdk/testsuite"
 	"go.uber.org/zap"
 	zapadapter "logur.dev/adapter/zap"
 	"logur.dev/logur"
@@ -28,7 +29,7 @@ type impl struct {
 	client client.Client
 	z      *zap.Logger
 	cfg    *Config
-	srv    *testsuite.DevServer
+	srv    *devserver.DevServer
 	done   chan struct{}
 }
 
@@ -107,7 +108,7 @@ func (c *impl) startDevServer(ctx context.Context, cfg *Config, opts client.Opti
 	cfg.DevServer.ClientOptions = &opts
 
 	var err error
-	if c.srv, err = testsuite.StartDevServer(ctx, cfg.DevServer); err != nil {
+	if c.srv, err = devserver.StartDevServer(ctx, cfg.DevServer); err != nil {
 		return fmt.Errorf("start Temporal dev server: %w", err)
 	}
 	c.z.Info("Started Temporal dev server", zap.String("address", c.srv.FrontendHostPort()))

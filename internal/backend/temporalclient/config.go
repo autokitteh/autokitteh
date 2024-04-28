@@ -4,11 +4,11 @@ import (
 	"path/filepath"
 	"time"
 
-	"go.temporal.io/sdk/testsuite"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/configset"
+	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient/devserver"
 	"go.autokitteh.dev/autokitteh/internal/xdg"
 )
 
@@ -35,7 +35,7 @@ type Config struct {
 	Namespace             string `koanf:"namespace"`
 
 	// DevServer.ClientOptions is not used.
-	DevServer testsuite.DevServerOptions `koanf:"dev_server"`
+	DevServer devserver.DevServerOptions `koanf:"dev_server"`
 	TLS       tlsConfig                  `koanf:"tls"`
 }
 
@@ -53,7 +53,7 @@ var (
 		Dev: &Config{
 			Monitor:               defaultMonitorConfig,
 			StartDevServerIfNotUp: true,
-			DevServer: testsuite.DevServerOptions{
+			DevServer: devserver.DevServerOptions{
 				LogLevel:   zapcore.WarnLevel.String(),
 				EnableUI:   true,
 				DBFilename: filepath.Join(xdg.DataHomeDir(), "temporal_dev.sqlite"),
@@ -62,7 +62,7 @@ var (
 		Test: &Config{
 			Monitor:              defaultMonitorConfig,
 			AlwaysStartDevServer: true,
-			DevServer: testsuite.DevServerOptions{
+			DevServer: devserver.DevServerOptions{
 				LogLevel: zapcore.WarnLevel.String(),
 			},
 		},
