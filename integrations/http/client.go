@@ -31,6 +31,11 @@ func New(sec sdkservices.Secrets) sdkservices.Integration {
 		sdkmodule.WithConfigAsData(),
 
 		sdkmodule.ExportFunction(
+			"delete",
+			i.request(http.MethodDelete),
+			sdkmodule.WithFuncDoc("https://www.rfc-editor.org/rfc/rfc9110#DELETE"),
+			args),
+		sdkmodule.ExportFunction(
 			"get",
 			i.request(http.MethodGet),
 			sdkmodule.WithFuncDoc("https://www.rfc-editor.org/rfc/rfc9110#GET"),
@@ -41,20 +46,6 @@ func New(sec sdkservices.Secrets) sdkservices.Integration {
 			sdkmodule.WithFuncDoc("https://www.rfc-editor.org/rfc/rfc9110#HEAD"),
 			args),
 		sdkmodule.ExportFunction(
-			"post",
-			i.request(http.MethodPost),
-			sdkmodule.WithFuncDoc("https://www.rfc-editor.org/rfc/rfc9110#POST"),
-			args),
-		sdkmodule.ExportFunction("put",
-			i.request(http.MethodPut),
-			sdkmodule.WithFuncDoc("https://www.rfc-editor.org/rfc/rfc9110#PUT"),
-			args),
-		sdkmodule.ExportFunction(
-			"delete",
-			i.request(http.MethodDelete),
-			sdkmodule.WithFuncDoc("https://www.rfc-editor.org/rfc/rfc9110#DELETE"),
-			args),
-		sdkmodule.ExportFunction(
 			"options",
 			i.request(http.MethodOptions),
 			sdkmodule.WithFuncDoc("https://www.rfc-editor.org/rfc/rfc9110#OPTIONS"),
@@ -63,6 +54,16 @@ func New(sec sdkservices.Secrets) sdkservices.Integration {
 			"patch",
 			i.request(http.MethodPatch),
 			sdkmodule.WithFuncDoc("https://www.rfc-editor.org/rfc/rfc5789"),
+			args),
+		sdkmodule.ExportFunction(
+			"post",
+			i.request(http.MethodPost),
+			sdkmodule.WithFuncDoc("https://www.rfc-editor.org/rfc/rfc9110#POST"),
+			args),
+		sdkmodule.ExportFunction(
+			"put",
+			i.request(http.MethodPut),
+			sdkmodule.WithFuncDoc("https://www.rfc-editor.org/rfc/rfc9110#PUT"),
 			args),
 	))
 }

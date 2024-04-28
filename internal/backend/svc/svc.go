@@ -99,7 +99,6 @@ func DBFxOpt() fx.Option {
 				HookOnStart(lc, db.Connect)
 			}),
 		),
-		fx.Invoke(func(lc fx.Lifecycle, db db.DB) { HookOnStart(lc, db.Setup) }),
 	)
 }
 
@@ -109,6 +108,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 	return []fx.Option{
 		fx.Supply(cfg),
 		LoggerFxOpt(),
+		fx.Invoke(func(lc fx.Lifecycle, db db.DB) { HookOnStart(lc, db.Setup) }),
 		DBFxOpt(),
 		Component(
 			"temporalclient",
@@ -320,7 +320,9 @@ func NewOpts(cfg *Config, ropts RunOptions) []fx.Option {
 	return append(opts, fx.Populate(svcs))
 }
 
-func StartDB(ctx context.Context, cfg *Config) (db.DB, error) {
+func StartDB(ctx context.Context, cfg *Config, ropt RunOptions) (db.DB, error) {
+	setFXRunOpts(ropt)
+
 	var db db.DB
 
 	if err := fx.New(
