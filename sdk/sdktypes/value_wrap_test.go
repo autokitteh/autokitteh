@@ -69,7 +69,12 @@ func TestValueWrapper(t *testing.T) {
 		{
 			in:  struct{}{},
 			w:   sdktypes.Nothing,
-			unw: struct{}{},
+			unw: nil,
+		},
+		{
+			in:  nil,
+			w:   sdktypes.Nothing,
+			unw: nil,
 		},
 		{
 			in:  9.0,
