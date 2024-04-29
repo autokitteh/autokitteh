@@ -39,6 +39,7 @@ var Configs = configset.Set[Config]{
 		c := defaultConfig
 		c.Calls.Temporal.ActivityHeartbeatTimeout = time.Minute * 3
 		c.Debug = true
+		c.Workflows.OSModule = true
 		return &c
 	}(),
 }

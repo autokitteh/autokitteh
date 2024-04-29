@@ -15,9 +15,12 @@ var CallOptsCtorSymbol = kittehs.Must1(sdktypes.ParseSymbol("callopts"))
 
 var ExecutorID = sdktypes.NewExecutorID(fixtures.NewBuiltinIntegrationID("ak"))
 
+var TimeoutError = sdktypes.NewSymbolValue(kittehs.Must1(sdktypes.ParseSymbol("timeout")))
+
 func New(syscall sdkexecutor.Function) sdkexecutor.Executor {
 	return fixtures.NewBuiltinExecutor(
 		ExecutorID,
+		sdkmodule.ExportValue("timeout_error", sdkmodule.WithValue(TimeoutError)),
 		sdkmodule.ExportFunction(
 			"syscall",
 			syscall,
