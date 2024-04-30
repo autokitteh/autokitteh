@@ -31,7 +31,7 @@ $ # get build
 $ ${AK} -j build get bld_00000000000000000000000001; echo $? #=> --regex {"build":\{"build_id":"bld_00000000000000000000000001","created_at":".*}}
 $ # list builds
 $ # describe build
-$ ${AK} -j build describe bld_00000000000000000000000001; echo $?
+$ ${AK} -J build describe bld_00000000000000000000000001; echo $?
 {
   "build": {
     "info": {},
