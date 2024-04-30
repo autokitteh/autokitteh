@@ -11,7 +11,7 @@ import (
 var env, connection string
 
 var triggerCmd = common.StandardCommand(&cobra.Command{
-	Use:     "triggers",
+	Use:     "trigger",
 	Short:   "Event triggers: create, get, list, delete",
 	Aliases: []string{"trg"},
 	Args:    cobra.NoArgs,

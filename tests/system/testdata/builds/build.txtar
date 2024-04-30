@@ -8,7 +8,7 @@ ak project build my_project --file meow.star
 return code == 0
 output equals 'build_id: bld_00000000000000000000000003'
 
-ak builds describe bld_00000000000000000000000003 -j
+ak build describe bld_00000000000000000000000003 -j
 return code == 0
 output equals_json file build.json
 

@@ -13,7 +13,7 @@ resp code == 200
 
 wait 10s for session ses_00000000000000000000000009
 
-ak sessions log --no-timestamps --skip -1 -J
+ak session log --no-timestamps --skip -1 -J
 return code == 0
 output equals_json file get_meow.json
 
@@ -22,7 +22,7 @@ resp code == 200
 
 wait 10s for session ses_0000000000000000000000000c
 
-ak sessions log --no-timestamps --skip -1 -J
+ak session log --no-timestamps --skip -1 -J
 return code == 0
 output equals_json file get_test.json
 
