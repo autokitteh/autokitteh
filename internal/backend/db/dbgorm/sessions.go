@@ -144,10 +144,13 @@ func (db *gormdb) listSessions(ctx context.Context, f sdkservices.ListSessionsFi
 		q = q.Where("current_state_type = ?", f.StateType.ToProto())
 	}
 
+	var totalCount int64
+	if err := q.Model(&scheme.Session{}).Count(&totalCount).Error; err != nil {
+		return nil, 0, err
+	}
+
 	if f.CountOnly {
-		var n int64
-		err := q.Model(&scheme.Session{}).Count(&n).Error
-		return nil, int(n), err
+		return nil, int(totalCount), nil
 	}
 
 	if f.PageSize != 0 {
@@ -171,7 +174,7 @@ func (db *gormdb) listSessions(ctx context.Context, f sdkservices.ListSessionsFi
 	}
 
 	// REVIEW: will the count be right in case of pagination?
-	return rs, len(rs), nil
+	return rs, int(totalCount), nil
 }
 
 func (db *gormdb) ListSessions(ctx context.Context, f sdkservices.ListSessionsFilter) (sdkservices.ListSessionResult, error) {
