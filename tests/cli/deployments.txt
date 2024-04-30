@@ -68,7 +68,7 @@ $ ${AK} deployment create --build-id bld_00000000000000000000000001 --env=2; ech
 Error: build ID "bld_00000000000000000000000001" not found
 10
 $ # Create project p1.
-$ ${AK} p c --name p1; echo $?
+$ ${AK} project c --name p1; echo $?
 project_id: prj_00000000000000000000000001
 0
 $ # upload build return build-id
@@ -80,7 +80,7 @@ $ ${AK} deployment create --build-id bld_00000000000000000000000003 --env=2; ech
 Error: invalid environment name "2": missing project prefix
 1
 $ # Create env for project p.
-$ ${AK} en c -p p1 e1; echo $?
+$ ${AK} env c -p p1 e1; echo $?
 env_id: env_00000000000000000000000004
 0
 $ # create deployment
@@ -113,7 +113,7 @@ $ ${AK} deployment get dep_00000000000000000000000005 -j | omit_nested_deploymen
 {"deployment":{"deployment_id":"dep_00000000000000000000000005","env_id":"env_00000000000000000000000004","build_id":"bld_00000000000000000000000003","state":"DEPLOYMENT_STATE_INACTIVE"}}
 0
 $ # Create second env for project p.
-$ ${AK} en c -p p1 e2; echo $?
+$ ${AK} env c -p p1 e2; echo $?
 env_id: env_00000000000000000000000006
 0
 $ # upload a second build 
