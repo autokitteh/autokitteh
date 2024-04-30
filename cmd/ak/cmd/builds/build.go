@@ -11,26 +11,26 @@ const (
 	defaultOutput = "build.akb"
 )
 
-var buildsCmd = common.StandardCommand(&cobra.Command{
-	Use:     "builds",
-	Short:   "Build management commands",
-	Aliases: []string{"build", "b"},
+var buildCmd = common.StandardCommand(&cobra.Command{
+	Use:     "build",
+	Short:   "Project resource builds: upload, download, get, list, describe, delete",
+	Aliases: []string{"bld"},
 	Args:    cobra.NoArgs,
 })
 
 // AddSubcommands adds this command, and its own subcommands, to the calling parent.
 func AddSubcommands(parentCmd *cobra.Command) {
-	parentCmd.AddCommand(buildsCmd)
+	parentCmd.AddCommand(buildCmd)
 }
 
 func init() {
 	// Subcommands.
-	buildsCmd.AddCommand(deleteCmd)
-	buildsCmd.AddCommand(describeCmd)
-	buildsCmd.AddCommand(downloadCmd)
-	buildsCmd.AddCommand(getCmd)
-	buildsCmd.AddCommand(listCmd)
-	buildsCmd.AddCommand(uploadCmd)
+	buildCmd.AddCommand(deleteCmd)
+	buildCmd.AddCommand(describeCmd)
+	buildCmd.AddCommand(downloadCmd)
+	buildCmd.AddCommand(getCmd)
+	buildCmd.AddCommand(listCmd)
+	buildCmd.AddCommand(uploadCmd)
 }
 
 func builds() sdkservices.Builds {

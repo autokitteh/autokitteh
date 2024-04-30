@@ -10,27 +10,27 @@ import (
 // Flags shared by the "create" and "list" subcommands.
 var buildID, env string
 
-var deploymentsCmd = common.StandardCommand(&cobra.Command{
-	Use:     "deployments",
-	Short:   "Build deployment management commands",
-	Aliases: []string{"deployment"},
+var deploymentCmd = common.StandardCommand(&cobra.Command{
+	Use:     "deployment",
+	Short:   "Build deployments: create, (de)activate, get, list, drain, delete",
+	Aliases: []string{"dep"},
 	Args:    cobra.NoArgs,
 })
 
 // AddSubcommands adds this command, and its own subcommands, to the calling parent.
 func AddSubcommands(parentCmd *cobra.Command) {
-	parentCmd.AddCommand(deploymentsCmd)
+	parentCmd.AddCommand(deploymentCmd)
 }
 
 func init() {
 	// Subcommands.
-	deploymentsCmd.AddCommand(activateCmd)
-	deploymentsCmd.AddCommand(createCmd)
-	deploymentsCmd.AddCommand(deactivateCmd)
-	deploymentsCmd.AddCommand(deleteCmd)
-	deploymentsCmd.AddCommand(drainCmd)
-	deploymentsCmd.AddCommand(getCmd)
-	deploymentsCmd.AddCommand(listCmd)
+	deploymentCmd.AddCommand(activateCmd)
+	deploymentCmd.AddCommand(createCmd)
+	deploymentCmd.AddCommand(deactivateCmd)
+	deploymentCmd.AddCommand(deleteCmd)
+	deploymentCmd.AddCommand(drainCmd)
+	deploymentCmd.AddCommand(getCmd)
+	deploymentCmd.AddCommand(listCmd)
 }
 
 func deployments() sdkservices.Deployments {

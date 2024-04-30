@@ -7,22 +7,21 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 )
 
-var recordsCmd = common.StandardCommand(&cobra.Command{
-	Use:     "records",
-	Short:   "Event record subcommands",
-	Aliases: []string{"record", "rec"},
-	Args:    cobra.NoArgs,
+var recordCmd = common.StandardCommand(&cobra.Command{
+	Use:   "record",
+	Short: "Event record subcommands: add, list",
+	Args:  cobra.NoArgs,
 })
 
 // AddSubcommands adds this command, and its own subcommands, to the calling parent.
 func AddSubcommands(parentCmd *cobra.Command) {
-	parentCmd.AddCommand(recordsCmd)
+	parentCmd.AddCommand(recordCmd)
 }
 
 func init() {
 	// Subcommands.
-	recordsCmd.AddCommand(addCmd)
-	recordsCmd.AddCommand(listCmd)
+	recordCmd.AddCommand(addCmd)
+	recordCmd.AddCommand(listCmd)
 }
 
 func events() sdkservices.Events {

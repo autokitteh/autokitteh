@@ -8,29 +8,31 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 )
 
+// Flag shared by all subcommands.
 var local bool
 
-var runtimesCmd = common.StandardCommand(&cobra.Command{
-	Use:     "runtimes",
-	Short:   "Runtime engine management commands",
-	Aliases: []string{"runtime", "run", "rt", "r"},
+var runtimeCmd = common.StandardCommand(&cobra.Command{
+	Use:     "runtime",
+	Short:   "Runtime engines: build, get, list, run",
+	Aliases: []string{"rt"},
 	Args:    cobra.NoArgs,
 })
 
 // AddSubcommands adds this command, and its own subcommands, to the calling parent.
 func AddSubcommands(parentCmd *cobra.Command) {
-	parentCmd.AddCommand(runtimesCmd)
+	parentCmd.AddCommand(runtimeCmd)
 }
 
 func init() {
-	// Subcommands.
-	runtimesCmd.AddCommand(buildCmd)
-	runtimesCmd.AddCommand(getCmd)
-	runtimesCmd.AddCommand(listCmd)
-	runtimesCmd.AddCommand(runCmd)
-	runtimesCmd.AddCommand(testCmd)
+	// Flag shared by all subcommands.
+	runtimeCmd.PersistentFlags().BoolVarP(&local, "local", "l", false, "execute locally")
 
-	runtimesCmd.PersistentFlags().BoolVarP(&local, "local", "l", false, "execute locally")
+	// Subcommands.
+	runtimeCmd.AddCommand(buildCmd)
+	runtimeCmd.AddCommand(getCmd)
+	runtimeCmd.AddCommand(listCmd)
+	runtimeCmd.AddCommand(runCmd)
+	runtimeCmd.AddCommand(testCmd)
 }
 
 func runtimes() sdkservices.Runtimes {

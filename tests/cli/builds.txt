@@ -1,37 +1,37 @@
 $ tmp=$(mktemp -d)
 $ build_file_path=${tmp}/build.akb
-$ ${AK} runtimes build --dir examples/testprograms/multi -o ${build_file_path}
+$ ${AK} runtime build --dir examples/testprograms/multi -o ${build_file_path}
 $ # List builds return empty list
-$ ${AK} builds list; echo $?
+$ ${AK} build list; echo $?
 0
 $ # get build return none if id not found
-$ ${AK} builds get bld_00000000000000000000000001; echo $?
+$ ${AK} build get bld_00000000000000000000000001; echo $?
 0
 $ # get build fails if id not found and failure is requested
-$ ${AK} builds get bld_00000000000000000000000001 -f; echo $?
+$ ${AK} build get bld_00000000000000000000000001 -f; echo $?
 Error: build not found
 10
 $ echo hissss > ${tmp}/hissss
-$ ${AK} builds upload ${tmp}/hissss; echo $?
+$ ${AK} build upload ${tmp}/hissss; echo $?
 Error: save build: server error: read version: gzip: unexpected EOF
 1
 $ # upload build without build_file_path fail
-$ ${AK} builds upload; echo $?
+$ ${AK} build upload; echo $?
 Error: accepts 1 arg(s), received 0
 1
 $ # upload build with invalid data file fail
-$ ${AK} builds upload not_existing.txt; echo $?
+$ ${AK} build upload not_existing.txt; echo $?
 Error: read file: open not_existing.txt: no such file or directory
 1
 $ # upload build return build_id
-$ ${AK} -j builds upload ${build_file_path}; echo $?
+$ ${AK} -j build upload ${build_file_path}; echo $?
 {"build_id":"bld_00000000000000000000000001"}
 0
 $ # get build
-$ ${AK} -j builds get bld_00000000000000000000000001; echo $? #=> --regex {"build":\{"build_id":"bld_00000000000000000000000001","created_at":".*}}
+$ ${AK} -j build get bld_00000000000000000000000001; echo $? #=> --regex {"build":\{"build_id":"bld_00000000000000000000000001","created_at":".*}}
 $ # list builds
 $ # describe build
-$ ${AK} -J builds describe bld_00000000000000000000000001; echo $?
+$ ${AK} -J build describe bld_00000000000000000000000001; echo $?
 {
   "build": {
     "info": {},
@@ -140,31 +140,31 @@ $ ${AK} -J builds describe bld_00000000000000000000000001; echo $?
   }
 }
 0
-$ ${AK} -j builds ls ; echo $? #=> --regex {"build_id":"bld_0000000000000000000000000[1-9]","created_at":".*}
+$ ${AK} -j build ls ; echo $? #=> --regex {"build_id":"bld_0000000000000000000000000[1-9]","created_at":".*}
 $ # upload another build return build_id
-$ ${AK} -j builds upload ${build_file_path}; echo $?
+$ ${AK} -j build upload ${build_file_path}; echo $?
 {"build_id":"bld_00000000000000000000000002"}
 0
 $ # list builds returns 2 builds and empty line
-$ ${AK} -j builds ls ; echo $? #=> --lines 3
+$ ${AK} -j build ls ; echo $? #=> --lines 3
 $ # delete build 1
-$ ${AK} -j builds delete bld_00000000000000000000000002; echo $?
+$ ${AK} -j build delete bld_00000000000000000000000002; echo $?
 0
 $ # list builds returns 1 build and empty line
-$ ${AK} -j builds ls ; echo $? #=> --lines 2
+$ ${AK} -j build ls ; echo $? #=> --lines 2
 $ # get build 1 return nothing
-$ ${AK} -j builds get bld_00000000000000000000000002; echo $?
+$ ${AK} -j build get bld_00000000000000000000000002; echo $?
 {"build":null}
 0
 $ # get build 1 still works
-$ ${AK} -j builds get bld_00000000000000000000000001; echo $? #=> --regex {"build":\{"build_id":"bld_00000000000000000000000001","created_at":".*}}
+$ ${AK} -j build get bld_00000000000000000000000001; echo $? #=> --regex {"build":\{"build_id":"bld_00000000000000000000000001","created_at":".*}}
 $ # download build 1
-$ ${AK} -j builds download bld_00000000000000000000000001 --output - > ${tmp}/got; echo $? 
+$ ${AK} -j build download bld_00000000000000000000000001 --output - > ${tmp}/got; echo $? 
 0
 $ cmp ${tmp}/got ${build_file_path}; echo $?
 0
 $ # download to file
-$ ${AK} -j builds download bld_00000000000000000000000001 -o ${tmp}/build.file; echo $? 
+$ ${AK} -j build download bld_00000000000000000000000001 -o ${tmp}/build.file; echo $? 
 0
 $ cmp ${tmp}/build.file ${build_file_path}; echo $?
 0

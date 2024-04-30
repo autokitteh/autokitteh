@@ -12,16 +12,15 @@ import (
 // Flag shared by all the subcommands.
 var project string
 
-var envsCmd = common.StandardCommand(&cobra.Command{
-	Use:     "envs",
-	Short:   "Execution environment management commands",
-	Aliases: []string{"env", "en"},
-	Args:    cobra.NoArgs,
+var envCmd = common.StandardCommand(&cobra.Command{
+	Use:   "env",
+	Short: "Execution environments: create, get, list, var",
+	Args:  cobra.NoArgs,
 })
 
 // AddSubcommands adds this command, and its own subcommands, to the calling parent.
 func AddSubcommands(parentCmd *cobra.Command) {
-	parentCmd.AddCommand(envsCmd)
+	parentCmd.AddCommand(envCmd)
 }
 
 func init() {
@@ -35,11 +34,11 @@ func init() {
 	listCmd.Flags().StringVarP(&project, "project", "p", "", "project name or ID")
 
 	// Subcommands.
-	envsCmd.AddCommand(createCmd)
-	envsCmd.AddCommand(getCmd)
-	envsCmd.AddCommand(listCmd)
+	envCmd.AddCommand(createCmd)
+	envCmd.AddCommand(getCmd)
+	envCmd.AddCommand(listCmd)
 
-	vars.AddSubcommands(envsCmd)
+	vars.AddSubcommands(envCmd)
 }
 
 func envs() sdkservices.Envs {

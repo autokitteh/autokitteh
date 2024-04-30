@@ -7,25 +7,25 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 )
 
-var integrationsCmd = common.StandardCommand(&cobra.Command{
-	Use:     "integrations",
-	Short:   "Integration management commands",
-	Aliases: []string{"integration", "int", "i"},
+var integrationCmd = common.StandardCommand(&cobra.Command{
+	Use:     "integration",
+	Short:   "Integrations: create, get, list, update, delete",
+	Aliases: []string{"int"},
 	Args:    cobra.NoArgs,
 })
 
 // AddSubcommands adds this command, and its own subcommands, to the calling parent.
 func AddSubcommands(parentCmd *cobra.Command) {
-	parentCmd.AddCommand(integrationsCmd)
+	parentCmd.AddCommand(integrationCmd)
 }
 
 func init() {
 	// Subcommands.
-	// TODO: integrationsCmd.AddCommand(createCmd)
-	// TODO: integrationsCmd.AddCommand(updateCmd)
-	// TODO: integrationsCmd.AddCommand(deleteCmd)
-	integrationsCmd.AddCommand(getCmd)
-	integrationsCmd.AddCommand(listCmd)
+	// TODO: integrationCmd.AddCommand(createCmd)
+	// TODO: integrationCmd.AddCommand(deleteCmd)
+	integrationCmd.AddCommand(getCmd)
+	integrationCmd.AddCommand(listCmd)
+	// TODO: integrationCmd.AddCommand(updateCmd)
 }
 
 func integrations() sdkservices.Integrations {
