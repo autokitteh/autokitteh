@@ -15,6 +15,7 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 var (
@@ -264,27 +265,33 @@ func (py *pySvc) Close() {
 	// We kill the Python process once the initial `Call` is completed.
 }
 
+func pyLevelToZap(level string) (zapcore.Level, error) {
+	switch level {
+	case "DEBUG":
+		return zap.DebugLevel, nil
+	case "INFO":
+		return zap.InfoLevel, nil
+	case "WARN":
+		return zap.WarnLevel, nil
+	case "ERROR":
+		return zap.ErrorLevel, nil
+	}
+
+	return 0, fmt.Errorf("unknown log level %q", level)
+}
+
 func (py *pySvc) handleLog(msg Message) error {
 	log, err := extractMessage[LogMessage](msg)
 	if err != nil {
 		return err
 	}
 
-	var fn func(string, ...zap.Field)
-	switch log.Level {
-	case "DEBUG":
-		fn = py.log.Debug
-	case "INFO":
-		fn = py.log.Info
-	case "WARN":
-		fn = py.log.Warn
-	case "ERROR":
-		fn = py.log.Error
-	default:
-		return fmt.Errorf("unknown log level in %#v", log)
+	level, err := pyLevelToZap(log.Level)
+	if err != nil {
+		return err
 	}
 
-	fn(log.Message, zap.String("runtime", "python"), zap.String("type", "log"))
+	py.log.Log(level, log.Message, zap.String("runtime", "python"), zap.String("type", "log"))
 	return nil
 }
 
@@ -326,11 +333,11 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, event map[str
 			return sdktypes.InvalidValue, fmt.Errorf("empty message from Python")
 		}
 
-		if msg.Type == MessageType[DoneMessage]() {
+		if msg.Type == messageType[DoneMessage]() {
 			break
 		}
 
-		if msg.Type == MessageType[LogMessage]() {
+		if msg.Type == messageType[LogMessage]() {
 			if err := py.handleLog(msg); err != nil {
 				py.log.Error("handle log", zap.Error(err))
 				return sdktypes.InvalidValue, fmt.Errorf("bad log message: %w", err)
@@ -488,7 +495,7 @@ func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 			return sdktypes.InvalidValue, err
 		}
 
-		if msg.Type == MessageType[LogMessage]() {
+		if msg.Type == messageType[LogMessage]() {
 			if err := py.handleLog(msg); err != nil {
 				py.log.Error("handle log", zap.Error(err))
 				return sdktypes.InvalidValue, err

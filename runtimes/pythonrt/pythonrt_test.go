@@ -4,6 +4,7 @@ import (
 	"archive/tar"
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -16,6 +17,7 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
 	"github.com/stretchr/testify/require"
 )
@@ -186,4 +188,41 @@ func TestNewBadVersion(t *testing.T) {
 
 	_, err = New()
 	require.Error(t, err)
+}
+func Test_handleLog(t *testing.T) {
+	var buff bytes.Buffer
+	cfg := zapcore.EncoderConfig{
+		MessageKey:  "message",
+		LevelKey:    "level",
+		EncodeLevel: zapcore.CapitalLevelEncoder,
+	}
+	logger := zap.New(
+		zapcore.NewCore(
+			zapcore.NewJSONEncoder(cfg),
+			zapcore.AddSync(&buff),
+			zap.DebugLevel,
+		),
+		zap.ErrorOutput(zapcore.AddSync(&buff)),
+	)
+
+	logMsg := "log message"
+	logJSON := fmt.Sprintf(`{"level": "INFO", "message": %q}`, logMsg)
+	msg := Message{
+		Type:    "log",
+		Payload: json.RawMessage(logJSON),
+	}
+	py := pySvc{log: logger}
+
+	err := py.handleLog(msg)
+	require.NoError(t, err)
+
+	var log struct {
+		Level   string
+		Message string
+	}
+	err = json.NewDecoder(&buff).Decode(&log)
+	require.NoError(t, err)
+
+	require.Equal(t, "INFO", log.Level)
+	require.Equal(t, logMsg, log.Message)
 }

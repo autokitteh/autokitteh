@@ -67,10 +67,9 @@ type SubMessage interface {
 	Type() string
 }
 
-func MessageType[T SubMessage]() string {
+func messageType[T SubMessage]() string {
 	var m T
 	return m.Type()
-
 }
 
 type Message struct {
