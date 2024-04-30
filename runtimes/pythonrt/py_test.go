@@ -17,21 +17,24 @@ import (
 )
 
 func skipIfNoPython(t *testing.T) {
-	_, err := exec.LookPath("python")
-	if err != nil {
+	_, err := pyExeInfo(context.Background())
+	if errors.Is(err, exec.ErrNotFound) {
 		t.Skip("no python installed")
+	}
+
+	if err != nil {
+		t.Logf("error getting Python info: %s", err)
 	}
 }
 
 func Test_createVEnv(t *testing.T) {
+	skipIfNoPython(t)
+
 	if testing.Short() {
 		t.Skip("short mode")
 	}
 
 	info, err := pyExeInfo(context.Background())
-	if errors.Is(errors.Unwrap(err), exec.ErrNotFound) {
-		t.Skip("python not found")
-	}
 	require.NoError(t, err)
 
 	venvPath := path.Join(t.TempDir(), "venv")
@@ -77,6 +80,54 @@ func processEnv(t *testing.T, pid int) map[string]string {
 		env[match[1]] = match[2]
 	}
 	return env
+}
+
+func genExe(t *testing.T, name string) {
+	file, err := os.Create(name)
+	require.NoError(t, err)
+	file.Close()
+
+	// We must set executable bit on the file otherwise exec.LookPath will ignore it.
+	err = os.Chmod(name, 0o766)
+	require.NoError(t, err)
+}
+
+func Test_findPython(t *testing.T) {
+	dirName := t.TempDir()
+	t.Setenv("PATH", dirName)
+
+	// No Python
+	_, err := findPython()
+	require.Error(t, err)
+
+	// python
+	pyExe := path.Join(dirName, "python")
+	genExe(t, pyExe)
+	out, err := findPython()
+	require.NoError(t, err)
+	require.Equal(t, pyExe, out)
+
+	// python & python3, should be python3
+	py3Exe := path.Join(dirName, "python3")
+	genExe(t, py3Exe)
+	out, err = findPython()
+	require.NoError(t, err)
+	require.Equal(t, py3Exe, out)
+
+	// Symlink
+	for _, name := range []string{pyExe, py3Exe} {
+		err = os.Remove(name)
+		require.NoError(t, err)
+	}
+
+	exe := path.Join(dirName, "python3.12")
+	genExe(t, exe)
+	link := path.Join(dirName, "python3")
+	err = os.Symlink(exe, link)
+	require.NoError(t, err)
+	out, err = findPython()
+	require.NoError(t, err)
+	require.Equal(t, link, out)
 }
 
 var pyVersionCases = []struct {
