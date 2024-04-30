@@ -6,12 +6,13 @@ import (
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
 )
 
+// Flag shared by all subcommands.
 var mode string
 
 var serverCmd = common.StandardCommand(&cobra.Command{
 	Use:     "server",
 	Short:   "Local server and storage",
-	Aliases: []string{"serv", "srv"},
+	Aliases: []string{"srv"},
 	Args:    cobra.NoArgs,
 })
 
@@ -25,8 +26,9 @@ func Remove(parentCmd *cobra.Command) {
 }
 
 func init() {
+	// Flag shared by all subcommands.
+	serverCmd.PersistentFlags().StringVarP(&mode, "mode", "m", "", "run mode")
+
 	// Subcommands.
 	serverCmd.AddCommand(migrateCmd)
-
-	serverCmd.PersistentFlags().StringVarP(&mode, "mode", "m", "", "run mode")
 }

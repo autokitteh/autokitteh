@@ -20,27 +20,27 @@ var (
 	data, memos []string
 )
 
-var eventsCmd = common.StandardCommand(&cobra.Command{
-	Use:     "events",
-	Short:   "Event management commands",
-	Aliases: []string{"event", "evt", "ev"},
+var eventCmd = common.StandardCommand(&cobra.Command{
+	Use:     "event",
+	Short:   "Events: save, get, list, (re)dispath, record",
+	Aliases: []string{"evt"},
 	Args:    cobra.NoArgs,
 })
 
 // AddSubcommands adds this command, and its own subcommands, to the calling parent.
 func AddSubcommands(parentCmd *cobra.Command) {
-	parentCmd.AddCommand(eventsCmd)
+	parentCmd.AddCommand(eventCmd)
 }
 
 func init() {
 	// Subcommands.
-	eventsCmd.AddCommand(saveCmd)
-	eventsCmd.AddCommand(dispatchCmd)
-	eventsCmd.AddCommand(redispatchCmd)
-	eventsCmd.AddCommand(getCmd)
-	eventsCmd.AddCommand(listCmd)
+	eventCmd.AddCommand(dispatchCmd)
+	eventCmd.AddCommand(getCmd)
+	eventCmd.AddCommand(listCmd)
+	eventCmd.AddCommand(redispatchCmd)
+	eventCmd.AddCommand(saveCmd)
 
-	records.AddSubcommands(eventsCmd)
+	records.AddSubcommands(eventCmd)
 }
 
 func events() sdkservices.Events {

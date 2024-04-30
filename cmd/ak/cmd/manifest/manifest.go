@@ -12,7 +12,7 @@ var quiet bool
 
 var manifestCmd = common.StandardCommand(&cobra.Command{
 	Use:     "manifest",
-	Short:   "Manifest file commands",
+	Short:   "Project manifest: schema, validate, plan, execute, apply, deploy",
 	Aliases: []string{"man"},
 	Args:    cobra.NoArgs,
 })

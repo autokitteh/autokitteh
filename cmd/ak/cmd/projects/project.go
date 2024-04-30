@@ -12,27 +12,27 @@ var (
 	dirPaths, filePaths []string
 )
 
-var projectsCmd = common.StandardCommand(&cobra.Command{
-	Use:     "projects",
-	Short:   "Project management commands",
-	Aliases: []string{"project", "proj", "p"},
+var projectCmd = common.StandardCommand(&cobra.Command{
+	Use:     "project",
+	Short:   "Projects: create, get, list, build, download, deploy, delete",
+	Aliases: []string{"prj"},
 	Args:    cobra.NoArgs,
 })
 
 // AddSubcommands adds this command, and its own subcommands, to the calling parent.
 func AddSubcommands(parentCmd *cobra.Command) {
-	parentCmd.AddCommand(projectsCmd)
+	parentCmd.AddCommand(projectCmd)
 }
 
 func init() {
 	// Subcommands.
-	projectsCmd.AddCommand(buildCmd)
-	projectsCmd.AddCommand(createCmd)
-	projectsCmd.AddCommand(deleteCmd)
-	projectsCmd.AddCommand(deployCmd)
-	projectsCmd.AddCommand(downloadCmd)
-	projectsCmd.AddCommand(getCmd)
-	projectsCmd.AddCommand(listCmd)
+	projectCmd.AddCommand(buildCmd)
+	projectCmd.AddCommand(createCmd)
+	projectCmd.AddCommand(deleteCmd)
+	projectCmd.AddCommand(deployCmd)
+	projectCmd.AddCommand(downloadCmd)
+	projectCmd.AddCommand(getCmd)
+	projectCmd.AddCommand(listCmd)
 }
 
 func projects() sdkservices.Projects {

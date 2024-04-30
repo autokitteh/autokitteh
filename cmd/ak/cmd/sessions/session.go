@@ -27,29 +27,29 @@ var (
 	noTimestamps bool
 )
 
-var sessionsCmd = common.StandardCommand(&cobra.Command{
-	Use:     "sessions",
-	Short:   "Session management commands",
-	Aliases: []string{"sessions", "session", "sess"},
+var sessionCmd = common.StandardCommand(&cobra.Command{
+	Use:     "session",
+	Short:   "Runtime sessions: (re)start, get, list, log, watch, test, stop, delete",
+	Aliases: []string{"ses"},
 	Args:    cobra.NoArgs,
 })
 
 // AddSubcommands adds this command, and its own subcommands, to the calling parent.
 func AddSubcommands(parentCmd *cobra.Command) {
-	parentCmd.AddCommand(sessionsCmd)
+	parentCmd.AddCommand(sessionCmd)
 }
 
 func init() {
 	// Subcommands.
-	sessionsCmd.AddCommand(deleteCmd)
-	sessionsCmd.AddCommand(getCmd)
-	sessionsCmd.AddCommand(listCmd)
-	sessionsCmd.AddCommand(logCmd)
-	sessionsCmd.AddCommand(restartCmd)
-	sessionsCmd.AddCommand(startCmd)
-	sessionsCmd.AddCommand(stopCmd)
-	sessionsCmd.AddCommand(testCmd)
-	sessionsCmd.AddCommand(watchCmd)
+	sessionCmd.AddCommand(deleteCmd)
+	sessionCmd.AddCommand(getCmd)
+	sessionCmd.AddCommand(listCmd)
+	sessionCmd.AddCommand(logCmd)
+	sessionCmd.AddCommand(restartCmd)
+	sessionCmd.AddCommand(startCmd)
+	sessionCmd.AddCommand(stopCmd)
+	sessionCmd.AddCommand(testCmd)
+	sessionCmd.AddCommand(watchCmd)
 }
 
 func sessions() sdkservices.Sessions {

@@ -10,24 +10,25 @@ import (
 // Flags shared by the "create" and "list" subcommands.
 var integration, connectionToken string
 
-var connectionsCmd = common.StandardCommand(&cobra.Command{
-	Use:     "connections",
-	Short:   "Connection management commands",
-	Aliases: []string{"connection", "conn", "con", "c"},
+var connectionCmd = common.StandardCommand(&cobra.Command{
+	Use:     "connection",
+	Short:   "Connections: create, get, list, update, delete",
+	Aliases: []string{"con"},
 	Args:    cobra.NoArgs,
 })
 
 // AddSubcommands adds this command, and its own subcommands, to the calling parent.
 func AddSubcommands(parentCmd *cobra.Command) {
-	parentCmd.AddCommand(connectionsCmd)
+	parentCmd.AddCommand(connectionCmd)
 }
 
 func init() {
 	// Subcommands.
-	connectionsCmd.AddCommand(createCmd)
-	connectionsCmd.AddCommand(deleteCmd)
-	connectionsCmd.AddCommand(getCmd)
-	connectionsCmd.AddCommand(listCmd)
+	connectionCmd.AddCommand(createCmd)
+	connectionCmd.AddCommand(deleteCmd)
+	connectionCmd.AddCommand(getCmd)
+	connectionCmd.AddCommand(listCmd)
+	// TODO: connectionCmd.AddCommand(updateCmd)
 }
 
 func connections() sdkservices.Connections {
