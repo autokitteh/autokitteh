@@ -1,5 +1,5 @@
 $ # Create project p.
-$ ${AK} p c --name p; echo $?
+$ ${AK} project c --name p; echo $?
 project_id: prj_00000000000000000000000001
 0
 $ # Get env that does not exists for p.
