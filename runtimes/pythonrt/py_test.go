@@ -57,7 +57,7 @@ func Test_runPython(t *testing.T) {
 		envKey: "B",
 	}
 
-	ri, err := runPython(log, "python", tarData, "simple.py:greet", env)
+	ri, err := runPython(log, "python", tarData, "simple.py:greet", env, os.Stdout, os.Stderr)
 	require.NoError(t, err)
 	defer ri.proc.Kill() //nolint:all
 

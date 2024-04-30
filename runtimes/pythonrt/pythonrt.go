@@ -37,6 +37,8 @@ type pySvc struct {
 	exports   map[string]sdktypes.Value
 	firstCall bool
 	comm      *Comm
+	stdout    *streamLogger
+	stderr    *streamLogger
 }
 
 var minPyVersion = Version{
@@ -182,7 +184,10 @@ func (py *pySvc) Run(
 		return nil, fmt.Errorf("%q note found in compiled data", archiveKey)
 	}
 
-	ri, err := runPython(py.log, venvPy, tarData, mainPath, envMap)
+	stdout := newStreamLogger("[stdout] ", cbs.Print, runID)
+	stderr := newStreamLogger("[stderr] ", cbs.Print, runID)
+
+	ri, err := runPython(py.log, venvPy, tarData, mainPath, envMap, stdout, stderr)
 	if err != nil {
 		return nil, err
 	}
@@ -247,6 +252,8 @@ func (py *pySvc) Run(
 	py.firstCall = true
 	py.run = ri
 	py.xid = xid
+	py.stdout = stdout
+	py.stderr = stderr
 
 	return py, nil
 }
@@ -269,7 +276,11 @@ func (py *pySvc) Close() {
 func (py *pySvc) initialCall(ctx context.Context, funcName string, event map[string]any) (sdktypes.Value, error) {
 	defer func() {
 		py.log.Info("python done, killing")
+
+		py.stderr.Close()
+		py.stdout.Close()
 		py.comm.Close()
+
 		if err := py.run.proc.Kill(); err != nil {
 			py.log.Warn("kill", zap.Int("pid", py.run.proc.Pid), zap.Error(err))
 		}

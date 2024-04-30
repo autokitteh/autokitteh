@@ -128,7 +128,7 @@ type pyRunInfo struct {
 	proc     *os.Process
 }
 
-func runPython(log *zap.Logger, pyExe string, tarData []byte, rootPath string, env map[string]string) (*pyRunInfo, error) {
+func runPython(log *zap.Logger, pyExe string, tarData []byte, rootPath string, env map[string]string, stdout, stderr io.Writer) (*pyRunInfo, error) {
 	rootDir, err := os.MkdirTemp("", "ak-")
 	if err != nil {
 		return nil, err
@@ -156,9 +156,8 @@ func runPython(log *zap.Logger, pyExe string, tarData []byte, rootPath string, e
 	cmd := exec.Command(pyExe, runnerPath, sockPath, tarPath, rootPath)
 	cmd.Dir = rootDir
 	cmd.Env = overrideEnv(env)
-	// TODO (ENG-552): Hook cmd.Stdout & cmd.Stderr to logs
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	cmd.Stdout = stdout
+	cmd.Stderr = stderr
 
 	if err := cmd.Start(); err != nil {
 		lis.Close()
