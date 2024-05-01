@@ -16,6 +16,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/backend/runtimes"
 	"go.autokitteh.dev/autokitteh/internal/backend/applygrpcsvc"
+	"go.autokitteh.dev/autokitteh/internal/backend/auth"
 	"go.autokitteh.dev/autokitteh/internal/backend/builds"
 	"go.autokitteh.dev/autokitteh/internal/backend/buildsgrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/configset"
@@ -180,7 +181,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		Component(
 			"http",
 			httpsvc.Configs,
-			fx.Provide(func(lc fx.Lifecycle, z *zap.Logger, cfg *httpsvc.Config) (svc httpsvc.Svc, mux *http.ServeMux, all *muxes.Muxes, err error) {
+			fx.Provide(func(lc fx.Lifecycle, z *zap.Logger, cfg *httpsvc.Config, authenticator auth.Authenticator) (svc httpsvc.Svc, mux *http.ServeMux, all *muxes.Muxes, err error) {
 				svc, err = httpsvc.New(
 					lc, z, cfg,
 					[]string{
@@ -207,20 +208,25 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 				// Replace the original mux with a main mux and also expose the original mux as the no-auth one.
 				authed := http.NewServeMux()
 
-				wrap := func(h http.Handler) http.Handler {
-					// TODO(ENG-3): Wrap the handler with auth middleware.
-					return h
-				}
-
 				mux = svc.Mux()
 
-				mux.Handle("/", wrap(authed))
+				mux.Handle("/", authenticator.Middleware(authed))
 
 				all = &muxes.Muxes{Auth: authed, NoAuth: mux}
 
 				return
 			}),
 		),
+		fx.Invoke(func(muxes *muxes.Muxes) {
+			muxes.Auth.Handle("/authenticated_only", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				fmt.Println("ok")
+				ctx := r.Context()
+
+				userDetails := ctx.Value(auth.AuthenticatedUserCtxKey).(*auth.AuthenticatedUserDetails)
+
+				json.NewEncoder(w).Encode(map[string]any{"ok": "ok", "userID": userDetails.UserID})
+			}))
+		}),
 		fx.Invoke(func(mux *http.ServeMux, h integrationsweb.Handler) {
 			mux.Handle("/i/", &h)
 		}),
@@ -233,6 +239,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 				return integrations.Start(ctx, l, muxes.NoAuth, s, o, d)
 			})
 		}),
+		Component("authenticator", auth.Configs, fx.Provide(auth.NewAuthenticator)),
 		indexOption(),
 		fx.Invoke(func(z *zap.Logger, mux *http.ServeMux) {
 			srv := http.StripPrefix("/static/", http.FileServer(http.FS(static.RootWebContent)))

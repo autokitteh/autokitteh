@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>autokitteh</title>
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="/static/apple-touch-icon.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="/static/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="/static/favicon-16x16.png"
+    />
+    <link rel="manifest" href="/static/site.webmanifest" />
+    <link rel="stylesheet" type="text/css" href="/static/styles.css" />
+    <meta name="robots" content="noindex, nofollow" />
+
+    <script src="https://unpkg.com/@descope/web-js-sdk@latest/dist/index.umd.js"></script>
+    <script>
+      const projectId = "{{.}}";
+      const sdk = Descope({
+        projectId: projectId,
+        persistTokens: true,
+        autoRefresh: true,
+        sessionTokenViaCookie: true,
+      });
+
+      const sessionToken = sdk.getSessionToken();
+      let isTokenExpired = true;
+      if (sessionToken) {
+        isTokenExpired = sdk.isJwtExpired(sessionToken);
+      }
+
+      if (!sessionToken || isTokenExpired) {
+        window.location.replace("/login");
+      }
+
+      async function setupLoggedinUser() {
+        const me = await sdk.me();
+        document.getElementById("user_name").innerHTML =
+          "<h2>Hello " + me.data.name + "</h2>";
+      }
+      setupLoggedinUser();
+
+      async function logout() {
+        await sdk.logout();
+        window.location.replace("/login");
+      }
+      // This is just an example, should be removed later
+      // Frontend would have to know how to fetch the token
+      // We might be able to hide it with a generic getToken method
+      // and inject the actual authentication logic when templating
+      async function callAuthenticatedEndpoint() {
+        const sessionToken = sdk.getSessionToken();
+        try {
+          const result = await fetch("/authenticated_only", {
+            headers: {
+              ContentType: "application/json",
+              Authorization: "Bearer " + sessionToken,
+            },
+          });
+
+          const data = await result.json();
+          console.log("ok", data);
+          document.getElementById("auth_call_result").innerHTML =
+            "<h2>" + data.userID + "</h2>";
+        } catch (err) {
+          console.log("error", err);
+          document.getElementById("auth_call_result").innerHTML =
+            "<h2>" + err + "</h2>";
+        }
+      }
+
+      async function callUnauthenticatedEndpoint() {
+        try {
+          const result = await fetch("/authenticated_only", {
+            headers: {
+              ContentType: "application/json",
+            },
+          });
+
+          const data = await result.json();
+          console.log("ok", data);
+          document.getElementById("unauth_call_result").innerHTML =
+            "<h2>" + data.error + "</h2>";
+        } catch (err) {
+          document.getElementById("unauth_call_result").innerHTML =
+            "<h2>" + err + "</h2>";
+          console.log("error", err);
+        }
+      }
+    </script>
+  </head>
+
+  <body>
+    <ul class="navbar-container" style="list-style-type: none">
+      <li class="navbar-logo">
+        <img class="banner" src="/static/banner.svg" alt="autokitteh" />
+      </li>
+
+      <li class="navbar-item">
+        <button onclick="logout()">Logout</button>
+      </li>
+      <li class="navbar-item">
+        <h2 id="user_name"></h2>
+      </li>
+    </ul>
+
+    <ul>
+      <li><a href="/i">Integrations</a></li>
+      <li>
+        <button onclick="callAuthenticatedEndpoint()">
+          Call Authenticated
+        </button>
+        <div id="auth_call_result"></div>
+      </li>
+
+      <li>
+        <button onclick="callUnauthenticatedEndpoint()">
+          Call Unauthenticated
+        </button>
+        <div id="unauth_call_result"></div>
+      </li>
+    </ul>
+  </body>
+</html>
