@@ -42,7 +42,7 @@ func New(cfg *Config, projects sdkservices.Projects) *Server {
 
 var _ projectsv1connect.ProjectsServiceHandler = (*Server)(nil)
 
-func (s *Server) Init(mux *http.ServeMux) {
+func Init(s *Server, mux *http.ServeMux) {
 	path, namer := projectsv1connect.NewProjectsServiceHandler(s, connect.WithReadMaxBytes(s.cfg.MaxUploadSize))
 	mux.Handle(path, namer)
 }

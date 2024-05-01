@@ -10,7 +10,7 @@ import (
 var projectName string
 
 var applyCmd = common.StandardCommand(&cobra.Command{
-	Use:     "apply [file] [--project-name <name>] [--no-validate] [--from-scratch] [--quiet]",
+	Use:     "apply [file] [--project-name <name>] [--no-validate] [--from-scratch] [--quiet] [--rm-unused-cvars]",
 	Short:   "Apply project configuration from file or stdin",
 	Aliases: []string{"a"},
 	Args:    cobra.MaximumNArgs(1),
@@ -41,6 +41,7 @@ func init() {
 	// Command-specific flags.
 	applyCmd.Flags().BoolVar(&noValidate, "no-validate", false, "do not validate")
 	applyCmd.Flags().BoolVarP(&fromScratch, "from-scratch", "s", false, "assume no existing setup")
+	applyCmd.Flags().BoolVar(&rmUnusedConnVars, "rm-unused-cvars", false, "delete connection variables not used")
 	applyCmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "only show errors, if any")
 	applyCmd.Flags().StringVarP(&projectName, "project-name", "n", "", "project name")
 }

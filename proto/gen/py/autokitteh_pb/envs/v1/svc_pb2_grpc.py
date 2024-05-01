@@ -39,26 +39,6 @@ class EnvsServiceStub(object):
                 request_serializer=autokitteh_dot_envs_dot_v1_dot_svc__pb2.UpdateRequest.SerializeToString,
                 response_deserializer=autokitteh_dot_envs_dot_v1_dot_svc__pb2.UpdateResponse.FromString,
                 )
-        self.SetVar = channel.unary_unary(
-                '/autokitteh.envs.v1.EnvsService/SetVar',
-                request_serializer=autokitteh_dot_envs_dot_v1_dot_svc__pb2.SetVarRequest.SerializeToString,
-                response_deserializer=autokitteh_dot_envs_dot_v1_dot_svc__pb2.SetVarResponse.FromString,
-                )
-        self.RemoveVar = channel.unary_unary(
-                '/autokitteh.envs.v1.EnvsService/RemoveVar',
-                request_serializer=autokitteh_dot_envs_dot_v1_dot_svc__pb2.RemoveVarRequest.SerializeToString,
-                response_deserializer=autokitteh_dot_envs_dot_v1_dot_svc__pb2.RemoveVarResponse.FromString,
-                )
-        self.GetVars = channel.unary_unary(
-                '/autokitteh.envs.v1.EnvsService/GetVars',
-                request_serializer=autokitteh_dot_envs_dot_v1_dot_svc__pb2.GetVarsRequest.SerializeToString,
-                response_deserializer=autokitteh_dot_envs_dot_v1_dot_svc__pb2.GetVarsResponse.FromString,
-                )
-        self.RevealVar = channel.unary_unary(
-                '/autokitteh.envs.v1.EnvsService/RevealVar',
-                request_serializer=autokitteh_dot_envs_dot_v1_dot_svc__pb2.RevealVarRequest.SerializeToString,
-                response_deserializer=autokitteh_dot_envs_dot_v1_dot_svc__pb2.RevealVarResponse.FromString,
-                )
 
 
 class EnvsServiceServicer(object):
@@ -94,30 +74,6 @@ class EnvsServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def SetVar(self, request, context):
-        """Missing associated documentation comment in .proto file."""
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
-    def RemoveVar(self, request, context):
-        """Missing associated documentation comment in .proto file."""
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
-    def GetVars(self, request, context):
-        """Missing associated documentation comment in .proto file."""
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
-    def RevealVar(self, request, context):
-        """Missing associated documentation comment in .proto file."""
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
 
 def add_EnvsServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -145,26 +101,6 @@ def add_EnvsServiceServicer_to_server(servicer, server):
                     servicer.Update,
                     request_deserializer=autokitteh_dot_envs_dot_v1_dot_svc__pb2.UpdateRequest.FromString,
                     response_serializer=autokitteh_dot_envs_dot_v1_dot_svc__pb2.UpdateResponse.SerializeToString,
-            ),
-            'SetVar': grpc.unary_unary_rpc_method_handler(
-                    servicer.SetVar,
-                    request_deserializer=autokitteh_dot_envs_dot_v1_dot_svc__pb2.SetVarRequest.FromString,
-                    response_serializer=autokitteh_dot_envs_dot_v1_dot_svc__pb2.SetVarResponse.SerializeToString,
-            ),
-            'RemoveVar': grpc.unary_unary_rpc_method_handler(
-                    servicer.RemoveVar,
-                    request_deserializer=autokitteh_dot_envs_dot_v1_dot_svc__pb2.RemoveVarRequest.FromString,
-                    response_serializer=autokitteh_dot_envs_dot_v1_dot_svc__pb2.RemoveVarResponse.SerializeToString,
-            ),
-            'GetVars': grpc.unary_unary_rpc_method_handler(
-                    servicer.GetVars,
-                    request_deserializer=autokitteh_dot_envs_dot_v1_dot_svc__pb2.GetVarsRequest.FromString,
-                    response_serializer=autokitteh_dot_envs_dot_v1_dot_svc__pb2.GetVarsResponse.SerializeToString,
-            ),
-            'RevealVar': grpc.unary_unary_rpc_method_handler(
-                    servicer.RevealVar,
-                    request_deserializer=autokitteh_dot_envs_dot_v1_dot_svc__pb2.RevealVarRequest.FromString,
-                    response_serializer=autokitteh_dot_envs_dot_v1_dot_svc__pb2.RevealVarResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -258,73 +194,5 @@ class EnvsService(object):
         return grpc.experimental.unary_unary(request, target, '/autokitteh.envs.v1.EnvsService/Update',
             autokitteh_dot_envs_dot_v1_dot_svc__pb2.UpdateRequest.SerializeToString,
             autokitteh_dot_envs_dot_v1_dot_svc__pb2.UpdateResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
-
-    @staticmethod
-    def SetVar(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/autokitteh.envs.v1.EnvsService/SetVar',
-            autokitteh_dot_envs_dot_v1_dot_svc__pb2.SetVarRequest.SerializeToString,
-            autokitteh_dot_envs_dot_v1_dot_svc__pb2.SetVarResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
-
-    @staticmethod
-    def RemoveVar(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/autokitteh.envs.v1.EnvsService/RemoveVar',
-            autokitteh_dot_envs_dot_v1_dot_svc__pb2.RemoveVarRequest.SerializeToString,
-            autokitteh_dot_envs_dot_v1_dot_svc__pb2.RemoveVarResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
-
-    @staticmethod
-    def GetVars(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/autokitteh.envs.v1.EnvsService/GetVars',
-            autokitteh_dot_envs_dot_v1_dot_svc__pb2.GetVarsRequest.SerializeToString,
-            autokitteh_dot_envs_dot_v1_dot_svc__pb2.GetVarsResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
-
-    @staticmethod
-    def RevealVar(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/autokitteh.envs.v1.EnvsService/RevealVar',
-            autokitteh_dot_envs_dot_v1_dot_svc__pb2.RevealVarRequest.SerializeToString,
-            autokitteh_dot_envs_dot_v1_dot_svc__pb2.RevealVarResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

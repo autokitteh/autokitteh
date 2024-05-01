@@ -73,7 +73,7 @@ func (c *execContext) resolveConnectionID(connID string) (sdktypes.ConnectionID,
 		return cid, nil
 	}
 
-	conn, _, err := c.resolver.ConnectionNameOrID(connID)
+	conn, _, err := c.resolver.ConnectionNameOrID(connID, "")
 	if err != nil {
 		return sdktypes.InvalidConnectionID, err
 	}

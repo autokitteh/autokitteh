@@ -110,7 +110,6 @@ func incByOne(id sdktypes.UUID) sdktypes.UUID {
 	}
 
 	return kittehs.Must1(uuid.FromBytes(newVal[:]))
-
 }
 
 // TODO: use gormkitteh (and maybe test with sqlite::memory and embedded PG)
@@ -320,14 +319,6 @@ func (f *dbFixture) newEnv() scheme.Env {
 	return scheme.Env{
 		EnvID:        f.envID,
 		MembershipID: envID, // must be unique
-	}
-}
-
-func (f *dbFixture) newEnvVar(name string, val string) scheme.EnvVar {
-	return scheme.EnvVar{
-		EnvID: f.envID,
-		Name:  name,
-		Value: val,
 	}
 }
 

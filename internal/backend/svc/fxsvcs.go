@@ -23,6 +23,7 @@ type fxServices struct {
 	Sessions_     sdkservices.Sessions     `optional:"true"`
 	Store_        sdkservices.Store        `optional:"true"`
 	Triggers_     sdkservices.Triggers     `optional:"true"`
+	Vars_         sdkservices.Vars         `optional:"true"`
 }
 
 var _ sdkservices.Services = &fxServices{}
@@ -41,3 +42,4 @@ func (s *fxServices) Secrets() sdkservices.Secrets           { return s.Secrets_
 func (s *fxServices) Sessions() sdkservices.Sessions         { return s.Sessions_ }
 func (s *fxServices) Store() sdkservices.Store               { return s.Store_ }
 func (s *fxServices) Triggers() sdkservices.Triggers         { return s.Triggers_ }
+func (s *fxServices) Vars() sdkservices.Vars                 { return s.Vars_ }

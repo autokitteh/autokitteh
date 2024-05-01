@@ -6,7 +6,6 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -53,33 +52,6 @@ func (e *envs) GetByName(ctx context.Context, pid sdktypes.ProjectID, en sdktype
 
 func (e *envs) List(ctx context.Context, pid sdktypes.ProjectID) ([]sdktypes.Env, error) {
 	return e.db.ListProjectEnvs(ctx, pid)
-}
-
-func (e *envs) SetVar(ctx context.Context, ev sdktypes.EnvVar) error {
-	return e.db.SetEnvVar(ctx, ev)
-}
-
-func (e *envs) GetVars(ctx context.Context, vns []sdktypes.Symbol, eid sdktypes.EnvID) ([]sdktypes.EnvVar, error) {
-	vs, err := e.db.GetEnvVars(ctx, eid)
-
-	if len(vns) != 0 {
-		has := kittehs.ContainedIn(kittehs.TransformToStrings(vns)...)
-
-		vs = kittehs.Filter(
-			vs,
-			func(v sdktypes.EnvVar) bool { return has(v.Symbol().String()) },
-		)
-	}
-
-	return vs, err
-}
-
-func (e *envs) RevealVar(ctx context.Context, eid sdktypes.EnvID, vn sdktypes.Symbol) (string, error) {
-	return e.db.RevealEnvVar(ctx, eid, vn)
-}
-
-func (e *envs) RemoveVar(ctx context.Context, eid sdktypes.EnvID, vn sdktypes.Symbol) error {
-	return e.db.RemoveEnvVar(ctx, eid, vn)
 }
 
 // TODO

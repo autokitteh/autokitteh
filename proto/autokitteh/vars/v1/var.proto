@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package autokitteh.vars.v1;
+
+message Var {
+  string scope_id = 1;
+  string name = 2;
+  string value = 3;
+  bool is_secret = 4;
+}

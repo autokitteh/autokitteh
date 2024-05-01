@@ -32,9 +32,9 @@ func UUIDOrNil(uuid sdktypes.UUID) *sdktypes.UUID {
 var Tables = []any{
 	&Build{},
 	&Connection{},
+	&Var{},
 	&Deployment{},
 	&Env{},
-	&EnvVar{},
 	&Event{},
 	&EventRecord{},
 	&Integration{},
@@ -89,11 +89,19 @@ func ParseConnection(c Connection) (sdktypes.Connection, error) {
 		ProjectId:        sdktypes.NewIDFromUUID[sdktypes.ProjectID](c.ProjectID).String(),
 		Name:             c.Name,
 	})
-
 	if err != nil {
 		return sdktypes.InvalidConnection, fmt.Errorf("invalid connection record: %w", err)
 	}
 	return conn, nil
+}
+
+type Var struct {
+	ScopeID  sdktypes.UUID `gorm:"primaryKey;index;type:uuid"`
+	Name     string        `gorm:"primaryKey;index"`
+	Value    string
+	IsSecret bool
+
+	IntegrationID sdktypes.UUID `gorm:"index;type:uuid"`
 }
 
 type Integration struct {
@@ -256,38 +264,6 @@ func ParseEnv(e Env) (sdktypes.Env, error) {
 		EnvId:     sdktypes.NewIDFromUUID[sdktypes.EnvID](&e.EnvID).String(),
 		ProjectId: sdktypes.NewIDFromUUID[sdktypes.ProjectID](e.ProjectID).String(),
 		Name:      e.Name,
-	})
-}
-
-type EnvVar struct {
-	EnvID sdktypes.UUID `gorm:"primaryKey;index;type:uuid"`
-	Name  string        `gorm:"primaryKey"`
-	Value string        // not set if is_secret.
-
-	// Set only if is_secret. will not be fetched by get, only by reveal.
-	SecretValue string // TODO: encrypt?
-	IsSecret    bool
-
-	// {eid.uuid}/{name}. easier to detect dups.
-	// See OrgMember for more.
-	MembershipID string `gorm:"uniqueIndex"`
-
-	// enforce foreign keys
-	Env *Env
-}
-
-func ParseEnvVar(r EnvVar) (sdktypes.EnvVar, error) {
-	v := r.Value
-
-	if r.IsSecret {
-		v = r.SecretValue
-	}
-
-	return sdktypes.StrictEnvVarFromProto(&sdktypes.EnvVarPB{
-		EnvId:    sdktypes.NewIDFromUUID[sdktypes.EnvID](&r.EnvID).String(),
-		Name:     r.Name,
-		Value:    v,
-		IsSecret: r.IsSecret,
 	})
 }
 

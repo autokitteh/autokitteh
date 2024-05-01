@@ -49,6 +49,8 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	"go.autokitteh.dev/autokitteh/internal/backend/triggers"
 	"go.autokitteh.dev/autokitteh/internal/backend/triggersgrpcsvc"
+	"go.autokitteh.dev/autokitteh/internal/backend/vars"
+	"go.autokitteh.dev/autokitteh/internal/backend/varsgrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/webtools"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/internal/version"
@@ -141,6 +143,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		Component("projects", configset.Empty, fx.Provide(projects.New)),
 		Component("projectsgrpcsvc", projectsgrpcsvc.Configs, fx.Provide(projectsgrpcsvc.New)),
 		Component("envs", configset.Empty, fx.Provide(envs.New)),
+		Component("vars", configset.Empty, fx.Provide(vars.New)),
 		Component("events", configset.Empty, fx.Provide(events.New)),
 		Component("triggers", configset.Empty, fx.Provide(triggers.New)),
 		Component("oauth", configset.Empty, fx.Provide(oauth.New)),
@@ -162,9 +165,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 			}),
 		),
 		fx.Provide(func(s fxServices) sdkservices.Services { return &s }),
-		fx.Invoke(sdkruntimessvc.Init),
 		fx.Invoke(applygrpcsvc.Init),
-		fx.Invoke(func(p *projectsgrpcsvc.Server, mux *http.ServeMux) { p.Init(mux) }),
 		fx.Invoke(buildsgrpcsvc.Init),
 		fx.Invoke(connectionsgrpcsvc.Init),
 		fx.Invoke(deploymentsgrpcsvc.Init),
@@ -172,11 +173,14 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		fx.Invoke(envsgrpcsvc.Init),
 		fx.Invoke(eventsgrpcsvc.Init),
 		fx.Invoke(integrationsgrpcsvc.Init),
-		fx.Invoke(triggersgrpcsvc.Init),
 		fx.Invoke(oauth.Init),
+		fx.Invoke(projectsgrpcsvc.Init),
+		fx.Invoke(sdkruntimessvc.Init),
 		fx.Invoke(secretsgrpcsvc.Init),
-		fx.Invoke(storegrpcsvc.Init),
 		fx.Invoke(sessionsgrpcsvc.Init),
+		fx.Invoke(storegrpcsvc.Init),
+		fx.Invoke(triggersgrpcsvc.Init),
+		fx.Invoke(varsgrpcsvc.Init),
 		Component(
 			"http",
 			httpsvc.Configs,

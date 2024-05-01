@@ -16,8 +16,8 @@ func Populate(ctx context.Context, db DB, objs ...sdktypes.Object) (err error) {
 			err = db.CreateEnv(ctx, obj)
 		case sdktypes.Event:
 			err = db.SaveEvent(ctx, obj)
-		case sdktypes.EnvVar:
-			err = db.SetEnvVar(ctx, obj)
+		case sdktypes.Var:
+			err = db.SetVars(ctx, []sdktypes.Var{obj})
 		case sdktypes.Trigger:
 			err = db.CreateTrigger(ctx, obj)
 		case sdktypes.Connection:

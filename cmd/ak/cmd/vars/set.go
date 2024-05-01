@@ -6,35 +6,29 @@ import (
 	"github.com/spf13/cobra"
 
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
-	"go.autokitteh.dev/autokitteh/internal/resolver"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 var secret bool
 
 var setCmd = common.StandardCommand(&cobra.Command{
-	Use:     "set <key> <value> [--secret] <--env=...> [--project=...]",
+	Use:     "set <key> <value> [--secret] <--env=.. | --connection=....> [--project=...]",
 	Short:   "Set environment variable",
 	Aliases: []string{"s"},
 	Args:    cobra.ExactArgs(2),
 
 	RunE: func(cmd *cobra.Command, args []string) error {
-		r := resolver.Resolver{Client: common.Client()}
-		e, id, err := r.EnvNameOrID(env, project)
+		id, err := resolveScopeID()
 		if err != nil {
 			return err
 		}
-		if !e.IsValid() {
-			err = fmt.Errorf("environment %q not found", env)
-			return common.NewExitCodeError(common.NotFoundExitCode, err)
+
+		n, err := sdktypes.StrictParseSymbol(args[0])
+		if err != nil {
+			return fmt.Errorf("invalid variable name %q: %w", args[0], err)
 		}
 
-		ev, err := sdktypes.EnvVarFromProto(&sdktypes.EnvVarPB{
-			EnvId:    id.String(),
-			Name:     args[0],
-			Value:    args[1],
-			IsSecret: secret,
-		})
+		ev := sdktypes.NewVar(n, args[1], secret).WithScopeID(id)
 		if err != nil {
 			return fmt.Errorf("invalid environment variable: %w", err)
 		}
@@ -42,7 +36,7 @@ var setCmd = common.StandardCommand(&cobra.Command{
 		ctx, cancel := common.LimitedContext()
 		defer cancel()
 
-		if err := envs().SetVar(ctx, ev); err != nil {
+		if err := vars().Set(ctx, ev); err != nil {
 			return fmt.Errorf("set environment variable: %w", err)
 		}
 		return nil

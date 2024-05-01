@@ -2,8 +2,6 @@
 package manifest
 
 import (
-	"crypto/md5"
-	"encoding/hex"
 	"encoding/json"
 
 	"github.com/invopop/jsonschema"
@@ -37,7 +35,7 @@ type Project struct {
 	Name        string        `yaml:"name" json:"name"`
 	Connections []*Connection `yaml:"connections,omitempty" json:"connections,omitempty"`
 	Triggers    []*Trigger    `yaml:"triggers,omitempty" json:"triggers,omitempty"`
-	Vars        []*EnvVar     `yaml:"vars,omitempty" json:"vars,omitempty"`
+	Vars        []*Var        `yaml:"vars,omitempty" json:"vars,omitempty"`
 }
 
 func (p Project) GetKey() string { return p.Name }
@@ -48,25 +46,26 @@ type Connection struct {
 	Name           string `yaml:"name" json:"name" jsonschema:"required"`
 	Token          string `yaml:"token,omitempty" json:"token,omitempty"`
 	IntegrationKey string `yaml:"integration" json:"integration" jsonschema:"required"`
+	Vars           []*Var `yaml:"vars,omitempty" json:"vars,omitempty"`
 }
 
 func (c Connection) GetKey() string { return c.ProjectKey + "/" + c.Name }
 
-type EnvVar struct {
-	EnvKey string `yaml:"-" json:"-"` // associated with env.
+type Var struct {
+	ParentKey string `yaml:"-" json:"-"` // associated with env or connection.
 
 	Name     string `yaml:"name" json:"name" jsonschema:"required"`
 	Value    string `yaml:"value,omitempty" json:"value,omitempty"`
 	IsSecret bool   `yaml:"is_secret,omitempty" json:"is_secret,omitempty"`
 }
 
-func (v EnvVar) GetKey() string { return v.EnvKey + "/" + v.Name }
+func (v Var) GetKey() string { return v.ParentKey + "/" + v.Name }
 
 type Trigger struct {
 	EnvKey string `yaml:"-" json:"-"` // associated with env.
 
 	ConnectionKey string `yaml:"connection" json:"connection" jsonschema:"required"` // coming from connection.
-	Name          string `yaml:"name,omitempty" json:"name,omitempty"`
+	Name          string `yaml:"name" json:"name"`
 	EventType     string `yaml:"event_type,omitempty" json:"event_type,omitempty"`
 	Filter        string `yaml:"filter,omitempty" json:"filter,omitempty"`
 
@@ -81,16 +80,10 @@ type Trigger struct {
 
 func (t Trigger) GetKey() string {
 	var id string
+
 	if t.EnvKey != "" {
 		id = t.EnvKey + ":"
 	}
 
-	id += t.ConnectionKey + "/"
-
-	if t.Name == "" {
-		hash := md5.Sum(kittehs.Must1(json.Marshal(t)))
-		return id + hex.EncodeToString(hash[:])
-	}
-
-	return id + t.Name
+	return id + t.ConnectionKey + "/" + t.Name
 }
