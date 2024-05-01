@@ -51,6 +51,10 @@ func (s SessionLogRecord) GetPrint() (string, bool) {
 	return "", false
 }
 
+func (s SessionLogRecord) GetState() SessionState {
+	return forceFromProto[SessionState](s.read().State)
+}
+
 func (s SessionLogRecord) GetStopRequest() (string, bool) {
 	if m := s.read(); m.StopRequest != nil {
 		return m.StopRequest.Reason, true

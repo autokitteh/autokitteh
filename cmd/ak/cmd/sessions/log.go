@@ -67,6 +67,9 @@ func sessionLog(ctx context.Context, sid sdktypes.SessionID, skip int) ([]sdktyp
 	}
 
 	rs := l.Records()
+	if len(rs) == 0 {
+		return rs, nil
+	}
 
 	var fresh []sdktypes.SessionLogRecord
 
@@ -81,15 +84,23 @@ func sessionLog(ctx context.Context, sid sdktypes.SessionID, skip int) ([]sdktyp
 			r = r.WithoutTimestamp().WithProcessID("")
 		}
 
+		msg := ""
 		if printsOnly {
 			if txt, ok := r.GetPrint(); ok {
+				msg = txt
+			} else if state := r.GetState(); state.IsValid() && state.Type() == sdktypes.SessionStateTypeError {
+				if stateErr := state.GetError(); stateErr.IsValid() {
+					pe := stateErr.GetProgramError()
+					msg = fmt.Sprintf("Error: %s", pe.ErrorString())
+				}
+			}
+
+			if msg != "" {
 				if !noTimestamps {
 					fmt.Printf("[%s] ", r.Timestamp().String())
 				}
-
-				fmt.Println(txt)
+				fmt.Println(msg)
 			}
-
 			continue
 		}
 
