@@ -99,7 +99,7 @@ type dbFixture struct {
 	projectID    sdktypes.UUID
 	triggerID    sdktypes.UUID
 	eventID      sdktypes.UUID
-	scopeID      sdktypes.UUID
+	// scopeID      sdktypes.UUID
 }
 
 func incByOne(id sdktypes.UUID) sdktypes.UUID {
@@ -325,9 +325,9 @@ func (f *dbFixture) newEnv() scheme.Env {
 }
 
 func (f *dbFixture) newVar(name string, val string) scheme.Var {
-	f.sessionID = incByOne(f.scopeID)
+	// f.sessionID = incByOne(f.scopeID)
 	return scheme.Var{
-		ScopeID: f.scopeID,
+		ScopeID: testScopeID,
 		Name:    name,
 		Value:   val,
 	}
