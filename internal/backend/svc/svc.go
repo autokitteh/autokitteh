@@ -209,7 +209,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 				apimux := http.NewServeMux()
 
 				mux = svc.Mux()
-				mux.Handle("/api/", authenticator.Middleware(apimux))
+				mux.Handle("/api/", http.StripPrefix("/api", authenticator.Middleware(apimux)))
 
 				all = &muxes.Muxes{Auth: apimux, NoAuth: mux}
 
