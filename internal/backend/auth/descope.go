@@ -38,7 +38,7 @@ func newDescopeAuthenticator(cfg *Config, z *zap.Logger) (Authenticator, error) 
 
 	descopeClient, err := client.NewWithConfig(&client.Config{ProjectID: cfg.ProjectID, LogLevel: ll})
 	if err != nil {
-		z.Error("failed initiating descope: %w", zap.Error(err))
+		z.Error("failed initiating descope", zap.Error(err))
 		return nil, ErrInvalidAuthProviderConfiguration
 	}
 
