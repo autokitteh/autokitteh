@@ -15,9 +15,8 @@ import (
 var env, project, conn string
 
 var varsCmd = common.StandardCommand(&cobra.Command{
-	Use:     "vars",
-	Short:   "Variable subcommands",
-	Aliases: []string{"var", "vs", "v"},
+	Use:   "var",
+	Short: "Connection variable subcommands: set, get, delete",
 	Args:    cobra.NoArgs,
 })
 
