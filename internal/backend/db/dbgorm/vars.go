@@ -115,7 +115,7 @@ func (db *gormdb) FindConnectionIDsByVar(ctx context.Context, iid sdktypes.Integ
 	}
 
 	var vs []scheme.Var
-	if err := q.Distinct("connection_id").Find(&vs).Error; err != nil {
+	if err := q.Distinct("scope_id").Find(&vs).Error; err != nil {
 		return nil, translateError(err)
 	}
 
