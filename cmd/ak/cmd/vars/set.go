@@ -45,5 +45,5 @@ var setCmd = common.StandardCommand(&cobra.Command{
 
 func init() {
 	// Command-specific flags.
-	setCmd.Flags().BoolVarP(&secret, "secret", "s", false, "this is a secret")
+	setCmd.Flags().BoolVarP(&secret, "secret", "s", false, "this value is secret")
 }
