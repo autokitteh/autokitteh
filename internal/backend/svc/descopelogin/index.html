@@ -47,6 +47,10 @@
         const me = await sdk.me();
         document.getElementById("user_name").innerHTML =
           "<h2>Hello " + me.data.name + "</h2>";
+
+        document
+          .getElementById("profile_img")
+          .setAttribute("src", me.data.picture);
       }
       setupLoggedinUser();
 
@@ -61,7 +65,7 @@
       async function callAuthenticatedEndpoint() {
         const sessionToken = sdk.getSessionToken();
         try {
-          const result = await fetch("/authenticated_only", {
+          const result = await fetch("/api/authenticated_only", {
             headers: {
               ContentType: "application/json",
               Authorization: "Bearer " + sessionToken,
@@ -81,7 +85,7 @@
 
       async function callUnauthenticatedEndpoint() {
         try {
-          const result = await fetch("/authenticated_only", {
+          const result = await fetch("/api/authenticated_only", {
             headers: {
               ContentType: "application/json",
             },
@@ -111,6 +115,7 @@
       </li>
       <li class="navbar-item">
         <h2 id="user_name"></h2>
+        <img id="profile_img" width="64" height="64" />
       </li>
     </ul>
 

@@ -206,19 +206,18 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 				}
 
 				// Replace the original mux with a main mux and also expose the original mux as the no-auth one.
-				authed := http.NewServeMux()
+				apimux := http.NewServeMux()
 
 				mux = svc.Mux()
+				mux.Handle("/api/", authenticator.Middleware(apimux))
 
-				mux.Handle("/", authenticator.Middleware(authed))
-
-				all = &muxes.Muxes{Auth: authed, NoAuth: mux}
+				all = &muxes.Muxes{Auth: apimux, NoAuth: mux}
 
 				return
 			}),
 		),
 		fx.Invoke(func(muxes *muxes.Muxes) {
-			muxes.Auth.Handle("/authenticated_only", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			muxes.Auth.Handle("/api/authenticated_only", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				fmt.Println("ok")
 				ctx := r.Context()
 
