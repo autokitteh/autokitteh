@@ -16,7 +16,11 @@ type Authenticator interface {
 	Provider() ProviderDetails
 }
 
-const AuthenticatedUserCtxKey = "auth:user_details"
+type authenticatedUserCtxKey struct{}
+
+var (
+	AuthenticatedUserCtxKey = authenticatedUserCtxKey{}
+)
 
 type AuthenticatedUserDetails struct {
 	UserID   string

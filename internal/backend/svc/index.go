@@ -30,7 +30,7 @@ func indexOption() fx.Option {
 
 			case auth.AuthProviderDescope:
 				projectID := authenticator.Provider().Config["ProjectID"]
-				descopelogin.LoginPage(w, projectID)
+				descopelogin.LoginPage(w, r, projectID)
 				return
 
 			default:
@@ -48,7 +48,7 @@ func indexOption() fx.Option {
 
 			case auth.AuthProviderDescope:
 				projectID := authenticator.Provider().Config["ProjectID"]
-				descopelogin.IndexPage(w, projectID)
+				descopelogin.IndexPage(w, r, projectID)
 				return
 
 			default:

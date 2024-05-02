@@ -16,10 +16,14 @@ var indexTemplate = kittehs.Must1(template.New("index.html").Parse(index))
 var login string
 var loginTemplate = kittehs.Must1(template.New("index.html").Parse(login))
 
-func IndexPage(w http.ResponseWriter, projectID string) {
-	indexTemplate.Execute(w, projectID)
+func IndexPage(w http.ResponseWriter, r *http.Request, projectID string) {
+	if err := indexTemplate.Execute(w, projectID); err != nil {
+		http.Redirect(w, r, "/error", http.StatusTemporaryRedirect)
+	}
 }
 
-func LoginPage(w http.ResponseWriter, projectID string) {
-	loginTemplate.Execute(w, projectID)
+func LoginPage(w http.ResponseWriter, r *http.Request, projectID string) {
+	if err := loginTemplate.Execute(w, projectID); err != nil {
+		http.Redirect(w, r, "/error", http.StatusTemporaryRedirect)
+	}
 }

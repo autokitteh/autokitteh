@@ -224,7 +224,8 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 
 				userDetails := ctx.Value(auth.AuthenticatedUserCtxKey).(*auth.AuthenticatedUserDetails)
 
-				json.NewEncoder(w).Encode(map[string]any{"ok": "ok", "userID": userDetails.UserID})
+				// we don't care about this error since this is an example route
+				kittehs.Must0(json.NewEncoder(w).Encode(map[string]any{"ok": "ok", "userID": userDetails.UserID}))
 			}))
 		}),
 		fx.Invoke(func(mux *http.ServeMux, h integrationsweb.Handler) {

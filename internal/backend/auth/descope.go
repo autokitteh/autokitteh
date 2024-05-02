@@ -7,6 +7,7 @@ import (
 
 	"github.com/descope/go-sdk/descope/client"
 	"github.com/descope/go-sdk/descope/logger"
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.uber.org/zap"
 )
 
@@ -67,7 +68,7 @@ func (d *descopeAuthenticator) Middleware(n http.Handler) http.Handler {
 		if !authorized {
 			w.WriteHeader(401)
 			res := map[string]any{"error": "unauthorized"}
-			json.NewEncoder(w).Encode(res)
+			kittehs.Must0(json.NewEncoder(w).Encode(res))
 			return
 		}
 

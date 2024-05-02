@@ -14,5 +14,5 @@ var errorPage string
 var errorTemplate = kittehs.Must1(template.New("index.html").Parse(errorPage))
 
 func ErrorPage(w http.ResponseWriter, message string) {
-	errorTemplate.Execute(w, message)
+	kittehs.Must0(errorTemplate.Execute(w, message))
 }
