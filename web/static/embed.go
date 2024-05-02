@@ -45,3 +45,9 @@ var SlackWebContent embed.FS
 
 //go:embed twilio/connect
 var TwilioWebContent embed.FS
+
+//go:embed descopelogin/index.html
+var DescopeIndex string
+
+//go:embed descopelogin/login.html
+var DescopeLogin string

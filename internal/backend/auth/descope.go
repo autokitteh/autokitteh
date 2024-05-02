@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/descope/go-sdk/descope"
 	"github.com/descope/go-sdk/descope/client"
 	"github.com/descope/go-sdk/descope/logger"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
@@ -54,9 +55,19 @@ func (d *descopeAuthenticator) validateToken(req *http.Request) (bool, *Authenti
 	authorized, tok, err := d.c.Auth.ValidateSessionWithRequest(req)
 	if !authorized {
 		if err != nil {
+			if descope.IsUnauthorizedError(err) {
+				d.z.Debug("unauthorized call")
+				return false, nil
+			}
+
+			if de, ok := err.(*descope.Error); ok {
+				d.z.Debug("descope err", zap.Error(de))
+				return false, nil
+			}
 			d.z.Error("validate session error", zap.Error(err))
+			return false, nil
 		}
-		return false, nil
+
 	}
 
 	return true, &AuthenticatedUserDetails{UserID: tok.ID, Provider: d.name}

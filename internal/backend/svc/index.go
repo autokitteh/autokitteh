@@ -9,7 +9,8 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/auth"
-	"go.autokitteh.dev/autokitteh/internal/backend/svc/descopelogin"
+	"go.autokitteh.dev/autokitteh/web/static"
+
 	"go.autokitteh.dev/autokitteh/internal/backend/svc/errorpage"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 )
@@ -18,6 +19,21 @@ import (
 var indexContent string
 
 var indexTemplate = kittehs.Must1(template.New("index.html").Parse(indexContent))
+
+var descopeIndexTemplate = kittehs.Must1(template.New("index.html").Parse(static.DescopeIndex))
+var descopeLoginTemplate = kittehs.Must1(template.New("login.html").Parse(static.DescopeLogin))
+
+func descopeIndexPage(w http.ResponseWriter, r *http.Request, projectID string) {
+	if err := descopeIndexTemplate.Execute(w, projectID); err != nil {
+		http.Redirect(w, r, "/error", http.StatusTemporaryRedirect)
+	}
+}
+
+func descopeLoginPage(w http.ResponseWriter, r *http.Request, projectID string) {
+	if err := descopeLoginTemplate.Execute(w, projectID); err != nil {
+		http.Redirect(w, r, "/error", http.StatusTemporaryRedirect)
+	}
+}
 
 func indexOption() fx.Option {
 	return fx.Invoke(func(z *zap.Logger, mux *http.ServeMux, authenticator auth.Authenticator) {
@@ -30,7 +46,7 @@ func indexOption() fx.Option {
 
 			case auth.AuthProviderDescope:
 				projectID := authenticator.Provider().Config["ProjectID"]
-				descopelogin.LoginPage(w, r, projectID)
+				descopeLoginPage(w, r, projectID)
 				return
 
 			default:
@@ -48,7 +64,7 @@ func indexOption() fx.Option {
 
 			case auth.AuthProviderDescope:
 				projectID := authenticator.Provider().Config["ProjectID"]
-				descopelogin.IndexPage(w, r, projectID)
+				descopeIndexPage(w, r, projectID)
 				return
 
 			default:

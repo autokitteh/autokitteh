@@ -217,7 +217,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 			}),
 		),
 		fx.Invoke(func(muxes *muxes.Muxes) {
-			muxes.Auth.Handle("/api/authenticated_only", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			muxes.Auth.Handle("/authenticated_only", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				fmt.Println("ok")
 				ctx := r.Context()
 
