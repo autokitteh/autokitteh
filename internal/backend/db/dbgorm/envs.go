@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
@@ -15,10 +14,6 @@ import (
 
 func envMembershipID(e sdktypes.Env) string {
 	return fmt.Sprintf("%s/%s", e.ProjectID().UUIDValue(), e.Name().String())
-}
-
-func envVarMembershipID(ev sdktypes.EnvVar) string {
-	return fmt.Sprintf("%s/%s", ev.EnvID().UUIDValue(), ev.Symbol().String())
 }
 
 func (db *gormdb) createEnv(ctx context.Context, env *scheme.Env) error {
@@ -89,62 +84,4 @@ func (db *gormdb) ListProjectEnvs(ctx context.Context, pid sdktypes.ProjectID) (
 			Name:      r.Name,
 		})
 	})
-}
-
-// --------------------------------------------------------------------------------
-func (db *gormdb) setEnvVar(ctx context.Context, envar *scheme.EnvVar) error {
-	return db.db.WithContext(ctx).
-		Clauses(clause.OnConflict{UpdateAll: true, Columns: []clause.Column{{Name: "membership_id"}}}). // upsert.
-		Create(&envar).Error
-}
-
-func (db *gormdb) SetEnvVar(ctx context.Context, ev sdktypes.EnvVar) error {
-	envar := scheme.EnvVar{
-		EnvID:        ev.EnvID().UUIDValue(), // need to verify envID ? where is envvar id ?
-		Name:         ev.Symbol().String(),
-		IsSecret:     ev.IsSecret(),
-		MembershipID: envVarMembershipID(ev),
-	}
-
-	if envar.IsSecret {
-		envar.SecretValue = ev.Value()
-	} else {
-		envar.Value = ev.Value()
-	}
-	return translateError(db.setEnvVar(ctx, &envar))
-}
-
-func (db *gormdb) GetEnvVars(ctx context.Context, eid sdktypes.EnvID) ([]sdktypes.EnvVar, error) {
-	var rs []scheme.EnvVar
-	err := db.db.WithContext(ctx).
-		Where("env_id = ?", eid.UUIDValue()).
-		Select("env_id", "name", "value", "is_secret"). // exclude secret_value.
-		Order("name").
-		Find(&rs).Error
-	if err != nil {
-		return nil, translateError(err)
-	}
-
-	return kittehs.TransformError(rs, scheme.ParseEnvVar)
-}
-
-func (db *gormdb) RevealEnvVar(ctx context.Context, eid sdktypes.EnvID, vn sdktypes.Symbol) (string, error) {
-	var r scheme.EnvVar
-	if err := db.db.WithContext(ctx).Where("env_id = ? and name = ?", eid.UUIDValue(), vn.String()).First(&r).Error; err != nil {
-		return "", translateError(err)
-	}
-
-	if r.IsSecret {
-		return r.SecretValue, nil
-	}
-
-	return r.Value, nil
-}
-
-func (db *gormdb) deleteEnvVar(ctx context.Context, envID sdktypes.UUID, varName string) error {
-	return db.db.WithContext(ctx).Delete(scheme.EnvVar{EnvID: envID, Name: varName}).Error
-}
-
-func (db *gormdb) RemoveEnvVar(ctx context.Context, eid sdktypes.EnvID, vn sdktypes.Symbol) error {
-	return translateError(db.deleteEnvVar(ctx, eid.UUIDValue(), vn.String()))
 }

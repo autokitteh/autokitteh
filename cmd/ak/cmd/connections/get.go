@@ -17,7 +17,7 @@ var getCmd = common.StandardCommand(&cobra.Command{
 
 	RunE: func(cmd *cobra.Command, args []string) error {
 		r := resolver.Resolver{Client: common.Client()}
-		c, _, err := r.ConnectionNameOrID(args[0])
+		c, _, err := r.ConnectionNameOrID(args[0], "")
 		if err != nil {
 			if errors.As(err, resolver.NotFoundErrorType) {
 				if err := common.FailIfNotFound(cmd, "connection", c.IsValid()); err != nil {

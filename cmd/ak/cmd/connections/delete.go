@@ -16,7 +16,7 @@ var deleteCmd = common.StandardCommand(&cobra.Command{
 
 	RunE: func(cmd *cobra.Command, args []string) error {
 		r := resolver.Resolver{Client: common.Client()}
-		c, id, err := r.ConnectionNameOrID(args[0])
+		c, id, err := r.ConnectionNameOrID(args[0], "")
 		if err != nil {
 			return common.ToExitCodeError(err, "connection")
 		}

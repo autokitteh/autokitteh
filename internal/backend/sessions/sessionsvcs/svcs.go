@@ -21,6 +21,7 @@ type Svcs struct {
 	Integrations sdkservices.Integrations
 	Triggers     sdkservices.Triggers
 	Connections  sdkservices.Connections
+	Vars         sdkservices.Vars
 
 	RedisClient *redis.Client
 	Temporal    client.Client

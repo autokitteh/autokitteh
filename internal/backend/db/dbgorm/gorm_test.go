@@ -99,6 +99,7 @@ type dbFixture struct {
 	projectID    sdktypes.UUID
 	triggerID    sdktypes.UUID
 	eventID      sdktypes.UUID
+	// scopeID      sdktypes.UUID
 }
 
 func incByOne(id sdktypes.UUID) sdktypes.UUID {
@@ -110,7 +111,6 @@ func incByOne(id sdktypes.UUID) sdktypes.UUID {
 	}
 
 	return kittehs.Must1(uuid.FromBytes(newVal[:]))
-
 }
 
 // TODO: use gormkitteh (and maybe test with sqlite::memory and embedded PG)
@@ -256,7 +256,8 @@ var (
 	testBuildID = kittehs.Must1(uuid.FromBytes([]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}))
 	// testDeploymentID = "dep_00000000000000000000000001"
 	// testEventID      = "evt_00000000000000000000000001"
-	testEnvID = kittehs.Must1(uuid.FromBytes([]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}))
+	testEnvID   = kittehs.Must1(uuid.FromBytes([]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}))
+	testScopeID = kittehs.Must1(uuid.FromBytes([]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}))
 	// testProjectID = "prj_00000000000000000000000001"
 	// testTriggerID     = "trg_00000000000000000000000001"
 	testConnectionID   = kittehs.Must1(uuid.FromBytes([]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}))
@@ -323,11 +324,12 @@ func (f *dbFixture) newEnv() scheme.Env {
 	}
 }
 
-func (f *dbFixture) newEnvVar(name string, val string) scheme.EnvVar {
-	return scheme.EnvVar{
-		EnvID: f.envID,
-		Name:  name,
-		Value: val,
+func (f *dbFixture) newVar(name string, val string) scheme.Var {
+	// f.sessionID = incByOne(f.scopeID)
+	return scheme.Var{
+		ScopeID: testScopeID,
+		Name:    name,
+		Value:   val,
 	}
 }
 

@@ -15,4 +15,5 @@ type Services interface {
 	Sessions() Sessions
 	Store() Store
 	Triggers() Triggers
+	Vars() Vars
 }

@@ -179,8 +179,8 @@ func (w *sessionWorkflow) initEnvModule() {
 	mod := sdkexecutor.NewExecutor(
 		nil, // no calls will be ever made to env.
 		envVarsExecutorID,
-		kittehs.ListToMap(w.data.EnvVars, func(v sdktypes.EnvVar) (string, sdktypes.Value) {
-			return v.Symbol().String(), sdktypes.NewStringValue(v.Value())
+		kittehs.ListToMap(w.data.Vars, func(v sdktypes.Var) (string, sdktypes.Value) {
+			return v.Name().String(), sdktypes.NewStringValue(v.Value())
 		}),
 	)
 

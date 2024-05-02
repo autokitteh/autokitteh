@@ -3,7 +3,6 @@ package envs
 import (
 	"github.com/spf13/cobra"
 
-	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/envs/vars"
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -14,7 +13,7 @@ var project string
 
 var envCmd = common.StandardCommand(&cobra.Command{
 	Use:   "env",
-	Short: "Execution environments: create, get, list, var",
+	Short: "Execution environments: create, get, list",
 	Args:  cobra.NoArgs,
 })
 
@@ -37,8 +36,6 @@ func init() {
 	envCmd.AddCommand(createCmd)
 	envCmd.AddCommand(getCmd)
 	envCmd.AddCommand(listCmd)
-
-	vars.AddSubcommands(envCmd)
 }
 
 func envs() sdkservices.Envs {

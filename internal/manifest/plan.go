@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/internal/manifest/internal/actions"
@@ -123,7 +124,7 @@ func planProject(ctx context.Context, mproj *Project, client sdkservices.Service
 	return acc, nil
 }
 
-func planDefaultEnv(ctx context.Context, mvars []*EnvVar, client sdkservices.Services, projName string, pid sdktypes.ProjectID, optfns ...Option) ([]actions.Action, error) {
+func planDefaultEnv(ctx context.Context, mvars []*Var, client sdkservices.Services, projName string, pid sdktypes.ProjectID, optfns ...Option) ([]actions.Action, error) {
 	envKeyer := stringKeyer(projName + "/" + defaultEnvName)
 	opts := applyOptions(optfns)
 	log := opts.log.For("env", envKeyer)
@@ -172,10 +173,12 @@ func planDefaultEnv(ctx context.Context, mvars []*EnvVar, client sdkservices.Ser
 		}
 	}
 
-	var vars []sdktypes.EnvVar
+	sid := sdktypes.NewVarScopeID(envID)
+
+	var vars sdktypes.Vars
 
 	if envID.IsValid() {
-		if vars, err = client.Envs().GetVars(ctx, nil, envID); err != nil {
+		if vars, err = client.Vars().Get(ctx, sid); err != nil {
 			return nil, fmt.Errorf("get vars: %w", err)
 		}
 	}
@@ -183,25 +186,20 @@ func planDefaultEnv(ctx context.Context, mvars []*EnvVar, client sdkservices.Ser
 	var mvarNames []string
 	for _, mvar := range mvars {
 		mvar := *mvar
-		mvar.EnvKey = projName + "/" + defaultEnvName
+		mvar.ParentKey = projName + "/" + defaultEnvName
 
 		mvarNames = append(mvarNames, mvar.Name)
 
-		_, v := kittehs.FindFirst(vars, func(v sdktypes.EnvVar) bool {
-			return v.Symbol().String() == mvar.Name
-		})
+		v := vars.GetByString(mvar.Name)
 
-		desired, err := sdktypes.EnvVarFromProto(&sdktypes.EnvVarPB{
-			EnvId:    envID.String(),
-			Name:     mvar.Name,
-			Value:    mvar.Value,
-			IsSecret: mvar.IsSecret,
-		})
+		n, err := sdktypes.StrictParseSymbol(mvar.Name)
 		if err != nil {
-			return nil, fmt.Errorf("invalid var: %w", err)
+			return nil, fmt.Errorf("invalid var name: %w", err)
 		}
 
-		setAction := actions.SetEnvVarAction{Key: mvar.GetKey(), EnvKey: envKeyer.GetKey(), EnvVar: desired}
+		desired := sdktypes.NewVar(n, mvar.Value, mvar.IsSecret).WithScopeID(sid)
+
+		setAction := actions.SetVarAction{Key: mvar.GetKey(), Env: envKeyer.GetKey(), Var: desired}
 
 		log := opts.log.For("var", mvar)
 
@@ -214,12 +212,6 @@ func planDefaultEnv(ctx context.Context, mvars []*EnvVar, client sdkservices.Ser
 		} else {
 			currVal := v.Value()
 
-			if v.IsSecret() {
-				if currVal, err = client.Envs().RevealVar(ctx, envID, v.Symbol()); err != nil {
-					return nil, fmt.Errorf("reveal var: %w", err)
-				}
-			}
-
 			if currVal != mvar.Value {
 				log("differs, will set")
 				add(setAction)
@@ -229,9 +221,9 @@ func planDefaultEnv(ctx context.Context, mvars []*EnvVar, client sdkservices.Ser
 
 	hasVar := kittehs.ContainedIn(mvarNames...)
 	for _, v := range vars {
-		if name := v.Symbol().String(); !hasVar(name) {
+		if name := v.Name().String(); !hasVar(name) {
 			log.Printf("env var %q is not in the manifest, will delete", name)
-			add(actions.DeleteEnvVarAction{Key: envKeyer.GetKey() + "/" + name, EnvID: envID, Name: name})
+			add(actions.DeleteVarAction{Key: envKeyer.GetKey() + "/" + name, ScopeID: sid, Name: name})
 		}
 	}
 
@@ -272,9 +264,24 @@ func planConnections(ctx context.Context, mconns []*Connection, client sdkservic
 			return c.Name().String() == mconn.Name
 		})
 
-		as, err := planConnection(&mconn, curr, optfns...)
+		cid, as, err := planConnection(&mconn, curr, optfns...)
 		if err != nil {
 			return nil, fmt.Errorf("connection %q: %w", mconn.GetKey(), err)
+		}
+
+		add(as...)
+
+		sid := sdktypes.NewVarScopeID(cid)
+
+		var cvars []sdktypes.Var
+		if cid.IsValid() {
+			if cvars, err = client.Vars().Get(ctx, sid); err != nil {
+				return nil, fmt.Errorf("get connection vars: %w", err)
+			}
+		}
+
+		if as, err = planConnectionVars(mconn, cid, cvars, optfns...); err != nil {
+			return nil, fmt.Errorf("connection vars %q: %w", mconn.GetKey(), err)
 		}
 
 		add(as...)
@@ -294,12 +301,63 @@ func planConnections(ctx context.Context, mconns []*Connection, client sdkservic
 	return acc, nil
 }
 
-func planConnection(mconn *Connection, curr sdktypes.Connection, optfns ...Option) ([]actions.Action, error) {
+func planConnectionVars(mconn Connection, cid sdktypes.ConnectionID, cvars sdktypes.Vars, optfns ...Option) (acts []actions.Action, err error) {
+	opts := applyOptions(optfns)
+
+	var handled []sdktypes.Symbol
+
+	for _, mvar := range mconn.Vars {
+		mvar.ParentKey = mconn.GetKey()
+
+		log := opts.log.For("var", mvar)
+
+		n, err := sdktypes.ParseSymbol(mvar.Name)
+		if err != nil {
+			return nil, fmt.Errorf("invalid var name: %w", err)
+		}
+
+		want := sdktypes.NewVar(n, mvar.Value, mvar.IsSecret).WithScopeID(sdktypes.NewVarScopeID(cid))
+
+		got := cvars.Get(want.Name())
+
+		handled = append(handled, n)
+
+		if got.Equal(want) {
+			log.Printf("no change needed")
+			continue
+		}
+
+		if got.IsValid() {
+			log.Printf("changed, will update")
+		} else {
+			log.Printf("not found, will set")
+		}
+
+		acts = append(acts, actions.SetVarAction{Key: mvar.GetKey(), ConnectionKey: mconn.GetKey(), Var: want})
+	}
+
+	// Remove connection vars not in the manifest.
+	if opts.rmUnusedConnVars {
+		hasVar := kittehs.ContainedIn(handled...)
+		removed := kittehs.Filter(cvars, func(cvar sdktypes.Var) bool {
+			return !hasVar(cvar.Name())
+		})
+
+		acts = append(acts, kittehs.Transform(removed, func(cvar sdktypes.Var) actions.Action {
+			log.Printf("connection var %q not in the manifest, will delete", cvar.Name())
+			return actions.DeleteVarAction{Key: mconn.GetKey() + "/" + cvar.Name().String(), ScopeID: sdktypes.NewVarScopeID(cid), Name: cvar.Name().String()}
+		})...)
+	}
+
+	return acts, nil
+}
+
+func planConnection(mconn *Connection, curr sdktypes.Connection, optfns ...Option) (sdktypes.ConnectionID, []actions.Action, error) {
 	opts := applyOptions(optfns)
 	log := opts.log.For("connection", mconn)
 
 	if !curr.IsValid() && mconn.ProjectKey == "" {
-		return nil, errors.New("project must be set")
+		return sdktypes.InvalidConnectionID, nil, errors.New("project must be set")
 	}
 
 	desired, err := sdktypes.ConnectionFromProto(&sdktypes.ConnectionPB{
@@ -307,12 +365,12 @@ func planConnection(mconn *Connection, curr sdktypes.Connection, optfns ...Optio
 		IntegrationToken: mconn.Token,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("invalid: %w", err)
+		return sdktypes.InvalidConnectionID, nil, fmt.Errorf("invalid: %w", err)
 	}
 
 	if !curr.IsValid() {
 		log.Printf("not found, will create")
-		return []actions.Action{actions.CreateConnectionAction{Key: mconn.GetKey(), ProjectKey: mconn.ProjectKey, IntegrationKey: mconn.IntegrationKey, Connection: desired}}, nil
+		return sdktypes.InvalidConnectionID, []actions.Action{actions.CreateConnectionAction{Key: mconn.GetKey(), ProjectKey: mconn.ProjectKey, IntegrationKey: mconn.IntegrationKey, Connection: desired}}, nil
 	}
 
 	desired = desired.
@@ -322,11 +380,11 @@ func planConnection(mconn *Connection, curr sdktypes.Connection, optfns ...Optio
 
 	if curr.Equal(desired) {
 		log.Printf("no changes needed")
-		return nil, nil
+		return curr.ID(), nil, nil
 	}
 
 	log.Printf("not as desired, will update")
-	return []actions.Action{actions.UpdateConnectionAction{Key: mconn.GetKey(), Connection: desired}}, nil
+	return curr.ID(), []actions.Action{actions.UpdateConnectionAction{Key: mconn.GetKey(), Connection: desired}}, nil
 }
 
 func planTriggers(ctx context.Context, mtriggers []*Trigger, client sdkservices.Services, projName string, pid sdktypes.ProjectID, optfns ...Option) ([]actions.Action, error) {

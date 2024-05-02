@@ -15,7 +15,6 @@ func (db *gormdb) saveEvent(ctx context.Context, event *scheme.Event) error {
 }
 
 func (db *gormdb) SaveEvent(ctx context.Context, event sdktypes.Event) error {
-
 	e := scheme.Event{
 		EventID:          event.ID().UUIDValue(),
 		IntegrationID:    scheme.UUIDOrNil(event.IntegrationID().UUIDValue()),

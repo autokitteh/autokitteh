@@ -70,7 +70,7 @@ func (r Resolver) BuildID(id string) (b sdktypes.Build, bid sdktypes.BuildID, er
 // Subtle note: the connection is guaranteed to exist only if the FIRST
 // return value is non-nil. Example: if the input is a valid ID,
 // but it doesn't actually exist, we return (nil, ID, nil).
-func (r Resolver) ConnectionNameOrID(nameOrID string) (c sdktypes.Connection, cid sdktypes.ConnectionID, err error) {
+func (r Resolver) ConnectionNameOrID(nameOrID, project string) (c sdktypes.Connection, cid sdktypes.ConnectionID, err error) {
 	if nameOrID == "" {
 		return
 	}
@@ -82,7 +82,11 @@ func (r Resolver) ConnectionNameOrID(nameOrID string) (c sdktypes.Connection, ci
 	parts := strings.Split(nameOrID, separator)
 	switch len(parts) {
 	case 1:
-		err = fmt.Errorf("invalid connection name %q: missing project prefix", nameOrID)
+		if project == "" {
+			err = fmt.Errorf("invalid connection name %q: missing project prefix", nameOrID)
+		} else {
+			return r.connectionByFullName(project, parts[1], nameOrID)
+		}
 		return
 	case 2:
 		return r.connectionByFullName(parts[0], parts[1], nameOrID)

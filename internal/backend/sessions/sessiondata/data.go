@@ -20,7 +20,7 @@ type Data struct {
 	ProjectID   sdktypes.ProjectID      `json:"project_id"`
 	Session     sdktypes.Session        `json:"session"`
 	Env         sdktypes.Env            `json:"env"`
-	EnvVars     []sdktypes.EnvVar       `json:"env_vars"`
+	Vars        []sdktypes.Var          `json:"vars"`
 	Build       sdktypes.Build          `json:"build"`
 	BuildFile   *sdkbuildfile.BuildFile `json:"build_file"`
 	Triggers    []sdktypes.Trigger      `json:"mappings"`
@@ -97,7 +97,7 @@ func Get(ctx context.Context, z *zap.Logger, svcs *sessionsvcs.Svcs, sessionID s
 
 		// TODO: merge mappings?
 
-		if data.EnvVars, err = svcs.Envs.GetVars(ctx, nil, envID); err != nil {
+		if data.Vars, err = svcs.Vars.Get(ctx, sdktypes.NewVarScopeID(envID)); err != nil {
 			return nil, fmt.Errorf("get vars: %w", err)
 		}
 	}
