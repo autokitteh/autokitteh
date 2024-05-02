@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
@@ -11,6 +12,11 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
+
+func (db *gormdb) setVars(ctx context.Context, vars []scheme.Var) error {
+	// NOTE: should be transactional
+	return db.db.WithContext(ctx).Clauses(clause.OnConflict{UpdateAll: true}).Create(&vars).Error
+}
 
 func (db *gormdb) SetVars(ctx context.Context, vars []sdktypes.Var) error {
 	if i, err := kittehs.ValidateList(vars, func(_ int, v sdktypes.Var) error {
@@ -57,22 +63,34 @@ func (db *gormdb) SetVars(ctx context.Context, vars []sdktypes.Var) error {
 			}
 		}
 
-		return translateError(tx.db.Clauses(clause.OnConflict{
-			UpdateAll: true,
-		}).Create(&dbvs).Error)
+		return translateError(tx.setVars(ctx, dbvs))
 	})
 }
 
-func (db *gormdb) GetVars(ctx context.Context, reveal bool, sid sdktypes.VarScopeID, names []sdktypes.Symbol) ([]sdktypes.Var, error) {
-	q := db.db.Where("scope_id = ?", sid.UUIDValue())
+func (db *gormdb) varsCommonQuery(ctx context.Context, scopeID sdktypes.UUID, names []string) *gorm.DB {
+	gormDB := db.db.WithContext(ctx)
+	query := gormDB.Where("scope_id = ?", scopeID)
 
 	if len(names) > 0 {
-		q = q.Where("name IN (?)", kittehs.TransformToStrings(names))
+		query = query.Where("name IN (?)", names)
 	}
+	return query
+}
 
-	var dbvs []scheme.Var
+func (db *gormdb) getVars(ctx context.Context, scopeID sdktypes.UUID, names ...string) ([]scheme.Var, error) {
+	query := db.varsCommonQuery(ctx, scopeID, names)
 
-	if err := q.Find(&dbvs).Error; err != nil {
+	var vars []scheme.Var
+
+	if err := query.Find(&vars).Error; err != nil {
+		return nil, err
+	}
+	return vars, nil
+}
+
+func (db *gormdb) GetVars(ctx context.Context, reveal bool, sid sdktypes.VarScopeID, names []sdktypes.Symbol) ([]sdktypes.Var, error) {
+	dbvs, err := db.getVars(ctx, sid.UUIDValue(), kittehs.TransformToStrings(names)...)
+	if err != nil {
 		return nil, translateError(err)
 	}
 
@@ -93,14 +111,13 @@ func (db *gormdb) GetVars(ctx context.Context, reveal bool, sid sdktypes.VarScop
 	)
 }
 
+func (db *gormdb) deleteVars(ctx context.Context, scopeID sdktypes.UUID, names ...string) error {
+	query := db.varsCommonQuery(ctx, scopeID, names)
+	return query.Delete(&scheme.Var{}).Error
+}
+
 func (db *gormdb) DeleteVars(ctx context.Context, sid sdktypes.VarScopeID, names []sdktypes.Symbol) error {
-	q := db.db.Where("scope_id = ?", sid.UUIDValue())
-
-	if len(names) > 0 {
-		q = q.Where("name IN (?)", kittehs.TransformToStrings(names))
-	}
-
-	return translateError(q.Delete(&scheme.Var{}).Error)
+	return translateError(db.deleteVars(ctx, sid.UUIDValue(), kittehs.TransformToStrings(names)...))
 }
 
 func (db *gormdb) FindConnectionIDsByVar(ctx context.Context, iid sdktypes.IntegrationID, n sdktypes.Symbol, v string) ([]sdktypes.ConnectionID, error) {

@@ -102,6 +102,9 @@ type Var struct {
 	IsSecret bool
 
 	IntegrationID sdktypes.UUID `gorm:"index;type:uuid"`
+
+	// enforce foreign keys
+	// Integration *Integration // FIXME: ENG-590
 }
 
 type Integration struct {

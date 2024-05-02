@@ -99,6 +99,7 @@ type dbFixture struct {
 	projectID    sdktypes.UUID
 	triggerID    sdktypes.UUID
 	eventID      sdktypes.UUID
+	scopeID      sdktypes.UUID
 }
 
 func incByOne(id sdktypes.UUID) sdktypes.UUID {
@@ -255,7 +256,8 @@ var (
 	testBuildID = kittehs.Must1(uuid.FromBytes([]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}))
 	// testDeploymentID = "dep_00000000000000000000000001"
 	// testEventID      = "evt_00000000000000000000000001"
-	testEnvID = kittehs.Must1(uuid.FromBytes([]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}))
+	testEnvID   = kittehs.Must1(uuid.FromBytes([]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}))
+	testScopeID = kittehs.Must1(uuid.FromBytes([]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}))
 	// testProjectID = "prj_00000000000000000000000001"
 	// testTriggerID     = "trg_00000000000000000000000001"
 	testConnectionID   = kittehs.Must1(uuid.FromBytes([]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}))
@@ -319,6 +321,15 @@ func (f *dbFixture) newEnv() scheme.Env {
 	return scheme.Env{
 		EnvID:        f.envID,
 		MembershipID: envID, // must be unique
+	}
+}
+
+func (f *dbFixture) newVar(name string, val string) scheme.Var {
+	f.sessionID = incByOne(f.scopeID)
+	return scheme.Var{
+		ScopeID: f.scopeID,
+		Name:    name,
+		Value:   val,
 	}
 }
 
