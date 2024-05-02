@@ -8,7 +8,7 @@ import (
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
 )
 
-var quiet bool
+var quiet, rmUnusedConnVars bool
 
 var manifestCmd = common.StandardCommand(&cobra.Command{
 	Use:     "manifest",

@@ -7,7 +7,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/manifest"
 )
 
-var noValidate, fromScratch, rmUnusedConnVars bool
+var noValidate, fromScratch bool
 
 var planCmd = common.StandardCommand(&cobra.Command{
 	Use:     "plan [file] [--project-name <name>] [--no-validate] [--from-scratch] [--quiet] [--rm-unused-cvars]",
