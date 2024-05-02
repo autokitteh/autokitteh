@@ -107,6 +107,7 @@ type DB interface {
 	UpdateConnection(ctx context.Context, conn sdktypes.Connection) error
 	DeleteConnection(ctx context.Context, id sdktypes.ConnectionID) error
 	GetConnection(ctx context.Context, id sdktypes.ConnectionID) (sdktypes.Connection, error)
+	GetConnections(ctx context.Context, ids []sdktypes.ConnectionID) ([]sdktypes.Connection, error)
 	ListConnections(ctx context.Context, filter sdkservices.ListConnectionsFilter) ([]sdktypes.Connection, error)
 
 	// -----------------------------------------------------------------------

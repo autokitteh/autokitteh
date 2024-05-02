@@ -16,7 +16,7 @@ var env, project, conn string
 
 var varsCmd = common.StandardCommand(&cobra.Command{
 	Use:     "vars",
-	Short:   "Environment variable subcommands",
+	Short:   "Variable subcommands",
 	Aliases: []string{"var", "vs", "v"},
 	Args:    cobra.NoArgs,
 })

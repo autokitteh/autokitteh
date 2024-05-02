@@ -11,7 +11,7 @@ import (
 
 var deleteCmd = common.StandardCommand(&cobra.Command{
 	Use:     "delete <key> <--env=... | --connection=...> [--project=...]",
-	Short:   "Delete environment variable",
+	Short:   "Delete variable",
 	Aliases: []string{"rm"},
 	Args:    cobra.ExactArgs(1),
 
@@ -30,7 +30,7 @@ var deleteCmd = common.StandardCommand(&cobra.Command{
 		defer cancel()
 
 		if err := vars().Delete(ctx, id, k); err != nil {
-			return fmt.Errorf("remove environment variable: %w", err)
+			return fmt.Errorf("delete variable: %w", err)
 		}
 
 		return nil

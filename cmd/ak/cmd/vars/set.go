@@ -13,7 +13,7 @@ var secret bool
 
 var setCmd = common.StandardCommand(&cobra.Command{
 	Use:     "set <key> <value> [--secret] <--env=.. | --connection=....> [--project=...]",
-	Short:   "Set environment variable",
+	Short:   "Set variable",
 	Aliases: []string{"s"},
 	Args:    cobra.ExactArgs(2),
 
@@ -30,14 +30,14 @@ var setCmd = common.StandardCommand(&cobra.Command{
 
 		ev := sdktypes.NewVar(n, args[1], secret).WithScopeID(id)
 		if err != nil {
-			return fmt.Errorf("invalid environment variable: %w", err)
+			return fmt.Errorf("invalid variable: %w", err)
 		}
 
 		ctx, cancel := common.LimitedContext()
 		defer cancel()
 
 		if err := vars().Set(ctx, ev); err != nil {
-			return fmt.Errorf("set environment variable: %w", err)
+			return fmt.Errorf("set variable: %w", err)
 		}
 		return nil
 	},

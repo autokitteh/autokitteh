@@ -15,7 +15,7 @@ var reveal bool
 
 var getCmd = common.StandardCommand(&cobra.Command{
 	Use:     "get [k1 [k2 ...]] <--env=... | --connection=...> [--project=...] [--reveal]",
-	Short:   "Get environment variable(s)",
+	Short:   "Get variable(s)",
 	Aliases: []string{"g"},
 	Args:    cobra.ArbitraryArgs,
 
@@ -40,7 +40,7 @@ var getCmd = common.StandardCommand(&cobra.Command{
 
 		vs, err := get(ctx, id, ks...)
 		if err != nil {
-			return fmt.Errorf("get environment variable(s): %w", err)
+			return fmt.Errorf("get variable(s): %w", err)
 		}
 
 		common.RenderList(kittehs.Transform(vs, func(v sdktypes.Var) V { return V{v} }))

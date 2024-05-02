@@ -44,3 +44,5 @@ func (e VarScopeID) ToConnectionID() ConnectionID { id, _ := ParseConnectionID(e
 
 func (e VarScopeID) IsEnvID() bool        { return e.Kind() == envIDKind }
 func (e VarScopeID) IsConnectionID() bool { return e.Kind() == connectionIDKind }
+
+func (e VarScopeID) AsID() ID { return e }
