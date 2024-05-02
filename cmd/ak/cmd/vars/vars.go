@@ -17,7 +17,7 @@ var env, project, conn string
 var varsCmd = common.StandardCommand(&cobra.Command{
 	Use:   "var",
 	Short: "Connection variable subcommands: set, get, delete",
-	Args:    cobra.NoArgs,
+	Args:  cobra.NoArgs,
 })
 
 // AddSubcommands adds this command, and its own subcommands, to the calling parent.
