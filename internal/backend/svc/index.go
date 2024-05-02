@@ -11,7 +11,6 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/auth"
 	"go.autokitteh.dev/autokitteh/web/static"
 
-	"go.autokitteh.dev/autokitteh/internal/backend/svc/errorpage"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 )
 
@@ -25,22 +24,18 @@ var descopeLoginTemplate = kittehs.Must1(template.New("login.html").Parse(static
 
 func descopeIndexPage(w http.ResponseWriter, r *http.Request, projectID string) {
 	if err := descopeIndexTemplate.Execute(w, projectID); err != nil {
-		http.Redirect(w, r, "/error", http.StatusTemporaryRedirect)
+		http.Redirect(w, r, "/error.html", http.StatusTemporaryRedirect)
 	}
 }
 
 func descopeLoginPage(w http.ResponseWriter, r *http.Request, projectID string) {
 	if err := descopeLoginTemplate.Execute(w, projectID); err != nil {
-		http.Redirect(w, r, "/error", http.StatusTemporaryRedirect)
+		http.Redirect(w, r, "/error.html", http.StatusTemporaryRedirect)
 	}
 }
 
 func indexOption() fx.Option {
 	return fx.Invoke(func(z *zap.Logger, mux *http.ServeMux, authenticator auth.Authenticator) {
-		mux.Handle("/error", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			errorpage.ErrorPage(w, "test")
-		}))
-
 		mux.Handle("/login", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			switch authenticator.Provider().Name {
 
@@ -51,7 +46,7 @@ func indexOption() fx.Option {
 
 			default:
 				z.Error("login unknown provider", zap.String("provider", authenticator.Provider().Name))
-				http.Redirect(w, r, "/error", 302)
+				http.Redirect(w, r, "/error.html", 302)
 			}
 		}))
 
@@ -69,7 +64,7 @@ func indexOption() fx.Option {
 
 			default:
 				z.Error("login unknown provider", zap.String("provider", authenticator.Provider().Name))
-				http.Redirect(w, r, "/error", 302)
+				http.Redirect(w, r, "/error.html", 302)
 			}
 		}))
 	})
