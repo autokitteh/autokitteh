@@ -110,11 +110,9 @@ test-dbgorm:
 	go test -v ./internal/backend/db/dbgorm -dbtype $$dbtype ; \
 	done
 
-# TODO(ENG-427): Fix E2E test's data race.
-# TODO(ENG-447): Fix HTTP trigger flakiness.
 .PHONY: test-unit
 test-unit:
-	$(GOTEST) ./... -skip /end2end/builtin_funcs
+	$(GOTEST) ./...
 
 # Subset of "test-unit", for simplicity.
 .PHONY: test-system
@@ -134,11 +132,9 @@ test-cover:
 	$(GOTEST) -covermode=atomic -coverprofile=tmp/cover.out ./...
 	go tool cover -html=tmp/cover.out
 
-# TODO(ENG-427): Fix E2E test's data race.
-# TODO(ENG-447): Fix HTTP trigger flakiness.
 .PHONY: test-race
 test-race:
-	$(GOTEST) -race ./... -skip /end2end/builtin_funcs
+	$(GOTEST) -race ./...
 
 .PHONY: test-cli
 # We don't want test-cli to explicitly depend on bin since
