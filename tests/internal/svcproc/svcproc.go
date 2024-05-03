@@ -58,19 +58,19 @@ func (s *svcProc) Start(ctx context.Context) error {
 
 	s.wait = make(chan fx.ShutdownSignal, 1)
 	go func() {
-		var ec int
+		var exitCode int
 
 		if err := s.cmd.Wait(); err != nil {
 			var exitError *exec.ExitError
 			if errors.As(err, &exitError) {
-				ec = exitError.ExitCode()
+				exitCode = exitError.ExitCode()
 			} else {
-				ec = 1010 // Indicates some kind of IO error.
+				exitCode = 1010 // Indicates some kind of IO error.
 			}
 		}
 
 		// TODO: Pass which signal killed it somehow?
-		s.wait <- svc.ShutdownSignal{ExitCode: ec}
+		s.wait <- svc.ShutdownSignal{ExitCode: exitCode}
 	}()
 
 	return nil
