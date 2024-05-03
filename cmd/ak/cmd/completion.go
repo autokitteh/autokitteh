@@ -9,16 +9,15 @@ import (
 )
 
 var completionCmd = common.StandardCommand(&cobra.Command{
-	Use:       "completion <bash|zsh|fish|powershell>",
+	Use:       "completion {bash|zsh|fish|powershell}",
 	Short:     "Generate shell autocomplete script",
-	Aliases:   []string{"comp", "com"},
 	Args:      cobra.MatchAll(cobra.ExactArgs(1), cobra.OnlyValidArgs),
 	ValidArgs: []string{"bash", "zsh", "fish", "powershell"},
 
 	RunE: func(cmd *cobra.Command, args []string) error {
 		switch args[0] {
 		case "bash":
-			return RootCmd.GenBashCompletion(cmd.OutOrStdout())
+			return RootCmd.GenBashCompletionV2(cmd.OutOrStdout(), true)
 		case "zsh":
 			return RootCmd.GenZshCompletion(cmd.OutOrStdout())
 		case "fish":
