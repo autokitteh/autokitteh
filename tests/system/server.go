@@ -62,45 +62,40 @@ func startAKServer(ctx context.Context, akPath string) (svc.Service, string, err
 // Wait for the AK server to be ready, with a timeout,
 // and return its HTTP address for client connections.
 func waitForReadiness() (string, error) {
-	ready := make(chan bool, 1)
+	ready := make(chan string, 1)
 	timer := time.NewTimer(serverReadyTimeout)
 	go queryReadyz(ready)
 
 	select {
-	case <-ready:
+	case addr := <-ready:
 		timer.Stop()
+		return addr, nil // Success.
 	case <-timer.C:
 		return "", fmt.Errorf("ak server not ready after %s", serverReadyTimeout)
 	}
-
-	// Success.
-	addr, _ := os.ReadFile(serverHTTPAddrFile)
-	return strings.TrimSpace(string(addr)), nil
 }
 
-func queryReadyz(result chan<- bool) {
+func queryReadyz(result chan<- string) {
 	start := time.Now()
 	for time.Since(start) < serverReadyTimeout {
+		time.Sleep(10 * time.Millisecond) // Short delay between checks.
+
 		b, err := os.ReadFile(serverHTTPAddrFile)
 		if err != nil {
-			time.Sleep(10 * time.Millisecond)
 			continue
 		}
 
 		addr := strings.TrimSpace(string(b))
 		resp, err := sendRequest(addr, httpRequest{method: "GET", url: "/readyz"})
 		if err != nil {
-			time.Sleep(10 * time.Millisecond)
 			continue
 		}
 
 		// For now, the availability of "/readyz" is sufficient,
 		// no need to check the response body yet.
 		if resp.resp.StatusCode == 200 {
-			result <- true
+			result <- addr
 			return
 		}
-
-		time.Sleep(10 * time.Millisecond)
 	}
 }
