@@ -1,36 +1,27 @@
-# Apply, build, and deploy project with program that
-# runs all built-in AK functions, and HTTP connection.
-ak manifest apply project.yaml
-return code == 0
-
-ak project build my_project --file my_program.star
-return code == 0
-output equals 'build_id: bld_00000000000000000000000005'
-
-ak deployment create --build-id=bld_00000000000000000000000005 --env=my_project/default --activate
+# Deploy project with HTTP trigger that runs all custom built-in functions.
+ak deploy --manifest project.yaml
 return code == 0
 
 # Send HTTP GET request to trigger deployment to start new session.
-http get /http/my_url_path
+http get /http/my_project/my_url_path
 resp code == 200
 
 wait 5s for session ses_00000000000000000000000008
 
 # Check session's output and final state.
-ak session log -J
+ak session log --prints-only
 return code == 0
-output contains '"text": "1st random int with seed: 5"'
-output contains '"text": "2nd random int with seed: 2"'
-output contains '"text": "3rd random int with seed: 1"'
-output contains '"text": "Store set = OK"'
-output contains '"text": "Store get = value"'
-output contains '"Store del = 1"'
-output regex '"text": "\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{1,9} \+0000 UTC"'
-output contains '"text": "done"'
+output contains '1st random int with seed: 5'
+output contains '2nd random int with seed: 2'
+output contains '3rd random int with seed: 1'
+output contains 'Store set = OK'
+output contains 'Store get = value'
+output contains 'Store del = 1'
+output regex ' \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{1,9} \+0000 UTC'
+output contains 'done'
 
-ak sessions list
+ak session list
 return code == 0
-output contains 'session_id:"ses_00000000000000000000000008"'
 output contains 'state:SESSION_STATE_TYPE_COMPLETED'
 
 -- project.yaml --
@@ -41,13 +32,15 @@ project:
   connections:
     - name: my_connection
       integration: http
-      token: my_url_path
   triggers:
-    - connection: my_connection
+    - name: http_get
+      connection: my_connection
       event_type: get
-      entrypoint: my_program.star:on_http_get
+      data:
+        path: my_url_path
+      call: program.star:on_http_get
 
--- my_program.star --
+-- program.star --
 def on_http_get(data):
     # runtimes/starlarkrt/internal/libs/rand/rand.go
     rand.seed(0x533d)

@@ -114,7 +114,7 @@ test-dbgorm:
 # TODO(ENG-447): Fix HTTP trigger flakiness.
 .PHONY: test-unit
 test-unit:
-	$(GOTEST) ./... -skip /workflows/builtin_funcs
+	$(GOTEST) ./... -skip /end2end/builtin_funcs
 
 # Subset of "test-unit", for simplicity.
 .PHONY: test-system
@@ -138,7 +138,7 @@ test-cover:
 # TODO(ENG-447): Fix HTTP trigger flakiness.
 .PHONY: test-race
 test-race:
-	$(GOTEST) -race ./... -skip /workflows/builtin_funcs
+	$(GOTEST) -race ./... -skip /end2end/builtin_funcs
 
 .PHONY: test-cli
 # We don't want test-cli to explicitly depend on bin since
