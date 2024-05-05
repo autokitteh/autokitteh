@@ -61,15 +61,8 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	timezone := r.Form.Get("timezone")
 	memo := r.Form.Get("memo")
 
-	// Test the validity of the schedule string.
-	id, err := cronTable.AddFunc(schedule, func() {})
-	if err != nil {
-		e := "Invalid schedule error: " + err.Error()
-		u := fmt.Sprintf("%serror.html?error=%s", uiPath, url.QueryEscape(e))
-		http.Redirect(w, r, u, http.StatusFound)
-		return
-	}
-	cronTable.Remove(id)
+	// FIXME: ENG-771 Test the validity of the schedule string.
+	// use some go library to parse and normalize cron schedule (cronexpr?) and ensure that TZ is supported as well
 
 	// Save a new connection, and return to the user an autokitteh connection token.
 	connToken, err := h.createConnection(schedule, timezone, memo)

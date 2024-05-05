@@ -24,6 +24,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sqs v1.31.2
 	github.com/bradleyfalzon/ghinstallation/v2 v2.9.0
 	github.com/bufbuild/protovalidate-go v0.6.0
+	github.com/descope/go-sdk v1.6.3
 	github.com/fatih/color v1.16.0
 	github.com/fergusstrange/embedded-postgres v1.26.0
 	github.com/flosch/pongo2/v6 v6.0.0
@@ -52,7 +53,6 @@ require (
 	github.com/psanford/memfs v0.0.0-20230130182539-4dbf7e3e865e
 	github.com/qri-io/starlib v0.5.0
 	github.com/redis/go-redis/v9 v9.5.1
-	github.com/robfig/cron/v3 v3.0.1
 	github.com/rs/cors v1.10.1
 	github.com/sashabaranov/go-openai v1.20.3
 	github.com/slack-go/slack v0.12.5
@@ -118,7 +118,6 @@ require (
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.2.0 // indirect
-	github.com/descope/go-sdk v1.6.3 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/dustmop/soup v1.1.2-0.20190516214245-38228baa104e // indirect

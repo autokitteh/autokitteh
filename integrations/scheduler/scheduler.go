@@ -2,10 +2,8 @@ package scheduler
 
 import (
 	"context"
-	"fmt"
 	"time"
 
-	"github.com/robfig/cron/v3"
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
@@ -22,7 +20,6 @@ const (
 
 type connection struct {
 	schedule, timezone, memo string
-	cronID                   cron.EntryID
 }
 
 type event struct {
@@ -38,19 +35,14 @@ type event struct {
 	Hour, Minute, Second      int
 }
 
-var (
-	connections = map[string]connection{}
-	cronTable   = cron.New(cron.WithParser(cron.NewParser(
-		cron.SecondOptional | cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow | cron.Descriptor,
-	)))
-)
+var connections = map[string]connection{}
 
 // detectNewConnections is a persistent goroutine that periodically
 // checks for new connections and adds them to the cron table.
 func detectNewConnections(l *zap.Logger, s sdkservices.Secrets, d sdkservices.Dispatcher) {
 	ctx := context.Background()
 
-	tokens, err := s.List(ctx, scope, "all")
+	tokens, err := s.List(ctx, scope, "tokens")
 	if err != nil {
 		l.Error("Failed to list connections", zap.Error(err))
 		return
@@ -61,29 +53,19 @@ func detectNewConnections(l *zap.Logger, s sdkservices.Secrets, d sdkservices.Di
 			continue
 		}
 		// Add new connections to the cron table.
-		// TODO(ENG-301): Support multiple distributed server instances.
 		if conn, err := s.Get(ctx, scope, token); err == nil {
 			c := connection{
 				schedule: conn["schedule"],
 				timezone: conn["timezone"],
 				memo:     conn["memo"],
 			}
-			spec := c.schedule
-			if c.timezone != "Local" {
-				spec = fmt.Sprintf("CRON_TZ=%s %s", c.timezone, s)
-			}
-			id, err := cronTable.AddFunc(spec, dispatchEvents(ctx, l, d, token, c))
-			if err != nil {
-				l.Error("Failed to add cron schedule",
-					zap.String("token", token),
-					zap.Any("connection", c),
-					zap.Error(err),
-				)
-				continue
-			}
-			c.cronID = id
+			// FIXME: ENG-771 use some go library to parse and normalize cron schedule (cronexpr?) and ensure that TZ is supported as well
+			// if c.timezone != "Local" {
+			//	 spec = fmt.Sprintf("CRON_TZ=%s %s", c.timezone, s)
+			// }
+			dispatchEvents(ctx, l, d, token, c)()
+
 			connections[token] = c
-			cronTable.Start()
 		}
 	}
 }
