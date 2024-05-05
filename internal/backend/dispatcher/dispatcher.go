@@ -59,7 +59,13 @@ func (d *dispatcher) Dispatch(ctx context.Context, event sdktypes.Event, opts *s
 
 	z.Debug("event saved")
 
-	if err := d.startWorkflow(ctx, eventID, opts); err != nil {
+	if event.Type() == "cron_trigger" {
+		err = d.startSchedulerWorkflow(ctx, eventID, opts)
+	} else {
+		err = d.startWorkflow(ctx, eventID, opts)
+	}
+
+	if err != nil {
 		z.Error("startWorkflow failed, orphaned event", zap.Error(err))
 
 		return sdktypes.InvalidEventID, fmt.Errorf("event %v saved, but startWorkflow failed: %w", eventID, err)
