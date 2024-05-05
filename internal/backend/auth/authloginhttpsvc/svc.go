@@ -84,7 +84,7 @@ func (a *svc) registerRoutes(muxes *muxes.Muxes) error {
 		}
 
 		w.Header().Add("Content-Type", "application/json")
-		w.Write(bs)
+		_, _ = w.Write(bs)
 	})
 
 	return nil
