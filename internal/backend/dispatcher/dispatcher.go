@@ -60,7 +60,7 @@ func (d *dispatcher) Dispatch(ctx context.Context, event sdktypes.Event, opts *s
 	z.Debug("event saved")
 
 	if event.Type() == "cron_trigger" {
-		err = d.startSchedulerWorkflow(ctx, eventID, opts)
+		err = d.startSchedulerWorkflow(ctx, eventID, opts, event.Data()["schedule"].GetString().Value())
 	} else {
 		err = d.startWorkflow(ctx, eventID, opts)
 	}
@@ -122,3 +122,29 @@ func (d *dispatcher) startWorkflow(ctx context.Context, eventID sdktypes.EventID
 
 	return nil
 }
+
+// use legacy temporal scheduler for now
+func (d *dispatcher) startSchedulerWorkflow(ctx context.Context, eventID sdktypes.EventID, opts *sdkservices.DispatchOptions, schedule string) error {
+	if schedule == "" {
+		return fmt.Errorf("failed starting scheduler workflow: no schedule")
+	}
+
+	options := client.StartWorkflowOptions{
+		ID:           eventID.String(),
+		TaskQueue:    taskQueueName,
+		CronSchedule: schedule,
+	}
+	input := eventsWorkflowInput{
+		EventID: eventID,
+		Options: opts,
+	}
+	_, err := d.temporal.ExecuteWorkflow(ctx, options, d.eventsWorkflow, input)
+	if err != nil {
+		d.z.Error("Failed starting scheduler workflow", zap.String("eventID", eventID.String()), zap.Error(err))
+		return fmt.Errorf("failed starting scheduler workflow: %w", err)
+	}
+	d.z.Info("Started scheduler workflow", zap.String("eventID", eventID.String()), zap.String("schedule", schedule))
+
+	return nil
+}
+
