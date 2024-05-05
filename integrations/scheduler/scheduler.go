@@ -63,72 +63,70 @@ func detectNewConnections(l *zap.Logger, s sdkservices.Secrets, d sdkservices.Di
 			// if c.timezone != "Local" {
 			//	 spec = fmt.Sprintf("CRON_TZ=%s %s", c.timezone, s)
 			// }
-			dispatchEvents(ctx, l, d, token, c)()
+			dispatchEvent(ctx, l, d, token, c)
 
 			connections[token] = c
 		}
 	}
 }
 
-func dispatchEvents(ctx context.Context, l *zap.Logger, d sdkservices.Dispatcher, token string, conn connection) func() {
-	return func() {
-		now := time.Now()
-		e := event{
-			// Trigger settings.
-			Schedule: conn.schedule,
-			Timezone: conn.timezone,
-			Memo:     conn.memo,
+func dispatchEvent(ctx context.Context, l *zap.Logger, d sdkservices.Dispatcher, token string, conn connection) {
+	now := time.Now()
+	e := event{
+		// Trigger settings.
+		Schedule: conn.schedule,
+		Timezone: conn.timezone,
+		Memo:     conn.memo,
 
-			// Event instance.
-			Timestamp:  now,
-			SinceEpoch: now.Unix(),
-			Location:   now.Location().String(),
+		// Event instance.
+		Timestamp:  now,
+		SinceEpoch: now.Unix(),
+		Location:   now.Location().String(),
 
-			Year:    now.Year(),
-			Month:   int(now.Month()),
-			Day:     now.Day(),
-			Weekday: int(now.Weekday()),
+		Year:    now.Year(),
+		Month:   int(now.Month()),
+		Day:     now.Day(),
+		Weekday: int(now.Weekday()),
 
-			Hour:   now.Hour(),
-			Minute: now.Minute(),
-			Second: now.Second(),
-		}
-
-		wrapped, err := sdktypes.DefaultValueWrapper.Wrap(e)
-		if err != nil {
-			l.Error("Failed to wrap cron event",
-				zap.Any("event", e),
-				zap.Error(err),
-			)
-			return
-		}
-		data, err := wrapped.ToStringValuesMap()
-		if err != nil {
-			l.Error("Failed to convert wrapped cron event",
-				zap.Any("event", e),
-				zap.Error(err),
-			)
-			return
-		}
-		proto := &sdktypes.EventPB{
-			IntegrationId:    integrationID.String(),
-			IntegrationToken: token,
-			EventType:        "cron_trigger",
-			Data:             kittehs.TransformMapValues(data, sdktypes.ToProto),
-		}
-		event := kittehs.Must1(sdktypes.EventFromProto(proto))
-
-		eventID, err := d.Dispatch(ctx, event, nil)
-		if err != nil {
-			l.Error("Dispatch failed",
-				zap.String("connectionToken", token),
-				zap.Error(err),
-			)
-			return
-		}
-		l.Debug("Dispatched",
-			zap.String("connectionToken", token),
-			zap.String("eventID", eventID.String()),
-		)
+		Hour:   now.Hour(),
+		Minute: now.Minute(),
+		Second: now.Second(),
 	}
+
+	wrapped, err := sdktypes.DefaultValueWrapper.Wrap(e)
+	if err != nil {
+		l.Error("Failed to wrap cron event",
+			zap.Any("event", e),
+			zap.Error(err),
+		)
+		return
+	}
+	data, err := wrapped.ToStringValuesMap()
+	if err != nil {
+		l.Error("Failed to convert wrapped cron event",
+			zap.Any("event", e),
+			zap.Error(err),
+		)
+		return
+	}
+	proto := &sdktypes.EventPB{
+		IntegrationId:    integrationID.String(),
+		IntegrationToken: token,
+		EventType:        "cron_trigger",
+		Data:             kittehs.TransformMapValues(data, sdktypes.ToProto),
+	}
+	event := kittehs.Must1(sdktypes.EventFromProto(proto))
+
+	eventID, err := d.Dispatch(ctx, event, nil)
+	if err != nil {
+		l.Error("Dispatch failed",
+			zap.String("connectionToken", token),
+			zap.Error(err),
+		)
+		return
+	}
+	l.Debug("Dispatched",
+		zap.String("connectionToken", token),
+		zap.String("eventID", eventID.String()),
+	)
 }
