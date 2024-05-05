@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
 
 	"connectrpc.com/connect"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/proto"
 	sessionsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/sessions/v1"
@@ -25,11 +25,11 @@ type server struct {
 
 var _ sessionsv1connect.SessionsServiceHandler = (*server)(nil)
 
-func Init(mux *http.ServeMux, sessions sdkservices.Sessions) {
+func Init(muxes *muxes.Muxes, sessions sdkservices.Sessions) {
 	srv := server{sessions: sessions}
 
 	path, handler := sessionsv1connect.NewSessionsServiceHandler(&srv)
-	mux.Handle(path, handler)
+	muxes.API.Handle(path, handler)
 }
 
 func (s *server) Start(ctx context.Context, req *connect.Request[sessionsv1.StartRequest]) (*connect.Response[sessionsv1.StartResponse], error) {

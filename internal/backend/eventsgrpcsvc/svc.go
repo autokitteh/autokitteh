@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
 
 	"connectrpc.com/connect"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/proto"
 	eventsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/events/v1"
@@ -25,11 +25,11 @@ type server struct {
 
 var _ eventsv1connect.EventsServiceHandler = (*server)(nil)
 
-func Init(mux *http.ServeMux, events sdkservices.Events) {
+func Init(muxes *muxes.Muxes, events sdkservices.Events) {
 	srv := server{events: events}
 
 	path, namer := eventsv1connect.NewEventsServiceHandler(&srv)
-	mux.Handle(path, namer)
+	muxes.API.Handle(path, namer)
 }
 
 func (s *server) Get(ctx context.Context, req *connect.Request[eventsv1.GetRequest]) (*connect.Response[eventsv1.GetResponse], error) {

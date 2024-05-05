@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <title>autokitteh</title>
+  <link rel="stylesheet" type="text/css" href="/static/styles.css" />
+</head>
+
+<body>
+  <img class="banner" src="/static/banner.svg" alt="autokitteh" />
+  <h1>Please login</h1>
+  <ul>
+    {{ if .GoogleOAuth.Enabled }}
+    <li><a href="/auth/google/login" class="button">Login with Google</a></li>
+    {{ end }}
+
+    {{ if .GithubOAuth.Enabled }}
+    <li><a href="/auth/github/login" class="button">Login with Github</a></li>
+    {{ end }}
+
+    {{ if .Descope.Enabled }}
+    <li><a href="/auth/descope/login" class="button">Login with Descope</a></li>
+    {{ end }}
+  </ul>
+</body>
+
+</html>
