@@ -48,12 +48,6 @@ message GetResponse {
 }
 
 message ListRequest {
-  option (buf.validate.message).cel = {
-    id: "list.mutuals",
-    message: "integration_token must be specified with integration_id",
-    expression: "this.integration_id != '' && this.integration_token != ''",
-  };
-
   string integration_id = 1;
   string integration_token = 2;
   string event_type = 4;
