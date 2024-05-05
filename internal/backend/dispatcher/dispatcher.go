@@ -147,4 +147,3 @@ func (d *dispatcher) startSchedulerWorkflow(ctx context.Context, eventID sdktype
 
 	return nil
 }
-
