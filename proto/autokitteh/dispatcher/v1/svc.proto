@@ -13,12 +13,6 @@ message DispatchRequest {
   };
 
   option (buf.validate.message).cel = {
-    id: "dispatcher.require_integration_token",
-    message: "missing integration_token",
-    expression: "has(this.event) && this.event.integration_token != ''",
-  };
-
-  option (buf.validate.message).cel = {
     id: "dispatcher.require_event_type",
     message: "missing event_type",
     expression: "has(this.event) && this.event.event_type != ''",
