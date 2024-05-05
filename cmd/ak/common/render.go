@@ -18,7 +18,9 @@ func SetRenderer(r Renderer) { renderer = r }
 func TextRenderer(o any) {
 	var out string
 
-	if oo, ok := o.(Texter); ok {
+	if s, ok := o.(string); ok {
+		out = s
+	} else if oo, ok := o.(Texter); ok {
 		out = oo.Text()
 	} else if _, ok := o.(fmt.Stringer); ok {
 		out = fmt.Sprintf("%v", o)

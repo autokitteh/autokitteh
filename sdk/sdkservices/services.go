@@ -1,6 +1,7 @@
 package sdkservices
 
 type Services interface {
+	Auth() Auth
 	Builds() Builds
 	Connections() Connections
 	Deployments() Deployments

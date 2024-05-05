@@ -2,11 +2,11 @@ package dispatchergrpcsvc
 
 import (
 	"context"
-	"net/http"
 
 	"connectrpc.com/connect"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/dispatcher"
+	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
 	"go.autokitteh.dev/autokitteh/proto"
 	dispatcher1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/dispatcher/v1"
 	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/dispatcher/v1/dispatcherv1connect"
@@ -23,11 +23,11 @@ type server struct {
 
 var _ dispatcherv1connect.DispatcherServiceHandler = (*server)(nil)
 
-func Init(mux *http.ServeMux, dispatcher dispatcher.Dispatcher) {
+func Init(muxes *muxes.Muxes, dispatcher dispatcher.Dispatcher) {
 	srv := server{dispatcher: dispatcher}
 
 	path, namer := dispatcherv1connect.NewDispatcherServiceHandler(&srv)
-	mux.Handle(path, namer)
+	muxes.API.Handle(path, namer)
 }
 
 func (s *server) Dispatch(ctx context.Context, req *connect.Request[dispatcher1.DispatchRequest]) (*connect.Response[dispatcher1.DispatchResponse], error) {

@@ -2,10 +2,10 @@ package varsgrpcsvc
 
 import (
 	"context"
-	"net/http"
 
 	"connectrpc.com/connect"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/proto"
 	varsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/vars/v1"
@@ -23,11 +23,11 @@ type server struct {
 
 var _ varsv1connect.VarsServiceHandler = (*server)(nil)
 
-func Init(mux *http.ServeMux, vars sdkservices.Vars) {
+func Init(muxes *muxes.Muxes, vars sdkservices.Vars) {
 	srv := server{vars: vars}
 
 	path, handler := varsv1connect.NewVarsServiceHandler(&srv)
-	mux.Handle(path, handler)
+	muxes.API.Handle(path, handler)
 }
 
 func (s *server) Set(ctx context.Context, req *connect.Request[varsv1.SetRequest]) (*connect.Response[varsv1.SetResponse], error) {

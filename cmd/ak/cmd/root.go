@@ -10,6 +10,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/spf13/cobra"
 
+	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/auth"
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/builds"
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/configuration"
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/connections"
@@ -34,6 +35,7 @@ import (
 var (
 	configs        []string
 	json, niceJSON bool
+	token          string
 )
 
 var RootCmd = common.StandardCommand(&cobra.Command{
@@ -75,7 +77,10 @@ var RootCmd = common.StandardCommand(&cobra.Command{
 			url = "http://" + url
 		}
 
-		common.InitRPCClient(url, "")
+		if token != "" {
+			token = "Bearer " + token
+		}
+		common.InitRPCClient(url, token)
 
 		return nil
 	},
@@ -102,6 +107,7 @@ func init() {
 	RootCmd.PersistentFlags().BoolVarP(&json, "json", "j", false, "print output in compact JSON format")
 	RootCmd.PersistentFlags().BoolVarP(&niceJSON, "nice_json", "J", false, "print output in readable JSON format")
 	RootCmd.MarkFlagsMutuallyExclusive("json", "nice_json")
+	RootCmd.PersistentFlags().StringVar(&token, "token", "", "auth token")
 
 	// Top-level standalone commands.
 	RootCmd.AddCommand(completionCmd)
@@ -110,6 +116,7 @@ func init() {
 	RootCmd.AddCommand(versionCmd)
 
 	// Top-level parent commands.
+	auth.AddSubcommands(RootCmd)
 	builds.AddSubcommands(RootCmd)
 	configuration.AddSubcommands(RootCmd)
 	connections.AddSubcommands(RootCmd)

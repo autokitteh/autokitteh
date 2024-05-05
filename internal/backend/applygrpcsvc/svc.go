@@ -3,10 +3,10 @@ package applygrpcsvc
 import (
 	"context"
 	"fmt"
-	"net/http"
 
 	"connectrpc.com/connect"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/internal/manifest"
 	"go.autokitteh.dev/autokitteh/proto"
@@ -24,11 +24,11 @@ type server struct {
 
 var _ applyv1connect.ApplyServiceHandler = (*server)(nil)
 
-func Init(mux *http.ServeMux, client sdkservices.Services) {
+func Init(muxes *muxes.Muxes, client sdkservices.Services) {
 	srv := server{client: client}
 
 	path, namer := applyv1connect.NewApplyServiceHandler(&srv)
-	mux.Handle(path, namer)
+	muxes.Handle(path, namer)
 }
 
 func (s *server) Apply(ctx context.Context, req *connect.Request[applyv1.ApplyRequest]) (*connect.Response[applyv1.ApplyResponse], error) {

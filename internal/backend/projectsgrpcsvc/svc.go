@@ -4,11 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
 
 	"connectrpc.com/connect"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/configset"
+	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/proto"
 	projectsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/projects/v1"
@@ -42,9 +42,9 @@ func New(cfg *Config, projects sdkservices.Projects) *Server {
 
 var _ projectsv1connect.ProjectsServiceHandler = (*Server)(nil)
 
-func Init(s *Server, mux *http.ServeMux) {
+func Init(s *Server, muxes *muxes.Muxes) {
 	path, namer := projectsv1connect.NewProjectsServiceHandler(s, connect.WithReadMaxBytes(s.cfg.MaxUploadSize))
-	mux.Handle(path, namer)
+	muxes.API.Handle(path, namer)
 }
 
 func (s *Server) Create(ctx context.Context, req *connect.Request[projectsv1.CreateRequest]) (*connect.Response[projectsv1.CreateResponse], error) {

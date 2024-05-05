@@ -2,6 +2,7 @@ package sdkclients
 
 import (
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
+	"go.autokitteh.dev/autokitteh/sdk/sdkclients/sdkauthclient"
 	"go.autokitteh.dev/autokitteh/sdk/sdkclients/sdkbuildsclient"
 	"go.autokitteh.dev/autokitteh/sdk/sdkclients/sdkclient"
 	"go.autokitteh.dev/autokitteh/sdk/sdkclients/sdkconnectionsclient"
@@ -23,6 +24,7 @@ import (
 )
 
 type client struct {
+	auth         func() sdkservices.Auth
 	builds       func() sdkservices.Builds
 	connections  func() sdkservices.Connections
 	deployments  func() sdkservices.Deployments
@@ -45,6 +47,7 @@ func New(params sdkclient.Params) sdkservices.Services {
 	return &client{
 		params: params, // just a dumb struct, no need to be lazy here.
 
+		auth:         kittehs.Lazy1(sdkauthclient.New, params),
 		builds:       kittehs.Lazy1(sdkbuildsclient.New, params),
 		connections:  kittehs.Lazy1(sdkconnectionsclient.New, params),
 		deployments:  kittehs.Lazy1(sdkdeploymentsclient.New, params),
@@ -70,11 +73,15 @@ func ClientWithToken(c sdkservices.Services, t string) sdkservices.Services {
 	}
 
 	params := v.params
-	params.AuthToken = t
+
+	if t != "" {
+		params.AuthToken = t
+	}
 
 	return New(params)
 }
 
+func (c *client) Auth() sdkservices.Auth                 { return c.auth() }
 func (c *client) Builds() sdkservices.Builds             { return c.builds() }
 func (c *client) Connections() sdkservices.Connections   { return c.connections() }
 func (c *client) Deployments() sdkservices.Deployments   { return c.deployments() }
