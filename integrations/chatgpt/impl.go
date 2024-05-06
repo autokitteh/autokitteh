@@ -46,6 +46,7 @@ func (i integration) createChatCompletion(ctx context.Context, args []sdktypes.V
 		})
 	}
 
+	// Retrieve auth details based on connection ID.
 	cid, err := sdkmodule.FunctionConnectionIDFromContext(ctx)
 	if err != nil {
 		return sdktypes.InvalidValue, err
