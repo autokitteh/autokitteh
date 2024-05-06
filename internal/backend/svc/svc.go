@@ -16,6 +16,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/backend/runtimes"
 	"go.autokitteh.dev/autokitteh/internal/backend/applygrpcsvc"
+	"go.autokitteh.dev/autokitteh/internal/backend/auth"
 	"go.autokitteh.dev/autokitteh/internal/backend/builds"
 	"go.autokitteh.dev/autokitteh/internal/backend/buildsgrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/configset"
@@ -49,6 +50,8 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	"go.autokitteh.dev/autokitteh/internal/backend/triggers"
 	"go.autokitteh.dev/autokitteh/internal/backend/triggersgrpcsvc"
+	"go.autokitteh.dev/autokitteh/internal/backend/vars"
+	"go.autokitteh.dev/autokitteh/internal/backend/varsgrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/webtools"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/internal/version"
@@ -141,6 +144,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		Component("projects", configset.Empty, fx.Provide(projects.New)),
 		Component("projectsgrpcsvc", projectsgrpcsvc.Configs, fx.Provide(projectsgrpcsvc.New)),
 		Component("envs", configset.Empty, fx.Provide(envs.New)),
+		Component("vars", configset.Empty, fx.Provide(vars.New)),
 		Component("events", configset.Empty, fx.Provide(events.New)),
 		Component("triggers", configset.Empty, fx.Provide(triggers.New)),
 		Component("oauth", configset.Empty, fx.Provide(oauth.New)),
@@ -162,9 +166,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 			}),
 		),
 		fx.Provide(func(s fxServices) sdkservices.Services { return &s }),
-		fx.Invoke(sdkruntimessvc.Init),
 		fx.Invoke(applygrpcsvc.Init),
-		fx.Invoke(func(p *projectsgrpcsvc.Server, mux *http.ServeMux) { p.Init(mux) }),
 		fx.Invoke(buildsgrpcsvc.Init),
 		fx.Invoke(connectionsgrpcsvc.Init),
 		fx.Invoke(deploymentsgrpcsvc.Init),
@@ -172,15 +174,18 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		fx.Invoke(envsgrpcsvc.Init),
 		fx.Invoke(eventsgrpcsvc.Init),
 		fx.Invoke(integrationsgrpcsvc.Init),
-		fx.Invoke(triggersgrpcsvc.Init),
 		fx.Invoke(oauth.Init),
+		fx.Invoke(projectsgrpcsvc.Init),
+		fx.Invoke(sdkruntimessvc.Init),
 		fx.Invoke(secretsgrpcsvc.Init),
-		fx.Invoke(storegrpcsvc.Init),
 		fx.Invoke(sessionsgrpcsvc.Init),
+		fx.Invoke(storegrpcsvc.Init),
+		fx.Invoke(triggersgrpcsvc.Init),
+		fx.Invoke(varsgrpcsvc.Init),
 		Component(
 			"http",
 			httpsvc.Configs,
-			fx.Provide(func(lc fx.Lifecycle, z *zap.Logger, cfg *httpsvc.Config) (svc httpsvc.Svc, mux *http.ServeMux, all *muxes.Muxes, err error) {
+			fx.Provide(func(lc fx.Lifecycle, z *zap.Logger, cfg *httpsvc.Config, authenticator auth.Authenticator) (svc httpsvc.Svc, mux *http.ServeMux, all *muxes.Muxes, err error) {
 				svc, err = httpsvc.New(
 					lc, z, cfg,
 					[]string{
@@ -205,22 +210,27 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 				}
 
 				// Replace the original mux with a main mux and also expose the original mux as the no-auth one.
-				authed := http.NewServeMux()
-
-				wrap := func(h http.Handler) http.Handler {
-					// TODO(ENG-3): Wrap the handler with auth middleware.
-					return h
-				}
+				apimux := http.NewServeMux()
 
 				mux = svc.Mux()
+				mux.Handle("/api/", http.StripPrefix("/api", authenticator.Middleware(apimux)))
 
-				mux.Handle("/", wrap(authed))
-
-				all = &muxes.Muxes{Auth: authed, NoAuth: mux}
+				all = &muxes.Muxes{Auth: apimux, NoAuth: mux}
 
 				return
 			}),
 		),
+		fx.Invoke(func(muxes *muxes.Muxes) {
+			muxes.Auth.Handle("/authenticated_only", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				fmt.Println("ok")
+				ctx := r.Context()
+
+				userDetails := ctx.Value(auth.AuthenticatedUserCtxKey).(*auth.AuthenticatedUserDetails)
+
+				// we don't care about this error since this is an example route
+				kittehs.Must0(json.NewEncoder(w).Encode(map[string]any{"ok": "ok", "userID": userDetails.UserID}))
+			}))
+		}),
 		fx.Invoke(func(mux *http.ServeMux, h integrationsweb.Handler) {
 			mux.Handle("/i/", &h)
 		}),
@@ -233,6 +243,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 				return integrations.Start(ctx, l, muxes.NoAuth, s, o, d)
 			})
 		}),
+		Component("authenticator", auth.Configs, fx.Provide(auth.NewAuthenticator)),
 		indexOption(),
 		fx.Invoke(func(z *zap.Logger, mux *http.ServeMux) {
 			srv := http.StripPrefix("/static/", http.FileServer(http.FS(static.RootWebContent)))

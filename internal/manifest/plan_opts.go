@@ -1,9 +1,10 @@
 package manifest
 
 type opts struct {
-	fromScratch bool
-	log         Log
-	projectName string
+	fromScratch      bool
+	log              Log
+	projectName      string
+	rmUnusedConnVars bool
 }
 
 func applyOptions(optfns []Option) (opts opts) {
@@ -18,6 +19,12 @@ type Option func(*opts)
 func WithFromScratch(s bool) Option {
 	return func(o *opts) {
 		o.fromScratch = s
+	}
+}
+
+func WithRemoveUnusedConnFlags(s bool) Option {
+	return func(o *opts) {
+		o.rmUnusedConnVars = s
 	}
 }
 

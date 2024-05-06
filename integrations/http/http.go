@@ -117,9 +117,6 @@ func parseBody(req *request, body sdktypes.Value) (err error) {
 	if req.bodyType == "" {
 		if err = body.UnwrapInto(&rawBody); err == nil {
 			req.bodyType = bodyTypeRaw
-			if contentType == "" {
-				req.headers[contentTypeHeader] = "text/plain" // or "application/octet-stream"
-			}
 		}
 	}
 	if (err != nil && req.bodyType == "") || req.bodyType == bodyTypeForm {

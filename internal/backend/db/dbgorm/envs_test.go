@@ -17,29 +17,15 @@ func (f *dbFixture) createEnvsAndAssert(t *testing.T, envs ...scheme.Env) {
 	}
 }
 
-func (f *dbFixture) setEnvVarsAndAssert(t *testing.T, envars ...scheme.EnvVar) {
-	for _, envar := range envars {
-		assert.NoError(t, f.gormdb.setEnvVar(f.ctx, &envar))
-		findAndAssertOne(t, f, envar, "env_id = ? and name = ?", envar.EnvID, envar.Name)
-	}
-}
-
 func (f *dbFixture) assertEnvDeleted(t *testing.T, envs ...scheme.Env) {
 	for _, env := range envs {
 		assertSoftDeleted(t, f, env)
 	}
 }
 
-func (f *dbFixture) assertEnvVarDeleted(t *testing.T, envars ...scheme.EnvVar) {
-	for _, envar := range envars {
-		assertDeleted(t, f, envar)
-	}
-}
-
 func preEnvTest(t *testing.T) *dbFixture {
 	f := newDBFixture()
-	findAndAssertCount(t, f, scheme.Env{}, 0, "")    // no envs
-	findAndAssertCount(t, f, scheme.EnvVar{}, 0, "") // no env vars
+	findAndAssertCount(t, f, scheme.Env{}, 0, "") // no envs
 	return f
 }
 
@@ -111,31 +97,4 @@ func TestDeleteEnvForeignKeys(t *testing.T) {
 	assert.NoError(t, f.gormdb.deleteDeployment(f.ctx, d.DeploymentID))
 	assert.NoError(t, f.gormdb.deleteEnv(f.ctx, e.EnvID))
 	f.assertEnvDeleted(t, e)
-}
-
-func TestSetEnvVar(t *testing.T) {
-	f := preEnvTest(t)
-	e := f.newEnv()
-	f.createEnvsAndAssert(t, e)
-
-	v := f.newEnvVar("foo", "bar")
-	// test setEnvVar
-	f.setEnvVarsAndAssert(t, v)
-
-	// test modify
-	v.Value = "baz"
-	f.setEnvVarsAndAssert(t, v)
-}
-
-func TestDeleteEnvVar(t *testing.T) {
-	f := preEnvTest(t)
-	e := f.newEnv()
-	f.createEnvsAndAssert(t, e)
-
-	v := f.newEnvVar("foo", "bar")
-	f.setEnvVarsAndAssert(t, v)
-
-	// test deleteEnvVar
-	assert.NoError(t, f.gormdb.deleteEnvVar(f.ctx, v.EnvID, v.Name))
-	f.assertEnvVarDeleted(t, v)
 }

@@ -10,6 +10,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/akmodules/ak"
+	osmodule "go.autokitteh.dev/autokitteh/internal/backend/akmodules/os"
 	"go.autokitteh.dev/autokitteh/internal/backend/akmodules/store"
 	timemodule "go.autokitteh.dev/autokitteh/internal/backend/akmodules/time"
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
@@ -178,8 +179,8 @@ func (w *sessionWorkflow) initEnvModule() {
 	mod := sdkexecutor.NewExecutor(
 		nil, // no calls will be ever made to env.
 		envVarsExecutorID,
-		kittehs.ListToMap(w.data.EnvVars, func(v sdktypes.EnvVar) (string, sdktypes.Value) {
-			return v.Symbol().String(), sdktypes.NewStringValue(v.Value())
+		kittehs.ListToMap(w.data.Vars, func(v sdktypes.Var) (string, sdktypes.Value) {
+			return v.Name().String(), sdktypes.NewStringValue(v.Value())
 		}),
 	)
 
@@ -237,6 +238,12 @@ func (w *sessionWorkflow) initGlobalModules() (map[string]sdktypes.Value, error)
 	}
 
 	vs := make(map[string]sdktypes.Value, len(execs))
+
+	if w.ws.cfg.OSModule {
+		execs["os"] = osmodule.New()
+	} else {
+		vs["os"] = sdktypes.Nothing
+	}
 
 	for name, exec := range execs {
 		sym, err := sdktypes.StrictParseSymbol(name)

@@ -32,16 +32,16 @@ output equals_json file last_state.json
 ak deploy --manifest test.yaml --file test.star
 return code == 0
 
-ak sessions start --deployment-id dep_0000000000000000000000000a --entrypoint test.star:test
+ak session start --deployment-id dep_0000000000000000000000000a --entrypoint test.star:test
 return code == 0
 
-ak sessions watch ses_0000000000000000000000000b --no-timestamps --end-state RUNNING --timeout 7s
+ak session watch ses_0000000000000000000000000b --no-timestamps --end-state RUNNING --timeout 7s
 return code == 0
 
-ak sessions stop ses_0000000000000000000000000b --reason test
+ak session stop ses_0000000000000000000000000b --reason test
 return code == 0
 
-ak sessions log ses_0000000000000000000000000b --no-timestamps -j
+ak session log ses_0000000000000000000000000b --no-timestamps -j
 return code == 0
 output equals file test.txt
 

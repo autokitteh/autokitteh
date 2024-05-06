@@ -24,6 +24,7 @@ import (
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/server"
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/sessions"
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/triggers"
+	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/vars"
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
 	"go.autokitteh.dev/autokitteh/config"
 	"go.autokitteh.dev/autokitteh/internal/xdg"
@@ -31,8 +32,7 @@ import (
 )
 
 var (
-	configs []string
-
+	configs        []string
 	json, niceJSON bool
 )
 
@@ -124,6 +124,7 @@ func init() {
 	server.AddSubcommands(RootCmd)
 	sessions.AddSubcommands(RootCmd)
 	triggers.AddSubcommands(RootCmd)
+	vars.AddSubcommands(RootCmd)
 }
 
 func parseConfigs(pairs []string) (map[string]any, error) {

@@ -20,9 +20,7 @@ package systest
 import (
 	"context"
 	"fmt"
-	"io"
 	"io/fs"
-	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -73,40 +71,23 @@ func setUpSuite(t *testing.T) string {
 func setUpTest(t *testing.T, akPath string) string {
 	// TODO: Replace "/backend/internal/temporalclient/client.go"?
 
-	// Redirect the OS's stdout and stderr through a pipe, to
-	// detect when the AK server is ready for the test to begin.
-	// TODO(ENG-693): Replace with /readyz.
-	origStdout, origStderr := os.Stdout, os.Stderr
-	combinedOutput := newMutexBuffer()
-	r, w, _ := os.Pipe()
-
-	os.Stdout = w
-	os.Stderr = w
-	go io.Copy(combinedOutput, r) //nolint:all
-
-	defer func() {
-		os.Stdout = origStdout
-		os.Stderr = origStderr
-		r.Close() // End the io.Copy goroutine.
-		w.Close()
-	}()
-
-	// Start the AK server, but in-process rather than as a separate
-	// subprocess: to support breakpoint debugging, and measure test coverage.
-	svc, err := startAKServer(context.Background(), akPath)
+	// Start the AK server.
+	ctx := context.Background()
+	svc, addr, err := startAKServer(ctx, akPath)
 	if err != nil {
-		t.Fatalf("error: %v", err)
+		t.Fatalf("start AK server error: %v", err)
 	}
 
+	// Eventual cleanup when the test is done.
 	t.Cleanup(func() {
-		ctx, cancel := context.WithTimeout(context.Background(), stopTimeout)
+		ctx, cancel := context.WithTimeout(ctx, stopTimeout)
 		defer cancel()
 		if err := svc.Stop(ctx); err != nil {
-			t.Log(fmt.Errorf("fx app stop: %w", err))
+			t.Log(fmt.Errorf("stop AK server: %w", err))
 		}
 	})
 
-	return svc.Addr()
+	return addr
 }
 
 func runTestSteps(t *testing.T, steps []string, akPath, akAddr string) {

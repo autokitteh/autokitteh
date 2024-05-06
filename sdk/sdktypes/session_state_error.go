@@ -40,6 +40,10 @@ func (s SessionState) GetError() SessionStateError {
 	return forceFromProto[SessionStateError](s.m.Error)
 }
 
+func (se SessionStateError) GetProgramError() ProgramError {
+	return forceFromProto[ProgramError](se.read().Error)
+}
+
 func NewSessionStateError(err error, prints []string) SessionState {
 	return forceFromProto[SessionState](&SessionStatePB{
 		Error: &SessionStateErrorPB{

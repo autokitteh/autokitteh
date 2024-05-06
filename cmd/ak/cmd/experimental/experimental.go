@@ -8,8 +8,8 @@ import (
 
 var experimentalCmd = common.StandardCommand(&cobra.Command{
 	Use:     "experimental",
-	Short:   "Unofficial commands under development",
-	Aliases: []string{"exp", "ex", "x"},
+	Short:   "Unofficial or internal commands",
+	Aliases: []string{"x"},
 	Args:    cobra.NoArgs,
 })
 

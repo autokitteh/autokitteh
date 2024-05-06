@@ -25,7 +25,6 @@ type Service interface {
 	Start(context.Context) error
 	Stop(context.Context) error
 	Wait() <-chan ShutdownSignal
-	Addr() string // available after Start.
 }
 
 type service struct {
@@ -36,7 +35,6 @@ type service struct {
 func (s *service) Start(ctx context.Context) error { return s.app.Start(ctx) }
 func (s *service) Stop(ctx context.Context) error  { return s.app.Stop(ctx) }
 func (s *service) Wait() <-chan ShutdownSignal     { return s.app.Wait() }
-func (s *service) Addr() string                    { return s.httpSvc.Addr() }
 
 func New(cfg *Config, ropts RunOptions) (Service, error) {
 	var service service

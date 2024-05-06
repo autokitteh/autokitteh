@@ -1,108 +1,37 @@
 $ # Create project p.
-$ ${AK} p c --name p; echo $?
+$ ${AK} project c --name p; echo $?
 project_id: prj_00000000000000000000000001
 0
 $ # Get env that does not exists for p.
-$ ${AK} en g -p p e; echo $?
+$ ${AK} env g -p p e; echo $?
 0
-$ ${AK} en g --fail p/e; echo $?
+$ ${AK} env g --fail p/e; echo $?
 Error: env not found
 10
 $ # Create env for project p.
-$ ${AK} en c -p p e1; echo $?
+$ ${AK} env c -p p e1; echo $?
 env_id: env_00000000000000000000000003
 0
 $ # Create env under project p for user meow.
-$ ${AK} -j en g p/e1; echo $?
+$ ${AK} -j env g p/e1; echo $?
 {"env":{"env_id":"env_00000000000000000000000003","project_id":"prj_00000000000000000000000001","name":"e1"}}
 0
 $ # List envs for project.
-$ ${AK} -j en ls -p p; echo $?
+$ ${AK} -j env ls -p p; echo $?
 {"env_id":"env_00000000000000000000000002","project_id":"prj_00000000000000000000000001","name":"default"}
 {"env_id":"env_00000000000000000000000003","project_id":"prj_00000000000000000000000001","name":"e1"}
 0
 $ # Create another env under project p for user meow.
-$ ${AK} en c -p p e2; echo $?
+$ ${AK} env c -p p e2; echo $?
 env_id: env_00000000000000000000000004
 0
 $ # List envs for project.
-$ ${AK} -j en ls -p p; echo $?
+$ ${AK} -j env ls -p p; echo $?
 {"env_id":"env_00000000000000000000000002","project_id":"prj_00000000000000000000000001","name":"default"}
 {"env_id":"env_00000000000000000000000003","project_id":"prj_00000000000000000000000001","name":"e1"}
 {"env_id":"env_00000000000000000000000004","project_id":"prj_00000000000000000000000001","name":"e2"}
 0
 $ # Get envs for project.
-$ ${AK} -j en g p/e1; echo $?
+$ ${AK} -j env g p/e1; echo $?
 {"env":{"env_id":"env_00000000000000000000000003","project_id":"prj_00000000000000000000000001","name":"e1"}}
-0
-$ # Get vars.
-$ ${AK} -j en v g -e p/e1; echo $?
-0
-$ # Set var.
-$ ${AK} en v set -e p/e1 k1 v1; echo $?
-0
-$ # Get vars.
-$ ${AK} -j en v g --env p/e1; echo $?
-{"env_id":"env_00000000000000000000000003","name":"k1","value":"v1"}
-0
-$ # Set var.
-$ ${AK} en v set --env p/e1 k2 v2; echo $?
-0
-$ # Get vars.
-$ ${AK} -j en v g --env p/e1; echo $?
-{"env_id":"env_00000000000000000000000003","name":"k1","value":"v1"}
-{"env_id":"env_00000000000000000000000003","name":"k2","value":"v2"}
-0
-$ # Set a secret var.
-$ ${AK} en v set -s -e p/e1 ks shhh; echo $?
-0
-$ # Get vars.
-$ ${AK} -j en v g -e p/e1; echo $?
-{"env_id":"env_00000000000000000000000003","name":"k1","value":"v1"}
-{"env_id":"env_00000000000000000000000003","name":"k2","value":"v2"}
-{"env_id":"env_00000000000000000000000003","name":"ks","is_secret":true}
-0
-$ # Reveal a secret var.
-$ ${AK} -j en v r -e p/e1 ks; echo $?
-"shhh"
-0
-$ # Reveal a non-secret var.
-$ ${AK} -j en v r -e p/e1 k1; echo $?
-"v1"
-0
-$ # Update var.
-$ ${AK} en v set -e p/e1 k1 v1updated; echo $?
-0
-$ # Get vars.
-$ ${AK} -j en v g -e p/e1; echo $?
-{"env_id":"env_00000000000000000000000003","name":"k1","value":"v1updated"}
-{"env_id":"env_00000000000000000000000003","name":"k2","value":"v2"}
-{"env_id":"env_00000000000000000000000003","name":"ks","is_secret":true}
-0
-$ ${AK} en v g -e p/e1; echo $?
-k1="v1updated"
-k2="v2"
-ks=<secret>
-0
-$ # Turn a var into a secret.
-$ ${AK} en v set -s -e p/e1 k2 shhh2; echo $?
-0
-$ # Get vars.
-$ ${AK} -j en v g -e p/e1; echo $?
-{"env_id":"env_00000000000000000000000003","name":"k1","value":"v1updated"}
-{"env_id":"env_00000000000000000000000003","name":"k2","is_secret":true}
-{"env_id":"env_00000000000000000000000003","name":"ks","is_secret":true}
-0
-$ # Reveal a secret var.
-$ ${AK} -j en v r -e p/e1 k2; echo $?
-"shhh2"
-0
-$ # Turn a var into a non-secret.
-$ ${AK} en v set -e p/e1 k2 no-longer-shhh2; echo $?
-0
-$ # Get vars.
-$ ${AK} -j en v g -e p/e1; echo $?
-{"env_id":"env_00000000000000000000000003","name":"k1","value":"v1updated"}
-{"env_id":"env_00000000000000000000000003","name":"k2","value":"no-longer-shhh2"}
-{"env_id":"env_00000000000000000000000003","name":"ks","is_secret":true}
 0

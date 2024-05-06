@@ -29,7 +29,7 @@ var listCmd = common.StandardCommand(&cobra.Command{
 			f.EnvID = eid
 		}
 
-		c, cid, err := r.ConnectionNameOrID(connection)
+		c, cid, err := r.ConnectionNameOrID(connection, "")
 		if err != nil {
 			if errors.As(err, resolver.NotFoundErrorType) {
 				err = common.NewExitCodeError(common.NotFoundExitCode, err)

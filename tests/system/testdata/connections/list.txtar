@@ -4,11 +4,11 @@ return code == 0
 output equals 'project_id: prj_00000000000000000000000001'
 
 # Negative tests: empty connections list, with/out --fail flag.
-ak connections list
+ak connection list
 return code == 0
 output equals ''
 
-ak connections list --fail
+ak connection list --fail
 output equals 'Error: connections not found'
 return code == 10
 
@@ -22,27 +22,27 @@ return code == 0
 output equals 'connection_id: con_00000000000000000000000004'
 
 # List all connections, with/out JSON.
-ak connections list
+ak connection list
 return code == 0
 output contains 'connection_id:"con_00000000000000000000000003"'
 output contains 'connection_id:"con_00000000000000000000000004"'
 
-ak connections list -j
+ak connection list -j
 return code == 0
 output equals file expected_all_unformatted.json
 
 # List all connections after filtering.
-ak connections list --integration http -J
+ak connection list --integration http -J
 return code == 0
 output equals file expected_all_formatted.json
 
 # List some connections after filtering.
-ak connections list --connection-token my_url_path_2 -J
+ak connection list --connection-token my_url_path_2 -J
 return code == 0
 output equals file expected_some.json
 
 # List no connections after filtering.
-ak connections list --integration scheduler -J
+ak connection list --integration scheduler -J
 return code == 0
 output equals ''
 

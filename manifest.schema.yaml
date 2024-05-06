@@ -13,6 +13,12 @@
         },
         "integration": {
           "type": "string"
+        },
+        "vars": {
+          "items": {
+            "$ref": "#/$defs/Var"
+          },
+          "type": "array"
         }
       },
       "additionalProperties": false,
@@ -20,24 +26,6 @@
       "required": [
         "name",
         "integration"
-      ]
-    },
-    "EnvVar": {
-      "properties": {
-        "name": {
-          "type": "string"
-        },
-        "value": {
-          "type": "string"
-        },
-        "is_secret": {
-          "type": "boolean"
-        }
-      },
-      "additionalProperties": false,
-      "type": "object",
-      "required": [
-        "name"
       ]
     },
     "Manifest": {
@@ -74,7 +62,7 @@
         },
         "vars": {
           "items": {
-            "$ref": "#/$defs/EnvVar"
+            "$ref": "#/$defs/Var"
           },
           "type": "array"
         }
@@ -126,7 +114,26 @@
       "additionalProperties": false,
       "type": "object",
       "required": [
-        "connection"
+        "connection",
+        "name"
+      ]
+    },
+    "Var": {
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        },
+        "is_secret": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "name"
       ]
     }
   }

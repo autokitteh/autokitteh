@@ -11,7 +11,8 @@ type Config struct {
 	Workflow WorkflowConfig `koanf:"workflow"`
 
 	// Enable internal test functionality.
-	Test bool `koanf:"test"`
+	Test     bool `koanf:"test"`
+	OSModule bool `koanf:"os_module"`
 }
 
 type TemporalConfig struct {

@@ -74,48 +74,6 @@ message UpdateRequest {
 
 message UpdateResponse {}
 
-message SetVarRequest {
-  option (buf.validate.message).cel = {
-    id: "var.env_id_required",
-    message: "env_id must be specified",
-    expression: "has(this.var) && this.var.env_id != ''",
-  };
-  option (buf.validate.message).cel = {
-    id: "var.name_required",
-    message: "name must be specified",
-    expression: "has(this.var) && this.var.name != ''",
-  };
-
-  EnvVar var = 1 [(buf.validate.field).required = true];
-}
-
-message SetVarResponse {}
-
-message RemoveVarRequest {
-  string env_id = 1 [(buf.validate.field).string.min_len = 1];
-  string name = 2 [(buf.validate.field).string.min_len = 1];
-}
-
-message RemoveVarResponse {}
-
-message GetVarsRequest {
-  string env_id = 1 [(buf.validate.field).string.min_len = 1];
-  repeated string names = 2; // if empty, get all.
-}
-
-message GetVarsResponse {
-  repeated EnvVar vars = 1 [(buf.validate.field).repeated.items.required = true];
-}
-
-message RevealVarRequest {
-  string env_id = 1 [(buf.validate.field).string.min_len = 1];
-  string name = 2 [(buf.validate.field).string.min_len = 1];
-}
-
-message RevealVarResponse {
-  string value = 1;
-}
-
 service EnvsService {
   rpc List(ListRequest) returns (ListResponse);
 
@@ -126,12 +84,4 @@ service EnvsService {
   rpc Remove(RemoveRequest) returns (RemoveResponse);
 
   rpc Update(UpdateRequest) returns (UpdateResponse);
-
-  rpc SetVar(SetVarRequest) returns (SetVarResponse);
-
-  rpc RemoveVar(RemoveVarRequest) returns (RemoveVarResponse);
-
-  rpc GetVars(GetVarsRequest) returns (GetVarsResponse);
-
-  rpc RevealVar(RevealVarRequest) returns (RevealVarResponse);
 }

@@ -72,12 +72,12 @@ type DB interface {
 	GetEnvByName(context.Context, sdktypes.ProjectID, sdktypes.Symbol) (sdktypes.Env, error)
 
 	ListProjectEnvs(context.Context, sdktypes.ProjectID) ([]sdktypes.Env, error)
-	SetEnvVar(context.Context, sdktypes.EnvVar) error
-	GetEnvVars(context.Context, sdktypes.EnvID) ([]sdktypes.EnvVar, error)
 
-	// Return sdkerrors.ErrNotFound if var not found.
-	RevealEnvVar(context.Context, sdktypes.EnvID, sdktypes.Symbol) (string, error)
-	RemoveEnvVar(context.Context, sdktypes.EnvID, sdktypes.Symbol) error
+	// -----------------------------------------------------------------------
+	SetVars(context.Context, []sdktypes.Var) error
+	GetVars(context.Context, bool, sdktypes.VarScopeID, []sdktypes.Symbol) ([]sdktypes.Var, error)
+	DeleteVars(context.Context, sdktypes.VarScopeID, []sdktypes.Symbol) error
+	FindConnectionIDsByVar(context.Context, sdktypes.IntegrationID, sdktypes.Symbol, string) ([]sdktypes.ConnectionID, error)
 
 	// -----------------------------------------------------------------------
 	// This is idempotent.
@@ -107,6 +107,7 @@ type DB interface {
 	UpdateConnection(ctx context.Context, conn sdktypes.Connection) error
 	DeleteConnection(ctx context.Context, id sdktypes.ConnectionID) error
 	GetConnection(ctx context.Context, id sdktypes.ConnectionID) (sdktypes.Connection, error)
+	GetConnections(ctx context.Context, ids []sdktypes.ConnectionID) ([]sdktypes.Connection, error)
 	ListConnections(ctx context.Context, filter sdkservices.ListConnectionsFilter) ([]sdktypes.Connection, error)
 
 	// -----------------------------------------------------------------------
