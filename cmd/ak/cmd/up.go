@@ -5,11 +5,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"go.autokitteh.dev/autokitteh/backend/svc"
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
 )
-
-var mode string
 
 var upCmd = common.StandardCommand(&cobra.Command{
 	Use:   "up [--mode {default|dev|test}]",
@@ -17,13 +14,9 @@ var upCmd = common.StandardCommand(&cobra.Command{
 	Args:  cobra.NoArgs,
 
 	RunE: func(cmd *cobra.Command, args []string) error {
-		m, err := svc.ParseMode(mode)
-		if err != nil {
-			return fmt.Errorf("mode: %w", err)
-		}
-
 		ctx := cmd.Root().Context()
-		app, err := svc.New(common.Config(), svc.RunOptions{Mode: m})
+
+		app, err := common.NewSvc(false)
 		if err != nil {
 			return fmt.Errorf("new service: %w", err)
 		}
@@ -41,5 +34,5 @@ var upCmd = common.StandardCommand(&cobra.Command{
 
 func init() {
 	// Command-specific flags.
-	upCmd.Flags().StringVarP(&mode, "mode", "m", "", "run mode: {default|dev|test}")
+	common.AddModeFlag(upCmd)
 }
