@@ -40,7 +40,7 @@ var listCmd = common.StandardCommand(&cobra.Command{
 })
 
 func init() {
-	listCmd.Flags().BoolVarP(&envVars, "env_vars", "e", false, "print key names as environment variables (default = false)")
+	listCmd.Flags().BoolVarP(&envVars, "env-vars", "e", false, "print key names as environment variables (default = false)")
 }
 
 // TODO: Fix this to return real values ASAP, see PR #323

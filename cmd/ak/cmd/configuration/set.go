@@ -66,10 +66,6 @@ var setCmd = common.StandardCommand(&cobra.Command{
 	},
 })
 
-func init() {
-	common.AddModeFlag(setCmd)
-}
-
 func validateArgs(args []string, possibleConfigs []string) error {
 	if len(args) != 2 {
 		return fmt.Errorf("expected exactly 2 arguments, got %d", len(args))

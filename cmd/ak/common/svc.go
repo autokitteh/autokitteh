@@ -11,6 +11,7 @@ import (
 
 var mode string
 
+// Get the mode initialized using AddModeFlag.
 func GetMode() (m configset.Mode, err error) {
 	if m, err = configset.ParseMode(mode); err != nil {
 		err = fmt.Errorf("parse mode: %w", err)
@@ -18,10 +19,12 @@ func GetMode() (m configset.Mode, err error) {
 	return
 }
 
+// Returns a new service initialized with dev mode.
 func NewDevSvc(silent bool) (svc.Service, error) {
 	return svc.New(Config(), svc.RunOptions{Mode: configset.Dev, Silent: silent})
 }
 
+// Returns a new service initialized with the mode set by AddModeFlag.
 func NewSvc(silent bool) (svc.Service, error) {
 	m, err := GetMode()
 	if err != nil {
