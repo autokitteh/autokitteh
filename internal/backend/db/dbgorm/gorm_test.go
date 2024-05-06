@@ -205,6 +205,12 @@ func newDBFixtureFK(withoutForeignKeys bool) *dbFixture {
 	return f
 }
 
+func (f *dbFixture) WithForeignKeysDisabled(fn func()) {
+	foreignKeys(f.gormdb, false) // disable
+	fn()
+	foreignKeys(f.gormdb, true) // enable
+}
+
 // enable SQL logging
 // func (f *dbFixture) debug() {
 // 	f.db = f.db.Debug()
