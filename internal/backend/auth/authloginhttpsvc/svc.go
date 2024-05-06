@@ -54,6 +54,10 @@ func (a *svc) registerRoutes(muxes *muxes.Muxes) error {
 	}
 
 	if a.Cfg.Descope.Enabled {
+		if a.Cfg.GithubOAuth.Enabled || a.Cfg.GoogleOAuth.Enabled {
+			return fmt.Errorf("cannot enable descope with other providers enabled")
+		}
+
 		if err := registerDescopeRoutes(muxes.NoAuth, a.Cfg.Descope, a.newSuccessLoginHandler); err != nil {
 			return err
 		}
