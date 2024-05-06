@@ -29,7 +29,8 @@ func NewUser(provider string, data map[string]string) User {
 	}))
 }
 
-func (u User) UniqueID() (id string) {
+// Used for display only.
+func (u User) Title() (id string) {
 	if id = u.Data()["email"]; id == "" {
 		id = "<unknown>"
 	}
