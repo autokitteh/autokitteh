@@ -11,8 +11,8 @@ import (
 )
 
 func (s Svc) initDeployments() {
-	s.Muxes.AuthHandleFunc("/deployments", s.deployments)
-	s.Muxes.AuthHandleFunc("/deployments/{did}", s.deployment)
+	s.Muxes.Auth.HandleFunc("/deployments", s.deployments)
+	s.Muxes.Auth.HandleFunc("/deployments/{did}", s.deployment)
 }
 
 type deployment struct{ sdktypes.Deployment }

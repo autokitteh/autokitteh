@@ -32,7 +32,7 @@ func Init(svc Svc) {
 }
 
 func (s *Svc) initIndex() {
-	s.Muxes.Root.HandleFunc("/{$}", func(w http.ResponseWriter, r *http.Request) {
+	s.Muxes.NoAuth.HandleFunc("/{$}", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/projects", http.StatusFound)
 	})
 }

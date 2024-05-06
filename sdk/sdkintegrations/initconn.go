@@ -10,7 +10,8 @@ import (
 
 // FinalizeConnectionInit finalizes the connection initialization.
 // This is done by encoding the init data into the connection initialization URL
-// and redirecting the user there.
+// and redirecting the user there. The destination handler will save `data` in
+// the connection's scope.
 func FinalizeConnectionInit(w http.ResponseWriter, r *http.Request, iid sdktypes.IntegrationID, data []sdktypes.Var) {
 	vars, err := kittehs.EncodeURLData(data)
 	if err != nil {

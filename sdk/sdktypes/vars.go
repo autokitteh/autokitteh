@@ -48,7 +48,7 @@ func (vs Vars) ToStringsMap() map[string]string {
 }
 
 // Encodes `in` into Vars. `in` must be a struct or a non-nil pointer to a struct.
-// All members must be strings. A field tag of `"var:secret"` will make the field secret.
+// All members must be strings. A field tag of `var:"secret"` will make the field secret.
 func EncodeVars(in any) (vs Vars) {
 	v, t := reflect.ValueOf(in), reflect.TypeOf(in)
 

@@ -25,4 +25,4 @@ project:
       connection: myhttp
       call: http.star:on_http_test
       data:
-        path: "/test/{a}/{b...}"    
+        path: "/test/{a}/{b...}"

@@ -9,8 +9,8 @@ import (
 )
 
 func (s Svc) initSessions() {
-	s.Muxes.AuthHandleFunc("/sessions", s.sessions)
-	s.Muxes.AuthHandleFunc("/sessions/{sid}", s.session)
+	s.Muxes.Auth.HandleFunc("/sessions", s.sessions)
+	s.Muxes.Auth.HandleFunc("/sessions/{sid}", s.session)
 }
 
 type session struct{ sdktypes.Session }

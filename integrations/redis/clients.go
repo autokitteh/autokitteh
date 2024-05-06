@@ -75,9 +75,9 @@ func (m *module) externalClient(ctx context.Context) (*redis.Client, error) {
 		return nil, err
 	}
 
-	dsnVar := vars.Get(sdktypes.NewSymbol("DSN"))
+	dsnVar := vars.Get(sdktypes.NewSymbol("URL"))
 	if !dsnVar.IsValid() {
-		return nil, fmt.Errorf("missing DSN")
+		return nil, fmt.Errorf("missing URL")
 	}
 
 	dsn := dsnVar.Value()

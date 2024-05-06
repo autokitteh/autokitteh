@@ -32,7 +32,7 @@ project:
     - name: myredis
       integration: "redis"
       vars: 
-        - name: "DSN"
+        - name: "URL"
           value: "redis://user:password@localhost:6789/3?dial_timeout=3&db=1&read_timeout=6s&max_retries=2"
     # gRPC
     - name: grpc

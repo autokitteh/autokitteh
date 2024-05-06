@@ -23,7 +23,7 @@ func Tmpl(r *http.Request) *template.Template {
 					return nil
 				}
 
-				return u.UniqueID()
+				return u.Title()
 			},
 		}).
 		ParseFS(tmplFS, "*.html"))

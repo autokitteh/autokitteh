@@ -12,8 +12,8 @@ import (
 )
 
 func (s Svc) initProjects() {
-	s.Muxes.AuthHandleFunc("/projects", s.projects)
-	s.Muxes.AuthHandleFunc("/projects/{pid}", s.project)
+	s.Muxes.Auth.HandleFunc("/projects", s.projects)
+	s.Muxes.Auth.HandleFunc("/projects/{pid}", s.project)
 }
 
 type project struct{ sdktypes.Project }

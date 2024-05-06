@@ -9,8 +9,8 @@ import (
 )
 
 func (s Svc) initEvents() {
-	s.Muxes.AuthHandleFunc("/events", s.events)
-	s.Muxes.AuthHandleFunc("/events/{eid}", s.event)
+	s.Muxes.Auth.HandleFunc("/events", s.events)
+	s.Muxes.Auth.HandleFunc("/events/{eid}", s.event)
 }
 
 type event struct{ sdktypes.Event }

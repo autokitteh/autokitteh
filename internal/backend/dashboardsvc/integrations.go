@@ -8,8 +8,8 @@ import (
 )
 
 func (s Svc) initIntegrations() {
-	s.Muxes.AuthHandleFunc("/integrations", s.integrations)
-	s.Muxes.AuthHandleFunc("/integrations/{iid}", s.integration)
+	s.Muxes.Auth.HandleFunc("/integrations", s.integrations)
+	s.Muxes.Auth.HandleFunc("/integrations/{iid}", s.integration)
 }
 
 type integration struct{ sdktypes.Integration }

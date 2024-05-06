@@ -23,8 +23,8 @@ type svc struct {
 
 func InitWebhook(l *zap.Logger, muxes *muxes.Muxes, c sdkservices.Services) {
 	s := &svc{logger: l, svcs: c}
-	muxes.AuthHandleFunc("/oauth/start/{intg}", s.start)
-	muxes.HandleFunc("/oauth/redirect/{intg}", s.exchange)
+	muxes.Auth.HandleFunc("/oauth/start/{intg}", s.start)
+	muxes.NoAuth.HandleFunc("/oauth/redirect/{intg}", s.exchange)
 }
 
 func (s *svc) start(w http.ResponseWriter, r *http.Request) {

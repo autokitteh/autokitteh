@@ -13,9 +13,9 @@ import (
 )
 
 func (s Svc) initConnections() {
-	s.Muxes.AuthHandleFunc("GET /connections", s.connections)
-	s.Muxes.AuthHandleFunc("GET /connections/{cid}", s.connection)
-	s.Muxes.AuthHandleFunc("GET /connections/{id}/init", s.initConnection)
+	s.Muxes.Auth.HandleFunc("GET /connections", s.connections)
+	s.Muxes.Auth.HandleFunc("GET /connections/{cid}", s.connection)
+	s.Muxes.Auth.HandleFunc("GET /connections/{id}/init", s.initConnection)
 }
 
 type connection struct{ sdktypes.Connection }
