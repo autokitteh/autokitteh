@@ -46,15 +46,18 @@ func (i integration) createChatCompletion(ctx context.Context, args []sdktypes.V
 		})
 	}
 
-	// Get auth details from secrets manager.
-	token := sdkmodule.FunctionDataFromContext(ctx)
-	auth, err := i.secrets.Get(ctx, i.scope, string(token))
+	cid, err := sdkmodule.FunctionConnectionIDFromContext(ctx)
+	if err != nil {
+		return sdktypes.InvalidValue, err
+	}
+
+	cvars, err := i.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
 
 	// Invoke the API method.
-	client := openai.NewClient(auth["apiKey"])
+	client := openai.NewClient(cvars.GetValue(apiKeyVar))
 	resp, err := client.CreateChatCompletion(ctx, req)
 	if err != nil {
 		jsonResp := ChatCompletionResponse{Error: err.Error()}

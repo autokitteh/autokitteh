@@ -8,6 +8,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/integrations/slack/events"
+	"go.autokitteh.dev/autokitteh/integrations/slack/internal/vars"
 	"go.autokitteh.dev/autokitteh/integrations/slack/webhooks"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -79,13 +80,12 @@ func (h handler) handleBotEvent(e *socketmode.Event, c *socketmode.Client) {
 
 	pb := kittehs.TransformMapValues(m, sdktypes.ToProto)
 	akEvent := &sdktypes.EventPB{
-		IntegrationId: h.integrationID.String(),
-		EventType:     cb.Event.Type,
-		Data:          pb,
+		EventType: cb.Event.Type,
+		Data:      pb,
 	}
 
 	// Retrieve all the relevant connections for this event.
-	connTokens, err := h.secrets.List(context.Background(), h.scope, "websockets")
+	connTokens, err := h.vars.FindConnectionIDs(context.Background(), h.integrationID, vars.BotTokenName, "")
 	if err != nil {
 		h.logger.Error("Failed to retrieve connection tokens", zap.Error(err))
 		return

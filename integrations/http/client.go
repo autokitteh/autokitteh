@@ -21,15 +21,13 @@ var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.Integrati
 }))
 
 type integration struct {
-	secrets sdkservices.Secrets
-	scope   string
+	vars  sdkservices.Vars
+	scope string
 }
 
-func New(sec sdkservices.Secrets) sdkservices.Integration {
-	i := integration{secrets: sec, scope: desc.UniqueName().String()}
+func New(vars sdkservices.Vars) sdkservices.Integration {
+	i := integration{vars: vars, scope: desc.UniqueName().String()}
 	return sdkintegrations.NewIntegration(desc, sdkmodule.New(
-		sdkmodule.WithConfigAsData(),
-
 		sdkmodule.ExportFunction(
 			"delete",
 			i.request(http.MethodDelete),

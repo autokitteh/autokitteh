@@ -48,7 +48,7 @@ func TestCreateEventForeignKeys(t *testing.T) {
 	i := f.newIntegration()
 	f.createIntegrationsAndAssert(t, i)
 
-	e.IntegrationID = &i.IntegrationID
+	e.IntegrationID = i.IntegrationID
 	f.createEventsAndAssert(t, e)
 }
 

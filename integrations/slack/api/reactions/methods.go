@@ -11,8 +11,7 @@ import (
 )
 
 type API struct {
-	Secrets sdkservices.Secrets
-	Scope   string
+	Vars sdkservices.Vars
 }
 
 // Add a reaction (emoji) to an item (message).
@@ -40,7 +39,7 @@ func (a API) Add(ctx context.Context, args []sdktypes.Value, kwargs map[string]s
 
 	// Invoke the API method.
 	resp := &AddResponse{}
-	err = api.PostJSON(ctx, a.Secrets, a.Scope, req, resp, "reactions.add")
+	err = api.PostJSON(ctx, a.Vars, req, resp, "reactions.add")
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}

@@ -17,8 +17,18 @@ var listCmd = common.StandardCommand(&cobra.Command{
 	Args:    cobra.NoArgs,
 
 	RunE: func(cmd *cobra.Command, args []string) error {
-		f := sdkservices.ListEventsFilter{
-			IntegrationToken: connectionToken,
+		var f sdkservices.ListEventsFilter
+
+		if connection != "" {
+			r := resolver.Resolver{Client: common.Client()}
+			_, cid, err := r.ConnectionNameOrID(args[0], "")
+			if err != nil {
+				return err
+			}
+			if !cid.IsValid() {
+				return fmt.Errorf("connection %q not found", connection)
+			}
+			f.ConnectionID = cid
 		}
 
 		if integration != "" {
@@ -53,10 +63,10 @@ var listCmd = common.StandardCommand(&cobra.Command{
 func init() {
 	// Command-specific flags.
 	listCmd.Flags().StringVarP(&integration, "integration", "i", "", "integration name or ID")
-	listCmd.Flags().StringVarP(&connectionToken, "connection-token", "t", "", "connection token")
+	listCmd.Flags().StringVarP(&connection, "connection", "c", "", "connection name or ID")
 	listCmd.Flags().StringVarP(&eventType, "event-type", "e", "", "event type")
 
-	listCmd.MarkFlagsOneRequired("integration", "connection-token")
+	listCmd.MarkFlagsOneRequired("integration", "connection")
 
 	common.AddFailIfNotFoundFlag(listCmd)
 }

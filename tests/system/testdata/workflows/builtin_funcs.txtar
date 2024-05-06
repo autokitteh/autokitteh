@@ -41,9 +41,9 @@ project:
   connections:
     - name: my_connection
       integration: http
-      token: my_url_path
   triggers:
-    - connection: my_connection
+    - name: test
+      connection: my_connection
       event_type: get
       entrypoint: my_program.star:on_http_get
 

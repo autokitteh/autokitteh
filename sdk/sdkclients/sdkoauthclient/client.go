@@ -12,6 +12,7 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdkclients/internal"
 	"go.autokitteh.dev/autokitteh/sdk/sdkclients/sdkclient"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 type client struct {
@@ -65,8 +66,8 @@ func (c *client) Get(ctx context.Context, id string) (*oauth2.Config, map[string
 	return cfg, resp.Msg.Config.Options, nil
 }
 
-func (c *client) StartFlow(ctx context.Context, id string) (string, error) {
-	req := &oauthv1.StartFlowRequest{Id: id}
+func (c *client) StartFlow(ctx context.Context, id string, cid sdktypes.ConnectionID) (string, error) {
+	req := &oauthv1.StartFlowRequest{Id: id, ConnectionId: cid.String()}
 	resp, err := c.client.StartFlow(ctx, connect.NewRequest(req))
 	if err != nil {
 		return "", err

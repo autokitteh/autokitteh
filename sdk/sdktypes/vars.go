@@ -64,7 +64,7 @@ func EncodeVars(in any) (vs Vars) {
 		fv := v.Field(i)
 		ft := t.Field(i)
 
-		n := forceSymbol(ft.Name)
+		n := NewSymbol(ft.Name)
 
 		if ft.Type.Kind() != reflect.String {
 			sdklogger.Panic("invalid field value type - not a string")
@@ -98,7 +98,7 @@ func (vs Vars) Decode(out any) {
 		fv := v.Field(i)
 		ft := t.Field(i)
 
-		n := forceSymbol(ft.Name)
+		n := NewSymbol(ft.Name)
 
 		if ft.Type.Kind() != reflect.String {
 			sdklogger.Panic("invalid field value type - not a string")

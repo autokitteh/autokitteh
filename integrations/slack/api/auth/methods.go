@@ -10,8 +10,7 @@ import (
 )
 
 type API struct {
-	Secrets sdkservices.Secrets
-	Scope   string
+	Vars sdkservices.Vars
 }
 
 // Test checks the caller's authentication & identity.
@@ -20,7 +19,7 @@ type API struct {
 func (a API) Test(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
 	// Invoke the API method.
 	resp := &TestResponse{}
-	err := api.PostJSON(ctx, a.Secrets, a.Scope, struct{}{}, resp, "auth.test")
+	err := api.PostJSON(ctx, a.Vars, struct{}{}, resp, "auth.test")
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
@@ -31,10 +30,10 @@ func (a API) Test(ctx context.Context, args []sdktypes.Value, kwargs map[string]
 
 // TestWithToken is only used internally, when the context doesn't store a
 // module and a connection token: when it's used by the OAuth redirect handler.
-func TestWithToken(ctx context.Context, secrets sdkservices.Secrets, scope, oauthToken string) (*TestResponse, error) {
+func TestWithToken(ctx context.Context, vars sdkservices.Vars, oauthToken string) (*TestResponse, error) {
 	ctx = context.WithValue(ctx, api.OAuthTokenContextKey{}, oauthToken)
 	resp := &TestResponse{}
-	err := api.PostJSON(ctx, secrets, scope, struct{}{}, resp, "auth.test")
+	err := api.PostJSON(ctx, vars, struct{}{}, resp, "auth.test")
 	if err != nil {
 		return nil, err
 	}

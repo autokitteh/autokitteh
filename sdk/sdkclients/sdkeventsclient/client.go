@@ -63,7 +63,7 @@ func (c *client) Get(ctx context.Context, eventId sdktypes.EventID) (sdktypes.Ev
 
 func (c *client) List(ctx context.Context, filter sdkservices.ListEventsFilter) ([]sdktypes.Event, error) {
 	resp, err := c.client.List(ctx, connect.NewRequest(
-		&eventsv1.ListRequest{IntegrationId: filter.IntegrationID.String(), EventType: filter.EventType, IntegrationToken: filter.IntegrationToken},
+		&eventsv1.ListRequest{IntegrationId: filter.IntegrationID.String(), EventType: filter.EventType, ConnectionId: filter.ConnectionID.String()},
 	))
 	if err != nil {
 		return nil, rpcerrors.ToSDKError(err)

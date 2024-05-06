@@ -13,10 +13,10 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-var event, filter, loc string
+var event, filter, loc, name string
 
 var createCmd = common.StandardCommand(&cobra.Command{
-	Use:     "create <--env=...> <--connection=...> <--event=...> <--loc=...>",
+	Use:     "create <--name=...> <--env=...> <--connection=...> <--event=...> <--loc=...>",
 	Short:   "Create event trigger",
 	Aliases: []string{"c"},
 	Args:    cobra.NoArgs,
@@ -55,6 +55,7 @@ var createCmd = common.StandardCommand(&cobra.Command{
 			EventType:    event,
 			Filter:       filter,
 			CodeLocation: cl.ToProto(),
+			Name:         name,
 		})
 		if err != nil {
 			return fmt.Errorf("invalid trigger: %w", err)
@@ -75,7 +76,10 @@ func init() {
 	createCmd.Flags().StringVarP(&env, "env", "e", "", "environment name or ID")
 	kittehs.Must0(createCmd.MarkFlagRequired("env"))
 
-	createCmd.Flags().StringVarP(&connection, "connection", "n", "", "connection name or ID")
+	createCmd.Flags().StringVarP(&name, "name", "n", "", "trigger name")
+	kittehs.Must0(createCmd.MarkFlagRequired("name"))
+
+	createCmd.Flags().StringVarP(&connection, "connection", "c", "", "connection name or ID")
 	kittehs.Must0(createCmd.MarkFlagRequired("connection"))
 
 	createCmd.Flags().StringVarP(&event, "event", "E", "", "event type")

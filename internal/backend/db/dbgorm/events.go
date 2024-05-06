@@ -6,6 +6,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
+	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -15,14 +16,29 @@ func (db *gormdb) saveEvent(ctx context.Context, event *scheme.Event) error {
 }
 
 func (db *gormdb) SaveEvent(ctx context.Context, event sdktypes.Event) error {
+	if err := event.Strict(); err != nil {
+		return err
+	}
+
+	cid := event.ConnectionID()
+
+	conn, err := db.GetConnection(ctx, cid)
+	if err != nil {
+		return err
+	}
+
+	if !conn.IsValid() {
+		return sdkerrors.NewInvalidArgumentError("event connection_id does not exist")
+	}
+
 	e := scheme.Event{
-		EventID:          event.ID().UUIDValue(),
-		IntegrationID:    scheme.UUIDOrNil(event.IntegrationID().UUIDValue()),
-		IntegrationToken: event.IntegrationToken(),
-		EventType:        event.Type(),
-		Data:             kittehs.Must1(json.Marshal(event.Data())),
-		Memo:             kittehs.Must1(json.Marshal(event.Memo())),
-		CreatedAt:        event.CreatedAt(),
+		EventID:       event.ID().UUIDValue(),
+		IntegrationID: conn.IntegrationID().UUIDValue(),
+		ConnectionID:  scheme.UUIDOrNil(cid.UUIDValue()),
+		EventType:     event.Type(),
+		Data:          kittehs.Must1(json.Marshal(event.Data())),
+		Memo:          kittehs.Must1(json.Marshal(event.Memo())),
+		CreatedAt:     event.CreatedAt(),
 	}
 	return translateError(db.saveEvent(ctx, &e))
 }
@@ -41,8 +57,8 @@ func (db *gormdb) ListEvents(ctx context.Context, filter sdkservices.ListEventsF
 		q = q.Where("integration_id = ?", filter.IntegrationID.UUIDValue())
 	}
 
-	if filter.IntegrationToken != "" {
-		q = q.Where("integration_token = ?", filter.IntegrationToken)
+	if filter.ConnectionID.IsValid() {
+		q = q.Where("connection_id = ?", filter.ConnectionID.UUIDValue())
 	}
 
 	if filter.EventType != "" {

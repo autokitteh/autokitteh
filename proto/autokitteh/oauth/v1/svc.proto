@@ -34,6 +34,7 @@ message GetResponse {
 
 message StartFlowRequest {
   string id = 1 [(buf.validate.field).string.min_len = 1];
+  string connection_id = 2;
 }
 
 message StartFlowResponse {

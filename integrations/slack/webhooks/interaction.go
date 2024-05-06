@@ -152,9 +152,8 @@ func (h handler) HandleInteraction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	akEvent := &sdktypes.EventPB{
-		IntegrationId: h.integrationID.String(),
-		EventType:     "interaction",
-		Data:          data,
+		EventType: "interaction",
+		Data:      data,
 	}
 
 	// Retrieve all the relevant connections for this event.
@@ -162,7 +161,7 @@ func (h handler) HandleInteraction(w http.ResponseWriter, r *http.Request) {
 	if payload.IsEnterpriseInstall {
 		enterpriseID = payload.User.EnterpriseUser.EnterpriseID
 	}
-	connTokens, err := h.listTokens(payload.APIAppID, enterpriseID, payload.Team.ID)
+	connTokens, err := h.listTokens(r.Context(), payload.APIAppID, enterpriseID, payload.Team.ID)
 	if err != nil {
 		l.Error("Failed to retrieve connection tokens",
 			zap.Error(err),
@@ -250,7 +249,7 @@ func (h handler) updateMessage(l *zap.Logger, payload *BlockActionsPayload) {
 	// Send the update to Slack's webhook.
 	meta := &chat.UpdateResponse{}
 	ctx := extrazap.AttachLoggerToContext(l, context.Background())
-	err := api.PostJSON(ctx, h.secrets, h.scope, resp, meta, payload.ResponseURL)
+	err := api.PostJSON(ctx, h.vars, resp, meta, payload.ResponseURL)
 	if err != nil {
 		l.Warn("Error in reply to user via interaction webhook",
 			zap.Error(err),

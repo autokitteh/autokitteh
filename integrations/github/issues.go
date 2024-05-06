@@ -29,7 +29,7 @@ func (i integration) createIssue(ctx context.Context, args []sdktypes.Value, kwa
 	}
 
 	// Invoke the API method.
-	gh, err := i.NewClient(ctx)
+	gh, err := i.NewClient(ctx, owner)
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
@@ -58,7 +58,7 @@ func (i integration) getIssue(ctx context.Context, args []sdktypes.Value, kwargs
 	}
 
 	// Invoke the API method.
-	gh, err := i.NewClient(ctx)
+	gh, err := i.NewClient(ctx, owner)
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
@@ -97,7 +97,7 @@ func (i integration) updateIssue(ctx context.Context, args []sdktypes.Value, kwa
 	}
 
 	// Invoke the API method.
-	gh, err := i.NewClient(ctx)
+	gh, err := i.NewClient(ctx, owner)
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
@@ -135,7 +135,7 @@ func (i integration) listRepositoryIssues(ctx context.Context, args []sdktypes.V
 	}
 
 	// Invoke the API method.
-	gh, err := i.NewClient(ctx)
+	gh, err := i.NewClient(ctx, owner)
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}

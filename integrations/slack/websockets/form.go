@@ -1,7 +1,6 @@
 package websockets
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -12,6 +11,9 @@ import (
 	"go.autokitteh.dev/autokitteh/integrations/slack/api/apps"
 	"go.autokitteh.dev/autokitteh/integrations/slack/api/auth"
 	"go.autokitteh.dev/autokitteh/integrations/slack/api/bots"
+	"go.autokitteh.dev/autokitteh/integrations/slack/internal/vars"
+	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 const (
@@ -55,7 +57,7 @@ func (h handler) HandleForm(w http.ResponseWriter, r *http.Request) {
 
 	// Test the Slack tokens usability and get authoritative installation details.
 	ctx := extrazap.AttachLoggerToContext(l, r.Context())
-	authTest, err := auth.TestWithToken(ctx, h.secrets, h.scope, botToken)
+	authTest, err := auth.TestWithToken(ctx, h.vars, botToken)
 	if err != nil {
 		e := "Bot token test failed: " + err.Error()
 		u := uiPath + "error.html?error=" + url.QueryEscape(e)
@@ -63,7 +65,7 @@ func (h handler) HandleForm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	botInfo, err := bots.InfoWithToken(ctx, h.secrets, h.scope, botToken, authTest)
+	botInfo, err := bots.InfoWithToken(ctx, h.vars, botToken, authTest)
 	if err != nil {
 		e := "Bot info request failed: " + err.Error()
 		u := uiPath + "error.html?error=" + url.QueryEscape(e)
@@ -71,7 +73,7 @@ func (h handler) HandleForm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = apps.ConnectionsOpenWithToken(ctx, h.secrets, h.scope, appToken)
+	_, err = apps.ConnectionsOpenWithToken(ctx, h.vars, appToken)
 	if err != nil {
 		e := "Socket connection test failed: " + err.Error()
 		u := uiPath + "error.html?error=" + url.QueryEscape(e)
@@ -79,42 +81,14 @@ func (h handler) HandleForm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Save a new connection.
-	connToken, err := h.createTokensConnection(r.Context(), authTest, botInfo, botToken, appToken)
-	if err != nil {
-		l.Warn("Failed to save new connection secrets", zap.Error(err))
-		e := "Connection saving error: " + err.Error()
-		u := uiPath + "error.html?error=" + url.QueryEscape(e)
-		http.Redirect(w, r, u, http.StatusFound)
-		return
-	}
-	l.Debug("Saved new autokitteh connection")
-
-	// Open a new Socket Mode connection.
-	h.OpenSocketModeConnection(botInfo.Bot.AppID, botToken, appToken)
-
-	// Redirect the user to a success page: give them the connection token.
-	u := fmt.Sprintf("%ssuccess.html?token=%s", uiPath, connToken)
-	http.Redirect(w, r, u, http.StatusFound)
-}
-
-func (h handler) createTokensConnection(ctx context.Context, authTest *auth.TestResponse, botInfo *bots.InfoResponse, botToken, appToken string) (string, error) {
-	connToken, err := h.secrets.Create(ctx, h.scope,
-		// Connection token --> Slack token (to call API methods).
-		map[string]string{
-			// Slack.
-			"appID":        botInfo.Bot.AppID,
-			"enterpriseID": authTest.EnterpriseID,
-			"teamID":       authTest.TeamID,
-			// Slack tokens.
-			"botToken":      botToken,
-			"appLevelToken": appToken,
+	initData := sdktypes.EncodeVars(
+		vars.Vars{
+			AppID:        botInfo.Bot.AppID,
+			EnterpriseID: authTest.EnterpriseID,
+			TeamID:       authTest.TeamID,
+			AppToken:     appToken,
 		},
-		// List of all connection tokens.
-		"websockets",
-	)
-	if err != nil {
-		return "", err
-	}
-	return connToken, nil
+	).Set(vars.BotTokenName, botToken, true)
+
+	sdkintegrations.FinalizeConnectionInit(w, r, h.integrationID, initData)
 }

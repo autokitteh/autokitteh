@@ -9,6 +9,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/integrations/slack/api/chat"
+	"go.autokitteh.dev/autokitteh/integrations/slack/internal/vars"
 	"go.autokitteh.dev/autokitteh/integrations/slack/webhooks"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -64,13 +65,12 @@ func (h handler) handleSlashCommand(e *socketmode.Event, c *socketmode.Client) {
 
 	pb := kittehs.TransformMapValues(m, sdktypes.ToProto)
 	akEvent := &sdktypes.EventPB{
-		IntegrationId: h.integrationID.String(),
-		EventType:     "slash_command",
-		Data:          pb,
+		EventType: "slash_command",
+		Data:      pb,
 	}
 
 	// Retrieve all the relevant connections for this event.
-	connTokens, err := h.secrets.List(context.Background(), h.scope, "websockets")
+	connTokens, err := h.vars.FindConnectionIDs(context.Background(), h.integrationID, vars.WebSocketName, "")
 	if err != nil {
 		h.logger.Error("Failed to retrieve connection tokens", zap.Error(err))
 		c.Ack(*e.Request)

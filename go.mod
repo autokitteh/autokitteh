@@ -7,6 +7,7 @@ require (
 	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.33.0-20240221180331-f05a6f4403ce.1
 	connectrpc.com/connect v1.15.0
 	connectrpc.com/grpcreflect v1.2.0
+	github.com/Masterminds/sprig/v3 v3.2.3
 	github.com/adrg/xdg v0.4.0
 	github.com/alicebob/miniredis/v2 v2.32.1
 	github.com/araddon/dateparse v0.0.0-20210429162001-6b43995a97de
@@ -19,7 +20,6 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/rds v1.75.1
 	github.com/aws/aws-sdk-go-v2/service/rdsdata v1.21.2
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.52.0
-	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.28.2
 	github.com/aws/aws-sdk-go-v2/service/sns v1.29.2
 	github.com/aws/aws-sdk-go-v2/service/sqs v1.31.2
 	github.com/bradleyfalzon/ghinstallation/v2 v2.9.0
@@ -38,7 +38,6 @@ require (
 	github.com/google/go-github/v60 v60.0.0
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/golang-lru/v2 v2.0.7
-	github.com/hashicorp/vault/api v1.12.1
 	github.com/hexops/gotextdiff v1.0.3
 	github.com/iancoleman/strcase v0.3.0
 	github.com/invopop/jsonschema v0.12.0
@@ -50,13 +49,11 @@ require (
 	github.com/knadh/koanf/providers/env v0.1.0
 	github.com/knadh/koanf/providers/file v0.1.0
 	github.com/knadh/koanf/v2 v2.1.0
-	github.com/lithammer/shortuuid v3.0.0+incompatible
 	github.com/lithammer/shortuuid/v4 v4.0.0
 	github.com/pressly/goose/v3 v3.19.2
 	github.com/psanford/memfs v0.0.0-20230130182539-4dbf7e3e865e
 	github.com/qri-io/starlib v0.5.0
 	github.com/redis/go-redis/v9 v9.5.1
-	github.com/robfig/cron/v3 v3.0.1
 	github.com/rs/cors v1.10.1
 	github.com/sashabaranov/go-openai v1.20.3
 	github.com/slack-go/slack v0.12.5
@@ -97,6 +94,8 @@ require (
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
 	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/360EntSecGroup-Skylar/excelize v1.4.1 // indirect
+	github.com/Masterminds/goutils v1.1.1 // indirect
+	github.com/Masterminds/semver/v3 v3.2.0 // indirect
 	github.com/ProtonMail/go-crypto v0.0.0-20230217124315-7d5c6f04bbb8 // indirect
 	github.com/PuerkitoBio/goquery v1.9.1 // indirect
 	github.com/alicebob/gopher-json v0.0.0-20230218143504-906a9b012302 // indirect
@@ -119,7 +118,6 @@ require (
 	github.com/bahlo/generic-list-go v0.2.0 // indirect
 	github.com/bufbuild/protocompile v0.8.0 // indirect
 	github.com/buger/jsonparser v1.1.1 // indirect
-	github.com/cenkalti/backoff/v3 v3.2.2 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/cloudflare/circl v1.3.7 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
@@ -131,7 +129,6 @@ require (
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/glebarez/go-sqlite v1.22.0 // indirect
-	github.com/go-jose/go-jose/v3 v3.0.3 // indirect
 	github.com/go-logr/logr v1.4.1 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-openapi/jsonpointer v0.21.0 // indirect
@@ -158,15 +155,8 @@ require (
 	github.com/gorilla/websocket v1.4.2 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.19.1 // indirect
-	github.com/hashicorp/errwrap v1.1.0 // indirect
-	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
-	github.com/hashicorp/go-multierror v1.1.1 // indirect
-	github.com/hashicorp/go-retryablehttp v0.7.5 // indirect
-	github.com/hashicorp/go-rootcerts v1.0.2 // indirect
-	github.com/hashicorp/go-secure-stdlib/parseutil v0.1.8 // indirect
-	github.com/hashicorp/go-secure-stdlib/strutil v0.1.2 // indirect
-	github.com/hashicorp/go-sockaddr v1.0.6 // indirect
-	github.com/hashicorp/hcl v1.0.0 // indirect
+	github.com/huandu/xstrings v1.3.3 // indirect
+	github.com/imdario/mergo v0.3.16 // indirect
 	github.com/inconshreveable/log15 v3.0.0-testing.5+incompatible // indirect
 	github.com/inconshreveable/log15/v3 v3.0.0-testing.5 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
@@ -194,8 +184,6 @@ require (
 	github.com/mfridman/interpolate v0.0.2 // indirect
 	github.com/microsoft/go-mssqldb v1.7.0 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
-	github.com/mitchellh/go-homedir v1.1.0 // indirect
-	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826 // indirect
 	github.com/ncruces/go-strftime v0.1.9 // indirect
@@ -205,9 +193,10 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/robfig/cron v1.2.0 // indirect
-	github.com/ryanuber/go-glob v1.0.0 // indirect
 	github.com/segmentio/asm v1.2.0 // indirect
 	github.com/sethvargo/go-retry v0.2.4 // indirect
+	github.com/shopspring/decimal v1.3.1 // indirect
+	github.com/spf13/cast v1.3.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stoewer/go-strcase v1.3.0 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect

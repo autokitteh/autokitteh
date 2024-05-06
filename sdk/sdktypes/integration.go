@@ -44,7 +44,7 @@ func (p Integration) ID() IntegrationID {
 	return kittehs.Must1(ParseIntegrationID(p.read().IntegrationId))
 }
 func (p Integration) DisplayName() string          { return p.read().DisplayName }
-func (p Integration) UniqueName() Symbol           { return forceSymbol(p.read().UniqueName) }
+func (p Integration) UniqueName() Symbol           { return NewSymbol(p.read().UniqueName) }
 func (p Integration) Description() string          { return p.read().Description }
 func (p Integration) UserLinks() map[string]string { return p.read().UserLinks }
 

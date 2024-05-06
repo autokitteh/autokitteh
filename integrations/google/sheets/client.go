@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"time"
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
@@ -12,6 +11,7 @@ import (
 	"google.golang.org/api/option"
 	"google.golang.org/api/sheets/v4"
 
+	"go.autokitteh.dev/autokitteh/integrations/google/internal/vars"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
@@ -24,8 +24,8 @@ const (
 )
 
 type api struct {
-	Secrets sdkservices.Secrets
-	Scope   string
+	Vars  sdkservices.Vars
+	Scope string
 }
 
 var integrationID = sdktypes.NewIntegrationIDFromName("googlesheets")
@@ -43,17 +43,16 @@ var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.Integrati
 	ConnectionUrl: "/googlesheets/connect",
 }))
 
-func New(sec sdkservices.Secrets) sdkservices.Integration {
+func New(sec sdkservices.Vars) sdkservices.Integration {
 	scope := googleScope
 
-	opts := []sdkmodule.Optfn{sdkmodule.WithConfigAsData()}
-	opts = append(opts, ExportedFunctions(sec, scope, false)...)
+	opts := ExportedFunctions(sec, scope, false)
 
 	return sdkintegrations.NewIntegration(desc, sdkmodule.New(opts...))
 }
 
-func ExportedFunctions(sec sdkservices.Secrets, scope string, prefix bool) []sdkmodule.Optfn {
-	a := api{Secrets: sec, Scope: scope}
+func ExportedFunctions(sec sdkservices.Vars, scope string, prefix bool) []sdkmodule.Optfn {
+	a := api{Vars: sec, Scope: scope}
 	return []sdkmodule.Optfn{
 		sdkmodule.ExportFunction(
 			withOrWithout(prefix, "a1_range"),
@@ -107,10 +106,12 @@ func (a api) sheetsClient(ctx context.Context) (*sheets.Service, error) {
 	}
 
 	var src oauth2.TokenSource
-	if _, ok := data["accessToken"]; ok {
-		src = a.oauthTokenSource(ctx, data)
+	if data.OAuthData != "" {
+		if src, err = a.oauthTokenSource(ctx, data.OAuthData); err != nil {
+			return nil, err
+		}
 	} else {
-		src, err = a.jwtTokenSource(ctx, data)
+		src, err = a.jwtTokenSource(ctx, data.JSON)
 		if err != nil {
 			return nil, err
 		}
@@ -123,31 +124,33 @@ func (a api) sheetsClient(ctx context.Context) (*sheets.Service, error) {
 	return svc, nil
 }
 
-func (a api) connectionData(ctx context.Context) (map[string]string, error) {
-	connToken := sdkmodule.FunctionDataFromContext(ctx)
-	data, err := a.Secrets.Get(ctx, a.Scope, string(connToken))
+func (a api) connectionData(ctx context.Context) (*vars.Vars, error) {
+	cid, err := sdkmodule.FunctionConnectionIDFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
-	return data, nil
-}
 
-func (a api) oauthTokenSource(ctx context.Context, data map[string]string) oauth2.TokenSource {
-	exp, err := time.Parse(time.RFC3339, data["expiry"])
+	vs, err := a.Vars.Get(ctx, sdktypes.NewVarScopeID(cid))
 	if err != nil {
-		exp = time.Unix(0, 0)
+		return nil, err
 	}
 
-	return oauthConfig(ctx).TokenSource(ctx, &oauth2.Token{
-		AccessToken:  data["accessToken"],
-		TokenType:    data["tokenType"],
-		RefreshToken: data["refreshToken"],
-		Expiry:       exp,
-	})
+	var vars vars.Vars
+	vs.Decode(&vars)
+	return &vars, nil
+}
+
+func (a api) oauthTokenSource(ctx context.Context, data string) (oauth2.TokenSource, error) {
+	tok, err := sdkintegrations.DecodeOAuthData(data)
+	if err != nil {
+		return nil, err
+	}
+
+	return oauthConfig().TokenSource(ctx, tok.Token), nil
 }
 
 // TODO(ENG-112): Use OAuth().Get() instead of calling this function.
-func oauthConfig(ctx context.Context) *oauth2.Config {
+func oauthConfig() *oauth2.Config {
 	addr := os.Getenv("WEBHOOK_ADDRESS")
 	return &oauth2.Config{
 		ClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
@@ -163,10 +166,10 @@ func oauthConfig(ctx context.Context) *oauth2.Config {
 	}
 }
 
-func (a api) jwtTokenSource(ctx context.Context, data map[string]string) (oauth2.TokenSource, error) {
-	scopes := oauthConfig(ctx).Scopes
+func (a api) jwtTokenSource(ctx context.Context, data string) (oauth2.TokenSource, error) {
+	scopes := oauthConfig().Scopes
 
-	cfg, err := google.JWTConfigFromJSON([]byte(data["JSON"]), scopes...)
+	cfg, err := google.JWTConfigFromJSON([]byte(data), scopes...)
 	if err != nil {
 		return nil, err
 	}

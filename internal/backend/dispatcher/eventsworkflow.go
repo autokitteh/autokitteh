@@ -63,34 +63,25 @@ func (d *dispatcher) getEventSessionData(ctx context.Context, event sdktypes.Eve
 		z = z.With(zap.String("env_id", optsEnvID.String()))
 	}
 
-	iid, it := event.IntegrationID(), event.IntegrationToken()
+	cid := event.ConnectionID()
 
-	connections, err := d.services.Connections.List(ctx, sdkservices.ListConnectionsFilter{IntegrationID: iid, IntegrationToken: it})
+	conn, err := d.services.Connections.Get(ctx, cid)
 	if err != nil {
-		z.Panic("could not fetch connections", zap.Error(err))
+		return nil, fmt.Errorf("get connection: %w", err)
 	}
 
-	if len(connections) == 0 {
-		z.Info("no connections for eventID", zap.String("integrationID", iid.String()), zap.String("integration token", it))
-		return nil, nil
+	if !conn.IsValid() {
+		return nil, sdkerrors.ErrNotFound
 	}
 
-	connIDToIntegrationID := kittehs.ListToMap(connections, func(c sdktypes.Connection) (sdktypes.ConnectionID, sdktypes.IntegrationID) {
-		return c.ID(), c.IntegrationID()
-	})
+	iid := conn.IntegrationID()
 
-	triggers := make([]sdktypes.Trigger, 0, len(connections))
-	for _, c := range connections {
-		m, err := d.services.Triggers.List(
-			ctx, sdkservices.ListTriggersFilter{ConnectionID: c.ID()},
-		)
-		if err != nil {
-			z.Panic("could not fetch triggers")
-		}
-		triggers = append(triggers, m...)
+	ts, err := d.services.Triggers.List(ctx, sdkservices.ListTriggersFilter{ConnectionID: cid})
+	if err != nil {
+		return nil, fmt.Errorf("list triggers: %w", err)
 	}
 
-	if len(triggers) == 0 {
+	if len(ts) == 0 {
 		z.Info("no triggers for eventID")
 		return nil, nil
 	}
@@ -98,7 +89,7 @@ func (d *dispatcher) getEventSessionData(ctx context.Context, event sdktypes.Eve
 	var sds []sessionData
 
 	eventType := event.Type()
-	for _, t := range triggers {
+	for _, t := range ts {
 		envID := t.EnvID()
 		triggerEventType := t.EventType()
 
@@ -114,7 +105,7 @@ func (d *dispatcher) getEventSessionData(ctx context.Context, event sdktypes.Eve
 			continue
 		}
 
-		relevant, additionalTriggerData, err := processSpecialTrigger(t, connIDToIntegrationID[t.ConnectionID()], event)
+		relevant, additionalTriggerData, err := processSpecialTrigger(t, iid, event)
 		if err != nil {
 			continue
 		} else if !relevant {
@@ -168,7 +159,7 @@ func (d *dispatcher) getEventSessionData(ctx context.Context, event sdktypes.Eve
 	return sds, nil
 }
 
-func (d *dispatcher) signalWorkflows(ctx context.Context, event sdktypes.Event, opts *sdkservices.DispatchOptions) error {
+func (d *dispatcher) signalWorkflows(ctx context.Context, event sdktypes.Event) error {
 	eid := event.ID()
 
 	z := d.z.With(zap.String("event_id", eid.String()))
@@ -178,21 +169,19 @@ func (d *dispatcher) signalWorkflows(ctx context.Context, event sdktypes.Event, 
 		return sdkerrors.ErrNotFound
 	}
 
-	iid, it := event.IntegrationID(), event.IntegrationToken()
+	cid := event.ConnectionID()
 
-	connections, err := d.services.Connections.List(ctx, sdkservices.ListConnectionsFilter{IntegrationID: iid, IntegrationToken: it})
+	conn, err := d.services.Connections.Get(ctx, cid)
 	if err != nil {
 		z.Panic("could not fetch connections", zap.Error(err))
 	}
 
-	if len(connections) == 0 {
-		z.Info("no connections for eventID", zap.String("integrationID", iid.String()), zap.String("integration token", it))
+	if !conn.IsValid() {
+		z.Info("no connections for event id", zap.String("connection_id", cid.String()))
 		return nil
 	}
 
-	connection := connections[0]
-
-	signals, err := d.db.ListSignalsWaitingOnConnection(ctx, connection.ID())
+	signals, err := d.db.ListSignalsWaitingOnConnection(ctx, conn.ID())
 	if err != nil {
 		z.Error("could not fetch signals", zap.Error(err))
 		return err
@@ -252,7 +241,7 @@ func (d *dispatcher) eventsWorkflow(ctx workflow.Context, input eventsWorkflowIn
 	}
 
 	// execute waiting signals
-	err = d.signalWorkflows(context.Background(), event, input.Options)
+	err = d.signalWorkflows(context.Background(), event)
 	if err != nil {
 		return nil, err
 	}

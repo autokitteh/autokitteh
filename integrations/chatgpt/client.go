@@ -8,10 +8,7 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-type integration struct {
-	secrets sdkservices.Secrets
-	scope   string
-}
+type integration struct{ vars sdkservices.Vars }
 
 var integrationID = sdktypes.NewIntegrationIDFromName("chatgpt")
 
@@ -28,11 +25,9 @@ var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.Integrati
 	ConnectionUrl: "/chatgpt/connect",
 }))
 
-func New(sec sdkservices.Secrets) sdkservices.Integration {
-	i := integration{secrets: sec, scope: desc.UniqueName().String()}
+func New(vars sdkservices.Vars) sdkservices.Integration {
+	i := integration{vars: vars}
 	return sdkintegrations.NewIntegration(desc, sdkmodule.New(
-		sdkmodule.WithConfigAsData(),
-
 		sdkmodule.ExportFunction(
 			"create_chat_completion",
 			i.createChatCompletion,

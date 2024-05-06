@@ -23,7 +23,7 @@ func (i integration) addIssueLabels(ctx context.Context, args []sdktypes.Value, 
 		return sdktypes.InvalidValue, err
 	}
 
-	gh, err := i.NewClient(ctx)
+	gh, err := i.NewClient(ctx, owner)
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
@@ -51,7 +51,7 @@ func (i integration) removeIssueLabel(ctx context.Context, args []sdktypes.Value
 		return sdktypes.InvalidValue, err
 	}
 
-	gh, err := i.NewClient(ctx)
+	gh, err := i.NewClient(ctx, owner)
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}

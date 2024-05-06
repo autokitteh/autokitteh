@@ -31,10 +31,12 @@ class GetResponse(_message.Message):
     def __init__(self, config: _Optional[_Union[OAuthConfig, _Mapping]] = ...) -> None: ...
 
 class StartFlowRequest(_message.Message):
-    __slots__ = ["id"]
+    __slots__ = ["id", "connection_id"]
     ID_FIELD_NUMBER: _ClassVar[int]
+    CONNECTION_ID_FIELD_NUMBER: _ClassVar[int]
     id: str
-    def __init__(self, id: _Optional[str] = ...) -> None: ...
+    connection_id: str
+    def __init__(self, id: _Optional[str] = ..., connection_id: _Optional[str] = ...) -> None: ...
 
 class StartFlowResponse(_message.Message):
     __slots__ = ["url"]

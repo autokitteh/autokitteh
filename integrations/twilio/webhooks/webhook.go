@@ -2,7 +2,6 @@ package webhooks
 
 import (
 	"context"
-	"fmt"
 
 	"go.uber.org/zap"
 
@@ -18,16 +17,16 @@ import (
 // receive, dispatch, and acknowledge asynchronous event notifications.
 type handler struct {
 	logger        *zap.Logger
-	secrets       sdkservices.Secrets
+	vars          sdkservices.Vars
 	dispatcher    sdkservices.Dispatcher
 	scope         string
 	integrationID sdktypes.IntegrationID
 }
 
-func NewHandler(l *zap.Logger, sec sdkservices.Secrets, d sdkservices.Dispatcher, scope string, id sdktypes.IntegrationID) handler {
+func NewHandler(l *zap.Logger, vars sdkservices.Vars, d sdkservices.Dispatcher, scope string, id sdktypes.IntegrationID) handler {
 	return handler{
 		logger:        l,
-		secrets:       sec,
+		vars:          vars,
 		dispatcher:    d,
 		scope:         scope,
 		integrationID: id,
@@ -50,31 +49,24 @@ func NewHandler(l *zap.Logger, sec sdkservices.Secrets, d sdkservices.Dispatcher
 // https://www.twilio.com/docs/usage/troubleshooting/alarms
 
 // listTokens calls the List method in SecretsService.
-func (h handler) listTokens(accountSID string) ([]string, error) {
-	key := fmt.Sprintf("accounts/%s", accountSID)
-	tokens, err := h.secrets.List(context.Background(), h.scope, key)
-	if err != nil {
-		return nil, err
-	}
-	return tokens, nil
+func (h handler) listTokens(ctx context.Context, accountSID string) ([]sdktypes.ConnectionID, error) {
+	return h.vars.FindConnectionIDs(ctx, h.integrationID, sdktypes.NewSymbol("account_sid"), accountSID)
 }
 
-func (h handler) dispatchAsyncEventsToConnections(l *zap.Logger, tokens []string, event *eventsv1.Event) {
+func (h handler) dispatchAsyncEventsToConnections(l *zap.Logger, cids []sdktypes.ConnectionID, event *eventsv1.Event) {
 	ctx := extrazap.AttachLoggerToContext(l, context.Background())
-	for _, connToken := range tokens {
-		event.IntegrationToken = connToken
+	for _, cid := range cids {
+		event.ConnectionId = cid.String()
 		event := kittehs.Must1(sdktypes.EventFromProto(event))
 		eventID, err := h.dispatcher.Dispatch(ctx, event, nil)
+
+		l := l.With(zap.String("connection_id", cid.String()))
+
 		if err != nil {
-			l.Error("Dispatch failed",
-				zap.String("connectionToken", connToken),
-				zap.Error(err),
-			)
+			l.Error("Dispatch failed", zap.Error(err))
 			return
 		}
-		l.Debug("Dispatched",
-			zap.String("connectionToken", connToken),
-			zap.String("eventID", eventID.String()),
-		)
+
+		l.Debug("Dispatched", zap.String("eventID", eventID.String()))
 	}
 }

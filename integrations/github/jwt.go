@@ -14,8 +14,10 @@ import (
 	ghinstallation "github.com/bradleyfalzon/ghinstallation/v2"
 	"github.com/google/go-github/v60/github"
 
+	"go.autokitteh.dev/autokitteh/integrations/github/internal/vars"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 const (
@@ -30,27 +32,27 @@ const (
 	enterpriseURLEnvVar = "GITHUB_ENTERPRISE_URL"
 )
 
-func (i integration) NewClient(ctx context.Context) (*github.Client, error) {
-	data, err := i.getConnection(ctx)
+func (i integration) NewClient(ctx context.Context, user string) (*github.Client, error) {
+	data, err := i.getConnection(ctx, user)
 	if err != nil {
 		return nil, err
 	}
-	if pat, ok := data["PAT"]; ok {
-		return github.NewTokenClient(ctx, pat), nil
+	if pat := data.Get(vars.PAT); pat.IsValid() {
+		return github.NewTokenClient(ctx, pat.Value()), nil
 	} else {
-		return i.newClientWithInstallJWT(data)
+		return i.newClientWithInstallJWT(data, user)
 	}
 }
 
 // NewClientWithInstallJWT returns a GitHub client that
 // uses a newly-generated GitHub app installation JWT.
-func (i integration) newClientWithInstallJWT(data map[string]string) (*github.Client, error) {
+func (i integration) newClientWithInstallJWT(data sdktypes.Vars, user string) (*github.Client, error) {
 	// Initialize and return a GitHub client with a JWT.
-	aid, err := strconv.ParseInt(data["appID"], 10, 64)
+	aid, err := strconv.ParseInt(data.GetValue(vars.UserAppID(user)), 10, 64)
 	if err != nil {
 		return nil, err
 	}
-	iid, err := strconv.ParseInt(data["installID"], 10, 64)
+	iid, err := strconv.ParseInt(data.GetValue(vars.UserInstallID(user)), 10, 64)
 	if err != nil {
 		return nil, err
 	}
@@ -58,18 +60,14 @@ func (i integration) newClientWithInstallJWT(data map[string]string) (*github.Cl
 }
 
 // getConnection calls the Get method in SecretsService.
-func (i integration) getConnection(ctx context.Context) (map[string]string, error) {
+func (i integration) getConnection(ctx context.Context, user string) (sdktypes.Vars, error) {
 	// Extract the connection token from the given context.
-	cfg := sdkmodule.FunctionDataFromContext(ctx)
-	if cfg == nil {
-		cfg = []byte{}
-	}
-
-	c, err := i.secrets.Get(ctx, i.scope, string(cfg))
+	cid, err := sdkmodule.FunctionConnectionIDFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
-	return c, nil
+
+	return i.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
 }
 
 // newClientWithInstallJWTFromGitHubIDs generates a GitHub app
@@ -94,6 +92,24 @@ func (i integration) newClientWithInstallJWTFromGitHubIDs(appID, installID int64
 
 	// Initialize a client with the generated JWT injected into outbound requests.
 	client := github.NewClient(&http.Client{Transport: itr})
+	if enterpriseURL != "" {
+		client, err = client.WithEnterpriseURLs(enterpriseURL, enterpriseURL)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return client, nil
+}
+
+func (i integration) newAnonymousClient() (*github.Client, error) {
+	// Shared transport to reuse TCP connections.
+	enterpriseURL, err := enterpriseURL()
+	if err != nil {
+		return nil, err
+	}
+
+	// Initialize a client with the generated JWT injected into outbound requests.
+	client := github.NewClient(nil)
 	if enterpriseURL != "" {
 		client, err = client.WithEnterpriseURLs(enterpriseURL, enterpriseURL)
 		if err != nil {

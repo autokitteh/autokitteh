@@ -61,7 +61,7 @@ func (cs *calls) invoke(ctx context.Context, callv sdktypes.Value, args []sdktyp
 		// so it can run in any worker and using a stateless integration.
 
 		var err error
-		if caller, err = cs.svcs.Integrations.Get(ctx, iid); err != nil {
+		if caller, err = cs.svcs.Integrations.GetByID(ctx, iid); err != nil {
 			return sdktypes.InvalidSessionCallAttemptResult, fmt.Errorf("get integration: %w", err)
 		}
 	} else {

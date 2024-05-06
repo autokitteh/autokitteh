@@ -30,19 +30,16 @@ var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.Integrati
 	ConnectionUrl: "/slack/connect",
 }))
 
-func New(sec sdkservices.Secrets) sdkservices.Integration {
-	scope := desc.UniqueName().String()
-	authAPI := auth.API{Secrets: sec, Scope: scope}
-	bookmarksAPI := bookmarks.API{Secrets: sec, Scope: scope}
-	botsAPI := bots.API{Secrets: sec, Scope: scope}
-	chatAPI := chat.API{Secrets: sec, Scope: scope}
-	conversationsAPI := conversations.API{Secrets: sec, Scope: scope}
-	reactionsAPI := reactions.API{Secrets: sec, Scope: scope}
-	usersAPI := users.API{Secrets: sec, Scope: scope}
+func New(vars sdkservices.Vars) sdkservices.Integration {
+	authAPI := auth.API{Vars: vars}
+	bookmarksAPI := bookmarks.API{Vars: vars}
+	botsAPI := bots.API{Vars: vars}
+	chatAPI := chat.API{Vars: vars}
+	conversationsAPI := conversations.API{Vars: vars}
+	reactionsAPI := reactions.API{Vars: vars}
+	usersAPI := users.API{Vars: vars}
 
 	return sdkintegrations.NewIntegration(desc, sdkmodule.New(
-		sdkmodule.WithConfigAsData(),
-
 		// Auth.
 		sdkmodule.ExportFunction(
 			"auth_test",

@@ -33,7 +33,7 @@ func TestModule(t *testing.T) {
 
 	require.NotNil(t, mod)
 
-	vs, err := mod.Configure(context.Background(), sdktypes.NewExecutorID(sdktypes.NewIntegrationID()), "")
+	vs, err := mod.Configure(context.Background(), sdktypes.NewExecutorID(sdktypes.NewIntegrationID()), sdktypes.InvalidConnectionID)
 	require.NoError(t, err)
 
 	require.Contains(t, vs, "say")

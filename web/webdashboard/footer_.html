@@ -1,0 +1,18 @@
+{{ define "footer_" }}
+
+<script>
+    const queryString = window.location.search;
+    const urlParams = new URLSearchParams(queryString);
+    const msg = urlParams.get('msg');
+
+    if (msg) {
+        document.getElementById('message-container').style.display = 'block';
+        document.getElementById('message').innerHTML = msg;
+    }
+</script>
+
+</body>
+
+</html>
+
+{{ end }}

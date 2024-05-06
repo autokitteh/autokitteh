@@ -42,13 +42,12 @@ func (h handler) HandleMessage(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	akEvent := &sdktypes.EventPB{
-		IntegrationId: h.integrationID.String(),
-		EventType:     "message",
-		Data:          kittehs.TransformMapValues(data, sdktypes.ToProto),
+		EventType: "message",
+		Data:      kittehs.TransformMapValues(data, sdktypes.ToProto),
 	}
 
 	// Retrieve all the relevant connections for this event.
-	connTokens, err := h.listTokens(aid)
+	connTokens, err := h.listTokens(r.Context(), aid)
 	if err != nil {
 		l.Error("Failed to retrieve connection tokens",
 			zap.Error(err),

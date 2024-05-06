@@ -114,13 +114,12 @@ func (h handler) HandleSlashCommand(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	akEvent := &sdktypes.EventPB{
-		IntegrationId: h.integrationID.String(),
-		EventType:     "slash_command",
-		Data:          data,
+		EventType: "slash_command",
+		Data:      data,
 	}
 
 	// Retrieve all the relevant connections for this event.
-	connTokens, err := h.listTokens(cmd.APIAppID, cmd.EnterpriseID, cmd.TeamID)
+	connTokens, err := h.listTokens(r.Context(), cmd.APIAppID, cmd.EnterpriseID, cmd.TeamID)
 	if err != nil {
 		l.Error("Failed to retrieve connection tokens",
 			zap.Error(err),

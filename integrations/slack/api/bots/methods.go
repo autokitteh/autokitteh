@@ -13,8 +13,7 @@ import (
 )
 
 type API struct {
-	Secrets sdkservices.Secrets
-	Scope   string
+	Vars sdkservices.Vars
 }
 
 // Info gets information about a bot user.
@@ -41,7 +40,7 @@ func (a API) Info(ctx context.Context, args []sdktypes.Value, kwargs map[string]
 	// Invoke the API method.
 	// TODO: Use HTTP GET instead of POST.
 	resp := &InfoResponse{}
-	err = api.PostForm(ctx, a.Secrets, a.Scope, req, resp, "bots.info")
+	err = api.PostForm(ctx, a.Vars, req, resp, "bots.info")
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
@@ -51,13 +50,13 @@ func (a API) Info(ctx context.Context, args []sdktypes.Value, kwargs map[string]
 }
 
 // Info is only used internally, to check the usability of a bot token.
-func InfoWithToken(ctx context.Context, secrets sdkservices.Secrets, scope, botToken string, authTest *auth.TestResponse) (*InfoResponse, error) {
+func InfoWithToken(ctx context.Context, secrets sdkservices.Vars, botToken string, authTest *auth.TestResponse) (*InfoResponse, error) {
 	ctx = context.WithValue(ctx, api.OAuthTokenContextKey{}, botToken)
 	req := url.Values{}
 	req.Set("bot", authTest.BotID)
 	req.Set("team_id", authTest.TeamID)
 	resp := &InfoResponse{}
-	err := api.PostForm(ctx, secrets, scope, req, resp, "bots.info")
+	err := api.PostForm(ctx, secrets, req, resp, "bots.info")
 	if err != nil {
 		return nil, err
 	}

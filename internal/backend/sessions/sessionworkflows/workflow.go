@@ -196,7 +196,7 @@ func (w *sessionWorkflow) initConnections(ctx workflow.Context) error {
 		name := conn.Name().String()
 		iid := conn.IntegrationID()
 
-		intg, err := w.ws.svcs.Integrations.Get(goCtx, iid)
+		intg, err := w.ws.svcs.Integrations.GetByID(goCtx, iid)
 		if err != nil {
 			return fmt.Errorf("get integration %q: %w", iid, err)
 		}
@@ -217,7 +217,7 @@ func (w *sessionWorkflow) initConnections(ctx workflow.Context) error {
 		}
 
 		// mod's executor id is the integration id.
-		vs, err := intg.Configure(goCtx, conn.IntegrationToken())
+		vs, err := intg.Configure(goCtx, conn.ID())
 		if err != nil {
 			return fmt.Errorf("connect to integration %q: %w", iid, err)
 		}
@@ -322,6 +322,7 @@ func (w *sessionWorkflow) getNextEvent(ctx context.Context, signalID string) (ma
 	}
 
 	iid := sdktypes.NewIDFromUUID[sdktypes.IntegrationID](signal.Connection.IntegrationID)
+	cid := sdktypes.NewIDFromUUID[sdktypes.ConnectionID](&signal.Connection.ConnectionID)
 
 	minSequenceNumber, ok := w.signals[signalID]
 	if !ok {
@@ -330,7 +331,7 @@ func (w *sessionWorkflow) getNextEvent(ctx context.Context, signalID string) (ma
 
 	filter := sdkservices.ListEventsFilter{
 		IntegrationID:     iid,
-		IntegrationToken:  signal.Connection.IntegrationToken,
+		ConnectionID:      cid,
 		Limit:             1,
 		MinSequenceNumber: minSequenceNumber,
 	}

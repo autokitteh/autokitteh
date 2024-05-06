@@ -2,7 +2,6 @@ package dbgorm
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
@@ -18,9 +17,8 @@ func (db *gormdb) createProject(ctx context.Context, p *scheme.Project) error {
 }
 
 func (db *gormdb) CreateProject(ctx context.Context, p sdktypes.Project) error {
-	if !p.ID().IsValid() {
-		db.z.DPanic("no project id supplied")
-		return errors.New("project id missing")
+	if err := p.Strict(); err != nil {
+		return err
 	}
 
 	project := scheme.Project{

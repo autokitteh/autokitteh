@@ -13,10 +13,13 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
 
+	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 
 	"go.autokitteh.dev/autokitteh/integrations/internal/extrazap"
+	"go.autokitteh.dev/autokitteh/integrations/slack/internal/vars"
 )
 
 const (
@@ -40,7 +43,7 @@ type OAuthTokenContextKey struct{}
 
 // PostForm sends a short-lived HTTP POST request with an OAuth bearer token and
 // URL-encoded key/value payload, and then receives and parses the JSON response.
-func PostForm(ctx context.Context, sec sdkservices.Secrets, scope string, kv url.Values, resp any, slackMethod string) error {
+func PostForm(ctx context.Context, vars sdkservices.Vars, kv url.Values, resp any, slackMethod string) error {
 	l := extrazap.ExtractLoggerFromContext(ctx).With(
 		zap.String("httpContent", "form"),
 		zap.String("slackMethod", slackMethod),
@@ -58,7 +61,7 @@ func PostForm(ctx context.Context, sec sdkservices.Secrets, scope string, kv url
 	}
 
 	// Send an HTTP POST request with the URL-encoded payload.
-	body, err := post(ctx, sec, scope, u, kv.Encode(), ContentTypeForm)
+	body, err := post(ctx, vars, u, kv.Encode(), ContentTypeForm)
 	if err != nil {
 		return err
 	}
@@ -76,7 +79,7 @@ func PostForm(ctx context.Context, sec sdkservices.Secrets, scope string, kv url
 
 // PostJSON sends a short-lived HTTP POST request with an OAuth bearer token
 // and JSON payload, and then receives and parses the JSON response.
-func PostJSON(ctx context.Context, sec sdkservices.Secrets, scope string, req, resp any, slackMethod string) error {
+func PostJSON(ctx context.Context, vars sdkservices.Vars, req, resp any, slackMethod string) error {
 	l := extrazap.ExtractLoggerFromContext(ctx).With(
 		zap.String("httpContent", "json"),
 		zap.String("slackMethod", slackMethod),
@@ -115,7 +118,7 @@ func PostJSON(ctx context.Context, sec sdkservices.Secrets, scope string, req, r
 	}
 
 	// Send an HTTP POST request with the JSON payload.
-	body, err := post(ctx, sec, scope, u, string(b), ContentTypeJSONCharsetUTF8)
+	body, err := post(ctx, vars, u, string(b), ContentTypeJSONCharsetUTF8)
 	if err != nil {
 		return err
 	}
@@ -131,11 +134,11 @@ func PostJSON(ctx context.Context, sec sdkservices.Secrets, scope string, req, r
 	return nil
 }
 
-func post(ctx context.Context, sec sdkservices.Secrets, scope string, url, body, contentType string) ([]byte, error) {
+func post(ctx context.Context, vars sdkservices.Vars, url, body, contentType string) ([]byte, error) {
 	l := extrazap.ExtractLoggerFromContext(ctx)
 
 	// Convert the autokitteh connection token into an OAuth user access token.
-	oauthToken, err := getConnection(ctx, sec, scope)
+	oauthToken, err := getConnection(ctx, vars)
 	if err != nil {
 		return nil, err
 	}
@@ -200,34 +203,35 @@ func post(ctx context.Context, sec sdkservices.Secrets, scope string, url, body,
 }
 
 // getConnection calls the Get method in SecretsService.
-func getConnection(ctx context.Context, sec sdkservices.Secrets, scope string) (*oauth2.Token, error) {
-	// Extract the connection token from the given context.
-	token := string(sdkmodule.FunctionDataFromContext(ctx))
-	if token == "" {
+func getConnection(ctx context.Context, varsSvc sdkservices.Vars) (*oauth2.Token, error) {
+	if varsSvc == nil {
+		// test.
 		return &oauth2.Token{}, nil
 	}
 
-	c, err := sec.Get(context.Background(), scope, token)
+	// Extract the connection token from the given context.
+	cid, err := sdkmodule.FunctionConnectionIDFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	vs, err := varsSvc.Get(context.Background(), sdktypes.NewVarScopeID(cid))
 	if err != nil {
 		return nil, err
 	}
 
 	// Socket mode connection.
-	if c["botToken"] != "" {
+	if bt := vs.GetValue(vars.BotTokenName); bt != "" {
 		return &oauth2.Token{
-			AccessToken: c["botToken"],
+			AccessToken: bt,
 		}, nil
 	}
 
 	// OAuth connection.
-	exp, err := time.Parse(time.RFC3339, c["expiry"])
+	oauthData, err := sdkintegrations.DecodeOAuthData(vs.GetValue(vars.OAuthDataName))
 	if err != nil {
-		exp = time.Unix(0, 0)
+		return nil, err
 	}
-	return &oauth2.Token{
-		AccessToken:  c["accessToken"],
-		TokenType:    c["tokenType"],
-		RefreshToken: c["refreshToken"],
-		Expiry:       exp,
-	}, nil
+
+	return oauthData.Token, nil
 }

@@ -30,7 +30,7 @@ func (i integration) listPullRequestReviewComments(ctx context.Context, args []s
 	}
 
 	// Invoke the API method.
-	gh, err := i.NewClient(ctx)
+	gh, err := i.NewClient(ctx, owner)
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}

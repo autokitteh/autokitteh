@@ -13,6 +13,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 type Config struct {
@@ -63,8 +64,23 @@ type Token struct {
 	KeyFunc func(string) string
 }
 
-func externalClient(ctx context.Context) (*redis.Client, error) {
-	addr := string(sdkmodule.FunctionDataFromContext(ctx))
+func (m *module) externalClient(ctx context.Context) (*redis.Client, error) {
+	cid, err := sdkmodule.FunctionConnectionIDFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	vars, err := m.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
+	if err != nil {
+		return nil, err
+	}
+
+	addrVar := vars.Get(sdktypes.NewSymbol("addr"))
+	if !addrVar.IsValid() {
+		return nil, fmt.Errorf("missing addr")
+	}
+
+	addr := addrVar.Value()
 
 	if c, ok := clients.Get(addr); ok {
 		return c, nil

@@ -17,7 +17,8 @@ func (i integration) getUser(ctx context.Context, args []sdktypes.Value, kwargs 
 		return sdktypes.InvalidValue, err
 	}
 
-	gh, err := i.NewClient(ctx)
+	// According to github docs, this endpoint requires no permissions.
+	gh, err := i.newAnonymousClient()
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}

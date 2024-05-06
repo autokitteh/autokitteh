@@ -33,9 +33,9 @@ func init() {
 	setCmd.Flags().StringVarP(&env, "env", "e", "", "environment name or ID")
 	deleteCmd.Flags().StringVarP(&env, "env", "e", "", "environment name or ID")
 
-	getCmd.Flags().StringVarP(&conn, "connection", "C", "", "connection name or ID")
-	setCmd.Flags().StringVarP(&conn, "connection", "C", "", "connection name or ID")
-	deleteCmd.Flags().StringVarP(&conn, "connection", "C", "", "connection name or ID")
+	getCmd.Flags().StringVarP(&conn, "connection", "c", "", "connection name or ID")
+	setCmd.Flags().StringVarP(&conn, "connection", "c", "", "connection name or ID")
+	deleteCmd.Flags().StringVarP(&conn, "connection", "c", "", "connection name or ID")
 
 	getCmd.MarkFlagsMutuallyExclusive("env", "connection")
 	setCmd.MarkFlagsMutuallyExclusive("env", "connection")

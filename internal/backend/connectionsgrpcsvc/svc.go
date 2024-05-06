@@ -102,9 +102,7 @@ func (s *server) List(ctx context.Context, req *connect.Request[connectionsv1.Li
 	if err := proto.Validate(req.Msg); err != nil {
 		return nil, sdkerrors.AsConnectError(err)
 	}
-	f := sdkservices.ListConnectionsFilter{
-		IntegrationToken: req.Msg.IntegrationToken, // Optional
-	}
+	var f sdkservices.ListConnectionsFilter
 
 	iid, err := sdktypes.ParseIntegrationID(req.Msg.IntegrationId) // Optional
 	if err != nil {

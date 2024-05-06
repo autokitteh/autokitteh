@@ -1,21 +1,19 @@
 package slack
 
 import (
-	"context"
 	"errors"
-	"fmt"
 	"net/http"
 	"net/url"
-	"strings"
-	"time"
 
 	"go.uber.org/zap"
-	"golang.org/x/oauth2"
 
 	"go.autokitteh.dev/autokitteh/integrations/internal/extrazap"
 	"go.autokitteh.dev/autokitteh/integrations/slack/api/auth"
 	"go.autokitteh.dev/autokitteh/integrations/slack/api/bots"
+	"go.autokitteh.dev/autokitteh/integrations/slack/internal/vars"
+	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 const (
@@ -32,13 +30,12 @@ const (
 // handler is an autokitteh webhook which implements [http.Handler]
 // to receive and dispatch asynchronous event notifications.
 type handler struct {
-	logger  *zap.Logger
-	secrets sdkservices.Secrets
-	scope   string
+	logger *zap.Logger
+	vars   sdkservices.Vars
 }
 
-func NewHandler(l *zap.Logger, sec sdkservices.Secrets, scope string) http.Handler {
-	return handler{logger: l, secrets: sec, scope: scope}
+func NewHandler(l *zap.Logger, sec sdkservices.Vars) http.Handler {
+	return handler{logger: l, vars: sec}
 }
 
 // ServeHTTP receives an inbound redirect request from autokitteh's OAuth
@@ -61,27 +58,23 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Parse and validate the results.
-	// TODO: It should be simpler to extract the token from the request.
-	t, err := time.Parse(time.RFC3339Nano, unescape(r, "ak_token_expiry"))
+	oauthDataString, oauthData, err := sdkintegrations.GetOAuthDataFromURL(r.URL)
 	if err != nil {
-		l.Warn("OAuth redirect request with invalid token expiry timestamp",
-			zap.String("timestamp", r.FormValue("ak_token_expiry")),
-		)
-		u := uiPath + "error.html?error=" + url.QueryEscape("invalid OAuth token timestamp")
-		http.Redirect(w, r, u, http.StatusFound)
+		l.Warn("Failed to decode OAuth data", zap.Error(err))
+		http.Error(w, "Bad request: invalid OAuth data", http.StatusBadRequest)
 		return
 	}
-	oauthToken := &oauth2.Token{
-		AccessToken:  unescape(r, "ak_token_access"),
-		RefreshToken: unescape(r, "ak_token_refresh"),
-		TokenType:    unescape(r, "ak_token_type"),
-		Expiry:       t,
+
+	oauthToken := oauthData.Token
+	if oauthToken == nil {
+		l.Warn("OAuth data missing token")
+		http.Error(w, "Bad request: missing OAuth token", http.StatusBadRequest)
+		return
 	}
 
 	// Test the OAuth token's usability and get authoritative installation details.
 	ctx := extrazap.AttachLoggerToContext(l, r.Context())
-	authTest, err := auth.TestWithToken(ctx, h.secrets, h.scope, oauthToken.AccessToken)
+	authTest, err := auth.TestWithToken(ctx, h.vars, oauthToken.AccessToken)
 	if err != nil {
 		e := "OAuth token test failed: " + err.Error()
 		u := uiPath + "error.html?error=" + url.QueryEscape(e)
@@ -89,7 +82,7 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	botInfo, err := bots.InfoWithToken(ctx, h.secrets, h.scope, oauthToken.AccessToken, authTest)
+	botInfo, err := bots.InfoWithToken(ctx, h.vars, oauthToken.AccessToken, authTest)
 	if err != nil {
 		e := "Bot info request failed: " + err.Error()
 		u := uiPath + "error.html?error=" + url.QueryEscape(e)
@@ -97,57 +90,15 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Save the OAuth token, and return to the user an autokitteh connection token.
-	connToken, err := h.createOAuthConnection(ctx, authTest, botInfo, oauthToken)
-	if err != nil {
-		l.Warn("Failed to save new connection secrets", zap.Error(err))
-		e := "Connection saving error: " + err.Error()
-		u := uiPath + "error.html?error=" + url.QueryEscape(e)
-		http.Redirect(w, r, u, http.StatusFound)
-		return
-	}
-
-	// Redirect the user to a success page: give them the connection token.
-	l.Debug("Completed OAuth flow")
-	u := fmt.Sprintf("%ssuccess.html?token=%s", uiPath, connToken)
-	http.Redirect(w, r, u, http.StatusFound)
-}
-
-// unescape returns a named URL-unescaped query parameter value,
-// or an empty string if it's missing, or URL-escaped improperly.
-func unescape(r *http.Request, key string) string {
-	s, err := url.QueryUnescape(r.FormValue(key))
-	if err != nil {
-		return ""
-	}
-	return s
-}
-
-func (h handler) createOAuthConnection(ctx context.Context, authTest *auth.TestResponse, botInfo *bots.InfoResponse, oauthToken *oauth2.Token) (string, error) {
-	token, err := h.secrets.Create(ctx, h.scope,
-		// Connection token --> OAUth token (to call API methods).
-		map[string]string{
-			// Slack.
-			"appID":        botInfo.Bot.AppID,
-			"enterpriseID": authTest.EnterpriseID,
-			"teamID":       authTest.TeamID,
-			// OAuth token.
-			"accessToken":  oauthToken.AccessToken,
-			"tokenType":    oauthToken.TokenType,
-			"refreshToken": oauthToken.RefreshToken,
-			"expiry":       oauthToken.Expiry.Format(time.RFC3339),
+	initData := sdktypes.EncodeVars(
+		vars.Vars{
+			AppID:        botInfo.Bot.AppID,
+			EnterpriseID: authTest.EnterpriseID,
+			TeamID:       authTest.TeamID,
 		},
-		// Slack app IDs --> connection token(s) (to dispatch API events).
-		appSecretName(botInfo.Bot.AppID, authTest.EnterpriseID, authTest.TeamID),
-	)
-	if err != nil {
-		return "", err
-	}
-	return token, nil
-}
+	).
+		Set(vars.KeyName, vars.KeyValue(botInfo.Bot.AppID, authTest.EnterpriseID, authTest.TeamID), false).
+		Set(vars.OAuthDataName, oauthDataString, true)
 
-func appSecretName(appID, enterpriseID, teamID string) string {
-	s := fmt.Sprintf("apps/%s/%s/%s", appID, enterpriseID, teamID)
-	// Slack enterprise ID is allowed to be empty.
-	return strings.ReplaceAll(s, "//", "/")
+	sdkintegrations.FinalizeConnectionInit(w, r, integrationID, initData)
 }

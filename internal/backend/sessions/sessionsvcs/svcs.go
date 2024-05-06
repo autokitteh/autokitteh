@@ -14,13 +14,13 @@ type Svcs struct {
 
 	DB db.DB
 
-	Envs         sdkservices.Envs
-	Deployments  sdkservices.Deployments
 	Builds       sdkservices.Builds
-	Runtimes     sdkservices.Runtimes
-	Integrations sdkservices.Integrations
-	Triggers     sdkservices.Triggers
 	Connections  sdkservices.Connections
+	Deployments  sdkservices.Deployments
+	Envs         sdkservices.Envs
+	Integrations sdkservices.Integrations
+	Runtimes     sdkservices.Runtimes
+	Triggers     sdkservices.Triggers
 	Vars         sdkservices.Vars
 
 	RedisClient *redis.Client
