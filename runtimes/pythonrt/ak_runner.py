@@ -21,7 +21,7 @@ from socket import AF_UNIX, SOCK_STREAM, socket
 # TODO(ENG-552): Log to AutoKitteh
 logging.basicConfig(
     format='[PYTHON] %(asctime)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s',
-    datefmt='%Y-%M-%DT%H:%M:%S',
+    datefmt='%Y-%m-%dT%H:%M:%S',
     level=logging.INFO,
 )
 
