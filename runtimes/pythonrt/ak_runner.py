@@ -28,14 +28,17 @@ logging.basicConfig(
 
 def name_of(node):
     """Name of call node (e.g. 'requests.get')"""
+    if isinstance(node, ast.Attribute):
+        prefix = name_of(node.value)
+        return f'{prefix}.{node.attr}'
+
+    if isinstance(node, ast.Call):
+        return name_of(node.func)
+
     if isinstance(node, ast.Name):
         return node.id
 
-    if isinstance(node, ast.Call):
-        return node.func.value.id
-
-    prefix = name_of(node.value)
-    return f'{prefix}.{node.attr}'
+    raise ValueError(f'unknown AST node type: {node!r}')
 
 
 ACTION_NAME = '_ak_call'

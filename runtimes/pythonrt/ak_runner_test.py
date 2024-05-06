@@ -1,11 +1,14 @@
+import ast
 import json
+import pickle
 import sys
 import types
 from pathlib import Path
-import pickle
 from socket import socket, socketpair
 from subprocess import run
 from unittest.mock import MagicMock
+
+import pytest
 
 import ak_runner
 
@@ -203,3 +206,17 @@ def test_in_activity():
     ak(in_act_1, 6)
     assert comm.num_activities == 2
     
+
+name_of_cases = [
+    # code, name
+    ('print(1)', 'print'),
+    ('requests.get("https://go.dev")', 'requests.get'),
+    ('sheets.values().get("A1:B4").execute()', 'sheets.values.get.execute'),
+]
+
+
+@pytest.mark.parametrize('code, name', name_of_cases)
+def test_name_of(code, name):
+    mod = ast.parse(code)
+    node = mod.body[0].value
+    assert ak_runner.name_of(node) == name
