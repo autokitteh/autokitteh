@@ -49,7 +49,7 @@ var Tables = []any{
 }
 
 type Build struct {
-	BuildID   sdktypes.UUID `gorm:"primaryKey;type:uuid"`
+	BuildID   sdktypes.UUID `gorm:"primaryKey;type:uuid;not null"`
 	Data      []byte
 	CreatedAt time.Time
 	DeletedAt gorm.DeletedAt `gorm:"index"`
@@ -68,7 +68,7 @@ func ParseBuild(b Build) (sdktypes.Build, error) {
 }
 
 type Connection struct {
-	ConnectionID  sdktypes.UUID  `gorm:"primaryKey;type:uuid"`
+	ConnectionID  sdktypes.UUID  `gorm:"primaryKey;type:uuid;not null"`
 	IntegrationID *sdktypes.UUID `gorm:"type:uuid"`
 	ProjectID     *sdktypes.UUID `gorm:"index;type:uuid"`
 	Name          string
@@ -94,7 +94,7 @@ func ParseConnection(c Connection) (sdktypes.Connection, error) {
 }
 
 type Var struct {
-	ScopeID  sdktypes.UUID `gorm:"primaryKey;index;type:uuid"`
+	ScopeID  sdktypes.UUID `gorm:"primaryKey;index;type:uuid;not null"`
 	Name     string        `gorm:"primaryKey;index"`
 	Value    string
 	IsSecret bool
@@ -107,7 +107,7 @@ type Var struct {
 
 type Integration struct {
 	// Unique internal identifier.
-	IntegrationID sdktypes.UUID `gorm:"primaryKey;type:uuid"`
+	IntegrationID sdktypes.UUID `gorm:"primaryKey;type:uuid;not null"`
 
 	// Unique external (and URL-safe) identifier.
 	UniqueName string `gorm:"uniqueIndex"`
@@ -160,7 +160,7 @@ func ParseIntegration(i Integration) (sdktypes.Integration, error) {
 }
 
 type Project struct {
-	ProjectID sdktypes.UUID `gorm:"primaryKey;type:uuid"`
+	ProjectID sdktypes.UUID `gorm:"primaryKey;type:uuid;not null"`
 	Name      string        `gorm:"uniqueIndex"`
 	RootURL   string
 	Resources []byte
@@ -189,9 +189,9 @@ type Secret struct {
 }
 
 type Event struct {
-	EventID       sdktypes.UUID `gorm:"uniqueIndex;type:uuid"`
-	IntegrationID sdktypes.UUID `gorm:"index"`
-	ConnectionID  sdktypes.UUID `gorm:"index"`
+	EventID       sdktypes.UUID `gorm:"uniqueIndex;type:uuid;not null"`
+	IntegrationID sdktypes.UUID `gorm:"index;type:uuid;not null"`
+	ConnectionID  sdktypes.UUID `gorm:"index;type:uuid;not null"`
 
 	EventType string `gorm:"index:idx_event_type_seq,priority:1;index:idx_event_type"`
 	Data      datatypes.JSON
@@ -203,7 +203,7 @@ type Event struct {
 
 	// enforce foreign keys
 	// Integration *Integration // FIXME: ENG-590
-	// Connection *Connection // FIXME: ENG-590
+	Connection *Connection
 }
 
 func ParseEvent(e Event) (sdktypes.Event, error) {
@@ -230,7 +230,7 @@ func ParseEvent(e Event) (sdktypes.Event, error) {
 
 type EventRecord struct {
 	Seq       uint32        `gorm:"primaryKey"`
-	EventID   sdktypes.UUID `gorm:"primaryKey;type:uuid"`
+	EventID   sdktypes.UUID `gorm:"primaryKey;type:uuid;not null"`
 	State     int32         `gorm:"index"`
 	CreatedAt time.Time
 
@@ -248,7 +248,7 @@ func ParseEventRecord(e EventRecord) (sdktypes.EventRecord, error) {
 }
 
 type Env struct {
-	EnvID     sdktypes.UUID  `gorm:"primaryKey;type:uuid"`
+	EnvID     sdktypes.UUID  `gorm:"primaryKey;type:uuid;not null"`
 	ProjectID *sdktypes.UUID `gorm:"index;type:uuid"`
 	Name      string
 	DeletedAt gorm.DeletedAt `gorm:"index"`
@@ -270,11 +270,11 @@ func ParseEnv(e Env) (sdktypes.Env, error) {
 }
 
 type Trigger struct {
-	TriggerID sdktypes.UUID `gorm:"primaryKey;type:uuid"`
+	TriggerID sdktypes.UUID `gorm:"primaryKey;type:uuid;not null"`
 
-	ProjectID    sdktypes.UUID `gorm:"index;type:uuid"`
-	ConnectionID sdktypes.UUID `gorm:"index;type:uuid"`
-	EnvID        sdktypes.UUID `gorm:"index;type:uuid"`
+	ProjectID    sdktypes.UUID `gorm:"index;type:uuid;not null"`
+	ConnectionID sdktypes.UUID `gorm:"index;type:uuid;not null"`
+	EnvID        sdktypes.UUID `gorm:"index;type:uuid;not null"`
 	Name         string
 	EventType    string
 	Filter       string
@@ -315,7 +315,7 @@ func ParseTrigger(e Trigger) (sdktypes.Trigger, error) {
 }
 
 type SessionLogRecord struct {
-	SessionID sdktypes.UUID `gorm:"index;type:uuid"`
+	SessionID sdktypes.UUID `gorm:"index;type:uuid;not null"`
 	Data      datatypes.JSON
 
 	// enforce foreign keys
@@ -328,7 +328,7 @@ func ParseSessionLogRecord(c SessionLogRecord) (spec sdktypes.SessionLogRecord, 
 }
 
 type SessionCallSpec struct {
-	SessionID sdktypes.UUID `gorm:"primaryKey:SessionID;type:uuid"`
+	SessionID sdktypes.UUID `gorm:"primaryKey:SessionID;type:uuid;not null"`
 	Seq       uint32        `gorm:"primaryKey"`
 	Data      datatypes.JSON
 
@@ -342,7 +342,7 @@ func ParseSessionCallSpec(c SessionCallSpec) (spec sdktypes.SessionCallSpec, err
 }
 
 type SessionCallAttempt struct {
-	SessionID sdktypes.UUID `gorm:"uniqueIndex:idx_session_id_seq_attempt,priority:1;type:uuid"`
+	SessionID sdktypes.UUID `gorm:"uniqueIndex:idx_session_id_seq_attempt,priority:1;type:uuid;not null"`
 	Seq       uint32        `gorm:"uniqueIndex:idx_session_id_seq_attempt,priority:2"`
 	Attempt   uint32        `gorm:"uniqueIndex:idx_session_id_seq_attempt,priority:3"`
 	Start     datatypes.JSON
@@ -363,7 +363,7 @@ func ParseSessionCallAttemptComplete(c SessionCallAttempt) (d sdktypes.SessionCa
 }
 
 type Session struct {
-	SessionID        sdktypes.UUID  `gorm:"primaryKey;type:uuid"`
+	SessionID        sdktypes.UUID  `gorm:"primaryKey;type:uuid;not null"`
 	BuildID          *sdktypes.UUID `gorm:"index;type:uuid"`
 	EnvID            *sdktypes.UUID `gorm:"index;type:uuid"`
 	DeploymentID     *sdktypes.UUID `gorm:"index;type:uuid"`
@@ -414,7 +414,7 @@ func ParseSession(s Session) (sdktypes.Session, error) {
 }
 
 type Deployment struct {
-	DeploymentID sdktypes.UUID  `gorm:"primaryKey;type:uuid"`
+	DeploymentID sdktypes.UUID  `gorm:"primaryKey;type:uuid;not null"`
 	EnvID        *sdktypes.UUID `gorm:"index;type:uuid"`
 	BuildID      *sdktypes.UUID `gorm:"type:uuid"`
 	State        int32
@@ -492,7 +492,7 @@ func ParseDeploymentWithSessionStats(d DeploymentWithStats) (sdktypes.Deployment
 
 type Signal struct {
 	SignalID     string        `gorm:"primaryKey"`
-	ConnectionID sdktypes.UUID `gorm:"index:idx_connection_id_event_type;type:uuid"`
+	ConnectionID sdktypes.UUID `gorm:"index:idx_connection_id_event_type;type:uuid;not null"`
 	CreatedAt    time.Time
 	WorkflowID   string
 	Filter       string

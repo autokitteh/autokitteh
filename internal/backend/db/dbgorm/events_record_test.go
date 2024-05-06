@@ -24,7 +24,9 @@ func TestCreateEventRecordForeignKeys(t *testing.T) {
 	er := f.newEventRecord()
 	assert.ErrorIs(t, f.gormdb.addEventRecord(f.ctx, &er), gorm.ErrForeignKeyViolated)
 
-	f.createEventsAndAssert(t, evt)
+	// create event. disable FK, since event depends on other tables
+	f.WithForeignKeysDisabled(func() { f.createEventsAndAssert(t, evt) })
+
 	// test createEventRecord
 	f.createEventRecordsAndAssert(t, er)
 }

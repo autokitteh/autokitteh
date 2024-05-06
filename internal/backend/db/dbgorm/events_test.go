@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"gorm.io/gorm"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 )
@@ -22,8 +23,8 @@ func (f *dbFixture) assertEventsDeleted(t *testing.T, events ...scheme.Event) {
 }
 
 func TestCreateEvent(t *testing.T) {
-	f := newDBFixtureFK(false)
-	findAndAssertCount[scheme.Event](t, f, 0, "") // no events
+	f := newDBFixtureFK(true)                       // no foreign keys
+	findAndAssertCount(t, f, scheme.Event{}, 0, "") // no events
 
 	evt := f.newEvent()
 	// test createEvent
@@ -35,20 +36,16 @@ func TestCreateEventForeignKeys(t *testing.T) {
 	findAndAssertCount[scheme.Event](t, f, 0, "") // no events
 
 	e := f.newEvent()
-	// unexisting := "unexisting"
-
-	// FIXME: ENG-571
-	// e.IntegrationID = &unexisting
-	// assert.ErrorIs(t, f.gormdb.saveEvent(f.ctx, &e), gorm.ErrForeignKeyViolated)
-	// e.IntegrationID = nil
-
-	e2 := f.newEvent()
-	f.createEventsAndAssert(t, e2)
+	assert.ErrorIs(t, f.gormdb.saveEvent(f.ctx, &e), gorm.ErrForeignKeyViolated)
 
 	i := f.newIntegration()
 	f.createIntegrationsAndAssert(t, i)
-
 	e.IntegrationID = i.IntegrationID
+	assert.ErrorIs(t, f.gormdb.saveEvent(f.ctx, &e), gorm.ErrForeignKeyViolated) // need connection as well
+
+	c := f.newConnection()
+	f.createConnectionsAndAssert(t, c)
+	e.ConnectionID = c.ConnectionID
 	f.createEventsAndAssert(t, e)
 }
 
