@@ -75,7 +75,7 @@ type DB interface {
 
 	// -----------------------------------------------------------------------
 	SetVars(context.Context, []sdktypes.Var) error
-	GetVars(context.Context, bool, sdktypes.VarScopeID, []sdktypes.Symbol) ([]sdktypes.Var, error)
+	GetVars(context.Context, sdktypes.VarScopeID, []sdktypes.Symbol) ([]sdktypes.Var, error)
 	DeleteVars(context.Context, sdktypes.VarScopeID, []sdktypes.Symbol) error
 	FindConnectionIDsByVar(context.Context, sdktypes.IntegrationID, sdktypes.Symbol, string) ([]sdktypes.ConnectionID, error)
 
@@ -150,4 +150,9 @@ type DB interface {
 	GetSignal(ctx context.Context, signalID string) (scheme.Signal, error)
 	RemoveSignal(ctx context.Context, signalID string) error
 	ListSignalsWaitingOnConnection(ctx context.Context, connectionID sdktypes.ConnectionID) ([]scheme.Signal, error)
+
+	// -----------------------------------------------------------------------
+	SetSecret(ctx context.Context, key string, value map[string]string) error
+	GetSecret(ctx context.Context, key string) (map[string]string, error)
+	DeleteSecret(ctx context.Context, key string) error
 }
