@@ -24,8 +24,7 @@ var Configs = configset.Set[Config]{
 		Type:               gormkitteh.RequireExplicitDSNType,
 	},
 	Dev: &Config{
-		Type: "sqlite",
-		DSN:  "file:" + filepath.Join(xdg.DataHomeDir(), "autokitteh.sqlite"),
+		DSN: "sqlite:file:" + filepath.Join(xdg.DataHomeDir(), "autokitteh.sqlite"),
 	},
 	Test: &Config{},
 }

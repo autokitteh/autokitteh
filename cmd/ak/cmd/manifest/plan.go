@@ -10,7 +10,7 @@ import (
 var noValidate, fromScratch bool
 
 var planCmd = common.StandardCommand(&cobra.Command{
-	Use:     "plan [file] [--project-name <name>] [--no-validate] [--from-scratch] [--quiet]",
+	Use:     "plan [file] [--project-name <name>] [--no-validate] [--from-scratch] [--quiet] [--rm-unused-cvars]",
 	Short:   "Dry-run for applying a YAML manifest, from a file or stdin",
 	Aliases: []string{"p"},
 	Args:    cobra.MaximumNArgs(1),
@@ -35,6 +35,7 @@ var planCmd = common.StandardCommand(&cobra.Command{
 func init() {
 	planCmd.Flags().BoolVar(&noValidate, "no-validate", false, "do not validate")
 	planCmd.Flags().BoolVarP(&fromScratch, "from-scratch", "s", false, "assume no existing setup")
+	planCmd.Flags().BoolVar(&rmUnusedConnVars, "rm-unused-cvars", false, "delete connection variables not used")
 	planCmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "only show errors, if any")
 	planCmd.Flags().StringVarP(&projectName, "project-name", "n", "", "project name")
 }
@@ -53,5 +54,6 @@ func plan(cmd *cobra.Command, data []byte, path, projectName string) (manifest.A
 		manifest.WithLogger(logFunc(cmd, "plan")),
 		manifest.WithFromScratch(fromScratch),
 		manifest.WithProjectName(projectName),
+		manifest.WithRemoveUnusedConnFlags(rmUnusedConnVars),
 	)
 }

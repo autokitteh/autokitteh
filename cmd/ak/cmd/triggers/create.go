@@ -32,7 +32,7 @@ var createCmd = common.StandardCommand(&cobra.Command{
 			return common.NewExitCodeError(common.NotFoundExitCode, err)
 		}
 
-		c, cid, err := r.ConnectionNameOrID(connection)
+		c, cid, err := r.ConnectionNameOrID(connection, "")
 		if err != nil {
 			if errors.As(err, resolver.NotFoundErrorType) {
 				err = common.NewExitCodeError(common.NotFoundExitCode, err)

@@ -8,40 +8,40 @@ $ data_file2_path=${tmp}/data_file2
 $ echo "project resources 2" >> ${data_file2_path}
 $ dd if=/dev/zero of=${large_file} bs=1M count=3 status=none
 $ # Create project p1.
-$ ${AK} p c --name p1; echo $?
+$ ${AK} project c --name p1; echo $?
 project_id: prj_00000000000000000000000001
 0
 $ # Try to create a project that already exists.
-$ ${AK} p c --name p1; echo $?
+$ ${AK} project c --name p1; echo $?
 Error: create project: already exists
 1
-$ ${AK} -j p get p1; echo $?
+$ ${AK} -j project get p1; echo $?
 {"project":{"project_id":"prj_00000000000000000000000001","name":"p1"}}
 0
 $ # List projects.
-$ ${AK} -j p ls
+$ ${AK} -j project ls
 {"project_id":"prj_00000000000000000000000001","name":"p1"}
 $ # Set resources specific file succeed
-$ ${AK} projects build p1 -f ${data_file_path}; echo $?
+$ ${AK} project build p1 -f ${data_file_path}; echo $?
 build_id: bld_00000000000000000000000005
 0
 $ # Download resources succeed.
-$ ${AK} -j projects download p1 -o ${tmp2}/; ls ${tmp2}/
+$ ${AK} -j project download p1 -o ${tmp2}/; ls ${tmp2}/
 data_file
 $ # Set resources directory file succeed
-$ ${AK} projects build p1 -f ${tmp}; echo $?
+$ ${AK} project build p1 -f ${tmp}; echo $?
 build_id: bld_00000000000000000000000006
 0
 $ # Download resources succeed.
-$ ${AK} -j projects download p1 -o ${tmp2}/; ls ${tmp2}/
+$ ${AK} -j project download p1 -o ${tmp2}/; ls ${tmp2}/
 data_file
 data_file2
 $ # Set resources large file fail (default is 1mb, large file is 3mb)
-$ ${AK} projects build p1 -f ${large_file}; echo $?  #=> --regex Error: set resources: limit exceeded: message size [0-9]+ is larger than configured max [0-9]+
+$ ${AK} project build p1 -f ${large_file}; echo $?  #=> --regex Error: set resources: limit exceeded: message size [0-9]+ is larger than configured max [0-9]+
 $ # Generate random project name
-$ ${AK} p c -j; echo $?
+$ ${AK} project c -j; echo $?
 {"project_id":"prj_00000000000000000000000007"}
 0
-$ ${AK} p g prj_00000000000000000000000007 -j; echo $?
+$ ${AK} project g prj_00000000000000000000000007 -j; echo $?
 {"project":{"project_id":"prj_00000000000000000000000007","name":"Behavioral_Andy_0010"}}
 0

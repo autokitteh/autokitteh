@@ -1,0 +1,50 @@
+syntax = "proto3";
+
+package autokitteh.vars.v1;
+
+import "autokitteh/vars/v1/var.proto";
+import "buf/validate/validate.proto";
+
+message SetRequest {
+  repeated Var vars = 1 [(buf.validate.field).repeated.items.required = true];
+}
+
+message SetResponse {}
+
+message DeleteRequest {
+  string scope_id = 1 [(buf.validate.field).string.min_len = 1];
+
+  // If empty, remove all for scope.
+  repeated string names = 2 [(buf.validate.field).repeated.items.string.min_len = 1];
+}
+
+message DeleteResponse {}
+
+message GetRequest {
+  string scope_id = 1 [(buf.validate.field).string.min_len = 1];
+  repeated string names = 2; // if empty, get all.
+  bool reveal = 3; // if true, returns secret values. if false, secret values are omitted.
+}
+
+message GetResponse {
+  repeated Var vars = 1 [(buf.validate.field).repeated.items.required = true];
+}
+
+message FindConnectionIDsRequest {
+  string integration_id = 1 [(buf.validate.field).string.min_len = 1];
+  string name = 2; // if empty, return all for scope.
+  string value = 3; // if set, name must be set.
+}
+
+message FindConnectionIDsResponse {
+  repeated string connection_ids = 1 [(buf.validate.field).repeated.items.string.min_len = 1];
+}
+
+service VarsService {
+  rpc Set(SetRequest) returns (SetResponse);
+  rpc Get(GetRequest) returns (GetResponse);
+  rpc Delete(DeleteRequest) returns (DeleteResponse);
+
+  // Specific for integrations.
+  rpc FindConnectionIDs(FindConnectionIDsRequest) returns (FindConnectionIDsResponse);
+}

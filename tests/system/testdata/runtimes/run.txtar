@@ -1,43 +1,43 @@
-ak runtimes build --local --dir multi -o multi.akb
+ak runtime build --local --dir multi -o multi.akb
 return code == 0
 
-ak runtimes run --local multi.akb --path main.star -j -v
-return code == 0
-output equals file multi-output.txt
-
-ak runtimes run multi.akb --path main.star -j -v
+ak runtime run --local multi.akb --path main.star -j -v
 return code == 0
 output equals file multi-output.txt
 
-ak runtimes run --local multi/cats.star -J -v
+ak runtime run multi.akb --path main.star -j -v
+return code == 0
+output equals file multi-output.txt
+
+ak runtime run --local multi/cats.star -J -v
 return code == 0
 output equals_json file cats-output.json
 
-ak runtimes run multi/cats.star -J -v
+ak runtime run multi/cats.star -J -v
 return code == 0
 output equals_json file cats-output.json
 
-ak runtimes run --txtar test.txtar -J
+ak runtime run --txtar test.txtar -J
 return code == 0
 output equals meow, world!
 
-ak runtimes test --local test.txtar -J
+ak runtime test --local test.txtar -J
 return code == 0
 output equals meow, world!
 
-ak runtimes test failing_test.txtar -J
+ak runtime test failing_test.txtar -J
 return code == 1
 output equals file failing_test_output.txt
 
-ak runtimes test --local failing_test.txtar -J
+ak runtime test --local failing_test.txtar -J
 return code == 1
 output equals file failing_test_output.txt
 
-ak runtimes run --local multi/main.star -jv
+ak runtime run --local multi/main.star -jv
 return code == 0
 output equals file multi-output.txt
 
-ak runtimes run multi/main.star -jv
+ak runtime run multi/main.star -jv
 return code == 1
 output equals file multi_single_remote_error.txt
 

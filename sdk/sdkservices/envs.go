@@ -13,10 +13,4 @@ type Envs interface {
 	GetByName(ctx context.Context, projectID sdktypes.ProjectID, name sdktypes.Symbol) (sdktypes.Env, error)
 	Remove(ctx context.Context, envID sdktypes.EnvID) error
 	Update(ctx context.Context, env sdktypes.Env) error
-
-	SetVar(ctx context.Context, envVar sdktypes.EnvVar) error
-	RemoveVar(ctx context.Context, envID sdktypes.EnvID, name sdktypes.Symbol) error
-	// If names is empty, all vars are returned.
-	GetVars(ctx context.Context, names []sdktypes.Symbol, envID sdktypes.EnvID) ([]sdktypes.EnvVar, error)
-	RevealVar(ctx context.Context, envID sdktypes.EnvID, varName sdktypes.Symbol) (string, error)
 }

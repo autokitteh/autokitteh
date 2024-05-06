@@ -43,14 +43,6 @@ const (
 	EnvsServiceRemoveProcedure = "/autokitteh.envs.v1.EnvsService/Remove"
 	// EnvsServiceUpdateProcedure is the fully-qualified name of the EnvsService's Update RPC.
 	EnvsServiceUpdateProcedure = "/autokitteh.envs.v1.EnvsService/Update"
-	// EnvsServiceSetVarProcedure is the fully-qualified name of the EnvsService's SetVar RPC.
-	EnvsServiceSetVarProcedure = "/autokitteh.envs.v1.EnvsService/SetVar"
-	// EnvsServiceRemoveVarProcedure is the fully-qualified name of the EnvsService's RemoveVar RPC.
-	EnvsServiceRemoveVarProcedure = "/autokitteh.envs.v1.EnvsService/RemoveVar"
-	// EnvsServiceGetVarsProcedure is the fully-qualified name of the EnvsService's GetVars RPC.
-	EnvsServiceGetVarsProcedure = "/autokitteh.envs.v1.EnvsService/GetVars"
-	// EnvsServiceRevealVarProcedure is the fully-qualified name of the EnvsService's RevealVar RPC.
-	EnvsServiceRevealVarProcedure = "/autokitteh.envs.v1.EnvsService/RevealVar"
 )
 
 // EnvsServiceClient is a client for the autokitteh.envs.v1.EnvsService service.
@@ -60,10 +52,6 @@ type EnvsServiceClient interface {
 	Get(context.Context, *connect.Request[v1.GetRequest]) (*connect.Response[v1.GetResponse], error)
 	Remove(context.Context, *connect.Request[v1.RemoveRequest]) (*connect.Response[v1.RemoveResponse], error)
 	Update(context.Context, *connect.Request[v1.UpdateRequest]) (*connect.Response[v1.UpdateResponse], error)
-	SetVar(context.Context, *connect.Request[v1.SetVarRequest]) (*connect.Response[v1.SetVarResponse], error)
-	RemoveVar(context.Context, *connect.Request[v1.RemoveVarRequest]) (*connect.Response[v1.RemoveVarResponse], error)
-	GetVars(context.Context, *connect.Request[v1.GetVarsRequest]) (*connect.Response[v1.GetVarsResponse], error)
-	RevealVar(context.Context, *connect.Request[v1.RevealVarRequest]) (*connect.Response[v1.RevealVarResponse], error)
 }
 
 // NewEnvsServiceClient constructs a client for the autokitteh.envs.v1.EnvsService service. By
@@ -101,40 +89,16 @@ func NewEnvsServiceClient(httpClient connect.HTTPClient, baseURL string, opts ..
 			baseURL+EnvsServiceUpdateProcedure,
 			opts...,
 		),
-		setVar: connect.NewClient[v1.SetVarRequest, v1.SetVarResponse](
-			httpClient,
-			baseURL+EnvsServiceSetVarProcedure,
-			opts...,
-		),
-		removeVar: connect.NewClient[v1.RemoveVarRequest, v1.RemoveVarResponse](
-			httpClient,
-			baseURL+EnvsServiceRemoveVarProcedure,
-			opts...,
-		),
-		getVars: connect.NewClient[v1.GetVarsRequest, v1.GetVarsResponse](
-			httpClient,
-			baseURL+EnvsServiceGetVarsProcedure,
-			opts...,
-		),
-		revealVar: connect.NewClient[v1.RevealVarRequest, v1.RevealVarResponse](
-			httpClient,
-			baseURL+EnvsServiceRevealVarProcedure,
-			opts...,
-		),
 	}
 }
 
 // envsServiceClient implements EnvsServiceClient.
 type envsServiceClient struct {
-	list      *connect.Client[v1.ListRequest, v1.ListResponse]
-	create    *connect.Client[v1.CreateRequest, v1.CreateResponse]
-	get       *connect.Client[v1.GetRequest, v1.GetResponse]
-	remove    *connect.Client[v1.RemoveRequest, v1.RemoveResponse]
-	update    *connect.Client[v1.UpdateRequest, v1.UpdateResponse]
-	setVar    *connect.Client[v1.SetVarRequest, v1.SetVarResponse]
-	removeVar *connect.Client[v1.RemoveVarRequest, v1.RemoveVarResponse]
-	getVars   *connect.Client[v1.GetVarsRequest, v1.GetVarsResponse]
-	revealVar *connect.Client[v1.RevealVarRequest, v1.RevealVarResponse]
+	list   *connect.Client[v1.ListRequest, v1.ListResponse]
+	create *connect.Client[v1.CreateRequest, v1.CreateResponse]
+	get    *connect.Client[v1.GetRequest, v1.GetResponse]
+	remove *connect.Client[v1.RemoveRequest, v1.RemoveResponse]
+	update *connect.Client[v1.UpdateRequest, v1.UpdateResponse]
 }
 
 // List calls autokitteh.envs.v1.EnvsService.List.
@@ -162,26 +126,6 @@ func (c *envsServiceClient) Update(ctx context.Context, req *connect.Request[v1.
 	return c.update.CallUnary(ctx, req)
 }
 
-// SetVar calls autokitteh.envs.v1.EnvsService.SetVar.
-func (c *envsServiceClient) SetVar(ctx context.Context, req *connect.Request[v1.SetVarRequest]) (*connect.Response[v1.SetVarResponse], error) {
-	return c.setVar.CallUnary(ctx, req)
-}
-
-// RemoveVar calls autokitteh.envs.v1.EnvsService.RemoveVar.
-func (c *envsServiceClient) RemoveVar(ctx context.Context, req *connect.Request[v1.RemoveVarRequest]) (*connect.Response[v1.RemoveVarResponse], error) {
-	return c.removeVar.CallUnary(ctx, req)
-}
-
-// GetVars calls autokitteh.envs.v1.EnvsService.GetVars.
-func (c *envsServiceClient) GetVars(ctx context.Context, req *connect.Request[v1.GetVarsRequest]) (*connect.Response[v1.GetVarsResponse], error) {
-	return c.getVars.CallUnary(ctx, req)
-}
-
-// RevealVar calls autokitteh.envs.v1.EnvsService.RevealVar.
-func (c *envsServiceClient) RevealVar(ctx context.Context, req *connect.Request[v1.RevealVarRequest]) (*connect.Response[v1.RevealVarResponse], error) {
-	return c.revealVar.CallUnary(ctx, req)
-}
-
 // EnvsServiceHandler is an implementation of the autokitteh.envs.v1.EnvsService service.
 type EnvsServiceHandler interface {
 	List(context.Context, *connect.Request[v1.ListRequest]) (*connect.Response[v1.ListResponse], error)
@@ -189,10 +133,6 @@ type EnvsServiceHandler interface {
 	Get(context.Context, *connect.Request[v1.GetRequest]) (*connect.Response[v1.GetResponse], error)
 	Remove(context.Context, *connect.Request[v1.RemoveRequest]) (*connect.Response[v1.RemoveResponse], error)
 	Update(context.Context, *connect.Request[v1.UpdateRequest]) (*connect.Response[v1.UpdateResponse], error)
-	SetVar(context.Context, *connect.Request[v1.SetVarRequest]) (*connect.Response[v1.SetVarResponse], error)
-	RemoveVar(context.Context, *connect.Request[v1.RemoveVarRequest]) (*connect.Response[v1.RemoveVarResponse], error)
-	GetVars(context.Context, *connect.Request[v1.GetVarsRequest]) (*connect.Response[v1.GetVarsResponse], error)
-	RevealVar(context.Context, *connect.Request[v1.RevealVarRequest]) (*connect.Response[v1.RevealVarResponse], error)
 }
 
 // NewEnvsServiceHandler builds an HTTP handler from the service implementation. It returns the path
@@ -226,26 +166,6 @@ func NewEnvsServiceHandler(svc EnvsServiceHandler, opts ...connect.HandlerOption
 		svc.Update,
 		opts...,
 	)
-	envsServiceSetVarHandler := connect.NewUnaryHandler(
-		EnvsServiceSetVarProcedure,
-		svc.SetVar,
-		opts...,
-	)
-	envsServiceRemoveVarHandler := connect.NewUnaryHandler(
-		EnvsServiceRemoveVarProcedure,
-		svc.RemoveVar,
-		opts...,
-	)
-	envsServiceGetVarsHandler := connect.NewUnaryHandler(
-		EnvsServiceGetVarsProcedure,
-		svc.GetVars,
-		opts...,
-	)
-	envsServiceRevealVarHandler := connect.NewUnaryHandler(
-		EnvsServiceRevealVarProcedure,
-		svc.RevealVar,
-		opts...,
-	)
 	return "/autokitteh.envs.v1.EnvsService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case EnvsServiceListProcedure:
@@ -258,14 +178,6 @@ func NewEnvsServiceHandler(svc EnvsServiceHandler, opts ...connect.HandlerOption
 			envsServiceRemoveHandler.ServeHTTP(w, r)
 		case EnvsServiceUpdateProcedure:
 			envsServiceUpdateHandler.ServeHTTP(w, r)
-		case EnvsServiceSetVarProcedure:
-			envsServiceSetVarHandler.ServeHTTP(w, r)
-		case EnvsServiceRemoveVarProcedure:
-			envsServiceRemoveVarHandler.ServeHTTP(w, r)
-		case EnvsServiceGetVarsProcedure:
-			envsServiceGetVarsHandler.ServeHTTP(w, r)
-		case EnvsServiceRevealVarProcedure:
-			envsServiceRevealVarHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -293,20 +205,4 @@ func (UnimplementedEnvsServiceHandler) Remove(context.Context, *connect.Request[
 
 func (UnimplementedEnvsServiceHandler) Update(context.Context, *connect.Request[v1.UpdateRequest]) (*connect.Response[v1.UpdateResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("autokitteh.envs.v1.EnvsService.Update is not implemented"))
-}
-
-func (UnimplementedEnvsServiceHandler) SetVar(context.Context, *connect.Request[v1.SetVarRequest]) (*connect.Response[v1.SetVarResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("autokitteh.envs.v1.EnvsService.SetVar is not implemented"))
-}
-
-func (UnimplementedEnvsServiceHandler) RemoveVar(context.Context, *connect.Request[v1.RemoveVarRequest]) (*connect.Response[v1.RemoveVarResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("autokitteh.envs.v1.EnvsService.RemoveVar is not implemented"))
-}
-
-func (UnimplementedEnvsServiceHandler) GetVars(context.Context, *connect.Request[v1.GetVarsRequest]) (*connect.Response[v1.GetVarsResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("autokitteh.envs.v1.EnvsService.GetVars is not implemented"))
-}
-
-func (UnimplementedEnvsServiceHandler) RevealVar(context.Context, *connect.Request[v1.RevealVarRequest]) (*connect.Response[v1.RevealVarResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("autokitteh.envs.v1.EnvsService.RevealVar is not implemented"))
 }

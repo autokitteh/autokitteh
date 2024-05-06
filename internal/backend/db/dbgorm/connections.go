@@ -3,6 +3,8 @@ package dbgorm
 import (
 	"context"
 
+	"github.com/google/uuid"
+
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -53,6 +55,18 @@ func (db *gormdb) DeleteConnection(ctx context.Context, id sdktypes.ConnectionID
 
 func (db *gormdb) GetConnection(ctx context.Context, id sdktypes.ConnectionID) (sdktypes.Connection, error) {
 	return getOneWTransform(db.db, ctx, scheme.ParseConnection, "connection_id = ?", id.UUIDValue())
+}
+
+func (db *gormdb) GetConnections(ctx context.Context, ids []sdktypes.ConnectionID) ([]sdktypes.Connection, error) {
+	q := db.db.WithContext(ctx).Where("connection_id IN (?)", kittehs.Transform(ids, func(id sdktypes.ConnectionID) uuid.UUID {
+		return id.UUIDValue()
+	}))
+
+	var cs []scheme.Connection
+	if err := q.Find(&cs).Error; err != nil {
+		return nil, translateError(err)
+	}
+	return kittehs.TransformError(cs, scheme.ParseConnection)
 }
 
 func (db *gormdb) ListConnections(ctx context.Context, filter sdkservices.ListConnectionsFilter) ([]sdktypes.Connection, error) {

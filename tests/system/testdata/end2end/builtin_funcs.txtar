@@ -1,0 +1,64 @@
+# Deploy project with HTTP trigger that runs all custom built-in functions.
+ak deploy --manifest project.yaml
+return code == 0
+
+# Send HTTP GET request to trigger deployment to start new session.
+http get /http/my_project/my_url_path
+resp code == 200
+
+wait 5s for session ses_00000000000000000000000008
+
+# Check session's output and final state.
+ak session log --prints-only
+return code == 0
+output contains '1st random int with seed: 5'
+output contains '2nd random int with seed: 2'
+output contains '3rd random int with seed: 1'
+output contains 'Store set = OK'
+output contains 'Store get = value'
+output contains 'Store del = 1'
+output regex ' \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{1,9} \+0000 UTC'
+output contains 'done'
+
+ak session list
+return code == 0
+output contains 'state:SESSION_STATE_TYPE_COMPLETED'
+
+-- project.yaml --
+version: v1
+
+project:
+  name: my_project
+  connections:
+    - name: my_connection
+      integration: http
+  triggers:
+    - name: http_get
+      connection: my_connection
+      event_type: get
+      data:
+        path: my_url_path
+      call: program.star:on_http_get
+
+-- program.star --
+def on_http_get(data):
+    # runtimes/starlarkrt/internal/libs/rand/rand.go
+    rand.seed(0x533d)
+    print("1st random int with seed: %d" % rand.intn(10))
+    print("2nd random int with seed: %d" % rand.intn(10))
+    print("3rd random int with seed: %d" % rand.intn(10))
+
+    # runtimes/starlarkrt/internal/bootstrap/bootstrap.star
+    sleep(1)
+
+    # integrations/redis/redis.go
+    key = "builtin_funcs_test_key"
+    if store.set(key, "value", ttl = "1m") == "OK":
+        print("Store set = OK")
+    print("Store get = %s" % store.get(key))
+    print("Store del = %d" % store.delete(key))
+
+    # backend/internal/akmodules/time/time.go
+    print(time.now())
+
+    print("done")

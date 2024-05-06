@@ -130,7 +130,6 @@ func initGoose(client *sql.DB, dialect string) error {
 }
 
 func (db *gormdb) Migrate(ctx context.Context) error {
-
 	client := db.client()
 
 	if err := initGoose(client, db.cfg.Type); err != nil {
@@ -165,9 +164,7 @@ func (db *gormdb) Setup(ctx context.Context) error {
 	isSqlite := db.cfg.Type == "sqlite"
 	if isSqlite {
 		foreignKeys(db, false)
-		defer func() {
-			foreignKeys(db, true)
-		}()
+		defer foreignKeys(db, true)
 	}
 
 	required, dbVersion, err := db.MigrationRequired(ctx)
@@ -182,7 +179,7 @@ func (db *gormdb) Setup(ctx context.Context) error {
 		return db.Migrate(ctx)
 	}
 
-	return errors.New("db migrations required") //TODO: maybe more details
+	return errors.New("db migrations required") // TODO: maybe more details
 }
 
 // TODO: not sure this will work with the connect method

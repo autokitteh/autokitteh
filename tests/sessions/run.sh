@@ -72,7 +72,7 @@ for f in tests/sessions/${TESTS}; do
     AK="${PWD}/${ak_filename} -c http.service_url=http://$(cat ${addr_filename})"
 
     echo "--- ${f} ---"
-    ${AK} sessions test --quiet "${f}"
+    ${AK} session test --quiet "${f}"
 
     down 
 done

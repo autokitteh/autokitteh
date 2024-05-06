@@ -28,7 +28,7 @@ var setCmd = common.StandardCommand(&cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// Required to check current configuration is valid
 		// and load all possible configuration keys.
-		if _, err := svc.New(common.Config(), svc.RunOptions{Silent: true}); err != nil {
+		if _, err := common.NewDevSvc(true); err != nil {
 			filename := common.ConfigYAMLFilePath()
 			err = dig.RootCause(err)
 			return fmt.Errorf("%q: invalid configuration: %w", filename, err)
@@ -153,7 +153,7 @@ func validateConfig(data []byte) error {
 		return fmt.Errorf("init temp config: %w", err)
 	}
 
-	if _, err := svc.New(common.Config(), svc.RunOptions{Silent: true}); err != nil {
+	if _, err := common.NewDevSvc(true); err != nil {
 		err = dig.RootCause(err)
 		return fmt.Errorf("configuration is invalid: %w", err)
 	}

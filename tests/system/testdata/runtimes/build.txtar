@@ -1,25 +1,25 @@
 # Negative test: build failure due to error in code.
-ak runtimes build hiss.star
+ak runtime build hiss.star
 output equals file hiss_error.txt
 return code == 1
 
-ak runtimes build single.star -o single.akb --describe --local
+ak runtime build single.star -o single.akb --describe --local
 output equals_json file single_output.json
 return code == 0
 
-ak runtimes build single.star -o single.akb --describe
+ak runtime build single.star -o single.akb --describe
 output equals_json file single_output.json
 return code == 0
 
-ak runtimes build --dir multi -o multi.akb --describe --local
+ak runtime build --dir multi -o multi.akb --describe --local
 output equals_json file multi_output.json
 return code == 0
 
-ak runtimes build --dir multi -o multi.akb --describe
+ak runtime build --dir multi -o multi.akb --describe
 output equals_json file multi_output.json
 return code == 0
 
-ak runtimes build test.txtar --txtar -o multi.akb --describe
+ak runtime build test.txtar --txtar -o multi.akb --describe
 output equals_json file test_output.json
 return code == 0
 

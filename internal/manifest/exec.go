@@ -115,25 +115,37 @@ func executeAction(ctx context.Context, action actions.Action, execContext *exec
 		}
 
 		log.Printf("deleted")
-	case actions.SetEnvVarAction:
-		eid, err := execContext.resolveEnvID(action.EnvKey)
-		if err != nil {
-			return err
+	case actions.SetVarAction:
+		var scopeID sdktypes.VarScopeID
+		if action.Env != "" {
+			eid, err := execContext.resolveEnvID(action.Env)
+			if err != nil {
+				return err
+			}
+
+			scopeID = sdktypes.NewVarScopeID(eid)
+		} else {
+			cid, err := execContext.resolveConnectionID(action.ConnectionKey)
+			if err != nil {
+				return err
+			}
+
+			scopeID = sdktypes.NewVarScopeID(cid)
 		}
 
-		v := action.EnvVar.WithEnvID(eid)
+		v := action.Var.WithScopeID(scopeID)
 
-		if err = execContext.client.Envs().SetVar(ctx, v); err != nil {
+		if err := execContext.client.Vars().Set(ctx, v); err != nil {
 			return err
 		}
 
 		log.Printf("set")
-	case actions.DeleteEnvVarAction:
+	case actions.DeleteVarAction:
 		n, err := sdktypes.ParseSymbol(action.Name)
 		if err != nil {
 			return err
 		}
-		if err = execContext.client.Envs().RemoveVar(ctx, action.EnvID, n); err != nil {
+		if err = execContext.client.Vars().Delete(ctx, action.ScopeID, n); err != nil {
 			return err
 		}
 		log.Printf("deleted")
