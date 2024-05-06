@@ -48,11 +48,6 @@ func NewHandler(l *zap.Logger, vars sdkservices.Vars, d sdkservices.Dispatcher, 
 // https://www.twilio.com/docs/usage/api/usage-trigger
 // https://www.twilio.com/docs/usage/troubleshooting/alarms
 
-// listTokens calls the List method in SecretsService.
-func (h handler) listTokens(ctx context.Context, accountSID string) ([]sdktypes.ConnectionID, error) {
-	return h.vars.FindConnectionIDs(ctx, h.integrationID, sdktypes.NewSymbol("account_sid"), accountSID)
-}
-
 func (h handler) dispatchAsyncEventsToConnections(l *zap.Logger, cids []sdktypes.ConnectionID, event *eventsv1.Event) {
 	ctx := extrazap.AttachLoggerToContext(l, context.Background())
 	for _, cid := range cids {

@@ -47,7 +47,7 @@ func (h handler) HandleMessage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Retrieve all the relevant connections for this event.
-	connTokens, err := h.listTokens(r.Context(), aid)
+	cids, err := h.vars.FindConnectionIDs(r.Context(), h.integrationID, sdktypes.NewSymbol("account_sid"), aid)
 	if err != nil {
 		l.Error("Failed to retrieve connection tokens",
 			zap.Error(err),
@@ -57,5 +57,5 @@ func (h handler) HandleMessage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Dispatch the event to all of them, for asynchronous handling.
-	h.dispatchAsyncEventsToConnections(l, connTokens, akEvent)
+	h.dispatchAsyncEventsToConnections(l, cids, akEvent)
 }

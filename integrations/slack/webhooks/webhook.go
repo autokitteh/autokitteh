@@ -141,8 +141,7 @@ func verifySignature(signingSecret, ts, want string, body []byte) bool {
 	return hmac.Equal([]byte(got), []byte(want))
 }
 
-// listTokens calls the List method in SecretsService.
-func (h handler) listTokens(ctx context.Context, appID, enterpriseID, teamID string) ([]sdktypes.ConnectionID, error) {
+func (h handler) listConnectionIDs(ctx context.Context, appID, enterpriseID, teamID string) ([]sdktypes.ConnectionID, error) {
 	return h.vars.FindConnectionIDs(ctx, h.integrationID, vars.KeyName, vars.KeyValue(appID, enterpriseID, teamID))
 }
 

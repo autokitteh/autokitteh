@@ -110,7 +110,7 @@ func (h handler) HandleBotEvent(w http.ResponseWriter, r *http.Request) {
 
 	// Retrieve all the relevant connections for this event.
 	enterpriseID := "" // TODO: Support enterprise IDs.
-	connTokens, err := h.listTokens(r.Context(), cb.APIAppID, enterpriseID, cb.TeamID)
+	cids, err := h.listConnectionIDs(r.Context(), cb.APIAppID, enterpriseID, cb.TeamID)
 	if err != nil {
 		l.Error("Failed to retrieve connection tokens",
 			zap.Error(err),
@@ -120,7 +120,7 @@ func (h handler) HandleBotEvent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Dispatch the event to all of them, for asynchronous handling.
-	h.dispatchAsyncEventsToConnections(l, connTokens, akEvent)
+	h.dispatchAsyncEventsToConnections(l, cids, akEvent)
 
 	// Returning immediately without an error = acknowledgement of receipt.
 }

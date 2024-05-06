@@ -119,7 +119,7 @@ func (h handler) HandleSlashCommand(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Retrieve all the relevant connections for this event.
-	connTokens, err := h.listTokens(r.Context(), cmd.APIAppID, cmd.EnterpriseID, cmd.TeamID)
+	cids, err := h.listConnectionIDs(r.Context(), cmd.APIAppID, cmd.EnterpriseID, cmd.TeamID)
 	if err != nil {
 		l.Error("Failed to retrieve connection tokens",
 			zap.Error(err),
@@ -129,7 +129,7 @@ func (h handler) HandleSlashCommand(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Dispatch the event to all of them, for asynchronous handling.
-	h.dispatchAsyncEventsToConnections(l, connTokens, akEvent)
+	h.dispatchAsyncEventsToConnections(l, cids, akEvent)
 
 	// https://api.slack.com/interactivity/slash-commands#responding_to_commands
 	// https://api.slack.com/interactivity/slash-commands#responding_response_url

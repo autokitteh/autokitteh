@@ -31,40 +31,31 @@ project:
     # Redis
     - name: myredis
       integration: "redis"
-      # A token is an connection specific configuration that its
-      # structured is defined by the integration.
-      token: "redis://user:password@localhost:6789/3?dial_timeout=3&db=1&read_timeout=6s&max_retries=2"
+      vars: 
+        - name: "DSN"
+          value: "redis://user:password@localhost:6789/3?dial_timeout=3&db=1&read_timeout=6s&max_retries=2"
     # gRPC
     - name: grpc
       integration: "grpc"
     # AWS
     - name: aws
       integration: "aws"
-      # If token is not provided, AWS default config means are used.
-      token: "region,access_key_id,secret_key[,token]"
     # GitHub
     - name: github
       integration: "github"
-      # Generated from <autokitteh_base_url>/i/github.
-      token: "xxxx_xxxx_xxxx"
     # Slack
     - name: slack
       integration: "slack"
-      # Generated from <autokitteh_base_url>/i/slack.
-      token: "xxxx_xxxx_xxxx"
     # Twilio
     - name: twilio
       integration: "twilio"
-      # Generated from <autokitteh_base_url>/i/twilio.
-      token: "xxxx_xxxx_xxxx"
     # Google
     - name: google
       integration: "google"
-      # Generated from <autokitteh_base_url>/i/google.
-      token: "xxxx_xxxx_xxxx"
   # Triggers specify how to route incoming events generated from the connections to this project.
   triggers:
-    - # Optional: event_type. For HTTP this is the method.
+    - name: http_get
+      # Optional: event_type. For HTTP this is the method.
       event_type: get
       # Optional: event filter, specified in CEL (https://github.com/google/cel-spec).
       # All event data is available to the filter via the `data` field.

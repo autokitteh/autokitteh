@@ -70,7 +70,7 @@ func (h handler) handleSlashCommand(e *socketmode.Event, c *socketmode.Client) {
 	}
 
 	// Retrieve all the relevant connections for this event.
-	connTokens, err := h.vars.FindConnectionIDs(context.Background(), h.integrationID, vars.WebSocketName, "")
+	cids, err := h.vars.FindConnectionIDs(context.Background(), h.integrationID, vars.WebSocketName, "")
 	if err != nil {
 		h.logger.Error("Failed to retrieve connection tokens", zap.Error(err))
 		c.Ack(*e.Request)
@@ -78,7 +78,7 @@ func (h handler) handleSlashCommand(e *socketmode.Event, c *socketmode.Client) {
 	}
 
 	// Dispatch the event to all of them, for asynchronous handling.
-	h.dispatchAsyncEventsToConnections(connTokens, akEvent)
+	h.dispatchAsyncEventsToConnections(cids, akEvent)
 
 	// https://api.slack.com/apis/connections/socket#acknowledge
 	if len(cmd.Text) == 0 {

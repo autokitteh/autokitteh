@@ -189,9 +189,9 @@ type Secret struct {
 }
 
 type Event struct {
-	EventID       sdktypes.UUID  `gorm:"uniqueIndex;type:uuid"`
-	IntegrationID sdktypes.UUID  `gorm:"index"`
-	ConnectionID  *sdktypes.UUID `gorm:"index"`
+	EventID       sdktypes.UUID `gorm:"uniqueIndex;type:uuid"`
+	IntegrationID sdktypes.UUID `gorm:"index"`
+	ConnectionID  sdktypes.UUID `gorm:"index"`
 
 	EventType string `gorm:"index:idx_event_type_seq,priority:1;index:idx_event_type"`
 	Data      datatypes.JSON
@@ -219,7 +219,7 @@ func ParseEvent(e Event) (sdktypes.Event, error) {
 
 	return sdktypes.StrictEventFromProto(&sdktypes.EventPB{
 		EventId:      sdktypes.NewIDFromUUID[sdktypes.EventID](&e.EventID).String(),
-		ConnectionId: sdktypes.NewIDFromUUID[sdktypes.ConnectionID](e.ConnectionID).String(),
+		ConnectionId: sdktypes.NewIDFromUUID[sdktypes.ConnectionID](&e.ConnectionID).String(),
 		EventType:    e.EventType,
 		Data:         kittehs.TransformMapValues(data, sdktypes.ToProto),
 		Memo:         memo,

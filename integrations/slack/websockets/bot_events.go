@@ -85,12 +85,12 @@ func (h handler) handleBotEvent(e *socketmode.Event, c *socketmode.Client) {
 	}
 
 	// Retrieve all the relevant connections for this event.
-	connTokens, err := h.vars.FindConnectionIDs(context.Background(), h.integrationID, vars.BotTokenName, "")
+	cids, err := h.vars.FindConnectionIDs(context.Background(), h.integrationID, vars.BotTokenName, "")
 	if err != nil {
 		h.logger.Error("Failed to retrieve connection tokens", zap.Error(err))
 		return
 	}
 
 	// Dispatch the event to all of them, for asynchronous handling.
-	h.dispatchAsyncEventsToConnections(connTokens, akEvent)
+	h.dispatchAsyncEventsToConnections(cids, akEvent)
 }

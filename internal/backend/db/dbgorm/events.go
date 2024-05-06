@@ -34,7 +34,7 @@ func (db *gormdb) SaveEvent(ctx context.Context, event sdktypes.Event) error {
 	e := scheme.Event{
 		EventID:       event.ID().UUIDValue(),
 		IntegrationID: conn.IntegrationID().UUIDValue(),
-		ConnectionID:  scheme.UUIDOrNil(cid.UUIDValue()),
+		ConnectionID:  cid.UUIDValue(),
 		EventType:     event.Type(),
 		Data:          kittehs.Must1(json.Marshal(event.Data())),
 		Memo:          kittehs.Must1(json.Marshal(event.Memo())),
