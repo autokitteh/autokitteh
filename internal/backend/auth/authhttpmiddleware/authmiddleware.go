@@ -21,7 +21,7 @@ var Configs = configset.Set[Config]{
 	Dev:     &Config{},
 }
 
-type WrapFunc func(http.Handler) http.Handler
+type AuthMiddlewareDecorator func(http.Handler) http.Handler
 
 type Deps struct {
 	fx.In
@@ -79,7 +79,7 @@ func newSessionsMiddleware(next http.Handler, sessions authsessions.Store) http.
 	}
 }
 
-func New(deps Deps) WrapFunc {
+func New(deps Deps) AuthMiddlewareDecorator {
 	return func(next http.Handler) http.Handler {
 		f := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if deps.Cfg.Required {
