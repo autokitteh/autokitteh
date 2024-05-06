@@ -69,7 +69,7 @@ export AK
 for f in tests/sessions/${TESTS}; do
     up "$(basename "${f}")"
 
-    AK="${PWD}/${ak_filename} -c http.service_url=http://$(cat ${addr_filename})"
+    AK="${PWD}/${ak_filename} -C http.service_url=http://$(cat ${addr_filename})"
 
     echo "--- ${f} ---"
     ${AK} session test --quiet "${f}"
