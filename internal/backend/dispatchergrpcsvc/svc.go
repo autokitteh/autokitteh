@@ -27,7 +27,7 @@ func Init(muxes *muxes.Muxes, dispatcher dispatcher.Dispatcher) {
 	srv := server{dispatcher: dispatcher}
 
 	path, namer := dispatcherv1connect.NewDispatcherServiceHandler(&srv)
-	muxes.API.Handle(path, namer)
+	muxes.Auth.Handle(path, namer)
 }
 
 func (s *server) Dispatch(ctx context.Context, req *connect.Request[dispatcher1.DispatchRequest]) (*connect.Response[dispatcher1.DispatchResponse], error) {

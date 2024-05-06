@@ -193,7 +193,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		fx.Invoke(oauth.Init),
 		fx.Invoke(projectsgrpcsvc.Init),
 		fx.Invoke(func(z *zap.Logger, runtimes sdkservices.Runtimes, muxes *muxes.Muxes) {
-			sdkruntimessvc.Init(z, runtimes, muxes.API)
+			sdkruntimessvc.Init(z, runtimes, muxes.Auth)
 		}),
 		fx.Invoke(sessionsgrpcsvc.Init),
 		fx.Invoke(storegrpcsvc.Init),
@@ -202,7 +202,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		Component(
 			"http",
 			httpsvc.Configs,
-			fx.Provide(func(lc fx.Lifecycle, z *zap.Logger, cfg *httpsvc.Config, wrapAuth authhttpmiddleware.WrapFunc) (svc httpsvc.Svc, all *muxes.Muxes, err error) {
+			fx.Provide(func(lc fx.Lifecycle, z *zap.Logger, cfg *httpsvc.Config, wrapAuth authhttpmiddleware.AuthMiddlewareDecorator) (svc httpsvc.Svc, all *muxes.Muxes, err error) {
 				svc, err = httpsvc.New(
 					lc, z, cfg,
 					[]string{
@@ -237,32 +237,31 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 				}
 
 				// Replace the original mux with a main mux and also expose the original mux as the no-auth one.
-				apimux := http.NewServeMux()
+				authMux := http.NewServeMux()
 
 				mux := svc.Mux()
-				mux.Handle("/", wrapAuth(apimux))
-				mux.Handle("/api/", http.StripPrefix("/api", wrapAuth(mux)))
+				mux.Handle("/", wrapAuth(authMux))
 
-				all = &muxes.Muxes{API: apimux, Root: mux, WrapAuth: wrapAuth}
+				all = &muxes.Muxes{Auth: authMux, NoAuth: mux}
 
 				return
 			}),
 		),
 		Component("authloginhttpsvc", authloginhttpsvc.Configs, fx.Invoke(authloginhttpsvc.Init)),
 		fx.Invoke(func(muxes *muxes.Muxes, h integrationsweb.Handler) {
-			muxes.Handle("/i/", &h)
+			muxes.NoAuth.Handle("/i/", &h)
 		}),
 		Component("integrations", integrations.Configs, fx.Provide(integrations.New)),
 		fx.Invoke(func(lc fx.Lifecycle, l *zap.Logger, muxes *muxes.Muxes, s sdkservices.Secrets, o sdkservices.OAuth, d dispatcher.Dispatcher) {
 			HookOnStart(lc, func(ctx context.Context) error {
-				return integrations.Start(ctx, l, muxes.Root, s, o, d)
+				return integrations.Start(ctx, l, muxes.NoAuth, s, o, d)
 			})
 		}),
 		fx.Invoke(func(z *zap.Logger, muxes *muxes.Muxes) {
 			srv := http.StripPrefix("/static/", http.FileServer(http.FS(static.RootWebContent)))
-			muxes.Handle("/static/", srv)
-			muxes.Handle("/favicon-32x32.png", srv)
-			muxes.Handle("/favicon-16x16.png", srv)
+			muxes.NoAuth.Handle("/static/", srv)
+			muxes.NoAuth.Handle("/favicon-32x32.png", srv)
+			muxes.NoAuth.Handle("/favicon-16x16.png", srv)
 		}),
 		fx.Invoke(func(lc fx.Lifecycle, z *zap.Logger, httpsvc httpsvc.Svc, tclient temporalclient.Client) {
 			HookSimpleOnStart(lc, func() {
@@ -271,10 +270,10 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 			})
 		}),
 		fx.Invoke(func(muxes *muxes.Muxes) {
-			muxes.HandleFunc("/id", func(w http.ResponseWriter, r *http.Request) {
+			muxes.NoAuth.HandleFunc("/id", func(w http.ResponseWriter, r *http.Request) {
 				fmt.Fprint(w, fixtures.ProcessID())
 			})
-			muxes.HandleFunc("/version", func(w http.ResponseWriter, r *http.Request) {
+			muxes.NoAuth.HandleFunc("/version", func(w http.ResponseWriter, r *http.Request) {
 				w.Header().Set("Content-Type", "application/json")
 				kittehs.Must0(json.NewEncoder(w).Encode(version.Version))
 			})
@@ -285,19 +284,19 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 				return
 			}
 
-			muxes.HandleFunc("/temporal", func(w http.ResponseWriter, r *http.Request) {
+			muxes.NoAuth.HandleFunc("/temporal", func(w http.ResponseWriter, r *http.Request) {
 				http.Redirect(w, r, uiAddr, http.StatusFound)
 			})
 		}),
 		fx.Invoke(func(z *zap.Logger, lc fx.Lifecycle, muxes *muxes.Muxes) {
 			var ready atomic.Bool
 
-			muxes.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+			muxes.NoAuth.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 				// TODO(ENG-530): check db, temporal, etc.
 				w.WriteHeader(http.StatusOK)
 			})
 
-			muxes.HandleFunc("/readyz", func(w http.ResponseWriter, r *http.Request) {
+			muxes.NoAuth.HandleFunc("/readyz", func(w http.ResponseWriter, r *http.Request) {
 				if !ready.Load() {
 					w.WriteHeader(http.StatusServiceUnavailable)
 					return

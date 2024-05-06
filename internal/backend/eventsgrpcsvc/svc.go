@@ -29,7 +29,7 @@ func Init(muxes *muxes.Muxes, events sdkservices.Events) {
 	srv := server{events: events}
 
 	path, namer := eventsv1connect.NewEventsServiceHandler(&srv)
-	muxes.API.Handle(path, namer)
+	muxes.Auth.Handle(path, namer)
 }
 
 func (s *server) Get(ctx context.Context, req *connect.Request[eventsv1.GetRequest]) (*connect.Response[eventsv1.GetResponse], error) {

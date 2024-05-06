@@ -27,7 +27,7 @@ var _ oauthv1connect.OAuthServiceHandler = (*server)(nil)
 func Init(muxes *muxes.Muxes, l *zap.Logger, oauth sdkservices.OAuth) {
 	srv := server{logger: l, impl: oauth}
 	path, handler := oauthv1connect.NewOAuthServiceHandler(&srv)
-	muxes.API.Handle(path, handler)
+	muxes.Auth.Handle(path, handler)
 }
 
 func (s *server) Register(ctx context.Context, req *connect.Request[oauthv1.RegisterRequest]) (*connect.Response[oauthv1.RegisterResponse], error) {

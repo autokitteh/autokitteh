@@ -42,35 +42,35 @@ func Init(deps Deps) error {
 
 func (a *svc) registerRoutes(muxes *muxes.Muxes) error {
 	if a.Cfg.GoogleOAuth.Enabled {
-		if err := registerGoogleOAuthRoutes(muxes.Root, a.Deps.Cfg.GoogleOAuth, a.newSuccessLoginHandler); err != nil {
+		if err := registerGoogleOAuthRoutes(muxes.NoAuth, a.Deps.Cfg.GoogleOAuth, a.newSuccessLoginHandler); err != nil {
 			return err
 		}
 	}
 
 	if a.Cfg.GithubOAuth.Enabled {
-		if err := registerGithubOAuthRoutes(muxes.Root, a.Cfg.GithubOAuth, a.newSuccessLoginHandler); err != nil {
+		if err := registerGithubOAuthRoutes(muxes.NoAuth, a.Cfg.GithubOAuth, a.newSuccessLoginHandler); err != nil {
 			return err
 		}
 	}
 
 	if a.Cfg.Descope.Enabled {
-		if err := registerDescopeRoutes(muxes.Root, a.Cfg.Descope, a.newSuccessLoginHandler); err != nil {
+		if err := registerDescopeRoutes(muxes.NoAuth, a.Cfg.Descope, a.newSuccessLoginHandler); err != nil {
 			return err
 		}
 	}
 
-	muxes.HandleFunc("/logout", func(w http.ResponseWriter, r *http.Request) {
+	muxes.Auth.HandleFunc("/logout", func(w http.ResponseWriter, r *http.Request) {
 		a.Deps.Sessions.Delete(w)
 		http.Redirect(w, r, "/", http.StatusFound)
 	})
 
-	muxes.HandleFunc("/login", func(w http.ResponseWriter, r *http.Request) {
+	muxes.NoAuth.HandleFunc("/login", func(w http.ResponseWriter, r *http.Request) {
 		if err := web.LoginTemplate.Execute(w, a.Cfg); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 	})
 
-	muxes.AuthHandleFunc("/whoami", func(w http.ResponseWriter, r *http.Request) {
+	muxes.Auth.HandleFunc("/whoami", func(w http.ResponseWriter, r *http.Request) {
 		u := authcontext.GetAuthnUser(r.Context())
 		if !u.IsValid() {
 			fmt.Fprint(w, "You are not logged in")
@@ -84,7 +84,9 @@ func (a *svc) registerRoutes(muxes *muxes.Muxes) error {
 		}
 
 		w.Header().Add("Content-Type", "application/json")
-		_, _ = w.Write(bs)
+		if _, err := w.Write(bs); err != nil {
+			a.Z.Error("failed writing response", zap.Error(err))
+		}
 	})
 
 	return nil

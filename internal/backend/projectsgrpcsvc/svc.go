@@ -44,7 +44,7 @@ var _ projectsv1connect.ProjectsServiceHandler = (*Server)(nil)
 
 func Init(s *Server, muxes *muxes.Muxes) {
 	path, namer := projectsv1connect.NewProjectsServiceHandler(s, connect.WithReadMaxBytes(s.cfg.MaxUploadSize))
-	muxes.API.Handle(path, namer)
+	muxes.Auth.Handle(path, namer)
 }
 
 func (s *Server) Create(ctx context.Context, req *connect.Request[projectsv1.CreateRequest]) (*connect.Response[projectsv1.CreateResponse], error) {

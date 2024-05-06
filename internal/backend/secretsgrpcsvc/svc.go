@@ -24,7 +24,7 @@ var _ secretsv1connect.SecretsServiceHandler = (*server)(nil)
 func Init(muxes *muxes.Muxes, l *zap.Logger, sec sdkservices.Secrets) error {
 	s := server{impl: sec, logger: l}
 	path, handler := secretsv1connect.NewSecretsServiceHandler(&s)
-	muxes.API.Handle(path, handler)
+	muxes.Auth.Handle(path, handler)
 	return nil
 }
 
