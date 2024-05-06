@@ -225,7 +225,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 					[]httpsvc.RequestLogExtractor{
 						func(r *http.Request) []zap.Field {
 							if user := authcontext.GetAuthnUser(r.Context()); user.IsValid() {
-								return []zap.Field{zap.String("user", user.UniqueID())}
+								return []zap.Field{zap.String("user", user.Title())}
 							}
 
 							return nil
