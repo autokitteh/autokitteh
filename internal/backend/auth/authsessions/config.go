@@ -7,21 +7,21 @@ import (
 )
 
 type Config struct {
-	UnsafeCookie *sessions.CookieConfig `koanf:"cookie"`
-	CookieKeys   []string               `koanf:"session_cookie_keys"` // pairs of sigining and encryption keys.
+	Cookie     *sessions.CookieConfig `koanf:"cookie"`
+	CookieKeys []string               `koanf:"cookie_keys"` // pairs of sigining and encryption keys.
 }
 
 func (c Config) cookieConfig() *sessions.CookieConfig {
-	if c.UnsafeCookie == nil {
+	if c.Cookie == nil {
 		return sessions.DefaultCookieConfig
 	}
 
-	return c.UnsafeCookie
+	return c.Cookie
 }
 
 var Configs = configset.Set[Config]{
 	Dev: &Config{
-		UnsafeCookie: sessions.DebugCookieConfig,
+		Cookie: sessions.DebugCookieConfig,
 		CookieKeys: []string{
 			"0000000000000000000000000000000000000000000000000000000000000000",
 			"0000000000000000000000000000000000000000000000000000000000000000",
