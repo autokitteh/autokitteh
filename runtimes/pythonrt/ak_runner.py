@@ -53,8 +53,8 @@ class Transformer(ast.NodeTransformer):
 
     def visit_Call(self, node):
         name = name_of(node.func)
+        # ast.Transformer does not recurse to func or args
         node.func = self.visit(node.func)
-        # ast.Transformer does not recurse to args
         node.args = [self.visit(a) for a in node.args]
 
         if not name or name in BUILTIN:
