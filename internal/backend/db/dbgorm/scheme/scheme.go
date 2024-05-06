@@ -203,7 +203,7 @@ type Event struct {
 
 	// enforce foreign keys
 	// Integration *Integration // FIXME: ENG-590
-	// Connection *Connection // FIXME: ENG-590
+	Connection *Connection
 }
 
 func ParseEvent(e Event) (sdktypes.Event, error) {
