@@ -220,3 +220,22 @@ def test_name_of(code, name):
     mod = ast.parse(code)
     node = mod.body[0].value
     assert ak_runner.name_of(node) == name
+
+
+transform_cases = [
+    # code, transformed
+    ('get(1)', '_ak_call(get, 1)'),
+    ('requests.get("https://go.dev")', '_ak_call(requests.get, "https://go.dev")'),
+    (
+        'sheets.values().get("A1:B4").execute()', 
+        '_ak_call(_ak_call(_ak_call(google.sheets.values).get, "A1:A10").execute)',
+    ),
+    ('add(get(1), get(2))', '_ak_call(add, _ak_call(get, 1), _ak_call(get, 2))'),
+]
+
+@pytest.mark.parametrize('code, transformed', transform_cases)
+def test_transform(code, transformed):
+    mod = ast.parse(code)
+    trans = ak_runner.Transformer('<stdin>')
+    out = trans.visit(mod)
+    assert transformed, ast.unparse(out)
