@@ -32,8 +32,7 @@ import (
 )
 
 var (
-	configs []string
-
+	configs        []string
 	json, niceJSON bool
 )
 
