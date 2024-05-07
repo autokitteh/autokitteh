@@ -4,10 +4,12 @@ import (
 	"archive/tar"
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"io/fs"
+	"net"
 	"os"
 	"path"
 	"testing"
@@ -186,4 +188,40 @@ func TestNewBadVersion(t *testing.T) {
 
 	_, err = New()
 	require.Error(t, err)
+}
+
+func Test_handleSleep(t *testing.T) {
+	goSide, pySide := net.Pipe()
+	go func() { // Drain the Python side in order not to block the Go side
+		io.Copy(io.Discard, pySide)
+	}()
+
+	py := newSVC(t)
+	py.comm = NewComm(goSide)
+	py.xid = sdktypes.NewExecutorID(sdktypes.NewRunID())
+	py.cbs = &sdkservices.RunCallbacks{
+		Call: func(ctx context.Context, rid sdktypes.RunID, v sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
+			require.Equal(t, 1, len(args))
+			secs := args[0]
+			require.True(t, secs.IsDuration())
+			d := secs.GetDuration().Value()
+			require.Equal(t, time.Second+230*time.Millisecond, d)
+			return sdktypes.NewBooleanValue(true), nil
+		},
+	}
+
+	sm := SleepMessage{
+		Seconds: 1.23,
+	}
+
+	payload, err := json.Marshal(sm)
+	require.NoError(t, err)
+	msg := Message{
+		Type:    SleepMessage{}.Type(),
+		Payload: payload,
+	}
+
+	ctx, cancel := testCtx(t)
+	defer cancel()
+	py.handleSleep(ctx, msg)
 }

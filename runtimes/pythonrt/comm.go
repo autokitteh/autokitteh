@@ -44,8 +44,14 @@ type RunMessage struct {
 
 func (RunMessage) Type() string { return "run" }
 
+type SleepMessage struct {
+	Seconds float64 `json:"seconds"`
+}
+
+func (SleepMessage) Type() string { return "sleep" }
+
 type SubMessage interface {
-	CallbackMessage | ModuleMessage | ResponseMessage | RunMessage
+	CallbackMessage | ModuleMessage | ResponseMessage | RunMessage | SleepMessage
 
 	Type() string
 }
@@ -117,4 +123,9 @@ func (c *Comm) Recv() (Message, error) {
 	}
 
 	return m, nil
+}
+
+func messageType[T SubMessage]() string {
+	var m T
+	return m.Type()
 }

@@ -37,6 +37,7 @@ type pySvc struct {
 	exports   map[string]sdktypes.Value
 	firstCall bool
 	comm      *Comm
+	sleepFn   sdktypes.Value
 }
 
 var minPyVersion = Version{
@@ -151,12 +152,21 @@ func entriesToValues(xid sdktypes.ExecutorID, entries []string) (map[string]sdkt
 }
 
 func (py *pySvc) loadSleep(ctx context.Context, runID sdktypes.RunID, cbs *sdkservices.RunCallbacks) error {
-	ak, err := cbs.Load(ctx, runID, "ak")
+	mod, err := cbs.Load(ctx, runID, "ak")
 	if err != nil {
 		return err
 	}
 
-	fmt.Println(ak)
+	sleep, ok := mod["sleep"]
+	if !ok {
+		return fmt.Errorf("`sleep` not found in `ak` module")
+	}
+
+	if !sleep.IsFunction() {
+		return fmt.Errorf("`ak.sleep` is not a function but a")
+	}
+
+	py.sleepFn = sleep
 	return nil
 }
 
@@ -279,6 +289,30 @@ func (py *pySvc) Close() {
 	// We kill the Python process once the initial `Call` is completed.
 }
 
+func (py *pySvc) handleSleep(ctx context.Context, msg Message) error {
+	sleep, err := extractMessage[SleepMessage](msg)
+	if err != nil {
+		py.log.Error("sleep message", zap.Error(err))
+		return err
+	}
+
+	py.log.Info("sleep", zap.Float64("seconds", sleep.Seconds))
+
+	// Milliseconds sleep granularity should be good enough.
+	d := time.Duration(sleep.Seconds*1000) * time.Millisecond
+	args := []sdktypes.Value{
+		sdktypes.NewDurationValue(d),
+	}
+
+	_, err = py.cbs.Call(ctx, py.xid.ToRunID(), py.sleepFn, args, nil)
+	if err != nil {
+		py.log.Error("call sleep", zap.Error(err))
+		return err
+	}
+
+	return py.comm.Send(sleep)
+}
+
 // initialCall handles initial call from autokitteh.
 // We split it from Call since Call is also used to execute activities.
 func (py *pySvc) initialCall(ctx context.Context, funcName string, event map[string]any) (sdktypes.Value, error) {
@@ -319,6 +353,11 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, event map[str
 		if msg.Type == "" {
 			py.log.Error("empty message from python, probably error", zap.Any("message", msg))
 			return sdktypes.InvalidValue, fmt.Errorf("empty message from Python")
+		}
+
+		if msg.Type == messageType[SleepMessage]() {
+			py.handleSleep(ctx, msg)
+			continue
 		}
 
 		cbm, err := extractMessage[CallbackMessage](msg)

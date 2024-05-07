@@ -10,6 +10,7 @@ import logging
 import pickle
 import sys
 import tarfile
+import time
 from base64 import b64decode, b64encode
 from functools import wraps
 from importlib.abc import Loader
@@ -161,6 +162,7 @@ class MessageType:
     done = 'done'
     module = 'module'
     response = 'response'
+    sleep = 'sleep'
     run = 'run'
     
 
@@ -237,6 +239,15 @@ class Comm:
         data = message['payload']['value']
         return pickle.loads(b64decode(data))
 
+    def send_sleep(self, seconds):
+        message = {
+            'type': MessageType.sleep,
+            'payload': {
+               'seconds': seconds,
+            }
+        }
+        self._send(message)
+
 
 class AKCall:
     """Callable wrapping functions with activities."""
@@ -262,8 +273,14 @@ class AKCall:
             return func(*args, **kw)
 
         logging.info('ACTION: calling %s via activity (args=%r, kw=%r)', func.__name__, args, kw)
+
         self.in_activity = True
         try:
+            if func is time.sleep:
+                self.comm.send_sleep(*args, **kw)
+                self.comm.recv(MessageType.sleep)
+                return
+
             self.comm.send_activity(func, args, kw)
             message = self.comm.recv(MessageType.callback, MessageType.response)
             
@@ -376,6 +393,9 @@ if __name__ == '__main__':
 
     logging.info('loading %r', module_name)
     comm = Comm(sock)
+
+
+
     ak_call = AKCall(module_name, comm)
     mod = load_code(code_dir, ak_call, module_name)
     MODULE_NAME = mod.__name__
