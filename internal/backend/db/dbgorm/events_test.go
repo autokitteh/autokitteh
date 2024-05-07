@@ -23,8 +23,9 @@ func (f *dbFixture) assertEventsDeleted(t *testing.T, events ...scheme.Event) {
 }
 
 func TestCreateEvent(t *testing.T) {
-	f := newDBFixtureFK(true)                       // no foreign keys
-	findAndAssertCount(t, f, scheme.Event{}, 0, "") // no events
+	f := newDBFixture()
+	foreignKeys(f.gormdb, false)                  // no foreign keys
+	findAndAssertCount[scheme.Event](t, f, 0, "") // no events
 
 	evt := f.newEvent()
 	// test createEvent
@@ -32,7 +33,7 @@ func TestCreateEvent(t *testing.T) {
 }
 
 func TestCreateEventForeignKeys(t *testing.T) {
-	f := newDBFixtureFK(false)
+	f := newDBFixture()
 	findAndAssertCount[scheme.Event](t, f, 0, "") // no events
 
 	e := f.newEvent()
@@ -50,7 +51,8 @@ func TestCreateEventForeignKeys(t *testing.T) {
 }
 
 func TestDeleteEvent(t *testing.T) {
-	f := newDBFixtureFK(true)                     // no foreign keys
+	f := newDBFixture()
+	foreignKeys(f.gormdb, false)                  // no foreign keys
 	findAndAssertCount[scheme.Event](t, f, 0, "") // no events
 
 	evt := f.newEvent()
