@@ -24,14 +24,13 @@ type EventTraits struct{}
 func (EventTraits) Validate(m *EventPB) error {
 	return errors.Join(
 		idField[EventID]("event_id", m.EventId),
-		idField[IntegrationID]("integration_id", m.IntegrationId),
+		idField[ConnectionID]("connection_id", m.ConnectionId),
 	)
 }
 
 func (EventTraits) StrictValidate(m *EventPB) error {
 	return errors.Join(
 		mandatory("event_id", m.EventId),
-		mandatory("integration_id", m.IntegrationId),
 		mandatory("created_at", m.CreatedAt),
 	)
 }
@@ -53,13 +52,15 @@ func (e Event) WithMemo(memo map[string]string) Event {
 	return Event{e.forceUpdate(func(m *EventPB) { m.Memo = memo })}
 }
 
-func (e Event) Memo() map[string]string { return e.read().Memo }
-
-func (e Event) IntegrationID() IntegrationID {
-	return kittehs.Must1(ParseIntegrationID(e.read().IntegrationId))
+func (e Event) WithConnectionID(cid ConnectionID) Event {
+	return Event{e.forceUpdate(func(m *EventPB) { m.ConnectionId = cid.String() })}
 }
 
-func (e Event) IntegrationToken() string { return e.read().IntegrationToken }
+func (e Event) Memo() map[string]string { return e.read().Memo }
+
+func (e Event) ConnectionID() ConnectionID {
+	return kittehs.Must1(ParseConnectionID(e.read().ConnectionId))
+}
 
 func (e Event) Type() string { return e.read().EventType }
 
@@ -69,9 +70,8 @@ func (e Event) ToValues() map[string]Value {
 	}
 
 	return map[string]Value{
-		"type":           NewStringValue(e.m.EventType),
-		"id":             NewStringValue(e.m.EventId),
-		"integration_id": NewStringValue(e.m.IntegrationId),
+		"type": NewStringValue(e.m.EventType),
+		"id":   NewStringValue(e.m.EventId),
 		"data": kittehs.Must1(NewStructValue(
 			NewStringValue("event_data"),
 			kittehs.TransformMapValues(

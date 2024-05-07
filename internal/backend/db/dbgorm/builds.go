@@ -15,6 +15,10 @@ func (db *gormdb) saveBuild(ctx context.Context, build *scheme.Build) error {
 }
 
 func (db *gormdb) SaveBuild(ctx context.Context, build sdktypes.Build, data []byte) error {
+	if err := build.Strict(); err != nil {
+		return err
+	}
+
 	// TODO: add Build time
 	b := scheme.Build{
 		BuildID:   build.ID().UUIDValue(),

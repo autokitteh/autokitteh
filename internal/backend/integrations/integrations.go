@@ -15,7 +15,6 @@ import (
 	"go.autokitteh.dev/autokitteh/integrations/grpc"
 	httpint "go.autokitteh.dev/autokitteh/integrations/http"
 	"go.autokitteh.dev/autokitteh/integrations/redis"
-	"go.autokitteh.dev/autokitteh/integrations/scheduler"
 	"go.autokitteh.dev/autokitteh/integrations/slack"
 	"go.autokitteh.dev/autokitteh/integrations/twilio"
 	"go.autokitteh.dev/autokitteh/internal/backend/configset"
@@ -32,21 +31,19 @@ var Configs = configset.Set[Config]{
 	Dev:     &Config{Test: true},
 }
 
-func New(cfg *Config, s sdkservices.Secrets) sdkservices.Integrations {
+func New(cfg *Config, vars sdkservices.Vars) sdkservices.Integrations {
 	ints := []sdkservices.Integration{
-		aws.New(), // TODO: Secrets
-		chatgpt.New(s),
-		github.New(s),
-		gmail.New(s),
-		google.New(s),
-		// TODO: gRPC
-		httpint.New(s),
-		redis.New(), // TODO: Secrets
-		scheduler.New(s),
-		sheets.New(s),
-		slack.New(s),
-		twilio.New(s),
-		grpc.New(s),
+		aws.New(vars),
+		chatgpt.New(vars),
+		github.New(vars),
+		gmail.New(vars),
+		google.New(vars),
+		grpc.New(),
+		httpint.New(vars),
+		redis.New(vars),
+		sheets.New(vars),
+		slack.New(vars),
+		twilio.New(vars),
 	}
 
 	if cfg.Test {
@@ -56,16 +53,13 @@ func New(cfg *Config, s sdkservices.Secrets) sdkservices.Integrations {
 	return sdkintegrations.New(ints)
 }
 
-func Start(_ context.Context, l *zap.Logger, mux *http.ServeMux, s sdkservices.Secrets, o sdkservices.OAuth, d sdkservices.Dispatcher) error {
-	// TODO: AWS
-	chatgpt.Start(l, mux, s)
-	github.Start(l, mux, s, o, d)
-	google.Start(l, mux, s, o, d)
-	httpint.Start(l, mux, s, d)
-	// TODO: Redis
-	scheduler.Start(l, mux, s, d)
-	slack.Start(l, mux, s, d)
-	twilio.Start(l, mux, s, d)
+func Start(_ context.Context, l *zap.Logger, mux *http.ServeMux, vars sdkservices.Vars, o sdkservices.OAuth, d sdkservices.Dispatcher, c sdkservices.Connections, p sdkservices.Projects) error {
+	chatgpt.Start(l, mux, vars)
+	github.Start(l, mux, vars, o, d)
+	google.Start(l, mux, vars, o, d)
+	httpint.Start(l, mux, vars, d, c, p)
+	slack.Start(l, mux, vars, d)
+	twilio.Start(l, mux, vars, d)
 
 	return nil
 }

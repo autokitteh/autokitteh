@@ -26,7 +26,7 @@ func (i integration) listCollaborators(ctx context.Context, args []sdktypes.Valu
 	}
 
 	// Invoke the API method.
-	gh, err := i.NewClient(ctx)
+	gh, err := i.NewClient(ctx, owner)
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}

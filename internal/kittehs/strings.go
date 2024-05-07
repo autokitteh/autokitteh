@@ -14,7 +14,7 @@ var _ fmt.Stringer = String("")
 
 func (s String) String() string { return string(s) }
 
-func ToString[T fmt.Stringer](t T) string { return t.String() }
+func ToString[T any](t T) string { return fmt.Sprint(t) }
 
 // HashString32 computes the 32-bit FNV-1a hash of s in software.
 // maphash.String does only 64bit version.

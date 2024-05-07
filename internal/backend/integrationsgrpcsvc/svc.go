@@ -33,15 +33,29 @@ func (s *server) Get(ctx context.Context, req *connect.Request[integrationsv1.Ge
 	if err := proto.Validate(req.Msg); err != nil {
 		return nil, sdkerrors.AsConnectError(err)
 	}
-	id, err := sdktypes.StrictParseIntegrationID(req.Msg.IntegrationId)
-	if err != nil {
-		return nil, sdkerrors.AsConnectError(err)
+
+	var i sdkservices.Integration
+
+	if req.Msg.IntegrationId != "" {
+		id, err := sdktypes.StrictParseIntegrationID(req.Msg.IntegrationId)
+		if err != nil {
+			return nil, sdkerrors.AsConnectError(err)
+		}
+
+		if i, err = s.integrations.GetByID(ctx, id); err != nil {
+			return nil, sdkerrors.AsConnectError(err)
+		}
+	} else {
+		n, err := sdktypes.StrictParseSymbol(req.Msg.Name)
+		if err != nil {
+			return nil, sdkerrors.AsConnectError(err)
+		}
+
+		if i, err = s.integrations.GetByName(ctx, n); err != nil {
+			return nil, sdkerrors.AsConnectError(err)
+		}
 	}
 
-	i, err := s.integrations.Get(ctx, id)
-	if err != nil {
-		return nil, sdkerrors.AsConnectError(err)
-	}
 	return connect.NewResponse(&integrationsv1.GetResponse{Integration: i.Get().ToProto()}), nil
 }
 

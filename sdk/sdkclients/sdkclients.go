@@ -14,7 +14,6 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdkclients/sdkoauthclient"
 	"go.autokitteh.dev/autokitteh/sdk/sdkclients/sdkprojectsclient"
 	"go.autokitteh.dev/autokitteh/sdk/sdkclients/sdkruntimesclient"
-	"go.autokitteh.dev/autokitteh/sdk/sdkclients/sdksecretsclient"
 	"go.autokitteh.dev/autokitteh/sdk/sdkclients/sdksessionsclient"
 	"go.autokitteh.dev/autokitteh/sdk/sdkclients/sdkstoreclient"
 	sdktriggerclient "go.autokitteh.dev/autokitteh/sdk/sdkclients/sdktriggersclient"
@@ -36,7 +35,6 @@ type client struct {
 	params       sdkclient.Params
 	projects     func() sdkservices.Projects
 	runtimes     func() sdkservices.Runtimes
-	secrets      func() sdkservices.Secrets
 	sessions     func() sdkservices.Sessions
 	store        func() sdkservices.Store
 	triggers     func() sdkservices.Triggers
@@ -58,7 +56,6 @@ func New(params sdkclient.Params) sdkservices.Services {
 		oauth:        kittehs.Lazy1(sdkoauthclient.New, params),
 		projects:     kittehs.Lazy1(sdkprojectsclient.New, params),
 		runtimes:     kittehs.Lazy1(sdkruntimesclient.New, params),
-		secrets:      kittehs.Lazy1(sdksecretsclient.New, params),
 		sessions:     kittehs.Lazy1(sdksessionsclient.New, params),
 		store:        kittehs.Lazy1(sdkstoreclient.New, params),
 		triggers:     kittehs.Lazy1(sdktriggerclient.New, params),
@@ -92,7 +89,6 @@ func (c *client) Integrations() sdkservices.Integrations { return c.integrations
 func (c *client) OAuth() sdkservices.OAuth               { return c.oauth() }
 func (c *client) Projects() sdkservices.Projects         { return c.projects() }
 func (c *client) Runtimes() sdkservices.Runtimes         { return c.runtimes() }
-func (c *client) Secrets() sdkservices.Secrets           { return c.secrets() }
 func (c *client) Sessions() sdkservices.Sessions         { return c.sessions() }
 func (c *client) Store() sdkservices.Store               { return c.store() }
 func (c *client) Triggers() sdkservices.Triggers         { return c.triggers() }

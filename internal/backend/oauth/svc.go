@@ -13,6 +13,7 @@ import (
 	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/oauth/v1/oauthv1connect"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 type server struct {
@@ -89,8 +90,13 @@ func (s *server) StartFlow(ctx context.Context, req *connect.Request[oauthv1.Sta
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
+	cid, err := sdktypes.ParseConnectionID(req.Msg.ConnectionId)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+
 	// Redirect the caller to the URL that starts the OAuth flow.
-	url, err := s.impl.StartFlow(ctx, req.Msg.Id)
+	url, err := s.impl.StartFlow(ctx, req.Msg.Id, cid)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeUnknown, err)
 	}
@@ -108,6 +114,7 @@ func (s *server) Exchange(ctx context.Context, req *connect.Request[oauthv1.Exch
 	if err != nil {
 		return nil, connect.NewError(connect.CodeUnknown, err)
 	}
+
 	return connect.NewResponse(&oauthv1.ExchangeResponse{
 		AccessToken:  token.AccessToken,
 		RefreshToken: token.RefreshToken,

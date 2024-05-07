@@ -28,9 +28,10 @@ const (
 // receive, dispatch, and acknowledge asynchronous event notifications.
 type handler struct {
 	logger     *zap.Logger
-	secrets    sdkservices.Secrets
 	dispatcher sdkservices.Dispatcher
-	scope      string
+	conns      sdkservices.Connections
+	projs      sdkservices.Projects
+	vars       sdkservices.Vars
 }
 
 // ns can be either:
@@ -40,8 +41,8 @@ func routePrefix(ns string) string {
 	return fmt.Sprintf("/http/%s/", ns)
 }
 
-func Start(l *zap.Logger, mux *http.ServeMux, s sdkservices.Secrets, d sdkservices.Dispatcher) {
-	h := handler{logger: l, secrets: s, dispatcher: d, scope: "http"}
+func Start(l *zap.Logger, mux *http.ServeMux, vs sdkservices.Vars, d sdkservices.Dispatcher, c sdkservices.Connections, p sdkservices.Projects) {
+	h := handler{logger: l, dispatcher: d, conns: c, vars: vs, projs: p}
 	mux.Handle(routePrefix("{ns}")+"*", h)
 
 	// Save new autokitteh connections with user-submitted HTTP secrets.
@@ -105,19 +106,45 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	event, err := sdktypes.EventFromProto(&sdktypes.EventPB{
-		IntegrationId: IntegrationID.String(),
-		EventType:     strings.ToLower(r.Method),
-		Data:          kittehs.TransformMapValues(data, sdktypes.ToProto),
+		EventType: strings.ToLower(r.Method),
+		Data:      kittehs.TransformMapValues(data, sdktypes.ToProto),
 	})
 	if err != nil {
 		l.Error("create event error", zap.Error(err))
 		return
 	}
 
-	eid, err := h.dispatcher.Dispatch(r.Context(), event, &sdkservices.DispatchOptions{Env: env})
+	ctx := r.Context()
+
+	pname, err := sdktypes.StrictParseSymbol(strings.SplitN(env, "/", 2)[0])
 	if err != nil {
-		l.Error("dispatch error", zap.Error(err))
+		l.Error("parse project name error", zap.Error(err))
+		return
 	}
 
-	l.Info("dispatched", zap.String("event_id", eid.String()))
+	p, err := h.projs.GetByName(ctx, pname)
+	if err != nil {
+		l.Error("get project error", zap.Error(err))
+		return
+	}
+
+	conns, err := h.conns.List(ctx, sdkservices.ListConnectionsFilter{
+		IntegrationID: IntegrationID,
+		ProjectID:     p.ID(),
+	})
+	if err != nil {
+		l.Error("list connections error", zap.Error(err))
+		return
+	}
+
+	for _, c := range conns {
+		cid := c.ID()
+		l := l.With(zap.String("cid", cid.String()))
+		eid, err := h.dispatcher.Dispatch(ctx, event.WithConnectionID(cid), &sdkservices.DispatchOptions{Env: env})
+		if err != nil {
+			l.Error("dispatch error", zap.Error(err))
+		}
+
+		l.Info("dispatched", zap.String("event_id", eid.String()))
+	}
 }

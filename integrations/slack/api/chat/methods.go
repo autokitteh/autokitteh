@@ -16,8 +16,7 @@ const (
 )
 
 type API struct {
-	Secrets sdkservices.Secrets
-	Scope   string
+	Vars sdkservices.Vars
 }
 
 // Delete an existing message sent by the caller.
@@ -41,7 +40,7 @@ func (a API) Delete(ctx context.Context, args []sdktypes.Value, kwargs map[strin
 
 	// Invoke the API method.
 	resp := &DeleteResponse{}
-	err = api.PostJSON(ctx, a.Secrets, a.Scope, req, resp, "chat.delete")
+	err = api.PostJSON(ctx, a.Vars, req, resp, "chat.delete")
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
@@ -87,7 +86,7 @@ func (a API) PostEphemeral(ctx context.Context, args []sdktypes.Value, kwargs ma
 
 	// Invoke the API method.
 	resp := &PostEphemeralResponse{}
-	err = api.PostJSON(ctx, a.Secrets, a.Scope, req, resp, "chat.postEphemeral")
+	err = api.PostJSON(ctx, a.Vars, req, resp, "chat.postEphemeral")
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
@@ -126,7 +125,7 @@ func (a API) PostMessage(ctx context.Context, args []sdktypes.Value, kwargs map[
 
 	// Invoke the API method.
 	resp := &PostMessageResponse{}
-	err = api.PostJSON(ctx, a.Secrets, a.Scope, req, resp, "chat.postMessage")
+	err = api.PostJSON(ctx, a.Vars, req, resp, "chat.postMessage")
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
@@ -165,7 +164,7 @@ func (a API) Update(ctx context.Context, args []sdktypes.Value, kwargs map[strin
 
 	// Invoke the API method.
 	resp := &UpdateResponse{}
-	err = api.PostJSON(ctx, a.Secrets, a.Scope, req, resp, "chat.update")
+	err = api.PostJSON(ctx, a.Vars, req, resp, "chat.update")
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
@@ -196,7 +195,7 @@ func (a API) SendTextMessage(ctx context.Context, args []sdktypes.Value, kwargs 
 
 	// Invoke the API method.
 	resp := &PostMessageResponse{}
-	err = api.PostJSON(ctx, a.Secrets, a.Scope, req, resp, "chat.postMessage")
+	err = api.PostJSON(ctx, a.Vars, req, resp, "chat.postMessage")
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
@@ -289,7 +288,7 @@ func (a API) SendApprovalMessage(ctx context.Context, args []sdktypes.Value, kwa
 
 	// Invoke the API method.
 	resp := &PostMessageResponse{}
-	err = api.PostJSON(ctx, a.Secrets, a.Scope, req, resp, "chat.postMessage")
+	err = api.PostJSON(ctx, a.Vars, req, resp, "chat.postMessage")
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}

@@ -32,7 +32,7 @@ func (i integration) listWorkflowRuns(ctx context.Context, args []sdktypes.Value
 	}
 
 	// Invoke the API method.
-	gh, err := i.NewClient(ctx)
+	gh, err := i.NewClient(ctx, owner)
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}

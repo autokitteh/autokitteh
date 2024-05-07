@@ -64,6 +64,10 @@ func (db *gormdb) createSession(ctx context.Context, session *scheme.Session) er
 }
 
 func (db *gormdb) CreateSession(ctx context.Context, session sdktypes.Session) error {
+	if err := session.Strict(); err != nil {
+		return err
+	}
+
 	now := time.Now()
 
 	s := scheme.Session{
@@ -183,7 +187,7 @@ func (db *gormdb) ListSessions(ctx context.Context, f sdkservices.ListSessionsFi
 
 	// Only if we have a full page, there might be more sessions
 	nextPageToken := ""
-	if len(sessions) == int(f.PageSize) {
+	if len(sessions) == int(f.PageSize) && len(sessions) > 0 {
 		nextPageToken = sessions[len(sessions)-1].ID().UUIDValue().String()
 	}
 

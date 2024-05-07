@@ -76,7 +76,6 @@ project:
   connections:
     - name: my_connection
       integration: http
-      token: my_path
   triggers:
     - name: get
       connection: my_connection
@@ -112,7 +111,6 @@ project:
   "connection": {
     "connection_id": "con_00000000000000000000000003",
     "integration_id": "int_3kth00httpf1201a7ed83f7cd5",
-    "integration_token": "my_path",
     "project_id": "prj_00000000000000000000000001",
     "name": "my_connection"
   }

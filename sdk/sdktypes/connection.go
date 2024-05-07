@@ -41,10 +41,9 @@ func StrictConnectionFromProto(m *ConnectionPB) (Connection, error) {
 func (p Connection) ID() ConnectionID { return kittehs.Must1(ParseConnectionID(p.read().ConnectionId)) }
 func (p Connection) Name() Symbol     { return kittehs.Must1(ParseSymbol(p.read().Name)) }
 
-func NewConnection(id ConnectionID, name Symbol) Connection {
+func NewConnection(id ConnectionID) Connection {
 	return kittehs.Must1(ConnectionFromProto(&ConnectionPB{
 		ConnectionId: id.String(),
-		Name:         name.String(),
 	}))
 }
 
@@ -58,10 +57,6 @@ func (p Connection) WithID(id ConnectionID) Connection {
 	return Connection{p.forceUpdate(func(pb *ConnectionPB) { pb.ConnectionId = id.String() })}
 }
 
-func (p Connection) WithIntegrationToken(tok string) Connection {
-	return Connection{p.forceUpdate(func(pb *ConnectionPB) { pb.IntegrationToken = tok })}
-}
-
 func (p Connection) WithProjectID(id ProjectID) Connection {
 	return Connection{p.forceUpdate(func(pb *ConnectionPB) { pb.ProjectId = id.String() })}
 }
@@ -70,7 +65,6 @@ func (p Connection) WithIntegrationID(id IntegrationID) Connection {
 	return Connection{p.forceUpdate(func(pb *ConnectionPB) { pb.IntegrationId = id.String() })}
 }
 
-func (p Connection) IntegrationToken() string { return p.read().IntegrationToken }
 func (p Connection) IntegrationID() IntegrationID {
 	return kittehs.Must1(ParseIntegrationID(p.read().IntegrationId))
 }

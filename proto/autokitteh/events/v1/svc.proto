@@ -7,21 +7,9 @@ import "buf/validate/validate.proto";
 
 message SaveRequest {
   option (buf.validate.message).cel = {
-    id: "events.missing_integration_id",
-    message: "missing integration_id",
-    expression: "has(this.event) && this.event.integration_id != ''",
-  };
-
-  option (buf.validate.message).cel = {
-    id: "events.missing_integration_token",
-    message: "missing integration_token",
-    expression: "has(this.event) && this.event.integration_token != ''",
-  };
-
-  option (buf.validate.message).cel = {
-    id: "events.missing_event_type",
-    message: "missing event_type",
-    expression: "has(this.event) && this.event.event_type != ''",
+    id: "events.missing_connection_id",
+    message: "missing connection_id",
+    expression: "has(this.event) && this.event.connection_id != ''",
   };
 
   option (buf.validate.message).cel = {
@@ -49,8 +37,8 @@ message GetResponse {
 
 message ListRequest {
   string integration_id = 1;
-  string integration_token = 2;
-  string event_type = 4;
+  string connection_id = 2;
+  string event_type = 3;
 }
 
 message ListResponse {
@@ -72,13 +60,6 @@ message AddEventRecordRequest {
     message: "missing event id",
     expression: "has(this.record) && this.record.event_id != ''",
   };
-
-  // TODO: What is "EventRecord.event_record_id"?
-  // option (buf.validate.message).cel = {
-  //   id: "events.event_record_id_must_be_empty",
-  //   message: "event_record_id must not be specified",
-  //   expression: "has(this.record) && this.record.event_record_id == ''",
-  // };
 
   EventRecord record = 1;
 }

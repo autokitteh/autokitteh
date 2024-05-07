@@ -296,25 +296,18 @@ export class GetResponse extends Message<GetResponse> {
  */
 export class ListRequest extends Message<ListRequest> {
   /**
-   * Optional filter.
+   * Optional.
    *
    * @generated from field: string integration_id = 1;
    */
   integrationId = "";
 
   /**
-   * Optional filter.
+   * Optional.
    *
    * @generated from field: string project_id = 2;
    */
   projectId = "";
-
-  /**
-   * Optional filter.
-   *
-   * @generated from field: string integration_token = 3;
-   */
-  integrationToken = "";
 
   constructor(data?: PartialMessage<ListRequest>) {
     super();
@@ -326,7 +319,6 @@ export class ListRequest extends Message<ListRequest> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "integration_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "integration_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListRequest {

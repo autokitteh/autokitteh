@@ -102,7 +102,7 @@ func Execute() {
 
 func init() {
 	// Global flags for all commands.
-	RootCmd.PersistentFlags().StringArrayVarP(&configs, "config", "c", nil, `temporary "key=value" configurations`)
+	RootCmd.PersistentFlags().StringArrayVarP(&configs, "config", "C", nil, `temporary "key=value" configurations`)
 
 	RootCmd.PersistentFlags().BoolVarP(&json, "json", "j", false, "print output in compact JSON format")
 	RootCmd.PersistentFlags().BoolVarP(&niceJSON, "nice_json", "J", false, "print output in readable JSON format")

@@ -21,8 +21,8 @@ func NewIntegration(desc sdktypes.Integration, mod sdkmodule.Module) sdkservices
 
 func (i *integration) Get() sdktypes.Integration { return i.desc }
 
-func (i *integration) Configure(ctx context.Context, config string) (map[string]sdktypes.Value, error) {
-	return i.mod.Configure(ctx, sdktypes.NewExecutorID(i.desc.ID()), config)
+func (i *integration) Configure(ctx context.Context, cid sdktypes.ConnectionID) (map[string]sdktypes.Value, error) {
+	return i.mod.Configure(ctx, sdktypes.NewExecutorID(i.desc.ID()), cid)
 }
 
 func (i *integration) Call(ctx context.Context, function sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {

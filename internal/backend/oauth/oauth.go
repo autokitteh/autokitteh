@@ -2,12 +2,10 @@ package oauth
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 	"os"
 
-	"github.com/lithammer/shortuuid/v4"
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
@@ -21,6 +19,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 type oauth struct {
@@ -31,10 +30,6 @@ type oauth struct {
 	// storage, we will merge them into a single table.
 	configs map[string]*oauth2.Config
 	opts    map[string]map[string]string
-
-	// States is a collection of authentication flows currently in-progress.
-	// TODO(ENG-177): Use a database table instead of an in-memory map.
-	states map[string]bool
 }
 
 func New(l *zap.Logger) sdkservices.OAuth {
@@ -300,52 +295,39 @@ func New(l *zap.Logger) sdkservices.OAuth {
 				"prompt":      "consent", // oauth2.ApprovalForce
 			},
 		},
-		states: make(map[string]bool),
 	}
 }
 
-func (o *oauth) Register(ctx context.Context, id string, cfg *oauth2.Config, opts map[string]string) error {
-	cfg.RedirectURL = fmt.Sprintf("https://%s/oauth/redirect/%s", os.Getenv("WEBHOOK_ADDRESS"), id)
-	o.configs[id] = cfg
-	o.opts[id] = opts
+func (o *oauth) Register(ctx context.Context, intg string, cfg *oauth2.Config, opts map[string]string) error {
+	cfg.RedirectURL = fmt.Sprintf("https://%s/oauth/redirect/%s", os.Getenv("WEBHOOK_ADDRESS"), intg)
+	o.configs[intg] = cfg
+	o.opts[intg] = opts
 	return nil
 }
 
-func (o *oauth) Get(ctx context.Context, id string) (*oauth2.Config, map[string]string, error) {
-	cfg, ok := o.configs[id]
+func (o *oauth) Get(ctx context.Context, intg string) (*oauth2.Config, map[string]string, error) {
+	cfg, ok := o.configs[intg]
 	if !ok {
-		return nil, nil, fmt.Errorf("%w: %q not registered as an OAuth ID", sdkerrors.ErrNotFound, id)
+		return nil, nil, fmt.Errorf("%w: %q not registered as an OAuth ID", sdkerrors.ErrNotFound, intg)
 	}
-	return cfg, o.opts[id], nil
+	return cfg, o.opts[intg], nil
 }
 
-func (o *oauth) StartFlow(ctx context.Context, id string) (string, error) {
-	cfg, opts, err := o.Get(ctx, id)
+func (o *oauth) StartFlow(ctx context.Context, intg string, cid sdktypes.ConnectionID) (string, error) {
+	cfg, opts, err := o.Get(ctx, intg)
 	if err != nil {
 		return "", err
 	}
-	// Redirect the caller to the URL that starts the OAuth flow, with a newly-generated
-	// state parameter (to validate the origin of a soon-to-be-received OAuth redirect
-	// request, to protect against CSRF attacks).
-	state := shortuuid.New()
-	o.states[state] = true
-	return cfg.AuthCodeURL(state, authCode(opts)...), nil
+
+	return cfg.AuthCodeURL(cid.String(), authCode(opts)...), nil
 }
 
-func (o *oauth) Exchange(ctx context.Context, id, state, code string) (*oauth2.Token, error) {
-	// Validate that the request was really initiated by us (i.e. its state
-	// parameter is recognized, as protection against CSRF attacks).
-	ok := o.states[state]
-	delete(o.states, state)
-	if !ok {
-		return nil, errors.New("oauth redirect request with unrecognized state parameter")
-	}
-
+func (o *oauth) Exchange(ctx context.Context, intg, state, code string) (*oauth2.Token, error) {
 	// Convert the received temporary authorization code
 	// into a refresh token / user access token.
-	cfg, opts, err := o.Get(ctx, id)
+	cfg, opts, err := o.Get(ctx, intg)
 	if err != nil {
-		return nil, fmt.Errorf("bad OAuth consumer ID: %w", err)
+		return nil, fmt.Errorf("bad oauth integration name: %w", err)
 	}
 	hc := &http.Client{Timeout: exchangeTimeout}
 	ctx = context.WithValue(ctx, oauth2.HTTPClient, hc)

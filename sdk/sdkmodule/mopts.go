@@ -8,23 +8,11 @@ import (
 )
 
 type moduleOpts struct {
-	funcs          map[string]*funcOpts
-	vars           map[string]*varOpts
-	dataFromConfig func(string) ([]byte, error)
+	funcs map[string]*funcOpts
+	vars  map[string]*varOpts
 }
 
 type Optfn func(*moduleOpts) error
-
-func WithDataFromConfig(f func(string) ([]byte, error)) Optfn {
-	return func(opts *moduleOpts) error {
-		opts.dataFromConfig = f
-		return nil
-	}
-}
-
-func WithConfigAsData() Optfn {
-	return WithDataFromConfig(func(cfg string) ([]byte, error) { return []byte(cfg), nil })
-}
 
 func ExportFunction(name string, fn sdkexecutor.Function, fopts ...FuncOpt) Optfn {
 	return func(mopts *moduleOpts) error {

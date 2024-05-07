@@ -16,9 +16,8 @@ import (
 type Connections struct {
 	fx.In
 
-	Z            *zap.Logger
-	DB           db.DB
-	Integrations sdkservices.Integrations
+	Z  *zap.Logger
+	DB db.DB
 }
 
 func New(c Connections) sdkservices.Connections { return &c }
@@ -59,5 +58,5 @@ func (c *Connections) Get(ctx context.Context, id sdktypes.ConnectionID) (sdktyp
 }
 
 func (c *Connections) List(ctx context.Context, filter sdkservices.ListConnectionsFilter) ([]sdktypes.Connection, error) {
-	return c.DB.ListConnections(ctx, filter)
+	return c.DB.ListConnections(ctx, filter, false)
 }

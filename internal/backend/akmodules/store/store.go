@@ -27,7 +27,7 @@ func New(envID sdktypes.EnvID, projectID sdktypes.ProjectID, client *redis.Clien
 
 	// context.TODO() is supplied here as the redis integration does not require
 	// use of context in Configure.
-	vs := kittehs.Must1(mod.Configure(context.TODO(), ExecutorID, ""))
+	vs := kittehs.Must1(mod.Configure(context.TODO(), ExecutorID, sdktypes.InvalidConnectionID))
 
 	return sdkexecutor.NewExecutor(mod, ExecutorID, vs)
 }

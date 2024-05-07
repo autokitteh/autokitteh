@@ -5,10 +5,10 @@ import (
 )
 
 type SetVarAction struct {
-	Key           string       `json:"key"`
-	Env           string       `json:"env,omitempty"`
-	ConnectionKey string       `json:"connection_key,omitempty"`
-	Var           sdktypes.Var `json:"var"`
+	Key        string       `json:"key"`
+	Env        string       `json:"env,omitempty"`
+	Connection string       `json:"connection,omitempty"`
+	Var        sdktypes.Var `json:"var"`
 }
 
 func (a SetVarAction) Type() string   { return "set_var" }

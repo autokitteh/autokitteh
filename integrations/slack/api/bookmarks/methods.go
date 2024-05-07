@@ -11,8 +11,7 @@ import (
 )
 
 type API struct {
-	Secrets sdkservices.Secrets
-	Scope   string
+	Vars sdkservices.Vars
 }
 
 // Add a bookmark to a channel.
@@ -39,7 +38,7 @@ func (a API) Add(ctx context.Context, args []sdktypes.Value, kwargs map[string]s
 
 	// Invoke the API method.
 	resp := &AddResponse{}
-	err = api.PostJSON(ctx, a.Secrets, a.Scope, req, resp, "bookmarks.add")
+	err = api.PostJSON(ctx, a.Vars, req, resp, "bookmarks.add")
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
@@ -70,7 +69,7 @@ func (a API) Edit(ctx context.Context, args []sdktypes.Value, kwargs map[string]
 
 	// Invoke the API method.
 	resp := &EditResponse{}
-	err = api.PostJSON(ctx, a.Secrets, a.Scope, req, resp, "bookmarks.edit")
+	err = api.PostJSON(ctx, a.Vars, req, resp, "bookmarks.edit")
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
@@ -97,7 +96,7 @@ func (a API) List(ctx context.Context, args []sdktypes.Value, kwargs map[string]
 
 	// Invoke the API method.
 	resp := &ListResponse{}
-	err = api.PostJSON(ctx, a.Secrets, a.Scope, req, resp, "bookmarks.list")
+	err = api.PostJSON(ctx, a.Vars, req, resp, "bookmarks.list")
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
@@ -126,7 +125,7 @@ func (a API) Remove(ctx context.Context, args []sdktypes.Value, kwargs map[strin
 
 	// Invoke the API method.
 	resp := &RemoveResponse{}
-	err = api.PostJSON(ctx, a.Secrets, a.Scope, req, resp, "bookmarks.remove")
+	err = api.PostJSON(ctx, a.Vars, req, resp, "bookmarks.remove")
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}

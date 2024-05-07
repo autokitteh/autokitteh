@@ -25,6 +25,7 @@ func (TriggerTraits) Validate(m *TriggerPB) error {
 		idField[TriggerID]("trigger_id", m.TriggerId),
 		objectField[CodeLocation]("code_location", m.CodeLocation),
 		valuesMapField("data", m.Data),
+		symbolField("name", m.Name),
 	)
 }
 
@@ -32,6 +33,7 @@ func (TriggerTraits) StrictValidate(m *TriggerPB) error {
 	return errors.Join(
 		mandatory("env_id", m.EnvId),
 		mandatory("connection_id", m.ConnectionId),
+		mandatory("name", m.Name),
 	)
 }
 
@@ -62,9 +64,9 @@ func (p Trigger) Data() map[string]Value {
 	return kittehs.TransformMapValues(p.read().Data, forceFromProto[Value])
 }
 
-func (p Trigger) Name() string { return p.read().Name }
-func (p Trigger) WithName(s string) Trigger {
-	return Trigger{p.forceUpdate(func(m *TriggerPB) { m.Name = s })}
+func (p Trigger) Name() Symbol { return NewSymbol(p.read().Name) }
+func (p Trigger) WithName(s Symbol) Trigger {
+	return Trigger{p.forceUpdate(func(m *TriggerPB) { m.Name = s.String() })}
 }
 
 func (p Trigger) EnvID() EnvID      { return kittehs.Must1(ParseEnvID(p.read().EnvId)) }

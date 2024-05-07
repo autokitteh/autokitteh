@@ -17,7 +17,7 @@ from autokitteh_pb.values.v1 import values_pb2 as autokitteh_dot_values_dot_v1_d
 from buf.validate import validate_pb2 as buf_dot_validate_dot_validate__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n$autokitteh/integrations/v1/svc.proto\x12\x1a\x61utokitteh.integrations.v1\x1a,autokitteh/integrations/v1/integration.proto\x1a#autokitteh/program/v1/program.proto\x1a!autokitteh/values/v1/values.proto\x1a\x1b\x62uf/validate/validate.proto\"=\n\nGetRequest\x12/\n\x0eintegration_id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\rintegrationId\"X\n\x0bGetResponse\x12I\n\x0bintegration\x18\x01 \x01(\x0b\x32\'.autokitteh.integrations.v1.IntegrationR\x0bintegration\":\n\x0bListRequest\x12%\n\x0ename_substring\x18\x01 \x01(\tR\rnameSubstringJ\x04\x08\x02\x10\x03\"i\n\x0cListResponse\x12Y\n\x0cintegrations\x18\x01 \x03(\x0b\x32\'.autokitteh.integrations.v1.IntegrationB\x0c\xfa\xf7\x18\x08\x92\x01\x05\"\x03\xc8\x01\x01R\x0cintegrations\"\xf8\x02\n\x0b\x43\x61llRequest\x12/\n\x0eintegration_id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\rintegrationId\x12@\n\x08\x66unction\x18\x02 \x01(\x0b\x32\x1b.autokitteh.values.v1.ValueB\x07\xfa\xf7\x18\x03\xc8\x01\x01R\x08\x66unction\x12=\n\x04\x61rgs\x18\x03 \x03(\x0b\x32\x1b.autokitteh.values.v1.ValueB\x0c\xfa\xf7\x18\x08\x92\x01\x05\"\x03\xc8\x01\x01R\x04\x61rgs\x12_\n\x06kwargs\x18\x04 \x03(\x0b\x32\x33.autokitteh.integrations.v1.CallRequest.KwargsEntryB\x12\xfa\xf7\x18\x0e\x9a\x01\x0b\"\x04r\x02\x10\x01*\x03\xc8\x01\x01R\x06kwargs\x1aV\n\x0bKwargsEntry\x12\x10\n\x03key\x18\x01 \x01(\tR\x03key\x12\x31\n\x05value\x18\x02 \x01(\x0b\x32\x1b.autokitteh.values.v1.ValueR\x05value:\x02\x38\x01\"u\n\x0c\x43\x61llResponse\x12\x31\n\x05value\x18\x01 \x01(\x0b\x32\x1b.autokitteh.values.v1.ValueR\x05value\x12\x32\n\x05\x65rror\x18\x02 \x01(\x0b\x32\x1c.autokitteh.program.v1.ErrorR\x05\x65rror\"[\n\x10\x43onfigureRequest\x12/\n\x0eintegration_id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\rintegrationId\x12\x16\n\x06\x63onfig\x18\x02 \x01(\tR\x06\x63onfig\"\xd2\x01\n\x11\x43onfigureResponse\x12\x65\n\x06values\x18\x04 \x03(\x0b\x32\x39.autokitteh.integrations.v1.ConfigureResponse.ValuesEntryB\x12\xfa\xf7\x18\x0e\x9a\x01\x0b\"\x04r\x02\x10\x01*\x03\xc8\x01\x01R\x06values\x1aV\n\x0bValuesEntry\x12\x10\n\x03key\x18\x01 \x01(\tR\x03key\x12\x31\n\x05value\x18\x02 \x01(\x0b\x32\x1b.autokitteh.values.v1.ValueR\x05value:\x02\x38\x01\">\n\x11\x44isconnectRequest\x12)\n\x0b\x65xecutor_id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\nexecutorId\"\x14\n\x12\x44isconnectResponse2\x8d\x03\n\x13IntegrationsService\x12V\n\x03Get\x12&.autokitteh.integrations.v1.GetRequest\x1a\'.autokitteh.integrations.v1.GetResponse\x12Y\n\x04List\x12\'.autokitteh.integrations.v1.ListRequest\x1a(.autokitteh.integrations.v1.ListResponse\x12h\n\tConfigure\x12,.autokitteh.integrations.v1.ConfigureRequest\x1a-.autokitteh.integrations.v1.ConfigureResponse\x12Y\n\x04\x43\x61ll\x12\'.autokitteh.integrations.v1.CallRequest\x1a(.autokitteh.integrations.v1.CallResponseB\x89\x02\n\x1e\x63om.autokitteh.integrations.v1B\x08SvcProtoP\x01ZSgo.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/integrations/v1;integrationsv1\xa2\x02\x03\x41IX\xaa\x02\x1a\x41utokitteh.Integrations.V1\xca\x02\x1a\x41utokitteh\\Integrations\\V1\xe2\x02&Autokitteh\\Integrations\\V1\\GPBMetadata\xea\x02\x1c\x41utokitteh::Integrations::V1b\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n$autokitteh/integrations/v1/svc.proto\x12\x1a\x61utokitteh.integrations.v1\x1a,autokitteh/integrations/v1/integration.proto\x1a#autokitteh/program/v1/program.proto\x1a!autokitteh/values/v1/values.proto\x1a\x1b\x62uf/validate/validate.proto\"\xfd\x01\n\nGetRequest\x12%\n\x0eintegration_id\x18\x01 \x01(\tR\rintegrationId\x12\x12\n\x04name\x18\x02 \x01(\tR\x04name:\xb3\x01\xfa\xf7\x18\xae\x01\x1a\xab\x01\n\x17integration_id_xor_name\x12.integration_id and name are mutually exclusive\x1a`(this.integration_id == \'\' && this.name != \'\') || (this.integration_id != \'\' && this.name == \'\')\"X\n\x0bGetResponse\x12I\n\x0bintegration\x18\x01 \x01(\x0b\x32\'.autokitteh.integrations.v1.IntegrationR\x0bintegration\":\n\x0bListRequest\x12%\n\x0ename_substring\x18\x01 \x01(\tR\rnameSubstringJ\x04\x08\x02\x10\x03\"i\n\x0cListResponse\x12Y\n\x0cintegrations\x18\x01 \x03(\x0b\x32\'.autokitteh.integrations.v1.IntegrationB\x0c\xfa\xf7\x18\x08\x92\x01\x05\"\x03\xc8\x01\x01R\x0cintegrations\"\xf8\x02\n\x0b\x43\x61llRequest\x12/\n\x0eintegration_id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\rintegrationId\x12@\n\x08\x66unction\x18\x02 \x01(\x0b\x32\x1b.autokitteh.values.v1.ValueB\x07\xfa\xf7\x18\x03\xc8\x01\x01R\x08\x66unction\x12=\n\x04\x61rgs\x18\x03 \x03(\x0b\x32\x1b.autokitteh.values.v1.ValueB\x0c\xfa\xf7\x18\x08\x92\x01\x05\"\x03\xc8\x01\x01R\x04\x61rgs\x12_\n\x06kwargs\x18\x04 \x03(\x0b\x32\x33.autokitteh.integrations.v1.CallRequest.KwargsEntryB\x12\xfa\xf7\x18\x0e\x9a\x01\x0b\"\x04r\x02\x10\x01*\x03\xc8\x01\x01R\x06kwargs\x1aV\n\x0bKwargsEntry\x12\x10\n\x03key\x18\x01 \x01(\tR\x03key\x12\x31\n\x05value\x18\x02 \x01(\x0b\x32\x1b.autokitteh.values.v1.ValueR\x05value:\x02\x38\x01\"u\n\x0c\x43\x61llResponse\x12\x31\n\x05value\x18\x01 \x01(\x0b\x32\x1b.autokitteh.values.v1.ValueR\x05value\x12\x32\n\x05\x65rror\x18\x02 \x01(\x0b\x32\x1c.autokitteh.program.v1.ErrorR\x05\x65rror\"h\n\x10\x43onfigureRequest\x12/\n\x0eintegration_id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\rintegrationId\x12#\n\rconnection_id\x18\x02 \x01(\tR\x0c\x63onnectionId\"\xd2\x01\n\x11\x43onfigureResponse\x12\x65\n\x06values\x18\x04 \x03(\x0b\x32\x39.autokitteh.integrations.v1.ConfigureResponse.ValuesEntryB\x12\xfa\xf7\x18\x0e\x9a\x01\x0b\"\x04r\x02\x10\x01*\x03\xc8\x01\x01R\x06values\x1aV\n\x0bValuesEntry\x12\x10\n\x03key\x18\x01 \x01(\tR\x03key\x12\x31\n\x05value\x18\x02 \x01(\x0b\x32\x1b.autokitteh.values.v1.ValueR\x05value:\x02\x38\x01\">\n\x11\x44isconnectRequest\x12)\n\x0b\x65xecutor_id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\nexecutorId\"\x14\n\x12\x44isconnectResponse2\x8d\x03\n\x13IntegrationsService\x12V\n\x03Get\x12&.autokitteh.integrations.v1.GetRequest\x1a\'.autokitteh.integrations.v1.GetResponse\x12Y\n\x04List\x12\'.autokitteh.integrations.v1.ListRequest\x1a(.autokitteh.integrations.v1.ListResponse\x12h\n\tConfigure\x12,.autokitteh.integrations.v1.ConfigureRequest\x1a-.autokitteh.integrations.v1.ConfigureResponse\x12Y\n\x04\x43\x61ll\x12\'.autokitteh.integrations.v1.CallRequest\x1a(.autokitteh.integrations.v1.CallResponseB\x89\x02\n\x1e\x63om.autokitteh.integrations.v1B\x08SvcProtoP\x01ZSgo.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/integrations/v1;integrationsv1\xa2\x02\x03\x41IX\xaa\x02\x1a\x41utokitteh.Integrations.V1\xca\x02\x1a\x41utokitteh\\Integrations\\V1\xe2\x02&Autokitteh\\Integrations\\V1\\GPBMetadata\xea\x02\x1c\x41utokitteh::Integrations::V1b\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -25,8 +25,8 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'autokitteh.integrations.v1.
 if _descriptor._USE_C_DESCRIPTORS == False:
   DESCRIPTOR._options = None
   DESCRIPTOR._serialized_options = b'\n\036com.autokitteh.integrations.v1B\010SvcProtoP\001ZSgo.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/integrations/v1;integrationsv1\242\002\003AIX\252\002\032Autokitteh.Integrations.V1\312\002\032Autokitteh\\Integrations\\V1\342\002&Autokitteh\\Integrations\\V1\\GPBMetadata\352\002\034Autokitteh::Integrations::V1'
-  _GETREQUEST.fields_by_name['integration_id']._options = None
-  _GETREQUEST.fields_by_name['integration_id']._serialized_options = b'\372\367\030\004r\002\020\001'
+  _GETREQUEST._options = None
+  _GETREQUEST._serialized_options = b'\372\367\030\256\001\032\253\001\n\027integration_id_xor_name\022.integration_id and name are mutually exclusive\032`(this.integration_id == \'\' && this.name != \'\') || (this.integration_id != \'\' && this.name == \'\')'
   _LISTRESPONSE.fields_by_name['integrations']._options = None
   _LISTRESPONSE.fields_by_name['integrations']._serialized_options = b'\372\367\030\010\222\001\005\"\003\310\001\001'
   _CALLREQUEST_KWARGSENTRY._options = None
@@ -47,30 +47,30 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _CONFIGURERESPONSE.fields_by_name['values']._serialized_options = b'\372\367\030\016\232\001\013\"\004r\002\020\001*\003\310\001\001'
   _DISCONNECTREQUEST.fields_by_name['executor_id']._options = None
   _DISCONNECTREQUEST.fields_by_name['executor_id']._serialized_options = b'\372\367\030\004r\002\020\001'
-  _globals['_GETREQUEST']._serialized_start=215
-  _globals['_GETREQUEST']._serialized_end=276
-  _globals['_GETRESPONSE']._serialized_start=278
-  _globals['_GETRESPONSE']._serialized_end=366
-  _globals['_LISTREQUEST']._serialized_start=368
-  _globals['_LISTREQUEST']._serialized_end=426
-  _globals['_LISTRESPONSE']._serialized_start=428
-  _globals['_LISTRESPONSE']._serialized_end=533
-  _globals['_CALLREQUEST']._serialized_start=536
-  _globals['_CALLREQUEST']._serialized_end=912
-  _globals['_CALLREQUEST_KWARGSENTRY']._serialized_start=826
-  _globals['_CALLREQUEST_KWARGSENTRY']._serialized_end=912
-  _globals['_CALLRESPONSE']._serialized_start=914
-  _globals['_CALLRESPONSE']._serialized_end=1031
-  _globals['_CONFIGUREREQUEST']._serialized_start=1033
-  _globals['_CONFIGUREREQUEST']._serialized_end=1124
-  _globals['_CONFIGURERESPONSE']._serialized_start=1127
-  _globals['_CONFIGURERESPONSE']._serialized_end=1337
-  _globals['_CONFIGURERESPONSE_VALUESENTRY']._serialized_start=1251
-  _globals['_CONFIGURERESPONSE_VALUESENTRY']._serialized_end=1337
-  _globals['_DISCONNECTREQUEST']._serialized_start=1339
-  _globals['_DISCONNECTREQUEST']._serialized_end=1401
-  _globals['_DISCONNECTRESPONSE']._serialized_start=1403
-  _globals['_DISCONNECTRESPONSE']._serialized_end=1423
-  _globals['_INTEGRATIONSSERVICE']._serialized_start=1426
-  _globals['_INTEGRATIONSSERVICE']._serialized_end=1823
+  _globals['_GETREQUEST']._serialized_start=216
+  _globals['_GETREQUEST']._serialized_end=469
+  _globals['_GETRESPONSE']._serialized_start=471
+  _globals['_GETRESPONSE']._serialized_end=559
+  _globals['_LISTREQUEST']._serialized_start=561
+  _globals['_LISTREQUEST']._serialized_end=619
+  _globals['_LISTRESPONSE']._serialized_start=621
+  _globals['_LISTRESPONSE']._serialized_end=726
+  _globals['_CALLREQUEST']._serialized_start=729
+  _globals['_CALLREQUEST']._serialized_end=1105
+  _globals['_CALLREQUEST_KWARGSENTRY']._serialized_start=1019
+  _globals['_CALLREQUEST_KWARGSENTRY']._serialized_end=1105
+  _globals['_CALLRESPONSE']._serialized_start=1107
+  _globals['_CALLRESPONSE']._serialized_end=1224
+  _globals['_CONFIGUREREQUEST']._serialized_start=1226
+  _globals['_CONFIGUREREQUEST']._serialized_end=1330
+  _globals['_CONFIGURERESPONSE']._serialized_start=1333
+  _globals['_CONFIGURERESPONSE']._serialized_end=1543
+  _globals['_CONFIGURERESPONSE_VALUESENTRY']._serialized_start=1457
+  _globals['_CONFIGURERESPONSE_VALUESENTRY']._serialized_end=1543
+  _globals['_DISCONNECTREQUEST']._serialized_start=1545
+  _globals['_DISCONNECTREQUEST']._serialized_end=1607
+  _globals['_DISCONNECTRESPONSE']._serialized_start=1609
+  _globals['_DISCONNECTRESPONSE']._serialized_end=1629
+  _globals['_INTEGRATIONSSERVICE']._serialized_start=1632
+  _globals['_INTEGRATIONSSERVICE']._serialized_end=2029
 # @@protoc_insertion_point(module_scope)

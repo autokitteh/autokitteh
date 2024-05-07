@@ -333,7 +333,7 @@ func planConnectionVars(mconn Connection, cid sdktypes.ConnectionID, cvars sdkty
 			log.Printf("not found, will set")
 		}
 
-		acts = append(acts, actions.SetVarAction{Key: mvar.GetKey(), ConnectionKey: mconn.GetKey(), Var: want})
+		acts = append(acts, actions.SetVarAction{Key: mvar.GetKey(), Connection: mconn.GetKey(), Var: want})
 	}
 
 	// Remove connection vars not in the manifest.
@@ -361,8 +361,7 @@ func planConnection(mconn *Connection, curr sdktypes.Connection, optfns ...Optio
 	}
 
 	desired, err := sdktypes.ConnectionFromProto(&sdktypes.ConnectionPB{
-		Name:             mconn.Name,
-		IntegrationToken: mconn.Token,
+		Name: mconn.Name,
 	})
 	if err != nil {
 		return sdktypes.InvalidConnectionID, nil, fmt.Errorf("invalid: %w", err)
@@ -416,7 +415,7 @@ func planTriggers(ctx context.Context, mtriggers []*Trigger, client sdkservices.
 		log := log.For("trigger", mtrigger)
 
 		_, curr := kittehs.FindFirst(triggers, func(t sdktypes.Trigger) bool {
-			return mtrigger.Name != "" && t.Name() == mtrigger.Name
+			return t.Name().String() == mtrigger.Name
 		})
 
 		ep := mtrigger.Entrypoint

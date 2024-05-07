@@ -13,12 +13,20 @@ type Vars []Var
 
 func NewVars(vs ...Var) Vars { return vs }
 
-func (vs Vars) Append(v Var) Vars { return append(vs, v) }
+func (vs Vars) WithPrefix(prefix string) Vars {
+	return kittehs.Transform(vs, func(v Var) Var {
+		return NewVar(NewSymbol(prefix+v.Name().String()), v.Value(), v.IsSecret())
+	})
+}
+
+func (vs Vars) Append(others ...Var) Vars { return append(vs, others...) }
 
 // panics if n is an invalid var name.
 func (vs Vars) Set(n Symbol, v string, isSecret bool) Vars {
 	return vs.Append(NewVar(n, v, isSecret))
 }
+
+func (vs Vars) Encode(x any) Vars { return vs.Append(EncodeVars(x)...) }
 
 func (vs Vars) GetValue(name Symbol) string { return vs.Get(name).Value() }
 
@@ -48,7 +56,7 @@ func (vs Vars) ToStringsMap() map[string]string {
 }
 
 // Encodes `in` into Vars. `in` must be a struct or a non-nil pointer to a struct.
-// All members must be strings. A field tag of `"var:secret"` will make the field secret.
+// All members must be strings. A field tag of `var:"secret"` will make the field secret.
 func EncodeVars(in any) (vs Vars) {
 	v, t := reflect.ValueOf(in), reflect.TypeOf(in)
 
@@ -64,7 +72,7 @@ func EncodeVars(in any) (vs Vars) {
 		fv := v.Field(i)
 		ft := t.Field(i)
 
-		n := forceSymbol(ft.Name)
+		n := NewSymbol(ft.Name)
 
 		if ft.Type.Kind() != reflect.String {
 			sdklogger.Panic("invalid field value type - not a string")
@@ -98,7 +106,7 @@ func (vs Vars) Decode(out any) {
 		fv := v.Field(i)
 		ft := t.Field(i)
 
-		n := forceSymbol(ft.Name)
+		n := NewSymbol(ft.Name)
 
 		if ft.Type.Kind() != reflect.String {
 			sdklogger.Panic("invalid field value type - not a string")

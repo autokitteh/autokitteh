@@ -14,7 +14,7 @@ _sym_db = _symbol_database.Default()
 from buf.validate import validate_pb2 as buf_dot_validate_dot_validate__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n*autokitteh/connections/v1/connection.proto\x12\x19\x61utokitteh.connections.v1\x1a\x1b\x62uf/validate/validate.proto\"\xe0\x01\n\nConnection\x12#\n\rconnection_id\x18\x01 \x01(\tR\x0c\x63onnectionId\x12/\n\x0eintegration_id\x18\x02 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\rintegrationId\x12\x35\n\x11integration_token\x18\x03 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x10integrationToken\x12\'\n\nproject_id\x18\x04 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\tprojectId\x12\x1c\n\x04name\x18\x05 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x04nameB\x89\x02\n\x1d\x63om.autokitteh.connections.v1B\x0f\x43onnectionProtoP\x01ZQgo.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/connections/v1;connectionsv1\xa2\x02\x03\x41\x43X\xaa\x02\x19\x41utokitteh.Connections.V1\xca\x02\x19\x41utokitteh\\Connections\\V1\xe2\x02%Autokitteh\\Connections\\V1\\GPBMetadata\xea\x02\x1b\x41utokitteh::Connections::V1b\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n*autokitteh/connections/v1/connection.proto\x12\x19\x61utokitteh.connections.v1\x1a\x1b\x62uf/validate/validate.proto\"\xa9\x01\n\nConnection\x12#\n\rconnection_id\x18\x01 \x01(\tR\x0c\x63onnectionId\x12/\n\x0eintegration_id\x18\x02 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\rintegrationId\x12\'\n\nproject_id\x18\x03 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\tprojectId\x12\x1c\n\x04name\x18\x04 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x04nameB\x89\x02\n\x1d\x63om.autokitteh.connections.v1B\x0f\x43onnectionProtoP\x01ZQgo.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/connections/v1;connectionsv1\xa2\x02\x03\x41\x43X\xaa\x02\x19\x41utokitteh.Connections.V1\xca\x02\x19\x41utokitteh\\Connections\\V1\xe2\x02%Autokitteh\\Connections\\V1\\GPBMetadata\xea\x02\x1b\x41utokitteh::Connections::V1b\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -24,12 +24,10 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   DESCRIPTOR._serialized_options = b'\n\035com.autokitteh.connections.v1B\017ConnectionProtoP\001ZQgo.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/connections/v1;connectionsv1\242\002\003ACX\252\002\031Autokitteh.Connections.V1\312\002\031Autokitteh\\Connections\\V1\342\002%Autokitteh\\Connections\\V1\\GPBMetadata\352\002\033Autokitteh::Connections::V1'
   _CONNECTION.fields_by_name['integration_id']._options = None
   _CONNECTION.fields_by_name['integration_id']._serialized_options = b'\372\367\030\004r\002\020\001'
-  _CONNECTION.fields_by_name['integration_token']._options = None
-  _CONNECTION.fields_by_name['integration_token']._serialized_options = b'\372\367\030\004r\002\020\001'
   _CONNECTION.fields_by_name['project_id']._options = None
   _CONNECTION.fields_by_name['project_id']._serialized_options = b'\372\367\030\004r\002\020\001'
   _CONNECTION.fields_by_name['name']._options = None
   _CONNECTION.fields_by_name['name']._serialized_options = b'\372\367\030\004r\002\020\001'
   _globals['_CONNECTION']._serialized_start=103
-  _globals['_CONNECTION']._serialized_end=327
+  _globals['_CONNECTION']._serialized_end=272
 # @@protoc_insertion_point(module_scope)

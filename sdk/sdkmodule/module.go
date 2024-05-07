@@ -14,7 +14,7 @@ import (
 type Module interface {
 	Describe() sdktypes.Module
 
-	Configure(ctx context.Context, xid sdktypes.ExecutorID, config string) (map[string]sdktypes.Value, error)
+	Configure(ctx context.Context, xid sdktypes.ExecutorID, cid sdktypes.ConnectionID) (map[string]sdktypes.Value, error)
 
 	sdkexecutor.Caller
 }
@@ -36,10 +36,6 @@ func New(optfns ...Optfn) Module {
 		}
 	}
 
-	if opts.dataFromConfig == nil {
-		opts.dataFromConfig = func(string) ([]byte, error) { return nil, nil }
-	}
-
 	return &module{
 		desc: kittehs.Must1(sdktypes.NewModule(
 			kittehs.TransformMapValues(opts.funcs, func(f *funcOpts) sdktypes.ModuleFunction {
@@ -53,12 +49,12 @@ func New(optfns ...Optfn) Module {
 	}
 }
 
-func (m *module) Configure(ctx context.Context, xid sdktypes.ExecutorID, config string) (map[string]sdktypes.Value, error) {
+func (m *module) Configure(ctx context.Context, xid sdktypes.ExecutorID, cid sdktypes.ConnectionID) (map[string]sdktypes.Value, error) {
 	values := make(map[string]sdktypes.Value)
 
-	data, err := m.opts.dataFromConfig(config)
-	if err != nil {
-		return nil, fmt.Errorf("config: %w", err)
+	var data []byte
+	if cid.IsValid() {
+		data = []byte(cid.String())
 	}
 
 	for k, v := range m.opts.vars {
@@ -66,12 +62,14 @@ func (m *module) Configure(ctx context.Context, xid sdktypes.ExecutorID, config 
 			return nil, fmt.Errorf("value name %q is already set: %w", k, sdkerrors.ErrConflict)
 		}
 
+		var err error
 		if values[k], err = v.fn(xid, data); err != nil {
 			return nil, fmt.Errorf("%q: %w", k, err)
 		}
 	}
 
 	for k, f := range m.opts.funcs {
+		var err error
 		if values[k], err = sdktypes.NewFunctionValue(xid, k, data, f.flags, kittehs.Must1(sdktypes.ModuleFunctionFromProto(&f.desc))); err != nil {
 			return nil, fmt.Errorf("%q: %w", k, err)
 		}

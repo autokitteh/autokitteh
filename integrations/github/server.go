@@ -13,7 +13,7 @@ import (
 	"go.autokitteh.dev/autokitteh/web/static"
 )
 
-func Start(l *zap.Logger, mux *http.ServeMux, s sdkservices.Secrets, o sdkservices.OAuth, d sdkservices.Dispatcher) {
+func Start(l *zap.Logger, mux *http.ServeMux, vars sdkservices.Vars, o sdkservices.OAuth, d sdkservices.Dispatcher) {
 	// Connection UI + handler.
 	mux.HandleFunc(uiPath, connect.ServeHTTP)
 	staticFiles := http.FileServer(http.FS(static.GitHubWebContent))
@@ -23,12 +23,12 @@ func Start(l *zap.Logger, mux *http.ServeMux, s sdkservices.Secrets, o sdkservic
 	mux.Handle(kittehs.Must1(url.JoinPath(uiPath, "styles.css")), staticFiles)
 	mux.Handle(kittehs.Must1(url.JoinPath(uiPath, "success.html")), staticFiles)
 	mux.Handle(kittehs.Must1(url.JoinPath(uiPath, "success.js")), staticFiles)
-	h := NewHandler(l, s, o, "github")
+	h := NewHandler(l, o)
 	mux.HandleFunc(patPath, h.handlePAT)
 	mux.HandleFunc(oauthPath, h.handleOAuth)
 
 	// Event webhooks.
-	eventHandler := webhooks.NewHandler(l, s, d, "github", integrationID)
+	eventHandler := webhooks.NewHandler(l, vars, d, integrationID)
 	mux.Handle(webhooks.WebhookPath+"/", eventHandler) // User events.
 	mux.Handle(webhooks.WebhookPath, eventHandler)     // App events.
 }
