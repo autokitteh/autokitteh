@@ -14,6 +14,10 @@ func (db *gormdb) addEventRecord(ctx context.Context, er *scheme.EventRecord) er
 }
 
 func (db *gormdb) AddEventRecord(ctx context.Context, er sdktypes.EventRecord) error {
+	if err := er.Strict(); err != nil {
+		return err
+	}
+
 	e := scheme.EventRecord{
 		Seq:     er.Seq(),
 		EventID: er.EventID().UUIDValue(),

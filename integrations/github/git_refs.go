@@ -31,7 +31,7 @@ func (i integration) createRef(ctx context.Context, args []sdktypes.Value, kwarg
 	}
 
 	// Invoke the API method.
-	gh, err := i.NewClient(ctx)
+	gh, err := i.NewClient(ctx, owner)
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
@@ -58,7 +58,7 @@ func (i integration) getRef(ctx context.Context, args []sdktypes.Value, kwargs m
 	}
 
 	// Invoke the API method.
-	gh, err := i.NewClient(ctx)
+	gh, err := i.NewClient(ctx, owner)
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}

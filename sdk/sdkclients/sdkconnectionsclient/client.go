@@ -86,9 +86,8 @@ func (c *client) Get(ctx context.Context, id sdktypes.ConnectionID) (sdktypes.Co
 
 func (c *client) List(ctx context.Context, filter sdkservices.ListConnectionsFilter) ([]sdktypes.Connection, error) {
 	resp, err := c.client.List(ctx, connect.NewRequest(&connectionsv1.ListRequest{
-		IntegrationId:    filter.IntegrationID.String(),
-		IntegrationToken: filter.IntegrationToken,
-		ProjectId:        filter.ProjectID.String(),
+		IntegrationId: filter.IntegrationID.String(),
+		ProjectId:     filter.ProjectID.String(),
 	}))
 	if err != nil {
 		return nil, rpcerrors.ToSDKError(err)

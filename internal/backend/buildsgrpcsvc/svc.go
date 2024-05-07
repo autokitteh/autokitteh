@@ -5,10 +5,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
 
 	"connectrpc.com/connect"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/proto"
 	buildsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/builds/v1"
@@ -26,11 +26,11 @@ type server struct {
 
 var _ buildsv1connect.BuildsServiceHandler = (*server)(nil)
 
-func Init(mux *http.ServeMux, builds sdkservices.Builds) {
+func Init(muxes *muxes.Muxes, builds sdkservices.Builds) {
 	srv := server{builds: builds}
 
 	path, namer := buildsv1connect.NewBuildsServiceHandler(&srv)
-	mux.Handle(path, namer)
+	muxes.Auth.Handle(path, namer)
 }
 
 func (s *server) Get(ctx context.Context, req *connect.Request[buildsv1.GetRequest]) (*connect.Response[buildsv1.GetResponse], error) {

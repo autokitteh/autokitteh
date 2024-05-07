@@ -18,6 +18,10 @@ import (
 // TODO: make redis work with structs (need to convert them to stringdicts).
 
 type module struct {
+	// set only for external clients
+	vars sdkservices.Vars
+
+	// set only for internal clients
 	internalClient *redis.Client
 	keyfn          func(string) string
 }
@@ -31,7 +35,7 @@ func (m *module) client(ctx context.Context) (*redis.Client, func(string) string
 		return m.internalClient, m.keyfn, nil
 	}
 
-	c, err := externalClient(ctx)
+	c, err := m.externalClient(ctx)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -51,30 +55,18 @@ var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.Integrati
 	},
 }))
 
-func New() sdkservices.Integration {
-	return sdkintegrations.NewIntegration(desc, newExternalModule())
+func New(vars sdkservices.Vars) sdkservices.Integration {
+	return sdkintegrations.NewIntegration(desc, newExternalModule(vars))
 }
 
-func newExternalModule() sdkmodule.Module {
-	opts := []sdkmodule.Optfn{
-		sdkmodule.WithDataFromConfig(func(config string) ([]byte, error) {
-			if config == "" {
-				return nil, errors.New("no address given")
-			}
+func newExternalModule(vars sdkservices.Vars) sdkmodule.Module {
+	m := &module{vars: vars}
 
-			if _, err := redis.ParseURL(string(config)); err != nil {
-				return nil, fmt.Errorf("invalid address: %w", err)
-			}
-
-			return []byte(config), nil
-		}),
-	}
-
-	opts = append(opts, makeOpts(nil)...)
+	opts := makeOpts(m)
 
 	// Allow these only for non-internal clients. Otherwise we cannot guarantee proper prefixes
 	// for command keys.
-	opts = append(opts, sdkmodule.ExportFunction("do", do, sdkmodule.WithFuncDoc("run an arbitrary command")))
+	opts = append(opts, sdkmodule.ExportFunction("do", m.do, sdkmodule.WithFuncDoc("run an arbitrary command")))
 
 	return sdkmodule.New(opts...)
 }
@@ -133,7 +125,7 @@ func makeOpts(m *module) []sdkmodule.Optfn {
 }
 
 // This function is not included in the integration when used as an internal client. See `NewModule`.
-func do(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
+func (m *module) do(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
 	if len(kwargs) != 0 {
 		return sdktypes.InvalidValue, fmt.Errorf("not expecting kwargs")
 	}
@@ -146,7 +138,7 @@ func do(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.V
 		}
 	}
 
-	client, err := externalClient(ctx)
+	client, err := m.externalClient(ctx)
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}

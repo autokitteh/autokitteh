@@ -7,21 +7,9 @@ import "buf/validate/validate.proto";
 
 message DispatchRequest {
   option (buf.validate.message).cel = {
-    id: "dispatcher.require_integration_id",
-    message: "missing integration_id",
-    expression: "has(this.event) && this.event.integration_id != ''",
-  };
-
-  option (buf.validate.message).cel = {
-    id: "dispatcher.require_integration_token",
-    message: "missing integration_token",
-    expression: "has(this.event) && this.event.integration_token != ''",
-  };
-
-  option (buf.validate.message).cel = {
-    id: "dispatcher.require_event_type",
-    message: "missing event_type",
-    expression: "has(this.event) && this.event.event_type != ''",
+    id: "dispatcher.require_connection_id",
+    message: "missing connection_id",
+    expression: "has(this.event) && this.event.connection_id != ''",
   };
 
   option (buf.validate.message).cel = {

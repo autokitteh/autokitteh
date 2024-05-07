@@ -110,39 +110,32 @@ export class Event extends Message<Event> {
   eventId = "";
 
   /**
-   * @generated from field: string integration_id = 2;
+   * @generated from field: string connection_id = 2;
    */
-  integrationId = "";
+  connectionId = "";
 
   /**
-   * TODO: think of a name that does not hint authn.
-   *
-   * @generated from field: string integration_token = 3;
-   */
-  integrationToken = "";
-
-  /**
-   * @generated from field: string event_type = 4;
+   * @generated from field: string event_type = 3;
    */
   eventType = "";
 
   /**
-   * @generated from field: map<string, autokitteh.values.v1.Value> data = 5;
+   * @generated from field: map<string, autokitteh.values.v1.Value> data = 4;
    */
   data: { [key: string]: Value } = {};
 
   /**
-   * @generated from field: map<string, string> memo = 6;
+   * @generated from field: map<string, string> memo = 5;
    */
   memo: { [key: string]: string } = {};
 
   /**
-   * @generated from field: google.protobuf.Timestamp created_at = 7;
+   * @generated from field: google.protobuf.Timestamp created_at = 6;
    */
   createdAt?: Timestamp;
 
   /**
-   * @generated from field: uint64 seq = 8;
+   * @generated from field: uint64 seq = 7;
    */
   seq = protoInt64.zero;
 
@@ -155,13 +148,12 @@ export class Event extends Message<Event> {
   static readonly typeName = "autokitteh.events.v1.Event";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "event_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "integration_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "integration_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "event_type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "data", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: Value} },
-    { no: 6, name: "memo", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
-    { no: 7, name: "created_at", kind: "message", T: Timestamp },
-    { no: 8, name: "seq", kind: "scalar", T: 4 /* ScalarType.UINT64 */ },
+    { no: 2, name: "connection_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "event_type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "data", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: Value} },
+    { no: 5, name: "memo", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 6, name: "created_at", kind: "message", T: Timestamp },
+    { no: 7, name: "seq", kind: "scalar", T: 4 /* ScalarType.UINT64 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Event {

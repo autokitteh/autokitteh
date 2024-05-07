@@ -8,7 +8,7 @@ import (
 )
 
 // Flags shared by the "create" and "list" subcommands.
-var integration, connectionToken string
+var integration string
 
 var connectionCmd = common.StandardCommand(&cobra.Command{
 	Use:     "connection",

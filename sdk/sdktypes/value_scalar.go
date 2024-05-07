@@ -60,7 +60,7 @@ type SymbolValue struct {
 	object[*SymbolValuePB, symbolValueTraits]
 }
 
-func (s SymbolValue) Symbol() Symbol { return forceSymbol(s.read().Name) }
+func (s SymbolValue) Symbol() Symbol { return NewSymbol(s.read().Name) }
 
 func (v Value) IsSymbol() bool         { return v.read().Symbol != nil }
 func (v Value) GetSymbol() SymbolValue { return forceFromProto[SymbolValue](v.read().Symbol) }

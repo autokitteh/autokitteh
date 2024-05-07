@@ -13,6 +13,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 type Config struct {
@@ -63,14 +64,29 @@ type Token struct {
 	KeyFunc func(string) string
 }
 
-func externalClient(ctx context.Context) (*redis.Client, error) {
-	addr := string(sdkmodule.FunctionDataFromContext(ctx))
+func (m *module) externalClient(ctx context.Context) (*redis.Client, error) {
+	cid, err := sdkmodule.FunctionConnectionIDFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
 
-	if c, ok := clients.Get(addr); ok {
+	vars, err := m.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
+	if err != nil {
+		return nil, err
+	}
+
+	dsnVar := vars.Get(sdktypes.NewSymbol("URL"))
+	if !dsnVar.IsValid() {
+		return nil, fmt.Errorf("missing URL")
+	}
+
+	dsn := dsnVar.Value()
+
+	if c, ok := clients.Get(dsn); ok {
 		return c, nil
 	}
 
-	opts, err := redis.ParseURL(addr)
+	opts, err := redis.ParseURL(dsn)
 	if err != nil {
 		return nil, fmt.Errorf("invalid redis url: %w", err)
 	}
@@ -79,7 +95,7 @@ func externalClient(ctx context.Context) (*redis.Client, error) {
 	// this can happen more than once, but that shouldn't be a problem.
 	c := redis.NewClient(opts)
 
-	_ = clients.Add(addr, c)
+	_ = clients.Add(dsn, c)
 
 	return c, nil
 }

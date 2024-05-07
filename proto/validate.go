@@ -8,6 +8,7 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 
 	applyv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/apply/v1"
+	authv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/auth/v1"
 	buildsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/builds/v1"
 	connectionsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/connections/v1"
 	deploymentsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/deployments/v1"
@@ -22,10 +23,10 @@ import (
 	programv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/program/v1"
 	projectsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/projects/v1"
 	runtimesv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/runtimes/v1"
-	secretsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/secrets/v1"
 	sessionsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/sessions/v1"
 	storev1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/store/v1"
 	triggersv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/triggers/v1"
+	usersv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/users/v1"
 	valuesv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/values/v1"
 	varsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/vars/v1"
 )
@@ -54,6 +55,7 @@ func parse(fds []protoreflect.FileDescriptor) func(proto.Message) error {
 
 var fds = []protoreflect.FileDescriptor{
 	applyv1.File_autokitteh_apply_v1_svc_proto,
+	authv1.File_autokitteh_auth_v1_svc_proto,
 	buildsv1.File_autokitteh_builds_v1_build_proto,
 	buildsv1.File_autokitteh_builds_v1_svc_proto,
 	connectionsv1.File_autokitteh_connections_v1_connection_proto,
@@ -84,9 +86,9 @@ var fds = []protoreflect.FileDescriptor{
 	storev1.File_autokitteh_store_v1_svc_proto,
 	triggersv1.File_autokitteh_triggers_v1_svc_proto,
 	triggersv1.File_autokitteh_triggers_v1_trigger_proto,
+	usersv1.File_autokitteh_users_v1_user_proto,
 	valuesv1.File_autokitteh_values_v1_values_proto,
 	varsv1.File_autokitteh_vars_v1_svc_proto,
-	secretsv1.File_autokitteh_secrets_v1_svc_proto,
 	varsv1.File_autokitteh_vars_v1_var_proto,
 }
 

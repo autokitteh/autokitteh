@@ -34,19 +34,14 @@ var dispatchCmd = common.StandardCommand(&cobra.Command{
 			pb = event.ToProto()
 		}
 
-		if integration != "" {
+		if connection != "" {
 			r := resolver.Resolver{Client: common.Client()}
-			i, iid, err := r.IntegrationNameOrID(integration)
+			_, cid, err := r.ConnectionNameOrID(args[0], "")
 			if err != nil {
 				return err
 			}
-			if !i.IsValid() {
-				return fmt.Errorf("integration %q not found", integration)
-			}
-			pb.IntegrationId = iid.String()
-		}
-		if connectionToken != "" {
-			pb.IntegrationToken = connectionToken
+
+			pb.ConnectionId = cid.String()
 		}
 		if eventType != "" {
 			pb.EventType = eventType
@@ -89,8 +84,7 @@ func init() {
 	dispatchCmd.Flags().StringVarP(&filename, "from_file", "f", "", "load event data from file")
 	kittehs.Must0(dispatchCmd.MarkFlagFilename("from_file"))
 
-	dispatchCmd.Flags().StringVarP(&integration, "integration", "i", "", "integration name or ID")
-	dispatchCmd.Flags().StringVarP(&connectionToken, "connection-token", "t", "", "connection token")
+	dispatchCmd.Flags().StringVarP(&connection, "connection", "c", "", "connection name or ID")
 	dispatchCmd.Flags().StringVarP(&eventType, "event-type", "e", "", "event type")
 	dispatchCmd.Flags().StringSliceVarP(&data, "data", "d", nil, `zero or more "key=value" pairs`)
 	dispatchCmd.Flags().StringSliceVarP(&memos, "memo", "m", nil, `zero or more "key=value" pairs`)

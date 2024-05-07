@@ -81,7 +81,7 @@ def test():
 {"state":{"running":{"run_id":"run_0000000000000000000000000c"}}}
 {"state":{"running":{"run_id":"run_0000000000000000000000000c","call":{"function":{"executor_id":"run_0000000000000000000000000c","name":"test","desc":{},"data":"dGVzdCMx"}}}}}
 {"print":{"text":"started"}}
-{"call_spec":{"function":{"function":{"executor_id":"int_3kth00test8c093f7e9fccbf69","name":"freeze","desc":{"input":[{"name":"duration","optional":true},{"name":"allow_cancel","optional":true}]}}},"args":[{"integer":{"v":"10"}},{"boolean":{"v":true}}],"seq":1}}
+{"call_spec":{"function":{"function":{"executor_id":"int_3kth00test8c093f7e9fccbf69","name":"freeze","desc":{"input":[{"name":"duration","optional":true},{"name":"allow_cancel","optional":true}]},"data":"Y29uXzAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDA4"}},"args":[{"integer":{"v":"10"}},{"boolean":{"v":true}}],"seq":1}}
 {"call_attempt_start":{}}
 {"stop_request":{"reason":"test"}}
 {"state":{"stopped":{"reason":"test"}}}

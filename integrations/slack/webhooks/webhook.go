@@ -10,13 +10,13 @@ import (
 	"net/http"
 	"os"
 	"strconv"
-	"strings"
 	"time"
 
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/integrations/internal/extrazap"
 	"go.autokitteh.dev/autokitteh/integrations/slack/api"
+	"go.autokitteh.dev/autokitteh/integrations/slack/internal/vars"
 	eventsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/events/v1"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -39,18 +39,16 @@ const (
 // to receive, dispatch, and acknowledge asynchronous event notifications.
 type handler struct {
 	logger        *zap.Logger
-	secrets       sdkservices.Secrets
+	vars          sdkservices.Vars
 	dispatcher    sdkservices.Dispatcher
 	integrationID sdktypes.IntegrationID
-	scope         string
 }
 
-func NewHandler(l *zap.Logger, sec sdkservices.Secrets, d sdkservices.Dispatcher, scope string, id sdktypes.IntegrationID) handler {
+func NewHandler(l *zap.Logger, vars sdkservices.Vars, d sdkservices.Dispatcher, id sdktypes.IntegrationID) handler {
 	return handler{
 		logger:        l,
-		secrets:       sec,
+		vars:          vars,
 		dispatcher:    d,
-		scope:         scope,
 		integrationID: id,
 	}
 }
@@ -143,26 +141,16 @@ func verifySignature(signingSecret, ts, want string, body []byte) bool {
 	return hmac.Equal([]byte(got), []byte(want))
 }
 
-// listTokens calls the List method in SecretsService.
-func (h handler) listTokens(appID, enterpriseID, teamID string) ([]string, error) {
-	k := appSecretName(appID, enterpriseID, teamID)
-	tokens, err := h.secrets.List(context.Background(), h.scope, k)
-	if err != nil {
-		return nil, err
-	}
-	return tokens, nil
+func (h handler) listConnectionIDs(ctx context.Context, appID, enterpriseID, teamID string) ([]sdktypes.ConnectionID, error) {
+	return h.vars.FindConnectionIDs(ctx, h.integrationID, vars.KeyName, vars.KeyValue(appID, enterpriseID, teamID))
 }
 
-func appSecretName(appID, enterpriseID, teamID string) string {
-	s := fmt.Sprintf("apps/%s/%s/%s", appID, enterpriseID, teamID)
-	// Slack enterprise ID is allowed to be empty.
-	return strings.ReplaceAll(s, "//", "/")
-}
-
-func (h handler) dispatchAsyncEventsToConnections(l *zap.Logger, tokens []string, event *eventsv1.Event) {
+func (h handler) dispatchAsyncEventsToConnections(l *zap.Logger, cids []sdktypes.ConnectionID, event *eventsv1.Event) {
 	ctx := extrazap.AttachLoggerToContext(l, context.Background())
-	for _, connToken := range tokens {
-		event.IntegrationToken = connToken
+	for _, cid := range cids {
+		l := l.With(zap.String("cid", cid.String()))
+
+		event.ConnectionId = cid.String()
 		event, err := sdktypes.EventFromProto(event)
 		if err != nil {
 			h.logger.Error("Failed to convert protocol buffer to SDK event",
@@ -174,15 +162,9 @@ func (h handler) dispatchAsyncEventsToConnections(l *zap.Logger, tokens []string
 
 		eventID, err := h.dispatcher.Dispatch(ctx, event, nil)
 		if err != nil {
-			l.Error("Dispatch failed",
-				zap.String("connectionToken", connToken),
-				zap.Error(err),
-			)
+			l.Error("Dispatch failed", zap.Error(err))
 			return
 		}
-		l.Debug("Dispatched",
-			zap.String("connectionToken", connToken),
-			zap.String("eventID", eventID.String()),
-		)
+		l.Debug("Dispatched", zap.String("eventID", eventID.String()))
 	}
 }

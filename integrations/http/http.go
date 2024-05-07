@@ -227,18 +227,19 @@ func setQueryParams(rawURL *string, params map[string]string) error {
 }
 
 // getConnection returns the secret data associated with this connection, if there is any.
-func (i integration) getConnection(ctx context.Context) map[string]string {
+func (i integration) getConnectionAuth(ctx context.Context) (string, error) {
 	// Extract the connection token from the given context.
-	cfg := sdkmodule.FunctionDataFromContext(ctx)
-	if cfg == nil {
-		cfg = []byte{}
+	cid, err := sdkmodule.FunctionConnectionIDFromContext(ctx)
+	if err != nil {
+		return "", err
 	}
 
-	c, err := i.secrets.Get(ctx, i.scope, string(cfg))
+	vars, err := i.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
 	if err != nil {
-		return nil
+		return "", err
 	}
-	return c
+
+	return vars.GetValue(authVar), nil
 }
 
 func createHttpRequest(ctx context.Context, req request, method string) (*http.Request, error) {
@@ -308,8 +309,13 @@ func (i integration) request(method string) sdkexecutor.Function {
 			return sdktypes.InvalidValue, err
 		}
 
+		auth, err := i.getConnectionAuth(ctx)
+		if err != nil {
+			return sdktypes.InvalidValue, err
+		}
+
 		// Add the Authorization HTTP header?
-		if auth := i.getConnection(ctx)["authorization"]; auth != "" {
+		if auth != "" {
 			// If the Authorization header is set explicitly, it
 			// should override the connection's default authorization.
 			if _, ok := req.headers[authHeader]; !ok {

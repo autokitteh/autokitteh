@@ -10,9 +10,9 @@ import (
 	"go.autokitteh.dev/autokitteh/web/static"
 )
 
-func Start(l *zap.Logger, mux *http.ServeMux, s sdkservices.Secrets, o sdkservices.OAuth, d sdkservices.Dispatcher) {
+func Start(l *zap.Logger, mux *http.ServeMux, vars sdkservices.Vars, o sdkservices.OAuth, d sdkservices.Dispatcher) {
 	// New connection UIs + handlers.
-	h := NewHTTPHandler(l, s, o, "google")
+	h := NewHTTPHandler(l, vars, o)
 	mux.Handle(uiPath, http.FileServer(http.FS(static.GoogleWebContent)))
 	mux.HandleFunc(oauthPath, h.HandleOAuth)
 	mux.HandleFunc(credsPath, h.HandleCreds)

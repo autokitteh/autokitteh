@@ -1,0 +1,12 @@
+version: v1
+
+project:
+  name: slack
+  connections:
+    - name: slack
+      integration: slack
+  triggers:
+    - name: slack_app_mention
+      event_type: app_mention
+      connection: slack
+      entrypoint: main.star:on_slack_app_mention

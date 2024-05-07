@@ -17,7 +17,8 @@ type ListIntegrationsFilter struct {
 type Integrations interface {
 	// Get returns the instance of an integration which has already been registered
 	// in the autokitteh server, and is available for usage by runtime connections.
-	Get(ctx context.Context, id sdktypes.IntegrationID) (Integration, error)
+	GetByID(ctx context.Context, id sdktypes.IntegrationID) (Integration, error)
+	GetByName(ctx context.Context, name sdktypes.Symbol) (Integration, error)
 
 	// List returns an enumeration - with optional filtering - of all
 	// the integrations which have been registered in the autokitteh
@@ -33,7 +34,7 @@ type Integration interface {
 	// external service that it wraps.
 	Get() sdktypes.Integration
 
-	Configure(ctx context.Context, config string) (map[string]sdktypes.Value, error)
+	Configure(ctx context.Context, cid sdktypes.ConnectionID) (map[string]sdktypes.Value, error)
 
 	sdkexecutor.Caller
 }

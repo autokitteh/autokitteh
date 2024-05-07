@@ -21,7 +21,7 @@ from socket import AF_UNIX, SOCK_STREAM, socket
 # Must come first before any logging.
 logging.basicConfig(
     format='[PYTHON] %(asctime)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s',
-    datefmt='%Y-%M-%DT%H:%M:%S',
+    datefmt='%Y-%m-%dT%H:%M:%S',
     level=logging.INFO,
 )
 
@@ -46,14 +46,17 @@ class AKLogHandler(logging.Handler):
 
 def name_of(node):
     """Name of call node (e.g. 'requests.get')"""
+    if isinstance(node, ast.Attribute):
+        prefix = name_of(node.value)
+        return f'{prefix}.{node.attr}'
+
+    if isinstance(node, ast.Call):
+        return name_of(node.func)
+
     if isinstance(node, ast.Name):
         return node.id
 
-    if isinstance(node, ast.Call):
-        return node.func.value.id
-
-    prefix = name_of(node.value)
-    return f'{prefix}.{node.attr}'
+    raise ValueError(f'unknown AST node type: {node!r}')
 
 
 ACTION_NAME = '_ak_call'
@@ -68,7 +71,8 @@ class Transformer(ast.NodeTransformer):
 
     def visit_Call(self, node):
         name = name_of(node.func)
-        # ast.Transformer does not recurse to args
+        # ast.Transformer does not recurse to func or args
+        node.func = self.visit(node.func)
         node.args = [self.visit(a) for a in node.args]
 
         if not name or name in BUILTIN:

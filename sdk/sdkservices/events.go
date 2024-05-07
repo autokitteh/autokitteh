@@ -9,7 +9,7 @@ import (
 
 type ListEventsFilter struct {
 	IntegrationID     sdktypes.IntegrationID
-	IntegrationToken  string
+	ConnectionID      sdktypes.ConnectionID
 	EventType         string
 	Limit             int
 	CreatedAfter      *time.Time

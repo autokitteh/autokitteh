@@ -26,15 +26,15 @@ var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.Integrati
 	ConnectionUrl: "/google/connect",
 }))
 
-func New(sec sdkservices.Secrets) sdkservices.Integration {
+func New(sec sdkservices.Vars) sdkservices.Integration {
 	scope := desc.UniqueName().String()
-	opts := []sdkmodule.Optfn{sdkmodule.WithConfigAsData()}
 
 	// TODO: Calendar.
 	// TODO: Chat.
 	// TODO: Drive.
 	// TODO: Forms.
-	opts = append(opts, gmail.ExportedFunctions(sec, scope, true)...)
+
+	opts := gmail.ExportedFunctions(sec, scope, true)
 	opts = append(opts, sheets.ExportedFunctions(sec, scope, true)...)
 
 	return sdkintegrations.NewIntegration(desc, sdkmodule.New(opts...))

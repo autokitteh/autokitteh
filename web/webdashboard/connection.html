@@ -1,0 +1,17 @@
+{{ template "header_" . }}
+
+<h1>Connection: <tt>{{ .Name }}</tt></h1>
+
+{{ if .ConnectionURL}}
+<button onclick='location.href="{{ .ConnectionURL }}?cid={{ .ID }}"'>Initialize</button>
+{{ end }}
+
+<pre>{{ .JSON }}</pre>
+
+<h2>{{ .Vars.N }} Vars</h2>
+{{ template "list_table_" .Vars}}
+
+<h2>{{ .Events.N }} Events</h2>
+{{ template "list_table_" .Events}}
+
+{{ template "footer_" . }}

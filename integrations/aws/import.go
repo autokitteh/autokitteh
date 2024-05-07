@@ -2,10 +2,8 @@ package aws
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"reflect"
-	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -14,34 +12,45 @@ import (
 
 	"go.autokitteh.dev/autokitteh/sdk/sdklogger"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
+	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-func getAWSConfig(cfg []byte) (*aws.Config, error) {
-	if string(cfg) == "default" {
+type authData struct {
+	Region      string
+	AccessKeyID string `vars:"secret"`
+	SecretKey   string `vars:"secret"`
+	Token       string `vars:"secret"`
+}
+
+func getAWSConfig(ctx context.Context, vars sdkservices.Vars) (*aws.Config, error) {
+	cid, err := sdkmodule.FunctionConnectionIDFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if !cid.IsValid() {
 		return defaultAWSConfig, nil
 	}
 
-	parts := strings.Split(string(cfg), ",")
-	if len(parts) != 3 && len(parts) != 4 {
-		return nil, errors.New("invalid config - exprecting \"region,access_key_id,secret_key,token\"")
+	cvars, err := vars.Get(ctx, sdktypes.NewVarScopeID(cid))
+	if err != nil {
+		return nil, err
 	}
 
-	var awsToken string
-	if len(parts) == 4 {
-		awsToken = parts[3]
-	}
+	var authData authData
+	cvars.Decode(&authData)
 
 	awsCfg, err := config.LoadDefaultConfig(
 		context.Background(),
-		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(parts[1], parts[2], awsToken)),
-		config.WithRegion(parts[0]),
+		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(authData.AccessKeyID, authData.SecretKey, authData.Token)),
+		config.WithRegion(authData.Region),
 	)
 
 	return &awsCfg, err
 }
 
-func importServiceMethods(moduleName string, connect any) ([]sdkmodule.Optfn, error) {
+func importServiceMethods(vars sdkservices.Vars, moduleName string, connect any) ([]sdkmodule.Optfn, error) {
 	connectv, connectt := reflect.ValueOf(connect), reflect.TypeOf(connect)
 	if connectt.NumOut() != 1 {
 		return nil, sdklogger.DPanicOrReturn("connect method must return only the client")
@@ -53,10 +62,6 @@ func importServiceMethods(moduleName string, connect any) ([]sdkmodule.Optfn, er
 	}
 
 	opts := make([]sdkmodule.Optfn, 0, clientt.NumMethod()+1)
-	opts = append(opts, sdkmodule.WithDataFromConfig(func(config string) ([]byte, error) {
-		_, err := getAWSConfig([]byte(config)) // validate.
-		return []byte(config), err
-	}))
 
 	for mi := 0; mi < clientt.NumMethod(); mi++ {
 		m := clientt.Method(mi)
@@ -89,7 +94,7 @@ func importServiceMethods(moduleName string, connect any) ([]sdkmodule.Optfn, er
 				return sdktypes.InvalidValue, err
 			}
 
-			cfg, err := getAWSConfig(sdkmodule.FunctionDataFromContext(ctx))
+			cfg, err := getAWSConfig(ctx, vars)
 			if err != nil {
 				return sdktypes.InvalidValue, fmt.Errorf("token: %w", err)
 			}

@@ -165,12 +165,12 @@ export class ListRequest extends Message<ListRequest> {
   integrationId = "";
 
   /**
-   * @generated from field: string integration_token = 2;
+   * @generated from field: string connection_id = 2;
    */
-  integrationToken = "";
+  connectionId = "";
 
   /**
-   * @generated from field: string event_type = 4;
+   * @generated from field: string event_type = 3;
    */
   eventType = "";
 
@@ -183,8 +183,8 @@ export class ListRequest extends Message<ListRequest> {
   static readonly typeName = "autokitteh.events.v1.ListRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "integration_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "integration_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "event_type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "connection_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "event_type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListRequest {

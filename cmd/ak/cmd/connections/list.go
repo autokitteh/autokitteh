@@ -11,13 +11,13 @@ import (
 )
 
 var listCmd = common.StandardCommand(&cobra.Command{
-	Use:     "list [--integration=...] [--connection-token=...] [--fail]",
+	Use:     "list [--integration=...] [--fail]",
 	Short:   "List all connections",
 	Aliases: []string{"ls", "l"},
 	Args:    cobra.NoArgs,
 
 	RunE: func(cmd *cobra.Command, args []string) error {
-		f := sdkservices.ListConnectionsFilter{}
+		var f sdkservices.ListConnectionsFilter
 
 		if integration != "" {
 			r := resolver.Resolver{Client: common.Client()}
@@ -25,10 +25,12 @@ var listCmd = common.StandardCommand(&cobra.Command{
 			if err != nil {
 				return err
 			}
+
+			if !iid.IsValid() {
+				return fmt.Errorf("integration %q not found", integration)
+			}
 			f.IntegrationID = iid
 		}
-
-		f.IntegrationToken = connectionToken
 
 		ctx, cancel := common.LimitedContext()
 		defer cancel()
@@ -50,7 +52,6 @@ var listCmd = common.StandardCommand(&cobra.Command{
 func init() {
 	// Command-specific flags.
 	listCmd.Flags().StringVarP(&integration, "integration", "i", "", "integration name or ID")
-	listCmd.Flags().StringVarP(&connectionToken, "connection-token", "t", "", "connection token")
 
 	common.AddFailIfNotFoundFlag(listCmd)
 }

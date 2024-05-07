@@ -21,10 +21,10 @@ type integration struct {
 
 func (i *integration) Get() sdktypes.Integration { return i.desc }
 
-func (i *integration) Configure(ctx context.Context, config string) (map[string]sdktypes.Value, error) {
+func (i *integration) Configure(ctx context.Context, cid sdktypes.ConnectionID) (map[string]sdktypes.Value, error) {
 	resp, err := i.client.Configure(ctx, connect.NewRequest(&integrationsv1.ConfigureRequest{
 		IntegrationId: i.desc.ID().String(),
-		Config:        config,
+		ConnectionId:  cid.String(),
 	}))
 	if err != nil {
 		return nil, rpcerrors.ToSDKError(err)

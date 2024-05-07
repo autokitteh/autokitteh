@@ -22,16 +22,15 @@ message EventRecord {
 
 message Event {
   string event_id = 1;
-  string integration_id = 2;
-  string integration_token = 3; // TODO: think of a name that does not hint authn.
+  string connection_id = 2;
 
-  string event_type = 4;
+  string event_type = 3;
 
-  map<string, values.v1.Value> data = 5;
+  map<string, values.v1.Value> data = 4;
 
-  map<string, string> memo = 6;
+  map<string, string> memo = 5;
 
-  google.protobuf.Timestamp created_at = 7;
+  google.protobuf.Timestamp created_at = 6;
 
-  uint64 seq = 8;
+  uint64 seq = 7;
 }

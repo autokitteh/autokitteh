@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
+	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
 	"go.autokitteh.dev/autokitteh/internal/backend/webtools/web"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 )
@@ -15,7 +16,7 @@ import (
 const defaultAddr = "default"
 
 type Svc interface {
-	Init(mux *http.ServeMux)
+	Init(muxes *muxes.Muxes)
 	Setup(ctx context.Context) error
 }
 
@@ -40,36 +41,36 @@ func (svc *svc) Setup(ctx context.Context) error {
 	return svc.db.Setup(ctx)
 }
 
-func (svc *svc) Init(mux *http.ServeMux) {
+func (svc *svc) Init(muxes *muxes.Muxes) {
 	if !svc.cfg.Enabled {
 		return
 	}
 
 	// messages api paths.
-	mux.HandleFunc("GET /webtools/api/msgs/{addr}", svc.getMessages)
-	mux.HandleFunc("GET /webtools/api/msgs", svc.getMessages)
-	mux.HandleFunc("POST /webtools/api/msgs/{addr}", svc.postMessage)
-	mux.HandleFunc("POST /webtools/api/msgs", svc.postMessage)
-	mux.HandleFunc("DELETE /webtools/api/msgs/{addr}/{id}", svc.deleteMessage)
-	mux.HandleFunc("DELETE /webtools/api/msgs/{addr}", svc.deleteMessage)
+	muxes.Auth.HandleFunc("GET /webtools/api/msgs/{addr}", svc.getMessages)
+	muxes.Auth.HandleFunc("GET /webtools/api/msgs", svc.getMessages)
+	muxes.Auth.HandleFunc("POST /webtools/api/msgs/{addr}", svc.postMessage)
+	muxes.Auth.HandleFunc("POST /webtools/api/msgs", svc.postMessage)
+	muxes.Auth.HandleFunc("DELETE /webtools/api/msgs/{addr}/{id}", svc.deleteMessage)
+	muxes.Auth.HandleFunc("DELETE /webtools/api/msgs/{addr}", svc.deleteMessage)
 
 	// messages app paths.
-	mux.Handle("/webtools/msgs", http.RedirectHandler("/webtools/msgs/"+defaultAddr, http.StatusFound))
-	mux.Handle("/webtools/msgs/{addr}/*", kittehs.StripWildcardPrefix("/webtools/msgs/{addr}", http.FileServer(http.FS(web.Messages))))
+	muxes.Auth.Handle("/webtools/msgs", http.RedirectHandler("/webtools/msgs/"+defaultAddr, http.StatusFound))
+	muxes.Auth.Handle("/webtools/msgs/{addr}/*", kittehs.StripWildcardPrefix("/webtools/msgs/{addr}", http.FileServer(http.FS(web.Messages))))
 
-	mux.HandleFunc("GET /webtools/msgs/{addr}/msgs", svc.getMessages)
-	mux.HandleFunc("POST /webtools/msgs/{addr}/msgs", svc.postMessage)
-	mux.HandleFunc("DELETE /webtools/msgs/{addr}/msgs/{id}", svc.deleteMessage)
-	mux.HandleFunc("DELETE /webtools/msgs/{addr}/msgs", svc.deleteMessage)
+	muxes.Auth.HandleFunc("GET /webtools/msgs/{addr}/msgs", svc.getMessages)
+	muxes.Auth.HandleFunc("POST /webtools/msgs/{addr}/msgs", svc.postMessage)
+	muxes.Auth.HandleFunc("DELETE /webtools/msgs/{addr}/msgs/{id}", svc.deleteMessage)
+	muxes.Auth.HandleFunc("DELETE /webtools/msgs/{addr}/msgs", svc.deleteMessage)
 
 	// terminal paths.
-	mux.Handle("/webtools/terminal", http.RedirectHandler("/webtools/terminal/"+defaultAddr, http.StatusFound))
-	mux.Handle("/webtools/terminal/{addr}/*", kittehs.StripWildcardPrefix("/webtools/terminal/{addr}", http.FileServer(http.FS(web.Terminal))))
+	muxes.Auth.Handle("/webtools/terminal", http.RedirectHandler("/webtools/terminal/"+defaultAddr, http.StatusFound))
+	muxes.Auth.Handle("/webtools/terminal/{addr}/*", kittehs.StripWildcardPrefix("/webtools/terminal/{addr}", http.FileServer(http.FS(web.Terminal))))
 
-	mux.HandleFunc("GET /webtools/terminal/{addr}/msgs", svc.getMessages)
-	mux.HandleFunc("POST /webtools/terminal/{addr}/msgs", svc.postMessage)
-	mux.HandleFunc("DELETE /webtools/terminal/{addr}/msgs/{id}", svc.deleteMessage)
-	mux.HandleFunc("DELETE /webtools/terminal/{addr}/msgs", svc.deleteMessage)
+	muxes.Auth.HandleFunc("GET /webtools/terminal/{addr}/msgs", svc.getMessages)
+	muxes.Auth.HandleFunc("POST /webtools/terminal/{addr}/msgs", svc.postMessage)
+	muxes.Auth.HandleFunc("DELETE /webtools/terminal/{addr}/msgs/{id}", svc.deleteMessage)
+	muxes.Auth.HandleFunc("DELETE /webtools/terminal/{addr}/msgs", svc.deleteMessage)
 }
 
 func (s *svc) getMessages(w http.ResponseWriter, r *http.Request) {

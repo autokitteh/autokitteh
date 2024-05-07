@@ -17,6 +17,10 @@ func (db *gormdb) createIntegration(ctx context.Context, i *scheme.Integration) 
 }
 
 func (db *gormdb) CreateIntegration(ctx context.Context, i sdktypes.Integration) error {
+	if err := i.Strict(); err != nil {
+		return err
+	}
+
 	return translateError(db.createIntegration(ctx, convertTypeToRecord(i)))
 }
 

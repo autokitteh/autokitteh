@@ -21,7 +21,6 @@ project:
   connections:
     - name: my_connection
       integration: http
-      token: my_path
   triggers:
     - name: get
       connection: my_connection
@@ -44,7 +43,6 @@ project:
     "action": {
       "key": "my_project/my_connection",
       "connection": {
-        "integration_token": "my_path",
         "name": "my_connection"
       },
       "project": "my_project",

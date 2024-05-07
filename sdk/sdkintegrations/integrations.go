@@ -20,8 +20,17 @@ func New(is []sdkservices.Integration) sdkservices.Integrations {
 	}))
 }
 
-func (is integrations) Get(ctx context.Context, id sdktypes.IntegrationID) (sdkservices.Integration, error) {
+func (is integrations) GetByID(ctx context.Context, id sdktypes.IntegrationID) (sdkservices.Integration, error) {
 	return is[id], nil
+}
+
+func (is integrations) GetByName(ctx context.Context, name sdktypes.Symbol) (sdkservices.Integration, error) {
+	for _, i := range is {
+		if i.Get().UniqueName() == name {
+			return i, nil
+		}
+	}
+	return nil, nil
 }
 
 func (is integrations) List(ctx context.Context, nameSubstring string) ([]sdktypes.Integration, error) {
