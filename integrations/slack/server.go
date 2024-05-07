@@ -17,7 +17,7 @@ import (
 const (
 	// formPath is the URL path for our handler to save a new
 	// autokitteh connection, based on a user-submitted form.
-	formPath = "/slack/save_tokens"
+	formPath = "/slack/save"
 )
 
 func Start(l *zap.Logger, mux *http.ServeMux, vs sdkservices.Vars, d sdkservices.Dispatcher) {
