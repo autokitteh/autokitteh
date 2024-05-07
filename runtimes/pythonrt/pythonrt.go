@@ -163,7 +163,7 @@ func (py *pySvc) loadSleep(ctx context.Context, runID sdktypes.RunID, cbs *sdkse
 	}
 
 	if !sleep.IsFunction() {
-		return fmt.Errorf("`ak.sleep` is not a function but a")
+		return fmt.Errorf("`ak.sleep` is not a function but a %T", sleep)
 	}
 
 	py.sleepFn = sleep
