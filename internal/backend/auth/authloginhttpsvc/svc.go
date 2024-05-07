@@ -112,12 +112,7 @@ func (a *svc) newSuccessLoginHandler(user sdktypes.User) http.Handler {
 			return
 		}
 
-		redirect := "/"
-		if cookie, _ := req.Cookie(redirectCookieName); cookie != nil {
-			redirect = cookie.Value
-		}
-
-		http.Redirect(w, req, redirect, http.StatusFound)
+		http.Redirect(w, req, getRedirect(req), http.StatusFound)
 	}
 
 	return http.HandlerFunc(fn)

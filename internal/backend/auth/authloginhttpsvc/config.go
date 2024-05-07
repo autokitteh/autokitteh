@@ -7,19 +7,19 @@ import (
 )
 
 type oauth2Config struct {
-	Enabled            bool                  `koanf:"enabled"`
-	ClientID           string                `koanf:"client_id"`
-	ClientSecret       string                `koanf:"client_secret"`
-	RedirectURL        string                `koanf:"redirect_url"`
-	UnsafeCookieConfig *gologin.CookieConfig `koanf:"cookie"`
+	Enabled      bool                  `koanf:"enabled"`
+	ClientID     string                `koanf:"client_id"`
+	ClientSecret string                `koanf:"client_secret"`
+	RedirectURL  string                `koanf:"redirect_url"`
+	Cookie       *gologin.CookieConfig `koanf:"cookie"`
 }
 
 func (c oauth2Config) cookieConfig() gologin.CookieConfig {
-	if c.UnsafeCookieConfig == nil {
+	if c.Cookie == nil {
 		return gologin.DefaultCookieConfig
 	}
 
-	return *c.UnsafeCookieConfig
+	return *c.Cookie
 }
 
 type descopeConfig struct {
@@ -38,12 +38,12 @@ var Configs = configset.Set[Config]{
 	Default: &Config{},
 	Dev: &Config{
 		GoogleOAuth: oauth2Config{
-			RedirectURL:        "http://localhost:9980/auth/google/callback",
-			UnsafeCookieConfig: &gologin.DebugOnlyCookieConfig,
+			RedirectURL: "http://localhost:9980/auth/google/callback",
+			Cookie:      &gologin.DebugOnlyCookieConfig,
 		},
 		GithubOAuth: oauth2Config{
-			RedirectURL:        "http://localhost:9980/auth/github/callback",
-			UnsafeCookieConfig: &gologin.DebugOnlyCookieConfig,
+			RedirectURL: "http://localhost:9980/auth/github/callback",
+			Cookie:      &gologin.DebugOnlyCookieConfig,
 		},
 	},
 }

@@ -32,7 +32,7 @@ func registerGithubOAuthRoutes(mux *http.ServeMux, cfg oauth2Config, onSuccess f
 		Endpoint:     githubOAuth2.Endpoint,
 	}
 
-	mux.Handle("/auth/github/login", setRedirectCookie(github.StateHandler(cfg.cookieConfig(), github.LoginHandler(&oauth2Config, nil))))
+	mux.Handle("/auth/github/login", github.StateHandler(cfg.cookieConfig(), github.LoginHandler(&oauth2Config, nil)))
 
 	githubOnSuccess := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gu, err := github.UserFromContext(r.Context())
@@ -57,7 +57,7 @@ func registerGithubOAuthRoutes(mux *http.ServeMux, cfg oauth2Config, onSuccess f
 		))
 	})
 
-	mux.Handle("/auth/github/callback", extractRedirectFromCookie(github.StateHandler(cfg.cookieConfig(), github.CallbackHandler(&oauth2Config, githubOnSuccess, nil))))
+	mux.Handle("/auth/github/callback", github.StateHandler(cfg.cookieConfig(), github.CallbackHandler(&oauth2Config, githubOnSuccess, nil)))
 
 	return nil
 }
