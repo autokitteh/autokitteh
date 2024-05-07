@@ -29,7 +29,7 @@ deploy-workflow:
 	ak deploy -m ./testdata/simple/autokitteh.yaml -d ./testdata/simple/
 
 run-workflow:
-	curl -i -X POST -d '{"user": "joe", "event": "login"}' http://localhost:9980/http/py_simple/trigger_url_path_py
+	curl -i -X POST -d '{"user": "joe", "event": "login"}' http://localhost:9980/http/py_simple/
 
 deploy-issues:
 	ak deploy -m ./testdata/issues/autokitteh.yaml -d ./testdata/issues/

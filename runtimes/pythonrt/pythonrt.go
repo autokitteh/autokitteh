@@ -108,7 +108,7 @@ func (*pySvc) Get() sdktypes.Runtime { return Runtime.Desc }
 const archiveKey = "archive"
 
 func (py *pySvc) Build(ctx context.Context, fs fs.FS, path string, values []sdktypes.Symbol) (sdktypes.BuildArtifact, error) {
-	py.log.Info("build")
+	py.log.Info("build start")
 
 	data, err := createTar(fs)
 	if err != nil {
@@ -122,6 +122,7 @@ func (py *pySvc) Build(ctx context.Context, fs fs.FS, path string, values []sdkt
 			archiveKey: data,
 		},
 	)
+	py.log.Info("build end")
 
 	return art, nil
 }
@@ -149,6 +150,16 @@ func entriesToValues(xid sdktypes.ExecutorID, entries []string) (map[string]sdkt
 	return values, nil
 }
 
+func (py *pySvc) loadSleep(ctx context.Context, runID sdktypes.RunID, cbs *sdkservices.RunCallbacks) error {
+	ak, err := cbs.Load(ctx, runID, "ak")
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(ak)
+	return nil
+}
+
 /*
 Run starts a Python workflow.
 
@@ -166,11 +177,15 @@ func (py *pySvc) Run(
 ) (sdkservices.Run, error) {
 	py.log.Info("run", zap.String("id", runID.String()), zap.String("path", mainPath))
 
+	if err := py.loadSleep(ctx, runID, cbs); err != nil {
+		return nil, fmt.Errorf("load `ak` module: %w", err)
+	}
+
 	// Load environment defined by user in the `vars` section of the manifest,
 	// these are injected to the Python subprocess environment.
 	env, err := cbs.Load(ctx, runID, "env")
 	if err != nil {
-		return nil, fmt.Errorf("can't load env : %w", err)
+		return nil, fmt.Errorf("load `env` module: %w", err)
 	}
 	envMap := kittehs.TransformMap(env, func(key string, value sdktypes.Value) (string, string) {
 		return key, value.GetString().Value()
