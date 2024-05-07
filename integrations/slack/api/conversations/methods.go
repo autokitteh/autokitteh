@@ -13,8 +13,7 @@ import (
 )
 
 type API struct {
-	Secrets sdkservices.Secrets
-	Scope   string
+	Vars sdkservices.Vars
 }
 
 // Archive a conversation (channel).
@@ -38,7 +37,7 @@ func (a API) Archive(ctx context.Context, args []sdktypes.Value, kwargs map[stri
 
 	// Invoke the API method.
 	resp := &ArchiveResponse{}
-	err = api.PostJSON(ctx, a.Secrets, a.Scope, req, resp, "conversations.archive")
+	err = api.PostJSON(ctx, a.Vars, req, resp, "conversations.archive")
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
@@ -68,7 +67,7 @@ func (a API) Close(ctx context.Context, args []sdktypes.Value, kwargs map[string
 
 	// Invoke the API method.
 	resp := &CloseResponse{}
-	err = api.PostJSON(ctx, a.Secrets, a.Scope, req, resp, "conversations.close")
+	err = api.PostJSON(ctx, a.Vars, req, resp, "conversations.close")
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
@@ -103,7 +102,7 @@ func (a API) Create(ctx context.Context, args []sdktypes.Value, kwargs map[strin
 
 	// Invoke the API method.
 	resp := &CreateResponse{}
-	err = api.PostJSON(ctx, a.Secrets, a.Scope, req, resp, "conversations.create")
+	err = api.PostJSON(ctx, a.Vars, req, resp, "conversations.create")
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
@@ -140,7 +139,7 @@ func (a API) History(ctx context.Context, args []sdktypes.Value, kwargs map[stri
 
 	// Invoke the API method.
 	resp := &HistoryResponse{}
-	err = api.PostJSON(ctx, a.Secrets, a.Scope, req, resp, "conversations.history")
+	err = api.PostJSON(ctx, a.Vars, req, resp, "conversations.history")
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
@@ -184,7 +183,7 @@ func (a API) Info(ctx context.Context, args []sdktypes.Value, kwargs map[string]
 	// Invoke the API method.
 	// TODO: Use HTTP GET instead of POST.
 	resp := &InfoResponse{}
-	err = api.PostForm(ctx, a.Secrets, a.Scope, req, resp, "conversations.info")
+	err = api.PostForm(ctx, a.Vars, req, resp, "conversations.info")
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
@@ -219,7 +218,7 @@ func (a API) Invite(ctx context.Context, args []sdktypes.Value, kwargs map[strin
 
 	// Invoke the API method.
 	resp := &InviteResponse{}
-	err = api.PostJSON(ctx, a.Secrets, a.Scope, req, resp, "conversations.invite")
+	err = api.PostJSON(ctx, a.Vars, req, resp, "conversations.invite")
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
@@ -274,7 +273,7 @@ func (a API) List(ctx context.Context, args []sdktypes.Value, kwargs map[string]
 	// Invoke the API method.
 	// TODO: Use HTTP GET instead of POST.
 	resp := &ListResponse{}
-	err = api.PostForm(ctx, a.Secrets, a.Scope, req, resp, "conversations.list")
+	err = api.PostForm(ctx, a.Vars, req, resp, "conversations.list")
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
@@ -318,7 +317,7 @@ func (a API) Members(ctx context.Context, args []sdktypes.Value, kwargs map[stri
 	// Invoke the API method.
 	// TODO: Use HTTP GET instead of POST.
 	resp := &MembersResponse{}
-	err = api.PostForm(ctx, a.Secrets, a.Scope, req, resp, "conversations.members")
+	err = api.PostForm(ctx, a.Vars, req, resp, "conversations.members")
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
@@ -350,7 +349,7 @@ func (a API) Open(ctx context.Context, args []sdktypes.Value, kwargs map[string]
 
 	// Invoke the API method.
 	resp := &OpenResponse{}
-	err = api.PostJSON(ctx, a.Secrets, a.Scope, req, resp, "conversations.open")
+	err = api.PostJSON(ctx, a.Vars, req, resp, "conversations.open")
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
@@ -384,7 +383,7 @@ func (a API) Rename(ctx context.Context, args []sdktypes.Value, kwargs map[strin
 
 	// Invoke the API method.
 	resp := &RenameResponse{}
-	err = api.PostJSON(ctx, a.Secrets, a.Scope, req, resp, "conversations.rename")
+	err = api.PostJSON(ctx, a.Vars, req, resp, "conversations.rename")
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
@@ -447,7 +446,7 @@ func (a API) Replies(ctx context.Context, args []sdktypes.Value, kwargs map[stri
 	// Invoke the API method.
 	// TODO: Use HTTP GET instead of POST.
 	resp := &RepliesResponse{}
-	err = api.PostForm(ctx, a.Secrets, a.Scope, req, resp, "conversations.replies")
+	err = api.PostForm(ctx, a.Vars, req, resp, "conversations.replies")
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
@@ -481,7 +480,7 @@ func (a API) SetPurpose(ctx context.Context, args []sdktypes.Value, kwargs map[s
 
 	// Invoke the API method.
 	resp := &SetPurposeResponse{}
-	err = api.PostJSON(ctx, a.Secrets, a.Scope, req, resp, "conversations.setPurpose")
+	err = api.PostJSON(ctx, a.Vars, req, resp, "conversations.setPurpose")
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
@@ -515,7 +514,7 @@ func (a API) SetTopic(ctx context.Context, args []sdktypes.Value, kwargs map[str
 
 	// Invoke the API method.
 	resp := &SetTopicResponse{}
-	err = api.PostJSON(ctx, a.Secrets, a.Scope, req, resp, "conversations.setTopic")
+	err = api.PostJSON(ctx, a.Vars, req, resp, "conversations.setTopic")
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
@@ -545,7 +544,7 @@ func (a API) Unarchive(ctx context.Context, args []sdktypes.Value, kwargs map[st
 
 	// Invoke the API method.
 	resp := &UnarchiveResponse{}
-	err = api.PostJSON(ctx, a.Secrets, a.Scope, req, resp, "conversations.unarchive")
+	err = api.PostJSON(ctx, a.Vars, req, resp, "conversations.unarchive")
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}

@@ -108,7 +108,7 @@ type DB interface {
 	DeleteConnection(ctx context.Context, id sdktypes.ConnectionID) error
 	GetConnection(ctx context.Context, id sdktypes.ConnectionID) (sdktypes.Connection, error)
 	GetConnections(ctx context.Context, ids []sdktypes.ConnectionID) ([]sdktypes.Connection, error)
-	ListConnections(ctx context.Context, filter sdkservices.ListConnectionsFilter) ([]sdktypes.Connection, error)
+	ListConnections(ctx context.Context, filter sdkservices.ListConnectionsFilter, idsOnly bool) ([]sdktypes.Connection, error)
 
 	// -----------------------------------------------------------------------
 	GetDeployment(ctx context.Context, id sdktypes.DeploymentID) (sdktypes.Deployment, error)
@@ -125,12 +125,6 @@ type DB interface {
 	DeleteIntegration(ctx context.Context, id sdktypes.IntegrationID) error
 	GetIntegration(ctx context.Context, id sdktypes.IntegrationID) (sdktypes.Integration, error)
 	ListIntegrations(ctx context.Context, filter sdkservices.ListIntegrationsFilter) ([]sdktypes.Integration, error)
-
-	// -----------------------------------------------------------------------
-	SetSecret(ctx context.Context, name string, data map[string]string) error
-	GetSecret(ctx context.Context, name string) (map[string]string, error)
-	AppendSecret(ctx context.Context, name, token string) error
-	DeleteSecret(ctx context.Context, name string) error
 
 	// -----------------------------------------------------------------------
 	CreateSession(ctx context.Context, session sdktypes.Session) error

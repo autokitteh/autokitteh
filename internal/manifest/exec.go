@@ -125,7 +125,7 @@ func executeAction(ctx context.Context, action actions.Action, execContext *exec
 
 			scopeID = sdktypes.NewVarScopeID(eid)
 		} else {
-			cid, err := execContext.resolveConnectionID(action.ConnectionKey)
+			cid, err := execContext.resolveConnectionID(action.Connection)
 			if err != nil {
 				return err
 			}

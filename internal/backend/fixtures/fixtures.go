@@ -19,6 +19,6 @@ func NewBuiltinIntegrationExecutorID(name string) sdktypes.ExecutorID {
 
 func NewBuiltinExecutor(xid sdktypes.ExecutorID, opts ...sdkmodule.Optfn) sdkexecutor.Executor {
 	mod := sdkmodule.New(opts...)
-	vs := kittehs.Must1(mod.Configure(context.TODO(), xid, ""))
+	vs := kittehs.Must1(mod.Configure(context.TODO(), xid, sdktypes.InvalidConnectionID))
 	return sdkexecutor.NewExecutor(mod, xid, vs)
 }

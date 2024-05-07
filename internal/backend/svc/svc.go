@@ -28,6 +28,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/configset"
 	"go.autokitteh.dev/autokitteh/internal/backend/connections"
 	"go.autokitteh.dev/autokitteh/internal/backend/connectionsgrpcsvc"
+	"go.autokitteh.dev/autokitteh/internal/backend/dashboardsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbfactory"
 	"go.autokitteh.dev/autokitteh/internal/backend/deployments"
@@ -47,8 +48,6 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/oauth"
 	"go.autokitteh.dev/autokitteh/internal/backend/projects"
 	"go.autokitteh.dev/autokitteh/internal/backend/projectsgrpcsvc"
-	"go.autokitteh.dev/autokitteh/internal/backend/secrets"
-	"go.autokitteh.dev/autokitteh/internal/backend/secretsgrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessionsgrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/store"
@@ -72,7 +71,6 @@ import (
 	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/oauth/v1/oauthv1connect"
 	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/projects/v1/projectsv1connect"
 	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/runtimes/v1/runtimesv1connect"
-	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/secrets/v1/secretsv1connect"
 	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/sessions/v1/sessionsv1connect"
 	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/triggers/v1/triggersv1connect"
 	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/vars/v1/varsv1connect"
@@ -143,7 +141,6 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 				HookOnStop(lc, c.Stop)
 			}),
 		),
-		Component("secrets", secrets.Configs, fx.Provide(secrets.New)),
 		Component(
 			"sessions",
 			sessions.Configs,
@@ -185,7 +182,6 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		fx.Invoke(buildsgrpcsvc.Init),
 		fx.Invoke(connectionsgrpcsvc.Init),
 		fx.Invoke(deploymentsgrpcsvc.Init),
-		fx.Invoke(secretsgrpcsvc.Init),
 		fx.Invoke(dispatchergrpcsvc.Init),
 		fx.Invoke(envsgrpcsvc.Init),
 		fx.Invoke(eventsgrpcsvc.Init),
@@ -217,7 +213,6 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 						oauthv1connect.OAuthServiceName,
 						projectsv1connect.ProjectsServiceName,
 						runtimesv1connect.RuntimesServiceName,
-						secretsv1connect.SecretsServiceName,
 						sessionsv1connect.SessionsServiceName,
 						triggersv1connect.TriggersServiceName,
 						varsv1connect.VarsServiceName,
@@ -251,10 +246,12 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		fx.Invoke(func(muxes *muxes.Muxes, h integrationsweb.Handler) {
 			muxes.NoAuth.Handle("/i/", &h)
 		}),
+		fx.Invoke(dashboardsvc.Init),
+		fx.Invoke(oauth.InitWebhook),
 		Component("integrations", integrations.Configs, fx.Provide(integrations.New)),
-		fx.Invoke(func(lc fx.Lifecycle, l *zap.Logger, muxes *muxes.Muxes, s sdkservices.Secrets, o sdkservices.OAuth, d dispatcher.Dispatcher) {
+		fx.Invoke(func(lc fx.Lifecycle, l *zap.Logger, muxes *muxes.Muxes, vs sdkservices.Vars, o sdkservices.OAuth, d dispatcher.Dispatcher, c sdkservices.Connections, p sdkservices.Projects) {
 			HookOnStart(lc, func(ctx context.Context) error {
-				return integrations.Start(ctx, l, muxes.NoAuth, s, o, d)
+				return integrations.Start(ctx, l, muxes.NoAuth, vs, o, d, c, p)
 			})
 		}),
 		fx.Invoke(func(z *zap.Logger, muxes *muxes.Muxes) {

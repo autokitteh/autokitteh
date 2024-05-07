@@ -1,0 +1,21 @@
+{{ template "header_" . }}
+
+<h1>{{ .Title }}</h1>
+
+<div id="jsoneditor"></div>
+
+<script type="module">
+    import { JSONEditor } from '/static/vanilla-jsoneditor.js'
+
+    let content = { json: undefined, text: {{ .JSON }} }
+
+    const editor = new JSONEditor({
+        target: document.getElementById('jsoneditor'),
+        props: {
+            content,
+            mode: 'text',
+        },
+    })
+</script>
+
+{{ template "footer_" . }}

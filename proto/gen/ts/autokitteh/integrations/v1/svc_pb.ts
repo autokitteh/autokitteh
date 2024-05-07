@@ -18,6 +18,11 @@ export class GetRequest extends Message<GetRequest> {
    */
   integrationId = "";
 
+  /**
+   * @generated from field: string name = 2;
+   */
+  name = "";
+
   constructor(data?: PartialMessage<GetRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -27,6 +32,7 @@ export class GetRequest extends Message<GetRequest> {
   static readonly typeName = "autokitteh.integrations.v1.GetRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "integration_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetRequest {
@@ -267,9 +273,9 @@ export class ConfigureRequest extends Message<ConfigureRequest> {
   integrationId = "";
 
   /**
-   * @generated from field: string config = 2;
+   * @generated from field: string connection_id = 2;
    */
-  config = "";
+  connectionId = "";
 
   constructor(data?: PartialMessage<ConfigureRequest>) {
     super();
@@ -280,7 +286,7 @@ export class ConfigureRequest extends Message<ConfigureRequest> {
   static readonly typeName = "autokitteh.integrations.v1.ConfigureRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "integration_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "config", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "connection_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ConfigureRequest {

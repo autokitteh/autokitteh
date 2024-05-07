@@ -23,7 +23,6 @@ import (
 	programv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/program/v1"
 	projectsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/projects/v1"
 	runtimesv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/runtimes/v1"
-	secretsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/secrets/v1"
 	sessionsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/sessions/v1"
 	storev1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/store/v1"
 	triggersv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/triggers/v1"
@@ -82,7 +81,6 @@ var fds = []protoreflect.FileDescriptor{
 	runtimesv1.File_autokitteh_runtimes_v1_build_proto,
 	runtimesv1.File_autokitteh_runtimes_v1_runtime_proto,
 	runtimesv1.File_autokitteh_runtimes_v1_svc_proto,
-	secretsv1.File_autokitteh_secrets_v1_svc_proto,
 	sessionsv1.File_autokitteh_sessions_v1_session_proto,
 	sessionsv1.File_autokitteh_sessions_v1_svc_proto,
 	storev1.File_autokitteh_store_v1_svc_proto,

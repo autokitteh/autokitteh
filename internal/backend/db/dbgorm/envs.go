@@ -2,7 +2,6 @@ package dbgorm
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"gorm.io/gorm"
@@ -21,9 +20,8 @@ func (db *gormdb) createEnv(ctx context.Context, env *scheme.Env) error {
 }
 
 func (db *gormdb) CreateEnv(ctx context.Context, env sdktypes.Env) error {
-	if !env.ID().IsValid() {
-		db.z.DPanic("no env id supplied")
-		return errors.New("env missing id")
+	if err := env.Strict(); err != nil {
+		return err
 	}
 
 	e := scheme.Env{

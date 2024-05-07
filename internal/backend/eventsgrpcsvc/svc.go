@@ -67,10 +67,14 @@ func (s *server) List(ctx context.Context, req *connect.Request[eventsv1.ListReq
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
+	cid, err := sdktypes.ParseConnectionID(msg.ConnectionId)
+	if err != nil {
+		return nil, sdkerrors.AsConnectError(err)
+	}
 	filter := sdkservices.ListEventsFilter{
-		IntegrationID:    iid,
-		IntegrationToken: msg.IntegrationToken,
-		EventType:        msg.EventType,
+		IntegrationID: iid,
+		ConnectionID:  cid,
+		EventType:     msg.EventType,
 	}
 
 	events, err := s.events.List(ctx, filter)

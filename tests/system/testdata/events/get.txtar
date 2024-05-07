@@ -12,7 +12,7 @@ ak project create --name my_project
 return code == 0
 output equals project_id: prj_00000000000000000000000001
 
-ak connection create my_connection --project my_project --integration http --connection-token my_url_path
+ak connection create my_connection --project my_project --integration http
 return code == 0
 output equals 'connection_id: con_00000000000000000000000003'
 

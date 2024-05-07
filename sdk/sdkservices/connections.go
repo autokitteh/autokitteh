@@ -7,9 +7,8 @@ import (
 )
 
 type ListConnectionsFilter struct {
-	IntegrationID    sdktypes.IntegrationID
-	IntegrationToken string
-	ProjectID        sdktypes.ProjectID
+	IntegrationID sdktypes.IntegrationID
+	ProjectID     sdktypes.ProjectID
 }
 
 type Connections interface {

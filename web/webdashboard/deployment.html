@@ -1,0 +1,9 @@
+{{ template "header_" . }}
+
+<h1>Deployment: <tt>{{ .ID }}</tt></h1>
+<pre>{{ .JSON }}</pre>
+
+<h2>{{ .Sessions.N }} Sessions</h2>
+{{ template "list_table_" .Sessions }}
+
+{{ template "footer_" . }}

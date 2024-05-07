@@ -10,10 +10,12 @@ from typing import ClassVar as _ClassVar, Iterable as _Iterable, Mapping as _Map
 DESCRIPTOR: _descriptor.FileDescriptor
 
 class GetRequest(_message.Message):
-    __slots__ = ["integration_id"]
+    __slots__ = ["integration_id", "name"]
     INTEGRATION_ID_FIELD_NUMBER: _ClassVar[int]
+    NAME_FIELD_NUMBER: _ClassVar[int]
     integration_id: str
-    def __init__(self, integration_id: _Optional[str] = ...) -> None: ...
+    name: str
+    def __init__(self, integration_id: _Optional[str] = ..., name: _Optional[str] = ...) -> None: ...
 
 class GetResponse(_message.Message):
     __slots__ = ["integration"]
@@ -61,12 +63,12 @@ class CallResponse(_message.Message):
     def __init__(self, value: _Optional[_Union[_values_pb2.Value, _Mapping]] = ..., error: _Optional[_Union[_program_pb2.Error, _Mapping]] = ...) -> None: ...
 
 class ConfigureRequest(_message.Message):
-    __slots__ = ["integration_id", "config"]
+    __slots__ = ["integration_id", "connection_id"]
     INTEGRATION_ID_FIELD_NUMBER: _ClassVar[int]
-    CONFIG_FIELD_NUMBER: _ClassVar[int]
+    CONNECTION_ID_FIELD_NUMBER: _ClassVar[int]
     integration_id: str
-    config: str
-    def __init__(self, integration_id: _Optional[str] = ..., config: _Optional[str] = ...) -> None: ...
+    connection_id: str
+    def __init__(self, integration_id: _Optional[str] = ..., connection_id: _Optional[str] = ...) -> None: ...
 
 class ConfigureResponse(_message.Message):
     __slots__ = ["values"]

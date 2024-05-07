@@ -9,8 +9,7 @@ import (
 )
 
 type integration struct {
-	secrets sdkservices.Secrets
-	scope   string
+	vars sdkservices.Vars
 }
 
 var integrationID = sdktypes.NewIntegrationIDFromName("github")
@@ -28,11 +27,9 @@ var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.Integrati
 	ConnectionUrl: "/github/connect",
 }))
 
-func New(sec sdkservices.Secrets) sdkservices.Integration {
-	i := integration{secrets: sec, scope: desc.UniqueName().String()}
+func New(vars sdkservices.Vars) sdkservices.Integration {
+	i := integration{vars: vars}
 	return sdkintegrations.NewIntegration(desc, sdkmodule.New(
-		sdkmodule.WithConfigAsData(),
-
 		// Issues.
 		sdkmodule.ExportFunction(
 			"create_issue",

@@ -78,7 +78,7 @@ func TestPostForm(t *testing.T) {
 
 			slackURL = s.URL + "/"
 			got := &response{}
-			err := PostForm(context.Background(), nil, "test", tt.kv, got, "slack.method")
+			err := PostForm(context.Background(), nil, tt.kv, got, "slack.method")
 			if (err != nil) != tt.wantErr {
 				t.Errorf("PostForm() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -146,7 +146,7 @@ func TestPostJSON(t *testing.T) {
 
 			slackURL = s.URL + "/"
 			got := &response{}
-			err := PostJSON(context.Background(), nil, "test", tt.json, got, "slack.method")
+			err := PostJSON(context.Background(), nil, tt.json, got, "slack.method")
 			if (err != nil) != tt.wantErr {
 				t.Errorf("PostJSON() error = %v, wantErr %v", err, tt.wantErr)
 				return

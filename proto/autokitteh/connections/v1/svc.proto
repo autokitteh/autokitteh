@@ -46,9 +46,9 @@ message GetResponse {
 }
 
 message ListRequest {
-  string integration_id = 1; // Optional filter.
-  string project_id = 2; // Optional filter.
-  string integration_token = 3; // Optional filter.
+  string integration_id = 1; // Optional.
+  string project_id = 2; // Optional.
+
   // TODO: fieldmask.
 }
 

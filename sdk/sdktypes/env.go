@@ -36,7 +36,7 @@ func StrictEnvFromProto(m *EnvPB) (Env, error) { return Strict(EnvFromProto(m)) 
 
 func (p Env) ID() EnvID            { return kittehs.Must1(ParseEnvID(p.read().EnvId)) }
 func (p Env) ProjectID() ProjectID { return kittehs.Must1(ParseProjectID(p.read().ProjectId)) }
-func (p Env) Name() Symbol         { return forceSymbol(p.read().Name) }
+func (p Env) Name() Symbol         { return NewSymbol(p.read().Name) }
 
 func NewEnv() Env {
 	return kittehs.Must1(EnvFromProto(&EnvPB{}))

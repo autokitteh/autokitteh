@@ -14,7 +14,7 @@ _sym_db = _symbol_database.Default()
 from buf.validate import validate_pb2 as buf_dot_validate_dot_validate__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1d\x61utokitteh/oauth/v1/svc.proto\x12\x13\x61utokitteh.oauth.v1\x1a\x1b\x62uf/validate/validate.proto\"e\n\x0fRegisterRequest\x12\x18\n\x02id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x02id\x12\x38\n\x06\x63onfig\x18\x02 \x01(\x0b\x32 .autokitteh.oauth.v1.OAuthConfigR\x06\x63onfig\"\x12\n\x10RegisterResponse\"&\n\nGetRequest\x12\x18\n\x02id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x02id\"G\n\x0bGetResponse\x12\x38\n\x06\x63onfig\x18\x01 \x01(\x0b\x32 .autokitteh.oauth.v1.OAuthConfigR\x06\x63onfig\",\n\x10StartFlowRequest\x12\x18\n\x02id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x02id\"%\n\x11StartFlowResponse\x12\x10\n\x03url\x18\x01 \x01(\tR\x03url\"i\n\x0f\x45xchangeRequest\x12\x18\n\x02id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x02id\x12\x1e\n\x05state\x18\x02 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x05state\x12\x1c\n\x04\x63ode\x18\x03 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x04\x63ode\"\x91\x01\n\x10\x45xchangeResponse\x12!\n\x0c\x61\x63\x63\x65ss_token\x18\x01 \x01(\tR\x0b\x61\x63\x63\x65ssToken\x12#\n\rrefresh_token\x18\x02 \x01(\tR\x0crefreshToken\x12\x1d\n\ntoken_type\x18\x03 \x01(\tR\ttokenType\x12\x16\n\x06\x65xpiry\x18\x04 \x01(\x03R\x06\x65xpiry\"\xca\x03\n\x0bOAuthConfig\x12%\n\tclient_id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x08\x63lientId\x12-\n\rclient_secret\x18\x02 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x0c\x63lientSecret\x12#\n\x08\x61uth_url\x18\x03 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x07\x61uthUrl\x12\x30\n\x0f\x64\x65vice_auth_url\x18\x04 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\rdeviceAuthUrl\x12%\n\ttoken_url\x18\x05 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x08tokenUrl\x12+\n\x0credirect_url\x18\x06 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x0bredirectUrl\x12\x1d\n\nauth_style\x18\x07 \x01(\x05R\tauthStyle\x12G\n\x07options\x18\x08 \x03(\x0b\x32-.autokitteh.oauth.v1.OAuthConfig.OptionsEntryR\x07options\x12\x16\n\x06scopes\x18\t \x03(\tR\x06scopes\x1a:\n\x0cOptionsEntry\x12\x10\n\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n\x05value\x18\x02 \x01(\tR\x05value:\x02\x38\x01\x32\xe6\x02\n\x0cOAuthService\x12W\n\x08Register\x12$.autokitteh.oauth.v1.RegisterRequest\x1a%.autokitteh.oauth.v1.RegisterResponse\x12H\n\x03Get\x12\x1f.autokitteh.oauth.v1.GetRequest\x1a .autokitteh.oauth.v1.GetResponse\x12Z\n\tStartFlow\x12%.autokitteh.oauth.v1.StartFlowRequest\x1a&.autokitteh.oauth.v1.StartFlowResponse\x12W\n\x08\x45xchange\x12$.autokitteh.oauth.v1.ExchangeRequest\x1a%.autokitteh.oauth.v1.ExchangeResponseB\xd8\x01\n\x17\x63om.autokitteh.oauth.v1B\x08SvcProtoP\x01ZEgo.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/oauth/v1;oauthv1\xa2\x02\x03\x41OX\xaa\x02\x13\x41utokitteh.Oauth.V1\xca\x02\x13\x41utokitteh\\Oauth\\V1\xe2\x02\x1f\x41utokitteh\\Oauth\\V1\\GPBMetadata\xea\x02\x15\x41utokitteh::Oauth::V1b\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1d\x61utokitteh/oauth/v1/svc.proto\x12\x13\x61utokitteh.oauth.v1\x1a\x1b\x62uf/validate/validate.proto\"e\n\x0fRegisterRequest\x12\x18\n\x02id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x02id\x12\x38\n\x06\x63onfig\x18\x02 \x01(\x0b\x32 .autokitteh.oauth.v1.OAuthConfigR\x06\x63onfig\"\x12\n\x10RegisterResponse\"&\n\nGetRequest\x12\x18\n\x02id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x02id\"G\n\x0bGetResponse\x12\x38\n\x06\x63onfig\x18\x01 \x01(\x0b\x32 .autokitteh.oauth.v1.OAuthConfigR\x06\x63onfig\"Q\n\x10StartFlowRequest\x12\x18\n\x02id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x02id\x12#\n\rconnection_id\x18\x02 \x01(\tR\x0c\x63onnectionId\"%\n\x11StartFlowResponse\x12\x10\n\x03url\x18\x01 \x01(\tR\x03url\"i\n\x0f\x45xchangeRequest\x12\x18\n\x02id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x02id\x12\x1e\n\x05state\x18\x02 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x05state\x12\x1c\n\x04\x63ode\x18\x03 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x04\x63ode\"\x91\x01\n\x10\x45xchangeResponse\x12!\n\x0c\x61\x63\x63\x65ss_token\x18\x01 \x01(\tR\x0b\x61\x63\x63\x65ssToken\x12#\n\rrefresh_token\x18\x02 \x01(\tR\x0crefreshToken\x12\x1d\n\ntoken_type\x18\x03 \x01(\tR\ttokenType\x12\x16\n\x06\x65xpiry\x18\x04 \x01(\x03R\x06\x65xpiry\"\xca\x03\n\x0bOAuthConfig\x12%\n\tclient_id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x08\x63lientId\x12-\n\rclient_secret\x18\x02 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x0c\x63lientSecret\x12#\n\x08\x61uth_url\x18\x03 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x07\x61uthUrl\x12\x30\n\x0f\x64\x65vice_auth_url\x18\x04 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\rdeviceAuthUrl\x12%\n\ttoken_url\x18\x05 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x08tokenUrl\x12+\n\x0credirect_url\x18\x06 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x0bredirectUrl\x12\x1d\n\nauth_style\x18\x07 \x01(\x05R\tauthStyle\x12G\n\x07options\x18\x08 \x03(\x0b\x32-.autokitteh.oauth.v1.OAuthConfig.OptionsEntryR\x07options\x12\x16\n\x06scopes\x18\t \x03(\tR\x06scopes\x1a:\n\x0cOptionsEntry\x12\x10\n\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n\x05value\x18\x02 \x01(\tR\x05value:\x02\x38\x01\x32\xe6\x02\n\x0cOAuthService\x12W\n\x08Register\x12$.autokitteh.oauth.v1.RegisterRequest\x1a%.autokitteh.oauth.v1.RegisterResponse\x12H\n\x03Get\x12\x1f.autokitteh.oauth.v1.GetRequest\x1a .autokitteh.oauth.v1.GetResponse\x12Z\n\tStartFlow\x12%.autokitteh.oauth.v1.StartFlowRequest\x1a&.autokitteh.oauth.v1.StartFlowResponse\x12W\n\x08\x45xchange\x12$.autokitteh.oauth.v1.ExchangeRequest\x1a%.autokitteh.oauth.v1.ExchangeResponseB\xd8\x01\n\x17\x63om.autokitteh.oauth.v1B\x08SvcProtoP\x01ZEgo.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/oauth/v1;oauthv1\xa2\x02\x03\x41OX\xaa\x02\x13\x41utokitteh.Oauth.V1\xca\x02\x13\x41utokitteh\\Oauth\\V1\xe2\x02\x1f\x41utokitteh\\Oauth\\V1\\GPBMetadata\xea\x02\x15\x41utokitteh::Oauth::V1b\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -57,17 +57,17 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _globals['_GETRESPONSE']._serialized_start=246
   _globals['_GETRESPONSE']._serialized_end=317
   _globals['_STARTFLOWREQUEST']._serialized_start=319
-  _globals['_STARTFLOWREQUEST']._serialized_end=363
-  _globals['_STARTFLOWRESPONSE']._serialized_start=365
-  _globals['_STARTFLOWRESPONSE']._serialized_end=402
-  _globals['_EXCHANGEREQUEST']._serialized_start=404
-  _globals['_EXCHANGEREQUEST']._serialized_end=509
-  _globals['_EXCHANGERESPONSE']._serialized_start=512
-  _globals['_EXCHANGERESPONSE']._serialized_end=657
-  _globals['_OAUTHCONFIG']._serialized_start=660
-  _globals['_OAUTHCONFIG']._serialized_end=1118
-  _globals['_OAUTHCONFIG_OPTIONSENTRY']._serialized_start=1060
-  _globals['_OAUTHCONFIG_OPTIONSENTRY']._serialized_end=1118
-  _globals['_OAUTHSERVICE']._serialized_start=1121
-  _globals['_OAUTHSERVICE']._serialized_end=1479
+  _globals['_STARTFLOWREQUEST']._serialized_end=400
+  _globals['_STARTFLOWRESPONSE']._serialized_start=402
+  _globals['_STARTFLOWRESPONSE']._serialized_end=439
+  _globals['_EXCHANGEREQUEST']._serialized_start=441
+  _globals['_EXCHANGEREQUEST']._serialized_end=546
+  _globals['_EXCHANGERESPONSE']._serialized_start=549
+  _globals['_EXCHANGERESPONSE']._serialized_end=694
+  _globals['_OAUTHCONFIG']._serialized_start=697
+  _globals['_OAUTHCONFIG']._serialized_end=1155
+  _globals['_OAUTHCONFIG_OPTIONSENTRY']._serialized_start=1097
+  _globals['_OAUTHCONFIG_OPTIONSENTRY']._serialized_end=1155
+  _globals['_OAUTHSERVICE']._serialized_start=1158
+  _globals['_OAUTHSERVICE']._serialized_end=1516
 # @@protoc_insertion_point(module_scope)

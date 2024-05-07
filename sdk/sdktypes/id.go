@@ -12,7 +12,7 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 )
 
-const validIDChars = "0123456789abcdefghjkmnpqrstvwxyz"
+const ValidIDChars = "0123456789abcdefghjkmnpqrstvwxyz"
 
 type idTraits = typeid.PrefixType
 

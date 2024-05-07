@@ -1,0 +1,34 @@
+{{ template "header_" . }}
+
+<h1>Auth</h1>
+
+{{ if User }}
+<p>
+    You are <tt>{{ User }}</tt>.
+</p>
+
+<pre>{{ .UserJSON }}</pre>
+
+<button onclick="window.location.href='/logout'">Logout</button>
+{{ else }}
+<p>You are not logged in.</p>
+{{ end }}
+
+<h2>Tokens</h2>
+
+<button onclick="createToken()">Create</button>
+<br />
+<br />
+<textarea id="token" rows="4" cols="128" readonly></textarea>
+
+<script>
+    function createToken() {
+        fetch('/auth/tokens', { method: 'POST', })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('token').innerHTML = data;
+            });
+    }
+</script>
+
+{{ template "footer_" . }}

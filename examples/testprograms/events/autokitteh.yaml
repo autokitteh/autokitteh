@@ -1,0 +1,16 @@
+version: v1
+
+project:
+  name: events
+  connections:
+    - name: http1
+      token: "meow"
+      integration: "http"
+    - name: http_event
+      token: "ev"
+      integration: "http"      
+  triggers:
+    - name: get
+      connection: http1
+      event_type: get
+      entrypoint: events.star:on_http_get

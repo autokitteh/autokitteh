@@ -29,7 +29,7 @@ resp code == 200
 # Negative test: list all events, without any filter.
 ak event list
 return code == 1
-output equals 'Error: at least one of the flags in the group [integration connection-token] is required'
+output equals 'Error: at least one of the flags in the group [integration connection] is required'
 
 # List all events, with multiple filters.
 ak event list --integration http --event-type get

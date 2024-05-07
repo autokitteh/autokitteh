@@ -20,7 +20,6 @@ type fxServices struct {
 	OAuth_        sdkservices.OAuth        `optional:"true"`
 	Projects_     sdkservices.Projects     `optional:"true"`
 	Runtimes_     sdkservices.Runtimes     `optional:"true"`
-	Secrets_      sdkservices.Secrets      `optional:"true"`
 	Sessions_     sdkservices.Sessions     `optional:"true"`
 	Store_        sdkservices.Store        `optional:"true"`
 	Triggers_     sdkservices.Triggers     `optional:"true"`
@@ -40,7 +39,6 @@ func (s *fxServices) Integrations() sdkservices.Integrations { return s.Integrat
 func (s *fxServices) OAuth() sdkservices.OAuth               { return s.OAuth_ }
 func (s *fxServices) Projects() sdkservices.Projects         { return s.Projects_ }
 func (s *fxServices) Runtimes() sdkservices.Runtimes         { return s.Runtimes_ }
-func (s *fxServices) Secrets() sdkservices.Secrets           { return s.Secrets_ }
 func (s *fxServices) Sessions() sdkservices.Sessions         { return s.Sessions_ }
 func (s *fxServices) Store() sdkservices.Store               { return s.Store_ }
 func (s *fxServices) Triggers() sdkservices.Triggers         { return s.Triggers_ }

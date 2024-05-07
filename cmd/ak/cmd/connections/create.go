@@ -14,7 +14,7 @@ import (
 var project string
 
 var createCmd = common.StandardCommand(&cobra.Command{
-	Use:     "create <name> <--project=...> <--integration=...> <--connection-token=...>",
+	Use:     "create <name> <--project=...> <--integration=...>",
 	Short:   "Define new connection to integration",
 	Aliases: []string{"c"},
 	Args:    cobra.ExactArgs(1),
@@ -40,10 +40,9 @@ var createCmd = common.StandardCommand(&cobra.Command{
 		}
 
 		c, err := sdktypes.ConnectionFromProto(&sdktypes.ConnectionPB{
-			IntegrationId:    iid.String(),
-			IntegrationToken: connectionToken,
-			ProjectId:        pid.String(),
-			Name:             args[0],
+			IntegrationId: iid.String(),
+			ProjectId:     pid.String(),
+			Name:          args[0],
 		})
 		if err != nil {
 			return fmt.Errorf("invalid connection: %w", err)
@@ -69,6 +68,4 @@ func init() {
 
 	createCmd.Flags().StringVarP(&integration, "integration", "i", "", "integration name or ID")
 	kittehs.Must0(createCmd.MarkFlagRequired("integration"))
-
-	createCmd.Flags().StringVarP(&connectionToken, "connection-token", "t", "", "connection token")
 }

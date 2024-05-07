@@ -23,9 +23,10 @@ func New(p sdkclient.Params) sdkservices.Integrations {
 	return &client{client: internal.New(integrationsv1connect.NewIntegrationsServiceClient, p)}
 }
 
-func (c *client) Get(ctx context.Context, id sdktypes.IntegrationID) (sdkservices.Integration, error) {
+func (c *client) get(ctx context.Context, id sdktypes.IntegrationID, name sdktypes.Symbol) (sdkservices.Integration, error) {
 	resp, err := c.client.Get(ctx, connect.NewRequest(&integrationsv1.GetRequest{
 		IntegrationId: id.String(),
+		Name:          name.String(),
 	}))
 	if err != nil {
 		return nil, rpcerrors.ToSDKError(err)
@@ -44,6 +45,14 @@ func (c *client) Get(ctx context.Context, id sdktypes.IntegrationID) (sdkservice
 	}
 
 	return &integration{desc: desc, client: c.client}, nil
+}
+
+func (c *client) GetByID(ctx context.Context, id sdktypes.IntegrationID) (sdkservices.Integration, error) {
+	return c.get(ctx, id, sdktypes.InvalidSymbol)
+}
+
+func (c *client) GetByName(ctx context.Context, name sdktypes.Symbol) (sdkservices.Integration, error) {
+	return c.get(ctx, sdktypes.InvalidIntegrationID, name)
 }
 
 func (c *client) List(ctx context.Context, nameSubstring string) ([]sdktypes.Integration, error) {
