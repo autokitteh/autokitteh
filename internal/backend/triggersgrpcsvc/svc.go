@@ -3,10 +3,10 @@ package triggersgrpcsvc
 import (
 	"context"
 	"fmt"
-	"net/http"
 
 	"connectrpc.com/connect"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/proto"
 	triggersv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/triggers/v1"
@@ -24,11 +24,11 @@ type server struct {
 
 var _ triggersv1connect.TriggersServiceHandler = (*server)(nil)
 
-func Init(mux *http.ServeMux, triggers sdkservices.Triggers) {
+func Init(muxes *muxes.Muxes, triggers sdkservices.Triggers) {
 	srv := server{triggers: triggers}
 
 	path, namer := triggersv1connect.NewTriggersServiceHandler(&srv)
-	mux.Handle(path, namer)
+	muxes.Auth.Handle(path, namer)
 }
 
 func (s *server) Create(ctx context.Context, req *connect.Request[triggersv1.CreateRequest]) (*connect.Response[triggersv1.CreateResponse], error) {

@@ -2,12 +2,12 @@ package oauth
 
 import (
 	"context"
-	"net/http"
 
 	"connectrpc.com/connect"
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
 	"go.autokitteh.dev/autokitteh/proto"
 	oauthv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/oauth/v1"
 	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/oauth/v1/oauthv1connect"
@@ -24,10 +24,10 @@ type server struct {
 
 var _ oauthv1connect.OAuthServiceHandler = (*server)(nil)
 
-func Init(mux *http.ServeMux, l *zap.Logger, oauth sdkservices.OAuth) {
+func Init(muxes *muxes.Muxes, l *zap.Logger, oauth sdkservices.OAuth) {
 	srv := server{logger: l, impl: oauth}
 	path, handler := oauthv1connect.NewOAuthServiceHandler(&srv)
-	mux.Handle(path, handler)
+	muxes.Auth.Handle(path, handler)
 }
 
 func (s *server) Register(ctx context.Context, req *connect.Request[oauthv1.RegisterRequest]) (*connect.Response[oauthv1.RegisterResponse], error) {

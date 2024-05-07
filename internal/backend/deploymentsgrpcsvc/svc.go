@@ -3,10 +3,10 @@ package deploymentsgrpcsvc
 import (
 	"context"
 	"fmt"
-	"net/http"
 
 	"connectrpc.com/connect"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/proto"
 	deploymentsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/deployments/v1"
@@ -24,11 +24,11 @@ type server struct {
 
 var _ deploymentsv1connect.DeploymentsServiceHandler = (*server)(nil)
 
-func Init(mux *http.ServeMux, deployments sdkservices.Deployments) {
+func Init(muxes *muxes.Muxes, deployments sdkservices.Deployments) {
 	srv := server{deployments: deployments}
 
 	path, namer := deploymentsv1connect.NewDeploymentsServiceHandler(&srv)
-	mux.Handle(path, namer)
+	muxes.Auth.Handle(path, namer)
 }
 
 func (s *server) Create(ctx context.Context, req *connect.Request[deploymentsv1.CreateRequest]) (*connect.Response[deploymentsv1.CreateResponse], error) {

@@ -3,10 +3,10 @@ package storegrpcsvc
 import (
 	"context"
 	"fmt"
-	"net/http"
 
 	"connectrpc.com/connect"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/proto"
 	storev1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/store/v1"
@@ -26,11 +26,11 @@ type server struct {
 
 var _ storev1connect.StoreServiceHandler = (*server)(nil)
 
-func Init(mux *http.ServeMux, store sdkservices.Store) {
+func Init(muxes *muxes.Muxes, store sdkservices.Store) {
 	srv := server{store: store}
 
 	path, handler := storev1connect.NewStoreServiceHandler(&srv)
-	mux.Handle(path, handler)
+	muxes.Auth.Handle(path, handler)
 }
 
 func (s *server) List(ctx context.Context, req *connect.Request[storev1.ListRequest]) (*connect.Response[storev1.ListResponse], error) {

@@ -2,11 +2,11 @@ package secretsgrpcsvc
 
 import (
 	"context"
-	"net/http"
 
 	"connectrpc.com/connect"
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
 	secretsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/secrets/v1"
 	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/secrets/v1/secretsv1connect"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -21,10 +21,10 @@ type server struct {
 
 var _ secretsv1connect.SecretsServiceHandler = (*server)(nil)
 
-func Init(mux *http.ServeMux, l *zap.Logger, sec sdkservices.Secrets) error {
+func Init(muxes *muxes.Muxes, l *zap.Logger, sec sdkservices.Secrets) error {
 	s := server{impl: sec, logger: l}
 	path, handler := secretsv1connect.NewSecretsServiceHandler(&s)
-	mux.Handle(path, handler)
+	muxes.Auth.Handle(path, handler)
 	return nil
 }
 

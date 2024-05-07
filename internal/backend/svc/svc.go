@@ -16,7 +16,13 @@ import (
 
 	"go.autokitteh.dev/autokitteh/backend/runtimes"
 	"go.autokitteh.dev/autokitteh/internal/backend/applygrpcsvc"
-	"go.autokitteh.dev/autokitteh/internal/backend/auth"
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authgrpcsvc"
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authhttpmiddleware"
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authjwttokens"
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authloginhttpsvc"
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authsessions"
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/builds"
 	"go.autokitteh.dev/autokitteh/internal/backend/buildsgrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/configset"
@@ -55,6 +61,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/webtools"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/internal/version"
+	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/auth/v1/authv1connect"
 	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/builds/v1/buildsv1connect"
 	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/connections/v1/connectionsv1connect"
 	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/deployments/v1/deploymentsv1connect"
@@ -68,6 +75,7 @@ import (
 	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/secrets/v1/secretsv1connect"
 	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/sessions/v1/sessionsv1connect"
 	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/triggers/v1/triggersv1connect"
+	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/vars/v1/varsv1connect"
 	"go.autokitteh.dev/autokitteh/sdk/sdkruntimessvc"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -112,6 +120,12 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		fx.Supply(cfg),
 		LoggerFxOpt(),
 		fx.Invoke(func(lc fx.Lifecycle, db db.DB) { HookOnStart(lc, db.Setup) }),
+
+		Component("auth", configset.Empty, fx.Provide(authsvc.New)),
+		Component("authjwttokens", authjwttokens.Configs, fx.Provide(authjwttokens.New)),
+		Component("authsessions", authsessions.Configs, fx.Provide(authsessions.New)),
+		Component("authhttmiddleware", authhttpmiddleware.Configs, fx.Provide(authhttpmiddleware.New)),
+
 		DBFxOpt(),
 		Component(
 			"temporalclient",
@@ -160,24 +174,27 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 			"webtools",
 			webtools.Configs,
 			fx.Provide(webtools.New),
-			fx.Invoke(func(lc fx.Lifecycle, mux *http.ServeMux, t webtools.Svc) {
-				t.Init(mux)
+			fx.Invoke(func(lc fx.Lifecycle, muxes *muxes.Muxes, t webtools.Svc) {
+				t.Init(muxes)
 				HookOnStart(lc, t.Setup)
 			}),
 		),
 		fx.Provide(func(s fxServices) sdkservices.Services { return &s }),
+		fx.Invoke(authgrpcsvc.Init),
 		fx.Invoke(applygrpcsvc.Init),
 		fx.Invoke(buildsgrpcsvc.Init),
 		fx.Invoke(connectionsgrpcsvc.Init),
 		fx.Invoke(deploymentsgrpcsvc.Init),
+		fx.Invoke(secretsgrpcsvc.Init),
 		fx.Invoke(dispatchergrpcsvc.Init),
 		fx.Invoke(envsgrpcsvc.Init),
 		fx.Invoke(eventsgrpcsvc.Init),
 		fx.Invoke(integrationsgrpcsvc.Init),
 		fx.Invoke(oauth.Init),
 		fx.Invoke(projectsgrpcsvc.Init),
-		fx.Invoke(sdkruntimessvc.Init),
-		fx.Invoke(secretsgrpcsvc.Init),
+		fx.Invoke(func(z *zap.Logger, runtimes sdkservices.Runtimes, muxes *muxes.Muxes) {
+			sdkruntimessvc.Init(z, runtimes, muxes.Auth)
+		}),
 		fx.Invoke(sessionsgrpcsvc.Init),
 		fx.Invoke(storegrpcsvc.Init),
 		fx.Invoke(triggersgrpcsvc.Init),
@@ -185,10 +202,11 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		Component(
 			"http",
 			httpsvc.Configs,
-			fx.Provide(func(lc fx.Lifecycle, z *zap.Logger, cfg *httpsvc.Config, authenticator auth.Authenticator) (svc httpsvc.Svc, mux *http.ServeMux, all *muxes.Muxes, err error) {
+			fx.Provide(func(lc fx.Lifecycle, z *zap.Logger, cfg *httpsvc.Config, wrapAuth authhttpmiddleware.AuthMiddlewareDecorator) (svc httpsvc.Svc, all *muxes.Muxes, err error) {
 				svc, err = httpsvc.New(
 					lc, z, cfg,
 					[]string{
+						authv1connect.AuthServiceName,
 						buildsv1connect.BuildsServiceName,
 						connectionsv1connect.ConnectionsServiceName,
 						deploymentsv1connect.DeploymentsServiceName,
@@ -202,40 +220,36 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 						secretsv1connect.SecretsServiceName,
 						sessionsv1connect.SessionsServiceName,
 						triggersv1connect.TriggersServiceName,
+						varsv1connect.VarsServiceName,
 					},
-					nil,
+					[]httpsvc.RequestLogExtractor{
+						func(r *http.Request) []zap.Field {
+							if user := authcontext.GetAuthnUser(r.Context()); user.IsValid() {
+								return []zap.Field{zap.String("user", user.Title())}
+							}
+
+							return nil
+						},
+					},
 				)
 				if err != nil {
 					return
 				}
 
 				// Replace the original mux with a main mux and also expose the original mux as the no-auth one.
-				apimux := http.NewServeMux()
+				authMux := http.NewServeMux()
 
-				mux = svc.Mux()
-				mux.Handle("/api/", http.StripPrefix("/api", authenticator.Middleware(apimux)))
+				mux := svc.Mux()
+				mux.Handle("/", wrapAuth(authMux))
 
-				all = &muxes.Muxes{Auth: apimux, NoAuth: mux}
+				all = &muxes.Muxes{Auth: authMux, NoAuth: mux}
 
 				return
 			}),
 		),
-		fx.Invoke(func(muxes *muxes.Muxes) {
-			muxes.Auth.Handle("/authenticated_only", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				fmt.Println("ok")
-				ctx := r.Context()
-
-				userDetails := ctx.Value(auth.AuthenticatedUserCtxKey).(*auth.AuthenticatedUserDetails)
-
-				// we don't care about this error since this is an example route
-				kittehs.Must0(json.NewEncoder(w).Encode(map[string]any{"ok": "ok", "userID": userDetails.UserID}))
-			}))
-		}),
-		fx.Invoke(func(mux *http.ServeMux, h integrationsweb.Handler) {
-			mux.Handle("/i/", &h)
-		}),
-		fx.Invoke(func(mux *http.ServeMux, l *zap.Logger, s sdkservices.Services) {
-			mux.Handle("/oauth/", oauth.NewWebhook(l, s))
+		Component("authloginhttpsvc", authloginhttpsvc.Configs, fx.Invoke(authloginhttpsvc.Init)),
+		fx.Invoke(func(muxes *muxes.Muxes, h integrationsweb.Handler) {
+			muxes.NoAuth.Handle("/i/", &h)
 		}),
 		Component("integrations", integrations.Configs, fx.Provide(integrations.New)),
 		fx.Invoke(func(lc fx.Lifecycle, l *zap.Logger, muxes *muxes.Muxes, s sdkservices.Secrets, o sdkservices.OAuth, d dispatcher.Dispatcher) {
@@ -243,13 +257,11 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 				return integrations.Start(ctx, l, muxes.NoAuth, s, o, d)
 			})
 		}),
-		Component("authenticator", auth.Configs, fx.Provide(auth.NewAuthenticator)),
-		indexOption(),
-		fx.Invoke(func(z *zap.Logger, mux *http.ServeMux) {
+		fx.Invoke(func(z *zap.Logger, muxes *muxes.Muxes) {
 			srv := http.StripPrefix("/static/", http.FileServer(http.FS(static.RootWebContent)))
-			mux.Handle("/static/", srv)
-			mux.Handle("/favicon-32x32.png", srv)
-			mux.Handle("/favicon-16x16.png", srv)
+			muxes.NoAuth.Handle("/static/", srv)
+			muxes.NoAuth.Handle("/favicon-32x32.png", srv)
+			muxes.NoAuth.Handle("/favicon-16x16.png", srv)
 		}),
 		fx.Invoke(func(lc fx.Lifecycle, z *zap.Logger, httpsvc httpsvc.Svc, tclient temporalclient.Client) {
 			HookSimpleOnStart(lc, func() {
@@ -257,34 +269,34 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 				printBanner(opts, httpsvc.Addr(), temporalFrontendAddr, temporalUIAddr)
 			})
 		}),
-		fx.Invoke(func(mux *http.ServeMux) {
-			mux.HandleFunc("/id", func(w http.ResponseWriter, r *http.Request) {
+		fx.Invoke(func(muxes *muxes.Muxes) {
+			muxes.NoAuth.HandleFunc("/id", func(w http.ResponseWriter, r *http.Request) {
 				fmt.Fprint(w, fixtures.ProcessID())
 			})
-			mux.HandleFunc("/version", func(w http.ResponseWriter, r *http.Request) {
+			muxes.NoAuth.HandleFunc("/version", func(w http.ResponseWriter, r *http.Request) {
 				w.Header().Set("Content-Type", "application/json")
 				kittehs.Must0(json.NewEncoder(w).Encode(version.Version))
 			})
 		}),
-		fx.Invoke(func(mux *http.ServeMux, tclient temporalclient.Client) {
+		fx.Invoke(func(muxes *muxes.Muxes, tclient temporalclient.Client) {
 			_, uiAddr := tclient.TemporalAddr()
 			if uiAddr == "" {
 				return
 			}
 
-			mux.HandleFunc("/temporal", func(w http.ResponseWriter, r *http.Request) {
+			muxes.NoAuth.HandleFunc("/temporal", func(w http.ResponseWriter, r *http.Request) {
 				http.Redirect(w, r, uiAddr, http.StatusFound)
 			})
 		}),
-		fx.Invoke(func(z *zap.Logger, lc fx.Lifecycle, mux *http.ServeMux) {
+		fx.Invoke(func(z *zap.Logger, lc fx.Lifecycle, muxes *muxes.Muxes) {
 			var ready atomic.Bool
 
-			mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+			muxes.NoAuth.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 				// TODO(ENG-530): check db, temporal, etc.
 				w.WriteHeader(http.StatusOK)
 			})
 
-			mux.HandleFunc("/readyz", func(w http.ResponseWriter, r *http.Request) {
+			muxes.NoAuth.HandleFunc("/readyz", func(w http.ResponseWriter, r *http.Request) {
 				if !ready.Load() {
 					w.WriteHeader(http.StatusServiceUnavailable)
 					return

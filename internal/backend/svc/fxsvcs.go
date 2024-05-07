@@ -9,6 +9,7 @@ import (
 type fxServices struct {
 	fx.In
 
+	Auth_         sdkservices.Auth         `optional:"true"`
 	Builds_       sdkservices.Builds       `optional:"true"`
 	Connections_  sdkservices.Connections  `optional:"true"`
 	Deployments_  sdkservices.Deployments  `optional:"true"`
@@ -28,6 +29,7 @@ type fxServices struct {
 
 var _ sdkservices.Services = &fxServices{}
 
+func (s *fxServices) Auth() sdkservices.Auth                 { return s.Auth_ }
 func (s *fxServices) Builds() sdkservices.Builds             { return s.Builds_ }
 func (s *fxServices) Connections() sdkservices.Connections   { return s.Connections_ }
 func (s *fxServices) Deployments() sdkservices.Deployments   { return s.Deployments_ }
