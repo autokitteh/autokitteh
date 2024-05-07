@@ -126,6 +126,9 @@ func Test_pySvc_Run(t *testing.T) {
 		Load: func(ctx context.Context, rid sdktypes.RunID, path string) (map[string]sdktypes.Value, error) {
 			return map[string]sdktypes.Value{}, nil
 		},
+		Print: func(ctx context.Context, rid sdktypes.RunID, text string) {
+			t.Log(text)
+		},
 	}
 
 	run, err := svc.Run(ctx, runID, mainPath, compiled, nil, &cbs)
@@ -211,9 +214,18 @@ func Test_handleLog(t *testing.T) {
 		Type:    "log",
 		Payload: json.RawMessage(logJSON),
 	}
-	py := pySvc{log: logger}
+	py := pySvc{
+		log: logger,
+		cbs: &sdkservices.RunCallbacks{
+			Print: func(ctx context.Context, rid sdktypes.RunID, text string) {
+				t.Log(text)
+			},
+		},
+	}
 
-	err := py.handleLog(msg)
+	ctx, cancel := testCtx(t)
+	defer cancel()
+	err := py.handleLog(ctx, msg)
 	require.NoError(t, err)
 
 	var log struct {

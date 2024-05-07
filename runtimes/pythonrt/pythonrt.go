@@ -280,7 +280,7 @@ func pyLevelToZap(level string) (zapcore.Level, error) {
 	return 0, fmt.Errorf("unknown log level %q", level)
 }
 
-func (py *pySvc) handleLog(msg Message) error {
+func (py *pySvc) handleLog(ctx context.Context, msg Message) error {
 	log, err := extractMessage[LogMessage](msg)
 	if err != nil {
 		return err
@@ -292,6 +292,7 @@ func (py *pySvc) handleLog(msg Message) error {
 	}
 
 	py.log.Log(level, log.Message, zap.String("runtime", "python"), zap.String("type", "log"))
+	py.cbs.Print(ctx, py.xid.ToRunID(), log.Message)
 	return nil
 }
 
@@ -338,7 +339,7 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, event map[str
 		}
 
 		if msg.Type == messageType[LogMessage]() {
-			if err := py.handleLog(msg); err != nil {
+			if err := py.handleLog(ctx, msg); err != nil {
 				py.log.Error("handle log", zap.Error(err))
 				return sdktypes.InvalidValue, fmt.Errorf("bad log message: %w", err)
 			}
@@ -496,7 +497,7 @@ func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 		}
 
 		if msg.Type == messageType[LogMessage]() {
-			if err := py.handleLog(msg); err != nil {
+			if err := py.handleLog(ctx, msg); err != nil {
 				py.log.Error("handle log", zap.Error(err))
 				return sdktypes.InvalidValue, err
 			}
