@@ -29,7 +29,7 @@ func registerDescopeRoutes(mux *http.ServeMux, cfg descopeConfig, onSuccess func
 		}
 	}))
 
-	mux.Handle("/auth/descope/loggedin", extractRedirectFromCookie(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	mux.Handle("/auth/descope/loggedin", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		authorized, tok, err := client.Auth.ValidateAndRefreshSessionWithRequest(r, w)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -65,7 +65,7 @@ func registerDescopeRoutes(mux *http.ServeMux, cfg descopeConfig, onSuccess func
 		}
 
 		onSuccess(sdktypes.NewUser("descope", details)).ServeHTTP(w, r)
-	})))
+	}))
 
 	return nil
 }
