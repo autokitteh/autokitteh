@@ -1,0 +1,22 @@
+{{ template "header_" . }}
+
+<h1>Authentication Token</h1>
+
+<p>Generated for <tt>{{ User }}</tt>.</p>
+
+<textarea id="token" rows="4" cols="128" readonly>{{ .Token }}</textarea>
+<br />
+<br />
+<button onclick="copyToClipboard()">Copy to clipboard</button>
+
+<script>
+    function copyToClipboard() {
+        var copyText = document.getElementById("token");
+        copyText.select();
+        copyText.setSelectionRange(0, 99999);
+        document.execCommand("copy");
+        copyText.setSelectionRange(0, 0);
+    }
+</script>
+
+{{ template "footer_" . }}
