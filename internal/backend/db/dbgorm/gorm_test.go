@@ -197,12 +197,10 @@ func newDBFixture() *dbFixture {
 	return &dbFixture{db: gormDB.db, gormdb: &gormDB, ctx: ctx}
 }
 
-func newDBFixtureFK(withoutForeignKeys bool) *dbFixture {
-	f := newDBFixture()
-	if withoutForeignKeys { // run after setup, since this pragma may be reset by setup
-		foreignKeys(f.gormdb, false)
-	}
-	return f
+func (f *dbFixture) WithForeignKeysDisabled(fn func()) {
+	foreignKeys(f.gormdb, false) // disable
+	fn()
+	foreignKeys(f.gormdb, true) // enable
 }
 
 // enable SQL logging
