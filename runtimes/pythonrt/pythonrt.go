@@ -184,8 +184,8 @@ func (py *pySvc) Run(
 		return nil, fmt.Errorf("%q note found in compiled data", archiveKey)
 	}
 
-	stdout := newStreamLogger("[stdout] ", cbs.Print, runID)
-	stderr := newStreamLogger("[stderr] ", cbs.Print, runID)
+	stdout := newStreamLogger("[PYTHON] <stdout> ", cbs.Print, runID)
+	stderr := newStreamLogger("[PYTHON] <stderr>", cbs.Print, runID)
 
 	ri, err := runPython(py.log, venvPy, tarData, mainPath, envMap, stdout, stderr)
 	if err != nil {
