@@ -1,97 +1,145 @@
 <!DOCTYPE html>
 <html>
+  <head>
+    <title>autokitteh Slack Integration</title>
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="/static/apple-touch-icon.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="/static/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="/static/favicon-16x16.png"
+    />
+    <link rel="manifest" href="/static/site.webmanifest" />
+    <link rel="stylesheet" type="text/css" href="styles.css" />
+    <meta name="robots" content="noindex, nofollow" />
+    <script src="form.js" defer></script>
+  </head>
 
-<head>
-  <title>autokitteh Slack Integration</title>
-  <link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png" />
-  <link rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16x16.png" />
-  <link rel="manifest" href="/static/site.webmanifest" />
-  <link rel="stylesheet" type="text/css" href="styles.css" />
-  <meta name="robots" content="noindex, nofollow" />
-  <script src="form.js" defer></script>
-</head>
+  <body>
+    <a href="/" target="_self">
+      <img class="banner" src="/static/banner.svg" alt="autokitteh" />
+    </a>
 
-<body>
-  <a href="/" target="_self">
-    <img class="banner" src="/static/banner.svg" alt="autokitteh" />
-  </a>
+    <table class="title">
+      <td><img class="logo" src="/static/images/slack.svg" alt="Logo" /></td>
+      <td>
+        <h1>Slack - Create a New Connection</h1>
+      </td>
+    </table>
 
-  <table class="title">
-    <td><img class="logo" src="/static/images/slack.svg" alt="Logo" /></td>
-    <td>
-      <h1>Slack - Create a New Connection</h1>
-    </td>
-  </table>
+    <div class="toggle-container">
+      <button class="toggle" id="toggletab1" onclick="toggleTab('tab1')">
+        Socket Mode
+      </button>
+      <span class="toggle-sep"></span>
+      <button class="toggle" id="toggletab2" onclick="toggleTab('tab2')">
+        OAuth v2
+      </button>
+    </div>
 
-  <div class="toggle-container">
-    <button class="toggle" id="toggletab1" onclick="toggleTab('tab1')">
-      Socket Mode
-    </button>
-    <span class="toggle-sep"></span>
-    <button class="toggle" id="toggletab2" onclick="toggleTab('tab2')">
-      OAuth v2
-    </button>
-  </div>
+    <div class="tab" id="tab1">
+      <p class="info">Information:</p>
+      <ul class="links">
+        <li>
+          <a
+            href="https://docs.autokitteh.com/tutorials/new_connections/slack"
+            target="_blank"
+            class="info"
+          >
+            autokitteh tutorial: creating a Socket-Mode Slack connection
+          </a>
+        </li>
+        <li>
+          <a
+            href="https://api.slack.com/apis/connections/socket"
+            target="_blank"
+            class="info"
+          >
+            Details about Slack's Socket Mode
+          </a>
+        </li>
+      </ul>
 
-  <div class="tab" id="tab1">
-    <p class="info">Information:</p>
-    <ul class="links">
-      <li>
-        <a href="https://docs.autokitteh.com/tutorials/new_connections/slack" target="_blank" class="info">
-          autokitteh tutorial: creating a Socket-Mode Slack connection
-        </a>
-      </li>
-      <li>
-        <a href="https://api.slack.com/apis/connections/socket" target="_blank" class="info">
-          Details about Slack's Socket Mode
-        </a>
-      </li>
-    </ul>
+      <!-- TODO(ENG-799): remove ID once its unused -->
+      <form id="save-tokens-form" method="post" action="/slack/save">
+        <div class="form-group">
+          <label for="bot_token">Bot Token ("<samp>xoxb</samp>")</label>
+          <input
+            type="text"
+            name="bot_token"
+            autocomplete="off"
+            spellcheck="false"
+            required
+          />
+        </div>
 
-    <form id="save-tokens-form" method="post" action="/slack/save_tokens">
-      <div class="form-group">
-        <label for="bot_token">Bot Token ("<samp>xoxb</samp>")</label>
-        <input type="text" name="bot_token" autocomplete="off" spellcheck="false" required />
-      </div>
+        <div class="form-group">
+          <label for="app_token">App-Level Token ("<samp>xapp</samp>")</label>
+          <input
+            type="text"
+            name="app_token"
+            autocomplete="off"
+            spellcheck="false"
+            required
+          />
+        </div>
 
-      <div class="form-group">
-        <label for="app_token">App-Level Token ("<samp>xapp</samp>")</label>
-        <input type="text" name="app_token" autocomplete="off" spellcheck="false" required />
-      </div>
+        <button type="submit" class="submit-btn">Save Connection</button>
+      </form>
+    </div>
 
-      <button type="submit" class="submit-btn">Save Connection</button>
-    </form>
-  </div>
+    <div class="tab" id="tab2">
+      <p class="info">Information:</p>
+      <ul class="links">
+        <li>
+          <a
+            href="https://docs.autokitteh.com/config/integrations/slack"
+            target="_blank"
+            class="info"
+          >
+            autokitteh guide: configuring the Slack integration
+          </a>
+        </li>
+        <li>
+          <a
+            href="https://api.slack.com/authentication/oauth-v2"
+            target="_blank"
+            class="info"
+          >
+            Background about installing Slack apps with OAuth
+          </a>
+        </li>
+      </ul>
 
-  <div class="tab" id="tab2">
-    <p class="info">Information:</p>
-    <ul class="links">
-      <li>
-        <a href="https://docs.autokitteh.com/config/integrations/slack" target="_blank" class="info">
-          autokitteh guide: configuring the Slack integration
-        </a>
-      </li>
-      <li>
-        <a href="https://api.slack.com/authentication/oauth-v2" target="_blank" class="info">
-          Background about installing Slack apps with OAuth
-        </a>
-      </li>
-    </ul>
+      <p class="info">
+        Click the button below to install and authorize<br />
+        the <b>autokitteh</b> app in your Slack workspace
+      </p>
+      <!-- TODO(ENG-799): remove ID once its unused -->
+      <a id="oauth-link" href="/oauth/start/slack" class="clickable"
+        >Start OAuth Flow</a
+      >
+    </div>
 
-    <p class="info">
-      Click the button below to install and authorize<br />
-      the <b>autokitteh</b> app in your Slack workspace
-    </p>
-    <a id="oauth-link" href="/oauth/start/slack" class="clickable">Start OAuth Flow</a>
-  </div>
-
-
-  <script>
-    const queryString = window.location.search;
-    document.getElementById("oauth-link").setAttribute("href", "/oauth/start/slack" + queryString);
-    document.getElementById("save-tokens-form").setAttribute("action", "/slack/save_pat" + queryString);
-  </script>
-</body>
-
+    <!-- TODO(ENG-799) -->
+    <script>
+      const queryString = window.location.search;
+      document
+        .getElementById("oauth-link")
+        .setAttribute("href", "/oauth/start/slack" + queryString);
+      document
+        .getElementById("save-tokens-form")
+        .setAttribute("action", "/slack/save" + queryString);
+    </script>
+  </body>
 </html>
