@@ -25,7 +25,7 @@ func (f *dbFixture) assertSignalsDeleted(t *testing.T, signals ...scheme.Signal)
 
 func preSignalTest(t *testing.T, no_foreign_keys bool) *dbFixture {
 	f := newDBFixtureFK(no_foreign_keys)
-	findAndAssertCount(t, f, scheme.Signal{}, 0, "") // no signals
+	findAndAssertCount[scheme.Signal](t, f, 0, "") // no signals
 	return f
 }
 

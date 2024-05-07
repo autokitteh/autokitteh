@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 )
 
@@ -22,7 +23,7 @@ func (f *dbFixture) assertVarDeleted(t *testing.T, vars ...scheme.Var) {
 
 func preVarTest(t *testing.T) *dbFixture {
 	f := newDBFixture()
-	findAndAssertCount(t, f, scheme.Var{}, 0, "") // no vars
+	findAndAssertCount[scheme.Var](t, f, 0, "") // no vars
 	return f
 }
 

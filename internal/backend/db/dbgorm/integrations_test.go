@@ -23,7 +23,7 @@ func (f *dbFixture) assertIntegrationsDeleted(t *testing.T, integrations ...sche
 
 func preIntegrationTest(t *testing.T) *dbFixture {
 	f := newDBFixture()
-	findAndAssertCount(t, f, scheme.Integration{}, 0, "") // no integrations
+	findAndAssertCount[scheme.Integration](t, f, 0, "") // no integrations
 	return f
 }
 
