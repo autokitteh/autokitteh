@@ -111,11 +111,11 @@ func (db *gormdb) UpdateProject(ctx context.Context, p sdktypes.Project) error {
 }
 
 func (db *gormdb) getProject(ctx context.Context, projectID sdktypes.UUID) (*scheme.Project, error) {
-	return getOne(db.db, ctx, scheme.Project{}, "project_id = ?", projectID)
+	return getOne[scheme.Project](db.db, ctx, "project_id = ?", projectID)
 }
 
 func (db *gormdb) getProjectByName(ctx context.Context, projectName string) (*scheme.Project, error) {
-	return getOne(db.db, ctx, scheme.Project{}, "name = ?", projectName)
+	return getOne[scheme.Project](db.db, ctx, "name = ?", projectName)
 }
 
 func schemaToSDKProject(p *scheme.Project, err error) (sdktypes.Project, error) {

@@ -210,7 +210,7 @@ func getOneWTransform[T any, R sdktypes.Object](db *gorm.DB, ctx context.Context
 }
 
 // TODO: change all get functions to use this
-func getOne[T any](db *gorm.DB, ctx context.Context, t T, where string, args ...any) (*T, error) {
+func getOne[T any](db *gorm.DB, ctx context.Context, where string, args ...any) (*T, error) {
 	var r T
 
 	// TODO: fetch all records and report if there is more than one record
@@ -226,7 +226,7 @@ func getOne[T any](db *gorm.DB, ctx context.Context, t T, where string, args ...
 }
 
 // TODO: this not working for deployments. Consider delete this function
-func delete[T any](db *gorm.DB, ctx context.Context, t T, where string, args ...any) error {
+func delete[T any](db *gorm.DB, ctx context.Context, where string, args ...any) error {
 	var r T
 	result := db.WithContext(ctx).Where(where, args...).Delete(&r)
 	if result.Error != nil {

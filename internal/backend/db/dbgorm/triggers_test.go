@@ -36,7 +36,7 @@ func (f *dbFixture) assertTriggersDeleted(t *testing.T, triggers ...scheme.Trigg
 
 func preTriggerTest(t *testing.T, no_foreign_keys bool) *dbFixture {
 	f := newDBFixtureFK(no_foreign_keys)
-	findAndAssertCount(t, f, scheme.Trigger{}, 0, "") // no trigger
+	findAndAssertCount[scheme.Trigger](t, f, 0, "") // no trigger
 	return f
 }
 

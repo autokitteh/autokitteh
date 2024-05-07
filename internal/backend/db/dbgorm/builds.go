@@ -29,7 +29,7 @@ func (db *gormdb) GetBuild(ctx context.Context, buildID sdktypes.BuildID) (sdkty
 }
 
 func (db *gormdb) deleteBuild(ctx context.Context, buildID sdktypes.UUID) error {
-	return delete(db.db, ctx, scheme.Build{}, "build_id = ?", buildID)
+	return delete[scheme.Build](db.db, ctx, "build_id = ?", buildID)
 }
 
 func (db *gormdb) DeleteBuild(ctx context.Context, buildID sdktypes.BuildID) error {
