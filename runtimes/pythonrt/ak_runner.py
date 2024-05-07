@@ -17,6 +17,7 @@ from importlib.machinery import SourceFileLoader
 from os import mkdir
 from pathlib import Path
 from socket import AF_UNIX, SOCK_STREAM, socket
+from traceback import format_tb
 
 # TODO(ENG-552): Log to AutoKitteh
 logging.basicConfig(
@@ -159,6 +160,7 @@ def run_code(mod, entry_point, data):
 class MessageType:
     callback = 'callback'
     done = 'done'
+    error = 'error'
     module = 'module'
     response = 'response'
     run = 'run'
@@ -236,6 +238,16 @@ class Comm:
     def extract_response(self, message):
         data = message['payload']['value']
         return pickle.loads(b64decode(data))
+    
+    def send_error(self, error, traceback):
+        message = {
+            'type': MessageType.error,
+            'payload': {
+               'error': message,
+               'traceback': traceback,
+            }
+        }
+        self._send(message)
 
 
 class AKCall:
@@ -364,47 +376,54 @@ if __name__ == '__main__':
     else:
         module_name = args.path[:-3]
 
+    comm = None  # In case of error before creating comm
     py_version = '{}.{}'.format(*sys.version_info[:2])
     logging.info('python: %r, version: %r', sys.executable, py_version)
     logging.info('sock: %r, tar: %r, module: %r', args.sock, args.tar, module_name)
-    code_dir = extract_code(args.tar)
-    logging.info('code dir: %r', code_dir)
+    try:
+        code_dir = extract_code(args.tar)
+        logging.info('code dir: %r', code_dir)
 
-    sock = socket(AF_UNIX, SOCK_STREAM)
-    sock.connect(args.sock)
-    logging.info('connected to %r', args.sock)
+        sock = socket(AF_UNIX, SOCK_STREAM)
+        sock.connect(args.sock)
+        logging.info('connected to %r', args.sock)
 
-    logging.info('loading %r', module_name)
-    comm = Comm(sock)
-    ak_call = AKCall(module_name, comm)
-    mod = load_code(code_dir, ak_call, module_name)
-    MODULE_NAME = mod.__name__
-    entries = module_entries(mod)
-    comm.send_exported(entries)
+        logging.info('loading %r', module_name)
+        comm = Comm(sock)
+        ak_call = AKCall(module_name, comm)
+        mod = load_code(code_dir, ak_call, module_name)
+        MODULE_NAME = mod.__name__
+        entries = module_entries(mod)
+        comm.send_exported(entries)
 
-    # Initial call
-    message = comm.receive_run()
-    func_name = message.get('func_name')
-    if func_name is None:
-        logging.error('no function name in %r', message)
+        # Initial call
+        message = comm.receive_run()
+        func_name = message.get('func_name')
+        if func_name is None:
+            logging.error('no function name in %r', message)
+            raise SystemExit(1)
+
+        fn = getattr(mod, func_name, None)
+        if fn is None:
+            logging.error('%r has no function %r', module_name, func_name)
+            raise SystemExit(1)
+            
+        event = message.get('event')
+        event = {} if event is None else event
+
+        # Inject HTTP body
+        # TODO (ENG-624) change this once we support callbacks to autokitteh
+        body = event.get('data', {}).get('body')
+        if isinstance(body, str):
+            try:
+                event['data']['body'] = b64decode(body)
+            except ValueError:
+                pass
+
+        fn(event)
+        comm.send_done()
+    except Exception as err:
+        logging.exception('error: %r', err)
+        if comm:
+            comm.send_done()
         raise SystemExit(1)
-
-    fn = getattr(mod, func_name, None)
-    if fn is None:
-        logging.error('%r has no function %r', module_name, func_name)
-        raise SystemExit(1)
-        
-    event = message.get('event')
-    event = {} if event is None else event
-
-    # Inject HTTP body
-    # TODO (ENG-624) change this once we support callbacks to autokitteh
-    body = event.get('data', {}).get('body')
-    if isinstance(body, str):
-        try:
-            event['data']['body'] = b64decode(body)
-        except ValueError:
-            pass
-
-    fn(event)
-    comm.send_done()

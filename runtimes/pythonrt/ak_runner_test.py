@@ -1,16 +1,18 @@
 import ast
 import json
 import pickle
+import re
 import sys
+import tarfile
 import types
+from io import BytesIO
 from pathlib import Path
-from socket import socket, socketpair
-from subprocess import run
+from socket import AF_UNIX, SOCK_STREAM, socket, socketpair
+from subprocess import Popen, run, PIPE
 from unittest.mock import MagicMock
 
-import pytest
-
 import ak_runner
+import pytest
 
 test_dir = Path(__file__).absolute().parent
 
@@ -239,3 +241,46 @@ def test_transform(code, transformed):
     trans = ak_runner.Transformer('<stdin>')
     out = trans.visit(mod)
     assert transformed, ast.unparse(out)
+
+
+err_code = '''
+def handler(event):
+    raise NotImplementedError()
+'''.encode('utf-8')
+
+def test_error(tmp_path):
+    io = BytesIO(err_code)
+    ti = tarfile.TarInfo('mod.py')
+    ti.size = len(err_code)
+    tar_file = str(tmp_path / 'code.tar')
+    with tarfile.open(tar_file, 'w') as tf:
+        tf.addfile(ti, io)
+    
+    sock_file = str(tmp_path / 'ak.sock')
+    sock = socket(AF_UNIX, SOCK_STREAM)
+    sock.settimeout(3)
+    sock.bind(sock_file)
+    sock.listen(1)
+
+    cmd = [
+        sys.executable,
+        'ak_runner.py',
+        sock_file,
+        tar_file,
+        'mod.py:handler',
+    ]
+
+    proc = Popen(cmd, stdout=PIPE, stderr=PIPE)
+    go, _ = sock.accept()
+    message = json.dumps({
+        'type': 'run',
+        'payload': {
+            'func_name': 'handler',
+            'event': {},
+        }
+    })
+    go.sendall((message + '\n').encode('utf-8'))
+    _, stderr = proc.communicate(timeout=3)
+    stderr = stderr.decode('utf-8')
+    assert re.search(r'ERROR.*NotImplementedError', stderr)
+    assert 'Traceback (most recent call last)' in stderr
