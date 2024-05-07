@@ -46,7 +46,7 @@ func triggerToRecord(ctx context.Context, tx *tx, trigger sdktypes.Trigger) (*sc
 		TriggerID:    trigger.ID().UUIDValue(),
 		EnvID:        envID.UUIDValue(),
 		ProjectID:    projID.UUIDValue(),
-		ConnectionID: connID.UUIDValue(),
+		ConnectionID: scheme.UUIDOrNil(connID.UUIDValue()),
 		EventType:    trigger.EventType(),
 		Filter:       trigger.Filter(),
 		CodeLocation: trigger.CodeLocation().CanonicalString(),
