@@ -4,7 +4,7 @@ import (
 	"embed"
 )
 
-//go:embed images/* *.png *.svg *.html *.ico *.txt *.webmanifest *.css
+//go:embed images/* *.png *.svg *.html *.ico *.txt *.webmanifest *.css *.js
 var RootWebContent embed.FS
 
 //go:embed chatgpt/connect
@@ -37,17 +37,8 @@ var GoogleSheetsWebContent embed.FS
 //go:embed i/http/connect
 var HTTPWebContent embed.FS
 
-//go:embed scheduler/connect
-var SchedulerWebContent embed.FS
-
 //go:embed slack/connect
 var SlackWebContent embed.FS
 
 //go:embed twilio/connect
 var TwilioWebContent embed.FS
-
-//go:embed descopelogin/index.html
-var DescopeIndex string
-
-//go:embed descopelogin/login.html
-var DescopeLogin string

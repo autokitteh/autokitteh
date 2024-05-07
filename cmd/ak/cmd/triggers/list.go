@@ -62,7 +62,7 @@ var listCmd = common.StandardCommand(&cobra.Command{
 func init() {
 	// Command-specific flags.
 	listCmd.Flags().StringVarP(&env, "env", "e", "", "environment name or ID")
-	listCmd.Flags().StringVarP(&connection, "connection", "n", "", "connection name or ID")
+	listCmd.Flags().StringVarP(&connection, "connection", "c", "", "connection name or ID")
 
 	common.AddFailIfNotFoundFlag(listCmd)
 }

@@ -8,7 +8,14 @@ import "autokitteh/values/v1/values.proto";
 import "buf/validate/validate.proto";
 
 message GetRequest {
-  string integration_id = 1 [(buf.validate.field).string.min_len = 1];
+  option (buf.validate.message).cel = {
+    id: "integration_id_xor_name",
+    message: "integration_id and name are mutually exclusive",
+    expression: "(this.integration_id == '' && this.name != '') || (this.integration_id != '' && this.name == '')",
+  };
+
+  string integration_id = 1;
+  string name = 2;
 }
 
 message GetResponse {
@@ -44,7 +51,7 @@ message CallResponse {
 
 message ConfigureRequest {
   string integration_id = 1 [(buf.validate.field).string.min_len = 1];
-  string config = 2;
+  string connection_id = 2;
 }
 
 message ConfigureResponse {

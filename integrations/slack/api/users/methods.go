@@ -13,8 +13,7 @@ import (
 )
 
 type API struct {
-	Secrets sdkservices.Secrets
-	Scope   string
+	Vars sdkservices.Vars
 }
 
 // TODO: Use HTTP GET instead of POST in all "users" methods.
@@ -39,7 +38,7 @@ func (a API) GetPresence(ctx context.Context, args []sdktypes.Value, kwargs map[
 
 	// Invoke the API method.
 	resp := &GetPresenceResponse{}
-	err := api.PostForm(ctx, a.Secrets, a.Scope, req, resp, "users.getPresence")
+	err := api.PostForm(ctx, a.Vars, req, resp, "users.getPresence")
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
@@ -75,7 +74,7 @@ func (a API) Info(ctx context.Context, args []sdktypes.Value, kwargs map[string]
 
 	// Invoke the API method.
 	resp := &InfoResponse{}
-	err = api.PostForm(ctx, a.Secrets, a.Scope, req, resp, "users.info")
+	err = api.PostForm(ctx, a.Vars, req, resp, "users.info")
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
@@ -121,7 +120,7 @@ func (a API) List(ctx context.Context, args []sdktypes.Value, kwargs map[string]
 
 	// Invoke the API method.
 	resp := &ListResponse{}
-	err = api.PostForm(ctx, a.Secrets, a.Scope, req, resp, "users.list")
+	err = api.PostForm(ctx, a.Vars, req, resp, "users.list")
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
@@ -149,7 +148,7 @@ func (a API) LookupByEmail(ctx context.Context, args []sdktypes.Value, kwargs ma
 
 	// Invoke the API method.
 	resp := &LookupByEmailResponse{}
-	err := api.PostForm(ctx, a.Secrets, a.Scope, req, resp, "users.lookupByEmail")
+	err := api.PostForm(ctx, a.Vars, req, resp, "users.lookupByEmail")
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}

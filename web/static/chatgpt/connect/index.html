@@ -1,71 +1,56 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <title>autokitteh OpenAI ChatGPT Integration</title>
-    <link
-      rel="apple-touch-icon"
-      sizes="180x180"
-      href="/static/apple-touch-icon.png"
-    />
-    <link
-      rel="icon"
-      type="image/png"
-      sizes="32x32"
-      href="/static/favicon-32x32.png"
-    />
-    <link
-      rel="icon"
-      type="image/png"
-      sizes="16x16"
-      href="/static/favicon-16x16.png"
-    />
-    <link rel="manifest" href="/static/site.webmanifest" />
-    <link rel="stylesheet" type="text/css" href="styles.css" />
-    <meta name="robots" content="noindex, nofollow" />
-  </head>
 
-  <body>
-    <a href="/" target="_self">
-      <img class="banner" src="/static/banner.svg" alt="autokitteh" />
-    </a>
+<head>
+  <title>autokitteh OpenAI ChatGPT Integration</title>
+  <link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16x16.png" />
+  <link rel="manifest" href="/static/site.webmanifest" />
+  <link rel="stylesheet" type="text/css" href="styles.css" />
+  <meta name="robots" content="noindex, nofollow" />
+</head>
 
-    <table class="title">
-      <td><img class="logo" src="/static/images/chatgpt.svg" alt="Logo" /></td>
-      <td><h1>OpenAI ChatGPT - Create a New Connection</h1></td>
-    </table>
+<body>
+  <a href="/" target="_self">
+    <img class="banner" src="/static/banner.svg" alt="autokitteh" />
+  </a>
 
-    <p class="info">Information:</p>
-    <ul class="links">
-      <li>
-        <a href="https://platform.openai.com/" target="_blank" class="info">
-          OpenAI developer platform
-        </a>
-      </li>
-      <li>
-        <a
-          href="https://platform.openai.com/api-keys"
-          target="_blank"
-          class="info"
-        >
-          API keys
-        </a>
-      </li>
-    </ul>
+  <table class="title">
+    <td><img class="logo" src="/static/images/chatgpt.svg" alt="Logo" /></td>
+    <td>
+      <h1>OpenAI ChatGPT - Create a New Connection</h1>
+    </td>
+  </table>
 
-    <form method="post" action="/chatgpt/save">
-      <div class="form-group">
-        <label for="key"> Secret API Key </label>
-        <input
-          type="text"
-          name="key"
-          autocomplete="off"
-          spellcheck="false"
-          class="text"
-          required
-        />
-      </div>
+  <p class="info">Information:</p>
+  <ul class="links">
+    <li>
+      <a href="https://platform.openai.com/" target="_blank" class="info">
+        OpenAI developer platform
+      </a>
+    </li>
+    <li>
+      <a href="https://platform.openai.com/api-keys" target="_blank" class="info">
+        API keys
+      </a>
+    </li>
+  </ul>
 
-      <button type="submit" class="submit-btn">Save Connection</button>
-    </form>
-  </body>
+  <form id="save-form" method="post" action="/chatgpt/save">
+    <div class="form-group">
+      <label for="key"> Secret API Key </label>
+      <input type="text" name="key" autocomplete="off" spellcheck="false" class="text" required />
+    </div>
+
+    <button type="submit" class="submit-btn">Save Connection</button>
+  </form>
+
+
+  <script>
+    const queryString = window.location.search;
+    document.getElementById("save-form").setAttribute("action", "/chatgpt/save" + queryString);
+  </script>
+</body>
+
 </html>

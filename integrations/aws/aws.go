@@ -39,25 +39,16 @@ var (
 		{"sqs", sqs.NewFromConfig},
 	}
 
-	opts []sdkmodule.Optfn
-
 	useDefaultConfig, _ = strconv.ParseBool(os.Getenv("AWS_USE_DEFAULT_CONFIG"))
 
 	defaultAWSConfig *aws.Config
 )
 
 func init() {
-	initOpts()
-	initConfig()
+	initDefaultConfig()
 }
 
-func initOpts() {
-	for _, svc := range svcs {
-		opts = append(opts, kittehs.Must1(importServiceMethods(svc.name, svc.fn))...)
-	}
-}
-
-func initConfig() {
+func initDefaultConfig() {
 	if !useDefaultConfig {
 		return
 	}
@@ -73,7 +64,14 @@ func initConfig() {
 	defaultAWSConfig = &cfg
 }
 
-func New() sdkservices.Integration {
+func initOpts(vars sdkservices.Vars) (opts []sdkmodule.Optfn) {
+	for _, svc := range svcs {
+		opts = append(opts, kittehs.Must1(importServiceMethods(vars, svc.name, svc.fn))...)
+	}
+	return
+}
+
+func New(vars sdkservices.Vars) sdkservices.Integration {
 	return sdkintegrations.NewIntegration(
 		kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
 			IntegrationId: sdktypes.NewIntegrationIDFromName("aws").String(),
@@ -86,6 +84,6 @@ func New() sdkservices.Integration {
 				"2 Service console":   "https://console.aws.amazon.com/",
 			},
 		})),
-		sdkmodule.New(opts...),
+		sdkmodule.New(initOpts(vars)...),
 	)
 }

@@ -2,17 +2,18 @@ package oauth
 
 import (
 	"context"
-	"net/http"
 
 	"connectrpc.com/connect"
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
 	"go.autokitteh.dev/autokitteh/proto"
 	oauthv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/oauth/v1"
 	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/oauth/v1/oauthv1connect"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 type server struct {
@@ -24,10 +25,10 @@ type server struct {
 
 var _ oauthv1connect.OAuthServiceHandler = (*server)(nil)
 
-func Init(mux *http.ServeMux, l *zap.Logger, oauth sdkservices.OAuth) {
+func Init(muxes *muxes.Muxes, l *zap.Logger, oauth sdkservices.OAuth) {
 	srv := server{logger: l, impl: oauth}
 	path, handler := oauthv1connect.NewOAuthServiceHandler(&srv)
-	mux.Handle(path, handler)
+	muxes.Auth.Handle(path, handler)
 }
 
 func (s *server) Register(ctx context.Context, req *connect.Request[oauthv1.RegisterRequest]) (*connect.Response[oauthv1.RegisterResponse], error) {
@@ -89,8 +90,13 @@ func (s *server) StartFlow(ctx context.Context, req *connect.Request[oauthv1.Sta
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
+	cid, err := sdktypes.ParseConnectionID(req.Msg.ConnectionId)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+
 	// Redirect the caller to the URL that starts the OAuth flow.
-	url, err := s.impl.StartFlow(ctx, req.Msg.Id)
+	url, err := s.impl.StartFlow(ctx, req.Msg.Id, cid)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeUnknown, err)
 	}
@@ -108,6 +114,7 @@ func (s *server) Exchange(ctx context.Context, req *connect.Request[oauthv1.Exch
 	if err != nil {
 		return nil, connect.NewError(connect.CodeUnknown, err)
 	}
+
 	return connect.NewResponse(&oauthv1.ExchangeResponse{
 		AccessToken:  token.AccessToken,
 		RefreshToken: token.RefreshToken,

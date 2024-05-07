@@ -19,11 +19,11 @@ const (
 
 func TestSequentialID(t *testing.T) {
 	SetIDGenerator(NewSequentialIDGeneratorForTesting(0))
-	const n = len(validIDChars)
-	for i := range validIDChars {
+	const n = len(ValidIDChars)
+	for i := range ValidIDChars {
 		assert.Equal(
 			t,
-			fmt.Sprintf("prj_000000000000000000000000%c%c", validIDChars[(i+1)/n], validIDChars[(i+1)%n]),
+			fmt.Sprintf("prj_000000000000000000000000%c%c", ValidIDChars[(i+1)/n], ValidIDChars[(i+1)%n]),
 			NewProjectID().String(),
 		)
 	}

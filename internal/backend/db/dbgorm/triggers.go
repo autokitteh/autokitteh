@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/google/uuid"
-
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
@@ -42,9 +40,6 @@ func triggerToRecord(ctx context.Context, tx *tx, trigger sdktypes.Trigger) (*sc
 	}
 
 	name := trigger.Name()
-	if name == "" {
-		name = uuid.New().String()
-	}
 	uniqueName := fmt.Sprintf("%s/%s", envID.String(), name)
 
 	return &scheme.Trigger{
@@ -55,7 +50,7 @@ func triggerToRecord(ctx context.Context, tx *tx, trigger sdktypes.Trigger) (*sc
 		EventType:    trigger.EventType(),
 		Filter:       trigger.Filter(),
 		CodeLocation: trigger.CodeLocation().CanonicalString(),
-		Name:         trigger.Name(),
+		Name:         trigger.Name().String(),
 		Data:         data,
 		UniqueName:   uniqueName,
 	}, nil
@@ -66,6 +61,10 @@ func (db *gormdb) createTrigger(ctx context.Context, trigger *scheme.Trigger) er
 }
 
 func (db *gormdb) CreateTrigger(ctx context.Context, trigger sdktypes.Trigger) error {
+	if err := trigger.Strict(); err != nil {
+		return err
+	}
+
 	return db.transaction(ctx, func(tx *tx) error {
 		t, err := triggerToRecord(ctx, tx, trigger)
 		if err != nil {

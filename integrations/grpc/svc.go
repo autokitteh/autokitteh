@@ -17,6 +17,6 @@ var description = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.In
 	LogoUrl:       "/static/images/grpc.png",
 }))
 
-func New(sec sdkservices.Secrets) sdkservices.Integration {
+func New() sdkservices.Integration {
 	return sdkintegrations.NewIntegration(description, sdkmodule.New(sdkmodule.ExportFunction("call", handleGenericGRPCCall())))
 }

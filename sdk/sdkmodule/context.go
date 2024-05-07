@@ -38,3 +38,11 @@ func FunctionDataFromContext(ctx context.Context) []byte {
 
 	return nil
 }
+
+func FunctionConnectionIDFromContext(ctx context.Context) (sdktypes.ConnectionID, error) {
+	if fnv := FunctionValueFromContext(ctx); fnv.IsValid() {
+		return sdktypes.StrictParseConnectionID(string(fnv.GetFunction().Data()))
+	}
+
+	return sdktypes.InvalidConnectionID, nil
+}

@@ -19,18 +19,16 @@ import (
 // to receive and dispatch asynchronous event notifications.
 type handler struct {
 	logger        *zap.Logger
-	secrets       sdkservices.Secrets
+	vars          sdkservices.Vars
 	dispatcher    sdkservices.Dispatcher
 	integrationID sdktypes.IntegrationID
-	scope         string
 }
 
-func NewHandler(l *zap.Logger, sec sdkservices.Secrets, d sdkservices.Dispatcher, scope string, id sdktypes.IntegrationID) handler {
+func NewHandler(l *zap.Logger, sec sdkservices.Vars, d sdkservices.Dispatcher, id sdktypes.IntegrationID) handler {
 	return handler{
 		logger:        l,
-		secrets:       sec,
+		vars:          sec,
 		dispatcher:    d,
-		scope:         scope,
 		integrationID: id,
 	}
 }
@@ -108,13 +106,15 @@ func (h handler) socketModeHandler(e *socketmode.Event, c *socketmode.Client) {
 	}
 }
 
-func (h handler) dispatchAsyncEventsToConnections(tokens []string, event *eventsv1.Event) {
+func (h handler) dispatchAsyncEventsToConnections(cids []sdktypes.ConnectionID, event *eventsv1.Event) {
 	ctx := extrazap.AttachLoggerToContext(h.logger, context.Background())
-	for _, connToken := range tokens {
-		event.IntegrationToken = connToken
+	for _, cid := range cids {
+		l := h.logger.With(zap.String("cid", cid.String()))
+
+		event.ConnectionId = cid.String()
 		event, err := sdktypes.EventFromProto(event)
 		if err != nil {
-			h.logger.Error("Failed to convert protocol buffer to SDK event",
+			l.Error("Failed to convert protocol buffer to SDK event",
 				zap.Any("event", event),
 				zap.Error(err),
 			)
@@ -123,15 +123,10 @@ func (h handler) dispatchAsyncEventsToConnections(tokens []string, event *events
 
 		eventID, err := h.dispatcher.Dispatch(ctx, event, nil)
 		if err != nil {
-			h.logger.Error("Dispatch failed",
-				zap.String("connectionToken", connToken),
-				zap.Error(err),
-			)
+			l.Error("Dispatch failed", zap.Error(err))
 			return
 		}
-		h.logger.Debug("Dispatched",
-			zap.String("connectionToken", connToken),
-			zap.String("eventID", eventID.String()),
-		)
+
+		l.Debug("Dispatched", zap.String("eventID", eventID.String()))
 	}
 }

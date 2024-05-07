@@ -34,19 +34,17 @@ var saveCmd = common.StandardCommand(&cobra.Command{
 			pb = event.ToProto()
 		}
 
-		if integration != "" {
+		if connection != "" {
 			r := resolver.Resolver{Client: common.Client()}
-			i, iid, err := r.IntegrationNameOrID(integration)
+			_, cid, err := r.ConnectionNameOrID(args[0], "")
 			if err != nil {
 				return err
 			}
-			if !i.IsValid() {
-				return fmt.Errorf("integration %q not found", integration)
+			if !cid.IsValid() {
+				return fmt.Errorf("connection %q not found", connection)
 			}
-			pb.IntegrationId = iid.String()
-		}
-		if connectionToken != "" {
-			pb.IntegrationToken = connectionToken
+
+			pb.ConnectionId = cid.String()
 		}
 		if len(data) > 0 {
 			m, err := kittehs.ListToMapError(data, parseDataKeyValue)
@@ -86,8 +84,7 @@ func init() {
 	saveCmd.Flags().StringVarP(&filename, "from-file", "f", "", "load event data from file")
 	kittehs.Must0(saveCmd.MarkFlagFilename("from-file"))
 
-	saveCmd.Flags().StringVarP(&integration, "integration", "i", "", "integration name or ID")
-	saveCmd.Flags().StringVarP(&connectionToken, "connection-token", "t", "", "connection token")
+	saveCmd.Flags().StringVarP(&connection, "connection", "c", "", "connection name or ID")
 	saveCmd.Flags().StringVarP(&eventType, "event-type", "e", "", "event type")
 	saveCmd.Flags().StringSliceVarP(&data, "data", "d", nil, `zero or more "key=value" pairs`)
 	saveCmd.Flags().StringSliceVarP(&memos, "memo", "m", nil, `zero or more "key=value" pairs`)

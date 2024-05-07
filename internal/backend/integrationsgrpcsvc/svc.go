@@ -2,10 +2,10 @@ package integrationsgrpcsvc
 
 import (
 	"context"
-	"net/http"
 
 	"connectrpc.com/connect"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/proto"
 	integrationsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/integrations/v1"
@@ -23,25 +23,39 @@ type server struct {
 
 var _ integrationsv1connect.IntegrationsServiceHandler = (*server)(nil)
 
-func Init(mux *http.ServeMux, integrations sdkservices.Integrations) {
+func Init(muxes *muxes.Muxes, integrations sdkservices.Integrations) {
 	s := server{integrations: integrations}
 	path, handler := integrationsv1connect.NewIntegrationsServiceHandler(&s)
-	mux.Handle(path, handler)
+	muxes.Auth.Handle(path, handler)
 }
 
 func (s *server) Get(ctx context.Context, req *connect.Request[integrationsv1.GetRequest]) (*connect.Response[integrationsv1.GetResponse], error) {
 	if err := proto.Validate(req.Msg); err != nil {
 		return nil, sdkerrors.AsConnectError(err)
 	}
-	id, err := sdktypes.StrictParseIntegrationID(req.Msg.IntegrationId)
-	if err != nil {
-		return nil, sdkerrors.AsConnectError(err)
+
+	var i sdkservices.Integration
+
+	if req.Msg.IntegrationId != "" {
+		id, err := sdktypes.StrictParseIntegrationID(req.Msg.IntegrationId)
+		if err != nil {
+			return nil, sdkerrors.AsConnectError(err)
+		}
+
+		if i, err = s.integrations.GetByID(ctx, id); err != nil {
+			return nil, sdkerrors.AsConnectError(err)
+		}
+	} else {
+		n, err := sdktypes.StrictParseSymbol(req.Msg.Name)
+		if err != nil {
+			return nil, sdkerrors.AsConnectError(err)
+		}
+
+		if i, err = s.integrations.GetByName(ctx, n); err != nil {
+			return nil, sdkerrors.AsConnectError(err)
+		}
 	}
 
-	i, err := s.integrations.Get(ctx, id)
-	if err != nil {
-		return nil, sdkerrors.AsConnectError(err)
-	}
 	return connect.NewResponse(&integrationsv1.GetResponse{Integration: i.Get().ToProto()}), nil
 }
 

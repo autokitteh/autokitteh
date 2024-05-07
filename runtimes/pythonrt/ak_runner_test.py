@@ -1,11 +1,14 @@
+import ast
 import json
+import pickle
 import sys
 import types
 from pathlib import Path
-import pickle
 from socket import socket, socketpair
 from subprocess import run
 from unittest.mock import MagicMock
+
+import pytest
 
 import ak_runner
 
@@ -203,3 +206,36 @@ def test_in_activity():
     ak(in_act_1, 6)
     assert comm.num_activities == 2
     
+
+name_of_cases = [
+    # code, name
+    ('print(1)', 'print'),
+    ('requests.get("https://go.dev")', 'requests.get'),
+    ('sheets.values().get("A1:B4").execute()', 'sheets.values.get.execute'),
+]
+
+
+@pytest.mark.parametrize('code, name', name_of_cases)
+def test_name_of(code, name):
+    mod = ast.parse(code)
+    node = mod.body[0].value
+    assert ak_runner.name_of(node) == name
+
+
+transform_cases = [
+    # code, transformed
+    ('get(1)', '_ak_call(get, 1)'),
+    ('requests.get("https://go.dev")', '_ak_call(requests.get, "https://go.dev")'),
+    (
+        'sheets.values().get("A1:B4").execute()', 
+        '_ak_call(_ak_call(_ak_call(google.sheets.values).get, "A1:A10").execute)',
+    ),
+    ('add(get(1), get(2))', '_ak_call(add, _ak_call(get, 1), _ak_call(get, 2))'),
+]
+
+@pytest.mark.parametrize('code, transformed', transform_cases)
+def test_transform(code, transformed):
+    mod = ast.parse(code)
+    trans = ak_runner.Transformer('<stdin>')
+    out = trans.visit(mod)
+    assert transformed, ast.unparse(out)

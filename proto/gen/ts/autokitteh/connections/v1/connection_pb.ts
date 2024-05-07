@@ -21,19 +21,12 @@ export class Connection extends Message<Connection> {
   integrationId = "";
 
   /**
-   * Reference to a configuration of this integration, usable by connections.
-   *
-   * @generated from field: string integration_token = 3;
-   */
-  integrationToken = "";
-
-  /**
-   * @generated from field: string project_id = 4;
+   * @generated from field: string project_id = 3;
    */
   projectId = "";
 
   /**
-   * @generated from field: string name = 5;
+   * @generated from field: string name = 4;
    */
   name = "";
 
@@ -47,9 +40,8 @@ export class Connection extends Message<Connection> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "connection_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "integration_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "integration_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Connection {

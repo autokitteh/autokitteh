@@ -2,10 +2,10 @@ package connectionsgrpcsvc
 
 import (
 	"context"
-	"net/http"
 
 	"connectrpc.com/connect"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/proto"
 	connectionsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/connections/v1"
@@ -22,10 +22,10 @@ type server struct {
 
 var _ connectionsv1connect.ConnectionsServiceHandler = (*server)(nil)
 
-func Init(mux *http.ServeMux, connections sdkservices.Connections) {
+func Init(muxes *muxes.Muxes, connections sdkservices.Connections) {
 	s := server{connections: connections}
 	path, handler := connectionsv1connect.NewConnectionsServiceHandler(&s)
-	mux.Handle(path, handler)
+	muxes.Auth.Handle(path, handler)
 }
 
 func (s *server) Create(ctx context.Context, req *connect.Request[connectionsv1.CreateRequest]) (*connect.Response[connectionsv1.CreateResponse], error) {
@@ -102,9 +102,7 @@ func (s *server) List(ctx context.Context, req *connect.Request[connectionsv1.Li
 	if err := proto.Validate(req.Msg); err != nil {
 		return nil, sdkerrors.AsConnectError(err)
 	}
-	f := sdkservices.ListConnectionsFilter{
-		IntegrationToken: req.Msg.IntegrationToken, // Optional
-	}
+	var f sdkservices.ListConnectionsFilter
 
 	iid, err := sdktypes.ParseIntegrationID(req.Msg.IntegrationId) // Optional
 	if err != nil {

@@ -3,17 +3,19 @@ package github
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
-	"time"
 
 	"github.com/google/go-github/v60/github"
 	"go.uber.org/zap"
+
 	"golang.org/x/oauth2"
 
+	"go.autokitteh.dev/autokitteh/integrations/github/internal/vars"
+	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 const (
@@ -28,14 +30,12 @@ const (
 // handler is an autokitteh webhook which implements [http.Handler]
 // to receive and dispatch asynchronous event notifications.
 type handler struct {
-	logger  *zap.Logger
-	secrets sdkservices.Secrets
-	oauth   sdkservices.OAuth
-	scope   string
+	logger *zap.Logger
+	oauth  sdkservices.OAuth
 }
 
-func NewHandler(l *zap.Logger, s sdkservices.Secrets, o sdkservices.OAuth, scope string) handler {
-	return handler{logger: l, secrets: s, oauth: o, scope: scope}
+func NewHandler(l *zap.Logger, o sdkservices.OAuth) handler {
+	return handler{logger: l, oauth: o}
 }
 
 // handleOAuth receives an inbound redirect request from autokitteh's OAuth
@@ -56,48 +56,40 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	_, data, err := sdkintegrations.GetOAuthDataFromURL(r.URL)
+	if err != nil {
+		l.Warn("OAuth redirect request with invalid data parameter", zap.Error(err))
+		u := uiPath + "error.html?error=" + url.QueryEscape("invalid data parameter")
+		http.Redirect(w, r, u, http.StatusFound)
+		return
+	}
+
 	// Parse and validate the results.
-	v := r.FormValue("installation_id")
+	v := data.Params.Get("installation_id")
 	if v == "" {
 		l.Warn("OAuth redirect request without installation_id parameter")
 		u := uiPath + "error.html?error=" + url.QueryEscape("missing installation ID")
 		http.Redirect(w, r, u, http.StatusFound)
 		return
 	}
+
+	l = l.With(zap.String("installation_id", v))
+
 	id, err := strconv.ParseInt(v, 10, 64)
 	if err != nil {
 		l.Warn("OAuth redirect request with invalid installation_id parameter",
-			zap.String("installationID", v),
 			zap.String("setupAction", r.FormValue("setup_action")),
 		)
 		u := uiPath + "error.html?error=" + url.QueryEscape("invalid installation ID")
 		http.Redirect(w, r, u, http.StatusFound)
 		return
 	}
-	// TODO: It should be simpler to extract the token from the request.
-	t, err := time.Parse(time.RFC3339Nano, unescape(r, "ak_token_expiry"))
-	if err != nil {
-		l.Warn("OAuth redirect request with invalid token expiry timestamp",
-			zap.String("installationID", v),
-			zap.String("setupAction", r.FormValue("setup_action")),
-			zap.String("timestamp", r.FormValue("ak_token_exiry")),
-		)
-		u := uiPath + "error.html?error=" + url.QueryEscape("invalid OAuth token timestamp")
-		http.Redirect(w, r, u, http.StatusFound)
-		return
-	}
-	oauthToken := &oauth2.Token{
-		AccessToken:  unescape(r, "ak_token_access"),
-		RefreshToken: unescape(r, "ak_token_refresh"),
-		TokenType:    unescape(r, "ak_token_type"),
-		Expiry:       t,
-	}
 
 	// Test the OAuth token's usability and get authoritative installation details:
 	// https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/generating-a-user-access-token-for-a-github-app
 	// https://docs.github.com/en/rest/apps/installations#list-app-installations-accessible-to-the-user-access-token
 	ctx := r.Context()
-	src := h.tokenSource(ctx, oauthToken)
+	src := h.tokenSource(ctx, data.Token)
 	gh := github.NewClient(oauth2.NewClient(ctx, src))
 	u, err := enterpriseURL()
 	if err != nil {
@@ -109,16 +101,14 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 	if u != "" {
 		gh, err = gh.WithEnterpriseURLs(u, u)
 		if err != nil {
-			l.Warn("Enterprise URL error",
-				zap.String("url", u),
-				zap.Error(err),
-			)
+			l.Warn("Enterprise URL error", zap.String("url", u), zap.Error(err))
 			u := uiPath + "error.html?error=" + url.QueryEscape(err.Error())
 			http.Redirect(w, r, u, http.StatusFound)
 			return
 		}
 	}
 
+	// TODO: Go over all pages.
 	is, _, err := gh.Apps.ListUserInstallations(ctx, &github.ListOptions{})
 	if err != nil {
 		l.Warn("OAuth user token source error", zap.Error(err))
@@ -129,11 +119,10 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 	foundInstallation := false
 	var i *github.Installation
 	for _, i = range is {
-		if *i.ID != id {
+		if i.ID == nil || *i.ID != id {
 			continue
 		}
 		l.Debug("Verified new GitHub app installation",
-			zap.Int64p("id", i.ID),
 			zap.Stringp("repositorySelection", i.RepositorySelection),
 			zap.Int64p("targetID", i.TargetID),
 			zap.Stringp("targetName", i.Account.Login),
@@ -143,62 +132,31 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 		break
 	}
 	if !foundInstallation {
-		l.Warn("Installation details not found",
-			zap.String("installationID", v),
-		)
+		l.Warn("Installation details not found")
 		http.Error(w, "Bad Request", http.StatusBadRequest)
 		return
 	}
 
-	// Return to the user an autokitteh connection token.
-	connToken, err := h.createOAuthConnection(ctx, i)
-	if err != nil {
-		l.Warn("Failed to save new connection secrets",
-			zap.Error(err),
-		)
-		http.Error(w, "Internal Server Error: create connection", http.StatusInternalServerError)
+	if i.AppID == nil || i.ID == nil || i.Account == nil || i.Account.Login == nil {
+		l.Warn("Installation details missing required fields")
+		http.Error(w, "Bad Request", http.StatusBadRequest)
 		return
 	}
 
-	// Redirect the user to a success page: give them the connection token.
-	l.Debug("Completed OAuth flow")
-	http.Redirect(w, r, uiPath+"success.html?token="+connToken, http.StatusFound)
-}
-
-// unescape returns a named URL-unescaped query parameter value,
-// or an empty string if it's missing, or URL-escaped improperly.
-func unescape(r *http.Request, key string) string {
-	s, err := url.QueryUnescape(r.FormValue(key))
-	if err != nil {
-		return ""
-	}
-	return s
-}
-
-func (h handler) createOAuthConnection(ctx context.Context, i *github.Installation) (string, error) {
 	appID := strconv.FormatInt(*i.AppID, 10)
 	installID := strconv.FormatInt(*i.ID, 10)
+	user := string(*i.Account.Login)
 
-	token, err := h.secrets.Create(ctx, h.scope,
-		// Connection token --> OAUth token (to call API methods).
-		map[string]string{
-			"appID":     appID,
-			"installID": installID,
-			"targetID":  strconv.FormatInt(*i.TargetID, 10),
-			"login":     *i.Account.Login,
-			"type":      *i.Account.Type,
-		},
-		// GitHub app IDs --> connection token(s) (to dispatch API events).
-		fmt.Sprintf("apps/%s/%s", appID, installID),
-	)
-	if err != nil {
-		return "", err
-	}
-	return token, nil
+	initData := sdktypes.NewVars().
+		Set(vars.UserAppID(user), appID, false).
+		Set(vars.UserInstallID(user), installID, false).
+		Set(vars.InstallKey(appID, installID), user, false)
+
+	sdkintegrations.FinalizeConnectionInit(w, r, integrationID, initData)
 }
 
 func (h handler) tokenSource(ctx context.Context, t *oauth2.Token) oauth2.TokenSource {
-	cfg, _, err := h.oauth.Get(ctx, h.scope)
+	cfg, _, err := h.oauth.Get(ctx, "github")
 	if err != nil {
 		return nil
 	}

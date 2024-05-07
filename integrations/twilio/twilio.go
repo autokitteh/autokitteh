@@ -7,6 +7,7 @@ import (
 	"github.com/twilio/twilio-go"
 	api "github.com/twilio/twilio-go/rest/api/v2010"
 
+	"go.autokitteh.dev/autokitteh/integrations/twilio/webhooks"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -34,18 +35,24 @@ func (i integration) createMessage(ctx context.Context, args []sdktypes.Value, k
 		return sdktypes.InvalidValue, errors.New(`required: "body", "media_url", or "content_sid"`)
 	}
 
-	// Get auth details from secrets manager.
-	token := sdkmodule.FunctionDataFromContext(ctx)
-	auth, err := i.secrets.Get(context.Background(), i.scope, string(token))
+	cid, err := sdkmodule.FunctionConnectionIDFromContext(ctx)
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
 
+	vars, err := i.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
+	if err != nil {
+		return sdktypes.InvalidValue, err
+	}
+
+	var decodedVars webhooks.Vars
+	vars.Decode(&decodedVars)
+
 	// Invoke the API method.
 	client := twilio.NewRestClientWithParams(twilio.ClientParams{
-		AccountSid: auth["accountSID"],
-		Username:   auth["username"],
-		Password:   auth["password"],
+		AccountSid: decodedVars.AccountSID,
+		Username:   decodedVars.Username,
+		Password:   decodedVars.Password,
 	})
 	params := &api.CreateMessageParams{}
 	params.SetTo(to)

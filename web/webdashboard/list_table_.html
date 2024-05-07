@@ -1,0 +1,22 @@
+{{ define "list_table_" }}
+{{ if gt .N 0 }}
+<table>
+    <thead>
+        <tr>
+            {{ range .Headers }}
+            <th><tt>{{ . }}</tt></th>
+            {{ end }}
+        </tr>
+    </thead>
+    <tbody>
+        {{ range .Items }}
+        <tr>
+            {{ range . }}
+            <td><tt>{{ . }}</tt></td>
+            {{ end }}
+        </tr>
+        {{ end }}
+    </tbody>
+</table>
+{{ end }}
+{{ end }}

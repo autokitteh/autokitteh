@@ -13,11 +13,11 @@ output equals 'Error: connections not found'
 return code == 10
 
 # Preconditions: create connections.
-ak connection create my_connection_1 --project my_project --integration http --connection-token my_url_path_1
+ak connection create my_connection_1 --project my_project --integration http
 return code == 0
 output equals 'connection_id: con_00000000000000000000000003'
 
-ak connection create my_connection_2 --project my_project --integration http --connection-token my_url_path_2
+ak connection create my_connection_2 --project my_project --integration http
 return code == 0
 output equals 'connection_id: con_00000000000000000000000004'
 
@@ -36,41 +36,29 @@ ak connection list --integration http -J
 return code == 0
 output equals file expected_all_formatted.json
 
-# List some connections after filtering.
-ak connection list --connection-token my_url_path_2 -J
-return code == 0
-output equals file expected_some.json
-
 # List no connections after filtering.
-ak connection list --integration scheduler -J
+ak connection list --integration github -J
 return code == 0
 output equals ''
 
+ak connection list --integration meow -J
+return code == 1
+output equals 'Error: integration "meow" not found'
+
 -- expected_all_unformatted.json --
-{"connection_id":"con_00000000000000000000000003","integration_id":"int_3kth00httpf1201a7ed83f7cd5","integration_token":"my_url_path_1","project_id":"prj_00000000000000000000000001","name":"my_connection_1"}
-{"connection_id":"con_00000000000000000000000004","integration_id":"int_3kth00httpf1201a7ed83f7cd5","integration_token":"my_url_path_2","project_id":"prj_00000000000000000000000001","name":"my_connection_2"}
+{"connection_id":"con_00000000000000000000000003","integration_id":"int_3kth00httpf1201a7ed83f7cd5","project_id":"prj_00000000000000000000000001","name":"my_connection_1"}
+{"connection_id":"con_00000000000000000000000004","integration_id":"int_3kth00httpf1201a7ed83f7cd5","project_id":"prj_00000000000000000000000001","name":"my_connection_2"}
 
 -- expected_all_formatted.json --
 {
   "connection_id": "con_00000000000000000000000003",
   "integration_id": "int_3kth00httpf1201a7ed83f7cd5",
-  "integration_token": "my_url_path_1",
   "project_id": "prj_00000000000000000000000001",
   "name": "my_connection_1"
 }
 {
   "connection_id": "con_00000000000000000000000004",
   "integration_id": "int_3kth00httpf1201a7ed83f7cd5",
-  "integration_token": "my_url_path_2",
-  "project_id": "prj_00000000000000000000000001",
-  "name": "my_connection_2"
-}
-
--- expected_some.json --
-{
-  "connection_id": "con_00000000000000000000000004",
-  "integration_id": "int_3kth00httpf1201a7ed83f7cd5",
-  "integration_token": "my_url_path_2",
   "project_id": "prj_00000000000000000000000001",
   "name": "my_connection_2"
 }

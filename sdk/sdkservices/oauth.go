@@ -4,6 +4,8 @@ import (
 	"context"
 
 	"golang.org/x/oauth2"
+
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 // OAuth is a generic implementation of 3-legged OAuth v2 flows, reusable by
@@ -13,6 +15,6 @@ import (
 type OAuth interface {
 	Register(ctx context.Context, id string, cfg *oauth2.Config, opts map[string]string) error
 	Get(ctx context.Context, id string) (*oauth2.Config, map[string]string, error)
-	StartFlow(ctx context.Context, id string) (string, error)
+	StartFlow(ctx context.Context, id string, cid sdktypes.ConnectionID) (string, error)
 	Exchange(ctx context.Context, id, state, code string) (*oauth2.Token, error)
 }

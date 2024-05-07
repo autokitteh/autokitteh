@@ -2,19 +2,27 @@ version: v1
 
 project:
   name: http
+  vars:
+    - name: DOG
+      value: "woof"
+    - name: CAT
+      value: "meow"
   connections:
     - name: myhttp
       integration: "http"
   triggers:
-    - event_type: get
+    - name: get
+      event_type: get
       connection: myhttp
       entrypoint: http.star:on_http_get
       data:
         path: "get"
-    - filter: "data.method == 'POST'"
+    - name: post
+      filter: "data.method == 'POST'"
       connection: myhttp
       entrypoint: http.star:on_http_post
-    - connection: myhttp
+    - name: test
+      connection: myhttp
       call: http.star:on_http_test
       data:
         path: "/test/{a}/{b...}"

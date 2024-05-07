@@ -68,11 +68,10 @@ func ParseBuild(b Build) (sdktypes.Build, error) {
 }
 
 type Connection struct {
-	ConnectionID     sdktypes.UUID  `gorm:"primaryKey;type:uuid"`
-	IntegrationID    *sdktypes.UUID `gorm:"type:uuid"`
-	IntegrationToken string
-	ProjectID        *sdktypes.UUID `gorm:"index;type:uuid"`
-	Name             string
+	ConnectionID  sdktypes.UUID  `gorm:"primaryKey;type:uuid"`
+	IntegrationID *sdktypes.UUID `gorm:"type:uuid"`
+	ProjectID     *sdktypes.UUID `gorm:"index;type:uuid"`
+	Name          string
 
 	// enforce foreign keys
 	// Integration *Integration FIXME: ENG-590
@@ -83,11 +82,10 @@ type Connection struct {
 
 func ParseConnection(c Connection) (sdktypes.Connection, error) {
 	conn, err := sdktypes.StrictConnectionFromProto(&sdktypes.ConnectionPB{
-		ConnectionId:     sdktypes.NewIDFromUUID[sdktypes.ConnectionID](&c.ConnectionID).String(),
-		IntegrationId:    sdktypes.NewIDFromUUID[sdktypes.IntegrationID](c.IntegrationID).String(),
-		IntegrationToken: c.IntegrationToken,
-		ProjectId:        sdktypes.NewIDFromUUID[sdktypes.ProjectID](c.ProjectID).String(),
-		Name:             c.Name,
+		ConnectionId:  sdktypes.NewIDFromUUID[sdktypes.ConnectionID](&c.ConnectionID).String(),
+		IntegrationId: sdktypes.NewIDFromUUID[sdktypes.IntegrationID](c.IntegrationID).String(),
+		ProjectId:     sdktypes.NewIDFromUUID[sdktypes.ProjectID](c.ProjectID).String(),
+		Name:          c.Name,
 	})
 	if err != nil {
 		return sdktypes.InvalidConnection, fmt.Errorf("invalid connection record: %w", err)
@@ -191,19 +189,21 @@ type Secret struct {
 }
 
 type Event struct {
-	EventID          sdktypes.UUID  `gorm:"uniqueIndex;type:uuid"`
-	IntegrationID    *sdktypes.UUID `gorm:"index"`
-	IntegrationToken string         `gorm:"index"`
-	EventType        string         `gorm:"index:idx_event_type_seq,priority:1;index:idx_event_type"`
-	Data             datatypes.JSON
-	Memo             datatypes.JSON
-	CreatedAt        time.Time
-	Seq              uint64 `gorm:"primaryKey;autoIncrement:true,index:idx_event_type_seq,priority:2"`
+	EventID       sdktypes.UUID `gorm:"uniqueIndex;type:uuid"`
+	IntegrationID sdktypes.UUID `gorm:"index"`
+	ConnectionID  sdktypes.UUID `gorm:"index"`
+
+	EventType string `gorm:"index:idx_event_type_seq,priority:1;index:idx_event_type"`
+	Data      datatypes.JSON
+	Memo      datatypes.JSON
+	CreatedAt time.Time
+	Seq       uint64 `gorm:"primaryKey;autoIncrement:true,index:idx_event_type_seq,priority:2"`
 
 	DeletedAt gorm.DeletedAt `gorm:"index"`
 
 	// enforce foreign keys
 	// Integration *Integration // FIXME: ENG-590
+	// Connection *Connection // FIXME: ENG-590
 }
 
 func ParseEvent(e Event) (sdktypes.Event, error) {
@@ -218,14 +218,13 @@ func ParseEvent(e Event) (sdktypes.Event, error) {
 	}
 
 	return sdktypes.StrictEventFromProto(&sdktypes.EventPB{
-		EventId:          sdktypes.NewIDFromUUID[sdktypes.EventID](&e.EventID).String(),
-		IntegrationId:    sdktypes.NewIDFromUUID[sdktypes.IntegrationID](e.IntegrationID).String(),
-		IntegrationToken: e.IntegrationToken,
-		EventType:        e.EventType,
-		Data:             kittehs.TransformMapValues(data, sdktypes.ToProto),
-		Memo:             memo,
-		CreatedAt:        timestamppb.New(e.CreatedAt),
-		Seq:              e.Seq,
+		EventId:      sdktypes.NewIDFromUUID[sdktypes.EventID](&e.EventID).String(),
+		ConnectionId: sdktypes.NewIDFromUUID[sdktypes.ConnectionID](&e.ConnectionID).String(),
+		EventType:    e.EventType,
+		Data:         kittehs.TransformMapValues(data, sdktypes.ToProto),
+		Memo:         memo,
+		CreatedAt:    timestamppb.New(e.CreatedAt),
+		Seq:          e.Seq,
 	})
 }
 
