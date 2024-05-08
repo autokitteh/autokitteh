@@ -31,6 +31,7 @@ type tokens struct {
 }
 
 var Configs = configset.Set[Config]{
+	Default: &Config{},
 	Dev: &Config{
 		SignKey: strings.Repeat("00", hashSize),
 	},

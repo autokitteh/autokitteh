@@ -20,6 +20,7 @@ func (c Config) cookieConfig() *sessions.CookieConfig {
 }
 
 var Configs = configset.Set[Config]{
+	Default: &Config{},
 	Dev: &Config{
 		Cookie: sessions.DebugCookieConfig,
 		CookieKeys: []string{
