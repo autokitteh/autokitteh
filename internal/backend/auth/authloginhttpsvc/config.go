@@ -23,9 +23,8 @@ func (c oauth2Config) cookieConfig() gologin.CookieConfig {
 }
 
 type descopeConfig struct {
-	Enabled       bool   `koanf:"enabled"`
-	ProjectID     string `koanf:"project_id"`
-	ManagementKey string `koanf:"management_key"`
+	Enabled   bool   `koanf:"enabled"`
+	ProjectID string `koanf:"project_id"`
 }
 
 type Config struct {

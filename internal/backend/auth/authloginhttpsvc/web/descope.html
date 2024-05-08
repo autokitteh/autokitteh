@@ -31,6 +31,7 @@
         const wcElement = document.getElementsByTagName("descope-wc")[0];
 
         const onSuccess = (e) => {
+            document.cookie = `DSR=${e.detail.refreshJwt}; path=/`;
             window.location.replace(loggedinPath);
         };
 

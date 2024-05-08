@@ -3,11 +3,9 @@ package authloginhttpsvc
 import (
 	_ "embed"
 	"errors"
-	"maps"
 	"net/http"
 
 	"github.com/descope/go-sdk/descope/client"
-	j "github.com/golang-jwt/jwt/v5"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authloginhttpsvc/web"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -18,7 +16,7 @@ func registerDescopeRoutes(mux *http.ServeMux, cfg descopeConfig, onSuccess func
 		return errors.New("descope login is enabled, but missing DESCOPE_PROJECT_ID")
 	}
 
-	client, err := client.NewWithConfig(&client.Config{ProjectID: cfg.ProjectID, ManagementKey: cfg.ManagementKey})
+	client, err := client.NewWithConfig(&client.Config{ProjectID: cfg.ProjectID})
 	if err != nil {
 		return err
 	}
@@ -30,7 +28,7 @@ func registerDescopeRoutes(mux *http.ServeMux, cfg descopeConfig, onSuccess func
 	}))
 
 	mux.Handle("/auth/descope/loggedin", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		authorized, tok, err := client.Auth.ValidateAndRefreshSessionWithRequest(r, w)
+		authorized, _, err := client.Auth.ValidateAndRefreshSessionWithRequest(r, w)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -41,27 +39,16 @@ func registerDescopeRoutes(mux *http.ServeMux, cfg descopeConfig, onSuccess func
 			return
 		}
 
-		var claims j.RegisteredClaims
-		if _, _, err = j.NewParser().ParseUnverified(tok.JWT, &claims); err != nil {
+		user, err := client.Auth.Me(r)
+		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
 		details := map[string]string{
-			"id": claims.Subject,
-		}
-
-		if cfg.ManagementKey != "" {
-			u, err := client.Management.User().LoadByUserID(r.Context(), claims.Subject)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-
-			maps.Copy(details, map[string]string{
-				"email": u.Email,
-				"name":  u.Name,
-			})
+			"id":    user.UserID,
+			"email": user.Email,
+			"name":  user.Name,
 		}
 
 		onSuccess(sdktypes.NewUser("descope", details)).ServeHTTP(w, r)

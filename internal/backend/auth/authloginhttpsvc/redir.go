@@ -26,3 +26,12 @@ func getRedirect(r *http.Request) string {
 
 	return "/"
 }
+
+func killRedirect(w http.ResponseWriter) {
+	http.SetCookie(w, &http.Cookie{
+		Name:   redirCookieName,
+		Value:  "",
+		Path:   "/",
+		MaxAge: -1,
+	})
+}
