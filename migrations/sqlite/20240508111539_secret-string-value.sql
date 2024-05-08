@@ -4,7 +4,7 @@ PRAGMA foreign_keys = off;
 -- create "new_secrets" table
 CREATE TABLE `new_secrets` (
   `key` text NULL,
-  `value` json NULL,
+  `value` text NULL,
   PRIMARY KEY (`key`)
 );
 -- drop "secrets" table without copying rows (no columns)

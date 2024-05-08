@@ -152,7 +152,7 @@ type DB interface {
 	ListSignalsWaitingOnConnection(ctx context.Context, connectionID sdktypes.ConnectionID) ([]scheme.Signal, error)
 
 	// -----------------------------------------------------------------------
-	SetSecret(ctx context.Context, key string, value map[string]string) error
-	GetSecret(ctx context.Context, key string) (map[string]string, error)
+	SetSecret(ctx context.Context, key string, value string) error
+	GetSecret(ctx context.Context, key string) (string, error)
 	DeleteSecret(ctx context.Context, key string) error
 }

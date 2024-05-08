@@ -13,10 +13,10 @@ import (
 
 type secretsMock struct {
 	secrets.Secrets
-	SetFunc func(ctx context.Context, key string, value map[string]string) error
+	SetFunc func(ctx context.Context, key string, value string) error
 }
 
-func (s secretsMock) Set(ctx context.Context, key string, value map[string]string) error {
+func (s secretsMock) Set(ctx context.Context, key string, value string) error {
 	return s.SetFunc(ctx, key, value)
 }
 
@@ -91,7 +91,7 @@ func TestSetVar(t *testing.T) {
 	s := secretsMock{}
 	sCallCounter := 0
 
-	s.SetFunc = func(ctx context.Context, key string, value map[string]string) error {
+	s.SetFunc = func(ctx context.Context, key string, value string) error {
 		sCallCounter = sCallCounter + 1
 		return nil
 	}
@@ -123,9 +123,9 @@ func TestSetSecretVar(t *testing.T) {
 
 	actualSecretKey := ""
 	actualSecretValue := ""
-	s.SetFunc = func(ctx context.Context, key string, value map[string]string) error {
+	s.SetFunc = func(ctx context.Context, key string, value string) error {
 		actualSecretKey = key
-		actualSecretValue = value["value"]
+		actualSecretValue = value
 		sCallCounter = sCallCounter + 1
 		return nil
 	}
@@ -165,9 +165,9 @@ func TestSetMultipleSecretVar(t *testing.T) {
 
 	keys := []string{}
 	vals := []string{}
-	s.SetFunc = func(ctx context.Context, key string, value map[string]string) error {
+	s.SetFunc = func(ctx context.Context, key string, value string) error {
 		keys = append(keys, key)
-		vals = append(vals, value["value"])
+		vals = append(vals, value)
 		sCallCounter = sCallCounter + 1
 		return nil
 	}

@@ -2,7 +2,6 @@ package secrets
 
 import (
 	"context"
-	"encoding/json"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -31,15 +30,10 @@ func newAWSSecrets(l *zap.Logger, _ *Config) (Secrets, error) {
 
 // The data size limit is 64 KiB, according to this link:
 // https://docs.aws.amazon.com/secretsmanager/latest/apireference/API_CreateSecret.html
-func (s *awsSecrets) Set(ctx context.Context, key string, data map[string]string) error {
-	d, err := json.MarshalIndent(data, "", "  ")
-	if err != nil {
-		return err
-	}
-
-	_, err = s.client.CreateSecret(ctx, &secretsmanager.CreateSecretInput{
+func (s *awsSecrets) Set(ctx context.Context, key string, data string) error {
+	_, err := s.client.CreateSecret(ctx, &secretsmanager.CreateSecretInput{
 		Name:         aws.String(key),
-		SecretString: aws.String(string(d)),
+		SecretString: aws.String(data),
 	})
 	if err != nil {
 		return err
@@ -47,19 +41,15 @@ func (s *awsSecrets) Set(ctx context.Context, key string, data map[string]string
 	return nil
 }
 
-func (s *awsSecrets) Get(ctx context.Context, key string) (map[string]string, error) {
+func (s *awsSecrets) Get(ctx context.Context, key string) (string, error) {
 	sec, err := s.client.GetSecretValue(ctx, &secretsmanager.GetSecretValueInput{
 		SecretId: aws.String(key),
 	})
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
-	data := make(map[string]string)
-	if err := json.Unmarshal([]byte(*sec.SecretString), &data); err != nil {
-		return nil, err
-	}
-	return data, nil
+	return *sec.SecretString, nil
 }
 
 func (s *awsSecrets) Delete(ctx context.Context, key string) error {

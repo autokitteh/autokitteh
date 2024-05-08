@@ -2,7 +2,6 @@ package vars
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"go.uber.org/zap"
@@ -31,7 +30,7 @@ func (v *vars) Set(ctx context.Context, vs ...sdktypes.Var) error {
 	for i, va := range vs {
 		if va.IsSecret() {
 			key := varSecretKey(va)
-			if err := v.secrets.Set(ctx, key, map[string]string{"value": va.Value()}); err != nil {
+			if err := v.secrets.Set(ctx, key, va.Value()); err != nil {
 				//TODO: handle delete secrets that were already created
 				return err
 			}
@@ -83,12 +82,7 @@ func (v *vars) Reveal(ctx context.Context, sid sdktypes.VarScopeID, names ...sdk
 			return nil, err
 		}
 
-		data, err := json.Marshal(value["value"])
-		if err != nil {
-			return nil, err
-		}
-
-		resultVars = append(resultVars, sdktypes.NewVar(va.Name(), string(data), true))
+		resultVars = append(resultVars, sdktypes.NewVar(va.Name(), value, true))
 	}
 
 	return resultVars, nil

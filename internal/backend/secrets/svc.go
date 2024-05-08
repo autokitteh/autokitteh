@@ -2,23 +2,18 @@ package secrets
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
+	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.uber.org/zap"
 )
 
 type Secrets interface {
-	Get(ctx context.Context, key string) (map[string]string, error)
-	Set(ctx context.Context, key string, value map[string]string) error
+	Get(ctx context.Context, key string) (string, error)
+	Set(ctx context.Context, key string, value string) error
 	Delete(ctx context.Context, key string) error
 }
-
-var (
-	ErrSecretsInvalidProvider              = errors.New("invalid provider")
-	ErrSecretsInvalidProviderConfiguration = errors.New("invalid provider configuration")
-)
 
 const (
 	SecretProviderDatabase         = "db"
@@ -33,6 +28,10 @@ type secrets struct {
 }
 
 func New(cfg *Config, z *zap.Logger, db db.DB) (Secrets, error) {
+	if cfg.Provider == "" {
+		return nil, sdkerrors.NewInvalidArgumentError("secret provider cannot be empty")
+	}
+
 	var (
 		provider Secrets
 		err      error
@@ -40,19 +39,15 @@ func New(cfg *Config, z *zap.Logger, db db.DB) (Secrets, error) {
 
 	switch cfg.Provider {
 	case SecretProviderAWSSecretManager:
-		if provider, err = newAWSSecrets(z, cfg); err != nil {
-			z.Panic("invalid provider configuration", zap.Error(err))
-			return nil, ErrSecretsInvalidProviderConfiguration
-		}
+		provider, err = newAWSSecrets(z, cfg)
 	case SecretProviderDatabase:
-		if provider, err = newDatabaseSecrets(z, db); err != nil {
-			z.Panic("invalid provider configuration", zap.Error(err))
-			return nil, ErrSecretsInvalidProviderConfiguration
-		}
+		provider, err = newDatabaseSecrets(z, db)
+	default:
+		return nil, sdkerrors.NewInvalidArgumentError("invalid secret provider: %s", cfg.Provider)
 	}
 
-	if provider == nil {
-		return nil, ErrSecretsInvalidProvider
+	if err != nil {
+		return nil, sdkerrors.NewInvalidArgumentError("invalid configuration for %s secret provider", cfg.Provider)
 	}
 
 	return &secrets{
@@ -63,11 +58,11 @@ func New(cfg *Config, z *zap.Logger, db db.DB) (Secrets, error) {
 
 }
 
-func (s *secrets) Get(ctx context.Context, key string) (map[string]string, error) {
+func (s *secrets) Get(ctx context.Context, key string) (string, error) {
 	return s.provider.Get(ctx, wrapKey(s.cfg.GlobalScope, key))
 }
 
-func (s *secrets) Set(ctx context.Context, key string, value map[string]string) error {
+func (s *secrets) Set(ctx context.Context, key string, value string) error {
 	return s.provider.Set(ctx, wrapKey(s.cfg.GlobalScope, key), value)
 }
 

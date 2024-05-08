@@ -20,11 +20,11 @@ func newDatabaseSecrets(l *zap.Logger, db db.DB) (Secrets, error) {
 	return &dbSecrets{logger: l, db: db}, nil
 }
 
-func (s *dbSecrets) Set(ctx context.Context, key string, data map[string]string) error {
+func (s *dbSecrets) Set(ctx context.Context, key string, data string) error {
 	return s.db.SetSecret(ctx, key, data)
 }
 
-func (s *dbSecrets) Get(ctx context.Context, key string) (map[string]string, error) {
+func (s *dbSecrets) Get(ctx context.Context, key string) (string, error) {
 	return s.db.GetSecret(ctx, key)
 }
 
