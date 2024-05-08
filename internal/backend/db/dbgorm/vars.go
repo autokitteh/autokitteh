@@ -125,7 +125,7 @@ func (db *gormdb) FindConnectionIDsByVar(ctx context.Context, iid sdktypes.Integ
 		return nil, sdkerrors.NewInvalidArgumentError("integration id is invalid")
 	}
 
-	q := db.db.Where("integration_id = ? AND name = ?", iid.UUIDValue(), n.String(), v)
+	q := db.db.Where("integration_id = ? AND name = ?", iid.UUIDValue(), n.String())
 
 	if v != "" {
 		q = q.Where("value = ? AND is_secret is false", v)

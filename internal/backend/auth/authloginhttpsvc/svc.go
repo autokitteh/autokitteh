@@ -4,6 +4,8 @@ import (
 	_ "embed"
 	"fmt"
 	"net/http"
+	"net/url"
+	"strconv"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authloginhttpsvc/web"
@@ -72,6 +74,43 @@ func (a *svc) registerRoutes(muxes *muxes.Muxes) error {
 		if err := web.LoginTemplate.Execute(w, a.Cfg); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
+	})
+
+	muxes.NoAuth.HandleFunc("/auth/cli-login", func(w http.ResponseWriter, r *http.Request) {
+		p := r.URL.Query().Get("p")
+		if _, err := strconv.ParseUint(p, 10, 16); err != nil {
+			http.Error(w, "invalid port", http.StatusBadRequest)
+			return
+		}
+
+		url := &url.URL{
+			Path:     "/auth/finish-cli-login",
+			RawQuery: "p=" + p,
+		}
+
+		RedirectToLogin(w, r, url)
+	})
+
+	muxes.Auth.HandleFunc("/auth/finish-cli-login", func(w http.ResponseWriter, r *http.Request) {
+		p := r.URL.Query().Get("p")
+		if _, err := strconv.ParseUint(p, 10, 16); err != nil {
+			http.Error(w, "invalid port", http.StatusBadRequest)
+			return
+		}
+
+		u := authcontext.GetAuthnUser(r.Context())
+		if !u.IsValid() {
+			http.Error(w, "unable to identify user", http.StatusInternalServerError)
+			return
+		}
+
+		token, err := a.Tokens.Create(u)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		http.Redirect(w, r, fmt.Sprintf("http://localhost:%s/?token=%s", p, token), http.StatusFound)
 	})
 
 	muxes.Auth.HandleFunc("/whoami", func(w http.ResponseWriter, r *http.Request) {
