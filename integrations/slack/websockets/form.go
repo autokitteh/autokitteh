@@ -93,6 +93,5 @@ func (h handler) HandleForm(w http.ResponseWriter, r *http.Request) {
 	// Open a new Socket Mode connection.
 	h.OpenSocketModeConnection(botInfo.Bot.AppID, botToken, appToken)
 
-	// TODO: Should this happen before "OpenSocketModeConnection"?
 	sdkintegrations.FinalizeConnectionInit(w, r, h.integrationID, initData)
 }
