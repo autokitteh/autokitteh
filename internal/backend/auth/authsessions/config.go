@@ -8,7 +8,7 @@ import (
 
 type Config struct {
 	Cookie     *sessions.CookieConfig `koanf:"cookie"`
-	CookieKeys []string               `koanf:"cookie_keys"` // pairs of sigining and encryption keys.
+	CookieKeys string                 `koanf:"cookie_keys"` // pairs of hash and block keys.
 }
 
 func (c Config) cookieConfig() *sessions.CookieConfig {
@@ -22,10 +22,7 @@ func (c Config) cookieConfig() *sessions.CookieConfig {
 var Configs = configset.Set[Config]{
 	Default: &Config{},
 	Dev: &Config{
-		Cookie: sessions.DebugCookieConfig,
-		CookieKeys: []string{
-			"0000000000000000000000000000000000000000000000000000000000000000",
-			"0000000000000000000000000000000000000000000000000000000000000000",
-		},
+		Cookie:     sessions.DebugCookieConfig,
+		CookieKeys: "0000000000000000000000000000000000000000000000000000000000000000,0000000000000000000000000000000000000000000000000000000000000000",
 	},
 }
