@@ -32,3 +32,29 @@ jobs:
           workdir: ${{env.WORKING_DIRECTORY}}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  publish_docker_image:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_GITHUB_ROLE }}
+          role-session-name: Github_Action_Release_Autokitteh
+          aws-region: us-east-1
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+      - name: Build And Push
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          platforms: linux/amd64
+          tags: ${{ steps.login-ecr.outputs.registry }}/autokitteh:${{github.ref_name}},${{ steps.login-ecr.outputs.registry }}/autokitteh:latest
+          push: true
+          provenance: false
