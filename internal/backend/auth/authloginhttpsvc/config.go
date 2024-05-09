@@ -32,6 +32,13 @@ type Config struct {
 	GoogleOAuth oauth2Config  `koanf:"google_oauth"`
 	GithubOAuth oauth2Config  `konf:"github_oauth"`
 	Descope     descopeConfig `koanf:"descope"`
+
+	// Allowed login patterns, separated by commas.
+	// Pattern format is either of:
+	// - "*"       - matches any login
+	// - "*@host"  - matches any login from host
+	// - otherwise - matches exact login
+	AllowedLogins string `koanf:"allowed_logins"`
 }
 
 var Configs = configset.Set[Config]{
