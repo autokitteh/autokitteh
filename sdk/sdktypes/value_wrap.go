@@ -1,8 +1,10 @@
 package sdktypes
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"reflect"
 	"time"
 
@@ -27,6 +29,24 @@ func (w ValueWrapper) Wrap(v any) (Value, error) {
 
 	if d, ok := v.(time.Duration); ok {
 		return NewDurationValue(d), nil
+	}
+
+	if r, ok := v.(io.Reader); ok {
+		if w.IgnoreReader {
+			return Nothing, nil
+		}
+
+		var buf bytes.Buffer
+
+		if _, err := buf.ReadFrom(r); err != nil {
+			return InvalidValue, fmt.Errorf("read: %w", err)
+		}
+
+		if w.WrapReaderAsString {
+			return NewStringValue(buf.String()), nil
+		}
+
+		return NewBytesValue(buf.Bytes()), nil
 	}
 
 	if msg, ok := v.(json.RawMessage); ok {
