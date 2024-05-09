@@ -13,6 +13,8 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
+const descopeLoginPath = "/auth/descope/login"
+
 func registerDescopeRoutes(mux *http.ServeMux, cfg descopeConfig, onSuccess func(sdktypes.User) http.Handler) error {
 	if cfg.ProjectID == "" {
 		return errors.New("descope login is enabled, but missing DESCOPE_PROJECT_ID")
@@ -23,7 +25,7 @@ func registerDescopeRoutes(mux *http.ServeMux, cfg descopeConfig, onSuccess func
 		return err
 	}
 
-	mux.Handle("/auth/descope/login", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	mux.Handle(descopeLoginPath, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if err := web.DescopeLoginTemplate.Execute(w, struct{ ProjectID string }{ProjectID: cfg.ProjectID}); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
