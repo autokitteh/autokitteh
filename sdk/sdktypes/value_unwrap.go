@@ -253,6 +253,11 @@ func (w ValueWrapper) unwrapIntoReader(path string, dstv reflect.Value, v Value)
 
 func (w ValueWrapper) unwrapScalarInto(path string, dstv reflect.Value, v Value) (bool, error) {
 	if dstv.Type().Implements(reflect.TypeOf((*io.Reader)(nil)).Elem()) {
+		if w.IgnoreReader {
+			dstv.Set(reflect.Zero(dstv.Type()))
+			return true, nil
+		}
+
 		return w.unwrapIntoReader(path, dstv, v)
 	}
 

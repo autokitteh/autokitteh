@@ -1,6 +1,7 @@
 package sdktypes_test
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"maps"
@@ -142,6 +143,29 @@ func TestValueWrapper(t *testing.T) {
 				assert.Equal(t, test.unw, unw)
 			}
 		})
+	}
+}
+
+func TestWrapReader(t *testing.T) {
+	buf := bytes.NewBuffer([]byte("meow"))
+	v, err := w.Wrap(buf)
+	if assert.NoError(t, err) {
+		assert.Equal(t, []byte("meow"), v.GetBytes().Value())
+	}
+
+	ww := w
+	ww.WrapReaderAsString = true
+	buf = bytes.NewBuffer([]byte("meow"))
+	v, err = ww.Wrap(buf)
+	if assert.NoError(t, err) {
+		assert.Equal(t, "meow", v.GetString().Value())
+	}
+
+	ww.IgnoreReader = true
+	buf = bytes.NewBuffer([]byte("meow"))
+	v, err = ww.Wrap(buf)
+	if assert.NoError(t, err) {
+		assert.True(t, v.IsNothing())
 	}
 }
 
@@ -307,6 +331,13 @@ func TestUnwrapIntoSpecials(t *testing.T) {
 		if assert.NoError(t, err) {
 			assert.Equal(t, "woof", string(txt))
 		}
+	}
+
+	ww := w
+	ww.IgnoreReader = true
+
+	if assert.NoError(t, ww.UnwrapInto(&r, sdktypes.NewBytesValue([]byte("woof")))) {
+		assert.Nil(t, r)
 	}
 }
 
