@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
-	"sort"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -92,30 +91,10 @@ func (s Svc) connection(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	vs, err := s.Svcs.Vars().Get(r.Context(), sdktypes.NewVarScopeID(cid))
+	cvars, err := s.genVarsList(w, r, sdktypes.NewVarScopeID(cid))
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
-	cvars := list{
-		Headers: []string{"name", "value"},
-		Items: kittehs.Transform(vs, func(cv sdktypes.Var) []template.HTML {
-			v := cv.Value()
-			if cv.IsSecret() {
-				v = "🤐"
-			}
-			return []template.HTML{
-				template.HTML(cv.Name().String()),
-				template.HTML(v),
-			}
-		}),
-		N: len(vs),
-	}
-
-	sort.Slice(cvars.Items, func(i, j int) bool {
-		return cvars.Items[i][0] < cvars.Items[j][0]
-	})
 
 	events, err := s.listEvents(w, r, sdkservices.ListEventsFilter{
 		ConnectionID: sdkC.ID(),
