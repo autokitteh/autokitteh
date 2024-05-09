@@ -1,9 +1,11 @@
 package sdktypes
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"reflect"
 	"time"
 
@@ -227,7 +229,33 @@ func (w ValueWrapper) unwrapPtrInto(path string, dstv reflect.Value, v Value) er
 	return w.unwrapInto(path, dstv.Elem(), v)
 }
 
+func (w ValueWrapper) unwrapIntoReader(path string, dstv reflect.Value, v Value) (bool, error) {
+	var buf bytes.Buffer
+
+	switch v := v.Concrete().(type) {
+	case NothingValue:
+	case StringValue:
+		if _, err := buf.WriteString(v.Value()); err != nil {
+			return false, err
+		}
+	case BytesValue:
+		if _, err := buf.Write(v.Value()); err != nil {
+			return false, err
+		}
+	default:
+		return true, fmt.Errorf("%scannot convert into reader", path)
+	}
+
+	dstv.Set(reflect.ValueOf(&buf))
+
+	return true, nil
+}
+
 func (w ValueWrapper) unwrapScalarInto(path string, dstv reflect.Value, v Value) (bool, error) {
+	if dstv.Type().Implements(reflect.TypeOf((*io.Reader)(nil)).Elem()) {
+		return w.unwrapIntoReader(path, dstv, v)
+	}
+
 	switch dstv.Interface().(type) {
 	case time.Duration:
 		d, err := v.ToDuration()

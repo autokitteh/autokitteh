@@ -2,6 +2,7 @@ package sdktypes_test
 
 import (
 	"fmt"
+	"io"
 	"maps"
 	"testing"
 	"time"
@@ -291,6 +292,21 @@ func TestUnwrapIntoSpecials(t *testing.T) {
 	var tm time.Time
 	if assert.NoError(t, w.UnwrapInto(&tm, sdktypes.NewStringValue("1/1/23 18:32"))) {
 		assert.Equal(t, time.Date(2023, time.January, 1, 18, 32, 0, 0, time.UTC), tm)
+	}
+
+	var r io.Reader
+	if assert.NoError(t, w.UnwrapInto(&r, sdktypes.NewStringValue("meow"))) {
+		txt, err := io.ReadAll(r)
+		if assert.NoError(t, err) {
+			assert.Equal(t, "meow", string(txt))
+		}
+	}
+
+	if assert.NoError(t, w.UnwrapInto(&r, sdktypes.NewBytesValue([]byte("woof")))) {
+		txt, err := io.ReadAll(r)
+		if assert.NoError(t, err) {
+			assert.Equal(t, "woof", string(txt))
+		}
 	}
 }
 
