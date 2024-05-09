@@ -8,16 +8,30 @@ import (
 
 	"github.com/fatih/color"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/configset"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/internal/version"
 )
+
+type bannerConfig struct {
+	Show bool
+}
+
+var bannerConfigs = configset.Set[bannerConfig]{
+	Default: &bannerConfig{},
+	Dev:     &bannerConfig{Show: true},
+}
 
 //go:embed banner.txt
 var banner string
 
 var bannerTemplate = template.Must(template.New("banner").Parse(banner))
 
-func printBanner(opts RunOptions, addr, temporalFrontendAddr, temporalUIAddr string) {
+func printBanner(cfg *bannerConfig, opts RunOptions, addr, temporalFrontendAddr, temporalUIAddr string) {
+	if !cfg.Show {
+		return
+	}
+
 	fieldColor := color.New(color.FgBlue).Add(color.Bold).SprintFunc()
 	eyeColor := color.New(color.FgGreen).Add(color.Bold).SprintFunc()
 
