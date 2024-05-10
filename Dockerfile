@@ -22,13 +22,10 @@ RUN --mount=type=cache,target=/go/pkg/mod/ \
 RUN --mount=type=cache,target=/go/pkg/mod/ \
     --mount=type=bind,target=. \
 <<EOF
-    if [ -f .version ]; then
-        export VERSION="$(cat .version)"
-    fi
-    if [ -f .commit ]; then
-        export COMMIT="$(cat .commit)"
-    fi
-    CGO_ENABLED=0 go build -o /bin/ak ./cmd/ak
+    export VERSION_PKG_PATH="go.autokitteh.dev/autokitteh/internal/version"
+    export TIMESTAMP="$(date -u "+%Y-%m-%dT%H:%MZ")"
+    export LDFLAGS="-X "${VERSION_PKG_PATH}.Version=$(cat .version || echo)" -X "${VERSION_PKG_PATH}.Time=${TIMESTAMP}" -X "${VERSION_PKG_PATH}.Commit=$(cat .commit || echo)""
+    CGO_ENABLED=0 go build -o /bin/ak -ldflags="${LDFLAGS}" ./cmd/ak
 EOF
 
 ################################################################################
