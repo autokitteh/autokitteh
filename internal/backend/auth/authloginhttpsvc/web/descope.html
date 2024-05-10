@@ -3,42 +3,26 @@
 <html>
 
 <head>
-    <script src="/static/descope-web-component.js"></script>
-    <script src="/static/descope-web-js-sdk.js"></script>
-    <script>
-        const projectId = "{{ .ProjectID }}";
-        const sdk = Descope({
-            projectId: projectId,
-            persistTokens: true,
-            autoRefresh: true,
-            sessionTokenViaCookie: true,
-        });
-
-        sdk.refresh();
-    </script>
+  <title>Login</title>
+  <script src="/static/descope-web-component.js"></script>
 </head>
 
 <body>
-    <h1>Descope Login</h1>
-    <p id="container" style="max-width: 500px"></p>
+  <div style="max-width: 500px; margin: auto;">
+    <descope-wc project-id="{{ .ProjectID }}" flow-id="sign-up-or-in" theme="os" debug="true"></descope-wc>
+  </div>
 
-    <script>
-        const loggedinPath = "/auth/descope/loggedin";
+  <script>
+    const onSuccess = async (e) => {
+      window.location.replace(`/auth/descope/login?jwt=${e.detail.sessionJwt}`);
+    }
 
-        var container = document.getElementById("container");
-        container.innerHTML = `<descope-wc project-id="${projectId}" flow-id="sign-up-or-in"></descope-wc>`;
+    const onError = (err) => console.error(err);
 
-        const wcElement = document.getElementsByTagName("descope-wc")[0];
-
-        const onSuccess = (e) => {
-            window.location.replace(loggedinPath);
-        };
-
-        const onError = (err) => console.log(err);
-
-        wcElement.addEventListener("success", onSuccess);
-        wcElement.addEventListener("error", onError);
-    </script>
+    const wcElement = document.getElementsByTagName("descope-wc")[0];
+    wcElement.addEventListener("success", onSuccess);
+    wcElement.addEventListener("error", onError);
+  </script>
 </body>
 
 </html>
