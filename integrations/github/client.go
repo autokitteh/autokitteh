@@ -241,7 +241,7 @@ func New(vars sdkservices.Vars) sdkservices.Integration {
 			"get_user",
 			i.getUser,
 			sdkmodule.WithFuncDoc("https://docs.github.com/en/rest/users#get-a-user"),
-			sdkmodule.WithArgs("username"),
+			sdkmodule.WithArgs("username", "owner=?"),
 		),
 		// Actions
 		sdkmodule.ExportFunction(
