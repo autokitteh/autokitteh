@@ -54,6 +54,7 @@ func New(cfg *Config, vars sdkservices.Vars) sdkservices.Integrations {
 }
 
 func Start(_ context.Context, l *zap.Logger, mux *http.ServeMux, vars sdkservices.Vars, o sdkservices.OAuth, d sdkservices.Dispatcher, c sdkservices.Connections, p sdkservices.Projects) error {
+	aws.Start(mux, vars)
 	chatgpt.Start(l, mux, vars)
 	github.Start(l, mux, vars, o, d)
 	google.Start(l, mux, vars, o, d)

@@ -5,9 +5,6 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/iancoleman/strcase"
 
 	"go.autokitteh.dev/autokitteh/sdk/sdklogger"
@@ -15,40 +12,6 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
-
-type authData struct {
-	Region      string
-	AccessKeyID string `vars:"secret"`
-	SecretKey   string `vars:"secret"`
-	Token       string `vars:"secret"`
-}
-
-func getAWSConfig(ctx context.Context, vars sdkservices.Vars) (*aws.Config, error) {
-	cid, err := sdkmodule.FunctionConnectionIDFromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	if !cid.IsValid() {
-		return defaultAWSConfig, nil
-	}
-
-	cvars, err := vars.Reveal(ctx, sdktypes.NewVarScopeID(cid))
-	if err != nil {
-		return nil, err
-	}
-
-	var authData authData
-	cvars.Decode(&authData)
-
-	awsCfg, err := config.LoadDefaultConfig(
-		context.Background(),
-		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(authData.AccessKeyID, authData.SecretKey, authData.Token)),
-		config.WithRegion(authData.Region),
-	)
-
-	return &awsCfg, err
-}
 
 func importServiceMethods(vars sdkservices.Vars, moduleName string, connect any) ([]sdkmodule.Optfn, error) {
 	connectv, connectt := reflect.ValueOf(connect), reflect.TypeOf(connect)
