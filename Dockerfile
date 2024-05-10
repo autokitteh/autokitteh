@@ -21,7 +21,15 @@ RUN --mount=type=cache,target=/go/pkg/mod/ \
 # source code into the container.
 RUN --mount=type=cache,target=/go/pkg/mod/ \
     --mount=type=bind,target=. \
-    CGO_ENABLED=0 make bin/ak
+<<EOF
+    if [ -f .version ]; then
+        export VERSION="$(cat .version)"
+    fi
+    if [ -f .commit ]; then
+        export COMMIT="$(cat .commit)"
+    fi
+    CGO_ENABLED=0 go build -o /bin/ak ./cmd/ak
+EOF
 
 ################################################################################
 # Create a new stage for running the application that contains the minimal
