@@ -3,22 +3,28 @@ package authloginhttpsvc
 import (
 	_ "embed"
 	"fmt"
+	"html/template"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
-	"go.autokitteh.dev/autokitteh/internal/backend/auth/authloginhttpsvc/web"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authsessions"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authtokens"
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 )
+
+//go:embed login.html
+var loginHTML string
+
+var loginTemplate = kittehs.Must1(template.New("").Parse(loginHTML))
 
 type Deps struct {
 	fx.In
@@ -93,7 +99,7 @@ func (a *svc) registerRoutes(muxes *muxes.Muxes) error {
 			return
 		}
 
-		if err := web.LoginTemplate.Execute(w, a.Cfg); err != nil {
+		if err := loginTemplate.Execute(w, a.Cfg); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 	})

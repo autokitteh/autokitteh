@@ -1,15 +1,13 @@
 package authloginhttpsvc
 
 import (
+	"context"
 	_ "embed"
 	"errors"
-	"maps"
 	"net/http"
 
 	"github.com/descope/go-sdk/descope/client"
-	j "github.com/golang-jwt/jwt/v5"
 
-	"go.autokitteh.dev/autokitteh/internal/backend/auth/authloginhttpsvc/web"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
@@ -26,44 +24,25 @@ func registerDescopeRoutes(mux *http.ServeMux, cfg descopeConfig, onSuccess func
 	}
 
 	mux.Handle(descopeLoginPath, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if err := web.DescopeLoginTemplate.Execute(w, struct{ ProjectID string }{ProjectID: cfg.ProjectID}); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
-	}))
-
-	mux.Handle("/auth/descope/loggedin", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		authorized, tok, err := client.Auth.ValidateAndRefreshSessionWithRequest(r, w)
+		url, err := client.Auth.OAuth().SignUpOrIn(context.Background(), "google", "", nil, nil, w)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		if !authorized {
-			http.Error(w, "unauthorized", http.StatusUnauthorized)
-			return
-		}
+		http.Redirect(w, r, url, http.StatusFound)
+	}))
 
-		var claims j.RegisteredClaims
-		if _, _, err = j.NewParser().ParseUnverified(tok.JWT, &claims); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+	mux.Handle("/auth/descope/loggedin", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		authInfo, err := client.Auth.OAuth().ExchangeToken(context.Background(), r.URL.Query().Get("code"), w)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusUnauthorized)
 			return
 		}
 
 		details := map[string]string{
-			"id": claims.Subject,
-		}
-
-		if cfg.ManagementKey != "" {
-			u, err := client.Management.User().LoadByUserID(r.Context(), claims.Subject)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-
-			maps.Copy(details, map[string]string{
-				"email": u.Email,
-				"name":  u.Name,
-			})
+			"email": authInfo.User.Email,
+			"name":  authInfo.User.Name,
 		}
 
 		onSuccess(sdktypes.NewUser("descope", details)).ServeHTTP(w, r)
