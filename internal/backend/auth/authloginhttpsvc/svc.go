@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authloginhttpsvc/web"
@@ -32,11 +33,14 @@ type Deps struct {
 
 type svc struct {
 	Deps
+
+	loginMatcher func(string) bool
 }
 
 func Init(deps Deps) error {
 	svc := &svc{
-		Deps: deps,
+		Deps:         deps,
+		loginMatcher: compileLoginMatchers(strings.Split(deps.Cfg.AllowedLogins, ",")),
 	}
 
 	return svc.registerRoutes(deps.Muxes)
@@ -158,6 +162,12 @@ func (a *svc) newSuccessLoginHandler(user sdktypes.User) http.Handler {
 		if !user.IsValid() {
 			a.Z.Warn("user not found")
 			http.Error(w, "user not found", http.StatusForbidden)
+			return
+		}
+
+		if !a.loginMatcher(user.Login()) {
+			a.Z.Warn("user not allowed to login", zap.String("user", user.Login()))
+			http.Error(w, "user not allowed to login", http.StatusForbidden)
 			return
 		}
 
