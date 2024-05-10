@@ -273,6 +273,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 			muxes.NoAuth.Handle("/static/", srv)
 			muxes.NoAuth.Handle("/favicon-32x32.png", srv)
 			muxes.NoAuth.Handle("/favicon-16x16.png", srv)
+			muxes.NoAuth.Handle("/favicon.ico", srv)
 		}),
 		Component(
 			"banner",
