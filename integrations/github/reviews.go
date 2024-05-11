@@ -15,14 +15,15 @@ func (i integration) createReview(ctx context.Context, args []sdktypes.Value, kw
 	var (
 		owner, repo string
 		pullNumber  int
-		commitID    *string
-		body, event *string
+
+		commitID, body, event *string
 	)
 
 	err := sdkmodule.UnpackArgs(args, kwargs,
 		"owner", &owner,
 		"repo", &repo,
 		"pull_number", &pullNumber,
+
 		"commit_id?", &commitID,
 		"body?", &body,
 		"event?", &event,
@@ -161,8 +162,9 @@ func (i integration) getReview(ctx context.Context, args []sdktypes.Value, kwarg
 func (i integration) listReviews(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
 	// Parse the input arguments.
 	var (
-		owner, repo   string
-		pullNumber    int
+		owner, repo string
+		pullNumber  int
+
 		perPage, page int
 	)
 
@@ -170,6 +172,7 @@ func (i integration) listReviews(ctx context.Context, args []sdktypes.Value, kwa
 		"owner", &owner,
 		"repo", &repo,
 		"pull_number", &pullNumber,
+
 		"per_page?", &perPage,
 		"page?", &page,
 	)
@@ -203,9 +206,10 @@ func (i integration) listReviews(ctx context.Context, args []sdktypes.Value, kwa
 func (i integration) listReviewComments(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
 	// Parse the input arguments.
 	var (
-		owner, repo   string
-		pullNumber    int
-		reviewID      int
+		owner, repo string
+		pullNumber  int
+		reviewID    int
+
 		perPage, page int
 	)
 
@@ -214,6 +218,7 @@ func (i integration) listReviewComments(ctx context.Context, args []sdktypes.Val
 		"repo", &repo,
 		"pull_number", &pullNumber,
 		"review_id", &reviewID,
+
 		"per_page?", &perPage,
 		"page?", &page,
 	)
@@ -250,7 +255,9 @@ func (i integration) submitReview(ctx context.Context, args []sdktypes.Value, kw
 		owner, repo string
 		pullNumber  int
 		reviewID    int
-		body, event *string
+		event       *string
+
+		body *string
 	)
 
 	err := sdkmodule.UnpackArgs(args, kwargs,
@@ -259,6 +266,7 @@ func (i integration) submitReview(ctx context.Context, args []sdktypes.Value, kw
 		"pull_number", &pullNumber,
 		"review_id", &reviewID,
 		"event", &event,
+
 		"body?", &body,
 	)
 	if err != nil {
