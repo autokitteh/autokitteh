@@ -73,7 +73,7 @@ func (a API) GetPermalink(ctx context.Context, args []sdktypes.Value, kwargs map
 	// Invoke the API method.
 	// TODO: Use HTTP GET instead of POST.
 	resp := &GetPermalinkResponse{}
-	err = api.PostForm(ctx, a.Vars, req, resp, "conversations.info")
+	err = api.PostForm(ctx, a.Vars, req, resp, "chat.getPermalink")
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
