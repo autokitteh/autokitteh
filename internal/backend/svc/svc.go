@@ -135,7 +135,6 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 
 				return temporalclient.New(cfg, z)
 			}),
-			fx.Provide(func(c temporalclient.Client) client.Client { return c.Temporal() }),
 			fx.Invoke(func(lc fx.Lifecycle, c temporalclient.Client) {
 				HookOnStart(lc, c.Start)
 				HookOnStop(lc, c.Stop)
@@ -145,12 +144,12 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 					return
 				}
 
-				_, uiAddr := tclient.TemporalAddr()
-				if uiAddr == "" {
-					return
-				}
-
 				muxes.NoAuth.HandleFunc("/temporal", func(w http.ResponseWriter, r *http.Request) {
+					_, uiAddr := tclient.TemporalAddr()
+					if uiAddr == "" {
+						return
+					}
+
 					http.Redirect(w, r, uiAddr, http.StatusFound)
 				})
 			}),

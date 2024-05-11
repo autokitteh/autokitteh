@@ -30,6 +30,7 @@ type impl struct {
 	cfg    *Config
 	srv    *testsuite.DevServer
 	done   chan struct{}
+	opts   client.Options
 }
 
 func NewFromClient(cfg *MonitorConfig, z *zap.Logger, tclient client.Client) (Client, error) {
@@ -58,49 +59,19 @@ func New(cfg *Config, z *zap.Logger) (Client, error) {
 		tlsConfig = &tls.Config{Certificates: []tls.Certificate{cert}}
 	}
 
-	opts := client.Options{
-		HostPort:  cfg.HostPort,
-		Namespace: cfg.Namespace,
-		Logger:    logur.LoggerToKV(zapadapter.New(z.WithOptions(zap.IncreaseLevel(cfg.Monitor.LogLevel)))),
-		ConnectionOptions: client.ConnectionOptions{
-			TLS: tlsConfig,
+	return &impl{
+		z:    z,
+		cfg:  cfg,
+		done: make(chan struct{}),
+		opts: client.Options{
+			HostPort:  cfg.HostPort,
+			Namespace: cfg.Namespace,
+			Logger:    logur.LoggerToKV(zapadapter.New(z.WithOptions(zap.IncreaseLevel(cfg.Monitor.LogLevel)))),
+			ConnectionOptions: client.ConnectionOptions{
+				TLS: tlsConfig,
+			},
 		},
-	}
-
-	impl := &impl{z: z, cfg: cfg, done: make(chan struct{})}
-
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute*10)
-	defer cancel()
-
-	if cfg.AlwaysStartDevServer {
-		if err := impl.startDevServer(ctx, cfg, opts); err != nil {
-			return nil, err
-		}
-	} else {
-		// TODO: tls and all this fun.
-		var err error
-
-		if impl.client, err = client.NewLazyClient(opts); err != nil {
-			return nil, fmt.Errorf("new temporal client: %w", err)
-		}
-
-		if cfg.StartDevServerIfNotUp {
-			if err := impl.healthCheck(ctx); err != nil {
-				var unavailable *serviceerror.Unavailable
-				if !errors.As(err, &unavailable) {
-					return nil, fmt.Errorf("temporal client: %w", err)
-				}
-
-				z.Info("Cannot connect to Temporal, starting Temporal dev server")
-
-				if err := impl.startDevServer(ctx, cfg, opts); err != nil {
-					return nil, err
-				}
-			}
-		}
-	}
-
-	return impl, nil
+	}, nil
 }
 
 func (c *impl) startDevServer(ctx context.Context, cfg *Config, opts client.Options) error {
@@ -110,11 +81,13 @@ func (c *impl) startDevServer(ctx context.Context, cfg *Config, opts client.Opti
 	if c.srv, err = testsuite.StartDevServer(ctx, cfg.DevServer); err != nil {
 		return fmt.Errorf("start Temporal dev server: %w", err)
 	}
+
 	c.z.Info("Started Temporal dev server", zap.String("address", c.srv.FrontendHostPort()))
 
 	if c.client != nil {
 		c.client.Close()
 	}
+
 	c.client = c.srv.Client()
 
 	return nil
@@ -197,6 +170,42 @@ func (c *impl) healthCheck(ctx context.Context) error {
 }
 
 func (c *impl) Start(context.Context) error {
+	if c.client != nil {
+		return nil
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute*10)
+	defer cancel()
+
+	if c.cfg.AlwaysStartDevServer {
+		if err := c.startDevServer(ctx, c.cfg, c.opts); err != nil {
+			return err
+		}
+	} else {
+		var err error
+
+		if c.client, err = client.NewLazyClient(c.opts); err != nil {
+			return fmt.Errorf("new temporal client: %w", err)
+		}
+
+		if c.cfg.StartDevServerIfNotUp {
+			if err := c.healthCheck(ctx); err != nil {
+				var unavailable *serviceerror.Unavailable
+				if !errors.As(err, &unavailable) {
+					return fmt.Errorf("temporal client: %w", err)
+				}
+
+				c.z.Info("Cannot connect to Temporal, starting Temporal dev server")
+
+				if err := c.startDevServer(ctx, c.cfg, c.opts); err != nil {
+					return err
+				}
+			}
+		}
+	}
+
+	// Start health check monitor.
+
 	if c.cfg.Monitor.CheckHealthInterval == 0 {
 		c.z.Warn("Periodic Temporal health checks are disabled")
 		return nil
@@ -212,6 +221,7 @@ func (c *impl) Start(context.Context) error {
 			} else if err != nil {
 				// TODO: stats.
 				c.z.Error("Temporal health check error", zap.Error(err))
+				ok = false
 			}
 
 			select {
