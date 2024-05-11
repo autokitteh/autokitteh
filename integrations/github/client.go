@@ -55,6 +55,7 @@ func New(vars sdkservices.Vars) sdkservices.Integration {
 			sdkmodule.WithFuncDoc("https://docs.github.com/en/rest/issues/issues#list-repository-issues"),
 			sdkmodule.WithArgs("owner", "repo", "milestone", "state", "assignee", "creator", "mentioned", "labels", "sort", "direction", "since"), // TODO: Pagination.
 		),
+
 		// Issue comments.
 		sdkmodule.ExportFunction(
 			"create_issue_comment",
@@ -129,7 +130,57 @@ func New(vars sdkservices.Vars) sdkservices.Integration {
 			sdkmodule.WithArgs("owner", "repo", "number", "reviewers=?", "team_reviewers=?"),
 		),
 
-		// Pull-request comments.
+		// Pull-request reviews.
+		sdkmodule.ExportFunction(
+			"create_review",
+			i.createReview,
+			sdkmodule.WithFuncDoc("https://docs.github.com/en/rest/pulls/reviews?#create-a-review-for-a-pull-request"),
+			sdkmodule.WithArgs("owner", "repo", "pull_number", "commit_id?", "body?", "event?"),
+		),
+		sdkmodule.ExportFunction(
+			"delete_pending_review",
+			i.getReview,
+			sdkmodule.WithFuncDoc("https://docs.github.com/en/rest/pulls/reviews#delete-a-pending-review-for-a-pull-request"),
+			sdkmodule.WithArgs("owner", "repo", "pull_number", "review_id"),
+		),
+		sdkmodule.ExportFunction(
+			"dismiss_review",
+			i.updateReview,
+			sdkmodule.WithFuncDoc("https://docs.github.com/en/rest/pulls/reviews#dismiss-a-review-for-a-pull-request"),
+			sdkmodule.WithArgs("owner", "repo", "pull_number", "review_id", "message"),
+		),
+		sdkmodule.ExportFunction(
+			"get_review",
+			i.getReview,
+			sdkmodule.WithFuncDoc("https://docs.github.com/en/rest/pulls/reviews#get-a-review-for-a-pull-request"),
+			sdkmodule.WithArgs("owner", "repo", "pull_number", "review_id"),
+		),
+		sdkmodule.ExportFunction(
+			"list_reviews",
+			i.listReviews,
+			sdkmodule.WithFuncDoc("https://docs.github.com/en/rest/pulls/reviews#list-reviews-for-a-pull-request"),
+			sdkmodule.WithArgs("owner", "repo", "pull_number", "per_page=?", "page=?"),
+		),
+		sdkmodule.ExportFunction(
+			"list_review_comments",
+			i.listReviewComments,
+			sdkmodule.WithFuncDoc("https://docs.github.com/en/rest/pulls/reviews#list-comments-for-a-pull-request-review"),
+			sdkmodule.WithArgs("owner", "repo", "pull_number", "review_id", "per_page=?", "page=?"),
+		),
+		sdkmodule.ExportFunction(
+			"submit_review",
+			i.submitReview,
+			sdkmodule.WithFuncDoc("https://docs.github.com/en/rest/pulls/reviews#submit-a-review-for-a-pull-request"),
+			sdkmodule.WithArgs("owner", "repo", "pull_number", "review_id", "event", "body?"),
+		),
+		sdkmodule.ExportFunction(
+			"update_review",
+			i.updateReview,
+			sdkmodule.WithFuncDoc("https://docs.github.com/en/rest/pulls/reviews#update-a-review-for-a-pull-request"),
+			sdkmodule.WithArgs("owner", "repo", "pull_number", "review_id", "body"),
+		),
+
+		// Pull-request review comments.
 		// sdkmodule.ExportFunction("create_review_comment",
 		//	sdkmodule.WithFuncDoc("https://docs.github.com/en/rest/pulls/comments#create-a-review-comment-for-a-pull-request",
 		//	sdkmodule.WithArgs("owner", "repo", "number"),
