@@ -89,6 +89,12 @@ func New(vars sdkservices.Vars) sdkservices.Integration {
 			sdkmodule.WithArgs("channel", "ts"),
 		),
 		sdkmodule.ExportFunction(
+			"chat_get_permalink",
+			chatAPI.GetPermalink,
+			sdkmodule.WithFuncDoc("https://api.slack.com/methods/chat.getPermalink"),
+			sdkmodule.WithArgs("channel", "message_ts"),
+		),
+		sdkmodule.ExportFunction(
 			"chat_post_ephemeral",
 			chatAPI.PostEphemeral,
 			sdkmodule.WithFuncDoc("https://api.slack.com/methods/chat.postEphemeral"),
