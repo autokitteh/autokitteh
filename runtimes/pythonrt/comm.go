@@ -44,27 +44,22 @@ type RunMessage struct {
 
 func (RunMessage) Type() string { return "run" }
 
-// python -> go
-type LogMessage struct {
-	Level   string `json:"level"`
-	Message string `json:"message"`
-}
-
-func (LogMessage) Type() string { return "log" }
-
 type DoneMessage struct{}
 
 func (DoneMessage) Type() string { return "done" }
 
+type Typed interface {
+	Type() string
+}
+
 type SubMessage interface {
 	CallbackMessage |
 		DoneMessage |
-		LogMessage |
 		ModuleMessage |
 		ResponseMessage |
 		RunMessage
 
-	Type() string
+	Typed
 }
 
 func messageType[T SubMessage]() string {
@@ -112,10 +107,6 @@ func NewComm(conn net.Conn) *Comm {
 
 func (c *Comm) Close() error {
 	return c.conn.Close()
-}
-
-type Typed interface {
-	Type() string
 }
 
 func (c *Comm) Send(msg Typed) error {

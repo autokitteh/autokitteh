@@ -18,29 +18,13 @@ from os import mkdir
 from pathlib import Path
 from socket import AF_UNIX, SOCK_STREAM, socket
 
-# Must come first before any logging.
-logging.basicConfig(
-    format='[PYTHON] %(asctime)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s',
-    datefmt='%Y-%m-%dT%H:%M:%S',
-    level=logging.INFO,
-)
-
-class AKLogHandler(logging.Handler):
-    def __init__(self, comm):
-        level = logging.getLogger().getEffectiveLevel()
-        super().__init__(level)
-        self.comm = comm
-        self.formatter = logging.Formatter()
-
-    def emit(self, record: logging.LogRecord):
-        level = 'ERROR' if record.levelno == logging.CRITICAL else record.levelname
-
-        message = record.getMessage()
-        if record.exc_info:
-            message += '\n' + self.formatter.formatException(record.exc_info)
-
-        self.comm.send_log(level, message)
-
+# Use own own logger, leave root logger to user.
+log = logging.getLogger('AK')
+log.setLevel(logging.INFO)
+formatter = logging.Formatter('[%(name)s] %(asctime)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s')
+hdlr = logging.StreamHandler()
+hdlr.setFormatter(formatter)
+log.addHandler(hdlr)
 
 def name_of(node):
     """Name of call node (e.g. 'requests.get')"""
@@ -76,7 +60,7 @@ class Transformer(ast.NodeTransformer):
         if not name or name in BUILTIN:
             return node
 
-        logging.info('%s:%d: patching %s with action', self.file_name, node.lineno, name)
+        log.info('%s:%d: patching %s with action', self.file_name, node.lineno, name)
         call = ast.Call(
             func=ast.Name(id=ACTION_NAME, ctx=ast.Load()),
             args=[node.func] + node.args,
@@ -125,7 +109,7 @@ def patch_finder(finder, action):
         if spec is None or not isinstance(spec.loader, SourceFileLoader):
             return spec
 
-        logging.info('patching loader for %r', fullname)
+        log.info('patching loader for %r', fullname)
         spec.loader = AKLoader(spec.loader, action)
         return spec
 
@@ -158,7 +142,7 @@ def patch_import_hooks(user_dir, action_fn):
 def load_code(root_path, action_fn, module_name):
     patch_import_hooks(root_path, action_fn)
     sys.path.insert(0, str(root_path))
-    logging.info('importing %r', module_name)
+    log.info('importing %r', module_name)
     mod = __import__(module_name)
     return mod
 
@@ -168,7 +152,7 @@ def run_code(mod, entry_point, data):
     if fn is None:
         raise NameError('%s.%s not found', mod.__name__, entry_point)
 
-    logging.info('calling %s.%s', mod.__name__, entry_point)
+    log.info('calling %s.%s', mod.__name__, entry_point)
     return fn(data)
 
 
@@ -254,16 +238,6 @@ class Comm:
         data = message['payload']['value']
         return pickle.loads(b64decode(data))
 
-    def send_log(self, level, message):
-        message = {
-            'type': MessageType.log,
-            'payload': {
-                'level': level,
-                'message': message,
-            }
-        }
-        self._send(message)
-
 
 class AKCall:
     """Callable wrapping functions with activities."""
@@ -283,12 +257,12 @@ class AKCall:
 
     def __call__(self, func, *args, **kw):
         if self.in_activity or self.ignore(func):
-            logging.info(
+            log.info(
                 'calling %s (args=%r, kw=%r) directly (in_activity=%s)', 
                 func.__name__, args, kw, self.in_activity)
             return func(*args, **kw)
 
-        logging.info('ACTION: calling %s via activity (args=%r, kw=%r)', func.__name__, args, kw)
+        log.info('ACTION: calling %s via activity (args=%r, kw=%r)', func.__name__, args, kw)
         self.in_activity = True
         try:
             self.comm.send_activity(func, args, kw)
@@ -392,16 +366,16 @@ if __name__ == '__main__':
         module_name = args.path[:-3]
 
     py_version = '{}.{}'.format(*sys.version_info[:2])
-    logging.info('python: %r, version: %r', sys.executable, py_version)
-    logging.info('sock: %r, tar: %r, module: %r', args.sock, args.tar, module_name)
+    log.info('python: %r, version: %r', sys.executable, py_version)
+    log.info('sock: %r, tar: %r, module: %r', args.sock, args.tar, module_name)
     code_dir = extract_code(args.tar)
-    logging.info('code dir: %r', code_dir)
+    log.info('code dir: %r', code_dir)
 
     sock = socket(AF_UNIX, SOCK_STREAM)
     sock.connect(args.sock)
-    logging.info('connected to %r', args.sock)
+    log.info('connected to %r', args.sock)
 
-    logging.info('loading %r', module_name)
+    log.info('loading %r', module_name)
     comm = Comm(sock)
 
     ak_call = AKCall(module_name, comm)
@@ -410,21 +384,16 @@ if __name__ == '__main__':
     entries = module_entries(mod)
     comm.send_exported(entries)
 
-    # Must come after sending exported entries.
-    handler = AKLogHandler(comm)
-    logging.getLogger().addHandler(handler)
-
-
     # Initial call.
     message = comm.receive_run()
     func_name = message.get('func_name')
     if func_name is None:
-        logging.error('no function name in %r', message)
+        log.error('no function name in %r', message)
         raise SystemExit(1)
 
     fn = getattr(mod, func_name, None)
     if fn is None:
-        logging.error('%r has no function %r', module_name, func_name)
+        log.error('%r has no function %r', module_name, func_name)
         raise SystemExit(1)
         
     event = message.get('event')
