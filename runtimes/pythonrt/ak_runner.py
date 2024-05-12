@@ -17,6 +17,7 @@ from importlib.machinery import SourceFileLoader
 from os import mkdir
 from pathlib import Path
 from socket import AF_UNIX, SOCK_STREAM, socket
+from types import ModuleType
 
 # Use own own logger, leave root logger to user.
 log = logging.getLogger('AK')
@@ -349,6 +350,18 @@ def module_entries(mod):
     ]
 
 
+activity_attr = '__ak_activity__'
+
+def inject_ak_module():
+    def activity(fn):
+        setattr(fn, activity_attr, True)
+        return fn
+
+    mod = ModuleType('ak')
+    mod.activity = activity
+    sys.modules[mod.__name__] = mod
+
+
 if __name__ == '__main__':
     from argparse import ArgumentParser
     import sys
@@ -374,6 +387,8 @@ if __name__ == '__main__':
     sock = socket(AF_UNIX, SOCK_STREAM)
     sock.connect(args.sock)
     log.info('connected to %r', args.sock)
+
+    inject_ak_module()
 
     log.info('loading %r', module_name)
     comm = Comm(sock)
