@@ -31,7 +31,7 @@ func (v *vars) Set(ctx context.Context, vs ...sdktypes.Var) error {
 		if va.IsSecret() {
 			key := varSecretKey(va)
 			if err := v.secrets.Set(ctx, key, va.Value()); err != nil {
-				//TODO: handle delete secrets that were already created
+				//TODO: ENG-817 - handle dangling secrets in secret store
 				return err
 			}
 
