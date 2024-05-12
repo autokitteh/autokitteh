@@ -159,6 +159,52 @@ func (d *dispatcher) getEventSessionData(ctx context.Context, event sdktypes.Eve
 	return sds, nil
 }
 
+func (d *dispatcher) getSchedulerEventSessionData(ctx context.Context, event sdktypes.Event, triggerID sdktypes.TriggerID) ([]sessionData, error) {
+	z := d.z.With(zap.String("event_id", event.ID().String()))
+
+	if !event.IsValid() {
+		z.Error("could not find event")
+		return nil, sdkerrors.ErrNotFound
+	}
+
+	var sds []sessionData
+
+	trigger, err := d.services.Triggers.Get(ctx, triggerID)
+	if err != nil {
+		return nil, fmt.Errorf("get trigger: %w", err)
+	}
+
+	if trigger.EventType() != "scheduler" { // sanity
+		z.Error("unsupported trigger type, expected [scheduler]: ", zap.String("event_type", trigger.EventType()))
+	}
+
+	envID := trigger.EnvID()
+	if !envID.IsValid() {
+		z.Debug("no valud environment")
+		return nil, nil
+	}
+
+	deployments, err := d.services.Deployments.List(ctx,
+		sdkservices.ListDeploymentsFilter{State: sdktypes.DeploymentStateActive, EnvID: envID})
+	if err != nil {
+		z.Panic("could not fetch active deployments", zap.Error(err))
+	}
+
+	// FIXME: do we need test deployments?
+	if len(deployments) == 0 {
+		z.Debug("no deployments")
+		return nil, nil
+	}
+
+	cl := trigger.CodeLocation()
+	for _, dep := range deployments {
+		sds = append(sds, sessionData{deployment: dep, codeLocation: cl, trigger: trigger})
+		z.Debug("deployment found", zap.String("deployment_id", dep.ID().String()))
+	}
+
+	return sds, nil
+}
+
 func (d *dispatcher) signalWorkflows(ctx context.Context, event sdktypes.Event) error {
 	eid := event.ID()
 
@@ -207,7 +253,23 @@ func (d *dispatcher) signalWorkflows(ctx context.Context, event sdktypes.Event) 
 	return nil
 }
 
-func (d *dispatcher) eventsWorkflow(ctx workflow.Context, input eventsWorkflowInput) (*eventsWorkflowOutput, error) {
+func (d *dispatcher) getSessionData(event sdktypes.Event, input EventsWorkflowInput) (sds []sessionData, err error) {
+	ctx := context.Background()
+	if event.Type() == "scheduler" {
+		err = fmt.Errorf("expected TriggerID isn't provided")
+		if input.TriggerID != nil {
+			return d.getSchedulerEventSessionData(ctx, event, *input.TriggerID)
+		}
+	} else {
+		err = fmt.Errorf("expected DispatchOptions isn't provided")
+		if input.Options != nil {
+			return d.getEventSessionData(ctx, event, input.Options)
+		}
+	}
+	return nil, err
+}
+
+func (d *dispatcher) eventsWorkflow(ctx workflow.Context, input EventsWorkflowInput) (*eventsWorkflowOutput, error) {
 	logger := workflow.GetLogger(ctx)
 	logger.Info("started events workflow", "event_id", input.EventID)
 
@@ -223,12 +285,12 @@ func (d *dispatcher) eventsWorkflow(ctx workflow.Context, input eventsWorkflowIn
 	}
 
 	// Set event to processing
-	if err := d.createEventRecord(context.Background(), input.EventID, sdktypes.EventStateProcessing); err != nil {
+	if err = d.createEventRecord(context.Background(), input.EventID, sdktypes.EventStateProcessing); err != nil {
 		return nil, err
 	}
 
 	// Fetch event related data
-	sds, err := d.getEventSessionData(context.Background(), event, input.Options)
+	sds, err := d.getSessionData(event, input)
 	if err != nil {
 		_ = d.createEventRecord(context.Background(), input.EventID, sdktypes.EventStateFailed)
 		logger.Error("Failed processing event", "EventID", input.EventID, "error", err)
@@ -241,9 +303,10 @@ func (d *dispatcher) eventsWorkflow(ctx workflow.Context, input eventsWorkflowIn
 	}
 
 	// execute waiting signals
-	err = d.signalWorkflows(context.Background(), event)
-	if err != nil {
-		return nil, err
+	if event.ConnectionID().IsValid() {
+		if err = d.signalWorkflows(context.Background(), event); err != nil {
+			return nil, err
+		}
 	}
 	// Set event to Completed
 	if err = d.createEventRecord(context.Background(), input.EventID, sdktypes.EventStateCompleted); err != nil {
