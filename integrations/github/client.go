@@ -185,7 +185,7 @@ func New(vars sdkservices.Vars) sdkservices.Integration {
 			"create_review_comment",
 			i.createReviewComment,
 			sdkmodule.WithFuncDoc("https://docs.github.com/en/rest/pulls/comments#create-a-review-comment-for-a-pull-request"),
-			sdkmodule.WithArgs("owner", "repo", "pull_number", "body", "commit_id", "path", "position?", "side?", "line?", "start_line?", "start_side?", "in_reply_to?", "subject_type?"),
+			sdkmodule.WithArgs("owner", "repo", "pull_number", "body", "commit_id", "path", "side?", "line?", "start_line?", "start_side?", "in_reply_to?", "subject_type?"),
 		),
 		sdkmodule.ExportFunction(
 			"create_review_comment_reply",

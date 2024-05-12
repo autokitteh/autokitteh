@@ -18,8 +18,8 @@ func (i integration) createReviewComment(ctx context.Context, args []sdktypes.Va
 		pullNumber           int
 		body, commitID, path *string
 
-		position, line, startLine, inReplyTo *int
-		side, startSide, subjectType         *string
+		line, startLine, inReplyTo   *int
+		side, startSide, subjectType *string
 	)
 
 	err := sdkmodule.UnpackArgs(args, kwargs,
@@ -30,7 +30,6 @@ func (i integration) createReviewComment(ctx context.Context, args []sdktypes.Va
 		"commit_id", &commitID,
 		"path", &path,
 
-		"position?", &position,
 		"side?", &side,
 		"line?", &line,
 		"start_line?", &startLine,
