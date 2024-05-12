@@ -11,13 +11,12 @@ jobs:
     name: Build + unit tests
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    python-version: "3.12"
     steps:
       - name: Check out code
         uses: actions/checkout@v4
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'  # Should be in sync with runtimes/pythonrt/pythonrt.go:minPyVersion
+          python-version: "3.12" # Should be in sync with runtimes/pythonrt/pythonrt.go:minPyVersion
       - name: Test
         run: cd runtimes/pythonrt && make ci

@@ -3,14 +3,15 @@
 
 from os import getenv
 import json
+import logging
 
 
 def greet(event):
-    print('INFO: simple: HOME:', getenv('HOME'))
-    print('INFO: simple: USER:', getenv('USER'))
-    print(f'INFO: simple: event: {event!r}')
+    logging.info("simple: HOME: %s", getenv('HOME'))  # From environment
+    logging.info("simple: USER: %s", getenv('USER'))  # From "var" in manifest
+    logging.info('simple: event: %r', event)
 
     body = event['data']['body']
-    print(f'BODY: {body!r}')
+    logging.info('BODY: %r', body)
     request = json.loads(body)
-    print(f'REQUEST: {request!r}')
+    logging.info('REQUEST: %r', request)
