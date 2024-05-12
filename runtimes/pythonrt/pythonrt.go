@@ -39,6 +39,7 @@ type pySvc struct {
 	comm      *Comm
 	stdout    *streamLogger
 	stderr    *streamLogger
+	sleepFn   sdktypes.Value
 }
 
 var minPyVersion = Version{
@@ -151,6 +152,50 @@ func entriesToValues(xid sdktypes.ExecutorID, entries []string) (map[string]sdkt
 	return values, nil
 }
 
+func (py *pySvc) loadSleep(ctx context.Context, runID sdktypes.RunID, cbs *sdkservices.RunCallbacks) error {
+	mod, err := cbs.Load(ctx, runID, "ak")
+	if err != nil {
+		return err
+	}
+
+	// FIXME: This fails, ask @itay
+	sleep, ok := mod["sleep"]
+	if !ok {
+		return fmt.Errorf("`sleep` not found in `ak` module")
+	}
+
+	if !sleep.IsFunction() {
+		return fmt.Errorf("`ak.sleep` is not a function but a %T", sleep)
+	}
+
+	py.sleepFn = sleep
+	return nil
+}
+
+func (py *pySvc) handleSleep(ctx context.Context, msg Message) error {
+	sleep, err := extractMessage[SleepMessage](msg)
+	if err != nil {
+		py.log.Error("sleep message", zap.Error(err))
+		return err
+	}
+
+	py.log.Info("sleep", zap.Float64("seconds", sleep.Seconds))
+
+	// Milliseconds sleep granularity should be good enough.
+	d := time.Duration(sleep.Seconds*1000) * time.Millisecond
+	args := []sdktypes.Value{
+		sdktypes.NewDurationValue(d),
+	}
+
+	_, err = py.cbs.Call(ctx, py.xid.ToRunID(), py.sleepFn, args, nil)
+	if err != nil {
+		py.log.Error("call sleep", zap.Error(err))
+		return err
+	}
+
+	return py.comm.Send(sleep)
+}
+
 /*
 Run starts a Python workflow.
 
@@ -167,6 +212,10 @@ func (py *pySvc) Run(
 	cbs *sdkservices.RunCallbacks,
 ) (sdkservices.Run, error) {
 	py.log.Info("run", zap.String("id", runID.String()), zap.String("path", mainPath))
+
+	if err := py.loadSleep(ctx, runID, cbs); err != nil {
+		return nil, err
+	}
 
 	// Load environment defined by user in the `vars` section of the manifest,
 	// these are injected to the Python subprocess environment.
@@ -321,6 +370,13 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, event map[str
 
 		if msg.Type == messageType[DoneMessage]() {
 			break
+		}
+
+		if msg.Type == messageType[SleepMessage]() {
+			if err := py.handleSleep(ctx, msg); err != nil {
+				return sdktypes.InvalidValue, err
+			}
+			continue
 		}
 
 		cbm, err := extractMessage[CallbackMessage](msg)
