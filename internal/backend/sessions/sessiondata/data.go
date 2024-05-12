@@ -97,7 +97,7 @@ func Get(ctx context.Context, z *zap.Logger, svcs *sessionsvcs.Svcs, sessionID s
 
 		// TODO: merge mappings?
 
-		if data.Vars, err = svcs.Vars.Get(ctx, sdktypes.NewVarScopeID(envID)); err != nil {
+		if data.Vars, err = svcs.Vars.Reveal(ctx, sdktypes.NewVarScopeID(envID)); err != nil {
 			return nil, fmt.Errorf("get vars: %w", err)
 		}
 	}

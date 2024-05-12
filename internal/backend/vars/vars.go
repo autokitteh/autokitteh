@@ -8,6 +8,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/secrets"
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -74,18 +75,19 @@ func (v *vars) Reveal(ctx context.Context, sid sdktypes.VarScopeID, names ...sdk
 		return nil, err
 	}
 
-	var resultVars sdktypes.Vars
-	for _, va := range vars {
+	return kittehs.TransformError(vars, func(va sdktypes.Var) (sdktypes.Var, error) {
+		if !va.IsSecret() {
+			return va, nil
+		}
+
 		key := varSecretKey(va)
 		value, err := v.secrets.Get(ctx, key)
 		if err != nil {
-			return nil, err
+			return sdktypes.Var{}, err
 		}
+		return sdktypes.NewVar(va.Name(), value, true), nil
+	})
 
-		resultVars = append(resultVars, sdktypes.NewVar(va.Name(), value, true))
-	}
-
-	return resultVars, nil
 }
 
 func (v *vars) FindConnectionIDs(ctx context.Context, iid sdktypes.IntegrationID, name sdktypes.Symbol, value string) ([]sdktypes.ConnectionID, error) {
