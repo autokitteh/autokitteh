@@ -41,10 +41,6 @@ func init() {
 	setCmd.MarkFlagsMutuallyExclusive("env", "connection")
 	deleteCmd.MarkFlagsMutuallyExclusive("env", "connection")
 
-	// getCmd.MarkFlagsOneRequired("env", "connection")
-	// setCmd.MarkFlagsOneRequired("env", "connection")
-	// deleteCmd.MarkFlagsOneRequired("env", "connection")
-
 	// Flag shared by all subcommands.
 	// We don't define it as a single persistent flag here for aesthetic
 	// conformance with the "env" flag, and "project" in other "envs" sibling commands.
