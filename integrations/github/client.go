@@ -106,10 +106,16 @@ func New(vars sdkservices.Vars) sdkservices.Integration {
 
 		// Pull requests.
 		sdkmodule.ExportFunction(
+			"create_pull_request",
+			i.createPullRequest,
+			sdkmodule.WithFuncDoc("https://docs.github.com/en/rest/pulls/pulls#create-a-pull-request"),
+			sdkmodule.WithArgs("owner", "repo", "head", "base", "title?", "body?", "head_repo?", "draft?", "issue?", "maintainer_can_modify?"),
+		),
+		sdkmodule.ExportFunction(
 			"get_pull_request",
 			i.getPullRequest,
 			sdkmodule.WithFuncDoc("https://docs.github.com/en/rest/pulls/pulls#get-a-pull-request"),
-			sdkmodule.WithArgs("owner", "repo", "number"),
+			sdkmodule.WithArgs("owner", "repo", "pull_number"),
 		),
 		sdkmodule.ExportFunction(
 			"list_pull_requests",
@@ -118,16 +124,10 @@ func New(vars sdkservices.Vars) sdkservices.Integration {
 			sdkmodule.WithArgs("owner", "repo", "state", "head", "base", "sort", "direction"), // TODO: Pagination.
 		),
 		sdkmodule.ExportFunction(
-			"create_pull_request",
-			i.createPullRequest,
-			sdkmodule.WithFuncDoc("https://docs.github.com/en/rest/pulls/pulls#create-a-pull-request"),
-			sdkmodule.WithArgs("owner", "repo", "head", "base", "title?", "body?", "head_repo?", "draft?", "issue?", "maintainer_can_modify?"),
-		),
-		sdkmodule.ExportFunction(
 			"request_review",
 			i.requestReview,
 			sdkmodule.WithFuncDoc("https://docs.github.com/en/rest/pulls/review-requests#request-reviewers-for-a-pull-request"),
-			sdkmodule.WithArgs("owner", "repo", "number", "reviewers=?", "team_reviewers=?"),
+			sdkmodule.WithArgs("owner", "repo", "pull_number", "reviewers=?", "team_reviewers=?"),
 		),
 
 		// Pull-request reviews.
