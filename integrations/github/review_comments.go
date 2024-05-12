@@ -58,7 +58,6 @@ func (i integration) createReviewComment(ctx context.Context, args []sdktypes.Va
 		CommitID: commitID,
 		Path:     path,
 
-		Position:    position,
 		Side:        side,
 		Line:        line,
 		StartLine:   startLine,
