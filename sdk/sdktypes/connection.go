@@ -28,8 +28,6 @@ func (ConnectionTraits) Validate(m *ConnectionPB) error {
 func (ConnectionTraits) StrictValidate(m *ConnectionPB) error {
 	return errors.Join(
 		mandatory("name", m.Name),
-		mandatory("project_id", m.ProjectId),
-		mandatory("integration_id", m.IntegrationId),
 	)
 }
 
