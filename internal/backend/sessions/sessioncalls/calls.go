@@ -72,19 +72,22 @@ func uniqueWorkerCallTaskQueueName() string {
 }
 
 func New(z *zap.Logger, config Config, svcs *sessionsvcs.Svcs) Calls {
-	opts := config.Temporal.Worker
-	opts.DisableRegistrationAliasing = true
-	opts.OnFatalError = func(err error) { z.Error("temporal worker error", zap.Error(err)) }
-	opts.DisableWorkflowWorker = true // these workers serve only activities.
-
-	cs := calls{
+	return &calls{
 		z:                    z,
 		config:               config,
 		svcs:                 svcs,
-		generalWorker:        worker.New(svcs.Temporal, taskQueueName, opts),
-		uniqueWorker:         worker.New(svcs.Temporal, uniqueWorkerCallTaskQueueName(), opts),
 		executorsForSessions: make(map[sdktypes.SessionID]*sdkexecutor.Executors, 16),
 	}
+}
+
+func (cs *calls) StartWorkers(ctx context.Context) error {
+	opts := cs.config.Temporal.Worker
+	opts.DisableRegistrationAliasing = true
+	opts.OnFatalError = func(err error) { cs.z.Error("temporal worker error", zap.Error(err)) }
+	opts.DisableWorkflowWorker = true // these workers serve only activities.
+
+	cs.generalWorker = worker.New(cs.svcs.TemporalClient(), taskQueueName, opts)
+	cs.uniqueWorker = worker.New(cs.svcs.TemporalClient(), uniqueWorkerCallTaskQueueName(), opts)
 
 	cs.generalWorker.RegisterActivityWithOptions(
 		cs.sessionCallActivity,
@@ -102,10 +105,6 @@ func New(z *zap.Logger, config Config, svcs *sessionsvcs.Svcs) Calls {
 		},
 	)
 
-	return &cs
-}
-
-func (cs *calls) StartWorkers(ctx context.Context) error {
 	if err := cs.generalWorker.Start(); err != nil {
 		return err
 	}

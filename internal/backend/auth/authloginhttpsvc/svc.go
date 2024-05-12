@@ -4,6 +4,9 @@ import (
 	_ "embed"
 	"fmt"
 	"net/http"
+	"net/url"
+	"strconv"
+	"strings"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authloginhttpsvc/web"
@@ -30,27 +33,36 @@ type Deps struct {
 
 type svc struct {
 	Deps
+
+	loginMatcher func(string) bool
 }
 
 func Init(deps Deps) error {
 	svc := &svc{
-		Deps: deps,
+		Deps:         deps,
+		loginMatcher: compileLoginMatchers(strings.Split(deps.Cfg.AllowedLogins, ",")),
 	}
 
 	return svc.registerRoutes(deps.Muxes)
 }
 
 func (a *svc) registerRoutes(muxes *muxes.Muxes) error {
+	var loginPaths []string
+
 	if a.Cfg.GoogleOAuth.Enabled {
 		if err := registerGoogleOAuthRoutes(muxes.NoAuth, a.Deps.Cfg.GoogleOAuth, a.newSuccessLoginHandler); err != nil {
 			return err
 		}
+
+		loginPaths = append(loginPaths, googleLoginPath)
 	}
 
 	if a.Cfg.GithubOAuth.Enabled {
 		if err := registerGithubOAuthRoutes(muxes.NoAuth, a.Cfg.GithubOAuth, a.newSuccessLoginHandler); err != nil {
 			return err
 		}
+
+		loginPaths = append(loginPaths, githubLoginPath)
 	}
 
 	if a.Cfg.Descope.Enabled {
@@ -61,6 +73,8 @@ func (a *svc) registerRoutes(muxes *muxes.Muxes) error {
 		if err := registerDescopeRoutes(muxes.NoAuth, a.Cfg.Descope, a.newSuccessLoginHandler); err != nil {
 			return err
 		}
+
+		loginPaths = append(loginPaths, descopeLoginPath)
 	}
 
 	muxes.Auth.HandleFunc("/logout", func(w http.ResponseWriter, r *http.Request) {
@@ -69,9 +83,56 @@ func (a *svc) registerRoutes(muxes *muxes.Muxes) error {
 	})
 
 	muxes.NoAuth.HandleFunc("/login", func(w http.ResponseWriter, r *http.Request) {
+		if len(loginPaths) == 0 {
+			http.Error(w, "login is not supported", http.StatusForbidden)
+			return
+		}
+
+		if len(loginPaths) == 1 {
+			http.Redirect(w, r, loginPaths[0], http.StatusFound)
+			return
+		}
+
 		if err := web.LoginTemplate.Execute(w, a.Cfg); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
+	})
+
+	muxes.NoAuth.HandleFunc("/auth/cli-login", func(w http.ResponseWriter, r *http.Request) {
+		p := r.URL.Query().Get("p")
+		if _, err := strconv.ParseUint(p, 10, 16); err != nil {
+			http.Error(w, "invalid port", http.StatusBadRequest)
+			return
+		}
+
+		url := &url.URL{
+			Path:     "/auth/finish-cli-login",
+			RawQuery: "p=" + p,
+		}
+
+		RedirectToLogin(w, r, url)
+	})
+
+	muxes.Auth.HandleFunc("/auth/finish-cli-login", func(w http.ResponseWriter, r *http.Request) {
+		p := r.URL.Query().Get("p")
+		if _, err := strconv.ParseUint(p, 10, 16); err != nil {
+			http.Error(w, "invalid port", http.StatusBadRequest)
+			return
+		}
+
+		u := authcontext.GetAuthnUser(r.Context())
+		if !u.IsValid() {
+			http.Error(w, "unable to identify user", http.StatusInternalServerError)
+			return
+		}
+
+		token, err := a.Tokens.Create(u)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		http.Redirect(w, r, fmt.Sprintf("http://localhost:%s/?token=%s", p, token), http.StatusFound)
 	})
 
 	muxes.Auth.HandleFunc("/whoami", func(w http.ResponseWriter, r *http.Request) {
@@ -104,6 +165,12 @@ func (a *svc) newSuccessLoginHandler(user sdktypes.User) http.Handler {
 			return
 		}
 
+		if !a.loginMatcher(user.Login()) {
+			a.Z.Warn("user not allowed to login", zap.String("user", user.Login()))
+			http.Error(w, "user not allowed to login", http.StatusForbidden)
+			return
+		}
+
 		sd := authsessions.SessionData{User: user}
 
 		if err := a.Deps.Sessions.Set(w, &sd); err != nil {
@@ -112,12 +179,7 @@ func (a *svc) newSuccessLoginHandler(user sdktypes.User) http.Handler {
 			return
 		}
 
-		redirect := "/"
-		if cookie, _ := req.Cookie(redirectCookieName); cookie != nil {
-			redirect = cookie.Value
-		}
-
-		http.Redirect(w, req, redirect, http.StatusFound)
+		http.Redirect(w, req, getRedirect(req), http.StatusFound)
 	}
 
 	return http.HandlerFunc(fn)

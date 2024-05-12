@@ -197,12 +197,10 @@ func newDBFixture() *dbFixture {
 	return &dbFixture{db: gormDB.db, gormdb: &gormDB, ctx: ctx}
 }
 
-func newDBFixtureFK(withoutForeignKeys bool) *dbFixture {
-	f := newDBFixture()
-	if withoutForeignKeys { // run after setup, since this pragma may be reset by setup
-		foreignKeys(f.gormdb, false)
-	}
-	return f
+func (f *dbFixture) WithForeignKeysDisabled(fn func()) {
+	foreignKeys(f.gormdb, false) // disable
+	fn()
+	foreignKeys(f.gormdb, true) // enable
 }
 
 // enable SQL logging
@@ -211,7 +209,7 @@ func newDBFixtureFK(withoutForeignKeys bool) *dbFixture {
 // 	f.gormdb.db = f.db
 // }
 
-func findAndAssertCount[T any](t *testing.T, f *dbFixture, schemaObj T, expected int, where string, args ...any) []T {
+func findAndAssertCount[T any](t *testing.T, f *dbFixture, expected int, where string, args ...any) []T {
 	var objs []T
 	res := f.gormdb.db.Where(where, args...).Find(&objs)
 	require.NoError(t, res.Error)
@@ -221,7 +219,7 @@ func findAndAssertCount[T any](t *testing.T, f *dbFixture, schemaObj T, expected
 }
 
 func findAndAssertOne[T any](t *testing.T, f *dbFixture, schemaObj T, where string, args ...any) {
-	res := findAndAssertCount(t, f, schemaObj, 1, where, args...)
+	res := findAndAssertCount[T](t, f, 1, where, args...)
 	require.Equal(t, schemaObj, res[0])
 }
 

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/dghubble/sessions"
 
@@ -33,13 +34,14 @@ type Store interface {
 }
 
 func New(cfg *Config) (Store, error) {
-	keyPairs, err := kittehs.TransformError(cfg.CookieKeys, hex.DecodeString)
-	if err != nil {
-		return nil, fmt.Errorf("invalid key pairs: %w", err)
+	rawKeyPairs := kittehs.Transform(strings.Split(cfg.CookieKeys, ","), strings.TrimSpace)
+	if len(rawKeyPairs)&1 != 0 {
+		return nil, errors.New("key pairs must be an even length list of hex encoded keys")
 	}
 
-	if len(keyPairs)&1 != 0 {
-		return nil, errors.New("key pairs must be an even length list of hex encoded keys")
+	keyPairs, err := kittehs.TransformError(rawKeyPairs, hex.DecodeString)
+	if err != nil {
+		return nil, fmt.Errorf("invalid key pairs: %w", err)
 	}
 
 	return &store{

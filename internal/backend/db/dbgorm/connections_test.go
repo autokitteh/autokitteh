@@ -25,7 +25,7 @@ func (f *dbFixture) assertConnectionDeleted(t *testing.T, connections ...scheme.
 
 func preConnectionTest(t *testing.T) *dbFixture {
 	f := newDBFixture()
-	findAndAssertCount(t, f, scheme.Connection{}, 0, "") // no connections
+	findAndAssertCount[scheme.Connection](t, f, 0, "") // no connections
 	return f
 }
 
@@ -47,7 +47,7 @@ func TestCreateConnectionForeignKeys(t *testing.T) {
 
 	// FIXME: ENG-571 - integration table
 	// c.IntegrationID = &unexisting
-	//assert.ErrorIs(t, f.gormdb.createConnection(f.ctx, &c), gorm.ErrForeignKeyViolated)
+	// assert.ErrorIs(t, f.gormdb.createConnection(f.ctx, &c), gorm.ErrForeignKeyViolated)
 	// c.IntegrationID = nil
 
 	c.ProjectID = scheme.UUIDOrNil(sdktypes.NewProjectID().UUIDValue())

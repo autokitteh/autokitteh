@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>autokitteh AWS Integration</title>
+  <link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16x16.png" />
+  <link rel="manifest" href="/static/site.webmanifest" />
+  <link rel="stylesheet" type="text/css" href="styles.css" />
+  <meta name="robots" content="noindex, nofollow" />
+</head>
+
+<body>
+  <a href="/" target="_self">
+    <img class="banner" src="/static/banner.svg" alt="autokitteh" />
+  </a>
+
+  <table class="title">
+    <td><img class="logo" src="/static/images/aws.svg" alt="Logo" /></td>
+    <td>
+      <h1>AWS - Create a New Connection</h1>
+    </td>
+  </table>
+
+
+  <!-- TODO(ENG-799) -->
+  <form id="save-form" method="post" action="/aws/save">
+    <div class="form-group">
+      <label for="region">Region</label>
+      <input type="text" name="region" list="regions" autocomplete="off" spellcheck="false" class="text" required />
+      <datalist id="regions">
+        <option value="ap-northeast-1">
+        <option value="ap-northeast-2">
+        <option value="ap-northeast-3">
+        <option value="ap-south-1">
+        <option value="ap-southeast-1">
+        <option value="ap-southeast-2">
+        <option value="ca-central-1">
+        <option value="eu-central-1">
+        <option value="eu-north-1">
+        <option value="eu-west-1">
+        <option value="eu-west-2">
+        <option value="eu-west-3">
+        <option value="sa-east-1">
+        <option value="us-east-1">
+        <option value="us-east-2">
+        <option value="us-west-1">
+        <option value="us-west-2">
+      </datalist>
+      <label for="access_key">Access Key</label>
+      <input type="text" name="access_key" autocomplete="off" spellcheck="false" class="text" required />
+      <label for="secret_key">Secret Key</label>
+      <input type="text" name="secret_key" autocomplete="off" spellcheck="false" class="text" required />
+      <label for="token">Token</label>
+      <input type="text" name="token" autocomplete="off" spellcheck="false" class="text" required />
+    </div>
+
+    <button type="submit" class="submit-btn">Save Connection</button>
+  </form>
+
+  <!-- TODO(ENG-799) -->
+  <script>
+    const queryString = window.location.search;
+    document
+      .getElementById("save-form")
+      .setAttribute("action", "/aws/save" + queryString);
+  </script>
+</body>
+
+</html>

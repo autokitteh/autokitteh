@@ -255,7 +255,7 @@ func (a api) connectionData(ctx context.Context) (*vars.Vars, error) {
 		return nil, err
 	}
 
-	vs, err := a.Vars.Get(ctx, sdktypes.NewVarScopeID(cid))
+	vs, err := a.Vars.Reveal(ctx, sdktypes.NewVarScopeID(cid))
 	if err != nil {
 		return nil, err
 	}

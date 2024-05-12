@@ -18,7 +18,6 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdkclients/sdkstoreclient"
 	sdktriggerclient "go.autokitteh.dev/autokitteh/sdk/sdkclients/sdktriggersclient"
 	"go.autokitteh.dev/autokitteh/sdk/sdkclients/sdkvarsclient"
-	"go.autokitteh.dev/autokitteh/sdk/sdklogger"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 )
 
@@ -61,21 +60,6 @@ func New(params sdkclient.Params) sdkservices.Services {
 		triggers:     kittehs.Lazy1(sdktriggerclient.New, params),
 		vars:         kittehs.Lazy1(sdkvarsclient.New, params),
 	}
-}
-
-func ClientWithToken(c sdkservices.Services, t string) sdkservices.Services {
-	v, ok := c.(*client)
-	if !ok {
-		sdklogger.Panic("original client is not a valid client")
-	}
-
-	params := v.params
-
-	if t != "" {
-		params.AuthToken = t
-	}
-
-	return New(params)
 }
 
 func (c *client) Auth() sdkservices.Auth                 { return c.auth() }

@@ -22,13 +22,6 @@ func (p env) HideFields() []string  { return nil }
 
 func toEnv(sdkE sdktypes.Env) env { return env{sdkE} }
 
-type envVar struct{ sdktypes.Var }
-
-func (e envVar) FieldsOrder() []string { return []string{"name"} }
-func (e envVar) HideFields() []string  { return nil }
-
-func toEnvVar(sdkEV sdktypes.Var) envVar { return envVar{sdkEV} }
-
 func (s Svc) listEnvs(w http.ResponseWriter, r *http.Request, pid sdktypes.ProjectID) (list, error) {
 	sdkEs, err := s.Svcs.Envs().List(r.Context(), pid)
 	if err != nil {
@@ -66,13 +59,10 @@ func (s Svc) env(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	vs, err := s.Svcs.Vars().Get(r.Context(), sdktypes.NewVarScopeID(eid))
+	evars, err := s.genVarsList(w, r, sdktypes.NewVarScopeID(eid))
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
-	evs := kittehs.Transform(vs, toEnvVar)
 
 	trgs, err := s.listTriggers(w, r, sdkservices.ListTriggersFilter{
 		EnvID: eid,
@@ -98,7 +88,7 @@ func (s Svc) env(w http.ResponseWriter, r *http.Request) {
 		Title:       "Env: " + sdkE.Name().String(),
 		Name:        sdkE.Name().String(),
 		JSON:        marshalObject(sdkE.ToProto()),
-		Vars:        genListData(evs, "env_id"),
+		Vars:        evars,
 		Triggers:    trgs,
 		Deployments: deps,
 	}); err != nil {

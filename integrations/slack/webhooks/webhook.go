@@ -142,7 +142,8 @@ func verifySignature(signingSecret, ts, want string, body []byte) bool {
 }
 
 func (h handler) listConnectionIDs(ctx context.Context, appID, enterpriseID, teamID string) ([]sdktypes.ConnectionID, error) {
-	return h.vars.FindConnectionIDs(ctx, h.integrationID, vars.KeyName, vars.KeyValue(appID, enterpriseID, teamID))
+	key := vars.KeyValue(appID, enterpriseID, teamID)
+	return h.vars.FindConnectionIDs(ctx, h.integrationID, vars.KeyName, key)
 }
 
 func (h handler) dispatchAsyncEventsToConnections(l *zap.Logger, cids []sdktypes.ConnectionID, event *eventsv1.Event) {

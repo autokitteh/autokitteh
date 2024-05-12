@@ -19,7 +19,7 @@ import (
 )
 
 func (db *gormdb) getSession(ctx context.Context, sessionID sdktypes.UUID) (*scheme.Session, error) {
-	return getOne(db.db, ctx, scheme.Session{}, "session_id = ?", sessionID)
+	return getOne[scheme.Session](db.db, ctx, "session_id = ?", sessionID)
 }
 
 func (db *gormdb) GetSession(ctx context.Context, id sdktypes.SessionID) (sdktypes.Session, error) {
@@ -31,7 +31,7 @@ func (db *gormdb) GetSession(ctx context.Context, id sdktypes.SessionID) (sdktyp
 }
 
 func (db *gormdb) deleteSession(ctx context.Context, sessionID sdktypes.UUID) error {
-	return delete(db.db, ctx, scheme.Session{}, "session_id = ?", sessionID)
+	return delete[scheme.Session](db.db, ctx, "session_id = ?", sessionID)
 }
 
 func (db *gormdb) DeleteSession(ctx context.Context, sessionID sdktypes.SessionID) error {

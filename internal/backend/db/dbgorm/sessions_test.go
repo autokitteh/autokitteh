@@ -22,7 +22,7 @@ func (f *dbFixture) createSessionsAndAssert(t *testing.T, sessions ...scheme.Ses
 
 func (f *dbFixture) addSessionLogRecordAndAssert(t *testing.T, logr scheme.SessionLogRecord, expected int) {
 	assert.NoError(t, addSessionLogRecordDB(f.gormdb.db, &logr))
-	findAndAssertCount(t, f, logr, expected, "session_id = ?", logr.SessionID)
+	findAndAssertCount[scheme.SessionLogRecord](t, f, expected, "session_id = ?", logr.SessionID)
 }
 
 func (f *dbFixture) listSessionsAndAssert(t *testing.T, expected int) []scheme.Session {
@@ -48,7 +48,7 @@ func (f *dbFixture) assertSessionsDeleted(t *testing.T, sessions ...scheme.Sessi
 func preSessionTest(t *testing.T) *dbFixture {
 	f := newDBFixture()
 	f.listSessionsAndAssert(t, 0) // no sessions
-	findAndAssertCount(t, f, scheme.SessionLogRecord{}, 0, "")
+	findAndAssertCount[scheme.SessionLogRecord](t, f, 0, "")
 	return f
 }
 
@@ -59,7 +59,7 @@ func TestCreateSession(t *testing.T) {
 	// test createSession without any assets session depends on, since they are soft-foreign keys and could be nil
 	f.createSessionsAndAssert(t, s)
 
-	logs := findAndAssertCount(t, f, scheme.SessionLogRecord{}, 1, "session_id = ?", s.SessionID)
+	logs := findAndAssertCount[scheme.SessionLogRecord](t, f, 1, "session_id = ?", s.SessionID)
 	assert.Equal(t, s.SessionID, logs[0].SessionID) // compare only ids, since actual log isn't empty
 }
 
@@ -96,7 +96,7 @@ func TestCreateSessionForeignKeys(t *testing.T) {
 	f.saveBuildsAndAssert(t, b)
 	f.createEnvsAndAssert(t, env)
 	f.createDeploymentsAndAssert(t, d)
-	f.createEventsAndAssert(t, ev)
+	f.WithForeignKeysDisabled(func() { f.createEventsAndAssert(t, ev) })
 
 	s.BuildID = &b.BuildID
 	s.EnvID = &env.EnvID

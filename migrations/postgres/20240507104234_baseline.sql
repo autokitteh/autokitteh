@@ -104,16 +104,17 @@ CREATE INDEX "idx_deployments_deleted_at" ON "deployments" ("deleted_at");
 CREATE INDEX "idx_deployments_env_id" ON "deployments" ("env_id");
 -- create "events" table
 CREATE TABLE "events" (
-  "event_id" uuid NULL,
-  "integration_id" text NULL,
-  "connection_id" text NULL,
+  "event_id" uuid NOT NULL,
+  "integration_id" uuid NOT NULL,
+  "connection_id" uuid NOT NULL,
   "event_type" text NULL,
   "data" jsonb NULL,
   "memo" jsonb NULL,
   "created_at" timestamptz NULL,
   "seq" bigserial NOT NULL,
   "deleted_at" timestamptz NULL,
-  PRIMARY KEY ("seq")
+  PRIMARY KEY ("seq"),
+  CONSTRAINT "fk_events_connection" FOREIGN KEY ("connection_id") REFERENCES "connections" ("connection_id") ON UPDATE NO ACTION ON DELETE NO ACTION
 );
 -- create index "idx_event_type" to table: "events"
 CREATE INDEX "idx_event_type" ON "events" ("event_type");
@@ -171,7 +172,7 @@ CREATE INDEX "idx_sessions_env_id" ON "sessions" ("env_id");
 CREATE INDEX "idx_sessions_event_id" ON "sessions" ("event_id");
 -- create "session_call_attempts" table
 CREATE TABLE "session_call_attempts" (
-  "session_id" uuid NULL,
+  "session_id" uuid NOT NULL,
   "seq" bigint NULL,
   "attempt" bigint NULL,
   "start" jsonb NULL,
@@ -190,7 +191,7 @@ CREATE TABLE "session_call_specs" (
 );
 -- create "session_log_records" table
 CREATE TABLE "session_log_records" (
-  "session_id" uuid NULL,
+  "session_id" uuid NOT NULL,
   "data" jsonb NULL,
   CONSTRAINT "fk_session_log_records_session" FOREIGN KEY ("session_id") REFERENCES "sessions" ("session_id") ON UPDATE NO ACTION ON DELETE NO ACTION
 );
@@ -199,7 +200,7 @@ CREATE INDEX "idx_session_log_records_session_id" ON "session_log_records" ("ses
 -- create "signals" table
 CREATE TABLE "signals" (
   "signal_id" text NOT NULL,
-  "connection_id" uuid NULL,
+  "connection_id" uuid NOT NULL,
   "created_at" timestamptz NULL,
   "workflow_id" text NULL,
   "filter" text NULL,
@@ -211,9 +212,9 @@ CREATE INDEX "idx_connection_id_event_type" ON "signals" ("connection_id");
 -- create "triggers" table
 CREATE TABLE "triggers" (
   "trigger_id" uuid NOT NULL,
-  "project_id" uuid NULL,
-  "connection_id" uuid NULL,
-  "env_id" uuid NULL,
+  "project_id" uuid NOT NULL,
+  "connection_id" uuid NOT NULL,
+  "env_id" uuid NOT NULL,
   "name" text NULL,
   "event_type" text NULL,
   "filter" text NULL,

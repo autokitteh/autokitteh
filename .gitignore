@@ -76,3 +76,6 @@ Temporary Items
 
 # Go workspace file
 go.work
+
+# Idea workspace folder
+.idea/

@@ -86,9 +86,13 @@ func (h handler) HandleForm(w http.ResponseWriter, r *http.Request) {
 			AppID:        botInfo.Bot.AppID,
 			EnterpriseID: authTest.EnterpriseID,
 			TeamID:       authTest.TeamID,
-			AppToken:     appToken,
 		},
-	).Set(vars.BotTokenName, botToken, true)
+	).
+		Set(vars.AppTokenName, appToken, true).
+		Set(vars.BotTokenName, botToken, true)
+
+	// Open a new Socket Mode connection.
+	h.OpenSocketModeConnection(botInfo.Bot.AppID, botToken, appToken)
 
 	sdkintegrations.FinalizeConnectionInit(w, r, h.integrationID, initData)
 }

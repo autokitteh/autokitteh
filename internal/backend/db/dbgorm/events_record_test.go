@@ -18,13 +18,15 @@ func (f *dbFixture) createEventRecordsAndAssert(t *testing.T, eventRecords ...sc
 
 func TestCreateEventRecordForeignKeys(t *testing.T) {
 	f := newDBFixture()
-	findAndAssertCount(t, f, scheme.EventRecord{}, 0, "") // no events
+	findAndAssertCount[scheme.EventRecord](t, f, 0, "") // no events
 
 	evt := f.newEvent()
 	er := f.newEventRecord()
 	assert.ErrorIs(t, f.gormdb.addEventRecord(f.ctx, &er), gorm.ErrForeignKeyViolated)
 
-	f.createEventsAndAssert(t, evt)
+	// create event. disable FK, since event depends on other tables
+	f.WithForeignKeysDisabled(func() { f.createEventsAndAssert(t, evt) })
+
 	// test createEventRecord
 	f.createEventRecordsAndAssert(t, er)
 }

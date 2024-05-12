@@ -20,7 +20,7 @@ func newClientAuthInterceptor(token string) connect.UnaryInterceptorFunc {
 					return nil, errors.New(msg)
 				}
 
-				req.Header().Set(sdkclient.AuthorizationHeader, token)
+				req.Header().Set(sdkclient.AuthorizationHeader, "Bearer "+token)
 
 				return next(ctx, req)
 			},
