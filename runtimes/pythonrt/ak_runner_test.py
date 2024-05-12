@@ -1,5 +1,6 @@
 import ast
 import json
+import logging
 import pickle
 import sys
 import types
@@ -13,6 +14,9 @@ import pytest
 import ak_runner
 
 test_dir = Path(__file__).absolute().parent
+
+# Globally for all tests
+ak_runner.log = logging.getLogger()
 
 
 def test_load_code():

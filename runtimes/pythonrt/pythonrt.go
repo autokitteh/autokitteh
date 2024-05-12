@@ -15,6 +15,7 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 var (
@@ -60,6 +61,7 @@ func New() (sdkservices.Runtime, error) {
 	if err != nil {
 		return nil, err
 	}
+	log = log.With(zap.String("runtime", "python"))
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
@@ -151,6 +153,32 @@ func entriesToValues(xid sdktypes.ExecutorID, entries []string) (map[string]sdkt
 	return values, nil
 }
 
+func pyLevelToZap(level string) zapcore.Level {
+	switch level {
+	case "DEBUG":
+		return zap.DebugLevel
+	case "INFO":
+		return zap.InfoLevel
+	case "WARNING":
+		return zap.WarnLevel
+	case "ERROR":
+		return zap.ErrorLevel
+	}
+
+	return zap.InfoLevel
+}
+
+func (py *pySvc) handleLog(msg Message) error {
+	log, err := extractMessage[LogMessage](msg)
+	if err != nil {
+		return err
+	}
+
+	level := pyLevelToZap(log.Level)
+	py.log.Log(level, log.Message, zap.String("source", "python"))
+	return nil
+}
+
 /*
 Run starts a Python workflow.
 
@@ -166,7 +194,10 @@ func (py *pySvc) Run(
 	values map[string]sdktypes.Value,
 	cbs *sdkservices.RunCallbacks,
 ) (sdkservices.Run, error) {
-	py.log.Info("run", zap.String("id", runID.String()), zap.String("path", mainPath))
+
+	py.xid = sdktypes.NewExecutorID(runID) // Should be first
+	py.log = py.log.With(zap.String("run_id", runID.String()))
+	py.log.Info("run", zap.String("path", mainPath))
 
 	// Load environment defined by user in the `vars` section of the manifest,
 	// these are injected to the Python subprocess environment.
@@ -222,31 +253,38 @@ func (py *pySvc) Run(
 	comm := NewComm(conn)
 
 	// FIXME (ENG-577) We might get activity calls before module is loaded if there are module level function calls.
+	var mod ModuleMessage
+	for {
+		msg, err := comm.Recv()
+		if err != nil {
+			py.log.Error("initial message from python", zap.Error(err))
+			return nil, err
+		}
 
-	msg, err := comm.Recv()
-	if err != nil {
-		py.log.Error("initial message from python", zap.Error(err))
-		return nil, err
+		if msg.Type == "" {
+			py.log.Error("python can't load module", zap.String("module", mainPath))
+			return nil, fmt.Errorf("python can't load %q", mainPath)
+		}
+
+		if msg.Type == messageType[LogMessage]() {
+			if err := py.handleLog(msg); err != nil {
+				return nil, err
+			}
+			continue
+		}
+
+		mod, err = extractMessage[ModuleMessage](msg)
+		if err != nil {
+			py.log.Error("initial message from python", zap.Error(err))
+			return nil, err
+		}
+
+		py.log.Info("module loaded")
+		break
 	}
-
-	if msg.Type == "" {
-		py.log.Error("python can't load module", zap.String("module", mainPath))
-		return nil, fmt.Errorf("python can't load %q", mainPath)
-	}
-
-	mod, err := extractMessage[ModuleMessage](msg)
-	if err != nil {
-		py.log.Error("initial message from python", zap.Error(err))
-		return nil, err
-	}
-
-	py.log.Info("module loaded")
-
-	xid := sdktypes.NewExecutorID(runID)
-	py.log.Info("executor", zap.String("id", xid.String()))
 
 	py.log.Info("module entries", zap.Any("entries", mod.Entries))
-	exports, err := entriesToValues(xid, mod.Entries)
+	exports, err := entriesToValues(py.xid, mod.Entries)
 	if err != nil {
 		py.log.Error("can't create module entries", zap.Error(err))
 		return nil, fmt.Errorf("can't create module entries: %w", err)
@@ -259,7 +297,6 @@ func (py *pySvc) Run(
 	py.exports = exports
 	py.firstCall = true
 	py.run = ri
-	py.xid = xid
 
 	return py, nil
 }
@@ -321,6 +358,13 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, event map[str
 
 		if msg.Type == messageType[DoneMessage]() {
 			break
+		}
+
+		if msg.Type == messageType[LogMessage]() {
+			if err := py.handleLog(msg); err != nil {
+				return sdktypes.InvalidValue, err
+			}
+			continue
 		}
 
 		cbm, err := extractMessage[CallbackMessage](msg)
