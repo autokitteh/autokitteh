@@ -30,7 +30,10 @@ func TestStartDevServer(t *testing.T) {
 	}
 	err := c.startDevServer(ctx, cfg, opts)
 	require.NoError(t, err)
-	defer c.Stop(ctx)
+	defer func() {
+		err := c.Stop(ctx)
+		require.NoError(t, err)
+	}()
 
 	require.NotNil(t, c.client)
 	require.NotNil(t, c.srv)
