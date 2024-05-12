@@ -68,6 +68,9 @@ type Trigger struct {
 	EventType     string `yaml:"event_type,omitempty" json:"event_type,omitempty"`
 	Filter        string `yaml:"filter,omitempty" json:"filter,omitempty"`
 
+	// for scheduled trigger. Schedule could be passed in `data` section as well
+	Schedule string `yaml:"schedule,omitempty" json:"schedule,omitempty"`
+
 	// Arbitrary data to be passed with the trigger.
 	// The dispatcher can use this data, for example, to extract HTTP path parameters.
 	// For example: `data: { "path": "/a/{b}/{c...}"}`, if the connection is an HTTP connection.

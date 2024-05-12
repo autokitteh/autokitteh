@@ -98,6 +98,9 @@
         "filter": {
           "type": "string"
         },
+        "schedule": {
+          "type": "string"
+        },
         "data": {
           "type": "object"
         },
