@@ -33,9 +33,7 @@ class AKLogHandler(logging.Handler):
         self.formatter = logging.Formatter()
 
     def emit(self, record: logging.LogRecord):
-        level = record.levelname
-        if level == 'CRITICAL':
-            level = 'ERROR'
+        level = 'ERROR' if record.levelno == logging.CRITICAL else record.levelname
 
         message = record.getMessage()
         if record.exc_info:
