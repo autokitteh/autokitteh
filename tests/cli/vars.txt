@@ -65,3 +65,10 @@ $ ${AK} -j var g -e p/e1; echo $?
 {"scope_id":"env_00000000000000000000000003","name":"k2","value":"no-longer-shhh2"}
 {"scope_id":"env_00000000000000000000000003","name":"ks","value":"00000000-0000-0000-0000-000000000003/ks","is_secret":true}
 0
+$ # Set var default env
+$ ${AK} var set kdefault defval -p p; echo $?
+0
+$ # Get var defualt env
+$ ${AK} -j var g -p p; echo $?
+{"scope_id":"env_00000000000000000000000002","name":"kdefault","value":"defval"}
+0
