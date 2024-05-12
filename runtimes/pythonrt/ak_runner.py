@@ -18,12 +18,28 @@ from os import mkdir
 from pathlib import Path
 from socket import AF_UNIX, SOCK_STREAM, socket
 
-# TODO(ENG-552): Log to AutoKitteh
+# Must come first before any logging.
 logging.basicConfig(
     format='[PYTHON] %(asctime)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s',
     datefmt='%Y-%m-%dT%H:%M:%S',
     level=logging.INFO,
 )
+
+class AKLogHandler(logging.Handler):
+    def __init__(self, comm):
+        level = logging.getLogger().getEffectiveLevel()
+        super().__init__(level)
+        self.comm = comm
+        self.formatter = logging.Formatter()
+
+    def emit(self, record: logging.LogRecord):
+        level = 'ERROR' if record.levelno == logging.CRITICAL else record.levelname
+
+        message = record.getMessage()
+        if record.exc_info:
+            message += '\n' + self.formatter.formatException(record.exc_info)
+
+        self.comm.send_log(level, message)
 
 
 def name_of(node):
@@ -159,6 +175,7 @@ def run_code(mod, entry_point, data):
 class MessageType:
     callback = 'callback'
     done = 'done'
+    log = 'log'
     module = 'module'
     response = 'response'
     run = 'run'
@@ -236,6 +253,16 @@ class Comm:
     def extract_response(self, message):
         data = message['payload']['value']
         return pickle.loads(b64decode(data))
+
+    def send_log(self, level, message):
+        message = {
+            'type': MessageType.log,
+            'payload': {
+                'level': level,
+                'message': message,
+            }
+        }
+        self._send(message)
 
 
 class AKCall:
@@ -376,13 +403,19 @@ if __name__ == '__main__':
 
     logging.info('loading %r', module_name)
     comm = Comm(sock)
+
     ak_call = AKCall(module_name, comm)
     mod = load_code(code_dir, ak_call, module_name)
     MODULE_NAME = mod.__name__
     entries = module_entries(mod)
     comm.send_exported(entries)
 
-    # Initial call
+    # Must come after sending exported entries.
+    handler = AKLogHandler(comm)
+    logging.getLogger().addHandler(handler)
+
+
+    # Initial call.
     message = comm.receive_run()
     func_name = message.get('func_name')
     if func_name is None:
