@@ -15,7 +15,6 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
 var (
@@ -272,37 +271,6 @@ func (py *pySvc) Close() {
 	// We kill the Python process once the initial `Call` is completed.
 }
 
-func pyLevelToZap(level string) (zapcore.Level, error) {
-	switch level {
-	case "DEBUG":
-		return zap.DebugLevel, nil
-	case "INFO":
-		return zap.InfoLevel, nil
-	case "WARN":
-		return zap.WarnLevel, nil
-	case "ERROR":
-		return zap.ErrorLevel, nil
-	}
-
-	return 0, fmt.Errorf("unknown log level %q", level)
-}
-
-func (py *pySvc) handleLog(ctx context.Context, msg Message) error {
-	log, err := extractMessage[LogMessage](msg)
-	if err != nil {
-		return err
-	}
-
-	level, err := pyLevelToZap(log.Level)
-	if err != nil {
-		return err
-	}
-
-	py.log.Log(level, log.Message, zap.String("runtime", "python"), zap.String("type", "log"))
-	py.cbs.Print(ctx, py.xid.ToRunID(), log.Message)
-	return nil
-}
-
 // initialCall handles initial call from autokitteh.
 // We split it from Call since Call is also used to execute activities.
 func (py *pySvc) initialCall(ctx context.Context, funcName string, event map[string]any) (sdktypes.Value, error) {
@@ -347,14 +315,6 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, event map[str
 
 		if msg.Type == messageType[DoneMessage]() {
 			break
-		}
-
-		if msg.Type == messageType[LogMessage]() {
-			if err := py.handleLog(ctx, msg); err != nil {
-				py.log.Error("handle log", zap.Error(err))
-				return sdktypes.InvalidValue, fmt.Errorf("bad log message: %w", err)
-			}
-			continue
 		}
 
 		cbm, err := extractMessage[CallbackMessage](msg)
@@ -500,28 +460,18 @@ func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 		return sdktypes.InvalidValue, err
 	}
 
-	for {
-		msg, err := py.comm.Recv()
-		if err != nil {
-			py.log.Error("from python", zap.Error(err))
-			return sdktypes.InvalidValue, err
-		}
-
-		if msg.Type == messageType[LogMessage]() {
-			if err := py.handleLog(ctx, msg); err != nil {
-				py.log.Error("handle log", zap.Error(err))
-				return sdktypes.InvalidValue, err
-			}
-			continue
-		}
-
-		rm, err := extractMessage[ResponseMessage](msg)
-		if err != nil {
-			py.log.Error("from python", zap.Error(err))
-			return sdktypes.InvalidValue, err
-		}
-		py.log.Info("python return", zap.Any("message", rm))
-
-		return sdktypes.NewBytesValue(rm.Value), nil
+	msg, err := py.comm.Recv()
+	if err != nil {
+		py.log.Error("from python", zap.Error(err))
+		return sdktypes.InvalidValue, err
 	}
+
+	rm, err := extractMessage[ResponseMessage](msg)
+	if err != nil {
+		py.log.Error("from python", zap.Error(err))
+		return sdktypes.InvalidValue, err
+	}
+	py.log.Info("python return", zap.Any("message", rm))
+
+	return sdktypes.NewBytesValue(rm.Value), nil
 }
