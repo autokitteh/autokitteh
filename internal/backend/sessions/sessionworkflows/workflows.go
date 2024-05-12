@@ -49,23 +49,23 @@ const (
 func workflowID(sessionID sdktypes.SessionID) string { return sessionID.String() }
 
 func New(z *zap.Logger, cfg Config, sessions sdkservices.Sessions, svcs *sessionsvcs.Svcs, calls sessioncalls.Calls) Workflows {
-	opts := cfg.Temporal.Worker
+	return &workflows{z: z, cfg: cfg, sessions: sessions, calls: calls, svcs: svcs}
+}
+
+func (ws *workflows) StartWorkers(ctx context.Context) error {
+	opts := ws.cfg.Temporal.Worker
 	opts.DisableRegistrationAliasing = true
-	opts.OnFatalError = func(err error) { z.Error("temporal worker error", zap.Error(err)) }
+	opts.OnFatalError = func(err error) { ws.z.Error("temporal worker error", zap.Error(err)) }
 
-	worker := worker.New(svcs.Temporal, taskQueueName, opts)
+	ws.worker = worker.New(ws.svcs.TemporalClient(), taskQueueName, opts)
 
-	ws := workflows{z: z, cfg: cfg, worker: worker, sessions: sessions, calls: calls, svcs: svcs}
-
-	worker.RegisterWorkflowWithOptions(
+	ws.worker.RegisterWorkflowWithOptions(
 		ws.sessionWorkflow,
 		workflow.RegisterOptions{Name: sessionWorkflowName},
 	)
 
-	return &ws
+	return ws.worker.Start()
 }
-
-func (ws *workflows) StartWorkers(ctx context.Context) error { return ws.worker.Start() }
 
 func (ws *workflows) StartWorkflow(ctx context.Context, session sdktypes.Session, debug bool) error {
 	sessionID := session.ID()
@@ -93,7 +93,7 @@ func (ws *workflows) StartWorkflow(ctx context.Context, session sdktypes.Session
 		Memo:                kittehs.TransformMapValues(memo, func(s string) any { return s }),
 	}
 
-	r, err := ws.svcs.Temporal.ExecuteWorkflow(
+	r, err := ws.svcs.TemporalClient().ExecuteWorkflow(
 		ctx,
 		swopts,
 		sessionWorkflowName,
@@ -289,7 +289,7 @@ func (ws *workflows) StopWorkflow(ctx context.Context, sessionID sdktypes.Sessio
 	if force {
 		// TODO(ENG-206): Is there a race condition here with update session?
 
-		if err := ws.svcs.Temporal.TerminateWorkflow(ctx, wid, "", reason); err != nil {
+		if err := ws.svcs.TemporalClient().TerminateWorkflow(ctx, wid, "", reason); err != nil {
 			// TODO: translate error
 			return fmt.Errorf("temporal: %w", err)
 		}
@@ -307,7 +307,7 @@ func (ws *workflows) StopWorkflow(ctx context.Context, sessionID sdktypes.Sessio
 		return err
 	}
 
-	if err := ws.svcs.Temporal.CancelWorkflow(ctx, wid, ""); err != nil {
+	if err := ws.svcs.TemporalClient().CancelWorkflow(ctx, wid, ""); err != nil {
 		// TODO: translate errors.
 		return err
 	}

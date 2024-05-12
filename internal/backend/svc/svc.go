@@ -135,10 +135,23 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 
 				return temporalclient.New(cfg, z)
 			}),
-			fx.Provide(func(c temporalclient.Client) client.Client { return c.Temporal() }),
 			fx.Invoke(func(lc fx.Lifecycle, c temporalclient.Client) {
 				HookOnStart(lc, c.Start)
 				HookOnStop(lc, c.Stop)
+			}),
+			fx.Invoke(func(cfg *temporalclient.Config, tclient temporalclient.Client, muxes *muxes.Muxes) {
+				if !cfg.EnableHelperRedirect {
+					return
+				}
+
+				muxes.NoAuth.HandleFunc("/temporal", func(w http.ResponseWriter, r *http.Request) {
+					_, uiAddr := tclient.TemporalAddr()
+					if uiAddr == "" {
+						return
+					}
+
+					http.Redirect(w, r, uiAddr, http.StatusFound)
+				})
 			}),
 		),
 		Component(
@@ -259,13 +272,18 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 			muxes.NoAuth.Handle("/static/", srv)
 			muxes.NoAuth.Handle("/favicon-32x32.png", srv)
 			muxes.NoAuth.Handle("/favicon-16x16.png", srv)
+			muxes.NoAuth.Handle("/favicon.ico", srv)
 		}),
-		fx.Invoke(func(lc fx.Lifecycle, z *zap.Logger, httpsvc httpsvc.Svc, tclient temporalclient.Client) {
-			HookSimpleOnStart(lc, func() {
-				temporalFrontendAddr, temporalUIAddr := tclient.TemporalAddr()
-				printBanner(opts, httpsvc.Addr(), temporalFrontendAddr, temporalUIAddr)
-			})
-		}),
+		Component(
+			"banner",
+			bannerConfigs,
+			fx.Invoke(func(cfg *bannerConfig, lc fx.Lifecycle, z *zap.Logger, httpsvc httpsvc.Svc, tclient temporalclient.Client) {
+				HookSimpleOnStart(lc, func() {
+					temporalFrontendAddr, temporalUIAddr := tclient.TemporalAddr()
+					printBanner(cfg, opts, httpsvc.Addr(), temporalFrontendAddr, temporalUIAddr)
+				})
+			}),
+		),
 		fx.Invoke(func(muxes *muxes.Muxes) {
 			muxes.NoAuth.HandleFunc("/id", func(w http.ResponseWriter, r *http.Request) {
 				fmt.Fprint(w, fixtures.ProcessID())
@@ -273,16 +291,6 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 			muxes.NoAuth.HandleFunc("/version", func(w http.ResponseWriter, r *http.Request) {
 				w.Header().Set("Content-Type", "application/json")
 				kittehs.Must0(json.NewEncoder(w).Encode(version.Version))
-			})
-		}),
-		fx.Invoke(func(muxes *muxes.Muxes, tclient temporalclient.Client) {
-			_, uiAddr := tclient.TemporalAddr()
-			if uiAddr == "" {
-				return
-			}
-
-			muxes.NoAuth.HandleFunc("/temporal", func(w http.ResponseWriter, r *http.Request) {
-				http.Redirect(w, r, uiAddr, http.StatusFound)
 			})
 		}),
 		fx.Invoke(func(z *zap.Logger, lc fx.Lifecycle, muxes *muxes.Muxes) {
@@ -331,7 +339,7 @@ func NewOpts(cfg *Config, ropts RunOptions) []fx.Option {
 		sdktypes.SetIDGenerator(sdktypes.NewSequentialIDGeneratorForTesting(0))
 	}
 
-	if !ropts.Mode.IsDefault() {
+	if !ropts.Mode.IsDefault() && !ropts.Silent {
 		printModeWarning(ropts.Mode)
 	}
 

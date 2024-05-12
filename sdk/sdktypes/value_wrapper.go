@@ -30,6 +30,12 @@ type ValueWrapper struct {
 	// Error out when trying to unwrap into a struct and the struct has fields that do not exist in the value.
 	UnwrapErrorOnNonexistentStructFields bool
 
+	// Wrap: if true, wrap a reader as a string instead of bytes.
+	WrapReaderAsString bool
+
+	// Ignore readers when wrapping and unwrapping.
+	IgnoreReader bool
+
 	// Unwrap: transform duration into microseconds, do not convert to string.
 	RawDuration bool
 

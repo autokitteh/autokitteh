@@ -190,7 +190,7 @@ func (d *dispatcher) signalWorkflows(ctx context.Context, event sdktypes.Event) 
 	z.Debug("found signal candidates", zap.Int("count", len(signals)))
 	for _, signal := range signals {
 
-		if err := d.temporal.SignalWorkflow(ctx, signal.WorkflowID, "", signal.SignalID, eid); err != nil {
+		if err := d.temporal.Temporal().SignalWorkflow(ctx, signal.WorkflowID, "", signal.SignalID, eid); err != nil {
 			var nferr *serviceerror.NotFound
 			if !errors.As(err, &nferr) {
 				z.Error("could not signal workflow", zap.Error(err))

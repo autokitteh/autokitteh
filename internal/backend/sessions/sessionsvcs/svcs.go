@@ -6,6 +6,7 @@ import (
 	"go.uber.org/fx"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
+	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 )
 
@@ -24,5 +25,7 @@ type Svcs struct {
 	Vars         sdkservices.Vars
 
 	RedisClient *redis.Client
-	Temporal    client.Client
+	Temporal    temporalclient.Client
 }
+
+func (s *Svcs) TemporalClient() client.Client { return s.Temporal.Temporal() }

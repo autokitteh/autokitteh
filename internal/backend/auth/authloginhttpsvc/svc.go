@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authloginhttpsvc/web"
@@ -32,27 +33,36 @@ type Deps struct {
 
 type svc struct {
 	Deps
+
+	loginMatcher func(string) bool
 }
 
 func Init(deps Deps) error {
 	svc := &svc{
-		Deps: deps,
+		Deps:         deps,
+		loginMatcher: compileLoginMatchers(strings.Split(deps.Cfg.AllowedLogins, ",")),
 	}
 
 	return svc.registerRoutes(deps.Muxes)
 }
 
 func (a *svc) registerRoutes(muxes *muxes.Muxes) error {
+	var loginPaths []string
+
 	if a.Cfg.GoogleOAuth.Enabled {
 		if err := registerGoogleOAuthRoutes(muxes.NoAuth, a.Deps.Cfg.GoogleOAuth, a.newSuccessLoginHandler); err != nil {
 			return err
 		}
+
+		loginPaths = append(loginPaths, googleLoginPath)
 	}
 
 	if a.Cfg.GithubOAuth.Enabled {
 		if err := registerGithubOAuthRoutes(muxes.NoAuth, a.Cfg.GithubOAuth, a.newSuccessLoginHandler); err != nil {
 			return err
 		}
+
+		loginPaths = append(loginPaths, githubLoginPath)
 	}
 
 	if a.Cfg.Descope.Enabled {
@@ -63,6 +73,8 @@ func (a *svc) registerRoutes(muxes *muxes.Muxes) error {
 		if err := registerDescopeRoutes(muxes.NoAuth, a.Cfg.Descope, a.newSuccessLoginHandler); err != nil {
 			return err
 		}
+
+		loginPaths = append(loginPaths, descopeLoginPath)
 	}
 
 	muxes.Auth.HandleFunc("/logout", func(w http.ResponseWriter, r *http.Request) {
@@ -71,6 +83,16 @@ func (a *svc) registerRoutes(muxes *muxes.Muxes) error {
 	})
 
 	muxes.NoAuth.HandleFunc("/login", func(w http.ResponseWriter, r *http.Request) {
+		if len(loginPaths) == 0 {
+			http.Error(w, "login is not supported", http.StatusForbidden)
+			return
+		}
+
+		if len(loginPaths) == 1 {
+			http.Redirect(w, r, loginPaths[0], http.StatusFound)
+			return
+		}
+
 		if err := web.LoginTemplate.Execute(w, a.Cfg); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
@@ -140,6 +162,12 @@ func (a *svc) newSuccessLoginHandler(user sdktypes.User) http.Handler {
 		if !user.IsValid() {
 			a.Z.Warn("user not found")
 			http.Error(w, "user not found", http.StatusForbidden)
+			return
+		}
+
+		if !a.loginMatcher(user.Login()) {
+			a.Z.Warn("user not allowed to login", zap.String("user", user.Login()))
+			http.Error(w, "user not allowed to login", http.StatusForbidden)
 			return
 		}
 

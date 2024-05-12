@@ -10,6 +10,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
+	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -32,7 +33,7 @@ type dispatcher struct {
 	z        *zap.Logger
 	db       db.DB
 	services Services
-	temporal client.Client
+	temporal temporalclient.Client
 }
 
 type Dispatcher interface {
@@ -44,7 +45,7 @@ func New(
 	z *zap.Logger,
 	db db.DB,
 	services Services,
-	c client.Client,
+	c temporalclient.Client,
 ) Dispatcher {
 	return &dispatcher{db: db, z: z, services: services, temporal: c}
 }
@@ -89,7 +90,7 @@ func (d *dispatcher) Redispatch(ctx context.Context, eventID sdktypes.EventID, o
 }
 
 func (d *dispatcher) Start(context.Context) error {
-	w := worker.New(d.temporal, taskQueueName, worker.Options{})
+	w := worker.New(d.temporal.Temporal(), taskQueueName, worker.Options{})
 	w.RegisterWorkflow(d.eventsWorkflow)
 
 	if err := w.Start(); err != nil {
@@ -107,7 +108,7 @@ func (d *dispatcher) startWorkflow(ctx context.Context, eventID sdktypes.EventID
 		EventID: eventID,
 		Options: opts,
 	}
-	_, err := d.temporal.ExecuteWorkflow(ctx, options, d.eventsWorkflow, input)
+	_, err := d.temporal.Temporal().ExecuteWorkflow(ctx, options, d.eventsWorkflow, input)
 	if err != nil {
 		d.z.Error("Failed starting workflow", zap.String("eventID", eventID.String()), zap.Error(err))
 		return fmt.Errorf("failed starting workflow: %w", err)

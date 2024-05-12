@@ -1,0 +1,44 @@
+name: manual_docker_image
+
+run-name: Publish image autokitteh:${{inputs.version}} to ECR
+
+env:
+  WORKING_DIRECTORY: .
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        type: string
+        required: true
+        description: version to push
+
+jobs:
+  publish_docker_image:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_GITHUB_ROLE }}
+          role-session-name: Github_Action_Release_Autokitteh
+          aws-region: us-east-1
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+      - name: Build And Push
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          platforms: linux/amd64
+          tags: ${{ steps.login-ecr.outputs.registry }}/autokitteh:${{inputs.version}}
+          push: true
+          provenance: false

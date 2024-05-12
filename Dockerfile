@@ -21,7 +21,12 @@ RUN --mount=type=cache,target=/go/pkg/mod/ \
 # source code into the container.
 RUN --mount=type=cache,target=/go/pkg/mod/ \
     --mount=type=bind,target=. \
-    CGO_ENABLED=0 go build -o /bin/ak ./cmd/ak
+<<EOF
+    export VERSION_PKG_PATH="go.autokitteh.dev/autokitteh/internal/version"
+    export TIMESTAMP="$(date -u "+%Y-%m-%dT%H:%MZ")"
+    export LDFLAGS="-X "${VERSION_PKG_PATH}.Version=$(cat .version || echo)" -X "${VERSION_PKG_PATH}.Time=${TIMESTAMP}" -X "${VERSION_PKG_PATH}.Commit=$(cat .commit || echo)""
+    CGO_ENABLED=0 go build -o /bin/ak -ldflags="${LDFLAGS}" ./cmd/ak
+EOF
 
 ################################################################################
 # Create a new stage for running the application that contains the minimal
