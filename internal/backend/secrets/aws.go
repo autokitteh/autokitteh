@@ -32,8 +32,9 @@ func newAWSSecrets(l *zap.Logger, _ *Config) (Secrets, error) {
 // https://docs.aws.amazon.com/secretsmanager/latest/apireference/API_CreateSecret.html
 func (s *awsSecrets) Set(ctx context.Context, key string, data string) error {
 	_, err := s.client.CreateSecret(ctx, &secretsmanager.CreateSecretInput{
-		Name:         aws.String(key),
-		SecretString: aws.String(data),
+		Name:                        aws.String(key),
+		SecretString:                aws.String(data),
+		ForceOverwriteReplicaSecret: true,
 	})
 	if err != nil {
 		return err
