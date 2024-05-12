@@ -25,7 +25,7 @@ func (f *dbFixture) assertEnvDeleted(t *testing.T, envs ...scheme.Env) {
 
 func preEnvTest(t *testing.T) *dbFixture {
 	f := newDBFixture()
-	findAndAssertCount(t, f, scheme.Env{}, 0, "") // no envs
+	findAndAssertCount[scheme.Env](t, f, 0, "") // no envs
 	return f
 }
 

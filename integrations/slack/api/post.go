@@ -13,13 +13,12 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
 
+	"go.autokitteh.dev/autokitteh/integrations/internal/extrazap"
+	"go.autokitteh.dev/autokitteh/integrations/slack/internal/vars"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-
-	"go.autokitteh.dev/autokitteh/integrations/internal/extrazap"
-	"go.autokitteh.dev/autokitteh/integrations/slack/internal/vars"
 )
 
 const (
@@ -222,7 +221,7 @@ func getConnection(ctx context.Context, varsSvc sdkservices.Vars) (*oauth2.Token
 		return nil, err
 	}
 
-	vs, err := varsSvc.Get(context.Background(), sdktypes.NewVarScopeID(cid))
+	vs, err := varsSvc.Reveal(context.Background(), sdktypes.NewVarScopeID(cid))
 	if err != nil {
 		return nil, err
 	}

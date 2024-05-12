@@ -23,7 +23,7 @@ func assertBuildDeleted(t *testing.T, f *dbFixture, buildID sdktypes.UUID) {
 
 func preBuildTest(t *testing.T) *dbFixture {
 	f := newDBFixture()
-	findAndAssertCount(t, f, scheme.Build{}, 0, "")
+	findAndAssertCount[scheme.Build](t, f, 0, "")
 	return f
 }
 

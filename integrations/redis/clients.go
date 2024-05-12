@@ -28,6 +28,8 @@ var (
 	}
 
 	clients *expirable.LRU[string, *redis.Client]
+
+	urlVarName = sdktypes.NewSymbol("URL")
 )
 
 func loadConfig() *Config {
@@ -70,23 +72,23 @@ func (m *module) externalClient(ctx context.Context) (*redis.Client, error) {
 		return nil, err
 	}
 
-	vars, err := m.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
+	vars, err := m.vars.Reveal(ctx, sdktypes.NewVarScopeID(cid), urlVarName)
 	if err != nil {
 		return nil, err
 	}
 
-	dsnVar := vars.Get(sdktypes.NewSymbol("URL"))
-	if !dsnVar.IsValid() {
-		return nil, fmt.Errorf("missing URL")
+	urlVar := vars.Get(urlVarName)
+	if !urlVar.IsValid() {
+		return nil, fmt.Errorf("missing URL var")
 	}
 
-	dsn := dsnVar.Value()
+	url := urlVar.Value()
 
-	if c, ok := clients.Get(dsn); ok {
+	if c, ok := clients.Get(url); ok {
 		return c, nil
 	}
 
-	opts, err := redis.ParseURL(dsn)
+	opts, err := redis.ParseURL(url)
 	if err != nil {
 		return nil, fmt.Errorf("invalid redis url: %w", err)
 	}
@@ -95,7 +97,7 @@ func (m *module) externalClient(ctx context.Context) (*redis.Client, error) {
 	// this can happen more than once, but that shouldn't be a problem.
 	c := redis.NewClient(opts)
 
-	_ = clients.Add(dsn, c)
+	_ = clients.Add(url, c)
 
 	return c, nil
 }

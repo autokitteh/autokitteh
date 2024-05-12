@@ -189,6 +189,7 @@ require (
 	github.com/ncruces/go-strftime v0.1.9 // indirect
 	github.com/paulmach/orb v0.11.1 // indirect
 	github.com/pborman/uuid v1.2.1 // indirect
+	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect

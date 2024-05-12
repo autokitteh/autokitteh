@@ -29,6 +29,7 @@ func Init(svc Svc) {
 	svc.initEvents()
 	svc.initSessions()
 	svc.initAuth()
+	svc.initToken()
 }
 
 func (s *Svc) initIndex() {
