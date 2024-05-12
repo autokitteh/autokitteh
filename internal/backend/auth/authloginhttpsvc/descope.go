@@ -3,15 +3,15 @@ package authloginhttpsvc
 import (
 	_ "embed"
 	"errors"
-	"maps"
 	"net/http"
 
 	"github.com/descope/go-sdk/descope/client"
-	j "github.com/golang-jwt/jwt/v5"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authloginhttpsvc/web"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
+
+const descopeLoginPath = "/auth/descope/login"
 
 func registerDescopeRoutes(mux *http.ServeMux, cfg descopeConfig, onSuccess func(sdktypes.User) http.Handler) error {
 	if cfg.ProjectID == "" {
@@ -23,14 +23,20 @@ func registerDescopeRoutes(mux *http.ServeMux, cfg descopeConfig, onSuccess func
 		return err
 	}
 
-	mux.Handle("/auth/descope/login", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if err := web.DescopeLoginTemplate.Execute(w, struct{ ProjectID string }{ProjectID: cfg.ProjectID}); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
-	}))
+	mux.Handle(descopeLoginPath, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		jwt := r.URL.Query().Get("jwt")
 
-	mux.Handle("/auth/descope/loggedin", extractRedirectFromCookie(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		authorized, tok, err := client.Auth.ValidateAndRefreshSessionWithRequest(r, w)
+		if jwt == "" {
+			if err := web.DescopeLoginTemplate.Execute(w, struct{ ProjectID string }{ProjectID: cfg.ProjectID}); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+			}
+
+			return
+		}
+
+		// post-login
+
+		authorized, tok, err := client.Auth.ValidateSessionWithToken(r.Context(), jwt)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -41,31 +47,21 @@ func registerDescopeRoutes(mux *http.ServeMux, cfg descopeConfig, onSuccess func
 			return
 		}
 
-		var claims j.RegisteredClaims
-		if _, _, err = j.NewParser().ParseUnverified(tok.JWT, &claims); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+		name, _ := tok.CustomClaim("name").(string)
+		email, _ := tok.CustomClaim("email").(string)
+
+		if email == "" {
+			http.Error(w, "email is required in jwt claims", http.StatusBadRequest)
 			return
 		}
 
 		details := map[string]string{
-			"id": claims.Subject,
-		}
-
-		if cfg.ManagementKey != "" {
-			u, err := client.Management.User().LoadByUserID(r.Context(), claims.Subject)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-
-			maps.Copy(details, map[string]string{
-				"email": u.Email,
-				"name":  u.Name,
-			})
+			"name":  name,
+			"email": email,
 		}
 
 		onSuccess(sdktypes.NewUser("descope", details)).ServeHTTP(w, r)
-	})))
+	}))
 
 	return nil
 }

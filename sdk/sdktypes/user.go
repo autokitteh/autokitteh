@@ -1,6 +1,8 @@
 package sdktypes
 
 import (
+	"fmt"
+
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 
 	userv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/users/v1"
@@ -29,10 +31,23 @@ func NewUser(provider string, data map[string]string) User {
 	}))
 }
 
+func (u User) Login() string {
+	if id := u.Data()["email"]; id != "" {
+		return id
+	}
+
+	if id := u.Data()["id"]; id != "" {
+		return fmt.Sprintf("%s:%s", u.Provider(), id)
+	}
+
+	return ""
+}
+
 // Used for display only.
 func (u User) Title() (id string) {
-	if id = u.Data()["email"]; id == "" {
+	if id = u.Login(); id == "" {
 		id = "<unknown>"
 	}
+
 	return
 }

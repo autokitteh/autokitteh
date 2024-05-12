@@ -12,6 +12,8 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
+const githubLoginPath = "/auth/github/login"
+
 func registerGithubOAuthRoutes(mux *http.ServeMux, cfg oauth2Config, onSuccess func(sdktypes.User) http.Handler) error {
 	if cfg.ClientID == "" {
 		return errors.New("github login is enabled, but missing GITHUB_CLIENT_ID")
@@ -32,7 +34,7 @@ func registerGithubOAuthRoutes(mux *http.ServeMux, cfg oauth2Config, onSuccess f
 		Endpoint:     githubOAuth2.Endpoint,
 	}
 
-	mux.Handle("/auth/github/login", setRedirectCookie(github.StateHandler(cfg.cookieConfig(), github.LoginHandler(&oauth2Config, nil))))
+	mux.Handle(githubLoginPath, github.StateHandler(cfg.cookieConfig(), github.LoginHandler(&oauth2Config, nil)))
 
 	githubOnSuccess := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gu, err := github.UserFromContext(r.Context())
@@ -57,7 +59,7 @@ func registerGithubOAuthRoutes(mux *http.ServeMux, cfg oauth2Config, onSuccess f
 		))
 	})
 
-	mux.Handle("/auth/github/callback", extractRedirectFromCookie(github.StateHandler(cfg.cookieConfig(), github.CallbackHandler(&oauth2Config, githubOnSuccess, nil))))
+	mux.Handle("/auth/github/callback", github.StateHandler(cfg.cookieConfig(), github.CallbackHandler(&oauth2Config, githubOnSuccess, nil)))
 
 	return nil
 }

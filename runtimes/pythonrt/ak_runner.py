@@ -17,14 +17,29 @@ from importlib.machinery import SourceFileLoader
 from os import mkdir
 from pathlib import Path
 from socket import AF_UNIX, SOCK_STREAM, socket
-from traceback import format_tb
 
-# TODO(ENG-552): Log to AutoKitteh
+# Must come first before any logging.
 logging.basicConfig(
     format='[PYTHON] %(asctime)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s',
     datefmt='%Y-%m-%dT%H:%M:%S',
     level=logging.INFO,
 )
+
+class AKLogHandler(logging.Handler):
+    def __init__(self, comm):
+        level = logging.getLogger().getEffectiveLevel()
+        super().__init__(level)
+        self.comm = comm
+        self.formatter = logging.Formatter()
+
+    def emit(self, record: logging.LogRecord):
+        level = 'ERROR' if record.levelno == logging.CRITICAL else record.levelname
+
+        message = record.getMessage()
+        if record.exc_info:
+            message += '\n' + self.formatter.formatException(record.exc_info)
+
+        self.comm.send_log(level, message)
 
 
 def name_of(node):
@@ -160,7 +175,7 @@ def run_code(mod, entry_point, data):
 class MessageType:
     callback = 'callback'
     done = 'done'
-    error = 'error'
+    log = 'log'
     module = 'module'
     response = 'response'
     run = 'run'
@@ -239,12 +254,12 @@ class Comm:
         data = message['payload']['value']
         return pickle.loads(b64decode(data))
     
-    def send_error(self, error, traceback):
+    def send_log(self, level, message):
         message = {
-            'type': MessageType.error,
+            'type': MessageType.log,
             'payload': {
-               'error': message,
-               'traceback': traceback,
+                'level': level,
+                'message': message,
             }
         }
         self._send(message)
@@ -390,6 +405,11 @@ if __name__ == '__main__':
 
         logging.info('loading %r', module_name)
         comm = Comm(sock)
+
+        # Must come after sending exported entries.
+        handler = AKLogHandler(comm)
+        logging.getLogger().addHandler(handler)
+
         ak_call = AKCall(module_name, comm)
         mod = load_code(code_dir, ak_call, module_name)
         MODULE_NAME = mod.__name__

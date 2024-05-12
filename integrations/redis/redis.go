@@ -2,7 +2,6 @@ package redis
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -27,11 +26,7 @@ type module struct {
 }
 
 func (m *module) client(ctx context.Context) (*redis.Client, func(string) string, error) {
-	if m != nil {
-		if m.internalClient == nil {
-			return nil, nil, errors.New("store not configured")
-		}
-
+	if m.internalClient != nil {
 		return m.internalClient, m.keyfn, nil
 	}
 
@@ -56,10 +51,6 @@ var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.Integrati
 }))
 
 func New(vars sdkservices.Vars) sdkservices.Integration {
-	return sdkintegrations.NewIntegration(desc, newExternalModule(vars))
-}
-
-func newExternalModule(vars sdkservices.Vars) sdkmodule.Module {
 	m := &module{vars: vars}
 
 	opts := makeOpts(m)
@@ -68,15 +59,11 @@ func newExternalModule(vars sdkservices.Vars) sdkmodule.Module {
 	// for command keys.
 	opts = append(opts, sdkmodule.ExportFunction("do", m.do, sdkmodule.WithFuncDoc("run an arbitrary command")))
 
-	return sdkmodule.New(opts...)
+	return sdkintegrations.NewIntegration(desc, sdkmodule.New(opts...))
 }
 
 func NewInternalModule(name string, xid sdktypes.ExecutorID, client *redis.Client, keyfn func(string) string) sdkmodule.Module {
-	opts := makeOpts(&module{
-		internalClient: client,
-		keyfn:          keyfn,
-	})
-
+	opts := makeOpts(&module{internalClient: client, keyfn: keyfn})
 	return sdkmodule.New(opts...)
 }
 

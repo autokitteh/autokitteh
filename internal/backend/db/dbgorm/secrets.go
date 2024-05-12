@@ -1,0 +1,26 @@
+package dbgorm
+
+import (
+	"context"
+
+	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
+)
+
+func (db *gormdb) SetSecret(ctx context.Context, key string, value string) error {
+	secret := scheme.Secret{Key: key, Value: value}
+	return translateError(db.db.WithContext(ctx).Create(secret).Error)
+}
+
+func (db *gormdb) GetSecret(ctx context.Context, key string) (string, error) {
+	var secret scheme.Secret
+	if err := db.db.WithContext(ctx).Where("key = ?", key).Find(&secret).Error; err != nil {
+		return "", translateError(err)
+	}
+
+	return secret.Value, nil
+
+}
+
+func (db *gormdb) DeleteSecret(ctx context.Context, key string) error {
+	return delete[scheme.Secret](db.db, ctx, "key = ?", key)
+}

@@ -12,6 +12,8 @@ import (
 	googleOAuth2 "golang.org/x/oauth2/google"
 )
 
+const googleLoginPath = "/auth/google/login"
+
 func registerGoogleOAuthRoutes(mux *http.ServeMux, cfg oauth2Config, onSuccess func(sdktypes.User) http.Handler) error {
 	if cfg.ClientID == "" {
 		return errors.New("google login is enabled, but missing GOOGLE_CLIENT_ID")
@@ -33,7 +35,7 @@ func registerGoogleOAuthRoutes(mux *http.ServeMux, cfg oauth2Config, onSuccess f
 		Scopes:       []string{"profile", "email"},
 	}
 
-	mux.Handle("/auth/google/login", setRedirectCookie(google.StateHandler(cfg.cookieConfig(), google.LoginHandler(&oauth2Config, nil))))
+	mux.Handle(googleLoginPath, google.StateHandler(cfg.cookieConfig(), google.LoginHandler(&oauth2Config, nil)))
 
 	googleOnSuccess := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gu, err := google.UserFromContext(r.Context())
@@ -52,6 +54,6 @@ func registerGoogleOAuthRoutes(mux *http.ServeMux, cfg oauth2Config, onSuccess f
 		))
 	})
 
-	mux.Handle("/auth/google/callback", extractRedirectFromCookie(google.StateHandler(cfg.cookieConfig(), google.CallbackHandler(&oauth2Config, googleOnSuccess, nil))))
+	mux.Handle("/auth/google/callback", google.StateHandler(cfg.cookieConfig(), google.CallbackHandler(&oauth2Config, googleOnSuccess, nil)))
 	return nil
 }

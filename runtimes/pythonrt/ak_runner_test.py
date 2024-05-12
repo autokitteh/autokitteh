@@ -1,5 +1,6 @@
 import ast
 import json
+import logging
 import pickle
 import re
 import sys
@@ -284,3 +285,28 @@ def test_error(tmp_path):
     stderr = stderr.decode('utf-8')
     assert re.search(r'ERROR.*NotImplementedError', stderr)
     assert 'Traceback (most recent call last)' in stderr
+
+
+def test_AKLogHandler():
+    go, py = socketpair()
+    comm = ak_runner.Comm(py)
+    handler = ak_runner.AKLogHandler(comm)
+    record = logging.LogRecord(
+        name='log',
+        level=logging.CRITICAL,
+        pathname='mod.py',
+        lineno=12,
+        msg='something bad happened',
+        args=(),
+        exc_info=None,
+    )
+    handler.emit(record)
+    message = json.loads(go.recv(2048))
+    expected = {
+        'type': ak_runner.MessageType.log,
+        'payload': {
+            'level': 'ERROR',
+            'message': record.msg,
+        },
+    }
+    assert message == expected

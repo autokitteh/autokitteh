@@ -17,7 +17,7 @@ import (
 const (
 	// formPath is the URL path for our handler to save a new
 	// autokitteh connection, based on a user-submitted form.
-	formPath = "/slack/save_tokens"
+	formPath = "/slack/save"
 )
 
 func Start(l *zap.Logger, mux *http.ServeMux, vs sdkservices.Vars, d sdkservices.Dispatcher) {
@@ -34,14 +34,14 @@ func Start(l *zap.Logger, mux *http.ServeMux, vs sdkservices.Vars, d sdkservices
 	mux.HandleFunc(webhooks.InteractionPath, whh.HandleInteraction)
 
 	// Initialize WebSocket pool.
-	cids, err := vs.FindConnectionIDs(context.Background(), integrationID, vars.WebSocketName, "")
+	cids, err := vs.FindConnectionIDs(context.Background(), integrationID, vars.AppTokenName, "")
 	if err != nil {
-		l.Error("Failed to list WebSocket cids", zap.Error(err))
+		l.Error("Failed to list WebSocket-based connection IDs", zap.Error(err))
 		return
 	}
 
 	for _, cid := range cids {
-		data, err := vs.Get(context.Background(), sdktypes.NewVarScopeID(cid))
+		data, err := vs.Reveal(context.Background(), sdktypes.NewVarScopeID(cid))
 		if err != nil {
 			l.Error("Missing data for Slack Socket Mode app", zap.Error(err))
 			continue
@@ -49,7 +49,9 @@ func Start(l *zap.Logger, mux *http.ServeMux, vs sdkservices.Vars, d sdkservices
 
 		var vs vars.Vars
 		data.Decode(&vs)
+		appToken := data.GetValue(vars.AppTokenName)
+		botToken := data.GetValue(vars.BotTokenName)
 
-		wsh.OpenSocketModeConnection(vs.AppID, data.GetValue(vars.BotTokenName), vs.AppToken)
+		wsh.OpenSocketModeConnection(vs.AppID, botToken, appToken)
 	}
 }

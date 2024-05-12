@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"go.temporal.io/sdk/client"
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
@@ -22,10 +21,9 @@ type Sessions interface {
 	StartWorkers(context.Context) error
 }
 type sessions struct {
-	config   *Config
-	temporal client.Client
-	z        *zap.Logger
-	svcs     *sessionsvcs.Svcs
+	config *Config
+	z      *zap.Logger
+	svcs   *sessionsvcs.Svcs
 
 	workflows sessionworkflows.Workflows
 	calls     sessioncalls.Calls
@@ -33,21 +31,18 @@ type sessions struct {
 
 var _ Sessions = (*sessions)(nil)
 
-func New(z *zap.Logger, config *Config, temporal client.Client, db db.DB, svcs sessionsvcs.Svcs) Sessions {
-	sessions := &sessions{
-		config:   config,
-		temporal: temporal,
-		svcs:     &svcs,
-		z:        z,
+func New(z *zap.Logger, config *Config, db db.DB, svcs sessionsvcs.Svcs) Sessions {
+	return &sessions{
+		config: config,
+		svcs:   &svcs,
+		z:      z,
 	}
-
-	sessions.calls = sessioncalls.New(z.Named("sessionworkflows"), config.Calls, &svcs)
-	sessions.workflows = sessionworkflows.New(z.Named("sessionworkflows"), config.Workflows, sessions, &svcs, sessions.calls)
-
-	return sessions
 }
 
 func (s *sessions) StartWorkers(ctx context.Context) error {
+	s.calls = sessioncalls.New(s.z.Named("sessionworkflows"), s.config.Calls, s.svcs)
+	s.workflows = sessionworkflows.New(s.z.Named("sessionworkflows"), s.config.Workflows, s, s.svcs, s.calls)
+
 	if err := s.workflows.StartWorkers(ctx); err != nil {
 		return fmt.Errorf("workflow workflows: %w", err)
 	}

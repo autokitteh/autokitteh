@@ -23,7 +23,7 @@ func init() {
 
 	processID = fmt.Sprintf(
 		"%s_%d_%s_%d_%s",
-		hostname,
+		strings.ReplaceAll(hostname, ".", "_"),
 		os.Getpid(),
 		version.Commit,
 		time.Now().Unix(),

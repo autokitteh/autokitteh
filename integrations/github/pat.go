@@ -18,7 +18,7 @@ import (
 const (
 	// patPath is the URL path for our webhook to save a new autokitteh
 	// PAT-based connection, after the user submits it via a web form.
-	patPath = "/github/save_pat"
+	patPath = "/github/save"
 
 	HeaderContentType = "Content-Type"
 	ContentTypeForm   = "application/x-www-form-urlencoded"

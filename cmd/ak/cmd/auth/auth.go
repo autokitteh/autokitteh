@@ -22,6 +22,8 @@ func init() {
 	// Subcommands.
 	authCmd.AddCommand(whoamiCmd)
 	authCmd.AddCommand(createTokenCmd)
+	authCmd.AddCommand(loginCmd)
+	authCmd.AddCommand(setTokenCmd)
 }
 
 func auth() sdkservices.Auth { return common.Client().Auth() }

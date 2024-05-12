@@ -1,0 +1,17 @@
+version: v1
+
+project:
+  name: redis
+  connections:
+    - name: myhttp
+      integration: "http"
+    - name: myredis
+      integration: "redis"
+      vars:
+        - name: URL
+          value: "redis://localhost:6379"
+  triggers:
+    - name: http_get
+      event_type: get
+      connection: myhttp
+      entrypoint: main.star:on_http_get

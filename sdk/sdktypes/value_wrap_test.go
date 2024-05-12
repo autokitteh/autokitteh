@@ -1,7 +1,9 @@
 package sdktypes_test
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"maps"
 	"testing"
 	"time"
@@ -141,6 +143,29 @@ func TestValueWrapper(t *testing.T) {
 				assert.Equal(t, test.unw, unw)
 			}
 		})
+	}
+}
+
+func TestWrapReader(t *testing.T) {
+	buf := bytes.NewBuffer([]byte("meow"))
+	v, err := w.Wrap(buf)
+	if assert.NoError(t, err) {
+		assert.Equal(t, []byte("meow"), v.GetBytes().Value())
+	}
+
+	ww := w
+	ww.WrapReaderAsString = true
+	buf = bytes.NewBuffer([]byte("meow"))
+	v, err = ww.Wrap(buf)
+	if assert.NoError(t, err) {
+		assert.Equal(t, "meow", v.GetString().Value())
+	}
+
+	ww.IgnoreReader = true
+	buf = bytes.NewBuffer([]byte("meow"))
+	v, err = ww.Wrap(buf)
+	if assert.NoError(t, err) {
+		assert.True(t, v.IsNothing())
 	}
 }
 
@@ -291,6 +316,28 @@ func TestUnwrapIntoSpecials(t *testing.T) {
 	var tm time.Time
 	if assert.NoError(t, w.UnwrapInto(&tm, sdktypes.NewStringValue("1/1/23 18:32"))) {
 		assert.Equal(t, time.Date(2023, time.January, 1, 18, 32, 0, 0, time.UTC), tm)
+	}
+
+	var r io.Reader
+	if assert.NoError(t, w.UnwrapInto(&r, sdktypes.NewStringValue("meow"))) {
+		txt, err := io.ReadAll(r)
+		if assert.NoError(t, err) {
+			assert.Equal(t, "meow", string(txt))
+		}
+	}
+
+	if assert.NoError(t, w.UnwrapInto(&r, sdktypes.NewBytesValue([]byte("woof")))) {
+		txt, err := io.ReadAll(r)
+		if assert.NoError(t, err) {
+			assert.Equal(t, "woof", string(txt))
+		}
+	}
+
+	ww := w
+	ww.IgnoreReader = true
+
+	if assert.NoError(t, ww.UnwrapInto(&r, sdktypes.NewBytesValue([]byte("woof")))) {
+		assert.Nil(t, r)
 	}
 }
 

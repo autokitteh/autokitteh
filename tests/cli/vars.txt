@@ -31,7 +31,7 @@ $ # Get var.
 $ ${AK} -j var g -e p/e1; echo $?
 {"scope_id":"env_00000000000000000000000003","name":"k1","value":"v1"}
 {"scope_id":"env_00000000000000000000000003","name":"k2","value":"v2"}
-{"scope_id":"env_00000000000000000000000003","name":"ks","is_secret":true}
+{"scope_id":"env_00000000000000000000000003","name":"ks","value":"00000000-0000-0000-0000-000000000003/ks","is_secret":true}
 0
 $ # Update var.
 $ ${AK} var set -e p/e1 k1 v1updated; echo $?
@@ -40,7 +40,7 @@ $ # Get var.
 $ ${AK} -j var g -e p/e1; echo $?
 {"scope_id":"env_00000000000000000000000003","name":"k1","value":"v1updated"}
 {"scope_id":"env_00000000000000000000000003","name":"k2","value":"v2"}
-{"scope_id":"env_00000000000000000000000003","name":"ks","is_secret":true}
+{"scope_id":"env_00000000000000000000000003","name":"ks","value":"00000000-0000-0000-0000-000000000003/ks","is_secret":true}
 0
 $ ${AK} var g -e p/e1; echo $?
 k1="v1updated"
@@ -53,8 +53,8 @@ $ ${AK} var set -s -e p/e1 k2 shhh2; echo $?
 $ # Get var.
 $ ${AK} -j var g -e p/e1; echo $?
 {"scope_id":"env_00000000000000000000000003","name":"k1","value":"v1updated"}
-{"scope_id":"env_00000000000000000000000003","name":"k2","is_secret":true}
-{"scope_id":"env_00000000000000000000000003","name":"ks","is_secret":true}
+{"scope_id":"env_00000000000000000000000003","name":"k2","value":"00000000-0000-0000-0000-000000000003/k2","is_secret":true}
+{"scope_id":"env_00000000000000000000000003","name":"ks","value":"00000000-0000-0000-0000-000000000003/ks","is_secret":true}
 0
 $ # Turn a var into a non-secret.
 $ ${AK} var set -e p/e1 k2 no-longer-shhh2; echo $?
@@ -63,5 +63,5 @@ $ # Get var.
 $ ${AK} -j var g -e p/e1; echo $?
 {"scope_id":"env_00000000000000000000000003","name":"k1","value":"v1updated"}
 {"scope_id":"env_00000000000000000000000003","name":"k2","value":"no-longer-shhh2"}
-{"scope_id":"env_00000000000000000000000003","name":"ks","is_secret":true}
+{"scope_id":"env_00000000000000000000000003","name":"ks","value":"00000000-0000-0000-0000-000000000003/ks","is_secret":true}
 0
