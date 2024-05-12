@@ -14,6 +14,9 @@ import (
 )
 
 func TestStartDevServer(t *testing.T) {
+	dataDir := t.TempDir()
+	t.Setenv("XDG_DATA_HOME", dataDir)
+
 	ctx := context.Background()
 	logger := zaptest.NewLogger(t)
 	cfg := &Config{
