@@ -105,11 +105,7 @@ func (d *dispatcher) startWorkflow(ctx context.Context, eventID sdktypes.EventID
 		ID:        eventID.String(),
 		TaskQueue: taskQueueName,
 	}
-	input := eventsWorkflowInput{
-		EventID: eventID,
-		Options: opts,
-	}
-	_, err := d.temporal.Temporal().ExecuteWorkflow(ctx, options, d.eventsWorkflow, input)
+	_, err := d.temporal.Temporal().ExecuteWorkflow(ctx, options, d.eventsWorkflow, EventsWorkflowInput{EventID: eventID, Options: opts})
 	if err != nil {
 		d.z.Error("Failed starting workflow", zap.String("eventID", eventID.String()), zap.Error(err))
 		return fmt.Errorf("failed starting workflow: %w", err)
