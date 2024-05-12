@@ -88,7 +88,7 @@ func (p Trigger) ToValues() map[string]Value {
 	return map[string]Value{
 		"name": NewStringValue(p.read().Name),
 		"data": kittehs.Must1(NewStructValue(
-			NewStringValue("event_data"),
+			NewStringValue("trigger_data"),
 			kittehs.TransformMapValues(
 				p.read().Data,
 				forceFromProto[Value],
