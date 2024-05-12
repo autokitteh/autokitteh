@@ -30,7 +30,7 @@ type GetPermalinkResponse struct {
 	api.SlackResponse
 
 	Permalink string `json:"permalink,omitempty"`
-	Channel string `json:"channel,omitempty"`
+	Channel   string `json:"channel,omitempty"`
 }
 
 // https://api.slack.com/methods/chat.postEphemeral#args
