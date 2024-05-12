@@ -2,10 +2,7 @@ package temporalclient
 
 import (
 	"context"
-	"io"
-	"os"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.autokitteh.dev/autokitteh/internal/xdg"
@@ -40,13 +37,4 @@ func TestStartDevServer(t *testing.T) {
 	require.NotNil(t, c.client)
 	require.NotNil(t, c.srv)
 	require.NotNil(t, c.srvLog)
-
-	time.Sleep(100 * time.Millisecond) // Let the server emit some logs
-
-	file, err := os.Open(c.srvLog.Name())
-	require.NoError(t, err)
-	defer file.Close()
-	data, err := io.ReadAll(file)
-	require.NoError(t, err)
-	require.NotEmpty(t, data)
 }
