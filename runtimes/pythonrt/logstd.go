@@ -9,7 +9,7 @@ import (
 )
 
 type streamLogger struct {
-	prefix string
+	prefix string // prefix appended to each printed line
 	print  sdkservices.RunPrintFunc
 	rid    sdktypes.RunID
 	buf    bytes.Buffer
@@ -25,14 +25,18 @@ func newStreamLogger(prefix string, print sdkservices.RunPrintFunc, rid sdktypes
 	return &s
 }
 
+// reset resets the buffer to contain only `s.prefix`.
 func (s *streamLogger) reset() {
 	s.buf.Reset()
 	s.buf.WriteString(s.prefix)
 }
 
+// Write implement io.Writer interface.
 func (s *streamLogger) Write(p []byte) (int, error) {
 	ctx := context.Background()
 	data := p
+	// io.Writer works with []byte, not lines.
+	// `data` might contain several newlines (or none), so we iterate over it.
 	for {
 		i := bytes.IndexByte(data, '\n')
 		if i < 0 {
@@ -53,6 +57,8 @@ func (s *streamLogger) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
+// Close implements io.Closer.
+// It will print whatever in `s.buf`.
 func (s *streamLogger) Close() error {
 	if s.buf.Len() > 0 {
 		s.print(context.Background(), s.rid, s.buf.String())
