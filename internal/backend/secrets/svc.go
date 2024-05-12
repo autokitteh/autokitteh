@@ -39,9 +39,11 @@ func New(cfg *Config, z *zap.Logger, db db.DB) (Secrets, error) {
 
 	switch cfg.Provider {
 	case SecretProviderAWSSecretManager:
-		provider, err = newAWSSecrets(z, cfg)
+		provider, err = newAWSSecrets(z, cfg.AWSSecretManager)
 	case SecretProviderDatabase:
 		provider, err = newDatabaseSecrets(z, db)
+	case SecretProviderVault:
+		provider, err = newVaultSecrets(z, cfg.Vault)
 	default:
 		return nil, sdkerrors.NewInvalidArgumentError("invalid secret provider: %s", cfg.Provider)
 	}
