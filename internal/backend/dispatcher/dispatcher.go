@@ -6,6 +6,7 @@ import (
 
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/worker"
+	"go.temporal.io/sdk/workflow"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 
@@ -91,7 +92,7 @@ func (d *dispatcher) Redispatch(ctx context.Context, eventID sdktypes.EventID, o
 
 func (d *dispatcher) Start(context.Context) error {
 	w := worker.New(d.temporal.Temporal(), taskQueueName, worker.Options{})
-	w.RegisterWorkflow(d.eventsWorkflow)
+	w.RegisterWorkflowWithOptions(d.eventsWorkflow, workflow.RegisterOptions{Name: "events_workflow"})
 
 	if err := w.Start(); err != nil {
 		return fmt.Errorf("worker start: %w", err)
