@@ -88,7 +88,7 @@ func (db *gormdb) getVars(ctx context.Context, scopeID sdktypes.UUID, names ...s
 	return vars, nil
 }
 
-func (db *gormdb) GetVars(ctx context.Context, reveal bool, sid sdktypes.VarScopeID, names []sdktypes.Symbol) ([]sdktypes.Var, error) {
+func (db *gormdb) GetVars(ctx context.Context, sid sdktypes.VarScopeID, names []sdktypes.Symbol) ([]sdktypes.Var, error) {
 	dbvs, err := db.getVars(ctx, sid.UUIDValue(), kittehs.TransformToStrings(names)...)
 	if err != nil {
 		return nil, translateError(err)
@@ -100,10 +100,6 @@ func (db *gormdb) GetVars(ctx context.Context, reveal bool, sid sdktypes.VarScop
 			n, err := sdktypes.ParseSymbol(r.Name)
 			if err != nil {
 				return sdktypes.InvalidVar, err
-			}
-
-			if !reveal && r.IsSecret {
-				r.Value = ""
 			}
 
 			return sdktypes.NewVar(n, r.Value, r.IsSecret).WithScopeID(sid), nil

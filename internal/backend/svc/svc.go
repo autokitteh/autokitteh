@@ -48,6 +48,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/oauth"
 	"go.autokitteh.dev/autokitteh/internal/backend/projects"
 	"go.autokitteh.dev/autokitteh/internal/backend/projectsgrpcsvc"
+	"go.autokitteh.dev/autokitteh/internal/backend/secrets"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessionsgrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/store"
@@ -169,6 +170,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		Component("projectsgrpcsvc", projectsgrpcsvc.Configs, fx.Provide(projectsgrpcsvc.New)),
 		Component("envs", configset.Empty, fx.Provide(envs.New)),
 		Component("vars", configset.Empty, fx.Provide(vars.New)),
+		Component("secrets", secrets.Configs, fx.Provide(secrets.New)),
 		Component("events", configset.Empty, fx.Provide(events.New)),
 		Component("triggers", configset.Empty, fx.Provide(triggers.New)),
 		Component("oauth", configset.Empty, fx.Provide(oauth.New)),
@@ -208,6 +210,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		fx.Invoke(storegrpcsvc.Init),
 		fx.Invoke(triggersgrpcsvc.Init),
 		fx.Invoke(varsgrpcsvc.Init),
+
 		Component(
 			"http",
 			httpsvc.Configs,
