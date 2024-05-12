@@ -427,6 +427,20 @@ func planTriggers(ctx context.Context, mtriggers []*Trigger, client sdkservices.
 			return nil, fmt.Errorf("trigger %q: invalid entrypoint: %w", mtrigger.GetKey(), err)
 		}
 
+		// keep schedule in data section
+		if mtrigger.Schedule != "" {
+			if schedule, found := mtrigger.Data["schedule"]; found {
+				if schedule != mtrigger.Schedule {
+					return nil, fmt.Errorf("trigger %q: conflicting schedules specified: %q != %q", mtrigger.GetKey(), mtrigger.Schedule, schedule)
+				}
+			}
+			mtrigger.Data["schedule"] = mtrigger.Schedule // ensure that schedule is present in data section
+		}
+
+		if _, found := mtrigger.Data["schedule"]; found {
+			mtrigger.EventType = "scheduler"
+		}
+
 		data, err := kittehs.TransformMapValuesError(mtrigger.Data, sdktypes.WrapValue)
 		if err != nil {
 			return nil, fmt.Errorf("trigger %q: invalid additional data: %w", mtrigger.GetKey(), err)
