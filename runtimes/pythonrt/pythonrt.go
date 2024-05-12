@@ -184,10 +184,18 @@ func (py *pySvc) Run(
 		return nil, fmt.Errorf("%q note found in compiled data", archiveKey)
 	}
 
-	stdout := newStreamLogger("<stdout> ", cbs.Print, runID)
-	stderr := newStreamLogger("<stderr>", cbs.Print, runID)
-
-	ri, err := runPython(py.log, venvPy, tarData, mainPath, envMap, stdout, stderr)
+	py.stdout = newStreamLogger("[stdout] ", cbs.Print, runID)
+	py.stderr = newStreamLogger("[stderr] ", cbs.Print, runID)
+	opts := runOptions{
+		log:      py.log,
+		pyExe:    venvPy,
+		tarData:  tarData,
+		rootPath: mainPath,
+		env:      envMap,
+		stdout:   py.stdout,
+		stderr:   py.stderr,
+	}
+	ri, err := runPython(opts)
 	if err != nil {
 		return nil, err
 	}
@@ -252,8 +260,6 @@ func (py *pySvc) Run(
 	py.firstCall = true
 	py.run = ri
 	py.xid = xid
-	py.stdout = stdout
-	py.stderr = stderr
 
 	return py, nil
 }

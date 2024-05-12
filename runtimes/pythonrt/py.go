@@ -128,13 +128,22 @@ type pyRunInfo struct {
 	proc     *os.Process
 }
 
-func runPython(log *zap.Logger, pyExe string, tarData []byte, rootPath string, env map[string]string, stdout, stderr io.Writer) (*pyRunInfo, error) {
+type runOptions struct {
+	log            *zap.Logger
+	pyExe          string
+	tarData        []byte
+	rootPath       string
+	env            map[string]string
+	stdout, stderr io.Writer
+}
+
+func runPython(opts runOptions) (*pyRunInfo, error) {
 	rootDir, err := os.MkdirTemp("", "ak-")
 	if err != nil {
 		return nil, err
 	}
 
-	tarPath, err := writeTar(rootDir, tarData)
+	tarPath, err := writeTar(rootDir, opts.tarData)
 	if err != nil {
 		return nil, err
 	}
@@ -143,21 +152,21 @@ func runPython(log *zap.Logger, pyExe string, tarData []byte, rootPath string, e
 	if err != nil {
 		return nil, err
 	}
-	log.Info("python runner", zap.String("path", runnerPath))
+	opts.log.Info("python runner", zap.String("path", runnerPath))
 
 	sockPath := path.Join(rootDir, "ak.sock")
-	log.Info("socket", zap.String("path", sockPath))
+	opts.log.Info("socket", zap.String("path", sockPath))
 
 	lis, err := net.Listen("unix", sockPath)
 	if err != nil {
 		return nil, err
 	}
 
-	cmd := exec.Command(pyExe, runnerPath, sockPath, tarPath, rootPath)
+	cmd := exec.Command(opts.pyExe, runnerPath, sockPath, tarPath, opts.rootPath)
 	cmd.Dir = rootDir
-	cmd.Env = overrideEnv(env)
-	cmd.Stdout = stdout
-	cmd.Stderr = stderr
+	cmd.Env = overrideEnv(opts.env)
+	cmd.Stdout = opts.stdout
+	cmd.Stderr = opts.stderr
 
 	if err := cmd.Start(); err != nil {
 		lis.Close()
@@ -165,7 +174,7 @@ func runPython(log *zap.Logger, pyExe string, tarData []byte, rootPath string, e
 	}
 
 	info := pyRunInfo{
-		rootDir:  rootPath,
+		rootDir:  opts.rootPath,
 		sockPath: sockPath,
 		lis:      lis,
 		proc:     cmd.Process,

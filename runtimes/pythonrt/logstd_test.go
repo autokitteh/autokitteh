@@ -39,8 +39,7 @@ func Test_streamLogger(t *testing.T) {
 	}
 	rid := sdktypes.NewRunID()
 
-	outPrefix := "[stdout] "
-	errPrefix := "[stderr] "
+	outPrefix, errPrefix := "[stdout] ", "[stderr] "
 	stdout := newStreamLogger(outPrefix, print, rid)
 	stderr := newStreamLogger(errPrefix, print, rid)
 
