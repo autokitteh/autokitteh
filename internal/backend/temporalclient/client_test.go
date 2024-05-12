@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.autokitteh.dev/autokitteh/internal/xdg"
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/testsuite"
 	"go.uber.org/zap/zaptest"
@@ -16,6 +17,7 @@ import (
 func TestStartDevServer(t *testing.T) {
 	dataDir := t.TempDir()
 	t.Setenv("XDG_DATA_HOME", dataDir)
+	xdg.Reload()
 
 	ctx := context.Background()
 	logger := zaptest.NewLogger(t)
