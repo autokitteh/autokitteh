@@ -73,7 +73,7 @@ func (db *gormdb) ListEvents(ctx context.Context, filter sdkservices.ListEventsF
 		q = q.Limit(filter.Limit)
 	}
 
-	q = q.Where("seq >= ?", filter.MinSequenceNumber)
+	q = q.Where("seq > ?", filter.MinSequenceNumber)
 
 	q = q.Order("created_at asc") // hard coded now to get oldest first to support workflow events
 
