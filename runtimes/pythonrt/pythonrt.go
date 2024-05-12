@@ -15,6 +15,7 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 var (
@@ -313,6 +314,37 @@ func (py *pySvc) handleSleep(ctx context.Context, msg Message) error {
 	return py.comm.Send(sleep)
 }
 
+func pyLevelToZap(level string) (zapcore.Level, error) {
+	switch level {
+	case "DEBUG":
+		return zap.DebugLevel, nil
+	case "INFO":
+		return zap.InfoLevel, nil
+	case "WARN":
+		return zap.WarnLevel, nil
+	case "ERROR":
+		return zap.ErrorLevel, nil
+	default:
+		return zapcore.DebugLevel, fmt.Errorf("unknown log level %q", level)
+	}
+}
+
+func (py *pySvc) handleLog(ctx context.Context, msg Message) error {
+	log, err := extractMessage[LogMessage](msg)
+	if err != nil {
+		return err
+	}
+
+	level, err := pyLevelToZap(log.Level)
+	if err != nil {
+		return err
+	}
+
+	py.log.Log(level, log.Message, zap.String("runtime", "python"), zap.String("type", "log"))
+	py.cbs.Print(ctx, py.xid.ToRunID(), log.Message)
+	return nil
+}
+
 // initialCall handles initial call from autokitteh.
 // We split it from Call since Call is also used to execute activities.
 func (py *pySvc) initialCall(ctx context.Context, funcName string, event map[string]any) (sdktypes.Value, error) {
@@ -344,11 +376,7 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, event map[str
 			py.log.Error("communication error", zap.Error(err))
 			return sdktypes.InvalidValue, err
 		}
-		py.log.Info("from python", zap.Any("message", msg))
-
-		if msg.Type == "done" {
-			break
-		}
+		py.log.Debug("from python", zap.Any("message", msg))
 
 		if msg.Type == "" {
 			py.log.Error("empty message from python, probably error", zap.Any("message", msg))
@@ -356,51 +384,65 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, event map[str
 		}
 
 		if msg.Type == messageType[SleepMessage]() {
-			py.handleSleep(ctx, msg)
-			continue
-		}
+			if err := py.handleSleep(ctx, msg); err != nil {
+				return sdktypes.InvalidValue, err
+			}
 
-		cbm, err := extractMessage[CallbackMessage](msg)
-		if err != nil {
-			py.log.Error("callback", zap.Error(err))
-			return sdktypes.InvalidValue, err
-		}
+			if msg.Type == messageType[DoneMessage]() {
+				break
+			}
 
-		// Generate activity, it'll call Python with the result
-		// The function name is irrelevant, all the information Python needs is in the Payload
-		fn, err := sdktypes.NewFunctionValue(py.xid, cbm.Name, cbm.Data, nil, pyModuleFunc)
-		if err != nil {
-			py.log.Error("create function", zap.Error(err))
-			return sdktypes.InvalidValue, err
-		}
+			if msg.Type == messageType[LogMessage]() {
+				if err := py.handleLog(ctx, msg); err != nil {
+					py.log.Error("handle log", zap.Error(err))
+					return sdktypes.InvalidValue, fmt.Errorf("bad log message: %w", err)
+				}
 
-		py.log.Info("callback", zap.String("func", cbm.Name))
-		val, err := py.cbs.Call(
-			ctx,
-			py.xid.ToRunID(),
-			// The Python function to call is encoded in the payload
-			fn,
-			kittehs.Transform(cbm.Args, sdktypes.NewStringValue),
-			kittehs.TransformMap(cbm.Kw, func(key, val string) (string, sdktypes.Value) {
-				return key, sdktypes.NewStringValue(val)
-			}),
-		)
-		if err != nil {
-			py.log.Error("callback", zap.Error(err))
-			return sdktypes.InvalidValue, err
-		}
+				continue
+			}
 
-		if !val.IsBytes() {
-			py.log.Error("activity result should be bytes", zap.Any("value", val))
-			return sdktypes.InvalidValue, err
-		}
+			cbm, err := extractMessage[CallbackMessage](msg)
+			if err != nil {
+				py.log.Error("callback", zap.Error(err))
+				return sdktypes.InvalidValue, err
+			}
 
-		reply := ResponseMessage{
-			Value: val.GetBytes().Value(),
-		}
-		if err := py.comm.Send(reply); err != nil {
-			py.log.Error("send value to Python", zap.Error(err))
-			return sdktypes.InvalidValue, err
+			// Generate activity, it'll call Python with the result
+			// The function name is irrelevant, all the information Python needs is in the Payload
+			fn, err := sdktypes.NewFunctionValue(py.xid, cbm.Name, cbm.Data, nil, pyModuleFunc)
+			if err != nil {
+				py.log.Error("create function", zap.Error(err))
+				return sdktypes.InvalidValue, err
+			}
+
+			py.log.Info("callback", zap.String("func", cbm.Name))
+			val, err := py.cbs.Call(
+				ctx,
+				py.xid.ToRunID(),
+				// The Python function to call is encoded in the payload
+				fn,
+				kittehs.Transform(cbm.Args, sdktypes.NewStringValue),
+				kittehs.TransformMap(cbm.Kw, func(key, val string) (string, sdktypes.Value) {
+					return key, sdktypes.NewStringValue(val)
+				}),
+			)
+			if err != nil {
+				py.log.Error("callback", zap.Error(err))
+				return sdktypes.InvalidValue, err
+			}
+
+			if !val.IsBytes() {
+				py.log.Error("activity result should be bytes", zap.Any("value", val))
+				return sdktypes.InvalidValue, err
+			}
+
+			reply := ResponseMessage{
+				Value: val.GetBytes().Value(),
+			}
+			if err := py.comm.Send(reply); err != nil {
+				py.log.Error("send value to Python", zap.Error(err))
+				return sdktypes.InvalidValue, err
+			}
 		}
 	}
 
@@ -503,18 +545,28 @@ func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 		return sdktypes.InvalidValue, err
 	}
 
-	msg, err := py.comm.Recv()
-	if err != nil {
-		py.log.Error("from python", zap.Error(err))
-		return sdktypes.InvalidValue, err
-	}
+	for {
+		msg, err := py.comm.Recv()
+		if err != nil {
+			py.log.Error("from python", zap.Error(err))
+			return sdktypes.InvalidValue, err
+		}
 
-	rm, err := extractMessage[ResponseMessage](msg)
-	if err != nil {
-		py.log.Error("from python", zap.Error(err))
-		return sdktypes.InvalidValue, err
-	}
-	py.log.Info("python return", zap.Any("message", rm))
+		if msg.Type == messageType[LogMessage]() {
+			if err := py.handleLog(ctx, msg); err != nil {
+				py.log.Error("handle log", zap.Error(err))
+				return sdktypes.InvalidValue, err
+			}
+			continue
+		}
 
-	return sdktypes.NewBytesValue(rm.Value), nil
+		rm, err := extractMessage[ResponseMessage](msg)
+		if err != nil {
+			py.log.Error("from python", zap.Error(err))
+			return sdktypes.InvalidValue, err
+		}
+		py.log.Info("python return", zap.Any("message", rm))
+
+		return sdktypes.NewBytesValue(rm.Value), nil
+	}
 }
