@@ -42,3 +42,6 @@ ngrok:
 
 ngrok-prod:
 	ngrok http --domain autokitteh.ngrok.dev 9980
+
+messages.py: _message.py comm.go gen_py_messages.go
+	go run gen_py_messages.go > $@
