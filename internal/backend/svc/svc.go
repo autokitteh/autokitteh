@@ -299,8 +299,18 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 				kittehs.Must0(json.NewEncoder(w).Encode(version.Version))
 			})
 			muxes.NoAuth.HandleFunc("/uptime", func(w http.ResponseWriter, r *http.Request) {
+				uptime := time.Since(t0)
+
+				resp := struct {
+					Text    string `json:"text"`
+					Seconds uint64 `json:"seconds"`
+				}{
+					Text:    uptime.String(),
+					Seconds: uint64(uptime.Seconds()),
+				}
+
 				w.Header().Set("Content-Type", "application/json")
-				kittehs.Must0(json.NewEncoder(w).Encode(time.Since(t0).String()))
+				kittehs.Must0(json.NewEncoder(w).Encode(resp))
 			})
 		}),
 		fx.Invoke(func(z *zap.Logger, lc fx.Lifecycle, muxes *muxes.Muxes) {
