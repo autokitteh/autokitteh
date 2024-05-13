@@ -25,6 +25,14 @@ type DeleteResponse struct {
 	TS      string `json:"ts,omitempty"`
 }
 
+// https://api.slack.com/methods/chat.getPermalink#args
+type GetPermalinkResponse struct {
+	api.SlackResponse
+
+	Permalink string `json:"permalink,omitempty"`
+	Channel   string `json:"channel,omitempty"`
+}
+
 // https://api.slack.com/methods/chat.postEphemeral#args
 type PostEphemeralRequest struct {
 	// https://api.slack.com/methods/chat.postEphemeral#target-channels-and-users

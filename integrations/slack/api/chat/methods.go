@@ -2,6 +2,7 @@ package chat
 
 import (
 	"context"
+	"net/url"
 
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -41,6 +42,38 @@ func (a API) Delete(ctx context.Context, args []sdktypes.Value, kwargs map[strin
 	// Invoke the API method.
 	resp := &DeleteResponse{}
 	err = api.PostJSON(ctx, a.Vars, req, resp, "chat.delete")
+	if err != nil {
+		return sdktypes.InvalidValue, err
+	}
+
+	// Parse and return the response.
+	return sdktypes.WrapValue(resp)
+}
+
+// GetPermalink generates a permalink URL for a specific extant message.
+//
+// Based on: https://api.slack.com/methods/chat.getPermalink
+//
+// Required Slack app scopes: none.
+func (a API) GetPermalink(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
+	// Parse the input arguments.
+	var channel, messageTS string
+	err := sdkmodule.UnpackArgs(args, kwargs,
+		"channel", &channel,
+		"message_ts", &messageTS,
+	)
+	if err != nil {
+		return sdktypes.InvalidValue, err
+	}
+
+	req := url.Values{}
+	req.Set("channel", channel)
+	req.Set("message_ts", messageTS)
+
+	// Invoke the API method.
+	// TODO: Use HTTP GET instead of POST.
+	resp := &GetPermalinkResponse{}
+	err = api.PostForm(ctx, a.Vars, req, resp, "chat.getPermalink")
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
