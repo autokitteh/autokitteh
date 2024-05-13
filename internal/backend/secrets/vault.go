@@ -14,7 +14,7 @@ type vaultSecrets struct {
 }
 
 // NewVaultSecrets initializes a client connection to HashiCorp Vault.
-func newVaultSecrets(l *zap.Logger, c *vaultConfig) (Secrets, error) {
+func newVaultSecrets(l *zap.Logger, c *vaultConfig) (*vaultSecrets, error) {
 	cfg := vault.DefaultConfig()
 	cfg.Address = c.URL
 
