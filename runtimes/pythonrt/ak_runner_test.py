@@ -239,3 +239,12 @@ def test_transform(code, transformed):
     trans = ak_runner.Transformer('<stdin>')
     out = trans.visit(mod)
     assert transformed, ast.unparse(out)
+
+
+def test_activity():
+    mod_name = 'activity'
+    mod = ak_runner.load_code('testdata', lambda f: f, mod_name)
+    fn = mod.phone_home
+
+    cb = ak_runner.AKCall(mod_name, None)
+    assert not cb.ignore(fn)

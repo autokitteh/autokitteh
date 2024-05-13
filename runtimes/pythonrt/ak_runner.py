@@ -142,6 +142,7 @@ def patch_import_hooks(user_dir, action_fn):
 
 ACTIVITY_ATTR = '__activity__'
 
+
 def activity(fn):
     setattr(fn, ACTIVITY_ATTR, True)
     return fn
