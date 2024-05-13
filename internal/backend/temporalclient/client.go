@@ -6,12 +6,9 @@ import (
 	"errors"
 	"fmt"
 	"net"
-	"os"
-	"path"
 	"strconv"
 	"time"
 
-	"go.autokitteh.dev/autokitteh/internal/xdg"
 	"go.temporal.io/api/serviceerror"
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/testsuite"
@@ -32,7 +29,6 @@ type impl struct {
 	z      *zap.Logger
 	cfg    *Config
 	srv    *testsuite.DevServer
-	srvLog *os.File
 	done   chan struct{}
 	opts   client.Options
 }
@@ -79,19 +75,10 @@ func New(cfg *Config, z *zap.Logger) (Client, error) {
 }
 
 func (c *impl) startDevServer(ctx context.Context, cfg *Config, opts client.Options) error {
-	temporalLog := path.Join(xdg.DataHomeDir(), "temporal_dev.log")
-	file, err := os.OpenFile(temporalLog, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		return fmt.Errorf("open temporal log file: %w", err)
-	}
-	c.srvLog = file
+	cfg.DevServer.ClientOptions = &opts
 
-	srvOpts := cfg.DevServer
-	srvOpts.ClientOptions = &opts
-	srvOpts.Stderr = file
-	srvOpts.Stdout = file
-
-	if c.srv, err = testsuite.StartDevServer(ctx, srvOpts); err != nil {
+	var err error
+	if c.srv, err = testsuite.StartDevServer(ctx, cfg.DevServer); err != nil {
 		return fmt.Errorf("start Temporal dev server: %w", err)
 	}
 
@@ -151,7 +138,6 @@ func (c *impl) Stop(context.Context) error {
 	}
 
 	if c.srv != nil {
-		defer c.srvLog.Close()
 		if err := c.srv.Stop(); err != nil {
 			// This is an ugly but reasonable hack: we can't do anything
 			// at this point if the Temporal server's pipe is broken.
