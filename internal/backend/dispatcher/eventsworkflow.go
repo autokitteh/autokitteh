@@ -181,7 +181,7 @@ func (d *dispatcher) signalWorkflows(ctx context.Context, event sdktypes.Event) 
 		return nil
 	}
 
-	signals, err := d.db.ListSignalsWaitingOnConnection(ctx, conn.ID())
+	signals, err := d.db.ListSignalsWaitingOnConnection(ctx, conn.ID(), event.Type())
 	if err != nil {
 		z.Error("could not fetch signals", zap.Error(err))
 		return err
