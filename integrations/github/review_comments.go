@@ -24,9 +24,9 @@ func (i integration) createReviewComment(ctx context.Context, args []sdktypes.Va
 		"owner", &owner,
 		"repo", &repo,
 		"pull_number", &pullNumber,
-		"body", req.Body,
-		"commit_id", req.CommitID,
-		"path", req.Path,
+		"body", &req.Body,
+		"commit_id", &req.CommitID,
+		"path", &req.Path,
 
 		"side?", &req.Side,
 		"line?", &req.Line,

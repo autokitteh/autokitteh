@@ -172,17 +172,18 @@ func (i integration) requestReview(ctx context.Context, args []sdktypes.Value, k
 	// Parse the input arguments.
 	var (
 		owner, repo string
-		pyllNumber  int
-		request     github.ReviewersRequest
+		pullNumber  int
+
+		req github.ReviewersRequest
 	)
 
 	err := sdkmodule.UnpackArgs(args, kwargs,
 		"owner", &owner,
 		"repo", &repo,
-		"pull_number", &pyllNumber,
+		"pull_number", &pullNumber,
 
-		"reviewers=?", &request.Reviewers,
-		"team_reviewers=?", &request.TeamReviewers,
+		"reviewers=?", &req.Reviewers,
+		"team_reviewers=?", &req.TeamReviewers,
 	)
 	if err != nil {
 		return sdktypes.InvalidValue, err
@@ -194,7 +195,7 @@ func (i integration) requestReview(ctx context.Context, args []sdktypes.Value, k
 		return sdktypes.InvalidValue, err
 	}
 
-	pr, _, err := gh.PullRequests.RequestReviewers(ctx, owner, repo, pyllNumber, request)
+	pr, _, err := gh.PullRequests.RequestReviewers(ctx, owner, repo, pullNumber, req)
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
