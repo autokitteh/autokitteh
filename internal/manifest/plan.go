@@ -409,8 +409,9 @@ func planTriggers(ctx context.Context, mtriggers []*Trigger, client sdkservices.
 
 	for _, mtrigger := range mtriggers {
 		mtrigger := *mtrigger
-		mtrigger.EnvKey = projName + "/" + defaultEnvName
-		mtrigger.ConnectionKey = projName + "/" + mtrigger.ConnectionKey
+		projPrefix := projName + "/"
+		mtrigger.EnvKey = projPrefix + defaultEnvName
+		mtrigger.ConnectionKey = projPrefix + mtrigger.ConnectionKey
 
 		log := log.For("trigger", mtrigger)
 
@@ -463,7 +464,7 @@ func planTriggers(ctx context.Context, mtriggers []*Trigger, client sdkservices.
 
 		// define connecitonID to pass trigger validation (either connection or schedule should be present)
 		connectionID := ""
-		if mtrigger.ConnectionKey != "" {
+		if mtrigger.ConnectionKey != projPrefix {
 			connectionID = sdktypes.NewConnectionID().String()
 		}
 
