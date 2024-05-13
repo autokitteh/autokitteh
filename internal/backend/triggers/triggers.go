@@ -83,7 +83,8 @@ func (m *triggers) createScheduledTrigger(ctx context.Context, trigger sdktypes.
 	if err := m.db.CreateTrigger(ctx, trigger); err != nil {
 		return sdktypes.InvalidTriggerID, err
 	}
-
+	m.z.Debug("created scheduler trigger",
+		zap.String("schedule", schedule.String()), zap.String("trigger_id", trigger.ID().String()))
 	return trigger.ID(), nil
 }
 
@@ -118,7 +119,7 @@ func (m *triggers) createScheduledWorkflow(ctx context.Context, schedule sdktype
 		return nil, fmt.Errorf("save event: %w", err)
 	}
 
-	z := m.z.With(zap.String("event_id", eventID.String()))
+	z := m.z.With(zap.String("event_id", eventID.String())).With(zap.String("schedule", scheduleStr))
 	z.Debug("create scheduled event", zap.String("schedule", scheduleStr))
 
 	scheduleID := fmt.Sprintf("%s_%s", trigger.Name().String(), trigger.ID().String())
