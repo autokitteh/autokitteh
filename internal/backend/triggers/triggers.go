@@ -10,6 +10,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/dispatcher"
+	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -19,11 +20,11 @@ import (
 type triggers struct {
 	z      *zap.Logger
 	db     db.DB
-	tmprl  client.Client
+	tmprl  temporalclient.Client
 	events sdkservices.Events
 }
 
-func New(z *zap.Logger, db db.DB, t client.Client, e sdkservices.Events) sdkservices.Triggers {
+func New(z *zap.Logger, db db.DB, t temporalclient.Client, e sdkservices.Events) sdkservices.Triggers {
 	return &triggers{db: db, z: z, tmprl: t, events: e}
 }
 

@@ -22,6 +22,7 @@ type Client interface {
 	Start(context.Context) error
 	Stop(context.Context) error
 	Temporal() client.Client
+	ScheduleClient() client.ScheduleClient
 	TemporalAddr() (frontend, ui string)
 	healthreporter.HealthReporter
 }
@@ -95,7 +96,8 @@ func (c *impl) startDevServer(ctx context.Context, cfg *Config, opts client.Opti
 	return nil
 }
 
-func (c *impl) Temporal() client.Client { return c.client }
+func (c *impl) Temporal() client.Client               { return c.client }
+func (c *impl) ScheduleClient() client.ScheduleClient { return c.client.ScheduleClient() }
 
 func (c *impl) TemporalAddr() (frontend, ui string) {
 	if c.srv == nil {
