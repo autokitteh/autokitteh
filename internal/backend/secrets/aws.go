@@ -17,7 +17,7 @@ type awsSecrets struct {
 }
 
 // NewAWSSecrets initializes a client connection to AWS Secrets Manager.
-func newAWSSecrets(l *zap.Logger, _ *Config) (Secrets, error) {
+func newAWSSecrets(l *zap.Logger, _ *awsSecretManagerConfig) (*awsSecrets, error) {
 	cfg, err := config.LoadDefaultConfig(context.Background())
 	if err != nil {
 		l.Error("AWS config initialization", zap.Error(err))

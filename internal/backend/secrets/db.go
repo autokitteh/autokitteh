@@ -16,7 +16,7 @@ type dbSecrets struct {
 // NewDatabaseSecrets initializes a (simple and persistent, yet insecure)
 // secrets manager for local non-production usage, in AK's relational database.
 // DO NOT STORE REAL SECRETS IN THIS WAY FOR LONG PERIODS OF TIME!
-func newDatabaseSecrets(l *zap.Logger, db db.DB) (Secrets, error) {
+func newDatabaseSecrets(l *zap.Logger, db db.DB) (*dbSecrets, error) {
 	return &dbSecrets{logger: l, db: db}, nil
 }
 

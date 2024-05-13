@@ -6,10 +6,15 @@ import (
 
 type awsSecretManagerConfig struct{}
 
+type vaultConfig struct {
+	URL string `koanf:"url"`
+}
+
 type Config struct {
 	Provider         string                  `koanf:"provider"`
 	GlobalScope      string                  `koanf:"global_scope"`
 	AWSSecretManager *awsSecretManagerConfig `koanf:"aws"`
+	Vault            *vaultConfig            `koanf:"vault"`
 }
 
 var (
