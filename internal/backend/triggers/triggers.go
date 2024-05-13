@@ -34,7 +34,7 @@ func (m *triggers) Create(ctx context.Context, trigger sdktypes.Trigger) (sdktyp
 	}
 	trigger = trigger.WithNewID()
 
-	if schedule, found := trigger.Data()["schedule"]; found && schedule.IsValid() {
+	if schedule, found := trigger.Data()[sdktypes.ScheduleDataSection]; found && schedule.IsValid() {
 		return m.createScheduledTrigger(ctx, trigger, schedule)
 	}
 
@@ -56,7 +56,7 @@ func (m *triggers) Delete(ctx context.Context, triggerID sdktypes.TriggerID) err
 	}
 
 	data := trigger.Data()
-	if schedule, found := data["schedule"]; found && schedule.IsValid() {
+	if schedule, found := data[sdktypes.ScheduleDataSection]; found && schedule.IsValid() {
 		return m.deleteScheduledTrigger(ctx, triggerID, data)
 	}
 	return m.db.DeleteTrigger(ctx, triggerID)

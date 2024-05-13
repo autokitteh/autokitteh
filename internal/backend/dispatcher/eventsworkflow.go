@@ -174,13 +174,13 @@ func (d *dispatcher) getSchedulerEventSessionData(ctx context.Context, event sdk
 		return nil, fmt.Errorf("get trigger: %w", err)
 	}
 
-	if trigger.EventType() != "scheduler" { // sanity
+	if trigger.EventType() != sdktypes.SchedulerEventTriggerType { // sanity
 		z.Error("unsupported trigger type, expected [scheduler]: ", zap.String("event_type", trigger.EventType()))
 	}
 
 	envID := trigger.EnvID()
 	if !envID.IsValid() {
-		z.Debug("no valud environment")
+		z.Debug("no valid environment")
 		return nil, nil
 	}
 
