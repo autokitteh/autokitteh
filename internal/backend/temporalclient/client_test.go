@@ -11,7 +11,8 @@ import (
 	"go.uber.org/zap/zaptest"
 )
 
-func TestStartDevServer(t *testing.T) {
+// FIXME: Disabled due to ENG-836, until there's an official release of the Temporal SDK.
+func DisabledTestStartDevServer(t *testing.T) {
 	dataDir := t.TempDir()
 	t.Setenv("XDG_DATA_HOME", dataDir)
 	xdg.Reload()
