@@ -131,6 +131,42 @@ func (i integration) listPullRequests(ctx context.Context, args []sdktypes.Value
 	return sdktypes.WrapValue(prs)
 }
 
+// https://docs.github.com/en/rest/pulls/pulls#list-pull-requests-files
+func (i integration) listPullRequestFiles(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
+	// Parse the input arguments.
+	var (
+		owner, repo string
+		pullNumber  int
+
+		opts github.ListOptions
+	)
+
+	err := sdkmodule.UnpackArgs(args, kwargs,
+		"owner", &owner,
+		"repo", &repo,
+		"pull_number", &pullNumber,
+
+		"per_page?", &opts.PerPage,
+		"page?", &opts.Page,
+	)
+	if err != nil {
+		return sdktypes.InvalidValue, err
+	}
+
+	// Invoke the API method.
+	gh, err := i.NewClient(ctx, owner)
+	if err != nil {
+		return sdktypes.InvalidValue, err
+	}
+
+	files, _, err := gh.PullRequests.ListFiles(ctx, owner, repo, pullNumber, &opts)
+	if err != nil {
+		return sdktypes.InvalidValue, err
+	}
+
+	return sdktypes.WrapValue(files)
+}
+
 // https://docs.github.com/en/rest/pulls/review-requests#request-reviewers-for-a-pull-request
 func (i integration) requestReview(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
 	// Parse the input arguments.

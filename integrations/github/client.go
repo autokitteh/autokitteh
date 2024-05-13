@@ -124,6 +124,12 @@ func New(vars sdkservices.Vars) sdkservices.Integration {
 			sdkmodule.WithArgs("owner", "repo", "state", "head", "base", "sort", "direction", "per_page?", "page?"),
 		),
 		sdkmodule.ExportFunction(
+			"list_pull_request_files",
+			i.listPullRequestFiles,
+			sdkmodule.WithFuncDoc("https://docs.github.com/en/rest/pulls/pulls#list-pull-requests-files"),
+			sdkmodule.WithArgs("owner", "repo", "pull_number", "per_page?", "page?"),
+		),
+		sdkmodule.ExportFunction(
 			"request_review",
 			i.requestReview,
 			sdkmodule.WithFuncDoc("https://docs.github.com/en/rest/pulls/review-requests#request-reviewers-for-a-pull-request"),
