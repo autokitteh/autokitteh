@@ -17,6 +17,7 @@ from importlib.machinery import SourceFileLoader
 from os import mkdir
 from pathlib import Path
 from socket import AF_UNIX, SOCK_STREAM, socket
+from types import ModuleType
 
 # Use own own logger, leave root logger to user.
 log = logging.getLogger('AK')
@@ -139,9 +140,29 @@ def patch_import_hooks(user_dir, action_fn):
     raise RuntimeError(f'cannot find import hook to patch in {sys.path_hooks}')
 
 
+ACTIVITY_ATTR = '__activity__'
+
+def activity(fn):
+    setattr(fn, ACTIVITY_ATTR, True)
+    return fn
+
+
+def ak_module():
+    mod = ModuleType('ak')
+    mod.activity = activity
+    return mod
+
+
 def load_code(root_path, action_fn, module_name):
+    # Make 'ak' module available for imports.
+    mod = ak_module()
+    sys.modules[mod.__name__] = mod
+
     patch_import_hooks(root_path, action_fn)
+
+    # Make sure user code is first in import path.
     sys.path.insert(0, str(root_path))
+
     log.info('importing %r', module_name)
     mod = __import__(module_name)
     return mod
@@ -247,6 +268,9 @@ class AKCall:
         self.comm = comm
 
     def ignore(self, fn):
+        if getattr(fn, ACTIVITY_ATTR, False):
+            return False
+
         if fn.__module__ == 'builtins':
             return True
         
