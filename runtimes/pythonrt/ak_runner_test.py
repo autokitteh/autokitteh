@@ -245,6 +245,7 @@ def test_activity():
     mod_name = 'activity'
     mod = ak_runner.load_code('testdata', lambda f: f, mod_name)
     fn = mod.phone_home
+    assert getattr(fn, ak_runner.ACTIVITY_ATTR, False)
 
     cb = ak_runner.AKCall(mod_name, None)
     assert not cb.ignore(fn)
