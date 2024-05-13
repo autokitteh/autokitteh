@@ -96,15 +96,18 @@ func (m *triggers) deleteScheduledTrigger(ctx context.Context, triggerID sdktype
 		m.z.Error("Failed delete scheduler workflow. No schedulerID found")
 		err = fmt.Errorf("delete scheduler workflow: scheduleID not found")
 	}
+	return errors.Join(
+		m.deleteScheduledWorkflow(ctx, scheduleID),
+		m.db.DeleteTrigger(ctx, triggerID))
+}
 
-	if err == nil {
-		scheduleHandle := m.tmprl.ScheduleClient().GetHandle(ctx, scheduleID)
-		// FIXME: create and save cancel schedule event?
-		if err = scheduleHandle.Delete(ctx); err != nil {
-			err = fmt.Errorf("delete scheduler workflow: %w", err)
-		}
+func (m *triggers) deleteScheduledWorkflow(ctx context.Context, scheduleID string) error {
+	scheduleHandle := m.tmprl.ScheduleClient().GetHandle(ctx, scheduleID) // validity of scheduleID is not checked by temporal
+	if err := scheduleHandle.Delete(ctx); err != nil {
+		return fmt.Errorf("delete scheduler workflow: %w", err)
 	}
-	return errors.Join(err, m.db.DeleteTrigger(ctx, triggerID))
+	// FIXME: create and save cancel schedule event?
+	return nil
 }
 
 func (m *triggers) createScheduledWorkflow(ctx context.Context, schedule sdktypes.Value, trigger sdktypes.Trigger) (*string, error) {
