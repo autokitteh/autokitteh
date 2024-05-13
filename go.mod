@@ -3,7 +3,8 @@ module go.autokitteh.dev/autokitteh
 go 1.22
 
 // FIXME: Once 1.26.2 is released, remove this
-replace go.temporal.io/sdk => go.temporal.io/sdk v1.26.2-0.20240501191625-d051de64e635
+// replace go.temporal.io/sdk => go.temporal.io/sdk v1.26.2-0.20240501191625-d051de64e635
+// (Disabled due to ENG-836)
 
 require (
 	ariga.io/atlas-provider-gorm v0.3.2
@@ -67,7 +68,7 @@ require (
 	github.com/xeipuuv/gojsonschema v1.2.0
 	go.jetpack.io/typeid v1.0.0
 	go.starlark.net v0.0.0-20240314022150-ee8ed142361c
-	go.temporal.io/api v1.32.0
+	go.temporal.io/api v1.29.2
 	go.temporal.io/sdk v1.26.0
 	go.uber.org/dig v1.17.1
 	go.uber.org/fx v1.21.0
