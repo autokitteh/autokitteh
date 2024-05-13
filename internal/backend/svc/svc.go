@@ -289,8 +289,6 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 			}),
 		),
 		fx.Invoke(func(muxes *muxes.Muxes) {
-			t0 := time.Now()
-
 			muxes.NoAuth.HandleFunc("/id", func(w http.ResponseWriter, r *http.Request) {
 				fmt.Fprint(w, fixtures.ProcessID())
 			})
@@ -299,7 +297,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 				kittehs.Must0(json.NewEncoder(w).Encode(version.Version))
 			})
 			muxes.NoAuth.HandleFunc("/uptime", func(w http.ResponseWriter, r *http.Request) {
-				uptime := time.Since(t0)
+				uptime := fixtures.Uptime().Truncate(time.Second)
 
 				resp := struct {
 					Text    string `json:"text"`
