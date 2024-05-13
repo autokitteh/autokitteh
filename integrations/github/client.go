@@ -121,7 +121,7 @@ func New(vars sdkservices.Vars) sdkservices.Integration {
 			"list_pull_requests",
 			i.listPullRequests,
 			sdkmodule.WithFuncDoc("https://docs.github.com/en/rest/pulls/pulls#list-pull-requests"),
-			sdkmodule.WithArgs("owner", "repo", "state", "head", "base", "sort", "direction"), // TODO: Pagination.
+			sdkmodule.WithArgs("owner", "repo", "state", "head", "base", "sort", "direction", "per_page?", "page?"),
 		),
 		sdkmodule.ExportFunction(
 			"request_review",

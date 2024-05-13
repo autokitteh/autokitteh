@@ -14,7 +14,7 @@ func (i integration) createPullRequest(ctx context.Context, args []sdktypes.Valu
 	// Parse the input arguments.
 	var (
 		owner, repo, head, base string
-		body, title, headRepo   *string
+		title, body, headRepo   *string
 		draft, mcm              *bool
 		issue                   *int
 	)
@@ -24,6 +24,7 @@ func (i integration) createPullRequest(ctx context.Context, args []sdktypes.Valu
 		"repo", &repo,
 		"head", &head,
 		"base", &base,
+
 		"title?", &title,
 		"body?", &body,
 		"head_repo?", &headRepo,
@@ -44,12 +45,12 @@ func (i integration) createPullRequest(ctx context.Context, args []sdktypes.Valu
 	pull := github.NewPullRequest{
 		Title:               title,
 		Head:                &head,
-		Base:                &base,
 		HeadRepo:            headRepo,
+		Base:                &base,
 		Body:                body,
 		Issue:               issue,
-		Draft:               draft,
 		MaintainerCanModify: mcm,
+		Draft:               draft,
 	}
 
 	pr, _, err := gh.PullRequests.Create(ctx, owner, repo, &pull)
@@ -94,23 +95,23 @@ func (i integration) getPullRequest(ctx context.Context, args []sdktypes.Value, 
 // https://docs.github.com/en/rest/pulls/pulls#list-pull-requests
 func (i integration) listPullRequests(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
 	// Parse the input arguments.
-	// TODO: Pagination.
 	var (
-		owner, repo                        string
-		head, base, sort, direction, state string
-		page, perPage                      int
+		owner, repo string
+
+		opts github.PullRequestListOptions
 	)
 
 	err := sdkmodule.UnpackArgs(args, kwargs,
 		"owner", &owner,
 		"repo", &repo,
-		"state?", &state,
-		"head?", &head,
-		"base?", &base,
-		"sort?", &sort,
-		"direction?", &direction,
-		"page?", &page,
-		"per_page?", &perPage,
+
+		"state?", &opts.State,
+		"head?", &opts.Head,
+		"base?", &opts.Base,
+		"sort?", &opts.Sort,
+		"direction?", &opts.Direction,
+		"per_page?", &opts.ListOptions.PerPage,
+		"page?", &opts.ListOptions.Page,
 	)
 	if err != nil {
 		return sdktypes.InvalidValue, err
@@ -122,19 +123,7 @@ func (i integration) listPullRequests(ctx context.Context, args []sdktypes.Value
 		return sdktypes.InvalidValue, err
 	}
 
-	opts := &github.PullRequestListOptions{
-		State:     state,
-		Head:      head,
-		Base:      base,
-		Sort:      sort,
-		Direction: direction,
-		ListOptions: github.ListOptions{
-			Page:    page,
-			PerPage: perPage,
-		},
-	}
-
-	prs, _, err := gh.PullRequests.List(ctx, owner, repo, opts)
+	prs, _, err := gh.PullRequests.List(ctx, owner, repo, &opts)
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
@@ -155,6 +144,7 @@ func (i integration) requestReview(ctx context.Context, args []sdktypes.Value, k
 		"owner", &owner,
 		"repo", &repo,
 		"pull_number", &pyllNumber,
+
 		"reviewers=?", &request.Reviewers,
 		"team_reviewers=?", &request.TeamReviewers,
 	)
