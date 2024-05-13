@@ -2,6 +2,7 @@ package dashboardsvc
 
 import (
 	"net/http"
+	"strconv"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -24,6 +25,21 @@ func (p event) HideFields() []string { return nil }
 func toEvent(sdkP sdktypes.Event) event { return event{sdkP} }
 
 func (s Svc) listEvents(w http.ResponseWriter, r *http.Request, f sdkservices.ListEventsFilter) (list, error) {
+	if f.Limit <= 0 {
+		f.Limit = 50
+
+		if l := r.URL.Query().Get("max_events"); l != "" {
+			l64, err := strconv.ParseInt(l, 10, 32)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return list{}, err
+
+			}
+
+			f.Limit = int(l64)
+		}
+	}
+
 	sdkCs, err := s.Svcs.Events().List(r.Context(), f)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
