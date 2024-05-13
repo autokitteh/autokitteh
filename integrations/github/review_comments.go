@@ -14,28 +14,26 @@ import (
 func (i integration) createReviewComment(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
 	// Parse the input arguments.
 	var (
-		owner, repo          string
-		pullNumber           int
-		body, commitID, path *string
+		owner, repo string
+		pullNumber  int
 
-		line, startLine, inReplyTo   *int
-		side, startSide, subjectType *string
+		req github.PullRequestComment
 	)
 
 	err := sdkmodule.UnpackArgs(args, kwargs,
 		"owner", &owner,
 		"repo", &repo,
 		"pull_number", &pullNumber,
-		"body", &body,
-		"commit_id", &commitID,
-		"path", &path,
+		"body", req.Body,
+		"commit_id", req.CommitID,
+		"path", req.Path,
 
-		"side?", &side,
-		"line?", &line,
-		"start_line?", &startLine,
-		"start_side?", &startSide,
-		"in_reply_to?", &inReplyTo,
-		"subject_type?", &subjectType,
+		"side?", &req.Side,
+		"line?", &req.Line,
+		"start_line?", &req.StartLine,
+		"start_side?", &req.StartSide,
+		"in_reply_to?", &req.InReplyTo,
+		"subject_type?", &req.SubjectType,
 	)
 	if err != nil {
 		return sdktypes.InvalidValue, err
@@ -45,25 +43,6 @@ func (i integration) createReviewComment(ctx context.Context, args []sdktypes.Va
 	gh, err := i.NewClient(ctx, owner)
 	if err != nil {
 		return sdktypes.InvalidValue, err
-	}
-
-	var inReplyTo64 *int64
-	if inReplyTo != nil {
-		inReplyTo64 = new(int64)
-		*inReplyTo64 = int64(*inReplyTo)
-	}
-
-	req := github.PullRequestComment{
-		Body:     body,
-		CommitID: commitID,
-		Path:     path,
-
-		Side:        side,
-		Line:        line,
-		StartLine:   startLine,
-		StartSide:   startSide,
-		InReplyTo:   inReplyTo64,
-		SubjectType: subjectType,
 	}
 
 	comment, _, err := gh.PullRequests.CreateComment(ctx, owner, repo, pullNumber, &req)
