@@ -1,6 +1,8 @@
 package healthchecker
 
 import (
+	"errors"
+
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/health/healthreporter"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
@@ -22,14 +24,14 @@ func New(db db.DB, z *zap.Logger, tc temporalclient.Client) healthreporter.Healt
 	return checker
 }
 
-func (h *healthChecker) Report() []error {
+func (h *healthChecker) Report() error {
 	allHealthErrors := []error{}
 	for name, reporter := range h.checks {
-		if reporterErrors := reporter.Report(); len(reporterErrors) > 0 {
-			h.z.Error("health check error", zap.Errors(name, reporterErrors))
-			allHealthErrors = append(allHealthErrors, reporterErrors...)
+		if err := reporter.Report(); err != nil {
+			h.z.Error("health check error", zap.String("service", name), zap.Error(err))
+			allHealthErrors = append(allHealthErrors, err)
 		}
 	}
 
-	return allHealthErrors
+	return errors.Join(allHealthErrors...)
 }

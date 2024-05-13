@@ -238,7 +238,6 @@ func (c *impl) Start(context.Context) error {
 	return nil
 }
 
-func (c *impl) Report() []error {
-	err := c.healthCheck(context.Background())
-	return []error{err}
+func (c *impl) Report() error {
+	return c.healthCheck(context.Background())
 }

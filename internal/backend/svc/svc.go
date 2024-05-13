@@ -319,7 +319,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 			var ready atomic.Bool
 
 			muxes.NoAuth.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
-				if healthErrors := h.Report(); len(healthErrors) != 0 {
+				if err := h.Report(); err != nil {
 					w.WriteHeader(http.StatusInternalServerError)
 					return
 				}
