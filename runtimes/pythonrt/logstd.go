@@ -10,7 +10,6 @@ import (
 )
 
 type streamLogger struct {
-	ctx    context.Context
 	prefix string // prefix appended to each printed line
 	print  sdkservices.RunPrintFunc
 	rid    sdktypes.RunID
@@ -19,12 +18,11 @@ type streamLogger struct {
 	buf bytes.Buffer
 }
 
-func newStreamLogger(ctx context.Context, prefix string, print sdkservices.RunPrintFunc, rid sdktypes.RunID) *streamLogger {
+func newStreamLogger(prefix string, print sdkservices.RunPrintFunc, rid sdktypes.RunID) *streamLogger {
 	s := streamLogger{
 		prefix: prefix,
 		print:  print,
 		rid:    rid,
-		ctx:    ctx,
 	}
 	s.reset()
 	return &s
@@ -52,7 +50,7 @@ func (s *streamLogger) Write(p []byte) (int, error) {
 		}
 
 		s.buf.Write(data[:i])
-		s.print(s.ctx, s.rid, s.buf.String())
+		s.print(context.Background(), s.rid, s.buf.String())
 
 		s.reset()
 		data = data[i+1:]
