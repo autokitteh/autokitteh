@@ -93,15 +93,16 @@ func (m *triggers) deleteScheduledTrigger(ctx context.Context, triggerID sdktype
 
 	if !found || err != nil {
 		m.z.Error("Failed delete scheduler workflow. No schedulerID found")
-		err = fmt.Errorf("delete trigger: scheduleID not found")
+		err = fmt.Errorf("delete scheduler workflow: scheduleID not found")
 	}
 
 	if err == nil {
 		scheduleHandle := m.tmprl.ScheduleClient().GetHandle(ctx, scheduleID)
-		err = scheduleHandle.Delete(ctx)
+		// FIXME: create and save cancel schedule event?
+		if err = scheduleHandle.Delete(ctx); err != nil {
+			err = fmt.Errorf("delete scheduler workflow: %w", err)
+		}
 	}
-
-	// TODO: create and save cancel event?
 	return errors.Join(err, m.db.DeleteTrigger(ctx, triggerID))
 }
 
