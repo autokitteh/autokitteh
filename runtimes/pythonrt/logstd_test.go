@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -31,17 +32,23 @@ func Test_streamLogger(t *testing.T) {
 	err = os.Chmod(exe, 0755)
 	require.NoError(t, err)
 
+	var mu sync.Mutex
 	var buf bytes.Buffer
 
 	print := func(ctx context.Context, rid sdktypes.RunID, text string) {
+		mu.Lock()
+		defer mu.Unlock()
+
 		buf.WriteString(text)
 		buf.WriteString("\n")
 	}
 	rid := sdktypes.NewRunID()
+	ctx, cancel := testCtx(t)
+	defer cancel()
 
 	outPrefix, errPrefix := "[stdout] ", "[stderr] "
-	stdout := newStreamLogger(outPrefix, print, rid)
-	stderr := newStreamLogger(errPrefix, print, rid)
+	stdout := newStreamLogger(ctx, outPrefix, print, rid)
+	stderr := newStreamLogger(ctx, errPrefix, print, rid)
 
 	cmd := exec.Command(exe)
 	cmd.Stdout = stdout
@@ -52,7 +59,9 @@ func Test_streamLogger(t *testing.T) {
 	stdout.Close()
 	stderr.Close()
 
+	mu.Lock()
 	out := buf.String()
+	mu.Unlock()
 	require.Contains(t, out, fmt.Sprintf("%s%s", outPrefix, outMsg))
 	require.Contains(t, out, fmt.Sprintf("%s%s", errPrefix, errMsg))
 }
@@ -65,7 +74,10 @@ func Test_streamLogger_MultiLine(t *testing.T) {
 		buf.WriteString("\n")
 	}
 
-	stdout := newStreamLogger("[stdout] ", print, sdktypes.NewRunID())
+	ctx, cancel := testCtx(t)
+	defer cancel()
+
+	stdout := newStreamLogger(ctx, "[stdout] ", print, sdktypes.NewRunID())
 	stdout.Write([]byte("garfield\ngrumpy\npuss"))
 	stdout.Close()
 
