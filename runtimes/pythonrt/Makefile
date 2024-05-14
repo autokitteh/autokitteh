@@ -42,3 +42,11 @@ ngrok:
 
 ngrok-prod:
 	ngrok http --domain autokitteh.ngrok.dev 9980
+
+
+cfg_dir = $(shell ak config where  | grep 'Data home' | awk '{print $$NF}')
+
+clean-dbs:
+	rm -f $(cfg_dir)/*sql*
+
+test-workflow: deploy-workflow run
