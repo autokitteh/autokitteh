@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"time"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/health/healthreporter"
 	"go.temporal.io/api/serviceerror"
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/testsuite"
@@ -22,6 +23,7 @@ type Client interface {
 	Stop(context.Context) error
 	Temporal() client.Client
 	TemporalAddr() (frontend, ui string)
+	healthreporter.HealthReporter
 }
 
 type impl struct {
@@ -234,4 +236,8 @@ func (c *impl) Start(context.Context) error {
 	}()
 
 	return nil
+}
+
+func (c *impl) Report() error {
+	return c.healthCheck(context.Background())
 }

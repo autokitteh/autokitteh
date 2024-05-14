@@ -41,6 +41,8 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/events"
 	"go.autokitteh.dev/autokitteh/internal/backend/eventsgrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
+	"go.autokitteh.dev/autokitteh/internal/backend/health/healthchecker"
+	"go.autokitteh.dev/autokitteh/internal/backend/health/healthreporter"
 	"go.autokitteh.dev/autokitteh/internal/backend/httpsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/integrations"
 	"go.autokitteh.dev/autokitteh/internal/backend/integrationsgrpcsvc"
@@ -176,6 +178,8 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		Component("triggers", configset.Empty, fx.Provide(triggers.New)),
 		Component("oauth", configset.Empty, fx.Provide(oauth.New)),
 		Component("runtimes", configset.Empty, fx.Provide(runtimes.New)),
+
+		Component("healthcheck", configset.Empty, fx.Provide(healthchecker.New)),
 		Component(
 			"dispatcher",
 			configset.Empty,
@@ -311,11 +315,14 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 				kittehs.Must0(json.NewEncoder(w).Encode(resp))
 			})
 		}),
-		fx.Invoke(func(z *zap.Logger, lc fx.Lifecycle, muxes *muxes.Muxes) {
+		fx.Invoke(func(z *zap.Logger, lc fx.Lifecycle, muxes *muxes.Muxes, h healthreporter.HealthReporter) {
 			var ready atomic.Bool
 
 			muxes.NoAuth.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
-				// TODO(ENG-530): check db, temporal, etc.
+				if err := h.Report(); err != nil {
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
 				w.WriteHeader(http.StatusOK)
 			})
 
