@@ -95,7 +95,7 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		userCID = cids[0]
 
-		data, err := h.vars.Get(r.Context(), sdktypes.NewVarScopeID(userCID), vars.PATSecret)
+		data, err := h.vars.Reveal(r.Context(), sdktypes.NewVarScopeID(userCID), vars.PATSecret)
 		if err != nil {
 			l.Warn("Unrecognized connection for user event payload",
 				zap.String("suffix", suffix),
