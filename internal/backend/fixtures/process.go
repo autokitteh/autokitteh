@@ -22,17 +22,15 @@ func init() {
 	}
 
 	processID = fmt.Sprintf(
-		"%s_%d_%s_%s_%d_%s",
-		strings.Map(func(r rune) rune {
-			if r == '.' || r == '-' {
-				return '_'
-			}
-			return r
-		}, hostname),
+		"%s_%d__%d_%s__%s_%s",
+		hostname,
 		os.Getpid(),
+		time.Now().Unix(),
+		uuid.NewString(),
 		version.Version,
 		version.Commit,
-		time.Now().Unix(),
-		strings.ReplaceAll(uuid.NewString(), "-", ""),
 	)
+
+	processID = strings.ReplaceAll(processID, "-", "_")
+	processID = strings.ReplaceAll(processID, ".", "_")
 }
