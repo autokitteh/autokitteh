@@ -8,6 +8,7 @@ import (
 	"os"
 	"strings"
 	"sync/atomic"
+	"time"
 
 	"github.com/fatih/color"
 	"go.temporal.io/sdk/client"
@@ -295,6 +296,20 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 				w.Header().Set("Content-Type", "application/json")
 				kittehs.Must0(json.NewEncoder(w).Encode(version.Version))
 			})
+			muxes.NoAuth.HandleFunc("/uptime", func(w http.ResponseWriter, r *http.Request) {
+				uptime := fixtures.Uptime().Truncate(time.Second)
+
+				resp := struct {
+					Text    string `json:"text"`
+					Seconds uint64 `json:"seconds"`
+				}{
+					Text:    uptime.String(),
+					Seconds: uint64(uptime.Seconds()),
+				}
+
+				w.Header().Set("Content-Type", "application/json")
+				kittehs.Must0(json.NewEncoder(w).Encode(resp))
+			})
 		}),
 		fx.Invoke(func(z *zap.Logger, lc fx.Lifecycle, muxes *muxes.Muxes) {
 			var ready atomic.Bool
@@ -315,7 +330,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 
 			HookSimpleOnStart(lc, func() {
 				ready.Store(true)
-				z.Info("ready", zap.String("id", fixtures.ProcessID()))
+				z.Info("ready", zap.String("version", version.Version), zap.String("id", fixtures.ProcessID()))
 			})
 		}),
 	}
