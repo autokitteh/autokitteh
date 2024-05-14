@@ -66,7 +66,7 @@ func (m *triggers) Update(ctx context.Context, trigger sdktypes.Trigger) error {
 		err = m.deleteSchedulerWorkflow(ctx, data)
 	} else if isSchedulerPrevTrigger && isSchedulerTrigger { // scheduler trigger -> scheduler trigger
 		if schedule.String() != prevSchedule.String() { // schedule changed
-			m.updateScheduledTrigger(ctx)
+			trigger, err = m.updateSchedulerWorkflow(ctx, trigger, prevData, schedule.String())
 		}
 	}
 
@@ -96,27 +96,6 @@ func (m *triggers) Get(ctx context.Context, triggerID sdktypes.TriggerID) (sdkty
 // List implements sdkservices.Triggers.
 func (m *triggers) List(ctx context.Context, filter sdkservices.ListTriggersFilter) ([]sdktypes.Trigger, error) {
 	return m.db.ListTriggers(ctx, filter)
-}
-
-func (m *triggers) deleteSchedulerWorkflow(ctx context.Context, data map[string]sdktypes.Value) error {
-	scheduleIDVal, found := data["schedule_id"]
-	scheduleID, err := scheduleIDVal.ToString()
-
-	if !found || err != nil || scheduleID == "" {
-		m.z.Error("Failed delete scheduler workflow. No schedulerID found")
-		return fmt.Errorf("delete scheduler workflow: scheduleID not found")
-	}
-
-	scheduleHandle := m.tmprl.ScheduleClient().GetHandle(ctx, scheduleID) // validity of scheduleID is not checked by temporal
-	if err := scheduleHandle.Delete(ctx); err != nil {
-		return fmt.Errorf("delete scheduler workflow: %w", err)
-	}
-	// FIXME: create and save cancel schedule event?
-	return nil
-}
-
-func (m *triggers) updateScheduledTrigger(ctx context.Context) {
-	// technically we could just delete temporal schedule and recreate it if could be ok to miss schedule runs during the update
 }
 
 func (m *triggers) createScheduledWorkflow(ctx context.Context, trigger sdktypes.Trigger, schedule sdktypes.Value) (sdktypes.Trigger, error) {
@@ -159,5 +138,57 @@ func (m *triggers) createScheduledWorkflow(ctx context.Context, trigger sdktypes
 
 	// update trigger with scheduleID
 	trigger = trigger.WithUpdatedData("schedule_id", sdktypes.NewStringValue(scheduleID))
+	return trigger, nil
+}
+
+func extractScheduleID(data map[string]sdktypes.Value) *string {
+	scheduleIDVal, found := data["schedule_id"]
+	scheduleID, err := scheduleIDVal.ToString()
+
+	if !found || err != nil || scheduleID == "" {
+		return nil
+	}
+	return &scheduleID
+}
+
+func (m *triggers) deleteSchedulerWorkflow(ctx context.Context, data map[string]sdktypes.Value) error {
+	scheduleID := extractScheduleID(data)
+	if scheduleID == nil {
+		m.z.Error("Failed delete scheduler workflow. No scheduleID found")
+		return fmt.Errorf("delete scheduler workflow: no scheduleID")
+	}
+
+	scheduleHandle := m.tmprl.ScheduleClient().GetHandle(ctx, *scheduleID) // validity of scheduleID is not checked by temporal
+	if err := scheduleHandle.Delete(ctx); err != nil {
+		return fmt.Errorf("delete scheduler workflow: %w", err)
+	}
+	// REVIEW: create and save cancel schedule event?
+	return nil
+}
+
+func (m *triggers) updateSchedulerWorkflow(
+	ctx context.Context, trigger sdktypes.Trigger, prevData map[string]sdktypes.Value, scheduleStr string,
+) (sdktypes.Trigger, error) {
+	scheduleID := extractScheduleID(prevData)
+	if scheduleID == nil {
+		m.z.Error("Failed update scheduler workflow. No scheduleID found")
+		return trigger, fmt.Errorf("delete scheduler workflow: no scheduleID")
+	}
+	z := m.z.With(zap.String("schedule_id", *scheduleID))
+
+	trigger = trigger.WithUpdatedData("schedule_id", sdktypes.NewStringValue(*scheduleID))
+
+	scheduleHandle := m.tmprl.ScheduleClient().GetHandle(ctx, *scheduleID) // validity of scheduleID is not checked by temporal
+	err := scheduleHandle.Update(ctx, client.ScheduleUpdateOptions{
+		DoUpdate: func(schedule client.ScheduleUpdateInput) (*client.ScheduleUpdate, error) {
+			schedule.Description.Schedule.Spec = &client.ScheduleSpec{CronExpressions: []string{scheduleStr}}
+			return &client.ScheduleUpdate{Schedule: &schedule.Description.Schedule}, nil
+		},
+	})
+	if err != nil {
+		m.z.Error("Failed updating scheduler workflow, orphaned event", zap.Error(err))
+		return trigger, fmt.Errorf("failed to update scheduler workflow: %w", err)
+	}
+	z.Debug("updated scheduler workflow", zap.String("schedule", scheduleStr))
 	return trigger, nil
 }
