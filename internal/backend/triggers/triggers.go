@@ -34,18 +34,44 @@ func (m *triggers) Create(ctx context.Context, trigger sdktypes.Trigger) (sdktyp
 	}
 	trigger = trigger.WithNewID()
 
+	var err error
 	if schedule, found := trigger.Data()[sdktypes.ScheduleDataSection]; found && schedule.IsValid() {
-		return m.createScheduledTrigger(ctx, trigger, schedule)
+		trigger, err = m.createScheduledWorkflow(ctx, trigger, schedule)
 	}
 
-	if err := m.db.CreateTrigger(ctx, trigger); err != nil {
+	if err == nil {
+		err = m.db.CreateTrigger(ctx, trigger)
+	}
+
+	if err != nil {
 		return sdktypes.InvalidTriggerID, err
 	}
 	return trigger.ID(), nil
 }
 
 func (m *triggers) Update(ctx context.Context, trigger sdktypes.Trigger) error {
-	return m.db.UpdateTrigger(ctx, trigger)
+	prevTrigger, err := m.db.GetTrigger(ctx, trigger.ID())
+	if err != nil {
+		return err
+	}
+
+	prevData := prevTrigger.Data()
+	data := trigger.Data()
+	schedule, isSchedulerTrigger := data[sdktypes.ScheduleDataSection]
+	prevSchedule, isSchedulerPrevTrigger := prevData[sdktypes.ScheduleDataSection]
+
+	if !isSchedulerPrevTrigger && isSchedulerTrigger { // trigger -> scheduler trigger
+		trigger, err = m.createScheduledWorkflow(ctx, trigger, schedule)
+	} else if isSchedulerPrevTrigger && !isSchedulerTrigger { // scheduler trigger -> trigger
+		err = m.deleteSchedulerWorkflow(ctx, data)
+	} else if isSchedulerPrevTrigger && isSchedulerTrigger { // scheduler trigger -> scheduler trigger
+		if schedule.String() != prevSchedule.String() { // schedule changed
+			m.updateScheduledTrigger(ctx)
+		}
+	}
+
+	// REVIEW: should we update trigger if scheduler workflow op failed?
+	return errors.Join(err, m.db.UpdateTrigger(ctx, trigger))
 }
 
 // Delete implements sdkservices.Triggers.
@@ -57,9 +83,9 @@ func (m *triggers) Delete(ctx context.Context, triggerID sdktypes.TriggerID) err
 
 	data := trigger.Data()
 	if schedule, found := data[sdktypes.ScheduleDataSection]; found && schedule.IsValid() {
-		return m.deleteScheduledTrigger(ctx, triggerID, data)
+		err = m.deleteSchedulerWorkflow(ctx, data)
 	}
-	return m.db.DeleteTrigger(ctx, triggerID)
+	return errors.Join(err, m.db.DeleteTrigger(ctx, triggerID))
 }
 
 // Get implements sdkservices.Triggers.
@@ -72,36 +98,15 @@ func (m *triggers) List(ctx context.Context, filter sdkservices.ListTriggersFilt
 	return m.db.ListTriggers(ctx, filter)
 }
 
-func (m *triggers) createScheduledTrigger(ctx context.Context, trigger sdktypes.Trigger, schedule sdktypes.Value) (sdktypes.TriggerID, error) {
-	scheduleID, err := m.createScheduledWorkflow(ctx, schedule, trigger)
-	if err != nil {
-		return sdktypes.InvalidTriggerID, fmt.Errorf("create scheduler trigger: %w", err)
-	}
-
-	trigger = trigger.WithUpdatedData("schedule_id", sdktypes.NewStringValue(*scheduleID))
-
-	if err := m.db.CreateTrigger(ctx, trigger); err != nil {
-		return sdktypes.InvalidTriggerID, err
-	}
-	m.z.Debug("created scheduler trigger",
-		zap.String("schedule", schedule.String()), zap.String("trigger_id", trigger.ID().String()))
-	return trigger.ID(), nil
-}
-
-func (m *triggers) deleteScheduledTrigger(ctx context.Context, triggerID sdktypes.TriggerID, data map[string]sdktypes.Value) error {
+func (m *triggers) deleteSchedulerWorkflow(ctx context.Context, data map[string]sdktypes.Value) error {
 	scheduleIDVal, found := data["schedule_id"]
 	scheduleID, err := scheduleIDVal.ToString()
 
-	if !found || err != nil {
+	if !found || err != nil || scheduleID == "" {
 		m.z.Error("Failed delete scheduler workflow. No schedulerID found")
-		err = fmt.Errorf("delete scheduler workflow: scheduleID not found")
+		return fmt.Errorf("delete scheduler workflow: scheduleID not found")
 	}
-	return errors.Join(
-		m.deleteScheduledWorkflow(ctx, scheduleID),
-		m.db.DeleteTrigger(ctx, triggerID))
-}
 
-func (m *triggers) deleteScheduledWorkflow(ctx context.Context, scheduleID string) error {
 	scheduleHandle := m.tmprl.ScheduleClient().GetHandle(ctx, scheduleID) // validity of scheduleID is not checked by temporal
 	if err := scheduleHandle.Delete(ctx); err != nil {
 		return fmt.Errorf("delete scheduler workflow: %w", err)
@@ -110,16 +115,20 @@ func (m *triggers) deleteScheduledWorkflow(ctx context.Context, scheduleID strin
 	return nil
 }
 
-func (m *triggers) createScheduledWorkflow(ctx context.Context, schedule sdktypes.Value, trigger sdktypes.Trigger) (*string, error) {
+func (m *triggers) updateScheduledTrigger(ctx context.Context) {
+	// technically we could just delete temporal schedule and recreate it if could be ok to miss schedule runs during the update
+}
+
+func (m *triggers) createScheduledWorkflow(ctx context.Context, trigger sdktypes.Trigger, schedule sdktypes.Value) (sdktypes.Trigger, error) {
 	scheduleStr, err := schedule.ToString()
 	if err != nil || scheduleStr == "" {
-		return nil, fmt.Errorf("failed to parse trigger schedule <%v>: %w", schedule, err)
+		return trigger, fmt.Errorf("failed to parse trigger schedule <%v>: %w", schedule, err)
 	}
 
 	event := kittehs.Must1(sdktypes.EventFromProto(&sdktypes.EventPB{EventType: "scheduler"}))
 	eventID, err := m.events.Save(ctx, event)
 	if err != nil {
-		return nil, fmt.Errorf("save event: %w", err)
+		return trigger, fmt.Errorf("create scheduler workflow: save event: %w", err)
 	}
 
 	z := m.z.With(zap.String("event_id", eventID.String())).With(zap.String("schedule", scheduleStr))
@@ -144,8 +153,11 @@ func (m *triggers) createScheduledWorkflow(ctx context.Context, schedule sdktype
 		})
 	if err != nil {
 		m.z.Error("Failed starting scheduler workflow, orphaned event", zap.Error(err))
-		return nil, fmt.Errorf("failed to create trigger schedule: %w", err)
+		return trigger, fmt.Errorf("failed to create scheduler workflow: %w", err)
 	}
-	z.Debug("created scheduled workflow", zap.String("schedule_id", scheduleID))
-	return &scheduleID, nil
+	z.Debug("created scheduler workflow", zap.String("schedule_id", scheduleID))
+
+	// update trigger with scheduleID
+	trigger = trigger.WithUpdatedData("schedule_id", sdktypes.NewStringValue(scheduleID))
+	return trigger, nil
 }
