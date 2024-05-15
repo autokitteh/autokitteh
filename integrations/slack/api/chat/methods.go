@@ -151,6 +151,8 @@ func (a API) PostMessage(ctx context.Context, args []sdktypes.Value, kwargs map[
 		"blocks?", &req.Blocks,
 		"thread_ts?", &req.ThreadTS,
 		"reply_broadcast?", &req.ReplyBroadcast,
+		"username?", &req.Username,
+		"icon_url?", &req.IconURL,
 	)
 	if err != nil {
 		return sdktypes.InvalidValue, err
