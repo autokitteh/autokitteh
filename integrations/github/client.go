@@ -27,8 +27,8 @@ var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.Integrati
 	ConnectionUrl: "/github/connect",
 }))
 
-func New(vars sdkservices.Vars) sdkservices.Integration {
-	i := integration{vars: vars}
+func New(cvars sdkservices.Vars) sdkservices.Integration {
+	i := integration{vars: cvars}
 	return sdkintegrations.NewIntegration(desc, sdkmodule.New(
 		// Issues.
 		sdkmodule.ExportFunction(

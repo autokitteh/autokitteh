@@ -31,7 +31,6 @@ type handler struct {
 	dispatcher sdkservices.Dispatcher
 	conns      sdkservices.Connections
 	projs      sdkservices.Projects
-	vars       sdkservices.Vars
 }
 
 // ns can be either:
@@ -41,8 +40,8 @@ func routePrefix(ns string) string {
 	return fmt.Sprintf("/http/%s/", ns)
 }
 
-func Start(l *zap.Logger, mux *http.ServeMux, vs sdkservices.Vars, d sdkservices.Dispatcher, c sdkservices.Connections, p sdkservices.Projects) {
-	h := handler{logger: l, dispatcher: d, conns: c, vars: vs, projs: p}
+func Start(l *zap.Logger, mux *http.ServeMux, d sdkservices.Dispatcher, c sdkservices.Connections, p sdkservices.Projects) {
+	h := handler{logger: l, dispatcher: d, conns: c, projs: p}
 	mux.Handle(routePrefix("{ns}")+"*", h)
 
 	// Save new autokitteh connections with user-submitted HTTP secrets.
