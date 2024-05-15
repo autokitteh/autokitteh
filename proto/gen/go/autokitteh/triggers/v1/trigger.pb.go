@@ -30,8 +30,8 @@ type Trigger struct {
 
 	TriggerId    string                `protobuf:"bytes,1,opt,name=trigger_id,json=triggerId,proto3" json:"trigger_id,omitempty"`
 	Name         string                `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	ConnectionId string                `protobuf:"bytes,3,opt,name=connection_id,json=connectionId,proto3" json:"connection_id,omitempty"`
-	EnvId        string                `protobuf:"bytes,4,opt,name=env_id,json=envId,proto3" json:"env_id,omitempty"` // if empty, applies to all envs.
+	ConnectionId string                `protobuf:"bytes,3,opt,name=connection_id,json=connectionId,proto3" json:"connection_id,omitempty"` // could be empty
+	EnvId        string                `protobuf:"bytes,4,opt,name=env_id,json=envId,proto3" json:"env_id,omitempty"`                      // if empty, applies to all envs.
 	EventType    string                `protobuf:"bytes,5,opt,name=event_type,json=eventType,proto3" json:"event_type,omitempty"`
 	CodeLocation *v1.CodeLocation      `protobuf:"bytes,6,opt,name=code_location,json=codeLocation,proto3" json:"code_location,omitempty"`
 	Filter       string                `protobuf:"bytes,7,opt,name=filter,proto3" json:"filter,omitempty"`
