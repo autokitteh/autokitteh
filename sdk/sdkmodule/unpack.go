@@ -15,6 +15,8 @@ import (
 //
 // If the parameter name ends with "?", it is optional.
 // If the parameter name ends with "=", it must be supplied in kwargs.
+// If the parameter name ends with "?=" or "?="", it must be supplied in kwargs but is optional.
+// If the parameter name ends with "=", it must be supplied in kwargs.
 // If the parameter name starts with "**", the destination will accept all kwargs as a dict.
 // If the parameter name starts with "*", the destination will aceppt all args as a list.
 //
@@ -32,7 +34,9 @@ import (
 //			  args []int
 //			)
 //
-//			if err := UnpackArgs(args, kwargs, "x", &x, "y=", &y, "*args", &args); err != nil {
+//			var st struct { Z int `json:"z"`}
+//
+//			if err := UnpackArgs(args, kwargs, "x", &x, &st, "y=", &y, "*args", &args); err != nil {
 //		  		return err
 //			}
 //
@@ -40,9 +44,7 @@ import (
 //		}
 //
 // (this function is heavily inspired by https://pkg.go.dev/go.starlark.net/starlark#UnpackArgs,
-// it essentially does the same thing, but on autokitteh level and not starlark)
-//
-// TODO: varargs.
+// it essentially does the same thing with some bells and whistles, but on autokitteh level)
 func UnpackArgs(args []sdktypes.Value, kwargs map[string]sdktypes.Value, dsts ...any) error {
 	kwargs = maps.Clone(kwargs)
 
