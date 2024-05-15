@@ -48,7 +48,7 @@ func TestUnpackFlat(t *testing.T) {
 			} `json:"s"`
 			Sptr *struct {
 				Z int `json:"z"`
-			} `json:"s"`
+			} `json:"sptr"`
 		}
 	)
 
