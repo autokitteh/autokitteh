@@ -335,9 +335,8 @@ func (f *dbFixture) newTrigger() scheme.Trigger {
 	f.triggerID = incByOne(f.triggerID)
 
 	return scheme.Trigger{
-		TriggerID:    f.triggerID,
-		EnvID:        testEnvID,
-		ConnectionID: testConnectionID,
+		TriggerID: f.triggerID,
+		EnvID:     testEnvID,
 	}
 }
 
