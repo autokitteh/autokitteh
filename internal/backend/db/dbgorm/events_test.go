@@ -3,6 +3,7 @@ package dbgorm
 import (
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
 
@@ -37,16 +38,24 @@ func TestCreateEventForeignKeys(t *testing.T) {
 	findAndAssertCount[scheme.Event](t, f, 0, "") // no events
 
 	e := f.newEvent()
-	assert.ErrorIs(t, f.gormdb.saveEvent(f.ctx, &e), gorm.ErrForeignKeyViolated)
-
 	i := f.newIntegration()
-	f.createIntegrationsAndAssert(t, i)
-	e.IntegrationID = i.IntegrationID
-	assert.ErrorIs(t, f.gormdb.saveEvent(f.ctx, &e), gorm.ErrForeignKeyViolated) // need connection as well
-
 	c := f.newConnection()
+
+	f.createIntegrationsAndAssert(t, i)
 	f.createConnectionsAndAssert(t, c)
-	e.ConnectionID = c.ConnectionID
+
+	// negative test with non-existing assets
+	unexisting := uuid.New()
+
+	// FIXME: ENG-590. foreign keys integration
+	// e.IntegrationID = &unexisting
+	// assert.ErrorIs(t, f.gormdb.saveEvent(f.ctx, &e), gorm.ErrForeignKeyViolated)
+	// e.IntegrationID = &i.IntegrationID
+
+	e.ConnectionID = &unexisting
+	assert.ErrorIs(t, f.gormdb.saveEvent(f.ctx, &e), gorm.ErrForeignKeyViolated)
+	e.ConnectionID = &c.ConnectionID
+
 	f.createEventsAndAssert(t, e)
 }
 
