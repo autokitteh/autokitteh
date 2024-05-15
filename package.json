@@ -1,0 +1,21 @@
+{
+  "name": "autokitteh",
+  "version": "1.0.0",
+  "description": "[![Go Reference](https://pkg.go.dev/badge/go.autokitteh.dev/autokitteh.svg)](https://pkg.go.dev/go.autokitteh.dev/autokitteh) [![Go Report Card](https://goreportcard.com/badge/go.autokitteh.dev/autokitteh)](https://goreportcard.com/report/go.autokitteh.dev/autokitteh)",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs",
+    "example": "examples",
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tailwindcss build -o web/static/tailwind.css",
+    "watch": "tailwindcss build -o web/static/tailwind.css --watch"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "tailwindcss": "^3.4.3"
+  }
+}

@@ -1,45 +1,79 @@
 <!DOCTYPE html>
 <html>
+  <head>
+    <title>autokitteh Integrations</title>
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="/static/apple-touch-icon.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="/static/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="/static/favicon-16x16.png"
+    />
+    <link rel="manifest" href="/static/site.webmanifest" />
+    <!-- <link rel="stylesheet" type="text/css" href="/static/styles.css" /> -->
+    <meta name="robots" content="noindex, nofollow" />
+    <link rel="stylesheet" href="/static/tailwind.css" />
+  </head>
 
-<head>
-  <title>autokitteh Integrations</title>
-  <link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png" />
-  <link rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16x16.png" />
-  <link rel="manifest" href="/static/site.webmanifest" />
-  <link rel="stylesheet" type="text/css" href="/static/styles.css" />
-  <meta name="robots" content="noindex, nofollow" />
-</head>
+  <body class="bg-gray-50">
+    <div class="h-40 p-4 flex">
+      <a class="mx-auto" href="/" target="_self">
+        <img class="object-contain h-full mx-auto" src="/static/banner.svg" alt="autokitteh" />
+      </a>
+    </div>
+    </div>
 
-<body>
-  <a href="/" target="_self">
-    <img class="banner" src="/static/banner.svg" alt="autokitteh" />
-  </a>
-
-  <h1>Integrations</h1>
-
-  <table>
-    {{ range . }}
-    <tr>
-      <td>
-        {{ if .Logo }}
-        {{ if .Connection }}
-        <a href="{{ .Connection }}" target="_self">
+    <div class="flex w-screen mt-8 mb-8">
+      <div class="grid grid-cols-2 sm:grid-cols-5 gap-16 m-auto">
+        {{ range . }}
+        <div class="shadow-md rounded-md w-48 h-48 flex flex-col bg-white">
+          <div class="mx-auto mt-8 mb-4">
+            {{ if .Connection }}
+            <a href="{{ .Connection }}" target="_self"><h2>{{ .Name }}</h2></a>
+            {{ else }}<h2> {{ .Name }} </h2>{{ end }}
+          </div>
+          <p class="mx-auto">
+            {{ if .Logo }} {{ if .Connection }}
+            <a href="{{ .Connection }}" target="_self">
+              <img class="h-20 w-20" src="{{ .Logo }}" alt="{{ .Name }}" />
+            </a>
+            {{ else }}
+            <img class="h-20 w-20" src="{{ .Logo }}" alt="{{ .Name }}" />
+            {{ end }} {{ end }}
+          </p>
+        </div>
+        {{ end }}
+      </div>
+    </div>
+    <!-- <table>
+      {{ range . }}
+      <tr>
+        <td>
+          {{ if .Logo }} {{ if .Connection }}
+          <a href="{{ .Connection }}" target="_self">
+            <img class="logo" src="{{ .Logo }}" alt="{{ .Name }}" />
+          </a>
+          {{ else }}
           <img class="logo" src="{{ .Logo }}" alt="{{ .Name }}" />
-        </a>
-        {{ else }}
-        <img class="logo" src="{{ .Logo }}" alt="{{ .Name }}" />
-        {{ end }}
-        {{ end }}
-      </td>
-      <td>
-        {{ if .Connection }}
-        <a href="{{ .Connection }}" target="_self">{{ .Name }}</a>
-        {{ else }} {{ .Name }} {{ end }}
-      </td>
-    </tr>
-    {{ end }}
-  </table>
-</body>
-
+          {{ end }} {{ end }}
+        </td>
+        <td>
+          {{ if .Connection }}
+          <a href="{{ .Connection }}" target="_self">{{ .Name }}</a>
+          {{ else }} {{ .Name }} {{ end }}
+        </td>
+      </tr>
+      {{ end }}
+    </table> -->
+  </body>
 </html>

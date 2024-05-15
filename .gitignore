@@ -79,3 +79,5 @@ go.work
 
 # Idea workspace folder
 .idea/
+
+node_modules
