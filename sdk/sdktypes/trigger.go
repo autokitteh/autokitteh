@@ -22,7 +22,7 @@ func (TriggerTraits) Validate(m *TriggerPB) error {
 	_, scheduleInData := m.Data["schedule"]
 	var scheduleOrConnectionErr error
 	if (scheduleInData && m.ConnectionId != "") || (!scheduleInData && m.ConnectionId == "") {
-		scheduleOrConnectionErr = fmt.Errorf("trigger should contain either valid schedule or conneciton")
+		scheduleOrConnectionErr = fmt.Errorf("trigger should contain either valid schedule or connection")
 	}
 
 	return errors.Join(
