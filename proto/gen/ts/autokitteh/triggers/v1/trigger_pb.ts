@@ -23,6 +23,8 @@ export class Trigger extends Message<Trigger> {
   name = "";
 
   /**
+   * could be empty
+   *
    * @generated from field: string connection_id = 3;
    */
   connectionId = "";

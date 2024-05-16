@@ -432,16 +432,39 @@ func planTriggers(ctx context.Context, mtriggers []*Trigger, client sdkservices.
 			return nil, fmt.Errorf("trigger %q: invalid additional data: %w", mtrigger.GetKey(), err)
 		}
 
+		// schedule could be specified in manifest either in `schedule` or in `data' sections. Ensure schedule is always present in data section
+		// TODO: reenable in upcoming PR
+		//if mtrigger.Schedule != "" {
+		//	if schedule, found := mtrigger.Data["schedule"]; found {
+		//		if schedule != mtrigger.Schedule {
+		//			return nil, fmt.Errorf("trigger %q: conflicting schedules specified: %q != %q", mtrigger.GetKey(), mtrigger.Schedule, schedule)
+		//		}
+		//	}
+		//	mtrigger.Data["schedule"] = mtrigger.Schedule // ensure that schedule i
+		//}
+		//
+		//if _, found := mtrigger.Data["schedule"]; found {
+		//	mtrigger.EventType = "scheduler"
+		//}
+
+		// define connecitonID to pass trigger validation (either connection or schedule should be present)
+		connectionID := ""
+		if mtrigger.ConnectionKey != "" {
+			connectionID = sdktypes.NewConnectionID().String()
+		}
+
 		desired, err := sdktypes.TriggerFromProto(&sdktypes.TriggerPB{
 			Filter:       mtrigger.Filter,
 			EventType:    mtrigger.EventType,
 			CodeLocation: loc.ToProto(),
 			Data:         kittehs.TransformMapValues(data, sdktypes.ToProto),
 			Name:         mtrigger.Name,
+			ConnectionId: connectionID,
 		})
 		if err != nil {
 			return nil, fmt.Errorf("trigger %q: invalid: %w", mtrigger.GetKey(), err)
 		}
+		desired = desired.WithConnectionID(curr.ConnectionID())
 
 		if !curr.IsValid() {
 			log.Printf("not found, will create")

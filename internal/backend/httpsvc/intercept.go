@@ -8,6 +8,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 )
 
@@ -43,6 +44,8 @@ func intercept(z *zap.Logger, cfg *LoggerConfig, extractors []RequestLogExtracto
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("X-AutoKitteh-ID", fixtures.ProcessID())
+
 		z := z.With(zap.String("method", r.Method), zap.String("path", r.URL.Path))
 
 		level := cfg.ImportantLevel.Level()

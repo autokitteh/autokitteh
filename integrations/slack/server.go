@@ -24,7 +24,7 @@ func Start(l *zap.Logger, mux *http.ServeMux, vs sdkservices.Vars, d sdkservices
 	// Connection UI + save handlers.
 	wsh := websockets.NewHandler(l, vs, d, integrationID)
 	mux.Handle(uiPath, http.FileServer(http.FS(static.SlackWebContent)))
-	mux.Handle(oauthPath, NewHandler(l, vs))
+	mux.Handle(oauthPath, NewHandler(l))
 	mux.HandleFunc(formPath, wsh.HandleForm)
 
 	// Event webhooks.

@@ -1,5 +1,9 @@
 {{ define "footer_" }}
 
+<div class="footer">
+    <p><tt>{{ ProcessID }} | {{ Uptime }}</tt></p>
+</div>
+
 <script>
     const queryString = window.location.search;
     const urlParams = new URLSearchParams(queryString);

@@ -7,6 +7,7 @@ import (
 	"gorm.io/gorm"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
+	"go.autokitteh.dev/autokitteh/internal/backend/health/healthreporter"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -31,6 +32,8 @@ type DB interface {
 	MigrationRequired(context.Context) (bool, int64, error)
 	Migrate(context.Context) error
 	Debug() DB
+
+	healthreporter.HealthReporter
 
 	GormDB() *gorm.DB
 

@@ -30,12 +30,11 @@ const (
 // to receive and dispatch asynchronous event notifications.
 type handler struct {
 	logger *zap.Logger
-	vars   sdkservices.Vars
 	oauth  sdkservices.OAuth
 }
 
-func NewHTTPHandler(l *zap.Logger, vars sdkservices.Vars, o sdkservices.OAuth) handler {
-	return handler{logger: l, vars: vars, oauth: o}
+func NewHTTPHandler(l *zap.Logger, o sdkservices.OAuth) handler {
+	return handler{logger: l, oauth: o}
 }
 
 // HandleOAuth receives an inbound redirect request from autokitteh's OAuth

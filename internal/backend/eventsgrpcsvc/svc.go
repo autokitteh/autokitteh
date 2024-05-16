@@ -75,6 +75,7 @@ func (s *server) List(ctx context.Context, req *connect.Request[eventsv1.ListReq
 		IntegrationID: iid,
 		ConnectionID:  cid,
 		EventType:     msg.EventType,
+		Limit:         int(msg.MaxResults),
 	}
 
 	events, err := s.events.List(ctx, filter)

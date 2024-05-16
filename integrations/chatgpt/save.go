@@ -8,7 +8,6 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
-	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
@@ -23,11 +22,10 @@ var apiKeyVar = sdktypes.NewSymbol("api_key")
 // to save data from web form submissions as connections.
 type handler struct {
 	logger *zap.Logger
-	vars   sdkservices.Vars
 }
 
-func NewHTTPHandler(l *zap.Logger, vars sdkservices.Vars) http.Handler {
-	return handler{logger: l, vars: vars}
+func NewHTTPHandler(l *zap.Logger) http.Handler {
+	return handler{logger: l}
 }
 
 // ServeHTTP saves a new autokitteh connection with user-submitted data.
