@@ -32,14 +32,16 @@ class GetResponse(_message.Message):
     def __init__(self, event: _Optional[_Union[_event_pb2.Event, _Mapping]] = ...) -> None: ...
 
 class ListRequest(_message.Message):
-    __slots__ = ["integration_id", "connection_id", "event_type"]
+    __slots__ = ["integration_id", "connection_id", "event_type", "max_results"]
     INTEGRATION_ID_FIELD_NUMBER: _ClassVar[int]
     CONNECTION_ID_FIELD_NUMBER: _ClassVar[int]
     EVENT_TYPE_FIELD_NUMBER: _ClassVar[int]
+    MAX_RESULTS_FIELD_NUMBER: _ClassVar[int]
     integration_id: str
     connection_id: str
     event_type: str
-    def __init__(self, integration_id: _Optional[str] = ..., connection_id: _Optional[str] = ..., event_type: _Optional[str] = ...) -> None: ...
+    max_results: int
+    def __init__(self, integration_id: _Optional[str] = ..., connection_id: _Optional[str] = ..., event_type: _Optional[str] = ..., max_results: _Optional[int] = ...) -> None: ...
 
 class ListResponse(_message.Message):
     __slots__ = ["events"]

@@ -8,6 +8,7 @@ import (
 	"os"
 	"strings"
 	"sync/atomic"
+	"time"
 
 	"github.com/fatih/color"
 	"go.temporal.io/sdk/client"
@@ -40,6 +41,8 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/events"
 	"go.autokitteh.dev/autokitteh/internal/backend/eventsgrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
+	"go.autokitteh.dev/autokitteh/internal/backend/health/healthchecker"
+	"go.autokitteh.dev/autokitteh/internal/backend/health/healthreporter"
 	"go.autokitteh.dev/autokitteh/internal/backend/httpsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/integrations"
 	"go.autokitteh.dev/autokitteh/internal/backend/integrationsgrpcsvc"
@@ -123,7 +126,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		Component("auth", configset.Empty, fx.Provide(authsvc.New)),
 		Component("authjwttokens", authjwttokens.Configs, fx.Provide(authjwttokens.New)),
 		Component("authsessions", authsessions.Configs, fx.Provide(authsessions.New)),
-		Component("authhttmiddleware", authhttpmiddleware.Configs, fx.Provide(authhttpmiddleware.New)),
+		Component("authhttpmiddleware", authhttpmiddleware.Configs, fx.Provide(authhttpmiddleware.New)),
 
 		DBFxOpt(),
 		Component(
@@ -175,6 +178,8 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		Component("triggers", configset.Empty, fx.Provide(triggers.New)),
 		Component("oauth", configset.Empty, fx.Provide(oauth.New)),
 		Component("runtimes", configset.Empty, fx.Provide(runtimes.New)),
+
+		Component("healthcheck", configset.Empty, fx.Provide(healthchecker.New)),
 		Component(
 			"dispatcher",
 			configset.Empty,
@@ -295,12 +300,29 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 				w.Header().Set("Content-Type", "application/json")
 				kittehs.Must0(json.NewEncoder(w).Encode(version.Version))
 			})
+			muxes.NoAuth.HandleFunc("/uptime", func(w http.ResponseWriter, r *http.Request) {
+				uptime := fixtures.Uptime().Truncate(time.Second)
+
+				resp := struct {
+					Text    string `json:"text"`
+					Seconds uint64 `json:"seconds"`
+				}{
+					Text:    uptime.String(),
+					Seconds: uint64(uptime.Seconds()),
+				}
+
+				w.Header().Set("Content-Type", "application/json")
+				kittehs.Must0(json.NewEncoder(w).Encode(resp))
+			})
 		}),
-		fx.Invoke(func(z *zap.Logger, lc fx.Lifecycle, muxes *muxes.Muxes) {
+		fx.Invoke(func(z *zap.Logger, lc fx.Lifecycle, muxes *muxes.Muxes, h healthreporter.HealthReporter) {
 			var ready atomic.Bool
 
 			muxes.NoAuth.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
-				// TODO(ENG-530): check db, temporal, etc.
+				if err := h.Report(); err != nil {
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
 				w.WriteHeader(http.StatusOK)
 			})
 
@@ -315,7 +337,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 
 			HookSimpleOnStart(lc, func() {
 				ready.Store(true)
-				z.Info("ready", zap.String("id", fixtures.ProcessID()))
+				z.Info("ready", zap.String("version", version.Version), zap.String("id", fixtures.ProcessID()))
 			})
 		}),
 	}

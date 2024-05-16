@@ -3,12 +3,14 @@ package dbgorm
 import (
 	"context"
 
+	"gorm.io/gorm/clause"
+
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 )
 
 func (db *gormdb) SetSecret(ctx context.Context, key string, value string) error {
 	secret := scheme.Secret{Key: key, Value: value}
-	return translateError(db.db.WithContext(ctx).Create(secret).Error)
+	return translateError(db.db.WithContext(ctx).Clauses(clause.OnConflict{UpdateAll: true}).Create(secret).Error)
 }
 
 func (db *gormdb) GetSecret(ctx context.Context, key string) (string, error) {
@@ -18,7 +20,6 @@ func (db *gormdb) GetSecret(ctx context.Context, key string) (string, error) {
 	}
 
 	return secret.Value, nil
-
 }
 
 func (db *gormdb) DeleteSecret(ctx context.Context, key string) error {

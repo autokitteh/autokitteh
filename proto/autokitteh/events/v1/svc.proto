@@ -39,6 +39,7 @@ message ListRequest {
   string integration_id = 1;
   string connection_id = 2;
   string event_type = 3;
+  uint32 max_results = 4;
 }
 
 message ListResponse {

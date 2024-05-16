@@ -189,9 +189,9 @@ type Secret struct {
 }
 
 type Event struct {
-	EventID       sdktypes.UUID `gorm:"uniqueIndex;type:uuid;not null"`
-	IntegrationID sdktypes.UUID `gorm:"index;type:uuid;not null"`
-	ConnectionID  sdktypes.UUID `gorm:"index;type:uuid;not null"`
+	EventID       sdktypes.UUID  `gorm:"uniqueIndex;type:uuid;not null"`
+	IntegrationID *sdktypes.UUID `gorm:"index;type:uuid"`
+	ConnectionID  *sdktypes.UUID `gorm:"index;type:uuid"`
 
 	EventType string `gorm:"index:idx_event_type_seq,priority:1;index:idx_event_type"`
 	Data      datatypes.JSON
@@ -219,7 +219,7 @@ func ParseEvent(e Event) (sdktypes.Event, error) {
 
 	return sdktypes.StrictEventFromProto(&sdktypes.EventPB{
 		EventId:      sdktypes.NewIDFromUUID[sdktypes.EventID](&e.EventID).String(),
-		ConnectionId: sdktypes.NewIDFromUUID[sdktypes.ConnectionID](&e.ConnectionID).String(),
+		ConnectionId: sdktypes.NewIDFromUUID[sdktypes.ConnectionID](e.ConnectionID).String(),
 		EventType:    e.EventType,
 		Data:         kittehs.TransformMapValues(data, sdktypes.ToProto),
 		Memo:         memo,
@@ -272,9 +272,9 @@ func ParseEnv(e Env) (sdktypes.Env, error) {
 type Trigger struct {
 	TriggerID sdktypes.UUID `gorm:"primaryKey;type:uuid;not null"`
 
-	ProjectID    sdktypes.UUID `gorm:"index;type:uuid;not null"`
-	ConnectionID sdktypes.UUID `gorm:"index;type:uuid;not null"`
-	EnvID        sdktypes.UUID `gorm:"index;type:uuid;not null"`
+	ProjectID    sdktypes.UUID  `gorm:"index;type:uuid;not null"`
+	ConnectionID *sdktypes.UUID `gorm:"index;type:uuid"`
+	EnvID        sdktypes.UUID  `gorm:"index;type:uuid;not null"`
 	Name         string
 	EventType    string
 	Filter       string
@@ -305,7 +305,7 @@ func ParseTrigger(e Trigger) (sdktypes.Trigger, error) {
 	return sdktypes.StrictTriggerFromProto(&sdktypes.TriggerPB{
 		TriggerId:    sdktypes.NewIDFromUUID[sdktypes.TriggerID](&e.TriggerID).String(),
 		EnvId:        sdktypes.NewIDFromUUID[sdktypes.EnvID](&e.EnvID).String(),
-		ConnectionId: sdktypes.NewIDFromUUID[sdktypes.ConnectionID](&e.ConnectionID).String(),
+		ConnectionId: sdktypes.NewIDFromUUID[sdktypes.ConnectionID](e.ConnectionID).String(),
 		EventType:    e.EventType,
 		Filter:       e.Filter,
 		CodeLocation: loc.ToProto(),

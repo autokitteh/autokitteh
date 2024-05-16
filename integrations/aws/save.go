@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
-	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
@@ -17,13 +16,9 @@ const (
 
 // handler is an autokitteh webhook which implements [http.Handler]
 // to save data from web form submissions as connections.
-type handler struct {
-	vars sdkservices.Vars
-}
+type handler struct{}
 
-func NewHTTPHandler(vars sdkservices.Vars) http.Handler {
-	return handler{vars: vars}
-}
+func NewHTTPHandler() http.Handler { return handler{} }
 
 // ServeHTTP saves a new autokitteh connection with user-submitted data.
 func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

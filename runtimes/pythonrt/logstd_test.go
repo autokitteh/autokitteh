@@ -43,12 +43,10 @@ func Test_streamLogger(t *testing.T) {
 		buf.WriteString("\n")
 	}
 	rid := sdktypes.NewRunID()
-	ctx, cancel := testCtx(t)
-	defer cancel()
 
 	outPrefix, errPrefix := "[stdout] ", "[stderr] "
-	stdout := newStreamLogger(ctx, outPrefix, print, rid)
-	stderr := newStreamLogger(ctx, errPrefix, print, rid)
+	stdout := newStreamLogger(outPrefix, print, rid)
+	stderr := newStreamLogger(errPrefix, print, rid)
 
 	cmd := exec.Command(exe)
 	cmd.Stdout = stdout
@@ -74,10 +72,7 @@ func Test_streamLogger_MultiLine(t *testing.T) {
 		buf.WriteString("\n")
 	}
 
-	ctx, cancel := testCtx(t)
-	defer cancel()
-
-	stdout := newStreamLogger(ctx, "[stdout] ", print, sdktypes.NewRunID())
+	stdout := newStreamLogger("[stdout] ", print, sdktypes.NewRunID())
 	stdout.Write([]byte("garfield\ngrumpy\npuss"))
 	stdout.Close()
 

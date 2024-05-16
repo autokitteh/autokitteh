@@ -13,6 +13,16 @@
     <link rel="stylesheet" type="text/css" href="/static/styles.css" />
 
     <style>
+        .footer {
+            position: fixed;
+            left: 0;
+            bottom: 0;
+            width: 100%;
+            color: rgb(42, 42, 42);
+            text-align: center;
+            font-size: small;
+        }
+
         .navbar ul {
             list-style-type: none;
             margin: 0;
@@ -76,7 +86,7 @@
 <body>
     <div class="navbar">
         <ul>
-            <li class="inert"><a target="_self">autokitteh</a></li>
+            <li class="inert"><a target="_self">autokitteh <tt>{{ Version }}</tt></a></li>
             <li><a href="/projects">projects</a></li>
             <li><a href="/envs">envs</a></li>
             <li><a href="/connections">connections</a></li>
