@@ -98,9 +98,18 @@ func (db *gormdb) UpdateTrigger(ctx context.Context, trigger sdktypes.Trigger) e
 			return err
 		}
 
-		if err := tx.db.Updates(t).Error; err != nil {
+		// update and set null fields as well, e.g. nullify connection, data etc..
+		tt := map[string]any{
+			"ConnectionID": t.ConnectionID,
+			"EventType":    t.EventType,
+			"Filter":       t.Filter,
+			"CodeLocation": t.CodeLocation,
+			"Data":         t.Data,
+		}
+		if err := tx.db.Model(&t).Updates(tt).Error; err != nil {
 			return translateError(err)
 		}
+
 		return nil
 	})
 }
