@@ -93,10 +93,6 @@ func (db *gormdb) UpdateTrigger(ctx context.Context, trigger sdktypes.Trigger) e
 			return sdkerrors.ErrConflict
 		}
 
-		if connID := trigger.ConnectionID(); connID.IsValid() && curr.ConnectionID() != connID {
-			return sdkerrors.ErrConflict
-		}
-
 		t, err := triggerToRecord(ctx, tx, trigger)
 		if err != nil {
 			return err
