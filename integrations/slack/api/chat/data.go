@@ -90,6 +90,11 @@ type PostMessageRequest struct {
 	// whether the reply should be made visible to everyone in the channel
 	// or conversation. Default = false.
 	ReplyBroadcast bool `json:"reply_broadcast,omitempty"`
+
+	// Name to display alongside the message, instead of the bot's name.
+	Username string `json:"username,omitempty"`
+	// URL to an image to use as the user's icon for this message, instead of the bot's.
+	IconURL string `json:"icon_url,omitempty"`
 }
 
 // https://api.slack.com/methods/chat.postMessage#examples
