@@ -114,7 +114,6 @@
       "additionalProperties": false,
       "type": "object",
       "required": [
-        "connection",
         "name"
       ]
     },
