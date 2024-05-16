@@ -63,7 +63,7 @@ func (m *triggers) Update(ctx context.Context, trigger sdktypes.Trigger) error {
 	if !isSchedulerPrevTrigger && isSchedulerTrigger { // trigger -> scheduler trigger
 		trigger, err = m.createScheduledWorkflow(ctx, trigger, schedule)
 	} else if isSchedulerPrevTrigger && !isSchedulerTrigger { // scheduler trigger -> trigger
-		err = m.deleteSchedulerWorkflow(ctx, data)
+		err = m.deleteSchedulerWorkflow(ctx, prevData)
 	} else if isSchedulerPrevTrigger && isSchedulerTrigger { // scheduler trigger -> scheduler trigger
 		if schedule.String() != prevSchedule.String() { // schedule changed
 			trigger, err = m.updateSchedulerWorkflow(ctx, trigger, prevData, schedule.String())
