@@ -13,15 +13,11 @@ import (
 )
 
 func triggerToRecord(ctx context.Context, tx *tx, trigger sdktypes.Trigger) (*scheme.Trigger, error) {
+	var projID sdktypes.ProjectID
 	connID := trigger.ConnectionID()
-	var (
-		conn   sdktypes.Connection
-		err    error
-		projID sdktypes.ProjectID
-	)
 
 	if connID.IsValid() {
-		conn, err = tx.GetConnection(ctx, connID)
+		conn, err := tx.GetConnection(ctx, connID)
 		if err != nil {
 			return nil, fmt.Errorf("get trigger connection: %w", err)
 		}

@@ -441,19 +441,19 @@ func planTriggers(ctx context.Context, mtriggers []*Trigger, client sdkservices.
 			mtrigger.Data[sdktypes.ScheduleDataSection] = mtrigger.Schedule // ensure that schedule is present in data section
 		}
 
+		connectionID := ""
+
 		if _, found := mtrigger.Data[sdktypes.ScheduleDataSection]; found {
 			mtrigger.EventType = sdktypes.SchedulerEventTriggerType
+			mtrigger.ConnectionKey = "" // no connection needed for SchedulerType
+
+		} else { // just define connectionID to pass trigger validation for non-scheduler triggers. It will be overrided or replaced by actual connection later
+			connectionID = sdktypes.NewConnectionID().String()
 		}
 
 		data, err := kittehs.TransformMapValuesError(mtrigger.Data, sdktypes.WrapValue)
 		if err != nil {
 			return nil, fmt.Errorf("trigger %q: invalid additional data: %w", mtrigger.GetKey(), err)
-		}
-
-		// define connecitonID to pass trigger validation (either connection or schedule should be present)
-		connectionID := ""
-		if mtrigger.ConnectionKey != projPrefix {
-			connectionID = sdktypes.NewConnectionID().String()
 		}
 
 		desired, err := sdktypes.TriggerFromProto(&sdktypes.TriggerPB{
@@ -467,14 +467,12 @@ func planTriggers(ctx context.Context, mtriggers []*Trigger, client sdkservices.
 		if err != nil {
 			return nil, fmt.Errorf("trigger %q: invalid: %w", mtrigger.GetKey(), err)
 		}
-		desired = desired.WithConnectionID(curr.ConnectionID())
 
 		if !curr.IsValid() {
 			log.Printf("not found, will create")
 			add(actions.CreateTriggerAction{Key: mtrigger.GetKey(), ConnectionKey: mtrigger.ConnectionKey, EnvKey: mtrigger.EnvKey, Trigger: desired})
 		} else {
 			matchedTriggerIDs = append(matchedTriggerIDs, curr.ID().String())
-
 			log.Printf("found, id=%q", curr.ID())
 
 			desired = desired.
