@@ -4,9 +4,9 @@
 from os import getenv
 import json
 
+home, user = getenv('HOME'), getenv('USER')
 
 def greet(event):
-    home, user = getenv('HOME'), getenv('USER')
     print(f'simple: HOME: {home}')  # From environment
     print(f'simple: USER: {user}')  # From 'var' in manifest
     print(f'simple: event: {event!r}')

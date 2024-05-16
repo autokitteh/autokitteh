@@ -227,17 +227,30 @@ func (py *pySvc) Run(
 	py.log.Info("python connected", zap.String("peer", conn.RemoteAddr().String()))
 	py.comm = NewComm(conn)
 
-	// FIXME (ENG-577) We might get activity calls before module is loaded if there are module level function calls.
+	var msg Message
+	for {
+		var err error
+		msg, err = py.comm.Recv()
+		if err != nil {
+			py.log.Error("initial message from python", zap.Error(err))
+			return nil, err
+		}
 
-	msg, err := py.comm.Recv()
-	if err != nil {
-		py.log.Error("initial message from python", zap.Error(err))
-		return nil, err
-	}
+		if msg.Type == "" {
+			py.log.Error("python can't load module", zap.String("module", mainPath))
+			return nil, fmt.Errorf("python can't load %q", mainPath)
+		}
 
-	if msg.Type == "" {
-		py.log.Error("python can't load module", zap.String("module", mainPath))
-		return nil, fmt.Errorf("python can't load %q", mainPath)
+		if msg.Type == messageType[CallbackMessage]() {
+			if err := py.handleAcitivy(ctx, msg); err != nil {
+				return nil, fmt.Errorf("loading module: %w", err)
+			}
+			continue
+		}
+
+		if msg.Type == messageType[ModuleMessage]() {
+			break
+		}
 	}
 
 	mod, err := extractMessage[ModuleMessage](msg)
@@ -273,6 +286,53 @@ func (py *pySvc) Close() {
 	// We kill the Python process once the initial `Call` is completed.
 }
 
+func (py *pySvc) handleAcitivy(ctx context.Context, msg Message) error {
+	cbm, err := extractMessage[CallbackMessage](msg)
+	if err != nil {
+		py.log.Error("callback", zap.Error(err))
+		return err
+	}
+
+	// Generate activity, it'll call Python with the result
+	// The function name is irrelevant, all the information Python needs is in the Payload
+	fn, err := sdktypes.NewFunctionValue(py.xid, cbm.Name, cbm.Data, nil, pyModuleFunc)
+	if err != nil {
+		py.log.Error("create function", zap.Error(err))
+		return err
+	}
+
+	py.log.Info("callback", zap.String("func", cbm.Name))
+	val, err := py.cbs.Call(
+		ctx,
+		py.xid.ToRunID(),
+		// The Python function to call is encoded in the payload
+		fn,
+		kittehs.Transform(cbm.Args, sdktypes.NewStringValue),
+		kittehs.TransformMap(cbm.Kw, func(key, val string) (string, sdktypes.Value) {
+			return key, sdktypes.NewStringValue(val)
+		}),
+	)
+	if err != nil {
+		py.log.Error("callback", zap.Error(err))
+		return err
+	}
+
+	if !val.IsBytes() {
+		py.log.Error("activity result should be bytes", zap.Any("value", val))
+		return err
+	}
+
+	reply := ResponseMessage{
+		Value: val.GetBytes().Value(),
+	}
+	if err := py.comm.Send(reply); err != nil {
+		py.log.Error("send value to Python", zap.Error(err))
+		return err
+	}
+
+	return nil
+}
+
 // initialCall handles initial call from autokitteh.
 // We split it from Call since Call is also used to execute activities.
 func (py *pySvc) initialCall(ctx context.Context, funcName string, event map[string]any) (sdktypes.Value, error) {
@@ -300,7 +360,7 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, event map[str
 		return sdktypes.InvalidValue, err
 	}
 
-	// Activity callback loop.
+	// Running code loop.
 	for {
 		py.log.Info("waiting for Python call")
 		msg, err := py.comm.Recv()
@@ -319,46 +379,7 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, event map[str
 			break
 		}
 
-		cbm, err := extractMessage[CallbackMessage](msg)
-		if err != nil {
-			py.log.Error("callback", zap.Error(err))
-			return sdktypes.InvalidValue, err
-		}
-
-		// Generate activity, it'll call Python with the result
-		// The function name is irrelevant, all the information Python needs is in the Payload
-		fn, err := sdktypes.NewFunctionValue(py.xid, cbm.Name, cbm.Data, nil, pyModuleFunc)
-		if err != nil {
-			py.log.Error("create function", zap.Error(err))
-			return sdktypes.InvalidValue, err
-		}
-
-		py.log.Info("callback", zap.String("func", cbm.Name))
-		val, err := py.cbs.Call(
-			ctx,
-			py.xid.ToRunID(),
-			// The Python function to call is encoded in the payload
-			fn,
-			kittehs.Transform(cbm.Args, sdktypes.NewStringValue),
-			kittehs.TransformMap(cbm.Kw, func(key, val string) (string, sdktypes.Value) {
-				return key, sdktypes.NewStringValue(val)
-			}),
-		)
-		if err != nil {
-			py.log.Error("callback", zap.Error(err))
-			return sdktypes.InvalidValue, err
-		}
-
-		if !val.IsBytes() {
-			py.log.Error("activity result should be bytes", zap.Any("value", val))
-			return sdktypes.InvalidValue, err
-		}
-
-		reply := ResponseMessage{
-			Value: val.GetBytes().Value(),
-		}
-		if err := py.comm.Send(reply); err != nil {
-			py.log.Error("send value to Python", zap.Error(err))
+		if err := py.handleAcitivy(ctx, msg); err != nil {
 			return sdktypes.InvalidValue, err
 		}
 	}
