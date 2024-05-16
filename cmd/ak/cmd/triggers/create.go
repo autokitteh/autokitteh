@@ -16,8 +16,7 @@ import (
 var event, filter, loc, name, schedule string
 
 var createCmd = common.StandardCommand(&cobra.Command{
-	Use: `create <--name=...> <--env=...> <--connection=...> <--event=...> <--loc=...>
-                 <--name=...> <--env=...> <--schedule=...> <--loc=...>`,
+	Use:     `create <--name=...> <--env=...> <--loc=...> { <--connection=...> <--event=...> | <--schedule=...> }`,
 	Short:   "Create event trigger",
 	Aliases: []string{"c"},
 	Args:    cobra.NoArgs,
