@@ -7,6 +7,7 @@ import (
 	"gorm.io/gorm"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
+	"go.autokitteh.dev/autokitteh/internal/backend/health/healthreporter"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -31,6 +32,8 @@ type DB interface {
 	MigrationRequired(context.Context) (bool, int64, error)
 	Migrate(context.Context) error
 	Debug() DB
+
+	healthreporter.HealthReporter
 
 	GormDB() *gorm.DB
 
@@ -149,7 +152,7 @@ type DB interface {
 	SaveSignal(ctx context.Context, signalID string, workflowID string, connectionID sdktypes.ConnectionID, filter string) (string, error)
 	GetSignal(ctx context.Context, signalID string) (scheme.Signal, error)
 	RemoveSignal(ctx context.Context, signalID string) error
-	ListSignalsWaitingOnConnection(ctx context.Context, connectionID sdktypes.ConnectionID) ([]scheme.Signal, error)
+	ListSignalsWaitingOnConnection(ctx context.Context, connectionID sdktypes.ConnectionID, filter string) ([]scheme.Signal, error)
 
 	// -----------------------------------------------------------------------
 	SetSecret(ctx context.Context, key string, value string) error

@@ -217,6 +217,11 @@ func (py *pySvc) Run(
 		return nil, err
 	}
 
+	py.xid = sdktypes.NewExecutorID(runID)
+	py.log.Info("executor", zap.String("id", py.xid.String()))
+	py.cbs = cbs
+	py.firstCall = true // State for Call.
+
 	// Load environment defined by user in the `vars` section of the manifest,
 	// these are injected to the Python subprocess environment.
 	env, err := cbs.Load(ctx, runID, "env")
@@ -248,6 +253,7 @@ func (py *pySvc) Run(
 	if err != nil {
 		return nil, err
 	}
+	py.run = ri
 
 	// Kill Python process in case we had errors.
 	killPy := true
@@ -256,23 +262,23 @@ func (py *pySvc) Run(
 			return
 		}
 
-		py.log.Error("killing Python", zap.Int("pid", ri.proc.Pid))
-		if err := ri.proc.Kill(); err != nil {
-			py.log.Warn("kill", zap.Int("pid", ri.proc.Pid), zap.Error(err))
+		py.log.Error("killing Python", zap.Int("pid", py.run.proc.Pid))
+		if err := py.run.proc.Kill(); err != nil {
+			py.log.Warn("kill", zap.Int("pid", py.run.proc.Pid), zap.Error(err))
 		}
 	}()
 
-	conn, err := ri.lis.Accept()
+	conn, err := py.run.lis.Accept()
 	if err != nil {
 		py.log.Error("connect to socket", zap.Error(err))
 		return nil, err
 	}
 	py.log.Info("python connected", zap.String("peer", conn.RemoteAddr().String()))
-	comm := NewComm(conn)
+	py.comm = NewComm(conn)
 
 	// FIXME (ENG-577) We might get activity calls before module is loaded if there are module level function calls.
 
-	msg, err := comm.Recv()
+	msg, err := py.comm.Recv()
 	if err != nil {
 		py.log.Error("initial message from python", zap.Error(err))
 		return nil, err
@@ -289,27 +295,17 @@ func (py *pySvc) Run(
 		return nil, err
 	}
 
-	py.log.Info("module loaded")
-
-	xid := sdktypes.NewExecutorID(runID)
-	py.log.Info("executor", zap.String("id", xid.String()))
-
 	py.log.Info("module entries", zap.Any("entries", mod.Entries))
-	exports, err := entriesToValues(xid, mod.Entries)
+	exports, err := entriesToValues(py.xid, mod.Entries)
 	if err != nil {
 		py.log.Error("can't create module entries", zap.Error(err))
 		return nil, fmt.Errorf("can't create module entries: %w", err)
 	}
+	py.exports = exports
 
 	killPy = false // All is good, don't kill Python subprocess.
 
-	py.cbs = cbs
-	py.comm = comm
-	py.exports = exports
-	py.firstCall = true
-	py.run = ri
-	py.xid = xid
-
+	py.log.Info("run done")
 	return py, nil
 }
 

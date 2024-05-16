@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -31,9 +32,13 @@ func Test_streamLogger(t *testing.T) {
 	err = os.Chmod(exe, 0755)
 	require.NoError(t, err)
 
+	var mu sync.Mutex
 	var buf bytes.Buffer
 
 	print := func(ctx context.Context, rid sdktypes.RunID, text string) {
+		mu.Lock()
+		defer mu.Unlock()
+
 		buf.WriteString(text)
 		buf.WriteString("\n")
 	}
@@ -52,7 +57,9 @@ func Test_streamLogger(t *testing.T) {
 	stdout.Close()
 	stderr.Close()
 
+	mu.Lock()
 	out := buf.String()
+	mu.Unlock()
 	require.Contains(t, out, fmt.Sprintf("%s%s", outPrefix, outMsg))
 	require.Contains(t, out, fmt.Sprintf("%s%s", errPrefix, errMsg))
 }

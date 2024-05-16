@@ -5,7 +5,6 @@ import (
 
 	"go.uber.org/zap"
 
-	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/web/static"
 )
 
@@ -18,8 +17,8 @@ const (
 	savePath = "/chatgpt/save"
 )
 
-func Start(l *zap.Logger, mux *http.ServeMux, vars sdkservices.Vars) {
+func Start(l *zap.Logger, mux *http.ServeMux) {
 	// New connection UI + form submission handler.
 	mux.Handle(uiPath, http.FileServer(http.FS(static.ChatGPTWebContent)))
-	mux.Handle(savePath, NewHTTPHandler(l, vars))
+	mux.Handle(savePath, NewHTTPHandler(l))
 }

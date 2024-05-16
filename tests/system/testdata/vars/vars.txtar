@@ -1,0 +1,46 @@
+# Precondition: create project.
+ak project create --name my_project
+return code == 0
+output equals 'project_id: prj_00000000000000000000000001'
+
+ak env create non_default -p my_project
+return code == 0
+output equals 'env_id: env_00000000000000000000000003'
+
+# Create var default env
+ak var set key val -p my_project
+return code == 0
+
+ak var get key -p my_project
+return code == 0
+output equals 'key="val"'
+
+# Create var non default env
+ak var set key val2 -p my_project -e non_default
+return code == 0
+
+ak var get key -p my_project -e non_default
+return code == 0
+output equals 'key="val2"'
+
+# Verify default env var not changed
+ak var get key -p my_project
+return code == 0
+output equals 'key="val"'
+
+# Update var
+ak var set key updated -p my_project
+return code == 0
+
+ak var get key -p my_project
+return code == 0
+output equals 'key="updated"'
+
+# Set secret var
+ak var set key_secret secret_value -p my_project --secret
+return code == 0
+
+# Reveal secret value
+ak var get key_secret -p my_project --reveal
+return code == 0
+output equals 'key_secret="secret_value"'

@@ -41,10 +41,6 @@ func init() {
 	setCmd.MarkFlagsMutuallyExclusive("env", "connection")
 	deleteCmd.MarkFlagsMutuallyExclusive("env", "connection")
 
-	getCmd.MarkFlagsOneRequired("env", "connection")
-	setCmd.MarkFlagsOneRequired("env", "connection")
-	deleteCmd.MarkFlagsOneRequired("env", "connection")
-
 	// Flag shared by all subcommands.
 	// We don't define it as a single persistent flag here for aesthetic
 	// conformance with the "env" flag, and "project" in other "envs" sibling commands.
@@ -65,19 +61,6 @@ func vars() sdkservices.Vars {
 func resolveScopeID() (sdktypes.VarScopeID, error) {
 	r := resolver.Resolver{Client: common.Client()}
 
-	if env != "" {
-		e, id, err := r.EnvNameOrID(env, project)
-		if err != nil {
-			return sdktypes.InvalidVarScopeID, err
-		}
-		if !e.IsValid() {
-			err = fmt.Errorf("environment %q not found", env)
-			return sdktypes.InvalidVarScopeID, common.NewExitCodeError(common.NotFoundExitCode, err)
-		}
-
-		return sdktypes.NewVarScopeID(id), nil
-	}
-
 	if conn != "" {
 		c, id, err := r.ConnectionNameOrID(conn, project)
 		if err != nil {
@@ -91,5 +74,14 @@ func resolveScopeID() (sdktypes.VarScopeID, error) {
 		return sdktypes.NewVarScopeID(id), nil
 	}
 
-	return sdktypes.InvalidVarScopeID, fmt.Errorf("internal error: no scope ID")
+	e, id, err := r.EnvNameOrID(env, project)
+	if err != nil {
+		return sdktypes.InvalidVarScopeID, err
+	}
+	if !e.IsValid() {
+		err = fmt.Errorf("environment %q not found", env)
+		return sdktypes.InvalidVarScopeID, common.NewExitCodeError(common.NotFoundExitCode, err)
+	}
+
+	return sdktypes.NewVarScopeID(id), nil
 }

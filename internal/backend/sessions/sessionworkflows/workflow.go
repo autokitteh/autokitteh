@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"go.temporal.io/sdk/workflow"
 	"go.uber.org/zap"
 
@@ -268,7 +269,7 @@ func (w *sessionWorkflow) createEventSubscription(ctx context.Context, connectio
 		return "", fmt.Errorf("get current sequence: %w", err)
 	}
 
-	signalID := fmt.Sprintf("wid_%s_cn_%s_seq_%d", workflowID, connectionName, minSequence)
+	signalID := uuid.New().String() //fmt.Sprintf("wid_%s_cn_%s_seq_%d", workflowID, connectionName, minSequence)
 
 	_, connection := kittehs.FindFirst(w.data.Connections, func(c sdktypes.Connection) bool {
 		return c.Name().String() == connectionName
@@ -334,6 +335,7 @@ func (w *sessionWorkflow) getNextEvent(ctx context.Context, signalID string) (ma
 		ConnectionID:      cid,
 		Limit:             1,
 		MinSequenceNumber: minSequenceNumber,
+		EventType:         signal.Filter,
 	}
 
 	var eventID sdktypes.EventID

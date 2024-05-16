@@ -3,7 +3,6 @@ package aws
 import (
 	"net/http"
 
-	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/web/static"
 )
 
@@ -16,8 +15,8 @@ const (
 	savePath = "/aws/save"
 )
 
-func Start(mux *http.ServeMux, vars sdkservices.Vars) {
+func Start(mux *http.ServeMux) {
 	// New connection UI + form submission handler.
 	mux.Handle(uiPath, http.FileServer(http.FS(static.AWSWebContent)))
-	mux.Handle(savePath, NewHTTPHandler(vars))
+	mux.Handle(savePath, NewHTTPHandler())
 }

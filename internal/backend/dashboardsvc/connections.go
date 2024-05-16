@@ -15,6 +15,7 @@ func (s Svc) initConnections() {
 	s.Muxes.Auth.HandleFunc("GET /connections", s.connections)
 	s.Muxes.Auth.HandleFunc("GET /connections/{cid}", s.connection)
 	s.Muxes.Auth.HandleFunc("GET /connections/{id}/init", s.initConnection)
+	s.Muxes.Auth.HandleFunc("DELETE /connections/{id}/vars", s.rmAllConnectionVars)
 }
 
 type connection struct{ sdktypes.Connection }
@@ -186,4 +187,19 @@ func (s Svc) initConnection(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Redirect(w, r, "/connections/"+cid.String()+`?msg=Connection initialized 😸`, http.StatusSeeOther)
+}
+
+func (s Svc) rmAllConnectionVars(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+
+	cid, err := sdktypes.StrictParseConnectionID(id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if err := s.Svcs.Vars().Delete(r.Context(), sdktypes.NewVarScopeID(cid)); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 }
