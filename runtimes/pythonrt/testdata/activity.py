@@ -1,4 +1,5 @@
 import ak
+from os import getenv
 
 
 def handler(message):
@@ -7,4 +8,6 @@ def handler(message):
 
 @ak.activity
 def phone_home():
-    return 'Gertie'
+    # getenv should not become an activity
+    home = getenv('HOME', default='Chicago')
+    return f'Gertie @ {home}'

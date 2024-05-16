@@ -268,20 +268,20 @@ class AKCall:
         self.in_activity = False
         self.comm = comm
 
-    def ignore(self, fn):
+    def should_run_as_activity(self, fn):
         if getattr(fn, ACTIVITY_ATTR, False):
-            return False
+            return True
 
         if fn.__module__ == 'builtins':
-            return True
+            return False
         
         if fn.__module__ == self.module_name:
-            return True
+            return False
 
-        return False
+        return True
 
     def __call__(self, func, *args, **kw):
-        if self.in_activity or self.ignore(func):
+        if self.in_activity or not self.should_run_as_activity(func):
             log.info(
                 'calling %s (args=%r, kw=%r) directly (in_activity=%s)', 
                 func.__name__, args, kw, self.in_activity)
