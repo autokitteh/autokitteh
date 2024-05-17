@@ -12,7 +12,7 @@ var integration string
 
 var connectionCmd = common.StandardCommand(&cobra.Command{
 	Use:     "connection",
-	Short:   "Connections: create, get, list, update, delete, init, test",
+	Short:   "Connections: create, init, test, get, list, update, delete",
 	Aliases: []string{"con"},
 	Args:    cobra.NoArgs,
 })

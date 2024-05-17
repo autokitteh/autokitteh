@@ -30,7 +30,7 @@ var initCmd = common.StandardCommand(&cobra.Command{
 
 		link := c.Links().InitURL()
 		if link == "" {
-			return errors.New("connection does specify init link")
+			return errors.New("connection doesn't have an init link")
 		}
 
 		return common.OpenURL(cmd, link)

@@ -62,7 +62,7 @@ export const ConnectionsService = {
       kind: MethodKind.Unary,
     },
     /**
-     * Test actively performs an integration test using a connections's configuration.
+     * Test actively performs an integration test using a connection's configuration.
      * (This in turn calls Integration.TestConnection).
      *
      * @generated from rpc autokitteh.connections.v1.ConnectionsService.Test

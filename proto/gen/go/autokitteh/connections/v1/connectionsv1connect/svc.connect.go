@@ -62,7 +62,7 @@ type ConnectionsServiceClient interface {
 	Update(context.Context, *connect.Request[v1.UpdateRequest]) (*connect.Response[v1.UpdateResponse], error)
 	Get(context.Context, *connect.Request[v1.GetRequest]) (*connect.Response[v1.GetResponse], error)
 	List(context.Context, *connect.Request[v1.ListRequest]) (*connect.Response[v1.ListResponse], error)
-	// Test actively performs an integration test using a connections's configuration.
+	// Test actively performs an integration test using a connection's configuration.
 	// (This in turn calls Integration.TestConnection).
 	Test(context.Context, *connect.Request[v1.TestRequest]) (*connect.Response[v1.TestResponse], error)
 	// RefreshStatus makes the connection query the integration regarding the
@@ -176,7 +176,7 @@ type ConnectionsServiceHandler interface {
 	Update(context.Context, *connect.Request[v1.UpdateRequest]) (*connect.Response[v1.UpdateResponse], error)
 	Get(context.Context, *connect.Request[v1.GetRequest]) (*connect.Response[v1.GetResponse], error)
 	List(context.Context, *connect.Request[v1.ListRequest]) (*connect.Response[v1.ListResponse], error)
-	// Test actively performs an integration test using a connections's configuration.
+	// Test actively performs an integration test using a connection's configuration.
 	// (This in turn calls Integration.TestConnection).
 	Test(context.Context, *connect.Request[v1.TestRequest]) (*connect.Response[v1.TestResponse], error)
 	// RefreshStatus makes the connection query the integration regarding the

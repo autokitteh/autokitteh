@@ -88,7 +88,7 @@ class ConnectionsServiceServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def Test(self, request, context):
-        """Test actively performs an integration test using a connections's configuration.
+        """Test actively performs an integration test using a connection's configuration.
         (This in turn calls Integration.TestConnection).
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)

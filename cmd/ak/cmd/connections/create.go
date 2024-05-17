@@ -70,7 +70,7 @@ var createCmd = common.StandardCommand(&cobra.Command{
 				if conn.Capabilities().RequiresConnectionInit() {
 					action = "but requires initialization"
 				}
-				fmt.Fprintf(cmd.ErrOrStderr(), "Connection created, %s. Please run `ak connection init %v` to complete.\n", action, cid)
+				fmt.Fprintf(cmd.ErrOrStderr(), "Connection created, %s. Please run this to complete: ak connection init %v\n", action, cid)
 			}
 		}
 
