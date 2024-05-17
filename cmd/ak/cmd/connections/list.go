@@ -11,7 +11,7 @@ import (
 )
 
 var listCmd = common.StandardCommand(&cobra.Command{
-	Use:     "list [--integration=...] [--fail]",
+	Use:     "list [--integration=...] [--project=...] [--fail]",
 	Short:   "List all connections",
 	Aliases: []string{"ls", "l"},
 	Args:    cobra.NoArgs,
