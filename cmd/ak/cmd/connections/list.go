@@ -19,8 +19,9 @@ var listCmd = common.StandardCommand(&cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		var f sdkservices.ListConnectionsFilter
 
+		r := resolver.Resolver{Client: common.Client()}
+
 		if integration != "" {
-			r := resolver.Resolver{Client: common.Client()}
 			_, iid, err := r.IntegrationNameOrID(integration)
 			if err != nil {
 				return err
@@ -30,6 +31,18 @@ var listCmd = common.StandardCommand(&cobra.Command{
 				return fmt.Errorf("integration %q not found", integration)
 			}
 			f.IntegrationID = iid
+		}
+
+		if project != "" {
+			_, pid, err := r.ProjectNameOrID(project)
+			if err != nil {
+				return err
+			}
+
+			if !pid.IsValid() {
+				return fmt.Errorf("project %q not found", integration)
+			}
+			f.ProjectID = pid
 		}
 
 		ctx, cancel := common.LimitedContext()
@@ -52,6 +65,7 @@ var listCmd = common.StandardCommand(&cobra.Command{
 func init() {
 	// Command-specific flags.
 	listCmd.Flags().StringVarP(&integration, "integration", "i", "", "integration name or ID")
+	listCmd.Flags().StringVarP(&project, "project", "p", "", "project name or ID")
 
 	common.AddFailIfNotFoundFlag(listCmd)
 }
