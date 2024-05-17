@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package autokitteh.integrations.v1;
 
+import "autokitteh/common/v1/status.proto";
 import "autokitteh/integrations/v1/integration.proto";
 import "autokitteh/program/v1/program.proto";
 import "autokitteh/values/v1/values.proto";
@@ -63,11 +64,23 @@ message ConfigureResponse {
   }];
 }
 
-message DisconnectRequest {
-  string executor_id = 1 [(buf.validate.field).string.min_len = 1];
+message TestConnectionRequest {
+  string integration_id = 1 [(buf.validate.field).string.min_len = 1];
+  string connection_id = 2 [(buf.validate.field).string.min_len = 1];
 }
 
-message DisconnectResponse {}
+message TestConnectionResponse {
+  common.v1.Status status = 1 [(buf.validate.field).required = true];
+}
+
+message GetConnectionStatusRequest {
+  string integration_id = 1 [(buf.validate.field).string.min_len = 1];
+  string connection_id = 2; // if not provided, will return the status of a new connection.
+}
+
+message GetConnectionStatusResponse {
+  common.v1.Status status = 1 [(buf.validate.field).required = true];
+}
 
 // Implemented by integration providers.
 service IntegrationsService {
@@ -77,6 +90,14 @@ service IntegrationsService {
   // Get all values for a specific configuration of the integration.
   // The returned values ExecutorIDs will be the integration id.
   rpc Configure(ConfigureRequest) returns (ConfigureResponse);
+
+  // Actively test the connection to the integration.
+  // requires supports_connection_test.
+  rpc TestConnection(TestConnectionRequest) returns (TestConnectionResponse);
+
+  // If connection_id is not provided, will return the status of a new connection as
+  // set in `Integration.initial_connection_status`.
+  rpc GetConnectionStatus(GetConnectionStatusRequest) returns (GetConnectionStatusResponse);
 
   rpc Call(CallRequest) returns (CallResponse);
 }

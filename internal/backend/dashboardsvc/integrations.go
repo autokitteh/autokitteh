@@ -14,10 +14,9 @@ func (s Svc) initIntegrations() {
 
 type integration struct{ sdktypes.Integration }
 
-func (p integration) FieldsOrder() []string { return []string{"unique_name", "integration_id"} }
-func (p integration) HideFields() []string {
-	return []string{}
-}
+func (p integration) FieldsOrder() []string       { return []string{"unique_name", "integration_id"} }
+func (p integration) HideFields() []string        { return nil }
+func (p integration) ExtraFields() map[string]any { return nil }
 
 func toIntegration(sdkI sdktypes.Integration) integration { return integration{sdkI} }
 

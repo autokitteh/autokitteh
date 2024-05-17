@@ -21,7 +21,8 @@ func (p deployment) FieldsOrder() []string {
 	return []string{"deployment_id", "name"}
 }
 
-func (p deployment) HideFields() []string { return nil }
+func (p deployment) HideFields() []string        { return nil }
+func (p deployment) ExtraFields() map[string]any { return nil }
 
 func toDeployment(sdkD sdktypes.Deployment) deployment { return deployment{sdkD} }
 

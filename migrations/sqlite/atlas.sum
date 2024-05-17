@@ -1,5 +1,6 @@
-h1:CgTaLIQ+WSeC1SxJ/Fbx+sUkYZz0leelAQdp1H0P8vY=
+h1:vslRwSwtYoUfWO7bQ4PiixPusZ023IEW4iaJtnhQrEY=
 20240507104228_baseline.sql h1:4B9CvzNeSNzEwATnxtK+d00ATCaSZHyr0dwmeuO06RA=
 20240508111539_secret-string-value.sql h1:dMpp/HpoRd49wXOZiPKt+Fxjns7Kc4x/aSOvBfLgU6E=
 20240515105250_trigger_opional_connection.sql h1:X1SRwT9f2BaswD0wPgqoK5E0NaEyQ4P3r94nMu4WXjA=
 20240515122617_event_optional_connection_and_integration.sql h1:ANox4SWiASzAtGp8rbE3uQ2xkcyhMc1mbZlbWH3r3po=
+20240517051309_conn-status.sql h1:SrCkbS4tTg//jxGzpYBnHzxAdVacoV8TOH0YbEqHclI=

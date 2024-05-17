@@ -22,12 +22,16 @@ func (ConnectionTraits) Validate(m *ConnectionPB) error {
 		nameField("name", m.Name),
 		idField[ProjectID]("project_id", m.ProjectId),
 		idField[IntegrationID]("integration_id", m.IntegrationId),
+		objectField[Status]("status", m.Status),
+		objectField[ConnectionCapabilities]("capabilities", m.Capabilities),
 	)
 }
 
 func (ConnectionTraits) StrictValidate(m *ConnectionPB) error {
 	return errors.Join(
 		mandatory("name", m.Name),
+		mandatory("project_id", m.ProjectId),
+		mandatory("integration_id", m.IntegrationId),
 	)
 }
 
@@ -68,3 +72,52 @@ func (p Connection) IntegrationID() IntegrationID {
 }
 
 func (p Connection) ProjectID() ProjectID { return kittehs.Must1(ParseProjectID(p.read().ProjectId)) }
+
+func (p Connection) Status() Status {
+	return kittehs.Must1(StatusFromProto(p.read().Status))
+}
+
+func (p Connection) WithStatus(status Status) Connection {
+	return Connection{p.forceUpdate(func(pb *ConnectionPB) { pb.Status = status.ToProto() })}
+}
+
+func (p Connection) Capabilities() ConnectionCapabilities {
+	return kittehs.Must1(ConnectionCapabilitiesFromProto(p.read().Capabilities))
+}
+
+func (p Connection) WithCapabilities(c ConnectionCapabilities) Connection {
+	return Connection{p.forceUpdate(func(pb *ConnectionPB) { pb.Capabilities = c.ToProto() })}
+}
+
+func (p Connection) WithoutGeneratedFields() Connection {
+	return Connection{p.forceUpdate(func(pb *ConnectionPB) {
+		pb.Links = nil
+		pb.Capabilities = nil
+		pb.Status = nil
+	})}
+}
+
+type Links map[string]string
+
+func (l Links) InitURL() string {
+	if l == nil {
+		return ""
+	}
+
+	return l["init_url"]
+}
+
+func (p Connection) Links() Links { return p.read().Links }
+func (p Connection) WithLinks(links Links) Connection {
+	return Connection{p.forceUpdate(func(pb *ConnectionPB) { pb.Links = links })}
+}
+
+func (p Connection) AddLink(name, value string) Connection {
+	return Connection{p.forceUpdate(func(pb *ConnectionPB) {
+		if pb.Links == nil {
+			pb.Links = make(Links)
+		}
+
+		pb.Links[name] = value
+	})}
+}

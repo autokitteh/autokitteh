@@ -1,6 +1,11 @@
 package github
 
 import (
+	"context"
+	"fmt"
+	"strings"
+
+	"go.autokitteh.dev/autokitteh/integrations/github/internal/vars"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
@@ -25,11 +30,59 @@ var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.Integrati
 		"2 Go client API": "https://pkg.go.dev/github.com/google/go-github/v57/github",
 	},
 	ConnectionUrl: "/github/connect",
+	ConnectionCapabilities: &sdktypes.ConnectionCapabilitiesPB{
+		RequiresConnectionInit: true,
+	},
 }))
 
 func New(cvars sdkservices.Vars) sdkservices.Integration {
-	i := integration{vars: cvars}
-	return sdkintegrations.NewIntegration(desc, sdkmodule.New(
+	i := &integration{vars: cvars}
+	return sdkintegrations.NewIntegration(
+		desc,
+		sdkmodule.New(funcs(i)...),
+		connStatus(i),
+		connTest(i),
+	)
+}
+
+func connTest(*integration) sdkintegrations.OptFn {
+	return sdkintegrations.WithConnectionTest(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
+		// TODO
+		return sdktypes.NewStatus(sdktypes.StatusCodeUnspecified, `¯\_(ツ)_/¯`), nil
+	})
+}
+
+func connStatus(i *integration) sdkintegrations.OptFn {
+	return sdkintegrations.WithConnectionStatus(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
+		initReq := sdktypes.NewStatus(sdktypes.StatusCodeWarning, "init required")
+
+		if !cid.IsValid() {
+			return initReq, nil
+		}
+
+		vs, err := i.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
+		if err != nil {
+			return sdktypes.InvalidStatus, err
+		}
+
+		if vs.Has(vars.PAT) {
+			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "using PAT"), nil
+		}
+
+		n := len(kittehs.Filter(vs, func(v sdktypes.Var) bool {
+			return strings.HasPrefix(v.Name().String(), "app_id__")
+		}))
+
+		if n == 0 {
+			return initReq, nil
+		}
+
+		return sdktypes.NewStatus(sdktypes.StatusCodeOK, fmt.Sprintf("%d installations", n)), nil
+	})
+}
+
+func funcs(i *integration) []sdkmodule.Optfn {
+	return []sdkmodule.Optfn{
 		// Issues.
 		sdkmodule.ExportFunction(
 			"create_issue",
@@ -334,5 +387,5 @@ func New(cvars sdkservices.Vars) sdkservices.Integration {
 			sdkmodule.WithFuncDoc("https://docs.github.com/en/rest/actions/workflows#create-a-workflow-dispatch-event"),
 			sdkmodule.WithArgs("owner", "repo", "ref", "workflow_name", "inputs?"),
 		),
-	))
+	}
 }

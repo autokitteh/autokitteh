@@ -17,10 +17,11 @@ func (s Svc) initEvents() {
 type event struct{ sdktypes.Event }
 
 func (p event) FieldsOrder() []string {
-	return []string{"event_id", "connection_id", "integration_id"}
+	return []string{"created_at", "event_id", "connection_id", "integration_id"}
 }
 
-func (p event) HideFields() []string { return nil }
+func (p event) HideFields() []string        { return nil }
+func (p event) ExtraFields() map[string]any { return nil }
 
 func toEvent(sdkP sdktypes.Event) event { return event{sdkP} }
 

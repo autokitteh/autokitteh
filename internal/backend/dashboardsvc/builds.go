@@ -15,8 +15,9 @@ func (s Svc) initBuilds() {
 
 type build struct{ sdktypes.Build }
 
-func (p build) FieldsOrder() []string { return nil }
-func (p build) HideFields() []string  { return nil }
+func (p build) FieldsOrder() []string       { return nil }
+func (p build) HideFields() []string        { return nil }
+func (p build) ExtraFields() map[string]any { return nil }
 
 func toBuild(sdkP sdktypes.Build) build { return build{sdkP} }
 

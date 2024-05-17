@@ -9,6 +9,7 @@ import (
 type ListConnectionsFilter struct {
 	IntegrationID sdktypes.IntegrationID
 	ProjectID     sdktypes.ProjectID
+	StatusCode    sdktypes.StatusCode
 }
 
 type Connections interface {
@@ -17,4 +18,6 @@ type Connections interface {
 	Update(ctx context.Context, conn sdktypes.Connection) error
 	List(ctx context.Context, filter ListConnectionsFilter) ([]sdktypes.Connection, error)
 	Get(ctx context.Context, id sdktypes.ConnectionID) (sdktypes.Connection, error)
+	Test(ctx context.Context, id sdktypes.ConnectionID) (sdktypes.Status, error)
+	RefreshStatus(ctx context.Context, id sdktypes.ConnectionID) (sdktypes.Status, error)
 }

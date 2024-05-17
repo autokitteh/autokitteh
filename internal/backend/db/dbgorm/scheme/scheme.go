@@ -10,6 +10,7 @@ import (
 	"gorm.io/gorm"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
+	commonv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/common/v1"
 	deploymentsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/deployments/v1"
 	eventsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/events/v1"
 	integrationsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/integrations/v1"
@@ -69,9 +70,11 @@ func ParseBuild(b Build) (sdktypes.Build, error) {
 
 type Connection struct {
 	ConnectionID  sdktypes.UUID  `gorm:"primaryKey;type:uuid;not null"`
-	IntegrationID *sdktypes.UUID `gorm:"type:uuid"`
+	IntegrationID *sdktypes.UUID `gorm:"index;type:uuid"`
 	ProjectID     *sdktypes.UUID `gorm:"index;type:uuid"`
 	Name          string
+	StatusCode    int32 `gorm:"index"`
+	StatusMessage string
 
 	// enforce foreign keys
 	// Integration *Integration FIXME: ENG-590
@@ -86,6 +89,10 @@ func ParseConnection(c Connection) (sdktypes.Connection, error) {
 		IntegrationId: sdktypes.NewIDFromUUID[sdktypes.IntegrationID](c.IntegrationID).String(),
 		ProjectId:     sdktypes.NewIDFromUUID[sdktypes.ProjectID](c.ProjectID).String(),
 		Name:          c.Name,
+		Status: &sdktypes.StatusPB{
+			Code:    commonv1.Status_Code(c.StatusCode),
+			Message: c.StatusMessage,
+		},
 	})
 	if err != nil {
 		return sdktypes.InvalidConnection, fmt.Errorf("invalid connection record: %w", err)

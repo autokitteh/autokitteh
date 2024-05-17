@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package autokitteh.integrations.v1;
 
+import "autokitteh/common/v1/status.proto";
+import "autokitteh/connections/v1/connection.proto";
 import "autokitteh/module/v1/module.proto";
 import "buf/validate/validate.proto";
 
@@ -26,4 +28,8 @@ message Integration {
   string connection_url = 8;
 
   module.v1.Module module = 9;
+
+  connections.v1.Capabilities connection_capabilities = 10;
+
+  common.v1.Status initial_connection_status = 11;
 }
