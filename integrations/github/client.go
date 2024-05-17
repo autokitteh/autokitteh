@@ -314,6 +314,13 @@ func New(cvars sdkservices.Vars) sdkservices.Integration {
 			sdkmodule.WithFuncDoc("https://docs.github.com/en/rest/users#get-a-user"),
 			sdkmodule.WithArgs("username", "owner=?"),
 		),
+		sdkmodule.ExportFunction(
+			"search_users",
+			i.searchUsers,
+			sdkmodule.WithFuncDoc("https://docs.github.com/en/rest/search/search#search-users"),
+			sdkmodule.WithArgs("query", "sort?", "order?", "per_page?", "page?", "owner=?"),
+		),
+
 		// Actions
 		sdkmodule.ExportFunction(
 			"list_workflows",
