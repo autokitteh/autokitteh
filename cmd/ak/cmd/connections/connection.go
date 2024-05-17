@@ -12,7 +12,7 @@ var integration string
 
 var connectionCmd = common.StandardCommand(&cobra.Command{
 	Use:     "connection",
-	Short:   "Connections: create, get, list, update, delete",
+	Short:   "Connections: create, get, list, update, delete, init, test",
 	Aliases: []string{"con"},
 	Args:    cobra.NoArgs,
 })
@@ -28,6 +28,8 @@ func init() {
 	connectionCmd.AddCommand(deleteCmd)
 	connectionCmd.AddCommand(getCmd)
 	connectionCmd.AddCommand(listCmd)
+	connectionCmd.AddCommand(initCmd)
+	connectionCmd.AddCommand(testCmd)
 	// TODO: connectionCmd.AddCommand(updateCmd)
 }
 

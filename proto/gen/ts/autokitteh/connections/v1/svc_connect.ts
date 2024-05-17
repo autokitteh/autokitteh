@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { CreateRequest, CreateResponse, DeleteRequest, DeleteResponse, GetRequest, GetResponse, ListRequest, ListResponse, UpdateRequest, UpdateResponse } from "./svc_pb.js";
+import { CreateRequest, CreateResponse, DeleteRequest, DeleteResponse, GetRequest, GetResponse, ListRequest, ListResponse, RefreshStatusRequest, RefreshStatusResponse, TestRequest, TestResponse, UpdateRequest, UpdateResponse } from "./svc_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -59,6 +59,32 @@ export const ConnectionsService = {
       name: "List",
       I: ListRequest,
       O: ListResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * Test actively performs an integration test using a connections's configuration.
+     * (This in turn calls Integration.TestConnection).
+     *
+     * @generated from rpc autokitteh.connections.v1.ConnectionsService.Test
+     */
+    test: {
+      name: "Test",
+      I: TestRequest,
+      O: TestResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * RefreshStatus makes the connection query the integration regarding the
+     * current connection status. This checks that the connection is configured correctly,
+     * but does not perform any actual data transfer.
+     * (This in turn calls Integration.GetConnectionStatus).
+     *
+     * @generated from rpc autokitteh.connections.v1.ConnectionsService.RefreshStatus
+     */
+    refreshStatus: {
+      name: "RefreshStatus",
+      I: RefreshStatusRequest,
+      O: RefreshStatusResponse,
       kind: MethodKind.Unary,
     },
   }

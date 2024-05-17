@@ -51,10 +51,6 @@ func (vs Vars) ToMap() map[Symbol]Var {
 	return kittehs.ListToMap(vs, func(v Var) (Symbol, Var) { return v.Name(), v })
 }
 
-func (vs Vars) ToStringsMap() map[string]string {
-	return kittehs.ListToMap(vs, func(v Var) (string, string) { return v.Name().String(), v.Value() })
-}
-
 // Encodes `in` into Vars. `in` must be a struct or a non-nil pointer to a struct.
 // All members must be strings. A field tag of `var:"secret"` will make the field secret.
 func EncodeVars(in any) (vs Vars) {

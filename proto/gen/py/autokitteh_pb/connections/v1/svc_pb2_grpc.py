@@ -40,6 +40,16 @@ class ConnectionsServiceStub(object):
                 request_serializer=autokitteh_dot_connections_dot_v1_dot_svc__pb2.ListRequest.SerializeToString,
                 response_deserializer=autokitteh_dot_connections_dot_v1_dot_svc__pb2.ListResponse.FromString,
                 )
+        self.Test = channel.unary_unary(
+                '/autokitteh.connections.v1.ConnectionsService/Test',
+                request_serializer=autokitteh_dot_connections_dot_v1_dot_svc__pb2.TestRequest.SerializeToString,
+                response_deserializer=autokitteh_dot_connections_dot_v1_dot_svc__pb2.TestResponse.FromString,
+                )
+        self.RefreshStatus = channel.unary_unary(
+                '/autokitteh.connections.v1.ConnectionsService/RefreshStatus',
+                request_serializer=autokitteh_dot_connections_dot_v1_dot_svc__pb2.RefreshStatusRequest.SerializeToString,
+                response_deserializer=autokitteh_dot_connections_dot_v1_dot_svc__pb2.RefreshStatusResponse.FromString,
+                )
 
 
 class ConnectionsServiceServicer(object):
@@ -77,6 +87,24 @@ class ConnectionsServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def Test(self, request, context):
+        """Test actively performs an integration test using a connections's configuration.
+        (This in turn calls Integration.TestConnection).
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def RefreshStatus(self, request, context):
+        """RefreshStatus makes the connection query the integration regarding the
+        current connection status. This checks that the connection is configured correctly,
+        but does not perform any actual data transfer.
+        (This in turn calls Integration.GetConnectionStatus).
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_ConnectionsServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -104,6 +132,16 @@ def add_ConnectionsServiceServicer_to_server(servicer, server):
                     servicer.List,
                     request_deserializer=autokitteh_dot_connections_dot_v1_dot_svc__pb2.ListRequest.FromString,
                     response_serializer=autokitteh_dot_connections_dot_v1_dot_svc__pb2.ListResponse.SerializeToString,
+            ),
+            'Test': grpc.unary_unary_rpc_method_handler(
+                    servicer.Test,
+                    request_deserializer=autokitteh_dot_connections_dot_v1_dot_svc__pb2.TestRequest.FromString,
+                    response_serializer=autokitteh_dot_connections_dot_v1_dot_svc__pb2.TestResponse.SerializeToString,
+            ),
+            'RefreshStatus': grpc.unary_unary_rpc_method_handler(
+                    servicer.RefreshStatus,
+                    request_deserializer=autokitteh_dot_connections_dot_v1_dot_svc__pb2.RefreshStatusRequest.FromString,
+                    response_serializer=autokitteh_dot_connections_dot_v1_dot_svc__pb2.RefreshStatusResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -198,5 +236,39 @@ class ConnectionsService(object):
         return grpc.experimental.unary_unary(request, target, '/autokitteh.connections.v1.ConnectionsService/List',
             autokitteh_dot_connections_dot_v1_dot_svc__pb2.ListRequest.SerializeToString,
             autokitteh_dot_connections_dot_v1_dot_svc__pb2.ListResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def Test(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/autokitteh.connections.v1.ConnectionsService/Test',
+            autokitteh_dot_connections_dot_v1_dot_svc__pb2.TestRequest.SerializeToString,
+            autokitteh_dot_connections_dot_v1_dot_svc__pb2.TestResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def RefreshStatus(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/autokitteh.connections.v1.ConnectionsService/RefreshStatus',
+            autokitteh_dot_connections_dot_v1_dot_svc__pb2.RefreshStatusRequest.SerializeToString,
+            autokitteh_dot_connections_dot_v1_dot_svc__pb2.RefreshStatusResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

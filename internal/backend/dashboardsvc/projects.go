@@ -18,8 +18,9 @@ func (s Svc) initProjects() {
 
 type project struct{ sdktypes.Project }
 
-func (p project) FieldsOrder() []string { return []string{"name", "project_id"} }
-func (p project) HideFields() []string  { return nil }
+func (p project) FieldsOrder() []string       { return []string{"name", "project_id"} }
+func (p project) HideFields() []string        { return nil }
+func (p project) ExtraFields() map[string]any { return nil }
 
 func toProject(sdkP sdktypes.Project) project { return project{sdkP} }
 

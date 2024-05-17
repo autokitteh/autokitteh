@@ -16,10 +16,11 @@ func (s Svc) initSessions() {
 type session struct{ sdktypes.Session }
 
 func (p session) FieldsOrder() []string {
-	return []string{"session_id", "name", "connection_id", "env_id"}
+	return []string{"created_at", "session_id", "name", "connection_id", "env_id"}
 }
 
-func (p session) HideFields() []string { return nil }
+func (p session) HideFields() []string        { return nil }
+func (p session) ExtraFields() map[string]any { return nil }
 
 func toSession(sdkP sdktypes.Session) session { return session{sdkP} }
 

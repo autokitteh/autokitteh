@@ -112,7 +112,15 @@ project:
     "connection_id": "con_00000000000000000000000003",
     "integration_id": "int_3kth00httpf1201a7ed83f7cd5",
     "project_id": "prj_00000000000000000000000001",
-    "name": "my_connection"
+    "name": "my_connection",
+    "status": {},
+    "capabilities": {
+      "supports_connection_init": true
+    },
+    "links": {
+      "init_url": "/connections/con_00000000000000000000000003/init",
+      "self_url": "/connections/con_00000000000000000000000003"
+    }
   }
 }
 

@@ -15,32 +15,46 @@ func (db *gormdb) createConnection(ctx context.Context, conn *scheme.Connection)
 	return db.db.WithContext(ctx).Create(conn).Error
 }
 
+func connToScheme(conn sdktypes.Connection) scheme.Connection {
+	return scheme.Connection{
+		ConnectionID:  conn.ID().UUIDValue(),
+		IntegrationID: scheme.UUIDOrNil(conn.IntegrationID().UUIDValue()), // TODO(ENG-158): need to verify integration id
+		ProjectID:     scheme.UUIDOrNil(conn.ProjectID().UUIDValue()),
+		Name:          conn.Name().String(),
+		StatusCode:    int32(conn.Status().Code().ToProto()),
+		StatusMessage: conn.Status().Message(),
+	}
+}
+
 func (db *gormdb) CreateConnection(ctx context.Context, conn sdktypes.Connection) error {
 	if err := conn.Strict(); err != nil {
 		return err
 	}
 
-	c := scheme.Connection{
-		ConnectionID:  conn.ID().UUIDValue(),
-		IntegrationID: scheme.UUIDOrNil(conn.IntegrationID().UUIDValue()), // TODO(ENG-158): need to verify integration id
-		ProjectID:     scheme.UUIDOrNil(conn.ProjectID().UUIDValue()),
-		Name:          conn.Name().String(),
-	}
+	c := connToScheme(conn)
 
 	return translateError(db.createConnection(ctx, &c))
 }
 
 func (db *gormdb) UpdateConnection(ctx context.Context, conn sdktypes.Connection) error {
-	c := scheme.Connection{
-		ConnectionID:  conn.ID().UUIDValue(),
-		IntegrationID: scheme.UUIDOrNil(conn.IntegrationID().UUIDValue()), // TODO(ENG-158): need to verify integration id
-		ProjectID:     scheme.UUIDOrNil(conn.ProjectID().UUIDValue()),
-		Name:          conn.Name().String(),
+	// This will never update integration id or project id, so not checking them.
+
+	data := make(map[string]any, 2)
+
+	if conn.Name().IsValid() {
+		data["name"] = conn.Name().String()
+	}
+
+	if conn.Status().IsValid() {
+		data["status_code"] = int32(conn.Status().Code().ToProto())
+		data["status_message"] = conn.Status().Message()
 	}
 
 	err := db.db.WithContext(ctx).
 		Where("connection_id = ?", conn.ID().UUIDValue()).
-		Updates(&c).Error
+		Model(&scheme.Connection{}).
+		Updates(data).
+		Error
 	if err != nil {
 		return translateError(err)
 	}
@@ -80,6 +94,10 @@ func (db *gormdb) ListConnections(ctx context.Context, filter sdkservices.ListCo
 
 	if filter.ProjectID.IsValid() {
 		q = q.Where("project_id = ?", filter.ProjectID.UUIDValue())
+	}
+
+	if filter.StatusCode != sdktypes.StatusCodeUnspecified {
+		q = q.Where("status_code = ?", int32(filter.StatusCode.ToProto()))
 	}
 
 	if idsOnly {

@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package autokitteh.connections.v1;
 
+import "autokitteh/common/v1/status.proto";
 import "buf/validate/validate.proto";
 
 message Connection {
@@ -9,4 +10,15 @@ message Connection {
   string integration_id = 2 [(buf.validate.field).string.min_len = 1];
   string project_id = 3 [(buf.validate.field).string.min_len = 1];
   string name = 4 [(buf.validate.field).string.min_len = 1];
+
+  // Read only fields that are filled by the server.
+  common.v1.Status status = 5;
+  Capabilities capabilities = 6;
+  map<string, string> links = 7;
+}
+
+message Capabilities {
+  bool supports_connection_test = 1;
+  bool supports_connection_init = 2;
+  bool requires_connection_init = 3;
 }

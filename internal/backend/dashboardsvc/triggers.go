@@ -19,7 +19,8 @@ func (p trigger) FieldsOrder() []string {
 	return []string{"trigger_id", "name", "connection_id", "env_id"}
 }
 
-func (p trigger) HideFields() []string { return nil }
+func (p trigger) HideFields() []string        { return nil }
+func (p trigger) ExtraFields() map[string]any { return nil }
 
 func toTrigger(sdkP sdktypes.Trigger) trigger { return trigger{sdkP} }
 

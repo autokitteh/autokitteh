@@ -17,8 +17,9 @@ func (s Svc) initEnvs() {
 
 type env struct{ sdktypes.Env }
 
-func (p env) FieldsOrder() []string { return []string{"env_id", "name"} }
-func (p env) HideFields() []string  { return nil }
+func (p env) FieldsOrder() []string       { return []string{"env_id", "name"} }
+func (p env) HideFields() []string        { return nil }
+func (p env) ExtraFields() map[string]any { return nil }
 
 func toEnv(sdkE sdktypes.Env) env { return env{sdkE} }
 

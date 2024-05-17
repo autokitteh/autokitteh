@@ -8,6 +8,7 @@ import { Message, proto3 } from "@bufbuild/protobuf";
 import { Integration } from "./integration_pb.js";
 import { Value } from "../../values/v1/values_pb.js";
 import { Error } from "../../program/v1/program_pb.js";
+import { Status } from "../../common/v1/status_pb.js";
 
 /**
  * @generated from message autokitteh.integrations.v1.GetRequest
@@ -344,70 +345,164 @@ export class ConfigureResponse extends Message<ConfigureResponse> {
 }
 
 /**
- * @generated from message autokitteh.integrations.v1.DisconnectRequest
+ * @generated from message autokitteh.integrations.v1.TestConnectionRequest
  */
-export class DisconnectRequest extends Message<DisconnectRequest> {
+export class TestConnectionRequest extends Message<TestConnectionRequest> {
   /**
-   * @generated from field: string executor_id = 1;
+   * @generated from field: string integration_id = 1;
    */
-  executorId = "";
+  integrationId = "";
 
-  constructor(data?: PartialMessage<DisconnectRequest>) {
+  /**
+   * @generated from field: string connection_id = 2;
+   */
+  connectionId = "";
+
+  constructor(data?: PartialMessage<TestConnectionRequest>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "autokitteh.integrations.v1.DisconnectRequest";
+  static readonly typeName = "autokitteh.integrations.v1.TestConnectionRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "executor_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: "integration_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "connection_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DisconnectRequest {
-    return new DisconnectRequest().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): TestConnectionRequest {
+    return new TestConnectionRequest().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DisconnectRequest {
-    return new DisconnectRequest().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): TestConnectionRequest {
+    return new TestConnectionRequest().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DisconnectRequest {
-    return new DisconnectRequest().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): TestConnectionRequest {
+    return new TestConnectionRequest().fromJsonString(jsonString, options);
   }
 
-  static equals(a: DisconnectRequest | PlainMessage<DisconnectRequest> | undefined, b: DisconnectRequest | PlainMessage<DisconnectRequest> | undefined): boolean {
-    return proto3.util.equals(DisconnectRequest, a, b);
+  static equals(a: TestConnectionRequest | PlainMessage<TestConnectionRequest> | undefined, b: TestConnectionRequest | PlainMessage<TestConnectionRequest> | undefined): boolean {
+    return proto3.util.equals(TestConnectionRequest, a, b);
   }
 }
 
 /**
- * @generated from message autokitteh.integrations.v1.DisconnectResponse
+ * @generated from message autokitteh.integrations.v1.TestConnectionResponse
  */
-export class DisconnectResponse extends Message<DisconnectResponse> {
-  constructor(data?: PartialMessage<DisconnectResponse>) {
+export class TestConnectionResponse extends Message<TestConnectionResponse> {
+  /**
+   * @generated from field: autokitteh.common.v1.Status status = 1;
+   */
+  status?: Status;
+
+  constructor(data?: PartialMessage<TestConnectionResponse>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "autokitteh.integrations.v1.DisconnectResponse";
+  static readonly typeName = "autokitteh.integrations.v1.TestConnectionResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "status", kind: "message", T: Status },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DisconnectResponse {
-    return new DisconnectResponse().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): TestConnectionResponse {
+    return new TestConnectionResponse().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DisconnectResponse {
-    return new DisconnectResponse().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): TestConnectionResponse {
+    return new TestConnectionResponse().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DisconnectResponse {
-    return new DisconnectResponse().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): TestConnectionResponse {
+    return new TestConnectionResponse().fromJsonString(jsonString, options);
   }
 
-  static equals(a: DisconnectResponse | PlainMessage<DisconnectResponse> | undefined, b: DisconnectResponse | PlainMessage<DisconnectResponse> | undefined): boolean {
-    return proto3.util.equals(DisconnectResponse, a, b);
+  static equals(a: TestConnectionResponse | PlainMessage<TestConnectionResponse> | undefined, b: TestConnectionResponse | PlainMessage<TestConnectionResponse> | undefined): boolean {
+    return proto3.util.equals(TestConnectionResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message autokitteh.integrations.v1.GetConnectionStatusRequest
+ */
+export class GetConnectionStatusRequest extends Message<GetConnectionStatusRequest> {
+  /**
+   * @generated from field: string integration_id = 1;
+   */
+  integrationId = "";
+
+  /**
+   * if not provided, will return the status of a new connection.
+   *
+   * @generated from field: string connection_id = 2;
+   */
+  connectionId = "";
+
+  constructor(data?: PartialMessage<GetConnectionStatusRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "autokitteh.integrations.v1.GetConnectionStatusRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "integration_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "connection_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetConnectionStatusRequest {
+    return new GetConnectionStatusRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetConnectionStatusRequest {
+    return new GetConnectionStatusRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetConnectionStatusRequest {
+    return new GetConnectionStatusRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetConnectionStatusRequest | PlainMessage<GetConnectionStatusRequest> | undefined, b: GetConnectionStatusRequest | PlainMessage<GetConnectionStatusRequest> | undefined): boolean {
+    return proto3.util.equals(GetConnectionStatusRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message autokitteh.integrations.v1.GetConnectionStatusResponse
+ */
+export class GetConnectionStatusResponse extends Message<GetConnectionStatusResponse> {
+  /**
+   * @generated from field: autokitteh.common.v1.Status status = 1;
+   */
+  status?: Status;
+
+  constructor(data?: PartialMessage<GetConnectionStatusResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "autokitteh.integrations.v1.GetConnectionStatusResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "status", kind: "message", T: Status },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetConnectionStatusResponse {
+    return new GetConnectionStatusResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetConnectionStatusResponse {
+    return new GetConnectionStatusResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetConnectionStatusResponse {
+    return new GetConnectionStatusResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetConnectionStatusResponse | PlainMessage<GetConnectionStatusResponse> | undefined, b: GetConnectionStatusResponse | PlainMessage<GetConnectionStatusResponse> | undefined): boolean {
+    return proto3.util.equals(GetConnectionStatusResponse, a, b);
   }
 }
 
