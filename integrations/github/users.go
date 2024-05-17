@@ -47,12 +47,10 @@ func (i integration) searchUsers(ctx context.Context, args []sdktypes.Value, kwa
 	// Parse the input arguments.
 	var (
 		query, owner string
-
-		opts github.SearchOptions
+		opts         github.SearchOptions
 	)
 	err := sdkmodule.UnpackArgs(args, kwargs,
 		"query", &query,
-
 		"sort?", &opts.Sort,
 		"order?", &opts.Order,
 		"per_page?", &opts.PerPage,
