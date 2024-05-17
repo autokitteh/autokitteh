@@ -17,7 +17,7 @@ var (
 )
 
 var createCmd = common.StandardCommand(&cobra.Command{
-	Use:     "create <name> <--project=...> <--integration=...> <--quiet>",
+	Use:     "create <name> <--project=...> <--integration=...> [--quiet]",
 	Short:   "Define new connection to integration",
 	Aliases: []string{"c"},
 	Args:    cobra.ExactArgs(1),
