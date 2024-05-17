@@ -391,13 +391,13 @@ func funcs(i *integration) []sdkmodule.Optfn {
 		sdkmodule.ExportFunction(
 			"create_check_run",
 			i.createCheckRun,
-			sdkmodule.WithFuncDoc("https://docs.github.com/en/rest/checks/runs?apiVersion=2022-11-28#create-a-check-run"),
+			sdkmodule.WithFuncDoc("https://docs.github.com/en/rest/checks/runs?create-a-check-run"),
 			sdkmodule.WithArgs("owner", "repo", "name", "head_sha", "details_url?", "external_url?", "status?", "conclusion?", "output?", "created_at?", "completed_at?", "actions?"),
 		),
 		sdkmodule.ExportFunction(
 			"update_check_run",
 			i.updateCheckRun,
-			sdkmodule.WithFuncDoc("https://docs.github.com/en/rest/checks/runs?apiVersion=2022-11-28#update-a-check-run"),
+			sdkmodule.WithFuncDoc("https://docs.github.com/en/rest/checks/runs?update-a-check-run"),
 			sdkmodule.WithArgs("owner", "repo", "check_run_id", "details_url?", "external_url?", "status?", "conclusion?", "output?", "created_at?", "completed_at?", "actions?"),
 		),
 	}
