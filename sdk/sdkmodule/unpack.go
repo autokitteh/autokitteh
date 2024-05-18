@@ -77,10 +77,13 @@ func UnpackArgs(args []sdktypes.Value, kwargs map[string]sdktypes.Value, dsts ..
 					continue
 				}
 
-				var rest string
-				name, rest, _ = strings.Cut(j, ",")
+				jname, rest, _ := strings.Cut(j, ",")
 				if rest == "omitempty" {
 					optional = true
+				}
+
+				if jname != "" {
+					name = jname
 				}
 			}
 
