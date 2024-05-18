@@ -57,6 +57,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/store"
 	"go.autokitteh.dev/autokitteh/internal/backend/storegrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
+	"go.autokitteh.dev/autokitteh/internal/backend/temporalschedule"
 	"go.autokitteh.dev/autokitteh/internal/backend/triggers"
 	"go.autokitteh.dev/autokitteh/internal/backend/triggersgrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/vars"
@@ -157,6 +158,9 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 					http.Redirect(w, r, uiAddr, http.StatusFound)
 				})
 			}),
+		),
+		Component(
+			"temporalschedule", configset.Empty, fx.Provide(temporalschedule.New),
 		),
 		Component(
 			"sessions",

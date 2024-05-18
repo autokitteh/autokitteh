@@ -44,7 +44,7 @@ var createCmd = common.StandardCommand(&cobra.Command{
 				return fmt.Errorf(`flags(s) "connection", "event" are not compatible with "schedule"`)
 			}
 			event = sdktypes.SchedulerEventTriggerType
-			data[sdktypes.ScheduleDataSection] = sdktypes.NewStringValue(schedule)
+			data[sdktypes.ScheduleExpression] = sdktypes.NewStringValue(schedule)
 		} else {
 			if connection == "" || event == "" {
 				return fmt.Errorf(`required flag(s) "connection", "event" not set`)

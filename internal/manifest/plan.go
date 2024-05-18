@@ -430,7 +430,7 @@ func planTriggers(ctx context.Context, mtriggers []*Trigger, client sdkservices.
 
 		// schedule could be specified in manifest either in dedicated or in `data' sections. Ensure schedule is present in data section
 		if mtrigger.Schedule != "" {
-			if schedule, found := mtrigger.Data[sdktypes.ScheduleDataSection]; found {
+			if schedule, found := mtrigger.Data[sdktypes.ScheduleExpression]; found {
 				if schedule != mtrigger.Schedule {
 					return nil, fmt.Errorf("trigger %q: conflicting schedules specified: %q != %q", mtrigger.GetKey(), mtrigger.Schedule, schedule)
 				}
@@ -438,12 +438,12 @@ func planTriggers(ctx context.Context, mtriggers []*Trigger, client sdkservices.
 			if mtrigger.Data == nil {
 				mtrigger.Data = make(map[string]any)
 			}
-			mtrigger.Data[sdktypes.ScheduleDataSection] = mtrigger.Schedule // ensure that schedule is present in data section
+			mtrigger.Data[sdktypes.ScheduleExpression] = mtrigger.Schedule // ensure that schedule is present in data section
 		}
 
 		connectionID := ""
 
-		if _, found := mtrigger.Data[sdktypes.ScheduleDataSection]; found {
+		if _, found := mtrigger.Data[sdktypes.ScheduleExpression]; found {
 			mtrigger.EventType = sdktypes.SchedulerEventTriggerType
 			mtrigger.ConnectionKey = "" // no connection needed for SchedulerType
 
