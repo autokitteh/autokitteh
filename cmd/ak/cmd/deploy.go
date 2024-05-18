@@ -7,6 +7,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	cmdmanifest "go.autokitteh.dev/autokitteh/cmd/ak/cmd/manifest"
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/internal/manifest"
@@ -141,10 +142,15 @@ func applyManifest(cmd *cobra.Command, manifestPath, projectName string) (string
 	}
 
 	// Execute the plan.
-	pids, err := manifest.Execute(ctx, actions, client, logFunc(cmd, "exec"))
+	effects, err := manifest.Execute(ctx, actions, client, logFunc(cmd, "exec"))
 	if err != nil {
 		return "", err
 	}
+
+	cmdmanifest.PrintSuggestions(cmd, effects)
+
+	pids := effects.ProjectIDs()
+
 	if len(pids) == 0 {
 		return m.Project.Name, nil // Project already exists.
 	}
