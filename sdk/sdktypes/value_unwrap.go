@@ -252,6 +252,15 @@ func (w ValueWrapper) unwrapIntoReader(path string, dstv reflect.Value, v Value)
 }
 
 func (w ValueWrapper) unwrapScalarInto(path string, dstv reflect.Value, v Value) (bool, error) {
+	if v.IsNothing() {
+		if dstv.Kind() == reflect.Ptr {
+			dstv.Set(reflect.Zero(dstv.Type()))
+			return true, nil
+		}
+
+		return true, fmt.Errorf("%scannot convert Nothing to target type", path)
+	}
+
 	if dstv.Type().Implements(reflect.TypeOf((*io.Reader)(nil)).Elem()) {
 		if w.IgnoreReader {
 			dstv.Set(reflect.Zero(dstv.Type()))
