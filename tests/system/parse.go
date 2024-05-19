@@ -16,11 +16,11 @@ const (
 )
 
 var (
-	steps = regexp.MustCompile(`^(ak|http|output|req|resp|return|wait|setenv)\s`)
+	steps = regexp.MustCompile(`^(ak|http|output|req|resp|return|wait|setenv|sleep)\s`)
 
 	// ak *
 	// http <get|post> *
-	actions = regexp.MustCompile(`^(ak|http\s+(get|post)|wait|setenv)\s+(.+)`)
+	actions = regexp.MustCompile(`^(ak|http\s+(get|post)|wait|setenv|sleep)\s+(.+)`)
 	// wait <duration> for session <session ID>
 	waitAction = regexp.MustCompile(`^wait\s+(.+)\s+for\s+session\s+(.+)`)
 
@@ -41,6 +41,9 @@ var (
 	httpCheckStatus = regexp.MustCompile(`^resp\s+code\s*==\s*(\d+)$`)
 	// resp header <name> == <value>
 	httpCheckHeader = regexp.MustCompile(`^resp\s+header\s+([\w-]+)\s*==\s*(.+)`)
+
+	// sleep <1-9s>
+	sleep = regexp.MustCompile(`^sleep\s+(\ds)`)
 )
 
 func readTestFile(t *testing.T, path string) []string {
@@ -140,6 +143,11 @@ func parseTestFile(t *testing.T, a *txtar.Archive) []string {
 		case "resp":
 			if !httpCheckOutput.MatchString(line) && !httpCheckStatus.MatchString(line) && !httpCheckHeader.MatchString(line) {
 				t.Errorf("invalid HTTP response check in line %d: %s", i+1, line)
+				errors++
+			}
+		case "sleep":
+			if !sleep.MatchString(line) {
+				t.Errorf("invalid sleep duration in line %d: %s", i+1, line)
 				errors++
 			}
 		}
