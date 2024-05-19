@@ -1,0 +1,109 @@
+# create scheduler trieer, redefine it as normal trigger and redefine once again as scheduler one
+
+ak project create --name schedules_project
+return code == 0
+output equals 'project_id: prj_00000000000000000000000001'
+
+ak deploy --manifest schedule.yaml --file cron.star
+return code == 0
+
+ak trigger list
+return code == 0
+output equals 'trigger_id:"trg_00000000000000000000000006" name:"cron" env_id:"env_00000000000000000000000004" event_type:"scheduler" code_location:{path:"cron.star" name:"on_cron_trigger"} data:{key:"schedule" value:{string:{v:"*/1 * * * * * *"}}} data:{key:"schedule_id" value:{string:{v:"cron_trg_00000000000000000000000006"}}}'
+
+wait 5s for session ses_0000000000000000000000000a
+ak session log ses_0000000000000000000000000a --no-timestamps --prints-only
+return code == 0
+output equals 'cron'
+
+# redefine trigger (scheduler trigger -> normal)
+ak deploy --manifest trigger.yaml --file cron.star
+return code == 0
+output equals file deploy_trigger.txt
+
+# check that trigger was redefined with connection
+ak trigger list
+return code == 0
+output equals 'trigger_id:"trg_00000000000000000000000006" name:"cron" connection_id:"con_00000000000000000000000005" env_id:"env_00000000000000000000000004" code_location:{path:"cron.star" name:"on_cron_trigger"}'
+
+# check no new session was created (i.e. redefenition deleted temporal schedule)
+sleep 3s 
+ak session list
+return code == 0
+output regex '(?m)^session_id:"ses_0+a.*$'
+
+# re-deploy manifest with cron as scheduler trigger
+ak deploy --manifest schedule.yaml --file cron.star
+return code == 0
+output equals file redeploy_schedule.txt
+
+wait 5s for session ses_0000000000000000000000000h
+ak session log ses_0000000000000000000000000h --no-timestamps --prints-only
+return code == 0
+output equals 'cron'
+
+ak trigger delete trg_00000000000000000000000006
+return code == 0
+
+# only 2 sessions since trigger and schedule were cancelled
+ak session list
+return code == 0
+output regex '(?m)^session_id:"ses_0+h.*\n^session_id:"ses_0+a.*$'
+
+-- schedule.yaml --
+version: v1
+project:
+  name: cron
+  connections:
+  - name: http
+    integration: "http"
+  triggers:
+    - name: cron
+      schedule: "*/1 * * * * * *"  # every sec
+      call: cron.star:on_cron_trigger
+
+-- trigger.yaml --
+version: v1
+project:
+  name: cron
+  connections:
+  - name: http
+    integration: "http"
+  triggers:
+    - name: cron
+      connection: http
+      call: cron.star:on_cron_trigger
+
+-- cron.star --
+def on_cron_trigger():
+    print("cron")
+
+-- deploy_trigger.txt --
+[plan] project "cron": found, id="prj_00000000000000000000000003"
+[plan] project "cron": no changes needed
+[plan] env "cron/default": found, id="env_00000000000000000000000004"
+[plan] env "cron/default": no changes needed
+[plan] project "cron": found 1 connections
+[plan] connection "cron/http": no changes needed
+[plan] project "cron": found 1 triggers
+[plan] trigger "cron/default:cron/http/cron": found, id="trg_00000000000000000000000006"
+[plan] trigger "cron/default:cron/http/cron": not as desired, will update
+[exec] update_trigger "cron/default:cron/http/cron": updated
+[exec] create_build: created "bld_0000000000000000000000000c"
+[exec] create_deployment: created "dep_0000000000000000000000000d"
+[exec] activate_deployment: activated
+
+-- redeploy_schedule.txt --
+[plan] project "cron": found, id="prj_00000000000000000000000003"
+[plan] project "cron": no changes needed
+[plan] env "cron/default": found, id="env_00000000000000000000000004"
+[plan] env "cron/default": no changes needed
+[plan] project "cron": found 1 connections
+[plan] connection "cron/http": no changes needed
+[plan] project "cron": found 1 triggers
+[plan] trigger "cron/default:cron//cron": found, id="trg_00000000000000000000000006"
+[plan] trigger "cron/default:cron//cron": not as desired, will update
+[exec] update_trigger "cron/default:/cron": updated
+[exec] create_build: created "bld_0000000000000000000000000f"
+[exec] create_deployment: created "dep_0000000000000000000000000g"
+[exec] activate_deployment: activated
