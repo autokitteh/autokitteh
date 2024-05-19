@@ -468,6 +468,10 @@ func planTriggers(ctx context.Context, mtriggers []*Trigger, client sdkservices.
 			return nil, fmt.Errorf("trigger %q: invalid: %w", mtrigger.GetKey(), err)
 		}
 
+		if mtrigger.ConnectionKey != "" {
+			desired = desired.WithConnectionID(curr.ConnectionID())
+		}
+
 		if !curr.IsValid() {
 			log.Printf("not found, will create")
 			add(actions.CreateTriggerAction{Key: mtrigger.GetKey(), ConnectionKey: mtrigger.ConnectionKey, EnvKey: mtrigger.EnvKey, Trigger: desired})
@@ -481,7 +485,6 @@ func planTriggers(ctx context.Context, mtriggers []*Trigger, client sdkservices.
 			desired = desired.
 				WithID(curr.ID()).
 				WithName(curr.Name()).
-				WithConnectionID(curr.ConnectionID()). // TODO: see above
 				WithEnvID(curr.EnvID())
 
 			if curr.Equal(desired) {
