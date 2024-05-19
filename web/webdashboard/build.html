@@ -1,0 +1,9 @@
+{{ template "header_" .}}
+
+<h1>Build: <tt>{{ .ID }}</tt></h1>
+<pre>{{ .Build }}<pre>
+
+<h2>Content</h2>
+<pre>{{ .File }}</pre>
+
+{{ template "footer_" . }}
