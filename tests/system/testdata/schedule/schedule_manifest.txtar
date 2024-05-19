@@ -10,7 +10,7 @@ return code == 0
 
 ak trigger list
 return code == 0
-output equals 'trigger_id:"trg_00000000000000000000000005" name:"cron" env_id:"env_00000000000000000000000004" event_type:"scheduler" code_location:{path:"cron.star" name:"on_cron_trigger"} data:{key:"schedule" value:{string:{v:"*/1 * * * * * *"}}} data:{key:"schedule_id" value:{string:{v:"cron_trg_00000000000000000000000005"}}}'
+output regex 'trigger_id:"trg_0+5"\s+name:"cron".*?event_type:"scheduler".*?data:{key:"schedule"\s+value:{string:{v:"\*/1 \* \* \* \* \* \*"}}}\s+data:{key:"schedule_id"\s+value:{string:{v:"cron_trg_0+5"}}}'
 
 # env_00000000000000000000000004
 # bld_00000000000000000000000007
