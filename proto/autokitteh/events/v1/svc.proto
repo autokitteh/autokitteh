@@ -40,6 +40,7 @@ message ListRequest {
   string connection_id = 2;
   string event_type = 3;
   uint32 max_results = 4;
+  string order = 5;
 }
 
 message ListResponse {
