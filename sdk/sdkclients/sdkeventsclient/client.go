@@ -68,6 +68,7 @@ func (c *client) List(ctx context.Context, filter sdkservices.ListEventsFilter) 
 			EventType:     filter.EventType,
 			ConnectionId:  filter.ConnectionID.String(),
 			MaxResults:    uint32(filter.Limit),
+			Order:         filter.Order,
 		},
 	))
 	if err != nil {
