@@ -15,13 +15,12 @@ type akResult struct {
 }
 
 func splitToArgs(cmdArgs string) []string {
-	// unfortunaly string.Fields will split everything by spaces, including quoted args. Let's use regexp instead
-	// re := regexp.MustCompile(`[^\s"']+|([^\s"']*"([^"]*)"[^\s"']*)+|'([^']*)`). DO we need quotes in arg?
-	re := regexp.MustCompile(`[^\s"']+|"[^"]*"|'[^']*'`)
+	re := regexp.MustCompile(`\w+=".*?"|\w+=[\w.:]+|"[^"]+"|[\w-.:/]+`)
 	args := re.FindAllString(cmdArgs, -1)
 	for i, arg := range args {
-		arg = strings.Trim(arg, "\"'")
-		args[i] = arg
+		if len(arg) >= 1 && arg[0] == '"' && arg[len(arg)-1] == '"' {
+			args[i] = strings.Trim(arg, "\"")
+		}
 	}
 	return args
 }
