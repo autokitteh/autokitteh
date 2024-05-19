@@ -22,13 +22,15 @@ func (p build) ExtraFields() map[string]any { return nil }
 func toBuild(sdkP sdktypes.Build) build { return build{sdkP} }
 
 func (s Svc) listBuilds(w http.ResponseWriter, r *http.Request) (list, error) {
-	sdkCs, err := s.Svcs.Builds().List(r.Context(), sdkservices.ListBuildsFilter{})
+	f := sdkservices.ListBuildsFilter{}
+
+	sdkCs, err := s.Svcs.Builds().List(r.Context(), f)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return list{}, err
 	}
 
-	return genListData(kittehs.Transform(sdkCs, toBuild)), nil
+	return genListData(f, kittehs.Transform(sdkCs, toBuild)), nil
 }
 
 func (s Svc) builds(w http.ResponseWriter, r *http.Request) {

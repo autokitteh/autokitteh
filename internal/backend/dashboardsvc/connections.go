@@ -62,7 +62,7 @@ func (s Svc) listConnections(w http.ResponseWriter, r *http.Request, f sdkservic
 		drops = append(drops, "project_id")
 	}
 
-	return genListData(kittehs.Transform(sdkCs, toConnection), drops...), nil
+	return genListData(f, kittehs.Transform(sdkCs, toConnection), drops...), nil
 }
 
 func (s Svc) connections(w http.ResponseWriter, r *http.Request) {

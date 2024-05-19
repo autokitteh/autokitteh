@@ -48,7 +48,7 @@ func (s Svc) listSessions(w http.ResponseWriter, r *http.Request, f sdkservices.
 		drops = append(drops, "build_id")
 	}
 
-	return genListData(kittehs.Transform(sdkCs.Sessions, toSession), drops...), nil
+	return genListData(f, kittehs.Transform(sdkCs.Sessions, toSession), drops...), nil
 }
 
 func (s Svc) sessions(w http.ResponseWriter, r *http.Request) {

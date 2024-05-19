@@ -33,7 +33,7 @@ func (s Svc) listDeployments(w http.ResponseWriter, r *http.Request, f sdkservic
 		return list{}, err
 	}
 
-	return genListData(kittehs.Transform(sdkCs, toDeployment)), nil
+	return genListData(f, kittehs.Transform(sdkCs, toDeployment)), nil
 }
 
 func (s Svc) deployments(w http.ResponseWriter, r *http.Request) {

@@ -27,7 +27,7 @@ func (s Svc) listIntegrations(w http.ResponseWriter, r *http.Request) (list, err
 		return list{}, err
 	}
 
-	return genListData(kittehs.Transform(sdkIs, toIntegration)), nil
+	return genListData(nil, kittehs.Transform(sdkIs, toIntegration)), nil
 }
 
 func (s Svc) integrations(w http.ResponseWriter, r *http.Request) {
