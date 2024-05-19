@@ -96,11 +96,20 @@ func (p Trigger) ToValues() map[string]Value {
 	return map[string]Value{
 		"name": NewStringValue(p.read().Name),
 		"data": kittehs.Must1(NewStructValue(
-			NewStringValue("event_data"),
+			NewStringValue("trigger_data"),
 			kittehs.TransformMapValues(
 				p.read().Data,
 				forceFromProto[Value],
 			),
 		)),
 	}
+}
+
+func (p Trigger) WithUpdatedData(key string, val Value) Trigger {
+	if !val.IsValid() {
+		return p
+	}
+	data := p.read().Data
+	data[key] = val.ToProto()
+	return Trigger{p.forceUpdate(func(m *TriggerPB) { m.Data = data })}
 }
