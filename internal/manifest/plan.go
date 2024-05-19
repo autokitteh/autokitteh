@@ -475,10 +475,13 @@ func planTriggers(ctx context.Context, mtriggers []*Trigger, client sdkservices.
 			matchedTriggerIDs = append(matchedTriggerIDs, curr.ID().String())
 			log.Printf("found, id=%q", curr.ID())
 
+			// TODO: `curr' may have actual connectionID (if not a scheduler trigger)
+			// while for `desired' we need to resolve it from connectionKey
+			// therefore for now `cur' and `desired' will have the same connectionID for comparison
 			desired = desired.
 				WithID(curr.ID()).
 				WithName(curr.Name()).
-				WithConnectionID(curr.ConnectionID()).
+				WithConnectionID(curr.ConnectionID()). // TODO: see above
 				WithEnvID(curr.EnvID())
 
 			if curr.Equal(desired) {

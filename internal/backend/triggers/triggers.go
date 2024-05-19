@@ -56,7 +56,7 @@ func (m *triggers) Update(ctx context.Context, trigger sdktypes.Trigger) error {
 
 	data := trigger.Data()
 	scheduleVal, isSchedulerTrigger := data[sdktypes.ScheduleExpression]
-	schedule := scheduleVal.String()
+	schedule, _ := scheduleVal.ToString()
 
 	if isSchedulerPrevTrigger {
 		if !isSchedulerTrigger { // scheduler trigger -> trigger
