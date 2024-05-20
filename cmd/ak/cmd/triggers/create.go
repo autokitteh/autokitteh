@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
+	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/internal/resolver"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -45,25 +46,25 @@ var createCmd = common.StandardCommand(&cobra.Command{
 			}
 			event = sdktypes.SchedulerEventTriggerType
 			data[sdktypes.ScheduleExpression] = sdktypes.NewStringValue(schedule)
-			connection = sdktypes.SchedulerConnectionName // FIXME: maybe use connectionID and don't use resolving?
+			connection = sdktypes.SchedulerConnectionName // FIXME: fix resolver. resolving by name isn't working
+			connectionID = fixtures.BuiltinSchedulerConnectionID.String()
 		} else {
 			if connection == "" || event == "" {
 				return fmt.Errorf(`required flag(s) "connection", "event" not set`)
 			}
-		}
-
-		c, cid, err := r.ConnectionNameOrID(connection, "")
-		if err != nil {
-			if errors.As(err, resolver.NotFoundErrorType) {
-				err = common.NewExitCodeError(common.NotFoundExitCode, err)
+			c, cid, err := r.ConnectionNameOrID(connection, "")
+			if err != nil {
+				if errors.As(err, resolver.NotFoundErrorType) {
+					err = common.NewExitCodeError(common.NotFoundExitCode, err)
+				}
+				return err
 			}
-			return err
+			if !c.IsValid() {
+				err = fmt.Errorf("connection %q not found", connection)
+				return common.NewExitCodeError(common.NotFoundExitCode, err)
+			}
+			connectionID = cid.String()
 		}
-		if !c.IsValid() {
-			err = fmt.Errorf("connection %q not found", connection)
-			return common.NewExitCodeError(common.NotFoundExitCode, err)
-		}
-		connectionID = cid.String()
 
 		t, err := sdktypes.StrictTriggerFromProto(&sdktypes.TriggerPB{
 			EnvId:        eid.String(),
