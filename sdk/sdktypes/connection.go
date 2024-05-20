@@ -28,10 +28,18 @@ func (ConnectionTraits) Validate(m *ConnectionPB) error {
 }
 
 func (ConnectionTraits) StrictValidate(m *ConnectionPB) error {
+	// FIXME: I think we should remove mandatory for project_id and integration_id since in DB we allow empty values
+
+	var errProjectID, errIntegrationID error
+	if m.Name != "cron" {
+		errProjectID = mandatory("project_id", m.ProjectId)
+		errIntegrationID = mandatory("integration_id", m.IntegrationId)
+	}
+
 	return errors.Join(
 		mandatory("name", m.Name),
-		mandatory("project_id", m.ProjectId),
-		mandatory("integration_id", m.IntegrationId),
+		errProjectID,
+		errIntegrationID,
 	)
 }
 
