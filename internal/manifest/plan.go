@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/internal/manifest/internal/actions"
 	"go.autokitteh.dev/autokitteh/sdk/sdklogger"
@@ -428,7 +429,9 @@ func planTriggers(ctx context.Context, mtriggers []*Trigger, client sdkservices.
 			return nil, fmt.Errorf("trigger %q: invalid entrypoint: %w", mtrigger.GetKey(), err)
 		}
 
+		connectionID := curr.ConnectionID()
 		// schedule could be specified in manifest either in dedicated or in `data' sections. Ensure schedule is present in data section
+		//
 		if mtrigger.Schedule != "" {
 			if schedule, found := mtrigger.Data[sdktypes.ScheduleExpression]; found {
 				if schedule != mtrigger.Schedule {
@@ -439,16 +442,12 @@ func planTriggers(ctx context.Context, mtriggers []*Trigger, client sdkservices.
 				mtrigger.Data = make(map[string]any)
 			}
 			mtrigger.Data[sdktypes.ScheduleExpression] = mtrigger.Schedule // ensure that schedule is present in data section
-		}
 
-		connectionID := ""
-
-		if _, found := mtrigger.Data[sdktypes.ScheduleExpression]; found {
-			mtrigger.EventType = sdktypes.SchedulerEventTriggerType
-			mtrigger.ConnectionKey = "" // no connection needed for SchedulerType
-
-		} else { // just define connectionID to pass trigger validation for non-scheduler triggers. It will be overrided or replaced by actual connection later
-			connectionID = sdktypes.NewConnectionID().String()
+			if mtrigger.ConnectionKey == projPrefix { // no connection was specified, assume it's a scheduler trigger
+				mtrigger.EventType = sdktypes.SchedulerEventTriggerType
+				mtrigger.ConnectionKey = "" // just simplify comparison later in exec plan
+				connectionID = fixtures.BuiltinSchedulerConnectionID
+			}
 		}
 
 		data, err := kittehs.TransformMapValuesError(mtrigger.Data, sdktypes.WrapValue)
@@ -462,14 +461,10 @@ func planTriggers(ctx context.Context, mtriggers []*Trigger, client sdkservices.
 			CodeLocation: loc.ToProto(),
 			Data:         kittehs.TransformMapValues(data, sdktypes.ToProto),
 			Name:         mtrigger.Name,
-			ConnectionId: connectionID,
+			ConnectionId: connectionID.String(),
 		})
 		if err != nil {
 			return nil, fmt.Errorf("trigger %q: invalid: %w", mtrigger.GetKey(), err)
-		}
-
-		if mtrigger.ConnectionKey != "" {
-			desired = desired.WithConnectionID(curr.ConnectionID())
 		}
 
 		if !curr.IsValid() {

@@ -185,19 +185,15 @@ func executeAction(ctx context.Context, action actions.Action, execContext *exec
 		return &Effect{SubjectID: triggerID, Type: Created}, nil
 
 	case actions.UpdateTriggerAction:
-		var err error
-		var cid sdktypes.ConnectionID
 		trigger := action.Trigger
 
-		if action.ConnectionKey == "" { // convert to scheduler trigger
-			cid = sdktypes.InvalidConnectionID
-		} else { // convert scheduler trigger to normal trigger, or just update connection
-			cid, err = execContext.resolveConnectionID(action.ConnectionKey)
+		if action.ConnectionKey != "" { // convert scheduler -> normal trigger, or just update connection
+			cid, err := execContext.resolveConnectionID(action.ConnectionKey)
 			if err != nil {
 				return nil, err
 			}
+			trigger = trigger.WithConnectionID(cid)
 		}
-		trigger = trigger.WithConnectionID(cid)
 
 		if err := execContext.client.Triggers().Update(ctx, trigger); err != nil {
 			return nil, err
