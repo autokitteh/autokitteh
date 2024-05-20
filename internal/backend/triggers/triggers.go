@@ -68,7 +68,8 @@ func (m *triggers) Update(ctx context.Context, trigger sdktypes.Trigger) error {
 			}
 		}
 	} else if isSchedulerTrigger { // trigger -> scheduler trigger
-		err = m.tsc.CreateScheduledWorkflow(ctx, newScheduleID(trigger), schedule, trigger.ID())
+		scheduleID = newScheduleID(trigger)
+		err = m.tsc.CreateScheduledWorkflow(ctx, scheduleID, schedule, trigger.ID())
 	}
 
 	if err != nil {

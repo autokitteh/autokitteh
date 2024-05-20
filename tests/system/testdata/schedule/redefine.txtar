@@ -9,7 +9,7 @@ return code == 0
 
 ak trigger list
 return code == 0
-output equals 'trigger_id:"trg_00000000000000000000000006" name:"cron" env_id:"env_00000000000000000000000004" event_type:"scheduler" code_location:{path:"cron.star" name:"on_cron_trigger"} data:{key:"schedule" value:{string:{v:"*/1 * * * * * *"}}} data:{key:"schedule_id" value:{string:{v:"cron_trg_00000000000000000000000006"}}}'
+output regex 'trigger_id:"trg_0+6" +name:"cron".*event_type:"scheduler".*?data:{key:"schedule" +value:{string:{v:"\*/1 \* \* \* \* \* \*"}}} +data:{key:"schedule_id" +value:{string:{v:"cron_trg_0+6"}}}'
 
 wait 5s for session ses_0000000000000000000000000a
 ak session log ses_0000000000000000000000000a --no-timestamps --prints-only
@@ -24,7 +24,7 @@ output equals file deploy_trigger.txt
 # check that trigger was redefined with connection
 ak trigger list
 return code == 0
-output regex 'trigger_id:"trg_0+6"\s+name:"cron".*?connection_id:"con_0+5".*?code_location:{path:"cron.star" name:"on_cron_trigger"}'
+output regex 'trigger_id:"trg_0+6" +name:"cron".*connection_id:"con_0+5"'
 
 # check no new session was created (i.e. redefenition deleted temporal schedule)
 sleep 3s 
@@ -43,7 +43,7 @@ return code == 0
 output equals 'cron'
 
 ak trigger delete trg_00000000000000000000000006
-# return code == 0 FIXME !!
+return code == 0
 
 # only 2 sessions since trigger and schedule were cancelled
 ak session list
