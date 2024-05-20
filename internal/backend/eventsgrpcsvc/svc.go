@@ -72,13 +72,15 @@ func (s *server) List(ctx context.Context, req *connect.Request[eventsv1.ListReq
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
+	order := sdkservices.ListOrder(msg.Order)
+
 	// set default order if not set
 	if msg.Order == "" {
-		msg.Order = sdkservices.ListOrderDescending
+		order = sdkservices.ListOrderDescending
 	}
 
 	// verify order is valid
-	if msg.Order != sdkservices.ListOrderAscending && msg.Order != sdkservices.ListOrderDescending {
+	if order != sdkservices.ListOrderAscending && order != sdkservices.ListOrderDescending {
 		return nil, connect.NewError(
 			connect.CodeInvalidArgument,
 			fmt.Errorf("order should be either %s or %s", sdkservices.ListOrderAscending, sdkservices.ListOrderDescending),
@@ -90,7 +92,7 @@ func (s *server) List(ctx context.Context, req *connect.Request[eventsv1.ListReq
 		ConnectionID:  cid,
 		EventType:     msg.EventType,
 		Limit:         int(msg.MaxResults),
-		Order:         msg.Order,
+		Order:         order,
 	}
 
 	events, err := s.events.List(ctx, filter)

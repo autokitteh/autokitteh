@@ -45,7 +45,7 @@ var listCmd = common.StandardCommand(&cobra.Command{
 			f.IntegrationID = iid
 		}
 
-		f.Order = listOrder
+		f.Order = sdkservices.ListOrder(listOrder)
 
 		ctx, cancel := common.LimitedContext()
 		defer cancel()

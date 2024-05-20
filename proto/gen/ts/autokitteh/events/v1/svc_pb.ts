@@ -180,6 +180,8 @@ export class ListRequest extends Message<ListRequest> {
   maxResults = 0;
 
   /**
+   * ASC or DESC values are supported
+   *
    * @generated from field: string order = 5;
    */
   order = "";

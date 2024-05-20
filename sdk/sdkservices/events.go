@@ -14,12 +14,14 @@ type ListEventsFilter struct {
 	Limit             int
 	CreatedAfter      *time.Time
 	MinSequenceNumber uint64
-	Order             string
+	Order             ListOrder
 }
 
+type ListOrder string
+
 const (
-	ListOrderAscending  = "ASC"
-	ListOrderDescending = "DESC"
+	ListOrderAscending  ListOrder = "ASC"
+	ListOrderDescending ListOrder = "DESC"
 )
 
 type ListEventRecordsFilter struct {

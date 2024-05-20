@@ -218,7 +218,7 @@ type ListRequest struct {
 	ConnectionId  string `protobuf:"bytes,2,opt,name=connection_id,json=connectionId,proto3" json:"connection_id,omitempty"`
 	EventType     string `protobuf:"bytes,3,opt,name=event_type,json=eventType,proto3" json:"event_type,omitempty"`
 	MaxResults    uint32 `protobuf:"varint,4,opt,name=max_results,json=maxResults,proto3" json:"max_results,omitempty"`
-	Order         string `protobuf:"bytes,5,opt,name=order,proto3" json:"order,omitempty"`
+	Order         string `protobuf:"bytes,5,opt,name=order,proto3" json:"order,omitempty"` // ASC or DESC values are supported
 }
 
 func (x *ListRequest) Reset() {
