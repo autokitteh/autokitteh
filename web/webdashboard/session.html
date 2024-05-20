@@ -1,0 +1,26 @@
+{{ template "header_" . }}
+
+<h1>Session: <tt>{{ .ID }}</tt></h1>
+<pre>{{ .SessionJSON }}</pre>
+
+<h2>Inputs</h2>
+<div class="jsoneditor">{{ .InputsJSON }}</div>
+
+<style>
+    .prints {
+        background-color: lightgray;
+        width: 100%;
+        margin: 0 auto;
+        min-height: 50px;
+        font-family: monospace;
+        white-space: pre-wrap;
+    }
+</style>
+
+<h2>Prints</h2>
+<pre class="prints">{{ .Prints}}</pre>
+
+<h2>Log</h2>
+<div class="jsoneditor">{{ .LogJSON }}</div>
+
+{{ template "footer_" . }}
