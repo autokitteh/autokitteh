@@ -86,17 +86,17 @@ project:
 [plan] project "my_project": not found, will create
 [plan] connection "my_project/my_connection": not found, will create
 [plan] trigger "my_project/default:my_project/my_connection/get": not found, will create
-[exec] create_project "my_project": created "prj_00000000000000000000000001"
-[exec] create_connection "my_project/my_connection": created "con_00000000000000000000000003"
-[exec] create_trigger "my_project/default:my_project/my_connection/get": created "trg_00000000000000000000000004"
+[exec] create_project "my_project": prj_00000000000000000000000001 created
+[exec] create_connection "my_project/my_connection": con_00000000000000000000000003 created
+[exec] create_trigger "my_project/default:my_project/my_connection/get": trg_00000000000000000000000004 created
 
 -- expected_on_full_apply_their.txt --
 [plan] project "their_project": not found, will create
 [plan] connection "their_project/my_connection": not found, will create
 [plan] trigger "their_project/default:their_project/my_connection/get": not found, will create
-[exec] create_project "their_project": created "prj_00000000000000000000000005"
-[exec] create_connection "their_project/my_connection": created "con_00000000000000000000000007"
-[exec] create_trigger "their_project/default:their_project/my_connection/get": created "trg_00000000000000000000000008"
+[exec] create_project "their_project": prj_00000000000000000000000005 created
+[exec] create_connection "their_project/my_connection": con_00000000000000000000000007 created
+[exec] create_trigger "their_project/default:their_project/my_connection/get": trg_00000000000000000000000008 created
 
 -- expected_project_details.json --
 {

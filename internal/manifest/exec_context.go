@@ -11,7 +11,6 @@ import (
 )
 
 type execContext struct {
-	log      Log
 	client   sdkservices.Services
 	resolver resolver.Resolver
 
@@ -42,6 +41,10 @@ func (c *execContext) resolveProjectID(ctx context.Context, name string) (sdktyp
 }
 
 func (c *execContext) resolveIntegrationID(name string) (sdktypes.IntegrationID, error) {
+	if iid, ok := c.integrations[name]; ok {
+		return iid, nil
+	}
+
 	in, _, err := c.resolver.IntegrationNameOrID(name)
 	iid := in.ID()
 	c.integrations[name] = iid

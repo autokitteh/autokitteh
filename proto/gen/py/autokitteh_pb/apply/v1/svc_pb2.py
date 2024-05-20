@@ -14,7 +14,7 @@ _sym_db = _symbol_database.Default()
 from buf.validate import validate_pb2 as buf_dot_validate_dot_validate__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1d\x61utokitteh/apply/v1/svc.proto\x12\x13\x61utokitteh.apply.v1\x1a\x1b\x62uf/validate/validate.proto\"u\n\x0c\x41pplyRequest\x12$\n\x08manifest\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x08manifest\x12\x1c\n\x04path\x18\x02 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x04path\x12!\n\x0cproject_name\x18\x03 \x01(\tR\x0bprojectName\"D\n\rApplyResponse\x12\x12\n\x04logs\x18\x01 \x03(\tR\x04logs\x12\x1f\n\x0bproject_ids\x18\x02 \x03(\tR\nprojectIds2^\n\x0c\x41pplyService\x12N\n\x05\x41pply\x12!.autokitteh.apply.v1.ApplyRequest\x1a\".autokitteh.apply.v1.ApplyResponseB\xd8\x01\n\x17\x63om.autokitteh.apply.v1B\x08SvcProtoP\x01ZEgo.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/apply/v1;applyv1\xa2\x02\x03\x41\x41X\xaa\x02\x13\x41utokitteh.Apply.V1\xca\x02\x13\x41utokitteh\\Apply\\V1\xe2\x02\x1f\x41utokitteh\\Apply\\V1\\GPBMetadata\xea\x02\x15\x41utokitteh::Apply::V1b\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1d\x61utokitteh/apply/v1/svc.proto\x12\x13\x61utokitteh.apply.v1\x1a\x1b\x62uf/validate/validate.proto\"u\n\x0c\x41pplyRequest\x12$\n\x08manifest\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x08manifest\x12\x1c\n\x04path\x18\x02 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x04path\x12!\n\x0cproject_name\x18\x03 \x01(\tR\x0bprojectName\"O\n\x06\x45\x66\x66\x65\x63t\x12\x1d\n\nsubject_id\x18\x01 \x01(\tR\tsubjectId\x12\x12\n\x04type\x18\x02 \x01(\tR\x04type\x12\x12\n\x04text\x18\x03 \x01(\tR\x04text\"{\n\rApplyResponse\x12\x12\n\x04logs\x18\x01 \x03(\tR\x04logs\x12\x1f\n\x0bproject_ids\x18\x02 \x03(\tR\nprojectIds\x12\x35\n\x07\x65\x66\x66\x65\x63ts\x18\x03 \x03(\x0b\x32\x1b.autokitteh.apply.v1.EffectR\x07\x65\x66\x66\x65\x63ts2^\n\x0c\x41pplyService\x12N\n\x05\x41pply\x12!.autokitteh.apply.v1.ApplyRequest\x1a\".autokitteh.apply.v1.ApplyResponseB\xd8\x01\n\x17\x63om.autokitteh.apply.v1B\x08SvcProtoP\x01ZEgo.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/apply/v1;applyv1\xa2\x02\x03\x41\x41X\xaa\x02\x13\x41utokitteh.Apply.V1\xca\x02\x13\x41utokitteh\\Apply\\V1\xe2\x02\x1f\x41utokitteh\\Apply\\V1\\GPBMetadata\xea\x02\x15\x41utokitteh::Apply::V1b\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -28,8 +28,10 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _APPLYREQUEST.fields_by_name['path']._serialized_options = b'\372\367\030\004r\002\020\001'
   _globals['_APPLYREQUEST']._serialized_start=83
   _globals['_APPLYREQUEST']._serialized_end=200
-  _globals['_APPLYRESPONSE']._serialized_start=202
-  _globals['_APPLYRESPONSE']._serialized_end=270
-  _globals['_APPLYSERVICE']._serialized_start=272
-  _globals['_APPLYSERVICE']._serialized_end=366
+  _globals['_EFFECT']._serialized_start=202
+  _globals['_EFFECT']._serialized_end=281
+  _globals['_APPLYRESPONSE']._serialized_start=283
+  _globals['_APPLYRESPONSE']._serialized_end=406
+  _globals['_APPLYSERVICE']._serialized_start=408
+  _globals['_APPLYSERVICE']._serialized_end=502
 # @@protoc_insertion_point(module_scope)
