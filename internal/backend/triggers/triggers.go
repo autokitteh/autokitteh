@@ -8,6 +8,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
+	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
 	"go.autokitteh.dev/autokitteh/internal/backend/schedule"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -30,12 +31,14 @@ func (m *triggers) Create(ctx context.Context, trigger sdktypes.Trigger) (sdktyp
 	}
 
 	trigger = trigger.WithNewID()
-	if schedule, _ := trigger.Data()[sdktypes.ScheduleExpression].ToString(); schedule != "" {
-		scheduleID := newScheduleID(trigger)
-		if err := m.tsc.CreateScheduledWorkflow(ctx, scheduleID, schedule, trigger.ID()); err != nil {
-			return sdktypes.InvalidTriggerID, err
+	if trigger.ConnectionID() == fixtures.BuiltinSchedulerConnectionID {
+		if schedule, _ := trigger.Data()[sdktypes.ScheduleExpression].ToString(); schedule != "" {
+			scheduleID := newScheduleID(trigger)
+			if err := m.tsc.CreateScheduledWorkflow(ctx, scheduleID, schedule, trigger.ID()); err != nil {
+				return sdktypes.InvalidTriggerID, err
+			}
+			trigger = trigger.WithUpdatedData(sdktypes.ScheduleIDKey, sdktypes.NewStringValue(scheduleID))
 		}
-		trigger = trigger.WithUpdatedData(sdktypes.ScheduleIDKey, sdktypes.NewStringValue(scheduleID))
 	}
 
 	if err := m.db.CreateTrigger(ctx, trigger); err != nil {
@@ -53,10 +56,12 @@ func (m *triggers) Update(ctx context.Context, trigger sdktypes.Trigger) error {
 	prevData := prevTrigger.Data()
 	prevScheduleVal, isSchedulerPrevTrigger := prevData[sdktypes.ScheduleExpression]
 	scheduleID, _ := prevData[sdktypes.ScheduleIDKey].ToString()
+	isSchedulerPrevTrigger = isSchedulerPrevTrigger && trigger.ConnectionID() == fixtures.BuiltinSchedulerConnectionID
 
 	data := trigger.Data()
 	scheduleVal, isSchedulerTrigger := data[sdktypes.ScheduleExpression]
 	schedule, _ := scheduleVal.ToString()
+	isSchedulerTrigger = isSchedulerTrigger && trigger.ConnectionID() == fixtures.BuiltinSchedulerConnectionID
 
 	if isSchedulerPrevTrigger {
 		if !isSchedulerTrigger { // scheduler trigger -> trigger
@@ -90,7 +95,7 @@ func (m *triggers) Delete(ctx context.Context, triggerID sdktypes.TriggerID) err
 	}
 
 	data := trigger.Data()
-	if schedule, found := data[sdktypes.ScheduleExpression]; found && schedule.IsValid() {
+	if trigger.ConnectionID() == fixtures.BuiltinSchedulerConnectionID {
 		scheduleID, _ := data[sdktypes.ScheduleIDKey].ToString()
 		err = m.tsc.DeleteSchedulerWorkflow(ctx, scheduleID)
 	}
