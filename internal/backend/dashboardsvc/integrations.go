@@ -1,10 +1,12 @@
 package dashboardsvc
 
 import (
+	"html/template"
 	"net/http"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
+	"go.autokitteh.dev/autokitteh/web/webdashboard"
 )
 
 func (s Svc) initIntegrations() {
@@ -52,5 +54,21 @@ func (s Svc) integration(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	renderObject(w, r, "integration", sdkI.Get().ToProto())
+	intg := sdkI.Get()
+
+	if err := webdashboard.Tmpl(r).ExecuteTemplate(w, "integration.html", struct {
+		Title           string
+		ID              string
+		IntegrationJSON template.HTML
+		VarsJSON        template.HTML
+		FuncsJSON       template.HTML
+	}{
+		Title:           "Integration: " + intg.ID().String(),
+		ID:              intg.ID().String(),
+		IntegrationJSON: marshalObject(intg.WithModule(sdktypes.InvalidModule).ToProto()),
+		VarsJSON:        template.HTML(kittehs.Must1(kittehs.MarshalProtoMapJSON(intg.ToProto().Module.Variables))),
+		FuncsJSON:       template.HTML(kittehs.Must1(kittehs.MarshalProtoMapJSON(intg.ToProto().Module.Functions))),
+	}); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }

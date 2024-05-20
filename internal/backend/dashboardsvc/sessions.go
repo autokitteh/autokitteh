@@ -1,11 +1,14 @@
 package dashboardsvc
 
 import (
+	"encoding/json"
+	"html/template"
 	"net/http"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
+	"go.autokitteh.dev/autokitteh/web/webdashboard"
 )
 
 func (s Svc) initSessions() {
@@ -67,13 +70,56 @@ func (s Svc) session(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sdkP, err := s.Svcs.Sessions().Get(r.Context(), sid)
+	sdkS, err := s.Svcs.Sessions().Get(r.Context(), sid)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	p := toSession(sdkP)
+	log, err := s.Svcs.Sessions().GetLog(r.Context(), sid)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
-	renderBigObject(w, r, "session", p.ToProto())
+	vw := sdktypes.DefaultValueWrapper
+	vw.SafeForJSON = true
+
+	inputs, err := kittehs.TransformMapValuesError(sdkS.Inputs(), vw.Unwrap)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	jsonInputs, err := json.MarshalIndent(inputs, "", "  ")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	var prints string
+
+	for _, r := range log.Records() {
+		if s, ok := r.GetPrint(); ok {
+			prints += s + "\n"
+		}
+	}
+
+	if err := webdashboard.Tmpl(r).ExecuteTemplate(w, "session.html", struct {
+		Title       string
+		ID          string
+		SessionJSON template.HTML
+		LogJSON     template.HTML
+		InputsJSON  template.HTML
+		Prints      string
+	}{
+		Title:       "Session: " + sdkS.ID().String(),
+		ID:          sdkS.ID().String(),
+		SessionJSON: marshalObject(sdkS.WithInputs(nil).ToProto()),
+		LogJSON:     template.HTML(kittehs.Must1(kittehs.MarshalProtoSliceJSON(log.ToProto().Records))),
+		InputsJSON:  template.HTML(jsonInputs),
+		Prints:      prints,
+	}); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }

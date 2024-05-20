@@ -1,12 +1,15 @@
 package dashboardsvc
 
 import (
+	"encoding/json"
+	"html/template"
 	"net/http"
 	"strconv"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
+	"go.autokitteh.dev/autokitteh/web/webdashboard"
 )
 
 func (s Svc) initEvents() {
@@ -88,13 +91,46 @@ func (s Svc) event(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sdkP, err := s.Svcs.Events().Get(r.Context(), eid)
+	sdkE, err := s.Svcs.Events().Get(r.Context(), eid)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	p := toEvent(sdkP)
+	rs, err := s.Svcs.Events().ListEventRecords(r.Context(), sdkservices.ListEventRecordsFilter{EventID: eid})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
-	renderBigObject(w, r, "event", p.ToProto())
+	vw := sdktypes.DefaultValueWrapper
+	vw.SafeForJSON = true
+
+	data, err := vw.UnwrapMap(sdkE.Data())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	jsonData, err := json.MarshalIndent(data, "", "  ")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if err := webdashboard.Tmpl(r).ExecuteTemplate(w, "event.html", struct {
+		Title     string
+		ID        string
+		EventJSON template.HTML
+		LogJSON   template.HTML
+		DataJSON  template.HTML
+	}{
+		Title:     "Event: " + sdkE.ID().String(),
+		ID:        sdkE.ID().String(),
+		EventJSON: marshalObject(sdkE.WithData(nil).ToProto()),
+		LogJSON:   template.HTML(kittehs.Must1(kittehs.MarshalProtoSliceJSON(kittehs.Transform(rs, sdktypes.ToProto)))),
+		DataJSON:  template.HTML(jsonData),
+	}); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }

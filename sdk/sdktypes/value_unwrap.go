@@ -14,6 +14,10 @@ import (
 
 func UnwrapValue(v Value) (any, error) { return DefaultValueWrapper.Unwrap(v) }
 
+func (w ValueWrapper) UnwrapMap(m map[string]Value) (map[string]any, error) {
+	return kittehs.TransformMapValuesError(m, w.Unwrap)
+}
+
 // Unwraps a value, converting it to a native go type.
 func (w ValueWrapper) Unwrap(v Value) (any, error) {
 	if w.Preunwrap != nil {
