@@ -45,23 +45,25 @@ var createCmd = common.StandardCommand(&cobra.Command{
 			}
 			event = sdktypes.SchedulerEventTriggerType
 			data[sdktypes.ScheduleExpression] = sdktypes.NewStringValue(schedule)
+			connection = sdktypes.SchedulerConnectionName // FIXME: maybe use connectionID and don't use resolving?
 		} else {
 			if connection == "" || event == "" {
 				return fmt.Errorf(`required flag(s) "connection", "event" not set`)
 			}
-			c, cid, err := r.ConnectionNameOrID(connection, "")
-			if err != nil {
-				if errors.As(err, resolver.NotFoundErrorType) {
-					err = common.NewExitCodeError(common.NotFoundExitCode, err)
-				}
-				return err
-			}
-			if !c.IsValid() {
-				err = fmt.Errorf("connection %q not found", connection)
-				return common.NewExitCodeError(common.NotFoundExitCode, err)
-			}
-			connectionID = cid.String()
 		}
+
+		c, cid, err := r.ConnectionNameOrID(connection, "")
+		if err != nil {
+			if errors.As(err, resolver.NotFoundErrorType) {
+				err = common.NewExitCodeError(common.NotFoundExitCode, err)
+			}
+			return err
+		}
+		if !c.IsValid() {
+			err = fmt.Errorf("connection %q not found", connection)
+			return common.NewExitCodeError(common.NotFoundExitCode, err)
+		}
+		connectionID = cid.String()
 
 		t, err := sdktypes.StrictTriggerFromProto(&sdktypes.TriggerPB{
 			EnvId:        eid.String(),
