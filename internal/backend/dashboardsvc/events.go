@@ -69,7 +69,7 @@ func (s Svc) listEvents(w http.ResponseWriter, r *http.Request, f sdkservices.Li
 		drops = append(drops, "connection_id")
 	}
 
-	return genListData(kittehs.Transform(sdkCs, toEvent), drops...), nil
+	return genListData(f, kittehs.Transform(sdkCs, toEvent), drops...), nil
 }
 
 func (s Svc) events(w http.ResponseWriter, r *http.Request) {

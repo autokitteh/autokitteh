@@ -35,7 +35,7 @@ func (s Svc) listEnvs(w http.ResponseWriter, r *http.Request, pid sdktypes.Proje
 		drops = append(drops, "project_id")
 	}
 
-	return genListData(kittehs.Transform(sdkEs, toEnv), drops...), nil
+	return genListData(pid.String(), kittehs.Transform(sdkEs, toEnv), drops...), nil
 }
 
 func (s Svc) envs(w http.ResponseWriter, r *http.Request) {

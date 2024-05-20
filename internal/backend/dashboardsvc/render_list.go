@@ -23,13 +23,14 @@ type listItem[M proto.Message] interface {
 }
 
 type list struct {
+	Scope            any
 	Headers          []string
 	UnformattedItems [][]string
 	Items            [][]template.HTML
 	N                int
 }
 
-func genListData[T listItem[M], M proto.Message](xs []T, drops ...string) list {
+func genListData[T listItem[M], M proto.Message](scope any, xs []T, drops ...string) list {
 	var (
 		m M
 		x T
@@ -140,7 +141,7 @@ func genListData[T listItem[M], M proto.Message](xs []T, drops ...string) list {
 
 	hdrs = kittehs.FilterZeroes(hdrs)
 
-	return list{hdrs, uitems, items, len(items)}
+	return list{scope, hdrs, uitems, items, len(items)}
 }
 
 func renderList(w http.ResponseWriter, r *http.Request, title string, l list) {

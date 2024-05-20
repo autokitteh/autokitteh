@@ -14,28 +14,12 @@
 
 <pre>{{ .JSON }}</pre>
 
-<h2>{{ .Vars.N }} Vars</h2>
-<button onclick="deleteAllVars()">Delete All</button>
-{{ template "list_table_" .Vars}} <h2>{{ .Events.N }} Events</h2>
+{{ template "vars_" .Vars }}
+
+<h2>{{ .Events.N }} Events</h2>
 {{ template "list_table_" .Events}}
 
 <script>
-    function deleteAllVars() {
-        fetch("/connections/{{ .ID }}/vars", {
-            method: "DELETE",
-        }).then(response => {
-            if (response.ok) {
-                location.reload()
-            } else {
-                console.error(response)
-                alert("Failed to delete all vars")
-            }
-        }).catch(error => {
-            console.error(error)
-            alert("Failed to delete all vars")
-        })
-    }
-
     function testConnection() {
         fetch("/connections/{{ .ID }}/test", {
             method: "POST",

@@ -13,7 +13,8 @@ import (
 
 func (s Svc) initProjects() {
 	s.Muxes.Auth.HandleFunc("/projects", s.projects)
-	s.Muxes.Auth.HandleFunc("/projects/{pid}", s.project)
+	s.Muxes.Auth.HandleFunc("GET /projects/{pid}", s.project)
+	s.Muxes.Auth.HandleFunc("DELETE /projects/{pid}", s.deleteProject)
 }
 
 type project struct{ sdktypes.Project }
@@ -31,7 +32,7 @@ func (s Svc) listProjects(w http.ResponseWriter, r *http.Request) (list, error) 
 		return list{}, err
 	}
 
-	return genListData(kittehs.Transform(sdkPs, toProject)), nil
+	return genListData(nil, kittehs.Transform(sdkPs, toProject)), nil
 }
 
 func (s Svc) projects(w http.ResponseWriter, r *http.Request) {
@@ -84,6 +85,7 @@ func (s Svc) project(w http.ResponseWriter, r *http.Request) {
 		Envs        list
 		Triggers    list
 		Sessions    list
+		ID          string
 	}{
 		Title:       "Project: " + p.Name().String(),
 		Name:        p.Name().String(),
@@ -91,7 +93,21 @@ func (s Svc) project(w http.ResponseWriter, r *http.Request) {
 		Connections: cs,
 		Envs:        es,
 		Triggers:    ts,
+		ID:          p.ID().String(),
 	}); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func (s Svc) deleteProject(w http.ResponseWriter, r *http.Request) {
+	pid, err := sdktypes.StrictParseProjectID(r.PathValue("pid"))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if err := s.Svcs.Projects().Delete(r.Context(), pid); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 }
