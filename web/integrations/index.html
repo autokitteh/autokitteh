@@ -26,54 +26,53 @@
   </head>
 
   <body class="bg-gray-50">
-    <div class="h-40 p-4 flex">
-      <a class="mx-auto" href="/" target="_self">
-        <img class="object-contain h-full mx-auto" src="/static/banner.svg" alt="autokitteh" />
+    <!-- LOGO -->
+    <div class="h-40 w-full pt-8 flex justify-center">
+      <a class="" href="/" target="_self">
+        <img
+          class="h-14 sm:h-20 aspect-auto"
+          src="/static/banner.svg"
+          alt="autokitteh"
+        />
       </a>
     </div>
-    </div>
 
-    <div class="flex w-screen mt-8 mb-8">
-      <div class="grid grid-cols-2 sm:grid-cols-5 gap-16 m-auto">
+    <!-- Integrations -->
+    <div class="flex mb-8 mx-8">
+      <div
+        class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-16 mx-auto"
+      >
         {{ range . }}
-        <div class="shadow-md rounded-md w-48 h-48 flex flex-col bg-white">
-          <div class="mx-auto mt-8 mb-4">
+        <!-- Integration Card -->
+        <div
+          class="shadow-md rounded-md h-full aspect-square flex flex-col bg-white"
+        >
+          <!-- Integration Name -->
+          <div class="mx-auto mt-8 mb-4 h-10">
             {{ if .Connection }}
             <a href="{{ .Connection }}" target="_self"><h2>{{ .Name }}</h2></a>
-            {{ else }}<h2> {{ .Name }} </h2>{{ end }}
+            {{ else }}
+            <h2>{{ .Name }}</h2>
+            {{ end }}
           </div>
-          <p class="mx-auto">
+
+          <!-- Integration Image -->
+          <p class="mx-auto mb-8">
             {{ if .Logo }} {{ if .Connection }}
             <a href="{{ .Connection }}" target="_self">
-              <img class="h-20 w-20" src="{{ .Logo }}" alt="{{ .Name }}" />
+              <img
+                class="h-20 aspect-auto"
+                src="{{ .Logo }}"
+                alt="{{ .Name }}"
+              />
             </a>
             {{ else }}
-            <img class="h-20 w-20" src="{{ .Logo }}" alt="{{ .Name }}" />
+            <img class="h-20 aspect-auto" src="{{ .Logo }}" alt="{{ .Name }}" />
             {{ end }} {{ end }}
           </p>
         </div>
         {{ end }}
       </div>
     </div>
-    <!-- <table>
-      {{ range . }}
-      <tr>
-        <td>
-          {{ if .Logo }} {{ if .Connection }}
-          <a href="{{ .Connection }}" target="_self">
-            <img class="logo" src="{{ .Logo }}" alt="{{ .Name }}" />
-          </a>
-          {{ else }}
-          <img class="logo" src="{{ .Logo }}" alt="{{ .Name }}" />
-          {{ end }} {{ end }}
-        </td>
-        <td>
-          {{ if .Connection }}
-          <a href="{{ .Connection }}" target="_self">{{ .Name }}</a>
-          {{ else }} {{ .Name }} {{ end }}
-        </td>
-      </tr>
-      {{ end }}
-    </table> -->
   </body>
 </html>
