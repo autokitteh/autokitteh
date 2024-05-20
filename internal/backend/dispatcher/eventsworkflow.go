@@ -190,7 +190,6 @@ func (d *dispatcher) getSchedulerEventSessionData(ctx context.Context, event sdk
 		z.Panic("could not fetch active deployments", zap.Error(err))
 	}
 
-	// FIXME: do we need test deployments?
 	if len(deployments) == 0 {
 		z.Debug("no deployments")
 		return nil, nil
