@@ -255,7 +255,7 @@ func (d *dispatcher) signalWorkflows(ctx context.Context, event sdktypes.Event) 
 
 func (d *dispatcher) getSessionData(event sdktypes.Event, input EventsWorkflowInput) (sds []sessionData, err error) {
 	ctx := context.Background()
-	if event.Type() == "scheduler" {
+	if event.Type() == sdktypes.SchedulerEventTriggerType {
 		err = fmt.Errorf("expected TriggerID isn't provided")
 		if input.TriggerID != nil {
 			return d.getSchedulerEventSessionData(ctx, event, *input.TriggerID)
