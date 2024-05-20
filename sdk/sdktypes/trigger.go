@@ -100,6 +100,9 @@ func (p Trigger) ToValues() map[string]Value {
 func (p Trigger) WithUpdatedData(key string, val Value) Trigger {
 	data := p.read().Data
 	if val.IsValid() {
+		if data == nil {
+			data = make(map[string]*ValuePB)
+		}
 		data[key] = val.ToProto()
 	} else {
 		delete(data, key)

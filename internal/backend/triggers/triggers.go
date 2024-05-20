@@ -56,7 +56,7 @@ func (m *triggers) Update(ctx context.Context, trigger sdktypes.Trigger) error {
 	prevData := prevTrigger.Data()
 	prevScheduleVal, isSchedulerPrevTrigger := prevData[sdktypes.ScheduleExpression]
 	scheduleID, _ := prevData[sdktypes.ScheduleIDKey].ToString()
-	isSchedulerPrevTrigger = isSchedulerPrevTrigger && trigger.ConnectionID() == fixtures.BuiltinSchedulerConnectionID
+	isSchedulerPrevTrigger = isSchedulerPrevTrigger && prevTrigger.ConnectionID() == fixtures.BuiltinSchedulerConnectionID
 
 	data := trigger.Data()
 	scheduleVal, isSchedulerTrigger := data[sdktypes.ScheduleExpression]
