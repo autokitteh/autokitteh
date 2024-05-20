@@ -51,13 +51,13 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/oauth"
 	"go.autokitteh.dev/autokitteh/internal/backend/projects"
 	"go.autokitteh.dev/autokitteh/internal/backend/projectsgrpcsvc"
+	"go.autokitteh.dev/autokitteh/internal/backend/schedule"
 	"go.autokitteh.dev/autokitteh/internal/backend/secrets"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessionsgrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/store"
 	"go.autokitteh.dev/autokitteh/internal/backend/storegrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
-	"go.autokitteh.dev/autokitteh/internal/backend/temporalschedule"
 	"go.autokitteh.dev/autokitteh/internal/backend/triggers"
 	"go.autokitteh.dev/autokitteh/internal/backend/triggersgrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/vars"
@@ -160,7 +160,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 			}),
 		),
 		Component(
-			"temporalschedule", configset.Empty, fx.Provide(temporalschedule.New),
+			"schedule", configset.Empty, fx.Provide(schedule.New),
 		),
 		Component(
 			"sessions",

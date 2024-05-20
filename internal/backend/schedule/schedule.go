@@ -1,4 +1,4 @@
-package temporalschedule
+package schedule
 
 import (
 	"context"

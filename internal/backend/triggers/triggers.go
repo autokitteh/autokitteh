@@ -8,7 +8,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
-	"go.autokitteh.dev/autokitteh/internal/backend/temporalschedule"
+	"go.autokitteh.dev/autokitteh/internal/backend/schedule"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -17,10 +17,10 @@ import (
 type triggers struct {
 	z   *zap.Logger
 	db  db.DB
-	tsc temporalschedule.TemporalSchedule
+	tsc schedule.TemporalSchedule
 }
 
-func New(z *zap.Logger, db db.DB, tsc temporalschedule.TemporalSchedule) sdkservices.Triggers {
+func New(z *zap.Logger, db db.DB, tsc schedule.TemporalSchedule) sdkservices.Triggers {
 	return &triggers{db: db, z: z, tsc: tsc}
 }
 
