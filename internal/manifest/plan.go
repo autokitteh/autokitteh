@@ -431,7 +431,6 @@ func planTriggers(ctx context.Context, mtriggers []*Trigger, client sdkservices.
 
 		connectionID := curr.ConnectionID()
 		// schedule could be specified in manifest either in dedicated or in `data' sections. Ensure schedule is present in data section
-		//
 		if mtrigger.Schedule != "" {
 			if schedule, found := mtrigger.Data[sdktypes.ScheduleExpression]; found {
 				if schedule != mtrigger.Schedule {
@@ -443,7 +442,7 @@ func planTriggers(ctx context.Context, mtriggers []*Trigger, client sdkservices.
 			}
 			mtrigger.Data[sdktypes.ScheduleExpression] = mtrigger.Schedule // ensure that schedule is present in data section
 
-			if mtrigger.ConnectionKey == projPrefix { // no connection was specified, assume it's a scheduler trigger
+			if mtrigger.ConnectionKey == projPrefix { // there is a schedule section and no connection was specified, means it's a scheduler trigger
 				mtrigger.EventType = sdktypes.SchedulerEventTriggerType
 				mtrigger.ConnectionKey = "" // just simplify comparison later in exec plan
 				connectionID = fixtures.BuiltinSchedulerConnectionID
