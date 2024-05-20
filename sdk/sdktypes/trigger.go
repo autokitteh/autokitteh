@@ -98,10 +98,11 @@ func (p Trigger) ToValues() map[string]Value {
 }
 
 func (p Trigger) WithUpdatedData(key string, val Value) Trigger {
-	if !val.IsValid() {
-		return p
-	}
 	data := p.read().Data
-	data[key] = val.ToProto()
+	if val.IsValid() {
+		data[key] = val.ToProto()
+	} else {
+		delete(data, key)
+	}
 	return Trigger{p.forceUpdate(func(m *TriggerPB) { m.Data = data })}
 }
