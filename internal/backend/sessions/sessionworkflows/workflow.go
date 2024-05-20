@@ -336,6 +336,7 @@ func (w *sessionWorkflow) getNextEvent(ctx context.Context, signalID string) (ma
 		Limit:             1,
 		MinSequenceNumber: minSequenceNumber,
 		EventType:         signal.Filter,
+		Order:             sdkservices.ListOrderAscending,
 	}
 
 	var eventID sdktypes.EventID
