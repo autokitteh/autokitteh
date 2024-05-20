@@ -56,7 +56,7 @@ func TestCreateTriggerForeignKeys(t *testing.T) {
 
 	tr.ProjectID = p.ProjectID
 	tr.EnvID = env.EnvID
-	tr.ConnectionID = &conn.ConnectionID
+	tr.ConnectionID = conn.ConnectionID
 
 	f.createProjectsAndAssert(t, p)
 	f.createEnvsAndAssert(t, env)
@@ -73,9 +73,9 @@ func TestCreateTriggerForeignKeys(t *testing.T) {
 	assert.ErrorIs(t, createTrigger(f.ctx, f.gormdb, &tr), gorm.ErrForeignKeyViolated)
 	tr.EnvID = env.EnvID
 
-	tr.ConnectionID = &unexisting
+	tr.ConnectionID = unexisting
 	assert.ErrorIs(t, createTrigger(f.ctx, f.gormdb, &tr), gorm.ErrForeignKeyViolated)
-	tr.ConnectionID = &conn.ConnectionID
+	tr.ConnectionID = conn.ConnectionID
 
 	// test with existing assets
 	f.createTriggersAndAssert(t, tr)
