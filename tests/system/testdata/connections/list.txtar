@@ -14,10 +14,10 @@ output equals 'project_id: prj_00000000000000000000000001'
 
 ak connection list
 return code == 0
-output regex 'connection_id:"con_3akt5cd1e00000000000000000" +name:"cron"'
+output regex 'connection_id:"con_3kthcr0n000000000000000000" +name:"cron"'
 
 # delete cron connection
-ak connection delete con_3akt5cd1e00000000000000000
+ak connection delete con_3kthcr0n000000000000000000
 return code == 0
 
 # Preconditions: create connections.
