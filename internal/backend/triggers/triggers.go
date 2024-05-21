@@ -18,10 +18,10 @@ import (
 type triggers struct {
 	z   *zap.Logger
 	db  db.DB
-	tsc schedule.TemporalSchedule
+	tsc schedule.Schedule
 }
 
-func New(z *zap.Logger, db db.DB, tsc schedule.TemporalSchedule) sdkservices.Triggers {
+func New(z *zap.Logger, db db.DB, tsc schedule.Schedule) sdkservices.Triggers {
 	return &triggers{db: db, z: z, tsc: tsc}
 }
 
@@ -31,10 +31,11 @@ func (m *triggers) Create(ctx context.Context, trigger sdktypes.Trigger) (sdktyp
 	}
 
 	trigger = trigger.WithNewID()
+
 	if trigger.ConnectionID() == fixtures.BuiltinSchedulerConnectionID {
 		if schedule, _ := trigger.Data()[sdktypes.ScheduleExpression].ToString(); schedule != "" {
 			scheduleID := newScheduleID(trigger)
-			if err := m.tsc.CreateScheduledWorkflow(ctx, scheduleID, schedule, trigger.ID()); err != nil {
+			if err := m.tsc.Create(ctx, scheduleID, schedule, trigger.ID()); err != nil {
 				return sdktypes.InvalidTriggerID, err
 			}
 			trigger = trigger.WithUpdatedData(sdktypes.ScheduleIDKey, sdktypes.NewStringValue(scheduleID))
@@ -65,16 +66,16 @@ func (m *triggers) Update(ctx context.Context, trigger sdktypes.Trigger) error {
 
 	if isSchedulerPrevTrigger {
 		if !isSchedulerTrigger { // scheduler trigger -> trigger
-			err = m.tsc.DeleteSchedulerWorkflow(ctx, scheduleID)
+			err = m.tsc.Delete(ctx, scheduleID)
 			scheduleID = ""
 		} else { // scheduler trigger -> scheduler trigger
 			if schedule != prevScheduleVal.String() { // schedule changed
-				err = m.tsc.UpdateSchedulerWorkflow(ctx, scheduleID, schedule)
+				err = m.tsc.Update(ctx, scheduleID, schedule)
 			}
 		}
 	} else if isSchedulerTrigger { // trigger -> scheduler trigger
 		scheduleID = newScheduleID(trigger)
-		err = m.tsc.CreateScheduledWorkflow(ctx, scheduleID, schedule, trigger.ID())
+		err = m.tsc.Create(ctx, scheduleID, schedule, trigger.ID())
 	}
 
 	if err != nil {
@@ -97,7 +98,7 @@ func (m *triggers) Delete(ctx context.Context, triggerID sdktypes.TriggerID) err
 	data := trigger.Data()
 	if trigger.ConnectionID() == fixtures.BuiltinSchedulerConnectionID {
 		scheduleID, _ := data[sdktypes.ScheduleIDKey].ToString()
-		err = m.tsc.DeleteSchedulerWorkflow(ctx, scheduleID)
+		err = m.tsc.Delete(ctx, scheduleID)
 	}
 	return errors.Join(err, m.db.DeleteTrigger(ctx, triggerID))
 }
