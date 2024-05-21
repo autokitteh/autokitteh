@@ -88,7 +88,7 @@ def on_cron_trigger():
 [plan] project "cron": found 1 triggers
 [plan] trigger "cron/default:cron/http/cron": found, id="trg_00000000000000000000000006"
 [plan] trigger "cron/default:cron/http/cron": not as desired, will update
-[exec] update_trigger "cron/default:cron/http/cron": updated
+[exec] update_trigger "cron/default:cron/http/cron": trg_00000000000000000000000006 updated
 [exec] create_build: created "bld_0000000000000000000000000c"
 [exec] create_deployment: created "dep_0000000000000000000000000d"
 [exec] activate_deployment: activated
@@ -103,7 +103,7 @@ def on_cron_trigger():
 [plan] project "cron": found 1 triggers
 [plan] trigger "cron/default:cron//cron": found, id="trg_00000000000000000000000006"
 [plan] trigger "cron/default:cron//cron": not as desired, will update
-[exec] update_trigger "cron/default:/cron": updated
+[exec] update_trigger "cron/default:/cron": trg_00000000000000000000000006 updated
 [exec] create_build: created "bld_0000000000000000000000000f"
 [exec] create_deployment: created "dep_0000000000000000000000000g"
 [exec] activate_deployment: activated
