@@ -14,20 +14,13 @@ import (
 
 func triggerToRecord(ctx context.Context, tx *tx, trigger sdktypes.Trigger) (*scheme.Trigger, error) {
 	connID := trigger.ConnectionID()
-	var (
-		conn   sdktypes.Connection
-		err    error
-		projID sdktypes.ProjectID
-	)
 
-	if connID.IsValid() {
-		conn, err = tx.GetConnection(ctx, connID)
-		if err != nil {
-			return nil, fmt.Errorf("get trigger connection: %w", err)
-		}
-		projID = conn.ProjectID()
+	conn, err := tx.GetConnection(ctx, connID)
+	if err != nil {
+		return nil, fmt.Errorf("get trigger connection: %w", err)
 	}
 
+	projID := conn.ProjectID()
 	envID := trigger.EnvID()
 	if envID.IsValid() {
 		env, err := tx.GetEnvByID(ctx, envID)
@@ -35,14 +28,17 @@ func triggerToRecord(ctx context.Context, tx *tx, trigger sdktypes.Trigger) (*sc
 			return nil, fmt.Errorf("get trigger env: %w", err)
 		}
 
-		if projID.IsValid() && projID != env.ProjectID() {
-			return nil, fmt.Errorf("env and connection project mismatch: %v != %v", projID, env.ProjectID())
+		if projID.IsValid() {
+			if projID != env.ProjectID() {
+				return nil, fmt.Errorf("env and connection project mismatch: %v != %v", projID, env.ProjectID())
+			}
+		} else {
+			projID = env.ProjectID()
 		}
-		projID = env.ProjectID()
 	}
 
 	if !projID.IsValid() {
-		return nil, fmt.Errorf("cannot guess projectID. No Env or Connection is provided")
+		return nil, fmt.Errorf("cannot guess projectID from either Env or Connection")
 	}
 
 	data, err := json.Marshal(trigger.Data())
@@ -57,7 +53,7 @@ func triggerToRecord(ctx context.Context, tx *tx, trigger sdktypes.Trigger) (*sc
 		TriggerID:    trigger.ID().UUIDValue(),
 		EnvID:        envID.UUIDValue(),
 		ProjectID:    projID.UUIDValue(),
-		ConnectionID: scheme.UUIDOrNil(connID.UUIDValue()),
+		ConnectionID: connID.UUIDValue(),
 		EventType:    trigger.EventType(),
 		Filter:       trigger.Filter(),
 		CodeLocation: trigger.CodeLocation().CanonicalString(),
@@ -97,18 +93,23 @@ func (db *gormdb) UpdateTrigger(ctx context.Context, trigger sdktypes.Trigger) e
 			return sdkerrors.ErrConflict
 		}
 
-		if connID := trigger.ConnectionID(); connID.IsValid() && curr.ConnectionID() != connID {
-			return sdkerrors.ErrConflict
-		}
-
 		t, err := triggerToRecord(ctx, tx, trigger)
 		if err != nil {
 			return err
 		}
 
-		if err := tx.db.Updates(t).Error; err != nil {
+		// update and set null fields as well, e.g. nullify connection, data etc..
+		tt := map[string]any{
+			"ConnectionID": t.ConnectionID,
+			"EventType":    t.EventType,
+			"Filter":       t.Filter,
+			"CodeLocation": t.CodeLocation,
+			"Data":         t.Data,
+		}
+		if err := tx.db.Model(&t).Updates(tt).Error; err != nil {
 			return translateError(err)
 		}
+
 		return nil
 	})
 }
