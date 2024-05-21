@@ -30,9 +30,13 @@ func New(z *zap.Logger, events sdkservices.Events, tc temporalclient.Client) Sch
 	return &temporalScheduleImpl{z: z, events: events, tmprl: tc}
 }
 
-func (tsc *temporalScheduleImpl) Create(ctx context.Context, scheduleID string, schedule string, triggerID sdktypes.TriggerID) error {
+func (tsc *temporalScheduleImpl) newScheduleEvent(ctx context.Context) (sdktypes.EventID, error) {
 	event := kittehs.Must1(sdktypes.EventFromProto(&sdktypes.EventPB{EventType: sdktypes.SchedulerEventTriggerType}))
-	eventID, err := tsc.events.Save(ctx, event)
+	return tsc.events.Save(ctx, event)
+}
+
+func (tsc *temporalScheduleImpl) Create(ctx context.Context, scheduleID string, schedule string, triggerID sdktypes.TriggerID) error {
+	eventID, err := tsc.newScheduleEvent(ctx)
 	if err != nil {
 		return fmt.Errorf("create scheduler workflow: save event: %w", err)
 	}
