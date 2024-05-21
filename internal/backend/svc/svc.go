@@ -159,9 +159,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 				})
 			}),
 		),
-		Component(
-			"schedule", configset.Empty, fx.Provide(schedule.New),
-		),
+		Component("schedule", configset.Empty, fx.Provide(schedule.New)),
 		Component(
 			"sessions",
 			sessions.Configs,
