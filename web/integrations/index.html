@@ -1,45 +1,78 @@
 <!DOCTYPE html>
 <html>
+  <head>
+    <title>autokitteh Integrations</title>
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="/static/apple-touch-icon.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="/static/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="/static/favicon-16x16.png"
+    />
+    <link rel="manifest" href="/static/site.webmanifest" />
+    <!-- <link rel="stylesheet" type="text/css" href="/static/styles.css" /> -->
+    <meta name="robots" content="noindex, nofollow" />
+    <link rel="stylesheet" href="/static/tailwind.css" />
+  </head>
 
-<head>
-  <title>autokitteh Integrations</title>
-  <link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png" />
-  <link rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16x16.png" />
-  <link rel="manifest" href="/static/site.webmanifest" />
-  <link rel="stylesheet" type="text/css" href="/static/styles.css" />
-  <meta name="robots" content="noindex, nofollow" />
-</head>
+  <body class="bg-gray-50">
+    <!-- LOGO -->
+    <div class="h-40 w-full pt-8 flex justify-center">
+      <a class="" href="/" target="_self">
+        <img
+          class="h-14 sm:h-20 aspect-auto"
+          src="/static/banner.svg"
+          alt="autokitteh"
+        />
+      </a>
+    </div>
 
-<body>
-  <a href="/" target="_self">
-    <img class="banner" src="/static/banner.svg" alt="autokitteh" />
-  </a>
+    <!-- Integrations -->
+    <div class="flex mb-8 mx-8">
+      <div
+        class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-16 mx-auto"
+      >
+        {{ range . }}
+        <!-- Integration Card -->
+        <div
+          class="shadow-md rounded-md h-full aspect-square flex flex-col bg-white hover:bg-gray-100"
+        >
+          <!-- Integration Name -->
+          <div class="mx-auto mt-8 mb-4 h-10">
+            {{ if .Connection }}
+            <a href="{{ .Connection }}" target="_self"><h2>{{ .Name }}</h2></a>
+            {{ else }}
+            <h2>{{ .Name }}</h2>
+            {{ end }}
+          </div>
 
-  <h1>Integrations</h1>
-
-  <table>
-    {{ range . }}
-    <tr>
-      <td>
-        {{ if .Logo }}
-        {{ if .Connection }}
-        <a href="{{ .Connection }}" target="_self">
-          <img class="logo" src="{{ .Logo }}" alt="{{ .Name }}" />
-        </a>
-        {{ else }}
-        <img class="logo" src="{{ .Logo }}" alt="{{ .Name }}" />
+          <!-- Integration Image -->
+          <p class="mx-auto mb-8">
+            {{ if .Logo }} {{ if .Connection }}
+            <a href="{{ .Connection }}" target="_self">
+              <img
+                class="h-20 aspect-auto"
+                src="{{ .Logo }}"
+                alt="{{ .Name }}"
+              />
+            </a>
+            {{ else }}
+            <img class="h-20 aspect-auto" src="{{ .Logo }}" alt="{{ .Name }}" />
+            {{ end }} {{ end }}
+          </p>
+        </div>
         {{ end }}
-        {{ end }}
-      </td>
-      <td>
-        {{ if .Connection }}
-        <a href="{{ .Connection }}" target="_self">{{ .Name }}</a>
-        {{ else }} {{ .Name }} {{ end }}
-      </td>
-    </tr>
-    {{ end }}
-  </table>
-</body>
-
+      </div>
+    </div>
+  </body>
 </html>
