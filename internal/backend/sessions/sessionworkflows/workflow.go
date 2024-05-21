@@ -294,7 +294,7 @@ func (w *sessionWorkflow) createEventSubscription(ctx context.Context, connectio
 	}
 
 	w.signals[signalID] = minSequence
-	w.z.Info("added signal", zap.String("signal_id", signalID), zap.String("min_sequence", string(minSequence)))
+
 	return signalID, nil
 }
 
