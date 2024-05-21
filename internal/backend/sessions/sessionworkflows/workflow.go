@@ -261,6 +261,10 @@ func (w *sessionWorkflow) initGlobalModules() (map[string]sdktypes.Value, error)
 }
 
 func (w *sessionWorkflow) createEventSubscription(ctx context.Context, connectionName, filter string) (string, error) {
+	if _, err := sdktypes.VerifyEventFilter(filter); err != nil {
+		w.z.Debug("invalid filter in workflow code", zap.Error(err))
+		return "", fmt.Errorf("invalid filter: %w", err)
+	}
 	wctx := sessioncontext.GetWorkflowContext(ctx)
 	workflowID := workflow.GetInfo(wctx).WorkflowExecution.ID
 
@@ -290,7 +294,7 @@ func (w *sessionWorkflow) createEventSubscription(ctx context.Context, connectio
 	}
 
 	w.signals[signalID] = minSequence
-
+	w.z.Info("added signal", zap.String("signal_id", signalID), zap.String("min_sequence", string(minSequence)))
 	return signalID, nil
 }
 
@@ -335,22 +339,27 @@ func (w *sessionWorkflow) getNextEvent(ctx context.Context, signalID string) (ma
 		ConnectionID:      cid,
 		Limit:             1,
 		MinSequenceNumber: minSequenceNumber,
-		EventType:         signal.Filter,
 		Order:             sdkservices.ListOrderAscending,
 	}
 
 	var eventID sdktypes.EventID
 	if err := workflow.ExecuteLocalActivity(wctx, func(ctx context.Context) (sdktypes.EventID, error) {
-		evs, err := w.ws.svcs.DB.ListEvents(ctx, filter)
-		if err != nil {
-			return sdktypes.InvalidEventID, err
+		for {
+			evs, err := w.ws.svcs.DB.ListEvents(ctx, filter)
+			if err != nil {
+				return sdktypes.InvalidEventID, err
+			}
+
+			if len(evs) == 0 {
+				return sdktypes.InvalidEventID, nil
+			}
+
+			if kittehs.Must1(evs[0].Matches(signal.Filter)) {
+				return evs[0].ID(), nil
+			}
+			filter.MinSequenceNumber = evs[0].Seq() + 1
 		}
 
-		if len(evs) == 0 {
-			return sdktypes.InvalidEventID, nil
-		}
-
-		return evs[0].ID(), nil
 	}).Get(wctx, &eventID); err != nil {
 		w.z.Panic("get signal", zap.Error(err))
 	}
