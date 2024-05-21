@@ -168,10 +168,22 @@ func ParseIntegration(i Integration) (sdktypes.Integration, error) {
 
 type Project struct {
 	ProjectID sdktypes.UUID `gorm:"primaryKey;type:uuid;not null"`
-	Name      string        `gorm:"uniqueIndex"`
+	Name      string        `gorm:"index"`
 	RootURL   string
 	Resources []byte
 	DeletedAt gorm.DeletedAt `gorm:"index"`
+}
+
+func (p *Project) BeforeCreate(tx *gorm.DB) (err error) {
+	var existingProject Project
+	// Note:
+	// - Gorm will add automatically `deleted_at is NULL` to the query
+	// - we use Find, since it won't return ErrRecordNotFound
+	res := tx.Where("name = ?", p.Name).Limit(1).Find(&existingProject)
+	if res.RowsAffected > 0 {
+		return gorm.ErrDuplicatedKey // existing active project found.
+	}
+	return err
 }
 
 func ParseProject(r Project) (sdktypes.Project, error) {
