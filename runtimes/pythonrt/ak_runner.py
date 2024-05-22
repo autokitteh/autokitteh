@@ -54,10 +54,10 @@ class Transformer(ast.NodeTransformer):
         self.file_name = file_name
 
     def visit_Call(self, node):
+        # Recurse, see https://docs.python.org/3/library/ast.html#ast.NodeVisitor.generic_visit
+        self.generic_visit(node)
+
         name = name_of(node.func)
-        # ast.Transformer does not recurse to func or args
-        node.func = self.visit(node.func)
-        node.args = [self.visit(a) for a in node.args]
 
         if not name or name in BUILTIN:
             return node

@@ -39,7 +39,7 @@ type pySvc struct {
 	comm      *Comm
 	stdout    *streamLogger
 	stderr    *streamLogger
-	sleepFn   sdktypes.Value
+	syscallFn sdktypes.Value
 }
 
 var minPyVersion = Version{
@@ -152,23 +152,25 @@ func entriesToValues(xid sdktypes.ExecutorID, entries []string) (map[string]sdkt
 	return values, nil
 }
 
-func (py *pySvc) loadSleep(ctx context.Context, runID sdktypes.RunID, cbs *sdkservices.RunCallbacks) error {
-	mod, err := cbs.Load(ctx, runID, "ak")
-	if err != nil {
-		return err
-	}
-
-	// FIXME: This fails, ask @itay
-	sleep, ok := mod["sleep"]
+func (py *pySvc) loadSyscall(values map[string]sdktypes.Value) error {
+	ak, ok := values["ak"]
 	if !ok {
-		return fmt.Errorf("`sleep` not found in `ak` module")
+		return fmt.Errorf("`ak` not found")
 	}
 
-	if !sleep.IsFunction() {
-		return fmt.Errorf("`ak.sleep` is not a function but a %T", sleep)
+	if !ak.IsStruct() {
+		return fmt.Errorf("`ak` is not a struct")
 	}
 
-	py.sleepFn = sleep
+	syscall, ok := ak.GetStruct().Fields()["syscall"]
+	if !ok {
+		return fmt.Errorf("`syscall` not found in `ak`")
+	}
+	if !syscall.IsFunction() {
+		return fmt.Errorf("`syscall` is not a function")
+	}
+
+	py.syscallFn = syscall
 	return nil
 }
 
@@ -184,10 +186,11 @@ func (py *pySvc) handleSleep(ctx context.Context, msg Message) error {
 	// Milliseconds sleep granularity should be good enough.
 	d := time.Duration(sleep.Seconds*1000) * time.Millisecond
 	args := []sdktypes.Value{
+		sdktypes.NewStringValue("sleep"),
 		sdktypes.NewDurationValue(d),
 	}
 
-	_, err = py.cbs.Call(ctx, py.xid.ToRunID(), py.sleepFn, args, nil)
+	_, err = py.cbs.Call(ctx, py.xid.ToRunID(), py.syscallFn, args, nil)
 	if err != nil {
 		py.log.Error("call sleep", zap.Error(err))
 		return err
@@ -213,7 +216,7 @@ func (py *pySvc) Run(
 ) (sdkservices.Run, error) {
 	py.log.Info("run", zap.String("id", runID.String()), zap.String("path", mainPath))
 
-	if err := py.loadSleep(ctx, runID, cbs); err != nil {
+	if err := py.loadSyscall(values); err != nil {
 		return nil, err
 	}
 
