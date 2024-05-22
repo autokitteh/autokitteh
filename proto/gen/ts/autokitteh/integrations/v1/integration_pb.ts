@@ -6,6 +6,8 @@
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
 import { Message, proto3 } from "@bufbuild/protobuf";
 import { Module } from "../../module/v1/module_pb.js";
+import { Capabilities } from "../../connections/v1/connection_pb.js";
+import { Status } from "../../common/v1/status_pb.js";
 
 /**
  * @generated from message autokitteh.integrations.v1.Integration
@@ -57,6 +59,16 @@ export class Integration extends Message<Integration> {
    */
   module?: Module;
 
+  /**
+   * @generated from field: autokitteh.connections.v1.Capabilities connection_capabilities = 10;
+   */
+  connectionCapabilities?: Capabilities;
+
+  /**
+   * @generated from field: autokitteh.common.v1.Status initial_connection_status = 11;
+   */
+  initialConnectionStatus?: Status;
+
   constructor(data?: PartialMessage<Integration>) {
     super();
     proto3.util.initPartial(data, this);
@@ -73,6 +85,8 @@ export class Integration extends Message<Integration> {
     { no: 6, name: "user_links", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 8, name: "connection_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 9, name: "module", kind: "message", T: Module },
+    { no: 10, name: "connection_capabilities", kind: "message", T: Capabilities },
+    { no: 11, name: "initial_connection_status", kind: "message", T: Status },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Integration {

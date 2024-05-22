@@ -10,6 +10,7 @@ import (
 	"gorm.io/gorm"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
+	commonv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/common/v1"
 	deploymentsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/deployments/v1"
 	eventsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/events/v1"
 	integrationsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/integrations/v1"
@@ -69,9 +70,11 @@ func ParseBuild(b Build) (sdktypes.Build, error) {
 
 type Connection struct {
 	ConnectionID  sdktypes.UUID  `gorm:"primaryKey;type:uuid;not null"`
-	IntegrationID *sdktypes.UUID `gorm:"type:uuid"`
+	IntegrationID *sdktypes.UUID `gorm:"index;type:uuid"`
 	ProjectID     *sdktypes.UUID `gorm:"index;type:uuid"`
 	Name          string
+	StatusCode    int32 `gorm:"index"`
+	StatusMessage string
 
 	// enforce foreign keys
 	// Integration *Integration FIXME: ENG-590
@@ -86,6 +89,10 @@ func ParseConnection(c Connection) (sdktypes.Connection, error) {
 		IntegrationId: sdktypes.NewIDFromUUID[sdktypes.IntegrationID](c.IntegrationID).String(),
 		ProjectId:     sdktypes.NewIDFromUUID[sdktypes.ProjectID](c.ProjectID).String(),
 		Name:          c.Name,
+		Status: &sdktypes.StatusPB{
+			Code:    commonv1.Status_Code(c.StatusCode),
+			Message: c.StatusMessage,
+		},
 	})
 	if err != nil {
 		return sdktypes.InvalidConnection, fmt.Errorf("invalid connection record: %w", err)
@@ -161,10 +168,22 @@ func ParseIntegration(i Integration) (sdktypes.Integration, error) {
 
 type Project struct {
 	ProjectID sdktypes.UUID `gorm:"primaryKey;type:uuid;not null"`
-	Name      string        `gorm:"uniqueIndex"`
+	Name      string        `gorm:"index"`
 	RootURL   string
 	Resources []byte
 	DeletedAt gorm.DeletedAt `gorm:"index"`
+}
+
+func (p *Project) BeforeCreate(tx *gorm.DB) (err error) {
+	var existingProject Project
+	// Note:
+	// - Gorm will add automatically `deleted_at is NULL` to the query
+	// - we use Find, since it won't return ErrRecordNotFound
+	res := tx.Where("name = ?", p.Name).Limit(1).Find(&existingProject)
+	if res.RowsAffected > 0 {
+		return gorm.ErrDuplicatedKey // existing active project found.
+	}
+	return err
 }
 
 func ParseProject(r Project) (sdktypes.Project, error) {

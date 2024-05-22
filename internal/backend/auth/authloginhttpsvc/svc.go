@@ -135,6 +135,26 @@ func (a *svc) registerRoutes(muxes *muxes.Muxes) error {
 		http.Redirect(w, r, fmt.Sprintf("http://localhost:%s/?token=%s", p, token), http.StatusFound)
 	})
 
+	muxes.NoAuth.HandleFunc("/auth/vscode-login", func(w http.ResponseWriter, r *http.Request) {
+		RedirectToLogin(w, r, &url.URL{Path: "/auth/finish-vscode-login"})
+	})
+
+	muxes.Auth.HandleFunc("/auth/finish-vscode-login", func(w http.ResponseWriter, r *http.Request) {
+		u := authcontext.GetAuthnUser(r.Context())
+		if !u.IsValid() {
+			http.Error(w, "unable to identify user", http.StatusInternalServerError)
+			return
+		}
+
+		token, err := a.Tokens.Create(u)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		http.Redirect(w, r, fmt.Sprintf("vscode://autokitteh.autokitteh/authenticate?token=%s", token), http.StatusFound)
+	})
+
 	muxes.Auth.HandleFunc("/whoami", func(w http.ResponseWriter, r *http.Request) {
 		u := authcontext.GetAuthnUser(r.Context())
 		if !u.IsValid() {

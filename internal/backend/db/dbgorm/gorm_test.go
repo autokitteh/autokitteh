@@ -2,6 +2,7 @@ package dbgorm
 
 import (
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
@@ -90,15 +91,16 @@ func init() {
 }
 
 type dbFixture struct {
-	db           *gorm.DB
-	gormdb       *gormdb
-	ctx          context.Context
-	sessionID    sdktypes.UUID
-	deploymentID sdktypes.UUID
-	envID        sdktypes.UUID
-	projectID    sdktypes.UUID
-	triggerID    sdktypes.UUID
-	eventID      sdktypes.UUID
+	db            *gorm.DB
+	gormdb        *gormdb
+	ctx           context.Context
+	sessionID     sdktypes.UUID
+	deploymentID  sdktypes.UUID
+	envID         sdktypes.UUID
+	projectID     sdktypes.UUID
+	triggerID     sdktypes.UUID
+	eventID       sdktypes.UUID
+	eventSequence int
 	// scopeID      sdktypes.UUID
 }
 
@@ -354,10 +356,13 @@ func (f *dbFixture) newIntegration() scheme.Integration {
 
 func (f *dbFixture) newEvent() scheme.Event {
 	f.eventID = incByOne(f.eventID)
-
+	f.eventSequence = f.eventSequence + 1
 	return scheme.Event{
 		EventID:   f.eventID,
 		CreatedAt: now,
+		Seq:       uint64(f.eventSequence),
+		Data:      kittehs.Must1(json.Marshal(struct{}{})),
+		Memo:      kittehs.Must1(json.Marshal(struct{}{})),
 	}
 }
 

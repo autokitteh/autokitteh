@@ -1,6 +1,7 @@
 {{ template "header_" . }}
 
 <h1>Project: <tt>{{ .Name }}</tt></h1>
+<button onclick="deleteProject()">Delete</button>
 <pre>{{ .JSON }}</pre>
 
 <h2>{{ .Envs.N }} Envs</h2>
@@ -11,5 +12,22 @@
 
 <h2>{{ .Triggers.N }} Triggers</h2>
 {{ template "list_table_" .Triggers}}
+
+<script>
+    function deleteProject() {
+        if (confirm("Delete this project?")) {
+            fetch("/projects/{{ .ID }}", {
+                method: "DELETE",
+            }).then(response => {
+                if (response.ok) {
+                    window.location.href = "/projects";
+                } else {
+                    console.error(response);
+                    alert("Failed to delete project: " + response.statusText);
+                }
+            });
+        }
+    }
+</script>
 
 {{ template "footer_" . }}

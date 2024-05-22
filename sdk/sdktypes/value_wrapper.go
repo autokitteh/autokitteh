@@ -36,6 +36,9 @@ type ValueWrapper struct {
 	// Ignore readers when wrapping and unwrapping.
 	IgnoreReader bool
 
+	// Ignore functions.
+	IgnoreFunctions bool
+
 	// Unwrap: transform duration into microseconds, do not convert to string.
 	RawDuration bool
 

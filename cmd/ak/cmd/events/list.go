@@ -10,6 +10,8 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 )
 
+var listOrder string
+
 var listCmd = common.StandardCommand(&cobra.Command{
 	Use:     "list [filter flags] [--fail]",
 	Short:   "List all events",
@@ -43,6 +45,8 @@ var listCmd = common.StandardCommand(&cobra.Command{
 			f.IntegrationID = iid
 		}
 
+		f.Order = sdkservices.ListOrder(listOrder)
+
 		ctx, cancel := common.LimitedContext()
 		defer cancel()
 
@@ -65,7 +69,7 @@ func init() {
 	listCmd.Flags().StringVarP(&integration, "integration", "i", "", "integration name or ID")
 	listCmd.Flags().StringVarP(&connection, "connection", "c", "", "connection name or ID")
 	listCmd.Flags().StringVarP(&eventType, "event-type", "e", "", "event type")
-
+	listCmd.Flags().StringVarP(&listOrder, "order", "o", "DESC", "events order, should be DESC or ASC, default is DESC")
 	listCmd.MarkFlagsOneRequired("integration", "connection")
 
 	common.AddFailIfNotFoundFlag(listCmd)

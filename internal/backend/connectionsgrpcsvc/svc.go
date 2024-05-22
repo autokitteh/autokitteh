@@ -116,11 +116,50 @@ func (s *server) List(ctx context.Context, req *connect.Request[connectionsv1.Li
 	}
 	f.ProjectID = pid
 
+	code, err := sdktypes.StatusCodeFromProto(req.Msg.StatusCode) // Optional
+	if err != nil {
+		return nil, sdkerrors.AsConnectError(err)
+	}
+	f.StatusCode = code
+
 	cs, err := s.connections.List(ctx, f)
 	if err != nil {
 		return nil, sdkerrors.AsConnectError(err)
 	}
+
 	return connect.NewResponse(&connectionsv1.ListResponse{
 		Connections: kittehs.Transform(cs, sdktypes.ToProto),
 	}), nil
+}
+
+func (s *server) Test(ctx context.Context, req *connect.Request[connectionsv1.TestRequest]) (*connect.Response[connectionsv1.TestResponse], error) {
+	if err := proto.Validate(req.Msg); err != nil {
+		return nil, sdkerrors.AsConnectError(err)
+	}
+	id, err := sdktypes.StrictParseConnectionID(req.Msg.ConnectionId)
+	if err != nil {
+		return nil, sdkerrors.AsConnectError(err)
+	}
+
+	status, err := s.connections.Test(ctx, id)
+	if err != nil {
+		return nil, sdkerrors.AsConnectError(err)
+	}
+	return connect.NewResponse(&connectionsv1.TestResponse{Status: status.ToProto()}), nil
+}
+
+func (s *server) RefreshStatus(ctx context.Context, req *connect.Request[connectionsv1.RefreshStatusRequest]) (*connect.Response[connectionsv1.RefreshStatusResponse], error) {
+	if err := proto.Validate(req.Msg); err != nil {
+		return nil, sdkerrors.AsConnectError(err)
+	}
+	id, err := sdktypes.StrictParseConnectionID(req.Msg.ConnectionId)
+	if err != nil {
+		return nil, sdkerrors.AsConnectError(err)
+	}
+
+	status, err := s.connections.RefreshStatus(ctx, id)
+	if err != nil {
+		return nil, sdkerrors.AsConnectError(err)
+	}
+	return connect.NewResponse(&connectionsv1.RefreshStatusResponse{Status: status.ToProto()}), nil
 }

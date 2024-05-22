@@ -1,0 +1,12 @@
+{{ template "header_" . }}
+
+<h1>Integration: <tt>{{ .ID }}</tt></h1>
+<pre>{{ .IntegrationJSON }}</pre>
+
+<h2>Variables</h2>
+<div class="jsoneditor">{{ .VarsJSON }}</div>
+
+<h2>Functions</h2>
+<div class="jsoneditor">{{ .FuncsJSON }}</div>
+
+{{ template "footer_" . }}

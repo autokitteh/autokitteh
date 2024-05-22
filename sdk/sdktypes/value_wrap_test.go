@@ -18,8 +18,8 @@ var (
 	w = sdktypes.DefaultValueWrapper
 
 	iv           = sdktypes.NewIntegerValue(42)
-	nothing      = sdktypes.Nothing
 	intsList     = kittehs.Must1(sdktypes.NewListValue([]sdktypes.Value{sdktypes.NewIntegerValue(1), sdktypes.NewIntegerValue(2), sdktypes.NewIntegerValue(3)}))
+	nothing      = sdktypes.Nothing
 	intsSet      = kittehs.Must1(sdktypes.NewSetValue([]sdktypes.Value{sdktypes.NewIntegerValue(1), sdktypes.NewIntegerValue(2), sdktypes.NewIntegerValue(3)}))
 	mixedList    = kittehs.Must1(sdktypes.NewListValue([]sdktypes.Value{sdktypes.NewIntegerValue(1), sdktypes.NewStringValue("meow"), sdktypes.NewFloatValue(1.2)}))
 	stringIntMap = map[string]sdktypes.Value{
@@ -412,4 +412,9 @@ func TestUnwrapIntoKitchenSink(t *testing.T) {
 	if assert.NoError(t, w.UnwrapInto(&x, wx)) {
 		assert.Equal(t, in, x)
 	}
+}
+
+func TestUnwrapNothing(t *testing.T) {
+	var i int
+	assert.Error(t, sdktypes.UnwrapValueInto(&i, sdktypes.Nothing))
 }

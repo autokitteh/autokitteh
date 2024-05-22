@@ -20,7 +20,7 @@ func (i integration) triggerWorkflow(ctx context.Context, args []sdktypes.Value,
 		"owner", &owner,
 		"repo", &repo,
 		"ref", &req.Ref,
-		"workflow_name", &workflowName,
+		"workflow_file_name", &workflowName,
 		"inputs?", &req.Inputs,
 	); err != nil {
 		return sdktypes.InvalidValue, err

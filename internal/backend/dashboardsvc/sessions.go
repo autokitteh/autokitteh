@@ -1,11 +1,14 @@
 package dashboardsvc
 
 import (
+	"encoding/json"
+	"html/template"
 	"net/http"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
+	"go.autokitteh.dev/autokitteh/web/webdashboard"
 )
 
 func (s Svc) initSessions() {
@@ -16,10 +19,11 @@ func (s Svc) initSessions() {
 type session struct{ sdktypes.Session }
 
 func (p session) FieldsOrder() []string {
-	return []string{"session_id", "name", "connection_id", "env_id"}
+	return []string{"created_at", "session_id", "name", "connection_id", "env_id"}
 }
 
-func (p session) HideFields() []string { return nil }
+func (p session) HideFields() []string        { return nil }
+func (p session) ExtraFields() map[string]any { return nil }
 
 func toSession(sdkP sdktypes.Session) session { return session{sdkP} }
 
@@ -47,11 +51,17 @@ func (s Svc) listSessions(w http.ResponseWriter, r *http.Request, f sdkservices.
 		drops = append(drops, "build_id")
 	}
 
-	return genListData(kittehs.Transform(sdkCs.Sessions, toSession), drops...), nil
+	return genListData(f, kittehs.Transform(sdkCs.Sessions, toSession), drops...), nil
 }
 
 func (s Svc) sessions(w http.ResponseWriter, r *http.Request) {
-	ts, err := s.listSessions(w, r, sdkservices.ListSessionsFilter{})
+	ts, err := s.listSessions(w, r, sdkservices.ListSessionsFilter{
+		PaginationRequest: sdktypes.PaginationRequest{
+			PageSize:  int32(getQueryNum(r, "sessions_page_size", 50)),
+			Skip:      int32(getQueryNum(r, "sessions_skip", 0)),
+			PageToken: r.URL.Query().Get("sessions_page_token"),
+		},
+	})
 	if err != nil {
 		return
 	}
@@ -66,13 +76,57 @@ func (s Svc) session(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sdkP, err := s.Svcs.Sessions().Get(r.Context(), sid)
+	sdkS, err := s.Svcs.Sessions().Get(r.Context(), sid)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	p := toSession(sdkP)
+	log, err := s.Svcs.Sessions().GetLog(r.Context(), sid)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
-	renderBigObject(w, r, "session", p.ToProto())
+	vw := sdktypes.DefaultValueWrapper
+	vw.SafeForJSON = true
+	vw.IgnoreFunctions = true
+
+	inputs, err := kittehs.TransformMapValuesError(sdkS.Inputs(), vw.Unwrap)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	jsonInputs, err := json.MarshalIndent(inputs, "", "  ")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	var prints string
+
+	for _, r := range log.Records() {
+		if s, ok := r.GetPrint(); ok {
+			prints += s + "\n"
+		}
+	}
+
+	if err := webdashboard.Tmpl(r).ExecuteTemplate(w, "session.html", struct {
+		Title       string
+		ID          string
+		SessionJSON template.HTML
+		LogJSON     template.HTML
+		InputsJSON  template.HTML
+		Prints      string
+	}{
+		Title:       "Session: " + sdkS.ID().String(),
+		ID:          sdkS.ID().String(),
+		SessionJSON: marshalObject(sdkS.WithInputs(nil).ToProto()),
+		LogJSON:     template.HTML(kittehs.Must1(kittehs.MarshalProtoSliceJSON(log.ToProto().Records))),
+		InputsJSON:  template.HTML(jsonInputs),
+		Prints:      prints,
+	}); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }

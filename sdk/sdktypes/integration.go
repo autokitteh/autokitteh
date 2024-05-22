@@ -23,8 +23,10 @@ func (IntegrationTraits) Validate(m *IntegrationPB) error {
 		idField[IntegrationID]("integration_id", m.IntegrationId),
 		nameField("unique_name", m.UniqueName),
 		objectField[Module]("module", m.Module),
+		objectField[ConnectionCapabilities]("connection_capabilities", m.ConnectionCapabilities),
 		urlField("logo_url", m.LogoUrl),
 		urlField("connection_url", m.ConnectionUrl),
+		objectField[Status]("init_connection_status", m.InitialConnectionStatus),
 	)
 }
 
@@ -76,4 +78,20 @@ func (p Integration) WithUserLinks(links map[string]string) Integration {
 
 func (p Integration) WithModule(m Module) Integration {
 	return Integration{p.forceUpdate(func(pb *IntegrationPB) { pb.Module = m.ToProto() })}
+}
+
+func (p Integration) ConnectionCapabilities() ConnectionCapabilities {
+	return kittehs.Must1(ConnectionCapabilitiesFromProto(p.read().ConnectionCapabilities))
+}
+
+func (p Integration) WithConnectionCapabilities(c ConnectionCapabilities) Integration {
+	return Integration{p.forceUpdate(func(pb *IntegrationPB) { pb.ConnectionCapabilities = c.ToProto() })}
+}
+
+func (p Integration) InitialConnectionStatus() Status {
+	return kittehs.Must1(StatusFromProto(p.read().InitialConnectionStatus))
+}
+
+func (p Integration) WithInitialConnectionStatus(s Status) Integration {
+	return Integration{p.forceUpdate(func(pb *IntegrationPB) { pb.InitialConnectionStatus = s.ToProto() })}
 }

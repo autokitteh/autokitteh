@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package autokitteh.common.v1;
+
+message Status {
+  enum Code {
+    CODE_UNSPECIFIED = 0;
+    CODE_OK = 1;
+    CODE_WARNING = 2;
+    CODE_ERROR = 3;
+  }
+
+  Code code = 1;
+  string message = 2;
+}

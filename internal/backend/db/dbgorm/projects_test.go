@@ -46,6 +46,30 @@ func TestCreateProject(t *testing.T) {
 	f.createProjectsAndAssert(t, p)
 }
 
+func TestCreateDuplicatedProjectName(t *testing.T) {
+	f := preProjectTest(t)
+
+	p := f.newProject()
+	// test createProject
+	f.createProjectsAndAssert(t, p)
+
+	p2 := f.newProject()
+	p2.Name = p.Name
+
+	assert.Equal(t, p.Name, p2.Name)
+	assert.NotEqual(t, p.ProjectID, p2.ProjectID)
+
+	// test create another project with the same name
+	assert.ErrorIs(t, f.gormdb.createProject(f.ctx, &p2), gorm.ErrDuplicatedKey)
+
+	// delete project
+	assert.NoError(t, f.gormdb.deleteProject(f.ctx, p.ProjectID))
+	f.assertProjectDeleted(t, p)
+
+	// test create another project with the same name after delete
+	f.createProjectsAndAssert(t, p2)
+}
+
 func TestGetProjects(t *testing.T) {
 	f := preProjectTest(t)
 

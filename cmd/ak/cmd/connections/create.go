@@ -11,10 +11,13 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-var project string
+var (
+	project string
+	quiet   bool
+)
 
 var createCmd = common.StandardCommand(&cobra.Command{
-	Use:     "create <name> <--project=...> <--integration=...>",
+	Use:     "create <name> <--project=...> <--integration=...> [--quiet]",
 	Short:   "Define new connection to integration",
 	Aliases: []string{"c"},
 	Args:    cobra.ExactArgs(1),
@@ -56,6 +59,21 @@ var createCmd = common.StandardCommand(&cobra.Command{
 			return fmt.Errorf("create connection: %w", err)
 		}
 
+		if !quiet {
+			conn, err := connections().Get(ctx, cid)
+			if err != nil {
+				return fmt.Errorf("get connection: %w", err)
+			}
+
+			if l := conn.Links().InitURL(); l != "" {
+				action := "and can be initialized"
+				if conn.Capabilities().RequiresConnectionInit() {
+					action = "but requires initialization"
+				}
+				fmt.Fprintf(cmd.ErrOrStderr(), "Connection created, %s. Please run this to complete: ak connection init %v\n", action, cid)
+			}
+		}
+
 		common.RenderKV("connection_id", cid)
 		return nil
 	},
@@ -68,4 +86,6 @@ func init() {
 
 	createCmd.Flags().StringVarP(&integration, "integration", "i", "", "integration name or ID")
 	kittehs.Must0(createCmd.MarkFlagRequired("integration"))
+
+	createCmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "do not print initialization guidance")
 }

@@ -1,0 +1,65 @@
+{{ define "vars_" }}
+
+<h2>{{ .N }} Vars</h2>
+<button onclick="deleteVars()">Delete</button>
+<button onclick="setVar()">Set:</button>
+<input type="text" id="var-name" placeholder="name" />
+<input type="checkbox" id="var-secret" />🤐&nbsp;
+<input type="text" id="var-value" placeholder="value" />
+
+{{ template "list_table_" . }}
+
+<script>
+    function deleteVars() {
+        const checkedBoxes = document.querySelectorAll('input[name=vars]:checked');
+        const keys = Array.from(checkedBoxes).map(checkbox => checkbox.value)
+
+        if (!confirm(`Delete ${keys.length ? keys.length : "all"} vars?`)) {
+            return
+        }
+
+
+        fetch(`/vars/{{ .Scope }}${keys.length ? "?names=" + keys.join(",") : ''}`, {
+            method: "DELETE",
+        }).then(response => {
+            if (response.ok) {
+                location.reload()
+            } else {
+                console.error(response)
+                alert("Failed to delete all vars")
+            }
+        }).catch(error => {
+            console.error(error)
+            alert("Failed to delete all vars")
+        })
+    }
+
+    function setVar() {
+        const name = document.getElementById('var-name').value
+        const value = document.getElementById('var-value').value
+        const is_secret = document.getElementById('var-secret').checked
+
+        if (!name) {
+            alert("Name is required")
+            return
+        }
+
+        fetch(`/vars/{{ .Scope }}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name, value, is_secret }),
+        }).then(response => {
+            if (response.ok) {
+                location.reload()
+            } else {
+                console.error(response)
+                alert("Failed to add var")
+            }
+        }).catch(error => {
+            console.error(error)
+            alert("Failed to add var")
+        })
+    }
+</script>
+
+{{ end }}

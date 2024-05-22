@@ -14,7 +14,15 @@ type ListEventsFilter struct {
 	Limit             int
 	CreatedAfter      *time.Time
 	MinSequenceNumber uint64
+	Order             ListOrder
 }
+
+type ListOrder string
+
+const (
+	ListOrderAscending  ListOrder = "ASC"
+	ListOrderDescending ListOrder = "DESC"
+)
 
 type ListEventRecordsFilter struct {
 	EventID sdktypes.EventID

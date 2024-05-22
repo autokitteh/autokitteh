@@ -23,20 +23,8 @@ func marshalObject(x proto.Message) template.HTML {
 }
 
 func renderObject[M proto.Message](w http.ResponseWriter, r *http.Request, title string, x M) {
-	renderObjectImpl(w, r, title, x, false)
-}
-
-func renderBigObject[M proto.Message](w http.ResponseWriter, r *http.Request, title string, x M) {
-	renderObjectImpl(w, r, title, x, true)
-}
-
-func renderObjectImpl[M proto.Message](w http.ResponseWriter, r *http.Request, title string, x M, big bool) {
 	n := "object.html"
 	json := marshalObject(x)
-	if big {
-		n = "big_object.html"
-		json = template.HTML(kittehs.Must1(marshalOpts.Marshal(x)))
-	}
 
 	if err := webdashboard.Tmpl(r).ExecuteTemplate(w, n, struct {
 		Message string

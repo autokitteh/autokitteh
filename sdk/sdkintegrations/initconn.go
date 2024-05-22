@@ -31,6 +31,6 @@ func FinalizeConnectionInit(w http.ResponseWriter, r *http.Request, iid sdktypes
 		id = iid.String()
 	}
 
-	u := fmt.Sprintf("/connections/%s/init?vars=%s", id, vars)
+	u := fmt.Sprintf("/connections/%s/postinit?vars=%s", id, vars)
 	http.Redirect(w, r, u, http.StatusSeeOther)
 }

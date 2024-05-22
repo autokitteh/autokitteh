@@ -46,6 +46,11 @@ const (
 	ConnectionsServiceGetProcedure = "/autokitteh.connections.v1.ConnectionsService/Get"
 	// ConnectionsServiceListProcedure is the fully-qualified name of the ConnectionsService's List RPC.
 	ConnectionsServiceListProcedure = "/autokitteh.connections.v1.ConnectionsService/List"
+	// ConnectionsServiceTestProcedure is the fully-qualified name of the ConnectionsService's Test RPC.
+	ConnectionsServiceTestProcedure = "/autokitteh.connections.v1.ConnectionsService/Test"
+	// ConnectionsServiceRefreshStatusProcedure is the fully-qualified name of the ConnectionsService's
+	// RefreshStatus RPC.
+	ConnectionsServiceRefreshStatusProcedure = "/autokitteh.connections.v1.ConnectionsService/RefreshStatus"
 )
 
 // ConnectionsServiceClient is a client for the autokitteh.connections.v1.ConnectionsService
@@ -57,6 +62,14 @@ type ConnectionsServiceClient interface {
 	Update(context.Context, *connect.Request[v1.UpdateRequest]) (*connect.Response[v1.UpdateResponse], error)
 	Get(context.Context, *connect.Request[v1.GetRequest]) (*connect.Response[v1.GetResponse], error)
 	List(context.Context, *connect.Request[v1.ListRequest]) (*connect.Response[v1.ListResponse], error)
+	// Test actively performs an integration test using a connection's configuration.
+	// (This in turn calls Integration.TestConnection).
+	Test(context.Context, *connect.Request[v1.TestRequest]) (*connect.Response[v1.TestResponse], error)
+	// RefreshStatus makes the connection query the integration regarding the
+	// current connection status. This checks that the connection is configured correctly,
+	// but does not perform any actual data transfer.
+	// (This in turn calls Integration.GetConnectionStatus).
+	RefreshStatus(context.Context, *connect.Request[v1.RefreshStatusRequest]) (*connect.Response[v1.RefreshStatusResponse], error)
 }
 
 // NewConnectionsServiceClient constructs a client for the
@@ -95,16 +108,28 @@ func NewConnectionsServiceClient(httpClient connect.HTTPClient, baseURL string, 
 			baseURL+ConnectionsServiceListProcedure,
 			opts...,
 		),
+		test: connect.NewClient[v1.TestRequest, v1.TestResponse](
+			httpClient,
+			baseURL+ConnectionsServiceTestProcedure,
+			opts...,
+		),
+		refreshStatus: connect.NewClient[v1.RefreshStatusRequest, v1.RefreshStatusResponse](
+			httpClient,
+			baseURL+ConnectionsServiceRefreshStatusProcedure,
+			opts...,
+		),
 	}
 }
 
 // connectionsServiceClient implements ConnectionsServiceClient.
 type connectionsServiceClient struct {
-	create *connect.Client[v1.CreateRequest, v1.CreateResponse]
-	delete *connect.Client[v1.DeleteRequest, v1.DeleteResponse]
-	update *connect.Client[v1.UpdateRequest, v1.UpdateResponse]
-	get    *connect.Client[v1.GetRequest, v1.GetResponse]
-	list   *connect.Client[v1.ListRequest, v1.ListResponse]
+	create        *connect.Client[v1.CreateRequest, v1.CreateResponse]
+	delete        *connect.Client[v1.DeleteRequest, v1.DeleteResponse]
+	update        *connect.Client[v1.UpdateRequest, v1.UpdateResponse]
+	get           *connect.Client[v1.GetRequest, v1.GetResponse]
+	list          *connect.Client[v1.ListRequest, v1.ListResponse]
+	test          *connect.Client[v1.TestRequest, v1.TestResponse]
+	refreshStatus *connect.Client[v1.RefreshStatusRequest, v1.RefreshStatusResponse]
 }
 
 // Create calls autokitteh.connections.v1.ConnectionsService.Create.
@@ -132,6 +157,16 @@ func (c *connectionsServiceClient) List(ctx context.Context, req *connect.Reques
 	return c.list.CallUnary(ctx, req)
 }
 
+// Test calls autokitteh.connections.v1.ConnectionsService.Test.
+func (c *connectionsServiceClient) Test(ctx context.Context, req *connect.Request[v1.TestRequest]) (*connect.Response[v1.TestResponse], error) {
+	return c.test.CallUnary(ctx, req)
+}
+
+// RefreshStatus calls autokitteh.connections.v1.ConnectionsService.RefreshStatus.
+func (c *connectionsServiceClient) RefreshStatus(ctx context.Context, req *connect.Request[v1.RefreshStatusRequest]) (*connect.Response[v1.RefreshStatusResponse], error) {
+	return c.refreshStatus.CallUnary(ctx, req)
+}
+
 // ConnectionsServiceHandler is an implementation of the
 // autokitteh.connections.v1.ConnectionsService service.
 type ConnectionsServiceHandler interface {
@@ -141,6 +176,14 @@ type ConnectionsServiceHandler interface {
 	Update(context.Context, *connect.Request[v1.UpdateRequest]) (*connect.Response[v1.UpdateResponse], error)
 	Get(context.Context, *connect.Request[v1.GetRequest]) (*connect.Response[v1.GetResponse], error)
 	List(context.Context, *connect.Request[v1.ListRequest]) (*connect.Response[v1.ListResponse], error)
+	// Test actively performs an integration test using a connection's configuration.
+	// (This in turn calls Integration.TestConnection).
+	Test(context.Context, *connect.Request[v1.TestRequest]) (*connect.Response[v1.TestResponse], error)
+	// RefreshStatus makes the connection query the integration regarding the
+	// current connection status. This checks that the connection is configured correctly,
+	// but does not perform any actual data transfer.
+	// (This in turn calls Integration.GetConnectionStatus).
+	RefreshStatus(context.Context, *connect.Request[v1.RefreshStatusRequest]) (*connect.Response[v1.RefreshStatusResponse], error)
 }
 
 // NewConnectionsServiceHandler builds an HTTP handler from the service implementation. It returns
@@ -174,6 +217,16 @@ func NewConnectionsServiceHandler(svc ConnectionsServiceHandler, opts ...connect
 		svc.List,
 		opts...,
 	)
+	connectionsServiceTestHandler := connect.NewUnaryHandler(
+		ConnectionsServiceTestProcedure,
+		svc.Test,
+		opts...,
+	)
+	connectionsServiceRefreshStatusHandler := connect.NewUnaryHandler(
+		ConnectionsServiceRefreshStatusProcedure,
+		svc.RefreshStatus,
+		opts...,
+	)
 	return "/autokitteh.connections.v1.ConnectionsService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case ConnectionsServiceCreateProcedure:
@@ -186,6 +239,10 @@ func NewConnectionsServiceHandler(svc ConnectionsServiceHandler, opts ...connect
 			connectionsServiceGetHandler.ServeHTTP(w, r)
 		case ConnectionsServiceListProcedure:
 			connectionsServiceListHandler.ServeHTTP(w, r)
+		case ConnectionsServiceTestProcedure:
+			connectionsServiceTestHandler.ServeHTTP(w, r)
+		case ConnectionsServiceRefreshStatusProcedure:
+			connectionsServiceRefreshStatusHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -213,4 +270,12 @@ func (UnimplementedConnectionsServiceHandler) Get(context.Context, *connect.Requ
 
 func (UnimplementedConnectionsServiceHandler) List(context.Context, *connect.Request[v1.ListRequest]) (*connect.Response[v1.ListResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("autokitteh.connections.v1.ConnectionsService.List is not implemented"))
+}
+
+func (UnimplementedConnectionsServiceHandler) Test(context.Context, *connect.Request[v1.TestRequest]) (*connect.Response[v1.TestResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("autokitteh.connections.v1.ConnectionsService.Test is not implemented"))
+}
+
+func (UnimplementedConnectionsServiceHandler) RefreshStatus(context.Context, *connect.Request[v1.RefreshStatusRequest]) (*connect.Response[v1.RefreshStatusResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("autokitteh.connections.v1.ConnectionsService.RefreshStatus is not implemented"))
 }

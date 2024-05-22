@@ -1,6 +1,11 @@
 package github
 
 import (
+	"context"
+	"fmt"
+	"strings"
+
+	"go.autokitteh.dev/autokitteh/integrations/github/internal/vars"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
@@ -25,11 +30,59 @@ var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.Integrati
 		"2 Go client API": "https://pkg.go.dev/github.com/google/go-github/v57/github",
 	},
 	ConnectionUrl: "/github/connect",
+	ConnectionCapabilities: &sdktypes.ConnectionCapabilitiesPB{
+		RequiresConnectionInit: true,
+	},
 }))
 
 func New(cvars sdkservices.Vars) sdkservices.Integration {
-	i := integration{vars: cvars}
-	return sdkintegrations.NewIntegration(desc, sdkmodule.New(
+	i := &integration{vars: cvars}
+	return sdkintegrations.NewIntegration(
+		desc,
+		sdkmodule.New(funcs(i)...),
+		connStatus(i),
+		connTest(i),
+	)
+}
+
+func connTest(*integration) sdkintegrations.OptFn {
+	return sdkintegrations.WithConnectionTest(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
+		// TODO
+		return sdktypes.NewStatus(sdktypes.StatusCodeUnspecified, `¯\_(ツ)_/¯`), nil
+	})
+}
+
+func connStatus(i *integration) sdkintegrations.OptFn {
+	return sdkintegrations.WithConnectionStatus(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
+		initReq := sdktypes.NewStatus(sdktypes.StatusCodeWarning, "init required")
+
+		if !cid.IsValid() {
+			return initReq, nil
+		}
+
+		vs, err := i.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
+		if err != nil {
+			return sdktypes.InvalidStatus, err
+		}
+
+		if vs.Has(vars.PAT) {
+			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "using PAT"), nil
+		}
+
+		n := len(kittehs.Filter(vs, func(v sdktypes.Var) bool {
+			return strings.HasPrefix(v.Name().String(), "app_id__")
+		}))
+
+		if n == 0 {
+			return initReq, nil
+		}
+
+		return sdktypes.NewStatus(sdktypes.StatusCodeOK, fmt.Sprintf("%d installations", n)), nil
+	})
+}
+
+func funcs(i *integration) []sdkmodule.Optfn {
+	return []sdkmodule.Optfn{
 		// Issues.
 		sdkmodule.ExportFunction(
 			"create_issue",
@@ -278,17 +331,6 @@ func New(cvars sdkservices.Vars) sdkservices.Integration {
 			sdkmodule.WithArgs("owner", "repo", "ref"),
 		),
 
-		// Actions
-		sdkmodule.ExportFunction(
-			"list_workflow_runs",
-			i.listWorkflowRuns,
-			sdkmodule.WithFuncDoc("https://docs.github.com/en/rest/actions/workflow-runs#list-workflow-runs-for-a-repository"),
-			sdkmodule.WithArgs(
-				"owner", "repo", "branch=?", "event=?", "actor=?", "status=?", "created=?",
-				"head_sha=?", "exclude_pull_requests=?", "check_suite_id=?",
-			),
-		),
-
 		// Repo
 		sdkmodule.ExportFunction(
 			"list_collaborators",
@@ -314,6 +356,13 @@ func New(cvars sdkservices.Vars) sdkservices.Integration {
 			sdkmodule.WithFuncDoc("https://docs.github.com/en/rest/users#get-a-user"),
 			sdkmodule.WithArgs("username", "owner=?"),
 		),
+		sdkmodule.ExportFunction(
+			"search_users",
+			i.searchUsers,
+			sdkmodule.WithFuncDoc("https://docs.github.com/en/rest/search/search#search-users"),
+			sdkmodule.WithArgs("query", "sort?", "order?", "per_page?", "page?", "owner=?"),
+		),
+
 		// Actions
 		sdkmodule.ExportFunction(
 			"list_workflows",
@@ -322,10 +371,33 @@ func New(cvars sdkservices.Vars) sdkservices.Integration {
 			sdkmodule.WithArgs("owner", "repo"),
 		),
 		sdkmodule.ExportFunction(
+			"list_workflow_runs",
+			i.listWorkflowRuns,
+			sdkmodule.WithFuncDoc("https://docs.github.com/en/rest/actions/workflow-runs#list-workflow-runs-for-a-repository"),
+			sdkmodule.WithArgs(
+				"owner", "repo", "branch=?", "event=?", "actor=?", "status=?", "created=?",
+				"head_sha=?", "exclude_pull_requests=?", "check_suite_id=?",
+			),
+		),
+		sdkmodule.ExportFunction(
 			"trigger_workflow",
 			i.triggerWorkflow,
 			sdkmodule.WithFuncDoc("https://docs.github.com/en/rest/actions/workflows#create-a-workflow-dispatch-event"),
-			sdkmodule.WithArgs("owner", "repo", "ref", "workflow_name", "inputs?"),
+			sdkmodule.WithArgs("owner", "repo", "ref", "workflow_file_name", "inputs?"),
 		),
-	))
+
+		// Checks
+		sdkmodule.ExportFunction(
+			"create_check_run",
+			i.createCheckRun,
+			sdkmodule.WithFuncDoc("https://docs.github.com/en/rest/checks/runs?create-a-check-run"),
+			sdkmodule.WithArgs("owner", "repo", "name", "head_sha", "details_url?", "external_url?", "status?", "conclusion?", "output?", "created_at?", "completed_at?", "actions?"),
+		),
+		sdkmodule.ExportFunction(
+			"update_check_run",
+			i.updateCheckRun,
+			sdkmodule.WithFuncDoc("https://docs.github.com/en/rest/checks/runs?update-a-check-run"),
+			sdkmodule.WithArgs("owner", "repo", "check_run_id", "details_url?", "external_url?", "status?", "conclusion?", "output?", "created_at?", "completed_at?", "actions?"),
+		),
+	}
 }
