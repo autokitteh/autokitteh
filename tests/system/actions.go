@@ -14,8 +14,16 @@ type akResult struct {
 	returnCode int
 }
 
+// \w+=".*?"       # Match key-value pairs with double quotes
+//
+// \w+=[\w.:]+     # Match key-value pairs without double quotes
+//
+// "[^"]+"         # Match double quoted strings
+//
+// [\w-.:/]+       # Match other words containing alphanumeric, hyphen, dot, colon, or slash characters
+var re = regexp.MustCompile(`\w+=".*?"|\w+=[\w.:]+|"[^"]+"|[\w-.:/]+`)
+
 func splitToArgs(cmdArgs string) []string {
-	re := regexp.MustCompile(`\w+=".*?"|\w+=[\w.:]+|"[^"]+"|[\w-.:/]+`)
 	args := re.FindAllString(cmdArgs, -1)
 	for i, arg := range args {
 		if len(arg) >= 1 && arg[0] == '"' && arg[len(arg)-1] == '"' {
