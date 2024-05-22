@@ -1,3 +1,8 @@
+# Precondition: create project.
+ak project create --name my_project
+return code == 0
+output equals 'project_id: prj_00000000000000000000000001'
+
 # Negative tests: empty connections list, with/out --fail flag.
 ak connection list
 return code == 0
@@ -6,19 +11,6 @@ output equals ''
 ak connection list --fail
 output equals 'Error: connections not found'
 return code == 10
-
-# Precondition: create project.
-ak project create --name my_project
-return code == 0
-output equals 'project_id: prj_00000000000000000000000001'
-
-ak connection list
-return code == 0
-output regex 'connection_id:"con_3kthcr0n000000000000000000" +name:"cron"'
-
-# delete cron connection
-ak connection delete con_3kthcr0n000000000000000000
-return code == 0
 
 # Preconditions: create connections.
 ak connection create my_connection_1 --project my_project --integration http -q

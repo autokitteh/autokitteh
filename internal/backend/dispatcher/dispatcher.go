@@ -6,7 +6,6 @@ import (
 
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/worker"
-	"go.temporal.io/sdk/workflow"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 
@@ -91,8 +90,8 @@ func (d *dispatcher) Redispatch(ctx context.Context, eventID sdktypes.EventID, o
 }
 
 func (d *dispatcher) Start(context.Context) error {
-	w := worker.New(d.temporal.Temporal(), sdktypes.TaskQueueName, worker.Options{})
-	w.RegisterWorkflowWithOptions(d.eventsWorkflow, workflow.RegisterOptions{Name: sdktypes.EventsWorkflow})
+	w := worker.New(d.temporal.Temporal(), taskQueueName, worker.Options{})
+	w.RegisterWorkflow(d.eventsWorkflow)
 
 	if err := w.Start(); err != nil {
 		return fmt.Errorf("worker start: %w", err)
@@ -103,9 +102,13 @@ func (d *dispatcher) Start(context.Context) error {
 func (d *dispatcher) startWorkflow(ctx context.Context, eventID sdktypes.EventID, opts *sdkservices.DispatchOptions) error {
 	options := client.StartWorkflowOptions{
 		ID:        eventID.String(),
-		TaskQueue: sdktypes.TaskQueueName,
+		TaskQueue: taskQueueName,
 	}
-	_, err := d.temporal.Temporal().ExecuteWorkflow(ctx, options, d.eventsWorkflow, EventsWorkflowInput{EventID: eventID, Options: opts})
+	input := eventsWorkflowInput{
+		EventID: eventID,
+		Options: opts,
+	}
+	_, err := d.temporal.Temporal().ExecuteWorkflow(ctx, options, d.eventsWorkflow, input)
 	if err != nil {
 		d.z.Error("Failed starting workflow", zap.String("eventID", eventID.String()), zap.Error(err))
 		return fmt.Errorf("failed starting workflow: %w", err)
