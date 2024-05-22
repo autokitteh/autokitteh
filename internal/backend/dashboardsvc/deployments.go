@@ -1,6 +1,7 @@
 package dashboardsvc
 
 import (
+	"context"
 	"html/template"
 	"net/http"
 
@@ -11,8 +12,14 @@ import (
 )
 
 func (s Svc) initDeployments() {
+	deployments := s.Svcs.Deployments()
+
 	s.Muxes.Auth.HandleFunc("/deployments", s.deployments)
 	s.Muxes.Auth.HandleFunc("/deployments/{did}", s.deployment)
+	s.Muxes.Auth.HandleFunc("/deployments/{did}/activate", s.deploymentAction(deployments.Activate))
+	s.Muxes.Auth.HandleFunc("/deployments/{did}/deactivate", s.deploymentAction(deployments.Deactivate))
+	s.Muxes.Auth.HandleFunc("/deployments/{did}/drain", s.deploymentAction(deployments.Drain))
+	s.Muxes.Auth.HandleFunc("/deployments/{did}/test", s.deploymentAction(deployments.Test))
 }
 
 type deployment struct{ sdktypes.Deployment }
@@ -21,12 +28,16 @@ func (p deployment) FieldsOrder() []string {
 	return []string{"deployment_id", "name"}
 }
 
-func (p deployment) HideFields() []string        { return nil }
+func (p deployment) HideFields() []string { return nil }
+
 func (p deployment) ExtraFields() map[string]any { return nil }
 
 func toDeployment(sdkD sdktypes.Deployment) deployment { return deployment{sdkD} }
 
 func (s Svc) listDeployments(w http.ResponseWriter, r *http.Request, f sdkservices.ListDeploymentsFilter) (list, error) {
+	f.IncludeSessionStats = true
+	f.Limit = uint32(getQueryNum(r, "deployments_limit", 50))
+
 	sdkCs, err := s.Svcs.Deployments().List(r.Context(), f)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -71,12 +82,31 @@ func (s Svc) deployment(w http.ResponseWriter, r *http.Request) {
 		ID       string
 		JSON     template.HTML
 		Sessions list
+		State    string
 	}{
 		Title:    "Deployment: " + sdkD.ID().String(),
 		ID:       sdkD.ID().String(),
 		JSON:     marshalObject(sdkD.ToProto()),
 		Sessions: sess,
+		State:    sdkD.State().String(),
 	}); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func (s Svc) deploymentAction(act func(context.Context, sdktypes.DeploymentID) error) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		did, err := sdktypes.Strict(sdktypes.ParseDeploymentID(r.PathValue("did")))
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		if err := act(r.Context(), did); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		http.Redirect(w, r, "/deployments/"+did.String(), http.StatusSeeOther)
 	}
 }
