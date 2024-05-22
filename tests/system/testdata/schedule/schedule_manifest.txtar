@@ -1,0 +1,64 @@
+# create and delete a schedule via manifest
+
+# Precondition: create project.
+ak project create --name schedules_project
+return code == 0
+output equals 'project_id: prj_00000000000000000000000001'
+
+ak deploy --manifest schedule.yaml --file cron.star
+return code == 0
+
+ak trigger list
+return code == 0
+output regex 'trigger_id:"trg_0+5" +name:"cron".*event_type:"scheduler".*data:{key:"schedule" +value:{string:{v:"\*/1 \* \* \* \* \* \*"}}} +data:{key:"schedule_id" +value:{string:{v:"cron_trg_0+5"}}}'
+
+# env_00000000000000000000000004
+# bld_00000000000000000000000007
+# dep_00000000000000000000000008
+
+wait 5s for session ses_00000000000000000000000009
+ak session log ses_00000000000000000000000009 --no-timestamps --prints-only
+return code == 0
+output equals 'cron'
+
+wait 5s for session ses_0000000000000000000000000b
+ak session log ses_0000000000000000000000000b --no-timestamps --prints-only
+return code == 0
+output equals 'cron'
+
+# remove trigger and effectively cancel cron
+ak trigger delete trg_00000000000000000000000005
+#ak deploy --manifest no_schedule.yaml --file cron.star
+return code == 0
+
+ak trigger list
+return code == 0
+output equals ''
+
+# sleep 3 seconds this should be more than enough
+sleep 3s
+
+# only 2 sessions since trigger and schedule were cancelled
+ak session list
+return code == 0
+output regex '(?m)^session_id:"ses_0+b.*\n^session_id:"ses_0+9.*$'
+
+
+-- schedule.yaml --
+version: v1
+project:
+  name: cron
+  triggers:
+    - name: cron
+      schedule: "*/1 * * * * * *"  # every sec
+      call: cron.star:on_cron_trigger
+
+-- no_schedule.yaml --
+version: v1
+project:
+  name: cron
+  triggers:
+
+-- cron.star --
+def on_cron_trigger():
+    print("cron")
