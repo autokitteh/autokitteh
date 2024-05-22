@@ -35,7 +35,6 @@ func (p deployment) ExtraFields() map[string]any { return nil }
 func toDeployment(sdkD sdktypes.Deployment) deployment { return deployment{sdkD} }
 
 func (s Svc) listDeployments(w http.ResponseWriter, r *http.Request, f sdkservices.ListDeploymentsFilter) (list, error) {
-	f.IncludeSessionStats = true
 	f.Limit = uint32(getQueryNum(r, "deployments_limit", 50))
 
 	sdkCs, err := s.Svcs.Deployments().List(r.Context(), f)
