@@ -261,7 +261,7 @@ func (w *sessionWorkflow) initGlobalModules() (map[string]sdktypes.Value, error)
 }
 
 func (w *sessionWorkflow) createEventSubscription(ctx context.Context, connectionName, filter string) (string, error) {
-	if _, err := sdktypes.VerifyEventFilter(filter); err != nil {
+	if err := sdktypes.VerifyEventFilter(filter); err != nil {
 		w.z.Debug("invalid filter in workflow code", zap.Error(err))
 		return "", fmt.Errorf("invalid filter: %w", err)
 	}

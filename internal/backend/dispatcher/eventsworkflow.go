@@ -190,40 +190,38 @@ func (d *dispatcher) signalWorkflows(ctx context.Context, event sdktypes.Event) 
 	z.Debug("found signal candidates", zap.Int("count", len(signals)))
 	for _, signal := range signals {
 		match, err := event.Matches(signal.Filter)
+		l := z.With(zap.String("signal_id", signal.SignalID),
+			zap.String("filter", signal.Filter),
+			zap.String("event_id", event.ID().String()))
+
 		if err != nil {
-			z.Error("inavlid signal filter",
-				zap.Error(err),
-				zap.String("signal_id", signal.SignalID),
-				zap.String("filter", signal.Filter),
-				zap.String("event_id", event.ID().String()))
+			l.Error("inavlid signal filter", zap.Error(err))
+
 			if err := d.db.RemoveSignal(ctx, signal.SignalID); err != nil {
-				z.Error("failed removing signal with invalid filter", zap.Error(err), zap.String("signal_id", signal.SignalID))
+				l.Error("failed removing signal with invalid filter", zap.Error(err))
 				continue
 			}
-			z.Debug("signal removed", zap.String("signal_id", signal.SignalID))
+			l.Debug("signal removed")
 			continue
 		}
 
 		if !match {
-			z.Debug("signal filter not matching event, skipping",
-				zap.String("signal_id", signal.SignalID),
-				zap.String("filter", signal.Filter),
-				zap.String("event_id", event.ID().String()))
+			l.Debug("signal filter not matching event, skipping")
 			continue
 		}
 
 		if err := d.temporal.Temporal().SignalWorkflow(ctx, signal.WorkflowID, "", signal.SignalID, eid); err != nil {
 			var nferr *serviceerror.NotFound
 			if !errors.As(err, &nferr) {
-				z.Error("could not signal workflow", zap.Error(err))
+				l.Error("could not signal workflow", zap.Error(err))
 				return err
 			}
-			z.Debug("workflow not found, removing signal", zap.String("signal_id", signal.SignalID))
+			l.Debug("workflow not found, removing signal")
 			if err := d.db.RemoveSignal(ctx, signal.SignalID); err != nil {
 				return err
 			}
 		}
-		z.Debug("signaled workflow", zap.String("workflow_id", signal.WorkflowID))
+		l.Debug("signaled workflow", zap.String("workflow_id", signal.WorkflowID))
 	}
 
 	return nil

@@ -96,12 +96,12 @@ var eventFilterEnv = kittehs.Must1(cel.NewEnv(
 	cel.Variable("data", cel.MapType(cel.StringType, cel.AnyType)),
 ))
 
-func VerifyEventFilter(filter string) (bool, error) {
+func VerifyEventFilter(filter string) error {
 	if _, err := eventFilterEnv.Compile(filter); err != nil {
-		return false, err.Err()
+		return err.Err()
 	}
 
-	return true, nil
+	return nil
 }
 
 func eventFilterField(name string, expr string) error {
