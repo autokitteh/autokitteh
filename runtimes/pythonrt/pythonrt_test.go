@@ -130,12 +130,15 @@ func Test_pySvc_Run(t *testing.T) {
 	xid := sdktypes.NewExecutorID(sdktypes.NewRunID())
 
 	var mod sdktypes.ModuleFunction
-	sleep, err := sdktypes.NewFunctionValue(xid, "sleep", nil, nil, mod)
+	syscall, err := sdktypes.NewFunctionValue(xid, "syscall", nil, nil, mod)
 	require.NoError(t, err)
 
-	values := map[string]sdktypes.Value{
-		"sleep": sleep,
-	}
+	ak, err := sdktypes.NewStructValue(
+		sdktypes.NewStringValue("ak"),
+		map[string]sdktypes.Value{"syscall": syscall},
+	)
+	require.NoError(t, err)
+	values := map[string]sdktypes.Value{"ak": ak}
 	run, err := svc.Run(ctx, runID, mainPath, compiled, values, &cbs)
 	require.NoError(t, err, "run")
 
