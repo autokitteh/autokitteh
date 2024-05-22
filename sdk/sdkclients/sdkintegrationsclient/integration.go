@@ -74,3 +74,37 @@ func (i *integration) Call(ctx context.Context, v sdktypes.Value, args []sdktype
 
 	return retv, perr.ToError()
 }
+
+func (i *integration) TestConnection(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
+	intid := i.desc.ID()
+
+	resp, err := i.client.TestConnection(ctx, connect.NewRequest(&integrationsv1.TestConnectionRequest{
+		IntegrationId: intid.String(),
+		ConnectionId:  cid.String(),
+	}))
+	if err != nil {
+		return sdktypes.InvalidStatus, rpcerrors.ToSDKError(err)
+	}
+	if err := internal.Validate(resp.Msg); err != nil {
+		return sdktypes.InvalidStatus, err
+	}
+
+	return sdktypes.StrictStatusFromProto(resp.Msg.Status)
+}
+
+func (i *integration) GetConnectionStatus(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
+	intid := i.desc.ID()
+
+	resp, err := i.client.GetConnectionStatus(ctx, connect.NewRequest(&integrationsv1.GetConnectionStatusRequest{
+		IntegrationId: intid.String(),
+		ConnectionId:  cid.String(),
+	}))
+	if err != nil {
+		return sdktypes.InvalidStatus, rpcerrors.ToSDKError(err)
+	}
+	if err := internal.Validate(resp.Msg); err != nil {
+		return sdktypes.InvalidStatus, err
+	}
+
+	return sdktypes.StrictStatusFromProto(resp.Msg.Status)
+}

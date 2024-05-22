@@ -31,10 +31,12 @@ var deployCmd = common.StandardCommand(&cobra.Command{
 		r := resolver.Resolver{Client: common.Client()}
 
 		// Step 1: apply the manifest file (see also the "manifest" parent command).
-		project, err := applyManifest(cmd, args)
+		effects, project, err := applyManifest(cmd, args)
 		if err != nil {
 			return err
 		}
+
+		PrintSuggestions(cmd, effects)
 
 		// Step 2: build the project
 		// (see also the "build" and "project" parent commands).
@@ -100,16 +102,16 @@ func init() {
 	deployCmd.Flags().StringVarP(&projectName, "project-name", "n", "", "project name")
 }
 
-func applyManifest(cmd *cobra.Command, args []string) (string, error) {
+func applyManifest(cmd *cobra.Command, args []string) (manifest.Effects, string, error) {
 	// Read and parse the manifest file.
 	data, path, err := common.Consume(args)
 	if err != nil {
-		return "", err
+		return nil, "", err
 	}
 
 	actions, err := plan(cmd, data, path, projectName)
 	if err != nil {
-		return "", err
+		return nil, "", err
 	}
 
 	client := common.Client()
@@ -117,20 +119,53 @@ func applyManifest(cmd *cobra.Command, args []string) (string, error) {
 	defer cancel()
 
 	// Execute the plan.
-	pids, err := manifest.Execute(ctx, actions, client, logFunc(cmd, "exec"))
+	effects, err := manifest.Execute(ctx, actions, client, logFunc(cmd, "exec"))
 	if err != nil {
-		return "", err
+		return nil, "", err
 	}
+
+	pids := effects.ProjectIDs()
+
 	if len(pids) == 0 {
 		// Execute didn't return a new project ID because the project already exists,
 		// so get the project name from the manifest instead. It's safe to ignore the
 		// error here because we already ran Read() successfully inside plan() above.
 		m := kittehs.Must1(manifest.Read(data, path))
-		return m.Project.Name, nil
+		return effects, m.Project.Name, nil
 	}
 	if len(pids) > 1 {
-		return "", fmt.Errorf("expected 1 project ID, got %d", len(pids))
+		return nil, "", fmt.Errorf("expected 1 project ID, got %d", len(pids))
 	}
 
-	return pids[0].String(), nil // Exactly one new project created.
+	return effects, pids[0].String(), nil // Exactly one new project created.
+}
+
+func PrintSuggestions(cmd *cobra.Command, effects manifest.Effects) {
+	for _, effect := range effects {
+		if effect.Type != manifest.Created {
+			continue
+		}
+
+		cid, ok := effect.SubjectID.(sdktypes.ConnectionID)
+		if !ok {
+			continue
+		}
+
+		ctx, cancel := common.LimitedContext()
+		defer cancel()
+
+		c, err := common.Client().Connections().Get(ctx, cid)
+		if err != nil {
+			fmt.Fprintf(cmd.ErrOrStderr(), "error getting connection %v: %v\n", cid, err)
+			continue
+		}
+
+		if l := c.Links().InitURL(); l != "" {
+			action := "and can be initialized"
+			if c.Capabilities().RequiresConnectionInit() {
+				action = "but requires initialization"
+			}
+			fmt.Fprintf(cmd.ErrOrStderr(), "[!!!!] Connection created, %s. Please run this to complete: ak connection init %v\n", action, cid)
+		}
+	}
 }

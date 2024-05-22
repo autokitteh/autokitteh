@@ -15,6 +15,19 @@
     }
 </script>
 
+<script type="module">
+    import { JSONEditor } from '/static/vanilla-jsoneditor.js'
+
+    document.querySelectorAll('.jsoneditor').forEach((element) => {
+        let content = { json: JSON.parse(element.innerText), text: undefined }
+        element.innerHTML = ''
+        new JSONEditor({
+            target: element,
+            props: { content, mode: 'view' },
+        })
+    })
+</script>
+
 </body>
 
 </html>

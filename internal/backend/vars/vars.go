@@ -2,6 +2,7 @@ package vars
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"go.uber.org/zap"
@@ -13,36 +14,53 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-type vars struct {
+type Vars struct {
 	db      db.DB
 	secrets secrets.Secrets
+	conns   sdkservices.Connections
 	z       *zap.Logger
 }
 
-func New(z *zap.Logger, db db.DB, secrets secrets.Secrets) sdkservices.Vars {
-	return &vars{db: db, z: z, secrets: secrets}
+func New(z *zap.Logger, db db.DB, secrets secrets.Secrets) *Vars {
+	return &Vars{db: db, z: z, secrets: secrets}
 }
 
 func varSecretKey(secret sdktypes.Var) string {
 	return fmt.Sprintf("%s/%s", secret.ScopeID().AsID().UUIDValue().String(), secret.Name())
 }
 
-func (v *vars) Set(ctx context.Context, vs ...sdktypes.Var) error {
+func (v *Vars) SetConnections(conns sdkservices.Connections) { v.conns = conns }
+
+func (v *Vars) Set(ctx context.Context, vs ...sdktypes.Var) error {
 	for i, va := range vs {
 		if va.IsSecret() {
 			key := varSecretKey(va)
 			if err := v.secrets.Set(ctx, key, va.Value()); err != nil {
-				//TODO: ENG-817 - handle dangling secrets in secret store
+				// TODO: ENG-817 - handle dangling secrets in secret store
 				return err
 			}
 
 			vs[i] = sdktypes.NewVar(va.Name(), key, true).WithScopeID(va.ScopeID())
 		}
 	}
-	return v.db.SetVars(ctx, vs)
+
+	if err := v.db.SetVars(ctx, vs); err != nil {
+		return err
+	}
+
+	sids := kittehs.ListToMap(vs, func(v sdktypes.Var) (sdktypes.VarScopeID, bool) { return v.ScopeID(), v.ScopeID().IsConnectionID() })
+	var errs []error
+	for sid, isConn := range sids {
+		if isConn {
+			if _, err := v.conns.RefreshStatus(ctx, sid.ToConnectionID()); err != nil {
+				errs = append(errs, err)
+			}
+		}
+	}
+	return errors.Join(errs...)
 }
 
-func (v *vars) Delete(ctx context.Context, sid sdktypes.VarScopeID, names ...sdktypes.Symbol) error {
+func (v *Vars) Delete(ctx context.Context, sid sdktypes.VarScopeID, names ...sdktypes.Symbol) error {
 	vars, err := v.db.GetVars(ctx, sid, names)
 	if err != nil {
 		return err
@@ -62,14 +80,20 @@ func (v *vars) Delete(ctx context.Context, sid sdktypes.VarScopeID, names ...sdk
 		}
 	}
 
-	return err
+	if sid.IsConnectionID() {
+		if _, err := v.conns.RefreshStatus(ctx, sid.ToConnectionID()); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
-func (v *vars) Get(ctx context.Context, sid sdktypes.VarScopeID, names ...sdktypes.Symbol) (sdktypes.Vars, error) {
+func (v *Vars) Get(ctx context.Context, sid sdktypes.VarScopeID, names ...sdktypes.Symbol) (sdktypes.Vars, error) {
 	return v.db.GetVars(ctx, sid, names)
 }
 
-func (v *vars) Reveal(ctx context.Context, sid sdktypes.VarScopeID, names ...sdktypes.Symbol) (sdktypes.Vars, error) {
+func (v *Vars) Reveal(ctx context.Context, sid sdktypes.VarScopeID, names ...sdktypes.Symbol) (sdktypes.Vars, error) {
 	vars, err := v.db.GetVars(ctx, sid, names)
 	if err != nil {
 		return nil, err
@@ -87,9 +111,8 @@ func (v *vars) Reveal(ctx context.Context, sid sdktypes.VarScopeID, names ...sdk
 		}
 		return sdktypes.NewVar(va.Name(), value, true), nil
 	})
-
 }
 
-func (v *vars) FindConnectionIDs(ctx context.Context, iid sdktypes.IntegrationID, name sdktypes.Symbol, value string) ([]sdktypes.ConnectionID, error) {
+func (v *Vars) FindConnectionIDs(ctx context.Context, iid sdktypes.IntegrationID, name sdktypes.Symbol, value string) ([]sdktypes.ConnectionID, error) {
 	return v.db.FindConnectionIDsByVar(ctx, iid, name, value)
 }

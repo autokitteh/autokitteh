@@ -17,6 +17,7 @@ from importlib.machinery import SourceFileLoader
 from os import mkdir
 from pathlib import Path
 from socket import AF_UNIX, SOCK_STREAM, socket
+from types import ModuleType
 
 log: logging.Logger = None  # Filled in main
 
@@ -133,9 +134,30 @@ def patch_import_hooks(user_dir, action_fn):
     raise RuntimeError(f'cannot find import hook to patch in {sys.path_hooks}')
 
 
+ACTIVITY_ATTR = '__activity__'
+
+
+def activity(fn):
+    setattr(fn, ACTIVITY_ATTR, True)
+    return fn
+
+
+def ak_module():
+    mod = ModuleType('ak')
+    mod.activity = activity
+    return mod
+
+
 def load_code(root_path, action_fn, module_name):
+    # Make 'ak' module available for imports.
+    mod = ak_module()
+    sys.modules[mod.__name__] = mod
+
     patch_import_hooks(root_path, action_fn)
+
+    # Make sure user code is first in import path.
     sys.path.insert(0, str(root_path))
+
     log.info('importing %r', module_name)
     mod = __import__(module_name)
     return mod
@@ -250,17 +272,20 @@ class AKCall:
         self.in_activity = False
         self.comm = comm
 
-    def ignore(self, fn):
-        if fn.__module__ == 'builtins':
+    def should_run_as_activity(self, fn):
+        if getattr(fn, ACTIVITY_ATTR, False):
             return True
+
+        if fn.__module__ == 'builtins':
+            return False
         
         if fn.__module__ == self.module_name:
-            return True
+            return False
 
-        return False
+        return True
 
     def __call__(self, func, *args, **kw):
-        if self.in_activity or self.ignore(func):
+        if self.in_activity or not self.should_run_as_activity(func):
             log.info(
                 'calling %s (args=%r, kw=%r) directly (in_activity=%s)', 
                 func.__name__, args, kw, self.in_activity)

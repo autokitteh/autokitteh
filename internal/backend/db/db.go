@@ -127,7 +127,7 @@ type DB interface {
 	UpdateIntegration(ctx context.Context, i sdktypes.Integration) error
 	DeleteIntegration(ctx context.Context, id sdktypes.IntegrationID) error
 	GetIntegration(ctx context.Context, id sdktypes.IntegrationID) (sdktypes.Integration, error)
-	ListIntegrations(ctx context.Context, filter sdkservices.ListIntegrationsFilter) ([]sdktypes.Integration, error)
+	ListIntegrations(ctx context.Context) ([]sdktypes.Integration, error)
 
 	// -----------------------------------------------------------------------
 	CreateSession(ctx context.Context, session sdktypes.Session) error

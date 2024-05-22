@@ -22,7 +22,7 @@ message EventRecord {
 
 message Event {
   string event_id = 1;
-  string connection_id = 2; // could be empty
+  string connection_id = 2; // could be empty.
 
   string event_type = 3;
 

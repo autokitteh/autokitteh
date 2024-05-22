@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { CallRequest, CallResponse, ConfigureRequest, ConfigureResponse, GetRequest, GetResponse, ListRequest, ListResponse } from "./svc_pb.js";
+import { CallRequest, CallResponse, ConfigureRequest, ConfigureResponse, GetConnectionStatusRequest, GetConnectionStatusResponse, GetRequest, GetResponse, ListRequest, ListResponse, TestConnectionRequest, TestConnectionResponse } from "./svc_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -42,6 +42,30 @@ export const IntegrationsService = {
       name: "Configure",
       I: ConfigureRequest,
       O: ConfigureResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * Actively test the connection to the integration.
+     * requires supports_connection_test.
+     *
+     * @generated from rpc autokitteh.integrations.v1.IntegrationsService.TestConnection
+     */
+    testConnection: {
+      name: "TestConnection",
+      I: TestConnectionRequest,
+      O: TestConnectionResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * If connection_id is not provided, will return the status of a new connection as
+     * set in `Integration.initial_connection_status`.
+     *
+     * @generated from rpc autokitteh.integrations.v1.IntegrationsService.GetConnectionStatus
+     */
+    getConnectionStatus: {
+      name: "GetConnectionStatus",
+      I: GetConnectionStatusRequest,
+      O: GetConnectionStatusResponse,
       kind: MethodKind.Unary,
     },
     /**

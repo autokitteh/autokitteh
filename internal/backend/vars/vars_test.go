@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/secrets"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
@@ -22,7 +23,7 @@ func (s secretsMock) Set(ctx context.Context, key string, value string) error {
 
 type dbMock struct {
 	db.DB
-	GetVarsFunc func(context.Context, sdktypes.VarScopeID, []sdktypes.Symbol) ([]sdktypes.Var, error)
+	GetVarsFunc func(context.Context, sdktypes.VarScopeID, []sdktypes.Symbol) (sdktypes.Vars, error)
 	SetVarsFunc func(context.Context, []sdktypes.Var) error
 }
 
@@ -38,12 +39,12 @@ func TestGetVarNotFound(t *testing.T) {
 	d := dbMock{}
 	callCounter := 0
 
-	d.GetVarsFunc = func(ctx context.Context, vsi sdktypes.VarScopeID, s []sdktypes.Symbol) ([]sdktypes.Var, error) {
+	d.GetVarsFunc = func(ctx context.Context, vsi sdktypes.VarScopeID, s []sdktypes.Symbol) (sdktypes.Vars, error) {
 		callCounter = callCounter + 1
 		return nil, nil
 	}
 
-	v := vars{
+	v := Vars{
 		db:      d,
 		secrets: secretsMock{},
 	}
@@ -61,12 +62,12 @@ func TestGetVarFound(t *testing.T) {
 	callCounter := 0
 	vv := sdktypes.NewVar(sdktypes.NewSymbol("efi"), "value", false)
 
-	d.GetVarsFunc = func(ctx context.Context, vsi sdktypes.VarScopeID, s []sdktypes.Symbol) ([]sdktypes.Var, error) {
+	d.GetVarsFunc = func(context.Context, sdktypes.VarScopeID, []sdktypes.Symbol) (sdktypes.Vars, error) {
 		callCounter = callCounter + 1
 		return []sdktypes.Var{vv}, nil
 	}
 
-	v := vars{
+	v := Vars{
 		db:      d,
 		secrets: secretsMock{},
 	}
@@ -96,7 +97,7 @@ func TestSetVar(t *testing.T) {
 		return nil
 	}
 
-	v := vars{
+	v := Vars{
 		db:      d,
 		secrets: secretsMock{},
 	}
@@ -130,7 +131,7 @@ func TestSetSecretVar(t *testing.T) {
 		return nil
 	}
 
-	v := vars{
+	v := Vars{
 		db:      d,
 		secrets: s,
 	}
@@ -172,7 +173,7 @@ func TestSetMultipleSecretVar(t *testing.T) {
 		return nil
 	}
 
-	v := vars{
+	v := Vars{
 		db:      d,
 		secrets: s,
 	}

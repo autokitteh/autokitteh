@@ -55,7 +55,7 @@ def on_http(data, trigger, event):
             "prints": [
                 "data(body = body(bytes = \u003cbuilt-in function .bytes\u003e, form = \u003cbuilt-in function .form\u003e, json = \u003cbuilt-in function .json\u003e, text = \u003cbuilt-in function .text\u003e), headers = {\"Accept-Encoding\": \"gzip\", \"User-Agent\": \"Go-http-client/1.1\"}, method = \"GET\", url = url(fragment = \"\", host = \"\", opaque = \"\", path = \"/\", query = {}, raw = \"\", raw_fragment = \"\", raw_query = \"\", scheme = \"\"))",
                 "event(data = event_data(body = body(bytes = \u003cbuilt-in function .bytes\u003e, form = \u003cbuilt-in function .form\u003e, json = \u003cbuilt-in function .json\u003e, text = \u003cbuilt-in function .text\u003e), headers = {\"Accept-Encoding\": \"gzip\", \"User-Agent\": \"Go-http-client/1.1\"}, method = \"GET\", url = url(fragment = \"\", host = \"\", opaque = \"\", path = \"/\", query = {}, raw = \"\", raw_fragment = \"\", raw_query = \"\", scheme = \"\")), id = \"evt_00000000000000000000000008\", type = \"get\")",
-                "trigger(data = trigger_data(), name = \"http_get_without_path\")"
+                "trigger(data = event_data(), name = \"http_get_without_path\")"
             ],
             "exports": {
                 "on_http": {

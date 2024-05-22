@@ -2,29 +2,50 @@
 
 <h1>Connection: <tt>{{ .Name }}</tt></h1>
 
-{{ if .ConnectionURL}}
-<button onclick='location.href="{{ .ConnectionURL }}?cid={{ .ID }}"'>Initialize</button>
+{{ if .Caps.SupportsConnectionInit }}
+<button onclick='location.href="/connections/{{ .ID }}/init"'>Initialize
+    {{ if .Caps.RequiresConnectionInit }}(required){{ end }}</button>
 {{ end }}
+
+{{ if .Caps.SupportsConnectionTest }}
+<button onclick='testConnection()'>Test</button> <input type="text" id="test-result" readonly hidden>
+{{ end }}
+
 
 <pre>{{ .JSON }}</pre>
 
-<h2>{{ .Vars.N }} Vars</h2>
-<button onclick="deleteAllVars()">Delete All</button>
-{{ template "list_table_" .Vars}} <h2>{{ .Events.N }} Events</h2>
+{{ template "vars_" .Vars }}
+
+<h2>{{ .Events.N }} Events</h2>
 {{ template "list_table_" .Events}}
 
 <script>
-    function deleteAllVars() {
-        fetch("/connections/{{ .ID }}/vars", {
-            method: "DELETE",
-        }).then(response => {
+    function testConnection() {
+        fetch("/connections/{{ .ID }}/test", {
+            method: "POST",
+        }).then(async response => {
             if (response.ok) {
-                location.reload()
+                const data = await response.json()
+                console.log(data)
+                const el = document.getElementById("test-result")
+
+                let text = data['code'] || ''
+                if (data['message']) {
+                    if (text) {
+                        text += ": "
+                    }
+                    text += data['message']
+                }
+
+                el.value = text
+                el.hidden = false
             } else {
-                alert("Failed to delete all vars")
+                console.error(response)
+                alert("Failed to test connection")
             }
         }).catch(error => {
-            alert("Failed to delete all vars")
+            console.error(error)
+            alert("Failed to test connection")
         })
     }
 </script>

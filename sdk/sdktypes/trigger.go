@@ -2,7 +2,6 @@ package sdktypes
 
 import (
 	"errors"
-	"fmt"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	triggerv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/triggers/v1"
@@ -19,12 +18,6 @@ type TriggerPB = triggerv1.Trigger
 type TriggerTraits struct{}
 
 func (TriggerTraits) Validate(m *TriggerPB) error {
-	_, scheduleInData := m.Data["schedule"]
-	var scheduleOrConnectionErr error
-	if (scheduleInData && m.ConnectionId != "") || (!scheduleInData && m.ConnectionId == "") {
-		scheduleOrConnectionErr = fmt.Errorf("trigger should contain either schedule or conneciton")
-	}
-
 	return errors.Join(
 		eventFilterField("filter", m.Filter),
 		idField[ConnectionID]("connection_id", m.ConnectionId),
@@ -33,7 +26,6 @@ func (TriggerTraits) Validate(m *TriggerPB) error {
 		objectField[CodeLocation]("code_location", m.CodeLocation),
 		valuesMapField("data", m.Data),
 		symbolField("name", m.Name),
-		scheduleOrConnectionErr,
 	)
 }
 
@@ -96,20 +88,11 @@ func (p Trigger) ToValues() map[string]Value {
 	return map[string]Value{
 		"name": NewStringValue(p.read().Name),
 		"data": kittehs.Must1(NewStructValue(
-			NewStringValue("trigger_data"),
+			NewStringValue("event_data"),
 			kittehs.TransformMapValues(
 				p.read().Data,
 				forceFromProto[Value],
 			),
 		)),
 	}
-}
-
-func (p Trigger) WithUpdatedData(key string, val Value) Trigger {
-	if !val.IsValid() {
-		return p
-	}
-	data := p.read().Data
-	data[key] = val.ToProto()
-	return Trigger{p.forceUpdate(func(m *TriggerPB) { m.Data = data })}
 }
