@@ -331,17 +331,6 @@ func funcs(i *integration) []sdkmodule.Optfn {
 			sdkmodule.WithArgs("owner", "repo", "ref"),
 		),
 
-		// Actions
-		sdkmodule.ExportFunction(
-			"list_workflow_runs",
-			i.listWorkflowRuns,
-			sdkmodule.WithFuncDoc("https://docs.github.com/en/rest/actions/workflow-runs#list-workflow-runs-for-a-repository"),
-			sdkmodule.WithArgs(
-				"owner", "repo", "branch=?", "event=?", "actor=?", "status=?", "created=?",
-				"head_sha=?", "exclude_pull_requests=?", "check_suite_id=?",
-			),
-		),
-
 		// Repo
 		sdkmodule.ExportFunction(
 			"list_collaborators",
@@ -382,11 +371,21 @@ func funcs(i *integration) []sdkmodule.Optfn {
 			sdkmodule.WithArgs("owner", "repo"),
 		),
 		sdkmodule.ExportFunction(
+			"list_workflow_runs",
+			i.listWorkflowRuns,
+			sdkmodule.WithFuncDoc("https://docs.github.com/en/rest/actions/workflow-runs#list-workflow-runs-for-a-repository"),
+			sdkmodule.WithArgs(
+				"owner", "repo", "branch=?", "event=?", "actor=?", "status=?", "created=?",
+				"head_sha=?", "exclude_pull_requests=?", "check_suite_id=?",
+			),
+		),
+		sdkmodule.ExportFunction(
 			"trigger_workflow",
 			i.triggerWorkflow,
 			sdkmodule.WithFuncDoc("https://docs.github.com/en/rest/actions/workflows#create-a-workflow-dispatch-event"),
-			sdkmodule.WithArgs("owner", "repo", "ref", "workflow_name", "inputs?"),
+			sdkmodule.WithArgs("owner", "repo", "ref", "workflow_file_name", "inputs?"),
 		),
+
 		// Checks
 		sdkmodule.ExportFunction(
 			"create_check_run",
