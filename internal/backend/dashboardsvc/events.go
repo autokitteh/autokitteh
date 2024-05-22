@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"html/template"
 	"net/http"
-	"strconv"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -30,31 +29,11 @@ func toEvent(sdkP sdktypes.Event) event { return event{sdkP} }
 
 func (s Svc) listEvents(w http.ResponseWriter, r *http.Request, f sdkservices.ListEventsFilter) (list, error) {
 	if f.Limit <= 0 {
-		f.Limit = 50
-
-		if l := r.URL.Query().Get("max_events"); l != "" {
-			l64, err := strconv.ParseInt(l, 10, 32)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusBadRequest)
-				return list{}, err
-
-			}
-
-			f.Limit = int(l64)
-		}
+		f.Limit = getQueryNum(r, "events_limit", 50)
 	}
 
 	if f.MinSequenceNumber == 0 {
-		if l := r.URL.Query().Get("min_event_seq"); l != "" {
-			l64, err := strconv.ParseInt(l, 10, 32)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusBadRequest)
-				return list{}, err
-
-			}
-
-			f.MinSequenceNumber = uint64(l64)
-		}
+		f.MinSequenceNumber = uint64(getQueryNum(r, "events_min_seq", 0))
 	}
 
 	sdkCs, err := s.Svcs.Events().List(r.Context(), f)
@@ -105,6 +84,7 @@ func (s Svc) event(w http.ResponseWriter, r *http.Request) {
 
 	vw := sdktypes.DefaultValueWrapper
 	vw.SafeForJSON = true
+	vw.IgnoreFunctions = true
 
 	data, err := vw.UnwrapMap(sdkE.Data())
 	if err != nil {

@@ -42,6 +42,9 @@ func (w *ValueWrapper) unwrap(v Value) (any, error) {
 	case NothingValue:
 		return nil, nil
 	case FunctionValue:
+		if w.IgnoreFunctions {
+			return nil, nil
+		}
 		return nil, errors.New("function values are not supported")
 	case StringValue:
 		return v.Value(), nil

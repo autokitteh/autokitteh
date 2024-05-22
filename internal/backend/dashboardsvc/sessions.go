@@ -55,7 +55,13 @@ func (s Svc) listSessions(w http.ResponseWriter, r *http.Request, f sdkservices.
 }
 
 func (s Svc) sessions(w http.ResponseWriter, r *http.Request) {
-	ts, err := s.listSessions(w, r, sdkservices.ListSessionsFilter{})
+	ts, err := s.listSessions(w, r, sdkservices.ListSessionsFilter{
+		PaginationRequest: sdktypes.PaginationRequest{
+			PageSize:  int32(getQueryNum(r, "sessions_page_size", 50)),
+			Skip:      int32(getQueryNum(r, "sessions_skip", 0)),
+			PageToken: r.URL.Query().Get("sessions_page_token"),
+		},
+	})
 	if err != nil {
 		return
 	}
@@ -84,6 +90,7 @@ func (s Svc) session(w http.ResponseWriter, r *http.Request) {
 
 	vw := sdktypes.DefaultValueWrapper
 	vw.SafeForJSON = true
+	vw.IgnoreFunctions = true
 
 	inputs, err := kittehs.TransformMapValuesError(sdkS.Inputs(), vw.Unwrap)
 	if err != nil {
