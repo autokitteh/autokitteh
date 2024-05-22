@@ -98,6 +98,9 @@
         "filter": {
           "type": "string"
         },
+        "schedule": {
+          "type": "string"
+        },
         "data": {
           "type": "object"
         },
@@ -111,7 +114,6 @@
       "additionalProperties": false,
       "type": "object",
       "required": [
-        "connection",
         "name"
       ]
     },
