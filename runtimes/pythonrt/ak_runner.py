@@ -11,9 +11,6 @@ import pickle
 import sys
 import tarfile
 from base64 import b64decode, b64encode
-from functools import wraps
-from importlib.abc import Loader
-from importlib.machinery import SourceFileLoader
 from os import mkdir
 from pathlib import Path
 from socket import AF_UNIX, SOCK_STREAM, socket
@@ -70,103 +67,29 @@ class Transformer(ast.NodeTransformer):
         return call
 
 
-class AKLoader(Loader):
-    """Custom file loaders that will rewrite function calls to actions."""
-    def __init__(self, src_loader, action):
-        self.file_name = src_loader.path
-        self.module_name = src_loader.name
-        self.action = action
-
-    def create_module(self, spec):
-        # Must be defined since it's an abstract method
-        return None  # Use default module
-
-    def exec_module(self, module):
-        try:
-            with open(self.file_name) as fp:
-                src = fp.read()
-        except OSError as err:
-            raise ImportError(f'cannot read {self.module_name!r} - {err}')
-
-        mod = ast.parse(src, self.file_name, 'exec')
-        trans = Transformer(self.file_name)
-        out = trans.visit(mod)
-        ast.fix_missing_locations(out)
-
-        code = compile(out, self.file_name, 'exec')
-        setattr(module, ACTION_NAME, self.action)
-        exec(code, module.__dict__)
-
-
-# There is an established way to add import hooks, but we want to change the behavior of
-# the current PathFinder found in sys.import_hooks so it'll call our code when importing
-# form the user directory. This is why you'll see all these monkey patches below.
-
-def patch_finder(finder, action):
-    """Patches the finder to use a custom source loader."""
-    _orig_find_spec = finder.find_spec
-    def find_spec(fullname, target=None):
-        spec = _orig_find_spec(fullname, target)
-        if spec is None or not isinstance(spec.loader, SourceFileLoader):
-            return spec
-
-        log.info('patching loader for %r', fullname)
-        spec.loader = AKLoader(spec.loader, action)
-        return spec
-
-    finder.find_spec = find_spec
-
-
-def wrap_hook(hook, user_dir, action):
-    """Wraps a hook to patch finder on user code directories."""
-    @wraps(hook)
-    def wrapper(path):
-        finder = hook(path)
-        if user_dir.is_relative_to(path):
-            patch_finder(finder, action)
-        return finder
-
-    return wrapper
-
-
-def patch_import_hooks(user_dir, action_fn):
-    """Patches standard import hook in sys.path_hooks."""
-    user_dir = Path(user_dir)
-    for i, hook in enumerate(sys.path_hooks):
-        if hook.__name__ == 'path_hook_for_FileFinder':
-            sys.path_hooks[i] = wrap_hook(hook, user_dir, action_fn)
-            return
-
-    raise RuntimeError(f'cannot find import hook to patch in {sys.path_hooks}')
-
-
-ACTIVITY_ATTR = '__activity__'
-
-
-def activity(fn):
-    setattr(fn, ACTIVITY_ATTR, True)
-    return fn
-
-
-def ak_module():
-    mod = ModuleType('ak')
-    mod.activity = activity
-    return mod
-
-
 def load_code(root_path, action_fn, module_name):
-    # Make 'ak' module available for imports.
-    mod = ak_module()
-    sys.modules[mod.__name__] = mod
-
-    patch_import_hooks(root_path, action_fn)
-
-    # Make sure user code is first in import path.
-    sys.path.insert(0, str(root_path))
-
+    """Load user code into a module, instrumenting function calls."""
     log.info('importing %r', module_name)
-    mod = __import__(module_name)
-    return mod
+    file_name = Path(root_path) / (module_name + '.py')
+    with open(file_name) as fp:
+        src = fp.read()
+
+    tree = ast.parse(src, file_name, 'exec')
+    trans = Transformer(file_name)
+    patched_tree = trans.visit(tree)
+    ast.fix_missing_locations(patched_tree)
+
+    # Make 'ak' module available for imports.
+    ak = ak_module()
+    sys.modules[ak.__name__] = ak
+
+    code = compile(patched_tree, file_name, 'exec')
+
+    module = ModuleType(module_name)
+    setattr(module, ACTION_NAME, action_fn)
+    exec(code, module.__dict__)
+
+    return module
 
 
 def run_code(mod, entry_point, data):
@@ -261,6 +184,19 @@ class Comm:
         return pickle.loads(b64decode(data))
 
 
+ACTIVITY_ATTR = '__activity__'
+
+def activity(fn):
+    setattr(fn, ACTIVITY_ATTR, True)
+    return fn
+
+
+def ak_module():
+    mod = ModuleType('ak')
+    mod.activity = activity  # type: ignore
+    return mod
+
+
 class AKCall:
     """Callable wrapping functions with activities."""
     def __init__(self, module_name, comm: Comm):
@@ -269,6 +205,9 @@ class AKCall:
         self.comm = comm
 
     def should_run_as_activity(self, fn):
+        if self.in_activity:
+            return False
+
         if getattr(fn, ACTIVITY_ATTR, False):
             return True
 
@@ -281,7 +220,7 @@ class AKCall:
         return True
 
     def __call__(self, func, *args, **kw):
-        if self.in_activity or not self.should_run_as_activity(func):
+        if not self.should_run_as_activity(func):
             log.info(
                 'calling %s (args=%r, kw=%r) directly (in_activity=%s)', 
                 func.__name__, args, kw, self.in_activity)

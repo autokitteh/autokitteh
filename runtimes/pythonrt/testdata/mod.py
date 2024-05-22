@@ -1,4 +1,4 @@
-# Test file for loader
+# Test file for loader, see ../ak_runner_test.py::test_load_code
 
 import json
 
