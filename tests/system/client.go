@@ -131,13 +131,3 @@ func setEnv(args string) error {
 
 	return nil
 }
-
-func sleepFor(arg string) error {
-	duration, err := time.ParseDuration(arg)
-	if err != nil {
-		return fmt.Errorf("invalid duration %q: %w", duration, err)
-	}
-
-	time.Sleep(duration)
-	return nil
-}

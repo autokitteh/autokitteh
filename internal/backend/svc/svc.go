@@ -51,7 +51,6 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/oauth"
 	"go.autokitteh.dev/autokitteh/internal/backend/projects"
 	"go.autokitteh.dev/autokitteh/internal/backend/projectsgrpcsvc"
-	"go.autokitteh.dev/autokitteh/internal/backend/schedule"
 	"go.autokitteh.dev/autokitteh/internal/backend/secrets"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessionsgrpcsvc"
@@ -159,7 +158,6 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 				})
 			}),
 		),
-		Component("schedule", configset.Empty, fx.Provide(schedule.New)),
 		Component(
 			"sessions",
 			sessions.Configs,

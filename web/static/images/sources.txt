@@ -52,6 +52,10 @@ Redis:
 https://redis.com/brand-guidelines/
 Download logo assets > cube > isometric > digital
 
+Scheduler:
+https://commons.wikimedia.org/wiki/File:Icons8_flat_alarm_clock.svg
+https://upload.wikimedia.org/wikipedia/commons/5/54/Icons8_flat_alarm_clock.svg
+
 Slack:
 https://commons.wikimedia.org/wiki/File:Slack_icon_2022.svg
 https://upload.wikimedia.org/wikipedia/commons/3/3b/Slack_icon_2022.svg

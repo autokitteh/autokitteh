@@ -22,5 +22,3 @@ func NewBuiltinExecutor(xid sdktypes.ExecutorID, opts ...sdkmodule.Optfn) sdkexe
 	vs := kittehs.Must1(mod.Configure(context.TODO(), xid, sdktypes.InvalidConnectionID))
 	return sdkexecutor.NewExecutor(mod, xid, vs)
 }
-
-var BuiltinSchedulerConnectionID = kittehs.Must1(sdktypes.ParseConnectionID("con_3kthcr0n000000000000000000"))

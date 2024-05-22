@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 
-	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/internal/manifest/internal/actions"
 	"go.autokitteh.dev/autokitteh/sdk/sdklogger"
@@ -410,9 +409,8 @@ func planTriggers(ctx context.Context, mtriggers []*Trigger, client sdkservices.
 
 	for _, mtrigger := range mtriggers {
 		mtrigger := *mtrigger
-		projPrefix := projName + "/"
-		mtrigger.EnvKey = projPrefix + defaultEnvName
-		mtrigger.ConnectionKey = projPrefix + mtrigger.ConnectionKey
+		mtrigger.EnvKey = projName + "/" + defaultEnvName
+		mtrigger.ConnectionKey = projName + "/" + mtrigger.ConnectionKey
 
 		log := log.For("trigger", mtrigger)
 
@@ -429,29 +427,30 @@ func planTriggers(ctx context.Context, mtriggers []*Trigger, client sdkservices.
 			return nil, fmt.Errorf("trigger %q: invalid entrypoint: %w", mtrigger.GetKey(), err)
 		}
 
-		connectionID := curr.ConnectionID()
-		// schedule could be specified in manifest either in dedicated or in `data' sections. Ensure schedule is present in data section
-		if mtrigger.Schedule != "" {
-			if schedule, found := mtrigger.Data[sdktypes.ScheduleExpression]; found {
-				if schedule != mtrigger.Schedule {
-					return nil, fmt.Errorf("trigger %q: conflicting schedules specified: %q != %q", mtrigger.GetKey(), mtrigger.Schedule, schedule)
-				}
-			}
-			if mtrigger.Data == nil {
-				mtrigger.Data = make(map[string]any)
-			}
-			mtrigger.Data[sdktypes.ScheduleExpression] = mtrigger.Schedule // ensure that schedule is present in data section
-
-			if mtrigger.ConnectionKey == projPrefix { // there is a schedule section and no connection was specified, means it's a scheduler trigger
-				mtrigger.EventType = sdktypes.SchedulerEventTriggerType
-				mtrigger.ConnectionKey = "" // just simplify comparison later in exec plan
-				connectionID = fixtures.BuiltinSchedulerConnectionID
-			}
-		}
-
 		data, err := kittehs.TransformMapValuesError(mtrigger.Data, sdktypes.WrapValue)
 		if err != nil {
 			return nil, fmt.Errorf("trigger %q: invalid additional data: %w", mtrigger.GetKey(), err)
+		}
+
+		// schedule could be specified in manifest either in `schedule` or in `data' sections. Ensure schedule is always present in data section
+		// TODO: reenable in upcoming PR
+		//if mtrigger.Schedule != "" {
+		//	if schedule, found := mtrigger.Data["schedule"]; found {
+		//		if schedule != mtrigger.Schedule {
+		//			return nil, fmt.Errorf("trigger %q: conflicting schedules specified: %q != %q", mtrigger.GetKey(), mtrigger.Schedule, schedule)
+		//		}
+		//	}
+		//	mtrigger.Data["schedule"] = mtrigger.Schedule // ensure that schedule i
+		//}
+		//
+		//if _, found := mtrigger.Data["schedule"]; found {
+		//	mtrigger.EventType = "scheduler"
+		//}
+
+		// define connecitonID to pass trigger validation (either connection or schedule should be present)
+		connectionID := ""
+		if mtrigger.ConnectionKey != "" {
+			connectionID = sdktypes.NewConnectionID().String()
 		}
 
 		desired, err := sdktypes.TriggerFromProto(&sdktypes.TriggerPB{
@@ -460,25 +459,25 @@ func planTriggers(ctx context.Context, mtriggers []*Trigger, client sdkservices.
 			CodeLocation: loc.ToProto(),
 			Data:         kittehs.TransformMapValues(data, sdktypes.ToProto),
 			Name:         mtrigger.Name,
-			ConnectionId: connectionID.String(),
+			ConnectionId: connectionID,
 		})
 		if err != nil {
 			return nil, fmt.Errorf("trigger %q: invalid: %w", mtrigger.GetKey(), err)
 		}
+		desired = desired.WithConnectionID(curr.ConnectionID())
 
 		if !curr.IsValid() {
 			log.Printf("not found, will create")
 			add(actions.CreateTriggerAction{Key: mtrigger.GetKey(), ConnectionKey: mtrigger.ConnectionKey, EnvKey: mtrigger.EnvKey, Trigger: desired})
 		} else {
 			matchedTriggerIDs = append(matchedTriggerIDs, curr.ID().String())
+
 			log.Printf("found, id=%q", curr.ID())
 
-			// TODO: `curr' may have actual connectionID (if not a scheduler trigger)
-			// while for `desired' we need to resolve it from connectionKey
-			// therefore for now `cur' and `desired' will have the same connectionID for comparison
 			desired = desired.
 				WithID(curr.ID()).
 				WithName(curr.Name()).
+				WithConnectionID(curr.ConnectionID()).
 				WithEnvID(curr.EnvID())
 
 			if curr.Equal(desired) {
