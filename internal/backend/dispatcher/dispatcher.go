@@ -90,7 +90,7 @@ func (d *dispatcher) Redispatch(ctx context.Context, eventID sdktypes.EventID, o
 }
 
 func (d *dispatcher) Start(context.Context) error {
-	w := worker.New(d.temporal.Temporal(), taskQueueName, worker.Options{})
+	w := worker.New(d.temporal.Temporal(), sdktypes.TaskQueueName, worker.Options{})
 	w.RegisterWorkflow(d.eventsWorkflow)
 
 	if err := w.Start(); err != nil {
@@ -102,7 +102,7 @@ func (d *dispatcher) Start(context.Context) error {
 func (d *dispatcher) startWorkflow(ctx context.Context, eventID sdktypes.EventID, opts *sdkservices.DispatchOptions) error {
 	options := client.StartWorkflowOptions{
 		ID:        eventID.String(),
-		TaskQueue: taskQueueName,
+		TaskQueue: sdktypes.TaskQueueName,
 	}
 	input := eventsWorkflowInput{
 		EventID: eventID,
