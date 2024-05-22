@@ -1,0 +1,12 @@
+{{ template "header_" . }}
+
+<h1>Event: <tt>{{ .ID }}</tt></h1>
+<pre>{{ .EventJSON }}</pre>
+
+<h2>Data</h2>
+<div class="jsoneditor">{{ .DataJSON }}</div>
+
+<h2>Log</h2>
+<div class="jsoneditor">{{ .LogJSON }}</div>
+
+{{ template "footer_" . }}

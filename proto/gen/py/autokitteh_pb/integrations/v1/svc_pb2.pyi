@@ -1,3 +1,4 @@
+from autokitteh_pb.common.v1 import status_pb2 as _status_pb2
 from autokitteh_pb.integrations.v1 import integration_pb2 as _integration_pb2
 from autokitteh_pb.program.v1 import program_pb2 as _program_pb2
 from autokitteh_pb.values.v1 import values_pb2 as _values_pb2
@@ -83,12 +84,30 @@ class ConfigureResponse(_message.Message):
     values: _containers.MessageMap[str, _values_pb2.Value]
     def __init__(self, values: _Optional[_Mapping[str, _values_pb2.Value]] = ...) -> None: ...
 
-class DisconnectRequest(_message.Message):
-    __slots__ = ["executor_id"]
-    EXECUTOR_ID_FIELD_NUMBER: _ClassVar[int]
-    executor_id: str
-    def __init__(self, executor_id: _Optional[str] = ...) -> None: ...
+class TestConnectionRequest(_message.Message):
+    __slots__ = ["integration_id", "connection_id"]
+    INTEGRATION_ID_FIELD_NUMBER: _ClassVar[int]
+    CONNECTION_ID_FIELD_NUMBER: _ClassVar[int]
+    integration_id: str
+    connection_id: str
+    def __init__(self, integration_id: _Optional[str] = ..., connection_id: _Optional[str] = ...) -> None: ...
 
-class DisconnectResponse(_message.Message):
-    __slots__ = []
-    def __init__(self) -> None: ...
+class TestConnectionResponse(_message.Message):
+    __slots__ = ["status"]
+    STATUS_FIELD_NUMBER: _ClassVar[int]
+    status: _status_pb2.Status
+    def __init__(self, status: _Optional[_Union[_status_pb2.Status, _Mapping]] = ...) -> None: ...
+
+class GetConnectionStatusRequest(_message.Message):
+    __slots__ = ["integration_id", "connection_id"]
+    INTEGRATION_ID_FIELD_NUMBER: _ClassVar[int]
+    CONNECTION_ID_FIELD_NUMBER: _ClassVar[int]
+    integration_id: str
+    connection_id: str
+    def __init__(self, integration_id: _Optional[str] = ..., connection_id: _Optional[str] = ...) -> None: ...
+
+class GetConnectionStatusResponse(_message.Message):
+    __slots__ = ["status"]
+    STATUS_FIELD_NUMBER: _ClassVar[int]
+    status: _status_pb2.Status
+    def __init__(self, status: _Optional[_Union[_status_pb2.Status, _Mapping]] = ...) -> None: ...

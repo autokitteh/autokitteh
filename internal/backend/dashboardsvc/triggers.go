@@ -19,7 +19,8 @@ func (p trigger) FieldsOrder() []string {
 	return []string{"trigger_id", "name", "connection_id", "env_id"}
 }
 
-func (p trigger) HideFields() []string { return nil }
+func (p trigger) HideFields() []string        { return nil }
+func (p trigger) ExtraFields() map[string]any { return nil }
 
 func toTrigger(sdkP sdktypes.Trigger) trigger { return trigger{sdkP} }
 
@@ -39,7 +40,7 @@ func (s Svc) listTriggers(w http.ResponseWriter, r *http.Request, f sdkservices.
 		drops = append(drops, "project_id")
 	}
 
-	return genListData(kittehs.Transform(sdkCs, toTrigger), drops...), nil
+	return genListData(f, kittehs.Transform(sdkCs, toTrigger), drops...), nil
 }
 
 func (s Svc) triggers(w http.ResponseWriter, r *http.Request) {

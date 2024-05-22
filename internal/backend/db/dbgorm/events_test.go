@@ -1,13 +1,16 @@
 package dbgorm
 
 import (
+	"context"
 	"testing"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
+	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 )
 
 func (f *dbFixture) createEventsAndAssert(t *testing.T, events ...scheme.Event) {
@@ -70,4 +73,64 @@ func TestDeleteEvent(t *testing.T) {
 	// test deleteEvent
 	assert.NoError(t, f.gormdb.deleteEvent(f.ctx, evt.EventID))
 	f.assertEventsDeleted(t, evt)
+}
+
+func TestListEventsDefaultOrder(t *testing.T) {
+	f := newDBFixture()
+	foreignKeys(f.gormdb, false) // no foreign keys
+
+	ctx := context.Background()
+	ev1 := f.newEvent()
+	ev2 := f.newEvent()
+	f.createEventsAndAssert(t, ev1, ev2)
+
+	evs, err := f.gormdb.ListEvents(ctx, sdkservices.ListEventsFilter{})
+
+	require.NoError(t, err)
+
+	require.Equal(t, 2, len(evs), "should be 2 events in db")
+
+	// Desc order is default
+	require.Equal(t, evs[0].ID().UUIDValue(), ev2.EventID)
+	require.Equal(t, evs[1].ID().UUIDValue(), ev1.EventID)
+}
+
+func TestListEventsDescOrder(t *testing.T) {
+	f := newDBFixture()
+	foreignKeys(f.gormdb, false) // no foreign keys
+
+	ctx := context.Background()
+	ev1 := f.newEvent()
+	ev2 := f.newEvent()
+	f.createEventsAndAssert(t, ev1, ev2)
+
+	evs, err := f.gormdb.ListEvents(ctx, sdkservices.ListEventsFilter{Order: sdkservices.ListOrderDescending})
+
+	require.NoError(t, err)
+
+	require.Equal(t, 2, len(evs), "should be 2 events in db")
+
+	// Desc order is default
+	require.Equal(t, evs[0].ID().UUIDValue(), ev2.EventID)
+	require.Equal(t, evs[1].ID().UUIDValue(), ev1.EventID)
+}
+
+func TestListEventsAscOrder(t *testing.T) {
+	f := newDBFixture()
+	foreignKeys(f.gormdb, false) // no foreign keys
+
+	ctx := context.Background()
+	ev1 := f.newEvent()
+	ev2 := f.newEvent()
+	f.createEventsAndAssert(t, ev1, ev2)
+
+	evs, err := f.gormdb.ListEvents(ctx, sdkservices.ListEventsFilter{Order: sdkservices.ListOrderAscending})
+
+	require.NoError(t, err)
+
+	require.Equal(t, 2, len(evs), "should be 2 events in db")
+
+	// Desc order is default
+	require.Equal(t, evs[0].ID().UUIDValue(), ev1.EventID)
+	require.Equal(t, evs[1].ID().UUIDValue(), ev2.EventID)
 }

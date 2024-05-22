@@ -10,9 +10,16 @@ message ApplyRequest {
   string project_name = 3;
 }
 
+message Effect {
+  string subject_id = 1;
+  string type = 2;
+  string text = 3;
+}
+
 message ApplyResponse {
   repeated string logs = 1;
-  repeated string project_ids = 2;
+  repeated string project_ids = 2; // to be retired.
+  repeated Effect effects = 3;
 }
 
 service ApplyService {

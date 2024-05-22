@@ -16,6 +16,23 @@ func Transform[A, B any](as []A, f func(A) B) []B {
 	return bs
 }
 
+func TransformFilter[A, B any](as []A, f func(A) *B) []B {
+	if as == nil {
+		return nil
+	}
+
+	var bs []B
+	for _, a := range as {
+		bptr := f(a)
+
+		if bptr != nil {
+			bs = append(bs, *bptr)
+		}
+	}
+
+	return bs
+}
+
 func TransformWithIndex[A, B any](as []A, f func(int, A) B) []B {
 	if as == nil {
 		return nil

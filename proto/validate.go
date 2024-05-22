@@ -10,6 +10,7 @@ import (
 	applyv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/apply/v1"
 	authv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/auth/v1"
 	buildsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/builds/v1"
+	commonv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/common/v1"
 	connectionsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/connections/v1"
 	deploymentsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/deployments/v1"
 	dispatcherv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/dispatcher/v1"
@@ -58,6 +59,7 @@ var fds = []protoreflect.FileDescriptor{
 	authv1.File_autokitteh_auth_v1_svc_proto,
 	buildsv1.File_autokitteh_builds_v1_build_proto,
 	buildsv1.File_autokitteh_builds_v1_svc_proto,
+	commonv1.File_autokitteh_common_v1_status_proto,
 	connectionsv1.File_autokitteh_connections_v1_connection_proto,
 	connectionsv1.File_autokitteh_connections_v1_svc_proto,
 	deploymentsv1.File_autokitteh_deployments_v1_deployment_proto,

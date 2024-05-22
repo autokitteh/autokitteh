@@ -21,7 +21,7 @@ def test_load_code():
     mod_name = 'mod'
     class MockCall(ak_runner.AKCall):
         def __call__(self, fn, *args, **kw):
-            if self.ignore(fn):
+            if not self.should_run_as_activity(fn):
                 return fn(*args, **kw)
 
             if fn.__module__ != mod_name:
@@ -258,3 +258,10 @@ def test_transform(code, transformed):
     trans = ak_runner.Transformer('<stdin>')
     out = trans.visit(mod)
     assert transformed, ast.unparse(out)
+
+
+def test_activity():
+    mod_name = 'activity'
+    mod = ak_runner.load_code('testdata', lambda f: f, mod_name)
+    fn = mod.phone_home
+    assert getattr(fn, ak_runner.ACTIVITY_ATTR, False)

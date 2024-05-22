@@ -126,7 +126,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		Component("auth", configset.Empty, fx.Provide(authsvc.New)),
 		Component("authjwttokens", authjwttokens.Configs, fx.Provide(authjwttokens.New)),
 		Component("authsessions", authsessions.Configs, fx.Provide(authsessions.New)),
-		Component("authhttpmiddleware", authhttpmiddleware.Configs, fx.Provide(authhttpmiddleware.New)),
+		Component("authhttmiddleware", authhttpmiddleware.Configs, fx.Provide(authhttpmiddleware.New)),
 
 		DBFxOpt(),
 		Component(
@@ -172,7 +172,13 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		Component("projects", configset.Empty, fx.Provide(projects.New)),
 		Component("projectsgrpcsvc", projectsgrpcsvc.Configs, fx.Provide(projectsgrpcsvc.New)),
 		Component("envs", configset.Empty, fx.Provide(envs.New)),
-		Component("vars", configset.Empty, fx.Provide(vars.New)),
+		Component(
+			"vars",
+			configset.Empty,
+			fx.Provide(vars.New),
+			fx.Provide(func(v *vars.Vars) sdkservices.Vars { return v }),
+			fx.Invoke(func(v *vars.Vars, c sdkservices.Connections) { v.SetConnections(c) }),
+		),
 		Component("secrets", secrets.Configs, fx.Provide(secrets.New)),
 		Component("events", configset.Empty, fx.Provide(events.New)),
 		Component("triggers", configset.Empty, fx.Provide(triggers.New)),

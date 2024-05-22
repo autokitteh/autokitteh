@@ -3,12 +3,10 @@ package dbgorm
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/url"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
-	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
@@ -85,13 +83,8 @@ func (db *gormdb) GetIntegration(ctx context.Context, id sdktypes.IntegrationID)
 	return getOneWTransform(db.db, ctx, scheme.ParseIntegration, "integration_id = ?", id.UUIDValue())
 }
 
-func (db *gormdb) ListIntegrations(ctx context.Context, filter sdkservices.ListIntegrationsFilter) ([]sdktypes.Integration, error) {
+func (db *gormdb) ListIntegrations(ctx context.Context) ([]sdktypes.Integration, error) {
 	q := db.db.WithContext(ctx)
-
-	if filter.NameSubstring != "" {
-		s := fmt.Sprintf("%%%s%%", filter.NameSubstring)
-		q = q.Where("uniqe_name LIKE ? OR display_name LIKE ?", s, s)
-	}
 
 	// TODO: Tags
 

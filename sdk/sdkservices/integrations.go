@@ -7,11 +7,6 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-type ListIntegrationsFilter struct {
-	NameSubstring string
-	// TODO: Categories
-}
-
 // Integrations is implemented by the autokitteh core, to manage integrations
 // of external services within a running autokitteh server.
 type Integrations interface {
@@ -35,6 +30,10 @@ type Integration interface {
 	Get() sdktypes.Integration
 
 	Configure(ctx context.Context, cid sdktypes.ConnectionID) (map[string]sdktypes.Value, error)
+
+	TestConnection(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error)
+
+	GetConnectionStatus(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error)
 
 	sdkexecutor.Caller
 }

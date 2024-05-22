@@ -1,12 +1,14 @@
 package dashboardsvc
 
 import (
+	"encoding/json"
+	"html/template"
 	"net/http"
-	"strconv"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
+	"go.autokitteh.dev/autokitteh/web/webdashboard"
 )
 
 func (s Svc) initEvents() {
@@ -17,40 +19,21 @@ func (s Svc) initEvents() {
 type event struct{ sdktypes.Event }
 
 func (p event) FieldsOrder() []string {
-	return []string{"event_id", "connection_id", "integration_id"}
+	return []string{"created_at", "event_id", "connection_id", "integration_id"}
 }
 
-func (p event) HideFields() []string { return nil }
+func (p event) HideFields() []string        { return nil }
+func (p event) ExtraFields() map[string]any { return nil }
 
 func toEvent(sdkP sdktypes.Event) event { return event{sdkP} }
 
 func (s Svc) listEvents(w http.ResponseWriter, r *http.Request, f sdkservices.ListEventsFilter) (list, error) {
 	if f.Limit <= 0 {
-		f.Limit = 50
-
-		if l := r.URL.Query().Get("max_events"); l != "" {
-			l64, err := strconv.ParseInt(l, 10, 32)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusBadRequest)
-				return list{}, err
-
-			}
-
-			f.Limit = int(l64)
-		}
+		f.Limit = getQueryNum(r, "events_limit", 50)
 	}
 
 	if f.MinSequenceNumber == 0 {
-		if l := r.URL.Query().Get("min_event_seq"); l != "" {
-			l64, err := strconv.ParseInt(l, 10, 32)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusBadRequest)
-				return list{}, err
-
-			}
-
-			f.MinSequenceNumber = uint64(l64)
-		}
+		f.MinSequenceNumber = uint64(getQueryNum(r, "events_min_seq", 0))
 	}
 
 	sdkCs, err := s.Svcs.Events().List(r.Context(), f)
@@ -68,7 +51,7 @@ func (s Svc) listEvents(w http.ResponseWriter, r *http.Request, f sdkservices.Li
 		drops = append(drops, "connection_id")
 	}
 
-	return genListData(kittehs.Transform(sdkCs, toEvent), drops...), nil
+	return genListData(f, kittehs.Transform(sdkCs, toEvent), drops...), nil
 }
 
 func (s Svc) events(w http.ResponseWriter, r *http.Request) {
@@ -87,13 +70,47 @@ func (s Svc) event(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sdkP, err := s.Svcs.Events().Get(r.Context(), eid)
+	sdkE, err := s.Svcs.Events().Get(r.Context(), eid)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	p := toEvent(sdkP)
+	rs, err := s.Svcs.Events().ListEventRecords(r.Context(), sdkservices.ListEventRecordsFilter{EventID: eid})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
-	renderBigObject(w, r, "event", p.ToProto())
+	vw := sdktypes.DefaultValueWrapper
+	vw.SafeForJSON = true
+	vw.IgnoreFunctions = true
+
+	data, err := vw.UnwrapMap(sdkE.Data())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	jsonData, err := json.MarshalIndent(data, "", "  ")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if err := webdashboard.Tmpl(r).ExecuteTemplate(w, "event.html", struct {
+		Title     string
+		ID        string
+		EventJSON template.HTML
+		LogJSON   template.HTML
+		DataJSON  template.HTML
+	}{
+		Title:     "Event: " + sdkE.ID().String(),
+		ID:        sdkE.ID().String(),
+		EventJSON: marshalObject(sdkE.WithData(nil).ToProto()),
+		LogJSON:   template.HTML(kittehs.Must1(kittehs.MarshalProtoSliceJSON(kittehs.Transform(rs, sdktypes.ToProto)))),
+		DataJSON:  template.HTML(jsonData),
+	}); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }

@@ -79,6 +79,10 @@ def load_code(root_path, action_fn, module_name):
     patched_tree = trans.visit(tree)
     ast.fix_missing_locations(patched_tree)
 
+    # Make 'ak' module available for imports.
+    ak = ak_module()
+    sys.modules[ak.__name__] = ak
+
     code = compile(patched_tree, file_name, 'exec')
 
     module = ModuleType(module_name)
@@ -180,6 +184,19 @@ class Comm:
         return pickle.loads(b64decode(data))
 
 
+ACTIVITY_ATTR = '__activity__'
+
+def activity(fn):
+    setattr(fn, ACTIVITY_ATTR, True)
+    return fn
+
+
+def ak_module():
+    mod = ModuleType('ak')
+    mod.activity = activity  # type: ignore
+    return mod
+
+
 class AKCall:
     """Callable wrapping functions with activities."""
     def __init__(self, module_name, comm: Comm):
@@ -187,17 +204,23 @@ class AKCall:
         self.in_activity = False
         self.comm = comm
 
-    def ignore(self, fn):
-        if fn.__module__ == 'builtins':
+    def should_run_as_activity(self, fn):
+        if self.in_activity:
+            return False
+
+        if getattr(fn, ACTIVITY_ATTR, False):
             return True
+
+        if fn.__module__ == 'builtins':
+            return False
         
         if fn.__module__ == self.module_name:
-            return True
+            return False
 
-        return False
+        return True
 
     def __call__(self, func, *args, **kw):
-        if self.in_activity or self.ignore(func):
+        if not self.should_run_as_activity(func):
             log.info(
                 'calling %s (args=%r, kw=%r) directly (in_activity=%s)', 
                 func.__name__, args, kw, self.in_activity)
