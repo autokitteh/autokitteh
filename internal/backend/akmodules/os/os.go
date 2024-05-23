@@ -121,7 +121,7 @@ func execute(ctx context.Context, name string, args []string, write map[string]a
 		retCtor,
 		map[string]sdktypes.Value{
 			"output":   sdktypes.NewStringValue(string(out)),
-			"exitcode": sdktypes.NewIntegerValue(int64(rc)),
+			"exitcode": sdktypes.NewIntegerValue(rc),
 			"files":    sdktypes.NewDictValueFromStringMap(files),
 		},
 	)

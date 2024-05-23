@@ -129,7 +129,7 @@ func (vctx *Context) FromStarlarkValue(v starlark.Value) (sdktypes.Value, error)
 		// TODO: Not sure that starlark's assumption that string and bytes are the same in go.
 		return sdktypes.NewBytesValue([]byte(v)), nil
 	case starlark.Float:
-		return sdktypes.NewFloatValue(float64(v)), nil
+		return sdktypes.NewFloatValue(v), nil
 	case *Symbol:
 		s, err := sdktypes.ParseSymbol(string(*v))
 		if err != nil {
