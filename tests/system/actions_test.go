@@ -17,7 +17,7 @@ func TestSplitToArgs(t *testing.T) {
 		},
 		{
 			// test [.:]
-			cmdArgs:  `session start --build-id bld_03 --entrypoint main.star:main "`,
+			cmdArgs:  `session start --build-id bld_03 --entrypoint main.star:main`,
 			expected: []string{"session", "start", "--build-id", "bld_03", "--entrypoint", "main.star:main"},
 		},
 		{
@@ -29,6 +29,11 @@ func TestSplitToArgs(t *testing.T) {
 			// test schedule
 			cmdArgs:  `--schedule1 "* * * * *" --schedule2 "0 0 */1 * *" --schedule3 "@every 1h3m2s"`,
 			expected: []string{"--schedule1", "* * * * *", "--schedule2", "0 0 */1 * *", "--schedule3", "@every 1h3m2s"},
+		},
+		{
+			// scv reader would return additional space as a field. Trim spaces
+			cmdArgs:  ` aaa bb `,
+			expected: []string{"aaa", "bb"},
 		},
 	}
 

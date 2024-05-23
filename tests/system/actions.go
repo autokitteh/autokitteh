@@ -15,6 +15,7 @@ type akResult struct {
 }
 
 func splitToArgs(cmdArgs string) []string {
+	cmdArgs = strings.TrimSpace(cmdArgs)
 	r := csv.NewReader(strings.NewReader(cmdArgs))
 	r.Comma = ' '       // space
 	r.LazyQuotes = true // allow quotes to appear in string
