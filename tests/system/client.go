@@ -21,7 +21,7 @@ const (
 
 var (
 	sessionStateFinal = regexp.MustCompile(`state:SESSION_STATE_TYPE_(COMPLETED|ERROR|STOPPED)`)
-	sessionStateAll   = regexp.MustCompile(`state:SESSION_STATE_TYPE_(COMPLETED|ERROR|STOPPED|CREATED|RUNNING)`)
+	sessionStateAll   = regexp.MustCompile(`state:SESSION_STATE_TYPE_`)
 )
 
 func buildClient(t *testing.T) string {
@@ -77,19 +77,17 @@ func waitForSession(akPath, akAddr, step string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("invalid duration %q: %w", match[1], err)
 	}
-	isSessionExpected := true // wait .. for .. session
-	if match[2] == "unless" {
-		isSessionExpected = false // wait .. unless .. session
-	}
+
 	waitType := match[2]
 	id := match[3]
 
-	// Check the session state with the AK client.
-	stateRegex := sessionStateFinal // wait for session to finish
-	if !isSessionExpected {
-		stateRegex = sessionStateAll // any state would mean error
+	stateRegex := sessionStateAll // wait .. unless .. session, wait for eany session state
+	isSessionExpected := waitType == "for"
+	if isSessionExpected {
+		stateRegex = sessionStateFinal // wait .. for .. session
 	}
 
+	// Check the session state with the AK client.
 	args := append(config.ServiceUrlArg(akAddr), "session", "get", id)
 	startTime := time.Now()
 
@@ -99,9 +97,8 @@ func waitForSession(akPath, akAddr, step string) (string, error) {
 		if err != nil {
 			return "", fmt.Errorf("failed to get session: %w", err)
 		}
-		if stateRegex.MatchString(result.output) {
+		if sessionFound = stateRegex.MatchString(result.output); sessionFound {
 			duration = time.Since(startTime).Round(time.Millisecond)
-			sessionFound = true
 			break
 		}
 		time.Sleep(waitInterval)
