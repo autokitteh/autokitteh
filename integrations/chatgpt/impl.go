@@ -6,6 +6,7 @@ import (
 
 	openai "github.com/sashabaranov/go-openai"
 
+	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -14,6 +15,26 @@ const (
 	defaultModel = openai.GPT3Dot5Turbo
 	defaultRole  = openai.ChatMessageRoleUser
 )
+
+func (i integration) getKey(ctx context.Context) (string, error) {
+	// Retrieve auth details based on connection ID.
+	cid, err := sdkmodule.FunctionConnectionIDFromContext(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	vs, err := i.vars.Reveal(ctx, sdktypes.NewVarScopeID(cid))
+	if err != nil {
+		return "", err
+	}
+
+	key := vs.GetValue(apiKeyVar)
+	if key == "" {
+		return "", sdkerrors.ErrNotInitialized
+	}
+
+	return key, nil
+}
 
 // https://pkg.go.dev/github.com/sashabaranov/go-openai#Client.CreateChatCompletion
 // https://platform.openai.com/docs/api-reference/chat/create
@@ -46,19 +67,13 @@ func (i integration) createChatCompletion(ctx context.Context, args []sdktypes.V
 		})
 	}
 
-	// Retrieve auth details based on connection ID.
-	cid, err := sdkmodule.FunctionConnectionIDFromContext(ctx)
-	if err != nil {
-		return sdktypes.InvalidValue, err
-	}
-
-	cvars, err := i.vars.Reveal(ctx, sdktypes.NewVarScopeID(cid))
+	apiKey, err := i.getKey(ctx)
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
 
 	// Invoke the API method.
-	client := openai.NewClient(cvars.GetValue(apiKeyVar))
+	client := openai.NewClient(apiKey)
 	resp, err := client.CreateChatCompletion(ctx, req)
 	if err != nil {
 		jsonResp := ChatCompletionResponse{Error: err.Error()}

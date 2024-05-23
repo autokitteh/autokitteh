@@ -2,11 +2,13 @@ package aws
 
 import (
 	"context"
+	"errors"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 
+	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -19,6 +21,8 @@ type authData struct {
 	Token       string `var:"secret"`
 }
 
+var ErrNotInit = errors.New("not initialized")
+
 func getAWSConfig(ctx context.Context, vars sdkservices.Vars) (*aws.Config, error) {
 	cid, err := sdkmodule.FunctionConnectionIDFromContext(ctx)
 	if err != nil {
@@ -26,12 +30,24 @@ func getAWSConfig(ctx context.Context, vars sdkservices.Vars) (*aws.Config, erro
 	}
 
 	if !cid.IsValid() {
+		if defaultAWSConfig == nil {
+			return nil, sdkerrors.ErrNotInitialized
+		}
+
 		return defaultAWSConfig, nil
 	}
 
 	cvars, err := vars.Reveal(ctx, sdktypes.NewVarScopeID(cid))
 	if err != nil {
 		return nil, err
+	}
+
+	if len(cvars) == 0 {
+		if defaultAWSConfig == nil {
+			return nil, sdkerrors.ErrNotInitialized
+		}
+
+		return defaultAWSConfig, nil
 	}
 
 	var authData authData

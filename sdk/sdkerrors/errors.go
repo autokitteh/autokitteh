@@ -19,6 +19,7 @@ var (
 	ErrUnknown            = errors.New("unknown")
 	ErrFailedPrecondition = errors.New("failed precondition")
 	ErrLimitExceeded      = errors.New("limit exceeded")
+	ErrNotInitialized     = errors.New("not initialized")
 )
 
 func IgnoreNotFoundErr[T any](in T, err error) (T, error) {
@@ -72,6 +73,8 @@ func AsConnectError(err error) error {
 	case errors.Is(err, ErrNotImplemented):
 		return connect.NewError(connect.CodeUnimplemented, err)
 	case errors.Is(err, ErrFailedPrecondition):
+		return connect.NewError(connect.CodeFailedPrecondition, err)
+	case errors.Is(err, ErrNotInitialized):
 		return connect.NewError(connect.CodeFailedPrecondition, err)
 	default:
 		return connect.NewError(connect.CodeUnknown, err)

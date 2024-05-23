@@ -49,16 +49,6 @@ func NewIntegration(
 
 	i.desc = i.desc.WithConnectionCapabilities(i.desc.ConnectionCapabilities().WithSupportsConnectionInit(connURL != nil && connURL.String() != ""))
 
-	if i.connStatus == nil {
-		i.connStatus = func(_ context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
-			if !cid.IsValid() {
-				return i.desc.InitialConnectionStatus(), nil
-			}
-
-			return sdktypes.NewStatus(sdktypes.StatusCodeUnspecified, ""), nil
-		}
-	}
-
 	return i
 }
 
@@ -81,6 +71,10 @@ func (i *integration) TestConnection(ctx context.Context, cid sdktypes.Connectio
 }
 
 func (i *integration) GetConnectionStatus(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
+	if !cid.IsValid() && i.desc.InitialConnectionStatus().IsValid() {
+		return i.desc.InitialConnectionStatus(), nil
+	}
+
 	if i.connStatus == nil {
 		return sdktypes.InvalidStatus, sdkerrors.ErrNotImplemented
 	}

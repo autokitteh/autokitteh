@@ -74,6 +74,11 @@ func initOpts(vars sdkservices.Vars) (opts []sdkmodule.Optfn) {
 var integrationID = sdktypes.NewIntegrationIDFromName("aws")
 
 func New(vars sdkservices.Vars) sdkservices.Integration {
+	initialStatus := sdktypes.NewStatus(sdktypes.StatusCodeOK, "")
+	if defaultAWSConfig == nil {
+		initialStatus = sdktypes.NewStatus(sdktypes.StatusCodeError, "init required")
+	}
+
 	return sdkintegrations.NewIntegration(
 		kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
 			IntegrationId: integrationID.String(),
@@ -86,7 +91,33 @@ func New(vars sdkservices.Vars) sdkservices.Integration {
 				"2 Service console":   "https://console.aws.amazon.com/",
 			},
 			ConnectionUrl: "/aws/connect",
+			ConnectionCapabilities: &sdktypes.ConnectionCapabilitiesPB{
+				RequiresConnectionInit: defaultAWSConfig == nil,
+			},
+			InitialConnectionStatus: initialStatus.ToProto(),
 		})),
 		sdkmodule.New(initOpts(vars)...),
+		sdkintegrations.WithConnectionStatus(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
+			_, err := getAWSConfig(ctx, vars)
+			if err != nil {
+				return sdktypes.NewErrorStatus(err), nil
+			}
+
+			return sdktypes.NewStatus(sdktypes.StatusCodeOK, ""), nil
+		}),
+		sdkintegrations.WithConnectionTest(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
+			cfg, err := getAWSConfig(ctx, vars)
+			if err != nil {
+				return sdktypes.NewErrorStatus(err), nil
+			}
+
+			client := iam.NewFromConfig(*cfg)
+
+			if _, err := client.ListAccountAliases(ctx, &iam.ListAccountAliasesInput{MaxItems: aws.Int32(1)}); err != nil {
+				return sdktypes.NewErrorStatus(err), nil
+			}
+
+			return sdktypes.NewStatus(sdktypes.StatusCodeOK, ""), nil
+		}),
 	)
 }
