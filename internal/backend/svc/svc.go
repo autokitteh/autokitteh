@@ -159,7 +159,6 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 				})
 			}),
 		),
-		Component("schedule", configset.Empty, fx.Provide(schedule.New)),
 		Component(
 			"sessions",
 			sessions.Configs,
@@ -188,6 +187,20 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		Component("runtimes", configset.Empty, fx.Provide(runtimes.New)),
 
 		Component("healthcheck", configset.Empty, fx.Provide(healthchecker.New)),
+		Component(
+			"scheduler",
+			configset.Empty,
+			fx.Provide(schedule.New),
+			// fx.Provide(func(sch schedule.Scheduler) sdkservices.Scheduler { return sch }),
+			// fx.Invoke(func(lc fx.Lifecycle, sch schedule.Scheduler) { HookOnStart(lc, sch.Start) }),
+		),
+		Component(
+			"schedulerWorkglow",
+			configset.Empty,
+			fx.Provide(schedule.NewSchedulerWorkflow),
+			// fx.Provide(func(sch schedule.Scheduler) sdkservices.Scheduler { return sch }),
+			fx.Invoke(func(lc fx.Lifecycle, swf schedule.SchedulerWorkflow) { HookOnStart(lc, swf.Start) }),
+		),
 		Component(
 			"dispatcher",
 			configset.Empty,

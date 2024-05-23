@@ -7,35 +7,32 @@ import (
 	"go.temporal.io/sdk/client"
 	"go.uber.org/zap"
 
-	"go.autokitteh.dev/autokitteh/internal/backend/dispatcher"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-type temporalScheduleImpl struct {
-	z      *zap.Logger
+type temporalScheduler struct {
 	tmprl  temporalclient.Client
 	events sdkservices.Events
+	z      *zap.Logger
 }
 
-type Schedule interface {
-	Create(ctx context.Context, scheduleID string, schedule string, triggerID sdktypes.TriggerID) error
-	Delete(ctx context.Context, scheduleID string) error
-	Update(ctx context.Context, scheduleID string, schedule string) error
+// type Scheduler interface {
+// 	sdkservices.Scheduler
+// }
+
+func New(z *zap.Logger, events sdkservices.Events, tc temporalclient.Client) sdkservices.Scheduler {
+	return &temporalScheduler{z: z, events: events, tmprl: tc}
 }
 
-func New(z *zap.Logger, events sdkservices.Events, tc temporalclient.Client) Schedule {
-	return &temporalScheduleImpl{z: z, events: events, tmprl: tc}
-}
-
-func (tsc *temporalScheduleImpl) newScheduleEvent(ctx context.Context) (sdktypes.EventID, error) {
+func (tsc *temporalScheduler) newScheduleEvent(ctx context.Context) (sdktypes.EventID, error) {
 	event := kittehs.Must1(sdktypes.EventFromProto(&sdktypes.EventPB{EventType: sdktypes.SchedulerEventTriggerType}))
 	return tsc.events.Save(ctx, event)
 }
 
-func (tsc *temporalScheduleImpl) Create(ctx context.Context, scheduleID string, schedule string, triggerID sdktypes.TriggerID) error {
+func (tsc *temporalScheduler) Create(ctx context.Context, scheduleID string, schedule string, triggerID sdktypes.TriggerID) error {
 	eventID, err := tsc.newScheduleEvent(ctx)
 	if err != nil {
 		return fmt.Errorf("create scheduler workflow: save event: %w", err)
@@ -52,9 +49,9 @@ func (tsc *temporalScheduleImpl) Create(ctx context.Context, scheduleID string, 
 			},
 			Action: &client.ScheduleWorkflowAction{
 				ID:        eventID.String(), // workflowID
-				Workflow:  sdktypes.EventsWorkflow,
+				Workflow:  sdktypes.SchedulerWorkflow,
 				TaskQueue: sdktypes.TaskQueueName,
-				Args:      []interface{}{dispatcher.EventsWorkflowInput{EventID: eventID, TriggerID: &triggerID}},
+				Args:      []interface{}{scheduleWorkflowInput{EventID: eventID, TriggerID: triggerID}},
 			},
 		})
 	if err != nil {
@@ -65,7 +62,7 @@ func (tsc *temporalScheduleImpl) Create(ctx context.Context, scheduleID string, 
 	return nil
 }
 
-func (tsc *temporalScheduleImpl) Delete(ctx context.Context, scheduleID string) error {
+func (tsc *temporalScheduler) Delete(ctx context.Context, scheduleID string) error {
 	if scheduleID == "" {
 		tsc.z.Error("Failed delete scheduler workflow. No scheduleID found")
 		return fmt.Errorf("delete scheduler workflow: no scheduleID")
@@ -79,7 +76,7 @@ func (tsc *temporalScheduleImpl) Delete(ctx context.Context, scheduleID string) 
 	return nil
 }
 
-func (tsc *temporalScheduleImpl) Update(ctx context.Context, scheduleID string, scheduleStr string) error {
+func (tsc *temporalScheduler) Update(ctx context.Context, scheduleID string, scheduleStr string) error {
 	if scheduleID == "" {
 		tsc.z.Error("Failed update scheduler workflow. No scheduleID found")
 		return fmt.Errorf("delete scheduler workflow: no scheduleID")
