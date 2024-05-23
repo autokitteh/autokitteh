@@ -26,8 +26,6 @@ func runAction(t *testing.T, akPath, akAddr, step string) (any, error) {
 		return &httpRequest{method: method, url: match[3]}, nil
 	case "wait":
 		return waitForSession(akPath, akAddr, step)
-	case "sleep":
-		return nil, sleepFor(strings.TrimSpace(strings.TrimPrefix(step, match[1])))
 	default:
 		return nil, errors.New("unhandled action")
 	}
