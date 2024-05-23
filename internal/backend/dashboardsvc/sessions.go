@@ -2,6 +2,7 @@ package dashboardsvc
 
 import (
 	"encoding/json"
+	"fmt"
 	"html/template"
 	"net/http"
 
@@ -14,6 +15,7 @@ import (
 func (s Svc) initSessions() {
 	s.Muxes.Auth.HandleFunc("/sessions", s.sessions)
 	s.Muxes.Auth.HandleFunc("/sessions/{sid}", s.session)
+	s.Muxes.Auth.HandleFunc("/sessions/{sid}/stop", s.stopSession)
 }
 
 type session struct{ sdktypes.Session }
@@ -119,6 +121,8 @@ func (s Svc) session(w http.ResponseWriter, r *http.Request) {
 		LogJSON     template.HTML
 		InputsJSON  template.HTML
 		Prints      string
+		State       string
+		IsActive    bool
 	}{
 		Title:       "Session: " + sdkS.ID().String(),
 		ID:          sdkS.ID().String(),
@@ -126,7 +130,27 @@ func (s Svc) session(w http.ResponseWriter, r *http.Request) {
 		LogJSON:     template.HTML(kittehs.Must1(kittehs.MarshalProtoSliceJSON(log.ToProto().Records))),
 		InputsJSON:  template.HTML(jsonInputs),
 		Prints:      prints,
+		State:       sdkS.State().String(),
+		IsActive:    !sdkS.State().IsFinal(),
 	}); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
+}
+
+func (s Svc) stopSession(w http.ResponseWriter, r *http.Request) {
+	sid, err := sdktypes.StrictParseSessionID(r.PathValue("sid"))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	reason := r.URL.Query().Get("reason")
+	force := getQueryBool(r, "force", false)
+
+	if err := s.Svcs.Sessions().Stop(r.Context(), sid, reason, force); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, fmt.Sprintf("/sessions/%v", sid), http.StatusSeeOther)
 }
