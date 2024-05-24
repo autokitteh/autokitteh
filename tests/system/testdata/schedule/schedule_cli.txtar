@@ -30,10 +30,8 @@ ak trigger list
 return code == 0
 output equals ''
 
-# sleep 3 seconds this should be more than enough
-sleep 3s
-
 # only 2 sessions since trigger and schedule were cancelled
+wait 3s unless session ses_0000000000000000000000000d
 ak session list
 return code == 0
 output regex '(?m)^session_id:"ses_0+b.*\n^session_id:"ses_0+9.*$'
