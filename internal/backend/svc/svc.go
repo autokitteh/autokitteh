@@ -195,7 +195,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 			// fx.Invoke(func(lc fx.Lifecycle, sch schedule.Scheduler) { HookOnStart(lc, sch.Start) }),
 		),
 		Component(
-			"schedulerWorkglow",
+			"schedulerWorkflow",
 			configset.Empty,
 			fx.Provide(schedule.NewSchedulerWorkflow),
 			// fx.Provide(func(sch schedule.Scheduler) sdkservices.Scheduler { return sch }),
