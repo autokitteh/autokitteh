@@ -14,5 +14,6 @@ twilio ~= 9.0
 
 # General
 
+munch ~= 4.0
 PyYAML ~= 6.0
 requests ~= 2.31
