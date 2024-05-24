@@ -28,10 +28,16 @@ func (ConnectionTraits) Validate(m *ConnectionPB) error {
 }
 
 func (ConnectionTraits) StrictValidate(m *ConnectionPB) error {
+	var errProjectID, errIntegrationID error
+	if m.Name != SchedulerConnectionName {
+		errProjectID = mandatory("project_id", m.ProjectId)
+		errIntegrationID = mandatory("integration_id", m.IntegrationId)
+	}
+
 	return errors.Join(
 		mandatory("name", m.Name),
-		mandatory("project_id", m.ProjectId),
-		mandatory("integration_id", m.IntegrationId),
+		errProjectID,
+		errIntegrationID,
 	)
 }
 
