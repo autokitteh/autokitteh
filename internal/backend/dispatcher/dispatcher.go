@@ -6,34 +6,19 @@ import (
 
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/worker"
-	"go.uber.org/fx"
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
+	wf "go.autokitteh.dev/autokitteh/internal/backend/workflows"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-type Services struct {
-	fx.In
-
-	Connections  sdkservices.Connections
-	Deployments  sdkservices.Deployments
-	Events       sdkservices.Events
-	Integrations sdkservices.Integrations
-	Projects     sdkservices.Projects
-	Triggers     sdkservices.Triggers
-	Sessions     sdkservices.Sessions
-	Envs         sdkservices.Envs
-}
-
 type dispatcher struct {
-	z        *zap.Logger
-	db       db.DB
-	services Services
-	temporal temporalclient.Client
+	wf.Workflow
+	db db.DB
 }
 
 type Dispatcher interface {
@@ -44,19 +29,19 @@ type Dispatcher interface {
 func New(
 	z *zap.Logger,
 	db db.DB,
-	services Services,
-	c temporalclient.Client,
+	services wf.Services,
+	tc temporalclient.Client,
 ) Dispatcher {
-	return &dispatcher{db: db, z: z, services: services, temporal: c}
+	return &dispatcher{wf.Workflow{Z: z, Services: services, Tmprl: tc}, db}
 }
 
 func (d *dispatcher) Dispatch(ctx context.Context, event sdktypes.Event, opts *sdkservices.DispatchOptions) (sdktypes.EventID, error) {
-	eventID, err := d.services.Events.Save(ctx, event)
+	eventID, err := d.Services.Events.Save(ctx, event)
 	if err != nil {
 		return sdktypes.InvalidEventID, fmt.Errorf("save event: %w", err)
 	}
 
-	z := d.z.With(zap.String("event_id", eventID.String()))
+	z := d.Z.With(zap.String("event_id", eventID.String()))
 
 	z.Debug("event saved")
 
@@ -70,7 +55,7 @@ func (d *dispatcher) Dispatch(ctx context.Context, event sdktypes.Event, opts *s
 }
 
 func (d *dispatcher) Redispatch(ctx context.Context, eventID sdktypes.EventID, opts *sdkservices.DispatchOptions) (sdktypes.EventID, error) {
-	event, err := d.services.Events.Get(ctx, eventID)
+	event, err := d.Services.Events.Get(ctx, eventID)
 	if err != nil {
 		return sdktypes.InvalidEventID, err
 	}
@@ -90,7 +75,7 @@ func (d *dispatcher) Redispatch(ctx context.Context, eventID sdktypes.EventID, o
 }
 
 func (d *dispatcher) Start(context.Context) error {
-	w := worker.New(d.temporal.Temporal(), sdktypes.TaskQueueName, worker.Options{Identity: sdktypes.DispatcherWorkerID})
+	w := worker.New(d.Tmprl.Temporal(), sdktypes.TaskQueueName, worker.Options{Identity: sdktypes.DispatcherWorkerID})
 	w.RegisterWorkflow(d.eventsWorkflow)
 
 	if err := w.Start(); err != nil {
@@ -108,12 +93,12 @@ func (d *dispatcher) startWorkflow(ctx context.Context, eventID sdktypes.EventID
 		EventID: eventID,
 		Options: opts,
 	}
-	_, err := d.temporal.Temporal().ExecuteWorkflow(ctx, options, d.eventsWorkflow, input)
+	_, err := d.Tmprl.Temporal().ExecuteWorkflow(ctx, options, d.eventsWorkflow, input)
 	if err != nil {
-		d.z.Error("Failed starting workflow", zap.String("eventID", eventID.String()), zap.Error(err))
+		d.Z.Error("Failed starting workflow", zap.String("eventID", eventID.String()), zap.Error(err))
 		return fmt.Errorf("failed starting workflow: %w", err)
 	}
-	d.z.Info("Started workflow", zap.String("eventID", eventID.String()))
+	d.Z.Info("Started workflow", zap.String("eventID", eventID.String()))
 
 	return nil
 }

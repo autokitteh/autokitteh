@@ -9,7 +9,6 @@ import (
 	"go.temporal.io/sdk/workflow"
 	"go.uber.org/zap"
 
-	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	wf "go.autokitteh.dev/autokitteh/internal/backend/workflows"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
@@ -17,20 +16,12 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-func (d *dispatcher) createEventRecord(ctx context.Context, eventID sdktypes.EventID, state sdktypes.EventState) error {
-	record := sdktypes.NewEventRecord(eventID, state)
-	if err := d.services.Events.AddEventRecord(ctx, record); err != nil {
-		d.z.Panic("Failed updating event state record", zap.String("eventID", eventID.String()), zap.String("state", state.String()), zap.Error(err))
-	}
-	return nil
-}
-
 func (d *dispatcher) getEventSessionData(ctx context.Context, event sdktypes.Event, opts *sdkservices.DispatchOptions) ([]wf.SessionData, error) {
 	if opts == nil {
 		opts = &sdkservices.DispatchOptions{}
 	}
 
-	z := d.z.With(zap.String("event_id", event.ID().String()))
+	z := d.Z.With(zap.String("event_id", event.ID().String()))
 
 	if opts.Env != "" {
 		z = z.With(zap.String("env", opts.Env))
@@ -45,7 +36,7 @@ func (d *dispatcher) getEventSessionData(ctx context.Context, event sdktypes.Eve
 		return nil, sdkerrors.ErrNotFound
 	}
 
-	optsEnvID, err := resolveEnv(ctx, &d.services, opts.Env)
+	optsEnvID, err := resolveEnv(ctx, &d.Services, opts.Env)
 	if err != nil {
 		if errors.Is(err, sdkerrors.ErrNotFound) {
 			z.Info("env is not configured")
@@ -59,7 +50,7 @@ func (d *dispatcher) getEventSessionData(ctx context.Context, event sdktypes.Eve
 
 	cid := event.ConnectionID()
 
-	conn, err := d.services.Connections.Get(ctx, cid)
+	conn, err := d.Services.Connections.Get(ctx, cid)
 	if err != nil {
 		return nil, fmt.Errorf("get connection: %w", err)
 	}
@@ -70,7 +61,7 @@ func (d *dispatcher) getEventSessionData(ctx context.Context, event sdktypes.Eve
 
 	iid := conn.IntegrationID()
 
-	ts, err := d.services.Triggers.List(ctx, sdkservices.ListTriggersFilter{ConnectionID: cid})
+	ts, err := d.Services.Triggers.List(ctx, sdkservices.ListTriggersFilter{ConnectionID: cid})
 	if err != nil {
 		return nil, fmt.Errorf("list triggers: %w", err)
 	}
@@ -116,7 +107,7 @@ func (d *dispatcher) getEventSessionData(ctx context.Context, event sdktypes.Eve
 			continue
 		}
 
-		activeDeployments, err := d.services.Deployments.List(ctx, sdkservices.ListDeploymentsFilter{State: sdktypes.DeploymentStateActive, EnvID: envID})
+		activeDeployments, err := d.Services.Deployments.List(ctx, sdkservices.ListDeploymentsFilter{State: sdktypes.DeploymentStateActive, EnvID: envID})
 		if err != nil {
 			z.Panic("could not fetch active deployments", zap.Error(err))
 		}
@@ -124,7 +115,7 @@ func (d *dispatcher) getEventSessionData(ctx context.Context, event sdktypes.Eve
 		var testingDeployments []sdktypes.Deployment
 
 		if optsEnvID.IsValid() || opts.DeploymentID.IsValid() {
-			testingDeployments, err = d.services.Deployments.List(ctx, sdkservices.ListDeploymentsFilter{State: sdktypes.DeploymentStateTesting, EnvID: envID})
+			testingDeployments, err = d.Services.Deployments.List(ctx, sdkservices.ListDeploymentsFilter{State: sdktypes.DeploymentStateTesting, EnvID: envID})
 			if err != nil {
 				z.Panic("could not fetch testing deployments", zap.Error(err))
 			}
@@ -156,7 +147,7 @@ func (d *dispatcher) getEventSessionData(ctx context.Context, event sdktypes.Eve
 func (d *dispatcher) signalWorkflows(ctx context.Context, event sdktypes.Event) error {
 	eid := event.ID()
 
-	z := d.z.With(zap.String("event_id", eid.String()))
+	z := d.Z.With(zap.String("event_id", eid.String()))
 
 	if !event.IsValid() {
 		z.Error("could not find event")
@@ -165,7 +156,7 @@ func (d *dispatcher) signalWorkflows(ctx context.Context, event sdktypes.Event) 
 
 	cid := event.ConnectionID()
 
-	conn, err := d.services.Connections.Get(ctx, cid)
+	conn, err := d.Services.Connections.Get(ctx, cid)
 	if err != nil {
 		z.Panic("could not fetch connections", zap.Error(err))
 	}
@@ -204,7 +195,7 @@ func (d *dispatcher) signalWorkflows(ctx context.Context, event sdktypes.Event) 
 			continue
 		}
 
-		if err := d.temporal.Temporal().SignalWorkflow(ctx, signal.WorkflowID, "", signal.SignalID, eid); err != nil {
+		if err := d.Tmprl.Temporal().SignalWorkflow(ctx, signal.WorkflowID, "", signal.SignalID, eid); err != nil {
 			var nferr *serviceerror.NotFound
 			if !errors.As(err, &nferr) {
 				l.Error("could not signal workflow", zap.Error(err))
@@ -225,8 +216,8 @@ func (d *dispatcher) eventsWorkflow(ctx workflow.Context, input eventsWorkflowIn
 	logger := workflow.GetLogger(ctx)
 	logger.Info("started events workflow", "event_id", input.EventID)
 
-	z := d.z.With(zap.String("event_id", input.EventID.String()))
-	event, err := d.services.Events.Get(context.TODO(), input.EventID)
+	z := d.Z.With(zap.String("event_id", input.EventID.String()))
+	event, err := d.Services.Events.Get(context.TODO(), input.EventID)
 	if err != nil {
 		return nil, fmt.Errorf("get event: %w", err)
 	}
@@ -237,20 +228,20 @@ func (d *dispatcher) eventsWorkflow(ctx workflow.Context, input eventsWorkflowIn
 	}
 
 	// Set event to processing
-	if err := d.createEventRecord(context.Background(), input.EventID, sdktypes.EventStateProcessing); err != nil {
+	if err := d.CreateEventRecord(context.Background(), input.EventID, sdktypes.EventStateProcessing); err != nil {
 		return nil, err
 	}
 
 	// Fetch event related data
 	sds, err := d.getEventSessionData(context.Background(), event, input.Options)
 	if err != nil {
-		_ = d.createEventRecord(context.Background(), input.EventID, sdktypes.EventStateFailed)
+		_ = d.CreateEventRecord(context.Background(), input.EventID, sdktypes.EventStateFailed)
 		logger.Error("Failed processing event", "EventID", input.EventID, "error", err)
 		return nil, nil
 	}
 
 	// start sessions
-	if err := d.startSessions(ctx, event, sds); err != nil {
+	if err := d.StartSessions(ctx, event, sds); err != nil {
 		return nil, err
 	}
 
@@ -260,28 +251,9 @@ func (d *dispatcher) eventsWorkflow(ctx workflow.Context, input eventsWorkflowIn
 		return nil, err
 	}
 	// Set event to Completed
-	if err = d.createEventRecord(context.Background(), input.EventID, sdktypes.EventStateCompleted); err != nil {
+	if err = d.CreateEventRecord(context.Background(), input.EventID, sdktypes.EventStateCompleted); err != nil {
 		return nil, err
 	}
 
 	return nil, nil
-}
-
-func (d *dispatcher) startSessions(ctx workflow.Context, event sdktypes.Event, sessionsData []wf.SessionData) error {
-	sessions, err := wf.CreateSessionsForWorkflow(event, sessionsData)
-	if err != nil {
-		return fmt.Errorf("start sessions: %w", err)
-	}
-
-	goCtx := temporalclient.NewWorkflowContextAsGOContext(ctx)
-
-	for _, session := range sessions {
-		// TODO(ENG-197): change to local activity.
-		sessionID, err := d.services.Sessions.Start(goCtx, *session)
-		if err != nil {
-			d.z.Panic("could not start session") // Panic in order to make the workflow retry.
-		}
-		d.z.Info("started session", zap.String("session_id", sessionID.String()))
-	}
-	return nil
 }

@@ -1,12 +1,37 @@
 package workflows
 
 import (
+	"context"
 	"fmt"
 	"maps"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
+	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
+	"go.temporal.io/sdk/workflow"
+	"go.uber.org/fx"
+	"go.uber.org/zap"
 )
+
+type Services struct {
+	fx.In
+
+	Connections  sdkservices.Connections
+	Deployments  sdkservices.Deployments
+	Events       sdkservices.Events
+	Integrations sdkservices.Integrations
+	Projects     sdkservices.Projects
+	Triggers     sdkservices.Triggers
+	Sessions     sdkservices.Sessions
+	Envs         sdkservices.Envs
+}
+
+type Workflow struct {
+	Z        *zap.Logger
+	Services Services
+	Tmprl    temporalclient.Client
+}
 
 type SessionData struct {
 	Deployment            sdktypes.Deployment
@@ -77,4 +102,31 @@ func CreateSessionsForWorkflow(event sdktypes.Event, sessionsData []SessionData)
 		sessions[i] = &session
 	}
 	return sessions, nil
+}
+
+func (wf *Workflow) StartSessions(ctx workflow.Context, event sdktypes.Event, sessionsData []SessionData) error {
+	sessions, err := CreateSessionsForWorkflow(event, sessionsData)
+	if err != nil {
+		return fmt.Errorf("schedule wf: start sessions: %w", err)
+	}
+
+	goCtx := temporalclient.NewWorkflowContextAsGOContext(ctx)
+
+	for _, session := range sessions {
+		// TODO(ENG-197): change to local activity.
+		sessionID, err := wf.Services.Sessions.Start(goCtx, *session)
+		if err != nil {
+			wf.Z.Panic("could not start session") // Panic in order to make the workflow retry.
+		}
+		wf.Z.Info("started session", zap.String("session_id", sessionID.String()))
+	}
+	return nil
+}
+
+func (wf *Workflow) CreateEventRecord(ctx context.Context, eventID sdktypes.EventID, state sdktypes.EventState) error {
+	record := sdktypes.NewEventRecord(eventID, state)
+	if err := wf.Services.Events.AddEventRecord(ctx, record); err != nil {
+		wf.Z.Panic("Failed updating event state record", zap.String("eventID", eventID.String()), zap.String("state", state.String()), zap.Error(err))
+	}
+	return nil
 }

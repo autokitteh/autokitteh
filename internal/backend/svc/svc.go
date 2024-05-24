@@ -188,14 +188,14 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 
 		Component("healthcheck", configset.Empty, fx.Provide(healthchecker.New)),
 		Component(
-			"scheduler",
+			"schedule",
 			configset.Empty,
 			fx.Provide(schedule.New),
 			// fx.Provide(func(sch schedule.Scheduler) sdkservices.Scheduler { return sch }),
 			// fx.Invoke(func(lc fx.Lifecycle, sch schedule.Scheduler) { HookOnStart(lc, sch.Start) }),
 		),
 		Component(
-			"schedulerWorkflow",
+			"scheduleWorkflow",
 			configset.Empty,
 			fx.Provide(schedule.NewSchedulerWorkflow),
 			// fx.Provide(func(sch schedule.Scheduler) sdkservices.Scheduler { return sch }),
