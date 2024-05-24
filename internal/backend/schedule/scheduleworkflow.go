@@ -3,10 +3,9 @@ package schedule
 import (
 	"context"
 	"fmt"
-	"maps"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
+	wf "go.autokitteh.dev/autokitteh/internal/backend/workflows"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -42,19 +41,6 @@ type scheduleWorkflowInput struct {
 
 type scheduleWorkflowOutput struct{}
 
-type sessionData struct {
-	deployment            sdktypes.Deployment
-	codeLocation          sdktypes.CodeLocation
-	trigger               sdktypes.Trigger
-	additionalTriggerData map[string]sdktypes.Value
-}
-
-var (
-	eventInputsSymbolValue   = sdktypes.NewSymbolValue(kittehs.Must1(sdktypes.ParseSymbol("event")))
-	triggerInputsSymbolValue = sdktypes.NewSymbolValue(kittehs.Must1(sdktypes.ParseSymbol("trigger")))
-	dataSymbolValue          = sdktypes.NewSymbolValue(kittehs.Must1(sdktypes.ParseSymbol("data")))
-)
-
 func NewSchedulerWorkflow(z *zap.Logger, services services, tc temporalclient.Client) SchedulerWorkflow {
 	return SchedulerWorkflow{z: z, services: services, tmprl: tc}
 }
@@ -79,73 +65,7 @@ func (swf *SchedulerWorkflow) createEventRecord(ctx context.Context, eventID sdk
 	return nil
 }
 
-// FIXME: same as in dispatcher. Move to common?
-func (swf *SchedulerWorkflow) startSessions(ctx workflow.Context, event sdktypes.Event, sessionsData []sessionData) error {
-	// DO NOT PASS Memo. It is not intended for automation use, just auditing.
-	eventInputs := event.ToValues()
-	eventStruct, err := sdktypes.NewStructValue(eventInputsSymbolValue, eventInputs)
-	if err != nil {
-		return fmt.Errorf("start session: event: %w", err)
-	}
-
-	inputs := map[string]sdktypes.Value{
-		"event": eventStruct,
-		"data":  eventInputs["data"],
-	}
-
-	for _, sd := range sessionsData {
-		if t := sd.trigger; t.IsValid() {
-			inputs = maps.Clone(inputs)
-			triggerInputs := t.ToValues()
-
-			if len(sd.additionalTriggerData) != 0 {
-				fs := sd.additionalTriggerData
-				if fs == nil {
-					fs = make(map[string]sdktypes.Value)
-				}
-
-				if data, ok := triggerInputs["data"]; ok {
-					maps.Copy(fs, data.GetStruct().Fields())
-				}
-
-				if triggerInputs["data"], err = sdktypes.NewStructValue(dataSymbolValue, fs); err != nil {
-					return fmt.Errorf("trigger: %w", err)
-				}
-			}
-
-			if inputs["trigger"], err = sdktypes.NewStructValue(triggerInputsSymbolValue, triggerInputs); err != nil {
-				return fmt.Errorf("trigger: %w", err)
-			}
-
-			fs := inputs["data"].GetStruct().Fields()
-			maps.Copy(fs, triggerInputs["data"].GetStruct().Fields())
-			if inputs["data"], err = sdktypes.NewStructValue(dataSymbolValue, fs); err != nil {
-				return fmt.Errorf("data: %w", err)
-			}
-
-		}
-
-		dep := sd.deployment
-
-		session := sdktypes.NewSession(dep.BuildID(), sd.codeLocation, inputs, nil).
-			WithDeploymentID(dep.ID()).
-			WithEventID(event.ID()).
-			WithEnvID(dep.EnvID())
-
-		goCtx := temporalclient.NewWorkflowContextAsGOContext(ctx)
-
-		// TODO(ENG-197): change to local activity.
-		sessionID, err := swf.services.Sessions.Start(goCtx, session)
-		if err != nil {
-			swf.z.Panic("could not start session") // Panic in order to make the workflow retry.
-		}
-		swf.z.Info("started session", zap.String("session_id", sessionID.String()))
-	}
-
-	return nil
-}
-
-func (swf *SchedulerWorkflow) getSessionData(ctx context.Context, triggerID sdktypes.TriggerID) ([]sessionData, error) {
+func (swf *SchedulerWorkflow) getSessionData(ctx context.Context, triggerID sdktypes.TriggerID) ([]wf.SessionData, error) {
 	z := swf.z.With(zap.String("trigger_id", triggerID.String()))
 
 	if !triggerID.IsValid() {
@@ -181,9 +101,9 @@ func (swf *SchedulerWorkflow) getSessionData(ctx context.Context, triggerID sdkt
 	}
 
 	cl := trigger.CodeLocation()
-	var sds []sessionData
+	var sds []wf.SessionData
 	for _, dep := range deployments {
-		sds = append(sds, sessionData{deployment: dep, codeLocation: cl, trigger: trigger})
+		sds = append(sds, wf.SessionData{Deployment: dep, CodeLocation: cl, Trigger: trigger})
 		z.Debug("deployment found", zap.String("deployment_id", dep.ID().String()))
 	}
 
@@ -229,8 +149,8 @@ func (swf *SchedulerWorkflow) scheduleWorkflow(wfctx workflow.Context, input sch
 		return nil, nil
 	}
 
-	// start session
-	if err = swf.startSessions(wfctx, event, sds); err != nil {
+	// start sessions
+	if err = swf.StartSessions(wfctx, event, sds); err != nil {
 		z.Error("shedule wf: failed start session", zap.Error(err))
 		return nil, fmt.Errorf("schedule wf: faield start session: %w", err)
 	}
@@ -242,4 +162,23 @@ func (swf *SchedulerWorkflow) scheduleWorkflow(wfctx workflow.Context, input sch
 
 	z.Info("shedule wf: finished")
 	return nil, err
+}
+
+func (swf *SchedulerWorkflow) StartSessions(ctx workflow.Context, event sdktypes.Event, sessionsData []wf.SessionData) error {
+	sessions, err := wf.CreateSessionsForWorkflow(event, sessionsData)
+	if err != nil {
+		return fmt.Errorf("start sessions: %w", err)
+	}
+
+	goCtx := temporalclient.NewWorkflowContextAsGOContext(ctx)
+
+	for _, session := range sessions {
+		// TODO(ENG-197): change to local activity.
+		sessionID, err := swf.services.Sessions.Start(goCtx, *session)
+		if err != nil {
+			swf.z.Panic("could not start session") // Panic in order to make the workflow retry.
+		}
+		swf.z.Info("started session", zap.String("session_id", sessionID.String()))
+	}
+	return nil
 }

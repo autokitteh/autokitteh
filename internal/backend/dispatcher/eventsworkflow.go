@@ -4,23 +4,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"maps"
 
 	"go.temporal.io/api/serviceerror"
 	"go.temporal.io/sdk/workflow"
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
+	wf "go.autokitteh.dev/autokitteh/internal/backend/workflows"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-)
-
-var (
-	eventInputsSymbolValue   = sdktypes.NewSymbolValue(kittehs.Must1(sdktypes.ParseSymbol("event")))
-	triggerInputsSymbolValue = sdktypes.NewSymbolValue(kittehs.Must1(sdktypes.ParseSymbol("trigger")))
-	dataSymbolValue          = sdktypes.NewSymbolValue(kittehs.Must1(sdktypes.ParseSymbol("data")))
 )
 
 func (d *dispatcher) createEventRecord(ctx context.Context, eventID sdktypes.EventID, state sdktypes.EventState) error {
@@ -31,7 +25,7 @@ func (d *dispatcher) createEventRecord(ctx context.Context, eventID sdktypes.Eve
 	return nil
 }
 
-func (d *dispatcher) getEventSessionData(ctx context.Context, event sdktypes.Event, opts *sdkservices.DispatchOptions) ([]sessionData, error) {
+func (d *dispatcher) getEventSessionData(ctx context.Context, event sdktypes.Event, opts *sdkservices.DispatchOptions) ([]wf.SessionData, error) {
 	if opts == nil {
 		opts = &sdkservices.DispatchOptions{}
 	}
@@ -86,7 +80,7 @@ func (d *dispatcher) getEventSessionData(ctx context.Context, event sdktypes.Eve
 		return nil, nil
 	}
 
-	var sds []sessionData
+	var sds []wf.SessionData
 
 	eventType := event.Type()
 	for _, t := range ts {
@@ -152,7 +146,7 @@ func (d *dispatcher) getEventSessionData(ctx context.Context, event sdktypes.Eve
 
 		cl := t.CodeLocation()
 		for _, dep := range deployments {
-			sds = append(sds, sessionData{deployment: dep, codeLocation: cl, trigger: t, additionalTriggerData: additionalTriggerData})
+			sds = append(sds, wf.SessionData{Deployment: dep, CodeLocation: cl, Trigger: t, AdditionalTriggerData: additionalTriggerData})
 			z.Debug("relevant deployment found", zap.String("deployment_id", dep.ID().String()))
 		}
 	}
@@ -273,75 +267,21 @@ func (d *dispatcher) eventsWorkflow(ctx workflow.Context, input eventsWorkflowIn
 	return nil, nil
 }
 
-type sessionData struct {
-	deployment            sdktypes.Deployment
-	codeLocation          sdktypes.CodeLocation
-	trigger               sdktypes.Trigger
-	additionalTriggerData map[string]sdktypes.Value
-}
-
-func (d *dispatcher) startSessions(ctx workflow.Context, event sdktypes.Event, sessionsData []sessionData) error {
-	// DO NOT PASS Memo. It is not intended for automation use, just auditing.
-	eventInputs := event.ToValues()
-	eventStruct, err := sdktypes.NewStructValue(eventInputsSymbolValue, eventInputs)
+func (d *dispatcher) startSessions(ctx workflow.Context, event sdktypes.Event, sessionsData []wf.SessionData) error {
+	sessions, err := wf.CreateSessionsForWorkflow(event, sessionsData)
 	if err != nil {
-		return fmt.Errorf("event: %w", err)
+		return fmt.Errorf("start sessions: %w", err)
 	}
 
-	inputs := map[string]sdktypes.Value{
-		"event": eventStruct,
-		"data":  eventInputs["data"],
-	}
+	goCtx := temporalclient.NewWorkflowContextAsGOContext(ctx)
 
-	for _, sd := range sessionsData {
-		if t := sd.trigger; t.IsValid() {
-			inputs = maps.Clone(inputs)
-			triggerInputs := t.ToValues()
-
-			if len(sd.additionalTriggerData) != 0 {
-				fs := sd.additionalTriggerData
-				if fs == nil {
-					fs = make(map[string]sdktypes.Value)
-				}
-
-				if data, ok := triggerInputs["data"]; ok {
-					maps.Copy(fs, data.GetStruct().Fields())
-				}
-
-				if triggerInputs["data"], err = sdktypes.NewStructValue(dataSymbolValue, fs); err != nil {
-					return fmt.Errorf("trigger: %w", err)
-				}
-			}
-
-			if inputs["trigger"], err = sdktypes.NewStructValue(triggerInputsSymbolValue, triggerInputs); err != nil {
-				return fmt.Errorf("trigger: %w", err)
-			}
-
-			fs := inputs["data"].GetStruct().Fields()
-			maps.Copy(fs, triggerInputs["data"].GetStruct().Fields())
-			if inputs["data"], err = sdktypes.NewStructValue(dataSymbolValue, fs); err != nil {
-				return fmt.Errorf("data: %w", err)
-			}
-
-		}
-
-		dep := sd.deployment
-
-		session := sdktypes.NewSession(dep.BuildID(), sd.codeLocation, inputs, nil).
-			WithDeploymentID(dep.ID()).
-			WithEventID(event.ID()).
-			WithEnvID(dep.EnvID())
-
-		goCtx := temporalclient.NewWorkflowContextAsGOContext(ctx)
-
+	for _, session := range sessions {
 		// TODO(ENG-197): change to local activity.
-		sessionID, err := d.services.Sessions.Start(goCtx, session)
+		sessionID, err := d.services.Sessions.Start(goCtx, *session)
 		if err != nil {
-			// Panic in order to make the workflow retry.
-			d.z.Panic("could not start session")
+			d.z.Panic("could not start session") // Panic in order to make the workflow retry.
 		}
 		d.z.Info("started session", zap.String("session_id", sessionID.String()))
 	}
-
 	return nil
 }
