@@ -50,7 +50,7 @@ func (tsc *temporalScheduler) Create(ctx context.Context, scheduleID string, sch
 			Action: &client.ScheduleWorkflowAction{
 				ID:        eventID.String(), // workflowID
 				Workflow:  sdktypes.SchedulerWorkflow,
-				TaskQueue: sdktypes.TaskQueueName,
+				TaskQueue: sdktypes.ScheduleTaskQueueName,
 				Args:      []interface{}{scheduleWorkflowInput{EventID: eventID, TriggerID: triggerID}},
 			},
 		})
