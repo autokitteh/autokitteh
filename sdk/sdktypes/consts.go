@@ -7,6 +7,9 @@ const (
 	SchedulerConnectionName   = "cron"
 
 	EventsWorkflow    = "events_workflow"
-	SchedulerWorkflow = "sheduler_workflow"
+	SchedulerWorkflow = "scheduler_workflow"
 	TaskQueueName     = "events-task-queue"
+
+	DispatcherWorkerID = "dispatcher-worker"
+	SchedulerWorkerID  = "scheduler-worker"
 )
