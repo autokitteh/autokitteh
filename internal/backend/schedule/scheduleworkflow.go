@@ -85,8 +85,6 @@ func (swf *SchedulerWorkflow) getSessionData(ctx context.Context, triggerID sdkt
 	return sds, nil
 }
 
-// FIXME: rewrite? we don't actually need this schdule workflow and fetch event data all the time. We could prepare it as input once in create/update
-// and then other event in cancel/delete
 func (swf *SchedulerWorkflow) scheduleWorkflow(wfctx workflow.Context, input scheduleWorkflowInput) (*scheduleWorkflowOutput, error) {
 	logger := workflow.GetLogger(wfctx)
 	logger.Info("started", "event_id", input.EventID)
