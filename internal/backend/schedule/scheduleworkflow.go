@@ -30,13 +30,13 @@ func NewSchedulerWorkflow(z *zap.Logger, services wf.Services, tc temporalclient
 }
 
 func (swf *SchedulerWorkflow) Start(context.Context) error {
-	w := worker.New(swf.Tmprl.Temporal(), sdktypes.ScheduleTaskQueueName, worker.Options{Identity: sdktypes.SchedulerWorkerID})
-	w.RegisterWorkflowWithOptions(swf.scheduleWorkflow, workflow.RegisterOptions{Name: sdktypes.SchedulerWorkflow})
+	w := worker.New(swf.Tmprl.Temporal(), wf.ScheduleTaskQueueName, worker.Options{Identity: wf.SchedulerWorkerID})
+	w.RegisterWorkflowWithOptions(swf.scheduleWorkflow, workflow.RegisterOptions{Name: wf.SchedulerWorkflow})
 
 	if err := w.Start(); err != nil {
 		return fmt.Errorf("schedule wf: worker start: %w", err)
 	}
-	swf.Z.Info("registered workflow and worker", zap.String("workflow", sdktypes.SchedulerWorkflow), zap.String("worker", sdktypes.SchedulerWorkerID))
+	swf.Z.Info("registered workflow and worker", zap.String("workflow", wf.SchedulerWorkflow), zap.String("worker", wf.SchedulerWorkerID))
 	return nil
 }
 

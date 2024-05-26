@@ -8,9 +8,17 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
+	wf "go.autokitteh.dev/autokitteh/internal/backend/workflows"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
+)
+
+const (
+	SchedulerEventTriggerType = "scheduler"
+	ScheduleExpression        = "schedule"
+	ScheduleIDKey             = "schedule_id"
+	SchedulerConnectionName   = "cron"
 )
 
 type temporalSchedule struct {
@@ -45,8 +53,8 @@ func (tsc *temporalSchedule) Create(ctx context.Context, scheduleID string, sche
 			},
 			Action: &client.ScheduleWorkflowAction{
 				ID:        eventID.String(), // workflowID
-				Workflow:  sdktypes.SchedulerWorkflow,
-				TaskQueue: sdktypes.ScheduleTaskQueueName,
+				Workflow:  wf.SchedulerWorkflow,
+				TaskQueue: wf.ScheduleTaskQueueName,
 				Args:      []interface{}{scheduleWorkflowInput{EventID: eventID, TriggerID: triggerID}},
 			},
 		})

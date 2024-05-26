@@ -14,6 +14,22 @@ import (
 	"go.uber.org/zap"
 )
 
+const (
+	EventsWorkflow        = "events_workflow"
+	SchedulerWorkflow     = "scheduler_workflow"
+	TaskQueueName         = "events-task-queue"
+	ScheduleTaskQueueName = "schedule-task-queue"
+
+	DispatcherWorkerID = "dispatcher-worker"
+	SchedulerWorkerID  = "scheduler-worker"
+)
+
+var (
+	eventInputsSymbolValue   = sdktypes.NewSymbolValue(kittehs.Must1(sdktypes.ParseSymbol("event")))
+	triggerInputsSymbolValue = sdktypes.NewSymbolValue(kittehs.Must1(sdktypes.ParseSymbol("trigger")))
+	dataSymbolValue          = sdktypes.NewSymbolValue(kittehs.Must1(sdktypes.ParseSymbol("data")))
+)
+
 type Services struct {
 	fx.In
 
@@ -39,12 +55,6 @@ type SessionData struct {
 	Trigger               sdktypes.Trigger
 	AdditionalTriggerData map[string]sdktypes.Value
 }
-
-var (
-	eventInputsSymbolValue   = sdktypes.NewSymbolValue(kittehs.Must1(sdktypes.ParseSymbol("event")))
-	triggerInputsSymbolValue = sdktypes.NewSymbolValue(kittehs.Must1(sdktypes.ParseSymbol("trigger")))
-	dataSymbolValue          = sdktypes.NewSymbolValue(kittehs.Must1(sdktypes.ParseSymbol("data")))
-)
 
 // used by both dispatcher and scheduler
 func CreateSessionsForWorkflow(event sdktypes.Event, sessionsData []SessionData) ([]*sdktypes.Session, error) {
