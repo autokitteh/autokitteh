@@ -1,6 +1,8 @@
 package authsessions
 
 import (
+	"net/http"
+
 	"github.com/dghubble/sessions"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/configset"
@@ -9,6 +11,7 @@ import (
 type Config struct {
 	Cookie     *sessions.CookieConfig `koanf:"cookie"`
 	CookieKeys string                 `koanf:"cookie_keys"` // pairs of hash and block keys.
+	AllowedCorsCookie bool 	         `koanf:"allowed_cors_cookie"`
 }
 
 func (c Config) cookieConfig() *sessions.CookieConfig {
@@ -16,6 +19,11 @@ func (c Config) cookieConfig() *sessions.CookieConfig {
 		return sessions.DefaultCookieConfig
 	}
 
+	if (c.AllowedCorsCookie){
+		c.Cookie.Secure = true
+		c.Cookie.SameSite = http.SameSiteNoneMode
+	}
+	
 	return c.Cookie
 }
 
