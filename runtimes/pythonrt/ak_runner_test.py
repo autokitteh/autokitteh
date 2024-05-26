@@ -259,6 +259,33 @@ def test_transform(code, transformed):
     out = trans.visit(mod)
     assert transformed, ast.unparse(out)
 
+sleep_code = '''
+from time import sleep
+import time
+
+def handler(event):
+    print('before')
+    sleep(1)
+    time.sleep(2)
+    print('after')
+
+'''
+
+def test_sleep(tmp_path):
+    mod_name = 'sleeper'
+
+    file_name = tmp_path / (mod_name + '.py')
+    with open(file_name, 'w') as out:
+        out.write(sleep_code)
+    
+    comm = MagicMock()
+    
+    ak_call = ak_runner.AKCall(mod_name, comm)
+    mod = ak_runner.load_code(tmp_path, ak_call, mod_name)
+    event = {'type': 'login', 'user': 'puss'}
+    mod.handler(event)
+    assert comm.send_sleep.call_count == 2
+
 
 def test_activity():
     mod_name = 'activity'

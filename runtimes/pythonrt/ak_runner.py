@@ -14,6 +14,7 @@ from base64 import b64decode, b64encode
 from os import mkdir
 from pathlib import Path
 from socket import AF_UNIX, SOCK_STREAM, socket
+from time import sleep
 from types import ModuleType
 
 # Use own own logger, leave root logger to user.
@@ -50,10 +51,10 @@ class Transformer(ast.NodeTransformer):
         self.file_name = file_name
 
     def visit_Call(self, node):
+        # Recurse, see https://docs.python.org/3/library/ast.html#ast.NodeVisitor.generic_visit
+        self.generic_visit(node)
+
         name = name_of(node.func)
-        # ast.Transformer does not recurse to func or args
-        node.func = self.visit(node.func)
-        node.args = [self.visit(a) for a in node.args]
 
         if not name or name in BUILTIN:
             return node
@@ -108,6 +109,7 @@ class MessageType:
     module = 'module'
     response = 'response'
     run = 'run'
+    sleep = 'sleep'
     
 
 class Comm:
@@ -183,6 +185,15 @@ class Comm:
         data = message['payload']['value']
         return pickle.loads(b64decode(data))
 
+    def send_sleep(self, seconds):
+        message = {
+            'type': MessageType.sleep,
+            'payload': {
+                'seconds': seconds,
+            }
+        }
+        self._send(message)
+
 
 ACTIVITY_ATTR = '__activity__'
 
@@ -229,6 +240,11 @@ class AKCall:
         log.info('ACTION: calling %s via activity (args=%r, kw=%r)', func.__name__, args, kw)
         self.in_activity = True
         try:
+            if func is sleep:
+                self.comm.send_sleep(*args, **kw)
+                self.comm.recv(MessageType.sleep)
+                return
+
             self.comm.send_activity(func, args, kw)
             message = self.comm.recv(MessageType.callback, MessageType.response)
             
@@ -314,8 +330,8 @@ def module_entries(mod):
 
 
 if __name__ == '__main__':
-    from argparse import ArgumentParser
     import sys
+    from argparse import ArgumentParser
 
     parser = ArgumentParser(description='autokitteh Python runner')
     parser.add_argument('sock', help='path to unix domain socket', type=file_type)
