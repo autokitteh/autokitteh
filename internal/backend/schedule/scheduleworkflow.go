@@ -6,6 +6,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	wf "go.autokitteh.dev/autokitteh/internal/backend/workflows"
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -45,23 +46,23 @@ func (swf *SchedulerWorkflow) getSessionData(ctx context.Context, triggerID sdkt
 
 	if !triggerID.IsValid() {
 		z.Debug("invalid trigger")
-		return nil, fmt.Errorf("schedule wf: trigger: %w", sdkerrors.ErrNotFound)
+		return nil, fmt.Errorf("trigger: %w", sdkerrors.ErrNotFound)
 	}
 
 	trigger, err := swf.Services.Triggers.Get(ctx, triggerID)
 	if err != nil {
-		return nil, fmt.Errorf("schedule wf: get trigger: %w", err)
+		return nil, fmt.Errorf("get trigger: %w", err)
 	}
 
 	if trigger.EventType() != sdktypes.SchedulerEventTriggerType { // sanity
-		z.Error("shedule wf: unsupported trigger type, expected `scheduler`", zap.String("trigger_type", trigger.EventType()))
+		z.Error("unsupported trigger type, expected `scheduler`", zap.String("trigger_type", trigger.EventType()))
 		return nil, fmt.Errorf("unexpected trigger type. Need `scheduler`, got %q", trigger.EventType())
 	}
 
 	envID := trigger.EnvID()
 	if !envID.IsValid() {
 		z.Debug("invalid environment")
-		return nil, fmt.Errorf("schedule wf: environment: %w", sdkerrors.ErrNotFound)
+		return nil, fmt.Errorf("environment: %w", sdkerrors.ErrNotFound)
 	}
 
 	depFilter := sdkservices.ListDeploymentsFilter{State: sdktypes.DeploymentStateActive, EnvID: envID}
@@ -85,54 +86,93 @@ func (swf *SchedulerWorkflow) getSessionData(ctx context.Context, triggerID sdkt
 	return sds, nil
 }
 
-func (swf *SchedulerWorkflow) scheduleWorkflow(wfctx workflow.Context, input scheduleWorkflowInput) (*scheduleWorkflowOutput, error) {
-	logger := workflow.GetLogger(wfctx)
-	logger.Info("started", "event_id", input.EventID)
+func (swf *SchedulerWorkflow) newScheduleTickEvent(ctx context.Context, parentEventID sdktypes.EventID) sdktypes.EventID {
+	z := swf.Z.With(zap.String("schedule_event_id", parentEventID.String()))
 
-	z := swf.Z.With(zap.String("event_id", input.EventID.String()))
+	event := kittehs.Must1(sdktypes.EventFromProto(
+		&sdktypes.EventPB{
+			EventType: sdktypes.SchedulerTickEventType,
+			Memo:      map[string]string{"schedule_event_id": parentEventID.String()},
+		}))
 
-	event, err := swf.Services.Events.Get(context.TODO(), input.EventID)
+	eventID, err := swf.Services.Events.Save(ctx, event) // create event
 	if err != nil {
-		return nil, fmt.Errorf("schedule wf: get event: %w", err)
+		z.Panic("failed creating schedule tick event")
 	}
 
-	if !event.IsValid() {
+	swf.CreateEventRecord(ctx, eventID, sdktypes.EventStateProcessing) // add `processing` event record
+	return eventID
+}
+
+func (swf *SchedulerWorkflow) fetchAndCheckOrginatingEvent(scheduleEventID sdktypes.EventID) (*sdktypes.Event, error) {
+	scheduleEvent, err := swf.Services.Events.Get(context.TODO(), scheduleEventID)
+	z := swf.Z.With(zap.String("schedule_event_id", scheduleEventID.String()))
+	if err != nil {
+		z.Error("failed to find schedule event", zap.Error(err))
+		return nil, fmt.Errorf("get event: %w", err)
+	}
+
+	if !scheduleEvent.IsValid() {
 		z.Error("invalid event")
-		return nil, sdkerrors.ErrNotFound
+		return nil, fmt.Errorf("get event: %w", sdkerrors.ErrNotFound)
 	}
 
-	if event.Type() != sdktypes.SchedulerEventTriggerType { // sanity
-		z.Error("unexpected event type, expected `scheduler`", zap.String("event_type", event.Type()))
-		return nil, fmt.Errorf("unexpected event type. Need `scheduler`, got %q", event.Type())
+	if scheduleEvent.Type() != sdktypes.SchedulerEventTriggerType { // sanity
+		z.Error("unexpected event type, expected `scheduler`", zap.String("event_type", scheduleEvent.Type()))
+		return nil, fmt.Errorf("unexpected event type. Need `scheduler`, got %q", scheduleEvent.Type())
+	}
+	return &scheduleEvent, nil
+}
+
+func (swf *SchedulerWorkflow) scheduleWorkflowInternal(wfctx workflow.Context, ctx context.Context, input scheduleWorkflowInput) error {
+	scheduleEventID := input.EventID
+	z := swf.Z.With(zap.String("schedule_event_id", scheduleEventID.String()))
+	z.Info("started")
+
+	scheduleEvent, err := swf.fetchAndCheckOrginatingEvent(scheduleEventID)
+	if err != nil {
+		z.Error("fetch schedule event", zap.Error(err))
+		return fmt.Errorf("fetch schedule event: %w", err)
 	}
 
-	ctx := context.Background()
-
-	// Set event to processing
-	if err = swf.CreateEventRecord(ctx, input.EventID, sdktypes.EventStateProcessing); err != nil {
-		return nil, fmt.Errorf("schedule wf: set event state: %w", err)
-	}
-
-	// get event data
 	sds, err := swf.getSessionData(ctx, input.TriggerID)
 	if err != nil {
-		_ = swf.CreateEventRecord(context.Background(), input.EventID, sdktypes.EventStateFailed)
-		z.Error("failed to get session data", zap.Error(err))
-		logger.Error("shedule wf: failed processing event", "event_id", input.EventID, "error", err)
-		return nil, nil
+		z.Error("get session data", zap.Error(err))
+		return err
 	}
 
-	// start sessions
-	if err = swf.StartSessions(wfctx, event, sds); err != nil {
+	if err = swf.StartSessions(wfctx, *scheduleEvent, sds); err != nil {
 		z.Error("failed start session", zap.Error(err))
-		return nil, fmt.Errorf("schedule wf: faield start session: %w", err)
-	}
-
-	// set event to Completed
-	if err = swf.CreateEventRecord(context.Background(), input.EventID, sdktypes.EventStateCompleted); err != nil {
-		err = fmt.Errorf("schedule wf: set event state: %w", err)
+		return fmt.Errorf("faield start session: %w", err)
 	}
 
 	z.Info("finished")
+	return err
+}
+
+func (swf *SchedulerWorkflow) scheduleWorkflow(wfctx workflow.Context, input scheduleWorkflowInput) (*scheduleWorkflowOutput, error) {
+	var err error
+
+	logger := workflow.GetLogger(wfctx)
+
+	scheduleEventID := input.EventID
+	logger.Info("started schedule workflow", "event_id", scheduleEventID.String())
+
+	ctx := context.Background()
+	tickEventID := swf.newScheduleTickEvent(ctx, scheduleEventID) // create tick event and add <processing> state
+
+	state := sdktypes.EventStateCompleted
+
+	if err = swf.scheduleWorkflowInternal(wfctx, ctx, input); err != nil {
+		state = sdktypes.EventStateFailed
+		logger.Error("error while schedule workflow", "event_id", scheduleEventID.String(), err)
+	} else {
+		logger.Info("finished schedule workflow", "event_id", scheduleEventID.String())
+	}
+	swf.CreateEventRecord(ctx, tickEventID, state) // add <comeplete|failed> state
+
+	if err != nil {
+		err = fmt.Errorf("scheduler wf: %w", err)
+	}
 	return nil, err
 }
