@@ -4,6 +4,7 @@ import (
 	"archive/tar"
 	"bytes"
 	"context"
+	"crypto/tls"
 	_ "embed"
 	"fmt"
 	"io"
@@ -23,6 +24,12 @@ var (
 
 	//go:embed requirements.txt
 	requirementsData []byte
+
+	//go:embed cert.pem
+	certPem []byte
+
+	//go:embed key.pem
+	keyPem []byte
 )
 
 func createTar(fs fs.FS) ([]byte, error) {
@@ -106,19 +113,18 @@ func pyExeInfo(ctx context.Context) (exeInfo, error) {
 	return info, nil
 }
 
-func extractRunner(rootDir string) (string, error) {
-	fileName := path.Join(rootDir, "ak_runner.py")
+func writeData(fileName string, data []byte) error {
 	file, err := os.Create(fileName)
 	if err != nil {
-		return "", err
+		return err
 	}
 	defer file.Close()
 
-	if _, err := io.Copy(file, bytes.NewReader(runnerPyCode)); err != nil {
-		return "", fmt.Errorf("can't copy python code to %s: %w", file.Name(), err)
+	if _, err := io.Copy(file, bytes.NewReader(data)); err != nil {
+		return err
 	}
 
-	return fileName, nil
+	return nil
 }
 
 type pyRunInfo struct {
@@ -148,16 +154,29 @@ func runPython(opts runOptions) (*pyRunInfo, error) {
 		return nil, err
 	}
 
-	runnerPath, err := extractRunner(rootDir)
-	if err != nil {
+	runnerPath := path.Join(rootDir, "ak_runner.py")
+	if err := writeData(runnerPath, runnerPyCode); err != nil {
 		return nil, err
 	}
+
+	pemPath := path.Join(rootDir, "cert.pem")
+	if err := writeData(pemPath, certPem); err != nil {
+		return nil, err
+	}
+
 	opts.log.Info("python runner", zap.String("path", runnerPath))
 
 	sockPath := path.Join(rootDir, "ak.sock")
 	opts.log.Info("socket", zap.String("path", sockPath))
 
-	lis, err := net.Listen("unix", sockPath)
+	cert, err := tls.X509KeyPair(certPem, keyPem)
+	if err != nil {
+		return nil, err
+	}
+
+	cfg := tls.Config{Certificates: []tls.Certificate{cert}}
+
+	lis, err := tls.Listen("unix", sockPath, &cfg)
 	if err != nil {
 		return nil, err
 	}

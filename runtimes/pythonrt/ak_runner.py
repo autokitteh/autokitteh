@@ -8,6 +8,7 @@ import builtins
 import json
 import logging
 import pickle
+import ssl
 import sys
 import tarfile
 from base64 import b64decode, b64encode
@@ -314,8 +315,8 @@ def module_entries(mod):
 
 
 if __name__ == '__main__':
-    from argparse import ArgumentParser
     import sys
+    from argparse import ArgumentParser
 
     parser = ArgumentParser(description='autokitteh Python runner')
     parser.add_argument('sock', help='path to unix domain socket', type=file_type)
@@ -335,7 +336,19 @@ if __name__ == '__main__':
     code_dir = extract_code(args.tar)
     log.info('code dir: %r', code_dir)
 
+    script_dir = Path(__file__).parent.absolute()
+    cert_file = script_dir / 'cert.pem'
+    if not cert_file.is_file():
+        raise SystemExit('error: {cert_file!s} not found')
+
+    context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+    context.verify_mode = ssl.CERT_REQUIRED
+    context.check_hostname = True
+    context.load_default_certs()
+    context.load_verify_locations(cert_file)
+
     sock = socket(AF_UNIX, SOCK_STREAM)
+    sock = context.wrap_socket(sock, server_hostname='localhost')
     sock.connect(args.sock)
     log.info('connected to %r', args.sock)
 
