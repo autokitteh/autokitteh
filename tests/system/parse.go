@@ -22,7 +22,7 @@ var (
 	// http <get|post> *
 	actions = regexp.MustCompile(`^(ak|http\s+(get|post)|wait|setenv)\s+(.+)`)
 	// wait <duration> for session <session ID>
-	waitAction = regexp.MustCompile(`^wait\s+(.+)\s+for\s+session\s+(.+)`)
+	waitAction = regexp.MustCompile(`^wait\s+(.+)\s+(for|unless)\s+session\s+(.+)`)
 
 	// output <equals|equals_json|contains|regex> [file] *
 	akCheckOutput = regexp.MustCompile(`^output\s+(equals|equals_json|contains|regex)\s+(file\s+)?(.+|'.*')`)

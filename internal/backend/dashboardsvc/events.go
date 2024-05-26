@@ -2,6 +2,7 @@ package dashboardsvc
 
 import (
 	"encoding/json"
+	"fmt"
 	"html/template"
 	"net/http"
 
@@ -14,6 +15,7 @@ import (
 func (s Svc) initEvents() {
 	s.Muxes.Auth.HandleFunc("/events", s.events)
 	s.Muxes.Auth.HandleFunc("/events/{eid}", s.event)
+	s.Muxes.Auth.HandleFunc("/events/{eid}/redispatch", s.redispatchEvent)
 }
 
 type event struct{ sdktypes.Event }
@@ -92,25 +94,100 @@ func (s Svc) event(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	actives, err := s.Svcs.Deployments().List(r.Context(), sdkservices.ListDeploymentsFilter{
+		State: sdktypes.DeploymentStateActive,
+	})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	testings, err := s.Svcs.Deployments().List(r.Context(), sdkservices.ListDeploymentsFilter{
+		State: sdktypes.DeploymentStateTesting,
+	})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	jsonData, err := json.MarshalIndent(data, "", "  ")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
+	projects, err := s.Svcs.Projects().List(r.Context())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	envs, err := s.Svcs.Envs().List(r.Context(), sdktypes.InvalidProjectID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// name -> deployment id
+	deployments := kittehs.ListToMap(append(actives, testings...), func(d sdktypes.Deployment) (string, string) {
+		var name string
+
+		_, e := kittehs.FindFirst(envs, func(e sdktypes.Env) bool { return e.ID() == d.EnvID() })
+		if e.IsValid() {
+			name = "/" + e.Name().String()
+			_, p := kittehs.FindFirst(projects, func(p sdktypes.Project) bool { return p.ID() == e.ProjectID() })
+			if p.IsValid() {
+				name = p.Name().String() + name
+			}
+		} else {
+			name = d.ID().String()
+		}
+
+		return fmt.Sprintf("%s [%v]", name, d.State()), d.ID().String()
+	})
+
 	if err := webdashboard.Tmpl(r).ExecuteTemplate(w, "event.html", struct {
-		Title     string
-		ID        string
-		EventJSON template.HTML
-		LogJSON   template.HTML
-		DataJSON  template.HTML
+		Title       string
+		ID          string
+		EventJSON   template.HTML
+		LogJSON     template.HTML
+		DataJSON    template.HTML
+		Deployments any
 	}{
-		Title:     "Event: " + sdkE.ID().String(),
-		ID:        sdkE.ID().String(),
-		EventJSON: marshalObject(sdkE.WithData(nil).ToProto()),
-		LogJSON:   template.HTML(kittehs.Must1(kittehs.MarshalProtoSliceJSON(kittehs.Transform(rs, sdktypes.ToProto)))),
-		DataJSON:  template.HTML(jsonData),
+		Title:       "Event: " + sdkE.ID().String(),
+		ID:          sdkE.ID().String(),
+		EventJSON:   marshalObject(sdkE.WithData(nil).ToProto()),
+		LogJSON:     template.HTML(kittehs.Must1(kittehs.MarshalProtoSliceJSON(kittehs.Transform(rs, sdktypes.ToProto)))),
+		DataJSON:    template.HTML(jsonData),
+		Deployments: deployments,
 	}); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
+}
+
+func (s Svc) redispatchEvent(w http.ResponseWriter, r *http.Request) {
+	eid, err := sdktypes.ParseEventID(r.PathValue("eid"))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	did, err := sdktypes.ParseDeploymentID(r.URL.Query().Get("did"))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	opts := sdkservices.DispatchOptions{
+		Env:          r.URL.Query().Get("env"),
+		DeploymentID: did,
+	}
+
+	eid1, err := s.Svcs.Dispatcher().Redispatch(r.Context(), eid, &opts)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, "/events/"+eid1.String(), http.StatusSeeOther)
 }
