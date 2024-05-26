@@ -1,7 +1,6 @@
 package dashboardsvc
 
 import (
-	"encoding/json"
 	"fmt"
 	"html/template"
 	"net/http"
@@ -94,17 +93,17 @@ func (s Svc) session(w http.ResponseWriter, r *http.Request) {
 	vw.SafeForJSON = true
 	vw.IgnoreFunctions = true
 
-	inputs, err := kittehs.TransformMapValuesError(sdkS.Inputs(), vw.Unwrap)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	// inputs, err := kittehs.TransformMapValuesError(sdkS.Inputs(), vw.Unwrap)
+	// if err != nil {
+	// 	http.Error(w, err.Error(), http.StatusInternalServerError)
+	// 	return
+	// }
 
-	jsonInputs, err := json.MarshalIndent(inputs, "", "  ")
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	// jsonInputs, err := json.MarshalIndent(inputs, "", "  ")
+	// if err != nil {
+	// 	http.Error(w, err.Error(), http.StatusInternalServerError)
+	// 	return
+	// }
 
 	var prints string
 
@@ -128,10 +127,10 @@ func (s Svc) session(w http.ResponseWriter, r *http.Request) {
 		ID:          sdkS.ID().String(),
 		SessionJSON: marshalObject(sdkS.WithInputs(nil).ToProto()),
 		LogJSON:     template.HTML(kittehs.Must1(kittehs.MarshalProtoSliceJSON(log.ToProto().Records))),
-		InputsJSON:  template.HTML(jsonInputs),
-		Prints:      prints,
-		State:       sdkS.State().String(),
-		IsActive:    !sdkS.State().IsFinal(),
+		// InputsJSON:  template.HTML(jsonInputs),
+		Prints:   prints,
+		State:    sdkS.State().String(),
+		IsActive: !sdkS.State().IsFinal(),
 	}); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}

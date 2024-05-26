@@ -170,6 +170,7 @@ func (db *gormdb) listSessions(ctx context.Context, f sdkservices.ListSessionsFi
 	if err := q.
 		Order(clause.OrderByColumn{Column: clause.Column{Name: "created_at"}, Desc: true}).
 		Order(clause.OrderByColumn{Column: clause.Column{Name: "session_id"}, Desc: true}).
+		Select("session_id, build_id, env_id, deployment_id, event_id, current_state_type, entrypoint").
 		Find(&rs).Error; err != nil {
 		return nil, 0, err
 	}

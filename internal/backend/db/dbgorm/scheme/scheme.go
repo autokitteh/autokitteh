@@ -407,11 +407,11 @@ func ParseSession(s Session) (sdktypes.Session, error) {
 		return sdktypes.InvalidSession, fmt.Errorf("entrypoint: %w", err)
 	}
 
-	var inputs map[string]sdktypes.Value
+	// var inputs map[string]sdktypes.Value = nil
 
-	if err := json.Unmarshal(s.Inputs, &inputs); err != nil {
-		return sdktypes.InvalidSession, fmt.Errorf("inputs: %w", err)
-	}
+	// if err := json.Unmarshal(s.Inputs, &inputs); err != nil {
+	// 	return sdktypes.InvalidSession, fmt.Errorf("inputs: %w", err)
+	// }
 
 	session, err := sdktypes.StrictSessionFromProto(&sdktypes.SessionPB{
 		SessionId:    sdktypes.NewIDFromUUID[sdktypes.SessionID](&s.SessionID).String(),
@@ -420,7 +420,7 @@ func ParseSession(s Session) (sdktypes.Session, error) {
 		DeploymentId: sdktypes.NewIDFromUUID[sdktypes.DeploymentID](s.DeploymentID).String(),
 		EventId:      sdktypes.NewIDFromUUID[sdktypes.EventID](s.EventID).String(),
 		Entrypoint:   ep.ToProto(),
-		Inputs:       kittehs.TransformMapValues(inputs, sdktypes.ToProto),
+		Inputs:       nil, //kittehs.TransformMapValues(inputs, sdktypes.ToProto),
 		CreatedAt:    timestamppb.New(s.CreatedAt),
 		UpdatedAt:    timestamppb.New(s.UpdatedAt),
 		State:        sessionsv1.SessionStateType(s.CurrentStateType),
