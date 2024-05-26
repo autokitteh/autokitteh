@@ -7,8 +7,8 @@ ak trigger list
 return code == 0
 output regex 'trigger_id:"trg_0+4" +name:"cron".*event_type:"scheduler".*?data:{key:"schedule" +value:{string:{v:"\*/1 \* \* \* \* \* \*"}}} +data:{key:"schedule_id" +value:{string:{v:"cron_trg_0+4"}}}'
 
-wait 5s for session ses_0000000000000000000000000a
-ak session log ses_0000000000000000000000000a --no-timestamps --prints-only
+wait 5s for session ses_00000000000000000000000009
+ak session log ses_00000000000000000000000009 --no-timestamps --prints-only
 return code == 0
 output equals 'cron'
 
@@ -26,7 +26,7 @@ output regex 'trigger_id:"trg_0+4" +name:"cron".*connection_id:"con_0+3"'
 wait 3s unless session ses_00000000000000000000000003
 ak session list
 return code == 0
-output regex '(?m)^session_id:"ses_0+a.*$'
+output regex '(?m)^session_id:"ses_0+9.*$'
 
 # re-deploy manifest with cron as scheduler trigger
 ak deploy --manifest schedule.yaml --file cron.star
@@ -44,7 +44,7 @@ return code == 0
 # only 2 sessions since trigger and schedule were cancelled
 ak session list
 return code == 0
-output regex '(?m)^session_id:"ses_0+h.*\n^session_id:"ses_0+a.*$'
+output regex '(?m)^session_id:"ses_0+h.*\n^session_id:"ses_0+9.*$'
 
 -- schedule.yaml --
 version: v1
@@ -85,8 +85,8 @@ def on_cron_trigger():
 [plan] trigger "cron/default:cron/http/cron": found, id="trg_00000000000000000000000004"
 [plan] trigger "cron/default:cron/http/cron": not as desired, will update
 [exec] update_trigger "cron/default:cron/http/cron": trg_00000000000000000000000004 updated
-[exec] create_build: created "bld_0000000000000000000000000c"
-[exec] create_deployment: created "dep_0000000000000000000000000d"
+[exec] create_build: created "bld_0000000000000000000000000b"
+[exec] create_deployment: created "dep_0000000000000000000000000c"
 [exec] activate_deployment: activated
 
 -- redeploy_schedule.txt --
@@ -100,6 +100,6 @@ def on_cron_trigger():
 [plan] trigger "cron/default:cron//cron": found, id="trg_00000000000000000000000004"
 [plan] trigger "cron/default:cron//cron": not as desired, will update
 [exec] update_trigger "cron/default:/cron": trg_00000000000000000000000004 updated
-[exec] create_build: created "bld_0000000000000000000000000f"
-[exec] create_deployment: created "dep_0000000000000000000000000g"
+[exec] create_build: created "bld_0000000000000000000000000e"
+[exec] create_deployment: created "dep_0000000000000000000000000f"
 [exec] activate_deployment: activated
