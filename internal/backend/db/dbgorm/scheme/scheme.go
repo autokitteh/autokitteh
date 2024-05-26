@@ -248,8 +248,8 @@ func ParseEvent(e Event) (sdktypes.Event, error) {
 }
 
 type EventRecord struct {
-	Seq       uint32        `gorm:"primaryKey"`
 	EventID   sdktypes.UUID `gorm:"primaryKey;type:uuid;not null"`
+	Seq       uint32        `gorm:"primaryKey"`
 	State     int32         `gorm:"index"`
 	CreatedAt time.Time
 
