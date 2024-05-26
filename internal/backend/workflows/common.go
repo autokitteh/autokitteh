@@ -133,10 +133,10 @@ func (wf *Workflow) StartSessions(ctx workflow.Context, event sdktypes.Event, se
 	return nil
 }
 
-func (wf *Workflow) CreateEventRecord(ctx context.Context, eventID sdktypes.EventID, state sdktypes.EventState) error {
+func (wf *Workflow) CreateEventRecord(ctx context.Context, eventID sdktypes.EventID, state sdktypes.EventState) {
 	record := sdktypes.NewEventRecord(eventID, state)
 	if err := wf.Services.Events.AddEventRecord(ctx, record); err != nil {
-		wf.Z.Panic("Failed updating event state record", zap.String("eventID", eventID.String()), zap.String("state", state.String()), zap.Error(err))
+		// TODO: log parent eventID / memo? pass logger?
+		wf.Z.Panic("Failed setting event state", zap.String("eventID", eventID.String()), zap.String("state", state.String()), zap.Error(err))
 	}
-	return nil
 }

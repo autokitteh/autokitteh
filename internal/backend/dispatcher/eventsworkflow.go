@@ -228,15 +228,13 @@ func (d *dispatcher) eventsWorkflow(ctx workflow.Context, input eventsWorkflowIn
 	}
 
 	// Set event to processing
-	if err := d.CreateEventRecord(context.Background(), input.EventID, sdktypes.EventStateProcessing); err != nil {
-		return nil, err
-	}
+	d.CreateEventRecord(context.Background(), input.EventID, sdktypes.EventStateProcessing)
 
 	// Fetch event related data
 	sds, err := d.getEventSessionData(context.Background(), event, input.Options)
 	if err != nil {
-		_ = d.CreateEventRecord(context.Background(), input.EventID, sdktypes.EventStateFailed)
 		logger.Error("Failed processing event", "EventID", input.EventID, "error", err)
+		d.CreateEventRecord(context.Background(), input.EventID, sdktypes.EventStateFailed)
 		return nil, nil
 	}
 
@@ -251,9 +249,6 @@ func (d *dispatcher) eventsWorkflow(ctx workflow.Context, input eventsWorkflowIn
 		return nil, err
 	}
 	// Set event to Completed
-	if err = d.CreateEventRecord(context.Background(), input.EventID, sdktypes.EventStateCompleted); err != nil {
-		return nil, err
-	}
-
+	d.CreateEventRecord(context.Background(), input.EventID, sdktypes.EventStateCompleted)
 	return nil, nil
 }
