@@ -199,7 +199,8 @@ func (a *svc) newSuccessLoginHandler(user sdktypes.User) http.Handler {
 			return
 		}
 
-		http.Redirect(w, req, getRedirect(req), http.StatusFound)
+		w.WriteHeader(http.StatusOK)
+		// http.Redirect(w, req, getRedirect(req), http.StatusFound)
 	}
 
 	return http.HandlerFunc(fn)
