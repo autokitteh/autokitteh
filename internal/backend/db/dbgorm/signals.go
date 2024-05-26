@@ -22,9 +22,9 @@ func (db *gormdb) SaveSignal(ctx context.Context, signalID string, workflowID st
 	return signalID, translateError(db.saveSignal(ctx, &s))
 }
 
-func (db *gormdb) ListSignalsWaitingOnConnection(ctx context.Context, connectionID sdktypes.ConnectionID, filter string) ([]scheme.Signal, error) {
+func (db *gormdb) ListSignalsWaitingOnConnection(ctx context.Context, connectionID sdktypes.ConnectionID) ([]scheme.Signal, error) {
 	var signals []scheme.Signal
-	q := db.db.WithContext(ctx).Where("connection_id = ?", connectionID.UUIDValue()).Where("filter = ?", filter)
+	q := db.db.WithContext(ctx).Where("connection_id = ?", connectionID.UUIDValue())
 	if err := q.Find(&signals).Error; err != nil {
 		return nil, err
 	}
