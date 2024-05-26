@@ -42,6 +42,25 @@ def test_load_code():
     assert name == 'json.loads'
 
 
+def test_load_twice(tmp_path):
+    mod_name = 'x'
+    file_name = tmp_path / (mod_name + '.py')
+    var, val = 'x', 1
+    with open(file_name, 'w') as out:
+        print(f'{var} = {val}', file=out)
+
+    mod = ak_runner.load_code(tmp_path, lambda x: x, mod_name)
+    assert getattr(mod, var) == val
+
+    # See that module is not cached.
+    val += 1
+    with open(file_name, 'w') as out:
+        print(f'{var} = {val}', file=out)
+
+    mod = ak_runner.load_code(tmp_path, lambda x: x, mod_name)
+    assert getattr(mod, var) == val
+
+
 def test_cmdline_help():
     py_file = str(test_dir / 'ak_runner.py')
     cmd = [sys.executable, py_file, '-h']

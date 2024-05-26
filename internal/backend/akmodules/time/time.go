@@ -20,12 +20,12 @@ var ExecutorID = sdktypes.NewExecutorID(fixtures.NewBuiltinIntegrationID("time")
 func New() sdkexecutor.Executor {
 	return fixtures.NewBuiltinExecutor(
 		ExecutorID,
-		sdkmodule.ExportValue("nanosecond", sdkmodule.WithValue(sdktypes.NewIntegerValue(int64(time.Nanosecond)))),
-		sdkmodule.ExportValue("microsecond", sdkmodule.WithValue(sdktypes.NewIntegerValue(int64(time.Microsecond)))),
-		sdkmodule.ExportValue("millisecond", sdkmodule.WithValue(sdktypes.NewIntegerValue(int64(time.Millisecond)))),
-		sdkmodule.ExportValue("second", sdkmodule.WithValue(sdktypes.NewIntegerValue(int64(time.Second)))),
-		sdkmodule.ExportValue("minute", sdkmodule.WithValue(sdktypes.NewIntegerValue(int64(time.Minute)))),
-		sdkmodule.ExportValue("hour", sdkmodule.WithValue(sdktypes.NewIntegerValue(int64(time.Hour)))),
+		sdkmodule.ExportValue("nanosecond", sdkmodule.WithValue(sdktypes.NewIntegerValue(time.Nanosecond))),
+		sdkmodule.ExportValue("microsecond", sdkmodule.WithValue(sdktypes.NewIntegerValue(time.Microsecond))),
+		sdkmodule.ExportValue("millisecond", sdkmodule.WithValue(sdktypes.NewIntegerValue(time.Millisecond))),
+		sdkmodule.ExportValue("second", sdkmodule.WithValue(sdktypes.NewIntegerValue(time.Second))),
+		sdkmodule.ExportValue("minute", sdkmodule.WithValue(sdktypes.NewIntegerValue(time.Minute))),
+		sdkmodule.ExportValue("hour", sdkmodule.WithValue(sdktypes.NewIntegerValue(time.Hour))),
 
 		sdkmodule.ExportFunction("time", newTime, sdkmodule.WithArgs("year?", "month?", "day?", "hour?", "minute?", "second?", "nanosecond?", "location?"), sdkmodule.WithFlag(sdktypes.PureFunctionFlag)),
 		sdkmodule.ExportFunction("parse_time", parseTime, sdkmodule.WithArgs("s", "format?", "location?"), sdkmodule.WithFlag(sdktypes.PureFunctionFlag)),

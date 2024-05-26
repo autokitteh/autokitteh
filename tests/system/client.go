@@ -19,6 +19,11 @@ const (
 	waitInterval = 100 * time.Millisecond
 )
 
+var (
+	sessionStateFinal = regexp.MustCompile(`state:SESSION_STATE_TYPE_(COMPLETED|ERROR|STOPPED)`)
+	sessionStateAll   = regexp.MustCompile(`state:SESSION_STATE_TYPE_`)
+)
+
 func buildClient(t *testing.T) string {
 	wd, err := os.Getwd()
 	if err != nil {
@@ -72,25 +77,38 @@ func waitForSession(akPath, akAddr, step string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("invalid duration %q: %w", match[1], err)
 	}
-	id := match[2]
+
+	waitType := match[2]
+	id := match[3]
+
+	stateRegex := sessionStateAll // wait .. unless .. session, wait for eany session state
+	isSessionExpected := waitType == "for"
+	if isSessionExpected {
+		stateRegex = sessionStateFinal // wait .. for .. session
+	}
 
 	// Check the session state with the AK client.
-	state := regexp.MustCompile(`state:SESSION_STATE_TYPE_(COMPLETED|ERROR|STOPPED)`)
 	args := append(config.ServiceUrlArg(akAddr), "session", "get", id)
 	startTime := time.Now()
 
+	sessionFound := false
 	for time.Since(startTime) < duration {
 		result, err := runClient(akPath, args)
 		if err != nil {
 			return "", fmt.Errorf("failed to get session: %w", err)
 		}
-		if state.MatchString(result.output) {
+		if sessionFound = stateRegex.MatchString(result.output); sessionFound {
 			duration = time.Since(startTime).Round(time.Millisecond)
-			return fmt.Sprintf("waited %s for session %s", duration, id), nil
+			break
 		}
 		time.Sleep(waitInterval)
 	}
 
+	if isSessionExpected == sessionFound {
+		return fmt.Sprintf("waited %s %s session %s. Session was found: %t", duration, waitType, id, sessionFound), nil
+	}
+
+	// error handling
 	text := fmt.Sprintf("session %s not done after %s", id, duration)
 
 	args = append(config.ServiceUrlArg(akAddr), "event", "list", "--integration=http")
@@ -104,7 +122,6 @@ func waitForSession(akPath, akAddr, step string) (string, error) {
 	if err == nil {
 		text += fmt.Sprintf("\n---\nSession list:\n%s", result.output)
 	}
-
 	return "", errors.New(text)
 }
 
