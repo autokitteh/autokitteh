@@ -1,8 +1,11 @@
 package scheme
 
 import (
+	"bytes"
+	"compress/gzip"
 	"encoding/json"
 	"fmt"
+	"io"
 	"time"
 
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -47,6 +50,40 @@ var Tables = []any{
 	&SessionLogRecord{},
 	&Signal{},
 	&Trigger{},
+}
+
+func unmarshalData(dst any, j datatypes.JSON, c []byte) error {
+	if len(j) == 0 {
+		r, err := gzip.NewReader(bytes.NewReader(c))
+		if err != nil {
+			return fmt.Errorf("compressed data: %w", err)
+		}
+
+		if j, err = io.ReadAll(r); err != nil {
+			return fmt.Errorf("compressed data: %w", err)
+		}
+	}
+
+	return json.Unmarshal(j, dst)
+}
+
+func CompressJSON(data any) (datatypes.JSON, error) {
+	j, err := json.Marshal(data)
+	if err != nil {
+		return nil, fmt.Errorf("json: %w", err)
+	}
+
+	var b bytes.Buffer
+	w := gzip.NewWriter(&b)
+	if _, err = w.Write(j); err != nil {
+		return nil, fmt.Errorf("compress: %w", err)
+	}
+
+	if err = w.Close(); err != nil {
+		return nil, fmt.Errorf("compress: %w", err)
+	}
+
+	return datatypes.JSON(b.Bytes()), nil
 }
 
 type Build struct {
@@ -212,11 +249,12 @@ type Event struct {
 	IntegrationID *sdktypes.UUID `gorm:"index;type:uuid"`
 	ConnectionID  *sdktypes.UUID `gorm:"index;type:uuid"`
 
-	EventType string `gorm:"index:idx_event_type_seq,priority:1;index:idx_event_type"`
-	Data      datatypes.JSON
-	Memo      datatypes.JSON
-	CreatedAt time.Time
-	Seq       uint64 `gorm:"primaryKey;autoIncrement:true,index:idx_event_type_seq,priority:2"`
+	EventType      string         `gorm:"index:idx_event_type_seq,priority:1;index:idx_event_type"`
+	Data           datatypes.JSON // if this is empty, data is in CompressedData.
+	CompressedData []byte
+	Memo           datatypes.JSON
+	CreatedAt      time.Time
+	Seq            uint64 `gorm:"primaryKey;autoIncrement:true,index:idx_event_type_seq,priority:2"`
 
 	DeletedAt gorm.DeletedAt `gorm:"index"`
 
@@ -227,7 +265,7 @@ type Event struct {
 
 func ParseEvent(e Event) (sdktypes.Event, error) {
 	var data map[string]sdktypes.Value
-	if err := json.Unmarshal(e.Data, &data); err != nil {
+	if err := unmarshalData(&data, e.Data, e.CompressedData); err != nil {
 		return sdktypes.InvalidEvent, fmt.Errorf("event data: %w", err)
 	}
 
@@ -347,25 +385,27 @@ func ParseSessionLogRecord(c SessionLogRecord) (spec sdktypes.SessionLogRecord, 
 }
 
 type SessionCallSpec struct {
-	SessionID sdktypes.UUID `gorm:"primaryKey:SessionID;type:uuid;not null"`
-	Seq       uint32        `gorm:"primaryKey"`
-	Data      datatypes.JSON
+	SessionID      sdktypes.UUID `gorm:"primaryKey:SessionID;type:uuid;not null"`
+	Seq            uint32        `gorm:"primaryKey"`
+	Data           datatypes.JSON
+	CompressedData []byte
 
 	// enforce foreign keys
 	Session *Session
 }
 
 func ParseSessionCallSpec(c SessionCallSpec) (spec sdktypes.SessionCallSpec, err error) {
-	err = json.Unmarshal(c.Data, &spec)
+	err = unmarshalData(&spec, c.Data, c.CompressedData)
 	return
 }
 
 type SessionCallAttempt struct {
-	SessionID sdktypes.UUID `gorm:"uniqueIndex:idx_session_id_seq_attempt,priority:1;type:uuid;not null"`
-	Seq       uint32        `gorm:"uniqueIndex:idx_session_id_seq_attempt,priority:2"`
-	Attempt   uint32        `gorm:"uniqueIndex:idx_session_id_seq_attempt,priority:3"`
-	Start     datatypes.JSON
-	Complete  datatypes.JSON
+	SessionID          sdktypes.UUID `gorm:"uniqueIndex:idx_session_id_seq_attempt,priority:1;type:uuid;not null"`
+	Seq                uint32        `gorm:"uniqueIndex:idx_session_id_seq_attempt,priority:2"`
+	Attempt            uint32        `gorm:"uniqueIndex:idx_session_id_seq_attempt,priority:3"`
+	Start              datatypes.JSON
+	Complete           datatypes.JSON
+	CompressedComplete []byte
 
 	// enforce foreign keys
 	Session *Session
@@ -377,7 +417,7 @@ func ParseSessionCallAttemptStart(c SessionCallAttempt) (d sdktypes.SessionCallA
 }
 
 func ParseSessionCallAttemptComplete(c SessionCallAttempt) (d sdktypes.SessionCallAttemptComplete, err error) {
-	err = json.Unmarshal(c.Complete, &d)
+	err = unmarshalData(&d, c.Complete, c.CompressedComplete)
 	return
 }
 
@@ -390,9 +430,11 @@ type Session struct {
 	CurrentStateType int            `gorm:"index"`
 	Entrypoint       string
 	Inputs           datatypes.JSON
-	CreatedAt        time.Time
-	UpdatedAt        time.Time
-	DeletedAt        gorm.DeletedAt `gorm:"index"`
+	CompressedInputs []byte
+
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	DeletedAt gorm.DeletedAt `gorm:"index"`
 
 	// enforce foreign keys
 	Build      *Build
@@ -408,9 +450,8 @@ func ParseSession(s Session) (sdktypes.Session, error) {
 	}
 
 	var inputs map[string]sdktypes.Value
-
-	if err := json.Unmarshal(s.Inputs, &inputs); err != nil {
-		return sdktypes.InvalidSession, fmt.Errorf("inputs: %w", err)
+	if err := unmarshalData(&inputs, s.Inputs, s.CompressedInputs); err != nil {
+		return sdktypes.InvalidSession, fmt.Errorf("event data: %w", err)
 	}
 
 	session, err := sdktypes.StrictSessionFromProto(&sdktypes.SessionPB{

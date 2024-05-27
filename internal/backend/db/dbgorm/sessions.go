@@ -70,6 +70,11 @@ func (db *gormdb) CreateSession(ctx context.Context, session sdktypes.Session) e
 
 	now := time.Now()
 
+	cinputs, err := scheme.CompressJSON(session.Inputs())
+	if err != nil {
+		return fmt.Errorf("compress inputs: %w", err)
+	}
+
 	s := scheme.Session{
 		SessionID:        session.ID().UUIDValue(),
 		BuildID:          scheme.UUIDOrNil(session.BuildID().UUIDValue()),
@@ -78,7 +83,7 @@ func (db *gormdb) CreateSession(ctx context.Context, session sdktypes.Session) e
 		EventID:          scheme.UUIDOrNil(session.EventID().UUIDValue()),
 		Entrypoint:       session.EntryPoint().CanonicalString(),
 		CurrentStateType: int(sdktypes.SessionStateTypeCreated.ToProto()),
-		Inputs:           kittehs.Must1(json.Marshal(session.Inputs())),
+		CompressedInputs: cinputs,
 		CreatedAt:        now,
 		UpdatedAt:        now,
 	}
@@ -200,16 +205,16 @@ func (db *gormdb) ListSessions(ctx context.Context, f sdkservices.ListSessionsFi
 }
 
 func (db *gormdb) CreateSessionCall(ctx context.Context, sessionID sdktypes.SessionID, spec sdktypes.SessionCallSpec) error {
-	jsonSpec, err := json.Marshal(spec)
+	cdata, err := scheme.CompressJSON(spec)
 	if err != nil {
 		return fmt.Errorf("marshal session call: %w", err)
 	}
 
 	return translateError(db.transaction(ctx, func(tx *tx) error {
 		r := scheme.SessionCallSpec{
-			SessionID: sessionID.UUIDValue(),
-			Seq:       spec.Seq(),
-			Data:      jsonSpec,
+			SessionID:      sessionID.UUIDValue(),
+			Seq:            spec.Seq(),
+			CompressedData: cdata,
 		}
 
 		if err := tx.db.Create(&r).Error; err != nil {
@@ -275,13 +280,13 @@ func (db *gormdb) StartSessionCallAttempt(ctx context.Context, sessionID sdktype
 
 func (db *gormdb) CompleteSessionCallAttempt(ctx context.Context, sessionID sdktypes.SessionID, seq, attempt uint32, complete sdktypes.SessionCallAttemptComplete) error {
 	return translateError(db.transaction(ctx, func(tx *tx) error {
-		json, err := json.Marshal(complete)
+		cdata, err := scheme.CompressJSON(complete)
 		if err != nil {
 			return fmt.Errorf("marshal session call attempt complete: %w", err)
 		}
 
 		r := scheme.SessionCallAttempt{
-			Complete: json,
+			CompressedComplete: cdata,
 		}
 
 		if res := tx.db.Model(&r).Where("session_id = ? AND seq = ? AND attempt = ?", sessionID.UUIDValue(), seq, attempt).Updates(r); res.Error != nil {
@@ -312,7 +317,7 @@ func (db *gormdb) GetSessionCallAttemptResult(ctx context.Context, sessionID sdk
 		return sdktypes.InvalidSessionCallAttemptResult, translateError(err)
 	}
 
-	if r.Complete == nil {
+	if r.Complete == nil && r.CompressedComplete == nil {
 		return sdktypes.InvalidSessionCallAttemptResult, sdkerrors.ErrNotFound
 	}
 
