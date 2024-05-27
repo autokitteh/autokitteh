@@ -13,7 +13,7 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 )
 
-func (f *dbFixture) createEventsAndAssert(t *testing.T, events ...scheme.Event) {
+func (f *dbFixture) createEventsAndAssert(t *testing.T, events ...scheme.EventWithData) {
 	for _, event := range events {
 		assert.NoError(t, f.gormdb.saveEvent(f.ctx, &event))
 		findAndAssertOne(t, f, event, "event_id = ?", event.EventID)
@@ -72,7 +72,7 @@ func TestDeleteEvent(t *testing.T) {
 
 	// test deleteEvent
 	assert.NoError(t, f.gormdb.deleteEvent(f.ctx, evt.EventID))
-	f.assertEventsDeleted(t, evt)
+	f.assertEventsDeleted(t, evt.Event)
 }
 
 func TestListEventsDefaultOrder(t *testing.T) {

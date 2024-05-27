@@ -55,6 +55,7 @@ message ListRequest {
 }
 
 message ListResponse {
+  // Sessions sans their inputs.
   repeated Session sessions = 1 [(buf.validate.field).repeated.items.required = true];
   int32 count = 2;
 

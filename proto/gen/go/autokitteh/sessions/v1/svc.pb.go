@@ -332,6 +332,7 @@ type ListResponse struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// Sessions sans their inputs.
 	Sessions      []*Session `protobuf:"bytes,1,rep,name=sessions,proto3" json:"sessions,omitempty"`
 	Count         int32      `protobuf:"varint,2,opt,name=count,proto3" json:"count,omitempty"`
 	NextPageToken string     `protobuf:"bytes,10,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`

@@ -266,15 +266,17 @@ var (
 	oneIncSixteenBytes = []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}
 )
 
-func (f *dbFixture) newSession(st sdktypes.SessionStateType) scheme.Session {
+func (f *dbFixture) newSession(st sdktypes.SessionStateType) scheme.SessionWithInputs {
 	f.sessionID = incByOne(f.sessionID)
 
-	return scheme.Session{
-		SessionID:        f.sessionID,
-		CurrentStateType: int(st.ToProto()),
-		Inputs:           datatypes.JSON(`{"key": "value"}`),
-		CreatedAt:        now,
-		UpdatedAt:        now,
+	return scheme.SessionWithInputs{
+		Session: scheme.Session{
+			SessionID:        f.sessionID,
+			CurrentStateType: int(st.ToProto()),
+			CreatedAt:        now,
+			UpdatedAt:        now,
+		},
+		Inputs: datatypes.JSON(`{"key": "value"}`),
 	}
 }
 
@@ -355,15 +357,17 @@ func (f *dbFixture) newIntegration() scheme.Integration {
 	}
 }
 
-func (f *dbFixture) newEvent() scheme.Event {
+func (f *dbFixture) newEvent() scheme.EventWithData {
 	f.eventID = incByOne(f.eventID)
 	f.eventSequence = f.eventSequence + 1
-	return scheme.Event{
-		EventID:   f.eventID,
-		CreatedAt: now,
-		Seq:       uint64(f.eventSequence),
-		Data:      kittehs.Must1(json.Marshal(struct{}{})),
-		Memo:      kittehs.Must1(json.Marshal(struct{}{})),
+	return scheme.EventWithData{
+		Event: scheme.Event{
+			EventID:   f.eventID,
+			CreatedAt: now,
+			Seq:       uint64(f.eventSequence),
+			Memo:      kittehs.Must1(json.Marshal(struct{}{})),
+		},
+		Data: kittehs.Must1(json.Marshal(struct{}{})),
 	}
 }
 

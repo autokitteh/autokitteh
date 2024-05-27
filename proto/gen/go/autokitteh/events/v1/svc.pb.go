@@ -293,6 +293,7 @@ type ListResponse struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// Events sans their data.
 	Events []*Event `protobuf:"bytes,1,rep,name=events,proto3" json:"events,omitempty"`
 }
 

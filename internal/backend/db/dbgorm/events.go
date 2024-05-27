@@ -11,7 +11,7 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-func (db *gormdb) saveEvent(ctx context.Context, event *scheme.Event) error {
+func (db *gormdb) saveEvent(ctx context.Context, event *scheme.EventWithData) error {
 	return db.db.WithContext(ctx).Create(&event).Error
 }
 
@@ -27,13 +27,15 @@ func (db *gormdb) SaveEvent(ctx context.Context, event sdktypes.Event) error {
 		return err
 	}
 
-	e := scheme.Event{
-		EventID:        event.ID().UUIDValue(),
-		ConnectionID:   scheme.UUIDOrNil(cid.UUIDValue()),
-		EventType:      event.Type(),
+	e := scheme.EventWithData{
+		Event: scheme.Event{
+			EventID:      event.ID().UUIDValue(),
+			ConnectionID: scheme.UUIDOrNil(cid.UUIDValue()),
+			EventType:    event.Type(),
+			Memo:         kittehs.Must1(json.Marshal(event.Memo())),
+			CreatedAt:    event.CreatedAt(),
+		},
 		CompressedData: cdata,
-		Memo:           kittehs.Must1(json.Marshal(event.Memo())),
-		CreatedAt:      event.CreatedAt(),
 	}
 
 	if cid.IsValid() { // only if exists
@@ -57,7 +59,7 @@ func (db *gormdb) deleteEvent(ctx context.Context, id sdktypes.UUID) error {
 }
 
 func (db *gormdb) GetEventByID(ctx context.Context, eventID sdktypes.EventID) (sdktypes.Event, error) {
-	return getOneWTransform(db.db, ctx, scheme.ParseEvent, "event_id = ?", eventID.UUIDValue())
+	return getOneWTransform(db.db, ctx, scheme.ParseEventWithData, "event_id = ?", eventID.UUIDValue())
 }
 
 func (db *gormdb) ListEvents(ctx context.Context, filter sdkservices.ListEventsFilter) ([]sdktypes.Event, error) {

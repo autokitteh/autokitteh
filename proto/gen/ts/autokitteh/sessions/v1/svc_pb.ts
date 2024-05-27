@@ -253,6 +253,8 @@ export class ListRequest extends Message<ListRequest> {
  */
 export class ListResponse extends Message<ListResponse> {
   /**
+   * Sessions sans their inputs.
+   *
    * @generated from field: repeated autokitteh.sessions.v1.Session sessions = 1;
    */
   sessions: Session[] = [];

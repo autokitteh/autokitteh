@@ -248,7 +248,7 @@ func TestDeleteProjectAndDependents(t *testing.T) {
 	assert.NoError(t, err)
 
 	f.assertDeploymentsDeleted(t, d1e1p1, d2e1p1, d1e2p1)
-	f.assertSessionsDeleted(t, s1d1e1p1, s2d1e2p1)
+	f.assertSessionsDeleted(t, s1d1e1p1.Session, s2d1e2p1.Session)
 	f.assertEnvDeleted(t, e1p1, e2p1)
 	f.assertTriggersDeleted(t, t1, t2)
 	f.assertSignalsDeleted(t, sig)

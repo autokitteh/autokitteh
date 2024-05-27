@@ -142,7 +142,7 @@ func TestListDeploymentsWithStats(t *testing.T) {
 
 	// delete session
 	assert.NoError(t, f.gormdb.deleteSession(f.ctx, s.SessionID))
-	f.assertSessionsDeleted(t, s)
+	f.assertSessionsDeleted(t, s.Session)
 
 	// check that deployment stats are updated
 	deployments = listDeploymentsWithStatsAndAssert(t, f, 1)
@@ -175,7 +175,7 @@ func TestDeleteDeployment(t *testing.T) {
 	f.assertDeploymentsDeleted(t, d)
 
 	listDeploymentsWithStatsAndAssert(t, f, 0)
-	f.assertSessionsDeleted(t, s1, s2)
+	f.assertSessionsDeleted(t, s1.Session, s2.Session)
 
 	// TODO: meanwhile builds are not deleted when deployment is deleted
 }

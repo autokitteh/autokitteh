@@ -249,12 +249,10 @@ type Event struct {
 	IntegrationID *sdktypes.UUID `gorm:"index;type:uuid"`
 	ConnectionID  *sdktypes.UUID `gorm:"index;type:uuid"`
 
-	EventType      string         `gorm:"index:idx_event_type_seq,priority:1;index:idx_event_type"`
-	Data           datatypes.JSON // if this is empty, data is in CompressedData.
-	CompressedData []byte
-	Memo           datatypes.JSON
-	CreatedAt      time.Time
-	Seq            uint64 `gorm:"primaryKey;autoIncrement:true,index:idx_event_type_seq,priority:2"`
+	EventType string `gorm:"index:idx_event_type_seq,priority:1;index:idx_event_type"`
+	Memo      datatypes.JSON
+	CreatedAt time.Time
+	Seq       uint64 `gorm:"primaryKey;autoIncrement:true,index:idx_event_type_seq,priority:2"`
 
 	DeletedAt gorm.DeletedAt `gorm:"index"`
 
@@ -263,12 +261,16 @@ type Event struct {
 	Connection *Connection
 }
 
-func ParseEvent(e Event) (sdktypes.Event, error) {
-	var data map[string]sdktypes.Value
-	if err := unmarshalData(&data, e.Data, e.CompressedData); err != nil {
-		return sdktypes.InvalidEvent, fmt.Errorf("event data: %w", err)
-	}
+type EventWithData struct {
+	Event
 
+	Data           datatypes.JSON // if this is empty, data is in CompressedData.
+	CompressedData []byte
+}
+
+func (e EventWithData) TableName() string { return "events" }
+
+func ParseEvent(e Event) (sdktypes.Event, error) {
 	var memo map[string]string
 	if err := json.Unmarshal(e.Memo, &memo); err != nil {
 		return sdktypes.InvalidEvent, fmt.Errorf("event memo: %w", err)
@@ -278,11 +280,24 @@ func ParseEvent(e Event) (sdktypes.Event, error) {
 		EventId:      sdktypes.NewIDFromUUID[sdktypes.EventID](&e.EventID).String(),
 		ConnectionId: sdktypes.NewIDFromUUID[sdktypes.ConnectionID](e.ConnectionID).String(),
 		EventType:    e.EventType,
-		Data:         kittehs.TransformMapValues(data, sdktypes.ToProto),
 		Memo:         memo,
 		CreatedAt:    timestamppb.New(e.CreatedAt),
 		Seq:          e.Seq,
 	})
+}
+
+func ParseEventWithData(e EventWithData) (sdktypes.Event, error) {
+	var data map[string]sdktypes.Value
+	if err := unmarshalData(&data, e.Data, e.CompressedData); err != nil {
+		return sdktypes.InvalidEvent, fmt.Errorf("event data: %w", err)
+	}
+
+	ev, err := ParseEvent(e.Event)
+	if err != nil {
+		return sdktypes.InvalidEvent, err
+	}
+
+	return ev.WithData(data), nil
 }
 
 type EventRecord struct {
@@ -429,8 +444,6 @@ type Session struct {
 	EventID          *sdktypes.UUID `gorm:"index;type:uuid"`
 	CurrentStateType int            `gorm:"index"`
 	Entrypoint       string
-	Inputs           datatypes.JSON
-	CompressedInputs []byte
 
 	CreatedAt time.Time
 	UpdatedAt time.Time
@@ -443,34 +456,46 @@ type Session struct {
 	Event      *Event `gorm:"references:EventID"`
 }
 
+type SessionWithInputs struct {
+	Session
+
+	Inputs           datatypes.JSON
+	CompressedInputs []byte
+}
+
+func (s SessionWithInputs) TableName() string { return "sessions" }
+
 func ParseSession(s Session) (sdktypes.Session, error) {
 	ep, err := sdktypes.ParseCodeLocation(s.Entrypoint)
 	if err != nil {
 		return sdktypes.InvalidSession, fmt.Errorf("entrypoint: %w", err)
 	}
 
-	var inputs map[string]sdktypes.Value
-	if err := unmarshalData(&inputs, s.Inputs, s.CompressedInputs); err != nil {
-		return sdktypes.InvalidSession, fmt.Errorf("event data: %w", err)
-	}
-
-	session, err := sdktypes.StrictSessionFromProto(&sdktypes.SessionPB{
+	return sdktypes.StrictSessionFromProto(&sdktypes.SessionPB{
 		SessionId:    sdktypes.NewIDFromUUID[sdktypes.SessionID](&s.SessionID).String(),
 		BuildId:      sdktypes.NewIDFromUUID[sdktypes.BuildID](s.BuildID).String(),
 		EnvId:        sdktypes.NewIDFromUUID[sdktypes.EnvID](s.EnvID).String(),
 		DeploymentId: sdktypes.NewIDFromUUID[sdktypes.DeploymentID](s.DeploymentID).String(),
 		EventId:      sdktypes.NewIDFromUUID[sdktypes.EventID](s.EventID).String(),
 		Entrypoint:   ep.ToProto(),
-		Inputs:       kittehs.TransformMapValues(inputs, sdktypes.ToProto),
 		CreatedAt:    timestamppb.New(s.CreatedAt),
 		UpdatedAt:    timestamppb.New(s.UpdatedAt),
 		State:        sessionsv1.SessionStateType(s.CurrentStateType),
 	})
+}
+
+func ParseSessionWithInputs(s SessionWithInputs) (sdktypes.Session, error) {
+	session, err := ParseSession(s.Session)
 	if err != nil {
 		return sdktypes.InvalidSession, err
 	}
 
-	return session, err
+	var inputs map[string]sdktypes.Value
+	if err := unmarshalData(&inputs, s.Inputs, s.CompressedInputs); err != nil {
+		return sdktypes.InvalidSession, fmt.Errorf("inputs: %w", err)
+	}
+
+	return session.WithInptus(inputs), nil
 }
 
 type Deployment struct {

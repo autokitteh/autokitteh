@@ -13,7 +13,7 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-func (f *dbFixture) createSessionsAndAssert(t *testing.T, sessions ...scheme.Session) {
+func (f *dbFixture) createSessionsAndAssert(t *testing.T, sessions ...scheme.SessionWithInputs) {
 	for _, session := range sessions {
 		assert.NoError(t, f.gormdb.createSession(f.ctx, &session))
 		findAndAssertOne(t, f, session, "session_id = ?", session.SessionID)
@@ -129,7 +129,7 @@ func TestListSessions(t *testing.T) {
 	f.createSessionsAndAssert(t, s)
 
 	sessions := f.listSessionsAndAssert(t, 1)
-	assert.Equal(t, s, sessions[0])
+	assert.Equal(t, s.Session, sessions[0])
 
 	// deleteSession and ensure that listSessions is empty
 	assert.NoError(t, f.gormdb.deleteSession(f.ctx, s.SessionID))
@@ -143,7 +143,7 @@ func TestDeleteSession(t *testing.T) {
 	f.createSessionsAndAssert(t, s)
 
 	assert.NoError(t, f.gormdb.deleteSession(f.ctx, s.SessionID))
-	f.assertSessionsDeleted(t, s)
+	f.assertSessionsDeleted(t, s.Session)
 }
 
 /*

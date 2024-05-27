@@ -18,8 +18,8 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-func (db *gormdb) getSession(ctx context.Context, sessionID sdktypes.UUID) (*scheme.Session, error) {
-	return getOne[scheme.Session](db.db, ctx, "session_id = ?", sessionID)
+func (db *gormdb) getSession(ctx context.Context, sessionID sdktypes.UUID) (*scheme.SessionWithInputs, error) {
+	return getOne[scheme.SessionWithInputs](db.db, ctx, "session_id = ?", sessionID)
 }
 
 func (db *gormdb) GetSession(ctx context.Context, id sdktypes.SessionID) (sdktypes.Session, error) {
@@ -27,7 +27,7 @@ func (db *gormdb) GetSession(ctx context.Context, id sdktypes.SessionID) (sdktyp
 	if s == nil || err != nil {
 		return sdktypes.InvalidSession, translateError(err)
 	}
-	return scheme.ParseSession(*s)
+	return scheme.ParseSessionWithInputs(*s)
 }
 
 func (db *gormdb) deleteSession(ctx context.Context, sessionID sdktypes.UUID) error {
@@ -50,7 +50,7 @@ func (db *gormdb) GetSessionLog(ctx context.Context, sessionID sdktypes.SessionI
 	return sdktypes.NewSessionLog(prs), err
 }
 
-func (db *gormdb) createSession(ctx context.Context, session *scheme.Session) error {
+func (db *gormdb) createSession(ctx context.Context, session *scheme.SessionWithInputs) error {
 	return db.transaction(ctx, func(tx *tx) error {
 		if err := tx.db.Create(session).Error; err != nil {
 			return err
@@ -75,17 +75,19 @@ func (db *gormdb) CreateSession(ctx context.Context, session sdktypes.Session) e
 		return fmt.Errorf("compress inputs: %w", err)
 	}
 
-	s := scheme.Session{
-		SessionID:        session.ID().UUIDValue(),
-		BuildID:          scheme.UUIDOrNil(session.BuildID().UUIDValue()),
-		EnvID:            scheme.UUIDOrNil(session.EnvID().UUIDValue()),
-		DeploymentID:     scheme.UUIDOrNil(session.DeploymentID().UUIDValue()),
-		EventID:          scheme.UUIDOrNil(session.EventID().UUIDValue()),
-		Entrypoint:       session.EntryPoint().CanonicalString(),
-		CurrentStateType: int(sdktypes.SessionStateTypeCreated.ToProto()),
+	s := scheme.SessionWithInputs{
+		Session: scheme.Session{
+			SessionID:        session.ID().UUIDValue(),
+			BuildID:          scheme.UUIDOrNil(session.BuildID().UUIDValue()),
+			EnvID:            scheme.UUIDOrNil(session.EnvID().UUIDValue()),
+			DeploymentID:     scheme.UUIDOrNil(session.DeploymentID().UUIDValue()),
+			EventID:          scheme.UUIDOrNil(session.EventID().UUIDValue()),
+			Entrypoint:       session.EntryPoint().CanonicalString(),
+			CurrentStateType: int(sdktypes.SessionStateTypeCreated.ToProto()),
+			CreatedAt:        now,
+			UpdatedAt:        now,
+		},
 		CompressedInputs: cinputs,
-		CreatedAt:        now,
-		UpdatedAt:        now,
 	}
 	return translateError(db.createSession(ctx, &s))
 }
