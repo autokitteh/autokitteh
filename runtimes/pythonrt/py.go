@@ -63,7 +63,27 @@ func parsePyVersion(s string) (major, minor int, err error) {
 	return
 }
 
+func isFile(path string) bool {
+	info, err := os.Stat(path)
+	if err != nil {
+		return false
+	}
+
+	return !info.IsDir()
+}
+
+const exeEnvKey = "AK_PYTHON"
+
 func findPython() (string, error) {
+	exePath := os.Getenv(exeEnvKey)
+	if exePath != "" {
+		if !isFile(exePath) {
+			return "", fmt.Errorf("%q (AK_PYTHON) is not a file", exePath)
+		}
+
+		return exePath, nil
+	}
+
 	names := []string{"python3", "python"}
 	for _, name := range names {
 		exePath, err := exec.LookPath(name)

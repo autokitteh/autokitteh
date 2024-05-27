@@ -31,7 +31,7 @@ func validateTar(t *testing.T, tarData []byte, fsys fs.FS) {
 		}
 
 		require.NoError(t, err, "iterate tar")
-		require.Truef(t, isFile(fsys, hdr.Name), "%q - not on fs", hdr.Name)
+		require.Truef(t, isFSFile(fsys, hdr.Name), "%q - not on fs", hdr.Name)
 		inTar[hdr.Name] = true
 	}
 
@@ -42,7 +42,7 @@ func validateTar(t *testing.T, tarData []byte, fsys fs.FS) {
 	}
 }
 
-func isFile(fsys fs.FS, path string) bool {
+func isFSFile(fsys fs.FS, path string) bool {
 	info, err := fs.Stat(fsys, path)
 	if err != nil {
 		return false

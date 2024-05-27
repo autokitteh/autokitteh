@@ -137,6 +137,18 @@ func Test_findPython(t *testing.T) {
 	out, err = findPython()
 	require.NoError(t, err)
 	require.Equal(t, link, out)
+
+	// Environment
+	envDir := t.TempDir()
+	envExe := path.Join(envDir, "pypy3")
+	t.Setenv(exeEnvKey, envExe)
+	_, err = findPython()
+	require.Error(t, err)
+
+	genExe(t, envExe)
+	out, err = findPython()
+	require.NoError(t, err)
+	require.Equal(t, envExe, out)
 }
 
 var pyVersionCases = []struct {
