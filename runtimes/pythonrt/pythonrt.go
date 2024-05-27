@@ -62,20 +62,7 @@ func New() (sdkservices.Runtime, error) {
 		return nil, err
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
-	info, err := pyExeInfo(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("python info: %w", err)
-	}
-
-	log.Info("system python info", zap.String("exe", info.Exe), zap.Any("version", info.Version))
-	if !isGoodVersion(info.Version) {
-		const format = "python >= %d.%d required, found %q"
-		return nil, fmt.Errorf(format, minPyVersion.Major, minPyVersion.Minor, info.VersionString)
-	}
-
-	if err := ensureVEnv(log, info.Exe); err != nil {
+	if err := ensureVEnv(log); err != nil {
 		return nil, fmt.Errorf("create venv: %w", err)
 	}
 
@@ -97,13 +84,26 @@ func dirExists(path string) bool {
 	return info.IsDir()
 }
 
-func ensureVEnv(log *zap.Logger, pyExe string) error {
+func ensureVEnv(log *zap.Logger) error {
 	if dirExists(venvPath) {
 		return nil
 	}
 
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	info, err := pyExeInfo(ctx)
+	if err != nil {
+		return fmt.Errorf("python info: %w", err)
+	}
+
+	log.Info("system python info", zap.String("exe", info.Exe), zap.Any("version", info.Version))
+	if !isGoodVersion(info.Version) {
+		const format = "python >= %d.%d required, found %q"
+		return fmt.Errorf(format, minPyVersion.Major, minPyVersion.Minor, info.VersionString)
+	}
+
 	log.Info("creating venv", zap.String("path", venvPath))
-	return createVEnv(pyExe, venvPath)
+	return createVEnv(info.Exe, venvPath)
 }
 
 func (*pySvc) Get() sdktypes.Runtime { return Runtime.Desc }

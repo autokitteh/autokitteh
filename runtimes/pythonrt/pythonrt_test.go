@@ -195,6 +195,15 @@ func TestNewBadVersion(t *testing.T) {
 	require.NoError(t, err)
 	t.Setenv("PATH", dirName)
 
+	// ensureVenv checks venv, change location to non-existing path
+	oldVenv := venvPath
+	venvPath = t.TempDir()
+	defer func() {
+		venvPath = oldVenv
+	}()
+	err = os.RemoveAll(venvPath)
+	require.NoError(t, err)
+
 	_, err = New()
 	require.Error(t, err)
 }
