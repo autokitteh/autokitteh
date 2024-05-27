@@ -67,25 +67,6 @@ func unmarshalData(dst any, j datatypes.JSON, c []byte) error {
 	return json.Unmarshal(j, dst)
 }
 
-func CompressJSON(data any) (datatypes.JSON, error) {
-	j, err := json.Marshal(data)
-	if err != nil {
-		return nil, fmt.Errorf("json: %w", err)
-	}
-
-	var b bytes.Buffer
-	w := gzip.NewWriter(&b)
-	if _, err = w.Write(j); err != nil {
-		return nil, fmt.Errorf("compress: %w", err)
-	}
-
-	if err = w.Close(); err != nil {
-		return nil, fmt.Errorf("compress: %w", err)
-	}
-
-	return datatypes.JSON(b.Bytes()), nil
-}
-
 type Build struct {
 	BuildID   sdktypes.UUID `gorm:"primaryKey;type:uuid;not null"`
 	Data      []byte

@@ -22,7 +22,7 @@ func (db *gormdb) SaveEvent(ctx context.Context, event sdktypes.Event) error {
 
 	cid := event.ConnectionID() // could be invalid/zero
 
-	cdata, err := scheme.CompressJSON(event.Data())
+	data, cdata, err := db.compressJSON(event.Data())
 	if err != nil {
 		return err
 	}
@@ -31,6 +31,7 @@ func (db *gormdb) SaveEvent(ctx context.Context, event sdktypes.Event) error {
 		EventID:        event.ID().UUIDValue(),
 		ConnectionID:   scheme.UUIDOrNil(cid.UUIDValue()),
 		EventType:      event.Type(),
+		Data:           data,
 		CompressedData: cdata,
 		Memo:           kittehs.Must1(json.Marshal(event.Memo())),
 		CreatedAt:      event.CreatedAt(),

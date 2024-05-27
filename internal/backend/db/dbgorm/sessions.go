@@ -70,7 +70,7 @@ func (db *gormdb) CreateSession(ctx context.Context, session sdktypes.Session) e
 
 	now := time.Now()
 
-	cinputs, err := scheme.CompressJSON(session.Inputs())
+	inputs, cinputs, err := db.compressJSON(session.Inputs())
 	if err != nil {
 		return fmt.Errorf("compress inputs: %w", err)
 	}
@@ -83,6 +83,7 @@ func (db *gormdb) CreateSession(ctx context.Context, session sdktypes.Session) e
 		EventID:          scheme.UUIDOrNil(session.EventID().UUIDValue()),
 		Entrypoint:       session.EntryPoint().CanonicalString(),
 		CurrentStateType: int(sdktypes.SessionStateTypeCreated.ToProto()),
+		Inputs:           inputs,
 		CompressedInputs: cinputs,
 		CreatedAt:        now,
 		UpdatedAt:        now,
@@ -205,7 +206,7 @@ func (db *gormdb) ListSessions(ctx context.Context, f sdkservices.ListSessionsFi
 }
 
 func (db *gormdb) CreateSessionCall(ctx context.Context, sessionID sdktypes.SessionID, spec sdktypes.SessionCallSpec) error {
-	cdata, err := scheme.CompressJSON(spec)
+	data, cdata, err := db.compressJSON(spec)
 	if err != nil {
 		return fmt.Errorf("marshal session call: %w", err)
 	}
@@ -214,6 +215,7 @@ func (db *gormdb) CreateSessionCall(ctx context.Context, sessionID sdktypes.Sess
 		r := scheme.SessionCallSpec{
 			SessionID:      sessionID.UUIDValue(),
 			Seq:            spec.Seq(),
+			Data:           data,
 			CompressedData: cdata,
 		}
 
@@ -280,12 +282,13 @@ func (db *gormdb) StartSessionCallAttempt(ctx context.Context, sessionID sdktype
 
 func (db *gormdb) CompleteSessionCallAttempt(ctx context.Context, sessionID sdktypes.SessionID, seq, attempt uint32, complete sdktypes.SessionCallAttemptComplete) error {
 	return translateError(db.transaction(ctx, func(tx *tx) error {
-		cdata, err := scheme.CompressJSON(complete)
+		data, cdata, err := db.compressJSON(complete)
 		if err != nil {
 			return fmt.Errorf("marshal session call attempt complete: %w", err)
 		}
 
 		r := scheme.SessionCallAttempt{
+			Complete:           data,
 			CompressedComplete: cdata,
 		}
 

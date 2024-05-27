@@ -1,14 +1,19 @@
 package dbgorm
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 	"sync"
 
 	"github.com/pressly/goose/v3"
 	"go.uber.org/zap"
+	"gorm.io/datatypes"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 
@@ -25,9 +30,10 @@ import (
 type Config = gormkitteh.Config
 
 type gormdb struct {
-	z   *zap.Logger
-	db  *gorm.DB
-	cfg *Config
+	z                    *zap.Logger
+	db                   *gorm.DB
+	cfg                  *Config
+	compressionThreshold int
 
 	// See https://github.com/mattn/go-sqlite3/issues/274.
 	// Used only for protecting writes when using sqlite.
@@ -49,6 +55,17 @@ func New(z *zap.Logger, cfg *Config) (db.DB, error) {
 
 	if cfg.Type == "sqlite" {
 		db.mu = new(sync.Mutex)
+	}
+
+	opts := cfg.ParseOptions()
+	db.compressionThreshold = 4096
+	if v, found := opts["compression_threshold"]; found {
+		thres, err := strconv.ParseInt(v, 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("compression threshold: %w", err)
+		}
+
+		db.compressionThreshold = int(thres)
 	}
 
 	return db, nil
@@ -242,4 +259,27 @@ func delete[T any](db *gorm.DB, ctx context.Context, where string, args ...any) 
 
 func (db *gormdb) client() *sql.DB {
 	return kittehs.Must1(db.db.DB())
+}
+
+func (db *gormdb) compressJSON(data any) (datatypes.JSON, []byte, error) {
+	j, err := json.Marshal(data)
+	if err != nil {
+		return nil, nil, fmt.Errorf("json: %w", err)
+	}
+
+	if len(j) < db.compressionThreshold {
+		return datatypes.JSON(j), nil, nil
+	}
+
+	var b bytes.Buffer
+	w := gzip.NewWriter(&b)
+	if _, err = w.Write(j); err != nil {
+		return nil, nil, fmt.Errorf("compress: %w", err)
+	}
+
+	if err = w.Close(); err != nil {
+		return nil, nil, fmt.Errorf("compress: %w", err)
+	}
+
+	return nil, b.Bytes(), nil
 }

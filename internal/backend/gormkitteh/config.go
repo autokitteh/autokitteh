@@ -5,6 +5,8 @@ import (
 	"errors"
 	"strings"
 	"time"
+
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
 )
 
 const RequireExplicitDSNType = "require"
@@ -25,6 +27,18 @@ type Config struct {
 	// If false, the server will fail to start if a migration is required,
 	// and the user has to run 'ak server migrate' explicitly.
 	AutoMigrate bool `koanf:"auto_migrate"`
+
+	Options string `koanf:"options"`
+}
+
+func (c Config) ParseOptions() map[string]string {
+	opts := make(map[string]string)
+	parts := kittehs.Transform(strings.Split(c.Options, ","), strings.TrimSpace)
+	for _, part := range parts {
+		k, v, _ := strings.Cut(part, "=")
+		opts[k] = v
+	}
+	return opts
 }
 
 func (c Config) Explicit() (*Config, error) {
