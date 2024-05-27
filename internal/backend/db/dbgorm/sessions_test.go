@@ -129,6 +129,8 @@ func TestListSessions(t *testing.T) {
 	f.createSessionsAndAssert(t, s)
 
 	sessions := f.listSessionsAndAssert(t, 1)
+	s.Inputs = nil
+	s.CompressedInputs = nil
 	assert.Equal(t, s, sessions[0])
 
 	// deleteSession and ensure that listSessions is empty

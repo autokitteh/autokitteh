@@ -36,6 +36,18 @@ func ContainedIn[T comparable](xs ...T) func(T) bool {
 	}
 }
 
+func NotContainedIn[T comparable](xs ...T) func(T) bool {
+	return func(t T) bool {
+		for _, x := range xs {
+			if x == t {
+				return false
+			}
+		}
+
+		return true
+	}
+}
+
 func FirstError(errs []error) error {
 	for _, err := range errs {
 		if err != nil {

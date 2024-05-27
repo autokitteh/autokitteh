@@ -6,11 +6,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"sync"
 	"time"
 
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
+	"gorm.io/gorm/schema"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	commonv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/common/v1"
@@ -52,8 +54,27 @@ var Tables = []any{
 	&Trigger{},
 }
 
+var (
+	SessionColNames              = tableColNames[Session]()
+	SessionColNamesWithoutInputs = kittehs.Filter(SessionColNames, kittehs.NotContainedIn("inputs", "compressed_inputs"))
+	EventColNames                = tableColNames[Event]()
+	EventColNamesWithoutData     = kittehs.Filter(EventColNames, kittehs.NotContainedIn("data", "compressed_data"))
+)
+
+func tableColNames[T any]() []string {
+	var t T
+	sch := kittehs.Must1(schema.Parse(&t, &sync.Map{}, schema.NamingStrategy{}))
+	return kittehs.Filter(kittehs.Transform(sch.Fields, func(f *schema.Field) string { return f.DBName }), func(s string) bool {
+		return s != ""
+	})
+}
+
 func unmarshalData(dst any, j datatypes.JSON, c []byte) error {
 	if len(j) == 0 {
+		if len(c) == 0 {
+			return nil
+		}
+
 		r, err := gzip.NewReader(bytes.NewReader(c))
 		if err != nil {
 			return fmt.Errorf("compressed data: %w", err)
