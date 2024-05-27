@@ -92,7 +92,7 @@ func (db *gormdb) ListEvents(ctx context.Context, filter sdkservices.ListEventsF
 	}
 
 	var es []scheme.Event
-	if err := q.Select(scheme.EventColNamesWithoutData).Find(&es).Error; err != nil {
+	if err := q.Omit("data", "compressed_data").Find(&es).Error; err != nil {
 		return nil, translateError(err)
 	}
 
