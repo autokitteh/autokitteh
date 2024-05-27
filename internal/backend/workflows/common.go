@@ -136,7 +136,6 @@ func (wf *Workflow) StartSessions(ctx workflow.Context, event sdktypes.Event, se
 func (wf *Workflow) CreateEventRecord(ctx context.Context, eventID sdktypes.EventID, state sdktypes.EventState) {
 	record := sdktypes.NewEventRecord(eventID, state)
 	if err := wf.Services.Events.AddEventRecord(ctx, record); err != nil {
-		// TODO: log parent eventID / memo? pass logger?
 		wf.Z.Panic("Failed setting event state", zap.String("eventID", eventID.String()), zap.String("state", state.String()), zap.Error(err))
 	}
 }
