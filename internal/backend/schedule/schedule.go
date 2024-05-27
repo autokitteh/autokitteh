@@ -9,7 +9,6 @@ import (
 
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	wf "go.autokitteh.dev/autokitteh/internal/backend/workflows"
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -31,35 +30,32 @@ func New(z *zap.Logger, events sdkservices.Events, tc temporalclient.Client) sdk
 	return &temporalSchedule{z: z, events: events, tmprl: tc}
 }
 
-func (tsc *temporalSchedule) newScheduleEvent(ctx context.Context) (sdktypes.EventID, error) {
-	event := kittehs.Must1(sdktypes.EventFromProto(&sdktypes.EventPB{EventType: sdktypes.SchedulerEventTriggerType}))
-	return tsc.events.Save(ctx, event)
+func (tsc *temporalSchedule) CreateEventRecord(ctx context.Context, eventID sdktypes.EventID, state sdktypes.EventState) {
+	record := sdktypes.NewEventRecord(eventID, state)
+	if err := tsc.events.AddEventRecord(ctx, record); err != nil {
+		tsc.z.Panic("Failed setting event state", zap.String("eventID", eventID.String()), zap.String("state", state.String()), zap.Error(err))
+	}
 }
 
 func (tsc *temporalSchedule) Create(ctx context.Context, scheduleID string, schedule string, triggerID sdktypes.TriggerID) error {
-	eventID, err := tsc.newScheduleEvent(ctx)
-	if err != nil {
-		return fmt.Errorf("shdedule: create event: %w", err)
-	}
-
-	z := tsc.z.With(zap.String("event_id", eventID.String())).With(zap.String("schedule_id", scheduleID))
+	z := tsc.z.With(zap.String("trigger_id", triggerID.String())).With(zap.String("schedule_id", scheduleID))
 	z.Debug("create schedule event", zap.String("schedule", schedule))
 
-	_, err = tsc.tmprl.Temporal().ScheduleClient().Create(ctx,
+	_, err := tsc.tmprl.Temporal().ScheduleClient().Create(ctx,
 		client.ScheduleOptions{
 			ID: scheduleID,
 			Spec: client.ScheduleSpec{
 				CronExpressions: []string{schedule},
 			},
 			Action: &client.ScheduleWorkflowAction{
-				ID:        eventID.String(), // workflowID
+				ID:        triggerID.String(), // workflowID
 				Workflow:  wf.SchedulerWorkflow,
 				TaskQueue: wf.ScheduleTaskQueueName,
-				Args:      []interface{}{scheduleWorkflowInput{EventID: eventID, TriggerID: triggerID}},
+				Args:      []interface{}{triggerID},
 			},
 		})
 	if err != nil {
-		z.Error("Failed creating schedule workflow, orphaned event", zap.Error(err))
+		z.Error("Failed creating schedule workflow", zap.Error(err))
 		return fmt.Errorf("schedule: create schedule workflow: %w", err)
 	}
 	z.Info("created schedule workflow")

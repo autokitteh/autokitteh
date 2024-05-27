@@ -6,13 +6,13 @@ ak trigger list
 return code == 0
 output regex 'trigger_id:"trg_0+3" +name:"cron".*event_type:"scheduler".*data:{key:"schedule" +value:{string:{v:"\*/1 \* \* \* \* \* \*"}}} +data:{key:"schedule_id" +value:{string:{v:"cron_trg_0+3"}}}'
 
-wait 5s for session ses_00000000000000000000000008
-ak session log ses_00000000000000000000000008 --no-timestamps --prints-only
+wait 5s for session ses_00000000000000000000000007
+ak session log ses_00000000000000000000000007 --no-timestamps --prints-only
 return code == 0
 output equals 'cron'
 
-wait 5s for session ses_0000000000000000000000000b
-ak session log ses_0000000000000000000000000b --no-timestamps --prints-only
+wait 5s for session ses_0000000000000000000000000a
+ak session log ses_0000000000000000000000000a --no-timestamps --prints-only
 return code == 0
 output equals 'cron'
 
@@ -29,7 +29,7 @@ output equals ''
 wait 3s unless session ses_0000000000000000000000000d
 ak session list
 return code == 0
-output regex '(?m)^session_id:"ses_0+b.*\n^session_id:"ses_0+8.*$'
+output regex '(?m)^session_id:"ses_0+a.*\n^session_id:"ses_0+7.*$'
 
 
 -- schedule.yaml --
