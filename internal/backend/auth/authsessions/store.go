@@ -45,7 +45,7 @@ func New(cfg *Config) (Store, error) {
 	}
 
 	return &store{
-		store: sessions.NewCookieStore[[]byte](cfg.cookieConfig(), keyPairs...),
+		store: sessions.NewCookieStore[[]byte](cfg.Cookie, keyPairs...),
 	}, nil
 }
 
