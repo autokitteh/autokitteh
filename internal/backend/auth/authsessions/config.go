@@ -13,15 +13,13 @@ type Config struct {
 	CookieKeys string `koanf:"cookie_keys"` // pairs of hash and block keys.
 }
 
-var productionCookie = func() *sessions.CookieConfig {
-	c := sessions.DefaultCookieConfig
-	c.SameSite = http.SameSiteNoneMode
-	return c
-}()
-
 var Configs = configset.Set[Config]{
 	Default: &Config{
-		Cookie: productionCookie,
+		Cookie: func() *sessions.CookieConfig {
+			c := sessions.DefaultCookieConfig
+			c.SameSite = http.SameSiteNoneMode
+			return c
+		}(),
 	},
 	Dev: &Config{
 		Cookie:     sessions.DebugCookieConfig,
