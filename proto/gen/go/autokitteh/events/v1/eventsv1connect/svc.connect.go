@@ -51,6 +51,7 @@ const (
 type EventsServiceClient interface {
 	Save(context.Context, *connect.Request[v1.SaveRequest]) (*connect.Response[v1.SaveResponse], error)
 	Get(context.Context, *connect.Request[v1.GetRequest]) (*connect.Response[v1.GetResponse], error)
+	// List returns events without their data.
 	List(context.Context, *connect.Request[v1.ListRequest]) (*connect.Response[v1.ListResponse], error)
 	ListEventRecords(context.Context, *connect.Request[v1.ListEventRecordsRequest]) (*connect.Response[v1.ListEventRecordsResponse], error)
 	AddEventRecord(context.Context, *connect.Request[v1.AddEventRecordRequest]) (*connect.Response[v1.AddEventRecordResponse], error)
@@ -132,6 +133,7 @@ func (c *eventsServiceClient) AddEventRecord(ctx context.Context, req *connect.R
 type EventsServiceHandler interface {
 	Save(context.Context, *connect.Request[v1.SaveRequest]) (*connect.Response[v1.SaveResponse], error)
 	Get(context.Context, *connect.Request[v1.GetRequest]) (*connect.Response[v1.GetResponse], error)
+	// List returns events without their data.
 	List(context.Context, *connect.Request[v1.ListRequest]) (*connect.Response[v1.ListResponse], error)
 	ListEventRecords(context.Context, *connect.Request[v1.ListEventRecordsRequest]) (*connect.Response[v1.ListEventRecordsResponse], error)
 	AddEventRecord(context.Context, *connect.Request[v1.AddEventRecordRequest]) (*connect.Response[v1.AddEventRecordResponse], error)
