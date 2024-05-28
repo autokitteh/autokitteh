@@ -32,7 +32,9 @@ var setCmd = common.StandardCommand(&cobra.Command{
 		}
 
 		var value string
-		if len(args) == 1 {
+		if len(args) == 2 {
+			value = args[1]
+		} else {
 			const maxVarSize = 1 << 20 // 1MB
 			r := io.LimitReader(os.Stdin, maxVarSize)
 			data, err := io.ReadAll(r)
@@ -40,8 +42,6 @@ var setCmd = common.StandardCommand(&cobra.Command{
 				return err
 			}
 			value = string(data)
-		} else {
-			value = args[1]
 		}
 
 		ev := sdktypes.NewVar(n, value, secret).WithScopeID(id)
