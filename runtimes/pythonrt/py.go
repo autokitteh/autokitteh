@@ -73,7 +73,7 @@ func findPython() (string, error) {
 		}
 	}
 
-	return "", fmt.Errorf("non of %v found in PATH", names)
+	return "", fmt.Errorf("none of %v found in PATH", names)
 }
 
 func pyExeInfo(ctx context.Context, exePath string) (exeInfo, error) {
