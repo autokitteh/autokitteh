@@ -76,6 +76,8 @@ type Connection struct {
 	StatusCode    int32 `gorm:"index"`
 	StatusMessage string
 
+	DeletedAt gorm.DeletedAt `gorm:"index"`
+
 	// enforce foreign keys
 	// Integration *Integration FIXME: ENG-590
 	Project *Project
