@@ -175,35 +175,31 @@ func Test_isGoodVersion(t *testing.T) {
 	}
 }
 
-const exeCodeTemplate = `#!/bin/bash
-
-echo Python %d.%d.7
-`
-
 func TestNewBadVersion(t *testing.T) {
 	dirName := t.TempDir()
 	exe := path.Join(dirName, "python")
-	file, err := os.Create(exe)
-	require.NoError(t, err)
 
-	exeCode := fmt.Sprintf(exeCodeTemplate, minPyVersion.Major, minPyVersion.Minor-1)
-	_, err = file.Write([]byte(exeCode))
-	require.NoError(t, err)
-	file.Close()
+	genExe(t, exe, minPyVersion.Major, minPyVersion.Minor-1)
+	t.Setenv(exeEnvKey, exe)
 
-	err = os.Chmod(exe, 0755)
-	require.NoError(t, err)
-	t.Setenv("PATH", dirName)
-
-	// ensureVenv checks venv, change location to non-existing path
-	oldVenv := venvPath
-	venvPath = t.TempDir()
-	defer func() {
-		venvPath = oldVenv
-	}()
-	err = os.RemoveAll(venvPath)
-	require.NoError(t, err)
-
-	_, err = New()
+	_, err := New()
 	require.Error(t, err)
+}
+
+func TestPythonFromEnv(t *testing.T) {
+	envDir := t.TempDir()
+	pyExe := path.Join(envDir, "pypy3")
+	t.Setenv(exeEnvKey, pyExe)
+
+	_, err := New()
+	require.Error(t, err)
+
+	genExe(t, pyExe, minPyVersion.Major, minPyVersion.Minor)
+	r, err := New()
+	require.NoError(t, err)
+
+	py, ok := r.(*pySvc)
+	require.True(t, ok)
+	require.Equal(t, pyExe, py.pyExe)
+
 }

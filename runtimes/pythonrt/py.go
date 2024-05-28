@@ -63,27 +63,8 @@ func parsePyVersion(s string) (major, minor int, err error) {
 	return
 }
 
-func isFile(path string) bool {
-	info, err := os.Stat(path)
-	if err != nil {
-		return false
-	}
-
-	return !info.IsDir()
-}
-
-const exeEnvKey = "AK_PYTHON"
-
+// findPython finds `python3` or `python` in PATH.
 func findPython() (string, error) {
-	exePath := os.Getenv(exeEnvKey)
-	if exePath != "" {
-		if !isFile(exePath) {
-			return "", fmt.Errorf("%q (%s) is not a file", exePath, exeEnvKey)
-		}
-
-		return exePath, nil
-	}
-
 	names := []string{"python3", "python"}
 	for _, name := range names {
 		exePath, err := exec.LookPath(name)
@@ -95,12 +76,7 @@ func findPython() (string, error) {
 	return "", fmt.Errorf("non of %v found in PATH", names)
 }
 
-func pyExeInfo(ctx context.Context) (exeInfo, error) {
-	exePath, err := findPython()
-	if err != nil {
-		return exeInfo{}, err
-	}
-
+func pyExeInfo(ctx context.Context, exePath string) (exeInfo, error) {
 	cmd := exec.CommandContext(ctx, exePath, "--version")
 	var buf bytes.Buffer
 	cmd.Stdout = &buf

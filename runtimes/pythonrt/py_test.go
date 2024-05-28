@@ -2,7 +2,6 @@ package pythonrt
 
 import (
 	"bytes"
-	"context"
 	_ "embed"
 	"errors"
 	"fmt"
@@ -17,7 +16,15 @@ import (
 )
 
 func skipIfNoPython(t *testing.T) {
-	_, err := pyExeInfo(context.Background())
+	pyExe, err := findPython()
+	if err != nil {
+		t.Skip("no python installed")
+	}
+
+	ctx, cancel := testCtx(t)
+	defer cancel()
+
+	_, err = pyExeInfo(ctx, pyExe)
 	if errors.Is(err, exec.ErrNotFound) {
 		t.Skip("no python installed")
 	}
@@ -34,7 +41,13 @@ func Test_createVEnv(t *testing.T) {
 		t.Skip("short mode")
 	}
 
-	info, err := pyExeInfo(context.Background())
+	pyExe, err := findPython()
+	require.NoError(t, err)
+
+	ctx, cancel := testCtx(t)
+	defer cancel()
+
+	info, err := pyExeInfo(ctx, pyExe)
 	require.NoError(t, err)
 
 	venvPath := path.Join(t.TempDir(), "venv")
@@ -91,13 +104,20 @@ func processEnv(t *testing.T, pid int) map[string]string {
 	return env
 }
 
-func genExe(t *testing.T, name string) {
-	file, err := os.Create(name)
+const exeCodeTemplate = `#!/bin/bash
+
+echo Python %d.%d.7
+`
+
+func genExe(t *testing.T, path string, major, minor int) {
+	file, err := os.Create(path)
 	require.NoError(t, err)
-	file.Close()
+	defer file.Close()
+
+	fmt.Fprintf(file, exeCodeTemplate, major, minor)
 
 	// We must set executable bit on the file otherwise exec.LookPath will ignore it.
-	err = os.Chmod(name, 0o766)
+	err = os.Chmod(path, 0o766)
 	require.NoError(t, err)
 }
 
@@ -111,14 +131,14 @@ func Test_findPython(t *testing.T) {
 
 	// python
 	pyExe := path.Join(dirName, "python")
-	genExe(t, pyExe)
+	genExe(t, pyExe, minPyVersion.Major, minPyVersion.Minor)
 	out, err := findPython()
 	require.NoError(t, err)
 	require.Equal(t, pyExe, out)
 
 	// python & python3, should be python3
 	py3Exe := path.Join(dirName, "python3")
-	genExe(t, py3Exe)
+	genExe(t, py3Exe, minPyVersion.Major, minPyVersion.Minor)
 	out, err = findPython()
 	require.NoError(t, err)
 	require.Equal(t, py3Exe, out)
@@ -130,25 +150,13 @@ func Test_findPython(t *testing.T) {
 	}
 
 	exe := path.Join(dirName, "python3.12")
-	genExe(t, exe)
+	genExe(t, exe, minPyVersion.Major, minPyVersion.Minor)
 	link := path.Join(dirName, "python3")
 	err = os.Symlink(exe, link)
 	require.NoError(t, err)
 	out, err = findPython()
 	require.NoError(t, err)
 	require.Equal(t, link, out)
-
-	// Environment
-	envDir := t.TempDir()
-	envExe := path.Join(envDir, "pypy3")
-	t.Setenv(exeEnvKey, envExe)
-	_, err = findPython()
-	require.Error(t, err)
-
-	genExe(t, envExe)
-	out, err = findPython()
-	require.NoError(t, err)
-	require.Equal(t, envExe, out)
 }
 
 var pyVersionCases = []struct {

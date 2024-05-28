@@ -40,6 +40,7 @@ type pySvc struct {
 	stdout    *streamLogger
 	stderr    *streamLogger
 	syscallFn sdktypes.Value
+	pyExe     string
 }
 
 var minPyVersion = Version{
@@ -55,21 +56,52 @@ func isGoodVersion(v Version) bool {
 	return v.Minor >= minPyVersion.Minor
 }
 
+const exeEnvKey = "AK_WORKER_PYTHON"
+
 func New() (sdkservices.Runtime, error) {
-	// Use sdklogger
 	log, err := logger.New(logger.Configs.Dev) // TODO (ENG-553): From configuration
 	if err != nil {
 		return nil, err
 	}
 
-	if err := ensureVEnv(log); err != nil {
-		return nil, fmt.Errorf("create venv: %w", err)
-	}
-
-	log.Info("venv python", zap.String("exe", venvPy))
-
 	svc := pySvc{
 		log: log,
+	}
+
+	userPython := true
+	pyExe := os.Getenv(exeEnvKey)
+	if pyExe == "" {
+		pyExe, err = findPython()
+		if err != nil {
+			return nil, err
+		}
+		userPython = false
+	}
+
+	const timeout = 3 * time.Second
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	info, err := pyExeInfo(ctx, pyExe)
+	if err != nil {
+		return nil, err
+	}
+
+	log.Info("python info", zap.String("exe", info.Exe), zap.Any("version", info.Version))
+	if !isGoodVersion(info.Version) {
+		const format = "python >= %d.%d required, found %q"
+		return nil, fmt.Errorf(format, minPyVersion.Major, minPyVersion.Minor, info.VersionString)
+	}
+
+	// If user supplies which Python to use, we use it "as-is" without creating venv
+	if !userPython {
+		if err := ensureVEnv(log, pyExe); err != nil {
+			return nil, fmt.Errorf("create venv: %w", err)
+		}
+		log.Info("venv python", zap.String("exe", venvPy))
+		svc.pyExe = venvPy
+	} else {
+		svc.pyExe = pyExe
 	}
 
 	return &svc, nil
@@ -84,26 +116,13 @@ func dirExists(path string) bool {
 	return info.IsDir()
 }
 
-func ensureVEnv(log *zap.Logger) error {
+func ensureVEnv(log *zap.Logger, pyExe string) error {
 	if dirExists(venvPath) {
 		return nil
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
-	info, err := pyExeInfo(ctx)
-	if err != nil {
-		return fmt.Errorf("python info: %w", err)
-	}
-
-	log.Info("system python info", zap.String("exe", info.Exe), zap.Any("version", info.Version))
-	if !isGoodVersion(info.Version) {
-		const format = "python >= %d.%d required, found %q"
-		return fmt.Errorf(format, minPyVersion.Major, minPyVersion.Minor, info.VersionString)
-	}
-
 	log.Info("creating venv", zap.String("path", venvPath))
-	return createVEnv(info.Exe, venvPath)
+	return createVEnv(pyExe, venvPath)
 }
 
 func (*pySvc) Get() sdktypes.Runtime { return Runtime.Desc }
@@ -245,7 +264,7 @@ func (py *pySvc) Run(
 	py.stderr = newStreamLogger("[stderr] ", cbs.Print, runID)
 	opts := runOptions{
 		log:      py.log,
-		pyExe:    venvPy,
+		pyExe:    py.pyExe,
 		tarData:  tarData,
 		rootPath: mainPath,
 		env:      envMap,
