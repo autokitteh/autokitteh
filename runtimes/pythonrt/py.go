@@ -78,7 +78,7 @@ func findPython() (string, error) {
 	exePath := os.Getenv(exeEnvKey)
 	if exePath != "" {
 		if !isFile(exePath) {
-			return "", fmt.Errorf("%q (AK_PYTHON) is not a file", exePath)
+			return "", fmt.Errorf("%q (%s) is not a file", exePath, exeEnvKey)
 		}
 
 		return exePath, nil
