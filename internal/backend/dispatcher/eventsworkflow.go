@@ -181,7 +181,7 @@ func (d *dispatcher) signalWorkflows(ctx context.Context, event sdktypes.Event) 
 		return nil
 	}
 
-	signals, err := d.db.ListSignalsWaitingOnConnection(ctx, conn.ID(), event.Type())
+	signals, err := d.db.ListSignalsWaitingOnConnection(ctx, conn.ID())
 	if err != nil {
 		z.Error("could not fetch signals", zap.Error(err))
 		return err
@@ -189,19 +189,39 @@ func (d *dispatcher) signalWorkflows(ctx context.Context, event sdktypes.Event) 
 
 	z.Debug("found signal candidates", zap.Int("count", len(signals)))
 	for _, signal := range signals {
+		match, err := event.Matches(signal.Filter)
+		l := z.With(zap.String("signal_id", signal.SignalID),
+			zap.String("filter", signal.Filter),
+			zap.String("event_id", event.ID().String()))
+
+		if err != nil {
+			l.Error("inavlid signal filter", zap.Error(err))
+
+			if err := d.db.RemoveSignal(ctx, signal.SignalID); err != nil {
+				l.Error("failed removing signal with invalid filter", zap.Error(err))
+				continue
+			}
+			l.Debug("signal removed")
+			continue
+		}
+
+		if !match {
+			l.Debug("signal filter not matching event, skipping")
+			continue
+		}
 
 		if err := d.temporal.Temporal().SignalWorkflow(ctx, signal.WorkflowID, "", signal.SignalID, eid); err != nil {
 			var nferr *serviceerror.NotFound
 			if !errors.As(err, &nferr) {
-				z.Error("could not signal workflow", zap.Error(err))
+				l.Error("could not signal workflow", zap.Error(err))
 				return err
 			}
-			z.Debug("workflow not found, removing signal", zap.String("signal_id", signal.SignalID))
+			l.Debug("workflow not found, removing signal")
 			if err := d.db.RemoveSignal(ctx, signal.SignalID); err != nil {
 				return err
 			}
 		}
-		z.Debug("signaled workflow", zap.String("workflow_id", signal.WorkflowID))
+		l.Debug("signaled workflow", zap.String("workflow_id", signal.WorkflowID))
 	}
 
 	return nil

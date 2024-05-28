@@ -1,6 +1,12 @@
 {{ template "header_" . }}
 
 <h1>Event: <tt>{{ .ID }}</tt></h1>
+<button onclick="redispatch()">Redispatch To:</button>
+<select id="redispatch">
+{{ range $k, $v := .Deployments }}
+    <option value="{{ $v }}">{{ $k }}</option>
+{{ end }}
+</select>
 <pre>{{ .EventJSON }}</pre>
 
 <h2>Data</h2>
@@ -8,5 +14,13 @@
 
 <h2>Log</h2>
 <div class="jsoneditor">{{ .LogJSON }}</div>
+
+<script>
+    function redispatch() {
+        const sel = document.getElementById('redispatch').value;
+
+        window.location.href = '/events/{{ .ID }}/redispatch?did=' + sel;
+    }
+</script>
 
 {{ template "footer_" . }}

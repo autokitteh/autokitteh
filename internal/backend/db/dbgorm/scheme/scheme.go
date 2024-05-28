@@ -248,8 +248,8 @@ func ParseEvent(e Event) (sdktypes.Event, error) {
 }
 
 type EventRecord struct {
-	Seq       uint32        `gorm:"primaryKey"`
 	EventID   sdktypes.UUID `gorm:"primaryKey;type:uuid;not null"`
+	Seq       uint32        `gorm:"primaryKey"`
 	State     int32         `gorm:"index"`
 	CreatedAt time.Time
 
@@ -291,9 +291,9 @@ func ParseEnv(e Env) (sdktypes.Env, error) {
 type Trigger struct {
 	TriggerID sdktypes.UUID `gorm:"primaryKey;type:uuid;not null"`
 
-	ProjectID    sdktypes.UUID  `gorm:"index;type:uuid;not null"`
-	ConnectionID *sdktypes.UUID `gorm:"index;type:uuid"`
-	EnvID        sdktypes.UUID  `gorm:"index;type:uuid;not null"`
+	ProjectID    sdktypes.UUID `gorm:"index;type:uuid;not null"`
+	ConnectionID sdktypes.UUID `gorm:"index;type:uuid;not null"`
+	EnvID        sdktypes.UUID `gorm:"index;type:uuid;not null"`
 	Name         string
 	EventType    string
 	Filter       string
@@ -324,7 +324,7 @@ func ParseTrigger(e Trigger) (sdktypes.Trigger, error) {
 	return sdktypes.StrictTriggerFromProto(&sdktypes.TriggerPB{
 		TriggerId:    sdktypes.NewIDFromUUID[sdktypes.TriggerID](&e.TriggerID).String(),
 		EnvId:        sdktypes.NewIDFromUUID[sdktypes.EnvID](&e.EnvID).String(),
-		ConnectionId: sdktypes.NewIDFromUUID[sdktypes.ConnectionID](e.ConnectionID).String(),
+		ConnectionId: sdktypes.NewIDFromUUID[sdktypes.ConnectionID](&e.ConnectionID).String(),
 		EventType:    e.EventType,
 		Filter:       e.Filter,
 		CodeLocation: loc.ToProto(),

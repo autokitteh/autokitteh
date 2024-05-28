@@ -55,6 +55,12 @@ type LogMessage struct {
 
 func (LogMessage) Type() string { return "log" }
 
+type SleepMessage struct {
+	Seconds float64 `json:"seconds"`
+}
+
+func (SleepMessage) Type() string { return "sleep" }
+
 type Typed interface {
 	Type() string
 }
@@ -65,7 +71,8 @@ type SubMessage interface {
 		LogMessage |
 		ModuleMessage |
 		ResponseMessage |
-		RunMessage
+		RunMessage |
+		SleepMessage
 
 	Typed
 }

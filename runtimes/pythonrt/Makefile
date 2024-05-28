@@ -10,10 +10,7 @@ ci: deps test-py
 
 test-py:
 	ruff check .
-	python -m pytest \
-		--doctest-modules \
-		--ignore testdata \
-		-v .
+	python -m pytest
 
 # You can set the TESTOPTS to pass options to `go test`
 test-go:
