@@ -305,6 +305,11 @@ export class ListRequest extends Message<ListRequest> {
    */
   connectionId = "";
 
+  /**
+   * @generated from field: string project_id = 3;
+   */
+  projectId = "";
+
   constructor(data?: PartialMessage<ListRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -315,6 +320,7 @@ export class ListRequest extends Message<ListRequest> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "env_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "connection_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListRequest {
