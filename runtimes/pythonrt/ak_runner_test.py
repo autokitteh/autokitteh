@@ -307,3 +307,6 @@ def test_AttrDict():
     })
     assert cfg['server']['port'] == cfg.server.port
     assert cfg['mode'] == cfg.mode
+
+    with pytest.raises(NotImplementedError):
+        cfg.server.port = 8081

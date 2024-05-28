@@ -347,6 +347,11 @@ class AttrDict(dict):
         except KeyError:
             raise AttributeError(name)
 
+    def __setattr__(self, attr, value):
+        # The default __getattr__ doesn't fail but also don't change values
+        cls = self.__class__.__name__
+        raise NotImplementedError(f'{cls} does not support setting attributes')
+
 
 if __name__ == '__main__':
     import sys
