@@ -329,6 +329,25 @@ def module_entries(mod):
     ]
 
 
+class AttrDict(dict):
+    """Allow attribute access to dictionary keys.
+
+    >>> config = AttrDict({'server': {'port': 8080}, 'debug': True})
+    >>> config.server.port
+    8080
+    >>> config.debug
+    True
+    """
+    def __getattr__(self, name):
+        try:
+            value = self[name]
+            if isinstance(value, dict):
+                value = AttrDict(value)
+            return value
+        except KeyError:
+            raise AttributeError(name)
+
+
 if __name__ == '__main__':
     import sys
     from argparse import ArgumentParser
@@ -388,5 +407,6 @@ if __name__ == '__main__':
         except ValueError:
             pass
 
+    event = AttrDict(event)
     fn(event)
     comm.send_done()

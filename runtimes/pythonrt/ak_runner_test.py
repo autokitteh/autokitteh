@@ -292,3 +292,18 @@ def test_activity():
     mod = ak_runner.load_code('testdata', lambda f: f, mod_name)
     fn = mod.phone_home
     assert getattr(fn, ak_runner.ACTIVITY_ATTR, False)
+
+
+def test_AttrDict():
+    cfg = ak_runner.AttrDict({
+        'server': {
+            'port': 8080,
+            'interface': 'localhost',
+        },
+        'mode': 'dev',
+        'logging': {
+            'level': 'info',
+        },
+    })
+    assert cfg['server']['port'] == cfg.server.port
+    assert cfg['mode'] == cfg.mode
