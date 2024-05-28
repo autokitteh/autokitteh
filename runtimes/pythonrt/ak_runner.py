@@ -17,13 +17,7 @@ from socket import AF_UNIX, SOCK_STREAM, socket
 from time import sleep
 from types import ModuleType
 
-# Use own own logger, leave root logger to user.
-log = logging.getLogger('AK')
-log.setLevel(logging.INFO)
-formatter = logging.Formatter('[%(name)s] %(asctime)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s')
-hdlr = logging.StreamHandler()
-hdlr.setFormatter(formatter)
-log.addHandler(hdlr)
+log: logging.Logger = None  # Filled in main
 
 def name_of(node):
     """Name of call node (e.g. 'requests.get')"""
@@ -185,12 +179,22 @@ class Comm:
         data = message['payload']['value']
         return pickle.loads(b64decode(data))
 
+
+    def send_log(self, level, message):
+        message = {
+            'type': MessageType.log,
+            'payload': {
+                'level': level,
+                'message': message,
+            },
+        }
+
     def send_sleep(self, seconds):
         message = {
             'type': MessageType.sleep,
             'payload': {
                 'seconds': seconds,
-            }
+            },
         }
         self._send(message)
 
@@ -329,6 +333,27 @@ def module_entries(mod):
     ]
 
 
+class AKLogHandler(logging.Handler):
+    def __init__(self, level, comm):
+        super().__init__(level)
+        self.comm = comm
+        self.formatter = logging.Formatter()
+
+    def emit(self, record):
+        level = 'ERROR' if record.levelname == 'CRITICAL' else record.levelname
+        message = record.getMessage()
+        if record.exc_info:
+            message += '\n' + self.formatter.formatException(record.exc_info)
+        self.comm.send_log(level, message)
+
+def create_logger(level, comm):
+    log = logging.getLogger('AK')
+    log.setLevel(level)
+    handler = AKLogHandler(level, comm)
+    log.addHandler(handler)
+    return log
+
+
 class AttrDict(dict):
     """Allow attribute access to dictionary keys.
 
@@ -363,6 +388,11 @@ if __name__ == '__main__':
     parser.add_argument('path', help='file.py:function')
     args = parser.parse_args()
 
+    sock = socket(AF_UNIX, SOCK_STREAM)
+    sock.connect(args.sock)
+    comm = Comm(sock)
+    log = create_logger(logging.INFO, comm)
+
     # TODO: Ask Itay why AK does not pass entry point
     if ':' in args.path:
         module_name, _ = parse_path(args.path)
@@ -375,12 +405,9 @@ if __name__ == '__main__':
     code_dir = extract_code(args.tar)
     log.info('code dir: %r', code_dir)
 
-    sock = socket(AF_UNIX, SOCK_STREAM)
-    sock.connect(args.sock)
     log.info('connected to %r', args.sock)
 
     log.info('loading %r', module_name)
-    comm = Comm(sock)
 
     ak_call = AKCall(module_name, comm)
     mod = load_code(code_dir, ak_call, module_name)

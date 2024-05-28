@@ -48,6 +48,13 @@ type DoneMessage struct{}
 
 func (DoneMessage) Type() string { return "done" }
 
+type LogMessage struct {
+	Level   string `json:"level"`
+	Message string `json:"message"`
+}
+
+func (LogMessage) Type() string { return "log" }
+
 type SleepMessage struct {
 	Seconds float64 `json:"seconds"`
 }
@@ -61,6 +68,7 @@ type Typed interface {
 type SubMessage interface {
 	CallbackMessage |
 		DoneMessage |
+		LogMessage |
 		ModuleMessage |
 		ResponseMessage |
 		RunMessage |
