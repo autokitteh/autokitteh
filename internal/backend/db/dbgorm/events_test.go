@@ -64,10 +64,9 @@ func TestCreateEventForeignKeys(t *testing.T) {
 
 func TestDeleteEvent(t *testing.T) {
 	f := newDBFixture()
-	foreignKeys(f.gormdb, false)                  // no foreign keys
 	findAndAssertCount[scheme.Event](t, f, 0, "") // no events
 
-	evt := f.newEvent()
+	evt := f.newEvent() // connection is nil
 	f.createEventsAndAssert(t, evt)
 
 	// test deleteEvent
