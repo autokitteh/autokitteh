@@ -39,6 +39,7 @@ type pySvc struct {
 	comm      *Comm
 	stdout    *streamLogger
 	stderr    *streamLogger
+	syscallFn sdktypes.Value
 }
 
 var minPyVersion = Version{
@@ -151,6 +152,53 @@ func entriesToValues(xid sdktypes.ExecutorID, entries []string) (map[string]sdkt
 	return values, nil
 }
 
+func (py *pySvc) loadSyscall(values map[string]sdktypes.Value) error {
+	ak, ok := values["ak"]
+	if !ok {
+		return fmt.Errorf("`ak` not found")
+	}
+
+	if !ak.IsStruct() {
+		return fmt.Errorf("`ak` is not a struct")
+	}
+
+	syscall, ok := ak.GetStruct().Fields()["syscall"]
+	if !ok {
+		return fmt.Errorf("`syscall` not found in `ak`")
+	}
+	if !syscall.IsFunction() {
+		return fmt.Errorf("`syscall` is not a function")
+	}
+
+	py.syscallFn = syscall
+	return nil
+}
+
+func (py *pySvc) handleSleep(ctx context.Context, msg Message) error {
+	sleep, err := extractMessage[SleepMessage](msg)
+	if err != nil {
+		py.log.Error("sleep message", zap.Error(err))
+		return err
+	}
+
+	py.log.Info("sleep", zap.Float64("seconds", sleep.Seconds))
+
+	// Milliseconds sleep granularity should be good enough.
+	d := time.Duration(sleep.Seconds*1000) * time.Millisecond
+	args := []sdktypes.Value{
+		sdktypes.NewStringValue("sleep"),
+		sdktypes.NewDurationValue(d),
+	}
+
+	_, err = py.cbs.Call(ctx, py.xid.ToRunID(), py.syscallFn, args, nil)
+	if err != nil {
+		py.log.Error("call sleep", zap.Error(err))
+		return err
+	}
+
+	return py.comm.Send(sleep)
+}
+
 /*
 Run starts a Python workflow.
 
@@ -167,6 +215,10 @@ func (py *pySvc) Run(
 	cbs *sdkservices.RunCallbacks,
 ) (sdkservices.Run, error) {
 	py.log.Info("run", zap.String("id", runID.String()), zap.String("path", mainPath))
+
+	if err := py.loadSyscall(values); err != nil {
+		return nil, err
+	}
 
 	py.xid = sdktypes.NewExecutorID(runID)
 	py.log.Info("executor", zap.String("id", py.xid.String()))
@@ -317,6 +369,13 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, event map[str
 
 		if msg.Type == messageType[DoneMessage]() {
 			break
+		}
+
+		if msg.Type == messageType[SleepMessage]() {
+			if err := py.handleSleep(ctx, msg); err != nil {
+				return sdktypes.InvalidValue, err
+			}
+			continue
 		}
 
 		cbm, err := extractMessage[CallbackMessage](msg)
