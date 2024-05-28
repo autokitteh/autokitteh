@@ -1,6 +1,7 @@
 package httpsvc
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"regexp"
@@ -11,6 +12,18 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 )
+
+type ctxKey string
+
+var t0CtxKey = ctxKey("t0")
+
+func GetT0(ctx context.Context) time.Time {
+	if t0, ok := ctx.Value(t0CtxKey).(time.Time); ok {
+		return t0
+	}
+
+	return time.Time{}
+}
 
 type responseInterceptor struct {
 	http.ResponseWriter
@@ -44,7 +57,7 @@ func intercept(z *zap.Logger, cfg *LoggerConfig, extractors []RequestLogExtracto
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("X-AutoKitteh-ID", fixtures.ProcessID())
+		w.Header().Set("X-AutoKitteh-Process-ID", fixtures.ProcessID())
 
 		z := z.With(zap.String("method", r.Method), zap.String("path", r.URL.Path))
 
@@ -68,9 +81,15 @@ func intercept(z *zap.Logger, cfg *LoggerConfig, extractors []RequestLogExtracto
 
 		rwi := &responseInterceptor{ResponseWriter: w, StatusCode: http.StatusOK, logger: z}
 
+		w.Header().Set("Trailer", "X-AutoKitteh-Duration")
+
 		t0 := time.Now()
+		r = r.WithContext(context.WithValue(r.Context(), t0CtxKey, t0))
+
 		next.ServeHTTP(rwi, r)
 		d := time.Since(t0)
+
+		w.Header().Add("X-AutoKitteh-Duration", d.Truncate(time.Microsecond).String())
 
 		if rwi.StatusCode >= 400 {
 			level = cfg.ErrorsLevel.Level()
