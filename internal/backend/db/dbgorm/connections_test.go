@@ -19,7 +19,7 @@ func (f *dbFixture) createConnectionsAndAssert(t *testing.T, connections ...sche
 
 func (f *dbFixture) assertConnectionDeleted(t *testing.T, connections ...scheme.Connection) {
 	for _, connection := range connections {
-		assertDeleted(t, f, connection)
+		assertSoftDeleted(t, f, connection)
 	}
 }
 
@@ -74,4 +74,20 @@ func TestDeleteConnection(t *testing.T) {
 	// test deleteConnection
 	assert.NoError(t, f.gormdb.deleteConnection(f.ctx, c.ConnectionID))
 	f.assertConnectionDeleted(t, c)
+}
+
+func TestDeleteConnectionForeignKeys(t *testing.T) {
+	f := preConnectionTest(t)
+
+	c := f.newConnection()
+	f.createConnectionsAndAssert(t, c)
+
+	evt := f.newEvent()
+	evt.ConnectionID = &c.ConnectionID
+	f.createEventsAndAssert(t, evt)
+	// also trigger and signal are dependant on connection
+
+	// test deleteConnection
+	assert.NoError(t, f.gormdb.deleteConnection(f.ctx, c.ConnectionID))
+	f.assertConnectionDeleted(t, c) // soft deleted, dependent object won't complain
 }
