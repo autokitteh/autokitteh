@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	_ "embed"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/fs"
@@ -34,6 +35,45 @@ func createTar(fs fs.FS) ([]byte, error) {
 
 	w.Close()
 	return buf.Bytes(), nil
+}
+
+// Copy fs to file so Python can inspect
+// TODO: Once os.CopyFS makes it out we can remove this
+func copyFS(fsys fs.FS, root string) error {
+	return fs.WalkDir(fsys, ".", func(name string, entry fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		fmt.Println(">>>", name)
+		if !entry.Type().IsRegular() {
+			return nil
+		}
+
+		dest := path.Join(root, name)
+		dirName := path.Dir(dest)
+		if err := os.MkdirAll(dirName, 0755); err != nil {
+			return err
+		}
+
+		r, err := fsys.Open(name)
+		if err != nil {
+			return err
+		}
+		defer r.Close()
+
+		w, err := os.Create(dest)
+		if err != nil {
+			return err
+		}
+		defer w.Close()
+
+		if _, err := io.Copy(w, r); err != nil {
+			return err
+		}
+
+		return nil
+	})
 }
 
 type Version struct {
@@ -162,7 +202,7 @@ func runPython(opts runOptions) (*pyRunInfo, error) {
 		return nil, err
 	}
 
-	cmd := exec.Command(opts.pyExe, runnerPath, sockPath, tarPath, opts.rootPath)
+	cmd := exec.Command(opts.pyExe, "run", runnerPath, sockPath, tarPath, opts.rootPath)
 	cmd.Dir = rootDir
 	cmd.Env = overrideEnv(opts.env)
 	cmd.Stdout = opts.stdout
@@ -238,4 +278,36 @@ func createVEnv(pyExe string, venvPath string) error {
 	}
 
 	return nil
+}
+
+type Export struct {
+	Name string
+	File string
+	Line int
+}
+
+func pyExports(ctx context.Context, pyExe string, fsys fs.FS) ([]Export, error) {
+	tmpDir, err := os.MkdirTemp("", "ak-inspect-")
+	if err != nil {
+		return nil, err
+	}
+
+	if err := copyFS(fsys, tmpDir); err != nil {
+		return nil, err
+	}
+
+	runnerPath, err := extractRunner(tmpDir)
+	cmd := exec.CommandContext(ctx, pyExe, runnerPath, "inspect", tmpDir)
+	var buf bytes.Buffer
+	cmd.Stdout = &buf
+	if err := cmd.Run(); err != nil {
+		return nil, err
+	}
+
+	var exports []Export
+	if err := json.NewDecoder(&buf).Decode(&exports); err != nil {
+		return nil, err
+	}
+
+	return exports, nil
 }

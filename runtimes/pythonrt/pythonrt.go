@@ -121,12 +121,31 @@ func (py *pySvc) Build(ctx context.Context, fs fs.FS, path string, values []sdkt
 		return sdktypes.InvalidBuildArtifact, err
 	}
 
+	exports, err := pyExports(ctx, venvPy, fs)
+	if err != nil {
+		py.log.Error("get exports", zap.Error(err))
+		return sdktypes.InvalidBuildArtifact, err
+	}
+
+	buildExports := kittehs.Transform(exports, func(e Export) sdktypes.BuildExport {
+		pb := sdktypes.BuildExportPB{
+			Symbol: e.Name,
+			Location: &sdktypes.CodeLocationPB{
+				Path: e.File,
+				Row:  uint32(e.Line),
+			},
+		}
+
+		b, _ := sdktypes.BuildExportFromProto(&pb)
+		return b
+	})
+
 	var art sdktypes.BuildArtifact
 	art = art.WithCompiledData(
 		map[string][]byte{
 			archiveKey: data,
 		},
-	)
+	).WithExports(buildExports)
 
 	return art, nil
 }
