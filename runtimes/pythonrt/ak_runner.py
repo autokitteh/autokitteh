@@ -35,7 +35,6 @@ def name_of(node):
 
 
 ACTION_NAME = '_ak_call'
-MODULE_NAME = ''
 BUILTIN = {v for v in dir(builtins) if callable(getattr(builtins, v))}
 
 
@@ -135,7 +134,7 @@ class Comm:
         message = {
             'type': MessageType.callback,
             'payload': {
-                'name': fn.__name__,
+                'name': fn if isinstance(fn, str) else fn.__name__,
                 'args': [str(a) for a in args],
                 'kw': {k: str(v) for k, v in kw.items()},
                 'data': self._picklize(data),
@@ -214,10 +213,13 @@ def ak_module():
 
 class AKCall:
     """Callable wrapping functions with activities."""
-    def __init__(self, module_name, comm: Comm):
-        self.module_name = module_name
+    def __init__(self, comm: Comm):
         self.in_activity = False
         self.comm = comm
+        self.module = None
+
+    def is_module_func(self, fn):
+        return fn.__module__ == self.module.__name__
 
     def should_run_as_activity(self, fn):
         if self.in_activity:
@@ -229,7 +231,7 @@ class AKCall:
         if fn.__module__ == 'builtins':
             return False
         
-        if fn.__module__ == self.module_name:
+        if self.is_module_func(fn):
             return False
 
         return True
@@ -249,12 +251,20 @@ class AKCall:
                 self.comm.recv(MessageType.sleep)
                 return
 
+            if self.is_module_func(func):
+                # Pickle can't handle function from our loaded module
+                func = func.__name__
             self.comm.send_activity(func, args, kw)
             message = self.comm.recv(MessageType.callback, MessageType.response)
             
             if message['type'] == MessageType.callback:
                 payload = self.comm.extract_activity(message)
                 fn, args, kw = payload['data']
+                if isinstance(fn, str):
+                    fn = getattr(self.module, fn, None)
+                    if fn is None:
+                        mod_name = self.module.__name__
+                        raise ValueError(f'function {fn} not found in {mod_name}')
                 value = fn(*args, **kw)
                 self.comm.send_response(value)
                 message = self.comm.recv(MessageType.response)
@@ -409,9 +419,10 @@ if __name__ == '__main__':
 
     log.info('loading %r', module_name)
 
-    ak_call = AKCall(module_name, comm)
+    ak_call = AKCall(comm)
     mod = load_code(code_dir, ak_call, module_name)
-    MODULE_NAME = mod.__name__
+    ak_call.module = mod
+
     entries = module_entries(mod)
     comm.send_exported(entries)
 
