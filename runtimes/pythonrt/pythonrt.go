@@ -133,6 +133,8 @@ func (py *pySvc) Build(ctx context.Context, fs fs.FS, path string, values []sdkt
 			Location: &sdktypes.CodeLocationPB{
 				Path: e.File,
 				Row:  uint32(e.Line),
+				Col:  1,
+				Name: e.Name,
 			},
 		}
 

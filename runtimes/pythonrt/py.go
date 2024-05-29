@@ -45,7 +45,6 @@ func copyFS(fsys fs.FS, root string) error {
 			return err
 		}
 
-		fmt.Println(">>>", name)
 		if !entry.Type().IsRegular() {
 			return nil
 		}
