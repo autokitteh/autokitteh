@@ -3,6 +3,7 @@ package sessionworkflows
 import (
 	"context"
 	"fmt"
+	"maps"
 	"strings"
 	"time"
 
@@ -82,7 +83,9 @@ func runWorkflow(
 		signals: make(map[string]uint64),
 	}
 
-	w.initEnvModule()
+	if err = w.initEnvModule(ctx); err != nil {
+		return
+	}
 
 	if w.globals, err = w.initGlobalModules(); err != nil {
 		return
@@ -176,16 +179,35 @@ func (w *sessionWorkflow) call(ctx workflow.Context, runID sdktypes.RunID, v sdk
 	return result.ToPair()
 }
 
-func (w *sessionWorkflow) initEnvModule() {
+func (w *sessionWorkflow) initEnvModule(wctx workflow.Context) error {
+	goCtx := temporalclient.NewWorkflowContextAsGOContext(wctx)
+
+	vs := kittehs.ListToMap(w.data.Vars, func(v sdktypes.Var) (string, sdktypes.Value) {
+		return v.Name().String(), sdktypes.NewStringValue(v.Value())
+	})
+
+	for _, conn := range w.data.Connections {
+		cid, name := conn.ID(), conn.Name().String()
+
+		cvs, err := w.ws.svcs.Vars.Reveal(goCtx, sdktypes.NewVarScopeID(cid))
+		if err != nil {
+			return fmt.Errorf("get connection %v vars: %w", name, err)
+		}
+
+		maps.Copy(vs, kittehs.ListToMap(cvs, func(v sdktypes.Var) (string, sdktypes.Value) {
+			return fmt.Sprintf("%v__%v", name, v.Name()), sdktypes.NewStringValue(v.Value())
+		}))
+	}
+
 	mod := sdkexecutor.NewExecutor(
 		nil, // no calls will be ever made to env.
 		envVarsExecutorID,
-		kittehs.ListToMap(w.data.Vars, func(v sdktypes.Var) (string, sdktypes.Value) {
-			return v.Name().String(), sdktypes.NewStringValue(v.Value())
-		}),
+		vs,
 	)
 
 	kittehs.Must0(w.executors.AddExecutor(envVarsModuleName, mod))
+
+	return nil
 }
 
 func integrationModulePrefix(name string) string { return fmt.Sprintf("__%v__", name) }
@@ -273,7 +295,7 @@ func (w *sessionWorkflow) createEventSubscription(ctx context.Context, connectio
 		return "", fmt.Errorf("get current sequence: %w", err)
 	}
 
-	signalID := uuid.New().String() //fmt.Sprintf("wid_%s_cn_%s_seq_%d", workflowID, connectionName, minSequence)
+	signalID := uuid.New().String()
 
 	_, connection := kittehs.FindFirst(w.data.Connections, func(c sdktypes.Connection) bool {
 		return c.Name().String() == connectionName
@@ -359,7 +381,6 @@ func (w *sessionWorkflow) getNextEvent(ctx context.Context, signalID string) (ma
 			}
 			filter.MinSequenceNumber = evs[0].Seq() + 1
 		}
-
 	}).Get(wctx, &eventID); err != nil {
 		w.z.Panic("get signal", zap.Error(err))
 	}
