@@ -17,15 +17,17 @@ import (
 
 var ExecutorID = sdktypes.NewExecutorID(fixtures.NewBuiltinIntegrationID("time"))
 
-func New() sdkexecutor.Executor {
+type t0Type time.Time
+
+func New(t0 time.Time) sdkexecutor.Executor {
 	return fixtures.NewBuiltinExecutor(
 		ExecutorID,
-		sdkmodule.ExportValue("nanosecond", sdkmodule.WithValue(sdktypes.NewIntegerValue(time.Nanosecond))),
-		sdkmodule.ExportValue("microsecond", sdkmodule.WithValue(sdktypes.NewIntegerValue(time.Microsecond))),
-		sdkmodule.ExportValue("millisecond", sdkmodule.WithValue(sdktypes.NewIntegerValue(time.Millisecond))),
-		sdkmodule.ExportValue("second", sdkmodule.WithValue(sdktypes.NewIntegerValue(time.Second))),
-		sdkmodule.ExportValue("minute", sdkmodule.WithValue(sdktypes.NewIntegerValue(time.Minute))),
-		sdkmodule.ExportValue("hour", sdkmodule.WithValue(sdktypes.NewIntegerValue(time.Hour))),
+		sdkmodule.ExportValue("nanosecond", sdkmodule.WithValue(sdktypes.NewDurationValue(time.Nanosecond))),
+		sdkmodule.ExportValue("microsecond", sdkmodule.WithValue(sdktypes.NewDurationValue(time.Microsecond))),
+		sdkmodule.ExportValue("millisecond", sdkmodule.WithValue(sdktypes.NewDurationValue(time.Millisecond))),
+		sdkmodule.ExportValue("second", sdkmodule.WithValue(sdktypes.NewDurationValue(time.Second))),
+		sdkmodule.ExportValue("minute", sdkmodule.WithValue(sdktypes.NewDurationValue(time.Minute))),
+		sdkmodule.ExportValue("hour", sdkmodule.WithValue(sdktypes.NewDurationValue(time.Hour))),
 
 		sdkmodule.ExportFunction("time", newTime, sdkmodule.WithArgs("year?", "month?", "day?", "hour?", "minute?", "second?", "nanosecond?", "location?"), sdkmodule.WithFlag(sdktypes.PureFunctionFlag)),
 		sdkmodule.ExportFunction("parse_time", parseTime, sdkmodule.WithArgs("s", "format?", "location?"), sdkmodule.WithFlag(sdktypes.PureFunctionFlag)),
@@ -33,11 +35,12 @@ func New() sdkexecutor.Executor {
 		sdkmodule.ExportFunction("from_timestamp", fromTimestamp, sdkmodule.WithArgs("sec", "nsec?"), sdkmodule.WithFlag(sdktypes.PureFunctionFlag)),
 		sdkmodule.ExportFunction("is_valid_timezone", isValidTimezone, sdkmodule.WithArgs("tz"), sdkmodule.WithFlag(sdktypes.PureFunctionFlag)),
 
-		// This is non-deterministic.
+		// These are non-deterministic.
 		// TODO: consider implementing only this as a higher level
 		//       module and somehow when `time.now` called in a starlark builtin
 		//       library, redirect here.
 		sdkmodule.ExportFunction("now", now, sdkmodule.WithFlags(sdktypes.PureFunctionFlag, sdktypes.PrivilidgedFunctionFlag)),
+		sdkmodule.ExportFunction("elapsed", t0Type(t0).elapsed, sdkmodule.WithFlags(sdktypes.PureFunctionFlag, sdktypes.PrivilidgedFunctionFlag)),
 	)
 }
 
@@ -57,6 +60,31 @@ func now(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.
 	}
 
 	return sdktypes.NewTimeValue(t), nil
+}
+
+func (t0 t0Type) elapsed(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
+	var resolution time.Duration
+
+	if err := sdkmodule.UnpackArgs(args, kwargs, "resolution?", &resolution); err != nil {
+		return sdktypes.InvalidValue, err
+	}
+
+	wctx := sessioncontext.GetWorkflowContext(ctx)
+
+	var t1 time.Time
+
+	if err := workflow.SideEffect(wctx, func(workflow.Context) any {
+		return time.Now()
+	}).Get(&t1); err != nil {
+		return sdktypes.InvalidValue, err
+	}
+
+	delta := t1.Sub(time.Time(t0))
+	if resolution != 0 {
+		delta = delta.Truncate(resolution)
+	}
+
+	return sdktypes.NewDurationValue(delta), nil
 }
 
 func newTime(_ context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {

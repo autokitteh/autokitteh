@@ -1,0 +1,47 @@
+None
+0 test1
+1 test1
+2 test1
+[None, "test1"]
+0 test2
+1 test2
+2 test2
+[None, "test2"]
+2s
+0 test3 [0] 0
+1 test3 [0, 1] 2
+2 test3 [0, 1, 2] 6
+3 test3 [0, 1, 2, 3] None
+[None, "test3"]
+10s
+
+-- main.star:main --
+def immediate_policy(err, attempt):
+    print(attempt, err)
+    return attempt < 2
+
+def delayed_policy(err, attempt):
+    print(attempt, err)
+    return "1s" if attempt < 2 else None
+
+def new_stateful_policy():
+    state = []
+
+    def policy(err, attempt):
+        state.append(attempt)
+        t = (len(state) * attempt) if attempt < 3 else None
+        print(attempt, err, state, t)
+        return t
+
+    return policy
+
+def main():
+    print(ak.meow(ak_retry=immediate_policy))
+
+    print(ak.meow(err="test1", ak_retry=immediate_policy, ak_catch=True))
+
+    print(ak.meow(err="test2", ak_retry=delayed_policy, ak_catch=True))
+    print(time.elapsed(time.second))
+
+    print(ak.meow(err="test3", ak_retry=new_stateful_policy(), ak_catch=True))
+    print(time.elapsed(time.second))

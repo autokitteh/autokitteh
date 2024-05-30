@@ -28,7 +28,6 @@ type CallParams struct {
 	ForceInternal bool
 	CallSpec      sdktypes.SessionCallSpec
 
-	Poller    sdktypes.Value         // TODO: need to be in Call.
 	Executors *sdkexecutor.Executors // needed for session specific calls (global modules, script functions).
 }
 
@@ -142,7 +141,12 @@ func (cs *calls) Call(ctx workflow.Context, params *CallParams) (sdktypes.Sessio
 			goCtx = sessioncontext.WithWorkflowContext(goCtx, ctx)
 		}
 
-		if _, attempt, err = cs.executeCall(goCtx, params.SessionID, seq, params.Poller, params.Executors); err != nil {
+		_, attempt, err = cs.executeCall(
+			goCtx,
+			&executeParams{Seq: seq, SessionID: params.SessionID},
+			params.Executors,
+		)
+		if err != nil {
 			return sdktypes.NewSessionCallAttemptResult(sdktypes.InvalidValue, fmt.Errorf("internal call: %w", err)), nil
 		}
 	} else {
@@ -163,14 +167,16 @@ func (cs *calls) Call(ctx workflow.Context, params *CallParams) (sdktypes.Sessio
 			}()
 		}
 
-		for retry := true; retry; {
-			aopts := workflow.ActivityOptions{
-				TaskQueue:              taskQueueName,
-				ActivityID:             fmt.Sprintf("session_call_%s_%d", params.SessionID.Value(), seq),
-				ScheduleToCloseTimeout: cs.config.Temporal.ActivityScheduleToCloseTimeout,
-				HeartbeatTimeout:       cs.config.Temporal.ActivityHeartbeatTimeout,
-			}
+		aopts := workflow.ActivityOptions{
+			TaskQueue:              taskQueueName,
+			ActivityID:             fmt.Sprintf("session_call_%s_%d", params.SessionID.Value(), seq),
+			ScheduleToCloseTimeout: cs.config.Temporal.ActivityScheduleToCloseTimeout,
+			HeartbeatTimeout:       cs.config.Temporal.ActivityHeartbeatTimeout,
+		}
 
+		actx := workflow.WithActivityOptions(ctx, aopts)
+
+		for retry := true; retry; {
 			if local {
 				// When a local execution is required, it is scheduled on a unique worker. These local executions
 				// need access to the state that is built by the workflow.
@@ -187,18 +193,15 @@ func (cs *calls) Call(ctx workflow.Context, params *CallParams) (sdktypes.Sessio
 				aopts.ActivityID = "local_" + aopts.ActivityID
 			}
 
-			actx := workflow.WithActivityOptions(ctx, aopts)
-
 			var ret callActivityOutputs
 
 			future := workflow.ExecuteActivity(
 				actx,
 				callActivityName,
-				&callActivityInputs{
+				&executeParams{
 					SessionID: params.SessionID,
 					Seq:       seq,
 					Debug:     params.Debug,
-					Poller:    params.Poller,
 				},
 			)
 			if err := future.Get(ctx, &ret); err != nil {

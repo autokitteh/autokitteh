@@ -25,19 +25,23 @@ func New(syscall sdkexecutor.Function) sdkexecutor.Executor {
 			"syscall",
 			syscall,
 			sdkmodule.WithFlags(
-				sdktypes.PureFunctionFlag,           // no need to run in an activity, we must have it in the workflow.
-				sdktypes.PrivilidgedFunctionFlag,    // provide workflow context.
-				sdktypes.DisablePollingFunctionFlag, // no polling.
+				sdktypes.PureFunctionFlag,            // no need to run in an activity, we must have it in the workflow.
+				sdktypes.PrivilidgedFunctionFlag,     // provide workflow context.
+				sdktypes.DisablePollingFunctionFlag,  // no polling.
+				sdktypes.DisableRetryingFunctionFlag, // no retrying.
 			),
 		),
 		sdkmodule.ExportFunction(
 			"callopts",
 			callopts,
 			sdkmodule.WithFlags(
-				sdktypes.PureFunctionFlag,           // no need to run in an activity, we must have it in the workflow.
-				sdktypes.DisablePollingFunctionFlag, // no polling.
+				sdktypes.PureFunctionFlag,            // no need to run in an activity, we must have it in the workflow.
+				sdktypes.DisablePollingFunctionFlag,  // no polling.
+				sdktypes.DisableRetryingFunctionFlag, // no retrying.
 			),
 		),
+		// Functions useful for testing.
+		sdkmodule.ExportFunction("meow", meow),
 	)
 }
 
@@ -47,4 +51,18 @@ func callopts(_ context.Context, args []sdktypes.Value, kwargs map[string]sdktyp
 	}
 
 	return sdktypes.NewStructValue(sdktypes.NewSymbolValue(CallOptsCtorSymbol), kwargs)
+}
+
+func meow(_ context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
+	ret := kwargs["ret"]
+	if ret.IsValid() {
+		return ret, nil
+	}
+
+	err := kwargs["err"]
+	if err.IsValid() {
+		return sdktypes.InvalidValue, sdktypes.NewProgramError(err, nil, nil).ToError()
+	}
+
+	return sdktypes.Nothing, nil
 }
