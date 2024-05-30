@@ -94,7 +94,7 @@ func TestCreateSessionForeignKeys(t *testing.T) {
 	ev := f.newEvent()
 
 	f.saveBuildsAndAssert(t, b)
-	f.createEnvsAndAssert(t, env)
+	f.WithForeignKeysDisabled(func() { f.createEnvsAndAssert(t, env) })
 	f.createDeploymentsAndAssert(t, d)
 	f.WithForeignKeysDisabled(func() { f.createEventsAndAssert(t, ev) })
 

@@ -82,8 +82,11 @@ func TestCreateDeploymentsForeignKeys(t *testing.T) {
 	d.EnvID = nil
 
 	// test with existing assets
+	p := f.newProject()
 	e := f.newEnv()
+	e.ProjectID = p.ProjectID
 	b := f.newBuild()
+	f.createProjectsAndAssert(t, p)
 	f.createEnvsAndAssert(t, e)
 	f.saveBuildsAndAssert(t, b)
 
