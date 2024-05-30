@@ -55,7 +55,6 @@ type sessionWorkflow struct {
 	executors sdkexecutor.Executors
 	globals   map[string]sdktypes.Value
 
-	poller sdktypes.Value
 	fakers map[string]sdktypes.Value
 
 	callSeq uint32
@@ -63,10 +62,11 @@ type sessionWorkflow struct {
 	signals map[string]uint64 // map signals to next sequence number
 
 	state sdktypes.SessionState
+	t0    time.Time
 }
 
 func runWorkflow(
-	ctx workflow.Context,
+	wctx workflow.Context,
 	z *zap.Logger,
 	ws *workflows,
 	data *sessiondata.Data,
@@ -75,11 +75,16 @@ func runWorkflow(
 	w := &sessionWorkflow{
 		z:       z,
 		data:    data,
-		poller:  sdktypes.Nothing,
 		ws:      ws,
 		fakers:  make(map[string]sdktypes.Value),
 		debug:   debug,
 		signals: make(map[string]uint64),
+	}
+
+	if err = workflow.SideEffect(wctx, func(workflow.Context) any {
+		return time.Now()
+	}).Get(&w.t0); err != nil {
+		return
 	}
 
 	w.initEnvModule()
@@ -88,11 +93,11 @@ func runWorkflow(
 		return
 	}
 
-	if err = w.initConnections(ctx); err != nil {
+	if err = w.initConnections(wctx); err != nil {
 		return
 	}
 
-	prints, err = w.run(ctx)
+	prints, err = w.run(wctx)
 
 	return
 }
@@ -166,7 +171,6 @@ func (w *sessionWorkflow) call(ctx workflow.Context, runID sdktypes.RunID, v sdk
 		CallSpec:      sdktypes.NewSessionCallSpec(v, args, kwargs, w.callSeq),
 		Debug:         w.debug,
 		ForceInternal: useFake,
-		Poller:        w.getPoller(),
 		Executors:     &w.executors, // HACK
 	})
 	if err != nil {
@@ -234,7 +238,7 @@ func (w *sessionWorkflow) initConnections(ctx workflow.Context) error {
 func (w *sessionWorkflow) initGlobalModules() (map[string]sdktypes.Value, error) {
 	execs := map[string]sdkexecutor.Executor{
 		"ak":    ak.New(w.syscall),
-		"time":  timemodule.New(),
+		"time":  timemodule.New(w.t0),
 		"store": store.New(w.data.Env.ID(), w.data.ProjectID, w.ws.svcs.RedisClient),
 	}
 
@@ -273,7 +277,7 @@ func (w *sessionWorkflow) createEventSubscription(ctx context.Context, connectio
 		return "", fmt.Errorf("get current sequence: %w", err)
 	}
 
-	signalID := uuid.New().String() //fmt.Sprintf("wid_%s_cn_%s_seq_%d", workflowID, connectionName, minSequence)
+	signalID := uuid.New().String() // fmt.Sprintf("wid_%s_cn_%s_seq_%d", workflowID, connectionName, minSequence)
 
 	_, connection := kittehs.FindFirst(w.data.Connections, func(c sdktypes.Connection) bool {
 		return c.Name().String() == connectionName

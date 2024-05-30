@@ -6,11 +6,10 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-type callActivityInputs struct {
+type executeParams struct {
 	SessionID sdktypes.SessionID
 	Seq       uint32
 	Debug     bool
-	Poller    sdktypes.Value
 }
 
 type callActivityOutputs struct {
@@ -24,7 +23,7 @@ type callActivityOutputs struct {
 	Retry bool
 }
 
-func (cs *calls) sessionCallActivity(ctx context.Context, params *callActivityInputs) (*callActivityOutputs, error) {
+func (cs *calls) sessionCallActivity(ctx context.Context, params *executeParams) (*callActivityOutputs, error) {
 	cs.executorsForSessionsMu.RLock()
 	executors := cs.executorsForSessions[params.SessionID]
 	cs.executorsForSessionsMu.RUnlock()
@@ -37,7 +36,7 @@ func (cs *calls) sessionCallActivity(ctx context.Context, params *callActivityIn
 		err error
 	)
 
-	ret.Debug, ret.Attempt, err = cs.executeCall(ctx, params.SessionID, params.Seq, params.Poller, executors)
+	ret.Debug, ret.Attempt, err = cs.executeCall(ctx, params, executors)
 
 	if !params.Debug {
 		// don't let temporal know about the debug data.

@@ -24,13 +24,6 @@
 def nop():
     pass
 
-# EXPORT: poll
-def poll(fn, pollerfn):
-    orig = ak.syscall("poll", pollerfn)
-    r = fn()
-    ak.syscall("poll", orig)
-    return r
-
 # EXPORT: fake
 def fake(*args, **kwargs):
     return ak.syscall("fake", *args, **kwargs)

@@ -15,7 +15,6 @@ import (
 )
 
 const (
-	pollOp        = "poll"
 	fakeOp        = "fake"
 	sleepOp       = "sleep"
 	startOp       = "start"
@@ -38,8 +37,6 @@ func (w *sessionWorkflow) syscall(ctx context.Context, args []sdktypes.Value, kw
 	args = args[1:]
 
 	switch op {
-	case pollOp:
-		return w.setPoller(args, kwargs)
 	case fakeOp:
 		return w.fake(args, kwargs)
 	case sleepOp:
@@ -89,36 +86,6 @@ func (w *sessionWorkflow) fake(args []sdktypes.Value, kwargs map[string]sdktypes
 	}
 
 	return prev, nil
-}
-
-func (w *sessionWorkflow) setPoller(args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
-	var fn sdktypes.Value
-
-	if err := sdkmodule.UnpackArgs(args, kwargs, "fn", &fn); err != nil {
-		return sdktypes.InvalidValue, err
-	}
-
-	if fn.IsValid() && !fn.IsFunction() && !fn.IsNothing() {
-		return sdktypes.InvalidValue, fmt.Errorf("value must be either a function or nothing")
-	}
-
-	prev := w.poller
-
-	if !fn.IsValid() {
-		fn = sdktypes.Nothing
-	}
-
-	w.poller = fn
-
-	return prev, nil
-}
-
-func (w *sessionWorkflow) getPoller() sdktypes.Value {
-	if w.poller.IsNothing() {
-		return sdktypes.InvalidValue
-	}
-
-	return w.poller
 }
 
 func (w *sessionWorkflow) sleep(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {

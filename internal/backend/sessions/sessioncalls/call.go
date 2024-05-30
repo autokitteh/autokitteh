@@ -17,36 +17,46 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-func (cs *calls) checkPollPolicy(ctx context.Context, pollfn, result sdktypes.Value, executors *sdkexecutor.Executors) (retry bool, interval time.Duration, err error) {
+func (cs *calls) checkPolicyFn(ctx context.Context, fn sdktypes.Value, args []sdktypes.Value, executors *sdkexecutor.Executors) (retry bool, interval time.Duration, err error) {
 	var res sdktypes.SessionCallAttemptResult
-	if res, err = cs.invoke(ctx, pollfn, []sdktypes.Value{result}, nil, executors, 0); err != nil {
-		err = fmt.Errorf("poll function invoke: %w", err)
+	if res, err = cs.invoke(ctx, fn, args, nil, executors, 0); err != nil {
+		err = fmt.Errorf("policy function invoke: %w", err)
 		return
 	} else if err = res.GetError(); err != nil {
-		err = fmt.Errorf("poll function error: %w", err)
+		err = fmt.Errorf("policy function error: %w", err)
 		return
 	}
 
-	pollRet := res.GetValue()
+	ret := res.GetValue()
 
-	if pollRet.IsNothing() {
+	if ret.IsNothing() {
 		// Nothing: no retry.
 		return
 	}
 
-	if isBool := pollRet.IsBoolean(); isBool {
-		// True: no retry. False: immediate retry.
-		return !pollRet.GetBoolean().Value(), 0, nil
+	if ret.IsBoolean() {
+		// True: immediate retry. False: no retry.
+		// TODO: invert for poll?
+		retry = ret.GetBoolean().Value()
+		return
 	}
 
 	// Duration: retry with specified interval.
-	if interval, err = pollRet.ToDuration(); err != nil {
-		err = fmt.Errorf("poller return value must be either a boolean or convertible to duration: %w", err)
+	if interval, err = ret.ToDuration(); err != nil {
+		err = fmt.Errorf("policy return value must be either nothing, a boolean, or convertible to duration: %w", err)
 		return
 	}
 
 	retry = true
 	return
+}
+
+func (cs *calls) checkPollPolicy(ctx context.Context, pollfn, result sdktypes.Value, executors *sdkexecutor.Executors) (bool, time.Duration, error) {
+	return cs.checkPolicyFn(ctx, pollfn, []sdktypes.Value{result}, executors)
+}
+
+func (cs *calls) checkRetryPolicy(ctx context.Context, retryfn sdktypes.Value, err error, executors *sdkexecutor.Executors, attempt uint32) (bool, time.Duration, error) {
+	return cs.checkPolicyFn(ctx, retryfn, []sdktypes.Value{sdktypes.WrapError(err).Value(), sdktypes.NewIntegerValue(attempt)}, executors)
 }
 
 func (cs *calls) invoke(ctx context.Context, callv sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value, executors *sdkexecutor.Executors, timeout time.Duration) (sdktypes.SessionCallAttemptResult, error) {
@@ -120,10 +130,16 @@ func (cs *calls) invoke(ctx context.Context, callv sdktypes.Value, args []sdktyp
 }
 
 // This is executed either in an activity (for regular calls) or directly in a workflow (for internal calls).
-func (cs *calls) executeCall(ctx context.Context, sessionID sdktypes.SessionID, seq uint32, poller sdktypes.Value, executors *sdkexecutor.Executors) (debug any, attempt uint32, _ error) {
+func (cs *calls) executeCall(
+	ctx context.Context,
+	params *executeParams,
+	executors *sdkexecutor.Executors,
+) (debug any, attempt uint32, _ error) {
+	seq, sid := params.Seq, params.SessionID
+
 	z := cs.z.With(zap.Uint32("seq", seq))
 
-	call, err := cs.svcs.DB.GetSessionCallSpec(ctx, sessionID, seq)
+	call, err := cs.svcs.DB.GetSessionCallSpec(ctx, sid, seq)
 	if err != nil {
 		return nil, 0, fmt.Errorf("db.get_call: %w", err)
 	}
@@ -133,22 +149,32 @@ func (cs *calls) executeCall(ctx context.Context, sessionID sdktypes.SessionID, 
 		return nil, 0, err
 	}
 
-	var (
-		interval time.Duration
-		last     bool
-	)
-
 	z = z.With(zap.Any("function", callv))
+
+	var poller, retryer sdktypes.Value
+
+	if opts.Poll.IsValid() {
+		poller = opts.Poll
+	}
+
+	if opts.Retry.IsValid() {
+		retryer = opts.Retry
+	}
 
 	if poller.IsValid() && callv.GetFunction().HasFlag(sdktypes.DisablePollingFunctionFlag) {
 		z.Debug("poller exists, but function is not pollable")
 		poller = sdktypes.InvalidValue
 	}
 
-	for !last {
+	if retryer.IsValid() && callv.GetFunction().HasFlag(sdktypes.DisableRetryingFunctionFlag) {
+		z.Debug("poller exists, but function is not pollable")
+		retryer = sdktypes.InvalidValue
+	}
+
+	for interval, last := time.Duration(0), false; !last; {
 		z := z.With(zap.Uint32("attempt", attempt))
 
-		attempt, err = cs.svcs.DB.StartSessionCallAttempt(ctx, sessionID, seq)
+		attempt, err = cs.svcs.DB.StartSessionCallAttempt(ctx, sid, seq)
 		if err != nil {
 			return nil, attempt, err
 		}
@@ -181,8 +207,21 @@ func (cs *calls) executeCall(ctx context.Context, sessionID sdktypes.SessionID, 
 		}()
 
 		if err := result.GetError(); err != nil {
-			last = true
+			last = !retryer.IsValid()
 			z.Debug("call returned an error", zap.Error(err))
+
+			if !last {
+				var retry bool
+
+				if retry, interval, err = cs.checkRetryPolicy(ctx, retryer, err, executors, attempt); err != nil {
+					result = sdktypes.NewSessionCallAttemptResult(sdktypes.InvalidValue, fmt.Errorf("retry function: %w", err))
+					last = true
+				} else {
+					last = !retry
+				}
+
+				z.Debug("retryer results", zap.Bool("last", last), zap.Duration("t", interval))
+			}
 		} else {
 			z.Debug("call returned a value")
 
@@ -209,7 +248,7 @@ func (cs *calls) executeCall(ctx context.Context, sessionID sdktypes.SessionID, 
 		// TODO: this is an error in db access inside the activity. If this fails we might be in a troubling state.
 		//       need to at least manually retry this.
 		if err := cs.svcs.DB.CompleteSessionCallAttempt(
-			ctx, sessionID, seq, attempt,
+			ctx, sid, seq, attempt,
 			sdktypes.NewSessionCallAttemptComplete(last, interval, result),
 		); err != nil {
 			return nil, attempt, err

@@ -11,16 +11,17 @@ import (
 
 const callOptsArgName = "ak"
 
-type CallOpts struct {
-	Catch   bool          `json:"catch"`
-	Timeout time.Duration `json:"timeout"`
+type callOpts struct {
+	Catch       bool
+	Timeout     time.Duration
+	Poll, Retry sdktypes.Value
 }
 
 // NOTE: If err is not nil, this might still have valid values in the other return values.
-func parseCallSpec(spec sdktypes.SessionCallSpec) (v sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value, opts *CallOpts, err error) {
+func parseCallSpec(spec sdktypes.SessionCallSpec) (v sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value, opts *callOpts, err error) {
 	v, args, kwargs = spec.Data()
 
-	opts = &CallOpts{}
+	opts = &callOpts{}
 
 	var found bool
 
@@ -76,6 +77,10 @@ func parseCallSpec(spec sdktypes.SessionCallSpec) (v sdktypes.Value, args []sdkt
 			if err = v.UnwrapInto(&opts.Timeout); err != nil {
 				err = fmt.Errorf("invalid call option timeout value: %w", err)
 			}
+		case "poll":
+			opts.Poll = v
+		case "retry":
+			opts.Retry = v
 		default:
 			err = fmt.Errorf("invalid call option: %s", k)
 		}
