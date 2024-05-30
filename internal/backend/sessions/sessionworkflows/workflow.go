@@ -295,7 +295,7 @@ func (w *sessionWorkflow) createEventSubscription(ctx context.Context, connectio
 		return "", fmt.Errorf("get current sequence: %w", err)
 	}
 
-	signalID := uuid.New().String() // fmt.Sprintf("wid_%s_cn_%s_seq_%d", workflowID, connectionName, minSequence)
+	signalID := uuid.New().String()
 
 	_, connection := kittehs.FindFirst(w.data.Connections, func(c sdktypes.Connection) bool {
 		return c.Name().String() == connectionName
