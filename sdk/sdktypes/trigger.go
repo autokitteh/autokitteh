@@ -97,7 +97,7 @@ func (p Trigger) ToValues() map[string]Value {
 	}
 }
 
-func (p Trigger) WithUpdatedData(key string, val Value) Trigger {
+func (p Trigger) WithAdditionalData(key string, val Value) Trigger {
 	data := p.read().Data
 	if val.IsValid() {
 		if data == nil {

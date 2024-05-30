@@ -37,7 +37,7 @@ func (m *triggers) Create(ctx context.Context, trigger sdktypes.Trigger) (sdktyp
 			if err := m.scheduler.Create(ctx, scheduleID, schedule, trigger.ID()); err != nil {
 				return sdktypes.InvalidTriggerID, err
 			}
-			trigger = trigger.WithUpdatedData(sdktypes.ScheduleIDKey, sdktypes.NewStringValue(scheduleID))
+			trigger = trigger.WithAdditionalData(sdktypes.ScheduleIDKey, sdktypes.NewStringValue(scheduleID))
 		}
 	}
 
@@ -82,7 +82,7 @@ func (m *triggers) Update(ctx context.Context, trigger sdktypes.Trigger) error {
 	}
 
 	if scheduleID != "" {
-		trigger = trigger.WithUpdatedData(sdktypes.ScheduleIDKey, sdktypes.NewStringValue(scheduleID))
+		trigger = trigger.WithAdditionalData(sdktypes.ScheduleIDKey, sdktypes.NewStringValue(scheduleID))
 	}
 	return m.db.UpdateTrigger(ctx, trigger)
 }
