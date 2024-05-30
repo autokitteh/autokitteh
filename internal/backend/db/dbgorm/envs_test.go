@@ -34,20 +34,20 @@ func TestCreateEnv(t *testing.T) {
 
 	e := f.newEnv()
 	// test createEnv
-	f.createEnvsAndAssert(t, e)
+	f.WithForeignKeysDisabled(func() { f.createEnvsAndAssert(t, e) })
 }
 
 func TestCreateEnvForeignKeys(t *testing.T) {
 	f := preEnvTest(t)
 
 	e := f.newEnv()
-	unexisting := scheme.UUIDOrNil(sdktypes.NewProjectID().UUIDValue())
+	unexisting := sdktypes.NewProjectID().UUIDValue()
 
 	e.ProjectID = unexisting
 	assert.ErrorIs(t, f.gormdb.createEnv(f.ctx, &e), gorm.ErrForeignKeyViolated)
 
 	p := f.newProject()
-	e.ProjectID = &p.ProjectID
+	e.ProjectID = p.ProjectID
 	f.createProjectsAndAssert(t, p)
 	f.createEnvsAndAssert(t, e)
 }
@@ -56,7 +56,7 @@ func TestDeleteEnv(t *testing.T) {
 	f := preEnvTest(t)
 
 	e := f.newEnv()
-	f.createEnvsAndAssert(t, e)
+	f.WithForeignKeysDisabled(func() { f.createEnvsAndAssert(t, e) })
 
 	// test deleteEnv
 	assert.NoError(t, f.gormdb.deleteEnv(f.ctx, e.EnvID))
@@ -67,7 +67,7 @@ func TestDeleteEnvs(t *testing.T) {
 	f := preEnvTest(t)
 
 	e1, e2 := f.newEnv(), f.newEnv()
-	f.createEnvsAndAssert(t, e1, e2)
+	f.WithForeignKeysDisabled(func() { f.createEnvsAndAssert(t, e1, e2) })
 
 	// test deleteEnvs
 	assert.NoError(t, f.gormdb.deleteEnvs(f.ctx, []sdktypes.UUID{e1.EnvID, e2.EnvID}))
@@ -80,7 +80,7 @@ func TestDeleteEnvForeignKeys(t *testing.T) {
 	b := f.newBuild()
 	p := f.newProject()
 	e := f.newEnv()
-	e.ProjectID = &p.ProjectID
+	e.ProjectID = p.ProjectID
 	d := f.newDeployment()
 	d.BuildID = &b.BuildID
 	d.EnvID = &e.EnvID
