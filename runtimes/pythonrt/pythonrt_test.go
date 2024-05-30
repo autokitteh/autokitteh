@@ -38,6 +38,9 @@ func validateTar(t *testing.T, tarData []byte, fsys fs.FS) {
 	entries, err := fs.ReadDir(fsys, ".")
 	require.NoError(t, err, "read dir")
 	for _, e := range entries {
+		if e.Name() == "__pycache__" {
+			continue
+		}
 		require.Truef(t, inTar[e.Name()], "%q not in tar", e.Name())
 	}
 }

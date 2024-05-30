@@ -296,6 +296,10 @@ func pyExports(ctx context.Context, pyExe string, fsys fs.FS) ([]Export, error) 
 	}
 
 	runnerPath, err := extractRunner(tmpDir)
+	if err != nil {
+		return nil, err
+	}
+
 	cmd := exec.CommandContext(ctx, pyExe, runnerPath, "inspect", tmpDir)
 	var buf bytes.Buffer
 	cmd.Stdout = &buf
