@@ -16,6 +16,9 @@ import (
 	"go.uber.org/zap"
 )
 
+// TODO: consider design where the workflow is an implementation
+// detail of the scheduler and does not need to be exposed via FX
+
 type SchedulerWorkflow struct {
 	wf.Workflow
 }

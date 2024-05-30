@@ -191,14 +191,12 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 			"schedule",
 			configset.Empty,
 			fx.Provide(schedule.New),
-			// fx.Provide(func(sch schedule.Scheduler) sdkservices.Scheduler { return sch }),
-			// fx.Invoke(func(lc fx.Lifecycle, sch schedule.Scheduler) { HookOnStart(lc, sch.Start) }),
 		),
+		// TODO: consider design where the workflow is an implementation detail of the scheduler and does not need to be exposed.
 		Component(
 			"scheduleWorkflow",
 			configset.Empty,
 			fx.Provide(schedule.NewSchedulerWorkflow),
-			// fx.Provide(func(sch schedule.Scheduler) sdkservices.Scheduler { return sch }),
 			fx.Invoke(func(lc fx.Lifecycle, swf schedule.SchedulerWorkflow) { HookOnStart(lc, swf.Start) }),
 		),
 		Component(
