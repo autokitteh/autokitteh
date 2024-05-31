@@ -384,6 +384,8 @@ class AttrDict(dict):
         raise NotImplementedError(f'{cls} does not support setting attributes')
 
 def run(args):
+    global log 
+
     sock = socket(AF_UNIX, SOCK_STREAM)
     sock.connect(args.sock)
     comm = Comm(sock)
