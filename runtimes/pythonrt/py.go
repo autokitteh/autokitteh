@@ -303,8 +303,9 @@ func pyExports(ctx context.Context, pyExe string, fsys fs.FS) ([]Export, error) 
 	cmd := exec.CommandContext(ctx, pyExe, runnerPath, "inspect", tmpDir)
 	var buf bytes.Buffer
 	cmd.Stdout = &buf
+	cmd.Stderr = &buf
 	if err := cmd.Run(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("inspect: %w.\nPython output: %s", err, buf.String())
 	}
 
 	var exports []Export

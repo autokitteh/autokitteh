@@ -479,6 +479,7 @@ def inspect(args):
             continue
         entries.extend(inspect_file(code_dir, path))
 
+    # Stdout is read by Go, don't print anything else
     print(json.dumps(entries))
 
 
