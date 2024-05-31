@@ -45,7 +45,7 @@ var createCmd = common.StandardCommand(&cobra.Command{
 			}
 			event = sdktypes.SchedulerEventTriggerType
 			data[sdktypes.ScheduleExpression] = sdktypes.NewStringValue(schedule)
-			connection = sdktypes.SchedulerConnectionName // FIXME: fix resolver. resolving by name isn't working
+			connection = sdktypes.SchedulerConnectionName
 			connectionID = sdktypes.BuiltinSchedulerConnectionID.String()
 		} else {
 			if connection == "" || event == "" {
