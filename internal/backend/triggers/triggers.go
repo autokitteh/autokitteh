@@ -3,7 +3,6 @@ package triggers
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"go.uber.org/zap"
 
@@ -33,11 +32,9 @@ func (m *triggers) Create(ctx context.Context, trigger sdktypes.Trigger) (sdktyp
 
 	if trigger.ConnectionID() == fixtures.BuiltinSchedulerConnectionID {
 		if schedule, _ := trigger.Data()[sdktypes.ScheduleExpression].ToString(); schedule != "" {
-			scheduleID := newScheduleID(trigger)
-			if err := m.scheduler.Create(ctx, scheduleID, schedule, trigger.ID()); err != nil {
+			if err := m.scheduler.Create(ctx, trigger.ID().String(), schedule, trigger.ID()); err != nil {
 				return sdktypes.InvalidTriggerID, err
 			}
-			trigger = trigger.WithAdditionalData(sdktypes.ScheduleIDKey, sdktypes.NewStringValue(scheduleID))
 		}
 	}
 
@@ -48,14 +45,14 @@ func (m *triggers) Create(ctx context.Context, trigger sdktypes.Trigger) (sdktyp
 }
 
 func (m *triggers) Update(ctx context.Context, trigger sdktypes.Trigger) error {
-	prevTrigger, err := m.db.GetTrigger(ctx, trigger.ID())
+	triggerID := trigger.ID()
+	prevTrigger, err := m.db.GetTrigger(ctx, triggerID)
 	if err != nil {
 		return err
 	}
 
 	prevData := prevTrigger.Data()
 	prevScheduleVal, isSchedulerPrevTrigger := prevData[sdktypes.ScheduleExpression]
-	scheduleID, _ := prevData[sdktypes.ScheduleIDKey].ToString()
 	isSchedulerPrevTrigger = isSchedulerPrevTrigger && prevTrigger.ConnectionID() == fixtures.BuiltinSchedulerConnectionID
 
 	data := trigger.Data()
@@ -65,24 +62,18 @@ func (m *triggers) Update(ctx context.Context, trigger sdktypes.Trigger) error {
 
 	if isSchedulerPrevTrigger {
 		if !isSchedulerTrigger { // scheduler trigger -> trigger
-			err = m.scheduler.Delete(ctx, scheduleID)
-			scheduleID = ""
+			err = m.scheduler.Delete(ctx, triggerID.String())
 		} else { // scheduler trigger -> scheduler trigger
 			if schedule != prevScheduleVal.String() { // schedule changed
-				err = m.scheduler.Update(ctx, scheduleID, schedule)
+				err = m.scheduler.Update(ctx, triggerID.String(), schedule)
 			}
 		}
 	} else if isSchedulerTrigger { // trigger -> scheduler trigger
-		scheduleID = newScheduleID(trigger)
-		err = m.scheduler.Create(ctx, scheduleID, schedule, trigger.ID())
+		err = m.scheduler.Create(ctx, triggerID.String(), schedule, triggerID)
 	}
 
 	if err != nil {
 		return err
-	}
-
-	if scheduleID != "" {
-		trigger = trigger.WithAdditionalData(sdktypes.ScheduleIDKey, sdktypes.NewStringValue(scheduleID))
 	}
 	return m.db.UpdateTrigger(ctx, trigger)
 }
@@ -94,10 +85,8 @@ func (m *triggers) Delete(ctx context.Context, triggerID sdktypes.TriggerID) err
 		return err
 	}
 
-	data := trigger.Data()
 	if trigger.ConnectionID() == fixtures.BuiltinSchedulerConnectionID {
-		scheduleID, _ := data[sdktypes.ScheduleIDKey].ToString()
-		err = m.scheduler.Delete(ctx, scheduleID)
+		err = m.scheduler.Delete(ctx, triggerID.String())
 	}
 	return errors.Join(err, m.db.DeleteTrigger(ctx, triggerID))
 }
@@ -113,5 +102,5 @@ func (m *triggers) List(ctx context.Context, filter sdkservices.ListTriggersFilt
 }
 
 func newScheduleID(trigger sdktypes.Trigger) string {
-	return fmt.Sprintf("%s_%s", trigger.Name().String(), trigger.ID().String())
+	return trigger.ID().String()
 }

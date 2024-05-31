@@ -5,7 +5,7 @@ return code == 0
 
 ak trigger list
 return code == 0
-output regex 'trigger_id:"trg_0+4" +name:"cron".*event_type:"scheduler".*?data:{key:"schedule" +value:{string:{v:"\*/1 \* \* \* \* \* \*"}}} +data:{key:"schedule_id" +value:{string:{v:"cron_trg_0+4"}}}'
+output regex 'trigger_id:"trg_0+4" +name:"cron" +connection_id:"con_3kthcr0n0+".*?event_type:"scheduler".*?data:{key:"schedule" +value:{string:{v:"\*/1 \* \* \* \* \* \*"}}}'
 
 wait 5s for session ses_00000000000000000000000008
 ak session log ses_00000000000000000000000008 --no-timestamps --prints-only
