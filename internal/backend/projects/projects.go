@@ -9,7 +9,6 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
-	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkruntimes"
@@ -52,8 +51,8 @@ func (ps *Projects) Create(ctx context.Context, project sdktypes.Project) (sdkty
 		}
 
 		// create default cron connection
-		if cronConnection, err := tx.GetConnection(ctx, fixtures.BuiltinSchedulerConnectionID); errors.Is(err, sdkerrors.ErrNotFound) {
-			cronConnection = cronConnection.WithID(fixtures.BuiltinSchedulerConnectionID).WithName(sdktypes.NewSymbol(sdktypes.SchedulerConnectionName))
+		if cronConnection, err := tx.GetConnection(ctx, sdktypes.BuiltinSchedulerConnectionID); errors.Is(err, sdkerrors.ErrNotFound) {
+			cronConnection = cronConnection.WithID(sdktypes.BuiltinSchedulerConnectionID).WithName(sdktypes.NewSymbol(sdktypes.SchedulerConnectionName))
 			if err = tx.CreateConnection(ctx, cronConnection); !errors.Is(err, sdkerrors.ErrAlreadyExists) { // just sanity
 				return err
 			}

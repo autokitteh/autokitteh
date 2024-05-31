@@ -8,7 +8,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
-	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/internal/resolver"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -47,7 +46,7 @@ var createCmd = common.StandardCommand(&cobra.Command{
 			event = sdktypes.SchedulerEventTriggerType
 			data[sdktypes.ScheduleExpression] = sdktypes.NewStringValue(schedule)
 			connection = sdktypes.SchedulerConnectionName // FIXME: fix resolver. resolving by name isn't working
-			connectionID = fixtures.BuiltinSchedulerConnectionID.String()
+			connectionID = sdktypes.BuiltinSchedulerConnectionID.String()
 		} else {
 			if connection == "" || event == "" {
 				return fmt.Errorf(`required flag(s) "connection", "event" not set`)

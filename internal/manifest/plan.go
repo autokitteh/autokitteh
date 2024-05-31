@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 
-	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/internal/manifest/internal/actions"
 	"go.autokitteh.dev/autokitteh/sdk/sdklogger"
@@ -445,7 +444,7 @@ func planTriggers(ctx context.Context, mtriggers []*Trigger, client sdkservices.
 			if mtrigger.ConnectionKey == projPrefix { // there is a schedule section and no connection was specified, means it's a scheduler trigger
 				mtrigger.EventType = sdktypes.SchedulerEventTriggerType
 				mtrigger.ConnectionKey = "" // just simplify comparison later in exec plan
-				connectionID = fixtures.BuiltinSchedulerConnectionID
+				connectionID = sdktypes.BuiltinSchedulerConnectionID
 			}
 		}
 

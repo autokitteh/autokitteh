@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	wf "go.autokitteh.dev/autokitteh/internal/backend/workflows"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
@@ -92,7 +91,7 @@ func (swf *SchedulerWorkflow) newScheduleTickEvent(ctx context.Context, triggerI
 		&sdktypes.EventPB{
 			EventType:    sdktypes.SchedulerTickEventType,
 			Memo:         map[string]string{"trigger_id": triggerID.String()},
-			ConnectionId: fixtures.BuiltinSchedulerConnectionID.String(),
+			ConnectionId: sdktypes.BuiltinSchedulerConnectionID.String(),
 		}))
 
 	eventID, err := swf.Services.Events.Save(ctx, event) // create event
