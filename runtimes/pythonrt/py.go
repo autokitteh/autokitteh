@@ -63,6 +63,7 @@ func parsePyVersion(s string) (major, minor int, err error) {
 	return
 }
 
+// findPython finds `python3` or `python` in PATH.
 func findPython() (string, error) {
 	names := []string{"python3", "python"}
 	for _, name := range names {
@@ -72,15 +73,10 @@ func findPython() (string, error) {
 		}
 	}
 
-	return "", fmt.Errorf("non of %v found in PATH", names)
+	return "", fmt.Errorf("none of %v found in PATH", names)
 }
 
-func pyExeInfo(ctx context.Context) (exeInfo, error) {
-	exePath, err := findPython()
-	if err != nil {
-		return exeInfo{}, err
-	}
-
+func pyExeInfo(ctx context.Context, exePath string) (exeInfo, error) {
 	cmd := exec.CommandContext(ctx, exePath, "--version")
 	var buf bytes.Buffer
 	cmd.Stdout = &buf
