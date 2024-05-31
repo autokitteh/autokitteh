@@ -1,4 +1,4 @@
-h1:Zd7Ps6xJIgV1P5Xs4F5fXndw+rkiwDAPcW9mPKa82To=
+h1:LfXbxZLlcihL4bxEzYsK1338N1+W+PGgieHN5uE2OYI=
 20240507104234_baseline.sql h1:u+/m2oVxbl8ocxuOGDK5ZvK1FSiFFDWpyDIY9lFOXv4=
 20240508111542_secret-string-value.sql h1:LMcOKQmbE418Nmj2HwOaRv6d2X8UQnblUh79EwLsamU=
 20240515105256_trigger_opional_connection.sql h1:Yf5xwhI8IpZXfrOvbi7wwWcmggl2f5Z2shOulpxwT0M=
@@ -7,3 +7,5 @@ h1:Zd7Ps6xJIgV1P5Xs4F5fXndw+rkiwDAPcW9mPKa82To=
 20240522074209_project_name_non_unique_index.sql h1:+XwG1fO/hBGfjWfZwoXHI0MJYCoVrOzDaivQDV8VSVE=
 20240522102628_revert-trigger-optional-connection.sql h1:Ww/LjXR7+BdBzqP5Kh3MkI8Wnu681D0yB+HsE0dyiNg=
 20240526072213_reorg-event-record-primary-key.sql h1:k0g4a1R5h6TcRcDRti+wDPlHCVgYphtpGBUqEjtTHeI=
+20240528162859_connection_soft_delete.sql h1:cWy3NUSV+EBbq/2hFcyuihRVKciv2ea0zVCngvlmzY0=
+20240530091858_non-optional-project-in-env.sql h1:t245lt4ccB3U/8v8xUGYxydj+JCXpewxs7Jvm96ZRl0=

@@ -3,6 +3,7 @@
 
 from os import getenv
 import json
+import ak
 
 
 def greet(event):
@@ -15,3 +16,8 @@ def greet(event):
     print(f'BODY: {body!r}')
     request = json.loads(body)
     print(f'REQUEST: {request!r}')
+
+
+@ak.activity
+def printer(event):
+    print(event)

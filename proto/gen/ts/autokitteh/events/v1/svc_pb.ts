@@ -223,6 +223,8 @@ export class ListRequest extends Message<ListRequest> {
  */
 export class ListResponse extends Message<ListResponse> {
   /**
+   * Events without their data.
+   *
    * @generated from field: repeated autokitteh.events.v1.Event events = 1;
    */
   events: Event[] = [];

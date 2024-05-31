@@ -31,6 +31,8 @@ export const SessionsService = {
       kind: MethodKind.Unary,
     },
     /**
+     * List returns events without their data.
+     *
      * @generated from rpc autokitteh.sessions.v1.SessionsService.List
      */
     list: {
