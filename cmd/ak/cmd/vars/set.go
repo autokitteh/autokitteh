@@ -2,6 +2,8 @@ package vars
 
 import (
 	"fmt"
+	"io"
+	"os"
 
 	"github.com/spf13/cobra"
 
@@ -12,10 +14,11 @@ import (
 var secret bool
 
 var setCmd = common.StandardCommand(&cobra.Command{
-	Use:     "set <key> <value> [--secret] <--env=.. | --connection=....> [--project=...]",
+	Use:     "set <key> [<value>] [--secret] <--env=.. | --connection=....> [--project=...]",
 	Short:   "Set variable",
+	Long:    "Set a variable. If <value> is not specified it will be read from standard input.",
 	Aliases: []string{"s"},
-	Args:    cobra.ExactArgs(2),
+	Args:    cobra.RangeArgs(1, 2),
 
 	RunE: func(cmd *cobra.Command, args []string) error {
 		id, err := resolveScopeID()
@@ -28,7 +31,20 @@ var setCmd = common.StandardCommand(&cobra.Command{
 			return fmt.Errorf("invalid variable name %q: %w", args[0], err)
 		}
 
-		ev := sdktypes.NewVar(n, args[1], secret).WithScopeID(id)
+		var value string
+		if len(args) == 2 {
+			value = args[1]
+		} else {
+			const maxVarSize = 1 << 20 // 1MB
+			r := io.LimitReader(os.Stdin, maxVarSize)
+			data, err := io.ReadAll(r)
+			if err != nil {
+				return err
+			}
+			value = string(data)
+		}
+
+		ev := sdktypes.NewVar(n, value, secret).WithScopeID(id)
 		if err != nil {
 			return fmt.Errorf("invalid variable: %w", err)
 		}

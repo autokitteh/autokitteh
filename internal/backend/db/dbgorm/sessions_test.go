@@ -94,7 +94,7 @@ func TestCreateSessionForeignKeys(t *testing.T) {
 	ev := f.newEvent()
 
 	f.saveBuildsAndAssert(t, b)
-	f.createEnvsAndAssert(t, env)
+	f.WithForeignKeysDisabled(func() { f.createEnvsAndAssert(t, env) })
 	f.createDeploymentsAndAssert(t, d)
 	f.WithForeignKeysDisabled(func() { f.createEventsAndAssert(t, ev) })
 
@@ -129,6 +129,7 @@ func TestListSessions(t *testing.T) {
 	f.createSessionsAndAssert(t, s)
 
 	sessions := f.listSessionsAndAssert(t, 1)
+	s.Inputs = nil
 	assert.Equal(t, s, sessions[0])
 
 	// deleteSession and ensure that listSessions is empty

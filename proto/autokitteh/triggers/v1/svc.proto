@@ -48,6 +48,7 @@ message GetResponse {
 message ListRequest {
   string env_id = 1;
   string connection_id = 2;
+  string project_id = 3;
 }
 
 message ListResponse {

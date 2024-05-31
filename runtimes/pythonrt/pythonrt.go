@@ -15,6 +15,7 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 var (
@@ -39,6 +40,8 @@ type pySvc struct {
 	comm      *Comm
 	stdout    *streamLogger
 	stderr    *streamLogger
+	syscallFn sdktypes.Value
+	pyExe     string
 }
 
 var minPyVersion = Version{
@@ -54,34 +57,53 @@ func isGoodVersion(v Version) bool {
 	return v.Minor >= minPyVersion.Minor
 }
 
+const exeEnvKey = "AK_WORKER_PYTHON"
+
 func New() (sdkservices.Runtime, error) {
-	// Use sdklogger
 	log, err := logger.New(logger.Configs.Dev) // TODO (ENG-553): From configuration
 	if err != nil {
 		return nil, err
 	}
+	log = log.With(zap.String("runtime", "python"))
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
-	info, err := pyExeInfo(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("python info: %w", err)
+	svc := pySvc{
+		log: log,
 	}
 
-	log.Info("system python info", zap.String("exe", info.Exe), zap.Any("version", info.Version))
+	userPython := true
+	pyExe := os.Getenv(exeEnvKey)
+	if pyExe == "" {
+		pyExe, err = findPython()
+		if err != nil {
+			return nil, err
+		}
+		userPython = false
+	}
+
+	const timeout = 3 * time.Second
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	info, err := pyExeInfo(ctx, pyExe)
+	if err != nil {
+		return nil, err
+	}
+
+	log.Info("python info", zap.String("exe", info.Exe), zap.Any("version", info.Version))
 	if !isGoodVersion(info.Version) {
 		const format = "python >= %d.%d required, found %q"
 		return nil, fmt.Errorf(format, minPyVersion.Major, minPyVersion.Minor, info.VersionString)
 	}
 
-	if err := ensureVEnv(log, info.Exe); err != nil {
-		return nil, fmt.Errorf("create venv: %w", err)
-	}
-
-	log.Info("venv python", zap.String("exe", venvPy))
-
-	svc := pySvc{
-		log: log,
+	// If user supplies which Python to use, we use it "as-is" without creating venv
+	if !userPython {
+		if err := ensureVEnv(log, pyExe); err != nil {
+			return nil, fmt.Errorf("create venv: %w", err)
+		}
+		log.Info("venv python", zap.String("exe", venvPy))
+		svc.pyExe = venvPy
+	} else {
+		svc.pyExe = pyExe
 	}
 
 	return &svc, nil
@@ -151,6 +173,79 @@ func entriesToValues(xid sdktypes.ExecutorID, entries []string) (map[string]sdkt
 	return values, nil
 }
 
+func pyLevelToZap(level string) zapcore.Level {
+	switch level {
+	case "DEBUG":
+		return zap.DebugLevel
+	case "INFO":
+		return zap.InfoLevel
+	case "WARNING":
+		return zap.WarnLevel
+	case "ERROR":
+		return zap.ErrorLevel
+	}
+
+	return zap.InfoLevel
+}
+
+func (py *pySvc) handleLog(msg Message) error {
+	log, err := extractMessage[LogMessage](msg)
+	if err != nil {
+		return err
+	}
+
+	level := pyLevelToZap(log.Level)
+	py.log.Log(level, log.Message, zap.String("source", "python"))
+	return nil
+}
+
+func (py *pySvc) loadSyscall(values map[string]sdktypes.Value) error {
+	ak, ok := values["ak"]
+	if !ok {
+		return fmt.Errorf("`ak` not found")
+	}
+
+	if !ak.IsStruct() {
+		return fmt.Errorf("`ak` is not a struct")
+	}
+
+	syscall, ok := ak.GetStruct().Fields()["syscall"]
+	if !ok {
+		return fmt.Errorf("`syscall` not found in `ak`")
+	}
+	if !syscall.IsFunction() {
+		return fmt.Errorf("`syscall` is not a function")
+	}
+
+	py.syscallFn = syscall
+	return nil
+}
+
+func (py *pySvc) handleSleep(ctx context.Context, msg Message) error {
+	sleep, err := extractMessage[SleepMessage](msg)
+	if err != nil {
+		py.log.Error("sleep message", zap.Error(err))
+		return err
+	}
+
+	py.log.Info("sleep", zap.Float64("seconds", sleep.Seconds))
+
+	// Milliseconds sleep granularity should be good enough.
+	d := time.Duration(sleep.Seconds*1000) * time.Millisecond
+	args := []sdktypes.Value{
+		sdktypes.NewStringValue("sleep"),
+		sdktypes.NewDurationValue(d),
+	}
+
+	_, err = py.cbs.Call(ctx, py.xid.ToRunID(), py.syscallFn, args, nil)
+	if err != nil {
+		py.log.Error("call sleep", zap.Error(err))
+		return err
+	}
+
+	return py.comm.Send(sleep)
+}
+
 /*
 Run starts a Python workflow.
 
@@ -166,7 +261,14 @@ func (py *pySvc) Run(
 	values map[string]sdktypes.Value,
 	cbs *sdkservices.RunCallbacks,
 ) (sdkservices.Run, error) {
-	py.log.Info("run", zap.String("id", runID.String()), zap.String("path", mainPath))
+
+	py.xid = sdktypes.NewExecutorID(runID) // Should be first
+	py.log = py.log.With(zap.String("run_id", runID.String()))
+	py.log.Info("run", zap.String("path", mainPath))
+
+	if err := py.loadSyscall(values); err != nil {
+		return nil, err
+	}
 
 	py.xid = sdktypes.NewExecutorID(runID)
 	py.log.Info("executor", zap.String("id", py.xid.String()))
@@ -193,7 +295,7 @@ func (py *pySvc) Run(
 	py.stderr = newStreamLogger("[stderr] ", cbs.Print, runID)
 	opts := runOptions{
 		log:      py.log,
-		pyExe:    venvPy,
+		pyExe:    py.pyExe,
 		tarData:  tarData,
 		rootPath: mainPath,
 		env:      envMap,
@@ -228,22 +330,34 @@ func (py *pySvc) Run(
 	py.comm = NewComm(conn)
 
 	// FIXME (ENG-577) We might get activity calls before module is loaded if there are module level function calls.
+	var mod ModuleMessage
+	for {
+		msg, err := py.comm.Recv()
+		if err != nil {
+			py.log.Error("initial message from python", zap.Error(err))
+			return nil, err
+		}
 
-	msg, err := py.comm.Recv()
-	if err != nil {
-		py.log.Error("initial message from python", zap.Error(err))
-		return nil, err
-	}
+		if msg.Type == "" {
+			py.log.Error("python can't load module", zap.String("module", mainPath))
+			return nil, fmt.Errorf("python can't load %q", mainPath)
+		}
 
-	if msg.Type == "" {
-		py.log.Error("python can't load module", zap.String("module", mainPath))
-		return nil, fmt.Errorf("python can't load %q", mainPath)
-	}
+		if msg.Type == messageType[LogMessage]() {
+			if err := py.handleLog(msg); err != nil {
+				return nil, err
+			}
+			continue
+		}
 
-	mod, err := extractMessage[ModuleMessage](msg)
-	if err != nil {
-		py.log.Error("initial message from python", zap.Error(err))
-		return nil, err
+		mod, err = extractMessage[ModuleMessage](msg)
+		if err != nil {
+			py.log.Error("initial message from python", zap.Error(err))
+			return nil, err
+		}
+
+		py.log.Info("module loaded")
+		break
 	}
 
 	py.log.Info("module entries", zap.Any("entries", mod.Entries))
@@ -317,6 +431,20 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, event map[str
 
 		if msg.Type == messageType[DoneMessage]() {
 			break
+		}
+
+		if msg.Type == messageType[LogMessage]() {
+			if err := py.handleLog(msg); err != nil {
+				return sdktypes.InvalidValue, err
+			}
+			continue
+		}
+
+		if msg.Type == messageType[SleepMessage]() {
+			if err := py.handleSleep(ctx, msg); err != nil {
+				return sdktypes.InvalidValue, err
+			}
+			continue
 		}
 
 		cbm, err := extractMessage[CallbackMessage](msg)

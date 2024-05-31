@@ -31,6 +31,8 @@ export const EventsService = {
       kind: MethodKind.Unary,
     },
     /**
+     * List returns events without their data.
+     *
      * @generated from rpc autokitteh.events.v1.EventsService.List
      */
     list: {

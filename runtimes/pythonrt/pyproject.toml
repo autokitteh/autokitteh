@@ -1,3 +1,7 @@
 [tool.pytest.ini_options]
 
-addopts = "-v --doctest-modules --ignore testdata"
+addopts = '''
+	-v 
+	--doctest-modules 
+	--ignore testdata
+'''

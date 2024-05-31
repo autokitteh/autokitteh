@@ -4,6 +4,8 @@ import (
 	"errors"
 	"time"
 
+	"golang.org/x/exp/constraints"
+
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -118,8 +120,8 @@ func (IntegerValue) isConcreteValue() {}
 
 func (s IntegerValue) Value() int64 { return s.read().V }
 
-func NewIntegerValue(v int64) Value {
-	return forceFromProto[Value](&ValuePB{Integer: &IntegerValuePB{V: v}})
+func NewIntegerValue[T constraints.Integer](v T) Value {
+	return forceFromProto[Value](&ValuePB{Integer: &IntegerValuePB{V: int64(v)}})
 }
 
 func (v Value) IsInteger() bool          { return v.read().Integer != nil }
@@ -174,8 +176,8 @@ func (FloatValue) isConcreteValue() {}
 
 func (s FloatValue) Value() float64 { return s.read().V }
 
-func NewFloatValue(v float64) Value {
-	return forceFromProto[Value](&ValuePB{Float: &FloatValuePB{V: v}})
+func NewFloatValue[T constraints.Float](v T) Value {
+	return forceFromProto[Value](&ValuePB{Float: &FloatValuePB{V: float64(v)}})
 }
 
 func (v Value) IsFloat() bool        { return v.read().Float != nil }

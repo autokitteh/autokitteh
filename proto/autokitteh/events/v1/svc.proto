@@ -44,6 +44,7 @@ message ListRequest {
 }
 
 message ListResponse {
+  // Events without their data.
   repeated Event events = 1;
 }
 
@@ -73,6 +74,7 @@ service EventsService {
 
   rpc Get(GetRequest) returns (GetResponse);
 
+  // List returns events without their data.
   rpc List(ListRequest) returns (ListResponse);
 
   rpc ListEventRecords(ListEventRecordsRequest) returns (ListEventRecordsResponse);

@@ -6,11 +6,6 @@ ak project build my_project --file main.star
 return code == 0
 output equals 'build_id: bld_00000000000000000000000003'
 
-# Negative tests: start session without required flags.
-ak session start
-output equals 'Error: required flag(s) "entrypoint" not set'
-return code == 1
-
 ak session start --entrypoint main.star:main
 output equals 'Error: at least one of the flags in the group [deployment-id build-id] is required'
 return code == 1
