@@ -134,7 +134,7 @@ func (swf *SchedulerWorkflow) scheduleWorkflow(wfctx workflow.Context, triggerID
 	logger := workflow.GetLogger(wfctx)
 	logger.Info("started scheduler workflow", "trigger_id", triggerID.String())
 
-	ctx := context.Background()
+	ctx := temporalclient.NewWorkflowContextAsGOContext(wfctx)
 	tickEvent := swf.newScheduleTickEvent(ctx, triggerID) // create tick event and add <processing> state
 
 	state := sdktypes.EventStateCompleted
