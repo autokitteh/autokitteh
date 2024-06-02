@@ -9,6 +9,13 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
+const (
+	SchedulerEventTriggerType = "scheduler"
+	SchedulerTickEventType    = "schedule_tick"
+	ScheduleExpression        = "schedule"
+	SchedulerConnectionName   = "cron"
+)
+
 func NewBuiltinIntegrationID(name string) sdktypes.IntegrationID {
 	return sdktypes.NewIntegrationIDFromName(name)
 }

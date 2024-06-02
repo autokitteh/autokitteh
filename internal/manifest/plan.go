@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/internal/manifest/internal/actions"
 	"go.autokitteh.dev/autokitteh/sdk/sdklogger"
@@ -431,7 +432,7 @@ func planTriggers(ctx context.Context, mtriggers []*Trigger, client sdkservices.
 		connectionID := curr.ConnectionID()
 		// schedule could be specified in manifest either in dedicated or in `data' sections. Ensure schedule is present in data section
 		if mtrigger.Schedule != "" {
-			if schedule, found := mtrigger.Data[sdktypes.ScheduleExpression]; found {
+			if schedule, found := mtrigger.Data[fixtures.ScheduleExpression]; found {
 				if schedule != mtrigger.Schedule {
 					return nil, fmt.Errorf("trigger %q: conflicting schedules specified: %q != %q", mtrigger.GetKey(), mtrigger.Schedule, schedule)
 				}
@@ -439,10 +440,10 @@ func planTriggers(ctx context.Context, mtriggers []*Trigger, client sdkservices.
 			if mtrigger.Data == nil {
 				mtrigger.Data = make(map[string]any)
 			}
-			mtrigger.Data[sdktypes.ScheduleExpression] = mtrigger.Schedule // ensure that schedule is present in data section
+			mtrigger.Data[fixtures.ScheduleExpression] = mtrigger.Schedule // ensure that schedule is present in data section
 
 			if mtrigger.ConnectionKey == projPrefix { // there is a schedule section and no connection was specified, means it's a scheduler trigger
-				mtrigger.EventType = sdktypes.SchedulerEventTriggerType
+				mtrigger.EventType = fixtures.SchedulerEventTriggerType
 				mtrigger.ConnectionKey = "" // just simplify comparison later in exec plan
 				connectionID = sdktypes.BuiltinSchedulerConnectionID
 			}

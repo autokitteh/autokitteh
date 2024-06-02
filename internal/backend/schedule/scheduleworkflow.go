@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	wf "go.autokitteh.dev/autokitteh/internal/backend/workflows"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
@@ -52,7 +53,7 @@ func (swf *SchedulerWorkflow) getSessionData(ctx context.Context, triggerID sdkt
 		return nil, fmt.Errorf("get trigger: %w", err)
 	}
 
-	if trigger.EventType() != sdktypes.SchedulerEventTriggerType { // sanity
+	if trigger.EventType() != fixtures.SchedulerEventTriggerType { // sanity
 		z.Error("unsupported trigger type, expected `scheduler`", zap.String("trigger_type", trigger.EventType()))
 		return nil, fmt.Errorf("unexpected trigger type. Need `scheduler`, got %q", trigger.EventType())
 	}
@@ -89,7 +90,7 @@ func (swf *SchedulerWorkflow) newScheduleTickEvent(ctx context.Context, triggerI
 
 	event := kittehs.Must1(sdktypes.EventFromProto(
 		&sdktypes.EventPB{
-			EventType:    sdktypes.SchedulerTickEventType,
+			EventType:    fixtures.SchedulerTickEventType,
 			Memo:         map[string]string{"trigger_id": triggerID.String()},
 			ConnectionId: sdktypes.BuiltinSchedulerConnectionID.String(),
 		}))
@@ -101,7 +102,7 @@ func (swf *SchedulerWorkflow) newScheduleTickEvent(ctx context.Context, triggerI
 
 	// REVIEW: re-fetching newly created event is costly (db). Right now we are recreating event without CreatedAt.
 	// other solution is to cause events.SaveEvent to return created event and not just ID
-	event = kittehs.Must1(sdktypes.EventFromProto(&sdktypes.EventPB{EventId: eventID.String(), EventType: sdktypes.SchedulerTickEventType}))
+	event = kittehs.Must1(sdktypes.EventFromProto(&sdktypes.EventPB{EventId: eventID.String(), EventType: fixtures.SchedulerTickEventType}))
 
 	swf.CreateEventRecord(ctx, eventID, sdktypes.EventStateProcessing) // add `processing` event record
 	return event

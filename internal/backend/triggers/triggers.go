@@ -7,6 +7,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
+	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -38,7 +39,7 @@ func (m *triggers) Create(ctx context.Context, trigger sdktypes.Trigger) (sdktyp
 	trigger = trigger.WithNewID()
 
 	if trigger.ConnectionID() == sdktypes.BuiltinSchedulerConnectionID {
-		if schedule, _ := trigger.Data()[sdktypes.ScheduleExpression].ToString(); schedule != "" {
+		if schedule, _ := trigger.Data()[fixtures.ScheduleExpression].ToString(); schedule != "" {
 			if err := m.scheduler.Create(ctx, trigger.ID().String(), schedule, trigger.ID()); err != nil {
 				return sdktypes.InvalidTriggerID, err
 			}
@@ -60,11 +61,11 @@ func (m *triggers) Update(ctx context.Context, trigger sdktypes.Trigger) error {
 	}
 
 	prevData := prevTrigger.Data()
-	prevScheduleVal, isSchedulerPrevTrigger := prevData[sdktypes.ScheduleExpression]
+	prevScheduleVal, isSchedulerPrevTrigger := prevData[fixtures.ScheduleExpression]
 	isSchedulerPrevTrigger = isSchedulerPrevTrigger && prevTrigger.ConnectionID() == sdktypes.BuiltinSchedulerConnectionID
 
 	data := trigger.Data()
-	scheduleVal, isSchedulerTrigger := data[sdktypes.ScheduleExpression]
+	scheduleVal, isSchedulerTrigger := data[fixtures.ScheduleExpression]
 	schedule, _ := scheduleVal.ToString()
 	isSchedulerTrigger = isSchedulerTrigger && trigger.ConnectionID() == sdktypes.BuiltinSchedulerConnectionID
 
