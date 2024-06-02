@@ -12,6 +12,14 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
+// NOTE(s):
+// 1. atomicity. Create temporal schedule and save trigger aren't atomic (and not temporal workflow).
+//    It's possible that AK will crash after creating schedule but before saving trigger. In this case
+//    the schedule will be orphaned. It will continue to be triggered by temporal, but will fail to run,
+//    since it needs to fetch the trigger form DB.
+//    We need to decide how to handle this case
+// 2. Same note on any non-atomic schedule creation and DB/trigger update
+
 type triggers struct {
 	z         *zap.Logger
 	db        db.DB
@@ -36,6 +44,7 @@ func (m *triggers) Create(ctx context.Context, trigger sdktypes.Trigger) (sdktyp
 			}
 		}
 	}
+	// FIXME: see atomicity NOTE above
 
 	if err := m.db.CreateTrigger(ctx, trigger); err != nil {
 		return sdktypes.InvalidTriggerID, err
