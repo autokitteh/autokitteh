@@ -34,7 +34,12 @@ const (
 )
 
 func (i integration) NewClient(ctx context.Context, user string) (*github.Client, error) {
-	data, err := i.getConnection(ctx)
+	// Extract the connection token from the given context.
+	cid, err := sdkmodule.FunctionConnectionIDFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	data, err := i.vars.Reveal(ctx, sdktypes.NewVarScopeID(cid))
 	if err != nil {
 		return nil, err
 	}
