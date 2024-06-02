@@ -107,7 +107,7 @@ func (swf *SchedulerWorkflow) newScheduleTickEvent(ctx context.Context, triggerI
 	return event
 }
 
-func (swf *SchedulerWorkflow) scheduleWorkflowInternal(wfctx workflow.Context, ctx context.Context, triggerID sdktypes.TriggerID, tickEvent *sdktypes.Event) error {
+func (swf *SchedulerWorkflow) startScheduleSessions(wfctx workflow.Context, ctx context.Context, triggerID sdktypes.TriggerID, tickEvent *sdktypes.Event) error {
 	z := swf.Z.With(zap.String("trigger_id", triggerID.String()))
 	z.Info("started")
 
@@ -137,7 +137,7 @@ func (swf *SchedulerWorkflow) scheduleWorkflow(wfctx workflow.Context, triggerID
 	tickEvent := swf.newScheduleTickEvent(ctx, triggerID) // create tick event and add <processing> state
 
 	state := sdktypes.EventStateCompleted
-	if err = swf.scheduleWorkflowInternal(wfctx, ctx, triggerID, &tickEvent); err != nil {
+	if err = swf.startScheduleSessions(wfctx, ctx, triggerID, &tickEvent); err != nil {
 		state = sdktypes.EventStateFailed
 		logger.Error("error while scheduler workflow", "trigger_id", triggerID.String(), err)
 	} else {
