@@ -75,17 +75,6 @@ func (i integration) newClientWithInstallJWT(data sdktypes.Vars, user string) (*
 	return i.newClientWithInstallJWTFromGitHubIDs(aid, iid)
 }
 
-// getConnection calls the Get method in SecretsService.
-func (i integration) getConnection(ctx context.Context) (sdktypes.Vars, error) {
-	// Extract the connection token from the given context.
-	cid, err := sdkmodule.FunctionConnectionIDFromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	return i.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
-}
-
 // newClientWithInstallJWTFromGitHubIDs generates a GitHub app
 // installation JWT based on the given GitHub app ID and installation ID. See:
 // https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/authenticating-as-a-github-app-installation
