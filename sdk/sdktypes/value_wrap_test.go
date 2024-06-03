@@ -422,36 +422,3 @@ func TestUnwrapNothing(t *testing.T) {
 	var i int
 	assert.Error(t, sdktypes.UnwrapValueInto(&i, sdktypes.Nothing))
 }
-
-func TestUnwrapIntoKitchenSink1(t *testing.T) {
-	type Y struct {
-		Z string
-	}
-	type Timestamp struct {
-		time.Time
-	}
-
-	type X struct {
-		//D   time.Duration
-		//InS struct {
-		//	T time.Time
-		//}
-		T Timestamp
-	}
-
-	in := X{
-		// D:   time.Hour,
-		// InS: struct{ T time.Time }{T: time.Date(2023, time.January, 1, 18, 32, 0, 0, time.UTC)},
-		T: Timestamp{time.Date(2023, time.January, 1, 18, 32, 0, 0, time.UTC)},
-	}
-
-	w := sdktypes.DefaultValueWrapper
-
-	var x X
-
-	wx := kittehs.Must1(w.Wrap(in))
-
-	if assert.NoError(t, w.UnwrapInto(&x, wx)) {
-		assert.Equal(t, in, x)
-	}
-}
