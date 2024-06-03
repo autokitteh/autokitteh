@@ -184,7 +184,7 @@ func runPython(opts runOptions) (*pyRunInfo, error) {
 
 	args := []string{runnerPath, sockPath, tarPath, opts.rootPath}
 	if pemPath != "" {
-		args = append(args, pemPath)
+		args = append(args, "--cert-file", pemPath)
 	}
 	cmd := exec.Command(opts.pyExe, args...)
 	cmd.Dir = rootDir

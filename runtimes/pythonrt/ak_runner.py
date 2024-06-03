@@ -404,6 +404,9 @@ if __name__ == '__main__':
     sock.connect(args.sock)
 
     if args.cert_file:
+        if not Path(args.cert_file).is_file():
+            raise SystemExit(f'error: {args.cert_file} not found')
+
         context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
         context.verify_mode = ssl.CERT_REQUIRED
         context.check_hostname = True
@@ -411,8 +414,12 @@ if __name__ == '__main__':
         context.load_verify_locations(args.cert_file)
         sock = context.wrap_socket(sock, server_hostname='localhost')
 
+
     comm = Comm(sock)
     log = create_logger(logging.INFO, comm)
+
+    # Can only log here
+    log.info('connected to %r', args.sock)
 
     # TODO: Ask Itay why AK does not pass entry point
     if ':' in args.path:
@@ -426,15 +433,8 @@ if __name__ == '__main__':
     code_dir = extract_code(args.tar)
     log.info('code dir: %r', code_dir)
 
-    script_dir = Path(__file__).parent.absolute()
-    cert_file = script_dir / 'cert.pem'
-    if not cert_file.is_file():
-        raise SystemExit('error: {cert_file!s} not found')
-
-    log.info('connected to %r', args.sock)
 
     log.info('loading %r', module_name)
-
     ak_call = AKCall(comm)
     mod = load_code(code_dir, ak_call, module_name)
     ak_call.module = mod
