@@ -34,7 +34,12 @@ const (
 )
 
 func (i integration) NewClient(ctx context.Context, user string) (*github.Client, error) {
-	data, err := i.getConnection(ctx)
+	// Extract the connection token from the given context.
+	cid, err := sdkmodule.FunctionConnectionIDFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	data, err := i.vars.Reveal(ctx, sdktypes.NewVarScopeID(cid))
 	if err != nil {
 		return nil, err
 	}
@@ -68,17 +73,6 @@ func (i integration) newClientWithInstallJWT(data sdktypes.Vars, user string) (*
 	}
 
 	return i.newClientWithInstallJWTFromGitHubIDs(aid, iid)
-}
-
-// getConnection calls the Get method in SecretsService.
-func (i integration) getConnection(ctx context.Context) (sdktypes.Vars, error) {
-	// Extract the connection token from the given context.
-	cid, err := sdkmodule.FunctionConnectionIDFromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	return i.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
 }
 
 // newClientWithInstallJWTFromGitHubIDs generates a GitHub app
