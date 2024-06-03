@@ -246,6 +246,36 @@ func (py *pySvc) handleSleep(ctx context.Context, msg Message) error {
 	return py.comm.Send(sleep)
 }
 
+const (
+	pemEnvKey = "AK_WORKER_PEM"
+	keyEnvKey = "AK_WORKER_KEY"
+)
+
+// tlsInfo return TLS information if set in environment.
+func tlsInfo(log *zap.Logger) ([]byte, []byte, error) {
+	pemPath, keyPath := os.Getenv(pemEnvKey), os.Getenv(keyEnvKey)
+
+	if pemPath == "" || keyPath == "" {
+		if pemPath != "" || keyPath != "" {
+			return nil, nil, fmt.Errorf("both %q and %q must be set", pemEnvKey, keyEnvKey)
+		}
+
+		return nil, nil, nil
+	}
+
+	pem, err := os.ReadFile(pemPath)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	key, err := os.ReadFile(keyPath)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return pem, key, nil
+}
+
 /*
 Run starts a Python workflow.
 
@@ -291,6 +321,11 @@ func (py *pySvc) Run(
 		return nil, fmt.Errorf("%q note found in compiled data", archiveKey)
 	}
 
+	pem, key, err := tlsInfo(py.log)
+	if err != nil {
+		return nil, err
+	}
+
 	py.stdout = newStreamLogger("[stdout] ", cbs.Print, runID)
 	py.stderr = newStreamLogger("[stderr] ", cbs.Print, runID)
 	opts := runOptions{
@@ -301,6 +336,8 @@ func (py *pySvc) Run(
 		env:      envMap,
 		stdout:   py.stdout,
 		stderr:   py.stderr,
+		certPem:  pem,
+		keyPem:   key,
 	}
 	ri, err := runPython(opts)
 	if err != nil {

@@ -132,6 +132,21 @@ type runOptions struct {
 	env            map[string]string
 	stdout, stderr io.Writer
 	certPem        []byte
+	keyPem         []byte
+}
+
+func createSock(path string, certPem, keyPem []byte) (net.Listener, error) {
+	if certPem == nil {
+		return net.Listen("unix", path)
+	}
+
+	cert, err := tls.X509KeyPair(certPem, keyPem)
+	if err != nil {
+		return nil, err
+	}
+
+	cfg := tls.Config{Certificates: []tls.Certificate{cert}}
+	return tls.Listen("unix", path, &cfg)
 }
 
 func runPython(opts runOptions) (*pyRunInfo, error) {
@@ -150,29 +165,21 @@ func runPython(opts runOptions) (*pyRunInfo, error) {
 		return nil, err
 	}
 
+	opts.log.Info("python runner", zap.String("path", runnerPath))
+
+	sockPath := path.Join(rootDir, "ak.sock")
+	opts.log.Info("socket", zap.String("path", sockPath))
+	lis, err := createSock(sockPath, opts.certPem, opts.keyPem)
+	if err != nil {
+		return nil, err
+	}
+
 	pemPath := ""
 	if opts.certPem != nil {
 		pemPath = path.Join(rootDir, "cert.pem")
 		if err := writeData(pemPath, opts.certPem); err != nil {
 			return nil, err
 		}
-	}
-
-	opts.log.Info("python runner", zap.String("path", runnerPath))
-
-	sockPath := path.Join(rootDir, "ak.sock")
-	opts.log.Info("socket", zap.String("path", sockPath))
-
-	cert, err := tls.X509KeyPair(certPem, keyPem)
-	if err != nil {
-		return nil, err
-	}
-
-	cfg := tls.Config{Certificates: []tls.Certificate{cert}}
-
-	lis, err := tls.Listen("unix", sockPath, &cfg)
-	if err != nil {
-		return nil, err
 	}
 
 	args := []string{runnerPath, sockPath, tarPath, opts.rootPath}
