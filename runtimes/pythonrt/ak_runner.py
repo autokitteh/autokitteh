@@ -397,10 +397,20 @@ if __name__ == '__main__':
     parser.add_argument('sock', help='path to unix domain socket', type=file_type)
     parser.add_argument('tar', help='path to code tar file', type=file_type)
     parser.add_argument('path', help='file.py:function')
+    parser.add_argument('--cert-file', help='TLS certificate file')
     args = parser.parse_args()
 
     sock = socket(AF_UNIX, SOCK_STREAM)
     sock.connect(args.sock)
+
+    if args.cert_file:
+        context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        context.verify_mode = ssl.CERT_REQUIRED
+        context.check_hostname = True
+        context.load_default_certs()
+        context.load_verify_locations(args.cert_file)
+        sock = context.wrap_socket(sock, server_hostname='localhost')
+
     comm = Comm(sock)
     log = create_logger(logging.INFO, comm)
 
@@ -420,16 +430,6 @@ if __name__ == '__main__':
     cert_file = script_dir / 'cert.pem'
     if not cert_file.is_file():
         raise SystemExit('error: {cert_file!s} not found')
-
-    context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-    context.verify_mode = ssl.CERT_REQUIRED
-    context.check_hostname = True
-    context.load_default_certs()
-    context.load_verify_locations(cert_file)
-
-    sock = socket(AF_UNIX, SOCK_STREAM)
-    sock = context.wrap_socket(sock, server_hostname='localhost')
-    sock.connect(args.sock)
 
     log.info('connected to %r', args.sock)
 

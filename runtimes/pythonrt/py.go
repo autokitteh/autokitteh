@@ -24,12 +24,6 @@ var (
 
 	//go:embed requirements.txt
 	requirementsData []byte
-
-	//go:embed cert.pem
-	certPem []byte
-
-	//go:embed key.pem
-	keyPem []byte
 )
 
 func createTar(fs fs.FS) ([]byte, error) {
@@ -137,6 +131,7 @@ type runOptions struct {
 	rootPath       string
 	env            map[string]string
 	stdout, stderr io.Writer
+	certPem        []byte
 }
 
 func runPython(opts runOptions) (*pyRunInfo, error) {
@@ -155,9 +150,12 @@ func runPython(opts runOptions) (*pyRunInfo, error) {
 		return nil, err
 	}
 
-	pemPath := path.Join(rootDir, "cert.pem")
-	if err := writeData(pemPath, certPem); err != nil {
-		return nil, err
+	pemPath := ""
+	if opts.certPem != nil {
+		pemPath = path.Join(rootDir, "cert.pem")
+		if err := writeData(pemPath, opts.certPem); err != nil {
+			return nil, err
+		}
 	}
 
 	opts.log.Info("python runner", zap.String("path", runnerPath))
@@ -177,7 +175,11 @@ func runPython(opts runOptions) (*pyRunInfo, error) {
 		return nil, err
 	}
 
-	cmd := exec.Command(opts.pyExe, runnerPath, sockPath, tarPath, opts.rootPath)
+	args := []string{runnerPath, sockPath, tarPath, opts.rootPath}
+	if pemPath != "" {
+		args = append(args, pemPath)
+	}
+	cmd := exec.Command(opts.pyExe, args...)
 	cmd.Dir = rootDir
 	cmd.Env = overrideEnv(opts.env)
 	cmd.Stdout = opts.stdout
