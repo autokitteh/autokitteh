@@ -51,7 +51,7 @@ func (tsc *temporalSchedule) Create(ctx context.Context, scheduleID string, sche
 				ID:        triggerID.String(), // workflowID
 				Workflow:  wf.SchedulerWorkflow,
 				TaskQueue: wf.ScheduleTaskQueueName,
-				Args:      []interface{}{triggerID},
+				Args:      []any{triggerID},
 			},
 		})
 	if err != nil {
