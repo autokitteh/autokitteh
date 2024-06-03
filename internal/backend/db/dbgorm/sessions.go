@@ -127,7 +127,7 @@ func (db *gormdb) AddSessionStopRequest(ctx context.Context, sessionID sdktypes.
 	)
 }
 
-func (db *gormdb) listSessions(ctx context.Context, f sdkservices.ListSessionsFilter) ([]scheme.Session, int, error) {
+func (db *gormdb) listSessions(ctx context.Context, f sdkservices.ListSessionsFilter) ([]scheme.Session, int64, error) {
 	var rs []scheme.Session
 
 	q := db.db.WithContext(ctx)
@@ -147,11 +147,14 @@ func (db *gormdb) listSessions(ctx context.Context, f sdkservices.ListSessionsFi
 	if f.StateType != sdktypes.SessionStateTypeUnspecified {
 		q = q.Where("current_state_type = ?", f.StateType.ToProto())
 	}
+	var n int64
+	err := q.Model(&scheme.Session{}).Count(&n).Error
+	if err != nil {
+		return nil, 0, err
+	}
 
 	if f.CountOnly {
-		var n int64
-		err := q.Model(&scheme.Session{}).Count(&n).Error
-		return nil, int(n), err
+		return nil, n, err
 	}
 
 	if f.PageSize != 0 {
@@ -175,8 +178,7 @@ func (db *gormdb) listSessions(ctx context.Context, f sdkservices.ListSessionsFi
 		return nil, 0, err
 	}
 
-	// REVIEW: will the count be right in case of pagination?
-	return rs, len(rs), nil
+	return rs, n, nil
 }
 
 func (db *gormdb) ListSessions(ctx context.Context, f sdkservices.ListSessionsFilter) (sdkservices.ListSessionResult, error) {

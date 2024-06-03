@@ -25,7 +25,7 @@ func (f *dbFixture) addSessionLogRecordAndAssert(t *testing.T, logr scheme.Sessi
 	findAndAssertCount[scheme.SessionLogRecord](t, f, expected, "session_id = ?", logr.SessionID)
 }
 
-func (f *dbFixture) listSessionsAndAssert(t *testing.T, expected int) []scheme.Session {
+func (f *dbFixture) listSessionsAndAssert(t *testing.T, expected int64) []scheme.Session {
 	flt := sdkservices.ListSessionsFilter{
 		CountOnly: false,
 		StateType: sdktypes.SessionStateTypeUnspecified, // fetch all sesssions
@@ -34,7 +34,7 @@ func (f *dbFixture) listSessionsAndAssert(t *testing.T, expected int) []scheme.S
 	sessions, cnt, err := f.gormdb.listSessions(f.ctx, flt)
 	require.NoError(t, err)
 	assert.Equal(t, expected, cnt)
-	require.Equal(t, expected, len(sessions))
+	require.Equal(t, expected, int64(len(sessions)))
 
 	return sessions
 }
