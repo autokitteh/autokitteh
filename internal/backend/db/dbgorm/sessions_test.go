@@ -137,6 +137,13 @@ func TestListSessions(t *testing.T) {
 	f.listSessionsAndAssert(t, 0)
 }
 
+func TestListSessionsNoSessions(t *testing.T) {
+	f := preSessionTest(t)
+
+	sessions := f.listSessionsAndAssert(t, 0)
+	assert.Equal(t, sessions, []scheme.Session{})
+}
+
 func TestListSessionsCountOnly(t *testing.T) {
 	f := preSessionTest(t)
 
@@ -151,6 +158,20 @@ func TestListSessionsCountOnly(t *testing.T) {
 	sessions, cnt, err := f.gormdb.listSessions(f.ctx, flt)
 	require.NoError(t, err)
 	require.Equal(t, cnt, int64(1))
+	require.Nil(t, sessions)
+}
+
+func TestListSessionsNoSessionsCountOnly(t *testing.T) {
+	f := preSessionTest(t)
+
+	flt := sdkservices.ListSessionsFilter{
+		CountOnly: true,
+		StateType: sdktypes.SessionStateTypeUnspecified, // fetch all sesssions
+	}
+
+	sessions, cnt, err := f.gormdb.listSessions(f.ctx, flt)
+	require.NoError(t, err)
+	require.Equal(t, cnt, int64(0))
 	require.Nil(t, sessions)
 }
 
