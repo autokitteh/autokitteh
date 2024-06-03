@@ -361,10 +361,6 @@ func TestUnwrapIntoKitchenSink(t *testing.T) {
 		Z string
 	}
 
-	type Timestamp struct {
-		time.Time // embedded, not-exported
-	}
-
 	type X struct {
 		I64       int64
 		S         string
