@@ -25,7 +25,7 @@ func (f *dbFixture) addSessionLogRecordAndAssert(t *testing.T, logr scheme.Sessi
 	findAndAssertCount[scheme.SessionLogRecord](t, f, expected, "session_id = ?", logr.SessionID)
 }
 
-func (f *dbFixture) listSessionsAndAssert(t *testing.T, expected int) []scheme.Session {
+func (f *dbFixture) listSessionsAndAssert(t *testing.T, expected int64) []scheme.Session {
 	flt := sdkservices.ListSessionsFilter{
 		CountOnly: false,
 		StateType: sdktypes.SessionStateTypeUnspecified, // fetch all sesssions
@@ -34,7 +34,7 @@ func (f *dbFixture) listSessionsAndAssert(t *testing.T, expected int) []scheme.S
 	sessions, cnt, err := f.gormdb.listSessions(f.ctx, flt)
 	require.NoError(t, err)
 	assert.Equal(t, expected, cnt)
-	require.Equal(t, expected, len(sessions))
+	require.Equal(t, expected, int64(len(sessions)))
 
 	return sessions
 }
@@ -135,6 +135,66 @@ func TestListSessions(t *testing.T) {
 	// deleteSession and ensure that listSessions is empty
 	assert.NoError(t, f.gormdb.deleteSession(f.ctx, s.SessionID))
 	f.listSessionsAndAssert(t, 0)
+}
+
+func TestListSessionsNoSessions(t *testing.T) {
+	f := preSessionTest(t)
+
+	sessions := f.listSessionsAndAssert(t, 0)
+	assert.Equal(t, sessions, []scheme.Session{})
+}
+
+func TestListSessionsCountOnly(t *testing.T) {
+	f := preSessionTest(t)
+
+	s := f.newSession(sdktypes.SessionStateTypeCompleted)
+	f.createSessionsAndAssert(t, s)
+
+	flt := sdkservices.ListSessionsFilter{
+		CountOnly: true,
+		StateType: sdktypes.SessionStateTypeUnspecified, // fetch all sesssions
+	}
+
+	sessions, cnt, err := f.gormdb.listSessions(f.ctx, flt)
+	require.NoError(t, err)
+	require.Equal(t, cnt, int64(1))
+	require.Nil(t, sessions)
+}
+
+func TestListSessionsNoSessionsCountOnly(t *testing.T) {
+	f := preSessionTest(t)
+
+	flt := sdkservices.ListSessionsFilter{
+		CountOnly: true,
+		StateType: sdktypes.SessionStateTypeUnspecified, // fetch all sesssions
+	}
+
+	sessions, cnt, err := f.gormdb.listSessions(f.ctx, flt)
+	require.NoError(t, err)
+	require.Equal(t, cnt, int64(0))
+	require.Nil(t, sessions)
+}
+
+func TestListPaginatedSession(t *testing.T) {
+	f := preSessionTest(t)
+
+	s := f.newSession(sdktypes.SessionStateTypeCompleted)
+	f.createSessionsAndAssert(t, s)
+
+	s = f.newSession(sdktypes.SessionStateTypeCompleted)
+	f.createSessionsAndAssert(t, s)
+
+	flt := sdkservices.ListSessionsFilter{
+		CountOnly:         false,
+		StateType:         sdktypes.SessionStateTypeUnspecified, // fetch all sesssions
+		PaginationRequest: sdktypes.PaginationRequest{PageSize: 1},
+	}
+
+	sessions, cnt, err := f.gormdb.listSessions(f.ctx, flt)
+	require.NoError(t, err)
+	require.Equal(t, cnt, int64(2))
+	require.Len(t, sessions, 1)
+
 }
 
 func TestDeleteSession(t *testing.T) {

@@ -162,7 +162,7 @@ func (s *server) List(ctx context.Context, req *connect.Request[sessionsv1.ListR
 
 	pbsessions := kittehs.Transform(result.Sessions, sdktypes.ToProto)
 
-	return connect.NewResponse(&sessionsv1.ListResponse{Sessions: pbsessions, Count: int32(result.TotalCount), NextPageToken: result.NextPageToken}), nil
+	return connect.NewResponse(&sessionsv1.ListResponse{Sessions: pbsessions, Count: result.TotalCount, NextPageToken: result.NextPageToken}), nil
 }
 
 func (s *server) Delete(ctx context.Context, req *connect.Request[sessionsv1.DeleteRequest]) (*connect.Response[sessionsv1.DeleteResponse], error) {
