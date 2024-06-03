@@ -181,9 +181,10 @@ func (db *gormdb) listSessions(ctx context.Context, f sdkservices.ListSessionsFi
 
 func (db *gormdb) ListSessions(ctx context.Context, f sdkservices.ListSessionsFilter) (sdkservices.ListSessionResult, error) {
 	rs, cnt, err := db.listSessions(ctx, f)
-	if rs == nil { // no sessions to process. either error or count request
+	if err != nil {
 		return sdkservices.ListSessionResult{}, translateError(err)
 	}
+
 	sessions, err := kittehs.TransformError(rs, scheme.ParseSession)
 
 	// Only if we have a full page, there might be more sessions
