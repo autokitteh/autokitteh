@@ -436,5 +436,9 @@ if __name__ == '__main__':
             pass
 
     event = AttrDict(event)
-    fn(event)
+    try:
+        fn(event)
+    except Exception as err:
+        log.exception('error running %s', func_name)
+        raise SystemExit(1)
     comm.send_done()
