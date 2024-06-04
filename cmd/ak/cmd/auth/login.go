@@ -26,7 +26,7 @@ var loginCmd = common.StandardCommand(&cobra.Command{
 			return err
 		}
 
-		link := fmt.Sprintf("/auth/cli-login?p=%d", port)
+		link := fmt.Sprintf("%s/auth/cli-login?p=%d", common.ServerURL(), port)
 		if err := browser.OpenURL(link); err != nil {
 			return err
 		}

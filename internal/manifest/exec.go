@@ -167,28 +167,39 @@ func executeAction(ctx context.Context, action actions.Action, execContext *exec
 		if err != nil {
 			return nil, err
 		}
+		trigger := action.Trigger.WithEnvID(eid)
 
-		cid, err := execContext.resolveConnectionID(action.ConnectionKey)
+		if action.ConnectionKey != "" {
+			cid, err := execContext.resolveConnectionID(action.ConnectionKey)
+			if err != nil {
+				return nil, err
+			}
+			trigger = trigger.WithConnectionID(cid)
+		}
+
+		triggerID, err := execContext.client.Triggers().Create(ctx, trigger)
 		if err != nil {
 			return nil, err
 		}
 
-		t := action.Trigger.WithEnvID(eid).WithConnectionID(cid)
-
-		tid, err := execContext.client.Triggers().Create(ctx, t)
-		if err != nil {
-			return nil, err
-		}
-
-		return &Effect{SubjectID: tid, Type: Created}, nil
+		return &Effect{SubjectID: triggerID, Type: Created}, nil
 
 	case actions.UpdateTriggerAction:
-		if err := execContext.client.Triggers().Update(ctx, action.Trigger); err != nil {
+		trigger := action.Trigger
+
+		if action.ConnectionKey != "" { // convert scheduler -> normal trigger, or just update connection
+			cid, err := execContext.resolveConnectionID(action.ConnectionKey)
+			if err != nil {
+				return nil, err
+			}
+			trigger = trigger.WithConnectionID(cid)
+		}
+
+		if err := execContext.client.Triggers().Update(ctx, trigger); err != nil {
 			return nil, err
 		}
 
-		return &Effect{SubjectID: action.Trigger.ID(), Type: Updated}, nil
-
+		return &Effect{SubjectID: trigger.ID(), Type: Updated}, nil
 	case actions.DeleteTriggerAction:
 		if err := execContext.client.Triggers().Delete(ctx, action.TriggerID); err != nil {
 			return nil, err
