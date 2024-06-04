@@ -138,12 +138,14 @@ test integrations and sessions.
 
 `resp body <euqals|contains|regex> file <embedded txtar filename>`
 
-### Action: Wait for Session
+### Action: Wait for|unless Session
 
-`wait <duration> for session <session ID>`
+`wait <duration> <for|unless> session <session ID>`
 
-Waits up to the specified duration (e.g. `10s`) for the specified session to
-be in the state `COMPLETED`, `STOPPED` or `ERROR`.
+waits up to the given duration (e.g. `5s`) for the specific session
+
+- if wait type is `for` - waits for the session to be in one of the states `COMPLETED`, `STOPPED` or `ERROR` and report error if no session was created or it failed to reach desired state.
+- if wait type is `unless` - waits for the session and reports error if found in any state.
 
 ## Syntax Summary
 

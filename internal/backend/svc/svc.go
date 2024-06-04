@@ -51,6 +51,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/oauth"
 	"go.autokitteh.dev/autokitteh/internal/backend/projects"
 	"go.autokitteh.dev/autokitteh/internal/backend/projectsgrpcsvc"
+	"go.autokitteh.dev/autokitteh/internal/backend/schedule"
 	"go.autokitteh.dev/autokitteh/internal/backend/secrets"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessionsgrpcsvc"
@@ -186,6 +187,18 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		Component("runtimes", configset.Empty, fx.Provide(runtimes.New)),
 
 		Component("healthcheck", configset.Empty, fx.Provide(healthchecker.New)),
+		Component(
+			"schedule",
+			configset.Empty,
+			fx.Provide(schedule.New),
+		),
+		// TODO: consider design where the workflow is an implementation detail of the scheduler and does not need to be exposed.
+		Component(
+			"scheduleWorkflow",
+			configset.Empty,
+			fx.Provide(schedule.NewSchedulerWorkflow),
+			fx.Invoke(func(lc fx.Lifecycle, swf schedule.SchedulerWorkflow) { HookOnStart(lc, swf.Start) }),
+		),
 		Component(
 			"dispatcher",
 			configset.Empty,
