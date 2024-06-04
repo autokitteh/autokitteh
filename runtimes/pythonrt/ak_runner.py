@@ -140,8 +140,8 @@ class Comm:
             'type': MessageType.callback,
             'payload': {
                 'name': fn if isinstance(fn, str) else fn.__name__,
-                'args': [str(a) for a in args],
-                'kw': {k: str(v) for k, v in kw.items()},
+                'args': [repr(a) for a in args],
+                'kw': {k: repr(v) for k, v in kw.items()},
                 'data': self._picklize(data),
             },
         }

@@ -8,7 +8,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/internal/resolver"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -64,7 +63,6 @@ func init() {
 	startCmd.MarkFlagsOneRequired("deployment-id", "build-id")
 
 	startCmd.Flags().StringVarP(&entryPoint, "entrypoint", "p", "", `entry point ("file:function")`)
-	kittehs.Must0(startCmd.MarkFlagRequired("entrypoint"))
 
 	startCmd.Flags().StringSliceVarP(&memos, "memo", "m", nil, `zero or more "key=value" pairs`)
 

@@ -26,7 +26,7 @@ func (db *gormdb) CreateEnv(ctx context.Context, env sdktypes.Env) error {
 
 	e := scheme.Env{
 		EnvID:        env.ID().UUIDValue(),
-		ProjectID:    scheme.UUIDOrNil(env.ProjectID().UUIDValue()),
+		ProjectID:    env.ProjectID().UUIDValue(),
 		Name:         env.Name().String(),
 		MembershipID: envMembershipID(env),
 	}
@@ -78,7 +78,7 @@ func (db *gormdb) ListProjectEnvs(ctx context.Context, pid sdktypes.ProjectID) (
 	return kittehs.TransformError(rs, func(r scheme.Env) (sdktypes.Env, error) {
 		return sdktypes.StrictEnvFromProto(&sdktypes.EnvPB{
 			EnvId:     sdktypes.NewIDFromUUID[sdktypes.EnvID](&r.EnvID).String(),
-			ProjectId: sdktypes.NewIDFromUUID[sdktypes.ProjectID](r.ProjectID).String(),
+			ProjectId: sdktypes.NewIDFromUUID[sdktypes.ProjectID](&r.ProjectID).String(),
 			Name:      r.Name,
 		})
 	})

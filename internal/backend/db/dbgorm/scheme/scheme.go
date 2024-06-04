@@ -229,8 +229,10 @@ type Event struct {
 
 func ParseEvent(e Event) (sdktypes.Event, error) {
 	var data map[string]sdktypes.Value
-	if err := json.Unmarshal(e.Data, &data); err != nil {
-		return sdktypes.InvalidEvent, fmt.Errorf("event data: %w", err)
+	if len(e.Data) != 0 {
+		if err := json.Unmarshal(e.Data, &data); err != nil {
+			return sdktypes.InvalidEvent, fmt.Errorf("event data: %w", err)
+		}
 	}
 
 	var memo map[string]string
@@ -269,8 +271,8 @@ func ParseEventRecord(e EventRecord) (sdktypes.EventRecord, error) {
 }
 
 type Env struct {
-	EnvID     sdktypes.UUID  `gorm:"primaryKey;type:uuid;not null"`
-	ProjectID *sdktypes.UUID `gorm:"index;type:uuid"`
+	EnvID     sdktypes.UUID `gorm:"primaryKey;type:uuid;not null"`
+	ProjectID sdktypes.UUID `gorm:"index;type:uuid;not null"`
 	Name      string
 	DeletedAt gorm.DeletedAt `gorm:"index"`
 
@@ -285,7 +287,7 @@ type Env struct {
 func ParseEnv(e Env) (sdktypes.Env, error) {
 	return sdktypes.StrictEnvFromProto(&sdktypes.EnvPB{
 		EnvId:     sdktypes.NewIDFromUUID[sdktypes.EnvID](&e.EnvID).String(),
-		ProjectId: sdktypes.NewIDFromUUID[sdktypes.ProjectID](e.ProjectID).String(),
+		ProjectId: sdktypes.NewIDFromUUID[sdktypes.ProjectID](&e.ProjectID).String(),
 		Name:      e.Name,
 	})
 }
@@ -410,9 +412,10 @@ func ParseSession(s Session) (sdktypes.Session, error) {
 	}
 
 	var inputs map[string]sdktypes.Value
-
-	if err := json.Unmarshal(s.Inputs, &inputs); err != nil {
-		return sdktypes.InvalidSession, fmt.Errorf("inputs: %w", err)
+	if len(s.Inputs) != 0 {
+		if err := json.Unmarshal(s.Inputs, &inputs); err != nil {
+			return sdktypes.InvalidSession, fmt.Errorf("inputs: %w", err)
+		}
 	}
 
 	session, err := sdktypes.StrictSessionFromProto(&sdktypes.SessionPB{
