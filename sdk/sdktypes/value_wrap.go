@@ -89,6 +89,7 @@ func (w ValueWrapper) Wrap(v any) (Value, error) {
 
 			if vfs.Anonymous && vfs.Type != reflect.TypeOf(time.Time{}) {
 				// skip anonymous but allow to wrap embedded time.Time (see tests)
+				// as a most common and problematic case (e.g. github Go API Timestamp)
 				continue
 			}
 
