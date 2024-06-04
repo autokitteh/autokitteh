@@ -15,7 +15,6 @@ import (
 
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-	"go.uber.org/zap"
 
 	"github.com/stretchr/testify/require"
 )
@@ -54,13 +53,15 @@ func isFSFile(fsys fs.FS, path string) bool {
 	return !info.IsDir()
 }
 
-func newSVC(t *testing.T) pySvc {
-	logger, err := zap.NewDevelopment()
-	require.NoError(t, err, "create logger")
+func newSVC(t *testing.T) *pySvc {
+	rt, err := New()
+	require.NoError(t, err, "New")
 
-	return pySvc{
-		log: logger,
+	svc, ok := rt.(*pySvc)
+	if !ok {
+		require.FailNowf(t, "type assertion failed", "got %T (not *pySvc)", rt)
 	}
+	return svc
 }
 
 func Test_pySvc_Get(t *testing.T) {

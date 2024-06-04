@@ -140,7 +140,7 @@ func (py *pySvc) Build(ctx context.Context, fs fs.FS, path string, values []sdkt
 		return sdktypes.InvalidBuildArtifact, err
 	}
 
-	exports, err := pyExports(ctx, venvPy, fs)
+	exports, err := pyExports(ctx, py.pyExe, fs)
 	if err != nil {
 		py.log.Error("get exports", zap.Error(err))
 		return sdktypes.InvalidBuildArtifact, err
