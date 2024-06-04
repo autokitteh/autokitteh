@@ -439,6 +439,6 @@ if __name__ == '__main__':
     try:
         fn(event)
     except Exception as err:
-        log.exception('error running %s', func_name)
+        log.exception('error running %s: %s', func_name, err)
         raise SystemExit(1)
     comm.send_done()
