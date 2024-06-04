@@ -221,31 +221,6 @@ func (py *pySvc) loadSyscall(values map[string]sdktypes.Value) error {
 	return nil
 }
 
-func (py *pySvc) handleSleep(ctx context.Context, msg Message) error {
-	sleep, err := extractMessage[SleepMessage](msg)
-	if err != nil {
-		py.log.Error("sleep message", zap.Error(err))
-		return err
-	}
-
-	py.log.Info("sleep", zap.Float64("seconds", sleep.Seconds))
-
-	// Milliseconds sleep granularity should be good enough.
-	d := time.Duration(sleep.Seconds*1000) * time.Millisecond
-	args := []sdktypes.Value{
-		sdktypes.NewStringValue("sleep"),
-		sdktypes.NewDurationValue(d),
-	}
-
-	_, err = py.cbs.Call(ctx, py.xid.ToRunID(), py.syscallFn, args, nil)
-	if err != nil {
-		py.log.Error("call sleep", zap.Error(err))
-		return err
-	}
-
-	return py.comm.Send(sleep)
-}
-
 /*
 Run starts a Python workflow.
 
@@ -440,8 +415,9 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, event map[str
 			continue
 		}
 
-		if msg.Type == messageType[SleepMessage]() {
-			if err := py.handleSleep(ctx, msg); err != nil {
+		if msg.Type == messageType[CallMessage]() {
+			call, _ := extractMessage[CallMessage](msg)
+			if err := py.handleCall(ctx, call); err != nil {
 				return sdktypes.InvalidValue, err
 			}
 			continue
@@ -604,4 +580,118 @@ func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 	py.log.Info("python return", zap.Any("message", rm))
 
 	return sdktypes.NewBytesValue(rm.Value), nil
+}
+
+// TODO: This is long and dog ugly, find a better way.
+func (py *pySvc) handleCall(ctx context.Context, msg CallMessage) error {
+	var value any
+
+	switch msg.FuncName {
+	case "sleep":
+		if len(msg.Args) != 1 {
+			return fmt.Errorf("sleep: expected 1 argument, got %d", len(msg.Args))
+		}
+
+		sleep, ok := msg.Args[0].(float64)
+		if !ok {
+			return fmt.Errorf("sleep: expected float64, got %T", msg.Args[0])
+		}
+
+		d := time.Duration(sleep*1000) * time.Millisecond
+		args := []sdktypes.Value{
+			sdktypes.NewStringValue("sleep"),
+			sdktypes.NewDurationValue(d),
+		}
+
+		_, err := py.cbs.Call(ctx, py.xid.ToRunID(), py.syscallFn, args, nil)
+		if err != nil {
+			py.log.Error("call sleep", zap.Error(err))
+			return err
+		}
+		value = nil
+	case "subscribe":
+		if len(msg.Args) < 1 || len(msg.Args) > 2 {
+			return fmt.Errorf("subscribe: expected 1 or 2 arguments, got %d", len(msg.Args))
+		}
+
+		connection, ok := msg.Args[0].(string)
+		if !ok {
+			return fmt.Errorf("subscribe: expected string ID, got %T", msg.Args[0])
+		}
+
+		args := []sdktypes.Value{
+			sdktypes.NewStringValue("subscribe"),
+			sdktypes.NewStringValue(connection),
+		}
+
+		if len(msg.Args) == 2 {
+			filter, ok := msg.Args[1].(string)
+			if !ok {
+				return fmt.Errorf("subscribe: expected string filter, got %T", msg.Args[1])
+			}
+			args = append(args, sdktypes.NewStringValue(filter))
+		}
+
+		id, err := py.cbs.Call(ctx, py.xid.ToRunID(), py.syscallFn, args, nil)
+		if err != nil {
+			py.log.Error("call subscribe", zap.Error(err))
+			return err
+		}
+
+		if !id.IsString() {
+			return fmt.Errorf("subscribe: expected string ID return, got %T", id)
+		}
+
+		value = id.GetString().Value()
+	case "unsubscribe":
+		if len(msg.Args) != 1 {
+			return fmt.Errorf("unsubscribe: expected 1 argument, got %d", len(msg.Args))
+		}
+
+		id, ok := msg.Args[0].(string)
+		if !ok {
+			return fmt.Errorf("unsubscribe: expected string ID, got %T", msg.Args[0])
+		}
+
+		args := []sdktypes.Value{
+			sdktypes.NewStringValue("unsubscribe"),
+			sdktypes.NewStringValue(id),
+		}
+
+		_, err := py.cbs.Call(ctx, py.xid.ToRunID(), py.syscallFn, args, nil)
+		if err != nil {
+			py.log.Error("call subscribe", zap.Error(err))
+			return err
+		}
+
+		value = nil
+	case "next_event":
+		if len(msg.Args) != 1 {
+			return fmt.Errorf("next_event: expected 1 argument, got %d", len(msg.Args))
+		}
+
+		id, ok := msg.Args[0].(string)
+		if !ok {
+			return fmt.Errorf("next_event: expected string ID, got %T", msg.Args[0])
+		}
+
+		args := []sdktypes.Value{
+			sdktypes.NewStringValue("next_event"),
+			sdktypes.NewStringValue(id),
+		}
+
+		event, err := py.cbs.Call(ctx, py.xid.ToRunID(), py.syscallFn, args, nil)
+		if err != nil {
+			py.log.Error("call next_event", zap.Error(err))
+			return err
+		}
+
+		value, err = event.Unwrap()
+		if err != nil {
+			py.log.Error("event unwrap", zap.Error(err))
+			return err
+		}
+	}
+
+	return py.comm.Send(ReturnMessage{Value: value})
 }

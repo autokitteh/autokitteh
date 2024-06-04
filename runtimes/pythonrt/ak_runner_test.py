@@ -294,7 +294,7 @@ def test_sleep(tmp_path):
     ak_call.module = mod
     event = {'type': 'login', 'user': 'puss'}
     mod.handler(event)
-    assert comm.send_sleep.call_count == 2
+    assert comm.send_call.call_count == 2
 
 
 def test_activity():
@@ -302,24 +302,6 @@ def test_activity():
     mod = ak_runner.load_code('testdata', lambda f: f, mod_name)
     fn = mod.phone_home
     assert getattr(fn, autokitteh.ACTIVITY_ATTR, False)
-
-
-def test_AttrDict():
-    cfg = ak_runner.AttrDict({
-        'server': {
-            'port': 8080,
-            'interface': 'localhost',
-        },
-        'mode': 'dev',
-        'logging': {
-            'level': 'info',
-        },
-    })
-    assert cfg['server']['port'] == cfg.server.port
-    assert cfg['mode'] == cfg.mode
-
-    with pytest.raises(NotImplementedError):
-        cfg.server.port = 8081
 
 
 def mock_tp_go(sock):

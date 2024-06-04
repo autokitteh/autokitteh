@@ -100,7 +100,8 @@ class MessageType:
     module = 'module'
     response = 'response'
     run = 'run'
-    sleep = 'sleep'
+    call = 'call'
+    call_return = 'return'
     
 
 class Comm:
@@ -186,11 +187,12 @@ class Comm:
             },
         }
 
-    def send_sleep(self, seconds):
+    def send_call(self, func_name, args):
         message = {
-            'type': MessageType.sleep,
+            'type': MessageType.call,
             'payload': {
-                'seconds': seconds,
+                'func_name': func_name,
+                'args': args,
             },
         }
         self._send(message)
@@ -232,9 +234,22 @@ class AKCall:
         self.in_activity = True
         try:
             if func is sleep:
-                self.comm.send_sleep(*args, **kw)
-                self.comm.recv(MessageType.sleep)
+                self.comm.send_call('sleep', args)
+                self.comm.recv(MessageType.call_return)
                 return
+            elif func is autokitteh.subscribe:
+                self.comm.send_call('subscribe', args)
+                msg = self.comm.recv(MessageType.call_return)
+                return msg['payload']['value']
+            elif func is autokitteh.unsubscribe:
+                self.comm.send_call('unsubscribe', args)
+                self.comm.recv(MessageType.call_return)
+                return
+            elif func is autokitteh.next_event:
+                self.comm.send_call('next_event', args)
+                msg = self.comm.recv(MessageType.call_return)
+                value = msg['payload']['value']
+                return autokitteh.AttrDict(value)
 
             if self.is_module_func(func):
                 # Pickle can't handle function from our loaded module
@@ -349,30 +364,6 @@ def create_logger(level, comm):
     return log
 
 
-class AttrDict(dict):
-    """Allow attribute access to dictionary keys.
-
-    >>> config = AttrDict({'server': {'port': 8080}, 'debug': True})
-    >>> config.server.port
-    8080
-    >>> config.debug
-    True
-    """
-    def __getattr__(self, name):
-        try:
-            value = self[name]
-            if isinstance(value, dict):
-                value = AttrDict(value)
-            return value
-        except KeyError:
-            raise AttributeError(name)
-
-    def __setattr__(self, attr, value):
-        # The default __getattr__ doesn't fail but also don't change values
-        cls = self.__class__.__name__
-        raise NotImplementedError(f'{cls} does not support setting attributes')
-
-
 if __name__ == '__main__':
     import sys
     from argparse import ArgumentParser
@@ -435,7 +426,7 @@ if __name__ == '__main__':
         except ValueError:
             pass
 
-    event = AttrDict(event)
+    event = autokitteh.AttrDict(event)
     try:
         fn(event)
     except Exception as err:
