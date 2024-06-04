@@ -112,7 +112,7 @@ func createFile(fileName string, content []byte) error {
 	}
 	defer file.Close()
 
-	if _, err := io.Copy(file, bytes.NewReader(runnerPyCode)); err != nil {
+	if _, err := io.Copy(file, bytes.NewReader(content)); err != nil {
 		return fmt.Errorf("can't copy python code to %s: %w", file.Name(), err)
 	}
 
