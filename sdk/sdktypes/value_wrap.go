@@ -83,11 +83,13 @@ func (w ValueWrapper) Wrap(v any) (Value, error) {
 		fs := make(map[string]Value)
 
 		for _, vfs := range reflect.VisibleFields(vt) {
-			if !vfs.IsExported() || vfs.Anonymous {
-				// allow to wrap embedded unexported time.Time field
-				if vfs.Type != reflect.TypeOf(time.Time{}) {
-					continue
-				}
+			if !vfs.IsExported() {
+				continue
+			}
+
+			if vfs.Anonymous && vfs.Type != reflect.TypeOf(time.Time{}) {
+				// skip anonymous but allow to wrap embedded time.Time (see tests)
+				continue
 			}
 
 			fv := vv.FieldByIndex(vfs.Index)
