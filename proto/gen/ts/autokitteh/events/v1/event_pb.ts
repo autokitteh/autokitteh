@@ -110,6 +110,8 @@ export class Event extends Message<Event> {
   eventId = "";
 
   /**
+   * could be empty.
+   *
    * @generated from field: string connection_id = 2;
    */
   connectionId = "";

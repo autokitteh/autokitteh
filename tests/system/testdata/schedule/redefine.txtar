@@ -1,0 +1,105 @@
+# create scheduler trieer, redefine it as normal trigger and redefine once again as scheduler one
+
+ak deploy --manifest schedule.yaml --file cron.star
+return code == 0
+
+ak trigger list
+return code == 0
+output regex 'trigger_id:"trg_0+4" +name:"cron" +connection_id:"con_3kthcr0n0+".*?event_type:"scheduler".*?data:{key:"schedule" +value:{string:{v:"\*/1 \* \* \* \* \* \*"}}}'
+
+wait 5s for session ses_00000000000000000000000008
+ak session log ses_00000000000000000000000008 --no-timestamps --prints-only
+return code == 0
+output equals 'cron'
+
+# redefine trigger (scheduler trigger -> normal)
+ak deploy --manifest trigger.yaml --file cron.star
+return code == 0
+output equals file deploy_trigger.txt
+
+# check that trigger was redefined with connection
+ak trigger list
+return code == 0
+output regex 'trigger_id:"trg_0+4" +name:"cron".*connection_id:"con_0+3"'
+
+# check no new session was created (i.e. redefenition deleted temporal schedule)
+wait 3s unless session ses_0000000000000000000000000f
+ak session list
+return code == 0
+output regex '(?m)^session_id:"ses_0+8.*$'
+
+# re-deploy manifest with cron as scheduler trigger
+ak deploy --manifest schedule.yaml --file cron.star
+return code == 0
+output equals file redeploy_schedule.txt
+
+wait 5s for session ses_0000000000000000000000000f
+ak session log ses_0000000000000000000000000f --no-timestamps --prints-only
+return code == 0
+output equals 'cron'
+
+ak trigger delete trg_00000000000000000000000004
+return code == 0
+
+# only 2 sessions since trigger and schedule were cancelled
+ak session list
+return code == 0
+output regex '(?m)^session_id:"ses_0+f.*\n^session_id:"ses_0+8.*$'
+
+-- schedule.yaml --
+version: v1
+project:
+  name: cron
+  connections:
+  - name: http
+    integration: "http"
+  triggers:
+    - name: cron
+      schedule: "*/1 * * * * * *"  # every sec
+      call: cron.star:on_cron_trigger
+
+-- trigger.yaml --
+version: v1
+project:
+  name: cron
+  connections:
+  - name: http
+    integration: "http"
+  triggers:
+    - name: cron
+      connection: http
+      call: cron.star:on_cron_trigger
+
+-- cron.star --
+def on_cron_trigger():
+    print("cron")
+
+-- deploy_trigger.txt --
+[plan] project "cron": found, id="prj_00000000000000000000000001"
+[plan] project "cron": no changes needed
+[plan] env "cron/default": found, id="env_00000000000000000000000002"
+[plan] env "cron/default": no changes needed
+[plan] project "cron": found 1 connections
+[plan] connection "cron/http": no changes needed
+[plan] project "cron": found 1 triggers
+[plan] trigger "cron/default:cron/http/cron": found, id="trg_00000000000000000000000004"
+[plan] trigger "cron/default:cron/http/cron": not as desired, will update
+[exec] update_trigger "cron/default:cron/http/cron": trg_00000000000000000000000004 updated
+[exec] create_build: created "bld_0000000000000000000000000a"
+[exec] create_deployment: created "dep_0000000000000000000000000b"
+[exec] activate_deployment: activated
+
+-- redeploy_schedule.txt --
+[plan] project "cron": found, id="prj_00000000000000000000000001"
+[plan] project "cron": no changes needed
+[plan] env "cron/default": found, id="env_00000000000000000000000002"
+[plan] env "cron/default": no changes needed
+[plan] project "cron": found 1 connections
+[plan] connection "cron/http": no changes needed
+[plan] project "cron": found 1 triggers
+[plan] trigger "cron/default:cron//cron": found, id="trg_00000000000000000000000004"
+[plan] trigger "cron/default:cron//cron": not as desired, will update
+[exec] update_trigger "cron/default:/cron": trg_00000000000000000000000004 updated
+[exec] create_build: created "bld_0000000000000000000000000c"
+[exec] create_deployment: created "dep_0000000000000000000000000d"
+[exec] activate_deployment: activated

@@ -10,10 +10,7 @@ ci: deps test-py
 
 test-py:
 	ruff check .
-	python -m pytest \
-		--doctest-modules \
-		--ignore testdata \
-		-v .
+	python -m pytest
 
 # You can set the TESTOPTS to pass options to `go test`
 test-go:
@@ -43,5 +40,14 @@ ngrok:
 ngrok-prod:
 	ngrok http --domain autokitteh.ngrok.dev 9980
 
+
 messages.py: _message.py comm.go gen_py_messages.go
 	go run gen_py_messages.go > $@
+
+
+cfg_dir = $(shell ak config where  | grep 'Data home' | awk '{print $$NF}')
+
+clean-dbs:
+	rm -f $(cfg_dir)/*sql*
+
+test-workflow: deploy-workflow run

@@ -26,11 +26,9 @@ var loginCmd = common.StandardCommand(&cobra.Command{
 			return err
 		}
 
-		url := fmt.Sprintf("%s/auth/cli-login?p=%d", common.ServerURL().String(), port)
-		if err := browser.OpenURL(url); err != nil {
-			fmt.Fprintf(cmd.ErrOrStderr(), "To start, open this address in your browser: %s\n", url)
-		} else {
-			fmt.Fprintf(cmd.ErrOrStderr(), "Please continue in browser (%s).\n", url)
+		link := fmt.Sprintf("%s/auth/cli-login?p=%d", common.ServerURL(), port)
+		if err := browser.OpenURL(link); err != nil {
+			return err
 		}
 
 		token, err := wait(cmd.Context())

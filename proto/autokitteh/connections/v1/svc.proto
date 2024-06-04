@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package autokitteh.connections.v1;
 
+import "autokitteh/common/v1/status.proto";
 import "autokitteh/connections/v1/connection.proto";
 import "buf/validate/validate.proto";
 
@@ -48,12 +49,29 @@ message GetResponse {
 message ListRequest {
   string integration_id = 1; // Optional.
   string project_id = 2; // Optional.
+  common.v1.Status.Code status_code = 3; // Optional.
 
   // TODO: fieldmask.
 }
 
 message ListResponse {
   repeated Connection connections = 1 [(buf.validate.field).repeated.items.required = true];
+}
+
+message TestRequest {
+  string connection_id = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+message TestResponse {
+  common.v1.Status status = 1 [(buf.validate.field).required = true];
+}
+
+message RefreshStatusRequest {
+  string connection_id = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+message RefreshStatusResponse {
+  common.v1.Status status = 1 [(buf.validate.field).required = true];
 }
 
 // Implemented by the autokitteh server.
@@ -64,4 +82,14 @@ service ConnectionsService {
   rpc Update(UpdateRequest) returns (UpdateResponse);
   rpc Get(GetRequest) returns (GetResponse);
   rpc List(ListRequest) returns (ListResponse);
+
+  // Test actively performs an integration test using a connection's configuration.
+  // (This in turn calls Integration.TestConnection).
+  rpc Test(TestRequest) returns (TestResponse);
+
+  // RefreshStatus makes the connection query the integration regarding the
+  // current connection status. This checks that the connection is configured correctly,
+  // but does not perform any actual data transfer.
+  // (This in turn calls Integration.GetConnectionStatus).
+  rpc RefreshStatus(RefreshStatusRequest) returns (RefreshStatusResponse);
 }

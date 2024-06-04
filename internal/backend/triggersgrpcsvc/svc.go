@@ -126,9 +126,15 @@ func (s *server) List(ctx context.Context, req *connect.Request[triggersv1.ListR
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
+	pid, err := sdktypes.ParseProjectID(msg.ProjectId)
+	if err != nil {
+		return nil, sdkerrors.AsConnectError(err)
+	}
+
 	filter := sdkservices.ListTriggersFilter{
 		EnvID:        eid,
 		ConnectionID: cid,
+		ProjectID:    pid,
 	}
 
 	triggers, err := s.triggers.List(ctx, filter)

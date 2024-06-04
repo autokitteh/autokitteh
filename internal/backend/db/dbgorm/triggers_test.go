@@ -54,6 +54,8 @@ func TestCreateTriggerForeignKeys(t *testing.T) {
 	env := f.newEnv()
 	conn := f.newConnection()
 
+	env.ProjectID = p.ProjectID
+
 	tr.ProjectID = p.ProjectID
 	tr.EnvID = env.EnvID
 	tr.ConnectionID = conn.ConnectionID

@@ -63,10 +63,13 @@ func (v Var) GetKey() string { return v.ParentKey + "/" + v.Name }
 type Trigger struct {
 	EnvKey string `yaml:"-" json:"-"` // associated with env.
 
-	ConnectionKey string `yaml:"connection" json:"connection" jsonschema:"required"` // coming from connection.
+	ConnectionKey string `yaml:"connection,omitempty" json:"connection,omitempty"` // jsonscheme: FIXME: ENG-862
 	Name          string `yaml:"name" json:"name"`
 	EventType     string `yaml:"event_type,omitempty" json:"event_type,omitempty"`
 	Filter        string `yaml:"filter,omitempty" json:"filter,omitempty"`
+
+	// for scheduled trigger. Schedule could be passed in `data` section as well
+	Schedule string `yaml:"schedule,omitempty" json:"schedule,omitempty"` // jsonscheme: FIXME: ENG-862
 
 	// Arbitrary data to be passed with the trigger.
 	// The dispatcher can use this data, for example, to extract HTTP path parameters.

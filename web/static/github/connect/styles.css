@@ -64,12 +64,12 @@ div.active {
   display: block;
 }
 
-p.info {
+p.no-margin {
   margin: 0px;
 }
 
-ul.links {
-  margin: 4px 0px 32px;
+p.info {
+  margin: 0px 0px 32px 0px;
 }
 
 a.info {

@@ -18,8 +18,8 @@ var (
 	w = sdktypes.DefaultValueWrapper
 
 	iv           = sdktypes.NewIntegerValue(42)
-	nothing      = sdktypes.Nothing
 	intsList     = kittehs.Must1(sdktypes.NewListValue([]sdktypes.Value{sdktypes.NewIntegerValue(1), sdktypes.NewIntegerValue(2), sdktypes.NewIntegerValue(3)}))
+	nothing      = sdktypes.Nothing
 	intsSet      = kittehs.Must1(sdktypes.NewSetValue([]sdktypes.Value{sdktypes.NewIntegerValue(1), sdktypes.NewIntegerValue(2), sdktypes.NewIntegerValue(3)}))
 	mixedList    = kittehs.Must1(sdktypes.NewListValue([]sdktypes.Value{sdktypes.NewIntegerValue(1), sdktypes.NewStringValue("meow"), sdktypes.NewFloatValue(1.2)}))
 	stringIntMap = map[string]sdktypes.Value{
@@ -381,26 +381,30 @@ func TestUnwrapIntoKitchenSink(t *testing.T) {
 		InS       struct {
 			T time.Time
 		}
+		Timestamp struct {
+			time.Time // embeeded, unnnamed, non-exported
+		}
 	}
 
 	True := true
 
 	in := X{
-		I64:   42,
-		S:     "meow",
-		B:     true,
-		F:     4.2,
-		A2:    [2]string{"meow", "woof"},
-		M:     map[int]string{1: "one", 7: "seven"},
-		Set:   map[string]bool{"one": true, "two": false},
-		Sl:    []float32{1.2, 3.4},
-		StsA:  [3]Y{{Z: "first"}, {Z: "second"}, {Z: "third"}},
-		StsS:  []Y{{Z: "uno"}, {Z: "dos"}, {Z: "tres"}},
-		Bptr:  &True,
-		Sptr:  &Y{Z: "neo"},
-		SptrS: []*Y{{Z: "meow"}, nil, {Z: "woof"}},
-		D:     time.Hour,
-		InS:   struct{ T time.Time }{T: time.Date(2023, time.January, 1, 18, 32, 0, 0, time.UTC)},
+		I64:       42,
+		S:         "meow",
+		B:         true,
+		F:         4.2,
+		A2:        [2]string{"meow", "woof"},
+		M:         map[int]string{1: "one", 7: "seven"},
+		Set:       map[string]bool{"one": true, "two": false},
+		Sl:        []float32{1.2, 3.4},
+		StsA:      [3]Y{{Z: "first"}, {Z: "second"}, {Z: "third"}},
+		StsS:      []Y{{Z: "uno"}, {Z: "dos"}, {Z: "tres"}},
+		Bptr:      &True,
+		Sptr:      &Y{Z: "neo"},
+		SptrS:     []*Y{{Z: "meow"}, nil, {Z: "woof"}},
+		D:         time.Hour,
+		InS:       struct{ T time.Time }{T: time.Date(2023, time.January, 1, 18, 32, 0, 0, time.UTC)},
+		Timestamp: struct{ time.Time }{time.Date(2023, time.January, 1, 18, 32, 0, 0, time.UTC)},
 	}
 
 	w := sdktypes.DefaultValueWrapper
@@ -412,4 +416,9 @@ func TestUnwrapIntoKitchenSink(t *testing.T) {
 	if assert.NoError(t, w.UnwrapInto(&x, wx)) {
 		assert.Equal(t, in, x)
 	}
+}
+
+func TestUnwrapNothing(t *testing.T) {
+	var i int
+	assert.Error(t, sdktypes.UnwrapValueInto(&i, sdktypes.Nothing))
 }

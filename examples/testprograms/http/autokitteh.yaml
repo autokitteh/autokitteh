@@ -10,6 +10,11 @@ project:
   connections:
     - name: myhttp
       integration: "http"
+      vars:
+        - name: COW
+          value: "moo"
+        - name: PIG
+          value: "oink"
   triggers:
     - name: get
       event_type: get

@@ -349,7 +349,7 @@ func toStruct(r *http.Response) (sdktypes.Value, error) {
 		sdktypes.NewStringValue("http_response"),
 		map[string]sdktypes.Value{
 			"url":         sdktypes.NewStringValue(r.Request.URL.String()),
-			"status_code": sdktypes.NewIntegerValue(int64(r.StatusCode)),
+			"status_code": sdktypes.NewIntegerValue(r.StatusCode),
 			"headers": kittehs.Must1(sdktypes.NewDictValue(
 				kittehs.TransformMapToList(r.Header, func(k string, vs []string) sdktypes.DictItem {
 					return sdktypes.DictItem{

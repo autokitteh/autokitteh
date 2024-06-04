@@ -174,6 +174,18 @@ export class ListRequest extends Message<ListRequest> {
    */
   eventType = "";
 
+  /**
+   * @generated from field: uint32 max_results = 4;
+   */
+  maxResults = 0;
+
+  /**
+   * ASC or DESC values are supported
+   *
+   * @generated from field: string order = 5;
+   */
+  order = "";
+
   constructor(data?: PartialMessage<ListRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -185,6 +197,8 @@ export class ListRequest extends Message<ListRequest> {
     { no: 1, name: "integration_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "connection_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "event_type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "max_results", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 5, name: "order", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListRequest {
@@ -209,6 +223,8 @@ export class ListRequest extends Message<ListRequest> {
  */
 export class ListResponse extends Message<ListResponse> {
   /**
+   * Events without their data.
+   *
    * @generated from field: repeated autokitteh.events.v1.Event events = 1;
    */
   events: Event[] = [];

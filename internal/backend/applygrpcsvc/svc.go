@@ -14,7 +14,6 @@ import (
 	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/apply/v1/applyv1connect"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
-	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 type server struct {
@@ -52,13 +51,22 @@ func (s *server) Apply(ctx context.Context, req *connect.Request[applyv1.ApplyRe
 		return nil, connect.NewError(connect.CodeUnknown, err)
 	}
 
-	pids, err := manifest.Execute(ctx, actions, s.client, func(msg string) {
+	effects, err := manifest.Execute(ctx, actions, s.client, func(msg string) {
 		logs = append(logs, fmt.Sprintf("[exec] %s", msg))
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeUnknown, err)
 	}
 
-	stringPIDs := kittehs.Transform(pids, func(pid sdktypes.ProjectID) string { return pid.String() })
-	return connect.NewResponse(&applyv1.ApplyResponse{Logs: logs, ProjectIds: stringPIDs}), nil
+	return connect.NewResponse(&applyv1.ApplyResponse{
+		Logs:       logs,
+		ProjectIds: kittehs.TransformToStrings(effects.ProjectIDs()),
+		Effects: kittehs.Transform(effects, func(e *manifest.Effect) *applyv1.Effect {
+			return &applyv1.Effect{
+				SubjectId: e.SubjectID.String(),
+				Type:      string(e.Type),
+				Text:      e.Text,
+			}
+		}),
+	}), nil
 }

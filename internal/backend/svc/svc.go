@@ -8,6 +8,7 @@ import (
 	"os"
 	"strings"
 	"sync/atomic"
+	"time"
 
 	"github.com/fatih/color"
 	"go.temporal.io/sdk/client"
@@ -40,6 +41,8 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/events"
 	"go.autokitteh.dev/autokitteh/internal/backend/eventsgrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
+	"go.autokitteh.dev/autokitteh/internal/backend/health/healthchecker"
+	"go.autokitteh.dev/autokitteh/internal/backend/health/healthreporter"
 	"go.autokitteh.dev/autokitteh/internal/backend/httpsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/integrations"
 	"go.autokitteh.dev/autokitteh/internal/backend/integrationsgrpcsvc"
@@ -48,6 +51,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/oauth"
 	"go.autokitteh.dev/autokitteh/internal/backend/projects"
 	"go.autokitteh.dev/autokitteh/internal/backend/projectsgrpcsvc"
+	"go.autokitteh.dev/autokitteh/internal/backend/schedule"
 	"go.autokitteh.dev/autokitteh/internal/backend/secrets"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessionsgrpcsvc"
@@ -169,12 +173,32 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		Component("projects", configset.Empty, fx.Provide(projects.New)),
 		Component("projectsgrpcsvc", projectsgrpcsvc.Configs, fx.Provide(projectsgrpcsvc.New)),
 		Component("envs", configset.Empty, fx.Provide(envs.New)),
-		Component("vars", configset.Empty, fx.Provide(vars.New)),
+		Component(
+			"vars",
+			configset.Empty,
+			fx.Provide(vars.New),
+			fx.Provide(func(v *vars.Vars) sdkservices.Vars { return v }),
+			fx.Invoke(func(v *vars.Vars, c sdkservices.Connections) { v.SetConnections(c) }),
+		),
 		Component("secrets", secrets.Configs, fx.Provide(secrets.New)),
 		Component("events", configset.Empty, fx.Provide(events.New)),
 		Component("triggers", configset.Empty, fx.Provide(triggers.New)),
 		Component("oauth", configset.Empty, fx.Provide(oauth.New)),
 		Component("runtimes", configset.Empty, fx.Provide(runtimes.New)),
+
+		Component("healthcheck", configset.Empty, fx.Provide(healthchecker.New)),
+		Component(
+			"schedule",
+			configset.Empty,
+			fx.Provide(schedule.New),
+		),
+		// TODO: consider design where the workflow is an implementation detail of the scheduler and does not need to be exposed.
+		Component(
+			"scheduleWorkflow",
+			configset.Empty,
+			fx.Provide(schedule.NewSchedulerWorkflow),
+			fx.Invoke(func(lc fx.Lifecycle, swf schedule.SchedulerWorkflow) { HookOnStart(lc, swf.Start) }),
+		),
 		Component(
 			"dispatcher",
 			configset.Empty,
@@ -295,12 +319,29 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 				w.Header().Set("Content-Type", "application/json")
 				kittehs.Must0(json.NewEncoder(w).Encode(version.Version))
 			})
+			muxes.NoAuth.HandleFunc("/uptime", func(w http.ResponseWriter, r *http.Request) {
+				uptime := fixtures.Uptime().Truncate(time.Second)
+
+				resp := struct {
+					Text    string `json:"text"`
+					Seconds uint64 `json:"seconds"`
+				}{
+					Text:    uptime.String(),
+					Seconds: uint64(uptime.Seconds()),
+				}
+
+				w.Header().Set("Content-Type", "application/json")
+				kittehs.Must0(json.NewEncoder(w).Encode(resp))
+			})
 		}),
-		fx.Invoke(func(z *zap.Logger, lc fx.Lifecycle, muxes *muxes.Muxes) {
+		fx.Invoke(func(z *zap.Logger, lc fx.Lifecycle, muxes *muxes.Muxes, h healthreporter.HealthReporter) {
 			var ready atomic.Bool
 
 			muxes.NoAuth.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
-				// TODO(ENG-530): check db, temporal, etc.
+				if err := h.Report(); err != nil {
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
 				w.WriteHeader(http.StatusOK)
 			})
 
@@ -315,7 +356,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 
 			HookSimpleOnStart(lc, func() {
 				ready.Store(true)
-				z.Info("ready", zap.String("id", fixtures.ProcessID()))
+				z.Info("ready", zap.String("version", version.Version), zap.String("id", fixtures.ProcessID()))
 			})
 		}),
 	}

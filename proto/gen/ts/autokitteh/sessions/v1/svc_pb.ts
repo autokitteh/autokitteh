@@ -4,7 +4,7 @@
 // @ts-nocheck
 
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
-import { Message, proto3 } from "@bufbuild/protobuf";
+import { Message, proto3, protoInt64 } from "@bufbuild/protobuf";
 import { Session, SessionLog, SessionStateType } from "./session_pb.js";
 
 /**
@@ -253,14 +253,16 @@ export class ListRequest extends Message<ListRequest> {
  */
 export class ListResponse extends Message<ListResponse> {
   /**
+   * Sessions without their data.
+   *
    * @generated from field: repeated autokitteh.sessions.v1.Session sessions = 1;
    */
   sessions: Session[] = [];
 
   /**
-   * @generated from field: int32 count = 2;
+   * @generated from field: int64 count = 2;
    */
-  count = 0;
+  count = protoInt64.zero;
 
   /**
    * @generated from field: string next_page_token = 10;
@@ -276,7 +278,7 @@ export class ListResponse extends Message<ListResponse> {
   static readonly typeName = "autokitteh.sessions.v1.ListResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "sessions", kind: "message", T: Session, repeated: true },
-    { no: 2, name: "count", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 2, name: "count", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 10, name: "next_page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 

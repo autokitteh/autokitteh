@@ -17,19 +17,20 @@ type Svc struct {
 }
 
 func Init(svc Svc) {
+	svc.initAuth()
+	svc.initBuilds()
+	svc.initConnections()
+	svc.initDeployments()
+	svc.initEnvs()
+	svc.initEvents()
 	svc.initIndex()
+	svc.initIntegrations()
 	svc.initObjects()
 	svc.initProjects()
-	svc.initConnections()
-	svc.initIntegrations()
-	svc.initEnvs()
-	svc.initTriggers()
-	svc.initDeployments()
-	svc.initBuilds()
-	svc.initEvents()
 	svc.initSessions()
-	svc.initAuth()
 	svc.initToken()
+	svc.initTriggers()
+	svc.initVars()
 }
 
 func (s *Svc) initIndex() {

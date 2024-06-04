@@ -15,7 +15,7 @@ from autokitteh_pb.events.v1 import event_pb2 as autokitteh_dot_events_dot_v1_do
 from buf.validate import validate_pb2 as buf_dot_validate_dot_validate__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1e\x61utokitteh/events/v1/svc.proto\x12\x14\x61utokitteh.events.v1\x1a autokitteh/events/v1/event.proto\x1a\x1b\x62uf/validate/validate.proto\"\xa1\x02\n\x0bSaveRequest\x12\x31\n\x05\x65vent\x18\x01 \x01(\x0b\x32\x1b.autokitteh.events.v1.EventR\x05\x65vent:\xde\x01\xfa\xf7\x18\xd9\x01\x1ah\n\x1c\x65vents.missing_connection_id\x12\x15missing connection_id\x1a\x31has(this.event) && this.event.connection_id != \'\'\x1am\n\x1d\x65vents.event_id_must_be_empty\x12\x1e\x65vent_id must not be specified\x1a,has(this.event) && this.event.event_id == \'\'\"3\n\x0cSaveResponse\x12#\n\x08\x65vent_id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x07\x65ventId\"1\n\nGetRequest\x12#\n\x08\x65vent_id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x07\x65ventId\"@\n\x0bGetResponse\x12\x31\n\x05\x65vent\x18\x01 \x01(\x0b\x32\x1b.autokitteh.events.v1.EventR\x05\x65vent\"x\n\x0bListRequest\x12%\n\x0eintegration_id\x18\x01 \x01(\tR\rintegrationId\x12#\n\rconnection_id\x18\x02 \x01(\tR\x0c\x63onnectionId\x12\x1d\n\nevent_type\x18\x03 \x01(\tR\teventType\"C\n\x0cListResponse\x12\x33\n\x06\x65vents\x18\x01 \x03(\x0b\x32\x1b.autokitteh.events.v1.EventR\x06\x65vents\"\x81\x01\n\x17ListEventRecordsRequest\x12#\n\x08\x65vent_id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x07\x65ventId\x12\x41\n\x05state\x18\x03 \x01(\x0e\x32 .autokitteh.events.v1.EventStateB\t\xfa\xf7\x18\x05\x82\x01\x02\x10\x01R\x05state\"e\n\x18ListEventRecordsResponse\x12I\n\x07records\x18\x01 \x03(\x0b\x32!.autokitteh.events.v1.EventRecordB\x0c\xfa\xf7\x18\x08\x92\x01\x05\"\x03\xc8\x01\x01R\x07records\"\xc4\x01\n\x15\x41\x64\x64\x45ventRecordRequest\x12\x39\n\x06record\x18\x01 \x01(\x0b\x32!.autokitteh.events.v1.EventRecordR\x06record:p\xfa\xf7\x18l\x1aj\n&events.event_record_must_have_event_id\x12\x10missing event id\x1a.has(this.record) && this.record.event_id != \'\'\"\x18\n\x16\x41\x64\x64\x45ventRecordResponse2\xd9\x03\n\rEventsService\x12M\n\x04Save\x12!.autokitteh.events.v1.SaveRequest\x1a\".autokitteh.events.v1.SaveResponse\x12J\n\x03Get\x12 .autokitteh.events.v1.GetRequest\x1a!.autokitteh.events.v1.GetResponse\x12M\n\x04List\x12!.autokitteh.events.v1.ListRequest\x1a\".autokitteh.events.v1.ListResponse\x12q\n\x10ListEventRecords\x12-.autokitteh.events.v1.ListEventRecordsRequest\x1a..autokitteh.events.v1.ListEventRecordsResponse\x12k\n\x0e\x41\x64\x64\x45ventRecord\x12+.autokitteh.events.v1.AddEventRecordRequest\x1a,.autokitteh.events.v1.AddEventRecordResponseB\xdf\x01\n\x18\x63om.autokitteh.events.v1B\x08SvcProtoP\x01ZGgo.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/events/v1;eventsv1\xa2\x02\x03\x41\x45X\xaa\x02\x14\x41utokitteh.Events.V1\xca\x02\x14\x41utokitteh\\Events\\V1\xe2\x02 Autokitteh\\Events\\V1\\GPBMetadata\xea\x02\x16\x41utokitteh::Events::V1b\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1e\x61utokitteh/events/v1/svc.proto\x12\x14\x61utokitteh.events.v1\x1a autokitteh/events/v1/event.proto\x1a\x1b\x62uf/validate/validate.proto\"\xa1\x02\n\x0bSaveRequest\x12\x31\n\x05\x65vent\x18\x01 \x01(\x0b\x32\x1b.autokitteh.events.v1.EventR\x05\x65vent:\xde\x01\xfa\xf7\x18\xd9\x01\x1ah\n\x1c\x65vents.missing_connection_id\x12\x15missing connection_id\x1a\x31has(this.event) && this.event.connection_id != \'\'\x1am\n\x1d\x65vents.event_id_must_be_empty\x12\x1e\x65vent_id must not be specified\x1a,has(this.event) && this.event.event_id == \'\'\"3\n\x0cSaveResponse\x12#\n\x08\x65vent_id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x07\x65ventId\"1\n\nGetRequest\x12#\n\x08\x65vent_id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x07\x65ventId\"@\n\x0bGetResponse\x12\x31\n\x05\x65vent\x18\x01 \x01(\x0b\x32\x1b.autokitteh.events.v1.EventR\x05\x65vent\"\xaf\x01\n\x0bListRequest\x12%\n\x0eintegration_id\x18\x01 \x01(\tR\rintegrationId\x12#\n\rconnection_id\x18\x02 \x01(\tR\x0c\x63onnectionId\x12\x1d\n\nevent_type\x18\x03 \x01(\tR\teventType\x12\x1f\n\x0bmax_results\x18\x04 \x01(\rR\nmaxResults\x12\x14\n\x05order\x18\x05 \x01(\tR\x05order\"C\n\x0cListResponse\x12\x33\n\x06\x65vents\x18\x01 \x03(\x0b\x32\x1b.autokitteh.events.v1.EventR\x06\x65vents\"\x81\x01\n\x17ListEventRecordsRequest\x12#\n\x08\x65vent_id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x07\x65ventId\x12\x41\n\x05state\x18\x03 \x01(\x0e\x32 .autokitteh.events.v1.EventStateB\t\xfa\xf7\x18\x05\x82\x01\x02\x10\x01R\x05state\"e\n\x18ListEventRecordsResponse\x12I\n\x07records\x18\x01 \x03(\x0b\x32!.autokitteh.events.v1.EventRecordB\x0c\xfa\xf7\x18\x08\x92\x01\x05\"\x03\xc8\x01\x01R\x07records\"\xc4\x01\n\x15\x41\x64\x64\x45ventRecordRequest\x12\x39\n\x06record\x18\x01 \x01(\x0b\x32!.autokitteh.events.v1.EventRecordR\x06record:p\xfa\xf7\x18l\x1aj\n&events.event_record_must_have_event_id\x12\x10missing event id\x1a.has(this.record) && this.record.event_id != \'\'\"\x18\n\x16\x41\x64\x64\x45ventRecordResponse2\xd9\x03\n\rEventsService\x12M\n\x04Save\x12!.autokitteh.events.v1.SaveRequest\x1a\".autokitteh.events.v1.SaveResponse\x12J\n\x03Get\x12 .autokitteh.events.v1.GetRequest\x1a!.autokitteh.events.v1.GetResponse\x12M\n\x04List\x12!.autokitteh.events.v1.ListRequest\x1a\".autokitteh.events.v1.ListResponse\x12q\n\x10ListEventRecords\x12-.autokitteh.events.v1.ListEventRecordsRequest\x1a..autokitteh.events.v1.ListEventRecordsResponse\x12k\n\x0e\x41\x64\x64\x45ventRecord\x12+.autokitteh.events.v1.AddEventRecordRequest\x1a,.autokitteh.events.v1.AddEventRecordResponseB\xdf\x01\n\x18\x63om.autokitteh.events.v1B\x08SvcProtoP\x01ZGgo.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/events/v1;eventsv1\xa2\x02\x03\x41\x45X\xaa\x02\x14\x41utokitteh.Events.V1\xca\x02\x14\x41utokitteh\\Events\\V1\xe2\x02 Autokitteh\\Events\\V1\\GPBMetadata\xea\x02\x16\x41utokitteh::Events::V1b\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -45,18 +45,18 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _globals['_GETREQUEST']._serialized_end=513
   _globals['_GETRESPONSE']._serialized_start=515
   _globals['_GETRESPONSE']._serialized_end=579
-  _globals['_LISTREQUEST']._serialized_start=581
-  _globals['_LISTREQUEST']._serialized_end=701
-  _globals['_LISTRESPONSE']._serialized_start=703
-  _globals['_LISTRESPONSE']._serialized_end=770
-  _globals['_LISTEVENTRECORDSREQUEST']._serialized_start=773
-  _globals['_LISTEVENTRECORDSREQUEST']._serialized_end=902
-  _globals['_LISTEVENTRECORDSRESPONSE']._serialized_start=904
-  _globals['_LISTEVENTRECORDSRESPONSE']._serialized_end=1005
-  _globals['_ADDEVENTRECORDREQUEST']._serialized_start=1008
-  _globals['_ADDEVENTRECORDREQUEST']._serialized_end=1204
-  _globals['_ADDEVENTRECORDRESPONSE']._serialized_start=1206
-  _globals['_ADDEVENTRECORDRESPONSE']._serialized_end=1230
-  _globals['_EVENTSSERVICE']._serialized_start=1233
-  _globals['_EVENTSSERVICE']._serialized_end=1706
+  _globals['_LISTREQUEST']._serialized_start=582
+  _globals['_LISTREQUEST']._serialized_end=757
+  _globals['_LISTRESPONSE']._serialized_start=759
+  _globals['_LISTRESPONSE']._serialized_end=826
+  _globals['_LISTEVENTRECORDSREQUEST']._serialized_start=829
+  _globals['_LISTEVENTRECORDSREQUEST']._serialized_end=958
+  _globals['_LISTEVENTRECORDSRESPONSE']._serialized_start=960
+  _globals['_LISTEVENTRECORDSRESPONSE']._serialized_end=1061
+  _globals['_ADDEVENTRECORDREQUEST']._serialized_start=1064
+  _globals['_ADDEVENTRECORDREQUEST']._serialized_end=1260
+  _globals['_ADDEVENTRECORDRESPONSE']._serialized_start=1262
+  _globals['_ADDEVENTRECORDRESPONSE']._serialized_end=1286
+  _globals['_EVENTSSERVICE']._serialized_start=1289
+  _globals['_EVENTSSERVICE']._serialized_end=1762
 # @@protoc_insertion_point(module_scope)

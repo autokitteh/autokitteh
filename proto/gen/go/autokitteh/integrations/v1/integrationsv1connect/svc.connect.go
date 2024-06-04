@@ -41,6 +41,12 @@ const (
 	// IntegrationsServiceConfigureProcedure is the fully-qualified name of the IntegrationsService's
 	// Configure RPC.
 	IntegrationsServiceConfigureProcedure = "/autokitteh.integrations.v1.IntegrationsService/Configure"
+	// IntegrationsServiceTestConnectionProcedure is the fully-qualified name of the
+	// IntegrationsService's TestConnection RPC.
+	IntegrationsServiceTestConnectionProcedure = "/autokitteh.integrations.v1.IntegrationsService/TestConnection"
+	// IntegrationsServiceGetConnectionStatusProcedure is the fully-qualified name of the
+	// IntegrationsService's GetConnectionStatus RPC.
+	IntegrationsServiceGetConnectionStatusProcedure = "/autokitteh.integrations.v1.IntegrationsService/GetConnectionStatus"
 	// IntegrationsServiceCallProcedure is the fully-qualified name of the IntegrationsService's Call
 	// RPC.
 	IntegrationsServiceCallProcedure = "/autokitteh.integrations.v1.IntegrationsService/Call"
@@ -54,6 +60,12 @@ type IntegrationsServiceClient interface {
 	// Get all values for a specific configuration of the integration.
 	// The returned values ExecutorIDs will be the integration id.
 	Configure(context.Context, *connect.Request[v1.ConfigureRequest]) (*connect.Response[v1.ConfigureResponse], error)
+	// Actively test the connection to the integration.
+	// requires supports_connection_test.
+	TestConnection(context.Context, *connect.Request[v1.TestConnectionRequest]) (*connect.Response[v1.TestConnectionResponse], error)
+	// If connection_id is not provided, will return the status of a new connection as
+	// set in `Integration.initial_connection_status`.
+	GetConnectionStatus(context.Context, *connect.Request[v1.GetConnectionStatusRequest]) (*connect.Response[v1.GetConnectionStatusResponse], error)
 	Call(context.Context, *connect.Request[v1.CallRequest]) (*connect.Response[v1.CallResponse], error)
 }
 
@@ -83,6 +95,16 @@ func NewIntegrationsServiceClient(httpClient connect.HTTPClient, baseURL string,
 			baseURL+IntegrationsServiceConfigureProcedure,
 			opts...,
 		),
+		testConnection: connect.NewClient[v1.TestConnectionRequest, v1.TestConnectionResponse](
+			httpClient,
+			baseURL+IntegrationsServiceTestConnectionProcedure,
+			opts...,
+		),
+		getConnectionStatus: connect.NewClient[v1.GetConnectionStatusRequest, v1.GetConnectionStatusResponse](
+			httpClient,
+			baseURL+IntegrationsServiceGetConnectionStatusProcedure,
+			opts...,
+		),
 		call: connect.NewClient[v1.CallRequest, v1.CallResponse](
 			httpClient,
 			baseURL+IntegrationsServiceCallProcedure,
@@ -93,10 +115,12 @@ func NewIntegrationsServiceClient(httpClient connect.HTTPClient, baseURL string,
 
 // integrationsServiceClient implements IntegrationsServiceClient.
 type integrationsServiceClient struct {
-	get       *connect.Client[v1.GetRequest, v1.GetResponse]
-	list      *connect.Client[v1.ListRequest, v1.ListResponse]
-	configure *connect.Client[v1.ConfigureRequest, v1.ConfigureResponse]
-	call      *connect.Client[v1.CallRequest, v1.CallResponse]
+	get                 *connect.Client[v1.GetRequest, v1.GetResponse]
+	list                *connect.Client[v1.ListRequest, v1.ListResponse]
+	configure           *connect.Client[v1.ConfigureRequest, v1.ConfigureResponse]
+	testConnection      *connect.Client[v1.TestConnectionRequest, v1.TestConnectionResponse]
+	getConnectionStatus *connect.Client[v1.GetConnectionStatusRequest, v1.GetConnectionStatusResponse]
+	call                *connect.Client[v1.CallRequest, v1.CallResponse]
 }
 
 // Get calls autokitteh.integrations.v1.IntegrationsService.Get.
@@ -114,6 +138,16 @@ func (c *integrationsServiceClient) Configure(ctx context.Context, req *connect.
 	return c.configure.CallUnary(ctx, req)
 }
 
+// TestConnection calls autokitteh.integrations.v1.IntegrationsService.TestConnection.
+func (c *integrationsServiceClient) TestConnection(ctx context.Context, req *connect.Request[v1.TestConnectionRequest]) (*connect.Response[v1.TestConnectionResponse], error) {
+	return c.testConnection.CallUnary(ctx, req)
+}
+
+// GetConnectionStatus calls autokitteh.integrations.v1.IntegrationsService.GetConnectionStatus.
+func (c *integrationsServiceClient) GetConnectionStatus(ctx context.Context, req *connect.Request[v1.GetConnectionStatusRequest]) (*connect.Response[v1.GetConnectionStatusResponse], error) {
+	return c.getConnectionStatus.CallUnary(ctx, req)
+}
+
 // Call calls autokitteh.integrations.v1.IntegrationsService.Call.
 func (c *integrationsServiceClient) Call(ctx context.Context, req *connect.Request[v1.CallRequest]) (*connect.Response[v1.CallResponse], error) {
 	return c.call.CallUnary(ctx, req)
@@ -127,6 +161,12 @@ type IntegrationsServiceHandler interface {
 	// Get all values for a specific configuration of the integration.
 	// The returned values ExecutorIDs will be the integration id.
 	Configure(context.Context, *connect.Request[v1.ConfigureRequest]) (*connect.Response[v1.ConfigureResponse], error)
+	// Actively test the connection to the integration.
+	// requires supports_connection_test.
+	TestConnection(context.Context, *connect.Request[v1.TestConnectionRequest]) (*connect.Response[v1.TestConnectionResponse], error)
+	// If connection_id is not provided, will return the status of a new connection as
+	// set in `Integration.initial_connection_status`.
+	GetConnectionStatus(context.Context, *connect.Request[v1.GetConnectionStatusRequest]) (*connect.Response[v1.GetConnectionStatusResponse], error)
 	Call(context.Context, *connect.Request[v1.CallRequest]) (*connect.Response[v1.CallResponse], error)
 }
 
@@ -151,6 +191,16 @@ func NewIntegrationsServiceHandler(svc IntegrationsServiceHandler, opts ...conne
 		svc.Configure,
 		opts...,
 	)
+	integrationsServiceTestConnectionHandler := connect.NewUnaryHandler(
+		IntegrationsServiceTestConnectionProcedure,
+		svc.TestConnection,
+		opts...,
+	)
+	integrationsServiceGetConnectionStatusHandler := connect.NewUnaryHandler(
+		IntegrationsServiceGetConnectionStatusProcedure,
+		svc.GetConnectionStatus,
+		opts...,
+	)
 	integrationsServiceCallHandler := connect.NewUnaryHandler(
 		IntegrationsServiceCallProcedure,
 		svc.Call,
@@ -164,6 +214,10 @@ func NewIntegrationsServiceHandler(svc IntegrationsServiceHandler, opts ...conne
 			integrationsServiceListHandler.ServeHTTP(w, r)
 		case IntegrationsServiceConfigureProcedure:
 			integrationsServiceConfigureHandler.ServeHTTP(w, r)
+		case IntegrationsServiceTestConnectionProcedure:
+			integrationsServiceTestConnectionHandler.ServeHTTP(w, r)
+		case IntegrationsServiceGetConnectionStatusProcedure:
+			integrationsServiceGetConnectionStatusHandler.ServeHTTP(w, r)
 		case IntegrationsServiceCallProcedure:
 			integrationsServiceCallHandler.ServeHTTP(w, r)
 		default:
@@ -185,6 +239,14 @@ func (UnimplementedIntegrationsServiceHandler) List(context.Context, *connect.Re
 
 func (UnimplementedIntegrationsServiceHandler) Configure(context.Context, *connect.Request[v1.ConfigureRequest]) (*connect.Response[v1.ConfigureResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("autokitteh.integrations.v1.IntegrationsService.Configure is not implemented"))
+}
+
+func (UnimplementedIntegrationsServiceHandler) TestConnection(context.Context, *connect.Request[v1.TestConnectionRequest]) (*connect.Response[v1.TestConnectionResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("autokitteh.integrations.v1.IntegrationsService.TestConnection is not implemented"))
+}
+
+func (UnimplementedIntegrationsServiceHandler) GetConnectionStatus(context.Context, *connect.Request[v1.GetConnectionStatusRequest]) (*connect.Response[v1.GetConnectionStatusResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("autokitteh.integrations.v1.IntegrationsService.GetConnectionStatus is not implemented"))
 }
 
 func (UnimplementedIntegrationsServiceHandler) Call(context.Context, *connect.Request[v1.CallRequest]) (*connect.Response[v1.CallResponse], error) {

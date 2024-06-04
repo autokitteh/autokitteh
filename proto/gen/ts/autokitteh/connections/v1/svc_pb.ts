@@ -6,6 +6,7 @@
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
 import { Message, proto3 } from "@bufbuild/protobuf";
 import { Connection } from "./connection_pb.js";
+import { Status, Status_Code } from "../../common/v1/status_pb.js";
 
 /**
  * @generated from message autokitteh.connections.v1.CreateRequest
@@ -309,6 +310,13 @@ export class ListRequest extends Message<ListRequest> {
    */
   projectId = "";
 
+  /**
+   * Optional.
+   *
+   * @generated from field: autokitteh.common.v1.Status.Code status_code = 3;
+   */
+  statusCode = Status_Code.UNSPECIFIED;
+
   constructor(data?: PartialMessage<ListRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -319,6 +327,7 @@ export class ListRequest extends Message<ListRequest> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "integration_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "status_code", kind: "enum", T: proto3.getEnumType(Status_Code) },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListRequest {
@@ -372,6 +381,154 @@ export class ListResponse extends Message<ListResponse> {
 
   static equals(a: ListResponse | PlainMessage<ListResponse> | undefined, b: ListResponse | PlainMessage<ListResponse> | undefined): boolean {
     return proto3.util.equals(ListResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message autokitteh.connections.v1.TestRequest
+ */
+export class TestRequest extends Message<TestRequest> {
+  /**
+   * @generated from field: string connection_id = 1;
+   */
+  connectionId = "";
+
+  constructor(data?: PartialMessage<TestRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "autokitteh.connections.v1.TestRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "connection_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): TestRequest {
+    return new TestRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): TestRequest {
+    return new TestRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): TestRequest {
+    return new TestRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: TestRequest | PlainMessage<TestRequest> | undefined, b: TestRequest | PlainMessage<TestRequest> | undefined): boolean {
+    return proto3.util.equals(TestRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message autokitteh.connections.v1.TestResponse
+ */
+export class TestResponse extends Message<TestResponse> {
+  /**
+   * @generated from field: autokitteh.common.v1.Status status = 1;
+   */
+  status?: Status;
+
+  constructor(data?: PartialMessage<TestResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "autokitteh.connections.v1.TestResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "status", kind: "message", T: Status },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): TestResponse {
+    return new TestResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): TestResponse {
+    return new TestResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): TestResponse {
+    return new TestResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: TestResponse | PlainMessage<TestResponse> | undefined, b: TestResponse | PlainMessage<TestResponse> | undefined): boolean {
+    return proto3.util.equals(TestResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message autokitteh.connections.v1.RefreshStatusRequest
+ */
+export class RefreshStatusRequest extends Message<RefreshStatusRequest> {
+  /**
+   * @generated from field: string connection_id = 1;
+   */
+  connectionId = "";
+
+  constructor(data?: PartialMessage<RefreshStatusRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "autokitteh.connections.v1.RefreshStatusRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "connection_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RefreshStatusRequest {
+    return new RefreshStatusRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): RefreshStatusRequest {
+    return new RefreshStatusRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): RefreshStatusRequest {
+    return new RefreshStatusRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: RefreshStatusRequest | PlainMessage<RefreshStatusRequest> | undefined, b: RefreshStatusRequest | PlainMessage<RefreshStatusRequest> | undefined): boolean {
+    return proto3.util.equals(RefreshStatusRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message autokitteh.connections.v1.RefreshStatusResponse
+ */
+export class RefreshStatusResponse extends Message<RefreshStatusResponse> {
+  /**
+   * @generated from field: autokitteh.common.v1.Status status = 1;
+   */
+  status?: Status;
+
+  constructor(data?: PartialMessage<RefreshStatusResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "autokitteh.connections.v1.RefreshStatusResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "status", kind: "message", T: Status },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RefreshStatusResponse {
+    return new RefreshStatusResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): RefreshStatusResponse {
+    return new RefreshStatusResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): RefreshStatusResponse {
+    return new RefreshStatusResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: RefreshStatusResponse | PlainMessage<RefreshStatusResponse> | undefined, b: RefreshStatusResponse | PlainMessage<RefreshStatusResponse> | undefined): boolean {
+    return proto3.util.equals(RefreshStatusResponse, a, b);
   }
 }
 

@@ -70,6 +70,7 @@ $ ak version
 - gotestsum (used by Makefile intead of "go test" if detected)
 - jq (for advanced output formatting)
 - atlasgo (for new DB migrations)
+- nodejs >= 20 (for updating UI only)
 
 ## Contact Us
 

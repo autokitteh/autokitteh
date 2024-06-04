@@ -88,9 +88,21 @@ func (e Event) Data() map[string]Value {
 }
 func (e Event) Seq() uint64 { return e.read().Seq }
 
+func (e Event) WithData(data map[string]Value) Event {
+	return Event{e.forceUpdate(func(m *EventPB) { m.Data = kittehs.TransformMapValues(data, func(v Value) *ValuePB { return v.m }) })}
+}
+
 var eventFilterEnv = kittehs.Must1(cel.NewEnv(
 	cel.Variable("data", cel.MapType(cel.StringType, cel.AnyType)),
 ))
+
+func VerifyEventFilter(filter string) error {
+	if _, err := eventFilterEnv.Compile(filter); err != nil {
+		return err.Err()
+	}
+
+	return nil
+}
 
 func eventFilterField(name string, expr string) error {
 	if expr == "" {

@@ -46,6 +46,30 @@ func TestCreateProject(t *testing.T) {
 	f.createProjectsAndAssert(t, p)
 }
 
+func TestCreateDuplicatedProjectName(t *testing.T) {
+	f := preProjectTest(t)
+
+	p := f.newProject()
+	// test createProject
+	f.createProjectsAndAssert(t, p)
+
+	p2 := f.newProject()
+	p2.Name = p.Name
+
+	assert.Equal(t, p.Name, p2.Name)
+	assert.NotEqual(t, p.ProjectID, p2.ProjectID)
+
+	// test create another project with the same name
+	assert.ErrorIs(t, f.gormdb.createProject(f.ctx, &p2), gorm.ErrDuplicatedKey)
+
+	// delete project
+	assert.NoError(t, f.gormdb.deleteProject(f.ctx, p.ProjectID))
+	f.assertProjectDeleted(t, p)
+
+	// test create another project with the same name after delete
+	f.createProjectsAndAssert(t, p2)
+}
+
 func TestGetProjects(t *testing.T) {
 	f := preProjectTest(t)
 
@@ -104,10 +128,10 @@ func TestGetProjectDeployments(t *testing.T) {
 	e1, e2, e3, e4 := f.newEnv(), f.newEnv(), f.newEnv(), f.newEnv()
 	d1, d2, d3, d4 := f.newDeployment(), f.newDeployment(), f.newDeployment(), f.newDeployment()
 
-	e1.ProjectID = &p1.ProjectID
-	e2.ProjectID = &p1.ProjectID
-	e3.ProjectID = &p1.ProjectID
-	e4.ProjectID = &p2.ProjectID
+	e1.ProjectID = p1.ProjectID
+	e2.ProjectID = p1.ProjectID
+	e3.ProjectID = p1.ProjectID
+	e4.ProjectID = p2.ProjectID
 
 	d1.EnvID = &e1.EnvID
 	d2.EnvID = &e1.EnvID
@@ -132,8 +156,8 @@ func TestGetProjectEnvs(t *testing.T) {
 	e1, e2 := f.newEnv(), f.newEnv()
 	d := f.newDeployment()
 
-	e1.ProjectID = &p.ProjectID
-	e2.ProjectID = &p.ProjectID
+	e1.ProjectID = p.ProjectID
+	e2.ProjectID = p.ProjectID
 	d.EnvID = &e1.EnvID
 
 	f.createProjectsAndAssert(t, p)
@@ -167,9 +191,9 @@ func TestDeleteProjectAndDependents(t *testing.T) {
 	c.ProjectID = &p1.ProjectID
 
 	e1p1, e2p1, e1p2 := f.newEnv(), f.newEnv(), f.newEnv()
-	e1p1.ProjectID = &p1.ProjectID
-	e2p1.ProjectID = &p1.ProjectID
-	e1p2.ProjectID = &p2.ProjectID
+	e1p1.ProjectID = p1.ProjectID
+	e2p1.ProjectID = p1.ProjectID
+	e1p2.ProjectID = p2.ProjectID
 
 	t1, t2 := f.newTrigger(), f.newTrigger()
 	t1.ProjectID = p1.ProjectID

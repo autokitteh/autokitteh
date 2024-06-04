@@ -11,20 +11,13 @@ import pickle
 import sys
 import tarfile
 from base64 import b64decode, b64encode
-from functools import wraps
-from importlib.abc import Loader
-from importlib.machinery import SourceFileLoader
 from os import mkdir
 from pathlib import Path
 from socket import AF_UNIX, SOCK_STREAM, socket
+from time import sleep
+from types import ModuleType
 
-# Use own own logger, leave root logger to user.
-log = logging.getLogger('AK')
-log.setLevel(logging.INFO)
-formatter = logging.Formatter('[%(name)s] %(asctime)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s')
-hdlr = logging.StreamHandler()
-hdlr.setFormatter(formatter)
-log.addHandler(hdlr)
+log: logging.Logger = None  # Filled in main
 
 def name_of(node):
     """Name of call node (e.g. 'requests.get')"""
@@ -42,7 +35,6 @@ def name_of(node):
 
 
 ACTION_NAME = '_ak_call'
-MODULE_NAME = ''
 BUILTIN = {v for v in dir(builtins) if callable(getattr(builtins, v))}
 
 
@@ -52,10 +44,10 @@ class Transformer(ast.NodeTransformer):
         self.file_name = file_name
 
     def visit_Call(self, node):
+        # Recurse, see https://docs.python.org/3/library/ast.html#ast.NodeVisitor.generic_visit
+        self.generic_visit(node)
+
         name = name_of(node.func)
-        # ast.Transformer does not recurse to func or args
-        node.func = self.visit(node.func)
-        node.args = [self.visit(a) for a in node.args]
 
         if not name or name in BUILTIN:
             return node
@@ -69,82 +61,29 @@ class Transformer(ast.NodeTransformer):
         return call
 
 
-class AKLoader(Loader):
-    """Custom file loaders that will rewrite function calls to actions."""
-    def __init__(self, src_loader, action):
-        self.file_name = src_loader.path
-        self.module_name = src_loader.name
-        self.action = action
-
-    def create_module(self, spec):
-        # Must be defined since it's an abstract method
-        return None  # Use default module
-
-    def exec_module(self, module):
-        try:
-            with open(self.file_name) as fp:
-                src = fp.read()
-        except OSError as err:
-            raise ImportError(f'cannot read {self.module_name!r} - {err}')
-
-        mod = ast.parse(src, self.file_name, 'exec')
-        trans = Transformer(self.file_name)
-        out = trans.visit(mod)
-        ast.fix_missing_locations(out)
-
-        code = compile(out, self.file_name, 'exec')
-        setattr(module, ACTION_NAME, self.action)
-        exec(code, module.__dict__)
-
-
-# There is an established way to add import hooks, but we want to change the behavior of
-# the current PathFinder found in sys.import_hooks so it'll call our code when importing
-# form the user directory. This is why you'll see all these monkey patches below.
-
-def patch_finder(finder, action):
-    """Patches the finder to use a custom source loader."""
-    _orig_find_spec = finder.find_spec
-    def find_spec(fullname, target=None):
-        spec = _orig_find_spec(fullname, target)
-        if spec is None or not isinstance(spec.loader, SourceFileLoader):
-            return spec
-
-        log.info('patching loader for %r', fullname)
-        spec.loader = AKLoader(spec.loader, action)
-        return spec
-
-    finder.find_spec = find_spec
-
-
-def wrap_hook(hook, user_dir, action):
-    """Wraps a hook to patch finder on user code directories."""
-    @wraps(hook)
-    def wrapper(path):
-        finder = hook(path)
-        if user_dir.is_relative_to(path):
-            patch_finder(finder, action)
-        return finder
-
-    return wrapper
-
-
-def patch_import_hooks(user_dir, action_fn):
-    """Patches standard import hook in sys.path_hooks."""
-    user_dir = Path(user_dir)
-    for i, hook in enumerate(sys.path_hooks):
-        if hook.__name__ == 'path_hook_for_FileFinder':
-            sys.path_hooks[i] = wrap_hook(hook, user_dir, action_fn)
-            return
-
-    raise RuntimeError(f'cannot find import hook to patch in {sys.path_hooks}')
-
-
 def load_code(root_path, action_fn, module_name):
-    patch_import_hooks(root_path, action_fn)
-    sys.path.insert(0, str(root_path))
+    """Load user code into a module, instrumenting function calls."""
     log.info('importing %r', module_name)
-    mod = __import__(module_name)
-    return mod
+    file_name = Path(root_path) / (module_name + '.py')
+    with open(file_name) as fp:
+        src = fp.read()
+
+    tree = ast.parse(src, file_name, 'exec')
+    trans = Transformer(file_name)
+    patched_tree = trans.visit(tree)
+    ast.fix_missing_locations(patched_tree)
+
+    # Make 'ak' module available for imports.
+    ak = ak_module()
+    sys.modules[ak.__name__] = ak
+
+    code = compile(patched_tree, file_name, 'exec')
+
+    module = ModuleType(module_name)
+    setattr(module, ACTION_NAME, action_fn)
+    exec(code, module.__dict__)
+
+    return module
 
 
 def run_code(mod, entry_point, data):
@@ -163,6 +102,7 @@ class MessageType:
     module = 'module'
     response = 'response'
     run = 'run'
+    sleep = 'sleep'
     
 
 class Comm:
@@ -194,9 +134,9 @@ class Comm:
         message = {
             'type': MessageType.callback,
             'payload': {
-                'name': fn.__name__,
-                'args': [str(a) for a in args],
-                'kw': {k: str(v) for k, v in kw.items()},
+                'name': fn if isinstance(fn, str) else fn.__name__,
+                'args': [repr(a) for a in args],
+                'kw': {k: repr(v) for k, v in kw.items()},
                 'data': self._picklize(data),
             },
         }
@@ -239,24 +179,65 @@ class Comm:
         return pickle.loads(b64decode(data))
 
 
+    def send_log(self, level, message):
+        message = {
+            'type': MessageType.log,
+            'payload': {
+                'level': level,
+                'message': message,
+            },
+        }
+
+    def send_sleep(self, seconds):
+        message = {
+            'type': MessageType.sleep,
+            'payload': {
+                'seconds': seconds,
+            },
+        }
+        self._send(message)
+
+
+ACTIVITY_ATTR = '__activity__'
+
+def activity(fn):
+    setattr(fn, ACTIVITY_ATTR, True)
+    return fn
+
+
+def ak_module():
+    mod = ModuleType('ak')
+    mod.activity = activity  # type: ignore
+    return mod
+
+
 class AKCall:
     """Callable wrapping functions with activities."""
-    def __init__(self, module_name, comm: Comm):
-        self.module_name = module_name
+    def __init__(self, comm: Comm):
         self.in_activity = False
         self.comm = comm
+        self.module = None
 
-    def ignore(self, fn):
+    def is_module_func(self, fn):
+        return fn.__module__ == self.module.__name__
+
+    def should_run_as_activity(self, fn):
+        if self.in_activity:
+            return False
+
+        if getattr(fn, ACTIVITY_ATTR, False):
+            return True
+
         if fn.__module__ == 'builtins':
-            return True
+            return False
         
-        if fn.__module__ == self.module_name:
-            return True
+        if self.is_module_func(fn):
+            return False
 
-        return False
+        return True
 
     def __call__(self, func, *args, **kw):
-        if self.in_activity or self.ignore(func):
+        if not self.should_run_as_activity(func):
             log.info(
                 'calling %s (args=%r, kw=%r) directly (in_activity=%s)', 
                 func.__name__, args, kw, self.in_activity)
@@ -265,12 +246,25 @@ class AKCall:
         log.info('ACTION: calling %s via activity (args=%r, kw=%r)', func.__name__, args, kw)
         self.in_activity = True
         try:
+            if func is sleep:
+                self.comm.send_sleep(*args, **kw)
+                self.comm.recv(MessageType.sleep)
+                return
+
+            if self.is_module_func(func):
+                # Pickle can't handle function from our loaded module
+                func = func.__name__
             self.comm.send_activity(func, args, kw)
             message = self.comm.recv(MessageType.callback, MessageType.response)
             
             if message['type'] == MessageType.callback:
                 payload = self.comm.extract_activity(message)
                 fn, args, kw = payload['data']
+                if isinstance(fn, str):
+                    fn = getattr(self.module, fn, None)
+                    if fn is None:
+                        mod_name = self.module.__name__
+                        raise ValueError(f'function {fn} not found in {mod_name}')
                 value = fn(*args, **kw)
                 self.comm.send_response(value)
                 message = self.comm.recv(MessageType.response)
@@ -349,15 +343,65 @@ def module_entries(mod):
     ]
 
 
+class AKLogHandler(logging.Handler):
+    def __init__(self, level, comm):
+        super().__init__(level)
+        self.comm = comm
+        self.formatter = logging.Formatter()
+
+    def emit(self, record):
+        level = 'ERROR' if record.levelname == 'CRITICAL' else record.levelname
+        message = record.getMessage()
+        if record.exc_info:
+            message += '\n' + self.formatter.formatException(record.exc_info)
+        self.comm.send_log(level, message)
+
+def create_logger(level, comm):
+    log = logging.getLogger('AK')
+    log.setLevel(level)
+    handler = AKLogHandler(level, comm)
+    log.addHandler(handler)
+    return log
+
+
+class AttrDict(dict):
+    """Allow attribute access to dictionary keys.
+
+    >>> config = AttrDict({'server': {'port': 8080}, 'debug': True})
+    >>> config.server.port
+    8080
+    >>> config.debug
+    True
+    """
+    def __getattr__(self, name):
+        try:
+            value = self[name]
+            if isinstance(value, dict):
+                value = AttrDict(value)
+            return value
+        except KeyError:
+            raise AttributeError(name)
+
+    def __setattr__(self, attr, value):
+        # The default __getattr__ doesn't fail but also don't change values
+        cls = self.__class__.__name__
+        raise NotImplementedError(f'{cls} does not support setting attributes')
+
+
 if __name__ == '__main__':
-    from argparse import ArgumentParser
     import sys
+    from argparse import ArgumentParser
 
     parser = ArgumentParser(description='autokitteh Python runner')
     parser.add_argument('sock', help='path to unix domain socket', type=file_type)
     parser.add_argument('tar', help='path to code tar file', type=file_type)
     parser.add_argument('path', help='file.py:function')
     args = parser.parse_args()
+
+    sock = socket(AF_UNIX, SOCK_STREAM)
+    sock.connect(args.sock)
+    comm = Comm(sock)
+    log = create_logger(logging.INFO, comm)
 
     # TODO: Ask Itay why AK does not pass entry point
     if ':' in args.path:
@@ -371,16 +415,14 @@ if __name__ == '__main__':
     code_dir = extract_code(args.tar)
     log.info('code dir: %r', code_dir)
 
-    sock = socket(AF_UNIX, SOCK_STREAM)
-    sock.connect(args.sock)
     log.info('connected to %r', args.sock)
 
     log.info('loading %r', module_name)
-    comm = Comm(sock)
 
-    ak_call = AKCall(module_name, comm)
+    ak_call = AKCall(comm)
     mod = load_code(code_dir, ak_call, module_name)
-    MODULE_NAME = mod.__name__
+    ak_call.module = mod
+
     entries = module_entries(mod)
     comm.send_exported(entries)
 
@@ -408,5 +450,6 @@ if __name__ == '__main__':
         except ValueError:
             pass
 
+    event = AttrDict(event)
     fn(event)
     comm.send_done()

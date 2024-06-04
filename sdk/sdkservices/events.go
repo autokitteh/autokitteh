@@ -14,7 +14,15 @@ type ListEventsFilter struct {
 	Limit             int
 	CreatedAfter      *time.Time
 	MinSequenceNumber uint64
+	Order             ListOrder
 }
+
+type ListOrder string
+
+const (
+	ListOrderAscending  ListOrder = "ASC"
+	ListOrderDescending ListOrder = "DESC"
+)
 
 type ListEventRecordsFilter struct {
 	EventID sdktypes.EventID
@@ -23,6 +31,7 @@ type ListEventRecordsFilter struct {
 type Events interface {
 	Save(ctx context.Context, event sdktypes.Event) (sdktypes.EventID, error)
 	Get(ctx context.Context, eventID sdktypes.EventID) (sdktypes.Event, error)
+	// List returns events without their data.
 	List(ctx context.Context, filter ListEventsFilter) ([]sdktypes.Event, error)
 	AddEventRecord(context.Context, sdktypes.EventRecord) error
 	ListEventRecords(context.Context, ListEventRecordsFilter) ([]sdktypes.EventRecord, error)

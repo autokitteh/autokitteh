@@ -31,7 +31,7 @@ func validateTar(t *testing.T, tarData []byte, fsys fs.FS) {
 		}
 
 		require.NoError(t, err, "iterate tar")
-		require.Truef(t, isFile(fsys, hdr.Name), "%q - not on fs", hdr.Name)
+		require.Truef(t, isFSFile(fsys, hdr.Name), "%q - not on fs", hdr.Name)
 		inTar[hdr.Name] = true
 	}
 
@@ -42,7 +42,7 @@ func validateTar(t *testing.T, tarData []byte, fsys fs.FS) {
 	}
 }
 
-func isFile(fsys fs.FS, path string) bool {
+func isFSFile(fsys fs.FS, path string) bool {
 	info, err := fs.Stat(fsys, path)
 	if err != nil {
 		return false
@@ -127,12 +127,22 @@ func Test_pySvc_Run(t *testing.T) {
 		Print: func(ctx context.Context, rid sdktypes.RunID, msg string) {},
 	}
 
-	run, err := svc.Run(ctx, runID, mainPath, compiled, nil, &cbs)
+	xid := sdktypes.NewExecutorID(sdktypes.NewRunID())
+
+	var mod sdktypes.ModuleFunction
+	syscall, err := sdktypes.NewFunctionValue(xid, "syscall", nil, nil, mod)
+	require.NoError(t, err)
+
+	ak, err := sdktypes.NewStructValue(
+		sdktypes.NewStringValue("ak"),
+		map[string]sdktypes.Value{"syscall": syscall},
+	)
+	require.NoError(t, err)
+	values := map[string]sdktypes.Value{"ak": ak}
+	run, err := svc.Run(ctx, runID, mainPath, compiled, values, &cbs)
 	require.NoError(t, err, "run")
 
-	xid := sdktypes.NewExecutorID(sdktypes.NewRunID())
-	var modFn sdktypes.ModuleFunction
-	fn, err := sdktypes.NewFunctionValue(xid, "greet", nil, nil, modFn)
+	fn, err := sdktypes.NewFunctionValue(xid, "greet", nil, nil, mod)
 	require.NoError(t, err, "new function")
 
 	kwargs := map[string]sdktypes.Value{
@@ -165,26 +175,31 @@ func Test_isGoodVersion(t *testing.T) {
 	}
 }
 
-const exeCodeTemplate = `#!/bin/bash
-
-echo Python %d.%d.7
-`
-
 func TestNewBadVersion(t *testing.T) {
 	dirName := t.TempDir()
 	exe := path.Join(dirName, "python")
-	file, err := os.Create(exe)
-	require.NoError(t, err)
 
-	exeCode := fmt.Sprintf(exeCodeTemplate, minPyVersion.Major, minPyVersion.Minor-1)
-	_, err = file.Write([]byte(exeCode))
-	require.NoError(t, err)
-	file.Close()
+	genExe(t, exe, minPyVersion.Major, minPyVersion.Minor-1)
+	t.Setenv(exeEnvKey, exe)
 
-	err = os.Chmod(exe, 0755)
-	require.NoError(t, err)
-	t.Setenv("PATH", dirName)
-
-	_, err = New()
+	_, err := New()
 	require.Error(t, err)
+}
+
+func TestPythonFromEnv(t *testing.T) {
+	envDir := t.TempDir()
+	pyExe := path.Join(envDir, "pypy3")
+	t.Setenv(exeEnvKey, pyExe)
+
+	_, err := New()
+	require.Error(t, err)
+
+	genExe(t, pyExe, minPyVersion.Major, minPyVersion.Minor)
+	r, err := New()
+	require.NoError(t, err)
+
+	py, ok := r.(*pySvc)
+	require.True(t, ok)
+	require.Equal(t, pyExe, py.pyExe)
+
 }

@@ -1,7 +1,7 @@
 package sdktypes
 
 type PaginationResult struct {
-	TotalCount    int
+	TotalCount    int64
 	NextPageToken string
 }
 

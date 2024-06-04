@@ -1,11 +1,14 @@
 package dashboardsvc
 
 import (
+	"encoding/json"
+	"html/template"
 	"net/http"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
+	"go.autokitteh.dev/autokitteh/web/webdashboard"
 )
 
 func (s Svc) initBuilds() {
@@ -15,19 +18,22 @@ func (s Svc) initBuilds() {
 
 type build struct{ sdktypes.Build }
 
-func (p build) FieldsOrder() []string { return nil }
-func (p build) HideFields() []string  { return nil }
+func (p build) FieldsOrder() []string       { return nil }
+func (p build) HideFields() []string        { return nil }
+func (p build) ExtraFields() map[string]any { return nil }
 
 func toBuild(sdkP sdktypes.Build) build { return build{sdkP} }
 
 func (s Svc) listBuilds(w http.ResponseWriter, r *http.Request) (list, error) {
-	sdkCs, err := s.Svcs.Builds().List(r.Context(), sdkservices.ListBuildsFilter{})
+	f := sdkservices.ListBuildsFilter{}
+
+	sdkCs, err := s.Svcs.Builds().List(r.Context(), f)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return list{}, err
 	}
 
-	return genListData(kittehs.Transform(sdkCs, toBuild)), nil
+	return genListData(f, kittehs.Transform(sdkCs, toBuild)), nil
 }
 
 func (s Svc) builds(w http.ResponseWriter, r *http.Request) {
@@ -46,13 +52,29 @@ func (s Svc) build(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sdkP, err := s.Svcs.Builds().Get(r.Context(), bid)
+	sdkB, err := s.Svcs.Builds().Get(r.Context(), bid)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	p := toBuild(sdkP)
+	bf, err := s.Svcs.Builds().Describe(r.Context(), bid)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
-	renderObject(w, r, "build", p.ToProto())
+	if err := webdashboard.Tmpl(r).ExecuteTemplate(w, "build.html", struct {
+		Title string
+		ID    string
+		Build template.HTML
+		File  template.HTML
+	}{
+		Title: "Build: " + sdkB.ID().String(),
+		ID:    bid.String(),
+		Build: marshalObject(sdkB.ToProto()),
+		File:  template.HTML(kittehs.Must1(json.MarshalIndent(bf, "", "  "))),
+	}); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }

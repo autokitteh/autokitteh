@@ -11,11 +11,12 @@ from google.protobuf.internal import builder as _builder
 _sym_db = _symbol_database.Default()
 
 
+from autokitteh_pb.common.v1 import status_pb2 as autokitteh_dot_common_dot_v1_dot_status__pb2
 from autokitteh_pb.connections.v1 import connection_pb2 as autokitteh_dot_connections_dot_v1_dot_connection__pb2
 from buf.validate import validate_pb2 as buf_dot_validate_dot_validate__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n#autokitteh/connections/v1/svc.proto\x12\x19\x61utokitteh.connections.v1\x1a*autokitteh/connections/v1/connection.proto\x1a\x1b\x62uf/validate/validate.proto\"\xeb\x01\n\rCreateRequest\x12\x45\n\nconnection\x18\x01 \x01(\x0b\x32%.autokitteh.connections.v1.ConnectionR\nconnection:\x92\x01\xfa\xf7\x18\x8d\x01\x1a\x8a\x01\n&connection.connection_id_must_be_empty\x12#connection_id must not be specified\x1a;has(this.connection) && this.connection.connection_id == \'\'\"?\n\x0e\x43reateResponse\x12-\n\rconnection_id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x0c\x63onnectionId\"\xeb\x01\n\rUpdateRequest\x12\x45\n\nconnection\x18\x01 \x01(\x0b\x32%.autokitteh.connections.v1.ConnectionR\nconnection:\x92\x01\xfa\xf7\x18\x8d\x01\x1a\x8a\x01\n*connection.connection_id_must_not_be_empty\x12\x1f\x63onnection_id must be specified\x1a;has(this.connection) && this.connection.connection_id != \'\'\"\x10\n\x0eUpdateResponse\">\n\rDeleteRequest\x12-\n\rconnection_id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x0c\x63onnectionId\"\x10\n\x0e\x44\x65leteResponse\"1\n\nGetRequest\x12#\n\rconnection_id\x18\x01 \x01(\tR\x0c\x63onnectionId\"T\n\x0bGetResponse\x12\x45\n\nconnection\x18\x01 \x01(\x0b\x32%.autokitteh.connections.v1.ConnectionR\nconnection\"S\n\x0bListRequest\x12%\n\x0eintegration_id\x18\x01 \x01(\tR\rintegrationId\x12\x1d\n\nproject_id\x18\x02 \x01(\tR\tprojectId\"e\n\x0cListResponse\x12U\n\x0b\x63onnections\x18\x01 \x03(\x0b\x32%.autokitteh.connections.v1.ConnectionB\x0c\xfa\xf7\x18\x08\x92\x01\x05\"\x03\xc8\x01\x01R\x0b\x63onnections2\xe0\x03\n\x12\x43onnectionsService\x12]\n\x06\x43reate\x12(.autokitteh.connections.v1.CreateRequest\x1a).autokitteh.connections.v1.CreateResponse\x12]\n\x06\x44\x65lete\x12(.autokitteh.connections.v1.DeleteRequest\x1a).autokitteh.connections.v1.DeleteResponse\x12]\n\x06Update\x12(.autokitteh.connections.v1.UpdateRequest\x1a).autokitteh.connections.v1.UpdateResponse\x12T\n\x03Get\x12%.autokitteh.connections.v1.GetRequest\x1a&.autokitteh.connections.v1.GetResponse\x12W\n\x04List\x12&.autokitteh.connections.v1.ListRequest\x1a\'.autokitteh.connections.v1.ListResponseB\x82\x02\n\x1d\x63om.autokitteh.connections.v1B\x08SvcProtoP\x01ZQgo.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/connections/v1;connectionsv1\xa2\x02\x03\x41\x43X\xaa\x02\x19\x41utokitteh.Connections.V1\xca\x02\x19\x41utokitteh\\Connections\\V1\xe2\x02%Autokitteh\\Connections\\V1\\GPBMetadata\xea\x02\x1b\x41utokitteh::Connections::V1b\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n#autokitteh/connections/v1/svc.proto\x12\x19\x61utokitteh.connections.v1\x1a!autokitteh/common/v1/status.proto\x1a*autokitteh/connections/v1/connection.proto\x1a\x1b\x62uf/validate/validate.proto\"\xeb\x01\n\rCreateRequest\x12\x45\n\nconnection\x18\x01 \x01(\x0b\x32%.autokitteh.connections.v1.ConnectionR\nconnection:\x92\x01\xfa\xf7\x18\x8d\x01\x1a\x8a\x01\n&connection.connection_id_must_be_empty\x12#connection_id must not be specified\x1a;has(this.connection) && this.connection.connection_id == \'\'\"?\n\x0e\x43reateResponse\x12-\n\rconnection_id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x0c\x63onnectionId\"\xeb\x01\n\rUpdateRequest\x12\x45\n\nconnection\x18\x01 \x01(\x0b\x32%.autokitteh.connections.v1.ConnectionR\nconnection:\x92\x01\xfa\xf7\x18\x8d\x01\x1a\x8a\x01\n*connection.connection_id_must_not_be_empty\x12\x1f\x63onnection_id must be specified\x1a;has(this.connection) && this.connection.connection_id != \'\'\"\x10\n\x0eUpdateResponse\">\n\rDeleteRequest\x12-\n\rconnection_id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x0c\x63onnectionId\"\x10\n\x0e\x44\x65leteResponse\"1\n\nGetRequest\x12#\n\rconnection_id\x18\x01 \x01(\tR\x0c\x63onnectionId\"T\n\x0bGetResponse\x12\x45\n\nconnection\x18\x01 \x01(\x0b\x32%.autokitteh.connections.v1.ConnectionR\nconnection\"\x97\x01\n\x0bListRequest\x12%\n\x0eintegration_id\x18\x01 \x01(\tR\rintegrationId\x12\x1d\n\nproject_id\x18\x02 \x01(\tR\tprojectId\x12\x42\n\x0bstatus_code\x18\x03 \x01(\x0e\x32!.autokitteh.common.v1.Status.CodeR\nstatusCode\"e\n\x0cListResponse\x12U\n\x0b\x63onnections\x18\x01 \x03(\x0b\x32%.autokitteh.connections.v1.ConnectionB\x0c\xfa\xf7\x18\x08\x92\x01\x05\"\x03\xc8\x01\x01R\x0b\x63onnections\"<\n\x0bTestRequest\x12-\n\rconnection_id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x0c\x63onnectionId\"M\n\x0cTestResponse\x12=\n\x06status\x18\x01 \x01(\x0b\x32\x1c.autokitteh.common.v1.StatusB\x07\xfa\xf7\x18\x03\xc8\x01\x01R\x06status\"E\n\x14RefreshStatusRequest\x12-\n\rconnection_id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x0c\x63onnectionId\"V\n\x15RefreshStatusResponse\x12=\n\x06status\x18\x01 \x01(\x0b\x32\x1c.autokitteh.common.v1.StatusB\x07\xfa\xf7\x18\x03\xc8\x01\x01R\x06status2\xad\x05\n\x12\x43onnectionsService\x12]\n\x06\x43reate\x12(.autokitteh.connections.v1.CreateRequest\x1a).autokitteh.connections.v1.CreateResponse\x12]\n\x06\x44\x65lete\x12(.autokitteh.connections.v1.DeleteRequest\x1a).autokitteh.connections.v1.DeleteResponse\x12]\n\x06Update\x12(.autokitteh.connections.v1.UpdateRequest\x1a).autokitteh.connections.v1.UpdateResponse\x12T\n\x03Get\x12%.autokitteh.connections.v1.GetRequest\x1a&.autokitteh.connections.v1.GetResponse\x12W\n\x04List\x12&.autokitteh.connections.v1.ListRequest\x1a\'.autokitteh.connections.v1.ListResponse\x12W\n\x04Test\x12&.autokitteh.connections.v1.TestRequest\x1a\'.autokitteh.connections.v1.TestResponse\x12r\n\rRefreshStatus\x12/.autokitteh.connections.v1.RefreshStatusRequest\x1a\x30.autokitteh.connections.v1.RefreshStatusResponseB\x82\x02\n\x1d\x63om.autokitteh.connections.v1B\x08SvcProtoP\x01ZQgo.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/connections/v1;connectionsv1\xa2\x02\x03\x41\x43X\xaa\x02\x19\x41utokitteh.Connections.V1\xca\x02\x19\x41utokitteh\\Connections\\V1\xe2\x02%Autokitteh\\Connections\\V1\\GPBMetadata\xea\x02\x1b\x41utokitteh::Connections::V1b\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -33,26 +34,42 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _DELETEREQUEST.fields_by_name['connection_id']._serialized_options = b'\372\367\030\004r\002\020\001'
   _LISTRESPONSE.fields_by_name['connections']._options = None
   _LISTRESPONSE.fields_by_name['connections']._serialized_options = b'\372\367\030\010\222\001\005\"\003\310\001\001'
-  _globals['_CREATEREQUEST']._serialized_start=140
-  _globals['_CREATEREQUEST']._serialized_end=375
-  _globals['_CREATERESPONSE']._serialized_start=377
-  _globals['_CREATERESPONSE']._serialized_end=440
-  _globals['_UPDATEREQUEST']._serialized_start=443
-  _globals['_UPDATEREQUEST']._serialized_end=678
-  _globals['_UPDATERESPONSE']._serialized_start=680
-  _globals['_UPDATERESPONSE']._serialized_end=696
-  _globals['_DELETEREQUEST']._serialized_start=698
-  _globals['_DELETEREQUEST']._serialized_end=760
-  _globals['_DELETERESPONSE']._serialized_start=762
-  _globals['_DELETERESPONSE']._serialized_end=778
-  _globals['_GETREQUEST']._serialized_start=780
-  _globals['_GETREQUEST']._serialized_end=829
-  _globals['_GETRESPONSE']._serialized_start=831
-  _globals['_GETRESPONSE']._serialized_end=915
-  _globals['_LISTREQUEST']._serialized_start=917
-  _globals['_LISTREQUEST']._serialized_end=1000
-  _globals['_LISTRESPONSE']._serialized_start=1002
-  _globals['_LISTRESPONSE']._serialized_end=1103
-  _globals['_CONNECTIONSSERVICE']._serialized_start=1106
-  _globals['_CONNECTIONSSERVICE']._serialized_end=1586
+  _TESTREQUEST.fields_by_name['connection_id']._options = None
+  _TESTREQUEST.fields_by_name['connection_id']._serialized_options = b'\372\367\030\004r\002\020\001'
+  _TESTRESPONSE.fields_by_name['status']._options = None
+  _TESTRESPONSE.fields_by_name['status']._serialized_options = b'\372\367\030\003\310\001\001'
+  _REFRESHSTATUSREQUEST.fields_by_name['connection_id']._options = None
+  _REFRESHSTATUSREQUEST.fields_by_name['connection_id']._serialized_options = b'\372\367\030\004r\002\020\001'
+  _REFRESHSTATUSRESPONSE.fields_by_name['status']._options = None
+  _REFRESHSTATUSRESPONSE.fields_by_name['status']._serialized_options = b'\372\367\030\003\310\001\001'
+  _globals['_CREATEREQUEST']._serialized_start=175
+  _globals['_CREATEREQUEST']._serialized_end=410
+  _globals['_CREATERESPONSE']._serialized_start=412
+  _globals['_CREATERESPONSE']._serialized_end=475
+  _globals['_UPDATEREQUEST']._serialized_start=478
+  _globals['_UPDATEREQUEST']._serialized_end=713
+  _globals['_UPDATERESPONSE']._serialized_start=715
+  _globals['_UPDATERESPONSE']._serialized_end=731
+  _globals['_DELETEREQUEST']._serialized_start=733
+  _globals['_DELETEREQUEST']._serialized_end=795
+  _globals['_DELETERESPONSE']._serialized_start=797
+  _globals['_DELETERESPONSE']._serialized_end=813
+  _globals['_GETREQUEST']._serialized_start=815
+  _globals['_GETREQUEST']._serialized_end=864
+  _globals['_GETRESPONSE']._serialized_start=866
+  _globals['_GETRESPONSE']._serialized_end=950
+  _globals['_LISTREQUEST']._serialized_start=953
+  _globals['_LISTREQUEST']._serialized_end=1104
+  _globals['_LISTRESPONSE']._serialized_start=1106
+  _globals['_LISTRESPONSE']._serialized_end=1207
+  _globals['_TESTREQUEST']._serialized_start=1209
+  _globals['_TESTREQUEST']._serialized_end=1269
+  _globals['_TESTRESPONSE']._serialized_start=1271
+  _globals['_TESTRESPONSE']._serialized_end=1348
+  _globals['_REFRESHSTATUSREQUEST']._serialized_start=1350
+  _globals['_REFRESHSTATUSREQUEST']._serialized_end=1419
+  _globals['_REFRESHSTATUSRESPONSE']._serialized_start=1421
+  _globals['_REFRESHSTATUSRESPONSE']._serialized_end=1507
+  _globals['_CONNECTIONSSERVICE']._serialized_start=1510
+  _globals['_CONNECTIONSSERVICE']._serialized_end=2195
 # @@protoc_insertion_point(module_scope)

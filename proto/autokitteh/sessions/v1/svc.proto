@@ -55,8 +55,9 @@ message ListRequest {
 }
 
 message ListResponse {
+  // Sessions without their data.
   repeated Session sessions = 1 [(buf.validate.field).repeated.items.required = true];
-  int32 count = 2;
+  int64 count = 2;
 
   string next_page_token = 10;
 }
@@ -88,6 +89,7 @@ message DeleteResponse {}
 service SessionsService {
   rpc Start(StartRequest) returns (StartResponse);
   rpc Stop(StopRequest) returns (StopResponse);
+  // List returns events without their data.
   rpc List(ListRequest) returns (ListResponse);
   rpc Get(GetRequest) returns (GetResponse);
   rpc GetLog(GetLogRequest) returns (GetLogResponse);

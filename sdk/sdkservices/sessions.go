@@ -25,6 +25,7 @@ type ListSessionResult struct {
 type Sessions interface {
 	Start(ctx context.Context, session sdktypes.Session) (sdktypes.SessionID, error)
 	Stop(ctx context.Context, sessionID sdktypes.SessionID, reason string, force bool) error
+	// List returns sessions without their data.
 	List(ctx context.Context, filter ListSessionsFilter) (ListSessionResult, error)
 	Get(ctx context.Context, sessionID sdktypes.SessionID) (sdktypes.Session, error)
 	GetLog(ctx context.Context, sessionID sdktypes.SessionID) (sdktypes.SessionLog, error)

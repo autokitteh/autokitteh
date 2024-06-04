@@ -7,6 +7,7 @@ import (
 	"gorm.io/gorm"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
+	"go.autokitteh.dev/autokitteh/internal/backend/health/healthreporter"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -31,6 +32,8 @@ type DB interface {
 	MigrationRequired(context.Context) (bool, int64, error)
 	Migrate(context.Context) error
 	Debug() DB
+
+	healthreporter.HealthReporter
 
 	GormDB() *gorm.DB
 
@@ -124,7 +127,7 @@ type DB interface {
 	UpdateIntegration(ctx context.Context, i sdktypes.Integration) error
 	DeleteIntegration(ctx context.Context, id sdktypes.IntegrationID) error
 	GetIntegration(ctx context.Context, id sdktypes.IntegrationID) (sdktypes.Integration, error)
-	ListIntegrations(ctx context.Context, filter sdkservices.ListIntegrationsFilter) ([]sdktypes.Integration, error)
+	ListIntegrations(ctx context.Context) ([]sdktypes.Integration, error)
 
 	// -----------------------------------------------------------------------
 	CreateSession(ctx context.Context, session sdktypes.Session) error
@@ -145,11 +148,11 @@ type DB interface {
 	GetSessionCallAttemptResult(ctx context.Context, sessionID sdktypes.SessionID, seq uint32, attempt int64 /* <0 for last */) (sdktypes.SessionCallAttemptResult, error)
 
 	// -----------------------------------------------------------------------
-	// TODO: Do not expose scheme outside of DB.
+	// TODO(ENG-917): Do not expose scheme outside of DB.
 	SaveSignal(ctx context.Context, signalID string, workflowID string, connectionID sdktypes.ConnectionID, filter string) (string, error)
 	GetSignal(ctx context.Context, signalID string) (scheme.Signal, error)
 	RemoveSignal(ctx context.Context, signalID string) error
-	ListSignalsWaitingOnConnection(ctx context.Context, connectionID sdktypes.ConnectionID, filter string) ([]scheme.Signal, error)
+	ListSignalsWaitingOnConnection(ctx context.Context, connectionID sdktypes.ConnectionID) ([]scheme.Signal, error)
 
 	// -----------------------------------------------------------------------
 	SetSecret(ctx context.Context, key string, value string) error

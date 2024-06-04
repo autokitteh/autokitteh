@@ -10,6 +10,7 @@ import (
 	"gorm.io/gorm"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
+	commonv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/common/v1"
 	deploymentsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/deployments/v1"
 	eventsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/events/v1"
 	integrationsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/integrations/v1"
@@ -69,9 +70,13 @@ func ParseBuild(b Build) (sdktypes.Build, error) {
 
 type Connection struct {
 	ConnectionID  sdktypes.UUID  `gorm:"primaryKey;type:uuid;not null"`
-	IntegrationID *sdktypes.UUID `gorm:"type:uuid"`
+	IntegrationID *sdktypes.UUID `gorm:"index;type:uuid"`
 	ProjectID     *sdktypes.UUID `gorm:"index;type:uuid"`
 	Name          string
+	StatusCode    int32 `gorm:"index"`
+	StatusMessage string
+
+	DeletedAt gorm.DeletedAt `gorm:"index"`
 
 	// enforce foreign keys
 	// Integration *Integration FIXME: ENG-590
@@ -86,6 +91,10 @@ func ParseConnection(c Connection) (sdktypes.Connection, error) {
 		IntegrationId: sdktypes.NewIDFromUUID[sdktypes.IntegrationID](c.IntegrationID).String(),
 		ProjectId:     sdktypes.NewIDFromUUID[sdktypes.ProjectID](c.ProjectID).String(),
 		Name:          c.Name,
+		Status: &sdktypes.StatusPB{
+			Code:    commonv1.Status_Code(c.StatusCode),
+			Message: c.StatusMessage,
+		},
 	})
 	if err != nil {
 		return sdktypes.InvalidConnection, fmt.Errorf("invalid connection record: %w", err)
@@ -161,10 +170,22 @@ func ParseIntegration(i Integration) (sdktypes.Integration, error) {
 
 type Project struct {
 	ProjectID sdktypes.UUID `gorm:"primaryKey;type:uuid;not null"`
-	Name      string        `gorm:"uniqueIndex"`
+	Name      string        `gorm:"index"`
 	RootURL   string
 	Resources []byte
 	DeletedAt gorm.DeletedAt `gorm:"index"`
+}
+
+func (p *Project) BeforeCreate(tx *gorm.DB) (err error) {
+	var existingProject Project
+	// Note:
+	// - Gorm will add automatically `deleted_at is NULL` to the query
+	// - we use Find, since it won't return ErrRecordNotFound
+	res := tx.Where("name = ?", p.Name).Limit(1).Find(&existingProject)
+	if res.RowsAffected > 0 {
+		return gorm.ErrDuplicatedKey // existing active project found.
+	}
+	return err
 }
 
 func ParseProject(r Project) (sdktypes.Project, error) {
@@ -189,9 +210,9 @@ type Secret struct {
 }
 
 type Event struct {
-	EventID       sdktypes.UUID `gorm:"uniqueIndex;type:uuid;not null"`
-	IntegrationID sdktypes.UUID `gorm:"index;type:uuid;not null"`
-	ConnectionID  sdktypes.UUID `gorm:"index;type:uuid;not null"`
+	EventID       sdktypes.UUID  `gorm:"uniqueIndex;type:uuid;not null"`
+	IntegrationID *sdktypes.UUID `gorm:"index;type:uuid"`
+	ConnectionID  *sdktypes.UUID `gorm:"index;type:uuid"`
 
 	EventType string `gorm:"index:idx_event_type_seq,priority:1;index:idx_event_type"`
 	Data      datatypes.JSON
@@ -208,8 +229,10 @@ type Event struct {
 
 func ParseEvent(e Event) (sdktypes.Event, error) {
 	var data map[string]sdktypes.Value
-	if err := json.Unmarshal(e.Data, &data); err != nil {
-		return sdktypes.InvalidEvent, fmt.Errorf("event data: %w", err)
+	if len(e.Data) != 0 {
+		if err := json.Unmarshal(e.Data, &data); err != nil {
+			return sdktypes.InvalidEvent, fmt.Errorf("event data: %w", err)
+		}
 	}
 
 	var memo map[string]string
@@ -219,7 +242,7 @@ func ParseEvent(e Event) (sdktypes.Event, error) {
 
 	return sdktypes.StrictEventFromProto(&sdktypes.EventPB{
 		EventId:      sdktypes.NewIDFromUUID[sdktypes.EventID](&e.EventID).String(),
-		ConnectionId: sdktypes.NewIDFromUUID[sdktypes.ConnectionID](&e.ConnectionID).String(),
+		ConnectionId: sdktypes.NewIDFromUUID[sdktypes.ConnectionID](e.ConnectionID).String(),
 		EventType:    e.EventType,
 		Data:         kittehs.TransformMapValues(data, sdktypes.ToProto),
 		Memo:         memo,
@@ -229,8 +252,8 @@ func ParseEvent(e Event) (sdktypes.Event, error) {
 }
 
 type EventRecord struct {
-	Seq       uint32        `gorm:"primaryKey"`
 	EventID   sdktypes.UUID `gorm:"primaryKey;type:uuid;not null"`
+	Seq       uint32        `gorm:"primaryKey"`
 	State     int32         `gorm:"index"`
 	CreatedAt time.Time
 
@@ -248,8 +271,8 @@ func ParseEventRecord(e EventRecord) (sdktypes.EventRecord, error) {
 }
 
 type Env struct {
-	EnvID     sdktypes.UUID  `gorm:"primaryKey;type:uuid;not null"`
-	ProjectID *sdktypes.UUID `gorm:"index;type:uuid"`
+	EnvID     sdktypes.UUID `gorm:"primaryKey;type:uuid;not null"`
+	ProjectID sdktypes.UUID `gorm:"index;type:uuid;not null"`
 	Name      string
 	DeletedAt gorm.DeletedAt `gorm:"index"`
 
@@ -264,7 +287,7 @@ type Env struct {
 func ParseEnv(e Env) (sdktypes.Env, error) {
 	return sdktypes.StrictEnvFromProto(&sdktypes.EnvPB{
 		EnvId:     sdktypes.NewIDFromUUID[sdktypes.EnvID](&e.EnvID).String(),
-		ProjectId: sdktypes.NewIDFromUUID[sdktypes.ProjectID](e.ProjectID).String(),
+		ProjectId: sdktypes.NewIDFromUUID[sdktypes.ProjectID](&e.ProjectID).String(),
 		Name:      e.Name,
 	})
 }
@@ -389,9 +412,10 @@ func ParseSession(s Session) (sdktypes.Session, error) {
 	}
 
 	var inputs map[string]sdktypes.Value
-
-	if err := json.Unmarshal(s.Inputs, &inputs); err != nil {
-		return sdktypes.InvalidSession, fmt.Errorf("inputs: %w", err)
+	if len(s.Inputs) != 0 {
+		if err := json.Unmarshal(s.Inputs, &inputs); err != nil {
+			return sdktypes.InvalidSession, fmt.Errorf("inputs: %w", err)
+		}
 	}
 
 	session, err := sdktypes.StrictSessionFromProto(&sdktypes.SessionPB{

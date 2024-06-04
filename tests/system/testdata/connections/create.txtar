@@ -17,15 +17,15 @@ ak connection create my_connection --project my_project
 output equals 'Error: required flag(s) "integration" not set'
 return code == 1
 
-ak connection create my_connection --integration http 
+ak connection create my_connection --integration http
 output equals 'Error: required flag(s) "project" not set'
 return code == 1
 
-ak connection create my_connection --project my_project 
+ak connection create my_connection --project my_project
 output equals 'Error: required flag(s) "integration" not set'
 return code == 1
 
 # Create connection.
-ak connection create my_connection --project my_project --integration http 
+ak connection create my_connection --project my_project --integration http -q
 return code == 0
 output equals 'connection_id: con_00000000000000000000000003'

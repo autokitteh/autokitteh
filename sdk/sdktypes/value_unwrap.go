@@ -14,6 +14,10 @@ import (
 
 func UnwrapValue(v Value) (any, error) { return DefaultValueWrapper.Unwrap(v) }
 
+func (w ValueWrapper) UnwrapMap(m map[string]Value) (map[string]any, error) {
+	return kittehs.TransformMapValuesError(m, w.Unwrap)
+}
+
 // Unwraps a value, converting it to a native go type.
 func (w ValueWrapper) Unwrap(v Value) (any, error) {
 	if w.Preunwrap != nil {
@@ -38,6 +42,9 @@ func (w *ValueWrapper) unwrap(v Value) (any, error) {
 	case NothingValue:
 		return nil, nil
 	case FunctionValue:
+		if w.IgnoreFunctions {
+			return nil, nil
+		}
 		return nil, errors.New("function values are not supported")
 	case StringValue:
 		return v.Value(), nil
@@ -252,6 +259,15 @@ func (w ValueWrapper) unwrapIntoReader(path string, dstv reflect.Value, v Value)
 }
 
 func (w ValueWrapper) unwrapScalarInto(path string, dstv reflect.Value, v Value) (bool, error) {
+	if v.IsNothing() {
+		if dstv.Kind() == reflect.Ptr {
+			dstv.Set(reflect.Zero(dstv.Type()))
+			return true, nil
+		}
+
+		return true, fmt.Errorf("%scannot convert Nothing to target type", path)
+	}
+
 	if dstv.Type().Implements(reflect.TypeOf((*io.Reader)(nil)).Elem()) {
 		if w.IgnoreReader {
 			dstv.Set(reflect.Zero(dstv.Type()))

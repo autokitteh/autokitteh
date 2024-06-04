@@ -6,6 +6,7 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
+	"fmt"
 	"net/http"
 	"os"
 	"strconv"
@@ -33,7 +34,12 @@ const (
 )
 
 func (i integration) NewClient(ctx context.Context, user string) (*github.Client, error) {
-	data, err := i.getConnection(ctx)
+	// Extract the connection token from the given context.
+	cid, err := sdkmodule.FunctionConnectionIDFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	data, err := i.vars.Reveal(ctx, sdktypes.NewVarScopeID(cid))
 	if err != nil {
 		return nil, err
 	}
@@ -48,26 +54,25 @@ func (i integration) NewClient(ctx context.Context, user string) (*github.Client
 // uses a newly-generated GitHub app installation JWT.
 func (i integration) newClientWithInstallJWT(data sdktypes.Vars, user string) (*github.Client, error) {
 	// Initialize and return a GitHub client with a JWT.
-	aid, err := strconv.ParseInt(data.GetValue(vars.UserAppID(user)), 10, 64)
-	if err != nil {
-		return nil, err
+	s := data.GetValue(vars.UserAppID(user))
+	if s == "" {
+		return nil, fmt.Errorf("app ID not found for owner %q", user)
 	}
-	iid, err := strconv.ParseInt(data.GetValue(vars.UserInstallID(user)), 10, 64)
+	aid, err := strconv.ParseInt(s, 10, 64)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("invalid app ID %q for owner %q", s, user)
 	}
+
+	s = data.GetValue(vars.UserInstallID(user))
+	if s == "" {
+		return nil, fmt.Errorf("install ID not found for owner %q", user)
+	}
+	iid, err := strconv.ParseInt(s, 10, 64)
+	if err != nil {
+		return nil, fmt.Errorf("invalid nstall ID %q for owner %q", s, user)
+	}
+
 	return i.newClientWithInstallJWTFromGitHubIDs(aid, iid)
-}
-
-// getConnection calls the Get method in SecretsService.
-func (i integration) getConnection(ctx context.Context) (sdktypes.Vars, error) {
-	// Extract the connection token from the given context.
-	cid, err := sdkmodule.FunctionConnectionIDFromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	return i.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
 }
 
 // newClientWithInstallJWTFromGitHubIDs generates a GitHub app

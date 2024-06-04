@@ -1,11 +1,14 @@
 import ast
 import json
+import logging
 import pickle
 import sys
 import types
+from base64 import b64encode
 from pathlib import Path
 from socket import socket, socketpair
 from subprocess import run
+from threading import Thread
 from unittest.mock import MagicMock
 
 import pytest
@@ -14,6 +17,9 @@ import ak_runner
 
 test_dir = Path(__file__).absolute().parent
 
+# Globally for all tests
+ak_runner.log = logging.getLogger()
+
 
 def test_load_code():
     calls = []
@@ -21,15 +27,16 @@ def test_load_code():
     mod_name = 'mod'
     class MockCall(ak_runner.AKCall):
         def __call__(self, fn, *args, **kw):
-            if self.ignore(fn):
+            if not self.should_run_as_activity(fn):
                 return fn(*args, **kw)
 
             if fn.__module__ != mod_name:
                 calls.append((fn, args, kw))
             return fn(*args, **kw)
-    ak_call = MockCall(mod_name, ak_runner.Comm(socket()))
+    ak_call = MockCall(ak_runner.Comm(socket()))
 
     mod = ak_runner.load_code('testdata', ak_call, mod_name)
+    ak_call.module = mod
     fn = getattr(mod, 'parse', None)
     assert fn, 'parse not found'
 
@@ -40,6 +47,25 @@ def test_load_code():
     fn = calls[0][0]
     name = fn.__module__ + '.' + fn.__name__
     assert name == 'json.loads'
+
+
+def test_load_twice(tmp_path):
+    mod_name = 'x'
+    file_name = tmp_path / (mod_name + '.py')
+    var, val = 'x', 1
+    with open(file_name, 'w') as out:
+        print(f'{var} = {val}', file=out)
+
+    mod = ak_runner.load_code(tmp_path, lambda x: x, mod_name)
+    assert getattr(mod, var) == val
+
+    # See that module is not cached.
+    val += 1
+    with open(file_name, 'w') as out:
+        print(f'{var} = {val}', file=out)
+
+    mod = ak_runner.load_code(tmp_path, lambda x: x, mod_name)
+    assert getattr(mod, var) == val
 
 
 def test_cmdline_help():
@@ -94,7 +120,8 @@ def test_nested():
         },
     ]
 
-    ak = ak_runner.AKCall('mod1', comm)
+    ak = ak_runner.AKCall(comm)
+    ak.module = json  # outer & inner should look external
     ak(outer)
 
     comm.send_activity.assert_called_once()
@@ -199,7 +226,8 @@ def test_in_activity():
 
 
     comm = Comm()
-    ak = ak_runner.AKCall('meow', comm)
+    ak = ak_runner.AKCall(comm)
+    ak.module = json  # in_act_1 should look external
     ak(in_act_1, 7)
     assert comm.num_activities == 1
 
@@ -239,3 +267,89 @@ def test_transform(code, transformed):
     trans = ak_runner.Transformer('<stdin>')
     out = trans.visit(mod)
     assert transformed, ast.unparse(out)
+
+sleep_code = '''
+from time import sleep
+import time
+
+def handler(event):
+    print('before')
+    sleep(1)
+    time.sleep(2)
+    print('after')
+
+'''
+
+def test_sleep(tmp_path):
+    mod_name = 'sleeper'
+
+    file_name = tmp_path / (mod_name + '.py')
+    with open(file_name, 'w') as out:
+        out.write(sleep_code)
+    
+    comm = MagicMock()
+    
+    ak_call = ak_runner.AKCall(comm)
+    mod = ak_runner.load_code(tmp_path, ak_call, mod_name)
+    ak_call.module = mod
+    event = {'type': 'login', 'user': 'puss'}
+    mod.handler(event)
+    assert comm.send_sleep.call_count == 2
+
+
+def test_activity():
+    mod_name = 'activity'
+    mod = ak_runner.load_code('testdata', lambda f: f, mod_name)
+    fn = mod.phone_home
+    assert getattr(fn, ak_runner.ACTIVITY_ATTR, False)
+
+
+def test_AttrDict():
+    cfg = ak_runner.AttrDict({
+        'server': {
+            'port': 8080,
+            'interface': 'localhost',
+        },
+        'mode': 'dev',
+        'logging': {
+            'level': 'info',
+        },
+    })
+    assert cfg['server']['port'] == cfg.server.port
+    assert cfg['mode'] == cfg.mode
+
+    with pytest.raises(NotImplementedError):
+        cfg.server.port = 8081
+
+
+def mock_tp_go(sock):
+    """Mock Go server for test_pickle_function"""
+    fp = sock.makefile('r')
+    fp.readline()
+
+    # Mock replay
+    result = b64encode(pickle.dumps(None))
+    message = {
+        'type': ak_runner.MessageType.response,
+        'payload': {'value': result.decode()},
+    }
+    out = json.dumps(message) + '\n'
+    sock.sendall(out.encode())
+
+
+def test_pickle_function():
+    go, py = socketpair()
+    Thread(target=mock_tp_go, args=(go,), daemon=True).start()
+
+    root_path = str(test_dir / 'testdata/simple')
+    comm = ak_runner.Comm(py)
+    ak_call = ak_runner.AKCall(comm)
+    mod = ak_runner.load_code(root_path, ak_call, 'simple')
+    ak_call.module = mod
+    event = {
+        'data': {
+            'body': b'{"name": "grumpy", "type": "cat"}',
+        },
+    }
+
+    ak_call(mod.printer, event)
