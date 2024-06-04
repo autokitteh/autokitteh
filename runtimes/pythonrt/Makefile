@@ -4,6 +4,8 @@ else
 	open=open
 endif
 
+export PYTHONPATH=$(PWD)/py-sdk
+
 test: test-py test-go
 
 ci: deps test-py

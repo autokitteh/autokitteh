@@ -15,7 +15,6 @@ import (
 
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-	"go.uber.org/zap"
 
 	"github.com/stretchr/testify/require"
 )
@@ -51,13 +50,13 @@ func isFSFile(fsys fs.FS, path string) bool {
 	return !info.IsDir()
 }
 
-func newSVC(t *testing.T) pySvc {
-	logger, err := zap.NewDevelopment()
-	require.NoError(t, err, "create logger")
+func newSVC(t *testing.T) *pySvc {
+	rt, err := New()
+	require.NoError(t, err, "New")
+	svc, ok := rt.(*pySvc)
+	require.Truef(t, ok, "type assertion failed, got %T", rt)
 
-	return pySvc{
-		log: logger,
-	}
+	return svc
 }
 
 func Test_pySvc_Get(t *testing.T) {
@@ -94,10 +93,7 @@ func testCtx(t *testing.T) (context.Context, context.CancelFunc) {
 func Test_pySvc_Run(t *testing.T) {
 	skipIfNoPython(t)
 
-	rt, err := New()
-	require.NoError(t, err, "New")
-	svc, ok := rt.(*pySvc)
-	require.True(t, ok, "type assertion failed")
+	svc := newSVC(t)
 	require.NotNil(t, svc.log, "nil logger")
 
 	fsys := os.DirFS("testdata/simple")

@@ -11,6 +11,7 @@ from subprocess import run
 from threading import Thread
 from unittest.mock import MagicMock
 
+import autokitteh
 import pytest
 
 import ak_runner
@@ -277,7 +278,6 @@ def handler(event):
     sleep(1)
     time.sleep(2)
     print('after')
-
 '''
 
 def test_sleep(tmp_path):
@@ -301,7 +301,7 @@ def test_activity():
     mod_name = 'activity'
     mod = ak_runner.load_code('testdata', lambda f: f, mod_name)
     fn = mod.phone_home
-    assert getattr(fn, ak_runner.ACTIVITY_ATTR, False)
+    assert getattr(fn, autokitteh.ACTIVITY_ATTR, False)
 
 
 def test_AttrDict():

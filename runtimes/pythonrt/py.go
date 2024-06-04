@@ -21,6 +21,9 @@ var (
 	//go:embed ak_runner.py
 	runnerPyCode []byte
 
+	//go:embed py-sdk/autokitteh.py
+	sdkPyCode []byte
+
 	//go:embed requirements.txt
 	requirementsData []byte
 )
@@ -102,19 +105,18 @@ func pyExeInfo(ctx context.Context, exePath string) (exeInfo, error) {
 	return info, nil
 }
 
-func extractRunner(rootDir string) (string, error) {
-	fileName := path.Join(rootDir, "ak_runner.py")
+func createFile(fileName string, content []byte) error {
 	file, err := os.Create(fileName)
 	if err != nil {
-		return "", err
+		return err
 	}
 	defer file.Close()
 
-	if _, err := io.Copy(file, bytes.NewReader(runnerPyCode)); err != nil {
-		return "", fmt.Errorf("can't copy python code to %s: %w", file.Name(), err)
+	if _, err := io.Copy(file, bytes.NewReader(content)); err != nil {
+		return fmt.Errorf("can't copy python code to %s: %w", file.Name(), err)
 	}
 
-	return fileName, nil
+	return nil
 }
 
 type pyRunInfo struct {
@@ -144,11 +146,17 @@ func runPython(opts runOptions) (*pyRunInfo, error) {
 		return nil, err
 	}
 
-	runnerPath, err := extractRunner(rootDir)
-	if err != nil {
+	runnerPath := path.Join(rootDir, "ak_runner.py")
+	if err := createFile(runnerPath, runnerPyCode); err != nil {
 		return nil, err
 	}
 	opts.log.Info("python runner", zap.String("path", runnerPath))
+
+	sdkPath := path.Join(rootDir, "autokitteh.py")
+	if err := createFile(sdkPath, sdkPyCode); err != nil {
+		return nil, err
+	}
+	opts.log.Info("python sdk", zap.String("path", sdkPath))
 
 	sockPath := path.Join(rootDir, "ak.sock")
 	opts.log.Info("socket", zap.String("path", sockPath))
@@ -161,6 +169,7 @@ func runPython(opts runOptions) (*pyRunInfo, error) {
 	cmd := exec.Command(opts.pyExe, runnerPath, sockPath, tarPath, opts.rootPath)
 	cmd.Dir = rootDir
 	cmd.Env = overrideEnv(opts.env)
+	cmd.Env = append(cmd.Env, "PYTHONPATH="+rootDir) // So users can import autokitteh
 	cmd.Stdout = opts.stdout
 	cmd.Stderr = opts.stderr
 
