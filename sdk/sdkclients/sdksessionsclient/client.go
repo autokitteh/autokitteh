@@ -116,7 +116,7 @@ func (c *client) List(ctx context.Context, filter sdkservices.ListSessionsFilter
 	res := sdkservices.ListSessionResult{
 		Sessions: xs,
 		PaginationResult: sdktypes.PaginationResult{
-			TotalCount:    int(resp.Msg.Count),
+			TotalCount:    resp.Msg.Count,
 			NextPageToken: resp.Msg.NextPageToken,
 		},
 	}
