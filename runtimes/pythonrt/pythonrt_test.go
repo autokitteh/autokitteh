@@ -70,6 +70,7 @@ func Test_pySvc_Get(t *testing.T) {
 }
 
 func Test_pySvc_Build(t *testing.T) {
+	skipIfNoPython(t)
 	svc := newSVC(t)
 
 	rootPath := "testdata/simple/"
