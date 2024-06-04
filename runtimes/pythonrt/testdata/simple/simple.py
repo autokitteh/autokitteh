@@ -3,7 +3,7 @@
 
 from os import getenv
 import json
-import ak
+import autokitteh
 
 
 def greet(event):
@@ -18,6 +18,6 @@ def greet(event):
     print(f'REQUEST: {request!r}')
 
 
-@ak.activity
+@autokitteh.activity
 def printer(event):
     print(event)
