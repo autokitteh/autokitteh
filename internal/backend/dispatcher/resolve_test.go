@@ -9,6 +9,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbfactory"
 	"go.autokitteh.dev/autokitteh/internal/backend/envs"
 	"go.autokitteh.dev/autokitteh/internal/backend/projects"
+	wf "go.autokitteh.dev/autokitteh/internal/backend/workflows"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -46,7 +47,7 @@ func TestResolveEnv(t *testing.T) {
 
 	z := zap.NewNop()
 
-	svcs := &Services{
+	svcs := &wf.Services{
 		Envs:     envs.New(z, testdb),
 		Projects: &projects.Projects{DB: testdb, Z: z},
 	}
