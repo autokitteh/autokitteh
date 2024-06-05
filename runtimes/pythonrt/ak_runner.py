@@ -18,6 +18,8 @@ from socket import AF_UNIX, SOCK_STREAM, socket
 from time import sleep
 from types import ModuleType
 
+import autokitteh
+
 log: logging.Logger = None  # Filled in main
 
 def name_of(node):
@@ -62,11 +64,6 @@ class Transformer(ast.NodeTransformer):
         return call
 
 
-def inject_ak_module():
-    ak = ak_module()
-    sys.modules[ak.__name__] = ak
-
-
 def load_code(root_path, action_fn, module_name):
     """Load user code into a module, instrumenting function calls."""
     log.info('importing %r', module_name)
@@ -78,9 +75,6 @@ def load_code(root_path, action_fn, module_name):
     trans = Transformer(file_name)
     patched_tree = trans.visit(tree)
     ast.fix_missing_locations(patched_tree)
-
-    # Make 'ak' module available for imports.
-    inject_ak_module()
 
     code = compile(patched_tree, file_name, 'exec')
 
@@ -203,19 +197,6 @@ class Comm:
         self._send(message)
 
 
-ACTIVITY_ATTR = '__activity__'
-
-def activity(fn):
-    setattr(fn, ACTIVITY_ATTR, True)
-    return fn
-
-
-def ak_module():
-    mod = ModuleType('ak')
-    mod.activity = activity  # type: ignore
-    return mod
-
-
 class AKCall:
     """Callable wrapping functions with activities."""
     def __init__(self, comm: Comm):
@@ -230,7 +211,7 @@ class AKCall:
         if self.in_activity:
             return False
 
-        if getattr(fn, ACTIVITY_ATTR, False):
+        if getattr(fn, autokitteh.ACTIVITY_ATTR, False):
             return True
 
         if fn.__module__ == 'builtins':
@@ -439,7 +420,11 @@ def run(args):
             pass
 
     event = AttrDict(event)
-    fn(event)
+    try:
+        fn(event)
+    except Exception as err:
+        log.exception('error running %s: %s', func_name, err)
+        raise SystemExit(1)
     comm.send_done()
 
 
@@ -469,7 +454,6 @@ def inspect_file(root_dir, path):
         
 
 def inspect(args):
-    inject_ak_module()
     ak_name = Path(__file__).name
 
     code_dir = Path(args.path)

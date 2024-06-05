@@ -1,0 +1,14 @@
+[project]
+name = 'autokitteh'
+version = '0.1.1'
+description = 'AutoKitteh Python SDK'
+readme = 'README.md'
+license = {file = 'LICENSE'}
+requires-python = '>= 3.11'
+
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+py-modules = ['autokitteh']

@@ -38,6 +38,7 @@ VERSION_PKG_PATH="go.autokitteh.dev/autokitteh/internal/version"
 LDFLAGS+=-X '${VERSION_PKG_PATH}.Version=${VERSION}' -X '${VERSION_PKG_PATH}.Time=${TIMESTAMP}' -X '${VERSION_PKG_PATH}.Commit=${COMMIT}' -X '${VERSION_PKG_PATH}.User=$(shell whoami)' -X '${VERSION_PKG_PATH}.Host=$(shell hostname)'
 
 export AK_SYSTEST_USE_PROC_SVC=1
+export PYTHONPATH=$(PWD)/runtimes/pythonrt/py-sdk
 
 # 1. Detect unformatted Go files
 # 2. Run golangci-lint (Go linters)

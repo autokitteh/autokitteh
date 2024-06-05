@@ -56,11 +56,9 @@ func isFSFile(fsys fs.FS, path string) bool {
 func newSVC(t *testing.T) *pySvc {
 	rt, err := New()
 	require.NoError(t, err, "New")
-
 	svc, ok := rt.(*pySvc)
-	if !ok {
-		require.FailNowf(t, "type assertion failed", "got %T (not *pySvc)", rt)
-	}
+	require.Truef(t, ok, "type assertion failed, got %T", rt)
+
 	return svc
 }
 
@@ -99,10 +97,7 @@ func testCtx(t *testing.T) (context.Context, context.CancelFunc) {
 func Test_pySvc_Run(t *testing.T) {
 	skipIfNoPython(t)
 
-	rt, err := New()
-	require.NoError(t, err, "New")
-	svc, ok := rt.(*pySvc)
-	require.True(t, ok, "type assertion failed")
+	svc := newSVC(t)
 	require.NotNil(t, svc.log, "nil logger")
 
 	fsys := os.DirFS("testdata/simple")

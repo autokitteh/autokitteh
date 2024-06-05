@@ -116,6 +116,8 @@ All messages have top level `type` and `payload`, the `payload` changes dependin
 
 ### Integration Testing
 
+Make sure that the `py-sdk` directory is in your `PYTHONPATH`.
+
 If you run `ak` with a database, then run `make create-workflow` once. 
 Otherwise run it every time.
 This will create a deployment for `testdata/simple/`

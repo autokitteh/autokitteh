@@ -22,6 +22,9 @@ var (
 	//go:embed ak_runner.py
 	runnerPyCode []byte
 
+	//go:embed py-sdk/autokitteh.py
+	sdkPyCode []byte
+
 	//go:embed requirements.txt
 	requirementsData []byte
 )
@@ -141,19 +144,18 @@ func pyExeInfo(ctx context.Context, exePath string) (exeInfo, error) {
 	return info, nil
 }
 
-func extractRunner(rootDir string) (string, error) {
-	fileName := path.Join(rootDir, "ak_runner.py")
+func createFile(fileName string, content []byte) error {
 	file, err := os.Create(fileName)
 	if err != nil {
-		return "", err
+		return err
 	}
 	defer file.Close()
 
-	if _, err := io.Copy(file, bytes.NewReader(runnerPyCode)); err != nil {
-		return "", fmt.Errorf("can't copy python code to %s: %w", file.Name(), err)
+	if _, err := io.Copy(file, bytes.NewReader(content)); err != nil {
+		return fmt.Errorf("can't copy python code to %s: %w", file.Name(), err)
 	}
 
-	return fileName, nil
+	return nil
 }
 
 type pyRunInfo struct {
@@ -172,6 +174,20 @@ type runOptions struct {
 	stdout, stderr io.Writer
 }
 
+func copyPyFiles(rootDir string) (string, error) {
+	runnerPath := path.Join(rootDir, "ak_runner.py")
+	if err := createFile(runnerPath, runnerPyCode); err != nil {
+		return "", err
+	}
+
+	sdkPath := path.Join(rootDir, "autokitteh.py")
+	if err := createFile(sdkPath, sdkPyCode); err != nil {
+		return "", err
+	}
+
+	return runnerPath, nil
+}
+
 func runPython(opts runOptions) (*pyRunInfo, error) {
 	rootDir, err := os.MkdirTemp("", "ak-")
 	if err != nil {
@@ -183,7 +199,7 @@ func runPython(opts runOptions) (*pyRunInfo, error) {
 		return nil, err
 	}
 
-	runnerPath, err := extractRunner(rootDir)
+	runnerPath, err := copyPyFiles(rootDir)
 	if err != nil {
 		return nil, err
 	}
@@ -200,6 +216,7 @@ func runPython(opts runOptions) (*pyRunInfo, error) {
 	cmd := exec.Command(opts.pyExe, runnerPath, "run", sockPath, tarPath, opts.rootPath)
 	cmd.Dir = rootDir
 	cmd.Env = overrideEnv(opts.env)
+	cmd.Env = append(cmd.Env, "PYTHONPATH="+rootDir) // So users can import autokitteh
 	cmd.Stdout = opts.stdout
 	cmd.Stderr = opts.stderr
 
@@ -291,7 +308,12 @@ func pyExports(ctx context.Context, pyExe string, fsys fs.FS) ([]Export, error) 
 		return nil, err
 	}
 
-	runnerPath, err := extractRunner(tmpDir)
+	runnerDir, err := os.MkdirTemp("", "ak-inspect-")
+	if err != nil {
+		return nil, err
+	}
+
+	runnerPath, err := copyPyFiles(runnerDir)
 	if err != nil {
 		return nil, err
 	}
