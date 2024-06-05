@@ -1,6 +1,10 @@
 package chatgpt
 
 import (
+	"context"
+
+	openai "github.com/sashabaranov/go-openai"
+
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
@@ -23,16 +27,43 @@ var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.Integrati
 		"2 Go client API":             "https://pkg.go.dev/github.com/sashabaranov/go-openai",
 	},
 	ConnectionUrl: "/chatgpt/connect",
+	ConnectionCapabilities: &sdktypes.ConnectionCapabilitiesPB{
+		RequiresConnectionInit: true,
+	},
 }))
 
 func New(vars sdkservices.Vars) sdkservices.Integration {
 	i := integration{vars: vars}
-	return sdkintegrations.NewIntegration(desc, sdkmodule.New(
-		sdkmodule.ExportFunction(
-			"create_chat_completion",
-			i.createChatCompletion,
-			sdkmodule.WithFuncDoc("https://pkg.go.dev/github.com/sashabaranov/go-openai#Client.CreateChatCompletion"),
-			sdkmodule.WithArgs("model?", "message?", "messages?"),
+	return sdkintegrations.NewIntegration(
+		desc,
+		sdkmodule.New(
+			sdkmodule.ExportFunction(
+				"create_chat_completion",
+				i.createChatCompletion,
+				sdkmodule.WithFuncDoc("https://pkg.go.dev/github.com/sashabaranov/go-openai#Client.CreateChatCompletion"),
+				sdkmodule.WithArgs("model?", "message?", "messages?"),
+			),
 		),
-	))
+		sdkintegrations.WithConnectionStatus(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
+			_, err := i.getKey(ctx)
+			if err != nil {
+				return sdktypes.NewErrorStatus(err), nil
+			}
+			return sdktypes.NewStatus(sdktypes.StatusCodeOK, ""), nil
+		}),
+		sdkintegrations.WithConnectionTest(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
+			cfg, err := i.getKey(ctx)
+			if err != nil {
+				return sdktypes.NewErrorStatus(err), nil
+			}
+
+			client := openai.NewClient(cfg)
+			engs, err := client.ListEngines(ctx)
+			if err != nil {
+				return sdktypes.NewErrorStatus(err), nil
+			}
+
+			return sdktypes.NewStatusf(sdktypes.StatusCodeOK, "%d engines available", len(engs.Engines)), nil
+		}),
+	)
 }

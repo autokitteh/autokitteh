@@ -48,6 +48,9 @@ var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.Integrati
 		"1 Redis command reference": "https://redis.io/commands/",
 		"2 Go client API":           "https://pkg.go.dev/github.com/go-redis/redis/v9",
 	},
+	ConnectionCapabilities: &sdktypes.ConnectionCapabilitiesPB{
+		RequiresConnectionInit: true,
+	},
 }))
 
 func New(vars sdkservices.Vars) sdkservices.Integration {
@@ -59,7 +62,29 @@ func New(vars sdkservices.Vars) sdkservices.Integration {
 	// for command keys.
 	opts = append(opts, sdkmodule.ExportFunction("do", m.do, sdkmodule.WithFuncDoc("run an arbitrary command")))
 
-	return sdkintegrations.NewIntegration(desc, sdkmodule.New(opts...))
+	return sdkintegrations.NewIntegration(
+		desc,
+		sdkmodule.New(opts...),
+		sdkintegrations.WithConnectionStatus(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
+			_, err := m.externalClient(ctx)
+			if err != nil {
+				return sdktypes.NewErrorStatus(err), nil
+			}
+			return sdktypes.NewStatus(sdktypes.StatusCodeOK, ""), nil
+		}),
+		sdkintegrations.WithConnectionTest(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
+			client, err := m.externalClient(ctx)
+			if err != nil {
+				return sdktypes.NewErrorStatus(err), nil
+			}
+
+			if err := client.Ping(ctx).Err(); err != nil {
+				return sdktypes.NewErrorStatus(err), nil
+			}
+
+			return sdktypes.NewStatus(sdktypes.StatusCodeOK, ""), nil
+		}),
+	)
 }
 
 func NewInternalModule(name string, xid sdktypes.ExecutorID, client *redis.Client, keyfn func(string) string) sdkmodule.Module {

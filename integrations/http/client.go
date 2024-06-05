@@ -18,6 +18,9 @@ var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.Integrati
 	DisplayName:   "HTTP",
 	LogoUrl:       "/static/images/http.svg",
 	ConnectionUrl: "/i/http/connect",
+	ConnectionCapabilities: &sdktypes.ConnectionCapabilitiesPB{
+		SupportsConnectionInit: true,
+	},
 }))
 
 type integration struct {
