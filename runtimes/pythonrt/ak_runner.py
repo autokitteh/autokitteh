@@ -11,6 +11,7 @@ import pickle
 import sys
 import tarfile
 from base64 import b64decode, b64encode
+from importlib.util import spec_from_file_location, module_from_spec
 from os import mkdir
 from pathlib import Path
 from socket import AF_UNIX, SOCK_STREAM, socket
@@ -285,15 +286,6 @@ def parse_path(root_path):
     return file_name[:-3], func_name
 
 
-# argparse.FileType will open the file
-def file_type(value):
-    path = Path(value)
-    if path.is_file() or path.is_socket():
-        return value
-
-    raise ValueError(f'{value!r} - not a file')
-
-
 def encode_msg(typ, name, payload, func_name="", func_args=None, kw=None):
     if isinstance(payload, str):
         payload = payload.encode('utf-8')
@@ -372,16 +364,8 @@ class AttrDict(dict):
         cls = self.__class__.__name__
         raise NotImplementedError(f'{cls} does not support setting attributes')
 
-
-if __name__ == '__main__':
-    import sys
-    from argparse import ArgumentParser
-
-    parser = ArgumentParser(description='autokitteh Python runner')
-    parser.add_argument('sock', help='path to unix domain socket', type=file_type)
-    parser.add_argument('tar', help='path to code tar file', type=file_type)
-    parser.add_argument('path', help='file.py:function')
-    args = parser.parse_args()
+def run(args):
+    global log 
 
     sock = socket(AF_UNIX, SOCK_STREAM)
     sock.connect(args.sock)
@@ -442,3 +426,80 @@ if __name__ == '__main__':
         log.exception('error running %s: %s', func_name, err)
         raise SystemExit(1)
     comm.send_done()
+
+
+def inspect_file(root_dir, path):
+    mod_name = path.stem
+    spec = spec_from_file_location(mod_name, path)
+    if spec is None:
+        raise ValueError('no spec for {path!r}')
+
+    mod = module_from_spec(spec)
+    spec.loader.exec_module(mod)
+
+    for name in dir(mod):
+        value = getattr(mod, name)
+        if not callable(value):
+            continue
+
+        if value.__module__ != mod.__name__:
+            continue
+
+        export = {
+            'name': name,
+            'file': str(path.relative_to(root_dir)),
+            'line': value.__code__.co_firstlineno,
+        }
+        yield export
+        
+
+def inspect(args):
+    ak_name = Path(__file__).name
+
+    code_dir = Path(args.path)
+    entries = []
+    for path in code_dir.glob('**/*.py'):
+        if path.name == ak_name:
+            continue
+        entries.extend(inspect_file(code_dir, path))
+
+    # Stdout is read by Go, don't print anything else
+    print(json.dumps(entries))
+
+
+# argparse.FileType will open the file
+def file_type(value):
+    path = Path(value)
+    if path.is_file() or path.is_socket():
+        return value
+
+    raise ValueError(f'{value!r} - not a file')
+
+
+def dir_type(value):
+    path = Path(value)
+    if path.is_dir():
+        return value
+
+    raise ValueError(f'{value!r} - not a directory')
+
+
+if __name__ == '__main__':
+    import sys
+    from argparse import ArgumentParser
+
+    parser = ArgumentParser(description='autokitteh Python runner')
+    sp = parser.add_subparsers(help='sub command help')
+
+    parse_run = sp.add_parser('run', help='run user code')
+    parse_run.add_argument('sock', help='path to unix domain socket', type=file_type)
+    parse_run.add_argument('tar', help='path to code tar file', type=file_type)
+    parse_run.add_argument('path', help='file.py:function')
+    parse_run.set_defaults(func=run)
+
+    parse_inspect = sp.add_parser('inspect', help='inspect user code')
+    parse_inspect.add_argument('path', help='path to code', type=dir_type)
+    parse_inspect.set_defaults(func=inspect)
+
+    args = parser.parse_args()
+    args.func(args)

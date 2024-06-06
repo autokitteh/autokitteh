@@ -187,3 +187,21 @@ func Test_parsePyVersion(t *testing.T) {
 		require.Equal(t, tc.minor, minor)
 	}
 }
+
+func Test_pyExports(t *testing.T) {
+	skipIfNoPython(t)
+
+	fsys := os.DirFS("testdata/simple")
+	ctx, cancel := testCtx(t)
+	defer cancel()
+
+	exports, err := pyExports(ctx, "python", fsys)
+	require.NoError(t, err)
+
+	expected := []Export{
+		{File: "simple.py", Name: "greet", Line: 9},
+		{File: "simple.py", Name: "printer", Line: 21},
+	}
+	require.Equal(t, expected, exports)
+
+}
