@@ -186,6 +186,7 @@ class Comm:
                 'message': message,
             },
         }
+        self._send(message)
 
     def send_sleep(self, seconds):
         message = {
@@ -424,7 +425,7 @@ def run(args):
         fn(event)
     except Exception as err:
         log.exception('error running %s: %s', func_name, err)
-        raise SystemExit(1)
+        raise  # Re-raise exception so it'll show in the session log.
     comm.send_done()
 
 
