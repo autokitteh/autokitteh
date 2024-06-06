@@ -198,6 +198,15 @@ class Comm:
         }
         self._send(message)
 
+# Functions that are called back to ak
+AK_FUNCS = {
+    autokitteh.next_event,
+    autokitteh.subscribe,
+    autokitteh.unsubscribe,
+
+    sleep,
+}
+
 
 class AKCall:
     """Callable wrapping functions with activities."""
@@ -234,23 +243,13 @@ class AKCall:
         log.info('ACTION: calling %s via activity (args=%r, kw=%r)', func.__name__, args, kw)
         self.in_activity = True
         try:
-            if func is sleep:
-                self.comm.send_call('sleep', args)
-                self.comm.recv(MessageType.call_return)
-                return
-            elif func is autokitteh.subscribe:
-                self.comm.send_call('subscribe', args)
-                msg = self.comm.recv(MessageType.call_return)
-                return msg['payload']['value']
-            elif func is autokitteh.unsubscribe:
-                self.comm.send_call('unsubscribe', args)
-                self.comm.recv(MessageType.call_return)
-                return
-            elif func is autokitteh.next_event:
-                self.comm.send_call('next_event', args)
+            if func in AK_FUNCS:
+                self.comm.send_call(func.__name__, args)
                 msg = self.comm.recv(MessageType.call_return)
                 value = msg['payload']['value']
-                return autokitteh.AttrDict(value)
+                if func is autokitteh.next_event:
+                    value = autokitteh.AttrDict(value)
+                return value
 
             if self.is_module_func(func):
                 # Pickle can't handle function from our loaded module
