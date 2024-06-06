@@ -64,7 +64,7 @@ the rest:
 
 ## Getting Started
 
-Visit our [docs](https://docs.autokitteh.com/) here.
+Visit our [docs](https://docs.autokitteh.com/) here:
 
 - [Installation](https://docs.autokitteh.com/get_started/install)
 - [Starting a self-hosted server](https://docs.autokitteh.com/get_started/start_server)
