@@ -42,6 +42,7 @@ func createTar(fs fs.FS) ([]byte, error) {
 
 // Copy fs to file so Python can inspect
 // TODO: Once os.CopyFS makes it out we can remove this
+// https://github.com/golang/go/issues/62484
 func copyFS(fsys fs.FS, root string) error {
 	return fs.WalkDir(fsys, ".", func(name string, entry fs.DirEntry, err error) error {
 		if err != nil {

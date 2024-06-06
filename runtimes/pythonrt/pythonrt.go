@@ -131,6 +131,20 @@ func (*pySvc) Get() sdktypes.Runtime { return Runtime.Desc }
 
 const archiveKey = "archive"
 
+func asBuildExport(e Export) sdktypes.BuildExport {
+	pb := sdktypes.BuildExportPB{
+		Symbol: e.Name,
+		Location: &sdktypes.CodeLocationPB{
+			Path: e.File,
+			Row:  uint32(e.Line),
+			Col:  1,
+		},
+	}
+
+	b, _ := sdktypes.BuildExportFromProto(&pb)
+	return b
+}
+
 func (py *pySvc) Build(ctx context.Context, fs fs.FS, path string, values []sdktypes.Symbol) (sdktypes.BuildArtifact, error) {
 	py.log.Info("build")
 
@@ -146,20 +160,7 @@ func (py *pySvc) Build(ctx context.Context, fs fs.FS, path string, values []sdkt
 		return sdktypes.InvalidBuildArtifact, err
 	}
 
-	buildExports := kittehs.Transform(exports, func(e Export) sdktypes.BuildExport {
-		pb := sdktypes.BuildExportPB{
-			Symbol: e.Name,
-			Location: &sdktypes.CodeLocationPB{
-				Path: e.File,
-				Row:  uint32(e.Line),
-				Col:  1,
-			},
-		}
-
-		b, _ := sdktypes.BuildExportFromProto(&pb)
-		return b
-	})
-
+	buildExports := kittehs.Transform(exports, asBuildExport)
 	var art sdktypes.BuildArtifact
 	art = art.WithCompiledData(
 		map[string][]byte{
