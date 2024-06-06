@@ -80,6 +80,11 @@ func New() (sdkservices.Runtime, error) {
 		userPython = false
 	}
 
+	if userPython {
+		log.Info("user python", zap.String("python", pyExe))
+
+	}
+
 	const timeout = 3 * time.Second
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
@@ -100,11 +105,11 @@ func New() (sdkservices.Runtime, error) {
 		if err := ensureVEnv(log, pyExe); err != nil {
 			return nil, fmt.Errorf("create venv: %w", err)
 		}
-		log.Info("venv python", zap.String("exe", venvPy))
 		svc.pyExe = venvPy
 	} else {
 		svc.pyExe = pyExe
 	}
+	log.Info("using python", zap.String("exe", svc.pyExe))
 
 	return &svc, nil
 }

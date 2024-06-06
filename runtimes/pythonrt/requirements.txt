@@ -12,6 +12,10 @@ redis ~= 5.0
 slack-sdk ~= 3.27
 twilio ~= 9.0
 
+# AutoKitteh SDK
+
+autokitteh ~= 0.1
+
 # General
 
 PyYAML ~= 6.0
