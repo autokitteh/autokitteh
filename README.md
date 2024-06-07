@@ -1,20 +1,24 @@
 ![Top banner](/docs/images/banner.jpg)
 
-AutoKitteh is an open-source workflow automation and orchestration platform
-for developers. It's an end-to-end solution to create and manage durable,
-long-running workflows that survive infrastructure failures without complexity.
+<div align="center">
 
-AutoKitteh is an easy-to-use, code-based alternative to no-code/low-code
-platforms (such as Zapier, Workato, Make.com, 8n8, etc.) with the flexibility
-to support custom needs and use cases. Moreover, it serves as a **durable**
-**execution** platform that complements [Temporal](https://temporal.io/) for
-building durable workflows within simple code, while removing many of the
-complexities facing developers.
+AutoKitteh is a developer platform for workflow automation and orchestration.
+It is an easy-to-use, code-based alternative to no-code/low-code platforms
+(such as Zapier, Workato, Make.com, 8n8, etc.) with unlimited flexibility.
+
+In addition, it is a **durable execution** platform for long-running and
+reliable workflows. It is based on [Temporal](https://temporal.io/), hiding
+many of its infrastructure and coding complexities.
+
+[![Go Reference](https://pkg.go.dev/badge/go.autokitteh.dev/autokitteh.svg)](https://pkg.go.dev/go.autokitteh.dev/autokitteh)
+[![Go Report Card](https://goreportcard.com/badge/go.autokitteh.dev/autokitteh)](https://goreportcard.com/report/go.autokitteh.dev/autokitteh)
+
+</div>
 
 AutoKitteh can be self-hosted, and has a cloud offering as well.
 
 Once installed, AutoKitteh is a scalable "serverless" platform (batteries
-included 😉) for DevOps, FinOps, MLOps, SOAR, productivity tasks, critical
+included) for DevOps, FinOps, MLOps, SOAR, productivity tasks, critical
 backend business processes, and more.
 
 ## High-Level Architecture
@@ -76,9 +80,6 @@ installations. Our managed cloud iPaaS offering is currently in beta - for
 details, contact us at meow@autokitteh.com.
 
 ## Build From Source
-
-[![Go Reference](https://pkg.go.dev/badge/go.autokitteh.dev/autokitteh.svg)](https://pkg.go.dev/go.autokitteh.dev/autokitteh)
-[![Go Report Card](https://goreportcard.com/badge/go.autokitteh.dev/autokitteh)](https://goreportcard.com/report/go.autokitteh.dev/autokitteh)
 
 The following requires [Go version 1.22](https://go.dev/dl/) or greater.
 
