@@ -59,7 +59,7 @@ func New(vars sdkservices.Vars) sdkservices.Integration {
 	// for command keys.
 	opts = append(opts, sdkmodule.ExportFunction("do", m.do, sdkmodule.WithFuncDoc("run an arbitrary command")))
 
-	return sdkintegrations.NewIntegration(desc, sdkmodule.New(opts...))
+	return sdkintegrations.NewIntegration(desc, sdkmodule.New(opts...), sdkintegrations.WithConnectionConfigFromVars(vars))
 }
 
 func NewInternalModule(name string, xid sdktypes.ExecutorID, client *redis.Client, keyfn func(string) string) sdkmodule.Module {

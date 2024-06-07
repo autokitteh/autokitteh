@@ -21,24 +21,24 @@ type integration struct {
 
 func (i *integration) Get() sdktypes.Integration { return i.desc }
 
-func (i *integration) Configure(ctx context.Context, cid sdktypes.ConnectionID) (map[string]sdktypes.Value, error) {
+func (i *integration) Configure(ctx context.Context, cid sdktypes.ConnectionID) (map[string]sdktypes.Value, map[string]string, error) {
 	resp, err := i.client.Configure(ctx, connect.NewRequest(&integrationsv1.ConfigureRequest{
 		IntegrationId: i.desc.ID().String(),
 		ConnectionId:  cid.String(),
 	}))
 	if err != nil {
-		return nil, rpcerrors.ToSDKError(err)
+		return nil, nil, rpcerrors.ToSDKError(err)
 	}
 	if err := internal.Validate(resp.Msg); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	vs, err := kittehs.TransformMapValuesError(resp.Msg.Values, sdktypes.StrictValueFromProto)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return vs, nil
+	return vs, resp.Msg.Config, nil
 }
 
 func (i *integration) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
@@ -107,4 +107,21 @@ func (i *integration) GetConnectionStatus(ctx context.Context, cid sdktypes.Conn
 	}
 
 	return sdktypes.StrictStatusFromProto(resp.Msg.Status)
+}
+
+func (i *integration) GetConnectionConfig(ctx context.Context, cid sdktypes.ConnectionID) (map[string]string, error) {
+	intid := i.desc.ID()
+
+	resp, err := i.client.GetConnectionConfig(ctx, connect.NewRequest(&integrationsv1.GetConnectionConfigRequest{
+		IntegrationId: intid.String(),
+		ConnectionId:  cid.String(),
+	}))
+	if err != nil {
+		return nil, rpcerrors.ToSDKError(err)
+	}
+	if err := internal.Validate(resp.Msg); err != nil {
+		return nil, err
+	}
+
+	return resp.Msg.Config, nil
 }

@@ -66,6 +66,11 @@ type sessionWorkflow struct {
 	state sdktypes.SessionState
 }
 
+type connInfo struct {
+	Config          map[string]string `json:"config"`
+	IntegrationName string            `json:"integration_name"`
+}
+
 func runWorkflow(
 	ctx workflow.Context,
 	z *zap.Logger,
@@ -83,15 +88,17 @@ func runWorkflow(
 		signals: make(map[string]uint64),
 	}
 
-	if err = w.initEnvModule(ctx); err != nil {
+	var cinfos map[string]connInfo
+
+	if cinfos, err = w.initConnections(ctx); err != nil {
+		return
+	}
+
+	if err = w.initEnvModule(cinfos); err != nil {
 		return
 	}
 
 	if w.globals, err = w.initGlobalModules(); err != nil {
-		return
-	}
-
-	if err = w.initConnections(ctx); err != nil {
 		return
 	}
 
@@ -179,23 +186,15 @@ func (w *sessionWorkflow) call(ctx workflow.Context, runID sdktypes.RunID, v sdk
 	return result.ToPair()
 }
 
-func (w *sessionWorkflow) initEnvModule(wctx workflow.Context) error {
-	goCtx := temporalclient.NewWorkflowContextAsGOContext(wctx)
-
+func (w *sessionWorkflow) initEnvModule(cinfos map[string]connInfo) error {
 	vs := kittehs.ListToMap(w.data.Vars, func(v sdktypes.Var) (string, sdktypes.Value) {
 		return v.Name().String(), sdktypes.NewStringValue(v.Value())
 	})
 
 	for _, conn := range w.data.Connections {
-		cid, name := conn.ID(), conn.Name().String()
-
-		cvs, err := w.ws.svcs.Vars.Reveal(goCtx, sdktypes.NewVarScopeID(cid))
-		if err != nil {
-			return fmt.Errorf("get connection %v vars: %w", name, err)
-		}
-
-		maps.Copy(vs, kittehs.ListToMap(cvs, func(v sdktypes.Var) (string, sdktypes.Value) {
-			return fmt.Sprintf("%v__%v", name, v.Name()), sdktypes.NewStringValue(v.Value())
+		name := conn.Name().String()
+		maps.Copy(vs, kittehs.TransformMap(cinfos[name].Config, func(k, v string) (string, sdktypes.Value) {
+			return fmt.Sprintf("%s__%s", name, k), sdktypes.NewStringValue(v)
 		}))
 	}
 
@@ -212,45 +211,60 @@ func (w *sessionWorkflow) initEnvModule(wctx workflow.Context) error {
 
 func integrationModulePrefix(name string) string { return fmt.Sprintf("__%v__", name) }
 
-func (w *sessionWorkflow) initConnections(ctx workflow.Context) error {
+func (w *sessionWorkflow) initConnections(ctx workflow.Context) (map[string]connInfo, error) {
+	cinfos := make(map[string]connInfo, len(w.data.Connections))
+
 	goCtx := temporalclient.NewWorkflowContextAsGOContext(ctx)
 
 	for _, conn := range w.data.Connections {
-		name := conn.Name().String()
-		iid := conn.IntegrationID()
+		name, cid, iid := conn.Name().String(), conn.ID(), conn.IntegrationID()
 
 		intg, err := w.ws.svcs.Integrations.GetByID(goCtx, iid)
 		if err != nil {
-			return fmt.Errorf("get integration %q: %w", iid, err)
+			return nil, fmt.Errorf("get integration %q: %w", iid, err)
 		}
 
 		if intg == nil {
-			return fmt.Errorf("integration %q not found", iid)
+			return nil, fmt.Errorf("integration %q not found", iid)
 		}
 
 		// In modules, we register the connection prefixed with its integration name.
 		// This allows us to query all connections for a given integration in the load callback.
 		scope := integrationModulePrefix(intg.Get().UniqueName().String()) + name
 		if w.executors.GetValues(scope) != nil {
-			return fmt.Errorf("conflicting connection %q", name)
+			return nil, fmt.Errorf("conflicting connection %q", name)
 		}
 
 		if xid := sdktypes.NewExecutorID(iid); w.executors.GetCaller(xid) == nil {
 			kittehs.Must0(w.executors.AddCaller(xid, intg))
 		}
 
-		// mod's executor id is the integration id.
-		vs, err := intg.Configure(goCtx, conn.ID())
-		if err != nil {
-			return fmt.Errorf("connect to integration %q: %w", iid, err)
+		cinfo := connInfo{
+			IntegrationName: intg.Get().UniqueName().String(),
 		}
 
+		// mod's executor id is the integration id.
+		var vs map[string]sdktypes.Value
+		vs, cinfo.Config, err = intg.Configure(goCtx, cid)
+		if err != nil {
+			return nil, fmt.Errorf("connect to integration %q: %w", iid, err)
+		}
+
+		const infoVarName = "_ak_info"
+		if !vs[infoVarName].IsValid() {
+			if vs[infoVarName], err = sdktypes.WrapValue(cinfo); err != nil {
+				return nil, fmt.Errorf("wrap conn info %q: %w", name, err)
+			}
+		}
+
+		cinfos[name] = cinfo
+
 		if err := w.executors.AddValues(scope, vs); err != nil {
-			return err
+			return nil, err
 		}
 	}
 
-	return nil
+	return cinfos, nil
 }
 
 func (w *sessionWorkflow) initGlobalModules() (map[string]sdktypes.Value, error) {

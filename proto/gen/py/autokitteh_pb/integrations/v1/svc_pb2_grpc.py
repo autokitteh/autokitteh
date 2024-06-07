@@ -40,6 +40,11 @@ class IntegrationsServiceStub(object):
                 request_serializer=autokitteh_dot_integrations_dot_v1_dot_svc__pb2.GetConnectionStatusRequest.SerializeToString,
                 response_deserializer=autokitteh_dot_integrations_dot_v1_dot_svc__pb2.GetConnectionStatusResponse.FromString,
                 )
+        self.GetConnectionConfig = channel.unary_unary(
+                '/autokitteh.integrations.v1.IntegrationsService/GetConnectionConfig',
+                request_serializer=autokitteh_dot_integrations_dot_v1_dot_svc__pb2.GetConnectionConfigRequest.SerializeToString,
+                response_deserializer=autokitteh_dot_integrations_dot_v1_dot_svc__pb2.GetConnectionConfigResponse.FromString,
+                )
         self.Call = channel.unary_unary(
                 '/autokitteh.integrations.v1.IntegrationsService/Call',
                 request_serializer=autokitteh_dot_integrations_dot_v1_dot_svc__pb2.CallRequest.SerializeToString,
@@ -87,6 +92,12 @@ class IntegrationsServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def GetConnectionConfig(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def Call(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -120,6 +131,11 @@ def add_IntegrationsServiceServicer_to_server(servicer, server):
                     servicer.GetConnectionStatus,
                     request_deserializer=autokitteh_dot_integrations_dot_v1_dot_svc__pb2.GetConnectionStatusRequest.FromString,
                     response_serializer=autokitteh_dot_integrations_dot_v1_dot_svc__pb2.GetConnectionStatusResponse.SerializeToString,
+            ),
+            'GetConnectionConfig': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetConnectionConfig,
+                    request_deserializer=autokitteh_dot_integrations_dot_v1_dot_svc__pb2.GetConnectionConfigRequest.FromString,
+                    response_serializer=autokitteh_dot_integrations_dot_v1_dot_svc__pb2.GetConnectionConfigResponse.SerializeToString,
             ),
             'Call': grpc.unary_unary_rpc_method_handler(
                     servicer.Call,
@@ -219,6 +235,23 @@ class IntegrationsService(object):
         return grpc.experimental.unary_unary(request, target, '/autokitteh.integrations.v1.IntegrationsService/GetConnectionStatus',
             autokitteh_dot_integrations_dot_v1_dot_svc__pb2.GetConnectionStatusRequest.SerializeToString,
             autokitteh_dot_integrations_dot_v1_dot_svc__pb2.GetConnectionStatusResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def GetConnectionConfig(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/autokitteh.integrations.v1.IntegrationsService/GetConnectionConfig',
+            autokitteh_dot_integrations_dot_v1_dot_svc__pb2.GetConnectionConfigRequest.SerializeToString,
+            autokitteh_dot_integrations_dot_v1_dot_svc__pb2.GetConnectionConfigResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 

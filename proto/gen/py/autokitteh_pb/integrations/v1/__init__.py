@@ -2,8 +2,8 @@
 
 
 from .integration_pb2 import (Integration,)
-from .svc_pb2 import (GetRequest,GetResponse,ListRequest,ListResponse,CallRequest,CallResponse,ConfigureRequest,ConfigureResponse,TestConnectionRequest,TestConnectionResponse,GetConnectionStatusRequest,GetConnectionStatusResponse,)
+from .svc_pb2 import (GetRequest,GetResponse,ListRequest,ListResponse,CallRequest,CallResponse,ConfigureRequest,ConfigureResponse,TestConnectionRequest,TestConnectionResponse,GetConnectionStatusRequest,GetConnectionStatusResponse,GetConnectionConfigRequest,GetConnectionConfigResponse,)
 from .svc_pb2_grpc import (IntegrationsServiceStub,IntegrationsServiceServicer,IntegrationsService,)
 
 
-__all__ = ["IntegrationsServiceStub","IntegrationsServiceServicer","IntegrationsService","GetRequest","GetResponse","ListRequest","ListResponse","CallRequest","CallResponse","ConfigureRequest","ConfigureResponse","TestConnectionRequest","TestConnectionResponse","GetConnectionStatusRequest","GetConnectionStatusResponse","Integration",]
+__all__ = ["IntegrationsServiceStub","IntegrationsServiceServicer","IntegrationsService","GetRequest","GetResponse","ListRequest","ListResponse","CallRequest","CallResponse","ConfigureRequest","ConfigureResponse","TestConnectionRequest","TestConnectionResponse","GetConnectionStatusRequest","GetConnectionStatusResponse","GetConnectionConfigRequest","GetConnectionConfigResponse","Integration",]
