@@ -1,13 +1,6 @@
-Atlassian Jira:
-https://atlassian.design/resources/logo-library
-https://worldvectorlogo.com/logo/jira-1
-
 AWS:
 https://commons.wikimedia.org/wiki/File:Amazon_Web_Services_Logo.svg
 https://upload.wikimedia.org/wikipedia/commons/9/93/Amazon_Web_Services_Logo.svg
-
-Discord:
-https://discord.com/branding
 
 GitHub:
 https://commons.wikimedia.org/wiki/File:Octicons-mark-github.svg
