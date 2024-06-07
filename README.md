@@ -4,7 +4,7 @@
 
 AutoKitteh is a **developer** platform for workflow automation and
 orchestration. It is an easy-to-use, code-based alternative to no/low-code
-platforms (such as Zapier, Workato, Make.com, 8n8) with unlimited flexibility.
+platforms (such as Zapier, Workato, Make.com, n8n) with unlimited flexibility.
 
 In addition, it is a **durable execution** platform for long-running and
 reliable workflows. It is based on [Temporal](https://temporal.io/), hiding
