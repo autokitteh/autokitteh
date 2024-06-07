@@ -1,25 +1,32 @@
-![Top banner](/docs/images/banner.jpg)
-
 <div align="center">
 
-AutoKitteh is a developer platform for workflow automation and orchestration.
-It is an easy-to-use, code-based alternative to no-code/low-code platforms
-(such as Zapier, Workato, Make.com, 8n8, etc.) with unlimited flexibility.
+![Top banner](/docs/images/banner.jpg)
+
+AutoKitteh is a **developer** platform for workflow automation and
+orchestration. It is an easy-to-use, code-based alternative to no/low-code
+platforms (such as Zapier, Workato, Make.com, 8n8) with unlimited flexibility.
 
 In addition, it is a **durable execution** platform for long-running and
 reliable workflows. It is based on [Temporal](https://temporal.io/), hiding
 many of its infrastructure and coding complexities.
 
+AutoKitteh can be self-hosted, and has a cloud offering as well.
+
+Once installed, AutoKitteh is a scalable "serverless" platform (with batteries
+included) for DevOps, FinOps, MLOps, SOAR, productivity tasks, critical
+backend business processes, and more.
+
+<br/>
+
+![GitHub License](https://img.shields.io/github/license/autokitteh/autokitteh)
 [![Go Reference](https://pkg.go.dev/badge/go.autokitteh.dev/autokitteh.svg)](https://pkg.go.dev/go.autokitteh.dev/autokitteh)
 [![Go Report Card](https://goreportcard.com/badge/go.autokitteh.dev/autokitteh)](https://goreportcard.com/report/go.autokitteh.dev/autokitteh)
 
+[![YouTube Channel](https://img.shields.io/badge/autokitteh-ff0000?logo=youtube)](https://www.youtube.com/@autokitteh-mo5sb)
+[![LinkedIn](https://img.shields.io/badge/autokitteh-0e76a8?logo=linkedin)](https://www.linkedin.com/company/autokitteh/posts/?feedView=all)
+[![GitHub Commit Activity](https://img.shields.io/github/commit-activity/m/autokitteh/autokitteh)](https://github.com/autokitteh/autokitteh/commits/main)
+
 </div>
-
-AutoKitteh can be self-hosted, and has a cloud offering as well.
-
-Once installed, AutoKitteh is a scalable "serverless" platform (batteries
-included) for DevOps, FinOps, MLOps, SOAR, productivity tasks, critical
-backend business processes, and more.
 
 ## High-Level Architecture
 
