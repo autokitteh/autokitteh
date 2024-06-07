@@ -15,7 +15,7 @@ type Config struct {
 	Zap zap.Config `koanf:"zap"`
 }
 
-var defaultZapLevel = zap.NewAtomicLevelAt(zap.DebugLevel)
+var defaultZapLevel = zap.NewAtomicLevelAt(zap.InfoLevel)
 
 var Configs = configset.Set[Config]{
 	Default: &Config{Zap: zap.NewProductionConfig()},
