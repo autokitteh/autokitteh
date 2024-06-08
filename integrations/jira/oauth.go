@@ -58,7 +58,9 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO(ENG-965): Test the OAuth token's usability and get authoritative installation details.
+	// TODO(ENG-965):
+	// Create a webhook to receive, parse, and dispatch Jira events,
+	// and retrieve authoritative app and installation details.
 
 	initData := sdktypes.NewVars(data.ToVars()...)
 
