@@ -49,6 +49,19 @@ func New(l *zap.Logger) sdkservices.OAuth {
 		)
 	}
 
+	// TODO(ENG-965): From new-connection form instead of env var.
+	jiraBaseURL := os.Getenv("JIRA_BASE_URL")
+	if jiraBaseURL == "" {
+		jiraBaseURL = "https://auth.atlassian.com"
+	}
+	jiraBaseURL, err = kittehs.NormalizeURL(jiraBaseURL, true)
+	if err != nil {
+		l.Fatal("Invalid environment variable value",
+			zap.String("name", "JIRA_BASE_URL"),
+			zap.Error(err),
+		)
+	}
+
 	appsDir := "apps"
 	if os.Getenv("GITHUB_ENTERPRISE_URL") != "" {
 		appsDir = "github-apps"
@@ -222,6 +235,27 @@ func New(l *zap.Logger) sdkservices.OAuth {
 				},
 			},
 
+			"jira": {
+				// TODO(ENG-965): From new-connection form instead of env vars.
+				ClientID:     os.Getenv("JIRA_CLIENT_ID"),
+				ClientSecret: os.Getenv("JIRA_CLIENT_SECRET"),
+				// https://developer.atlassian.com/cloud/jira/platform/oauth-2-3lo-apps/
+				Endpoint: oauth2.Endpoint{
+					AuthURL:  fmt.Sprintf("%s/authorize", jiraBaseURL),
+					TokenURL: fmt.Sprintf("%s/oauth/token", jiraBaseURL),
+				},
+				RedirectURL: redirectURL + "jira",
+				// https://developer.atlassian.com/cloud/jira/platform/scopes-for-oauth-2-3LO-and-forge-apps/
+				Scopes: []string{
+					"read:me",      // TODO(ENG-965): Really needed?
+					"read:account", // TODO(ENG-965): Really needed?
+					"read:jira-user",
+					"read:jira-work",
+					"write:jira-work",
+					// TODO(ENG-965): "manage:jira-webhook" to add webhook automatically.
+				},
+			},
+
 			// Based on:
 			// https://api.slack.com/apps/A05F30M6W3H
 			"slack": {
@@ -245,6 +279,7 @@ func New(l *zap.Logger) sdkservices.OAuth {
 					"channels:manage",
 					"channels:read",
 					"chat:write",
+					"chat:write.customize",
 					"chat:write.public",
 					"commands",
 					"dnd:read",
@@ -265,6 +300,7 @@ func New(l *zap.Logger) sdkservices.OAuth {
 				},
 			},
 		},
+
 		opts: map[string]map[string]string{
 			"gmail": {
 				"access_type": "offline", // oauth2.AccessTypeOffline
@@ -293,6 +329,9 @@ func New(l *zap.Logger) sdkservices.OAuth {
 			"googlesheets": {
 				"access_type": "offline", // oauth2.AccessTypeOffline
 				"prompt":      "consent", // oauth2.ApprovalForce
+			},
+			"jira": {
+				"prompt": "consent", // oauth2.ApprovalForce
 			},
 		},
 	}
