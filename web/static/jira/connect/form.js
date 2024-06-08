@@ -1,5 +1,5 @@
-// Switch between 2 available modes: OAuth 2.0 App,
-// and ... TODO(ENG-965).
+// Switch between 2 available modes: an OAuth 2.0 app,
+// and a user's API token (Cloud) or PAT (Data Center).
 
 function toggleTab(id) {
   // Update the toggle buttons.

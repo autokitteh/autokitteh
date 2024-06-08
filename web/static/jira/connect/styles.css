@@ -31,7 +31,7 @@ h1 {
 }
 
 div.toggle-container {
-  max-width: 550px;
+  max-width: 450px;
   display: flex;
   align-items: center;
   justify-content: center;
