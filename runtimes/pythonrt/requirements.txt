@@ -2,6 +2,7 @@
 
 # Integrations
 
+atlassian-python-api ~= 3.41
 boto3 ~= 1.34
 google-api-python-client ~= 2.122
 google-auth-httplib2 ~= 0.2
