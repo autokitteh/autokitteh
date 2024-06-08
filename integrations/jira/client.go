@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	"go.autokitteh.dev/autokitteh/integrations/jira/internal/vars"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
@@ -59,9 +58,10 @@ func connStatus(i *integration) sdkintegrations.OptFn {
 			return sdktypes.InvalidStatus, err
 		}
 
-		if vs.Has(vars.PAT) {
-			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "using PAT"), nil
-		}
+		// TODO(ENG-965): Implement a real check, and reuse in the OAuth handler.
+		// if vs.Has(vars.PAT) {
+		// 	return sdktypes.NewStatus(sdktypes.StatusCodeOK, "using PAT"), nil
+		// }
 
 		n := len(kittehs.Filter(vs, func(v sdktypes.Var) bool {
 			return strings.HasPrefix(v.Name().String(), "app_id__")

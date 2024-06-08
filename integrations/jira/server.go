@@ -19,8 +19,11 @@ const (
 )
 
 func Start(l *zap.Logger, mux *http.ServeMux, vars sdkservices.Vars, o sdkservices.OAuth, d sdkservices.Dispatcher) {
-	// Connection UI + handler.
+	// Connection UI + handlers.
 	mux.Handle(uiPath, http.FileServer(http.FS(static.JiraWebContent)))
 
-	// TODO(ENG-965): Implement OAuth handler.
+	h := NewHTTPHandler(l, o)
+	mux.HandleFunc(oauthPath, h.handleOAuth)
+
+	// TODO(ENG-965): Event webhooks.
 }
