@@ -645,7 +645,7 @@ func (py *pySvc) handleCall(ctx context.Context, msg CallMessage) error {
 			sdktypes.NewStringValue(connection),
 		}
 
-		filter := sdktypes.NewStringValue("")
+		filter := sdktypes.NewStringValue("true")
 		if len(msg.Args) == 2 {
 			v, ok := msg.Args[1].(string)
 			if !ok {
