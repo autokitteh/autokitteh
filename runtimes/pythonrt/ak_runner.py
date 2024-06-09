@@ -198,6 +198,10 @@ class Comm:
         self._send(message)
 
 
+def is_marked_activity(fn):
+    return getattr(fn, autokitteh.ACTIVITY_ATTR, False)
+
+
 class AKCall:
     """Callable wrapping functions with activities."""
     def __init__(self, comm: Comm):
@@ -212,7 +216,7 @@ class AKCall:
         if self.in_activity:
             return False
 
-        if getattr(fn, autokitteh.ACTIVITY_ATTR, False):
+        if is_marked_activity(fn):
             return True
 
         if fn.__module__ == 'builtins':
@@ -365,6 +369,18 @@ class AttrDict(dict):
         cls = self.__class__.__name__
         raise NotImplementedError(f'{cls} does not support setting attributes')
 
+
+class ActivityFn:
+    """Run top level functions as activities."""
+    # We can't use lambdas to wrap the original function since it can't be pickled.
+    def __init__(self, ak_call, fn):
+        self.ak_call = ak_call
+        self.fn = fn
+
+    def __call__(self, *args, **kw):
+        return self.ak_call(self.fn, *args, **kw)
+
+
 def run(args):
     global log 
 
@@ -373,11 +389,7 @@ def run(args):
     comm = Comm(sock)
     log = create_logger(logging.INFO, comm)
 
-    # TODO: Ask Itay why AK does not pass entry point
-    if ':' in args.path:
-        module_name, _ = parse_path(args.path)
-    else:
-        module_name = args.path[:-3]
+    module_name = args.path[:-3]  # Trim .py suffix
 
     py_version = '{}.{}'.format(*sys.version_info[:2])
     log.info('python: %r, version: %r', sys.executable, py_version)
@@ -407,6 +419,10 @@ def run(args):
     if fn is None:
         log.error('%r has no function %r', module_name, func_name)
         raise SystemExit(1)
+
+    # Support activity decorator in top level handlers
+    if is_marked_activity(fn):
+        fn = ActivityFn(ak_call, fn)
         
     event = message.get('event')
     event = {} if event is None else event
