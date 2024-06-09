@@ -417,7 +417,7 @@ def run(args):
         fn(event)
     except Exception as err:
         log.exception('error running %s: %s', func_name, err)
-        raise # Re-raise to get traceback in ak logs
+        raise  # Re-raise exception so it'll show in the session log.
     comm.send_done()
 
 
