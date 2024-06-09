@@ -187,6 +187,7 @@ class Comm:
                 'message': message,
             },
         }
+        self._send(message)
 
     def send_call(self, func_name, args):
         message = {
@@ -416,7 +417,7 @@ def run(args):
         fn(event)
     except Exception as err:
         log.exception('error running %s: %s', func_name, err)
-        raise SystemExit(1)
+        raise # Re-raise to get traceback in ak logs
     comm.send_done()
 
 

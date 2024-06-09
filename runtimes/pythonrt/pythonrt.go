@@ -645,13 +645,15 @@ func (py *pySvc) handleCall(ctx context.Context, msg CallMessage) error {
 			sdktypes.NewStringValue(connection),
 		}
 
+		filter := sdktypes.NewStringValue("")
 		if len(msg.Args) == 2 {
-			filter, ok := msg.Args[1].(string)
+			v, ok := msg.Args[1].(string)
 			if !ok {
 				return fmt.Errorf("subscribe: expected string filter, got %T", msg.Args[1])
 			}
-			args = append(args, sdktypes.NewStringValue(filter))
+			filter = sdktypes.NewStringValue(v)
 		}
+		args = append(args, filter)
 
 		id, err := py.cbs.Call(ctx, py.xid.ToRunID(), py.syscallFn, args, nil)
 		if err != nil {
