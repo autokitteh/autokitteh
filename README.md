@@ -42,10 +42,10 @@ executing the code as durable workflows, and managing these workflows.
 gPRC / HTTP.
 
 **Built-in integrations:** Slack, GitHub, Twilio, ChatGPT, Gemini, Gmail,
-Calendar, HTTP, gRPC and many more. It's easy to add new integrations.
+Google Calendar, HTTP, gRPC and many more. It's easy to add new integrations.
 
 **Supported programming languages:** Python, Starlark (a dialect of Python),
-and TypeScript (coming soon).
+and JavaScript (coming soon).
 
 [Discover how it works](https://docs.autokitteh.com/how_it_works)
 (in detail).
