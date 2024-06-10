@@ -400,5 +400,42 @@ func funcs(i *integration) []sdkmodule.Optfn {
 			sdkmodule.WithFuncDoc("https://docs.github.com/en/rest/checks/runs?update-a-check-run"),
 			sdkmodule.WithArgs("owner", "repo", "check_run_id", "details_url?", "external_url?", "status?", "conclusion?", "output?", "created_at?", "completed_at?", "actions?"),
 		),
+
+		// Copilot
+		sdkmodule.ExportFunction(
+			"get_copilot_billing",
+			i.getCopilotBilling,
+			sdkmodule.WithArgs("org"),
+		),
+		sdkmodule.ExportFunction(
+			"list_copilot_seats",
+			i.listCopilotSeats,
+			sdkmodule.WithArgs("org", "page=?", "per_page=?"),
+		),
+		sdkmodule.ExportFunction(
+			"add_copilot_teams",
+			i.addCopilotTeams,
+			sdkmodule.WithArgs("org", "teams"),
+		),
+		sdkmodule.ExportFunction(
+			"rm_copilot_teams",
+			i.rmCopilotTeams,
+			sdkmodule.WithArgs("org", "teams"),
+		),
+		sdkmodule.ExportFunction(
+			"add_copilot_users",
+			i.addCopilotUsers,
+			sdkmodule.WithArgs("org", "users"),
+		),
+		sdkmodule.ExportFunction(
+			"rm_copilot_users",
+			i.rmCopilotUsers,
+			sdkmodule.WithArgs("org", "users"),
+		),
+		sdkmodule.ExportFunction(
+			"get_copilot_seat_details",
+			i.getCopilotSeatDetails,
+			sdkmodule.WithArgs("org", "user"),
+		),
 	}
 }
