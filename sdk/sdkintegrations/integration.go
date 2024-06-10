@@ -33,6 +33,10 @@ func WithConnectionConfig(fn func(context.Context, sdktypes.ConnectionID) (map[s
 }
 
 func WithConnectionConfigFromVars(cvars sdkservices.Vars) OptFn {
+	if cvars == nil {
+		return WithoutConnectionConfig()
+	}
+
 	return func(i *integration) {
 		i.connConfig = func(ctx context.Context, cid sdktypes.ConnectionID) (map[string]string, error) {
 			vs, err := cvars.Reveal(ctx, sdktypes.NewVarScopeID(cid))
@@ -43,6 +47,14 @@ func WithConnectionConfigFromVars(cvars sdkservices.Vars) OptFn {
 			return kittehs.ListToMap(vs, func(v sdktypes.Var) (string, string) {
 				return v.Name().String(), v.Value()
 			}), nil
+		}
+	}
+}
+
+func WithoutConnectionConfig() OptFn {
+	return func(i *integration) {
+		i.connConfig = func(context.Context, sdktypes.ConnectionID) (map[string]string, error) {
+			return nil, nil
 		}
 	}
 }

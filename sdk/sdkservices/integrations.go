@@ -29,7 +29,7 @@ type Integration interface {
 	// external service that it wraps.
 	Get() sdktypes.Integration
 
-	Configure(ctx context.Context, cid sdktypes.ConnectionID) (map[string]sdktypes.Value, map[string]string, error)
+	Configure(ctx context.Context, cid sdktypes.ConnectionID) (vs map[string]sdktypes.Value, config map[string]string, err error)
 
 	TestConnection(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error)
 
