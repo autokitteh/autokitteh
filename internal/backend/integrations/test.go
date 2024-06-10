@@ -31,7 +31,7 @@ func newTestIntegration() sdkservices.Integration {
 			i.freeze,
 			sdkmodule.WithArgs("duration?", "allow_cancel?"),
 		),
-	), sdkintegrations.WithoutConnectionConfig())
+	))
 }
 
 func (i test) freeze(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
