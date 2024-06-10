@@ -21,7 +21,7 @@ func Start(l *zap.Logger, mux *http.ServeMux, vars sdkservices.Vars, o sdkservic
 	// Connection UI + handlers.
 	mux.Handle(desc.ConnectionURL().Path, http.FileServer(http.FS(static.JiraWebContent)))
 
-	h := NewHTTPHandler(l, o, d)
+	h := NewHTTPHandler(l, o, vars, d)
 	mux.HandleFunc(oauthPath, h.handleOAuth)
 
 	// Event webhook.
