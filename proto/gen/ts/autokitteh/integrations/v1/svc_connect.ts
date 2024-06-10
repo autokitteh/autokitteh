@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { CallRequest, CallResponse, ConfigureRequest, ConfigureResponse, GetConnectionStatusRequest, GetConnectionStatusResponse, GetRequest, GetResponse, ListRequest, ListResponse, TestConnectionRequest, TestConnectionResponse } from "./svc_pb.js";
+import { CallRequest, CallResponse, ConfigureRequest, ConfigureResponse, GetConnectionConfigRequest, GetConnectionConfigResponse, GetConnectionStatusRequest, GetConnectionStatusResponse, GetRequest, GetResponse, ListRequest, ListResponse, TestConnectionRequest, TestConnectionResponse } from "./svc_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -66,6 +66,15 @@ export const IntegrationsService = {
       name: "GetConnectionStatus",
       I: GetConnectionStatusRequest,
       O: GetConnectionStatusResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * @generated from rpc autokitteh.integrations.v1.IntegrationsService.GetConnectionConfig
+     */
+    getConnectionConfig: {
+      name: "GetConnectionConfig",
+      I: GetConnectionConfigRequest,
+      O: GetConnectionConfigResponse,
       kind: MethodKind.Unary,
     },
     /**

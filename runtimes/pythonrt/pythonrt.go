@@ -8,14 +8,15 @@ import (
 	"path"
 	"time"
 
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+
 	"go.autokitteh.dev/autokitteh/internal/backend/logger"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/internal/xdg"
 	"go.autokitteh.dev/autokitteh/sdk/sdkruntimes"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
 var (
@@ -287,7 +288,6 @@ func (py *pySvc) Run(
 	values map[string]sdktypes.Value,
 	cbs *sdkservices.RunCallbacks,
 ) (sdkservices.Run, error) {
-
 	py.xid = sdktypes.NewExecutorID(runID) // Should be first
 	py.log = py.log.With(zap.String("run_id", runID.String()))
 	py.log.Info("run", zap.String("path", mainPath))
