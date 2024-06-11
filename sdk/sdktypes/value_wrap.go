@@ -11,7 +11,7 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 )
 
-func WrapValue(v any) (Value, error) { return DefaultValueWrapper.Wrap(v) }
+func WrapValue[T any](v T) (Value, error) { return DefaultValueWrapper.Wrap(v) }
 
 // Wraps a native go type in a Value.
 func (w ValueWrapper) Wrap(v any) (Value, error) {
