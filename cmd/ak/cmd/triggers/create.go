@@ -129,7 +129,7 @@ func init() {
 
 	createCmd.Flags().StringVarP(&event, "event", "E", "", "optional event type, based on connection")
 	createCmd.Flags().StringVarP(&filter, "filter", "f", "", "optional event data filter expression")
-	createCmd.Flags().StringToStringVarP(&data, "data", "d", nil, "optional event config key-value pairs")
+	createCmd.Flags().StringToStringVarP(&data, "data", "d", map[string]string{}, "optional event config key-value pairs")
 	createCmd.MarkFlagsMutuallyExclusive("schedule", "event")
 	createCmd.MarkFlagsMutuallyExclusive("schedule", "filter")
 	createCmd.MarkFlagsMutuallyExclusive("schedule", "data")
