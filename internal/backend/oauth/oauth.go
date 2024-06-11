@@ -48,6 +48,7 @@ func New(l *zap.Logger) sdkservices.OAuth {
 			zap.Error(err),
 		)
 	}
+	l.Debug("GitHub base URL for OAuth", zap.String("url", githubBaseURL))
 
 	// TODO(ENG-965): From new-connection form instead of env var.
 	jiraBaseURL := os.Getenv("JIRA_BASE_URL")
@@ -61,6 +62,7 @@ func New(l *zap.Logger) sdkservices.OAuth {
 			zap.Error(err),
 		)
 	}
+	l.Debug("Jira base URL for OAuth", zap.String("url", jiraBaseURL))
 
 	appsDir := "apps"
 	if os.Getenv("GITHUB_ENTERPRISE_URL") != "" {

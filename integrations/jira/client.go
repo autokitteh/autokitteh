@@ -2,8 +2,6 @@ package jira
 
 import (
 	"context"
-	"fmt"
-	"strings"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
@@ -29,7 +27,7 @@ var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.Integrati
 		"2 Go client API":     "https://pkg.go.dev/github.com/andygrunwald/go-jira",
 		"3 Python client API": "https://jira.readthedocs.io/",
 	},
-	ConnectionUrl: "/jira/connect",
+	ConnectionUrl: "/jira/connect/",
 	ConnectionCapabilities: &sdktypes.ConnectionCapabilitiesPB{
 		RequiresConnectionInit: true,
 	},
@@ -41,16 +39,17 @@ func New(cvars sdkservices.Vars) sdkservices.Integration {
 		desc,
 		sdkmodule.New( /* No exported functions for Starlark */ ),
 		connStatus(i),
-		connTest(i),
 	)
 }
 
+// connStatus is an optional connection status check provided by the
+// integration to AutoKitteh. The possible results are "init required"
+// (the connection is not usable yet) and "using X" (where "X" is the
+// authentication method: OAuth 2.0, Cloud API token, or on-prem PAT).
 func connStatus(i *integration) sdkintegrations.OptFn {
 	return sdkintegrations.WithConnectionStatus(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
-		initReq := sdktypes.NewStatus(sdktypes.StatusCodeWarning, "init required")
-
 		if !cid.IsValid() {
-			return initReq, nil
+			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "init required"), nil
 		}
 
 		vs, err := i.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
@@ -58,26 +57,16 @@ func connStatus(i *integration) sdkintegrations.OptFn {
 			return sdktypes.InvalidStatus, err
 		}
 
-		// TODO(ENG-965): Implement a real check, and reuse in the OAuth handler.
-		// if vs.Has(vars.PAT) {
-		// 	return sdktypes.NewStatus(sdktypes.StatusCodeOK, "using PAT"), nil
-		// }
-
-		n := len(kittehs.Filter(vs, func(v sdktypes.Var) bool {
-			return strings.HasPrefix(v.Name().String(), "app_id__")
-		}))
-
-		if n == 0 {
-			return initReq, nil
+		if vs.Has(sdktypes.NewSymbol("oauth_AccessToken")) {
+			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "using OAuth 2.0"), nil
+		}
+		if vs.Has(sdktypes.NewSymbol("apiToken")) {
+			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "using API token"), nil
+		}
+		if vs.Has(sdktypes.NewSymbol("pat")) {
+			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "using PAT"), nil
 		}
 
-		return sdktypes.NewStatus(sdktypes.StatusCodeOK, fmt.Sprintf("%d installations", n)), nil
-	})
-}
-
-func connTest(*integration) sdkintegrations.OptFn {
-	return sdkintegrations.WithConnectionTest(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
-		// TODO
-		return sdktypes.NewStatus(sdktypes.StatusCodeUnspecified, `¯\_(ツ)_/¯`), nil
+		return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "unrecognized auth"), nil
 	})
 }

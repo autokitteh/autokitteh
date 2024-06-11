@@ -36,25 +36,22 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 	// https://developers.google.com/identity/protocols/oauth2/web-server#handlingresponse
 	e := r.FormValue("error")
 	if e != "" {
-		l.Warn("OAuth redirect request reported an error", zap.Error(errors.New(e)))
-		u := fmt.Sprintf("%serror.html?error=%s", uiPath, url.QueryEscape(e))
-		http.Redirect(w, r, u, http.StatusFound)
+		l.Warn("OAuth redirect reported an error", zap.Error(errors.New(e)))
+		redirectToErrorPage(w, r, e)
 		return
 	}
 
 	_, data, err := sdkintegrations.GetOAuthDataFromURL(r.URL)
 	if err != nil {
-		l.Warn("OAuth redirect request with invalid data parameter", zap.Error(err))
-		u := uiPath + "error.html?error=" + url.QueryEscape("invalid data parameter")
-		http.Redirect(w, r, u, http.StatusFound)
+		l.Warn("Invalid data in OAuth redirect request", zap.Error(err))
+		redirectToErrorPage(w, r, "invalid data parameter")
 		return
 	}
 
 	oauthToken := data.Token
 	if oauthToken == nil {
-		l.Warn("OAuth redirect request without token in data parameter", zap.Error(err))
-		u := uiPath + "error.html?error=" + url.QueryEscape("missing OAuth token")
-		http.Redirect(w, r, u, http.StatusFound)
+		l.Warn("Missing token in OAuth redirect request", zap.Any("data", data))
+		redirectToErrorPage(w, r, "missing OAuth token")
 		return
 	}
 
@@ -65,4 +62,9 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 	initData := sdktypes.NewVars(data.ToVars()...)
 
 	sdkintegrations.FinalizeConnectionInit(w, r, integrationID, initData)
+}
+
+func redirectToErrorPage(w http.ResponseWriter, r *http.Request, err string) {
+	u := fmt.Sprintf("%serror.html?error=%s", desc.ConnectionURL().Path, url.QueryEscape(err))
+	http.Redirect(w, r, u, http.StatusFound)
 }
