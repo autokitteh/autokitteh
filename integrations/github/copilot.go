@@ -75,7 +75,7 @@ func (i integration) addCopilotTeams(ctx context.Context, args []sdktypes.Value,
 	return sdktypes.WrapValue(resp)
 }
 
-func (i integration) rmCopilotTeams(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
+func (i integration) removeCopilotTeams(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
 	var (
 		org   string
 		teams []string
@@ -121,7 +121,7 @@ func (i integration) addCopilotUsers(ctx context.Context, args []sdktypes.Value,
 	return sdktypes.WrapValue(resp)
 }
 
-func (i integration) rmCopilotUsers(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
+func (i integration) removeCopilotUsers(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
 	var (
 		org   string
 		users []string

@@ -405,36 +405,43 @@ func funcs(i *integration) []sdkmodule.Optfn {
 		sdkmodule.ExportFunction(
 			"get_copilot_billing",
 			i.getCopilotBilling,
+			sdkmodule.WithFuncDoc("https://docs.github.com/en/rest/copilot/copilot-user-management#get-copilot-seat-information-and-settings-for-an-organization"),
 			sdkmodule.WithArgs("org"),
 		),
 		sdkmodule.ExportFunction(
 			"list_copilot_seats",
 			i.listCopilotSeats,
+			sdkmodule.WithFuncDoc("https://docs.github.com/en/rest/copilot/copilot-user-management#list-all-copilot-seat-assignments-for-an-organization"),
 			sdkmodule.WithArgs("org", "page=?", "per_page=?"),
 		),
 		sdkmodule.ExportFunction(
 			"add_copilot_teams",
 			i.addCopilotTeams,
+			sdkmodule.WithFuncDoc("https://docs.github.com/en/rest/copilot/copilot-user-management#add-teams-to-the-copilot-subscription-for-an-organization"),
 			sdkmodule.WithArgs("org", "teams"),
 		),
 		sdkmodule.ExportFunction(
-			"rm_copilot_teams",
-			i.rmCopilotTeams,
+			"remove_copilot_teams",
+			i.removeCopilotTeams,
+			sdkmodule.WithFuncDoc("https://docs.github.com/en/rest/copilot/copilot-user-management#remove-teams-from-the-copilot-subscription-for-an-organization"),
 			sdkmodule.WithArgs("org", "teams"),
 		),
 		sdkmodule.ExportFunction(
 			"add_copilot_users",
 			i.addCopilotUsers,
+			sdkmodule.WithFuncDoc("https://docs.github.com/en/rest/copilot/copilot-user-management#add-users-to-the-copilot-subscription-for-an-organization"),
 			sdkmodule.WithArgs("org", "users"),
 		),
 		sdkmodule.ExportFunction(
-			"rm_copilot_users",
-			i.rmCopilotUsers,
+			"remove_copilot_users",
+			i.removeCopilotUsers,
+			sdkmodule.WithFuncDoc("https://docs.github.com/en/rest/copilot/copilot-user-management#remove-users-from-the-copilot-subscription-for-an-organization"),
 			sdkmodule.WithArgs("org", "users"),
 		),
 		sdkmodule.ExportFunction(
 			"get_copilot_seat_details",
 			i.getCopilotSeatDetails,
+			sdkmodule.WithFuncDoc("https://docs.github.com/en/rest/copilot/copilot-user-management#get-copilot-seat-assignment-details-for-a-user"),
 			sdkmodule.WithArgs("org", "user"),
 		),
 	}
