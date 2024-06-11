@@ -715,7 +715,7 @@ func (py *pySvc) handleCall(ctx context.Context, msg CallMessage) error {
 			return err
 		}
 
-		value, err = event.Unwrap()
+		value, err = unwrap(event)
 		if err != nil {
 			py.log.Error("event unwrap", zap.Error(err))
 			return err
