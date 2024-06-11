@@ -74,7 +74,7 @@ func Test_runPython(t *testing.T) {
 		log:      log,
 		pyExe:    "python",
 		tarData:  tarData,
-		rootPath: "simple.py:greet",
+		rootPath: "simple.py",
 		env:      env,
 		stdout:   os.Stdout,
 		stderr:   os.Stderr,
