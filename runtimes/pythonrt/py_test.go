@@ -205,3 +205,32 @@ func Test_pyExports(t *testing.T) {
 	require.Equal(t, expected, exports)
 
 }
+
+const testRunnerPath = "/tmp/zzz/ak_runner"
+
+var adjustCases = []struct {
+	name     string
+	env      []string
+	expected []string
+}{
+	{"empty env", nil, []string{"PYTHONPATH=" + testRunnerPath}},
+	{
+		name:     "regular",
+		env:      []string{"HOME=/home/ak", "PYTHONPATH=x"},
+		expected: []string{"HOME=/home/ak", "PYTHONPATH=x:" + testRunnerPath},
+	},
+	{
+		name:     "last",
+		env:      []string{"PYTHONPATH=x", "HOME=/home/ak", "PYTHONPATH=y"},
+		expected: []string{"PYTHONPATH=x", "HOME=/home/ak", "PYTHONPATH=y:" + testRunnerPath},
+	},
+}
+
+func Test_adjustPYTHONPATH(t *testing.T) {
+	for _, tc := range adjustCases {
+		t.Run(tc.name, func(t *testing.T) {
+			out := adjustPYTHONPATH(tc.env, testRunnerPath)
+			require.Equal(t, tc.expected, out)
+		})
+	}
+}

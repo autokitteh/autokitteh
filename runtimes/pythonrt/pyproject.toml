@@ -3,5 +3,5 @@
 addopts = '''
 	-v 
 	--doctest-modules 
-	--ignore testdata
+	--ignore testdata,py-sdk
 '''
