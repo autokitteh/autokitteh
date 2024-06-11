@@ -8,14 +8,15 @@ import (
 	"path"
 	"time"
 
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+
 	"go.autokitteh.dev/autokitteh/internal/backend/logger"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/internal/xdg"
 	"go.autokitteh.dev/autokitteh/sdk/sdkruntimes"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
 var (
@@ -287,7 +288,6 @@ func (py *pySvc) Run(
 	values map[string]sdktypes.Value,
 	cbs *sdkservices.RunCallbacks,
 ) (sdkservices.Run, error) {
-
 	py.xid = sdktypes.NewExecutorID(runID) // Should be first
 	py.log = py.log.With(zap.String("run_id", runID.String()))
 	py.log.Info("run", zap.String("path", mainPath))
@@ -570,7 +570,7 @@ func (py *pySvc) injectHTTPBody(ctx context.Context, data sdktypes.Value, event 
 // Call handles a function call from autokitteh.
 // First used of Call start a workflow, later invocations are activity calls.
 func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
-	py.log.Info("call", zap.String("func", v.String()), zap.Any("args", args), zap.Any("kwargs", kwargs))
+	py.log.Info("call", zap.String("func", v.String()))
 	if py.run.proc == nil {
 		py.log.Error("call - python not running")
 		return sdktypes.InvalidValue, fmt.Errorf("python not running")
@@ -591,6 +591,7 @@ func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 		}
 		event[key] = goVal
 	}
+	py.log.Info("event", zap.Any("event", event))
 
 	if err := py.injectHTTPBody(ctx, kwargs["data"], event, py.cbs); err != nil {
 		return sdktypes.InvalidValue, err

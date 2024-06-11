@@ -88,5 +88,6 @@ func New(vars sdkservices.Vars) sdkservices.Integration {
 			ConnectionUrl: "/aws/connect",
 		})),
 		sdkmodule.New(initOpts(vars)...),
+		sdkintegrations.WithConnectionConfigFromVars(vars),
 	)
 }

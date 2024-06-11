@@ -312,6 +312,11 @@ export class ConfigureRequest extends Message<ConfigureRequest> {
  */
 export class ConfigureResponse extends Message<ConfigureResponse> {
   /**
+   * @generated from field: map<string, string> config = 1;
+   */
+  config: { [key: string]: string } = {};
+
+  /**
    * @generated from field: map<string, autokitteh.values.v1.Value> values = 4;
    */
   values: { [key: string]: Value } = {};
@@ -324,6 +329,7 @@ export class ConfigureResponse extends Message<ConfigureResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "autokitteh.integrations.v1.ConfigureResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "config", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 4, name: "values", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: Value} },
   ]);
 
@@ -503,6 +509,86 @@ export class GetConnectionStatusResponse extends Message<GetConnectionStatusResp
 
   static equals(a: GetConnectionStatusResponse | PlainMessage<GetConnectionStatusResponse> | undefined, b: GetConnectionStatusResponse | PlainMessage<GetConnectionStatusResponse> | undefined): boolean {
     return proto3.util.equals(GetConnectionStatusResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message autokitteh.integrations.v1.GetConnectionConfigRequest
+ */
+export class GetConnectionConfigRequest extends Message<GetConnectionConfigRequest> {
+  /**
+   * @generated from field: string integration_id = 1;
+   */
+  integrationId = "";
+
+  /**
+   * @generated from field: string connection_id = 2;
+   */
+  connectionId = "";
+
+  constructor(data?: PartialMessage<GetConnectionConfigRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "autokitteh.integrations.v1.GetConnectionConfigRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "integration_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "connection_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetConnectionConfigRequest {
+    return new GetConnectionConfigRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetConnectionConfigRequest {
+    return new GetConnectionConfigRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetConnectionConfigRequest {
+    return new GetConnectionConfigRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetConnectionConfigRequest | PlainMessage<GetConnectionConfigRequest> | undefined, b: GetConnectionConfigRequest | PlainMessage<GetConnectionConfigRequest> | undefined): boolean {
+    return proto3.util.equals(GetConnectionConfigRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message autokitteh.integrations.v1.GetConnectionConfigResponse
+ */
+export class GetConnectionConfigResponse extends Message<GetConnectionConfigResponse> {
+  /**
+   * @generated from field: map<string, string> config = 1;
+   */
+  config: { [key: string]: string } = {};
+
+  constructor(data?: PartialMessage<GetConnectionConfigResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "autokitteh.integrations.v1.GetConnectionConfigResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "config", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetConnectionConfigResponse {
+    return new GetConnectionConfigResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetConnectionConfigResponse {
+    return new GetConnectionConfigResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetConnectionConfigResponse {
+    return new GetConnectionConfigResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetConnectionConfigResponse | PlainMessage<GetConnectionConfigResponse> | undefined, b: GetConnectionConfigResponse | PlainMessage<GetConnectionConfigResponse> | undefined): boolean {
+    return proto3.util.equals(GetConnectionConfigResponse, a, b);
   }
 }
 

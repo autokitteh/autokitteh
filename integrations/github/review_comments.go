@@ -114,7 +114,7 @@ func (i integration) deleteReviewComment(ctx context.Context, args []sdktypes.Va
 		return sdktypes.InvalidValue, err
 	}
 
-	return sdktypes.WrapValue(nil)
+	return sdktypes.Nothing, nil
 }
 
 // https://docs.github.com/en/rest/pulls/comments#get-a-review-comment-for-a-pull-request
