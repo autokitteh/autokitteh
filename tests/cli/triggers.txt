@@ -14,7 +14,7 @@ $ # List triggers empty list
 $ ${AK} trigger list; echo $?
 0
 $ # create trigger
-$ ${AK} trigger create -n test1 --connection con_00000000000000000000000003 --env=env_00000000000000000000000002 --event et --loc a; echo $?
+$ ${AK} trigger create -n test1 --connection con_00000000000000000000000003 --env=env_00000000000000000000000002 --event et --call a; echo $?
 trigger_id: trg_00000000000000000000000004
 0
 $ # get trigger
@@ -26,7 +26,7 @@ $ ${AK} connection c name -i http -p p -q; echo $?;
 connection_id: con_00000000000000000000000005
 0
 $ # create trigger 2 (full code location)
-$ ${AK} trigger create -n test2 --connection con_00000000000000000000000005 --env=env_00000000000000000000000002 --event et --loc meow.kitteh:Meow; echo $?
+$ ${AK} trigger create -n test2 --connection con_00000000000000000000000005 --env=env_00000000000000000000000002 --event et --call meow.kitteh:Meow; echo $?
 trigger_id: trg_00000000000000000000000006
 0
 $ # get trigger 2
