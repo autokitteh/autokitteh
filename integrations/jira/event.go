@@ -11,6 +11,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -38,7 +39,9 @@ func NewHTTPHandler(l *zap.Logger, o sdkservices.OAuth, v sdkservices.Vars, d sd
 }
 
 type event struct {
-	MatchedWebhookIDs []int `json:"matchedWebhookIds"`
+	WebhookEvent      string `json:"webhookEvent"`
+	MatchedWebhookIDs []int  `json:"matchedWebhookIds"`
+	Timestamp         int64  `json:"timestamp"`
 }
 
 // handleEvent receives from Jira asynchronous events,
@@ -51,14 +54,18 @@ type event struct {
 func (h handler) handleEvent(w http.ResponseWriter, r *http.Request) {
 	l := h.logger.With(zap.String("urlPath", r.URL.Path))
 
+	// TODO(ENG-965): Verify the event's "Authorization" header.
+	header := r.Header.Get(headerAuthorization)
+	l.Debug("Event signature", zap.String("authHeader", header))
+
 	// Check the "Content-Type" header.
-	header := r.Header.Get(headerContentType)
+	header = r.Header.Get(headerContentType)
 	if !strings.HasPrefix(header, contentTypeJSON) {
 		http.Error(w, "Bad Request", http.StatusBadRequest)
 		return
 	}
 
-	// Parse the event's JSON content, specifically the webhook ID(s).
+	// Parse some of the metadata in the Jira event's JSON content.
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, "Bad Request", http.StatusBadRequest)
@@ -71,18 +78,18 @@ func (h handler) handleEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Construct an AutoKitteh event from the Jira event.
+	event, err := constructEvent(l, body, e)
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+	}
+
+	// Iterate through all the relevant connections for this event.
 	ctx := context.Background()
 	key := sdktypes.NewSymbol("webhook_id")
 	for _, id := range e.MatchedWebhookIDs {
-		l.Warn("Webhook ID", zap.Int("id", id)) // TODO: REMOVE THIS LINE!
-
-		// TODO: Check the "Authorization" header.
-		header = r.Header.Get(headerAuthorization)
-		l.Warn("Authorization header", zap.String("header", header)) // TODO: REMOVE THIS LINE!
-
-		// Retrieve all the relevant connections for this event.
 		value := fmt.Sprintf("%d", id)
-		cs, err := h.vars.FindConnectionIDs(ctx, integrationID, key, value)
+		cids, err := h.vars.FindConnectionIDs(ctx, integrationID, key, value)
 		if err != nil {
 			l.Warn("Failed to find connection IDs",
 				zap.String("jiraWebHookID", value),
@@ -91,11 +98,49 @@ func (h handler) handleEvent(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
-		// TODO: Dispatch the event to all of them, for asynchronous handling.
-		for _, c := range cs {
-			l.Warn("Connection ID", zap.String("cid", c.String())) // TODO: REMOVE THIS LINE!
-		}
+		// Dispatch the event to all of them, for asynchronous handling.
+		h.dispatchAsyncEventsToConnections(ctx, l, cids, event)
 	}
 
 	// Returning immediately without an error = acknowledgement of receipt.
+}
+
+func constructEvent(l *zap.Logger, body []byte, e event) (*sdktypes.EventPB, error) {
+	m := map[string]string{"json": string(body)}
+	wrapped, err := sdktypes.DefaultValueWrapper.Wrap(m)
+	if err != nil {
+		l.Error("Failed to wrap Jira event", zap.Any("event", body), zap.Error(err))
+		return nil, err
+	}
+
+	data, err := wrapped.ToStringValuesMap()
+	if err != nil {
+		l.Error("Failed to convert wrapped Jira event", zap.Any("event", body), zap.Error(err))
+		return nil, err
+	}
+
+	return &sdktypes.EventPB{
+		EventType: strings.TrimPrefix(e.WebhookEvent, "jira:"),
+		Data:      kittehs.TransformMapValues(data, sdktypes.ToProto),
+	}, nil
+}
+
+func (h handler) dispatchAsyncEventsToConnections(ctx context.Context, l *zap.Logger, cids []sdktypes.ConnectionID, event *sdktypes.EventPB) {
+	for _, cid := range cids {
+		event.ConnectionId = cid.String()
+		e := kittehs.Must1(sdktypes.EventFromProto(event))
+		eventID, err := h.dispatcher.Dispatch(ctx, e, nil)
+		if err != nil {
+			l.Error("Dispatch failed",
+				zap.String("eventID", eventID.String()),
+				zap.String("connectionID", cid.String()),
+				zap.Error(err),
+			)
+			return
+		}
+		l.Debug("Dispatched",
+			zap.String("eventID", eventID.String()),
+			zap.String("connectionID", cid.String()),
+		)
+	}
 }
