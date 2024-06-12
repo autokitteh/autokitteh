@@ -96,7 +96,11 @@ func (a api) draftsGet(ctx context.Context, args []sdktypes.Value, kwargs map[st
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
-	draft, err := client.Users.Drafts.Get("me", id).Format(format).Do()
+	call := client.Users.Drafts.Get("me", id)
+	if format != "" {
+		call = call.Format(format)
+	}
+	draft, err := call.Do()
 
 	// Parse and return the response.
 	if draft == nil {

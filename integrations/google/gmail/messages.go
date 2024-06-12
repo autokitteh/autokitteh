@@ -65,8 +65,11 @@ func (a api) messagesGet(ctx context.Context, args []sdktypes.Value, kwargs map[
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
-	msg, err := client.Users.Messages.Get("me", id).
-		Format(format).MetadataHeaders(metadataHeaders...).Do()
+	call := client.Users.Messages.Get("me", id).MetadataHeaders(metadataHeaders...)
+	if format != "" {
+		call = call.Format(format)
+	}
+	msg, err := call.Do()
 
 	// Parse and return the response.
 	if msg == nil {
