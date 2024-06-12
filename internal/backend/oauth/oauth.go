@@ -255,8 +255,7 @@ func New(l *zap.Logger) sdkservices.OAuth {
 				RedirectURL: redirectURL + "jira",
 				// https://developer.atlassian.com/cloud/jira/platform/scopes-for-oauth-2-3LO-and-forge-apps/
 				Scopes: []string{
-					"read:me",      // TODO(ENG-965): Really needed?
-					"read:account", // TODO(ENG-965): Really needed?
+					"read:account",
 					"read:jira-work",
 					"read:jira-user",
 					"write:jira-work",
