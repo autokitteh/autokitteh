@@ -86,21 +86,19 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 	u, err := enterpriseURL()
 	if err != nil {
 		l.Warn("GitHub enterprise URL error", zap.Error(err))
-		redirectToErrorPage(w, r, err.Error())
+		redirectToErrorPage(w, r, "token source")
 		return
 	}
 	if u != "" {
 		gh, err = gh.WithEnterpriseURLs(u, u)
 		if err != nil {
-			l.Warn("GitHub enterprise URL error",
-				zap.String("url", u), zap.Error(err),
-			)
+			l.Warn("GitHub enterprise URL error", zap.String("url", u), zap.Error(err))
 			redirectToErrorPage(w, r, err.Error())
 			return
 		}
 	}
 
-	// TODO: Go over all pages.
+	// TODO: Support pagination.
 	is, _, err := gh.Apps.ListUserInstallations(ctx, &github.ListOptions{})
 	if err != nil {
 		l.Warn("OAuth user token source error", zap.Error(err))
@@ -123,12 +121,14 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 		break
 	}
 	if !foundInstallation {
+		// This is probably an attack, so no user-friendliness.
 		l.Warn("GitHub app installation details not found")
 		http.Error(w, "Bad Request", http.StatusBadRequest)
 		return
 	}
 
 	if i.AppID == nil || i.ID == nil || i.Account == nil || i.Account.Login == nil {
+		// This is probably an attack, so no user-friendliness.
 		l.Warn("GitHub app installation details missing required fields")
 		http.Error(w, "Bad Request", http.StatusBadRequest)
 		return
@@ -147,7 +147,7 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 }
 
 func redirectToErrorPage(w http.ResponseWriter, r *http.Request, err string) {
-	u := fmt.Sprintf("%serror.html?error=%s", desc.ConnectionURL().Path, url.QueryEscape(err))
+	u := fmt.Sprintf("%s/error.html?error=%s", desc.ConnectionURL().Path, url.QueryEscape(err))
 	http.Redirect(w, r, u, http.StatusFound)
 }
 

@@ -11,11 +11,13 @@ import (
 )
 
 func Start(l *zap.Logger, mux *http.ServeMux, o sdkservices.OAuth, d sdkservices.Dispatcher) {
+	uiPath := "GET " + desc.ConnectionURL().Path + "/"
+
 	// New connection UIs + handlers.
 	h := NewHTTPHandler(l, o)
 	mux.Handle(uiPath, http.FileServer(http.FS(static.GoogleWebContent)))
-	mux.HandleFunc(oauthPath, h.HandleOAuth)
-	mux.HandleFunc(credsPath, h.HandleCreds)
+	mux.HandleFunc("GET "+oauthPath, h.HandleOAuth)
+	mux.HandleFunc("POST "+credsPath, h.HandleCreds)
 
 	urlPath := strings.ReplaceAll(uiPath, "google", "gmail")
 	mux.Handle(urlPath, http.FileServer(http.FS(static.GmailWebContent)))

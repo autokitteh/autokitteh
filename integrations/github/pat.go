@@ -30,6 +30,7 @@ func (h handler) handlePAT(w http.ResponseWriter, r *http.Request) {
 	// Check the "Content-Type" header.
 	contentType := r.Header.Get(headerContentType)
 	if !strings.HasPrefix(contentType, contentTypeForm) {
+		// This is probably an attack, so no user-friendliness.
 		http.Error(w, "Bad Request", http.StatusBadRequest)
 		return
 	}

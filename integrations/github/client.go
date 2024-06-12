@@ -28,7 +28,7 @@ var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.Integrati
 		"2 Go client API":     "https://pkg.go.dev/github.com/google/go-github/v57/github",
 		"3 Python client API": "https://pygithub.readthedocs.io/en/stable/",
 	},
-	ConnectionUrl: "/github/connect/",
+	ConnectionUrl: "/github/connect",
 	ConnectionCapabilities: &sdktypes.ConnectionCapabilitiesPB{
 		RequiresConnectionInit: true,
 	},
