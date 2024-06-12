@@ -3,13 +3,13 @@ package github
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
 
 	"github.com/google/go-github/v60/github"
 	"go.uber.org/zap"
-
 	"golang.org/x/oauth2"
 
 	"go.autokitteh.dev/autokitteh/integrations/github/internal/vars"
@@ -19,10 +19,6 @@ import (
 )
 
 const (
-	// uiPath is the URL root path of a simple web UI to interact with users at the
-	// beginning and the end of their GitHub app installation and 3-legged OAuth v2 flow.
-	uiPath = "/github/connect/"
-
 	// oauthPath is the URL path for our handler to save new OAuth-based connections.
 	oauthPath = "/github/oauth"
 )
@@ -51,25 +47,22 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 	e := r.FormValue("error")
 	if e != "" {
 		l.Warn("OAuth redirect request reported an error", zap.Error(errors.New(e)))
-		u := uiPath + "error.html?error=" + url.QueryEscape(e)
-		http.Redirect(w, r, u, http.StatusFound)
+		redirectToErrorPage(w, r, e)
 		return
 	}
 
 	_, data, err := sdkintegrations.GetOAuthDataFromURL(r.URL)
 	if err != nil {
-		l.Warn("OAuth redirect request with invalid data parameter", zap.Error(err))
-		u := uiPath + "error.html?error=" + url.QueryEscape("invalid data parameter")
-		http.Redirect(w, r, u, http.StatusFound)
+		l.Warn("Invalid data in OAuth redirect request", zap.Error(err))
+		redirectToErrorPage(w, r, "invalid data parameter")
 		return
 	}
 
 	// Parse and validate the results.
 	v := data.Params.Get("installation_id")
 	if v == "" {
-		l.Warn("OAuth redirect request without installation_id parameter")
-		u := uiPath + "error.html?error=" + url.QueryEscape("missing installation ID")
-		http.Redirect(w, r, u, http.StatusFound)
+		l.Warn("Missing installation ID in OAuth redirect request")
+		redirectToErrorPage(w, r, "missing installation ID")
 		return
 	}
 
@@ -77,11 +70,10 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 
 	id, err := strconv.ParseInt(v, 10, 64)
 	if err != nil {
-		l.Warn("OAuth redirect request with invalid installation_id parameter",
+		l.Warn("Invalid installation ID in OAuth redirect request",
 			zap.String("setupAction", r.FormValue("setup_action")),
 		)
-		u := uiPath + "error.html?error=" + url.QueryEscape("invalid installation ID")
-		http.Redirect(w, r, u, http.StatusFound)
+		redirectToErrorPage(w, r, "invalid installation ID")
 		return
 	}
 
@@ -93,17 +85,17 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 	gh := github.NewClient(oauth2.NewClient(ctx, src))
 	u, err := enterpriseURL()
 	if err != nil {
-		l.Warn("Enterprise URL error", zap.Error(err))
-		u := uiPath + "error.html?error=" + url.QueryEscape(err.Error())
-		http.Redirect(w, r, u, http.StatusFound)
+		l.Warn("GitHub enterprise URL error", zap.Error(err))
+		redirectToErrorPage(w, r, err.Error())
 		return
 	}
 	if u != "" {
 		gh, err = gh.WithEnterpriseURLs(u, u)
 		if err != nil {
-			l.Warn("Enterprise URL error", zap.String("url", u), zap.Error(err))
-			u := uiPath + "error.html?error=" + url.QueryEscape(err.Error())
-			http.Redirect(w, r, u, http.StatusFound)
+			l.Warn("GitHub enterprise URL error",
+				zap.String("url", u), zap.Error(err),
+			)
+			redirectToErrorPage(w, r, err.Error())
 			return
 		}
 	}
@@ -112,8 +104,7 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 	is, _, err := gh.Apps.ListUserInstallations(ctx, &github.ListOptions{})
 	if err != nil {
 		l.Warn("OAuth user token source error", zap.Error(err))
-		u := uiPath + "error.html?error=" + url.QueryEscape(err.Error())
-		http.Redirect(w, r, u, http.StatusFound)
+		redirectToErrorPage(w, r, err.Error())
 		return
 	}
 	foundInstallation := false
@@ -132,13 +123,13 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 		break
 	}
 	if !foundInstallation {
-		l.Warn("Installation details not found")
+		l.Warn("GitHub app installation details not found")
 		http.Error(w, "Bad Request", http.StatusBadRequest)
 		return
 	}
 
 	if i.AppID == nil || i.ID == nil || i.Account == nil || i.Account.Login == nil {
-		l.Warn("Installation details missing required fields")
+		l.Warn("GitHub app installation details missing required fields")
 		http.Error(w, "Bad Request", http.StatusBadRequest)
 		return
 	}
@@ -153,6 +144,11 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 		Set(vars.InstallKey(appID, installID), user, false)
 
 	sdkintegrations.FinalizeConnectionInit(w, r, integrationID, initData)
+}
+
+func redirectToErrorPage(w http.ResponseWriter, r *http.Request, err string) {
+	u := fmt.Sprintf("%serror.html?error=%s", desc.ConnectionURL().Path, url.QueryEscape(err))
+	http.Redirect(w, r, u, http.StatusFound)
 }
 
 func (h handler) tokenSource(ctx context.Context, t *oauth2.Token) oauth2.TokenSource {

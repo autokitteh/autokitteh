@@ -2,10 +2,9 @@ package github
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
-	"net/url"
 	"path/filepath"
+	"strings"
 
 	"github.com/google/go-github/v60/github"
 	"go.uber.org/zap"
@@ -20,36 +19,25 @@ const (
 	// PAT-based connection, after the user submits it via a web form.
 	patPath = "/github/save"
 
-	HeaderContentType = "Content-Type"
-	ContentTypeForm   = "application/x-www-form-urlencoded"
+	headerContentType = "Content-Type"
+	contentTypeForm   = "application/x-www-form-urlencoded"
 )
 
 // HandlePAT saves a new autokitteh connection with a user-submitted token.
 func (h handler) handlePAT(w http.ResponseWriter, r *http.Request) {
 	l := h.logger.With(zap.String("urlPath", r.URL.Path))
 
-	// Check "Content-Type" header.
-	ct := r.Header.Get(HeaderContentType)
-	if ct != ContentTypeForm {
-		l.Warn("Unexpected header value",
-			zap.String("header", HeaderContentType),
-			zap.String("got", ct),
-			zap.String("want", ContentTypeForm),
-		)
-		e := fmt.Sprintf("Unexpected Content-Type header: %q", ct)
-		u := fmt.Sprintf("%serror.html?error=%s", uiPath, url.QueryEscape(e))
-		http.Redirect(w, r, u, http.StatusFound)
+	// Check the "Content-Type" header.
+	contentType := r.Header.Get(headerContentType)
+	if !strings.HasPrefix(contentType, contentTypeForm) {
+		http.Error(w, "Bad Request", http.StatusBadRequest)
 		return
 	}
 
 	// Read and parse POST request body.
 	if err := r.ParseForm(); err != nil {
-		l.Warn("Failed to parse inbound HTTP request",
-			zap.Error(err),
-		)
-		e := "Form parsing error: " + err.Error()
-		u := fmt.Sprintf("%serror.html?error=%s", uiPath, url.QueryEscape(e))
-		http.Redirect(w, r, u, http.StatusFound)
+		l.Warn("Failed to parse inbound HTTP request", zap.Error(err))
+		redirectToErrorPage(w, r, "form parsing error: "+err.Error())
 		return
 	}
 
@@ -62,29 +50,19 @@ func (h handler) handlePAT(w http.ResponseWriter, r *http.Request) {
 	client := github.NewTokenClient(ctx, pat)
 	user, _, err := client.Users.Get(ctx, "")
 	if err != nil {
-		l.Warn("Unusable Personal Access Token",
-			zap.Error(err),
-		)
-		e := "Unusable PAT error: " + err.Error()
-		u := fmt.Sprintf("%serror.html?error=%s", uiPath, url.QueryEscape(e))
-		http.Redirect(w, r, u, http.StatusFound)
+		l.Warn("Unusable GitHub PAT", zap.Error(err))
+		redirectToErrorPage(w, r, "unusable PAT error: "+err.Error())
 		return
 	}
 
 	if user == nil || user.Login == nil {
-		l.Warn("Unexpected response from GitHub API",
-			zap.Any("user", user),
-		)
-		e := "Unexpected response from GitHub API"
-		u := fmt.Sprintf("%serror.html?error=%s", uiPath, url.QueryEscape(e))
-		http.Redirect(w, r, u, http.StatusFound)
+		l.Warn("Unexpected response from GitHub API", zap.Any("user", user))
+		redirectToErrorPage(w, r, "unexpected response from GitHub API")
 		return
 	}
 
 	userJSON, _ := json.Marshal(user)
-
 	_, patKey := filepath.Split(webhook)
-
 	initData := sdktypes.NewVars().
 		Set(vars.PAT, pat, true).
 		Set(vars.PATKey, patKey, false).

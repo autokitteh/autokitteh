@@ -47,15 +47,14 @@ func (h handler) HandleMessage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Retrieve all the relevant connections for this event.
-	cids, err := h.vars.FindConnectionIDs(r.Context(), h.integrationID, sdktypes.NewSymbol("account_sid"), aid)
+	ctx := r.Context()
+	cids, err := h.vars.FindConnectionIDs(ctx, h.integrationID, sdktypes.NewSymbol("account_sid"), aid)
 	if err != nil {
-		l.Error("Failed to retrieve connection tokens",
-			zap.Error(err),
-		)
+		l.Error("Failed to find connection IDs", zap.Error(err))
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 
 	// Dispatch the event to all of them, for asynchronous handling.
-	h.dispatchAsyncEventsToConnections(l, cids, akEvent)
+	h.dispatchAsyncEventsToConnections(ctx, l, cids, akEvent)
 }
