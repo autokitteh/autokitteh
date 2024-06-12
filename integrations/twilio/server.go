@@ -10,16 +10,13 @@ import (
 	"go.autokitteh.dev/autokitteh/web/static"
 )
 
-const (
-	// Save new autokitteh connections with user-submitted Twilio secrets.
-	uiPath = "/twilio/connect/"
-)
-
 func Start(l *zap.Logger, mux *http.ServeMux, vars sdkservices.Vars, d sdkservices.Dispatcher) {
 	h := webhooks.NewHandler(l, vars, d, "twilio", integrationID)
 
 	// Save new autokitteh connections with user-submitted Twilio secrets.
+	uiPath := "GET " + desc.ConnectionURL().Path + "/"
 	mux.Handle(uiPath, http.FileServer(http.FS(static.TwilioWebContent)))
+
 	mux.HandleFunc(webhooks.AuthPath, h.HandleAuth)
 
 	// Event webhooks.
