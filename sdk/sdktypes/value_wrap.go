@@ -15,6 +15,13 @@ func WrapValue[T any](v T) (Value, error) { return DefaultValueWrapper.Wrap(v) }
 
 // Wraps a native go type in a Value.
 func (w ValueWrapper) Wrap(v any) (Value, error) {
+	if w.Prewrap != nil {
+		var err error
+		if v, err = w.Prewrap(v); err != nil {
+			return InvalidValue, fmt.Errorf("prewrap: %w", err)
+		}
+	}
+
 	if v, ok := v.(Value); ok {
 		return v, nil
 	}

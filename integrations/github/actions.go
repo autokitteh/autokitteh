@@ -42,5 +42,5 @@ func (i integration) listWorkflowRuns(ctx context.Context, args []sdktypes.Value
 		return sdktypes.InvalidValue, err
 	}
 
-	return sdktypes.WrapValue(c)
+	return valueWrapper.Wrap(c)
 }

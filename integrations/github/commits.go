@@ -36,5 +36,5 @@ func (i integration) listCommits(ctx context.Context, args []sdktypes.Value, kwa
 		return sdktypes.InvalidValue, err
 	}
 
-	return sdktypes.WrapValue(resp)
+	return valueWrapper.Wrap(resp)
 }

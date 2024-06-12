@@ -33,7 +33,7 @@ func (i integration) addIssueLabels(ctx context.Context, args []sdktypes.Value, 
 		return sdktypes.InvalidValue, err
 	}
 
-	return sdktypes.WrapValue(c)
+	return valueWrapper.Wrap(c)
 }
 
 func (i integration) removeIssueLabel(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
@@ -61,5 +61,5 @@ func (i integration) removeIssueLabel(ctx context.Context, args []sdktypes.Value
 		return sdktypes.InvalidValue, err
 	}
 
-	return sdktypes.WrapValue(c)
+	return valueWrapper.Wrap(c)
 }

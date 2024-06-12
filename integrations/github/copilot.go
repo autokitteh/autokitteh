@@ -26,7 +26,7 @@ func (i integration) getCopilotBilling(ctx context.Context, args []sdktypes.Valu
 		return sdktypes.InvalidValue, err
 	}
 
-	return sdktypes.WrapValue(resp)
+	return valueWrapper.Wrap(resp)
 }
 
 func (i integration) listCopilotSeats(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
@@ -49,7 +49,7 @@ func (i integration) listCopilotSeats(ctx context.Context, args []sdktypes.Value
 		return sdktypes.InvalidValue, err
 	}
 
-	return sdktypes.WrapValue(resp)
+	return valueWrapper.Wrap(resp)
 }
 
 func (i integration) addCopilotTeams(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
@@ -72,7 +72,7 @@ func (i integration) addCopilotTeams(ctx context.Context, args []sdktypes.Value,
 		return sdktypes.InvalidValue, err
 	}
 
-	return sdktypes.WrapValue(resp)
+	return valueWrapper.Wrap(resp)
 }
 
 func (i integration) removeCopilotTeams(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
@@ -95,7 +95,7 @@ func (i integration) removeCopilotTeams(ctx context.Context, args []sdktypes.Val
 		return sdktypes.InvalidValue, err
 	}
 
-	return sdktypes.WrapValue(resp)
+	return valueWrapper.Wrap(resp)
 }
 
 func (i integration) addCopilotUsers(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
@@ -118,7 +118,7 @@ func (i integration) addCopilotUsers(ctx context.Context, args []sdktypes.Value,
 		return sdktypes.InvalidValue, err
 	}
 
-	return sdktypes.WrapValue(resp)
+	return valueWrapper.Wrap(resp)
 }
 
 func (i integration) removeCopilotUsers(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
@@ -141,7 +141,7 @@ func (i integration) removeCopilotUsers(ctx context.Context, args []sdktypes.Val
 		return sdktypes.InvalidValue, err
 	}
 
-	return sdktypes.WrapValue(resp)
+	return valueWrapper.Wrap(resp)
 }
 
 func (i integration) getCopilotSeatDetails(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
@@ -161,5 +161,5 @@ func (i integration) getCopilotSeatDetails(ctx context.Context, args []sdktypes.
 		return sdktypes.InvalidValue, err
 	}
 
-	return sdktypes.WrapValue(resp)
+	return valueWrapper.Wrap(resp)
 }
