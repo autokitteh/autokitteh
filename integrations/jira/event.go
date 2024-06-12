@@ -59,6 +59,7 @@ func (h handler) handleEvent(w http.ResponseWriter, r *http.Request) {
 	// Verify the JWT in the event's "Authorization" header.
 	token := r.Header.Get(headerAuthorization)
 	if !verifyJWT(l, strings.TrimPrefix(token, "Bearer ")) {
+		// This is probably an attack, so no user-friendliness.
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
@@ -66,6 +67,7 @@ func (h handler) handleEvent(w http.ResponseWriter, r *http.Request) {
 	// Check the "Content-Type" header.
 	contentType := r.Header.Get(headerContentType)
 	if !strings.HasPrefix(contentType, contentTypeJSON) {
+		// This is probably an attack, so no user-friendliness.
 		http.Error(w, "Bad Request", http.StatusBadRequest)
 		return
 	}
@@ -73,12 +75,14 @@ func (h handler) handleEvent(w http.ResponseWriter, r *http.Request) {
 	// Parse some of the metadata in the Jira event's JSON content.
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
+		// This is probably an attack, so no user-friendliness.
 		http.Error(w, "Bad Request", http.StatusBadRequest)
 		return
 	}
 
 	var e event
 	if err := json.Unmarshal(body, &e); err != nil {
+		// This is probably an attack, so no user-friendliness.
 		http.Error(w, "Bad Request", http.StatusBadRequest)
 		return
 	}
