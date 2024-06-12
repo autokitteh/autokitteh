@@ -1,28 +1,19 @@
 package jira
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
 
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
-	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
-
-// handler is an autokitteh webhook which implements [http.Handler]
-// to receive and dispatch asynchronous event notifications.
-type handler struct {
-	logger *zap.Logger
-	oauth  sdkservices.OAuth
-}
-
-func NewHTTPHandler(l *zap.Logger, o sdkservices.OAuth) handler {
-	return handler{logger: l, oauth: o}
-}
 
 // handleOAuth receives an inbound redirect request from autokitteh's OAuth
 // management service. This request contains an OAuth token (if the OAuth
@@ -55,11 +46,55 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO(ENG-965):
-	// Create a webhook to receive, parse, and dispatch Jira events,
-	// and retrieve authoritative app and installation details.
+	baseURL, err := baseURL()
+	if err != nil {
+		l.Warn("Invalid Jira base URL", zap.Error(err))
+		redirectToErrorPage(w, r, "invalid Jira base URL")
+		return
+	}
 
-	initData := sdktypes.NewVars(data.ToVars()...)
+	// Test the OAuth token's usability and get authoritative installation details.
+	res, err := accessibleResources(l, baseURL, oauthToken.AccessToken)
+	if err != nil {
+		redirectToErrorPage(w, r, err.Error())
+		return
+	}
+
+	if len(res) > 1 {
+		l.Warn("Multiple accessible resources for single OAuth token", zap.Any("resources", res))
+		redirectToErrorPage(w, r, "multiple accessible resources")
+		return
+	}
+
+	if !checkWebhookPermissions(res[0].Scopes) {
+		l.Warn("Insufficient webhook permissions for OAuth token", zap.Any("resources", res))
+		redirectToErrorPage(w, r, "insufficient webhook permissions")
+		return
+	}
+
+	// Register a new webhook to receive, parse, and dispatch
+	// Jira events, or extend the deadline of an existing one.
+	baseURL += "/ex/jira/" + res[0].ID
+	t := utc30Days()
+	id, ok := getWebhook(l, baseURL, oauthToken.AccessToken)
+	if !ok {
+		id, ok = registerWebhook(l, baseURL, oauthToken.AccessToken)
+		if !ok {
+			redirectToErrorPage(w, r, "failed to register webhook")
+			return
+		}
+	} else {
+		t, ok = extendWebhookLife(l, baseURL, oauthToken.AccessToken, id)
+		if !ok {
+			redirectToErrorPage(w, r, "failed to extend webhook life")
+			return
+		}
+	}
+
+	expiration := t.Format("2006-01-02T15:04:05.000-0700")
+	initData := sdktypes.NewVars(data.ToVars()...).Append(res[0].toVars()...).
+		Append(sdktypes.NewVar(sdktypes.NewSymbol("webhook_id"), fmt.Sprintf("%d", id), false)).
+		Append(sdktypes.NewVar(sdktypes.NewSymbol("webhook_expiration"), expiration, false))
 
 	sdkintegrations.FinalizeConnectionInit(w, r, integrationID, initData)
 }
@@ -67,4 +102,69 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 func redirectToErrorPage(w http.ResponseWriter, r *http.Request, err string) {
 	u := fmt.Sprintf("%serror.html?error=%s", desc.ConnectionURL().Path, url.QueryEscape(err))
 	http.Redirect(w, r, u, http.StatusFound)
+}
+
+// Determine Jira base URL (to support Jira Data Center, i.e. on-prem).
+// TODO(ENG-965): From new-connection form instead of env var.
+func baseURL() (string, error) {
+	u := os.Getenv("JIRA_BASE_URL")
+	if u == "" {
+		u = "https://api.atlassian.com"
+	}
+	return kittehs.NormalizeURL(u, true)
+}
+
+type resource struct {
+	ID        string   `json:"id"`
+	URL       string   `json:"url"`
+	Name      string   `json:"name"`
+	Scopes    []string `json:"scopes"`
+	AvatarURL string   `json:"avatarUrl"`
+}
+
+// accessibleResources retrieves the Jira Cloud metadata associated with an
+// OAuth token, which is necessary for API calls and webhook events. Based on:
+// https://developer.atlassian.com/cloud/jira/platform/oauth-2-3lo-apps/#3--make-calls-to-the-api-using-the-access-token
+func accessibleResources(l *zap.Logger, baseURL string, token string) ([]resource, error) {
+	u := fmt.Sprintf("%s/oauth/token/accessible-resources", baseURL)
+	req, err := http.NewRequest("GET", u, nil)
+	if err != nil {
+		l.Warn("Failed to construct HTTP request for OAuth token test", zap.Error(err))
+		return nil, err
+	}
+
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		l.Warn("Failed to request accessible resources for OAuth token", zap.Error(err))
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		l.Warn("Unexpected response on accessible resources", zap.Int("status", resp.StatusCode))
+		return nil, fmt.Errorf("accessible resources: unexpected status code %d", resp.StatusCode)
+	}
+
+	var res []resource
+	if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
+		return nil, err
+	}
+
+	if len(res) == 0 {
+		return nil, errors.New("no accessible resources for OAuth token")
+	}
+
+	return res, nil
+}
+
+func (r resource) toVars() sdktypes.Vars {
+	return []sdktypes.Var{
+		sdktypes.NewVar(sdktypes.NewSymbol("access_id"), r.ID, false),
+		sdktypes.NewVar(sdktypes.NewSymbol("access_url"), r.URL, false),
+		sdktypes.NewVar(sdktypes.NewSymbol("access_name"), r.Name, false),
+		sdktypes.NewVar(sdktypes.NewSymbol("access_scopes"), fmt.Sprintf("%s", r.Scopes), false),
+		sdktypes.NewVar(sdktypes.NewSymbol("access_avatarUrl"), r.AvatarURL, false),
+	}
 }

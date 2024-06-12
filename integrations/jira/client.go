@@ -23,9 +23,9 @@ var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.Integrati
 	Description:   "Atlassian Jira is an issue tracking and project management system.",
 	LogoUrl:       "/static/images/jira.svg",
 	UserLinks: map[string]string{
-		"1 REST API":          "https://developer.atlassian.com/cloud/jira/platform/rest/v3/intro/",
-		"2 Go client API":     "https://pkg.go.dev/github.com/andygrunwald/go-jira",
-		"3 Python client API": "https://jira.readthedocs.io/",
+		"1 REST API":             "https://developer.atlassian.com/cloud/jira/platform/rest/v3/intro/",
+		"2 Atlassian Python API": "https://atlassian-python-api.readthedocs.io/",
+		"3 Python Jira API":      "https://jira.readthedocs.io/",
 	},
 	ConnectionUrl: "/jira/connect/",
 	ConnectionCapabilities: &sdktypes.ConnectionCapabilitiesPB{
