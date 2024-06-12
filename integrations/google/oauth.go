@@ -91,7 +91,7 @@ func (h handler) HandleOAuth(w http.ResponseWriter, r *http.Request) {
 }
 
 func redirectToErrorPage(w http.ResponseWriter, r *http.Request, err string) {
-	u := fmt.Sprintf("%serror.html?error=%s", desc.ConnectionURL().Path, url.QueryEscape(err))
+	u := fmt.Sprintf("%s/error.html?error=%s", desc.ConnectionURL().Path, url.QueryEscape(err))
 	http.Redirect(w, r, u, http.StatusFound)
 }
 
