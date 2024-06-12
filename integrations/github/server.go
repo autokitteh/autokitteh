@@ -11,6 +11,15 @@ import (
 	"go.autokitteh.dev/autokitteh/web/static"
 )
 
+const(
+	// oauthPath is the URL path for our handler to save new OAuth-based connections.
+	oauthPath = "/github/oauth"
+
+	// patPath is the URL path for our webhook to save a new autokitteh
+	// PAT-based connection, after the user submits it via a web form.
+	patPath = "/github/save"
+)
+
 func Start(l *zap.Logger, mux *http.ServeMux, v sdkservices.Vars, o sdkservices.OAuth, d sdkservices.Dispatcher) {
 	// Connection UI + handlers.
 	uiPath := "GET " + desc.ConnectionURL().Path + "/"

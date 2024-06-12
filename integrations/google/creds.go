@@ -12,10 +12,6 @@ import (
 )
 
 const (
-	// credsPath is the URL path for our handler to save a new autokitteh
-	// credentials-based connection, after the user submits it via a web form.
-	credsPath = "/google/save"
-
 	headerContentType = "Content-Type"
 	contentTypeForm   = "application/x-www-form-urlencoded"
 )

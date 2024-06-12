@@ -18,11 +18,6 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-const (
-	// oauthPath is the URL path for our handler to save new OAuth-based connections.
-	oauthPath = "/github/oauth"
-)
-
 // handler is an autokitteh webhook which implements [http.Handler]
 // to receive and dispatch asynchronous event notifications.
 type handler struct {
