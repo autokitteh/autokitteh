@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"strings"
 	"sync/atomic"
@@ -358,6 +359,13 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 				ready.Store(true)
 				z.Info("ready", zap.String("version", version.Version), zap.String("id", fixtures.ProcessID()))
 			})
+		}),
+		fx.Invoke(func(z *zap.Logger) {
+			go func() {
+				if err := http.ListenAndServe("localhost:6060", nil); err != nil {
+					z.Error("pprof server error", zap.Error(err))
+				}
+			}()
 		}),
 	}
 }
