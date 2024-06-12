@@ -11,6 +11,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authsessions"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authtokens"
 	"go.autokitteh.dev/autokitteh/internal/backend/configset"
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 type Config struct {
@@ -102,5 +103,23 @@ func New(deps Deps) AuthMiddlewareDecorator {
 		}
 
 		return f
+	}
+}
+
+type AuthHeaderExtractor func(*http.Request) sdktypes.User
+
+// just for logs in interceptor
+func AuthorizationHeaderExtractor(deps Deps) AuthHeaderExtractor {
+	return func(r *http.Request) sdktypes.User {
+		if deps.Tokens != nil {
+			if auth := r.Header.Get("Authorization"); auth != "" {
+				if kind, payload, _ := strings.Cut(auth, " "); kind == "Bearer" {
+					if user, err := deps.Tokens.Parse(payload); err == nil {
+						return user
+					}
+				}
+			}
+		}
+		return sdktypes.InvalidUser
 	}
 }
