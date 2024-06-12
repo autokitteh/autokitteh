@@ -246,9 +246,11 @@ func New(l *zap.Logger) sdkservices.OAuth {
 				ClientID:     os.Getenv("JIRA_CLIENT_ID"),
 				ClientSecret: os.Getenv("JIRA_CLIENT_SECRET"),
 				// https://developer.atlassian.com/cloud/jira/platform/oauth-2-3lo-apps/
+				// https://auth.atlassian.com/.well-known/openid-configuration
 				Endpoint: oauth2.Endpoint{
-					AuthURL:  fmt.Sprintf("%s/authorize", jiraBaseURL),
-					TokenURL: fmt.Sprintf("%s/oauth/token", jiraBaseURL),
+					AuthURL:       fmt.Sprintf("%s/authorize", jiraBaseURL),
+					TokenURL:      fmt.Sprintf("%s/oauth/token", jiraBaseURL),
+					DeviceAuthURL: fmt.Sprintf("%s/oauth/device/code", jiraBaseURL),
 				},
 				RedirectURL: redirectURL + "jira",
 				// https://developer.atlassian.com/cloud/jira/platform/scopes-for-oauth-2-3LO-and-forge-apps/

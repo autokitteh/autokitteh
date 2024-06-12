@@ -54,13 +54,15 @@ type event struct {
 func (h handler) handleEvent(w http.ResponseWriter, r *http.Request) {
 	l := h.logger.With(zap.String("urlPath", r.URL.Path))
 
-	// TODO(ENG-965): Verify the event's "Authorization" header.
-	header := r.Header.Get(headerAuthorization)
-	l.Debug("Event signature", zap.String("authHeader", header))
+	// TODO(ENG-965): Verify the JWT in the event's "Authorization" header.
+	if !verifyJWT(l, r.Header.Get(headerAuthorization)) {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
 
 	// Check the "Content-Type" header.
-	header = r.Header.Get(headerContentType)
-	if !strings.HasPrefix(header, contentTypeJSON) {
+	contentType := r.Header.Get(headerContentType)
+	if !strings.HasPrefix(contentType, contentTypeJSON) {
 		http.Error(w, "Bad Request", http.StatusBadRequest)
 		return
 	}
@@ -85,16 +87,13 @@ func (h handler) handleEvent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Iterate through all the relevant connections for this event.
-	ctx := context.Background()
+	ctx := r.Context()
 	key := sdktypes.NewSymbol("webhook_id")
 	for _, id := range e.MatchedWebhookIDs {
 		value := fmt.Sprintf("%d", id)
 		cids, err := h.vars.FindConnectionIDs(ctx, integrationID, key, value)
 		if err != nil {
-			l.Warn("Failed to find connection IDs",
-				zap.String("jiraWebHookID", value),
-				zap.Error(err),
-			)
+			l.Error("Failed to find connection IDs", zap.Error(err))
 			continue
 		}
 
@@ -103,6 +102,10 @@ func (h handler) handleEvent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Returning immediately without an error = acknowledgement of receipt.
+}
+
+func verifyJWT(l *zap.Logger, authz string) bool {
+	return true
 }
 
 func constructEvent(l *zap.Logger, body []byte, e event) (*sdktypes.EventPB, error) {
@@ -128,17 +131,22 @@ func constructEvent(l *zap.Logger, body []byte, e event) (*sdktypes.EventPB, err
 func (h handler) dispatchAsyncEventsToConnections(ctx context.Context, l *zap.Logger, cids []sdktypes.ConnectionID, event *sdktypes.EventPB) {
 	for _, cid := range cids {
 		event.ConnectionId = cid.String()
-		e := kittehs.Must1(sdktypes.EventFromProto(event))
+		e, err := sdktypes.EventFromProto(event)
+		if err != nil {
+			l.Error("Failed to convert protocol buffer to SDK event", zap.Error(err))
+			return
+		}
+
 		eventID, err := h.dispatcher.Dispatch(ctx, e, nil)
 		if err != nil {
-			l.Error("Dispatch failed",
+			l.Error("Event dispatch failed",
 				zap.String("eventID", eventID.String()),
 				zap.String("connectionID", cid.String()),
 				zap.Error(err),
 			)
 			return
 		}
-		l.Debug("Dispatched",
+		l.Debug("Event dispatched",
 			zap.String("eventID", eventID.String()),
 			zap.String("connectionID", cid.String()),
 		)
