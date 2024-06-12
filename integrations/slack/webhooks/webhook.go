@@ -14,10 +14,8 @@ import (
 
 	"go.uber.org/zap"
 
-	"go.autokitteh.dev/autokitteh/integrations/internal/extrazap"
 	"go.autokitteh.dev/autokitteh/integrations/slack/api"
 	"go.autokitteh.dev/autokitteh/integrations/slack/internal/vars"
-	eventsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/events/v1"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -146,26 +144,29 @@ func (h handler) listConnectionIDs(ctx context.Context, appID, enterpriseID, tea
 	return h.vars.FindConnectionIDs(ctx, h.integrationID, vars.KeyName, key)
 }
 
-func (h handler) dispatchAsyncEventsToConnections(l *zap.Logger, cids []sdktypes.ConnectionID, event *eventsv1.Event) {
-	ctx := extrazap.AttachLoggerToContext(l, context.Background())
+func (h handler) dispatchAsyncEventsToConnections(ctx context.Context, l *zap.Logger, cids []sdktypes.ConnectionID, event *sdktypes.EventPB) {
 	for _, cid := range cids {
 		l := l.With(zap.String("cid", cid.String()))
 
 		event.ConnectionId = cid.String()
 		event, err := sdktypes.EventFromProto(event)
 		if err != nil {
-			h.logger.Error("Failed to convert protocol buffer to SDK event",
-				zap.Any("event", event),
-				zap.Error(err),
-			)
+			h.logger.Error("Failed to convert protocol buffer to SDK event", zap.Error(err))
 			return
 		}
 
 		eventID, err := h.dispatcher.Dispatch(ctx, event, nil)
 		if err != nil {
-			l.Error("Dispatch failed", zap.Error(err))
+			l.Error("Event dispatch failed",
+				zap.String("eventID", eventID.String()),
+				zap.String("connectionID", cid.String()),
+				zap.Error(err),
+			)
 			return
 		}
-		l.Debug("Dispatched", zap.String("eventID", eventID.String()))
+		l.Debug("Event dispatched",
+			zap.String("eventID", eventID.String()),
+			zap.String("connectionID", cid.String()),
+		)
 	}
 }
