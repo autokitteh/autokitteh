@@ -2,7 +2,6 @@ package triggers
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/spf13/cobra"
 
@@ -12,24 +11,34 @@ import (
 )
 
 var listCmd = common.StandardCommand(&cobra.Command{
-	Use:     "list [--env=...] [--conection=...] [--fail]",
+	Use:     "list [-p project] [-e env] [-c conection] [--fail]",
 	Short:   "List all event triggers",
-	Aliases: []string{"ls", "l"},
+	Aliases: []string{"ls"},
 	Args:    cobra.NoArgs,
 
 	RunE: func(cmd *cobra.Command, args []string) error {
 		r := resolver.Resolver{Client: common.Client()}
-		f := sdkservices.ListTriggersFilter{}
 
-		if env != "" {
-			_, eid, err := r.EnvNameOrID(env, "")
-			if err != nil {
-				return err
-			}
-			f.EnvID = eid
+		// All flags are optional.
+		p, pid, err := r.ProjectNameOrID(project)
+		if err != nil {
+			return err
+		}
+		if project != "" && !p.IsValid() {
+			err = resolver.NotFoundError{Type: "project", Name: project}
+			return common.NewExitCodeError(common.NotFoundExitCode, err)
 		}
 
-		c, cid, err := r.ConnectionNameOrID(connection, "")
+		e, eid, err := r.EnvNameOrID(env, project)
+		if err != nil {
+			return err
+		}
+		if env != "" && !e.IsValid() {
+			err = resolver.NotFoundError{Type: "environment", Name: env}
+			return common.NewExitCodeError(common.NotFoundExitCode, err)
+		}
+
+		c, cid, err := r.ConnectionNameOrID(connection, project)
 		if err != nil {
 			if errors.As(err, resolver.NotFoundErrorType) {
 				err = common.NewExitCodeError(common.NotFoundExitCode, err)
@@ -37,15 +46,18 @@ var listCmd = common.StandardCommand(&cobra.Command{
 			return err
 		}
 		if cid.IsValid() && !c.IsValid() {
-			err = fmt.Errorf("connection ID %q not found", connection)
+			err = resolver.NotFoundError{Type: "connection ID", Name: connection}
 			return common.NewExitCodeError(common.NotFoundExitCode, err)
 		}
-		f.ConnectionID = cid
 
 		ctx, cancel := common.LimitedContext()
 		defer cancel()
 
-		ts, err := triggers().List(ctx, f)
+		ts, err := triggers().List(ctx, sdkservices.ListTriggersFilter{
+			ProjectID:    pid,
+			EnvID:        eid,
+			ConnectionID: cid,
+		})
 		if err != nil {
 			return err
 		}
@@ -61,6 +73,7 @@ var listCmd = common.StandardCommand(&cobra.Command{
 
 func init() {
 	// Command-specific flags.
+	listCmd.Flags().StringVarP(&project, "project", "p", "", "project name or ID")
 	listCmd.Flags().StringVarP(&env, "env", "e", "", "environment name or ID")
 	listCmd.Flags().StringVarP(&connection, "connection", "c", "", "connection name or ID")
 
