@@ -109,7 +109,7 @@ func (s Svc) connection(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if !sdkI.Get().IsValid() {
+	if sdkI == nil || !sdkI.Get().IsValid() {
 		http.Error(w, "Integration not found", http.StatusNotFound)
 		return
 	}
