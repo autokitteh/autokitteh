@@ -39,7 +39,7 @@ func (i integration) createIssue(ctx context.Context, args []sdktypes.Value, kwa
 		return sdktypes.InvalidValue, err
 	}
 
-	return sdktypes.WrapValue(resp)
+	return valueWrapper.Wrap(resp)
 }
 
 // https://docs.github.com/en/rest/issues/issues#get-an-issue
@@ -68,7 +68,7 @@ func (i integration) getIssue(ctx context.Context, args []sdktypes.Value, kwargs
 		return sdktypes.InvalidValue, err
 	}
 
-	return sdktypes.WrapValue(resp)
+	return valueWrapper.Wrap(resp)
 }
 
 // https://docs.github.com/en/rest/issues/issues#update-an-issue
@@ -107,7 +107,7 @@ func (i integration) updateIssue(ctx context.Context, args []sdktypes.Value, kwa
 		return sdktypes.InvalidValue, err
 	}
 
-	return sdktypes.WrapValue(resp)
+	return valueWrapper.Wrap(resp)
 }
 
 // https://docs.github.com/en/rest/issues/issues#list-repository-issues
@@ -146,5 +146,5 @@ func (i integration) listRepositoryIssues(ctx context.Context, args []sdktypes.V
 	}
 
 	// Parse and return the response.
-	return sdktypes.WrapValue(is)
+	return valueWrapper.Wrap(is)
 }

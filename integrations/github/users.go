@@ -38,7 +38,7 @@ func (i integration) getUser(ctx context.Context, args []sdktypes.Value, kwargs 
 		return sdktypes.InvalidValue, err
 	}
 
-	return sdktypes.WrapValue(resp)
+	return valueWrapper.Wrap(resp)
 }
 
 // https://docs.github.com/en/rest/search/search#search-users
@@ -78,5 +78,5 @@ func (i integration) searchUsers(ctx context.Context, args []sdktypes.Value, kwa
 		return sdktypes.InvalidValue, err
 	}
 
-	return sdktypes.WrapValue(resp)
+	return valueWrapper.Wrap(resp)
 }
