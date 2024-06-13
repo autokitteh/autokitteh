@@ -8,7 +8,9 @@ from os import mkdir
 from pathlib import Path
 from socket import AF_UNIX, SOCK_STREAM, socket
 
-from ak_runner import ACTION_NAME, AKCall, AttrDict, Comm, load_code, log
+from ak_runner import (
+    ACTION_NAME, AKCall, AttrDict, Comm, is_marked_activity, load_code, log,
+)
 
 
 def parse_path(root_path):
@@ -44,17 +46,24 @@ def module_entries(mod):
     ]
 
 
+class ActivityFn:
+    """Run top level functions as activities."""
+    # We can't use lambdas to wrap the original function since it can't be pickled.
+    def __init__(self, ak_call, fn):
+        self.ak_call = ak_call
+        self.fn = fn
+
+    def __call__(self, *args, **kw):
+        return self.ak_call(self.fn, *args, **kw)
+
+
 def run(args):
     sock = socket(AF_UNIX, SOCK_STREAM)
     sock.connect(args.sock)
     comm = Comm(sock)
     log.init(logging.INFO, comm)
 
-    # TODO: Ask Itay why AK does not pass entry point
-    if ':' in args.path:
-        module_name, _ = parse_path(args.path)
-    else:
-        module_name = args.path[:-3]
+    module_name = args.path[:-3]  # Trim .py suffix
 
     py_version = '{}.{}'.format(*sys.version_info[:2])
     log.info('python: %r, version: %r', sys.executable, py_version)
@@ -84,6 +93,10 @@ def run(args):
     if fn is None:
         log.error('%r has no function %r', module_name, func_name)
         raise SystemExit(1)
+
+    # Support activity decorator in top level handlers
+    if is_marked_activity(fn):
+        fn = ActivityFn(ak_call, fn)
         
     event = message.get('event')
     event = {} if event is None else event

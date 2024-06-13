@@ -5,6 +5,11 @@ from . import log
 from time import sleep
 
 
+def is_marked_activity(fn):
+    """Return true if function is marked as an activity."""
+    return getattr(fn, autokitteh.ACTIVITY_ATTR, False)
+
+
 class AKCall:
     """Callable wrapping functions with activities."""
     def __init__(self, comm: Comm):
@@ -19,7 +24,7 @@ class AKCall:
         if self.in_activity:
             return False
 
-        if getattr(fn, autokitteh.ACTIVITY_ATTR, False):
+        if is_marked_activity(fn):
             return True
 
         if fn.__module__ == 'builtins':
