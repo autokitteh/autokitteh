@@ -390,10 +390,23 @@ func (w *sessionWorkflow) getNextEvent(ctx context.Context, signalID string) (ma
 				return sdktypes.InvalidEventID, nil
 			}
 
-			if kittehs.Must1(evs[0].Matches(signal.Filter)) {
-				return evs[0].ID(), nil
+			ev, err := w.ws.svcs.DB.GetEventByID(ctx, evs[0].ID())
+			if err != nil {
+				return sdktypes.InvalidEventID, err
 			}
-			filter.MinSequenceNumber = evs[0].Seq() + 1
+
+			filter.MinSequenceNumber = ev.Seq() + 1
+
+			match, err := ev.Matches(signal.Filter)
+			if err != nil {
+				// TODO(ENG-566): inform user.
+				w.z.Info("invalid signal filter", zap.Error(err), zap.String("filter", signal.Filter))
+				continue
+			}
+
+			if match {
+				return ev.ID(), nil
+			}
 		}
 	}).Get(wctx, &eventID); err != nil {
 		w.z.Panic("get signal", zap.Error(err))
