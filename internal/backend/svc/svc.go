@@ -136,7 +136,9 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		Component("auth", configset.Empty, fx.Provide(authsvc.New)),
 		Component("authjwttokens", authjwttokens.Configs, fx.Provide(authjwttokens.New)),
 		Component("authsessions", authsessions.Configs, fx.Provide(authsessions.New)),
-		Component("authhttmiddleware", authhttpmiddleware.Configs, fx.Provide(authhttpmiddleware.New), fx.Provide(authhttpmiddleware.AuthorizationHeaderExtractor)),
+		Component("authhttmiddleware", authhttpmiddleware.Configs,
+			fx.Provide(authhttpmiddleware.New),
+			fx.Provide(authhttpmiddleware.AuthorizationHeaderExtractor)),
 
 		DBFxOpt(),
 		Component(
