@@ -67,5 +67,5 @@ func (i integration) listWorkflows(ctx context.Context, args []sdktypes.Value, k
 		return sdktypes.InvalidValue, err
 	}
 
-	return sdktypes.WrapValue(workflows)
+	return valueWrapper.Wrap(workflows)
 }

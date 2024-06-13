@@ -428,3 +428,33 @@ func TestUnwrapNothing(t *testing.T) {
 	var i int
 	assert.Error(t, sdktypes.UnwrapValueInto(&i, sdktypes.Nothing))
 }
+
+func TestPrewrap(t *testing.T) {
+	w := sdktypes.ValueWrapper{
+		Prewrap: func(v any) (any, error) {
+			switch v.(type) {
+			case int:
+				return fmt.Sprintf("%d", v), nil
+			case string:
+				return nil, nil
+			default:
+				return v, nil
+			}
+		},
+	}
+
+	v, err := w.Wrap(42)
+	if assert.NoError(t, err) {
+		assert.Equal(t, "42", v.GetString().Value())
+	}
+
+	v, err = w.Wrap("42")
+	if assert.NoError(t, err) {
+		assert.True(t, v.IsNothing())
+	}
+
+	v, err = w.Wrap(42.0)
+	if assert.NoError(t, err) {
+		assert.Equal(t, 42.0, v.GetFloat().Value())
+	}
+}

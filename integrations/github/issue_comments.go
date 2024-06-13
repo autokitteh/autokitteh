@@ -40,5 +40,5 @@ func (i integration) createIssueComment(ctx context.Context, args []sdktypes.Val
 		return sdktypes.InvalidValue, err
 	}
 
-	return sdktypes.WrapValue(c)
+	return valueWrapper.Wrap(c)
 }

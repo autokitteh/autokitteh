@@ -36,5 +36,5 @@ func (i integration) listCollaborators(ctx context.Context, args []sdktypes.Valu
 		return sdktypes.InvalidValue, err
 	}
 
-	return sdktypes.WrapValue(c)
+	return valueWrapper.Wrap(c)
 }

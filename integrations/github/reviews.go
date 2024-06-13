@@ -50,7 +50,7 @@ func (i integration) createReview(ctx context.Context, args []sdktypes.Value, kw
 		return sdktypes.InvalidValue, err
 	}
 
-	return sdktypes.WrapValue(review)
+	return valueWrapper.Wrap(review)
 }
 
 // https://docs.github.com/en/rest/pulls/reviews#delete-a-pending-review-for-a-pull-request
@@ -83,7 +83,7 @@ func (i integration) deletePendingReview(ctx context.Context, args []sdktypes.Va
 		return sdktypes.InvalidValue, err
 	}
 
-	return sdktypes.WrapValue(review)
+	return valueWrapper.Wrap(review)
 }
 
 // https://docs.github.com/en/rest/pulls/reviews#dismiss-a-review-for-a-pull-request
@@ -122,7 +122,7 @@ func (i integration) dismissReview(ctx context.Context, args []sdktypes.Value, k
 		return sdktypes.InvalidValue, err
 	}
 
-	return sdktypes.WrapValue(review)
+	return valueWrapper.Wrap(review)
 }
 
 // https://docs.github.com/en/rest/pulls/reviews#get-a-review-for-a-pull-request
@@ -155,7 +155,7 @@ func (i integration) getReview(ctx context.Context, args []sdktypes.Value, kwarg
 		return sdktypes.InvalidValue, err
 	}
 
-	return sdktypes.WrapValue(review)
+	return valueWrapper.Wrap(review)
 }
 
 // https://docs.github.com/en/rest/pulls/reviews#list-reviews-for-a-pull-request
@@ -199,7 +199,7 @@ func (i integration) listReviews(ctx context.Context, args []sdktypes.Value, kwa
 		return sdktypes.InvalidValue, err
 	}
 
-	return sdktypes.WrapValue(reviews)
+	return valueWrapper.Wrap(reviews)
 }
 
 // https://docs.github.com/en/rest/pulls/reviews#list-comments-for-a-pull-request-review
@@ -245,7 +245,7 @@ func (i integration) listReviewComments(ctx context.Context, args []sdktypes.Val
 		return sdktypes.InvalidValue, err
 	}
 
-	return sdktypes.WrapValue(comments)
+	return valueWrapper.Wrap(comments)
 }
 
 // https://docs.github.com/en/rest/pulls/reviews#submit-a-review-for-a-pull-request
@@ -289,7 +289,7 @@ func (i integration) submitReview(ctx context.Context, args []sdktypes.Value, kw
 		return sdktypes.InvalidValue, err
 	}
 
-	return sdktypes.WrapValue(review)
+	return valueWrapper.Wrap(review)
 }
 
 // https://docs.github.com/en/rest/pulls/reviews#update-a-review-for-a-pull-request
@@ -322,5 +322,5 @@ func (i integration) updateReview(ctx context.Context, args []sdktypes.Value, kw
 		return sdktypes.InvalidValue, err
 	}
 
-	return sdktypes.WrapValue(review)
+	return valueWrapper.Wrap(review)
 }

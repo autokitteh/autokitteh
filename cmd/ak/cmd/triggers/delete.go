@@ -12,7 +12,7 @@ import (
 var deleteCmd = common.StandardCommand(&cobra.Command{
 	Use:     "delete <trigger ID>",
 	Short:   "Delete event trigger",
-	Aliases: []string{"del", "d"},
+	Aliases: []string{"rm"},
 	Args:    cobra.ExactArgs(1),
 
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -22,7 +22,7 @@ var deleteCmd = common.StandardCommand(&cobra.Command{
 			return err
 		}
 		if !t.IsValid() {
-			err = fmt.Errorf("trigger ID %q not found", args[0])
+			err = resolver.NotFoundError{Type: "trigger ID", Name: args[0]}
 			return common.NewExitCodeError(common.NotFoundExitCode, err)
 		}
 

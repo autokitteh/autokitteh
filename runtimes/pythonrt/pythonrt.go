@@ -617,10 +617,23 @@ func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 		return sdktypes.InvalidValue, err
 	}
 
-	msg, err := py.comm.Recv()
-	if err != nil {
-		py.log.Error("from python", zap.Error(err))
-		return sdktypes.InvalidValue, err
+	var msg Message
+	for { // Consume logs.
+		var err error
+		msg, err = py.comm.Recv()
+		if err != nil {
+			py.log.Error("from python", zap.Error(err))
+			return sdktypes.InvalidValue, err
+		}
+
+		if messageType[LogMessage]() != msg.Type {
+			break
+		}
+
+		if err := py.handleLog(msg); err != nil {
+			py.log.Error("handle log", zap.Error(err))
+			return sdktypes.InvalidValue, err
+		}
 	}
 
 	rm, err := extractMessage[ResponseMessage](msg)
