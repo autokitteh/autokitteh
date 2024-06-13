@@ -42,6 +42,14 @@ func (ps *Projects) Create(ctx context.Context, project sdktypes.Project) (sdkty
 	env := kittehs.Must1(sdktypes.EnvFromProto(&sdktypes.EnvPB{ProjectId: project.ID().String(), Name: "default"}))
 	env = env.WithNewID()
 
+	// ensure there is a default cron connection (for all projects)
+	if cronConnection, err := ps.DB.GetConnection(ctx, sdktypes.BuiltinSchedulerConnectionID); errors.Is(err, sdkerrors.ErrNotFound) {
+		cronConnection = cronConnection.WithID(sdktypes.BuiltinSchedulerConnectionID).WithName(sdktypes.NewSymbol(fixtures.SchedulerConnectionName))
+		if err := ps.DB.CreateConnection(ctx, cronConnection); !errors.Is(err, sdkerrors.ErrAlreadyExists) { // just sanity
+			return sdktypes.InvalidProjectID, err
+		}
+	}
+
 	if err := ps.DB.Transaction(ctx, func(tx db.DB) error {
 		if err := tx.CreateProject(ctx, project); err != nil {
 			return err
@@ -49,14 +57,6 @@ func (ps *Projects) Create(ctx context.Context, project sdktypes.Project) (sdkty
 
 		if err := tx.CreateEnv(ctx, env); err != nil {
 			return err
-		}
-
-		// create default cron connection
-		if cronConnection, err := tx.GetConnection(ctx, sdktypes.BuiltinSchedulerConnectionID); errors.Is(err, sdkerrors.ErrNotFound) {
-			cronConnection = cronConnection.WithID(sdktypes.BuiltinSchedulerConnectionID).WithName(sdktypes.NewSymbol(fixtures.SchedulerConnectionName))
-			if err = tx.CreateConnection(ctx, cronConnection); !errors.Is(err, sdkerrors.ErrAlreadyExists) { // just sanity
-				return err
-			}
 		}
 
 		return nil
