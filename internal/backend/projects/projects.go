@@ -35,10 +35,6 @@ func (ps *Projects) Create(ctx context.Context, project sdktypes.Project) (sdkty
 		project = project.WithName(sdktypes.NewRandomSymbol())
 	}
 
-	if err := project.Strict(); err != nil {
-		return sdktypes.InvalidProjectID, err
-	}
-
 	env := kittehs.Must1(sdktypes.EnvFromProto(&sdktypes.EnvPB{ProjectId: project.ID().String(), Name: "default"}))
 	env = env.WithNewID()
 
