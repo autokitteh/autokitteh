@@ -117,6 +117,15 @@ func DBFxOpt() fx.Option {
 	)
 }
 
+type pprofConfig struct {
+	Enable bool `koanf:"enable"`
+	Port   int  `koanf:"port"`
+}
+
+var pprofConfigs = configset.Set[pprofConfig]{
+	Default: &pprofConfig{Enable: true, Port: 6060},
+}
+
 type HTTPServerAddr string
 
 func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
@@ -335,6 +344,24 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 				kittehs.Must0(json.NewEncoder(w).Encode(resp))
 			})
 		}),
+		Component(
+			"pprof",
+			pprofConfigs,
+			fx.Invoke(func(cfg *pprofConfig, lc fx.Lifecycle, z *zap.Logger) {
+				if !cfg.Enable {
+					return
+				}
+
+				HookSimpleOnStart(lc, func() {
+					go func() {
+						addr := fmt.Sprintf("localhost:%d", cfg.Port)
+						if err := http.ListenAndServe(addr, nil); err != nil {
+							z.Error("listen", zap.Error(err))
+						}
+					}()
+				})
+			}),
+		),
 		fx.Invoke(func(z *zap.Logger, lc fx.Lifecycle, muxes *muxes.Muxes, h healthreporter.HealthReporter) {
 			var ready atomic.Bool
 
@@ -359,13 +386,6 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 				ready.Store(true)
 				z.Info("ready", zap.String("version", version.Version), zap.String("id", fixtures.ProcessID()))
 			})
-		}),
-		fx.Invoke(func(z *zap.Logger) {
-			go func() {
-				if err := http.ListenAndServe("localhost:6060", nil); err != nil {
-					z.Error("pprof server error", zap.Error(err))
-				}
-			}()
 		}),
 	}
 }
