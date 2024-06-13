@@ -270,8 +270,9 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 						varsv1connect.VarsServiceName,
 					},
 					[]httpsvc.RequestLogExtractor{
-						// Note: auth middleware is connected after interceptor, so in httpsvc and interceptor there is no user in the context.
-						// Therefore we just extract and parse user from the Authorization header.
+						// Note: auth middleware will be connected after interceptor, so in httpsvc and interceptor handler
+						// there is (still) no parsed user in the httpRequest context. So in order to log the user in the
+						// same place where httpRequest is logged we need to extract it from the header
 						func(r *http.Request) []zap.Field {
 							if user := authHdrExtractor(r); user.IsValid() {
 								return []zap.Field{zap.String("user", user.Title())}

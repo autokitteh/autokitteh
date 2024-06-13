@@ -108,18 +108,31 @@ func New(deps Deps) AuthMiddlewareDecorator {
 
 type AuthHeaderExtractor func(*http.Request) sdktypes.User
 
-// just for logs in interceptor
+// Auth middleware is extracting, parsing and adding user to the request context (see newTokensMiddleware above)
+// Unfortunately the main log is in interceptor, and auth middleware chained several hops after the interceptor
+// handler, where httpRequest is logged. So this function duplicates partly the extraction logic of
+// newTokensMiddleware in order to be applied earlier in chain and log the user passed in the request.
 func AuthorizationHeaderExtractor(deps Deps) AuthHeaderExtractor {
 	return func(r *http.Request) sdktypes.User {
-		if deps.Tokens != nil {
-			if auth := r.Header.Get("Authorization"); auth != "" {
-				if kind, payload, _ := strings.Cut(auth, " "); kind == "Bearer" {
-					if user, err := deps.Tokens.Parse(payload); err == nil {
-						return user
-					}
-				}
-			}
+		if deps.Tokens == nil {
+			return sdktypes.InvalidUser
 		}
-		return sdktypes.InvalidUser
+
+		auth := r.Header.Get("Authorization")
+		if auth == "" {
+			return sdktypes.InvalidUser
+		}
+
+		kind, payload, _ := strings.Cut(auth, " ")
+		if kind != "Bearer" {
+			return sdktypes.InvalidUser
+		}
+
+		user, err := deps.Tokens.Parse(payload)
+		if err != nil {
+			return sdktypes.InvalidUser
+		}
+
+		return user
 	}
 }
