@@ -91,10 +91,9 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	expiration := t.Format("2006-01-02T15:04:05.000-0700")
 	initData := sdktypes.NewVars(data.ToVars()...).Append(res[0].toVars()...).
 		Append(sdktypes.NewVar(sdktypes.NewSymbol("webhook_id"), fmt.Sprintf("%d", id), false)).
-		Append(sdktypes.NewVar(sdktypes.NewSymbol("webhook_expiration"), expiration, false))
+		Append(sdktypes.NewVar(sdktypes.NewSymbol("webhook_expiration"), t.String(), false))
 
 	sdkintegrations.FinalizeConnectionInit(w, r, integrationID, initData)
 }
