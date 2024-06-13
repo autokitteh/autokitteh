@@ -1,15 +1,17 @@
 import ast
 import json
+from os import environ
 from pathlib import Path
 from socket import socket
+from unittest.mock import MagicMock
 
 import pytest
 
 import ak_runner
 from ak_runner import loader
 
-test_dir = Path(__file__).absolute().parent
-simple_dir = test_dir / '../testdata/simple'
+test_dir = Path(__file__).absolute().parent.parent
+simple_dir = test_dir / 'testdata/simple'
 
 
 def test_load_code():
@@ -17,6 +19,10 @@ def test_load_code():
 
     mod_name = 'mod'
     class MockCall(ak_runner.AKCall):
+        def __init__(self, *args, **kw):
+            super().__init__(*args, **kw)
+            self.loading = False
+
         def __call__(self, fn, *args, **kw):
             if not self.should_run_as_activity(fn):
                 return fn(*args, **kw)
@@ -27,7 +33,7 @@ def test_load_code():
     ak_call = MockCall(ak_runner.Comm(socket()))
 
     mod = ak_runner.load_code('testdata', ak_call, mod_name)
-    ak_call.module = mod
+    ak_call.set_module(mod)
     fn = getattr(mod, 'parse', None)
     assert fn, 'parse not found'
 
@@ -101,3 +107,14 @@ def test_transform(code, transformed):
     out = trans.visit(mod)
     assert transformed, ast.unparse(out)
 
+
+def test_module_level():
+    comm = MagicMock()
+    root_path = str(test_dir / 'testdata')
+    akc = ak_runner.AKCall(comm)
+    mod = ak_runner.load_code(root_path, akc, 'modlevel')
+    assert mod.home == environ['HOME']
+    akc.set_module(mod)
+
+    mod.on_event(None)
+    assert mod.ncalls == 1

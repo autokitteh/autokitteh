@@ -77,7 +77,7 @@ def run(args):
 
     ak_call = AKCall(comm)
     mod = load_code(code_dir, ak_call, module_name)
-    ak_call.module = mod
+    ak_call.set_module(mod)
 
     entries = module_entries(mod)
     comm.send_exported(entries)

@@ -46,9 +46,9 @@ def test_nested():
         },
     ]
 
-    ak = ak_runner.AKCall(comm)
-    ak.module = json  # outer & inner should look external
-    ak(outer)
+    akc = ak_runner.AKCall(comm)
+    akc.set_module(json)  # outer & inner should look external
+    akc(outer)
 
     comm.send_activity.assert_called_once()
 
@@ -98,12 +98,12 @@ def test_in_activity():
 
 
     comm = Comm()
-    ak = ak_runner.AKCall(comm)
-    ak.module = json  # in_act_1 should look external
-    ak(in_act_1, 7)
+    akc = ak_runner.AKCall(comm)
+    akc.set_module(json)  # in_act_1 should look external
+    akc(in_act_1, 7)
     assert comm.num_activities == 1
 
-    ak(in_act_1, 6)
+    akc(in_act_1, 6)
     assert comm.num_activities == 2
     
 
@@ -129,7 +129,7 @@ def test_sleep(tmp_path):
     
     ak_call = ak_runner.AKCall(comm)
     mod = ak_runner.load_code(tmp_path, ak_call, mod_name)
-    ak_call.module = mod
+    ak_call.set_module(mod)
     event = {'type': 'login', 'user': 'puss'}
     mod.handler(event)
     assert comm.send_sleep.call_count == 2
