@@ -205,15 +205,17 @@ def is_marked_activity(fn):
 class AKCall:
     """Callable wrapping functions with activities."""
     def __init__(self, comm: Comm):
-        self.in_activity = False
         self.comm = comm
-        self.module = None
+
+        self.in_activity = False
+        self.loading = True  # Loading module
+        self.module = None  # Module for "local" function, filled by "run"
 
     def is_module_func(self, fn):
         return fn.__module__ == self.module.__name__
 
     def should_run_as_activity(self, fn):
-        if self.in_activity:
+        if self.in_activity or self.loading:
             return False
 
         if is_marked_activity(fn):
@@ -226,6 +228,10 @@ class AKCall:
             return False
 
         return True
+
+    def set_module(self, mod):
+        self.module = mod
+        self.loading = False
 
     def __call__(self, func, *args, **kw):
         if not self.should_run_as_activity(func):
@@ -403,7 +409,7 @@ def run(args):
 
     ak_call = AKCall(comm)
     mod = load_code(code_dir, ak_call, module_name)
-    ak_call.module = mod
+    ak_call.set_module(mod)
 
     entries = module_entries(mod)
     comm.send_exported(entries)

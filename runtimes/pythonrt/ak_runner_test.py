@@ -5,6 +5,7 @@ import pickle
 import sys
 import types
 from base64 import b64encode
+from os import environ
 from pathlib import Path
 from socket import socket, socketpair
 from subprocess import run
@@ -27,6 +28,10 @@ def test_load_code():
 
     mod_name = 'mod'
     class MockCall(ak_runner.AKCall):
+        def __init__(self, *args, **kw):
+            super().__init__(*args, **kw)
+            self.loading = False
+
         def __call__(self, fn, *args, **kw):
             if not self.should_run_as_activity(fn):
                 return fn(*args, **kw)
@@ -37,7 +42,7 @@ def test_load_code():
     ak_call = MockCall(ak_runner.Comm(socket()))
 
     mod = ak_runner.load_code('testdata', ak_call, mod_name)
-    ak_call.module = mod
+    ak_call.set_module(mod)
     fn = getattr(mod, 'parse', None)
     assert fn, 'parse not found'
 
@@ -121,9 +126,9 @@ def test_nested():
         },
     ]
 
-    ak = ak_runner.AKCall(comm)
-    ak.module = json  # outer & inner should look external
-    ak(outer)
+    akc = ak_runner.AKCall(comm)
+    akc.set_module(json)  # outer & inner should look external
+    akc(outer)
 
     comm.send_activity.assert_called_once()
 
@@ -227,12 +232,12 @@ def test_in_activity():
 
 
     comm = Comm()
-    ak = ak_runner.AKCall(comm)
-    ak.module = json  # in_act_1 should look external
-    ak(in_act_1, 7)
+    akc = ak_runner.AKCall(comm)
+    akc.set_module(json)  # in_act_1 should look external
+    akc(in_act_1, 7)
     assert comm.num_activities == 1
 
-    ak(in_act_1, 6)
+    akc(in_act_1, 6)
     assert comm.num_activities == 2
     
 
@@ -291,7 +296,7 @@ def test_sleep(tmp_path):
     
     ak_call = ak_runner.AKCall(comm)
     mod = ak_runner.load_code(tmp_path, ak_call, mod_name)
-    ak_call.module = mod
+    ak_call.set_module(mod)
     event = {'type': 'login', 'user': 'puss'}
     mod.handler(event)
     assert comm.send_sleep.call_count == 2
@@ -345,7 +350,7 @@ def test_pickle_function():
     comm = ak_runner.Comm(py)
     ak_call = ak_runner.AKCall(comm)
     mod = ak_runner.load_code(root_path, ak_call, 'simple')
-    ak_call.module = mod
+    ak_call.set_module(mod)
     event = {
         'data': {
             'body': b'{"name": "grumpy", "type": "cat"}',
@@ -353,3 +358,15 @@ def test_pickle_function():
     }
 
     ak_call(mod.printer, event)
+
+
+def test_module_level():
+    comm = MagicMock()
+    root_path = str(test_dir / 'testdata')
+    akc = ak_runner.AKCall(comm)
+    mod = ak_runner.load_code(root_path, akc, 'modlevel')
+    assert mod.home == environ['HOME']
+    akc.set_module(mod)
+
+    mod.on_event(None)
+    assert mod.ncalls == 1

@@ -5,11 +5,12 @@ from os import getenv
 import json
 import autokitteh
 
+HOME, USER = getenv('HOME'), getenv('USER')
+
 
 def greet(event):
-    home, user = getenv('HOME'), getenv('USER')
-    print(f'simple: HOME: {home}')  # From environment
-    print(f'simple: USER: {user}')  # From 'var' in manifest
+    print(f'simple: HOME: {HOME}')  # From environment
+    print(f'simple: USER: {USER}')  # From 'var' in manifest
     print(f'simple: event: {event!r}')
 
     body = event['data']['body']
