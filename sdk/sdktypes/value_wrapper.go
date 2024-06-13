@@ -45,6 +45,9 @@ type ValueWrapper struct {
 	// Unwrap: Tranform value before unwrapping. If returns InvalidValue, ignore value.
 	Preunwrap func(Value) (Value, error)
 
+	// Wrap: Transform value before wrapping.
+	Prewrap func(any) (any, error)
+
 	// Unwrap: if not handled, use this unwrapper.
 	UnwrapUnknown func(Value) (any, error)
 }

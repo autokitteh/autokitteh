@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
@@ -36,6 +37,7 @@ func New(l *zap.Logger) sdkservices.OAuth {
 	// TODO(ENG-112): Remove (see Register below).
 	redirectURL := fmt.Sprintf("https://%s/oauth/redirect/", os.Getenv("WEBHOOK_ADDRESS"))
 
+	// Determine GitHub base URL (to support GitHub Enterprise Server, i.e. on-prem).
 	githubBaseURL := os.Getenv("GITHUB_ENTERPRISE_URL")
 	if githubBaseURL == "" {
 		githubBaseURL = "https://github.com"
@@ -48,11 +50,28 @@ func New(l *zap.Logger) sdkservices.OAuth {
 			zap.Error(err),
 		)
 	}
+	l.Debug("GitHub base URL for OAuth", zap.String("url", githubBaseURL))
 
 	appsDir := "apps"
 	if os.Getenv("GITHUB_ENTERPRISE_URL") != "" {
 		appsDir = "github-apps"
 	}
+
+	// Determine Jira base URL (to support Jira Data Center, i.e. on-prem).
+	// TODO(ENG-965): From new-connection form instead of env var.
+	jiraBaseURL := os.Getenv("JIRA_BASE_URL")
+	if jiraBaseURL == "" {
+		jiraBaseURL = "https://api.atlassian.com"
+	}
+	jiraBaseURL, err = kittehs.NormalizeURL(jiraBaseURL, true)
+	if err != nil {
+		l.Fatal("Invalid environment variable value",
+			zap.String("name", "JIRA_BASE_URL"),
+			zap.Error(err),
+		)
+	}
+	jiraBaseURL = strings.Replace(jiraBaseURL, "api", "auth", 1)
+	l.Debug("Jira base URL for OAuth", zap.String("url", jiraBaseURL))
 
 	return &oauth{
 		logger: l,
@@ -222,6 +241,28 @@ func New(l *zap.Logger) sdkservices.OAuth {
 				},
 			},
 
+			"jira": {
+				// TODO(ENG-965): From new-connection form instead of env vars.
+				ClientID:     os.Getenv("JIRA_CLIENT_ID"),
+				ClientSecret: os.Getenv("JIRA_CLIENT_SECRET"),
+				// https://developer.atlassian.com/cloud/jira/platform/oauth-2-3lo-apps/
+				// https://auth.atlassian.com/.well-known/openid-configuration
+				Endpoint: oauth2.Endpoint{
+					AuthURL:       fmt.Sprintf("%s/authorize", jiraBaseURL),
+					TokenURL:      fmt.Sprintf("%s/oauth/token", jiraBaseURL),
+					DeviceAuthURL: fmt.Sprintf("%s/oauth/device/code", jiraBaseURL),
+				},
+				RedirectURL: redirectURL + "jira",
+				// https://developer.atlassian.com/cloud/jira/platform/scopes-for-oauth-2-3LO-and-forge-apps/
+				Scopes: []string{
+					"read:account",
+					"read:jira-work",
+					"read:jira-user",
+					"write:jira-work",
+					"manage:jira-webhook",
+				},
+			},
+
 			// Based on:
 			// https://api.slack.com/apps/A05F30M6W3H
 			"slack": {
@@ -245,6 +286,7 @@ func New(l *zap.Logger) sdkservices.OAuth {
 					"channels:manage",
 					"channels:read",
 					"chat:write",
+					"chat:write.customize",
 					"chat:write.public",
 					"commands",
 					"dnd:read",
@@ -265,6 +307,7 @@ func New(l *zap.Logger) sdkservices.OAuth {
 				},
 			},
 		},
+
 		opts: map[string]map[string]string{
 			"gmail": {
 				"access_type": "offline", // oauth2.AccessTypeOffline
@@ -291,6 +334,10 @@ func New(l *zap.Logger) sdkservices.OAuth {
 				"prompt":      "consent", // oauth2.ApprovalForce
 			},
 			"googlesheets": {
+				"access_type": "offline", // oauth2.AccessTypeOffline
+				"prompt":      "consent", // oauth2.ApprovalForce
+			},
+			"jira": {
 				"access_type": "offline", // oauth2.AccessTypeOffline
 				"prompt":      "consent", // oauth2.ApprovalForce
 			},

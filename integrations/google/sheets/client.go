@@ -48,7 +48,7 @@ func New(sec sdkservices.Vars) sdkservices.Integration {
 
 	opts := ExportedFunctions(sec, scope, false)
 
-	return sdkintegrations.NewIntegration(desc, sdkmodule.New(opts...))
+	return sdkintegrations.NewIntegration(desc, sdkmodule.New(opts...), sdkintegrations.WithConnectionConfigFromVars(sec))
 }
 
 func ExportedFunctions(sec sdkservices.Vars, scope string, prefix bool) []sdkmodule.Optfn {

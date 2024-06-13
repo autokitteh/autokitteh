@@ -29,7 +29,11 @@ type NotFoundError struct {
 var NotFoundErrorType = new(NotFoundError)
 
 func (e NotFoundError) Error() string {
-	return e.Type + " not found"
+	name := e.Name
+	if name != "" {
+		name = fmt.Sprintf(" %q", name)
+	}
+	return e.Type + name + " not found"
 }
 
 func limitedContext() (context.Context, context.CancelFunc) {
@@ -85,7 +89,7 @@ func (r Resolver) ConnectionNameOrID(nameOrID, project string) (c sdktypes.Conne
 		if project == "" {
 			err = fmt.Errorf("invalid connection name %q: missing project prefix", nameOrID)
 		} else {
-			return r.connectionByFullName(project, parts[1], nameOrID)
+			return r.connectionByFullName(project, parts[0], nameOrID)
 		}
 		return
 	case 2:

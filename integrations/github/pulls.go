@@ -58,7 +58,7 @@ func (i integration) createPullRequest(ctx context.Context, args []sdktypes.Valu
 		return sdktypes.InvalidValue, err
 	}
 
-	return sdktypes.WrapValue(pr)
+	return valueWrapper.Wrap(pr)
 }
 
 // https://docs.github.com/en/rest/pulls/pulls#get-a-pull-request
@@ -89,7 +89,7 @@ func (i integration) getPullRequest(ctx context.Context, args []sdktypes.Value, 
 		return sdktypes.InvalidValue, err
 	}
 
-	return sdktypes.WrapValue(pr)
+	return valueWrapper.Wrap(pr)
 }
 
 // https://docs.github.com/en/rest/pulls/pulls#list-pull-requests
@@ -128,7 +128,7 @@ func (i integration) listPullRequests(ctx context.Context, args []sdktypes.Value
 		return sdktypes.InvalidValue, err
 	}
 
-	return sdktypes.WrapValue(prs)
+	return valueWrapper.Wrap(prs)
 }
 
 // https://docs.github.com/en/rest/pulls/pulls#list-pull-requests-files
@@ -164,7 +164,7 @@ func (i integration) listPullRequestFiles(ctx context.Context, args []sdktypes.V
 		return sdktypes.InvalidValue, err
 	}
 
-	return sdktypes.WrapValue(files)
+	return valueWrapper.Wrap(files)
 }
 
 // https://docs.github.com/en/rest/pulls/review-requests#request-reviewers-for-a-pull-request
@@ -200,5 +200,5 @@ func (i integration) requestReview(ctx context.Context, args []sdktypes.Value, k
 		return sdktypes.InvalidValue, err
 	}
 
-	return sdktypes.WrapValue(pr)
+	return valueWrapper.Wrap(pr)
 }

@@ -2,10 +2,12 @@
 
 # Integrations
 
+atlassian-python-api ~= 3.41
 boto3 ~= 1.34
 google-api-python-client ~= 2.122
 google-auth-httplib2 ~= 0.2
 google-auth-oauthlib ~= 1.2
+jira ~= 3.8
 openai ~= 1.14
 PyGithub ~= 2.2
 redis ~= 5.0

@@ -22,8 +22,9 @@ import (
 //
 // A nameless parameter can also be specified. That parameter must be a pointer to a struct.
 // The function will use the member names of the struct as the parameter names. If the fields
-// are tagged with `json:"..."`, the tag will be used as the parameter name. If the tag is
-// "-", the field will be ignored. If the tag modifier is "omitempty", the field will be optional.
+// are tagged with `json:"..."` or `url:"..."`, the tag will be used as the parameter name.
+// If the tag is "-", the field will be ignored. If the tag modifier is "omitempty", the
+// field will be optional.
 //
 // Example:
 //
@@ -72,18 +73,23 @@ func UnpackArgs(args []sdktypes.Value, kwargs map[string]sdktypes.Value, dsts ..
 			name := ttf.Name
 			optional := ttf.Type.Kind() == reflect.Ptr
 
-			if j := ttf.Tag.Get("json"); j != "" {
-				if j == "-" {
+			tag := ttf.Tag.Get("json")
+			if tag == "" {
+				tag = ttf.Tag.Get("url")
+			}
+
+			if tag != "" {
+				if tag == "-" {
 					continue
 				}
 
-				jname, rest, _ := strings.Cut(j, ",")
-				if rest == "omitempty" {
+				tagName, tagOptions, _ := strings.Cut(tag, ",")
+				if tagOptions == "omitempty" {
 					optional = true
 				}
 
-				if jname != "" {
-					name = jname
+				if tagName != "" {
+					name = tagName
 				}
 			}
 

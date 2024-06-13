@@ -14,6 +14,7 @@ import (
 	"go.autokitteh.dev/autokitteh/integrations/google/sheets"
 	"go.autokitteh.dev/autokitteh/integrations/grpc"
 	httpint "go.autokitteh.dev/autokitteh/integrations/http"
+	"go.autokitteh.dev/autokitteh/integrations/jira"
 	"go.autokitteh.dev/autokitteh/integrations/redis"
 	"go.autokitteh.dev/autokitteh/integrations/slack"
 	"go.autokitteh.dev/autokitteh/integrations/twilio"
@@ -40,6 +41,7 @@ func New(cfg *Config, vars sdkservices.Vars) sdkservices.Integrations {
 		google.New(vars),
 		grpc.New(),
 		httpint.New(vars),
+		jira.New(vars),
 		redis.New(vars),
 		sheets.New(vars),
 		slack.New(vars),
@@ -59,6 +61,7 @@ func Start(_ context.Context, l *zap.Logger, mux *http.ServeMux, vars sdkservice
 	github.Start(l, mux, vars, o, d)
 	google.Start(l, mux, o, d)
 	httpint.Start(l, mux, d, c, p)
+	jira.Start(l, mux, vars, o, d)
 	slack.Start(l, mux, vars, d)
 	twilio.Start(l, mux, vars, d)
 

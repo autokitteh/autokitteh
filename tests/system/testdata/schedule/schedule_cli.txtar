@@ -8,7 +8,7 @@ ak deploy --project schedules_project --file cron.star
 return code == 0
 output equals file deploy.txt
 
-ak trigger create --schedule "*/1 * * * * * *" --env env_00000000000000000000000002 --loc "cron.star:on_cron_trigger" --name cron_trg
+ak trigger create --schedule "*/1 * * * * * *" --env env_00000000000000000000000002 --call "cron.star:on_cron_trigger" --name cron_trg
 return code == 0
 output equals 'trigger_id: trg_00000000000000000000000005'
 
