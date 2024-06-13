@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"strings"
 	"sync/atomic"
@@ -114,6 +115,15 @@ func DBFxOpt() fx.Option {
 			}),
 		),
 	)
+}
+
+type pprofConfig struct {
+	Enable bool `koanf:"enable"`
+	Port   int  `koanf:"port"`
+}
+
+var pprofConfigs = configset.Set[pprofConfig]{
+	Default: &pprofConfig{Enable: true, Port: 6060},
 }
 
 type HTTPServerAddr string
@@ -334,6 +344,24 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 				kittehs.Must0(json.NewEncoder(w).Encode(resp))
 			})
 		}),
+		Component(
+			"pprof",
+			pprofConfigs,
+			fx.Invoke(func(cfg *pprofConfig, lc fx.Lifecycle, z *zap.Logger) {
+				if !cfg.Enable {
+					return
+				}
+
+				HookSimpleOnStart(lc, func() {
+					go func() {
+						addr := fmt.Sprintf("localhost:%d", cfg.Port)
+						if err := http.ListenAndServe(addr, nil); err != nil {
+							z.Error("listen", zap.Error(err))
+						}
+					}()
+				})
+			}),
+		),
 		fx.Invoke(func(z *zap.Logger, lc fx.Lifecycle, muxes *muxes.Muxes, h healthreporter.HealthReporter) {
 			var ready atomic.Bool
 
