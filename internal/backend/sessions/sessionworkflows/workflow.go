@@ -399,7 +399,7 @@ func (w *sessionWorkflow) getNextEvent(ctx context.Context, signalID string) (ma
 
 			match, err := ev.Matches(signal.Filter)
 			if err != nil {
-				// TODO: inform user.
+				// TODO(ENG-566): inform user.
 				w.z.Info("invalid signal filter", zap.Error(err), zap.String("filter", signal.Filter))
 				continue
 			}
