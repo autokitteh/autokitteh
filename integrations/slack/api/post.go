@@ -208,7 +208,6 @@ func getConnection(ctx context.Context, varsSvc sdkservices.Vars) (*oauth2.Token
 	}
 
 	if varsSvc == nil {
-		// test.
 		return &oauth2.Token{}, nil
 	}
 
@@ -228,11 +227,16 @@ func getConnection(ctx context.Context, varsSvc sdkservices.Vars) (*oauth2.Token
 		return &oauth2.Token{AccessToken: bt}, nil
 	}
 
-	// OAuth connection.
+	// Not Socket mode, so maybe OAuth?
 	oauthData, err := sdkintegrations.DecodeOAuthData(vs.GetValue(vars.OAuthDataName))
 	if err != nil {
-		return nil, err
+		// No, we are using a temporary URL which was provided by Slack
+		// (https://hooks.slack.com/actions/...), so we don't have to attach
+		// an AutoKitteh connection's OAuth token to our outgoing request.
+		return &oauth2.Token{}, nil
 	}
 
+	// Yes, we are sending a regular Slack API request
+	// on behalf of an OAuth-based AutoKitteh connection.
 	return oauthData.Token, nil
 }

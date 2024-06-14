@@ -169,9 +169,6 @@ func (h handler) HandleInteraction(w http.ResponseWriter, r *http.Request) {
 	// It's a Slack best practice to update an interactive message after the interaction,
 	// to prevent further interaction with the same message, and to reflect the user actions.
 	// See: https://api.slack.com/interactivity/handling#updating_message_response.
-	if len(cids) > 0 {
-		ctx = context.WithValue(ctx, api.OAuthTokenContextKey, cids[0].String())
-	}
 	h.updateMessage(ctx, payload)
 }
 
