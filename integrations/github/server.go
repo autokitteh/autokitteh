@@ -11,7 +11,7 @@ import (
 	"go.autokitteh.dev/autokitteh/web/static"
 )
 
-const(
+const (
 	// oauthPath is the URL path for our handler to save new OAuth-based connections.
 	oauthPath = "/github/oauth"
 
