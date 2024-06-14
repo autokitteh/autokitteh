@@ -38,9 +38,7 @@ const (
 // slackURL is a var and not a const for unit-testing purposes.
 var slackURL = "https://slack.com/api/"
 
-type ctxKey string
-
-var OAuthTokenContextKey = ctxKey("OAuthTokenContext")
+var OAuthTokenContextKey = struct{}{}
 
 // PostForm sends a short-lived HTTP POST request with an OAuth bearer token and
 // URL-encoded key/value payload, and then receives and parses the JSON response.
@@ -203,11 +201,10 @@ func post(ctx context.Context, vars sdkservices.Vars, url, body, contentType str
 	return b, nil
 }
 
-// getConnection calls the Get method in SecretsService.
 func getConnection(ctx context.Context, varsSvc sdkservices.Vars) (*oauth2.Token, error) {
-	tok, ok := ctx.Value(OAuthTokenContextKey).(string)
+	token, ok := ctx.Value(OAuthTokenContextKey).(string)
 	if ok {
-		return &oauth2.Token{AccessToken: tok}, nil
+		return &oauth2.Token{AccessToken: token}, nil
 	}
 
 	if varsSvc == nil {
@@ -221,16 +218,14 @@ func getConnection(ctx context.Context, varsSvc sdkservices.Vars) (*oauth2.Token
 		return nil, err
 	}
 
-	vs, err := varsSvc.Reveal(context.Background(), sdktypes.NewVarScopeID(cid))
+	vs, err := varsSvc.Reveal(ctx, sdktypes.NewVarScopeID(cid))
 	if err != nil {
 		return nil, err
 	}
 
 	// Socket mode connection.
 	if bt := vs.GetValue(vars.BotTokenName); bt != "" {
-		return &oauth2.Token{
-			AccessToken: bt,
-		}, nil
+		return &oauth2.Token{AccessToken: bt}, nil
 	}
 
 	// OAuth connection.
