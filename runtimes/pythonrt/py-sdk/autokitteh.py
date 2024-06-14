@@ -1,9 +1,13 @@
-"""AutoKitteh Python SDK"""
+"""AutoKitteh Python SDK."""
+
+import os
+
+import slack_sdk
 
 from uuid import uuid4
 
 
-ACTIVITY_ATTR = '__activity__'
+ACTIVITY_ATTR = "__activity__"
 
 class AttrDict(dict):
     """Allow attribute access to dictionary keys.
