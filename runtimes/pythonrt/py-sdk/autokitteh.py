@@ -5,6 +5,8 @@ import json
 import os
 import re
 
+# These imports will work in AutoKitteh's virtual environment.
+# No need to install these dependencies for CI workflows.
 try:
     from atlassian import Jira
     from google.auth.transport.requests import Request
@@ -13,7 +15,9 @@ try:
     from googleapiclient.discovery import build
     import slack_sdk
 except ModuleNotFoundError:
-    pass  # These imports will work in AutoKitteh's virtual environment.
+    pass
+
+from uuid import uuid4
 
 from uuid import uuid4
 
