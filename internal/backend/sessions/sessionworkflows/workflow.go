@@ -269,7 +269,7 @@ func (w *sessionWorkflow) initConnections(ctx workflow.Context) (map[string]conn
 
 func (w *sessionWorkflow) initGlobalModules() (map[string]sdktypes.Value, error) {
 	execs := map[string]sdkexecutor.Executor{
-		"ak":    ak.New(w.syscall),
+		"ak":    ak.New(w.syscall, w.data, w.ws.svcs),
 		"time":  timemodule.New(),
 		"store": store.New(w.data.Env.ID(), w.data.ProjectID, w.ws.svcs.RedisClient),
 	}
