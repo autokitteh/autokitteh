@@ -12,8 +12,8 @@ try:
     import google.oauth2.service_account as service_account
     from googleapiclient.discovery import build
     import slack_sdk
-except:
-    pass
+except ModuleNotFoundError:
+    pass  # These imports will work in AutoKitteh's virtual environment.
 
 from uuid import uuid4
 
