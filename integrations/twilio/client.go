@@ -23,6 +23,9 @@ var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.Integrati
 		"2 Voice API overview":     "https://www.twilio.com/docs/voice/api",
 	},
 	ConnectionUrl: "/twilio/connect",
+	ConnectionCapabilities: &sdktypes.ConnectionCapabilitiesPB{
+		RequiresConnectionInit: true,
+	},
 }))
 
 func New(vars sdkservices.Vars) sdkservices.Integration {

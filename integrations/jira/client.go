@@ -29,7 +29,7 @@ var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.Integrati
 		"4 Python Jira API":           "https://jira.readthedocs.io/",
 		"5 Python Jira examples":      "https://github.com/pycontribs/jira/tree/main/examples",
 	},
-	ConnectionUrl: "/jira/connect/",
+	ConnectionUrl: "/jira/connect",
 	ConnectionCapabilities: &sdktypes.ConnectionCapabilitiesPB{
 		RequiresConnectionInit: true,
 	},
