@@ -690,8 +690,6 @@ func (x *Module) GetMembers() map[string]*Value {
 	return nil
 }
 
-// TODO: To bring back the 2 TODOs in this message, address these:
-// https://github.com/autokitteh/autokitteh/pull/386/commits/001f6865b10da689f19f95331012e1dc9acb20b7
 type Function struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -700,9 +698,9 @@ type Function struct {
 	// executor identifies who owns the execution of the function.
 	// essentially, where the function is defined. that entity
 	// is responsible of the execution of the function.
-	ExecutorId string       `protobuf:"bytes,1,opt,name=executor_id,json=executorId,proto3" json:"executor_id,omitempty"` // [(buf.validate.field).string.min_len = 1];
+	ExecutorId string       `protobuf:"bytes,1,opt,name=executor_id,json=executorId,proto3" json:"executor_id,omitempty"`
 	Name       string       `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	Desc       *v1.Function `protobuf:"bytes,3,opt,name=desc,proto3" json:"desc,omitempty"` // [(buf.validate.field).required = true];
+	Desc       *v1.Function `protobuf:"bytes,3,opt,name=desc,proto3" json:"desc,omitempty"`
 	// Data that is transfered along with the function itself.
 	// This can be used by the function implementing the name
 	// above, to store data in its internal scope.

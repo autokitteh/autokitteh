@@ -198,6 +198,8 @@ export class ListRequest extends Message<ListRequest> {
   countOnly = false;
 
   /**
+   * Invalid values are fixed by the gRPC service.
+   *
    * @generated from field: int32 page_size = 20;
    */
   pageSize = 0;

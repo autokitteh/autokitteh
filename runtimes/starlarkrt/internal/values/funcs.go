@@ -144,8 +144,6 @@ func (vctx *Context) fromStarlarkFunction(v *starlark.Function) (sdktypes.Value,
 
 func (vctx *Context) fromStarlarkBuiltin(b *starlark.Builtin) (sdktypes.Value, error) {
 	if starlark.Universe.Has(b.Name()) {
-		// FIXME: This can't work? The Function proto has validation checks
-		// that require it to have a non-empty desc.
 		return sdktypes.NewFunctionValue(
 			sdktypes.NewExecutorID(vctx.RunID),
 			b.Name(),

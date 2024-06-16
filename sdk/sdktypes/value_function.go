@@ -117,7 +117,6 @@ const (
 	errorHeader = 'E'
 )
 
-// TODO: This function is used only by the HTTP integration. Move it there.
 func NewConstFunctionValue(name string, data Value) (Value, error) {
 	bs, err := proto.Marshal(data.ToProto())
 	if err != nil {
@@ -129,8 +128,6 @@ func NewConstFunctionValue(name string, data Value) (Value, error) {
 		return InvalidValue, err
 	}
 
-	// FIXME: This can't work? The Function proto has validation checks
-	// that require it to have non-empty executor ID and desc.
 	return NewFunctionValue(
 		InvalidExecutorID,
 		name,
@@ -152,8 +149,6 @@ func NewConstFunctionError(name string, in error) (Value, error) {
 		return InvalidValue, err
 	}
 
-	// FIXME: This can't work? The Function proto has validation checks
-	// that require it to have non-empty executor ID and desc.
 	return NewFunctionValue(
 		InvalidExecutorID,
 		name,

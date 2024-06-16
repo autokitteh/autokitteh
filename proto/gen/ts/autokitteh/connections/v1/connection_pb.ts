@@ -8,6 +8,9 @@ import { Message, proto3 } from "@bufbuild/protobuf";
 import { Status } from "../../common/v1/status_pb.js";
 
 /**
+ * TODO: Bring back the 2 validation checks in this message? If so,
+ * fix scheduler (cron) connections - they don't have these IDs.
+ *
  * @generated from message autokitteh.connections.v1.Connection
  */
 export class Connection extends Message<Connection> {
@@ -17,11 +20,15 @@ export class Connection extends Message<Connection> {
   connectionId = "";
 
   /**
+   * [(buf.validate.field).string.min_len = 1];
+   *
    * @generated from field: string integration_id = 2;
    */
   integrationId = "";
 
   /**
+   * [(buf.validate.field).string.min_len = 1];
+   *
    * @generated from field: string project_id = 3;
    */
   projectId = "";
