@@ -577,6 +577,9 @@ export class Module extends Message<Module> {
 }
 
 /**
+ * TODO: To bring back the 2 TODOs in this message, address these:
+ * https://github.com/autokitteh/autokitteh/pull/386/commits/001f6865b10da689f19f95331012e1dc9acb20b7
+ *
  * @generated from message autokitteh.values.v1.Function
  */
 export class Function extends Message<Function> {
@@ -584,6 +587,8 @@ export class Function extends Message<Function> {
    * executor identifies who owns the execution of the function.
    * essentially, where the function is defined. that entity
    * is responsible of the execution of the function.
+   *
+   * [(buf.validate.field).string.min_len = 1];
    *
    * @generated from field: string executor_id = 1;
    */
@@ -595,6 +600,8 @@ export class Function extends Message<Function> {
   name = "";
 
   /**
+   * [(buf.validate.field).required = true];
+   *
    * @generated from field: autokitteh.module.v1.Function desc = 3;
    */
   desc?: Function$1;
