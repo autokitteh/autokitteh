@@ -25,7 +25,9 @@ func TestModule(t *testing.T) {
 			return sdktypes.NewStructValue(
 				sdktypes.NewStringValue("dog"),
 				map[string]sdktypes.Value{
-					"say": kittehs.Must1(sdktypes.NewFunctionValue(xid, "say", []byte("woof"), nil, sdktypes.ModuleFunction{})),
+					// FIXME: This can't work? The Function proto has validation checks
+					// that require it to have a non-empty desc.
+					"say": kittehs.Must1(sdktypes.NewFunctionValue(xid, "say", []byte("woof"), nil, sdktypes.InvalidModuleFunction)),
 				},
 			)
 		})),
