@@ -10,7 +10,7 @@ import (
 
 	"golang.org/x/exp/maps"
 	"golang.org/x/tools/txtar"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
