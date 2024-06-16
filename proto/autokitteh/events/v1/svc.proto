@@ -7,15 +7,15 @@ import "buf/validate/validate.proto";
 
 message SaveRequest {
   option (buf.validate.message).cel = {
-    id: "events.missing_connection_id",
-    message: "missing connection_id",
-    expression: "has(this.event) && this.event.connection_id != ''",
+    id: "events.missing_connection_id"
+    message: "missing connection_id"
+    expression: "has(this.event) && this.event.connection_id != ''"
   };
 
   option (buf.validate.message).cel = {
-    id: "events.event_id_must_be_empty",
-    message: "event_id must not be specified",
-    expression: "has(this.event) && this.event.event_id == ''",
+    id: "events.event_id_must_be_empty"
+    message: "event_id must not be specified"
+    expression: "has(this.event) && this.event.event_id == ''"
   };
 
   Event event = 1;
@@ -59,9 +59,9 @@ message ListEventRecordsResponse {
 
 message AddEventRecordRequest {
   option (buf.validate.message).cel = {
-    id: "events.event_record_must_have_event_id",
-    message: "missing event id",
-    expression: "has(this.record) && this.record.event_id != ''",
+    id: "events.event_record_must_have_event_id"
+    message: "missing event id"
+    expression: "has(this.record) && this.record.event_id != ''"
   };
 
   EventRecord record = 1;

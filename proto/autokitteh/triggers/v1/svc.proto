@@ -7,9 +7,9 @@ import "buf/validate/validate.proto";
 
 message CreateRequest {
   option (buf.validate.message).cel = {
-    id: "trigger.trigger_id_must_be_empty",
-    message: "trigger_id must not be specified",
-    expression: "has(this.trigger) && this.trigger.trigger_id == ''",
+    id: "trigger.trigger_id_must_be_empty"
+    message: "trigger_id must not be specified"
+    expression: "has(this.trigger) && this.trigger.trigger_id == ''"
   };
 
   Trigger trigger = 1;
@@ -21,9 +21,9 @@ message CreateResponse {
 
 message UpdateRequest {
   option (buf.validate.message).cel = {
-    id: "trigger.trigger_id_required",
-    message: "trigger_id is required",
-    expression: "has(this.trigger) && this.trigger.trigger_id != ''",
+    id: "trigger.trigger_id_required"
+    message: "trigger_id is required"
+    expression: "has(this.trigger) && this.trigger.trigger_id != ''"
   };
 
   Trigger trigger = 1;

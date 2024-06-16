@@ -7,14 +7,14 @@ import "buf/validate/validate.proto";
 
 message CreateRequest {
   option (buf.validate.message).cel = {
-    id: "deployment.deployment_id_must_be_empty",
-    message: "deployment_id must not be specified",
-    expression: "has(this.deployment) && this.deployment.deployment_id == ''",
+    id: "deployment.deployment_id_must_be_empty"
+    message: "deployment_id must not be specified"
+    expression: "has(this.deployment) && this.deployment.deployment_id == ''"
   };
   option (buf.validate.message).cel = {
-    id: "deployment.deployment_state_must_be_unspecified",
-    message: "deployment_state must not be specified",
-    expression: "has(this.deployment) && this.deployment.state == 0",
+    id: "deployment.deployment_state_must_be_unspecified"
+    message: "deployment_state must not be specified"
+    expression: "has(this.deployment) && this.deployment.state == 0"
   };
 
   // deployment.state must be 0 or inactive.

@@ -18,9 +18,9 @@ message Artifact {
 
 message Requirement {
   option (buf.validate.message).cel = {
-    id: "url_or_member",
-    message: "at least url or symbol must be specified",
-    expression: "this.url != '' || this.symbol != ''",
+    id: "url_or_member"
+    message: "at least url or symbol must be specified"
+    expression: "this.url != '' || this.symbol != ''"
   };
 
   program.v1.CodeLocation location = 1; // where the requirement is coming from.

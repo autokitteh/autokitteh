@@ -23,9 +23,9 @@ service IntegrationRegistryService {
 
 message CreateRequest {
   option (buf.validate.message).cel = {
-    id: "integration_registry.create.integration_id_must_be_empty",
-    message: "integration_id must not be specified",
-    expression: "has(this.integration) && this.integration.integration_id == ''",
+    id: "integration_registry.create.integration_id_must_be_empty"
+    message: "integration_id must not be specified"
+    expression: "has(this.integration) && this.integration.integration_id == ''"
   };
 
   integration_registry.v1.Integration integration = 1 [(buf.validate.field).required = true];
@@ -37,9 +37,9 @@ message CreateResponse {
 
 message UpdateRequest {
   option (buf.validate.message).cel = {
-    id: "integration_registry.update.integration_id_must_not_be_empty",
-    message: "integration_id must be non-empty",
-    expression: "has(this.integration) && this.integration.integration_id != ''",
+    id: "integration_registry.update.integration_id_must_not_be_empty"
+    message: "integration_id must be non-empty"
+    expression: "has(this.integration) && this.integration.integration_id != ''"
   };
 
   integration_registry.v1.Integration integration = 1 [(buf.validate.field).required = true];
