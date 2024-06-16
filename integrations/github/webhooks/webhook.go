@@ -12,9 +12,8 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/integrations/github/internal/vars"
+	"go.autokitteh.dev/autokitteh/integrations/internal/extrazap"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
-	eventsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/events/v1"
-	valuesv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/values/v1"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -128,9 +127,18 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		return
 	}
-	akEvent := &sdktypes.EventPB{
+	akEvent, err := sdktypes.EventFromProto(&sdktypes.EventPB{
 		EventType: eventType,
 		Data:      data,
+	})
+	if err != nil {
+		l.Error("Failed to convert protocol buffer to SDK event",
+			zap.String("eventType", eventType),
+			zap.Any("data", data),
+			zap.Error(err),
+		)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
 	}
 
 	// Retrieve all the relevant connections for this event.
@@ -139,7 +147,7 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		cids = append(cids, userCID) // User-defined webhook.
 	}
 
-	ctx := r.Context()
+	ctx := extrazap.AttachLoggerToContext(l, r.Context())
 
 	if installID != "" {
 		// App webhook.
@@ -154,7 +162,7 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Dispatch the event to all of them, for asynchronous handling.
-	dispatchAsyncEventsToConnections(ctx, l, cids, akEvent, h.dispatcher)
+	h.dispatchAsyncEventsToConnections(ctx, cids, akEvent)
 
 	// Returning immediately without an error = acknowledgement of receipt.
 }
@@ -182,7 +190,7 @@ func extractInstallationID(event any) (inst string, err error) {
 }
 
 // transformEvent transforms a received GitHub event into an autokitteh event.
-func transformEvent(l *zap.Logger, w http.ResponseWriter, event any) (map[string]*valuesv1.Value, error) {
+func transformEvent(l *zap.Logger, w http.ResponseWriter, event any) (map[string]*sdktypes.ValuePB, error) {
 	wrapped, err := sdktypes.DefaultValueWrapper.Wrap(event)
 	if err != nil {
 		l.Error("Failed to wrap GitHub event", zap.Any("event", event), zap.Error(err))
@@ -198,27 +206,18 @@ func transformEvent(l *zap.Logger, w http.ResponseWriter, event any) (map[string
 	return kittehs.TransformMapValues(data, sdktypes.ToProto), nil
 }
 
-func dispatchAsyncEventsToConnections(ctx context.Context, l *zap.Logger, cids []sdktypes.ConnectionID, event *eventsv1.Event, d sdkservices.Dispatcher) {
+func (h handler) dispatchAsyncEventsToConnections(ctx context.Context, cids []sdktypes.ConnectionID, e sdktypes.Event) {
+	l := extrazap.ExtractLoggerFromContext(ctx)
 	for _, cid := range cids {
-		event.ConnectionId = cid.String()
-		e, err := sdktypes.EventFromProto(event)
-		if err != nil {
-			l.Error("Failed to convert protocol buffer to SDK event", zap.Error(err))
-			return
-		}
-
-		eventID, err := d.Dispatch(ctx, e, nil)
-		if err != nil {
-			l.Error("Event dispatch failed",
-				zap.String("eventID", eventID.String()),
-				zap.String("connectionID", cid.String()),
-				zap.Error(err),
-			)
-			return
-		}
-		l.Debug("Event dispatched",
-			zap.String("eventID", eventID.String()),
+		eid, err := h.dispatcher.Dispatch(ctx, e.WithConnectionID(cid), nil)
+		l := l.With(
 			zap.String("connectionID", cid.String()),
+			zap.String("eventID", eid.String()),
 		)
+		if err != nil {
+			l.Error("Event dispatch failed", zap.Error(err))
+			return
+		}
+		l.Debug("Event dispatched")
 	}
 }

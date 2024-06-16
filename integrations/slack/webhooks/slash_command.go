@@ -8,9 +8,6 @@ import (
 
 	"go.uber.org/zap"
 
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
-	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-
 	"go.autokitteh.dev/autokitteh/integrations/slack/api"
 )
 
@@ -107,14 +104,11 @@ func (h handler) HandleSlashCommand(w http.ResponseWriter, r *http.Request) {
 		TriggerID:   kv.Get("trigger_id"),
 	}
 
-	// Transform the received Slack event into an autokitteh event.
-	data, err := transformCommand(l, w, cmd)
+	// Transform the received Slack event into an AutoKitteh event.
+	akEvent, err := transformEvent(l, cmd, "slash_command")
 	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
-	}
-	akEvent := &sdktypes.EventPB{
-		EventType: "slash_command",
-		Data:      data,
 	}
 
 	// Retrieve all the relevant connections for this event.
@@ -127,7 +121,7 @@ func (h handler) HandleSlashCommand(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Dispatch the event to all of them, for asynchronous handling.
-	h.dispatchAsyncEventsToConnections(ctx, l, cids, akEvent)
+	h.dispatchAsyncEventsToConnections(ctx, cids, akEvent)
 
 	// https://api.slack.com/interactivity/slash-commands#responding_to_commands
 	// https://api.slack.com/interactivity/slash-commands#responding_response_url
@@ -137,27 +131,4 @@ func (h handler) HandleSlashCommand(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Add(api.HeaderContentType, api.ContentTypeJSONCharsetUTF8)
 	fmt.Fprintf(w, "{\"response_type\": \"ephemeral\", \"text\": \"Your command: `%s`\"}", cmd.Text)
-}
-
-// transformCommand transforms a received Slack event into an autokitteh event.
-func transformCommand(l *zap.Logger, w http.ResponseWriter, cmd SlashCommand) (map[string]*sdktypes.ValuePB, error) {
-	wrapped, err := sdktypes.DefaultValueWrapper.Wrap(cmd)
-	if err != nil {
-		l.Error("Failed to wrap Slack event",
-			zap.Error(err),
-			zap.Any("cmd", cmd),
-		)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return nil, err
-	}
-	data, err := wrapped.ToStringValuesMap()
-	if err != nil {
-		l.Error("Failed to convert wrapped Slack event",
-			zap.Error(err),
-			zap.Any("cmd", cmd),
-		)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return nil, err
-	}
-	return kittehs.TransformMapValues(data, sdktypes.ToProto), nil
 }

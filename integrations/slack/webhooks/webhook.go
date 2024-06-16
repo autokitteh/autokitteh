@@ -14,8 +14,10 @@ import (
 
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/integrations/internal/extrazap"
 	"go.autokitteh.dev/autokitteh/integrations/slack/api"
 	"go.autokitteh.dev/autokitteh/integrations/slack/internal/vars"
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -139,34 +141,57 @@ func verifySignature(signingSecret, ts, want string, body []byte) bool {
 	return hmac.Equal([]byte(got), []byte(want))
 }
 
+// Transform the received Slack event into an AutoKitteh event.
+func transformEvent(l *zap.Logger, slackEvent any, eventType string) (sdktypes.Event, error) {
+	l = l.With(
+		zap.String("eventType", eventType),
+		zap.Any("event", slackEvent),
+	)
+
+	wrapped, err := sdktypes.DefaultValueWrapper.Wrap(slackEvent)
+	if err != nil {
+		l.Error("Failed to wrap Slack event", zap.Error(err))
+		return sdktypes.InvalidEvent, err
+	}
+
+	data, err := wrapped.ToStringValuesMap()
+	if err != nil {
+		l.Error("Failed to convert wrapped Slack event", zap.Error(err))
+		return sdktypes.InvalidEvent, err
+	}
+
+	akEvent, err := sdktypes.EventFromProto(&sdktypes.EventPB{
+		EventType: eventType,
+		Data:      kittehs.TransformMapValues(data, sdktypes.ToProto),
+	})
+	if err != nil {
+		l.Error("Failed to convert protocol buffer to SDK event",
+			zap.Any("data", data),
+			zap.Error(err),
+		)
+		return sdktypes.InvalidEvent, err
+	}
+
+	return akEvent, nil
+}
+
 func (h handler) listConnectionIDs(ctx context.Context, appID, enterpriseID, teamID string) ([]sdktypes.ConnectionID, error) {
 	key := vars.KeyValue(appID, enterpriseID, teamID)
 	return h.vars.FindConnectionIDs(ctx, h.integrationID, vars.KeyName, key)
 }
 
-func (h handler) dispatchAsyncEventsToConnections(ctx context.Context, l *zap.Logger, cids []sdktypes.ConnectionID, event *sdktypes.EventPB) {
+func (h handler) dispatchAsyncEventsToConnections(ctx context.Context, cids []sdktypes.ConnectionID, e sdktypes.Event) {
+	l := extrazap.ExtractLoggerFromContext(ctx)
 	for _, cid := range cids {
-		l := l.With(zap.String("cid", cid.String()))
-
-		event.ConnectionId = cid.String()
-		event, err := sdktypes.EventFromProto(event)
-		if err != nil {
-			h.logger.Error("Failed to convert protocol buffer to SDK event", zap.Error(err))
-			return
-		}
-
-		eventID, err := h.dispatcher.Dispatch(ctx, event, nil)
-		if err != nil {
-			l.Error("Event dispatch failed",
-				zap.String("eventID", eventID.String()),
-				zap.String("connectionID", cid.String()),
-				zap.Error(err),
-			)
-			return
-		}
-		l.Debug("Event dispatched",
-			zap.String("eventID", eventID.String()),
+		eid, err := h.dispatcher.Dispatch(ctx, e.WithConnectionID(cid), nil)
+		l := l.With(
 			zap.String("connectionID", cid.String()),
+			zap.String("eventID", eid.String()),
 		)
+		if err != nil {
+			l.Error("Event dispatch failed", zap.Error(err))
+			return
+		}
+		l.Debug("Event dispatched")
 	}
 }

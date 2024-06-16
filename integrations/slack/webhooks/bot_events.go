@@ -6,10 +6,9 @@ import (
 
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/integrations/internal/extrazap"
 	"go.autokitteh.dev/autokitteh/integrations/slack/api"
 	"go.autokitteh.dev/autokitteh/integrations/slack/events"
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
-	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 const (
@@ -97,18 +96,15 @@ func (h handler) HandleBotEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Transform the received Slack event into an autokitteh event.
-	data, err := transformEvent(l, w, slackEvent)
+	// Transform the received Slack event into an AutoKitteh event.
+	akEvent, err := transformEvent(l, slackEvent, cb.Event.Type)
 	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
-	}
-	akEvent := &sdktypes.EventPB{
-		EventType: cb.Event.Type,
-		Data:      data,
 	}
 
 	// Retrieve all the relevant connections for this event.
-	ctx := r.Context()
+	ctx := extrazap.AttachLoggerToContext(l, r.Context())
 	enterpriseID := "" // TODO: Support enterprise IDs.
 	cids, err := h.listConnectionIDs(ctx, cb.APIAppID, enterpriseID, cb.TeamID)
 	if err != nil {
@@ -118,30 +114,7 @@ func (h handler) HandleBotEvent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Dispatch the event to all of them, for asynchronous handling.
-	h.dispatchAsyncEventsToConnections(ctx, l, cids, akEvent)
+	h.dispatchAsyncEventsToConnections(ctx, cids, akEvent)
 
 	// Returning immediately without an error = acknowledgement of receipt.
-}
-
-// transformEvent transforms a received Slack event into an autokitteh event.
-func transformEvent(l *zap.Logger, w http.ResponseWriter, event any) (map[string]*sdktypes.ValuePB, error) {
-	wrapped, err := sdktypes.DefaultValueWrapper.Wrap(event)
-	if err != nil {
-		l.Error("Failed to wrap Slack event",
-			zap.Any("innerEvent", event),
-			zap.Error(err),
-		)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return nil, err
-	}
-	data, err := wrapped.ToStringValuesMap()
-	if err != nil {
-		l.Error("Failed to convert wrapped Slack event",
-			zap.Any("innerEvent", event),
-			zap.Error(err),
-		)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return nil, err
-	}
-	return kittehs.TransformMapValues(data, sdktypes.ToProto), nil
 }

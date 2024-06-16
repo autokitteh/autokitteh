@@ -6,6 +6,7 @@ import (
 	"github.com/iancoleman/strcase"
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/integrations/internal/extrazap"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -25,8 +26,11 @@ func (h handler) HandleMessage(w http.ResponseWriter, r *http.Request) {
 	// https://www.twilio.com/docs/usage/security#validating-requests
 	// https://www.twilio.com/docs/usage/tutorials/how-to-secure-your-gin-project-by-validating-incoming-twilio-requests
 
+	// Read and parse POST request body.
 	if err := r.ParseForm(); err != nil {
-		l.Warn("parse form error", zap.Error(err))
+		l.Warn("Failed to parse inbound HTTP request", zap.Error(err))
+		// Attack or network loss, so no need for user-friendliness.
+		http.Error(w, "Bad Request", http.StatusBadRequest)
 		return
 	}
 
@@ -41,13 +45,22 @@ func (h handler) HandleMessage(w http.ResponseWriter, r *http.Request) {
 			data[strcase.ToSnake(k)] = sdktypes.NewStringValue(vs[0])
 		}
 	}
-	akEvent := &sdktypes.EventPB{
+
+	akEvent, err := sdktypes.EventFromProto(&sdktypes.EventPB{
 		EventType: "message",
 		Data:      kittehs.TransformMapValues(data, sdktypes.ToProto),
+	})
+	if err != nil {
+		l.Error("Failed to convert protocol buffer to SDK event",
+			zap.Any("data", data),
+			zap.Error(err),
+		)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
 	}
 
 	// Retrieve all the relevant connections for this event.
-	ctx := r.Context()
+	ctx := extrazap.AttachLoggerToContext(l, r.Context())
 	cids, err := h.vars.FindConnectionIDs(ctx, h.integrationID, sdktypes.NewSymbol("account_sid"), aid)
 	if err != nil {
 		l.Error("Failed to find connection IDs", zap.Error(err))
@@ -56,5 +69,5 @@ func (h handler) HandleMessage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Dispatch the event to all of them, for asynchronous handling.
-	h.dispatchAsyncEventsToConnections(ctx, l, cids, akEvent)
+	h.dispatchAsyncEventsToConnections(ctx, cids, akEvent)
 }

@@ -13,6 +13,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/integrations/internal/extrazap"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -94,7 +95,7 @@ func (h handler) handleEvent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Iterate through all the relevant connections for this event.
-	ctx := r.Context()
+	ctx := extrazap.AttachLoggerToContext(l, r.Context())
 	key := sdktypes.NewSymbol("webhook_id")
 	for _, id := range e.MatchedWebhookIDs {
 		value := fmt.Sprintf("%d", id)
@@ -105,7 +106,7 @@ func (h handler) handleEvent(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Dispatch the event to all of them, for asynchronous handling.
-		h.dispatchAsyncEventsToConnections(ctx, l, cids, event)
+		h.dispatchAsyncEventsToConnections(ctx, cids, event)
 	}
 
 	// Returning immediately without an error = acknowledgement of receipt.
@@ -128,47 +129,50 @@ func verifyJWT(l *zap.Logger, authz string) bool {
 	return token.Valid
 }
 
-func constructEvent(l *zap.Logger, body []byte, e event) (*sdktypes.EventPB, error) {
+func constructEvent(l *zap.Logger, body []byte, e event) (sdktypes.Event, error) {
+	l = l.With(zap.Any("event", body))
+
 	m := map[string]string{"json": string(body)}
 	wrapped, err := sdktypes.DefaultValueWrapper.Wrap(m)
 	if err != nil {
-		l.Error("Failed to wrap Jira event", zap.Any("event", body), zap.Error(err))
-		return nil, err
+		l.Error("Failed to wrap Jira event", zap.Error(err))
+		return sdktypes.InvalidEvent, err
 	}
 
 	data, err := wrapped.ToStringValuesMap()
 	if err != nil {
-		l.Error("Failed to convert wrapped Jira event", zap.Any("event", body), zap.Error(err))
-		return nil, err
+		l.Error("Failed to convert wrapped Jira event", zap.Error(err))
+		return sdktypes.InvalidEvent, err
 	}
 
-	return &sdktypes.EventPB{
+	event, err := sdktypes.EventFromProto(&sdktypes.EventPB{
 		EventType: strings.TrimPrefix(e.WebhookEvent, "jira:"),
 		Data:      kittehs.TransformMapValues(data, sdktypes.ToProto),
-	}, nil
+	})
+	if err != nil {
+		l.Error("Failed to convert protocol buffer to SDK event",
+			zap.String("eventType", strings.TrimPrefix(e.WebhookEvent, "jira:")),
+			zap.Any("data", data),
+			zap.Error(err),
+		)
+		return sdktypes.InvalidEvent, err
+	}
+
+	return event, nil
 }
 
-func (h handler) dispatchAsyncEventsToConnections(ctx context.Context, l *zap.Logger, cids []sdktypes.ConnectionID, event *sdktypes.EventPB) {
+func (h handler) dispatchAsyncEventsToConnections(ctx context.Context, cids []sdktypes.ConnectionID, e sdktypes.Event) {
+	l := extrazap.ExtractLoggerFromContext(ctx)
 	for _, cid := range cids {
-		event.ConnectionId = cid.String()
-		e, err := sdktypes.EventFromProto(event)
-		if err != nil {
-			l.Error("Failed to convert protocol buffer to SDK event", zap.Error(err))
-			return
-		}
-
-		eventID, err := h.dispatcher.Dispatch(ctx, e, nil)
-		if err != nil {
-			l.Error("Event dispatch failed",
-				zap.String("eventID", eventID.String()),
-				zap.String("connectionID", cid.String()),
-				zap.Error(err),
-			)
-			return
-		}
-		l.Debug("Event dispatched",
-			zap.String("eventID", eventID.String()),
+		eid, err := h.dispatcher.Dispatch(ctx, e.WithConnectionID(cid), nil)
+		l := l.With(
 			zap.String("connectionID", cid.String()),
+			zap.String("eventID", eid.String()),
 		)
+		if err != nil {
+			l.Error("Event dispatch failed", zap.Error(err))
+			return
+		}
+		l.Debug("Event dispatched")
 	}
 }

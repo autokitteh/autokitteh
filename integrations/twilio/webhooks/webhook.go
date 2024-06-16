@@ -5,6 +5,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/integrations/internal/extrazap"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -44,29 +45,18 @@ func NewHandler(l *zap.Logger, vars sdkservices.Vars, d sdkservices.Dispatcher, 
 // https://www.twilio.com/docs/usage/api/usage-trigger
 // https://www.twilio.com/docs/usage/troubleshooting/alarms
 
-func (h handler) dispatchAsyncEventsToConnections(ctx context.Context, l *zap.Logger, cids []sdktypes.ConnectionID, event *sdktypes.EventPB) {
+func (h handler) dispatchAsyncEventsToConnections(ctx context.Context, cids []sdktypes.ConnectionID, e sdktypes.Event) {
+	l := extrazap.ExtractLoggerFromContext(ctx)
 	for _, cid := range cids {
-		event.ConnectionId = cid.String()
-
-		event, err := sdktypes.EventFromProto(event)
-		if err != nil {
-			l.Error("Failed to convert protocol buffer to SDK event", zap.Error(err))
-			return
-		}
-
-		eventID, err := h.dispatcher.Dispatch(ctx, event, nil)
-		if err != nil {
-			l.Error("Event dispatch failed",
-				zap.String("eventID", eventID.String()),
-				zap.String("connectionID", cid.String()),
-				zap.Error(err),
-			)
-			return
-		}
-		l.Debug("Event dispatched",
-			zap.String("eventID", eventID.String()),
+		eid, err := h.dispatcher.Dispatch(ctx, e.WithConnectionID(cid), nil)
+		l := l.With(
 			zap.String("connectionID", cid.String()),
+			zap.String("eventID", eid.String()),
 		)
-
+		if err != nil {
+			l.Error("Event dispatch failed", zap.Error(err))
+			return
+		}
+		l.Debug("Event dispatched")
 	}
 }

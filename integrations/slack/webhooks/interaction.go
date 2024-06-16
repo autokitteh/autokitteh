@@ -16,8 +16,6 @@ import (
 	"go.autokitteh.dev/autokitteh/integrations/slack/api/chat"
 	"go.autokitteh.dev/autokitteh/integrations/slack/api/conversations"
 	"go.autokitteh.dev/autokitteh/integrations/slack/api/users"
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
-	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 const (
@@ -145,18 +143,15 @@ func (h handler) HandleInteraction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Transform the received Slack event into an autokitteh event.
-	data, err := transformPayload(l, w, payload)
+	// Transform the received Slack event into an AutoKitteh event.
+	akEvent, err := transformEvent(l, payload, "interaction")
 	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
-	}
-	akEvent := &sdktypes.EventPB{
-		EventType: "interaction",
-		Data:      data,
 	}
 
 	// Retrieve all the relevant connections for this event.
-	ctx := r.Context()
+	ctx := extrazap.AttachLoggerToContext(l, r.Context())
 	enterpriseID := ""
 	if payload.IsEnterpriseInstall {
 		enterpriseID = payload.User.EnterpriseUser.EnterpriseID
@@ -169,35 +164,12 @@ func (h handler) HandleInteraction(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Dispatch the event to all of them, for asynchronous handling.
-	h.dispatchAsyncEventsToConnections(ctx, l, cids, akEvent)
+	h.dispatchAsyncEventsToConnections(ctx, cids, akEvent)
 
 	// It's a Slack best practice to update an interactive message after the interaction,
 	// to prevent further interaction with the same message, and to reflect the user actions.
 	// See: https://api.slack.com/interactivity/handling#updating_message_response.
 	h.updateMessage(l, payload)
-}
-
-// transformPayload transforms a received Slack event into an autokitteh event.
-func transformPayload(l *zap.Logger, w http.ResponseWriter, payload *BlockActionsPayload) (map[string]*sdktypes.ValuePB, error) {
-	wrapped, err := sdktypes.DefaultValueWrapper.Wrap(payload)
-	if err != nil {
-		l.Error("Failed to wrap Slack event",
-			zap.Any("payload", payload),
-			zap.Error(err),
-		)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return nil, err
-	}
-	data, err := wrapped.ToStringValuesMap()
-	if err != nil {
-		l.Error("Failed to convert wrapped Slack event",
-			zap.Any("payload", payload),
-			zap.Error(err),
-		)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return nil, err
-	}
-	return kittehs.TransformMapValues(data, sdktypes.ToProto), nil
 }
 
 // updateMessage updates an interactive message after the interaction, to prevent
