@@ -78,15 +78,17 @@ message Module {
   ];
 }
 
+// TODO: To bring back the 2 TODOs in this message, address these:
+// https://github.com/autokitteh/autokitteh/pull/386/commits/001f6865b10da689f19f95331012e1dc9acb20b7
 message Function {
   // executor identifies who owns the execution of the function.
   // essentially, where the function is defined. that entity
   // is responsible of the execution of the function.
-  string executor_id = 1 [(buf.validate.field).string.min_len = 1];
+  string executor_id = 1; // [(buf.validate.field).string.min_len = 1];
 
   string name = 2 [(buf.validate.field).string.min_len = 1];
 
-  module.v1.Function desc = 3 [(buf.validate.field).required = true];
+  module.v1.Function desc = 3; // [(buf.validate.field).required = true];
 
   // Data that is transfered along with the function itself.
   // This can be used by the function implementing the name
