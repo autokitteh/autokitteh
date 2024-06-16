@@ -143,8 +143,6 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// Dispatch the event to all of them, for asynchronous handling.
 	h.dispatchAsyncEventsToConnections(ctx, conns, env, event)
-
-	// Returning immediately without an error = acknowledgement of receipt.
 }
 
 func (h handler) dispatchAsyncEventsToConnections(ctx context.Context, cs []sdktypes.Connection, env string, event sdktypes.Event) {

@@ -8,6 +8,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/integrations/internal/extrazap"
 	"go.autokitteh.dev/autokitteh/integrations/slack/api/auth"
 	"go.autokitteh.dev/autokitteh/integrations/slack/api/bots"
 	"go.autokitteh.dev/autokitteh/integrations/slack/internal/vars"
@@ -57,18 +58,18 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Test the OAuth token's usability and get authoritative installation details.
-	ctx := r.Context()
+	ctx := extrazap.AttachLoggerToContext(l, r.Context())
 	authTest, err := auth.TestWithToken(ctx, oauthToken.AccessToken)
 	if err != nil {
 		l.Warn("Slack OAuth token test failed", zap.Error(err))
-		redirectToErrorPage(w, r, "OAuth token test failed: "+err.Error())
+		redirectToErrorPage(w, r, "token auth test failed: "+err.Error())
 		return
 	}
 
 	botInfo, err := bots.InfoWithToken(ctx, oauthToken.AccessToken, authTest)
 	if err != nil {
 		l.Warn("Slack bot info request failed", zap.Error(err))
-		redirectToErrorPage(w, r, "Bot info request failed: "+err.Error())
+		redirectToErrorPage(w, r, "bot info request failed: "+err.Error())
 		return
 	}
 
