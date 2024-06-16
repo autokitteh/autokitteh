@@ -42,6 +42,7 @@ func New(cfg *Config) (*zap.Logger, error) {
 	if cfg.Encoding != "" {
 		cfg.Zap.Encoding = cfg.Encoding
 	}
+
 	if cfg.Zap.Encoding == "console" {
 		cfg.Zap.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
 		cfg.Zap.EncoderConfig.EncodeTime = zapcore.TimeEncoderOfLayout(time.DateTime)
