@@ -39,6 +39,7 @@ require (
 	github.com/google/go-github/v60 v60.0.0
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/golang-lru/v2 v2.0.7
+	github.com/hashicorp/vault/api v1.13.0
 	github.com/hexops/gotextdiff v1.0.3
 	github.com/iancoleman/strcase v0.3.0
 	github.com/invopop/jsonschema v0.12.0
@@ -51,6 +52,7 @@ require (
 	github.com/knadh/koanf/providers/file v0.1.0
 	github.com/knadh/koanf/v2 v2.1.0
 	github.com/lithammer/shortuuid/v4 v4.0.0
+	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c
 	github.com/pressly/goose/v3 v3.19.2
 	github.com/psanford/memfs v0.0.0-20230130182539-4dbf7e3e865e
 	github.com/qri-io/starlib v0.5.0
@@ -167,7 +169,6 @@ require (
 	github.com/hashicorp/go-secure-stdlib/strutil v0.1.2 // indirect
 	github.com/hashicorp/go-sockaddr v1.0.2 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
-	github.com/hashicorp/vault/api v1.13.0 // indirect
 	github.com/huandu/xstrings v1.3.3 // indirect
 	github.com/imdario/mergo v0.3.16 // indirect
 	github.com/inconshreveable/log15 v3.0.0-testing.5+incompatible // indirect
@@ -204,7 +205,6 @@ require (
 	github.com/ncruces/go-strftime v0.1.9 // indirect
 	github.com/paulmach/orb v0.11.1 // indirect
 	github.com/pborman/uuid v1.2.1 // indirect
-	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
