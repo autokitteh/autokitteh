@@ -38,7 +38,9 @@ const (
 // slackURL is a var and not a const for unit-testing purposes.
 var slackURL = "https://slack.com/api/"
 
-var OAuthTokenContextKey = struct{}{}
+type ctxKey string
+
+var OAuthTokenContextKey = ctxKey("OAuthTokenContext")
 
 // PostForm sends a short-lived HTTP POST request with an OAuth bearer token and
 // URL-encoded key/value payload, and then receives and parses the JSON response.
