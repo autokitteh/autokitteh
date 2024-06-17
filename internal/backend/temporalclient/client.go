@@ -6,16 +6,20 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"os"
+	"path"
 	"strconv"
 	"time"
 
-	"go.autokitteh.dev/autokitteh/internal/backend/health/healthreporter"
 	"go.temporal.io/api/serviceerror"
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/testsuite"
 	"go.uber.org/zap"
 	zapadapter "logur.dev/adapter/zap"
 	"logur.dev/logur"
+
+	"go.autokitteh.dev/autokitteh/internal/backend/health/healthreporter"
+	"go.autokitteh.dev/autokitteh/internal/xdg"
 )
 
 type Client interface {
@@ -31,6 +35,7 @@ type impl struct {
 	z      *zap.Logger
 	cfg    *Config
 	srv    *testsuite.DevServer
+	log    *os.File
 	done   chan struct{}
 	opts   client.Options
 }
@@ -76,11 +81,19 @@ func New(cfg *Config, z *zap.Logger) (Client, error) {
 	}, nil
 }
 
-func (c *impl) startDevServer(ctx context.Context, cfg *Config, opts client.Options) error {
-	cfg.DevServer.ClientOptions = &opts
-
+func (c *impl) startDevServer(ctx context.Context) error {
 	var err error
-	if c.srv, err = testsuite.StartDevServer(ctx, cfg.DevServer); err != nil {
+	logPath := path.Join(xdg.DataHomeDir(), "temporal_dev.log")
+	c.log, err = os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
+	if err != nil {
+		return fmt.Errorf("open Temporal dev server log file: %w", err)
+	}
+
+	c.cfg.DevServer.ClientOptions = &c.opts
+	c.cfg.DevServer.Stderr = c.log
+	c.cfg.DevServer.Stdout = c.log
+
+	if c.srv, err = testsuite.StartDevServer(ctx, c.cfg.DevServer); err != nil {
 		return fmt.Errorf("start Temporal dev server: %w", err)
 	}
 
@@ -136,6 +149,7 @@ func (c *impl) Stop(context.Context) error {
 	close(c.done)
 
 	if c.client != nil {
+		defer c.log.Close()
 		c.client.Close()
 	}
 
@@ -180,7 +194,7 @@ func (c *impl) Start(context.Context) error {
 	defer cancel()
 
 	if c.cfg.AlwaysStartDevServer {
-		if err := c.startDevServer(ctx, c.cfg, c.opts); err != nil {
+		if err := c.startDevServer(ctx); err != nil {
 			return err
 		}
 	} else {
@@ -199,7 +213,7 @@ func (c *impl) Start(context.Context) error {
 
 				c.z.Info("Cannot connect to Temporal, starting Temporal dev server")
 
-				if err := c.startDevServer(ctx, c.cfg, c.opts); err != nil {
+				if err := c.startDevServer(ctx); err != nil {
 					return err
 				}
 			}
