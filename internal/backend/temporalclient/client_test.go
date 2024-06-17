@@ -35,5 +35,5 @@ func TestStartDevServer(t *testing.T) {
 
 	require.NotNil(t, c.client)
 	require.NotNil(t, c.srv)
-	require.NotNil(t, c.log)
+	require.NotNil(t, c.logFile)
 }

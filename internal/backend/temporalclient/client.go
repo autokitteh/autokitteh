@@ -31,13 +31,13 @@ type Client interface {
 }
 
 type impl struct {
-	client client.Client
-	z      *zap.Logger
-	cfg    *Config
-	srv    *testsuite.DevServer
-	log    *os.File
-	done   chan struct{}
-	opts   client.Options
+	client  client.Client
+	z       *zap.Logger
+	cfg     *Config
+	srv     *testsuite.DevServer
+	logFile *os.File
+	done    chan struct{}
+	opts    client.Options
 }
 
 func NewFromClient(cfg *MonitorConfig, z *zap.Logger, tclient client.Client) (Client, error) {
@@ -84,14 +84,14 @@ func New(cfg *Config, z *zap.Logger) (Client, error) {
 func (c *impl) startDevServer(ctx context.Context) error {
 	var err error
 	logPath := path.Join(xdg.DataHomeDir(), "temporal_dev.log")
-	c.log, err = os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
+	c.logFile, err = os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
 	if err != nil {
 		return fmt.Errorf("open Temporal dev server log file: %w", err)
 	}
 
 	c.cfg.DevServer.ClientOptions = &c.opts
-	c.cfg.DevServer.Stderr = c.log
-	c.cfg.DevServer.Stdout = c.log
+	c.cfg.DevServer.Stderr = c.logFile
+	c.cfg.DevServer.Stdout = c.logFile
 
 	if c.srv, err = testsuite.StartDevServer(ctx, c.cfg.DevServer); err != nil {
 		return fmt.Errorf("start Temporal dev server: %w", err)
@@ -149,7 +149,7 @@ func (c *impl) Stop(context.Context) error {
 	close(c.done)
 
 	if c.client != nil {
-		defer c.log.Close()
+		defer c.logFile.Close()
 		c.client.Close()
 	}
 
