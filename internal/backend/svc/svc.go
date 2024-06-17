@@ -18,7 +18,6 @@ import (
 
 	"go.autokitteh.dev/autokitteh/backend/runtimes"
 	"go.autokitteh.dev/autokitteh/internal/backend/applygrpcsvc"
-	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authgrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authhttpmiddleware"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authjwttokens"
@@ -137,7 +136,9 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		Component("auth", configset.Empty, fx.Provide(authsvc.New)),
 		Component("authjwttokens", authjwttokens.Configs, fx.Provide(authjwttokens.New)),
 		Component("authsessions", authsessions.Configs, fx.Provide(authsessions.New)),
-		Component("authhttmiddleware", authhttpmiddleware.Configs, fx.Provide(authhttpmiddleware.New)),
+		Component("authhttmiddleware", authhttpmiddleware.Configs,
+			fx.Provide(authhttpmiddleware.New),
+			fx.Provide(authhttpmiddleware.AuthorizationHeaderExtractor)),
 
 		DBFxOpt(),
 		Component(
@@ -248,7 +249,10 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		Component(
 			"http",
 			httpsvc.Configs,
-			fx.Provide(func(lc fx.Lifecycle, z *zap.Logger, cfg *httpsvc.Config, wrapAuth authhttpmiddleware.AuthMiddlewareDecorator) (svc httpsvc.Svc, all *muxes.Muxes, err error) {
+			fx.Provide(func(lc fx.Lifecycle, z *zap.Logger, cfg *httpsvc.Config,
+				wrapAuth authhttpmiddleware.AuthMiddlewareDecorator,
+				authHdrExtractor authhttpmiddleware.AuthHeaderExtractor,
+			) (svc httpsvc.Svc, all *muxes.Muxes, err error) {
 				svc, err = httpsvc.New(
 					lc, z, cfg,
 					[]string{
@@ -268,8 +272,11 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 						varsv1connect.VarsServiceName,
 					},
 					[]httpsvc.RequestLogExtractor{
+						// Note: auth middleware will be connected after interceptor, so in httpsvc and interceptor handler
+						// there is (still) no parsed user in the httpRequest context. So in order to log the user in the
+						// same place where httpRequest is logged we need to extract it from the header
 						func(r *http.Request) []zap.Field {
-							if user := authcontext.GetAuthnUser(r.Context()); user.IsValid() {
+							if user := authHdrExtractor(r); user.IsValid() {
 								return []zap.Field{zap.String("user", user.Title())}
 							}
 
