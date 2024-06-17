@@ -8,8 +8,10 @@ import { Message, proto3 } from "@bufbuild/protobuf";
 import { Status } from "../../common/v1/status_pb.js";
 
 /**
- * TODO: Bring back the 2 validation checks in this message? If so,
- * fix scheduler (cron) connections - they don't have these IDs.
+ * TODO(ENG-1026):
+ * - The first integration ID and project ID validation
+ *   checks are incorrect for scheduler (cron) connections
+ * - The name validation check breaks sdktypes.NewConnection(id)
  *
  * @generated from message autokitteh.connections.v1.Connection
  */
@@ -34,6 +36,8 @@ export class Connection extends Message<Connection> {
   projectId = "";
 
   /**
+   * [(buf.validate.field).string.min_len = 1];
+   *
    * @generated from field: string name = 4;
    */
   name = "";

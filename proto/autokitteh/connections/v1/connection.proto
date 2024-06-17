@@ -3,15 +3,17 @@ syntax = "proto3";
 package autokitteh.connections.v1;
 
 import "autokitteh/common/v1/status.proto";
-import "buf/validate/validate.proto";
+// import "buf/validate/validate.proto";
 
-// TODO: Bring back the 2 validation checks in this message? If so,
-// fix scheduler (cron) connections - they don't have these IDs.
+// TODO(ENG-1026):
+// - The first integration ID and project ID validation
+//   checks are incorrect for scheduler (cron) connections
+// - The name validation check breaks sdktypes.NewConnection(id)
 message Connection {
   string connection_id = 1;
   string integration_id = 2; // [(buf.validate.field).string.min_len = 1];
   string project_id = 3; // [(buf.validate.field).string.min_len = 1];
-  string name = 4 [(buf.validate.field).string.min_len = 1];
+  string name = 4; // [(buf.validate.field).string.min_len = 1];
 
   // Read only fields that are filled by the server.
   common.v1.Status status = 5;
