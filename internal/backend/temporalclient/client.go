@@ -85,7 +85,6 @@ func (c *impl) startDevServer(ctx context.Context) error {
 	var err error
 	logPath := path.Join(xdg.DataHomeDir(), "temporal_dev.log")
 	c.logFile, err = os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY, 0o644)
-	os.ReadFile()
 	if err != nil {
 		return fmt.Errorf("open Temporal dev server log file: %w", err)
 	}
