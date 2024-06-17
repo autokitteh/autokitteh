@@ -36,7 +36,7 @@ message SessionState {
       (buf.validate.field).map.keys.string.min_len = 1,
       (buf.validate.field).map.values.required = true
     ];
-    values.v1.Value return_value = 3 [(buf.validate.field).required = true];
+    values.v1.Value return_value = 3;
   }
 
   message Stopped {
