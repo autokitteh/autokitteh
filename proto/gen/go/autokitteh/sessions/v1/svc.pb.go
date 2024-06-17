@@ -227,9 +227,11 @@ type ListRequest struct {
 	BuildId      string           `protobuf:"bytes,4,opt,name=build_id,json=buildId,proto3" json:"build_id,omitempty"`
 	StateType    SessionStateType `protobuf:"varint,5,opt,name=state_type,json=stateType,proto3,enum=autokitteh.sessions.v1.SessionStateType" json:"state_type,omitempty"`
 	CountOnly    bool             `protobuf:"varint,10,opt,name=count_only,json=countOnly,proto3" json:"count_only,omitempty"`
-	PageSize     int32            `protobuf:"varint,20,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"` // Invalid values are fixed by the gRPC service.
-	Skip         int32            `protobuf:"varint,21,opt,name=skip,proto3" json:"skip,omitempty"`
-	PageToken    string           `protobuf:"bytes,22,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
+	// If the value is outside the allowed range, the sessions
+	// gRPC service sets it to the closest range bound.
+	PageSize  int32  `protobuf:"varint,20,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	Skip      int32  `protobuf:"varint,21,opt,name=skip,proto3" json:"skip,omitempty"`
+	PageToken string `protobuf:"bytes,22,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
 }
 
 func (x *ListRequest) Reset() {

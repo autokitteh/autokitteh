@@ -38,7 +38,9 @@ message ListRequest {
 
   // TODO: FieldMask.
 
-  int32 page_size = 20; // Invalid values are fixed by the gRPC service.
+  // If the value is outside the allowed range, the sessions
+  // gRPC service sets it to the closest range bound.
+  int32 page_size = 20;
 
   int32 skip = 21 [(buf.validate.field).cel = {
     id: "session.list.skip"
