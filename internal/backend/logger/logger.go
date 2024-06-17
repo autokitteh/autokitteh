@@ -39,10 +39,15 @@ func (onPanicHook) OnWrite(ce *zapcore.CheckedEntry, fs []zapcore.Field) {
 func New(cfg *Config) (*zap.Logger, error) {
 	cfg.Zap.Level.SetLevel(zapcore.Level(cfg.Level)) // Default = 0 = Info.
 
+	// Optional override for the default encoding:
+	// AK default mode = Zap production config = "json" encoding,
+	// AK dev mode = Zap development config = "console" encoding.
 	if cfg.Encoding != "" {
 		cfg.Zap.Encoding = cfg.Encoding
 	}
 
+	// Regardless of AK mode, if the encoding is "console" (whether
+	// as a default or as an override), tweak it for easier reading.
 	if cfg.Zap.Encoding == "console" {
 		cfg.Zap.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
 		cfg.Zap.EncoderConfig.EncodeTime = zapcore.TimeEncoderOfLayout(time.DateTime)
