@@ -41,7 +41,7 @@ func (ps *Projects) Create(ctx context.Context, project sdktypes.Project) (sdkty
 	// ensure there is a default cron connection (for all projects)
 	if cronConnection, err := ps.DB.GetConnection(ctx, sdktypes.BuiltinSchedulerConnectionID); errors.Is(err, sdkerrors.ErrNotFound) {
 		cronConnection = cronConnection.WithID(sdktypes.BuiltinSchedulerConnectionID).WithName(sdktypes.NewSymbol(fixtures.SchedulerConnectionName))
-		if err := ps.DB.CreateConnection(ctx, cronConnection); !errors.Is(err, sdkerrors.ErrAlreadyExists) { // just sanity
+		if err = ps.DB.CreateConnection(ctx, cronConnection); err != nil && !errors.Is(err, sdkerrors.ErrAlreadyExists) { // just sanity
 			return sdktypes.InvalidProjectID, err
 		}
 	}
