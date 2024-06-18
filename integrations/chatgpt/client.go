@@ -23,6 +23,9 @@ var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.Integrati
 		"2 Go client API":             "https://pkg.go.dev/github.com/sashabaranov/go-openai",
 	},
 	ConnectionUrl: "/chatgpt/connect",
+	ConnectionCapabilities: &sdktypes.ConnectionCapabilitiesPB{
+		RequiresConnectionInit: true,
+	},
 }))
 
 func New(vars sdkservices.Vars) sdkservices.Integration {

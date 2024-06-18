@@ -8,10 +8,6 @@ import (
 
 	"go.uber.org/zap"
 
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
-	valuesv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/values/v1"
-	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-
 	"go.autokitteh.dev/autokitteh/integrations/slack/api"
 )
 
@@ -72,8 +68,8 @@ func (h handler) HandleSlashCommand(w http.ResponseWriter, r *http.Request) {
 	kv, err := url.ParseQuery(string(body))
 	if err != nil {
 		l.Error("Failed to parse slash command's URL-encoded form",
-			zap.Error(err),
 			zap.ByteString("body", body),
+			zap.Error(err),
 		)
 		http.Error(w, "Bad Request", http.StatusBadRequest)
 		return
@@ -108,28 +104,24 @@ func (h handler) HandleSlashCommand(w http.ResponseWriter, r *http.Request) {
 		TriggerID:   kv.Get("trigger_id"),
 	}
 
-	// Transform the received Slack event into an autokitteh event.
-	data, err := transformCommand(l, w, cmd)
+	// Transform the received Slack event into an AutoKitteh event.
+	akEvent, err := transformEvent(l, cmd, "slash_command")
 	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
-	}
-	akEvent := &sdktypes.EventPB{
-		EventType: "slash_command",
-		Data:      data,
 	}
 
 	// Retrieve all the relevant connections for this event.
-	cids, err := h.listConnectionIDs(r.Context(), cmd.APIAppID, cmd.EnterpriseID, cmd.TeamID)
+	ctx := r.Context()
+	cids, err := h.listConnectionIDs(ctx, cmd.APIAppID, cmd.EnterpriseID, cmd.TeamID)
 	if err != nil {
-		l.Error("Failed to retrieve connection tokens",
-			zap.Error(err),
-		)
+		l.Error("Failed to find connection IDs", zap.Error(err))
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 
 	// Dispatch the event to all of them, for asynchronous handling.
-	h.dispatchAsyncEventsToConnections(l, cids, akEvent)
+	h.dispatchAsyncEventsToConnections(ctx, cids, akEvent)
 
 	// https://api.slack.com/interactivity/slash-commands#responding_to_commands
 	// https://api.slack.com/interactivity/slash-commands#responding_response_url
@@ -139,27 +131,4 @@ func (h handler) HandleSlashCommand(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Add(api.HeaderContentType, api.ContentTypeJSONCharsetUTF8)
 	fmt.Fprintf(w, "{\"response_type\": \"ephemeral\", \"text\": \"Your command: `%s`\"}", cmd.Text)
-}
-
-// transformCommand transforms a received Slack event into an autokitteh event.
-func transformCommand(l *zap.Logger, w http.ResponseWriter, cmd SlashCommand) (map[string]*valuesv1.Value, error) {
-	wrapped, err := sdktypes.DefaultValueWrapper.Wrap(cmd)
-	if err != nil {
-		l.Error("Failed to wrap Slack event",
-			zap.Error(err),
-			zap.Any("cmd", cmd),
-		)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return nil, err
-	}
-	data, err := wrapped.ToStringValuesMap()
-	if err != nil {
-		l.Error("Failed to convert wrapped Slack event",
-			zap.Error(err),
-			zap.Any("cmd", cmd),
-		)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return nil, err
-	}
-	return kittehs.TransformMapValues(data, sdktypes.ToProto), nil
 }

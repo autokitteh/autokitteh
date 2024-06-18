@@ -139,12 +139,12 @@ func (w *sessionWorkflow) sleep(ctx context.Context, args []sdktypes.Value, kwar
 
 func (w *sessionWorkflow) start(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
 	var (
-		loc  string
-		data map[string]sdktypes.Value
-		memo map[string]string
+		loc    string
+		inputs map[string]sdktypes.Value
+		memo   map[string]string
 	)
 
-	if err := sdkmodule.UnpackArgs(args, kwargs, "loc", &loc, "data?", &data, "memo?", &memo); err != nil {
+	if err := sdkmodule.UnpackArgs(args, kwargs, "loc", &loc, "inputs?", &inputs, "memo=?", &memo); err != nil {
 		return sdktypes.InvalidValue, err
 	}
 
@@ -153,7 +153,7 @@ func (w *sessionWorkflow) start(ctx context.Context, args []sdktypes.Value, kwar
 		return sdktypes.InvalidValue, fmt.Errorf("invalid location: %w", err)
 	}
 
-	session := sdktypes.NewSession(w.data.Build.ID(), cl, data, memo).
+	session := sdktypes.NewSession(w.data.Build.ID(), cl, inputs, memo).
 		WithParentSessionID(w.data.SessionID).
 		WithDeploymentID(w.data.Session.DeploymentID()).
 		WithEnvID(w.data.Env.ID())

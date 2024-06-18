@@ -2,6 +2,7 @@ package http
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -9,6 +10,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/integrations/internal/extrazap"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -16,9 +18,6 @@ import (
 )
 
 const (
-	// Save new autokitteh connections with user-submitted secrets.
-	uiPath = "/i/http/connect/"
-
 	// savePath is the URL path for our handler to save a new autokitteh
 	// connection, after the user submits its details via a web form.
 	savePath = "/i/http/save"
@@ -45,14 +44,13 @@ func Start(l *zap.Logger, mux *http.ServeMux, d sdkservices.Dispatcher, c sdkser
 	mux.Handle(routePrefix("{ns}")+"*", h)
 
 	// Save new autokitteh connections with user-submitted HTTP secrets.
-	mux.Handle(uiPath, http.FileServer(http.FS(static.HTTPWebContent)))
+	mux.Handle(desc.ConnectionURL().Path, http.FileServer(http.FS(static.HTTPWebContent)))
 	mux.HandleFunc(savePath, h.handleAuth)
 }
 
 func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	l := h.logger.With(zap.String("url", r.URL.String()))
-
-	l.Info("incoming request")
+	l := h.logger.With(zap.String("urlPath", r.URL.Path))
+	l.Info("Incoming HTTP request")
 
 	ns := r.PathValue("ns")
 	env := strings.ReplaceAll(ns, ".", "/")
@@ -109,11 +107,16 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		Data:      kittehs.TransformMapValues(data, sdktypes.ToProto),
 	})
 	if err != nil {
-		l.Error("create event error", zap.Error(err))
+		l.Error("Failed to convert protocol buffer to SDK event",
+			zap.String("eventType", strings.ToLower(r.Method)),
+			zap.Any("data", data),
+			zap.Error(err),
+		)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 
-	ctx := r.Context()
+	ctx := extrazap.AttachLoggerToContext(l, r.Context())
 
 	pname, err := sdktypes.StrictParseSymbol(strings.SplitN(env, "/", 2)[0])
 	if err != nil {
@@ -127,23 +130,35 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Retrieve all the relevant connections for this event.
 	conns, err := h.conns.List(ctx, sdkservices.ListConnectionsFilter{
 		IntegrationID: IntegrationID,
 		ProjectID:     p.ID(),
 	})
 	if err != nil {
-		l.Error("list connections error", zap.Error(err))
+		l.Error("Failed to find connection IDs", zap.Error(err))
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 
-	for _, c := range conns {
-		cid := c.ID()
-		l := l.With(zap.String("cid", cid.String()))
-		eid, err := h.dispatcher.Dispatch(ctx, event.WithConnectionID(cid), &sdkservices.DispatchOptions{Env: env})
-		if err != nil {
-			l.Error("dispatch error", zap.Error(err))
-		}
+	// Dispatch the event to all of them, for asynchronous handling.
+	h.dispatchAsyncEventsToConnections(ctx, conns, env, event)
+}
 
-		l.Info("dispatched", zap.String("event_id", eid.String()))
+func (h handler) dispatchAsyncEventsToConnections(ctx context.Context, cs []sdktypes.Connection, env string, event sdktypes.Event) {
+	l := extrazap.ExtractLoggerFromContext(ctx)
+	for _, c := range cs {
+		cid := c.ID()
+		opts := &sdkservices.DispatchOptions{Env: env}
+		eid, err := h.dispatcher.Dispatch(ctx, event.WithConnectionID(cid), opts)
+		l := l.With(
+			zap.String("connectionID", cid.String()),
+			zap.String("eventID", eid.String()),
+		)
+		if err != nil {
+			l.Error("Event dispatch failed", zap.Error(err))
+			return
+		}
+		l.Debug("Event dispatched")
 	}
 }

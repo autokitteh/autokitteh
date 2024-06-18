@@ -2,8 +2,6 @@ package github
 
 import (
 	"context"
-	"fmt"
-	"strings"
 
 	"go.autokitteh.dev/autokitteh/integrations/github/internal/vars"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
@@ -26,8 +24,9 @@ var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.Integrati
 	Description:   "GitHub is a development platform with distributed version control, issue tracking, continuous integration, and more.",
 	LogoUrl:       "/static/images/github.svg",
 	UserLinks: map[string]string{
-		"1 REST API":      "https://docs.github.com/rest",
-		"2 Go client API": "https://pkg.go.dev/github.com/google/go-github/v57/github",
+		"1 REST API":          "https://docs.github.com/rest",
+		"2 Go client API":     "https://pkg.go.dev/github.com/google/go-github/v57/github",
+		"3 Python client API": "https://pygithub.readthedocs.io/en/stable/",
 	},
 	ConnectionUrl: "/github/connect",
 	ConnectionCapabilities: &sdktypes.ConnectionCapabilitiesPB{
@@ -53,12 +52,14 @@ func connTest(*integration) sdkintegrations.OptFn {
 	})
 }
 
+// connStatus is an optional connection status check provided by the
+// integration to AutoKitteh. The possible results are "init required"
+// (the connection is not usable yet) and "using X" (where "X" is the
+// authentication method: OAuth 2.0, Cloud API token, or on-prem PAT).
 func connStatus(i *integration) sdkintegrations.OptFn {
 	return sdkintegrations.WithConnectionStatus(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
-		initReq := sdktypes.NewStatus(sdktypes.StatusCodeWarning, "init required")
-
 		if !cid.IsValid() {
-			return initReq, nil
+			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "init required"), nil
 		}
 
 		vs, err := i.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
@@ -68,17 +69,9 @@ func connStatus(i *integration) sdkintegrations.OptFn {
 
 		if vs.Has(vars.PAT) {
 			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "using PAT"), nil
+		} else {
+			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "using OAuth 2.0"), nil
 		}
-
-		n := len(kittehs.Filter(vs, func(v sdktypes.Var) bool {
-			return strings.HasPrefix(v.Name().String(), "app_id__")
-		}))
-
-		if n == 0 {
-			return initReq, nil
-		}
-
-		return sdktypes.NewStatus(sdktypes.StatusCodeOK, fmt.Sprintf("%d installations", n)), nil
 	})
 }
 

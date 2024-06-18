@@ -203,15 +203,13 @@ func post(ctx context.Context, vars sdkservices.Vars, url, body, contentType str
 	return b, nil
 }
 
-// getConnection calls the Get method in SecretsService.
 func getConnection(ctx context.Context, varsSvc sdkservices.Vars) (*oauth2.Token, error) {
-	tok, ok := ctx.Value(OAuthTokenContextKey).(string)
+	token, ok := ctx.Value(OAuthTokenContextKey).(string)
 	if ok {
-		return &oauth2.Token{AccessToken: tok}, nil
+		return &oauth2.Token{AccessToken: token}, nil
 	}
 
 	if varsSvc == nil {
-		// test.
 		return &oauth2.Token{}, nil
 	}
 
@@ -221,23 +219,26 @@ func getConnection(ctx context.Context, varsSvc sdkservices.Vars) (*oauth2.Token
 		return nil, err
 	}
 
-	vs, err := varsSvc.Reveal(context.Background(), sdktypes.NewVarScopeID(cid))
+	vs, err := varsSvc.Reveal(ctx, sdktypes.NewVarScopeID(cid))
 	if err != nil {
 		return nil, err
 	}
 
 	// Socket mode connection.
 	if bt := vs.GetValue(vars.BotTokenName); bt != "" {
-		return &oauth2.Token{
-			AccessToken: bt,
-		}, nil
+		return &oauth2.Token{AccessToken: bt}, nil
 	}
 
-	// OAuth connection.
+	// Not Socket mode, so maybe OAuth?
 	oauthData, err := sdkintegrations.DecodeOAuthData(vs.GetValue(vars.OAuthDataName))
 	if err != nil {
-		return nil, err
+		// No, we are using a temporary URL which was provided by Slack
+		// (https://hooks.slack.com/actions/...), so we don't have to attach
+		// an AutoKitteh connection's OAuth token to our outgoing request.
+		return &oauth2.Token{}, nil
 	}
 
+	// Yes, we are sending a regular Slack API request
+	// on behalf of an OAuth-based AutoKitteh connection.
 	return oauthData.Token, nil
 }

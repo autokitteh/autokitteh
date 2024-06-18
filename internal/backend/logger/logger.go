@@ -12,23 +12,14 @@ import (
 )
 
 type Config struct {
-	Zap zap.Config `koanf:"zap"`
+	Zap      zap.Config `koanf:"zap"`
+	Level    int        `koanf:"level"`    // -1 = Debug, 0 = Info, etc.
+	Encoding string     `koanf:"encoding"` // "json" or "console".
 }
-
-var defaultZapLevel = zap.NewAtomicLevelAt(zap.InfoLevel)
 
 var Configs = configset.Set[Config]{
 	Default: &Config{Zap: zap.NewProductionConfig()},
-	Dev: &Config{
-		Zap: (func() (cfg zap.Config) {
-			cfg = zap.NewDevelopmentConfig()
-			cfg.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
-			cfg.EncoderConfig.EncodeTime = zapcore.TimeEncoderOfLayout(time.DateTime)
-			cfg.EncoderConfig.ConsoleSeparator = " "
-			cfg.Level = defaultZapLevel
-			return
-		})(),
-	},
+	Dev:     &Config{Zap: zap.NewDevelopmentConfig()},
 }
 
 type onFatalHook struct{}
@@ -46,6 +37,23 @@ func (onPanicHook) OnWrite(ce *zapcore.CheckedEntry, fs []zapcore.Field) {
 }
 
 func New(cfg *Config) (*zap.Logger, error) {
+	cfg.Zap.Level.SetLevel(zapcore.Level(cfg.Level)) // Default = 0 = Info.
+
+	// Optional override for the default encoding:
+	// AK default mode = Zap production config = "json" encoding,
+	// AK dev mode = Zap development config = "console" encoding.
+	if cfg.Encoding != "" {
+		cfg.Zap.Encoding = cfg.Encoding
+	}
+
+	// Regardless of AK mode, if the encoding is "console" (whether
+	// as a default or as an override), tweak it for easier reading.
+	if cfg.Zap.Encoding == "console" {
+		cfg.Zap.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
+		cfg.Zap.EncoderConfig.EncodeTime = zapcore.TimeEncoderOfLayout(time.DateTime)
+		cfg.Zap.EncoderConfig.ConsoleSeparator = " "
+	}
+
 	z, err := cfg.Zap.Build(
 		zap.WithFatalHook(onFatalHook{}),
 		zap.WithPanicHook(onPanicHook{}),

@@ -11,8 +11,6 @@ import (
 	"go.autokitteh.dev/autokitteh/integrations/slack/api/chat"
 	"go.autokitteh.dev/autokitteh/integrations/slack/internal/vars"
 	"go.autokitteh.dev/autokitteh/integrations/slack/webhooks"
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
-	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 // HandleSlashCommand dispatches and acknowledges a user's slash command registered by our
@@ -42,37 +40,16 @@ func (h handler) handleSlashCommand(e *socketmode.Event, c *socketmode.Client) {
 		TriggerID:   d.TriggerID,
 	}
 
-	// Transform the slash command struct into an autokitteh event.
-	wrapped, err := sdktypes.DefaultValueWrapper.Wrap(cmd)
+	// Transform the received Slack event into an AutoKitteh event.
+	akEvent, err := transformEvent(h.logger, cmd, "slash_command")
 	if err != nil {
-		h.logger.Error("Failed to wrap Slack event",
-			zap.Any("cmd", cmd),
-			zap.Error(err),
-		)
-		c.Ack(*e.Request)
 		return
-	}
-
-	m, err := wrapped.ToStringValuesMap()
-	if err != nil {
-		h.logger.Error("Failed to convert wrapped Slack event",
-			zap.Any("cmd", cmd),
-			zap.Error(err),
-		)
-		c.Ack(*e.Request)
-		return
-	}
-
-	pb := kittehs.TransformMapValues(m, sdktypes.ToProto)
-	akEvent := &sdktypes.EventPB{
-		EventType: "slash_command",
-		Data:      pb,
 	}
 
 	// Retrieve all the relevant connections for this event.
 	cids, err := h.vars.FindConnectionIDs(context.Background(), h.integrationID, vars.AppTokenName, "")
 	if err != nil {
-		h.logger.Error("Failed to retrieve connection tokens", zap.Error(err))
+		h.logger.Error("Failed to find connection IDs", zap.Error(err))
 		c.Ack(*e.Request)
 		return
 	}
