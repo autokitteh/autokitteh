@@ -13,6 +13,7 @@ try:
     import google.oauth2.credentials as credentials
     import google.oauth2.service_account as service_account
     from googleapiclient.discovery import build
+    from jira import JIRA
     import slack_sdk
 except ModuleNotFoundError:
     pass
