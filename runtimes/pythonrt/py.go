@@ -220,7 +220,7 @@ func writeTar(rootDir string, data []byte) (string, error) {
 	return tarName, err
 }
 
-func adjustPYTHONPATH(env []string, runnerPath string) []string {
+func adjustPythonPath(env []string, runnerPath string) []string {
 	// Iterate in reverse since last value overrides
 	for i := len(env) - 1; i >= 0; i-- {
 		v := env[i]
@@ -240,7 +240,7 @@ func overrideEnv(envMap map[string]string, runnerPath string) []string {
 		env = append(env, fmt.Sprintf("%s=%s", k, v))
 	}
 
-	return adjustPYTHONPATH(env, runnerPath)
+	return adjustPythonPath(env, runnerPath)
 }
 
 func createVEnv(pyExe string, venvPath string) error {
@@ -304,7 +304,7 @@ func pyExports(ctx context.Context, pyExe string, fsys fs.FS) ([]Export, error) 
 	var buf bytes.Buffer
 	cmd.Stdout = &buf
 	cmd.Stderr = &buf
-	cmd.Env = adjustPYTHONPATH(os.Environ(), runnerDir)
+	cmd.Env = adjustPythonPath(os.Environ(), runnerDir)
 	if err := cmd.Run(); err != nil {
 		return nil, fmt.Errorf("inspect: %w.\nPython output: %s", err, buf.String())
 	}

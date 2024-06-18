@@ -69,7 +69,7 @@ class AKCall:
                     fn = getattr(self.module, fn, None)
                     if fn is None:
                         mod_name = self.module.__name__
-                        raise ValueError(f'function {fn} not found in {mod_name}')
+                        raise ValueError(f'function {fn!r} not found in {mod_name!r}')
                 value = fn(*args, **kw)
                 self.comm.send_response(value)
                 message = self.comm.recv(MessageType.response)

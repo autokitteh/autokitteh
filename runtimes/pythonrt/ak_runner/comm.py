@@ -15,7 +15,11 @@ class MessageType:
     
 
 class Comm:
-    """Comm does communication with ak server, JSON lines over socket."""
+    """Comm communicates with ak server.
+
+    The communication protocol is JSON object per line over a socket.
+    See "Communication Sequence" section of the README for more details.
+    """
     def __init__(self, sock):
         self.sock = sock
         self.rdr = sock.makefile('r')
@@ -27,7 +31,7 @@ class Comm:
     def recv(self, *msg_types):
         data = self.rdr.readline()
         if not data:
-            raise ValueError('connection closed')
+            raise ValueError('connection from autokitteh closed')
 
         message = json.loads(data)
         if (typ := message['type']) not in msg_types:

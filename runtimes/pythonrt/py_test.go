@@ -229,7 +229,7 @@ var adjustCases = []struct {
 func Test_adjustPYTHONPATH(t *testing.T) {
 	for _, tc := range adjustCases {
 		t.Run(tc.name, func(t *testing.T) {
-			out := adjustPYTHONPATH(tc.env, testRunnerPath)
+			out := adjustPythonPath(tc.env, testRunnerPath)
 			require.Equal(t, tc.expected, out)
 		})
 	}
