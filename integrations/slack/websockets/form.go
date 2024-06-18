@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"go.uber.org/zap"
 
@@ -19,39 +20,31 @@ import (
 const (
 	// uiPath is the URL root path of a simple web UI to interact
 	// with users to install a Slack Socket Mode app.
-	uiPath = "/slack/connect/"
+	uiPath = "/slack/connect"
 
-	HeaderContentType = "Content-Type"
-	ContentTypeForm   = "application/x-www-form-urlencoded"
+	headerContentType = "Content-Type"
+	contentTypeForm   = "application/x-www-form-urlencoded"
 )
 
 // HandleForm saves a new autokitteh connection, based on a user-submitted form.
 func (h handler) HandleForm(w http.ResponseWriter, r *http.Request) {
 	l := h.logger.With(zap.String("urlPath", r.URL.Path))
 
-	// Check "Content-Type" header.
-	ct := r.Header.Get(HeaderContentType)
-	if ct != ContentTypeForm {
-		l.Warn("Unexpected header value",
-			zap.String("header", HeaderContentType),
-			zap.String("got", ct),
-			zap.String("want", ContentTypeForm),
-		)
-		e := fmt.Sprintf("Unexpected Content-Type header: %q", ct)
-		u := uiPath + "error.html?error=" + url.QueryEscape(e)
-		http.Redirect(w, r, u, http.StatusFound)
+	// Check the "Content-Type" header.
+	contentType := r.Header.Get(headerContentType)
+	if !strings.HasPrefix(contentType, contentTypeForm) {
+		// Probably an attack, so no need for user-friendliness.
+		http.Error(w, "Bad Request", http.StatusBadRequest)
 		return
 	}
 
 	// Read and parse POST request body.
-	err := r.ParseForm()
-	if err != nil {
+	if err := r.ParseForm(); err != nil {
 		l.Warn("Failed to parse inbound HTTP request", zap.Error(err))
-		e := "Form parsing error: " + err.Error()
-		u := uiPath + "error.html?error=" + url.QueryEscape(e)
-		http.Redirect(w, r, u, http.StatusFound)
+		redirectToErrorPage(w, r, "form parsing error: "+err.Error())
 		return
 	}
+
 	botToken := r.Form.Get("bot_token")
 	appToken := r.Form.Get("app_token")
 
@@ -59,25 +52,22 @@ func (h handler) HandleForm(w http.ResponseWriter, r *http.Request) {
 	ctx := extrazap.AttachLoggerToContext(l, r.Context())
 	authTest, err := auth.TestWithToken(ctx, botToken)
 	if err != nil {
-		e := "Bot token test failed: " + err.Error()
-		u := uiPath + "error.html?error=" + url.QueryEscape(e)
-		http.Redirect(w, r, u, http.StatusFound)
+		l.Warn("Slack OAuth token test failed", zap.Error(err))
+		redirectToErrorPage(w, r, "token auth test failed: "+err.Error())
 		return
 	}
 
 	botInfo, err := bots.InfoWithToken(ctx, botToken, authTest)
 	if err != nil {
-		e := "Bot info request failed: " + err.Error()
-		u := uiPath + "error.html?error=" + url.QueryEscape(e)
-		http.Redirect(w, r, u, http.StatusFound)
+		l.Warn("Slack bot info request failed", zap.Error(err))
+		redirectToErrorPage(w, r, "bot info request failed: "+err.Error())
 		return
 	}
 
 	_, err = apps.ConnectionsOpenWithToken(ctx, h.vars, appToken)
 	if err != nil {
-		e := "Socket connection test failed: " + err.Error()
-		u := uiPath + "error.html?error=" + url.QueryEscape(e)
-		http.Redirect(w, r, u, http.StatusFound)
+		l.Warn("Slack websocket connection error", zap.Error(err))
+		redirectToErrorPage(w, r, "websocket connection error: "+err.Error())
 		return
 	}
 
@@ -95,4 +85,9 @@ func (h handler) HandleForm(w http.ResponseWriter, r *http.Request) {
 	h.OpenSocketModeConnection(botInfo.Bot.AppID, botToken, appToken)
 
 	sdkintegrations.FinalizeConnectionInit(w, r, h.integrationID, initData)
+}
+
+func redirectToErrorPage(w http.ResponseWriter, r *http.Request, err string) {
+	u := fmt.Sprintf("%s/error.html?error=%s", uiPath, url.QueryEscape(err))
+	http.Redirect(w, r, u, http.StatusFound)
 }

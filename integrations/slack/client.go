@@ -26,6 +26,7 @@ var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.Integrati
 	UserLinks: map[string]string{
 		"1 Web API reference":    "https://api.slack.com/methods",
 		"2 Events API reference": "https://api.slack.com/events?filter=Events",
+		"3 Python client API":    "https://slack.dev/python-slack-sdk/api-docs/slack_sdk/",
 	},
 	ConnectionUrl: "/slack/connect",
 	ConnectionCapabilities: &sdktypes.ConnectionCapabilitiesPB{

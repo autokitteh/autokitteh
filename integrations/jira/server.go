@@ -19,11 +19,12 @@ const (
 
 func Start(l *zap.Logger, mux *http.ServeMux, vars sdkservices.Vars, o sdkservices.OAuth, d sdkservices.Dispatcher) {
 	// Connection UI + handlers.
-	mux.Handle(desc.ConnectionURL().Path, http.FileServer(http.FS(static.JiraWebContent)))
+	uiPath := "GET " + desc.ConnectionURL().Path + "/"
+	mux.Handle(uiPath, http.FileServer(http.FS(static.JiraWebContent)))
 
 	h := NewHTTPHandler(l, o, vars, d)
-	mux.HandleFunc(oauthPath, h.handleOAuth)
+	mux.HandleFunc("GET "+oauthPath, h.handleOAuth)
 
 	// Event webhook.
-	mux.HandleFunc(webhookPath, h.handleEvent)
+	mux.HandleFunc("POST "+webhookPath, h.handleEvent)
 }

@@ -18,20 +18,27 @@ const (
 	// formPath is the URL path for our handler to save a new
 	// autokitteh connection, based on a user-submitted form.
 	formPath = "/slack/save"
+
+	// oauthPath is the URL path for our handler to save
+	// new OAuth-based connections.
+	oauthPath = "/slack/oauth"
 )
 
 func Start(l *zap.Logger, mux *http.ServeMux, vs sdkservices.Vars, d sdkservices.Dispatcher) {
 	// Connection UI + save handlers.
-	wsh := websockets.NewHandler(l, vs, d, integrationID)
+	uiPath := "GET " + desc.ConnectionURL().Path + "/"
 	mux.Handle(uiPath, http.FileServer(http.FS(static.SlackWebContent)))
-	mux.Handle(oauthPath, NewHandler(l))
-	mux.HandleFunc(formPath, wsh.HandleForm)
+
+	mux.Handle("GET "+oauthPath, NewHandler(l))
+
+	wsh := websockets.NewHandler(l, vs, d, integrationID)
+	mux.HandleFunc("POST "+formPath, wsh.HandleForm)
 
 	// Event webhooks.
 	whh := webhooks.NewHandler(l, vs, d, integrationID)
-	mux.HandleFunc(webhooks.BotEventPath, whh.HandleBotEvent)
-	mux.HandleFunc(webhooks.SlashCommandPath, whh.HandleSlashCommand)
-	mux.HandleFunc(webhooks.InteractionPath, whh.HandleInteraction)
+	mux.HandleFunc("POST "+webhooks.BotEventPath, whh.HandleBotEvent)
+	mux.HandleFunc("POST "+webhooks.SlashCommandPath, whh.HandleSlashCommand)
+	mux.HandleFunc("POST "+webhooks.InteractionPath, whh.HandleInteraction)
 
 	// Initialize WebSocket pool.
 	cids, err := vs.FindConnectionIDs(context.Background(), integrationID, vars.AppTokenName, "")

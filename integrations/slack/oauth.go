@@ -2,6 +2,7 @@ package slack
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"net/url"
 
@@ -13,17 +14,6 @@ import (
 	"go.autokitteh.dev/autokitteh/integrations/slack/internal/vars"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-)
-
-const (
-	// uiPath is the URL root path of a simple web UI to interact with
-	// users at the beginning and the end of their 3-legged OAuth v2
-	// flow to install a Slack app.
-	uiPath = "/slack/connect/"
-
-	// oauthPath is the URL path for our handler to save
-	// new OAuth-based connections.
-	oauthPath = "/slack/oauth"
 )
 
 // handler is an autokitteh webhook which implements [http.Handler]
@@ -48,25 +38,22 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// https://developers.google.com/identity/protocols/oauth2/web-server#handlingresponse
 	e := r.FormValue("error")
 	if e != "" {
-		l.Warn("OAuth redirect request reported an error",
-			zap.Error(errors.New(e)),
-		)
-		u := uiPath + "error.html?error=" + url.QueryEscape(e)
-		http.Redirect(w, r, u, http.StatusFound)
+		l.Warn("OAuth redirect request reported an error", zap.Error(errors.New(e)))
+		redirectToErrorPage(w, r, e)
 		return
 	}
 
-	oauthDataString, oauthData, err := sdkintegrations.GetOAuthDataFromURL(r.URL)
+	raw, data, err := sdkintegrations.GetOAuthDataFromURL(r.URL)
 	if err != nil {
-		l.Warn("Failed to decode OAuth data", zap.Error(err))
-		http.Error(w, "Bad request: invalid OAuth data", http.StatusBadRequest)
+		l.Warn("Invalid data in OAuth redirect request", zap.Error(err))
+		redirectToErrorPage(w, r, "invalid data parameter")
 		return
 	}
 
-	oauthToken := oauthData.Token
+	oauthToken := data.Token
 	if oauthToken == nil {
-		l.Warn("OAuth data missing token")
-		http.Error(w, "Bad request: missing OAuth token", http.StatusBadRequest)
+		l.Warn("Missing token in OAuth redirect request", zap.Any("data", data))
+		redirectToErrorPage(w, r, "missing OAuth token")
 		return
 	}
 
@@ -74,17 +61,15 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx := extrazap.AttachLoggerToContext(l, r.Context())
 	authTest, err := auth.TestWithToken(ctx, oauthToken.AccessToken)
 	if err != nil {
-		e := "OAuth token test failed: " + err.Error()
-		u := uiPath + "error.html?error=" + url.QueryEscape(e)
-		http.Redirect(w, r, u, http.StatusFound)
+		l.Warn("Slack OAuth token test failed", zap.Error(err))
+		redirectToErrorPage(w, r, "token auth test failed: "+err.Error())
 		return
 	}
 
 	botInfo, err := bots.InfoWithToken(ctx, oauthToken.AccessToken, authTest)
 	if err != nil {
-		e := "Bot info request failed: " + err.Error()
-		u := uiPath + "error.html?error=" + url.QueryEscape(e)
-		http.Redirect(w, r, u, http.StatusFound)
+		l.Warn("Slack bot info request failed", zap.Error(err))
+		redirectToErrorPage(w, r, "bot info request failed: "+err.Error())
 		return
 	}
 
@@ -97,8 +82,13 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		},
 	).
 		Set(vars.KeyName, key, false).
-		Set(vars.OAuthDataName, oauthDataString, true).
-		Append(oauthData.ToVars()...)
+		Set(vars.OAuthDataName, raw, true).
+		Append(data.ToVars()...)
 
 	sdkintegrations.FinalizeConnectionInit(w, r, integrationID, initData)
+}
+
+func redirectToErrorPage(w http.ResponseWriter, r *http.Request, err string) {
+	u := fmt.Sprintf("%s/error.html?error=%s", desc.ConnectionURL().Path, url.QueryEscape(err))
+	http.Redirect(w, r, u, http.StatusFound)
 }

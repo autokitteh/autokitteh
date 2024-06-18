@@ -1,0 +1,57 @@
+ak deploy --manifest project.yaml
+return code == 0
+
+http get /http/my_project/short
+resp code == 200
+
+wait 5s for session ses_00000000000000000000000009
+
+ak session log --prints-only
+return code == 0
+output contains 'True'
+
+http get /http/my_project/long
+resp code == 200
+
+ak session watch ses_0000000000000000000000000c --end-state RUNNING
+return code == 0
+
+ak deployment drain dep_00000000000000000000000007
+return code == 0
+
+wait 5s for session ses_0000000000000000000000000c
+
+ak session log --prints-only
+return code == 0
+output contains 'still alive!'
+output contains 'done'
+
+-- project.yaml --
+version: v1
+
+project:
+  name: my_project
+  connections:
+    - name: my_connection
+      integration: http
+  triggers:
+    - name: http_get_short
+      connection: my_connection
+      call: program.star:on_http_get_short
+      data:
+        path: "/short"
+    - name: http_get_long
+      connection: my_connection
+      call: program.star:on_http_get_long
+      data:
+        path: "/long"
+
+-- program.star --
+def on_http_get_short():
+    print(ak.is_deployment_active())
+
+def on_http_get_long():
+    while ak.is_deployment_active():
+        print("still alive!")
+        sleep(1)
+    print("done")
