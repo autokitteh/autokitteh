@@ -4,7 +4,7 @@ import (
 	"archive/tar"
 	"bytes"
 	"context"
-	_ "embed"
+	"embed"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -19,8 +19,8 @@ import (
 )
 
 var (
-	//go:embed ak_runner.py
-	runnerPyCode []byte
+	//go:embed ak_runner/*.py
+	runnerPyCode embed.FS
 
 	//go:embed requirements.txt
 	requirementsData []byte
@@ -142,20 +142,6 @@ func pyExeInfo(ctx context.Context, exePath string) (exeInfo, error) {
 	return info, nil
 }
 
-func createFile(fileName string, content []byte) error {
-	file, err := os.Create(fileName)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	if _, err := io.Copy(file, bytes.NewReader(content)); err != nil {
-		return fmt.Errorf("can't copy python code to %s: %w", file.Name(), err)
-	}
-
-	return nil
-}
-
 type pyRunInfo struct {
 	rootDir  string
 	sockPath string
@@ -172,17 +158,11 @@ type runOptions struct {
 	stdout, stderr io.Writer
 }
 
-func createRunner(rootDir string) (string, error) {
-	runnerPath := path.Join(rootDir, "ak_runner.py")
-	if err := createFile(runnerPath, runnerPyCode); err != nil {
-		return "", err
-	}
-
-	return runnerPath, nil
-}
+const runnerMod = "ak_runner"
 
 func runPython(opts runOptions) (*pyRunInfo, error) {
 	rootDir, err := os.MkdirTemp("", "ak-")
+	opts.log.Info("root dir", zap.String("path", rootDir))
 	if err != nil {
 		return nil, err
 	}
@@ -192,11 +172,9 @@ func runPython(opts runOptions) (*pyRunInfo, error) {
 		return nil, err
 	}
 
-	runnerPath, err := createRunner(rootDir)
-	if err != nil {
+	if err := copyFS(runnerPyCode, rootDir); err != nil {
 		return nil, err
 	}
-	opts.log.Info("python runner", zap.String("path", runnerPath))
 
 	sockPath := path.Join(rootDir, "ak.sock")
 	opts.log.Info("socket", zap.String("path", sockPath))
@@ -206,9 +184,9 @@ func runPython(opts runOptions) (*pyRunInfo, error) {
 		return nil, err
 	}
 
-	cmd := exec.Command(opts.pyExe, runnerPath, "run", sockPath, tarPath, opts.rootPath)
+	cmd := exec.Command(opts.pyExe, "-m", runnerMod, "run", sockPath, tarPath, opts.rootPath)
 	cmd.Dir = rootDir
-	cmd.Env = overrideEnv(opts.env)
+	cmd.Env = overrideEnv(opts.env, rootDir)
 	cmd.Stdout = opts.stdout
 	cmd.Stderr = opts.stderr
 
@@ -242,14 +220,27 @@ func writeTar(rootDir string, data []byte) (string, error) {
 	return tarName, err
 }
 
-func overrideEnv(envMap map[string]string) []string {
+func adjustPythonPath(env []string, runnerPath string) []string {
+	// Iterate in reverse since last value overrides
+	for i := len(env) - 1; i >= 0; i-- {
+		v := env[i]
+		if strings.HasPrefix(v, "PYTHONPATH=") {
+			env[i] = fmt.Sprintf("%s:%s", v, runnerPath)
+			return env
+		}
+	}
+
+	return append(env, fmt.Sprintf("PYTHONPATH=%s", runnerPath))
+}
+
+func overrideEnv(envMap map[string]string, runnerPath string) []string {
 	env := os.Environ()
 	// Append AK values to end to override (see Env docs in https://pkg.go.dev/os/exec#Cmd)
 	for k, v := range envMap {
 		env = append(env, fmt.Sprintf("%s=%s", k, v))
 	}
 
-	return env
+	return adjustPythonPath(env, runnerPath)
 }
 
 func createVEnv(pyExe string, venvPath string) error {
@@ -305,15 +296,15 @@ func pyExports(ctx context.Context, pyExe string, fsys fs.FS) ([]Export, error) 
 		return nil, err
 	}
 
-	runnerPath, err := createRunner(runnerDir)
-	if err != nil {
+	if err := copyFS(runnerPyCode, runnerDir); err != nil {
 		return nil, err
 	}
 
-	cmd := exec.CommandContext(ctx, pyExe, runnerPath, "inspect", tmpDir)
+	cmd := exec.CommandContext(ctx, pyExe, "-m", runnerMod, "inspect", tmpDir)
 	var buf bytes.Buffer
 	cmd.Stdout = &buf
 	cmd.Stderr = &buf
+	cmd.Env = adjustPythonPath(os.Environ(), runnerDir)
 	if err := cmd.Run(); err != nil {
 		return nil, fmt.Errorf("inspect: %w.\nPython output: %s", err, buf.String())
 	}
