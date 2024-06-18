@@ -196,7 +196,8 @@ func newDBFixture() *dbFixture {
 	if err := CleanupDB(&gormDB, ctx); err != nil { // ensure migration/schemas
 		log.Fatalf("Failed to cleanup gormdb: %v", err)
 	}
-	return &dbFixture{db: gormDB.db, gormdb: &gormDB, ctx: ctx}
+	f := dbFixture{db: gormDB.db, gormdb: &gormDB, ctx: ctx}
+	return &f
 }
 
 func (f *dbFixture) WithForeignKeysDisabled(fn func()) {
@@ -206,10 +207,11 @@ func (f *dbFixture) WithForeignKeysDisabled(fn func()) {
 }
 
 // enable SQL logging
-// func (f *dbFixture) debug() {
-// 	f.db = f.db.Debug()
-// 	f.gormdb.db = f.db
-// }
+func (f *dbFixture) WithDebug() *dbFixture {
+	f.db = f.db.Debug()
+	f.gormdb.db = f.db
+	return f
+}
 
 func findAndAssertCount[T any](t *testing.T, f *dbFixture, expected int, where string, args ...any) []T {
 	var objs []T

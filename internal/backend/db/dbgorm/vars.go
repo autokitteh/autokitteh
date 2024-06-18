@@ -14,8 +14,17 @@ import (
 )
 
 func (db *gormdb) setVars(ctx context.Context, vars []scheme.Var) error {
-	// NOTE: should be transactional
-	return db.db.WithContext(ctx).Clauses(clause.OnConflict{UpdateAll: true}).Create(&vars).Error
+	conflict := clause.OnConflict{
+		Columns:   []clause.Column{{Name: "scope_id"}, {Name: "name"}},      // uniqueness name + scope
+		DoUpdates: clause.AssignmentColumns([]string{"value", "is_secret"}), // updates allowed for value and is_secret
+	}
+	for i := range vars {
+		// Set the ID for each var. Note that it be used only when creating the variable
+		// On conflict/update it will be ignored
+		vars[i].VarID = sdktypes.NewVarID().UUIDValue()
+	}
+
+	return db.db.WithContext(ctx).Clauses(conflict).Create(&vars).Error
 }
 
 func (db *gormdb) SetVars(ctx context.Context, vars []sdktypes.Var) error {

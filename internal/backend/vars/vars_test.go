@@ -27,6 +27,14 @@ type dbMock struct {
 	SetVarsFunc func(context.Context, []sdktypes.Var) error
 }
 
+func (d dbMock) Transaction(ctx context.Context, f func(tx db.DB) error) error {
+	return f(d)
+}
+
+func (d dbMock) AddOwnership(ctx context.Context, entities ...any) error {
+	return nil
+}
+
 func (d dbMock) GetVars(ctx context.Context, sid sdktypes.VarScopeID, sym []sdktypes.Symbol) ([]sdktypes.Var, error) {
 	return d.GetVarsFunc(ctx, sid, sym)
 }
