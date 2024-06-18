@@ -49,11 +49,17 @@ func (b *Builds) Save(ctx context.Context, build sdktypes.Build, data []byte) (s
 		return sdktypes.InvalidBuildID, fmt.Errorf("read version: %w", err)
 	}
 
-	build = build.
-		WithNewID().
-		WithCreatedAt(time.Now())
+	build = build.WithNewID().WithCreatedAt(time.Now())
 
-	if err := b.DB.SaveBuild(ctx, build, data); err != nil {
+	if err := b.DB.Transaction(ctx, func(tx db.DB) error {
+		if err := tx.SaveBuild(ctx, build, data); err != nil {
+			return err
+		}
+		if err := tx.AddOwnership(ctx, build); err != nil {
+			return err
+		}
+		return nil
+	}); err != nil {
 		return sdktypes.InvalidBuildID, err
 	}
 

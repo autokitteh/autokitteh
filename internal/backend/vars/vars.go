@@ -44,7 +44,16 @@ func (v *Vars) Set(ctx context.Context, vs ...sdktypes.Var) error {
 		}
 	}
 
-	if err := v.db.SetVars(ctx, vs); err != nil {
+	if err := v.db.Transaction(ctx, func(tx db.DB) error {
+		if err := tx.SetVars(ctx, vs); err != nil {
+			return err
+		}
+
+		if err := tx.AddOwnership(ctx, vs); err != nil {
+			return err
+		}
+		return nil
+	}); err != nil {
 		return err
 	}
 

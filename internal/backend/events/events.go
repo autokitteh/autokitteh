@@ -31,7 +31,15 @@ func (e *events) List(ctx context.Context, filter sdkservices.ListEventsFilter) 
 func (e *events) Save(ctx context.Context, event sdktypes.Event) (sdktypes.EventID, error) {
 	event = event.WithNewID().WithCreatedAt(time.Now())
 
-	if err := e.db.SaveEvent(ctx, event); err != nil {
+	if err := e.db.Transaction(ctx, func(tx db.DB) error {
+		if err := e.db.SaveEvent(ctx, event); err != nil {
+			return err
+		}
+		if err := tx.AddOwnership(ctx, event); err != nil {
+			return err
+		}
+		return nil
+	}); err != nil {
 		return sdktypes.InvalidEventID, err
 	}
 

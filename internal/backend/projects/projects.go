@@ -35,8 +35,9 @@ func (ps *Projects) Create(ctx context.Context, project sdktypes.Project) (sdkty
 		project = project.WithName(sdktypes.NewRandomSymbol())
 	}
 
-	env := kittehs.Must1(sdktypes.EnvFromProto(&sdktypes.EnvPB{ProjectId: project.ID().String(), Name: "default"}))
-	env = env.WithNewID()
+	if err := project.Strict(); err != nil {
+		return sdktypes.InvalidProjectID, err
+	}
 
 	// ensure there is a default cron connection (for all projects)
 	if cronConnection, err := ps.DB.GetConnection(ctx, sdktypes.BuiltinSchedulerConnectionID); errors.Is(err, sdkerrors.ErrNotFound) {
@@ -46,12 +47,19 @@ func (ps *Projects) Create(ctx context.Context, project sdktypes.Project) (sdkty
 		}
 	}
 
+	env := kittehs.Must1(sdktypes.EnvFromProto(&sdktypes.EnvPB{ProjectId: project.ID().String(), Name: "default"}))
+	env = env.WithNewID()
+
 	if err := ps.DB.Transaction(ctx, func(tx db.DB) error {
 		if err := tx.CreateProject(ctx, project); err != nil {
 			return err
 		}
 
 		if err := tx.CreateEnv(ctx, env); err != nil {
+			return err
+		}
+
+		if err := tx.AddOwnership(ctx, project); err != nil {
 			return err
 		}
 
