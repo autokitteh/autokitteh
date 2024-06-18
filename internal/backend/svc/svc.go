@@ -301,7 +301,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		),
 		Component("authloginhttpsvc", authloginhttpsvc.Configs, fx.Invoke(authloginhttpsvc.Init)),
 		fx.Invoke(func(muxes *muxes.Muxes, h integrationsweb.Handler) {
-			muxes.NoAuth.Handle("/i/", &h)
+			muxes.NoAuth.Handle("GET /i/{$}", &h)
 		}),
 		fx.Invoke(dashboardsvc.Init),
 		fx.Invoke(oauth.InitWebhook),
@@ -312,11 +312,13 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 			})
 		}),
 		fx.Invoke(func(z *zap.Logger, muxes *muxes.Muxes) {
-			srv := http.StripPrefix("/static/", http.FileServer(http.FS(static.RootWebContent)))
-			muxes.NoAuth.Handle("/static/", srv)
-			muxes.NoAuth.Handle("/favicon-32x32.png", srv)
-			muxes.NoAuth.Handle("/favicon-16x16.png", srv)
-			muxes.NoAuth.Handle("/favicon.ico", srv)
+			srv := http.FileServer(http.FS(static.RootWebContent))
+			muxes.NoAuth.Handle("GET /static/", http.StripPrefix("/static/", srv))
+			muxes.NoAuth.Handle("GET /favicon-16x16.png", srv)
+			muxes.NoAuth.Handle("GET /favicon-32x32.png", srv)
+			muxes.NoAuth.Handle("GET /favicon.ico", srv)
+			muxes.NoAuth.Handle("GET /robots.txt", srv)
+			muxes.NoAuth.Handle("GET /site.webmanifest", srv)
 		}),
 		Component(
 			"banner",
@@ -329,14 +331,14 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 			}),
 		),
 		fx.Invoke(func(muxes *muxes.Muxes) {
-			muxes.NoAuth.HandleFunc("/id", func(w http.ResponseWriter, r *http.Request) {
+			muxes.NoAuth.HandleFunc("GET /id", func(w http.ResponseWriter, r *http.Request) {
 				fmt.Fprint(w, fixtures.ProcessID())
 			})
-			muxes.NoAuth.HandleFunc("/version", func(w http.ResponseWriter, r *http.Request) {
+			muxes.NoAuth.HandleFunc("GET /version", func(w http.ResponseWriter, r *http.Request) {
 				w.Header().Set("Content-Type", "application/json")
 				kittehs.Must0(json.NewEncoder(w).Encode(version.Version))
 			})
-			muxes.NoAuth.HandleFunc("/uptime", func(w http.ResponseWriter, r *http.Request) {
+			muxes.NoAuth.HandleFunc("GET /uptime", func(w http.ResponseWriter, r *http.Request) {
 				uptime := fixtures.Uptime().Truncate(time.Second)
 
 				resp := struct {
@@ -372,7 +374,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		fx.Invoke(func(z *zap.Logger, lc fx.Lifecycle, muxes *muxes.Muxes, h healthreporter.HealthReporter) {
 			var ready atomic.Bool
 
-			muxes.NoAuth.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+			muxes.NoAuth.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
 				if err := h.Report(); err != nil {
 					w.WriteHeader(http.StatusInternalServerError)
 					return
@@ -380,7 +382,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 				w.WriteHeader(http.StatusOK)
 			})
 
-			muxes.NoAuth.HandleFunc("/readyz", func(w http.ResponseWriter, r *http.Request) {
+			muxes.NoAuth.HandleFunc("GET /readyz", func(w http.ResponseWriter, r *http.Request) {
 				if !ready.Load() {
 					w.WriteHeader(http.StatusServiceUnavailable)
 					return

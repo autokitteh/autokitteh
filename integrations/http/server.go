@@ -20,7 +20,7 @@ import (
 const (
 	// savePath is the URL path for our handler to save a new autokitteh
 	// connection, after the user submits its details via a web form.
-	savePath = "/i/http/save"
+	savePath = "POST /i/http/save"
 )
 
 // handler is an autokitteh webhook which implements [http.Handler] to
@@ -44,7 +44,8 @@ func Start(l *zap.Logger, mux *http.ServeMux, d sdkservices.Dispatcher, c sdkser
 	mux.Handle(routePrefix("{ns}")+"*", h)
 
 	// Save new autokitteh connections with user-submitted HTTP secrets.
-	mux.Handle(desc.ConnectionURL().Path, http.FileServer(http.FS(static.HTTPWebContent)))
+	uiPath := fmt.Sprintf("GET %s/", desc.ConnectionURL().Path)
+	mux.Handle(uiPath, http.FileServer(http.FS(static.HTTPWebContent)))
 	mux.HandleFunc(savePath, h.handleAuth)
 }
 
