@@ -15,8 +15,12 @@ func (db *gormdb) createConnection(ctx context.Context, conn *scheme.Connection)
 	return db.db.WithContext(ctx).Create(conn).Error
 }
 
-func connToScheme(conn sdktypes.Connection) scheme.Connection {
-	return scheme.Connection{
+func (db *gormdb) CreateConnection(ctx context.Context, conn sdktypes.Connection) error {
+	if err := conn.Strict(); err != nil {
+		return err
+	}
+
+	c := scheme.Connection{
 		ConnectionID:  conn.ID().UUIDValue(),
 		IntegrationID: scheme.UUIDOrNil(conn.IntegrationID().UUIDValue()), // TODO(ENG-158): need to verify integration id
 		ProjectID:     scheme.UUIDOrNil(conn.ProjectID().UUIDValue()),
@@ -24,14 +28,6 @@ func connToScheme(conn sdktypes.Connection) scheme.Connection {
 		StatusCode:    int32(conn.Status().Code().ToProto()),
 		StatusMessage: conn.Status().Message(),
 	}
-}
-
-func (db *gormdb) CreateConnection(ctx context.Context, conn sdktypes.Connection) error {
-	if err := conn.Strict(); err != nil {
-		return err
-	}
-
-	c := connToScheme(conn)
 
 	return translateError(db.createConnection(ctx, &c))
 }
