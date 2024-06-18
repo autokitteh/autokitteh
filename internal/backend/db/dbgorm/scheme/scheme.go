@@ -125,11 +125,6 @@ type Var struct {
 	Ownerships *Ownership `gorm:"polymorphic:Entity"`
 }
 
-func (v *Var) BeforeCreate(db *gorm.DB) error {
-	v.ID = sdktypes.NewVarID().UUIDValue()
-	return nil
-}
-
 type Integration struct {
 	// Unique internal identifier.
 	IntegrationID sdktypes.UUID `gorm:"primaryKey;type:uuid;not null"`
