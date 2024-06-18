@@ -33,8 +33,9 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	apiKey := r.Form.Get("key_or_pat")
-	vars := sdktypes.NewVars().Set(sdktypes.NewSymbol("APIKeyOrPAT"), apiKey, true)
+	vars := sdktypes.NewVars().
+		Set(sdktypes.NewSymbol("BaseURL"), r.Form.Get("base_url"), true).
+		Set(sdktypes.NewSymbol("APIKeyOrPAT"), r.Form.Get("key_or_pat"), true)
 
 	email := r.Form.Get("email")
 	if email != "" {

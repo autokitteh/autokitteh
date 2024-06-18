@@ -107,6 +107,18 @@
       <!-- TODO(ENG-799): remove ID once its unused -->
       <form id="save-form" method="post" action="/jira/save">
         <div class="form-group">
+          <label for="url">Base URL</label>
+          <input
+            type="url"
+            name="url"
+            autocomplete="off"
+            spellcheck="false"
+            placeholder="https://your-domain.atlassian.net or on-prem URL"
+            required
+          />
+        </div>
+
+        <div class="form-group">
           <label for="key">API Key / Personal Access Token (PAT)</label>
           <input
             type="text"
