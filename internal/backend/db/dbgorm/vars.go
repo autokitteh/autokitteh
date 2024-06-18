@@ -33,38 +33,37 @@ func (db *gormdb) SetVars(ctx context.Context, vars []sdktypes.Var) error {
 		return cid.IsValid()
 	})
 
-	return db.transaction(ctx, func(tx *tx) error {
-		cs, err := tx.GetConnections(ctx, cids)
-		if err != nil {
-			return err
-		}
+	// NOTE: should be transactional  ---v
+	cs, err := db.GetConnections(ctx, cids)
+	if err != nil {
+		return err
+	}
 
-		iids := kittehs.ListToMap(cs, func(c sdktypes.Connection) (sdktypes.ConnectionID, sdktypes.IntegrationID) {
-			return c.ID(), c.IntegrationID()
-		})
-
-		dbvs := make([]scheme.Var, len(vars))
-
-		for i, v := range vars {
-			var iid sdktypes.IntegrationID
-
-			if cid := v.ScopeID().ToConnectionID(); cid.IsValid() {
-				if iid = iids[cid]; !iid.IsValid() {
-					return sdkerrors.NewInvalidArgumentError("integration id %v not found", iid)
-				}
-			}
-
-			dbvs[i] = scheme.Var{
-				ScopeID:       v.ScopeID().AsID().UUIDValue(),
-				Name:          v.Name().String(),
-				Value:         v.Value(),
-				IsSecret:      v.IsSecret(),
-				IntegrationID: iid.UUIDValue(),
-			}
-		}
-
-		return translateError(tx.setVars(ctx, dbvs))
+	iids := kittehs.ListToMap(cs, func(c sdktypes.Connection) (sdktypes.ConnectionID, sdktypes.IntegrationID) {
+		return c.ID(), c.IntegrationID()
 	})
+
+	dbvs := make([]scheme.Var, len(vars))
+
+	for i, v := range vars {
+		var iid sdktypes.IntegrationID
+
+		if cid := v.ScopeID().ToConnectionID(); cid.IsValid() {
+			if iid = iids[cid]; !iid.IsValid() {
+				return sdkerrors.NewInvalidArgumentError("integration id %v not found", iid)
+			}
+		}
+
+		dbvs[i] = scheme.Var{
+			ScopeID:       v.ScopeID().AsID().UUIDValue(),
+			Name:          v.Name().String(),
+			Value:         v.Value(),
+			IsSecret:      v.IsSecret(),
+			IntegrationID: iid.UUIDValue(),
+		}
+	}
+
+	return translateError(db.setVars(ctx, dbvs))
 }
 
 func (db *gormdb) varsCommonQuery(ctx context.Context, scopeID sdktypes.UUID, names []string) *gorm.DB {
