@@ -1,5 +1,4 @@
 import ast
-import json
 from os import environ
 from pathlib import Path
 from socket import socket
@@ -37,13 +36,11 @@ def test_load_code():
     fn = getattr(mod, 'parse', None)
     assert fn, 'parse not found'
 
-    obj = {'x': 1, 'y': 2}
-    out = fn(json.dumps(obj))
-    assert out == obj, 'parse fail'
+    out = fn('meow')
+    assert out == 7
     assert len(calls) == 1, 'calls'
     fn = calls[0][0]
-    name = fn.__module__ + '.' + fn.__name__
-    assert name == 'json.loads'
+    assert fn.__qualname__ == 'datetime.now'
 
 
 def test_load_twice(tmp_path):

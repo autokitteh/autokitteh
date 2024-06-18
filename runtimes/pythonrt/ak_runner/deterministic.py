@@ -1,4 +1,5 @@
-# List of functions/modules that should not run as activities.
+"""List of functions/modules that are deterministic should not run as activities."""
+
 # Function/modules added here should be:
 # - Stateless
 # - Common enough to be included
@@ -7,12 +8,9 @@
 import datetime
 
 
-def is_nonact(fn):
+def is_determinstic(fn):
     """Return True if fn (callable) can run outside of activity."""
     return fn in functions or fn.__module__ in modules
-
-# TODO:
-# pathlib
 
 
 # Modules are represented as strings func.__module__ is a string
@@ -21,6 +19,7 @@ modules = {
     'array',
     'base64',
     'bisect',
+    'builtins',
     'bz2',
     'cmath',
     'collections',
