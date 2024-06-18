@@ -11,7 +11,7 @@ message Trigger {
   string name = 2;
   string connection_id = 3;
   string env_id = 4; // if empty, applies to all envs.
-  string event_type = 5 [(buf.validate.field).string.min_len = 1];
+  string event_type = 5;
   program.v1.CodeLocation code_location = 6 [(buf.validate.field).required = true];
   string filter = 7;
   map<string, values.v1.Value> data = 8;

@@ -7,15 +7,15 @@ import "buf/validate/validate.proto";
 
 message DispatchRequest {
   option (buf.validate.message).cel = {
-    id: "dispatcher.require_connection_id",
-    message: "missing connection_id",
-    expression: "has(this.event) && this.event.connection_id != ''",
+    id: "dispatcher.require_connection_id"
+    message: "missing connection_id"
+    expression: "has(this.event) && this.event.connection_id != ''"
   };
 
   option (buf.validate.message).cel = {
-    id: "dispatcher.event_id_must_be_empty",
-    message: "event_id must not be specified",
-    expression: "has(this.event) && this.event.event_id == ''",
+    id: "dispatcher.event_id_must_be_empty"
+    message: "event_id must not be specified"
+    expression: "has(this.event) && this.event.event_id == ''"
   };
 
   events.v1.Event event = 1;

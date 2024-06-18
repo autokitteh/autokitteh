@@ -10,9 +10,9 @@ import "buf/validate/validate.proto";
 
 message GetRequest {
   option (buf.validate.message).cel = {
-    id: "integration_id_xor_name",
-    message: "integration_id and name are mutually exclusive",
-    expression: "(this.integration_id == '' && this.name != '') || (this.integration_id != '' && this.name == '')",
+    id: "integration_id_xor_name"
+    message: "integration_id and name are mutually exclusive"
+    expression: "(this.integration_id == '' && this.name != '') || (this.integration_id != '' && this.name == '')"
   };
 
   string integration_id = 1;
@@ -40,8 +40,8 @@ message CallRequest {
   map<string, values.v1.Value> kwargs = 4 [(buf.validate.field).map = {
     keys: {
       string: {min_len: 1}
-    },
-    values: {required: true},
+    }
+    values: {required: true}
   }];
 }
 
@@ -60,8 +60,8 @@ message ConfigureResponse {
   map<string, values.v1.Value> values = 4 [(buf.validate.field).map = {
     keys: {
       string: {min_len: 1}
-    },
-    values: {required: true},
+    }
+    values: {required: true}
   }];
 }
 

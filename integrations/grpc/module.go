@@ -5,11 +5,12 @@ import (
 	"errors"
 	"fmt"
 
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkexecutor"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 )
 
 var safeForJsonWrapper = sdktypes.ValueWrapper{SafeForJSON: true}
@@ -52,12 +53,14 @@ func handleGenericGRPCCall() sdkexecutor.Function {
 			return sdktypes.Nothing, err
 		}
 
-		hostport, ok := args["host"].(string)
+		// TODO(ENG-1024): Rename to "target" here and in the sample, and
+		// reference https://github.com/grpc/grpc/blob/master/doc/naming.md
+		target, ok := args["host"].(string)
 		if !ok {
 			return sdktypes.Nothing, errors.New("host is required")
 		}
 
-		conn, err := grpc.Dial(hostport, grpc.WithTransportCredentials(insecure.NewCredentials()))
+		conn, err := grpc.NewClient(target, grpc.WithTransportCredentials(insecure.NewCredentials()))
 		if err != nil {
 			return sdktypes.Nothing, err
 		}

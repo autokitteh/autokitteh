@@ -37,14 +37,16 @@ project:
   triggers:
     - name: http_get_short
       connection: my_connection
-      call: program.star:on_http_get_short
+      event_type: get
       data:
         path: "/short"
+      call: program.star:on_http_get_short
     - name: http_get_long
       connection: my_connection
-      call: program.star:on_http_get_long
+      event_type: get
       data:
         path: "/long"
+      call: program.star:on_http_get_long
 
 -- program.star --
 def on_http_get_short():

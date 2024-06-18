@@ -1,7 +1,7 @@
 package sdktypes
 
 import (
-	"go.jetpack.io/typeid"
+	"go.jetify.com/typeid"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"

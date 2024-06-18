@@ -7,9 +7,9 @@ import "buf/validate/validate.proto";
 
 message StartRequest {
   option (buf.validate.message).cel = {
-    id: "session.session_id_must_be_empty",
-    message: "session_id must not be specified",
-    expression: "has(this.session) && this.session.session_id == ''",
+    id: "session.session_id_must_be_empty"
+    message: "session_id must not be specified"
+    expression: "has(this.session) && this.session.session_id == ''"
   };
 
   Session session = 1 [(buf.validate.field).required = true];
@@ -36,18 +36,15 @@ message ListRequest {
 
   bool count_only = 10;
 
-  // TODO: Pagination.
   // TODO: FieldMask.
 
-  int32 page_size = 20 [(buf.validate.field).cel = {
-    id: "session.list.page_size",
-    message: "Must be between 10 and 100",
-    expression: "this >= 10 && this <= 100"
-  }];
+  // If the value is outside the allowed range, the sessions
+  // gRPC service sets it to the closest range bound.
+  int32 page_size = 20;
 
   int32 skip = 21 [(buf.validate.field).cel = {
-    id: "session.list.skip",
-    message: "Must be >= 0",
+    id: "session.list.skip"
+    message: "Must be >= 0"
     expression: "this >= 0"
   }];
 
