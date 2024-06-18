@@ -12,10 +12,10 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-func triggerToRecord(ctx context.Context, tx *tx, trigger sdktypes.Trigger) (*scheme.Trigger, error) {
+func triggerToRecord(ctx context.Context, db *gormdb, trigger sdktypes.Trigger) (*scheme.Trigger, error) {
 	connID := trigger.ConnectionID()
 
-	conn, err := tx.GetConnection(ctx, connID)
+	conn, err := db.GetConnection(ctx, connID)
 	if err != nil {
 		return nil, fmt.Errorf("get trigger connection: %w", err)
 	}
@@ -23,7 +23,7 @@ func triggerToRecord(ctx context.Context, tx *tx, trigger sdktypes.Trigger) (*sc
 	projID := conn.ProjectID()
 	envID := trigger.EnvID()
 	if envID.IsValid() {
-		env, err := tx.GetEnvByID(ctx, envID)
+		env, err := db.GetEnvByID(ctx, envID)
 		if err != nil {
 			return nil, fmt.Errorf("get trigger env: %w", err)
 		}
@@ -69,14 +69,13 @@ func (db *gormdb) CreateTrigger(ctx context.Context, trigger sdktypes.Trigger) e
 		return err
 	}
 
-	return db.transaction(ctx, func(tx *tx) error {
-		t, err := triggerToRecord(ctx, tx, trigger)
-		if err != nil {
-			return err
-		}
+	// NOTE: should be transactional? or maybe Rlock on envs/connections
+	t, err := triggerToRecord(ctx, db, trigger)
+	if err != nil {
+		return err
+	}
 
-		return translateError(tx.createTrigger(ctx, t))
-	})
+	return translateError(db.createTrigger(ctx, t))
 }
 
 func (db *gormdb) UpdateTrigger(ctx context.Context, trigger sdktypes.Trigger) error {
@@ -90,7 +89,7 @@ func (db *gormdb) UpdateTrigger(ctx context.Context, trigger sdktypes.Trigger) e
 			return sdkerrors.ErrConflict
 		}
 
-		t, err := triggerToRecord(ctx, tx, trigger)
+		t, err := triggerToRecord(ctx, &tx.gormdb, trigger)
 		if err != nil {
 			return err
 		}

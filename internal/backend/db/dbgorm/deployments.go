@@ -33,9 +33,7 @@ func (db *gormdb) CreateDeployment(ctx context.Context, deployment sdktypes.Depl
 		UpdatedAt:    now,
 	}
 
-	return db.locked(func(db *gormdb) error {
-		return translateError(db.createDeployment(ctx, &d))
-	})
+	return translateError(db.createDeployment(ctx, &d))
 }
 
 func (db *gormdb) getDeployment(ctx context.Context, deploymentID sdktypes.UUID) (*scheme.Deployment, error) {

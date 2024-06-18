@@ -51,16 +51,15 @@ func (db *gormdb) GetSessionLog(ctx context.Context, sessionID sdktypes.SessionI
 }
 
 func (db *gormdb) createSession(ctx context.Context, session *scheme.Session) error {
-	return db.transaction(ctx, func(tx *tx) error {
-		if err := tx.db.Create(session).Error; err != nil {
-			return err
-		}
-		return addSessionLogRecord(
-			tx.db,
-			session.SessionID,
-			sdktypes.NewStateSessionLogRecord(sdktypes.NewSessionStateCreated()).WithProcessID(fixtures.ProcessID()),
-		)
-	})
+	// NOTE: should be transactional
+	if err := db.db.Create(session).Error; err != nil {
+		return err
+	}
+	return addSessionLogRecord(
+		db.db,
+		session.SessionID,
+		sdktypes.NewStateSessionLogRecord(sdktypes.NewSessionStateCreated()).WithProcessID(fixtures.ProcessID()),
+	)
 }
 
 func (db *gormdb) CreateSession(ctx context.Context, session sdktypes.Session) error {
