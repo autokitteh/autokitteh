@@ -18,6 +18,10 @@ func (db *gormdb) createDeployment(ctx context.Context, deployment *scheme.Deplo
 }
 
 func (db *gormdb) CreateDeployment(ctx context.Context, deployment sdktypes.Deployment) error {
+	if err := deployment.Strict(); err != nil {
+		return err
+	}
+
 	now := time.Now()
 
 	d := scheme.Deployment{
