@@ -108,8 +108,9 @@ func ParseConnection(c Connection) (sdktypes.Connection, error) {
 }
 
 type Var struct {
-	ScopeID  sdktypes.UUID `gorm:"primaryKey;index;type:uuid;not null"`
-	Name     string        `gorm:"primaryKey;index"`
+	VarID    sdktypes.UUID `gorm:"primaryKey;type:uuid;not null"`
+	ScopeID  sdktypes.UUID `gorm:"uniqueIndex:idx_scope_name,priority:1;type:uuid;not null"`
+	Name     string        `gorm:"uniqueIndex:idx_scope_name,priority:2"`
 	Value    string
 	IsSecret bool
 
@@ -117,6 +118,11 @@ type Var struct {
 
 	// enforce foreign keys
 	// Integration *Integration // FIXME: ENG-590
+}
+
+func (v *Var) BeforeCreate(db *gorm.DB) error {
+	v.ID = sdktypes.NewVarID().UUIDValue()
+	return nil
 }
 
 type Integration struct {
