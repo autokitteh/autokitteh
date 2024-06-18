@@ -77,7 +77,15 @@ func (d *deployments) Test(ctx context.Context, id sdktypes.DeploymentID) error 
 func (d *deployments) Create(ctx context.Context, deployment sdktypes.Deployment) (sdktypes.DeploymentID, error) {
 	deployment = deployment.WithNewID().WithState(sdktypes.DeploymentStateInactive)
 
-	if err := d.db.CreateDeployment(ctx, deployment); err != nil {
+	if err := d.db.Transaction(ctx, func(tx db.DB) error {
+		if err := d.db.CreateDeployment(ctx, deployment); err != nil {
+			return err
+		}
+		if err := tx.AddOwnership(ctx, deployment); err != nil {
+			return err
+		}
+		return nil
+	}); err != nil {
 		return sdktypes.InvalidDeploymentID, err
 	}
 
