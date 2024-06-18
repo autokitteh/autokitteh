@@ -36,14 +36,13 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Check the "Content-Type" header.
 	contentType := r.Header.Get(headerContentType)
 	if !strings.HasPrefix(contentType, contentTypeForm) {
-		// This is probably an attack, so no user-friendliness.
+		// Probably an attack, so no need for user-friendliness.
 		http.Error(w, "Bad Request", http.StatusBadRequest)
 		return
 	}
 
 	// Read and parse POST request body.
-	err := r.ParseForm()
-	if err != nil {
+	if err := r.ParseForm(); err != nil {
 		l.Warn("Failed to parse inbound HTTP request", zap.Error(err))
 		redirectToErrorPage(w, r, "form parsing error: "+err.Error())
 		return
