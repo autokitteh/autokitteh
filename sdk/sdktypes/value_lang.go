@@ -35,6 +35,8 @@ func (s StructValue) Fields() map[string]Value {
 	return kittehs.TransformMapValues(s.read().Fields, forceFromProto[Value])
 }
 
+func (StructValue) IsTrue() bool { return true }
+
 func NewStructValue(ctor Value, fields map[string]Value) (Value, error) {
 	return FromProto[Value](&ValuePB{Struct: &StructValuePB{
 		Ctor:   ctor.ToProto(),
@@ -80,6 +82,7 @@ func (s ModuleValue) Name() Symbol { return kittehs.Must1(ParseSymbol(s.read().N
 func (s ModuleValue) Members() map[string]Value {
 	return kittehs.TransformMapValues(s.read().Members, forceFromProto[Value])
 }
+func (ModuleValue) IsTrue() bool { return true }
 
 func NewModuleValue(name Symbol, fields map[string]Value) (Value, error) {
 	return FromProto[Value](&ValuePB{Module: &ModuleValuePB{

@@ -19,12 +19,14 @@ class SessionStateType(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
     SESSION_STATE_TYPE_ERROR: _ClassVar[SessionStateType]
     SESSION_STATE_TYPE_COMPLETED: _ClassVar[SessionStateType]
     SESSION_STATE_TYPE_STOPPED: _ClassVar[SessionStateType]
+    SESSION_STATE_TYPE_DEBUG_TRACE: _ClassVar[SessionStateType]
 SESSION_STATE_TYPE_UNSPECIFIED: SessionStateType
 SESSION_STATE_TYPE_CREATED: SessionStateType
 SESSION_STATE_TYPE_RUNNING: SessionStateType
 SESSION_STATE_TYPE_ERROR: SessionStateType
 SESSION_STATE_TYPE_COMPLETED: SessionStateType
 SESSION_STATE_TYPE_STOPPED: SessionStateType
+SESSION_STATE_TYPE_DEBUG_TRACE: SessionStateType
 
 class SessionState(_message.Message):
     __slots__ = ["created", "running", "error", "completed", "stopped"]
@@ -137,7 +139,7 @@ class Call(_message.Message):
     def __init__(self, spec: _Optional[_Union[Call.Spec, _Mapping]] = ..., attempts: _Optional[_Iterable[_Union[Call.Attempt, _Mapping]]] = ...) -> None: ...
 
 class SessionLogRecord(_message.Message):
-    __slots__ = ["t", "process_id", "print", "call_spec", "call_attempt_start", "call_attempt_complete", "state", "stop_request"]
+    __slots__ = ["t", "process_id", "print", "call_spec", "call_attempt_start", "call_attempt_complete", "state", "stop_request", "debug_trace"]
     class Print(_message.Message):
         __slots__ = ["text"]
         TEXT_FIELD_NUMBER: _ClassVar[int]
@@ -148,6 +150,20 @@ class SessionLogRecord(_message.Message):
         REASON_FIELD_NUMBER: _ClassVar[int]
         reason: str
         def __init__(self, reason: _Optional[str] = ...) -> None: ...
+    class DebugTrace(_message.Message):
+        __slots__ = ["callstack", "extra"]
+        class ExtraEntry(_message.Message):
+            __slots__ = ["key", "value"]
+            KEY_FIELD_NUMBER: _ClassVar[int]
+            VALUE_FIELD_NUMBER: _ClassVar[int]
+            key: str
+            value: str
+            def __init__(self, key: _Optional[str] = ..., value: _Optional[str] = ...) -> None: ...
+        CALLSTACK_FIELD_NUMBER: _ClassVar[int]
+        EXTRA_FIELD_NUMBER: _ClassVar[int]
+        callstack: _containers.RepeatedCompositeFieldContainer[_program_pb2.CallFrame]
+        extra: _containers.ScalarMap[str, str]
+        def __init__(self, callstack: _Optional[_Iterable[_Union[_program_pb2.CallFrame, _Mapping]]] = ..., extra: _Optional[_Mapping[str, str]] = ...) -> None: ...
     T_FIELD_NUMBER: _ClassVar[int]
     PROCESS_ID_FIELD_NUMBER: _ClassVar[int]
     PRINT_FIELD_NUMBER: _ClassVar[int]
@@ -156,6 +172,7 @@ class SessionLogRecord(_message.Message):
     CALL_ATTEMPT_COMPLETE_FIELD_NUMBER: _ClassVar[int]
     STATE_FIELD_NUMBER: _ClassVar[int]
     STOP_REQUEST_FIELD_NUMBER: _ClassVar[int]
+    DEBUG_TRACE_FIELD_NUMBER: _ClassVar[int]
     t: _timestamp_pb2.Timestamp
     process_id: str
     print: SessionLogRecord.Print
@@ -164,7 +181,8 @@ class SessionLogRecord(_message.Message):
     call_attempt_complete: Call.Attempt.Complete
     state: SessionState
     stop_request: SessionLogRecord.StopRequest
-    def __init__(self, t: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ..., process_id: _Optional[str] = ..., print: _Optional[_Union[SessionLogRecord.Print, _Mapping]] = ..., call_spec: _Optional[_Union[Call.Spec, _Mapping]] = ..., call_attempt_start: _Optional[_Union[Call.Attempt.Start, _Mapping]] = ..., call_attempt_complete: _Optional[_Union[Call.Attempt.Complete, _Mapping]] = ..., state: _Optional[_Union[SessionState, _Mapping]] = ..., stop_request: _Optional[_Union[SessionLogRecord.StopRequest, _Mapping]] = ...) -> None: ...
+    debug_trace: SessionLogRecord.DebugTrace
+    def __init__(self, t: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ..., process_id: _Optional[str] = ..., print: _Optional[_Union[SessionLogRecord.Print, _Mapping]] = ..., call_spec: _Optional[_Union[Call.Spec, _Mapping]] = ..., call_attempt_start: _Optional[_Union[Call.Attempt.Start, _Mapping]] = ..., call_attempt_complete: _Optional[_Union[Call.Attempt.Complete, _Mapping]] = ..., state: _Optional[_Union[SessionState, _Mapping]] = ..., stop_request: _Optional[_Union[SessionLogRecord.StopRequest, _Mapping]] = ..., debug_trace: _Optional[_Union[SessionLogRecord.DebugTrace, _Mapping]] = ...) -> None: ...
 
 class SessionLog(_message.Message):
     __slots__ = ["records"]

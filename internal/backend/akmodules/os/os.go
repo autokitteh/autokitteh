@@ -28,6 +28,7 @@ func New() sdkexecutor.Executor {
 		ExecutorID,
 		sdkmodule.ExportFunction("command", command, sdkmodule.WithArgs("cmd", "*args", "write=?", "read=?")),
 		sdkmodule.ExportFunction("shell", shell, sdkmodule.WithArgs("cmd", "sh=?", "write=?", "read=?")),
+		sdkmodule.ExportFunction("getenv", getenv, sdkmodule.WithArgs("name")),
 	)
 }
 
@@ -174,4 +175,15 @@ func shell(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdktype
 	cmdArgs = append(cmdArgs, cmd)
 
 	return execute(ctx, sh, cmdArgs, write, read)
+}
+
+func getenv(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
+	var name string
+
+	err := sdkmodule.UnpackArgs(args, kwargs, "name", &name)
+	if err != nil {
+		return sdktypes.InvalidValue, err
+	}
+
+	return sdktypes.NewStringValue(os.Getenv(name)), nil
 }

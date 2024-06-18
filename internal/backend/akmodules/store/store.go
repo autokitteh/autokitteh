@@ -29,5 +29,5 @@ func New(envID sdktypes.EnvID, projectID sdktypes.ProjectID, client *redis.Clien
 	// use of context in Configure.
 	vs := kittehs.Must1(mod.Configure(context.TODO(), ExecutorID, sdktypes.InvalidConnectionID))
 
-	return sdkexecutor.NewExecutor(mod, ExecutorID, vs)
+	return sdkexecutor.NewExecutor(mod, []sdktypes.ExecutorID{ExecutorID}, vs)
 }

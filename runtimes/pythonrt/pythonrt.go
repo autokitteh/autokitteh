@@ -83,7 +83,6 @@ func New() (sdkservices.Runtime, error) {
 
 	if userPython {
 		log.Info("user python", zap.String("python", pyExe))
-
 	}
 
 	const timeout = 3 * time.Second
@@ -376,8 +375,8 @@ func (py *pySvc) Run(
 	return py, nil
 }
 
-func (py *pySvc) ID() sdktypes.RunID              { return py.xid.ToRunID() }
-func (py *pySvc) ExecutorID() sdktypes.ExecutorID { return py.xid }
+func (py *pySvc) ID() sdktypes.RunID                 { return py.xid.ToRunID() }
+func (py *pySvc) ExecutorIDs() []sdktypes.ExecutorID { return []sdktypes.ExecutorID{py.xid} }
 
 func (py *pySvc) Values() map[string]sdktypes.Value {
 	return py.exports

@@ -53,6 +53,10 @@ func (p Session) ID() SessionID { return kittehs.Must1(ParseSessionID(p.read().S
 func (p Session) DeploymentID() DeploymentID {
 	return kittehs.Must1(ParseDeploymentID(p.read().DeploymentId))
 }
+
+func (p Session) ParentSessionID() SessionID {
+	return kittehs.Must1(ParseSessionID(p.read().ParentSessionId))
+}
 func (p Session) EventID() EventID         { return kittehs.Must1(ParseEventID(p.read().EventId)) }
 func (p Session) BuildID() BuildID         { return kittehs.Must1(ParseBuildID(p.read().BuildId)) }
 func (p Session) EnvID() EnvID             { return kittehs.Must1(ParseEnvID(p.read().EnvId)) }

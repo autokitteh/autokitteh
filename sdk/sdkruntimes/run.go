@@ -32,13 +32,25 @@ func Run(ctx context.Context, params RunParams) (sdkservices.Run, error) {
 	cbs := sdkservices.RunCallbacks{
 		Print: params.FallthroughCallbacks.SafePrint,
 		Call: func(ctx context.Context, runID sdktypes.RunID, v sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
-			if xid := v.GetFunction().ExecutorID(); xid.IsValid() || group.runs[xid] == nil {
+			fv := v.GetFunction()
+
+			if fv.IsConst() {
+				return fv.ConstValue()
+			}
+
+			xid := fv.ExecutorID()
+			if !xid.IsValid() {
+				return sdktypes.InvalidValue, fmt.Errorf("invalid executor id: %w", sdkerrors.ErrNotFound)
+			}
+
+			if !fv.HasFlag(sdktypes.PureFunctionFlag) || group.runs[xid] == nil {
 				return params.FallthroughCallbacks.SafeCall(ctx, runID, v, args, kwargs)
 			}
 
 			return group.Call(ctx, v, args, kwargs)
 		},
-		NewRunID: params.FallthroughCallbacks.NewRunID,
+		NewRunID:   params.FallthroughCallbacks.NewRunID,
+		DebugTrace: params.FallthroughCallbacks.SafeDebugTrace,
 	}
 
 	cache := make(map[string]map[string]sdktypes.Value)
@@ -46,15 +58,28 @@ func Run(ctx context.Context, params RunParams) (sdkservices.Run, error) {
 	cbs.Load = func(ctx context.Context, rid sdktypes.RunID, path string) (map[string]sdktypes.Value, error) {
 		exports, ok := cache[path]
 		if ok {
+			if exports == nil {
+				return nil, fmt.Errorf("detected circular dependency detected involving %q", path)
+			}
+
 			return exports, nil
 		}
 
 		loadRunID := params.FallthroughCallbacks.SafeNewRunID()
 
 		runParams := params
-		runParams.Globals = nil // TODO: globals: figure out which values to pass here.
+		runParams.Globals = params.Globals
 		runParams.RunID = loadRunID
 		runParams.FallthroughCallbacks = cbs
+
+		if vs, err := params.FallthroughCallbacks.SafeLoad(ctx, rid, path); err == nil {
+			cache[path] = vs
+			return vs, nil
+		} else if !errors.Is(err, sdkerrors.ErrNotFound) {
+			return nil, err
+		}
+
+		cache[path] = nil
 
 		r, err := run(ctx, runParams, path)
 		if err != nil {

@@ -1,0 +1,6 @@
+y
+
+-- main.star main --
+def main():
+    store.set("x", "y")
+    print(store.get("x"))

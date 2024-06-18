@@ -1,0 +1,27 @@
+true
+
+-- main.flowchart.yaml start --
+version: v1
+
+imports:
+  - path: "foo.star"
+    name: foo
+
+nodes:
+  - name: start
+    action:
+      call:
+        target: imports.foo.foo
+        args:
+          addr: args.ak_addr
+    result: states.results.start.body.json
+    goto: nodes.report
+  - name: report
+    action:
+      print:
+        value: states.results.start.seconds > 1
+
+-- foo.star --
+def foo(addr):
+  sleep(2)
+  return http.get("http://{}/uptime".format(addr))

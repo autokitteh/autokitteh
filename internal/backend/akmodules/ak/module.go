@@ -20,12 +20,13 @@ var ExecutorID = sdktypes.NewExecutorID(fixtures.NewBuiltinIntegrationID("ak"))
 var TimeoutError = sdktypes.NewSymbolValue(kittehs.Must1(sdktypes.ParseSymbol("timeout")))
 
 type module struct {
-	data *sessiondata.Data
-	svcs *sessionsvcs.Svcs
+	data    *sessiondata.Data
+	svcs    *sessionsvcs.Svcs
+	syscall sdkexecutor.Function
 }
 
 func New(syscall sdkexecutor.Function, data *sessiondata.Data, svcs *sessionsvcs.Svcs) sdkexecutor.Executor {
-	mod := &module{data: data, svcs: svcs}
+	mod := &module{data: data, svcs: svcs, syscall: syscall}
 
 	return fixtures.NewBuiltinExecutor(
 		ExecutorID,
@@ -50,6 +51,14 @@ func New(syscall sdkexecutor.Function, data *sessiondata.Data, svcs *sessionsvcs
 		sdkmodule.ExportFunction(
 			"is_deployment_active",
 			mod.isDeploymentActive,
+		),
+		sdkmodule.ExportFunction(
+			"sleep",
+			mod.sleep,
+			sdkmodule.WithFlags(
+				sdktypes.PureFunctionFlag,        // no need to run in an activity, we must have it in the workflow.
+				sdktypes.PrivilidgedFunctionFlag, // provide workflow context.
+			),
 		),
 	)
 }
@@ -87,4 +96,9 @@ func (m *module) isDeploymentActive(ctx context.Context, args []sdktypes.Value, 
 	}
 
 	return sdktypes.NewBooleanValue(state == sdktypes.DeploymentStateActive), nil
+}
+
+func (m *module) sleep(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
+	args = append([]sdktypes.Value{sdktypes.NewStringValue("sleep")}, args...)
+	return m.syscall(ctx, args, kwargs)
 }

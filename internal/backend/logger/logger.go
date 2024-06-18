@@ -25,6 +25,8 @@ var Configs = configset.Set[Config]{
 type onFatalHook struct{}
 
 func (onFatalHook) OnWrite(ce *zapcore.CheckedEntry, fs []zapcore.Field) {
+	kittehs.Omgomgomg(ce, fs)
+
 	// This is a useful place for a breakpoint to catch all fatals.
 	zapcore.WriteThenGoexit.OnWrite(ce, fs)
 }
@@ -32,6 +34,8 @@ func (onFatalHook) OnWrite(ce *zapcore.CheckedEntry, fs []zapcore.Field) {
 type onPanicHook struct{}
 
 func (onPanicHook) OnWrite(ce *zapcore.CheckedEntry, fs []zapcore.Field) {
+	kittehs.Omgomgomg(ce, fs)
+
 	// This is a useful place for a breakpoint to catch all panics.
 	zapcore.WriteThenPanic.OnWrite(ce, fs)
 }

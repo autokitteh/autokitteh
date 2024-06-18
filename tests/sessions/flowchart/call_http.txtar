@@ -1,0 +1,20 @@
+true
+
+-- main.flowchart.yaml main --
+version: v1
+
+nodes:
+    - name: main
+      action:
+        call:
+          target: globals.http.get
+          args:
+            # getting these from the session inputs
+            url: "'http://' + args.ak_addr + '/uptime'"
+      result: states.results.main.body.json
+      goto: nodes.end
+
+    - name: end
+      action:
+        print:
+          value: "states.results.main.seconds >= 0"

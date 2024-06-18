@@ -1,0 +1,17 @@
+meow, world!
+
+-- main.flowchart.yaml main --
+version: v1
+
+values:
+  what: "cat"
+
+imports:
+  - name: "data"
+    path: "data.yaml"
+
+nodes:
+    - name: main
+      action:
+        print:
+            value: "imports.data.sounds[values.what] + ', world!'"

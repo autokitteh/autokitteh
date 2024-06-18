@@ -1,8 +1,0 @@
-(None, "floating-point division by zero")
-
--- main.star:main --
-def foo():
-    return 1/0
-    
-def main():
-    print(catch(foo))

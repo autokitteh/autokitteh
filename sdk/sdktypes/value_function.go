@@ -10,6 +10,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	modulev1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/module/v1"
 	valuev1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/values/v1"
+	"go.autokitteh.dev/autokitteh/sdk/sdklogger"
 )
 
 type FunctionValuePB = valuev1.Function
@@ -58,6 +59,7 @@ func (f FunctionValue) UniqueID() string { return fmt.Sprintf("%v.%s", f.Executo
 func (f FunctionValue) HasFlag(flag FunctionFlag) bool {
 	return kittehs.ContainedIn(f.read().Flags...)(flag.String())
 }
+func (s FunctionValue) IsTrue() bool { return true }
 
 func (v Value) IsFunction() bool           { return v.read().Function != nil }
 func (v Value) GetFunction() FunctionValue { return forceFromProto[FunctionValue](v.read().Function) }
@@ -81,6 +83,16 @@ const (
 )
 
 func (ff FunctionFlag) String() string { return string(ff) }
+
+func (v Value) WithoutFunctionFlag(flag FunctionFlag) Value {
+	if !v.IsFunction() {
+		sdklogger.Panic("not a function")
+	}
+
+	m := *v.read()
+	m.Function.Flags = kittehs.Filter(m.Function.Flags, func(f string) bool { return f != flag.String() })
+	return kittehs.Must1(ValueFromProto(&m))
+}
 
 func validateFunctionFlags(fs []string) error {
 	var errs []error
@@ -158,8 +170,10 @@ func NewConstFunctionError(name string, in error) (Value, error) {
 	)
 }
 
+func (f FunctionValue) IsConst() bool { return f.HasFlag(ConstFunctionFlag) }
+
 func (f FunctionValue) ConstValue() (Value, error) {
-	if !f.HasFlag(ConstFunctionFlag) {
+	if !f.IsConst() {
 		return InvalidValue, fmt.Errorf("function is not a const")
 	}
 

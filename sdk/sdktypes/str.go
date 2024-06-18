@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 
 	"google.golang.org/protobuf/types/known/wrapperspb"
+	"gopkg.in/yaml.v3"
 
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 )
@@ -45,6 +46,28 @@ func ParseValidatedString[N ~struct{ validatedString[T] }, T validatedStringTrai
 }
 
 func (s validatedString[T]) String() string { return s.s }
+
+func (s validatedString[T]) GobEncode() ([]byte, error) {
+	return []byte(s.s), nil
+}
+
+func (s *validatedString[T]) GobDecode(b []byte) (err error) {
+	if *s, err = parseValidatedString[T](string(b)); err != nil {
+		return err
+	}
+
+	return
+}
+
+func (s validatedString[T]) MarshalYAML() (any, error) { return s.s, nil }
+
+func (s *validatedString[T]) UnmarshalYAML(v *yaml.Node) (err error) {
+	if *s, err = parseValidatedString[T](v.Value); err != nil {
+		return err
+	}
+
+	return nil
+}
 
 func (s validatedString[T]) MarshalJSON() ([]byte, error) { return json.Marshal(s.s) }
 

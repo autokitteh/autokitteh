@@ -3,6 +3,8 @@ package sdktypes
 type concreteValue interface {
 	Object
 
+	IsTrue() bool
+
 	isConcreteValue()
 }
 

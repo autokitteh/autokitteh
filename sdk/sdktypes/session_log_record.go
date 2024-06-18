@@ -25,6 +25,7 @@ func (SessionLogRecordTraits) Validate(m *SessionLogRecordPB) error {
 		objectField[SessionCallAttemptComplete]("call_attempt_complete", m.CallAttemptComplete),
 		objectField[SessionCallSpec]("call_spec", m.CallSpec),
 		objectField[SessionState]("state", m.State),
+		objectField[SessionDebugTrace]("debug_trace", m.DebugTrace),
 	)
 }
 
@@ -63,6 +64,14 @@ func (s SessionLogRecord) GetStopRequest() (string, bool) {
 	return "", false
 }
 
+func (s SessionLogRecord) GetDebugTrace() SessionDebugTrace {
+	if m := s.read(); m.DebugTrace != nil {
+		return forceFromProto[SessionDebugTrace](s.read().DebugTrace)
+	}
+
+	return InvalidSessionDebugTrace
+}
+
 func NewPrintSessionLogRecord(text string) SessionLogRecord {
 	return forceFromProto[SessionLogRecord](&SessionLogRecordPB{
 		T:     timestamppb.Now(),
@@ -74,6 +83,13 @@ func NewStopRequestSessionLogRecord(reason string) SessionLogRecord {
 	return forceFromProto[SessionLogRecord](&SessionLogRecordPB{
 		T:           timestamppb.Now(),
 		StopRequest: &sessionv1.SessionLogRecord_StopRequest{Reason: reason},
+	})
+}
+
+func NewDebugTraceSessionLogRecord(trace SessionDebugTrace) SessionLogRecord {
+	return forceFromProto[SessionLogRecord](&SessionLogRecordPB{
+		T:          timestamppb.Now(),
+		DebugTrace: trace.ToProto(),
 	})
 }
 

@@ -7,6 +7,10 @@ import (
 	"go.temporal.io/sdk/workflow"
 )
 
+type contextKey string
+
+var workflowContextKey = contextKey("autokitteh_workflow_context")
+
 type WorkflowContextAsGoContext struct {
 	workflow.Context
 	done chan struct{}
@@ -25,5 +29,20 @@ func NewWorkflowContextAsGOContext(ctx workflow.Context) context.Context {
 
 func (wctx *WorkflowContextAsGoContext) Deadline() (time.Time, bool) { return wctx.Context.Deadline() }
 func (wctx *WorkflowContextAsGoContext) Err() error                  { return wctx.Context.Err() }
-func (wctx *WorkflowContextAsGoContext) Value(key any) any           { return wctx.Context.Value(key) }
-func (wctx *WorkflowContextAsGoContext) Done() <-chan struct{}       { return wctx.done }
+func (wctx *WorkflowContextAsGoContext) Value(key any) any {
+	if key == workflowContextKey {
+		return wctx.Context
+	}
+
+	return wctx.Context.Value(key)
+}
+
+func (wctx *WorkflowContextAsGoContext) Done() <-chan struct{} { return wctx.done }
+
+func GetWorkflowContext(ctx context.Context) workflow.Context {
+	if wctx, _ := ctx.(*WorkflowContextAsGoContext); wctx != nil {
+		return wctx.Context
+	}
+
+	return nil
+}

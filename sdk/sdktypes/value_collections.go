@@ -5,6 +5,8 @@ import (
 	"slices"
 	"sort"
 
+	"golang.org/x/exp/maps"
+
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	valuev1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/values/v1"
 )
@@ -18,6 +20,7 @@ type BytesValue struct {
 func (BytesValue) isConcreteValue() {}
 
 func (s BytesValue) Value() []byte { return clone(s.m).V }
+func (s BytesValue) IsTrue() bool  { return len(s.read().V) > 0 }
 
 func NewBytesValue(v []byte) Value {
 	return forceFromProto[Value](clone(&ValuePB{Bytes: &BytesValuePB{V: v}}))
@@ -57,6 +60,15 @@ func NewListValue(vs []Value) (Value, error) {
 }
 
 func (l ListValue) Values() []Value { return kittehs.Transform(l.read().Vs, forceFromProto[Value]) }
+func (l ListValue) IsTrue() bool    { return len(l.read().Vs) > 0 }
+func (l ListValue) Len() int        { return len(l.read().Vs) }
+func (l ListValue) Index(i int) (Value, error) {
+	if i >= len(l.read().Vs) {
+		return InvalidValue, fmt.Errorf("index %d out of range", i)
+	}
+
+	return forceFromProto[Value](l.read().Vs[i]), nil
+}
 
 func (v Value) IsList() bool       { return v.read().List != nil }
 func (v Value) GetList() ListValue { return forceFromProto[ListValue](v.read().List) }
@@ -88,7 +100,8 @@ type SetValue struct {
 func (SetValue) isConcreteValue() {}
 
 func NewSetValue(vs []Value) (Value, error) {
-	vs = slices.Clone(vs)
+	// Remove dups.
+	vs = maps.Values(kittehs.ListToMap(vs, func(v Value) (string, Value) { return v.Hash(), v }))
 
 	// Make item order deterministic.
 	sort.Slice(vs, func(i, j int) bool { return vs[i].Hash() < vs[j].Hash() })
@@ -97,6 +110,15 @@ func NewSetValue(vs []Value) (Value, error) {
 }
 
 func (l SetValue) Values() []Value { return kittehs.Transform(l.read().Vs, forceFromProto[Value]) }
+func (l SetValue) IsTrue() bool    { return len(l.read().Vs) > 0 }
+func (l SetValue) Len() int        { return len(l.read().Vs) }
+func (l SetValue) Index(i int) (Value, error) {
+	if i >= len(l.read().Vs) {
+		return InvalidValue, fmt.Errorf("index %d out of range", i)
+	}
+
+	return forceFromProto[Value](l.read().Vs[i]), nil
+}
 
 func (v Value) IsSet() bool      { return v.read().Set != nil }
 func (v Value) GetSet() SetValue { return forceFromProto[SetValue](v.read().Set) }
@@ -159,6 +181,16 @@ func (d DictValue) Items() []DictItem {
 	return kittehs.Transform(d.read().Items, func(i *dictItemPB) DictItem {
 		return DictItem{K: forceFromProto[Value](i.K), V: forceFromProto[Value](i.V)}
 	})
+}
+
+func (d DictValue) Len() int     { return len(d.read().Items) }
+func (d DictValue) IsTrue() bool { return len(d.read().Items) > 0 }
+func (d DictValue) Index(i int) (Value, error) {
+	if i >= len(d.read().Items) {
+		return InvalidValue, fmt.Errorf("index %d out of range", i)
+	}
+
+	return forceFromProto[Value](d.read().Items[i].K), nil
 }
 
 func (d DictValue) ToStringValuesMap() (map[string]Value, error) {

@@ -15,6 +15,7 @@ enum SessionStateType { // TODO: Type might not be the best qualifier.
   SESSION_STATE_TYPE_ERROR = 3;
   SESSION_STATE_TYPE_COMPLETED = 4;
   SESSION_STATE_TYPE_STOPPED = 5;
+  SESSION_STATE_TYPE_DEBUG_TRACE = 6;
 }
 
 message SessionState {
@@ -99,6 +100,13 @@ message SessionLogRecord {
     string reason = 2;
   }
 
+  message DebugTrace {
+    // [0] is outermost.
+    repeated program.v1.CallFrame callstack = 1 [(buf.validate.field).repeated.items.required = true];
+
+    map<string, string> extra = 2;
+  }
+
   google.protobuf.Timestamp t = 1;
   string process_id = 2;
 
@@ -109,6 +117,7 @@ message SessionLogRecord {
   Call.Attempt.Complete call_attempt_complete = 13;
   SessionState state = 14;
   StopRequest stop_request = 15;
+  DebugTrace debug_trace = 16;
 }
 
 message SessionLog {

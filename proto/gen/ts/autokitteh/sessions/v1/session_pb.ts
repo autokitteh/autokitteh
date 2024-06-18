@@ -6,7 +6,7 @@
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
 import { Duration, Message, proto3, Timestamp } from "@bufbuild/protobuf";
 import { Value } from "../../values/v1/values_pb.js";
-import { CodeLocation, Error } from "../../program/v1/program_pb.js";
+import { CallFrame, CodeLocation, Error } from "../../program/v1/program_pb.js";
 
 /**
  * TODO: Type might not be the best qualifier.
@@ -43,6 +43,11 @@ export enum SessionStateType {
    * @generated from enum value: SESSION_STATE_TYPE_STOPPED = 5;
    */
   STOPPED = 5,
+
+  /**
+   * @generated from enum value: SESSION_STATE_TYPE_DEBUG_TRACE = 6;
+   */
+  DEBUG_TRACE = 6,
 }
 // Retrieve enum metadata with: proto3.getEnumType(SessionStateType)
 proto3.util.setEnumType(SessionStateType, "autokitteh.sessions.v1.SessionStateType", [
@@ -52,6 +57,7 @@ proto3.util.setEnumType(SessionStateType, "autokitteh.sessions.v1.SessionStateTy
   { no: 3, name: "SESSION_STATE_TYPE_ERROR" },
   { no: 4, name: "SESSION_STATE_TYPE_COMPLETED" },
   { no: 5, name: "SESSION_STATE_TYPE_STOPPED" },
+  { no: 6, name: "SESSION_STATE_TYPE_DEBUG_TRACE" },
 ]);
 
 /**
@@ -652,6 +658,11 @@ export class SessionLogRecord extends Message<SessionLogRecord> {
    */
   stopRequest?: SessionLogRecord_StopRequest;
 
+  /**
+   * @generated from field: autokitteh.sessions.v1.SessionLogRecord.DebugTrace debug_trace = 16;
+   */
+  debugTrace?: SessionLogRecord_DebugTrace;
+
   constructor(data?: PartialMessage<SessionLogRecord>) {
     super();
     proto3.util.initPartial(data, this);
@@ -668,6 +679,7 @@ export class SessionLogRecord extends Message<SessionLogRecord> {
     { no: 13, name: "call_attempt_complete", kind: "message", T: Call_Attempt_Complete },
     { no: 14, name: "state", kind: "message", T: SessionState },
     { no: 15, name: "stop_request", kind: "message", T: SessionLogRecord_StopRequest },
+    { no: 16, name: "debug_trace", kind: "message", T: SessionLogRecord_DebugTrace },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SessionLogRecord {
@@ -758,6 +770,51 @@ export class SessionLogRecord_StopRequest extends Message<SessionLogRecord_StopR
 
   static equals(a: SessionLogRecord_StopRequest | PlainMessage<SessionLogRecord_StopRequest> | undefined, b: SessionLogRecord_StopRequest | PlainMessage<SessionLogRecord_StopRequest> | undefined): boolean {
     return proto3.util.equals(SessionLogRecord_StopRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message autokitteh.sessions.v1.SessionLogRecord.DebugTrace
+ */
+export class SessionLogRecord_DebugTrace extends Message<SessionLogRecord_DebugTrace> {
+  /**
+   * [0] is outermost.
+   *
+   * @generated from field: repeated autokitteh.program.v1.CallFrame callstack = 1;
+   */
+  callstack: CallFrame[] = [];
+
+  /**
+   * @generated from field: map<string, string> extra = 2;
+   */
+  extra: { [key: string]: string } = {};
+
+  constructor(data?: PartialMessage<SessionLogRecord_DebugTrace>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "autokitteh.sessions.v1.SessionLogRecord.DebugTrace";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "callstack", kind: "message", T: CallFrame, repeated: true },
+    { no: 2, name: "extra", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SessionLogRecord_DebugTrace {
+    return new SessionLogRecord_DebugTrace().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SessionLogRecord_DebugTrace {
+    return new SessionLogRecord_DebugTrace().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SessionLogRecord_DebugTrace {
+    return new SessionLogRecord_DebugTrace().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SessionLogRecord_DebugTrace | PlainMessage<SessionLogRecord_DebugTrace> | undefined, b: SessionLogRecord_DebugTrace | PlainMessage<SessionLogRecord_DebugTrace> | undefined): boolean {
+    return proto3.util.equals(SessionLogRecord_DebugTrace, a, b);
   }
 }
 

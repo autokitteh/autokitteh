@@ -1,0 +1,27 @@
+meow, world!
+bub and bob say buh bye!
+
+-- main.flowchart.yaml main --
+version: v1
+
+imports:
+  - name: foo
+    path: "foo.star"
+
+nodes:
+    - name: main
+      action:
+        call:
+          target: imports.foo.say
+          args:
+            sound: "'meow'"
+      goto: nodes.end
+
+    - name: end
+      action:
+        print:
+          value: "'bub and bob say buh bye!'"
+
+-- foo.star --
+def say(sound):
+  print("{}, world!".format(sound))

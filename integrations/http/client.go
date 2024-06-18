@@ -20,52 +20,53 @@ var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.Integrati
 	ConnectionUrl: "/i/http/connect",
 }))
 
-type integration struct {
-	vars  sdkservices.Vars
-	scope string
+type integration struct{ vars sdkservices.Vars }
+
+func NewModule(i *integration) sdkmodule.Module {
+	return sdkmodule.New(
+		sdkmodule.ExportFunction(
+			"delete",
+			i.request(http.MethodDelete),
+			sdkmodule.WithFuncDoc("https://www.rfc-editor.org/rfc/rfc9110#DELETE"),
+			args),
+		sdkmodule.ExportFunction(
+			"get",
+			i.request(http.MethodGet),
+			sdkmodule.WithFuncDoc("https://www.rfc-editor.org/rfc/rfc9110#GET"),
+			args),
+		sdkmodule.ExportFunction(
+			"head",
+			i.request(http.MethodHead),
+			sdkmodule.WithFuncDoc("https://www.rfc-editor.org/rfc/rfc9110#HEAD"),
+			args),
+		sdkmodule.ExportFunction(
+			"options",
+			i.request(http.MethodOptions),
+			sdkmodule.WithFuncDoc("https://www.rfc-editor.org/rfc/rfc9110#OPTIONS"),
+			args),
+		sdkmodule.ExportFunction(
+			"patch",
+			i.request(http.MethodPatch),
+			sdkmodule.WithFuncDoc("https://www.rfc-editor.org/rfc/rfc5789"),
+			args),
+		sdkmodule.ExportFunction(
+			"post",
+			i.request(http.MethodPost),
+			sdkmodule.WithFuncDoc("https://www.rfc-editor.org/rfc/rfc9110#POST"),
+			args),
+		sdkmodule.ExportFunction(
+			"put",
+			i.request(http.MethodPut),
+			sdkmodule.WithFuncDoc("https://www.rfc-editor.org/rfc/rfc9110#PUT"),
+			args),
+	)
 }
 
 func New(vars sdkservices.Vars) sdkservices.Integration {
-	i := integration{vars: vars, scope: desc.UniqueName().String()}
+	i := integration{vars: vars}
 	return sdkintegrations.NewIntegration(
 		desc,
-		sdkmodule.New(
-			sdkmodule.ExportFunction(
-				"delete",
-				i.request(http.MethodDelete),
-				sdkmodule.WithFuncDoc("https://www.rfc-editor.org/rfc/rfc9110#DELETE"),
-				args),
-			sdkmodule.ExportFunction(
-				"get",
-				i.request(http.MethodGet),
-				sdkmodule.WithFuncDoc("https://www.rfc-editor.org/rfc/rfc9110#GET"),
-				args),
-			sdkmodule.ExportFunction(
-				"head",
-				i.request(http.MethodHead),
-				sdkmodule.WithFuncDoc("https://www.rfc-editor.org/rfc/rfc9110#HEAD"),
-				args),
-			sdkmodule.ExportFunction(
-				"options",
-				i.request(http.MethodOptions),
-				sdkmodule.WithFuncDoc("https://www.rfc-editor.org/rfc/rfc9110#OPTIONS"),
-				args),
-			sdkmodule.ExportFunction(
-				"patch",
-				i.request(http.MethodPatch),
-				sdkmodule.WithFuncDoc("https://www.rfc-editor.org/rfc/rfc5789"),
-				args),
-			sdkmodule.ExportFunction(
-				"post",
-				i.request(http.MethodPost),
-				sdkmodule.WithFuncDoc("https://www.rfc-editor.org/rfc/rfc9110#POST"),
-				args),
-			sdkmodule.ExportFunction(
-				"put",
-				i.request(http.MethodPut),
-				sdkmodule.WithFuncDoc("https://www.rfc-editor.org/rfc/rfc9110#PUT"),
-				args),
-		),
+		NewModule(&i),
 		sdkintegrations.WithConnectionConfigFromVars(vars),
 	)
 }

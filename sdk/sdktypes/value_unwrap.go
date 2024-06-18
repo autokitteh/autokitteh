@@ -38,13 +38,14 @@ func (w *ValueWrapper) unwrap(v Value) (any, error) {
 		return nil, nil
 	}
 
+	if v.IsFunction() && w.UnwrapFunction != nil {
+		return w.UnwrapFunction(v)
+	}
+
 	switch v := v.Concrete().(type) {
 	case NothingValue:
 		return nil, nil
 	case FunctionValue:
-		if w.IgnoreFunctions {
-			return nil, nil
-		}
 		return nil, errors.New("function values are not supported")
 	case StringValue:
 		return v.Value(), nil

@@ -193,6 +193,11 @@ export class ListRequest extends Message<ListRequest> {
   stateType = SessionStateType.UNSPECIFIED;
 
   /**
+   * @generated from field: string parent_session_id = 6;
+   */
+  parentSessionId = "";
+
+  /**
    * @generated from field: bool count_only = 10;
    */
   countOnly = false;
@@ -228,6 +233,7 @@ export class ListRequest extends Message<ListRequest> {
     { no: 3, name: "event_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "build_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "state_type", kind: "enum", T: proto3.getEnumType(SessionStateType) },
+    { no: 6, name: "parent_session_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "count_only", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 20, name: "page_size", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 21, name: "skip", kind: "scalar", T: 5 /* ScalarType.INT32 */ },

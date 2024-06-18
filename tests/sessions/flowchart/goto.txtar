@@ -1,0 +1,17 @@
+meow, world!
+bub and bob say buh bye!
+
+-- main.flowchart.yaml main --
+version: v1
+
+nodes:
+    - name: main
+      action:
+        print:
+          value: "'meow, world!'"
+      goto: nodes.end
+
+    - name: end
+      action:
+        print:
+          value: "'bub and bob say buh bye!'"

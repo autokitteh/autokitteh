@@ -92,7 +92,7 @@ func (s Svc) session(w http.ResponseWriter, r *http.Request) {
 
 	vw := sdktypes.DefaultValueWrapper
 	vw.SafeForJSON = true
-	vw.IgnoreFunctions = true
+	vw.UnwrapFunction = func(v sdktypes.Value) (any, error) { return nil, nil }
 
 	inputs, err := kittehs.TransformMapValuesError(sdkS.Inputs(), vw.Unwrap)
 	if err != nil {

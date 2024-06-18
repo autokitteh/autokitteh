@@ -35,6 +35,8 @@ type ErrInvalidArgument struct {
 	Underlying error
 }
 
+func (e ErrInvalidArgument) Is(target error) bool { _, ok := target.(ErrInvalidArgument); return ok }
+
 func (e ErrInvalidArgument) Error() string {
 	if e.Underlying != nil {
 		return e.Underlying.Error()

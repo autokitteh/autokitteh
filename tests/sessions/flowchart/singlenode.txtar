@@ -1,0 +1,10 @@
+meow, world!
+
+-- main.flowchart.yaml main --
+version: v1
+
+nodes:
+    - name: main
+      action:
+        print:
+            value: "'meow, world!'"

@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-TESTS="${TESTS-*.txtar}"
+TESTS="${TESTS-$(find tests/sessions -name '*.txtar' -print)}"
 
 # if set, will not start its own ak instance.
 AK_ADDR="${AK_ADDR-}"
@@ -66,13 +66,23 @@ trap ontrap 0
 
 export AK
 
-for f in tests/sessions/${TESTS}; do
-    up "$(basename "${f}")"
+for f in ${TESTS}; do
+    name="$(basename "${f}")"
+    dir="$(dirname "${f}")"
 
-    AK="${PWD}/${ak_filename} -C http.service_url=http://$(cat ${addr_filename})"
+    if [[ $name == _* ]]; then
+        continue
+    fi
 
-    echo "--- ${f} ---"
-    ${AK} session test --quiet "${f}"
+    up "${name}"
+
+    ak_addr="$(cat ${addr_filename})"
+    AK="${PWD}/${ak_filename} -C http.service_url=http://${ak_addr}"
+
+    echo "--- ${dir}/${f} ---"
+    set -x
+    ${AK} session test -I "ak_addr=\"${ak_addr}\"" "${f}" "${dir}"/_*.txtar
+    set +x
 
     down 
 done

@@ -14,6 +14,7 @@
 # TODO: Move the below to be supplied by the project build.
 # The followings are always supplied by the session: {
 # EXPORT: ak
+# EXPORT: http
 # EXPORT: os
 # EXPORT: rand
 # EXPORT: store

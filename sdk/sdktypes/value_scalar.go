@@ -2,6 +2,7 @@ package sdktypes
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"golang.org/x/exp/constraints"
@@ -23,6 +24,8 @@ type NothingValue struct {
 func (NothingValue) isConcreteValue() {}
 
 var Nothing = forceFromProto[Value](&ValuePB{Nothing: &NothingValuePB{}})
+
+func (NothingValue) IsTrue() bool { return false }
 
 func (v Value) IsNothing() bool          { return v.read().Nothing != nil }
 func (v Value) GetNothing() NothingValue { return forceFromProto[NothingValue](v.read().Nothing) }
@@ -63,6 +66,7 @@ type SymbolValue struct {
 }
 
 func (s SymbolValue) Symbol() Symbol { return NewSymbol(s.read().Name) }
+func (SymbolValue) IsTrue() bool     { return false }
 
 func (v Value) IsSymbol() bool         { return v.read().Symbol != nil }
 func (v Value) GetSymbol() SymbolValue { return forceFromProto[SymbolValue](v.read().Symbol) }
@@ -91,10 +95,13 @@ type StringValue struct {
 func (StringValue) isConcreteValue() {}
 
 func (s StringValue) Value() string { return s.read().V }
+func (s StringValue) IsTrue() bool  { return len(s.read().V) > 0 }
 
 func NewStringValue(s string) Value {
 	return forceFromProto[Value](&ValuePB{String_: &StringValuePB{V: s}})
 }
+
+func NewStringValuef(f string, vs ...any) Value { return NewStringValue(fmt.Sprintf(f, vs...)) }
 
 func (v Value) IsString() bool         { return v.read().String_ != nil }
 func (v Value) GetString() StringValue { return forceFromProto[StringValue](v.read().String_) }
@@ -119,6 +126,7 @@ type IntegerValue struct {
 func (IntegerValue) isConcreteValue() {}
 
 func (s IntegerValue) Value() int64 { return s.read().V }
+func (s IntegerValue) IsTrue() bool { return s.read().V != 0 }
 
 func NewIntegerValue[T constraints.Integer](v T) Value {
 	return forceFromProto[Value](&ValuePB{Integer: &IntegerValuePB{V: int64(v)}})
@@ -146,10 +154,24 @@ type BooleanValue struct {
 
 func (BooleanValue) isConcreteValue() {}
 
-func (s BooleanValue) Value() bool { return s.read().V }
+func (s BooleanValue) Value() bool  { return s.read().V }
+func (s BooleanValue) IsTrue() bool { return s.read().V }
+
+var (
+	True  = newBooleanValue(true)
+	False = newBooleanValue(false)
+)
+
+func newBooleanValue(v bool) Value {
+	return forceFromProto[Value](&ValuePB{Boolean: &BooleanValuePB{V: v}})
+}
 
 func NewBooleanValue(v bool) Value {
-	return forceFromProto[Value](&ValuePB{Boolean: &BooleanValuePB{V: v}})
+	if v {
+		return True
+	}
+
+	return False
 }
 
 func (v Value) IsBoolean() bool          { return v.read().Boolean != nil }
@@ -175,6 +197,7 @@ type FloatValue struct {
 func (FloatValue) isConcreteValue() {}
 
 func (s FloatValue) Value() float64 { return s.read().V }
+func (s FloatValue) IsTrue() bool   { return s.read().V != 0 }
 
 func NewFloatValue[T constraints.Float](v T) Value {
 	return forceFromProto[Value](&ValuePB{Float: &FloatValuePB{V: float64(v)}})
@@ -203,6 +226,7 @@ type DurationValue struct {
 func (DurationValue) isConcreteValue() {}
 
 func (s DurationValue) Value() time.Duration { return s.read().V.AsDuration() }
+func (s DurationValue) IsTrue() bool         { return s.Value() != 0 }
 
 func NewDurationValue(v time.Duration) Value {
 	return forceFromProto[Value](&ValuePB{Duration: &DurationValuePB{V: durationpb.New(v)}})
@@ -231,6 +255,7 @@ type TimeValue struct {
 func (TimeValue) isConcreteValue() {}
 
 func (s TimeValue) Value() time.Time { return s.read().V.AsTime() }
+func (TimeValue) IsTrue() bool       { return true }
 
 func NewTimeValue(v time.Time) Value {
 	return forceFromProto[Value](&ValuePB{Time: &TimeValuePB{V: timestamppb.New(v)}})

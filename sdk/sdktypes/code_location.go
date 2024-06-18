@@ -18,6 +18,8 @@ type CodeLocation struct {
 	object[*CodeLocationPB, CodeLocationTraits]
 }
 
+var InvalidCodeLocation CodeLocation
+
 type CodeLocationPB = programv1.CodeLocation
 
 type CodeLocationTraits struct{}
@@ -70,6 +72,15 @@ func CodeLocationFromProto(m *CodeLocationPB) (CodeLocation, error) {
 
 func StrictParseCodeLocation(s string) (CodeLocation, error) {
 	return Strict(ParseCodeLocation(s))
+}
+
+func NewCodeLocation(name, path string, row, col uint32) (CodeLocation, error) {
+	return CodeLocationFromProto(&CodeLocationPB{
+		Name: name,
+		Path: path,
+		Row:  uint32(row),
+		Col:  uint32(col),
+	})
 }
 
 func ParseCodeLocation(s string) (CodeLocation, error) {

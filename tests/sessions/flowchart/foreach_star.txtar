@@ -1,0 +1,32 @@
+["1st","2nd","3rd"]
+
+-- main.flowchart.yaml main --
+version: v1
+
+imports:
+  - name: foo
+    path: "foo.star"
+
+nodes:
+  - name: main
+    action:
+      foreach:
+        items: [1, 2, 3]
+        call:
+          target: imports.foo.foo
+          args: 
+            i: states.foreach.item
+    goto: nodes.end
+
+  - name: end
+    action:
+      print:
+        value: "states.results.main"
+
+-- foo.star --
+def foo(i):
+  return {
+    1: "1st",
+    2: "2nd",
+    3: "3rd"
+  }[i]

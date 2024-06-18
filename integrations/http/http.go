@@ -296,7 +296,7 @@ func sendHttpRequest(ctx context.Context, req request, method string) (*http.Res
 
 // request is a factory function for generating autokitteh
 // functions for different HTTP request methods.
-func (i integration) request(method string) sdkexecutor.Function {
+func (i *integration) request(method string) sdkexecutor.Function {
 	return func(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
 		// Parse the input arguments.
 		var (
@@ -309,17 +309,19 @@ func (i integration) request(method string) sdkexecutor.Function {
 			return sdktypes.InvalidValue, err
 		}
 
-		auth, err := i.getConnectionAuth(ctx)
-		if err != nil {
-			return sdktypes.InvalidValue, err
-		}
+		if i != nil {
+			auth, err := i.getConnectionAuth(ctx)
+			if err != nil {
+				return sdktypes.InvalidValue, err
+			}
 
-		// Add the Authorization HTTP header?
-		if auth != "" {
-			// If the Authorization header is set explicitly, it
-			// should override the connection's default authorization.
-			if _, ok := req.headers[authHeader]; !ok {
-				req.headers[authHeader] = auth
+			// Add the Authorization HTTP header?
+			if auth != "" {
+				// If the Authorization header is set explicitly, it
+				// should override the connection's default authorization.
+				if _, ok := req.headers[authHeader]; !ok {
+					req.headers[authHeader] = auth
+				}
 			}
 		}
 

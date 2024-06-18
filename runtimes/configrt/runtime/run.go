@@ -22,7 +22,9 @@ var _ sdkservices.Run = &run{}
 
 func (r *run) ID() sdktypes.RunID                { return r.runID }
 func (r *run) Values() map[string]sdktypes.Value { return r.exports }
-func (r *run) ExecutorID() sdktypes.ExecutorID   { return sdktypes.NewExecutorID(r.runID) }
+func (r *run) ExecutorIDs() []sdktypes.ExecutorID {
+	return []sdktypes.ExecutorID{sdktypes.NewExecutorID(r.runID)}
+}
 
 func (r *run) getFunc(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
 	var key string

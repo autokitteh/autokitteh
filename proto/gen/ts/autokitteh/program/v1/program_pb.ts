@@ -83,6 +83,11 @@ export class CallFrame extends Message<CallFrame> {
    */
   location?: CodeLocation;
 
+  /**
+   * @generated from field: map<string, autokitteh.values.v1.Value> locals = 3;
+   */
+  locals: { [key: string]: Value } = {};
+
   constructor(data?: PartialMessage<CallFrame>) {
     super();
     proto3.util.initPartial(data, this);
@@ -93,6 +98,7 @@ export class CallFrame extends Message<CallFrame> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "location", kind: "message", T: CodeLocation },
+    { no: 3, name: "locals", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: Value} },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CallFrame {

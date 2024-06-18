@@ -20,12 +20,21 @@ class CodeLocation(_message.Message):
     def __init__(self, path: _Optional[str] = ..., row: _Optional[int] = ..., col: _Optional[int] = ..., name: _Optional[str] = ...) -> None: ...
 
 class CallFrame(_message.Message):
-    __slots__ = ["name", "location"]
+    __slots__ = ["name", "location", "locals"]
+    class LocalsEntry(_message.Message):
+        __slots__ = ["key", "value"]
+        KEY_FIELD_NUMBER: _ClassVar[int]
+        VALUE_FIELD_NUMBER: _ClassVar[int]
+        key: str
+        value: _values_pb2.Value
+        def __init__(self, key: _Optional[str] = ..., value: _Optional[_Union[_values_pb2.Value, _Mapping]] = ...) -> None: ...
     NAME_FIELD_NUMBER: _ClassVar[int]
     LOCATION_FIELD_NUMBER: _ClassVar[int]
+    LOCALS_FIELD_NUMBER: _ClassVar[int]
     name: str
     location: CodeLocation
-    def __init__(self, name: _Optional[str] = ..., location: _Optional[_Union[CodeLocation, _Mapping]] = ...) -> None: ...
+    locals: _containers.MessageMap[str, _values_pb2.Value]
+    def __init__(self, name: _Optional[str] = ..., location: _Optional[_Union[CodeLocation, _Mapping]] = ..., locals: _Optional[_Mapping[str, _values_pb2.Value]] = ...) -> None: ...
 
 class Error(_message.Message):
     __slots__ = ["value", "callstack", "extra"]

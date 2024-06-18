@@ -137,7 +137,7 @@ func (vctx *Context) fromStarlarkFunction(v *starlark.Function) (sdktypes.Value,
 		sdktypes.NewExecutorID(vctx.RunID),
 		v.Name(),
 		[]byte(sig),
-		nil,
+		[]sdktypes.FunctionFlag{sdktypes.PureFunctionFlag},
 		desc,
 	)
 }
@@ -148,7 +148,7 @@ func (vctx *Context) fromStarlarkBuiltin(b *starlark.Builtin) (sdktypes.Value, e
 			sdktypes.NewExecutorID(vctx.RunID),
 			b.Name(),
 			nil,
-			nil,
+			[]sdktypes.FunctionFlag{sdktypes.PureFunctionFlag},
 			sdktypes.InvalidModuleFunction,
 		)
 	}

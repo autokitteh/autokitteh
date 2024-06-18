@@ -88,15 +88,13 @@ func (o object[M, T]) forceUpdate(f func(M)) object[M, T] {
 	return object[M, T]{m: m}
 }
 
-var protoMarshal = protojson.MarshalOptions{UseProtoNames: true}.Marshal
-
 func (o object[M, T]) MarshalJSON() ([]byte, error) {
 	// The object can be marshalled as a pointer, so if it's null, we just
 	// specify null in JSON.
 	if !o.IsValid() {
 		return []byte("null"), nil
 	}
-	return protoMarshal(o.m)
+	return protojson.MarshalOptions{UseProtoNames: true}.Marshal(o.m)
 }
 
 func (o *object[M, T]) UnmarshalJSON(b []byte) (err error) {

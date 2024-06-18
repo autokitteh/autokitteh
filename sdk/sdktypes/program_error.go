@@ -73,6 +73,8 @@ func NewProgramError(v Value, callstack []CallFrame, extra map[string]string) Pr
 	))
 }
 
+func IsProgramError(err error) bool { _, ok := FromError(err); return ok }
+
 func FromError(err error) (ProgramError, bool) {
 	var pperr programError
 	if errors.As(err, &pperr) {

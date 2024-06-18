@@ -3,6 +3,7 @@ package sdktypes
 import (
 	"errors"
 
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	programv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/program/v1"
 )
 
@@ -18,6 +19,7 @@ func (CallFrameTraits) Validate(m *CallFramePB) error {
 	// No need to validate name, as it is a freeform string.
 	return errors.Join(
 		objectField[CodeLocation]("location", m.Location),
+		valuesMapField("locals", m.Locals),
 	)
 }
 
@@ -31,4 +33,12 @@ func (f CallFrame) Location() CodeLocation { return forceFromProto[CodeLocation]
 
 func CallFrameFromProto(m *CallFramePB) (CallFrame, error) {
 	return FromProto[CallFrame](m)
+}
+
+func NewCallFrame(name string, loc CodeLocation, locals map[string]Value) CallFrame {
+	return kittehs.Must1(CallFrameFromProto(&CallFramePB{
+		Name:     name,
+		Location: loc.ToProto(),
+		Locals:   kittehs.TransformMapValues(locals, ToProto),
+	}))
 }

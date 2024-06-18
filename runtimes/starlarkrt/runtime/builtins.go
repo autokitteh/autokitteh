@@ -76,6 +76,9 @@ func runActivityBuiltinFunc(th *starlark.Thread, _ *starlark.Builtin, args starl
 		return nil, err
 	}
 
+	// force activity call.
+	akV = akV.WithoutFunctionFlag(sdktypes.PureFunctionFlag)
+
 	rv, err := tlsContext.Callbacks.Call(tlsContext.GoCtx, tlsContext.RunID, akV, akArgs, akKwArgs)
 	if err != nil {
 		return nil, err

@@ -21,6 +21,7 @@ message CodeLocation {
 message CallFrame {
   string name = 1;
   CodeLocation location = 2;
+  map<string, values.v1.Value> locals = 3;
 }
 
 message Error {

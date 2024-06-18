@@ -44,10 +44,11 @@ type Runtime interface {
 }
 
 type (
-	RunLoadFunc  = func(ctx context.Context, rid sdktypes.RunID, path string) (map[string]sdktypes.Value, error)
-	RunCallFunc  = func(ctx context.Context, rid sdktypes.RunID, v sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error)
-	RunPrintFunc = func(ctx context.Context, rid sdktypes.RunID, text string)
-	NewRunIDFunc = func() sdktypes.RunID
+	RunLoadFunc    = func(ctx context.Context, rid sdktypes.RunID, path string) (map[string]sdktypes.Value, error)
+	RunCallFunc    = func(ctx context.Context, rid sdktypes.RunID, v sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error)
+	RunPrintFunc   = func(ctx context.Context, rid sdktypes.RunID, text string)
+	NewRunIDFunc   = func() sdktypes.RunID
+	DebugTraceFunc = func(ctx context.Context, rid sdktypes.RunID, callstack []sdktypes.CallFrame, extra map[string]string)
 )
 
 type RunCallbacks struct {
@@ -60,6 +61,8 @@ type RunCallbacks struct {
 	Print RunPrintFunc
 
 	NewRunID NewRunIDFunc
+
+	DebugTrace DebugTraceFunc
 }
 
 type Run interface {
@@ -95,3 +98,11 @@ func (rc *RunCallbacks) SafePrint(ctx context.Context, rid sdktypes.RunID, text 
 }
 
 func (rc *RunCallbacks) SafeNewRunID() sdktypes.RunID { return sdktypes.NewRunID() }
+
+func (rc *RunCallbacks) SafeDebugTrace(ctx context.Context, rid sdktypes.RunID, callstack []sdktypes.CallFrame, extra map[string]string) {
+	if rc == nil || rc.DebugTrace == nil {
+		return
+	}
+
+	rc.DebugTrace(ctx, rid, callstack, extra)
+}

@@ -1,0 +1,31 @@
+meow, world!
+moooo
+bub and bob say buh bye!
+
+-- main.flowchart.yaml main --
+version: v1
+
+nodes:
+    - name: main
+      action:
+        call:
+          target: nodes.say
+          args:
+            sound: "'meow'"
+      goto: nodes.end
+
+    - name: say
+      action:
+        print:
+          value: "args.sound + ', world!'"
+      goto: nodes.postsay
+
+    - name: postsay
+      action:
+        print:
+          value: "'moooo'"
+
+    - name: end
+      action:
+        print:
+          value: "'bub and bob say buh bye!'"

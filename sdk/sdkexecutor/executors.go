@@ -30,8 +30,10 @@ func (ms *Executors) Call(ctx context.Context, v sdktypes.Value, args []sdktypes
 }
 
 func (ms *Executors) AddExecutor(name string, x Executor) error {
-	if err := ms.AddCaller(x.ExecutorID(), x); err != nil {
-		return fmt.Errorf("add caller: %w", err)
+	for _, xid := range x.ExecutorIDs() {
+		if err := ms.AddCaller(xid, x); err != nil {
+			return fmt.Errorf("add caller: %w", err)
+		}
 	}
 
 	if err := ms.AddValues(name, x.Values()); err != nil {
@@ -46,7 +48,7 @@ func (ms *Executors) AddCaller(xid sdktypes.ExecutorID, c Caller) error {
 		ms.callers = make(map[string]Caller)
 	}
 
-	if _, ok := ms.callers[xid.String()]; ok {
+	if cc, ok := ms.callers[xid.String()]; ok && cc != c {
 		return sdkerrors.ErrConflict
 	}
 

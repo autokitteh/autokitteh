@@ -33,7 +33,13 @@ func (g *group) Close() {
 	}
 }
 
-func (g *group) ExecutorID() sdktypes.ExecutorID { return sdktypes.NewExecutorID(g.mainID) }
+func (g *group) ExecutorIDs() (xids []sdktypes.ExecutorID) {
+	for _, r := range g.runs {
+		xids = append(xids, r.ExecutorIDs()...)
+	}
+
+	return
+}
 
 func (g *group) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
 	if !v.IsFunction() {

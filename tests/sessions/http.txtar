@@ -1,0 +1,5 @@
+200
+
+-- main.star main --
+def main():
+    print(http.get("http://example.com").status_code)

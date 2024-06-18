@@ -1,0 +1,14 @@
+42
+
+-- main.flowchart.yaml main --
+version: v1
+
+nodes:
+    - name: main
+      result: 42
+      goto: nodes.end
+
+    - name: end
+      action:
+        print:
+          value: "states.results.main"

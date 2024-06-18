@@ -387,6 +387,7 @@ func ParseSessionCallAttemptComplete(c SessionCallAttempt) (d sdktypes.SessionCa
 
 type Session struct {
 	SessionID        sdktypes.UUID  `gorm:"primaryKey;type:uuid;not null"`
+	ParentSessionID  *sdktypes.UUID `gorm:"index;type:uuid"`
 	BuildID          *sdktypes.UUID `gorm:"index;type:uuid"`
 	EnvID            *sdktypes.UUID `gorm:"index;type:uuid"`
 	DeploymentID     *sdktypes.UUID `gorm:"index;type:uuid"`
@@ -399,10 +400,11 @@ type Session struct {
 	DeletedAt        gorm.DeletedAt `gorm:"index"`
 
 	// enforce foreign keys
-	Build      *Build
-	Env        *Env
-	Deployment *Deployment
-	Event      *Event `gorm:"references:EventID"`
+	Build         *Build
+	Env           *Env
+	Deployment    *Deployment
+	Event         *Event   `gorm:"references:EventID"`
+	ParentSession *Session `gorm:"references:SessionID"`
 }
 
 func ParseSession(s Session) (sdktypes.Session, error) {
@@ -419,16 +421,17 @@ func ParseSession(s Session) (sdktypes.Session, error) {
 	}
 
 	session, err := sdktypes.StrictSessionFromProto(&sdktypes.SessionPB{
-		SessionId:    sdktypes.NewIDFromUUID[sdktypes.SessionID](&s.SessionID).String(),
-		BuildId:      sdktypes.NewIDFromUUID[sdktypes.BuildID](s.BuildID).String(),
-		EnvId:        sdktypes.NewIDFromUUID[sdktypes.EnvID](s.EnvID).String(),
-		DeploymentId: sdktypes.NewIDFromUUID[sdktypes.DeploymentID](s.DeploymentID).String(),
-		EventId:      sdktypes.NewIDFromUUID[sdktypes.EventID](s.EventID).String(),
-		Entrypoint:   ep.ToProto(),
-		Inputs:       kittehs.TransformMapValues(inputs, sdktypes.ToProto),
-		CreatedAt:    timestamppb.New(s.CreatedAt),
-		UpdatedAt:    timestamppb.New(s.UpdatedAt),
-		State:        sessionsv1.SessionStateType(s.CurrentStateType),
+		SessionId:       sdktypes.NewIDFromUUID[sdktypes.SessionID](&s.SessionID).String(),
+		ParentSessionId: sdktypes.NewIDFromUUID[sdktypes.SessionID](s.ParentSessionID).String(),
+		BuildId:         sdktypes.NewIDFromUUID[sdktypes.BuildID](s.BuildID).String(),
+		EnvId:           sdktypes.NewIDFromUUID[sdktypes.EnvID](s.EnvID).String(),
+		DeploymentId:    sdktypes.NewIDFromUUID[sdktypes.DeploymentID](s.DeploymentID).String(),
+		EventId:         sdktypes.NewIDFromUUID[sdktypes.EventID](s.EventID).String(),
+		Entrypoint:      ep.ToProto(),
+		Inputs:          kittehs.TransformMapValues(inputs, sdktypes.ToProto),
+		CreatedAt:       timestamppb.New(s.CreatedAt),
+		UpdatedAt:       timestamppb.New(s.UpdatedAt),
+		State:           sessionsv1.SessionStateType(s.CurrentStateType),
 	})
 	if err != nil {
 		return sdktypes.InvalidSession, err

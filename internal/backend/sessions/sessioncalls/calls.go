@@ -122,9 +122,11 @@ func (cs *calls) Call(ctx workflow.Context, params *CallParams) (sdktypes.Sessio
 
 	z := cs.z.With(zap.String("session_id", params.SessionID.String()), zap.Uint32("seq", seq), zap.Any("v", fnv))
 
+	dctx, _ := workflow.NewDisconnectedContext(ctx)
+
 	// TODO: If replaying, make sure arguments are the same?
 	if err := workflow.ExecuteLocalActivity(
-		ctx, cs.svcs.DB.CreateSessionCall, params.SessionID, spec,
+		dctx, cs.svcs.DB.CreateSessionCall, params.SessionID, spec,
 	).Get(ctx, nil); err != nil {
 		return sdktypes.InvalidSessionCallAttemptResult, fmt.Errorf("db.create_call: %w", err)
 	}

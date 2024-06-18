@@ -25,7 +25,7 @@ var startCmd = common.StandardCommand(&cobra.Command{
 	Args:  cobra.NoArgs,
 
 	RunE: func(cmd *cobra.Command, args []string) error {
-		did, eid, bid, ep, err := sessionArgs()
+		did, eid, bid, ep, inputs, err := sessionArgs()
 		if err != nil {
 			return err
 		}
@@ -33,12 +33,7 @@ var startCmd = common.StandardCommand(&cobra.Command{
 		ctx, cancel := common.LimitedContext()
 		defer cancel()
 
-		inputs, err := parseinputs()
-		if err != nil {
-			return err
-		}
-
-		s := sdktypes.NewSession(bid, ep, nil, nil).WithEnvID(eid).WithDeploymentID(did).WithInputs(inputs)
+		s := sdktypes.NewSession(bid, ep, inputs, nil).WithEnvID(eid).WithDeploymentID(did)
 		sid, err := sessions().Start(ctx, s)
 		if err != nil {
 			return fmt.Errorf("start session: %w", err)
@@ -76,7 +71,7 @@ func init() {
 	startCmd.Flags().StringArrayVarP(&inputs, "input", "I", nil, `zero or more "key=value" pairs, where value is a JSON value`)
 }
 
-func parseinputs() (map[string]sdktypes.Value, error) {
+func parseInputs() (map[string]sdktypes.Value, error) {
 	m := make(map[string]sdktypes.Value, len(inputs))
 	for _, v := range inputs {
 		k, v, ok := strings.Cut(v, "=")
@@ -103,7 +98,7 @@ func parseinputs() (map[string]sdktypes.Value, error) {
 	return m, nil
 }
 
-func sessionArgs() (did sdktypes.DeploymentID, eid sdktypes.EnvID, bid sdktypes.BuildID, ep sdktypes.CodeLocation, err error) {
+func sessionArgs() (did sdktypes.DeploymentID, eid sdktypes.EnvID, bid sdktypes.BuildID, ep sdktypes.CodeLocation, inputs map[string]sdktypes.Value, err error) {
 	r := resolver.Resolver{Client: common.Client()}
 
 	if deploymentID != "" {
@@ -147,6 +142,11 @@ func sessionArgs() (did sdktypes.DeploymentID, eid sdktypes.EnvID, bid sdktypes.
 
 	if ep, err = sdktypes.ParseCodeLocation(entryPoint); err != nil {
 		err = fmt.Errorf("invalid entry-point %q: %w", entryPoint, err)
+		return
+	}
+
+	if inputs, err = parseInputs(); err != nil {
+		err = fmt.Errorf("invalid inputs: %w", err)
 		return
 	}
 

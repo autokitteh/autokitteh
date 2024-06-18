@@ -1,0 +1,28 @@
+yay!
+
+-- main.flowchart.yaml sw --
+version: v1
+
+nodes:
+    - name: sw
+      action:
+        switch:
+          - if: "1 != 1"
+            goto: nodes.omgomgomg
+          - goto: nodes.yay
+      goto: nodes.end # should never reach here
+
+    - name: omgomgomg
+      action:
+        print:
+          value: "'omgomgomg'"
+
+    - name: yay
+      action:
+        print:
+          value: "'yay!'"
+
+    - name: end
+      action:
+        print:
+          value: "'bub and bob say buh bye!'"

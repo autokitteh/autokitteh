@@ -1,0 +1,25 @@
+true
+
+-- main.flowchart.yaml main --
+version: v1
+
+nodes:
+  - name: main
+    action:
+      foreach:
+        items: ["1st", "2nd", "3rd"]
+        call:
+          target: nodes.worker
+          args: 
+            item: states.foreach.item
+          async: true
+    goto: nodes.end
+
+  - name: worker
+    result: "'meow ' + args.item"
+
+  - name: end
+    action:
+      print:
+        value: "states.results.main.all(x, x.startsWith('ses')) && size(states.results.main) == 3"
+   

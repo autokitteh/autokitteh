@@ -36,9 +36,6 @@ type ValueWrapper struct {
 	// Ignore readers when wrapping and unwrapping.
 	IgnoreReader bool
 
-	// Ignore functions.
-	IgnoreFunctions bool
-
 	// Unwrap: transform duration into microseconds, do not convert to string.
 	RawDuration bool
 
@@ -50,6 +47,10 @@ type ValueWrapper struct {
 
 	// Unwrap: if not handled, use this unwrapper.
 	UnwrapUnknown func(Value) (any, error)
+
+	// Unwrap: define how to treat functions. If returns nil, nil - ignore.
+	// default: error.
+	UnwrapFunction func(Value) (any, error)
 }
 
 var DefaultValueWrapper ValueWrapper

@@ -1,0 +1,28 @@
+meow
+bub and bob say buh bye!
+
+-- main.flowchart.yaml main --
+version: v1
+
+imports:
+    - name: sub
+      path: sub.flowchart.yaml
+
+nodes:
+    - name: main
+      goto: imports.sub.foo
+
+-- sub.flowchart.yaml --
+version: v1
+
+nodes:
+    - name: foo
+      action:
+        print:
+          value: "'meow'"
+      goto: nodes.bar
+
+    - name: bar
+      action:
+        print:
+          value: "'bub and bob say buh bye!'"

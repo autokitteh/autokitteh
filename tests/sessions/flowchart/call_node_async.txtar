@@ -1,0 +1,26 @@
+true
+
+-- main.flowchart.yaml main --
+version: v1
+
+nodes:
+    - name: main
+      action:
+        call:
+          target: nodes.say
+          args:
+            sound: "'meow'"
+          async: true
+      goto: nodes.end
+
+    - name: say
+      action:
+        print:
+          value: "args.sound + ', world!'"
+
+    - name: end
+      action:
+        print:
+          value: "states.results.main.startsWith('ses_')"
+
+# TODO: check actual results from the async call.

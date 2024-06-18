@@ -5,7 +5,7 @@ import (
 )
 
 type Executor interface {
-	ExecutorID() sdktypes.ExecutorID
+	ExecutorIDs() []sdktypes.ExecutorID
 
 	Values() map[string]sdktypes.Value
 
@@ -15,13 +15,13 @@ type Executor interface {
 type executor struct {
 	Caller
 
-	xid sdktypes.ExecutorID
-	vs  map[string]sdktypes.Value
+	xids []sdktypes.ExecutorID
+	vs   map[string]sdktypes.Value
 }
 
-func (m *executor) ExecutorID() sdktypes.ExecutorID   { return m.xid }
-func (m *executor) Values() map[string]sdktypes.Value { return m.vs }
+func (m *executor) ExecutorIDs() []sdktypes.ExecutorID { return m.xids }
+func (m *executor) Values() map[string]sdktypes.Value  { return m.vs }
 
-func NewExecutor(caller Caller, xid sdktypes.ExecutorID, vs map[string]sdktypes.Value) Executor {
-	return &executor{Caller: caller, xid: xid, vs: vs}
+func NewExecutor(caller Caller, xids []sdktypes.ExecutorID, vs map[string]sdktypes.Value) Executor {
+	return &executor{Caller: caller, xids: xids, vs: vs}
 }

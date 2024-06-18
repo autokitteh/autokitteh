@@ -12,6 +12,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/akmodules/ak"
+	httpmodule "go.autokitteh.dev/autokitteh/internal/backend/akmodules/http"
 	osmodule "go.autokitteh.dev/autokitteh/internal/backend/akmodules/os"
 	"go.autokitteh.dev/autokitteh/internal/backend/akmodules/store"
 	timemodule "go.autokitteh.dev/autokitteh/internal/backend/akmodules/time"
@@ -98,7 +99,7 @@ func runWorkflow(
 		return
 	}
 
-	if w.globals, err = w.initGlobalModules(); err != nil {
+	if w.globals, err = w.initGlobals(); err != nil {
 		return
 	}
 
@@ -200,7 +201,7 @@ func (w *sessionWorkflow) initEnvModule(cinfos map[string]connInfo) error {
 
 	mod := sdkexecutor.NewExecutor(
 		nil, // no calls will be ever made to env.
-		envVarsExecutorID,
+		[]sdktypes.ExecutorID{envVarsExecutorID},
 		vs,
 	)
 
@@ -267,11 +268,12 @@ func (w *sessionWorkflow) initConnections(ctx workflow.Context) (map[string]conn
 	return cinfos, nil
 }
 
-func (w *sessionWorkflow) initGlobalModules() (map[string]sdktypes.Value, error) {
+func (w *sessionWorkflow) initGlobals() (map[string]sdktypes.Value, error) {
 	execs := map[string]sdkexecutor.Executor{
 		"ak":    ak.New(w.syscall, w.data, w.ws.svcs),
 		"time":  timemodule.New(),
 		"store": store.New(w.data.Env.ID(), w.data.ProjectID, w.ws.svcs.RedisClient),
+		"http":  httpmodule.New(),
 	}
 
 	vs := make(map[string]sdktypes.Value, len(execs))
@@ -437,15 +439,9 @@ func (w *sessionWorkflow) removeEventSubscription(ctx context.Context, signalID 
 }
 
 func (w *sessionWorkflow) run(wctx workflow.Context) (prints []string, err error) {
-	type contextKey string
-	workflowContextKey := contextKey("autokitteh_workflow_context")
-
 	goCtx := temporalclient.NewWorkflowContextAsGOContext(wctx)
 
-	// This will allow us to identify if the call context is from a workflow (script code run), or
-	// some other thing that calls the Call callback from within an activity. The latter is not supported.
-	goCtx = context.WithValue(goCtx, workflowContextKey, wctx)
-	isFromActivity := func(ctx context.Context) bool { return ctx.Value(workflowContextKey) == nil }
+	isFromActivity := func(ctx context.Context) bool { return temporalclient.GetWorkflowContext(ctx) == nil }
 
 	newRunID := func() (runID sdktypes.RunID) {
 		if err := workflow.SideEffect(wctx, func(workflow.Context) any {
@@ -489,6 +485,25 @@ func (w *sessionWorkflow) run(wctx workflow.Context) (prints []string, err error
 
 			if err != nil {
 				w.z.Panic("add print", zap.Error(err))
+			}
+		},
+		DebugTrace: func(traceCtx context.Context, runID sdktypes.RunID, callstack []sdktypes.CallFrame, extra map[string]string) {
+			w.z.Debug("debug_trace", zap.String("run_id", runID.String()), zap.Any("callstack", callstack), zap.Any("extra", extra))
+
+			trace := sdktypes.NewSessionDebugTrace(callstack, extra)
+
+			if isFromActivity(traceCtx) {
+				// TODO: We do this since we're already in an activity. We need to either
+				//       manually retry this (maybe even using the heartbeat to know if it's
+				//       already been processed), or we need to aggregate the prints
+				//       and just perform them in the workflow after the activity is done.
+				err = w.ws.svcs.DB.AddSessionDebugTrace(traceCtx, w.data.SessionID, trace)
+			} else {
+				err = workflow.ExecuteLocalActivity(wctx, w.ws.svcs.DB.AddSessionDebugTrace, w.data.SessionID, trace).Get(wctx, nil)
+			}
+
+			if err != nil {
+				w.z.Panic("add debug trace", zap.Error(err))
 			}
 		},
 	}
@@ -540,11 +555,7 @@ func (w *sessionWorkflow) run(wctx workflow.Context) (prints []string, err error
 			return prints, err
 		}
 
-		argNames := callValue.GetFunction().ArgNames() // sdktypes.GetFunctionValueArgsNames(callValue)
-		kwargs := kittehs.FilterMapKeys(
-			w.data.Session.Inputs(),
-			kittehs.ContainedIn(argNames...),
-		)
+		kwargs := selectArgs(callValue, w.data.Session.Inputs())
 
 		if retVal, err = run.Call(goCtx, callValue, nil, kwargs); err != nil {
 			return prints, err
@@ -554,4 +565,16 @@ func (w *sessionWorkflow) run(wctx workflow.Context) (prints []string, err error
 	state := sdktypes.NewSessionStateCompleted(prints, run.Values(), retVal)
 
 	return prints, w.updateState(wctx, state)
+}
+
+func selectArgs(f sdktypes.Value, inputs map[string]sdktypes.Value) map[string]sdktypes.Value {
+	argNames := f.GetFunction().ArgNames()
+	argsFilter := func(s string) bool { return true }
+
+	// if any of the args have ** as a prefix, just pass all args in.
+	if !kittehs.AnyTransform(argNames, func(s string) bool { return strings.HasPrefix(s, "**") }) {
+		argsFilter = kittehs.ContainedIn(argNames...)
+	}
+
+	return kittehs.FilterMapKeys(inputs, argsFilter)
 }

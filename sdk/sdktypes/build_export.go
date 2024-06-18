@@ -3,6 +3,7 @@ package sdktypes
 import (
 	"errors"
 
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	runtimesv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/runtimes/v1"
 )
 
@@ -40,3 +41,5 @@ func (r BuildExport) WithLocation(loc CodeLocation) BuildExport {
 func (r BuildExport) WithSymbol(sym Symbol) BuildExport {
 	return BuildExport{r.forceUpdate(func(pb *BuildExportPB) { pb.Symbol = sym.String() })}
 }
+
+func (r BuildExport) Symbol() Symbol { return kittehs.Must1(ParseSymbol(r.read().Symbol)) }

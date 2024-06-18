@@ -214,7 +214,9 @@ func (r *run) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Value,
 
 func (r *run) Values() map[string]sdktypes.Value { return r.exports }
 
-func (r *run) ExecutorID() sdktypes.ExecutorID { return sdktypes.NewExecutorID(r.runID) }
+func (r *run) ExecutorIDs() []sdktypes.ExecutorID {
+	return []sdktypes.ExecutorID{sdktypes.NewExecutorID(r.runID)}
+}
 
 func (r *run) Close() {}
 

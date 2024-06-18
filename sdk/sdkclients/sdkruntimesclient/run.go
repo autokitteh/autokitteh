@@ -18,8 +18,10 @@ type run struct {
 
 func (r *run) ID() sdktypes.RunID                { return r.rid }
 func (r *run) Values() map[string]sdktypes.Value { return r.result }
-func (r *run) ExecutorID() sdktypes.ExecutorID   { return sdktypes.NewExecutorID(r.rid) }
-func (r *run) Close()                            { r.stream.Close() }
+func (r *run) ExecutorIDs() []sdktypes.ExecutorID {
+	return []sdktypes.ExecutorID{sdktypes.NewExecutorID(r.rid)}
+}
+func (r *run) Close() { r.stream.Close() }
 
 func (r *run) Call(context.Context, sdktypes.Value, []sdktypes.Value, map[string]sdktypes.Value) (sdktypes.Value, error) {
 	// Need a way to pass this to the server - will do when the stream will be bidi.

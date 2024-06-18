@@ -1,0 +1,8 @@
+-- data.yaml --
+sounds:
+  cat: meow
+  
+animals:
+  - cat
+  - dog
+  - cow

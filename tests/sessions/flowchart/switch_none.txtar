@@ -1,0 +1,22 @@
+bub and bob say buh bye!
+
+-- main.flowchart.yaml sw --
+version: v1
+
+nodes:
+    - name: sw
+      action:
+        switch:
+          - if: "1 == 2"
+            goto: nodes.omgomgomg
+      goto: nodes.end
+
+    - name: omgomgomg
+      action:
+        print:
+          value: "'omgomgomg'"
+
+    - name: end
+      action:
+        print:
+          value: "'bub and bob say buh bye!'"

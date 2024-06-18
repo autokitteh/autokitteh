@@ -72,6 +72,7 @@ func (db *gormdb) CreateSession(ctx context.Context, session sdktypes.Session) e
 
 	s := scheme.Session{
 		SessionID:        session.ID().UUIDValue(),
+		ParentSessionID:  scheme.UUIDOrNil(session.ParentSessionID().UUIDValue()),
 		BuildID:          scheme.UUIDOrNil(session.BuildID().UUIDValue()),
 		EnvID:            scheme.UUIDOrNil(session.EnvID().UUIDValue()),
 		DeploymentID:     scheme.UUIDOrNil(session.DeploymentID().UUIDValue()),
@@ -113,6 +114,12 @@ func addSessionLogRecord(tx *gorm.DB, sessionID sdktypes.UUID, logr sdktypes.Ses
 		return fmt.Errorf("marshal session log record: %w", err)
 	}
 	return addSessionLogRecordDB(tx, &scheme.SessionLogRecord{SessionID: sessionID, Data: jsonData})
+}
+
+func (db *gormdb) AddSessionDebugTrace(ctx context.Context, sessionID sdktypes.SessionID, trace sdktypes.SessionDebugTrace) error {
+	return translateError(
+		addSessionLogRecord(db.db, sessionID.UUIDValue(), sdktypes.NewDebugTraceSessionLogRecord(trace).WithProcessID(fixtures.ProcessID())),
+	)
 }
 
 func (db *gormdb) AddSessionPrint(ctx context.Context, sessionID sdktypes.SessionID, print string) error {

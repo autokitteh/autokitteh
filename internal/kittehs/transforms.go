@@ -16,6 +16,8 @@ func Transform[A, B any](as []A, f func(A) B) []B {
 	return bs
 }
 
+func AnyTransform[A any](xs []A, f func(A) bool) bool { return Any(Transform(xs, f)...) }
+
 func TransformFilter[A, B any](as []A, f func(A) *B) []B {
 	if as == nil {
 		return nil
@@ -100,6 +102,10 @@ func TransformMapError[A0, A1 comparable, B0, B1 any](m map[A0]B0, f func(A0, B0
 		m1[k1] = v1
 	}
 	return m1, nil
+}
+
+func TransformMapKeys[A0, A1 comparable, B any](m map[A0]B, f func(A0) A1) map[A1]B {
+	return TransformMap(m, func(a A0, b B) (A1, B) { return f(a), b })
 }
 
 func TransformMapValues[A comparable, B0, B1 any](m map[A]B0, f func(B0) B1) map[A]B1 {
