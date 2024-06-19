@@ -8,6 +8,11 @@ import { Message, proto3 } from "@bufbuild/protobuf";
 import { Status } from "../../common/v1/status_pb.js";
 
 /**
+ * TODO(ENG-1026):
+ * - The first integration ID and project ID validation
+ *   checks are incorrect for scheduler (cron) connections
+ * - The name validation check breaks sdktypes.NewConnection(id)
+ *
  * @generated from message autokitteh.connections.v1.Connection
  */
 export class Connection extends Message<Connection> {
@@ -17,16 +22,22 @@ export class Connection extends Message<Connection> {
   connectionId = "";
 
   /**
+   * [(buf.validate.field).string.min_len = 1];
+   *
    * @generated from field: string integration_id = 2;
    */
   integrationId = "";
 
   /**
+   * [(buf.validate.field).string.min_len = 1];
+   *
    * @generated from field: string project_id = 3;
    */
   projectId = "";
 
   /**
+   * [(buf.validate.field).string.min_len = 1];
+   *
    * @generated from field: string name = 4;
    */
   name = "";

@@ -24,9 +24,9 @@ message ListResponse {
 
 message SaveRequest {
   option (buf.validate.message).cel = {
-    id: "builds.build_id_must_be_empty",
-    message: "build_id must not be specified",
-    expression: "has(this.build) && this.build.build_id == ''",
+    id: "builds.build_id_must_be_empty"
+    message: "build_id must not be specified"
+    expression: "has(this.build) && this.build.build_id == ''"
   };
 
   builds.v1.Build build = 1;

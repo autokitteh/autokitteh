@@ -133,7 +133,7 @@ func NewConstFunctionValue(name string, data Value) (Value, error) {
 		name,
 		buf.Bytes(),
 		[]FunctionFlag{ConstFunctionFlag},
-		ModuleFunction{},
+		InvalidModuleFunction,
 	)
 }
 
@@ -154,7 +154,7 @@ func NewConstFunctionError(name string, in error) (Value, error) {
 		name,
 		buf.Bytes(),
 		[]FunctionFlag{ConstFunctionFlag},
-		ModuleFunction{},
+		InvalidModuleFunction,
 	)
 }
 

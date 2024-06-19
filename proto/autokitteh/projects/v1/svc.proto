@@ -9,14 +9,9 @@ import "google/protobuf/field_mask.proto";
 
 message CreateRequest {
   option (buf.validate.message).cel = {
-    id: "project.project_id_must_be_empty",
-    message: "project_id must not be specified",
-    expression: "has(this.project) && this.project.project_id == ''",
-  };
-  option (buf.validate.message).cel = {
-    id: "owner.name_required",
-    message: "name must be specified",
-    expression: "has(this.project) && this.project.name != ''",
+    id: "project.project_id_must_be_empty"
+    message: "project_id must not be specified"
+    expression: "has(this.project) && this.project.project_id == ''"
   };
 
   // project.project_id is ignored.
@@ -36,16 +31,16 @@ message DeleteResponse {}
 
 message GetRequest {
   option (buf.validate.message).cel = {
-    id: "project_id_xor_name",
-    message: "project_id and name are mutually exclusive",
-    expression: "(this.project_id == '' && this.name != '') || (this.project_id != '' && this.name == '')",
+    id: "project_id_xor_name"
+    message: "project_id and name are mutually exclusive"
+    expression: "(this.project_id == '' && this.name != '') || (this.project_id != '' && this.name == '')"
   };
 
   option (buf.validate.message).cel = {
-    id: "owner_id_with_name_only",
+    id: "owner_id_with_name_only"
     // if owner_id is empty, it is fetched from authn.
-    message: "owner_id can be specified only if name is specified",
-    expression: "this.owner_id == '' || this.name != ''",
+    message: "owner_id can be specified only if name is specified"
+    expression: "this.owner_id == '' || this.name != ''"
   };
 
   string project_id = 1;
@@ -60,9 +55,9 @@ message GetResponse {
 
 message UpdateRequest {
   option (buf.validate.message).cel = {
-    id: "project.project_id_required",
-    message: "project_id must be specified",
-    expression: "has(this.project) && this.project.project_id != ''",
+    id: "project.project_id_required"
+    message: "project_id must be specified"
+    expression: "has(this.project) && this.project.project_id != ''"
   };
 
   Project project = 1 [(buf.validate.field).required = true];

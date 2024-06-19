@@ -15,7 +15,7 @@ from autokitteh_pb.sessions.v1 import session_pb2 as autokitteh_dot_sessions_dot
 from buf.validate import validate_pb2 as buf_dot_validate_dot_validate__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n autokitteh/sessions/v1/svc.proto\x12\x16\x61utokitteh.sessions.v1\x1a$autokitteh/sessions/v1/session.proto\x1a\x1b\x62uf/validate/validate.proto\"\xd2\x01\n\x0cStartRequest\x12\x42\n\x07session\x18\x01 \x01(\x0b\x32\x1f.autokitteh.sessions.v1.SessionB\x07\xfa\xf7\x18\x03\xc8\x01\x01R\x07session:~\xfa\xf7\x18z\x1ax\n session.session_id_must_be_empty\x12 session_id must not be specified\x1a\x32has(this.session) && this.session.session_id == \'\'\"8\n\rStartResponse\x12\'\n\nsession_id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\tsessionId\"l\n\x0bStopRequest\x12\'\n\nsession_id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\tsessionId\x12\x16\n\x06reason\x18\x02 \x01(\tR\x06reason\x12\x1c\n\tterminate\x18\x03 \x01(\x08R\tterminate\"\x0e\n\x0cStopResponse\"\xcf\x03\n\x0bListRequest\x12#\n\rdeployment_id\x18\x01 \x01(\tR\x0c\x64\x65ploymentId\x12\x15\n\x06\x65nv_id\x18\x02 \x01(\tR\x05\x65nvId\x12\x19\n\x08\x65vent_id\x18\x03 \x01(\tR\x07\x65ventId\x12\x19\n\x08\x62uild_id\x18\x04 \x01(\tR\x07\x62uildId\x12R\n\nstate_type\x18\x05 \x01(\x0e\x32(.autokitteh.sessions.v1.SessionStateTypeB\t\xfa\xf7\x18\x05\x82\x01\x02\x10\x01R\tstateType\x12\x1d\n\ncount_only\x18\n \x01(\x08R\tcountOnly\x12s\n\tpage_size\x18\x14 \x01(\x05\x42V\xfa\xf7\x18R\xba\x01O\n\x16session.list.page_size\x12\x1aMust be between 10 and 100\x1a\x19this >= 10 && this <= 100R\x08pageSize\x12G\n\x04skip\x18\x15 \x01(\x05\x42\x33\xfa\xf7\x18/\xba\x01,\n\x11session.list.skip\x12\x0cMust be >= 0\x1a\tthis >= 0R\x04skip\x12\x1d\n\npage_token\x18\x16 \x01(\tR\tpageToken\"\x97\x01\n\x0cListResponse\x12I\n\x08sessions\x18\x01 \x03(\x0b\x32\x1f.autokitteh.sessions.v1.SessionB\x0c\xfa\xf7\x18\x08\x92\x01\x05\"\x03\xc8\x01\x01R\x08sessions\x12\x14\n\x05\x63ount\x18\x02 \x01(\x03R\x05\x63ount\x12&\n\x0fnext_page_token\x18\n \x01(\tR\rnextPageToken\"5\n\nGetRequest\x12\'\n\nsession_id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\tsessionId\"Q\n\x0bGetResponse\x12\x42\n\x07session\x18\x01 \x01(\x0b\x32\x1f.autokitteh.sessions.v1.SessionB\x07\xfa\xf7\x18\x03\xc8\x01\x01R\x07session\"8\n\rGetLogRequest\x12\'\n\nsession_id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\tsessionId\"O\n\x0eGetLogResponse\x12=\n\x03log\x18\x01 \x01(\x0b\x32\".autokitteh.sessions.v1.SessionLogB\x07\xfa\xf7\x18\x03\xc8\x01\x01R\x03log\"8\n\rDeleteRequest\x12\'\n\nsession_id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\tsessionId\"\x10\n\x0e\x44\x65leteResponse2\x8f\x04\n\x0fSessionsService\x12T\n\x05Start\x12$.autokitteh.sessions.v1.StartRequest\x1a%.autokitteh.sessions.v1.StartResponse\x12Q\n\x04Stop\x12#.autokitteh.sessions.v1.StopRequest\x1a$.autokitteh.sessions.v1.StopResponse\x12Q\n\x04List\x12#.autokitteh.sessions.v1.ListRequest\x1a$.autokitteh.sessions.v1.ListResponse\x12N\n\x03Get\x12\".autokitteh.sessions.v1.GetRequest\x1a#.autokitteh.sessions.v1.GetResponse\x12W\n\x06GetLog\x12%.autokitteh.sessions.v1.GetLogRequest\x1a&.autokitteh.sessions.v1.GetLogResponse\x12W\n\x06\x44\x65lete\x12%.autokitteh.sessions.v1.DeleteRequest\x1a&.autokitteh.sessions.v1.DeleteResponseB\xed\x01\n\x1a\x63om.autokitteh.sessions.v1B\x08SvcProtoP\x01ZKgo.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/sessions/v1;sessionsv1\xa2\x02\x03\x41SX\xaa\x02\x16\x41utokitteh.Sessions.V1\xca\x02\x16\x41utokitteh\\Sessions\\V1\xe2\x02\"Autokitteh\\Sessions\\V1\\GPBMetadata\xea\x02\x18\x41utokitteh::Sessions::V1b\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n autokitteh/sessions/v1/svc.proto\x12\x16\x61utokitteh.sessions.v1\x1a$autokitteh/sessions/v1/session.proto\x1a\x1b\x62uf/validate/validate.proto\"\xd2\x01\n\x0cStartRequest\x12\x42\n\x07session\x18\x01 \x01(\x0b\x32\x1f.autokitteh.sessions.v1.SessionB\x07\xfa\xf7\x18\x03\xc8\x01\x01R\x07session:~\xfa\xf7\x18z\x1ax\n session.session_id_must_be_empty\x12 session_id must not be specified\x1a\x32has(this.session) && this.session.session_id == \'\'\"8\n\rStartResponse\x12\'\n\nsession_id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\tsessionId\"l\n\x0bStopRequest\x12\'\n\nsession_id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\tsessionId\x12\x16\n\x06reason\x18\x02 \x01(\tR\x06reason\x12\x1c\n\tterminate\x18\x03 \x01(\x08R\tterminate\"\x0e\n\x0cStopResponse\"\xf7\x02\n\x0bListRequest\x12#\n\rdeployment_id\x18\x01 \x01(\tR\x0c\x64\x65ploymentId\x12\x15\n\x06\x65nv_id\x18\x02 \x01(\tR\x05\x65nvId\x12\x19\n\x08\x65vent_id\x18\x03 \x01(\tR\x07\x65ventId\x12\x19\n\x08\x62uild_id\x18\x04 \x01(\tR\x07\x62uildId\x12R\n\nstate_type\x18\x05 \x01(\x0e\x32(.autokitteh.sessions.v1.SessionStateTypeB\t\xfa\xf7\x18\x05\x82\x01\x02\x10\x01R\tstateType\x12\x1d\n\ncount_only\x18\n \x01(\x08R\tcountOnly\x12\x1b\n\tpage_size\x18\x14 \x01(\x05R\x08pageSize\x12G\n\x04skip\x18\x15 \x01(\x05\x42\x33\xfa\xf7\x18/\xba\x01,\n\x11session.list.skip\x12\x0cMust be >= 0\x1a\tthis >= 0R\x04skip\x12\x1d\n\npage_token\x18\x16 \x01(\tR\tpageToken\"\x97\x01\n\x0cListResponse\x12I\n\x08sessions\x18\x01 \x03(\x0b\x32\x1f.autokitteh.sessions.v1.SessionB\x0c\xfa\xf7\x18\x08\x92\x01\x05\"\x03\xc8\x01\x01R\x08sessions\x12\x14\n\x05\x63ount\x18\x02 \x01(\x03R\x05\x63ount\x12&\n\x0fnext_page_token\x18\n \x01(\tR\rnextPageToken\"5\n\nGetRequest\x12\'\n\nsession_id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\tsessionId\"Q\n\x0bGetResponse\x12\x42\n\x07session\x18\x01 \x01(\x0b\x32\x1f.autokitteh.sessions.v1.SessionB\x07\xfa\xf7\x18\x03\xc8\x01\x01R\x07session\"8\n\rGetLogRequest\x12\'\n\nsession_id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\tsessionId\"O\n\x0eGetLogResponse\x12=\n\x03log\x18\x01 \x01(\x0b\x32\".autokitteh.sessions.v1.SessionLogB\x07\xfa\xf7\x18\x03\xc8\x01\x01R\x03log\"8\n\rDeleteRequest\x12\'\n\nsession_id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\tsessionId\"\x10\n\x0e\x44\x65leteResponse2\x8f\x04\n\x0fSessionsService\x12T\n\x05Start\x12$.autokitteh.sessions.v1.StartRequest\x1a%.autokitteh.sessions.v1.StartResponse\x12Q\n\x04Stop\x12#.autokitteh.sessions.v1.StopRequest\x1a$.autokitteh.sessions.v1.StopResponse\x12Q\n\x04List\x12#.autokitteh.sessions.v1.ListRequest\x1a$.autokitteh.sessions.v1.ListResponse\x12N\n\x03Get\x12\".autokitteh.sessions.v1.GetRequest\x1a#.autokitteh.sessions.v1.GetResponse\x12W\n\x06GetLog\x12%.autokitteh.sessions.v1.GetLogRequest\x1a&.autokitteh.sessions.v1.GetLogResponse\x12W\n\x06\x44\x65lete\x12%.autokitteh.sessions.v1.DeleteRequest\x1a&.autokitteh.sessions.v1.DeleteResponseB\xed\x01\n\x1a\x63om.autokitteh.sessions.v1B\x08SvcProtoP\x01ZKgo.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/sessions/v1;sessionsv1\xa2\x02\x03\x41SX\xaa\x02\x16\x41utokitteh.Sessions.V1\xca\x02\x16\x41utokitteh\\Sessions\\V1\xe2\x02\"Autokitteh\\Sessions\\V1\\GPBMetadata\xea\x02\x18\x41utokitteh::Sessions::V1b\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -33,8 +33,6 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _STOPREQUEST.fields_by_name['session_id']._serialized_options = b'\372\367\030\004r\002\020\001'
   _LISTREQUEST.fields_by_name['state_type']._options = None
   _LISTREQUEST.fields_by_name['state_type']._serialized_options = b'\372\367\030\005\202\001\002\020\001'
-  _LISTREQUEST.fields_by_name['page_size']._options = None
-  _LISTREQUEST.fields_by_name['page_size']._serialized_options = b'\372\367\030R\272\001O\n\026session.list.page_size\022\032Must be between 10 and 100\032\031this >= 10 && this <= 100'
   _LISTREQUEST.fields_by_name['skip']._options = None
   _LISTREQUEST.fields_by_name['skip']._serialized_options = b'\372\367\030/\272\001,\n\021session.list.skip\022\014Must be >= 0\032\tthis >= 0'
   _LISTRESPONSE.fields_by_name['sessions']._options = None
@@ -58,21 +56,21 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _globals['_STOPRESPONSE']._serialized_start=508
   _globals['_STOPRESPONSE']._serialized_end=522
   _globals['_LISTREQUEST']._serialized_start=525
-  _globals['_LISTREQUEST']._serialized_end=988
-  _globals['_LISTRESPONSE']._serialized_start=991
-  _globals['_LISTRESPONSE']._serialized_end=1142
-  _globals['_GETREQUEST']._serialized_start=1144
-  _globals['_GETREQUEST']._serialized_end=1197
-  _globals['_GETRESPONSE']._serialized_start=1199
-  _globals['_GETRESPONSE']._serialized_end=1280
-  _globals['_GETLOGREQUEST']._serialized_start=1282
-  _globals['_GETLOGREQUEST']._serialized_end=1338
-  _globals['_GETLOGRESPONSE']._serialized_start=1340
-  _globals['_GETLOGRESPONSE']._serialized_end=1419
-  _globals['_DELETEREQUEST']._serialized_start=1421
-  _globals['_DELETEREQUEST']._serialized_end=1477
-  _globals['_DELETERESPONSE']._serialized_start=1479
-  _globals['_DELETERESPONSE']._serialized_end=1495
-  _globals['_SESSIONSSERVICE']._serialized_start=1498
-  _globals['_SESSIONSSERVICE']._serialized_end=2025
+  _globals['_LISTREQUEST']._serialized_end=900
+  _globals['_LISTRESPONSE']._serialized_start=903
+  _globals['_LISTRESPONSE']._serialized_end=1054
+  _globals['_GETREQUEST']._serialized_start=1056
+  _globals['_GETREQUEST']._serialized_end=1109
+  _globals['_GETRESPONSE']._serialized_start=1111
+  _globals['_GETRESPONSE']._serialized_end=1192
+  _globals['_GETLOGREQUEST']._serialized_start=1194
+  _globals['_GETLOGREQUEST']._serialized_end=1250
+  _globals['_GETLOGRESPONSE']._serialized_start=1252
+  _globals['_GETLOGRESPONSE']._serialized_end=1331
+  _globals['_DELETEREQUEST']._serialized_start=1333
+  _globals['_DELETEREQUEST']._serialized_end=1389
+  _globals['_DELETERESPONSE']._serialized_start=1391
+  _globals['_DELETERESPONSE']._serialized_end=1407
+  _globals['_SESSIONSSERVICE']._serialized_start=1410
+  _globals['_SESSIONSSERVICE']._serialized_end=1937
 # @@protoc_insertion_point(module_scope)

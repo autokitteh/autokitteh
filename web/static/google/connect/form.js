@@ -1,5 +1,5 @@
 // Switch between 2 available modes: user impersonation (using
-// OAuth v2), and a GCP service account (using a JSON key).
+// OAuth 2.0), and a GCP service account (using a JSON key).
 
 function toggleTab(id) {
   // Update the toggle buttons.

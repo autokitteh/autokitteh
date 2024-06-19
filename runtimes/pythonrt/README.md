@@ -64,7 +64,7 @@ It will also inject `vars` definition from the manifest to the Python process en
 
 The Python server returns a list of exported symbols from the user code.
 
-### Communication sequence
+### Communication Sequence
 
 A call with function and payload:
 
@@ -80,6 +80,11 @@ sequenceDiagram
     end
     Python-->>Go: Run return (None)
 ```
+
+Other messages are:
+
+- `log` from Python to Go
+- `sleep` from Python to Go
 
 ### Communication Protocol
 

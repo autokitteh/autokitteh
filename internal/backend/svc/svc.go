@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"strings"
 	"sync/atomic"
@@ -17,7 +18,6 @@ import (
 
 	"go.autokitteh.dev/autokitteh/backend/runtimes"
 	"go.autokitteh.dev/autokitteh/internal/backend/applygrpcsvc"
-	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authgrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authhttpmiddleware"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authjwttokens"
@@ -116,6 +116,15 @@ func DBFxOpt() fx.Option {
 	)
 }
 
+type pprofConfig struct {
+	Enable bool `koanf:"enable"`
+	Port   int  `koanf:"port"`
+}
+
+var pprofConfigs = configset.Set[pprofConfig]{
+	Default: &pprofConfig{Enable: true, Port: 6060},
+}
+
 type HTTPServerAddr string
 
 func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
@@ -127,7 +136,9 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		Component("auth", configset.Empty, fx.Provide(authsvc.New)),
 		Component("authjwttokens", authjwttokens.Configs, fx.Provide(authjwttokens.New)),
 		Component("authsessions", authsessions.Configs, fx.Provide(authsessions.New)),
-		Component("authhttmiddleware", authhttpmiddleware.Configs, fx.Provide(authhttpmiddleware.New)),
+		Component("authhttmiddleware", authhttpmiddleware.Configs,
+			fx.Provide(authhttpmiddleware.New),
+			fx.Provide(authhttpmiddleware.AuthorizationHeaderExtractor)),
 
 		DBFxOpt(),
 		Component(
@@ -238,7 +249,10 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		Component(
 			"http",
 			httpsvc.Configs,
-			fx.Provide(func(lc fx.Lifecycle, z *zap.Logger, cfg *httpsvc.Config, wrapAuth authhttpmiddleware.AuthMiddlewareDecorator) (svc httpsvc.Svc, all *muxes.Muxes, err error) {
+			fx.Provide(func(lc fx.Lifecycle, z *zap.Logger, cfg *httpsvc.Config,
+				wrapAuth authhttpmiddleware.AuthMiddlewareDecorator,
+				authHdrExtractor authhttpmiddleware.AuthHeaderExtractor,
+			) (svc httpsvc.Svc, all *muxes.Muxes, err error) {
 				svc, err = httpsvc.New(
 					lc, z, cfg,
 					[]string{
@@ -258,8 +272,11 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 						varsv1connect.VarsServiceName,
 					},
 					[]httpsvc.RequestLogExtractor{
+						// Note: auth middleware will be connected after interceptor, so in httpsvc and interceptor handler
+						// there is (still) no parsed user in the httpRequest context. So in order to log the user in the
+						// same place where httpRequest is logged we need to extract it from the header
 						func(r *http.Request) []zap.Field {
-							if user := authcontext.GetAuthnUser(r.Context()); user.IsValid() {
+							if user := authHdrExtractor(r); user.IsValid() {
 								return []zap.Field{zap.String("user", user.Title())}
 							}
 
@@ -284,7 +301,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		),
 		Component("authloginhttpsvc", authloginhttpsvc.Configs, fx.Invoke(authloginhttpsvc.Init)),
 		fx.Invoke(func(muxes *muxes.Muxes, h integrationsweb.Handler) {
-			muxes.NoAuth.Handle("/i/", &h)
+			muxes.NoAuth.Handle("GET /i/{$}", &h)
 		}),
 		fx.Invoke(dashboardsvc.Init),
 		fx.Invoke(oauth.InitWebhook),
@@ -295,11 +312,13 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 			})
 		}),
 		fx.Invoke(func(z *zap.Logger, muxes *muxes.Muxes) {
-			srv := http.StripPrefix("/static/", http.FileServer(http.FS(static.RootWebContent)))
-			muxes.NoAuth.Handle("/static/", srv)
-			muxes.NoAuth.Handle("/favicon-32x32.png", srv)
-			muxes.NoAuth.Handle("/favicon-16x16.png", srv)
-			muxes.NoAuth.Handle("/favicon.ico", srv)
+			srv := http.FileServer(http.FS(static.RootWebContent))
+			muxes.NoAuth.Handle("GET /static/", http.StripPrefix("/static/", srv))
+			muxes.NoAuth.Handle("GET /favicon-16x16.png", srv)
+			muxes.NoAuth.Handle("GET /favicon-32x32.png", srv)
+			muxes.NoAuth.Handle("GET /favicon.ico", srv)
+			muxes.NoAuth.Handle("GET /robots.txt", srv)
+			muxes.NoAuth.Handle("GET /site.webmanifest", srv)
 		}),
 		Component(
 			"banner",
@@ -312,14 +331,14 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 			}),
 		),
 		fx.Invoke(func(muxes *muxes.Muxes) {
-			muxes.NoAuth.HandleFunc("/id", func(w http.ResponseWriter, r *http.Request) {
+			muxes.NoAuth.HandleFunc("GET /id", func(w http.ResponseWriter, r *http.Request) {
 				fmt.Fprint(w, fixtures.ProcessID())
 			})
-			muxes.NoAuth.HandleFunc("/version", func(w http.ResponseWriter, r *http.Request) {
+			muxes.NoAuth.HandleFunc("GET /version", func(w http.ResponseWriter, r *http.Request) {
 				w.Header().Set("Content-Type", "application/json")
 				kittehs.Must0(json.NewEncoder(w).Encode(version.Version))
 			})
-			muxes.NoAuth.HandleFunc("/uptime", func(w http.ResponseWriter, r *http.Request) {
+			muxes.NoAuth.HandleFunc("GET /uptime", func(w http.ResponseWriter, r *http.Request) {
 				uptime := fixtures.Uptime().Truncate(time.Second)
 
 				resp := struct {
@@ -334,10 +353,28 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 				kittehs.Must0(json.NewEncoder(w).Encode(resp))
 			})
 		}),
+		Component(
+			"pprof",
+			pprofConfigs,
+			fx.Invoke(func(cfg *pprofConfig, lc fx.Lifecycle, z *zap.Logger) {
+				if !cfg.Enable {
+					return
+				}
+
+				HookSimpleOnStart(lc, func() {
+					go func() {
+						addr := fmt.Sprintf("localhost:%d", cfg.Port)
+						if err := http.ListenAndServe(addr, nil); err != nil {
+							z.Error("listen", zap.Error(err))
+						}
+					}()
+				})
+			}),
+		),
 		fx.Invoke(func(z *zap.Logger, lc fx.Lifecycle, muxes *muxes.Muxes, h healthreporter.HealthReporter) {
 			var ready atomic.Bool
 
-			muxes.NoAuth.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+			muxes.NoAuth.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
 				if err := h.Report(); err != nil {
 					w.WriteHeader(http.StatusInternalServerError)
 					return
@@ -345,7 +382,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 				w.WriteHeader(http.StatusOK)
 			})
 
-			muxes.NoAuth.HandleFunc("/readyz", func(w http.ResponseWriter, r *http.Request) {
+			muxes.NoAuth.HandleFunc("GET /readyz", func(w http.ResponseWriter, r *http.Request) {
 				if !ready.Load() {
 					w.WriteHeader(http.StatusServiceUnavailable)
 					return

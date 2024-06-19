@@ -113,7 +113,7 @@ func init() {
 	listCmd.Flags().StringVar(&eventID, "event-id", "", "event ID")
 	listCmd.Flags().VarP(&stateType, "state-type", "s", strings.Join(possibleStates, "|"))
 	listCmd.Flags().BoolVarP(&withInputs, "with-inputs", "i", false, "include input details")
-	listCmd.Flags().StringVar(&nextPageToken, "next-page-token", "", "provide the returnred page token to get next")
+	listCmd.Flags().StringVar(&nextPageToken, "next-page-token", "", "provide the returned page token to get next")
 	listCmd.Flags().IntVar(&pageSize, "page-size", 20, "page size")
 	listCmd.Flags().IntVar(&skipRows, "skip-rows", 0, "skip rows")
 

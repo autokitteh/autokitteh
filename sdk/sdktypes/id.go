@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
-	"go.jetpack.io/typeid"
+	"go.jetify.com/typeid"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
@@ -89,10 +89,7 @@ func (i id[T]) MarshalJSON() ([]byte, error)           { return json.Marshal(i.t
 func (i *id[T]) UnmarshalJSON(data []byte) (err error) { err = json.Unmarshal(data, &i.tid); return }
 
 func newID[ID id[T], T idTraits]() ID {
-	var t T
-	tid := kittehs.Must1(typeid.FromUUIDBytes[typeid.TypeID[T]](t.Prefix(), newUUID()))
-
-	return ID(id[T]{tid: tid})
+	return ID(id[T]{tid: kittehs.Must1(typeid.FromUUIDBytes[typeid.TypeID[T]](newUUID()))})
 }
 
 func NewIDFromUUID[ID id[T], T idTraits](uuid *UUID) ID {
@@ -100,10 +97,7 @@ func NewIDFromUUID[ID id[T], T idTraits](uuid *UUID) ID {
 		var zero ID
 		return zero
 	}
-	var t T
-	tid := kittehs.Must1(typeid.FromUUIDBytes[typeid.TypeID[T]](t.Prefix(), uuid[:]))
-
-	return ID(id[T]{tid: tid})
+	return ID(id[T]{tid: kittehs.Must1(typeid.FromUUIDBytes[typeid.TypeID[T]](uuid[:]))})
 }
 
 func ParseID[ID id[T], T idTraits](s string) (ID, error) {

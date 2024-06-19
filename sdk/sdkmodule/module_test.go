@@ -25,7 +25,7 @@ func TestModule(t *testing.T) {
 			return sdktypes.NewStructValue(
 				sdktypes.NewStringValue("dog"),
 				map[string]sdktypes.Value{
-					"say": kittehs.Must1(sdktypes.NewFunctionValue(xid, "say", []byte("woof"), nil, sdktypes.ModuleFunction{})),
+					"say": kittehs.Must1(sdktypes.NewFunctionValue(xid, "say", []byte("woof"), nil, sdktypes.InvalidModuleFunction)),
 				},
 			)
 		})),
