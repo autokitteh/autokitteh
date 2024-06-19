@@ -10,7 +10,6 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
-	"google.golang.org/api/calendar/v3"
 	"google.golang.org/api/chat/v1"
 	"google.golang.org/api/drive/v3"
 	"google.golang.org/api/forms/v1"
@@ -137,8 +136,6 @@ func New(l *zap.Logger) sdkservices.OAuth {
 					googleoauth2.UserinfoEmailScope,
 					googleoauth2.UserinfoProfileScope,
 					// Sensitive.
-					calendar.CalendarScope,
-					calendar.CalendarEventsScope,
 					chat.ChatMembershipsScope,
 					chat.ChatMessagesScope,
 					chat.ChatSpacesScope,
@@ -165,9 +162,6 @@ func New(l *zap.Logger) sdkservices.OAuth {
 					googleoauth2.OpenIDScope,
 					googleoauth2.UserinfoEmailScope,
 					googleoauth2.UserinfoProfileScope,
-					// Sensitive.
-					calendar.CalendarScope,
-					calendar.CalendarEventsScope,
 				},
 			},
 
