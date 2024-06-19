@@ -183,11 +183,16 @@ type Block struct {
 	// https://api.slack.com/reference/block-kit/composition-objects#text.
 	// Header: maximum length for the text in this field is 150 characters.
 	// Section: maximum length for the text in this field is 3000 characters.
+	// Optional when "fields" is not empty.
 	Text *Text `json:"text,omitempty"`
 	// https://api.slack.com/reference/block-kit/block-elements.
 	// Actions: maximum of 25 elements. Context: maximum of 10 elements.
 	// TODO: Support other element types.
-	Elements []Button `json:"elements,omitempty"`
+	Elements  []Button `json:"elements,omitempty"`
+	Accessory *Button  `json:"accessory,omitempty"`
+	// Required if "text" is empty. Maximum of 10 elements,
+	// each with a maximum length of 2000 characters.
+	Fields []Text `json:"fields,omitempty"`
 	// Maximum length is 255 characters. It should be unique for each message and
 	// each iteration of a message. If a message is updated, use a new value.
 	BlockID string `json:"block_id,omitempty"`
