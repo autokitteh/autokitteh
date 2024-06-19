@@ -168,8 +168,6 @@ func (c *impl) Stop(context.Context) error {
 }
 
 func (c *impl) healthCheck(ctx context.Context) error {
-	c.z.Debug("Checking Temporal connection health")
-
 	if c.cfg.Monitor.CheckHealthTimeout != 0 {
 		var cancel context.CancelFunc
 		ctx, cancel = context.WithTimeout(ctx, 5*time.Second)
@@ -180,7 +178,6 @@ func (c *impl) healthCheck(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	c.z.Debug("Connection to Temporal is healthy")
 
 	return nil
 }
