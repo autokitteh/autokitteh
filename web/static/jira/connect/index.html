@@ -81,11 +81,11 @@
       <ul class="links">
         <li>
           <a
-            href="https://support.atlassian.com/atlassian-account/docs/manage-api-tokens-for-your-atlassian-account/"
+            href="https://id.atlassian.com/manage-profile/security/api-tokens"
             target="_blank"
             class="info"
           >
-            Jira Cloud: Manage API tokens for your Atlassian account
+            Jira Cloud: API tokens
           </a>
         </li>
         <li>
@@ -94,7 +94,7 @@
             target="_blank"
             class="info"
           >
-            Jira Data Center: Using Personal Access Tokens
+            Jira Data Center: Personal Access Tokens
           </a>
         </li>
         <li>
@@ -105,18 +105,40 @@
       </ul>
 
       <!-- TODO(ENG-799): remove ID once its unused -->
-      <form id="save-json-form" method="post" action="/jira/save">
+      <form id="save-form" method="post" action="/jira/save">
         <div class="form-group">
-          <label for="json">JSON Key</label>
-          <textarea
-            name="json"
-            rows="14"
-            cols="65"
-            wrap="soft"
+          <label for="url">Base URL</label>
+          <input
+            type="url"
+            name="url"
+            autocomplete="off"
+            spellcheck="false"
+            placeholder="https://your-domain.atlassian.net or on-prem URL"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="key">API Key / Personal Access Token (PAT)</label>
+          <input
+            type="text"
+            name="key_or_pat"
             autocomplete="off"
             spellcheck="false"
             required
-          ></textarea>
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="email">
+            User email address (for API keys only, not for PATs)
+          </label>
+          <input
+            type="email"
+            name="email"
+            autocomplete="off"
+            spellcheck="false"
+          />
         </div>
 
         <button type="submit" class="submit-btn">Save Connection</button>
@@ -130,7 +152,7 @@
         .getElementById("oauth-link")
         .setAttribute("href", "/oauth/start/jira" + queryString);
       document
-        .getElementById("save-json-form")
+        .getElementById("save-form")
         .setAttribute("action", "/jira/save" + queryString);
     </script>
   </body>
