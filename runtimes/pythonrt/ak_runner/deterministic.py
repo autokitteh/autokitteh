@@ -12,6 +12,7 @@ def is_determinstic(fn):
     """Return True if fn (callable) can run outside of activity."""
     return fn in functions or fn.__module__ in modules
 
+# Please keep the following modules and functions sorted in alphabetical order.
 
 # Modules are represented as strings func.__module__ is a string
 modules = {
@@ -53,8 +54,19 @@ modules = {
     'struct',
     'tomllib',
     'traceback',
+    'types',
+    'typing',
     'unicodedata',
+    'xml',
+    'xml.dom',
+    'xml.dom.minidom',
+    'xml.dom.pulldom',
+    'xml.etree.ElementTree',
+    'xml.sax',
+    'xml.parsers.expat',
+    'zipfile',
     'zlib',
+    'zoneninfo',
 }
 
 functions = {
