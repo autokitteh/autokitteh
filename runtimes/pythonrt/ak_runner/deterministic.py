@@ -1,4 +1,4 @@
-"""List of functions/modules that are deterministic should not run as activities."""
+"""List of functions/modules that are deterministic and should not run as activities."""
 
 # Function/modules added here should be:
 # - Stateless
