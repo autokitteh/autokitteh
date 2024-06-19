@@ -132,7 +132,7 @@ def test_sleep(tmp_path):
     ak_call.set_module(mod)
     event = {'type': 'login', 'user': 'puss'}
     mod.handler(event)
-    assert comm.send_sleep.call_count == 2
+    assert comm.send_call.call_count == 2
 
 
 def test_activity():
