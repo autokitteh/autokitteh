@@ -8,6 +8,11 @@ from . import log
 
 def name_of(node):
     """Name of call node (e.g. 'requests.get')"""
+    if isinstance(node, ast.Subscript):
+        name = node.value.id
+        slice = node.slice.value
+        return f'{name}["{slice}"]'
+
     if isinstance(node, ast.Attribute):
         prefix = name_of(node.value)
         return f'{prefix}.{node.attr}'
