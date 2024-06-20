@@ -46,17 +46,8 @@ func (m *triggers) Create(ctx context.Context, trigger sdktypes.Trigger) (sdktyp
 		}
 	}
 
-	if err := m.db.Transaction(ctx, func(tx db.DB) error {
-		// FIXME: see atomicity NOTE above
-		if err := tx.CreateTrigger(ctx, trigger); err != nil {
-			return err
-		}
-
-		if err := tx.AddOwnership(ctx, trigger); err != nil {
-			return err
-		}
-		return nil
-	}); err != nil {
+	// FIXME: see atomicity NOTE above
+	if err := m.db.CreateTrigger(ctx, trigger); err != nil {
 		return sdktypes.InvalidTriggerID, err
 	}
 
