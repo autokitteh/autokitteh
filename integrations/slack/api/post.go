@@ -105,10 +105,6 @@ func PostJSON(ctx context.Context, vars sdkservices.Vars, req, resp any, slackMe
 	}
 
 	// Construct the request body.
-	// This is usually a struct, but *may* be a string: when the OAuth redirect
-	// webhook tests the connection, it doesn't have an AK connection token yet,
-	// but it still needs to use its new OAuth token, so we pass it as the body.
-	// See the underlying post() method below for how it handles this case.
 	b, err := json.Marshal(req)
 	if err != nil {
 		l.Error("Failed to serialize JSON payload",
@@ -138,34 +134,34 @@ func PostJSON(ctx context.Context, vars sdkservices.Vars, req, resp any, slackMe
 func post(ctx context.Context, vars sdkservices.Vars, url, body, contentType string) ([]byte, error) {
 	l := extrazap.ExtractLoggerFromContext(ctx)
 
-	// Convert the autokitteh connection token into an OAuth user access token.
+	// Retrieve the AutoKitteh connection's OAuth user access token.
 	oauthToken, err := getConnection(ctx, vars)
 	if err != nil {
 		return nil, err
 	}
+
+	// Special cases where we don't have/need it from the connection:
+	// 1. Response to a user interaction webhook (no need for a token)
+	// 2. Unit tests
 	if oauthToken.AccessToken == "" {
-		// Special cases where we don't have/need a connection token:
-		// 1. OAuth redirect handler is testing a new OAuth token, before
-		//    creating a new AK connection token (so it passes the OAuth
-		//    user access token as a fake request body up to this point)
+		// 3. OAuth redirect handler is testing a new OAuth token,
+		//    while initializing a new AK connection (so it passes
+		//    the OAuth token via the context up to this point)
 		var ok bool
 		oauthToken.AccessToken, ok = ctx.Value(OAuthTokenContextKey).(string)
 		if !ok {
-			l.Warn("Unexpected non-string OAuth access token after OAuth exchange")
+			oauthToken.AccessToken = ""
 		}
-		// 2. Response to a user interaction webhook (with a JSON body)
-		// 3. Unit tests (body is an empty string)
-		// --> No need to do anything in these cases.
 	}
 
 	// Construct HTTP POST request.
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, strings.NewReader(body))
 	if err != nil {
 		l.Error("Failed to construct HTTP request",
-			zap.Error(err),
 			zap.String("httpMethod", http.MethodPost),
 			zap.String("url", url),
 			zap.String("body", body),
+			zap.Error(err),
 		)
 		return nil, err
 	}
@@ -213,7 +209,7 @@ func getConnection(ctx context.Context, varsSvc sdkservices.Vars) (*oauth2.Token
 		return &oauth2.Token{}, nil
 	}
 
-	// Extract the connection token from the given context.
+	// Extract the connection ID from the given context.
 	cid, err := sdkmodule.FunctionConnectionIDFromContext(ctx)
 	if err != nil {
 		return nil, err

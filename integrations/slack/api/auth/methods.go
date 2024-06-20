@@ -28,8 +28,7 @@ func (a API) Test(ctx context.Context, args []sdktypes.Value, kwargs map[string]
 	return sdktypes.WrapValue(resp)
 }
 
-// TestWithToken is only used internally, when the context doesn't store a
-// module and a connection token: when it's used by the OAuth redirect handler.
+// TestWithToken is only used internally, when it's used by the OAuth redirect handler.
 func TestWithToken(ctx context.Context, oauthToken string) (*TestResponse, error) {
 	ctx = context.WithValue(ctx, api.OAuthTokenContextKey, oauthToken)
 	resp := &TestResponse{}
