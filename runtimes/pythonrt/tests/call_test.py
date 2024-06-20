@@ -154,7 +154,10 @@ def mock_tp_go(sock):
         'payload': {'value': result.decode()},
     }
     out = json.dumps(message) + '\n'
-    sock.sendall(out.encode())
+    try:
+        sock.sendall(out.encode())
+    except BrokenPipeError:
+        pass
 
 
 def test_pickle_function():

@@ -4,6 +4,7 @@ import sys
 import tarfile
 from base64 import b64decode
 from importlib.util import module_from_spec, spec_from_file_location
+from inspect import getsourcelines
 from os import mkdir
 from pathlib import Path
 from socket import AF_UNIX, SOCK_STREAM, socket
@@ -127,6 +128,8 @@ def inspect_file(root_dir, path):
 
     mod = module_from_spec(spec)
     spec.loader.exec_module(mod)
+    sys.modules[mod_name] = mod  # required for getsourcelines
+
 
     for name in dir(mod):
         value = getattr(mod, name)
@@ -136,10 +139,11 @@ def inspect_file(root_dir, path):
         if value.__module__ != mod.__name__:
             continue
 
+        _, lnum = getsourcelines(value)
         export = {
             'name': name,
             'file': str(path.relative_to(root_dir)),
-            'line': value.__code__.co_firstlineno,
+            'line': lnum,
         }
         yield export
         
