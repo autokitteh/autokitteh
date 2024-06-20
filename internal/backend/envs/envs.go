@@ -27,16 +27,7 @@ func (e *envs) Create(ctx context.Context, env sdktypes.Env) (sdktypes.EnvID, er
 
 	env = env.WithNewID()
 
-	if err := e.db.Transaction(ctx, func(tx db.DB) error {
-		if err := tx.CreateEnv(ctx, env); err != nil {
-			return err
-		}
-
-		if err := tx.AddOwnership(ctx, env); err != nil {
-			return err
-		}
-		return nil
-	}); err != nil {
+	if err := e.db.CreateEnv(ctx, env); err != nil {
 		return sdktypes.InvalidEnvID, err
 	}
 

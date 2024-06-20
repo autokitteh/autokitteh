@@ -41,16 +41,7 @@ func (c *Connections) Create(ctx context.Context, conn sdktypes.Connection) (sdk
 
 	conn = conn.WithStatus(status).WithNewID()
 
-	if err := c.DB.Transaction(ctx, func(tx db.DB) error {
-		if err := tx.CreateConnection(ctx, conn); err != nil {
-			return err
-		}
-
-		if err := tx.AddOwnership(ctx, conn); err != nil {
-			return err
-		}
-		return nil
-	}); err != nil {
+	if err := c.DB.CreateConnection(ctx, conn); err != nil {
 		return sdktypes.InvalidConnectionID, err
 	}
 

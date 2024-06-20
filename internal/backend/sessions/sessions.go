@@ -95,15 +95,7 @@ func (s *sessions) Start(ctx context.Context, session sdktypes.Session) (sdktype
 	session = session.WithNewID()
 	z := s.z.With(zap.String("session_id", session.ID().String()))
 
-	if err := s.svcs.DB.Transaction(ctx, func(tx db.DB) error {
-		if err := tx.CreateSession(ctx, session); err != nil {
-			return err
-		}
-		if err := tx.AddOwnership(ctx, session); err != nil {
-			return err
-		}
-		return nil
-	}); err != nil {
+	if err := s.svcs.DB.CreateSession(ctx, session); err != nil {
 		return sdktypes.InvalidSessionID, fmt.Errorf("start session: %w", err)
 	}
 

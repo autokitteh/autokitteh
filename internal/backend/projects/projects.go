@@ -54,16 +54,7 @@ func (ps *Projects) Create(ctx context.Context, project sdktypes.Project) (sdkty
 		if err := tx.CreateProject(ctx, project); err != nil {
 			return err
 		}
-
-		if err := tx.CreateEnv(ctx, env); err != nil {
-			return err
-		}
-
-		if err := tx.AddOwnership(ctx, project); err != nil {
-			return err
-		}
-
-		return nil
+		return tx.CreateEnv(ctx, env)
 	}); err != nil {
 		return sdktypes.InvalidProjectID, err
 	}
