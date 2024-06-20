@@ -1,7 +1,7 @@
 # Test file for loader, see ../ak_runner_test.py::test_load_code
 
-import json
 
+from datetime import datetime
 
 # Internal function, shouldn't be patched
 def log(msg):
@@ -9,6 +9,7 @@ def log(msg):
 
 
 def parse(data):
-    log(f'parsing {data!r}')
     # External function, should be patched
-    return json.loads(data)
+    now = datetime.now()
+    log(f'{data!r} at {now}')
+    return 7

@@ -1,8 +1,10 @@
+from time import sleep
+
 import autokitteh
 
-from .comm import Comm, MessageType
 from . import log
-from time import sleep
+from .comm import Comm, MessageType
+from .deterministic import is_determinstic
 
 
 def is_marked_activity(fn):
@@ -29,7 +31,7 @@ class AKCall:
         if is_marked_activity(fn):
             return True
 
-        if fn.__module__ == 'builtins':
+        if is_determinstic(fn):
             return False
         
         if self.is_module_func(fn):
