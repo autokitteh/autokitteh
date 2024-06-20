@@ -92,15 +92,24 @@ func (h handler) handleEvent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Iterate through all the relevant connections for this event.
-	ids, ok := jiraEvent["matchedWebhookIds"].([]int)
+	is, ok := jiraEvent["matchedWebhookIds"].([]interface{})
 	if !ok {
-		l.Warn("Invalid webhook IDs in Jira event")
+		l.Warn("Invalid webhook IDs in Jira event", zap.Any("ids", jiraEvent["matchedWebhookIds"]))
 		http.Error(w, "Bad Request", http.StatusBadRequest)
 		return
 	}
 
+	ids := kittehs.Transform(is, func(v interface{}) int {
+		f, ok := v.(float64)
+		if !ok {
+			l.Warn("Invalid webhook ID in Jira event", zap.Any("id", v))
+			return 0
+		}
+		return int(f)
+	})
+
 	ctx := extrazap.AttachLoggerToContext(l, r.Context())
-	key := sdktypes.NewSymbol("webhook_id")
+	key := sdktypes.NewSymbol("WebhookID")
 	for _, id := range ids {
 		value := fmt.Sprintf("%d", id)
 		cids, err := h.vars.FindConnectionIDs(ctx, integrationID, key, value)
