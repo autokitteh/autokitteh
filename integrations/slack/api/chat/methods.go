@@ -4,11 +4,10 @@ import (
 	"context"
 	"net/url"
 
+	"go.autokitteh.dev/autokitteh/integrations/slack/api"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-
-	"go.autokitteh.dev/autokitteh/integrations/slack/api"
 )
 
 const (
@@ -270,52 +269,52 @@ func (a API) SendApprovalMessage(ctx context.Context, args []sdktypes.Value, kwa
 	if redButton == "" {
 		redButton = DefaultApprovalRedButton
 	}
-	req.Blocks = []Block{
+	req.Blocks = []map[string]interface{}{
 		{
-			Type: "header",
-			Text: &Text{
-				Type:  "plain_text",
-				Emoji: true,
-				Text:  req.Text,
+			"type": "header",
+			"text": map[string]interface{}{
+				"type":  "plain_text",
+				"emoji": true,
+				"text":  req.Text,
 			},
 		},
 		{
-			Type: "divider",
+			"type": "divider",
 		},
 		{
-			Type: "section",
-			Text: &Text{
-				Type: "mrkdwn",
-				Text: message,
+			"type": "section",
+			"text": map[string]string{
+				"type": "mrkdwn",
+				"text": message,
 			},
 		},
 		{
-			Type: "divider",
+			"type": "divider",
 		},
 		{
-			Type: "actions",
-			Elements: []Button{
+			"type": "actions",
+			"elements": []map[string]interface{}{
 				{
-					Type:  "button",
-					Style: "primary",
-					Text: &Text{
-						Type:  "plain_text",
-						Emoji: true,
-						Text:  greenButton,
+					"type":  "button",
+					"style": "primary",
+					"text": map[string]interface{}{
+						"type":  "plain_text",
+						"emoji": true,
+						"text":  greenButton,
 					},
-					Value:    DefaultApprovalGreenButton,
-					ActionID: DefaultApprovalGreenButton,
+					"value":     DefaultApprovalGreenButton,
+					"action_id": DefaultApprovalGreenButton,
 				},
 				{
-					Type:  "button",
-					Style: "danger",
-					Text: &Text{
-						Type:  "plain_text",
-						Emoji: true,
-						Text:  redButton,
+					"type":  "button",
+					"style": "danger",
+					"text": map[string]interface{}{
+						"type":  "plain_text",
+						"emoji": true,
+						"text":  redButton,
 					},
-					Value:    DefaultApprovalRedButton,
-					ActionID: DefaultApprovalRedButton,
+					"value":     DefaultApprovalRedButton,
+					"action_id": DefaultApprovalRedButton,
 				},
 			},
 		},
