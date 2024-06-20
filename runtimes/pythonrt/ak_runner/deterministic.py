@@ -10,9 +10,33 @@ import datetime
 
 def is_determinstic(fn):
     """Return True if fn (callable) can run outside of activity."""
-    return fn in functions or fn.__module__ in modules
+    if fn in functions:
+        return True
 
-# Please keep the following modules and functions sorted in alphabetical order.
+    if fn.__module__ in modules:
+        return True
+
+    self = getattr(fn, '__self__', None)
+    if self is not None:
+        return self.__class__ in builtin_types
+
+    return False
+
+
+# Please keep the following sorted in alphabetical order.
+
+builtin_types = {
+    bytearray,
+    bytes,
+    dict,
+    frozenset,
+    list,
+    memoryview,
+    range,
+    set,
+    str,
+    tuple,
+}
 
 # Modules are represented as strings func.__module__ is a string
 modules = {
