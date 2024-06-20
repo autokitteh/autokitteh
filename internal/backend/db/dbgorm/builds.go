@@ -31,7 +31,7 @@ func (db *gormdb) SaveBuild(ctx context.Context, build sdktypes.Build, data []by
 		Data:      data,
 		CreatedAt: build.CreatedAt(),
 	}
-	return translateError(db.saveBuild(ctx, &b))
+	return translateError(db.saveBuildWithOwnership(ctx, &b))
 }
 
 func (db *gormdb) GetBuild(ctx context.Context, buildID sdktypes.BuildID) (sdktypes.Build, error) {

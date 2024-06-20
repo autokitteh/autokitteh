@@ -80,7 +80,7 @@ func (db *gormdb) CreateTrigger(ctx context.Context, trigger sdktypes.Trigger) e
 		return err
 	}
 
-	return translateError(db.createTrigger(ctx, t))
+	return translateError(db.createTriggerWithOwnership(ctx, t))
 }
 
 func (db *gormdb) UpdateTrigger(ctx context.Context, trigger sdktypes.Trigger) error {

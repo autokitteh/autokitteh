@@ -86,7 +86,7 @@ func (db *gormdb) CreateSession(ctx context.Context, session sdktypes.Session) e
 		CreatedAt:        now,
 		UpdatedAt:        now,
 	}
-	return translateError(db.createSession(ctx, &s))
+	return translateError(db.createSessionWithOwnership(ctx, &s))
 }
 
 func (db *gormdb) UpdateSessionState(ctx context.Context, sessionID sdktypes.SessionID, state sdktypes.SessionState) error {

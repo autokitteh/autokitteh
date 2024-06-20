@@ -30,7 +30,7 @@ func (db *gormdb) CreateProject(ctx context.Context, p sdktypes.Project) error {
 		ProjectID: p.ID().UUIDValue(),
 		Name:      p.Name().String(),
 	}
-	return translateError(db.createProject(ctx, &project))
+	return translateError(db.createProjectWithOwnership(ctx, &project))
 }
 
 func (db *gormdb) deleteProject(ctx context.Context, projectID sdktypes.UUID) error {
