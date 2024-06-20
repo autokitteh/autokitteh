@@ -146,4 +146,4 @@ functions = {
     datetime.time.utcoffset,
     datetime.time.dst,
     datetime.time.tzname,
-}
+} | builtin_types
