@@ -51,7 +51,7 @@ func (db *gormdb) GetSessionLog(ctx context.Context, sessionID sdktypes.SessionI
 }
 
 func (db *gormdb) createSession(ctx context.Context, session *scheme.Session) error {
-	// NOTE: should be transactional
+	// NOTE: should be transactional?
 	if err := db.db.Create(session).Error; err != nil {
 		return err
 	}
@@ -60,6 +60,11 @@ func (db *gormdb) createSession(ctx context.Context, session *scheme.Session) er
 		session.SessionID,
 		sdktypes.NewStateSessionLogRecord(sdktypes.NewSessionStateCreated()).WithProcessID(fixtures.ProcessID()),
 	)
+}
+
+func (gdb *gormdb) createSessionWithOwnership(ctx context.Context, session *scheme.Session) error {
+	createFunc := func(p *scheme.Session) error { return gdb.createSession(ctx, session) }
+	return createEntityWithOwnership(ctx, gdb, session, createFunc)
 }
 
 func (db *gormdb) CreateSession(ctx context.Context, session sdktypes.Session) error {

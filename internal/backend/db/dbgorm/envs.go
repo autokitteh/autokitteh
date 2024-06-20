@@ -19,6 +19,11 @@ func (db *gormdb) createEnv(ctx context.Context, env *scheme.Env) error {
 	return db.db.WithContext(ctx).Create(env).Error
 }
 
+func (gdb *gormdb) createEnvWithOwnership(ctx context.Context, env *scheme.Env) error {
+	createFunc := func(p *scheme.Env) error { return gdb.createEnv(ctx, env) }
+	return createEntityWithOwnership(ctx, gdb, env, createFunc)
+}
+
 func (db *gormdb) CreateEnv(ctx context.Context, env sdktypes.Env) error {
 	if err := env.Strict(); err != nil {
 		return err

@@ -15,6 +15,11 @@ func (db *gormdb) createConnection(ctx context.Context, conn *scheme.Connection)
 	return db.db.WithContext(ctx).Create(conn).Error
 }
 
+func (gdb *gormdb) createConnectionWithOwnership(ctx context.Context, conn *scheme.Connection) error {
+	createFunc := func(p *scheme.Connection) error { return gdb.createConnection(ctx, conn) }
+	return createEntityWithOwnership(ctx, gdb, conn, createFunc)
+}
+
 func (db *gormdb) CreateConnection(ctx context.Context, conn sdktypes.Connection) error {
 	if err := conn.Strict(); err != nil {
 		return err
