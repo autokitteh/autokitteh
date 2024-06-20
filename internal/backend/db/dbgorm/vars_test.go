@@ -20,8 +20,8 @@ func findAndAssertOneVar(t *testing.T, f *dbFixture, v scheme.Var) {
 }
 
 func (f *dbFixture) setVarsAndAssert(t *testing.T, vars ...scheme.Var) {
-	assert.NoError(t, f.gormdb.setVars(f.ctx, vars))
 	for _, vr := range vars {
+		assert.NoError(t, f.gormdb.setVar(f.ctx, &vr))
 		findAndAssertOneVar(t, f, vr)
 	}
 }
