@@ -15,6 +15,11 @@ func (db *gormdb) saveEvent(ctx context.Context, event *scheme.Event) error {
 	return db.db.WithContext(ctx).Create(&event).Error
 }
 
+func (gdb *gormdb) saveEventWithOwnership(ctx context.Context, event *scheme.Event) error {
+	createFunc := func(p *scheme.Event) error { return gdb.saveEvent(ctx, event) }
+	return createEntityWithOwnership(ctx, gdb, event, createFunc)
+}
+
 func (db *gormdb) SaveEvent(ctx context.Context, event sdktypes.Event) error {
 	if err := event.Strict(); err != nil {
 		return err

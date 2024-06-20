@@ -10,8 +10,13 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-func (db *gormdb) saveBuild(ctx context.Context, build *scheme.Build) error {
-	return db.db.WithContext(ctx).Create(build).Error
+func (gdb *gormdb) saveBuild(ctx context.Context, build *scheme.Build) error {
+	return gdb.db.WithContext(ctx).Create(build).Error
+}
+
+func (gdb *gormdb) saveBuildWithOwnership(ctx context.Context, build *scheme.Build) error {
+	createFunc := func(build *scheme.Build) error { return gdb.saveBuild(ctx, build) }
+	return createEntityWithOwnership(ctx, gdb, build, createFunc)
 }
 
 func (db *gormdb) SaveBuild(ctx context.Context, build sdktypes.Build, data []byte) error {

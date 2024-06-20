@@ -12,8 +12,13 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-func (db *gormdb) createProject(ctx context.Context, p *scheme.Project) error {
-	return db.db.WithContext(ctx).Create(p).Error
+func (gdb *gormdb) createProject(ctx context.Context, p *scheme.Project) error {
+	return gdb.db.WithContext(ctx).Create(p).Error
+}
+
+func (gdb *gormdb) createProjectWithOwnership(ctx context.Context, p *scheme.Project) error {
+	createFunc := func(p *scheme.Project) error { return gdb.createProject(ctx, p) }
+	return createEntityWithOwnership(ctx, gdb, p, createFunc)
 }
 
 func (db *gormdb) CreateProject(ctx context.Context, p sdktypes.Project) error {

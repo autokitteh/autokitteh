@@ -27,6 +27,21 @@ func (db *gormdb) setVars(ctx context.Context, vars []scheme.Var) error {
 	return db.db.WithContext(ctx).Clauses(conflict).Create(&vars).Error
 }
 
+// TODO: make createEntiryWithOwnership variadic
+func (gdb *gormdb) setVarsWithOwnership(ctx context.Context, vars []scheme.Var) error {
+	user, ownerships, err := prepareOwnershipForEntities(ctx, vars)
+	if err != nil {
+		return err
+	}
+	return gdb.transaction(ctx, func(tx *tx) error {
+		if err := tx.gormdb.setVars(ctx, vars); err != nil {
+			return err
+		}
+
+		return saveOwnershipForEntities(ctx, tx.gormdb.db, user, ownerships...)
+	})
+}
+
 func (db *gormdb) SetVars(ctx context.Context, vars []sdktypes.Var) error {
 	if i, err := kittehs.ValidateList(vars, func(_ int, v sdktypes.Var) error {
 		return v.Strict()

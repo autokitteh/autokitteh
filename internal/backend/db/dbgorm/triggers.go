@@ -64,6 +64,11 @@ func (db *gormdb) createTrigger(ctx context.Context, trigger *scheme.Trigger) er
 	return db.db.WithContext(ctx).Create(trigger).Error
 }
 
+func (gdb *gormdb) createTriggerWithOwnership(ctx context.Context, trigger *scheme.Trigger) error {
+	createFunc := func(p *scheme.Trigger) error { return gdb.createTrigger(ctx, trigger) }
+	return createEntityWithOwnership(ctx, gdb, trigger, createFunc)
+}
+
 func (db *gormdb) CreateTrigger(ctx context.Context, trigger sdktypes.Trigger) error {
 	if err := trigger.Strict(); err != nil {
 		return err
