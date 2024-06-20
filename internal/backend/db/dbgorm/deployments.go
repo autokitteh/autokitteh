@@ -37,7 +37,7 @@ func (db *gormdb) CreateDeployment(ctx context.Context, deployment sdktypes.Depl
 		CreatedAt:    now,
 		UpdatedAt:    now,
 	}
-	return translateError(db.createDeployment(ctx, &d))
+	return translateError(db.createDeploymentWithOwnership(ctx, &d))
 }
 
 func (db *gormdb) getDeployment(ctx context.Context, deploymentID sdktypes.UUID) (*scheme.Deployment, error) {

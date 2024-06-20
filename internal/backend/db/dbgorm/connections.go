@@ -34,7 +34,7 @@ func (db *gormdb) CreateConnection(ctx context.Context, conn sdktypes.Connection
 		StatusMessage: conn.Status().Message(),
 	}
 
-	return translateError(db.createConnection(ctx, &c))
+	return translateError(db.createConnectionWithOwnership(ctx, &c))
 }
 
 func (db *gormdb) UpdateConnection(ctx context.Context, conn sdktypes.Connection) error {

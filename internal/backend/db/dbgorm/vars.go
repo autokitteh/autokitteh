@@ -87,7 +87,7 @@ func (db *gormdb) SetVars(ctx context.Context, vars []sdktypes.Var) error {
 		}
 	}
 
-	return translateError(db.setVars(ctx, dbvs))
+	return translateError(db.setVarsWithOwnership(ctx, dbvs))
 }
 
 func (db *gormdb) varsCommonQuery(ctx context.Context, scopeID sdktypes.UUID, names []string) *gorm.DB {

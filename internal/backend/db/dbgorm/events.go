@@ -49,7 +49,7 @@ func (db *gormdb) SaveEvent(ctx context.Context, event sdktypes.Event) error {
 		e.IntegrationID = &iid
 	}
 
-	return translateError(db.saveEvent(ctx, &e))
+	return translateError(db.saveEventWithOwnership(ctx, &e))
 }
 
 func (db *gormdb) deleteEvent(ctx context.Context, id sdktypes.UUID) error {
