@@ -88,12 +88,20 @@ func (h handler) handleEvent(w http.ResponseWriter, r *http.Request) {
 	akEvent, err := constructEvent(l, jiraEvent)
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
 	}
 
 	// Iterate through all the relevant connections for this event.
+	ids, ok := jiraEvent["matchedWebhookIds"].([]int)
+	if !ok {
+		l.Warn("Invalid webhook IDs in Jira event")
+		http.Error(w, "Bad Request", http.StatusBadRequest)
+		return
+	}
+
 	ctx := extrazap.AttachLoggerToContext(l, r.Context())
 	key := sdktypes.NewSymbol("webhook_id")
-	for _, id := range jiraEvent["matchedWebhookIds"].([]int) {
+	for _, id := range ids {
 		value := fmt.Sprintf("%d", id)
 		cids, err := h.vars.FindConnectionIDs(ctx, integrationID, key, value)
 		if err != nil {
@@ -140,7 +148,11 @@ func constructEvent(l *zap.Logger, jiraEvent map[string]interface{}) (sdktypes.E
 		return sdktypes.InvalidEvent, err
 	}
 
-	eventType := jiraEvent["webhookEvent"].(string)
+	eventType, ok := jiraEvent["webhookEvent"].(string)
+	if !ok {
+		l.Error("Invalid event type")
+		return sdktypes.InvalidEvent, fmt.Errorf("invalid event type")
+	}
 
 	akEvent, err := sdktypes.EventFromProto(&sdktypes.EventPB{
 		EventType: strings.TrimPrefix(eventType, "jira:"),
