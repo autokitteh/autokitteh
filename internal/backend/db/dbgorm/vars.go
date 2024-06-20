@@ -13,35 +13,20 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-func (db *gormdb) setVars(ctx context.Context, vars []scheme.Var) error {
+func (db *gormdb) setVar(ctx context.Context, vr *scheme.Var) error {
 	conflict := clause.OnConflict{
 		Columns:   []clause.Column{{Name: "scope_id"}, {Name: "name"}},      // uniqueness name + scope
 		DoUpdates: clause.AssignmentColumns([]string{"value", "is_secret"}), // updates allowed for value and is_secret
 	}
-	for i := range vars {
-		// Set the ID for each var. Note that it be used only when creating the variable
-		// On conflict/update it will be ignored
-		vars[i].VarID = sdktypes.NewVarID().UUIDValue()
-	}
-
-	return db.db.WithContext(ctx).Clauses(conflict).Create(&vars).Error
+	return db.db.WithContext(ctx).Clauses(conflict).Create(vr).Error
 }
 
-// TODO: make createEntiryWithOwnership variadic
-func (gdb *gormdb) setVarsWithOwnership(ctx context.Context, vars []scheme.Var) error {
-	user, ownerships, err := prepareOwnershipForEntities(ctx, vars)
-	if err != nil {
-		return err
-	}
-	return gdb.transaction(ctx, func(tx *tx) error {
-		if err := tx.gormdb.setVars(ctx, vars); err != nil {
-			return err
-		}
-
-		return saveOwnershipForEntities(ctx, tx.gormdb.db, user, ownerships...)
-	})
+func (gdb *gormdb) setVarWithOwnership(ctx context.Context, vr *scheme.Var) error {
+	createFunc := func(p *scheme.Var) error { return gdb.setVar(ctx, vr) }
+	return createEntityWithOwnership(ctx, gdb, vr, createFunc)
 }
 
+// FIXME: do we need to handle slice here? it seems to be unused anywhere and (meanwhile) compicates uniformal handling
 func (db *gormdb) SetVars(ctx context.Context, vars []sdktypes.Var) error {
 	if i, err := kittehs.ValidateList(vars, func(_ int, v sdktypes.Var) error {
 		return v.Strict()
@@ -67,9 +52,7 @@ func (db *gormdb) SetVars(ctx context.Context, vars []sdktypes.Var) error {
 		return c.ID(), c.IntegrationID()
 	})
 
-	dbvs := make([]scheme.Var, len(vars))
-
-	for i, v := range vars {
+	for _, v := range vars {
 		var iid sdktypes.IntegrationID
 
 		if cid := v.ScopeID().ToConnectionID(); cid.IsValid() {
@@ -78,16 +61,22 @@ func (db *gormdb) SetVars(ctx context.Context, vars []sdktypes.Var) error {
 			}
 		}
 
-		dbvs[i] = scheme.Var{
+		vr := scheme.Var{
+			// Set the ID for each var. Note that it be used only when creating
+			// the variable, on conflict/update it will be ignored
+			VarID: sdktypes.NewVarID().UUIDValue(),
+
 			ScopeID:       v.ScopeID().AsID().UUIDValue(),
 			Name:          v.Name().String(),
 			Value:         v.Value(),
 			IsSecret:      v.IsSecret(),
 			IntegrationID: iid.UUIDValue(),
 		}
+		if err := db.setVarWithOwnership(ctx, &vr); err != nil {
+			return translateError(err)
+		}
 	}
-
-	return translateError(db.setVarsWithOwnership(ctx, dbvs))
+	return nil
 }
 
 func (db *gormdb) varsCommonQuery(ctx context.Context, scopeID sdktypes.UUID, names []string) *gorm.DB {
