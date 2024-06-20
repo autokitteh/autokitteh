@@ -79,6 +79,7 @@ name_of_cases = [
     ('print(1)', 'print'),
     ('requests.get("https://go.dev")', 'requests.get'),
     ('sheets.values().get("A1:B4").execute()', 'sheets.values.get.execute'),
+    ('label["name"].lower()', 'label["name"].lower'),
 ]
 
 
