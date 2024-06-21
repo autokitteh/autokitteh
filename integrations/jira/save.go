@@ -34,12 +34,12 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 	}
 
 	vars := sdktypes.NewVars().
-		Set(sdktypes.NewSymbol("BaseURL"), r.Form.Get("base_url"), true).
-		Set(sdktypes.NewSymbol("APIKeyOrPAT"), r.Form.Get("key_or_pat"), true)
+		Set(baseURL, r.Form.Get("base_url"), false).
+		Set(apiKeyOrPAT, r.Form.Get("key_or_pat"), true)
 
-	email := r.Form.Get("email")
-	if email != "" {
-		vars = vars.Set(sdktypes.NewSymbol("Email"), email, true)
+	addr := r.Form.Get("email")
+	if addr != "" {
+		vars = vars.Set(email, addr, true)
 	}
 
 	sdkintegrations.FinalizeConnectionInit(w, r, integrationID, vars)
