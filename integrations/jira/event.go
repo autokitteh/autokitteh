@@ -77,7 +77,7 @@ func (h handler) handleEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var jiraEvent map[string]interface{}
+	var jiraEvent map[string]any
 	if err := json.Unmarshal(body, &jiraEvent); err != nil {
 		l.Warn("Failed to unmarshal JSON in incoming Jira event", zap.Error(err))
 		http.Error(w, "Bad Request", http.StatusBadRequest)
@@ -92,14 +92,14 @@ func (h handler) handleEvent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Iterate through all the relevant connections for this event.
-	is, ok := jiraEvent["matchedWebhookIds"].([]interface{})
+	is, ok := jiraEvent["matchedWebhookIds"].([]any)
 	if !ok {
 		l.Warn("Invalid webhook IDs in Jira event", zap.Any("ids", jiraEvent["matchedWebhookIds"]))
 		http.Error(w, "Bad Request", http.StatusBadRequest)
 		return
 	}
 
-	ids := kittehs.Transform(is, func(v interface{}) int {
+	ids := kittehs.Transform(is, func(v any) int {
 		f, ok := v.(float64)
 		if !ok {
 			l.Warn("Invalid webhook ID in Jira event", zap.Any("id", v))
@@ -109,10 +109,9 @@ func (h handler) handleEvent(w http.ResponseWriter, r *http.Request) {
 	})
 
 	ctx := extrazap.AttachLoggerToContext(l, r.Context())
-	key := sdktypes.NewSymbol("WebhookID")
 	for _, id := range ids {
 		value := fmt.Sprintf("%d", id)
-		cids, err := h.vars.FindConnectionIDs(ctx, integrationID, key, value)
+		cids, err := h.vars.FindConnectionIDs(ctx, integrationID, webhookID, value)
 		if err != nil {
 			l.Error("Failed to find connection IDs", zap.Error(err))
 			continue
@@ -127,7 +126,7 @@ func (h handler) handleEvent(w http.ResponseWriter, r *http.Request) {
 
 // https://developer.atlassian.com/cloud/jira/platform/understanding-jwt-for-connect-apps/
 func verifyJWT(l *zap.Logger, authz string) bool {
-	token, err := jwt.Parse(authz, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.Parse(authz, func(token *jwt.Token) (any, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			l.Warn("Unexpected signing method", zap.Any("alg", token.Header["alg"]))
 		}
@@ -142,7 +141,7 @@ func verifyJWT(l *zap.Logger, authz string) bool {
 	return token.Valid
 }
 
-func constructEvent(l *zap.Logger, jiraEvent map[string]interface{}) (sdktypes.Event, error) {
+func constructEvent(l *zap.Logger, jiraEvent map[string]any) (sdktypes.Event, error) {
 	l = l.With(zap.Any("event", jiraEvent))
 
 	wrapped, err := sdktypes.DefaultValueWrapper.Wrap(jiraEvent)

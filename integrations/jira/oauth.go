@@ -45,7 +45,7 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	baseURL, err := baseURL()
+	url, err := apiBaseURL()
 	if err != nil {
 		l.Warn("Invalid Jira base URL", zap.Error(err))
 		redirectToErrorPage(w, r, "invalid Jira base URL")
@@ -53,7 +53,7 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Test the OAuth token's usability and get authoritative installation details.
-	res, err := accessibleResources(l, baseURL, oauthToken.AccessToken)
+	res, err := accessibleResources(l, url, oauthToken.AccessToken)
 	if err != nil {
 		redirectToErrorPage(w, r, err.Error())
 		return
@@ -73,17 +73,17 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 
 	// Register a new webhook to receive, parse, and dispatch
 	// Jira events, or extend the deadline of an existing one.
-	baseURL += "/ex/jira/" + res[0].ID
+	url += "/ex/jira/" + res[0].ID
 	t := utc30Days()
-	id, ok := getWebhook(l, baseURL, oauthToken.AccessToken)
+	id, ok := getWebhook(l, url, oauthToken.AccessToken)
 	if !ok {
-		id, ok = registerWebhook(l, baseURL, oauthToken.AccessToken)
+		id, ok = registerWebhook(l, url, oauthToken.AccessToken)
 		if !ok {
 			redirectToErrorPage(w, r, "failed to register webhook")
 			return
 		}
 	} else {
-		t, ok = extendWebhookLife(l, baseURL, oauthToken.AccessToken, id)
+		t, ok = extendWebhookLife(l, url, oauthToken.AccessToken, id)
 		if !ok {
 			redirectToErrorPage(w, r, "failed to extend webhook life")
 			return
@@ -91,15 +91,15 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 	}
 
 	initData := sdktypes.NewVars(data.ToVars()...).Append(res[0].toVars()...).
-		Append(sdktypes.NewVar(sdktypes.NewSymbol("webhook_id"), fmt.Sprintf("%d", id), false)).
-		Append(sdktypes.NewVar(sdktypes.NewSymbol("webhook_expiration"), t.String(), false))
+		Append(sdktypes.NewVar(webhookID, fmt.Sprintf("%d", id), false)).
+		Append(sdktypes.NewVar(webhookExpiration, t.String(), false))
 
 	sdkintegrations.FinalizeConnectionInit(w, r, integrationID, initData)
 }
 
 // Determine Jira base URL (to support Jira Data Center, i.e. on-prem).
 // TODO(ENG-965): From new-connection form instead of env var.
-func baseURL() (string, error) {
+func apiBaseURL() (string, error) {
 	u := os.Getenv("JIRA_BASE_URL")
 	if u == "" {
 		u = "https://api.atlassian.com"
@@ -154,10 +154,10 @@ func accessibleResources(l *zap.Logger, baseURL string, token string) ([]resourc
 
 func (r resource) toVars() sdktypes.Vars {
 	return []sdktypes.Var{
-		sdktypes.NewVar(sdktypes.NewSymbol("access_id"), r.ID, false),
-		sdktypes.NewVar(sdktypes.NewSymbol("access_url"), r.URL, false),
-		sdktypes.NewVar(sdktypes.NewSymbol("access_name"), r.Name, false),
-		sdktypes.NewVar(sdktypes.NewSymbol("access_scopes"), fmt.Sprintf("%s", r.Scopes), false),
-		sdktypes.NewVar(sdktypes.NewSymbol("access_avatarUrl"), r.AvatarURL, false),
+		sdktypes.NewVar(accessID, r.ID, false),
+		sdktypes.NewVar(accessURL, r.URL, false),
+		sdktypes.NewVar(accessName, r.Name, false),
+		sdktypes.NewVar(accessScope, fmt.Sprintf("%s", r.Scopes), false),
+		sdktypes.NewVar(accessAvatarURL, r.AvatarURL, false),
 	}
 }
