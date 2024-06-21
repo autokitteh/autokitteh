@@ -111,9 +111,12 @@ test-dbgorm:
 	go test -v ./internal/backend/db/dbgorm -dbtype $$dbtype ; \
 	done
 
+# Skip a Python unit-test in runtimes/pythonrt/ that fails
+# due to missing Python deps - it's already covered by that
+# directory's "make test" and the Python CI workflow.
 .PHONY: test-unit
 test-unit:
-	$(GOTEST) ./...
+	$(GOTEST) ./... -skip Test_pyExports
 
 # Subset of "test-unit", for simplicity.
 .PHONY: test-system
