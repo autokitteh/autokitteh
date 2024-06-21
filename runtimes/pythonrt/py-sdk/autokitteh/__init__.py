@@ -1,7 +1,7 @@
 """AutoKitteh Python SDK."""
 
-from .activity import *
 from . import atlassian
+from .decorators import activity
 from . import errors
 from . import google
 from . import slack
