@@ -13,7 +13,7 @@ from .connections import check_connection_name
 from .errors import ConnectionInitError
 
 
-def slack_client(connection: str, **kwargs) -> WebClient:
+def client(connection: str, **kwargs) -> WebClient:
     """Initialize a Slack client, based on an AutoKitteh connection.
 
     API reference:

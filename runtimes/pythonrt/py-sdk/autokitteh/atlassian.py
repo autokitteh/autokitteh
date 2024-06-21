@@ -41,7 +41,7 @@ def atlassian_jira_client(connection: str, **kwargs):
     check_connection_name(connection)
 
     if os.getenv(connection + "__oauth_AccessToken"):
-        return _atlassian_jira_client_cloud_oauth2(connection, **kwargs)
+        return __atlassian_jira_client_cloud_oauth2(connection, **kwargs)
 
     base_url = os.getenv(connection + "__BaseURL")
     secret = os.getenv(connection + "__APIKeyOrPAT")
@@ -60,7 +60,7 @@ def atlassian_jira_client(connection: str, **kwargs):
     raise ConnectionInitError(connection)
 
 
-def _atlassian_jira_client_cloud_oauth2(connection: str, **kwargs):
+def __atlassian_jira_client_cloud_oauth2(connection: str, **kwargs):
     """Initialize a Jira client for Atlassian Cloud using OAuth 2.0."""
     expiry = os.getenv(connection + "__oauth_Expiry")
     if not expiry:

@@ -140,12 +140,12 @@ def google_creds(connection: str, scopes: list[str], **kwargs):
 
     refresh_token = os.getenv(connection + "__oauth_RefreshToken")  # User (OAuth 2.0)
     if refresh_token:
-        return _google_creds_oauth2(connection, refresh_token, scopes)
+        return __google_creds_oauth2(connection, refresh_token, scopes)
 
     raise ConnectionInitError(connection)
 
 
-def _google_creds_oauth2(connection: str, refresh_token: str, scopes: list[str]):
+def __google_creds_oauth2(connection: str, refresh_token: str, scopes: list[str]):
     """Initialize user credentials for Google APIs using OAuth 2.0.
 
     For more details, see:
