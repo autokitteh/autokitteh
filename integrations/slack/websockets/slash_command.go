@@ -63,7 +63,7 @@ func (h handler) handleSlashCommand(e *socketmode.Event, c *socketmode.Client) {
 	}
 
 	// https://api.slack.com/apis/connections/socket#command
-	c.Ack(*e.Request, map[string][]map[string]interface{}{
+	c.Ack(*e.Request, map[string][]map[string]any{
 		"blocks": {
 			{
 				"type": "section",

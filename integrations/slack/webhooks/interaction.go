@@ -101,12 +101,12 @@ type Team struct {
 }
 
 type Response struct {
-	Text            string                   `json:"text,omitempty"`
-	Blocks          []map[string]interface{} `json:"blocks,omitempty"`
-	ResponseType    string                   `json:"response_type,omitempty"`
-	ThreadTS        string                   `json:"thread_ts,omitempty"`
-	ReplaceOriginal bool                     `json:"replace_original,omitempty"`
-	DeleteOriginal  bool                     `json:"delete_original,omitempty"`
+	Text            string           `json:"text,omitempty"`
+	Blocks          []map[string]any `json:"blocks,omitempty"`
+	ResponseType    string           `json:"response_type,omitempty"`
+	ThreadTS        string           `json:"thread_ts,omitempty"`
+	ReplaceOriginal bool             `json:"replace_original,omitempty"`
+	DeleteOriginal  bool             `json:"delete_original,omitempty"`
 }
 
 // HandleInteraction dispatches and acknowledges a user interaction callback
@@ -191,7 +191,7 @@ func (h handler) updateMessage(ctx context.Context, payload *BlockActionsPayload
 	for _, b := range payload.Message.Blocks {
 		// Header text is HTML-encoded, so unescape it.
 		if b["type"] == "header" {
-			h := b["text"].(map[string]interface{})
+			h := b["text"].(map[string]any)
 			h["text"] = html.UnescapeString(h["text"].(string))
 		}
 		if b["type"] != "actions" {
@@ -210,7 +210,7 @@ func (h handler) updateMessage(ctx context.Context, payload *BlockActionsPayload
 			case "danger":
 				action = ":large_red_square: " + action
 			}
-			resp.Blocks = append(resp.Blocks, map[string]interface{}{
+			resp.Blocks = append(resp.Blocks, map[string]any{
 				"type": "section",
 				"text": map[string]string{
 					"type": "mrkdwn",

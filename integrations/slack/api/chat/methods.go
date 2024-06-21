@@ -269,10 +269,10 @@ func (a API) SendApprovalMessage(ctx context.Context, args []sdktypes.Value, kwa
 	if redButton == "" {
 		redButton = DefaultApprovalRedButton
 	}
-	req.Blocks = []map[string]interface{}{
+	req.Blocks = []map[string]any{
 		{
 			"type": "header",
-			"text": map[string]interface{}{
+			"text": map[string]any{
 				"type":  "plain_text",
 				"emoji": true,
 				"text":  req.Text,
@@ -293,11 +293,11 @@ func (a API) SendApprovalMessage(ctx context.Context, args []sdktypes.Value, kwa
 		},
 		{
 			"type": "actions",
-			"elements": []map[string]interface{}{
+			"elements": []map[string]any{
 				{
 					"type":  "button",
 					"style": "primary",
-					"text": map[string]interface{}{
+					"text": map[string]any{
 						"type":  "plain_text",
 						"emoji": true,
 						"text":  greenButton,
@@ -308,7 +308,7 @@ func (a API) SendApprovalMessage(ctx context.Context, args []sdktypes.Value, kwa
 				{
 					"type":  "button",
 					"style": "danger",
-					"text": map[string]interface{}{
+					"text": map[string]any{
 						"type":  "plain_text",
 						"emoji": true,
 						"text":  redButton,

@@ -48,7 +48,7 @@ type PostEphemeralRequest struct {
 	// https://api.slack.com/messaging/composing/layouts
 	// https://api.slack.com/messaging/interactivity
 	// https://app.slack.com/block-kit-builder/
-	Blocks []map[string]interface{} `json:"blocks,omitempty"`
+	Blocks []map[string]any `json:"blocks,omitempty"`
 
 	// ThreadTS provides another message's [TS] value to make this message
 	// a reply. Avoid using a reply's [TS] value; use its parent instead.
@@ -80,7 +80,7 @@ type PostMessageRequest struct {
 	// https://api.slack.com/messaging/composing/layouts
 	// https://api.slack.com/messaging/interactivity
 	// https://app.slack.com/block-kit-builder/
-	Blocks []map[string]interface{} `json:"blocks,omitempty"`
+	Blocks []map[string]any `json:"blocks,omitempty"`
 
 	// ThreadTS provides another message's [TS] value to make this message
 	// a reply. Avoid using a reply's [TS] value; use its parent instead.
@@ -124,7 +124,7 @@ type UpdateRequest struct {
 	// https://api.slack.com/messaging/composing/layouts
 	// https://api.slack.com/messaging/interactivity
 	// https://app.slack.com/block-kit-builder/
-	Blocks []map[string]interface{} `json:"blocks,omitempty"`
+	Blocks []map[string]any `json:"blocks,omitempty"`
 
 	// ReplyBroadcast is used in conjunction with [TS] and indicates whether
 	// the reply should be made visible to everyone in the channel or
@@ -202,9 +202,9 @@ type Message struct {
 	// https://api.slack.com/events/message#hidden_subtypes
 	Hidden bool `json:"hidden,omitempty"`
 
-	Text   string                   `json:"text,omitempty"`
-	Blocks []map[string]interface{} `json:"blocks,omitempty"`
-	Edited *Edited                  `json:"edited,omitempty"`
+	Text   string           `json:"text,omitempty"`
+	Blocks []map[string]any `json:"blocks,omitempty"`
+	Edited *Edited          `json:"edited,omitempty"`
 
 	User         string      `json:"user,omitempty"`
 	AppID        string      `json:"app_id,omitempty"`

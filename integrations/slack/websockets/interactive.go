@@ -85,7 +85,7 @@ func (h handler) updateMessage(payload *webhooks.BlockActionsPayload, cids []sdk
 	for _, b := range payload.Message.Blocks {
 		// Header text is HTML-encoded, so unescape it.
 		if b["type"] == "header" {
-			h := b["text"].(map[string]interface{})
+			h := b["text"].(map[string]any)
 			h["text"] = html.UnescapeString(h["text"].(string))
 		}
 		if b["type"] != "actions" {
@@ -104,7 +104,7 @@ func (h handler) updateMessage(payload *webhooks.BlockActionsPayload, cids []sdk
 			case "danger":
 				action = ":large_red_square: " + action
 			}
-			resp.Blocks = append(resp.Blocks, map[string]interface{}{
+			resp.Blocks = append(resp.Blocks, map[string]any{
 				"type": "section",
 				"text": map[string]string{
 					"type": "mrkdwn",
