@@ -5,15 +5,10 @@ import json
 import os
 import re
 
-# These imports work in AutoKitteh's virtual environment. The try-except block
-# silences import errors in CI workflows that don't install these dependencies.
-try:
-    from google.auth.transport.requests import Request
-    import google.oauth2.credentials as credentials
-    import google.oauth2.service_account as service_account
-    from googleapiclient.discovery import build
-except ModuleNotFoundError:
-    pass
+from google.auth.transport.requests import Request
+import google.oauth2.credentials as credentials
+import google.oauth2.service_account as service_account
+from googleapiclient.discovery import build
 
 from .connections import check_connection_name
 from .errors import ConnectionInitError, EnvVarError

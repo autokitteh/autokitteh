@@ -4,14 +4,8 @@ from datetime import UTC, datetime
 import re
 import os
 
-
-# These imports work in AutoKitteh's virtual environment. The try-except block
-# silences import errors in CI workflows that don't install these dependencies.
-try:
-    from atlassian import Jira
-    from jira import JIRA
-except ModuleNotFoundError:
-    pass
+from atlassian import Jira
+from jira import JIRA
 
 from .connections import check_connection_name
 from .errors import ConnectionInitError, EnvVarError

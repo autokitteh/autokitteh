@@ -2,12 +2,7 @@
 
 import os
 
-# This import works in AutoKitteh's virtual environment. The try-except block
-# silences import errors in CI workflows that don't install this dependency.
-try:
-    from slack_sdk.web.client import WebClient
-except ModuleNotFoundError:
-    pass
+from slack_sdk.web.client import WebClient
 
 from .connections import check_connection_name
 from .errors import ConnectionInitError
