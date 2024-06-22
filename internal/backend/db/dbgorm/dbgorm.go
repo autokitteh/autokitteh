@@ -78,6 +78,15 @@ func (db *gormdb) locked(f func(db *gormdb) error) error {
 	return translateError(f(db))
 }
 
+func (db *gormdb) locked2(f func(db *gormdb) error) error {
+	if db.mu != nil {
+		db.mu.Lock()
+		defer db.mu.Unlock()
+	}
+
+	return f(db)
+}
+
 func translateError(err error) error {
 	switch {
 	case err == nil:
