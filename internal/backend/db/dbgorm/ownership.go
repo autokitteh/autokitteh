@@ -2,11 +2,13 @@ package dbgorm
 
 import (
 	"context"
+	"fmt"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
+	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
 
@@ -37,25 +39,6 @@ func userFromContext(ctx context.Context) (*scheme.User, error) {
 // extract entity UUID and Type
 func entityOwnershipWithIDAndType(entity any) scheme.Ownership {
 	switch entity := entity.(type) {
-	case sdktypes.Project:
-		return scheme.Ownership{EntityID: entity.ID().UUIDValue(), EntityType: "Project"}
-	case sdktypes.Build:
-		return scheme.Ownership{EntityID: entity.ID().UUIDValue(), EntityType: "Build"}
-	case sdktypes.Deployment:
-		return scheme.Ownership{EntityID: entity.ID().UUIDValue(), EntityType: "Deployment"}
-	case sdktypes.Env:
-		return scheme.Ownership{EntityID: entity.ID().UUIDValue(), EntityType: "Env"}
-	case sdktypes.Connection:
-		return scheme.Ownership{EntityID: entity.ID().UUIDValue(), EntityType: "Connection"}
-	case sdktypes.Session:
-		return scheme.Ownership{EntityID: entity.ID().UUIDValue(), EntityType: "Session"}
-	case sdktypes.Event:
-		return scheme.Ownership{EntityID: entity.ID().UUIDValue(), EntityType: "Event"}
-	case sdktypes.Trigger:
-		return scheme.Ownership{EntityID: entity.ID().UUIDValue(), EntityType: "Trigger"}
-	// FIXME: there is no ID method for VAR
-
-	// -------------------------------------------------------------------------------------------
 	case scheme.Project:
 		return scheme.Ownership{EntityID: entity.ProjectID, EntityType: "Project"}
 	case *scheme.Project:
@@ -112,42 +95,92 @@ func prepareOwnershipForEntities(ctx context.Context, entities ...any) (*scheme.
 	return user, oo, nil
 }
 
-func saveOwnershipForEntities(ctx context.Context, db *gorm.DB, u *scheme.User, oo ...scheme.Ownership) error {
+func saveOwnershipForEntities(db *gorm.DB, u *scheme.User, oo ...scheme.Ownership) error {
 	for _, o := range oo { // sanity. ensure same user
 		o.UserID = u.UserID
 	}
 
-	// FIXME: add transaction - will require reqursive one
-	db = db.WithContext(ctx)
-	if err := db.Where(u).FirstOrCreate(u).Error; err != nil {
+	// NOTE: should be transactional
+	if err := db.Where(u).FirstOrCreate(u).Error; err != nil { // ensure user exists
 		return err
 	}
-
-	return db.Create(oo).Error
+	return db.Create(oo).Error // and create ownerships
 }
 
-func createEntityWithOwnership[T any](ctx context.Context, gdb *gormdb, model *T, createFunc func(*T) error) error {
+func createEntityWithOwnership[T any](ctx context.Context, db *gorm.DB, model *T) error {
 	user, ownerships, err := prepareOwnershipForEntities(ctx, model)
 	if err != nil {
 		return err
 	}
-	return gdb.transaction(ctx, func(tx *tx) error {
-		if err := createFunc(model); err != nil {
+	return db.Transaction(func(tx *gorm.DB) error {
+		tx = tx.WithContext(ctx)
+		if err := tx.Create(model).Error; err != nil {
 			return err
 		}
 
-		return saveOwnershipForEntities(ctx, tx.gormdb.db, user, ownerships...)
+		return saveOwnershipForEntities(tx, user, ownerships...)
 	})
 }
 
+func (gdb *gormdb) isUserEntity(ctx context.Context, ids ...sdktypes.UUID) error {
+	user, _ := userFromContext(ctx) // REVIEW: OK to ignore error
+	gdb.z.Debug("isUserEntity", zap.Any("entityIDs", ids), zap.Any("user", user))
+	var count int64
+	if err := gdb.db.Model(&scheme.Ownership{}).Where("entity_id IN ? AND user_id = ?", ids, user.UserID).Limit(1).Count(&count).Error; err != nil {
+		return err
+	}
+	if count < int64(len(ids)) {
+		return sdkerrors.ErrUnauthorized
+	}
+	// FIXME: could/should we distinguish between not found and unauthorized? Could be useful in updates
+	// Is there other way then adding more queries?
+	return nil
+}
+
+// add context and join with user ownership on entity
+func joinUserEntity(ctx context.Context, db *gorm.DB, entity string, userID sdktypes.UUID) *gorm.DB {
+	// REVIEW: the simplest possible way. We could also use generics, TableName, interface to find ID column,  etc..
+	tableName := entity + string("s")
+	joinExpr := fmt.Sprintf("JOIN ownerships ON ownerships.entity_id = %s.%s_id", tableName, entity)
+	return db.WithContext(ctx).
+		Table(tableName).Joins(joinExpr).Where("ownerships.user_id = ?", userID)
+}
+
+// gorm user+entity scope
+// func withUserEntity(ctx context.Context, entity string) func(db *gorm.DB) *gorm.DB {
+// 	return func(db *gorm.DB) *gorm.DB {
+// 		user, _ := userFromContext(ctx) // FIXME: ignore error?
+// 		return joinUserEntity(ctx, db, entity, user.UserID)
+// 	}
+// }
+
+// gormdb user+entity scoped godm db + logging
+func (gdb *gormdb) withUserEntity(ctx context.Context, entity string) *gorm.DB {
+	user, _ := userFromContext(ctx) // FIXME: ignore error?
+	gdb.z.Debug("withUser", zap.String("entity", entity), zap.Any("user", user))
+	return joinUserEntity(ctx, gdb.db, entity, user.UserID)
+}
+
 // FIXME:
+// 1. ID
 // - maybe we could add google/github users earlier? on login?
 // - compute userID on user creation and add to proto?
 // - could we store emails? (data protection? CCPA/GDPR?)
 // - maybe we could rely on providers IDs? we have such for google/github and need one from descope
-// - ensureOwnershipUser. Here under transaction (nested transaction for projects, deployments, events) or in scheme
-// - we could add Addownership on db layer or on service layer. Meanwhile added on services layer
-// - we could add a auth wrapper on top of regular func or just insert logic inside. Auth wrapper will require nested transcation
-// - need to check ownership foreign keys for fully deleted objects
-// - deleting objects
 // - add uniq index for users name+email+provider? or userID is enough which is 1-to-1 to all those 3
+// 2. Delete
+// - need to check ownership foreign keys for fully deleted objects
+// - cleaning ownership table
+// - deleting objects
+// 3.
+// - rmove varID from var and use ScopeID as userID
+// - remove line from dbgorm files
+// - create
+//   - build need to add projectID
+//   - connection check with projectID, even if optional
+//   - deployment, build should be non-optinal. Need to check vs. buildID or EnvID
+//   - env with ProjectID
+//   - event if connectionID is present
+//   - TRIGGER PROJECTid
+
+// if we are in production do not allow save events
