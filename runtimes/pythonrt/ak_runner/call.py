@@ -1,6 +1,6 @@
 from time import sleep
 
-import autokitteh.decorators
+from autokitteh import decorators
 
 from . import log
 from .comm import Comm, MessageType
@@ -17,7 +17,7 @@ AK_FUNCS = {
 
 def is_marked_activity(fn):
     """Return true if function is marked as an activity."""
-    return getattr(fn, autokitteh.decorators.ACTIVITY_ATTR, False)
+    return getattr(fn, decorators.ACTIVITY_ATTR, False)
 
 
 class AKCall:

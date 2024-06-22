@@ -8,4 +8,11 @@ from . import google
 from . import slack
 
 
-__all__ = ["AttrDict", "activity", "atlassian", "errors", "google", "slack"]
+__all__ = [
+    "AttrDict",
+    "activity",
+    "atlassian",
+    "errors",
+    "google",
+    "slack",
+]

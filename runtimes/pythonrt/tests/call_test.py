@@ -5,7 +5,7 @@ from socket import socketpair
 from threading import Thread
 from unittest.mock import MagicMock
 
-import autokitteh.decorators
+from autokitteh import decorators
 from loader_test import simple_dir
 from conftest import testdata
 
@@ -147,7 +147,7 @@ def test_activity():
     mod_name = 'activity'
     mod = ak_runner.load_code(testdata, lambda f: f, mod_name)
     fn = mod.phone_home
-    assert getattr(fn, autokitteh.decorators.ACTIVITY_ATTR, False)
+    assert getattr(fn, decorators.ACTIVITY_ATTR, False)
 
 
 def mock_tp_go(sock):
