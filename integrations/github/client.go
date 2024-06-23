@@ -38,7 +38,7 @@ func New(cvars sdkservices.Vars) sdkservices.Integration {
 	i := &integration{vars: cvars}
 	return sdkintegrations.NewIntegration(
 		desc,
-		sdkmodule.New(funcs(i)...),
+		sdkmodule.New(exportFuncs(i)...),
 		connStatus(i),
 		connTest(i),
 		sdkintegrations.WithConnectionConfigFromVars(cvars),
@@ -74,7 +74,7 @@ func connStatus(i *integration) sdkintegrations.OptFn {
 	})
 }
 
-func funcs(i *integration) []sdkmodule.Optfn {
+func exportFuncs(i *integration) []sdkmodule.Optfn {
 	return []sdkmodule.Optfn{
 		// Issues.
 		sdkmodule.ExportFunction(

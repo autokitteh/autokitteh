@@ -40,7 +40,7 @@ var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.Integrati
 func New(vs sdkservices.Vars) sdkservices.Integration {
 	return sdkintegrations.NewIntegration(
 		desc,
-		sdkmodule.New(funcs(vs)...),
+		sdkmodule.New(exportFuncs(vs)...),
 		connStatus(vs),
 		sdkintegrations.WithConnectionConfigFromVars(vs),
 	)
@@ -68,7 +68,7 @@ func connStatus(vs sdkservices.Vars) sdkintegrations.OptFn {
 	})
 }
 
-func funcs(vs sdkservices.Vars) []sdkmodule.Optfn {
+func exportFuncs(vs sdkservices.Vars) []sdkmodule.Optfn {
 	authAPI := auth.API{Vars: vs}
 	bookmarksAPI := bookmarks.API{Vars: vs}
 	botsAPI := bots.API{Vars: vs}
@@ -90,7 +90,7 @@ func funcs(vs sdkservices.Vars) []sdkmodule.Optfn {
 			"bookmarks_add",
 			bookmarksAPI.Add,
 			sdkmodule.WithFuncDoc("https://api.slack.com/methods/bookmarks.add"),
-			sdkmodule.WithArgs("channel_id", "title" /* , "type" */, "link?", "emoji?", "entity_id?", "parent_id?"),
+			sdkmodule.WithArgs("channel_id", "title", "type?", "link?", "emoji?", "entity_id?", "parent_id?"),
 		),
 		sdkmodule.ExportFunction(
 			"bookmarks_edit",
@@ -260,7 +260,7 @@ func funcs(vs sdkservices.Vars) []sdkmodule.Optfn {
 		),
 
 		// Users.
-		// TODO: sdkmodule.ExportFunction(
+		// TODO(ENG-1057): sdkmodule.ExportFunction(
 		// "users_conversations",
 		// 	sdkmodule.WithFuncDoc("https://api.slack.com/methods/users.conversations"),
 		// 	sdkmodule.WithArgs(...TODO...),
