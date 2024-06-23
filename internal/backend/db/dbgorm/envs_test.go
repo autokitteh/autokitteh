@@ -37,6 +37,25 @@ func TestCreateEnv(t *testing.T) {
 	f.WithForeignKeysDisabled(func() { f.createEnvsAndAssert(t, e) })
 }
 
+func TestGetEnv(t *testing.T) {
+	f := preEnvTest(t)
+
+	p := f.newProject()
+	f.createProjectsAndAssert(t, p)
+
+	e := f.newEnv()
+	e.ProjectID = p.ProjectID
+	f.createEnvsAndAssert(t, e)
+
+	e2, err := f.gormdb.getEnvByName(f.ctx, p.ProjectID, e.Name)
+	assert.NoError(t, err)
+	assert.Equal(t, e, *e2)
+
+	e2, err = f.gormdb.getEnvByID(f.ctx, e.EnvID)
+	assert.NoError(t, err)
+	assert.Equal(t, e, *e2)
+}
+
 func TestCreateEnvForeignKeys(t *testing.T) {
 	f := preEnvTest(t)
 
