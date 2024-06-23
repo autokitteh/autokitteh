@@ -121,6 +121,10 @@ func NewComm(conn net.Conn) *Comm {
 }
 
 func (c *Comm) Close() error {
+	if c == nil || c.conn == nil {
+		return nil
+	}
+
 	return c.conn.Close()
 }
 

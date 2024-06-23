@@ -345,6 +345,7 @@ func (py *pySvc) Run(
 		if err := py.run.proc.Kill(); err != nil {
 			py.log.Warn("kill", zap.Int("pid", py.run.proc.Pid), zap.Error(err))
 		}
+		py.run.Cleanup()
 	}()
 
 	conn, err := py.run.lis.Accept()
@@ -423,9 +424,12 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, event map[str
 		py.stdout.Close()
 		py.comm.Close()
 
-		if err := py.run.proc.Kill(); err != nil {
-			py.log.Warn("kill", zap.Int("pid", py.run.proc.Pid), zap.Error(err))
+		if py.run.proc != nil {
+			if err := py.run.proc.Kill(); err != nil {
+				py.log.Warn("kill", zap.Int("pid", py.run.proc.Pid), zap.Error(err))
+			}
 		}
+		py.run.Cleanup()
 		py.run.proc = nil
 	}()
 

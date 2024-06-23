@@ -143,66 +143,88 @@ func pyExeInfo(ctx context.Context, exePath string) (exeInfo, error) {
 }
 
 type pyRunInfo struct {
-	rootDir  string
-	sockPath string
-	lis      net.Listener
-	proc     *os.Process
+	userRootDir string
+	pyRootDir   string
+	sockPath    string
+	lis         net.Listener
+	proc        *os.Process
+}
+
+func (ri *pyRunInfo) Cleanup() {
+	if ri.userRootDir != "" {
+		os.RemoveAll(ri.userRootDir)
+	}
+
+	if ri.pyRootDir != "" {
+		os.RemoveAll(ri.pyRootDir)
+	}
 }
 
 type runOptions struct {
 	log            *zap.Logger
-	pyExe          string
-	tarData        []byte
-	rootPath       string
-	env            map[string]string
+	pyExe          string            // Python executable to use
+	tarData        []byte            // tar data from build stage
+	rootPath       string            // simple.py:greet
+	env            map[string]string // Python process environment
 	stdout, stderr io.Writer
 }
 
 const runnerMod = "ak_runner"
 
 func runPython(opts runOptions) (*pyRunInfo, error) {
-	rootDir, err := os.MkdirTemp("", "ak-")
-	opts.log.Info("root dir", zap.String("path", rootDir))
+	runOK := false
+	var ri pyRunInfo
+	var err error
+	defer func() {
+		if !runOK {
+			ri.Cleanup()
+		}
+	}()
+
+	ri.userRootDir, err = os.MkdirTemp("", "ak-")
+	if err != nil {
+		return nil, err
+	}
+	opts.log.Info("user root dir", zap.String("path", ri.userRootDir))
+
+	tarPath, err := writeTar(ri.userRootDir, opts.tarData)
 	if err != nil {
 		return nil, err
 	}
 
-	tarPath, err := writeTar(rootDir, opts.tarData)
+	ri.pyRootDir, err = os.MkdirTemp("", "ak-")
+	if err != nil {
+		return nil, err
+	}
+	opts.log.Info("python root dir", zap.String("path", ri.pyRootDir))
+
+	if err := copyFS(runnerPyCode, ri.pyRootDir); err != nil {
+		return nil, err
+	}
+
+	ri.sockPath = path.Join(ri.pyRootDir, "ak.sock")
+	opts.log.Info("socket", zap.String("path", ri.sockPath))
+
+	ri.lis, err = net.Listen("unix", ri.sockPath)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := copyFS(runnerPyCode, rootDir); err != nil {
-		return nil, err
-	}
-
-	sockPath := path.Join(rootDir, "ak.sock")
-	opts.log.Info("socket", zap.String("path", sockPath))
-
-	lis, err := net.Listen("unix", sockPath)
-	if err != nil {
-		return nil, err
-	}
-
-	cmd := exec.Command(opts.pyExe, "-m", runnerMod, "run", sockPath, tarPath, opts.rootPath)
-	cmd.Dir = rootDir
-	cmd.Env = overrideEnv(opts.env, rootDir)
+	cmd := exec.Command(opts.pyExe, "-m", runnerMod, "run", ri.sockPath, tarPath, opts.rootPath)
+	cmd.Dir = ri.pyRootDir
+	cmd.Env = overrideEnv(opts.env, ri.pyRootDir)
 	cmd.Stdout = opts.stdout
 	cmd.Stderr = opts.stderr
 
 	if err := cmd.Start(); err != nil {
-		lis.Close()
+		ri.lis.Close()
 		return nil, err
 	}
 
-	info := pyRunInfo{
-		rootDir:  opts.rootPath,
-		sockPath: sockPath,
-		lis:      lis,
-		proc:     cmd.Process,
-	}
+	runOK = true // signal we're good to cleanup
+	ri.proc = cmd.Process
 
-	return &info, nil
+	return &ri, nil
 }
 
 func writeTar(rootDir string, data []byte) (string, error) {
