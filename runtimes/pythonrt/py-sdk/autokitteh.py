@@ -35,7 +35,7 @@ def activity(fn: callable) -> callable:
     return fn
 
 
-def subscribe(connection_name: str, filter: str ='') -> str:
+def subscribe(connection_name: str, filter: str) -> str:
     """Subscribe to events on connection. Option filter is a CEL expression."""
 
     # Dummy implementation for local development
