@@ -8,15 +8,42 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
+	"gorm.io/gorm"
 )
 
-func (gdb *gormdb) saveBuild(ctx context.Context, build *scheme.Build) error {
-	return gdb.db.WithContext(ctx).Create(build).Error
+func (gdb *gormdb) withUserBuilds(ctx context.Context) *gorm.DB {
+	return gdb.withUserEntity(ctx, "build")
 }
 
-func (gdb *gormdb) saveBuildWithOwnership(ctx context.Context, build *scheme.Build) error {
-	createFunc := func(build *scheme.Build) error { return gdb.saveBuild(ctx, build) }
-	return createEntityWithOwnership(ctx, gdb, build, createFunc)
+func (gdb *gormdb) saveBuild(ctx context.Context, build *scheme.Build) error {
+	return createEntityWithOwnership(ctx, gdb.db, build)
+}
+
+func (gdb *gormdb) deleteBuild(ctx context.Context, buildID sdktypes.UUID) error {
+	return gdb.transaction2(ctx, func(tx *tx) error {
+		if err := tx.isUserEntity(ctx, buildID); err != nil {
+			return err
+		}
+		return tx.db.Delete(&scheme.Build{BuildID: buildID}).Error
+	})
+}
+
+func (gdb *gormdb) getBuild(ctx context.Context, buildID sdktypes.UUID) (*scheme.Build, error) {
+	return getOne[scheme.Build](gdb.withUserBuilds(ctx), "build_id = ?", buildID)
+}
+
+func (gdb *gormdb) listBuilds(ctx context.Context, filter sdkservices.ListBuildsFilter) ([]scheme.Build, error) {
+	q := gdb.withUserBuilds(ctx).Order("created_at desc")
+
+	if filter.Limit != 0 {
+		q = q.Limit(int(filter.Limit))
+	}
+
+	var bs []scheme.Build
+	if err := q.Find(&bs).Error; err != nil {
+		return nil, err
+	}
+	return bs, nil
 }
 
 func (db *gormdb) SaveBuild(ctx context.Context, build sdktypes.Build, data []byte) error {
@@ -31,49 +58,35 @@ func (db *gormdb) SaveBuild(ctx context.Context, build sdktypes.Build, data []by
 		Data:      data,
 		CreatedAt: build.CreatedAt(),
 	}
-	return translateError(db.saveBuildWithOwnership(ctx, &b))
-}
-
-func (db *gormdb) GetBuild(ctx context.Context, buildID sdktypes.BuildID) (sdktypes.Build, error) {
-	return getOneWTransform(db.db, ctx, scheme.ParseBuild, "build_id = ?", buildID.UUIDValue())
-}
-
-func (db *gormdb) deleteBuild(ctx context.Context, buildID sdktypes.UUID) error {
-	return delete[scheme.Build](db.db, ctx, "build_id = ?", buildID)
+	return translateError(db.saveBuild(ctx, &b))
 }
 
 func (db *gormdb) DeleteBuild(ctx context.Context, buildID sdktypes.BuildID) error {
-	return db.deleteBuild(ctx, buildID.UUIDValue())
+	return translateError(db.deleteBuild(ctx, buildID.UUIDValue()))
 }
 
-func (db *gormdb) listBuilds(ctx context.Context, filter sdkservices.ListBuildsFilter) ([]scheme.Build, error) {
-	q := db.db.WithContext(ctx).Order("created_at desc")
-	if filter.Limit != 0 {
-		q = q.Limit(int(filter.Limit))
+func (db *gormdb) GetBuild(ctx context.Context, buildID sdktypes.BuildID) (sdktypes.Build, error) {
+	b, err := db.getBuild(ctx, buildID.UUIDValue())
+	if b == nil || err != nil {
+		return sdktypes.InvalidBuild, translateError(err)
 	}
-
-	var bs []scheme.Build
-	if err := q.Find(&bs).Error; err != nil {
-		return nil, err
-	}
-	return bs, nil
+	return scheme.ParseBuild(*b) // TODO: get and list returns different errors due to transform
 }
 
-func (db *gormdb) ListBuilds(ctx context.Context, filter sdkservices.ListBuildsFilter) ([]sdktypes.Build, error) {
-	bs, err := db.listBuilds(ctx, filter)
+func (db *gormdb) GetBuildData(ctx context.Context, buildID sdktypes.BuildID) ([]byte, error) {
+	b, err := db.getBuild(ctx, buildID.UUIDValue())
 	if err != nil {
 		return nil, translateError(err)
 	}
-
-	slices.Reverse(bs)
-	return kittehs.TransformError(bs, scheme.ParseBuild)
+	return b.Data, nil
 }
 
-func (db *gormdb) GetBuildData(ctx context.Context, id sdktypes.BuildID) ([]byte, error) {
-	var b scheme.Build
-	if err := db.db.WithContext(ctx).Where("build_id = ?", id.UUIDValue()).First(&b).Error; err != nil {
+func (db *gormdb) ListBuilds(ctx context.Context, filter sdkservices.ListBuildsFilter) ([]sdktypes.Build, error) {
+	builds, err := db.listBuilds(ctx, filter)
+	if builds == nil || err != nil {
 		return nil, translateError(err)
 	}
 
-	return b.Data, nil
+	slices.Reverse(builds)
+	return kittehs.TransformError(builds, scheme.ParseBuild)
 }
