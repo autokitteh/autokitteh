@@ -1,6 +1,6 @@
 [project]
 name = 'autokitteh'
-version = '0.1.1'
+version = '0.2.0'
 description = 'AutoKitteh Python SDK'
 readme = 'README.md'
 license = {file = 'LICENSE'}
@@ -11,4 +11,4 @@ requires = ["setuptools", "setuptools-scm"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
-py-modules = ['autokitteh']
+find={}
