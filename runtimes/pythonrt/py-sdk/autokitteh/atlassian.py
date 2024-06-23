@@ -38,15 +38,15 @@ def atlassian_jira_client(connection: str, **kwargs):
         return __atlassian_jira_client_cloud_oauth2(connection, **kwargs)
 
     base_url = os.getenv(connection + "__BaseURL")
-    secret = os.getenv(connection + "__APIKeyOrPAT")
-    if secret:
+    token = os.getenv(connection + "__Token")
+    if token:
         email = os.getenv(connection + "__Email")
         if not email:
-            return Jira(url=base_url, token=secret, **kwargs)
+            return Jira(url=base_url, token=token, **kwargs)
         return Jira(
             url=base_url,
             username=email,
-            password=secret,
+            password=token,
             cloud=True,
             **kwargs,
         )
@@ -110,12 +110,12 @@ def jira_client(connection: str, **kwargs):
     check_connection_name(connection)
 
     base_url = os.getenv(connection + "__BaseURL")
-    secret = os.getenv(connection + "__APIKeyOrPAT")
-    if secret:
+    token = os.getenv(connection + "__Token")
+    if token:
         email = os.getenv(connection + "__Email")
         if email:
-            return JIRA(base_url, basic_auth=(email, secret), **kwargs)
+            return JIRA(base_url, basic_auth=(email, token), **kwargs)
         else:
-            return JIRA(base_url, token_auth=secret, **kwargs)
+            return JIRA(base_url, token_auth=token, **kwargs)
 
     raise ConnectionInitError(connection)
