@@ -38,7 +38,7 @@ func New(cvars sdkservices.Vars) sdkservices.Integration {
 	i := &integration{vars: cvars}
 	return sdkintegrations.NewIntegration(
 		desc,
-		sdkmodule.New(funcs(i)...),
+		sdkmodule.New(exportFuncs(i)...),
 		connStatus(i),
 		connTest(i),
 		sdkintegrations.WithConnectionConfigFromVars(cvars),
@@ -55,7 +55,7 @@ func connTest(*integration) sdkintegrations.OptFn {
 // connStatus is an optional connection status check provided by the
 // integration to AutoKitteh. The possible results are "init required"
 // (the connection is not usable yet) and "using X" (where "X" is the
-// authentication method: OAuth 2.0, Cloud API token, or on-prem PAT).
+// authentication method: a GitHub app, or a user's PAT + webhook).
 func connStatus(i *integration) sdkintegrations.OptFn {
 	return sdkintegrations.WithConnectionStatus(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
 		if !cid.IsValid() {
@@ -68,14 +68,13 @@ func connStatus(i *integration) sdkintegrations.OptFn {
 		}
 
 		if vs.Has(vars.PAT) {
-			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "using PAT"), nil
-		} else {
-			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "using OAuth 2.0"), nil
+			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "using PAT + webhook"), nil
 		}
+		return sdktypes.NewStatus(sdktypes.StatusCodeOK, "using GitHub app"), nil
 	})
 }
 
-func funcs(i *integration) []sdkmodule.Optfn {
+func exportFuncs(i *integration) []sdkmodule.Optfn {
 	return []sdkmodule.Optfn{
 		// Issues.
 		sdkmodule.ExportFunction(
