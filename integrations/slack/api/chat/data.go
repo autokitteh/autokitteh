@@ -48,7 +48,7 @@ type PostEphemeralRequest struct {
 	// https://api.slack.com/messaging/composing/layouts
 	// https://api.slack.com/messaging/interactivity
 	// https://app.slack.com/block-kit-builder/
-	Blocks []Block `json:"blocks,omitempty"`
+	Blocks []map[string]any `json:"blocks,omitempty"`
 
 	// ThreadTS provides another message's [TS] value to make this message
 	// a reply. Avoid using a reply's [TS] value; use its parent instead.
@@ -80,7 +80,7 @@ type PostMessageRequest struct {
 	// https://api.slack.com/messaging/composing/layouts
 	// https://api.slack.com/messaging/interactivity
 	// https://app.slack.com/block-kit-builder/
-	Blocks []Block `json:"blocks,omitempty"`
+	Blocks []map[string]any `json:"blocks,omitempty"`
 
 	// ThreadTS provides another message's [TS] value to make this message
 	// a reply. Avoid using a reply's [TS] value; use its parent instead.
@@ -124,7 +124,7 @@ type UpdateRequest struct {
 	// https://api.slack.com/messaging/composing/layouts
 	// https://api.slack.com/messaging/interactivity
 	// https://app.slack.com/block-kit-builder/
-	Blocks []Block `json:"blocks,omitempty"`
+	Blocks []map[string]any `json:"blocks,omitempty"`
 
 	// ReplyBroadcast is used in conjunction with [TS] and indicates whether
 	// the reply should be made visible to everyone in the channel or
@@ -175,24 +175,6 @@ type SendApprovalMessageRequest struct {
 
 // -------------------- Auxiliary data structures --------------------
 
-// https://api.slack.com/reference/block-kit/blocks
-type Block struct {
-	// Valid values: "actions", "context", "divider", "header", or "section".
-	// TODO: add the rest too - "file", "image", "input", and "video".
-	Type string `json:"type,omitempty"`
-	// https://api.slack.com/reference/block-kit/composition-objects#text.
-	// Header: maximum length for the text in this field is 150 characters.
-	// Section: maximum length for the text in this field is 3000 characters.
-	Text *Text `json:"text,omitempty"`
-	// https://api.slack.com/reference/block-kit/block-elements.
-	// Actions: maximum of 25 elements. Context: maximum of 10 elements.
-	// TODO: Support other element types.
-	Elements []Button `json:"elements,omitempty"`
-	// Maximum length is 255 characters. It should be unique for each message and
-	// each iteration of a message. If a message is updated, use a new value.
-	BlockID string `json:"block_id,omitempty"`
-}
-
 type BotProfile struct {
 	ID     string `json:"id,omitempty"`
 	AppID  string `json:"app_id,omitempty"`
@@ -204,43 +186,9 @@ type BotProfile struct {
 	Updated int  `json:"updated,omitempty"`
 }
 
-// https://api.slack.com/reference/block-kit/block-elements#button
-type Button struct {
-	// Type must be "button".
-	Type string `json:"type,omitempty"`
-	// Text's type must be "plain_text", may truncate with ~30 characters,
-	// maximum length is 75 characters.
-	Text *Text `json:"text,omitempty"`
-	// ActionID can be used when receiving an interaction payload to identify the
-	// action's source (https://api.slack.com/interactivity/handling#payloads).
-	// Should be unique among all other [ActionId]s in the containing block.
-	ActionID string `json:"action_id,omitempty"`
-	// URL to load in the user's browser when the button is clicked. Maximum
-	// length is 3000 characters. If you're using this, you'll
-	// still receive an interaction payload and need to send an acknowledgement
-	// response (https://api.slack.com/interactivity/handling#acknowledgment_response).
-	URL string `json:"url,omitempty"`
-	// Value to send along with the interaction payload.
-	// Maximum length is 2000 characters.
-	Value string `json:"value,omitempty"`
-	// Style is optional. Decorates buttons with alternative visual color
-	// schemes. Use this option with restraint. If specified, must be either
-	// "primary" (green) or "danger" (red).
-	Style string `json:"style,omitempty"`
-	// AccessibilityLabel for longer descriptive text about the button. This
-	// label will be read out by screen readers instead of the Text object.
-	// Maximum length is 75 characters.
-	AccessibilityLabel string `json:"accessibility_label,omitempty"`
-}
-
 type Edited struct {
 	User string `json:"user,omitempty"`
 	TS   string `json:"ts,omitempty"`
-}
-
-// https://api.slack.com/reference/block-kit/block-elements
-type Element struct {
-	// TODO: Implement.
 }
 
 // https://api.slack.com/types/conversation
@@ -254,9 +202,9 @@ type Message struct {
 	// https://api.slack.com/events/message#hidden_subtypes
 	Hidden bool `json:"hidden,omitempty"`
 
-	Text   string  `json:"text,omitempty"`
-	Blocks []Block `json:"blocks,omitempty"`
-	Edited *Edited `json:"edited,omitempty"`
+	Text   string           `json:"text,omitempty"`
+	Blocks []map[string]any `json:"blocks,omitempty"`
+	Edited *Edited          `json:"edited,omitempty"`
 
 	User         string      `json:"user,omitempty"`
 	AppID        string      `json:"app_id,omitempty"`

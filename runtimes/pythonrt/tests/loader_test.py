@@ -1,17 +1,15 @@
 import ast
-import json
 from os import environ
-from pathlib import Path
 from socket import socket
 from unittest.mock import MagicMock
 
 import pytest
+from conftest import testdata
 
 import ak_runner
 from ak_runner import loader
 
-test_dir = Path(__file__).absolute().parent.parent
-simple_dir = test_dir / 'testdata/simple'
+simple_dir = testdata / 'simple'
 
 
 def test_load_code():
@@ -32,18 +30,16 @@ def test_load_code():
             return fn(*args, **kw)
     ak_call = MockCall(ak_runner.Comm(socket()))
 
-    mod = ak_runner.load_code('testdata', ak_call, mod_name)
+    mod = ak_runner.load_code(testdata, ak_call, mod_name)
     ak_call.set_module(mod)
     fn = getattr(mod, 'parse', None)
     assert fn, 'parse not found'
 
-    obj = {'x': 1, 'y': 2}
-    out = fn(json.dumps(obj))
-    assert out == obj, 'parse fail'
+    out = fn('meow')
+    assert out == 7
     assert len(calls) == 1, 'calls'
     fn = calls[0][0]
-    name = fn.__module__ + '.' + fn.__name__
-    assert name == 'json.loads'
+    assert fn.__qualname__ == 'datetime.now'
 
 
 def test_load_twice(tmp_path):
@@ -79,6 +75,7 @@ name_of_cases = [
     ('print(1)', 'print'),
     ('requests.get("https://go.dev")', 'requests.get'),
     ('sheets.values().get("A1:B4").execute()', 'sheets.values.get.execute'),
+    ('label["name"].lower()', 'label["name"].lower'),
 ]
 
 
@@ -110,9 +107,8 @@ def test_transform(code, transformed):
 
 def test_module_level():
     comm = MagicMock()
-    root_path = str(test_dir / 'testdata')
     akc = ak_runner.AKCall(comm)
-    mod = ak_runner.load_code(root_path, akc, 'modlevel')
+    mod = ak_runner.load_code(testdata, akc, 'modlevel')
     assert mod.home == environ['HOME']
     akc.set_module(mod)
 

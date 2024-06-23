@@ -8,7 +8,6 @@ import (
 	"github.com/slack-go/slack/socketmode"
 	"go.uber.org/zap"
 
-	"go.autokitteh.dev/autokitteh/integrations/slack/api/chat"
 	"go.autokitteh.dev/autokitteh/integrations/slack/internal/vars"
 	"go.autokitteh.dev/autokitteh/integrations/slack/webhooks"
 )
@@ -64,13 +63,13 @@ func (h handler) handleSlashCommand(e *socketmode.Event, c *socketmode.Client) {
 	}
 
 	// https://api.slack.com/apis/connections/socket#command
-	c.Ack(*e.Request, map[string][]*chat.Block{
+	c.Ack(*e.Request, map[string][]map[string]any{
 		"blocks": {
 			{
-				Type: "section",
-				Text: &chat.Text{
-					Type: "mrkdwn",
-					Text: fmt.Sprintf("Your command: `%s`", cmd.Text),
+				"type": "section",
+				"text": map[string]string{
+					"type": "mrkdwn",
+					"text": fmt.Sprintf("Your command: `%s`", cmd.Text),
 				},
 			},
 		},

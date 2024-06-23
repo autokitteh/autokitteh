@@ -22,11 +22,11 @@ type API struct {
 //   - https://api.slack.com/scopes/bookmarks:write
 func (a API) Add(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
 	// Parse the input arguments.
-	req := AddRequest{Type: "link"}
+	req := AddRequest{}
 	err := sdkmodule.UnpackArgs(args, kwargs,
 		"channel_id", &req.ChannelID,
 		"title", &req.Title,
-		// "type", &req.Type,
+		"type?", &req.Type,
 		"link?", &req.Link,
 		"emoji?", &req.Emoji,
 		"entity_id?", &req.EntityID,
@@ -34,6 +34,10 @@ func (a API) Add(ctx context.Context, args []sdktypes.Value, kwargs map[string]s
 	)
 	if err != nil {
 		return sdktypes.InvalidValue, err
+	}
+
+	if req.Type == "" {
+		req.Type = "link" // Required by Slack.
 	}
 
 	// Invoke the API method.

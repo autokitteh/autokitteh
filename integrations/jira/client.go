@@ -23,11 +23,11 @@ var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.Integrati
 	Description:   "Atlassian Jira is an issue tracking and project management system.",
 	LogoUrl:       "/static/images/jira.svg",
 	UserLinks: map[string]string{
-		"1 REST API":                  "https://developer.atlassian.com/cloud/jira/platform/rest/v3/intro/",
-		"2 Atlassian Python API":      "https://atlassian-python-api.readthedocs.io/",
-		"3 Atlassian Python examples": "https://github.com/atlassian-api/atlassian-python-api/tree/master/examples/jira",
-		"4 Python Jira API":           "https://jira.readthedocs.io/",
-		"5 Python Jira examples":      "https://github.com/pycontribs/jira/tree/main/examples",
+		"1 REST API":                    "https://developer.atlassian.com/cloud/jira/platform/rest/v3/intro/",
+		"2 Atlassian Python client API": "https://atlassian-python-api.readthedocs.io/",
+		"3 Atlassian Python examples":   "https://github.com/atlassian-api/atlassian-python-api/tree/master/examples/jira",
+		"4 Jira Python client API":      "https://jira.readthedocs.io/",
+		"5 Jira Python examples":        "https://github.com/pycontribs/jira/tree/main/examples",
 	},
 	ConnectionUrl: "/jira/connect",
 	ConnectionCapabilities: &sdktypes.ConnectionCapabilitiesPB{
@@ -60,13 +60,13 @@ func connStatus(i *integration) sdkintegrations.OptFn {
 			return sdktypes.InvalidStatus, err
 		}
 
-		if vs.Has(sdktypes.NewSymbol("oauth_AccessToken")) {
+		if vs.Has(oauthAccessToken) {
 			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "using OAuth 2.0"), nil
 		}
-		if vs.Has(sdktypes.NewSymbol("Email")) {
+		if vs.Has(email) {
 			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "using API key"), nil
 		}
-		if vs.Has(sdktypes.NewSymbol("APIKeyOrPAT")) {
+		if vs.Has(apiKeyOrPAT) {
 			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "using PAT"), nil
 		}
 

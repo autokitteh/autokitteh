@@ -101,12 +101,12 @@ type Team struct {
 }
 
 type Response struct {
-	Text            string       `json:"text,omitempty"`
-	Blocks          []chat.Block `json:"blocks,omitempty"`
-	ResponseType    string       `json:"response_type,omitempty"`
-	ThreadTS        string       `json:"thread_ts,omitempty"`
-	ReplaceOriginal bool         `json:"replace_original,omitempty"`
-	DeleteOriginal  bool         `json:"delete_original,omitempty"`
+	Text            string           `json:"text,omitempty"`
+	Blocks          []map[string]any `json:"blocks,omitempty"`
+	ResponseType    string           `json:"response_type,omitempty"`
+	ThreadTS        string           `json:"thread_ts,omitempty"`
+	ReplaceOriginal bool             `json:"replace_original,omitempty"`
+	DeleteOriginal  bool             `json:"delete_original,omitempty"`
 }
 
 // HandleInteraction dispatches and acknowledges a user interaction callback
@@ -186,11 +186,15 @@ func (h handler) updateMessage(ctx context.Context, payload *BlockActionsPayload
 	}
 
 	// Copy all the message's blocks, except actions.
+	// The event is verifiably from Slack, so we can trust the data.
+	// TODO(ENG-1052): Support updating actions in non-last blocks.
 	for _, b := range payload.Message.Blocks {
-		if b.Type == "header" {
-			b.Text.Text = html.UnescapeString(b.Text.Text)
+		// Header text is HTML-encoded, so unescape it.
+		if b["type"] == "header" {
+			h := b["text"].(map[string]any)
+			h["text"] = html.UnescapeString(h["text"].(string))
 		}
-		if b.Type != "actions" {
+		if b["type"] != "actions" {
 			resp.Blocks = append(resp.Blocks, b)
 		}
 	}
@@ -206,11 +210,11 @@ func (h handler) updateMessage(ctx context.Context, payload *BlockActionsPayload
 			case "danger":
 				action = ":large_red_square: " + action
 			}
-			resp.Blocks = append(resp.Blocks, chat.Block{
-				Type: "section",
-				Text: &chat.Text{
-					Type: "mrkdwn",
-					Text: action,
+			resp.Blocks = append(resp.Blocks, map[string]any{
+				"type": "section",
+				"text": map[string]string{
+					"type": "mrkdwn",
+					"text": action,
 				},
 			})
 		}
