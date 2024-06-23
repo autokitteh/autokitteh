@@ -34,7 +34,7 @@ def extract_code(tar_path):
     code_dir = f'{root_dir}/code'
     mkdir(code_dir)
     with tarfile.open(tar_path) as tf:
-        tf.extractall(code_dir)
+        tf.extractall(code_dir, filter='data')
 
     return code_dir
 
