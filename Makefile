@@ -111,12 +111,14 @@ test-dbgorm:
 	go test -v ./internal/backend/db/dbgorm -dbtype $$dbtype ; \
 	done
 
-# Skip a Python unit-test in runtimes/pythonrt/ that fails
-# due to missing Python deps - it's already covered by that
-# directory's "make test" and the Python CI workflow.
+# Skip a few Go unit-tests under "runtimes/pythonrt/" - either because they
+# fails due to missing Python deps, or because they are very slow (20-30 sec).
+# Note that this affects only Go CI in GitHub (which runs "make test-unit"),
+# but not manual runs of "make" (which depend on "test-race"), or Python CI
+# in GitHub (which uses "runtimes/pythonrt/Makefile").
 .PHONY: test-unit
 test-unit:
-	$(GOTEST) ./... -skip Test_pyExports
+	$(GOTEST) ./... -skip "(pyExports|pySvc|createVEnv)"
 
 # Subset of "test-unit", for simplicity.
 .PHONY: test-system
