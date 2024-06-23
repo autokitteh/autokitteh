@@ -184,7 +184,7 @@ func runPython(opts runOptions) (*pyRunInfo, error) {
 		return nil, err
 	}
 
-	cmd := exec.Command(opts.pyExe, "-m", runnerMod, "run", sockPath, tarPath, opts.rootPath)
+	cmd := exec.Command(opts.pyExe, "-u", "-m", runnerMod, "run", sockPath, tarPath, opts.rootPath)
 	cmd.Dir = rootDir
 	cmd.Env = overrideEnv(opts.env, rootDir)
 	cmd.Stdout = opts.stdout
