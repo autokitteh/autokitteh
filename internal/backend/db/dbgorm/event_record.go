@@ -2,6 +2,7 @@ package dbgorm
 
 import (
 	"context"
+	"time"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
@@ -9,17 +10,43 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-func (db *gormdb) addEventRecord(ctx context.Context, er *scheme.EventRecord) error {
-	return db.db.WithContext(ctx).Create(&er).Error
+func (gdb *gormdb) addEventRecord(ctx context.Context, er *scheme.EventRecord) error {
+	return gdb.transaction2(ctx, func(tx *tx) error {
+		if err := tx.isUserEntity(ctx, er.EventID); err != nil {
+			return err
+		}
+		var seq int64
+		if err := tx.db.Model(&scheme.EventRecord{}).
+			Where("event_id = ?", er.EventID).Count(&seq).Error; err != nil {
+			return err
+		}
+		er.Seq = uint32(seq)
+		er.CreatedAt = time.Now()
+		return tx.db.Create(&er).Error
+	})
 }
 
+func (gdb *gormdb) listEventRecords(ctx context.Context, eventID sdktypes.UUID) ([]scheme.EventRecord, error) {
+	var ers []scheme.EventRecord
+	if err := gdb.transaction2(ctx, func(tx *tx) error { // REVIEW: do we need transaction in those cases?
+		if err := tx.isUserEntity(ctx, eventID); err != nil {
+			return err
+		}
+		return tx.db.Model(&scheme.EventRecord{}).
+			Where("event_id = ?", eventID).Order("event_id DESC, seq DESC").Find(&ers).Error
+	}); err != nil {
+		return nil, err
+	}
+	return ers, nil
+}
+
+// ------------------------------------------------------------------------------------------------
 func (db *gormdb) AddEventRecord(ctx context.Context, er sdktypes.EventRecord) error {
 	if err := er.Strict(); err != nil {
 		return err
 	}
 
 	e := scheme.EventRecord{
-		Seq:     er.Seq(),
 		EventID: er.EventID().UUIDValue(),
 		State:   int32(er.State().ToProto()),
 	}
@@ -28,17 +55,10 @@ func (db *gormdb) AddEventRecord(ctx context.Context, er sdktypes.EventRecord) e
 }
 
 func (db *gormdb) ListEventRecords(ctx context.Context, filter sdkservices.ListEventRecordsFilter) ([]sdktypes.EventRecord, error) {
-	q := db.db.WithContext(ctx)
-	if filter.EventID.IsValid() {
-		q = q.Where("event_id = ?", filter.EventID.UUIDValue())
-	}
-
-	q.Order("event_id DESC, seq DESC")
-
-	var ers []scheme.EventRecord
-	if err := q.Find(&ers).Error; err != nil {
+	// NOTE: invalid eventID won't list all events for all users
+	eventRecords, err := db.listEventRecords(ctx, filter.EventID.UUIDValue())
+	if eventRecords == nil || err != nil {
 		return nil, translateError(err)
 	}
-
-	return kittehs.TransformError(ers, scheme.ParseEventRecord)
+	return kittehs.TransformError(eventRecords, scheme.ParseEventRecord)
 }
