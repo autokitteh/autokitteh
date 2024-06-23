@@ -93,7 +93,7 @@ modules = {
     'zoneninfo',
 }
 
-functions = {
+functions = builtin_types | {
     datetime.date,
     datetime.date.fromisocalendar,
     datetime.date.fromisoformat,
@@ -146,4 +146,4 @@ functions = {
     datetime.time.utcoffset,
     datetime.time.dst,
     datetime.time.tzname,
-} | builtin_types
+}
