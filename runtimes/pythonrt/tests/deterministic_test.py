@@ -10,6 +10,7 @@ nonact_caes = [
     (b64decode, True),
     (datetime.now, False),
     (datetime.strptime, True),
+    ([].append, True),
 ]
 
 @pytest.mark.parametrize('func, expected', nonact_caes)
