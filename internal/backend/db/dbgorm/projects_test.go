@@ -210,7 +210,7 @@ func TestDeleteProjectAndDependents(t *testing.T) {
 	t1.ConnectionID = c.ConnectionID
 	t2.ProjectID = p1.ProjectID
 	t2.EnvID = e2p1.EnvID
-	t1.ConnectionID = c.ConnectionID
+	t2.ConnectionID = c.ConnectionID
 
 	sig := f.newSignal()
 	sig.ConnectionID = c.ConnectionID
