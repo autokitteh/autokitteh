@@ -188,18 +188,6 @@ type Project struct {
 	Ownerships *Ownership     `gorm:"polymorphic:Entity;"`
 }
 
-func (p *Project) BeforeCreate(tx *gorm.DB) (err error) {
-	var existingProject Project
-	// Note:
-	// - Gorm will add automatically `deleted_at is NULL` to the query
-	// - we use Find, since it won't return ErrRecordNotFound
-	res := tx.Where("name = ?", p.Name).Limit(1).Find(&existingProject)
-	if res.RowsAffected > 0 {
-		return gorm.ErrDuplicatedKey // existing active project found.
-	}
-	return err
-}
-
 func ParseProject(r Project) (sdktypes.Project, error) {
 	p, err := sdktypes.StrictProjectFromProto(&sdktypes.ProjectPB{
 		ProjectId: sdktypes.NewIDFromUUID[sdktypes.ProjectID](&r.ProjectID).String(),
@@ -299,11 +287,16 @@ type Env struct {
 }
 
 func ParseEnv(e Env) (sdktypes.Env, error) {
-	return sdktypes.StrictEnvFromProto(&sdktypes.EnvPB{
+	env, err := sdktypes.StrictEnvFromProto(&sdktypes.EnvPB{
 		EnvId:     sdktypes.NewIDFromUUID[sdktypes.EnvID](&e.EnvID).String(),
 		ProjectId: sdktypes.NewIDFromUUID[sdktypes.ProjectID](&e.ProjectID).String(),
 		Name:      e.Name,
 	})
+	if err != nil {
+		return sdktypes.InvalidEnv, fmt.Errorf("invalid record: %w", err)
+	}
+
+	return env, nil
 }
 
 type Trigger struct {
@@ -376,6 +369,9 @@ type SessionCallSpec struct {
 
 func ParseSessionCallSpec(c SessionCallSpec) (spec sdktypes.SessionCallSpec, err error) {
 	err = json.Unmarshal(c.Data, &spec)
+	if err != nil {
+		spec = sdktypes.InvalidSessionCallSpec
+	}
 	return
 }
 
@@ -555,6 +551,8 @@ type Ownership struct {
 
 	UserID sdktypes.UUID `gorm:"not null"`
 
-	// FIXME: what about foreign keys for the entities? will Ownership polymorphic do this?
+	// enforce foreign keys
 	User *User
+	// TODO: Polymorphic associations won't enforce foreign key to entities in different tables
+	// we might need to have separated ownership tables for each entity.
 }
