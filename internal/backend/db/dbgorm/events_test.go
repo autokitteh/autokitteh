@@ -1,7 +1,6 @@
 package dbgorm
 
 import (
-	"context"
 	"testing"
 
 	"github.com/google/uuid"
@@ -26,19 +25,22 @@ func (f *dbFixture) assertEventsDeleted(t *testing.T, events ...scheme.Event) {
 	}
 }
 
-func TestCreateEvent(t *testing.T) {
+func preEventTest(t *testing.T) *dbFixture {
 	f := newDBFixture()
-	foreignKeys(f.gormdb, false)                  // no foreign keys
 	findAndAssertCount[scheme.Event](t, f, 0, "") // no events
+	return f
+}
 
-	evt := f.newEvent()
+func TestCreateEvent(t *testing.T) {
+	f := preEventTest(t)
+	e := f.newEvent()
+
 	// test createEvent
-	f.createEventsAndAssert(t, evt)
+	f.createEventsAndAssert(t, e)
 }
 
 func TestCreateEventForeignKeys(t *testing.T) {
-	f := newDBFixture()
-	findAndAssertCount[scheme.Event](t, f, 0, "") // no events
+	f := preEventTest(t)
 
 	e := f.newEvent()
 	i := f.newIntegration()
@@ -53,7 +55,7 @@ func TestCreateEventForeignKeys(t *testing.T) {
 	// FIXME: ENG-590. foreign keys integration
 	// e.IntegrationID = &unexisting
 	// assert.ErrorIs(t, f.gormdb.saveEvent(f.ctx, &e), gorm.ErrForeignKeyViolated)
-	// e.IntegrationID = &i.IntegrationID
+	e.IntegrationID = &i.IntegrationID
 
 	e.ConnectionID = &unexisting
 	assert.ErrorIs(t, f.gormdb.saveEvent(f.ctx, &e), gorm.ErrForeignKeyViolated)
@@ -63,69 +65,51 @@ func TestCreateEventForeignKeys(t *testing.T) {
 }
 
 func TestDeleteEvent(t *testing.T) {
-	f := newDBFixture()
-	findAndAssertCount[scheme.Event](t, f, 0, "") // no events
+	f := preEventTest(t)
 
-	evt := f.newEvent() // connection is nil
-	f.createEventsAndAssert(t, evt)
+	e := f.newEvent() // connection is nil
+	f.createEventsAndAssert(t, e)
 
 	// test deleteEvent
-	assert.NoError(t, f.gormdb.deleteEvent(f.ctx, evt.EventID))
-	f.assertEventsDeleted(t, evt)
-}
-
-func TestListEventsDefaultOrder(t *testing.T) {
-	f := newDBFixture()
-	foreignKeys(f.gormdb, false) // no foreign keys
-
-	ctx := context.Background()
-	ev1 := f.newEvent()
-	ev2 := f.newEvent()
-	f.createEventsAndAssert(t, ev1, ev2)
-
-	evs, err := f.gormdb.ListEvents(ctx, sdkservices.ListEventsFilter{})
-
-	require.NoError(t, err)
-
-	require.Equal(t, 2, len(evs), "should be 2 events in db")
-
-	// Desc order is default
-	require.Equal(t, evs[0].ID().UUIDValue(), ev2.EventID)
-	require.Equal(t, evs[1].ID().UUIDValue(), ev1.EventID)
+	assert.NoError(t, f.gormdb.deleteEvent(f.ctx, e.EventID))
+	f.assertEventsDeleted(t, e)
 }
 
 func TestListEventsOrder(t *testing.T) {
-	f := newDBFixture()
-	foreignKeys(f.gormdb, false) // no foreign keys
+	f := preEventTest(t)
 
-	ctx := context.Background()
 	ev1 := f.newEvent()
 	ev2 := f.newEvent()
 	f.createEventsAndAssert(t, ev1, ev2)
 
 	tests := []struct {
-		name  string
-		order sdkservices.ListOrder
-		ids   [2]uuid.UUID
+		name   string
+		filter sdkservices.ListEventsFilter
+		ids    [2]uuid.UUID
 	}{
 		{
-			name:  "descending order",
-			order: sdkservices.ListOrderDescending,
-			ids:   [2]uuid.UUID{ev2.EventID, ev1.EventID},
+			name:   "default order",
+			filter: sdkservices.ListEventsFilter{},
+			ids:    [2]uuid.UUID{ev2.EventID, ev1.EventID},
 		},
 		{
-			name:  "ascending order",
-			order: sdkservices.ListOrderAscending,
-			ids:   [2]uuid.UUID{ev1.EventID, ev2.EventID},
+			name:   "descending order",
+			filter: sdkservices.ListEventsFilter{Order: sdkservices.ListOrderDescending},
+			ids:    [2]uuid.UUID{ev2.EventID, ev1.EventID},
+		},
+		{
+			name:   "ascending order",
+			filter: sdkservices.ListEventsFilter{Order: sdkservices.ListOrderAscending},
+			ids:    [2]uuid.UUID{ev1.EventID, ev2.EventID},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			evs, err := f.gormdb.ListEvents(ctx, sdkservices.ListEventsFilter{Order: tt.order})
+			evs, err := f.gormdb.listEvents(f.ctx, tt.filter)
 			require.NoError(t, err)
 			require.Equal(t, 2, len(evs), "should be 2 events in db")
-			require.Equal(t, tt.ids, [2]uuid.UUID{evs[0].ID().UUIDValue(), evs[1].ID().UUIDValue()})
+			require.Equal(t, tt.ids, [2]uuid.UUID{evs[0].EventID, evs[1].EventID})
 		})
 	}
 }
