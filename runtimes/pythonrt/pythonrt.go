@@ -295,13 +295,13 @@ func (py *pySvc) Run(
 	py.stdout = newStreamLogger("[stdout] ", cbs.Print, runID)
 	py.stderr = newStreamLogger("[stderr] ", cbs.Print, runID)
 	opts := runOptions{
-		log:      py.log,
-		pyExe:    py.pyExe,
-		tarData:  tarData,
-		rootPath: mainPath,
-		env:      envMap,
-		stdout:   py.stdout,
-		stderr:   py.stderr,
+		log:        py.log,
+		pyExe:      py.pyExe,
+		tarData:    tarData,
+		entryPoint: mainPath,
+		env:        envMap,
+		stdout:     py.stdout,
+		stderr:     py.stderr,
 	}
 	ri, err := runPython(opts)
 	if err != nil {
@@ -320,6 +320,7 @@ func (py *pySvc) Run(
 		if err := py.run.proc.Kill(); err != nil {
 			py.log.Warn("kill", zap.Int("pid", py.run.proc.Pid), zap.Error(err))
 		}
+		py.run.Cleanup()
 	}()
 
 	conn, err := py.run.lis.Accept()
@@ -398,9 +399,12 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, event map[str
 		py.stdout.Close()
 		py.comm.Close()
 
-		if err := py.run.proc.Kill(); err != nil {
-			py.log.Warn("kill", zap.Int("pid", py.run.proc.Pid), zap.Error(err))
+		if py.run.proc != nil {
+			if err := py.run.proc.Kill(); err != nil {
+				py.log.Warn("kill", zap.Int("pid", py.run.proc.Pid), zap.Error(err))
+			}
 		}
+		py.run.Cleanup()
 		py.run.proc = nil
 	}()
 

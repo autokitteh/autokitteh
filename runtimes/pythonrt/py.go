@@ -143,66 +143,88 @@ func pyExeInfo(ctx context.Context, exePath string) (exeInfo, error) {
 }
 
 type pyRunInfo struct {
-	rootDir  string
-	sockPath string
-	lis      net.Listener
-	proc     *os.Process
+	userRootDir string
+	pyRootDir   string
+	sockPath    string
+	lis         net.Listener
+	proc        *os.Process
+}
+
+func (ri *pyRunInfo) Cleanup() {
+	if ri.userRootDir != "" {
+		os.RemoveAll(ri.userRootDir)
+	}
+
+	if ri.pyRootDir != "" {
+		os.RemoveAll(ri.pyRootDir)
+	}
 }
 
 type runOptions struct {
 	log            *zap.Logger
-	pyExe          string
-	tarData        []byte
-	rootPath       string
-	env            map[string]string
+	pyExe          string            // Python executable to use
+	tarData        []byte            // tar data from build stage
+	entryPoint     string            // simple.py:greet
+	env            map[string]string // Python process environment
 	stdout, stderr io.Writer
 }
 
 const runnerMod = "ak_runner"
 
 func runPython(opts runOptions) (*pyRunInfo, error) {
-	rootDir, err := os.MkdirTemp("", "ak-")
-	opts.log.Info("root dir", zap.String("path", rootDir))
+	runOK := false
+	var ri pyRunInfo
+	var err error
+	defer func() {
+		if !runOK {
+			ri.Cleanup()
+		}
+	}()
+
+	ri.userRootDir, err = os.MkdirTemp("", "ak-")
+	if err != nil {
+		return nil, err
+	}
+	opts.log.Info("user root dir", zap.String("path", ri.userRootDir))
+
+	tarPath, err := writeTar(ri.userRootDir, opts.tarData)
 	if err != nil {
 		return nil, err
 	}
 
-	tarPath, err := writeTar(rootDir, opts.tarData)
+	ri.pyRootDir, err = os.MkdirTemp("", "ak-")
+	if err != nil {
+		return nil, err
+	}
+	opts.log.Info("python root dir", zap.String("path", ri.pyRootDir))
+
+	if err := copyFS(runnerPyCode, ri.pyRootDir); err != nil {
+		return nil, err
+	}
+
+	ri.sockPath = path.Join(ri.pyRootDir, "ak.sock")
+	opts.log.Info("socket", zap.String("path", ri.sockPath))
+
+	ri.lis, err = net.Listen("unix", ri.sockPath)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := copyFS(runnerPyCode, rootDir); err != nil {
-		return nil, err
-	}
-
-	sockPath := path.Join(rootDir, "ak.sock")
-	opts.log.Info("socket", zap.String("path", sockPath))
-
-	lis, err := net.Listen("unix", sockPath)
-	if err != nil {
-		return nil, err
-	}
-
-	cmd := exec.Command(opts.pyExe, "-u", "-m", runnerMod, "run", sockPath, tarPath, opts.rootPath)
-	cmd.Dir = rootDir
-	cmd.Env = overrideEnv(opts.env, rootDir)
+	cmd := exec.Command(opts.pyExe, "-u", "-m", runnerMod, "run", ri.sockPath, tarPath, opts.entryPoint)
+	cmd.Dir = ri.pyRootDir
+	cmd.Env = overrideEnv(opts.env, ri.pyRootDir, ri.userRootDir)
 	cmd.Stdout = opts.stdout
 	cmd.Stderr = opts.stderr
 
 	if err := cmd.Start(); err != nil {
-		lis.Close()
+		ri.lis.Close()
 		return nil, err
 	}
 
-	info := pyRunInfo{
-		rootDir:  opts.rootPath,
-		sockPath: sockPath,
-		lis:      lis,
-		proc:     cmd.Process,
-	}
+	runOK = true // signal we're good to cleanup
+	ri.proc = cmd.Process
 
-	return &info, nil
+	return &ri, nil
 }
 
 func writeTar(rootDir string, data []byte) (string, error) {
@@ -220,27 +242,28 @@ func writeTar(rootDir string, data []byte) (string, error) {
 	return tarName, err
 }
 
-func adjustPythonPath(env []string, runnerPath string) []string {
+func adjustPythonPath(env []string, runnerPath, userCodePath string) []string {
+	path := fmt.Sprintf("%s:%s", runnerPath, userCodePath) // runnerPath should be first
 	// Iterate in reverse since last value overrides
 	for i := len(env) - 1; i >= 0; i-- {
 		v := env[i]
 		if strings.HasPrefix(v, "PYTHONPATH=") {
-			env[i] = fmt.Sprintf("%s:%s", v, runnerPath)
+			env[i] = fmt.Sprintf("%s:%s", v, path)
 			return env
 		}
 	}
 
-	return append(env, fmt.Sprintf("PYTHONPATH=%s", runnerPath))
+	return append(env, fmt.Sprintf("PYTHONPATH=%s", path))
 }
 
-func overrideEnv(envMap map[string]string, runnerPath string) []string {
+func overrideEnv(envMap map[string]string, runnerPath, userCodePath string) []string {
 	env := os.Environ()
 	// Append AK values to end to override (see Env docs in https://pkg.go.dev/os/exec#Cmd)
 	for k, v := range envMap {
 		env = append(env, fmt.Sprintf("%s=%s", k, v))
 	}
 
-	return adjustPythonPath(env, runnerPath)
+	return adjustPythonPath(env, runnerPath, userCodePath)
 }
 
 func createVEnv(pyExe string, venvPath string) error {
@@ -304,7 +327,7 @@ func pyExports(ctx context.Context, pyExe string, fsys fs.FS) ([]Export, error) 
 	var buf bytes.Buffer
 	cmd.Stdout = &buf
 	cmd.Stderr = &buf
-	cmd.Env = adjustPythonPath(os.Environ(), runnerDir)
+	cmd.Env = adjustPythonPath(os.Environ(), runnerDir, tmpDir)
 	if err := cmd.Run(); err != nil {
 		return nil, fmt.Errorf("inspect: %w.\nPython output: %s", err, buf.String())
 	}
