@@ -206,30 +206,35 @@ func Test_pyExports(t *testing.T) {
 
 }
 
-const testRunnerPath = "/tmp/zzz/ak_runner"
+const (
+	testRunnerPath   = "/tmp/zzz/ak_runner"
+	testUserCodePath = "/tmp/zzz/user_code"
+)
+
+var addedPath = fmt.Sprintf("%s:%s", testRunnerPath, testUserCodePath)
 
 var adjustCases = []struct {
 	name     string
 	env      []string
 	expected []string
 }{
-	{"empty env", nil, []string{"PYTHONPATH=" + testRunnerPath}},
+	{"empty env", nil, []string{"PYTHONPATH=" + addedPath}},
 	{
 		name:     "regular",
 		env:      []string{"HOME=/home/ak", "PYTHONPATH=x"},
-		expected: []string{"HOME=/home/ak", "PYTHONPATH=x:" + testRunnerPath},
+		expected: []string{"HOME=/home/ak", "PYTHONPATH=x:" + addedPath},
 	},
 	{
 		name:     "last",
 		env:      []string{"PYTHONPATH=x", "HOME=/home/ak", "PYTHONPATH=y"},
-		expected: []string{"PYTHONPATH=x", "HOME=/home/ak", "PYTHONPATH=y:" + testRunnerPath},
+		expected: []string{"PYTHONPATH=x", "HOME=/home/ak", "PYTHONPATH=y:" + addedPath},
 	},
 }
 
 func Test_adjustPYTHONPATH(t *testing.T) {
 	for _, tc := range adjustCases {
 		t.Run(tc.name, func(t *testing.T) {
-			out := adjustPythonPath(tc.env, testRunnerPath)
+			out := adjustPythonPath(tc.env, testRunnerPath, testUserCodePath)
 			require.Equal(t, tc.expected, out)
 		})
 	}

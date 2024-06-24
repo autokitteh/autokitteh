@@ -212,7 +212,7 @@ func runPython(opts runOptions) (*pyRunInfo, error) {
 
 	cmd := exec.Command(opts.pyExe, "-m", runnerMod, "run", ri.sockPath, tarPath, opts.rootPath)
 	cmd.Dir = ri.pyRootDir
-	cmd.Env = overrideEnv(opts.env, ri.pyRootDir)
+	cmd.Env = overrideEnv(opts.env, ri.pyRootDir, ri.userRootDir)
 	cmd.Stdout = opts.stdout
 	cmd.Stderr = opts.stderr
 
@@ -242,27 +242,28 @@ func writeTar(rootDir string, data []byte) (string, error) {
 	return tarName, err
 }
 
-func adjustPythonPath(env []string, runnerPath string) []string {
+func adjustPythonPath(env []string, runnerPath, userCodePath string) []string {
+	path := fmt.Sprintf("%s:%s", runnerPath, userCodePath) // runnerPath should be first
 	// Iterate in reverse since last value overrides
 	for i := len(env) - 1; i >= 0; i-- {
 		v := env[i]
 		if strings.HasPrefix(v, "PYTHONPATH=") {
-			env[i] = fmt.Sprintf("%s:%s", v, runnerPath)
+			env[i] = fmt.Sprintf("%s:%s", v, path)
 			return env
 		}
 	}
 
-	return append(env, fmt.Sprintf("PYTHONPATH=%s", runnerPath))
+	return append(env, fmt.Sprintf("PYTHONPATH=%s", path))
 }
 
-func overrideEnv(envMap map[string]string, runnerPath string) []string {
+func overrideEnv(envMap map[string]string, runnerPath, userCodePath string) []string {
 	env := os.Environ()
 	// Append AK values to end to override (see Env docs in https://pkg.go.dev/os/exec#Cmd)
 	for k, v := range envMap {
 		env = append(env, fmt.Sprintf("%s=%s", k, v))
 	}
 
-	return adjustPythonPath(env, runnerPath)
+	return adjustPythonPath(env, runnerPath, userCodePath)
 }
 
 func createVEnv(pyExe string, venvPath string) error {
@@ -326,7 +327,7 @@ func pyExports(ctx context.Context, pyExe string, fsys fs.FS) ([]Export, error) 
 	var buf bytes.Buffer
 	cmd.Stdout = &buf
 	cmd.Stderr = &buf
-	cmd.Env = adjustPythonPath(os.Environ(), runnerDir)
+	cmd.Env = adjustPythonPath(os.Environ(), runnerDir, tmpDir)
 	if err := cmd.Run(); err != nil {
 		return nil, fmt.Errorf("inspect: %w.\nPython output: %s", err, buf.String())
 	}
