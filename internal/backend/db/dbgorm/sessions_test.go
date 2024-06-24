@@ -9,6 +9,8 @@ import (
 	"gorm.io/gorm"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
+	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
+	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -18,11 +20,6 @@ func (f *dbFixture) createSessionsAndAssert(t *testing.T, sessions ...scheme.Ses
 		assert.NoError(t, f.gormdb.createSession(f.ctx, &session))
 		findAndAssertOne(t, f, session, "session_id = ?", session.SessionID)
 	}
-}
-
-func (f *dbFixture) addSessionLogRecordAndAssert(t *testing.T, logr scheme.SessionLogRecord, expected int) {
-	assert.NoError(t, addSessionLogRecordDB(f.gormdb.db, &logr))
-	findAndAssertCount[scheme.SessionLogRecord](t, f, expected, "session_id = ?", logr.SessionID)
 }
 
 func (f *dbFixture) listSessionsAndAssert(t *testing.T, expected int64) []scheme.Session {
@@ -52,6 +49,22 @@ func preSessionTest(t *testing.T) *dbFixture {
 	return f
 }
 
+func testLastLogRecord(t *testing.T, f *dbFixture, numRecords int, sessionID sdktypes.UUID, lr sdktypes.SessionLogRecord) {
+	logs, err := f.gormdb.getSessionLogRecords(f.ctx, sessionID)
+	assert.NoError(t, err)
+	assert.Equal(t, numRecords, len(logs))
+	for _, r := range logs {
+		assert.Equal(t, sessionID, r.SessionID)
+	}
+
+	l, err := scheme.ParseSessionLogRecord(logs[len(logs)-1]) // last log
+	assert.NoError(t, err)
+
+	l = l.WithoutTimestamp()
+	lr = lr.WithProcessID(fixtures.ProcessID()).WithoutTimestamp()
+	assert.Equal(t, l, lr)
+}
+
 func TestCreateSession(t *testing.T) {
 	f := preSessionTest(t)
 
@@ -59,8 +72,8 @@ func TestCreateSession(t *testing.T) {
 	// test createSession without any assets session depends on, since they are soft-foreign keys and could be nil
 	f.createSessionsAndAssert(t, s)
 
-	logs := findAndAssertCount[scheme.SessionLogRecord](t, f, 1, "session_id = ?", s.SessionID)
-	assert.Equal(t, s.SessionID, logs[0].SessionID) // compare only ids, since actual log isn't empty
+	// test getSessionLogRecords and ensure that session logs contain the only CREATED record
+	testLastLogRecord(t, f, 1, s.SessionID, sdktypes.NewStateSessionLogRecord(sdktypes.NewSessionStateCreated()))
 }
 
 func TestCreateSessionForeignKeys(t *testing.T) {
@@ -214,15 +227,33 @@ func TestDeleteSessionForeignKeys(t *testing.T) {
 }
 */
 
-func TestCreateSessionLogRecordForeignKeys(t *testing.T) {
+func TestAddSessionLogRecordUnexistingSession(t *testing.T) {
 	f := preSessionTest(t)
 
 	s := f.newSession(sdktypes.SessionStateTypeCompleted)
-	logr := f.newSessionLogRecord()
-	assert.ErrorIs(t, addSessionLogRecordDB(f.gormdb.db, &logr), gorm.ErrForeignKeyViolated)
+	logr := f.newSessionLogRecord() // invalid sessionID
+
+	// NOTE: although sessionID is foreignKey for sessionLogRecord, we won't fail with gorm.ErrForeignKeyViolated
+	// due to the users, we will fail with sdkerrors.ErrUnauthorized, since there is no such session for the user
+	assert.ErrorIs(t, f.gormdb.addSessionLogRecord(f.ctx, &logr), sdkerrors.ErrUnauthorized)
 
 	f.createSessionsAndAssert(t, s) // will create session and session record as well
 
-	// test createSessionLogRecord
-	f.addSessionLogRecordAndAssert(t, logr, 2) // one log record was already created due to session creation
+	// ensure that with valid sessionID log could be added
+	logr.SessionID = s.SessionID
+	assert.NoError(t, f.gormdb.addSessionLogRecord(f.ctx, &logr))
+}
+
+func TestAddSessionPrintLogRecord(t *testing.T) {
+	f := preSessionTest(t)
+
+	s := f.newSession(sdktypes.SessionStateTypeCompleted)
+	l := sdktypes.NewPrintSessionLogRecord("meow")
+	logr, err := toSessionLogRecord(s.SessionID, l)
+	assert.NoError(t, err)
+
+	f.createSessionsAndAssert(t, s) // will create session and session record as well
+	assert.NoError(t, f.gormdb.addSessionLogRecord(f.ctx, logr))
+
+	testLastLogRecord(t, f, 2, s.SessionID, l)
 }
