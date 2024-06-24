@@ -5,7 +5,7 @@ from socket import socketpair
 from threading import Thread
 from unittest.mock import MagicMock
 
-import autokitteh
+from autokitteh import decorators
 from loader_test import simple_dir
 from conftest import testdata
 
@@ -13,11 +13,16 @@ import ak_runner
 
 
 # Used by test_nested, must be global to be pickled.
-def ak(fn): pass
+def ak(fn):
+    pass
+
 
 val = 7
+
+
 def outer():
     return ak(inner)
+
 
 def inner():
     return val
@@ -35,8 +40,8 @@ def test_nested():
             'type': ak_runner.MessageType.response,
             'payload': {
                 'value': pickle.dumps(val),
-            }
-        }
+            },
+        },
     ]
     comm.extract_activity.side_effect = [
         {
@@ -56,6 +61,7 @@ def test_nested():
 
 def in_act_2(v):
     print(f'in_act_2: {v}')
+
 
 def in_act_1(v):
     print('in_act_1: in')
@@ -93,7 +99,7 @@ def test_in_activity():
                 'type': ak_runner.MessageType.response,
                 'payload': {'value': pickle.dumps(self.values[0])},
             }
-        
+
         def extract_activity(self, msg):
             return msg['payload']
 
@@ -106,7 +112,7 @@ def test_in_activity():
 
     akc(in_act_1, 6)
     assert comm.num_activities == 2
-    
+
 
 sleep_code = '''
 from time import sleep
@@ -119,15 +125,16 @@ def handler(event):
     print('after')
 '''
 
+
 def test_sleep(tmp_path):
     mod_name = 'sleeper'
 
     file_name = tmp_path / (mod_name + '.py')
     with open(file_name, 'w') as out:
         out.write(sleep_code)
-    
+
     comm = MagicMock()
-    
+
     ak_call = ak_runner.AKCall(comm)
     mod = ak_runner.load_code(tmp_path, ak_call, mod_name)
     ak_call.set_module(mod)
@@ -140,7 +147,7 @@ def test_activity():
     mod_name = 'activity'
     mod = ak_runner.load_code(testdata, lambda f: f, mod_name)
     fn = mod.phone_home
-    assert getattr(fn, autokitteh.ACTIVITY_ATTR, False)
+    assert getattr(fn, decorators.ACTIVITY_ATTR, False)
 
 
 def mock_tp_go(sock):

@@ -1,6 +1,7 @@
 from time import sleep
 
 import autokitteh
+from autokitteh import decorators
 
 from . import log
 from .comm import Comm, MessageType
@@ -11,20 +12,21 @@ AK_FUNCS = {
     autokitteh.next_event,
     autokitteh.subscribe,
     autokitteh.unsubscribe,
-
     sleep,
 }
 
+
 def is_marked_activity(fn):
     """Return true if function is marked as an activity."""
-    return getattr(fn, autokitteh.ACTIVITY_ATTR, False)
+    return getattr(fn, decorators.ACTIVITY_ATTR, False)
 
 
 class AKCall:
     """Callable wrapping functions with activities."""
+
     def __init__(self, comm: Comm):
         self.comm = comm
-        
+
         self.in_activity = False
         self.loading = True  # Loading module
         self.module = None  # Module for "local" function, filled by "run"
@@ -41,7 +43,7 @@ class AKCall:
 
         if is_determinstic(fn):
             return False
-        
+
         if self.is_module_func(fn):
             return False
 
@@ -63,7 +65,7 @@ class AKCall:
 
         if not self.should_run_as_activity(func):
             log.info(
-                'calling %s (args=%r, kw=%r) directly (in_activity=%s)', 
+                'calling %s (args=%r, kw=%r) directly (in_activity=%s)',
                 func.__name__, args, kw, self.in_activity)
             return func(*args, **kw)
 
@@ -75,7 +77,7 @@ class AKCall:
                 func = func.__name__
             self.comm.send_activity(func, args, kw)
             message = self.comm.recv(MessageType.callback, MessageType.response)
-            
+
             if message['type'] == MessageType.callback:
                 payload = self.comm.extract_activity(message)
                 fn, args, kw = payload['data']
