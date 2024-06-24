@@ -2,10 +2,13 @@
 
 This is the Python SDK for [AutoKitteh](https://autokitteh.com).
 
-This library provides an `activity` decorator, and client initialization
-functions for AutoKitteh's connections.
+It provides the following utilities for AutoKitteh workflows:
 
-See more at [the docs](https://docs.autokitteh.com).
+- Client initialization functions for AutoKitteh connections
+- Un/subscription and consumption functions for AutoKitteh events
+- `activity` decorator to work around issues with [pickle](https://docs.python.org/3/library/pickle.html)
+
+For more information, see [our documentation](https://docs.autokitteh.com/develop/python).
 
 ## Installing
 

@@ -1,5 +1,6 @@
 from time import sleep
 
+import autokitteh
 from autokitteh import decorators
 
 from . import log
@@ -11,9 +12,9 @@ AK_FUNCS = {
     autokitteh.next_event,
     autokitteh.subscribe,
     autokitteh.unsubscribe,
-
     sleep,
 }
+
 
 def is_marked_activity(fn):
     """Return true if function is marked as an activity."""

@@ -3,7 +3,7 @@
 ACTIVITY_ATTR = "__activity__"
 
 
-def activity(fn):
+def activity(fn: callable) -> callable:
     """Decorator to mark a function as a Temporal activity.
 
     This forces AutoKitteh to run the function as a single Temporal activity,

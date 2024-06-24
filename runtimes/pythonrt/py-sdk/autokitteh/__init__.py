@@ -2,14 +2,15 @@
 
 from .attr_dict import AttrDict
 from .decorators import activity
+from .events import next_event, subscribe, unsubscribe
 from . import errors
 
 
 __all__ = [
     "AttrDict",
     "activity",
-    "atlassian",
     "errors",
-    "google",
-    "slack",
+    "next_event",
+    "subscribe",
+    "unsubscribe",
 ]
