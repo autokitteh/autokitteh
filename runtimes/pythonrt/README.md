@@ -121,7 +121,10 @@ All messages have top level `type` and `payload`, the `payload` changes dependin
 
 ### Integration Testing
 
-Make sure that the `py-sdk` directory is in your `PYTHONPATH`.
+To make sure you use `autokitteh` from the `py-sdk`, update your `PYTHONPATH` before running `ak`.
+Run the following from the root of the repo:
+    
+    export PYTHONPATH="${PWD}/runtimes/pythonrt/py-sdk:${PYTHONPATH}"
 
 If you run `ak` with a database, then run `make create-workflow` once. 
 Otherwise run it every time.
