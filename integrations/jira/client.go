@@ -64,9 +64,9 @@ func connStatus(i *integration) sdkintegrations.OptFn {
 			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "using OAuth 2.0"), nil
 		}
 		if vs.Has(email) {
-			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "using API key"), nil
+			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "using API token"), nil
 		}
-		if vs.Has(apiKeyOrPAT) {
+		if vs.Has(token) {
 			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "using PAT"), nil
 		}
 
