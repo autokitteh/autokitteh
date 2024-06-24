@@ -10,6 +10,7 @@ import (
 	"io/fs"
 	"os"
 	"path"
+	"strings"
 	"testing"
 	"time"
 
@@ -202,4 +203,31 @@ func TestPythonFromEnv(t *testing.T) {
 	require.True(t, ok)
 	require.Equal(t, pyExe, py.pyExe)
 
+}
+
+func Test_pySvc_Build_PyCache(t *testing.T) {
+	skipIfNoPython(t)
+	svc := newSVC(t)
+
+	rootPath := "testdata/pycache/"
+	fsys := os.DirFS(rootPath)
+
+	ctx, cancel := testCtx(t)
+	defer cancel()
+	art, err := svc.Build(ctx, fsys, ".", nil)
+	require.NoError(t, err)
+
+	p := art.ToProto()
+	data := p.CompiledData[archiveKey]
+	r := tar.NewReader(bytes.NewReader(data))
+
+	for {
+		hdr, err := r.Next()
+		if errors.Is(err, io.EOF) {
+			break
+		}
+
+		require.NoError(t, err, "iterate tar")
+		require.Falsef(t, strings.Contains(hdr.Name, "__pycache__"), "%q", hdr.Name)
+	}
 }
