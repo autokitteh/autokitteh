@@ -55,24 +55,36 @@ type LogMessage struct {
 
 func (LogMessage) Type() string { return "log" }
 
-type SleepMessage struct {
-	Seconds float64 `json:"seconds"`
+type CallMessage struct {
+	FuncName string `json:"func_name"`
+	Args     []any  `json:"args"`
 }
 
-func (SleepMessage) Type() string { return "sleep" }
+func (CallMessage) Type() string {
+	return "call"
+}
+
+type ReturnMessage struct {
+	Value any `json:"value"`
+}
+
+func (ReturnMessage) Type() string {
+	return "return"
+}
 
 type Typed interface {
 	Type() string
 }
 
 type SubMessage interface {
-	CallbackMessage |
+	CallMessage |
+		CallbackMessage |
 		DoneMessage |
 		LogMessage |
 		ModuleMessage |
 		ResponseMessage |
-		RunMessage |
-		SleepMessage
+		ReturnMessage |
+		RunMessage
 
 	Typed
 }

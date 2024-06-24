@@ -6,6 +6,14 @@ from . import log
 from .comm import Comm, MessageType
 from .deterministic import is_determinstic
 
+# Functions that are called back to ak
+AK_FUNCS = {
+    autokitteh.next_event,
+    autokitteh.subscribe,
+    autokitteh.unsubscribe,
+
+    sleep,
+}
 
 def is_marked_activity(fn):
     """Return true if function is marked as an activity."""
@@ -44,20 +52,24 @@ class AKCall:
         self.loading = False
 
     def __call__(self, func, *args, **kw):
+        if func in AK_FUNCS:
+            log.info('ak function call: %s(%r, %r)', func.__name__, args, kw)
+            self.comm.send_call(func.__name__, args)
+            msg = self.comm.recv(MessageType.call_return)
+            value = msg['payload']['value']
+            if func is autokitteh.next_event:
+                value = autokitteh.AttrDict(value)
+            return value
+
         if not self.should_run_as_activity(func):
             log.info(
                 'calling %s (args=%r, kw=%r) directly (in_activity=%s)', 
                 func.__name__, args, kw, self.in_activity)
             return func(*args, **kw)
 
-        log.info('ACTION: calling %s via activity (args=%r, kw=%r)', func.__name__, args, kw)
+        log.info('ACTION: activity call %s(%r, %r)', func.__name__, args, kw)
         self.in_activity = True
         try:
-            if func is sleep:
-                self.comm.send_sleep(*args, **kw)
-                self.comm.recv(MessageType.sleep)
-                return
-
             if self.is_module_func(func):
                 # Pickle can't handle function from our loaded module
                 func = func.__name__

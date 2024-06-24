@@ -1,0 +1,4 @@
+# Development requirements
+
+pytest ~= 8.2
+pytest-ruff ~= 0.3

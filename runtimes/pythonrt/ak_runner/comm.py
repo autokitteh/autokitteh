@@ -5,6 +5,8 @@ from base64 import b64encode, b64decode
 
 class MessageType:
     """Possible message types."""
+    call = 'call'
+    call_return = 'return'
     callback = 'callback'
     done = 'done'
     log = 'log'
@@ -92,7 +94,6 @@ class Comm:
         data = message['payload']['value']
         return pickle.loads(b64decode(data))
 
-
     def send_log(self, level, message):
         message = {
             'type': MessageType.log,
@@ -103,11 +104,12 @@ class Comm:
         }
         self._send(message)
 
-    def send_sleep(self, seconds):
+    def send_call(self, func_name, args):
         message = {
-            'type': MessageType.sleep,
+            'type': MessageType.call,
             'payload': {
-                'seconds': seconds,
+                'func_name': func_name,
+                'args': args,
             },
         }
         self._send(message)
