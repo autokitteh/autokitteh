@@ -320,13 +320,13 @@ func (py *pySvc) Run(
 	py.stdout = newStreamLogger("[stdout] ", cbs.Print, runID)
 	py.stderr = newStreamLogger("[stderr] ", cbs.Print, runID)
 	opts := runOptions{
-		log:      py.log,
-		pyExe:    py.pyExe,
-		tarData:  tarData,
-		rootPath: mainPath,
-		env:      envMap,
-		stdout:   py.stdout,
-		stderr:   py.stderr,
+		log:        py.log,
+		pyExe:      py.pyExe,
+		tarData:    tarData,
+		entryPoint: mainPath,
+		env:        envMap,
+		stdout:     py.stdout,
+		stderr:     py.stderr,
 	}
 	ri, err := runPython(opts)
 	if err != nil {

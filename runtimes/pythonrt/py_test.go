@@ -71,13 +71,13 @@ func Test_runPython(t *testing.T) {
 	}
 
 	opts := runOptions{
-		log:      log,
-		pyExe:    "python",
-		tarData:  tarData,
-		rootPath: "simple.py",
-		env:      env,
-		stdout:   os.Stdout,
-		stderr:   os.Stderr,
+		log:        log,
+		pyExe:      "python",
+		tarData:    tarData,
+		entryPoint: "simple.py",
+		env:        env,
+		stdout:     os.Stdout,
+		stderr:     os.Stderr,
 	}
 	ri, err := runPython(opts)
 	require.NoError(t, err)

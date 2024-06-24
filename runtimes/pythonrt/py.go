@@ -164,7 +164,7 @@ type runOptions struct {
 	log            *zap.Logger
 	pyExe          string            // Python executable to use
 	tarData        []byte            // tar data from build stage
-	rootPath       string            // simple.py:greet
+	entryPoint     string            // simple.py:greet
 	env            map[string]string // Python process environment
 	stdout, stderr io.Writer
 }
@@ -210,7 +210,7 @@ func runPython(opts runOptions) (*pyRunInfo, error) {
 		return nil, err
 	}
 
-	cmd := exec.Command(opts.pyExe, "-m", runnerMod, "run", ri.sockPath, tarPath, opts.rootPath)
+	cmd := exec.Command(opts.pyExe, "-m", runnerMod, "run", ri.sockPath, tarPath, opts.entryPoint)
 	cmd.Dir = ri.pyRootDir
 	cmd.Env = overrideEnv(opts.env, ri.pyRootDir, ri.userRootDir)
 	cmd.Stdout = opts.stdout
