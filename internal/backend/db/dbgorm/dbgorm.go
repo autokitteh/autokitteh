@@ -218,12 +218,10 @@ func getOneWTransform[T any, R sdktypes.Object](db *gorm.DB, ctx context.Context
 	return f(rec)
 }
 
-// TODO: change all get functions to use this
-func getOne[T any](db *gorm.DB, ctx context.Context, where string, args ...any) (*T, error) {
-	var r T
-
-	// TODO: fetch all records and report if there is more than one record
-	result := db.WithContext(ctx).Where(where, args...).Limit(1).Find(&r)
+// NOTE: no ctx is passed since in all places it's already applied
+func getOne[T any](db *gorm.DB, where string, args ...any) (*T, error) {
+	var r []T
+	result := db.Where(where, args...).Limit(2).Find(&r)
 	if result.Error != nil {
 		return nil, result.Error
 	}
@@ -231,7 +229,10 @@ func getOne[T any](db *gorm.DB, ctx context.Context, where string, args ...any) 
 	if result.RowsAffected == 0 {
 		return nil, gorm.ErrRecordNotFound
 	}
-	return &r, nil
+	if result.RowsAffected > 1 {
+		return nil, gorm.ErrDuplicatedKey
+	}
+	return &r[0], nil
 }
 
 // TODO: this not working for deployments. Consider delete this function
