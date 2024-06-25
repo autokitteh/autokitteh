@@ -606,14 +606,23 @@ func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 			return sdktypes.InvalidValue, err
 		}
 
-		if messageType[LogMessage]() != msg.Type {
-			break
+		if msg.Type == messageType[LogMessage]() {
+			if err := py.handleLog(msg); err != nil {
+				py.log.Error("handle log", zap.Error(err))
+				return sdktypes.InvalidValue, err
+			}
+			continue
 		}
 
-		if err := py.handleLog(msg); err != nil {
-			py.log.Error("handle log", zap.Error(err))
-			return sdktypes.InvalidValue, err
+		if msg.Type == messageType[CallMessage]() {
+			call, _ := extractMessage[CallMessage](msg)
+			if err := py.handleCall(ctx, call); err != nil {
+				return sdktypes.InvalidValue, err
+			}
+			continue
 		}
+
+		break
 	}
 
 	rm, err := extractMessage[ResponseMessage](msg)
