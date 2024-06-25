@@ -3,7 +3,8 @@
 from uuid import uuid4
 
 
-ACTIVITY_ATTR = '__activity__'
+ACTIVITY_ATTR = "__activity__"
+
 
 class AttrDict(dict):
     """Allow attribute access to dictionary keys.
@@ -14,6 +15,7 @@ class AttrDict(dict):
     >>> config.debug
     True
     """
+
     def __getattr__(self, name):
         try:
             value = self[name]
@@ -26,7 +28,7 @@ class AttrDict(dict):
     def __setattr__(self, attr, value):
         # The default __getattr__ doesn't fail but also don't change values
         cls = self.__class__.__name__
-        raise NotImplementedError(f'{cls} does not support setting attributes')
+        raise NotImplementedError(f"{cls} does not support setting attributes")
 
 
 def activity(fn: callable) -> callable:

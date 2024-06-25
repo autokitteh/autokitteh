@@ -11,9 +11,9 @@ AK_FUNCS = {
     autokitteh.next_event,
     autokitteh.subscribe,
     autokitteh.unsubscribe,
-
     sleep,
 }
+
 
 def is_marked_activity(fn):
     """Return true if function is marked as an activity."""
@@ -22,9 +22,10 @@ def is_marked_activity(fn):
 
 class AKCall:
     """Callable wrapping functions with activities."""
+
     def __init__(self, comm: Comm):
         self.comm = comm
-        
+
         self.in_activity = False
         self.loading = True  # Loading module
         self.module = None  # Module for "local" function, filled by "run"
@@ -41,7 +42,7 @@ class AKCall:
 
         if is_determinstic(fn):
             return False
-        
+
         if self.is_module_func(fn):
             return False
 
@@ -53,21 +54,25 @@ class AKCall:
 
     def __call__(self, func, *args, **kw):
         if func in AK_FUNCS:
-            log.info('ak function call: %s(%r, %r)', func.__name__, args, kw)
+            log.info("ak function call: %s(%r, %r)", func.__name__, args, kw)
             self.comm.send_call(func.__name__, args)
             msg = self.comm.recv(MessageType.call_return)
-            value = msg['payload']['value']
+            value = msg["payload"]["value"]
             if func is autokitteh.next_event:
                 value = autokitteh.AttrDict(value)
             return value
 
         if not self.should_run_as_activity(func):
             log.info(
-                'calling %s (args=%r, kw=%r) directly (in_activity=%s)', 
-                func.__name__, args, kw, self.in_activity)
+                "calling %s (args=%r, kw=%r) directly (in_activity=%s)",
+                func.__name__,
+                args,
+                kw,
+                self.in_activity,
+            )
             return func(*args, **kw)
 
-        log.info('ACTION: activity call %s(%r, %r)', func.__name__, args, kw)
+        log.info("ACTION: activity call %s(%r, %r)", func.__name__, args, kw)
         self.in_activity = True
         try:
             if self.is_module_func(func):
@@ -75,15 +80,15 @@ class AKCall:
                 func = func.__name__
             self.comm.send_activity(func, args, kw)
             message = self.comm.recv(MessageType.callback, MessageType.response)
-            
-            if message['type'] == MessageType.callback:
+
+            if message["type"] == MessageType.callback:
                 payload = self.comm.extract_activity(message)
-                fn, args, kw = payload['data']
+                fn, args, kw = payload["data"]
                 if isinstance(fn, str):
                     fn = getattr(self.module, fn, None)
                     if fn is None:
                         mod_name = self.module.__name__
-                        raise ValueError(f'function {fn!r} not found in {mod_name!r}')
+                        raise ValueError(f"function {fn!r} not found in {mod_name!r}")
                 value = fn(*args, **kw)
                 self.comm.send_response(value)
                 message = self.comm.recv(MessageType.response)
