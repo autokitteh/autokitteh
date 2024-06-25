@@ -5,7 +5,7 @@ from socket import socketpair
 from threading import Thread
 from unittest.mock import MagicMock
 
-import autokitteh
+from autokitteh import decorators
 from loader_test import simple_dir
 from conftest import testdata
 
@@ -61,6 +61,7 @@ def test_nested():
 
 def in_act_2(v):
     print(f"in_act_2: {v}")
+
 
 
 def in_act_1(v):
@@ -146,7 +147,7 @@ def test_activity():
     mod_name = "activity"
     mod = ak_runner.load_code(testdata, lambda f: f, mod_name)
     fn = mod.phone_home
-    assert getattr(fn, autokitteh.ACTIVITY_ATTR, False)
+    assert getattr(fn, decorators.ACTIVITY_ATTR, False)
 
 
 def mock_tp_go(sock):

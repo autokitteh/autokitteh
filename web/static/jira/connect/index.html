@@ -59,11 +59,6 @@
             Jira Cloud platform: OAuth 2.0 (3LO) apps
           </a>
         </li>
-        <li>
-          <a href="" target="_blank" class="info">
-            TODO(ENG-965): Docusaurus guide, like GitHub
-          </a>
-        </li>
       </ul>
 
       <p class="info">
@@ -97,20 +92,15 @@
             Jira Data Center: Personal Access Tokens
           </a>
         </li>
-        <li>
-          <a href="" target="_blank" class="info">
-            TODO(ENG-965): Docusaurus guide, like GitHub
-          </a>
-        </li>
       </ul>
 
       <!-- TODO(ENG-799): remove ID once its unused -->
       <form id="save-form" method="post" action="/jira/save">
         <div class="form-group">
-          <label for="url">Base URL</label>
+          <label for="base_url">Base URL</label>
           <input
             type="url"
-            name="url"
+            name="base_url"
             autocomplete="off"
             spellcheck="false"
             placeholder="https://your-domain.atlassian.net or on-prem URL"
@@ -119,10 +109,10 @@
         </div>
 
         <div class="form-group">
-          <label for="key">API Key / Personal Access Token (PAT)</label>
+          <label for="token">API Token / Personal Access Token (PAT)</label>
           <input
             type="text"
-            name="key_or_pat"
+            name="token"
             autocomplete="off"
             spellcheck="false"
             required
@@ -131,13 +121,14 @@
 
         <div class="form-group">
           <label for="email">
-            User email address (for API keys only, not for PATs)
+            User email address (API tokens only, not PATs!)
           </label>
           <input
             type="email"
             name="email"
             autocomplete="off"
             spellcheck="false"
+            placeholder="name@example.com"
           />
         </div>
 
