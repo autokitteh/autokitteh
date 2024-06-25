@@ -31,8 +31,15 @@ func (gdb *gormdb) setVar(ctx context.Context, vr *scheme.Var) error {
 	// Set the ID for each var. Note that it be used only when creating the variable, on update with conflict it will be ignored
 	vr.VarID = varIDfunc()
 
+	// NOTE: createEntityWithOwnership won't respect clauses and it will enter to recirsive transaction
+	// that's why we are handing user extraction, create entiry and ownerships differently here
+	user, err := userFromContext(ctx)
+	if err != nil {
+		return err
+	}
+
 	return gdb.transaction(ctx, func(tx *tx) error {
-		if err := tx.isUserEntity(ctx, vr.ScopeID); err != nil {
+		if err := tx.isUserEntity1(user, vr.ScopeID); err != nil {
 			return err
 		}
 
@@ -52,13 +59,7 @@ func (gdb *gormdb) setVar(ctx context.Context, vr *scheme.Var) error {
 			return gorm.ErrForeignKeyViolated
 		}
 
-		// FIXME: createEntityWithOwnership don't respect clauses. That's the reason for the code below
-		// FIXME: splt functions and less transactions. We cannot pass clauses
-		// add isUserEntityCtx and isUserEntiry(User)
-		user, ownerships, err := prepareOwnershipForEntities(ctx, vr)
-		if err != nil {
-			return err
-		}
+		ownerships := prepareOwnershipForEntities1(user, vr)
 		if err := tx.db.Clauses(conflict).Create(vr).Error; err != nil {
 			return err
 		}
