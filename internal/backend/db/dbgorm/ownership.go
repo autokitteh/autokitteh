@@ -79,12 +79,7 @@ func entityOwnershipWithIDAndType(entity any) scheme.Ownership {
 	return scheme.Ownership{}
 }
 
-func prepareOwnershipForEntities(ctx context.Context, entities ...any) (*scheme.User, []scheme.Ownership, error) {
-	user, err := userFromContext(ctx)
-	if err != nil {
-		return nil, nil, err
-	}
-
+func prepareOwnershipForEntities1(user *scheme.User, entities ...any) []scheme.Ownership {
 	var oo []scheme.Ownership
 	for _, entity := range entities {
 		if o := entityOwnershipWithIDAndType(entity); o.EntityType != "" {
@@ -92,6 +87,15 @@ func prepareOwnershipForEntities(ctx context.Context, entities ...any) (*scheme.
 			oo = append(oo, o)
 		}
 	}
+	return oo
+}
+
+func prepareOwnershipForEntities(ctx context.Context, entities ...any) (*scheme.User, []scheme.Ownership, error) {
+	user, err := userFromContext(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+	oo := prepareOwnershipForEntities1(user, entities...)
 	return user, oo, nil
 }
 
@@ -122,8 +126,7 @@ func createEntityWithOwnership[T any](ctx context.Context, db *gorm.DB, model *T
 	})
 }
 
-func (gdb *gormdb) isUserEntity(ctx context.Context, ids ...sdktypes.UUID) error {
-	user, _ := userFromContext(ctx) // REVIEW: OK to ignore error
+func (gdb *gormdb) isUserEntity1(user *scheme.User, ids ...sdktypes.UUID) error {
 	gdb.z.Debug("isUserEntity", zap.Any("entityIDs", ids), zap.Any("user", user))
 	var count int64
 	if err := gdb.db.Model(&scheme.Ownership{}).Where("entity_id IN ? AND user_id = ?", ids, user.UserID).Limit(1).Count(&count).Error; err != nil {
@@ -135,6 +138,11 @@ func (gdb *gormdb) isUserEntity(ctx context.Context, ids ...sdktypes.UUID) error
 	// FIXME: could/should we distinguish between not found and unauthorized? Could be useful in updates
 	// Is there other way then adding more queries?
 	return nil
+}
+
+func (gdb *gormdb) isUserEntity(ctx context.Context, ids ...sdktypes.UUID) error {
+	user, _ := userFromContext(ctx) // REVIEW: OK to ignore error
+	return gdb.isUserEntity1(user, ids...)
 }
 
 // add context and join with user ownership on entity
