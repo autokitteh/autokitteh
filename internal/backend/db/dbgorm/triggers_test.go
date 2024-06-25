@@ -50,7 +50,7 @@ func TestCreateTrigger(t *testing.T) {
 }
 
 func TestGetTrigger(t *testing.T) {
-	f := preTriggerTest(t).WithDebug()
+	f := preTriggerTest(t)
 	foreignKeys(f.gormdb, false) // no foreign keys
 
 	tr := f.newTrigger()
