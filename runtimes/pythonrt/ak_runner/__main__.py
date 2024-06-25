@@ -5,7 +5,7 @@ import tarfile
 from base64 import b64decode
 from importlib.util import module_from_spec, spec_from_file_location
 from inspect import getsourcelines
-from os import mkdir
+from os import chdir, mkdir
 from pathlib import Path
 from socket import AF_UNIX, SOCK_STREAM, socket
 
@@ -71,11 +71,14 @@ def run(args):
     log.info('sock: %r, tar: %r, module: %r', args.sock, args.tar, module_name)
     code_dir = extract_code(args.tar)
     log.info('code dir: %r', code_dir)
+    
+    # Allow users to import their own files and load data files
+    sys.path.append(code_dir)
+    chdir(code_dir)
 
     log.info('connected to %r', args.sock)
 
     log.info('loading %r', module_name)
-
     ak_call = AKCall(comm)
     mod = load_code(code_dir, ak_call, module_name)
     ak_call.set_module(mod)
@@ -121,6 +124,10 @@ def run(args):
 
 
 def inspect_file(root_dir, path):
+    # Allow users to import their own files and load data files
+    sys.path.append(root_dir)
+    chdir(root_dir)
+
     mod_name = path.stem
     spec = spec_from_file_location(mod_name, path)
     if spec is None:

@@ -242,18 +242,17 @@ func writeTar(rootDir string, data []byte) (string, error) {
 	return tarName, err
 }
 
-func adjustPythonPath(env []string, runnerPath, userCodePath string) []string {
-	path := fmt.Sprintf("%s:%s", runnerPath, userCodePath) // runnerPath should be first
+func adjustPythonPath(env []string, runnerPath string) []string {
 	// Iterate in reverse since last value overrides
 	for i := len(env) - 1; i >= 0; i-- {
 		v := env[i]
 		if strings.HasPrefix(v, "PYTHONPATH=") {
-			env[i] = fmt.Sprintf("%s:%s", v, path)
+			env[i] = fmt.Sprintf("%s:%s", v, runnerPath)
 			return env
 		}
 	}
 
-	return append(env, fmt.Sprintf("PYTHONPATH=%s", path))
+	return append(env, fmt.Sprintf("PYTHONPATH=%s", runnerPath))
 }
 
 func overrideEnv(envMap map[string]string, runnerPath, userCodePath string) []string {
@@ -263,7 +262,7 @@ func overrideEnv(envMap map[string]string, runnerPath, userCodePath string) []st
 		env = append(env, fmt.Sprintf("%s=%s", k, v))
 	}
 
-	return adjustPythonPath(env, runnerPath, userCodePath)
+	return adjustPythonPath(env, runnerPath)
 }
 
 func createVEnv(pyExe string, venvPath string) error {
@@ -327,7 +326,7 @@ func pyExports(ctx context.Context, pyExe string, fsys fs.FS) ([]Export, error) 
 	var buf bytes.Buffer
 	cmd.Stdout = &buf
 	cmd.Stderr = &buf
-	cmd.Env = adjustPythonPath(os.Environ(), runnerDir, tmpDir)
+	cmd.Env = adjustPythonPath(os.Environ(), runnerDir)
 	if err := cmd.Run(); err != nil {
 		return nil, fmt.Errorf("inspect: %w.\nPython output: %s", err, buf.String())
 	}
