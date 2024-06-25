@@ -1,0 +1,15 @@
+---
+version: v1
+
+project:
+  name: redis
+  connections:
+    - name: http_trigger
+      integration: http
+  triggers:
+    - name: events
+      connection: http_trigger
+      entrypoint: r.py:on_event
+
+# Invoke the trigger with:
+#   curl -d HELLO http://localhost:9980/http/redis/events
