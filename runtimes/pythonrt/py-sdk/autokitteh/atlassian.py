@@ -60,13 +60,13 @@ def __atlassian_jira_client_cloud_oauth2(connection: str, **kwargs):
     if not expiry:
         raise ConnectionInitError(connection)
 
-    # Convert Go's time string (e.g. "2024-06-20 19:18:17 +0700 PDT") to
+    # Convert Go's time string (e.g. "2024-06-20 19:18:17 -0700 PDT") to
     # an ISO-8601 string that Python can parse with timezone awareness.
-    timestamp = re.sub(r"[ A-Z]+.*", "", expiry)
+    timestamp = re.sub(r" [A-Z]+.*", "", expiry)
     if datetime.fromisoformat(timestamp) < datetime.now(UTC):
         raise RuntimeError("OAuth 2.0 access token expired on: " + expiry)
 
-    cloud_id = os.getenv(connection + "__access_id")
+    cloud_id = os.getenv(connection + "__access_ID")
     if not cloud_id:
         raise ConnectionInitError(connection)
 
