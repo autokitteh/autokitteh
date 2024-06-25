@@ -11,15 +11,6 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-const (
-	googleScope = "google"
-)
-
-type api struct {
-	Vars  sdkservices.Vars
-	Scope string
-}
-
 var integrationID = sdktypes.NewIntegrationIDFromName("googlecalendar")
 
 var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
