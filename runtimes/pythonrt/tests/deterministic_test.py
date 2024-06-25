@@ -1,3 +1,4 @@
+import re
 from base64 import b64decode
 from datetime import datetime
 
@@ -11,6 +12,7 @@ nonact_caes = [
     (datetime.now, False),
     (datetime.strptime, True),
     ([].append, True),
+    (re.search('[a-z]', 'hello').group, True),
 ]
 
 @pytest.mark.parametrize('func, expected', nonact_caes)

@@ -6,9 +6,8 @@ import (
 
 var (
 	baseURL = sdktypes.NewSymbol("BaseURL")
-
-	apiKeyOrPAT = sdktypes.NewSymbol("APIKeyOrPAT")
-	email       = sdktypes.NewSymbol("Email")
+	token   = sdktypes.NewSymbol("Token")
+	email   = sdktypes.NewSymbol("Email")
 
 	oauthAccessToken = sdktypes.NewSymbol("oauth_AccessToken")
 	accessID         = sdktypes.NewSymbol("access_ID")

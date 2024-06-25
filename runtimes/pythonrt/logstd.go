@@ -66,6 +66,10 @@ func (s *streamLogger) Write(p []byte) (int, error) {
 // Close implements io.Closer.
 // It will print whatever in `s.buf`.
 func (s *streamLogger) Close() error {
+	if s == nil {
+		return nil
+	}
+
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
