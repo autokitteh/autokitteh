@@ -49,9 +49,8 @@ func (db *gormdb) Transaction(ctx context.Context, f func(db db.DB) error) error
 	})
 }
 
-// FIXME: fix/rewrite locked()
 func (db *gormdb) transaction(ctx context.Context, f func(tx *tx) error) error {
-	return db.locked2(func(db *gormdb) error {
+	return db.locked(func(db *gormdb) error {
 		return db.db.WithContext(ctx).Transaction(func(txdb *gorm.DB) error {
 			return f(
 				&tx{

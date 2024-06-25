@@ -75,15 +75,6 @@ func (db *gormdb) locked(f func(db *gormdb) error) error {
 		defer db.mu.Unlock()
 	}
 
-	return translateError(f(db))
-}
-
-func (db *gormdb) locked2(f func(db *gormdb) error) error {
-	if db.mu != nil {
-		db.mu.Lock()
-		defer db.mu.Unlock()
-	}
-
 	return f(db)
 }
 
