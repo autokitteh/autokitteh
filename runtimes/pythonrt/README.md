@@ -86,6 +86,34 @@ Other messages are:
 - `log` from Python to Go
 - `sleep` from Python to Go
 
+
+### State Machine
+
+Below is the state machine for `Call`:
+
+```mermaid
+---
+title: Call State Machine
+---
+stateDiagram-v2
+    Wait --> Connected: exports
+    Connected --> Running : run
+    Running --> Done : done
+    Running --> Error : empty
+    Running --> Running : log
+    Running --> Running: func
+    Running --> CallFromPython : call
+    CallFromPython --> CallToPython : return
+    CallFromPython --> ReturnToPython: replay
+    CallToPython --> CallToPython: log
+    CallToPython --> CallToPython: func
+    CallToPython --> Error: empty
+    CallToPython --> ReturnFromPython: return
+    ReturnFromPython --> ReturnToPython: return
+    ReturnToPython  --> Running
+    ReturnToPython --> Error: empty
+```
+
 ### Communication Protocol
 
 We're using JSON over Unix domain socket, one JSON object per line.
