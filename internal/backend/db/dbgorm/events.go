@@ -21,7 +21,7 @@ func (gdb *gormdb) saveEvent(ctx context.Context, event *scheme.Event) error {
 }
 
 func (gdb *gormdb) deleteEvent(ctx context.Context, eventID sdktypes.UUID) error {
-	return gdb.transaction2(ctx, func(tx *tx) error {
+	return gdb.transaction(ctx, func(tx *tx) error {
 		if err := tx.isUserEntity(ctx, eventID); err != nil {
 			return err
 		}

@@ -18,7 +18,7 @@ func (gdb *gormdb) withUserProjects(ctx context.Context) *gorm.DB {
 }
 
 func (gdb *gormdb) createProject(ctx context.Context, p *scheme.Project) error {
-	return gdb.transaction2(ctx, func(tx *tx) error {
+	return gdb.transaction(ctx, func(tx *tx) error {
 		// ensure there is no active project with the same name (but allow deleted ones)
 		// - `deleted_at is NULL` will be added automatically to the query scope
 		// - we use Find, since it won't return and report/log ErrRecordNotFound
@@ -35,7 +35,7 @@ func (gdb *gormdb) createProject(ctx context.Context, p *scheme.Project) error {
 }
 
 func (gdb *gormdb) deleteProject(ctx context.Context, projectID sdktypes.UUID) error {
-	return gdb.transaction2(ctx, func(tx *tx) error {
+	return gdb.transaction(ctx, func(tx *tx) error {
 		if err := tx.isUserEntity(ctx, projectID); err != nil {
 			return err
 		}
@@ -102,7 +102,7 @@ func (gdb *gormdb) deleteProjectAndDependents(ctx context.Context, projectID sdk
 
 func (gdb *gormdb) updateProject(ctx context.Context, p *scheme.Project) error {
 	// REVIEW: security? any specific fields to allow? resources to disallow?
-	return gdb.transaction2(ctx, func(tx *tx) error {
+	return gdb.transaction(ctx, func(tx *tx) error {
 		if err := tx.isUserEntity(ctx, p.ProjectID); err != nil {
 			return err
 		}

@@ -31,7 +31,7 @@ func (gdb *gormdb) setVar(ctx context.Context, vr *scheme.Var) error {
 	// Set the ID for each var. Note that it be used only when creating the variable, on update with conflict it will be ignored
 	vr.VarID = varIDfunc()
 
-	return gdb.transaction2(ctx, func(tx *tx) error {
+	return gdb.transaction(ctx, func(tx *tx) error {
 		if err := tx.isUserEntity(ctx, vr.ScopeID); err != nil {
 			return err
 		}
@@ -76,7 +76,7 @@ func varsCommonQuery(db *gorm.DB, scopeID sdktypes.UUID, names []string) *gorm.D
 }
 
 func (gdb *gormdb) deleteVars(ctx context.Context, scopeID sdktypes.UUID, names ...string) error {
-	return gdb.transaction2(ctx, func(tx *tx) error {
+	return gdb.transaction(ctx, func(tx *tx) error {
 		if err := tx.isUserEntity(ctx, scopeID); err != nil {
 			return err
 		}

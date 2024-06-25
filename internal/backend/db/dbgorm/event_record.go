@@ -11,7 +11,7 @@ import (
 )
 
 func (gdb *gormdb) addEventRecord(ctx context.Context, er *scheme.EventRecord) error {
-	return gdb.transaction2(ctx, func(tx *tx) error {
+	return gdb.transaction(ctx, func(tx *tx) error {
 		if err := tx.isUserEntity(ctx, er.EventID); err != nil {
 			return err
 		}
@@ -28,7 +28,7 @@ func (gdb *gormdb) addEventRecord(ctx context.Context, er *scheme.EventRecord) e
 
 func (gdb *gormdb) listEventRecords(ctx context.Context, eventID sdktypes.UUID) ([]scheme.EventRecord, error) {
 	var ers []scheme.EventRecord
-	if err := gdb.transaction2(ctx, func(tx *tx) error { // REVIEW: do we need transaction in those cases?
+	if err := gdb.transaction(ctx, func(tx *tx) error { // REVIEW: do we need transaction in those cases?
 		if err := tx.isUserEntity(ctx, eventID); err != nil {
 			return err
 		}
