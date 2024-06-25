@@ -13,6 +13,9 @@ def name_of(node):
         slice = node.slice.value
         return f'{name}["{slice}"]'
 
+    if isinstance(node, ast.Constant):
+        return node.value
+
     if isinstance(node, ast.Attribute):
         prefix = name_of(node.value)
         return f'{prefix}.{node.attr}'
