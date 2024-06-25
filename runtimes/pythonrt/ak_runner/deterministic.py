@@ -13,12 +13,17 @@ def is_determinstic(fn):
     if fn in functions:
         return True
 
-    if fn.__module__ in modules:
+    if getattr(fn, "__module__", None) in modules:
         return True
 
-    self = getattr(fn, "__self__", None)
-    if self is not None:
-        return self.__class__ in builtin_types
+    if hasattr(fn, "__self__"):  # A bound method
+        cls = fn.__self__.__class__
+        if cls in builtin_types:
+            return True
+
+        mod = cls.__module__
+        if mod != "builtins" and mod in modules:
+            return True
 
     return False
 
