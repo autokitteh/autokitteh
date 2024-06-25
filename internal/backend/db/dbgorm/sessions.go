@@ -28,7 +28,7 @@ func (gdb *gormdb) createSession(ctx context.Context, session *scheme.Session) e
 		return err
 	}
 
-	return gdb.transaction2(ctx, func(tx *tx) error {
+	return gdb.transaction(ctx, func(tx *tx) error {
 		if err := createEntityWithOwnership(ctx, tx.db, session); err != nil {
 			return err
 		}
@@ -37,7 +37,7 @@ func (gdb *gormdb) createSession(ctx context.Context, session *scheme.Session) e
 }
 
 func (gdb *gormdb) deleteSession(ctx context.Context, sessionID sdktypes.UUID) error {
-	return gdb.transaction2(ctx, func(tx *tx) error {
+	return gdb.transaction(ctx, func(tx *tx) error {
 		if err := tx.isUserEntity(ctx, sessionID); err != nil {
 			return err
 		}
@@ -52,7 +52,7 @@ func (gdb *gormdb) updateSessionState(ctx context.Context, sessionID sdktypes.UU
 		return err
 	}
 
-	return gdb.transaction2(ctx, func(tx *tx) error {
+	return gdb.transaction(ctx, func(tx *tx) error {
 		if err := tx.isUserEntity(ctx, sessionID); err != nil {
 			return err
 		}
@@ -121,7 +121,7 @@ func (gdb *gormdb) listSessions(ctx context.Context, f sdkservices.ListSessionsF
 
 // --- log records ---
 func (gdb *gormdb) addSessionLogRecord(ctx context.Context, logr *scheme.SessionLogRecord) error {
-	return gdb.transaction2(ctx, func(tx *tx) error {
+	return gdb.transaction(ctx, func(tx *tx) error {
 		if err := tx.isUserEntity(ctx, logr.SessionID); err != nil {
 			return err
 		}
@@ -131,7 +131,7 @@ func (gdb *gormdb) addSessionLogRecord(ctx context.Context, logr *scheme.Session
 
 func (gdb *gormdb) getSessionLogRecords(ctx context.Context, sessionID sdktypes.UUID) ([]scheme.SessionLogRecord, error) {
 	var logs []scheme.SessionLogRecord
-	if err := gdb.transaction2(ctx, func(tx *tx) error {
+	if err := gdb.transaction(ctx, func(tx *tx) error {
 		if err := tx.isUserEntity(ctx, sessionID); err != nil {
 			return err
 		}
@@ -160,7 +160,7 @@ func (gdb *gormdb) createSessionCall(ctx context.Context, sessionID sdktypes.UUI
 		Data:      jsonSpec,
 	}
 
-	return gdb.transaction2(ctx, func(tx *tx) error {
+	return gdb.transaction(ctx, func(tx *tx) error {
 		if err := tx.isUserEntity(ctx, sessionID); err != nil {
 			return err
 		}
@@ -173,7 +173,7 @@ func (gdb *gormdb) createSessionCall(ctx context.Context, sessionID sdktypes.UUI
 
 func (gdb *gormdb) getSessionCallSpec(ctx context.Context, sessionID sdktypes.UUID, seq uint32) (*scheme.SessionCallSpec, error) {
 	var r scheme.SessionCallSpec
-	if err := gdb.transaction2(ctx, func(tx *tx) error {
+	if err := gdb.transaction(ctx, func(tx *tx) error {
 		if err := tx.isUserEntity(ctx, sessionID); err != nil {
 			return err
 		}
@@ -195,7 +195,7 @@ func countCallAttemps(db *gorm.DB, sessionID sdktypes.UUID, seq uint32) (uint32,
 }
 
 func (gdb *gormdb) startSessionCallAttempt(ctx context.Context, sessionID sdktypes.UUID, seq uint32) (attempt uint32, err error) {
-	err = gdb.transaction2(ctx, func(tx *tx) error {
+	err = gdb.transaction(ctx, func(tx *tx) error {
 		if err := tx.isUserEntity(ctx, sessionID); err != nil {
 			return err
 		}
@@ -243,7 +243,7 @@ func (gdb *gormdb) completeSessionCallAttempt(ctx context.Context, sessionID sdk
 	}
 	r := scheme.SessionCallAttempt{Complete: json}
 
-	return gdb.transaction2(ctx, func(tx *tx) error {
+	return gdb.transaction(ctx, func(tx *tx) error {
 		if err := tx.isUserEntity(ctx, sessionID); err != nil {
 			return err
 		}
@@ -261,7 +261,7 @@ func (gdb *gormdb) completeSessionCallAttempt(ctx context.Context, sessionID sdk
 func (gdb *gormdb) getSessionCallAttemptResult(ctx context.Context, sessionID sdktypes.UUID, seq uint32, attempt int64) (*scheme.SessionCallAttempt, error) {
 	var r scheme.SessionCallAttempt
 
-	if err := gdb.transaction2(ctx, func(tx *tx) error {
+	if err := gdb.transaction(ctx, func(tx *tx) error {
 		if err := tx.isUserEntity(ctx, sessionID); err != nil {
 			return err
 		}

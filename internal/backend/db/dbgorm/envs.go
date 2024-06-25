@@ -20,7 +20,7 @@ func (gdb *gormdb) createEnv(ctx context.Context, env *scheme.Env) error {
 }
 
 func (gdb *gormdb) deleteEnv(ctx context.Context, envID sdktypes.UUID) error {
-	return gdb.transaction2(ctx, func(tx *tx) error {
+	return gdb.transaction(ctx, func(tx *tx) error {
 		return tx.deleteEnvs(ctx, []sdktypes.UUID{envID})
 	})
 }

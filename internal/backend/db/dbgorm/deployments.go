@@ -21,7 +21,7 @@ func (gdb *gormdb) createDeployment(ctx context.Context, deployment *scheme.Depl
 }
 
 func (gdb *gormdb) deleteDeployment(ctx context.Context, deploymentID sdktypes.UUID) error {
-	return gdb.transaction2(ctx, func(tx *tx) error {
+	return gdb.transaction(ctx, func(tx *tx) error {
 		if err := tx.isUserEntity(ctx, deploymentID); err != nil {
 			return err
 		}
@@ -54,7 +54,7 @@ func (gdb *gormdb) deleteDeploymentsAndDependents(ctx context.Context, depIDs []
 func (gdb *gormdb) updateDeploymentState(ctx context.Context, deploymentID sdktypes.UUID, state sdktypes.DeploymentState) error {
 	d := &scheme.Deployment{DeploymentID: deploymentID}
 
-	return gdb.transaction2(ctx, func(tx *tx) error {
+	return gdb.transaction(ctx, func(tx *tx) error {
 		if err := tx.isUserEntity(ctx, deploymentID); err != nil {
 			return err
 		}

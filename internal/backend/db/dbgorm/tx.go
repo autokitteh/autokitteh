@@ -49,24 +49,8 @@ func (db *gormdb) Transaction(ctx context.Context, f func(db db.DB) error) error
 	})
 }
 
-func (db *gormdb) transaction(ctx context.Context, f func(tx *tx) error) error {
-	return db.locked(func(db *gormdb) error {
-		return db.db.WithContext(ctx).Transaction(func(txdb *gorm.DB) error {
-			return f(
-				&tx{
-					gormdb: gormdb{
-						z:  db.z.With(zap.String("txid", uuid.NewString())),
-						db: txdb,
-					},
-				},
-			)
-		})
-	})
-}
-
 // FIXME: fix/rewrite locked()
-// the same as transaction, but without translating the error in locked()
-func (db *gormdb) transaction2(ctx context.Context, f func(tx *tx) error) error {
+func (db *gormdb) transaction(ctx context.Context, f func(tx *tx) error) error {
 	return db.locked2(func(db *gormdb) error {
 		return db.db.WithContext(ctx).Transaction(func(txdb *gorm.DB) error {
 			return f(

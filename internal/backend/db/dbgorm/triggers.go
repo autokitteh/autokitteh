@@ -18,7 +18,7 @@ func (gdb *gormdb) withUserTriggers(ctx context.Context) *gorm.DB {
 }
 
 func (gdb *gormdb) createTrigger(ctx context.Context, trigger *scheme.Trigger) error {
-	return gdb.transaction2(ctx, func(tx *tx) error {
+	return gdb.transaction(ctx, func(tx *tx) error {
 		// REVIEW: should we also check ConnectionID? beware of global cron connection
 		if err := tx.isUserEntity(ctx, trigger.ProjectID); err != nil {
 			return err
@@ -28,7 +28,7 @@ func (gdb *gormdb) createTrigger(ctx context.Context, trigger *scheme.Trigger) e
 }
 
 func (gdb *gormdb) deleteTrigger(ctx context.Context, triggerID sdktypes.UUID) error {
-	return gdb.transaction2(ctx, func(tx *tx) error {
+	return gdb.transaction(ctx, func(tx *tx) error {
 		if err := tx.isUserEntity(ctx, triggerID); err != nil {
 			return err
 		}
@@ -37,7 +37,7 @@ func (gdb *gormdb) deleteTrigger(ctx context.Context, triggerID sdktypes.UUID) e
 }
 
 func (gdb *gormdb) updateTrigger(ctx context.Context, triggerID sdktypes.UUID, data map[string]any) error {
-	return gdb.transaction2(ctx, func(tx *tx) error {
+	return gdb.transaction(ctx, func(tx *tx) error {
 		if err := tx.isUserEntity(ctx, triggerID); err != nil {
 			return err
 		}
