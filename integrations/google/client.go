@@ -33,7 +33,6 @@ var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.Integrati
 func New(cvars sdkservices.Vars) sdkservices.Integration {
 	scope := desc.UniqueName().String()
 
-	// TODO: Calendar.
 	// TODO: Chat.
 	// TODO: Drive.
 	// TODO: Forms.
