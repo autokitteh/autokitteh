@@ -10,6 +10,7 @@ import (
 	"go.autokitteh.dev/autokitteh/integrations/chatgpt"
 	"go.autokitteh.dev/autokitteh/integrations/github"
 	"go.autokitteh.dev/autokitteh/integrations/google"
+	"go.autokitteh.dev/autokitteh/integrations/google/calendar"
 	"go.autokitteh.dev/autokitteh/integrations/google/gmail"
 	"go.autokitteh.dev/autokitteh/integrations/google/sheets"
 	"go.autokitteh.dev/autokitteh/integrations/grpc"
@@ -35,6 +36,7 @@ var Configs = configset.Set[Config]{
 func New(cfg *Config, vars sdkservices.Vars) sdkservices.Integrations {
 	ints := []sdkservices.Integration{
 		aws.New(vars),
+		calendar.New(vars),
 		chatgpt.New(vars),
 		github.New(vars),
 		gmail.New(vars),
