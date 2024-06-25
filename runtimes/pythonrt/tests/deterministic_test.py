@@ -12,7 +12,7 @@ nonact_caes = [
     (datetime.now, False),
     (datetime.strptime, True),
     ([].append, True),
-    (re.search('[a-z]', 'hello').group, True),
+    (re.search("[a-z]", "hello").group, True),
 ]
 
 
