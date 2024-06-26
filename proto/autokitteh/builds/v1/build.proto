@@ -6,6 +6,6 @@ import "google/protobuf/timestamp.proto";
 
 message Build {
   string build_id = 1;
-
+  string project_id = 2; // optional
   google.protobuf.Timestamp created_at = 3;
 }
