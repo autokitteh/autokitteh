@@ -76,8 +76,6 @@ func (gdb *gormdb) listConnections(ctx context.Context, filter sdkservices.ListC
 	return findConnections(q)
 }
 
-// ------------------------------------------------------------------------------------------------
-
 func (db *gormdb) CreateConnection(ctx context.Context, conn sdktypes.Connection) error {
 	if err := conn.Strict(); err != nil {
 		return err

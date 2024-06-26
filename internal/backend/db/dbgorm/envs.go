@@ -64,7 +64,6 @@ func (gdb *gormdb) listEnvs(ctx context.Context, projectID sdktypes.UUID) ([]sch
 	return envs, nil
 }
 
-// ------------------------------------------------------------------------------------------------
 func (db *gormdb) CreateEnv(ctx context.Context, env sdktypes.Env) error {
 	if err := env.Strict(); err != nil {
 		return err

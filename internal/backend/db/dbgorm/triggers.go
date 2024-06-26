@@ -72,7 +72,6 @@ func (gdb *gormdb) listTriggers(ctx context.Context, filter sdkservices.ListTrig
 	return ts, nil
 }
 
-// ------------------------------------------------------------------------------------------------
 func (db *gormdb) triggerToRecord(ctx context.Context, trigger sdktypes.Trigger) (*scheme.Trigger, error) {
 	connID := trigger.ConnectionID()
 

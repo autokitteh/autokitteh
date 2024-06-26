@@ -289,7 +289,6 @@ func (gdb *gormdb) getSessionCallAttemptResult(ctx context.Context, sessionID sd
 	return &r, nil
 }
 
-// ------------------------------------------------------------------------------------------------
 func (db *gormdb) CreateSession(ctx context.Context, session sdktypes.Session) error {
 	if err := session.Strict(); err != nil {
 		return err

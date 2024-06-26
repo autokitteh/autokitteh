@@ -128,8 +128,6 @@ func (gdb *gormdb) listProjects(ctx context.Context) ([]scheme.Project, error) {
 	return ps, nil
 }
 
-//------------------------------------------------------------------------------------------------
-
 func (db *gormdb) CreateProject(ctx context.Context, p sdktypes.Project) error {
 	if err := p.Strict(); err != nil {
 		return err
