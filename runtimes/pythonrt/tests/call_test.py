@@ -3,11 +3,12 @@ import pickle
 from base64 import b64encode
 from socket import socketpair
 from threading import Thread
+from time import sleep
 from unittest.mock import MagicMock
 
 from autokitteh import decorators
-from loader_test import simple_dir
 from conftest import testdata
+from loader_test import simple_dir
 
 import ak_runner
 
@@ -183,3 +184,12 @@ def test_pickle_function():
     }
 
     ak_call(mod.printer, event)
+
+
+def test_sleep_activity():
+    comm = MagicMock()
+    ak_call = ak_runner.AKCall(comm)
+    ak_call.in_activity = True
+    ak_call(sleep, 0.1)
+
+    assert comm.send_call.call_count == 0

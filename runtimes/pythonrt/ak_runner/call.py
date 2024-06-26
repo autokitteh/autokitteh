@@ -55,6 +55,9 @@ class AKCall:
 
     def __call__(self, func, *args, **kw):
         if func in AK_FUNCS:
+            if self.in_activity and func is sleep:
+                return func(*args, **kw)
+
             log.info("ak function call: %s(%r, %r)", func.__name__, args, kw)
             self.comm.send_call(func.__name__, args)
             msg = self.comm.recv(MessageType.call_return)

@@ -117,3 +117,23 @@ def test_module_level():
 
     mod.on_event(None)
     assert mod.ncalls == 1
+
+
+const_code = '''
+def handler(event):
+    msg = 'INFO: event: {event!r}'.format(event=event)
+    print(msg)
+    return msg
+'''
+
+def test_const(tmp_path):
+    mod_name = 'const'
+    file_name = tmp_path / (mod_name + '.py')
+    with open(file_name, 'w') as out:
+        out.write(const_code)
+
+    def ak_call(fn, *args, **kw):
+        return fn(*args, **kw)
+
+    mod = loader.load_code(tmp_path, ak_call, mod_name)
+    assert mod.handler('meow') == "INFO: event: 'meow'"
