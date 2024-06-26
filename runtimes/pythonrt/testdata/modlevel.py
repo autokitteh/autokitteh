@@ -1,7 +1,7 @@
 from os import getenv
 from random import randint
 
-home = getenv('HOME')
+home = getenv("HOME")
 
 ncalls = 0
 
@@ -11,4 +11,4 @@ def on_event(event):
 
     ncalls += 1
 
-    print('dice:', randint(1, 6))
+    print("dice:", randint(1, 6))

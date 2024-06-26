@@ -144,4 +144,6 @@ db:
 
 ## Hacking
 
-Since `ak_runner.py` is embedded in `ak`, you'll need to build it (`make bin` from root of project) every time you change Python code and want to run workflows.
+The `ak_runner` is directory in `ak`, you'll need to build it (`make bin` from root of project) every time you change Python code and want to run workflows.
+
+Your code should be formatted with `ruff`.

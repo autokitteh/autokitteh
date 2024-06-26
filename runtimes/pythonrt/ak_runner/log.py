@@ -1,11 +1,12 @@
 import logging
 
-_log = logging.getLogger('AK')
+_log = logging.getLogger("AK")
 
 info = _log.info
 warning = _log.warning
 error = _log.error
 exception = _log.exception
+
 
 class AKLogHandler(logging.Handler):
     def __init__(self, level, comm):
@@ -14,10 +15,10 @@ class AKLogHandler(logging.Handler):
         self.formatter = logging.Formatter()
 
     def emit(self, record):
-        level = 'ERROR' if record.levelname == 'CRITICAL' else record.levelname
+        level = "ERROR" if record.levelname == "CRITICAL" else record.levelname
         message = record.getMessage()
         if record.exc_info:
-            message += '\n' + self.formatter.formatException(record.exc_info)
+            message += "\n" + self.formatter.formatException(record.exc_info)
         self.comm.send_log(level, message)
 
 
