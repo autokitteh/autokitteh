@@ -22,7 +22,7 @@ var GmailWebContent embed.FS
 //go:embed google/connect
 var GoogleWebContent embed.FS
 
-//go:embed google/connect
+//go:embed googlecalendar/connect
 var GoogleCalendarWebContent embed.FS
 
 //go:embed google/connect
