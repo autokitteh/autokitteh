@@ -127,7 +127,6 @@ func (db *gormdb) listDeployments(ctx context.Context, filter sdkservices.ListDe
 	return ds, nil
 }
 
-// ------------------------------------------------------------------------------------------------
 func (db *gormdb) CreateDeployment(ctx context.Context, deployment sdktypes.Deployment) error {
 	if err := deployment.Strict(); err != nil {
 		return err

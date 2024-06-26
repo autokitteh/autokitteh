@@ -68,7 +68,6 @@ func (gdb *gormdb) listEvents(ctx context.Context, filter sdkservices.ListEvents
 	return es, nil
 }
 
-// ------------------------------------------------------------------------------------------------
 func (db *gormdb) SaveEvent(ctx context.Context, event sdktypes.Event) error {
 	if err := event.Strict(); err != nil {
 		return err
