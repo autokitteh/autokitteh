@@ -17,7 +17,8 @@ func (s Svc) initConnections() {
 
 	s.Muxes.Auth.HandleFunc("GET /connections", s.connections)
 	s.Muxes.Auth.HandleFunc("GET /connections/{cid}", s.connection)
-	s.Muxes.Auth.HandleFunc("GET /connections/{id}/init", s.initConnection)
+	s.Muxes.Auth.HandleFunc("GET /connections/{id}/init", s.initConnection(""))
+	s.Muxes.Auth.HandleFunc("GET /connections/{id}/init/vscode", s.initConnection("vscode"))
 	s.Muxes.Auth.HandleFunc("GET /connections/{id}/postinit", s.postInitConnection)
 	s.Muxes.Auth.HandleFunc("DELETE /connections/{id}/vars", s.rmAllConnectionVars)
 
@@ -179,7 +180,7 @@ func (s Svc) initUnknownConnection(w http.ResponseWriter, r *http.Request, id, v
 }
 
 func (s Svc) postInitConnection(w http.ResponseWriter, r *http.Request) {
-	vars := r.URL.Query().Get("vars")
+	vars, method := r.URL.Query().Get("vars"), r.URL.Query().Get("method")
 
 	id := r.PathValue("id")
 	if sdktypes.IsIntegrationID(id) {
@@ -208,7 +209,12 @@ func (s Svc) postInitConnection(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, "/connections/"+cid.String()+`?msg=Connection initialized 😸`, http.StatusSeeOther)
+	switch method {
+	case "vscode":
+		http.Redirect(w, r, "vscode://autokitteh.autokitteh?cid="+cid.String(), http.StatusSeeOther)
+	default:
+		http.Redirect(w, r, "/connections/"+cid.String()+`?msg=Connection initialized 😸`, http.StatusSeeOther)
+	}
 }
 
 func (s Svc) rmAllConnectionVars(w http.ResponseWriter, r *http.Request) {
@@ -270,34 +276,36 @@ func (s Svc) refreshConnection(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, fmt.Sprintf("/connections/%s", id), http.StatusSeeOther)
 }
 
-func (s Svc) initConnection(w http.ResponseWriter, r *http.Request) {
-	id := r.PathValue("id")
+func (s Svc) initConnection(method string) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		id := r.PathValue("id")
 
-	cid, err := sdktypes.StrictParseConnectionID(id)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
+		cid, err := sdktypes.StrictParseConnectionID(id)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
 
-	sdkC, err := s.Svcs.Connections().Get(r.Context(), cid)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	if !sdkC.IsValid() {
-		http.Error(w, "connection not found", http.StatusNotFound)
-		return
-	}
+		sdkC, err := s.Svcs.Connections().Get(r.Context(), cid)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if !sdkC.IsValid() {
+			http.Error(w, "connection not found", http.StatusNotFound)
+			return
+		}
 
-	sdkI, err := s.Svcs.Integrations().GetByID(r.Context(), sdkC.IntegrationID())
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	if !sdkI.Get().IsValid() {
-		http.Error(w, "integration not found", http.StatusNotFound)
-		return
-	}
+		sdkI, err := s.Svcs.Integrations().GetByID(r.Context(), sdkC.IntegrationID())
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if !sdkI.Get().IsValid() {
+			http.Error(w, "integration not found", http.StatusNotFound)
+			return
+		}
 
-	http.Redirect(w, r, fmt.Sprintf("%s?cid=%v", sdkI.Get().ConnectionURL(), cid), http.StatusSeeOther)
+		http.Redirect(w, r, fmt.Sprintf("%s?cid=%v&method=%s", sdkI.Get().ConnectionURL(), cid, method), http.StatusSeeOther)
+	}
 }
