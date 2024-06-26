@@ -100,7 +100,7 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 // Determine Jira base URL (to support Jira Data Center, i.e. on-prem).
 // TODO(ENG-965): From new-connection form instead of env var.
 func apiBaseURL() (string, error) {
-	u := os.Getenv("JIRA_BASE_URL")
+	u := os.Getenv("ATLASSIAN_BASE_URL")
 	if u == "" {
 		u = "https://api.atlassian.com"
 	}

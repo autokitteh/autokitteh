@@ -131,7 +131,7 @@ func verifyJWT(l *zap.Logger, authz string) bool {
 			l.Warn("Unexpected signing method", zap.Any("alg", token.Header["alg"]))
 		}
 		// TODO(ENG-965): From new-connection form instead of env vars.
-		return []byte(os.Getenv("JIRA_CLIENT_SECRET")), nil
+		return []byte(os.Getenv("ATLASSIAN_CLIENT_SECRET")), nil
 	})
 	if err != nil {
 		l.Warn("Failed to parse JWT", zap.Error(err))
