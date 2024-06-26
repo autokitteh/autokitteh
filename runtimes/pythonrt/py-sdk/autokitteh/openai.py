@@ -4,6 +4,7 @@ import os
 
 from openai import OpenAI
 
+from .connections import check_connection_name
 from .errors import ConnectionInitError
 
 
@@ -24,6 +25,8 @@ def openai_client(connection: str) -> OpenAI:
         ConnectionInitError: AutoKitteh connection was not initialized yet.
         OpenAIError: Connection attempt failed, or connection is unauthorized.
     """
+    check_connection_name(connection)
+
     api_key = os.getenv(connection + "__api_key")
     if not api_key:
         raise ConnectionInitError(connection)
