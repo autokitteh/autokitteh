@@ -6,6 +6,8 @@ import (
 
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/integrations/atlassian/confluence"
+	"go.autokitteh.dev/autokitteh/integrations/atlassian/jira"
 	"go.autokitteh.dev/autokitteh/integrations/aws"
 	"go.autokitteh.dev/autokitteh/integrations/chatgpt"
 	"go.autokitteh.dev/autokitteh/integrations/github"
@@ -15,7 +17,6 @@ import (
 	"go.autokitteh.dev/autokitteh/integrations/google/sheets"
 	"go.autokitteh.dev/autokitteh/integrations/grpc"
 	httpint "go.autokitteh.dev/autokitteh/integrations/http"
-	"go.autokitteh.dev/autokitteh/integrations/jira"
 	"go.autokitteh.dev/autokitteh/integrations/redis"
 	"go.autokitteh.dev/autokitteh/integrations/slack"
 	"go.autokitteh.dev/autokitteh/integrations/twilio"
@@ -38,6 +39,7 @@ func New(cfg *Config, vars sdkservices.Vars) sdkservices.Integrations {
 		aws.New(vars),
 		calendar.New(vars),
 		chatgpt.New(vars),
+		confluence.New(vars),
 		github.New(vars),
 		gmail.New(vars),
 		google.New(vars),
@@ -60,6 +62,7 @@ func New(cfg *Config, vars sdkservices.Vars) sdkservices.Integrations {
 func Start(_ context.Context, l *zap.Logger, mux *http.ServeMux, vars sdkservices.Vars, o sdkservices.OAuth, d sdkservices.Dispatcher, c sdkservices.Connections, p sdkservices.Projects) error {
 	aws.Start(mux)
 	chatgpt.Start(l, mux)
+	confluence.Start(l, mux, vars, o, d)
 	github.Start(l, mux, vars, o, d)
 	google.Start(l, mux, o, d)
 	httpint.Start(l, mux, d, c, p)

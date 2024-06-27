@@ -38,12 +38,28 @@ func New(l *zap.Logger) sdkservices.OAuth {
 	// TODO(ENG-112): Remove (see Register below).
 	redirectURL := fmt.Sprintf("https://%s/oauth/redirect/", os.Getenv("WEBHOOK_ADDRESS"))
 
+	// Determine Atlassian base URL (to support Confluence and Jira on-prem).
+	// TODO(ENG-965): From new-connection form instead of env var.
+	atlassianBaseURL := os.Getenv("ATLASSIAN_BASE_URL")
+	if atlassianBaseURL == "" {
+		atlassianBaseURL = "https://api.atlassian.com"
+	}
+	var err error
+	atlassianBaseURL, err = kittehs.NormalizeURL(atlassianBaseURL, true)
+	if err != nil {
+		l.Fatal("Invalid environment variable value",
+			zap.String("name", "ATLASSIAN_BASE_URL"),
+			zap.Error(err),
+		)
+	}
+	atlassianBaseURL = strings.Replace(atlassianBaseURL, "api", "auth", 1)
+	l.Debug("Atlassian base URL for OAuth", zap.String("url", atlassianBaseURL))
+
 	// Determine GitHub base URL (to support GitHub Enterprise Server, i.e. on-prem).
 	githubBaseURL := os.Getenv("GITHUB_ENTERPRISE_URL")
 	if githubBaseURL == "" {
 		githubBaseURL = "https://github.com"
 	}
-	var err error
 	githubBaseURL, err = kittehs.NormalizeURL(githubBaseURL, true)
 	if err != nil {
 		l.Fatal("Invalid environment variable value",
@@ -58,28 +74,47 @@ func New(l *zap.Logger) sdkservices.OAuth {
 		appsDir = "github-apps"
 	}
 
-	// Determine Jira base URL (to support Jira Data Center, i.e. on-prem).
-	// TODO(ENG-965): From new-connection form instead of env var.
-	jiraBaseURL := os.Getenv("JIRA_BASE_URL")
-	if jiraBaseURL == "" {
-		jiraBaseURL = "https://api.atlassian.com"
-	}
-	jiraBaseURL, err = kittehs.NormalizeURL(jiraBaseURL, true)
-	if err != nil {
-		l.Fatal("Invalid environment variable value",
-			zap.String("name", "JIRA_BASE_URL"),
-			zap.Error(err),
-		)
-	}
-	jiraBaseURL = strings.Replace(jiraBaseURL, "api", "auth", 1)
-	l.Debug("Jira base URL for OAuth", zap.String("url", jiraBaseURL))
-
 	return &oauth{
 		logger: l,
 		// TODO(ENG-112): Construct the following 2 maps with dynamic integration
 		// registrations, where each integration registration will call Register
 		// below (if it uses OAuth). This hard-coding is EXTREMELY TEMPORARY!
 		configs: map[string]*oauth2.Config{
+			"confluence": {
+				// TODO(ENG-965): From new-connection form instead of env vars.
+				ClientID:     os.Getenv("CONFLUENCE_CLIENT_ID"),
+				ClientSecret: os.Getenv("CONFLUENCE_CLIENT_SECRET"),
+				// https://developer.atlassian.com/cloud/confluence/oauth-2-3lo-apps/
+				// https://auth.atlassian.com/.well-known/openid-configuration
+				Endpoint: oauth2.Endpoint{
+					AuthURL:       fmt.Sprintf("%s/authorize", atlassianBaseURL),
+					TokenURL:      fmt.Sprintf("%s/oauth/token", atlassianBaseURL),
+					DeviceAuthURL: fmt.Sprintf("%s/oauth/device/code", atlassianBaseURL),
+				},
+				RedirectURL: redirectURL + "confluence",
+				// https://developer.atlassian.com/cloud/confluence/scopes-for-oauth-2-3LO-and-forge-apps/
+				Scopes: []string{
+					"write:confluence-content",
+					"read:confluence-space.summary", // Needed?
+					"write:confluence-space",
+					"write:confluence-file",
+					"read:confluence-props", // Needed?
+					"write:confluence-props",
+					"manage:confluence-configuration",    // Needed?
+					"read:confluence-content.all",        // Needed?
+					"search:confluence",                  // Needed?
+					"read:confluence-content.permission", // Needed?
+					"read:confluence-user",
+					"read:confluence-groups", // Needed?
+					"write:confluence-groups",
+					"readonly:content.attachment:confluence", // Needed?
+					// User identity API.
+					"read:account",
+					// https://developer.atlassian.com/cloud/jira/platform/oauth-2-3lo-apps/#use-a-refresh-token-to-get-another-access-token-and-refresh-token-pair
+					"offline_access",
+				},
+			},
+
 			// Based on:
 			// https://github.com/organizations/autokitteh/settings/apps/autokitteh
 			"github": {
@@ -254,18 +289,21 @@ func New(l *zap.Logger) sdkservices.OAuth {
 				// https://developer.atlassian.com/cloud/jira/platform/oauth-2-3lo-apps/
 				// https://auth.atlassian.com/.well-known/openid-configuration
 				Endpoint: oauth2.Endpoint{
-					AuthURL:       fmt.Sprintf("%s/authorize", jiraBaseURL),
-					TokenURL:      fmt.Sprintf("%s/oauth/token", jiraBaseURL),
-					DeviceAuthURL: fmt.Sprintf("%s/oauth/device/code", jiraBaseURL),
+					AuthURL:       fmt.Sprintf("%s/authorize", atlassianBaseURL),
+					TokenURL:      fmt.Sprintf("%s/oauth/token", atlassianBaseURL),
+					DeviceAuthURL: fmt.Sprintf("%s/oauth/device/code", atlassianBaseURL),
 				},
 				RedirectURL: redirectURL + "jira",
 				// https://developer.atlassian.com/cloud/jira/platform/scopes-for-oauth-2-3LO-and-forge-apps/
 				Scopes: []string{
-					"read:account",
-					"read:jira-work",
+					"read:jira-work", // Needed?
 					"read:jira-user",
 					"write:jira-work",
 					"manage:jira-webhook",
+					// User identity API.
+					"read:account",
+					// https://developer.atlassian.com/cloud/jira/platform/oauth-2-3lo-apps/#use-a-refresh-token-to-get-another-access-token-and-refresh-token-pair
+					"offline_access",
 				},
 			},
 
@@ -340,10 +378,6 @@ func New(l *zap.Logger) sdkservices.OAuth {
 				"prompt":      "consent", // oauth2.ApprovalForce
 			},
 			"googlesheets": {
-				"access_type": "offline", // oauth2.AccessTypeOffline
-				"prompt":      "consent", // oauth2.ApprovalForce
-			},
-			"jira": {
 				"access_type": "offline", // oauth2.AccessTypeOffline
 				"prompt":      "consent", // oauth2.ApprovalForce
 			},

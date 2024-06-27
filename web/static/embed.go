@@ -13,6 +13,9 @@ var AWSWebContent embed.FS
 //go:embed chatgpt/connect
 var ChatGPTWebContent embed.FS
 
+//go:embed confluence/connect
+var ConfluenceWebContent embed.FS
+
 //go:embed github/connect
 var GitHubWebContent embed.FS
 

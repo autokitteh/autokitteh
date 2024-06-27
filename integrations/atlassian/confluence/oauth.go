@@ -1,4 +1,4 @@
-package jira
+package confluence
 
 import (
 	"encoding/json"
@@ -47,8 +47,8 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 
 	url, err := apiBaseURL()
 	if err != nil {
-		l.Warn("Invalid Jira base URL", zap.Error(err))
-		redirectToErrorPage(w, r, "invalid Jira base URL")
+		l.Warn("Invalid Atlassian base URL", zap.Error(err))
+		redirectToErrorPage(w, r, "invalid Atlassian base URL")
 		return
 	}
 
@@ -65,42 +65,18 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !checkWebhookPermissions(res[0].Scopes) {
-		l.Warn("Insufficient webhook permissions for OAuth token", zap.Any("resources", res))
-		redirectToErrorPage(w, r, "insufficient webhook permissions")
-		return
-	}
+	// Attention: in Confluence, there's no known workaround to define
+	// webhooks when using OAuth 2.0, only when using a token!
 
-	// Register a new webhook to receive, parse, and dispatch
-	// Jira events, or extend the deadline of an existing one.
-	url += "/ex/jira/" + res[0].ID
-	t := utc30Days()
-	id, ok := getWebhook(l, url, oauthToken.AccessToken)
-	if !ok {
-		id, ok = registerWebhook(l, url, oauthToken.AccessToken)
-		if !ok {
-			redirectToErrorPage(w, r, "failed to register webhook")
-			return
-		}
-	} else {
-		t, ok = extendWebhookLife(l, url, oauthToken.AccessToken, id)
-		if !ok {
-			redirectToErrorPage(w, r, "failed to extend webhook life")
-			return
-		}
-	}
-
-	initData := sdktypes.NewVars(data.ToVars()...).Append(res[0].toVars()...).
-		Append(sdktypes.NewVar(webhookID, fmt.Sprintf("%d", id), false)).
-		Append(sdktypes.NewVar(webhookExpiration, t.String(), false))
+	initData := sdktypes.NewVars(data.ToVars()...).Append(res[0].toVars()...)
 
 	sdkintegrations.FinalizeConnectionInit(w, r, integrationID, initData)
 }
 
-// Determine Jira base URL (to support Jira Data Center, i.e. on-prem).
+// Determine Atlassian base URL (to support on-prem servers).
 // TODO(ENG-965): From new-connection form instead of env var.
 func apiBaseURL() (string, error) {
-	u := os.Getenv("JIRA_BASE_URL")
+	u := os.Getenv("ATLASSIAN_BASE_URL")
 	if u == "" {
 		u = "https://api.atlassian.com"
 	}
@@ -115,8 +91,9 @@ type resource struct {
 	AvatarURL string   `json:"avatarUrl"`
 }
 
-// accessibleResources retrieves the Jira Cloud metadata associated with an
-// OAuth token, which is necessary for API calls and webhook events. Based on:
+// accessibleResources retrieves the Atlassian Cloud metadata associated with
+// an OAuth token, which is necessary for API calls and webhook events. Based on:
+// https://developer.atlassian.com/cloud/confluence/oauth-2-3lo-apps/#3--make-calls-to-the-api-using-the-access-token
 // https://developer.atlassian.com/cloud/jira/platform/oauth-2-3lo-apps/#3--make-calls-to-the-api-using-the-access-token
 func accessibleResources(l *zap.Logger, baseURL string, token string) ([]resource, error) {
 	u := fmt.Sprintf("%s/oauth/token/accessible-resources", baseURL)
