@@ -42,7 +42,7 @@ func NewHTTPHandler(l *zap.Logger, o sdkservices.OAuth, v sdkservices.Vars, d sd
 }
 
 // handleEvent receives from Jira asynchronous events,
-// and dispatches them to one or more AutoKitteh connections.
+// and dispatches them to zero or more AutoKitteh connections.
 // Note 1: By default, AutoKitteh creates webhooks automatically,
 // subscribing to all events - see "webhooks.go" for more details.
 // TODO(ENG-965):

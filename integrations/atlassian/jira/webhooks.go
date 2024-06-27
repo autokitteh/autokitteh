@@ -232,6 +232,7 @@ func registerWebhook(l *zap.Logger, base, token string) (int, bool) {
 		return 0, false
 	}
 
+	// Success.
 	return reg.Result[0].CreatedWebhookID, true
 }
 
