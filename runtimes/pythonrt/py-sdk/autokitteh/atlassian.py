@@ -1,17 +1,19 @@
-"""Initialize an Atlassian Jira client, based on an AutoKitteh connection."""
+"""Initialize an Atlassian client, based on an AutoKitteh connection."""
 
-from datetime import UTC, datetime
-import re
 import os
 
 from atlassian import Confluence, Jira
 from jira import JIRA
+from requests_oauthlib import OAuth2Session
 
 from .connections import check_connection_name
 from .errors import ConnectionInitError, EnvVarError
 
 
-def atlassian_jira_client(connection: str, **kwargs):
+__TOKEN_URL = "https://auth.atlassian.com/oauth/token"
+
+
+def atlassian_jira_client(connection: str, **kwargs) -> Jira:
     """Initialize an Atlassian Jira client, based on an AutoKitteh connection.
 
     API reference:
@@ -28,7 +30,6 @@ def atlassian_jira_client(connection: str, **kwargs):
 
     Raises:
         ValueError: AutoKitteh connection name is invalid.
-        RuntimeError: OAuth 2.0 access token expired.
         ConnectionInitError: AutoKitteh connection was not initialized yet.
         EnvVarError: Required environment variable is missing or invalid.
     """
@@ -54,40 +55,37 @@ def atlassian_jira_client(connection: str, **kwargs):
     raise ConnectionInitError(connection)
 
 
-def __atlassian_jira_client_cloud_oauth2(connection: str, **kwargs):
+def __atlassian_jira_client_cloud_oauth2(connection: str, **kwargs) -> Jira:
     """Initialize a Jira client for Atlassian Cloud using OAuth 2.0."""
-    expiry = os.getenv(connection + "__oauth_Expiry")
-    if not expiry:
-        raise ConnectionInitError(connection)
-
-    # Convert Go's time string (e.g. "2024-06-20 19:18:17 -0700 PDT") to
-    # an ISO-8601 string that Python can parse with timezone awareness.
-    timestamp = re.sub(r" [A-Z]+.*", "", expiry)
-    if datetime.fromisoformat(timestamp) < datetime.now(UTC):
-        raise RuntimeError("OAuth 2.0 access token expired on: " + expiry)
-
-    cloud_id = os.getenv(connection + "__access_ID")
-    if not cloud_id:
-        raise ConnectionInitError(connection)
-
     client_id = os.getenv("JIRA_CLIENT_ID")
     if not client_id:
         raise EnvVarError("JIRA_CLIENT_ID", "missing")
 
+    client_secret = os.getenv("JIRA_CLIENT_SECRET")
+    if not client_id:
+        raise EnvVarError("JIRA_CLIENT_SECRET", "missing")
+
+    extra = {"client_id": client_id, "client_secret": client_secret}
+    oauth = OAuth2Session(client_id, auto_refresh_kwargs=extra)
+
+    refresh = os.getenv(connection + "__oauth_RefreshToken")
+    if not refresh:
+        raise ConnectionInitError(connection)
+
+    token = oauth.refresh_token(__TOKEN_URL, refresh_token=refresh)
+
+    cloud_id = os.getenv(connection + "__AccessID")
+    if not cloud_id:
+        raise ConnectionInitError(connection)
+
     return Jira(
         url="https://api.atlassian.com/ex/jira/" + cloud_id,
-        oauth2={
-            "client_id": client_id,
-            "token": {
-                "access_token": os.getenv(connection + "__oauth_AccessToken"),
-                "token_type": os.getenv(connection + "__oauth_TokenType"),
-            },
-        },
+        oauth2={"client_id": client_id, "token": token},
         **kwargs,
     )
 
 
-def confluence_client(connection: str, **kwargs):
+def confluence_client(connection: str, **kwargs) -> Confluence:
     """Initialize an Atlassian Confluence client, based on an AutoKitteh connection.
 
     API reference:
@@ -104,14 +102,13 @@ def confluence_client(connection: str, **kwargs):
 
     Raises:
         ValueError: AutoKitteh connection name is invalid.
-        RuntimeError: OAuth 2.0 access token expired.
         ConnectionInitError: AutoKitteh connection was not initialized yet.
         EnvVarError: Required environment variable is missing or invalid.
     """
     check_connection_name(connection)
 
     if os.getenv(connection + "__oauth_AccessToken"):
-        return __atlassian_confluence_client_cloud_oauth2(connection, **kwargs)
+        return __confluence_client_cloud_oauth2(connection, **kwargs)
 
     base_url = os.getenv(connection + "__BaseURL")
     token = os.getenv(connection + "__Token")
@@ -130,35 +127,32 @@ def confluence_client(connection: str, **kwargs):
     raise ConnectionInitError(connection)
 
 
-def __atlassian_confluence_client_cloud_oauth2(connection: str, **kwargs):
+def __confluence_client_cloud_oauth2(connection: str, **kwargs) -> Confluence:
     """Initialize a Confluence client for Atlassian Cloud using OAuth 2.0."""
-    expiry = os.getenv(connection + "__oauth_Expiry")
-    if not expiry:
-        raise ConnectionInitError(connection)
-
-    # Convert Go's time string (e.g. "2024-06-20 19:18:17 -0700 PDT") to
-    # an ISO-8601 string that Python can parse with timezone awareness.
-    timestamp = re.sub(r" [A-Z]+.*", "", expiry)
-    if datetime.fromisoformat(timestamp) < datetime.now(UTC):
-        raise RuntimeError("OAuth 2.0 access token expired on: " + expiry)
-
-    cloud_id = os.getenv(connection + "__access_ID")
-    if not cloud_id:
-        raise ConnectionInitError(connection)
-
     client_id = os.getenv("CONFLUENCE_CLIENT_ID")
     if not client_id:
         raise EnvVarError("CONFLUENCE_CLIENT_ID", "missing")
 
+    client_secret = os.getenv("CONFLUENCE_CLIENT_SECRET")
+    if not client_id:
+        raise EnvVarError("CONFLUENCE_CLIENT_SECRET", "missing")
+
+    extra = {"client_id": client_id, "client_secret": client_secret}
+    oauth = OAuth2Session(client_id, auto_refresh_kwargs=extra)
+
+    refresh = os.getenv(connection + "__oauth_RefreshToken")
+    if not refresh:
+        raise ConnectionInitError(connection)
+
+    token = oauth.refresh_token(__TOKEN_URL, refresh_token=refresh)
+
+    cloud_id = os.getenv(connection + "__AccessID")
+    if not cloud_id:
+        raise ConnectionInitError(connection)
+
     return Confluence(
         url="https://api.atlassian.com/ex/confluence/" + cloud_id,
-        oauth2={
-            "client_id": client_id,
-            "token": {
-                "access_token": os.getenv(connection + "__oauth_AccessToken"),
-                "token_type": os.getenv(connection + "__oauth_TokenType"),
-            },
-        },
+        oauth2={"client_id": client_id, "token": token},
         **kwargs,
     )
 
