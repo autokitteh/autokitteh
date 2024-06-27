@@ -8,7 +8,7 @@
 import datetime
 
 
-def is_determinstic(fn):
+def is_deterministic(fn):
     """Return True if fn (callable) can run outside of activity."""
     if fn in functions:
         return True

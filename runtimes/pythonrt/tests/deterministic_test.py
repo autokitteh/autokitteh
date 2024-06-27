@@ -18,5 +18,5 @@ nonact_caes = [
 
 @pytest.mark.parametrize("func, expected", nonact_caes)
 def test_is_deterministic(func, expected):
-    out = deterministic.is_determinstic(func)
+    out = deterministic.is_deterministic(func)
     assert out == expected, func.__qualname__
