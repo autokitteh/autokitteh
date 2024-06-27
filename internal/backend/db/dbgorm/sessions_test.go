@@ -93,6 +93,8 @@ func TestCreateSessionForeignKeys(t *testing.T) {
 	d := f.newDeployment()
 	ev := f.newEvent()
 
+	d.BuildID = b.BuildID
+
 	f.saveBuildsAndAssert(t, b)
 	f.WithForeignKeysDisabled(func() { f.createEnvsAndAssert(t, env) })
 	f.createDeploymentsAndAssert(t, d)
@@ -194,7 +196,6 @@ func TestListPaginatedSession(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, cnt, int64(2))
 	require.Len(t, sessions, 1)
-
 }
 
 func TestDeleteSession(t *testing.T) {

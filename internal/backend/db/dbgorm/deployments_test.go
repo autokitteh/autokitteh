@@ -58,6 +58,7 @@ func preDeploymentTest(t *testing.T) *dbFixture {
 
 func TestCreateDeployment(t *testing.T) {
 	f := preDeploymentTest(t)
+	foreignKeys(f.gormdb, false) // no foreign keys - need build
 
 	d := f.newDeployment()
 	// test createDeployment without any assets deployment depends on, since they are soft-foreign keys and could be nil
@@ -70,11 +71,6 @@ func TestCreateDeploymentsForeignKeys(t *testing.T) {
 
 	// negative test with non-existing assets
 	d := f.newDeployment()
-	unexistingBuildID := scheme.UUIDOrNil(sdktypes.NewBuildID().UUIDValue())
-
-	d.BuildID = unexistingBuildID
-	assert.ErrorIs(t, f.gormdb.createDeployment(f.ctx, &d), gorm.ErrForeignKeyViolated)
-	d.BuildID = nil
 
 	unexistingEnvID := scheme.UUIDOrNil(sdktypes.NewEnvID().UUIDValue())
 	d.EnvID = unexistingEnvID
@@ -91,13 +87,14 @@ func TestCreateDeploymentsForeignKeys(t *testing.T) {
 	f.saveBuildsAndAssert(t, b)
 
 	d = f.newDeployment()
-	d.BuildID = &b.BuildID
+	d.BuildID = b.BuildID
 	d.EnvID = &e.EnvID
 	f.createDeploymentsAndAssert(t, d)
 }
 
 func TestGetDeployment(t *testing.T) {
 	f := preDeploymentTest(t)
+	foreignKeys(f.gormdb, false) // no foreign keys - need build
 
 	d := f.newDeployment()
 	f.createDeploymentsAndAssert(t, d)
@@ -114,6 +111,7 @@ func TestGetDeployment(t *testing.T) {
 
 func TestListDeployments(t *testing.T) {
 	f := preDeploymentTest(t)
+	foreignKeys(f.gormdb, false) // no foreign keys - need build
 
 	d := f.newDeployment()
 	f.createDeploymentsAndAssert(t, d)
@@ -124,6 +122,7 @@ func TestListDeployments(t *testing.T) {
 
 func TestListDeploymentsWithStats(t *testing.T) {
 	f := preDeploymentTest(t)
+	foreignKeys(f.gormdb, false) // no foreign keys - need build
 
 	// create deployment and ensure there are no stats
 	d := f.newDeployment()
@@ -158,7 +157,7 @@ func TestDeleteDeployment(t *testing.T) {
 
 	b := f.newBuild()
 	d := f.newDeployment()
-	d.BuildID = &b.BuildID
+	d.BuildID = b.BuildID
 	f.saveBuildsAndAssert(t, b)
 	f.createDeploymentsAndAssert(t, d)
 
