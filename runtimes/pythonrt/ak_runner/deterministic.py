@@ -13,18 +13,17 @@ def is_determinstic(fn):
     if fn in functions:
         return True
 
-    if getattr(fn, '__module__', None) in modules:
+    if getattr(fn, "__module__", None) in modules:
         return True
 
-    if hasattr(fn, '__self__'):  # A bound method
+    if hasattr(fn, "__self__"):  # A bound method
         cls = fn.__self__.__class__
         if cls in builtin_types:
             return True
 
         mod = cls.__module__
-        if mod != 'builtins' and mod in modules:
+        if mod != "builtins" and mod in modules:
             return True
-
 
     return False
 
@@ -46,57 +45,57 @@ builtin_types = {
 
 # Modules are represented as strings func.__module__ is a string
 modules = {
-    'abc',
-    'array',
-    'base64',
-    'bisect',
-    'builtins',
-    'bz2',
-    'cmath',
-    'collections',
-    'contextlib',
-    'copy',
-    'csv',
-    'dataclasses',
-    'decimal',
-    'enum',
-    'fnmatch',
-    'fractions',
-    'functools',
-    'graphlib',
-    'gzip',
-    'hashlib',
-    'heapq',
-    'html',
-    'html.entities',
-    'html.parser',
-    'ipaddress',
-    'itertools',
-    'json',
-    'lzma',
-    'math',
-    'operator',
-    'pprint',
-    're',
-    'shlex',
-    'statistics',
-    'stats',
-    'struct',
-    'tomllib',
-    'traceback',
-    'types',
-    'typing',
-    'unicodedata',
-    'xml',
-    'xml.dom',
-    'xml.dom.minidom',
-    'xml.dom.pulldom',
-    'xml.etree.ElementTree',
-    'xml.sax',
-    'xml.parsers.expat',
-    'zipfile',
-    'zlib',
-    'zoneninfo',
+    "abc",
+    "array",
+    "base64",
+    "bisect",
+    "builtins",
+    "bz2",
+    "cmath",
+    "collections",
+    "contextlib",
+    "copy",
+    "csv",
+    "dataclasses",
+    "decimal",
+    "enum",
+    "fnmatch",
+    "fractions",
+    "functools",
+    "graphlib",
+    "gzip",
+    "hashlib",
+    "heapq",
+    "html",
+    "html.entities",
+    "html.parser",
+    "ipaddress",
+    "itertools",
+    "json",
+    "lzma",
+    "math",
+    "operator",
+    "pprint",
+    "re",
+    "shlex",
+    "statistics",
+    "stats",
+    "struct",
+    "tomllib",
+    "traceback",
+    "types",
+    "typing",
+    "unicodedata",
+    "xml",
+    "xml.dom",
+    "xml.dom.minidom",
+    "xml.dom.pulldom",
+    "xml.etree.ElementTree",
+    "xml.sax",
+    "xml.parsers.expat",
+    "zipfile",
+    "zlib",
+    "zoneninfo",
 }
 
 functions = builtin_types | {

@@ -1,6 +1,6 @@
 [project]
 name = 'autokitteh'
-version = '0.2.0'
+version = '0.2.2'
 description = 'AutoKitteh Python SDK'
 readme = 'README.md'
 license = {file = 'LICENSE'}
