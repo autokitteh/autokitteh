@@ -45,21 +45,15 @@ func NewHTTPHandler(l *zap.Logger, o sdkservices.OAuth, v sdkservices.Vars, d sd
 // and dispatches them to zero or more AutoKitteh connections.
 // Note 1: By default, AutoKitteh creates webhooks automatically,
 // subscribing to all events - see "webhooks.go" for more details.
-// TODO(ENG-965):
-// Note 2: Dynamic (i.e. auto-created) webhooks expire after 30 days.
-// This functions extends this deadline at the 20-day mark.
+// Note 2: Unlike Jira webhooks, auto-created Confluence webhooks
+// do not expire after 30 days, so no need to extend their deadline.
 // Note 3: The requests are sent by a service, so no need to respond
 // with user-friendly error web pages.
 func (h handler) handleEvent(w http.ResponseWriter, r *http.Request) {
 	l := h.logger.With(zap.String("urlPath", r.URL.Path))
 
-	// Verify the JWT in the event's "Authorization" header.
-	token := r.Header.Get(headerAuthorization)
-	if !verifyJWT(l, strings.TrimPrefix(token, "Bearer ")) {
-		l.Warn("Incoming Atlassian event with bad header", zap.String(headerAuthorization, token))
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
+	// TODO(ENG-1081): Verify the HMAC signature in "X-Hub-Signature"
+	// (Confluence doesn't recognize secrets when creating webhooks).
 
 	// Check the "Content-Type" header.
 	contentType := r.Header.Get(headerContentType)
@@ -84,29 +78,40 @@ func (h handler) handleEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Determine the event type based on the webhook callback URL, and the content
+	// of the event (unlike Jira, Confluence events don't have an event type field).
+	eventType := r.PathValue("category")
+	if eventType == "" {
+		l.Warn("Unexpected Confluence event callback without category in URL")
+		http.Error(w, "Bad Request", http.StatusBadRequest)
+	}
+
+	// TODO(ENG-1081): Parse event content, add as a prefix to the category.
+
 	// Construct an AutoKitteh event from the Atlassian event.
-	akEvent, err := constructEvent(l, atlassianEvent)
+	akEvent, err := constructEvent(l, atlassianEvent, eventType)
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 
-	// Iterate through all the relevant connections for this event.
-	is, ok := atlassianEvent["matchedWebhookIds"].([]any)
-	if !ok {
-		l.Warn("Invalid webhook IDs in Atlassian event", zap.Any("ids", atlassianEvent["matchedWebhookIds"]))
-		http.Error(w, "Bad Request", http.StatusBadRequest)
-		return
-	}
+	// TODO(ENG-1081): Iterate through all the relevant connections for this event.
+	// is, ok := atlassianEvent["matchedWebhookIds"].([]any)
+	// if !ok {
+	// 	l.Warn("Invalid webhook IDs in Atlassian event", zap.Any("ids", atlassianEvent["matchedWebhookIds"]))
+	// 	http.Error(w, "Bad Request", http.StatusBadRequest)
+	// 	return
+	// }
 
-	ids := kittehs.Transform(is, func(v any) int {
-		f, ok := v.(float64)
-		if !ok {
-			l.Warn("Invalid webhook ID in Atlassian event", zap.Any("id", v))
-			return 0
-		}
-		return int(f)
-	})
+	ids := []int{}
+	// ids := kittehs.Transform(is, func(v any) int {
+	// 	f, ok := v.(float64)
+	// 	if !ok {
+	// 		l.Warn("Invalid webhook ID in Atlassian event", zap.Any("id", v))
+	// 		return 0
+	// 	}
+	// 	return int(f)
+	// })
 
 	ctx := extrazap.AttachLoggerToContext(l, r.Context())
 	for _, id := range ids {
@@ -141,7 +146,7 @@ func verifyJWT(l *zap.Logger, authz string) bool {
 	return token.Valid
 }
 
-func constructEvent(l *zap.Logger, atlassianEvent map[string]any) (sdktypes.Event, error) {
+func constructEvent(l *zap.Logger, atlassianEvent map[string]any, eventType string) (sdktypes.Event, error) {
 	l = l.With(zap.Any("event", atlassianEvent))
 
 	wrapped, err := sdktypes.DefaultValueWrapper.Wrap(atlassianEvent)
@@ -156,14 +161,8 @@ func constructEvent(l *zap.Logger, atlassianEvent map[string]any) (sdktypes.Even
 		return sdktypes.InvalidEvent, err
 	}
 
-	eventType, ok := atlassianEvent["webhookEvent"].(string)
-	if !ok {
-		l.Error("Invalid event type")
-		return sdktypes.InvalidEvent, fmt.Errorf("invalid event type")
-	}
-
 	akEvent, err := sdktypes.EventFromProto(&sdktypes.EventPB{
-		EventType: strings.TrimPrefix(eventType, "jira:"),
+		EventType: eventType,
 		Data:      kittehs.TransformMapValues(data, sdktypes.ToProto),
 	})
 	if err != nil {

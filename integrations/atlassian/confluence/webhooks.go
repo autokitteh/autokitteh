@@ -11,9 +11,10 @@ import (
 	"strings"
 	"time"
 
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.jetify.com/typeid"
 	"go.uber.org/zap"
+
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
 )
 
 const (
@@ -24,13 +25,14 @@ const (
 type webhook struct {
 	// Requests.
 	Name        string            `json:"name"`
-	Description string            `json:"description"`
+	Description string            `json:"description,omitempty"`
 	URL         string            `json:"url"`
-	ExcludeBody bool              `json:"excludeBody"`
-	Filters     map[string]string `json:"filters"`
+	ExcludeBody bool              `json:"excludeBody,omitempty"`
+	Filters     map[string]string `json:"filters,omitempty"`
 	Events      []string          `json:"events"`
 	// https://developer.atlassian.com/cloud/jira/platform/webhooks/#secure-admin-webhooks
-	Secret string `json:"secret,omitempty"`
+	// TODO(ENG-1081): Empirically, Confluence doesn't recognize this!
+	Secret string `json:"secret"`
 
 	// Responses.
 	Enabled                bool   `json:"enabled,omitempty"`
@@ -42,7 +44,7 @@ type webhook struct {
 }
 
 // getWebhook checks whether the given Confluence domain already has
-// a registered dynamic webhook for this AutoKitteh server. Based on:
+// a registered dynamic webhooks for this AutoKitteh server. Based on:
 // https://jira.atlassian.com/browse/CONFCLOUD-36613
 // https://developer.atlassian.com/cloud/confluence/modules/webhook/
 // https://developer.atlassian.com/server/confluence/webhooks/
@@ -89,7 +91,7 @@ func getWebhook(l *zap.Logger, base, user, key string) (int, bool) {
 
 	// Finally, filter the results based on the AutoKitteh server address.
 	webhookBase := os.Getenv("WEBHOOK_ADDRESS")
-	url := fmt.Sprintf("https://%s/confluence/webhook", webhookBase)
+	url := fmt.Sprintf("https://%s/confluence/webhook/CONN/created", webhookBase)
 	for _, w := range list {
 		if w.URL == url {
 			id, err := extractIDSuffixFromURL(w.Self)
@@ -107,40 +109,22 @@ func getWebhook(l *zap.Logger, base, user, key string) (int, bool) {
 // https://developer.atlassian.com/cloud/confluence/modules/webhook/#confluence-webhook-events
 func registerWebhook(l *zap.Logger, base, user, key string) (int, string, error) {
 	webhookBase := os.Getenv("WEBHOOK_ADDRESS")
-	url := fmt.Sprintf("https://%s/confluence/webhook", webhookBase)
+	url := fmt.Sprintf("https://%s/confluence/webhook/created", webhookBase)
 	secret := kittehs.Must1(typeid.WithPrefix("")).String()
 	r := webhook{
 		Name:        "AutoKitteh",
 		Description: time.Now().UTC().String(),
 		URL:         url,
-		ExcludeBody: false,
-		Filters:     map[string]string{},
 		// https://developer.atlassian.com/cloud/confluence/modules/webhook/
+		// https://confluence.atlassian.com/conf715/managing-webhooks-1096098349.html
 		Events: []string{
+			"attachment_created",
+			"blog_created",
+			"blueprint_page_created",
 			"comment_created",
-			"comment_removed",
-			"comment_updated",
-
-			"page_archived",
-			"page_children_reordered",
+			"content_created",
+			"group_created",
 			"page_created",
-			"page_copied",
-			"page_moved",
-			"page_removed",
-			"page_restored",
-			"page_trashed",
-			"page_unarchived",
-			"page_updated",
-			"page_viewed",
-
-			"space_created",
-			"space_logo_updated",
-			"space_permissions_updated",
-			"space_removed",
-			"space_updated",
-
-			"user_followed",
-			"user_removed",
 		},
 		Secret: secret,
 	}
@@ -199,8 +183,9 @@ func registerWebhook(l *zap.Logger, base, user, key string) (int, string, error)
 		l.Warn("Confluence webhook ID not found", zap.ByteString("body", body))
 	}
 
+	// Success.
 	id, err := extractIDSuffixFromURL(reg.Self)
-	return id, "", err
+	return id, secret, err
 }
 
 func extractIDSuffixFromURL(url string) (int, error) {

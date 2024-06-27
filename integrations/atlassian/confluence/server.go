@@ -20,7 +20,7 @@ const (
 	savePath = "/confluence/save"
 
 	// WebhookPath is the URL path for our webhook to handle asynchronous events.
-	webhookPath = "/confluence/webhook"
+	webhookPath = "/confluence/webhook/{category}"
 )
 
 func Start(l *zap.Logger, mux *http.ServeMux, vars sdkservices.Vars, o sdkservices.OAuth, d sdkservices.Dispatcher) {
