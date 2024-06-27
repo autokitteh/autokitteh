@@ -445,7 +445,7 @@ func ParseSession(s Session) (sdktypes.Session, error) {
 type Deployment struct {
 	DeploymentID sdktypes.UUID  `gorm:"primaryKey;type:uuid;not null"`
 	EnvID        *sdktypes.UUID `gorm:"index;type:uuid"`
-	BuildID      *sdktypes.UUID `gorm:"type:uuid"`
+	BuildID      sdktypes.UUID  `gorm:"type:uuid;not null"`
 	State        int32
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
@@ -459,7 +459,7 @@ type Deployment struct {
 func ParseDeployment(d Deployment) (sdktypes.Deployment, error) {
 	deployment, err := sdktypes.StrictDeploymentFromProto(&sdktypes.DeploymentPB{
 		DeploymentId: sdktypes.NewIDFromUUID[sdktypes.DeploymentID](&d.DeploymentID).String(),
-		BuildId:      sdktypes.NewIDFromUUID[sdktypes.BuildID](d.BuildID).String(),
+		BuildId:      sdktypes.NewIDFromUUID[sdktypes.BuildID](&d.BuildID).String(),
 		EnvId:        sdktypes.NewIDFromUUID[sdktypes.EnvID](d.EnvID).String(),
 		State:        deploymentsv1.DeploymentState(d.State),
 		CreatedAt:    timestamppb.New(d.CreatedAt),
@@ -484,7 +484,7 @@ type DeploymentWithStats struct {
 func ParseDeploymentWithSessionStats(d DeploymentWithStats) (sdktypes.Deployment, error) {
 	deployment, err := sdktypes.StrictDeploymentFromProto(&sdktypes.DeploymentPB{
 		DeploymentId: sdktypes.NewIDFromUUID[sdktypes.DeploymentID](&d.DeploymentID).String(),
-		BuildId:      sdktypes.NewIDFromUUID[sdktypes.BuildID](d.BuildID).String(),
+		BuildId:      sdktypes.NewIDFromUUID[sdktypes.BuildID](&d.BuildID).String(),
 		EnvId:        sdktypes.NewIDFromUUID[sdktypes.EnvID](d.EnvID).String(),
 		State:        deploymentsv1.DeploymentState(d.State),
 		CreatedAt:    timestamppb.New(d.CreatedAt),

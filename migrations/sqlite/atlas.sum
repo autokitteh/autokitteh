@@ -1,4 +1,4 @@
-h1:B/ufNq5WqXbl7V517BFgdmy0S1e81uelDMsIC2J7zyk=
+h1:oOUHFjo5QCJeHmZ5hZHX+hGfJgVOQcfcXW/uOzKKOkI=
 20240507104228_baseline.sql h1:4B9CvzNeSNzEwATnxtK+d00ATCaSZHyr0dwmeuO06RA=
 20240508111539_secret-string-value.sql h1:dMpp/HpoRd49wXOZiPKt+Fxjns7Kc4x/aSOvBfLgU6E=
 20240515105250_trigger_opional_connection.sql h1:X1SRwT9f2BaswD0wPgqoK5E0NaEyQ4P3r94nMu4WXjA=
@@ -10,3 +10,4 @@ h1:B/ufNq5WqXbl7V517BFgdmy0S1e81uelDMsIC2J7zyk=
 20240528162850_connection_soft_delete.sql h1:70VAgkLjWYb64pA+7oX5RitQ9E22GinOb4MPq4NDT6Y=
 20240530091852_non-optional-project-in-env.sql h1:StpuImGk+Hl+N3hlGNCBUKDWWCA6Om8kQ+pNsLZOCxY=
 20240626133131_build_add_optional_project_id.sql h1:3ntnuT7OT4be8CbJo01AZaCqx+9QENDmez8A27Ip6Zk=
+20240627150240_deployment_mandatory_build_id.sql h1:5dvm0or6/RoigM6ngRfEDurTPqWjvZ78zbdDD2e+AVo=
