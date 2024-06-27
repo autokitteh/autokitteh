@@ -16,7 +16,7 @@ twilio ~= 9.0
 
 # AutoKitteh SDK
 
-autokitteh ~= 0.1
+autokitteh ~= 0.2
 
 # General
 
