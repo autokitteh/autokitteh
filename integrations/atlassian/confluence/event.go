@@ -78,13 +78,13 @@ func (h handler) handleEvent(w http.ResponseWriter, r *http.Request) {
 
 	// Determine the event type based on the webhook callback URL, and the content
 	// of the event (unlike Jira, Confluence events don't have an event type field).
-	eventType := r.PathValue("category")
-	if eventType == "" {
-		l.Warn("Unexpected Confluence event callback without category in URL")
+	eventType, ok := extractEntityType(l, atlassianEvent, r.PathValue("category"))
+	if !ok {
 		http.Error(w, "Bad Request", http.StatusBadRequest)
 	}
 
-	// TODO(ENG-1081): Parse event content, add as a prefix to the category.
+	// Iterate through all the relevant connections for this event.
+	atlassianURL := extractBaseURL(atlassianEvent)
 
 	// Construct an AutoKitteh event from the Atlassian event.
 	akEvent, err := constructEvent(l, atlassianEvent, eventType)
@@ -93,38 +93,61 @@ func (h handler) handleEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO(ENG-1081): Iterate through all the relevant connections for this event.
-	// is, ok := atlassianEvent["matchedWebhookIds"].([]any)
-	// if !ok {
-	// 	l.Warn("Invalid webhook IDs in Atlassian event", zap.Any("ids", atlassianEvent["matchedWebhookIds"]))
-	// 	http.Error(w, "Bad Request", http.StatusBadRequest)
-	// 	return
-	// }
-
-	ids := []int{}
-	// ids := kittehs.Transform(is, func(v any) int {
-	// 	f, ok := v.(float64)
-	// 	if !ok {
-	// 		l.Warn("Invalid webhook ID in Atlassian event", zap.Any("id", v))
-	// 		return 0
-	// 	}
-	// 	return int(f)
-	// })
-
 	ctx := extrazap.AttachLoggerToContext(l, r.Context())
-	for _, id := range ids {
-		value := fmt.Sprintf("%d", id)
-		cids, err := h.vars.FindConnectionIDs(ctx, integrationID, webhookID, value)
-		if err != nil {
-			l.Error("Failed to find connection IDs", zap.Error(err))
-			continue
-		}
-
-		// Dispatch the event to all of them, for asynchronous handling.
-		h.dispatchAsyncEventsToConnections(ctx, cids, akEvent)
+	cids, err := h.vars.FindConnectionIDs(ctx, integrationID, baseURL, atlassianURL)
+	if err != nil {
+		l.Error("Failed to find connection IDs", zap.Error(err))
+		return
 	}
 
+	// Dispatch the event to all of them, for asynchronous handling.
+	h.dispatchAsyncEventsToConnections(ctx, cids, akEvent)
+
 	// Returning immediately without an error = acknowledgement of receipt.
+}
+
+var simpleEntities = []string{"attachment", "comment", "group", "page", "space"}
+
+func extractEntityType(l *zap.Logger, atlassianEvent map[string]any, category string) (string, bool) {
+	if category == "" {
+		l.Warn("Unexpected Confluence event callback: missing category in URL ")
+		return "", false
+	}
+
+	for _, entity := range simpleEntities {
+		if _, ok := atlassianEvent[entity]; ok {
+			return fmt.Sprintf("%s_%s", entity, category), true
+		}
+	}
+
+	// "content_*" events.
+	if contentType, ok := atlassianEvent["type"]; ok {
+		if s, ok := contentType.(string); ok && strings.Contains(s, "content") {
+			return "content_" + category, true
+		}
+	}
+
+	l.Error("Unrecognized Confluence event", zap.Any("event", atlassianEvent))
+	return "", false
+}
+
+func extractBaseURL(atlassianEvent map[string]any) string {
+	for _, entity := range simpleEntities {
+		if data, ok := atlassianEvent[entity].(map[string]any); ok {
+			if url, ok := data["self"].(string); ok {
+				return strings.Split(url, "/wiki")[0]
+			}
+		}
+	}
+
+	// "content_*" events.
+	if links, ok := atlassianEvent["_links"].(map[string]string); ok {
+		if base, ok := links["base"]; ok {
+			return strings.Split(base, "/wiki")[0]
+		}
+	}
+
+	return ""
 }
 
 func constructEvent(l *zap.Logger, atlassianEvent map[string]any, eventType string) (sdktypes.Event, error) {
