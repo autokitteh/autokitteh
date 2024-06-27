@@ -95,17 +95,17 @@ func New(l *zap.Logger) sdkservices.OAuth {
 				// https://developer.atlassian.com/cloud/confluence/scopes-for-oauth-2-3LO-and-forge-apps/
 				Scopes: []string{
 					"write:confluence-content",
-					// "read:confluence-space.summary", // Needed?
+					"read:confluence-space.summary", // Needed?
 					"write:confluence-space",
 					"write:confluence-file",
-					// "read:confluence-props", // Needed?
+					"read:confluence-props", // Needed?
 					"write:confluence-props",
-					"manage:confluence-configuration", // Needed?
-					// "read:confluence-content.all",        // Needed?
-					// "search:confluence",                  // Needed?
-					// "read:confluence-content.permission", // Needed?
+					"manage:confluence-configuration",    // Needed?
+					"read:confluence-content.all",        // Needed?
+					"search:confluence",                  // Needed?
+					"read:confluence-content.permission", // Needed?
 					"read:confluence-user",
-					// "read:confluence-groups", // Needed?
+					"read:confluence-groups", // Needed?
 					"write:confluence-groups",
 					"readonly:content.attachment:confluence", // Needed?
 					// User identity API.

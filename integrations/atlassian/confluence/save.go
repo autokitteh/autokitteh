@@ -50,17 +50,24 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 	// Confluence events, if there isn't one already.
 	id, ok := getWebhook(l, u, e, t)
 	if ok {
-		initData = initData.Set(webhookID, fmt.Sprintf("%d", id), false)
-	} else {
-		var secret string
-		var err error
-		id, secret, err = registerWebhook(l, u, e, t)
-		if err != nil {
-			redirectToErrorPage(w, r, "failed to register webhook: "+err.Error())
+		// TODO: In the future, when we're sure which events we want to
+		// subscribe to, uncomment this line and don't delete the webhook.
+		// initData = initData.Set(webhookID, fmt.Sprintf("%d", id), false)
+
+		if err := deleteWebhook(l, u, e, t, id); err != nil {
+			redirectToErrorPage(w, r, "failed to delete existing webhook: "+err.Error())
 			return
 		}
-		initData = initData.Set(webhookSecret, secret, true)
+	} // else {
+	var secret string
+	var err error
+	id, secret, err = registerWebhook(l, u, e, t)
+	if err != nil {
+		redirectToErrorPage(w, r, "failed to register webhook: "+err.Error())
+		return
 	}
+	initData = initData.Set(webhookSecret, secret, true)
+	// }
 
 	initData = initData.Set(webhookID, fmt.Sprintf("%d", id), false)
 

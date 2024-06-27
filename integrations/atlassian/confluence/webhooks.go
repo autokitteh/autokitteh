@@ -35,7 +35,7 @@ type webhook struct {
 	// Responses.
 	Enabled                bool   `json:"enabled,omitempty"`
 	Self                   string `json:"self,omitempty"`
-	LastUpdatedUser        string `json:"lastUpdatedUser,omitempty"` // UUID
+	LastUpdatedUser        string `json:"lastUpdatedUser,omitempty"`
 	LastUpdatedDisplayName string `json:"lastUpdatedDisplayName,omitempty"`
 	LastUpdated            int    `json:"lastUpdated,omitempty"`
 	IsSigned               bool   `json:"isSigned,omitempty"`
@@ -69,7 +69,6 @@ func getWebhook(l *zap.Logger, base, user, key string) (int, bool) {
 		l.Warn("Failed to read Confluence webhooks list response", zap.Error(err))
 		return 0, false
 	}
-	l.Warn("WEBHOOKS", zap.ByteString("body", body)) ///// TODO: REMOVE
 
 	if resp.StatusCode != http.StatusOK {
 		l.Warn("Unexpected response to Confluence webhooks list request",
@@ -122,6 +121,8 @@ func registerWebhook(l *zap.Logger, base, user, key string) (int, string, error)
 			"comment_removed",
 			"comment_updated",
 
+			"page_archived",
+			"page_children_reordered",
 			"page_created",
 			"page_copied",
 			"page_moved",
@@ -131,9 +132,12 @@ func registerWebhook(l *zap.Logger, base, user, key string) (int, string, error)
 			"page_unarchived",
 			"page_updated",
 			"page_viewed",
-			"relation_created",
-			"relation_deleted",
-			"search_performed",
+
+			"space_created",
+			"space_logo_updated",
+			"space_permissions_updated",
+			"space_removed",
+			"space_updated",
 
 			"user_followed",
 			"user_removed",
@@ -206,4 +210,31 @@ func extractIDSuffixFromURL(url string) (int, error) {
 		return 0, err
 	}
 	return i, nil
+}
+
+func deleteWebhook(l *zap.Logger, base, user, key string, id int) error {
+	url := fmt.Sprintf("%s%s/%d", base, restPath, id)
+	req, err := http.NewRequest("DELETE", url, nil)
+	if err != nil {
+		l.Error("Failed to construct HTTP request to delete Confluence webhook", zap.Error(err))
+		return err
+	}
+
+	req.SetBasicAuth(user, key)
+
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		l.Error("Failed to delete Confluence webhook", zap.Error(err))
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= http.StatusBadRequest {
+		l.Error("Unexpected response to Confluence webhook deletion request",
+			zap.Int("status", resp.StatusCode),
+		)
+		return fmt.Errorf("existing webhook deletion failed: %d", resp.StatusCode)
+	}
+
+	return nil
 }
