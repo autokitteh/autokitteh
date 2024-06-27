@@ -91,8 +91,8 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 	}
 
 	initData := sdktypes.NewVars(data.ToVars()...).Append(res[0].toVars()...).
-		Append(sdktypes.NewVar(webhookID, fmt.Sprintf("%d", id), false)).
-		Append(sdktypes.NewVar(webhookExpiration, t.String(), false))
+		Set(webhookID, fmt.Sprintf("%d", id), false).
+		Set(webhookExpiration, t.String(), false)
 
 	sdkintegrations.FinalizeConnectionInit(w, r, integrationID, initData)
 }
