@@ -90,12 +90,7 @@ func NewFilterFS(fsys fs.FS, pred func(fs.DirEntry) bool) (*FilterFS, error) {
 
 // ReadDir returns list of entries filtered by f.Pred.
 func (f *FilterFS) ReadDir(name string) ([]fs.DirEntry, error) {
-	fsr, ok := f.FS.(fs.ReadDirFS)
-	if !ok {
-		return nil, fmt.Errorf("ReadDir not supported")
-	}
-
-	entries, err := fsr.ReadDir(name)
+	entries, err := fs.ReadDir(f.FS, name)
 	if err != nil {
 		return nil, err
 	}
