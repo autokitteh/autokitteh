@@ -91,7 +91,7 @@ func getWebhook(l *zap.Logger, base, user, key string) (int, bool) {
 
 	// Finally, filter the results based on the AutoKitteh server address.
 	webhookBase := os.Getenv("WEBHOOK_ADDRESS")
-	url := fmt.Sprintf("https://%s/confluence/webhook/CONN/created", webhookBase)
+	url := fmt.Sprintf("https://%s/confluence/webhook/created", webhookBase)
 	for _, w := range list {
 		if w.URL == url {
 			id, err := extractIDSuffixFromURL(w.Self)
