@@ -50,15 +50,20 @@ var Tables = []any{
 }
 
 type Build struct {
-	BuildID   sdktypes.UUID `gorm:"primaryKey;type:uuid;not null"`
+	BuildID   sdktypes.UUID  `gorm:"primaryKey;type:uuid;not null"`
+	ProjectID *sdktypes.UUID `gorm:"index;type:uuid"`
 	Data      []byte
 	CreatedAt time.Time
 	DeletedAt gorm.DeletedAt `gorm:"index"`
+
+	// enforce foreign keys
+	Project *Project
 }
 
 func ParseBuild(b Build) (sdktypes.Build, error) {
 	build, err := sdktypes.StrictBuildFromProto(&sdktypes.BuildPB{
 		BuildId:   sdktypes.NewIDFromUUID[sdktypes.BuildID](&b.BuildID).String(),
+		ProjectId: sdktypes.NewIDFromUUID[sdktypes.ProjectID](b.ProjectID).String(),
 		CreatedAt: timestamppb.New(b.CreatedAt),
 	})
 	if err != nil {

@@ -117,7 +117,7 @@ func (ps *Projects) Build(ctx context.Context, projectID sdktypes.ProjectID) (sd
 		return sdktypes.InvalidBuildID, err
 	}
 
-	return ps.Builds.Save(ctx, sdktypes.NewBuild(), buf.Bytes())
+	return ps.Builds.Save(ctx, sdktypes.NewBuild().WithProjectID(projectID), buf.Bytes())
 }
 
 func (ps *Projects) SetResources(ctx context.Context, projectID sdktypes.ProjectID, resources map[string][]byte) error {
