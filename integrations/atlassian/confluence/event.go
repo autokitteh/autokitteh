@@ -6,11 +6,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 
-	"github.com/golang-jwt/jwt/v5"
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/integrations/internal/extrazap"
@@ -127,23 +125,6 @@ func (h handler) handleEvent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Returning immediately without an error = acknowledgement of receipt.
-}
-
-// https://developer.atlassian.com/cloud/jira/platform/understanding-jwt-for-connect-apps/
-func verifyJWT(l *zap.Logger, authz string) bool {
-	token, err := jwt.Parse(authz, func(token *jwt.Token) (any, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			l.Warn("Unexpected signing method", zap.Any("alg", token.Header["alg"]))
-		}
-		// TODO(ENG-965): From new-connection form instead of env vars.
-		return []byte(os.Getenv("ATLASSIAN_CLIENT_SECRET")), nil
-	})
-	if err != nil {
-		l.Warn("Failed to parse JWT", zap.Error(err))
-		return false
-	}
-
-	return token.Valid
 }
 
 func constructEvent(l *zap.Logger, atlassianEvent map[string]any, eventType string) (sdktypes.Event, error) {
