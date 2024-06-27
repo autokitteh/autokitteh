@@ -4,7 +4,7 @@ from datetime import UTC, datetime
 import re
 import os
 
-from atlassian import Jira
+from atlassian import Confluence, Jira
 from jira import JIRA
 
 from .connections import check_connection_name
@@ -76,6 +76,82 @@ def __atlassian_jira_client_cloud_oauth2(connection: str, **kwargs):
 
     return Jira(
         url="https://api.atlassian.com/ex/jira/" + cloud_id,
+        oauth2={
+            "client_id": client_id,
+            "token": {
+                "access_token": os.getenv(connection + "__oauth_AccessToken"),
+                "token_type": os.getenv(connection + "__oauth_TokenType"),
+            },
+        },
+        **kwargs,
+    )
+
+
+def confluence_client(connection: str, **kwargs):
+    """Initialize an Atlassian Confluence client, based on an AutoKitteh connection.
+
+    API reference:
+    https://atlassian-python-api.readthedocs.io/confluence.html
+
+    Code samples:
+    https://github.com/atlassian-api/atlassian-python-api/tree/master/examples/confluence
+
+    Args:
+        connection: AutoKitteh connection name.
+
+    Returns:
+        Atlassian-Python-API Confluence client.
+
+    Raises:
+        ValueError: AutoKitteh connection name is invalid.
+        RuntimeError: OAuth 2.0 access token expired.
+        ConnectionInitError: AutoKitteh connection was not initialized yet.
+        EnvVarError: Required environment variable is missing or invalid.
+    """
+    check_connection_name(connection)
+
+    if os.getenv(connection + "__oauth_AccessToken"):
+        return __atlassian_confluence_client_cloud_oauth2(connection, **kwargs)
+
+    base_url = os.getenv(connection + "__BaseURL")
+    token = os.getenv(connection + "__Token")
+    if token:
+        email = os.getenv(connection + "__Email")
+        if not email:
+            return Confluence(url=base_url, token=token, **kwargs)
+        return Confluence(
+            url=base_url,
+            username=email,
+            password=token,
+            cloud=True,
+            **kwargs,
+        )
+
+    raise ConnectionInitError(connection)
+
+
+def __atlassian_confluence_client_cloud_oauth2(connection: str, **kwargs):
+    """Initialize a Confluence client for Atlassian Cloud using OAuth 2.0."""
+    expiry = os.getenv(connection + "__oauth_Expiry")
+    if not expiry:
+        raise ConnectionInitError(connection)
+
+    # Convert Go's time string (e.g. "2024-06-20 19:18:17 -0700 PDT") to
+    # an ISO-8601 string that Python can parse with timezone awareness.
+    timestamp = re.sub(r" [A-Z]+.*", "", expiry)
+    if datetime.fromisoformat(timestamp) < datetime.now(UTC):
+        raise RuntimeError("OAuth 2.0 access token expired on: " + expiry)
+
+    cloud_id = os.getenv(connection + "__access_ID")
+    if not cloud_id:
+        raise ConnectionInitError(connection)
+
+    client_id = os.getenv("CONFLUENCE_CLIENT_ID")
+    if not client_id:
+        raise EnvVarError("CONFLUENCE_CLIENT_ID", "missing")
+
+    return Confluence(
+        url="https://api.atlassian.com/ex/confluence/" + cloud_id,
         oauth2={
             "client_id": client_id,
             "token": {
