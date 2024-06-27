@@ -13,6 +13,7 @@ def openai_client(connection: str) -> OpenAI:
 
     API reference:
     https://platform.openai.com/docs/api-reference/
+    https://github.com/openai/openai-python/blob/main/api.md
 
     Args:
         connection: AutoKitteh connection name.
