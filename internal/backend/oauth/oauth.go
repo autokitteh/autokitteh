@@ -82,8 +82,8 @@ func New(l *zap.Logger) sdkservices.OAuth {
 		configs: map[string]*oauth2.Config{
 			"confluence": {
 				// TODO(ENG-965): From new-connection form instead of env vars.
-				ClientID:     os.Getenv("ATLASSIAN_CLIENT_ID"),
-				ClientSecret: os.Getenv("ATLASSIAN_CLIENT_SECRET"),
+				ClientID:     os.Getenv("CONFLUENCE_CLIENT_ID"),
+				ClientSecret: os.Getenv("CONFLUENCE_CLIENT_SECRET"),
 				// https://developer.atlassian.com/cloud/confluence/oauth-2-3lo-apps/
 				// https://auth.atlassian.com/.well-known/openid-configuration
 				Endpoint: oauth2.Endpoint{
@@ -284,8 +284,8 @@ func New(l *zap.Logger) sdkservices.OAuth {
 
 			"jira": {
 				// TODO(ENG-965): From new-connection form instead of env vars.
-				ClientID:     os.Getenv("ATLASSIAN_CLIENT_ID"),
-				ClientSecret: os.Getenv("ATLASSIAN_CLIENT_SECRET"),
+				ClientID:     os.Getenv("JIRA_CLIENT_ID"),
+				ClientSecret: os.Getenv("JIRA_CLIENT_SECRET"),
 				// https://developer.atlassian.com/cloud/jira/platform/oauth-2-3lo-apps/
 				// https://auth.atlassian.com/.well-known/openid-configuration
 				Endpoint: oauth2.Endpoint{
