@@ -16,7 +16,6 @@ var (
 	accessScope      = sdktypes.NewSymbol("AccessScope")
 	accessAvatarURL  = sdktypes.NewSymbol("AccessAvatarURL")
 
-	webhookID         = sdktypes.NewSymbol("WebhookID")
-	webhookExpiration = sdktypes.NewSymbol("WebhookExpiration")
-	webhookSecret     = sdktypes.NewSymbol("WebhookSecret")
+	webhookID     = sdktypes.NewSymbol("WebhookID")
+	webhookSecret = sdktypes.NewSymbol("WebhookSecret")
 )
