@@ -17,21 +17,25 @@ func (gdb *gormdb) withUserProjects(ctx context.Context) *gorm.DB {
 	return gdb.withUserEntity(ctx, "project")
 }
 
-func (gdb *gormdb) createProject(ctx context.Context, p *scheme.Project) error {
-	return gdb.transaction(ctx, func(tx *tx) error {
+func (gdb *gormdb) createProject(ctx context.Context, project *scheme.Project) error {
+	createFunc := func(tx *gorm.DB, user *scheme.User) error {
 		// ensure there is no active project with the same name (but allow deleted ones)
-		// - `deleted_at is NULL` will be added automatically to the query scope
-		// - we use Find, since it won't return and report/log ErrRecordNotFound
 		var count int64
-		if err := tx.withUserProjects(ctx).Model(&scheme.Project{}).
-			Where("name = ?", p.Name).Limit(1).Count(&count).Error; err != nil {
+		if err := tx.
+			// probably EXISTS is a bit more efficient, but it's not naturally supported by gorm
+			// and we are using joins as well. First maybe a good option too, but there should be only
+			// one active user project with the same name, so COUNT is also OK
+			Model(&scheme.Project{}). // with model scope grom will add `deleted_at is NULL` to the query
+			Scopes(withUserEntity("project", user.UserID)).
+			Where("name = ?", project.Name).Count(&count).Error; err != nil {
 			return err
 		}
 		if count > 0 {
 			return gorm.ErrDuplicatedKey // active/non-deleted project was found.
 		}
-		return createEntityWithOwnership(ctx, tx.gormdb.db, p)
-	})
+		return tx.Create(project).Error
+	}
+	return gdb.createEntityWithOwnership(ctx, createFunc, project)
 }
 
 func (gdb *gormdb) deleteProject(ctx context.Context, projectID sdktypes.UUID) error {

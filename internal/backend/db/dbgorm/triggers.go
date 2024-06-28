@@ -18,13 +18,12 @@ func (gdb *gormdb) withUserTriggers(ctx context.Context) *gorm.DB {
 }
 
 func (gdb *gormdb) createTrigger(ctx context.Context, trigger *scheme.Trigger) error {
-	return gdb.transaction(ctx, func(tx *tx) error {
-		// REVIEW: should we also check ConnectionID? beware of global cron connection
-		if err := tx.isUserEntity(ctx, trigger.ProjectID); err != nil {
-			return err
-		}
-		return createEntityWithOwnership(ctx, tx.db, trigger)
-	})
+	idsToVerify := []*sdktypes.UUID{&trigger.ProjectID, &trigger.EnvID}
+	if trigger.ConnectionID != sdktypes.BuiltinSchedulerConnectionID.UUIDValue() {
+		idsToVerify = append(idsToVerify, &trigger.ConnectionID)
+	}
+	createFunc := func(tx *gorm.DB, user *scheme.User) error { return tx.Create(trigger).Error }
+	return gdb.createEntityWithOwnership(ctx, createFunc, trigger, idsToVerify...)
 }
 
 func (gdb *gormdb) deleteTrigger(ctx context.Context, triggerID sdktypes.UUID) error {

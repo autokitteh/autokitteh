@@ -16,7 +16,8 @@ func (gdb *gormdb) withUserEnvs(ctx context.Context) *gorm.DB {
 }
 
 func (gdb *gormdb) createEnv(ctx context.Context, env *scheme.Env) error {
-	return createEntityWithOwnership(ctx, gdb.db, env)
+	createFunc := func(tx *gorm.DB, user *scheme.User) error { return tx.Create(env).Error }
+	return gdb.createEntityWithOwnership(ctx, createFunc, env, &env.ProjectID)
 }
 
 func (gdb *gormdb) deleteEnv(ctx context.Context, envID sdktypes.UUID) error {

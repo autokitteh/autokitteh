@@ -28,12 +28,15 @@ func (gdb *gormdb) createSession(ctx context.Context, session *scheme.Session) e
 		return err
 	}
 
-	return gdb.transaction(ctx, func(tx *tx) error {
-		if err := createEntityWithOwnership(ctx, tx.db, session); err != nil {
+	idsToVerify := []*sdktypes.UUID{session.BuildID, session.EnvID, session.DeploymentID, session.EventID}
+	createFunc := func(tx *gorm.DB, user *scheme.User) error {
+		if err := tx.Create(session).Error; err != nil {
 			return err
 		}
-		return tx.db.Create(logr).Error
-	})
+		return tx.Create(logr).Error
+	}
+
+	return gdb.createEntityWithOwnership(ctx, createFunc, session, idsToVerify...)
 }
 
 func (gdb *gormdb) deleteSession(ctx context.Context, sessionID sdktypes.UUID) error {

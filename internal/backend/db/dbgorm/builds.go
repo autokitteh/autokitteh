@@ -16,7 +16,8 @@ func (gdb *gormdb) withUserBuilds(ctx context.Context) *gorm.DB {
 }
 
 func (gdb *gormdb) saveBuild(ctx context.Context, build *scheme.Build) error {
-	return createEntityWithOwnership(ctx, gdb.db, build)
+	createFunc := func(tx *gorm.DB, user *scheme.User) error { return tx.Create(build).Error }
+	return gdb.createEntityWithOwnership(ctx, createFunc, build, build.ProjectID)
 }
 
 func (gdb *gormdb) deleteBuild(ctx context.Context, buildID sdktypes.UUID) error {
