@@ -85,6 +85,12 @@ def __atlassian_cloud_oauth2(connection: str, affix: str, client, **kwargs):
 
         token = oauth.refresh_token(__TOKEN_URL, refresh_token=refresh)
 
+        # Support long-running workflows - update the connection's variables.
+        os.environ[connection + "__oauth_AccessToken"] = token["access_token"]
+        os.environ[connection + "__oauth_RefreshToken"] = token["refresh_token"]
+        expiry = datetime.fromtimestamp(token["expires_at"]).astimezone(UTC)
+        os.environ[connection + "__oauth_Expiry"] = expiry.isoformat()
+
     cloud_id = os.getenv(connection + "__AccessID")
     if not cloud_id:
         raise ConnectionInitError(connection)
