@@ -63,15 +63,15 @@ def __atlassian_cloud_oauth2(connection: str, affix: str, client, **kwargs):
     if not expiry:
         raise ConnectionInitError(connection)
 
+    client_id = os.getenv(affix.upper() + "_CLIENT_ID")
+    if not client_id:
+        raise EnvVarError(affix.upper() + "_CLIENT_ID", "missing")
+
     # Convert Go's time string (e.g. "2024-06-20 19:18:17 -0700 PDT") to
     # an ISO-8601 string that Python can parse with timezone awareness.
     timestamp = re.sub(r" [A-Z]+.*", "", expiry)
     if datetime.fromisoformat(timestamp) <= datetime.now(UTC):
         # If the access token is expired, refresh it.
-        client_id = os.getenv(affix.upper() + "_CLIENT_ID")
-        if not client_id:
-            raise EnvVarError(affix.upper() + "_CLIENT_ID", "missing")
-
         client_secret = os.getenv(affix.upper() + "_CLIENT_SECRET")
         if not client_id:
             raise EnvVarError(affix.upper() + "_CLIENT_SECRET", "missing")
