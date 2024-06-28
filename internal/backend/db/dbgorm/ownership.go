@@ -111,25 +111,46 @@ func saveOwnershipForEntities(db *gorm.DB, u *scheme.User, oo ...scheme.Ownershi
 	return db.Create(oo).Error // and create ownerships
 }
 
-func createEntityWithOwnership[T any](ctx context.Context, db *gorm.DB, model *T) error {
+func (gdb *gormdb) createEntityWithOwnership(
+	ctx context.Context, create func(tx *gorm.DB, user *scheme.User) error, model any, allowedOnID ...*sdktypes.UUID,
+) error {
 	user, ownerships, err := prepareOwnershipForEntities(ctx, model)
 	if err != nil {
 		return err
 	}
-	return db.Transaction(func(tx *gorm.DB) error {
-		tx = tx.WithContext(ctx)
-		if err := tx.Create(model).Error; err != nil {
+
+	var idsToVerifyOwnership []sdktypes.UUID
+	if len(allowedOnID) != 0 {
+		uniqueIDs := make(map[sdktypes.UUID]struct{}, len(allowedOnID))
+		for _, id := range allowedOnID {
+			if id != nil {
+				uniqueIDs[*id] = struct{}{}
+			}
+		}
+		for id := range uniqueIDs {
+			idsToVerifyOwnership = append(idsToVerifyOwnership, id)
+		}
+	}
+
+	return gdb.transaction(ctx, func(tx *tx) error {
+		if err := tx.isUserEntity1(user, idsToVerifyOwnership...); err != nil {
 			return err
 		}
-
-		return saveOwnershipForEntities(tx, user, ownerships...)
+		if err := create(tx.db, user); err != nil { // create
+			return err
+		}
+		return saveOwnershipForEntities(tx.db, user, ownerships...) // ensure user and add ownerships
 	})
 }
 
 func (gdb *gormdb) isUserEntity1(user *scheme.User, ids ...sdktypes.UUID) error {
 	gdb.z.Debug("isUserEntity", zap.Any("entityIDs", ids), zap.Any("user", user))
+	if len(ids) == 0 {
+		return nil
+	}
+
 	var count int64
-	if err := gdb.db.Model(&scheme.Ownership{}).Where("entity_id IN ? AND user_id = ?", ids, user.UserID).Limit(1).Count(&count).Error; err != nil {
+	if err := gdb.db.Model(&scheme.Ownership{}).Where("entity_id IN ? AND user_id = ?", ids, user.UserID).Count(&count).Error; err != nil {
 		return err
 	}
 	if count < int64(len(ids)) {
@@ -145,28 +166,29 @@ func (gdb *gormdb) isUserEntity(ctx context.Context, ids ...sdktypes.UUID) error
 	return gdb.isUserEntity1(user, ids...)
 }
 
-// add context and join with user ownership on entity
-func joinUserEntity(ctx context.Context, db *gorm.DB, entity string, userID sdktypes.UUID) *gorm.DB {
-	// REVIEW: the simplest possible way. We could also use generics, TableName, interface to find ID column,  etc..
+// REVIEW: this is probably the simplest possible way (e.g. with entity as string).
+// We could also use generics, TableName, interface to find ID column,  etc..
+
+// join with user ownership on entity
+func joinUserEntity(db *gorm.DB, entity string, userID sdktypes.UUID) *gorm.DB {
 	tableName := entity + string("s")
 	joinExpr := fmt.Sprintf("JOIN ownerships ON ownerships.entity_id = %s.%s_id", tableName, entity)
-	return db.WithContext(ctx).
-		Table(tableName).Joins(joinExpr).Where("ownerships.user_id = ?", userID)
+	return db.Table(tableName).Joins(joinExpr).Where("ownerships.user_id = ?", userID)
 }
 
 // gorm user+entity scope
-// func withUserEntity(ctx context.Context, entity string) func(db *gorm.DB) *gorm.DB {
-// 	return func(db *gorm.DB) *gorm.DB {
-// 		user, _ := userFromContext(ctx) // FIXME: ignore error?
-// 		return joinUserEntity(ctx, db, entity, user.UserID)
-// 	}
-// }
+func withUserEntity(entity string, userID sdktypes.UUID) func(*gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		return joinUserEntity(db, entity, userID)
+	}
+}
 
 // gormdb user+entity scoped godm db + logging
 func (gdb *gormdb) withUserEntity(ctx context.Context, entity string) *gorm.DB {
-	user, _ := userFromContext(ctx) // FIXME: ignore error?
+	user, _ := userFromContext(ctx) // NOTE: ignore possible error
 	gdb.z.Debug("withUser", zap.String("entity", entity), zap.Any("user", user))
-	return joinUserEntity(ctx, gdb.db, entity, user.UserID)
+	db := gdb.db.WithContext(ctx)
+	return joinUserEntity(db, entity, user.UserID)
 }
 
 // FIXME:
@@ -178,17 +200,8 @@ func (gdb *gormdb) withUserEntity(ctx context.Context, entity string) *gorm.DB {
 // - add uniq index for users name+email+provider? or userID is enough which is 1-to-1 to all those 3
 // 2. Delete
 // - need to check ownership foreign keys for fully deleted objects
-// - cleaning ownership table
-// - deleting objects
+// - cleaning ownership table? deleting objects
 // 3.
-// - rmove varID from var and use ScopeID as userID
-// - remove line from dbgorm files
-// - create
-//   - build need to add projectID
-//   - connection check with projectID, even if optional
-//   - deployment, build should be non-optinal. Need to check vs. buildID or EnvID
-//   - env with ProjectID
-//   - event if connectionID is present
-//   - TRIGGER PROJECTid
-
-// if we are in production do not allow save events
+//   if we are in production do not allow save events via cmd?
+// 4. tests
+// - get/list/delete
