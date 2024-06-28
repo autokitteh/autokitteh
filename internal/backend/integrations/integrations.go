@@ -13,6 +13,8 @@ import (
 	"go.autokitteh.dev/autokitteh/integrations/github"
 	"go.autokitteh.dev/autokitteh/integrations/google"
 	"go.autokitteh.dev/autokitteh/integrations/google/calendar"
+	"go.autokitteh.dev/autokitteh/integrations/google/drive"
+	"go.autokitteh.dev/autokitteh/integrations/google/forms"
 	"go.autokitteh.dev/autokitteh/integrations/google/gmail"
 	"go.autokitteh.dev/autokitteh/integrations/google/sheets"
 	"go.autokitteh.dev/autokitteh/integrations/grpc"
@@ -40,6 +42,8 @@ func New(cfg *Config, vars sdkservices.Vars) sdkservices.Integrations {
 		calendar.New(vars),
 		chatgpt.New(vars),
 		confluence.New(vars),
+		drive.New(vars),
+		forms.New(vars),
 		github.New(vars),
 		gmail.New(vars),
 		google.New(vars),
