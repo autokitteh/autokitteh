@@ -45,19 +45,21 @@ func TestCreateEventForeignKeys(t *testing.T) {
 	e := f.newEvent()
 	i := f.newIntegration()
 	c := f.newConnection()
+	b := f.newBuild()
 
+	f.saveBuildsAndAssert(t, b)
 	f.createIntegrationsAndAssert(t, i)
 	f.createConnectionsAndAssert(t, c)
 
 	// negative test with non-existing assets
-	unexisting := uuid.New()
+	// use unexisingID = buildID owned by user to pass user ownership test
 
 	// FIXME: ENG-590. foreign keys integration
 	// e.IntegrationID = &unexisting
 	// assert.ErrorIs(t, f.gormdb.saveEvent(f.ctx, &e), gorm.ErrForeignKeyViolated)
 	e.IntegrationID = &i.IntegrationID
 
-	e.ConnectionID = &unexisting
+	e.ConnectionID = &b.BuildID // no such connectionID, since it's a buildID
 	assert.ErrorIs(t, f.gormdb.saveEvent(f.ctx, &e), gorm.ErrForeignKeyViolated)
 	e.ConnectionID = &c.ConnectionID
 

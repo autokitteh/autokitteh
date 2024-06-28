@@ -20,7 +20,7 @@ func withUser(ctx context.Context, user sdktypes.User) context.Context {
 }
 
 func preOwnershipTest(t *testing.T) *dbFixture {
-	f := newDBFixture().WithDebug()
+	f := newDBFixture()
 	findAndAssertCount[scheme.Ownership](t, f, 0, "") // no ownerships
 	return f
 }

@@ -52,9 +52,9 @@ func TestCreateDuplicatedProjectName(t *testing.T) {
 	// test createProject
 	f.createProjectsAndAssert(t, p)
 
+	// create different project with the same name
 	p2 := f.newProject()
 	p2.Name = p.Name
-
 	assert.Equal(t, p.Name, p2.Name)
 	assert.NotEqual(t, p.ProjectID, p2.ProjectID)
 
