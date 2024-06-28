@@ -17,7 +17,8 @@ func (gdb *gormdb) withUserConnections(ctx context.Context) *gorm.DB {
 }
 
 func (gdb *gormdb) createConnection(ctx context.Context, conn *scheme.Connection) error {
-	return createEntityWithOwnership(ctx, gdb.db, conn)
+	createFunc := func(tx *gorm.DB, user *scheme.User) error { return tx.Create(conn).Error }
+	return gdb.createEntityWithOwnership(ctx, createFunc, conn, conn.ProjectID)
 }
 
 func (gdb *gormdb) deleteConnection(ctx context.Context, id sdktypes.UUID) error {

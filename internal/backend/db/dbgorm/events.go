@@ -17,7 +17,8 @@ func (gdb *gormdb) withUserEvents(ctx context.Context) *gorm.DB {
 }
 
 func (gdb *gormdb) saveEvent(ctx context.Context, event *scheme.Event) error {
-	return createEntityWithOwnership(ctx, gdb.db, event)
+	createFunc := func(tx *gorm.DB, user *scheme.User) error { return tx.Create(event).Error }
+	return gdb.createEntityWithOwnership(ctx, createFunc, event, event.ConnectionID)
 }
 
 func (gdb *gormdb) deleteEvent(ctx context.Context, eventID sdktypes.UUID) error {

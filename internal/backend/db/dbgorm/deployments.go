@@ -16,8 +16,9 @@ func (gdb *gormdb) withUserDeployments(ctx context.Context) *gorm.DB {
 	return gdb.withUserEntity(ctx, "deployment")
 }
 
-func (gdb *gormdb) createDeployment(ctx context.Context, deployment *scheme.Deployment) error {
-	return createEntityWithOwnership(ctx, gdb.db, deployment)
+func (gdb *gormdb) createDeployment(ctx context.Context, d *scheme.Deployment) error {
+	createFunc := func(tx *gorm.DB, user *scheme.User) error { return tx.Create(d).Error }
+	return gdb.createEntityWithOwnership(ctx, createFunc, d, &d.BuildID, d.EnvID)
 }
 
 func (gdb *gormdb) deleteDeployment(ctx context.Context, deploymentID sdktypes.UUID) error {
