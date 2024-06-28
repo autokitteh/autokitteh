@@ -173,3 +173,8 @@ def jira_client(connection: str, **kwargs):
             return JIRA(base_url, token_auth=token, **kwargs)
 
     raise ConnectionInitError(connection)
+
+
+def get_url(connection: str) -> str:
+    check_connection_name(connection)
+    return os.getenv(connection + "__BaseURL") or os.getenv(connection + "__AccessURL")
