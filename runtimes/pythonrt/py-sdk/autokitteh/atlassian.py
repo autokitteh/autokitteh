@@ -1,5 +1,7 @@
 """Initialize an Atlassian client, based on an AutoKitteh connection."""
 
+from datetime import UTC, datetime
+import re
 import os
 
 from atlassian import Confluence, Jira
@@ -36,7 +38,7 @@ def atlassian_jira_client(connection: str, **kwargs) -> Jira:
     check_connection_name(connection)
 
     if os.getenv(connection + "__oauth_AccessToken"):
-        return __atlassian_jira_client_cloud_oauth2(connection, **kwargs)
+        return __atlassian_cloud_oauth2(connection, "jira", Jira, **kwargs)
 
     base_url = os.getenv(connection + "__BaseURL")
     token = os.getenv(connection + "__Token")
@@ -44,42 +46,57 @@ def atlassian_jira_client(connection: str, **kwargs) -> Jira:
         email = os.getenv(connection + "__Email")
         if not email:
             return Jira(url=base_url, token=token, **kwargs)
-        return Jira(
-            url=base_url,
-            username=email,
-            password=token,
-            cloud=True,
-            **kwargs,
-        )
+
+        return Jira(url=base_url, username=email, password=token, cloud=True, **kwargs)
 
     raise ConnectionInitError(connection)
 
 
-def __atlassian_jira_client_cloud_oauth2(connection: str, **kwargs) -> Jira:
+def __atlassian_cloud_oauth2(connection: str, affix: str, client, **kwargs):
     """Initialize a Jira client for Atlassian Cloud using OAuth 2.0."""
-    client_id = os.getenv("JIRA_CLIENT_ID")
-    if not client_id:
-        raise EnvVarError("JIRA_CLIENT_ID", "missing")
+    token = {
+        "access_token": os.getenv(connection + "__oauth_AccessToken"),
+        "token_type": os.getenv(connection + "__oauth_TokenType"),
+    }
 
-    client_secret = os.getenv("JIRA_CLIENT_SECRET")
-    if not client_id:
-        raise EnvVarError("JIRA_CLIENT_SECRET", "missing")
-
-    extra = {"client_id": client_id, "client_secret": client_secret}
-    oauth = OAuth2Session(client_id, auto_refresh_kwargs=extra)
-
-    refresh = os.getenv(connection + "__oauth_RefreshToken")
-    if not refresh:
+    expiry = os.getenv(connection + "__oauth_Expiry")
+    if not expiry:
         raise ConnectionInitError(connection)
 
-    token = oauth.refresh_token(__TOKEN_URL, refresh_token=refresh)
+    client_id = os.getenv(affix.upper() + "_CLIENT_ID")
+    if not client_id:
+        raise EnvVarError(affix.upper() + "_CLIENT_ID", "missing")
+
+    # Convert Go's time string (e.g. "2024-06-20 19:18:17 -0700 PDT") to
+    # an ISO-8601 string that Python can parse with timezone awareness.
+    timestamp = re.sub(r" [A-Z]+.*", "", expiry)
+    if datetime.fromisoformat(timestamp) <= datetime.now(UTC):
+        # If the access token is expired, refresh it.
+        client_secret = os.getenv(affix.upper() + "_CLIENT_SECRET")
+        if not client_id:
+            raise EnvVarError(affix.upper() + "_CLIENT_SECRET", "missing")
+
+        extra = {"client_id": client_id, "client_secret": client_secret}
+        oauth = OAuth2Session(client_id, auto_refresh_kwargs=extra)
+
+        refresh = os.getenv(connection + "__oauth_RefreshToken")
+        if not refresh:
+            raise ConnectionInitError(connection)
+
+        token = oauth.refresh_token(__TOKEN_URL, refresh_token=refresh)
+
+        # Support long-running workflows - update the connection's variables.
+        os.environ[connection + "__oauth_AccessToken"] = token["access_token"]
+        os.environ[connection + "__oauth_RefreshToken"] = token["refresh_token"]
+        expiry = datetime.fromtimestamp(token["expires_at"]).astimezone(UTC)
+        os.environ[connection + "__oauth_Expiry"] = expiry.isoformat()
 
     cloud_id = os.getenv(connection + "__AccessID")
     if not cloud_id:
         raise ConnectionInitError(connection)
 
-    return Jira(
-        url="https://api.atlassian.com/ex/jira/" + cloud_id,
+    return client(
+        url=f"https://api.atlassian.com/ex/{affix.lower()}/{cloud_id}",
         oauth2={"client_id": client_id, "token": token},
         **kwargs,
     )
@@ -108,7 +125,7 @@ def confluence_client(connection: str, **kwargs) -> Confluence:
     check_connection_name(connection)
 
     if os.getenv(connection + "__oauth_AccessToken"):
-        return __confluence_client_cloud_oauth2(connection, **kwargs)
+        return __atlassian_cloud_oauth2(connection, "confluence", Confluence, **kwargs)
 
     base_url = os.getenv(connection + "__BaseURL")
     token = os.getenv(connection + "__Token")
@@ -116,45 +133,12 @@ def confluence_client(connection: str, **kwargs) -> Confluence:
         email = os.getenv(connection + "__Email")
         if not email:
             return Confluence(url=base_url, token=token, **kwargs)
+
         return Confluence(
-            url=base_url,
-            username=email,
-            password=token,
-            cloud=True,
-            **kwargs,
+            url=base_url, username=email, password=token, cloud=True, **kwargs
         )
 
     raise ConnectionInitError(connection)
-
-
-def __confluence_client_cloud_oauth2(connection: str, **kwargs) -> Confluence:
-    """Initialize a Confluence client for Atlassian Cloud using OAuth 2.0."""
-    client_id = os.getenv("CONFLUENCE_CLIENT_ID")
-    if not client_id:
-        raise EnvVarError("CONFLUENCE_CLIENT_ID", "missing")
-
-    client_secret = os.getenv("CONFLUENCE_CLIENT_SECRET")
-    if not client_id:
-        raise EnvVarError("CONFLUENCE_CLIENT_SECRET", "missing")
-
-    extra = {"client_id": client_id, "client_secret": client_secret}
-    oauth = OAuth2Session(client_id, auto_refresh_kwargs=extra)
-
-    refresh = os.getenv(connection + "__oauth_RefreshToken")
-    if not refresh:
-        raise ConnectionInitError(connection)
-
-    token = oauth.refresh_token(__TOKEN_URL, refresh_token=refresh)
-
-    cloud_id = os.getenv(connection + "__AccessID")
-    if not cloud_id:
-        raise ConnectionInitError(connection)
-
-    return Confluence(
-        url="https://api.atlassian.com/ex/confluence/" + cloud_id,
-        oauth2={"client_id": client_id, "token": token},
-        **kwargs,
-    )
 
 
 def jira_client(connection: str, **kwargs):
