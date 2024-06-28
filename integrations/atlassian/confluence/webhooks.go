@@ -124,7 +124,10 @@ func registerWebhook(l *zap.Logger, base, user, key string) (int, string, error)
 			"comment_created",
 			"content_created",
 			"group_created",
+			"label_created",
 			"page_created",
+			"relation_created",
+			"space_created",
 		},
 		Secret: secret,
 	}

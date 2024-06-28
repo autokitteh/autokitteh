@@ -106,7 +106,13 @@ func (h handler) handleEvent(w http.ResponseWriter, r *http.Request) {
 	// Returning immediately without an error = acknowledgement of receipt.
 }
 
-var simpleEntities = []string{"attachment", "comment", "group", "page", "space"}
+// All non-"content" event types (with the created/updated/removed suffix).
+// https://developer.atlassian.com/cloud/confluence/modules/webhook/
+// https://confluence.atlassian.com/conf715/managing-webhooks-1096098349.html
+var simpleEntities = []string{
+	"attachment", "blog", "blueprint_page", "comment",
+	"group", "label", "page", "relation", "space",
+}
 
 func extractEntityType(l *zap.Logger, atlassianEvent map[string]any, category string) (string, bool) {
 	if category == "" {
