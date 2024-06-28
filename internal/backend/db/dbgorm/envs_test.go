@@ -32,25 +32,28 @@ func preEnvTest(t *testing.T) *dbFixture {
 func TestCreateEnv(t *testing.T) {
 	f := preEnvTest(t)
 
-	e := f.newEnv()
+	p := f.newProject()
+	f.createProjectsAndAssert(t, p)
+	e := f.newEnv(p)
+
 	// test createEnv
-	f.WithForeignKeysDisabled(func() { f.createEnvsAndAssert(t, e) })
+	f.createEnvsAndAssert(t, e)
 }
 
 func TestGetEnv(t *testing.T) {
 	f := preEnvTest(t)
 
 	p := f.newProject()
+	e := f.newEnv(p)
 	f.createProjectsAndAssert(t, p)
-
-	e := f.newEnv()
-	e.ProjectID = p.ProjectID
 	f.createEnvsAndAssert(t, e)
 
+	// test getEnvByName
 	e2, err := f.gormdb.getEnvByName(f.ctx, p.ProjectID, e.Name)
 	assert.NoError(t, err)
 	assert.Equal(t, e, *e2)
 
+	// test getEnvByID
 	e2, err = f.gormdb.getEnvByID(f.ctx, e.EnvID)
 	assert.NoError(t, err)
 	assert.Equal(t, e, *e2)
@@ -59,23 +62,27 @@ func TestGetEnv(t *testing.T) {
 func TestCreateEnvForeignKeys(t *testing.T) {
 	f := preEnvTest(t)
 
+	p := f.newProject()
+	b := f.newBuild()
 	e := f.newEnv()
-	unexisting := sdktypes.NewProjectID().UUIDValue()
+	f.createProjectsAndAssert(t, p)
+	f.saveBuildsAndAssert(t, b)
 
-	e.ProjectID = unexisting
+	// use user owner buildID to pass user checks as unexisting projectID
+	e.ProjectID = b.BuildID // no such projectID, since it's a buildID
 	assert.ErrorIs(t, f.gormdb.createEnv(f.ctx, &e), gorm.ErrForeignKeyViolated)
 
-	p := f.newProject()
 	e.ProjectID = p.ProjectID
-	f.createProjectsAndAssert(t, p)
 	f.createEnvsAndAssert(t, e)
 }
 
 func TestDeleteEnv(t *testing.T) {
 	f := preEnvTest(t)
 
-	e := f.newEnv()
-	f.WithForeignKeysDisabled(func() { f.createEnvsAndAssert(t, e) })
+	p := f.newProject()
+	e := f.newEnv(p)
+	f.createProjectsAndAssert(t, p)
+	f.createEnvsAndAssert(t, e)
 
 	// test deleteEnv
 	assert.NoError(t, f.gormdb.deleteEnv(f.ctx, e.EnvID))
@@ -85,8 +92,10 @@ func TestDeleteEnv(t *testing.T) {
 func TestDeleteEnvs(t *testing.T) {
 	f := preEnvTest(t)
 
-	e1, e2 := f.newEnv(), f.newEnv()
-	f.WithForeignKeysDisabled(func() { f.createEnvsAndAssert(t, e1, e2) })
+	p := f.newProject()
+	e1, e2 := f.newEnv(p), f.newEnv(p)
+	f.createProjectsAndAssert(t, p)
+	f.createEnvsAndAssert(t, e1, e2)
 
 	// test deleteEnvs
 	assert.NoError(t, f.gormdb.deleteEnvs(f.ctx, []sdktypes.UUID{e1.EnvID, e2.EnvID}))
@@ -96,16 +105,13 @@ func TestDeleteEnvs(t *testing.T) {
 func TestDeleteEnvForeignKeys(t *testing.T) {
 	f := preEnvTest(t)
 
-	b := f.newBuild()
 	p := f.newProject()
-	e := f.newEnv()
-	e.ProjectID = p.ProjectID
-	d := f.newDeployment()
-	d.BuildID = b.BuildID
-	d.EnvID = &e.EnvID
+	b := f.newBuild(p)
+	e := f.newEnv(p)
+	d := f.newDeployment(b, e)
 
-	f.saveBuildsAndAssert(t, b)
 	f.createProjectsAndAssert(t, p)
+	f.saveBuildsAndAssert(t, b)
 	f.createEnvsAndAssert(t, e)
 	f.createDeploymentsAndAssert(t, d)
 

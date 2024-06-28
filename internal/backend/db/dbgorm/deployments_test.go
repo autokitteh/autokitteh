@@ -58,9 +58,11 @@ func preDeploymentTest(t *testing.T) *dbFixture {
 
 func TestCreateDeployment(t *testing.T) {
 	f := preDeploymentTest(t)
-	foreignKeys(f.gormdb, false) // no foreign keys - need build
 
-	d := f.newDeployment()
+	b := f.newBuild()
+	f.saveBuildsAndAssert(t, b)
+
+	d := f.newDeployment(b)
 	// test createDeployment without any assets deployment depends on, since they are soft-foreign keys and could be nil
 	f.createDeploymentsAndAssert(t, d)
 }
@@ -69,34 +71,30 @@ func TestCreateDeploymentsForeignKeys(t *testing.T) {
 	// check session creation if foreign keys are not nil
 	f := preDeploymentTest(t)
 
-	// negative test with non-existing assets
-	d := f.newDeployment()
-
-	unexistingEnvID := scheme.UUIDOrNil(sdktypes.NewEnvID().UUIDValue())
-	d.EnvID = unexistingEnvID
-	assert.ErrorIs(t, f.gormdb.createDeployment(f.ctx, &d), gorm.ErrForeignKeyViolated)
-	d.EnvID = nil
-
-	// test with existing assets
 	p := f.newProject()
-	e := f.newEnv()
-	e.ProjectID = p.ProjectID
 	b := f.newBuild()
+	e := f.newEnv(p)
 	f.createProjectsAndAssert(t, p)
 	f.createEnvsAndAssert(t, e)
 	f.saveBuildsAndAssert(t, b)
 
-	d = f.newDeployment()
-	d.BuildID = b.BuildID
-	d.EnvID = &e.EnvID
+	// negative test with non-existing assets
+	// use existing user-owned buildID as fake envID
+	d := f.newDeployment(b)
+	d.EnvID = &b.BuildID // use existing buildID as unexisting envIDs
+	assert.ErrorIs(t, f.gormdb.createDeployment(f.ctx, &d), gorm.ErrForeignKeyViolated)
+
+	// test with existing assets
+	d = f.newDeployment(e, b)
 	f.createDeploymentsAndAssert(t, d)
 }
 
 func TestGetDeployment(t *testing.T) {
 	f := preDeploymentTest(t)
-	foreignKeys(f.gormdb, false) // no foreign keys - need build
 
-	d := f.newDeployment()
+	b := f.newBuild()
+	d := f.newDeployment(b)
+	f.saveBuildsAndAssert(t, b)
 	f.createDeploymentsAndAssert(t, d)
 
 	// check getDeployment
@@ -111,9 +109,10 @@ func TestGetDeployment(t *testing.T) {
 
 func TestListDeployments(t *testing.T) {
 	f := preDeploymentTest(t)
-	foreignKeys(f.gormdb, false) // no foreign keys - need build
 
-	d := f.newDeployment()
+	b := f.newBuild()
+	d := f.newDeployment(b)
+	f.saveBuildsAndAssert(t, b)
 	f.createDeploymentsAndAssert(t, d)
 
 	deployments := f.listDeploymentsAndAssert(t, 1)
@@ -124,8 +123,11 @@ func TestListDeploymentsWithStats(t *testing.T) {
 	f := preDeploymentTest(t)
 	foreignKeys(f.gormdb, false) // no foreign keys - need build
 
+	b := f.newBuild()
+	d := f.newDeployment(b)
+	f.saveBuildsAndAssert(t, b)
+
 	// create deployment and ensure there are no stats
-	d := f.newDeployment()
 	f.createDeploymentsAndAssert(t, d)
 
 	dWS := scheme.DeploymentWithStats{Deployment: d} // no stats, all zeros
@@ -133,8 +135,7 @@ func TestListDeploymentsWithStats(t *testing.T) {
 	assert.Equal(t, dWS, deployments[0])
 
 	// add session for the stats
-	s := f.newSession(sdktypes.SessionStateTypeCompleted)
-	s.DeploymentID = &d.DeploymentID
+	s := f.newSession(sdktypes.SessionStateTypeCompleted, d)
 	f.createSessionsAndAssert(t, s)
 
 	// ensure that new session is included in stats
@@ -156,16 +157,13 @@ func TestDeleteDeployment(t *testing.T) {
 	f := preDeploymentTest(t)
 
 	b := f.newBuild()
-	d := f.newDeployment()
-	d.BuildID = b.BuildID
+	d := f.newDeployment(b)
 	f.saveBuildsAndAssert(t, b)
 	f.createDeploymentsAndAssert(t, d)
 
 	// add sessions and check that deployment stats are updated
-	s1 := f.newSession(sdktypes.SessionStateTypeCompleted)
-	s2 := f.newSession(sdktypes.SessionStateTypeError)
-	s1.DeploymentID = &d.DeploymentID
-	s2.DeploymentID = &d.DeploymentID
+	s1 := f.newSession(sdktypes.SessionStateTypeCompleted, d)
+	s2 := f.newSession(sdktypes.SessionStateTypeError, d)
 	f.createSessionsAndAssert(t, s1, s2)
 
 	dWS := scheme.DeploymentWithStats{Deployment: d, Completed: 1, Error: 1}

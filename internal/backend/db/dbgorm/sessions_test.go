@@ -3,7 +3,6 @@ package dbgorm
 import (
 	"testing"
 
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
@@ -68,9 +67,9 @@ func testLastLogRecord(t *testing.T, f *dbFixture, numRecords int, sessionID sdk
 func TestCreateSession(t *testing.T) {
 	f := preSessionTest(t)
 
+	// test createSession
 	s := f.newSession(sdktypes.SessionStateTypeCompleted)
-	// test createSession without any assets session depends on, since they are soft-foreign keys and could be nil
-	f.createSessionsAndAssert(t, s)
+	f.createSessionsAndAssert(t, s) // all session assets are optional and will be set to nil
 
 	// test getSessionLogRecords and ensure that session logs contain the only CREATED record
 	testLastLogRecord(t, f, 1, s.SessionID, sdktypes.NewStateSessionLogRecord(sdktypes.NewSessionStateCreated()))
@@ -80,44 +79,43 @@ func TestCreateSessionForeignKeys(t *testing.T) {
 	// check session creation if foreign keys are not nil
 	f := preSessionTest(t)
 
-	// negative test with non-existing assets
-	s := f.newSession(sdktypes.SessionStateTypeCompleted)
-	unexisting := uuid.New()
-
-	s.BuildID = &unexisting
-	assert.ErrorIs(t, f.gormdb.createSession(f.ctx, &s), gorm.ErrForeignKeyViolated)
-	s.BuildID = nil
-
-	s.EnvID = &unexisting
-	assert.ErrorIs(t, f.gormdb.createSession(f.ctx, &s), gorm.ErrForeignKeyViolated)
-	s.EnvID = nil
-
-	s.DeploymentID = &unexisting
-	assert.ErrorIs(t, f.gormdb.createSession(f.ctx, &s), gorm.ErrForeignKeyViolated)
-	s.DeploymentID = nil
-
-	s.EventID = &unexisting
-	assert.ErrorIs(t, f.gormdb.createSession(f.ctx, &s), gorm.ErrForeignKeyViolated)
-	s.EventID = nil
-
 	// test with existing assets
+	p := f.newProject()
 	b := f.newBuild()
-	env := f.newEnv()
-	d := f.newDeployment()
-	ev := f.newEvent()
+	env := f.newEnv(p)
+	d := f.newDeployment(b)
+	evt := f.newEvent()
 
-	d.BuildID = b.BuildID
-
+	f.createProjectsAndAssert(t, p)
 	f.saveBuildsAndAssert(t, b)
-	f.WithForeignKeysDisabled(func() { f.createEnvsAndAssert(t, env) })
+	f.createEnvsAndAssert(t, env)
 	f.createDeploymentsAndAssert(t, d)
-	f.WithForeignKeysDisabled(func() { f.createEventsAndAssert(t, ev) })
+	f.createEventsAndAssert(t, evt)
 
-	s.BuildID = &b.BuildID
-	s.EnvID = &env.EnvID
-	s.DeploymentID = &d.DeploymentID
-	s.EventID = &ev.EventID
+	s := f.newSession(sdktypes.SessionStateTypeCompleted, d, b, env, evt)
+
 	f.createSessionsAndAssert(t, s)
+
+	// negative test with non-existing assets
+	// use existing user owned projectID as fakeID to pass user check
+
+	s2 := f.newSession(sdktypes.SessionStateTypeCompleted)
+
+	s2.BuildID = &p.ProjectID // no such buildID, since it's a projectID
+	assert.ErrorIs(t, f.gormdb.createSession(f.ctx, &s2), gorm.ErrForeignKeyViolated)
+	s2.BuildID = nil
+
+	s2.EnvID = &p.ProjectID // no such envID, since it's a projectID
+	assert.ErrorIs(t, f.gormdb.createSession(f.ctx, &s2), gorm.ErrForeignKeyViolated)
+	s2.EnvID = nil
+
+	s2.DeploymentID = &p.ProjectID // no such deploymentID, since it's a projectID
+	assert.ErrorIs(t, f.gormdb.createSession(f.ctx, &s2), gorm.ErrForeignKeyViolated)
+	s2.DeploymentID = nil
+
+	s2.EventID = &p.ProjectID // no such eventID, since it's a projectID
+	assert.ErrorIs(t, f.gormdb.createSession(f.ctx, &s2), gorm.ErrForeignKeyViolated)
+	s2.EventID = nil
 }
 
 func TestGetSession(t *testing.T) {
