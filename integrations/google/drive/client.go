@@ -21,7 +21,7 @@ var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.Integrati
 	LogoUrl:       "/static/images/google_forms.svg",
 	UserLinks: map[string]string{
 		"1 REST API reference": "https://developers.google.com/drive/api/reference/rest/v3",
-		"2 Python client API":  "https://developers.google.com/resources/api-libraries/documentation/drive/v3/python/latest/index.html",
+		"2 Python client API":  "https://developers.google.com/resources/api-libraries/documentation/drive/v3/python/latest/",
 		"3 Python samples":     "https://github.com/googleworkspace/python-samples/tree/main/drive",
 	},
 	ConnectionUrl: "/googledrive/connect",
