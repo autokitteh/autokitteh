@@ -112,9 +112,10 @@ func ParseConnection(c Connection) (sdktypes.Connection, error) {
 }
 
 type Var struct {
-	VarID    sdktypes.UUID `gorm:"primaryKey;type:uuid;not null"`
-	ScopeID  sdktypes.UUID `gorm:"uniqueIndex:idx_scope_name,priority:1;type:uuid;not null"`
-	Name     string        `gorm:"uniqueIndex:idx_scope_name,priority:2"`
+	// varID is scopeID. just mapped directly for reusing the join code
+	VarID    sdktypes.UUID `gorm:"primaryKey;index;type:uuid;not null"`
+	ScopeID  sdktypes.UUID `gorm:"-"`
+	Name     string        `gorm:"primaryKey;index;not null"`
 	Value    string
 	IsSecret bool
 
@@ -122,7 +123,19 @@ type Var struct {
 
 	// enforce foreign keys
 	// Integration *Integration // FIXME: ENG-590
-	Ownerships *Ownership `gorm:"polymorphic:Entity"`
+}
+
+// simple hook to populate ScopeID after retrieving a Var from the database
+func (v *Var) AfterFind(tx *gorm.DB) (err error) {
+	v.ScopeID = v.VarID
+	return nil
+}
+
+func (v *Var) BeforeCreate(tx *gorm.DB) (err error) {
+	if v.VarID != v.ScopeID {
+		return gorm.ErrInvalidField
+	}
+	return nil
 }
 
 type Integration struct {
