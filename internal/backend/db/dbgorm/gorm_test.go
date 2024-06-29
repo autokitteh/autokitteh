@@ -97,10 +97,7 @@ type dbFixture struct {
 	db            *gorm.DB
 	gormdb        *gormdb
 	ctx           context.Context
-	projectID     sdktypes.UUID
 	eventID       sdktypes.UUID
-	connectionID  sdktypes.UUID
-	envID         sdktypes.UUID
 	eventSequence int
 }
 
@@ -374,6 +371,7 @@ func (f *dbFixture) newVar(name string, val string, args ...any) scheme.Var {
 			v.ScopeID = a
 		}
 	}
+	v.VarID = v.ScopeID
 	return v
 }
 

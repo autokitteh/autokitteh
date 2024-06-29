@@ -2,6 +2,7 @@ package dbgorm
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"gorm.io/gorm"
@@ -17,58 +18,58 @@ func (gdb *gormdb) withUserVars(ctx context.Context) *gorm.DB {
 	return gdb.withUserEntity(ctx, "var")
 }
 
-var varIDfunc = func() sdktypes.UUID { return sdktypes.NewVarID().UUIDValue() }
-
 // FIXME:
 // - env vars are user scopes for sure. Connection vars may have no user in ctx? Need to check more use-cases for connection vars
 
 func (gdb *gormdb) setVar(ctx context.Context, vr *scheme.Var) error {
-	conflict := clause.OnConflict{
-		Columns:   []clause.Column{{Name: "scope_id"}, {Name: "name"}},      // uniqueness name + scope
-		DoUpdates: clause.AssignmentColumns([]string{"value", "is_secret"}), // updates allowed for value and is_secret
-	}
+	vr.VarID = vr.ScopeID // just ensure
 
-	// Set the ID for each var. Note that it be used only when creating the variable, on update with conflict it will be ignored
-	vr.VarID = varIDfunc()
-
-	// NOTE: createEntityWithOwnership won't respect clauses and it will enter to recirsive transaction
-	// that's why we are handing user extraction, create entiry and ownerships differently here
 	user, err := userFromContext(ctx)
 	if err != nil {
 		return err
 	}
-
 	return gdb.transaction(ctx, func(tx *tx) error {
-		if err := tx.isUserEntity1(user, vr.ScopeID); err != nil {
-			return err
-		}
-
 		// connection and env are soft-deleted. emulate foreign keys check
-		// REVIEW: we may extract entityType from ownerships
-		query := `
-        SELECT CASE 
-            WHEN EXISTS (SELECT 1 FROM connections WHERE connection_id = ? AND deleted_at IS NULL) THEN 1
-            WHEN EXISTS (SELECT 1 FROM envs WHERE env_id = ? AND deleted_at IS NULL) THEN 1
-            ELSE 0
-        END`
-		var count int64
-		if err := tx.db.Raw(query, vr.ScopeID, vr.ScopeID).Scan(&count).Error; err != nil {
-			return err
-		}
-		if count != 1 {
-			return gorm.ErrForeignKeyViolated
+		var ownership scheme.Ownership
+		db := tx.db.WithContext(ctx)
+
+		// fetch user_id and entity_type for provided scope_id
+		if err := db.Model(&scheme.Ownership{}).
+			Select("user_id", "entity_type").
+			Where("entity_id = ? AND entity_type IN ('Connection', 'Env')", vr.ScopeID).
+			First(&ownership).Error; err != nil {
+			// if no records were found then fail with foreign keys validation (#1), since there should be one
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return gorm.ErrForeignKeyViolated
+			}
 		}
 
-		ownerships := prepareOwnershipForEntities1(user, vr)
-		if err := tx.db.Clauses(conflict).Create(vr).Error; err != nil {
+		if user.UserID != ownership.UserID { // check user ownership
+			return sdkerrors.ErrUnauthorized
+		}
+
+		var tableName, idField string
+		var deletedAt gorm.DeletedAt
+		switch ownership.EntityType {
+		case "Connection":
+			tableName, idField = "connections", "connection_id"
+		case "Env":
+			tableName, idField = "envs", "env_id"
+		}
+		query := fmt.Sprintf("SELECT deleted_at FROM %s where %s = ? LIMIT 1", tableName, idField)
+		if err := db.Raw(query, vr.ScopeID).Scan(&deletedAt).Error; err != nil {
 			return err
 		}
-		return saveOwnershipForEntities(tx.db, user, ownerships...)
+		if deletedAt.Valid { // entity (either connection or env) was deleted
+			return gorm.ErrForeignKeyViolated // emulate foreign keys check (#2)
+		}
+
+		return db.Clauses(clause.OnConflict{UpdateAll: true}).Create(&vr).Error
 	})
 }
 
 func varsCommonQuery(db *gorm.DB, scopeID sdktypes.UUID, names []string) *gorm.DB {
-	db = db.Where("scope_id = ?", scopeID)
+	db = db.Where("var_id = ?", scopeID)
 
 	if len(names) > 0 {
 		db = db.Where("name IN (?)", names)
@@ -92,6 +93,9 @@ func (gdb *gormdb) getVars(ctx context.Context, scopeID sdktypes.UUID, names ...
 	if err := db.Find(&vars).Error; err != nil {
 		return nil, err
 	}
+	for i := range vars {
+		vars[i].ScopeID = vars[i].VarID
+	}
 	return vars, nil
 }
 
@@ -102,8 +106,11 @@ func (gdb *gormdb) findConnectionIDsByVar(ctx context.Context, integrationID sdk
 	}
 
 	var vars []scheme.Var
-	if err := db.Distinct("scope_id").Find(&vars).Error; err != nil {
+	if err := db.Distinct("var_id").Find(&vars).Error; err != nil {
 		return nil, err
+	}
+	for i := range vars {
+		vars[i].ScopeID = vars[i].VarID
 	}
 	return vars, nil
 }
@@ -144,7 +151,7 @@ func (db *gormdb) SetVars(ctx context.Context, vars []sdktypes.Var) error {
 		}
 
 		vr := scheme.Var{
-			ScopeID:       v.ScopeID().AsID().UUIDValue(),
+			ScopeID:       v.ScopeID().AsID().UUIDValue(), // scopeID is varID in DB
 			Name:          v.Name().String(),
 			Value:         v.Value(),
 			IsSecret:      v.IsSecret(),
