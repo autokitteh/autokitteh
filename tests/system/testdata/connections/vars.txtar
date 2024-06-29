@@ -5,7 +5,7 @@ return code == 0
 ak var set test_secret shhhh --secret --connection my_project/my_connection
 return code == 0
 
-ak session start -d dep_00000000000000000000000006 --watch --no-timestamps --entrypoint main.star
+ak session start -d dep_00000000000000000000000005 --watch --no-timestamps --entrypoint main.star
 return code == 0
 output contains 'url=test_url'
 output contains 'secret=shhhh'

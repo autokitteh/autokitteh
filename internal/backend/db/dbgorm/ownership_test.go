@@ -279,7 +279,32 @@ func TestCreateVarWithOwnership(t *testing.T) {
 	f := preOwnershipTest(t)
 
 	p := f.newProject()
+	e := f.newEnv(p)
+	c := f.newConnection(p)
+
 	f.createProjectsAndAssert(t, p)
+	f.createEnvsAndAssert(t, e)
+	f.createConnectionsAndAssert(t, c)
+
+	// env scoped var
+	v1 := f.newVar("k", "v", e)
+	f.setVarsAndAssert(t, v1)
+	assert.NoError(t, f.gormdb.isUserEntity(f.ctx, v1.ScopeID))
+
+	// connection scoped var
+	v2 := f.newVar("k", "v", c)
+	f.setVarsAndAssert(t, v2)
+	assert.NoError(t, f.gormdb.isUserEntity(f.ctx, v2.ScopeID))
+
+	// different user
+	f.ctx = withUser(f.ctx, u)
+
+	// cannot create var for non-user owned scope
+	v3 := f.newVar("k", "v", e)
+	assert.ErrorIs(t, f.gormdb.setVar(f.ctx, &v3), sdkerrors.ErrUnauthorized)
+
+	v4 := f.newVar("k", "v", c)
+	assert.ErrorIs(t, f.gormdb.setVar(f.ctx, &v4), sdkerrors.ErrUnauthorized)
 }
 
 // delete tests. that all entries are deleted with ownership and cannot be deleted without ownership
