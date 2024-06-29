@@ -175,6 +175,18 @@ def jira_client(connection: str, **kwargs):
     raise ConnectionInitError(connection)
 
 
-def get_url(connection: str) -> str:
+def get_base_url(connection: str) -> str | None:
+    """Get the base URL of an AutoKitteh connection's Atlassian server.
+
+    Args:
+        connection: AutoKitteh connection name.
+
+    Returns:
+        Base URL of the Atlassian connection, or None if
+        the AutoKitteh connection was not initialized yet.
+
+    Raises:
+        ValueError: AutoKitteh connection name is invalid.
+    """
     check_connection_name(connection)
     return os.getenv(connection + "__BaseURL") or os.getenv(connection + "__AccessURL")
