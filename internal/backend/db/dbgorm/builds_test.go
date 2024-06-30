@@ -64,7 +64,7 @@ func TestGetBuild(t *testing.T) {
 	assert.ErrorIs(t, err, gorm.ErrRecordNotFound)
 }
 
-func TestListBuild(t *testing.T) {
+func TestListBuilds(t *testing.T) {
 	f := preBuildTest(t)
 
 	// no builds
@@ -80,7 +80,7 @@ func TestListBuild(t *testing.T) {
 	// check listBuilds API
 	builds, err = f.gormdb.listBuilds(f.ctx, flt)
 	assert.NoError(t, err)
-	assert.Equal(t, 1, len(builds))
+	assert.Len(t, builds, 1)
 	assert.Equal(t, b, builds[0])
 
 	// delete build
@@ -89,5 +89,5 @@ func TestListBuild(t *testing.T) {
 	// check listBuilds API - ensure no builds are found
 	builds, err = f.gormdb.listBuilds(f.ctx, flt)
 	assert.NoError(t, err)
-	assert.Equal(t, 0, len(builds))
+	assert.Len(t, builds, 0)
 }
