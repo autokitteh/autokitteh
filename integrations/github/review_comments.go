@@ -50,7 +50,7 @@ func (i integration) createReviewComment(ctx context.Context, args []sdktypes.Va
 		return sdktypes.InvalidValue, err
 	}
 
-	return sdktypes.WrapValue(comment)
+	return valueWrapper.Wrap(comment)
 }
 
 // https://docs.github.com/en/rest/pulls/comments#create-a-reply-for-a-review-comment
@@ -83,7 +83,7 @@ func (i integration) createReviewCommentReply(ctx context.Context, args []sdktyp
 		return sdktypes.InvalidValue, err
 	}
 
-	return sdktypes.WrapValue(comment)
+	return valueWrapper.Wrap(comment)
 }
 
 // https://docs.github.com/en/rest/pulls/comments#delete-a-review-comment-for-a-pull-request
@@ -114,7 +114,7 @@ func (i integration) deleteReviewComment(ctx context.Context, args []sdktypes.Va
 		return sdktypes.InvalidValue, err
 	}
 
-	return sdktypes.WrapValue(nil)
+	return sdktypes.Nothing, nil
 }
 
 // https://docs.github.com/en/rest/pulls/comments#get-a-review-comment-for-a-pull-request
@@ -145,7 +145,7 @@ func (i integration) getReviewComment(ctx context.Context, args []sdktypes.Value
 		return sdktypes.InvalidValue, err
 	}
 
-	return sdktypes.WrapValue(comment)
+	return valueWrapper.Wrap(comment)
 }
 
 // https://docs.github.com/en/rest/pulls/comments#list-review-comments-on-a-pull-request
@@ -206,7 +206,7 @@ func (i integration) listPullRequestReviewComments(ctx context.Context, args []s
 		return sdktypes.InvalidValue, err
 	}
 
-	return sdktypes.WrapValue(comments)
+	return valueWrapper.Wrap(comments)
 }
 
 // https://docs.github.com/en/rest/pulls/comments#update-a-review-comment-for-a-pull-request
@@ -243,5 +243,5 @@ func (i integration) updateReviewComment(ctx context.Context, args []sdktypes.Va
 		return sdktypes.InvalidValue, err
 	}
 
-	return sdktypes.WrapValue(comment)
+	return valueWrapper.Wrap(comment)
 }

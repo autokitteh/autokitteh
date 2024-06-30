@@ -6,7 +6,11 @@ import (
 	"io/fs"
 	"os"
 	"path"
+	"strings"
 	"time"
+
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/logger"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
@@ -14,8 +18,6 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdkruntimes"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
 var (
@@ -80,6 +82,11 @@ func New() (sdkservices.Runtime, error) {
 		userPython = false
 	}
 
+	if userPython {
+		log.Info("user python", zap.String("python", pyExe))
+
+	}
+
 	const timeout = 3 * time.Second
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
@@ -100,11 +107,11 @@ func New() (sdkservices.Runtime, error) {
 		if err := ensureVEnv(log, pyExe); err != nil {
 			return nil, fmt.Errorf("create venv: %w", err)
 		}
-		log.Info("venv python", zap.String("exe", venvPy))
 		svc.pyExe = venvPy
 	} else {
 		svc.pyExe = pyExe
 	}
+	log.Info("using python", zap.String("exe", svc.pyExe))
 
 	return &svc, nil
 }
@@ -131,21 +138,50 @@ func (*pySvc) Get() sdktypes.Runtime { return Runtime.Desc }
 
 const archiveKey = "archive"
 
-func (py *pySvc) Build(ctx context.Context, fs fs.FS, path string, values []sdktypes.Symbol) (sdktypes.BuildArtifact, error) {
+func asBuildExport(e Export) sdktypes.BuildExport {
+	pb := sdktypes.BuildExportPB{
+		Symbol: e.Name,
+		Location: &sdktypes.CodeLocationPB{
+			Path: e.File,
+			Row:  uint32(e.Line),
+			Col:  1,
+		},
+	}
+
+	b, _ := sdktypes.BuildExportFromProto(&pb)
+	return b
+}
+
+func (py *pySvc) Build(ctx context.Context, fsys fs.FS, path string, values []sdktypes.Symbol) (sdktypes.BuildArtifact, error) {
 	py.log.Info("build")
 
-	data, err := createTar(fs)
+	ffs, err := kittehs.NewFilterFS(fsys, func(entry fs.DirEntry) bool {
+		return !strings.Contains(entry.Name(), "__pycache__")
+	})
+
+	if err != nil {
+		return sdktypes.InvalidBuildArtifact, err
+	}
+
+	data, err := createTar(ffs)
 	if err != nil {
 		py.log.Error("create tar", zap.Error(err))
 		return sdktypes.InvalidBuildArtifact, err
 	}
 
+	exports, err := pyExports(ctx, py.pyExe, fsys)
+	if err != nil {
+		py.log.Error("get exports", zap.Error(err))
+		return sdktypes.InvalidBuildArtifact, err
+	}
+
+	buildExports := kittehs.Transform(exports, asBuildExport)
 	var art sdktypes.BuildArtifact
 	art = art.WithCompiledData(
 		map[string][]byte{
 			archiveKey: data,
 		},
-	)
+	).WithExports(buildExports)
 
 	return art, nil
 }
@@ -221,31 +257,6 @@ func (py *pySvc) loadSyscall(values map[string]sdktypes.Value) error {
 	return nil
 }
 
-func (py *pySvc) handleSleep(ctx context.Context, msg Message) error {
-	sleep, err := extractMessage[SleepMessage](msg)
-	if err != nil {
-		py.log.Error("sleep message", zap.Error(err))
-		return err
-	}
-
-	py.log.Info("sleep", zap.Float64("seconds", sleep.Seconds))
-
-	// Milliseconds sleep granularity should be good enough.
-	d := time.Duration(sleep.Seconds*1000) * time.Millisecond
-	args := []sdktypes.Value{
-		sdktypes.NewStringValue("sleep"),
-		sdktypes.NewDurationValue(d),
-	}
-
-	_, err = py.cbs.Call(ctx, py.xid.ToRunID(), py.syscallFn, args, nil)
-	if err != nil {
-		py.log.Error("call sleep", zap.Error(err))
-		return err
-	}
-
-	return py.comm.Send(sleep)
-}
-
 const (
 	pemEnvKey = "AK_WORKER_PEM"
 	keyEnvKey = "AK_WORKER_KEY"
@@ -291,7 +302,6 @@ func (py *pySvc) Run(
 	values map[string]sdktypes.Value,
 	cbs *sdkservices.RunCallbacks,
 ) (sdkservices.Run, error) {
-
 	py.xid = sdktypes.NewExecutorID(runID) // Should be first
 	py.log = py.log.With(zap.String("run_id", runID.String()))
 	py.log.Info("run", zap.String("path", mainPath))
@@ -329,15 +339,15 @@ func (py *pySvc) Run(
 	py.stdout = newStreamLogger("[stdout] ", cbs.Print, runID)
 	py.stderr = newStreamLogger("[stderr] ", cbs.Print, runID)
 	opts := runOptions{
-		log:      py.log,
-		pyExe:    py.pyExe,
-		tarData:  tarData,
-		rootPath: mainPath,
-		env:      envMap,
-		stdout:   py.stdout,
-		stderr:   py.stderr,
-		certPem:  pem,
-		keyPem:   key,
+		log:        py.log,
+		pyExe:      py.pyExe,
+		tarData:    tarData,
+		entryPoint: mainPath,
+		env:        envMap,
+		stdout:     py.stdout,
+		stderr:     py.stderr,
+		certPem:    pem,
+		keyPem:     key,
 	}
 	ri, err := runPython(opts)
 	if err != nil {
@@ -356,6 +366,7 @@ func (py *pySvc) Run(
 		if err := py.run.proc.Kill(); err != nil {
 			py.log.Warn("kill", zap.Int("pid", py.run.proc.Pid), zap.Error(err))
 		}
+		py.run.Cleanup()
 	}()
 
 	conn, err := py.run.lis.Accept()
@@ -434,9 +445,12 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, event map[str
 		py.stdout.Close()
 		py.comm.Close()
 
-		if err := py.run.proc.Kill(); err != nil {
-			py.log.Warn("kill", zap.Int("pid", py.run.proc.Pid), zap.Error(err))
+		if py.run.proc != nil {
+			if err := py.run.proc.Kill(); err != nil {
+				py.log.Warn("kill", zap.Int("pid", py.run.proc.Pid), zap.Error(err))
+			}
 		}
+		py.run.Cleanup()
 		py.run.proc = nil
 	}()
 
@@ -477,8 +491,9 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, event map[str
 			continue
 		}
 
-		if msg.Type == messageType[SleepMessage]() {
-			if err := py.handleSleep(ctx, msg); err != nil {
+		if msg.Type == messageType[CallMessage]() {
+			call, _ := extractMessage[CallMessage](msg)
+			if err := py.handleCall(ctx, call); err != nil {
 				return sdktypes.InvalidValue, err
 			}
 			continue
@@ -581,7 +596,7 @@ func (py *pySvc) injectHTTPBody(ctx context.Context, data sdktypes.Value, event 
 // Call handles a function call from autokitteh.
 // First used of Call start a workflow, later invocations are activity calls.
 func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
-	py.log.Info("call", zap.String("func", v.String()), zap.Any("args", args), zap.Any("kwargs", kwargs))
+	py.log.Info("call", zap.String("func", v.String()))
 	if py.run.proc == nil {
 		py.log.Error("call - python not running")
 		return sdktypes.InvalidValue, fmt.Errorf("python not running")
@@ -602,6 +617,7 @@ func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 		}
 		event[key] = goVal
 	}
+	py.log.Info("event", zap.Any("event", event))
 
 	if err := py.injectHTTPBody(ctx, kwargs["data"], event, py.cbs); err != nil {
 		return sdktypes.InvalidValue, err
@@ -627,10 +643,32 @@ func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 		return sdktypes.InvalidValue, err
 	}
 
-	msg, err := py.comm.Recv()
-	if err != nil {
-		py.log.Error("from python", zap.Error(err))
-		return sdktypes.InvalidValue, err
+	var msg Message
+	for { // Consume logs.
+		var err error
+		msg, err = py.comm.Recv()
+		if err != nil {
+			py.log.Error("from python", zap.Error(err))
+			return sdktypes.InvalidValue, err
+		}
+
+		if msg.Type == messageType[LogMessage]() {
+			if err := py.handleLog(msg); err != nil {
+				py.log.Error("handle log", zap.Error(err))
+				return sdktypes.InvalidValue, err
+			}
+			continue
+		}
+
+		if msg.Type == messageType[CallMessage]() {
+			call, _ := extractMessage[CallMessage](msg)
+			if err := py.handleCall(ctx, call); err != nil {
+				return sdktypes.InvalidValue, err
+			}
+			continue
+		}
+
+		break
 	}
 
 	rm, err := extractMessage[ResponseMessage](msg)
@@ -641,4 +679,120 @@ func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 	py.log.Info("python return", zap.Any("message", rm))
 
 	return sdktypes.NewBytesValue(rm.Value), nil
+}
+
+// TODO: This is long and dog ugly, find a better way.
+func (py *pySvc) handleCall(ctx context.Context, msg CallMessage) error {
+	var value any
+
+	switch msg.FuncName {
+	case "sleep":
+		if len(msg.Args) != 1 {
+			return fmt.Errorf("sleep: expected 1 argument, got %d", len(msg.Args))
+		}
+
+		sleep, ok := msg.Args[0].(float64)
+		if !ok {
+			return fmt.Errorf("sleep: expected float64, got %T", msg.Args[0])
+		}
+
+		d := time.Duration(sleep*1000) * time.Millisecond
+		args := []sdktypes.Value{
+			sdktypes.NewStringValue("sleep"),
+			sdktypes.NewDurationValue(d),
+		}
+
+		_, err := py.cbs.Call(ctx, py.xid.ToRunID(), py.syscallFn, args, nil)
+		if err != nil {
+			py.log.Error("call sleep", zap.Error(err))
+			return err
+		}
+		value = nil
+	case "subscribe":
+		if len(msg.Args) < 1 || len(msg.Args) > 2 {
+			return fmt.Errorf("subscribe: expected 1 or 2 arguments, got %d", len(msg.Args))
+		}
+
+		connection, ok := msg.Args[0].(string)
+		if !ok {
+			return fmt.Errorf("subscribe: expected string ID, got %T", msg.Args[0])
+		}
+
+		args := []sdktypes.Value{
+			sdktypes.NewStringValue("subscribe"),
+			sdktypes.NewStringValue(connection),
+		}
+
+		filter := sdktypes.NewStringValue("true")
+		if len(msg.Args) == 2 {
+			v, ok := msg.Args[1].(string)
+			if !ok {
+				return fmt.Errorf("subscribe: expected string filter, got %T", msg.Args[1])
+			}
+			filter = sdktypes.NewStringValue(v)
+		}
+		args = append(args, filter)
+
+		id, err := py.cbs.Call(ctx, py.xid.ToRunID(), py.syscallFn, args, nil)
+		if err != nil {
+			py.log.Error("call subscribe", zap.Error(err))
+			return err
+		}
+
+		if !id.IsString() {
+			return fmt.Errorf("subscribe: expected string ID return, got %T", id)
+		}
+
+		value = id.GetString().Value()
+	case "unsubscribe":
+		if len(msg.Args) != 1 {
+			return fmt.Errorf("unsubscribe: expected 1 argument, got %d", len(msg.Args))
+		}
+
+		id, ok := msg.Args[0].(string)
+		if !ok {
+			return fmt.Errorf("unsubscribe: expected string ID, got %T", msg.Args[0])
+		}
+
+		args := []sdktypes.Value{
+			sdktypes.NewStringValue("unsubscribe"),
+			sdktypes.NewStringValue(id),
+		}
+
+		_, err := py.cbs.Call(ctx, py.xid.ToRunID(), py.syscallFn, args, nil)
+		if err != nil {
+			py.log.Error("call subscribe", zap.Error(err))
+			return err
+		}
+
+		value = nil
+	case "next_event":
+		if len(msg.Args) != 1 {
+			return fmt.Errorf("next_event: expected 1 argument, got %d", len(msg.Args))
+		}
+
+		id, ok := msg.Args[0].(string)
+		if !ok {
+			return fmt.Errorf("next_event: expected string ID, got %T", msg.Args[0])
+		}
+
+		args := []sdktypes.Value{
+			sdktypes.NewStringValue("next_event"),
+			sdktypes.NewStringValue(id),
+		}
+
+		event, err := py.cbs.Call(ctx, py.xid.ToRunID(), py.syscallFn, args, nil)
+		if err != nil {
+			py.log.Error("call next_event", zap.Error(err))
+			return err
+		}
+
+		value, err = unwrap(event)
+		if err != nil {
+			py.log.Error("event unwrap", zap.Error(err))
+			return err
+		}
+	}
+
+	return py.comm.Send(ReturnMessage{Value: value})
 }

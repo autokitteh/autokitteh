@@ -39,8 +39,13 @@ var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.Integrati
 	UserLinks: map[string]string{
 		"1 REST API reference": "https://developers.google.com/sheets/api/reference/rest",
 		"2 Go client API":      "https://pkg.go.dev/google.golang.org/api/sheets/v4",
+		"3 Python client API":  "https://developers.google.com/resources/api-libraries/documentation/sheets/v4/python/latest/sheets_v4.spreadsheets.html",
+		"4 Python samples":     "https://github.com/googleworkspace/python-samples/tree/main/sheets",
 	},
 	ConnectionUrl: "/googlesheets/connect",
+	ConnectionCapabilities: &sdktypes.ConnectionCapabilitiesPB{
+		RequiresConnectionInit: true,
+	},
 }))
 
 func New(sec sdkservices.Vars) sdkservices.Integration {
@@ -48,7 +53,7 @@ func New(sec sdkservices.Vars) sdkservices.Integration {
 
 	opts := ExportedFunctions(sec, scope, false)
 
-	return sdkintegrations.NewIntegration(desc, sdkmodule.New(opts...))
+	return sdkintegrations.NewIntegration(desc, sdkmodule.New(opts...), sdkintegrations.WithConnectionConfigFromVars(sec))
 }
 
 func ExportedFunctions(sec sdkservices.Vars, scope string, prefix bool) []sdkmodule.Optfn {

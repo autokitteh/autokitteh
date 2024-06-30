@@ -34,7 +34,7 @@ func (i integration) createCheckRun(ctx context.Context, args []sdktypes.Value, 
 		return sdktypes.InvalidValue, err
 	}
 
-	return sdktypes.WrapValue(resp)
+	return valueWrapper.Wrap(resp)
 }
 
 func (i integration) updateCheckRun(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
@@ -64,5 +64,5 @@ func (i integration) updateCheckRun(ctx context.Context, args []sdktypes.Value, 
 		return sdktypes.InvalidValue, err
 	}
 
-	return sdktypes.WrapValue(resp)
+	return valueWrapper.Wrap(resp)
 }

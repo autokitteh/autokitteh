@@ -5,12 +5,9 @@ import (
 
 	"go.uber.org/zap"
 
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
-	eventsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/events/v1"
+	"go.autokitteh.dev/autokitteh/integrations/internal/extrazap"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-
-	"go.autokitteh.dev/autokitteh/integrations/internal/extrazap"
 )
 
 // handler is an autokitteh webhook which implements [http.Handler] to
@@ -48,20 +45,18 @@ func NewHandler(l *zap.Logger, vars sdkservices.Vars, d sdkservices.Dispatcher, 
 // https://www.twilio.com/docs/usage/api/usage-trigger
 // https://www.twilio.com/docs/usage/troubleshooting/alarms
 
-func (h handler) dispatchAsyncEventsToConnections(l *zap.Logger, cids []sdktypes.ConnectionID, event *eventsv1.Event) {
-	ctx := extrazap.AttachLoggerToContext(l, context.Background())
+func (h handler) dispatchAsyncEventsToConnections(ctx context.Context, cids []sdktypes.ConnectionID, e sdktypes.Event) {
+	l := extrazap.ExtractLoggerFromContext(ctx)
 	for _, cid := range cids {
-		event.ConnectionId = cid.String()
-		event := kittehs.Must1(sdktypes.EventFromProto(event))
-		eventID, err := h.dispatcher.Dispatch(ctx, event, nil)
-
-		l := l.With(zap.String("connection_id", cid.String()))
-
+		eid, err := h.dispatcher.Dispatch(ctx, e.WithConnectionID(cid), nil)
+		l := l.With(
+			zap.String("connectionID", cid.String()),
+			zap.String("eventID", eid.String()),
+		)
 		if err != nil {
-			l.Error("Dispatch failed", zap.Error(err))
+			l.Error("Event dispatch failed", zap.Error(err))
 			return
 		}
-
-		l.Debug("Dispatched", zap.String("eventID", eventID.String()))
+		l.Debug("Event dispatched")
 	}
 }

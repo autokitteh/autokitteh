@@ -1,7 +1,7 @@
 {{ define "footer_" }}
 
 <div class="footer">
-    <p><tt>{{ ProcessID }} | up {{ Uptime }} | req {{ Duration }}</tt></p>
+    <p><tt>{{ ProcessID }} | up {{ Uptime }} | req {{ Duration }} | {{ dateInZone "2006-01-02 15:04:05" (now) "UTC" }} UTC</tt></p>
 </div>
 
 <script>

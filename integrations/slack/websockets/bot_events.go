@@ -10,8 +10,6 @@ import (
 	"go.autokitteh.dev/autokitteh/integrations/slack/events"
 	"go.autokitteh.dev/autokitteh/integrations/slack/internal/vars"
 	"go.autokitteh.dev/autokitteh/integrations/slack/webhooks"
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
-	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 // HandleBotEvent routes all asynchronous bot event notifications that our Slack
@@ -59,35 +57,16 @@ func (h handler) handleBotEvent(e *socketmode.Event, c *socketmode.Client) {
 		return
 	}
 
-	// Transform the received Slack event into an autokitteh event.
-	wrapped, err := sdktypes.DefaultValueWrapper.Wrap(slackEvent)
+	// Transform the received Slack event into an AutoKitteh event.
+	akEvent, err := transformEvent(h.logger, slackEvent, cb.Event.Type)
 	if err != nil {
-		h.logger.Error("Failed to wrap Slack event",
-			zap.Any("cmd", slackEvent),
-			zap.Error(err),
-		)
 		return
-	}
-
-	m, err := wrapped.ToStringValuesMap()
-	if err != nil {
-		h.logger.Error("Failed to convert wrapped Slack event",
-			zap.Any("event", slackEvent),
-			zap.Error(err),
-		)
-		return
-	}
-
-	pb := kittehs.TransformMapValues(m, sdktypes.ToProto)
-	akEvent := &sdktypes.EventPB{
-		EventType: cb.Event.Type,
-		Data:      pb,
 	}
 
 	// Retrieve all the relevant connections for this event.
 	cids, err := h.vars.FindConnectionIDs(context.Background(), h.integrationID, vars.AppTokenName, "")
 	if err != nil {
-		h.logger.Error("Failed to retrieve connection tokens", zap.Error(err))
+		h.logger.Error("Failed to find connection IDs", zap.Error(err))
 		return
 	}
 

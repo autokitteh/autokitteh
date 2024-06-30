@@ -360,6 +360,9 @@ func TestUnwrapIntoKitchenSink(t *testing.T) {
 	type Y struct {
 		Z string
 	}
+	type TS struct {
+		time.Time
+	}
 
 	type X struct {
 		I64       int64
@@ -381,30 +384,33 @@ func TestUnwrapIntoKitchenSink(t *testing.T) {
 		InS       struct {
 			T time.Time
 		}
-		Timestamp struct {
-			time.Time // embeeded, unnnamed, non-exported
+		Timestamp1 struct {
+			time.Time // embeeded time.Time, anonymous struct
 		}
+		Timestamp2 TS // embedded time.Time
 	}
 
 	True := true
+	td := time.Date(2023, time.January, 1, 18, 32, 0, 0, time.UTC)
 
 	in := X{
-		I64:       42,
-		S:         "meow",
-		B:         true,
-		F:         4.2,
-		A2:        [2]string{"meow", "woof"},
-		M:         map[int]string{1: "one", 7: "seven"},
-		Set:       map[string]bool{"one": true, "two": false},
-		Sl:        []float32{1.2, 3.4},
-		StsA:      [3]Y{{Z: "first"}, {Z: "second"}, {Z: "third"}},
-		StsS:      []Y{{Z: "uno"}, {Z: "dos"}, {Z: "tres"}},
-		Bptr:      &True,
-		Sptr:      &Y{Z: "neo"},
-		SptrS:     []*Y{{Z: "meow"}, nil, {Z: "woof"}},
-		D:         time.Hour,
-		InS:       struct{ T time.Time }{T: time.Date(2023, time.January, 1, 18, 32, 0, 0, time.UTC)},
-		Timestamp: struct{ time.Time }{time.Date(2023, time.January, 1, 18, 32, 0, 0, time.UTC)},
+		I64:        42,
+		S:          "meow",
+		B:          true,
+		F:          4.2,
+		A2:         [2]string{"meow", "woof"},
+		M:          map[int]string{1: "one", 7: "seven"},
+		Set:        map[string]bool{"one": true, "two": false},
+		Sl:         []float32{1.2, 3.4},
+		StsA:       [3]Y{{Z: "first"}, {Z: "second"}, {Z: "third"}},
+		StsS:       []Y{{Z: "uno"}, {Z: "dos"}, {Z: "tres"}},
+		Bptr:       &True,
+		Sptr:       &Y{Z: "neo"},
+		SptrS:      []*Y{{Z: "meow"}, nil, {Z: "woof"}},
+		D:          time.Hour,
+		InS:        struct{ T time.Time }{T: td},
+		Timestamp1: struct{ time.Time }{td},
+		Timestamp2: TS{td},
 	}
 
 	w := sdktypes.DefaultValueWrapper
@@ -421,4 +427,34 @@ func TestUnwrapIntoKitchenSink(t *testing.T) {
 func TestUnwrapNothing(t *testing.T) {
 	var i int
 	assert.Error(t, sdktypes.UnwrapValueInto(&i, sdktypes.Nothing))
+}
+
+func TestPrewrap(t *testing.T) {
+	w := sdktypes.ValueWrapper{
+		Prewrap: func(v any) (any, error) {
+			switch v.(type) {
+			case int:
+				return fmt.Sprintf("%d", v), nil
+			case string:
+				return nil, nil
+			default:
+				return v, nil
+			}
+		},
+	}
+
+	v, err := w.Wrap(42)
+	if assert.NoError(t, err) {
+		assert.Equal(t, "42", v.GetString().Value())
+	}
+
+	v, err = w.Wrap("42")
+	if assert.NoError(t, err) {
+		assert.True(t, v.IsNothing())
+	}
+
+	v, err = w.Wrap(42.0)
+	if assert.NoError(t, err) {
+		assert.Equal(t, 42.0, v.GetFloat().Value())
+	}
 }

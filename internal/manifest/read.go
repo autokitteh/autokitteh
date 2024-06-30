@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/xeipuuv/gojsonschema"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 )

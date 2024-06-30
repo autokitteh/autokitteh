@@ -20,8 +20,8 @@ message GetResponse {
   map<string, values.v1.Value> values = 1 [(buf.validate.field).map = {
     keys: {
       string: {min_len: 1}
-    },
-    values: {required: true},
+    }
+    values: {required: true}
   }];
 }
 

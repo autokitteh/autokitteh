@@ -38,6 +38,7 @@ VERSION_PKG_PATH="go.autokitteh.dev/autokitteh/internal/version"
 LDFLAGS+=-X '${VERSION_PKG_PATH}.Version=${VERSION}' -X '${VERSION_PKG_PATH}.Time=${TIMESTAMP}' -X '${VERSION_PKG_PATH}.Commit=${COMMIT}' -X '${VERSION_PKG_PATH}.User=$(shell whoami)' -X '${VERSION_PKG_PATH}.Host=$(shell hostname)'
 
 export AK_SYSTEST_USE_PROC_SVC=1
+export PYTHONPATH=$(PWD)/runtimes/pythonrt/py-sdk
 
 # 1. Detect unformatted Go files
 # 2. Run golangci-lint (Go linters)
@@ -110,9 +111,14 @@ test-dbgorm:
 	go test -v ./internal/backend/db/dbgorm -dbtype $$dbtype ; \
 	done
 
+# Skip a few Go unit-tests under "runtimes/pythonrt/" - either because they
+# fails due to missing Python deps, or because they are very slow (20-30 sec).
+# Note that this affects only Go CI in GitHub (which runs "make test-unit"),
+# but not manual runs of "make" (which depend on "test-race"), or Python CI
+# in GitHub (which uses "runtimes/pythonrt/Makefile").
 .PHONY: test-unit
 test-unit:
-	$(GOTEST) ./...
+	$(GOTEST) ./... -skip "(pyExports|pySvc|createVEnv)"
 
 # Subset of "test-unit", for simplicity.
 .PHONY: test-system

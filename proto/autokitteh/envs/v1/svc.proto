@@ -18,14 +18,14 @@ message ListResponse {
 
 message CreateRequest {
   option (buf.validate.message).cel = {
-    id: "env.env_id_must_be_empty",
-    message: "env_id must not be specified",
-    expression: "has(this.env) && this.env.env_id == ''",
+    id: "env.env_id_must_be_empty"
+    message: "env_id must not be specified"
+    expression: "has(this.env) && this.env.env_id == ''"
   };
   option (buf.validate.message).cel = {
-    id: "env.name_required",
-    message: "name must be specified",
-    expression: "has(this.env) && this.env.name != ''",
+    id: "env.name_required"
+    message: "name must be specified"
+    expression: "has(this.env) && this.env.name != ''"
   };
 
   Env env = 1 [(buf.validate.field).required = true];
@@ -37,9 +37,9 @@ message CreateResponse {
 
 message GetRequest {
   option (buf.validate.message).cel = {
-    id: "env_id_xor_name",
-    message: "env_id and name are mutually exclusive",
-    expression: "(this.env_id == '' && this.name != '') || (this.env_id != '' && this.name == '')",
+    id: "env_id_xor_name"
+    message: "env_id and name are mutually exclusive"
+    expression: "(this.env_id == '' && this.name != '') || (this.env_id != '' && this.name == '')"
   };
 
   string env_id = 1;
@@ -59,14 +59,14 @@ message RemoveResponse {}
 
 message UpdateRequest {
   option (buf.validate.message).cel = {
-    id: "env.env_id_must_be_empty",
-    message: "env_id must not be specified",
-    expression: "has(this.env) && this.env.env_id == ''",
+    id: "env.env_id_must_be_empty"
+    message: "env_id must not be specified"
+    expression: "has(this.env) && this.env.env_id == ''"
   };
   option (buf.validate.message).cel = {
-    id: "env.project_id_required",
-    message: "project_id must be specified",
-    expression: "has(this.env) && this.env.project_id != ''",
+    id: "env.project_id_required"
+    message: "project_id must be specified"
+    expression: "has(this.env) && this.env.project_id != ''"
   };
 
   Env env = 1 [(buf.validate.field).required = true];

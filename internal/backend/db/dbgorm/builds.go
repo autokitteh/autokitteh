@@ -22,6 +22,7 @@ func (db *gormdb) SaveBuild(ctx context.Context, build sdktypes.Build, data []by
 	// TODO: add Build time
 	b := scheme.Build{
 		BuildID:   build.ID().UUIDValue(),
+		ProjectID: scheme.UUIDOrNil(build.ProjectID().UUIDValue()),
 		Data:      data,
 		CreatedAt: build.CreatedAt(),
 	}

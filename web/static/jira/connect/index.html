@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>AutoKitteh Atlassian Jira Integration</title>
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="/static/apple-touch-icon.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="/static/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="/static/favicon-16x16.png"
+    />
+    <link rel="manifest" href="/static/site.webmanifest" />
+    <link rel="stylesheet" type="text/css" href="styles.css" />
+    <meta name="robots" content="noindex, nofollow" />
+    <script src="form.js" defer></script>
+  </head>
+
+  <body>
+    <a href="/" target="_self">
+      <img class="banner" src="/static/banner.svg" alt="AutoKitteh" />
+    </a>
+
+    <table class="title">
+      <td><img class="logo" src="/static/images/jira.svg" alt="Logo" /></td>
+      <td>
+        <h1>Atlassian Jira - Create a New Connection</h1>
+      </td>
+    </table>
+
+    <div class="toggle-container">
+      <button class="toggle" id="toggletab1" onclick="toggleTab('tab1')">
+        OAuth 2.0 App
+      </button>
+      <span class="toggle-sep"></span>
+      <button class="toggle" id="toggletab2" onclick="toggleTab('tab2')">
+        User API Token / PAT
+      </button>
+    </div>
+
+    <div class="tab" id="tab1">
+      <p class="info">Information:</p>
+      <ul class="links">
+        <li>
+          <a
+            href="https://developer.atlassian.com/cloud/jira/platform/oauth-2-3lo-apps/"
+            target="_blank"
+            class="info"
+          >
+            Jira Cloud platform: OAuth 2.0 (3LO) apps
+          </a>
+        </li>
+      </ul>
+
+      <p class="info">
+        Click the button below to authorize<br />
+        the <strong>AutoKitteh</strong> app
+      </p>
+      <!-- TODO(ENG-799): remove ID once its unused -->
+      <a id="oauth-link" href="/oauth/start/jira" class="clickable">
+        Start OAuth Flow
+      </a>
+    </div>
+
+    <div class="tab" id="tab2">
+      <p class="info">Information:</p>
+      <ul class="links">
+        <li>
+          <a
+            href="https://id.atlassian.com/manage-profile/security/api-tokens"
+            target="_blank"
+            class="info"
+          >
+            Jira Cloud: API tokens
+          </a>
+        </li>
+        <li>
+          <a
+            href="https://confluence.atlassian.com/enterprise/using-personal-access-tokens-1026032365.html"
+            target="_blank"
+            class="info"
+          >
+            Jira Data Center: Personal Access Tokens
+          </a>
+        </li>
+      </ul>
+
+      <!-- TODO(ENG-799): remove ID once its unused -->
+      <form id="save-form" method="post" action="/jira/save">
+        <div class="form-group">
+          <label for="base_url">Base URL</label>
+          <input
+            type="url"
+            name="base_url"
+            autocomplete="off"
+            spellcheck="false"
+            placeholder="https://your-domain.atlassian.net or on-prem URL"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="token">API Token / Personal Access Token (PAT)</label>
+          <input
+            type="text"
+            name="token"
+            autocomplete="off"
+            spellcheck="false"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="email">
+            User email address (API tokens only, not PATs!)
+          </label>
+          <input
+            type="email"
+            name="email"
+            autocomplete="off"
+            spellcheck="false"
+            placeholder="name@example.com"
+          />
+        </div>
+
+        <button type="submit" class="submit-btn">Save Connection</button>
+      </form>
+    </div>
+
+    <!-- TODO(ENG-799) -->
+    <script>
+      const queryString = window.location.search;
+      document
+        .getElementById("oauth-link")
+        .setAttribute("href", "/oauth/start/jira" + queryString);
+      document
+        .getElementById("save-form")
+        .setAttribute("action", "/jira/save" + queryString);
+    </script>
+  </body>
+</html>

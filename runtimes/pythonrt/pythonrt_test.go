@@ -10,12 +10,12 @@ import (
 	"io/fs"
 	"os"
 	"path"
+	"strings"
 	"testing"
 	"time"
 
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-	"go.uber.org/zap"
 
 	"github.com/stretchr/testify/require"
 )
@@ -38,6 +38,9 @@ func validateTar(t *testing.T, tarData []byte, fsys fs.FS) {
 	entries, err := fs.ReadDir(fsys, ".")
 	require.NoError(t, err, "read dir")
 	for _, e := range entries {
+		if e.Name() == "__pycache__" {
+			continue
+		}
 		require.Truef(t, inTar[e.Name()], "%q not in tar", e.Name())
 	}
 }
@@ -51,13 +54,13 @@ func isFSFile(fsys fs.FS, path string) bool {
 	return !info.IsDir()
 }
 
-func newSVC(t *testing.T) pySvc {
-	logger, err := zap.NewDevelopment()
-	require.NoError(t, err, "create logger")
+func newSVC(t *testing.T) *pySvc {
+	rt, err := New()
+	require.NoError(t, err, "New")
+	svc, ok := rt.(*pySvc)
+	require.Truef(t, ok, "type assertion failed, got %T", rt)
 
-	return pySvc{
-		log: logger,
-	}
+	return svc
 }
 
 func Test_pySvc_Get(t *testing.T) {
@@ -67,6 +70,7 @@ func Test_pySvc_Get(t *testing.T) {
 }
 
 func Test_pySvc_Build(t *testing.T) {
+	skipIfNoPython(t)
 	svc := newSVC(t)
 
 	rootPath := "testdata/simple/"
@@ -94,10 +98,7 @@ func testCtx(t *testing.T) (context.Context, context.CancelFunc) {
 func Test_pySvc_Run(t *testing.T) {
 	skipIfNoPython(t)
 
-	rt, err := New()
-	require.NoError(t, err, "New")
-	svc, ok := rt.(*pySvc)
-	require.True(t, ok, "type assertion failed")
+	svc := newSVC(t)
 	require.NotNil(t, svc.log, "nil logger")
 
 	fsys := os.DirFS("testdata/simple")
@@ -107,7 +108,7 @@ func Test_pySvc_Run(t *testing.T) {
 	ctx, cancel := testCtx(t)
 	defer cancel()
 	runID := sdktypes.NewRunID()
-	mainPath := "simple.py:greet"
+	mainPath := "simple.py"
 	compiled := map[string][]byte{
 		archiveKey: tarData,
 	}
@@ -202,4 +203,53 @@ func TestPythonFromEnv(t *testing.T) {
 	require.True(t, ok)
 	require.Equal(t, pyExe, py.pyExe)
 
+}
+
+func Test_pySvc_Build_PyCache(t *testing.T) {
+	skipIfNoPython(t)
+	svc := newSVC(t)
+
+	rootPath := "testdata/pycache/"
+	fsys := os.DirFS(rootPath)
+
+	ctx, cancel := testCtx(t)
+	defer cancel()
+	art, err := svc.Build(ctx, fsys, ".", nil)
+	require.NoError(t, err)
+
+	p := art.ToProto()
+	data := p.CompiledData[archiveKey]
+	r := tar.NewReader(bytes.NewReader(data))
+
+	for {
+		hdr, err := r.Next()
+		if errors.Is(err, io.EOF) {
+			break
+		}
+
+		require.NoError(t, err, "iterate tar")
+		require.Falsef(t, strings.Contains(hdr.Name, "__pycache__"), "%q", hdr.Name)
+	}
+}
+
+func TestCleanup(t *testing.T) {
+	var ri pyRunInfo
+	var err error
+
+	ri.pyRootDir, err = os.MkdirTemp("", "test-pyrt-py")
+	require.NoError(t, err)
+	ri.userRootDir, err = os.MkdirTemp("", "test-pyrt-user")
+	require.NoError(t, err)
+
+	defer func() {
+		_ = recover() // ignore panic
+		require.NoDirExists(t, ri.pyRootDir)
+		require.NoDirExists(t, ri.userRootDir)
+	}()
+
+	svc := newSVC(t)
+	svc.run = &ri
+
+	_, err = svc.initialCall(context.Background(), "greet", nil) // will panic
+	require.Error(t, err)
 }

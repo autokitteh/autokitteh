@@ -16,9 +16,6 @@ import (
 	"go.autokitteh.dev/autokitteh/integrations/slack/api/chat"
 	"go.autokitteh.dev/autokitteh/integrations/slack/api/conversations"
 	"go.autokitteh.dev/autokitteh/integrations/slack/api/users"
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
-	valuesv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/values/v1"
-	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 const (
@@ -104,12 +101,12 @@ type Team struct {
 }
 
 type Response struct {
-	Text            string       `json:"text,omitempty"`
-	Blocks          []chat.Block `json:"blocks,omitempty"`
-	ResponseType    string       `json:"response_type,omitempty"`
-	ThreadTS        string       `json:"thread_ts,omitempty"`
-	ReplaceOriginal bool         `json:"replace_original,omitempty"`
-	DeleteOriginal  bool         `json:"delete_original,omitempty"`
+	Text            string           `json:"text,omitempty"`
+	Blocks          []map[string]any `json:"blocks,omitempty"`
+	ResponseType    string           `json:"response_type,omitempty"`
+	ThreadTS        string           `json:"thread_ts,omitempty"`
+	ReplaceOriginal bool             `json:"replace_original,omitempty"`
+	DeleteOriginal  bool             `json:"delete_original,omitempty"`
 }
 
 // HandleInteraction dispatches and acknowledges a user interaction callback
@@ -129,8 +126,8 @@ func (h handler) HandleInteraction(w http.ResponseWriter, r *http.Request) {
 	j, err := url.QueryUnescape(string(body))
 	if err != nil {
 		l.Error("Failed to URL-decode interaction callback",
-			zap.Error(err),
 			zap.ByteString("body", body),
+			zap.Error(err),
 		)
 		http.Error(w, "Bad Request", http.StatusBadRequest)
 		return
@@ -139,73 +136,46 @@ func (h handler) HandleInteraction(w http.ResponseWriter, r *http.Request) {
 	payload := &BlockActionsPayload{}
 	if err := json.Unmarshal([]byte(j), payload); err != nil {
 		l.Error("Failed to parse URL-decoded JSON payload",
-			zap.Error(err),
 			zap.String("json", j),
+			zap.Error(err),
 		)
 		http.Error(w, "Bad Request", http.StatusBadRequest)
 		return
 	}
 
-	// Transform the received Slack event into an autokitteh event.
-	data, err := transformPayload(l, w, payload)
+	// Transform the received Slack event into an AutoKitteh event.
+	akEvent, err := transformEvent(l, payload, "interaction")
 	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
-	}
-	akEvent := &sdktypes.EventPB{
-		EventType: "interaction",
-		Data:      data,
 	}
 
 	// Retrieve all the relevant connections for this event.
+	ctx := extrazap.AttachLoggerToContext(l, r.Context())
 	enterpriseID := ""
 	if payload.IsEnterpriseInstall {
 		enterpriseID = payload.User.EnterpriseUser.EnterpriseID
 	}
-	cids, err := h.listConnectionIDs(r.Context(), payload.APIAppID, enterpriseID, payload.Team.ID)
+	cids, err := h.listConnectionIDs(ctx, payload.APIAppID, enterpriseID, payload.Team.ID)
 	if err != nil {
-		l.Error("Failed to retrieve connection tokens",
-			zap.Error(err),
-		)
+		l.Error("Failed to find connection IDs", zap.Error(err))
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 
 	// Dispatch the event to all of them, for asynchronous handling.
-	h.dispatchAsyncEventsToConnections(l, cids, akEvent)
+	h.dispatchAsyncEventsToConnections(ctx, cids, akEvent)
 
 	// It's a Slack best practice to update an interactive message after the interaction,
 	// to prevent further interaction with the same message, and to reflect the user actions.
 	// See: https://api.slack.com/interactivity/handling#updating_message_response.
-	h.updateMessage(l, payload)
-}
-
-// transformPayload transforms a received Slack event into an autokitteh event.
-func transformPayload(l *zap.Logger, w http.ResponseWriter, payload *BlockActionsPayload) (map[string]*valuesv1.Value, error) {
-	wrapped, err := sdktypes.DefaultValueWrapper.Wrap(payload)
-	if err != nil {
-		l.Error("Failed to wrap Slack event",
-			zap.Error(err),
-			zap.Any("payload", payload),
-		)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return nil, err
-	}
-	data, err := wrapped.ToStringValuesMap()
-	if err != nil {
-		l.Error("Failed to convert wrapped Slack event",
-			zap.Error(err),
-			zap.Any("payload", payload),
-		)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return nil, err
-	}
-	return kittehs.TransformMapValues(data, sdktypes.ToProto), nil
+	h.updateMessage(ctx, payload)
 }
 
 // updateMessage updates an interactive message after the interaction, to prevent
 // further interaction with the same message, and to reflect the user actions.
 // See: https://api.slack.com/interactivity/handling#updating_message_response.
-func (h handler) updateMessage(l *zap.Logger, payload *BlockActionsPayload) {
+func (h handler) updateMessage(ctx context.Context, payload *BlockActionsPayload) {
 	resp := Response{
 		Text:            payload.Message.Text,
 		ResponseType:    "in_channel",
@@ -216,11 +186,15 @@ func (h handler) updateMessage(l *zap.Logger, payload *BlockActionsPayload) {
 	}
 
 	// Copy all the message's blocks, except actions.
+	// The event is verifiably from Slack, so we can trust the data.
+	// TODO(ENG-1052): Support updating actions in non-last blocks.
 	for _, b := range payload.Message.Blocks {
-		if b.Type == "header" {
-			b.Text.Text = html.UnescapeString(b.Text.Text)
+		// Header text is HTML-encoded, so unescape it.
+		if b["type"] == "header" {
+			h := b["text"].(map[string]any)
+			h["text"] = html.UnescapeString(h["text"].(string))
 		}
-		if b.Type != "actions" {
+		if b["type"] != "actions" {
 			resp.Blocks = append(resp.Blocks, b)
 		}
 	}
@@ -236,11 +210,11 @@ func (h handler) updateMessage(l *zap.Logger, payload *BlockActionsPayload) {
 			case "danger":
 				action = ":large_red_square: " + action
 			}
-			resp.Blocks = append(resp.Blocks, chat.Block{
-				Type: "section",
-				Text: &chat.Text{
-					Type: "mrkdwn",
-					Text: action,
+			resp.Blocks = append(resp.Blocks, map[string]any{
+				"type": "section",
+				"text": map[string]string{
+					"type": "mrkdwn",
+					"text": action,
 				},
 			})
 		}
@@ -248,9 +222,9 @@ func (h handler) updateMessage(l *zap.Logger, payload *BlockActionsPayload) {
 
 	// Send the update to Slack's webhook.
 	meta := &chat.UpdateResponse{}
-	ctx := extrazap.AttachLoggerToContext(l, context.Background())
 	err := api.PostJSON(ctx, h.vars, resp, meta, payload.ResponseURL)
 	if err != nil {
+		l := extrazap.ExtractLoggerFromContext(ctx)
 		l.Warn("Error in reply to user via interaction webhook",
 			zap.Error(err),
 			zap.String("url", payload.ResponseURL),

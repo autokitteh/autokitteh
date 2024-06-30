@@ -23,16 +23,23 @@ var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.Integrati
 		"2 Go client API":             "https://pkg.go.dev/github.com/sashabaranov/go-openai",
 	},
 	ConnectionUrl: "/chatgpt/connect",
+	ConnectionCapabilities: &sdktypes.ConnectionCapabilitiesPB{
+		RequiresConnectionInit: true,
+	},
 }))
 
 func New(vars sdkservices.Vars) sdkservices.Integration {
 	i := integration{vars: vars}
-	return sdkintegrations.NewIntegration(desc, sdkmodule.New(
-		sdkmodule.ExportFunction(
-			"create_chat_completion",
-			i.createChatCompletion,
-			sdkmodule.WithFuncDoc("https://pkg.go.dev/github.com/sashabaranov/go-openai#Client.CreateChatCompletion"),
-			sdkmodule.WithArgs("model?", "message?", "messages?"),
+	return sdkintegrations.NewIntegration(
+		desc,
+		sdkmodule.New(
+			sdkmodule.ExportFunction(
+				"create_chat_completion",
+				i.createChatCompletion,
+				sdkmodule.WithFuncDoc("https://pkg.go.dev/github.com/sashabaranov/go-openai#Client.CreateChatCompletion"),
+				sdkmodule.WithArgs("model?", "message?", "messages?"),
+			),
 		),
-	))
+		sdkintegrations.WithConnectionConfigFromVars(vars),
+	)
 }

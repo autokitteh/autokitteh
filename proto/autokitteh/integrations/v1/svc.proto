@@ -10,9 +10,9 @@ import "buf/validate/validate.proto";
 
 message GetRequest {
   option (buf.validate.message).cel = {
-    id: "integration_id_xor_name",
-    message: "integration_id and name are mutually exclusive",
-    expression: "(this.integration_id == '' && this.name != '') || (this.integration_id != '' && this.name == '')",
+    id: "integration_id_xor_name"
+    message: "integration_id and name are mutually exclusive"
+    expression: "(this.integration_id == '' && this.name != '') || (this.integration_id != '' && this.name == '')"
   };
 
   string integration_id = 1;
@@ -40,8 +40,8 @@ message CallRequest {
   map<string, values.v1.Value> kwargs = 4 [(buf.validate.field).map = {
     keys: {
       string: {min_len: 1}
-    },
-    values: {required: true},
+    }
+    values: {required: true}
   }];
 }
 
@@ -56,11 +56,12 @@ message ConfigureRequest {
 }
 
 message ConfigureResponse {
+  map<string, string> config = 1;
   map<string, values.v1.Value> values = 4 [(buf.validate.field).map = {
     keys: {
       string: {min_len: 1}
-    },
-    values: {required: true},
+    }
+    values: {required: true}
   }];
 }
 
@@ -82,6 +83,15 @@ message GetConnectionStatusResponse {
   common.v1.Status status = 1 [(buf.validate.field).required = true];
 }
 
+message GetConnectionConfigRequest {
+  string integration_id = 1 [(buf.validate.field).string.min_len = 1];
+  string connection_id = 2 [(buf.validate.field).string.min_len = 1];
+}
+
+message GetConnectionConfigResponse {
+  map<string, string> config = 1;
+}
+
 // Implemented by integration providers.
 service IntegrationsService {
   rpc Get(GetRequest) returns (GetResponse);
@@ -98,6 +108,8 @@ service IntegrationsService {
   // If connection_id is not provided, will return the status of a new connection as
   // set in `Integration.initial_connection_status`.
   rpc GetConnectionStatus(GetConnectionStatusRequest) returns (GetConnectionStatusResponse);
+
+  rpc GetConnectionConfig(GetConnectionConfigRequest) returns (GetConnectionConfigResponse);
 
   rpc Call(CallRequest) returns (CallResponse);
 }

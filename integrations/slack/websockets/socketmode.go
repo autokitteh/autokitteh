@@ -10,7 +10,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/integrations/internal/extrazap"
-	eventsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/events/v1"
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -106,27 +106,52 @@ func (h handler) socketModeHandler(e *socketmode.Event, c *socketmode.Client) {
 	}
 }
 
-func (h handler) dispatchAsyncEventsToConnections(cids []sdktypes.ConnectionID, event *eventsv1.Event) {
+// Transform the received Slack event into an AutoKitteh event.
+func transformEvent(l *zap.Logger, slackEvent any, eventType string) (sdktypes.Event, error) {
+	l = l.With(
+		zap.String("eventType", eventType),
+		zap.Any("event", slackEvent),
+	)
+
+	wrapped, err := sdktypes.DefaultValueWrapper.Wrap(slackEvent)
+	if err != nil {
+		l.Error("Failed to wrap Slack event", zap.Error(err))
+		return sdktypes.InvalidEvent, err
+	}
+
+	data, err := wrapped.ToStringValuesMap()
+	if err != nil {
+		l.Error("Failed to convert wrapped Slack event", zap.Error(err))
+		return sdktypes.InvalidEvent, err
+	}
+
+	akEvent, err := sdktypes.EventFromProto(&sdktypes.EventPB{
+		EventType: eventType,
+		Data:      kittehs.TransformMapValues(data, sdktypes.ToProto),
+	})
+	if err != nil {
+		l.Error("Failed to convert protocol buffer to SDK event",
+			zap.Any("data", data),
+			zap.Error(err),
+		)
+		return sdktypes.InvalidEvent, err
+	}
+
+	return akEvent, nil
+}
+
+func (h handler) dispatchAsyncEventsToConnections(cids []sdktypes.ConnectionID, e sdktypes.Event) {
 	ctx := extrazap.AttachLoggerToContext(h.logger, context.Background())
 	for _, cid := range cids {
-		l := h.logger.With(zap.String("cid", cid.String()))
-
-		event.ConnectionId = cid.String()
-		event, err := sdktypes.EventFromProto(event)
+		eid, err := h.dispatcher.Dispatch(ctx, e.WithConnectionID(cid), nil)
+		l := h.logger.With(
+			zap.String("connectionID", cid.String()),
+			zap.String("eventID", eid.String()),
+		)
 		if err != nil {
-			l.Error("Failed to convert protocol buffer to SDK event",
-				zap.Any("event", event),
-				zap.Error(err),
-			)
+			l.Error("Event dispatch failed", zap.Error(err))
 			return
 		}
-
-		eventID, err := h.dispatcher.Dispatch(ctx, event, nil)
-		if err != nil {
-			l.Error("Dispatch failed", zap.Error(err))
-			return
-		}
-
-		l.Debug("Dispatched", zap.String("eventID", eventID.String()))
+		l.Debug("Event dispatched")
 	}
 }

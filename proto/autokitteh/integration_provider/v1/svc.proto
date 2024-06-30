@@ -51,8 +51,8 @@ message CallRequest {
   map<string, values.v1.Value> kwargs = 4 [(buf.validate.field).map = {
     keys: {
       string: {min_len: 1}
-    },
-    values: {required: true},
+    }
+    values: {required: true}
   }];
 }
 

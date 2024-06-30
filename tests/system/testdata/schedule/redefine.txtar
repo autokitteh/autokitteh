@@ -68,6 +68,7 @@ project:
   triggers:
     - name: cron
       connection: http
+      event_type: get
       call: cron.star:on_cron_trigger
 
 -- cron.star --

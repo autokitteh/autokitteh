@@ -65,7 +65,7 @@ func (i integration) createOrUpdateFile(ctx context.Context, args []sdktypes.Val
 		return sdktypes.InvalidValue, err
 	}
 
-	return sdktypes.WrapValue(c)
+	return valueWrapper.Wrap(c)
 }
 
 // https://docs.github.com/en/rest/repos/contents#get-repository-content
@@ -102,5 +102,5 @@ func (i integration) getContents(ctx context.Context, args []sdktypes.Value, kwa
 		directoryContent = []*github.RepositoryContent{fileContent}
 	}
 
-	return sdktypes.WrapValue(directoryContent)
+	return valueWrapper.Wrap(directoryContent)
 }

@@ -2,8 +2,6 @@ package github
 
 import (
 	"context"
-	"fmt"
-	"strings"
 
 	"go.autokitteh.dev/autokitteh/integrations/github/internal/vars"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
@@ -26,8 +24,9 @@ var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.Integrati
 	Description:   "GitHub is a development platform with distributed version control, issue tracking, continuous integration, and more.",
 	LogoUrl:       "/static/images/github.svg",
 	UserLinks: map[string]string{
-		"1 REST API":      "https://docs.github.com/rest",
-		"2 Go client API": "https://pkg.go.dev/github.com/google/go-github/v57/github",
+		"1 REST API":          "https://docs.github.com/rest",
+		"2 Go client API":     "https://pkg.go.dev/github.com/google/go-github/v57/github",
+		"3 Python client API": "https://pygithub.readthedocs.io/en/stable/",
 	},
 	ConnectionUrl: "/github/connect",
 	ConnectionCapabilities: &sdktypes.ConnectionCapabilitiesPB{
@@ -39,9 +38,10 @@ func New(cvars sdkservices.Vars) sdkservices.Integration {
 	i := &integration{vars: cvars}
 	return sdkintegrations.NewIntegration(
 		desc,
-		sdkmodule.New(funcs(i)...),
+		sdkmodule.New(exportFuncs(i)...),
 		connStatus(i),
 		connTest(i),
+		sdkintegrations.WithConnectionConfigFromVars(cvars),
 	)
 }
 
@@ -52,12 +52,14 @@ func connTest(*integration) sdkintegrations.OptFn {
 	})
 }
 
+// connStatus is an optional connection status check provided by the
+// integration to AutoKitteh. The possible results are "init required"
+// (the connection is not usable yet) and "using X" (where "X" is the
+// authentication method: a GitHub app, or a user's PAT + webhook).
 func connStatus(i *integration) sdkintegrations.OptFn {
 	return sdkintegrations.WithConnectionStatus(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
-		initReq := sdktypes.NewStatus(sdktypes.StatusCodeWarning, "init required")
-
 		if !cid.IsValid() {
-			return initReq, nil
+			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "init required"), nil
 		}
 
 		vs, err := i.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
@@ -66,22 +68,13 @@ func connStatus(i *integration) sdkintegrations.OptFn {
 		}
 
 		if vs.Has(vars.PAT) {
-			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "using PAT"), nil
+			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "using PAT + webhook"), nil
 		}
-
-		n := len(kittehs.Filter(vs, func(v sdktypes.Var) bool {
-			return strings.HasPrefix(v.Name().String(), "app_id__")
-		}))
-
-		if n == 0 {
-			return initReq, nil
-		}
-
-		return sdktypes.NewStatus(sdktypes.StatusCodeOK, fmt.Sprintf("%d installations", n)), nil
+		return sdktypes.NewStatus(sdktypes.StatusCodeOK, "using GitHub app"), nil
 	})
 }
 
-func funcs(i *integration) []sdkmodule.Optfn {
+func exportFuncs(i *integration) []sdkmodule.Optfn {
 	return []sdkmodule.Optfn{
 		// Issues.
 		sdkmodule.ExportFunction(
@@ -398,6 +391,50 @@ func funcs(i *integration) []sdkmodule.Optfn {
 			i.updateCheckRun,
 			sdkmodule.WithFuncDoc("https://docs.github.com/en/rest/checks/runs?update-a-check-run"),
 			sdkmodule.WithArgs("owner", "repo", "check_run_id", "details_url?", "external_url?", "status?", "conclusion?", "output?", "created_at?", "completed_at?", "actions?"),
+		),
+
+		// Copilot
+		sdkmodule.ExportFunction(
+			"get_copilot_billing",
+			i.getCopilotBilling,
+			sdkmodule.WithFuncDoc("https://docs.github.com/en/rest/copilot/copilot-user-management#get-copilot-seat-information-and-settings-for-an-organization"),
+			sdkmodule.WithArgs("org"),
+		),
+		sdkmodule.ExportFunction(
+			"list_copilot_seats",
+			i.listCopilotSeats,
+			sdkmodule.WithFuncDoc("https://docs.github.com/en/rest/copilot/copilot-user-management#list-all-copilot-seat-assignments-for-an-organization"),
+			sdkmodule.WithArgs("org", "page=?", "per_page=?"),
+		),
+		sdkmodule.ExportFunction(
+			"add_copilot_teams",
+			i.addCopilotTeams,
+			sdkmodule.WithFuncDoc("https://docs.github.com/en/rest/copilot/copilot-user-management#add-teams-to-the-copilot-subscription-for-an-organization"),
+			sdkmodule.WithArgs("org", "teams"),
+		),
+		sdkmodule.ExportFunction(
+			"remove_copilot_teams",
+			i.removeCopilotTeams,
+			sdkmodule.WithFuncDoc("https://docs.github.com/en/rest/copilot/copilot-user-management#remove-teams-from-the-copilot-subscription-for-an-organization"),
+			sdkmodule.WithArgs("org", "teams"),
+		),
+		sdkmodule.ExportFunction(
+			"add_copilot_users",
+			i.addCopilotUsers,
+			sdkmodule.WithFuncDoc("https://docs.github.com/en/rest/copilot/copilot-user-management#add-users-to-the-copilot-subscription-for-an-organization"),
+			sdkmodule.WithArgs("org", "users"),
+		),
+		sdkmodule.ExportFunction(
+			"remove_copilot_users",
+			i.removeCopilotUsers,
+			sdkmodule.WithFuncDoc("https://docs.github.com/en/rest/copilot/copilot-user-management#remove-users-from-the-copilot-subscription-for-an-organization"),
+			sdkmodule.WithArgs("org", "users"),
+		),
+		sdkmodule.ExportFunction(
+			"get_copilot_seat_details",
+			i.getCopilotSeatDetails,
+			sdkmodule.WithFuncDoc("https://docs.github.com/en/rest/copilot/copilot-user-management#get-copilot-seat-assignment-details-for-a-user"),
+			sdkmodule.WithArgs("org", "user"),
 		),
 	}
 }

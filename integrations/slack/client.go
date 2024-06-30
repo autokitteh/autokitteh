@@ -1,6 +1,8 @@
 package slack
 
 import (
+	"context"
+
 	"go.autokitteh.dev/autokitteh/integrations/slack/api/auth"
 	"go.autokitteh.dev/autokitteh/integrations/slack/api/bookmarks"
 	"go.autokitteh.dev/autokitteh/integrations/slack/api/bots"
@@ -8,6 +10,7 @@ import (
 	"go.autokitteh.dev/autokitteh/integrations/slack/api/conversations"
 	"go.autokitteh.dev/autokitteh/integrations/slack/api/reactions"
 	"go.autokitteh.dev/autokitteh/integrations/slack/api/users"
+	"go.autokitteh.dev/autokitteh/integrations/slack/internal/vars"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
@@ -26,6 +29,7 @@ var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.Integrati
 	UserLinks: map[string]string{
 		"1 Web API reference":    "https://api.slack.com/methods",
 		"2 Events API reference": "https://api.slack.com/events?filter=Events",
+		"3 Python client API":    "https://slack.dev/python-slack-sdk/api-docs/slack_sdk/",
 	},
 	ConnectionUrl: "/slack/connect",
 	ConnectionCapabilities: &sdktypes.ConnectionCapabilitiesPB{
@@ -33,16 +37,47 @@ var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.Integrati
 	},
 }))
 
-func New(vars sdkservices.Vars) sdkservices.Integration {
-	authAPI := auth.API{Vars: vars}
-	bookmarksAPI := bookmarks.API{Vars: vars}
-	botsAPI := bots.API{Vars: vars}
-	chatAPI := chat.API{Vars: vars}
-	conversationsAPI := conversations.API{Vars: vars}
-	reactionsAPI := reactions.API{Vars: vars}
-	usersAPI := users.API{Vars: vars}
+func New(vs sdkservices.Vars) sdkservices.Integration {
+	return sdkintegrations.NewIntegration(
+		desc,
+		sdkmodule.New(exportFuncs(vs)...),
+		connStatus(vs),
+		sdkintegrations.WithConnectionConfigFromVars(vs),
+	)
+}
 
-	return sdkintegrations.NewIntegration(desc, sdkmodule.New(
+// connStatus is an optional connection status check provided by the
+// integration to AutoKitteh. The possible results are "init required"
+// (the connection is not usable yet) and "using X" (where "X" is the
+// authentication method: an OAuth v2 app, or a Socket Mode app).
+func connStatus(vs sdkservices.Vars) sdkintegrations.OptFn {
+	return sdkintegrations.WithConnectionStatus(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
+		if !cid.IsValid() {
+			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "init required"), nil
+		}
+
+		vs, err := vs.Get(ctx, sdktypes.NewVarScopeID(cid))
+		if err != nil {
+			return sdktypes.InvalidStatus, err
+		}
+
+		if vs.Has(vars.AppTokenName) {
+			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "using Socket Mode app"), nil
+		}
+		return sdktypes.NewStatus(sdktypes.StatusCodeOK, "using OAuth v2 app"), nil
+	})
+}
+
+func exportFuncs(vs sdkservices.Vars) []sdkmodule.Optfn {
+	authAPI := auth.API{Vars: vs}
+	bookmarksAPI := bookmarks.API{Vars: vs}
+	botsAPI := bots.API{Vars: vs}
+	chatAPI := chat.API{Vars: vs}
+	conversationsAPI := conversations.API{Vars: vs}
+	reactionsAPI := reactions.API{Vars: vs}
+	usersAPI := users.API{Vars: vs}
+
+	return []sdkmodule.Optfn{
 		// Auth.
 		sdkmodule.ExportFunction(
 			"auth_test",
@@ -55,7 +90,7 @@ func New(vars sdkservices.Vars) sdkservices.Integration {
 			"bookmarks_add",
 			bookmarksAPI.Add,
 			sdkmodule.WithFuncDoc("https://api.slack.com/methods/bookmarks.add"),
-			sdkmodule.WithArgs("channel_id", "title" /* , "type" */, "link?", "emoji?", "entity_id?", "parent_id?"),
+			sdkmodule.WithArgs("channel_id", "title", "type?", "link?", "emoji?", "entity_id?", "parent_id?"),
 		),
 		sdkmodule.ExportFunction(
 			"bookmarks_edit",
@@ -225,7 +260,7 @@ func New(vars sdkservices.Vars) sdkservices.Integration {
 		),
 
 		// Users.
-		// TODO: sdkmodule.ExportFunction(
+		// TODO(ENG-1057): sdkmodule.ExportFunction(
 		// "users_conversations",
 		// 	sdkmodule.WithFuncDoc("https://api.slack.com/methods/users.conversations"),
 		// 	sdkmodule.WithArgs(...TODO...),
@@ -254,5 +289,5 @@ func New(vars sdkservices.Vars) sdkservices.Integration {
 			sdkmodule.WithFuncDoc("https://api.slack.com/methods/users.lookupByEmail"),
 			sdkmodule.WithArgs("email"),
 		),
-	))
+	}
 }

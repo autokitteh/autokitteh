@@ -4,12 +4,15 @@ else
 	open=open
 endif
 
+export PYTHONPATH=$(PWD)/py-sdk
+
 test: test-py test-go
 
 ci: deps test-py
 
 test-py:
 	ruff check .
+	ruff format --check
 	python -m pytest
 
 # You can set the TESTOPTS to pass options to `go test`

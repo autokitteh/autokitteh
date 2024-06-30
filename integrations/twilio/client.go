@@ -23,16 +23,23 @@ var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.Integrati
 		"2 Voice API overview":     "https://www.twilio.com/docs/voice/api",
 	},
 	ConnectionUrl: "/twilio/connect",
+	ConnectionCapabilities: &sdktypes.ConnectionCapabilitiesPB{
+		RequiresConnectionInit: true,
+	},
 }))
 
 func New(vars sdkservices.Vars) sdkservices.Integration {
 	i := integration{vars: vars}
 
-	return sdkintegrations.NewIntegration(desc, sdkmodule.New(
-		sdkmodule.ExportFunction("create_message",
-			i.createMessage,
-			sdkmodule.WithFuncDoc("https://www.twilio.com/docs/messaging/api/message-resource#create-a-message-resource"),
-			sdkmodule.WithArgs("to", "from_number?", "messaging_service_sid?", "body?", "media_url?", "content_sid?"),
+	return sdkintegrations.NewIntegration(
+		desc,
+		sdkmodule.New(
+			sdkmodule.ExportFunction("create_message",
+				i.createMessage,
+				sdkmodule.WithFuncDoc("https://www.twilio.com/docs/messaging/api/message-resource#create-a-message-resource"),
+				sdkmodule.WithArgs("to", "from_number?", "messaging_service_sid?", "body?", "media_url?", "content_sid?"),
+			),
 		),
-	))
+		sdkintegrations.WithConnectionConfigFromVars(vars),
+	)
 }

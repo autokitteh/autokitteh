@@ -7,9 +7,14 @@ import "buf/validate/validate.proto";
 
 message CreateRequest {
   option (buf.validate.message).cel = {
-    id: "trigger.trigger_id_must_be_empty",
-    message: "trigger_id must not be specified",
-    expression: "has(this.trigger) && this.trigger.trigger_id == ''",
+    id: "trigger.trigger_id_must_be_empty"
+    message: "trigger_id must not be specified"
+    expression: "has(this.trigger) && this.trigger.trigger_id == ''"
+  };
+  option (buf.validate.message).cel = {
+    id: "trigger.trigger_qualifiers_required"
+    message: "at least one is required: event_type, filter, data"
+    expression: "has(this.trigger) && (this.trigger.event_type != '' || this.trigger.filter != '' || has(this.trigger.data))"
   };
 
   Trigger trigger = 1;
@@ -21,9 +26,14 @@ message CreateResponse {
 
 message UpdateRequest {
   option (buf.validate.message).cel = {
-    id: "trigger.trigger_id_required",
-    message: "trigger_id is required",
-    expression: "has(this.trigger) && this.trigger.trigger_id != ''",
+    id: "trigger.trigger_id_required"
+    message: "trigger_id is required"
+    expression: "has(this.trigger) && this.trigger.trigger_id != ''"
+  };
+  option (buf.validate.message).cel = {
+    id: "trigger.trigger_qualifiers_required"
+    message: "at least one is required: event_type, filter, data"
+    expression: "has(this.trigger) && (this.trigger.event_type != '' || this.trigger.filter != '' || has(this.trigger.data))"
   };
 
   Trigger trigger = 1;

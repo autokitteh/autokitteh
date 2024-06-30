@@ -65,3 +65,42 @@ func TxtarToFS(a *txtar.Archive) (fs.FS, error) {
 
 	return MapToMemFS(m)
 }
+
+// FilterFS will filter entries based on a predicate function.
+type FilterFS struct {
+	fs.FS // embed underlying FS
+
+	Pred func(fs.DirEntry) bool // DirEntry predicate
+}
+
+// NewFilterFS returns a new FilterFS wrapping the given FS and predicate.
+// `nil` pred assumes to always return true.
+func NewFilterFS(fsys fs.FS, pred func(fs.DirEntry) bool) (*FilterFS, error) {
+	if fsys == nil {
+		return nil, fmt.Errorf("fsys is nil")
+	}
+
+	ffs := FilterFS{
+		FS:   fsys,
+		Pred: pred,
+	}
+
+	return &ffs, nil
+}
+
+// ReadDir returns list of entries filtered by f.Pred.
+func (f *FilterFS) ReadDir(name string) ([]fs.DirEntry, error) {
+	entries, err := fs.ReadDir(f.FS, name)
+	if err != nil {
+		return nil, err
+	}
+
+	var filtered []fs.DirEntry
+	for _, entry := range entries {
+		if f.Pred == nil || f.Pred(entry) {
+			filtered = append(filtered, entry)
+		}
+	}
+
+	return filtered, nil
+}

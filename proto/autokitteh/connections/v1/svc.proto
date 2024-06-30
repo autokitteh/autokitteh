@@ -8,9 +8,9 @@ import "buf/validate/validate.proto";
 
 message CreateRequest {
   option (buf.validate.message).cel = {
-    id: "connection.connection_id_must_be_empty",
-    message: "connection_id must not be specified",
-    expression: "has(this.connection) && this.connection.connection_id == ''",
+    id: "connection.connection_id_must_be_empty"
+    message: "connection_id must not be specified"
+    expression: "has(this.connection) && this.connection.connection_id == ''"
   };
 
   Connection connection = 1;
@@ -22,9 +22,9 @@ message CreateResponse {
 
 message UpdateRequest {
   option (buf.validate.message).cel = {
-    id: "connection.connection_id_must_not_be_empty",
-    message: "connection_id must be specified",
-    expression: "has(this.connection) && this.connection.connection_id != ''",
+    id: "connection.connection_id_must_not_be_empty"
+    message: "connection_id must be specified"
+    expression: "has(this.connection) && this.connection.connection_id != ''"
   };
 
   Connection connection = 1;

@@ -198,6 +198,9 @@ export class ListRequest extends Message<ListRequest> {
   countOnly = false;
 
   /**
+   * If the value is outside the allowed range, the sessions
+   * gRPC service sets it to the closest range bound.
+   *
    * @generated from field: int32 page_size = 20;
    */
   pageSize = 0;

@@ -72,7 +72,14 @@ class ConfigureRequest(_message.Message):
     def __init__(self, integration_id: _Optional[str] = ..., connection_id: _Optional[str] = ...) -> None: ...
 
 class ConfigureResponse(_message.Message):
-    __slots__ = ["values"]
+    __slots__ = ["config", "values"]
+    class ConfigEntry(_message.Message):
+        __slots__ = ["key", "value"]
+        KEY_FIELD_NUMBER: _ClassVar[int]
+        VALUE_FIELD_NUMBER: _ClassVar[int]
+        key: str
+        value: str
+        def __init__(self, key: _Optional[str] = ..., value: _Optional[str] = ...) -> None: ...
     class ValuesEntry(_message.Message):
         __slots__ = ["key", "value"]
         KEY_FIELD_NUMBER: _ClassVar[int]
@@ -80,9 +87,11 @@ class ConfigureResponse(_message.Message):
         key: str
         value: _values_pb2.Value
         def __init__(self, key: _Optional[str] = ..., value: _Optional[_Union[_values_pb2.Value, _Mapping]] = ...) -> None: ...
+    CONFIG_FIELD_NUMBER: _ClassVar[int]
     VALUES_FIELD_NUMBER: _ClassVar[int]
+    config: _containers.ScalarMap[str, str]
     values: _containers.MessageMap[str, _values_pb2.Value]
-    def __init__(self, values: _Optional[_Mapping[str, _values_pb2.Value]] = ...) -> None: ...
+    def __init__(self, config: _Optional[_Mapping[str, str]] = ..., values: _Optional[_Mapping[str, _values_pb2.Value]] = ...) -> None: ...
 
 class TestConnectionRequest(_message.Message):
     __slots__ = ["integration_id", "connection_id"]
@@ -111,3 +120,24 @@ class GetConnectionStatusResponse(_message.Message):
     STATUS_FIELD_NUMBER: _ClassVar[int]
     status: _status_pb2.Status
     def __init__(self, status: _Optional[_Union[_status_pb2.Status, _Mapping]] = ...) -> None: ...
+
+class GetConnectionConfigRequest(_message.Message):
+    __slots__ = ["integration_id", "connection_id"]
+    INTEGRATION_ID_FIELD_NUMBER: _ClassVar[int]
+    CONNECTION_ID_FIELD_NUMBER: _ClassVar[int]
+    integration_id: str
+    connection_id: str
+    def __init__(self, integration_id: _Optional[str] = ..., connection_id: _Optional[str] = ...) -> None: ...
+
+class GetConnectionConfigResponse(_message.Message):
+    __slots__ = ["config"]
+    class ConfigEntry(_message.Message):
+        __slots__ = ["key", "value"]
+        KEY_FIELD_NUMBER: _ClassVar[int]
+        VALUE_FIELD_NUMBER: _ClassVar[int]
+        key: str
+        value: str
+        def __init__(self, key: _Optional[str] = ..., value: _Optional[str] = ...) -> None: ...
+    CONFIG_FIELD_NUMBER: _ClassVar[int]
+    config: _containers.ScalarMap[str, str]
+    def __init__(self, config: _Optional[_Mapping[str, str]] = ...) -> None: ...

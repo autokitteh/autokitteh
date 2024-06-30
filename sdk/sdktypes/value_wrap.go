@@ -11,10 +11,17 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 )
 
-func WrapValue(v any) (Value, error) { return DefaultValueWrapper.Wrap(v) }
+func WrapValue[T any](v T) (Value, error) { return DefaultValueWrapper.Wrap(v) }
 
 // Wraps a native go type in a Value.
 func (w ValueWrapper) Wrap(v any) (Value, error) {
+	if w.Prewrap != nil {
+		var err error
+		if v, err = w.Prewrap(v); err != nil {
+			return InvalidValue, fmt.Errorf("prewrap: %w", err)
+		}
+	}
+
 	if v, ok := v.(Value); ok {
 		return v, nil
 	}
@@ -83,11 +90,14 @@ func (w ValueWrapper) Wrap(v any) (Value, error) {
 		fs := make(map[string]Value)
 
 		for _, vfs := range reflect.VisibleFields(vt) {
-			if !vfs.IsExported() || vfs.Anonymous {
-				// allow to wrap embedded unexported time.Time field
-				if vfs.Type != reflect.TypeOf(time.Time{}) {
-					continue
-				}
+			if !vfs.IsExported() {
+				continue
+			}
+
+			if vfs.Anonymous && vfs.Type != reflect.TypeOf(time.Time{}) {
+				// skip anonymous but allow to wrap embedded time.Time (see tests)
+				// as a most common and problematic case (e.g. github Go API Timestamp)
+				continue
 			}
 
 			fv := vv.FieldByIndex(vfs.Index)

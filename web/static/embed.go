@@ -13,6 +13,9 @@ var AWSWebContent embed.FS
 //go:embed chatgpt/connect
 var ChatGPTWebContent embed.FS
 
+//go:embed confluence/connect
+var ConfluenceWebContent embed.FS
+
 //go:embed github/connect
 var GitHubWebContent embed.FS
 
@@ -22,16 +25,16 @@ var GmailWebContent embed.FS
 //go:embed google/connect
 var GoogleWebContent embed.FS
 
-//go:embed google/connect
+//go:embed googlecalendar/connect
 var GoogleCalendarWebContent embed.FS
 
 //go:embed google/connect
 var GoogleChatWebContent embed.FS
 
-//go:embed google/connect
+//go:embed googledrive/connect
 var GoogleDriveWebContent embed.FS
 
-//go:embed google/connect
+//go:embed googleforms/connect
 var GoogleFormsWebContent embed.FS
 
 //go:embed googlesheets/connect
@@ -39,6 +42,9 @@ var GoogleSheetsWebContent embed.FS
 
 //go:embed i/http/connect
 var HTTPWebContent embed.FS
+
+//go:embed jira/connect
+var JiraWebContent embed.FS
 
 //go:embed slack/connect
 var SlackWebContent embed.FS

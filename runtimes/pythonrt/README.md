@@ -64,7 +64,7 @@ It will also inject `vars` definition from the manifest to the Python process en
 
 The Python server returns a list of exported symbols from the user code.
 
-### Communication sequence
+### Communication Sequence
 
 A call with function and payload:
 
@@ -80,6 +80,11 @@ sequenceDiagram
     end
     Python-->>Go: Run return (None)
 ```
+
+Other messages are:
+
+- `log` from Python to Go
+- `sleep` from Python to Go
 
 ### Communication Protocol
 
@@ -116,6 +121,11 @@ All messages have top level `type` and `payload`, the `payload` changes dependin
 
 ### Integration Testing
 
+To make sure you use `autokitteh` from the `py-sdk`, update your `PYTHONPATH` before running `ak`.
+Run the following from the root of the repo:
+    
+    export PYTHONPATH="${PWD}/runtimes/pythonrt/py-sdk:${PYTHONPATH}"
+
 If you run `ak` with a database, then run `make create-workflow` once. 
 Otherwise run it every time.
 This will create a deployment for `testdata/simple/`
@@ -134,4 +144,6 @@ db:
 
 ## Hacking
 
-Since `ak_runner.py` is embedded in `ak`, you'll need to build it (`make bin` from root of project) every time you change Python code and want to run workflows.
+The `ak_runner` is directory in `ak`, you'll need to build it (`make bin` from root of project) every time you change Python code and want to run workflows.
+
+Your code should be formatted with `ruff`.
