@@ -156,7 +156,7 @@ type webhookRegistrationResult struct {
 // https://developer.atlassian.com/server/jira/platform/webhooks/
 // https://developer.atlassian.com/cloud/jira/platform/rest/v3/api-group-webhooks/
 func registerWebhook(l *zap.Logger, base, token string) (int, bool) {
-	webhookBase := os.Getenv("WEBHOOK_ADDRESS") + "jira"
+	webhookBase := os.Getenv("WEBHOOK_ADDRESS")
 	r := webhookRegisterRequest{
 		URL: fmt.Sprintf("https://%s/jira/webhook", webhookBase),
 		Webhooks: []webhook{
