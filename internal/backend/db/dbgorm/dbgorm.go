@@ -95,6 +95,13 @@ func translateError(err error) error {
 	}
 }
 
+func gormErrNotFoundToForeignKey(err error) error {
+	if err == gorm.ErrRecordNotFound {
+		return gorm.ErrForeignKeyViolated
+	}
+	return err
+}
+
 var fkStmtByDB = map[string]map[bool]string{
 	"sqlite": {
 		true:  "PRAGMA foreign_keys = ON",

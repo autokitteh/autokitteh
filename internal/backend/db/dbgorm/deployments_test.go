@@ -82,14 +82,24 @@ func TestCreateDeploymentsForeignKeys(t *testing.T) {
 	f.saveBuildsAndAssert(t, b)
 
 	// negative test with non-existing assets
-	// use existing user-owned buildID as fake envID
-	d := f.newDeployment(b)
-	d.EnvID = &b.BuildID // use existing buildID as unexisting envIDs
-	assert.ErrorIs(t, f.gormdb.createDeployment(f.ctx, &d), gorm.ErrForeignKeyViolated)
+	// zero buildID
+	d1 := f.newDeployment()
+	assert.Equal(t, d1.BuildID, sdktypes.UUID{}) // zero value for buildID
+	assert.ErrorIs(t, f.gormdb.createDeployment(f.ctx, &d1), gorm.ErrForeignKeyViolated)
+
+	// valid env, but zero buildID
+	d2 := f.newDeployment(e)
+	assert.Equal(t, d2.BuildID, sdktypes.UUID{}) // zero value for buildID
+	assert.ErrorIs(t, f.gormdb.createDeployment(f.ctx, &d2), gorm.ErrForeignKeyViolated)
+
+	// use existing user-owned buildID as fake unexisting envID
+	d3 := f.newDeployment(b)
+	d3.EnvID = &b.BuildID // no such envID, since it's a buildID
+	assert.ErrorIs(t, f.gormdb.createDeployment(f.ctx, &d3), gorm.ErrForeignKeyViolated)
 
 	// test with existing assets
-	d.EnvID = &e.EnvID
-	f.createDeploymentsAndAssert(t, d)
+	d3.EnvID = &e.EnvID
+	f.createDeploymentsAndAssert(t, d3)
 }
 
 func TestGetDeployment(t *testing.T) {

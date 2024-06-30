@@ -4,9 +4,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"gorm.io/gorm"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
-	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 )
 
 // func (f *dbFixture) createEventRecordsAndAssert(t *testing.T, eventRecord scheme.EventRecord) {
@@ -28,9 +28,7 @@ func TestEventRecord(t *testing.T) {
 	f := preEventRecordTest(t)
 
 	er := f.newEventRecord()
-	// NOTE: this test won't fail due to foreign key violation of eventRecord.eventID
-	// But on user scope check (for unexisting eventID, which is not in DB and thus not in user scope)
-	assert.ErrorIs(t, f.gormdb.addEventRecord(f.ctx, &er), sdkerrors.ErrUnauthorized)
+	assert.ErrorIs(t, f.gormdb.addEventRecord(f.ctx, &er), gorm.ErrForeignKeyViolated)
 
 	// test createEventRecord
 	er.EventID = f.eventID

@@ -23,7 +23,8 @@ func (gdb *gormdb) createTrigger(ctx context.Context, trigger *scheme.Trigger) e
 		idsToVerify = append(idsToVerify, &trigger.ConnectionID)
 	}
 	createFunc := func(tx *gorm.DB, user *scheme.User) error { return tx.Create(trigger).Error }
-	return gdb.createEntityWithOwnership(ctx, createFunc, trigger, idsToVerify...)
+	return gormErrNotFoundToForeignKey(
+		gdb.createEntityWithOwnership(ctx, createFunc, trigger, idsToVerify...))
 }
 
 func (gdb *gormdb) deleteTrigger(ctx context.Context, triggerID sdktypes.UUID) error {

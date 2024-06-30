@@ -126,7 +126,7 @@ func (gdb *gormdb) listSessions(ctx context.Context, f sdkservices.ListSessionsF
 func (gdb *gormdb) addSessionLogRecord(ctx context.Context, logr *scheme.SessionLogRecord) error {
 	return gdb.transaction(ctx, func(tx *tx) error {
 		if err := tx.isUserEntity(ctx, logr.SessionID); err != nil {
-			return err
+			return gormErrNotFoundToForeignKey(err) // session should be present
 		}
 		return tx.db.Create(logr).Error
 	})

@@ -101,7 +101,12 @@ func TestCreateEnvForeignKeys(t *testing.T) {
 	f.createProjectsAndAssert(t, p)
 	f.saveBuildsAndAssert(t, b)
 
-	// use user owner buildID to pass user checks as unexisting projectID
+	// negative tests with non-existing assets
+	// zero ProjectID
+	assert.Equal(t, e.ProjectID, sdktypes.UUID{}) // zero value
+	assert.ErrorIs(t, f.gormdb.createEnv(f.ctx, &e), gorm.ErrForeignKeyViolated)
+
+	// use existing user-owner buildID to fake unexisting projectID
 	e.ProjectID = b.BuildID // no such projectID, since it's a buildID
 	assert.ErrorIs(t, f.gormdb.createEnv(f.ctx, &e), gorm.ErrForeignKeyViolated)
 

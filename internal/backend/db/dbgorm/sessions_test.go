@@ -9,7 +9,6 @@ import (
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
-	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -229,9 +228,7 @@ func TestAddSessionLogRecordUnexistingSession(t *testing.T) {
 	s := f.newSession(sdktypes.SessionStateTypeCompleted)
 	logr := f.newSessionLogRecord() // invalid sessionID
 
-	// NOTE: although sessionID is foreignKey for sessionLogRecord, we won't fail with gorm.ErrForeignKeyViolated
-	// due to the users, we will fail with sdkerrors.ErrUnauthorized, since there is no such session for the user
-	assert.ErrorIs(t, f.gormdb.addSessionLogRecord(f.ctx, &logr), sdkerrors.ErrUnauthorized)
+	assert.ErrorIs(t, f.gormdb.addSessionLogRecord(f.ctx, &logr), gorm.ErrForeignKeyViolated)
 
 	f.createSessionsAndAssert(t, s) // will create session and session record as well
 

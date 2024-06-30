@@ -13,7 +13,7 @@ import (
 func (gdb *gormdb) addEventRecord(ctx context.Context, er *scheme.EventRecord) error {
 	return gdb.transaction(ctx, func(tx *tx) error {
 		if err := tx.isUserEntity(ctx, er.EventID); err != nil {
-			return err
+			return gormErrNotFoundToForeignKey(err) // should be present
 		}
 		var seq int64
 		if err := tx.db.Model(&scheme.EventRecord{}).
