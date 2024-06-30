@@ -200,4 +200,4 @@ func (gdb *gormdb) withUserEntity(ctx context.Context, entity string) *gorm.DB {
 // 3.
 //   if we are in production do not allow save events via cmd?
 // 4. tests
-// - get/list/delete
+// - list/delete

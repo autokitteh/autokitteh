@@ -8,6 +8,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
+	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
@@ -323,6 +324,7 @@ func TestGetBuildWithOwnership(t *testing.T) {
 	f := preOwnershipTest(t)
 
 	b := f.newBuild()
+	f.saveBuildsAndAssert(t, b)
 
 	// Build owned by the same user tested in TestGetBuild
 
@@ -423,6 +425,156 @@ func TestGetTriggerWithOwnership(t *testing.T) {
 
 	_, err := f.gormdb.getEvent(f.ctx, trg.TriggerID)
 	assert.Error(t, err, sdkerrors.ErrUnauthorized)
+}
+
+func TestDeleteProjectsWithOwnership(t *testing.T) {
+}
+
+func TestDeleteBuildsWithOwnership(t *testing.T) {
+}
+
+func TestDeleteDeploymentsWithOwnership(t *testing.T) {
+}
+
+func TestDeleteEnvsWithOwnership(t *testing.T) {
+}
+
+func TestDeleteConnectionsWithOwnership(t *testing.T) {
+}
+
+func TestDeleteSessionsWithOwnership(t *testing.T) {
+}
+
+func TestDeleteEventsWithOwnership(t *testing.T) {
+}
+
+func TestDeleteTriggersWithOwnership(t *testing.T) {
+}
+
+func TestDeleteVarsWithOwnership(t *testing.T) {
+}
+
+func TestListProjectsWithOwnership(t *testing.T) {
+	f := preOwnershipTest(t)
+
+	p := f.newProject()
+	f.createProjectsAndAssert(t, p)
+
+	// Project owned by the same user tested in TestListProjects
+
+	// different user
+	f.ctx = withUser(f.ctx, u)
+
+	projects, err := f.gormdb.listProjects(f.ctx)
+	assert.Len(t, projects, 0) // no projects fetched, not user owned
+	assert.NoError(t, err)
+}
+
+func TestListBuildsWithOwnership(t *testing.T) {
+	f := preOwnershipTest(t)
+
+	b := f.newBuild()
+	f.saveBuildsAndAssert(t, b)
+
+	// Build owned by the same user tested in TestListBuilds
+
+	// different user
+	f.ctx = withUser(f.ctx, u)
+
+	builds, err := f.gormdb.listBuilds(f.ctx, sdkservices.ListBuildsFilter{})
+	assert.Len(t, builds, 0) // no build fetched, not user owned
+	assert.NoError(t, err)
+}
+
+func TestListDeploymentsWithOwnership(t *testing.T) {
+	f := preOwnershipTest(t)
+
+	_, _ = createBuildAndDeployment(t, f)
+
+	// Deployment owned by the same user tested in TestListDeployments
+
+	// different user
+	f.ctx = withUser(f.ctx, u)
+
+	f.listDeploymentsAndAssert(t, 0) // no deployments fetched, not user owned
+}
+
+func TestListEnvsWithOwnership(t *testing.T) {
+	f := preOwnershipTest(t)
+
+	p, _ := createProjectAndEnv(t, f)
+
+	// Env owned by the same user tested in TestListEnvs
+
+	// different user
+	f.ctx = withUser(f.ctx, u)
+
+	envs, err := f.gormdb.listEnvs(f.ctx, p.ProjectID)
+	assert.Len(t, envs, 0) // no envs fetched, not user owned
+	assert.NoError(t, err)
+}
+
+func TestListConnectionsWithOwnership(t *testing.T) {
+	f := preOwnershipTest(t)
+
+	c := f.newConnection()
+	f.createConnectionsAndAssert(t, c)
+
+	// Connection owned by the same user tested in TestListConnections
+
+	// different user
+	f.ctx = withUser(f.ctx, u)
+
+	cc, err := f.gormdb.listConnections(f.ctx, sdkservices.ListConnectionsFilter{}, false)
+	assert.Len(t, cc, 0) // no connections fetched, not user owned
+	assert.NoError(t, err)
+}
+
+func TestListSessionsWithOwnership(t *testing.T) {
+	f := preOwnershipTest(t)
+
+	s := f.newSession(sdktypes.SessionStateTypeCompleted)
+	f.createSessionsAndAssert(t, s)
+
+	// Session owned by the same user tested in TestListSessions
+
+	// different user
+	f.ctx = withUser(f.ctx, u)
+
+	f.listSessionsAndAssert(t, 0) // no sessions fetched, not user owned
+}
+
+func TestListEventsWithOwnership(t *testing.T) {
+	f := preOwnershipTest(t)
+
+	e := f.newEvent()
+	f.createEventsAndAssert(t, e)
+
+	// Event owned by the same user tested in TestListEventsOrder
+
+	// different user
+	f.ctx = withUser(f.ctx, u)
+
+	events, err := f.gormdb.listEvents(f.ctx, sdkservices.ListEventsFilter{})
+	assert.Len(t, events, 0) // no events fetched, not user owned
+	assert.NoError(t, err)
+}
+
+func TestListTriggersWithOwnership(t *testing.T) {
+	f := preOwnershipTest(t)
+
+	p, c, e := createProjectConnectionEnv(t, f)
+	trg := f.newTrigger(p, c, e)
+	f.createTriggersAndAssert(t, trg)
+
+	// Trigger owned by the same user tested in TestListTriggers
+
+	// different user
+	f.ctx = withUser(f.ctx, u)
+
+	triggers, err := f.gormdb.listTriggers(f.ctx, sdkservices.ListTriggersFilter{})
+	assert.Len(t, triggers, 0) // no triggers fetched, not user owned
+	assert.NoError(t, err)
 }
 
 func TestListVarsWithOwnership(t *testing.T) {

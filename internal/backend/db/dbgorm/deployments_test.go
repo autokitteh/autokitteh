@@ -114,6 +114,10 @@ func TestListDeployments(t *testing.T) {
 
 	deployments := f.listDeploymentsAndAssert(t, 1)
 	assert.Equal(t, d, deployments[0])
+
+	// test listDeployments after delete
+	assert.NoError(t, f.gormdb.deleteDeployment(f.ctx, d.DeploymentID))
+	f.listDeploymentsAndAssert(t, 0)
 }
 
 func TestListDeploymentsWithStats(t *testing.T) {

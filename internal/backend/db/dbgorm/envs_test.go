@@ -73,6 +73,25 @@ func TestGetEnv(t *testing.T) {
 	assert.ErrorIs(t, err, gorm.ErrRecordNotFound)
 }
 
+func TestListEnvs(t *testing.T) {
+	f := preEnvTest(t)
+
+	p, e := createProjectAndEnv(t, f)
+
+	envs, err := f.gormdb.listEnvs(f.ctx, p.ProjectID)
+	assert.NoError(t, err)
+	assert.Len(t, envs, 1)
+	assert.Equal(t, e, envs[0])
+
+	// delete env
+	assert.NoError(t, f.gormdb.deleteEnv(f.ctx, e.EnvID))
+
+	// test listEnvs after delete
+	envs, err = f.gormdb.listEnvs(f.ctx, p.ProjectID)
+	assert.NoError(t, err)
+	assert.Len(t, envs, 0)
+}
+
 func TestCreateEnvForeignKeys(t *testing.T) {
 	f := preEnvTest(t)
 

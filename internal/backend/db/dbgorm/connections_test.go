@@ -7,6 +7,7 @@ import (
 	"gorm.io/gorm"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
+	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 )
 
 func (f *dbFixture) createConnectionsAndAssert(t *testing.T, connections ...scheme.Connection) {
@@ -106,4 +107,23 @@ func TestGetConnection(t *testing.T) {
 	assert.NoError(t, f.gormdb.deleteConnection(f.ctx, c.ConnectionID))
 	_, err = f.gormdb.getConnection(f.ctx, c.ConnectionID)
 	assert.ErrorIs(t, err, gorm.ErrRecordNotFound)
+}
+
+func TestListConnection(t *testing.T) {
+	f := preConnectionTest(t)
+
+	c := f.newConnection()
+	f.createConnectionsAndAssert(t, c)
+
+	// test listConnection
+	cc, err := f.gormdb.listConnections(f.ctx, sdkservices.ListConnectionsFilter{}, false)
+	assert.NoError(t, err)
+	assert.Len(t, cc, 1)
+	assert.Equal(t, c, cc[0])
+
+	// test listConnection after delete
+	assert.NoError(t, f.gormdb.deleteConnection(f.ctx, c.ConnectionID))
+	cc, err = f.gormdb.listConnections(f.ctx, sdkservices.ListConnectionsFilter{}, false)
+	assert.NoError(t, err)
+	assert.Len(t, cc, 0)
 }
