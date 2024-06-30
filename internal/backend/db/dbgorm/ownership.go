@@ -187,19 +187,6 @@ func (gdb *gormdb) withUserEntity(ctx context.Context, entity string) *gorm.DB {
 	return joinUserEntity(db, entity, user.UserID)
 }
 
-// func joinUserEntity1(db *gorm.DB, tableName string, idName string, userID sdktypes.UUID) *gorm.DB {
-// 	joinExpr := fmt.Sprintf("JOIN ownerships ON ownerships.entity_id = %s.%s_id", tableName, idName)
-// 	return db.Table(tableName).Joins(joinExpr).Where("ownerships.user_id = ?", userID)
-// }
-
-// func (gdb *gormdb) withUserEntity2(ctx context.Context, tableName string, idName string) *gorm.DB {
-// 	user, _ := userFromContext(ctx) // NOTE: ignore possible error
-// 	tableName := entity + string("s")
-// 	gdb.z.Debug("withUser", zap.String("entity", entityName), zap.Any("user", user))
-// 	db := gdb.db.WithContext(ctx)
-// 	return joinUserEntity1(db, tableName, idName, user.UserID)
-// }
-
 // FIXME:
 // 1. ID
 // - maybe we could add google/github users earlier? on login?
