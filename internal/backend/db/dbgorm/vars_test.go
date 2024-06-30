@@ -88,7 +88,7 @@ func TestReSetVar(t *testing.T) {
 	f.setVarsAndAssert(t, v)
 }
 
-func TestGetVar(t *testing.T) {
+func TestListVar(t *testing.T) {
 	f := preVarTest(t)
 	_, env := createConnectionAndEnv(t, f)
 
@@ -96,7 +96,7 @@ func TestGetVar(t *testing.T) {
 	f.setVarsAndAssert(t, v)
 
 	// test getVar
-	vars, err := f.gormdb.getVars(f.ctx, v.ScopeID, v.Name)
+	vars, err := f.gormdb.listVars(f.ctx, v.ScopeID, v.Name)
 	assert.NoError(t, err)
 	assert.Len(t, vars, 1)
 	assert.Equal(t, v, vars[0])

@@ -86,10 +86,11 @@ func (gdb *gormdb) deleteVars(ctx context.Context, scopeID sdktypes.UUID, names 
 	})
 }
 
-func (gdb *gormdb) getVars(ctx context.Context, scopeID sdktypes.UUID, names ...string) ([]scheme.Var, error) {
+func (gdb *gormdb) listVars(ctx context.Context, scopeID sdktypes.UUID, names ...string) ([]scheme.Var, error) {
 	db := varsCommonQuery(gdb.withUserVars(ctx), scopeID, names)
 
 	var vars []scheme.Var
+	// will skip not user owned vars
 	if err := db.Find(&vars).Error; err != nil {
 		return nil, err
 	}
@@ -169,7 +170,7 @@ func (db *gormdb) DeleteVars(ctx context.Context, sid sdktypes.VarScopeID, names
 }
 
 func (db *gormdb) GetVars(ctx context.Context, sid sdktypes.VarScopeID, names []sdktypes.Symbol) ([]sdktypes.Var, error) {
-	dbvs, err := db.getVars(ctx, sid.UUIDValue(), kittehs.TransformToStrings(names)...)
+	dbvs, err := db.listVars(ctx, sid.UUIDValue(), kittehs.TransformToStrings(names)...)
 	if err != nil {
 		return nil, translateError(err)
 	}
