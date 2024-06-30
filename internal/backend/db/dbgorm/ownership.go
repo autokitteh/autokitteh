@@ -145,15 +145,20 @@ func (gdb *gormdb) isUserEntity1(user *scheme.User, ids ...sdktypes.UUID) error 
 		return nil
 	}
 
-	var count int64
-	if err := gdb.db.Model(&scheme.Ownership{}).Where("entity_id IN ? AND user_id = ?", ids, user.UserID).Count(&count).Error; err != nil {
+	var oo []scheme.Ownership
+	if err := gdb.db.Model(&scheme.Ownership{}).Where("entity_id IN ?", ids).Select("user_id").Find(&oo).Error; err != nil {
 		return err
 	}
-	if count < int64(len(ids)) {
-		return sdkerrors.ErrUnauthorized
+
+	if len(oo) < len(ids) {
+		return gorm.ErrRecordNotFound
 	}
-	// FIXME: could/should we distinguish between not found and unauthorized? Could be useful in updates
-	// Is there other way then adding more queries?
+
+	for _, o := range oo {
+		if o.UserID != user.UserID {
+			return sdkerrors.ErrUnauthorized
+		}
+	}
 	return nil
 }
 
