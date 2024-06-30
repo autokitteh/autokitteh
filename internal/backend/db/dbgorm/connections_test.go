@@ -90,3 +90,20 @@ func TestDeleteConnectionForeignKeys(t *testing.T) {
 	assert.NoError(t, f.gormdb.deleteConnection(f.ctx, c.ConnectionID))
 	f.assertConnectionDeleted(t, c) // soft deleted, dependent object won't complain
 }
+
+func TestGetConnection(t *testing.T) {
+	f := preConnectionTest(t)
+
+	c := f.newConnection()
+	f.createConnectionsAndAssert(t, c)
+
+	// test getConnection
+	c2, err := f.gormdb.getConnection(f.ctx, c.ConnectionID)
+	assert.NoError(t, err)
+	assert.Equal(t, c, *c2)
+
+	// test getConnection after delete
+	assert.NoError(t, f.gormdb.deleteConnection(f.ctx, c.ConnectionID))
+	_, err = f.gormdb.getConnection(f.ctx, c.ConnectionID)
+	assert.ErrorIs(t, err, gorm.ErrRecordNotFound)
+}

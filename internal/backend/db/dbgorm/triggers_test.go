@@ -54,13 +54,17 @@ func TestGetTrigger(t *testing.T) {
 	f := preTriggerTest(t)
 
 	p, c, env := createProjectConnectionEnv(t, f)
-	tr := f.newTrigger(p, c, env)
-	f.createTriggersAndAssert(t, tr)
+	t1 := f.newTrigger(p, c, env)
+	f.createTriggersAndAssert(t, t1)
 
 	// test getTrigger
-	tr2, err := f.gormdb.getTrigger(f.ctx, tr.TriggerID)
+	t2, err := f.gormdb.getTrigger(f.ctx, t1.TriggerID)
 	assert.NoError(t, err)
-	assert.Equal(t, tr, *tr2)
+	assert.Equal(t, t1, *t2)
+
+	assert.NoError(t, f.gormdb.deleteTrigger(f.ctx, t1.TriggerID))
+	_, err = f.gormdb.getTrigger(f.ctx, t1.TriggerID)
+	assert.ErrorIs(t, err, gorm.ErrRecordNotFound)
 }
 
 func TestCreateTriggerForeignKeys(t *testing.T) {

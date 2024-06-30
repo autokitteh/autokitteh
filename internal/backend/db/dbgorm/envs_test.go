@@ -29,24 +29,27 @@ func preEnvTest(t *testing.T) *dbFixture {
 	return f
 }
 
+func createProjectAndEnv(t *testing.T, f *dbFixture) (scheme.Project, scheme.Env) {
+	p := f.newProject()
+	e := f.newEnv(p)
+
+	f.createProjectsAndAssert(t, p)
+	f.createEnvsAndAssert(t, e)
+
+	return p, e
+}
+
 func TestCreateEnv(t *testing.T) {
 	f := preEnvTest(t)
 
-	p := f.newProject()
-	f.createProjectsAndAssert(t, p)
-	e := f.newEnv(p)
-
 	// test createEnv
-	f.createEnvsAndAssert(t, e)
+	_, _ = createProjectAndEnv(t, f)
 }
 
 func TestGetEnv(t *testing.T) {
 	f := preEnvTest(t)
 
-	p := f.newProject()
-	e := f.newEnv(p)
-	f.createProjectsAndAssert(t, p)
-	f.createEnvsAndAssert(t, e)
+	p, e := createProjectAndEnv(t, f)
 
 	// test getEnvByName
 	e2, err := f.gormdb.getEnvByName(f.ctx, p.ProjectID, e.Name)
@@ -57,6 +60,17 @@ func TestGetEnv(t *testing.T) {
 	e2, err = f.gormdb.getEnvByID(f.ctx, e.EnvID)
 	assert.NoError(t, err)
 	assert.Equal(t, e, *e2)
+
+	// delete env
+	assert.NoError(t, f.gormdb.deleteEnv(f.ctx, e.EnvID))
+
+	// test getEnvByName after delete
+	_, err = f.gormdb.getEnvByName(f.ctx, p.ProjectID, e.Name)
+	assert.ErrorIs(t, err, gorm.ErrRecordNotFound)
+
+	// test getEnvByID after delete
+	_, err = f.gormdb.getEnvByID(f.ctx, e.EnvID)
+	assert.ErrorIs(t, err, gorm.ErrRecordNotFound)
 }
 
 func TestCreateEnvForeignKeys(t *testing.T) {
@@ -79,10 +93,7 @@ func TestCreateEnvForeignKeys(t *testing.T) {
 func TestDeleteEnv(t *testing.T) {
 	f := preEnvTest(t)
 
-	p := f.newProject()
-	e := f.newEnv(p)
-	f.createProjectsAndAssert(t, p)
-	f.createEnvsAndAssert(t, e)
+	_, e := createProjectAndEnv(t, f)
 
 	// test deleteEnv
 	assert.NoError(t, f.gormdb.deleteEnv(f.ctx, e.EnvID))

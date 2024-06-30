@@ -77,6 +77,22 @@ func TestDeleteEvent(t *testing.T) {
 	f.assertEventsDeleted(t, e)
 }
 
+func TestGetEvent(t *testing.T) {
+	f := preEventTest(t)
+
+	e := f.newEvent()
+	f.createEventsAndAssert(t, e)
+
+	// test getEvent
+	e2, err := f.gormdb.getEvent(f.ctx, e.EventID)
+	assert.NoError(t, err)
+	assert.Equal(t, e, *e2)
+
+	assert.NoError(t, f.gormdb.deleteEvent(f.ctx, e.EventID))
+	_, err = f.gormdb.getTrigger(f.ctx, e.EventID)
+	assert.ErrorIs(t, err, gorm.ErrRecordNotFound)
+}
+
 func TestListEventsOrder(t *testing.T) {
 	f := preEventTest(t)
 

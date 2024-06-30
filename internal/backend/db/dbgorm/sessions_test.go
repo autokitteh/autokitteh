@@ -85,15 +85,13 @@ func TestCreateSessionForeignKeys(t *testing.T) {
 	env := f.newEnv(p)
 	d := f.newDeployment(b)
 	evt := f.newEvent()
+	s := f.newSession(sdktypes.SessionStateTypeCompleted, d, b, env, evt)
 
 	f.createProjectsAndAssert(t, p)
 	f.saveBuildsAndAssert(t, b)
 	f.createEnvsAndAssert(t, env)
 	f.createDeploymentsAndAssert(t, d)
 	f.createEventsAndAssert(t, evt)
-
-	s := f.newSession(sdktypes.SessionStateTypeCompleted, d, b, env, evt)
-
 	f.createSessionsAndAssert(t, s)
 
 	// negative test with non-existing assets
