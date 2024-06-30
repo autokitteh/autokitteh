@@ -29,7 +29,7 @@ message SaveRequest {
     expression: "has(this.build) && this.build.build_id == ''"
   };
 
-  builds.v1.Build build = 1;
+  Build build = 1;
 
   bytes data = 2 [(buf.validate.field).bytes.min_len = 1];
 }

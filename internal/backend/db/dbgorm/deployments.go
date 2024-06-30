@@ -22,7 +22,7 @@ func (db *gormdb) CreateDeployment(ctx context.Context, deployment sdktypes.Depl
 
 	d := scheme.Deployment{
 		DeploymentID: deployment.ID().UUIDValue(),
-		BuildID:      scheme.UUIDOrNil(deployment.BuildID().UUIDValue()),
+		BuildID:      deployment.BuildID().UUIDValue(),
 		EnvID:        scheme.UUIDOrNil(deployment.EnvID().UUIDValue()),
 		State:        int32(deployment.State().ToProto()),
 		CreatedAt:    now,

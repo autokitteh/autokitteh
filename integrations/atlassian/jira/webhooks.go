@@ -81,15 +81,15 @@ type webhookListResponse struct {
 // https://developer.atlassian.com/cloud/jira/platform/webhooks/
 // https://developer.atlassian.com/server/jira/platform/webhooks/
 // https://developer.atlassian.com/cloud/jira/platform/rest/v3/api-group-webhooks/
-func getWebhook(l *zap.Logger, baseURL, oauthToken string) (int, bool) {
+func getWebhook(l *zap.Logger, base, token string) (int, bool) {
 	// TODO(ENG-965): Support pagination.
-	req, err := http.NewRequest("GET", baseURL+"/rest/api/3/webhook", nil)
+	req, err := http.NewRequest("GET", base+"/rest/api/3/webhook", nil)
 	if err != nil {
 		l.Warn("Failed to construct HTTP request to list Jira webhooks", zap.Error(err))
 		return 0, false
 	}
 
-	req.Header.Set("Authorization", "Bearer "+oauthToken)
+	req.Header.Set("Authorization", "Bearer "+token)
 
 	resp, err := httpClient.Do(req)
 	if err != nil {
@@ -122,12 +122,12 @@ func getWebhook(l *zap.Logger, baseURL, oauthToken string) (int, bool) {
 	}
 
 	// Finally, filter the results based on the AutoKitteh server address
-	// ("GET .../webhook" doesn't show webhook URLs in the response, so we
-	// use a trick: we specify the AutoKitteh server address in the JQL
-	// filter, without affecting the actual event filtering).
-	addr := os.Getenv("WEBHOOK_ADDRESS")
+	// ("GET .../webhook" doesn't show webhook URLs in the response, so
+	// we use a trick: we specify the AutoKitteh server address in the
+	// JQL filter, without affecting the actual event filtering).
+	webhookBase := os.Getenv("WEBHOOK_ADDRESS")
 	for _, v := range list.Values {
-		if strings.HasSuffix(v.JQLFilter, addr) {
+		if strings.HasSuffix(v.JQLFilter, webhookBase) {
 			return v.ID, true
 		}
 	}
@@ -155,10 +155,10 @@ type webhookRegistrationResult struct {
 // https://developer.atlassian.com/cloud/jira/platform/webhooks/
 // https://developer.atlassian.com/server/jira/platform/webhooks/
 // https://developer.atlassian.com/cloud/jira/platform/rest/v3/api-group-webhooks/
-func registerWebhook(l *zap.Logger, baseURL, oauthToken string) (int, bool) {
-	addr := os.Getenv("WEBHOOK_ADDRESS")
+func registerWebhook(l *zap.Logger, base, token string) (int, bool) {
+	webhookBase := os.Getenv("WEBHOOK_ADDRESS")
 	r := webhookRegisterRequest{
-		URL: fmt.Sprintf("https://%s/jira/webhook", addr),
+		URL: fmt.Sprintf("https://%s/jira/webhook", webhookBase),
 		Webhooks: []webhook{
 			{
 				Events: []string{
@@ -166,7 +166,10 @@ func registerWebhook(l *zap.Logger, baseURL, oauthToken string) (int, bool) {
 					"comment_created", "comment_updated", "comment_deleted",
 					"issue_property_set", "issue_property_deleted",
 				},
-				JQLFilter: "project != " + addr,
+				// "GET .../webhook" doesn't show webhook URLs in the response,
+				// so we use a trick: we specify the AutoKitteh server address in
+				// the JQL filter, without affecting the actual event filtering.
+				JQLFilter: fmt.Sprintf("project != %s_jira", webhookBase),
 			},
 		},
 	}
@@ -180,13 +183,13 @@ func registerWebhook(l *zap.Logger, baseURL, oauthToken string) (int, bool) {
 	}
 
 	jsonReader := bytes.NewReader(body)
-	req, err := http.NewRequest("POST", baseURL+"/rest/api/3/webhook", jsonReader)
+	req, err := http.NewRequest("POST", base+"/rest/api/3/webhook", jsonReader)
 	if err != nil {
 		l.Warn("Failed to construct HTTP request to register Jira webhook", zap.Error(err))
 		return 0, false
 	}
 
-	req.Header.Set("Authorization", "Bearer "+oauthToken)
+	req.Header.Set("Authorization", "Bearer "+token)
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := httpClient.Do(req)
@@ -229,6 +232,7 @@ func registerWebhook(l *zap.Logger, baseURL, oauthToken string) (int, bool) {
 		return 0, false
 	}
 
+	// Success.
 	return reg.Result[0].CreatedWebhookID, true
 }
 

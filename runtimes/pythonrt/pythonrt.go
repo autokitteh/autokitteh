@@ -6,6 +6,7 @@ import (
 	"io/fs"
 	"os"
 	"path"
+	"strings"
 	"time"
 
 	"go.uber.org/zap"
@@ -151,16 +152,24 @@ func asBuildExport(e Export) sdktypes.BuildExport {
 	return b
 }
 
-func (py *pySvc) Build(ctx context.Context, fs fs.FS, path string, values []sdktypes.Symbol) (sdktypes.BuildArtifact, error) {
+func (py *pySvc) Build(ctx context.Context, fsys fs.FS, path string, values []sdktypes.Symbol) (sdktypes.BuildArtifact, error) {
 	py.log.Info("build")
 
-	data, err := createTar(fs)
+	ffs, err := kittehs.NewFilterFS(fsys, func(entry fs.DirEntry) bool {
+		return !strings.Contains(entry.Name(), "__pycache__")
+	})
+
+	if err != nil {
+		return sdktypes.InvalidBuildArtifact, err
+	}
+
+	data, err := createTar(ffs)
 	if err != nil {
 		py.log.Error("create tar", zap.Error(err))
 		return sdktypes.InvalidBuildArtifact, err
 	}
 
-	exports, err := pyExports(ctx, py.pyExe, fs)
+	exports, err := pyExports(ctx, py.pyExe, fsys)
 	if err != nil {
 		py.log.Error("get exports", zap.Error(err))
 		return sdktypes.InvalidBuildArtifact, err

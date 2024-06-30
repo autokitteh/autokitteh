@@ -5,7 +5,7 @@ from autokitteh import decorators
 
 from . import log
 from .comm import Comm, MessageType
-from .deterministic import is_determinstic
+from .deterministic import is_deterministic
 
 # Functions that are called back to ak
 AK_FUNCS = {
@@ -41,7 +41,7 @@ class AKCall:
         if is_marked_activity(fn):
             return True
 
-        if is_determinstic(fn):
+        if is_deterministic(fn):
             return False
 
         if self.is_module_func(fn):

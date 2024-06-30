@@ -47,7 +47,7 @@ def google_calendar_client(connection: str, **kwargs):
     """Initialize a Google Calendar client, based on an AutoKitteh connection.
 
     API reference:
-    https://developers.google.com/resources/api-libraries/documentation/calendar/v3/python/latest/index.html
+    https://developers.google.com/resources/api-libraries/documentation/calendar/v3/python/latest/
 
     Code samples:
     https://github.com/googleworkspace/python-samples/tree/main/calendar
@@ -70,6 +70,63 @@ def google_calendar_client(connection: str, **kwargs):
     ]
     creds = google_creds(connection, default_scopes, **kwargs)
     return build("calendar", "v3", credentials=creds, **kwargs)
+
+
+def google_drive_client(connection: str, **kwargs):
+    """Initialize a Google Drive client, based on an AutoKitteh connection.
+
+    API reference:
+    https://developers.google.com/resources/api-libraries/documentation/drive/v3/python/latest/
+
+    Code samples:
+    https://github.com/googleworkspace/python-samples/tree/main/drive
+
+    Args:
+        connection: AutoKitteh connection name.
+
+    Returns:
+        Google Drive client.
+
+    Raises:
+        ValueError: AutoKitteh connection name is invalid.
+        ConnectionInitError: AutoKitteh connection was not initialized yet.
+        EnvVarError: Required environment variable is missing or invalid.
+    """
+    # https://developers.google.com/drive/api/guides/api-specific-auth
+    default_scopes = [
+        "https://www.googleapis.com/auth/drive",
+    ]
+    creds = google_creds(connection, default_scopes, **kwargs)
+    return build("drive", "v3", credentials=creds, **kwargs)
+
+
+def google_forms_client(connection: str, **kwargs):
+    """Initialize a Google Forms client, based on an AutoKitteh connection.
+
+    API reference:
+    https://googleapis.github.io/google-api-python-client/docs/dyn/forms_v1.html
+
+    Code samples:
+    https://github.com/googleworkspace/python-samples/tree/main/forms
+
+    Args:
+        connection: AutoKitteh connection name.
+
+    Returns:
+        Google Forms client.
+
+    Raises:
+        ValueError: AutoKitteh connection name is invalid.
+        ConnectionInitError: AutoKitteh connection was not initialized yet.
+        EnvVarError: Required environment variable is missing or invalid.
+    """
+    # https://developers.google.com/identity/protocols/oauth2/scopes#script
+    default_scopes = [
+        "https://www.googleapis.com/auth/forms.body",
+        "https://www.googleapis.com/auth/forms.responses.readonly",
+    ]
+    creds = google_creds(connection, default_scopes, **kwargs)
+    return build("forms", "v1", credentials=creds, **kwargs)
 
 
 def google_sheets_client(connection: str, **kwargs):

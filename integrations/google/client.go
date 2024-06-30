@@ -1,14 +1,13 @@
 package google
 
 import (
+	"go.autokitteh.dev/autokitteh/integrations/google/gmail"
+	"go.autokitteh.dev/autokitteh/integrations/google/sheets"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-
-	"go.autokitteh.dev/autokitteh/integrations/google/gmail"
-	"go.autokitteh.dev/autokitteh/integrations/google/sheets"
 )
 
 var integrationID = sdktypes.NewIntegrationIDFromName("google")
@@ -32,10 +31,6 @@ var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.Integrati
 
 func New(cvars sdkservices.Vars) sdkservices.Integration {
 	scope := desc.UniqueName().String()
-
-	// TODO: Chat.
-	// TODO: Drive.
-	// TODO: Forms.
 
 	opts := gmail.ExportedFunctions(cvars, scope, true)
 	opts = append(opts, sheets.ExportedFunctions(cvars, scope, true)...)

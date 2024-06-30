@@ -10,11 +10,11 @@ var (
 	email   = sdktypes.NewSymbol("Email")
 
 	oauthAccessToken = sdktypes.NewSymbol("oauth_AccessToken")
-	accessID         = sdktypes.NewSymbol("access_ID")
-	accessURL        = sdktypes.NewSymbol("access_URL")
-	accessName       = sdktypes.NewSymbol("access_Name")
-	accessScope      = sdktypes.NewSymbol("access_Scope")
-	accessAvatarURL  = sdktypes.NewSymbol("access_AvatarURL")
+	accessID         = sdktypes.NewSymbol("AccessID")
+	accessURL        = sdktypes.NewSymbol("AccessURL")
+	accessName       = sdktypes.NewSymbol("AccessName")
+	accessScope      = sdktypes.NewSymbol("AccessScope")
+	accessAvatarURL  = sdktypes.NewSymbol("AccessAvatarURL")
 
 	webhookID         = sdktypes.NewSymbol("WebhookID")
 	webhookExpiration = sdktypes.NewSymbol("WebhookExpiration")

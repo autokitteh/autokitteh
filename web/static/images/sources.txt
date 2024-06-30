@@ -1,5 +1,11 @@
-Atlassian Jira:
+Atlassian:
+https://www.svgrepo.com/svg/353428/atlassian
 https://atlassian.design/resources/logo-library
+
+Atlassian Confluence:
+https://www.svgrepo.com/svg/353597/confluence
+
+Atlassian Jira:
 https://worldvectorlogo.com/logo/jira-1
 
 AWS:

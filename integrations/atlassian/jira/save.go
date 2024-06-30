@@ -33,14 +33,14 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	vars := sdktypes.NewVars().
+	initData := sdktypes.NewVars().
 		Set(baseURL, r.Form.Get("base_url"), false).
 		Set(token, r.Form.Get("token"), true)
 
 	addr := r.Form.Get("email")
 	if addr != "" {
-		vars = vars.Set(email, addr, true)
+		initData = initData.Set(email, addr, true)
 	}
 
-	sdkintegrations.FinalizeConnectionInit(w, r, integrationID, vars)
+	sdkintegrations.FinalizeConnectionInit(w, r, integrationID, initData)
 }

@@ -1,4 +1,4 @@
-package jira
+package confluence
 
 import (
 	"fmt"
@@ -13,20 +13,20 @@ import (
 
 const (
 	// oauthPath is the URL path for our handler to save new OAuth-based connections.
-	oauthPath = "/jira/oauth"
+	oauthPath = "/confluence/oauth"
 
-	// savePath is the URL path for our handler to save a new API key / PAT
+	// savePath is the URL path for our handler to save a new API token / PAT
 	// connection, after the user submits its details via a web form.
-	savePath = "/jira/save"
+	savePath = "/confluence/save"
 
 	// WebhookPath is the URL path for our webhook to handle asynchronous events.
-	webhookPath = "/jira/webhook"
+	webhookPath = "/confluence/webhook/{category}"
 )
 
 func Start(l *zap.Logger, mux *http.ServeMux, vars sdkservices.Vars, o sdkservices.OAuth, d sdkservices.Dispatcher) {
 	// Connection UI + handlers.
 	uiPath := "GET " + desc.ConnectionURL().Path + "/"
-	mux.Handle(uiPath, http.FileServer(http.FS(static.JiraWebContent)))
+	mux.Handle(uiPath, http.FileServer(http.FS(static.ConfluenceWebContent)))
 
 	h := NewHTTPHandler(l, o, vars, d)
 	mux.HandleFunc("GET "+oauthPath, h.handleOAuth)

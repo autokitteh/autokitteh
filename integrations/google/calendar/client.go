@@ -21,9 +21,8 @@ var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.Integrati
 	LogoUrl:       "/static/images/google_calendar.svg",
 	UserLinks: map[string]string{
 		"1 REST API reference": "https://developers.google.com/calendar/api/v3/reference",
-		"2 Go client API":      "https://pkg.go.dev/google.golang.org/api/calendar/v3",
-		"3 Python client API":  "https://developers.google.com/resources/api-libraries/documentation/calendar/v3/python/latest/",
-		"4 Python samples":     "https://github.com/googleworkspace/python-samples/tree/main/calendar",
+		"2 Python client API":  "https://developers.google.com/resources/api-libraries/documentation/calendar/v3/python/latest/",
+		"3 Python samples":     "https://github.com/googleworkspace/python-samples/tree/main/calendar",
 	},
 	ConnectionUrl: "/googlecalendar/connect",
 	ConnectionCapabilities: &sdktypes.ConnectionCapabilitiesPB{

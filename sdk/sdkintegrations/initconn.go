@@ -3,6 +3,7 @@ package sdkintegrations
 import (
 	"fmt"
 	"net/http"
+	"net/url"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -31,6 +32,8 @@ func FinalizeConnectionInit(w http.ResponseWriter, r *http.Request, iid sdktypes
 		id = iid.String()
 	}
 
-	u := fmt.Sprintf("/connections/%s/postinit?vars=%s", id, vars)
+	method := url.QueryEscape(r.URL.Query().Get("method"))
+
+	u := fmt.Sprintf("/connections/%s/postinit?vars=%s&method=%s", id, vars, method)
 	http.Redirect(w, r, u, http.StatusSeeOther)
 }
