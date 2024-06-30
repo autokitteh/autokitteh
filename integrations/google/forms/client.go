@@ -1,4 +1,4 @@
-package calendar
+package forms
 
 import (
 	"context"
@@ -11,20 +11,20 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-var integrationID = sdktypes.NewIntegrationIDFromName("googlecalendar")
+var integrationID = sdktypes.NewIntegrationIDFromName("googleforms")
 
 var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
 	IntegrationId: integrationID.String(),
-	UniqueName:    "googlecalendar",
-	DisplayName:   "Google Calendar",
-	Description:   "Google Calendar is a time-management and scheduling calendar service developed by Google.",
-	LogoUrl:       "/static/images/google_calendar.svg",
+	UniqueName:    "googleforms",
+	DisplayName:   "Google Forms",
+	Description:   "Google Forms is a survey administration software that part of the Google Workspace office suite.",
+	LogoUrl:       "/static/images/google_forms.svg",
 	UserLinks: map[string]string{
-		"1 REST API reference": "https://developers.google.com/calendar/api/v3/reference",
-		"2 Python client API":  "https://developers.google.com/resources/api-libraries/documentation/calendar/v3/python/latest/",
-		"3 Python samples":     "https://github.com/googleworkspace/python-samples/tree/main/calendar",
+		"1 REST API reference": "https://developers.google.com/forms/api/reference/rest",
+		"2 Python client API":  "https://googleapis.github.io/google-api-python-client/docs/dyn/forms_v1.html",
+		"3 Python samples":     "https://github.com/googleworkspace/python-samples/tree/main/forms",
 	},
-	ConnectionUrl: "/googlecalendar/connect",
+	ConnectionUrl: "/googleforms/connect",
 	ConnectionCapabilities: &sdktypes.ConnectionCapabilitiesPB{
 		RequiresConnectionInit: true,
 	},
