@@ -53,8 +53,6 @@ func handleGenericGRPCCall() sdkexecutor.Function {
 			return sdktypes.Nothing, err
 		}
 
-		// TODO(ENG-1024): Rename to "target" here and in the sample, and
-		// reference https://github.com/grpc/grpc/blob/master/doc/naming.md
 		target, ok := args["target"].(string)
 		if !ok {
 			return sdktypes.Nothing, errors.New("host is required")
