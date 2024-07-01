@@ -70,7 +70,7 @@ def __atlassian_cloud_oauth2(connection: str, affix: str, client, **kwargs):
     # Convert Go's time string (e.g. "2024-06-20 19:18:17 -0700 PDT") to
     # an ISO-8601 string that Python can parse with timezone awareness.
     timestamp = re.sub(r" [A-Z]+.*", "", expiry)
-    timestamp = re.sub(r"\.\d+", "", expiry)  # Also ignore sub-second precision.
+    timestamp = re.sub(r"\.\d+", "", timestamp)  # Also ignore sub-second precision.
     if datetime.fromisoformat(timestamp) <= datetime.now(UTC):
         # If the access token is expired, refresh it.
         client_secret = os.getenv(affix.upper() + "_CLIENT_SECRET")

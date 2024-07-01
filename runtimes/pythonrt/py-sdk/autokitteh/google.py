@@ -223,7 +223,7 @@ def __google_creds_oauth2(connection: str, refresh_token: str, scopes: list[str]
     # Convert Go's time string (e.g. "2024-06-20 19:18:17 -0700 PDT") to
     # an ISO-8601 string that Python can parse with timezone awareness.
     timestamp = re.sub(r" [A-Z]+.*", "", expiry)
-    timestamp = re.sub(r"\.\d+", "", expiry)  # Also ignore sub-second precision.
+    timestamp = re.sub(r"\.\d+", "", timestamp)  # Also ignore sub-second precision.
     dt = datetime.fromisoformat(timestamp).astimezone(UTC)
 
     client_id = os.getenv("GOOGLE_CLIENT_ID")
