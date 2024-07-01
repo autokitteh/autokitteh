@@ -4,6 +4,7 @@ import (
 	"archive/tar"
 	"bytes"
 	"context"
+	"crypto/tls"
 	"embed"
 	"encoding/json"
 	"fmt"
@@ -167,6 +168,22 @@ type runOptions struct {
 	entryPoint     string            // simple.py:greet
 	env            map[string]string // Python process environment
 	stdout, stderr io.Writer
+	certPem        []byte
+	keyPem         []byte
+}
+
+func createSock(path string, certPem, keyPem []byte) (net.Listener, error) {
+	if certPem == nil {
+		return net.Listen("unix", path)
+	}
+
+	cert, err := tls.X509KeyPair(certPem, keyPem)
+	if err != nil {
+		return nil, err
+	}
+
+	cfg := tls.Config{Certificates: []tls.Certificate{cert}}
+	return tls.Listen("unix", path, &cfg)
 }
 
 const runnerMod = "ak_runner"
@@ -205,12 +222,24 @@ func runPython(opts runOptions) (*pyRunInfo, error) {
 	ri.sockPath = path.Join(ri.pyRootDir, "ak.sock")
 	opts.log.Info("socket", zap.String("path", ri.sockPath))
 
-	ri.lis, err = net.Listen("unix", ri.sockPath)
+	ri.lis, err = createSock(ri.sockPath, opts.certPem, opts.keyPem)
 	if err != nil {
 		return nil, err
 	}
 
-	cmd := exec.Command(opts.pyExe, "-u", "-m", runnerMod, "run", ri.sockPath, tarPath, opts.entryPoint)
+	pemPath := ""
+	if opts.certPem != nil {
+		pemPath = path.Join(ri.userRootDir, "cert.pem")
+		if err := os.WriteFile(pemPath, opts.certPem, 0666); err != nil {
+			return nil, err
+		}
+	}
+
+	args := []string{"-u", "-m", runnerMod, "run", ri.sockPath, tarPath, opts.entryPoint}
+	if pemPath != "" {
+		args = append(args, "--cert-file", pemPath)
+	}
+	cmd := exec.Command(opts.pyExe, args...)
 	cmd.Dir = ri.pyRootDir
 	cmd.Env = overrideEnv(opts.env, ri.pyRootDir, ri.userRootDir)
 	cmd.Stdout = opts.stdout

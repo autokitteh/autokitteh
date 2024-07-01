@@ -1,5 +1,6 @@
 import json
 import logging
+import ssl
 import sys
 import tarfile
 from base64 import b64decode
@@ -68,6 +69,15 @@ class ActivityFn:
 def run(args):
     sock = socket(AF_UNIX, SOCK_STREAM)
     sock.connect(args.sock)
+
+    if args.cert_file:
+        context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        context.verify_mode = ssl.CERT_REQUIRED
+        context.check_hostname = True
+        context.load_default_certs()
+        context.load_verify_locations(args.cert_file.name)
+        sock = context.wrap_socket(sock, server_hostname="localhost")
+
     comm = Comm(sock)
     log.init(logging.INFO, comm)
     log.info("connected to %r", args.sock)
@@ -193,7 +203,7 @@ def dir_type(value):
 
 if __name__ == "__main__":
     import sys
-    from argparse import ArgumentParser
+    from argparse import ArgumentParser, FileType
 
     parser = ArgumentParser(prog="ak_runner", description="autokitteh Python runner")
     sp = parser.add_subparsers(help="sub command help", required=True)
@@ -202,6 +212,7 @@ if __name__ == "__main__":
     parse_run.add_argument("sock", help="path to unix domain socket", type=file_type)
     parse_run.add_argument("tar", help="path to code tar file", type=file_type)
     parse_run.add_argument("path", help="file.py:function")
+    parser.add_argument("--cert-file", help="TLS certificate file", type=FileType("r"))
     parse_run.set_defaults(func=run)
 
     parse_inspect = sp.add_parser("inspect", help="inspect user code")
