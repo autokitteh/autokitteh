@@ -27,10 +27,6 @@ func (e *envs) Create(ctx context.Context, env sdktypes.Env) (sdktypes.EnvID, er
 
 	env = env.WithNewID()
 
-	if err := env.Strict(); err != nil {
-		return sdktypes.InvalidEnvID, err
-	}
-
 	if err := e.db.CreateEnv(ctx, env); err != nil {
 		return sdktypes.InvalidEnvID, err
 	}

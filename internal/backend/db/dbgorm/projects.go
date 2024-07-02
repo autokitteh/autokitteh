@@ -10,33 +10,50 @@ import (
 	deploymentsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/deployments/v1"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
+	"gorm.io/gorm"
 )
 
-func (db *gormdb) createProject(ctx context.Context, p *scheme.Project) error {
-	return db.db.WithContext(ctx).Create(p).Error
+func (gdb *gormdb) withUserProjects(ctx context.Context) *gorm.DB {
+	return gdb.withUserEntity(ctx, "project")
 }
 
-func (db *gormdb) CreateProject(ctx context.Context, p sdktypes.Project) error {
-	if err := p.Strict(); err != nil {
-		return err
+func (gdb *gormdb) createProject(ctx context.Context, project *scheme.Project) error {
+	createFunc := func(tx *gorm.DB, user *scheme.User) error {
+		// ensure there is no active project with the same name (but allow deleted ones)
+		var count int64
+		if err := tx.
+			// probably EXISTS is a bit more efficient, but it's not naturally supported by gorm
+			// and we are using joins as well. First maybe a good option too, but there should be only
+			// one active user project with the same name, so COUNT is also OK
+			Model(&scheme.Project{}). // with model scope grom will add `deleted_at is NULL` to the query
+			Scopes(withUserEntity("project", user.UserID)).
+			Where("name = ?", project.Name).Count(&count).Error; err != nil {
+			return err
+		}
+		if count > 0 {
+			return gorm.ErrDuplicatedKey // active/non-deleted project was found.
+		}
+		return tx.Create(project).Error
 	}
-
-	project := scheme.Project{
-		ProjectID: p.ID().UUIDValue(),
-		Name:      p.Name().String(),
-	}
-	return translateError(db.createProject(ctx, &project))
+	return gdb.createEntityWithOwnership(ctx, createFunc, project)
 }
 
-func (db *gormdb) deleteProject(ctx context.Context, projectID sdktypes.UUID) error {
-	return db.deleteProjectAndDependents(ctx, projectID)
+func (gdb *gormdb) deleteProject(ctx context.Context, projectID sdktypes.UUID) error {
+	return gdb.transaction(ctx, func(tx *tx) error {
+		if err := tx.isCtxUserEntity(ctx, projectID); err != nil {
+			return err
+		}
+		return tx.deleteProjectAndDependents(ctx, projectID)
+	})
 }
 
 // delete project, its envs, deployments, sessions and build
-func (db *gormdb) deleteProjectAndDependents(ctx context.Context, projectID sdktypes.UUID) error {
+func (gdb *gormdb) deleteProjectAndDependents(ctx context.Context, projectID sdktypes.UUID) error {
 	// NOTE: should be transactional
 
-	deploymentStates, err := db.getProjectDeployments(ctx, projectID)
+	db := gdb.db.WithContext(ctx)
+
+	deploymentStates, err := gdb.getProjectDeployments(ctx, projectID)
 	if err != nil {
 		return err
 	}
@@ -51,72 +68,95 @@ func (db *gormdb) deleteProjectAndDependents(ctx context.Context, projectID sdkt
 	}
 
 	// TODO: consider deleting deployments from envs
-	if err = db.deleteDeploymentsAndDependents(ctx, deplIDs); err != nil {
+	if err = gdb.deleteDeploymentsAndDependents(ctx, deplIDs); err != nil {
 		return err
 	}
 
-	gormDB := db.db.WithContext(ctx)
-
 	// Connection is referenced by signals and triggers, so delete them first.
 	// NOTE that signals, triggers and connections are hard-deleted now
-	if err = gormDB.Delete(&scheme.Trigger{}, "project_id = ?", projectID).Error; err != nil {
+	if err = db.Delete(&scheme.Trigger{}, "project_id = ?", projectID).Error; err != nil {
 		return err
 	}
 
 	var signalIDs []string
-	if err := gormDB.Model(&scheme.Signal{}).
+	if err := db.Model(&scheme.Signal{}).
 		Joins("join connections on connections.connection_id = signals.connection_id").
 		Where("connections.project_id = ?", projectID).
 		Pluck("signals.signal_id", &signalIDs).Error; err != nil {
 		return err
 	}
-	if err = gormDB.Delete(&scheme.Signal{}, "signal_id IN ?", signalIDs).Error; err != nil {
+	if err = db.Delete(&scheme.Signal{}, "signal_id IN ?", signalIDs).Error; err != nil {
 		return err
 	}
 
-	if err = gormDB.Delete(&scheme.Connection{}, "project_id = ?", projectID).Error; err != nil {
+	if err = db.Delete(&scheme.Connection{}, "project_id = ?", projectID).Error; err != nil {
 		return err
 	}
 
-	envIDs, err := db.getProjectEnvs(ctx, projectID)
+	envIDs, err := gdb.getProjectEnvs(ctx, projectID)
 	if err != nil {
 		return err
 	}
-	if err = db.deleteEnvs(ctx, envIDs); err != nil {
+	if err = gdb.deleteEnvs(ctx, envIDs); err != nil {
 		return err
 	}
 
-	return gormDB.Delete(&scheme.Project{ProjectID: projectID}).Error
+	return db.Delete(&scheme.Project{ProjectID: projectID}).Error
 }
 
-func (db *gormdb) DeleteProject(ctx context.Context, projectID sdktypes.ProjectID) error {
-	return db.transaction(ctx, func(tx *tx) error {
-		return translateError(tx.deleteProject(ctx, projectID.UUIDValue()))
+func (gdb *gormdb) updateProject(ctx context.Context, p *scheme.Project) error {
+	// REVIEW: security? any specific fields to allow? resources to disallow?
+	return gdb.transaction(ctx, func(tx *tx) error {
+		if err := tx.isCtxUserEntity(ctx, p.ProjectID); err != nil {
+			return err
+		}
+		return tx.db.Updates(p).Error
 	})
 }
 
-func (db *gormdb) UpdateProject(ctx context.Context, p sdktypes.Project) error {
-	r := scheme.Project{
+func (gdb *gormdb) getProject(ctx context.Context, projectID sdktypes.UUID) (*scheme.Project, error) {
+	return getOne[scheme.Project](gdb.withUserProjects(ctx), "project_id = ?", projectID)
+}
+
+func (gdb *gormdb) getProjectByName(ctx context.Context, projectName string) (*scheme.Project, error) {
+	return getOne[scheme.Project](gdb.withUserProjects(ctx), "name = ?", projectName)
+}
+
+func (gdb *gormdb) listProjects(ctx context.Context) ([]scheme.Project, error) {
+	q := gdb.withUserProjects(ctx)
+
+	var ps []scheme.Project
+	if err := q.Find(&ps).Order("project_id").Error; err != nil {
+		return nil, err
+	}
+	return ps, nil
+}
+
+func (db *gormdb) CreateProject(ctx context.Context, p sdktypes.Project) error {
+	if err := p.Strict(); err != nil {
+		return err
+	}
+
+	project := scheme.Project{
 		ProjectID: p.ID().UUIDValue(),
 		Name:      p.Name().String(),
 	}
+	return translateError(db.createProject(ctx, &project))
+}
 
-	if err := db.db.WithContext(ctx).Updates(&r).Error; err != nil {
-		return translateError(err)
+func (gdb *gormdb) DeleteProject(ctx context.Context, projectID sdktypes.ProjectID) error {
+	return translateError(gdb.deleteProjectAndDependents(ctx, projectID.UUIDValue()))
+}
+
+func (gdb *gormdb) UpdateProject(ctx context.Context, project sdktypes.Project) error {
+	p := scheme.Project{
+		ProjectID: project.ID().UUIDValue(),
+		Name:      project.Name().String(),
 	}
-
-	return nil
+	return translateError(gdb.updateProject(ctx, &p))
 }
 
-func (db *gormdb) getProject(ctx context.Context, projectID sdktypes.UUID) (*scheme.Project, error) {
-	return getOne[scheme.Project](db.db, ctx, "project_id = ?", projectID)
-}
-
-func (db *gormdb) getProjectByName(ctx context.Context, projectName string) (*scheme.Project, error) {
-	return getOne[scheme.Project](db.db, ctx, "name = ?", projectName)
-}
-
-func schemaToSDKProject(p *scheme.Project, err error) (sdktypes.Project, error) {
+func schemaToProject(p *scheme.Project, err error) (sdktypes.Project, error) {
 	if p == nil || err != nil {
 		return sdktypes.InvalidProject, translateError(err)
 	}
@@ -124,17 +164,27 @@ func schemaToSDKProject(p *scheme.Project, err error) (sdktypes.Project, error) 
 }
 
 func (db *gormdb) GetProjectByID(ctx context.Context, pid sdktypes.ProjectID) (sdktypes.Project, error) {
-	return schemaToSDKProject(db.getProject(ctx, pid.UUIDValue()))
+	return schemaToProject(db.getProject(ctx, pid.UUIDValue()))
 }
 
 func (db *gormdb) GetProjectByName(ctx context.Context, ph sdktypes.Symbol) (sdktypes.Project, error) {
-	return schemaToSDKProject(db.getProjectByName(ctx, ph.String()))
+	return schemaToProject(db.getProjectByName(ctx, ph.String()))
+}
+
+func (db *gormdb) ListProjects(ctx context.Context) ([]sdktypes.Project, error) {
+	ps, err := db.listProjects(ctx)
+	if ps == nil || err != nil {
+		return nil, translateError(err)
+	}
+	return kittehs.TransformError(ps, scheme.ParseProject)
 }
 
 type DeploymentState struct {
 	DeploymentID sdktypes.UUID
 	State        int32
 }
+
+// FIXME: apply user scopes from here ---v
 
 func (db *gormdb) getProjectDeployments(ctx context.Context, pid sdktypes.UUID) ([]DeploymentState, error) {
 	var pds []DeploymentState
@@ -149,24 +199,6 @@ func (db *gormdb) getProjectDeployments(ctx context.Context, pid sdktypes.UUID) 
 func (db *gormdb) getProjectEnvs(ctx context.Context, pid sdktypes.UUID) (envIDs []sdktypes.UUID, err error) {
 	err = db.db.WithContext(ctx).Model(&scheme.Env{}).Where("project_id = ?", pid).Pluck("env_id", &envIDs).Error
 	return envIDs, err
-}
-
-func (db *gormdb) listProjects(ctx context.Context) ([]scheme.Project, error) {
-	q := db.db.WithContext(ctx).Order("project_id")
-
-	var ps []scheme.Project
-	if err := q.Find(&ps).Error; err != nil {
-		return nil, err
-	}
-	return ps, nil
-}
-
-func (db *gormdb) ListProjects(ctx context.Context) ([]sdktypes.Project, error) {
-	ps, err := db.listProjects(ctx)
-	if ps == nil || err != nil {
-		return nil, translateError(err)
-	}
-	return kittehs.TransformError(ps, scheme.ParseProject)
 }
 
 func (db *gormdb) GetProjectResources(ctx context.Context, pid sdktypes.ProjectID) (map[string][]byte, error) {

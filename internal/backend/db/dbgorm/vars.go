@@ -2,6 +2,7 @@ package dbgorm
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"gorm.io/gorm"
@@ -13,11 +14,109 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-func (db *gormdb) setVars(ctx context.Context, vars []scheme.Var) error {
-	// NOTE: should be transactional
-	return db.db.WithContext(ctx).Clauses(clause.OnConflict{UpdateAll: true}).Create(&vars).Error
+func (gdb *gormdb) withUserVars(ctx context.Context) *gorm.DB {
+	return gdb.withUserEntity(ctx, "var")
 }
 
+// FIXME:
+// - env vars are user scopes for sure. Connection vars may have no user in ctx? Need to check more use-cases for connection vars
+
+func (gdb *gormdb) setVar(ctx context.Context, vr *scheme.Var) error {
+	vr.VarID = vr.ScopeID // just ensure
+
+	user, err := userFromContext(ctx)
+	if err != nil {
+		return err
+	}
+	return gdb.transaction(ctx, func(tx *tx) error {
+		// connection and env are soft-deleted. emulate foreign keys check
+		var ownership scheme.Ownership
+		db := tx.db.WithContext(ctx)
+
+		// fetch user_id and entity_type for provided scope_id
+		if err := db.Model(&scheme.Ownership{}).
+			Select("user_id", "entity_type").
+			Where("entity_id = ? AND entity_type IN ('Connection', 'Env')", vr.ScopeID).
+			First(&ownership).Error; err != nil {
+			// if no records were found then fail with foreign keys validation (#1), since there should be one
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return gorm.ErrForeignKeyViolated
+			}
+		}
+
+		if user.UserID != ownership.UserID { // check user ownership
+			return sdkerrors.ErrUnauthorized
+		}
+
+		var tableName, idField string
+		var deletedAt gorm.DeletedAt
+		switch ownership.EntityType {
+		case "Connection":
+			tableName, idField = "connections", "connection_id"
+		case "Env":
+			tableName, idField = "envs", "env_id"
+		}
+		query := fmt.Sprintf("SELECT deleted_at FROM %s where %s = ? LIMIT 1", tableName, idField)
+		if err := db.Raw(query, vr.ScopeID).Scan(&deletedAt).Error; err != nil {
+			return err
+		}
+		if deletedAt.Valid { // entity (either connection or env) was deleted
+			return gorm.ErrForeignKeyViolated // emulate foreign keys check (#2)
+		}
+
+		return db.Clauses(clause.OnConflict{UpdateAll: true}).Create(&vr).Error
+	})
+}
+
+func varsCommonQuery(db *gorm.DB, scopeID sdktypes.UUID, names []string) *gorm.DB {
+	db = db.Where("var_id = ?", scopeID)
+
+	if len(names) > 0 {
+		db = db.Where("name IN (?)", names)
+	}
+	return db
+}
+
+func (gdb *gormdb) deleteVars(ctx context.Context, scopeID sdktypes.UUID, names ...string) error {
+	return gdb.transaction(ctx, func(tx *tx) error {
+		if err := tx.isCtxUserEntity(ctx, scopeID); err != nil {
+			return err
+		}
+		return varsCommonQuery(tx.db, scopeID, names).Delete(&scheme.Var{}).Error
+	})
+}
+
+func (gdb *gormdb) listVars(ctx context.Context, scopeID sdktypes.UUID, names ...string) ([]scheme.Var, error) {
+	db := varsCommonQuery(gdb.withUserVars(ctx), scopeID, names)
+
+	var vars []scheme.Var
+	// will skip not user owned vars
+	if err := db.Find(&vars).Error; err != nil {
+		return nil, err
+	}
+	for i := range vars {
+		vars[i].ScopeID = vars[i].VarID
+	}
+	return vars, nil
+}
+
+func (gdb *gormdb) findConnectionIDsByVar(ctx context.Context, integrationID sdktypes.UUID, name string, v string) ([]scheme.Var, error) {
+	db := gdb.withUserVars(ctx).Where("integration_id = ? AND name = ?", integrationID, name)
+	if v != "" {
+		db = db.Where("value = ? AND is_secret is false", v)
+	}
+
+	var vars []scheme.Var
+	if err := db.Distinct("var_id").Find(&vars).Error; err != nil {
+		return nil, err
+	}
+	for i := range vars {
+		vars[i].ScopeID = vars[i].VarID
+	}
+	return vars, nil
+}
+
+// FIXME: do we need to handle slice here? it seems to be unused anywhere and (meanwhile) compicates uniformal handling
 func (db *gormdb) SetVars(ctx context.Context, vars []sdktypes.Var) error {
 	if i, err := kittehs.ValidateList(vars, func(_ int, v sdktypes.Var) error {
 		return v.Strict()
@@ -33,63 +132,45 @@ func (db *gormdb) SetVars(ctx context.Context, vars []sdktypes.Var) error {
 		return cid.IsValid()
 	})
 
-	return db.transaction(ctx, func(tx *tx) error {
-		cs, err := tx.GetConnections(ctx, cids)
-		if err != nil {
-			return err
-		}
+	// NOTE: should be transactional  ---v
+	cs, err := db.GetConnections(ctx, cids)
+	if err != nil {
+		return err
+	}
 
-		iids := kittehs.ListToMap(cs, func(c sdktypes.Connection) (sdktypes.ConnectionID, sdktypes.IntegrationID) {
-			return c.ID(), c.IntegrationID()
-		})
-
-		dbvs := make([]scheme.Var, len(vars))
-
-		for i, v := range vars {
-			var iid sdktypes.IntegrationID
-
-			if cid := v.ScopeID().ToConnectionID(); cid.IsValid() {
-				if iid = iids[cid]; !iid.IsValid() {
-					return sdkerrors.NewInvalidArgumentError("integration id %v not found", iid)
-				}
-			}
-
-			dbvs[i] = scheme.Var{
-				ScopeID:       v.ScopeID().AsID().UUIDValue(),
-				Name:          v.Name().String(),
-				Value:         v.Value(),
-				IsSecret:      v.IsSecret(),
-				IntegrationID: iid.UUIDValue(),
-			}
-		}
-
-		return translateError(tx.setVars(ctx, dbvs))
+	iids := kittehs.ListToMap(cs, func(c sdktypes.Connection) (sdktypes.ConnectionID, sdktypes.IntegrationID) {
+		return c.ID(), c.IntegrationID()
 	})
+
+	for _, v := range vars {
+		var iid sdktypes.IntegrationID
+
+		if cid := v.ScopeID().ToConnectionID(); cid.IsValid() {
+			if iid = iids[cid]; !iid.IsValid() {
+				return sdkerrors.NewInvalidArgumentError("integration id %v not found", iid)
+			}
+		}
+
+		vr := scheme.Var{
+			ScopeID:       v.ScopeID().AsID().UUIDValue(), // scopeID is varID in DB
+			Name:          v.Name().String(),
+			Value:         v.Value(),
+			IsSecret:      v.IsSecret(),
+			IntegrationID: iid.UUIDValue(),
+		}
+		if err := db.setVar(ctx, &vr); err != nil {
+			return translateError(err)
+		}
+	}
+	return nil
 }
 
-func (db *gormdb) varsCommonQuery(ctx context.Context, scopeID sdktypes.UUID, names []string) *gorm.DB {
-	gormDB := db.db.WithContext(ctx)
-	query := gormDB.Where("scope_id = ?", scopeID)
-
-	if len(names) > 0 {
-		query = query.Where("name IN (?)", names)
-	}
-	return query
-}
-
-func (db *gormdb) getVars(ctx context.Context, scopeID sdktypes.UUID, names ...string) ([]scheme.Var, error) {
-	query := db.varsCommonQuery(ctx, scopeID, names)
-
-	var vars []scheme.Var
-
-	if err := query.Find(&vars).Error; err != nil {
-		return nil, err
-	}
-	return vars, nil
+func (db *gormdb) DeleteVars(ctx context.Context, sid sdktypes.VarScopeID, names []sdktypes.Symbol) error {
+	return translateError(db.deleteVars(ctx, sid.UUIDValue(), kittehs.TransformToStrings(names)...))
 }
 
 func (db *gormdb) GetVars(ctx context.Context, sid sdktypes.VarScopeID, names []sdktypes.Symbol) ([]sdktypes.Var, error) {
-	dbvs, err := db.getVars(ctx, sid.UUIDValue(), kittehs.TransformToStrings(names)...)
+	dbvs, err := db.listVars(ctx, sid.UUIDValue(), kittehs.TransformToStrings(names)...)
 	if err != nil {
 		return nil, translateError(err)
 	}
@@ -107,28 +188,13 @@ func (db *gormdb) GetVars(ctx context.Context, sid sdktypes.VarScopeID, names []
 	)
 }
 
-func (db *gormdb) deleteVars(ctx context.Context, scopeID sdktypes.UUID, names ...string) error {
-	query := db.varsCommonQuery(ctx, scopeID, names)
-	return query.Delete(&scheme.Var{}).Error
-}
-
-func (db *gormdb) DeleteVars(ctx context.Context, sid sdktypes.VarScopeID, names []sdktypes.Symbol) error {
-	return translateError(db.deleteVars(ctx, sid.UUIDValue(), kittehs.TransformToStrings(names)...))
-}
-
 func (db *gormdb) FindConnectionIDsByVar(ctx context.Context, iid sdktypes.IntegrationID, n sdktypes.Symbol, v string) ([]sdktypes.ConnectionID, error) {
 	if !iid.IsValid() {
 		return nil, sdkerrors.NewInvalidArgumentError("integration id is invalid")
 	}
 
-	q := db.db.Where("integration_id = ? AND name = ?", iid.UUIDValue(), n.String())
-
-	if v != "" {
-		q = q.Where("value = ? AND is_secret is false", v)
-	}
-
-	var vs []scheme.Var
-	if err := q.Distinct("scope_id").Find(&vs).Error; err != nil {
+	vs, err := db.findConnectionIDsByVar(ctx, iid.UUIDValue(), n.String(), v)
+	if err != nil {
 		return nil, translateError(err)
 	}
 

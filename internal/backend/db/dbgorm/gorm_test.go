@@ -2,12 +2,14 @@ package dbgorm
 
 import (
 	"context"
+	"encoding/binary"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -31,6 +33,7 @@ var (
 	now    time.Time
 	dbType string
 	gormDB gormdb
+	id     int64 // running testID
 )
 
 func TestMain(m *testing.M) {
@@ -94,25 +97,16 @@ type dbFixture struct {
 	db            *gorm.DB
 	gormdb        *gormdb
 	ctx           context.Context
-	sessionID     sdktypes.UUID
-	deploymentID  sdktypes.UUID
-	envID         sdktypes.UUID
-	projectID     sdktypes.UUID
-	triggerID     sdktypes.UUID
 	eventID       sdktypes.UUID
 	eventSequence int
-	// scopeID      sdktypes.UUID
 }
 
-func incByOne(id sdktypes.UUID) sdktypes.UUID {
-	bytes := kittehs.Must1(id.MarshalBinary())
+func newTestID() sdktypes.UUID {
+	bytes := make([]byte, 16)
+	id += 1
+	binary.BigEndian.PutUint64(bytes[8:], uint64(id)) // fill the last 8 bytes, leave the first 8 bytes as zero
 
-	var newVal [16]byte
-	for i := range bytes {
-		newVal[i] = bytes[i] + oneIncSixteenBytes[i]
-	}
-
-	return kittehs.Must1(uuid.FromBytes(newVal[:]))
+	return kittehs.Must1(uuid.FromBytes(bytes[:]))
 }
 
 // TODO: use gormkitteh (and maybe test with sqlite::memory and embedded PG)
@@ -165,8 +159,12 @@ func TeardownDB(gormdb *gormdb, ctx context.Context) error {
 	if isSqlite {
 		foreignKeys(gormdb, false)
 	}
-	if err := gormdb.db.WithContext(ctx).Migrator().DropTable(scheme.Tables...); err != nil {
+	db := gormdb.db.WithContext(ctx).Scopes(NoDebug())
+	if err := db.Migrator().DropTable(scheme.Tables...); err != nil {
 		return fmt.Errorf("droptable: %w", err)
+	}
+	if err := db.Migrator().DropTable("goose_db_version"); err != nil {
+		return fmt.Errorf("failed to drop migraiton table (goose_db_version) : %w", err)
 	}
 	if isSqlite {
 		foreignKeys(gormdb, true)
@@ -183,7 +181,9 @@ func CleanupDB(gormdb *gormdb, ctx context.Context) error {
 		modelType := reflect.TypeOf(model)
 		model := reflect.New(modelType).Interface()
 		if err := db.Delete(model).Error; err != nil {
-			return fmt.Errorf("cleanup data for table %s: %w", modelType.Name(), err)
+			if !strings.Contains(err.Error(), "no such table") {
+				return fmt.Errorf("cleanup data for table %s: %w", modelType.Name(), err)
+			}
 		}
 	}
 
@@ -196,7 +196,8 @@ func newDBFixture() *dbFixture {
 	if err := CleanupDB(&gormDB, ctx); err != nil { // ensure migration/schemas
 		log.Fatalf("Failed to cleanup gormdb: %v", err)
 	}
-	return &dbFixture{db: gormDB.db, gormdb: &gormDB, ctx: ctx}
+	f := dbFixture{db: gormDB.db, gormdb: &gormDB, ctx: ctx}
+	return &f
 }
 
 func (f *dbFixture) WithForeignKeysDisabled(fn func()) {
@@ -206,10 +207,20 @@ func (f *dbFixture) WithForeignKeysDisabled(fn func()) {
 }
 
 // enable SQL logging
-// func (f *dbFixture) debug() {
-// 	f.db = f.db.Debug()
-// 	f.gormdb.db = f.db
-// }
+func (f *dbFixture) WithDebug() *dbFixture {
+	f.db = f.db.Debug()
+	f.gormdb.db = f.db
+	return f
+}
+
+func NoDebug() func(*gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		config := db.Config
+		config.Logger = logger.Default.LogMode(logger.Warn)
+		db.Config = config
+		return db
+	}
+}
 
 func findAndAssertCount[T any](t *testing.T, f *dbFixture, expected int, where string, args ...any) []T {
 	var objs []T
@@ -252,124 +263,178 @@ func assertDeleted[T any](t *testing.T, f *dbFixture, m T) {
 }
 
 var (
-	// testSessionID    = "ses_00000000000000000000000001"
-	testBuildID = kittehs.Must1(uuid.FromBytes([]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}))
-	// testDeploymentID = "dep_00000000000000000000000001"
-	// testEventID      = "evt_00000000000000000000000001"
-	testEnvID   = kittehs.Must1(uuid.FromBytes([]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}))
-	testScopeID = kittehs.Must1(uuid.FromBytes([]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}))
-	// testProjectID = "prj_00000000000000000000000001"
-	// testTriggerID     = "trg_00000000000000000000000001"
-	testConnectionID   = kittehs.Must1(uuid.FromBytes([]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}))
-	testIntegrationID  = kittehs.Must1(uuid.FromBytes([]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}))
-	testSignalID       = "00000000000000000000000001"
-	oneIncSixteenBytes = []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}
+	testDummyID  = kittehs.Must1(uuid.FromBytes([]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}))
+	testSignalID = "00000000000000000000000001"
 )
 
-func (f *dbFixture) newSession(st sdktypes.SessionStateType) scheme.Session {
-	f.sessionID = incByOne(f.sessionID)
-
-	return scheme.Session{
-		SessionID:        f.sessionID,
-		CurrentStateType: int(st.ToProto()),
-		Inputs:           datatypes.JSON(`{"key": "value"}`),
-		CreatedAt:        now,
-		UpdatedAt:        now,
+func (f *dbFixture) newSession(args ...any) scheme.Session {
+	s := scheme.Session{
+		SessionID: newTestID(),
+		// CurrentStateType: int(st.ToProto()),
+		Inputs:    datatypes.JSON(`{"key": "value"}`),
+		CreatedAt: now,
+		UpdatedAt: now,
 	}
+	for _, a := range args {
+		switch a := a.(type) {
+		case sdktypes.SessionStateType:
+			s.CurrentStateType = int(a.ToProto())
+		case scheme.Build:
+			s.BuildID = &a.BuildID
+		case scheme.Deployment:
+			s.DeploymentID = &a.DeploymentID
+		case scheme.Env:
+			s.EnvID = &a.EnvID
+		case scheme.Event:
+			s.EventID = &a.EventID
+		}
+	}
+	return s
 }
 
 func (f *dbFixture) newSessionLogRecord() scheme.SessionLogRecord {
 	return scheme.SessionLogRecord{
-		SessionID: f.sessionID,
+		SessionID: testDummyID,
 	}
 }
 
-func (f *dbFixture) newBuild() scheme.Build {
-	return scheme.Build{
-		BuildID:   testBuildID,
+func (f *dbFixture) newBuild(args ...any) scheme.Build {
+	b := scheme.Build{
+		BuildID:   newTestID(),
 		Data:      []byte{},
 		CreatedAt: now,
 	}
+	for _, a := range args {
+		switch a := a.(type) {
+		case scheme.Project:
+			b.ProjectID = &a.ProjectID
+		}
+	}
+	return b
 }
 
-func (f *dbFixture) newDeployment() scheme.Deployment {
-	f.deploymentID = incByOne(f.deploymentID)
-
-	return scheme.Deployment{
-		DeploymentID: f.deploymentID,
+func (f *dbFixture) newDeployment(args ...any) scheme.Deployment {
+	d := scheme.Deployment{
+		DeploymentID: newTestID(),
 		State:        int32(sdktypes.DeploymentStateUnspecified.ToProto()),
 		CreatedAt:    now,
 		UpdatedAt:    now,
 	}
+	for _, a := range args {
+		switch a := a.(type) {
+		case scheme.Build:
+			d.BuildID = a.BuildID
+		case scheme.Env:
+			d.EnvID = &a.EnvID
+		}
+	}
+	return d
 }
 
 func (f *dbFixture) newProject() scheme.Project {
-	f.projectID = incByOne(f.projectID)
-	projectID := fmt.Sprintf("prj_%026d", f.projectID)
-
 	return scheme.Project{
-		ProjectID: f.projectID,
-		Name:      projectID, // must be unique
+		ProjectID: newTestID(),
+		Name:      fmt.Sprintf("prj_%010d", id),
 		Resources: []byte{},
 	}
 }
 
-func (f *dbFixture) newEnv() scheme.Env {
-	f.envID = incByOne(f.envID)
-	envID := fmt.Sprintf("env_%026d", f.envID)
-
-	return scheme.Env{
-		EnvID:        f.envID,
-		MembershipID: envID, // must be unique
+func (f *dbFixture) newEnv(args ...any) scheme.Env {
+	env := scheme.Env{
+		EnvID:        newTestID(),
+		MembershipID: fmt.Sprintf("env_%010d", id),
 	}
+	for _, a := range args {
+		switch a := a.(type) {
+		case scheme.Project:
+			env.ProjectID = a.ProjectID
+		case sdktypes.UUID:
+			env.ProjectID = a
+		}
+	}
+	return env
 }
 
-func (f *dbFixture) newVar(name string, val string) scheme.Var {
-	// f.sessionID = incByOne(f.scopeID)
-	return scheme.Var{
-		ScopeID: testScopeID,
+func (f *dbFixture) newVar(name string, val string, args ...any) scheme.Var {
+	v := scheme.Var{
+		ScopeID: testDummyID,
 		Name:    name,
 		Value:   val,
 	}
+	for _, a := range args {
+		switch a := a.(type) {
+		case scheme.Connection:
+			v.ScopeID = a.ConnectionID
+		case scheme.Env:
+			v.ScopeID = a.EnvID
+		case sdktypes.UUID:
+			v.ScopeID = a
+		}
+	}
+	v.VarID = v.ScopeID
+	return v
 }
 
-func (f *dbFixture) newTrigger() scheme.Trigger {
-	f.triggerID = incByOne(f.triggerID)
-
-	return scheme.Trigger{
-		TriggerID:    f.triggerID,
-		EnvID:        testEnvID,
-		ConnectionID: testConnectionID,
+func (f *dbFixture) newTrigger(args ...any) scheme.Trigger {
+	t := scheme.Trigger{
+		TriggerID:  newTestID(),
+		UniqueName: uuid.New().String(), // just pass DB trigger unique name validation for testing
 	}
+	for _, a := range args {
+		switch a := a.(type) {
+		case scheme.Project:
+			t.ProjectID = a.ProjectID
+		case scheme.Connection:
+			t.ConnectionID = a.ConnectionID
+		case scheme.Env:
+			t.EnvID = a.EnvID
+		}
+	}
+	return t
 }
 
-func (f *dbFixture) newConnection() scheme.Connection {
-	return scheme.Connection{
-		ConnectionID: testConnectionID,
+func (f *dbFixture) newConnection(args ...any) scheme.Connection {
+	c := scheme.Connection{
+		ConnectionID: newTestID(),
 	}
+	for _, a := range args {
+		switch a := a.(type) {
+		case scheme.Project:
+			c.ProjectID = &a.ProjectID
+		case scheme.Integration:
+			c.IntegrationID = &a.IntegrationID
+		}
+	}
+	return c
 }
 
 func (f *dbFixture) newIntegration() scheme.Integration {
 	return scheme.Integration{
-		IntegrationID: testIntegrationID,
+		IntegrationID: newTestID(),
 	}
 }
 
-func (f *dbFixture) newEvent() scheme.Event {
-	f.eventID = incByOne(f.eventID)
+func (f *dbFixture) newEvent(args ...any) scheme.Event {
 	f.eventSequence = f.eventSequence + 1
-	return scheme.Event{
-		EventID:   f.eventID,
+	e := scheme.Event{
+		EventID:   newTestID(),
 		CreatedAt: now,
 		Seq:       uint64(f.eventSequence),
 		Data:      kittehs.Must1(json.Marshal(struct{}{})),
 		Memo:      kittehs.Must1(json.Marshal(struct{}{})),
 	}
+	for _, a := range args {
+		switch a := a.(type) {
+		case scheme.Connection:
+			e.ConnectionID = &a.ConnectionID
+		}
+	}
+	return e
 }
 
 func (f *dbFixture) newEventRecord() scheme.EventRecord {
 	return scheme.EventRecord{
-		EventID:   f.eventID,
+		EventID:   testDummyID,
 		CreatedAt: now,
 	}
 }

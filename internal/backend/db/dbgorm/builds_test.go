@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"gorm.io/gorm"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -46,7 +47,24 @@ func TestDeleteBuild(t *testing.T) {
 	assertBuildDeleted(t, f, b.BuildID)
 }
 
-func TestListBuild(t *testing.T) {
+func TestGetBuild(t *testing.T) {
+	f := preBuildTest(t)
+
+	b := f.newBuild()
+	f.saveBuildsAndAssert(t, b)
+
+	// test getBuild
+	b2, err := f.gormdb.getBuild(f.ctx, b.BuildID)
+	assert.NoError(t, err)
+	assert.Equal(t, b, *b2)
+
+	// test getBuild after delete
+	assert.NoError(t, f.gormdb.deleteBuild(f.ctx, b.BuildID))
+	_, err = f.gormdb.getBuild(f.ctx, b.BuildID)
+	assert.ErrorIs(t, err, gorm.ErrRecordNotFound)
+}
+
+func TestListBuilds(t *testing.T) {
 	f := preBuildTest(t)
 
 	// no builds
@@ -62,7 +80,7 @@ func TestListBuild(t *testing.T) {
 	// check listBuilds API
 	builds, err = f.gormdb.listBuilds(f.ctx, flt)
 	assert.NoError(t, err)
-	assert.Equal(t, 1, len(builds))
+	assert.Len(t, builds, 1)
 	assert.Equal(t, b, builds[0])
 
 	// delete build
@@ -71,5 +89,5 @@ func TestListBuild(t *testing.T) {
 	// check listBuilds API - ensure no builds are found
 	builds, err = f.gormdb.listBuilds(f.ctx, flt)
 	assert.NoError(t, err)
-	assert.Equal(t, 0, len(builds))
+	assert.Len(t, builds, 0)
 }
