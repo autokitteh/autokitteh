@@ -99,7 +99,7 @@ func TestCreateTriggerForeignKeys(t *testing.T) {
 	// change connection to builtin scheduler connection (now user owned) - should be allowed
 	t2.ConnectionID = cronCon.ConnectionID
 	f.createTriggersAndAssert(t, t2)
-	assert.NoError(t, f.gormdb.isUserEntity(f.ctx, t2.TriggerID))
+	assert.NoError(t, f.gormdb.isCtxUserEntity(f.ctx, t2.TriggerID))
 
 	// use buildID (owned by user to pass user ownership test) to fake unexisting IDs
 	t3 := f.newTrigger(p, c, e)

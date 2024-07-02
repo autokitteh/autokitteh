@@ -162,7 +162,7 @@ func (gdb *gormdb) isUserEntity1(user *scheme.User, ids ...sdktypes.UUID) error 
 	return nil
 }
 
-func (gdb *gormdb) isUserEntity(ctx context.Context, ids ...sdktypes.UUID) error {
+func (gdb *gormdb) isCtxUserEntity(ctx context.Context, ids ...sdktypes.UUID) error {
 	user, _ := userFromContext(ctx) // REVIEW: OK to ignore error
 	return gdb.isUserEntity1(user, ids...)
 }

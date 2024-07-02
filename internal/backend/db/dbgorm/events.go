@@ -23,7 +23,7 @@ func (gdb *gormdb) saveEvent(ctx context.Context, event *scheme.Event) error {
 
 func (gdb *gormdb) deleteEvent(ctx context.Context, eventID sdktypes.UUID) error {
 	return gdb.transaction(ctx, func(tx *tx) error {
-		if err := tx.isUserEntity(ctx, eventID); err != nil {
+		if err := tx.isCtxUserEntity(ctx, eventID); err != nil {
 			return err
 		}
 		return tx.db.Delete(&scheme.Event{}, "event_id = ?", eventID).Error // NOTE: eventID isn't a primary key

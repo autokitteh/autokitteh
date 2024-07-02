@@ -40,7 +40,7 @@ func (gdb *gormdb) createProject(ctx context.Context, project *scheme.Project) e
 
 func (gdb *gormdb) deleteProject(ctx context.Context, projectID sdktypes.UUID) error {
 	return gdb.transaction(ctx, func(tx *tx) error {
-		if err := tx.isUserEntity(ctx, projectID); err != nil {
+		if err := tx.isCtxUserEntity(ctx, projectID); err != nil {
 			return err
 		}
 		return tx.deleteProjectAndDependents(ctx, projectID)
@@ -107,7 +107,7 @@ func (gdb *gormdb) deleteProjectAndDependents(ctx context.Context, projectID sdk
 func (gdb *gormdb) updateProject(ctx context.Context, p *scheme.Project) error {
 	// REVIEW: security? any specific fields to allow? resources to disallow?
 	return gdb.transaction(ctx, func(tx *tx) error {
-		if err := tx.isUserEntity(ctx, p.ProjectID); err != nil {
+		if err := tx.isCtxUserEntity(ctx, p.ProjectID); err != nil {
 			return err
 		}
 		return tx.db.Updates(p).Error

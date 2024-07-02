@@ -41,7 +41,7 @@ func (gdb *gormdb) createSession(ctx context.Context, session *scheme.Session) e
 
 func (gdb *gormdb) deleteSession(ctx context.Context, sessionID sdktypes.UUID) error {
 	return gdb.transaction(ctx, func(tx *tx) error {
-		if err := tx.isUserEntity(ctx, sessionID); err != nil {
+		if err := tx.isCtxUserEntity(ctx, sessionID); err != nil {
 			return err
 		}
 		return tx.db.Delete(&scheme.Session{SessionID: sessionID}).Error
@@ -56,7 +56,7 @@ func (gdb *gormdb) updateSessionState(ctx context.Context, sessionID sdktypes.UU
 	}
 
 	return gdb.transaction(ctx, func(tx *tx) error {
-		if err := tx.isUserEntity(ctx, sessionID); err != nil {
+		if err := tx.isCtxUserEntity(ctx, sessionID); err != nil {
 			return err
 		}
 		if err := tx.db.Model(&scheme.Session{SessionID: sessionID}).Updates(sessionStateUpdate).Error; err != nil {
@@ -125,7 +125,7 @@ func (gdb *gormdb) listSessions(ctx context.Context, f sdkservices.ListSessionsF
 // --- log records ---
 func (gdb *gormdb) addSessionLogRecord(ctx context.Context, logr *scheme.SessionLogRecord) error {
 	return gdb.transaction(ctx, func(tx *tx) error {
-		if err := tx.isUserEntity(ctx, logr.SessionID); err != nil {
+		if err := tx.isCtxUserEntity(ctx, logr.SessionID); err != nil {
 			return gormErrNotFoundToForeignKey(err) // session should be present
 		}
 		return tx.db.Create(logr).Error
@@ -135,7 +135,7 @@ func (gdb *gormdb) addSessionLogRecord(ctx context.Context, logr *scheme.Session
 func (gdb *gormdb) getSessionLogRecords(ctx context.Context, sessionID sdktypes.UUID) ([]scheme.SessionLogRecord, error) {
 	var logs []scheme.SessionLogRecord
 	if err := gdb.transaction(ctx, func(tx *tx) error {
-		if err := tx.isUserEntity(ctx, sessionID); err != nil {
+		if err := tx.isCtxUserEntity(ctx, sessionID); err != nil {
 			return err
 		}
 		return tx.db.Where("session_id = ?", sessionID).Find(&logs).Error
@@ -164,7 +164,7 @@ func (gdb *gormdb) createSessionCall(ctx context.Context, sessionID sdktypes.UUI
 	}
 
 	return gdb.transaction(ctx, func(tx *tx) error {
-		if err := tx.isUserEntity(ctx, sessionID); err != nil {
+		if err := tx.isCtxUserEntity(ctx, sessionID); err != nil {
 			return err
 		}
 		if err := tx.db.Create(&callSpec).Error; err != nil {
@@ -177,7 +177,7 @@ func (gdb *gormdb) createSessionCall(ctx context.Context, sessionID sdktypes.UUI
 func (gdb *gormdb) getSessionCallSpec(ctx context.Context, sessionID sdktypes.UUID, seq uint32) (*scheme.SessionCallSpec, error) {
 	var r scheme.SessionCallSpec
 	if err := gdb.transaction(ctx, func(tx *tx) error {
-		if err := tx.isUserEntity(ctx, sessionID); err != nil {
+		if err := tx.isCtxUserEntity(ctx, sessionID); err != nil {
 			return err
 		}
 		return tx.db.Where("session_id = ?", sessionID).Where("seq = ?", seq).First(&r).Error
@@ -199,7 +199,7 @@ func countCallAttemps(db *gorm.DB, sessionID sdktypes.UUID, seq uint32) (uint32,
 
 func (gdb *gormdb) startSessionCallAttempt(ctx context.Context, sessionID sdktypes.UUID, seq uint32) (attempt uint32, err error) {
 	err = gdb.transaction(ctx, func(tx *tx) error {
-		if err := tx.isUserEntity(ctx, sessionID); err != nil {
+		if err := tx.isCtxUserEntity(ctx, sessionID); err != nil {
 			return err
 		}
 		if attempt, err = countCallAttemps(tx.db, sessionID, seq); err != nil {
@@ -247,7 +247,7 @@ func (gdb *gormdb) completeSessionCallAttempt(ctx context.Context, sessionID sdk
 	r := scheme.SessionCallAttempt{Complete: json}
 
 	return gdb.transaction(ctx, func(tx *tx) error {
-		if err := tx.isUserEntity(ctx, sessionID); err != nil {
+		if err := tx.isCtxUserEntity(ctx, sessionID); err != nil {
 			return err
 		}
 
@@ -265,7 +265,7 @@ func (gdb *gormdb) getSessionCallAttemptResult(ctx context.Context, sessionID sd
 	var r scheme.SessionCallAttempt
 
 	if err := gdb.transaction(ctx, func(tx *tx) error {
-		if err := tx.isUserEntity(ctx, sessionID); err != nil {
+		if err := tx.isCtxUserEntity(ctx, sessionID); err != nil {
 			return err
 		}
 

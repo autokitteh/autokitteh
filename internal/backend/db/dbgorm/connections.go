@@ -23,7 +23,7 @@ func (gdb *gormdb) createConnection(ctx context.Context, conn *scheme.Connection
 
 func (gdb *gormdb) deleteConnection(ctx context.Context, id sdktypes.UUID) error {
 	return gdb.transaction(ctx, func(tx *tx) error {
-		if err := tx.isUserEntity(ctx, id); err != nil {
+		if err := tx.isCtxUserEntity(ctx, id); err != nil {
 			return err
 		}
 		return tx.db.Delete(&scheme.Connection{ConnectionID: id}).Error
@@ -32,7 +32,7 @@ func (gdb *gormdb) deleteConnection(ctx context.Context, id sdktypes.UUID) error
 
 func (gdb *gormdb) updateConnection(ctx context.Context, id sdktypes.UUID, data map[string]any) error {
 	return gdb.transaction(ctx, func(tx *tx) error {
-		if err := tx.isUserEntity(ctx, id); err != nil {
+		if err := tx.isCtxUserEntity(ctx, id); err != nil {
 			return err
 		}
 		return tx.db.Model(&scheme.Connection{ConnectionID: id}).Updates(data).Error
