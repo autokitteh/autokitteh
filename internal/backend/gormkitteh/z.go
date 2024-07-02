@@ -15,7 +15,7 @@ func OpenZ(z *zap.Logger, cfg *Config, f func(*gorm.Config)) (*gorm.DB, error) {
 	return Open(cfg, func(c *gorm.Config) {
 		l := &zapgorm2.Logger{
 			ZapLogger:                 z,
-			LogLevel:                  logger.Info,
+			LogLevel:                  logger.Warn,
 			SlowThreshold:             cfg.SlowQueryThreshold,
 			IgnoreRecordNotFoundError: true,
 		}

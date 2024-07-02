@@ -78,9 +78,6 @@ func (db *gormdb) GetSessionLog(ctx context.Context, filter sdkservices.ListSess
 	if len(rs) == int(filter.PageSize) && len(rs) > 0 {
 		nextPageToken = fmt.Sprintf("%d", rs[len(rs)-1].Seq)
 	}
-	fmt.Println("Next Page Token", nextPageToken)
-	fmt.Println("RS len", len(rs))
-	fmt.Println("Page Size", filter.PageSize)
 
 	return sdkservices.GetLogResults{Log: log, PaginationResult: sdktypes.PaginationResult{TotalCount: n, NextPageToken: nextPageToken}}, err
 }
@@ -146,7 +143,7 @@ func addSessionLogRecordDB(tx *gorm.DB, logr *scheme.SessionLogRecord) error {
 	data := map[string]interface{}{}
 	data["SessionID"] = logr.SessionID
 	data["Data"] = logr.Data
-	data["Seq"] = clause.Expr{SQL: "(select COALESCE(MAX(seq), 0)+1 from session_log_records where session_id = ?)", Vars: []interface{}{logr.SessionID}} // fmt.Sprintf("select COALESCE(MAX(seq), 0) from session_log_records where session_id = '%s'", logr.SessionID)
+	data["Seq"] = clause.Expr{SQL: "(select COALESCE(MAX(seq), 0)+1 from session_log_records where session_id = ?)", Vars: []interface{}{logr.SessionID}}
 	return tx.Model(&scheme.SessionLogRecord{}).Create(data).Error
 }
 
