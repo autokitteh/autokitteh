@@ -191,18 +191,3 @@ func (gdb *gormdb) withUserEntity(ctx context.Context, entity string) *gorm.DB {
 	db := gdb.db.WithContext(ctx)
 	return joinUserEntity(db, entity, user.UserID)
 }
-
-// FIXME:
-// 1. ID
-// - maybe we could add google/github users earlier? on login?
-// - compute userID on user creation and add to proto?
-// - could we store emails? (data protection? CCPA/GDPR?)
-// - maybe we could rely on providers IDs? we have such for google/github and need one from descope
-// - add uniq index for users name+email+provider? or userID is enough which is 1-to-1 to all those 3
-// 2. Delete
-// - need to check ownership foreign keys for fully deleted objects
-// - cleaning ownership table? deleting objects
-// 3.
-//   if we are in production do not allow save events via cmd?
-// 4. tests
-// - list/delete
