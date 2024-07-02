@@ -1,4 +1,4 @@
-h1:MQ6W8EfeOucSjPnshOPbkhgj0CLID3pi5z9CJBsdQAk=
+h1:98o7eRyUcOCRRqR98Zmbg9K6Kibhk+q2o2htgQ2z13Q=
 20240507104234_baseline.sql h1:u+/m2oVxbl8ocxuOGDK5ZvK1FSiFFDWpyDIY9lFOXv4=
 20240508111542_secret-string-value.sql h1:LMcOKQmbE418Nmj2HwOaRv6d2X8UQnblUh79EwLsamU=
 20240515105256_trigger_opional_connection.sql h1:Yf5xwhI8IpZXfrOvbi7wwWcmggl2f5Z2shOulpxwT0M=
@@ -11,3 +11,4 @@ h1:MQ6W8EfeOucSjPnshOPbkhgj0CLID3pi5z9CJBsdQAk=
 20240530091858_non-optional-project-in-env.sql h1:t245lt4ccB3U/8v8xUGYxydj+JCXpewxs7Jvm96ZRl0=
 20240626133139_build_add_optional_project_id.sql h1:lF0doA2vYTvdVQmNuxSmakVkig3u9nZuMPePL6yoDnI=
 20240627150248_deployment_mandatory_build_id.sql h1:VF9dsnD7fyZazbhSiVzTHzkUBhBXkJOM2+TCgLzwZmE=
+20240702080313_ownership.sql h1:P7RuTnUj1q/4Ur8ikOYOz+KnsSWdUgf6S/0qXTaJOww=
