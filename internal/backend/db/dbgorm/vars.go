@@ -79,7 +79,7 @@ func varsCommonQuery(db *gorm.DB, scopeID sdktypes.UUID, names []string) *gorm.D
 
 func (gdb *gormdb) deleteVars(ctx context.Context, scopeID sdktypes.UUID, names ...string) error {
 	return gdb.transaction(ctx, func(tx *tx) error {
-		if err := tx.isUserEntity(ctx, scopeID); err != nil {
+		if err := tx.isCtxUserEntity(ctx, scopeID); err != nil {
 			return err
 		}
 		return varsCommonQuery(tx.db, scopeID, names).Delete(&scheme.Var{}).Error

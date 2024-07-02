@@ -12,7 +12,7 @@ import (
 
 func (gdb *gormdb) addEventRecord(ctx context.Context, er *scheme.EventRecord) error {
 	return gdb.transaction(ctx, func(tx *tx) error {
-		if err := tx.isUserEntity(ctx, er.EventID); err != nil {
+		if err := tx.isCtxUserEntity(ctx, er.EventID); err != nil {
 			return gormErrNotFoundToForeignKey(err) // should be present
 		}
 		var seq int64
@@ -29,7 +29,7 @@ func (gdb *gormdb) addEventRecord(ctx context.Context, er *scheme.EventRecord) e
 func (gdb *gormdb) listEventRecords(ctx context.Context, eventID sdktypes.UUID) ([]scheme.EventRecord, error) {
 	var ers []scheme.EventRecord
 	if err := gdb.transaction(ctx, func(tx *tx) error { // REVIEW: do we need transaction in those cases?
-		if err := tx.isUserEntity(ctx, eventID); err != nil {
+		if err := tx.isCtxUserEntity(ctx, eventID); err != nil {
 			return err
 		}
 		return tx.db.Model(&scheme.EventRecord{}).

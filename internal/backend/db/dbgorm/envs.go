@@ -39,7 +39,7 @@ func (gdb *gormdb) deleteEnvs(ctx context.Context, ids []sdktypes.UUID) error {
 
 	// REVIEW: should we allow deleting only user envs and skipping the others.
 	// The check below will fail of any of provided envs cannot be deleted
-	if err := gdb.isUserEntity(ctx, ids...); err != nil {
+	if err := gdb.isCtxUserEntity(ctx, ids...); err != nil {
 		return err
 	}
 

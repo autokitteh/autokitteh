@@ -22,7 +22,7 @@ func (gdb *gormdb) saveBuild(ctx context.Context, build *scheme.Build) error {
 
 func (gdb *gormdb) deleteBuild(ctx context.Context, buildID sdktypes.UUID) error {
 	return gdb.transaction(ctx, func(tx *tx) error {
-		if err := tx.isUserEntity(ctx, buildID); err != nil {
+		if err := tx.isCtxUserEntity(ctx, buildID); err != nil {
 			return err
 		}
 		return tx.db.Delete(&scheme.Build{BuildID: buildID}).Error
