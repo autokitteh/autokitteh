@@ -24,6 +24,10 @@ var InvalidUserID UserID
 
 // TODO: ENG-1112
 func NewUserIDFromUserData(provider string, email string, name string) UserID {
+	if provider == "ak" && email == "a@k" && name == "dflt" {
+		return BuiltinDefaultUserID
+	}
+
 	combined := fmt.Sprintf("%s:%s:%s", provider, email, name)
 
 	// Hash the combined string using SHA-256 -> 32 bytes
