@@ -102,7 +102,17 @@ func (s *server) GetLog(ctx context.Context, req *connect.Request[sessionsv1.Get
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	hist, err := s.sessions.GetLog(ctx, sessionID)
+	filter := sdkservices.ListSessionLogRecordsFilter{
+		PaginationRequest: sdktypes.PaginationRequest{
+			Skip:      msg.Skip,
+			PageToken: msg.PageToken,
+			PageSize:  msg.PageSize,
+			Ascending: msg.Ascending,
+		},
+		SessionID: sessionID,
+	}
+
+	hist, err := s.sessions.GetLog(ctx, filter)
 	if err != nil {
 		if errors.Is(err, sdkerrors.ErrNotFound) {
 			return connect.NewResponse(&sessionsv1.GetLogResponse{}), nil
@@ -110,7 +120,7 @@ func (s *server) GetLog(ctx context.Context, req *connect.Request[sessionsv1.Get
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	return connect.NewResponse(&sessionsv1.GetLogResponse{Log: hist.ToProto()}), nil
+	return connect.NewResponse(&sessionsv1.GetLogResponse{Log: hist.Log.ToProto(), Count: hist.TotalCount, NextPageToken: hist.NextPageToken}), nil
 }
 
 func (s *server) List(ctx context.Context, req *connect.Request[sessionsv1.ListRequest]) (*connect.Response[sessionsv1.ListResponse], error) {

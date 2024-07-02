@@ -25,7 +25,7 @@ ak session log ses_00000000000000000000000004 -j
 return code == 0
 output contains "stop_request"
 
-ak session log ses_00000000000000000000000004 --skip -1 --no-timestamps -j
+ak session log ses_00000000000000000000000004 --page-size 1 --order desc --no-timestamps -j
 return code == 0
 output equals_json file last_state.json
 

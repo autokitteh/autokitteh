@@ -9,6 +9,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
 	"go.autokitteh.dev/autokitteh/internal/resolver"
+	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
@@ -65,6 +66,10 @@ func sessionWatch(sid sdktypes.SessionID, endState sdktypes.SessionStateType) ([
 	var state sdktypes.SessionStateType
 	var rs []sdktypes.SessionLogRecord
 
+	f := sdkservices.ListSessionLogRecordsFilter{SessionID: sid}
+	f.PageSize = int32(pageSize)
+	f.Ascending = true
+
 	ctx := context.Background()
 	if watchTimeout > 0 {
 		var cancel func()
@@ -72,8 +77,8 @@ func sessionWatch(sid sdktypes.SessionID, endState sdktypes.SessionStateType) ([
 		defer cancel()
 	}
 
-	for last := 0; !state.IsFinal() && (endState.IsZero() || state != endState); last = len(rs) {
-		if last > 0 {
+	for !state.IsFinal() && (endState.IsZero() || state != endState) {
+		if len(rs) > 0 {
 			time.Sleep(pollInterval)
 		}
 
@@ -87,9 +92,36 @@ func sessionWatch(sid sdktypes.SessionID, endState sdktypes.SessionStateType) ([
 
 		state = s.State()
 
-		if rs, err = sessionLog(currCtx, sid, last); err != nil {
+		f.Skip = int32(len(rs))
+		f.PageToken = ""
+		res, err := sessions().GetLog(currCtx, f)
+		if err != nil {
 			cancel()
 			return nil, err
+		}
+
+		logs := res.Log.Records()
+
+		printLogs(logs)
+
+		f.PageToken = res.NextPageToken
+
+		rs = append(rs, logs...)
+		f.Skip = 0
+
+		for f.PageToken != "" {
+			res, err = sessions().GetLog(currCtx, f)
+			if err != nil {
+				cancel()
+				return nil, err
+			}
+
+			logs := res.Log.Records()
+			printLogs(logs)
+
+			rs = append(rs, logs...)
+
+			f.PageToken = res.NextPageToken
 		}
 
 		cancel()

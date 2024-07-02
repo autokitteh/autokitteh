@@ -114,7 +114,7 @@ func init() {
 	listCmd.Flags().VarP(&stateType, "state-type", "s", strings.Join(possibleStates, "|"))
 	listCmd.Flags().BoolVarP(&withInputs, "with-inputs", "i", false, "include input details")
 	listCmd.Flags().StringVar(&nextPageToken, "next-page-token", "", "provide the returned page token to get next")
-	listCmd.Flags().IntVar(&pageSize, "page-size", 20, "page size")
+	listCmd.Flags().IntVar(&pageSize, "page-size", 50, "page size")
 	listCmd.Flags().IntVar(&skipRows, "skip-rows", 0, "skip rows")
 
 	common.AddFailIfNotFoundFlag(listCmd)

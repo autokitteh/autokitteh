@@ -38,16 +38,48 @@ func (db *gormdb) DeleteSession(ctx context.Context, sessionID sdktypes.SessionI
 	return translateError(db.deleteSession(ctx, sessionID.UUIDValue()))
 }
 
-func (db *gormdb) GetSessionLog(ctx context.Context, sessionID sdktypes.SessionID) (sdktypes.SessionLog, error) {
+func (db *gormdb) GetSessionLog(ctx context.Context, filter sdkservices.ListSessionLogRecordsFilter) (sdkservices.GetLogResults, error) {
 	var rs []scheme.SessionLogRecord
+	q := db.db.WithContext(ctx).
+		Where("session_id = ?", filter.SessionID.UUIDValue())
 
-	if err := db.db.WithContext(ctx).Where("session_id = ?", sessionID.UUIDValue()).Find(&rs).Error; err != nil {
-		return sdktypes.InvalidSessionLog, translateError(err)
+	if filter.PageSize != 0 {
+		q = q.Limit(int(filter.PageSize))
+	}
+
+	if filter.Skip != 0 {
+		q = q.Offset(int(filter.Skip))
+	}
+
+	if filter.PageToken != "" {
+		if filter.Ascending {
+			q = q.Where("seq > ?", filter.PageToken)
+		} else {
+			q = q.Where("seq < ?", filter.PageToken)
+		}
+	}
+
+	var n int64
+	err := q.Model(&scheme.SessionLogRecord{}).Count(&n).Error
+	if err != nil {
+		return sdkservices.GetLogResults{Log: sdktypes.InvalidSessionLog}, err
+	}
+
+	q = q.Order(clause.OrderByColumn{Column: clause.Column{Name: "seq"}, Desc: !filter.Ascending})
+
+	if err := q.Find(&rs).Error; err != nil {
+		return sdkservices.GetLogResults{Log: sdktypes.InvalidSessionLog}, translateError(err)
 	}
 
 	prs, err := kittehs.TransformError(rs, scheme.ParseSessionLogRecord)
+	log := sdktypes.NewSessionLog(prs)
 
-	return sdktypes.NewSessionLog(prs), err
+	nextPageToken := ""
+	if len(rs) == int(filter.PageSize) && len(rs) > 0 {
+		nextPageToken = fmt.Sprintf("%d", rs[len(rs)-1].Seq)
+	}
+
+	return sdkservices.GetLogResults{Log: log, PaginationResult: sdktypes.PaginationResult{TotalCount: n, NextPageToken: nextPageToken}}, err
 }
 
 func (db *gormdb) createSession(ctx context.Context, session *scheme.Session) error {
@@ -93,18 +125,26 @@ func (db *gormdb) UpdateSessionState(ctx context.Context, sessionID sdktypes.Ses
 		}
 
 		sid := sessionID.UUIDValue()
+
 		if res := tx.db.Model(&r).Where("session_id = ?", sid).Updates(r); res.Error != nil {
 			return res.Error
 		} else if res.RowsAffected == 0 {
 			return sdkerrors.ErrNotFound
 		}
-
 		return addSessionLogRecord(tx.db, sid, sdktypes.NewStateSessionLogRecord(state).WithProcessID(fixtures.ProcessID()))
 	}))
 }
 
 func addSessionLogRecordDB(tx *gorm.DB, logr *scheme.SessionLogRecord) error {
-	return tx.Create(logr).Error
+	// This is a hack in gorm so we can use subquery when creating an object
+	// We want to have a sequence number per session
+	// The insert uses a subquery to get the current max sequence for this session_id
+	// and insert the next value in one query
+	data := map[string]interface{}{}
+	data["SessionID"] = logr.SessionID
+	data["Data"] = logr.Data
+	data["Seq"] = clause.Expr{SQL: "(select COALESCE(MAX(seq), 0)+1 from session_log_records where session_id = ?)", Vars: []interface{}{logr.SessionID}}
+	return tx.Model(&scheme.SessionLogRecord{}).Create(data).Error
 }
 
 func addSessionLogRecord(tx *gorm.DB, sessionID sdktypes.UUID, logr sdktypes.SessionLogRecord) error {
