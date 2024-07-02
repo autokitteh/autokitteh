@@ -344,7 +344,7 @@ func ParseTrigger(e Trigger) (sdktypes.Trigger, error) {
 
 type SessionLogRecord struct {
 	SessionID sdktypes.UUID `gorm:"primaryKey:SessionID;type:uuid;not null"`
-	Seq       uint64        `gorm:"primaryKey"`
+	Seq       uint64        `gorm:"primaryKey;not null"`
 	Data      datatypes.JSON
 
 	// enforce foreign keys
