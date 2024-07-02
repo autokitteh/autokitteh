@@ -96,8 +96,8 @@ func prepareOwnershipForEntities(ctx context.Context, entities ...any) (*scheme.
 }
 
 func saveOwnershipForEntities(db *gorm.DB, u *scheme.User, oo ...scheme.Ownership) error {
-	for _, o := range oo { // sanity. ensure same user
-		o.UserID = u.UserID
+	for i := range oo { // sanity. ensure same user
+		oo[i].UserID = u.UserID
 	}
 
 	// NOTE: should be transactional
@@ -129,7 +129,7 @@ func (gdb *gormdb) createEntityWithOwnership(
 	}
 
 	return gdb.transaction(ctx, func(tx *tx) error {
-		if err := tx.isUserEntity1(user, idsToVerifyOwnership...); err != nil {
+		if err := tx.isUserEntity(user, idsToVerifyOwnership...); err != nil {
 			return err
 		}
 		if err := create(tx.db, user); err != nil { // create
@@ -139,7 +139,7 @@ func (gdb *gormdb) createEntityWithOwnership(
 	})
 }
 
-func (gdb *gormdb) isUserEntity1(user *scheme.User, ids ...sdktypes.UUID) error {
+func (gdb *gormdb) isUserEntity(user *scheme.User, ids ...sdktypes.UUID) error {
 	gdb.z.Debug("isUserEntity", zap.Any("entityIDs", ids), zap.Any("user", user))
 	if len(ids) == 0 {
 		return nil
@@ -164,7 +164,7 @@ func (gdb *gormdb) isUserEntity1(user *scheme.User, ids ...sdktypes.UUID) error 
 
 func (gdb *gormdb) isCtxUserEntity(ctx context.Context, ids ...sdktypes.UUID) error {
 	user, _ := userFromContext(ctx) // REVIEW: OK to ignore error
-	return gdb.isUserEntity1(user, ids...)
+	return gdb.isUserEntity(user, ids...)
 }
 
 // REVIEW: this is probably the simplest possible way (e.g. with entity as string).
