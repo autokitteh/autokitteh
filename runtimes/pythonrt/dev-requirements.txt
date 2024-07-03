@@ -2,6 +2,7 @@
 
 pytest ~= 8.0
 ruff ~= 0.4
+sphinx ~= 7.3
 
 # AutoKitteh integrations
 
