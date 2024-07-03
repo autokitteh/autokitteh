@@ -48,14 +48,15 @@ func preSessionTest(t *testing.T) *dbFixture {
 }
 
 func testLastLogRecord(t *testing.T, f *dbFixture, numRecords int, sessionID sdktypes.UUID, lr sdktypes.SessionLogRecord) {
-	logs, err := f.gormdb.getSessionLogRecords(f.ctx, sessionID)
+	sid := sdktypes.NewIDFromUUID[sdktypes.SessionID](&sessionID)
+	logs, _, err := f.gormdb.getSessionLogRecords(f.ctx, sdkservices.ListSessionLogRecordsFilter{SessionID: sid, PaginationRequest: sdktypes.PaginationRequest{Ascending: false}})
 	assert.NoError(t, err)
 	assert.Equal(t, numRecords, len(logs))
 	for _, r := range logs {
 		assert.Equal(t, sessionID, r.SessionID)
 	}
 
-	l, err := scheme.ParseSessionLogRecord(logs[len(logs)-1]) // last log
+	l, err := scheme.ParseSessionLogRecord(logs[0]) // last log
 	assert.NoError(t, err)
 
 	l = l.WithoutTimestamp()
