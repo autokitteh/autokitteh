@@ -21,8 +21,8 @@ func (UserTraits) StrictValidate(m *UserPB) error { return nil }
 
 func UserFromProto(m *UserPB) (User, error) { return FromProto[User](m) }
 
-func (u User) Data() map[string]string { return u.read().Data }
 func (u User) Provider() string        { return u.read().Provider }
+func (u User) Data() map[string]string { return u.read().Data }
 
 func NewUser(provider string, data map[string]string) User {
 	return kittehs.Must1(UserFromProto(&UserPB{
@@ -32,11 +32,12 @@ func NewUser(provider string, data map[string]string) User {
 }
 
 func (u User) Login() string {
-	if id := u.Data()["email"]; id != "" {
+	data := u.Data()
+	if id := data["email"]; id != "" {
 		return id
 	}
 
-	if id := u.Data()["id"]; id != "" {
+	if id := data["id"]; id != "" {
 		return fmt.Sprintf("%s:%s", u.Provider(), id)
 	}
 

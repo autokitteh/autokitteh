@@ -39,6 +39,7 @@ var Tables = []any{
 	&Event{},
 	&EventRecord{},
 	&Integration{},
+	&Ownership{},
 	&Project{},
 	&Secret{},
 	&Session{},
@@ -47,6 +48,7 @@ var Tables = []any{
 	&SessionLogRecord{},
 	&Signal{},
 	&Trigger{},
+	&User{},
 }
 
 type Build struct {
@@ -57,7 +59,8 @@ type Build struct {
 	DeletedAt gorm.DeletedAt `gorm:"index"`
 
 	// enforce foreign keys
-	Project *Project
+	Project   *Project
+	Ownership *Ownership `gorm:"polymorphic:Entity;"`
 }
 
 func ParseBuild(b Build) (sdktypes.Build, error) {
@@ -85,7 +88,8 @@ type Connection struct {
 
 	// enforce foreign keys
 	// Integration *Integration FIXME: ENG-590
-	Project *Project
+	Project   *Project
+	Ownership *Ownership `gorm:"polymorphic:Entity;"`
 
 	// TODO(ENG-111): Also call "Preload()" where relevant
 }
@@ -108,8 +112,10 @@ func ParseConnection(c Connection) (sdktypes.Connection, error) {
 }
 
 type Var struct {
-	ScopeID  sdktypes.UUID `gorm:"primaryKey;index;type:uuid;not null"`
-	Name     string        `gorm:"primaryKey;index"`
+	// varID is scopeID. just mapped directly for reusing the join code
+	VarID    sdktypes.UUID `gorm:"primaryKey;index;type:uuid;not null"`
+	ScopeID  sdktypes.UUID `gorm:"-"`
+	Name     string        `gorm:"primaryKey;index;not null"`
 	Value    string
 	IsSecret bool
 
@@ -117,6 +123,19 @@ type Var struct {
 
 	// enforce foreign keys
 	// Integration *Integration // FIXME: ENG-590
+}
+
+// simple hook to populate ScopeID after retrieving a Var from the database
+func (v *Var) AfterFind(tx *gorm.DB) (err error) {
+	v.ScopeID = v.VarID
+	return nil
+}
+
+func (v *Var) BeforeCreate(tx *gorm.DB) (err error) {
+	if v.VarID != v.ScopeID {
+		return gorm.ErrInvalidField
+	}
+	return nil
 }
 
 type Integration struct {
@@ -179,18 +198,7 @@ type Project struct {
 	RootURL   string
 	Resources []byte
 	DeletedAt gorm.DeletedAt `gorm:"index"`
-}
-
-func (p *Project) BeforeCreate(tx *gorm.DB) (err error) {
-	var existingProject Project
-	// Note:
-	// - Gorm will add automatically `deleted_at is NULL` to the query
-	// - we use Find, since it won't return ErrRecordNotFound
-	res := tx.Where("name = ?", p.Name).Limit(1).Find(&existingProject)
-	if res.RowsAffected > 0 {
-		return gorm.ErrDuplicatedKey // existing active project found.
-	}
-	return err
+	Ownership *Ownership     `gorm:"polymorphic:Entity;"`
 }
 
 func ParseProject(r Project) (sdktypes.Project, error) {
@@ -230,6 +238,7 @@ type Event struct {
 	// enforce foreign keys
 	// Integration *Integration // FIXME: ENG-590
 	Connection *Connection
+	Ownership  *Ownership `gorm:"polymorphic:Entity;"`
 }
 
 func ParseEvent(e Event) (sdktypes.Event, error) {
@@ -286,7 +295,8 @@ type Env struct {
 	MembershipID string `gorm:"uniqueIndex"`
 
 	// enforce foreign keys
-	Project *Project
+	Project   *Project
+	Ownership *Ownership `gorm:"polymorphic:Entity;"`
 }
 
 func ParseEnv(e Env) (sdktypes.Env, error) {
@@ -313,6 +323,7 @@ type Trigger struct {
 	Project    *Project
 	Env        *Env
 	Connection *Connection
+	Ownership  *Ownership `gorm:"polymorphic:Entity;"`
 
 	// Makes sure name is unique - this is the env_id with name.
 	// If name is emptyy, will be env_id with a random string.
@@ -366,6 +377,9 @@ type SessionCallSpec struct {
 
 func ParseSessionCallSpec(c SessionCallSpec) (spec sdktypes.SessionCallSpec, err error) {
 	err = json.Unmarshal(c.Data, &spec)
+	if err != nil {
+		spec = sdktypes.InvalidSessionCallSpec
+	}
 	return
 }
 
@@ -407,7 +421,8 @@ type Session struct {
 	Build      *Build
 	Env        *Env
 	Deployment *Deployment
-	Event      *Event `gorm:"references:EventID"`
+	Event      *Event     `gorm:"references:EventID"`
+	Ownership  *Ownership `gorm:"polymorphic:Entity;"`
 }
 
 func ParseSession(s Session) (sdktypes.Session, error) {
@@ -452,8 +467,9 @@ type Deployment struct {
 	DeletedAt    gorm.DeletedAt `gorm:"index"`
 
 	// enforce foreign keys
-	Env   *Env
-	Build *Build
+	Env       *Env
+	Build     *Build
+	Ownership *Ownership `gorm:"polymorphic:Entity;"`
 }
 
 func ParseDeployment(d Deployment) (sdktypes.Deployment, error) {
@@ -528,4 +544,23 @@ type Signal struct {
 
 	// enforce foreign key
 	Connection *Connection
+}
+
+type User struct {
+	UserID   sdktypes.UUID `gorm:"primaryKey;type:uuid;not null"`
+	Provider string        `gorm:"not null; uniqueIndex:idx_provider_email_name_idx,priority:2"`
+	Email    string        `gorm:"not null; uniqueIndex:idx_provider_email_name_idx,priority:1"`
+	Name     string        `gorm:"not null; uniqueIndex:idx_provider_email_name_idx,priority:3"`
+}
+
+type Ownership struct {
+	EntityID   sdktypes.UUID `gorm:"primaryKey;type:uuid;not null"`
+	EntityType string        `gorm:"not null"`
+
+	UserID sdktypes.UUID `gorm:"not null"`
+
+	// enforce foreign keys
+	User *User
+	// TODO: Polymorphic associations won't enforce foreign key to entities in different tables
+	// we might need to have separated ownership tables for each entity.
 }

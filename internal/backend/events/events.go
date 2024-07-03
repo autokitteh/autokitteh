@@ -40,20 +40,7 @@ func (e *events) Save(ctx context.Context, event sdktypes.Event) (sdktypes.Event
 
 // Save implements sdkservices.EventRecords.
 func (e *events) AddEventRecord(ctx context.Context, eventRecord sdktypes.EventRecord) error {
-	return e.db.Transaction(ctx, func(tx db.DB) error {
-		eventID := eventRecord.EventID()
-		records, err := tx.ListEventRecords(ctx, sdkservices.ListEventRecordsFilter{EventID: eventID})
-		if err != nil {
-			return err
-		}
-
-		eventRecord = eventRecord.WithSeq(uint32(len(records))).WithCreatedAt(time.Now())
-
-		if err := tx.AddEventRecord(ctx, eventRecord); err != nil {
-			return err
-		}
-		return nil
-	})
+	return e.db.AddEventRecord(ctx, eventRecord)
 }
 
 // ListEventRecords implements sdkservices.Events.
