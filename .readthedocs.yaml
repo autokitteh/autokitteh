@@ -24,5 +24,5 @@ sphinx:
 # to build your documentation
 # See https://docs.readthedocs.io/en/stable/guides/reproducible-builds.html
 python:
-   install:
-   - requirements: runtimes/pythonrt/dev-requirements.txt
+  install:
+    - requirements: runtimes/pythonrt/dev-requirements.txt
