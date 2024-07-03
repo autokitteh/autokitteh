@@ -76,19 +76,35 @@ func (c *client) Get(ctx context.Context, sessionID sdktypes.SessionID) (sdktype
 	return sdktypes.SessionFromProto(resp.Msg.Session)
 }
 
-func (c *client) GetLog(ctx context.Context, sessionID sdktypes.SessionID) (sdktypes.SessionLog, error) {
+func (c *client) GetLog(ctx context.Context, filter sdkservices.ListSessionLogRecordsFilter) (sdkservices.GetLogResults, error) {
 	resp, err := c.client.GetLog(ctx, connect.NewRequest(&sessionsv1.GetLogRequest{
-		SessionId: sessionID.String(),
+		SessionId: filter.SessionID.String(),
+		PageSize:  filter.PageSize,
+		Skip:      filter.Skip,
+		PageToken: filter.PageToken,
+		Ascending: filter.Ascending,
 	}))
+
 	if err != nil {
-		return sdktypes.InvalidSessionLog, rpcerrors.ToSDKError(err)
+		return sdkservices.GetLogResults{Log: sdktypes.InvalidSessionLog}, rpcerrors.ToSDKError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {
-		return sdktypes.InvalidSessionLog, err
+		return sdkservices.GetLogResults{Log: sdktypes.InvalidSessionLog}, err
+	}
+	log, err := sdktypes.SessionLogFromProto(resp.Msg.Log)
+	if err != nil {
+		return sdkservices.GetLogResults{Log: sdktypes.InvalidSessionLog}, err
 	}
 
-	return sdktypes.SessionLogFromProto(resp.Msg.Log)
+	result := sdkservices.GetLogResults{
+		Log: log,
+		PaginationResult: sdktypes.PaginationResult{
+			TotalCount:    resp.Msg.Count,
+			NextPageToken: resp.Msg.NextPageToken},
+	}
+
+	return result, nil
 }
 
 func (c *client) List(ctx context.Context, filter sdkservices.ListSessionsFilter) (sdkservices.ListSessionResult, error) {

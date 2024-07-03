@@ -385,6 +385,26 @@ export class GetLogRequest extends Message<GetLogRequest> {
    */
   sessionId = "";
 
+  /**
+   * @generated from field: int32 page_size = 20;
+   */
+  pageSize = 0;
+
+  /**
+   * @generated from field: int32 skip = 21;
+   */
+  skip = 0;
+
+  /**
+   * @generated from field: string page_token = 22;
+   */
+  pageToken = "";
+
+  /**
+   * @generated from field: bool ascending = 11;
+   */
+  ascending = false;
+
   constructor(data?: PartialMessage<GetLogRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -394,6 +414,10 @@ export class GetLogRequest extends Message<GetLogRequest> {
   static readonly typeName = "autokitteh.sessions.v1.GetLogRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "session_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 20, name: "page_size", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 21, name: "skip", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 22, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 11, name: "ascending", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetLogRequest {
@@ -422,6 +446,16 @@ export class GetLogResponse extends Message<GetLogResponse> {
    */
   log?: SessionLog;
 
+  /**
+   * @generated from field: int64 count = 2;
+   */
+  count = protoInt64.zero;
+
+  /**
+   * @generated from field: string next_page_token = 10;
+   */
+  nextPageToken = "";
+
   constructor(data?: PartialMessage<GetLogResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -431,6 +465,8 @@ export class GetLogResponse extends Message<GetLogResponse> {
   static readonly typeName = "autokitteh.sessions.v1.GetLogResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "log", kind: "message", T: SessionLog },
+    { no: 2, name: "count", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 10, name: "next_page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetLogResponse {

@@ -9,4 +9,5 @@ type PaginationRequest struct {
 	PageSize  int32
 	Skip      int32
 	PageToken string
+	Ascending bool
 }
