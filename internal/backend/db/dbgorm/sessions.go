@@ -170,7 +170,7 @@ func (gdb *gormdb) getSessionLogRecords(ctx context.Context, filter sdkservices.
 			}
 		}
 
-		// Default is descnding order
+		// Default is desc order
 		q = q.Order(clause.OrderByColumn{Column: clause.Column{Name: "seq"}, Desc: !filter.Ascending})
 		return q.Find(&logs).Error
 	}); err != nil {

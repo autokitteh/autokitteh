@@ -76,7 +76,7 @@ func TestCreateSession(t *testing.T) {
 
 	// test createSession
 	s := f.newSession(sdktypes.SessionStateTypeCompleted)
-	f.createSessionsAndAssert(t, s) // all session asserts are optional and will be set to nil
+	f.createSessionsAndAssert(t, s) // all session assets are optional and will be set to nil
 
 	// test getSessionLogRecords and ensure that session logs contain the only CREATED record
 	testLastLogRecord(t, f, 1, s.SessionID, sdktypes.NewStateSessionLogRecord(sdktypes.NewSessionStateCreated()))
@@ -86,7 +86,7 @@ func TestCreateSessionForeignKeys(t *testing.T) {
 	// check session creation if foreign keys are not nil
 	f := preSessionTest(t)
 
-	// test with existing asserts
+	// test with existing assets
 	p := f.newProject()
 	b := f.newBuild()
 	env := f.newEnv(p)
@@ -101,7 +101,7 @@ func TestCreateSessionForeignKeys(t *testing.T) {
 	f.createEventsAndAssert(t, evt)
 	f.createSessionsAndAssert(t, s)
 
-	// negative test with non-existing asserts
+	// negative test with non-existing assets
 	// use existing user owned projectID as fakeID to pass user check
 
 	s2 := f.newSession(sdktypes.SessionStateTypeCompleted)
@@ -259,7 +259,7 @@ func TestAddSessionPrintLogRecord(t *testing.T) {
 	testLastLogRecord(t, f, 2, s.SessionID, l)
 }
 
-func TestSessionLogRecordOrderAscending(t *testing.T) {
+func TestSessionLogRecordListOrder(t *testing.T) {
 	f := preSessionTest(t)
 
 	s := f.newSession(sdktypes.SessionStateTypeCompleted)
@@ -271,30 +271,34 @@ func TestSessionLogRecordOrderAscending(t *testing.T) {
 	assert.NoError(t, f.gormdb.addSessionLogRecord(f.ctx, logr))
 
 	sid := sdktypes.NewIDFromUUID[sdktypes.SessionID](&s.SessionID)
-	logs, _, err := f.gormdb.getSessionLogRecords(f.ctx, sdkservices.ListSessionLogRecordsFilter{SessionID: sid, PaginationRequest: sdktypes.PaginationRequest{Ascending: true}})
-	assert.NoError(t, err)
 
-	savedRecord, _ := scheme.ParseSessionLogRecord(logs[len(logs)-1]) // last log
-	assertSessionLogRecordsEqual(t, l, savedRecord)
-}
+	tests := []struct {
+		name  string
+		asc   bool
+		index int
+	}{
+		{
+			name:  "ascending",
+			asc:   true,
+			index: 1,
+		},
+		{
+			name:  "desc",
+			asc:   false,
+			index: 0,
+		},
+	}
 
-func TestSessionLogRecordOrderDescending(t *testing.T) {
-	f := preSessionTest(t)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			logs, _, err := f.gormdb.getSessionLogRecords(f.ctx, sdkservices.ListSessionLogRecordsFilter{SessionID: sid, PaginationRequest: sdktypes.PaginationRequest{Ascending: tt.asc}})
+			assert.NoError(t, err)
 
-	s := f.newSession(sdktypes.SessionStateTypeCompleted)
-	l := sdktypes.NewPrintSessionLogRecord("meow")
-	logr, err := toSessionLogRecord(s.SessionID, l)
-	assert.NoError(t, err)
+			savedRecord, _ := scheme.ParseSessionLogRecord(logs[tt.index]) // last log
+			assertSessionLogRecordsEqual(t, l, savedRecord)
+		})
+	}
 
-	f.createSessionsAndAssert(t, s) // will create session and session record as well
-	assert.NoError(t, f.gormdb.addSessionLogRecord(f.ctx, logr))
-
-	sid := sdktypes.NewIDFromUUID[sdktypes.SessionID](&s.SessionID)
-	logs, _, err := f.gormdb.getSessionLogRecords(f.ctx, sdkservices.ListSessionLogRecordsFilter{SessionID: sid, PaginationRequest: sdktypes.PaginationRequest{Ascending: false}})
-	assert.NoError(t, err)
-
-	savedRecord, _ := scheme.ParseSessionLogRecord(logs[0])
-	assertSessionLogRecordsEqual(t, l, savedRecord)
 }
 
 func TestSessionLogRecordPageSizeAndTotalCount(t *testing.T) {
