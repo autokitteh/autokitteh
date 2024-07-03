@@ -149,6 +149,11 @@ func (gdb *gormdb) getSessionLogRecords(ctx context.Context, filter sdkservices.
 			return err
 		}
 		q := tx.db.Where("session_id = ?", sessionID)
+
+		if err := q.Model(&scheme.SessionLogRecord{}).Count(&n).Error; err != nil {
+			return err
+		}
+
 		if filter.PageSize != 0 {
 			q = q.Limit(int(filter.PageSize))
 		}
@@ -165,10 +170,7 @@ func (gdb *gormdb) getSessionLogRecords(ctx context.Context, filter sdkservices.
 			}
 		}
 
-		if err := q.Model(&scheme.SessionLogRecord{}).Count(&n).Error; err != nil {
-			return err
-		}
-
+		// Default is descnding order
 		q = q.Order(clause.OrderByColumn{Column: clause.Column{Name: "seq"}, Desc: !filter.Ascending})
 		return q.Find(&logs).Error
 	}); err != nil {

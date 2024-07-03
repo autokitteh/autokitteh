@@ -1,6 +1,7 @@
 package dbgorm
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -64,12 +65,18 @@ func testLastLogRecord(t *testing.T, f *dbFixture, numRecords int, sessionID sdk
 	assert.Equal(t, l, lr)
 }
 
+func assertSessionLogRecordsEqual(t *testing.T, a, b sdktypes.SessionLogRecord) {
+	a = a.WithProcessID(fixtures.ProcessID()).WithoutTimestamp()
+	b = b.WithProcessID(fixtures.ProcessID()).WithoutTimestamp()
+	assert.Equal(t, a, b)
+}
+
 func TestCreateSession(t *testing.T) {
 	f := preSessionTest(t)
 
 	// test createSession
 	s := f.newSession(sdktypes.SessionStateTypeCompleted)
-	f.createSessionsAndAssert(t, s) // all session assets are optional and will be set to nil
+	f.createSessionsAndAssert(t, s) // all session asserts are optional and will be set to nil
 
 	// test getSessionLogRecords and ensure that session logs contain the only CREATED record
 	testLastLogRecord(t, f, 1, s.SessionID, sdktypes.NewStateSessionLogRecord(sdktypes.NewSessionStateCreated()))
@@ -79,7 +86,7 @@ func TestCreateSessionForeignKeys(t *testing.T) {
 	// check session creation if foreign keys are not nil
 	f := preSessionTest(t)
 
-	// test with existing assets
+	// test with existing asserts
 	p := f.newProject()
 	b := f.newBuild()
 	env := f.newEnv(p)
@@ -94,7 +101,7 @@ func TestCreateSessionForeignKeys(t *testing.T) {
 	f.createEventsAndAssert(t, evt)
 	f.createSessionsAndAssert(t, s)
 
-	// negative test with non-existing assets
+	// negative test with non-existing asserts
 	// use existing user owned projectID as fakeID to pass user check
 
 	s2 := f.newSession(sdktypes.SessionStateTypeCompleted)
@@ -250,4 +257,166 @@ func TestAddSessionPrintLogRecord(t *testing.T) {
 	assert.NoError(t, f.gormdb.addSessionLogRecord(f.ctx, logr))
 
 	testLastLogRecord(t, f, 2, s.SessionID, l)
+}
+
+func TestSessionLogRecordOrderAscending(t *testing.T) {
+	f := preSessionTest(t)
+
+	s := f.newSession(sdktypes.SessionStateTypeCompleted)
+	l := sdktypes.NewPrintSessionLogRecord("meow")
+	logr, err := toSessionLogRecord(s.SessionID, l)
+	assert.NoError(t, err)
+
+	f.createSessionsAndAssert(t, s) // will create session and session record as well
+	assert.NoError(t, f.gormdb.addSessionLogRecord(f.ctx, logr))
+
+	sid := sdktypes.NewIDFromUUID[sdktypes.SessionID](&s.SessionID)
+	logs, _, err := f.gormdb.getSessionLogRecords(f.ctx, sdkservices.ListSessionLogRecordsFilter{SessionID: sid, PaginationRequest: sdktypes.PaginationRequest{Ascending: true}})
+	assert.NoError(t, err)
+
+	savedRecord, _ := scheme.ParseSessionLogRecord(logs[len(logs)-1]) // last log
+	assertSessionLogRecordsEqual(t, l, savedRecord)
+}
+
+func TestSessionLogRecordOrderDescending(t *testing.T) {
+	f := preSessionTest(t)
+
+	s := f.newSession(sdktypes.SessionStateTypeCompleted)
+	l := sdktypes.NewPrintSessionLogRecord("meow")
+	logr, err := toSessionLogRecord(s.SessionID, l)
+	assert.NoError(t, err)
+
+	f.createSessionsAndAssert(t, s) // will create session and session record as well
+	assert.NoError(t, f.gormdb.addSessionLogRecord(f.ctx, logr))
+
+	sid := sdktypes.NewIDFromUUID[sdktypes.SessionID](&s.SessionID)
+	logs, _, err := f.gormdb.getSessionLogRecords(f.ctx, sdkservices.ListSessionLogRecordsFilter{SessionID: sid, PaginationRequest: sdktypes.PaginationRequest{Ascending: false}})
+	assert.NoError(t, err)
+
+	savedRecord, _ := scheme.ParseSessionLogRecord(logs[0])
+	assertSessionLogRecordsEqual(t, l, savedRecord)
+}
+
+func TestSessionLogRecordPageSizeAndTotalCount(t *testing.T) {
+	f := preSessionTest(t)
+
+	s := f.newSession(sdktypes.SessionStateTypeCompleted)
+	l := sdktypes.NewPrintSessionLogRecord("meow")
+	logr, err := toSessionLogRecord(s.SessionID, l)
+	assert.NoError(t, err)
+
+	f.createSessionsAndAssert(t, s) // will create session and session record as well
+	assert.NoError(t, f.gormdb.addSessionLogRecord(f.ctx, logr))
+
+	sid := sdktypes.NewIDFromUUID[sdktypes.SessionID](&s.SessionID)
+	logs, n, err := f.gormdb.getSessionLogRecords(f.ctx,
+		sdkservices.ListSessionLogRecordsFilter{SessionID: sid,
+			PaginationRequest: sdktypes.PaginationRequest{PageSize: 1},
+		})
+
+	assert.NoError(t, err)
+	assert.Equal(t, len(logs), 1)
+	assert.Equal(t, n, int64(2))
+}
+
+func TestSessionLogRecordSkipAll(t *testing.T) {
+	f := preSessionTest(t)
+
+	s := f.newSession(sdktypes.SessionStateTypeCompleted)
+	l := sdktypes.NewPrintSessionLogRecord("meow")
+	logr, err := toSessionLogRecord(s.SessionID, l)
+	assert.NoError(t, err)
+
+	f.createSessionsAndAssert(t, s) // will create session and session record as well
+	assert.NoError(t, f.gormdb.addSessionLogRecord(f.ctx, logr))
+
+	sid := sdktypes.NewIDFromUUID[sdktypes.SessionID](&s.SessionID)
+	logs, n, err := f.gormdb.getSessionLogRecords(f.ctx,
+		sdkservices.ListSessionLogRecordsFilter{SessionID: sid,
+			PaginationRequest: sdktypes.PaginationRequest{Skip: 2},
+		})
+
+	assert.NoError(t, err)
+	assert.Equal(t, len(logs), 0)
+	assert.Equal(t, n, int64(2))
+}
+
+func TestSessionLogRecordSkip(t *testing.T) {
+	f := preSessionTest(t)
+
+	s := f.newSession(sdktypes.SessionStateTypeCompleted)
+	l := sdktypes.NewPrintSessionLogRecord("meow")
+	logr, err := toSessionLogRecord(s.SessionID, l)
+	assert.NoError(t, err)
+
+	f.createSessionsAndAssert(t, s) // will create session and session record as well
+	assert.NoError(t, f.gormdb.addSessionLogRecord(f.ctx, logr))
+
+	sid := sdktypes.NewIDFromUUID[sdktypes.SessionID](&s.SessionID)
+	logs, n, err := f.gormdb.getSessionLogRecords(f.ctx,
+		sdkservices.ListSessionLogRecordsFilter{SessionID: sid,
+			PaginationRequest: sdktypes.PaginationRequest{Skip: 1},
+		})
+
+	assert.NoError(t, err)
+	assert.Equal(t, len(logs), 1)
+	assert.Equal(t, n, int64(2))
+}
+
+func TestSessionLogRecordNextPageTokenEmpty(t *testing.T) {
+	f := preSessionTest(t)
+
+	s := f.newSession(sdktypes.SessionStateTypeCompleted)
+	l := sdktypes.NewPrintSessionLogRecord("meow")
+	logr, err := toSessionLogRecord(s.SessionID, l)
+	assert.NoError(t, err)
+
+	f.createSessionsAndAssert(t, s) // will create session and session record as well
+	assert.NoError(t, f.gormdb.addSessionLogRecord(f.ctx, logr))
+
+	sid := sdktypes.NewIDFromUUID[sdktypes.SessionID](&s.SessionID)
+	res, err := f.gormdb.GetSessionLog(context.Background(),
+		sdkservices.ListSessionLogRecordsFilter{SessionID: sid,
+			PaginationRequest: sdktypes.PaginationRequest{},
+		})
+
+	assert.NoError(t, err)
+	assert.Equal(t, len(res.Log.Records()), 2)
+	assert.Equal(t, res.TotalCount, int64(2))
+	assert.Equal(t, res.PaginationResult.NextPageToken, "")
+}
+
+func TestSessionLogRecordNextPageTokenNotEmpty(t *testing.T) {
+	f := preSessionTest(t)
+
+	s := f.newSession(sdktypes.SessionStateTypeCompleted)
+	l := sdktypes.NewPrintSessionLogRecord("meow")
+	logr, err := toSessionLogRecord(s.SessionID, l)
+	assert.NoError(t, err)
+
+	f.createSessionsAndAssert(t, s) // will create session and session record as well
+	assert.NoError(t, f.gormdb.addSessionLogRecord(f.ctx, logr))
+	assert.NoError(t, f.gormdb.addSessionLogRecord(f.ctx, logr))
+
+	sid := sdktypes.NewIDFromUUID[sdktypes.SessionID](&s.SessionID)
+	res, err := f.gormdb.GetSessionLog(context.Background(),
+		sdkservices.ListSessionLogRecordsFilter{SessionID: sid,
+			PaginationRequest: sdktypes.PaginationRequest{PageSize: 2, Ascending: true},
+		})
+
+	assert.NoError(t, err)
+	assert.Equal(t, len(res.Log.Records()), 2)
+	assert.Equal(t, res.TotalCount, int64(3))
+	assert.Equal(t, res.PaginationResult.NextPageToken, "2")
+
+	// Get Next Batch to exhaust next page token
+	res, err = f.gormdb.GetSessionLog(context.Background(),
+		sdkservices.ListSessionLogRecordsFilter{SessionID: sid,
+			PaginationRequest: sdktypes.PaginationRequest{PageToken: res.PaginationResult.NextPageToken},
+		})
+
+	assert.NoError(t, err)
+	assert.Equal(t, len(res.Log.Records()), 1)
+	assert.Equal(t, res.TotalCount, int64(3))
+	assert.Equal(t, res.PaginationResult.NextPageToken, "")
 }
