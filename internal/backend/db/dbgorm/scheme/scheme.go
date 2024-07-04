@@ -354,7 +354,8 @@ func ParseTrigger(e Trigger) (sdktypes.Trigger, error) {
 }
 
 type SessionLogRecord struct {
-	SessionID sdktypes.UUID `gorm:"index;type:uuid;not null"`
+	SessionID sdktypes.UUID `gorm:"primaryKey:SessionID;type:uuid;not null"`
+	Seq       uint64        `gorm:"primaryKey;not null"`
 	Data      datatypes.JSON
 
 	// enforce foreign keys
@@ -377,9 +378,6 @@ type SessionCallSpec struct {
 
 func ParseSessionCallSpec(c SessionCallSpec) (spec sdktypes.SessionCallSpec, err error) {
 	err = json.Unmarshal(c.Data, &spec)
-	if err != nil {
-		spec = sdktypes.InvalidSessionCallSpec
-	}
 	return
 }
 

@@ -54,8 +54,8 @@ func (s *sessions) StartWorkers(ctx context.Context) error {
 	return nil
 }
 
-func (s *sessions) GetLog(ctx context.Context, sessionID sdktypes.SessionID) (sdktypes.SessionLog, error) {
-	return s.svcs.DB.GetSessionLog(ctx, sessionID)
+func (s *sessions) GetLog(ctx context.Context, filter sdkservices.ListSessionLogRecordsFilter) (sdkservices.GetLogResults, error) {
+	return s.svcs.DB.GetSessionLog(ctx, filter)
 }
 
 func (s *sessions) Get(ctx context.Context, sessionID sdktypes.SessionID) (sdktypes.Session, error) {
