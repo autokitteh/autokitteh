@@ -89,8 +89,10 @@ func (gdb *gormdb) deleteVars(ctx context.Context, scopeID sdktypes.UUID, names 
 func (gdb *gormdb) listVars(ctx context.Context, scopeID sdktypes.UUID, names ...string) ([]scheme.Var, error) {
 	db := varsCommonQuery(gdb.withUserVars(ctx), scopeID, names)
 
+	// Note(s):
+	// - will skip not user owned vars
+	// - not checking if scope is deleted, since scope deletion will cascade deletion of relevant vars
 	var vars []scheme.Var
-	// will skip not user owned vars
 	if err := db.Find(&vars).Error; err != nil {
 		return nil, err
 	}
@@ -106,6 +108,9 @@ func (gdb *gormdb) findConnectionIDsByVar(ctx context.Context, integrationID sdk
 		db = db.Where("value = ? AND is_secret is false", v)
 	}
 
+	// Note(s):
+	// - will skip not user owned vars
+	// - not checking if scope is deleted, since scope deletion will cascade deletion of relevant vars
 	var vars []scheme.Var
 	if err := db.Distinct("var_id").Find(&vars).Error; err != nil {
 		return nil, err

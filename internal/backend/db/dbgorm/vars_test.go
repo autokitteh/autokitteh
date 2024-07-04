@@ -153,6 +153,21 @@ func TestListVar(t *testing.T) {
 	f.testListVar(t, vc)
 }
 
+func TestListProjVars(t *testing.T) {
+	f := preVarTest(t).WithDebug()
+
+	c, e := createConnectionAndEnv(t, f)
+
+	ve := f.newVar("k", "env scope", e)
+	vc := f.newVar("k", "connection scope", c)
+	f.setVarsAndAssert(t, ve)
+	f.setVarsAndAssert(t, vc)
+
+	// delete project
+	assert.NoError(t, f.gormdb.deleteProject(f.ctx, e.ProjectID))
+	findAndAssertCount[scheme.Var](t, f, 0, "") // no vars. Both connection and env scope vars were deleted
+}
+
 func TestDeleteVar(t *testing.T) {
 	f := preVarTest(t)
 	_, env := createConnectionAndEnv(t, f)
