@@ -26,7 +26,14 @@ func (gdb *gormdb) deleteConnection(ctx context.Context, id sdktypes.UUID) error
 		if err := tx.isCtxUserEntity(ctx, id); err != nil {
 			return err
 		}
-		return tx.db.Delete(&scheme.Connection{ConnectionID: id}).Error
+
+		// delete connection
+		if err := tx.db.Delete(&scheme.Connection{ConnectionID: id}).Error; err != nil {
+			return err
+		}
+
+		// and associated vars
+		return tx.db.Where("var_id = ?", id).Delete(&scheme.Var{}).Error
 	})
 }
 
