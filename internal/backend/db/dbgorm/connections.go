@@ -22,7 +22,7 @@ func (gdb *gormdb) createConnection(ctx context.Context, conn *scheme.Connection
 	return gdb.createEntityWithOwnership(ctx, createFunc, conn, conn.ProjectID)
 }
 
-func (gdb *gormdb) deleteConnectionsAndVars(where string, args ...interface{}) error {
+func (gdb *gormdb) deleteConnectionsAndVars(where string, args ...any) error {
 	// should be transactional with context already applied
 
 	var ids []sdktypes.UUID
