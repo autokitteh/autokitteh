@@ -43,7 +43,12 @@ func (gdb *gormdb) deleteEnvs(ctx context.Context, ids []sdktypes.UUID) error {
 		return err
 	}
 
-	return db.Where("env_id IN ?", ids).Delete(&scheme.Env{}).Error
+	// delete envs and associated vars
+	if err := db.Where("env_id IN ?", ids).Delete(&scheme.Env{}).Error; err != nil {
+		return err
+	}
+
+	return db.Where("var_id IN ?", ids).Delete(&scheme.Var{}).Error
 }
 
 func (gdb *gormdb) getEnvByID(ctx context.Context, envID sdktypes.UUID) (*scheme.Env, error) {
