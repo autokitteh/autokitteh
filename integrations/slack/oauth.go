@@ -74,13 +74,11 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	key := vars.KeyValue(botInfo.Bot.AppID, authTest.EnterpriseID, authTest.TeamID)
-	initData := sdktypes.EncodeVars(
-		vars.Vars{
-			AppID:        botInfo.Bot.AppID,
-			EnterpriseID: authTest.EnterpriseID,
-			TeamID:       authTest.TeamID,
-		},
-	).
+	initData := sdktypes.EncodeVars(vars.Vars{
+		AppID:        botInfo.Bot.AppID,
+		EnterpriseID: authTest.EnterpriseID,
+		TeamID:       authTest.TeamID,
+	}).
 		Set(vars.KeyName, key, false).
 		Set(vars.OAuthDataName, raw, true).
 		Append(data.ToVars()...)

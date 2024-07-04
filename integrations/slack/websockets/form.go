@@ -71,13 +71,11 @@ func (h handler) HandleForm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	initData := sdktypes.EncodeVars(
-		vars.Vars{
-			AppID:        botInfo.Bot.AppID,
-			EnterpriseID: authTest.EnterpriseID,
-			TeamID:       authTest.TeamID,
-		},
-	).
+	initData := sdktypes.EncodeVars(vars.Vars{
+		AppID:        botInfo.Bot.AppID,
+		EnterpriseID: authTest.EnterpriseID,
+		TeamID:       authTest.TeamID,
+	}).
 		Set(vars.AppTokenName, appToken, true).
 		Set(vars.BotTokenName, botToken, true)
 
