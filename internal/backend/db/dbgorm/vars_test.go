@@ -88,18 +88,69 @@ func TestReSetVar(t *testing.T) {
 	f.setVarsAndAssert(t, v)
 }
 
-func TestListVar(t *testing.T) {
+func TestListVarUnexisting(t *testing.T) {
 	f := preVarTest(t)
-	_, env := createConnectionAndEnv(t, f)
+	c := f.newConnection()
+	f.createConnectionsAndAssert(t, c)
 
-	v := f.newVar("foo", "bar", env)
+	v := f.newVar("k", "v", c)
 	f.setVarsAndAssert(t, v)
 
-	// test getVar
+	// test listVars
+	vars, err := f.gormdb.listVars(f.ctx, c.ConnectionID, v.Name) // the same as v.ScopeID or v.VarID
+	assert.NoError(t, err)
+	assert.Len(t, vars, 1)
+	assert.Equal(t, v, vars[0])
+
+	// test listVars with non-existing var
+	vars, err = f.gormdb.listVars(f.ctx, c.ConnectionID, "unexisting")
+	assert.NoError(t, err)
+	assert.Len(t, vars, 0)
+}
+
+func (f *dbFixture) testListVar(t *testing.T, v scheme.Var) {
+	// test listVars
 	vars, err := f.gormdb.listVars(f.ctx, v.ScopeID, v.Name)
 	assert.NoError(t, err)
 	assert.Len(t, vars, 1)
 	assert.Equal(t, v, vars[0])
+
+	// test listVars with non-existing var
+	vars, err = f.gormdb.listVars(f.ctx, v.ScopeID, "unexisting")
+	assert.NoError(t, err)
+	assert.Len(t, vars, 0)
+
+	// delete scope - either Connection or Env
+	var o scheme.Ownership
+	assert.NoError(t, f.db.Where("entity_id = ?", v.ScopeID).First(&o).Error)
+	switch o.EntityType {
+	case "Connection":
+		assert.NoError(t, f.gormdb.deleteConnection(f.ctx, v.ScopeID))
+	case "Env":
+		assert.NoError(t, f.gormdb.deleteEnv(f.ctx, v.ScopeID))
+	}
+
+	// test var was deleted due to scope deletion
+	f.assertVarDeleted(t, v)
+
+	// test listVars after scope deletion
+	vars, err = f.gormdb.listVars(f.ctx, v.ScopeID, v.Name)
+	assert.NoError(t, err)
+	assert.Len(t, vars, 0)
+}
+
+func TestListVar(t *testing.T) {
+	f := preVarTest(t).WithDebug()
+
+	c, e := createConnectionAndEnv(t, f)
+
+	ve := f.newVar("k", "env scope", e)
+	f.setVarsAndAssert(t, ve)
+	f.testListVar(t, ve)
+
+	vc := f.newVar("k", "connection scope", c)
+	f.setVarsAndAssert(t, vc)
+	f.testListVar(t, vc)
 }
 
 func TestDeleteVar(t *testing.T) {
