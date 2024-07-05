@@ -147,6 +147,38 @@ func (s Svc) connection(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (s Svc) initConnection(w http.ResponseWriter, r *http.Request) {
+	id, origin := r.PathValue("id"), r.PathValue("origin")
+
+	cid, err := sdktypes.StrictParseConnectionID(id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	conn, err := s.Svcs.Connections().Get(r.Context(), cid)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if !conn.IsValid() {
+		http.Error(w, "connection not found", http.StatusNotFound)
+		return
+	}
+
+	integ, err := s.Svcs.Integrations().GetByID(r.Context(), conn.IntegrationID())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if !integ.Get().IsValid() {
+		http.Error(w, "integration not found", http.StatusNotFound)
+		return
+	}
+
+	http.Redirect(w, r, fmt.Sprintf("%s?cid=%v&origin=%s", integ.Get().ConnectionURL(), cid, origin), http.StatusFound)
+}
+
 // The user needs to select a specific connection at the end
 // of the initialization flow, based on the integration,
 // if a connection wasn't selected at the beginning.
@@ -286,36 +318,4 @@ func (s Svc) refreshConnection(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Redirect(w, r, fmt.Sprintf("/connections/%s", id), http.StatusFound)
-}
-
-func (s Svc) initConnection(w http.ResponseWriter, r *http.Request) {
-	id, origin := r.PathValue("id"), r.PathValue("origin")
-
-	cid, err := sdktypes.StrictParseConnectionID(id)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	conn, err := s.Svcs.Connections().Get(r.Context(), cid)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	if !conn.IsValid() {
-		http.Error(w, "connection not found", http.StatusNotFound)
-		return
-	}
-
-	integ, err := s.Svcs.Integrations().GetByID(r.Context(), conn.IntegrationID())
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	if !integ.Get().IsValid() {
-		http.Error(w, "integration not found", http.StatusNotFound)
-		return
-	}
-
-	http.Redirect(w, r, fmt.Sprintf("%s?cid=%v&origin=%s", integ.Get().ConnectionURL(), cid, origin), http.StatusFound)
 }
