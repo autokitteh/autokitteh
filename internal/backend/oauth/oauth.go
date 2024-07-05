@@ -2,6 +2,7 @@ package oauth
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -400,22 +401,34 @@ func (o *oauth) Get(ctx context.Context, intg string) (*oauth2.Config, map[strin
 	return cfg, o.opts[intg], nil
 }
 
-func (o *oauth) StartFlow(ctx context.Context, intg string, cid sdktypes.ConnectionID) (string, error) {
+func (o *oauth) StartFlow(ctx context.Context, intg string, cid sdktypes.ConnectionID, origin string) (string, error) {
 	cfg, opts, err := o.Get(ctx, intg)
 	if err != nil {
 		return "", err
 	}
 
-	return cfg.AuthCodeURL(cid.String(), authCode(opts)...), nil
+	if !cid.IsValid() {
+		return "", errors.New("invalid connection ID")
+	}
+
+	if origin == "" {
+		return "", errors.New("missing origin")
+	}
+
+	// Identify the relevant connection when we get an OAuth response.
+	state := strings.Replace(cid.String(), "con_", "", 1) + "_" + origin
+
+	return cfg.AuthCodeURL(state, authCode(opts)...), nil
 }
 
-func (o *oauth) Exchange(ctx context.Context, intg, state, code string) (*oauth2.Token, error) {
+func (o *oauth) Exchange(ctx context.Context, integration, code string) (*oauth2.Token, error) {
 	// Convert the received temporary authorization code
 	// into a refresh token / user access token.
-	cfg, opts, err := o.Get(ctx, intg)
+	cfg, opts, err := o.Get(ctx, integration)
 	if err != nil {
 		return nil, fmt.Errorf("bad oauth integration name: %w", err)
 	}
+
 	hc := &http.Client{Timeout: exchangeTimeout}
 	ctx = context.WithValue(ctx, oauth2.HTTPClient, hc)
 	token, err := cfg.Exchange(ctx, code, authCode(opts)...)

@@ -96,7 +96,7 @@ func (s *server) StartFlow(ctx context.Context, req *connect.Request[oauthv1.Sta
 	}
 
 	// Redirect the caller to the URL that starts the OAuth flow.
-	url, err := s.impl.StartFlow(ctx, req.Msg.Id, cid)
+	url, err := s.impl.StartFlow(ctx, req.Msg.Integration, cid, req.Msg.Origin)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeUnknown, err)
 	}
@@ -110,7 +110,7 @@ func (s *server) Exchange(ctx context.Context, req *connect.Request[oauthv1.Exch
 	}
 
 	// Return the exchanged OAuth token, based on the authorization code.
-	token, err := s.impl.Exchange(ctx, req.Msg.Id, req.Msg.State, req.Msg.Code)
+	token, err := s.impl.Exchange(ctx, req.Msg.Integration, req.Msg.Code)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeUnknown, err)
 	}

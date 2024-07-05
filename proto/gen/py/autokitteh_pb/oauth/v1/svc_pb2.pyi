@@ -31,12 +31,14 @@ class GetResponse(_message.Message):
     def __init__(self, config: _Optional[_Union[OAuthConfig, _Mapping]] = ...) -> None: ...
 
 class StartFlowRequest(_message.Message):
-    __slots__ = ["id", "connection_id"]
-    ID_FIELD_NUMBER: _ClassVar[int]
+    __slots__ = ["integration", "connection_id", "origin"]
+    INTEGRATION_FIELD_NUMBER: _ClassVar[int]
     CONNECTION_ID_FIELD_NUMBER: _ClassVar[int]
-    id: str
+    ORIGIN_FIELD_NUMBER: _ClassVar[int]
+    integration: str
     connection_id: str
-    def __init__(self, id: _Optional[str] = ..., connection_id: _Optional[str] = ...) -> None: ...
+    origin: str
+    def __init__(self, integration: _Optional[str] = ..., connection_id: _Optional[str] = ..., origin: _Optional[str] = ...) -> None: ...
 
 class StartFlowResponse(_message.Message):
     __slots__ = ["url"]
@@ -45,14 +47,12 @@ class StartFlowResponse(_message.Message):
     def __init__(self, url: _Optional[str] = ...) -> None: ...
 
 class ExchangeRequest(_message.Message):
-    __slots__ = ["id", "state", "code"]
-    ID_FIELD_NUMBER: _ClassVar[int]
-    STATE_FIELD_NUMBER: _ClassVar[int]
+    __slots__ = ["integration", "code"]
+    INTEGRATION_FIELD_NUMBER: _ClassVar[int]
     CODE_FIELD_NUMBER: _ClassVar[int]
-    id: str
-    state: str
+    integration: str
     code: str
-    def __init__(self, id: _Optional[str] = ..., state: _Optional[str] = ..., code: _Optional[str] = ...) -> None: ...
+    def __init__(self, integration: _Optional[str] = ..., code: _Optional[str] = ...) -> None: ...
 
 class ExchangeResponse(_message.Message):
     __slots__ = ["access_token", "refresh_token", "token_type", "expiry"]
