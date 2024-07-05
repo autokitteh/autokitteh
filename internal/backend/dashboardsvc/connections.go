@@ -221,7 +221,7 @@ func (s Svc) postInitConnection(w http.ResponseWriter, r *http.Request) {
 	case "vscode":
 		http.Redirect(w, r, "vscode://autokitteh.autokitteh?cid="+cid.String(), http.StatusFound)
 	case "web":
-		// TODO: base URL from config var!
+		// TODO(ENG-1106): base URL from config var
 		http.Redirect(w, r, "/connections/"+cid.String(), http.StatusFound)
 	default: // Local server ("cli", "dash", etc.)
 		u := fmt.Sprintf("/connections/%s?msg=Connection initialized 😸", cid.String())
