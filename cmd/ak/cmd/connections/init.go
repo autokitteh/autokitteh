@@ -2,10 +2,12 @@ package connections
 
 import (
 	"errors"
+	"net/url"
 
 	"github.com/spf13/cobra"
 
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/internal/resolver"
 )
 
@@ -28,7 +30,7 @@ var initCmd = common.StandardCommand(&cobra.Command{
 			return err
 		}
 
-		link := c.Links().InitURL()
+		link := kittehs.Must1(url.JoinPath(c.Links().InitURL(), "cli"))
 		if link == "" {
 			return errors.New("connection doesn't have an init link")
 		}
