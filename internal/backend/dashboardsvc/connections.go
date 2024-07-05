@@ -17,12 +17,14 @@ func (s Svc) initConnections() {
 
 	s.Muxes.Auth.HandleFunc("GET /connections", s.connections)
 	s.Muxes.Auth.HandleFunc("GET /connections/{cid}", s.connection)
-	s.Muxes.Auth.HandleFunc("GET /connections/{id}/init/{origin}", s.initConnection)
-	s.Muxes.Auth.HandleFunc("GET /connections/{id}/postinit", s.postInitConnection)
-	s.Muxes.Auth.HandleFunc("DELETE /connections/{id}/vars", s.rmAllConnectionVars)
 
-	s.Muxes.Auth.HandleFunc("/connections/{id}/test", s.testConnection)
-	s.Muxes.Auth.HandleFunc("/connections/{id}/refresh", s.refreshConnection)
+	s.Muxes.Auth.HandleFunc("GET /connections/{id}/init/{origin}", s.init)
+	s.Muxes.Auth.HandleFunc("GET /connections/{id}/postinit", s.postInit)
+	// s.Muxes.Auth.HandleFunc("GET /connections/{id}/result", s.initResult)
+
+	s.Muxes.Auth.HandleFunc("DELETE /connections/{id}/vars", s.rmAllConnectionVars)
+	s.Muxes.Auth.HandleFunc("GET /connections/{id}/test", s.test)
+	s.Muxes.Auth.HandleFunc("GET /connections/{id}/refresh", s.refresh)
 }
 
 type connection struct{ sdktypes.Connection }
@@ -147,7 +149,7 @@ func (s Svc) connection(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s Svc) initConnection(w http.ResponseWriter, r *http.Request) {
+func (s Svc) init(w http.ResponseWriter, r *http.Request) {
 	id, origin := r.PathValue("id"), r.PathValue("origin")
 
 	cid, err := sdktypes.StrictParseConnectionID(id)
@@ -213,11 +215,11 @@ func (s Svc) initUnknownConnection(w http.ResponseWriter, r *http.Request, id, v
 	renderList(w, r, "connections", l)
 }
 
-// postInitConnection is the last step in the connection initialization
-// flow. It saves the connection's data in the connection's scope, and
+// postInit is the last step in the connection initialization flow.
+// It saves the connection's data in the connection's scope, and
 // redirects the user to the last HTTP response, based on its origin
 // (local AK server / local VS Code extension / SaaS web UI).
-func (s Svc) postInitConnection(w http.ResponseWriter, r *http.Request) {
+func (s Svc) postInit(w http.ResponseWriter, r *http.Request) {
 	vars, origin := r.URL.Query().Get("vars"), r.URL.Query().Get("origin")
 
 	id := r.PathValue("id")
@@ -276,7 +278,7 @@ func (s Svc) rmAllConnectionVars(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s Svc) testConnection(w http.ResponseWriter, r *http.Request) {
+func (s Svc) test(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 
 	cid, err := sdktypes.StrictParseConnectionID(id)
@@ -297,7 +299,7 @@ func (s Svc) testConnection(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s Svc) refreshConnection(w http.ResponseWriter, r *http.Request) {
+func (s Svc) refresh(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 
 	cid, err := sdktypes.StrictParseConnectionID(id)
