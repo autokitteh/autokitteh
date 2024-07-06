@@ -244,7 +244,9 @@ func initResult(w http.ResponseWriter, r *http.Request) {
 		output = []byte(`{"status":500,"error":"failed to encode error message"}`)
 	}
 
-	w.Write(output)
+	if _, err := w.Write(output); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }
 
 func (s Svc) rmAllConnectionVars(w http.ResponseWriter, r *http.Request) {

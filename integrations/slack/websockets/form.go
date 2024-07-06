@@ -16,10 +16,6 @@ import (
 )
 
 const (
-	// uiPath is the URL root path of a simple web UI to interact
-	// with users to install a Slack Socket Mode app.
-	uiPath = "/slack/connect"
-
 	headerContentType = "Content-Type"
 	contentTypeForm   = "application/x-www-form-urlencoded"
 )

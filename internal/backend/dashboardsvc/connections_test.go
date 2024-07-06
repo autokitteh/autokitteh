@@ -57,7 +57,7 @@ func Test_initResult(t *testing.T) {
 			assert.Equal(t, "application/json", resp.Header.Get("Content-Type"))
 			assert.Contains(t, string(body), fmt.Sprintf(`"status":%d`, tt.status))
 			if tt.err == "" {
-				assert.NotContains(t, string(body), fmt.Sprintf(`"error":`))
+				assert.NotContains(t, string(body), `"error":`)
 			} else {
 				assert.Contains(t, string(body), fmt.Sprintf(`"error":"%s"`, tt.err))
 			}
