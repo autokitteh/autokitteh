@@ -48,7 +48,7 @@ func (s *svc) start(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cid, err := sdktypes.ParseConnectionID(r.URL.Query().Get("cid"))
+	cid, err := sdktypes.StrictParseConnectionID(r.URL.Query().Get("cid"))
 	if err != nil {
 		l.Warn("Failed to parse connection ID", zap.Error(err))
 		http.Error(w, "Bad request: invalid connection ID", http.StatusBadRequest)
