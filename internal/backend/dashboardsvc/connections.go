@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
+	"strconv"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -20,11 +21,11 @@ func (s Svc) initConnections() {
 
 	s.Muxes.Auth.HandleFunc("GET /connections/{id}/init/{origin}", s.init)
 	s.Muxes.Auth.HandleFunc("GET /connections/{id}/postinit", s.postInit)
-	// s.Muxes.Auth.HandleFunc("GET /connections/{id}/result", s.initResult)
+	s.Muxes.Auth.HandleFunc("GET /connections/{id}/result", initResult)
 
 	s.Muxes.Auth.HandleFunc("DELETE /connections/{id}/vars", s.rmAllConnectionVars)
-	s.Muxes.Auth.HandleFunc("GET /connections/{id}/test", s.test)
-	s.Muxes.Auth.HandleFunc("GET /connections/{id}/refresh", s.refresh)
+	s.Muxes.Auth.HandleFunc("GET /connections/{id}/test", s.testConnection)
+	s.Muxes.Auth.HandleFunc("GET /connections/{id}/refresh", s.refreshConnection)
 }
 
 type connection struct{ sdktypes.Connection }
@@ -251,16 +252,41 @@ func (s Svc) postInit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var u string
 	switch origin {
 	case "vscode":
-		http.Redirect(w, r, "vscode://autokitteh.autokitteh?cid="+cid.String(), http.StatusFound)
+		u = "vscode://autokitteh.autokitteh?cid=%s"
 	case "web":
-		// TODO(ENG-1106): base URL from config var
-		http.Redirect(w, r, "/connections/"+cid.String(), http.StatusFound)
+		u = "/connections/%s/result?status=200"
 	default: // Local server ("cli", "dash", etc.)
-		u := fmt.Sprintf("/connections/%s?msg=Connection initialized 😸", cid.String())
-		http.Redirect(w, r, u, http.StatusFound)
+		u = "/connections/%s?msg=Connection initialized 😸"
 	}
+	http.Redirect(w, r, fmt.Sprintf(u, cid), http.StatusFound)
+}
+
+type jsonResult struct {
+	Status int    `json:"status"`
+	Error  string `json:"error,omitempty"`
+}
+
+func initResult(w http.ResponseWriter, r *http.Request) {
+	result := jsonResult{Error: r.FormValue("error")}
+
+	var err error
+	status := r.FormValue("status")
+	if result.Status, err = strconv.Atoi(status); err != nil {
+		result.Status = http.StatusInternalServerError
+		result.Error = "non-integer status"
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	output, err := json.Marshal(result)
+	if err != nil {
+		output = []byte(`{"status":500,"error":"failed to encode error message"}`)
+	}
+
+	w.Write(output)
 }
 
 func (s Svc) rmAllConnectionVars(w http.ResponseWriter, r *http.Request) {
@@ -278,7 +304,7 @@ func (s Svc) rmAllConnectionVars(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s Svc) test(w http.ResponseWriter, r *http.Request) {
+func (s Svc) testConnection(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 
 	cid, err := sdktypes.StrictParseConnectionID(id)
@@ -299,7 +325,7 @@ func (s Svc) test(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s Svc) refresh(w http.ResponseWriter, r *http.Request) {
+func (s Svc) refreshConnection(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 
 	cid, err := sdktypes.StrictParseConnectionID(id)
