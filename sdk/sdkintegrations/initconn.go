@@ -79,16 +79,10 @@ func (c ConnectionInit) Finalize(data []sdktypes.Var) {
 		return
 	}
 
-	if _, err = sdktypes.ParseConnectionID(c.ConnectionID); err != nil {
+	if _, err = sdktypes.StrictParseConnectionID(c.ConnectionID); err != nil {
 		c.logger.Warn("Invalid connection ID")
 		c.Abort("invalid connection ID")
 		return
-	}
-
-	if c.ConnectionID == "" {
-		// The user needs to select a specific connection at the end,
-		// based on the integration, if it wasn't selected at the beginning.
-		c.ConnectionID = c.Integration.ID().String()
 	}
 
 	u := fmt.Sprintf("/connections/%s/postinit?vars=%s&origin=%s", c.ConnectionID, vars, c.Origin)

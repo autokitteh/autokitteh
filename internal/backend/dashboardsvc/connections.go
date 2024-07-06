@@ -182,40 +182,6 @@ func (s Svc) init(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, fmt.Sprintf("%s?cid=%v&origin=%s", integ.Get().ConnectionURL(), cid, origin), http.StatusFound)
 }
 
-// The user needs to select a specific connection at the end
-// of the initialization flow, based on the integration,
-// if a connection wasn't selected at the beginning.
-func (s Svc) initUnknownConnection(w http.ResponseWriter, r *http.Request, id, vars string) {
-	iid, err := sdktypes.StrictParseIntegrationID(id)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	l, err := s.listConnections(w, r, sdkservices.ListConnectionsFilter{
-		IntegrationID: iid,
-	})
-	if err != nil {
-		return
-	}
-
-	l.Headers = append(l.Headers, "")
-
-	for i := range l.Items {
-		l.Items[i] = append(
-			l.Items[i],
-			template.HTML(
-				fmt.Sprintf(`<button onclick="window.location.href='/connections/%s/init/dash?vars=%s'">Select</button>`,
-					l.UnformattedItems[i][0],
-					vars,
-				),
-			),
-		)
-	}
-
-	renderList(w, r, "connections", l)
-}
-
 // postInit is the last step in the connection initialization flow.
 // It saves the connection's data in the connection's scope, and
 // redirects the user to the last HTTP response, based on its origin
@@ -223,21 +189,13 @@ func (s Svc) initUnknownConnection(w http.ResponseWriter, r *http.Request, id, v
 func (s Svc) postInit(w http.ResponseWriter, r *http.Request) {
 	vars, origin := r.URL.Query().Get("vars"), r.URL.Query().Get("origin")
 
-	id := r.PathValue("id")
-	if sdktypes.IsIntegrationID(id) {
-		// The user needs to select a specific connection at the end,
-		// based on the integration, if it wasn't selected at the beginning.
-		s.initUnknownConnection(w, r, id, vars)
-		return
-	}
-
 	var data []sdktypes.Var
 	if err := kittehs.DecodeURLData(vars, &data); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	cid, err := sdktypes.StrictParseConnectionID(id)
+	cid, err := sdktypes.StrictParseConnectionID(r.PathValue("id"))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
