@@ -53,5 +53,6 @@ func (h handler) handleAuth(w http.ResponseWriter, r *http.Request) {
 
 	// Finalize the connection initialization - save the auth data in the connection.
 	initData := sdktypes.NewVars().Set(authVar, auth, true)
+
 	sdkintegrations.FinalizeConnectionInit(w, r, IntegrationID, initData)
 }

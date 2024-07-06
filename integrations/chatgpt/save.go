@@ -49,7 +49,9 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	apiKey := r.Form.Get("key")
 
-	sdkintegrations.FinalizeConnectionInit(w, r, integrationID, sdktypes.NewVars().Set(apiKeyVar, apiKey, true))
+	initData := sdktypes.NewVars().Set(apiKeyVar, apiKey, true)
+
+	sdkintegrations.FinalizeConnectionInit(w, r, integrationID, initData)
 }
 
 func redirectToErrorPage(w http.ResponseWriter, r *http.Request, err string) {

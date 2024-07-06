@@ -58,11 +58,11 @@ func (h handler) HandleAuth(w http.ResponseWriter, r *http.Request) {
 
 	// TODO: Test the authentication details.
 
-	vars := sdktypes.EncodeVars(Vars{
+	initData := sdktypes.EncodeVars(Vars{
 		AccountSID: accountSID,
 		Username:   username,
 		Password:   password,
 	})
 
-	sdkintegrations.FinalizeConnectionInit(w, r, h.integrationID, vars)
+	sdkintegrations.FinalizeConnectionInit(w, r, h.integrationID, initData)
 }

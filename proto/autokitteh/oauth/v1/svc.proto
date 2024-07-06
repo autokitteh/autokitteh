@@ -33,8 +33,9 @@ message GetResponse {
 }
 
 message StartFlowRequest {
-  string id = 1 [(buf.validate.field).string.min_len = 1];
-  string connection_id = 2;
+  string integration = 1 [(buf.validate.field).string.min_len = 1];
+  string connection_id = 2 [(buf.validate.field).string.min_len = 1];
+  string origin = 3 [(buf.validate.field).string.min_len = 1];
 }
 
 message StartFlowResponse {
@@ -42,9 +43,8 @@ message StartFlowResponse {
 }
 
 message ExchangeRequest {
-  string id = 1 [(buf.validate.field).string.min_len = 1];
-  string state = 2 [(buf.validate.field).string.min_len = 1];
-  string code = 3 [(buf.validate.field).string.min_len = 1];
+  string integration = 1 [(buf.validate.field).string.min_len = 1];
+  string code = 2 [(buf.validate.field).string.min_len = 1];
 }
 
 message ExchangeResponse {
