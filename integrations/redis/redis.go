@@ -580,7 +580,7 @@ func (m *module) linsert(ctx context.Context, args []sdktypes.Value, kwargs map[
 	return returnCmd(client.LInsert(ctx, keyfn(k), op, pivot, v))
 }
 
-func (m *module) dbsize(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
+func (m *module) dbsize(ctx context.Context, _ []sdktypes.Value, _ map[string]sdktypes.Value) (sdktypes.Value, error) {
 	client, _, err := m.client(ctx)
 	if err != nil {
 		return sdktypes.InvalidValue, err
