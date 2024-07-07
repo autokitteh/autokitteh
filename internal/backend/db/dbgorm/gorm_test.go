@@ -196,7 +196,8 @@ func newDBFixture() *dbFixture {
 	if err := CleanupDB(&gormDB, ctx); err != nil { // ensure migration/schemas
 		log.Fatalf("Failed to cleanup gormdb: %v", err)
 	}
-	f := dbFixture{db: gormDB.db, gormdb: &gormDB, ctx: ctx}
+	gormdb := gormDB
+	f := dbFixture{db: gormdb.db, gormdb: &gormdb, ctx: ctx}
 	return &f
 }
 
