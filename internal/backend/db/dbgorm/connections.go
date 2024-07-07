@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
@@ -11,82 +12,52 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-func (db *gormdb) createConnection(ctx context.Context, conn *scheme.Connection) error {
-	return db.db.WithContext(ctx).Create(conn).Error
+func (gdb *gormdb) withUserConnections(ctx context.Context) *gorm.DB {
+	return gdb.withUserEntity(ctx, "connection")
 }
 
-func connToScheme(conn sdktypes.Connection) scheme.Connection {
-	return scheme.Connection{
-		ConnectionID:  conn.ID().UUIDValue(),
-		IntegrationID: scheme.UUIDOrNil(conn.IntegrationID().UUIDValue()), // TODO(ENG-158): need to verify integration id
-		ProjectID:     scheme.UUIDOrNil(conn.ProjectID().UUIDValue()),
-		Name:          conn.Name().String(),
-		StatusCode:    int32(conn.Status().Code().ToProto()),
-		StatusMessage: conn.Status().Message(),
-	}
+func (gdb *gormdb) createConnection(ctx context.Context, conn *scheme.Connection) error {
+	createFunc := func(tx *gorm.DB, user *scheme.User) error { return tx.Create(conn).Error }
+	return gdb.createEntityWithOwnership(ctx, createFunc, conn, conn.ProjectID)
 }
 
-func (db *gormdb) CreateConnection(ctx context.Context, conn sdktypes.Connection) error {
-	if err := conn.Strict(); err != nil {
-		return err
-	}
-
-	c := connToScheme(conn)
-
-	return translateError(db.createConnection(ctx, &c))
+func (gdb *gormdb) deleteConnection(ctx context.Context, id sdktypes.UUID) error {
+	return gdb.transaction(ctx, func(tx *tx) error {
+		if err := tx.isCtxUserEntity(ctx, id); err != nil {
+			return err
+		}
+		return tx.db.Delete(&scheme.Connection{ConnectionID: id}).Error
+	})
 }
 
-func (db *gormdb) UpdateConnection(ctx context.Context, conn sdktypes.Connection) error {
-	// This will never update integration id or project id, so not checking them.
-
-	data := make(map[string]any, 2)
-
-	if conn.Name().IsValid() {
-		data["name"] = conn.Name().String()
-	}
-
-	if conn.Status().IsValid() {
-		data["status_code"] = int32(conn.Status().Code().ToProto())
-		data["status_message"] = conn.Status().Message()
-	}
-
-	err := db.db.WithContext(ctx).
-		Where("connection_id = ?", conn.ID().UUIDValue()).
-		Model(&scheme.Connection{}).
-		Updates(data).
-		Error
-	if err != nil {
-		return translateError(err)
-	}
-	return nil
+func (gdb *gormdb) updateConnection(ctx context.Context, id sdktypes.UUID, data map[string]any) error {
+	return gdb.transaction(ctx, func(tx *tx) error {
+		if err := tx.isCtxUserEntity(ctx, id); err != nil {
+			return err
+		}
+		return tx.db.Model(&scheme.Connection{ConnectionID: id}).Updates(data).Error
+	})
 }
 
-func (db *gormdb) deleteConnection(ctx context.Context, id sdktypes.UUID) error {
-	return db.db.WithContext(ctx).Delete(&scheme.Connection{ConnectionID: id}).Error
+func (gdb *gormdb) getConnection(ctx context.Context, id sdktypes.UUID) (*scheme.Connection, error) {
+	return getOne[scheme.Connection](gdb.withUserConnections(ctx), "connection_id = ?", id)
 }
 
-func (db *gormdb) DeleteConnection(ctx context.Context, id sdktypes.ConnectionID) error {
-	return translateError(db.deleteConnection(ctx, id.UUIDValue()))
-}
-
-func (db *gormdb) GetConnection(ctx context.Context, id sdktypes.ConnectionID) (sdktypes.Connection, error) {
-	return getOneWTransform(db.db, ctx, scheme.ParseConnection, "connection_id = ?", id.UUIDValue())
-}
-
-func (db *gormdb) GetConnections(ctx context.Context, ids []sdktypes.ConnectionID) ([]sdktypes.Connection, error) {
-	q := db.db.WithContext(ctx).Where("connection_id IN (?)", kittehs.Transform(ids, func(id sdktypes.ConnectionID) uuid.UUID {
-		return id.UUIDValue()
-	}))
-
+func findConnections(query *gorm.DB) ([]scheme.Connection, error) {
 	var cs []scheme.Connection
-	if err := q.Find(&cs).Error; err != nil {
-		return nil, translateError(err)
+	if err := query.Find(&cs).Error; err != nil {
+		return nil, err
 	}
-	return kittehs.TransformError(cs, scheme.ParseConnection)
+	return cs, nil
 }
 
-func (db *gormdb) ListConnections(ctx context.Context, filter sdkservices.ListConnectionsFilter, idsOnly bool) ([]sdktypes.Connection, error) {
-	q := db.db.WithContext(ctx)
+func (gdb *gormdb) getConnections(ctx context.Context, ids ...sdktypes.UUID) ([]scheme.Connection, error) {
+	q := gdb.withUserConnections(ctx).Where("connection_id IN (?)", ids)
+	return findConnections(q)
+}
+
+func (gdb *gormdb) listConnections(ctx context.Context, filter sdkservices.ListConnectionsFilter, idsOnly bool) ([]scheme.Connection, error) {
+	q := gdb.withUserConnections(ctx)
 
 	if filter.IntegrationID.IsValid() {
 		q = q.Where("integration_id = ?", filter.IntegrationID.UUIDValue())
@@ -103,9 +74,69 @@ func (db *gormdb) ListConnections(ctx context.Context, filter sdkservices.ListCo
 	if idsOnly {
 		q = q.Select("connection_id")
 	}
+	return findConnections(q)
+}
 
-	var cs []scheme.Connection
-	if err := q.Find(&cs).Error; err != nil {
+func (db *gormdb) CreateConnection(ctx context.Context, conn sdktypes.Connection) error {
+	if err := conn.Strict(); err != nil {
+		return err
+	}
+
+	c := scheme.Connection{
+		ConnectionID:  conn.ID().UUIDValue(),
+		IntegrationID: scheme.UUIDOrNil(conn.IntegrationID().UUIDValue()), // TODO(ENG-158): need to verify integration id
+		ProjectID:     scheme.UUIDOrNil(conn.ProjectID().UUIDValue()),
+		Name:          conn.Name().String(),
+		StatusCode:    int32(conn.Status().Code().ToProto()),
+		StatusMessage: conn.Status().Message(),
+	}
+
+	return translateError(db.createConnection(ctx, &c))
+}
+
+func (db *gormdb) DeleteConnection(ctx context.Context, id sdktypes.ConnectionID) error {
+	return translateError(db.deleteConnection(ctx, id.UUIDValue()))
+}
+
+func (db *gormdb) UpdateConnection(ctx context.Context, conn sdktypes.Connection) error {
+	// This will never update integration id or project id, so not checking them.
+
+	data := make(map[string]any, 2)
+
+	if conn.Name().IsValid() {
+		data["name"] = conn.Name().String()
+	}
+
+	if conn.Status().IsValid() {
+		data["status_code"] = int32(conn.Status().Code().ToProto())
+		data["status_message"] = conn.Status().Message()
+	}
+	if len(data) == 0 {
+		return nil
+	}
+	return translateError(db.updateConnection(ctx, conn.ID().UUIDValue(), data))
+}
+
+func (db *gormdb) GetConnection(ctx context.Context, connectionID sdktypes.ConnectionID) (sdktypes.Connection, error) {
+	c, err := db.getConnection(ctx, connectionID.UUIDValue())
+	if c == nil || err != nil {
+		return sdktypes.InvalidConnection, translateError(err)
+	}
+	return scheme.ParseConnection(*c)
+}
+
+func (db *gormdb) GetConnections(ctx context.Context, connectionIDs []sdktypes.ConnectionID) ([]sdktypes.Connection, error) {
+	ids := kittehs.Transform(connectionIDs, func(id sdktypes.ConnectionID) uuid.UUID { return id.UUIDValue() })
+	cs, err := db.getConnections(ctx, ids...)
+	if err != nil {
+		return nil, translateError(err)
+	}
+	return kittehs.TransformError(cs, scheme.ParseConnection)
+}
+
+func (db *gormdb) ListConnections(ctx context.Context, filter sdkservices.ListConnectionsFilter, idsOnly bool) ([]sdktypes.Connection, error) {
+	cs, err := db.listConnections(ctx, filter, idsOnly)
+	if err != nil {
 		return nil, translateError(err)
 	}
 	return kittehs.TransformError(cs, scheme.ParseConnection)

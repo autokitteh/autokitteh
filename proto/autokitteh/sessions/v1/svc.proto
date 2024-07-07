@@ -71,10 +71,23 @@ message GetResponse {
 
 message GetLogRequest {
   string session_id = 1 [(buf.validate.field).string.min_len = 1];
+  int32 page_size = 20;
+
+  int32 skip = 21 [(buf.validate.field).cel = {
+    id: "session.list.skip"
+    message: "Must be >= 0"
+    expression: "this >= 0"
+  }];
+
+  string page_token = 22;
+  bool ascending = 11;
 }
 
 message GetLogResponse {
   SessionLog log = 1 [(buf.validate.field).required = true];
+  int64 count = 2;
+
+  string next_page_token = 10;
 }
 
 message DeleteRequest {

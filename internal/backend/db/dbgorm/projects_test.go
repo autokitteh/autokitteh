@@ -52,9 +52,9 @@ func TestCreateDuplicatedProjectName(t *testing.T) {
 	// test createProject
 	f.createProjectsAndAssert(t, p)
 
+	// create different project with the same name
 	p2 := f.newProject()
 	p2.Name = p.Name
-
 	assert.Equal(t, p.Name, p2.Name)
 	assert.NotEqual(t, p.ProjectID, p2.ProjectID)
 
@@ -210,7 +210,7 @@ func TestDeleteProjectAndDependents(t *testing.T) {
 	t1.ConnectionID = c.ConnectionID
 	t2.ProjectID = p1.ProjectID
 	t2.EnvID = e2p1.EnvID
-	t1.ConnectionID = c.ConnectionID
+	t2.ConnectionID = c.ConnectionID
 
 	sig := f.newSignal()
 	sig.ConnectionID = c.ConnectionID

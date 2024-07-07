@@ -45,11 +45,12 @@ func (m *triggers) Create(ctx context.Context, trigger sdktypes.Trigger) (sdktyp
 			}
 		}
 	}
-	// FIXME: see atomicity NOTE above
 
+	// FIXME: see atomicity NOTE above
 	if err := m.db.CreateTrigger(ctx, trigger); err != nil {
 		return sdktypes.InvalidTriggerID, err
 	}
+
 	return trigger.ID(), nil
 }
 

@@ -56,54 +56,63 @@ func preDeploymentTest(t *testing.T) *dbFixture {
 	return f
 }
 
+func createBuildAndDeployment(t *testing.T, f *dbFixture) (scheme.Build, scheme.Deployment) {
+	b := f.newBuild()
+	d := f.newDeployment(b)
+	f.saveBuildsAndAssert(t, b)
+	f.createDeploymentsAndAssert(t, d)
+	return b, d
+}
+
 func TestCreateDeployment(t *testing.T) {
 	f := preDeploymentTest(t)
-	foreignKeys(f.gormdb, false) // no foreign keys - need build
 
-	d := f.newDeployment()
-	// test createDeployment without any assets deployment depends on, since they are soft-foreign keys and could be nil
-	f.createDeploymentsAndAssert(t, d)
+	_, _ = createBuildAndDeployment(t, f)
 }
 
 func TestCreateDeploymentsForeignKeys(t *testing.T) {
 	// check session creation if foreign keys are not nil
 	f := preDeploymentTest(t)
 
-	// negative test with non-existing assets
-	d := f.newDeployment()
-
-	unexistingEnvID := scheme.UUIDOrNil(sdktypes.NewEnvID().UUIDValue())
-	d.EnvID = unexistingEnvID
-	assert.ErrorIs(t, f.gormdb.createDeployment(f.ctx, &d), gorm.ErrForeignKeyViolated)
-	d.EnvID = nil
-
-	// test with existing assets
 	p := f.newProject()
-	e := f.newEnv()
-	e.ProjectID = p.ProjectID
+	e := f.newEnv(p)
 	b := f.newBuild()
 	f.createProjectsAndAssert(t, p)
 	f.createEnvsAndAssert(t, e)
 	f.saveBuildsAndAssert(t, b)
 
-	d = f.newDeployment()
-	d.BuildID = b.BuildID
-	d.EnvID = &e.EnvID
-	f.createDeploymentsAndAssert(t, d)
+	// negative test with non-existing assets
+	// zero buildID
+	d1 := f.newDeployment()
+	assert.Equal(t, d1.BuildID, sdktypes.UUID{}) // zero value for buildID
+	assert.ErrorIs(t, f.gormdb.createDeployment(f.ctx, &d1), gorm.ErrForeignKeyViolated)
+
+	// valid env, but zero buildID
+	d2 := f.newDeployment(e)
+	assert.Equal(t, d2.BuildID, sdktypes.UUID{}) // zero value for buildID
+	assert.ErrorIs(t, f.gormdb.createDeployment(f.ctx, &d2), gorm.ErrForeignKeyViolated)
+
+	// use existing user-owned buildID as fake unexisting envID
+	d3 := f.newDeployment(b)
+	d3.EnvID = &b.BuildID // no such envID, since it's a buildID
+	assert.ErrorIs(t, f.gormdb.createDeployment(f.ctx, &d3), gorm.ErrForeignKeyViolated)
+
+	// test with existing assets
+	d3.EnvID = &e.EnvID
+	f.createDeploymentsAndAssert(t, d3)
 }
 
 func TestGetDeployment(t *testing.T) {
 	f := preDeploymentTest(t)
-	foreignKeys(f.gormdb, false) // no foreign keys - need build
 
-	d := f.newDeployment()
-	f.createDeploymentsAndAssert(t, d)
+	_, d := createBuildAndDeployment(t, f)
 
 	// check getDeployment
-	deployment, err := f.gormdb.getDeployment(f.ctx, d.DeploymentID)
+	d2, err := f.gormdb.getDeployment(f.ctx, d.DeploymentID)
 	assert.NoError(t, err)
-	assert.Equal(t, d, *deployment)
+	assert.Equal(t, d, *d2)
 
+	// check getDeployment after delete
 	assert.NoError(t, f.gormdb.deleteDeployment(f.ctx, d.DeploymentID))
 	_, err = f.gormdb.getDeployment(f.ctx, d.DeploymentID)
 	assert.ErrorIs(t, err, gorm.ErrRecordNotFound)
@@ -111,30 +120,28 @@ func TestGetDeployment(t *testing.T) {
 
 func TestListDeployments(t *testing.T) {
 	f := preDeploymentTest(t)
-	foreignKeys(f.gormdb, false) // no foreign keys - need build
-
-	d := f.newDeployment()
-	f.createDeploymentsAndAssert(t, d)
+	_, d := createBuildAndDeployment(t, f)
 
 	deployments := f.listDeploymentsAndAssert(t, 1)
 	assert.Equal(t, d, deployments[0])
+
+	// test listDeployments after delete
+	assert.NoError(t, f.gormdb.deleteDeployment(f.ctx, d.DeploymentID))
+	f.listDeploymentsAndAssert(t, 0)
 }
 
 func TestListDeploymentsWithStats(t *testing.T) {
 	f := preDeploymentTest(t)
-	foreignKeys(f.gormdb, false) // no foreign keys - need build
 
 	// create deployment and ensure there are no stats
-	d := f.newDeployment()
-	f.createDeploymentsAndAssert(t, d)
+	_, d := createBuildAndDeployment(t, f)
 
 	dWS := scheme.DeploymentWithStats{Deployment: d} // no stats, all zeros
 	deployments := listDeploymentsWithStatsAndAssert(t, f, 1)
 	assert.Equal(t, dWS, deployments[0])
 
 	// add session for the stats
-	s := f.newSession(sdktypes.SessionStateTypeCompleted)
-	s.DeploymentID = &d.DeploymentID
+	s := f.newSession(sdktypes.SessionStateTypeCompleted, d)
 	f.createSessionsAndAssert(t, s)
 
 	// ensure that new session is included in stats
@@ -155,17 +162,11 @@ func TestListDeploymentsWithStats(t *testing.T) {
 func TestDeleteDeployment(t *testing.T) {
 	f := preDeploymentTest(t)
 
-	b := f.newBuild()
-	d := f.newDeployment()
-	d.BuildID = b.BuildID
-	f.saveBuildsAndAssert(t, b)
-	f.createDeploymentsAndAssert(t, d)
+	_, d := createBuildAndDeployment(t, f)
 
 	// add sessions and check that deployment stats are updated
-	s1 := f.newSession(sdktypes.SessionStateTypeCompleted)
-	s2 := f.newSession(sdktypes.SessionStateTypeError)
-	s1.DeploymentID = &d.DeploymentID
-	s2.DeploymentID = &d.DeploymentID
+	s1 := f.newSession(sdktypes.SessionStateTypeCompleted, d)
+	s2 := f.newSession(sdktypes.SessionStateTypeError, d)
 	f.createSessionsAndAssert(t, s1, s2)
 
 	dWS := scheme.DeploymentWithStats{Deployment: d, Completed: 1, Error: 1}

@@ -3,17 +3,20 @@ package sessions
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	"github.com/spf13/cobra"
 
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
 	"go.autokitteh.dev/autokitteh/internal/resolver"
+	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 var (
-	skip       int
+	// skip       int
 	printsOnly bool
+	logOrder   string
 )
 
 var logCmd = common.StandardCommand(&cobra.Command{
@@ -43,43 +46,67 @@ var logCmd = common.StandardCommand(&cobra.Command{
 		ctx, cancel := common.LimitedContext()
 		defer cancel()
 
-		_, err = sessionLog(ctx, id, skip)
+		f := sdkservices.ListSessionLogRecordsFilter{SessionID: id}
+		if nextPageToken != "" {
+			f.PageToken = nextPageToken
+		}
 
-		return err
+		if pageSize > 0 {
+			f.PageSize = int32(pageSize)
+		}
+
+		if skipRows > 0 {
+			f.Skip = int32(skipRows)
+		}
+
+		f.Ascending = true
+		if logOrder == "desc" {
+			f.Ascending = false
+		}
+
+		return sessionLog(ctx, f)
+
 	},
 })
 
 func init() {
 	// Command-specific flags.
-	logCmd.Flags().IntVarP(&skip, "skip", "s", 0, "number of entries to skip")
+	// logCmd.Flags().IntVarP(&skip, "skip", "s", 0, "number of entries to skip")
 	logCmd.Flags().BoolVarP(&noTimestamps, "no-timestamps", "n", false, "omit timestamps from watch output")
 	logCmd.Flags().BoolVarP(&printsOnly, "prints-only", "p", false, "output only session print messages")
+	logCmd.Flags().StringVarP(&logOrder, "order", "o", "desc", "logs order can be asc or desc")
+	logCmd.Flags().StringVar(&nextPageToken, "next-page-token", "", "provide the returned page token to get next")
+	logCmd.Flags().IntVar(&pageSize, "page-size", 20, "page size")
+	logCmd.Flags().IntVar(&skipRows, "skip-rows", 0, "skip rows")
 
 	common.AddFailIfNotFoundFlag(logCmd)
+
 }
 
 // skip >= 0: skip first records
 // skip < 0: skip all up to last |skip| records.
-func sessionLog(ctx context.Context, sid sdktypes.SessionID, skip int) ([]sdktypes.SessionLogRecord, error) {
-	l, err := sessions().GetLog(ctx, sid)
+func sessionLog(ctx context.Context, filter sdkservices.ListSessionLogRecordsFilter) error {
+	l, err := sessions().GetLog(ctx, filter)
 	if err != nil {
-		return nil, fmt.Errorf("get log: %w", err)
+		return fmt.Errorf("get log: %w", err)
 	}
 
-	rs := l.Records()
+	rs := l.Log.Records()
 	if len(rs) == 0 {
-		return rs, nil
+		return nil
 	}
 
-	var fresh []sdktypes.SessionLogRecord
+	slices.SortFunc(rs, func(a, b sdktypes.SessionLogRecord) int {
+		return a.Timestamp().Compare(b.Timestamp())
+	})
 
-	if skip < 0 {
-		fresh = rs[len(rs)+skip:]
-	} else if len(rs) > skip {
-		fresh = rs[skip:]
-	}
+	printLogs(rs)
 
-	for _, r := range fresh {
+	return nil
+}
+
+func printLogs(logs []sdktypes.SessionLogRecord) {
+	for _, r := range logs {
 		if noTimestamps {
 			r = r.WithoutTimestamp().WithProcessID("")
 		}
@@ -108,6 +135,4 @@ func sessionLog(ctx context.Context, sid sdktypes.SessionID, skip int) ([]sdktyp
 			common.Render(r)
 		}
 	}
-
-	return rs, nil
 }

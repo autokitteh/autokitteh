@@ -1,19 +1,10 @@
 -- +goose Up
--- create "vars" table
-CREATE TABLE "vars" (
-  "scope_id" uuid NOT NULL,
-  "name" text NOT NULL,
+-- create "secrets" table
+CREATE TABLE "secrets" (
+  "key" text NOT NULL,
   "value" text NULL,
-  "is_secret" boolean NULL,
-  "integration_id" uuid NULL,
-  PRIMARY KEY ("scope_id", "name")
+  PRIMARY KEY ("key")
 );
--- create index "idx_vars_integration_id" to table: "vars"
-CREATE INDEX "idx_vars_integration_id" ON "vars" ("integration_id");
--- create index "idx_vars_name" to table: "vars"
-CREATE INDEX "idx_vars_name" ON "vars" ("name");
--- create index "idx_vars_scope_id" to table: "vars"
-CREATE INDEX "idx_vars_scope_id" ON "vars" ("scope_id");
 -- create "integrations" table
 CREATE TABLE "integrations" (
   "integration_id" uuid NOT NULL,
@@ -29,12 +20,21 @@ CREATE TABLE "integrations" (
 );
 -- create index "idx_integrations_unique_name" to table: "integrations"
 CREATE UNIQUE INDEX "idx_integrations_unique_name" ON "integrations" ("unique_name");
--- create "secrets" table
-CREATE TABLE "secrets" (
+-- create "vars" table
+CREATE TABLE "vars" (
+  "var_id" uuid NOT NULL,
   "name" text NOT NULL,
-  "data" jsonb NULL,
-  PRIMARY KEY ("name")
+  "value" text NULL,
+  "is_secret" boolean NULL,
+  "integration_id" uuid NULL,
+  PRIMARY KEY ("var_id", "name")
 );
+-- create index "idx_vars_integration_id" to table: "vars"
+CREATE INDEX "idx_vars_integration_id" ON "vars" ("integration_id");
+-- create index "idx_vars_name" to table: "vars"
+CREATE INDEX "idx_vars_name" ON "vars" ("name");
+-- create index "idx_vars_var_id" to table: "vars"
+CREATE INDEX "idx_vars_var_id" ON "vars" ("var_id");
 -- create "projects" table
 CREATE TABLE "projects" (
   "project_id" uuid NOT NULL,
@@ -47,32 +47,45 @@ CREATE TABLE "projects" (
 -- create index "idx_projects_deleted_at" to table: "projects"
 CREATE INDEX "idx_projects_deleted_at" ON "projects" ("deleted_at");
 -- create index "idx_projects_name" to table: "projects"
-CREATE UNIQUE INDEX "idx_projects_name" ON "projects" ("name");
+CREATE INDEX "idx_projects_name" ON "projects" ("name");
+-- create "builds" table
+CREATE TABLE "builds" (
+  "build_id" uuid NOT NULL,
+  "project_id" uuid NULL,
+  "data" bytea NULL,
+  "created_at" timestamptz NULL,
+  "deleted_at" timestamptz NULL,
+  PRIMARY KEY ("build_id"),
+  CONSTRAINT "fk_builds_project" FOREIGN KEY ("project_id") REFERENCES "projects" ("project_id") ON UPDATE NO ACTION ON DELETE NO ACTION
+);
+-- create index "idx_builds_deleted_at" to table: "builds"
+CREATE INDEX "idx_builds_deleted_at" ON "builds" ("deleted_at");
+-- create index "idx_builds_project_id" to table: "builds"
+CREATE INDEX "idx_builds_project_id" ON "builds" ("project_id");
 -- create "connections" table
 CREATE TABLE "connections" (
   "connection_id" uuid NOT NULL,
   "integration_id" uuid NULL,
   "project_id" uuid NULL,
   "name" text NULL,
+  "status_code" integer NULL,
+  "status_message" text NULL,
+  "deleted_at" timestamptz NULL,
   PRIMARY KEY ("connection_id"),
   CONSTRAINT "fk_connections_project" FOREIGN KEY ("project_id") REFERENCES "projects" ("project_id") ON UPDATE NO ACTION ON DELETE NO ACTION
 );
+-- create index "idx_connections_deleted_at" to table: "connections"
+CREATE INDEX "idx_connections_deleted_at" ON "connections" ("deleted_at");
+-- create index "idx_connections_integration_id" to table: "connections"
+CREATE INDEX "idx_connections_integration_id" ON "connections" ("integration_id");
 -- create index "idx_connections_project_id" to table: "connections"
 CREATE INDEX "idx_connections_project_id" ON "connections" ("project_id");
--- create "builds" table
-CREATE TABLE "builds" (
-  "build_id" uuid NOT NULL,
-  "data" bytea NULL,
-  "created_at" timestamptz NULL,
-  "deleted_at" timestamptz NULL,
-  PRIMARY KEY ("build_id")
-);
--- create index "idx_builds_deleted_at" to table: "builds"
-CREATE INDEX "idx_builds_deleted_at" ON "builds" ("deleted_at");
+-- create index "idx_connections_status_code" to table: "connections"
+CREATE INDEX "idx_connections_status_code" ON "connections" ("status_code");
 -- create "envs" table
 CREATE TABLE "envs" (
   "env_id" uuid NOT NULL,
-  "project_id" uuid NULL,
+  "project_id" uuid NOT NULL,
   "name" text NULL,
   "deleted_at" timestamptz NULL,
   "membership_id" text NULL,
@@ -89,7 +102,7 @@ CREATE INDEX "idx_envs_project_id" ON "envs" ("project_id");
 CREATE TABLE "deployments" (
   "deployment_id" uuid NOT NULL,
   "env_id" uuid NULL,
-  "build_id" uuid NULL,
+  "build_id" uuid NOT NULL,
   "state" integer NULL,
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
@@ -105,8 +118,8 @@ CREATE INDEX "idx_deployments_env_id" ON "deployments" ("env_id");
 -- create "events" table
 CREATE TABLE "events" (
   "event_id" uuid NOT NULL,
-  "integration_id" uuid NOT NULL,
-  "connection_id" uuid NOT NULL,
+  "integration_id" uuid NULL,
+  "connection_id" uuid NULL,
   "event_type" text NULL,
   "data" jsonb NULL,
   "memo" jsonb NULL,
@@ -130,15 +143,33 @@ CREATE UNIQUE INDEX "idx_events_event_id" ON "events" ("event_id");
 CREATE INDEX "idx_events_integration_id" ON "events" ("integration_id");
 -- create "event_records" table
 CREATE TABLE "event_records" (
-  "seq" bigint NOT NULL,
   "event_id" uuid NOT NULL,
+  "seq" bigint NOT NULL,
   "state" integer NULL,
   "created_at" timestamptz NULL,
-  PRIMARY KEY ("seq", "event_id"),
+  PRIMARY KEY ("event_id", "seq"),
   CONSTRAINT "fk_event_records_event" FOREIGN KEY ("event_id") REFERENCES "events" ("event_id") ON UPDATE NO ACTION ON DELETE NO ACTION
 );
 -- create index "idx_event_records_state" to table: "event_records"
 CREATE INDEX "idx_event_records_state" ON "event_records" ("state");
+-- create "users" table
+CREATE TABLE "users" (
+  "user_id" uuid NOT NULL,
+  "provider" text NOT NULL,
+  "email" text NOT NULL,
+  "name" text NOT NULL,
+  PRIMARY KEY ("user_id")
+);
+-- create index "idx_provider_email_name_idx" to table: "users"
+CREATE UNIQUE INDEX "idx_provider_email_name_idx" ON "users" ("email", "provider", "name");
+-- create "ownerships" table
+CREATE TABLE "ownerships" (
+  "entity_id" uuid NOT NULL,
+  "entity_type" text NOT NULL,
+  "user_id" uuid NOT NULL,
+  PRIMARY KEY ("entity_id"),
+  CONSTRAINT "fk_ownerships_user" FOREIGN KEY ("user_id") REFERENCES "users" ("user_id") ON UPDATE NO ACTION ON DELETE NO ACTION
+);
 -- create "sessions" table
 CREATE TABLE "sessions" (
   "session_id" uuid NOT NULL,
@@ -192,11 +223,11 @@ CREATE TABLE "session_call_specs" (
 -- create "session_log_records" table
 CREATE TABLE "session_log_records" (
   "session_id" uuid NOT NULL,
+  "seq" bigint NOT NULL,
   "data" jsonb NULL,
+  PRIMARY KEY ("session_id", "seq"),
   CONSTRAINT "fk_session_log_records_session" FOREIGN KEY ("session_id") REFERENCES "sessions" ("session_id") ON UPDATE NO ACTION ON DELETE NO ACTION
 );
--- create index "idx_session_log_records_session_id" to table: "session_log_records"
-CREATE INDEX "idx_session_log_records_session_id" ON "session_log_records" ("session_id");
 -- create "signals" table
 CREATE TABLE "signals" (
   "signal_id" text NOT NULL,
@@ -250,8 +281,6 @@ DROP TABLE "triggers";
 DROP INDEX "idx_connection_id_event_type";
 -- reverse: create "signals" table
 DROP TABLE "signals";
--- reverse: create index "idx_session_log_records_session_id" to table: "session_log_records"
-DROP INDEX "idx_session_log_records_session_id";
 -- reverse: create "session_log_records" table
 DROP TABLE "session_log_records";
 -- reverse: create "session_call_specs" table
@@ -274,6 +303,12 @@ DROP INDEX "idx_sessions_current_state_type";
 DROP INDEX "idx_sessions_build_id";
 -- reverse: create "sessions" table
 DROP TABLE "sessions";
+-- reverse: create "ownerships" table
+DROP TABLE "ownerships";
+-- reverse: create index "idx_provider_email_name_idx" to table: "users"
+DROP INDEX "idx_provider_email_name_idx";
+-- reverse: create "users" table
+DROP TABLE "users";
 -- reverse: create index "idx_event_records_state" to table: "event_records"
 DROP INDEX "idx_event_records_state";
 -- reverse: create "event_records" table
@@ -306,31 +341,39 @@ DROP INDEX "idx_envs_membership_id";
 DROP INDEX "idx_envs_deleted_at";
 -- reverse: create "envs" table
 DROP TABLE "envs";
+-- reverse: create index "idx_connections_status_code" to table: "connections"
+DROP INDEX "idx_connections_status_code";
+-- reverse: create index "idx_connections_project_id" to table: "connections"
+DROP INDEX "idx_connections_project_id";
+-- reverse: create index "idx_connections_integration_id" to table: "connections"
+DROP INDEX "idx_connections_integration_id";
+-- reverse: create index "idx_connections_deleted_at" to table: "connections"
+DROP INDEX "idx_connections_deleted_at";
+-- reverse: create "connections" table
+DROP TABLE "connections";
+-- reverse: create index "idx_builds_project_id" to table: "builds"
+DROP INDEX "idx_builds_project_id";
 -- reverse: create index "idx_builds_deleted_at" to table: "builds"
 DROP INDEX "idx_builds_deleted_at";
 -- reverse: create "builds" table
 DROP TABLE "builds";
--- reverse: create index "idx_connections_project_id" to table: "connections"
-DROP INDEX "idx_connections_project_id";
--- reverse: create "connections" table
-DROP TABLE "connections";
 -- reverse: create index "idx_projects_name" to table: "projects"
 DROP INDEX "idx_projects_name";
 -- reverse: create index "idx_projects_deleted_at" to table: "projects"
 DROP INDEX "idx_projects_deleted_at";
 -- reverse: create "projects" table
 DROP TABLE "projects";
--- reverse: create "secrets" table
-DROP TABLE "secrets";
--- reverse: create index "idx_integrations_unique_name" to table: "integrations"
-DROP INDEX "idx_integrations_unique_name";
--- reverse: create "integrations" table
-DROP TABLE "integrations";
--- reverse: create index "idx_vars_scope_id" to table: "vars"
-DROP INDEX "idx_vars_scope_id";
+-- reverse: create index "idx_vars_var_id" to table: "vars"
+DROP INDEX "idx_vars_var_id";
 -- reverse: create index "idx_vars_name" to table: "vars"
 DROP INDEX "idx_vars_name";
 -- reverse: create index "idx_vars_integration_id" to table: "vars"
 DROP INDEX "idx_vars_integration_id";
 -- reverse: create "vars" table
 DROP TABLE "vars";
+-- reverse: create index "idx_integrations_unique_name" to table: "integrations"
+DROP INDEX "idx_integrations_unique_name";
+-- reverse: create "integrations" table
+DROP TABLE "integrations";
+-- reverse: create "secrets" table
+DROP TABLE "secrets";

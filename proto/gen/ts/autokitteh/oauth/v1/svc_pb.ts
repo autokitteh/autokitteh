@@ -162,14 +162,19 @@ export class GetResponse extends Message<GetResponse> {
  */
 export class StartFlowRequest extends Message<StartFlowRequest> {
   /**
-   * @generated from field: string id = 1;
+   * @generated from field: string integration = 1;
    */
-  id = "";
+  integration = "";
 
   /**
    * @generated from field: string connection_id = 2;
    */
   connectionId = "";
+
+  /**
+   * @generated from field: string origin = 3;
+   */
+  origin = "";
 
   constructor(data?: PartialMessage<StartFlowRequest>) {
     super();
@@ -179,8 +184,9 @@ export class StartFlowRequest extends Message<StartFlowRequest> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "autokitteh.oauth.v1.StartFlowRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: "integration", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "connection_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "origin", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): StartFlowRequest {
@@ -242,17 +248,12 @@ export class StartFlowResponse extends Message<StartFlowResponse> {
  */
 export class ExchangeRequest extends Message<ExchangeRequest> {
   /**
-   * @generated from field: string id = 1;
+   * @generated from field: string integration = 1;
    */
-  id = "";
+  integration = "";
 
   /**
-   * @generated from field: string state = 2;
-   */
-  state = "";
-
-  /**
-   * @generated from field: string code = 3;
+   * @generated from field: string code = 2;
    */
   code = "";
 
@@ -264,9 +265,8 @@ export class ExchangeRequest extends Message<ExchangeRequest> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "autokitteh.oauth.v1.ExchangeRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "state", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "code", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: "integration", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "code", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ExchangeRequest {

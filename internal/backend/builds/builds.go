@@ -49,9 +49,7 @@ func (b *Builds) Save(ctx context.Context, build sdktypes.Build, data []byte) (s
 		return sdktypes.InvalidBuildID, fmt.Errorf("read version: %w", err)
 	}
 
-	build = build.
-		WithNewID().
-		WithCreatedAt(time.Now())
+	build = build.WithNewID().WithCreatedAt(time.Now())
 
 	if err := b.DB.SaveBuild(ctx, build, data); err != nil {
 		return sdktypes.InvalidBuildID, err

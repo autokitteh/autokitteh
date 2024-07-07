@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"slices"
 	"strings"
 
 	"github.com/hexops/gotextdiff"
@@ -93,11 +94,15 @@ var testCmd = common.StandardCommand(&cobra.Command{
 		if err != nil {
 			return fmt.Errorf("start session: %w", err)
 		}
-
+		pageSize = 10
 		rs, err := sessionWatch(sid, sdktypes.SessionStateTypeUnspecified)
 		if err != nil {
 			return err
 		}
+
+		slices.SortFunc(rs, func(a, b sdktypes.SessionLogRecord) int {
+			return a.Timestamp().Compare(b.Timestamp())
+		})
 
 		var prints strings.Builder
 		for _, r := range rs {

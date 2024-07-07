@@ -126,7 +126,12 @@ func extractEntityType(l *zap.Logger, atlassianEvent map[string]any, category st
 		}
 	}
 
-	// "content_*" events.
+	// Some "relation_*" events look a little different.
+	if _, ok := atlassianEvent["relationData"]; ok {
+		return fmt.Sprintf("relation_%s", category), true
+	}
+
+	// Last but not least: "content_*" events.
 	if contentType, ok := atlassianEvent["type"]; ok {
 		if s, ok := contentType.(string); ok && strings.Contains(s, "content") {
 			return "content_" + category, true
@@ -146,7 +151,7 @@ func extractBaseURL(atlassianEvent map[string]any) string {
 		}
 	}
 
-	// "content_*" events.
+	// Last but not least: "content_*" and "relation_*" events.
 	if links, ok := atlassianEvent["_links"].(map[string]string); ok {
 		if base, ok := links["base"]; ok {
 			return strings.Split(base, "/wiki")[0]

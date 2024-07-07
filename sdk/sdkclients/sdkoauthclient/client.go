@@ -66,17 +66,20 @@ func (c *client) Get(ctx context.Context, id string) (*oauth2.Config, map[string
 	return cfg, resp.Msg.Config.Options, nil
 }
 
-func (c *client) StartFlow(ctx context.Context, id string, cid sdktypes.ConnectionID) (string, error) {
-	req := &oauthv1.StartFlowRequest{Id: id, ConnectionId: cid.String()}
-	resp, err := c.client.StartFlow(ctx, connect.NewRequest(req))
+func (c *client) StartFlow(ctx context.Context, intg string, cid sdktypes.ConnectionID, origin string) (string, error) {
+	resp, err := c.client.StartFlow(ctx, connect.NewRequest(&oauthv1.StartFlowRequest{
+		Integration:  intg,
+		ConnectionId: cid.String(),
+		Origin:       origin,
+	}))
 	if err != nil {
 		return "", err
 	}
 	return resp.Msg.Url, nil
 }
 
-func (c *client) Exchange(ctx context.Context, id, state, code string) (*oauth2.Token, error) {
-	req := &oauthv1.ExchangeRequest{Id: id, State: state, Code: code}
+func (c *client) Exchange(ctx context.Context, integration, code string) (*oauth2.Token, error) {
+	req := &oauthv1.ExchangeRequest{Integration: integration, Code: code}
 	resp, err := c.client.Exchange(ctx, connect.NewRequest(req))
 	if err != nil {
 		return nil, err
