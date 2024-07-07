@@ -88,7 +88,7 @@ func (gdb *gormdb) deleteProjectAndDependents(ctx context.Context, projectID sdk
 	}
 
 	// delete project connections and associated vars
-	if err = gdb.deleteConnectionsAndVars("project_id = ?", projectID); err != nil {
+	if err = gdb.deleteConnectionsAndVars("project_id", projectID); err != nil {
 		return err
 	}
 

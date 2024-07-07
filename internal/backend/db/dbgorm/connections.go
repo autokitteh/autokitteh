@@ -2,6 +2,7 @@ package dbgorm
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -22,13 +23,13 @@ func (gdb *gormdb) createConnection(ctx context.Context, conn *scheme.Connection
 	return gdb.createEntityWithOwnership(ctx, createFunc, conn, conn.ProjectID)
 }
 
-func (gdb *gormdb) deleteConnectionsAndVars(where string, id sdktypes.UUID) error {
+func (gdb *gormdb) deleteConnectionsAndVars(what string, id sdktypes.UUID) error {
 	// should be transactional with context already applied
 
 	var ids []sdktypes.UUID
 	q := gdb.db.Model(&scheme.Connection{})
 	q = q.Clauses(clause.Returning{Columns: []clause.Column{{Name: "connection_id"}}})
-	if err := q.Delete(&ids, where, id).Error; err != nil {
+	if err := q.Delete(&ids, fmt.Sprintf("%s = ?", what), id).Error; err != nil {
 		return err
 		// REVIEW: proceed to vars deletion if there are any?
 	}
@@ -45,7 +46,7 @@ func (gdb *gormdb) deleteConnection(ctx context.Context, id sdktypes.UUID) error
 			return err
 		}
 		// delete connection and associated vars
-		return tx.deleteConnectionsAndVars("connection_id = ?", id)
+		return tx.deleteConnectionsAndVars("connection_id", id)
 	})
 }
 
