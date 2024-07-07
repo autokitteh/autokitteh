@@ -32,7 +32,7 @@ EOF
 # Create a new stage for running the application that contains the minimal
 # runtime dependencies for the application.
 
-FROM alpine:latest AS final
+FROM python:3.12-alpine3.20 AS final
 
 # Install any runtime dependencies 
 RUN --mount=type=cache,target=/var/cache/apk \
@@ -56,6 +56,13 @@ USER appuser
 
 # Copy the executable from the "build" stage.
 COPY --from=build /bin/ak /bin/
+
+# Create initial venv
+RUN python3 -m venv ~/.local/share/autokitteh/venv
+COPY --chown=appuser ./runtimes/pythonrt/requirements.txt /tmp/requirements.txt
+RUN ~/.local/share/autokitteh/venv/bin/python -m pip install --no-cache-dir -r /tmp/requirements.txt
+RUN rm /tmp/requirements.txt
+
 
 # Expose the port that the application listens on.
 EXPOSE 9980
