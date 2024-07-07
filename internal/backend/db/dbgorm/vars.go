@@ -87,11 +87,10 @@ func (gdb *gormdb) deleteVars(ctx context.Context, scopeID sdktypes.UUID, names 
 }
 
 func (gdb *gormdb) listVars(ctx context.Context, scopeID sdktypes.UUID, names ...string) ([]scheme.Var, error) {
-	db := varsCommonQuery(gdb.withUserVars(ctx), scopeID, names)
+	db := varsCommonQuery(gdb.withUserVars(ctx), scopeID, names) // skip not user owned vars
 
-	// Note(s):
-	// - will skip not user owned vars
-	// - not checking if scope is deleted, since scope deletion will cascade deletion of relevant vars
+	// Note: we are not checking if scope (env/connection) is deleted, since scope deletion will cascade deletion of relevant vars
+	// e.g. vars present only for valid and active scope
 	var vars []scheme.Var
 	if err := db.Find(&vars).Error; err != nil {
 		return nil, err
