@@ -25,9 +25,10 @@ import (
 type Config = gormkitteh.Config
 
 type gormdb struct {
-	z   *zap.Logger
-	db  *gorm.DB
-	cfg *Config
+	z     *zap.Logger
+	db    *gorm.DB
+	cfg   *Config
+	owner OwnershipChecker
 
 	// See https://github.com/mattn/go-sqlite3/issues/274.
 	// Used only for protecting writes when using sqlite.
@@ -38,6 +39,17 @@ type gormdb struct {
 }
 
 var _ db.DB = (*gormdb)(nil)
+
+func (db *gormdb) setupOwnershipChecker(z *zap.Logger) {
+	z.Info("ownership", zap.String("checker", db.cfg.Ownership))
+	z = z.With(zap.String("checker", db.cfg.Ownership))
+	switch db.cfg.Ownership {
+	case "none":
+		db.owner = &PermissiveOwnershipChecker{z}
+	default: // users
+		db.owner = &UsersOwnerchipChecker{z}
+	}
+}
 
 func New(z *zap.Logger, cfg *Config) (db.DB, error) {
 	cfg, err := cfg.Explicit()
@@ -50,6 +62,7 @@ func New(z *zap.Logger, cfg *Config) (db.DB, error) {
 	if cfg.Type == "sqlite" {
 		db.mu = new(sync.Mutex)
 	}
+	db.setupOwnershipChecker(z)
 
 	return db, nil
 }

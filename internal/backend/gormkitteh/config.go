@@ -25,6 +25,8 @@ type Config struct {
 	// If false, the server will fail to start if a migration is required,
 	// and the user has to run 'ak server migrate' explicitly.
 	AutoMigrate bool `koanf:"auto_migrate"`
+
+	Ownership string `koanf:"ownership"`
 }
 
 func (c Config) Explicit() (*Config, error) {
@@ -53,6 +55,10 @@ func (c Config) Explicit() (*Config, error) {
 				return nil, ErrInvalidDSN
 			}
 		}
+	}
+
+	if c.Ownership != "none" {
+		c.Ownership = "users"
 	}
 
 	return &c, nil

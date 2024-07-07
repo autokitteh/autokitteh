@@ -139,14 +139,13 @@ func (gdb *gormdb) createEntityWithOwnership(
 	})
 }
 
-func (gdb *gormdb) isUserEntity(user *scheme.User, ids ...sdktypes.UUID) error {
-	gdb.z.Debug("isUserEntity", zap.Any("entityIDs", ids), zap.Any("user", user))
+func isUserEntity(db *gorm.DB, user *scheme.User, ids ...sdktypes.UUID) error {
 	if len(ids) == 0 {
 		return nil
 	}
 
 	var oo []scheme.Ownership
-	if err := gdb.db.Model(&scheme.Ownership{}).Where("entity_id IN ?", ids).Select("user_id").Find(&oo).Error; err != nil {
+	if err := db.Model(&scheme.Ownership{}).Where("entity_id IN ?", ids).Select("user_id").Find(&oo).Error; err != nil {
 		return err
 	}
 
@@ -162,8 +161,12 @@ func (gdb *gormdb) isUserEntity(user *scheme.User, ids ...sdktypes.UUID) error {
 	return nil
 }
 
+func (gdb *gormdb) isUserEntity(user *scheme.User, ids ...sdktypes.UUID) error {
+	return gdb.owner.IsUserEntity(gdb.db, user, ids...)
+}
+
 func (gdb *gormdb) isCtxUserEntity(ctx context.Context, ids ...sdktypes.UUID) error {
-	user, _ := userFromContext(ctx) // REVIEW: OK to ignore error
+	user, _ := userFromContext(ctx)
 	return gdb.isUserEntity(user, ids...)
 }
 
@@ -178,16 +181,45 @@ func joinUserEntity(db *gorm.DB, entity string, userID sdktypes.UUID) *gorm.DB {
 }
 
 // gorm user+entity scope
-func withUserEntity(entity string, userID sdktypes.UUID) func(*gorm.DB) *gorm.DB {
+func withUserEntity(gdb *gormdb, entity string, user *scheme.User) func(*gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
-		return joinUserEntity(db, entity, userID)
+		return gdb.owner.JoinUserEntity(db, entity, user)
 	}
 }
 
 // gormdb user+entity scoped godm db + logging
 func (gdb *gormdb) withUserEntity(ctx context.Context, entity string) *gorm.DB {
 	user, _ := userFromContext(ctx) // NOTE: ignore possible error
-	gdb.z.Debug("withUser", zap.String("entity", entity), zap.Any("user", user))
-	db := gdb.db.WithContext(ctx)
+	return gdb.owner.JoinUserEntity(gdb.db.WithContext(ctx), entity, user)
+}
+
+type OwnershipChecker interface {
+	IsUserEntity(db *gorm.DB, user *scheme.User, ids ...sdktypes.UUID) error
+	JoinUserEntity(db *gorm.DB, entity string, user *scheme.User) *gorm.DB
+}
+
+type UsersOwnerchipChecker struct {
+	z *zap.Logger
+}
+
+func (c *UsersOwnerchipChecker) IsUserEntity(db *gorm.DB, user *scheme.User, ids ...sdktypes.UUID) error {
+	c.z.Debug("isUserEntity", zap.Any("entityIDs", ids), zap.Any("user", user))
+	return isUserEntity(db, user, ids...)
+}
+
+func (c *UsersOwnerchipChecker) JoinUserEntity(db *gorm.DB, entity string, user *scheme.User) *gorm.DB {
+	c.z.Debug("withUser", zap.String("entity", entity), zap.Any("user", user))
 	return joinUserEntity(db, entity, user.UserID)
+}
+
+type PermissiveOwnershipChecker struct {
+	z *zap.Logger
+}
+
+func (c *PermissiveOwnershipChecker) IsUserEntity(db *gorm.DB, user *scheme.User, ids ...sdktypes.UUID) error {
+	return nil
+}
+
+func (c *PermissiveOwnershipChecker) JoinUserEntity(db *gorm.DB, entity string, user *scheme.User) *gorm.DB {
+	return db
 }
