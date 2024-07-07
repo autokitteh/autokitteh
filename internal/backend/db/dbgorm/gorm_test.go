@@ -51,9 +51,11 @@ func TestMain(m *testing.M) {
 	}
 
 	// setup test bench - gorm, schemas, migrations, etc
-	cfg := gormkitteh.Config{Type: dbType, DSN: ""} // "" for in-memory, or specify a file
-	db := setupDB(&cfg)
-	gormDB = gormdb{db: db, cfg: &cfg, mu: nil, z: zap.NewExample()}
+	cfg := &gormkitteh.Config{Type: dbType, DSN: ""} // "" for in-memory, or specify a file
+	cfg, _ = cfg.Explicit()
+	db := setupDB(cfg)
+	z := zap.NewExample()
+	gormDB = gormdb{db: db, cfg: cfg, mu: nil, z: z}
 
 	ctx := context.Background()
 	if err := gormDB.Setup(ctx); err != nil { // ensure migration/schemas
@@ -111,6 +113,7 @@ func newTestID() sdktypes.UUID {
 
 // TODO: use gormkitteh (and maybe test with sqlite::memory and embedded PG)
 func setupDB(config *gormkitteh.Config) *gorm.DB {
+	// mimic gormkitteh.Open
 	var dialector gorm.Dialector
 	switch config.Type {
 	case "sqlite":
@@ -131,9 +134,9 @@ func setupDB(config *gormkitteh.Config) *gorm.DB {
 	logger := logger.New(
 		log.New(os.Stdout, "\r\n", log.LstdFlags), // io writer
 		logger.Config{
-			SlowThreshold: time.Second,   // Slow SQL threshold
-			LogLevel:      logger.Silent, // Log level
-			Colorful:      false,         // Disable color
+			LogLevel:      logger.Silent,          // Log level
+			Colorful:      false,                  // Disable color
+			SlowThreshold: time.Millisecond * 500, // Slow SQL threshold
 		},
 	)
 
@@ -196,7 +199,8 @@ func newDBFixture() *dbFixture {
 	if err := CleanupDB(&gormDB, ctx); err != nil { // ensure migration/schemas
 		log.Fatalf("Failed to cleanup gormdb: %v", err)
 	}
-	f := dbFixture{db: gormDB.db, gormdb: &gormDB, ctx: ctx}
+	gormdb := gormDB
+	f := dbFixture{db: gormdb.db, gormdb: &gormdb, ctx: ctx}
 	return &f
 }
 
