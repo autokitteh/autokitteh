@@ -97,7 +97,8 @@ func (gdb *gormdb) listDeploymentsCommonQuery(ctx context.Context, filter sdkser
 func (db *gormdb) listDeploymentsWithStats(ctx context.Context, filter sdkservices.ListDeploymentsFilter) ([]scheme.DeploymentWithStats, error) {
 	q := db.listDeploymentsCommonQuery(ctx, filter)
 
-	q = q.Select(`
+	// explcitly set model, since DeploymentWithStats is Deployment
+	q = q.Model(scheme.Deployment{}).Select(`
 	deployments.*, 
 	COUNT(case when sessions.current_state_type = ? then 1 end) AS created,
 	COUNT(case when sessions.current_state_type = ? then 1 end) AS running,
