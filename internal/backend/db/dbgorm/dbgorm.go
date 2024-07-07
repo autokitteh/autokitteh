@@ -47,7 +47,7 @@ func (db *gormdb) setupOwnershipChecker(z *zap.Logger) {
 	case "none":
 		db.owner = &PermissiveOwnershipChecker{z}
 	default: // users
-		db.owner = &UsersOwnerchipChecker{z}
+		db.owner = &UsersOwnershipChecker{z}
 	}
 }
 

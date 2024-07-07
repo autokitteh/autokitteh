@@ -198,16 +198,16 @@ type OwnershipChecker interface {
 	JoinUserEntity(db *gorm.DB, entity string, user *scheme.User) *gorm.DB
 }
 
-type UsersOwnerchipChecker struct {
+type UsersOwnershipChecker struct {
 	z *zap.Logger
 }
 
-func (c *UsersOwnerchipChecker) IsUserEntity(db *gorm.DB, user *scheme.User, ids ...sdktypes.UUID) error {
+func (c *UsersOwnershipChecker) IsUserEntity(db *gorm.DB, user *scheme.User, ids ...sdktypes.UUID) error {
 	c.z.Debug("isUserEntity", zap.Any("entityIDs", ids), zap.Any("user", user))
 	return isUserEntity(db, user, ids...)
 }
 
-func (c *UsersOwnerchipChecker) JoinUserEntity(db *gorm.DB, entity string, user *scheme.User) *gorm.DB {
+func (c *UsersOwnershipChecker) JoinUserEntity(db *gorm.DB, entity string, user *scheme.User) *gorm.DB {
 	c.z.Debug("withUser", zap.String("entity", entity), zap.Any("user", user))
 	return joinUserEntity(db, entity, user.UserID)
 }
