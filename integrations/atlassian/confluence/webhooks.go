@@ -3,6 +3,7 @@ package confluence
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -138,6 +139,7 @@ func registerWebhook(l *zap.Logger, base, user, key string) (int, string, error)
 			zap.Any("request", r),
 			zap.Error(err),
 		)
+		return 0, "", err
 	}
 
 	jsonReader := bytes.NewReader(body)
@@ -169,7 +171,7 @@ func registerWebhook(l *zap.Logger, base, user, key string) (int, string, error)
 			zap.Int("status", resp.StatusCode),
 			zap.ByteString("body", body),
 		)
-		return 0, "", err
+		return 0, "", errors.New(string(body))
 	}
 
 	var reg webhook
@@ -184,6 +186,7 @@ func registerWebhook(l *zap.Logger, base, user, key string) (int, string, error)
 	// Error mode 2: based on the content of the parsed JSON response.
 	if reg.Self == "" {
 		l.Warn("Confluence webhook ID not found", zap.ByteString("body", body))
+		return 0, "", errors.New(string(body))
 	}
 
 	// Success.
