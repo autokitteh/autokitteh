@@ -53,9 +53,11 @@ func TestMain(m *testing.M) {
 	// setup test bench - gorm, schemas, migrations, etc
 	cfg := &gormkitteh.Config{Type: dbType, DSN: ""} // "" for in-memory, or specify a file
 	cfg, _ = cfg.Explicit()
+	cfg.Ownership = "users"
 	db := setupDB(cfg)
 	z := zap.NewExample()
 	gormDB = gormdb{db: db, cfg: cfg, mu: nil, z: z}
+	gormDB.setupOwnershipChecker(z)
 
 	ctx := context.Background()
 	if err := gormDB.Setup(ctx); err != nil { // ensure migration/schemas
