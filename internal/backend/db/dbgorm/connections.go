@@ -22,13 +22,13 @@ func (gdb *gormdb) createConnection(ctx context.Context, conn *scheme.Connection
 	return gdb.createEntityWithOwnership(ctx, createFunc, conn, conn.ProjectID)
 }
 
-func (gdb *gormdb) deleteConnectionsAndVars(where string, args ...any) error {
+func (gdb *gormdb) deleteConnectionsAndVars(where string, id sdktypes.UUID) error {
 	// should be transactional with context already applied
 
 	var ids []sdktypes.UUID
 	q := gdb.db.Model(&scheme.Connection{})
 	q = q.Clauses(clause.Returning{Columns: []clause.Column{{Name: "connection_id"}}})
-	if err := q.Delete(&ids, where, args).Error; err != nil {
+	if err := q.Delete(&ids, where, id).Error; err != nil {
 		return err
 		// REVIEW: proceed to vars deletion if there are any?
 	}
