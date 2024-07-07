@@ -2,9 +2,11 @@ package dbgorm
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
@@ -21,12 +23,30 @@ func (gdb *gormdb) createConnection(ctx context.Context, conn *scheme.Connection
 	return gdb.createEntityWithOwnership(ctx, createFunc, conn, conn.ProjectID)
 }
 
+func (gdb *gormdb) deleteConnectionsAndVars(what string, id sdktypes.UUID) error {
+	// should be transactional with context already applied
+
+	var ids []sdktypes.UUID
+	q := gdb.db.Model(&scheme.Connection{})
+	q = q.Clauses(clause.Returning{Columns: []clause.Column{{Name: "connection_id"}}})
+	if err := q.Delete(&ids, fmt.Sprintf("%s = ?", what), id).Error; err != nil {
+		return err
+		// REVIEW: proceed to vars deletion if there are any?
+	}
+
+	if len(ids) > 0 {
+		return gdb.db.Where("var_id IN (?)", ids).Delete(&scheme.Var{}).Error
+	}
+	return nil
+}
+
 func (gdb *gormdb) deleteConnection(ctx context.Context, id sdktypes.UUID) error {
 	return gdb.transaction(ctx, func(tx *tx) error {
 		if err := tx.isCtxUserEntity(ctx, id); err != nil {
 			return err
 		}
-		return tx.db.Delete(&scheme.Connection{ConnectionID: id}).Error
+		// delete connection and associated vars
+		return tx.deleteConnectionsAndVars("connection_id", id)
 	})
 }
 

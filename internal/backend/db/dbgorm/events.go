@@ -3,6 +3,7 @@ package dbgorm
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
@@ -88,7 +89,7 @@ func (db *gormdb) SaveEvent(ctx context.Context, event sdktypes.Event) error {
 	if connectionID.IsValid() { // only if exists
 		conn, err := db.GetConnection(ctx, connectionID)
 		if err != nil {
-			return err
+			return fmt.Errorf("connection: %w", err)
 		}
 
 		if !conn.IsValid() {

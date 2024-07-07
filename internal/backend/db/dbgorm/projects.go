@@ -49,9 +49,7 @@ func (gdb *gormdb) deleteProject(ctx context.Context, projectID sdktypes.UUID) e
 
 // delete project, its envs, deployments, sessions and build
 func (gdb *gormdb) deleteProjectAndDependents(ctx context.Context, projectID sdktypes.UUID) error {
-	// NOTE: should be transactional
-
-	db := gdb.db.WithContext(ctx)
+	// NOTE: should be transactional and with context applied
 
 	deploymentStates, err := gdb.getProjectDeployments(ctx, projectID)
 	if err != nil {
@@ -74,22 +72,23 @@ func (gdb *gormdb) deleteProjectAndDependents(ctx context.Context, projectID sdk
 
 	// Connection is referenced by signals and triggers, so delete them first.
 	// NOTE that signals, triggers and connections are hard-deleted now
-	if err = db.Delete(&scheme.Trigger{}, "project_id = ?", projectID).Error; err != nil {
+	if err = gdb.db.Delete(&scheme.Trigger{}, "project_id = ?", projectID).Error; err != nil {
 		return err
 	}
 
 	var signalIDs []string
-	if err := db.Model(&scheme.Signal{}).
+	if err := gdb.db.Model(&scheme.Signal{}).
 		Joins("join connections on connections.connection_id = signals.connection_id").
 		Where("connections.project_id = ?", projectID).
 		Pluck("signals.signal_id", &signalIDs).Error; err != nil {
 		return err
 	}
-	if err = db.Delete(&scheme.Signal{}, "signal_id IN ?", signalIDs).Error; err != nil {
+	if err = gdb.db.Delete(&scheme.Signal{}, "signal_id IN ?", signalIDs).Error; err != nil {
 		return err
 	}
 
-	if err = db.Delete(&scheme.Connection{}, "project_id = ?", projectID).Error; err != nil {
+	// delete project connections and associated vars
+	if err = gdb.deleteConnectionsAndVars("project_id", projectID); err != nil {
 		return err
 	}
 
@@ -101,7 +100,7 @@ func (gdb *gormdb) deleteProjectAndDependents(ctx context.Context, projectID sdk
 		return err
 	}
 
-	return db.Delete(&scheme.Project{ProjectID: projectID}).Error
+	return gdb.db.Delete(&scheme.Project{ProjectID: projectID}).Error
 }
 
 func (gdb *gormdb) updateProject(ctx context.Context, p *scheme.Project) error {
@@ -145,7 +144,7 @@ func (db *gormdb) CreateProject(ctx context.Context, p sdktypes.Project) error {
 }
 
 func (gdb *gormdb) DeleteProject(ctx context.Context, projectID sdktypes.ProjectID) error {
-	return translateError(gdb.deleteProjectAndDependents(ctx, projectID.UUIDValue()))
+	return translateError(gdb.deleteProject(ctx, projectID.UUIDValue()))
 }
 
 func (gdb *gormdb) UpdateProject(ctx context.Context, project sdktypes.Project) error {
