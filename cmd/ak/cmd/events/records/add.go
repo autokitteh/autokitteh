@@ -22,7 +22,10 @@ var addCmd = common.StandardCommand(&cobra.Command{
 
 	RunE: func(cmd *cobra.Command, args []string) error {
 		r := resolver.Resolver{Client: common.Client()}
-		e, eid, err := r.EventID(args[0])
+		ctx, cancel := common.LimitedContext()
+		defer cancel()
+
+		e, eid, err := r.EventID(ctx, args[0])
 		if err != nil {
 			return err
 		}
@@ -32,9 +35,6 @@ var addCmd = common.StandardCommand(&cobra.Command{
 		}
 
 		record := sdktypes.NewEventRecord(eid, kittehs.Must1(sdktypes.ParseEventState(state.String())))
-
-		ctx, cancel := common.LimitedContext()
-		defer cancel()
 
 		err = events().AddEventRecord(ctx, record)
 		if err != nil {

@@ -21,7 +21,10 @@ var createCmd = common.StandardCommand(&cobra.Command{
 
 	RunE: func(cmd *cobra.Command, args []string) error {
 		r := resolver.Resolver{Client: common.Client()}
-		b, _, err := r.BuildID(buildID)
+		ctx, cancel := common.LimitedContext()
+		defer cancel()
+
+		b, _, err := r.BuildID(ctx, buildID)
 		if err != nil {
 			return err
 		}
@@ -30,7 +33,7 @@ var createCmd = common.StandardCommand(&cobra.Command{
 			return common.NewExitCodeError(common.NotFoundExitCode, err)
 		}
 
-		e, eid, err := r.EnvNameOrID(env, "")
+		e, eid, err := r.EnvNameOrID(ctx, env, "")
 		if err != nil {
 			return err
 		}
@@ -46,9 +49,6 @@ var createCmd = common.StandardCommand(&cobra.Command{
 		if err != nil {
 			return fmt.Errorf("invalid deployment: %w", err)
 		}
-
-		ctx, cancel := common.LimitedContext()
-		defer cancel()
 
 		did, err := deployments().Create(ctx, deployment)
 		if err != nil {

@@ -15,7 +15,10 @@ var getCmd = common.StandardCommand(&cobra.Command{
 
 	RunE: func(cmd *cobra.Command, args []string) error {
 		r := resolver.Resolver{Client: common.Client()}
-		e, _, err := r.EnvNameOrID(args[0], project)
+		ctx, cancel := common.LimitedContext()
+		defer cancel()
+
+		e, _, err := r.EnvNameOrID(ctx, args[0], project)
 		if err != nil {
 			return err
 		}

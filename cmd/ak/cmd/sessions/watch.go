@@ -30,7 +30,10 @@ var watchCmd = common.StandardCommand(&cobra.Command{
 		}
 
 		r := resolver.Resolver{Client: common.Client()}
-		s, id, err := r.SessionID(args[0])
+		ctx, cancel := common.LimitedContext()
+		defer cancel()
+
+		s, id, err := r.SessionID(ctx, args[0])
 		if err != nil {
 			return err
 		}

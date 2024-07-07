@@ -45,7 +45,10 @@ func Build(rts sdkservices.Runtimes, srcFS fs.FS, paths []string, syms []sdktype
 
 func BuildProject(project string, dirPaths, filePaths []string) (sdktypes.BuildID, error) {
 	r := resolver.Resolver{Client: Client()}
-	p, pid, err := r.ProjectNameOrID(project)
+	ctx, cancel := LimitedContext()
+	defer cancel()
+
+	p, pid, err := r.ProjectNameOrID(ctx, project)
 	if err != nil {
 		return sdktypes.InvalidBuildID, err
 	}
@@ -77,9 +80,6 @@ func BuildProject(project string, dirPaths, filePaths []string) (sdktypes.BuildI
 		}
 		uploads[fi.Name()] = contents
 	}
-
-	ctx, cancel := LimitedContext()
-	defer cancel()
 
 	// Communicate with the server in 2 steps.
 	if err := Client().Projects().SetResources(ctx, pid, uploads); err != nil {

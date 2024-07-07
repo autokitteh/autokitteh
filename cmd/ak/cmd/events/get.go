@@ -18,7 +18,10 @@ var getCmd = common.StandardCommand(&cobra.Command{
 
 	RunE: func(cmd *cobra.Command, args []string) error {
 		r := resolver.Resolver{Client: common.Client()}
-		e, _, err := r.EventID(args[0])
+		ctx, cancel := common.LimitedContext()
+		defer cancel()
+
+		e, _, err := r.EventID(ctx, args[0])
 		if err != nil {
 			if errors.Is(err, sdkerrors.ErrNotFound) {
 				return common.FailNotFound(cmd, "event")

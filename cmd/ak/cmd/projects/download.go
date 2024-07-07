@@ -22,7 +22,10 @@ var downloadCmd = common.StandardCommand(&cobra.Command{
 
 	RunE: func(cmd *cobra.Command, args []string) error {
 		r := resolver.Resolver{Client: common.Client()}
-		p, pid, err := r.ProjectNameOrID(args[0])
+		ctx, cancel := common.LimitedContext()
+		defer cancel()
+
+		p, pid, err := r.ProjectNameOrID(ctx, args[0])
 		if err != nil {
 			return common.FailIfError(cmd, err, "project")
 		}
@@ -30,9 +33,6 @@ var downloadCmd = common.StandardCommand(&cobra.Command{
 			err = errors.New("project not found")
 			return common.NewExitCodeError(common.NotFoundExitCode, err)
 		}
-
-		ctx, cancel := common.LimitedContext()
-		defer cancel()
 
 		resources, err := projects().DownloadResources(ctx, pid)
 		if err != nil {

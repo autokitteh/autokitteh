@@ -21,9 +21,12 @@ var listCmd = common.StandardCommand(&cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		var f sdkservices.ListEventsFilter
 
+		r := resolver.Resolver{Client: common.Client()}
+		ctx, cancel := common.LimitedContext()
+		defer cancel()
+
 		if connection != "" {
-			r := resolver.Resolver{Client: common.Client()}
-			_, cid, err := r.ConnectionNameOrID(args[0], "")
+			_, cid, err := r.ConnectionNameOrID(ctx, args[0], "")
 			if err != nil {
 				return err
 			}
@@ -34,8 +37,7 @@ var listCmd = common.StandardCommand(&cobra.Command{
 		}
 
 		if integration != "" {
-			r := resolver.Resolver{Client: common.Client()}
-			i, iid, err := r.IntegrationNameOrID(integration)
+			i, iid, err := r.IntegrationNameOrID(ctx, integration)
 			if err != nil {
 				return err
 			}
@@ -46,9 +48,6 @@ var listCmd = common.StandardCommand(&cobra.Command{
 		}
 
 		f.Order = sdkservices.ListOrder(listOrder)
-
-		ctx, cancel := common.LimitedContext()
-		defer cancel()
 
 		es, err := events().List(ctx, f)
 		if err != nil {

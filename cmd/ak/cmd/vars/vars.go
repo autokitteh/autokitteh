@@ -61,8 +61,11 @@ func vars() sdkservices.Vars {
 func resolveScopeID() (sdktypes.VarScopeID, error) {
 	r := resolver.Resolver{Client: common.Client()}
 
+	ctx, cancel := common.LimitedContext()
+	defer cancel()
+
 	if conn != "" {
-		c, id, err := r.ConnectionNameOrID(conn, project)
+		c, id, err := r.ConnectionNameOrID(ctx, conn, project)
 		if err != nil {
 			return sdktypes.InvalidVarScopeID, err
 		}
@@ -74,7 +77,7 @@ func resolveScopeID() (sdktypes.VarScopeID, error) {
 		return sdktypes.NewVarScopeID(id), nil
 	}
 
-	e, id, err := r.EnvNameOrID(env, project)
+	e, id, err := r.EnvNameOrID(ctx, env, project)
 	if err != nil {
 		return sdktypes.InvalidVarScopeID, err
 	}

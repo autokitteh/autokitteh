@@ -22,7 +22,10 @@ var downloadCmd = common.StandardCommand(&cobra.Command{
 
 	RunE: func(cmd *cobra.Command, args []string) error {
 		r := resolver.Resolver{Client: common.Client()}
-		b, id, err := r.BuildID(args[0])
+		ctx, cancel := common.LimitedContext()
+		defer cancel()
+
+		b, id, err := r.BuildID(ctx, args[0])
 		if err != nil {
 			return err
 		}
@@ -30,9 +33,6 @@ var downloadCmd = common.StandardCommand(&cobra.Command{
 			err = fmt.Errorf("build ID %q not found", args[0])
 			return common.NewExitCodeError(common.NotFoundExitCode, err)
 		}
-
-		ctx, cancel := common.LimitedContext()
-		defer cancel()
 
 		reader, err := builds().Download(ctx, id)
 		if err != nil {

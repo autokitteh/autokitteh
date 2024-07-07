@@ -15,7 +15,10 @@ var deleteCmd = common.StandardCommand(&cobra.Command{
 
 	RunE: func(cmd *cobra.Command, args []string) error {
 		r := resolver.Resolver{Client: common.Client()}
-		s, id, err := r.SessionID(args[0])
+		ctx, cancel := common.LimitedContext()
+		defer cancel()
+
+		s, id, err := r.SessionID(ctx, args[0])
 		if err != nil {
 			return common.FailIfError(cmd, err, "session")
 		}
@@ -24,8 +27,6 @@ var deleteCmd = common.StandardCommand(&cobra.Command{
 			return err
 		}
 
-		ctx, cancel := common.LimitedContext()
-		defer cancel()
 		err = sessions().Delete(ctx, id)
 		if err != nil {
 			return common.FailIfError(cmd, err, "session")

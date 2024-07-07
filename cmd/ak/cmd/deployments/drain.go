@@ -17,7 +17,10 @@ var drainCmd = common.StandardCommand(&cobra.Command{
 
 	RunE: func(cmd *cobra.Command, args []string) error {
 		r := resolver.Resolver{Client: common.Client()}
-		d, id, err := r.DeploymentID(args[0])
+		ctx, cancel := common.LimitedContext()
+		defer cancel()
+
+		d, id, err := r.DeploymentID(ctx, args[0])
 		if err != nil {
 			return err
 		}
@@ -25,9 +28,6 @@ var drainCmd = common.StandardCommand(&cobra.Command{
 			err = fmt.Errorf("deployment %q not found", args[0])
 			return common.NewExitCodeError(common.NotFoundExitCode, err)
 		}
-
-		ctx, cancel := common.LimitedContext()
-		defer cancel()
 
 		if err := deployments().Drain(ctx, id); err != nil {
 			return fmt.Errorf("drain deployment: %w", err)

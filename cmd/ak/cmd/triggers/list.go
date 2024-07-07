@@ -18,9 +18,11 @@ var listCmd = common.StandardCommand(&cobra.Command{
 
 	RunE: func(cmd *cobra.Command, args []string) error {
 		r := resolver.Resolver{Client: common.Client()}
+		ctx, cancel := common.LimitedContext()
+		defer cancel()
 
 		// All flags are optional.
-		p, pid, err := r.ProjectNameOrID(project)
+		p, pid, err := r.ProjectNameOrID(ctx, project)
 		if err != nil {
 			return err
 		}
@@ -29,7 +31,7 @@ var listCmd = common.StandardCommand(&cobra.Command{
 			return common.NewExitCodeError(common.NotFoundExitCode, err)
 		}
 
-		e, eid, err := r.EnvNameOrID(env, project)
+		e, eid, err := r.EnvNameOrID(ctx, env, project)
 		if err != nil {
 			return err
 		}
@@ -38,7 +40,7 @@ var listCmd = common.StandardCommand(&cobra.Command{
 			return common.NewExitCodeError(common.NotFoundExitCode, err)
 		}
 
-		c, cid, err := r.ConnectionNameOrID(connection, project)
+		c, cid, err := r.ConnectionNameOrID(ctx, connection, project)
 		if err != nil {
 			if errors.As(err, resolver.NotFoundErrorType) {
 				err = common.NewExitCodeError(common.NotFoundExitCode, err)
@@ -49,9 +51,6 @@ var listCmd = common.StandardCommand(&cobra.Command{
 			err = resolver.NotFoundError{Type: "connection ID", Name: connection}
 			return common.NewExitCodeError(common.NotFoundExitCode, err)
 		}
-
-		ctx, cancel := common.LimitedContext()
-		defer cancel()
 
 		ts, err := triggers().List(ctx, sdkservices.ListTriggersFilter{
 			ProjectID:    pid,

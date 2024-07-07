@@ -105,10 +105,12 @@ func parseinputs() (map[string]sdktypes.Value, error) {
 
 func sessionArgs() (did sdktypes.DeploymentID, eid sdktypes.EnvID, bid sdktypes.BuildID, ep sdktypes.CodeLocation, err error) {
 	r := resolver.Resolver{Client: common.Client()}
+	ctx, cancel := common.LimitedContext()
+	defer cancel()
 
 	if deploymentID != "" {
 		var d sdktypes.Deployment
-		if d, did, err = r.DeploymentID(deploymentID); err != nil {
+		if d, did, err = r.DeploymentID(ctx, deploymentID); err != nil {
 			return
 		}
 		if !d.IsValid() {
@@ -122,7 +124,7 @@ func sessionArgs() (did sdktypes.DeploymentID, eid sdktypes.EnvID, bid sdktypes.
 
 	if buildID != "" {
 		var b sdktypes.Build
-		if b, bid, err = r.BuildID(buildID); err != nil {
+		if b, bid, err = r.BuildID(ctx, buildID); err != nil {
 			return
 		}
 		if !b.IsValid() {
@@ -135,7 +137,7 @@ func sessionArgs() (did sdktypes.DeploymentID, eid sdktypes.EnvID, bid sdktypes.
 
 	if env != "" {
 		var e sdktypes.Env
-		if e, eid, err = r.EnvNameOrID(env, ""); err != nil {
+		if e, eid, err = r.EnvNameOrID(ctx, env, ""); err != nil {
 			return
 		}
 		if env != "" && !e.IsValid() {

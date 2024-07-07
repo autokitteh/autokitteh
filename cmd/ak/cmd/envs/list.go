@@ -22,9 +22,13 @@ var listCmd = common.StandardCommand(&cobra.Command{
 			pid sdktypes.ProjectID
 			err error
 		)
+
+		r := resolver.Resolver{Client: common.Client()}
+		ctx, cancel := common.LimitedContext()
+		defer cancel()
+
 		if project != "" {
-			r := resolver.Resolver{Client: common.Client()}
-			p, pid, err = r.ProjectNameOrID(project)
+			p, pid, err = r.ProjectNameOrID(ctx, project)
 			if err != nil {
 				return err
 			}
@@ -33,9 +37,6 @@ var listCmd = common.StandardCommand(&cobra.Command{
 				return common.NewExitCodeError(common.NotFoundExitCode, err)
 			}
 		}
-
-		ctx, cancel := common.LimitedContext()
-		defer cancel()
 
 		es, err := envs().List(ctx, pid)
 		if err != nil {

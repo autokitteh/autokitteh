@@ -17,7 +17,10 @@ var getCmd = common.StandardCommand(&cobra.Command{
 
 	RunE: func(cmd *cobra.Command, args []string) error {
 		r := resolver.Resolver{Client: common.Client()}
-		i, _, err := r.IntegrationNameOrID(args[0])
+		ctx, cancel := common.LimitedContext()
+		defer cancel()
+
+		i, _, err := r.IntegrationNameOrID(ctx, args[0])
 		if err != nil {
 			if errors.As(err, resolver.NotFoundErrorType) {
 				err = common.NewExitCodeError(common.NotFoundExitCode, err)
