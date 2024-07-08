@@ -108,6 +108,7 @@ func makeOpts(m *module) []sdkmodule.Optfn {
 		sdkmodule.ExportFunction("brpoplpush", m.brpoplpush, sdkmodule.WithFuncDoc("https://redis.io/commands/rpoplpush/"), sdkmodule.WithArgs("src", "dst")),
 		sdkmodule.ExportFunction("brpop", m.brpop, sdkmodule.WithFuncDoc("https://redis.io/commands/brpop/"), sdkmodule.WithArgs("timeout", "*keys")),
 		sdkmodule.ExportFunction("blpop", m.blpop, sdkmodule.WithFuncDoc("https://redis.io/commands/blpop/"), sdkmodule.WithArgs("timeout", "*keys")),
+		sdkmodule.ExportFunction("dbsize", m.dbsize, sdkmodule.WithFuncDoc("https://redis.io/commands/dbsize/")),
 	}
 }
 
@@ -577,4 +578,12 @@ func (m *module) linsert(ctx context.Context, args []sdktypes.Value, kwargs map[
 	}
 
 	return returnCmd(client.LInsert(ctx, keyfn(k), op, pivot, v))
+}
+
+func (m *module) dbsize(ctx context.Context, _ []sdktypes.Value, _ map[string]sdktypes.Value) (sdktypes.Value, error) {
+	client, _, err := m.client(ctx)
+	if err != nil {
+		return sdktypes.InvalidValue, err
+	}
+	return returnCmd(client.DBSize(ctx))
 }
