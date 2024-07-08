@@ -171,7 +171,12 @@ func registerWebhook(l *zap.Logger, base, user, key string) (int, string, error)
 			zap.Int("status", resp.StatusCode),
 			zap.ByteString("body", body),
 		)
-		return 0, "", errors.New(string(body))
+		s := strings.TrimSpace(string(body))
+		s = s[:min(len(s), 256)]
+		if s == "" {
+			s = "no error message"
+		}
+		return 0, "", errors.New(s)
 	}
 
 	var reg webhook
@@ -186,7 +191,7 @@ func registerWebhook(l *zap.Logger, base, user, key string) (int, string, error)
 	// Error mode 2: based on the content of the parsed JSON response.
 	if reg.Self == "" {
 		l.Warn("Confluence webhook ID not found", zap.ByteString("body", body))
-		return 0, "", errors.New(string(body))
+		return 0, "", errors.New("no webhook ID in response")
 	}
 
 	// Success.
