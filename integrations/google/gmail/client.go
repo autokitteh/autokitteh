@@ -11,6 +11,7 @@ import (
 	googleoauth2 "google.golang.org/api/oauth2/v2"
 	"google.golang.org/api/option"
 
+	"go.autokitteh.dev/autokitteh/integrations/google/connections"
 	"go.autokitteh.dev/autokitteh/integrations/google/internal/vars"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
@@ -49,12 +50,16 @@ var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.Integrati
 	},
 }))
 
-func New(sec sdkservices.Vars) sdkservices.Integration {
+func New(cvars sdkservices.Vars) sdkservices.Integration {
 	scope := googleScope
 
-	opts := ExportedFunctions(sec, scope, false)
+	opts := ExportedFunctions(cvars, scope, false)
 
-	return sdkintegrations.NewIntegration(desc, sdkmodule.New(opts...), sdkintegrations.WithConnectionConfigFromVars(sec))
+	return sdkintegrations.NewIntegration(
+		desc,
+		sdkmodule.New(opts...),
+		connections.ConnStatus(cvars),
+		sdkintegrations.WithConnectionConfigFromVars(cvars))
 }
 
 func ExportedFunctions(sec sdkservices.Vars, scope string, prefix bool) []sdkmodule.Optfn {
