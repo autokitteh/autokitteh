@@ -11,8 +11,8 @@ import (
 	googleoauth2 "google.golang.org/api/oauth2/v2"
 	"google.golang.org/api/option"
 
+	"go.autokitteh.dev/autokitteh/integrations/google/connections"
 	"go.autokitteh.dev/autokitteh/integrations/google/internal/vars"
-	"go.autokitteh.dev/autokitteh/integrations/google/utils"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
@@ -58,7 +58,7 @@ func New(cvars sdkservices.Vars) sdkservices.Integration {
 	return sdkintegrations.NewIntegration(
 		desc,
 		sdkmodule.New(opts...),
-		utils.ConnStatus(cvars),
+		connections.ConnStatus(cvars),
 		sdkintegrations.WithConnectionConfigFromVars(cvars))
 }
 

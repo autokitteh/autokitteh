@@ -11,8 +11,8 @@ import (
 	"google.golang.org/api/option"
 	"google.golang.org/api/sheets/v4"
 
+	"go.autokitteh.dev/autokitteh/integrations/google/connections"
 	"go.autokitteh.dev/autokitteh/integrations/google/internal/vars"
-	"go.autokitteh.dev/autokitteh/integrations/google/utils"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
@@ -57,7 +57,7 @@ func New(cvars sdkservices.Vars) sdkservices.Integration {
 	return sdkintegrations.NewIntegration(
 		desc,
 		sdkmodule.New(opts...),
-		utils.ConnStatus(cvars),
+		connections.ConnStatus(cvars),
 		sdkintegrations.WithConnectionConfigFromVars(cvars))
 }
 
