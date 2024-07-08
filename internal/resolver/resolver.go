@@ -21,6 +21,7 @@ type Resolver struct {
 	Client sdkservices.DBServices
 }
 
+// FIXME: move to sdkerrors
 type NotFoundError struct {
 	Type, Name string
 }
@@ -37,15 +38,14 @@ func (e NotFoundError) Error() string {
 
 func translateError[O sdktypes.Object](err error, obj O, typ, id string) error {
 	if err != nil {
-		if errors.Is(err, sdkerrors.ErrNotFound) {
-			return NotFoundError{Type: "event", Name: id}
+		if !errors.Is(err, sdkerrors.ErrNotFound) {
+			return fmt.Errorf("get %s ID %q: %w", typ, id, err)
 		}
-		return fmt.Errorf("get %s ID %q: %w", typ, id, err)
 	}
 	// no error. But most of the services.Get() methods filtering out notFound errors.
 	// check sdktype.IsValid() to cover this case
 	if !obj.IsValid() {
-		return NotFoundError{Type: "event", Name: id}
+		return sdkerrors.ErrNotFound
 	}
 	return nil
 }
