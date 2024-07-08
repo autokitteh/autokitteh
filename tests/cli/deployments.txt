@@ -29,7 +29,7 @@ Error: invalid deployment ID "dep_1": invalid suffix: 1. Suffix length is 1, exp
 1
 $ # activate deployment with not existing id return not found
 $ ${AK} deployment activate dep_00000000000000000000000001; echo $?
-Error: deployment "dep_00000000000000000000000001" not found
+Error: deployment not found
 10
 $ # drain deployment with inavlid id 1 return error
 $ ${AK} deployment drain 1; echo $?
@@ -41,7 +41,7 @@ Error: invalid deployment ID "dep_1": invalid suffix: 1. Suffix length is 1, exp
 1
 $ # drain deployment with not existing id return not found
 $ ${AK} deployment drain dep_00000000000000000000000001; echo $?
-Error: deployment "dep_00000000000000000000000001" not found
+Error: deployment not found
 10
 $ # deactivate deployment with inavlid id 1 return error
 $ ${AK} deployment deactivate 1; echo $?
@@ -53,7 +53,7 @@ Error: invalid deployment ID "dep_1": invalid suffix: 1. Suffix length is 1, exp
 1
 $ # deactivate deployment with not existing id return not found
 $ ${AK} deployment deactivate dep_00000000000000000000000001; echo $?
-Error: deployment "dep_00000000000000000000000001" not found
+Error: deployment not found
 10
 $ # create deployment without build-id or env fails
 $ ${AK} deployment create; echo $?
