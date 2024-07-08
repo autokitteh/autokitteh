@@ -74,12 +74,7 @@ func TestCreateDeploymentsForeignKeys(t *testing.T) {
 	// check session creation if foreign keys are not nil
 	f := preDeploymentTest(t)
 
-	p := f.newProject()
-	e := f.newEnv(p)
-	b := f.newBuild()
-	f.createProjectsAndAssert(t, p)
-	f.createEnvsAndAssert(t, e)
-	f.saveBuildsAndAssert(t, b)
+	_, b, e := f.createProjectBuildEnv(t)
 
 	// negative test with non-existing assets
 	// zero buildID
