@@ -214,7 +214,7 @@ func (s Svc) postInit(w http.ResponseWriter, r *http.Request) {
 	switch origin {
 	case "vscode":
 		u = "vscode://autokitteh.autokitteh?cid=%s"
-	case "web":
+	case "web": // Another redirect just to get rid of the secrets in the URL.
 		u = "/connections/%s/result?status=200"
 	default: // Local server ("cli", "dash", etc.)
 		u = "/connections/%s?msg=Connection initialized 😸"
@@ -222,31 +222,20 @@ func (s Svc) postInit(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, fmt.Sprintf(u, cid), http.StatusFound)
 }
 
-type jsonResult struct {
-	Status int    `json:"status"`
-	Error  string `json:"error,omitempty"`
-}
-
+// initResult is the target of the final redirect in the connection init flow.
+// It exists merely to remove vars from the post-init URL, to prevent leaks.
 func initResult(w http.ResponseWriter, r *http.Request) {
-	result := jsonResult{Error: r.FormValue("error")}
-
-	var err error
-	status := r.FormValue("status")
-	if result.Status, err = strconv.Atoi(status); err != nil {
-		result.Status = http.StatusInternalServerError
-		result.Error = "non-integer status"
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-
-	output, err := json.Marshal(result)
+	status, err := strconv.Atoi(r.FormValue("status"))
 	if err != nil {
-		output = []byte(`{"status":500,"error":"failed to encode error message"}`)
+		http.Error(w, "non-integer status", http.StatusBadRequest)
+		return
 	}
 
-	if _, err := w.Write(output); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	if status >= http.StatusBadRequest {
+		http.Error(w, r.FormValue("error"), status)
 	}
+
+	// Otherwise, just return HTTP 200.
 }
 
 func (s Svc) rmAllConnectionVars(w http.ResponseWriter, r *http.Request) {
