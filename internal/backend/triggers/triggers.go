@@ -8,7 +8,6 @@ import (
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
-	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -103,7 +102,7 @@ func (m *triggers) Delete(ctx context.Context, triggerID sdktypes.TriggerID) err
 
 // Get implements sdkservices.Triggers.
 func (m *triggers) Get(ctx context.Context, triggerID sdktypes.TriggerID) (sdktypes.Trigger, error) {
-	return sdkerrors.IgnoreNotFoundErr(m.db.GetTrigger(ctx, triggerID))
+	return m.db.GetTrigger(ctx, triggerID)
 }
 
 // List implements sdkservices.Triggers.

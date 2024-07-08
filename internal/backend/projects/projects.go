@@ -63,7 +63,6 @@ func (ps *Projects) Create(ctx context.Context, project sdktypes.Project) (sdkty
 }
 
 func (ps *Projects) Delete(ctx context.Context, pid sdktypes.ProjectID) error {
-	// TODO: Make sure somone can't delete a project they don't own or member of its org.
 	return ps.DB.DeleteProject(ctx, pid)
 }
 
@@ -72,13 +71,11 @@ func (ps *Projects) Update(ctx context.Context, project sdktypes.Project) error 
 }
 
 func (ps *Projects) GetByID(ctx context.Context, pid sdktypes.ProjectID) (sdktypes.Project, error) {
-	// TODO: Make sure somone can't get a project they don't own or member of its org.
-	return sdkerrors.IgnoreNotFoundErr(ps.DB.GetProjectByID(ctx, pid))
+	return ps.DB.GetProjectByID(ctx, pid)
 }
 
 func (ps *Projects) GetByName(ctx context.Context, n sdktypes.Symbol) (sdktypes.Project, error) {
-	// TODO: Make sure somone can't get a project they don't own or member of its org.
-	return sdkerrors.IgnoreNotFoundErr(ps.DB.GetProjectByName(ctx, n))
+	return ps.DB.GetProjectByName(ctx, n)
 }
 
 func (ps *Projects) List(ctx context.Context) ([]sdktypes.Project, error) {
