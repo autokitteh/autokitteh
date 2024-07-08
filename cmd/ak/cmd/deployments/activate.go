@@ -21,13 +21,11 @@ var activateCmd = common.StandardCommand(&cobra.Command{
 		defer cancel()
 
 		d, id, err := r.DeploymentID(ctx, args[0])
-		if err != nil {
+		err = common.AddNotFoundErrIfNeeded(err, d.IsValid())
+		if err = common.FailIfError2(cmd, err, "deployment"); err != nil {
 			return err
 		}
-		if !d.IsValid() {
-			err = fmt.Errorf("deployment %q not found", args[0])
-			return common.NewExitCodeError(common.NotFoundExitCode, err)
-		}
+
 		if err := deployments().Activate(ctx, id); err != nil {
 			return fmt.Errorf("activate deployment: %w", err)
 		}

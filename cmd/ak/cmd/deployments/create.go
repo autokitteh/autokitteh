@@ -25,21 +25,15 @@ var createCmd = common.StandardCommand(&cobra.Command{
 		defer cancel()
 
 		b, _, err := r.BuildID(ctx, buildID)
-		if err != nil {
+		err = common.AddNotFoundErrIfNeeded(err, b.IsValid())
+		if err = common.FailIfError2(cmd, err, fmt.Sprintf("build ID %q", buildID)); err != nil {
 			return err
-		}
-		if !b.IsValid() {
-			err = fmt.Errorf("build ID %q not found", buildID)
-			return common.NewExitCodeError(common.NotFoundExitCode, err)
 		}
 
 		e, eid, err := r.EnvNameOrID(ctx, env, "")
-		if err != nil {
+		err = common.AddNotFoundErrIfNeeded(err, e.IsValid())
+		if err = common.FailIfError2(cmd, err, fmt.Sprintf("environment %q", env)); err != nil {
 			return err
-		}
-		if !e.IsValid() {
-			err = fmt.Errorf("environment %q not found", env)
-			return common.NewExitCodeError(common.NotFoundExitCode, err)
 		}
 
 		deployment, err := sdktypes.DeploymentFromProto(&sdktypes.DeploymentPB{

@@ -18,11 +18,8 @@ var getCmd = common.StandardCommand(&cobra.Command{
 		defer cancel()
 
 		t, _, err := r.TriggerID(ctx, args[0])
-		if err != nil {
-			return err
-		}
-
-		if err := common.FailIfNotFound(cmd, "trigger", t.IsValid()); err != nil {
+		err = common.AddNotFoundErrIfNeeded(err, t.IsValid())
+		if err = common.FailIfError2(cmd, err, "trigger"); err != nil {
 			return err
 		}
 
