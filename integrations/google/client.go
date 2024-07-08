@@ -35,5 +35,9 @@ func New(cvars sdkservices.Vars) sdkservices.Integration {
 	opts := gmail.ExportedFunctions(cvars, scope, true)
 	opts = append(opts, sheets.ExportedFunctions(cvars, scope, true)...)
 
-	return sdkintegrations.NewIntegration(desc, sdkmodule.New(opts...), sdkintegrations.WithConnectionConfigFromVars(cvars))
+	return sdkintegrations.NewIntegration(
+		desc,
+		sdkmodule.New(opts...),
+		ConnStatus(cvars),
+		sdkintegrations.WithConnectionConfigFromVars(cvars))
 }
