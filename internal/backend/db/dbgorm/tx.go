@@ -55,8 +55,10 @@ func (db *gormdb) transaction(ctx context.Context, f func(tx *tx) error) error {
 			return f(
 				&tx{
 					gormdb: gormdb{
-						z:  db.z.With(zap.String("txid", uuid.NewString())),
-						db: txdb,
+						z:     db.z.With(zap.String("txid", uuid.NewString())),
+						db:    txdb,
+						cfg:   db.cfg,
+						owner: db.owner,
 					},
 				},
 			)
