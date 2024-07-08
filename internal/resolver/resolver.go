@@ -18,7 +18,7 @@ const (
 )
 
 type Resolver struct {
-	Client sdkservices.Services
+	Client sdkservices.DBServices
 }
 
 type NotFoundError struct {
