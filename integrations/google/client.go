@@ -3,6 +3,7 @@ package google
 import (
 	"go.autokitteh.dev/autokitteh/integrations/google/gmail"
 	"go.autokitteh.dev/autokitteh/integrations/google/sheets"
+	"go.autokitteh.dev/autokitteh/integrations/google/utils"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
@@ -38,6 +39,6 @@ func New(cvars sdkservices.Vars) sdkservices.Integration {
 	return sdkintegrations.NewIntegration(
 		desc,
 		sdkmodule.New(opts...),
-		ConnStatus(cvars),
+		utils.ConnStatus(cvars),
 		sdkintegrations.WithConnectionConfigFromVars(cvars))
 }

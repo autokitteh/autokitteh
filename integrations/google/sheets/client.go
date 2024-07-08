@@ -12,6 +12,7 @@ import (
 	"google.golang.org/api/sheets/v4"
 
 	"go.autokitteh.dev/autokitteh/integrations/google/internal/vars"
+	"go.autokitteh.dev/autokitteh/integrations/google/utils"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
@@ -48,12 +49,16 @@ var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.Integrati
 	},
 }))
 
-func New(sec sdkservices.Vars) sdkservices.Integration {
+func New(cvars sdkservices.Vars) sdkservices.Integration {
 	scope := googleScope
 
-	opts := ExportedFunctions(sec, scope, false)
+	opts := ExportedFunctions(cvars, scope, false)
 
-	return sdkintegrations.NewIntegration(desc, sdkmodule.New(opts...), sdkintegrations.WithConnectionConfigFromVars(sec))
+	return sdkintegrations.NewIntegration(
+		desc,
+		sdkmodule.New(opts...),
+		utils.ConnStatus(cvars),
+		sdkintegrations.WithConnectionConfigFromVars(cvars))
 }
 
 func ExportedFunctions(sec sdkservices.Vars, scope string, prefix bool) []sdkmodule.Optfn {

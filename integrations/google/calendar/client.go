@@ -1,7 +1,7 @@
 package calendar
 
 import (
-	"go.autokitteh.dev/autokitteh/integrations/google"
+	"go.autokitteh.dev/autokitteh/integrations/google/utils"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
@@ -32,7 +32,7 @@ func New(cvars sdkservices.Vars) sdkservices.Integration {
 	return sdkintegrations.NewIntegration(
 		desc,
 		sdkmodule.New( /* No exported functions for Starlark */ ),
-		google.ConnStatus(cvars),
+		utils.ConnStatus(cvars),
 		sdkintegrations.WithConnectionConfigFromVars(cvars),
 	)
 }
