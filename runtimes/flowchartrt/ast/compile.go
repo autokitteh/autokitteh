@@ -15,6 +15,7 @@ import (
 
 func init() {
 	gob.Register([]any{})
+	gob.Register(map[string]any{})
 }
 
 func decode(path string, src []byte) (*Flowchart, error) {

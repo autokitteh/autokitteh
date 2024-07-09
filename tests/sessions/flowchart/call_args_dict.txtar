@@ -1,0 +1,29 @@
+{"a":1,"b":2}
+
+-- main.flowchart.yaml main --
+version: v1
+
+imports:
+  - name: test
+    path: test.star
+
+nodes:
+  - name: main
+    action:
+      call:
+        target: imports.test.foo
+        args:
+          x:
+            a: 1
+            b: 2
+    goto: nodes.end
+
+  - name: end
+    action:
+      print:
+        value: "states.results.main"
+
+
+-- test.star --
+def foo(x):
+  return x
