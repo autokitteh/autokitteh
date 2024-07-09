@@ -81,7 +81,7 @@ def run(args):
     log.info("code dir: %r", code_dir)
 
     # Allow users to import their own files and load data files
-    sys.path.append(code_dir)
+    sys.path.append(str(code_dir))
     chdir(code_dir)
 
     log.info("loading %r", module_name)
@@ -131,7 +131,7 @@ def run(args):
 
 def inspect_file(root_dir, path):
     # Allow users to import their own files and load data files
-    sys.path.append(root_dir)
+    sys.path.append(str(root_dir))
     chdir(root_dir)
 
     mod_name = path.stem
