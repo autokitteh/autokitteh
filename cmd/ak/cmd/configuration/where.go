@@ -11,6 +11,8 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/xdg"
 )
 
+var onlyCfg, onlyData bool
+
 var whereCmd = common.StandardCommand(&cobra.Command{
 	Use:     "where",
 	Short:   "Where are the config and data directories",
@@ -19,11 +21,23 @@ var whereCmd = common.StandardCommand(&cobra.Command{
 
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cfg := xdg.ConfigHomeDir()
+
+		if onlyCfg {
+			fmt.Fprintln(cmd.OutOrStdout(), cfg)
+			return nil
+		}
+
 		if strings.Contains(cfg, " ") {
 			cfg = strconv.Quote(cfg)
 		}
 
 		data := xdg.DataHomeDir()
+
+		if onlyData {
+			fmt.Fprintln(cmd.OutOrStdout(), data)
+			return nil
+		}
+
 		if strings.Contains(data, " ") {
 			data = strconv.Quote(data)
 		}
@@ -38,3 +52,10 @@ var whereCmd = common.StandardCommand(&cobra.Command{
 		return nil
 	},
 })
+
+func init() {
+	// Command-specific flags.
+	whereCmd.Flags().BoolVarP(&onlyCfg, "cfg", "c", false, "print only config directory path")
+	whereCmd.Flags().BoolVarP(&onlyData, "data", "d", false, "print only data directory path")
+	whereCmd.MarkFlagsMutuallyExclusive("cfg", "data")
+}
