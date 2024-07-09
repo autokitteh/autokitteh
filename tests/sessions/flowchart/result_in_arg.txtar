@@ -1,0 +1,24 @@
+meow, world!
+
+-- main.flowchart.yaml main --
+version: v1
+
+imports:
+  - name: foo
+    path: "foo.star"
+
+nodes:
+  - name: main
+    result: "'world!'"
+    goto: nodes.call
+
+  - name: call
+    action:
+      call:
+        target: imports.foo.foo
+        args:
+          x: "'meow, %s'.format([states.results.main])"
+
+-- foo.star --
+def foo(x):
+  print(x)
