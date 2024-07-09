@@ -13,6 +13,9 @@ message StartRequest {
   };
 
   Session session = 1 [(buf.validate.field).required = true];
+
+  // Helper: if set, merged into and overwrites the session's inputs.
+  map<string, string> json_inputs = 2;
 }
 
 message StartResponse {

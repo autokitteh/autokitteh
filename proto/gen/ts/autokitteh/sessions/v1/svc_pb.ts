@@ -16,6 +16,13 @@ export class StartRequest extends Message<StartRequest> {
    */
   session?: Session;
 
+  /**
+   * Helper: if set, merged into and overwrites the session's inputs.
+   *
+   * @generated from field: map<string, string> json_inputs = 2;
+   */
+  jsonInputs: { [key: string]: string } = {};
+
   constructor(data?: PartialMessage<StartRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -25,6 +32,7 @@ export class StartRequest extends Message<StartRequest> {
   static readonly typeName = "autokitteh.sessions.v1.StartRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "session", kind: "message", T: Session },
+    { no: 2, name: "json_inputs", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): StartRequest {
