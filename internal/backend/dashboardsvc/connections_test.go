@@ -1,9 +1,7 @@
 package dashboardsvc
 
 import (
-	"fmt"
 	"io"
-	"net/http"
 	"net/http/httptest"
 	"testing"
 
@@ -22,13 +20,13 @@ func Test_initResult(t *testing.T) {
 		{
 			name:   "no status",
 			path:   basePath,
-			status: 500,
+			status: 400,
 			err:    "non-integer status",
 		},
 		{
 			name:   "invalid status",
 			path:   basePath + "?status=abc",
-			status: 500,
+			status: 400,
 			err:    "non-integer status",
 		},
 		{
@@ -53,13 +51,11 @@ func Test_initResult(t *testing.T) {
 			resp := w.Result()
 			body, _ := io.ReadAll(resp.Body)
 
-			assert.Equal(t, http.StatusOK, resp.StatusCode)
-			assert.Equal(t, "application/json", resp.Header.Get("Content-Type"))
-			assert.Contains(t, string(body), fmt.Sprintf(`"status":%d`, tt.status))
+			assert.Equal(t, tt.status, resp.StatusCode)
 			if tt.err == "" {
-				assert.NotContains(t, string(body), `"error":`)
+				assert.Empty(t, string(body))
 			} else {
-				assert.Contains(t, string(body), fmt.Sprintf(`"error":"%s"`, tt.err))
+				assert.Equal(t, tt.err+"\n", string(body))
 			}
 		})
 	}
