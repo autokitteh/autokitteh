@@ -81,6 +81,7 @@ func (h handler) handleEvent(w http.ResponseWriter, r *http.Request) {
 	eventType, ok := extractEntityType(l, atlassianEvent, r.PathValue("category"))
 	if !ok {
 		http.Error(w, "Bad Request", http.StatusBadRequest)
+		return
 	}
 
 	// Iterate through all the relevant connections for this event.
@@ -126,7 +127,10 @@ func extractEntityType(l *zap.Logger, atlassianEvent map[string]any, category st
 		}
 	}
 
-	// Some "relation_*" events look a little different.
+	// Some "attachment_*" and "relation_*" events look a little different.
+	if _, ok := atlassianEvent["attachments"]; ok {
+		return fmt.Sprintf("attachment_%s", category), true
+	}
 	if _, ok := atlassianEvent["relationData"]; ok {
 		return fmt.Sprintf("relation_%s", category), true
 	}
