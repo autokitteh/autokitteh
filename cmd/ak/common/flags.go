@@ -34,7 +34,7 @@ func FailNotFound(cmd *cobra.Command, what string) error {
 	return nil
 }
 
-func toExitCodeErrorNotNilErr(err error, whats ...string) ExitCodeError {
+func ToExitCodeErrorNotNilErr(err error, whats ...string) ExitCodeError {
 	msg := strings.Join(whats, " ")
 	var code int = GenericFailure
 
@@ -58,7 +58,7 @@ func ToExitCodeError(err error, whats ...string) error {
 	if err == nil {
 		return nil
 	}
-	return toExitCodeErrorNotNilErr(err, whats...)
+	return ToExitCodeErrorNotNilErr(err, whats...)
 }
 
 func FailIfError(cmd *cobra.Command, err error, whats ...string) error {
@@ -69,7 +69,7 @@ func FailIfError(cmd *cobra.Command, err error, whats ...string) error {
 }
 
 // keep given error, if passed or return notFound if !found condition
-func AddNotFoundErrIfNeeded(err error, found bool) error {
+func AddNotFoundErrIfCond(err error, found bool) error {
 	if err == nil && !found {
 		err = sdkerrors.ErrNotFound
 	}
@@ -82,7 +82,7 @@ func FailIfError2(cmd *cobra.Command, err error, whats ...string) error {
 	if err == nil {
 		return err
 	}
-	exitErr := toExitCodeErrorNotNilErr(err, whats...)
+	exitErr := ToExitCodeErrorNotNilErr(err, whats...)
 	if exitErr.Code == NotFoundExitCode {
 		flags := cmd.Flags()
 		if flags.Lookup("fail") != nil && !kittehs.Must1(flags.GetBool("fail")) {

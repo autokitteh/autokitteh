@@ -36,11 +36,18 @@ func (e NotFoundError) Error() string {
 	return e.Type + name + " not found"
 }
 
-func translateError[O sdktypes.Object](err error, obj O, typ, id string) error {
+func translateError[O sdktypes.Object](err error, obj O, typ, idOrName string) error {
+	// hack - rework
+	what := "ID"
+	if len(idOrName) > 4 && idOrName[4] != '_' {
+		what = "name"
+	}
+
 	if err != nil {
 		if !errors.Is(err, sdkerrors.ErrNotFound) {
-			return fmt.Errorf("get %s ID %q: %w", typ, id, err)
+			return fmt.Errorf("get %s %s %q: %w", typ, what, idOrName, err)
 		}
+		return err // not found
 	}
 	// no error. But most of the services.Get() methods filtering out notFound errors.
 	// check sdktype.IsValid() to cover this case
@@ -68,12 +75,26 @@ func (r Resolver) BuildID(ctx context.Context, id string) (b sdktypes.Build, bid
 	return
 }
 
+// DeploymentID returns a deployment, based on the given ID.
+// It does NOT accept empty input.
+func (r Resolver) DeploymentID(ctx context.Context, id string) (d sdktypes.Deployment, did sdktypes.DeploymentID, err error) {
+	if id == "" {
+		err = errors.New("missing deployment ID")
+		return
+	}
+
+	if did, err = sdktypes.Strict(sdktypes.ParseDeploymentID(id)); err != nil {
+		err = fmt.Errorf("invalid deployment ID %q: %w", id, err)
+		return
+	}
+
+	d, err = r.Client.Deployments().Get(ctx, did)
+	err = translateError(err, d, "deployment", id)
+	return
+}
+
 // ConnectionNameOrID returns a connection, based on the given name or
 // ID. If the input is empty, we return nil but not an error.
-//
-// Subtle note: the connection is guaranteed to exist only if the FIRST
-// return value is non-nil. Example: if the input is a valid ID,
-// but it doesn't actually exist, we return (nil, ID, nil).
 func (r Resolver) ConnectionNameOrID(ctx context.Context, nameOrID, project string) (c sdktypes.Connection, cid sdktypes.ConnectionID, err error) {
 	if nameOrID == "" {
 		return
@@ -114,6 +135,7 @@ func (r Resolver) connectionByID(ctx context.Context, id string) (c sdktypes.Con
 	return
 }
 
+// TODO: add type and maybe id to sdkerrors.ErrNotFound and replace NotFoundError below
 func (r Resolver) connectionByFullName(ctx context.Context, projNameOrID, connName, fullName string) (sdktypes.Connection, sdktypes.ConnectionID, error) {
 	p, pid, err := r.ProjectNameOrID(ctx, projNameOrID)
 	if err != nil {
@@ -138,24 +160,6 @@ func (r Resolver) connectionByFullName(ctx context.Context, projNameOrID, connNa
 	return sdktypes.InvalidConnection, sdktypes.InvalidConnectionID, NotFoundError{Type: "connection", Name: fullName}
 }
 
-// DeploymentID returns a deployment, based on the given ID.
-// It does NOT accept empty input.
-func (r Resolver) DeploymentID(ctx context.Context, id string) (d sdktypes.Deployment, did sdktypes.DeploymentID, err error) {
-	if id == "" {
-		err = errors.New("missing deployment ID")
-		return
-	}
-
-	if did, err = sdktypes.Strict(sdktypes.ParseDeploymentID(id)); err != nil {
-		err = fmt.Errorf("invalid deployment ID %q: %w", id, err)
-		return
-	}
-
-	d, err = r.Client.Deployments().Get(ctx, did)
-	err = translateError(err, d, "deployment", id)
-	return
-}
-
 // EnvNameOrID returns an environment, based on the given environment
 // and project names or IDs.
 //
@@ -168,10 +172,6 @@ func (r Resolver) DeploymentID(ctx context.Context, id string) (d sdktypes.Deplo
 //     in the environment name
 //   - If the environment is specified as an ID, the project is optional,
 //     but if specified it must concur with the environment's known project
-//
-// Subtle note: the environment is guaranteed to exist only if the FIRST
-// return value is non-nil. Example: if the input is a valid ID,
-// but it doesn't actually exist, we return (nil, ID, nil).
 func (r Resolver) EnvNameOrID(ctx context.Context, envNameOrID, projNameOrID string) (sdktypes.Env, sdktypes.EnvID, error) {
 	if envNameOrID == "" {
 		if projNameOrID == "" {
@@ -200,8 +200,9 @@ func (r Resolver) envByID(ctx context.Context, envID, projNameOrID string, pid s
 		return
 	}
 
-	if e, err = r.Client.Envs().GetByID(ctx, eid); err != nil {
-		err = fmt.Errorf("get environment ID %q: %w", envID, err)
+	e, err = r.Client.Envs().GetByID(ctx, eid)
+	err = translateError(err, e, "environment", envID)
+	if err != nil {
 		return
 	}
 
@@ -278,10 +279,6 @@ func (r Resolver) EventID(ctx context.Context, id string) (e sdktypes.Event, eid
 
 // IntegrationNameOrID returns an integration, based on the given
 // name or ID. If the input is empty, we return nil but not an error.
-//
-// Subtle note: the integration is guaranteed to exist only if the FIRST
-// return value is non-nil. Example: if the input is a valid ID,
-// but it doesn't actually exist, we return (nil, ID, nil).
 func (r Resolver) IntegrationNameOrID(ctx context.Context, nameOrID string) (sdktypes.Integration, sdktypes.IntegrationID, error) {
 	if nameOrID == "" {
 		return sdktypes.InvalidIntegration, sdktypes.InvalidIntegrationID, nil
@@ -334,10 +331,6 @@ func (r Resolver) integrationByName(ctx context.Context, name string) (sdktypes.
 
 // TriggerID returns a trigger, based on the given ID.
 // If the input is empty, we return nil but not an error.
-//
-// Subtle note: the trigger is guaranteed to exist only if the FIRST
-// return value is non-nil. Example: if the input is a valid ID,
-// but it doesn't actually exist, we return (nil, ID, nil).
 func (r Resolver) TriggerID(ctx context.Context, id string) (t sdktypes.Trigger, tid sdktypes.TriggerID, err error) {
 	if id == "" {
 		err = errors.New("missing trigger ID")
@@ -356,10 +349,6 @@ func (r Resolver) TriggerID(ctx context.Context, id string) (t sdktypes.Trigger,
 
 // ProjectNameOrID returns a project, based on the given name or ID.
 // If the input is empty, we return nil but not an error.
-//
-// Subtle note: the project is guaranteed to exist only if the FIRST
-// return value is non-nil. Example: if the input is a valid ID,
-// but it doesn't actually exist, we return (nil, ID, nil).
 func (r Resolver) ProjectNameOrID(ctx context.Context, nameOrID string) (sdktypes.Project, sdktypes.ProjectID, error) {
 	if nameOrID == "" {
 		return sdktypes.InvalidProject, sdktypes.InvalidProjectID, nil
@@ -378,10 +367,7 @@ func (r Resolver) projectByID(ctx context.Context, id string) (p sdktypes.Projec
 		return
 	}
 	p, err = r.Client.Projects().GetByID(ctx, pid)
-	if err != nil {
-		err = fmt.Errorf("get project ID %q: %w", id, err)
-		return
-	}
+	err = translateError(err, p, "project", id)
 
 	return
 }
@@ -393,20 +379,14 @@ func (r Resolver) projectByName(ctx context.Context, name string) (p sdktypes.Pr
 		return
 	}
 
-	if p, err = r.Client.Projects().GetByName(ctx, n); err != nil {
-		err = fmt.Errorf("get project name %q: %w", name, err)
-	}
-
+	p, err = r.Client.Projects().GetByName(ctx, n)
+	err = translateError(err, p, "project", name)
 	pid = p.ID()
 	return
 }
 
 // SessionID returns a session, based on the given ID.
 // If the input is empty, we return nil but not an error.
-//
-// Subtle note: the session is guaranteed to exist only if the FIRST
-// return value is non-nil. Example: if the input is a valid ID,
-// but it doesn't actually exist, we return (nil, ID, nil).
 func (r Resolver) SessionID(ctx context.Context, id string) (s sdktypes.Session, sid sdktypes.SessionID, err error) {
 	if id == "" {
 		err = errors.New("missing session ID")
@@ -418,9 +398,7 @@ func (r Resolver) SessionID(ctx context.Context, id string) (s sdktypes.Session,
 		return
 	}
 
-	if s, err = r.Client.Sessions().Get(ctx, sid); err != nil {
-		err = fmt.Errorf("get session ID %q: %w", id, err)
-	}
-
+	s, err = r.Client.Sessions().Get(ctx, sid)
+	err = translateError(err, s, "build", id)
 	return
 }

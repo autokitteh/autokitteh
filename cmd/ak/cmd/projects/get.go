@@ -19,7 +19,7 @@ var getCmd = common.StandardCommand(&cobra.Command{
 		defer cancel()
 
 		p, _, err := r.ProjectNameOrID(ctx, args[0])
-		err = common.AddNotFoundErrIfNeeded(err, p.IsValid())
+		err = common.AddNotFoundErrIfCond(err, p.IsValid())
 		if err = common.FailIfError2(cmd, err, "project"); err != nil {
 			return err
 		}

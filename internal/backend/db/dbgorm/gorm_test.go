@@ -357,9 +357,11 @@ func (f *dbFixture) newProject() scheme.Project {
 
 func (f *dbFixture) newEnv(args ...any) scheme.Env {
 	id := newTestID()
+	name := idToName(id, "env")
 	env := scheme.Env{
 		EnvID:        id,
-		MembershipID: idToName(id, "env"),
+		Name:         name,
+		MembershipID: name,
 	}
 	for _, a := range args {
 		switch a := a.(type) {
@@ -435,9 +437,14 @@ func (f *dbFixture) newConnection(args ...any) scheme.Connection {
 	return c
 }
 
-func (f *dbFixture) newIntegration() scheme.Integration {
+func (f *dbFixture) newIntegration(name string) scheme.Integration {
+	id := sdktypes.NewIntegrationIDFromName(name).UUIDValue()
 	return scheme.Integration{
-		IntegrationID: newTestID(),
+		IntegrationID: id,
+		UniqueName:    name,
+		DisplayName:   name,
+		Description:   name + " integration",
+		UserLinks:     datatypes.JSON([]byte("{}")),
 	}
 }
 

@@ -27,22 +27,18 @@ var listCmd = common.StandardCommand(&cobra.Command{
 
 		if connection != "" {
 			_, cid, err := r.ConnectionNameOrID(ctx, args[0], "")
-			if err != nil {
+			err = common.AddNotFoundErrIfCond(err, cid.IsValid())
+			if err = common.FailIfError2(cmd, err, "connection"); err != nil {
 				return err
-			}
-			if !cid.IsValid() {
-				return fmt.Errorf("connection %q not found", connection)
 			}
 			f.ConnectionID = cid
 		}
 
 		if integration != "" {
 			i, iid, err := r.IntegrationNameOrID(ctx, integration)
-			if err != nil {
+			err = common.AddNotFoundErrIfCond(err, i.IsValid())
+			if err = common.FailIfError2(cmd, err, "integration"); err != nil {
 				return err
-			}
-			if !i.IsValid() {
-				return fmt.Errorf("integration %q not found", integration)
 			}
 			f.IntegrationID = iid
 		}

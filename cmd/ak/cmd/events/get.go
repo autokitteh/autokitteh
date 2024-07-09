@@ -19,7 +19,7 @@ var getCmd = common.StandardCommand(&cobra.Command{
 		defer cancel()
 
 		e, _, err := r.EventID(ctx, args[0])
-		err = common.AddNotFoundErrIfNeeded(err, e.IsValid())
+		err = common.AddNotFoundErrIfCond(err, e.IsValid())
 		if err = common.FailIfError2(cmd, err, "event"); err != nil {
 			return err
 		}

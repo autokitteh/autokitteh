@@ -1,8 +1,6 @@
 package connections
 
 import (
-	"errors"
-
 	"github.com/spf13/cobra"
 
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
@@ -21,17 +19,8 @@ var getCmd = common.StandardCommand(&cobra.Command{
 		defer cancel()
 
 		c, _, err := r.ConnectionNameOrID(ctx, args[0], "")
-		if err != nil {
-			if errors.As(err, resolver.NotFoundErrorType) {
-				if err := common.FailIfNotFound(cmd, "connection", c.IsValid()); err != nil {
-					return err
-				}
-				return nil
-			}
-			return err
-		}
-
-		if err := common.FailIfNotFound(cmd, "connection", c.IsValid()); err != nil {
+		err = common.AddNotFoundErrIfCond(err, c.IsValid())
+		if err = common.FailIfError2(cmd, err, "connection"); err != nil {
 			return err
 		}
 

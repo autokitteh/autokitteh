@@ -1,7 +1,6 @@
 package projects
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"path"
@@ -26,12 +25,8 @@ var downloadCmd = common.StandardCommand(&cobra.Command{
 		defer cancel()
 
 		p, pid, err := r.ProjectNameOrID(ctx, args[0])
-		if err != nil {
-			return common.FailIfError(cmd, err, "project")
-		}
-		if !p.IsValid() {
-			err = errors.New("project not found")
-			return common.NewExitCodeError(common.NotFoundExitCode, err)
+		if err = common.AddNotFoundErrIfCond(err, p.IsValid()); err != nil {
+			return common.ToExitCodeErrorNotNilErr(err, "project")
 		}
 
 		resources, err := projects().DownloadResources(ctx, pid)

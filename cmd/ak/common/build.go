@@ -49,12 +49,8 @@ func BuildProject(project string, dirPaths, filePaths []string) (sdktypes.BuildI
 	defer cancel()
 
 	p, pid, err := r.ProjectNameOrID(ctx, project)
-	if err != nil {
-		return sdktypes.InvalidBuildID, err
-	}
-	if !p.IsValid() {
-		err := fmt.Errorf("project %q not found", project)
-		return sdktypes.InvalidBuildID, NewExitCodeError(NotFoundExitCode, err)
+	if err = AddNotFoundErrIfCond(err, p.IsValid()); err != nil {
+		return sdktypes.InvalidBuildID, ToExitCodeErrorNotNilErr(err, "project")
 	}
 
 	uploads := make(map[string][]byte)

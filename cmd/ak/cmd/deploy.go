@@ -67,12 +67,9 @@ var deployCmd = common.StandardCommand(&cobra.Command{
 
 		// Step 3: parse the optional environment argument.
 		e, eid, err := r.EnvNameOrID(ctx, env, project)
-		if err != nil {
+		err = common.AddNotFoundErrIfCond(err, e.IsValid())
+		if err = common.FailIfError2(cmd, err, "environment"); err != nil {
 			return err
-		}
-		if !e.IsValid() {
-			err = fmt.Errorf("environment %q not found", env)
-			return common.NewExitCodeError(common.NotFoundExitCode, err)
 		}
 
 		// Step 4: deploy the build

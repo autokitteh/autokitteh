@@ -39,64 +39,15 @@ type dbs struct {
 	varSvc sdkservices.Vars
 }
 
-// type integrations struct {
-// 	db db.DB
-// 	z  *zap.Logger
-// }
-// func newIntegrationSvc(db db.DB, z *zap.Logger) sdkservices.Integrations {
-// 	return &integrations{db: db, z: z}
-// }
-
-// func (isvc *integrations) GetByID(ctx context.Context, id sdktypes.IntegrationID) (sdktypes.Integration, error) {
-// 	return isvc.db.GetIntegration(ctx, id)
-// }
-
-// func (isvc *integrations) GetByName(ctx context.Context, name sdktypes.Symbol) (sdktypes.Integration, error) {
-// 	ii, err := isvc.db.ListIntegrations(ctx)
-// 	if err == nil {
-// 		for _, i := range ii {
-// 			if i.DisplayName() == name.String() {
-// 				return i, nil
-// 			}
-// 		}
-// 	}
-// 	return sdktypes.InvalidIntegration, err
-// }
-
-// func (isvc *integrations) List(ctx context.Context, nameSubstring string) ([]sdktypes.Integration, error) {
-// 	ii, err := isvc.db.ListIntegrations(ctx)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	var iiFiltered []sdktypes.Integration
-
-//		for _, i := range ii {
-//			if strings.Contains(i.DisplayName(), nameSubstring) {
-//				iiFiltered = append(iiFiltered, i)
-//			}
-//		}
-//		return iiFiltered, nil
-//	}
-// type ConnectionsSvcWithoutEnrich struct {
-// 	connections.Connections
-// }
-
-// func newConnectionsSvc(db db.DB, z *zap.Logger) sdkservices.Connections {
-// 	return &ConnectionsSvcWithoutEnrich{connections.Connections{Z: z, DB: db, Name: "aaa"}}
-// }
-
-// func (c *ConnectionsSvcWithoutEnrich) enrichConnection(_ context.Context, conn sdktypes.Connection) (sdktypes.Connection, error) {
-// 	return conn, nil
-// }
-
-func newIntegrationsSvc() sdkservices.Integrations {
-	integrationID := sdktypes.NewIntegrationIDFromName("test")
+func newIntegrationsSvc(t *testing.T, f *dbFixture) sdkservices.Integrations {
+	i := f.newIntegration("test")
+	f.createIntegrationsAndAssert(t, i)
 
 	desc := kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
-		IntegrationId: integrationID.String(),
-		UniqueName:    "test",
-		DisplayName:   "Test",
-		Description:   "Test integration",
+		IntegrationId: sdktypes.NewIDFromUUID[sdktypes.IntegrationID](&i.IntegrationID).String(),
+		UniqueName:    i.UniqueName,
+		DisplayName:   i.DisplayName,
+		Description:   i.Description,
 	}))
 
 	testIntegration := sdkintegrations.NewIntegration(desc, sdkmodule.New())
@@ -120,7 +71,7 @@ func newDBServices(t *testing.T) (sdkservices.DBServices, *dbFixture) {
 
 	z := zaptest.NewLogger(t) // FIXME: or gormdb.z?
 
-	intSvc := newIntegrationsSvc()
+	intSvc := newIntegrationsSvc(t, f)
 	bldSvc := builds.New(builds.Builds{Z: z, DB: gdb})
 	prjSvc := projects.New(projects.Projects{Z: z, DB: gdb})
 	depSvc := deployments.New(z, gdb)
@@ -261,14 +212,15 @@ func TestResolverSessionIDWithOwnership(t *testing.T) {
 func TestResolverConnectionNameOrIdWithOwnership(t *testing.T) {
 	r, f := createResolverAndFixture(t)
 
-	// since we are passing via service, connection should be defined properly otherwise will fail in parsing
-	// e.g. have project and integration defined
+	// since we are passing via service, connection should be defined properly otherwise
+	// will fail in parsing, e.g. have project and integration defined
+	ii, err := f.gormdb.listIntegrations(f.ctx)
+	assert.NoError(t, err)
+	assert.GreaterOrEqual(t, len(ii), 1)
+	i := ii[0] // get the first integraiton. Created in createResolverAndFixture
 
-	i := f.newIntegration()
-	i.IntegrationID = sdktypes.NewIntegrationIDFromName("test").UUIDValue()
 	p := f.newProject()
 	c := f.newConnection(p, i)
-	f.createIntegrationsAndAssert(t, i)
 	f.createProjectsAndAssert(t, p)
 	f.createConnectionsAndAssert(t, c)
 
@@ -306,7 +258,113 @@ func TestResolverConnectionNameOrIdWithOwnership(t *testing.T) {
 	// TODO: check that all users could access default cronConnection?
 }
 
-// FIXME:
-// EnvNameOrID
-// IntegraitonNameOrID
-// ProjectNameOrID
+func TestResolverEnvNameOrIdWithOwnership(t *testing.T) {
+	r, f := createResolverAndFixture(t)
+
+	p := f.newProject()
+	e := f.newEnv(p)
+	f.createProjectsAndAssert(t, p)
+	f.createEnvsAndAssert(t, e)
+
+	eid := sdktypes.NewIDFromUUID[sdktypes.EnvID](&e.EnvID)
+	eids := eid.String()
+
+	pid := sdktypes.NewIDFromUUID[sdktypes.ProjectID](&p.ProjectID)
+	pids := pid.String()
+
+	testCases := []struct {
+		name         string
+		envNameOrID  string
+		projNameOrID string
+	}{
+		{"envID,projectID", eids, pids},
+		{"envID,projectName", eids, p.Name},
+		{"envName,projectID", e.Name, pids},
+		{"envName,projectName", e.Name, p.Name},
+	}
+
+	// resolve ok
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			e, _, err := r.EnvNameOrID(f.ctx, tc.envNameOrID, tc.projNameOrID)
+			assert.NoError(t, err)
+			assert.Equal(t, eid, e.ID())
+		})
+	}
+
+	// fail due to auth
+	f.ctx = withUser(f.ctx, u)
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, _, err := r.EnvNameOrID(f.ctx, tc.envNameOrID, tc.projNameOrID)
+			assert.ErrorIs(t, err, sdkerrors.ErrNotFound)
+		})
+	}
+}
+
+func TestResolverProjectNameOrIdWithOwnership(t *testing.T) {
+	r, f := createResolverAndFixture(t)
+
+	p := f.newProject()
+	f.createProjectsAndAssert(t, p)
+
+	pid := sdktypes.NewIDFromUUID[sdktypes.ProjectID](&p.ProjectID)
+	pids := pid.String()
+
+	testCases := []struct {
+		name     string
+		nameOrID string
+	}{
+		{"projectID", pids},
+		{"projectName", p.Name},
+	}
+
+	// resolve ok
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			p, _, err := r.ProjectNameOrID(f.ctx, tc.nameOrID)
+			assert.NoError(t, err)
+			assert.Equal(t, pid, p.ID())
+		})
+	}
+
+	// fail due to auth
+	f.ctx = withUser(f.ctx, u)
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, _, err := r.ProjectNameOrID(f.ctx, tc.nameOrID)
+			assert.ErrorIs(t, err, sdkerrors.ErrNotFound)
+		})
+	}
+}
+
+func TestResolverIntegrationNameOrIdWithOwnership(t *testing.T) {
+	r, f := createResolverAndFixture(t)
+
+	ii, err := f.gormdb.listIntegrations(f.ctx)
+	assert.NoError(t, err)
+	assert.GreaterOrEqual(t, len(ii), 1)
+	i := ii[0] // get the first integraiton. Created in createResolverAndFixture
+
+	iid := sdktypes.NewIDFromUUID[sdktypes.IntegrationID](&i.IntegrationID)
+	iids := iid.String()
+
+	testCases := []struct {
+		name     string
+		nameOrID string
+	}{
+		{"integraitonID", iids},
+		{"integraitonName", i.DisplayName},
+	}
+
+	// resolve ok
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			i, _, err := r.IntegrationNameOrID(f.ctx, tc.nameOrID)
+			assert.NoError(t, err)
+			assert.Equal(t, iid, i.ID())
+		})
+	}
+
+	// no users on integrations
+}

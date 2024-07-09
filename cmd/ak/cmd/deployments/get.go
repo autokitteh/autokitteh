@@ -19,7 +19,7 @@ var getCmd = common.StandardCommand(&cobra.Command{
 		defer cancel()
 
 		d, _, err := r.DeploymentID(ctx, args[0])
-		err = common.AddNotFoundErrIfNeeded(err, d.IsValid())
+		err = common.AddNotFoundErrIfCond(err, d.IsValid())
 		if err = common.FailIfError2(cmd, err, "deployment"); err != nil {
 			return err
 		}
