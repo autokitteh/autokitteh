@@ -248,3 +248,15 @@ def __google_creds_oauth2(connection: str, refresh_token: str, scopes: list[str]
         creds.refresh(Request())
 
     return creds
+
+
+def google_id(url: str) -> str:
+    """Extract the Google Doc/Sheet ID from a URL. This function is idempotent.
+
+    Example: https://docs.google.com/*/d/1a2b3c4d5e6f/edit --> 1a2b3c4d5e6f
+    """
+    match = re.match(r"(.*/d/)?([\w-]{20,})", url)
+    if match:
+        return match.group(2)
+    else:
+        raise ValueError(f'Invalid Google ID in "{url}"')
