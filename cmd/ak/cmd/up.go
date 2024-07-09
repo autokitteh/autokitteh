@@ -3,6 +3,8 @@ package cmd
 import (
 	"fmt"
 
+	"go.uber.org/automaxprocs/maxprocs"
+
 	"github.com/spf13/cobra"
 
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
@@ -14,6 +16,11 @@ var upCmd = common.StandardCommand(&cobra.Command{
 	Args:  cobra.NoArgs,
 
 	RunE: func(cmd *cobra.Command, args []string) error {
+		_, err := maxprocs.Set()
+		if err != nil {
+			return fmt.Errorf("maxprocs set: %w", err)
+		}
+
 		ctx := cmd.Root().Context()
 
 		app, err := common.NewSvc(false)

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 	"os"
+	"runtime"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -393,7 +394,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 
 			HookSimpleOnStart(lc, func() {
 				ready.Store(true)
-				z.Info("ready", zap.String("version", version.Version), zap.String("id", fixtures.ProcessID()))
+				z.Info("ready", zap.String("version", version.Version), zap.String("id", fixtures.ProcessID()), zap.Int("gomaxprocs", runtime.GOMAXPROCS(0)))
 			})
 		}),
 	}

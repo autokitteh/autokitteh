@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"time"
 
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/worker"
@@ -56,6 +57,7 @@ func (ws *workflows) StartWorkers(ctx context.Context) error {
 	opts := ws.cfg.Temporal.Worker
 	opts.DisableRegistrationAliasing = true
 	opts.OnFatalError = func(err error) { ws.z.Error("temporal worker error", zap.Error(err)) }
+	opts.DeadlockDetectionTimeout = time.Second * 10
 
 	ws.worker = worker.New(ws.svcs.TemporalClient(), taskQueueName, opts)
 
