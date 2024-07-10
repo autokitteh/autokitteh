@@ -50,7 +50,8 @@ func (c ConnectionInit) Abort(err string) {
 // and redirects the user to the last HTTP response, based on its
 // origin (local AK server / local VS Code extension / SaaS web UI).
 func (c ConnectionInit) AbortWithStatus(status int, err string) {
-	switch c.Request.FormValue("origin") {
+	origin := c.Request.FormValue("origin")
+	switch origin {
 	case "vscode":
 		u := "vscode://autokitteh.autokitteh?cid=%s&status=%d&error=%s"
 		u = fmt.Sprintf(u, c.ConnectionID, status, url.QueryEscape(err))
@@ -58,8 +59,8 @@ func (c ConnectionInit) AbortWithStatus(status int, err string) {
 	case "web":
 		http.Error(c.Writer, err, status)
 	default: // Local server ("cli", "dash", etc.)
-		path := c.Integration.ConnectionURL().Path + "/error.html"
-		u := fmt.Sprintf("%s?error=%s", path, url.QueryEscape(err))
+		u := c.Integration.ConnectionURL().Path + "/error.html?cid=%s&origin=%s&error=%s"
+		u = fmt.Sprintf(u, c.ConnectionID, origin, url.QueryEscape(err))
 		http.Redirect(c.Writer, c.Request, u, http.StatusFound)
 	}
 }
