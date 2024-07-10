@@ -31,7 +31,7 @@ func Start(l *zap.Logger, mux *http.ServeMux, vs sdkservices.Vars, d sdkservices
 
 	mux.Handle("GET "+oauthPath, NewHandler(l))
 
-	wsh := websockets.NewHandler(l, vs, d, integrationID)
+	wsh := websockets.NewHandler(l, vs, d, desc)
 	mux.HandleFunc("POST "+formPath, wsh.HandleForm)
 
 	// Event webhooks.

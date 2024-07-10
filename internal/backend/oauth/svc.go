@@ -90,7 +90,7 @@ func (s *server) StartFlow(ctx context.Context, req *connect.Request[oauthv1.Sta
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	cid, err := sdktypes.ParseConnectionID(req.Msg.ConnectionId)
+	cid, err := sdktypes.StrictParseConnectionID(req.Msg.ConnectionId)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}

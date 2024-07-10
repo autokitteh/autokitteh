@@ -3,6 +3,8 @@ package aws
 import (
 	"net/http"
 
+	"go.uber.org/zap"
+
 	"go.autokitteh.dev/autokitteh/web/static"
 )
 
@@ -15,8 +17,8 @@ const (
 	savePath = "/aws/save"
 )
 
-func Start(mux *http.ServeMux) {
+func Start(l *zap.Logger, mux *http.ServeMux) {
 	// New connection UI + form submission handler.
 	mux.Handle(uiPath, http.FileServer(http.FS(static.AWSWebContent)))
-	mux.Handle(savePath, NewHTTPHandler())
+	mux.Handle(savePath, NewHTTPHandler(l))
 }

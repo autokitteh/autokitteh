@@ -20,57 +20,55 @@ import (
 // (either way). If all is well, it saves a new autokitteh connection.
 // Either way, it redirects the user to success or failure webpages.
 func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
-	l := h.logger.With(zap.String("urlPath", r.URL.Path))
+	c, l := sdkintegrations.NewConnectionInit(h.logger, w, r, desc)
 
 	// Handle errors (e.g. the user didn't authorize us) based on:
 	// https://developers.google.com/identity/protocols/oauth2/web-server#handlingresponse
 	e := r.FormValue("error")
 	if e != "" {
 		l.Warn("OAuth redirect reported an error", zap.Error(errors.New(e)))
-		redirectToErrorPage(w, r, e)
+		c.Abort(e)
 		return
 	}
 
 	_, data, err := sdkintegrations.GetOAuthDataFromURL(r.URL)
 	if err != nil {
 		l.Warn("Invalid data in OAuth redirect request", zap.Error(err))
-		redirectToErrorPage(w, r, "invalid data parameter")
+		c.Abort("invalid data parameter")
 		return
 	}
 
 	oauthToken := data.Token
 	if oauthToken == nil {
 		l.Warn("Missing token in OAuth redirect request", zap.Any("data", data))
-		redirectToErrorPage(w, r, "missing OAuth token")
+		c.Abort("missing OAuth token")
 		return
 	}
 
 	url, err := apiBaseURL()
 	if err != nil {
 		l.Warn("Invalid Atlassian base URL", zap.Error(err))
-		redirectToErrorPage(w, r, "invalid Atlassian base URL")
+		c.Abort("invalid Atlassian base URL")
 		return
 	}
 
 	// Test the OAuth token's usability and get authoritative installation details.
 	res, err := accessibleResources(l, url, oauthToken.AccessToken)
 	if err != nil {
-		redirectToErrorPage(w, r, err.Error())
+		c.Abort(err.Error())
 		return
 	}
 
 	if len(res) > 1 {
 		l.Warn("Multiple accessible resources for single OAuth token", zap.Any("resources", res))
-		redirectToErrorPage(w, r, "multiple accessible resources")
+		c.Abort("multiple Atlassian accessible resources")
 		return
 	}
 
 	// Attention: in Confluence, there's no known workaround to define
 	// webhooks when using OAuth 2.0, only when using a token!
 
-	initData := sdktypes.NewVars(data.ToVars()...).Append(res[0].toVars()...)
-
-	sdkintegrations.FinalizeConnectionInit(w, r, integrationID, initData)
+	c.Finalize(sdktypes.NewVars(data.ToVars()...).Append(res[0].toVars()...))
 }
 
 // Determine Atlassian base URL (to support on-prem servers).

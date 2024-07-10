@@ -1,9 +1,7 @@
 package confluence
 
 import (
-	"fmt"
 	"net/http"
-	"net/url"
 
 	"go.uber.org/zap"
 
@@ -34,9 +32,4 @@ func Start(l *zap.Logger, mux *http.ServeMux, vars sdkservices.Vars, o sdkservic
 
 	// Event webhook.
 	mux.HandleFunc("POST "+webhookPath, h.handleEvent)
-}
-
-func redirectToErrorPage(w http.ResponseWriter, r *http.Request, err string) {
-	u := fmt.Sprintf("%s/error.html?error=%s", desc.ConnectionURL().Path, url.QueryEscape(err))
-	http.Redirect(w, r, u, http.StatusFound)
 }

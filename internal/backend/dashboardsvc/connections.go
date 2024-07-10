@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
+	"strconv"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -17,12 +18,14 @@ func (s Svc) initConnections() {
 
 	s.Muxes.Auth.HandleFunc("GET /connections", s.connections)
 	s.Muxes.Auth.HandleFunc("GET /connections/{cid}", s.connection)
-	s.Muxes.Auth.HandleFunc("GET /connections/{id}/init/{origin}", s.initConnection)
-	s.Muxes.Auth.HandleFunc("GET /connections/{id}/postinit", s.postInitConnection)
-	s.Muxes.Auth.HandleFunc("DELETE /connections/{id}/vars", s.rmAllConnectionVars)
 
-	s.Muxes.Auth.HandleFunc("/connections/{id}/test", s.testConnection)
-	s.Muxes.Auth.HandleFunc("/connections/{id}/refresh", s.refreshConnection)
+	s.Muxes.Auth.HandleFunc("GET /connections/{id}/init/{origin}", s.init)
+	s.Muxes.Auth.HandleFunc("GET /connections/{id}/postinit", s.postInit)
+	s.Muxes.Auth.HandleFunc("GET /connections/{id}/result", initResult)
+
+	s.Muxes.Auth.HandleFunc("DELETE /connections/{id}/vars", s.rmAllConnectionVars)
+	s.Muxes.Auth.HandleFunc("GET /connections/{id}/test", s.testConnection)
+	s.Muxes.Auth.HandleFunc("GET /connections/{id}/refresh", s.refreshConnection)
 }
 
 type connection struct{ sdktypes.Connection }
@@ -147,54 +150,44 @@ func (s Svc) connection(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// The user needs to select a specific connection at the end
-// of the initialization flow, based on the integration,
-// if a connection wasn't selected at the beginning.
-func (s Svc) initUnknownConnection(w http.ResponseWriter, r *http.Request, id, vars string) {
-	iid, err := sdktypes.StrictParseIntegrationID(id)
+func (s Svc) init(w http.ResponseWriter, r *http.Request) {
+	id, origin := r.PathValue("id"), r.PathValue("origin")
+
+	cid, err := sdktypes.StrictParseConnectionID(id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	l, err := s.listConnections(w, r, sdkservices.ListConnectionsFilter{
-		IntegrationID: iid,
-	})
+	conn, err := s.Svcs.Connections().Get(r.Context(), cid)
 	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if !conn.IsValid() {
+		http.Error(w, "connection not found", http.StatusNotFound)
 		return
 	}
 
-	l.Headers = append(l.Headers, "")
-
-	for i := range l.Items {
-		l.Items[i] = append(
-			l.Items[i],
-			template.HTML(
-				fmt.Sprintf(`<button onclick="window.location.href='/connections/%s/init/dash?vars=%s'">Select</button>`,
-					l.UnformattedItems[i][0],
-					vars,
-				),
-			),
-		)
+	integ, err := s.Svcs.Integrations().GetByID(r.Context(), conn.IntegrationID())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if !integ.Get().IsValid() {
+		http.Error(w, "integration not found", http.StatusNotFound)
+		return
 	}
 
-	renderList(w, r, "connections", l)
+	http.Redirect(w, r, fmt.Sprintf("%s?cid=%v&origin=%s", integ.Get().ConnectionURL(), cid, origin), http.StatusFound)
 }
 
-// postInitConnection is the last step in the connection initialization
-// flow. It saves the connection's data in the connection's scope, and
+// postInit is the last step in the connection initialization flow.
+// It saves the connection's data in the connection's scope, and
 // redirects the user to the last HTTP response, based on its origin
 // (local AK server / local VS Code extension / SaaS web UI).
-func (s Svc) postInitConnection(w http.ResponseWriter, r *http.Request) {
+func (s Svc) postInit(w http.ResponseWriter, r *http.Request) {
 	vars, origin := r.URL.Query().Get("vars"), r.URL.Query().Get("origin")
-
-	id := r.PathValue("id")
-	if sdktypes.IsIntegrationID(id) {
-		// The user needs to select a specific connection at the end,
-		// based on the integration, if it wasn't selected at the beginning.
-		s.initUnknownConnection(w, r, id, vars)
-		return
-	}
 
 	var data []sdktypes.Var
 	if err := kittehs.DecodeURLData(vars, &data); err != nil {
@@ -202,7 +195,7 @@ func (s Svc) postInitConnection(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cid, err := sdktypes.StrictParseConnectionID(id)
+	cid, err := sdktypes.StrictParseConnectionID(r.PathValue("id"))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -217,16 +210,32 @@ func (s Svc) postInitConnection(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var u string
 	switch origin {
 	case "vscode":
-		http.Redirect(w, r, "vscode://autokitteh.autokitteh?cid="+cid.String(), http.StatusFound)
-	case "web":
-		// TODO(ENG-1106): base URL from config var
-		http.Redirect(w, r, "/connections/"+cid.String(), http.StatusFound)
+		u = "vscode://autokitteh.autokitteh?cid=%s"
+	case "web": // Another redirect just to get rid of the secrets in the URL.
+		u = "/connections/%s/result?status=200"
 	default: // Local server ("cli", "dash", etc.)
-		u := fmt.Sprintf("/connections/%s?msg=Connection initialized 😸", cid.String())
-		http.Redirect(w, r, u, http.StatusFound)
+		u = "/connections/%s?msg=Connection initialized 😸"
 	}
+	http.Redirect(w, r, fmt.Sprintf(u, cid), http.StatusFound)
+}
+
+// initResult is the target of the final redirect in the connection init flow.
+// It exists merely to remove vars from the post-init URL, to prevent leaks.
+func initResult(w http.ResponseWriter, r *http.Request) {
+	status, err := strconv.Atoi(r.FormValue("status"))
+	if err != nil {
+		http.Error(w, "non-integer status", http.StatusBadRequest)
+		return
+	}
+
+	if status >= http.StatusBadRequest {
+		http.Error(w, r.FormValue("error"), status)
+	}
+
+	// Otherwise, just return HTTP 200.
 }
 
 func (s Svc) rmAllConnectionVars(w http.ResponseWriter, r *http.Request) {
@@ -286,36 +295,4 @@ func (s Svc) refreshConnection(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Redirect(w, r, fmt.Sprintf("/connections/%s", id), http.StatusFound)
-}
-
-func (s Svc) initConnection(w http.ResponseWriter, r *http.Request) {
-	id, origin := r.PathValue("id"), r.PathValue("origin")
-
-	cid, err := sdktypes.StrictParseConnectionID(id)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	conn, err := s.Svcs.Connections().Get(r.Context(), cid)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	if !conn.IsValid() {
-		http.Error(w, "connection not found", http.StatusNotFound)
-		return
-	}
-
-	integ, err := s.Svcs.Integrations().GetByID(r.Context(), conn.IntegrationID())
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	if !integ.Get().IsValid() {
-		http.Error(w, "integration not found", http.StatusNotFound)
-		return
-	}
-
-	http.Redirect(w, r, fmt.Sprintf("%s?cid=%v&origin=%s", integ.Get().ConnectionURL(), cid, origin), http.StatusFound)
 }

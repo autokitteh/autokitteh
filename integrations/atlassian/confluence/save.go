@@ -17,20 +17,19 @@ const (
 
 // handleAuth saves a new AutoKitteh connection with user-submitted data.
 func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
-	l := h.logger.With(zap.String("urlPath", r.URL.Path))
+	c, l := sdkintegrations.NewConnectionInit(h.logger, w, r, desc)
 
-	// Check the "Content-Type" header.
+	// Check "Content-Type" header.
 	contentType := r.Header.Get(headerContentType)
 	if !strings.HasPrefix(contentType, contentTypeForm) {
-		// Probably an attack, so no need for user-friendliness.
-		http.Error(w, "Bad Request", http.StatusBadRequest)
+		c.Abort("unexpected content type")
 		return
 	}
 
 	// Read and parse POST request body.
 	if err := r.ParseForm(); err != nil {
-		l.Warn("Failed to parse inbound HTTP request", zap.Error(err))
-		redirectToErrorPage(w, r, "form parsing error: "+err.Error())
+		l.Warn("Failed to parse incoming HTTP request", zap.Error(err))
+		c.Abort("form parsing error")
 		return
 	}
 
@@ -55,7 +54,8 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 		// initData = initData.Set(webhookID, fmt.Sprintf("%d", id), false)
 
 		if err := deleteWebhook(l, u, e, t, id); err != nil {
-			redirectToErrorPage(w, r, "failed to delete existing webhook: "+err.Error())
+			l.Warn("Failed to delete existing webhook", zap.Error(err))
+			c.Abort("failed to delete existing webhook: " + err.Error())
 			return
 		}
 	} // else {
@@ -63,7 +63,8 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 	var err error
 	id, secret, err = registerWebhook(l, u, e, t)
 	if err != nil {
-		redirectToErrorPage(w, r, "failed to register webhook: "+err.Error())
+		l.Warn("Failed to register webhook", zap.Error(err))
+		c.Abort("failed to register webhook: " + err.Error())
 		return
 	}
 	initData = initData.Set(webhookSecret, secret, true)
@@ -71,5 +72,5 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 
 	initData = initData.Set(webhookID, fmt.Sprintf("%d", id), false)
 
-	sdkintegrations.FinalizeConnectionInit(w, r, integrationID, initData)
+	c.Finalize(initData)
 }

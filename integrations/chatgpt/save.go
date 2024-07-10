@@ -1,9 +1,7 @@
 package chatgpt
 
 import (
-	"fmt"
 	"net/http"
-	"net/url"
 	"strings"
 
 	"go.uber.org/zap"
@@ -31,30 +29,21 @@ func NewHTTPHandler(l *zap.Logger) http.Handler {
 
 // ServeHTTP saves a new autokitteh connection with user-submitted data.
 func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	l := h.logger.With(zap.String("urlPath", r.URL.Path))
+	c, l := sdkintegrations.NewConnectionInit(h.logger, w, r, desc)
 
-	// Check the "Content-Type" header.
+	// Check "Content-Type" header.
 	contentType := r.Header.Get(headerContentType)
 	if !strings.HasPrefix(contentType, contentTypeForm) {
-		// Probably an attack, so no need for user-friendliness.
-		http.Error(w, "Bad Request", http.StatusBadRequest)
+		c.Abort("unexpected content type")
 		return
 	}
 
 	// Read and parse POST request body.
 	if err := r.ParseForm(); err != nil {
-		l.Warn("Failed to parse inbound HTTP request", zap.Error(err))
-		redirectToErrorPage(w, r, "form parsing error: "+err.Error())
+		l.Warn("Failed to parse incoming HTTP request", zap.Error(err))
+		c.Abort("form parsing error")
 		return
 	}
-	apiKey := r.Form.Get("key")
 
-	initData := sdktypes.NewVars().Set(apiKeyVar, apiKey, true)
-
-	sdkintegrations.FinalizeConnectionInit(w, r, integrationID, initData)
-}
-
-func redirectToErrorPage(w http.ResponseWriter, r *http.Request, err string) {
-	u := fmt.Sprintf("%s/error.html?error=%s", desc.ConnectionURL().Path, url.QueryEscape(err))
-	http.Redirect(w, r, u, http.StatusFound)
+	c.Finalize(sdktypes.NewVars().Set(apiKeyVar, r.Form.Get("key"), true))
 }

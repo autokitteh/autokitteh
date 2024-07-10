@@ -11,7 +11,7 @@ import (
 )
 
 func Start(l *zap.Logger, mux *http.ServeMux, vars sdkservices.Vars, d sdkservices.Dispatcher) {
-	h := webhooks.NewHandler(l, vars, d, "twilio", integrationID)
+	h := webhooks.NewHandler(l, vars, d, "twilio", desc)
 
 	// Save new autokitteh connections with user-submitted Twilio secrets.
 	uiPath := "GET " + desc.ConnectionURL().Path + "/"
