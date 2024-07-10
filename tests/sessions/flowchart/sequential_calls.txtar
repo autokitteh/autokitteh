@@ -1,0 +1,30 @@
+bar
+bar
+
+-- main.flowchart.yaml main --
+version: v1
+
+imports:
+  - name: foo
+    path: "foo.star"
+
+nodes:
+  - name: main
+    action:
+      call:
+        target: nodes.a
+
+  - name: a
+    action:
+      call:
+        target: imports.foo.bar
+    goto: nodes.b
+
+  - name: b
+    action:
+      call:
+        target: imports.foo.bar
+
+-- foo.star --
+def bar():
+  print("bar")

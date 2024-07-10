@@ -129,11 +129,14 @@ func (th *thread) runCallAction(ctx context.Context, c *ast.CallAction, setResul
 			return nil, nil
 		}
 
-		f := th.frame().withArgs(kwargs)
-		th.frame().setState("call", map[string]sdktypes.Value{
+		f := th.frame()
+
+		th.push(kwargs)
+
+		f.setState("call", map[string]sdktypes.Value{
 			"args": sdktypes.NewDictValueFromStringMap(kwargs),
 		})
-		th.push(f)
+
 		return n, nil
 	}
 

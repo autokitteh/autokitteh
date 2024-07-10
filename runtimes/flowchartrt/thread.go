@@ -81,7 +81,14 @@ func (r *run) newThread(entrypoint sdktypes.Value, args map[string]sdktypes.Valu
 	return &th, nil
 }
 
-func (th *thread) push(f *frame) { th.callstack = append([]*frame{f}, th.callstack...) }
+func (th *thread) push(args map[string]sdktypes.Value) {
+	f := &frame{
+		node: th.frame().node,
+		args: args,
+	}
+
+	th.callstack = append([]*frame{f}, th.callstack...)
+}
 
 func (th *thread) pop(ctx context.Context) (next *ast.Node, result sdktypes.Value, err error) {
 	frame := th.frame()

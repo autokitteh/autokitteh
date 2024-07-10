@@ -1,5 +1,4 @@
 meow, world!
-bub and bob say buh bye!
 
 -- main.flowchart.yaml main --
 version: v1
@@ -20,8 +19,8 @@ nodes:
     - name: end
       action:
         print:
-          value: "'bub and bob say buh bye!'"
+          value: "states.results.main"
 
 -- foo.star --
 def say(sound):
-  print("{}, world!".format(sound))
+  return "{}, world!".format(sound)

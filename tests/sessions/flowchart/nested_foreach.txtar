@@ -1,0 +1,48 @@
+1 a
+1 b
+1 c
+2 a
+2 b
+2 c
+3 a
+3 b
+3 c
+
+-- main.flowchart.yaml main --
+version: v1
+
+imports:
+  - name: foo
+    path: "foo.star"
+
+nodes:
+  - name: main
+    action:
+      foreach:
+        items: [1, 2, 3]
+        call:
+          target: nodes.iter1
+          args:
+            i: states.foreach.item
+
+  - name: iter1
+    action:
+      foreach:
+        items: ['a', 'b', 'c']
+        call:
+          target: nodes.iter2
+          args:
+            i: args.i
+            j: states.foreach.item
+
+  - name: iter2
+    action:
+      call:
+        target: imports.foo.bar
+        args:
+          i: args.i
+          j: args.j
+
+-- foo.star --
+def bar(i, j):
+  print(i, j)

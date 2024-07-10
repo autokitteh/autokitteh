@@ -1,6 +1,8 @@
 package flowchartrt
 
 import (
+	"fmt"
+
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -10,12 +12,6 @@ type frame struct {
 	states     map[string]sdktypes.Value
 	args       map[string]sdktypes.Value
 	lastResult sdktypes.Value
-}
-
-func (f *frame) withArgs(args map[string]sdktypes.Value) *frame {
-	ff := *f
-	ff.args = args
-	return &ff
 }
 
 func (f *frame) getState(k string) map[string]sdktypes.Value {
@@ -65,6 +61,10 @@ func (f *frame) updateResult(update func(sdktypes.Value) sdktypes.Value) {
 }
 
 func (f *frame) setResult(v sdktypes.Value) {
+	if !v.IsValid() {
+		fmt.Println("oops")
+	}
+
 	f.updateResult(func(sdktypes.Value) sdktypes.Value { return v })
 }
 
