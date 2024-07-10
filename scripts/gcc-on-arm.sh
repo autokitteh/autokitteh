@@ -2,7 +2,7 @@
 # Install GCC on ARM architecture, used by Docker.
 
 case $1 in
-	"-h" | "--help" ) echo "usage: $(basename $0)"; exit;;
+	"-h" | "--help" ) echo "usage: $(basename "$0")"; exit;;
 esac
 
 if [ $# -gt 0 ]; then
