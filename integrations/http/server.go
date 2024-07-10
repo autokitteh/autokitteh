@@ -3,6 +3,7 @@ package http
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -12,6 +13,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/integrations/internal/extrazap"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
+	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 	"go.autokitteh.dev/autokitteh/web/static"
@@ -121,13 +123,20 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	pname, err := sdktypes.StrictParseSymbol(strings.SplitN(env, "/", 2)[0])
 	if err != nil {
-		l.Error("parse project name error", zap.Error(err))
+		l.Debug("parse project name error", zap.Error(err))
+		http.Error(w, "Not Found", http.StatusNotFound)
 		return
 	}
 
 	p, err := h.projs.GetByName(ctx, pname)
 	if err != nil {
-		l.Error("get project error", zap.Error(err))
+		if errors.Is(err, sdkerrors.ErrNotFound) {
+			l.Debug("project not found", zap.String("project", pname.String()))
+			http.Error(w, "Not Found", http.StatusNotFound)
+		} else {
+			l.Error("get project", zap.Error(err))
+		}
+		http.Error(w, "Not Found", http.StatusNotFound)
 		return
 	}
 
