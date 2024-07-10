@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>autokitteh Google Gemini Integration</title>
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="/static/apple-touch-icon.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="/static/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="/static/favicon-16x16.png"
+    />
+    <link rel="manifest" href="/static/site.webmanifest" />
+    <link rel="stylesheet" type="text/css" href="styles.css" />
+    <meta name="robots" content="noindex, nofollow" />
+  </head>
+
+  <body>
+    <a href="/" target="_self">
+      <img class="banner" src="/static/banner.svg" alt="autokitteh" />
+    </a>
+
+    <table class="title">
+      <td><img class="logo" src="/static/images/chatgpt.svg" alt="Logo" /></td>
+      <td>
+        <h1>Google Gemini - Create a New Connection</h1>
+      </td>
+    </table>
+
+    <p class="info">Information:</p>
+    <ul class="links">
+      <li>
+        <a href="https://aistudio.google.com/app" target="_blank" class="info">
+          Google AI Studio 
+        </a>
+      </li>
+      <li>
+        <a
+          href="https://aistudio.google.com/app/apikey"
+          target="_blank"
+          class="info"
+        >
+          API keys
+        </a>
+      </li>
+    </ul>
+
+    <form id="save-form" method="post" action="/googlegemini/save">
+      <div class="form-group">
+        <label for="key">Secret API Key</label>
+        <input
+          type="text"
+          name="key"
+          autocomplete="off"
+          spellcheck="false"
+          class="text"
+          required
+        />
+      </div>
+
+      <button type="submit" class="submit-btn">Save Connection</button>
+    </form>
+
+    <script>
+      const queryString = window.location.search;
+      document
+        .getElementById("save-form")
+        .setAttribute("action", "/googlegemini/save" + queryString);
+    </script>
+  </body>
+</html>
