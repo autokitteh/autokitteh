@@ -45,7 +45,7 @@ func (s *server) Create(ctx context.Context, req *connect.Request[triggersv1.Cre
 
 	mid, err := s.triggers.Create(ctx, trigger)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeUnknown, fmt.Errorf("server error: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	return connect.NewResponse(&triggersv1.CreateResponse{TriggerId: mid.String()}), nil
@@ -64,7 +64,7 @@ func (s *server) Update(ctx context.Context, req *connect.Request[triggersv1.Upd
 	}
 
 	if err := s.triggers.Update(ctx, trigger); err != nil {
-		return nil, connect.NewError(connect.CodeUnknown, fmt.Errorf("server error: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	return connect.NewResponse(&triggersv1.UpdateResponse{}), nil
@@ -83,7 +83,7 @@ func (s *server) Delete(ctx context.Context, req *connect.Request[triggersv1.Del
 	}
 
 	if err := s.triggers.Delete(ctx, mid); err != nil {
-		return nil, connect.NewError(connect.CodeUnknown, fmt.Errorf("server error: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	return connect.NewResponse(&triggersv1.DeleteResponse{}), nil
@@ -103,7 +103,7 @@ func (s *server) Get(ctx context.Context, req *connect.Request[triggersv1.GetReq
 
 	trigger, err := s.triggers.Get(ctx, mid)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeUnknown, fmt.Errorf("server error: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	return connect.NewResponse(&triggersv1.GetResponse{Trigger: trigger.ToProto()}), nil
@@ -139,7 +139,7 @@ func (s *server) List(ctx context.Context, req *connect.Request[triggersv1.ListR
 
 	triggers, err := s.triggers.List(ctx, filter)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeUnknown, fmt.Errorf("server error: %w", err))
+		return nil, sdkerrors.AsConnectError(fmt.Errorf("server error: %w", err))
 	}
 
 	triggersPB := kittehs.Transform(triggers, sdktypes.ToProto)

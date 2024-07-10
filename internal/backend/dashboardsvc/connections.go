@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
+	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 	"go.autokitteh.dev/autokitteh/web/webdashboard"
@@ -86,7 +87,11 @@ func (s Svc) getConnection(w http.ResponseWriter, r *http.Request) (sdktypes.Con
 
 	sdkC, err := s.Svcs.Connections().Get(r.Context(), cid)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		status := http.StatusInternalServerError
+		if err == sdkerrors.ErrNotFound {
+			status = http.StatusNotFound
+		}
+		http.Error(w, err.Error(), status)
 		return sdktypes.InvalidConnection, false
 	}
 

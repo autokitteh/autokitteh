@@ -18,7 +18,10 @@ var createCmd = common.StandardCommand(&cobra.Command{
 
 	RunE: func(cmd *cobra.Command, args []string) error {
 		r := resolver.Resolver{Client: common.Client()}
-		p, pid, err := r.ProjectNameOrID(project)
+		ctx, cancel := common.LimitedContext()
+		defer cancel()
+
+		p, pid, err := r.ProjectNameOrID(ctx, project)
 		if err != nil {
 			return err
 		}
@@ -31,9 +34,6 @@ var createCmd = common.StandardCommand(&cobra.Command{
 		if err != nil {
 			return fmt.Errorf("invalid environment: %w", err)
 		}
-
-		ctx, cancel := common.LimitedContext()
-		defer cancel()
 
 		eid, err := envs().Create(ctx, e)
 		if err != nil {

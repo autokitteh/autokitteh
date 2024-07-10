@@ -18,7 +18,10 @@ var listCmd = common.StandardCommand(&cobra.Command{
 
 	RunE: func(cmd *cobra.Command, args []string) error {
 		r := resolver.Resolver{Client: common.Client()}
-		e, id, err := r.EventID(args[0])
+		ctx, cancel := common.LimitedContext()
+		defer cancel()
+
+		e, id, err := r.EventID(ctx, args[0])
 		if err != nil {
 			return err
 		}
@@ -28,9 +31,6 @@ var listCmd = common.StandardCommand(&cobra.Command{
 		}
 
 		f := sdkservices.ListEventRecordsFilter{EventID: id}
-
-		ctx, cancel := common.LimitedContext()
-		defer cancel()
 
 		ers, err := events().ListEventRecords(ctx, f)
 		if err != nil {

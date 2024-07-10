@@ -17,13 +17,13 @@ return code == 0
 output equals 'connection_id: con_00000000000000000000000003'
 
 # Send HTTP GET request to create new events.
-http get /http/my_url_path
+http get /http/my_project
 resp code == 200
 
-http get /http/my_url_path
+http get /http/my_project
 resp code == 200
 
-http get /http/my_url_path
+http get /http/my_project
 resp code == 200
 
 # Negative test: list all events, without any filter.

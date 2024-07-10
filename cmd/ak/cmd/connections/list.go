@@ -20,9 +20,11 @@ var listCmd = common.StandardCommand(&cobra.Command{
 		var f sdkservices.ListConnectionsFilter
 
 		r := resolver.Resolver{Client: common.Client()}
+		ctx, cancel := common.LimitedContext()
+		defer cancel()
 
 		if integration != "" {
-			_, iid, err := r.IntegrationNameOrID(integration)
+			_, iid, err := r.IntegrationNameOrID(ctx, integration)
 			if err != nil {
 				return err
 			}
@@ -34,7 +36,7 @@ var listCmd = common.StandardCommand(&cobra.Command{
 		}
 
 		if project != "" {
-			_, pid, err := r.ProjectNameOrID(project)
+			_, pid, err := r.ProjectNameOrID(ctx, project)
 			if err != nil {
 				return err
 			}
@@ -44,9 +46,6 @@ var listCmd = common.StandardCommand(&cobra.Command{
 			}
 			f.ProjectID = pid
 		}
-
-		ctx, cancel := common.LimitedContext()
-		defer cancel()
 
 		cs, err := connections().List(ctx, f)
 		if err != nil {

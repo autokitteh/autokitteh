@@ -108,7 +108,7 @@ func (s *Server) Update(ctx context.Context, req *connect.Request[projectsv1.Upd
 func (s *Server) Get(ctx context.Context, req *connect.Request[projectsv1.GetRequest]) (*connect.Response[projectsv1.GetResponse], error) {
 	toResponse := func(project sdktypes.Project, err error) (*connect.Response[projectsv1.GetResponse], error) {
 		if err != nil {
-			if errors.Is(err, sdkerrors.ErrNotFound) {
+			if errors.Is(err, sdkerrors.ErrNotFound) { // ignore not found errors
 				return connect.NewResponse(&projectsv1.GetResponse{}), nil
 			}
 			return nil, sdkerrors.AsConnectError(err)
@@ -139,7 +139,7 @@ func (s *Server) Get(ctx context.Context, req *connect.Request[projectsv1.GetReq
 	if !n.IsValid() {
 		// essentially should never happen since we validate existance of name xor uid
 		// in proto. Hence Unknown error.
-		return nil, connect.NewError(connect.CodeUnknown, fmt.Errorf("missing name"))
+		return nil, sdkerrors.AsConnectError(fmt.Errorf("missing name"))
 	}
 
 	return toResponse(s.projects.GetByName(ctx, n))
@@ -193,7 +193,7 @@ func (s *Server) Build(ctx context.Context, req *connect.Request[projectsv1.Buil
 	}
 
 	if !pid.IsValid() {
-		return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("project_id: %w", err))
+		return nil, sdkerrors.AsConnectError(fmt.Errorf("project_id: %w", err))
 	}
 
 	bid, err := s.projects.Build(ctx, pid)
@@ -201,8 +201,7 @@ func (s *Server) Build(ctx context.Context, req *connect.Request[projectsv1.Buil
 		if err, ok := sdktypes.FromError(err); ok {
 			return connect.NewResponse(&projectsv1.BuildResponse{Error: err.ToProto()}), nil
 		}
-
-		return nil, connect.NewError(connect.CodeUnknown, err)
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	return connect.NewResponse(&projectsv1.BuildResponse{BuildId: bid.String()}), nil

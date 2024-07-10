@@ -44,7 +44,7 @@ func TestCreateConnectionForeignKeys(t *testing.T) {
 	f := preConnectionTest(t)
 
 	p := f.newProject()
-	i := f.newIntegration()
+	i := f.newIntegration("test")
 	b := f.newBuild()
 	f.saveBuildsAndAssert(t, b)
 	f.createProjectsAndAssert(t, p)

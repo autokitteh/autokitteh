@@ -15,12 +15,12 @@ var getCmd = common.StandardCommand(&cobra.Command{
 
 	RunE: func(cmd *cobra.Command, args []string) error {
 		r := resolver.Resolver{Client: common.Client()}
-		d, _, err := r.DeploymentID(args[0])
-		if err != nil {
-			return err
-		}
+		ctx, cancel := common.LimitedContext()
+		defer cancel()
 
-		if err := common.FailIfNotFound(cmd, "deployment", d.IsValid()); err != nil {
+		d, _, err := r.DeploymentID(ctx, args[0])
+		err = common.AddNotFoundErrIfCond(err, d.IsValid())
+		if err = common.FailIfError2(cmd, err, "deployment"); err != nil {
 			return err
 		}
 

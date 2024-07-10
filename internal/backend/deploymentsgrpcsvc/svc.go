@@ -2,7 +2,6 @@ package deploymentsgrpcsvc
 
 import (
 	"context"
-	"fmt"
 
 	"connectrpc.com/connect"
 
@@ -45,7 +44,7 @@ func (s *server) Create(ctx context.Context, req *connect.Request[deploymentsv1.
 
 	did, err := s.deployments.Create(ctx, deployment)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeUnknown, fmt.Errorf("server error: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	return connect.NewResponse(&deploymentsv1.CreateResponse{DeploymentId: did.String()}), nil
@@ -87,7 +86,7 @@ func (s *server) List(ctx context.Context, req *connect.Request[deploymentsv1.Li
 
 	deployments, err := s.deployments.List(ctx, filter)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeUnknown, fmt.Errorf("server error: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	deploymentsPB := kittehs.Transform(deployments, sdktypes.ToProto)

@@ -2,7 +2,6 @@ package connections
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"go.uber.org/fx"
@@ -112,16 +111,11 @@ func (c *Connections) RefreshStatus(ctx context.Context, id sdktypes.ConnectionI
 }
 
 func (c *Connections) Get(ctx context.Context, id sdktypes.ConnectionID) (sdktypes.Connection, error) {
-	desc, err := c.DB.GetConnection(ctx, id)
-	if err != nil {
-		if errors.Is(err, sdkerrors.ErrNotFound) {
-			return sdktypes.InvalidConnection, nil
-		}
-
+	conn, err := c.DB.GetConnection(ctx, id)
+	if err != nil || !conn.IsValid() {
 		return sdktypes.InvalidConnection, err
 	}
-
-	return c.enrichConnection(ctx, desc)
+	return c.enrichConnection(ctx, conn)
 }
 
 func (c *Connections) enrichConnection(ctx context.Context, conn sdktypes.Connection) (sdktypes.Connection, error) {

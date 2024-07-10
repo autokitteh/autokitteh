@@ -51,12 +51,9 @@ func (d *dispatcher) getEventSessionData(ctx context.Context, event sdktypes.Eve
 	cid := event.ConnectionID()
 
 	conn, err := d.Services.Connections.Get(ctx, cid)
-	if err != nil {
-		return nil, fmt.Errorf("get connection: %w", err)
-	}
-
-	if !conn.IsValid() {
-		return nil, sdkerrors.ErrNotFound
+	if err != nil { // any error, including NotFound
+		z.Error("get connection", zap.Error(err))
+		return nil, err
 	}
 
 	iid := conn.IntegrationID()
@@ -156,14 +153,15 @@ func (d *dispatcher) signalWorkflows(ctx context.Context, event sdktypes.Event) 
 
 	cid := event.ConnectionID()
 
-	conn, err := d.Services.Connections.Get(ctx, cid)
-	if err != nil {
-		z.Panic("could not fetch connections", zap.Error(err))
-	}
-
-	if !conn.IsValid() {
+	// REVIEW: could we rely on invalid connectionID instead of fetching connection and checking it?
+	// if not we need to fetch connection with ignoreNotFound and check if it's valid
+	if !cid.IsValid() {
 		z.Info("no connections for event id", zap.String("connection_id", cid.String()))
 		return nil
+	}
+	conn, err := d.Services.Connections.Get(ctx, cid)
+	if err != nil {
+		z.Error("could not fetch connections", zap.Error(err))
 	}
 
 	signals, err := d.db.ListSignalsWaitingOnConnection(ctx, conn.ID())
