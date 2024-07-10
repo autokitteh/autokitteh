@@ -17,7 +17,7 @@ const (
 func Start(l *zap.Logger, mux *http.ServeMux) {
 	// New connection UI + form submission handler.
 	uiPath := "GET " + desc.ConnectionURL().Path + "/"
-	mux.Handle(uiPath, http.FileServer(http.FS(static.ChatGPTWebContent)))
+	mux.Handle(uiPath, http.FileServer(http.FS(static.GoogleGeminiWebContent)))
 
 	mux.Handle("POST "+savePath, NewHTTPHandler(l))
 }
