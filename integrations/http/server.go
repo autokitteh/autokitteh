@@ -132,7 +132,6 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		if errors.Is(err, sdkerrors.ErrNotFound) {
 			l.Debug("project not found", zap.String("project", pname.String()))
-			http.Error(w, "Not Found", http.StatusNotFound)
 		} else {
 			l.Error("get project", zap.Error(err))
 		}
