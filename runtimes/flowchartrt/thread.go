@@ -87,6 +87,12 @@ func (th *thread) push(args map[string]sdktypes.Value) {
 		args: args,
 	}
 
+	// Frames inherits the results from previous frames. This allows them to use
+	// results from nodes that were previously processed.
+	if rs, ok := th.frame().states["results"]; ok {
+		f.states = map[string]sdktypes.Value{"results": rs}
+	}
+
 	th.callstack = append([]*frame{f}, th.callstack...)
 }
 

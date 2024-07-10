@@ -72,7 +72,7 @@ func (th *thread) runCallAction(ctx context.Context, c *ast.CallAction, setResul
 	}
 
 	if state := th.frame().getState("call"); len(state) > 0 {
-		// this is a return from a node call.
+		// this is a return from a node call. should always happen after a frame pop.
 		th.frame().setState("call", nil)
 		setResult(th.frame().lastResult)
 		return nil, nil
