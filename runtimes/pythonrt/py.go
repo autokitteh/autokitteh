@@ -308,6 +308,7 @@ func pyExports(ctx context.Context, pyExe string, fsys fs.FS) ([]Export, error) 
 	if err != nil {
 		return nil, err
 	}
+	defer os.RemoveAll(tmpDir)
 
 	if err := copyFS(fsys, tmpDir); err != nil {
 		return nil, err
@@ -317,6 +318,7 @@ func pyExports(ctx context.Context, pyExe string, fsys fs.FS) ([]Export, error) 
 	if err != nil {
 		return nil, err
 	}
+	defer os.RemoveAll(runnerDir)
 
 	if err := copyFS(runnerPyCode, runnerDir); err != nil {
 		return nil, err
