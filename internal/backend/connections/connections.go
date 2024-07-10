@@ -115,7 +115,6 @@ func (c *Connections) Get(ctx context.Context, id sdktypes.ConnectionID) (sdktyp
 	if err != nil || !conn.IsValid() {
 		return sdktypes.InvalidConnection, err
 	}
-	
 	return c.enrichConnection(ctx, conn)
 }
 
