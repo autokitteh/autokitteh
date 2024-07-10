@@ -9,6 +9,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/internal/manifest/internal/actions"
+	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdklogger"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -63,7 +64,7 @@ func planProject(ctx context.Context, mproj *Project, client sdkservices.Service
 
 	var curr sdktypes.Project
 	if !opts.fromScratch {
-		if curr, err = client.Projects().GetByName(ctx, name); err != nil {
+		if curr, err = sdkerrors.IgnoreNotFoundErr(client.Projects().GetByName(ctx, name)); err != nil {
 			return nil, fmt.Errorf("get: %w", err)
 		}
 	}

@@ -29,9 +29,11 @@ var listCmd = common.StandardCommand(&cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		r := resolver.Resolver{Client: common.Client()}
 		f := sdkservices.ListSessionsFilter{}
+		ctx, cancel := common.LimitedContext()
+		defer cancel()
 
 		if deploymentID != "" {
-			d, did, err := r.DeploymentID(deploymentID)
+			d, did, err := r.DeploymentID(ctx, deploymentID)
 			if err != nil {
 				return err
 			}
@@ -43,7 +45,7 @@ var listCmd = common.StandardCommand(&cobra.Command{
 		}
 
 		if env != "" {
-			e, _, err := r.EnvNameOrID(env, "")
+			e, _, err := r.EnvNameOrID(ctx, env, "")
 			if err != nil {
 				return err
 			}
@@ -51,7 +53,7 @@ var listCmd = common.StandardCommand(&cobra.Command{
 		}
 
 		if eventID != "" {
-			e, eid, err := r.EventID(eventID)
+			e, eid, err := r.EventID(ctx, eventID)
 			if err != nil {
 				return err
 			}
@@ -78,9 +80,6 @@ var listCmd = common.StandardCommand(&cobra.Command{
 		if f.StateType, err = sdktypes.ParseSessionStateType(stateType.String()); err != nil {
 			return fmt.Errorf("invalid state %q: %w", stateType, err)
 		}
-
-		ctx, cancel := common.LimitedContext()
-		defer cancel()
 
 		result, err := sessions().List(ctx, f)
 		if err != nil {

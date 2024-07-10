@@ -20,54 +20,54 @@ import (
 // (either way). If all is well, it saves a new autokitteh connection.
 // Either way, it redirects the user to success or failure webpages.
 func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
-	l := h.logger.With(zap.String("urlPath", r.URL.Path))
+	c, l := sdkintegrations.NewConnectionInit(h.logger, w, r, desc)
 
 	// Handle errors (e.g. the user didn't authorize us) based on:
 	// https://developers.google.com/identity/protocols/oauth2/web-server#handlingresponse
 	e := r.FormValue("error")
 	if e != "" {
 		l.Warn("OAuth redirect reported an error", zap.Error(errors.New(e)))
-		redirectToErrorPage(w, r, e)
+		c.Abort(e)
 		return
 	}
 
 	_, data, err := sdkintegrations.GetOAuthDataFromURL(r.URL)
 	if err != nil {
 		l.Warn("Invalid data in OAuth redirect request", zap.Error(err))
-		redirectToErrorPage(w, r, "invalid data parameter")
+		c.Abort("invalid data parameter")
 		return
 	}
 
 	oauthToken := data.Token
 	if oauthToken == nil {
 		l.Warn("Missing token in OAuth redirect request", zap.Any("data", data))
-		redirectToErrorPage(w, r, "missing OAuth token")
+		c.Abort("missing OAuth token")
 		return
 	}
 
 	url, err := apiBaseURL()
 	if err != nil {
-		l.Warn("Invalid Jira base URL", zap.Error(err))
-		redirectToErrorPage(w, r, "invalid Jira base URL")
+		l.Warn("Invalid Atlassian base URL", zap.Error(err))
+		c.Abort("invalid Atlassian base URL")
 		return
 	}
 
 	// Test the OAuth token's usability and get authoritative installation details.
 	res, err := accessibleResources(l, url, oauthToken.AccessToken)
 	if err != nil {
-		redirectToErrorPage(w, r, err.Error())
+		c.Abort(err.Error())
 		return
 	}
 
 	if len(res) > 1 {
 		l.Warn("Multiple accessible resources for single OAuth token", zap.Any("resources", res))
-		redirectToErrorPage(w, r, "multiple accessible resources")
+		c.Abort("multiple Atlassian accessible resources")
 		return
 	}
 
 	if !checkWebhookPermissions(res[0].Scopes) {
 		l.Warn("Insufficient webhook permissions for OAuth token", zap.Any("resources", res))
-		redirectToErrorPage(w, r, "insufficient webhook permissions")
+		c.Abort("insufficient webhook permissions")
 		return
 	}
 
@@ -79,22 +79,20 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		id, ok = registerWebhook(l, url, oauthToken.AccessToken)
 		if !ok {
-			redirectToErrorPage(w, r, "failed to register webhook")
+			c.Abort("failed to register webhook")
 			return
 		}
 	} else {
 		t, ok = extendWebhookLife(l, url, oauthToken.AccessToken, id)
 		if !ok {
-			redirectToErrorPage(w, r, "failed to extend webhook life")
+			c.Abort("failed to extend webhook life")
 			return
 		}
 	}
 
-	initData := sdktypes.NewVars(data.ToVars()...).Append(res[0].toVars()...).
+	c.Finalize(sdktypes.NewVars(data.ToVars()...).Append(res[0].toVars()...).
 		Set(webhookID, fmt.Sprintf("%d", id), false).
-		Set(webhookExpiration, t.String(), false)
-
-	sdkintegrations.FinalizeConnectionInit(w, r, integrationID, initData)
+		Set(webhookExpiration, t.String(), false))
 }
 
 // Determine Jira base URL (to support Jira Data Center, i.e. on-prem).

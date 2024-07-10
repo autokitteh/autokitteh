@@ -43,7 +43,7 @@ func TestCreateEventForeignKeys(t *testing.T) {
 	f := preEventTest(t)
 
 	e := f.newEvent()
-	i := f.newIntegration()
+	i := f.newIntegration("test")
 	c := f.newConnection()
 	b := f.newBuild()
 

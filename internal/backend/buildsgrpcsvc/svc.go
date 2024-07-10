@@ -66,7 +66,7 @@ func (s *server) List(ctx context.Context, req *connect.Request[buildsv1.ListReq
 
 	builds, err := s.builds.List(ctx, filter)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeUnknown, fmt.Errorf("server error: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	buildsPB := kittehs.Transform(builds, sdktypes.ToProto)
@@ -94,7 +94,7 @@ func (s *server) Download(ctx context.Context, req *connect.Request[buildsv1.Dow
 
 	buf := new(bytes.Buffer)
 	if _, err := buf.ReadFrom(data); err != nil {
-		return nil, connect.NewError(connect.CodeUnknown, fmt.Errorf("server error: %w", err))
+		return nil, sdkerrors.AsConnectError(fmt.Errorf("server error: %w", err))
 	}
 
 	return connect.NewResponse(&buildsv1.DownloadResponse{Data: buf.Bytes()}), nil
@@ -114,7 +114,7 @@ func (s *server) Save(ctx context.Context, req *connect.Request[buildsv1.SaveReq
 
 	bid, err := s.builds.Save(ctx, build, msg.Data)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeUnknown, fmt.Errorf("server error: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	return connect.NewResponse(&buildsv1.SaveResponse{BuildId: bid.String()}), nil

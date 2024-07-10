@@ -14,12 +14,12 @@ var getCmd = common.StandardCommand(&cobra.Command{
 
 	RunE: func(cmd *cobra.Command, args []string) error {
 		r := resolver.Resolver{Client: common.Client()}
-		t, _, err := r.TriggerID(args[0])
-		if err != nil {
-			return err
-		}
+		ctx, cancel := common.LimitedContext()
+		defer cancel()
 
-		if err := common.FailIfNotFound(cmd, "trigger", t.IsValid()); err != nil {
+		t, _, err := r.TriggerID(ctx, args[0])
+		err = common.AddNotFoundErrIfCond(err, t.IsValid())
+		if err = common.FailIfError2(cmd, err, "trigger"); err != nil {
 			return err
 		}
 

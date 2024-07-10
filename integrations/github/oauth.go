@@ -3,9 +3,7 @@ package github
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
-	"net/url"
 	"strconv"
 
 	"github.com/google/go-github/v60/github"
@@ -35,21 +33,21 @@ func NewHandler(l *zap.Logger, o sdkservices.OAuth) handler {
 // (either way). If all is well, it saves a new autokitteh connection.
 // Either way, it redirects the user to success or failure webpages.
 func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
-	l := h.logger.With(zap.String("urlPath", r.URL.Path))
+	c, l := sdkintegrations.NewConnectionInit(h.logger, w, r, desc)
 
 	// Handle errors (e.g. the user didn't authorize us) based on:
 	// https://developers.google.com/identity/protocols/oauth2/web-server#handlingresponse
 	e := r.FormValue("error")
 	if e != "" {
 		l.Warn("OAuth redirect request reported an error", zap.Error(errors.New(e)))
-		redirectToErrorPage(w, r, e)
+		c.Abort(e)
 		return
 	}
 
 	_, data, err := sdkintegrations.GetOAuthDataFromURL(r.URL)
 	if err != nil {
 		l.Warn("Invalid data in OAuth redirect request", zap.Error(err))
-		redirectToErrorPage(w, r, "invalid data parameter")
+		c.Abort("invalid data parameter")
 		return
 	}
 
@@ -57,7 +55,7 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 	v := data.Params.Get("installation_id")
 	if v == "" {
 		l.Warn("Missing installation ID in OAuth redirect request")
-		redirectToErrorPage(w, r, "missing installation ID")
+		c.Abort("missing GitHub installation ID")
 		return
 	}
 
@@ -65,10 +63,10 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 
 	id, err := strconv.ParseInt(v, 10, 64)
 	if err != nil {
-		l.Warn("Invalid installation ID in OAuth redirect request",
+		l.Warn("Invalid GitHub installation ID in OAuth redirect request",
 			zap.String("setupAction", r.FormValue("setup_action")),
 		)
-		redirectToErrorPage(w, r, "invalid installation ID")
+		c.Abort("invalid GitHub installation ID")
 		return
 	}
 
@@ -81,14 +79,14 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 	u, err := enterpriseURL()
 	if err != nil {
 		l.Warn("GitHub enterprise URL error", zap.Error(err))
-		redirectToErrorPage(w, r, "token source")
+		c.Abort("token source")
 		return
 	}
 	if u != "" {
 		gh, err = gh.WithEnterpriseURLs(u, u)
 		if err != nil {
 			l.Warn("GitHub enterprise URL error", zap.String("url", u), zap.Error(err))
-			redirectToErrorPage(w, r, err.Error())
+			c.Abort(err.Error())
 			return
 		}
 	}
@@ -97,7 +95,7 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 	is, _, err := gh.Apps.ListUserInstallations(ctx, &github.ListOptions{})
 	if err != nil {
 		l.Warn("OAuth user token source error", zap.Error(err))
-		redirectToErrorPage(w, r, err.Error())
+		c.Abort(err.Error())
 		return
 	}
 	foundInstallation := false
@@ -116,16 +114,14 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 		break
 	}
 	if !foundInstallation {
-		// This is probably an attack, so no user-friendliness.
 		l.Warn("GitHub app installation details not found")
-		http.Error(w, "Bad Request", http.StatusBadRequest)
+		c.Abort("GitHub app installation details not found")
 		return
 	}
 
 	if i.AppID == nil || i.ID == nil || i.Account == nil || i.Account.Login == nil {
-		// This is probably an attack, so no user-friendliness.
 		l.Warn("GitHub app installation details missing required fields")
-		http.Error(w, "Bad Request", http.StatusBadRequest)
+		c.Abort("GitHub app installation details missing required fields")
 		return
 	}
 
@@ -133,17 +129,10 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 	installID := strconv.FormatInt(*i.ID, 10)
 	user := string(*i.Account.Login)
 
-	initData := sdktypes.NewVars().
+	c.Finalize(sdktypes.NewVars().
 		Set(vars.UserAppID(user), appID, false).
 		Set(vars.UserInstallID(user), installID, false).
-		Set(vars.InstallKey(appID, installID), user, false)
-
-	sdkintegrations.FinalizeConnectionInit(w, r, integrationID, initData)
-}
-
-func redirectToErrorPage(w http.ResponseWriter, r *http.Request, err string) {
-	u := fmt.Sprintf("%s/error.html?error=%s", desc.ConnectionURL().Path, url.QueryEscape(err))
-	http.Redirect(w, r, u, http.StatusFound)
+		Set(vars.InstallKey(appID, installID), user, false))
 }
 
 func (h handler) tokenSource(ctx context.Context, t *oauth2.Token) oauth2.TokenSource {

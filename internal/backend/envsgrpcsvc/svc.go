@@ -56,11 +56,8 @@ func (s *server) Get(ctx context.Context, req *connect.Request[envsv1.GetRequest
 		if err != nil {
 			if errors.Is(err, sdkerrors.ErrNotFound) {
 				return connect.NewResponse(&envsv1.GetResponse{}), nil
-			} else if errors.Is(err, sdkerrors.ErrUnauthorized) {
-				return nil, connect.NewError(connect.CodePermissionDenied, err)
 			}
-
-			return nil, connect.NewError(connect.CodeUnknown, err)
+			return nil, sdkerrors.AsConnectError(err)
 		}
 
 		return connect.NewResponse(&envsv1.GetResponse{Env: env.ToProto()}), nil

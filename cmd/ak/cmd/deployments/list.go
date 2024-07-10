@@ -33,9 +33,12 @@ var listCmd = common.StandardCommand(&cobra.Command{
 		}
 		f.BuildID = bid
 
+		ctx, cancel := common.LimitedContext()
+		defer cancel()
+
 		if env != "" {
 			r := resolver.Resolver{Client: common.Client()}
-			e, _, err := r.EnvNameOrID(env, "")
+			e, _, err := r.EnvNameOrID(ctx, env, "")
 			if err != nil {
 				return err
 			}
@@ -47,9 +50,6 @@ var listCmd = common.StandardCommand(&cobra.Command{
 		}
 
 		f.IncludeSessionStats = includeSessionStats
-
-		ctx, cancel := common.LimitedContext()
-		defer cancel()
 
 		ds, err := deployments().List(ctx, f)
 		if err != nil {

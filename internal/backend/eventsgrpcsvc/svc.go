@@ -2,7 +2,6 @@ package eventsgrpcsvc
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"connectrpc.com/connect"
@@ -46,10 +45,7 @@ func (s *server) Get(ctx context.Context, req *connect.Request[eventsv1.GetReque
 
 	event, err := s.events.Get(ctx, eventId)
 	if err != nil {
-		if errors.Is(err, sdkerrors.ErrNotFound) {
-			return nil, connect.NewError(connect.CodeNotFound, err)
-		}
-		return nil, connect.NewError(connect.CodeUnknown, fmt.Errorf("server error: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	return connect.NewResponse(&eventsv1.GetResponse{Event: event.ToProto()}), nil

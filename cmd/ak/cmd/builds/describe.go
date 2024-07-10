@@ -16,13 +16,13 @@ var describeCmd = common.StandardCommand(&cobra.Command{
 
 	RunE: func(cmd *cobra.Command, args []string) error {
 		r := resolver.Resolver{Client: common.Client()}
-		_, bid, err := r.BuildID(args[0])
+		ctx, cancel := common.LimitedContext()
+		defer cancel()
+
+		_, bid, err := r.BuildID(ctx, args[0])
 		if err != nil {
 			return err
 		}
-
-		ctx, cancel := common.LimitedContext()
-		defer cancel()
 
 		bf, err := builds().Describe(ctx, bid)
 		if err != nil {

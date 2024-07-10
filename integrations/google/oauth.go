@@ -3,9 +3,7 @@ package google
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
-	"net/url"
 
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
@@ -35,21 +33,21 @@ func NewHTTPHandler(l *zap.Logger, o sdkservices.OAuth) handler {
 // (either way). If all is well, it saves a new autokitteh connection.
 // Either way, it redirects the user to success or failure webpages.
 func (h handler) HandleOAuth(w http.ResponseWriter, r *http.Request) {
-	l := h.logger.With(zap.String("urlPath", r.URL.Path))
+	c, l := sdkintegrations.NewConnectionInit(h.logger, w, r, desc)
 
 	// Handle errors (e.g. the user didn't authorize us) based on:
 	// https://developers.google.com/identity/protocols/oauth2/web-server#handlingresponse
 	e := r.FormValue("error")
 	if e != "" {
 		l.Warn("OAuth redirect request reported an error", zap.Error(errors.New(e)))
-		redirectToErrorPage(w, r, e)
+		c.Abort(e)
 		return
 	}
 
 	raw, data, err := sdkintegrations.GetOAuthDataFromURL(r.URL)
 	if err != nil {
 		l.Warn("Invalid data in OAuth redirect request", zap.Error(err))
-		redirectToErrorPage(w, r, "invalid data parameter")
+		c.Abort("invalid data parameter")
 		return
 
 	}
@@ -57,7 +55,7 @@ func (h handler) HandleOAuth(w http.ResponseWriter, r *http.Request) {
 	oauthToken := data.Token
 	if oauthToken == nil {
 		l.Warn("Missing token in OAuth redirect request", zap.Any("data", data))
-		redirectToErrorPage(w, r, "missing OAuth token")
+		c.Abort("missing OAuth token")
 		return
 	}
 
@@ -67,27 +65,20 @@ func (h handler) HandleOAuth(w http.ResponseWriter, r *http.Request) {
 	svc, err := googleoauth2.NewService(ctx, option.WithTokenSource(src))
 	if err != nil {
 		l.Warn("OAuth user token error", zap.Error(err))
-		redirectToErrorPage(w, r, "token source")
+		c.Abort("token source")
 		return
 	}
 
 	user, err := h.getUserDetails(l, svc)
 	if err != nil {
 		l.Warn("OAuth user details error", zap.Error(err))
-		redirectToErrorPage(w, r, "Google user details error")
+		c.Abort("Google user details error")
 		return
 	}
 
-	initData := sdktypes.EncodeVars(&vars.Vars{OAuthData: raw}).
+	c.Finalize(sdktypes.EncodeVars(&vars.Vars{OAuthData: raw}).
 		Append(data.ToVars()...).
-		Append(user...)
-
-	sdkintegrations.FinalizeConnectionInit(w, r, integrationID, initData)
-}
-
-func redirectToErrorPage(w http.ResponseWriter, r *http.Request, err string) {
-	u := fmt.Sprintf("%s/error.html?error=%s", desc.ConnectionURL().Path, url.QueryEscape(err))
-	http.Redirect(w, r, u, http.StatusFound)
+		Append(user...))
 }
 
 func (h handler) tokenSource(ctx context.Context, t *oauth2.Token) oauth2.TokenSource {

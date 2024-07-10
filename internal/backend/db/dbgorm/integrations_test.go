@@ -30,7 +30,7 @@ func preIntegrationTest(t *testing.T) *dbFixture {
 func TestCreateIntegration(t *testing.T) {
 	f := preIntegrationTest(t)
 
-	i := f.newIntegration()
+	i := f.newIntegration("test")
 	// test createIntegration
 	f.createIntegrationsAndAssert(t, i)
 }
@@ -38,7 +38,7 @@ func TestCreateIntegration(t *testing.T) {
 func TestDeleteIntegration(t *testing.T) {
 	f := preIntegrationTest(t)
 
-	i := f.newIntegration()
+	i := f.newIntegration("test")
 	f.createIntegrationsAndAssert(t, i)
 
 	// test deleteIntegration

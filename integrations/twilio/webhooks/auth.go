@@ -2,6 +2,7 @@ package webhooks
 
 import (
 	"net/http"
+	"strings"
 
 	"go.uber.org/zap"
 
@@ -14,8 +15,8 @@ const (
 	// connection, after the user submits their Twilio secrets.
 	AuthPath = "/twilio/save"
 
-	HeaderContentType = "Content-Type"
-	ContentTypeForm   = "application/x-www-form-urlencoded"
+	headerContentType = "Content-Type"
+	contentTypeForm   = "application/x-www-form-urlencoded"
 )
 
 type Vars struct {
@@ -26,28 +27,22 @@ type Vars struct {
 
 // HandleAuth saves a new autokitteh connection with user-submitted Twilio secrets.
 func (h handler) HandleAuth(w http.ResponseWriter, r *http.Request) {
-	l := h.logger.With(zap.String("urlPath", r.URL.Path))
+	c, l := sdkintegrations.NewConnectionInit(h.logger, w, r, h.integration)
 
 	// Check "Content-Type" header.
-	if r.Header.Get(HeaderContentType) != ContentTypeForm {
-		l.Error("Unexpected header value",
-			zap.String("header", HeaderContentType),
-			zap.String("got", r.Header.Get(HeaderContentType)),
-			zap.String("want", ContentTypeForm),
-		)
-		http.Error(w, "Bad Request", http.StatusBadRequest)
+	contentType := r.Header.Get(headerContentType)
+	if !strings.HasPrefix(contentType, contentTypeForm) {
+		c.Abort("unexpected content type")
 		return
 	}
 
 	// Read and parse POST request body.
-	err := r.ParseForm()
-	if err != nil {
-		l.Error("Failed to parse inbound HTTP request",
-			zap.Error(err),
-		)
-		http.Error(w, "Bad Request", http.StatusBadRequest)
+	if err := r.ParseForm(); err != nil {
+		l.Warn("Failed to parse incoming HTTP request", zap.Error(err))
+		c.Abort("form parsing error")
 		return
 	}
+
 	accountSID := r.Form.Get("account_sid")
 	username := accountSID
 	password := r.Form.Get("auth_token")
@@ -56,13 +51,11 @@ func (h handler) HandleAuth(w http.ResponseWriter, r *http.Request) {
 		password = r.Form.Get("api_secret")
 	}
 
-	// TODO: Test the authentication details.
+	// TODO(ENG-1156): Test the authentication details.
 
-	initData := sdktypes.EncodeVars(Vars{
+	c.Finalize(sdktypes.EncodeVars(Vars{
 		AccountSID: accountSID,
 		Username:   username,
 		Password:   password,
-	})
-
-	sdkintegrations.FinalizeConnectionInit(w, r, h.integrationID, initData)
+	}))
 }

@@ -28,6 +28,8 @@ var createCmd = common.StandardCommand(&cobra.Command{
 
 	RunE: func(cmd *cobra.Command, args []string) error {
 		r := resolver.Resolver{Client: common.Client()}
+		ctx, cancel := common.LimitedContext()
+		defer cancel()
 
 		// Entry-point code location to call is required.
 		cl, err := sdktypes.ParseCodeLocation(call)
@@ -36,7 +38,7 @@ var createCmd = common.StandardCommand(&cobra.Command{
 		}
 
 		// Project and/or environment are required.
-		p, _, err := r.ProjectNameOrID(project)
+		p, _, err := r.ProjectNameOrID(ctx, project)
 		if err != nil {
 			return err
 		}
@@ -45,7 +47,7 @@ var createCmd = common.StandardCommand(&cobra.Command{
 			return common.NewExitCodeError(common.NotFoundExitCode, err)
 		}
 
-		e, eid, err := r.EnvNameOrID(env, project)
+		e, eid, err := r.EnvNameOrID(ctx, env, project)
 		if err != nil {
 			return err
 		}
@@ -56,7 +58,7 @@ var createCmd = common.StandardCommand(&cobra.Command{
 
 		// Mode 1: connection is required, event and/or filter
 		// and/or data are required, and schedule is not allowed.
-		c, cid, err := r.ConnectionNameOrID(connection, project)
+		c, cid, err := r.ConnectionNameOrID(ctx, connection, project)
 		if connection != "" {
 			if err != nil {
 				if errors.As(err, resolver.NotFoundErrorType) {
@@ -96,9 +98,6 @@ var createCmd = common.StandardCommand(&cobra.Command{
 		if err != nil {
 			return fmt.Errorf("invalid trigger: %w", err)
 		}
-
-		ctx, cancel := common.LimitedContext()
-		defer cancel()
 
 		tid, err := triggers().Create(ctx, t)
 		if err != nil {

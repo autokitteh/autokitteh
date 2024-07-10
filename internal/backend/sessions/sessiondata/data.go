@@ -11,6 +11,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionsvcs"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkbuildfile"
+	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -30,7 +31,7 @@ type Data struct {
 func retrieve[I sdktypes.ID, R sdktypes.Object](ctx context.Context, z *zap.Logger, id I, f func(context.Context, I) (R, error)) (R, error) {
 	var invalid R
 
-	r, err := f(ctx, id)
+	r, err := sdkerrors.IgnoreNotFoundErr(f(ctx, id))
 
 	if err != nil {
 		z.DPanic("get", zap.Error(err), zap.String("id", id.String()))

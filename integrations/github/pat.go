@@ -21,20 +21,19 @@ const (
 
 // HandlePAT saves a new autokitteh connection with a user-submitted token.
 func (h handler) handlePAT(w http.ResponseWriter, r *http.Request) {
-	l := h.logger.With(zap.String("urlPath", r.URL.Path))
+	c, l := sdkintegrations.NewConnectionInit(h.logger, w, r, desc)
 
-	// Check the "Content-Type" header.
+	// Check "Content-Type" header.
 	contentType := r.Header.Get(headerContentType)
 	if !strings.HasPrefix(contentType, contentTypeForm) {
-		// This is probably an attack, so no user-friendliness.
-		http.Error(w, "Bad Request", http.StatusBadRequest)
+		c.Abort("unexpected content type")
 		return
 	}
 
 	// Read and parse POST request body.
 	if err := r.ParseForm(); err != nil {
-		l.Warn("Failed to parse inbound HTTP request", zap.Error(err))
-		redirectToErrorPage(w, r, "form parsing error: "+err.Error())
+		l.Warn("Failed to parse incoming HTTP request", zap.Error(err))
+		c.Abort("form parsing error")
 		return
 	}
 
@@ -48,23 +47,22 @@ func (h handler) handlePAT(w http.ResponseWriter, r *http.Request) {
 	user, _, err := client.Users.Get(ctx, "")
 	if err != nil {
 		l.Warn("Unusable GitHub PAT", zap.Error(err))
-		redirectToErrorPage(w, r, "unusable PAT error: "+err.Error())
+		c.Abort("unusable PAT error: " + err.Error())
 		return
 	}
 
 	if user == nil || user.Login == nil {
 		l.Warn("Unexpected response from GitHub API", zap.Any("user", user))
-		redirectToErrorPage(w, r, "unexpected response from GitHub API")
+		c.Abort("unexpected response from GitHub API")
 		return
 	}
 
 	userJSON, _ := json.Marshal(user)
 	_, patKey := filepath.Split(webhook)
-	initData := sdktypes.NewVars().
+
+	c.Finalize(sdktypes.NewVars().
 		Set(vars.PAT, pat, true).
 		Set(vars.PATKey, patKey, false).
 		Set(vars.PATSecret, secret, true).
-		Set(vars.PATUser, string(userJSON), false)
-
-	sdkintegrations.FinalizeConnectionInit(w, r, integrationID, initData)
+		Set(vars.PATUser, string(userJSON), false))
 }

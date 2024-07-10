@@ -18,25 +18,21 @@ const (
 
 // HandleCreds saves a new autokitteh connection with a user-submitted token.
 func (h handler) HandleCreds(w http.ResponseWriter, r *http.Request) {
-	l := h.logger.With(zap.String("urlPath", r.URL.Path))
+	c, l := sdkintegrations.NewConnectionInit(h.logger, w, r, desc)
 
-	// Check the "Content-Type" header.
+	// Check "Content-Type" header.
 	contentType := r.Header.Get(headerContentType)
 	if !strings.HasPrefix(contentType, contentTypeForm) {
-		// This is probably an attack, so no user-friendliness.
-		http.Error(w, "Bad Request", http.StatusBadRequest)
+		c.Abort("unexpected content type")
 		return
 	}
 
 	// Read and parse POST request body.
-	err := r.ParseForm()
-	if err != nil {
-		l.Warn("Failed to parse inbound HTTP request", zap.Error(err))
-		redirectToErrorPage(w, r, "form parsing error: "+err.Error())
+	if err := r.ParseForm(); err != nil {
+		l.Warn("Failed to parse incoming HTTP request", zap.Error(err))
+		c.Abort("form parsing error")
 		return
 	}
 
-	initData := sdktypes.EncodeVars(&vars.Vars{JSON: r.Form.Get("json")})
-
-	sdkintegrations.FinalizeConnectionInit(w, r, integrationID, initData)
+	c.Finalize(sdktypes.EncodeVars(&vars.Vars{JSON: r.Form.Get("json")}))
 }

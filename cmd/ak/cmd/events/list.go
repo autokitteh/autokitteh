@@ -21,34 +21,29 @@ var listCmd = common.StandardCommand(&cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		var f sdkservices.ListEventsFilter
 
+		r := resolver.Resolver{Client: common.Client()}
+		ctx, cancel := common.LimitedContext()
+		defer cancel()
+
 		if connection != "" {
-			r := resolver.Resolver{Client: common.Client()}
-			_, cid, err := r.ConnectionNameOrID(args[0], "")
-			if err != nil {
+			_, cid, err := r.ConnectionNameOrID(ctx, args[0], "")
+			err = common.AddNotFoundErrIfCond(err, cid.IsValid())
+			if err = common.FailIfError2(cmd, err, "connection"); err != nil {
 				return err
-			}
-			if !cid.IsValid() {
-				return fmt.Errorf("connection %q not found", connection)
 			}
 			f.ConnectionID = cid
 		}
 
 		if integration != "" {
-			r := resolver.Resolver{Client: common.Client()}
-			i, iid, err := r.IntegrationNameOrID(integration)
-			if err != nil {
+			i, iid, err := r.IntegrationNameOrID(ctx, integration)
+			err = common.AddNotFoundErrIfCond(err, i.IsValid())
+			if err = common.FailIfError2(cmd, err, "integration"); err != nil {
 				return err
-			}
-			if !i.IsValid() {
-				return fmt.Errorf("integration %q not found", integration)
 			}
 			f.IntegrationID = iid
 		}
 
 		f.Order = sdkservices.ListOrder(listOrder)
-
-		ctx, cancel := common.LimitedContext()
-		defer cancel()
 
 		es, err := events().List(ctx, f)
 		if err != nil {
