@@ -3,6 +3,7 @@ package dbgorm
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
@@ -128,11 +129,31 @@ func createLogRecord(db *gorm.DB, logr *scheme.SessionLogRecord) error {
 	// This is a hack in gorm to use subquery when creating an object.
 	// The goal is to have a sequence number per session.  The insert uses a subquery to get
 	// the current max sequence for this session_id and insert the next value in one query
+	// The loop is to handle optimistic locking, since concurrent writes can happen
+	// we have to retry on failure to commit
+	// We will try fo 10 times which should be enough retries
+	// This convention does not guarantee ordering of the log records
+	// Since inheritnly in the records them selfs, two records can happen in the same exact time
 	data["Seq"] = clause.Expr{SQL: "(select COALESCE(MAX(seq), 0)+1 from session_log_records where session_id = ?)", Vars: []interface{}{logr.SessionID}}
-	return db.Model(&scheme.SessionLogRecord{}).Create(data).Error
+	var err error
+
+	const retriesCount = 10
+	for i := 0; i < retriesCount; i++ {
+		if err = db.Model(&scheme.SessionLogRecord{}).Create(data).Error; err == nil {
+			return nil
+		}
+
+		if !errors.Is(err, gorm.ErrDuplicatedKey) {
+			return err
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+
+	return err
 }
 
 func (gdb *gormdb) addSessionLogRecord(ctx context.Context, logr *scheme.SessionLogRecord) error {
+
 	return gdb.transaction(ctx, func(tx *tx) error {
 		if err := tx.isCtxUserEntity(ctx, logr.SessionID); err != nil {
 			return gormErrNotFoundToForeignKey(err) // session should be present
