@@ -129,11 +129,7 @@ def run(args):
     comm.send_done()
 
 
-def inspect_file(root_dir, path):
-    # Allow users to import their own files and load data files
-    sys.path.append(str(root_dir))
-    chdir(root_dir)
-
+def inspect_file(code_dir, path):
     mod_name = path.stem
     spec = spec_from_file_location(mod_name, path)
     if spec is None:
@@ -154,7 +150,7 @@ def inspect_file(root_dir, path):
         _, lnum = getsourcelines(value)
         export = {
             "name": name,
-            "file": str(path.relative_to(root_dir)),
+            "file": str(path.relative_to(code_dir)),
             "line": lnum,
         }
         yield export
@@ -162,8 +158,11 @@ def inspect_file(root_dir, path):
 
 def inspect(args):
     ak_name = Path(__file__).name
-
     code_dir = Path(args.path)
+
+    # Allow users to import their own files and load data files
+    sys.path.append(str(code_dir))
+
     entries = []
     for path in code_dir.glob("**/*.py"):
         if path.name == ak_name:
@@ -171,7 +170,7 @@ def inspect(args):
         entries.extend(inspect_file(code_dir, path))
 
     # Stdout is read by Go, don't print anything else
-    print(json.dumps(entries))
+    print(json.dumps(entries), file=args.output)
 
 
 # argparse.FileType will open the file
@@ -193,7 +192,7 @@ def dir_type(value):
 
 if __name__ == "__main__":
     import sys
-    from argparse import ArgumentParser
+    from argparse import ArgumentParser, FileType
 
     parser = ArgumentParser(prog="ak_runner", description="autokitteh Python runner")
     sp = parser.add_subparsers(help="sub command help", required=True)
@@ -206,6 +205,7 @@ if __name__ == "__main__":
 
     parse_inspect = sp.add_parser("inspect", help="inspect user code")
     parse_inspect.add_argument("path", help="path to code", type=dir_type)
+    parse_inspect.add_argument("output", help="output file", type=FileType("w"))
     parse_inspect.set_defaults(func=inspect)
 
     args = parser.parse_args()
