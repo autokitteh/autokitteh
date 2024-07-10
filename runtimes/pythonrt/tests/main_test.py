@@ -3,6 +3,7 @@ import types
 from os import environ
 from subprocess import run
 from sys import executable
+from tempfile import NamedTemporaryFile
 
 from conftest import test_dir
 
@@ -32,10 +33,16 @@ def test_class(tmp_path):
     with open(tmp_path / "cls.py", "w") as out:
         out.write(cls_code)
 
-    cmd = [executable, "-m", "ak_runner", "inspect", str(tmp_path)]
-    out = run(cmd, capture_output=True, env=env)
+    outfile = NamedTemporaryFile(delete=False)
+    outfile.close()
+
+    cmd = [executable, "-m", "ak_runner", "inspect", str(tmp_path), outfile.name]
+    out = run(cmd)
     assert out.returncode == 0
-    reply = json.loads(out.stdout)
+
+    with open(outfile.name) as fp:
+        reply = json.load(fp)
+
     expected = [
         {"name": "A", "file": "cls.py", "line": 2},
         {"name": "fn", "file": "cls.py", "line": 4},

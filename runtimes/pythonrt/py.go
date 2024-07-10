@@ -322,7 +322,13 @@ func pyExports(ctx context.Context, pyExe string, fsys fs.FS) ([]Export, error) 
 		return nil, err
 	}
 
-	cmd := exec.CommandContext(ctx, pyExe, "-m", runnerMod, "inspect", tmpDir)
+	outFile, err := os.CreateTemp("", "")
+	if err != nil {
+		return nil, fmt.Errorf("create temp file: %w", err)
+	}
+	outFile.Close()
+
+	cmd := exec.CommandContext(ctx, pyExe, "-m", runnerMod, "inspect", tmpDir, outFile.Name())
 	var buf bytes.Buffer
 	cmd.Stdout = &buf
 	cmd.Stderr = &buf
@@ -331,8 +337,14 @@ func pyExports(ctx context.Context, pyExe string, fsys fs.FS) ([]Export, error) 
 		return nil, fmt.Errorf("inspect: %w.\nPython output: %s", err, buf.String())
 	}
 
+	file, err := os.Open(outFile.Name())
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
 	var exports []Export
-	if err := json.NewDecoder(&buf).Decode(&exports); err != nil {
+	if err := json.NewDecoder(file).Decode(&exports); err != nil {
 		return nil, err
 	}
 
