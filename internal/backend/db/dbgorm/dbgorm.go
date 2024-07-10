@@ -73,6 +73,7 @@ func (db *gormdb) Connect(ctx context.Context) error {
 	client, err := gormkitteh.OpenZ(db.z.Named("gorm"), db.cfg, func(cfg *gorm.Config) {
 		cfg.SkipDefaultTransaction = true
 		cfg.Logger = logger.Default
+		cfg.TranslateError = true
 	})
 	if err != nil {
 		return fmt.Errorf("opendb: %w", err)
