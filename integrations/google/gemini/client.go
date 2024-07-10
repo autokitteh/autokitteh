@@ -15,8 +15,7 @@ var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.Integrati
 	UniqueName:    "googlegemini",
 	DisplayName:   "Google Gemini",
 	Description:   "Gemini is a generative artificial intelligence chatbot developed by Google.",
-	// TODO: Figure out where to upload svg
-	// LogoUrl: "/static/images/google_gemini.svg",
+	LogoUrl:       "/static/images/google_gemini.svg",
 	UserLinks: map[string]string{
 		"1 REST API reference": "https://ai.google.dev/api/rest",
 		"2 Python client API":  "https://ai.google.dev/api/python/google/generativeai",
