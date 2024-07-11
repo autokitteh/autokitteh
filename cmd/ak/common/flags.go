@@ -55,8 +55,6 @@ func AddNotFoundErrIfCond(err error, found bool) error {
 	return err
 }
 
-// FIXME: introduced to avoid more changes in existing code due non-skipping of NotFoundExitCode in services
-// Need to be combined and refactored with ToExitCodeWithSkipNotFoundFlag and FailIfNotFound
 func ToExitCodeWithSkipNotFoundFlag(cmd *cobra.Command, err error, whats ...string) error {
 	if err == nil {
 		return nil
