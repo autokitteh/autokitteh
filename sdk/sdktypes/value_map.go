@@ -36,26 +36,23 @@ func (v Value) Map(f func(v Value) (Value, error)) (Value, error) {
 
 	case DictValue:
 		items := vv.Items()
-
-		for _, item := range items {
-			if item.K, err = item.K.Map(f); err != nil {
+		for i := range items {
+			if items[i].K, err = items[i].K.Map(f); err != nil {
 				return InvalidValue, err
-			} else if !item.K.IsValid() {
+			} else if !items[i].K.IsValid() {
 				return InvalidValue, errors.New("invalid value")
 			}
 
-			if item.V, err = item.V.Map(f); err != nil {
+			if items[i].V, err = items[i].V.Map(f); err != nil {
 				return InvalidValue, err
-			} else if !item.V.IsValid() {
+			} else if !items[i].V.IsValid() {
 				return InvalidValue, errors.New("invalid value")
 			}
 		}
-
 		return NewDictValue(items)
 
 	case StructValue:
 		fs := vv.Fields()
-
 		for k, fv := range fs {
 			if fs[k], err = fv.Map(f); err != nil {
 				return InvalidValue, err
@@ -63,7 +60,6 @@ func (v Value) Map(f func(v Value) (Value, error)) (Value, error) {
 				return InvalidValue, errors.New("invalid value")
 			}
 		}
-
 		return NewStructValue(vv.Ctor(), fs)
 
 	default:

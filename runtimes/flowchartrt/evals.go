@@ -130,7 +130,7 @@ func (th *thread) evalArg(ctx context.Context, v any, inputs map[string]any) (sd
 		err    error
 	)
 
-	if th.frame().node.mod.flowchart.HasPragma("argsnoexpr") {
+	if th.frame().node.mod.flowchart.HasPragma("args_noexpr") {
 		result, err = sdktypes.WrapValue(v)
 	} else {
 		result, err = th.evalValue(ctx, v, false)

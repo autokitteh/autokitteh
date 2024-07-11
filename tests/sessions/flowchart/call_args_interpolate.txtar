@@ -1,10 +1,10 @@
-meow, world!
+meow, world! meow, earth! meow, hadera!
 
 -- main.flowchart.yaml main --
 version: v1
 
 pragmas:
-  - argsnoexpr
+  - args_noexpr
 
 imports:
   - name: foo
@@ -29,14 +29,24 @@ nodes:
         target: imports.foo.pick
         args:
           sounds:
-            - "{{ .states.results.main }}, world!"
+            moo: "{{ .states.results.main }}, earth!"
+          i: moo
+    goto: nodes.print3
+
+  - name: print3
+    action:
+      call:
+        target: imports.foo.pick
+        args:
+          sounds:
+            - "{{ .states.results.main }}, hadera!"
           i: 0
     goto: nodes.end
 
   - name: end
     action:
       print:
-        value: "states.results.print1"
+        value: "states.results.print1 + ' ' + states.results.print2 + ' ' + states.results.print3"
 
 -- foo.star --
 def say(sound):
