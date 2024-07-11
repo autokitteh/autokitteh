@@ -488,7 +488,7 @@ func (w *sessionWorkflow) run(wctx workflow.Context) (prints []string, err error
 			}
 
 			if err != nil {
-				w.z.Error("print", zap.String("run_id", runID.String()), zap.String("text", text))
+				w.z.Error("failed to add print session record", zap.String("run_id", runID.String()), zap.String("text", text))
 			}
 		},
 	}
