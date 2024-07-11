@@ -1,8 +1,6 @@
 package integrations
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
 
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
@@ -27,30 +25,24 @@ var listCmd = common.StandardCommand(&cobra.Command{
 		defer cancel()
 
 		is, err := integrations().List(ctx, name)
-		if err != nil {
-			return fmt.Errorf("list integrations: %w", err)
-		}
+		err = common.AddNotFoundErrIfCond(err, len(is) > 0)
+		if err = common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "builds"); err == nil {
+			for idx := range is {
+				if !withDesc {
+					is[idx] = is[idx].WithDescription("")
+				}
 
-		if err := common.FailIfNotFound(cmd, "integrations", len(is) > 0); err != nil {
-			return err
-		}
+				if !withRefs {
+					is[idx] = is[idx].WithUserLinks(nil)
+				}
 
-		for idx := range is {
-			if !withDesc {
-				is[idx] = is[idx].WithDescription("")
+				if !withMod {
+					is[idx] = is[idx].WithModule(sdktypes.InvalidModule)
+				}
 			}
-
-			if !withRefs {
-				is[idx] = is[idx].WithUserLinks(nil)
-			}
-
-			if !withMod {
-				is[idx] = is[idx].WithModule(sdktypes.InvalidModule)
-			}
+			common.RenderList(is)
 		}
-
-		common.RenderList(is)
-		return nil
+		return err
 	},
 })
 

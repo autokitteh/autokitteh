@@ -1,8 +1,6 @@
 package builds
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
 
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
@@ -20,16 +18,11 @@ var listCmd = common.StandardCommand(&cobra.Command{
 		defer cancel()
 
 		bs, err := builds().List(ctx, sdkservices.ListBuildsFilter{})
-		if err != nil {
-			return fmt.Errorf("list builds: %w", err)
+		err = common.AddNotFoundErrIfCond(err, len(bs) > 0)
+		if err = common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "builds"); err == nil {
+			common.RenderList(bs)
 		}
-
-		if err := common.FailIfNotFound(cmd, "builds", len(bs) > 0); err != nil {
-			return err
-		}
-
-		common.RenderList(bs)
-		return nil
+		return err
 	},
 })
 
