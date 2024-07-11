@@ -20,13 +20,6 @@ func AddFailIfError(cmd *cobra.Command) {
 	cmd.Flags().BoolP("fail", "f", false, "fail on error")
 }
 
-func FailIfNotFound(cmd *cobra.Command, what string, found bool) error {
-	if !found {
-		return ToExitCodeWithSkipNotFoundFlag(cmd, sdkerrors.ErrNotFound, what)
-	}
-	return nil
-}
-
 func ToExitCodeErrorNotNilErr(err error, whats ...string) ExitCodeError {
 	msg := strings.Join(whats, " ")
 	var code int = GenericFailure

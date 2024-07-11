@@ -37,16 +37,12 @@ var logCmd = common.StandardCommand(&cobra.Command{
 		ctx, cancel := common.LimitedContext()
 		defer cancel()
 
-		s, id, err := r.SessionID(ctx, args[0])
-		if err != nil {
-			return err
+		s, sid, err := r.SessionID(ctx, args[0])
+		if err = common.AddNotFoundErrIfCond(err, s.IsValid()); err != nil {
+			return common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "session")
 		}
 
-		if err := common.FailIfNotFound(cmd, "session", s.IsValid()); err != nil {
-			return err
-		}
-
-		f := sdkservices.ListSessionLogRecordsFilter{SessionID: id}
+		f := sdkservices.ListSessionLogRecordsFilter{SessionID: sid}
 		if nextPageToken != "" {
 			f.PageToken = nextPageToken
 		}

@@ -30,11 +30,8 @@ var downloadCmd = common.StandardCommand(&cobra.Command{
 		}
 
 		resources, err := projects().DownloadResources(ctx, pid)
-		if err != nil {
-			return err
-		}
-		if err := common.FailIfNotFound(cmd, "resources", len(resources) > 0); err != nil {
-			return err
+		if err = common.AddNotFoundErrIfCond(err, len(resources) > 0); err != nil {
+			return common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "resources")
 		}
 
 		for filename, data := range resources {
