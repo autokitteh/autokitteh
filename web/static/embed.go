@@ -37,6 +37,9 @@ var GoogleDriveWebContent embed.FS
 //go:embed googleforms/connect
 var GoogleFormsWebContent embed.FS
 
+//go:embed googlegemini/connect
+var GoogleGeminiWebContent embed.FS
+
 //go:embed googlesheets/connect
 var GoogleSheetsWebContent embed.FS
 

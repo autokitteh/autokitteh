@@ -15,6 +15,7 @@ import (
 	"go.autokitteh.dev/autokitteh/integrations/google/calendar"
 	"go.autokitteh.dev/autokitteh/integrations/google/drive"
 	"go.autokitteh.dev/autokitteh/integrations/google/forms"
+	"go.autokitteh.dev/autokitteh/integrations/google/gemini"
 	"go.autokitteh.dev/autokitteh/integrations/google/gmail"
 	"go.autokitteh.dev/autokitteh/integrations/google/sheets"
 	"go.autokitteh.dev/autokitteh/integrations/grpc"
@@ -46,6 +47,7 @@ func New(cfg *Config, vars sdkservices.Vars) sdkservices.Integrations {
 		forms.New(vars),
 		github.New(vars),
 		gmail.New(vars),
+		gemini.New(vars),
 		google.New(vars),
 		grpc.New(),
 		httpint.New(vars),
@@ -68,6 +70,7 @@ func Start(_ context.Context, l *zap.Logger, mux *http.ServeMux, vars sdkservice
 	chatgpt.Start(l, mux)
 	confluence.Start(l, mux, vars, o, d)
 	github.Start(l, mux, vars, o, d)
+	gemini.Start(l, mux)
 	google.Start(l, mux, o, d)
 	httpint.Start(l, mux, d, c, p)
 	jira.Start(l, mux, vars, o, d)
