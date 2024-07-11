@@ -57,12 +57,9 @@ var listCmd = common.StandardCommand(&cobra.Command{
 			EnvID:        eid,
 			ConnectionID: cid,
 		})
-		if err != nil {
-			return err
-		}
 
-		if err := common.FailIfNotFound(cmd, "triggers", len(ts) > 0); err != nil {
-			return err
+		if err = common.AddNotFoundErrIfCond(err, len(ts) > 0); err != nil {
+			return common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "trigger")
 		}
 
 		common.RenderList(ts)

@@ -22,7 +22,7 @@ var drainCmd = common.StandardCommand(&cobra.Command{
 
 		d, id, err := r.DeploymentID(ctx, args[0])
 		err = common.AddNotFoundErrIfCond(err, d.IsValid())
-		if err = common.FailIfError2(cmd, err, "deployment"); err != nil {
+		if err = common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "deployment"); err != nil {
 			return err
 		}
 

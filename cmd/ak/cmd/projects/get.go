@@ -20,12 +20,10 @@ var getCmd = common.StandardCommand(&cobra.Command{
 
 		p, _, err := r.ProjectNameOrID(ctx, args[0])
 		err = common.AddNotFoundErrIfCond(err, p.IsValid())
-		if err = common.FailIfError2(cmd, err, "project"); err != nil {
-			return err
+		if err = common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "project"); err == nil {
+			common.RenderKVIfV("project", p)
 		}
-
-		common.RenderKVIfV("project", p)
-		return nil
+		return err
 	},
 })
 

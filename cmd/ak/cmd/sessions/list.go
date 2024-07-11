@@ -82,12 +82,8 @@ var listCmd = common.StandardCommand(&cobra.Command{
 		}
 
 		result, err := sessions().List(ctx, f)
-		if err != nil {
-			return fmt.Errorf("list sessions: %w", err)
-		}
-
-		if err := common.FailIfNotFound(cmd, "sessions", len(result.Sessions) > 0); err != nil {
-			return err
+		if err = common.AddNotFoundErrIfCond(err, len(result.Sessions) > 0); err != nil {
+			return common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "list sessions")
 		}
 
 		if !withInputs {

@@ -19,16 +19,11 @@ var getCmd = common.StandardCommand(&cobra.Command{
 		defer cancel()
 
 		e, _, err := r.EnvNameOrID(ctx, args[0], project)
-		if err != nil {
-			return err
+		err = common.AddNotFoundErrIfCond(err, e.IsValid())
+		if err = common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "env"); err == nil {
+			common.RenderKVIfV("env", e)
 		}
-
-		if err := common.FailIfNotFound(cmd, "env", e.IsValid()); err != nil {
-			return err
-		}
-
-		common.RenderKVIfV("env", e)
-		return nil
+		return err
 	},
 })
 

@@ -20,12 +20,10 @@ var getCmd = common.StandardCommand(&cobra.Command{
 
 		e, _, err := r.EventID(ctx, args[0])
 		err = common.AddNotFoundErrIfCond(err, e.IsValid())
-		if err = common.FailIfError2(cmd, err, "event"); err != nil {
-			return err
+		if err = common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "event"); err == nil {
+			common.RenderKVIfV("event", e)
 		}
-
-		common.RenderKVIfV("event", e)
-		return nil
+		return err
 	},
 })
 

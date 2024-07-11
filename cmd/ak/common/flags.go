@@ -22,14 +22,7 @@ func AddFailIfError(cmd *cobra.Command) {
 
 func FailIfNotFound(cmd *cobra.Command, what string, found bool) error {
 	if !found {
-		return FailNotFound(cmd, what)
-	}
-	return nil
-}
-
-func FailNotFound(cmd *cobra.Command, what string) error {
-	if kittehs.Must1(cmd.Flags().GetBool("fail")) {
-		return NewExitCodeError(NotFoundExitCode, fmt.Errorf("%s not found", what))
+		return ToExitCodeWithSkipNotFoundFlag(cmd, sdkerrors.ErrNotFound, what)
 	}
 	return nil
 }
@@ -61,13 +54,6 @@ func ToExitCodeError(err error, whats ...string) error {
 	return ToExitCodeErrorNotNilErr(err, whats...)
 }
 
-func FailIfError(cmd *cobra.Command, err error, whats ...string) error {
-	if kittehs.Must1(cmd.Flags().GetBool("fail")) && err != nil {
-		return ToExitCodeError(err, whats...)
-	}
-	return nil
-}
-
 // keep given error, if passed or return notFound if !found condition
 func AddNotFoundErrIfCond(err error, found bool) error {
 	if err == nil && !found {
@@ -77,10 +63,10 @@ func AddNotFoundErrIfCond(err error, found bool) error {
 }
 
 // FIXME: introduced to avoid more changes in existing code due non-skipping of NotFoundExitCode in services
-// Need to be combined and refactored with FailIfError and FailIfNotFound
-func FailIfError2(cmd *cobra.Command, err error, whats ...string) error {
+// Need to be combined and refactored with ToExitCodeWithSkipNotFoundFlag and FailIfNotFound
+func ToExitCodeWithSkipNotFoundFlag(cmd *cobra.Command, err error, whats ...string) error {
 	if err == nil {
-		return err
+		return nil
 	}
 	exitErr := ToExitCodeErrorNotNilErr(err, whats...)
 	if exitErr.Code == NotFoundExitCode {

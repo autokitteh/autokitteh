@@ -20,12 +20,10 @@ var getCmd = common.StandardCommand(&cobra.Command{
 
 		b, _, err := r.BuildID(ctx, args[0])
 		err = common.AddNotFoundErrIfCond(err, b.IsValid())
-		if err = common.FailIfError2(cmd, err, "build"); err != nil {
-			return err
+		if err = common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "build"); err == nil {
+			common.RenderKVIfV("build", b)
 		}
-
-		common.RenderKVIfV("build", b)
-		return nil
+		return err
 	},
 })
 

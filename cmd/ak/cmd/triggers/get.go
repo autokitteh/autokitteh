@@ -19,12 +19,10 @@ var getCmd = common.StandardCommand(&cobra.Command{
 
 		t, _, err := r.TriggerID(ctx, args[0])
 		err = common.AddNotFoundErrIfCond(err, t.IsValid())
-		if err = common.FailIfError2(cmd, err, "trigger"); err != nil {
-			return err
+		if err = common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "trigger"); err == nil {
+			common.RenderKVIfV("trigger", t)
 		}
-
-		common.RenderKVIfV("trigger", t)
-		return nil
+		return err
 	},
 })
 

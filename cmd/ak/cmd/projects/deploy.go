@@ -36,7 +36,7 @@ var deployCmd = common.StandardCommand(&cobra.Command{
 
 		e, eid, err := r.EnvNameOrID(ctx, env, args[0])
 		err = common.AddNotFoundErrIfCond(err, e.IsValid())
-		if err = common.FailIfError2(cmd, err, "environment"); err != nil {
+		if err = common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "environment"); err != nil {
 			return err
 		}
 

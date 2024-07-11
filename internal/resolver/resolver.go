@@ -399,6 +399,6 @@ func (r Resolver) SessionID(ctx context.Context, id string) (s sdktypes.Session,
 	}
 
 	s, err = r.Client.Sessions().Get(ctx, sid)
-	err = translateError(err, s, "build", id)
+	err = translateError(err, s, "session", id)
 	return
 }

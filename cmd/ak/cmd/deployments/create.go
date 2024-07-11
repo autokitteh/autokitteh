@@ -26,13 +26,13 @@ var createCmd = common.StandardCommand(&cobra.Command{
 
 		b, _, err := r.BuildID(ctx, buildID)
 		err = common.AddNotFoundErrIfCond(err, b.IsValid())
-		if err = common.FailIfError2(cmd, err, fmt.Sprintf("build ID %q", buildID)); err != nil {
+		if err = common.ToExitCodeWithSkipNotFoundFlag(cmd, err, fmt.Sprintf("build ID %q", buildID)); err != nil {
 			return err
 		}
 
 		e, eid, err := r.EnvNameOrID(ctx, env, "")
 		err = common.AddNotFoundErrIfCond(err, e.IsValid())
-		if err = common.FailIfError2(cmd, err, fmt.Sprintf("environment %q", env)); err != nil {
+		if err = common.ToExitCodeWithSkipNotFoundFlag(cmd, err, fmt.Sprintf("environment %q", env)); err != nil {
 			return err
 		}
 

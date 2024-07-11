@@ -18,17 +18,12 @@ var deleteCmd = common.StandardCommand(&cobra.Command{
 		ctx, cancel := common.LimitedContext()
 		defer cancel()
 
-		d, id, err := r.DeploymentID(ctx, args[0])
-		if err != nil {
-			return common.FailIfError(cmd, err, "deployment")
+		d, did, err := r.DeploymentID(ctx, args[0])
+		if err = common.AddNotFoundErrIfCond(err, d.IsValid()); err != nil {
+			return common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "deployment")
 		}
 
-		if err := common.FailIfNotFound(cmd, "deployment", d.IsValid()); err != nil {
-			return err
-		}
-
-		err = deployments().Delete(ctx, id)
-		return common.ToExitCodeError(err, "delete deployment")
+		return common.ToExitCodeWithSkipNotFoundFlag(cmd, deployments().Delete(ctx, did), "delete deployment")
 	},
 })
 

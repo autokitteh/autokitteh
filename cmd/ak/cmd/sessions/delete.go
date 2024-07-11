@@ -18,18 +18,13 @@ var deleteCmd = common.StandardCommand(&cobra.Command{
 		ctx, cancel := common.LimitedContext()
 		defer cancel()
 
-		s, id, err := r.SessionID(ctx, args[0])
-		if err != nil {
-			return common.FailIfError(cmd, err, "session")
+		s, sid, err := r.SessionID(ctx, args[0])
+		if err = common.AddNotFoundErrIfCond(err, s.IsValid()); err != nil {
+			return common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "session")
 		}
 
-		if err := common.FailIfNotFound(cmd, "session id", s.IsValid()); err != nil {
-			return err
-		}
-
-		err = sessions().Delete(ctx, id)
-		if err != nil {
-			return common.FailIfError(cmd, err, "session")
+		if err = sessions().Delete(ctx, sid); err != nil {
+			return common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "delete session")
 		}
 
 		common.RenderKVIfV("session", s) // print deleted session
