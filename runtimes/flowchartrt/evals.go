@@ -3,6 +3,8 @@ package flowchartrt
 import (
 	"context"
 	"fmt"
+	"html/template"
+	"strings"
 
 	"github.com/google/cel-go/cel"
 
@@ -56,7 +58,7 @@ func (th *thread) evalExpr(ctx context.Context, expr string, static bool) (sdkty
 	return th.evalProgram(ctx, prg, static)
 }
 
-func (th *thread) evalProgram(ctx context.Context, prg cel.Program, static bool) (sdktypes.Value, error) {
+func (th *thread) evalInputs(static bool) (map[string]any, error) {
 	nodes := kittehs.ListToMap(th.nodes, func(n *threadNode) (string, any) { return n.node.Name, n.toValue() })
 
 	frame := th.frame()
@@ -67,14 +69,14 @@ func (th *thread) evalProgram(ctx context.Context, prg cel.Program, static bool)
 		// allow globals access only from the root module.
 		var err error
 		if inputs["globals"], err = kittehs.TransformMapValuesError(th.r.globals, th.w.Unwrap); err != nil {
-			return sdktypes.InvalidValue, fmt.Errorf("transform globals: %w", err)
+			return nil, fmt.Errorf("transform globals: %w", err)
 		}
 	}
 
 	if !static {
 		var err error
 		if inputs["states"], err = kittehs.TransformMapValuesError(frame.states, th.w.Unwrap); err != nil {
-			return sdktypes.InvalidValue, fmt.Errorf("transform state: %w", err)
+			return nil, fmt.Errorf("transform state: %w", err)
 		}
 	}
 
@@ -83,21 +85,30 @@ func (th *thread) evalProgram(ctx context.Context, prg cel.Program, static bool)
 
 		inputs["values"], err = kittehs.TransformMapValuesError(curr.mod.values, th.w.Unwrap)
 		if err != nil {
-			return sdktypes.InvalidValue, fmt.Errorf("transform values: %w", err)
+			return nil, fmt.Errorf("transform values: %w", err)
 		}
 
 		inputs["imports"], err = kittehs.TransformMapValuesError(curr.mod.loads, func(vs map[string]sdktypes.Value) (map[string]any, error) {
 			return kittehs.TransformMapValuesError(vs, th.w.Unwrap)
 		})
 		if err != nil {
-			return sdktypes.InvalidValue, fmt.Errorf("transform imports: %w", err)
+			return nil, fmt.Errorf("transform imports: %w", err)
 		}
 
 		if !static {
 			if inputs["args"], err = kittehs.TransformMapValuesError(frame.args, th.w.Unwrap); err != nil {
-				return sdktypes.InvalidValue, fmt.Errorf("unwrap input: %w", err)
+				return nil, fmt.Errorf("unwrap input: %w", err)
 			}
 		}
+	}
+
+	return inputs, nil
+}
+
+func (th *thread) evalProgram(ctx context.Context, prg cel.Program, static bool) (sdktypes.Value, error) {
+	inputs, err := th.evalInputs(static)
+	if err != nil {
+		return sdktypes.InvalidValue, err
 	}
 
 	out, _, err := prg.ContextEval(ctx, inputs)
@@ -111,4 +122,56 @@ func (th *thread) evalProgram(ctx context.Context, prg cel.Program, static bool)
 	}
 
 	return v, nil
+}
+
+func (th *thread) evalArg(ctx context.Context, v any, inputs map[string]any) (sdktypes.Value, error) {
+	var (
+		result sdktypes.Value
+		err    error
+	)
+
+	if th.frame().node.mod.flowchart.HasPragma("argsnoexpr") {
+		result, err = sdktypes.WrapValue(v)
+	} else {
+		result, err = th.evalValue(ctx, v, false)
+	}
+
+	if err != nil {
+		return sdktypes.InvalidValue, err
+	}
+
+	result, err = result.Map(func(v sdktypes.Value) (sdktypes.Value, error) {
+		if !v.IsString() {
+			return v, nil
+		}
+
+		s := v.GetString().Value()
+
+		t, err := template.New("").Parse(s)
+		if err != nil {
+			return sdktypes.InvalidValue, fmt.Errorf("invalid interpolation string %q: %w", s, err)
+		}
+
+		var b strings.Builder
+
+		if err := t.Execute(&b, inputs); err != nil {
+			return sdktypes.InvalidValue, fmt.Errorf("interpolation %q: %w", s, err)
+		}
+
+		return sdktypes.NewStringValue(b.String()), err
+	})
+
+	return result, err
+}
+
+// Arguments also perform string interpolation on the output.
+func (th *thread) evalArgs(ctx context.Context, vs map[string]any) (map[string]sdktypes.Value, error) {
+	inputs, err := th.evalInputs(false)
+	if err != nil {
+		return nil, err
+	}
+
+	eval := func(v any) (sdktypes.Value, error) { return th.evalArg(ctx, v, inputs) }
+
+	return kittehs.TransformMapValuesError(vs, eval)
 }

@@ -1,0 +1,46 @@
+meow, world!
+
+-- main.flowchart.yaml main --
+version: v1
+
+pragmas:
+  - argsnoexpr
+
+imports:
+  - name: foo
+    path: "foo.star"
+
+nodes:
+  - name: main
+    result: "'meow'"
+    goto: nodes.print1
+
+  - name: print1
+    action:
+      call:
+        target: imports.foo.say
+        args:
+          sound: "{{ .states.results.main }}, world!"
+    goto: nodes.print2
+
+  - name: print2
+    action:
+      call:
+        target: imports.foo.pick
+        args:
+          sounds:
+            - "{{ .states.results.main }}, world!"
+          i: 0
+    goto: nodes.end
+
+  - name: end
+    action:
+      print:
+        value: "states.results.print1"
+
+-- foo.star --
+def say(sound):
+  return sound
+
+def pick(sounds, i):
+  return sounds[i]

@@ -23,9 +23,12 @@ type Flowchart struct {
 	Imports []*Import      `yaml:"imports,omitempty" json:"imports,omitempty"`
 	Nodes   []*Node        `yaml:"nodes,omitempty" json:"nodes,omitempty"`
 	Memo    any            `yaml:"memo,omitempty" json:"memo,omitempty"`
+	Pragmas []string       `yaml:"pragmas,omitempty" json:"pragmas,omitempty"`
 
 	path string
 }
+
+func (f *Flowchart) HasPragma(pragma string) bool { return kittehs.ContainedIn(f.Pragmas...)(pragma) }
 
 func (f *Flowchart) GetNode(name string) *Node {
 	_, node := kittehs.FindFirst(f.Nodes, func(n *Node) bool { return n.Name == name })

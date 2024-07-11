@@ -78,9 +78,7 @@ func (th *thread) runCallAction(ctx context.Context, c *ast.CallAction, setResul
 		return nil, nil
 	}
 
-	kwargs, err := kittehs.TransformMapValuesError(c.Args, func(v any) (sdktypes.Value, error) {
-		return th.evalValue(ctx, v, false)
-	})
+	kwargs, err := th.evalArgs(ctx, c.Args)
 	if err != nil {
 		return nil, err
 	}
