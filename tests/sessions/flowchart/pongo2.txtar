@@ -1,0 +1,17 @@
+meow world {{ some other thing }}
+
+-- main.flowchart.yaml main --
+version: v1
+
+options:
+  interpolate_all_strings: true
+  default_interpolation: p
+
+values:
+  what: "world"
+
+nodes:
+  - name: main
+    action:
+      print:
+        value: "meow {{ values.what }} %{{ some other thing %}}"
