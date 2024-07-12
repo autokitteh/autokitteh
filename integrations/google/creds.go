@@ -1,6 +1,7 @@
 package google
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -57,18 +58,43 @@ func (h handler) HandleCreds(w http.ResponseWriter, r *http.Request) {
 	switch r.PostFormValue("auth_type") {
 	// GCP service-account JSON-key connection? Save the JSON key.
 	case "json":
+		// TODO(ENG-1103): Create watches for the form's events, if the ID isn't empty.
 		c.Finalize(sdktypes.EncodeVars(&vars.Vars{JSON: r.PostFormValue("json"), FormID: formID}))
-		// TODO(ENG-1103): Create watches for the form's event, if the ID isn't empty.
 
 	// User OAuth connect? Redirect to AutoKitteh's OAuth starting point.
 	case "oauth":
-		// TODO(ENG-1103): Save the form ID.
+		if err := h.saveFormID(r.Context(), c, formID); err != nil {
+			l.Error("Connection ID parsing error", zap.Error(err))
+			e := fmt.Sprintf("form ID saving error: %v", err)
+			c.AbortWithStatus(http.StatusInternalServerError, e)
+			return
+		}
 		http.Redirect(w, r, oauthURL(c, r.PostForm), http.StatusFound)
 
 	// Unknown mode.
 	default:
-		c.Abort(fmt.Sprintf("unexpected authentication type %q", r.PostFormValue("auth_type")))
+		err := fmt.Sprintf("unexpected auth type %q", r.PostFormValue("auth_type"))
+		c.AbortWithStatus(http.StatusInternalServerError, err)
 	}
+}
+
+func (h handler) saveFormID(ctx context.Context, c sdkintegrations.ConnectionInit, formID string) error {
+	if formID == "" {
+		return nil
+	}
+
+	cid, err := sdktypes.StrictParseConnectionID(c.ConnectionID)
+	if err != nil {
+		return fmt.Errorf("connection ID parsing error: %w", err)
+	}
+
+	v := sdktypes.NewVar(vars.FormID, formID, false)
+	v = v.WithScopeID(sdktypes.NewVarScopeID(cid))
+
+	if err := h.vars.Set(ctx, v); err != nil {
+		return err
+	}
+	return nil
 }
 
 func oauthURL(c sdkintegrations.ConnectionInit, form url.Values) string {

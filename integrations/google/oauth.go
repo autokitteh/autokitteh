@@ -21,10 +21,11 @@ import (
 type handler struct {
 	logger *zap.Logger
 	oauth  sdkservices.OAuth
+	vars   sdkservices.Vars
 }
 
-func NewHTTPHandler(l *zap.Logger, o sdkservices.OAuth) handler {
-	return handler{logger: l, oauth: o}
+func NewHTTPHandler(l *zap.Logger, o sdkservices.OAuth, v sdkservices.Vars) handler {
+	return handler{logger: l, oauth: o, vars: v}
 }
 
 // HandleOAuth receives an inbound redirect request from autokitteh's OAuth
@@ -75,6 +76,8 @@ func (h handler) HandleOAuth(w http.ResponseWriter, r *http.Request) {
 		c.Abort("Google user details error")
 		return
 	}
+
+	// TODO(ENG-1103): Create watches for a form's events, if we have its ID.
 
 	c.Finalize(sdktypes.EncodeVars(&vars.Vars{OAuthData: raw}).
 		Append(data.ToVars()...).

@@ -71,7 +71,7 @@ func Start(_ context.Context, l *zap.Logger, mux *http.ServeMux, vars sdkservice
 	confluence.Start(l, mux, vars, o, d)
 	github.Start(l, mux, vars, o, d)
 	gemini.Start(l, mux)
-	google.Start(l, mux, o, d)
+	google.Start(l, mux, vars, o, d)
 	httpint.Start(l, mux, d, c, p)
 	jira.Start(l, mux, vars, o, d)
 	slack.Start(l, mux, vars, d)
