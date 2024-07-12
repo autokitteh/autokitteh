@@ -75,6 +75,9 @@
 
       <!-- TODO(ENG-799): remove ID once its unused -->
       <form id="save-form-oauth" method="post" action="/google/save">
+        <input type="hidden" name="auth_scopes" value="forms" />
+        <input type="hidden" name="auth_type" value="oauth" />
+
         <div class="form-group">
           <label for="form_id">Optional: Form ID (To Receive Events)</label>
           <input
@@ -141,6 +144,9 @@
 
       <!-- TODO(ENG-799): remove ID once its unused -->
       <form id="save-form-json" method="post" action="/google/save">
+        <input type="hidden" name="auth_scopes" value="forms" />
+        <input type="hidden" name="auth_types" value="json" />
+
         <div class="form-group">
           <label for="form_id">Optional: Form ID (To Receive Events)</label>
           <input
