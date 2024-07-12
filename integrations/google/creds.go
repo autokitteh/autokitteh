@@ -20,6 +20,8 @@ const (
 func (h handler) HandleCreds(w http.ResponseWriter, r *http.Request) {
 	c, l := sdkintegrations.NewConnectionInit(h.logger, w, r, desc)
 
+	l.Warn("HEADERS", zap.Any("headers", r.Header)) // TODO: Remove this debug line.
+
 	// Check "Content-Type" header.
 	contentType := r.Header.Get(headerContentType)
 	if !strings.HasPrefix(contentType, contentTypeForm) {

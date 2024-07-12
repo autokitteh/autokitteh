@@ -49,89 +49,117 @@
       </button>
     </div>
 
-    <div class="tab" id="tab1">
-      <p class="info">Information:</p>
-      <ul class="links">
-        <li>
-          Guide:
-          <a
-            href="https://docs.autokitteh.com/config/integrations/google"
-            target="_blank"
-            class="info"
-          >
-            configuring the Google integration
-          </a>
-        </li>
-        <li>
-          <a
-            href="https://developers.google.com/workspace/guides/auth-overview"
-            target="_blank"
-            class="info"
-          >
-            Learn about authentication and authorization
-          </a>
-        </li>
-      </ul>
+    <!-- TODO(ENG-799): remove ID once its unused -->
+    <form id="save-form" method="post" action="/google/save">
+      <div class="tab" id="tab1">
+        <p class="info">Information:</p>
+        <ul class="links">
+          <li>
+            Guide:
+            <a
+              href="https://docs.autokitteh.com/config/integrations/google"
+              target="_blank"
+              class="info"
+            >
+              configuring the Google integration
+            </a>
+          </li>
+          <li>
+            <a
+              href="https://developers.google.com/workspace/guides/auth-overview"
+              target="_blank"
+              class="info"
+            >
+              Learn about authentication and authorization
+            </a>
+          </li>
+        </ul>
 
-      <p class="info">
-        Click the button below to authorize the
-        <strong>AutoKitteh</strong> service
-      </p>
-      <!-- TODO(ENG-799): remove ID once its unused -->
-      <a id="oauth-link" href="/oauth/start/googleforms" class="clickable"
-        >Start OAuth Flow</a
-      >
-    </div>
+        <div class="form-group">
+          <label for="form_id_oauth">
+            Optional: Form ID (To Receive Events)
+          </label>
+          <input
+            type="text"
+            id="formIdOauth"
+            name="form_id_oauth"
+            autocomplete="off"
+            spellcheck="false"
+            pattern="[\w-]{20,}"
+          />
+        </div>
 
-    <div class="tab" id="tab2">
-      <p class="info">Information:</p>
-      <ul class="links">
-        <li>
-          <a
-            href="https://cloud.google.com/iam/docs/service-account-overview"
-            target="_blank"
-            class="info"
-          >
-            GCP service accounts overview
-          </a>
-        </li>
-        <li>
-          <a
-            href="https://cloud.google.com/iam/docs/service-account-creds"
-            target="_blank"
-            class="info"
-          >
-            Service account credentials
-          </a>
-        </li>
-        <li>
-          <a
-            href="https://cloud.google.com/iam/docs/keys-create-delete"
-            target="_blank"
-            class="info"
-          >
-            Create and delete service account keys
-          </a>
-        </li>
-        <li>
-          <a
-            href="https://cloud.google.com/iam/docs/best-practices-for-managing-service-account-keys"
-            target="_blank"
-            class="info"
-          >
-            Best practices for managing service account keys
-          </a>
-        </li>
-      </ul>
+        <div class="form-group">
+          <p class="info">
+            Click the button below to authorize the
+            <strong>AutoKitteh</strong> service
+          </p>
+        </div>
 
-      <!-- TODO(ENG-799): remove ID once its unused -->
-      <form id="save-json-form" method="post" action="/google/save">
+        <button type="submit" class="submit-btn">Start OAuth Flow</button>
+      </div>
+
+      <div class="tab" id="tab2">
+        <p class="info">Information:</p>
+        <ul class="links">
+          <li>
+            <a
+              href="https://cloud.google.com/iam/docs/service-account-overview"
+              target="_blank"
+              class="info"
+            >
+              GCP service accounts overview
+            </a>
+          </li>
+          <li>
+            <a
+              href="https://cloud.google.com/iam/docs/service-account-creds"
+              target="_blank"
+              class="info"
+            >
+              Service account credentials
+            </a>
+          </li>
+          <li>
+            <a
+              href="https://cloud.google.com/iam/docs/keys-create-delete"
+              target="_blank"
+              class="info"
+            >
+              Create and delete service account keys
+            </a>
+          </li>
+          <li>
+            <a
+              href="https://cloud.google.com/iam/docs/best-practices-for-managing-service-account-keys"
+              target="_blank"
+              class="info"
+            >
+              Best practices for managing service account keys
+            </a>
+          </li>
+        </ul>
+
+        <div class="form-group">
+          <label for="form_id_json">
+            Optional: Form ID (To Receive Events)
+          </label>
+          <input
+            type="text"
+            id="formIdJson"
+            name="form_id_json"
+            autocomplete="off"
+            spellcheck="false"
+            pattern="[\w-]{20,}"
+          />
+        </div>
+
         <div class="form-group">
           <label for="json">JSON Key</label>
           <textarea
             name="json"
-            rows="14"
-            cols="65"
+            rows="8"
+            cols="64"
             wrap="soft"
             autocomplete="off"
             spellcheck="false"
@@ -140,17 +168,14 @@
         </div>
 
         <button type="submit" class="submit-btn">Save Connection</button>
-      </form>
-    </div>
+      </div>
+    </form>
 
     <!-- TODO(ENG-799) -->
     <script>
       const queryString = window.location.search;
       document
-        .getElementById("oauth-link")
-        .setAttribute("href", "/oauth/start/google" + queryString);
-      document
-        .getElementById("save-json-form")
+        .getElementById("save-form")
         .setAttribute("action", "/google/save" + queryString);
     </script>
   </body>
