@@ -49,40 +49,38 @@
       </button>
     </div>
 
-    <!-- TODO(ENG-799): remove ID once its unused -->
-    <form id="save-form" method="post" action="/google/save">
-      <div class="tab" id="tab1">
-        <p class="info">Information:</p>
-        <ul class="links">
-          <li>
-            Guide:
-            <a
-              href="https://docs.autokitteh.com/config/integrations/google"
-              target="_blank"
-              class="info"
-            >
-              configuring the Google integration
-            </a>
-          </li>
-          <li>
-            <a
-              href="https://developers.google.com/workspace/guides/auth-overview"
-              target="_blank"
-              class="info"
-            >
-              Learn about authentication and authorization
-            </a>
-          </li>
-        </ul>
+    <div class="tab" id="tab1">
+      <p class="info">Information:</p>
+      <ul class="links">
+        <li>
+          Guide:
+          <a
+            href="https://docs.autokitteh.com/config/integrations/google"
+            target="_blank"
+            class="info"
+          >
+            configuring the Google integration
+          </a>
+        </li>
+        <li>
+          <a
+            href="https://developers.google.com/workspace/guides/auth-overview"
+            target="_blank"
+            class="info"
+          >
+            Learn about authentication and authorization
+          </a>
+        </li>
+      </ul>
 
+      <!-- TODO(ENG-799): remove ID once its unused -->
+      <form id="save-form-oauth" method="post" action="/google/save">
         <div class="form-group">
-          <label for="form_id_oauth">
-            Optional: Form ID (To Receive Events)
-          </label>
+          <label for="form_id">Optional: Form ID (To Receive Events)</label>
           <input
             type="text"
             id="formIdOauth"
-            name="form_id_oauth"
+            name="form_id"
             autocomplete="off"
             spellcheck="false"
             pattern="[\w-]{20,}"
@@ -97,57 +95,58 @@
         </div>
 
         <button type="submit" class="submit-btn">Start OAuth Flow</button>
-      </div>
+      </form>
+    </div>
 
-      <div class="tab" id="tab2">
-        <p class="info">Information:</p>
-        <ul class="links">
-          <li>
-            <a
-              href="https://cloud.google.com/iam/docs/service-account-overview"
-              target="_blank"
-              class="info"
-            >
-              GCP service accounts overview
-            </a>
-          </li>
-          <li>
-            <a
-              href="https://cloud.google.com/iam/docs/service-account-creds"
-              target="_blank"
-              class="info"
-            >
-              Service account credentials
-            </a>
-          </li>
-          <li>
-            <a
-              href="https://cloud.google.com/iam/docs/keys-create-delete"
-              target="_blank"
-              class="info"
-            >
-              Create and delete service account keys
-            </a>
-          </li>
-          <li>
-            <a
-              href="https://cloud.google.com/iam/docs/best-practices-for-managing-service-account-keys"
-              target="_blank"
-              class="info"
-            >
-              Best practices for managing service account keys
-            </a>
-          </li>
-        </ul>
+    <div class="tab" id="tab2">
+      <p class="info">Information:</p>
+      <ul class="links">
+        <li>
+          <a
+            href="https://cloud.google.com/iam/docs/service-account-overview"
+            target="_blank"
+            class="info"
+          >
+            GCP service accounts overview
+          </a>
+        </li>
+        <li>
+          <a
+            href="https://cloud.google.com/iam/docs/service-account-creds"
+            target="_blank"
+            class="info"
+          >
+            Service account credentials
+          </a>
+        </li>
+        <li>
+          <a
+            href="https://cloud.google.com/iam/docs/keys-create-delete"
+            target="_blank"
+            class="info"
+          >
+            Create and delete service account keys
+          </a>
+        </li>
+        <li>
+          <a
+            href="https://cloud.google.com/iam/docs/best-practices-for-managing-service-account-keys"
+            target="_blank"
+            class="info"
+          >
+            Best practices for managing service account keys
+          </a>
+        </li>
+      </ul>
 
+      <!-- TODO(ENG-799): remove ID once its unused -->
+      <form id="save-form-json" method="post" action="/google/save">
         <div class="form-group">
-          <label for="form_id_json">
-            Optional: Form ID (To Receive Events)
-          </label>
+          <label for="form_id">Optional: Form ID (To Receive Events)</label>
           <input
             type="text"
             id="formIdJson"
-            name="form_id_json"
+            name="form_id"
             autocomplete="off"
             spellcheck="false"
             pattern="[\w-]{20,}"
@@ -168,14 +167,17 @@
         </div>
 
         <button type="submit" class="submit-btn">Save Connection</button>
-      </div>
-    </form>
+      </form>
+    </div>
 
     <!-- TODO(ENG-799) -->
     <script>
       const queryString = window.location.search;
       document
-        .getElementById("save-form")
+        .getElementById("save-form-json")
+        .setAttribute("action", "/google/save" + queryString);
+      document
+        .getElementById("save-form-oauth")
         .setAttribute("action", "/google/save" + queryString);
     </script>
   </body>
