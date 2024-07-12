@@ -27,7 +27,7 @@ func ConnStatus(cvars sdkservices.Vars) sdkintegrations.OptFn {
 		if vs.Has(vars.OAuthData) {
 			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "using OAuth 2.0"), nil
 		}
-		if vs.Has(vars.JSON) {
+		if vs.Has(vars.JSONKey) {
 			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "using JSON key"), nil
 		}
 

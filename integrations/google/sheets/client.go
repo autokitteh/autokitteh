@@ -121,7 +121,7 @@ func (a api) sheetsClient(ctx context.Context) (*sheets.Service, error) {
 			return nil, err
 		}
 	} else {
-		src, err = a.jwtTokenSource(ctx, data.JSON)
+		src, err = a.jwtTokenSource(ctx, data.JSONKey)
 		if err != nil {
 			return nil, err
 		}

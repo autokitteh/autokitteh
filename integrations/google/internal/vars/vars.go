@@ -6,10 +6,10 @@ import (
 
 type Vars struct {
 	OAuthData string `var:"secret"`
-	JSON      string `var:"secret"`
+	JSONKey   string `var:"secret"`
 }
 
 var (
 	OAuthData = sdktypes.NewSymbol("OAuthData")
-	JSON      = sdktypes.NewSymbol("JSON")
+	JSONKey   = sdktypes.NewSymbol("JSONKey")
 )

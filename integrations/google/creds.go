@@ -34,5 +34,5 @@ func (h handler) HandleCreds(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	c.Finalize(sdktypes.EncodeVars(&vars.Vars{JSON: r.Form.Get("json")}))
+	c.Finalize(sdktypes.EncodeVars(&vars.Vars{JSONKey: r.Form.Get("json_key")}))
 }
