@@ -9,18 +9,18 @@ nodes:
         call:
           target: nodes.say
           args:
-            sound: "'meow'"
+            sound: "meow"
           async: true
       goto: nodes.end
 
     - name: say
       action:
         print:
-          value: "args.sound + ', world!'"
+          value: ^^ "args.sound + ', world!'"
 
     - name: end
       action:
         print:
-          value: "states.results.main.startsWith('ses_')"
+          value: ^^ states.results.main.startsWith('ses_')
 
 # TODO: check actual results from the async call.

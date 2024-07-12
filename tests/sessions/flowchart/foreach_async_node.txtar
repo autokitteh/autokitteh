@@ -3,11 +3,14 @@ true
 -- main.flowchart.yaml main --
 version: v1
 
+options:
+  interpolate_all_strings: true
+
 nodes:
   - name: main
     action:
       foreach:
-        items: ["1st", "2nd", "3rd"]
+        items: ["'1st'", "'2nd'", "'3rd'"]
         call:
           target: nodes.worker
           args: 
@@ -22,4 +25,4 @@ nodes:
     action:
       print:
         value: "states.results.main.all(x, x.startsWith('ses')) && size(states.results.main) == 3"
-   
+  

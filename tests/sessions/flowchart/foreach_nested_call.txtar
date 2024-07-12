@@ -3,6 +3,9 @@ bar
 -- main.flowchart.yaml main --
 version: v1
 
+options:
+  interpolate_all_strings: true
+
 imports:
   - name: foo
     path: "foo.star"

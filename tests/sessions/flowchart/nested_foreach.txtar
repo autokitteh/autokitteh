@@ -23,7 +23,7 @@ nodes:
         call:
           target: nodes.iter1
           args:
-            i: states.foreach.item
+            i: ^^ states.foreach.item
 
   - name: iter1
     action:
@@ -32,16 +32,16 @@ nodes:
         call:
           target: nodes.iter2
           args:
-            i: args.i
-            j: states.foreach.item
+            i: ^^ args.i
+            j: ^^ states.foreach.item
 
   - name: iter2
     action:
       call:
         target: imports.foo.bar
         args:
-          i: args.i
-          j: args.j
+          i: ^^ args.i
+          j: ^^ args.j
 
 -- foo.star --
 def bar(i, j):

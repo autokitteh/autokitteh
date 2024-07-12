@@ -5,6 +5,9 @@ done!
 -- main.flowchart.yaml main --
 version: v1
 
+options:
+  interpolate_all_strings: true
+
 imports:
     - name: sub
       path: sub.flowchart.yaml
@@ -23,6 +26,9 @@ nodes:
 
 -- sub.flowchart.yaml --
 version: v1
+
+options:
+  interpolate_all_strings: true
 
 nodes:
     - name: foo

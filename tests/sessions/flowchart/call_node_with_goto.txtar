@@ -11,21 +11,21 @@ nodes:
         call:
           target: nodes.say
           args:
-            sound: "'meow'"
+            sound: "meow"
       goto: nodes.end
 
     - name: say
       action:
         print:
-          value: "args.sound + ', world!'"
+          value: ^^ args.sound + ', world!'
       goto: nodes.postsay
 
     - name: postsay
       action:
         print:
-          value: "'moooo'"
+          value: "moooo"
 
     - name: end
       action:
         print:
-          value: "'bub and bob say buh bye!'"
+          value: "bub and bob say buh bye!"

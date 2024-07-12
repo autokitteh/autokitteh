@@ -7,4 +7,4 @@ nodes:
     - name: main
       action:
         print:
-            value: "'meow, world!'"
+            value: "meow, world!"

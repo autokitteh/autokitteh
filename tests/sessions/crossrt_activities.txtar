@@ -13,13 +13,13 @@ nodes:
       call:
         target: imports.foo.foo
         args:
-          addr: args.ak_addr
-    result: states.results.start.body.json
+          addr: ^^ args.ak_addr
+    result: ^^ states.results.start.body.json
     goto: nodes.report
   - name: report
     action:
       print:
-        value: states.results.start.seconds > 1
+        value: ^^ states.results.start.seconds > 1
 
 -- foo.star --
 def foo(addr):

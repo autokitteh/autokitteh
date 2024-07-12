@@ -86,7 +86,7 @@ func TestEvalExprs(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.expr, func(t *testing.T) {
-			v, err := th.evalExpr(context.TODO(), test.expr, false)
+			v, err := th.evalCELExpr(context.TODO(), test.expr, false, nil)
 			if assert.NoError(t, err) {
 				assert.True(t, test.want.Equal(v), v)
 			}

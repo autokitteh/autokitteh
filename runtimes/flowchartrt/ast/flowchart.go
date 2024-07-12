@@ -17,18 +17,29 @@ var (
 	JSONSchemaString = string(kittehs.Must1(json.MarshalIndent(JSONSchema, "", "  ")))
 )
 
+type Options struct {
+	InterpolateAllStrings bool   `yaml:"interpolate_all_strings,omitempty" json:"interpolate_all_strings,omitempty"`
+	DefaultInterpolation  string `yaml:"default_interpolation,omitempty" json:"default_interpolation,omitempty"`
+}
+
 type Flowchart struct {
 	Version string         `yaml:"version" json:"version" jsonschema:"required"`
 	Values  map[string]any `yaml:"values,omitempty" json:"values,omitempty"` // const - cannot be an expression.
 	Imports []*Import      `yaml:"imports,omitempty" json:"imports,omitempty"`
 	Nodes   []*Node        `yaml:"nodes,omitempty" json:"nodes,omitempty"`
 	Memo    any            `yaml:"memo,omitempty" json:"memo,omitempty"`
-	Pragmas []string       `yaml:"pragmas,omitempty" json:"pragmas,omitempty"`
+	Options *Options       `yaml:"options,omitempty" json:"options,omitempty"`
 
 	path string
 }
 
-func (f *Flowchart) HasPragma(pragma string) bool { return kittehs.ContainedIn(f.Pragmas...)(pragma) }
+func (f *Flowchart) SafeOptions() *Options {
+	if f.Options == nil {
+		return &Options{}
+	}
+
+	return f.Options
+}
 
 func (f *Flowchart) GetNode(name string) *Node {
 	_, node := kittehs.FindFirst(f.Nodes, func(n *Node) bool { return n.Name == name })

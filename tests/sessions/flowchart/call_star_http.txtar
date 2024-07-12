@@ -14,14 +14,14 @@ nodes:
           target: imports.foo.uptime
           args:
             # getting these from the session inputs
-            host: args.ak_addr
-      result: states.results.main.body.json
+            host: ^^ args.ak_addr
+      result: ^^ states.results.main.body.json
       goto: nodes.end
 
     - name: end
       action:
         print:
-          value: "states.results.main.seconds >= 0"
+          value: "^^ states.results.main.seconds >= 0"
 
 -- foo.star --
 def uptime(host):

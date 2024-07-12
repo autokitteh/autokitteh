@@ -11,14 +11,14 @@ nodes:
         call:
           target: nodes.worker
           args: 
-            item: states.foreach.item
+            item: ^^ states.foreach.item
     goto: nodes.end
 
   - name: worker
-    result: "'meow ' + args.item"
+    result: "^^ 'meow ' + args.item"
 
   - name: end
     action:
       print:
-        value: "states.results.main"
+        value: "^^ states.results.main"
   

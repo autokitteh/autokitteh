@@ -14,4 +14,4 @@ nodes:
     - name: main
       action:
         print:
-            value: "imports.data.sounds[values.what] + ', world!'"
+            value: "^^ imports.data.sounds[values.what] + ', world!'"

@@ -4,19 +4,19 @@ phrase: meow, world!
 version: v1
 
 nodes:
-    - name: main
-      action:
-        call:
-          target: nodes.phrase
-          args:
-            sound: "'meow'"
-      result: "'phrase: ' + states.results.main"
-      goto: nodes.end
+  - name: main
+    action:
+      call:
+        target: nodes.phrase
+        args:
+          sound: "meow"
+    result: "^^ 'phrase: ' + states.results.main"
+    goto: nodes.end
 
-    - name: phrase
-      result: "args.sound + ', world!'"
+  - name: phrase
+    result: ^^ args.sound + ', world!'
 
-    - name: end
-      action:
-        print:
-          value: "states.results.main"
+  - name: end
+    action:
+      print:
+        value: ^^ states.results.main

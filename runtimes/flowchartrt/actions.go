@@ -13,7 +13,7 @@ import (
 )
 
 func (th *thread) runPrintAction(ctx context.Context, p *ast.PrintAction) error {
-	v, err := th.evalValue(ctx, p.Value, false)
+	v, err := th.evalValue(ctx, p.Value, false, nil)
 	if err != nil {
 		return fmt.Errorf("value: %w", err)
 	}
@@ -50,7 +50,7 @@ func (th *thread) runPrintAction(ctx context.Context, p *ast.PrintAction) error 
 func (th *thread) runSwitchAction(ctx context.Context, s ast.SwitchAction) (*ast.Node, error) {
 	for _, c := range s {
 		if c.If != nil {
-			v, err := th.evalValue(ctx, c.If, false)
+			v, err := th.evalValue(ctx, c.If, false, nil)
 			if err != nil {
 				return nil, fmt.Errorf("condition: %w", err)
 			}
@@ -78,13 +78,20 @@ func (th *thread) runCallAction(ctx context.Context, c *ast.CallAction, setResul
 		return nil, nil
 	}
 
-	kwargs, err := th.evalArgs(ctx, c.Args)
+	inputs, err := th.evalInputs(false)
+	if err != nil {
+		return nil, err
+	}
+
+	kwargs, err := kittehs.TransformMapValuesError(c.Args, func(v any) (sdktypes.Value, error) {
+		return th.evalValue(ctx, v, false, inputs)
+	})
 	if err != nil {
 		return nil, err
 	}
 
 	// TODO: evaluate at load time.
-	v, err := th.evalExpr(ctx, c.Target, true)
+	v, err := th.evalCELExpr(ctx, c.Target, true, inputs)
 	if err != nil {
 		return nil, fmt.Errorf("target: %w", err)
 	}
@@ -143,7 +150,7 @@ func (th *thread) runCallAction(ctx context.Context, c *ast.CallAction, setResul
 	}
 
 	if c.Timeout != nil {
-		tmov, err := th.evalValue(ctx, c.Timeout, false)
+		tmov, err := th.evalValue(ctx, c.Timeout, false, inputs)
 		if err != nil {
 			return nil, fmt.Errorf("timeout: %w", err)
 		}
@@ -195,7 +202,7 @@ func (th *thread) runForEachAction(ctx context.Context, l *ast.ForEachAction) (*
 
 	state := th.frame().getState("foreach")
 	if len(state) == 0 {
-		v, err := th.evalValue(ctx, l.Items, false)
+		v, err := th.evalValue(ctx, l.Items, false, nil)
 		if err != nil {
 			return nil, fmt.Errorf("items: %w", err)
 		}

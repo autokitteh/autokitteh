@@ -9,13 +9,13 @@ nodes:
         call:
           target: nodes.phrase
           args:
-            sound: "'meow'"
+            sound: "meow"
       goto: nodes.end
 
     - name: phrase
-      result: "args.sound + ', world!'"
+      result: "^^ args.sound + ', world!'"
 
     - name: end
       action:
         print:
-          value: "states.results.main"
+          value: ^^ states.results.main

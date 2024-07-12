@@ -6,6 +6,7 @@ import (
 	"html/template"
 	"strings"
 
+	"github.com/flosch/pongo2/v6"
 	"github.com/google/cel-go/cel"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
@@ -20,7 +21,7 @@ func (th *thread) evalNodeExpr(ctx context.Context, expr string) (*ast.Node, err
 		return nil, nil
 	}
 
-	v, err := th.evalExpr(ctx, expr, true)
+	v, err := th.evalCELExpr(ctx, expr, true, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -37,25 +38,61 @@ func (th *thread) evalNodeExpr(ctx context.Context, expr string) (*ast.Node, err
 	return n, nil
 }
 
-func (th *thread) evalValue(ctx context.Context, v any, static bool) (sdktypes.Value, error) {
-	if expr, ok := v.(string); ok {
-		return th.evalExpr(ctx, expr, static)
+func (th *thread) evalValue(ctx context.Context, u any, static bool, inputs map[string]any) (sdktypes.Value, error) {
+	v, err := sdktypes.WrapValue(u)
+	if err != nil {
+		return sdktypes.InvalidValue, err
 	}
 
-	return sdktypes.WrapValue(v)
+	return th.resolveValue(ctx, v, static, inputs)
 }
 
 // If static, not evaluated during runtime, else evaluated during runtime.
 // Note that this is doing parsing and running. In the future, we'll separate these, so parsing
 // is always be done at compile time, and evaluation might be running during compile type or runtime -
 // depends on the case.
-func (th *thread) evalExpr(ctx context.Context, expr string, static bool) (sdktypes.Value, error) {
+func (th *thread) evalCELExpr(ctx context.Context, expr string, static bool, inputs map[string]any) (sdktypes.Value, error) {
 	prg, err := eval.Build(expr, static)
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
 
-	return th.evalProgram(ctx, prg, static)
+	if inputs == nil {
+		if inputs, err = th.evalInputs(static); err != nil {
+			return sdktypes.InvalidValue, err
+		}
+	}
+
+	return th.evalProgram(ctx, prg, inputs)
+}
+
+func (th *thread) evalPongo2Expr(expr string, inputs map[string]any) (sdktypes.Value, error) {
+	tpl, err := pongo2.FromString(expr)
+	if err != nil {
+		return sdktypes.InvalidValue, err
+	}
+
+	out, err := tpl.Execute(inputs)
+	if err != nil {
+		return sdktypes.InvalidValue, err
+	}
+
+	return sdktypes.NewStringValue(out), nil
+}
+
+func (th *thread) evalGoExpr(expr string, inputs map[string]any) (sdktypes.Value, error) {
+	t, err := template.New("").Parse(expr)
+	if err != nil {
+		return sdktypes.InvalidValue, err
+	}
+
+	var b strings.Builder
+
+	if err := t.Execute(&b, inputs); err != nil {
+		return sdktypes.InvalidValue, err
+	}
+
+	return sdktypes.NewStringValue(b.String()), err
 }
 
 func (th *thread) evalInputs(static bool) (map[string]any, error) {
@@ -105,12 +142,7 @@ func (th *thread) evalInputs(static bool) (map[string]any, error) {
 	return inputs, nil
 }
 
-func (th *thread) evalProgram(ctx context.Context, prg cel.Program, static bool) (sdktypes.Value, error) {
-	inputs, err := th.evalInputs(static)
-	if err != nil {
-		return sdktypes.InvalidValue, err
-	}
-
+func (th *thread) evalProgram(ctx context.Context, prg cel.Program, inputs map[string]any) (sdktypes.Value, error) {
 	out, _, err := prg.ContextEval(ctx, inputs)
 	if err != nil {
 		return sdktypes.InvalidValue, fmt.Errorf("eval: %w", err)
@@ -124,54 +156,63 @@ func (th *thread) evalProgram(ctx context.Context, prg cel.Program, static bool)
 	return v, nil
 }
 
-func (th *thread) evalArg(ctx context.Context, v any, inputs map[string]any) (sdktypes.Value, error) {
-	var (
-		result sdktypes.Value
-		err    error
-	)
-
-	if th.frame().node.mod.flowchart.HasPragma("args_noexpr") {
-		result, err = sdktypes.WrapValue(v)
-	} else {
-		result, err = th.evalValue(ctx, v, false)
+func (th *thread) resolveValue(ctx context.Context, v sdktypes.Value, static bool, inputs map[string]any) (sdktypes.Value, error) {
+	var err error
+	if inputs == nil {
+		if inputs, err = th.evalInputs(static); err != nil {
+			return sdktypes.InvalidValue, err
+		}
 	}
 
-	if err != nil {
-		return sdktypes.InvalidValue, err
-	}
+	opts := th.frame().node.mod.flowchart.SafeOptions()
 
-	result, err = result.Map(func(v sdktypes.Value) (sdktypes.Value, error) {
-		if !v.IsString() {
+	return v.Map(func(v sdktypes.Value, mi *sdktypes.MapInfo) (sdktypes.Value, error) {
+		if (mi.Kind == sdktypes.MapKindDictItemKey) || !v.IsString() {
 			return v, nil
 		}
 
 		s := v.GetString().Value()
 
-		t, err := template.New("").Parse(s)
-		if err != nil {
-			return sdktypes.InvalidValue, fmt.Errorf("invalid interpolation string %q: %w", s, err)
+		interpolate := strings.HasPrefix(s, "^")
+
+		if !interpolate && opts.InterpolateAllStrings {
+			s = "^^" + s
+			interpolate = true
 		}
 
-		var b strings.Builder
+		if interpolate {
+			kind, rest, ok := strings.Cut(s[1:], "^")
+			if !ok {
+				return sdktypes.InvalidValue, sdkerrors.NewInvalidArgumentError("invalid interpolation type")
+			}
 
-		if err := t.Execute(&b, inputs); err != nil {
-			return sdktypes.InvalidValue, fmt.Errorf("interpolation %q: %w", s, err)
+			if kind == "" {
+				kind = opts.DefaultInterpolation
+			}
+
+			switch kind {
+			case "cel", "":
+				v, err = th.evalCELExpr(ctx, rest, static, inputs)
+
+			case "p":
+				v, err = th.evalPongo2Expr(rest, inputs)
+
+			case "go":
+				v, err = th.evalGoExpr(rest, inputs)
+
+			default:
+				v, err = sdktypes.InvalidValue, sdkerrors.NewInvalidArgumentError("invalid interpolation type")
+			}
+
+			if err != nil {
+				return sdktypes.InvalidValue, fmt.Errorf("interpolation %q: %w", s, err)
+			}
+
+			return v, sdktypes.ErrMapSkip
+		} else if strings.HasPrefix(s, `\^`) {
+			s = s[1:]
 		}
 
-		return sdktypes.NewStringValue(b.String()), err
+		return sdktypes.NewStringValue(s), nil
 	})
-
-	return result, err
-}
-
-// Arguments also perform string interpolation on the output.
-func (th *thread) evalArgs(ctx context.Context, vs map[string]any) (map[string]sdktypes.Value, error) {
-	inputs, err := th.evalInputs(false)
-	if err != nil {
-		return nil, err
-	}
-
-	eval := func(v any) (sdktypes.Value, error) { return th.evalArg(ctx, v, inputs) }
-
-	return kittehs.TransformMapValuesError(vs, eval)
 }

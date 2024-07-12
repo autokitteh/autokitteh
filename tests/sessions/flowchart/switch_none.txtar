@@ -3,6 +3,9 @@ bub and bob say buh bye!
 -- main.flowchart.yaml sw --
 version: v1
 
+options:
+  interpolate_all_strings: true
+  
 nodes:
     - name: sw
       action:

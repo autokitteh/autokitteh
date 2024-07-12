@@ -9,7 +9,7 @@ imports:
 
 nodes:
   - name: main
-    result: "'world!'"
+    result: "world!"
     goto: nodes.call
 
   - name: call
@@ -17,7 +17,7 @@ nodes:
       call:
         target: imports.foo.foo
         args:
-          x: "'meow, %s'.format([states.results.main])"
+          x: "^^ 'meow, %s'.format([states.results.main])"
 
 -- foo.star --
 def foo(x):

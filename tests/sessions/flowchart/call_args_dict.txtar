@@ -1,7 +1,10 @@
-{"a":1,"b":2}
+{"a":1,"b":3}
 
 -- main.flowchart.yaml main --
 version: v1
+
+options:
+  interpolate_all_strings: true
 
 imports:
   - name: test
@@ -14,15 +17,14 @@ nodes:
         target: imports.test.foo
         args:
           x:
-            a: 1
-            b: 2
+            a: !!int 1
+            b: 2 + 1
     goto: nodes.end
 
   - name: end
     action:
       print:
-        value: "states.results.main"
-
+        value: states.results.main
 
 -- test.star --
 def foo(x):

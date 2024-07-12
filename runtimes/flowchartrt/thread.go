@@ -207,7 +207,7 @@ func (th *thread) step(ctx context.Context, frame *frame) (*ast.Node, error) {
 	}
 
 	if node.Result != nil {
-		result, err := th.evalValue(ctx, node.Result, false)
+		result, err := th.evalValue(ctx, node.Result, false, nil)
 		if err != nil {
 			return nil, fmt.Errorf("result: %w", err)
 		}

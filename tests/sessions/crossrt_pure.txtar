@@ -13,7 +13,7 @@ nodes:
       call:
         target: imports.foo.say
         args:
-          msg: "'meow'"
+          msg: "meow"
 
 -- foo.star --
 def say(msg):
