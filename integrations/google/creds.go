@@ -11,6 +11,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/integrations/google/internal/vars"
+	"go.autokitteh.dev/autokitteh/integrations/internal/extrazap"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -55,10 +56,14 @@ func (h handler) HandleCreds(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	ctx := extrazap.AttachLoggerToContext(l, r.Context())
 	switch r.PostFormValue("auth_type") {
 	// GCP service-account JSON-key connection? Save the JSON key.
 	case "json":
-		// TODO(ENG-1103): Create watches for the form's events, if the ID isn't empty.
+		if err := h.updateFormWatches(ctx, c); err != nil {
+			l.Error("Form watches creation error", zap.Error(err))
+			c.AbortWithStatus(http.StatusInternalServerError, "form watches creation error")
+		}
 		c.Finalize(sdktypes.EncodeVars(&vars.Vars{JSON: r.PostFormValue("json"), FormID: formID}))
 
 	// User OAuth connect? Redirect to AutoKitteh's OAuth starting point.

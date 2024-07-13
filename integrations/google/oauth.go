@@ -11,6 +11,7 @@ import (
 	"google.golang.org/api/option"
 
 	"go.autokitteh.dev/autokitteh/integrations/google/internal/vars"
+	"go.autokitteh.dev/autokitteh/integrations/internal/extrazap"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -61,7 +62,7 @@ func (h handler) HandleOAuth(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Test the OAuth token's usability and get authoritative installation details.
-	ctx := r.Context()
+	ctx := extrazap.AttachLoggerToContext(l, r.Context())
 	src := h.tokenSource(ctx, oauthToken)
 	svc, err := googleoauth2.NewService(ctx, option.WithTokenSource(src))
 	if err != nil {
@@ -77,7 +78,10 @@ func (h handler) HandleOAuth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO(ENG-1103): Create watches for a form's events, if we have its ID.
+	if err := h.updateFormWatches(ctx, c); err != nil {
+		l.Error("Form watches creation error", zap.Error(err))
+		c.AbortWithStatus(http.StatusInternalServerError, "form watches creation error")
+	}
 
 	// Encoding "OAuthData" and "JSON", but not "FormID", so we don't overwrite
 	// the value that was already written there by the creds.go passthrough.
