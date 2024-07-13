@@ -20,7 +20,7 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-type API struct {
+type api struct {
 	Vars sdkservices.Vars
 	CID  string
 }
@@ -55,7 +55,7 @@ func New(cvars sdkservices.Vars) sdkservices.Integration {
 
 // Extract the form ID from the connection's vars.
 // Return an empty string if the form ID wasn't set (i.e. do nothing).
-func (a API) FormID(ctx context.Context) (string, error) {
+func (a api) formID(ctx context.Context) (string, error) {
 	data, err := a.connectionData(ctx)
 	if err != nil {
 		return "", err
@@ -64,8 +64,8 @@ func (a API) FormID(ctx context.Context) (string, error) {
 	return data.FormID, nil
 }
 
-func (a API) formsIDAndClient(ctx context.Context) (string, *forms.Service, error) {
-	id, err := a.FormID(ctx)
+func (a api) formsIDAndClient(ctx context.Context) (string, *forms.Service, error) {
+	id, err := a.formID(ctx)
 	if err != nil {
 		return "", nil, err
 	}
@@ -78,7 +78,7 @@ func (a API) formsIDAndClient(ctx context.Context) (string, *forms.Service, erro
 	return id, client, nil
 }
 
-func (a API) formsClient(ctx context.Context) (*forms.Service, error) {
+func (a api) formsClient(ctx context.Context) (*forms.Service, error) {
 	data, err := a.connectionData(ctx)
 	if err != nil {
 		return nil, err
@@ -103,7 +103,7 @@ func (a API) formsClient(ctx context.Context) (*forms.Service, error) {
 	return svc, nil
 }
 
-func (a API) connectionData(ctx context.Context) (*vars.Vars, error) {
+func (a api) connectionData(ctx context.Context) (*vars.Vars, error) {
 	cid, err := sdkmodule.FunctionConnectionIDFromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -164,14 +164,7 @@ func jwtTokenSource(ctx context.Context, data string) (oauth2.TokenSource, error
 	return cfg.TokenSource(ctx), nil
 }
 
-type Watch = forms.Watch
-
-type WatchEventType string
-
 const (
-	WatchSchemaChanges WatchEventType = "SCHEMA"
-	WatchNewResponses  WatchEventType = "RESPONSES"
-
 	// TODO(ENG-1103): Make this configurable! Env var?
 	topic = "projects/autokitteh-gapis-integration/topics/forms-notifications"
 )
@@ -180,7 +173,7 @@ const (
 // Forms service account `forms-notifications@system.gserviceaccount.com`.
 // Only the GCP project that owns a topic may create a watch with it.
 // Pub/Sub delivery guarantees should be considered.
-func (a API) WatchesCreate(ctx context.Context, e WatchEventType) (*forms.Watch, error) {
+func (a api) watchesCreate(ctx context.Context, e WatchEventType) (*forms.Watch, error) {
 	formID, client, err := a.formsIDAndClient(ctx)
 	if err != nil {
 		return nil, err
@@ -201,7 +194,7 @@ func (a API) WatchesCreate(ctx context.Context, e WatchEventType) (*forms.Watch,
 	return resp, nil
 }
 
-func (a API) WatchesDelete(ctx context.Context, watchID string) error {
+func (a api) watchesDelete(ctx context.Context, watchID string) error {
 	formID, client, err := a.formsIDAndClient(ctx)
 	if err != nil {
 		return err
@@ -211,7 +204,7 @@ func (a API) WatchesDelete(ctx context.Context, watchID string) error {
 	return err
 }
 
-func (a API) WatchesList(ctx context.Context) ([]*forms.Watch, error) {
+func (a api) watchesList(ctx context.Context) ([]*forms.Watch, error) {
 	formID, client, err := a.formsIDAndClient(ctx)
 	if err != nil {
 		return nil, err
@@ -225,7 +218,7 @@ func (a API) WatchesList(ctx context.Context) ([]*forms.Watch, error) {
 	return resp.Watches, nil
 }
 
-func (a API) WatchesRenew(ctx context.Context, watchID string) (*forms.Watch, error) {
+func (a api) watchesRenew(ctx context.Context, watchID string) (*forms.Watch, error) {
 	formID, client, err := a.formsIDAndClient(ctx)
 	if err != nil {
 		return nil, err

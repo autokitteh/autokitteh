@@ -10,6 +10,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/integrations/google/forms"
 	"go.autokitteh.dev/autokitteh/integrations/google/internal/vars"
 	"go.autokitteh.dev/autokitteh/integrations/internal/extrazap"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
@@ -21,10 +22,10 @@ const (
 	contentTypeForm   = "application/x-www-form-urlencoded"
 )
 
-// HandleCreds saves a new AutoKitteh connection with a user-submitted JSON key.
+// handleCreds saves a new AutoKitteh connection with a user-submitted JSON key.
 // It also acts as a passthrough for the OAuth connection mode, to save optional
 // details (e.g. Google Form ID), to support and manage incoming events.
-func (h handler) HandleCreds(w http.ResponseWriter, r *http.Request) {
+func (h handler) handleCreds(w http.ResponseWriter, r *http.Request) {
 	c, l := sdkintegrations.NewConnectionInit(h.logger, w, r, desc)
 
 	// Check "Content-Type" header.
@@ -60,7 +61,7 @@ func (h handler) HandleCreds(w http.ResponseWriter, r *http.Request) {
 	switch r.PostFormValue("auth_type") {
 	// GCP service-account JSON-key connection? Save the JSON key.
 	case "json":
-		if err := h.updateFormWatches(ctx, c); err != nil {
+		if err := forms.UpdateWatches(ctx, h.vars, c); err != nil {
 			l.Error("Form watches creation error", zap.Error(err))
 			c.AbortWithStatus(http.StatusInternalServerError, "form watches creation error")
 		}
