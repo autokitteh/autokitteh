@@ -19,11 +19,11 @@ const (
 	oauthPath = "/google/oauth"
 )
 
-func Start(l *zap.Logger, mux *http.ServeMux, o sdkservices.OAuth, d sdkservices.Dispatcher) {
+func Start(l *zap.Logger, mux *http.ServeMux, v sdkservices.Vars, o sdkservices.OAuth, d sdkservices.Dispatcher) {
 	uiPath := "GET " + desc.ConnectionURL().Path + "/"
 
 	// New connection UIs + handlers.
-	h := NewHTTPHandler(l, o)
+	h := NewHTTPHandler(l, o, v)
 	mux.Handle(uiPath, http.FileServer(http.FS(static.GoogleWebContent)))
 
 	urlPath := strings.ReplaceAll(uiPath, "google", "gmail")
