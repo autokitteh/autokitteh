@@ -61,8 +61,8 @@ func New(cvars sdkservices.Vars) sdkservices.Integration {
 		sdkintegrations.WithConnectionConfigFromVars(cvars))
 }
 
-func ExportedFunctions(sec sdkservices.Vars, scope string, prefix bool) []sdkmodule.Optfn {
-	a := api{Vars: sec, Scope: scope}
+func ExportedFunctions(cvars sdkservices.Vars, scope string, prefix bool) []sdkmodule.Optfn {
+	a := api{Vars: cvars, Scope: scope}
 	return []sdkmodule.Optfn{
 		sdkmodule.ExportFunction(
 			withOrWithout(prefix, "a1_range"),
