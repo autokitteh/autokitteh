@@ -7,10 +7,12 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/api/forms/v1"
 
+	"go.autokitteh.dev/autokitteh/integrations/google/internal/vars"
 	"go.autokitteh.dev/autokitteh/integrations/internal/extrazap"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 type WatchEventType string
@@ -50,12 +52,12 @@ func UpdateWatches(ctx context.Context, v sdkservices.Vars, c sdkintegrations.Co
 
 	// Renew or create the form's SCHEMA (changes) and (new) RESPONSES watches.
 	for _, e := range []WatchEventType{WatchSchemaChanges, WatchNewResponses} {
-		wid, err := api.updateSingleWatch(ctx, e, ws[e])
+		watchID, err := api.updateSingleWatch(ctx, e, ws[e])
 		if err != nil {
 			return err
 		}
 		// And save their IDs.
-		err = saveWatchID(ctx, v, e, wid)
+		err = api.saveWatchID(ctx, e, watchID)
 		if err != nil {
 			return err
 		}
@@ -87,7 +89,21 @@ func (a api) updateSingleWatch(ctx context.Context, e WatchEventType, w *forms.W
 	return w.Id, nil
 }
 
-func saveWatchID(ctx context.Context, v sdkservices.Vars, e WatchEventType, wid string) error {
-	// TODO(ENG-1103): Save the watch ID in the connection's vars.
+func (a api) saveWatchID(ctx context.Context, e WatchEventType, watchID string) error {
+	cid, err := sdktypes.StrictParseConnectionID(a.CID)
+	if err != nil {
+		return fmt.Errorf("connection ID parsing error: %w", err)
+	}
+
+	n := vars.FormResponsesWatchID
+	if e == WatchSchemaChanges {
+		n = vars.FormSchemaWatchID
+	}
+
+	v := sdktypes.NewVar(n, watchID, false).WithScopeID(sdktypes.NewVarScopeID(cid))
+	if err := a.Vars.Set(ctx, v); err != nil {
+		return err
+	}
+
 	return nil
 }
