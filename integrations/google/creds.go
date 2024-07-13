@@ -83,6 +83,7 @@ func (h handler) saveFormID(ctx context.Context, c sdkintegrations.ConnectionIni
 		return nil
 	}
 
+	// Sanity check: the connection ID is valid.
 	cid, err := sdktypes.StrictParseConnectionID(c.ConnectionID)
 	if err != nil {
 		return fmt.Errorf("connection ID parsing error: %w", err)

@@ -79,9 +79,10 @@ func (h handler) HandleOAuth(w http.ResponseWriter, r *http.Request) {
 
 	// TODO(ENG-1103): Create watches for a form's events, if we have its ID.
 
-	c.Finalize(sdktypes.EncodeVars(&vars.Vars{OAuthData: raw}).
-		Append(data.ToVars()...).
-		Append(user...))
+	// Encoding "OAuthData" and "JSON", but not "FormID", so we don't overwrite
+	// the value that was already written there by the creds.go passthrough.
+	c.Finalize(sdktypes.NewVars(sdktypes.NewVar(vars.OAuthData, raw, true)).
+		Set(vars.JSON, "", true).Append(data.ToVars()...).Append(user...))
 }
 
 func (h handler) tokenSource(ctx context.Context, t *oauth2.Token) oauth2.TokenSource {
