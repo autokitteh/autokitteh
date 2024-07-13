@@ -164,18 +164,23 @@ func jwtTokenSource(ctx context.Context, data string) (oauth2.TokenSource, error
 	return cfg.TokenSource(ctx), nil
 }
 
+type Watch = forms.Watch
+
 type WatchEventType string
 
 const (
 	WatchSchemaChanges WatchEventType = "SCHEMA"
 	WatchNewResponses  WatchEventType = "RESPONSES"
+
+	// TODO(ENG-1103): Make this configurable! Env var?
+	topic = "projects/autokitteh-gapis-integration/topics/forms-notifications"
 )
 
-// To receive notifications, the topic must grant publish privileges to the Forms
-// service account `serviceAccount:forms-notifications@system.gserviceaccount.com`.
+// To receive notifications, the topic must grant publish privileges to the
+// Forms service account `forms-notifications@system.gserviceaccount.com`.
 // Only the GCP project that owns a topic may create a watch with it.
 // Pub/Sub delivery guarantees should be considered.
-func (a API) WatchesCreate(ctx context.Context, e WatchEventType, topic string) (*forms.Watch, error) {
+func (a API) WatchesCreate(ctx context.Context, e WatchEventType) (*forms.Watch, error) {
 	formID, client, err := a.formsIDAndClient(ctx)
 	if err != nil {
 		return nil, err
