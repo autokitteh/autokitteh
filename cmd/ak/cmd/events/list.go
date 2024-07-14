@@ -1,8 +1,6 @@
 package events
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
 
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
@@ -27,18 +25,16 @@ var listCmd = common.StandardCommand(&cobra.Command{
 
 		if connection != "" {
 			_, cid, err := r.ConnectionNameOrID(ctx, args[0], "")
-			err = common.AddNotFoundErrIfCond(err, cid.IsValid())
-			if err = common.FailIfError2(cmd, err, "connection"); err != nil {
-				return err
+			if err = common.AddNotFoundErrIfCond(err, cid.IsValid()); err != nil {
+				return common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "connection")
 			}
 			f.ConnectionID = cid
 		}
 
 		if integration != "" {
 			i, iid, err := r.IntegrationNameOrID(ctx, integration)
-			err = common.AddNotFoundErrIfCond(err, i.IsValid())
-			if err = common.FailIfError2(cmd, err, "integration"); err != nil {
-				return err
+			if err = common.AddNotFoundErrIfCond(err, i.IsValid()); err != nil {
+				return common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "integration")
 			}
 			f.IntegrationID = iid
 		}
@@ -46,16 +42,11 @@ var listCmd = common.StandardCommand(&cobra.Command{
 		f.Order = sdkservices.ListOrder(listOrder)
 
 		es, err := events().List(ctx, f)
-		if err != nil {
-			return fmt.Errorf("list events: %w", err)
+		err = common.AddNotFoundErrIfCond(err, len(es) > 0)
+		if err = common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "events"); err == nil {
+			common.RenderList(es)
 		}
-
-		if err := common.FailIfNotFound(cmd, "events", len(es) > 0); err != nil {
-			return err
-		}
-
-		common.RenderList(es)
-		return nil
+		return err
 	},
 })
 

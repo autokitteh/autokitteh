@@ -1,8 +1,6 @@
 package projects
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
 
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
@@ -19,16 +17,11 @@ var listCmd = common.StandardCommand(&cobra.Command{
 		defer cancel()
 
 		ps, err := projects().List(ctx)
-		if err != nil {
-			return fmt.Errorf("list projects: %w", err)
+		err = common.AddNotFoundErrIfCond(err, len(ps) > 0)
+		if err = common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "projects"); err == nil {
+			common.RenderList(ps)
 		}
-
-		if err := common.FailIfNotFound(cmd, "projects", len(ps) > 0); err != nil {
-			return err
-		}
-
-		common.RenderList(ps)
-		return nil
+		return err
 	},
 })
 

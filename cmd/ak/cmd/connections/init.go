@@ -23,14 +23,8 @@ var initCmd = common.StandardCommand(&cobra.Command{
 		defer cancel()
 
 		c, _, err := r.ConnectionNameOrID(ctx, args[0], "")
-		if err != nil {
-			if errors.As(err, resolver.NotFoundErrorType) {
-				if err := common.FailIfNotFound(cmd, "connection", c.IsValid()); err != nil {
-					return err
-				}
-				return nil
-			}
-			return err
+		if err = common.AddNotFoundErrIfCond(err, c.IsValid()); err != nil {
+			return common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "connection")
 		}
 
 		link := kittehs.Must1(url.JoinPath(c.Links().InitURL(), "cli"))

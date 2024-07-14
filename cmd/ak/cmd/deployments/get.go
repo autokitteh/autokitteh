@@ -20,17 +20,14 @@ var getCmd = common.StandardCommand(&cobra.Command{
 
 		d, _, err := r.DeploymentID(ctx, args[0])
 		err = common.AddNotFoundErrIfCond(err, d.IsValid())
-		if err = common.FailIfError2(cmd, err, "deployment"); err != nil {
-			return err
+		if err = common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "deployment"); err == nil {
+			// Make the output deterministic during CLI integration tests.
+			if test, err := cmd.Root().PersistentFlags().GetBool("test"); err == nil && test {
+				d = d.WithoutTimestamps()
+			}
+			common.RenderKVIfV("deployment", d)
 		}
-
-		// Make the output deterministic during CLI integration tests.
-		if test, err := cmd.Root().PersistentFlags().GetBool("test"); err == nil && test {
-			d = d.WithoutTimestamps()
-		}
-
-		common.RenderKVIfV("deployment", d)
-		return nil
+		return err
 	},
 })
 

@@ -2,12 +2,10 @@ package runtimes
 
 import (
 	"context"
-	"errors"
 
 	"github.com/spf13/cobra"
 
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
 )
 
 var listCmd = common.StandardCommand(&cobra.Command{
@@ -18,16 +16,11 @@ var listCmd = common.StandardCommand(&cobra.Command{
 
 	RunE: func(cmd *cobra.Command, args []string) error {
 		rs, err := runtimes().List(context.Background())
-		if err != nil {
-			return err
+		err = common.AddNotFoundErrIfCond(err, len(rs) > 0)
+		if err = common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "runtimes"); err == nil {
+			common.RenderList(rs)
 		}
-
-		if kittehs.Must1(cmd.Flags().GetBool("fail")) && len(rs) == 0 {
-			return common.NewExitCodeError(common.NotFoundExitCode, errors.New("no runtimes found"))
-		}
-
-		common.RenderList(rs)
-		return nil
+		return err
 	},
 })
 

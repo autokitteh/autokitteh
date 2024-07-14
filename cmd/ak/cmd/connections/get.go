@@ -20,12 +20,10 @@ var getCmd = common.StandardCommand(&cobra.Command{
 
 		c, _, err := r.ConnectionNameOrID(ctx, args[0], "")
 		err = common.AddNotFoundErrIfCond(err, c.IsValid())
-		if err = common.FailIfError2(cmd, err, "connection"); err != nil {
-			return err
+		if err = common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "connection"); err == nil {
+			common.RenderKVIfV("connection", c)
 		}
-
-		common.RenderKVIfV("connection", c)
-		return nil
+		return err
 	},
 })
 

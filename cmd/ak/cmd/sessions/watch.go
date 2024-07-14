@@ -33,13 +33,9 @@ var watchCmd = common.StandardCommand(&cobra.Command{
 		ctx, cancel := common.LimitedContext()
 		defer cancel()
 
-		s, id, err := r.SessionID(ctx, args[0])
-		if err != nil {
-			return err
-		}
-
-		if err := common.FailIfNotFound(cmd, "session", s.IsValid()); err != nil {
-			return err
+		s, sid, err := r.SessionID(ctx, args[0])
+		if err = common.AddNotFoundErrIfCond(err, s.IsValid()); err != nil {
+			return common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "session")
 		}
 
 		endState, err := sdktypes.ParseSessionStateType(endState)
@@ -47,7 +43,7 @@ var watchCmd = common.StandardCommand(&cobra.Command{
 			return fmt.Errorf("end state: %w", err)
 		}
 
-		_, err = sessionWatch(id, endState)
+		_, err = sessionWatch(sid, endState)
 		return err
 	},
 })

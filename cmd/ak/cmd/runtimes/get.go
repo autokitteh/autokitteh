@@ -11,10 +11,10 @@ import (
 )
 
 var getCmd = common.StandardCommand(&cobra.Command{
-	Use:     "get <runtime name>",
+	Use:     "get <runtime name> [--fail]",
 	Short:   "Get runtime engine details",
-	Args:    cobra.ExactArgs(1),
 	Aliases: []string{"g"},
+	Args:    cobra.ExactArgs(1),
 
 	RunE: func(cmd *cobra.Command, args []string) error {
 		name, err := sdktypes.ParseSymbol(args[0])
@@ -23,18 +23,15 @@ var getCmd = common.StandardCommand(&cobra.Command{
 		}
 
 		rt, err := runtimes().New(context.Background(), name)
-		if err != nil {
-			return err
+		err = common.AddNotFoundErrIfCond(err, rt == nil)
+		if err = common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "runtime"); err == nil {
+			common.Render(rt.Get())
 		}
-
-		// QUESTION: Why not "common.FailIfNotFound" like other "get" commands?
-		// If we do add it, don't forget to add "[--fail]" to "Use" above,
-		// and an "init" function calling "common.AddFailIfNotFoundFlag".
-		if rt == nil {
-			return nil
-		}
-
-		common.Render(rt.Get())
-		return nil
+		return err
 	},
 })
+
+func init() {
+	// Command-specific flags.
+	common.AddFailIfNotFoundFlag(getCmd)
+}

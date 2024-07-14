@@ -27,16 +27,11 @@ var getCmd = common.StandardCommand(&cobra.Command{
 		defer cancel()
 
 		s, _, err := r.SessionID(ctx, args[0])
-		if err != nil {
-			return err
+		err = common.AddNotFoundErrIfCond(err, s.IsValid())
+		if err = common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "session"); err == nil {
+			common.RenderKVIfV("session", s)
 		}
-
-		if err := common.FailIfNotFound(cmd, "session", s.IsValid()); err != nil {
-			return err
-		}
-
-		common.RenderKVIfV("session", s)
-		return nil
+		return err
 	},
 })
 

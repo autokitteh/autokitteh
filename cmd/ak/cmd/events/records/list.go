@@ -1,8 +1,6 @@
 package records
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
 
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
@@ -22,27 +20,17 @@ var listCmd = common.StandardCommand(&cobra.Command{
 		defer cancel()
 
 		e, id, err := r.EventID(ctx, args[0])
-		if err != nil {
-			return err
-		}
-		if !e.IsValid() {
-			err = fmt.Errorf("event ID %q not found", args[0])
-			return common.NewExitCodeError(common.NotFoundExitCode, err)
+		if err = common.AddNotFoundErrIfCond(err, e.IsValid()); err != nil {
+			return common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "event")
 		}
 
 		f := sdkservices.ListEventRecordsFilter{EventID: id}
-
 		ers, err := events().ListEventRecords(ctx, f)
-		if err != nil {
-			return err
+		err = common.AddNotFoundErrIfCond(err, len(ers) > 0)
+		if err = common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "event records"); err == nil {
+			common.RenderList(ers)
 		}
-
-		if err := common.FailIfNotFound(cmd, "event records", len(ers) > 0); err != nil {
-			return err
-		}
-
-		common.RenderList(ers)
-		return nil
+		return err
 	},
 })
 

@@ -25,6 +25,10 @@ var listCmd = common.StandardCommand(&cobra.Command{
 	Args:    cobra.NoArgs,
 
 	RunE: func(cmd *cobra.Command, args []string) error {
+		r := resolver.Resolver{Client: common.Client()}
+		ctx, cancel := common.LimitedContext()
+		defer cancel()
+
 		f := sdkservices.ListDeploymentsFilter{}
 
 		bid, err := sdktypes.ParseBuildID(buildID)
@@ -33,14 +37,10 @@ var listCmd = common.StandardCommand(&cobra.Command{
 		}
 		f.BuildID = bid
 
-		ctx, cancel := common.LimitedContext()
-		defer cancel()
-
 		if env != "" {
-			r := resolver.Resolver{Client: common.Client()}
 			e, _, err := r.EnvNameOrID(ctx, env, "")
-			if err != nil {
-				return err
+			if err = common.AddNotFoundErrIfCond(err, e.IsValid()); err != nil {
+				return common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "environment")
 			}
 			f.EnvID = e.ID()
 		}
@@ -52,21 +52,15 @@ var listCmd = common.StandardCommand(&cobra.Command{
 		f.IncludeSessionStats = includeSessionStats
 
 		ds, err := deployments().List(ctx, f)
-		if err != nil {
-			return fmt.Errorf("list deployments: %w", err)
+		err = common.AddNotFoundErrIfCond(err, len(ds) > 0)
+		if err = common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "builds"); err == nil {
+			// Make the output deterministic during CLI integration tests.
+			if test, err := cmd.Root().PersistentFlags().GetBool("test"); err == nil && test {
+				ds = kittehs.Transform(ds, func(d sdktypes.Deployment) sdktypes.Deployment { return d.WithoutTimestamps() })
+			}
+			common.RenderList(ds)
 		}
-
-		if err := common.FailIfNotFound(cmd, "deployments", len(ds) > 0); err != nil {
-			return err
-		}
-
-		// Make the output deterministic during CLI integration tests.
-		if test, err := cmd.Root().PersistentFlags().GetBool("test"); err == nil && test {
-			ds = kittehs.Transform(ds, func(d sdktypes.Deployment) sdktypes.Deployment { return d.WithoutTimestamps() })
-		}
-
-		common.RenderList(ds)
-		return nil
+		return err
 	},
 })
 
