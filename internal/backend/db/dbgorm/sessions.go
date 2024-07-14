@@ -29,7 +29,7 @@ func (gdb *gormdb) createSession(ctx context.Context, session *scheme.Session) e
 	}
 
 	idsToVerify := []*sdktypes.UUID{session.BuildID, session.EnvID, session.DeploymentID, session.EventID}
-	createFunc := func(tx *gorm.DB, user *scheme.User) error {
+	createFunc := func(tx *gorm.DB, uid string) error {
 		if err := tx.Create(session).Error; err != nil {
 			return err
 		}

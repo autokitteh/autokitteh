@@ -4,13 +4,14 @@ import (
 	"context"
 	"fmt"
 
+	"gorm.io/gorm"
+
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/internal/backend/tar"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	deploymentsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/deployments/v1"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-	"gorm.io/gorm"
 )
 
 func (gdb *gormdb) withUserProjects(ctx context.Context) *gorm.DB {
@@ -18,7 +19,7 @@ func (gdb *gormdb) withUserProjects(ctx context.Context) *gorm.DB {
 }
 
 func (gdb *gormdb) createProject(ctx context.Context, project *scheme.Project) error {
-	createFunc := func(tx *gorm.DB, user *scheme.User) error {
+	createFunc := func(tx *gorm.DB, uid string) error {
 		// ensure there is no active project with the same name (but allow deleted ones)
 		var count int64
 		if err := tx.
@@ -26,7 +27,7 @@ func (gdb *gormdb) createProject(ctx context.Context, project *scheme.Project) e
 			// and we are using joins as well. First maybe a good option too, but there should be only
 			// one active user project with the same name, so COUNT is also OK
 			Model(&scheme.Project{}). // with model scope grom will add `deleted_at is NULL` to the query
-			Scopes(withUserEntity(gdb, "project", user)).
+			Scopes(withUserEntity(gdb, "project", uid)).
 			Where("name = ?", project.Name).Count(&count).Error; err != nil {
 			return err
 		}
