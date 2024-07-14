@@ -181,6 +181,7 @@ func (py *pySvc) Build(ctx context.Context, fsys fs.FS, path string, values []sd
 		archiveKey: data,
 	}
 
+	// UI requires file names in the compiled data.
 	tf := tar.NewReader(bytes.NewReader(data))
 	for {
 		hdr, err := tf.Next()
