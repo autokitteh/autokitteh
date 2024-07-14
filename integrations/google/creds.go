@@ -10,7 +10,9 @@ import (
 
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/integrations/google/forms"
 	"go.autokitteh.dev/autokitteh/integrations/google/internal/vars"
+	"go.autokitteh.dev/autokitteh/integrations/internal/extrazap"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -20,10 +22,10 @@ const (
 	contentTypeForm   = "application/x-www-form-urlencoded"
 )
 
-// HandleCreds saves a new AutoKitteh connection with a user-submitted JSON key.
+// handleCreds saves a new AutoKitteh connection with a user-submitted JSON key.
 // It also acts as a passthrough for the OAuth connection mode, to save optional
 // details (e.g. Google Form ID), to support and manage incoming events.
-func (h handler) HandleCreds(w http.ResponseWriter, r *http.Request) {
+func (h handler) handleCreds(w http.ResponseWriter, r *http.Request) {
 	c, l := sdkintegrations.NewConnectionInit(h.logger, w, r, desc)
 
 	// Check "Content-Type" header.
@@ -55,10 +57,14 @@ func (h handler) HandleCreds(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	ctx := extrazap.AttachLoggerToContext(l, r.Context())
 	switch r.PostFormValue("auth_type") {
 	// GCP service-account JSON-key connection? Save the JSON key.
 	case "json":
-		// TODO(ENG-1103): Create watches for the form's events, if the ID isn't empty.
+		if err := forms.UpdateWatches(ctx, h.vars, c); err != nil {
+			l.Error("Form watches creation error", zap.Error(err))
+			c.AbortWithStatus(http.StatusInternalServerError, "form watches creation error")
+		}
 		c.Finalize(sdktypes.EncodeVars(&vars.Vars{JSON: r.PostFormValue("json"), FormID: formID}))
 
 	// User OAuth connect? Redirect to AutoKitteh's OAuth starting point.
@@ -89,9 +95,7 @@ func (h handler) saveFormID(ctx context.Context, c sdkintegrations.ConnectionIni
 		return fmt.Errorf("connection ID parsing error: %w", err)
 	}
 
-	v := sdktypes.NewVar(vars.FormID, formID, false)
-	v = v.WithScopeID(sdktypes.NewVarScopeID(cid))
-
+	v := sdktypes.NewVar(vars.FormID, formID, false).WithScopeID(sdktypes.NewVarScopeID(cid))
 	if err := h.vars.Set(ctx, v); err != nil {
 		return err
 	}

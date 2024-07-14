@@ -10,7 +10,9 @@ import (
 	googleoauth2 "google.golang.org/api/oauth2/v2"
 	"google.golang.org/api/option"
 
+	"go.autokitteh.dev/autokitteh/integrations/google/forms"
 	"go.autokitteh.dev/autokitteh/integrations/google/internal/vars"
+	"go.autokitteh.dev/autokitteh/integrations/internal/extrazap"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -28,12 +30,12 @@ func NewHTTPHandler(l *zap.Logger, o sdkservices.OAuth, v sdkservices.Vars) hand
 	return handler{logger: l, oauth: o, vars: v}
 }
 
-// HandleOAuth receives an inbound redirect request from autokitteh's OAuth
+// handleOAuth receives an inbound redirect request from autokitteh's OAuth
 // management service. This request contains an OAuth token (if the OAuth
 // flow was successful) and form parameters for debugging and validation
 // (either way). If all is well, it saves a new autokitteh connection.
 // Either way, it redirects the user to success or failure webpages.
-func (h handler) HandleOAuth(w http.ResponseWriter, r *http.Request) {
+func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 	c, l := sdkintegrations.NewConnectionInit(h.logger, w, r, desc)
 
 	// Handle errors (e.g. the user didn't authorize us) based on:
@@ -61,7 +63,7 @@ func (h handler) HandleOAuth(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Test the OAuth token's usability and get authoritative installation details.
-	ctx := r.Context()
+	ctx := extrazap.AttachLoggerToContext(l, r.Context())
 	src := h.tokenSource(ctx, oauthToken)
 	svc, err := googleoauth2.NewService(ctx, option.WithTokenSource(src))
 	if err != nil {
@@ -77,7 +79,10 @@ func (h handler) HandleOAuth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO(ENG-1103): Create watches for a form's events, if we have its ID.
+	if err := forms.UpdateWatches(ctx, h.vars, c); err != nil {
+		l.Error("Form watches creation error", zap.Error(err))
+		c.AbortWithStatus(http.StatusInternalServerError, "form watches creation error")
+	}
 
 	// Encoding "OAuthData" and "JSON", but not "FormID", so we don't overwrite
 	// the value that was already written there by the creds.go passthrough.
