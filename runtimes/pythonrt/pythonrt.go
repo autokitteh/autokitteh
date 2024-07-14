@@ -1,8 +1,12 @@
 package pythonrt
 
 import (
+	"archive/tar"
+	"bytes"
 	"context"
+	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"path"
@@ -173,13 +177,26 @@ func (py *pySvc) Build(ctx context.Context, fsys fs.FS, path string, values []sd
 		return sdktypes.InvalidBuildArtifact, err
 	}
 
+	compiledData := map[string][]byte{
+		archiveKey: data,
+	}
+
+	tf := tar.NewReader(bytes.NewReader(data))
+	for {
+		hdr, err := tf.Next()
+		if errors.Is(err, io.EOF) {
+			break
+		}
+		if err != nil {
+			py.log.Error("next tar", zap.Error(err))
+			return sdktypes.InvalidBuildArtifact, err
+		}
+		compiledData[hdr.Name] = nil
+	}
+
 	buildExports := kittehs.Transform(exports, asBuildExport)
 	var art sdktypes.BuildArtifact
-	art = art.WithCompiledData(
-		map[string][]byte{
-			archiveKey: data,
-		},
-	).WithExports(buildExports)
+	art = art.WithCompiledData(compiledData).WithExports(buildExports)
 
 	return art, nil
 }
