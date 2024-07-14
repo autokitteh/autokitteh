@@ -63,6 +63,6 @@ jobs:
         with:
           context: .
           platforms: linux/amd64
-          tags: ${{ steps.login-ecr.outputs.registry }}/autokitteh:${{github.ref_name}},${{ steps.login-ecr.outputs.registry }}/autokitteh:latest
+          tags: ${{ steps.login-ecr.outputs.registry }}/autokitteh:${{github.ref_name}},${{ steps.login-ecr.outputs.registry }}/autokitteh:stable
           push: true
           provenance: false
