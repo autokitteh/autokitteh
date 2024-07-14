@@ -183,20 +183,6 @@ func (a api) getForm(ctx context.Context) (*forms.Form, error) {
 	return resp, nil
 }
 
-func (a api) getResponse(ctx context.Context, responseID string) (*forms.FormResponse, error) {
-	formID, client, err := a.formsIDAndClient(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	resp, err := client.Forms.Responses.Get(formID, responseID).Do()
-	if err != nil {
-		return nil, err
-	}
-
-	return resp, nil
-}
-
 func (a api) listResponses(ctx context.Context) ([]*forms.FormResponse, error) {
 	formID, client, err := a.formsIDAndClient(ctx)
 	if err != nil {
@@ -234,16 +220,6 @@ func (a api) watchesCreate(ctx context.Context, e WatchEventType) (*forms.Watch,
 	}
 
 	return resp, nil
-}
-
-func (a api) watchesDelete(ctx context.Context, watchID string) error {
-	formID, client, err := a.formsIDAndClient(ctx)
-	if err != nil {
-		return err
-	}
-
-	_, err = client.Forms.Watches.Delete(formID, watchID).Do()
-	return err
 }
 
 func (a api) watchesList(ctx context.Context) ([]*forms.Watch, error) {
