@@ -21,8 +21,8 @@ import (
 )
 
 type api struct {
-	Vars sdkservices.Vars
-	CID  string
+	vars sdkservices.Vars
+	cid  string
 }
 
 var integrationID = sdktypes.NewIntegrationIDFromName("googleforms")
@@ -110,13 +110,13 @@ func (a api) connectionData(ctx context.Context) (*vars.Vars, error) {
 	}
 
 	if !cid.IsValid() {
-		cid, err = sdktypes.StrictParseConnectionID(a.CID)
+		cid, err = sdktypes.StrictParseConnectionID(a.cid)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	vs, err := a.Vars.Reveal(ctx, sdktypes.NewVarScopeID(cid))
+	vs, err := a.vars.Reveal(ctx, sdktypes.NewVarScopeID(cid))
 	if err != nil {
 		return nil, err
 	}
@@ -165,9 +165,51 @@ func jwtTokenSource(ctx context.Context, data string) (oauth2.TokenSource, error
 }
 
 const (
-	// TODO(ENG-1103): Make this configurable! Env var?
+	// TODO(ENG-1203): Make this configurable! Env var?
 	topic = "projects/autokitteh-gapis-integration/topics/forms-notifications"
 )
+
+func (a api) getForm(ctx context.Context) (*forms.Form, error) {
+	formID, client, err := a.formsIDAndClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := client.Forms.Get(formID).Do()
+	if err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
+
+func (a api) getResponse(ctx context.Context, responseID string) (*forms.FormResponse, error) {
+	formID, client, err := a.formsIDAndClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := client.Forms.Responses.Get(formID, responseID).Do()
+	if err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
+
+func (a api) listResponses(ctx context.Context) ([]*forms.FormResponse, error) {
+	formID, client, err := a.formsIDAndClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := client.Forms.Responses.List(formID).Do()
+	if err != nil {
+		return nil, err
+	}
+
+	return resp.Responses, nil
+}
 
 // To receive notifications, the topic must grant publish privileges to the
 // Forms service account `forms-notifications@system.gserviceaccount.com`.

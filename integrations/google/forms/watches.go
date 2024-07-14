@@ -26,7 +26,7 @@ const (
 // for a specific Google Forms form, if an ID was specified during initialization.
 func UpdateWatches(ctx context.Context, v sdkservices.Vars, c sdkintegrations.ConnectionInit) error {
 	l := extrazap.ExtractLoggerFromContext(ctx)
-	api := api{Vars: v, CID: c.ConnectionID}
+	api := api{vars: v, cid: c.ConnectionID}
 
 	formID, err := api.formID(ctx)
 	if err != nil {
@@ -90,7 +90,7 @@ func (a api) updateSingleWatch(ctx context.Context, e WatchEventType, w *forms.W
 }
 
 func (a api) saveWatchID(ctx context.Context, e WatchEventType, watchID string) error {
-	cid, err := sdktypes.StrictParseConnectionID(a.CID)
+	cid, err := sdktypes.StrictParseConnectionID(a.cid)
 	if err != nil {
 		return fmt.Errorf("connection ID parsing error: %w", err)
 	}
@@ -101,7 +101,7 @@ func (a api) saveWatchID(ctx context.Context, e WatchEventType, watchID string) 
 	}
 
 	v := sdktypes.NewVar(n, watchID, false).WithScopeID(sdktypes.NewVarScopeID(cid))
-	if err := a.Vars.Set(ctx, v); err != nil {
+	if err := a.vars.Set(ctx, v); err != nil {
 		return err
 	}
 

@@ -114,7 +114,7 @@ func (h handler) handleEvent(w http.ResponseWriter, r *http.Request) {
 		cids, err := h.vars.FindConnectionIDs(ctx, integrationID, webhookID, value)
 		if err != nil {
 			l.Error("Failed to find connection IDs", zap.Error(err))
-			continue
+			break
 		}
 
 		// Dispatch the event to all of them, for asynchronous handling.
