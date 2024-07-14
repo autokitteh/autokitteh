@@ -82,7 +82,7 @@ def run(args):
 
     py_file = code_dir / args.path
     if not py_file.exists():
-        raise SystemExit(f'error: {py_file.name!r} not found')
+        raise SystemExit(f"error: {py_file.name!r} not found")
 
     # Allow users to import their own files and load data files
     sys.path.append(str(code_dir))
