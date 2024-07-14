@@ -24,7 +24,7 @@ var (
 	sessionStateAll   = regexp.MustCompile(`state:SESSION_STATE_TYPE_`)
 )
 
-func buildClient(t *testing.T) string {
+func buildAKbinary(t *testing.T) string {
 	wd, err := os.Getwd()
 	if err != nil {
 		t.Fatalf("failed to get current working directory: %v", err)
