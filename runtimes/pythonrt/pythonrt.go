@@ -191,6 +191,11 @@ func (py *pySvc) Build(ctx context.Context, fsys fs.FS, path string, values []sd
 			py.log.Error("next tar", zap.Error(err))
 			return sdktypes.InvalidBuildArtifact, err
 		}
+
+		if !strings.HasSuffix(hdr.Name, ".py") {
+			continue
+		}
+
 		compiledData[hdr.Name] = nil
 	}
 
