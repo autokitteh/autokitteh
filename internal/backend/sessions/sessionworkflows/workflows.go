@@ -145,7 +145,7 @@ func (ws *workflows) getSessionDebugData(data *sessiondata.Data, prints []string
 	ctx, cancel := withLimitedTimeout(context.Background())
 	defer cancel()
 
-	history, err := ws.sessions.GetLog(ctx, sdkservices.ListSessionLogRecordsFilter{SessionID: data.SessionID})
+	history, err := ws.sessions.ListSessionLogRecords(ctx, sdkservices.ListSessionLogRecordsFilter{SessionID: data.SessionID})
 	if err != nil {
 		z.Warn("get history failed", zap.Error(err))
 		return "error retreiving history"
@@ -153,10 +153,10 @@ func (ws *workflows) getSessionDebugData(data *sessiondata.Data, prints []string
 
 	return struct {
 		Prints  []string
-		History sdktypes.SessionLog
+		History []sdktypes.SessionLogRecord
 	}{
 		Prints:  prints,
-		History: history.Log,
+		History: history.Records,
 	}
 }
 
@@ -216,8 +216,8 @@ func (ws *workflows) stopped(sessionID sdktypes.SessionID) {
 
 	reason := "<unknown>"
 
-	if log, err := ws.svcs.DB.GetSessionLog(ctx, sdkservices.ListSessionLogRecordsFilter{SessionID: sessionID}); err == nil {
-		for _, rec := range log.Log.Records() {
+	if result, err := ws.svcs.DB.ListSessionLogRecords(ctx, sdkservices.ListSessionLogRecordsFilter{SessionID: sessionID}); err == nil {
+		for _, rec := range result.Records {
 			if r, ok := rec.GetStopRequest(); ok {
 				reason = r
 				break

@@ -115,7 +115,7 @@ func (s *server) Stop(ctx context.Context, req *connect.Request[sessionsv1.StopR
 	return connect.NewResponse(&sessionsv1.StopResponse{}), nil
 }
 
-func (s *server) GetLog(ctx context.Context, req *connect.Request[sessionsv1.GetLogRequest]) (*connect.Response[sessionsv1.GetLogResponse], error) {
+func (s *server) ListSessionLogRecords(ctx context.Context, req *connect.Request[sessionsv1.ListSessionLogRecordsRequest]) (*connect.Response[sessionsv1.ListSessionLogRecordsResponse], error) {
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
@@ -137,15 +137,17 @@ func (s *server) GetLog(ctx context.Context, req *connect.Request[sessionsv1.Get
 		SessionID: sessionID,
 	}
 
-	hist, err := s.sessions.GetLog(ctx, filter)
+	hist, err := s.sessions.ListSessionLogRecords(ctx, filter)
 	if err != nil {
 		if errors.Is(err, sdkerrors.ErrNotFound) {
-			return connect.NewResponse(&sessionsv1.GetLogResponse{}), nil
+			return connect.NewResponse(&sessionsv1.ListSessionLogRecordsResponse{}), nil
 		}
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	return connect.NewResponse(&sessionsv1.GetLogResponse{Log: hist.Log.ToProto(), Count: hist.TotalCount, NextPageToken: hist.NextPageToken}), nil
+	records := kittehs.Transform(hist.Records, sdktypes.ToProto)
+
+	return connect.NewResponse(&sessionsv1.ListSessionLogRecordsResponse{Records: records, Count: hist.TotalCount, NextPageToken: hist.NextPageToken}), nil
 }
 
 func (s *server) List(ctx context.Context, req *connect.Request[sessionsv1.ListRequest]) (*connect.Response[sessionsv1.ListResponse], error) {

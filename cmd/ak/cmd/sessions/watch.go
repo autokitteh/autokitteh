@@ -93,13 +93,13 @@ func sessionWatch(sid sdktypes.SessionID, endState sdktypes.SessionStateType) ([
 
 		f.Skip = int32(len(rs))
 		f.PageToken = ""
-		res, err := sessions().GetLog(currCtx, f)
+		res, err := sessions().ListSessionLogRecords(currCtx, f)
 		if err != nil {
 			cancel()
 			return nil, err
 		}
 
-		logs := res.Log.Records()
+		logs := res.Records
 
 		printLogs(logs)
 
@@ -109,13 +109,13 @@ func sessionWatch(sid sdktypes.SessionID, endState sdktypes.SessionStateType) ([
 		f.Skip = 0
 
 		for f.PageToken != "" {
-			res, err = sessions().GetLog(currCtx, f)
+			res, err = sessions().ListSessionLogRecords(currCtx, f)
 			if err != nil {
 				cancel()
 				return nil, err
 			}
 
-			logs := res.Log.Records()
+			logs := res.Records
 			printLogs(logs)
 
 			rs = append(rs, logs...)

@@ -80,12 +80,12 @@ func init() {
 // skip >= 0: skip first records
 // skip < 0: skip all up to last |skip| records.
 func sessionLog(ctx context.Context, filter sdkservices.ListSessionLogRecordsFilter) error {
-	l, err := sessions().GetLog(ctx, filter)
+	l, err := sessions().ListSessionLogRecords(ctx, filter)
 	if err != nil {
 		return fmt.Errorf("get log: %w", err)
 	}
 
-	rs := l.Log.Records()
+	rs := l.Records
 	if len(rs) == 0 {
 		return nil
 	}

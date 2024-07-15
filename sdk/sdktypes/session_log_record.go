@@ -31,6 +31,7 @@ func (SessionLogRecordTraits) Validate(m *SessionLogRecordPB) error {
 func (SessionLogRecordTraits) StrictValidate(m *SessionLogRecordPB) error {
 	return errors.Join(
 		mandatory("t", m.T),
+		mandatory("seq", m.Seq),
 		oneOfMessage(m /* ignore: */, "t", "process_id"),
 	)
 }
@@ -145,3 +146,5 @@ func (r SessionLogRecord) WithProcessID(pid string) SessionLogRecord {
 	m.ProcessId = pid
 	return forceFromProto[SessionLogRecord](m)
 }
+
+func (r SessionLogRecord) Seq() uint32 { return uint32(r.read().Seq) }

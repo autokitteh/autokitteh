@@ -27,8 +27,8 @@ type ListSessionLogRecordsFilter struct {
 	sdktypes.PaginationRequest
 }
 
-type GetLogResults struct {
-	Log sdktypes.SessionLog
+type ListSessionLogRecordsResults struct {
+	Records []sdktypes.SessionLogRecord
 	sdktypes.PaginationResult
 }
 
@@ -38,6 +38,6 @@ type Sessions interface {
 	// List returns sessions without their data.
 	List(ctx context.Context, filter ListSessionsFilter) (ListSessionResult, error)
 	Get(ctx context.Context, sessionID sdktypes.SessionID) (sdktypes.Session, error)
-	GetLog(ctx context.Context, filter ListSessionLogRecordsFilter) (GetLogResults, error)
+	ListSessionLogRecords(ctx context.Context, filter ListSessionLogRecordsFilter) (ListSessionLogRecordsResults, error)
 	Delete(ctx context.Context, sessionID sdktypes.SessionID) error
 }

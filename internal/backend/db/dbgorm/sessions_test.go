@@ -379,13 +379,13 @@ func TestSessionLogRecordNextPageTokenEmpty(t *testing.T) {
 	assert.NoError(t, f.gormdb.addSessionLogRecord(f.ctx, logr))
 
 	sid := sdktypes.NewIDFromUUID[sdktypes.SessionID](&s.SessionID)
-	res, err := f.gormdb.GetSessionLog(context.Background(),
+	res, err := f.gormdb.ListSessionLogRecords(context.Background(),
 		sdkservices.ListSessionLogRecordsFilter{SessionID: sid,
 			PaginationRequest: sdktypes.PaginationRequest{},
 		})
 
 	assert.NoError(t, err)
-	assert.Equal(t, len(res.Log.Records()), 2)
+	assert.Equal(t, len(res.Records), 2)
 	assert.Equal(t, res.TotalCount, int64(2))
 	assert.Equal(t, res.PaginationResult.NextPageToken, "")
 }
@@ -403,24 +403,24 @@ func TestSessionLogRecordNextPageTokenNotEmpty(t *testing.T) {
 	assert.NoError(t, f.gormdb.addSessionLogRecord(f.ctx, logr))
 
 	sid := sdktypes.NewIDFromUUID[sdktypes.SessionID](&s.SessionID)
-	res, err := f.gormdb.GetSessionLog(context.Background(),
+	res, err := f.gormdb.ListSessionLogRecords(context.Background(),
 		sdkservices.ListSessionLogRecordsFilter{SessionID: sid,
 			PaginationRequest: sdktypes.PaginationRequest{PageSize: 2, Ascending: true},
 		})
 
 	assert.NoError(t, err)
-	assert.Equal(t, len(res.Log.Records()), 2)
+	assert.Equal(t, len(res.Records), 2)
 	assert.Equal(t, res.TotalCount, int64(3))
 	assert.Equal(t, res.PaginationResult.NextPageToken, "2")
 
 	// Get Next Batch to exhaust next page token
-	res, err = f.gormdb.GetSessionLog(context.Background(),
+	res, err = f.gormdb.ListSessionLogRecords(context.Background(),
 		sdkservices.ListSessionLogRecordsFilter{SessionID: sid,
 			PaginationRequest: sdktypes.PaginationRequest{PageToken: res.PaginationResult.NextPageToken},
 		})
 
 	assert.NoError(t, err)
-	assert.Equal(t, len(res.Log.Records()), 1)
+	assert.Equal(t, len(res.Records), 1)
 	assert.Equal(t, res.TotalCount, int64(3))
 	assert.Equal(t, res.PaginationResult.NextPageToken, "")
 }

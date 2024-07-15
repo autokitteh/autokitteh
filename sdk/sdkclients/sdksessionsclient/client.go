@@ -76,8 +76,9 @@ func (c *client) Get(ctx context.Context, sessionID sdktypes.SessionID) (sdktype
 	return sdktypes.SessionFromProto(resp.Msg.Session)
 }
 
-func (c *client) GetLog(ctx context.Context, filter sdkservices.ListSessionLogRecordsFilter) (sdkservices.GetLogResults, error) {
-	resp, err := c.client.GetLog(ctx, connect.NewRequest(&sessionsv1.GetLogRequest{
+func (c *client) ListSessionLogRecords(ctx context.Context, filter sdkservices.ListSessionLogRecordsFilter) (sdkservices.ListSessionLogRecordsResults, error) {
+
+	resp, err := c.client.ListSessionLogRecords(ctx, connect.NewRequest(&sessionsv1.ListSessionLogRecordsRequest{
 		SessionId: filter.SessionID.String(),
 		PageSize:  filter.PageSize,
 		Skip:      filter.Skip,
@@ -86,19 +87,21 @@ func (c *client) GetLog(ctx context.Context, filter sdkservices.ListSessionLogRe
 	}))
 
 	if err != nil {
-		return sdkservices.GetLogResults{Log: sdktypes.InvalidSessionLog}, rpcerrors.ToSDKError(err)
+		return sdkservices.ListSessionLogRecordsResults{}, rpcerrors.ToSDKError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {
-		return sdkservices.GetLogResults{Log: sdktypes.InvalidSessionLog}, err
-	}
-	log, err := sdktypes.SessionLogFromProto(resp.Msg.Log)
-	if err != nil {
-		return sdkservices.GetLogResults{Log: sdktypes.InvalidSessionLog}, err
+		return sdkservices.ListSessionLogRecordsResults{}, err
 	}
 
-	result := sdkservices.GetLogResults{
-		Log: log,
+	records, err := kittehs.TransformError(resp.Msg.Records, sdktypes.SessionLogRecordFromProto)
+
+	if err != nil {
+		return sdkservices.ListSessionLogRecordsResults{}, err
+	}
+
+	result := sdkservices.ListSessionLogRecordsResults{
+		Records: records,
 		PaginationResult: sdktypes.PaginationResult{
 			TotalCount:    resp.Msg.Count,
 			NextPageToken: resp.Msg.NextPageToken},

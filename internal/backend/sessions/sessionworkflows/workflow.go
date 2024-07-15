@@ -64,6 +64,9 @@ type sessionWorkflow struct {
 	signals map[string]uint64 // map signals to next sequence number
 
 	state sdktypes.SessionState
+
+	// this is a sequence for all workflow records
+	globalSeq uint32
 }
 
 type connInfo struct {
@@ -155,6 +158,7 @@ func (w *sessionWorkflow) call(ctx workflow.Context, runID sdktypes.RunID, v sdk
 	}
 
 	w.callSeq++
+	w.globalSeq++
 
 	z := w.z.With(zap.Any("run_id", runID), zap.Any("v", v), zap.Uint32("seq", w.callSeq))
 

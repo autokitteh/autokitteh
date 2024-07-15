@@ -132,7 +132,7 @@ type DB interface {
 	// -----------------------------------------------------------------------
 	CreateSession(ctx context.Context, session sdktypes.Session) error
 	GetSession(ctx context.Context, sessionID sdktypes.SessionID) (sdktypes.Session, error)
-	GetSessionLog(ctx context.Context, filter sdkservices.ListSessionLogRecordsFilter) (sdkservices.GetLogResults, error)
+	ListSessionLogRecords(ctx context.Context, filter sdkservices.ListSessionLogRecordsFilter) (sdkservices.ListSessionLogRecordsResults, error)
 	UpdateSessionState(ctx context.Context, sessionID sdktypes.SessionID, state sdktypes.SessionState) error
 	AddSessionPrint(ctx context.Context, sessionID sdktypes.SessionID, print string) error
 	AddSessionStopRequest(ctx context.Context, sessionID sdktypes.SessionID, reason string) error

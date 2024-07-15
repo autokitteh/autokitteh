@@ -124,12 +124,7 @@ func (gdb *gormdb) listSessions(ctx context.Context, f sdkservices.ListSessionsF
 
 // --- log records ---
 func createLogRecord(db *gorm.DB, logr *scheme.SessionLogRecord) error {
-	data := map[string]interface{}{"SessionID": logr.SessionID, "Data": logr.Data}
-	// This is a hack in gorm to use subquery when creating an object.
-	// The goal is to have a sequence number per session.  The insert uses a subquery to get
-	// the current max sequence for this session_id and insert the next value in one query
-	data["Seq"] = clause.Expr{SQL: "(select COALESCE(MAX(seq), 0)+1 from session_log_records where session_id = ?)", Vars: []interface{}{logr.SessionID}}
-	return db.Model(&scheme.SessionLogRecord{}).Create(data).Error
+	return db.Model(&scheme.SessionLogRecord{}).Create(logr).Error
 }
 
 func (gdb *gormdb) addSessionLogRecord(ctx context.Context, logr *scheme.SessionLogRecord) error {
@@ -394,7 +389,7 @@ func toSessionLogRecord(sessionID sdktypes.UUID, logr sdktypes.SessionLogRecord)
 		return nil, fmt.Errorf("marshal session log record: %w", err)
 	}
 
-	return &scheme.SessionLogRecord{SessionID: sessionID, Data: logRecordData}, nil
+	return &scheme.SessionLogRecord{SessionID: sessionID, Data: logRecordData, Seq: uint64(logr.Seq())}, nil
 }
 
 func (db *gormdb) AddSessionPrint(ctx context.Context, sessionID sdktypes.SessionID, print string) error {
@@ -413,21 +408,20 @@ func (db *gormdb) AddSessionStopRequest(ctx context.Context, sessionID sdktypes.
 	return translateError(db.addSessionLogRecord(ctx, logr))
 }
 
-func (db *gormdb) GetSessionLog(ctx context.Context, filter sdkservices.ListSessionLogRecordsFilter) (sdkservices.GetLogResults, error) {
+func (db *gormdb) ListSessionLogRecords(ctx context.Context, filter sdkservices.ListSessionLogRecordsFilter) (sdkservices.ListSessionLogRecordsResults, error) {
 	rs, n, err := db.getSessionLogRecords(ctx, filter)
 	if err != nil {
-		return sdkservices.GetLogResults{Log: sdktypes.InvalidSessionLog}, translateError(err)
+		return sdkservices.ListSessionLogRecordsResults{}, translateError(err)
 	}
 
 	prs, err := kittehs.TransformError(rs, scheme.ParseSessionLogRecord)
-	log := sdktypes.NewSessionLog(prs)
 
 	nextPageToken := ""
 	if len(rs) == int(filter.PageSize) && len(rs) > 0 {
 		nextPageToken = fmt.Sprintf("%d", rs[len(rs)-1].Seq)
 	}
 
-	return sdkservices.GetLogResults{Log: log, PaginationResult: sdktypes.PaginationResult{TotalCount: n, NextPageToken: nextPageToken}}, err
+	return sdkservices.ListSessionLogRecordsResults{Records: prs, PaginationResult: sdktypes.PaginationResult{TotalCount: n, NextPageToken: nextPageToken}}, err
 }
 
 // --- session call funcs ---
