@@ -34,11 +34,6 @@ class SessionsServiceStub(object):
                 request_serializer=autokitteh_dot_sessions_dot_v1_dot_svc__pb2.GetRequest.SerializeToString,
                 response_deserializer=autokitteh_dot_sessions_dot_v1_dot_svc__pb2.GetResponse.FromString,
                 )
-        self.GetLog = channel.unary_unary(
-                '/autokitteh.sessions.v1.SessionsService/GetLog',
-                request_serializer=autokitteh_dot_sessions_dot_v1_dot_svc__pb2.GetLogRequest.SerializeToString,
-                response_deserializer=autokitteh_dot_sessions_dot_v1_dot_svc__pb2.GetLogResponse.FromString,
-                )
         self.ListSessionLogRecords = channel.unary_unary(
                 '/autokitteh.sessions.v1.SessionsService/ListSessionLogRecords',
                 request_serializer=autokitteh_dot_sessions_dot_v1_dot_svc__pb2.ListSessionLogRecordsRequest.SerializeToString,
@@ -79,12 +74,6 @@ class SessionsServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def GetLog(self, request, context):
-        """Missing associated documentation comment in .proto file."""
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
     def ListSessionLogRecords(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -119,11 +108,6 @@ def add_SessionsServiceServicer_to_server(servicer, server):
                     servicer.Get,
                     request_deserializer=autokitteh_dot_sessions_dot_v1_dot_svc__pb2.GetRequest.FromString,
                     response_serializer=autokitteh_dot_sessions_dot_v1_dot_svc__pb2.GetResponse.SerializeToString,
-            ),
-            'GetLog': grpc.unary_unary_rpc_method_handler(
-                    servicer.GetLog,
-                    request_deserializer=autokitteh_dot_sessions_dot_v1_dot_svc__pb2.GetLogRequest.FromString,
-                    response_serializer=autokitteh_dot_sessions_dot_v1_dot_svc__pb2.GetLogResponse.SerializeToString,
             ),
             'ListSessionLogRecords': grpc.unary_unary_rpc_method_handler(
                     servicer.ListSessionLogRecords,
@@ -210,23 +194,6 @@ class SessionsService(object):
         return grpc.experimental.unary_unary(request, target, '/autokitteh.sessions.v1.SessionsService/Get',
             autokitteh_dot_sessions_dot_v1_dot_svc__pb2.GetRequest.SerializeToString,
             autokitteh_dot_sessions_dot_v1_dot_svc__pb2.GetResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
-
-    @staticmethod
-    def GetLog(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/autokitteh.sessions.v1.SessionsService/GetLog',
-            autokitteh_dot_sessions_dot_v1_dot_svc__pb2.GetLogRequest.SerializeToString,
-            autokitteh_dot_sessions_dot_v1_dot_svc__pb2.GetLogResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 

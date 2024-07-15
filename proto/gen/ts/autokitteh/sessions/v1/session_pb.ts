@@ -621,6 +621,11 @@ export class SessionLogRecord extends Message<SessionLogRecord> {
   processId = "";
 
   /**
+   * @generated from field: int32 seq = 3;
+   */
+  seq = 0;
+
+  /**
    * one of the following is required.
    *
    * @generated from field: autokitteh.sessions.v1.SessionLogRecord.Print print = 10;
@@ -662,6 +667,7 @@ export class SessionLogRecord extends Message<SessionLogRecord> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "t", kind: "message", T: Timestamp },
     { no: 2, name: "process_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "seq", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 10, name: "print", kind: "message", T: SessionLogRecord_Print },
     { no: 11, name: "call_spec", kind: "message", T: Call_Spec },
     { no: 12, name: "call_attempt_start", kind: "message", T: Call_Attempt_Start },
@@ -758,45 +764,6 @@ export class SessionLogRecord_StopRequest extends Message<SessionLogRecord_StopR
 
   static equals(a: SessionLogRecord_StopRequest | PlainMessage<SessionLogRecord_StopRequest> | undefined, b: SessionLogRecord_StopRequest | PlainMessage<SessionLogRecord_StopRequest> | undefined): boolean {
     return proto3.util.equals(SessionLogRecord_StopRequest, a, b);
-  }
-}
-
-/**
- * @generated from message autokitteh.sessions.v1.SessionLog
- */
-export class SessionLog extends Message<SessionLog> {
-  /**
-   * Chronological order: the last item is the latest.
-   *
-   * @generated from field: repeated autokitteh.sessions.v1.SessionLogRecord records = 1;
-   */
-  records: SessionLogRecord[] = [];
-
-  constructor(data?: PartialMessage<SessionLog>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "autokitteh.sessions.v1.SessionLog";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "records", kind: "message", T: SessionLogRecord, repeated: true },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SessionLog {
-    return new SessionLog().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SessionLog {
-    return new SessionLog().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SessionLog {
-    return new SessionLog().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: SessionLog | PlainMessage<SessionLog> | undefined, b: SessionLog | PlainMessage<SessionLog> | undefined): boolean {
-    return proto3.util.equals(SessionLog, a, b);
   }
 }
 

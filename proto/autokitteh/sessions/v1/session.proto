@@ -101,6 +101,7 @@ message SessionLogRecord {
 
   google.protobuf.Timestamp t = 1;
   string process_id = 2;
+  int32 seq = 3;
 
   // one of the following is required.
   Print print = 10;
@@ -109,11 +110,6 @@ message SessionLogRecord {
   Call.Attempt.Complete call_attempt_complete = 13;
   SessionState state = 14;
   StopRequest stop_request = 15;
-}
-
-message SessionLog {
-  // Chronological order: the last item is the latest.
-  repeated SessionLogRecord records = 1 [(buf.validate.field).repeated.items.required = true];
 }
 
 message Session {

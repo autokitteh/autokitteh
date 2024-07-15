@@ -137,7 +137,7 @@ class Call(_message.Message):
     def __init__(self, spec: _Optional[_Union[Call.Spec, _Mapping]] = ..., attempts: _Optional[_Iterable[_Union[Call.Attempt, _Mapping]]] = ...) -> None: ...
 
 class SessionLogRecord(_message.Message):
-    __slots__ = ["t", "process_id", "print", "call_spec", "call_attempt_start", "call_attempt_complete", "state", "stop_request"]
+    __slots__ = ["t", "process_id", "seq", "print", "call_spec", "call_attempt_start", "call_attempt_complete", "state", "stop_request"]
     class Print(_message.Message):
         __slots__ = ["text"]
         TEXT_FIELD_NUMBER: _ClassVar[int]
@@ -150,6 +150,7 @@ class SessionLogRecord(_message.Message):
         def __init__(self, reason: _Optional[str] = ...) -> None: ...
     T_FIELD_NUMBER: _ClassVar[int]
     PROCESS_ID_FIELD_NUMBER: _ClassVar[int]
+    SEQ_FIELD_NUMBER: _ClassVar[int]
     PRINT_FIELD_NUMBER: _ClassVar[int]
     CALL_SPEC_FIELD_NUMBER: _ClassVar[int]
     CALL_ATTEMPT_START_FIELD_NUMBER: _ClassVar[int]
@@ -158,19 +159,14 @@ class SessionLogRecord(_message.Message):
     STOP_REQUEST_FIELD_NUMBER: _ClassVar[int]
     t: _timestamp_pb2.Timestamp
     process_id: str
+    seq: int
     print: SessionLogRecord.Print
     call_spec: Call.Spec
     call_attempt_start: Call.Attempt.Start
     call_attempt_complete: Call.Attempt.Complete
     state: SessionState
     stop_request: SessionLogRecord.StopRequest
-    def __init__(self, t: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ..., process_id: _Optional[str] = ..., print: _Optional[_Union[SessionLogRecord.Print, _Mapping]] = ..., call_spec: _Optional[_Union[Call.Spec, _Mapping]] = ..., call_attempt_start: _Optional[_Union[Call.Attempt.Start, _Mapping]] = ..., call_attempt_complete: _Optional[_Union[Call.Attempt.Complete, _Mapping]] = ..., state: _Optional[_Union[SessionState, _Mapping]] = ..., stop_request: _Optional[_Union[SessionLogRecord.StopRequest, _Mapping]] = ...) -> None: ...
-
-class SessionLog(_message.Message):
-    __slots__ = ["records"]
-    RECORDS_FIELD_NUMBER: _ClassVar[int]
-    records: _containers.RepeatedCompositeFieldContainer[SessionLogRecord]
-    def __init__(self, records: _Optional[_Iterable[_Union[SessionLogRecord, _Mapping]]] = ...) -> None: ...
+    def __init__(self, t: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ..., process_id: _Optional[str] = ..., seq: _Optional[int] = ..., print: _Optional[_Union[SessionLogRecord.Print, _Mapping]] = ..., call_spec: _Optional[_Union[Call.Spec, _Mapping]] = ..., call_attempt_start: _Optional[_Union[Call.Attempt.Start, _Mapping]] = ..., call_attempt_complete: _Optional[_Union[Call.Attempt.Complete, _Mapping]] = ..., state: _Optional[_Union[SessionState, _Mapping]] = ..., stop_request: _Optional[_Union[SessionLogRecord.StopRequest, _Mapping]] = ...) -> None: ...
 
 class Session(_message.Message):
     __slots__ = ["session_id", "build_id", "env_id", "entrypoint", "inputs", "parent_session_id", "memo", "created_at", "updated_at", "state", "deployment_id", "event_id"]

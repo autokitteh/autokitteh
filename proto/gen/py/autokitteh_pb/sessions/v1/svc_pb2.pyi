@@ -86,30 +86,6 @@ class GetResponse(_message.Message):
     session: _session_pb2.Session
     def __init__(self, session: _Optional[_Union[_session_pb2.Session, _Mapping]] = ...) -> None: ...
 
-class GetLogRequest(_message.Message):
-    __slots__ = ["session_id", "page_size", "skip", "page_token", "ascending"]
-    SESSION_ID_FIELD_NUMBER: _ClassVar[int]
-    PAGE_SIZE_FIELD_NUMBER: _ClassVar[int]
-    SKIP_FIELD_NUMBER: _ClassVar[int]
-    PAGE_TOKEN_FIELD_NUMBER: _ClassVar[int]
-    ASCENDING_FIELD_NUMBER: _ClassVar[int]
-    session_id: str
-    page_size: int
-    skip: int
-    page_token: str
-    ascending: bool
-    def __init__(self, session_id: _Optional[str] = ..., page_size: _Optional[int] = ..., skip: _Optional[int] = ..., page_token: _Optional[str] = ..., ascending: bool = ...) -> None: ...
-
-class GetLogResponse(_message.Message):
-    __slots__ = ["log", "count", "next_page_token"]
-    LOG_FIELD_NUMBER: _ClassVar[int]
-    COUNT_FIELD_NUMBER: _ClassVar[int]
-    NEXT_PAGE_TOKEN_FIELD_NUMBER: _ClassVar[int]
-    log: _session_pb2.SessionLog
-    count: int
-    next_page_token: str
-    def __init__(self, log: _Optional[_Union[_session_pb2.SessionLog, _Mapping]] = ..., count: _Optional[int] = ..., next_page_token: _Optional[str] = ...) -> None: ...
-
 class DeleteRequest(_message.Message):
     __slots__ = ["session_id"]
     SESSION_ID_FIELD_NUMBER: _ClassVar[int]
