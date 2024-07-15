@@ -50,7 +50,7 @@ var getCmd = common.StandardCommand(&cobra.Command{
 
 type V struct{ sdktypes.Var }
 
-func (v V) Text() string {
+func (v V) ToString() string {
 	vv := "<secret>"
 
 	if !v.Var.IsSecret() || reveal {
@@ -60,7 +60,7 @@ func (v V) Text() string {
 	return fmt.Sprintf("%v=%s", v.Var.Name(), vv)
 }
 
-var _ common.Texter = V{}
+var _ common.ToStringer = V{}
 
 func init() {
 	getCmd.Flags().BoolVar(&reveal, "reveal", false, "reveal secret values")

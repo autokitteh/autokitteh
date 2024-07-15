@@ -39,6 +39,10 @@ func StrictSessionCallSpecFromProto(m *SessionCallSpecPB) (SessionCallSpec, erro
 
 func (p SessionCallSpec) Seq() uint32 { return p.read().Seq }
 
+func (p SessionCallSpec) Function() Value {
+	return forceFromProto[Value](p.read().Function)
+}
+
 func (p SessionCallSpec) Data() (Value, []Value, map[string]Value) {
 	pb := p.read()
 

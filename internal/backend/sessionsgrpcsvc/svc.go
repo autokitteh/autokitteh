@@ -145,7 +145,18 @@ func (s *server) GetLog(ctx context.Context, req *connect.Request[sessionsv1.Get
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	return connect.NewResponse(&sessionsv1.GetLogResponse{Log: hist.Log.ToProto(), Count: hist.TotalCount, NextPageToken: hist.NextPageToken}), nil
+	log := hist.Log.ToProto()
+
+	if msg.Describe {
+		opts := *sdktypes.DefaultSessionLogRecordDescribeOptions
+		opts.IncludeTime = false
+
+		for i, r := range hist.Log.Records() {
+			log.Records[i].Description = r.Describe(&opts)
+		}
+	}
+
+	return connect.NewResponse(&sessionsv1.GetLogResponse{Log: log, Count: hist.TotalCount, NextPageToken: hist.NextPageToken}), nil
 }
 
 func (s *server) List(ctx context.Context, req *connect.Request[sessionsv1.ListRequest]) (*connect.Response[sessionsv1.ListResponse], error) {
