@@ -633,9 +633,9 @@ export class ListSessionLogRecordsResponse extends Message<ListSessionLogRecords
   records: SessionLogRecord[] = [];
 
   /**
-   * @generated from field: int32 count = 2;
+   * @generated from field: int64 count = 2;
    */
-  count = 0;
+  count = protoInt64.zero;
 
   /**
    * @generated from field: string next_page_token = 10;
@@ -651,7 +651,7 @@ export class ListSessionLogRecordsResponse extends Message<ListSessionLogRecords
   static readonly typeName = "autokitteh.sessions.v1.ListSessionLogRecordsResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "records", kind: "message", T: SessionLogRecord, repeated: true },
-    { no: 2, name: "count", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 2, name: "count", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 10, name: "next_page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 

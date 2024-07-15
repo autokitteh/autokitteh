@@ -115,7 +115,7 @@ message ListSessionLogRecordsRequest {
 
 message ListSessionLogRecordsResponse {
   repeated SessionLogRecord records = 1 [(buf.validate.field).repeated.items.required = true];
-  int32 count = 2;
+  int64 count = 2;
   string next_page_token = 10;
 }
 
