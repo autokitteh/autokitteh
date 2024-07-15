@@ -119,3 +119,27 @@ class DeleteRequest(_message.Message):
 class DeleteResponse(_message.Message):
     __slots__ = []
     def __init__(self) -> None: ...
+
+class ListSessionLogRecordsRequest(_message.Message):
+    __slots__ = ["session_id", "page_size", "skip", "page_token", "ascending"]
+    SESSION_ID_FIELD_NUMBER: _ClassVar[int]
+    PAGE_SIZE_FIELD_NUMBER: _ClassVar[int]
+    SKIP_FIELD_NUMBER: _ClassVar[int]
+    PAGE_TOKEN_FIELD_NUMBER: _ClassVar[int]
+    ASCENDING_FIELD_NUMBER: _ClassVar[int]
+    session_id: str
+    page_size: int
+    skip: int
+    page_token: str
+    ascending: bool
+    def __init__(self, session_id: _Optional[str] = ..., page_size: _Optional[int] = ..., skip: _Optional[int] = ..., page_token: _Optional[str] = ..., ascending: bool = ...) -> None: ...
+
+class ListSessionLogRecordsResponse(_message.Message):
+    __slots__ = ["records", "count", "next_page_token"]
+    RECORDS_FIELD_NUMBER: _ClassVar[int]
+    COUNT_FIELD_NUMBER: _ClassVar[int]
+    NEXT_PAGE_TOKEN_FIELD_NUMBER: _ClassVar[int]
+    records: _containers.RepeatedCompositeFieldContainer[_session_pb2.SessionLogRecord]
+    count: int
+    next_page_token: str
+    def __init__(self, records: _Optional[_Iterable[_Union[_session_pb2.SessionLogRecord, _Mapping]]] = ..., count: _Optional[int] = ..., next_page_token: _Optional[str] = ...) -> None: ...

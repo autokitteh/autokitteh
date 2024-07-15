@@ -43,6 +43,9 @@ const (
 	SessionsServiceGetProcedure = "/autokitteh.sessions.v1.SessionsService/Get"
 	// SessionsServiceGetLogProcedure is the fully-qualified name of the SessionsService's GetLog RPC.
 	SessionsServiceGetLogProcedure = "/autokitteh.sessions.v1.SessionsService/GetLog"
+	// SessionsServiceListSessionLogRecordsProcedure is the fully-qualified name of the
+	// SessionsService's ListSessionLogRecords RPC.
+	SessionsServiceListSessionLogRecordsProcedure = "/autokitteh.sessions.v1.SessionsService/ListSessionLogRecords"
 	// SessionsServiceDeleteProcedure is the fully-qualified name of the SessionsService's Delete RPC.
 	SessionsServiceDeleteProcedure = "/autokitteh.sessions.v1.SessionsService/Delete"
 )
@@ -55,6 +58,7 @@ type SessionsServiceClient interface {
 	List(context.Context, *connect.Request[v1.ListRequest]) (*connect.Response[v1.ListResponse], error)
 	Get(context.Context, *connect.Request[v1.GetRequest]) (*connect.Response[v1.GetResponse], error)
 	GetLog(context.Context, *connect.Request[v1.GetLogRequest]) (*connect.Response[v1.GetLogResponse], error)
+	ListSessionLogRecords(context.Context, *connect.Request[v1.ListSessionLogRecordsRequest]) (*connect.Response[v1.ListSessionLogRecordsResponse], error)
 	Delete(context.Context, *connect.Request[v1.DeleteRequest]) (*connect.Response[v1.DeleteResponse], error)
 }
 
@@ -93,6 +97,11 @@ func NewSessionsServiceClient(httpClient connect.HTTPClient, baseURL string, opt
 			baseURL+SessionsServiceGetLogProcedure,
 			opts...,
 		),
+		listSessionLogRecords: connect.NewClient[v1.ListSessionLogRecordsRequest, v1.ListSessionLogRecordsResponse](
+			httpClient,
+			baseURL+SessionsServiceListSessionLogRecordsProcedure,
+			opts...,
+		),
 		delete: connect.NewClient[v1.DeleteRequest, v1.DeleteResponse](
 			httpClient,
 			baseURL+SessionsServiceDeleteProcedure,
@@ -103,12 +112,13 @@ func NewSessionsServiceClient(httpClient connect.HTTPClient, baseURL string, opt
 
 // sessionsServiceClient implements SessionsServiceClient.
 type sessionsServiceClient struct {
-	start  *connect.Client[v1.StartRequest, v1.StartResponse]
-	stop   *connect.Client[v1.StopRequest, v1.StopResponse]
-	list   *connect.Client[v1.ListRequest, v1.ListResponse]
-	get    *connect.Client[v1.GetRequest, v1.GetResponse]
-	getLog *connect.Client[v1.GetLogRequest, v1.GetLogResponse]
-	delete *connect.Client[v1.DeleteRequest, v1.DeleteResponse]
+	start                 *connect.Client[v1.StartRequest, v1.StartResponse]
+	stop                  *connect.Client[v1.StopRequest, v1.StopResponse]
+	list                  *connect.Client[v1.ListRequest, v1.ListResponse]
+	get                   *connect.Client[v1.GetRequest, v1.GetResponse]
+	getLog                *connect.Client[v1.GetLogRequest, v1.GetLogResponse]
+	listSessionLogRecords *connect.Client[v1.ListSessionLogRecordsRequest, v1.ListSessionLogRecordsResponse]
+	delete                *connect.Client[v1.DeleteRequest, v1.DeleteResponse]
 }
 
 // Start calls autokitteh.sessions.v1.SessionsService.Start.
@@ -136,6 +146,11 @@ func (c *sessionsServiceClient) GetLog(ctx context.Context, req *connect.Request
 	return c.getLog.CallUnary(ctx, req)
 }
 
+// ListSessionLogRecords calls autokitteh.sessions.v1.SessionsService.ListSessionLogRecords.
+func (c *sessionsServiceClient) ListSessionLogRecords(ctx context.Context, req *connect.Request[v1.ListSessionLogRecordsRequest]) (*connect.Response[v1.ListSessionLogRecordsResponse], error) {
+	return c.listSessionLogRecords.CallUnary(ctx, req)
+}
+
 // Delete calls autokitteh.sessions.v1.SessionsService.Delete.
 func (c *sessionsServiceClient) Delete(ctx context.Context, req *connect.Request[v1.DeleteRequest]) (*connect.Response[v1.DeleteResponse], error) {
 	return c.delete.CallUnary(ctx, req)
@@ -150,6 +165,7 @@ type SessionsServiceHandler interface {
 	List(context.Context, *connect.Request[v1.ListRequest]) (*connect.Response[v1.ListResponse], error)
 	Get(context.Context, *connect.Request[v1.GetRequest]) (*connect.Response[v1.GetResponse], error)
 	GetLog(context.Context, *connect.Request[v1.GetLogRequest]) (*connect.Response[v1.GetLogResponse], error)
+	ListSessionLogRecords(context.Context, *connect.Request[v1.ListSessionLogRecordsRequest]) (*connect.Response[v1.ListSessionLogRecordsResponse], error)
 	Delete(context.Context, *connect.Request[v1.DeleteRequest]) (*connect.Response[v1.DeleteResponse], error)
 }
 
@@ -184,6 +200,11 @@ func NewSessionsServiceHandler(svc SessionsServiceHandler, opts ...connect.Handl
 		svc.GetLog,
 		opts...,
 	)
+	sessionsServiceListSessionLogRecordsHandler := connect.NewUnaryHandler(
+		SessionsServiceListSessionLogRecordsProcedure,
+		svc.ListSessionLogRecords,
+		opts...,
+	)
 	sessionsServiceDeleteHandler := connect.NewUnaryHandler(
 		SessionsServiceDeleteProcedure,
 		svc.Delete,
@@ -201,6 +222,8 @@ func NewSessionsServiceHandler(svc SessionsServiceHandler, opts ...connect.Handl
 			sessionsServiceGetHandler.ServeHTTP(w, r)
 		case SessionsServiceGetLogProcedure:
 			sessionsServiceGetLogHandler.ServeHTTP(w, r)
+		case SessionsServiceListSessionLogRecordsProcedure:
+			sessionsServiceListSessionLogRecordsHandler.ServeHTTP(w, r)
 		case SessionsServiceDeleteProcedure:
 			sessionsServiceDeleteHandler.ServeHTTP(w, r)
 		default:
@@ -230,6 +253,10 @@ func (UnimplementedSessionsServiceHandler) Get(context.Context, *connect.Request
 
 func (UnimplementedSessionsServiceHandler) GetLog(context.Context, *connect.Request[v1.GetLogRequest]) (*connect.Response[v1.GetLogResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("autokitteh.sessions.v1.SessionsService.GetLog is not implemented"))
+}
+
+func (UnimplementedSessionsServiceHandler) ListSessionLogRecords(context.Context, *connect.Request[v1.ListSessionLogRecordsRequest]) (*connect.Response[v1.ListSessionLogRecordsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("autokitteh.sessions.v1.SessionsService.ListSessionLogRecords is not implemented"))
 }
 
 func (UnimplementedSessionsServiceHandler) Delete(context.Context, *connect.Request[v1.DeleteRequest]) (*connect.Response[v1.DeleteResponse], error) {
