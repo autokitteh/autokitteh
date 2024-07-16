@@ -72,6 +72,22 @@ func (ReturnMessage) Type() string {
 	return "return"
 }
 
+type Frame struct {
+	File   string `json:"file"`
+	LineNo uint32 `json:"lineno"`
+	Code   string `json:"code"`
+	Name   string `json:"name"`
+}
+
+type ErrorMessage struct {
+	Error     string  `json:"error"`
+	Traceback []Frame `json:"traceback"`
+}
+
+func (ErrorMessage) Type() string {
+	return "error"
+}
+
 type Typed interface {
 	Type() string
 }
@@ -79,6 +95,7 @@ type Typed interface {
 type SubMessage interface {
 	CallMessage |
 		CallbackMessage |
+		ErrorMessage |
 		DoneMessage |
 		LogMessage |
 		ModuleMessage |

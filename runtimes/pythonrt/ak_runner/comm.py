@@ -1,6 +1,7 @@
 import json
 import pickle
-from base64 import b64encode, b64decode
+from base64 import b64decode, b64encode
+from traceback import extract_stack
 
 
 class MessageType:
@@ -9,6 +10,7 @@ class MessageType:
     call = "call"
     call_return = "return"
     callback = "callback"
+    error = "error"
     done = "done"
     log = "log"
     module = "module"
@@ -115,3 +117,27 @@ class Comm:
             },
         }
         self._send(message)
+
+    def send_error(self, error):
+        message = {
+            "type": MessageType.error,
+            "payload": {
+                "error": str(error),
+                "traceback": format_traceback(error.__traceback__),
+            },
+        }
+        self._send(message)
+
+
+def format_traceback(tb):
+    """Format traceback to JSONable list."""
+    return [frame_dict(f) for f in extract_stack(tb.tb_frame)]
+
+
+def frame_dict(frame):
+    return {
+        "file": frame.filename,
+        "lineno": frame.lineno,
+        "code": frame.line,
+        "name": frame.name,
+    }
