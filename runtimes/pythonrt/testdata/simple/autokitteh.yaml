@@ -5,7 +5,6 @@ project:
   connections:
     - name: http_trigger
       integration: http
-      token: event
   triggers:
     - name: events
       connection: http_trigger

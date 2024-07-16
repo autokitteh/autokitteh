@@ -37,7 +37,7 @@ def parse_path(root_path):
 
 def extract_code(tar_path):
     root_dir = Path(tar_path).absolute().parent
-    code_dir = f"{root_dir}/code"
+    code_dir = root_dir / "code"
     mkdir(code_dir)
     with tarfile.open(tar_path) as tf:
         tf.extractall(code_dir, filter="data")
@@ -79,6 +79,10 @@ def run(args):
     log.info("sock: %r, tar: %r, module: %r", args.sock, args.tar, module_name)
     code_dir = extract_code(args.tar)
     log.info("code dir: %r", code_dir)
+
+    py_file = code_dir / args.path
+    if not py_file.exists():
+        raise SystemExit(f"error: {py_file.name!r} not found")
 
     # Allow users to import their own files and load data files
     sys.path.append(str(code_dir))
