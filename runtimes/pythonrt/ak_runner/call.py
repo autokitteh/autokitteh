@@ -59,7 +59,7 @@ class AKCall:
                 return func(*args, **kw)
 
             log.info("ak function call: %s(%r, %r)", func.__name__, args, kw)
-            self.comm.send_call(func.__name__, args)
+            self.comm.send_call(func.__name__, args, kw)
             msg = self.comm.recv(MessageType.call_return)
             value = msg["payload"]["value"]
             if func is autokitteh.next_event:

@@ -106,12 +106,13 @@ class Comm:
         }
         self._send(message)
 
-    def send_call(self, func_name, args):
+    def send_call(self, func_name, args, kw):
         message = {
             "type": MessageType.call,
             "payload": {
                 "func_name": func_name,
                 "args": args,
+                "kw": kw,
             },
         }
         self._send(message)
