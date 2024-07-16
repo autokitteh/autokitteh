@@ -1,10 +1,9 @@
+import ast
 import json
 import logging
 import sys
 import tarfile
 from base64 import b64decode
-from importlib.util import module_from_spec, spec_from_file_location
-from inspect import getsourcelines
 from os import chdir, mkdir
 from pathlib import Path
 from socket import AF_UNIX, SOCK_STREAM, socket
@@ -134,43 +133,27 @@ def run(args):
 
 
 def inspect_file(code_dir, path):
-    mod_name = path.stem
-    spec = spec_from_file_location(mod_name, path)
-    if spec is None:
-        raise ValueError("no spec for {path!r}")
+    with open(path) as fp:
+        code = fp.read()
 
-    mod = module_from_spec(spec)
-    spec.loader.exec_module(mod)
-    sys.modules[mod_name] = mod  # required for getsourcelines
-
-    for name in dir(mod):
-        value = getattr(mod, name)
-        if not callable(value):
+    tree = ast.parse(code, path.name, "exec")
+    for node in tree.body:
+        if not isinstance(node, (ast.FunctionDef, ast.ClassDef)):
             continue
 
-        if value.__module__ != mod.__name__:
-            continue
-
-        _, lnum = getsourcelines(value)
         export = {
-            "name": name,
+            "name": node.name,
             "file": str(path.relative_to(code_dir)),
-            "line": lnum,
+            "line": node.lineno,
         }
         yield export
 
 
 def inspect(args):
-    ak_name = Path(__file__).name
     code_dir = Path(args.path)
-
-    # Allow users to import their own files and load data files
-    sys.path.append(str(code_dir))
 
     entries = []
     for path in code_dir.glob("**/*.py"):
-        if path.name == ak_name:
-            continue
         entries.extend(inspect_file(code_dir, path))
 
     # Stdout is read by Go, don't print anything else

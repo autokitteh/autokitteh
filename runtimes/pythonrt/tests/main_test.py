@@ -59,3 +59,38 @@ def test_module_entries():
 
     entries = main.module_entries(mod)
     assert names == sorted(entries)
+
+
+run_code = """
+def div(a, b):
+    return a / b
+
+
+val = div(1, 0)  # Will raise on import
+
+
+def handler(event):
+    print("VAL:", val)
+"""
+
+
+def test_inspect_run_code(tmp_path):
+    """Test that inspect don't run user code"""
+    with open(tmp_path / "run.py", "w") as out:
+        out.write(run_code)
+
+    outfile = NamedTemporaryFile(delete=False)
+    outfile.close()
+
+    cmd = [executable, "-m", "ak_runner", "inspect", str(tmp_path), outfile.name]
+    out = run(cmd)
+    assert out.returncode == 0
+
+    with open(outfile.name) as fp:
+        reply = json.load(fp)
+
+    expected = [
+        {"name": "div", "file": "run.py", "line": 2},
+        {"name": "handler", "file": "run.py", "line": 9},
+    ]
+    assert reply == expected
