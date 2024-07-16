@@ -15,6 +15,19 @@ const (
 	contentTypeForm = "application/x-www-form-urlencoded"
 )
 
+// See [webhookEvents] in "webhooks.go" for more details.
+var eventCategories = []string{
+	"added",
+	"archived",
+	"copied",
+	"created",
+	"deleted",
+	"moved",
+	"removed",
+	"trashed",
+	"updated",
+}
+
 // handleAuth saves a new AutoKitteh connection with user-submitted data.
 func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 	c, l := sdkintegrations.NewConnectionInit(h.logger, w, r, desc)
@@ -45,32 +58,34 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 		initData = initData.Set(email, e, true)
 	}
 
-	// Register a new webhook to receive, parse, and dispatch
-	// Confluence events, if there isn't one already.
-	id, ok := getWebhook(l, u, e, t)
-	if ok {
-		// TODO: In the future, when we're sure which events we want to
-		// subscribe to, uncomment this line and don't delete the webhook.
-		// initData = initData.Set(webhookID, fmt.Sprintf("%d", id), false)
+	for _, category := range eventCategories {
+		// Register a new webhook to receive, parse, and dispatch
+		// Confluence events, if there isn't one already.
+		id, ok := getWebhook(l, u, e, t, category)
+		if ok {
+			// TODO: In the future, when we're sure which events we want to
+			// subscribe to, uncomment this line and don't delete the webhook.
+			// initData = initData.Set(webhookID, fmt.Sprintf("%d", id), false)
 
-		if err := deleteWebhook(l, u, e, t, id); err != nil {
-			l.Warn("Failed to delete existing webhook", zap.Error(err))
-			c.Abort("failed to delete existing webhook: " + err.Error())
+			if err := deleteWebhook(l, u, e, t, id); err != nil {
+				l.Warn("Failed to delete existing webhook", zap.Error(err))
+				c.Abort("failed to delete existing webhook")
+				return
+			}
+		} // else {
+		var secret string
+		var err error
+		id, secret, err = registerWebhook(l, u, e, t, category)
+		if err != nil {
+			l.Warn("Failed to register webhook", zap.Error(err))
+			c.Abort("failed to register webhook")
 			return
 		}
-	} // else {
-	var secret string
-	var err error
-	id, secret, err = registerWebhook(l, u, e, t)
-	if err != nil {
-		l.Warn("Failed to register webhook", zap.Error(err))
-		c.Abort("failed to register webhook: " + err.Error())
-		return
-	}
-	initData = initData.Set(webhookSecret, secret, true)
-	// }
+		initData = initData.Set(webhookSecret(category), secret, true)
+		// }
 
-	initData = initData.Set(webhookID, fmt.Sprintf("%d", id), false)
+		initData = initData.Set(webhookID(category), fmt.Sprintf("%d", id), false)
+	}
 
 	c.Finalize(initData)
 }

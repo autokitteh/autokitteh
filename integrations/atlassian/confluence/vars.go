@@ -15,7 +15,12 @@ var (
 	accessName       = sdktypes.NewSymbol("AccessName")
 	accessScope      = sdktypes.NewSymbol("AccessScope")
 	accessAvatarURL  = sdktypes.NewSymbol("AccessAvatarURL")
-
-	webhookID     = sdktypes.NewSymbol("WebhookID")
-	webhookSecret = sdktypes.NewSymbol("WebhookSecret")
 )
+
+func webhookID(category string) sdktypes.Symbol {
+	return sdktypes.NewSymbol("WebhookID_" + category)
+}
+
+func webhookSecret(category string) sdktypes.Symbol {
+	return sdktypes.NewSymbol("WebhookSecret_" + category)
+}
