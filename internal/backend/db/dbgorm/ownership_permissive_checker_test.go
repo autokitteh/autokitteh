@@ -5,12 +5,14 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
+	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
 
 func preOwnershipTestPermissive(t *testing.T) *dbFixture {
 	f := preOwnershipTest(t)
 	f.gormdb.owner = &PermissiveOwnershipChecker{f.gormdb.z}
+	f.gormdb.z.Info("patched ownership checker", zap.String("type", "permissive"))
 	return f
 }
 
@@ -65,4 +67,17 @@ func TestListBuildsWithOwnershipP(t *testing.T) {
 	builds, err := f.gormdb.listBuilds(f.ctx, sdkservices.ListBuildsFilter{})
 	assert.Len(t, builds, 1) // allowed to fetch builds owned by other users
 	assert.NoError(t, err)
+}
+
+func TestSetVarWithOwnershipP(t *testing.T) {
+	f := preOwnershipTestPermissive(t).WithDebug()
+
+	c, env := createConnectionAndEnv(t, f)
+	v1 := f.newVar("k", "v", env) // env scoped var
+	v2 := f.newVar("k", "v", c)   // connection scoped var
+
+	// different user - authorised to create var for the connection and env owned by different user
+	f.ctx = withUser(f.ctx, u)
+	f.setVarsAndAssert(t, v1)
+	f.setVarsAndAssert(t, v2)
 }
