@@ -3,8 +3,6 @@
 
 import json
 from os import getenv
-from time import sleep
-from datetime import datetime
 
 import autokitteh
 
@@ -20,10 +18,6 @@ def greet(event):
     print(f"BODY: {body!r}")
     request = json.loads(body)
     print(f"REQUEST: {request!r}")
-
-    print("NOW:", datetime.now())
-    sleep(1)
-    print("NOW:", datetime.now())
 
 
 @autokitteh.activity
