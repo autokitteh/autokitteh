@@ -83,7 +83,7 @@ func (r SessionLogRecord) Describe(opts *SessionLogRecordDescribeOptions) string
 			describeValue(opts, opts.indent(w), kittehs.Must1(ValueFromProto(m.CallAttemptComplete.Result.Value)))
 		}
 	default:
-		fmt.Fprintln(b, "???")
+		fmt.Fprintln(b, "<unknown>")
 	}
 
 	return b.String()
@@ -132,7 +132,7 @@ func describeState(opts *SessionLogRecordDescribeOptions, w io.Writer, s Session
 		fmt.Fprintln(w, "")
 		describeCompletedState(opts, opts.indent(w), s)
 	default:
-		fmt.Fprintln(w, "???")
+		fmt.Fprintln(w, "<unknown>")
 	}
 }
 
