@@ -6,6 +6,7 @@ from threading import Thread
 from time import sleep
 from unittest.mock import MagicMock
 
+import pytest
 from autokitteh import decorators
 from conftest import testdata
 from loader_test import simple_dir
@@ -193,3 +194,10 @@ def test_sleep_activity():
     ak_call(sleep, 0.1)
 
     assert comm.send_call.call_count == 0
+
+
+def test_call_non_func():
+    comm = MagicMock()
+    ak_call = ak_runner.AKCall(comm)
+    with pytest.raises(ValueError):
+        ak_call("hello")
