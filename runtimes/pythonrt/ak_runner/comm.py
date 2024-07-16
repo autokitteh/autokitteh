@@ -39,8 +39,13 @@ class Comm:
 
         message = json.loads(data)
         if (typ := message["type"]) not in msg_types:
-            typs = ", ".join(msg_types)
-            raise ValueError(f"message type: expected one of {typs!r}, got {typ!r}")
+            if len(msg_types) == 1:
+                typs = msg_types[0]
+                extra = ""
+            else:
+                typs = ", ".join(msg_types)
+                extra = " one of"
+            raise ValueError(f"message type: expected{extra} {typs!r}, got {typ!r}")
         return message
 
     def _picklize(self, data):
