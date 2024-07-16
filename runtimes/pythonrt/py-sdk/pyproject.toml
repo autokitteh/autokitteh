@@ -1,7 +1,7 @@
 [project]
 name = 'autokitteh'
 # If you bump minor or major, update ../requirements.txt as well
-version = '0.2.5'
+version = '0.2.6'
 description = 'AutoKitteh Python SDK'
 readme = 'README.md'
 license = {file = 'LICENSE'}
@@ -13,22 +13,24 @@ build-backend = "setuptools.build_meta"
 
 [project.optional-dependencies]
 # The AutoKitteh enviornment when running workflows
-# This should be in sync with ../pyproject.toml
+# This should be in sync with ../requirements.txt
 all = [
 	"atlassian-python-api ~= 3.41",
 	"beautifulsoup4 ~= 4.12",
 	"boto3 ~= 1.34",
-	"google-api-python-client ~= 2.122",
+	"discord.py ~= 2.4",
+	"google-api-python-client ~= 2.137",
 	"google-auth-httplib2 ~= 0.2",
 	"google-auth-oauthlib ~= 1.2",
+	"google-generativeai ~= 0.7",
 	"jira ~= 3.8",
-	"openai ~= 1.14",
-	"PyGithub ~= 2.2",
+	"openai ~= 1.35",
+	"PyGithub ~= 2.3",
 	"PyYAML ~= 6.0",
 	"redis ~= 5.0",
-	"requests ~= 2.31",
-	"slack-sdk ~= 3.27",
-	"twilio ~= 9.0",
+	"requests ~= 2.32",
+	"slack-sdk ~= 3.31",
+	"twilio ~= 9.2",
 ]
 
 [tool.setuptools.packages.find]
