@@ -18,9 +18,6 @@ func (gdb *gormdb) withUserVars(ctx context.Context) *gorm.DB {
 	return gdb.withUserEntity(ctx, "var")
 }
 
-// FIXME:
-// - env vars are user scopes for sure. Connection vars may have no user in ctx? Need to check more use-cases for connection vars
-
 func (gdb *gormdb) setVar(ctx context.Context, vr *scheme.Var) error {
 	vr.VarID = vr.ScopeID // just ensure
 
@@ -29,13 +26,11 @@ func (gdb *gormdb) setVar(ctx context.Context, vr *scheme.Var) error {
 		return err
 	}
 	return gdb.transaction(ctx, func(tx *tx) error {
-		// connection and env are soft-deleted. emulate foreign keys check
 		db := tx.db.WithContext(ctx)
 
-		// fetch user_id and entity_type for provided scope_id
+		// if no records were found then fail with foreign keys validation (#1), since there should be one
 		oo, err := tx.owner.EnsureUserAccessToEntitiesWithOwnership(db, uid, vr.ScopeID)
 		if err != nil {
-			// if no records were found then fail with foreign keys validation (#1), since there should be one
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return gorm.ErrForeignKeyViolated
 			}
