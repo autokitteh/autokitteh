@@ -80,6 +80,14 @@ autokitteh.events module
    :undoc-members:
    :show-inheritance:
 
+autokitteh.github module
+------------------------
+
+.. automodule:: autokitteh.github
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 autokitteh.google module
 ------------------------
 
@@ -92,6 +100,14 @@ autokitteh.openai module
 ------------------------
 
 .. automodule:: autokitteh.openai
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+autokitteh.redis module
+------------------------
+
+.. automodule:: autokitteh.redis
    :members:
    :undoc-members:
    :show-inheritance:
