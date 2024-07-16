@@ -131,26 +131,38 @@ func (gdb *gormdb) createEntityWithOwnership(
 	})
 }
 
-func EnsureUserAccessToEntities(db *gorm.DB, uid string, ids ...sdktypes.UUID) ([]scheme.Ownership, error) {
+func getOwnerships(db *gorm.DB, ids ...sdktypes.UUID) ([]scheme.Ownership, error) {
 	if len(ids) == 0 {
 		return nil, nil
 	}
 
-	var oo []scheme.Ownership
-	if err := db.Model(&scheme.Ownership{}).Where("entity_id IN ?", ids).Select("user_id", "entity_type").Find(&oo).Error; err != nil {
+	var ownerships []scheme.Ownership
+	if err := db.Model(&scheme.Ownership{}).Where("entity_id IN ?", ids).Select("user_id", "entity_type").Find(&ownerships).Error; err != nil {
 		return nil, err
 	}
+	return ownerships, nil
+}
 
-	if len(oo) < len(ids) {
-		return oo, gorm.ErrRecordNotFound
-	}
-
-	for _, o := range oo {
+func verifyOwnerships(uid string, ownerships []scheme.Ownership) error {
+	for _, o := range ownerships {
 		if o.UserID != uid {
-			return oo, sdkerrors.ErrUnauthorized
+			return sdkerrors.ErrUnauthorized
 		}
 	}
-	return oo, nil
+	return nil
+}
+
+// fetches ownerships for given ids and verifies that user have access to all of them
+func ensureUserAccessToEntitiesWithOwnerships(db *gorm.DB, uid string, ids ...sdktypes.UUID) ([]scheme.Ownership, error) {
+	ownerships, err := getOwnerships(db, ids...)
+	if err != nil {
+		return ownerships, err
+	}
+
+	if len(ownerships) < len(ids) { // should be equal
+		return ownerships, gorm.ErrRecordNotFound
+	}
+	return ownerships, verifyOwnerships(uid, ownerships)
 }
 
 func (gdb *gormdb) isUserEntity(uid string, ids ...sdktypes.UUID) error {
@@ -199,7 +211,7 @@ func (c *UsersOwnershipChecker) EnsureUserAccessToEntitiesWithOwnership(
 	db *gorm.DB, uid string, ids ...sdktypes.UUID,
 ) ([]scheme.Ownership, error) {
 	c.z.Debug("isUserEntity", zap.Any("entityIDs", ids), zap.Any("uid", uid))
-	return EnsureUserAccessToEntities(db, uid, ids...)
+	return ensureUserAccessToEntitiesWithOwnerships(db, uid, ids...)
 }
 
 func (c *UsersOwnershipChecker) EnsureUserAccessToEntities(db *gorm.DB, uid string, ids ...sdktypes.UUID) error {
@@ -219,7 +231,7 @@ type PermissiveOwnershipChecker struct {
 func (c *PermissiveOwnershipChecker) EnsureUserAccessToEntitiesWithOwnership(
 	db *gorm.DB, uid string, ids ...sdktypes.UUID,
 ) ([]scheme.Ownership, error) {
-	oo, err := EnsureUserAccessToEntities(db, uid, ids...)
+	oo, err := ensureUserAccessToEntitiesWithOwnerships(db, uid, ids...)
 	if err != nil && errors.Is(err, sdkerrors.ErrUnauthorized) {
 		err = nil // ignore not authorized, but keep all other (e.g. NotFound) - see var
 	}
