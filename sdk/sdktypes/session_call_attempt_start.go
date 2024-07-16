@@ -27,3 +27,7 @@ func SessionCallAttemptStartFromProto(m *SessionCallAttemptStartPB) (SessionCall
 func StrictSessionCallAttemptStartFromProto(m *SessionCallAttemptStartPB) (SessionCallAttemptStart, error) {
 	return Strict(SessionCallAttemptStartFromProto(m))
 }
+
+func (s SessionCallAttemptStart) Num() uint32 {
+	return s.m.Num
+}

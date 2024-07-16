@@ -14,6 +14,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/akmodules"
+	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessioncontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionsvcs"
@@ -112,6 +113,16 @@ func (cs *calls) StartWorkers(ctx context.Context) error {
 	return cs.uniqueWorker.Start()
 }
 
+func (cs *calls) createSessionCall(ctx context.Context, sessionID sdktypes.SessionID, spec sdktypes.SessionCallSpec) error {
+	return cs.svcs.DB.Transaction(ctx, func(tx db.DB) error {
+		if err := tx.CreateSessionCall(ctx, sessionID, spec); err != nil {
+			return err
+		}
+		r := sdktypes.NewCallSpecSessionLogRecord(spec.Seq(), spec)
+		return tx.SaveSessionLogRecord(ctx, sessionID, r)
+	})
+}
+
 func (cs *calls) Call(ctx workflow.Context, params *CallParams) (sdktypes.SessionCallAttemptResult, error) {
 	spec := params.CallSpec
 
@@ -124,7 +135,7 @@ func (cs *calls) Call(ctx workflow.Context, params *CallParams) (sdktypes.Sessio
 
 	// TODO: If replaying, make sure arguments are the same?
 	if err := workflow.ExecuteLocalActivity(
-		ctx, cs.svcs.DB.CreateSessionCall, params.SessionID, spec,
+		ctx, cs.createSessionCall, params.SessionID, spec,
 	).Get(ctx, nil); err != nil {
 		return sdktypes.InvalidSessionCallAttemptResult, fmt.Errorf("db.create_call: %w", err)
 	}

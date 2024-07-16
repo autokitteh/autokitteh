@@ -64,9 +64,6 @@ type sessionWorkflow struct {
 	signals map[string]uint64 // map signals to next sequence number
 
 	state sdktypes.SessionState
-
-	// this is a sequence for all workflow records
-	globalSeq uint32
 }
 
 type connInfo struct {
@@ -158,7 +155,6 @@ func (w *sessionWorkflow) call(ctx workflow.Context, runID sdktypes.RunID, v sdk
 	}
 
 	w.callSeq++
-	w.globalSeq++
 
 	z := w.z.With(zap.Any("run_id", runID), zap.Any("v", v), zap.Uint32("seq", w.callSeq))
 
@@ -480,15 +476,17 @@ func (w *sessionWorkflow) run(wctx workflow.Context) (prints []string, err error
 			w.z.Debug("print", zap.String("run_id", runID.String()), zap.String("text", text))
 
 			prints = append(prints, text)
+			r := sdktypes.NewPrintSessionLogRecord(int32(w.callSeq), text)
 
 			if isFromActivity(printCtx) {
 				// TODO: We do this since we're already in an activity. We need to either
 				//       manually retry this (maybe even using the heartbeat to know if it's
 				//       already been processed), or we need to aggregate the prints
 				//       and just perform them in the workflow after the activity is done.
-				err = w.ws.svcs.DB.AddSessionPrint(printCtx, w.data.SessionID, text)
+
+				err = w.ws.svcs.DB.SaveSessionLogRecord(printCtx, w.data.SessionID, r)
 			} else {
-				err = workflow.ExecuteLocalActivity(wctx, w.ws.svcs.DB.AddSessionPrint, w.data.SessionID, text).Get(wctx, nil)
+				err = workflow.ExecuteLocalActivity(wctx, w.ws.svcs.DB.SaveSessionLogRecord, w.data.SessionID, r).Get(wctx, nil)
 			}
 
 			if err != nil {

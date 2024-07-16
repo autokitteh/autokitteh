@@ -12,6 +12,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/internal/backend/akmodules"
 	akmodule "go.autokitteh.dev/autokitteh/internal/backend/akmodules/ak"
+	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessioncontext"
 	"go.autokitteh.dev/autokitteh/sdk/sdkexecutor"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -148,8 +149,22 @@ func (cs *calls) executeCall(ctx context.Context, sessionID sdktypes.SessionID, 
 	for !last {
 		z := z.With(zap.Uint32("attempt", attempt))
 
-		attempt, err = cs.svcs.DB.StartSessionCallAttempt(ctx, sessionID, seq)
-		if err != nil {
+		if err := cs.svcs.DB.Transaction(ctx, func(tx db.DB) error {
+			scas, err := tx.StartSessionCallAttempt(ctx, sessionID, seq)
+			if err != nil {
+				return err
+			}
+
+			r := sdktypes.NewCallAttemptStartSessionLogRecord(seq, scas)
+
+			err = tx.SaveSessionLogRecord(ctx, sessionID, r)
+			if err != nil {
+				return err
+			}
+
+			attempt = scas.Num()
+			return nil
+		}); err != nil {
 			return nil, attempt, err
 		}
 
@@ -208,10 +223,20 @@ func (cs *calls) executeCall(ctx context.Context, sessionID sdktypes.SessionID, 
 
 		// TODO: this is an error in db access inside the activity. If this fails we might be in a troubling state.
 		//       need to at least manually retry this.
-		if err := cs.svcs.DB.CompleteSessionCallAttempt(
-			ctx, sessionID, seq, attempt,
-			sdktypes.NewSessionCallAttemptComplete(last, interval, result),
-		); err != nil {
+
+		err = cs.svcs.DB.Transaction(ctx, func(tx db.DB) error {
+			complete := sdktypes.NewSessionCallAttemptComplete(last, interval, result)
+			if err := cs.svcs.DB.CompleteSessionCallAttempt(
+				ctx, sessionID, seq, attempt,
+				complete,
+			); err != nil {
+				return err
+			}
+
+			return cs.svcs.DB.SaveSessionLogRecord(ctx, sessionID, sdktypes.NewCallAttemptCompleteSessionLogRecord(seq, complete))
+		})
+
+		if err != nil {
 			return nil, attempt, err
 		}
 	}

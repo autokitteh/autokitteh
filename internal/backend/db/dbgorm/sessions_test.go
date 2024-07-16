@@ -249,7 +249,7 @@ func TestAddSessionPrintLogRecord(t *testing.T) {
 	f := preSessionTest(t)
 
 	s := f.newSession(sdktypes.SessionStateTypeCompleted)
-	l := sdktypes.NewPrintSessionLogRecord("meow")
+	l := sdktypes.NewPrintSessionLogRecord(1, "meow")
 	logr, err := toSessionLogRecord(s.SessionID, l)
 	assert.NoError(t, err)
 
@@ -263,7 +263,7 @@ func TestSessionLogRecordListOrder(t *testing.T) {
 	f := preSessionTest(t)
 
 	s := f.newSession(sdktypes.SessionStateTypeCompleted)
-	l := sdktypes.NewPrintSessionLogRecord("meow")
+	l := sdktypes.NewPrintSessionLogRecord(1, "meow")
 	logr, err := toSessionLogRecord(s.SessionID, l)
 	assert.NoError(t, err)
 
@@ -305,7 +305,7 @@ func TestSessionLogRecordPageSizeAndTotalCount(t *testing.T) {
 	f := preSessionTest(t)
 
 	s := f.newSession(sdktypes.SessionStateTypeCompleted)
-	l := sdktypes.NewPrintSessionLogRecord("meow")
+	l := sdktypes.NewPrintSessionLogRecord(1, "meow")
 	logr, err := toSessionLogRecord(s.SessionID, l)
 	assert.NoError(t, err)
 
@@ -327,7 +327,7 @@ func TestSessionLogRecordSkipAll(t *testing.T) {
 	f := preSessionTest(t)
 
 	s := f.newSession(sdktypes.SessionStateTypeCompleted)
-	l := sdktypes.NewPrintSessionLogRecord("meow")
+	l := sdktypes.NewPrintSessionLogRecord(1, "meow")
 	logr, err := toSessionLogRecord(s.SessionID, l)
 	assert.NoError(t, err)
 
@@ -349,7 +349,7 @@ func TestSessionLogRecordSkip(t *testing.T) {
 	f := preSessionTest(t)
 
 	s := f.newSession(sdktypes.SessionStateTypeCompleted)
-	l := sdktypes.NewPrintSessionLogRecord("meow")
+	l := sdktypes.NewPrintSessionLogRecord(1, "meow")
 	logr, err := toSessionLogRecord(s.SessionID, l)
 	assert.NoError(t, err)
 
@@ -371,7 +371,7 @@ func TestSessionLogRecordNextPageTokenEmpty(t *testing.T) {
 	f := preSessionTest(t)
 
 	s := f.newSession(sdktypes.SessionStateTypeCompleted)
-	l := sdktypes.NewPrintSessionLogRecord("meow")
+	l := sdktypes.NewPrintSessionLogRecord(1, "meow")
 	logr, err := toSessionLogRecord(s.SessionID, l)
 	assert.NoError(t, err)
 
@@ -394,7 +394,7 @@ func TestSessionLogRecordNextPageTokenNotEmpty(t *testing.T) {
 	f := preSessionTest(t)
 
 	s := f.newSession(sdktypes.SessionStateTypeCompleted)
-	l := sdktypes.NewPrintSessionLogRecord("meow")
+	l := sdktypes.NewPrintSessionLogRecord(1, "meow")
 	logr, err := toSessionLogRecord(s.SessionID, l)
 	assert.NoError(t, err)
 

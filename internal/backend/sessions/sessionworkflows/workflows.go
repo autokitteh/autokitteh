@@ -305,7 +305,28 @@ func (ws *workflows) StopWorkflow(ctx context.Context, sessionID sdktypes.Sessio
 
 	// In case of non-forceful termination, we log the request politely. This will also
 	// let the workflow know what the reason is.
-	if err := ws.svcs.DB.AddSessionStopRequest(ctx, sessionID, reason); err != nil {
+
+	if err := ws.svcs.DB.Transaction(ctx, func(tx db.DB) error {
+		result, err := ws.svcs.DB.ListSessionLogRecords(ctx,
+			sdkservices.ListSessionLogRecordsFilter{
+				SessionID: sessionID,
+				PaginationRequest: sdktypes.PaginationRequest{
+					PageSize:  1,
+					Ascending: false,
+				}})
+
+		if err != nil {
+			return err
+		}
+
+		seq := int32(1)
+		if len(result.Records) == 1 {
+			seq = int32(result.Records[0].Seq())
+		}
+
+		r := sdktypes.NewStopRequestSessionLogRecord(seq, reason)
+		return ws.svcs.DB.SaveSessionLogRecord(ctx, sessionID, r)
+	}); err != nil {
 		return err
 	}
 

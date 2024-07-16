@@ -64,17 +64,19 @@ func (s SessionLogRecord) GetStopRequest() (string, bool) {
 	return "", false
 }
 
-func NewPrintSessionLogRecord(text string) SessionLogRecord {
+func NewPrintSessionLogRecord(seq int32, text string) SessionLogRecord {
 	return forceFromProto[SessionLogRecord](&SessionLogRecordPB{
 		T:     timestamppb.Now(),
 		Print: &sessionv1.SessionLogRecord_Print{Text: text},
+		Seq:   seq,
 	})
 }
 
-func NewStopRequestSessionLogRecord(reason string) SessionLogRecord {
+func NewStopRequestSessionLogRecord(seq int32, reason string) SessionLogRecord {
 	return forceFromProto[SessionLogRecord](&SessionLogRecordPB{
 		T:           timestamppb.Now(),
 		StopRequest: &sessionv1.SessionLogRecord_StopRequest{Reason: reason},
+		Seq:         seq,
 	})
 }
 
@@ -89,7 +91,7 @@ func NewStateSessionLogRecord(state SessionState) SessionLogRecord {
 	})
 }
 
-func NewCallAttemptStartSessionLogRecord(s SessionCallAttemptStart) SessionLogRecord {
+func NewCallAttemptStartSessionLogRecord(seq uint32, s SessionCallAttemptStart) SessionLogRecord {
 	if !s.IsValid() {
 		return InvalidSessionLogRecord
 	}
@@ -97,10 +99,11 @@ func NewCallAttemptStartSessionLogRecord(s SessionCallAttemptStart) SessionLogRe
 	return forceFromProto[SessionLogRecord](&SessionLogRecordPB{
 		T:                timestamppb.Now(),
 		CallAttemptStart: s.ToProto(),
+		Seq:              int32(seq),
 	})
 }
 
-func NewCallAttemptCompleteSessionLogRecord(s SessionCallAttemptComplete) SessionLogRecord {
+func NewCallAttemptCompleteSessionLogRecord(seq uint32, s SessionCallAttemptComplete) SessionLogRecord {
 	if !s.IsValid() {
 		return InvalidSessionLogRecord
 	}
@@ -108,10 +111,11 @@ func NewCallAttemptCompleteSessionLogRecord(s SessionCallAttemptComplete) Sessio
 	return forceFromProto[SessionLogRecord](&SessionLogRecordPB{
 		T:                   timestamppb.Now(),
 		CallAttemptComplete: s.ToProto(),
+		Seq:                 int32(seq),
 	})
 }
 
-func NewCallSpecSessionLogRecord(s SessionCallSpec) SessionLogRecord {
+func NewCallSpecSessionLogRecord(seq uint32, s SessionCallSpec) SessionLogRecord {
 	if !s.IsValid() {
 		return InvalidSessionLogRecord
 	}
@@ -119,6 +123,7 @@ func NewCallSpecSessionLogRecord(s SessionCallSpec) SessionLogRecord {
 	return forceFromProto[SessionLogRecord](&SessionLogRecordPB{
 		T:        timestamppb.Now(),
 		CallSpec: s.ToProto(),
+		Seq:      int32(seq),
 	})
 }
 

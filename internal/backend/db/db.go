@@ -132,19 +132,20 @@ type DB interface {
 	// -----------------------------------------------------------------------
 	CreateSession(ctx context.Context, session sdktypes.Session) error
 	GetSession(ctx context.Context, sessionID sdktypes.SessionID) (sdktypes.Session, error)
-	ListSessionLogRecords(ctx context.Context, filter sdkservices.ListSessionLogRecordsFilter) (sdkservices.ListSessionLogRecordsResults, error)
 	UpdateSessionState(ctx context.Context, sessionID sdktypes.SessionID, state sdktypes.SessionState) error
-	AddSessionPrint(ctx context.Context, sessionID sdktypes.SessionID, print string) error
-	AddSessionStopRequest(ctx context.Context, sessionID sdktypes.SessionID, reason string) error
 	ListSessions(ctx context.Context, f sdkservices.ListSessionsFilter) (sdkservices.ListSessionResult, error)
 	DeleteSession(ctx context.Context, sessionID sdktypes.SessionID) error
 
-	// -----------------------------------------------------------------------
-	CreateSessionCall(ctx context.Context, sessionID sdktypes.SessionID, data sdktypes.SessionCallSpec) error
-	GetSessionCallSpec(ctx context.Context, sessionID sdktypes.SessionID, seq uint32) (sdktypes.SessionCallSpec, error)
+	SaveSessionLogRecord(ctx context.Context, sesssionID sdktypes.SessionID, record sdktypes.SessionLogRecord) error
+	ListSessionLogRecords(ctx context.Context, filter sdkservices.ListSessionLogRecordsFilter) (sdkservices.ListSessionLogRecordsResults, error)
 
-	StartSessionCallAttempt(ctx context.Context, sessionID sdktypes.SessionID, seq uint32) (uint32, error)
+	// AddSessionPrint(ctx context.Context, sessionID sdktypes.SessionID, print string) error
+	// AddSessionStopRequest(ctx context.Context, sessionID sdktypes.SessionID, reason string) error
+	CreateSessionCall(ctx context.Context, sessionID sdktypes.SessionID, data sdktypes.SessionCallSpec) error
+	StartSessionCallAttempt(ctx context.Context, sessionID sdktypes.SessionID, seq uint32) (sdktypes.SessionCallAttemptStart, error)
 	CompleteSessionCallAttempt(ctx context.Context, sessionID sdktypes.SessionID, seq, attempt uint32, complete sdktypes.SessionCallAttemptComplete) error
+
+	GetSessionCallSpec(ctx context.Context, sessionID sdktypes.SessionID, seq uint32) (sdktypes.SessionCallSpec, error)
 	GetSessionCallAttemptResult(ctx context.Context, sessionID sdktypes.SessionID, seq uint32, attempt int64 /* <0 for last */) (sdktypes.SessionCallAttemptResult, error)
 
 	// -----------------------------------------------------------------------

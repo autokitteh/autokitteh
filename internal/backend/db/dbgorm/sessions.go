@@ -181,26 +181,16 @@ func (gdb *gormdb) createSessionCall(ctx context.Context, sessionID sdktypes.UUI
 		return fmt.Errorf("marshal session call: %w", err)
 	}
 
-	logr, err := toSessionLogRecord(sessionID, sdktypes.NewCallSpecSessionLogRecord(spec))
-	if err != nil {
-		return err
-	}
-
 	callSpec := scheme.SessionCallSpec{
 		SessionID: sessionID,
 		Seq:       spec.Seq(),
 		Data:      jsonSpec,
 	}
 
-	return gdb.transaction(ctx, func(tx *tx) error {
-		if err := tx.isCtxUserEntity(ctx, sessionID); err != nil {
-			return err
-		}
-		if err := tx.db.Create(&callSpec).Error; err != nil {
-			return err
-		}
-		return createLogRecord(tx.db, logr)
-	})
+	if err := gdb.isCtxUserEntity(ctx, sessionID); err != nil {
+		return err
+	}
+	return gdb.db.Create(&callSpec).Error
 }
 
 func (gdb *gormdb) getSessionCallSpec(ctx context.Context, sessionID sdktypes.UUID, seq uint32) (*scheme.SessionCallSpec, error) {
@@ -226,48 +216,45 @@ func countCallAttemps(db *gorm.DB, sessionID sdktypes.UUID, seq uint32) (uint32,
 	return uint32(n), nil
 }
 
-func (gdb *gormdb) startSessionCallAttempt(ctx context.Context, sessionID sdktypes.UUID, seq uint32) (attempt uint32, err error) {
-	err = gdb.transaction(ctx, func(tx *tx) error {
-		if err := tx.isCtxUserEntity(ctx, sessionID); err != nil {
-			return err
-		}
-		if attempt, err = countCallAttemps(tx.db, sessionID, seq); err != nil {
-			return err
-		}
+func (gdb *gormdb) startSessionCallAttempt(ctx context.Context, sessionID sdktypes.UUID, seq uint32) (*scheme.SessionCallAttempt, error) {
+	if err := gdb.isCtxUserEntity(ctx, sessionID); err != nil {
+		return nil, err
+	}
 
-		callAttemptStart := kittehs.Must1(sdktypes.SessionCallAttemptStartFromProto(&sdktypes.SessionCallAttemptStartPB{
-			StartedAt: timestamppb.Now(),
-			Num:       attempt,
-		}))
-		callAttemptStartJson, err := json.Marshal(callAttemptStart)
-		if err != nil {
-			return err
-		}
-		logr, err := toSessionLogRecord(sessionID, sdktypes.NewCallAttemptStartSessionLogRecord(callAttemptStart))
-		if err != nil {
-			return err
-		}
+	attempt, err := countCallAttemps(gdb.db, sessionID, seq)
+	if err != nil {
+		return nil, err
+	}
 
-		callAttempt := scheme.SessionCallAttempt{
-			SessionID: sessionID,
-			Seq:       seq,
-			Attempt:   attempt,
-			Start:     callAttemptStartJson,
-		}
+	callAttemptStart := kittehs.Must1(sdktypes.SessionCallAttemptStartFromProto(&sdktypes.SessionCallAttemptStartPB{
+		StartedAt: timestamppb.Now(),
+		Num:       attempt,
+	}))
 
-		if err := tx.db.Create(&callAttempt).Error; err != nil {
-			return err
-		}
-		return createLogRecord(tx.db, logr)
-	})
-	return
+	callAttemptStartJson, err := json.Marshal(callAttemptStart)
+	if err != nil {
+		return nil, err
+	}
+
+	callAttempt := scheme.SessionCallAttempt{
+		SessionID: sessionID,
+		Seq:       seq,
+		Attempt:   attempt,
+		Start:     callAttemptStartJson,
+	}
+
+	if err := gdb.db.Create(&callAttempt).Error; err != nil {
+		return nil, err
+	}
+
+	return &callAttempt, nil
 }
 
 func (gdb *gormdb) completeSessionCallAttempt(ctx context.Context, sessionID sdktypes.UUID, seq, attempt uint32, complete sdktypes.SessionCallAttemptComplete) error {
-	logr, err := toSessionLogRecord(sessionID, sdktypes.NewCallAttemptCompleteSessionLogRecord(complete))
-	if err != nil {
-		return err
-	}
+	// logr, err := toSessionLogRecord(sessionID, sdktypes.NewCallAttemptCompleteSessionLogRecord(complete))
+	// if err != nil {
+	// 	return err
+	// }
 
 	json, err := json.Marshal(complete)
 	if err != nil {
@@ -275,18 +262,16 @@ func (gdb *gormdb) completeSessionCallAttempt(ctx context.Context, sessionID sdk
 	}
 	r := scheme.SessionCallAttempt{Complete: json}
 
-	return gdb.transaction(ctx, func(tx *tx) error {
-		if err := tx.isCtxUserEntity(ctx, sessionID); err != nil {
-			return err
-		}
+	if err := gdb.isCtxUserEntity(ctx, sessionID); err != nil {
+		return err
+	}
 
-		if res := tx.db.Model(&r).Where("session_id = ? AND seq = ? AND attempt = ?", sessionID, seq, attempt).Updates(r); res.Error != nil {
-			return res.Error
-		} else if res.RowsAffected == 0 {
-			return sdkerrors.ErrNotFound
-		}
-		return createLogRecord(tx.db, logr)
-	})
+	if res := gdb.db.Model(&r).Where("session_id = ? AND seq = ? AND attempt = ?", sessionID, seq, attempt).Updates(r); res.Error != nil {
+		return res.Error
+	} else if res.RowsAffected == 0 {
+		return sdkerrors.ErrNotFound
+	}
+	return nil
 }
 
 // attempt legend: -1 for latest, >= 0 for specific attempt.
@@ -392,21 +377,21 @@ func toSessionLogRecord(sessionID sdktypes.UUID, logr sdktypes.SessionLogRecord)
 	return &scheme.SessionLogRecord{SessionID: sessionID, Data: logRecordData, Seq: uint64(logr.Seq())}, nil
 }
 
-func (db *gormdb) AddSessionPrint(ctx context.Context, sessionID sdktypes.SessionID, print string) error {
-	logr, err := toSessionLogRecord(sessionID.UUIDValue(), sdktypes.NewPrintSessionLogRecord(print))
-	if err != nil {
-		return err
-	}
-	return translateError(db.addSessionLogRecord(ctx, logr))
-}
+// func (db *gormdb) AddSessionPrint(ctx context.Context, sessionID sdktypes.SessionID, print string) error {
+// 	logr, err := toSessionLogRecord(sessionID.UUIDValue(), sdktypes.NewPrintSessionLogRecord(print))
+// 	if err != nil {
+// 		return err
+// 	}
+// 	return translateError(db.addSessionLogRecord(ctx, logr))
+// }
 
-func (db *gormdb) AddSessionStopRequest(ctx context.Context, sessionID sdktypes.SessionID, reason string) error {
-	logr, err := toSessionLogRecord(sessionID.UUIDValue(), sdktypes.NewStopRequestSessionLogRecord(reason))
-	if err != nil {
-		return err
-	}
-	return translateError(db.addSessionLogRecord(ctx, logr))
-}
+// func (db *gormdb) AddSessionStopRequest(ctx context.Context, sessionID sdktypes.SessionID, reason string) error {
+// 	logr, err := toSessionLogRecord(sessionID.UUIDValue(), sdktypes.NewStopRequestSessionLogRecord(reason))
+// 	if err != nil {
+// 		return err
+// 	}
+// 	return translateError(db.addSessionLogRecord(ctx, logr))
+// }
 
 func (db *gormdb) ListSessionLogRecords(ctx context.Context, filter sdkservices.ListSessionLogRecordsFilter) (sdkservices.ListSessionLogRecordsResults, error) {
 	rs, n, err := db.getSessionLogRecords(ctx, filter)
@@ -437,9 +422,13 @@ func (db *gormdb) GetSessionCallSpec(ctx context.Context, sessionID sdktypes.Ses
 	return scheme.ParseSessionCallSpec(*r)
 }
 
-func (db *gormdb) StartSessionCallAttempt(ctx context.Context, sessionID sdktypes.SessionID, seq uint32) (attempt uint32, err error) {
-	attempt, err = db.startSessionCallAttempt(ctx, sessionID.UUIDValue(), seq)
-	return attempt, translateError(err)
+func (db *gormdb) StartSessionCallAttempt(ctx context.Context, sessionID sdktypes.SessionID, seq uint32) (sdktypes.SessionCallAttemptStart, error) {
+	sca, err := db.startSessionCallAttempt(ctx, sessionID.UUIDValue(), seq)
+	if err != nil {
+		return sdktypes.InvalidSessionCallAttemptStart, translateError(err)
+	}
+	return scheme.ParseSessionCallAttemptStart(*sca)
+
 }
 
 func (db *gormdb) CompleteSessionCallAttempt(ctx context.Context, sessionID sdktypes.SessionID, seq, attempt uint32, complete sdktypes.SessionCallAttemptComplete) error {
