@@ -23,6 +23,23 @@
 <pre class="prints">{{ .Prints}}</pre>
 
 <h2>Log</h2>
+
+<div class="tab">
+    <button class="tablinks" onclick="viewTab('text-log')">Text</button>
+    <button class="tablinks" onclick="viewTab('json-log')">JSON</button>
+</div>
+
+<div id="text-log" class="tabcontent">
+<pre class="prints">{{ range .LogText }}{{ . }}
+{{ end }}</pre>
+</div>
+
+<div id="json-log" class="tabcontent">
 <div class="jsoneditor">{{ .LogJSON }}</div>
+</div>
+
+<script>
+    setTimeout(function() { viewTab('text-log') }, 100)
+</script>
 
 {{ template "footer_" . }}

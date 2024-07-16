@@ -119,6 +119,7 @@ func (s Svc) session(w http.ResponseWriter, r *http.Request) {
 		ID          string
 		SessionJSON template.HTML
 		LogJSON     template.HTML
+		LogText     []template.HTML
 		InputsJSON  template.HTML
 		Prints      string
 		State       string
@@ -128,10 +129,13 @@ func (s Svc) session(w http.ResponseWriter, r *http.Request) {
 		ID:          sdkS.ID().String(),
 		SessionJSON: marshalObject(sdkS.WithInputs(nil).ToProto()),
 		LogJSON:     template.HTML(kittehs.Must1(kittehs.MarshalProtoSliceJSON(log.Log.ToProto().Records))),
-		InputsJSON:  template.HTML(jsonInputs),
-		Prints:      prints,
-		State:       sdkS.State().String(),
-		IsActive:    !sdkS.State().IsFinal(),
+		LogText: kittehs.Transform(log.Log.Records(), func(r sdktypes.SessionLogRecord) template.HTML {
+			return template.HTML(r.ToString())
+		}),
+		InputsJSON: template.HTML(jsonInputs),
+		Prints:     prints,
+		State:      sdkS.State().String(),
+		IsActive:   !sdkS.State().IsFinal(),
 	}); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
