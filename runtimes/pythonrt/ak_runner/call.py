@@ -1,3 +1,5 @@
+import inspect
+from pathlib import Path
 from time import sleep
 
 import autokitteh
@@ -54,6 +56,15 @@ class AKCall:
         self.loading = False
 
     def __call__(self, func, *args, **kw):
+        if not callable(func):
+            frames = inspect.stack()
+            if len(frames) > 1:
+                file, lnum = Path(frames[1].filename).name, frames[1].lineno
+            else:
+                file, lnum = "<unknown>", 0
+
+            raise ValueError(f"{func!r} is not callable (user bug at {file}:{lnum}?)")
+
         if func in AK_FUNCS:
             if self.in_activity and func is sleep:
                 return func(*args, **kw)
