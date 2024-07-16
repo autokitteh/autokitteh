@@ -40,18 +40,18 @@ func (c *execContext) resolveProjectID(ctx context.Context, name string) (sdktyp
 	return pid, nil
 }
 
-func (c *execContext) resolveIntegrationID(name string) (sdktypes.IntegrationID, error) {
+func (c *execContext) resolveIntegrationID(ctx context.Context, name string) (sdktypes.IntegrationID, error) {
 	if iid, ok := c.integrations[name]; ok {
 		return iid, nil
 	}
 
-	in, _, err := c.resolver.IntegrationNameOrID(name)
+	in, _, err := c.resolver.IntegrationNameOrID(ctx, name)
 	iid := in.ID()
 	c.integrations[name] = iid
 	return iid, err
 }
 
-func (c *execContext) resolveEnvID(envID string) (sdktypes.EnvID, error) {
+func (c *execContext) resolveEnvID(ctx context.Context, envID string) (sdktypes.EnvID, error) {
 	if eid, ok := c.envs[envID]; ok {
 		return eid, nil
 	}
@@ -61,7 +61,7 @@ func (c *execContext) resolveEnvID(envID string) (sdktypes.EnvID, error) {
 		return sdktypes.InvalidEnvID, fmt.Errorf("invalid env id %q", envID)
 	}
 
-	sdkEnv, _, err := c.resolver.EnvNameOrID(env, proj)
+	sdkEnv, _, err := c.resolver.EnvNameOrID(ctx, env, proj)
 	if err != nil {
 		return sdktypes.InvalidEnvID, err
 	}
@@ -71,12 +71,12 @@ func (c *execContext) resolveEnvID(envID string) (sdktypes.EnvID, error) {
 	return eid, nil
 }
 
-func (c *execContext) resolveConnectionID(connID string) (sdktypes.ConnectionID, error) {
+func (c *execContext) resolveConnectionID(ctx context.Context, connID string) (sdktypes.ConnectionID, error) {
 	if cid, ok := c.connections[connID]; ok {
 		return cid, nil
 	}
 
-	conn, _, err := c.resolver.ConnectionNameOrID(connID, "")
+	conn, _, err := c.resolver.ConnectionNameOrID(ctx, connID, "")
 	if err != nil {
 		return sdktypes.InvalidConnectionID, err
 	}

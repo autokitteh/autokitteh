@@ -15,20 +15,15 @@ var deleteCmd = common.StandardCommand(&cobra.Command{
 
 	RunE: func(cmd *cobra.Command, args []string) error {
 		r := resolver.Resolver{Client: common.Client()}
-		p, id, err := r.ProjectNameOrID(args[0])
-		if err != nil {
-			return common.FailIfError(cmd, err, "project")
-		}
-
-		if err := common.FailIfNotFound(cmd, "project", p.IsValid()); err != nil {
-			return err
-		}
-
 		ctx, cancel := common.LimitedContext()
 		defer cancel()
 
-		err = projects().Delete(ctx, id)
-		return common.ToExitCodeError(err, "delete project")
+		p, pid, err := r.ProjectNameOrID(ctx, args[0])
+		if err = common.AddNotFoundErrIfCond(err, p.IsValid()); err != nil {
+			return common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "project")
+		}
+
+		return common.ToExitCodeWithSkipNotFoundFlag(cmd, projects().Delete(ctx, pid), "delete project")
 	},
 })
 

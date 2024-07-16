@@ -51,6 +51,10 @@ func (s SessionLogRecord) GetPrint() (string, bool) {
 	return "", false
 }
 
+func (s SessionLogRecord) GetCallSpec() SessionCallSpec {
+	return forceFromProto[SessionCallSpec](s.read().CallSpec)
+}
+
 func (s SessionLogRecord) GetState() SessionState {
 	return forceFromProto[SessionState](s.read().State)
 }

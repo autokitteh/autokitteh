@@ -34,19 +34,15 @@ var logCmd = common.StandardCommand(&cobra.Command{
 		}
 
 		r := resolver.Resolver{Client: common.Client()}
-		s, id, err := r.SessionID(args[0])
-		if err != nil {
-			return err
-		}
-
-		if err := common.FailIfNotFound(cmd, "session", s.IsValid()); err != nil {
-			return err
-		}
-
 		ctx, cancel := common.LimitedContext()
 		defer cancel()
 
-		f := sdkservices.ListSessionLogRecordsFilter{SessionID: id}
+		s, sid, err := r.SessionID(ctx, args[0])
+		if err = common.AddNotFoundErrIfCond(err, s.IsValid()); err != nil {
+			return common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "session")
+		}
+
+		f := sdkservices.ListSessionLogRecordsFilter{SessionID: sid}
 		if nextPageToken != "" {
 			f.PageToken = nextPageToken
 		}
@@ -65,7 +61,6 @@ var logCmd = common.StandardCommand(&cobra.Command{
 		}
 
 		return sessionLog(ctx, f)
-
 	},
 })
 
@@ -80,7 +75,6 @@ func init() {
 	logCmd.Flags().IntVar(&skipRows, "skip-rows", 0, "skip rows")
 
 	common.AddFailIfNotFoundFlag(logCmd)
-
 }
 
 // skip >= 0: skip first records

@@ -19,7 +19,7 @@ func (gdb *gormdb) withUserConnections(ctx context.Context) *gorm.DB {
 }
 
 func (gdb *gormdb) createConnection(ctx context.Context, conn *scheme.Connection) error {
-	createFunc := func(tx *gorm.DB, user *scheme.User) error { return tx.Create(conn).Error }
+	createFunc := func(tx *gorm.DB, uid string) error { return tx.Create(conn).Error }
 	return gdb.createEntityWithOwnership(ctx, createFunc, conn, conn.ProjectID)
 }
 

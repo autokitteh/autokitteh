@@ -1,8 +1,6 @@
 package integrations
 
 import (
-	"errors"
-
 	"github.com/spf13/cobra"
 
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
@@ -17,20 +15,15 @@ var getCmd = common.StandardCommand(&cobra.Command{
 
 	RunE: func(cmd *cobra.Command, args []string) error {
 		r := resolver.Resolver{Client: common.Client()}
-		i, _, err := r.IntegrationNameOrID(args[0])
-		if err != nil {
-			if errors.As(err, resolver.NotFoundErrorType) {
-				err = common.NewExitCodeError(common.NotFoundExitCode, err)
-			}
-			return err
-		}
+		ctx, cancel := common.LimitedContext()
+		defer cancel()
 
-		if err := common.FailIfNotFound(cmd, "integration", i.IsValid()); err != nil {
-			return err
+		i, _, err := r.IntegrationNameOrID(ctx, args[0])
+		err = common.AddNotFoundErrIfCond(err, i.IsValid())
+		if err = common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "integration"); err == nil {
+			common.RenderKVIfV("integration", i)
 		}
-
-		common.RenderKVIfV("integration", i)
-		return nil
+		return err
 	},
 })
 

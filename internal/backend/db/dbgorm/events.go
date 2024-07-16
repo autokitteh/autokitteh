@@ -5,12 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"gorm.io/gorm"
+
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-	"gorm.io/gorm"
 )
 
 func (gdb *gormdb) withUserEvents(ctx context.Context) *gorm.DB {
@@ -18,7 +19,7 @@ func (gdb *gormdb) withUserEvents(ctx context.Context) *gorm.DB {
 }
 
 func (gdb *gormdb) saveEvent(ctx context.Context, event *scheme.Event) error {
-	createFunc := func(tx *gorm.DB, user *scheme.User) error { return tx.Create(event).Error }
+	createFunc := func(tx *gorm.DB, uid string) error { return tx.Create(event).Error }
 	return gdb.createEntityWithOwnership(ctx, createFunc, event, event.ConnectionID)
 }
 

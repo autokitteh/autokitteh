@@ -12,7 +12,6 @@ import (
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/sdk/sdkbuildfile"
-	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -27,7 +26,7 @@ type Builds struct {
 func New(b Builds) sdkservices.Builds { return &b }
 
 func (b *Builds) Get(ctx context.Context, id sdktypes.BuildID) (sdktypes.Build, error) {
-	return sdkerrors.IgnoreNotFoundErr(b.DB.GetBuild(ctx, id))
+	return b.DB.GetBuild(ctx, id)
 }
 
 func (b *Builds) List(ctx context.Context, filter sdkservices.ListBuildsFilter) ([]sdktypes.Build, error) {

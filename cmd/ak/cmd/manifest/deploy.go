@@ -50,8 +50,11 @@ var deployCmd = common.StandardCommand(&cobra.Command{
 		}
 		logFunc(cmd, "exec")(fmt.Sprintf("create_build: created %q", bid))
 
+		ctx, cancel := common.LimitedContext()
+		defer cancel()
+
 		// Step 3: parse the optional environment argument.
-		e, eid, err := r.EnvNameOrID(env, project)
+		e, eid, err := r.EnvNameOrID(ctx, env, project)
 		if err != nil {
 			return err
 		}
@@ -69,9 +72,6 @@ var deployCmd = common.StandardCommand(&cobra.Command{
 		if err != nil {
 			return fmt.Errorf("invalid deployment: %w", err)
 		}
-
-		ctx, cancel := common.LimitedContext()
-		defer cancel()
 
 		dep := common.Client().Deployments()
 		did, err := dep.Create(ctx, deployment)

@@ -1,8 +1,6 @@
 package connections
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
 
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
@@ -20,45 +18,31 @@ var listCmd = common.StandardCommand(&cobra.Command{
 		var f sdkservices.ListConnectionsFilter
 
 		r := resolver.Resolver{Client: common.Client()}
+		ctx, cancel := common.LimitedContext()
+		defer cancel()
 
 		if integration != "" {
-			_, iid, err := r.IntegrationNameOrID(integration)
-			if err != nil {
-				return err
-			}
-
-			if !iid.IsValid() {
-				return fmt.Errorf("integration %q not found", integration)
+			i, iid, err := r.IntegrationNameOrID(ctx, integration)
+			if err = common.AddNotFoundErrIfCond(err, i.IsValid()); err != nil {
+				return common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "integration")
 			}
 			f.IntegrationID = iid
 		}
 
 		if project != "" {
-			_, pid, err := r.ProjectNameOrID(project)
-			if err != nil {
-				return err
-			}
-
-			if !pid.IsValid() {
-				return fmt.Errorf("project %q not found", integration)
+			p, pid, err := r.ProjectNameOrID(ctx, project)
+			if err = common.AddNotFoundErrIfCond(err, p.IsValid()); err != nil {
+				return common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "project")
 			}
 			f.ProjectID = pid
 		}
 
-		ctx, cancel := common.LimitedContext()
-		defer cancel()
-
 		cs, err := connections().List(ctx, f)
-		if err != nil {
-			return fmt.Errorf("list connections: %w", err)
+		err = common.AddNotFoundErrIfCond(err, len(cs) > 0)
+		if err = common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "connections"); err == nil {
+			common.RenderList(cs)
 		}
-
-		if err := common.FailIfNotFound(cmd, "connections", len(cs) > 0); err != nil {
-			return err
-		}
-
-		common.RenderList(cs)
-		return nil
+		return err
 	},
 })
 

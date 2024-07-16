@@ -29,35 +29,29 @@ var listCmd = common.StandardCommand(&cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		r := resolver.Resolver{Client: common.Client()}
 		f := sdkservices.ListSessionsFilter{}
+		ctx, cancel := common.LimitedContext()
+		defer cancel()
 
 		if deploymentID != "" {
-			d, did, err := r.DeploymentID(deploymentID)
-			if err != nil {
-				return err
-			}
-			if !d.IsValid() {
-				err = fmt.Errorf("deployment ID %q not found", deploymentID)
-				return common.NewExitCodeError(common.NotFoundExitCode, err)
+			d, did, err := r.DeploymentID(ctx, deploymentID)
+			if err = common.AddNotFoundErrIfCond(err, d.IsValid()); err != nil {
+				return common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "deployment")
 			}
 			f.DeploymentID = did
 		}
 
 		if env != "" {
-			e, _, err := r.EnvNameOrID(env, "")
-			if err != nil {
-				return err
+			e, _, err := r.EnvNameOrID(ctx, env, "")
+			if err = common.AddNotFoundErrIfCond(err, e.IsValid()); err != nil {
+				return common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "environment")
 			}
 			f.EnvID = e.ID()
 		}
 
 		if eventID != "" {
-			e, eid, err := r.EventID(eventID)
-			if err != nil {
-				return err
-			}
-			if !e.IsValid() {
-				err = fmt.Errorf("event ID %q not found", eventID)
-				return common.NewExitCodeError(common.NotFoundExitCode, err)
+			e, eid, err := r.EventID(ctx, eventID)
+			if err = common.AddNotFoundErrIfCond(err, e.IsValid()); err != nil {
+				return common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "event")
 			}
 			f.EventID = eid
 		}
@@ -79,30 +73,20 @@ var listCmd = common.StandardCommand(&cobra.Command{
 			return fmt.Errorf("invalid state %q: %w", stateType, err)
 		}
 
-		ctx, cancel := common.LimitedContext()
-		defer cancel()
-
 		result, err := sessions().List(ctx, f)
-		if err != nil {
-			return fmt.Errorf("list sessions: %w", err)
-		}
-
-		if err := common.FailIfNotFound(cmd, "sessions", len(result.Sessions) > 0); err != nil {
-			return err
-		}
-
-		if !withInputs {
-			for i := range result.Sessions {
-				result.Sessions[i] = result.Sessions[i].WithInputs(nil)
+		err = common.AddNotFoundErrIfCond(err, len(result.Sessions) > 0)
+		if err = common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "sessions"); err == nil {
+			if !withInputs {
+				for i := range result.Sessions {
+					result.Sessions[i] = result.Sessions[i].WithInputs(nil)
+				}
+			}
+			common.RenderList(result.Sessions)
+			if result.NextPageToken != "" {
+				common.RenderKV("next-page-token", result.NextPageToken)
 			}
 		}
-
-		common.RenderList(result.Sessions)
-
-		if result.NextPageToken != "" {
-			common.RenderKV("next-page-token", result.NextPageToken)
-		}
-		return nil
+		return err
 	},
 })
 

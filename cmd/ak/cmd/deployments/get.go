@@ -15,22 +15,19 @@ var getCmd = common.StandardCommand(&cobra.Command{
 
 	RunE: func(cmd *cobra.Command, args []string) error {
 		r := resolver.Resolver{Client: common.Client()}
-		d, _, err := r.DeploymentID(args[0])
-		if err != nil {
-			return err
-		}
+		ctx, cancel := common.LimitedContext()
+		defer cancel()
 
-		if err := common.FailIfNotFound(cmd, "deployment", d.IsValid()); err != nil {
-			return err
+		d, _, err := r.DeploymentID(ctx, args[0])
+		err = common.AddNotFoundErrIfCond(err, d.IsValid())
+		if err = common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "deployment"); err == nil {
+			// Make the output deterministic during CLI integration tests.
+			if test, err := cmd.Root().PersistentFlags().GetBool("test"); err == nil && test {
+				d = d.WithoutTimestamps()
+			}
+			common.RenderKVIfV("deployment", d)
 		}
-
-		// Make the output deterministic during CLI integration tests.
-		if test, err := cmd.Root().PersistentFlags().GetBool("test"); err == nil && test {
-			d = d.WithoutTimestamps()
-		}
-
-		common.RenderKVIfV("deployment", d)
-		return nil
+		return err
 	},
 })
 

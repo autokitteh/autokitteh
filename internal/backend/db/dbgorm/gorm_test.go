@@ -113,6 +113,14 @@ func newTestID() sdktypes.UUID {
 	return kittehs.Must1(uuid.FromBytes(bytes[:]))
 }
 
+func idToName(id sdktypes.UUID, prefix string) string {
+	idStr := id.String()
+	if len(idStr) > 10 {
+		idStr = idStr[len(idStr)-10:]
+	}
+	return fmt.Sprintf("%s_%s", prefix, idStr)
+}
+
 // TODO: use gormkitteh (and maybe test with sqlite::memory and embedded PG)
 func setupDB(config *gormkitteh.Config) *gorm.DB {
 	// mimic gormkitteh.Open
@@ -277,9 +285,10 @@ func (f *dbFixture) newSession(args ...any) scheme.Session {
 	s := scheme.Session{
 		SessionID: newTestID(),
 		// CurrentStateType: int(st.ToProto()),
-		Inputs:    datatypes.JSON(`{"key": "value"}`),
-		CreatedAt: now,
-		UpdatedAt: now,
+		Inputs:     datatypes.JSON([]byte("{}")),
+		Entrypoint: "loc",
+		CreatedAt:  now,
+		UpdatedAt:  now,
 	}
 	for _, a := range args {
 		switch a := a.(type) {
@@ -338,17 +347,21 @@ func (f *dbFixture) newDeployment(args ...any) scheme.Deployment {
 }
 
 func (f *dbFixture) newProject() scheme.Project {
+	id := newTestID()
 	return scheme.Project{
-		ProjectID: newTestID(),
-		Name:      fmt.Sprintf("prj_%010d", id),
+		ProjectID: id,
+		Name:      idToName(id, "prj"),
 		Resources: []byte{},
 	}
 }
 
 func (f *dbFixture) newEnv(args ...any) scheme.Env {
+	id := newTestID()
+	name := idToName(id, "env")
 	env := scheme.Env{
-		EnvID:        newTestID(),
-		MembershipID: fmt.Sprintf("env_%010d", id),
+		EnvID:        id,
+		Name:         name,
+		MembershipID: name,
 	}
 	for _, a := range args {
 		switch a := a.(type) {
@@ -382,9 +395,14 @@ func (f *dbFixture) newVar(name string, val string, args ...any) scheme.Var {
 }
 
 func (f *dbFixture) newTrigger(args ...any) scheme.Trigger {
+	id := newTestID()
+	name := idToName(id, "trg")
 	t := scheme.Trigger{
-		TriggerID:  newTestID(),
-		UniqueName: uuid.New().String(), // just pass DB trigger unique name validation for testing
+		TriggerID:    id,
+		Name:         name,
+		UniqueName:   name,
+		Data:         datatypes.JSON([]byte("{}")),
+		CodeLocation: "loc",
 	}
 	for _, a := range args {
 		switch a := a.(type) {
@@ -400,8 +418,11 @@ func (f *dbFixture) newTrigger(args ...any) scheme.Trigger {
 }
 
 func (f *dbFixture) newConnection(args ...any) scheme.Connection {
+	id := newTestID()
+	name := idToName(id, "con")
 	c := scheme.Connection{
-		ConnectionID: newTestID(),
+		ConnectionID: id,
+		Name:         name,
 	}
 	for _, a := range args {
 		switch a := a.(type) {
@@ -409,14 +430,21 @@ func (f *dbFixture) newConnection(args ...any) scheme.Connection {
 			c.ProjectID = &a.ProjectID
 		case scheme.Integration:
 			c.IntegrationID = &a.IntegrationID
+		case string:
+			c.Name = a
 		}
 	}
 	return c
 }
 
-func (f *dbFixture) newIntegration() scheme.Integration {
+func (f *dbFixture) newIntegration(name string) scheme.Integration {
+	id := sdktypes.NewIntegrationIDFromName(name).UUIDValue()
 	return scheme.Integration{
-		IntegrationID: newTestID(),
+		IntegrationID: id,
+		UniqueName:    name,
+		DisplayName:   name,
+		Description:   name + " integration",
+		UserLinks:     datatypes.JSON([]byte("{}")),
 	}
 }
 

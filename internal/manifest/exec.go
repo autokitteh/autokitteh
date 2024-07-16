@@ -61,7 +61,7 @@ func executeAction(ctx context.Context, action actions.Action, execContext *exec
 			return nil, err
 		}
 
-		iid, err := execContext.resolveIntegrationID(action.IntegrationKey)
+		iid, err := execContext.resolveIntegrationID(ctx, action.IntegrationKey)
 		if err != nil {
 			return nil, err
 		}
@@ -128,14 +128,14 @@ func executeAction(ctx context.Context, action actions.Action, execContext *exec
 	case actions.SetVarAction:
 		var scopeID sdktypes.VarScopeID
 		if action.Env != "" {
-			eid, err := execContext.resolveEnvID(action.Env)
+			eid, err := execContext.resolveEnvID(ctx, action.Env)
 			if err != nil {
 				return nil, err
 			}
 
 			scopeID = sdktypes.NewVarScopeID(eid)
 		} else {
-			cid, err := execContext.resolveConnectionID(action.Connection)
+			cid, err := execContext.resolveConnectionID(ctx, action.Connection)
 			if err != nil {
 				return nil, err
 			}
@@ -163,14 +163,14 @@ func executeAction(ctx context.Context, action actions.Action, execContext *exec
 		return &Effect{SubjectID: action.ScopeID, Type: Updated, Text: fmt.Sprintf("var %q deleted", n)}, nil
 
 	case actions.CreateTriggerAction:
-		eid, err := execContext.resolveEnvID(action.EnvKey)
+		eid, err := execContext.resolveEnvID(ctx, action.EnvKey)
 		if err != nil {
 			return nil, err
 		}
 		trigger := action.Trigger.WithEnvID(eid)
 
 		if action.ConnectionKey != "" {
-			cid, err := execContext.resolveConnectionID(action.ConnectionKey)
+			cid, err := execContext.resolveConnectionID(ctx, action.ConnectionKey)
 			if err != nil {
 				return nil, err
 			}
@@ -188,7 +188,7 @@ func executeAction(ctx context.Context, action actions.Action, execContext *exec
 		trigger := action.Trigger
 
 		if action.ConnectionKey != "" { // convert scheduler -> normal trigger, or just update connection
-			cid, err := execContext.resolveConnectionID(action.ConnectionKey)
+			cid, err := execContext.resolveConnectionID(ctx, action.ConnectionKey)
 			if err != nil {
 				return nil, err
 			}

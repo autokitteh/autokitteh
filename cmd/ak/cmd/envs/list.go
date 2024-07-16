@@ -1,8 +1,6 @@
 package envs
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
 
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
@@ -22,32 +20,24 @@ var listCmd = common.StandardCommand(&cobra.Command{
 			pid sdktypes.ProjectID
 			err error
 		)
-		if project != "" {
-			r := resolver.Resolver{Client: common.Client()}
-			p, pid, err = r.ProjectNameOrID(project)
-			if err != nil {
-				return err
-			}
-			if !p.IsValid() {
-				err = fmt.Errorf("project %q not found", project)
-				return common.NewExitCodeError(common.NotFoundExitCode, err)
-			}
-		}
 
+		r := resolver.Resolver{Client: common.Client()}
 		ctx, cancel := common.LimitedContext()
 		defer cancel()
 
+		if project != "" {
+			p, pid, err = r.ProjectNameOrID(ctx, project)
+			if err = common.AddNotFoundErrIfCond(err, p.IsValid()); err != nil {
+				return common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "project")
+			}
+		}
+
 		es, err := envs().List(ctx, pid)
-		if err != nil {
-			return fmt.Errorf("list environments: %w", err)
+		err = common.AddNotFoundErrIfCond(err, len(es) > 0)
+		if err = common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "environments"); err == nil {
+			common.RenderList(es)
 		}
-
-		if err := common.FailIfNotFound(cmd, "environments", len(es) > 0); err != nil {
-			return err
-		}
-
-		common.RenderList(es)
-		return nil
+		return err
 	},
 })
 

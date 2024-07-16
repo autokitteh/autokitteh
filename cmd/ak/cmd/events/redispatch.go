@@ -17,7 +17,10 @@ var redispatchCmd = common.StandardCommand(&cobra.Command{
 
 	RunE: func(cmd *cobra.Command, args []string) error {
 		r := resolver.Resolver{Client: common.Client()}
-		e, _, err := r.EventID(args[0])
+		ctx, cancel := common.LimitedContext()
+		defer cancel()
+
+		e, _, err := r.EventID(ctx, args[0])
 		if err != nil {
 			return err
 		}
@@ -25,9 +28,6 @@ var redispatchCmd = common.StandardCommand(&cobra.Command{
 			err = fmt.Errorf("event ID %q not found", args[0])
 			return common.NewExitCodeError(common.NotFoundExitCode, err)
 		}
-
-		ctx, cancel := common.LimitedContext()
-		defer cancel()
 
 		eid, err := common.Client().Dispatcher().Dispatch(ctx, e, nil)
 		if err != nil {

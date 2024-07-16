@@ -15,20 +15,15 @@ var deleteCmd = common.StandardCommand(&cobra.Command{
 
 	RunE: func(cmd *cobra.Command, args []string) error {
 		r := resolver.Resolver{Client: common.Client()}
-		d, id, err := r.DeploymentID(args[0])
-		if err != nil {
-			return common.FailIfError(cmd, err, "deployment")
-		}
-
-		if err := common.FailIfNotFound(cmd, "deployment", d.IsValid()); err != nil {
-			return err
-		}
-
 		ctx, cancel := common.LimitedContext()
 		defer cancel()
 
-		err = deployments().Delete(ctx, id)
-		return common.ToExitCodeError(err, "delete deployment")
+		d, did, err := r.DeploymentID(ctx, args[0])
+		if err = common.AddNotFoundErrIfCond(err, d.IsValid()); err != nil {
+			return common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "deployment")
+		}
+
+		return common.ToExitCodeWithSkipNotFoundFlag(cmd, deployments().Delete(ctx, did), "delete deployment")
 	},
 })
 

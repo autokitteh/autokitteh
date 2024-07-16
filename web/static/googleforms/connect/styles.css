@@ -98,9 +98,21 @@ a.info:hover {
   background-color: #2980b9;
 }
 
+.form-group {
+  margin-bottom: 32px;
+}
+
 .form-group label {
   display: block;
   margin-bottom: 4px;
+}
+
+.form-group input {
+  width: 530px;
+  padding: 8px;
+  margin-bottom: 4px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
 }
 
 .form-group textarea {
@@ -111,7 +123,6 @@ a.info:hover {
 
 .submit-btn {
   display: inline-block;
-  margin-top: 32px;
   padding: 10px 20px;
   background-color: #3498db;
   color: white;

@@ -21,15 +21,17 @@ type handler struct {
 	logger        *zap.Logger
 	vars          sdkservices.Vars
 	dispatcher    sdkservices.Dispatcher
+	integration   sdktypes.Integration
 	integrationID sdktypes.IntegrationID
 }
 
-func NewHandler(l *zap.Logger, v sdkservices.Vars, d sdkservices.Dispatcher, id sdktypes.IntegrationID) handler {
+func NewHandler(l *zap.Logger, v sdkservices.Vars, d sdkservices.Dispatcher, i sdktypes.Integration) handler {
 	return handler{
 		logger:        l,
 		vars:          v,
 		dispatcher:    d,
-		integrationID: id,
+		integration:   i,
+		integrationID: i.ID(),
 	}
 }
 

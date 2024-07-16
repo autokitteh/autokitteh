@@ -19,15 +19,12 @@ var initCmd = common.StandardCommand(&cobra.Command{
 
 	RunE: func(cmd *cobra.Command, args []string) error {
 		r := resolver.Resolver{Client: common.Client()}
-		c, _, err := r.ConnectionNameOrID(args[0], "")
-		if err != nil {
-			if errors.As(err, resolver.NotFoundErrorType) {
-				if err := common.FailIfNotFound(cmd, "connection", c.IsValid()); err != nil {
-					return err
-				}
-				return nil
-			}
-			return err
+		ctx, cancel := common.LimitedContext()
+		defer cancel()
+
+		c, _, err := r.ConnectionNameOrID(ctx, args[0], "")
+		if err = common.AddNotFoundErrIfCond(err, c.IsValid()); err != nil {
+			return common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "connection")
 		}
 
 		link := kittehs.Must1(url.JoinPath(c.Links().InitURL(), "cli"))

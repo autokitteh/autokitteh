@@ -34,10 +34,7 @@ func resolveEnv(ctx context.Context, svcs *wf.Services, env string) (sdktypes.En
 
 		p, err := svcs.Projects.GetByName(context.Background(), name)
 		if err != nil {
-			return sdktypes.InvalidEnvID, err
-		}
-		if !p.IsValid() {
-			return sdktypes.InvalidEnvID, fmt.Errorf("project: %w", sdkerrors.ErrNotFound)
+			return sdktypes.InvalidEnvID, fmt.Errorf("project: %w", err)
 		}
 
 		envs, err := svcs.Envs.List(ctx, p.ID())

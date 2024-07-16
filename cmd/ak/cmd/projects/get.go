@@ -1,13 +1,10 @@
 package projects
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
 
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
 	"go.autokitteh.dev/autokitteh/internal/resolver"
-	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 )
 
 var getCmd = common.StandardCommand(&cobra.Command{
@@ -18,17 +15,15 @@ var getCmd = common.StandardCommand(&cobra.Command{
 
 	RunE: func(cmd *cobra.Command, args []string) error {
 		r := resolver.Resolver{Client: common.Client()}
-		p, _, err := r.ProjectNameOrID(args[0])
-		if err != nil {
-			return err
-		}
+		ctx, cancel := common.LimitedContext()
+		defer cancel()
 
-		if !p.IsValid() {
-			return common.FailIfError(cmd, sdkerrors.ErrNotFound, fmt.Sprintf("project <%q>", args[0]))
+		p, _, err := r.ProjectNameOrID(ctx, args[0])
+		err = common.AddNotFoundErrIfCond(err, p.IsValid())
+		if err = common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "project"); err == nil {
+			common.RenderKVIfV("project", p)
 		}
-
-		common.RenderKVIfV("project", p)
-		return nil
+		return err
 	},
 })
 

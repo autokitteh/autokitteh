@@ -24,7 +24,7 @@ func (gdb *gormdb) withUserVars(ctx context.Context) *gorm.DB {
 func (gdb *gormdb) setVar(ctx context.Context, vr *scheme.Var) error {
 	vr.VarID = vr.ScopeID // just ensure
 
-	user, err := userFromContext(ctx)
+	uid, err := userIDFromContext(ctx)
 	if err != nil {
 		return err
 	}
@@ -44,7 +44,7 @@ func (gdb *gormdb) setVar(ctx context.Context, vr *scheme.Var) error {
 			}
 		}
 
-		if user.UserID != ownership.UserID { // check user ownership
+		if uid != ownership.UserID { // check user ownership
 			return sdkerrors.ErrUnauthorized
 		}
 

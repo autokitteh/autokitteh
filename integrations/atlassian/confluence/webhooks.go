@@ -44,13 +44,75 @@ type webhook struct {
 	IsSigned               bool   `json:"isSigned,omitempty"`
 }
 
+// https://developer.atlassian.com/cloud/confluence/modules/webhook/
+// https://confluence.atlassian.com/conf715/managing-webhooks-1096098349.html
+var webhookEvents = map[string][]string{
+	"added": {
+		"label_added",
+	},
+	"archived": {
+		"attachment_archived",
+		"page_archived",
+	},
+	"copied": {
+		"page_copied",
+	},
+	"created": {
+		"attachment_created",
+		"blog_created",
+		"blueprint_page_created",
+		"comment_created",
+		"content_created",
+		"group_created",
+		"label_created",
+		"page_created",
+		"relation_created",
+		"space_created",
+	},
+	"deleted": {
+		"label_deleted",
+		"relation_deleted",
+	},
+	"moved": {
+		"page_moved",
+	},
+	"removed": {
+		"attachment_removed",
+		"blog_removed",
+		"comment_removed",
+		"content_removed",
+		"group_removed",
+		"label_removed",
+		"page_removed",
+		"space_removed",
+		"user_removed",
+	},
+	"trashed": {
+		"attachment_trashed",
+		"blog_trashed",
+		"content_trashed",
+		"page_trashed",
+	},
+	"updated": {
+		"attachment_updated",
+		"blog_updated",
+		"comment_updated",
+		"content_updated",
+		"content_permissions_updated",
+		"page_updated",
+		"space_logo_updated",
+		"space_permissions_updated",
+		"space_updated",
+	},
+}
+
 // getWebhook checks whether the given Confluence domain already has
 // a registered dynamic webhooks for this AutoKitteh server. Based on:
 // https://jira.atlassian.com/browse/CONFCLOUD-36613
 // https://developer.atlassian.com/cloud/confluence/modules/webhook/
 // https://developer.atlassian.com/server/confluence/webhooks/
 // https://confluence.atlassian.com/doc/managing-webhooks-1021225606.html
-func getWebhook(l *zap.Logger, base, user, key string) (int, bool) {
+func getWebhook(l *zap.Logger, base, user, key, category string) (int, bool) {
 	// TODO(ENG-965): Support pagination.
 	req, err := http.NewRequest("GET", base+restPath, nil)
 	if err != nil {
@@ -92,7 +154,7 @@ func getWebhook(l *zap.Logger, base, user, key string) (int, bool) {
 
 	// Finally, filter the results based on the AutoKitteh server address.
 	webhookBase := os.Getenv("WEBHOOK_ADDRESS")
-	url := fmt.Sprintf("https://%s/confluence/webhook/created", webhookBase)
+	url := fmt.Sprintf("https://%s/confluence/webhook/%s", webhookBase, category)
 	for _, w := range list {
 		if w.URL == url {
 			id, err := extractIDSuffixFromURL(w.Self)
@@ -108,29 +170,18 @@ func getWebhook(l *zap.Logger, base, user, key string) (int, bool) {
 // https://jira.atlassian.com/browse/CONFCLOUD-36613
 // https://developer.atlassian.com/cloud/jira/platform/webhooks/#registering-a-webhook-using-the-jira-rest-api--other-integrations-
 // https://developer.atlassian.com/cloud/confluence/modules/webhook/#confluence-webhook-events
-func registerWebhook(l *zap.Logger, base, user, key string) (int, string, error) {
+func registerWebhook(l *zap.Logger, base, user, key, category string) (int, string, error) {
+	l = l.With(zap.String("category", category))
+
 	webhookBase := os.Getenv("WEBHOOK_ADDRESS")
-	url := fmt.Sprintf("https://%s/confluence/webhook/created", webhookBase)
+	url := fmt.Sprintf("https://%s/confluence/webhook/%s", webhookBase, category)
 	secret := kittehs.Must1(typeid.WithPrefix("")).String()
 	r := webhook{
 		Name:        "AutoKitteh",
 		Description: time.Now().UTC().String(),
 		URL:         url,
-		// https://developer.atlassian.com/cloud/confluence/modules/webhook/
-		// https://confluence.atlassian.com/conf715/managing-webhooks-1096098349.html
-		Events: []string{
-			"attachment_created",
-			"blog_created",
-			"blueprint_page_created",
-			"comment_created",
-			"content_created",
-			"group_created",
-			"label_created",
-			"page_created",
-			"relation_created",
-			"space_created",
-		},
-		Secret: secret,
+		Events:      webhookEvents[category],
+		Secret:      secret,
 	}
 
 	body, err := json.Marshal(r)
@@ -196,6 +247,7 @@ func registerWebhook(l *zap.Logger, base, user, key string) (int, string, error)
 
 	// Success.
 	id, err := extractIDSuffixFromURL(reg.Self)
+	l.Info("Registered Confluence events webhook", zap.Int("id", id))
 	return id, secret, err
 }
 

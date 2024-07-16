@@ -15,22 +15,34 @@ const (
 	contentTypeForm = "application/x-www-form-urlencoded"
 )
 
+// See [webhookEvents] in "webhooks.go" for more details.
+var eventCategories = []string{
+	"added",
+	"archived",
+	"copied",
+	"created",
+	"deleted",
+	"moved",
+	"removed",
+	"trashed",
+	"updated",
+}
+
 // handleAuth saves a new AutoKitteh connection with user-submitted data.
 func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
-	l := h.logger.With(zap.String("urlPath", r.URL.Path))
+	c, l := sdkintegrations.NewConnectionInit(h.logger, w, r, desc)
 
-	// Check the "Content-Type" header.
+	// Check "Content-Type" header.
 	contentType := r.Header.Get(headerContentType)
 	if !strings.HasPrefix(contentType, contentTypeForm) {
-		// Probably an attack, so no need for user-friendliness.
-		http.Error(w, "Bad Request", http.StatusBadRequest)
+		c.Abort("unexpected content type")
 		return
 	}
 
 	// Read and parse POST request body.
 	if err := r.ParseForm(); err != nil {
-		l.Warn("Failed to parse inbound HTTP request", zap.Error(err))
-		redirectToErrorPage(w, r, "form parsing error: "+err.Error())
+		l.Warn("Failed to parse incoming HTTP request", zap.Error(err))
+		c.Abort("form parsing error")
 		return
 	}
 
@@ -46,30 +58,34 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 		initData = initData.Set(email, e, true)
 	}
 
-	// Register a new webhook to receive, parse, and dispatch
-	// Confluence events, if there isn't one already.
-	id, ok := getWebhook(l, u, e, t)
-	if ok {
-		// TODO: In the future, when we're sure which events we want to
-		// subscribe to, uncomment this line and don't delete the webhook.
-		// initData = initData.Set(webhookID, fmt.Sprintf("%d", id), false)
+	for _, category := range eventCategories {
+		// Register a new webhook to receive, parse, and dispatch
+		// Confluence events, if there isn't one already.
+		id, ok := getWebhook(l, u, e, t, category)
+		if ok {
+			// TODO: In the future, when we're sure which events we want to
+			// subscribe to, uncomment this line and don't delete the webhook.
+			// initData = initData.Set(webhookID, fmt.Sprintf("%d", id), false)
 
-		if err := deleteWebhook(l, u, e, t, id); err != nil {
-			redirectToErrorPage(w, r, "failed to delete existing webhook: "+err.Error())
+			if err := deleteWebhook(l, u, e, t, id); err != nil {
+				l.Warn("Failed to delete existing webhook", zap.Error(err))
+				c.Abort("failed to delete existing webhook")
+				return
+			}
+		} // else {
+		var secret string
+		var err error
+		id, secret, err = registerWebhook(l, u, e, t, category)
+		if err != nil {
+			l.Warn("Failed to register webhook", zap.Error(err))
+			c.Abort("failed to register webhook")
 			return
 		}
-	} // else {
-	var secret string
-	var err error
-	id, secret, err = registerWebhook(l, u, e, t)
-	if err != nil {
-		redirectToErrorPage(w, r, "failed to register webhook: "+err.Error())
-		return
+		initData = initData.Set(webhookSecret(category), secret, true)
+		// }
+
+		initData = initData.Set(webhookID(category), fmt.Sprintf("%d", id), false)
 	}
-	initData = initData.Set(webhookSecret, secret, true)
-	// }
 
-	initData = initData.Set(webhookID, fmt.Sprintf("%d", id), false)
-
-	sdkintegrations.FinalizeConnectionInit(w, r, integrationID, initData)
+	c.Finalize(initData)
 }

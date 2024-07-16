@@ -1,8 +1,6 @@
 package triggers
 
 import (
-	"errors"
-
 	"github.com/spf13/cobra"
 
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
@@ -18,56 +16,42 @@ var listCmd = common.StandardCommand(&cobra.Command{
 
 	RunE: func(cmd *cobra.Command, args []string) error {
 		r := resolver.Resolver{Client: common.Client()}
-
-		// All flags are optional.
-		p, pid, err := r.ProjectNameOrID(project)
-		if err != nil {
-			return err
-		}
-		if project != "" && !p.IsValid() {
-			err = resolver.NotFoundError{Type: "project", Name: project}
-			return common.NewExitCodeError(common.NotFoundExitCode, err)
-		}
-
-		e, eid, err := r.EnvNameOrID(env, project)
-		if err != nil {
-			return err
-		}
-		if env != "" && !e.IsValid() {
-			err = resolver.NotFoundError{Type: "environment", Name: env}
-			return common.NewExitCodeError(common.NotFoundExitCode, err)
-		}
-
-		c, cid, err := r.ConnectionNameOrID(connection, project)
-		if err != nil {
-			if errors.As(err, resolver.NotFoundErrorType) {
-				err = common.NewExitCodeError(common.NotFoundExitCode, err)
-			}
-			return err
-		}
-		if cid.IsValid() && !c.IsValid() {
-			err = resolver.NotFoundError{Type: "connection ID", Name: connection}
-			return common.NewExitCodeError(common.NotFoundExitCode, err)
-		}
-
 		ctx, cancel := common.LimitedContext()
 		defer cancel()
 
-		ts, err := triggers().List(ctx, sdkservices.ListTriggersFilter{
-			ProjectID:    pid,
-			EnvID:        eid,
-			ConnectionID: cid,
-		})
-		if err != nil {
-			return err
+		f := sdkservices.ListTriggersFilter{}
+
+		// All flags are optional.
+		if project != "" {
+			p, pid, err := r.ProjectNameOrID(ctx, project)
+			if err = common.AddNotFoundErrIfCond(err, p.IsValid()); err != nil {
+				return common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "project")
+			}
+			f.ProjectID = pid
 		}
 
-		if err := common.FailIfNotFound(cmd, "triggers", len(ts) > 0); err != nil {
-			return err
+		if env != "" {
+			e, eid, err := r.EnvNameOrID(ctx, env, project)
+			if err = common.AddNotFoundErrIfCond(err, e.IsValid()); err != nil {
+				return common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "environment")
+			}
+			f.EnvID = eid
 		}
 
-		common.RenderList(ts)
-		return nil
+		if connection != "" {
+			c, cid, err := r.ConnectionNameOrID(ctx, connection, project)
+			if err = common.AddNotFoundErrIfCond(err, c.IsValid()); err != nil {
+				return common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "connection")
+			}
+			f.ConnectionID = cid
+		}
+
+		ts, err := triggers().List(ctx, f)
+		err = common.AddNotFoundErrIfCond(err, len(ts) > 0)
+		if err = common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "triggers"); err == nil {
+			common.RenderList(ts)
+		}
+		return err
 	},
 })
 

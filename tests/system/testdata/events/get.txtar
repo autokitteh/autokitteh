@@ -16,8 +16,16 @@ ak connection create my_connection --project my_project --integration http -q
 return code == 0
 output equals 'connection_id: con_00000000000000000000000003'
 
+# Negative test: invalid project name (dash disallowed)
+http get /http/my-project  
+resp code == 404
+
+# Negative test: unexisting project
+http get /http/my_project1
+resp code == 404
+
 # Send HTTP GET request to create new event.
-http get /http/my_url_path
+http get /http/my_project
 resp code == 200
 
 # Get first event, with/out JSON.

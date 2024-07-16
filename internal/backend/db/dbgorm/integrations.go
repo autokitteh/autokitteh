@@ -10,27 +10,20 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-func (db *gormdb) createIntegration(ctx context.Context, i *scheme.Integration) error {
-	return db.db.WithContext(ctx).Create(i).Error
+func (gdb *gormdb) createIntegration(ctx context.Context, i *scheme.Integration) error {
+	return gdb.db.WithContext(ctx).Create(i).Error
 }
 
-func (db *gormdb) CreateIntegration(ctx context.Context, i sdktypes.Integration) error {
-	if err := i.Strict(); err != nil {
-		return err
-	}
-
-	return translateError(db.createIntegration(ctx, convertTypeToRecord(i)))
+func (gdb *gormdb) deleteIntegration(ctx context.Context, id sdktypes.UUID) error {
+	return gdb.db.WithContext(ctx).Delete(&scheme.Integration{IntegrationID: id}).Error
 }
 
-func (db *gormdb) UpdateIntegration(ctx context.Context, i sdktypes.Integration) error {
-	integ := convertTypeToRecord(i)
-	err := db.db.WithContext(ctx).
-		Where("integration_id = ?", integ.IntegrationID).
-		Updates(integ).Error
-	if err != nil {
-		return translateError(err)
+func (gdb *gormdb) listIntegrations(ctx context.Context) ([]scheme.Integration, error) {
+	var is []scheme.Integration
+	if err := gdb.db.WithContext(ctx).Find(&is).Error; err != nil {
+		return nil, err
 	}
-	return nil
+	return is, nil
 }
 
 func convertTypeToRecord(i sdktypes.Integration) *scheme.Integration {
@@ -66,8 +59,12 @@ func convertTypeToRecord(i sdktypes.Integration) *scheme.Integration {
 	}
 }
 
-func (db *gormdb) deleteIntegration(ctx context.Context, id sdktypes.UUID) error {
-	return db.db.WithContext(ctx).Delete(&scheme.Integration{IntegrationID: id}).Error
+func (db *gormdb) CreateIntegration(ctx context.Context, integration sdktypes.Integration) error {
+	if err := integration.Strict(); err != nil {
+		return err
+	}
+	i := convertTypeToRecord(integration)
+	return translateError(db.createIntegration(ctx, i))
 }
 
 func (db *gormdb) DeleteIntegration(ctx context.Context, id sdktypes.IntegrationID) error {
@@ -79,17 +76,24 @@ func (db *gormdb) DeleteIntegration(ctx context.Context, id sdktypes.Integration
 	return translateError(db.deleteIntegration(ctx, id.UUIDValue()))
 }
 
+func (db *gormdb) UpdateIntegration(ctx context.Context, i sdktypes.Integration) error {
+	integ := convertTypeToRecord(i)
+	err := db.db.WithContext(ctx).
+		Where("integration_id = ?", integ.IntegrationID).
+		Updates(integ).Error
+	if err != nil {
+		return translateError(err)
+	}
+	return nil
+}
+
 func (db *gormdb) GetIntegration(ctx context.Context, id sdktypes.IntegrationID) (sdktypes.Integration, error) {
 	return getOneWTransform(db.db, ctx, scheme.ParseIntegration, "integration_id = ?", id.UUIDValue())
 }
 
 func (db *gormdb) ListIntegrations(ctx context.Context) ([]sdktypes.Integration, error) {
-	q := db.db.WithContext(ctx)
-
-	// TODO: Tags
-
-	var is []scheme.Integration
-	if err := q.Find(&is).Error; err != nil {
+	is, err := db.listIntegrations(ctx)
+	if is == nil || err != nil {
 		return nil, translateError(err)
 	}
 	return kittehs.TransformError(is, scheme.ParseIntegration)

@@ -1,13 +1,10 @@
 package events
 
 import (
-	"errors"
-
 	"github.com/spf13/cobra"
 
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
 	"go.autokitteh.dev/autokitteh/internal/resolver"
-	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 )
 
 var getCmd = common.StandardCommand(&cobra.Command{
@@ -18,20 +15,15 @@ var getCmd = common.StandardCommand(&cobra.Command{
 
 	RunE: func(cmd *cobra.Command, args []string) error {
 		r := resolver.Resolver{Client: common.Client()}
-		e, _, err := r.EventID(args[0])
-		if err != nil {
-			if errors.Is(err, sdkerrors.ErrNotFound) {
-				return common.FailNotFound(cmd, "event")
-			}
-			return err
-		}
+		ctx, cancel := common.LimitedContext()
+		defer cancel()
 
-		if err := common.FailIfNotFound(cmd, "event", e.IsValid()); err != nil {
-			return err
+		e, _, err := r.EventID(ctx, args[0])
+		err = common.AddNotFoundErrIfCond(err, e.IsValid())
+		if err = common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "event"); err == nil {
+			common.RenderKVIfV("event", e)
 		}
-
-		common.RenderKVIfV("event", e)
-		return nil
+		return err
 	},
 })
 

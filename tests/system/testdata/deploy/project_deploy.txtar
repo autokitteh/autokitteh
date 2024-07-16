@@ -1,10 +1,10 @@
 # Negative tests: deploy nonexistent project, by name/ID.
 ak project deploy bad_project --file program.star
-output equals 'Error: project "bad_project" not found'
+output equals 'Error: project not found'
 return code == 10
 
 ak project deploy prj_000000000000000bad0bad0bad --file program.star
-output equals 'Error: project "prj_000000000000000bad0bad0bad" not found'
+output equals 'Error: project not found'
 return code == 10
 
 # Preconditions: create project and environment.

@@ -73,20 +73,22 @@ func initOpts(vars sdkservices.Vars) (opts []sdkmodule.Optfn) {
 
 var integrationID = sdktypes.NewIntegrationIDFromName("aws")
 
+var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
+	IntegrationId: integrationID.String(),
+	UniqueName:    "aws",
+	DisplayName:   "AWS (All APIs)",
+	Description:   "Aggregation of all available Amazon Web Services (AWS) APIs.",
+	LogoUrl:       "/static/images/aws.svg",
+	UserLinks: map[string]string{
+		"1 API documentation": "https://docs.aws.amazon.com/",
+		"2 Service console":   "https://console.aws.amazon.com/",
+	},
+	ConnectionUrl: "/aws/connect",
+}))
+
 func New(vars sdkservices.Vars) sdkservices.Integration {
 	return sdkintegrations.NewIntegration(
-		kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
-			IntegrationId: integrationID.String(),
-			UniqueName:    "aws",
-			DisplayName:   "AWS (All APIs)",
-			Description:   "Aggregation of all available Amazon Web Services (AWS) APIs.",
-			LogoUrl:       "/static/images/aws.svg",
-			UserLinks: map[string]string{
-				"1 API documentation": "https://docs.aws.amazon.com/",
-				"2 Service console":   "https://console.aws.amazon.com/",
-			},
-			ConnectionUrl: "/aws/connect",
-		})),
+		desc,
 		sdkmodule.New(initOpts(vars)...),
 		sdkintegrations.WithConnectionConfigFromVars(vars),
 	)

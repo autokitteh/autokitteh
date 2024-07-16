@@ -21,22 +21,19 @@ var createCmd = common.StandardCommand(&cobra.Command{
 
 	RunE: func(cmd *cobra.Command, args []string) error {
 		r := resolver.Resolver{Client: common.Client()}
-		b, _, err := r.BuildID(buildID)
-		if err != nil {
+		ctx, cancel := common.LimitedContext()
+		defer cancel()
+
+		b, _, err := r.BuildID(ctx, buildID)
+		err = common.AddNotFoundErrIfCond(err, b.IsValid())
+		if err = common.ToExitCodeWithSkipNotFoundFlag(cmd, err, fmt.Sprintf("build ID %q", buildID)); err != nil {
 			return err
-		}
-		if !b.IsValid() {
-			err = fmt.Errorf("build ID %q not found", buildID)
-			return common.NewExitCodeError(common.NotFoundExitCode, err)
 		}
 
-		e, eid, err := r.EnvNameOrID(env, "")
-		if err != nil {
+		e, eid, err := r.EnvNameOrID(ctx, env, "")
+		err = common.AddNotFoundErrIfCond(err, e.IsValid())
+		if err = common.ToExitCodeWithSkipNotFoundFlag(cmd, err, fmt.Sprintf("environment %q", env)); err != nil {
 			return err
-		}
-		if !e.IsValid() {
-			err = fmt.Errorf("environment %q not found", env)
-			return common.NewExitCodeError(common.NotFoundExitCode, err)
 		}
 
 		deployment, err := sdktypes.DeploymentFromProto(&sdktypes.DeploymentPB{
@@ -46,9 +43,6 @@ var createCmd = common.StandardCommand(&cobra.Command{
 		if err != nil {
 			return fmt.Errorf("invalid deployment: %w", err)
 		}
-
-		ctx, cancel := common.LimitedContext()
-		defer cancel()
 
 		did, err := deployments().Create(ctx, deployment)
 		if err != nil {

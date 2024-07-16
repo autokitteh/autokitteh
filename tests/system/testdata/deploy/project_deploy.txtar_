@@ -1,0 +1,73 @@
+# Negative tests: deploy nonexistent project, by name/ID.
+ak project deploy bad_project --file program.star
+output equals 'Error: not found'
+return code == 10
+
+ak project deploy prj_000000000000000bad0bad0bad --file program.star
+output equals 'Error: not found'
+return code == 10
+
+# Preconditions: create project and environment.
+ak project create --name my_project
+return code == 0
+output equals 'project_id: prj_00000000000000000000000001'
+
+# Negative test: deploy project without required flag.
+ak project deploy my_project
+output equals 'Error: at least one of the flags in the group [dir file] is required'
+return code == 1
+
+# Negative test: deploy project with nonexistent files and directories.
+ak project deploy my_project --file bad_filename
+output equals 'Error: stat bad_filename: no such file or directory'
+return code == 10
+
+ak project deploy my_project --dir bad_dir_name
+output equals 'Error: stat bad_dir_name: no such file or directory'
+return code == 10
+
+# Deploy project from a single file.
+ak project deploy my_project --file single_file.star
+return code == 0
+output contains 'build_id: bld_00000000000000000000000003'
+output contains 'deployment_id: dep_00000000000000000000000004'
+
+# Deploy project from a directory tree with multiple files.
+ak project deploy my_project --dir directory
+return code == 0
+output contains 'build_id: bld_00000000000000000000000005'
+output contains 'deployment_id: dep_00000000000000000000000006'
+
+# Deploy project from both, alongside each other.
+ak project deploy my_project --file single_file.star --dir directory
+return code == 0
+output contains 'build_id: bld_00000000000000000000000007'
+output contains 'deployment_id: dep_00000000000000000000000008'
+
+# Deploy project to default environment, by name/ID.
+ak project deploy my_project --file single_file.star --env default
+return code == 0
+output contains 'build_id: bld_00000000000000000000000009'
+output contains 'deployment_id: dep_0000000000000000000000000a'
+
+ak project deploy my_project --file single_file.star --env my_project/default
+return code == 0
+output contains 'build_id: bld_0000000000000000000000000b'
+output contains 'deployment_id: dep_0000000000000000000000000c'
+
+ak project deploy my_project --file single_file.star --env env_00000000000000000000000002
+return code == 0
+output contains 'build_id: bld_0000000000000000000000000d'
+output contains 'deployment_id: dep_0000000000000000000000000e'
+
+-- single_file.star --
+print("single_file.star")
+
+-- directory/file1.star --
+print("directory/file1.star")
+
+-- directory/subdirectory/file1.star --
+print("directory/subdirectory/file1.star")
+
+-- directory/subdirectory/file2.star --
+print("directory/subdirectory/file2.star")

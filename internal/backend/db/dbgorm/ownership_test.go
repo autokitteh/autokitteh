@@ -24,6 +24,16 @@ func preOwnershipTest(t *testing.T) *dbFixture {
 	return f
 }
 
+func (f *dbFixture) createProjectBuildEnv(t *testing.T) (scheme.Project, scheme.Build, scheme.Env) {
+	p := f.newProject()
+	b := f.newBuild()
+	e := f.newEnv(p)
+	f.createProjectsAndAssert(t, p)
+	f.saveBuildsAndAssert(t, b)
+	f.createEnvsAndAssert(t, e)
+	return p, b, e
+}
+
 func TestCreateProjectWithOwnership(t *testing.T) {
 	f := preOwnershipTest(t)
 
@@ -57,12 +67,7 @@ func TestCreateBuildWithOwnership(t *testing.T) {
 func TestCreateDeploymentWithOwnership(t *testing.T) {
 	f := preOwnershipTest(t)
 
-	p := f.newProject()
-	e := f.newEnv(p)
-	b := f.newBuild()
-	f.createProjectsAndAssert(t, p)
-	f.createEnvsAndAssert(t, e)
-	f.saveBuildsAndAssert(t, b)
+	_, b, e := f.createProjectBuildEnv(t)
 
 	// with build owned by the same user
 	d1 := f.newDeployment(b)

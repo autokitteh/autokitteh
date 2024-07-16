@@ -162,5 +162,5 @@ func (d *deployments) List(ctx context.Context, filter sdkservices.ListDeploymen
 }
 
 func (d *deployments) Get(ctx context.Context, id sdktypes.DeploymentID) (sdktypes.Deployment, error) {
-	return sdkerrors.IgnoreNotFoundErr(d.db.GetDeployment(ctx, id))
+	return d.db.GetDeployment(ctx, id)
 }

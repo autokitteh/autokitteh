@@ -9,7 +9,7 @@ import (
 
 type Renderer func(any)
 
-type Texter interface{ Text() string }
+type ToStringer interface{ ToString() string }
 
 var renderer Renderer = TextRenderer
 
@@ -20,8 +20,8 @@ func TextRenderer(o any) {
 
 	if s, ok := o.(string); ok {
 		out = s
-	} else if oo, ok := o.(Texter); ok {
-		out = oo.Text()
+	} else if oo, ok := o.(ToStringer); ok {
+		out = oo.ToString()
 	} else if _, ok := o.(fmt.Stringer); ok {
 		out = fmt.Sprintf("%v", o)
 	} else {
@@ -65,11 +65,11 @@ type KV struct {
 	V any
 }
 
-func (kv KV) Text() string                 { return fmt.Sprintf("%s: %v", kv.K, kv.V) }
+func (kv KV) ToString() string             { return fmt.Sprintf("%s: %v", kv.K, kv.V) }
 func (kv KV) MarshalJSON() ([]byte, error) { return json.Marshal(map[string]any{kv.K: kv.V}) }
 
 var (
-	_ Texter         = KV{}
+	_ ToStringer     = KV{}
 	_ json.Marshaler = KV{}
 )
 
@@ -83,7 +83,7 @@ type KVIfV[T any] struct {
 	V T
 }
 
-func (kv KVIfV[T]) Text() string {
+func (kv KVIfV[T]) ToString() string {
 	if reflect.ValueOf(kv.V).IsZero() {
 		return ""
 	}
@@ -94,7 +94,7 @@ func (kv KVIfV[T]) Text() string {
 func (kv KVIfV[T]) MarshalJSON() ([]byte, error) { return json.Marshal(map[string]any{kv.K: kv.V}) }
 
 var (
-	_ Texter         = KV{}
+	_ ToStringer     = KV{}
 	_ json.Marshaler = KV{}
 )
 

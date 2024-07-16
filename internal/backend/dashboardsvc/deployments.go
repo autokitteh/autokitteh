@@ -2,10 +2,12 @@ package dashboardsvc
 
 import (
 	"context"
+	"errors"
 	"html/template"
 	"net/http"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
+	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 	"go.autokitteh.dev/autokitteh/web/webdashboard"
@@ -64,7 +66,11 @@ func (s Svc) deployment(w http.ResponseWriter, r *http.Request) {
 
 	sdkD, err := s.Svcs.Deployments().Get(r.Context(), did)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		status := http.StatusInternalServerError
+		if errors.Is(err, sdkerrors.ErrNotFound) {
+			status = http.StatusNotFound
+		}
+		http.Error(w, err.Error(), status)
 		return
 	}
 

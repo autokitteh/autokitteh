@@ -18,7 +18,7 @@ func (f *dbFixture) saveBuildsAndAssert(t *testing.T, builds ...scheme.Build) {
 	}
 }
 
-func assertBuildDeleted(t *testing.T, f *dbFixture, buildID sdktypes.UUID) {
+func (f *dbFixture) assertBuildDeleted(t *testing.T, buildID sdktypes.UUID) {
 	assertSoftDeleted(t, f, scheme.Build{BuildID: buildID})
 }
 
@@ -44,7 +44,7 @@ func TestDeleteBuild(t *testing.T) {
 
 	// test deleteBuild
 	assert.NoError(t, f.gormdb.deleteBuild(f.ctx, b.BuildID))
-	assertBuildDeleted(t, f, b.BuildID)
+	f.assertBuildDeleted(t, b.BuildID)
 }
 
 func TestGetBuild(t *testing.T) {

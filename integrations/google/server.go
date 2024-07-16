@@ -6,6 +6,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/integrations/google/forms"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/web/static"
 )
@@ -17,13 +18,16 @@ const (
 
 	// oauthPath is the URL path for our handler to save new OAuth-based connections.
 	oauthPath = "/google/oauth"
+
+	// formsWebhookPath is the URL path for our webhook to handle incoming events.
+	formsWebhookPath = "/googleforms/notifications"
 )
 
-func Start(l *zap.Logger, mux *http.ServeMux, o sdkservices.OAuth, d sdkservices.Dispatcher) {
+func Start(l *zap.Logger, mux *http.ServeMux, v sdkservices.Vars, o sdkservices.OAuth, d sdkservices.Dispatcher) {
 	uiPath := "GET " + desc.ConnectionURL().Path + "/"
 
 	// New connection UIs + handlers.
-	h := NewHTTPHandler(l, o)
+	h := NewHTTPHandler(l, o, v)
 	mux.Handle(uiPath, http.FileServer(http.FS(static.GoogleWebContent)))
 
 	urlPath := strings.ReplaceAll(uiPath, "google", "gmail")
@@ -44,8 +48,9 @@ func Start(l *zap.Logger, mux *http.ServeMux, o sdkservices.OAuth, d sdkservices
 	urlPath = strings.ReplaceAll(uiPath, "google", "googlesheets")
 	mux.Handle(urlPath, http.FileServer(http.FS(static.GoogleSheetsWebContent)))
 
-	mux.HandleFunc("GET "+oauthPath, h.HandleOAuth)
-	mux.HandleFunc("POST "+credsPath, h.HandleCreds)
+	mux.HandleFunc("GET "+oauthPath, h.handleOAuth)
+	mux.HandleFunc("POST "+credsPath, h.handleCreds)
 
-	// TODO: Event webhooks.
+	// Event webhooks.
+	mux.Handle("POST "+formsWebhookPath, forms.NewWebhookHandler(l, v, d))
 }

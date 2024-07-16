@@ -4,6 +4,7 @@ import (
 	_ "embed"
 	"fmt"
 	"net/http"
+	"net/url"
 	"regexp"
 	"time"
 
@@ -30,7 +31,7 @@ func InitWebhook(l *zap.Logger, muxes *muxes.Muxes, c sdkservices.Services) {
 
 func (s *svc) start(w http.ResponseWriter, r *http.Request) {
 	intg := r.PathValue("intg")
-	origin := r.URL.Query().Get("origin")
+	origin := r.FormValue("origin")
 
 	l := s.logger.With(
 		zap.String("urlPath", r.URL.Path),
@@ -47,7 +48,7 @@ func (s *svc) start(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cid, err := sdktypes.ParseConnectionID(r.URL.Query().Get("cid"))
+	cid, err := sdktypes.StrictParseConnectionID(r.URL.Query().Get("cid"))
 	if err != nil {
 		l.Warn("Failed to parse connection ID", zap.Error(err))
 		http.Error(w, "Bad request: invalid connection ID", http.StatusBadRequest)
@@ -60,6 +61,7 @@ func (s *svc) start(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Bad request: start flow error", http.StatusBadRequest)
 		return
 	}
+
 	http.Redirect(w, r, startURL, http.StatusFound)
 }
 
@@ -76,45 +78,62 @@ func (s *svc) exchange(w http.ResponseWriter, r *http.Request) {
 
 	// Ensure the specified integration is registered.
 	o := s.svcs.OAuth()
-	if _, _, err := o.Get(ctx, r.PathValue("intg")); err != nil {
-		abort(l, w, "unrecognized integration name", err, http.StatusBadRequest)
+	if _, _, err := o.Get(ctx, intg); err != nil {
+		l.Error("Unrecognized integration name")
+		http.Error(w, "Unrecognized integration name", http.StatusBadRequest)
 		return
 	}
 
-	// Read the temporary authorization code from the redirected request.
+	// Ensure the state parameter is well-formed.
+	sub := regexp.MustCompile(`^(.+)_([a-z]+)$`).FindStringSubmatch(state)
+	if len(sub) != 3 {
+		l.Error("Invalid state parameter")
+		http.Error(w, "Invalid state parameter", http.StatusBadRequest)
+		return
+	}
+
+	// Report back OAuth errors.
+	if err := r.FormValue("error_description"); err != "" {
+		abort(w, r, intg, sub[1], sub[2], err)
+		return
+	}
+
+	if err := r.FormValue("error"); err != "" {
+		abort(w, r, intg, sub[1], sub[2], err)
+		return
+	}
+
+	// Convert the OAuth code into a refresh token / user access token.
 	code := r.FormValue("code")
 	if code == "" {
-		abort(l, w, "missing code parameter", nil, http.StatusBadRequest)
+		abort(w, r, intg, sub[1], sub[2], "missing code parameter")
 		return
 	}
 
-	// Convert it into an OAuth refresh token / user access token.
 	token, err := o.Exchange(ctx, intg, code)
 	if err != nil {
-		abort(l, w, "OAuth exchange error", err, http.StatusBadRequest)
+		l.Warn("OAuth exchange error", zap.Error(err))
+		abort(w, r, intg, sub[1], sub[2], "OAuth exchange error")
 		return
 	}
 
 	l.Info("OAuth token exchange successful")
 
+	// Pass the OAuth data back to the originating integration.
 	oauthData, err := sdkintegrations.OAuthData{Token: token, Params: r.URL.Query()}.Encode()
 	if err != nil {
-		abort(l, w, "failed to encode OAuth token", err, http.StatusInternalServerError)
+		abort(w, r, intg, sub[1], sub[2], "OAuth token encoding error")
 		return
 	}
 
-	sub := regexp.MustCompile(`^(.+)_([a-z]+)$`).FindStringSubmatch(state)
-	if len(sub) != 3 {
-		err := fmt.Errorf("invalid state parameter: %q", state)
-		abort(l, w, "invalid state parameter", err, http.StatusBadRequest)
-		return
-	}
-
-	u := fmt.Sprintf("/%s/oauth?oauth=%s&cid=con_%s&origin=%s", intg, oauthData, sub[1], sub[2])
-	http.Redirect(w, r, u, http.StatusFound)
+	redirect(w, r, intg, sub[1], sub[2], "oauth", oauthData)
 }
 
-func abort(l *zap.Logger, w http.ResponseWriter, msg string, err error, code int) {
-	l.Warn(msg, zap.Error(err))
-	http.Error(w, msg, code)
+func abort(w http.ResponseWriter, r *http.Request, intg, cid, origin, err string) {
+	redirect(w, r, intg, cid, origin, "error", url.QueryEscape(err))
+}
+
+func redirect(w http.ResponseWriter, r *http.Request, intg, cid, origin, param, value string) {
+	u := fmt.Sprintf("/%s/oauth?cid=con_%s&origin=%s&%s=%s", intg, cid, origin, param, value)
+	http.Redirect(w, r, u, http.StatusFound)
 }

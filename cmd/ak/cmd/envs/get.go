@@ -15,17 +15,15 @@ var getCmd = common.StandardCommand(&cobra.Command{
 
 	RunE: func(cmd *cobra.Command, args []string) error {
 		r := resolver.Resolver{Client: common.Client()}
-		e, _, err := r.EnvNameOrID(args[0], project)
-		if err != nil {
-			return err
-		}
+		ctx, cancel := common.LimitedContext()
+		defer cancel()
 
-		if err := common.FailIfNotFound(cmd, "env", e.IsValid()); err != nil {
-			return err
+		e, _, err := r.EnvNameOrID(ctx, args[0], project)
+		err = common.AddNotFoundErrIfCond(err, e.IsValid())
+		if err = common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "env"); err == nil {
+			common.RenderKVIfV("env", e)
 		}
-
-		common.RenderKVIfV("env", e)
-		return nil
+		return err
 	},
 })
 

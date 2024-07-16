@@ -3,6 +3,7 @@ package kittehs
 import (
 	"fmt"
 	"hash/fnv"
+	"io"
 	"net/url"
 	"strings"
 )
@@ -78,4 +79,46 @@ func NormalizeURL(rawURL string, secure bool) (string, error) {
 
 	// Reconstruct the URL with only the scheme and the host.
 	return fmt.Sprintf("%s://%s", u.Scheme, u.Host), nil
+}
+
+func NewIndentedStringWriter(w io.Writer, indent string) *IndentedStringWriter {
+	return &IndentedStringWriter{
+		W:       w,
+		Indent:  indent,
+		pending: true,
+	}
+}
+
+type IndentedStringWriter struct {
+	DoNotCopy
+	DoNotCompare
+
+	W      io.Writer
+	Indent string
+
+	pending bool
+}
+
+func (w *IndentedStringWriter) Write(p []byte) (n int, err error) {
+	n = 0
+	for _, b := range p {
+		var (
+			k   int
+			buf []byte = []byte{b}
+		)
+
+		if w.pending {
+			buf = append([]byte(w.Indent), buf...)
+			w.pending = false
+		}
+
+		if k, err = w.W.Write(buf); err != nil {
+			return
+		}
+
+		n += k
+		w.pending = b == '\n'
+	}
+
+	return
 }

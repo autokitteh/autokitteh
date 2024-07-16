@@ -24,7 +24,10 @@ var createCmd = common.StandardCommand(&cobra.Command{
 
 	RunE: func(cmd *cobra.Command, args []string) error {
 		r := resolver.Resolver{Client: common.Client()}
-		p, pid, err := r.ProjectNameOrID(project)
+		ctx, cancel := common.LimitedContext()
+		defer cancel()
+
+		p, pid, err := r.ProjectNameOrID(ctx, project)
 		if err != nil {
 			return err
 		}
@@ -33,7 +36,7 @@ var createCmd = common.StandardCommand(&cobra.Command{
 			return common.NewExitCodeError(common.NotFoundExitCode, err)
 		}
 
-		i, iid, err := r.IntegrationNameOrID(integration)
+		i, iid, err := r.IntegrationNameOrID(ctx, integration)
 		if err != nil {
 			return err
 		}
@@ -50,9 +53,6 @@ var createCmd = common.StandardCommand(&cobra.Command{
 		if err != nil {
 			return fmt.Errorf("invalid connection: %w", err)
 		}
-
-		ctx, cancel := common.LimitedContext()
-		defer cancel()
 
 		cid, err := connections().Create(ctx, c)
 		if err != nil {

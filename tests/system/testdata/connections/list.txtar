@@ -50,8 +50,12 @@ return code == 0
 output equals ''
 
 ak connection list --integration meow -J
-return code == 1
-output equals 'Error: integration "meow" not found'
+return code == 0
+output equals ''
+
+ak connection list -f --integration meow -J 
+return code == 10
+output equals 'Error: integration not found'
 
 -- expected_all_unformatted.json --
 {"connection_id":"con_00000000000000000000000003","integration_id":"int_3kth00httpf1201a7ed83f7cd5","project_id":"prj_00000000000000000000000001","name":"my_connection_1","status":{},"capabilities":{"supports_connection_init":true},"links":{"init_url":"/connections/con_00000000000000000000000003/init","self_url":"/connections/con_00000000000000000000000003"}}

@@ -1,19 +1,24 @@
 package sdkservices
 
 type Services interface {
+	DBServices
+
 	Auth() Auth
-	Builds() Builds
-	Connections() Connections
-	Deployments() Deployments
 	Dispatcher() Dispatcher
-	Envs() Envs
-	Events() Events
-	Integrations() Integrations
 	OAuth() OAuth
-	Projects() Projects
 	Runtimes() Runtimes
-	Sessions() Sessions
 	Store() Store
+}
+
+type DBServices interface {
+	Integrations() Integrations
+	Projects() Projects
+	Builds() Builds
+	Deployments() Deployments
+	Envs() Envs
+	Connections() Connections
+	Sessions() Sessions
+	Events() Events
 	Triggers() Triggers
 	Vars() Vars
 }

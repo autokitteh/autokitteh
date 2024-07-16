@@ -16,19 +16,11 @@ var whoamiCmd = common.StandardCommand(&cobra.Command{
 		defer cancel()
 
 		u, err := auth().WhoAmI(ctx)
-		if err != nil {
-			return err
-		}
-
-		if err := common.FailIfNotFound(cmd, "user", u.IsValid()); err != nil {
-			return err
-		}
-
-		if u.IsValid() {
+		err = common.AddNotFoundErrIfCond(err, u.IsValid())
+		if err = common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "user"); err == nil {
 			common.RenderKV("user", u)
 		}
-
-		return nil
+		return err
 	},
 })
 

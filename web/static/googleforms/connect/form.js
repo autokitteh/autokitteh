@@ -9,6 +9,17 @@ function toggleTab(id) {
   }
   document.getElementById("toggle" + id).classList.add("active");
 
+  // Synchronize the form ID text fields.
+  if (id === "tab1") {
+    jsonValue = document.getElementById("formIdJson").value;
+    document.getElementById("formIdOauth").value = jsonValue;
+    document.getElementById("formIdJson").value = "";
+  } else {
+    oauthValue = document.getElementById("formIdOauth").value;
+    document.getElementById("formIdJson").value = jsonValue;
+    document.getElementById("formIdOauth").value = "";
+  }
+
   // Update the tab contents.
   const tabs = document.getElementsByClassName("tab");
   for (let i = 0; i < tabs.length; i++) {

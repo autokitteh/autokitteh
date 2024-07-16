@@ -23,6 +23,10 @@ var dispatchCmd = common.StandardCommand(&cobra.Command{
 		var event sdktypes.Event
 		pb := &sdktypes.EventPB{}
 
+		r := resolver.Resolver{Client: common.Client()}
+		ctx, cancel := common.LimitedContext()
+		defer cancel()
+
 		if filename != "" {
 			text, err := os.ReadFile(filename)
 			if err != nil {
@@ -35,8 +39,7 @@ var dispatchCmd = common.StandardCommand(&cobra.Command{
 		}
 
 		if connection != "" {
-			r := resolver.Resolver{Client: common.Client()}
-			_, cid, err := r.ConnectionNameOrID(args[0], "")
+			_, cid, err := r.ConnectionNameOrID(ctx, args[0], "")
 			if err != nil {
 				return err
 			}
@@ -65,9 +68,6 @@ var dispatchCmd = common.StandardCommand(&cobra.Command{
 		if err != nil {
 			return fmt.Errorf("invalid event: %w", err)
 		}
-
-		ctx, cancel := common.LimitedContext()
-		defer cancel()
 
 		eid, err := common.Client().Dispatcher().Dispatch(ctx, e, nil)
 		if err != nil {

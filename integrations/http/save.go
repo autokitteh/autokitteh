@@ -2,9 +2,7 @@ package http
 
 import (
 	"encoding/base64"
-	"fmt"
 	"net/http"
-	"net/url"
 	"strings"
 
 	"go.uber.org/zap"
@@ -21,22 +19,19 @@ var authVar = sdktypes.NewSymbol("auth")
 
 // handleAuth saves a new autokitteh connection with user-submitted data.
 func (h handler) handleAuth(w http.ResponseWriter, r *http.Request) {
-	l := h.logger.With(zap.String("urlPath", r.URL.Path))
+	c, l := sdkintegrations.NewConnectionInit(h.logger, w, r, desc)
 
-	// Check the "Content-Type" header.
+	// Check "Content-Type" header.
 	contentType := r.Header.Get(headerContentType)
 	if !strings.HasPrefix(contentType, contentTypeForm) {
-		// Probably an attack, so no need for user-friendliness.
-		http.Error(w, "Bad Request", http.StatusBadRequest)
+		c.Abort("unexpected content type")
 		return
 	}
 
 	// Read and parse POST request body.
 	if err := r.ParseForm(); err != nil {
-		l.Warn("Failed to parse inbound HTTP request", zap.Error(err))
-		msg := url.QueryEscape(err.Error())
-		u := fmt.Sprintf("%s/error.html?error=%s", desc.ConnectionURL().Path, msg)
-		http.Redirect(w, r, u, http.StatusFound)
+		l.Warn("Failed to parse incoming HTTP request", zap.Error(err))
+		c.Abort("form parsing error")
 		return
 	}
 
@@ -52,7 +47,5 @@ func (h handler) handleAuth(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Finalize the connection initialization - save the auth data in the connection.
-	initData := sdktypes.NewVars().Set(authVar, auth, true)
-
-	sdkintegrations.FinalizeConnectionInit(w, r, IntegrationID, initData)
+	c.Finalize(sdktypes.NewVars().Set(authVar, auth, true))
 }

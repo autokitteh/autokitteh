@@ -30,13 +30,14 @@ var deployCmd = common.StandardCommand(&cobra.Command{
 
 		// Step 2: parse the optional environment argument.
 		r := resolver.Resolver{Client: common.Client()}
-		e, eid, err := r.EnvNameOrID(env, args[0])
-		if err != nil {
+
+		ctx, cancel := common.LimitedContext()
+		defer cancel()
+
+		e, eid, err := r.EnvNameOrID(ctx, env, args[0])
+		err = common.AddNotFoundErrIfCond(err, e.IsValid())
+		if err = common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "environment"); err != nil {
 			return err
-		}
-		if !e.IsValid() {
-			err = fmt.Errorf("environment %q not found", env)
-			return common.NewExitCodeError(common.NotFoundExitCode, err)
 		}
 
 		// Step 3: deploy the build (see the "deployment" parent command).
@@ -47,9 +48,6 @@ var deployCmd = common.StandardCommand(&cobra.Command{
 		if err != nil {
 			return fmt.Errorf("invalid deployment: %w", err)
 		}
-
-		ctx, cancel := common.LimitedContext()
-		defer cancel()
 
 		did, err := deployments().Create(ctx, deployment)
 		if err != nil {

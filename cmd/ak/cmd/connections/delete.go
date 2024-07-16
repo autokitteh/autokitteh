@@ -16,16 +16,16 @@ var deleteCmd = common.StandardCommand(&cobra.Command{
 
 	RunE: func(cmd *cobra.Command, args []string) error {
 		r := resolver.Resolver{Client: common.Client()}
-		c, id, err := r.ConnectionNameOrID(args[0], "")
+		ctx, cancel := common.LimitedContext()
+		defer cancel()
+
+		c, id, err := r.ConnectionNameOrID(ctx, args[0], "")
 		if err != nil {
 			return common.ToExitCodeError(err, "connection")
 		}
 		if !c.IsValid() {
 			return common.ToExitCodeError(sdkerrors.ErrNotFound, "connection")
 		}
-
-		ctx, cancel := common.LimitedContext()
-		defer cancel()
 
 		err = connections().Delete(ctx, id)
 		return common.ToExitCodeError(err, "delete connection")

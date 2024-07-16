@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
+
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 )
 
@@ -16,7 +17,6 @@ type userIDTraits struct{}
 
 func (userIDTraits) Prefix() string { return userIDKind }
 
-// func NewUserID() UserID                          { return newID[UserID]() }
 func ParseUserID(s string) (UserID, error)       { return ParseID[UserID](s) }
 func StrictParseUserID(s string) (UserID, error) { return Strict(ParseUserID(s)) }
 

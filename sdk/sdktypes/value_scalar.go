@@ -2,6 +2,7 @@ package sdktypes
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"golang.org/x/exp/constraints"
@@ -95,6 +96,8 @@ func (s StringValue) Value() string { return s.read().V }
 func NewStringValue(s string) Value {
 	return forceFromProto[Value](&ValuePB{String_: &StringValuePB{V: s}})
 }
+
+func NewStringValuef(f string, args ...any) Value { return NewStringValue(fmt.Sprintf(f, args...)) }
 
 func (v Value) IsString() bool         { return v.read().String_ != nil }
 func (v Value) GetString() StringValue { return forceFromProto[StringValue](v.read().String_) }

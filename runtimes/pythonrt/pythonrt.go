@@ -84,7 +84,6 @@ func New() (sdkservices.Runtime, error) {
 
 	if userPython {
 		log.Info("user python", zap.String("python", pyExe))
-
 	}
 
 	const timeout = 3 * time.Second
@@ -153,12 +152,11 @@ func asBuildExport(e Export) sdktypes.BuildExport {
 }
 
 func (py *pySvc) Build(ctx context.Context, fsys fs.FS, path string, values []sdktypes.Symbol) (sdktypes.BuildArtifact, error) {
-	py.log.Info("build")
+	py.log.Info("build Python module", zap.String("path", path))
 
 	ffs, err := kittehs.NewFilterFS(fsys, func(entry fs.DirEntry) bool {
 		return !strings.Contains(entry.Name(), "__pycache__")
 	})
-
 	if err != nil {
 		return sdktypes.InvalidBuildArtifact, err
 	}
@@ -402,7 +400,7 @@ func (py *pySvc) Close() {
 // We split it from Call since Call is also used to execute activities.
 func (py *pySvc) initialCall(ctx context.Context, funcName string, event map[string]any) (sdktypes.Value, error) {
 	defer func() {
-		py.log.Info("python done, killing")
+		py.log.Info("Python subprocess cleanup after initial call is done")
 
 		py.stderr.Close()
 		py.stdout.Close()

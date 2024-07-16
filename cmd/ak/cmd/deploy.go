@@ -29,6 +29,8 @@ var deployCmd = common.StandardCommand(&cobra.Command{
 
 	RunE: func(cmd *cobra.Command, args []string) error {
 		r := resolver.Resolver{Client: common.Client()}
+		ctx, cancel := common.LimitedContext()
+		defer cancel()
 
 		// Step 1: apply the manifest file, if provided
 		// (see also the "manifest" parent command).
@@ -43,7 +45,7 @@ var deployCmd = common.StandardCommand(&cobra.Command{
 				return fmt.Errorf("project name provided without manifest")
 			}
 
-			p, pid, _ := r.ProjectNameOrID(project)
+			p, pid, _ := r.ProjectNameOrID(ctx, project)
 			if p.IsValid() {
 				logFunc(cmd, "plan")(fmt.Sprintf("project %q: found, id=%q", project, pid))
 			}
@@ -64,13 +66,10 @@ var deployCmd = common.StandardCommand(&cobra.Command{
 		logFunc(cmd, "exec")(fmt.Sprintf("create_build: created %q", bid))
 
 		// Step 3: parse the optional environment argument.
-		e, eid, err := r.EnvNameOrID(env, project)
-		if err != nil {
+		e, eid, err := r.EnvNameOrID(ctx, env, project)
+		err = common.AddNotFoundErrIfCond(err, e.IsValid())
+		if err = common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "environment"); err != nil {
 			return err
-		}
-		if !e.IsValid() {
-			err = fmt.Errorf("environment %q not found", env)
-			return common.NewExitCodeError(common.NotFoundExitCode, err)
 		}
 
 		// Step 4: deploy the build
@@ -82,9 +81,6 @@ var deployCmd = common.StandardCommand(&cobra.Command{
 		if err != nil {
 			return fmt.Errorf("invalid deployment: %w", err)
 		}
-
-		ctx, cancel := common.LimitedContext()
-		defer cancel()
 
 		dep := common.Client().Deployments()
 		did, err := dep.Create(ctx, deployment)

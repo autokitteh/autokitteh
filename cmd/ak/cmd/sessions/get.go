@@ -23,17 +23,15 @@ var getCmd = common.StandardCommand(&cobra.Command{
 		}
 
 		r := resolver.Resolver{Client: common.Client()}
-		s, _, err := r.SessionID(args[0])
-		if err != nil {
-			return err
-		}
+		ctx, cancel := common.LimitedContext()
+		defer cancel()
 
-		if err := common.FailIfNotFound(cmd, "session", s.IsValid()); err != nil {
-			return err
+		s, _, err := r.SessionID(ctx, args[0])
+		err = common.AddNotFoundErrIfCond(err, s.IsValid())
+		if err = common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "session"); err == nil {
+			common.RenderKVIfV("session", s)
 		}
-
-		common.RenderKVIfV("session", s)
-		return nil
+		return err
 	},
 })
 

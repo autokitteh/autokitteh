@@ -74,7 +74,10 @@ func (s *streamLogger) Close() error {
 	defer s.mu.Unlock()
 
 	if s.buf.Len() > 0 {
-		s.print(context.Background(), s.rid, s.buf.String())
+		text := s.buf.String()
+		if text != s.prefix {
+			s.print(context.Background(), s.rid, text)
+		}
 	}
 
 	return nil

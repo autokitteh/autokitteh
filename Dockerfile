@@ -42,6 +42,10 @@ RUN --mount=type=cache,target=/var/cache/apk \
     && \
     update-ca-certificates
 
+COPY ./scripts/gcc-on-arm.sh /tmp
+RUN /tmp/gcc-on-arm.sh
+RUN rm /tmp/gcc-on-arm.sh
+
 # Create a non-privileged user 
 # See https://docs.docker.com/develop/develop-images/dockerfile_best-practices/#user
 ARG UID=10001
