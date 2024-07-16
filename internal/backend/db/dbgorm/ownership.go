@@ -82,12 +82,12 @@ func prepareOwnershipForEntities1(uid string, entities ...any) []scheme.Ownershi
 }
 
 func prepareOwnershipForEntities(ctx context.Context, entities ...any) (string, []scheme.Ownership, error) {
-	user, err := userIDFromContext(ctx)
+	uid, err := userIDFromContext(ctx)
 	if err != nil {
 		return "", nil, err
 	}
-	oo := prepareOwnershipForEntities1(user, entities...)
-	return user, oo, nil
+	oo := prepareOwnershipForEntities1(uid, entities...)
+	return uid, oo, nil
 }
 
 func saveOwnershipForEntities(db *gorm.DB, uid string, oo ...scheme.Ownership) error {
@@ -101,7 +101,7 @@ func saveOwnershipForEntities(db *gorm.DB, uid string, oo ...scheme.Ownership) e
 func (gdb *gormdb) createEntityWithOwnership(
 	ctx context.Context, create func(tx *gorm.DB, uid string) error, model any, allowedOnID ...*sdktypes.UUID,
 ) error {
-	user, ownerships, err := prepareOwnershipForEntities(ctx, model)
+	uid, ownerships, err := prepareOwnershipForEntities(ctx, model)
 	if err != nil {
 		return err
 	}
@@ -120,13 +120,13 @@ func (gdb *gormdb) createEntityWithOwnership(
 	}
 
 	return gdb.transaction(ctx, func(tx *tx) error {
-		if err := tx.isUserEntity(user, idsToVerifyOwnership...); err != nil {
+		if err := tx.isUserEntity(uid, idsToVerifyOwnership...); err != nil {
 			return err
 		}
-		if err := create(tx.db, user); err != nil { // create
+		if err := create(tx.db, uid); err != nil { // create
 			return err
 		}
-		return saveOwnershipForEntities(tx.db, user, ownerships...) // ensure user and add ownerships
+		return saveOwnershipForEntities(tx.db, uid, ownerships...) // ensure user and add ownerships
 	})
 }
 
