@@ -50,7 +50,7 @@ def github_client(connection: str, **kwargs) -> Github:
         if not install_id:
             raise ConnectionInitError(connection)
 
-        app = GithubIntegration(Auth.AppAuth(int(app_id), private_key), **kwargs)
+        app = GithubIntegration(auth=Auth.AppAuth(int(app_id), private_key), **kwargs)
         return app.get_github_for_installation(int(install_id))
 
     # Errors
