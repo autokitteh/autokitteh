@@ -48,7 +48,6 @@ var Tables = []any{
 	&SessionLogRecord{},
 	&Signal{},
 	&Trigger{},
-	&User{},
 }
 
 type Build struct {
@@ -544,21 +543,12 @@ type Signal struct {
 	Connection *Connection
 }
 
-type User struct {
-	UserID   sdktypes.UUID `gorm:"primaryKey;type:uuid;not null"`
-	Provider string        `gorm:"not null; uniqueIndex:idx_provider_email_name_idx,priority:2"`
-	Email    string        `gorm:"not null; uniqueIndex:idx_provider_email_name_idx,priority:1"`
-	Name     string        `gorm:"not null; uniqueIndex:idx_provider_email_name_idx,priority:3"`
-}
-
 type Ownership struct {
 	EntityID   sdktypes.UUID `gorm:"primaryKey;type:uuid;not null"`
 	EntityType string        `gorm:"not null"`
 
-	UserID sdktypes.UUID `gorm:"not null"`
+	UserID string `gorm:"not null"`
 
-	// enforce foreign keys
-	User *User
 	// TODO: Polymorphic associations won't enforce foreign key to entities in different tables
 	// we might need to have separated ownership tables for each entity.
 }
