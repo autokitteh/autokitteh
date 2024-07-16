@@ -5,6 +5,22 @@ from types import ModuleType
 
 from . import log
 
+bin_ops = {
+    ast.Add: "+",
+    ast.Sub: "-",
+    ast.Mult: "*",
+    ast.MatMult: "@",
+    ast.Div: "/",
+    ast.Mod: "%",
+    ast.Pow: "**",
+    ast.LShift: "<<",
+    ast.RShift: ">>",
+    ast.BitOr: "|",
+    ast.BitXor: "^",
+    ast.BitAnd: "&",
+    ast.FloorDiv: "//",
+}
+
 
 def name_of(node):
     """Name of call node (e.g. 'requests.get')"""
@@ -25,6 +41,12 @@ def name_of(node):
 
     if isinstance(node, ast.Name):
         return node.id
+
+    if isinstance(node, ast.BinOp):
+        left = name_of(node.left)
+        right = name_of(node.right)
+        op = bin_ops.get(type(node.op), "?")
+        return f"({left} {op} {right})"
 
     raise ValueError(f"unknown AST node type: {node!r}")
 
