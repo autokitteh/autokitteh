@@ -70,7 +70,7 @@ func TestListBuildsWithOwnershipP(t *testing.T) {
 }
 
 func TestSetVarWithOwnershipP(t *testing.T) {
-	f := preOwnershipTestPermissive(t).WithDebug()
+	f := preOwnershipTestPermissive(t)
 
 	c, env := createConnectionAndEnv(t, f)
 	v1 := f.newVar("k", "v", env) // env scoped var
