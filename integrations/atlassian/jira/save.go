@@ -1,7 +1,9 @@
 package jira
 
 import (
+	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"go.uber.org/zap"
@@ -32,13 +34,23 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	initData := sdktypes.NewVars().
-		Set(baseURL, r.Form.Get("base_url"), false).
-		Set(token, r.Form.Get("token"), true)
+	b := r.Form.Get("base_url")
+	t := r.Form.Get("token")
+	e := r.Form.Get("email")
 
-	addr := r.Form.Get("email")
-	if addr != "" {
-		initData = initData.Set(email, addr, true)
+	u, err := url.Parse(b)
+	if err != nil {
+		l.Warn("Failed to parse base URL", zap.Error(err))
+		c.Abort("failed to parse base URL")
+		return
+	}
+
+	// Ensure the base URL is formatted as we expect.
+	b = fmt.Sprintf("%s://%s\n", u.Scheme, u.Host)
+
+	initData := sdktypes.NewVars().Set(baseURL, b, false).Set(token, t, true)
+	if e != "" {
+		initData = initData.Set(email, e, true)
 	}
 
 	c.Finalize(initData)
