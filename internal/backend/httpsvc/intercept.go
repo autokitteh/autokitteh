@@ -60,6 +60,7 @@ func intercept(z *zap.Logger, cfg *LoggerConfig, extractors []RequestLogExtracto
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if unlogged.MatchString(r.URL.Path) {
+			next.ServeHTTP(w, r)
 			return
 		}
 
