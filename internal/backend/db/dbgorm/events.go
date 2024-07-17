@@ -105,18 +105,12 @@ func (db *gormdb) SaveEvent(ctx context.Context, event sdktypes.Event) error {
 
 func (db *gormdb) GetEventByID(ctx context.Context, eventID sdktypes.EventID) (sdktypes.Event, error) {
 	e, err := db.getEvent(ctx, eventID.UUIDValue())
-	if e == nil || err != nil {
-		return sdktypes.InvalidEvent, translateError(err)
-	}
-	return scheme.ParseEvent(*e)
+	return schemaToSDK(e, err, scheme.ParseEvent)
 }
 
 func (db *gormdb) ListEvents(ctx context.Context, filter sdkservices.ListEventsFilter) ([]sdktypes.Event, error) {
 	events, err := db.listEvents(ctx, filter)
-	if events == nil || err != nil {
-		return nil, translateError(err)
-	}
-	return kittehs.TransformError(events, scheme.ParseEvent)
+	return schemasToSDK(events, err, scheme.ParseEvent)
 }
 
 func (db *gormdb) GetLatestEventSequence(ctx context.Context) (uint64, error) {

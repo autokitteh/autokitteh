@@ -139,10 +139,7 @@ func (db *gormdb) UpdateConnection(ctx context.Context, conn sdktypes.Connection
 
 func (db *gormdb) GetConnection(ctx context.Context, connectionID sdktypes.ConnectionID) (sdktypes.Connection, error) {
 	c, err := db.getConnection(ctx, connectionID.UUIDValue())
-	if c == nil || err != nil {
-		return sdktypes.InvalidConnection, translateError(err)
-	}
-	return scheme.ParseConnection(*c)
+	return schemaToSDK(c, err, scheme.ParseConnection)
 }
 
 func (db *gormdb) GetConnections(ctx context.Context, connectionIDs []sdktypes.ConnectionID) ([]sdktypes.Connection, error) {
@@ -156,8 +153,5 @@ func (db *gormdb) GetConnections(ctx context.Context, connectionIDs []sdktypes.C
 
 func (db *gormdb) ListConnections(ctx context.Context, filter sdkservices.ListConnectionsFilter, idsOnly bool) ([]sdktypes.Connection, error) {
 	cs, err := db.listConnections(ctx, filter, idsOnly)
-	if err != nil {
-		return nil, translateError(err)
-	}
-	return kittehs.TransformError(cs, scheme.ParseConnection)
+	return schemasToSDK(cs, err, scheme.ParseConnection)
 }

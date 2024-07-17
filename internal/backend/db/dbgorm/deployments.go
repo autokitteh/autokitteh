@@ -7,7 +7,6 @@ import (
 	"gorm.io/gorm"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -158,24 +157,15 @@ func (db *gormdb) UpdateDeploymentState(ctx context.Context, id sdktypes.Deploym
 
 func (db *gormdb) GetDeployment(ctx context.Context, id sdktypes.DeploymentID) (sdktypes.Deployment, error) {
 	d, err := db.getDeployment(ctx, id.UUIDValue())
-	if d == nil || err != nil {
-		return sdktypes.InvalidDeployment, translateError(err)
-	}
-	return scheme.ParseDeployment(*d)
+	return schemaToSDK(d, err, scheme.ParseDeployment)
 }
 
 func (db *gormdb) ListDeployments(ctx context.Context, filter sdkservices.ListDeploymentsFilter) ([]sdktypes.Deployment, error) {
 	if filter.IncludeSessionStats {
 		ds, err := db.listDeploymentsWithStats(ctx, filter)
-		if ds == nil || err != nil {
-			return nil, translateError(err)
-		}
-		return kittehs.TransformError(ds, scheme.ParseDeploymentWithSessionStats)
+		return schemasToSDK(ds, err, scheme.ParseDeploymentWithSessionStats)
 	} else {
 		ds, err := db.listDeployments(ctx, filter)
-		if ds == nil || err != nil {
-			return nil, translateError(err)
-		}
-		return kittehs.TransformError(ds, scheme.ParseDeployment)
+		return schemasToSDK(ds, err, scheme.ParseDeployment)
 	}
 }

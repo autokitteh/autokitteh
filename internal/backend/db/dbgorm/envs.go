@@ -7,7 +7,6 @@ import (
 	"gorm.io/gorm"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
@@ -86,25 +85,17 @@ func (db *gormdb) CreateEnv(ctx context.Context, env sdktypes.Env) error {
 	return translateError(db.createEnv(ctx, &e))
 }
 
-func schemaToEnv(p *scheme.Env, err error) (sdktypes.Env, error) {
-	if p == nil || err != nil {
-		return sdktypes.InvalidEnv, translateError(err)
-	}
-	return scheme.ParseEnv(*p)
-}
-
 func (db *gormdb) GetEnvByID(ctx context.Context, envID sdktypes.EnvID) (sdktypes.Env, error) {
-	return schemaToEnv(db.getEnvByID(ctx, envID.UUIDValue()))
+	e, err := db.getEnvByID(ctx, envID.UUIDValue())
+	return schemaToSDK(e, err, scheme.ParseEnv)
 }
 
 func (db *gormdb) GetEnvByName(ctx context.Context, projectID sdktypes.ProjectID, envName sdktypes.Symbol) (sdktypes.Env, error) {
-	return schemaToEnv(db.getEnvByName(ctx, projectID.UUIDValue(), envName.String()))
+	e, err := db.getEnvByName(ctx, projectID.UUIDValue(), envName.String())
+	return schemaToSDK(e, err, scheme.ParseEnv)
 }
 
 func (db *gormdb) ListProjectEnvs(ctx context.Context, pid sdktypes.ProjectID) ([]sdktypes.Env, error) {
 	envs, err := db.listEnvs(ctx, pid.UUIDValue())
-	if envs == nil || err != nil {
-		return nil, translateError(err)
-	}
-	return kittehs.TransformError(envs, scheme.ParseEnv)
+	return schemasToSDK(envs, err, scheme.ParseEnv)
 }

@@ -8,7 +8,6 @@ import (
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/internal/backend/tar"
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	deploymentsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/deployments/v1"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -156,27 +155,19 @@ func (gdb *gormdb) UpdateProject(ctx context.Context, project sdktypes.Project) 
 	return translateError(gdb.updateProject(ctx, &p))
 }
 
-func schemaToProject(p *scheme.Project, err error) (sdktypes.Project, error) {
-	if p == nil || err != nil {
-		return sdktypes.InvalidProject, translateError(err)
-	}
-	return scheme.ParseProject(*p)
-}
-
 func (db *gormdb) GetProjectByID(ctx context.Context, pid sdktypes.ProjectID) (sdktypes.Project, error) {
-	return schemaToProject(db.getProject(ctx, pid.UUIDValue()))
+	p, err := db.getProject(ctx, pid.UUIDValue())
+	return schemaToSDK(p, err, scheme.ParseProject)
 }
 
 func (db *gormdb) GetProjectByName(ctx context.Context, ph sdktypes.Symbol) (sdktypes.Project, error) {
-	return schemaToProject(db.getProjectByName(ctx, ph.String()))
+	p, err := db.getProjectByName(ctx, ph.String())
+	return schemaToSDK(p, err, scheme.ParseProject)
 }
 
 func (db *gormdb) ListProjects(ctx context.Context) ([]sdktypes.Project, error) {
 	ps, err := db.listProjects(ctx)
-	if ps == nil || err != nil {
-		return nil, translateError(err)
-	}
-	return kittehs.TransformError(ps, scheme.ParseProject)
+	return schemasToSDK(ps, err, scheme.ParseProject)
 }
 
 type DeploymentState struct {

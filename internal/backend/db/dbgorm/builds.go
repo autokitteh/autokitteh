@@ -7,7 +7,6 @@ import (
 	"gorm.io/gorm"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -69,10 +68,7 @@ func (db *gormdb) DeleteBuild(ctx context.Context, buildID sdktypes.BuildID) err
 
 func (db *gormdb) GetBuild(ctx context.Context, buildID sdktypes.BuildID) (sdktypes.Build, error) {
 	b, err := db.getBuild(ctx, buildID.UUIDValue())
-	if b == nil || err != nil {
-		return sdktypes.InvalidBuild, translateError(err)
-	}
-	return scheme.ParseBuild(*b) // TODO: get and list returns different errors due to transform
+	return schemaToSDK(b, err, scheme.ParseBuild)
 }
 
 func (db *gormdb) GetBuildData(ctx context.Context, buildID sdktypes.BuildID) ([]byte, error) {
@@ -84,11 +80,8 @@ func (db *gormdb) GetBuildData(ctx context.Context, buildID sdktypes.BuildID) ([
 }
 
 func (db *gormdb) ListBuilds(ctx context.Context, filter sdkservices.ListBuildsFilter) ([]sdktypes.Build, error) {
-	builds, err := db.listBuilds(ctx, filter)
-	if builds == nil || err != nil {
-		return nil, translateError(err)
-	}
-
+	bs, err := db.listBuilds(ctx, filter)
+	builds, err := schemasToSDK(bs, err, scheme.ParseBuild)
 	slices.Reverse(builds)
-	return kittehs.TransformError(builds, scheme.ParseBuild)
+	return builds, err
 }

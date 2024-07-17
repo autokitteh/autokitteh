@@ -358,10 +358,7 @@ func (db *gormdb) UpdateSessionState(ctx context.Context, sessionID sdktypes.Ses
 
 func (db *gormdb) GetSession(ctx context.Context, id sdktypes.SessionID) (sdktypes.Session, error) {
 	s, err := db.getSession(ctx, id.UUIDValue())
-	if s == nil || err != nil {
-		return sdktypes.InvalidSession, translateError(err)
-	}
-	return scheme.ParseSession(*s)
+	return schemaToSDK(s, err, scheme.ParseSession)
 }
 
 func (db *gormdb) ListSessions(ctx context.Context, f sdkservices.ListSessionsFilter) (sdkservices.ListSessionResult, error) {

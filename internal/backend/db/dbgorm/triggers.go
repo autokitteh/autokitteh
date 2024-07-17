@@ -8,7 +8,6 @@ import (
 	"gorm.io/gorm"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -73,7 +72,7 @@ func (gdb *gormdb) listTriggers(ctx context.Context, filter sdkservices.ListTrig
 	return ts, nil
 }
 
-func (db *gormdb) triggerToRecord(ctx context.Context, trigger sdktypes.Trigger) (*scheme.Trigger, error) {
+func (db *gormdb) triggerToSchema(ctx context.Context, trigger sdktypes.Trigger) (*scheme.Trigger, error) {
 	connID := trigger.ConnectionID()
 
 	conn, err := db.GetConnection(ctx, connID)
@@ -127,7 +126,7 @@ func (db *gormdb) CreateTrigger(ctx context.Context, trigger sdktypes.Trigger) e
 	}
 
 	// Note: building trigger record involves non-transactionl fetching connectionID and projectID from the DB
-	t, err := db.triggerToRecord(ctx, trigger)
+	t, err := db.triggerToSchema(ctx, trigger)
 	if err != nil {
 		return err
 	}
@@ -150,7 +149,7 @@ func (db *gormdb) UpdateTrigger(ctx context.Context, trigger sdktypes.Trigger) e
 	}
 
 	// Note: building trigger record involves non-transactionl fetching connectionID and projectID from the DB
-	t, err := db.triggerToRecord(ctx, trigger)
+	t, err := db.triggerToSchema(ctx, trigger)
 	if err != nil {
 		return err
 	}
@@ -167,16 +166,10 @@ func (db *gormdb) UpdateTrigger(ctx context.Context, trigger sdktypes.Trigger) e
 
 func (db *gormdb) GetTrigger(ctx context.Context, triggerID sdktypes.TriggerID) (sdktypes.Trigger, error) {
 	t, err := db.getTrigger(ctx, triggerID.UUIDValue())
-	if t == nil || err != nil {
-		return sdktypes.InvalidTrigger, translateError(err)
-	}
-	return scheme.ParseTrigger(*t)
+	return schemaToSDK(t, err, scheme.ParseTrigger)
 }
 
 func (db *gormdb) ListTriggers(ctx context.Context, filter sdkservices.ListTriggersFilter) ([]sdktypes.Trigger, error) {
 	ts, err := db.listTriggers(ctx, filter)
-	if ts == nil || err != nil {
-		return nil, translateError(err)
-	}
-	return kittehs.TransformError(ts, scheme.ParseTrigger)
+	return schemasToSDK(ts, err, scheme.ParseTrigger)
 }
