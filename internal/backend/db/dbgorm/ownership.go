@@ -72,14 +72,14 @@ func entityOwnershipWithIDAndType(entity any) scheme.Ownership {
 }
 
 func prepareOwnershipForEntities1(uid string, entities ...any) []scheme.Ownership {
-	var oo []scheme.Ownership
+	var ownerships []scheme.Ownership
 	for _, entity := range entities {
 		if o := entityOwnershipWithIDAndType(entity); o.EntityType != "" {
 			o.UserID = uid
-			oo = append(oo, o)
+			ownerships = append(ownerships, o)
 		}
 	}
-	return oo
+	return ownerships
 }
 
 func prepareOwnershipForEntities(ctx context.Context, entities ...any) (string, []scheme.Ownership, error) {
