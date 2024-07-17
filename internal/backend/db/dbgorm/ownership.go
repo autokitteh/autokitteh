@@ -156,7 +156,7 @@ func verifyOwnerships(uid string, ownerships []scheme.Ownership) error {
 func ensureUserAccessToEntitiesWithOwnerships(db *gorm.DB, uid string, ids ...sdktypes.UUID) ([]scheme.Ownership, error) {
 	ownerships, err := getOwnershipsForEntities(db, ids...)
 	if err != nil {
-		return ownerships, err
+		return nil, err
 	}
 
 	if len(ownerships) < len(ids) { // should be equal
