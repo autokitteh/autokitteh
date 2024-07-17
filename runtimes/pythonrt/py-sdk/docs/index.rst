@@ -104,6 +104,14 @@ autokitteh.openai module
    :undoc-members:
    :show-inheritance:
 
+autokitteh.packages module
+------------------------
+
+.. automodule:: autokitteh.packages
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 autokitteh.redis module
 ------------------------
 
