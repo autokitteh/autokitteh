@@ -40,7 +40,7 @@ def _install_package(specifier, import_name):
         )
 
 
-def install(packages):
+def install(*packages):
     """Install Python packages using pip.
 
     A package can be either a package requirement specifier
@@ -49,9 +49,9 @@ def install(packages):
     the package name (e.g. Package `pillow` import imported as `PIL`).
 
     Examples:
-    >>> install(['requests', 'numpy'])
-    >>> install(['requests ~= 2.32', 'numpy == 2.0.0'])
-    >>> install([('pillow ~= 10.4', 'PIL')])
+    >>> install('requests', 'numpy')
+    >>> install('requests ~= 2.32', 'numpy == 2.0.0')
+    >>> install(['pillow ~= 10.4', 'PIL'])
     """
     for package in packages:
         if isinstance(package, str):
