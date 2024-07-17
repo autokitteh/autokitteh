@@ -199,8 +199,8 @@ func Test_pyExports(t *testing.T) {
 	require.NoError(t, err)
 
 	expected := []Export{
-		{File: "simple.py", Name: "greet", Line: 11},
-		{File: "simple.py", Name: "printer", Line: 22},
+		{File: "simple.py", Name: "greet", Line: 12},
+		{File: "simple.py", Name: "printer", Line: 23},
 	}
 	require.Equal(t, expected, exports)
 
