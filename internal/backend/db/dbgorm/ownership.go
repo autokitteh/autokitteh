@@ -160,7 +160,7 @@ func ensureUserAccessToEntitiesWithOwnerships(db *gorm.DB, uid string, ids ...sd
 	}
 
 	if len(ownerships) < len(ids) { // should be equal
-		return ownerships, gorm.ErrRecordNotFound
+		return nil, gorm.ErrRecordNotFound
 	}
 	return ownerships, verifyOwnerships(uid, ownerships)
 }
