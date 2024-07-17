@@ -3,6 +3,7 @@ package sessions
 import (
 	"context"
 	"fmt"
+	"math"
 
 	"go.uber.org/zap"
 
@@ -101,10 +102,20 @@ func (s *sessions) Start(ctx context.Context, session sdktypes.Session) (sdktype
 
 	if err := s.workflows.StartWorkflow(ctx, session, s.config.Debug); err != nil {
 		err = fmt.Errorf("start workflow: %w", err)
-		if uerr := s.svcs.DB.UpdateSessionState(ctx, session.ID(), sdktypes.NewSessionStateError(err, nil)); uerr != nil {
+		if err := s.svcs.DB.Transaction(ctx, func(tx db.DB) error {
+			state := sdktypes.NewSessionStateError(err, nil)
+			if err := tx.UpdateSessionState(ctx, session.ID(), state); err != nil {
+				return err
+			}
+			//TODO: Decide how to handle latest record
+			// this assume this is for sure the latest record
+			record := sdktypes.NewStateSessionLogRecord(math.MaxInt32, state)
+			return tx.SaveSessionLogRecord(ctx, session.ID(), record)
+		}); err != nil {
 			z.Error("update session state", zap.Error(err))
+			return sdktypes.InvalidSessionID, fmt.Errorf("start workflow: %w", err)
 		}
-		return sdktypes.InvalidSessionID, fmt.Errorf("start workflow: %w", err)
+
 	}
 
 	return session.ID(), nil

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"math"
 	"time"
 
 	"go.temporal.io/sdk/client"
@@ -208,9 +209,19 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 	return debug, err
 }
 
-func (ws *workflows) stopped(sessionID sdktypes.SessionID) {
-	z := ws.z.With(zap.String("session_id", sessionID.String()))
+func (ws *workflows) updateFinalSessionState(ctx context.Context, sessionID sdktypes.SessionID, state sdktypes.SessionState) error {
+	return ws.svcs.DB.Transaction(ctx, func(tx db.DB) error {
+		if err := tx.UpdateSessionState(ctx, sessionID, state); err != nil {
+			return err
+		}
+		//TODO: Decide how to handle latest record
+		// this assume this is for sure the latest record
+		record := sdktypes.NewStateSessionLogRecord(math.MaxInt32, state)
+		return tx.SaveSessionLogRecord(ctx, sessionID, record)
+	})
+}
 
+func (ws *workflows) stopped(sessionID sdktypes.SessionID) {
 	ctx, cancel := withLimitedTimeout(context.Background())
 	defer cancel()
 
@@ -225,20 +236,19 @@ func (ws *workflows) stopped(sessionID sdktypes.SessionID) {
 		}
 	}
 
-	if err := ws.svcs.DB.UpdateSessionState(ctx, sessionID, sdktypes.NewSessionStateStopped(reason)); err != nil {
-		z.Error("update session", zap.Error(err))
+	if err := ws.updateFinalSessionState(ctx, sessionID, sdktypes.NewSessionStateStopped(reason)); err != nil {
+		ws.z.Error("update session", zap.Error(err), zap.String("session_id", sessionID.String()))
 	}
 }
 
 func (ws *workflows) errored(sessionID sdktypes.SessionID, err error, prints []string) {
-	z := ws.z.With(zap.String("session_id", sessionID.String()))
-
 	ctx, cancel := withLimitedTimeout(context.Background())
 	defer cancel()
 
-	if err := ws.svcs.DB.UpdateSessionState(ctx, sessionID, sdktypes.NewSessionStateError(err, prints)); err != nil {
-		z.Error("update session", zap.Error(err))
+	if err := ws.updateFinalSessionState(ctx, sessionID, sdktypes.NewSessionStateError(err, prints)); err != nil {
+		ws.z.Error("update session", zap.Error(err), zap.String("session_id", sessionID.String()))
 	}
+
 }
 
 func (ws *workflows) deactivateDrainedDeployment(ctx context.Context, deploymentID sdktypes.DeploymentID) error {

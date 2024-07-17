@@ -23,7 +23,7 @@ func (gdb *gormdb) withUserSessions(ctx context.Context) *gorm.DB {
 }
 
 func (gdb *gormdb) createSession(ctx context.Context, session *scheme.Session) error {
-	logr, err := toSessionLogRecord(session.SessionID, sdktypes.NewStateSessionLogRecord(sdktypes.NewSessionStateCreated()))
+	logr, err := toSessionLogRecord(session.SessionID, sdktypes.NewStateSessionLogRecord(1, sdktypes.NewSessionStateCreated()))
 	if err != nil {
 		return err
 	}
@@ -50,20 +50,13 @@ func (gdb *gormdb) deleteSession(ctx context.Context, sessionID sdktypes.UUID) e
 
 func (gdb *gormdb) updateSessionState(ctx context.Context, sessionID sdktypes.UUID, state sdktypes.SessionState) error {
 	sessionStateUpdate := map[string]any{"current_state_type": int(state.Type().ToProto()), "updated_at": time.Now()}
-	logr, err := toSessionLogRecord(sessionID, sdktypes.NewStateSessionLogRecord(state))
-	if err != nil {
+	if err := gdb.isCtxUserEntity(ctx, sessionID); err != nil {
 		return err
 	}
-
-	return gdb.transaction(ctx, func(tx *tx) error {
-		if err := tx.isCtxUserEntity(ctx, sessionID); err != nil {
-			return err
-		}
-		if err := tx.db.Model(&scheme.Session{SessionID: sessionID}).Updates(sessionStateUpdate).Error; err != nil {
-			return err
-		}
-		return createLogRecord(tx.db, logr)
-	})
+	if err := gdb.db.Model(&scheme.Session{SessionID: sessionID}).Updates(sessionStateUpdate).Error; err != nil {
+		return err
+	}
+	return nil
 }
 
 func (gdb *gormdb) getSession(ctx context.Context, sessionID sdktypes.UUID) (*scheme.Session, error) {

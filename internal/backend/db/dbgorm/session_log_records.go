@@ -17,5 +17,6 @@ func (db *gormdb) SaveSessionLogRecord(ctx context.Context, sessionID sdktypes.S
 		return fmt.Errorf("marshal session log record: %w", err)
 	}
 
+	fmt.Println("Seq", record.Seq())
 	return db.db.Create(&scheme.SessionLogRecord{SessionID: sessionID.UUIDValue(), Data: logRecordData, Seq: uint64(record.Seq())}).Error
 }

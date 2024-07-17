@@ -121,7 +121,7 @@ func (cs *calls) invoke(ctx context.Context, callv sdktypes.Value, args []sdktyp
 }
 
 // This is executed either in an activity (for regular calls) or directly in a workflow (for internal calls).
-func (cs *calls) executeCall(ctx context.Context, sessionID sdktypes.SessionID, seq uint32, poller sdktypes.Value, executors *sdkexecutor.Executors) (debug any, attempt uint32, _ error) {
+func (cs *calls) executeCall(ctx context.Context, sessionID sdktypes.SessionID, seq uint32, recordCounter uint32, poller sdktypes.Value, executors *sdkexecutor.Executors) (debug any, attempt uint32, _ error) {
 	z := cs.z.With(zap.Uint32("seq", seq))
 
 	call, err := cs.svcs.DB.GetSessionCallSpec(ctx, sessionID, seq)
@@ -155,13 +155,13 @@ func (cs *calls) executeCall(ctx context.Context, sessionID sdktypes.SessionID, 
 				return err
 			}
 
-			r := sdktypes.NewCallAttemptStartSessionLogRecord(seq, scas)
+			r := sdktypes.NewCallAttemptStartSessionLogRecord(recordCounter, scas)
 
 			err = tx.SaveSessionLogRecord(ctx, sessionID, r)
 			if err != nil {
 				return err
 			}
-
+			recordCounter++
 			attempt = scas.Num()
 			return nil
 		}); err != nil {
@@ -233,7 +233,7 @@ func (cs *calls) executeCall(ctx context.Context, sessionID sdktypes.SessionID, 
 				return err
 			}
 
-			return cs.svcs.DB.SaveSessionLogRecord(ctx, sessionID, sdktypes.NewCallAttemptCompleteSessionLogRecord(seq, complete))
+			return cs.svcs.DB.SaveSessionLogRecord(ctx, sessionID, sdktypes.NewCallAttemptCompleteSessionLogRecord(recordCounter, complete))
 		})
 
 		if err != nil {

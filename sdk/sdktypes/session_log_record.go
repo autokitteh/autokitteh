@@ -80,7 +80,7 @@ func NewStopRequestSessionLogRecord(seq int32, reason string) SessionLogRecord {
 	})
 }
 
-func NewStateSessionLogRecord(state SessionState) SessionLogRecord {
+func NewStateSessionLogRecord(seq int32, state SessionState) SessionLogRecord {
 	if !state.IsValid() {
 		return InvalidSessionLogRecord
 	}
@@ -88,6 +88,7 @@ func NewStateSessionLogRecord(state SessionState) SessionLogRecord {
 	return forceFromProto[SessionLogRecord](&SessionLogRecordPB{
 		T:     timestamppb.Now(),
 		State: state.ToProto(),
+		Seq:   seq,
 	})
 }
 

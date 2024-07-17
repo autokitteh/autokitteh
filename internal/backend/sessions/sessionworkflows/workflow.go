@@ -15,6 +15,7 @@ import (
 	osmodule "go.autokitteh.dev/autokitteh/internal/backend/akmodules/os"
 	"go.autokitteh.dev/autokitteh/internal/backend/akmodules/store"
 	timemodule "go.autokitteh.dev/autokitteh/internal/backend/akmodules/time"
+	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessioncalls"
@@ -60,16 +61,38 @@ type sessionWorkflow struct {
 	fakers map[string]sdktypes.Value
 
 	callSeq uint32
+	records uint32
 
 	signals map[string]uint64 // map signals to next sequence number
 
 	state sdktypes.SessionState
+
+	caller sessioncalls.Caller
 }
 
 type connInfo struct {
 	Config          map[string]string `json:"config"`
 	IntegrationName string            `json:"integration_name"`
 }
+
+// func newWorkflow(
+// 	z *zap.Logger,
+// 	ws *workflows,
+// 	data *sessiondata.Data,
+// 	debug bool) *sessionWorkflow {
+
+// 	w := &sessionWorkflow{
+// 		z:       z,
+// 		data:    data,
+// 		poller:  sdktypes.Nothing,
+// 		ws:      ws,
+// 		fakers:  make(map[string]sdktypes.Value),
+// 		debug:   debug,
+// 		signals: make(map[string]uint64),
+// 	}
+
+// 	return w
+// }
 
 func runWorkflow(
 	ctx workflow.Context,
@@ -86,6 +109,7 @@ func runWorkflow(
 		fakers:  make(map[string]sdktypes.Value),
 		debug:   debug,
 		signals: make(map[string]uint64),
+		records: 2,
 	}
 
 	var cinfos map[string]connInfo
@@ -108,11 +132,32 @@ func runWorkflow(
 }
 
 func (w *sessionWorkflow) updateState(ctx workflow.Context, state sdktypes.SessionState) error {
+
 	w.z.Debug("update state", zap.Any("state", state))
 
 	w.state = state
 
-	return workflow.ExecuteLocalActivity(ctx, w.ws.svcs.DB.UpdateSessionState, w.data.SessionID, state).Get(ctx, nil)
+	w.callSeq++
+	return workflow.ExecuteLocalActivity(ctx, func() error {
+		// gctx := temporalclient.NewWorkflowContextAsGOContext(ctx)
+		gctx := context.Background()
+		if err := w.ws.svcs.DB.Transaction(gctx, func(tx db.DB) error {
+			if err := tx.UpdateSessionState(gctx, w.data.SessionID, state); err != nil {
+				return err
+			}
+			//TODO: Decide how to handle latest record
+			// this assume this is for sure the latest record
+			w.records++
+			record := sdktypes.NewStateSessionLogRecord(int32(w.records), state)
+			return tx.SaveSessionLogRecord(gctx, w.data.SessionID, record)
+		}); err != nil {
+			w.z.Error("update session state", zap.Error(err))
+			return err
+		}
+		return nil
+	}).Get(ctx, nil)
+
+	// return workflow.ExecuteLocalActivity(ctx, w.ws.svcs.DB.UpdateSessionState, w.data.SessionID, state).Get(ctx, nil)
 }
 
 func (w *sessionWorkflow) loadIntegrationConnections(path string) (map[string]sdktypes.Value, error) {
@@ -171,6 +216,7 @@ func (w *sessionWorkflow) call(ctx workflow.Context, runID sdktypes.RunID, v sdk
 		z.Debug("using fake")
 	}
 
+	w.records++
 	result, err := w.ws.calls.Call(ctx, &sessioncalls.CallParams{
 		SessionID:     w.data.SessionID,
 		CallSpec:      sdktypes.NewSessionCallSpec(v, args, kwargs, w.callSeq),
@@ -178,6 +224,7 @@ func (w *sessionWorkflow) call(ctx workflow.Context, runID sdktypes.RunID, v sdk
 		ForceInternal: useFake,
 		Poller:        w.getPoller(),
 		Executors:     &w.executors, // HACK
+		RecordsCount:  int32(w.records),
 	})
 	if err != nil {
 		return sdktypes.InvalidValue, err
@@ -476,7 +523,9 @@ func (w *sessionWorkflow) run(wctx workflow.Context) (prints []string, err error
 			w.z.Debug("print", zap.String("run_id", runID.String()), zap.String("text", text))
 
 			prints = append(prints, text)
-			r := sdktypes.NewPrintSessionLogRecord(int32(w.callSeq), text)
+
+			w.records++
+			r := sdktypes.NewPrintSessionLogRecord(int32(w.records), text)
 
 			if isFromActivity(printCtx) {
 				// TODO: We do this since we're already in an activity. We need to either

@@ -25,17 +25,25 @@ import (
 
 type CallParams struct {
 	SessionID     sdktypes.SessionID
+	RecordsCount  int32
 	Debug         bool
 	ForceInternal bool
 	CallSpec      sdktypes.SessionCallSpec
 
 	Poller    sdktypes.Value         // TODO: need to be in Call.
 	Executors *sdkexecutor.Executors // needed for session specific calls (global modules, script functions).
+
 }
 
 type Calls interface {
 	StartWorkers(context.Context) error
 	Call(ctx workflow.Context, params *CallParams) (sdktypes.SessionCallAttemptResult, error)
+}
+
+type Caller struct {
+	SessionID      sdktypes.SessionID
+	RecordsCounter uint32
+	Calls          Calls
 }
 
 type calls struct {
@@ -113,12 +121,12 @@ func (cs *calls) StartWorkers(ctx context.Context) error {
 	return cs.uniqueWorker.Start()
 }
 
-func (cs *calls) createSessionCall(ctx context.Context, sessionID sdktypes.SessionID, spec sdktypes.SessionCallSpec) error {
+func (cs *calls) createSessionCall(ctx context.Context, sessionID sdktypes.SessionID, spec sdktypes.SessionCallSpec, recordCounter int32) error {
 	return cs.svcs.DB.Transaction(ctx, func(tx db.DB) error {
 		if err := tx.CreateSessionCall(ctx, sessionID, spec); err != nil {
 			return err
 		}
-		r := sdktypes.NewCallSpecSessionLogRecord(spec.Seq(), spec)
+		r := sdktypes.NewCallSpecSessionLogRecord(uint32(recordCounter), spec)
 		return tx.SaveSessionLogRecord(ctx, sessionID, r)
 	})
 }
@@ -135,10 +143,12 @@ func (cs *calls) Call(ctx workflow.Context, params *CallParams) (sdktypes.Sessio
 
 	// TODO: If replaying, make sure arguments are the same?
 	if err := workflow.ExecuteLocalActivity(
-		ctx, cs.createSessionCall, params.SessionID, spec,
+		ctx, cs.createSessionCall, params.SessionID, spec, params.RecordsCount,
 	).Get(ctx, nil); err != nil {
 		return sdktypes.InvalidSessionCallAttemptResult, fmt.Errorf("db.create_call: %w", err)
 	}
+
+	params.RecordsCount++
 
 	var attempt uint32
 

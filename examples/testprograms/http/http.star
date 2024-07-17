@@ -5,9 +5,9 @@ def foo(x):
 
 def on_http_get():
     print(time.now())
-    print(store.set("x", "meow"))
+    # print(store.set("x", "meow"))
 
-    resp, err = myhttp.get("https://httpbin.org/status/404", ak.callopts(catch=True))
+    # resp, err = myhttp.get("https://httpbin.org/status/404", ak.callopts(catch=True))
 
     # also works:
     # resp, err = catch(lambda: myhttp.get("https://httpbin3212.org/status/404"))
@@ -16,11 +16,11 @@ def on_http_get():
     # resp, err = myhttp.get("https://httpbin3212.org/status/404", ak_catch=True)
     # resp, err = myhttp.get("https://httpbin3212.org/status/404", ak = {"catch": True})
 
-    print(resp, err)
-    if err:
-        print(err.op)
-    else:
-        print(resp.body.text())
+    # print(resp, err)
+    # if err:
+    #     print(err.op)
+    # else:
+    #     print(resp.body.text())
 
 def on_http_post(data):
     addr = data.body.text()
