@@ -55,17 +55,22 @@ func intercept(z *zap.Logger, cfg *LoggerConfig, extractors []RequestLogExtracto
 	// and errors in them should be caught at startup. Furthermore, we
 	// combine them into a single regular expression, because efficiency is
 	// critical when we delay each and every incoming HTTP and gRPC request.
-	re := regexp.MustCompile(strings.Join(cfg.NonimportantRegexes, `|`))
+	unimportant := regexp.MustCompile(strings.Join(cfg.UnimportantRegexes, `|`))
+	unlogged := regexp.MustCompile(strings.Join(cfg.UnloggedRegexes, `|`))
 
 	return func(w http.ResponseWriter, r *http.Request) {
+		if unlogged.MatchString(r.URL.Path) {
+			return
+		}
+
 		w.Header().Set("X-AutoKitteh-Process-ID", fixtures.ProcessID())
 
 		z := z.With(zap.String("method", r.Method), zap.String("path", r.URL.Path))
 		msg := fmt.Sprintf("HTTP request: %s %s", r.Method, r.URL.Path)
 
 		level := cfg.ImportantLevel.Level()
-		if re.MatchString(r.URL.Path) {
-			level = cfg.NonimportantLevel.Level()
+		if unimportant.MatchString(r.URL.Path) {
+			level = cfg.UnimportantLevel.Level()
 		}
 
 		if ce := z.Check(level, msg); ce != nil {

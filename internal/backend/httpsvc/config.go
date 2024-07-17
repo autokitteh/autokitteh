@@ -18,13 +18,17 @@ type ngrokConfig struct {
 }
 
 type LoggerConfig struct {
-	ImportantLevel    zap.AtomicLevel `koanf:"important_log_level"`
-	NonimportantLevel zap.AtomicLevel `koanf:"nonimportant_log_level"`
-	ErrorsLevel       zap.AtomicLevel `koanf:"trace_errors_log_level"`
+	ImportantLevel   zap.AtomicLevel `koanf:"important_log_level"`
+	UnimportantLevel zap.AtomicLevel `koanf:"unimportant_log_level"`
+	ErrorsLevel      zap.AtomicLevel `koanf:"trace_errors_log_level"`
 
-	// Requests that their paths matches any one of these regexes will be
-	// logged in the nonimportant log level.
-	NonimportantRegexes []string `koanf:"nonimportant_regexes"`
+	// URL requests with paths that match any one of these regular
+	// expressions will be logged in the nonimportant log level.
+	UnimportantRegexes []string `koanf:"nonimportant_regexes"`
+
+	// URL requests with paths that match any one of these
+	// regular expressions will not be logged at all.
+	UnloggedRegexes []string `koanf:"unlogged_regexes"`
 }
 
 type CORSConfig struct {
@@ -70,14 +74,15 @@ var Configs = configset.Set[Config]{
 			AllowCredentials: true,
 		},
 		Logger: LoggerConfig{
-			NonimportantLevel: zap.NewAtomicLevelAt(zap.DebugLevel),
-			ImportantLevel:    zap.NewAtomicLevelAt(zap.InfoLevel),
-			ErrorsLevel:       zap.NewAtomicLevelAt(zap.WarnLevel),
-			NonimportantRegexes: []string{
-				`\.(css|html|ico|js|png|svg|txt)$`, // Static web content
-				`^/autokitteh.+/(Get|List)$`,       // gRPC Get and List methods
-				`/(healthz|readyz)$`,               // Kubernetes health checks
-				`/$`,                               // Dynamic web content and webhooks
+			UnimportantLevel: zap.NewAtomicLevelAt(zap.DebugLevel),
+			ImportantLevel:   zap.NewAtomicLevelAt(zap.InfoLevel),
+			ErrorsLevel:      zap.NewAtomicLevelAt(zap.WarnLevel),
+			UnimportantRegexes: []string{
+				`^/autokitteh.+/(Get|List)$`, // gRPC Get and List methods
+				`/(healthz|readyz)$`,         // Kubernetes health checks
+			},
+			UnloggedRegexes: []string{
+				`\.(css|html|ico|js|png|svg|txt|webmanifest)$`, // Static web content
 			},
 		},
 	},
