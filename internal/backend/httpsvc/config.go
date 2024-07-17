@@ -74,11 +74,10 @@ var Configs = configset.Set[Config]{
 			ImportantLevel:    zap.NewAtomicLevelAt(zap.InfoLevel),
 			ErrorsLevel:       zap.NewAtomicLevelAt(zap.WarnLevel),
 			NonimportantRegexes: []string{
-				`.*/List.*`,
-				`.*/Get.*`,
-				`/healthz`,
-				`/readyz`,
-				`/`,
+				`\.(css|html|ico|js|png|svg|txt)$`, // Static web content
+				`^/autokitteh.+/(Get|List)$`,       // gRPC Get and List methods
+				`/(healthz|readyz)$`,               // Kubernetes health checks
+				`/$`,                               // Dynamic web content and webhooks
 			},
 		},
 	},
