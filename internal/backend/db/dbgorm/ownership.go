@@ -131,7 +131,7 @@ func (gdb *gormdb) createEntityWithOwnership(
 	})
 }
 
-func getOwnerships(db *gorm.DB, ids ...sdktypes.UUID) ([]scheme.Ownership, error) {
+func getOwnershipsForEntities(db *gorm.DB, ids ...sdktypes.UUID) ([]scheme.Ownership, error) {
 	if len(ids) == 0 {
 		return nil, nil
 	}
@@ -154,7 +154,7 @@ func verifyOwnerships(uid string, ownerships []scheme.Ownership) error {
 
 // fetches ownerships for given ids and verifies that user have access to all of them
 func ensureUserAccessToEntitiesWithOwnerships(db *gorm.DB, uid string, ids ...sdktypes.UUID) ([]scheme.Ownership, error) {
-	ownerships, err := getOwnerships(db, ids...)
+	ownerships, err := getOwnershipsForEntities(db, ids...)
 	if err != nil {
 		return ownerships, err
 	}
