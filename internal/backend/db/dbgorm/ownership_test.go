@@ -241,7 +241,7 @@ func TestCreateTriggerWithOwnership(t *testing.T) {
 	assert.ErrorIs(t, f.gormdb.createTrigger(f.ctx, &t5), sdkerrors.ErrUnauthorized)
 }
 
-func TestCreateVarWithOwnership(t *testing.T) {
+func TestSetVarWithOwnership(t *testing.T) {
 	f := preOwnershipTest(t)
 
 	c, env := createConnectionAndEnv(t, f)
