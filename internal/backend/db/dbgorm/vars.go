@@ -18,9 +18,6 @@ func (gdb *gormdb) withUserVars(ctx context.Context) *gorm.DB {
 	return gdb.withUserEntity(ctx, "var")
 }
 
-// FIXME:
-// - env vars are user scopes for sure. Connection vars may have no user in ctx? Need to check more use-cases for connection vars
-
 func (gdb *gormdb) setVar(ctx context.Context, vr *scheme.Var) error {
 	vr.VarID = vr.ScopeID // just ensure
 
@@ -29,32 +26,29 @@ func (gdb *gormdb) setVar(ctx context.Context, vr *scheme.Var) error {
 		return err
 	}
 	return gdb.transaction(ctx, func(tx *tx) error {
-		// connection and env are soft-deleted. emulate foreign keys check
-		var ownership scheme.Ownership
 		db := tx.db.WithContext(ctx)
 
-		// fetch user_id and entity_type for provided scope_id
-		if err := db.Model(&scheme.Ownership{}).
-			Select("user_id", "entity_type").
-			Where("entity_id = ? AND entity_type IN ('Connection', 'Env')", vr.ScopeID).
-			First(&ownership).Error; err != nil {
-			// if no records were found then fail with foreign keys validation (#1), since there should be one
+		// if no records were found then fail with foreign keys validation (#1), since there should be one
+		oo, err := tx.owner.EnsureUserAccessToEntitiesWithOwnership(db, uid, vr.ScopeID)
+		if err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return gorm.ErrForeignKeyViolated
 			}
+			return err
 		}
-
-		if uid != ownership.UserID { // check user ownership
-			return sdkerrors.ErrUnauthorized
+		if len(oo) != 1 {
+			return gorm.ErrForeignKeyViolated
 		}
 
 		var tableName, idField string
 		var deletedAt gorm.DeletedAt
-		switch ownership.EntityType {
+		switch oo[0].EntityType {
 		case "Connection":
 			tableName, idField = "connections", "connection_id"
 		case "Env":
 			tableName, idField = "envs", "env_id"
+		default:
+			return gorm.ErrCheckConstraintViolated // should be either Env or Connection
 		}
 		query := fmt.Sprintf("SELECT deleted_at FROM %s where %s = ? LIMIT 1", tableName, idField)
 		if err := db.Raw(query, vr.ScopeID).Scan(&deletedAt).Error; err != nil {
