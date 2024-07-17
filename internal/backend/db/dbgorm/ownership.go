@@ -137,7 +137,7 @@ func getOwnerships(db *gorm.DB, ids ...sdktypes.UUID) ([]scheme.Ownership, error
 	}
 
 	var ownerships []scheme.Ownership
-	if err := db.Model(&scheme.Ownership{}).Where("entity_id IN ?", ids).Select("user_id", "entity_type").Find(&ownerships).Error; err != nil {
+	if err := db.Model(&scheme.Ownership{}).Where("entity_id IN ?", ids).Find(&ownerships).Error; err != nil {
 		return nil, err
 	}
 	return ownerships, nil
