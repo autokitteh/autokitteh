@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"maps"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -33,6 +34,7 @@ var (
 type Services struct {
 	fx.In
 
+	// TODO: sdkservices.DBServices?
 	Connections  sdkservices.Connections
 	Deployments  sdkservices.Deployments
 	Events       sdkservices.Events
@@ -45,6 +47,7 @@ type Services struct {
 
 type Workflow struct {
 	Z        *zap.Logger
+	DB       db.DB
 	Services Services
 	Tmprl    temporalclient.Client
 }
