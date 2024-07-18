@@ -33,15 +33,14 @@ func UpdateWatches(ctx context.Context, v sdkservices.Vars, c sdkintegrations.Co
 		return err
 	}
 
-	l = l.With(zap.String("formID", formID))
-	extrazap.AttachLoggerToContext(l, ctx)
-
 	// No form ID? Nothing to do.
 	if formID == "" {
 		return nil
 	}
 
 	// List all existing watches.
+	l = l.With(zap.String("formID", formID))
+	extrazap.AttachLoggerToContext(l, ctx)
 	watches, err := api.watchesList(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to list form watches: %w", err)
