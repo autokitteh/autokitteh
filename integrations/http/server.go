@@ -12,6 +12,8 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/integrations/internal/extrazap"
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
+	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -29,6 +31,7 @@ const (
 // receive, dispatch, and acknowledge asynchronous event notifications.
 type handler struct {
 	logger     *zap.Logger
+	db         db.DB
 	dispatcher sdkservices.Dispatcher
 	conns      sdkservices.Connections
 	projs      sdkservices.Projects
@@ -41,8 +44,8 @@ func routePrefix(ns string) string {
 	return fmt.Sprintf("/http/%s/", ns)
 }
 
-func Start(l *zap.Logger, mux *http.ServeMux, d sdkservices.Dispatcher, c sdkservices.Connections, p sdkservices.Projects) {
-	h := handler{logger: l, dispatcher: d, conns: c, projs: p}
+func Start(l *zap.Logger, mux *http.ServeMux, d sdkservices.Dispatcher, c sdkservices.Connections, p sdkservices.Projects, db db.DB) {
+	h := handler{logger: l, db: db, dispatcher: d, conns: c, projs: p}
 	mux.Handle(routePrefix("{ns}")+"*", h)
 
 	// Save new autokitteh connections with user-submitted HTTP secrets.
@@ -120,6 +123,7 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := extrazap.AttachLoggerToContext(l, r.Context())
+	ctx = authcontext.SetComponent(ctx, "http")
 
 	pname, err := sdktypes.StrictParseSymbol(strings.SplitN(env, "/", 2)[0])
 	if err != nil {
@@ -128,7 +132,7 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	p, err := h.projs.GetByName(ctx, pname)
+	p, err := h.db.GetProjectByName(ctx, pname)
 	if err != nil {
 		if errors.Is(err, sdkerrors.ErrNotFound) {
 			l.Debug("project not found", zap.String("project", pname.String()))
@@ -140,10 +144,8 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Retrieve all the relevant connections for this event.
-	conns, err := h.conns.List(ctx, sdkservices.ListConnectionsFilter{
-		IntegrationID: IntegrationID,
-		ProjectID:     p.ID(),
-	})
+	connFilter := sdkservices.ListConnectionsFilter{IntegrationID: IntegrationID, ProjectID: p.ID()}
+	cs, err := h.db.ListConnections(ctx, connFilter, false) // FIXME: [ENG-1204] pass true and fetch only IDs.
 	if err != nil {
 		l.Error("Failed to find connection IDs", zap.Error(err))
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -151,13 +153,13 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Dispatch the event to all of them, for asynchronous handling.
-	h.dispatchAsyncEventsToConnections(ctx, conns, env, event)
+	cids := kittehs.Transform(cs, func(c sdktypes.Connection) sdktypes.ConnectionID { return c.ID() })
+	h.dispatchAsyncEventsToConnections(ctx, cids, env, event)
 }
 
-func (h handler) dispatchAsyncEventsToConnections(ctx context.Context, cs []sdktypes.Connection, env string, event sdktypes.Event) {
+func (h handler) dispatchAsyncEventsToConnections(ctx context.Context, cids []sdktypes.ConnectionID, env string, event sdktypes.Event) {
 	l := extrazap.ExtractLoggerFromContext(ctx)
-	for _, c := range cs {
-		cid := c.ID()
+	for _, cid := range cids {
 		opts := &sdkservices.DispatchOptions{Env: env}
 		eid, err := h.dispatcher.Dispatch(ctx, event.WithConnectionID(cid), opts)
 		l := l.With(

@@ -9,6 +9,7 @@ import (
 var client sdkservices.Services
 
 func InitRPCClient(authToken string) (err error) {
+	// fmt.Println("authToken:", authToken)
 	if authToken == "" {
 		if authToken, err = GetToken(); err != nil {
 			return

@@ -51,6 +51,8 @@ func buildAKbinary(t *testing.T) string {
 func runClient(akPath string, args []string) (*akResult, error) {
 	// Running in a subprocess, not a goroutine (like the
 	// server), to ensure state isolation between executions.
+	token := "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJhayIsInN1YiI6IntcInByb3ZpZGVyXCI6XCJwcm92aWRlclwiLFwiZGF0YVwiOntcImVtYWlsXCI6XCJmb29AYmFyXCIsXCJuYW1lXCI6XCJUZXN0IFVzZXJcIn19IiwiaWF0IjoxNzIwOTQyMzQ4LCJqdGkiOiIwMTkwYjAyOC00NmYwLTc3NDEtOWRlNS0wYjRjNzIxYjU2ZWQifQ.D2172YVRHUmjI29XqxLqfoFiI0DqCuRm8u9H0DowlcU"
+	args = append([]string{"--token", token}, args...)
 	cmd := exec.Command(akPath, args...)
 	output, err := cmd.CombinedOutput()
 

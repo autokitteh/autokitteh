@@ -2,6 +2,7 @@ package dbgorm
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -12,7 +13,10 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-var u = sdktypes.NewUser("provider", map[string]string{"email": "foo@bar", "name": "Test User"})
+var (
+	u  = sdktypes.NewUser("ak", map[string]string{"email": "foo@bar", "name": "Test User1"})
+	u2 = sdktypes.NewUser("ak", map[string]string{"email": "foo@baz", "name": "Test User2"})
+)
 
 func withUser(ctx context.Context, user sdktypes.User) context.Context {
 	return authcontext.SetAuthnUser(ctx, user)
@@ -625,7 +629,7 @@ func TestListEventsWithOwnership(t *testing.T) {
 }
 
 func TestListTriggersWithOwnership(t *testing.T) {
-	f := preOwnershipTest(t)
+	f := preOwnershipTest(t).WithDebug()
 
 	p, c, e := f.createProjectConnectionEnv(t)
 	trg := f.newTrigger(p, c, e)
@@ -635,6 +639,7 @@ func TestListTriggersWithOwnership(t *testing.T) {
 
 	// different user
 	f.ctx = withUser(f.ctx, u)
+	fmt.Println("-- from here--")
 
 	triggers, err := f.gormdb.listTriggers(f.ctx, sdkservices.ListTriggersFilter{})
 	assert.Len(t, triggers, 0) // no triggers fetched, not user owned

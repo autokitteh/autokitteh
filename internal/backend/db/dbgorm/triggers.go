@@ -173,10 +173,13 @@ func (db *gormdb) GetTrigger(ctx context.Context, triggerID sdktypes.TriggerID) 
 	return scheme.ParseTrigger(*t)
 }
 
-func (db *gormdb) ListTriggers(ctx context.Context, filter sdkservices.ListTriggersFilter) ([]sdktypes.Trigger, error) {
-	ts, err := db.listTriggers(ctx, filter)
+func schemasToTriggers(ts []scheme.Trigger, err error) ([]sdktypes.Trigger, error) {
 	if ts == nil || err != nil {
 		return nil, translateError(err)
 	}
 	return kittehs.TransformError(ts, scheme.ParseTrigger)
+}
+
+func (db *gormdb) ListTriggers(ctx context.Context, filter sdkservices.ListTriggersFilter) ([]sdktypes.Trigger, error) {
+	return schemasToTriggers(db.listTriggers(ctx, filter))
 }

@@ -66,7 +66,7 @@ func (dbs *dbs) Vars() sdkservices.Vars                 { return dbs.varSvc }
 func (dbs *dbs) Integrations() sdkservices.Integrations { return dbs.intSvc }
 
 func newDBServices(t *testing.T) (sdkservices.DBServices, *dbFixture) {
-	f := newDBFixture().WithDebug()
+	f := newDBFixture()
 	var gdb db.DB = f.gormdb
 
 	z := zaptest.NewLogger(t) // FIXME: or gormdb.z?
@@ -99,6 +99,7 @@ func newDBServices(t *testing.T) (sdkservices.DBServices, *dbFixture) {
 
 func createResolverAndFixture(t *testing.T) (resolver.Resolver, *dbFixture) {
 	dbServices, f := newDBServices(t)
+	f.ctx = withUser(f.ctx, u2)
 	r := resolver.Resolver{Client: dbServices}
 	return r, f
 }

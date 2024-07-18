@@ -15,8 +15,16 @@ import (
 )
 
 func userIDFromContext(ctx context.Context) (string, error) {
+	uid := authcontext.GetAuthnUserID(ctx)
+	if uid != "" {
+		fmt.Println("ownership: userIDFromCTX (uid):", authcontext.GetComponent(ctx), uid)
+		return uid, nil
+	}
+
 	user := authcontext.GetAuthnUser(ctx)
 	if !user.IsValid() {
+		// panic("using default user")
+		fmt.Println("ownership: userIDFromCTX: use default user")
 		user = sdktypes.DefaultUser
 	}
 
@@ -29,7 +37,28 @@ func userIDFromContext(ctx context.Context) (string, error) {
 		return "", sdkerrors.NewInvalidArgumentError("missing user data: [name|email|provider]")
 	}
 
-	return sdktypes.NewUserIDFromUserData(provider, email, name).String(), nil
+	// uid = sdktypes.NewUserIDFromUserData(provider, email, name).String()
+	uid = fmt.Sprintf("%s:%s:%s", provider, email, name)
+	fmt.Println("ownership: userIDFromCTX:", authcontext.GetComponent(ctx), uid)
+	return uid, nil
+}
+
+func (gdb *gormdb) GetOwnership(ctx context.Context, entityID sdktypes.UUID) (string, error) {
+	var o scheme.Ownership
+	// FIXME: hack?
+	if err := gdb.db.WithContext(ctx).Where("entity_id = ?", entityID).Select("user_id").First(&o).Error; err != nil {
+		return "", err
+	}
+	return o.UserID, nil
+}
+
+func (gdb *gormdb) CtxWithOwnershipOf(ctx context.Context, entityID sdktypes.UUID) context.Context {
+	uid, err := gdb.GetOwnership(ctx, entityID) // ignore error
+	if err != nil {
+		gdb.z.Error("get ownership", zap.String("id", entityID.String()), zap.Error(err))
+		return ctx
+	}
+	return authcontext.SetAuthnUserID(ctx, uid)
 }
 
 // extract entity UUID and Type
@@ -121,8 +150,15 @@ func (gdb *gormdb) createEntityWithOwnership(
 	}
 
 	return gdb.transaction(ctx, func(tx *tx) error {
-		if err := tx.isUserEntity(uid, idsToVerifyOwnership...); err != nil {
-			return err
+		if authcontext.NeedOwnershipCheck(ctx) {
+			if err := tx.isUserEntity(uid, idsToVerifyOwnership...); err != nil {
+				return err
+			}
+		} else {
+			gdb.z.Debug("ownership check skipped on create",
+				zap.String("component", authcontext.GetComponent(ctx)),
+				zap.Any("ownerships", ownerships),
+				zap.Any("ids", idsToVerifyOwnership))
 		}
 		if err := create(tx.db, uid); err != nil { // create
 			return err
@@ -170,6 +206,12 @@ func (gdb *gormdb) isUserEntity(uid string, ids ...sdktypes.UUID) error {
 }
 
 func (gdb *gormdb) isCtxUserEntity(ctx context.Context, ids ...sdktypes.UUID) error {
+	if !authcontext.NeedOwnershipCheck(ctx) {
+		gdb.z.Debug("ownership check skipped",
+			zap.String("component", authcontext.GetComponent(ctx)),
+			zap.Any("ids", ids))
+		return nil
+	}
 	uid, _ := userIDFromContext(ctx)
 	return gdb.isUserEntity(uid, ids...)
 }
@@ -184,7 +226,7 @@ func joinUserEntity(db *gorm.DB, entity string, uid string) *gorm.DB {
 	return db.Table(tableName).Joins(joinExpr).Where("ownerships.user_id = ?", uid)
 }
 
-// gorm user+entity scope
+// gorm user+entity scope. Called only within user request context from createProject
 func withUserEntity(gdb *gormdb, entity string, uid string) func(*gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
 		return gdb.owner.JoinUserEntity(db, entity, uid)
@@ -193,6 +235,12 @@ func withUserEntity(gdb *gormdb, entity string, uid string) func(*gorm.DB) *gorm
 
 // gormdb user+entity scoped godm db + logging
 func (gdb *gormdb) withUserEntity(ctx context.Context, entity string) *gorm.DB {
+	if !authcontext.NeedOwnershipCheck(ctx) {
+		gdb.z.Debug("ownership join skipped",
+			zap.String("component", authcontext.GetComponent(ctx)),
+			zap.String("entity", entity))
+		return gdb.db.WithContext(ctx)
+	}
 	user, _ := userIDFromContext(ctx) // NOTE: ignore possible error
 	return gdb.owner.JoinUserEntity(gdb.db.WithContext(ctx), entity, user)
 }

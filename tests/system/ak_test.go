@@ -49,6 +49,7 @@ func TestSuite(t *testing.T) {
 		t.Run(strings.TrimPrefix(path, rootDir), func(t *testing.T) {
 			steps := readTestFile(t, path)
 			akAddr := setUpTest(t, akPath)
+			// akAddr := "localhost:9980"
 			runTestSteps(t, steps, akPath, akAddr)
 		})
 

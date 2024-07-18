@@ -1,6 +1,7 @@
 package authhttpmiddleware
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -36,6 +37,9 @@ type Deps struct {
 func newTokensMiddleware(next http.Handler, tokens authtokens.Tokens) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
+		fmt.Println("set ownership required context")
+		ctx = authcontext.SetOwnershipRequired(ctx)
+		ctx = authcontext.SetComponent(ctx, "middleware")
 
 		if user := authcontext.GetAuthnUser(ctx); !user.IsValid() {
 			if auth := r.Header.Get("Authorization"); auth != "" {
@@ -49,14 +53,14 @@ func newTokensMiddleware(next http.Handler, tokens authtokens.Tokens) http.Handl
 						return
 					}
 
-					r = r.WithContext(authcontext.SetAuthnUser(ctx, user))
+					ctx = authcontext.SetAuthnUser(ctx, user)
 				default:
 					http.Error(w, "invalid authorization header", http.StatusUnauthorized)
 					return
 				}
 			}
 		}
-
+		r = r.WithContext(ctx)
 		next.ServeHTTP(w, r)
 	}
 }

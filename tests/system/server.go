@@ -26,6 +26,11 @@ func startAKServer(ctx context.Context, akPath string) (svc.Service, string, err
 	cfg := kittehs.Must1(svc.LoadConfig("", map[string]any{
 		"db.type": "sqlite",
 		"db.dsn":  "file:autokitteh.sqlite", // In the test's temporary directory.
+		// "db.dsn":            "file:/tmp/ak.sqlite", // In the test's temporary directory.
+		// "debug":             true,
+		// "db.debug":          true,
+		// "logger.level":      -1,
+		// "http.logger.level": -1,
 
 		"http.addr":          ":0",
 		"http.addr_filename": serverHTTPAddrFile, // In the test's temporary directory.

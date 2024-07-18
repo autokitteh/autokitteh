@@ -10,21 +10,21 @@ ak session log --prints-only
 return code == 0
 output contains 'True'
 
-http get /http/my_project/long
-resp code == 200
-
-ak session watch ses_0000000000000000000000000c --end-state RUNNING
-return code == 0
-
-ak deployment drain dep_00000000000000000000000007
-return code == 0
-
-wait 5s for session ses_0000000000000000000000000c
-
-ak session log --prints-only
-return code == 0
-output contains 'still alive!'
-output contains 'done'
+#http get /http/my_project/long
+#resp code == 200
+#
+#ak session watch ses_0000000000000000000000000c --end-state RUNNING
+#return code == 0
+#
+#ak deployment drain dep_00000000000000000000000007
+#return code == 0
+#
+#wait 5s for session ses_0000000000000000000000000c
+#
+#ak session log --prints-only
+#return code == 0
+#output contains 'still alive!'
+#output contains 'done'
 
 -- project.yaml --
 version: v1

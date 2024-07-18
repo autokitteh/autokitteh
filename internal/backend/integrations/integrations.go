@@ -24,6 +24,7 @@ import (
 	"go.autokitteh.dev/autokitteh/integrations/slack"
 	"go.autokitteh.dev/autokitteh/integrations/twilio"
 	"go.autokitteh.dev/autokitteh/internal/backend/configset"
+	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 )
@@ -65,14 +66,14 @@ func New(cfg *Config, vars sdkservices.Vars) sdkservices.Integrations {
 	return sdkintegrations.New(ints)
 }
 
-func Start(_ context.Context, l *zap.Logger, mux *http.ServeMux, vars sdkservices.Vars, o sdkservices.OAuth, d sdkservices.Dispatcher, c sdkservices.Connections, p sdkservices.Projects) error {
+func Start(_ context.Context, l *zap.Logger, mux *http.ServeMux, vars sdkservices.Vars, o sdkservices.OAuth, d sdkservices.Dispatcher, c sdkservices.Connections, p sdkservices.Projects, db db.DB) error {
 	aws.Start(l, mux)
 	chatgpt.Start(l, mux)
 	confluence.Start(l, mux, vars, o, d)
 	github.Start(l, mux, vars, o, d)
 	gemini.Start(l, mux)
 	google.Start(l, mux, vars, o, d)
-	httpint.Start(l, mux, d, c, p)
+	httpint.Start(l, mux, d, c, p, db)
 	jira.Start(l, mux, vars, o, d)
 	slack.Start(l, mux, vars, d)
 	twilio.Start(l, mux, vars, d)

@@ -7,9 +7,9 @@ import (
 
 	"gorm.io/gorm"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
-	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -19,7 +19,25 @@ func (gdb *gormdb) withUserEvents(ctx context.Context) *gorm.DB {
 }
 
 func (gdb *gormdb) saveEvent(ctx context.Context, event *scheme.Event) error {
-	createFunc := func(tx *gorm.DB, uid string) error { return tx.Create(event).Error }
+	cronConnectionID := sdktypes.BuiltinSchedulerConnectionID.UUIDValue()
+	if event.ConnectionID == nil || event.ConnectionID == &cronConnectionID {
+		return fmt.Errorf("find event owner: bad connection %s", event.ConnectionID)
+	}
+	if !authcontext.NeedOwnershipCheck(ctx) {
+		ctx = gdb.CtxWithOwnershipOf(ctx, *event.ConnectionID)
+	}
+	createFunc := func(tx *gorm.DB, uid string) error {
+		if event.ConnectionID != nil && *event.ConnectionID != cronConnectionID {
+			var con scheme.Connection
+			if err := tx.Where("connection_id = ?", event.ConnectionID).First(&con).Error; err != nil {
+				return fmt.Errorf("find event connection: %w", err)
+			}
+			if con.IntegrationID != nil {
+				event.IntegrationID = con.IntegrationID
+			}
+		}
+		return tx.Create(event).Error
+	}
 	return gdb.createEntityWithOwnership(ctx, createFunc, event, event.ConnectionID)
 }
 
@@ -71,36 +89,28 @@ func (gdb *gormdb) listEvents(ctx context.Context, filter sdkservices.ListEvents
 	return es, nil
 }
 
-func (db *gormdb) SaveEvent(ctx context.Context, event sdktypes.Event) error {
+func (db *gormdb) sdkToRecord(event sdktypes.Event) (*scheme.Event, error) {
 	if err := event.Strict(); err != nil {
-		return err
+		return nil, err
 	}
-
-	connectionID := event.ConnectionID() // could be invalid/zero
 
 	e := scheme.Event{
 		EventID:      event.ID().UUIDValue(),
-		ConnectionID: scheme.UUIDOrNil(connectionID.UUIDValue()),
+		ConnectionID: scheme.UUIDOrNil(event.ConnectionID().UUIDValue()), // could be invalid/zero
 		EventType:    event.Type(),
 		Data:         kittehs.Must1(json.Marshal(event.Data())),
 		Memo:         kittehs.Must1(json.Marshal(event.Memo())),
 		CreatedAt:    event.CreatedAt(),
 	}
+	return &e, nil
+}
 
-	if connectionID.IsValid() { // only if exists
-		conn, err := db.GetConnection(ctx, connectionID)
-		if err != nil {
-			return fmt.Errorf("connection: %w", err)
-		}
-
-		if !conn.IsValid() {
-			return sdkerrors.NewInvalidArgumentError("invalid event connection")
-		}
-		integrationID := conn.IntegrationID().UUIDValue()
-		e.IntegrationID = &integrationID
+func (db *gormdb) SaveEvent(ctx context.Context, event sdktypes.Event) error {
+	e, err := db.sdkToRecord(event)
+	if err != nil {
+		return err
 	}
-
-	return translateError(db.saveEvent(ctx, &e))
+	return translateError(db.saveEvent(ctx, e))
 }
 
 func (db *gormdb) GetEventByID(ctx context.Context, eventID sdktypes.EventID) (sdktypes.Event, error) {

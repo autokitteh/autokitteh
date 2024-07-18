@@ -3,11 +3,13 @@ package dispatcher
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/worker"
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	wf "go.autokitteh.dev/autokitteh/internal/backend/workflows"
@@ -18,7 +20,6 @@ import (
 
 type dispatcher struct {
 	wf.Workflow
-	db db.DB
 }
 
 type Dispatcher interface {
@@ -32,17 +33,20 @@ func New(
 	services wf.Services,
 	tc temporalclient.Client,
 ) Dispatcher {
-	return &dispatcher{wf.Workflow{Z: z, Services: services, Tmprl: tc}, db}
+	return &dispatcher{wf.Workflow{Z: z, DB: db, Services: services, Tmprl: tc}}
 }
 
 func (d *dispatcher) Dispatch(ctx context.Context, event sdktypes.Event, opts *sdkservices.DispatchOptions) (sdktypes.EventID, error) {
-	eventID, err := d.Services.Events.Save(ctx, event)
+	ctx = authcontext.SetComponent(ctx, "dispatcher")
+	event = event.WithNewID().WithCreatedAt(time.Now())
+
+	err := d.DB.SaveEvent(ctx, event)
 	if err != nil {
 		return sdktypes.InvalidEventID, fmt.Errorf("save event: %w", err)
 	}
 
+	eventID := event.ID()
 	z := d.Z.With(zap.String("event_id", eventID.String()))
-
 	z.Debug("event saved")
 
 	if err := d.startWorkflow(ctx, eventID, opts); err != nil {
@@ -50,11 +54,11 @@ func (d *dispatcher) Dispatch(ctx context.Context, event sdktypes.Event, opts *s
 
 		return sdktypes.InvalidEventID, fmt.Errorf("event %v saved, but startWorkflow failed: %w", eventID, err)
 	}
-
 	return eventID, nil
 }
 
 func (d *dispatcher) Redispatch(ctx context.Context, eventID sdktypes.EventID, opts *sdkservices.DispatchOptions) (sdktypes.EventID, error) {
+	ctx = authcontext.SetComponent(ctx, "dispatcher")
 	event, err := d.Services.Events.Get(ctx, eventID)
 	if err != nil {
 		return sdktypes.InvalidEventID, err

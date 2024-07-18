@@ -15,6 +15,7 @@ import (
 	osmodule "go.autokitteh.dev/autokitteh/internal/backend/akmodules/os"
 	"go.autokitteh.dev/autokitteh/internal/backend/akmodules/store"
 	timemodule "go.autokitteh.dev/autokitteh/internal/backend/akmodules/time"
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessioncalls"
@@ -445,6 +446,7 @@ func (w *sessionWorkflow) run(wctx workflow.Context) (prints []string, err error
 	// This will allow us to identify if the call context is from a workflow (script code run), or
 	// some other thing that calls the Call callback from within an activity. The latter is not supported.
 	goCtx = context.WithValue(goCtx, workflowContextKey, wctx)
+	goCtx = authcontext.SetComponent(goCtx, "sessionWF")
 	isFromActivity := func(ctx context.Context) bool { return ctx.Value(workflowContextKey) == nil }
 
 	newRunID := func() (runID sdktypes.RunID) {

@@ -48,7 +48,7 @@ func (gdb *gormdb) deleteSession(ctx context.Context, sessionID sdktypes.UUID) e
 	})
 }
 
-func (gdb *gormdb) updateSessionState(ctx context.Context, sessionID sdktypes.UUID, state sdktypes.SessionState) error {
+func (gdb *gormdb) updateSessionState(ctx context.Context, sessionID sdktypes.UUID, state sdktypes.SessionState, withUserCheck bool) error {
 	sessionStateUpdate := map[string]any{"current_state_type": int(state.Type().ToProto()), "updated_at": time.Now()}
 	logr, err := toSessionLogRecord(sessionID, sdktypes.NewStateSessionLogRecord(state))
 	if err != nil {
@@ -56,8 +56,10 @@ func (gdb *gormdb) updateSessionState(ctx context.Context, sessionID sdktypes.UU
 	}
 
 	return gdb.transaction(ctx, func(tx *tx) error {
-		if err := tx.isCtxUserEntity(ctx, sessionID); err != nil {
-			return err
+		if withUserCheck {
+			if err := tx.isCtxUserEntity(ctx, sessionID); err != nil {
+				return err
+			}
 		}
 		if err := tx.db.Model(&scheme.Session{SessionID: sessionID}).Updates(sessionStateUpdate).Error; err != nil {
 			return err
@@ -353,15 +355,18 @@ func (db *gormdb) DeleteSession(ctx context.Context, sessionID sdktypes.SessionI
 }
 
 func (db *gormdb) UpdateSessionState(ctx context.Context, sessionID sdktypes.SessionID, state sdktypes.SessionState) error {
-	return translateError(db.updateSessionState(ctx, sessionID.UUIDValue(), state))
+	return translateError(db.updateSessionState(ctx, sessionID.UUIDValue(), state, true))
 }
 
-func (db *gormdb) GetSession(ctx context.Context, id sdktypes.SessionID) (sdktypes.Session, error) {
-	s, err := db.getSession(ctx, id.UUIDValue())
+func schemaToSession(s *scheme.Session, err error) (sdktypes.Session, error) {
 	if s == nil || err != nil {
 		return sdktypes.InvalidSession, translateError(err)
 	}
 	return scheme.ParseSession(*s)
+}
+
+func (db *gormdb) GetSession(ctx context.Context, id sdktypes.SessionID) (sdktypes.Session, error) {
+	return schemaToSession(db.getSession(ctx, id.UUIDValue()))
 }
 
 func (db *gormdb) ListSessions(ctx context.Context, f sdkservices.ListSessionsFilter) (sdkservices.ListSessionResult, error) {

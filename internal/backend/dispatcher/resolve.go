@@ -32,7 +32,7 @@ func resolveEnv(ctx context.Context, svcs *wf.Services, env string) (sdktypes.En
 			return sdktypes.InvalidEnvID, err
 		}
 
-		p, err := svcs.Projects.GetByName(context.Background(), name)
+		p, err := svcs.Projects.GetByName(ctx, name)
 		if err != nil {
 			return sdktypes.InvalidEnvID, fmt.Errorf("project: %w", err)
 		}
