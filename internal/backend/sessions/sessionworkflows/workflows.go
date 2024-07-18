@@ -212,7 +212,6 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 
 func (ws *workflows) stopped(ctx context.Context, sessionID sdktypes.SessionID) {
 	ctx, cancel := withLimitedTimeout(ctx)
-	z := ws.z.With(zap.String("session_id", sessionID.String()))
 	defer cancel()
 
 	reason := "<unknown>"
@@ -226,20 +225,14 @@ func (ws *workflows) stopped(ctx context.Context, sessionID sdktypes.SessionID) 
 		}
 	}
 
-	if err := ws.svcs.DB.UpdateSessionState(ctx, sessionID, sdktypes.NewSessionStateStopped(reason)); err != nil {
-		z.Error("update session", zap.Error(err))
-	}
+	_ = ws.updateSessionState(ctx, sessionID, sdktypes.NewSessionStateStopped(reason))
 }
-
-	z := ws.z.With(zap.String("session_id", sessionID.String()))
 
 func (ws *workflows) errored(ctx context.Context, sessionID sdktypes.SessionID, err error, prints []string) {
 	ctx, cancel := withLimitedTimeout(ctx)
 	defer cancel()
 
-	if err := ws.svcs.DB.UpdateSessionState(ctx, sessionID, sdktypes.NewSessionStateError(err, prints)); err != nil {
-		z.Error("update session", zap.Error(err))
-	}
+	_ = ws.updateSessionState(ctx, sessionID, sdktypes.NewSessionStateError(err, prints))
 }
 
 func (ws *workflows) deactivateDrainedDeployment(ctx context.Context, deploymentID sdktypes.DeploymentID) error {
