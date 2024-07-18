@@ -122,13 +122,13 @@ func (ws *workflows) getSessionData(ctx workflow.Context, sessionID sdktypes.Ses
 	return data, nil
 }
 
-func (ws *workflows) cleanupSession(data *sessiondata.Data) {
+func (ws *workflows) cleanupSession(ctx context.Context, data *sessiondata.Data) {
 	z := ws.z.With(zap.String("session_id", data.SessionID.String()))
 
 	if depID := data.Session.DeploymentID(); depID.IsValid() {
 		// We cannot rely on workflow context here as it might have been canceled.
 		go func() {
-			ctx, cancel := withLimitedTimeout(context.Background())
+			ctx, cancel := withLimitedTimeout(ctx)
 			defer cancel()
 
 			if err := ws.deactivateDrainedDeployment(ctx, depID); err != nil {
@@ -167,6 +167,8 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 		ScheduleToCloseTimeout: ws.cfg.Temporal.LocalScheduleToCloseTimeout,
 	})
 
+	ctx := context.Background()
+
 	// TODO(ENG-322): Save data in snapshot, otherwise changes between retries would
 	//                blow us up due to non determinism.
 
@@ -182,9 +184,9 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 
 		if errors.Is(err, workflow.ErrCanceled) || errors.Is(wctx.Err(), workflow.ErrCanceled) {
 			z.Debug("workflow canceled")
-			ws.stopped(params.SessionID)
+			ws.stopped(ctx, params.SessionID)
 		} else {
-			ws.errored(params.SessionID, err, prints)
+			ws.errored(ctx, params.SessionID, err, prints)
 
 			if _, ok := sdktypes.FromError(err); ok {
 				// User level error, no need to indicate the workflow as errored.
@@ -198,7 +200,7 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 	}
 
 	if data != nil {
-		ws.cleanupSession(data)
+		ws.cleanupSession(ctx, data)
 
 		if params.Debug {
 			debug = ws.getSessionDebugData(data, prints)
@@ -208,10 +210,9 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 	return debug, err
 }
 
-func (ws *workflows) stopped(sessionID sdktypes.SessionID) {
+func (ws *workflows) stopped(ctx context.Context, sessionID sdktypes.SessionID) {
+	ctx, cancel := withLimitedTimeout(ctx)
 	z := ws.z.With(zap.String("session_id", sessionID.String()))
-
-	ctx, cancel := withLimitedTimeout(context.Background())
 	defer cancel()
 
 	reason := "<unknown>"
@@ -230,10 +231,10 @@ func (ws *workflows) stopped(sessionID sdktypes.SessionID) {
 	}
 }
 
-func (ws *workflows) errored(sessionID sdktypes.SessionID, err error, prints []string) {
 	z := ws.z.With(zap.String("session_id", sessionID.String()))
 
-	ctx, cancel := withLimitedTimeout(context.Background())
+func (ws *workflows) errored(ctx context.Context, sessionID sdktypes.SessionID, err error, prints []string) {
+	ctx, cancel := withLimitedTimeout(ctx)
 	defer cancel()
 
 	if err := ws.svcs.DB.UpdateSessionState(ctx, sessionID, sdktypes.NewSessionStateError(err, prints)); err != nil {
@@ -250,6 +251,7 @@ func (ws *workflows) deactivateDrainedDeployment(ctx context.Context, deployment
 			return fmt.Errorf("deployments.get: %w", err)
 		}
 
+		// FIXME: use single query for this and move this to the db layer?
 		if dep.State() == sdktypes.DeploymentStateDraining {
 			resultRunning, err := tx.ListSessions(ctx, sdkservices.ListSessionsFilter{
 				DeploymentID: deploymentID,
@@ -300,6 +302,7 @@ func (ws *workflows) StopWorkflow(ctx context.Context, sessionID sdktypes.Sessio
 		//       we can avoid a dirty state if the terminator crashes between the temporal termination
 		//       and the state update. Another way is to periodically check on all workflows and make sure
 		//       that they are indeed running in termporal once in a while.
+
 		return ws.updateSessionState(ctx, sessionID, sdktypes.NewSessionStateStopped(reason))
 	}
 
