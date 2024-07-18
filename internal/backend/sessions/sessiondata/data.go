@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io"
 
 	"go.uber.org/zap"
 
@@ -43,18 +42,6 @@ func retrieve[I sdktypes.ID, R sdktypes.Object](ctx context.Context, z *zap.Logg
 	return r, nil
 }
 
-// TODO(ENG-205): Limit max size.
-func downloadBuild(ctx context.Context, buildID sdktypes.BuildID, builds sdkservices.Builds) ([]byte, error) {
-	r, err := builds.Download(ctx, buildID)
-	if err != nil {
-		return nil, err
-	}
-
-	defer r.Close()
-
-	return io.ReadAll(r)
-}
-
 // Get session related data using local activities in order not to expose data to Temporal.
 func Get(ctx context.Context, z *zap.Logger, svcs *sessionsvcs.Svcs, sessionID sdktypes.SessionID) (*Data, error) {
 	var err error
@@ -70,7 +57,7 @@ func Get(ctx context.Context, z *zap.Logger, svcs *sessionsvcs.Svcs, sessionID s
 	}
 
 	if envID := data.Session.EnvID(); envID.IsValid() {
-		if data.Env, err = retrieve(ctx, z, envID, svcs.Envs.GetByID); err != nil {
+		if data.Env, err = retrieve(ctx, z, envID, svcs.DB.GetEnvByID); err != nil {
 			return nil, err
 		}
 
@@ -78,12 +65,12 @@ func Get(ctx context.Context, z *zap.Logger, svcs *sessionsvcs.Svcs, sessionID s
 			return nil, fmt.Errorf("sessions can only run on projects")
 		}
 
-		if data.Connections, err = svcs.Connections.List(ctx, sdkservices.ListConnectionsFilter{ProjectID: data.ProjectID}); err != nil {
+		if data.Connections, err = svcs.DB.ListConnections(ctx, sdkservices.ListConnectionsFilter{ProjectID: data.ProjectID}, false); err != nil {
 			return nil, fmt.Errorf("connections.list: %w", err)
 		}
 
 		for _, conn := range data.Connections {
-			ts, err := svcs.Triggers.List(ctx, sdkservices.ListTriggersFilter{ConnectionID: conn.ID()})
+			ts, err := svcs.DB.ListTriggers(ctx, sdkservices.ListTriggersFilter{ConnectionID: conn.ID()})
 			if err != nil {
 				return nil, fmt.Errorf("triggers.list(%v): %w", conn.ID(), err)
 			}
@@ -104,14 +91,14 @@ func Get(ctx context.Context, z *zap.Logger, svcs *sessionsvcs.Svcs, sessionID s
 	}
 
 	buildID := data.Session.BuildID()
-
-	if data.Build, err = retrieve(ctx, z, buildID, svcs.Builds.Get); err != nil {
+	if data.Build, err = retrieve(ctx, z, buildID, svcs.DB.GetBuild); err != nil {
 		return nil, err
 	}
 
-	buildData, err := downloadBuild(ctx, buildID, svcs.Builds)
+	buildData, err := svcs.DB.GetBuildData(ctx, buildID) // TODO(ENG-205): Limit max size.
 	if err != nil {
-		z.Panic("download build data", zap.Error(err), zap.String("build_id", buildID.String()))
+		z.Error("download build data", zap.Error(err), zap.String("build_id", buildID.String()))
+		return nil, fmt.Errorf("download build data: %w", err)
 	}
 
 	if data.BuildFile, err = sdkbuildfile.Read(bytes.NewBuffer(buildData)); err != nil {
