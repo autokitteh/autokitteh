@@ -39,6 +39,9 @@ func ToSDKError(err error) error {
 	case connect.CodeResourceExhausted:
 		sdkErr = sdkerrors.ErrLimitExceeded
 		errMsg = connectErr.Message()
+	case connect.CodeFailedPrecondition:
+		sdkErr = sdkerrors.ErrFailedPrecondition
+		errMsg = connectErr.Error()
 	case connect.CodeUnknown: // returned as connect.Error, but unrelated to RPC, just unwrap underlying error
 		return connectErr.Unwrap()
 	default:
