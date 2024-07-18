@@ -164,7 +164,7 @@ func (d *dispatcher) signalWorkflows(ctx context.Context, event sdktypes.Event) 
 		z.Error("could not fetch connections", zap.Error(err))
 	}
 
-	signals, err := d.db.ListSignalsWaitingOnConnection(ctx, conn.ID())
+	signals, err := d.DB.ListSignalsWaitingOnConnection(ctx, conn.ID())
 	if err != nil {
 		z.Error("could not fetch signals", zap.Error(err))
 		return err
@@ -180,7 +180,7 @@ func (d *dispatcher) signalWorkflows(ctx context.Context, event sdktypes.Event) 
 		if err != nil {
 			l.Error("inavlid signal filter", zap.Error(err))
 
-			if err := d.db.RemoveSignal(ctx, signal.SignalID); err != nil {
+			if err := d.DB.RemoveSignal(ctx, signal.SignalID); err != nil {
 				l.Error("failed removing signal with invalid filter", zap.Error(err))
 				continue
 			}
@@ -200,7 +200,7 @@ func (d *dispatcher) signalWorkflows(ctx context.Context, event sdktypes.Event) 
 				return err
 			}
 			l.Debug("workflow not found, removing signal")
-			if err := d.db.RemoveSignal(ctx, signal.SignalID); err != nil {
+			if err := d.DB.RemoveSignal(ctx, signal.SignalID); err != nil {
 				return err
 			}
 		}
