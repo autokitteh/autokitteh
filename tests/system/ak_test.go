@@ -60,7 +60,7 @@ func TestSuite(t *testing.T) {
 }
 
 func setUpSuite(t *testing.T) string {
-	akPath := buildAKbinary(t)
+	akPath := buildAKBinary(t)
 
 	// https://docs.temporal.io/dev-guide/go/debugging
 	t.Setenv("TEMPORAL_DEBUG", "true")
