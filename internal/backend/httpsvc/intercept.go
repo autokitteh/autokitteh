@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"net/http"
 	"regexp"
+	"strings"
 	"time"
 
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
 )
 
 type ctxKey string
@@ -51,26 +51,30 @@ func (r *responseInterceptor) Flush() {
 type RequestLogExtractor func(*http.Request) []zap.Field
 
 func intercept(z *zap.Logger, cfg *LoggerConfig, extractors []RequestLogExtractor, next http.Handler) (http.HandlerFunc, error) {
-	res, err := kittehs.TransformError(cfg.NonimportantRegexes, regexp.Compile)
-	if err != nil {
-		return nil, fmt.Errorf("compiling important regexes: %w", err)
-	}
+	// MustCompile is appropriate here because the patterns are static
+	// and errors in them should be caught at startup. Furthermore, we
+	// combine them into a single regular expression, because efficiency is
+	// critical when we delay each and every incoming HTTP and gRPC request.
+	unimportant := regexp.MustCompile(strings.Join(cfg.UnimportantRegexes, `|`))
+	unlogged := regexp.MustCompile(strings.Join(cfg.UnloggedRegexes, `|`))
 
 	return func(w http.ResponseWriter, r *http.Request) {
+		if unlogged.MatchString(r.URL.Path) {
+			next.ServeHTTP(w, r)
+			return
+		}
+
 		w.Header().Set("X-AutoKitteh-Process-ID", fixtures.ProcessID())
 
 		z := z.With(zap.String("method", r.Method), zap.String("path", r.URL.Path))
+		msg := fmt.Sprintf("HTTP request: %s %s", r.Method, r.URL.Path)
 
 		level := cfg.ImportantLevel.Level()
-
-		for _, re := range res {
-			if re.MatchString(r.URL.Path) {
-				level = cfg.NonimportantLevel.Level()
-				break
-			}
+		if unimportant.MatchString(r.URL.Path) {
+			level = cfg.UnimportantLevel.Level()
 		}
 
-		if ce := z.Check(level, "HTTP Request"); ce != nil {
+		if ce := z.Check(level, msg); ce != nil {
 			var fields []zap.Field
 			for _, x := range extractors {
 				fields = append(fields, x(r)...)
@@ -95,8 +99,9 @@ func intercept(z *zap.Logger, cfg *LoggerConfig, extractors []RequestLogExtracto
 			level = cfg.ErrorsLevel.Level()
 		}
 
-		if ce := z.Check(level, "HTTP Response"); ce != nil {
-			ce.Write(zap.Int("status_code", rwi.StatusCode), zap.Duration("duration", d))
+		msg = strings.Replace(msg, "request", "response", 1)
+		if ce := z.Check(level, msg); ce != nil {
+			ce.Write(zap.Int("statusCode", rwi.StatusCode), zap.Duration("duration", d))
 		}
 	}, nil
 }
