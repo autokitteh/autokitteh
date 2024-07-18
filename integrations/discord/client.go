@@ -31,6 +31,7 @@ func New(cvars sdkservices.Vars) sdkservices.Integration {
 	return sdkintegrations.NewIntegration(
 		desc,
 		sdkmodule.New( /* No exported functions for Starlark */ ),
+		connStatus(cvars),
 		sdkintegrations.WithConnectionConfigFromVars(cvars),
 	)
 }
