@@ -117,17 +117,17 @@ func CreateSessionsForWorkflow(event sdktypes.Event, sessionsData []SessionData)
 	return sessions, nil
 }
 
-func (wf *Workflow) StartSessions(ctx workflow.Context, event sdktypes.Event, sessionsData []SessionData) error {
+func (wf *Workflow) StartSessions(wctx workflow.Context, event sdktypes.Event, sessionsData []SessionData) error {
 	sessions, err := CreateSessionsForWorkflow(event, sessionsData)
 	if err != nil {
 		return fmt.Errorf("schedule wf: start sessions: %w", err)
 	}
 
-	goCtx := temporalclient.NewWorkflowContextAsGOContext(ctx)
+	ctx := temporalclient.NewWorkflowContextAsGOContext(wctx)
 
 	for _, session := range sessions {
 		// TODO(ENG-197): change to local activity.
-		sessionID, err := wf.Services.Sessions.Start(goCtx, *session)
+		sessionID, err := wf.Services.Sessions.Start(ctx, *session)
 		if err != nil {
 			wf.Z.Panic("could not start session") // Panic in order to make the workflow retry.
 		}
