@@ -18,7 +18,6 @@ import (
 
 type dispatcher struct {
 	wf.Workflow
-	db db.DB
 }
 
 type Dispatcher interface {
@@ -32,7 +31,7 @@ func New(
 	services wf.Services,
 	tc temporalclient.Client,
 ) Dispatcher {
-	return &dispatcher{wf.Workflow{Z: z, Services: services, Tmprl: tc}, db}
+	return &dispatcher{wf.Workflow{Z: z, DB: db, Services: services, Tmprl: tc}}
 }
 
 func (d *dispatcher) Dispatch(ctx context.Context, event sdktypes.Event, opts *sdkservices.DispatchOptions) (sdktypes.EventID, error) {
