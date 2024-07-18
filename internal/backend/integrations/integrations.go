@@ -71,7 +71,7 @@ func Start(_ context.Context, l *zap.Logger, mux *http.ServeMux, vars sdkservice
 	aws.Start(l, mux)
 	chatgpt.Start(l, mux)
 	confluence.Start(l, mux, vars, o, d)
-	discord.Start(l, mux, vars, o)
+	discord.Start(l, mux)
 	github.Start(l, mux, vars, o, d)
 	gemini.Start(l, mux)
 	google.Start(l, mux, vars, o, d)

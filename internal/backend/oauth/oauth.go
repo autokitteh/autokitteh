@@ -116,30 +116,6 @@ func New(l *zap.Logger) sdkservices.OAuth {
 				},
 			},
 
-			"discord": {
-				ClientID:     os.Getenv("DISCORD_CLIENT_ID"),
-				ClientSecret: os.Getenv("DISCORD_CLIENT_SECRET"),
-				Endpoint: oauth2.Endpoint{
-					// https://discord.com/developers/docs/topics/oauth2#shared-resources-oauth2-urls
-					AuthURL:  "https://discord.com/api/oauth2/authorize",
-					TokenURL: "https://discord.com/api/oauth2/token",
-				},
-				RedirectURL: redirectURL + "discord", // TODO(ENG-112): Remove (see Register below).
-				// https://developers.google.com/gmail/api/auth/scopes
-				Scopes: []string{
-					"applications.commands",
-					"applications.commands.update",
-					"applications.store.update",
-					"bot",
-					"connections",
-					"email",
-					"guilds",
-					"guilds.join",
-					"identify",
-					"messages.read",
-					"webhook.incoming",
-				},
-			},
 			// Based on:
 			// https://github.com/organizations/autokitteh/settings/apps/autokitteh
 			"github": {
