@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>AutoKitteh - Discord - New Connection</title>
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="/static/apple-touch-icon.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="/static/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="/static/favicon-16x16.png"
+    />
+    <link rel="manifest" href="/static/site.webmanifest" />
+    <link rel="stylesheet" type="text/css" href="styles.css" />
+    <meta name="robots" content="noindex, nofollow" />
+  </head>
+
+  <body>
+    <a href="/" target="_self">
+      <img class="banner" src="/static/banner.svg" alt="AutoKitteh" />
+    </a>
+
+    <table class="title">
+      <td><img class="logo" src="/static/images/discord.svg" alt="Logo" /></td>
+      <td>
+        <h1>Discord - Create a New Connection</h1>
+      </td>
+    </table>
+
+    <p class="info">Information:</p>
+    <ul class="links">
+      <li>
+        <a href="https://discord.com/developers/docs/intro" target="_blank" class="info">
+          Discord developer platform
+        </a>
+      </li>
+    </ul>
+
+    <!-- TODO(ENG-799): remove ID once its unused -->
+    <form id="save-form" method="post" action="/discord/save">
+      <div class="form-group">
+        <label for="bot_token">Bot Token</label>
+        <input
+          type="text"
+          name="bot_token"
+          autocomplete="off"
+          spellcheck="false"
+          class="text"
+          required
+        />
+      </div>
+
+      <button type="submit" class="submit-btn">Save Connection</button>
+    </form>
+
+    <!-- TODO(ENG-799) -->
+    <script>
+      const queryString = window.location.search;
+      document
+        .getElementById("save-form")
+        .setAttribute("action", "/discord/save" + queryString);
+    </script>
+  </body>
+</html>
