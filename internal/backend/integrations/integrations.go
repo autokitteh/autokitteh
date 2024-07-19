@@ -10,6 +10,7 @@ import (
 	"go.autokitteh.dev/autokitteh/integrations/atlassian/jira"
 	"go.autokitteh.dev/autokitteh/integrations/aws"
 	"go.autokitteh.dev/autokitteh/integrations/chatgpt"
+	"go.autokitteh.dev/autokitteh/integrations/discord"
 	"go.autokitteh.dev/autokitteh/integrations/github"
 	"go.autokitteh.dev/autokitteh/integrations/google"
 	"go.autokitteh.dev/autokitteh/integrations/google/calendar"
@@ -43,6 +44,7 @@ func New(cfg *Config, vars sdkservices.Vars) sdkservices.Integrations {
 		calendar.New(vars),
 		chatgpt.New(vars),
 		confluence.New(vars),
+		discord.New(vars),
 		drive.New(vars),
 		forms.New(vars),
 		github.New(vars),
@@ -69,6 +71,7 @@ func Start(_ context.Context, l *zap.Logger, mux *http.ServeMux, vars sdkservice
 	aws.Start(l, mux)
 	chatgpt.Start(l, mux)
 	confluence.Start(l, mux, vars, o, d)
+	discord.Start(l, mux)
 	github.Start(l, mux, vars, o, d)
 	gemini.Start(l, mux)
 	google.Start(l, mux, vars, o, d)

@@ -16,6 +16,9 @@ var ChatGPTWebContent embed.FS
 //go:embed confluence/connect
 var ConfluenceWebContent embed.FS
 
+//go:embed discord/connect
+var DiscordWebContent embed.FS
+
 //go:embed github/connect
 var GitHubWebContent embed.FS
 
