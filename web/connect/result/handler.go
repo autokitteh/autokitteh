@@ -4,6 +4,7 @@ import (
 	"html/template"
 	"net/http"
 
+	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -28,7 +29,7 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request, t *template.T
 	}
 
 	// Fetch the connection details.
-	conn, err := h.connections.Get(r.Context(), cid)
+	conn, err := sdkerrors.IgnoreNotFoundErr(h.connections.Get(r.Context(), cid))
 	if err != nil {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
