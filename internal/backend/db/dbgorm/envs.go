@@ -86,11 +86,11 @@ func (db *gormdb) CreateEnv(ctx context.Context, env sdktypes.Env) error {
 	return translateError(db.createEnv(ctx, &e))
 }
 
-func schemaToEnv(p *scheme.Env, err error) (sdktypes.Env, error) {
-	if p == nil || err != nil {
+func schemaToEnv(e *scheme.Env, err error) (sdktypes.Env, error) {
+	if e == nil || err != nil {
 		return sdktypes.InvalidEnv, translateError(err)
 	}
-	return scheme.ParseEnv(*p)
+	return scheme.ParseEnv(*e)
 }
 
 func (db *gormdb) GetEnvByID(ctx context.Context, envID sdktypes.EnvID) (sdktypes.Env, error) {
