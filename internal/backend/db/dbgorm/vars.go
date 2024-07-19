@@ -29,7 +29,7 @@ func (gdb *gormdb) setVar(ctx context.Context, vr *scheme.Var) error {
 		db := tx.db.WithContext(ctx)
 
 		// if no records were found then fail with foreign keys validation (#1), since there should be one
-		oo, err := tx.owner.EnsureUserAccessToEntitiesWithOwnership(db, uid, vr.ScopeID)
+		oo, err := tx.owner.EnsureUserAccessToEntitiesWithOwnership(ctx, db, uid, vr.ScopeID)
 		if err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return gorm.ErrForeignKeyViolated
