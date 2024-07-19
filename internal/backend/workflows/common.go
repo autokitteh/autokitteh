@@ -7,6 +7,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
+	cctx "go.autokitteh.dev/autokitteh/internal/context"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -124,6 +125,7 @@ func (wf *Workflow) StartSessions(wctx workflow.Context, event sdktypes.Event, s
 	}
 
 	ctx := temporalclient.NewWorkflowContextAsGOContext(wctx)
+	ctx = cctx.WithComponent(ctx, cctx.Workflow)
 
 	for _, session := range sessions {
 		// TODO(ENG-197): change to local activity.
@@ -137,6 +139,7 @@ func (wf *Workflow) StartSessions(wctx workflow.Context, event sdktypes.Event, s
 }
 
 func (wf *Workflow) CreateEventRecord(ctx context.Context, eventID sdktypes.EventID, state sdktypes.EventState) {
+	ctx = cctx.WithComponent(ctx, cctx.Workflow)
 	record := sdktypes.NewEventRecord(eventID, state)
 	if err := wf.Services.Events.AddEventRecord(ctx, record); err != nil {
 		wf.Z.Panic("Failed setting event state", zap.String("eventID", eventID.String()), zap.String("state", state.String()), zap.Error(err))

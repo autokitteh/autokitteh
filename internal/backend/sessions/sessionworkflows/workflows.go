@@ -17,6 +17,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessiondata"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionsvcs"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
+	cctx "go.autokitteh.dev/autokitteh/internal/context"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -70,6 +71,8 @@ func (ws *workflows) StartWorkers(ctx context.Context) error {
 }
 
 func (ws *workflows) StartWorkflow(ctx context.Context, session sdktypes.Session, debug bool) error {
+	ctx = cctx.WithComponent(ctx, cctx.SessionWorkflow)
+
 	sessionID := session.ID()
 
 	wid := workflowID(sessionID)
@@ -110,11 +113,12 @@ func (ws *workflows) StartWorkflow(ctx context.Context, session sdktypes.Session
 	return nil
 }
 
-func (ws *workflows) getSessionData(ctx workflow.Context, sessionID sdktypes.SessionID) (*sessiondata.Data, error) {
-	goCtx := temporalclient.NewWorkflowContextAsGOContext(ctx)
+func (ws *workflows) getSessionData(wctx workflow.Context, sessionID sdktypes.SessionID) (*sessiondata.Data, error) {
+	ctx := temporalclient.NewWorkflowContextAsGOContext(wctx)
+	ctx = cctx.WithComponent(ctx, cctx.SessionWorkflow)
 
 	// This cannot run through activity as it would expose potentialy sensitive data to temporal.
-	data, err := sessiondata.Get(goCtx, ws.z, ws.svcs, sessionID)
+	data, err := sessiondata.Get(ctx, ws.z, ws.svcs, sessionID)
 	if err != nil {
 		return nil, fmt.Errorf("session data: %w", err)
 	}
@@ -144,6 +148,7 @@ func (ws *workflows) getSessionDebugData(data *sessiondata.Data, prints []string
 	// We use background as the workflow might have been canceled.
 	ctx, cancel := withLimitedTimeout(context.Background())
 	defer cancel()
+	ctx = cctx.WithComponent(ctx, cctx.SessionWorkflow)
 
 	history, err := ws.sessions.GetLog(ctx, sdkservices.ListSessionLogRecordsFilter{SessionID: data.SessionID})
 	if err != nil {
@@ -167,7 +172,7 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 		ScheduleToCloseTimeout: ws.cfg.Temporal.LocalScheduleToCloseTimeout,
 	})
 
-	ctx := context.Background()
+	ctx := cctx.WithComponent(context.Background(), cctx.SessionWorkflow)
 
 	// TODO(ENG-322): Save data in snapshot, otherwise changes between retries would
 	//                blow us up due to non determinism.
@@ -282,6 +287,7 @@ func (ws *workflows) deactivateDrainedDeployment(ctx context.Context, deployment
 
 func (ws *workflows) StopWorkflow(ctx context.Context, sessionID sdktypes.SessionID, reason string, force bool) error {
 	wid := workflowID(sessionID)
+	ctx = cctx.WithComponent(ctx, cctx.SessionWorkflow)
 
 	if force {
 		// TODO(ENG-206): Is there a race condition here with update session?

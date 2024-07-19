@@ -10,6 +10,7 @@ import (
 	"go.uber.org/zap"
 
 	wf "go.autokitteh.dev/autokitteh/internal/backend/workflows"
+	cctx "go.autokitteh.dev/autokitteh/internal/context"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -216,7 +217,8 @@ func (d *dispatcher) eventsWorkflow(wctx workflow.Context, input eventsWorkflowI
 	logger.Info("started events workflow", "event_id", input.EventID)
 	z := d.Z.With(zap.String("event_id", input.EventID.String()))
 
-	ctx := context.Background()
+	ctx := cctx.WithComponent(context.Background(), cctx.EventWorkflow)
+
 	event, err := d.Services.Events.Get(ctx, input.EventID)
 	if err != nil {
 		return nil, fmt.Errorf("get event: %w", err)

@@ -10,6 +10,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessioncalls"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionsvcs"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionworkflows"
+	cctx "go.autokitteh.dev/autokitteh/internal/context"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -40,6 +41,7 @@ func New(z *zap.Logger, config *Config, db db.DB, svcs sessionsvcs.Svcs) Session
 }
 
 func (s *sessions) StartWorkers(ctx context.Context) error {
+	ctx = cctx.WithComponent(ctx, cctx.SessionWorkflow)
 	s.calls = sessioncalls.New(s.z.Named("sessionworkflows"), s.config.Calls, s.svcs)
 	s.workflows = sessionworkflows.New(s.z.Named("sessionworkflows"), s.config.Workflows, s, s.svcs, s.calls)
 
@@ -55,14 +57,17 @@ func (s *sessions) StartWorkers(ctx context.Context) error {
 }
 
 func (s *sessions) GetLog(ctx context.Context, filter sdkservices.ListSessionLogRecordsFilter) (sdkservices.GetLogResults, error) {
+	ctx = cctx.WithComponent(ctx, cctx.SessionWorkflow)
 	return s.svcs.DB.GetSessionLog(ctx, filter)
 }
 
 func (s *sessions) Get(ctx context.Context, sessionID sdktypes.SessionID) (sdktypes.Session, error) {
+	ctx = cctx.WithComponent(ctx, cctx.SessionWorkflow)
 	return s.svcs.DB.GetSession(ctx, sessionID)
 }
 
 func (s *sessions) Stop(ctx context.Context, sessionID sdktypes.SessionID, reason string, force bool) error {
+	ctx = cctx.WithComponent(ctx, cctx.SessionWorkflow)
 	return s.workflows.StopWorkflow(ctx, sessionID, reason, force)
 }
 
@@ -71,6 +76,7 @@ func (s *sessions) List(ctx context.Context, filter sdkservices.ListSessionsFilt
 }
 
 func (s *sessions) Delete(ctx context.Context, sessionID sdktypes.SessionID) error {
+	ctx = cctx.WithComponent(ctx, cctx.SessionWorkflow)
 	session, err := s.Get(ctx, sessionID)
 	if err != nil {
 		return err
@@ -91,6 +97,7 @@ func (s *sessions) Start(ctx context.Context, session sdktypes.Session) (sdktype
 	if session.ID().IsValid() {
 		return sdktypes.InvalidSessionID, sdkerrors.NewInvalidArgumentError("session id is not nil")
 	}
+	ctx = cctx.WithComponent(ctx, cctx.SessionWorkflow)
 
 	session = session.WithNewID()
 	z := s.z.With(zap.String("session_id", session.ID().String()))

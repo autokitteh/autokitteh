@@ -21,6 +21,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessioncontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessiondata"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
+	cctx "go.autokitteh.dev/autokitteh/internal/context"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkexecutor"
@@ -440,11 +441,13 @@ func (w *sessionWorkflow) run(wctx workflow.Context) (prints []string, err error
 	type contextKey string
 	workflowContextKey := contextKey("autokitteh_workflow_context")
 
-	goCtx := temporalclient.NewWorkflowContextAsGOContext(wctx)
+	ctx := temporalclient.NewWorkflowContextAsGOContext(wctx)
+	ctx = cctx.WithComponent(ctx, cctx.SessionWorkflow)
 
 	// This will allow us to identify if the call context is from a workflow (script code run), or
 	// some other thing that calls the Call callback from within an activity. The latter is not supported.
-	goCtx = context.WithValue(goCtx, workflowContextKey, wctx)
+	ctx = context.WithValue(ctx, workflowContextKey, wctx)
+
 	isFromActivity := func(ctx context.Context) bool { return ctx.Value(workflowContextKey) == nil }
 
 	newRunID := func() (runID sdktypes.RunID) {
@@ -502,7 +505,7 @@ func (w *sessionWorkflow) run(wctx workflow.Context) (prints []string, err error
 	entryPoint := w.data.Session.EntryPoint()
 
 	run, err := sdkruntimes.Run(
-		goCtx,
+		ctx,
 		sdkruntimes.RunParams{
 			Runtimes:             w.ws.svcs.Runtimes,
 			BuildFile:            w.data.BuildFile,
@@ -546,7 +549,7 @@ func (w *sessionWorkflow) run(wctx workflow.Context) (prints []string, err error
 			kittehs.ContainedIn(argNames...),
 		)
 
-		if retVal, err = run.Call(goCtx, callValue, nil, kwargs); err != nil {
+		if retVal, err = run.Call(ctx, callValue, nil, kwargs); err != nil {
 			return prints, err
 		}
 	}
