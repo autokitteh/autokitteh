@@ -301,6 +301,7 @@ func oauthConfig() *oauth2.Config {
 			googleoauth2.UserinfoEmailScope,
 			googleoauth2.UserinfoProfileScope,
 			gmail.GmailModifyScope,
+			gmail.GmailSettingsBasicScope,
 		},
 	}
 }
