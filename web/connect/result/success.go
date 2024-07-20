@@ -12,5 +12,5 @@ var successPage string
 var successTmpl = template.Must(template.New("success").Parse(successPage))
 
 func (h handler) Success(w http.ResponseWriter, r *http.Request) {
-	h.ServeHTTP(w, r, successTmpl)
+	h.ServeHTTP(w, r, successTmpl, true)
 }

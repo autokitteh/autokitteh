@@ -57,8 +57,8 @@ func (c ConnectionInit) AbortWithStatus(status int, err string) {
 		u = fmt.Sprintf(u, c.ConnectionID, status, url.QueryEscape(err))
 		http.Redirect(c.Writer, c.Request, u, http.StatusFound)
 	default: // Local server ("cli", "dash", etc.)
-		u := "/connections/%s/error?cid=%s&origin=%s&error=%s"
-		u = fmt.Sprintf(u, c.ConnectionID, c.ConnectionID, origin, url.QueryEscape(err))
+		u := "/connections/%s/error?origin=%s&status=%d&error=%s"
+		u = fmt.Sprintf(u, c.ConnectionID, origin, status, url.QueryEscape(err))
 		http.Redirect(c.Writer, c.Request, u, http.StatusFound)
 	}
 }

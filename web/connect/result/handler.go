@@ -3,6 +3,7 @@ package result
 import (
 	"html/template"
 	"net/http"
+	"strconv"
 
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -20,7 +21,7 @@ func NewHandler(s sdkservices.Services) handler {
 
 // ServeHTTP is an HTTP handler that serves generic
 // connection success and error webpages for all integrations.
-func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request, t *template.Template) {
+func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request, t *template.Template, ok bool) {
 	// Read the connection ID from the request path.
 	cid, err := sdktypes.StrictParseConnectionID(r.PathValue("id"))
 	if err != nil {
@@ -47,15 +48,35 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request, t *template.T
 		return
 	}
 
-	i := integ.Get()
-	data := map[string]string{
-		"id":   i.UniqueName().String(),
-		"name": i.DisplayName(),
-		"logo": i.LogoURL().String(),
+	// Read the intended error status code from the URL query.
+	statusCode := http.StatusOK
+	if !ok {
+		status := r.URL.Query().Get("status")
+		if status == "" {
+			status = "400"
+		}
+
+		statusCode, err = strconv.Atoi(status)
+		if err != nil {
+			http.Error(w, "Bad request", http.StatusBadRequest)
+			return
+		}
 	}
 
 	// Generate the HTML page with the integration details.
+	i := integ.Get()
+	data := map[string]string{
+		"cid":    cid.String(),
+		"origin": r.URL.Query().Get("origin"),
+		"error":  r.URL.Query().Get("error"),
+		"integ":  i.UniqueName().String(),
+		"name":   i.DisplayName(),
+		"logo":   i.LogoURL().String(),
+	}
+
+	w.WriteHeader(statusCode)
+
 	if err := t.Execute(w, data); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
 	}
 }
