@@ -64,23 +64,31 @@ func (h handler) handleCreds(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Sanity check: the connection ID is valid.
+	cid, err := sdktypes.StrictParseConnectionID(c.ConnectionID)
+	if err != nil {
+		l.Warn("Invalid connection ID", zap.Error(err))
+		c.Abort("invalid connection ID")
+		return
+	}
+
 	ctx := extrazap.AttachLoggerToContext(l, r.Context())
 	switch r.PostFormValue("auth_type") {
 	// GCP service-account JSON-key connection? Save the JSON key.
 	case "", "json":
 		c.Finalize(sdktypes.EncodeVars(&vars.Vars{JSON: r.PostFormValue("json"), FormID: formID}))
 
-		if err := forms.UpdateWatches(ctx, h.vars, c); err != nil {
-			l.Error("Form watches creation error", zap.Error(err))
+		if err := forms.UpdateWatches(ctx, h.vars, cid); err != nil {
+			l.Error("Google form watches creation error", zap.Error(err))
 		}
 
-		if err := gmail.UpdateWatch(ctx, h.vars, c); err != nil {
+		if err := gmail.UpdateWatch(ctx, h.vars, cid); err != nil {
 			l.Error("Gmail watch creation error", zap.Error(err))
 		}
 
 	// User OAuth connect? Redirect to AutoKitteh's OAuth starting point.
 	case "oauth":
-		http.Redirect(w, r, oauthURL(c, r.PostForm), http.StatusFound)
+		http.Redirect(w, r, oauthURL(r.PostForm, c), http.StatusFound)
 
 	// Unknown mode.
 	default:
@@ -103,7 +111,7 @@ func (h handler) saveFormID(ctx context.Context, c sdkintegrations.ConnectionIni
 	return nil
 }
 
-func oauthURL(c sdkintegrations.ConnectionInit, form url.Values) string {
+func oauthURL(form url.Values, c sdkintegrations.ConnectionInit) string {
 	// Default scopes for OAuth: all ("google").
 	u := "/oauth/start/google%s?cid=%s&origin=%s"
 

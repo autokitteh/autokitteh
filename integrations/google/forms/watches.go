@@ -10,7 +10,6 @@ import (
 	"go.autokitteh.dev/autokitteh/integrations/google/internal/vars"
 	"go.autokitteh.dev/autokitteh/integrations/internal/extrazap"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
-	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -24,13 +23,7 @@ const (
 
 // UpdateWatches creates or renews schema-changes and new-responses event watches
 // for a specific Google Forms form, if an ID was specified during initialization.
-func UpdateWatches(ctx context.Context, v sdkservices.Vars, c sdkintegrations.ConnectionInit) error {
-	// Sanity check: the connection ID is valid.
-	cid, err := sdktypes.StrictParseConnectionID(c.ConnectionID)
-	if err != nil {
-		return fmt.Errorf("connection ID parsing error: %w", err)
-	}
-
+func UpdateWatches(ctx context.Context, v sdkservices.Vars, cid sdktypes.ConnectionID) error {
 	a := api{vars: v, cid: cid}
 	formID, err := a.formID(ctx)
 	if err != nil {

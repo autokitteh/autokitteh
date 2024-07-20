@@ -67,16 +67,24 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Sanity check: the connection ID is valid.
+	cid, err := sdktypes.StrictParseConnectionID(c.ConnectionID)
+	if err != nil {
+		l.Warn("Invalid connection ID", zap.Error(err))
+		c.Abort("invalid connection ID")
+		return
+	}
+
 	// Encoding "OAuthData" and "JSON", but not "FormID", so we don't overwrite
 	// the value that was already written there by the creds.go passthrough.
 	c.Finalize(sdktypes.NewVars(sdktypes.NewVar(vars.OAuthData, raw, true)).
 		Set(vars.JSON, "", true).Append(data.ToVars()...).Append(user...))
 
-	if err := forms.UpdateWatches(ctx, h.vars, c); err != nil {
-		l.Error("Form watches creation error", zap.Error(err))
+	if err := forms.UpdateWatches(ctx, h.vars, cid); err != nil {
+		l.Error("Google form watches creation error", zap.Error(err))
 	}
 
-	if err := gmail.UpdateWatch(ctx, h.vars, c); err != nil {
+	if err := gmail.UpdateWatch(ctx, h.vars, cid); err != nil {
 		l.Error("Gmail watch creation error", zap.Error(err))
 	}
 }
