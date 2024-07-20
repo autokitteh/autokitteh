@@ -11,6 +11,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/integrations/google/forms"
+	"go.autokitteh.dev/autokitteh/integrations/google/gmail"
 	"go.autokitteh.dev/autokitteh/integrations/google/internal/vars"
 	"go.autokitteh.dev/autokitteh/integrations/internal/extrazap"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
@@ -67,11 +68,15 @@ func (h handler) handleCreds(w http.ResponseWriter, r *http.Request) {
 	switch r.PostFormValue("auth_type") {
 	// GCP service-account JSON-key connection? Save the JSON key.
 	case "", "json":
+		c.Finalize(sdktypes.EncodeVars(&vars.Vars{JSON: r.PostFormValue("json"), FormID: formID}))
+
 		if err := forms.UpdateWatches(ctx, h.vars, c); err != nil {
 			l.Error("Form watches creation error", zap.Error(err))
-			c.AbortWithStatus(http.StatusInternalServerError, "form watches creation error")
 		}
-		c.Finalize(sdktypes.EncodeVars(&vars.Vars{JSON: r.PostFormValue("json"), FormID: formID}))
+
+		if err := gmail.UpdateWatch(ctx, h.vars, c); err != nil {
+			l.Error("Gmail watch creation error", zap.Error(err))
+		}
 
 	// User OAuth connect? Redirect to AutoKitteh's OAuth starting point.
 	case "oauth":

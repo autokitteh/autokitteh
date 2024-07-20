@@ -22,7 +22,7 @@ import (
 
 type api struct {
 	vars sdkservices.Vars
-	cid  string
+	cid  sdktypes.ConnectionID
 }
 
 var integrationID = sdktypes.NewIntegrationIDFromName("googleforms")
@@ -110,10 +110,7 @@ func (a api) connectionData(ctx context.Context) (*vars.Vars, error) {
 	}
 
 	if !cid.IsValid() {
-		cid, err = sdktypes.StrictParseConnectionID(a.cid)
-		if err != nil {
-			return nil, err
-		}
+		cid = a.cid // Fallback during authentication flows.
 	}
 
 	vs, err := a.vars.Reveal(ctx, sdktypes.NewVarScopeID(cid))

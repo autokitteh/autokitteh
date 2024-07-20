@@ -25,10 +25,14 @@ const (
 // UpdateWatches creates or renews schema-changes and new-responses event watches
 // for a specific Google Forms form, if an ID was specified during initialization.
 func UpdateWatches(ctx context.Context, v sdkservices.Vars, c sdkintegrations.ConnectionInit) error {
-	l := extrazap.ExtractLoggerFromContext(ctx)
-	api := api{vars: v, cid: c.ConnectionID}
+	// Sanity check: the connection ID is valid.
+	cid, err := sdktypes.StrictParseConnectionID(c.ConnectionID)
+	if err != nil {
+		return fmt.Errorf("connection ID parsing error: %w", err)
+	}
 
-	formID, err := api.formID(ctx)
+	a := api{vars: v, cid: cid}
+	formID, err := a.formID(ctx)
 	if err != nil {
 		return err
 	}
@@ -39,9 +43,10 @@ func UpdateWatches(ctx context.Context, v sdkservices.Vars, c sdkintegrations.Co
 	}
 
 	// List all existing watches.
+	l := extrazap.ExtractLoggerFromContext(ctx)
 	l = l.With(zap.String("formID", formID))
 	extrazap.AttachLoggerToContext(l, ctx)
-	watches, err := api.watchesList(ctx)
+	watches, err := a.watchesList(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to list form watches: %w", err)
 	}
@@ -51,12 +56,12 @@ func UpdateWatches(ctx context.Context, v sdkservices.Vars, c sdkintegrations.Co
 
 	// Renew or create the form's SCHEMA (changes) and (new) RESPONSES watches.
 	for _, e := range []WatchEventType{WatchSchemaChanges, WatchNewResponses} {
-		watchID, err := api.updateSingleWatch(ctx, e, ws[e])
+		watchID, err := a.updateSingleWatch(ctx, e, ws[e])
 		if err != nil {
 			return err
 		}
 		// And save their IDs.
-		err = api.saveWatchID(ctx, e, watchID)
+		err = a.saveWatchID(ctx, e, watchID)
 		if err != nil {
 			return err
 		}
@@ -89,17 +94,12 @@ func (a api) updateSingleWatch(ctx context.Context, e WatchEventType, w *forms.W
 }
 
 func (a api) saveWatchID(ctx context.Context, e WatchEventType, watchID string) error {
-	cid, err := sdktypes.StrictParseConnectionID(a.cid)
-	if err != nil {
-		return fmt.Errorf("connection ID parsing error: %w", err)
-	}
-
 	n := vars.FormResponsesWatchID
 	if e == WatchSchemaChanges {
 		n = vars.FormSchemaWatchID
 	}
 
-	v := sdktypes.NewVar(n, watchID, false).WithScopeID(sdktypes.NewVarScopeID(cid))
+	v := sdktypes.NewVar(n, watchID, false).WithScopeID(sdktypes.NewVarScopeID(a.cid))
 	if err := a.vars.Set(ctx, v); err != nil {
 		return err
 	}
