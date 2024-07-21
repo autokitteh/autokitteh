@@ -37,7 +37,7 @@ func New(
 
 func (d *dispatcher) Dispatch(ctx context.Context, event sdktypes.Event, opts *sdkservices.DispatchOptions) (sdktypes.EventID, error) {
 	eventID, err := d.Services.Events.Save(ctx, event)
-	ctx = cctx.WithRequestOrinator(ctx, cctx.Dispatcher)
+	ctx = cctx.WithRequestOrginator(ctx, cctx.Dispatcher)
 	if err != nil {
 		return sdktypes.InvalidEventID, fmt.Errorf("save event: %w", err)
 	}
@@ -56,7 +56,7 @@ func (d *dispatcher) Dispatch(ctx context.Context, event sdktypes.Event, opts *s
 }
 
 func (d *dispatcher) Redispatch(ctx context.Context, eventID sdktypes.EventID, opts *sdkservices.DispatchOptions) (sdktypes.EventID, error) {
-	ctx = cctx.WithRequestOrinator(ctx, cctx.Dispatcher)
+	ctx = cctx.WithRequestOrginator(ctx, cctx.Dispatcher)
 	event, err := d.Services.Events.Get(ctx, eventID)
 	if err != nil {
 		return sdktypes.InvalidEventID, err

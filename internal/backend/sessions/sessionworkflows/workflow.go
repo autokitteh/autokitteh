@@ -442,7 +442,7 @@ func (w *sessionWorkflow) run(wctx workflow.Context) (prints []string, err error
 	workflowContextKey := contextKey("autokitteh_workflow_context")
 
 	ctx := temporalclient.NewWorkflowContextAsGOContext(wctx)
-	ctx = cctx.WithRequestOrinator(ctx, cctx.SessionWorkflow)
+	ctx = cctx.WithRequestOrginator(ctx, cctx.SessionWorkflow)
 
 	// This will allow us to identify if the call context is from a workflow (script code run), or
 	// some other thing that calls the Call callback from within an activity. The latter is not supported.

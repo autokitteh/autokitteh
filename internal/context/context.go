@@ -33,7 +33,7 @@ func RequestOrginator(ctx context.Context) RequestOrginatorType {
 	return Unknown
 }
 
-func WithRequestOrinator(ctx context.Context, component RequestOrginatorType) context.Context {
+func WithRequestOrginator(ctx context.Context, component RequestOrginatorType) context.Context {
 	if component >= Unknown {
 		return ctx
 	}

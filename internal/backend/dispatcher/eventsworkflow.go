@@ -217,7 +217,7 @@ func (d *dispatcher) eventsWorkflow(wctx workflow.Context, input eventsWorkflowI
 	logger.Info("started events workflow", "event_id", input.EventID)
 	z := d.Z.With(zap.String("event_id", input.EventID.String()))
 
-	ctx := cctx.WithRequestOrinator(context.Background(), cctx.EventWorkflow)
+	ctx := cctx.WithRequestOrginator(context.Background(), cctx.EventWorkflow)
 
 	event, err := d.Services.Events.Get(ctx, input.EventID)
 	if err != nil {
