@@ -7,6 +7,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	wf "go.autokitteh.dev/autokitteh/internal/backend/workflows"
+	akCtx "go.autokitteh.dev/autokitteh/internal/context"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -135,6 +136,7 @@ func (swf *SchedulerWorkflow) scheduleWorkflow(wfctx workflow.Context, triggerID
 	logger.Info("started scheduler workflow", "trigger_id", triggerID.String())
 
 	ctx := temporalclient.NewWorkflowContextAsGOContext(wfctx)
+	ctx = akCtx.WithRequestOrginator(ctx, akCtx.ScheduleWorkflow)
 	tickEvent := swf.newScheduleTickEvent(ctx, triggerID) // create tick event and add <processing> state
 
 	state := sdktypes.EventStateCompleted

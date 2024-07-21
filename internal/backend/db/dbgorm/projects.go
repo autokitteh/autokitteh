@@ -27,7 +27,7 @@ func (gdb *gormdb) createProject(ctx context.Context, project *scheme.Project) e
 			// and we are using joins as well. First maybe a good option too, but there should be only
 			// one active user project with the same name, so COUNT is also OK
 			Model(&scheme.Project{}). // with model scope grom will add `deleted_at is NULL` to the query
-			Scopes(withUserEntity(gdb, "project", uid)).
+			Scopes(withUserEntity(ctx, gdb, "project", uid)).
 			Where("name = ?", project.Name).Count(&count).Error; err != nil {
 			return err
 		}
