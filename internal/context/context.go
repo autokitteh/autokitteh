@@ -23,7 +23,7 @@ func (c RequestOrginatorType) String() string {
 	if c >= Unknown {
 		return "unknown"
 	}
-	return [...]string{"dispatcher", "eventsWF", "sessionWF", "schedulerWF", "middleware"}[c]
+	return [...]string{"dispatcher", "eventsWorkflow", "sessionWorkflow", "schedulerWorkflow", "authMiddleware"}[c]
 }
 
 func RequestOrginator(ctx context.Context) RequestOrginatorType {
