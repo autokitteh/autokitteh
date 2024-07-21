@@ -15,7 +15,7 @@ const (
 	EventWorkflow
 	SessionWorkflow
 	ScheduleWorkflow
-	Middleware
+	User
 	Unknown
 )
 
@@ -23,7 +23,7 @@ func (c RequestOrginatorType) String() string {
 	if c >= Unknown {
 		return "unknown"
 	}
-	return [...]string{"dispatcher", "eventsWorkflow", "sessionWorkflow", "schedulerWorkflow", "authMiddleware"}[c]
+	return [...]string{"dispatcher", "eventsWorkflow", "sessionWorkflow", "schedulerWorkflow", "user"}[c]
 }
 
 func RequestOrginator(ctx context.Context) RequestOrginatorType {
