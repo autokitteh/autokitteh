@@ -210,12 +210,14 @@ func (d *dispatcher) signalWorkflows(ctx context.Context, event sdktypes.Event) 
 	return nil
 }
 
-func (d *dispatcher) eventsWorkflow(ctx workflow.Context, input eventsWorkflowInput) (*eventsWorkflowOutput, error) {
-	logger := workflow.GetLogger(ctx)
-	logger.Info("started events workflow", "event_id", input.EventID)
+func (d *dispatcher) eventsWorkflow(wctx workflow.Context, input eventsWorkflowInput) (*eventsWorkflowOutput, error) {
+	logger := workflow.GetLogger(wctx)
 
+	logger.Info("started events workflow", "event_id", input.EventID)
 	z := d.Z.With(zap.String("event_id", input.EventID.String()))
-	event, err := d.Services.Events.Get(context.TODO(), input.EventID)
+
+	ctx := context.Background()
+	event, err := d.Services.Events.Get(ctx, input.EventID)
 	if err != nil {
 		return nil, fmt.Errorf("get event: %w", err)
 	}
@@ -226,27 +228,27 @@ func (d *dispatcher) eventsWorkflow(ctx workflow.Context, input eventsWorkflowIn
 	}
 
 	// Set event to processing
-	d.CreateEventRecord(context.Background(), input.EventID, sdktypes.EventStateProcessing)
+	d.CreateEventRecord(ctx, input.EventID, sdktypes.EventStateProcessing)
 
 	// Fetch event related data
-	sds, err := d.getEventSessionData(context.Background(), event, input.Options)
+	sds, err := d.getEventSessionData(ctx, event, input.Options)
 	if err != nil {
 		logger.Error("Failed processing event", "EventID", input.EventID, "error", err)
-		d.CreateEventRecord(context.Background(), input.EventID, sdktypes.EventStateFailed)
+		d.CreateEventRecord(ctx, input.EventID, sdktypes.EventStateFailed)
 		return nil, nil
 	}
 
 	// start sessions
-	if err := d.StartSessions(ctx, event, sds); err != nil {
+	if err := d.StartSessions(wctx, event, sds); err != nil {
 		return nil, err
 	}
 
 	// execute waiting signals
-	err = d.signalWorkflows(context.Background(), event)
+	err = d.signalWorkflows(ctx, event)
 	if err != nil {
 		return nil, err
 	}
 	// Set event to Completed
-	d.CreateEventRecord(context.Background(), input.EventID, sdktypes.EventStateCompleted)
+	d.CreateEventRecord(ctx, input.EventID, sdktypes.EventStateCompleted)
 	return nil, nil
 }
