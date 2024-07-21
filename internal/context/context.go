@@ -15,6 +15,7 @@ const (
 	Workflow
 	EventWorkflow
 	SessionWorkflow
+	ScheduleWorkflow
 	Middleware
 	Unknown
 )
