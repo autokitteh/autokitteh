@@ -71,7 +71,7 @@ func (ws *workflows) StartWorkers(ctx context.Context) error {
 }
 
 func (ws *workflows) StartWorkflow(ctx context.Context, session sdktypes.Session, debug bool) error {
-	ctx = cctx.WithComponent(ctx, cctx.SessionWorkflow)
+	ctx = cctx.WithRequestOrinator(ctx, cctx.SessionWorkflow)
 
 	sessionID := session.ID()
 
@@ -115,7 +115,7 @@ func (ws *workflows) StartWorkflow(ctx context.Context, session sdktypes.Session
 
 func (ws *workflows) getSessionData(wctx workflow.Context, sessionID sdktypes.SessionID) (*sessiondata.Data, error) {
 	ctx := temporalclient.NewWorkflowContextAsGOContext(wctx)
-	ctx = cctx.WithComponent(ctx, cctx.SessionWorkflow)
+	ctx = cctx.WithRequestOrinator(ctx, cctx.SessionWorkflow)
 
 	// This cannot run through activity as it would expose potentialy sensitive data to temporal.
 	data, err := sessiondata.Get(ctx, ws.z, ws.svcs, sessionID)
@@ -148,7 +148,7 @@ func (ws *workflows) getSessionDebugData(data *sessiondata.Data, prints []string
 	// We use background as the workflow might have been canceled.
 	ctx, cancel := withLimitedTimeout(context.Background())
 	defer cancel()
-	ctx = cctx.WithComponent(ctx, cctx.SessionWorkflow)
+	ctx = cctx.WithRequestOrinator(ctx, cctx.SessionWorkflow)
 
 	history, err := ws.sessions.GetLog(ctx, sdkservices.ListSessionLogRecordsFilter{SessionID: data.SessionID})
 	if err != nil {
@@ -172,7 +172,7 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 		ScheduleToCloseTimeout: ws.cfg.Temporal.LocalScheduleToCloseTimeout,
 	})
 
-	ctx := cctx.WithComponent(context.Background(), cctx.SessionWorkflow)
+	ctx := cctx.WithRequestOrinator(context.Background(), cctx.SessionWorkflow)
 
 	// TODO(ENG-322): Save data in snapshot, otherwise changes between retries would
 	//                blow us up due to non determinism.
@@ -287,7 +287,7 @@ func (ws *workflows) deactivateDrainedDeployment(ctx context.Context, deployment
 
 func (ws *workflows) StopWorkflow(ctx context.Context, sessionID sdktypes.SessionID, reason string, force bool) error {
 	wid := workflowID(sessionID)
-	ctx = cctx.WithComponent(ctx, cctx.SessionWorkflow)
+	ctx = cctx.WithRequestOrinator(ctx, cctx.SessionWorkflow)
 
 	if force {
 		// TODO(ENG-206): Is there a race condition here with update session?

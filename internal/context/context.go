@@ -8,10 +8,10 @@ type ctxKey string
 
 const componentCtxKey = ctxKey("component")
 
-type ComponentType int
+type RequestOrginatorType int
 
 const (
-	Dispatcher ComponentType = iota
+	Dispatcher RequestOrginatorType = iota
 	Workflow
 	EventWorkflow
 	SessionWorkflow
@@ -19,21 +19,21 @@ const (
 	Unknown
 )
 
-func (c ComponentType) String() string {
+func (c RequestOrginatorType) String() string {
 	if c >= Unknown {
 		return "unknown"
 	}
 	return [...]string{"dispatcher", "workflow", "eventsWF", "sessionWF", "middleware"}[c]
 }
 
-func Component(ctx context.Context) ComponentType {
+func RequestOrginator(ctx context.Context) RequestOrginatorType {
 	if v := ctx.Value(componentCtxKey); v != nil {
-		return v.(ComponentType)
+		return v.(RequestOrginatorType)
 	}
 	return Unknown
 }
 
-func WithComponent(ctx context.Context, component ComponentType) context.Context {
+func WithRequestOrinator(ctx context.Context, component RequestOrginatorType) context.Context {
 	if component >= Unknown {
 		return ctx
 	}

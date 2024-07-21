@@ -125,7 +125,7 @@ func (wf *Workflow) StartSessions(wctx workflow.Context, event sdktypes.Event, s
 	}
 
 	ctx := temporalclient.NewWorkflowContextAsGOContext(wctx)
-	ctx = cctx.WithComponent(ctx, cctx.Workflow)
+	ctx = cctx.WithRequestOrinator(ctx, cctx.Workflow)
 
 	for _, session := range sessions {
 		// TODO(ENG-197): change to local activity.
@@ -139,7 +139,7 @@ func (wf *Workflow) StartSessions(wctx workflow.Context, event sdktypes.Event, s
 }
 
 func (wf *Workflow) CreateEventRecord(ctx context.Context, eventID sdktypes.EventID, state sdktypes.EventState) {
-	ctx = cctx.WithComponent(ctx, cctx.Workflow)
+	ctx = cctx.WithRequestOrinator(ctx, cctx.Workflow)
 	record := sdktypes.NewEventRecord(eventID, state)
 	if err := wf.Services.Events.AddEventRecord(ctx, record); err != nil {
 		wf.Z.Panic("Failed setting event state", zap.String("eventID", eventID.String()), zap.String("state", state.String()), zap.Error(err))

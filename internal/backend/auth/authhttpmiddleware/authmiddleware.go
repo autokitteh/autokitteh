@@ -37,7 +37,7 @@ type Deps struct {
 func newTokensMiddleware(next http.Handler, tokens authtokens.Tokens) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		ctx = cctx.WithComponent(ctx, cctx.Middleware)
+		ctx = cctx.WithRequestOrinator(ctx, cctx.Middleware)
 
 		if user := authcontext.GetAuthnUser(ctx); !user.IsValid() {
 			if auth := r.Header.Get("Authorization"); auth != "" {
