@@ -244,7 +244,7 @@ func (ws *workflows) deactivateDrainedDeployment(ctx context.Context, deployment
 			return fmt.Errorf("deployments.get: %w", err)
 		}
 
-		// FIXME: use single query for this and move this to the db layer?
+		// TODO [ENG-1238]: use single query for this and move this to the db layer?
 		if dep.State() == sdktypes.DeploymentStateDraining {
 			resultRunning, err := tx.ListSessions(ctx, sdkservices.ListSessionsFilter{
 				DeploymentID: deploymentID,
