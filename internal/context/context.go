@@ -6,7 +6,7 @@ import (
 
 type ctxKey string
 
-const componentCtxKey = ctxKey("component")
+const componentCtxKey = ctxKey("origin")
 
 type RequestOrginatorType int
 
