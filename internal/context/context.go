@@ -12,7 +12,6 @@ type RequestOrginatorType int
 
 const (
 	Dispatcher RequestOrginatorType = iota
-	Workflow
 	EventWorkflow
 	SessionWorkflow
 	ScheduleWorkflow
@@ -24,7 +23,7 @@ func (c RequestOrginatorType) String() string {
 	if c >= Unknown {
 		return "unknown"
 	}
-	return [...]string{"dispatcher", "workflow", "eventsWF", "sessionWF", "schedulerWF", "middleware"}[c]
+	return [...]string{"dispatcher", "eventsWF", "sessionWF", "schedulerWF", "middleware"}[c]
 }
 
 func RequestOrginator(ctx context.Context) RequestOrginatorType {
