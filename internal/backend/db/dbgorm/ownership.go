@@ -10,7 +10,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
-	cctx "go.autokitteh.dev/autokitteh/internal/context"
+	akCtx "go.autokitteh.dev/autokitteh/internal/context"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -211,7 +211,7 @@ type UsersOwnershipChecker struct {
 func (c *UsersOwnershipChecker) EnsureUserAccessToEntitiesWithOwnership(
 	ctx context.Context, db *gorm.DB, uid string, ids ...sdktypes.UUID,
 ) ([]scheme.Ownership, error) {
-	c.z.Debug("isUserEntity", zap.String("component", cctx.RequestOrginator(ctx).String()), zap.Any("entityIDs", ids), zap.Any("uid", uid))
+	c.z.Debug("isUserEntity", zap.String("component", akCtx.RequestOrginator(ctx).String()), zap.Any("entityIDs", ids), zap.Any("uid", uid))
 	return ensureUserAccessToEntitiesWithOwnerships(db, uid, ids...)
 }
 
@@ -221,7 +221,7 @@ func (c *UsersOwnershipChecker) EnsureUserAccessToEntities(ctx context.Context, 
 }
 
 func (c *UsersOwnershipChecker) JoinUserEntity(ctx context.Context, db *gorm.DB, entity string, uid string) *gorm.DB {
-	c.z.Debug("withUser", zap.String("component", cctx.RequestOrginator(ctx).String()), zap.String("entity", entity), zap.Any("uid", uid))
+	c.z.Debug("withUser", zap.String("component", akCtx.RequestOrginator(ctx).String()), zap.String("entity", entity), zap.Any("uid", uid))
 	return joinUserEntity(db, entity, uid)
 }
 

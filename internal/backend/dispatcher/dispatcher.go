@@ -11,7 +11,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	wf "go.autokitteh.dev/autokitteh/internal/backend/workflows"
-	cctx "go.autokitteh.dev/autokitteh/internal/context"
+	akCtx "go.autokitteh.dev/autokitteh/internal/context"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -37,7 +37,7 @@ func New(
 
 func (d *dispatcher) Dispatch(ctx context.Context, event sdktypes.Event, opts *sdkservices.DispatchOptions) (sdktypes.EventID, error) {
 	eventID, err := d.Services.Events.Save(ctx, event)
-	ctx = cctx.WithRequestOrginator(ctx, cctx.Dispatcher)
+	ctx = akCtx.WithRequestOrginator(ctx, akCtx.Dispatcher)
 	if err != nil {
 		return sdktypes.InvalidEventID, fmt.Errorf("save event: %w", err)
 	}
@@ -56,7 +56,7 @@ func (d *dispatcher) Dispatch(ctx context.Context, event sdktypes.Event, opts *s
 }
 
 func (d *dispatcher) Redispatch(ctx context.Context, eventID sdktypes.EventID, opts *sdkservices.DispatchOptions) (sdktypes.EventID, error) {
-	ctx = cctx.WithRequestOrginator(ctx, cctx.Dispatcher)
+	ctx = akCtx.WithRequestOrginator(ctx, akCtx.Dispatcher)
 	event, err := d.Services.Events.Get(ctx, eventID)
 	if err != nil {
 		return sdktypes.InvalidEventID, err

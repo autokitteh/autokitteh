@@ -10,7 +10,6 @@ import (
 	"go.uber.org/zap"
 
 	wf "go.autokitteh.dev/autokitteh/internal/backend/workflows"
-	cctx "go.autokitteh.dev/autokitteh/internal/context"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"

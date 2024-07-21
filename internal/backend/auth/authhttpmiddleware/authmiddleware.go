@@ -11,7 +11,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authsessions"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authtokens"
 	"go.autokitteh.dev/autokitteh/internal/backend/configset"
-	cctx "go.autokitteh.dev/autokitteh/internal/context"
+	akCtx "go.autokitteh.dev/autokitteh/internal/context"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
@@ -37,7 +37,7 @@ type Deps struct {
 func newTokensMiddleware(next http.Handler, tokens authtokens.Tokens) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		ctx = cctx.WithRequestOrginator(ctx, cctx.Middleware)
+		ctx = akCtx.WithRequestOrginator(ctx, akCtx.Middleware)
 
 		if user := authcontext.GetAuthnUser(ctx); !user.IsValid() {
 			if auth := r.Header.Get("Authorization"); auth != "" {

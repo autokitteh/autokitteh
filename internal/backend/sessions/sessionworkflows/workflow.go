@@ -21,7 +21,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessioncontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessiondata"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
-	cctx "go.autokitteh.dev/autokitteh/internal/context"
+	akCtx "go.autokitteh.dev/autokitteh/internal/context"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkexecutor"
@@ -442,7 +442,7 @@ func (w *sessionWorkflow) run(wctx workflow.Context) (prints []string, err error
 	workflowContextKey := contextKey("autokitteh_workflow_context")
 
 	ctx := temporalclient.NewWorkflowContextAsGOContext(wctx)
-	ctx = cctx.WithRequestOrginator(ctx, cctx.SessionWorkflow)
+	ctx = akCtx.WithRequestOrginator(ctx, akCtx.SessionWorkflow)
 
 	// This will allow us to identify if the call context is from a workflow (script code run), or
 	// some other thing that calls the Call callback from within an activity. The latter is not supported.
