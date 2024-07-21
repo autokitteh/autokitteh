@@ -24,6 +24,8 @@ const (
 // UpdateWatches creates or renews schema-changes and new-responses event watches
 // for a specific Google Forms form, if an ID was specified during initialization.
 func UpdateWatches(ctx context.Context, v sdkservices.Vars, cid sdktypes.ConnectionID) error {
+	l := extrazap.ExtractLoggerFromContext(ctx)
+
 	a := api{vars: v, cid: cid}
 	formID, err := a.formID(ctx)
 	if err != nil {
@@ -32,11 +34,11 @@ func UpdateWatches(ctx context.Context, v sdkservices.Vars, cid sdktypes.Connect
 
 	// No form ID? Nothing to do.
 	if formID == "" {
+		l.Debug("No form ID specified, skipping Google Forms watches")
 		return nil
 	}
 
 	// List all existing watches.
-	l := extrazap.ExtractLoggerFromContext(ctx)
 	l = l.With(zap.String("formID", formID))
 	extrazap.AttachLoggerToContext(l, ctx)
 	watches, err := a.watchesList(ctx)

@@ -21,8 +21,11 @@ const (
 
 // UpdateWatch creates or updates a push notification watch on the user's mailbox.
 func UpdateWatch(ctx context.Context, v sdkservices.Vars, cid sdktypes.ConnectionID) error {
+	l := extrazap.ExtractLoggerFromContext(ctx)
+
 	// Not a Gmail user? Nothing to do.
 	if !gotGmailScope(ctx, v, cid) {
+		l.Debug("No Gmail scope, skipping Gmail user mailbox watch")
 		return nil
 	}
 
@@ -31,7 +34,6 @@ func UpdateWatch(ctx context.Context, v sdkservices.Vars, cid sdktypes.Connectio
 		return fmt.Errorf("failed to create Gmail watch: %w", err)
 	}
 
-	l := extrazap.ExtractLoggerFromContext(ctx)
 	l.Info("Created Gmail user mailbox watch", zap.Any("watch", watch))
 	return nil
 }
