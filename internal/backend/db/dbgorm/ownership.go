@@ -9,8 +9,8 @@ import (
 	"gorm.io/gorm"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
+	akCtx "go.autokitteh.dev/autokitteh/internal/backend/context"
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
-	akCtx "go.autokitteh.dev/autokitteh/internal/context"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )

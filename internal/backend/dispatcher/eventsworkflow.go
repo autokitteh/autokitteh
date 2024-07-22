@@ -9,8 +9,8 @@ import (
 	"go.temporal.io/sdk/workflow"
 	"go.uber.org/zap"
 
+	akCtx "go.autokitteh.dev/autokitteh/internal/backend/context"
 	wf "go.autokitteh.dev/autokitteh/internal/backend/workflows"
-	akCtx "go.autokitteh.dev/autokitteh/internal/context"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
