@@ -15,7 +15,7 @@ const (
 	contentTypeForm   = "application/x-www-form-urlencoded"
 )
 
-var BotToken = sdktypes.NewSymbol("BotToken")
+var botToken = sdktypes.NewSymbol("BotToken")
 
 // handler is an autokitteh webhook which implements [http.Handler]
 // to save data from web form submissions as connections.
@@ -45,5 +45,5 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	c.Finalize(sdktypes.NewVars().Set(BotToken, r.Form.Get("botToken"), true))
+	c.Finalize(sdktypes.NewVars().Set(botToken, r.Form.Get("BotToken"), true))
 }
