@@ -138,7 +138,7 @@ func (swf *SchedulerWorkflow) scheduleWorkflow(wfctx workflow.Context, triggerID
 
 	ctx := temporalclient.NewWorkflowContextAsGOContext(wfctx)
 	ctx = akCtx.WithRequestOrginator(ctx, akCtx.ScheduleWorkflow)
-	ctx = swf.DB.CtxWithOwnershipOf(ctx, triggerID.UUIDValue())
+	ctx = akCtx.WithOwnershipOf(ctx, swf.DB.GetOwnership, triggerID.UUIDValue())
 
 	tickEvent := swf.newScheduleTickEvent(ctx, triggerID) // create tick event and add <processing> state
 

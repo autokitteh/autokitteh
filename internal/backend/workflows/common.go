@@ -126,7 +126,7 @@ func (wf *Workflow) StartSessions(wctx workflow.Context, event sdktypes.Event, s
 
 	ctx := temporalclient.NewWorkflowContextAsGOContext(wctx)
 	ctx = akCtx.WithRequestOrginator(ctx, akCtx.SessionWorkflow)
-	ctx = wf.DB.CtxWithOwnershipOf(ctx, event.ID().UUIDValue())
+	ctx = akCtx.WithOwnershipOf(ctx, wf.DB.GetOwnership, event.ID().UUIDValue())
 
 	for _, session := range sessions {
 		// TODO(ENG-197): change to local activity.

@@ -37,7 +37,7 @@ func New(
 
 func (d *dispatcher) Dispatch(ctx context.Context, event sdktypes.Event, opts *sdkservices.DispatchOptions) (sdktypes.EventID, error) {
 	ctx = akCtx.WithRequestOrginator(ctx, akCtx.Dispatcher)
-	ctx = d.DB.CtxWithOwnershipOf(ctx, event.ConnectionID().UUIDValue())
+	ctx = akCtx.WithOwnershipOf(ctx, d.DB.GetOwnership, event.ConnectionID().UUIDValue())
 
 	eventID, err := d.Services.Events.Save(ctx, event)
 	if err != nil {
