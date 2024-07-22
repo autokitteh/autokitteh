@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	wf "go.autokitteh.dev/autokitteh/internal/backend/workflows"
@@ -26,8 +27,8 @@ type SchedulerWorkflow struct {
 
 type scheduleWorkflowOutput struct{}
 
-func NewSchedulerWorkflow(z *zap.Logger, services wf.Services, tc temporalclient.Client) SchedulerWorkflow {
-	return SchedulerWorkflow{wf.Workflow{Z: z, Services: services, Tmprl: tc}}
+func NewSchedulerWorkflow(z *zap.Logger, db db.DB, services wf.Services, tc temporalclient.Client) SchedulerWorkflow {
+	return SchedulerWorkflow{wf.Workflow{Z: z, DB: db, Services: services, Tmprl: tc}}
 }
 
 func (swf *SchedulerWorkflow) Start(context.Context) error {
