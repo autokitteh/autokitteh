@@ -36,8 +36,10 @@ func New(
 }
 
 func (d *dispatcher) Dispatch(ctx context.Context, event sdktypes.Event, opts *sdkservices.DispatchOptions) (sdktypes.EventID, error) {
-	eventID, err := d.Services.Events.Save(ctx, event)
 	ctx = akCtx.WithRequestOrginator(ctx, akCtx.Dispatcher)
+	ctx = d.DB.CtxWithOwnershipOf(ctx, event.ConnectionID().UUIDValue())
+
+	eventID, err := d.Services.Events.Save(ctx, event)
 	if err != nil {
 		return sdktypes.InvalidEventID, fmt.Errorf("save event: %w", err)
 	}
