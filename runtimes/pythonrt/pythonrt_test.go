@@ -95,6 +95,40 @@ func testCtx(t *testing.T) (context.Context, context.CancelFunc) {
 	return context.WithDeadline(context.Background(), d)
 }
 
+func newValues(t *testing.T, runID sdktypes.RunID) (sdktypes.ModuleFunction, map[string]sdktypes.Value) {
+	xid := sdktypes.NewExecutorID(runID)
+	var mod sdktypes.ModuleFunction
+	syscall, err := sdktypes.NewFunctionValue(xid, "syscall", nil, nil, mod)
+	require.NoError(t, err)
+
+	ak, err := sdktypes.NewStructValue(
+		sdktypes.NewStringValue("ak"),
+		map[string]sdktypes.Value{"syscall": syscall},
+	)
+	require.NoError(t, err)
+
+	return mod, map[string]sdktypes.Value{"ak": ak}
+}
+
+func newCallbacks(svc *pySvc) *sdkservices.RunCallbacks {
+	cbs := sdkservices.RunCallbacks{
+		Call: func(
+			ctx context.Context,
+			rid sdktypes.RunID,
+			v sdktypes.Value,
+			args []sdktypes.Value,
+			kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
+			return svc.Call(ctx, v, args, kwargs)
+		},
+		Load: func(ctx context.Context, rid sdktypes.RunID, path string) (map[string]sdktypes.Value, error) {
+			return map[string]sdktypes.Value{}, nil
+		},
+		Print: func(ctx context.Context, rid sdktypes.RunID, msg string) {},
+	}
+
+	return &cbs
+}
+
 func Test_pySvc_Run(t *testing.T) {
 	skipIfNoPython(t)
 
@@ -113,34 +147,11 @@ func Test_pySvc_Run(t *testing.T) {
 		archiveKey: tarData,
 	}
 
-	cbs := sdkservices.RunCallbacks{
-		Call: func(
-			ctx context.Context,
-			rid sdktypes.RunID,
-			v sdktypes.Value,
-			args []sdktypes.Value,
-			kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
-			return svc.Call(ctx, v, args, kwargs)
-		},
-		Load: func(ctx context.Context, rid sdktypes.RunID, path string) (map[string]sdktypes.Value, error) {
-			return map[string]sdktypes.Value{}, nil
-		},
-		Print: func(ctx context.Context, rid sdktypes.RunID, msg string) {},
-	}
+	cbs := newCallbacks(svc)
+	mod, values := newValues(t, runID)
+	xid := sdktypes.NewExecutorID(runID)
 
-	xid := sdktypes.NewExecutorID(sdktypes.NewRunID())
-
-	var mod sdktypes.ModuleFunction
-	syscall, err := sdktypes.NewFunctionValue(xid, "syscall", nil, nil, mod)
-	require.NoError(t, err)
-
-	ak, err := sdktypes.NewStructValue(
-		sdktypes.NewStringValue("ak"),
-		map[string]sdktypes.Value{"syscall": syscall},
-	)
-	require.NoError(t, err)
-	values := map[string]sdktypes.Value{"ak": ak}
-	run, err := svc.Run(ctx, runID, mainPath, compiled, values, &cbs)
+	run, err := svc.Run(ctx, runID, mainPath, compiled, values, cbs)
 	require.NoError(t, err, "run")
 
 	fn, err := sdktypes.NewFunctionValue(xid, "greet", nil, nil, mod)
@@ -252,4 +263,54 @@ func TestCleanup(t *testing.T) {
 
 	_, err = svc.initialCall(context.Background(), "greet", nil) // will panic
 	require.Error(t, err)
+}
+
+var progErrCode = []byte(`
+def handle(event):
+    1 / 0
+`)
+
+func TestProgramError(t *testing.T) {
+	skipIfNoPython(t)
+
+	pyFile := "progerr.py"
+	var buf bytes.Buffer
+	tw := tar.NewWriter(&buf)
+	hdr := &tar.Header{
+		Name: pyFile,
+		Size: int64(len(progErrCode)),
+		Mode: 0644,
+	}
+	err := tw.WriteHeader(hdr)
+	require.NoError(t, err)
+	_, err = tw.Write(progErrCode)
+	tw.Close()
+
+	compiled := map[string][]byte{
+		archiveKey: buf.Bytes(),
+	}
+
+	require.NoError(t, err)
+	svc := newSVC(t)
+
+	runID := sdktypes.NewRunID()
+	mod, values := newValues(t, runID)
+	cbs := newCallbacks(svc)
+	ctx, cancel := testCtx(t)
+	defer cancel()
+	_, err = svc.Run(ctx, runID, pyFile, compiled, values, cbs)
+	require.NoError(t, err)
+
+	xid := sdktypes.NewExecutorID(runID)
+	fn, err := sdktypes.NewFunctionValue(xid, "handle", nil, nil, mod)
+	require.NoError(t, err, "new function")
+
+	kwargs := map[string]sdktypes.Value{}
+
+	_, err = svc.Call(ctx, fn, nil, kwargs)
+	require.Error(t, err)
+	t.Logf("ERROR:\n%s", err)
+	// There no way to check that err is a ProgramError since it's wrapped by unexported programError
+	require.Contains(t, err.Error(), "division by zero")
+	require.Contains(t, err.Error(), "progerr.py")
 }

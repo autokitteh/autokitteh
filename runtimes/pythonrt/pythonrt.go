@@ -419,7 +419,7 @@ func (py *pySvc) Close() {
 	// We kill the Python process once the initial `Call` is completed.
 }
 
-// initialCall handles initial call from autokitteh.
+// initialCall handles initial call from autokitteh, it does the message loop with Python.
 // We split it from Call since Call is also used to execute activities.
 func (py *pySvc) initialCall(ctx context.Context, funcName string, event map[string]any) (sdktypes.Value, error) {
 	defer func() {
@@ -466,6 +466,22 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, event map[str
 
 		if msg.Type == messageType[DoneMessage]() {
 			break
+		}
+
+		if msg.Type == messageType[ErrorMessage]() {
+			py.log.Error("python error", zap.Any("message", msg))
+			em, err := extractMessage[ErrorMessage](msg)
+			if err != nil {
+				py.log.Error("error message", zap.Error(err))
+				return sdktypes.InvalidValue, err
+			}
+
+			perr := sdktypes.NewProgramError(
+				sdktypes.NewStringValue(em.Error),
+				py.tracebackToLocation(em.Traceback),
+				map[string]string{"raw": em.Error},
+			)
+			return sdktypes.InvalidValue, perr.ToError()
 		}
 
 		if msg.Type == messageType[LogMessage]() {
@@ -528,6 +544,26 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, event map[str
 	}
 
 	return sdktypes.Nothing, nil
+}
+
+func (py *pySvc) tracebackToLocation(traceback []Frame) []sdktypes.CallFrame {
+	frames := make([]sdktypes.CallFrame, len(traceback))
+	for i, f := range traceback {
+		var err error
+		frames[i], err = sdktypes.CallFrameFromProto(&sdktypes.CallFramePB{
+			Name: f.Name,
+			Location: &sdktypes.CodeLocationPB{
+				Path: f.File,
+				Row:  f.LineNo,
+				Col:  1,
+			},
+		})
+		if err != nil {
+			py.log.Warn("can't translate traceback frame", zap.Error(err))
+		}
+	}
+
+	return frames
 }
 
 // TODO (ENG-624) Remove this once we support callbacks to autokitteh

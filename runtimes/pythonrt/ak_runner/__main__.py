@@ -3,6 +3,7 @@ import json
 import logging
 import sys
 import tarfile
+import traceback
 from base64 import b64decode
 from os import chdir, mkdir
 from pathlib import Path
@@ -128,7 +129,11 @@ def run(args):
         fn(event)
     except Exception as err:
         log.exception("error running %s: %s", func_name, err)
-        raise  # Re-raise exception so it'll show in the session log.
+        # Print the error to stderr so it'll show in session logs
+        print(f"error: {err}", file=sys.stderr)
+        traceback.print_exception(err, file=sys.stderr)
+        comm.send_error(err)
+        raise SystemExit(1)
     comm.send_done()
 
 
