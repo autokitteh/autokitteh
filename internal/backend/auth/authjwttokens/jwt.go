@@ -35,6 +35,9 @@ var Configs = configset.Set[Config]{
 	Dev: &Config{
 		SignKey: strings.Repeat("00", hashSize),
 	},
+	Test: &Config{
+		SignKey: strings.Repeat("00", hashSize),
+	},
 }
 
 func New(cfg *Config) (authtokens.Tokens, error) {
