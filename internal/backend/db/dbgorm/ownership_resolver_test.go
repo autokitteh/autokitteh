@@ -66,7 +66,7 @@ func (dbs *dbs) Vars() sdkservices.Vars                 { return dbs.varSvc }
 func (dbs *dbs) Integrations() sdkservices.Integrations { return dbs.intSvc }
 
 func newDBServices(t *testing.T) (sdkservices.DBServices, *dbFixture) {
-	f := newDBFixture().WithDebug()
+	f := preOwnershipTest(t)
 	var gdb db.DB = f.gormdb
 
 	z := zaptest.NewLogger(t) // FIXME: or gormdb.z?
@@ -117,7 +117,7 @@ func TestResolverBuildIDWithOwnership(t *testing.T) {
 	assert.Equal(t, bid, b1.ID())
 
 	// fail due to auth
-	f.ctx = withUser(f.ctx, u)
+	f.ctx = withUser(f.ctx, u2)
 	_, _, err = r.BuildID(f.ctx, bids)
 	assert.ErrorIs(t, err, sdkerrors.ErrNotFound)
 }
@@ -138,7 +138,7 @@ func TestResolverDeploymentIDWithOwnership(t *testing.T) {
 	assert.Equal(t, did, d1.ID())
 
 	// fail due to auth
-	f.ctx = withUser(f.ctx, u)
+	f.ctx = withUser(f.ctx, u2)
 	_, _, err = r.DeploymentID(f.ctx, dids)
 	assert.ErrorIs(t, err, sdkerrors.ErrNotFound)
 }
@@ -160,7 +160,7 @@ func TestResolverEventIDWithOwnership(t *testing.T) {
 	assert.Equal(t, eid, e1.ID())
 
 	// fail due to auth
-	f.ctx = withUser(f.ctx, u)
+	f.ctx = withUser(f.ctx, u2)
 	_, _, err = r.EventID(f.ctx, eids)
 	assert.ErrorIs(t, err, sdkerrors.ErrNotFound)
 }
@@ -182,7 +182,7 @@ func TestResolverTriggerIDWithOwnership(t *testing.T) {
 	assert.Equal(t, tid, t1.ID())
 
 	// fail due to auth
-	f.ctx = withUser(f.ctx, u)
+	f.ctx = withUser(f.ctx, u2)
 	_, _, err = r.TriggerID(f.ctx, tids)
 	assert.ErrorIs(t, err, sdkerrors.ErrNotFound)
 }
@@ -204,7 +204,7 @@ func TestResolverSessionIDWithOwnership(t *testing.T) {
 	assert.Equal(t, sid, s1.ID())
 
 	// fail due to auth
-	f.ctx = withUser(f.ctx, u)
+	f.ctx = withUser(f.ctx, u2)
 	_, _, err = r.SessionID(f.ctx, sids)
 	assert.ErrorIs(t, err, sdkerrors.ErrNotFound)
 }
@@ -247,7 +247,7 @@ func TestResolverConnectionNameOrIdWithOwnership(t *testing.T) {
 	}
 
 	// fail due to auth
-	f.ctx = withUser(f.ctx, u)
+	f.ctx = withUser(f.ctx, u2)
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			_, _, err := r.ConnectionNameOrID(f.ctx, tc.nameOrID, tc.project)
@@ -293,7 +293,7 @@ func TestResolverEnvNameOrIdWithOwnership(t *testing.T) {
 	}
 
 	// fail due to auth
-	f.ctx = withUser(f.ctx, u)
+	f.ctx = withUser(f.ctx, u2)
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			_, _, err := r.EnvNameOrID(f.ctx, tc.envNameOrID, tc.projNameOrID)
@@ -329,7 +329,7 @@ func TestResolverProjectNameOrIdWithOwnership(t *testing.T) {
 	}
 
 	// fail due to auth
-	f.ctx = withUser(f.ctx, u)
+	f.ctx = withUser(f.ctx, u2)
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			_, _, err := r.ProjectNameOrID(f.ctx, tc.nameOrID)

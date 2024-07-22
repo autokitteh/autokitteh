@@ -6,13 +6,17 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
+	akCtx "go.autokitteh.dev/autokitteh/internal/backend/context"
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-var u = sdktypes.NewUser("provider", map[string]string{"email": "foo@bar", "name": "Test User"})
+var (
+	u1 = sdktypes.NewUser("ak", map[string]string{"email": "foo@baz", "name": "Test User 1"})
+	u2 = sdktypes.NewUser("ak", map[string]string{"email": "foo@bar", "name": "Test User 2"})
+)
 
 func withUser(ctx context.Context, user sdktypes.User) context.Context {
 	return authcontext.SetAuthnUser(ctx, user)
@@ -20,6 +24,8 @@ func withUser(ctx context.Context, user sdktypes.User) context.Context {
 
 func preOwnershipTest(t *testing.T) *dbFixture {
 	f := newDBFixture()
+	f.ctx = withUser(f.ctx, u1)
+	f.ctx = akCtx.WithRequestOrginator(f.ctx, akCtx.User)
 	findAndAssertCount[scheme.Ownership](t, f, 0, "") // no ownerships
 	return f
 }
@@ -60,7 +66,7 @@ func TestCreateBuildWithOwnership(t *testing.T) {
 	assert.NoError(t, f.gormdb.isCtxUserEntity(f.ctx, b2.BuildID))
 
 	// different user - unathorized to create build for the project owned by another user
-	f.ctx = withUser(f.ctx, u)
+	f.ctx = withUser(f.ctx, u2)
 	assert.ErrorIs(t, f.gormdb.saveBuild(f.ctx, &b2), sdkerrors.ErrUnauthorized)
 }
 
@@ -80,7 +86,7 @@ func TestCreateDeploymentWithOwnership(t *testing.T) {
 	assert.NoError(t, f.gormdb.isCtxUserEntity(f.ctx, d2.DeploymentID))
 
 	// different user
-	f.ctx = withUser(f.ctx, u)
+	f.ctx = withUser(f.ctx, u2)
 
 	// with build owned by the different user
 	d4 := f.newDeployment(b)
@@ -103,7 +109,7 @@ func TestCreateEnvWithOwnership(t *testing.T) {
 	assert.NoError(t, f.gormdb.isCtxUserEntity(f.ctx, e.EnvID))
 
 	// different user - unathorized to create env for the project owned by another user
-	f.ctx = withUser(f.ctx, u)
+	f.ctx = withUser(f.ctx, u2)
 	assert.ErrorIs(t, f.gormdb.createEnv(f.ctx, &e), sdkerrors.ErrUnauthorized)
 }
 
@@ -125,7 +131,7 @@ func TestCreateConnectionWithOwnership(t *testing.T) {
 	assert.NoError(t, f.gormdb.isCtxUserEntity(f.ctx, c2.ConnectionID))
 
 	// different user - unathorized to create connection for the project owned by another user
-	f.ctx = withUser(f.ctx, u)
+	f.ctx = withUser(f.ctx, u2)
 	assert.ErrorIs(t, f.gormdb.createConnection(f.ctx, &c2), sdkerrors.ErrUnauthorized)
 }
 
@@ -174,7 +180,7 @@ func TestCreateSessionWithOwnership(t *testing.T) {
 	assert.NoError(t, f.gormdb.isCtxUserEntity(f.ctx, s5.SessionID))
 
 	// different user
-	f.ctx = withUser(f.ctx, u)
+	f.ctx = withUser(f.ctx, u2)
 
 	// all IDs are nil - could create
 	s6 := f.newSession()
@@ -213,7 +219,7 @@ func TestCreateEventWithOwnership(t *testing.T) {
 	assert.NoError(t, f.gormdb.isCtxUserEntity(f.ctx, e2.EventID))
 
 	// different user - unathorized to create event with connection owned by another user
-	f.ctx = withUser(f.ctx, u)
+	f.ctx = withUser(f.ctx, u2)
 	assert.ErrorIs(t, f.gormdb.saveEvent(f.ctx, &e2), sdkerrors.ErrUnauthorized)
 }
 
@@ -228,7 +234,7 @@ func TestCreateTriggerWithOwnership(t *testing.T) {
 	assert.NoError(t, f.gormdb.isCtxUserEntity(f.ctx, t1.TriggerID))
 
 	// different user
-	f.ctx = withUser(f.ctx, u)
+	f.ctx = withUser(f.ctx, u2)
 
 	// user not owning any of project, env, connecion
 	t2 := f.newTrigger(p, e, c)
@@ -257,7 +263,7 @@ func TestSetVarWithOwnership(t *testing.T) {
 	assert.NoError(t, f.gormdb.isCtxUserEntity(f.ctx, v2.ScopeID))
 
 	// different user
-	f.ctx = withUser(f.ctx, u)
+	f.ctx = withUser(f.ctx, u2)
 
 	// cannot create var for non-user owned scope
 	v3 := f.newVar("k", "v", env)
@@ -276,7 +282,7 @@ func TestDeleteProjectsWithOwnership(t *testing.T) {
 	// Project owned by the same user tested in TestDeleteProject
 
 	// different user
-	f.ctx = withUser(f.ctx, u)
+	f.ctx = withUser(f.ctx, u2)
 
 	assert.Error(t, f.gormdb.deleteProject(f.ctx, p.ProjectID), sdkerrors.ErrUnauthorized)
 }
@@ -290,7 +296,7 @@ func TestDeleteBuildsWithOwnership(t *testing.T) {
 	// Project owned by the same user tested in TestDeleteBuild
 
 	// different user
-	f.ctx = withUser(f.ctx, u)
+	f.ctx = withUser(f.ctx, u2)
 
 	assert.Error(t, f.gormdb.deleteBuild(f.ctx, b.BuildID), sdkerrors.ErrUnauthorized)
 }
@@ -302,7 +308,7 @@ func TestDeleteDeploymentsWithOwnership(t *testing.T) {
 	// Deployment owned by the same user tested in TestDeleteDeployment
 
 	// different user
-	f.ctx = withUser(f.ctx, u)
+	f.ctx = withUser(f.ctx, u2)
 
 	assert.Error(t, f.gormdb.deleteDeployment(f.ctx, d.DeploymentID), sdkerrors.ErrUnauthorized)
 }
@@ -313,7 +319,7 @@ func TestDeleteEnvsWithOwnership(t *testing.T) {
 	// Env owned by the same user tested in TestDeleteEnv
 
 	// different user
-	f.ctx = withUser(f.ctx, u)
+	f.ctx = withUser(f.ctx, u2)
 
 	assert.Error(t, f.gormdb.deleteEnv(f.ctx, e.EnvID), sdkerrors.ErrUnauthorized)
 }
@@ -326,7 +332,7 @@ func TestDeleteConnectionsWithOwnership(t *testing.T) {
 	// Connection owned by the same user tested in TestDeleteConnection
 
 	// different user
-	f.ctx = withUser(f.ctx, u)
+	f.ctx = withUser(f.ctx, u2)
 
 	assert.Error(t, f.gormdb.deleteConnection(f.ctx, c.ConnectionID), sdkerrors.ErrUnauthorized)
 }
@@ -340,7 +346,7 @@ func TestDeleteSessionsWithOwnership(t *testing.T) {
 	// Session owned by the same user tested in TestDeleteSession
 
 	// different user
-	f.ctx = withUser(f.ctx, u)
+	f.ctx = withUser(f.ctx, u2)
 
 	assert.Error(t, f.gormdb.deleteSession(f.ctx, s.SessionID), sdkerrors.ErrUnauthorized)
 }
@@ -354,7 +360,7 @@ func TestDeleteEventsWithOwnership(t *testing.T) {
 	// Event owned by the same user tested in TestDeleteEvent
 
 	// different user
-	f.ctx = withUser(f.ctx, u)
+	f.ctx = withUser(f.ctx, u2)
 
 	assert.Error(t, f.gormdb.deleteEvent(f.ctx, e.EventID), sdkerrors.ErrUnauthorized)
 }
@@ -369,7 +375,7 @@ func TestDeleteTriggersWithOwnership(t *testing.T) {
 	// Trigger owned by the same user tested in TestDeleteTrigger
 
 	// different user
-	f.ctx = withUser(f.ctx, u)
+	f.ctx = withUser(f.ctx, u2)
 
 	assert.Error(t, f.gormdb.deleteTrigger(f.ctx, trg.TriggerID), sdkerrors.ErrUnauthorized)
 }
@@ -387,7 +393,7 @@ func TestDeleteVarsWithOwnership(t *testing.T) {
 	// Var with scope owned by the same user tested in TestDeleteVars
 
 	// different user
-	f.ctx = withUser(f.ctx, u)
+	f.ctx = withUser(f.ctx, u2)
 
 	assert.Error(t, f.gormdb.deleteVars(f.ctx, v1.ScopeID, v1.Name), sdkerrors.ErrUnauthorized)
 	assert.Error(t, f.gormdb.deleteVars(f.ctx, v2.ScopeID, v2.Name), sdkerrors.ErrUnauthorized)
@@ -402,7 +408,7 @@ func TestGetProjectWithOwnership(t *testing.T) {
 	// Project owned by the same user tested in TestGetProject
 
 	// different user
-	f.ctx = withUser(f.ctx, u)
+	f.ctx = withUser(f.ctx, u2)
 
 	_, err := f.gormdb.getProject(f.ctx, p.ProjectID)
 	assert.Error(t, err, sdkerrors.ErrUnauthorized)
@@ -420,7 +426,7 @@ func TestGetBuildWithOwnership(t *testing.T) {
 	// Build owned by the same user tested in TestGetBuild
 
 	// different user
-	f.ctx = withUser(f.ctx, u)
+	f.ctx = withUser(f.ctx, u2)
 
 	_, err := f.gormdb.getBuild(f.ctx, b.BuildID)
 	assert.Error(t, err, sdkerrors.ErrUnauthorized)
@@ -434,7 +440,7 @@ func TestGetDeploymentWithOwnership(t *testing.T) {
 	// Deployment owned by the same user tested in TestGetDeployment
 
 	// different user
-	f.ctx = withUser(f.ctx, u)
+	f.ctx = withUser(f.ctx, u2)
 
 	_, err := f.gormdb.getDeployment(f.ctx, d.DeploymentID)
 	assert.Error(t, err, sdkerrors.ErrUnauthorized)
@@ -448,7 +454,7 @@ func TestGetEnvWithOwnership(t *testing.T) {
 	// Env owned by the same user tested in TestGetEnv
 
 	// different user
-	f.ctx = withUser(f.ctx, u)
+	f.ctx = withUser(f.ctx, u2)
 
 	_, err := f.gormdb.getEnvByID(f.ctx, e.EnvID)
 	assert.Error(t, err, sdkerrors.ErrUnauthorized)
@@ -466,7 +472,7 @@ func TestGetConnectionWithOwnership(t *testing.T) {
 	// Connection owned by the same user tested in TestGetConnection
 
 	// different user
-	f.ctx = withUser(f.ctx, u)
+	f.ctx = withUser(f.ctx, u2)
 
 	_, err := f.gormdb.getConnection(f.ctx, c.ConnectionID)
 	assert.Error(t, err, sdkerrors.ErrUnauthorized)
@@ -481,7 +487,7 @@ func TestGetSessionWithOwnership(t *testing.T) {
 	// Session owned by the same user tested in TestGetSession
 
 	// different user
-	f.ctx = withUser(f.ctx, u)
+	f.ctx = withUser(f.ctx, u2)
 
 	_, err := f.gormdb.getSession(f.ctx, s.SessionID)
 	assert.Error(t, err, sdkerrors.ErrUnauthorized)
@@ -496,7 +502,7 @@ func TestGetEventWithOwnership(t *testing.T) {
 	// Event owned by the same user tested in TestGetEvent
 
 	// different user
-	f.ctx = withUser(f.ctx, u)
+	f.ctx = withUser(f.ctx, u2)
 
 	_, err := f.gormdb.getEvent(f.ctx, e.EventID)
 	assert.Error(t, err, sdkerrors.ErrUnauthorized)
@@ -512,7 +518,7 @@ func TestGetTriggerWithOwnership(t *testing.T) {
 	// Trigger owned by the same user tested in TestGetTrigger
 
 	// different user
-	f.ctx = withUser(f.ctx, u)
+	f.ctx = withUser(f.ctx, u2)
 
 	_, err := f.gormdb.getEvent(f.ctx, trg.TriggerID)
 	assert.Error(t, err, sdkerrors.ErrUnauthorized)
@@ -527,7 +533,7 @@ func TestListProjectsWithOwnership(t *testing.T) {
 	// Project owned by the same user tested in TestListProjects
 
 	// different user
-	f.ctx = withUser(f.ctx, u)
+	f.ctx = withUser(f.ctx, u2)
 
 	projects, err := f.gormdb.listProjects(f.ctx)
 	assert.Len(t, projects, 0) // no projects fetched, not user owned
@@ -543,7 +549,7 @@ func TestListBuildsWithOwnership(t *testing.T) {
 	// Build owned by the same user tested in TestListBuilds
 
 	// different user
-	f.ctx = withUser(f.ctx, u)
+	f.ctx = withUser(f.ctx, u2)
 
 	builds, err := f.gormdb.listBuilds(f.ctx, sdkservices.ListBuildsFilter{})
 	assert.Len(t, builds, 0) // no build fetched, not user owned
@@ -558,7 +564,7 @@ func TestListDeploymentsWithOwnership(t *testing.T) {
 	// Deployment owned by the same user tested in TestListDeployments
 
 	// different user
-	f.ctx = withUser(f.ctx, u)
+	f.ctx = withUser(f.ctx, u2)
 
 	f.listDeploymentsAndAssert(t, 0) // no deployments fetched, not user owned
 }
@@ -571,7 +577,7 @@ func TestListEnvsWithOwnership(t *testing.T) {
 	// Env owned by the same user tested in TestListEnvs
 
 	// different user
-	f.ctx = withUser(f.ctx, u)
+	f.ctx = withUser(f.ctx, u2)
 
 	envs, err := f.gormdb.listEnvs(f.ctx, p.ProjectID)
 	assert.Len(t, envs, 0) // no envs fetched, not user owned
@@ -587,7 +593,7 @@ func TestListConnectionsWithOwnership(t *testing.T) {
 	// Connection owned by the same user tested in TestListConnections
 
 	// different user
-	f.ctx = withUser(f.ctx, u)
+	f.ctx = withUser(f.ctx, u2)
 
 	cc, err := f.gormdb.listConnections(f.ctx, sdkservices.ListConnectionsFilter{}, false)
 	assert.Len(t, cc, 0) // no connections fetched, not user owned
@@ -603,7 +609,7 @@ func TestListSessionsWithOwnership(t *testing.T) {
 	// Session owned by the same user tested in TestListSessions
 
 	// different user
-	f.ctx = withUser(f.ctx, u)
+	f.ctx = withUser(f.ctx, u2)
 
 	f.listSessionsAndAssert(t, 0) // no sessions fetched, not user owned
 }
@@ -617,7 +623,7 @@ func TestListEventsWithOwnership(t *testing.T) {
 	// Event owned by the same user tested in TestListEventsOrder
 
 	// different user
-	f.ctx = withUser(f.ctx, u)
+	f.ctx = withUser(f.ctx, u2)
 
 	events, err := f.gormdb.listEvents(f.ctx, sdkservices.ListEventsFilter{})
 	assert.Len(t, events, 0) // no events fetched, not user owned
@@ -634,7 +640,7 @@ func TestListTriggersWithOwnership(t *testing.T) {
 	// Trigger owned by the same user tested in TestListTriggers
 
 	// different user
-	f.ctx = withUser(f.ctx, u)
+	f.ctx = withUser(f.ctx, u2)
 
 	triggers, err := f.gormdb.listTriggers(f.ctx, sdkservices.ListTriggersFilter{})
 	assert.Len(t, triggers, 0) // no triggers fetched, not user owned
@@ -654,7 +660,7 @@ func TestListVarsWithOwnership(t *testing.T) {
 	// Var with scope owned by the same user tested in TestListVars
 
 	// different user
-	f.ctx = withUser(f.ctx, u)
+	f.ctx = withUser(f.ctx, u2)
 
 	vars, err := f.gormdb.listVars(f.ctx, v1.ScopeID, v1.Name)
 	assert.Len(t, vars, 0) // no vars fetched, since not not user owned
