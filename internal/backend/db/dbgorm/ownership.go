@@ -180,7 +180,10 @@ func ensureUserAccessToEntitiesWithOwnerships(db *gorm.DB, uid string, ids ...sd
 }
 
 func (gdb *gormdb) isUserEntity(ctx context.Context, uid string, ids ...sdktypes.UUID) error {
-	return gdb.owner.EnsureUserAccessToEntities(ctx, gdb.db, uid, ids...)
+	if akCtx.RequestOrginator(ctx) == akCtx.User { // enforce only on user-orginated requests
+		return gdb.owner.EnsureUserAccessToEntities(ctx, gdb.db, uid, ids...)
+	}
+	return nil
 }
 
 func (gdb *gormdb) isCtxUserEntity(ctx context.Context, ids ...sdktypes.UUID) error {
@@ -223,9 +226,13 @@ type UsersOwnershipChecker struct {
 
 func (c *UsersOwnershipChecker) EnsureUserAccessToEntitiesWithOwnership(
 	ctx context.Context, db *gorm.DB, uid string, ids ...sdktypes.UUID,
-) ([]scheme.Ownership, error) {
+) (ownerships []scheme.Ownership, err error) {
 	c.z.Debug("isUserEntity", zap.String("origin", akCtx.RequestOrginator(ctx).String()), zap.Any("entityIDs", ids), zap.Any("uid", uid))
-	return ensureUserAccessToEntitiesWithOwnerships(db, uid, ids...)
+	ownerships, err = ensureUserAccessToEntitiesWithOwnerships(db, uid, ids...)
+	if akCtx.RequestOrginator(ctx) != akCtx.User && errors.Is(err, sdkerrors.ErrUnauthorized) {
+		err = nil // ignore not authorized, but keep all other (e.g. NotFound) - see var
+	}
+	return
 }
 
 func (c *UsersOwnershipChecker) EnsureUserAccessToEntities(ctx context.Context, db *gorm.DB, uid string, ids ...sdktypes.UUID) error {
@@ -235,7 +242,10 @@ func (c *UsersOwnershipChecker) EnsureUserAccessToEntities(ctx context.Context, 
 
 func (c *UsersOwnershipChecker) JoinUserEntity(ctx context.Context, db *gorm.DB, entity string, uid string) *gorm.DB {
 	c.z.Debug("withUser", zap.String("origin", akCtx.RequestOrginator(ctx).String()), zap.String("entity", entity), zap.Any("uid", uid))
-	return joinUserEntity(db, entity, uid)
+	if akCtx.RequestOrginator(ctx) == akCtx.User {
+		return joinUserEntity(db, entity, uid)
+	}
+	return db
 }
 
 type PermissiveOwnershipChecker struct {
