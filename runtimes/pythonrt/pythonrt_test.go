@@ -309,6 +309,8 @@ func TestProgramError(t *testing.T) {
 
 	_, err = svc.Call(ctx, fn, nil, kwargs)
 	require.Error(t, err)
+	t.Logf("ERROR:\n%s", err)
 	// There no way to check that err is a ProgramError since it's wrapped by unexported programError
 	require.Contains(t, err.Error(), "division by zero")
+	require.Contains(t, err.Error(), "progerr.py")
 }

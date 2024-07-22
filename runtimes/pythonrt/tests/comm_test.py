@@ -1,7 +1,7 @@
 import json
 from socket import socketpair
 
-from ak_runner.comm import Comm, MessageType
+from ak_runner.comm import Comm, MessageType, format_traceback
 
 
 def sub(a, b, *, verbose=False):
@@ -46,3 +46,17 @@ def test_comm():
     assert data, "no data"
     message = json.loads(data)
     assert message["type"] == MessageType.done
+
+
+def func_that_errs():
+    json.loads(None)
+
+
+def test_format_traceback():
+    try:
+        func_that_errs()
+    except Exception as err:
+        tb = format_traceback(err)
+
+    assert len(tb) == 3
+    assert "json" in tb[2]["file"]
