@@ -33,6 +33,10 @@ func (gdb *gormdb) CtxWithOwnershipOf(ctx context.Context, entityID sdktypes.UUI
 }
 
 func userIDFromContext(ctx context.Context) (string, error) {
+	if uid := authcontext.GetAuthnUserID(ctx); uid != "" {
+		return uid, nil
+	}
+
 	user := authcontext.GetAuthnUser(ctx)
 	if !user.IsValid() {
 		user = sdktypes.DefaultUser
