@@ -30,4 +30,4 @@ resp code == 200
 
 # Get first event, with/out JSON.
 ak event get evt_00000000000000000000000004
-output contains ''
+output regex 'event_id:"evt_0+4"\s+connection_id:"con_0+3"\s+event_type:"get"'

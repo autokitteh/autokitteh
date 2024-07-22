@@ -411,7 +411,7 @@ func TestSessionLogRecordNextPageTokenNotEmpty(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, len(res.Log.Records()), 2)
 	assert.Equal(t, res.TotalCount, int64(3))
-	assert.Equal(t, res.PaginationResult.NextPageToken, "2")
+	assert.NotEmpty(t, res.NextPageToken)
 
 	// Get Next Batch to exhaust next page token
 	res, err = f.gormdb.GetSessionLog(context.Background(),

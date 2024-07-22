@@ -124,12 +124,8 @@ func (gdb *gormdb) listSessions(ctx context.Context, f sdkservices.ListSessionsF
 
 // --- log records ---
 func createLogRecord(db *gorm.DB, logr *scheme.SessionLogRecord) error {
-	data := map[string]interface{}{"SessionID": logr.SessionID, "Data": logr.Data}
-	// This is a hack in gorm to use subquery when creating an object.
-	// The goal is to have a sequence number per session.  The insert uses a subquery to get
-	// the current max sequence for this session_id and insert the next value in one query
-	data["Seq"] = clause.Expr{SQL: "(select COALESCE(MAX(seq), 0)+1 from session_log_records where session_id = ?)", Vars: []interface{}{logr.SessionID}}
-	return db.Model(&scheme.SessionLogRecord{}).Create(data).Error
+	logr.Seq = uint64(time.Now().UnixMicro())
+	return db.Create(logr).Error
 }
 
 func (gdb *gormdb) addSessionLogRecord(ctx context.Context, logr *scheme.SessionLogRecord) error {

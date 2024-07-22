@@ -64,6 +64,9 @@ func checkAKOutput(step string, ak *akResult) error {
 			return stringCheckFailed(want, got)
 		}
 	case "contains":
+		if len(want) == 0 && got != want { // Empty string is always contained.
+			return stringCheckFailed(want, got)
+		}
 		if !strings.Contains(got, want) {
 			return stringCheckFailed(want, got)
 		}

@@ -42,7 +42,7 @@ func (h handler) handleCreds(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Validate input: Google Forms ID.
+	// Special case: validate & save Google Forms ID.
 	formID := r.PostFormValue("form_id")
 	if formID != "" {
 		ok, err := regexp.MatchString(`[\w-]{20,}`, formID)
@@ -55,12 +55,18 @@ func (h handler) handleCreds(w http.ResponseWriter, r *http.Request) {
 			c.Abort(fmt.Sprintf("invalid Google Forms ID %q", formID))
 			return
 		}
+
+		if err := h.saveFormID(r.Context(), c, formID); err != nil {
+			l.Error("Form ID saving error", zap.Error(err))
+			c.AbortWithStatus(http.StatusInternalServerError, "form ID saving error")
+			return
+		}
 	}
 
 	ctx := extrazap.AttachLoggerToContext(l, r.Context())
 	switch r.PostFormValue("auth_type") {
 	// GCP service-account JSON-key connection? Save the JSON key.
-	case "json":
+	case "", "json":
 		if err := forms.UpdateWatches(ctx, h.vars, c); err != nil {
 			l.Error("Form watches creation error", zap.Error(err))
 			c.AbortWithStatus(http.StatusInternalServerError, "form watches creation error")
@@ -69,12 +75,6 @@ func (h handler) handleCreds(w http.ResponseWriter, r *http.Request) {
 
 	// User OAuth connect? Redirect to AutoKitteh's OAuth starting point.
 	case "oauth":
-		if err := h.saveFormID(r.Context(), c, formID); err != nil {
-			l.Error("Connection ID parsing error", zap.Error(err))
-			e := fmt.Sprintf("form ID saving error: %v", err)
-			c.AbortWithStatus(http.StatusInternalServerError, e)
-			return
-		}
 		http.Redirect(w, r, oauthURL(c, r.PostForm), http.StatusFound)
 
 	// Unknown mode.
@@ -85,10 +85,6 @@ func (h handler) handleCreds(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h handler) saveFormID(ctx context.Context, c sdkintegrations.ConnectionInit, formID string) error {
-	if formID == "" {
-		return nil
-	}
-
 	// Sanity check: the connection ID is valid.
 	cid, err := sdktypes.StrictParseConnectionID(c.ConnectionID)
 	if err != nil {
@@ -103,11 +99,15 @@ func (h handler) saveFormID(ctx context.Context, c sdkintegrations.ConnectionIni
 }
 
 func oauthURL(c sdkintegrations.ConnectionInit, form url.Values) string {
-	urlPath := "/oauth/start/google%s?cid=%s&origin=%s"
+	// Default scopes for OAuth: all ("google").
+	u := "/oauth/start/google%s?cid=%s&origin=%s"
 
 	// Narrow down the requested scopes?
 	oauthScopes := form.Get("auth_scopes")
 
 	// Remember the AutoKitteh connection ID and connection origin.
-	return fmt.Sprintf(urlPath, oauthScopes, c.ConnectionID, c.Origin)
+	u = fmt.Sprintf(u, oauthScopes, c.ConnectionID, c.Origin)
+
+	// Special case: "gmail" is the only one without a "google" prefix.
+	return strings.Replace(u, "/googlegmail?", "/gmail?", 1)
 }
