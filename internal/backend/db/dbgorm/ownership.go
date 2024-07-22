@@ -9,13 +9,26 @@ import (
 	"gorm.io/gorm"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
+	akCtx "go.autokitteh.dev/autokitteh/internal/backend/context"
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
-	akCtx "go.autokitteh.dev/autokitteh/internal/context"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
+func (gdb *gormdb) GetOwnership(ctx context.Context, entityID sdktypes.UUID) (uid string, err error) {
+	var o scheme.Ownership
+	if err = gdb.db.WithContext(ctx).Where("entity_id = ?", entityID).Select("user_id").First(&o).Error; err != nil {
+		gdb.z.Error("get ownership", zap.String("id", entityID.String()), zap.Error(err))
+		return
+	}
+	return o.UserID, nil
+}
+
 func userIDFromContext(ctx context.Context) (string, error) {
+	if uid := authcontext.GetAuthnUserID(ctx); uid != "" {
+		return uid, nil
+	}
+
 	user := authcontext.GetAuthnUser(ctx)
 	if !user.IsValid() {
 		user = sdktypes.DefaultUser

@@ -8,10 +8,10 @@ import (
 	"go.temporal.io/sdk/worker"
 	"go.uber.org/zap"
 
+	akCtx "go.autokitteh.dev/autokitteh/internal/backend/context"
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	wf "go.autokitteh.dev/autokitteh/internal/backend/workflows"
-	akCtx "go.autokitteh.dev/autokitteh/internal/context"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -36,8 +36,10 @@ func New(
 }
 
 func (d *dispatcher) Dispatch(ctx context.Context, event sdktypes.Event, opts *sdkservices.DispatchOptions) (sdktypes.EventID, error) {
-	eventID, err := d.Services.Events.Save(ctx, event)
 	ctx = akCtx.WithRequestOrginator(ctx, akCtx.Dispatcher)
+	ctx = akCtx.WithOwnershipOf(ctx, d.DB.GetOwnership, event.ConnectionID().UUIDValue())
+
+	eventID, err := d.Services.Events.Save(ctx, event)
 	if err != nil {
 		return sdktypes.InvalidEventID, fmt.Errorf("save event: %w", err)
 	}

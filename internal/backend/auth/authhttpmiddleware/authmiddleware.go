@@ -11,7 +11,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authsessions"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authtokens"
 	"go.autokitteh.dev/autokitteh/internal/backend/configset"
-	akCtx "go.autokitteh.dev/autokitteh/internal/context"
+	akCtx "go.autokitteh.dev/autokitteh/internal/backend/context"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 

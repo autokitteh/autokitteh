@@ -2,6 +2,9 @@ package context
 
 import (
 	"context"
+
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 type ctxKey string
@@ -38,4 +41,12 @@ func WithRequestOrginator(ctx context.Context, component RequestOrginatorType) c
 		return ctx
 	}
 	return context.WithValue(ctx, componentCtxKey, component)
+}
+
+func WithOwnershipOf(ctx context.Context, entityOwnership func(context.Context, sdktypes.UUID) (string, error), entityID sdktypes.UUID) context.Context {
+	uid, err := entityOwnership(ctx, entityID)
+	if err != nil {
+		return ctx
+	}
+	return authcontext.SetAuthnUserID(ctx, uid)
 }

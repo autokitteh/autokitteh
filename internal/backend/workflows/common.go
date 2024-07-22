@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"maps"
 
+	akCtx "go.autokitteh.dev/autokitteh/internal/backend/context"
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
-	akCtx "go.autokitteh.dev/autokitteh/internal/context"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -126,6 +126,7 @@ func (wf *Workflow) StartSessions(wctx workflow.Context, event sdktypes.Event, s
 
 	ctx := temporalclient.NewWorkflowContextAsGOContext(wctx)
 	ctx = akCtx.WithRequestOrginator(ctx, akCtx.SessionWorkflow)
+	ctx = akCtx.WithOwnershipOf(ctx, wf.DB.GetOwnership, event.ID().UUIDValue())
 
 	for _, session := range sessions {
 		// TODO(ENG-197): change to local activity.
