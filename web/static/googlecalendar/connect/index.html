@@ -73,14 +73,20 @@
         </li>
       </ul>
 
-      <p class="info">
-        Click the button below to authorize the
-        <strong>AutoKitteh</strong> service
-      </p>
       <!-- TODO(ENG-799): remove ID once its unused -->
-      <a id="oauth-link" href="/oauth/start/googlecalendar" class="clickable"
-        >Start OAuth Flow</a
-      >
+      <form id="save-form-oauth" method="post" action="/google/save">
+        <input type="hidden" name="auth_type" value="oauth" />
+        <input type="hidden" name="auth_scopes" value="calendar" />
+
+        <div class="form-group">
+          <p class="info">
+            Click the button below to authorize the
+            <strong>AutoKitteh</strong> service
+          </p>
+        </div>
+
+        <button type="submit" class="submit-btn">Start OAuth Flow</button>
+      </form>
     </div>
 
     <div class="tab" id="tab2">
@@ -125,13 +131,15 @@
       </ul>
 
       <!-- TODO(ENG-799): remove ID once its unused -->
-      <form id="save-json-form" method="post" action="/google/save">
+      <form id="save-form-json" method="post" action="/google/save">
+        <input type="hidden" name="auth_type" value="json" />
+
         <div class="form-group">
           <label for="json">JSON Key</label>
           <textarea
             name="json"
-            rows="14"
-            cols="65"
+            rows="8"
+            cols="64"
             wrap="soft"
             autocomplete="off"
             spellcheck="false"
@@ -147,10 +155,10 @@
     <script>
       const queryString = window.location.search;
       document
-        .getElementById("oauth-link")
-        .setAttribute("href", "/oauth/start/google" + queryString);
+        .getElementById("save-form-json")
+        .setAttribute("action", "/google/save" + queryString);
       document
-        .getElementById("save-json-form")
+        .getElementById("save-form-oauth")
         .setAttribute("action", "/google/save" + queryString);
     </script>
   </body>

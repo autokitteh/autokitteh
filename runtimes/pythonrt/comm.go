@@ -56,8 +56,9 @@ type LogMessage struct {
 func (LogMessage) Type() string { return "log" }
 
 type CallMessage struct {
-	FuncName string `json:"func_name"`
-	Args     []any  `json:"args"`
+	FuncName string         `json:"func_name"`
+	Args     []any          `json:"args"`
+	Kw       map[string]any `json:"kw"`
 }
 
 func (CallMessage) Type() string {

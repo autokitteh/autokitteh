@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"maps"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
+	akCtx "go.autokitteh.dev/autokitteh/internal/context"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -33,6 +35,7 @@ var (
 type Services struct {
 	fx.In
 
+	// TODO: sdkservices.DBServices?
 	Connections  sdkservices.Connections
 	Deployments  sdkservices.Deployments
 	Events       sdkservices.Events
@@ -45,6 +48,7 @@ type Services struct {
 
 type Workflow struct {
 	Z        *zap.Logger
+	DB       db.DB
 	Services Services
 	Tmprl    temporalclient.Client
 }
@@ -114,17 +118,18 @@ func CreateSessionsForWorkflow(event sdktypes.Event, sessionsData []SessionData)
 	return sessions, nil
 }
 
-func (wf *Workflow) StartSessions(ctx workflow.Context, event sdktypes.Event, sessionsData []SessionData) error {
+func (wf *Workflow) StartSessions(wctx workflow.Context, event sdktypes.Event, sessionsData []SessionData) error {
 	sessions, err := CreateSessionsForWorkflow(event, sessionsData)
 	if err != nil {
 		return fmt.Errorf("schedule wf: start sessions: %w", err)
 	}
 
-	goCtx := temporalclient.NewWorkflowContextAsGOContext(ctx)
+	ctx := temporalclient.NewWorkflowContextAsGOContext(wctx)
+	ctx = akCtx.WithRequestOrginator(ctx, akCtx.SessionWorkflow)
 
 	for _, session := range sessions {
 		// TODO(ENG-197): change to local activity.
-		sessionID, err := wf.Services.Sessions.Start(goCtx, *session)
+		sessionID, err := wf.Services.Sessions.Start(ctx, *session)
 		if err != nil {
 			wf.Z.Panic("could not start session") // Panic in order to make the workflow retry.
 		}

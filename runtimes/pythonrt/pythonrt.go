@@ -1,8 +1,12 @@
 package pythonrt
 
 import (
+	"archive/tar"
+	"bytes"
 	"context"
+	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"path"
@@ -173,13 +177,32 @@ func (py *pySvc) Build(ctx context.Context, fsys fs.FS, path string, values []sd
 		return sdktypes.InvalidBuildArtifact, err
 	}
 
+	compiledData := map[string][]byte{
+		archiveKey: data,
+	}
+
+	// UI requires file names in the compiled data.
+	tf := tar.NewReader(bytes.NewReader(data))
+	for {
+		hdr, err := tf.Next()
+		if errors.Is(err, io.EOF) {
+			break
+		}
+		if err != nil {
+			py.log.Error("next tar", zap.Error(err))
+			return sdktypes.InvalidBuildArtifact, err
+		}
+
+		if !strings.HasSuffix(hdr.Name, ".py") {
+			continue
+		}
+
+		compiledData[hdr.Name] = nil
+	}
+
 	buildExports := kittehs.Transform(exports, asBuildExport)
 	var art sdktypes.BuildArtifact
-	art = art.WithCompiledData(
-		map[string][]byte{
-			archiveKey: data,
-		},
-	).WithExports(buildExports)
+	art = art.WithCompiledData(compiledData).WithExports(buildExports)
 
 	return art, nil
 }
@@ -642,117 +665,44 @@ func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 	return sdktypes.NewBytesValue(rm.Value), nil
 }
 
-// TODO: This is long and dog ugly, find a better way.
+func packSyscallArgs(msg CallMessage) ([]sdktypes.Value, map[string]sdktypes.Value, error) {
+	args := make([]sdktypes.Value, len(msg.Args)+1)
+	args[0] = sdktypes.NewStringValue(msg.FuncName)
+	// Can't use kittehs.Transform since we want to handle errors.
+	for i, arg := range msg.Args {
+		var err error
+		args[i+1], err = sdktypes.WrapValue(arg)
+		if err != nil {
+			return nil, nil, fmt.Errorf("%s: unsupported argument: %#v - %w", msg.FuncName, arg, err)
+		}
+	}
+
+	kw := make(map[string]sdktypes.Value, len(msg.Kw))
+	for key, val := range msg.Kw {
+		v, err := sdktypes.WrapValue(val)
+		if err != nil {
+			return nil, nil, fmt.Errorf("%s: unsupported kwarg: %s:%#v - %w", msg.FuncName, key, val, err)
+		}
+		kw[key] = v
+	}
+
+	return args, kw, nil
+}
+
 func (py *pySvc) handleCall(ctx context.Context, msg CallMessage) error {
-	var value any
+	args, kw, err := packSyscallArgs(msg)
+	if err != nil {
+		return fmt.Errorf("syscall of %#v - %w", msg, err)
+	}
 
-	switch msg.FuncName {
-	case "sleep":
-		if len(msg.Args) != 1 {
-			return fmt.Errorf("sleep: expected 1 argument, got %d", len(msg.Args))
-		}
+	out, err := py.cbs.Call(ctx, py.xid.ToRunID(), py.syscallFn, args, kw)
+	if err != nil {
+		return fmt.Errorf("call %#v - %w", msg, err)
+	}
 
-		sleep, ok := msg.Args[0].(float64)
-		if !ok {
-			return fmt.Errorf("sleep: expected float64, got %T", msg.Args[0])
-		}
-
-		d := time.Duration(sleep*1000) * time.Millisecond
-		args := []sdktypes.Value{
-			sdktypes.NewStringValue("sleep"),
-			sdktypes.NewDurationValue(d),
-		}
-
-		_, err := py.cbs.Call(ctx, py.xid.ToRunID(), py.syscallFn, args, nil)
-		if err != nil {
-			py.log.Error("call sleep", zap.Error(err))
-			return err
-		}
-		value = nil
-	case "subscribe":
-		if len(msg.Args) < 1 || len(msg.Args) > 2 {
-			return fmt.Errorf("subscribe: expected 1 or 2 arguments, got %d", len(msg.Args))
-		}
-
-		connection, ok := msg.Args[0].(string)
-		if !ok {
-			return fmt.Errorf("subscribe: expected string ID, got %T", msg.Args[0])
-		}
-
-		args := []sdktypes.Value{
-			sdktypes.NewStringValue("subscribe"),
-			sdktypes.NewStringValue(connection),
-		}
-
-		filter := sdktypes.NewStringValue("true")
-		if len(msg.Args) == 2 {
-			v, ok := msg.Args[1].(string)
-			if !ok {
-				return fmt.Errorf("subscribe: expected string filter, got %T", msg.Args[1])
-			}
-			filter = sdktypes.NewStringValue(v)
-		}
-		args = append(args, filter)
-
-		id, err := py.cbs.Call(ctx, py.xid.ToRunID(), py.syscallFn, args, nil)
-		if err != nil {
-			py.log.Error("call subscribe", zap.Error(err))
-			return err
-		}
-
-		if !id.IsString() {
-			return fmt.Errorf("subscribe: expected string ID return, got %T", id)
-		}
-
-		value = id.GetString().Value()
-	case "unsubscribe":
-		if len(msg.Args) != 1 {
-			return fmt.Errorf("unsubscribe: expected 1 argument, got %d", len(msg.Args))
-		}
-
-		id, ok := msg.Args[0].(string)
-		if !ok {
-			return fmt.Errorf("unsubscribe: expected string ID, got %T", msg.Args[0])
-		}
-
-		args := []sdktypes.Value{
-			sdktypes.NewStringValue("unsubscribe"),
-			sdktypes.NewStringValue(id),
-		}
-
-		_, err := py.cbs.Call(ctx, py.xid.ToRunID(), py.syscallFn, args, nil)
-		if err != nil {
-			py.log.Error("call subscribe", zap.Error(err))
-			return err
-		}
-
-		value = nil
-	case "next_event":
-		if len(msg.Args) != 1 {
-			return fmt.Errorf("next_event: expected 1 argument, got %d", len(msg.Args))
-		}
-
-		id, ok := msg.Args[0].(string)
-		if !ok {
-			return fmt.Errorf("next_event: expected string ID, got %T", msg.Args[0])
-		}
-
-		args := []sdktypes.Value{
-			sdktypes.NewStringValue("next_event"),
-			sdktypes.NewStringValue(id),
-		}
-
-		event, err := py.cbs.Call(ctx, py.xid.ToRunID(), py.syscallFn, args, nil)
-		if err != nil {
-			py.log.Error("call next_event", zap.Error(err))
-			return err
-		}
-
-		value, err = unwrap(event)
-		if err != nil {
-			py.log.Error("event unwrap", zap.Error(err))
-			return err
-		}
+	value, err := unwrap(out)
+	if err != nil {
+		return fmt.Errorf("call %#v, got %#v - %w", msg, out, err)
 	}
 
 	return py.comm.Send(ReturnMessage{Value: value})

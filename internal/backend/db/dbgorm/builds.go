@@ -77,7 +77,7 @@ func (db *gormdb) GetBuild(ctx context.Context, buildID sdktypes.BuildID) (sdkty
 
 func (db *gormdb) GetBuildData(ctx context.Context, buildID sdktypes.BuildID) ([]byte, error) {
 	b, err := db.getBuild(ctx, buildID.UUIDValue())
-	if err != nil {
+	if b == nil || err != nil {
 		return nil, translateError(err)
 	}
 	return b.Data, nil

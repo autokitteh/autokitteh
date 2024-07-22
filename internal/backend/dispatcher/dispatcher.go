@@ -11,6 +11,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	wf "go.autokitteh.dev/autokitteh/internal/backend/workflows"
+	akCtx "go.autokitteh.dev/autokitteh/internal/context"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -18,7 +19,6 @@ import (
 
 type dispatcher struct {
 	wf.Workflow
-	db db.DB
 }
 
 type Dispatcher interface {
@@ -32,11 +32,12 @@ func New(
 	services wf.Services,
 	tc temporalclient.Client,
 ) Dispatcher {
-	return &dispatcher{wf.Workflow{Z: z, Services: services, Tmprl: tc}, db}
+	return &dispatcher{wf.Workflow{Z: z, DB: db, Services: services, Tmprl: tc}}
 }
 
 func (d *dispatcher) Dispatch(ctx context.Context, event sdktypes.Event, opts *sdkservices.DispatchOptions) (sdktypes.EventID, error) {
 	eventID, err := d.Services.Events.Save(ctx, event)
+	ctx = akCtx.WithRequestOrginator(ctx, akCtx.Dispatcher)
 	if err != nil {
 		return sdktypes.InvalidEventID, fmt.Errorf("save event: %w", err)
 	}
@@ -55,6 +56,7 @@ func (d *dispatcher) Dispatch(ctx context.Context, event sdktypes.Event, opts *s
 }
 
 func (d *dispatcher) Redispatch(ctx context.Context, eventID sdktypes.EventID, opts *sdkservices.DispatchOptions) (sdktypes.EventID, error) {
+	ctx = akCtx.WithRequestOrginator(ctx, akCtx.Dispatcher)
 	event, err := d.Services.Events.Get(ctx, eventID)
 	if err != nil {
 		return sdktypes.InvalidEventID, err
