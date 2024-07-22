@@ -160,5 +160,5 @@ type DB interface {
 	DeleteSecret(ctx context.Context, key string) error
 
 	// -----------------------------------------------------------------------
-	CtxWithOwnershipOf(ctx context.Context, entityID sdktypes.UUID) context.Context
+	GetOwnership(ctx context.Context, entityID sdktypes.UUID) (string, error)
 }
