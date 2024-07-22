@@ -17,19 +17,11 @@ import (
 
 func (gdb *gormdb) GetOwnership(ctx context.Context, entityID sdktypes.UUID) (uid string, err error) {
 	var o scheme.Ownership
-	if err = gdb.db.WithContext(ctx).Where("entity_id = ?", entityID).Select("user_id").First(&o).Error; err == nil {
-		uid = o.UserID
-	}
-	return
-}
-
-func (gdb *gormdb) CtxWithOwnershipOf(ctx context.Context, entityID sdktypes.UUID) context.Context {
-	uid, err := gdb.GetOwnership(ctx, entityID) // ignore error
-	if err != nil {
+	if err = gdb.db.WithContext(ctx).Where("entity_id = ?", entityID).Select("user_id").First(&o).Error; err != nil {
 		gdb.z.Error("get ownership", zap.String("id", entityID.String()), zap.Error(err))
-		return ctx
+		return
 	}
-	return authcontext.SetAuthnUserID(ctx, uid)
+	return o.UserID, nil
 }
 
 func userIDFromContext(ctx context.Context) (string, error) {
