@@ -13,6 +13,9 @@ import (
 	"time"
 
 	"go.autokitteh.dev/autokitteh/config"
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authjwttokens"
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 const (
@@ -22,7 +25,14 @@ const (
 var (
 	sessionStateFinal = regexp.MustCompile(`state:SESSION_STATE_TYPE_(COMPLETED|ERROR|STOPPED)`)
 	sessionStateAll   = regexp.MustCompile(`state:SESSION_STATE_TYPE_`)
+	token             = "INVALID_TOKEN"
 )
+
+func init() {
+	js := kittehs.Must1(authjwttokens.New(authjwttokens.Configs.Test))
+	user := sdktypes.NewUser("ak", map[string]string{"email": "foo@bar", "name": "Test User"})
+	token = kittehs.Must1(js.Create(user))
+}
 
 func buildAKBinary(t *testing.T) string {
 	wd, err := os.Getwd()
@@ -51,6 +61,7 @@ func buildAKBinary(t *testing.T) string {
 func runClient(akPath string, args []string) (*akResult, error) {
 	// Running in a subprocess, not a goroutine (like the
 	// server), to ensure state isolation between executions.
+	args = append([]string{"--token", token}, args...)
 	cmd := exec.Command(akPath, args...)
 	output, err := cmd.CombinedOutput()
 
