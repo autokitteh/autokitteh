@@ -520,7 +520,7 @@ func TestGetTriggerWithOwnership(t *testing.T) {
 	// different user
 	f.ctx = withUser(f.ctx, u2)
 
-	_, err := f.gormdb.getEvent(f.ctx, trg.TriggerID)
+	_, err := f.gormdb.getTrigger(f.ctx, trg.TriggerID)
 	assert.Error(t, err, sdkerrors.ErrUnauthorized)
 }
 
