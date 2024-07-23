@@ -10,6 +10,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 func (f *dbFixture) createEventsAndAssert(t *testing.T, events ...scheme.Event) {
@@ -26,7 +27,7 @@ func (f *dbFixture) assertEventsDeleted(t *testing.T, events ...scheme.Event) {
 }
 
 func preEventTest(t *testing.T) *dbFixture {
-	f := newDBFixture()
+	f := newDBFixture().withUser(sdktypes.DefaultUser)
 	findAndAssertCount[scheme.Event](t, f, 0, "") // no events
 	return f
 }

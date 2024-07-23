@@ -8,6 +8,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 func (f *dbFixture) createConnectionsAndAssert(t *testing.T, connections ...scheme.Connection) {
@@ -24,7 +25,7 @@ func (f *dbFixture) assertConnectionDeleted(t *testing.T, connections ...scheme.
 }
 
 func preConnectionTest(t *testing.T) *dbFixture {
-	f := newDBFixture()
+	f := newDBFixture().withUser(sdktypes.DefaultUser)
 	findAndAssertCount[scheme.Connection](t, f, 0, "") // no connections
 	return f
 }

@@ -51,7 +51,7 @@ func (f *dbFixture) assertDeploymentsDeleted(t *testing.T, deployments ...scheme
 }
 
 func preDeploymentTest(t *testing.T) *dbFixture {
-	f := newDBFixture()
+	f := newDBFixture().withUser(sdktypes.DefaultUser)
 	f.listDeploymentsAndAssert(t, 0) // no deployments
 	return f
 }

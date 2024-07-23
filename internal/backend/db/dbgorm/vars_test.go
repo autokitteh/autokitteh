@@ -44,7 +44,7 @@ func createConnectionAndEnv(t *testing.T, f *dbFixture) (scheme.Connection, sche
 }
 
 func preVarTest(t *testing.T) *dbFixture {
-	f := newDBFixture()
+	f := newDBFixture().withUser(sdktypes.DefaultUser)
 	findAndAssertCount[scheme.Var](t, f, 0, "") // no vars
 	return f
 }
