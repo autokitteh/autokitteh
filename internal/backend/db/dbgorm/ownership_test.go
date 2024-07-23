@@ -575,6 +575,12 @@ func TestListProjectsWithOwnership(t *testing.T) {
 	projects, err := f.gormdb.listProjects(f.ctx)
 	assert.Len(t, projects, 0) // no projects fetched, not user owned
 	assert.NoError(t, err)
+
+	// as system orginator
+	f.ctx = akCtx.WithRequestOrginator(f.ctx, akCtx.Dispatcher)
+	projects, err = f.gormdb.listProjects(f.ctx)
+	assert.Len(t, projects, 1)
+	assert.NoError(t, err)
 }
 
 func TestListBuildsWithOwnership(t *testing.T) {
@@ -591,6 +597,12 @@ func TestListBuildsWithOwnership(t *testing.T) {
 	builds, err := f.gormdb.listBuilds(f.ctx, sdkservices.ListBuildsFilter{})
 	assert.Len(t, builds, 0) // no build fetched, not user owned
 	assert.NoError(t, err)
+
+	// as system orginator
+	f.ctx = akCtx.WithRequestOrginator(f.ctx, akCtx.Dispatcher)
+	builds, err = f.gormdb.listBuilds(f.ctx, sdkservices.ListBuildsFilter{})
+	assert.Len(t, builds, 1)
+	assert.NoError(t, err)
 }
 
 func TestListDeploymentsWithOwnership(t *testing.T) {
@@ -604,6 +616,10 @@ func TestListDeploymentsWithOwnership(t *testing.T) {
 	f.ctx = withUser(f.ctx, u2)
 
 	f.listDeploymentsAndAssert(t, 0) // no deployments fetched, not user owned
+
+	// as system orginator
+	f.ctx = akCtx.WithRequestOrginator(f.ctx, akCtx.Dispatcher)
+	f.listDeploymentsAndAssert(t, 1)
 }
 
 func TestListEnvsWithOwnership(t *testing.T) {
@@ -618,6 +634,12 @@ func TestListEnvsWithOwnership(t *testing.T) {
 
 	envs, err := f.gormdb.listEnvs(f.ctx, p.ProjectID)
 	assert.Len(t, envs, 0) // no envs fetched, not user owned
+	assert.NoError(t, err)
+
+	// as system orginator
+	f.ctx = akCtx.WithRequestOrginator(f.ctx, akCtx.Dispatcher)
+	envs, err = f.gormdb.listEnvs(f.ctx, p.ProjectID)
+	assert.Len(t, envs, 1)
 	assert.NoError(t, err)
 }
 
@@ -635,6 +657,12 @@ func TestListConnectionsWithOwnership(t *testing.T) {
 	cc, err := f.gormdb.listConnections(f.ctx, sdkservices.ListConnectionsFilter{}, false)
 	assert.Len(t, cc, 0) // no connections fetched, not user owned
 	assert.NoError(t, err)
+
+	// as system orginator
+	f.ctx = akCtx.WithRequestOrginator(f.ctx, akCtx.Dispatcher)
+	cc, err = f.gormdb.listConnections(f.ctx, sdkservices.ListConnectionsFilter{}, false)
+	assert.Len(t, cc, 1)
+	assert.NoError(t, err)
 }
 
 func TestListSessionsWithOwnership(t *testing.T) {
@@ -649,6 +677,10 @@ func TestListSessionsWithOwnership(t *testing.T) {
 	f.ctx = withUser(f.ctx, u2)
 
 	f.listSessionsAndAssert(t, 0) // no sessions fetched, not user owned
+
+	// as system orginator
+	f.ctx = akCtx.WithRequestOrginator(f.ctx, akCtx.Dispatcher)
+	f.listSessionsAndAssert(t, 1)
 }
 
 func TestListEventsWithOwnership(t *testing.T) {
@@ -664,6 +696,12 @@ func TestListEventsWithOwnership(t *testing.T) {
 
 	events, err := f.gormdb.listEvents(f.ctx, sdkservices.ListEventsFilter{})
 	assert.Len(t, events, 0) // no events fetched, not user owned
+	assert.NoError(t, err)
+
+	// as system orginator
+	f.ctx = akCtx.WithRequestOrginator(f.ctx, akCtx.Dispatcher)
+	events, err = f.gormdb.listEvents(f.ctx, sdkservices.ListEventsFilter{})
+	assert.Len(t, events, 1)
 	assert.NoError(t, err)
 }
 
@@ -681,6 +719,12 @@ func TestListTriggersWithOwnership(t *testing.T) {
 
 	triggers, err := f.gormdb.listTriggers(f.ctx, sdkservices.ListTriggersFilter{})
 	assert.Len(t, triggers, 0) // no triggers fetched, not user owned
+	assert.NoError(t, err)
+
+	// as system orginator
+	f.ctx = akCtx.WithRequestOrginator(f.ctx, akCtx.Dispatcher)
+	triggers, err = f.gormdb.listTriggers(f.ctx, sdkservices.ListTriggersFilter{})
+	assert.Len(t, triggers, 1)
 	assert.NoError(t, err)
 }
 
@@ -705,5 +749,15 @@ func TestListVarsWithOwnership(t *testing.T) {
 
 	vars, err = f.gormdb.listVars(f.ctx, v2.ScopeID, v2.Name)
 	assert.Len(t, vars, 0) // no vars fetched, since not not user owned
+	assert.NoError(t, err)
+
+	// as system orginator
+	f.ctx = akCtx.WithRequestOrginator(f.ctx, akCtx.Dispatcher)
+	vars, err = f.gormdb.listVars(f.ctx, v1.ScopeID, v1.Name)
+	assert.Len(t, vars, 1)
+	assert.NoError(t, err)
+
+	vars, err = f.gormdb.listVars(f.ctx, v2.ScopeID, v2.Name)
+	assert.Len(t, vars, 1)
 	assert.NoError(t, err)
 }
