@@ -22,6 +22,15 @@ func withUser(ctx context.Context, user sdktypes.User) context.Context {
 	return authcontext.SetAuthnUser(ctx, user)
 }
 
+func withSystemOrginators(t *testing.T, f *dbFixture, test func(t *testing.T, f *dbFixture)) {
+	for _, orginator := range akCtx.SystemOrginators {
+		t.Run(orginator.String(), func(t *testing.T) {
+			f.ctx = akCtx.WithRequestOrginator(f.ctx, orginator)
+			test(t, f)
+		})
+	}
+}
+
 func preOwnershipTest(t *testing.T) *dbFixture {
 	f := newDBFixture()
 	f.ctx = withUser(f.ctx, u1)
@@ -415,6 +424,15 @@ func TestGetProjectWithOwnership(t *testing.T) {
 
 	_, err = f.gormdb.getProjectByName(f.ctx, p.Name)
 	assert.Error(t, err, sdkerrors.ErrUnauthorized)
+
+	// with system orginators - full access
+	withSystemOrginators(t, f, func(t *testing.T, f *dbFixture) {
+		_, err := f.gormdb.getProject(f.ctx, p.ProjectID)
+		assert.NoError(t, err)
+
+		_, err = f.gormdb.getProjectByName(f.ctx, p.Name)
+		assert.NoError(t, err)
+	})
 }
 
 func TestGetBuildWithOwnership(t *testing.T) {
@@ -430,6 +448,12 @@ func TestGetBuildWithOwnership(t *testing.T) {
 
 	_, err := f.gormdb.getBuild(f.ctx, b.BuildID)
 	assert.Error(t, err, sdkerrors.ErrUnauthorized)
+
+	// with system orginators - full access
+	withSystemOrginators(t, f, func(t *testing.T, f *dbFixture) {
+		_, err = f.gormdb.getBuild(f.ctx, b.BuildID)
+		assert.NoError(t, err)
+	})
 }
 
 func TestGetDeploymentWithOwnership(t *testing.T) {
@@ -444,6 +468,12 @@ func TestGetDeploymentWithOwnership(t *testing.T) {
 
 	_, err := f.gormdb.getDeployment(f.ctx, d.DeploymentID)
 	assert.Error(t, err, sdkerrors.ErrUnauthorized)
+
+	// with system orginators - full access
+	withSystemOrginators(t, f, func(t *testing.T, f *dbFixture) {
+		_, err = f.gormdb.getDeployment(f.ctx, d.DeploymentID)
+		assert.NoError(t, err)
+	})
 }
 
 func TestGetEnvWithOwnership(t *testing.T) {
@@ -461,6 +491,14 @@ func TestGetEnvWithOwnership(t *testing.T) {
 
 	_, err = f.gormdb.getEnvByName(f.ctx, p.ProjectID, e.Name)
 	assert.Error(t, err, sdkerrors.ErrUnauthorized)
+
+	// with system orginators - full access
+	withSystemOrginators(t, f, func(t *testing.T, f *dbFixture) {
+		_, err = f.gormdb.getEnvByID(f.ctx, e.EnvID)
+		assert.NoError(t, err)
+		_, err = f.gormdb.getEnvByName(f.ctx, p.ProjectID, e.Name)
+		assert.NoError(t, err)
+	})
 }
 
 func TestGetConnectionWithOwnership(t *testing.T) {
@@ -476,6 +514,12 @@ func TestGetConnectionWithOwnership(t *testing.T) {
 
 	_, err := f.gormdb.getConnection(f.ctx, c.ConnectionID)
 	assert.Error(t, err, sdkerrors.ErrUnauthorized)
+
+	// with system orginators - full access
+	withSystemOrginators(t, f, func(t *testing.T, f *dbFixture) {
+		_, err = f.gormdb.getConnection(f.ctx, c.ConnectionID)
+		assert.NoError(t, err)
+	})
 }
 
 func TestGetSessionWithOwnership(t *testing.T) {
@@ -491,6 +535,12 @@ func TestGetSessionWithOwnership(t *testing.T) {
 
 	_, err := f.gormdb.getSession(f.ctx, s.SessionID)
 	assert.Error(t, err, sdkerrors.ErrUnauthorized)
+
+	// with system orginators - full access
+	withSystemOrginators(t, f, func(t *testing.T, f *dbFixture) {
+		_, err = f.gormdb.getSession(f.ctx, s.SessionID)
+		assert.NoError(t, err)
+	})
 }
 
 func TestGetEventWithOwnership(t *testing.T) {
@@ -506,6 +556,12 @@ func TestGetEventWithOwnership(t *testing.T) {
 
 	_, err := f.gormdb.getEvent(f.ctx, e.EventID)
 	assert.Error(t, err, sdkerrors.ErrUnauthorized)
+
+	// with system orginators - full access
+	withSystemOrginators(t, f, func(t *testing.T, f *dbFixture) {
+		_, err = f.gormdb.getEvent(f.ctx, e.EventID)
+		assert.NoError(t, err)
+	})
 }
 
 func TestGetTriggerWithOwnership(t *testing.T) {
@@ -520,8 +576,14 @@ func TestGetTriggerWithOwnership(t *testing.T) {
 	// different user
 	f.ctx = withUser(f.ctx, u2)
 
-	_, err := f.gormdb.getEvent(f.ctx, trg.TriggerID)
+	_, err := f.gormdb.getTrigger(f.ctx, trg.TriggerID)
 	assert.Error(t, err, sdkerrors.ErrUnauthorized)
+
+	// with system orginators - full access
+	withSystemOrginators(t, f, func(t *testing.T, f *dbFixture) {
+		_, err = f.gormdb.getTrigger(f.ctx, trg.TriggerID)
+		assert.NoError(t, err)
+	})
 }
 
 func TestListProjectsWithOwnership(t *testing.T) {
@@ -538,6 +600,13 @@ func TestListProjectsWithOwnership(t *testing.T) {
 	projects, err := f.gormdb.listProjects(f.ctx)
 	assert.Len(t, projects, 0) // no projects fetched, not user owned
 	assert.NoError(t, err)
+
+	// with system orginators - full access
+	withSystemOrginators(t, f, func(t *testing.T, f *dbFixture) {
+		projects, err = f.gormdb.listProjects(f.ctx)
+		assert.Len(t, projects, 1)
+		assert.NoError(t, err)
+	})
 }
 
 func TestListBuildsWithOwnership(t *testing.T) {
@@ -554,6 +623,13 @@ func TestListBuildsWithOwnership(t *testing.T) {
 	builds, err := f.gormdb.listBuilds(f.ctx, sdkservices.ListBuildsFilter{})
 	assert.Len(t, builds, 0) // no build fetched, not user owned
 	assert.NoError(t, err)
+
+	// with system orginators - full access
+	withSystemOrginators(t, f, func(t *testing.T, f *dbFixture) {
+		builds, err = f.gormdb.listBuilds(f.ctx, sdkservices.ListBuildsFilter{})
+		assert.Len(t, builds, 1)
+		assert.NoError(t, err)
+	})
 }
 
 func TestListDeploymentsWithOwnership(t *testing.T) {
@@ -567,6 +643,12 @@ func TestListDeploymentsWithOwnership(t *testing.T) {
 	f.ctx = withUser(f.ctx, u2)
 
 	f.listDeploymentsAndAssert(t, 0) // no deployments fetched, not user owned
+
+	// with system orginators - full access
+	withSystemOrginators(t, f, func(t *testing.T, f *dbFixture) {
+		f.ctx = akCtx.WithRequestOrginator(f.ctx, akCtx.Dispatcher)
+		f.listDeploymentsAndAssert(t, 1)
+	})
 }
 
 func TestListEnvsWithOwnership(t *testing.T) {
@@ -582,6 +664,13 @@ func TestListEnvsWithOwnership(t *testing.T) {
 	envs, err := f.gormdb.listEnvs(f.ctx, p.ProjectID)
 	assert.Len(t, envs, 0) // no envs fetched, not user owned
 	assert.NoError(t, err)
+
+	// with system orginators - full access
+	withSystemOrginators(t, f, func(t *testing.T, f *dbFixture) {
+		envs, err = f.gormdb.listEnvs(f.ctx, p.ProjectID)
+		assert.Len(t, envs, 1)
+		assert.NoError(t, err)
+	})
 }
 
 func TestListConnectionsWithOwnership(t *testing.T) {
@@ -598,6 +687,13 @@ func TestListConnectionsWithOwnership(t *testing.T) {
 	cc, err := f.gormdb.listConnections(f.ctx, sdkservices.ListConnectionsFilter{}, false)
 	assert.Len(t, cc, 0) // no connections fetched, not user owned
 	assert.NoError(t, err)
+
+	// with system orginators - full access
+	withSystemOrginators(t, f, func(t *testing.T, f *dbFixture) {
+		cc, err = f.gormdb.listConnections(f.ctx, sdkservices.ListConnectionsFilter{}, false)
+		assert.Len(t, cc, 1)
+		assert.NoError(t, err)
+	})
 }
 
 func TestListSessionsWithOwnership(t *testing.T) {
@@ -612,6 +708,11 @@ func TestListSessionsWithOwnership(t *testing.T) {
 	f.ctx = withUser(f.ctx, u2)
 
 	f.listSessionsAndAssert(t, 0) // no sessions fetched, not user owned
+
+	// with system orginators - full access
+	withSystemOrginators(t, f, func(t *testing.T, f *dbFixture) {
+		f.listSessionsAndAssert(t, 1)
+	})
 }
 
 func TestListEventsWithOwnership(t *testing.T) {
@@ -628,6 +729,13 @@ func TestListEventsWithOwnership(t *testing.T) {
 	events, err := f.gormdb.listEvents(f.ctx, sdkservices.ListEventsFilter{})
 	assert.Len(t, events, 0) // no events fetched, not user owned
 	assert.NoError(t, err)
+
+	// with system orginators - full access
+	withSystemOrginators(t, f, func(t *testing.T, f *dbFixture) {
+		events, err = f.gormdb.listEvents(f.ctx, sdkservices.ListEventsFilter{})
+		assert.Len(t, events, 1)
+		assert.NoError(t, err)
+	})
 }
 
 func TestListTriggersWithOwnership(t *testing.T) {
@@ -645,6 +753,13 @@ func TestListTriggersWithOwnership(t *testing.T) {
 	triggers, err := f.gormdb.listTriggers(f.ctx, sdkservices.ListTriggersFilter{})
 	assert.Len(t, triggers, 0) // no triggers fetched, not user owned
 	assert.NoError(t, err)
+
+	// with system orginators - full access
+	withSystemOrginators(t, f, func(t *testing.T, f *dbFixture) {
+		triggers, err = f.gormdb.listTriggers(f.ctx, sdkservices.ListTriggersFilter{})
+		assert.Len(t, triggers, 1)
+		assert.NoError(t, err)
+	})
 }
 
 func TestListVarsWithOwnership(t *testing.T) {
@@ -669,4 +784,15 @@ func TestListVarsWithOwnership(t *testing.T) {
 	vars, err = f.gormdb.listVars(f.ctx, v2.ScopeID, v2.Name)
 	assert.Len(t, vars, 0) // no vars fetched, since not not user owned
 	assert.NoError(t, err)
+
+	// with system orginators - full access
+	withSystemOrginators(t, f, func(t *testing.T, f *dbFixture) {
+		vars, err = f.gormdb.listVars(f.ctx, v1.ScopeID, v1.Name)
+		assert.Len(t, vars, 1)
+		assert.NoError(t, err)
+
+		vars, err = f.gormdb.listVars(f.ctx, v2.ScopeID, v2.Name)
+		assert.Len(t, vars, 1)
+		assert.NoError(t, err)
+	})
 }

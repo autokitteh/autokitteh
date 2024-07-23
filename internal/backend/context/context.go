@@ -17,10 +17,12 @@ const (
 	Dispatcher RequestOrginatorType = iota
 	EventWorkflow
 	SessionWorkflow
-	ScheduleWorkflow
+	SchedulerWorkflow
 	User
 	Unknown
 )
+
+var SystemOrginators = []RequestOrginatorType{Dispatcher, EventWorkflow, SessionWorkflow, SchedulerWorkflow}
 
 func (c RequestOrginatorType) String() string {
 	if c >= Unknown {
