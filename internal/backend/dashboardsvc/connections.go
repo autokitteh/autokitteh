@@ -222,7 +222,7 @@ func (s Svc) postInit(w http.ResponseWriter, r *http.Request) {
 	switch origin {
 	case "vscode":
 		u = "vscode://autokitteh.autokitteh?cid=%s"
-	case "web": // Another redirect just to get rid of the secrets in the URL.
+	case "web", "web-oauth": // Another redirect just to get rid of the secrets in the URL.
 		u = "/connections/%s/success"
 	default: // Local server ("cli", "dash", etc.)
 		u = "/connections/%s?msg=Connection initialized 😸"
