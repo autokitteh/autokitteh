@@ -31,7 +31,7 @@ func userIDFromContext(ctx context.Context) (string, error) {
 
 	user := authcontext.GetAuthnUser(ctx)
 	if !user.IsValid() {
-		user = sdktypes.DefaultUser
+		return "", sdkerrors.NewInvalidArgumentError("unknown user")
 	}
 
 	data := user.Data()
@@ -40,10 +40,11 @@ func userIDFromContext(ctx context.Context) (string, error) {
 	provider := user.Provider()
 
 	if name == "" || email == "" || provider == "" {
-		return "", sdkerrors.NewInvalidArgumentError("missing user data: [name|email|provider]")
+		return "", sdkerrors.NewInvalidArgumentError("unknown user")
 	}
 
-	return sdktypes.NewUserIDFromUserData(provider, email, name).String(), nil
+	// return sdktypes.NewUserIDFromUserData(provider, email, name).String(), nil
+	return fmt.Sprintf("%s:%s:%s", provider, email, name), nil
 }
 
 // extract entity UUID and Type
