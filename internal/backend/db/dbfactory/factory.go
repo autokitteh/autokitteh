@@ -8,6 +8,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/configset"
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm"
@@ -51,6 +52,7 @@ func NewTest(t *testing.T, objs []sdktypes.Object) db.DB {
 		t.Fatalf("Setup: %v", err)
 	}
 
+	ctx = authcontext.SetAuthnUser(ctx, sdktypes.DefaultUser)
 	if err := db.Populate(ctx, testdb, objs...); err != nil {
 		t.Fatalf("Populate: %v", err)
 	}
