@@ -24,33 +24,38 @@ const (
 
 // https://api.slack.com/reference/interaction-payloads/block-actions#fields
 type BlockActionsPayload struct {
-	// Type must be "block_actions" (or "interactive_message" for attachments,
-	// which we don't support because they're superseded by blocks).
-	Type      string      `json:"type,omitempty"`
-	User      *users.User `json:"user,omitempty"`
-	Container *Container  `json:"container,omitempty"`
+	// Type must be "block_actions" or "modal" (or "interactive_message" for
+	// attachments, which we don't support because they're superseded by blocks).
+	Type string `json:"type,omitempty"`
+
+	User                *users.User `json:"user,omitempty"`
+	APIAppID            string      `json:"api_app_id,omitempty"`
+	Team                *Team       `json:"team,omitempty"`
+	IsEnterpriseInstall bool        `json:"is_enterprise_install,omitempty"`
+	Enterprise          *Enterprise `json:"enterprise,omitempty"`
+
+	Channel   *conversations.Channel `json:"channel,omitempty"`
+	Message   *chat.Message          `json:"message,omitempty"`
+	Container *Container             `json:"container,omitempty"`
 	// Contains data from the specific interactive component that was used.
 	// App surfaces can contain blocks with multiple interactive components,
 	// and each of those components can have multiple values selected by users.
 	Actions []Action `json:"actions,omitempty"`
 	// TODO: "state": {"values":{}}
 
-	APIAppID            string      `json:"api_app_id,omitempty"`
-	Team                *Team       `json:"team,omitempty"`
-	IsEnterpriseInstall bool        `json:"is_enterprise_install,omitempty"`
-	Enterprise          *Enterprise `json:"enterprise,omitempty"`
-
-	Channel *conversations.Channel `json:"channel,omitempty"`
-	Message *chat.Message          `json:"message,omitempty"`
-
 	// Short-lived webhook URL to send messages in response to interactions.
 	// Attention: documented as deprecated for next-generation Slack apps, see
 	// https://api.slack.com/reference/interaction-payloads/block-actions#fields
 	// and compare with [webhooks.SlashCommand].
 	ResponseURL string `json:"response_url,omitempty"`
+	// https://api.slack.com/reference/interaction-payloads/views
+	ResponseURLs []ResponseURL `json:"response_urls,omitempty"`
+
 	// Short-lived ID that will let your app open a modal
 	// (https://api.slack.com/surfaces/modals).
 	TriggerID string `json:"trigger_id,omitempty"`
+	// TODO: token?
+	View *View `json:"view,omitempty"`
 }
 
 // https://api.slack.com/reference/interaction-payloads/block-actions
@@ -92,12 +97,60 @@ type Enterprise struct {
 	Name string `json:"name,omitempty"`
 }
 
+// https://api.slack.com/reference/interaction-payloads/views
+type ResponseURL struct {
+	BlockID     string `json:"block_id,omitempty"`
+	ActionID    string `json:"action_id,omitempty"`
+	ChannelID   string `json:"channel_id,omitempty"`
+	ResponseURL string `json:"response_url,omitempty"`
+}
+
+// https://api.slack.com/reference/interaction-payloads/views#view_submission_fields
+type State struct {
+	Values map[string]map[string]any `json:"values,omitempty"`
+}
+
 // https://api.slack.com/methods/oauth.v2.access#examples
 // https://api.slack.com/reference/interaction-payloads/block-actions#examples
 type Team struct {
 	ID     string `json:"id,omitempty"`
 	Domain string `json:"domain,omitempty"`
 	Name   string `json:"name,omitempty"`
+}
+
+// https://api.slack.com/surfaces/modals#view-object-fields
+// https://api.slack.com/reference/interaction-payloads/views
+// https://api.slack.com/reference/workflows/configuration-view
+type View struct {
+	ID                 string `json:"id,omitempty"`
+	AppID              string `json:"app_id,omitempty"`
+	BotID              string `json:"bot_id,omitempty"`
+	TeamID             string `json:"team_id,omitempty"`
+	AppInstalledTeamID string `json:"app_installed_team_id,omitempty"`
+
+	Type           string           `json:"type,omitempty"`
+	CallbackID     string           `json:"callback_id,omitempty"`
+	Title          *chat.Text       `json:"title,omitempty"`
+	Blocks         []map[string]any `json:"blocks,omitempty"`
+	Close          *chat.Text       `json:"close,omitempty"`
+	Submit         *chat.Text       `json:"submit,omitempty"`
+	ClearOnClose   bool             `json:"clear_on_close,omitempty"`
+	NotifyOnClose  bool             `json:"notify_on_close,omitempty"`
+	SubmitDisabled bool             `json:"submit_disabled,omitempty"`
+
+	// https://api.slack.com/block-kit/dialogs-to-modals#state
+	PrivateMetadata string `json:"private_metadata,omitempty"`
+
+	ExternalID string `json:"external_id,omitempty"`
+	ViewID     string `json:"view_id,omitempty"`
+
+	// https://api.slack.com/surfaces/modals#handling_race_conditions
+	Hash string `json:"hash,omitempty"`
+	// https://api.slack.com/reference/interaction-payloads/views#view_submission_fields
+	State *State `json:"state,omitempty"`
+
+	// PreviousViewID = null?
+	RootViewID string `json:"root_view_id,omitempty"`
 }
 
 type Response struct {
@@ -169,7 +222,9 @@ func (h handler) HandleInteraction(w http.ResponseWriter, r *http.Request) {
 	// It's a Slack best practice to update an interactive message after the interaction,
 	// to prevent further interaction with the same message, and to reflect the user actions.
 	// See: https://api.slack.com/interactivity/handling#updating_message_response.
-	h.updateMessage(ctx, payload)
+	if payload.Type == "block_actions" {
+		h.updateMessage(ctx, payload)
+	}
 }
 
 // updateMessage updates an interactive message after the interaction, to prevent
