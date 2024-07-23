@@ -430,6 +430,11 @@ func TestGetBuildWithOwnership(t *testing.T) {
 
 	_, err := f.gormdb.getBuild(f.ctx, b.BuildID)
 	assert.Error(t, err, sdkerrors.ErrUnauthorized)
+
+	// as system orginator
+	f.ctx = akCtx.WithRequestOrginator(f.ctx, akCtx.Dispatcher)
+	_, err = f.gormdb.getBuild(f.ctx, b.BuildID)
+	assert.NoError(t, err)
 }
 
 func TestGetDeploymentWithOwnership(t *testing.T) {
@@ -444,6 +449,11 @@ func TestGetDeploymentWithOwnership(t *testing.T) {
 
 	_, err := f.gormdb.getDeployment(f.ctx, d.DeploymentID)
 	assert.Error(t, err, sdkerrors.ErrUnauthorized)
+
+	// as system orginator
+	f.ctx = akCtx.WithRequestOrginator(f.ctx, akCtx.Dispatcher)
+	_, err = f.gormdb.getDeployment(f.ctx, d.DeploymentID)
+	assert.NoError(t, err)
 }
 
 func TestGetEnvWithOwnership(t *testing.T) {
@@ -461,6 +471,13 @@ func TestGetEnvWithOwnership(t *testing.T) {
 
 	_, err = f.gormdb.getEnvByName(f.ctx, p.ProjectID, e.Name)
 	assert.Error(t, err, sdkerrors.ErrUnauthorized)
+
+	// as system orginator
+	f.ctx = akCtx.WithRequestOrginator(f.ctx, akCtx.Dispatcher)
+	_, err = f.gormdb.getEnvByID(f.ctx, e.EnvID)
+	assert.NoError(t, err)
+	_, err = f.gormdb.getEnvByName(f.ctx, p.ProjectID, e.Name)
+	assert.NoError(t, err)
 }
 
 func TestGetConnectionWithOwnership(t *testing.T) {
@@ -476,6 +493,11 @@ func TestGetConnectionWithOwnership(t *testing.T) {
 
 	_, err := f.gormdb.getConnection(f.ctx, c.ConnectionID)
 	assert.Error(t, err, sdkerrors.ErrUnauthorized)
+
+	// as system orginator
+	f.ctx = akCtx.WithRequestOrginator(f.ctx, akCtx.Dispatcher)
+	_, err = f.gormdb.getConnection(f.ctx, c.ConnectionID)
+	assert.NoError(t, err)
 }
 
 func TestGetSessionWithOwnership(t *testing.T) {
@@ -491,6 +513,11 @@ func TestGetSessionWithOwnership(t *testing.T) {
 
 	_, err := f.gormdb.getSession(f.ctx, s.SessionID)
 	assert.Error(t, err, sdkerrors.ErrUnauthorized)
+
+	// as system orginator
+	f.ctx = akCtx.WithRequestOrginator(f.ctx, akCtx.Dispatcher)
+	_, err = f.gormdb.getSession(f.ctx, s.SessionID)
+	assert.NoError(t, err)
 }
 
 func TestGetEventWithOwnership(t *testing.T) {
@@ -506,6 +533,11 @@ func TestGetEventWithOwnership(t *testing.T) {
 
 	_, err := f.gormdb.getEvent(f.ctx, e.EventID)
 	assert.Error(t, err, sdkerrors.ErrUnauthorized)
+
+	// as system orginator
+	f.ctx = akCtx.WithRequestOrginator(f.ctx, akCtx.Dispatcher)
+	_, err = f.gormdb.getEvent(f.ctx, e.EventID)
+	assert.NoError(t, err)
 }
 
 func TestGetTriggerWithOwnership(t *testing.T) {
@@ -522,6 +554,11 @@ func TestGetTriggerWithOwnership(t *testing.T) {
 
 	_, err := f.gormdb.getTrigger(f.ctx, trg.TriggerID)
 	assert.Error(t, err, sdkerrors.ErrUnauthorized)
+
+	// as system orginator
+	f.ctx = akCtx.WithRequestOrginator(f.ctx, akCtx.Dispatcher)
+	_, err = f.gormdb.getTrigger(f.ctx, trg.TriggerID)
+	assert.NoError(t, err)
 }
 
 func TestListProjectsWithOwnership(t *testing.T) {
