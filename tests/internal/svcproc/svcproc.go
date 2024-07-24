@@ -39,6 +39,9 @@ func NewSvcProc(binPath string, cfg *svc.Config, ropts svc.RunOptions) (svc.Serv
 
 func (s *svcProc) Start(ctx context.Context) error {
 	// TODO: Pass user configuration to executable.
+	allow_default_user := true
+	_, _ = s.cfg.Get("authhttpmiddleware.allow_default_user", &allow_default_user)
+
 	s.cmd = exec.Command(
 		s.binPath, "up",
 		"--mode", string(s.ropts.Mode),
@@ -48,6 +51,7 @@ func (s *svcProc) Start(ctx context.Context) error {
 
 		"--config", "http.addr=:0",
 		"--config", "http.addr_filename="+httpAddrFile, // In the test's temporary directory.
+		"--config", fmt.Sprintf("authhttpmiddleware.allow_default_user=%t", allow_default_user),
 	)
 	// Use same system group to kill ak + all children (temporal, etc.)
 	s.cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}

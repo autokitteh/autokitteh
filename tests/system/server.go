@@ -27,8 +27,9 @@ func startAKServer(ctx context.Context, akPath string) (svc.Service, string, err
 		"db.type": "sqlite",
 		"db.dsn":  "file:autokitteh.sqlite", // In the test's temporary directory.
 
-		"http.addr":          ":0",
-		"http.addr_filename": serverHTTPAddrFile, // In the test's temporary directory.
+		"http.addr":                             ":0",
+		"http.addr_filename":                    serverHTTPAddrFile, // In the test's temporary directory.
+		"authhttpmiddleware.allow_default_user": false,
 	}, ""))
 
 	// Instantiate the server, either as a subprocess or in-process.
@@ -36,6 +37,7 @@ func startAKServer(ctx context.Context, akPath string) (svc.Service, string, err
 		server svc.Service
 		err    error
 	)
+
 	if subproc, _ := strconv.ParseBool(os.Getenv("AK_SYSTEST_USE_PROC_SVC")); subproc {
 		server, err = svcproc.NewSvcProc(akPath, cfg, runOpts)
 	} else {
