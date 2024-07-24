@@ -43,8 +43,7 @@ func userIDFromContext(ctx context.Context) (string, error) {
 		return "", sdkerrors.NewInvalidArgumentError("unknown user")
 	}
 
-	// return sdktypes.NewUserIDFromUserData(provider, email, name).String(), nil
-	return fmt.Sprintf("%s:%s:%s", provider, email, name), nil
+	return sdktypes.NewUserIDFromUserData(provider, email, name).String(), nil
 }
 
 // extract entity UUID and Type
