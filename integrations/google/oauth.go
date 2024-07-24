@@ -14,6 +14,7 @@ import (
 	"go.autokitteh.dev/autokitteh/integrations/google/gmail"
 	"go.autokitteh.dev/autokitteh/integrations/google/internal/vars"
 	"go.autokitteh.dev/autokitteh/integrations/internal/extrazap"
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -75,18 +76,36 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Encoding "OAuthData" and "JSON", but not "FormID", so we don't overwrite
-	// the value that was already written there by the creds.go passthrough.
-	c.Finalize(sdktypes.NewVars(sdktypes.NewVar(vars.OAuthData, raw, true)).
-		Set(vars.JSON, "", true).Append(data.ToVars()...).Append(user...))
+	// Unique step for Google integrations (specifically for Gmail and Forms):
+	// save the auth data before creating/updating event watches.
+	vs := sdktypes.NewVars(sdktypes.NewVar(vars.OAuthData, raw, true)).
+		Set(vars.JSON, "", true).Append(data.ToVars()...).Append(user...)
+
+	vsl := kittehs.TransformMapToList(vs.ToMap(), func(_ sdktypes.Symbol, v sdktypes.Var) sdktypes.Var {
+		return v.WithScopeID(sdktypes.NewVarScopeID(cid))
+	})
+
+	if err := h.vars.Set(ctx, vsl...); err != nil {
+		l.Error("Connection data saving error", zap.Error(err))
+		c.AbortWithStatus(http.StatusInternalServerError, "connection data saving error")
+		return
+	}
 
 	if err := forms.UpdateWatches(ctx, h.vars, cid); err != nil {
 		l.Error("Google form watches creation error", zap.Error(err))
+		c.AbortWithStatus(http.StatusInternalServerError, "Google form watches creation error")
+		return
 	}
 
 	if err := gmail.UpdateWatch(ctx, h.vars, cid); err != nil {
 		l.Error("Gmail watch creation error", zap.Error(err))
+		c.AbortWithStatus(http.StatusInternalServerError, "Gmail watch creation error")
+		return
 	}
+
+	// Encoding "OAuthData" and "JSON", but not "FormID", so we don't overwrite
+	// the value that was already written there by the creds.go passthrough.
+	c.Finalize(vs)
 }
 
 func (h handler) tokenSource(ctx context.Context, t *oauth2.Token) oauth2.TokenSource {
