@@ -42,6 +42,35 @@ func (f *dbFixture) createProjectBuildEnv(t *testing.T) (scheme.Project, scheme.
 	return p, b, e
 }
 
+func TestCreateWithoutUser(t *testing.T) {
+	// creation of any object with ownership requires user
+	f := newDBFixture() // no user
+
+	p := f.newProject()
+	assert.ErrorContains(t, f.gormdb.createProject(f.ctx, &p), "unknown user")
+
+	b := f.newBuild()
+	assert.ErrorContains(t, f.gormdb.saveBuild(f.ctx, &b), "unknown user")
+
+	d := f.newDeployment()
+	assert.ErrorContains(t, f.gormdb.createDeployment(f.ctx, &d), "unknown user")
+
+	env := f.newEnv()
+	assert.ErrorContains(t, f.gormdb.createEnv(f.ctx, &env), "unknown user")
+
+	c := f.newConnection()
+	assert.ErrorContains(t, f.gormdb.createConnection(f.ctx, &c), "unknown user")
+
+	s := f.newSession()
+	assert.ErrorContains(t, f.gormdb.createSession(f.ctx, &s), "unknown user")
+
+	evt := f.newEvent()
+	assert.ErrorContains(t, f.gormdb.saveEvent(f.ctx, &evt), "unknown user")
+
+	trg := f.newTrigger()
+	assert.ErrorContains(t, f.gormdb.createTrigger(f.ctx, &trg), "unknown user")
+}
+
 func TestCreateProjectWithOwnership(t *testing.T) {
 	f := preOwnershipTest(t)
 
