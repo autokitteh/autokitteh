@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
-	"strconv"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
+	"go.autokitteh.dev/autokitteh/web/connect/result"
 	"go.autokitteh.dev/autokitteh/web/webdashboard"
 )
 
@@ -22,7 +22,10 @@ func (s Svc) initConnections() {
 
 	s.Muxes.Auth.HandleFunc("GET /connections/{id}/init/{origin}", s.init)
 	s.Muxes.Auth.HandleFunc("GET /connections/{id}/postinit", s.postInit)
-	s.Muxes.Auth.HandleFunc("GET /connections/{id}/result", initResult)
+
+	h := result.NewHandler(s.Svcs)
+	s.Muxes.Auth.HandleFunc("GET /connections/{id}/error", h.Error)
+	s.Muxes.Auth.HandleFunc("GET /connections/{id}/success", h.Success)
 
 	s.Muxes.Auth.HandleFunc("DELETE /connections/{id}/vars", s.rmAllConnectionVars)
 	s.Muxes.Auth.HandleFunc("GET /connections/{id}/test", s.testConnection)
@@ -219,28 +222,12 @@ func (s Svc) postInit(w http.ResponseWriter, r *http.Request) {
 	switch origin {
 	case "vscode":
 		u = "vscode://autokitteh.autokitteh?cid=%s"
-	case "web": // Another redirect just to get rid of the secrets in the URL.
-		u = "/connections/%s/result?status=200"
+	case "web", "web-oauth": // Another redirect just to get rid of the secrets in the URL.
+		u = "/connections/%s/success"
 	default: // Local server ("cli", "dash", etc.)
 		u = "/connections/%s?msg=Connection initialized 😸"
 	}
 	http.Redirect(w, r, fmt.Sprintf(u, cid), http.StatusFound)
-}
-
-// initResult is the target of the final redirect in the connection init flow.
-// It exists merely to remove vars from the post-init URL, to prevent leaks.
-func initResult(w http.ResponseWriter, r *http.Request) {
-	status, err := strconv.Atoi(r.FormValue("status"))
-	if err != nil {
-		http.Error(w, "non-integer status", http.StatusBadRequest)
-		return
-	}
-
-	if status >= http.StatusBadRequest {
-		http.Error(w, r.FormValue("error"), status)
-	}
-
-	// Otherwise, just return HTTP 200.
 }
 
 func (s Svc) rmAllConnectionVars(w http.ResponseWriter, r *http.Request) {
