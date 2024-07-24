@@ -38,13 +38,19 @@ type Deps struct {
 
 func newTokensMiddleware(next http.Handler, deps Deps) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-		ctx = akCtx.WithRequestOrginator(ctx, akCtx.User)
+		ctx := akCtx.WithRequestOrginator(r.Context(), akCtx.User)
+		user := authcontext.GetAuthnUser(ctx)
+		authHdr := r.Header.Get("Authorization")
 
-		if user := authcontext.GetAuthnUser(ctx); !user.IsValid() {
-			if auth := r.Header.Get("Authorization"); auth != "" {
-				kind, payload, _ := strings.Cut(auth, " ")
-
+		if deps.Cfg.AllowDefaultUser {
+			if user.IsValid() || authHdr != "" {
+				http.Error(w, "only default user is allowed", http.StatusUnauthorized)
+				return
+			}
+			ctx = authcontext.SetAuthnUser(ctx, sdktypes.DefaultUser)
+		} else {
+			if !user.IsValid() && authHdr != "" {
+				kind, payload, _ := strings.Cut(authHdr, " ")
 				switch kind {
 				case "Bearer":
 					var err error
@@ -58,9 +64,6 @@ func newTokensMiddleware(next http.Handler, deps Deps) http.HandlerFunc {
 					http.Error(w, "invalid authorization header", http.StatusUnauthorized)
 					return
 				}
-			}
-			if deps.Cfg.AllowDefaultUser && !user.IsValid() {
-				ctx = authcontext.SetAuthnUser(ctx, sdktypes.DefaultUser)
 			}
 		}
 
