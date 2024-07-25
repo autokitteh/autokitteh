@@ -111,8 +111,8 @@ func (gdb *gormdb) updateProject(ctx context.Context, p *scheme.Project) error {
 			return err
 		}
 
-		data := map[string]any{"Name": p.Name}
-		allowedFields := []string{"Name"}
+		data := map[string]any{"Name": p.Name, "RootURL": p.RootURL}
+		allowedFields := []string{"Name", "RootURL"} // NOTE: resources are updated via SetResurces
 		return tx.db.Model(&scheme.Project{ProjectID: p.ProjectID}).Select(allowedFields).Updates(data).Error
 	})
 }
