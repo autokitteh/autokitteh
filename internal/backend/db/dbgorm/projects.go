@@ -110,7 +110,10 @@ func (gdb *gormdb) updateProject(ctx context.Context, p *scheme.Project) error {
 		if err := tx.isCtxUserEntity(ctx, p.ProjectID); err != nil {
 			return err
 		}
-		return tx.db.Updates(p).Error
+
+		data := map[string]any{"Name": p.Name}
+		allowedFields := []string{"Name"}
+		return tx.db.Model(&scheme.Project{ProjectID: p.ProjectID}).Select(allowedFields).Updates(data).Error
 	})
 }
 
@@ -148,12 +151,17 @@ func (gdb *gormdb) DeleteProject(ctx context.Context, projectID sdktypes.Project
 	return translateError(gdb.deleteProject(ctx, projectID.UUIDValue()))
 }
 
-func (gdb *gormdb) UpdateProject(ctx context.Context, project sdktypes.Project) error {
-	p := scheme.Project{
-		ProjectID: project.ID().UUIDValue(),
-		Name:      project.Name().String(),
+func (gdb *gormdb) UpdateProject(ctx context.Context, p sdktypes.Project) error {
+	if err := p.Strict(); err != nil {
+		return err
 	}
-	return translateError(gdb.updateProject(ctx, &p))
+
+	project := scheme.Project{
+		ProjectID: p.ID().UUIDValue(),
+		Name:      p.Name().String(),
+	}
+
+	return translateError(gdb.updateProject(ctx, &project))
 }
 
 func schemaToProject(p *scheme.Project, err error) (sdktypes.Project, error) {
