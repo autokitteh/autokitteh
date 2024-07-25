@@ -15,7 +15,7 @@ from .errors import ConnectionInitError, EnvVarError
 __TOKEN_URL = "https://auth.atlassian.com/oauth/token"
 
 
-def atlassian_jira_client(connection: str, **kwargs) -> Jira:
+def jira_client(connection: str, **kwargs) -> Jira:
     """Initialize an Atlassian Jira client, based on an AutoKitteh connection.
 
     API reference:
@@ -138,40 +138,6 @@ def confluence_client(connection: str, **kwargs) -> Confluence:
         return Confluence(
             url=base_url, username=email, password=token, cloud=True, **kwargs
         )
-
-    raise ConnectionInitError(connection)
-
-
-def jira_client(connection: str, **kwargs):
-    """Initialize an Atlassian Jira client, based on an AutoKitteh connection.
-
-    API reference:
-    https://jira.readthedocs.io/
-
-    Code samples:
-    https://github.com/pycontribs/jira/tree/main/examples
-
-    Args:
-        connection: AutoKitteh connection name.
-
-    Returns:
-        Jira client.
-
-    Raises:
-        ValueError: AutoKitteh connection name is invalid.
-        ConnectionInitError: AutoKitteh connection was not initialized yet.
-        EnvVarError: Required environment variable is missing or invalid.
-    """
-    check_connection_name(connection)
-
-    base_url = os.getenv(connection + "__BaseURL")
-    token = os.getenv(connection + "__Token")
-    if token:
-        email = os.getenv(connection + "__Email")
-        if email:
-            return JIRA(base_url, basic_auth=(email, token), **kwargs)
-        else:
-            return JIRA(base_url, token_auth=token, **kwargs)
 
     raise ConnectionInitError(connection)
 
