@@ -5,7 +5,6 @@ import re
 import os
 
 from atlassian import Confluence, Jira
-from jira import JIRA
 from requests_oauthlib import OAuth2Session
 
 from .connections import check_connection_name
