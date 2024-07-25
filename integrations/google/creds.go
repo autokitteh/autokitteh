@@ -33,14 +33,14 @@ func (h handler) handleCreds(w http.ResponseWriter, r *http.Request) {
 	// Check "Content-Type" header.
 	contentType := r.Header.Get(headerContentType)
 	if !strings.HasPrefix(contentType, contentTypeForm) {
-		c.Abort("unexpected content type")
+		c.AbortBadRequest("unexpected content type")
 		return
 	}
 
 	// Read and parse POST request body.
 	if err := r.ParseForm(); err != nil {
 		l.Warn("Failed to parse incoming HTTP request", zap.Error(err))
-		c.Abort("form parsing error")
+		c.AbortBadRequest("form parsing error")
 		return
 	}
 
@@ -49,18 +49,19 @@ func (h handler) handleCreds(w http.ResponseWriter, r *http.Request) {
 	if formID != "" {
 		ok, err := regexp.MatchString(`[\w-]{20,}`, formID)
 		if err != nil {
-			l.Error("Failed to validate form ID", zap.Error(err))
-			c.Abort(fmt.Sprintf("form ID validation error: %v", err))
+			l.Error("Google Forms form ID validation error", zap.Error(err))
+			c.AbortISE(fmt.Sprintf("form ID validation error: %v", err))
 			return
 		}
 		if !ok {
-			c.Abort(fmt.Sprintf("invalid Google Forms ID %q", formID))
+			l.Warn("Invalid Google Forms form ID", zap.String("formID", formID))
+			c.AbortBadRequest(fmt.Sprintf("invalid Google Forms ID %q", formID))
 			return
 		}
 
 		if err := h.saveFormID(r.Context(), c, formID); err != nil {
-			l.Error("Form ID saving error", zap.Error(err))
-			c.AbortWithStatus(http.StatusInternalServerError, "form ID saving error")
+			l.Error("Google Forms form ID saving error", zap.Error(err))
+			c.AbortISE("form ID saving error")
 			return
 		}
 	}
@@ -78,8 +79,8 @@ func (h handler) handleCreds(w http.ResponseWriter, r *http.Request) {
 
 	// Unknown mode.
 	default:
-		err := fmt.Sprintf("unexpected auth type %q", r.PostFormValue("auth_type"))
-		c.AbortWithStatus(http.StatusInternalServerError, err)
+		l.Error("Unexpected auth type", zap.String("auth_type", r.PostFormValue("auth_type")))
+		c.AbortISE(fmt.Sprintf("unexpected auth type %q", r.PostFormValue("auth_type")))
 	}
 }
 
@@ -106,7 +107,7 @@ func (h handler) finalize(ctx context.Context, c sdkintegrations.ConnectionInit,
 	cid, err := sdktypes.StrictParseConnectionID(c.ConnectionID)
 	if err != nil {
 		l.Warn("Invalid connection ID", zap.Error(err))
-		c.Abort("invalid connection ID")
+		c.AbortBadRequest("invalid connection ID")
 		return
 	}
 
@@ -118,19 +119,19 @@ func (h handler) finalize(ctx context.Context, c sdkintegrations.ConnectionInit,
 
 	if err := h.vars.Set(ctx, vsl...); err != nil {
 		l.Error("Connection data saving error", zap.Error(err))
-		c.AbortWithStatus(http.StatusInternalServerError, "connection data saving error")
+		c.AbortISE("connection data saving error")
 		return
 	}
 
 	if err := forms.UpdateWatches(ctx, h.vars, cid); err != nil {
-		l.Error("Google form watches creation error", zap.Error(err))
-		c.AbortWithStatus(http.StatusInternalServerError, "Google form watches creation error")
+		l.Error("Google Forms watches creation error", zap.Error(err))
+		c.AbortISE("Google Forms watches creation error")
 		return
 	}
 
 	if err := gmail.UpdateWatch(ctx, h.vars, cid); err != nil {
 		l.Error("Gmail watch creation error", zap.Error(err))
-		c.AbortWithStatus(http.StatusInternalServerError, "Gmail watch creation error")
+		c.AbortISE("Gmail watch creation error")
 		return
 	}
 

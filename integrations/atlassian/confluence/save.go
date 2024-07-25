@@ -36,14 +36,14 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 	// Check "Content-Type" header.
 	contentType := r.Header.Get(headerContentType)
 	if !strings.HasPrefix(contentType, contentTypeForm) {
-		c.Abort("unexpected content type")
+		c.AbortBadRequest("unexpected content type")
 		return
 	}
 
 	// Read and parse POST request body.
 	if err := r.ParseForm(); err != nil {
 		l.Warn("Failed to parse incoming HTTP request", zap.Error(err))
-		c.Abort("form parsing error")
+		c.AbortBadRequest("form parsing error")
 		return
 	}
 
@@ -54,7 +54,7 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 	u, err := url.Parse(b)
 	if err != nil {
 		l.Warn("Failed to parse base URL", zap.Error(err))
-		c.Abort("failed to parse base URL")
+		c.AbortBadRequest("base URL parsing error")
 		return
 	}
 
@@ -76,8 +76,8 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 			// initData = initData.Set(webhookID, fmt.Sprintf("%d", id), false)
 
 			if err := deleteWebhook(l, b, e, t, id); err != nil {
-				l.Warn("Failed to delete existing webhook", zap.Error(err))
-				c.Abort("failed to delete existing webhook")
+				l.Error("Failed to delete existing webhook", zap.Error(err))
+				c.AbortISE("failed to delete existing webhook")
 				return
 			}
 		} // else {
@@ -85,8 +85,8 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 		var err error
 		id, secret, err = registerWebhook(l, b, e, t, category)
 		if err != nil {
-			l.Warn("Failed to register webhook", zap.Error(err))
-			c.Abort("failed to register webhook")
+			l.Error("Failed to register webhook", zap.Error(err))
+			c.AbortISE("failed to register webhook")
 			return
 		}
 		initData = initData.Set(webhookSecret(category), secret, true)

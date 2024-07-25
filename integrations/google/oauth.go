@@ -32,14 +32,14 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 	e := r.FormValue("error")
 	if e != "" {
 		l.Warn("OAuth redirect request reported an error", zap.Error(errors.New(e)))
-		c.Abort(e)
+		c.AbortBadRequest(e)
 		return
 	}
 
 	raw, data, err := sdkintegrations.GetOAuthDataFromURL(r.URL)
 	if err != nil {
 		l.Warn("Invalid data in OAuth redirect request", zap.Error(err))
-		c.Abort("invalid data parameter")
+		c.AbortBadRequest("invalid data parameter")
 		return
 
 	}
@@ -47,7 +47,7 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 	oauthToken := data.Token
 	if oauthToken == nil {
 		l.Warn("Missing token in OAuth redirect request", zap.Any("data", data))
-		c.Abort("missing OAuth token")
+		c.AbortBadRequest("missing OAuth token")
 		return
 	}
 
@@ -57,14 +57,14 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 	svc, err := googleoauth2.NewService(ctx, option.WithTokenSource(src))
 	if err != nil {
 		l.Warn("OAuth user token error", zap.Error(err))
-		c.Abort("token source")
+		c.AbortBadRequest("token source")
 		return
 	}
 
 	user, err := h.getUserDetails(l, svc)
 	if err != nil {
 		l.Warn("OAuth user details error", zap.Error(err))
-		c.Abort("Google user details error")
+		c.AbortBadRequest("Google user details error")
 		return
 	}
 
@@ -72,7 +72,7 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 	cid, err := sdktypes.StrictParseConnectionID(c.ConnectionID)
 	if err != nil {
 		l.Warn("Invalid connection ID", zap.Error(err))
-		c.Abort("invalid connection ID")
+		c.AbortBadRequest("invalid connection ID")
 		return
 	}
 
@@ -87,19 +87,19 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 
 	if err := h.vars.Set(ctx, vsl...); err != nil {
 		l.Error("Connection data saving error", zap.Error(err))
-		c.AbortWithStatus(http.StatusInternalServerError, "connection data saving error")
+		c.AbortISE("connection data saving error")
 		return
 	}
 
 	if err := forms.UpdateWatches(ctx, h.vars, cid); err != nil {
-		l.Error("Google form watches creation error", zap.Error(err))
-		c.AbortWithStatus(http.StatusInternalServerError, "Google form watches creation error")
+		l.Error("Google Forms watches creation error", zap.Error(err))
+		c.AbortISE("Google Forms watches creation error")
 		return
 	}
 
 	if err := gmail.UpdateWatch(ctx, h.vars, cid); err != nil {
 		l.Error("Gmail watch creation error", zap.Error(err))
-		c.AbortWithStatus(http.StatusInternalServerError, "Gmail watch creation error")
+		c.AbortISE("Gmail watch creation error")
 		return
 	}
 

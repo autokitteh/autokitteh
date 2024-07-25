@@ -27,14 +27,14 @@ func (h handler) HandleForm(w http.ResponseWriter, r *http.Request) {
 	// Check "Content-Type" header.
 	contentType := r.Header.Get(headerContentType)
 	if !strings.HasPrefix(contentType, contentTypeForm) {
-		c.Abort("unexpected content type")
+		c.AbortBadRequest("unexpected content type")
 		return
 	}
 
 	// Read and parse POST request body.
 	if err := r.ParseForm(); err != nil {
 		l.Warn("Failed to parse incoming HTTP request", zap.Error(err))
-		c.Abort("form parsing error")
+		c.AbortBadRequest("form parsing error")
 		return
 	}
 
@@ -46,21 +46,21 @@ func (h handler) HandleForm(w http.ResponseWriter, r *http.Request) {
 	authTest, err := auth.TestWithToken(ctx, botToken)
 	if err != nil {
 		l.Warn("Slack OAuth token test failed", zap.Error(err))
-		c.Abort("token auth test failed: " + err.Error())
+		c.AbortBadRequest("token auth test failed: " + err.Error())
 		return
 	}
 
 	botInfo, err := bots.InfoWithToken(ctx, botToken, authTest)
 	if err != nil {
 		l.Warn("Slack bot info request failed", zap.Error(err))
-		c.Abort("bot info request failed: " + err.Error())
+		c.AbortBadRequest("bot info request failed: " + err.Error())
 		return
 	}
 
 	_, err = apps.ConnectionsOpenWithToken(ctx, h.vars, appToken)
 	if err != nil {
 		l.Warn("Slack websocket connection error", zap.Error(err))
-		c.Abort("websocket connection error: " + err.Error())
+		c.AbortBadRequest("websocket connection error: " + err.Error())
 		return
 	}
 
