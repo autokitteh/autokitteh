@@ -32,7 +32,7 @@ func (f *dbFixture) assertProjectDeleted(t *testing.T, projects ...scheme.Projec
 }
 
 func preProjectTest(t *testing.T) *dbFixture {
-	f := newDBFixture()
+	f := newDBFixture().withUser(sdktypes.DefaultUser)
 	findAndAssertCount[scheme.Project](t, f, 0, "") // no projects
 	return f
 }

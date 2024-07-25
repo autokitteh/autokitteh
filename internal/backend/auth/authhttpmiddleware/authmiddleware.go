@@ -16,12 +16,14 @@ import (
 )
 
 type Config struct {
-	Required bool `koanf:"required"`
+	Required         bool `koanf:"required"`
+	AllowDefaultUser bool `koanf:"allow_default_user"`
 }
 
 var Configs = configset.Set[Config]{
 	Default: &Config{Required: true},
-	Dev:     &Config{},
+	Dev:     &Config{AllowDefaultUser: true},
+	Test:    &Config{AllowDefaultUser: true},
 }
 
 type AuthMiddlewareDecorator func(http.Handler) http.Handler
@@ -34,19 +36,25 @@ type Deps struct {
 	Tokens   authtokens.Tokens  `optional:"true"`
 }
 
-func newTokensMiddleware(next http.Handler, tokens authtokens.Tokens) http.HandlerFunc {
+func newTokensMiddleware(next http.Handler, deps Deps) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-		ctx = akCtx.WithRequestOrginator(ctx, akCtx.User)
+		ctx := akCtx.WithRequestOrginator(r.Context(), akCtx.User)
+		user := authcontext.GetAuthnUser(ctx)
+		authHdr := r.Header.Get("Authorization")
 
-		if user := authcontext.GetAuthnUser(ctx); !user.IsValid() {
-			if auth := r.Header.Get("Authorization"); auth != "" {
-				kind, payload, _ := strings.Cut(auth, " ")
-
+		if deps.Cfg.AllowDefaultUser {
+			if user.IsValid() || authHdr != "" {
+				http.Error(w, "only default user is allowed", http.StatusUnauthorized)
+				return
+			}
+			ctx = authcontext.SetAuthnUser(ctx, sdktypes.DefaultUser)
+		} else {
+			if !user.IsValid() && authHdr != "" {
+				kind, payload, _ := strings.Cut(authHdr, " ")
 				switch kind {
 				case "Bearer":
 					var err error
-					if user, err = tokens.Parse(payload); err != nil {
+					if user, err = deps.Tokens.Parse(payload); err != nil {
 						http.Error(w, "invalid token", http.StatusUnauthorized)
 						return
 					}
@@ -58,6 +66,7 @@ func newTokensMiddleware(next http.Handler, tokens authtokens.Tokens) http.Handl
 				}
 			}
 		}
+
 		r = r.WithContext(ctx)
 		next.ServeHTTP(w, r)
 	}
@@ -101,7 +110,7 @@ func New(deps Deps) AuthMiddlewareDecorator {
 		}
 
 		if deps.Tokens != nil {
-			f = newTokensMiddleware(f, deps.Tokens)
+			f = newTokensMiddleware(f, deps)
 		}
 
 		return f

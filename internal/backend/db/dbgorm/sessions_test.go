@@ -42,7 +42,7 @@ func (f *dbFixture) assertSessionsDeleted(t *testing.T, sessions ...scheme.Sessi
 }
 
 func preSessionTest(t *testing.T) *dbFixture {
-	f := newDBFixture()
+	f := newDBFixture().withUser(sdktypes.DefaultUser)
 	f.listSessionsAndAssert(t, 0) // no sessions
 	findAndAssertCount[scheme.SessionLogRecord](t, f, 0, "")
 	return f
@@ -298,7 +298,6 @@ func TestSessionLogRecordListOrder(t *testing.T) {
 			assertSessionLogRecordsEqual(t, l, savedRecord)
 		})
 	}
-
 }
 
 func TestSessionLogRecordPageSizeAndTotalCount(t *testing.T) {
@@ -314,7 +313,8 @@ func TestSessionLogRecordPageSizeAndTotalCount(t *testing.T) {
 
 	sid := sdktypes.NewIDFromUUID[sdktypes.SessionID](&s.SessionID)
 	logs, n, err := f.gormdb.getSessionLogRecords(f.ctx,
-		sdkservices.ListSessionLogRecordsFilter{SessionID: sid,
+		sdkservices.ListSessionLogRecordsFilter{
+			SessionID:         sid,
 			PaginationRequest: sdktypes.PaginationRequest{PageSize: 1},
 		})
 
@@ -336,7 +336,8 @@ func TestSessionLogRecordSkipAll(t *testing.T) {
 
 	sid := sdktypes.NewIDFromUUID[sdktypes.SessionID](&s.SessionID)
 	logs, n, err := f.gormdb.getSessionLogRecords(f.ctx,
-		sdkservices.ListSessionLogRecordsFilter{SessionID: sid,
+		sdkservices.ListSessionLogRecordsFilter{
+			SessionID:         sid,
 			PaginationRequest: sdktypes.PaginationRequest{Skip: 2},
 		})
 
@@ -358,7 +359,8 @@ func TestSessionLogRecordSkip(t *testing.T) {
 
 	sid := sdktypes.NewIDFromUUID[sdktypes.SessionID](&s.SessionID)
 	logs, n, err := f.gormdb.getSessionLogRecords(f.ctx,
-		sdkservices.ListSessionLogRecordsFilter{SessionID: sid,
+		sdkservices.ListSessionLogRecordsFilter{
+			SessionID:         sid,
 			PaginationRequest: sdktypes.PaginationRequest{Skip: 1},
 		})
 
@@ -380,7 +382,8 @@ func TestSessionLogRecordNextPageTokenEmpty(t *testing.T) {
 
 	sid := sdktypes.NewIDFromUUID[sdktypes.SessionID](&s.SessionID)
 	res, err := f.gormdb.GetSessionLog(context.Background(),
-		sdkservices.ListSessionLogRecordsFilter{SessionID: sid,
+		sdkservices.ListSessionLogRecordsFilter{
+			SessionID:         sid,
 			PaginationRequest: sdktypes.PaginationRequest{},
 		})
 
@@ -404,7 +407,8 @@ func TestSessionLogRecordNextPageTokenNotEmpty(t *testing.T) {
 
 	sid := sdktypes.NewIDFromUUID[sdktypes.SessionID](&s.SessionID)
 	res, err := f.gormdb.GetSessionLog(context.Background(),
-		sdkservices.ListSessionLogRecordsFilter{SessionID: sid,
+		sdkservices.ListSessionLogRecordsFilter{
+			SessionID:         sid,
 			PaginationRequest: sdktypes.PaginationRequest{PageSize: 2, Ascending: true},
 		})
 
@@ -415,7 +419,8 @@ func TestSessionLogRecordNextPageTokenNotEmpty(t *testing.T) {
 
 	// Get Next Batch to exhaust next page token
 	res, err = f.gormdb.GetSessionLog(context.Background(),
-		sdkservices.ListSessionLogRecordsFilter{SessionID: sid,
+		sdkservices.ListSessionLogRecordsFilter{
+			SessionID:         sid,
 			PaginationRequest: sdktypes.PaginationRequest{PageToken: res.PaginationResult.NextPageToken},
 		})
 

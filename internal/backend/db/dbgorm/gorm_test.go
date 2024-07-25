@@ -23,6 +23,7 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/internal/backend/gormkitteh"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
@@ -212,6 +213,11 @@ func newDBFixture() *dbFixture {
 	gormdb := gormDB
 	f := dbFixture{db: gormdb.db, gormdb: &gormdb, ctx: ctx}
 	return &f
+}
+
+func (f *dbFixture) withUser(user sdktypes.User) *dbFixture {
+	f.ctx = authcontext.SetAuthnUser(f.ctx, user)
+	return f
 }
 
 func (f *dbFixture) WithForeignKeysDisabled(fn func()) {
