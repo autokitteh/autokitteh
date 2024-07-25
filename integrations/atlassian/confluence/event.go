@@ -117,7 +117,7 @@ var simpleEntities = []string{
 
 func extractEntityType(l *zap.Logger, atlassianEvent map[string]any, category string) (string, bool) {
 	if category == "" {
-		l.Warn("Unexpected Confluence event callback: missing category in URL")
+		l.Warn("Unexpected Confluence event callback: missing category in URL ")
 		return "", false
 	}
 
@@ -142,10 +142,7 @@ func extractEntityType(l *zap.Logger, atlassianEvent map[string]any, category st
 		}
 	}
 
-	l.Error("Unrecognized Confluence event",
-		zap.String("category", category),
-		zap.Any("event", atlassianEvent),
-	)
+	l.Error("Unrecognized Confluence event", zap.Any("event", atlassianEvent))
 	return "", false
 }
 
