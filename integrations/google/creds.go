@@ -70,7 +70,7 @@ func (h handler) handleCreds(w http.ResponseWriter, r *http.Request) {
 	case "", "json":
 		ctx := extrazap.AttachLoggerToContext(l, r.Context())
 		vs := sdktypes.EncodeVars(&vars.Vars{JSON: r.PostFormValue("json"), FormID: formID})
-		h.finalizeJSON(ctx, c, vs)
+		h.finalize(ctx, c, vs)
 
 	// User OAuth connect? Redirect to AutoKitteh's OAuth starting point.
 	case "oauth":
@@ -97,7 +97,9 @@ func (h handler) saveFormID(ctx context.Context, c sdkintegrations.ConnectionIni
 	return nil
 }
 
-func (h handler) finalizeJSON(ctx context.Context, c sdkintegrations.ConnectionInit, vs sdktypes.Vars) {
+// finalize saves the user-submitted JSON key and optional Google Forms ID.
+// It also initializes watches for Gmail and Google Forms, if needed.
+func (h handler) finalize(ctx context.Context, c sdkintegrations.ConnectionInit, vs sdktypes.Vars) {
 	l := extrazap.ExtractLoggerFromContext(ctx)
 
 	// Sanity check: the connection ID is valid.
