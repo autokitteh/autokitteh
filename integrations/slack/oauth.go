@@ -37,21 +37,21 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	e := r.FormValue("error")
 	if e != "" {
 		l.Warn("OAuth redirect request reported an error", zap.Error(errors.New(e)))
-		c.Abort(e)
+		c.AbortBadRequest(e)
 		return
 	}
 
 	raw, data, err := sdkintegrations.GetOAuthDataFromURL(r.URL)
 	if err != nil {
 		l.Warn("Invalid data in OAuth redirect request", zap.Error(err))
-		c.Abort("invalid data parameter")
+		c.AbortBadRequest("invalid data parameter")
 		return
 	}
 
 	oauthToken := data.Token
 	if oauthToken == nil {
 		l.Warn("Missing token in OAuth redirect request", zap.Any("data", data))
-		c.Abort("missing OAuth token")
+		c.AbortBadRequest("missing OAuth token")
 		return
 	}
 
@@ -61,7 +61,7 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		l.Warn("Slack OAuth token test failed", zap.Error(err))
 		e := "token auth test failed: " + err.Error()
-		c.Abort(e)
+		c.AbortBadRequest(e)
 		return
 	}
 
@@ -69,7 +69,7 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		l.Warn("Slack bot info request failed", zap.Error(err))
 		e := "bot info request failed: " + err.Error()
-		c.Abort(e)
+		c.AbortBadRequest(e)
 		return
 	}
 

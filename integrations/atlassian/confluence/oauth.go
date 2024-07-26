@@ -27,41 +27,41 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 	e := r.FormValue("error")
 	if e != "" {
 		l.Warn("OAuth redirect reported an error", zap.Error(errors.New(e)))
-		c.Abort(e)
+		c.AbortBadRequest(e)
 		return
 	}
 
 	_, data, err := sdkintegrations.GetOAuthDataFromURL(r.URL)
 	if err != nil {
 		l.Warn("Invalid data in OAuth redirect request", zap.Error(err))
-		c.Abort("invalid data parameter")
+		c.AbortBadRequest("invalid data parameter")
 		return
 	}
 
 	oauthToken := data.Token
 	if oauthToken == nil {
 		l.Warn("Missing token in OAuth redirect request", zap.Any("data", data))
-		c.Abort("missing OAuth token")
+		c.AbortBadRequest("missing OAuth token")
 		return
 	}
 
 	url, err := apiBaseURL()
 	if err != nil {
 		l.Warn("Invalid Atlassian base URL", zap.Error(err))
-		c.Abort("invalid Atlassian base URL")
+		c.AbortBadRequest("invalid Atlassian base URL")
 		return
 	}
 
 	// Test the OAuth token's usability and get authoritative installation details.
 	res, err := accessibleResources(l, url, oauthToken.AccessToken)
 	if err != nil {
-		c.Abort(err.Error())
+		c.AbortBadRequest(err.Error())
 		return
 	}
 
 	if len(res) > 1 {
 		l.Warn("Multiple accessible resources for single OAuth token", zap.Any("resources", res))
-		c.Abort("multiple Atlassian accessible resources")
+		c.AbortBadRequest("multiple Atlassian accessible resources")
 		return
 	}
 

@@ -40,14 +40,14 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 	e := r.FormValue("error")
 	if e != "" {
 		l.Warn("OAuth redirect request reported an error", zap.Error(errors.New(e)))
-		c.Abort(e)
+		c.AbortBadRequest(e)
 		return
 	}
 
 	_, data, err := sdkintegrations.GetOAuthDataFromURL(r.URL)
 	if err != nil {
 		l.Warn("Invalid data in OAuth redirect request", zap.Error(err))
-		c.Abort("invalid data parameter")
+		c.AbortBadRequest("invalid data parameter")
 		return
 	}
 
@@ -55,7 +55,7 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 	v := data.Params.Get("installation_id")
 	if v == "" {
 		l.Warn("Missing installation ID in OAuth redirect request")
-		c.Abort("missing GitHub installation ID")
+		c.AbortBadRequest("missing GitHub installation ID")
 		return
 	}
 
@@ -66,7 +66,7 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 		l.Warn("Invalid GitHub installation ID in OAuth redirect request",
 			zap.String("setupAction", r.FormValue("setup_action")),
 		)
-		c.Abort("invalid GitHub installation ID")
+		c.AbortBadRequest("invalid GitHub installation ID")
 		return
 	}
 
@@ -79,14 +79,14 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 	u, err := enterpriseURL()
 	if err != nil {
 		l.Warn("GitHub enterprise URL error", zap.Error(err))
-		c.Abort("token source")
+		c.AbortBadRequest("token source")
 		return
 	}
 	if u != "" {
 		gh, err = gh.WithEnterpriseURLs(u, u)
 		if err != nil {
 			l.Warn("GitHub enterprise URL error", zap.String("url", u), zap.Error(err))
-			c.Abort(err.Error())
+			c.AbortBadRequest(err.Error())
 			return
 		}
 	}
@@ -95,7 +95,7 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 	is, _, err := gh.Apps.ListUserInstallations(ctx, &github.ListOptions{})
 	if err != nil {
 		l.Warn("OAuth user token source error", zap.Error(err))
-		c.Abort(err.Error())
+		c.AbortBadRequest("list installations error")
 		return
 	}
 	foundInstallation := false
@@ -115,13 +115,13 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 	}
 	if !foundInstallation {
 		l.Warn("GitHub app installation details not found")
-		c.Abort("GitHub app installation details not found")
+		c.AbortBadRequest("GitHub app installation details not found")
 		return
 	}
 
 	if i.AppID == nil || i.ID == nil || i.Account == nil || i.Account.Login == nil {
 		l.Warn("GitHub app installation details missing required fields")
-		c.Abort("GitHub app installation details missing required fields")
+		c.AbortBadRequest("GitHub app installation details missing required fields")
 		return
 	}
 

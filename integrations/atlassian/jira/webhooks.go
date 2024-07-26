@@ -176,7 +176,7 @@ func registerWebhook(l *zap.Logger, base, token string) (int, bool) {
 
 	body, err := json.Marshal(r)
 	if err != nil {
-		l.Warn("Failed to marshal Jira webhook registration request",
+		l.Error("Failed to marshal Jira webhook registration request",
 			zap.Any("request", r),
 			zap.Error(err),
 		)
@@ -185,7 +185,7 @@ func registerWebhook(l *zap.Logger, base, token string) (int, bool) {
 	jsonReader := bytes.NewReader(body)
 	req, err := http.NewRequest("POST", base+"/rest/api/3/webhook", jsonReader)
 	if err != nil {
-		l.Warn("Failed to construct HTTP request to register Jira webhook", zap.Error(err))
+		l.Error("Failed to construct HTTP request to register Jira webhook", zap.Error(err))
 		return 0, false
 	}
 
@@ -194,20 +194,20 @@ func registerWebhook(l *zap.Logger, base, token string) (int, bool) {
 
 	resp, err := httpClient.Do(req)
 	if err != nil {
-		l.Warn("Failed to register Jira webhook", zap.Error(err))
+		l.Error("Failed to register Jira webhook", zap.Error(err))
 		return 0, false
 	}
 	defer resp.Body.Close()
 
 	body, err = io.ReadAll(resp.Body)
 	if err != nil {
-		l.Warn("Failed to read Jira webhook registration response", zap.Error(err))
+		l.Error("Failed to read Jira webhook registration response", zap.Error(err))
 		return 0, false
 	}
 
 	// Error mode 1: based on HTTP status code.
 	if resp.StatusCode != http.StatusOK {
-		l.Warn("Unexpected response to Jira webhook registration request",
+		l.Error("Unexpected response to Jira webhook registration request",
 			zap.Int("status", resp.StatusCode),
 			zap.ByteString("body", body),
 		)
@@ -216,7 +216,7 @@ func registerWebhook(l *zap.Logger, base, token string) (int, bool) {
 
 	var reg webhookRegisterResponse
 	if err := json.Unmarshal(body, &reg); err != nil {
-		l.Warn("Failed to unmarshal Jira webhook registration result from JSON",
+		l.Error("Failed to unmarshal Jira webhook registration result from JSON",
 			zap.ByteString("body", body),
 			zap.Error(err),
 		)
@@ -225,10 +225,10 @@ func registerWebhook(l *zap.Logger, base, token string) (int, bool) {
 
 	// Error mode 2: based on error messages in the parsed JSON response.
 	if len(reg.Result) == 0 {
-		l.Warn("Jira webhook registration result not found", zap.ByteString("body", body))
+		l.Error("Jira webhook registration result not found", zap.ByteString("body", body))
 	}
 	if len(reg.Result[0].Errors) > 0 {
-		l.Warn("Jira webhook registration errors", zap.Strings("errors", reg.Result[0].Errors))
+		l.Error("Jira webhook registration errors", zap.Strings("errors", reg.Result[0].Errors))
 		return 0, false
 	}
 
@@ -245,7 +245,7 @@ func extendWebhookLife(l *zap.Logger, baseURL, oauthToken string, id int) (time.
 	jsonReader := bytes.NewReader([]byte(fmt.Sprintf(`{"webhookIds": [%d]}`, id)))
 	req, err := http.NewRequest("PUT", baseURL+"/rest/api/3/webhook/refresh", jsonReader)
 	if err != nil {
-		l.Warn("Failed to construct HTTP request to refresh Jira webhook", zap.Error(err))
+		l.Error("Failed to construct HTTP request to refresh Jira webhook", zap.Error(err))
 		return time.Time{}, false
 	}
 
@@ -254,19 +254,19 @@ func extendWebhookLife(l *zap.Logger, baseURL, oauthToken string, id int) (time.
 
 	resp, err := httpClient.Do(req)
 	if err != nil {
-		l.Warn("Failed to refresh Jira webhook", zap.Error(err))
+		l.Error("Failed to refresh Jira webhook", zap.Error(err))
 		return time.Time{}, false
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		l.Warn("Failed to read Jira webhook refresh response", zap.Error(err))
+		l.Error("Failed to read Jira webhook refresh response", zap.Error(err))
 		return time.Time{}, false
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		l.Warn("Unexpected response to Jira webhook refresh request",
+		l.Error("Unexpected response to Jira webhook refresh request",
 			zap.Int("status", resp.StatusCode),
 			zap.ByteString("body", body),
 		)
@@ -275,7 +275,7 @@ func extendWebhookLife(l *zap.Logger, baseURL, oauthToken string, id int) (time.
 
 	var ref webhookRefreshResponse
 	if err := json.Unmarshal(body, &ref); err != nil {
-		l.Warn("Failed to unmarshal Jira webhook refresh result from JSON",
+		l.Error("Failed to unmarshal Jira webhook refresh result from JSON",
 			zap.ByteString("body", body),
 			zap.Error(err),
 		)
@@ -284,7 +284,7 @@ func extendWebhookLife(l *zap.Logger, baseURL, oauthToken string, id int) (time.
 
 	t, err := time.Parse("2006-01-02T15:04:05.000-0700", ref.ExpirationDate)
 	if err != nil {
-		l.Warn("Failed to parse Jira webhook expiration date",
+		l.Error("Failed to parse Jira webhook expiration date",
 			zap.String("time", ref.ExpirationDate),
 		)
 		return utc30Days(), true
