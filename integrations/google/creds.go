@@ -14,6 +14,7 @@ import (
 	"go.autokitteh.dev/autokitteh/integrations/google/gmail"
 	"go.autokitteh.dev/autokitteh/integrations/google/internal/vars"
 	"go.autokitteh.dev/autokitteh/integrations/internal/extrazap"
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -64,27 +65,12 @@ func (h handler) handleCreds(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Sanity check: the connection ID is valid.
-	cid, err := sdktypes.StrictParseConnectionID(c.ConnectionID)
-	if err != nil {
-		l.Warn("Invalid connection ID", zap.Error(err))
-		c.Abort("invalid connection ID")
-		return
-	}
-
-	ctx := extrazap.AttachLoggerToContext(l, r.Context())
 	switch r.PostFormValue("auth_type") {
 	// GCP service-account JSON-key connection? Save the JSON key.
 	case "", "json":
-		c.Finalize(sdktypes.EncodeVars(&vars.Vars{JSON: r.PostFormValue("json"), FormID: formID}))
-
-		if err := forms.UpdateWatches(ctx, h.vars, cid); err != nil {
-			l.Error("Google form watches creation error", zap.Error(err))
-		}
-
-		if err := gmail.UpdateWatch(ctx, h.vars, cid); err != nil {
-			l.Error("Gmail watch creation error", zap.Error(err))
-		}
+		ctx := extrazap.AttachLoggerToContext(l, r.Context())
+		vs := sdktypes.EncodeVars(&vars.Vars{JSON: r.PostFormValue("json"), FormID: formID})
+		h.finalize(ctx, c, vs)
 
 	// User OAuth connect? Redirect to AutoKitteh's OAuth starting point.
 	case "oauth":
@@ -109,6 +95,47 @@ func (h handler) saveFormID(ctx context.Context, c sdkintegrations.ConnectionIni
 		return err
 	}
 	return nil
+}
+
+// finalize saves the user-submitted JSON key and optional Google Forms ID.
+// It also initializes watches for Gmail and Google Forms, if needed.
+func (h handler) finalize(ctx context.Context, c sdkintegrations.ConnectionInit, vs sdktypes.Vars) {
+	l := extrazap.ExtractLoggerFromContext(ctx)
+
+	// Sanity check: the connection ID is valid.
+	cid, err := sdktypes.StrictParseConnectionID(c.ConnectionID)
+	if err != nil {
+		l.Warn("Invalid connection ID", zap.Error(err))
+		c.Abort("invalid connection ID")
+		return
+	}
+
+	// Unique step for Google integrations (specifically for Gmail and Forms):
+	// save the auth data before creating/updating event watches.
+	vsl := kittehs.TransformMapToList(vs.ToMap(), func(_ sdktypes.Symbol, v sdktypes.Var) sdktypes.Var {
+		return v.WithScopeID(sdktypes.NewVarScopeID(cid))
+	})
+
+	if err := h.vars.Set(ctx, vsl...); err != nil {
+		l.Error("Connection data saving error", zap.Error(err))
+		c.AbortWithStatus(http.StatusInternalServerError, "connection data saving error")
+		return
+	}
+
+	if err := forms.UpdateWatches(ctx, h.vars, cid); err != nil {
+		l.Error("Google form watches creation error", zap.Error(err))
+		c.AbortWithStatus(http.StatusInternalServerError, "Google form watches creation error")
+		return
+	}
+
+	if err := gmail.UpdateWatch(ctx, h.vars, cid); err != nil {
+		l.Error("Gmail watch creation error", zap.Error(err))
+		c.AbortWithStatus(http.StatusInternalServerError, "Gmail watch creation error")
+		return
+	}
+
+	// Redirect to the post-init handler to finish the connection setup.
+	c.Finalize(vsl)
 }
 
 func oauthURL(form url.Values, c sdkintegrations.ConnectionInit) string {
