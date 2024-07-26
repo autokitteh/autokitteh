@@ -59,7 +59,7 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Ensure the base URL is formatted as we expect.
-	b = fmt.Sprintf("%s://%s\n", u.Scheme, u.Host)
+	b = fmt.Sprintf("%s://%s", u.Scheme, u.Host)
 
 	initData := sdktypes.NewVars().Set(baseURL, b, false).Set(token, t, true)
 	if e != "" {
