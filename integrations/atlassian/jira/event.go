@@ -144,7 +144,7 @@ func verifyJWT(l *zap.Logger, authz string) bool {
 func constructEvent(l *zap.Logger, jiraEvent map[string]any) (sdktypes.Event, error) {
 	l = l.With(zap.Any("event", jiraEvent))
 
-	wrapped, err := sdktypes.DefaultValueWrapper.Wrap(jiraEvent)
+	wrapped, err := sdktypes.WrapValue(jiraEvent)
 	if err != nil {
 		l.Error("Failed to wrap Jira event", zap.Error(err))
 		return sdktypes.InvalidEvent, err

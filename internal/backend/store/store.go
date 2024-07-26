@@ -119,7 +119,7 @@ func (s *store) Get(ctx context.Context, envID sdktypes.EnvID, projectID sdktype
 
 	m := make(map[string]sdktypes.Value, len(vs))
 	for i, k := range keys {
-		if m[k], err = sdktypes.DefaultValueWrapper.Wrap(vs[i]); err != nil {
+		if m[k], err = sdktypes.WrapValue(vs[i]); err != nil {
 			return nil, fmt.Errorf("wrap #%d: %w", i, err)
 		}
 	}

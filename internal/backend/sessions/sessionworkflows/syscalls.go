@@ -181,7 +181,7 @@ func (w *sessionWorkflow) subscribe(ctx context.Context, args []sdktypes.Value, 
 		return sdktypes.InvalidValue, err
 	}
 
-	return sdktypes.DefaultValueWrapper.Wrap(signalID)
+	return sdktypes.WrapValue(signalID)
 }
 
 /*
@@ -215,7 +215,7 @@ func (w *sessionWorkflow) nextEvent(ctx context.Context, args []sdktypes.Value, 
 			return sdktypes.InvalidValue, err
 		}
 		if event != nil {
-			return sdktypes.DefaultValueWrapper.Wrap(event)
+			return sdktypes.WrapValue(event)
 		}
 	}
 
@@ -237,7 +237,7 @@ func (w *sessionWorkflow) nextEvent(ctx context.Context, args []sdktypes.Value, 
 		return sdktypes.InvalidValue, fmt.Errorf("no event received")
 	}
 
-	return sdktypes.DefaultValueWrapper.Wrap(event)
+	return sdktypes.WrapValue(event)
 }
 
 func (w *sessionWorkflow) unsubscribe(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {

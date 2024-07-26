@@ -39,7 +39,7 @@ func ConstructEvent(ctx context.Context, vars sdkservices.Vars, formsEvent map[s
 	}
 
 	// Convert the raw data to an AutoKitteh event.
-	wrapped, err := sdktypes.DefaultValueWrapper.Wrap(formsEvent)
+	wrapped, err := sdktypes.WrapValue(formsEvent)
 	if err != nil {
 		l.Error("Failed to wrap Google Forms event", zap.Error(err))
 		return sdktypes.InvalidEvent, err

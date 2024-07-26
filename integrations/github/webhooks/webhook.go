@@ -191,7 +191,7 @@ func extractInstallationID(event any) (inst string, err error) {
 
 // transformEvent transforms a received GitHub event into an autokitteh event.
 func transformEvent(l *zap.Logger, w http.ResponseWriter, event any) (map[string]*sdktypes.ValuePB, error) {
-	wrapped, err := sdktypes.DefaultValueWrapper.Wrap(event)
+	wrapped, err := sdktypes.WrapValue(event)
 	if err != nil {
 		l.Error("Failed to wrap GitHub event", zap.Any("event", event), zap.Error(err))
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
