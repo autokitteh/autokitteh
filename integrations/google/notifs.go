@@ -15,9 +15,9 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-// handlNotif receives and dispatches asynchronous Google Forms
+// handleFormsNotification receives and dispatches asynchronous Google Forms
 // notifications from a push subscription to a GCP Cloud Pub/Sub topic.
-func (h handler) handleFormsNotif(w http.ResponseWriter, r *http.Request) {
+func (h handler) handleFormsNotification(w http.ResponseWriter, r *http.Request) {
 	l := h.logger.With(
 		zap.String("urlPath", r.URL.Path),
 		zap.String("eventType", r.Header.Get("Eventtype")),
@@ -73,9 +73,9 @@ type gmailNotifBody struct {
 	HistoryID    int    `json:"historyId"`
 }
 
-// handlNotif receives and dispatches asynchronous Gmail
+// handleGmailNotification receives and dispatches asynchronous Gmail
 // notifications from a push subscription to a GCP Cloud Pub/Sub topic.
-func (h handler) handleGmailNotif(w http.ResponseWriter, r *http.Request) {
+func (h handler) handleGmailNotification(w http.ResponseWriter, r *http.Request) {
 	l := h.logger.With(
 		zap.String("urlPath", r.URL.Path),
 		zap.String("messageID", r.Header.Get("X-Goog-Pubsub-Message-Id")),

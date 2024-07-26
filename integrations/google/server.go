@@ -53,6 +53,6 @@ func Start(l *zap.Logger, mux *http.ServeMux, v sdkservices.Vars, o sdkservices.
 	mux.HandleFunc("POST "+credsPath, h.handleCreds)
 
 	// Event webhooks.
-	mux.HandleFunc("POST "+formsWebhookPath, h.handleFormsNotif)
-	mux.HandleFunc("POST "+gmailWebhookPath, h.handleGmailNotif)
+	mux.HandleFunc("POST "+formsWebhookPath, h.handleFormsNotification)
+	mux.HandleFunc("POST "+gmailWebhookPath, h.handleGmailNotification)
 }
