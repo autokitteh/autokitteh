@@ -87,19 +87,19 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 
 	if err := h.vars.Set(ctx, vsl...); err != nil {
 		l.Error("Connection data saving error", zap.Error(err))
-		c.AbortISE("connection data saving error")
+		c.AbortServerError("connection data saving error")
 		return
 	}
 
 	if err := forms.UpdateWatches(ctx, h.vars, cid); err != nil {
 		l.Error("Google Forms watches creation error", zap.Error(err))
-		c.AbortISE("Google Forms watches creation error")
+		c.AbortServerError("form watches creation error")
 		return
 	}
 
 	if err := gmail.UpdateWatch(ctx, h.vars, cid); err != nil {
 		l.Error("Gmail watch creation error", zap.Error(err))
-		c.AbortISE("Gmail watch creation error")
+		c.AbortServerError("Gmail watch creation error")
 		return
 	}
 

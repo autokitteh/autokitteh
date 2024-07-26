@@ -77,7 +77,7 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 
 			if err := deleteWebhook(l, b, e, t, id); err != nil {
 				l.Error("Failed to delete existing webhook", zap.Error(err))
-				c.AbortISE("failed to delete existing webhook")
+				c.AbortServerError("failed to delete existing webhook")
 				return
 			}
 		} // else {
@@ -86,7 +86,7 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 		id, secret, err = registerWebhook(l, b, e, t, category)
 		if err != nil {
 			l.Error("Failed to register webhook", zap.Error(err))
-			c.AbortISE("failed to register webhook")
+			c.AbortServerError("failed to register webhook")
 			return
 		}
 		initData = initData.Set(webhookSecret(category), secret, true)

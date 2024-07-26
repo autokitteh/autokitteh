@@ -45,8 +45,8 @@ func (c ConnectionInit) AbortBadRequest(err string) {
 	c.AbortWithStatus(http.StatusBadRequest, err)
 }
 
-// AbortISE is the same as [AbortWithStatus] with HTTP 500 (Internal Server Error).
-func (c ConnectionInit) AbortISE(err string) {
+// AbortServerError is the same as [AbortWithStatus] with HTTP 500 (Internal Server Error).
+func (c ConnectionInit) AbortServerError(err string) {
 	c.AbortWithStatus(http.StatusInternalServerError, err)
 }
 
@@ -79,7 +79,7 @@ func (c ConnectionInit) Finalize(data []sdktypes.Var) {
 	vars, err := kittehs.EncodeURLData(data)
 	if err != nil {
 		c.logger.Error("Connection data encoding error", zap.Error(err))
-		c.AbortISE("connection data encoding error")
+		c.AbortServerError("connection data encoding error")
 		return
 	}
 

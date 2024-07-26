@@ -50,7 +50,7 @@ func (h handler) handleCreds(w http.ResponseWriter, r *http.Request) {
 		ok, err := regexp.MatchString(`[\w-]{20,}`, formID)
 		if err != nil {
 			l.Error("Google Forms form ID validation error", zap.Error(err))
-			c.AbortISE(fmt.Sprintf("form ID validation error: %v", err))
+			c.AbortServerError(fmt.Sprintf("form ID validation error: %v", err))
 			return
 		}
 		if !ok {
@@ -61,7 +61,7 @@ func (h handler) handleCreds(w http.ResponseWriter, r *http.Request) {
 
 		if err := h.saveFormID(r.Context(), c, formID); err != nil {
 			l.Error("Google Forms form ID saving error", zap.Error(err))
-			c.AbortISE("form ID saving error")
+			c.AbortServerError("form ID saving error")
 			return
 		}
 	}
@@ -80,7 +80,7 @@ func (h handler) handleCreds(w http.ResponseWriter, r *http.Request) {
 	// Unknown mode.
 	default:
 		l.Error("Unexpected auth type", zap.String("auth_type", r.PostFormValue("auth_type")))
-		c.AbortISE(fmt.Sprintf("unexpected auth type %q", r.PostFormValue("auth_type")))
+		c.AbortServerError(fmt.Sprintf("unexpected auth type %q", r.PostFormValue("auth_type")))
 	}
 }
 
@@ -119,19 +119,19 @@ func (h handler) finalize(ctx context.Context, c sdkintegrations.ConnectionInit,
 
 	if err := h.vars.Set(ctx, vsl...); err != nil {
 		l.Error("Connection data saving error", zap.Error(err))
-		c.AbortISE("connection data saving error")
+		c.AbortServerError("connection data saving error")
 		return
 	}
 
 	if err := forms.UpdateWatches(ctx, h.vars, cid); err != nil {
 		l.Error("Google Forms watches creation error", zap.Error(err))
-		c.AbortISE("Google Forms watches creation error")
+		c.AbortServerError("form watches creation error")
 		return
 	}
 
 	if err := gmail.UpdateWatch(ctx, h.vars, cid); err != nil {
 		l.Error("Gmail watch creation error", zap.Error(err))
-		c.AbortISE("Gmail watch creation error")
+		c.AbortServerError("Gmail watch creation error")
 		return
 	}
 

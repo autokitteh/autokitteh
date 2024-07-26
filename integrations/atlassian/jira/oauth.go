@@ -79,13 +79,13 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		id, ok = registerWebhook(l, url, oauthToken.AccessToken)
 		if !ok {
-			c.AbortISE("failed to register webhook")
+			c.AbortServerError("failed to register webhook")
 			return
 		}
 	} else {
 		t, ok = extendWebhookLife(l, url, oauthToken.AccessToken, id)
 		if !ok {
-			c.AbortISE("failed to extend webhook life")
+			c.AbortServerError("failed to extend webhook life")
 			return
 		}
 	}
