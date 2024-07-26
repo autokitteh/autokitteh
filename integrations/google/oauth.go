@@ -11,29 +11,17 @@ import (
 	"google.golang.org/api/option"
 
 	"go.autokitteh.dev/autokitteh/integrations/google/forms"
+	"go.autokitteh.dev/autokitteh/integrations/google/gmail"
 	"go.autokitteh.dev/autokitteh/integrations/google/internal/vars"
 	"go.autokitteh.dev/autokitteh/integrations/internal/extrazap"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
-	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-// handler is an autokitteh webhook which implements [http.Handler]
-// to receive and dispatch asynchronous event notifications.
-type handler struct {
-	logger *zap.Logger
-	oauth  sdkservices.OAuth
-	vars   sdkservices.Vars
-}
-
-func NewHTTPHandler(l *zap.Logger, o sdkservices.OAuth, v sdkservices.Vars) handler {
-	return handler{logger: l, oauth: o, vars: v}
-}
-
-// handleOAuth receives an inbound redirect request from autokitteh's OAuth
+// handleOAuth receives an incoming redirect request from AutoKitteh's OAuth
 // management service. This request contains an OAuth token (if the OAuth
 // flow was successful) and form parameters for debugging and validation
-// (either way). If all is well, it saves a new autokitteh connection.
+// (either way). If all is well, it saves a new AutoKitteh connection.
 // Either way, it redirects the user to success or failure webpages.
 func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 	c, l := sdkintegrations.NewConnectionInit(h.logger, w, r, desc)
@@ -79,15 +67,26 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := forms.UpdateWatches(ctx, h.vars, c); err != nil {
-		l.Error("Form watches creation error", zap.Error(err))
-		c.AbortWithStatus(http.StatusInternalServerError, "form watches creation error")
+	// Sanity check: the connection ID is valid.
+	cid, err := sdktypes.StrictParseConnectionID(c.ConnectionID)
+	if err != nil {
+		l.Warn("Invalid connection ID", zap.Error(err))
+		c.Abort("invalid connection ID")
+		return
 	}
 
 	// Encoding "OAuthData" and "JSON", but not "FormID", so we don't overwrite
 	// the value that was already written there by the creds.go passthrough.
 	c.Finalize(sdktypes.NewVars(sdktypes.NewVar(vars.OAuthData, raw, true)).
 		Set(vars.JSON, "", true).Append(data.ToVars()...).Append(user...))
+
+	if err := forms.UpdateWatches(ctx, h.vars, cid); err != nil {
+		l.Error("Google form watches creation error", zap.Error(err))
+	}
+
+	if err := gmail.UpdateWatch(ctx, h.vars, cid); err != nil {
+		l.Error("Gmail watch creation error", zap.Error(err))
+	}
 }
 
 func (h handler) tokenSource(ctx context.Context, t *oauth2.Token) oauth2.TokenSource {

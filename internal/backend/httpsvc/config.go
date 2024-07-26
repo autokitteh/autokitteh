@@ -80,6 +80,7 @@ var Configs = configset.Set[Config]{
 			UnimportantRegexes: []string{
 				`^/autokitteh.+/(Get|List)$`, // gRPC Get and List methods
 				`/(healthz|readyz)$`,         // Kubernetes health checks
+				`^/oauth/|/oauth$|/save$`,    // Connection initialization
 			},
 			UnloggedRegexes: []string{
 				`\.(css|html|ico|js|png|svg|txt|webmanifest)$`, // Static web content
