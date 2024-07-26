@@ -172,7 +172,7 @@ func extractBaseURL(atlassianEvent map[string]any) string {
 func constructEvent(l *zap.Logger, atlassianEvent map[string]any, eventType string) (sdktypes.Event, error) {
 	l = l.With(zap.Any("event", atlassianEvent))
 
-	wrapped, err := sdktypes.DefaultValueWrapper.Wrap(atlassianEvent)
+	wrapped, err := sdktypes.WrapValue(atlassianEvent)
 	if err != nil {
 		l.Error("Failed to wrap Atlassian event", zap.Error(err))
 		return sdktypes.InvalidEvent, err
