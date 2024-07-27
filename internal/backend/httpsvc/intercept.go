@@ -60,11 +60,6 @@ func intercept(z *zap.Logger, cfg *LoggerConfig, extractors []RequestLogExtracto
 	unlogged := regexp.MustCompile(strings.Join(cfg.UnloggedRegexes, `|`))
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		if unlogged.MatchString(r.URL.Path) {
-			next.ServeHTTP(w, r)
-			return
-		}
-
 		w.Header().Set("X-AutoKitteh-Process-ID", fixtures.ProcessID())
 
 		l := z.With(zap.String("method", r.Method), zap.String("path", r.URL.Path))
@@ -72,14 +67,22 @@ func intercept(z *zap.Logger, cfg *LoggerConfig, extractors []RequestLogExtracto
 
 		w.Header().Set("Trailer", "X-AutoKitteh-Duration")
 
+		// Call the next handler in the chain, and calculate the duration.
 		startTime := time.Now()
 		r = r.WithContext(context.WithValue(r.Context(), startTimeCtxKey, startTime))
 
 		next.ServeHTTP(rwi, r)
-		d := time.Since(startTime)
 
+		d := time.Since(startTime)
 		w.Header().Add("X-AutoKitteh-Duration", d.Truncate(time.Microsecond).String())
 
+		// Don't log some requests, unless they result in an error.
+		if unlogged.MatchString(r.URL.Path) && rwi.StatusCode < 400 {
+			return
+		}
+
+		// Otherwise, determine the log level based on the request's
+		// URL path and the response's HTTP status code.
 		level := cfg.ImportantLevel.Level()
 		if unimportant.MatchString(r.URL.Path) {
 			level = cfg.UnimportantLevel.Level()
