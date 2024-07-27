@@ -1,0 +1,11 @@
+[stdout] meow, world!
+
+-- main.py:main --
+import foo
+
+def main(event):
+    foo.foo("meow")
+
+-- foo.py --
+def foo(x):
+    print(x + ", world!")

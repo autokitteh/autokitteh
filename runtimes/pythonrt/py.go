@@ -52,7 +52,7 @@ func copyFS(fsys fs.FS, root string) error {
 
 		dest := path.Join(root, name)
 		dirName := path.Dir(dest)
-		if err := os.MkdirAll(dirName, 0755); err != nil {
+		if err := os.MkdirAll(dirName, 0o755); err != nil {
 			return err
 		}
 

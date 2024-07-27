@@ -259,7 +259,7 @@ func (py *pySvc) handleLog(msg Message) error {
 func (py *pySvc) loadSyscall(values map[string]sdktypes.Value) error {
 	ak, ok := values["ak"]
 	if !ok {
-		return fmt.Errorf("`ak` not found")
+		return nil
 	}
 
 	if !ak.IsStruct() {
@@ -726,6 +726,10 @@ func packSyscallArgs(msg CallMessage) ([]sdktypes.Value, map[string]sdktypes.Val
 }
 
 func (py *pySvc) handleCall(ctx context.Context, msg CallMessage) error {
+	if !py.syscallFn.IsValid() {
+		return fmt.Errorf("no syscall function")
+	}
+
 	args, kw, err := packSyscallArgs(msg)
 	if err != nil {
 		return fmt.Errorf("syscall of %#v - %w", msg, err)

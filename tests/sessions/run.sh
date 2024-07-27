@@ -3,6 +3,7 @@
 set -euo pipefail
 
 TESTS="${TESTS-*.txtar}"
+PYTHON="${PYTHON-skip}"
 
 # if set, will not start its own ak instance.
 AK_ADDR="${AK_ADDR-}"
@@ -67,11 +68,31 @@ trap ontrap 0
 export AK
 
 for f in tests/sessions/${TESTS}; do
-    up "$(basename "${f}")"
+    name="$(basename "${f}")"
+
+    echo "--- ${f} ---"
+
+    case "${PYTHON}" in
+        skip)
+            if [[ ${name} == python_* ]]; then
+                echo "skipping python test"
+                continue
+            fi
+            ;;
+        only)
+            if [[ ${name} != python_* ]]; then
+                echo "skipping non-python test"
+                continue
+            fi
+            ;;
+        *)
+            ;;
+    esac
+
+    up "${name}"
 
     AK="${PWD}/${ak_filename} -C http.service_url=http://$(cat ${addr_filename})"
 
-    echo "--- ${f} ---"
     ${AK} session test --quiet "${f}"
 
     down 
