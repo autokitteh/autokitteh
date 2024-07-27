@@ -28,7 +28,7 @@ def discord_client(connection: str, intents=None, **kwargs) -> discord.Client:
     if not intents:
         intents = discord.Intents.default()
 
-    bot_token = os.getenv(connection + "__botToken")
+    bot_token = os.getenv(connection + "__BotToken")
     if not bot_token:
         raise ConnectionInitError(connection)
 
