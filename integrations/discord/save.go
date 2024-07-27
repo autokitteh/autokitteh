@@ -45,5 +45,5 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	c.Finalize(sdktypes.NewVars().Set(botToken, r.Form.Get("BotToken"), true))
+	c.Finalize(sdktypes.NewVars().Set(botToken, r.Form.Get("botToken"), true))
 }
