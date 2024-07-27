@@ -1,0 +1,12 @@
+version: v1
+
+project:
+  name: python
+  connections:
+    - name: myhttp
+      integration: "http"
+  triggers:
+    - name: get
+      event_type: get
+      connection: myhttp
+      entrypoint: main.py:on_http_get
