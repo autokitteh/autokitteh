@@ -20,3 +20,21 @@ jobs:
           python-version: "3.12" # Should be in sync with runtimes/pythonrt/pythonrt.go:minPyVersion
       - name: Test
         run: cd runtimes/pythonrt && make ci
+
+  test-python-sessions:
+    name: Python Session tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12" # Should be in sync with runtimes/pythonrt/pythonrt.go:minPyVersion
+      - name: Python Session tests
+        run: PYTHON=only make bin/ak test-sessions
