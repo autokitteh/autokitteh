@@ -14,7 +14,7 @@ import (
 )
 
 type bannerConfig struct {
-	Show bool
+	Show bool `koanf:"show"`
 }
 
 var bannerConfigs = configset.Set[bannerConfig]{
