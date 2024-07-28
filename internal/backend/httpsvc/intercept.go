@@ -73,8 +73,8 @@ func intercept(z *zap.Logger, cfg *LoggerConfig, extractors []RequestLogExtracto
 
 		next.ServeHTTP(rwi, r)
 
-		d := time.Since(startTime)
-		w.Header().Add("X-AutoKitteh-Duration", d.Truncate(time.Microsecond).String())
+		duration := time.Since(startTime)
+		w.Header().Add("X-AutoKitteh-Duration", duration.Truncate(time.Microsecond).String())
 
 		// Don't log some requests, unless they result in an error.
 		if unlogged.MatchString(r.URL.Path) && rwi.StatusCode < 400 {
@@ -91,7 +91,7 @@ func intercept(z *zap.Logger, cfg *LoggerConfig, extractors []RequestLogExtracto
 			level = cfg.ErrorsLevel.Level()
 		}
 
-		l = l.With(zap.Int("statusCode", rwi.StatusCode), zap.Duration("duration", d))
+		l = l.With(zap.Int("statusCode", rwi.StatusCode), zap.Duration("duration", duration))
 		msg := fmt.Sprintf("Response to incoming HTTP request: %s %s", r.Method, r.URL.Path)
 		if ce := l.Check(level, msg); ce != nil {
 			var fields []zap.Field
