@@ -78,6 +78,7 @@ name_of_cases = [
     ('requests.get("https://go.dev")', "requests.get"),
     ('sheets.values().get("A1:B4").execute()', "sheets.values.get.execute"),
     ('label["name"].lower()', 'label["name"].lower'),
+    ("(datetime.now() - t0).total_seconds()", "(datetime.now - t0).total_seconds"),
 ]
 
 
