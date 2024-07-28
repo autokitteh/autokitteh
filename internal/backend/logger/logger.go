@@ -1,6 +1,7 @@
 package logger
 
 import (
+	"strconv"
 	"time"
 
 	"go.uber.org/zap"
@@ -37,11 +38,17 @@ func (onPanicHook) OnWrite(ce *zapcore.CheckedEntry, fs []zapcore.Field) {
 }
 
 func New(cfg *Config) (*zap.Logger, error) {
-	// Optional override for the default level (info).
+	// Optional override for the default level (0 = info).
 	if cfg.Level != "" {
+		// Accept lower-case or all-caps level names, as defined by Zap.
 		level, err := zapcore.ParseLevel(cfg.Level)
 		if err != nil {
-			return nil, err
+			// Temporary: numeric level IDs, as used internally by Zap.
+			if n, e := strconv.Atoi(cfg.Level); e == nil {
+				level = zapcore.Level(n)
+			} else {
+				return nil, err
+			}
 		}
 		cfg.Zap.Level.SetLevel(level)
 	}
