@@ -5,56 +5,11 @@ from types import ModuleType
 
 from . import log
 
-bin_ops = {
-    ast.Add: "+",
-    ast.Sub: "-",
-    ast.Mult: "*",
-    ast.MatMult: "@",
-    ast.Div: "/",
-    ast.Mod: "%",
-    ast.Pow: "**",
-    ast.LShift: "<<",
-    ast.RShift: ">>",
-    ast.BitOr: "|",
-    ast.BitXor: "^",
-    ast.BitAnd: "&",
-    ast.FloorDiv: "//",
-}
-
 
 def name_of(node, code_lines):
     line = code_lines[node.lineno - 1]
     name = line[node.col_offset : node.end_col_offset]
     return name
-
-
-def _name_of(node):
-    """Name of call node (e.g. 'requests.get')"""
-    if isinstance(node, ast.Subscript):
-        name = node.value.id
-        slice = node.slice.value
-        return f'{name}["{slice}"]'
-
-    if isinstance(node, ast.Constant):
-        return node.value
-
-    if isinstance(node, ast.Attribute):
-        prefix = name_of(node.value)
-        return f"{prefix}.{node.attr}"
-
-    if isinstance(node, ast.Call):
-        return name_of(node.func)
-
-    if isinstance(node, ast.Name):
-        return node.id
-
-    if isinstance(node, ast.BinOp):
-        left = name_of(node.left)
-        right = name_of(node.right)
-        op = bin_ops.get(type(node.op), "?")
-        return f"({left} {op} {right})"
-
-    raise ValueError(f"unknown AST node type: {node!r}")
 
 
 ACTION_NAME = "_ak_call"
