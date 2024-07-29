@@ -105,7 +105,19 @@ func runWorkflow(
 
 	prints, err = w.run(ctx)
 
+	w.cleanupSignals(ctx)
 	return
+}
+
+func (w *sessionWorkflow) cleanupSignals(ctx workflow.Context) {
+	goCtx := temporalclient.NewWorkflowContextAsGOContext(ctx)
+	for signalID := range w.signals {
+		if err := w.ws.svcs.DB.RemoveSignal(goCtx, signalID); err != nil {
+			// No need to to any handling in case of an error, it won't be used again
+			// at most we would have db garabge we can clear up later with background jobs
+			w.z.Warn(fmt.Sprintf("failed removing signal %s, err: %s", signalID, err), zap.String("signalID", signalID), zap.Error(err))
+		}
+	}
 }
 
 func (w *sessionWorkflow) updateState(ctx workflow.Context, state sdktypes.SessionState) error {
