@@ -2,22 +2,14 @@
 
 ## Framework
 
-We use structured logging, and specifically we use [Zap](https://github.com/uber-go/zap)
-as our logging framework.
-
-Why not something else?
-
-- [Zerolog](https://github.com/rs/zerolog) is more performant and better
-  looking, but its syntax is more error-prone (no logging in case you forget
-  to call `Msg("...")` at the end)
-- Go's [Slog](https://pkg.go.dev/log/slog) is new, slower (according to Zap
-  benchmarks), and doesn't provide useful benefits
+We use structured logging, and specifically we currently use
+[Zap](https://github.com/uber-go/zap) as our logging framework.
 
 ## Default Level
 
 The default logging level is [Info](https://pkg.go.dev/go.uber.org/zap/zapcore#InfoLevel).
-To change this, set the following AutoKitteh config value to the lower-case or
-all-caps name of the level you want. For example:
+To change this, set the following AutoKitteh config value to the
+case-insensitive name of the level you want. For example:
 
 - CLI: `ak config set logger.level debug`
 
@@ -133,7 +125,7 @@ func foo(l *zap.Logger) {
 
     // Bad: "ddd" remains after the condition's block.
     if ... {
-		l := l.With(zap.String("ddd", "444"))
+		l = l.With(zap.String("ddd", "444"))
 		l.Info("...", zap.String("eee", "555"))
     }
 
