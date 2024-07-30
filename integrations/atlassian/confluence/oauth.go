@@ -129,10 +129,10 @@ func accessibleResources(l *zap.Logger, baseURL string, token string) ([]resourc
 
 func (r resource) toVars() sdktypes.Vars {
 	return []sdktypes.Var{
-		sdktypes.NewVar(accessID, r.ID, false),
-		sdktypes.NewVar(accessURL, r.URL, false),
-		sdktypes.NewVar(accessName, r.Name, false),
-		sdktypes.NewVar(accessScope, fmt.Sprintf("%s", r.Scopes), false),
-		sdktypes.NewVar(accessAvatarURL, r.AvatarURL, false),
+		sdktypes.NewVar(accessID).SetValue(r.ID),
+		sdktypes.NewVar(accessURL).SetValue(r.URL),
+		sdktypes.NewVar(accessName).SetValue(r.Name),
+		sdktypes.NewVar(accessScope).SetValue(fmt.Sprintf("%s", r.Scopes)),
+		sdktypes.NewVar(accessAvatarURL).SetValue(r.AvatarURL),
 	}
 }

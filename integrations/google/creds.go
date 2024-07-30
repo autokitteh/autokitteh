@@ -91,7 +91,7 @@ func (h handler) saveFormID(ctx context.Context, c sdkintegrations.ConnectionIni
 		return fmt.Errorf("connection ID parsing error: %w", err)
 	}
 
-	v := sdktypes.NewVar(vars.FormID, formID, false).WithScopeID(sdktypes.NewVarScopeID(cid))
+	v := sdktypes.NewVar(vars.FormID).SetValue(formID).WithScopeID(sdktypes.NewVarScopeID(cid))
 	if err := h.vars.Set(ctx, v); err != nil {
 		return err
 	}
