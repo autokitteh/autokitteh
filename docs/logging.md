@@ -141,6 +141,11 @@ func foo(l *zap.Logger) {
 }
 ```
 
+## Secure Error Handling and Logging
+
+OWASP secure coding practices checklist - error handling and logging:
+https://owasp.org/www-project-secure-coding-practices-quick-reference-guide/stable-en/02-checklist/05-checklist#error-handling-and-logging
+
 ## Other Recommendations
 
 Usually, you should write logs as close as possible to the reason for logging.
