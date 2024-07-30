@@ -15,7 +15,7 @@ Why not something else?
 
 ## Default Level
 
-The default minimum logging level is [Info](https://pkg.go.dev/go.uber.org/zap/zapcore#InfoLevel).
+The default logging level is [Info](https://pkg.go.dev/go.uber.org/zap/zapcore#InfoLevel).
 To change this, set the following AutoKitteh config value to the lower-case or
 all-caps name of the level you want. For example:
 
