@@ -79,7 +79,7 @@ func three() {
 In other words, you **should** attach a logger to a context before passing it
 to a function that uses `extrazap`, but it will work even if you don't.
 
-Because of that, there's no need to call [zap.L()](https://pkg.go.dev/go.uber.org/zap#L)
+Because of that, you shouldn't to call [zap.L()](https://pkg.go.dev/go.uber.org/zap#L)
 directly.
 
 Anyway, do not pass both a context and a logger as function parameters, this
