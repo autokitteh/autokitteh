@@ -25,7 +25,7 @@ func (gdb *gormdb) createConnection(ctx context.Context, conn *scheme.Connection
 		if err := tx.
 			Model(&scheme.Connection{}).
 			Scopes(withUserEntity(ctx, gdb, "connection", uid)).
-			Where("name = ? and project_id is ? OR project_id IS NULL", conn.Name, conn.ProjectID).Count(&count).Error; err != nil {
+			Where("name = ? AND (project_id is ? OR project_id IS NULL)", conn.Name, conn.ProjectID).Count(&count).Error; err != nil {
 			return err
 		}
 		if count > 0 {

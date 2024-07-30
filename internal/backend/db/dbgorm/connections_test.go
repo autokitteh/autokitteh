@@ -70,7 +70,7 @@ func TestCreateConnectionForeignKeys(t *testing.T) {
 
 func TestCreateConnectionSameName(t *testing.T) {
 	// test createConneciton without any dependencies, since they are soft-foreign keys and could be nil
-	f := preConnectionTest(t).WithDebug()
+	f := preConnectionTest(t)
 
 	// test createConnection with the same name
 	connName := "same name"
