@@ -68,11 +68,11 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 		// This event is for a user-defined webhook, not an app.
-		path := strings.Split(r.URL.Path, "/")
-		suffix := path[len(path)-1]
-		ctx := r.Context()
+		webhookID := r.PathValue("id")
+		l := l.With(zap.String("webhookID", webhookID))
 
-		cids, err := h.vars.FindConnectionIDs(ctx, h.integrationID, vars.PATKey, suffix)
+		ctx := r.Context()
+		cids, err := h.vars.FindConnectionIDs(ctx, h.integrationID, vars.PATKey, webhookID)
 		if err != nil {
 			l.Error("Failed to find connection IDs", zap.Error(err))
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -80,13 +80,11 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 
 		for _, cid := range cids {
+			l := l.With(zap.String("connectionID", cid.String()))
+
 			data, err := h.vars.Reveal(ctx, sdktypes.NewVarScopeID(cid), vars.PATSecret)
 			if err != nil {
-				l.Warn("Unrecognized connection for user event payload",
-					zap.String("suffix", suffix),
-					zap.String("cid", cid.String()),
-					zap.Error(err),
-				)
+				l.Error("Unrecognized connection for user event payload", zap.Error(err))
 				http.Error(w, "Internal Server error", http.StatusInternalServerError)
 				return
 			}
@@ -97,10 +95,22 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				http.Error(w, "Bad Request", http.StatusBadRequest)
 				return
 			}
+
+			if payload != nil {
+				userCID = cid
+				break // Successful validation with non-empty payload - no need to retry.
+			}
+		}
+
+		if payload == nil {
+			l.Info("Received GitHub event from user webhook, but no relevant connection found")
+			return
 		}
 	}
 
 	eventType := github.WebHookType(r)
+	l = l.With(zap.String("eventType", eventType))
+
 	ghEvent, err := github.ParseWebHook(eventType, payload)
 	if err != nil {
 		l.Warn("Received unrecognized event type",
@@ -133,7 +143,6 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	})
 	if err != nil {
 		l.Error("Failed to convert protocol buffer to SDK event",
-			zap.String("eventType", eventType),
 			zap.Any("data", data),
 			zap.Error(err),
 		)
