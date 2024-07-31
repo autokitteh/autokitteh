@@ -25,6 +25,11 @@ const (
 )
 
 func Start(l *zap.Logger, muxNoAuth *http.ServeMux, muxAuth *http.ServeMux, v sdkservices.Vars, o sdkservices.OAuth, d sdkservices.Dispatcher) {
+	// Note: there is a need to set some variable before calling `finalize' in `handleOauth'.
+	// This could be possible only if there is authenticated user present in context (otherwise DB layer will reject the operations).
+	// Therefore, oauthPath is routed via muxAuth, which will pass through auth middleware and extract authenticated user
+	// from the cookie to update the context.
+
 	uiPath := "GET " + desc.ConnectionURL().Path + "/"
 
 	// New connection UIs + handlers.
