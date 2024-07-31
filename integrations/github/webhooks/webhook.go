@@ -105,7 +105,8 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		// The loop above tries to validate and parse the event, by finding the
 		// AK connection corresponding to the webhook ID and using its secret.
 		// If the payload is still nil at this point, then either the event is
-		// fake, or a relevant connection could not be found.
+		// fake (not from GitHub), or a relevant connection could not be found.
+		// Either way, we report success (HTTP 200) and do nothing.
 		if payload == nil {
 			l.Info("Received GitHub event from user webhook, but no relevant connection found")
 			return
