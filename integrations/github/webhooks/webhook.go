@@ -98,7 +98,7 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 			if payload != nil {
 				userCID = cid
-				break // Successful validation with non-empty payload - no need to retry.
+				break // Successful validation with non-empty payload - no need to repeat.
 			}
 		}
 
