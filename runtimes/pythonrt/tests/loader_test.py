@@ -72,23 +72,6 @@ def test_load_simple():
     ak_runner.load_code(root_path, action_fn, "simple")
 
 
-name_of_cases = [
-    # code, name
-    ("print(1)", "print"),
-    ('requests.get("https://go.dev")', "requests.get"),
-    ('sheets.values().get("A1:B4").execute()', "sheets.values.get.execute"),
-    ('label["name"].lower()', 'label["name"].lower'),
-    ("(datetime.now() - t0).total_seconds()", "(datetime.now - t0).total_seconds"),
-]
-
-
-@pytest.mark.parametrize("code, name", name_of_cases)
-def test_name_of(code, name):
-    mod = ast.parse(code)
-    node = mod.body[0].value
-    assert loader.name_of(node) == name
-
-
 transform_cases = [
     # code, transformed
     ("get(1)", "_ak_call(get, 1)"),
@@ -104,7 +87,7 @@ transform_cases = [
 @pytest.mark.parametrize("code, transformed", transform_cases)
 def test_transform(code, transformed):
     mod = ast.parse(code)
-    trans = loader.Transformer("<stdin>")
+    trans = loader.Transformer("<stdin>", code)
     out = trans.visit(mod)
     assert transformed, ast.unparse(out)
 

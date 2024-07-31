@@ -309,7 +309,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		Component("integrations", integrations.Configs, fx.Provide(integrations.New)),
 		fx.Invoke(func(lc fx.Lifecycle, l *zap.Logger, muxes *muxes.Muxes, vs sdkservices.Vars, o sdkservices.OAuth, d dispatcher.Dispatcher, c sdkservices.Connections, p sdkservices.Projects) {
 			HookOnStart(lc, func(ctx context.Context) error {
-				return integrations.Start(ctx, l, muxes.NoAuth, vs, o, d, c, p)
+				return integrations.Start(ctx, l, muxes.NoAuth, muxes.Auth, vs, o, d, c, p)
 			})
 		}),
 		fx.Invoke(func(z *zap.Logger, muxes *muxes.Muxes) {

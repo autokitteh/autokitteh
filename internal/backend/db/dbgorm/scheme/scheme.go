@@ -193,7 +193,7 @@ func ParseIntegration(i Integration) (sdktypes.Integration, error) {
 
 type Project struct {
 	ProjectID sdktypes.UUID `gorm:"primaryKey;type:uuid;not null"`
-	Name      string        `gorm:"index"`
+	Name      string        `gorm:"index;not null"`
 	RootURL   string
 	Resources []byte
 	DeletedAt gorm.DeletedAt `gorm:"index"`
