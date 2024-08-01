@@ -17,8 +17,8 @@ project:
       # Variable value.
       value: "myvalue"
     - name: myvar2
-      # Deploy activation will fail if this variable is not set.
-      required: true
+      # Deploy activation will not fail if this variable is not set.
+      optional: true
   # Connections map integrations to a specific project.
   # A connection is used in project code using:
   #  load("@<integration_name>", "<connection_name>")

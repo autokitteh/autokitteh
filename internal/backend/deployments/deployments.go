@@ -40,7 +40,7 @@ func (d *deployments) Activate(ctx context.Context, id sdktypes.DeploymentID) er
 
 		var reqs []string
 		for _, v := range vs {
-			if v.IsRequired() && v.Value() == "" {
+			if v.Value() == "" && !v.IsOptional() {
 				reqs = append(reqs, v.Name().String())
 			}
 		}
