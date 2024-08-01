@@ -17,6 +17,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessioncalls"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessiondata"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionsvcs"
+	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -166,7 +167,8 @@ func (ws *workflows) getSessionDebugData(data *sessiondata.Data, prints []string
 }
 
 func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkflowParams) (debug any, _ error) {
-	z := ws.z.With(zap.String("session_id", params.SessionID.String()))
+	sessionID := params.SessionID.String()
+	z := ws.z.With(zap.String("session_id", sessionID))
 
 	wctx = workflow.WithLocalActivityOptions(wctx, workflow.LocalActivityOptions{
 		ScheduleToCloseTimeout: ws.cfg.Temporal.LocalScheduleToCloseTimeout,
@@ -178,17 +180,23 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 	//                blow us up due to non determinism.
 
 	var prints []string
+	// attrs := map[string]string{"session_id": sessionID}
 
 	data, err := ws.getSessionData(wctx, params.SessionID)
 	if err == nil {
+		// FIXME: session_id? environment?
+		telemetry.Metrics.Sessions.Update(1, map[string]string{"session_id": sessionID, "type": "start"})
+		z.Info("session workflow: started")
 		prints, err = runWorkflow(wctx, z, ws, data, params.Debug)
 	}
 
 	if err != nil {
+		telemetry.Metrics.Sessions.Update(-1, map[string]string{"session_id": sessionID, "type": "err"})
+
 		z := z.With(zap.Error(err))
 
 		if errors.Is(err, workflow.ErrCanceled) || errors.Is(wctx.Err(), workflow.ErrCanceled) {
-			z.Debug("workflow canceled")
+			z.Info("session workflow: canceled")
 			ws.stopped(ctx, params.SessionID)
 		} else {
 			ws.errored(ctx, params.SessionID, err, prints)
@@ -197,11 +205,14 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 				// User level error, no need to indicate the workflow as errored.
 				err = nil
 
-				z.Debug("program error")
+				z.Info("session workflow: program error")
 			} else {
-				z.Error("workflow error")
+				z.Error("session workflow: error")
 			}
 		}
+	} else {
+		telemetry.Metrics.Sessions.Update(-1, map[string]string{"session_id": sessionID, "type": "complete"})
+		z.Info("session workflow: completed")
 	}
 
 	if data != nil {
