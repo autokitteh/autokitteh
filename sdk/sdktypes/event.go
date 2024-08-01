@@ -94,6 +94,7 @@ func (e Event) WithData(data map[string]Value) Event {
 
 var eventFilterEnv = kittehs.Must1(cel.NewEnv(
 	cel.Variable("data", cel.MapType(cel.StringType, cel.AnyType)),
+	cel.Variable("event_type", cel.StringType),
 ))
 
 func VerifyEventFilter(filter string) error {
@@ -147,7 +148,7 @@ func (e Event) Matches(expr string) (bool, error) {
 		return false, fmt.Errorf("convert: %w", err)
 	}
 
-	out, _, err := prg.Eval(map[string]any{"data": data, "type": e.Type()})
+	out, _, err := prg.Eval(map[string]any{"data": data, "event_type": e.Type()})
 	if err != nil {
 		return false, fmt.Errorf("eval: %w", err)
 	}
