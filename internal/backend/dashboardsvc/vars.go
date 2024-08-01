@@ -48,7 +48,7 @@ func (s Svc) setVar(w http.ResponseWriter, r *http.Request) {
 		Name       sdktypes.Symbol `json:"name"`
 		Value      string          `json:"value"`
 		IsSecret   bool            `json:"is_secret"`
-		IsRequired bool            `json:"is_required"`
+		IsOptional bool            `json:"is_optional"`
 	}
 
 	bs, err := io.ReadAll(r.Body)
@@ -62,7 +62,7 @@ func (s Svc) setVar(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	v := sdktypes.NewVar(req.Name).SetValue(req.Value).SetSecret(req.IsSecret).SetRequired(req.IsRequired).WithScopeID(sid)
+	v := sdktypes.NewVar(req.Name).SetValue(req.Value).SetSecret(req.IsSecret).SetOptional(req.IsOptional).WithScopeID(sid)
 
 	if err := s.Svcs.Vars().Set(r.Context(), v); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -87,7 +87,7 @@ func (s Svc) genVarsList(w http.ResponseWriter, r *http.Request, sid sdktypes.Va
 			}
 
 			n := cv.Name().String()
-			if cv.IsRequired() {
+			if cv.IsOptional() {
 				n = "<em>" + n + "</em>"
 			}
 

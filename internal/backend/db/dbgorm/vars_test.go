@@ -60,7 +60,7 @@ func TestSetVar(t *testing.T) {
 	f.setVarsAndAssert(t, v2)
 
 	v3 := f.newVar("v3", "envScope", env)
-	v3.IsRequired = true
+	v3.IsOptional = true
 	f.setVarsAndAssert(t, v3)
 
 	// test scopeID as foreign keys to either connectionID or envID

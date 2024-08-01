@@ -117,7 +117,7 @@ type Var struct {
 	Name       string        `gorm:"primaryKey;index;not null"`
 	Value      string
 	IsSecret   bool
-	IsRequired bool
+	IsOptional bool
 
 	IntegrationID sdktypes.UUID `gorm:"index;type:uuid"`
 

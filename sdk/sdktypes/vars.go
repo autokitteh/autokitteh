@@ -18,7 +18,7 @@ func (vs Vars) WithPrefix(prefix string) Vars {
 		return NewVar(NewSymbol(prefix + v.Name().String())).
 			SetValue(v.Value()).
 			SetSecret(v.IsSecret()).
-			SetRequired(v.IsRequired())
+			SetOptional(v.IsOptional())
 	})
 }
 

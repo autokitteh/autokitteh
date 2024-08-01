@@ -1,5 +1,6 @@
-h1:j5kgiW292VIKWiPhDnyVFzBXbbX83pPGRYDjgM8p9Vc=
+h1:kpYTyxK7QtPiPAABZMOAnw2BM3nUtvafwAKagBqCsJk=
 20240704121927_baseline.sql h1:Urgmm304lCno+ou4WguUjFGiqu2PYoIOlswHpSL1lRg=
 20240714051159_no-db-user.sql h1:FRReTH5AzKrGU3qp0laWWzkgiBc5693KZIpgrjY81d8=
 20240727114913_project-not-nil-name.sql h1:tRZh+O1yx/QZuytlirQJA0f9Ga/m3FDNM9yE5eJDv1I=
 20240730031017_vars-required.sql h1:s2al16ewNa+r/DLyvwX/fgaWVlYoJssvHto3tn3GfRg=
+20240801050457_replace_required_with_optional_vars.sql h1:cC0bwix+wTwMtd99sGAd/Mj/GOqBiNGqfEMJcy0ls1U=

@@ -23,7 +23,7 @@ func (p Var) ScopeID() VarScopeID { return kittehs.Must1(ParseVarScopeID(p.read(
 func (p Var) Name() Symbol        { return kittehs.Must1(ParseSymbol(p.read().Name)) }
 func (p Var) Value() string       { return p.read().Value }
 func (p Var) IsSecret() bool      { return p.read().IsSecret }
-func (p Var) IsRequired() bool    { return p.read().IsRequired }
+func (p Var) IsOptional() bool    { return p.read().IsOptional }
 
 func (p Var) WithScopeID(id VarScopeID) Var {
 	return Var{p.forceUpdate(func(pb *VarPB) { pb.ScopeId = id.String() })}
@@ -33,8 +33,8 @@ func (p Var) SetSecret(s bool) Var {
 	return Var{p.forceUpdate(func(pb *VarPB) { pb.IsSecret = s })}
 }
 
-func (p Var) SetRequired(r bool) Var {
-	return Var{p.forceUpdate(func(pb *VarPB) { pb.IsRequired = r })}
+func (p Var) SetOptional(r bool) Var {
+	return Var{p.forceUpdate(func(pb *VarPB) { pb.IsOptional = r })}
 }
 
 func (p Var) SetValue(v string) Var {

@@ -16,8 +16,8 @@ project:
     name: my_project
     vars:
         - name: req
-          required: true
         - name: opt
+          optional: true
 
 -- main.star --
 def foo():
