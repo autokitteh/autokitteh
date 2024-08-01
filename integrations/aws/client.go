@@ -90,6 +90,22 @@ func New(vars sdkservices.Vars) sdkservices.Integration {
 	return sdkintegrations.NewIntegration(
 		desc,
 		sdkmodule.New(initOpts(vars)...),
+		// connStatus(vars),
 		sdkintegrations.WithConnectionConfigFromVars(vars),
 	)
+}
+
+func connStatus(cvars sdkservices.Vars) sdkintegrations.OptFn {
+	return sdkintegrations.WithConnectionStatus(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
+		if !cid.IsValid() {
+			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "init required"), nil
+		}
+
+		_, err := cvars.Get(ctx, sdktypes.NewVarScopeID(cid))
+		if err != nil {
+			return sdktypes.InvalidStatus, err
+		}
+
+		return sdktypes.NewStatus(sdktypes.StatusCodeOK, "Using Access Token"), nil
+	})
 }
