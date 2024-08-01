@@ -68,7 +68,7 @@ func (th *thread) evalCELExpr(ctx context.Context, expr string, static bool, inp
 
 func (th *thread) evalPongo2Expr(expr string, inputs map[string]any) (sdktypes.Value, error) {
 	expr = strings.ReplaceAll(expr, "%{{", `{{ "{{" }}`)
-	expr = strings.ReplaceAll(expr, "%{{", `{{ "{{" }}`)
+	expr = strings.ReplaceAll(expr, "%}}", `{{ "}}" }}`)
 
 	tpl, err := pongo2.FromString(expr)
 	if err != nil {
