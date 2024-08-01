@@ -127,6 +127,9 @@
         },
         "is_secret": {
           "type": "boolean"
+        },
+        "is_required": {
+          "type": "boolean"
         }
       },
       "additionalProperties": false,
