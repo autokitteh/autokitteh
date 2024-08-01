@@ -94,7 +94,7 @@ func (a api) saveWatchID(ctx context.Context, e WatchEventType, watchID string) 
 		n = vars.FormSchemaWatchID
 	}
 
-	v := sdktypes.NewVar(n, watchID, false).WithScopeID(sdktypes.NewVarScopeID(a.cid))
+	v := sdktypes.NewVar(n).SetValue(watchID).WithScopeID(sdktypes.NewVarScopeID(a.cid))
 	if err := a.vars.Set(ctx, v); err != nil {
 		return err
 	}

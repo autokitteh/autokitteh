@@ -40,7 +40,7 @@ func (v *Vars) Set(ctx context.Context, vs ...sdktypes.Var) error {
 				return err
 			}
 
-			vs[i] = sdktypes.NewVar(va.Name(), key, true).WithScopeID(va.ScopeID())
+			vs[i] = va.SetValue(key)
 		}
 	}
 
@@ -109,7 +109,8 @@ func (v *Vars) Reveal(ctx context.Context, sid sdktypes.VarScopeID, names ...sdk
 		if err != nil {
 			return sdktypes.Var{}, err
 		}
-		return sdktypes.NewVar(va.Name(), value, true), nil
+
+		return va.SetValue(value), nil
 	})
 }
 

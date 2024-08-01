@@ -16,6 +16,9 @@ project:
       name: myvar
       # Variable value.
       value: "myvalue"
+    - name: myvar2
+      # Deploy activation will fail if this variable is not set.
+      required: true
   # Connections map integrations to a specific project.
   # A connection is used in project code using:
   #  load("@<integration_name>", "<connection_name>")
@@ -31,7 +34,7 @@ project:
     # Redis
     - name: myredis
       integration: "redis"
-      vars: 
+      vars:
         - name: "URL"
           value: "redis://user:password@localhost:6789/3?dial_timeout=3&db=1&read_timeout=6s&max_retries=2"
     # gRPC

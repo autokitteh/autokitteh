@@ -6,6 +6,7 @@
 <input type="text" id="var-name" placeholder="name" />
 <input type="checkbox" id="var-secret" />🤐&nbsp;
 <input type="text" id="var-value" placeholder="value" />
+<input type="checkbox" id="var-required" />required&nbsp;
 
 {{ template "list_table_" . }}
 
@@ -38,6 +39,7 @@
         const name = document.getElementById('var-name').value
         const value = document.getElementById('var-value').value
         const is_secret = document.getElementById('var-secret').checked
+        const is_required = document.getElementById('var-required').checked
 
         if (!name) {
             alert("Name is required")
@@ -47,7 +49,7 @@
         fetch(`/vars/{{ .Scope }}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ name, value, is_secret }),
+            body: JSON.stringify({ name, value, is_secret, is_required }),
         }).then(response => {
             if (response.ok) {
                 location.reload()

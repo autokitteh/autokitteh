@@ -33,6 +33,21 @@ func (d *deployments) Activate(ctx context.Context, id sdktypes.DeploymentID) er
 			return nil
 		}
 
+		vs, err := tx.GetVars(ctx, sdktypes.NewVarScopeID(deployment.EnvID()), nil)
+		if err != nil {
+			return fmt.Errorf("get vars: %w", err)
+		}
+
+		var reqs []string
+		for _, v := range vs {
+			if v.IsRequired() && v.Value() == "" {
+				reqs = append(reqs, v.Name().String())
+			}
+		}
+		if len(reqs) > 0 {
+			return sdkerrors.NewInvalidArgumentError("required vars not set: %v", reqs)
+		}
+
 		deployments, err := tx.ListDeployments(ctx, sdkservices.ListDeploymentsFilter{
 			EnvID: deployment.EnvID(),
 			State: sdktypes.DeploymentStateActive,

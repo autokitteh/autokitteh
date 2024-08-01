@@ -112,11 +112,12 @@ func ParseConnection(c Connection) (sdktypes.Connection, error) {
 
 type Var struct {
 	// varID is scopeID. just mapped directly for reusing the join code
-	VarID    sdktypes.UUID `gorm:"primaryKey;index;type:uuid;not null"`
-	ScopeID  sdktypes.UUID `gorm:"-"`
-	Name     string        `gorm:"primaryKey;index;not null"`
-	Value    string
-	IsSecret bool
+	VarID      sdktypes.UUID `gorm:"primaryKey;index;type:uuid;not null"`
+	ScopeID    sdktypes.UUID `gorm:"-"`
+	Name       string        `gorm:"primaryKey;index;not null"`
+	Value      string
+	IsSecret   bool
+	IsRequired bool
 
 	IntegrationID sdktypes.UUID `gorm:"index;type:uuid"`
 

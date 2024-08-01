@@ -78,7 +78,7 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 
 	// Unique step for Google integrations (specifically for Gmail and Forms):
 	// save the auth data before creating/updating event watches.
-	vs := sdktypes.NewVars(sdktypes.NewVar(vars.OAuthData, raw, true)).
+	vs := sdktypes.NewVars(sdktypes.NewVar(vars.OAuthData).SetValue(raw).SetSecret(true)).
 		Set(vars.JSON, "", true).Append(data.ToVars()...).Append(user...)
 
 	vsl := kittehs.TransformMapToList(vs.ToMap(), func(_ sdktypes.Symbol, v sdktypes.Var) sdktypes.Var {
