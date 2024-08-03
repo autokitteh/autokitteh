@@ -56,7 +56,7 @@ func (gdb *gormdb) listEvents(ctx context.Context, filter sdkservices.ListEvents
 		q = q.Limit(filter.Limit)
 	}
 
-	q = q.Where("seq > ?", filter.MinSequenceNumber)
+	q = q.Where("seq >= ?", filter.MinSequenceNumber)
 
 	if filter.Order == sdkservices.ListOrderAscending {
 		q = q.Order("seq asc")
