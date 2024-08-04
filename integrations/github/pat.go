@@ -60,6 +60,12 @@ func (h handler) handlePAT(w http.ResponseWriter, r *http.Request) {
 	userJSON, _ := json.Marshal(user)
 	_, patKey := filepath.Split(webhook)
 
+	if patKey == "" {
+		l.Warn("Invalid webhook URL")
+		c.AbortBadRequest("invalid webhook key")
+		return
+	}
+
 	c.Finalize(sdktypes.NewVars().
 		Set(vars.PAT, pat, true).
 		Set(vars.PATKey, patKey, false).
