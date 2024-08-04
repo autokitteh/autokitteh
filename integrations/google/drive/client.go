@@ -16,7 +16,7 @@ var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.Integrati
 	UniqueName:    "googledrive",
 	DisplayName:   "Google Drive",
 	Description:   "Google Drive is a file-hosting service and synchronization service developed by Google.",
-	LogoUrl:       "/static/images/google_forms.svg",
+	LogoUrl:       "/static/images/google_drive.svg",
 	UserLinks: map[string]string{
 		"1 REST API reference": "https://developers.google.com/drive/api/reference/rest/v3",
 		"2 Python client API":  "https://developers.google.com/resources/api-libraries/documentation/drive/v3/python/latest/",
