@@ -62,7 +62,7 @@ func (h handler) handlePAT(w http.ResponseWriter, r *http.Request) {
 
 	if patKey == "" {
 		l.Warn("Invalid webhook URL")
-		c.AbortBadRequest("invalid webhook key")
+		c.AbortBadRequest("invalid webhook URL")
 		return
 	}
 
