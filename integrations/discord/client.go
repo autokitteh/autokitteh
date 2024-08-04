@@ -15,7 +15,7 @@ var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.Integrati
 	UniqueName:    "discord",
 	DisplayName:   "Discord",
 	Description:   "Discord is an instant messaging and VoIP social platform which allows communication through voice calls, video calls, text messaging, and media.",
-	LogoUrl:       "/static/images/discord-icon.svg",
+	LogoUrl:       "/static/images/discord.svg",
 	UserLinks: map[string]string{
 		"1 REST API reference": "https://discord.com/developers/docs/reference",
 		"2 Python client API":  "https://discordpy.readthedocs.io/en/stable/api.html",
