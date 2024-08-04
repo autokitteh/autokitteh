@@ -2,6 +2,7 @@ package logger
 
 import (
 	"strconv"
+	"strings"
 	"time"
 
 	"go.uber.org/zap"
@@ -14,7 +15,7 @@ import (
 
 type Config struct {
 	Zap      zap.Config `koanf:"zap"`
-	Level    string     `koanf:"level"`    // Lower-case or all caps, default = "info".
+	Level    string     `koanf:"level"`    // Case-insensitive, default = info.
 	Encoding string     `koanf:"encoding"` // "json" or "console".
 }
 
@@ -40,8 +41,8 @@ func (onPanicHook) OnWrite(ce *zapcore.CheckedEntry, fs []zapcore.Field) {
 func New(cfg *Config) (*zap.Logger, error) {
 	// Optional override for the default level (0 = info).
 	if cfg.Level != "" {
-		// Accept lower-case or all-caps level names, as defined by Zap.
-		level, err := zapcore.ParseLevel(cfg.Level)
+		// Accept case-insensitive names, not just lower-case or all-caps.
+		level, err := zapcore.ParseLevel(strings.ToLower(cfg.Level))
 		if err != nil {
 			// Temporary: numeric level IDs, as used internally by Zap.
 			if n, e := strconv.Atoi(cfg.Level); e == nil {
