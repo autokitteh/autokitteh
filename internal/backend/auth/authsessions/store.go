@@ -17,6 +17,7 @@ import (
 const (
 	sessionName        = "ak_user_session"
 	sessionDataKeyName = "ak_data"
+	loggedInCookie     = "ak_logged_in"
 )
 
 type SessionData struct {
@@ -58,10 +59,30 @@ func (s store) Set(w http.ResponseWriter, data *SessionData) error {
 	}
 
 	session.Set(sessionDataKeyName, bs)
-	return session.Save(w)
+
+	if err := session.Save(w); err != nil {
+		return err
+	}
+
+	http.SetCookie(w, &http.Cookie{
+		Name:  loggedInCookie,
+		Value: "",
+		Path:  "/",
+	})
+
+	return nil
 }
 
 func (s store) Get(req *http.Request) (*SessionData, error) {
+	loggedIn, err := req.Cookie(loggedInCookie)
+	if err != nil {
+		return nil, err
+	}
+
+	if loggedIn == nil {
+		return nil, errors.New("logged in cookie missing")
+	}
+
 	session, err := s.store.Get(req, sessionName)
 	if err != nil {
 		if errors.Is(err, http.ErrNoCookie) {
