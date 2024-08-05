@@ -58,6 +58,6 @@ func connStatus(cvars sdkservices.Vars) sdkintegrations.OptFn {
 			return sdktypes.InvalidStatus, err
 		}
 
-		return sdktypes.NewStatus(sdktypes.StatusCodeOK, "using api-key"), nil
+		return sdktypes.NewStatus(sdktypes.StatusCodeOK, "using api key"), nil
 	})
 }
