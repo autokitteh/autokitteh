@@ -118,9 +118,6 @@ func Init(z *zap.Logger, cfg *Config) {
 		field := metricsValue.Field(i)
 		fieldType := metricsType.Field(i)
 
-		if !cfg.Enabled {
-		}
-
 		metricName := metricName(field, fieldType)
 		description := api.WithDescription(metricName)
 
