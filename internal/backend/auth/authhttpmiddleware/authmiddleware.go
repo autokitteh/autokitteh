@@ -83,6 +83,11 @@ func newSessionsMiddleware(next http.Handler, sessions authsessions.Store) http.
 				return
 			}
 
+			if session == nil {
+				http.Error(w, "invalid session", http.StatusUnauthorized)
+				return
+			}
+
 			if session != nil {
 				r = r.WithContext(authcontext.SetAuthnUser(ctx, session.User))
 			}
