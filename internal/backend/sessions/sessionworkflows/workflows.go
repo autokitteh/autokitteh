@@ -180,11 +180,9 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 	//                blow us up due to non determinism.
 
 	var prints []string
-	// attrs := map[string]string{"session_id": sessionID}
 
 	data, err := ws.getSessionData(wctx, params.SessionID)
 	if err == nil {
-		// FIXME: session_id? environment?
 		telemetry.Metrics.Sessions.Update(1, map[string]string{"session_id": sessionID, "type": "start"})
 		z.Info("session workflow: started")
 		prints, err = runWorkflow(wctx, z, ws, data, params.Debug)
