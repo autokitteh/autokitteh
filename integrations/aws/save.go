@@ -6,6 +6,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/integrations/internal/extrazap"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -42,11 +43,33 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		c.AbortBadRequest("form parsing error")
 		return
 	}
+	// Trim whitespace and retrieve form values
+	region := strings.TrimSpace(r.FormValue("region"))
+	accessKey := strings.TrimSpace(r.FormValue("access_key"))
+	secretKey := strings.TrimSpace(r.FormValue("secret_key"))
+	token := strings.TrimSpace(r.FormValue("token"))
+
+	// Test the AWS authentication details.
+	ctx := extrazap.AttachLoggerToContext(l, r.Context())
+	api := AWSAPI{
+		Vars: AWSVars{
+			AccessKeyID:  accessKey,
+			Region:       region,
+			SecretKey:    secretKey,
+			SessionToken: token,
+		},
+	}
+	_, err := api.Test(ctx)
+	if err != nil {
+		l.Warn("AWS authentication test failed", zap.Error(err))
+		c.AbortBadRequest("AWS authentication test failed: " + err.Error())
+		return
+	}
 
 	c.Finalize(sdktypes.EncodeVars(authData{
-		Region:      strings.TrimSpace(r.FormValue("region")),
-		AccessKeyID: strings.TrimSpace(r.FormValue("access_key")),
-		SecretKey:   strings.TrimSpace(r.FormValue("secret_key")),
-		Token:       strings.TrimSpace(r.FormValue("token")),
+		Region:      region,
+		AccessKeyID: accessKey,
+		SecretKey:   secretKey,
+		Token:       token,
 	}))
 }
