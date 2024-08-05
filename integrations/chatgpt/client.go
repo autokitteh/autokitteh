@@ -1,6 +1,8 @@
 package chatgpt
 
 import (
+	"context"
+
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
@@ -40,6 +42,22 @@ func New(vars sdkservices.Vars) sdkservices.Integration {
 				sdkmodule.WithArgs("model?", "message?", "messages?"),
 			),
 		),
+		connStatus(vars),
 		sdkintegrations.WithConnectionConfigFromVars(vars),
 	)
+}
+
+func connStatus(cvars sdkservices.Vars) sdkintegrations.OptFn {
+	return sdkintegrations.WithConnectionStatus(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
+		if !cid.IsValid() {
+			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "init required"), nil
+		}
+
+		_, err := cvars.Get(ctx, sdktypes.NewVarScopeID(cid))
+		if err != nil {
+			return sdktypes.InvalidStatus, err
+		}
+
+		return sdktypes.NewStatus(sdktypes.StatusCodeOK, "using api-key"), nil
+	})
 }
