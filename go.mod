@@ -25,10 +25,10 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sqs v1.32.6
 	github.com/bradleyfalzon/ghinstallation/v2 v2.11.0
 	github.com/bufbuild/protovalidate-go v0.6.2
+	github.com/bwmarrin/discordgo v0.28.1
 	github.com/descope/go-sdk v1.6.4
 	github.com/dghubble/gologin/v2 v2.5.0
 	github.com/dghubble/sessions v0.4.1
-	github.com/bwmarrin/discordgo v0.28.1
 	github.com/fatih/color v1.17.0
 	github.com/fergusstrange/embedded-postgres v1.27.0
 	github.com/flosch/pongo2/v6 v6.0.0
