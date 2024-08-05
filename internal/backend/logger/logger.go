@@ -1,7 +1,6 @@
 package logger
 
 import (
-	"strconv"
 	"time"
 
 	"go.uber.org/zap"
@@ -43,12 +42,7 @@ func New(cfg *Config) (*zap.Logger, error) {
 		// Accept lower-case or all-caps level names, as defined by Zap.
 		level, err := zapcore.ParseLevel(cfg.Level)
 		if err != nil {
-			// Temporary: numeric level IDs, as used internally by Zap.
-			if n, e := strconv.Atoi(cfg.Level); e == nil {
-				level = zapcore.Level(n)
-			} else {
-				return nil, err
-			}
+			return nil, err
 		}
 		cfg.Zap.Level.SetLevel(level)
 	}
