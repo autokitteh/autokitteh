@@ -4,13 +4,15 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"strings"
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/exporters/stdout/stdoutmetric"
+	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
 	api "go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
+	semconv "go.opentelemetry.io/otel/semconv/v1.20.0"
 	"go.uber.org/zap"
 )
 
@@ -43,8 +45,28 @@ func (m UpDownCounter) Update(value int64, attrs map[string]string) {
 	m.counter.Add(context.Background(), value, api.WithAttributes(toMetricAttrs(attrs)...))
 }
 
+func metricName(field reflect.Value, fieldType reflect.StructField) string {
+	metricName := fieldType.Name
+	metricName = strings.ReplaceAll(metricName, "_", ".")
+	metricName = "ak." + strings.ToLower(metricName)
+	switch field.Interface().(type) {
+	case Counter:
+		metricName = metricName + ".counter"
+	case UpDownCounter:
+		metricName = metricName + ".gauge"
+	}
+	return metricName
+}
+
 func Init(z *zap.Logger) {
-	exporter, err := stdoutmetric.New(stdoutmetric.WithPrettyPrint())
+	// REVIEW: insecure? port? maybe over GRPC?
+	// REVIEW: config? maybe env: OTEL_EXPORTER_OTLP_ENDPOINT or OTEL_EXPORTER_OTLP_METRICS_ENDPOINT
+	exporter, err := otlpmetrichttp.New(
+		context.Background(),
+		otlpmetrichttp.WithInsecure(),
+		otlpmetrichttp.WithEndpoint("localhost:4318"),
+		// otlpmetrichttp.WithURLPath("/"), // send to /v1/metrics
+	)
 	if err != nil {
 		z.Error("failed to create metric exporter: %v", zap.Error(err))
 	}
@@ -52,12 +74,13 @@ func Init(z *zap.Logger) {
 	schemaURL := "https://opentelemetry.io/schemas/1.1.0"
 	resourceAttrs := resource.NewWithAttributes(
 		schemaURL,
-		// REVIEW: do we want to report anything?
-		//  attribute.String("deployment.environment", "igor"),
+		semconv.ServiceNameKey.String("ak-dev"),
+		// REVIEW: anything else?
 	)
 
+	// REVIEW: consider using controller?
+	// TODO: koanf config?
 	meterProvider := metric.NewMeterProvider(
-		// FIXME: add koanf config for periodic reader?
 		metric.WithReader(metric.NewPeriodicReader(exporter)),
 		metric.WithResource(resourceAttrs),
 	)
@@ -71,9 +94,10 @@ func Init(z *zap.Logger) {
 	for i := 0; i < metricsValue.NumField(); i++ {
 		field := metricsValue.Field(i)
 		fieldType := metricsType.Field(i)
-		metricName := fieldType.Name
 
+		metricName := metricName(field, fieldType)
 		description := api.WithDescription(metricName)
+
 		var err error
 		switch field.Interface().(type) {
 		case Counter:
