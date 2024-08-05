@@ -66,7 +66,7 @@ func (s store) Set(w http.ResponseWriter, data *SessionData) error {
 
 	http.SetCookie(w, &http.Cookie{
 		Name:  loggedInCookie,
-		Value: "",
+		Value: "true",
 		Path:  "/",
 	})
 
