@@ -18,15 +18,14 @@ import (
 )
 
 type Config struct {
+	Enabled     bool   `koanf:"enabled"`
 	ServiceName string `koanf:"service_name"`
 	Endpoint    string `koanf:"endpoint"`
 }
 
-var defaultTelemetryConfig = Config{ServiceName: "ak", Endpoint: "localhost:4318"}
-
 var Configs = configset.Set[Config]{
-	Default: &defaultTelemetryConfig,
-	Dev:     &defaultTelemetryConfig,
+	Default: &Config{Enabled: true, ServiceName: "ak", Endpoint: "localhost:4318"},
+	Dev:     &Config{Enabled: false, ServiceName: "ak", Endpoint: "localhost:4318"},
 }
 
 func toMetricAttrs(attrs map[string]string) []attribute.KeyValue {
@@ -51,12 +50,18 @@ type UpDownCounter struct {
 
 func (m Counter) Update(value int64, attrs map[string]string) {
 	// REVIEW: should we check/report if we get a negative value
-	m.counter.Add(context.Background(), value, api.WithAttributes(toMetricAttrs(attrs)...))
+	if enabled {
+		m.counter.Add(context.Background(), value, api.WithAttributes(toMetricAttrs(attrs)...))
+	}
 }
 
 func (m UpDownCounter) Update(value int64, attrs map[string]string) {
-	m.counter.Add(context.Background(), value, api.WithAttributes(toMetricAttrs(attrs)...))
+	if enabled {
+		m.counter.Add(context.Background(), value, api.WithAttributes(toMetricAttrs(attrs)...))
+	}
 }
+
+var enabled = false
 
 func metricName(field reflect.Value, fieldType reflect.StructField) string {
 	metricName := fieldType.Name
@@ -72,6 +77,11 @@ func metricName(field reflect.Value, fieldType reflect.StructField) string {
 }
 
 func Init(z *zap.Logger, cfg *Config) {
+	enabled = cfg.Enabled
+	if !enabled {
+		z.Warn("metrics are disabled")
+	}
+
 	// REVIEW: insecure? port? maybe over GRPC?
 	// REVIEW: should we use AK env or maybe standard OTEL onses?
 	//         - OTEL_EXPORTER_OTLP_ENDPOINT or OTEL_EXPORTER_OTLP_METRICS_ENDPOINT
@@ -107,6 +117,9 @@ func Init(z *zap.Logger, cfg *Config) {
 	for i := 0; i < metricsValue.NumField(); i++ {
 		field := metricsValue.Field(i)
 		fieldType := metricsType.Field(i)
+
+		if !cfg.Enabled {
+		}
 
 		metricName := metricName(field, fieldType)
 		description := api.WithDescription(metricName)
