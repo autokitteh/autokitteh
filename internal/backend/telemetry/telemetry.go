@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"strings"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/configset"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
@@ -15,6 +16,18 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.20.0"
 	"go.uber.org/zap"
 )
+
+type Config struct {
+	ServiceName string `koanf:"service_name"`
+	Endpoint    string `koanf:"endpoint"`
+}
+
+var defaultTelemetryConfig = Config{ServiceName: "ak", Endpoint: "localhost:4318"}
+
+var Configs = configset.Set[Config]{
+	Default: &defaultTelemetryConfig,
+	Dev:     &defaultTelemetryConfig,
+}
 
 func toMetricAttrs(attrs map[string]string) []attribute.KeyValue {
 	var result []attribute.KeyValue
@@ -58,14 +71,15 @@ func metricName(field reflect.Value, fieldType reflect.StructField) string {
 	return metricName
 }
 
-func Init(z *zap.Logger) {
+func Init(z *zap.Logger, cfg *Config) {
 	// REVIEW: insecure? port? maybe over GRPC?
-	// REVIEW: config? maybe env: OTEL_EXPORTER_OTLP_ENDPOINT or OTEL_EXPORTER_OTLP_METRICS_ENDPOINT
+	// REVIEW: should we use AK env or maybe standard OTEL onses?
+	//         - OTEL_EXPORTER_OTLP_ENDPOINT or OTEL_EXPORTER_OTLP_METRICS_ENDPOINT
 	exporter, err := otlpmetrichttp.New(
 		context.Background(),
 		otlpmetrichttp.WithInsecure(),
-		otlpmetrichttp.WithEndpoint("localhost:4318"),
-		// otlpmetrichttp.WithURLPath("/"), // send to /v1/metrics
+		otlpmetrichttp.WithEndpoint(cfg.Endpoint),
+		// otlpmetrichttp.WithURLPath("/"), // /v1/metrics by default, unless set
 	)
 	if err != nil {
 		z.Error("failed to create metric exporter: %v", zap.Error(err))
@@ -74,12 +88,11 @@ func Init(z *zap.Logger) {
 	schemaURL := "https://opentelemetry.io/schemas/1.1.0"
 	resourceAttrs := resource.NewWithAttributes(
 		schemaURL,
-		semconv.ServiceNameKey.String("ak-dev"),
-		// REVIEW: anything else?
+		semconv.ServiceNameKey.String(cfg.ServiceName),
 	)
+	fmt.Println("with service name", cfg.ServiceName)
 
 	// REVIEW: consider using controller?
-	// TODO: koanf config?
 	meterProvider := metric.NewMeterProvider(
 		metric.WithReader(metric.NewPeriodicReader(exporter)),
 		metric.WithResource(resourceAttrs),
