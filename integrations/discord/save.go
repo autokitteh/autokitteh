@@ -6,6 +6,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/integrations/internal/extrazap"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -44,6 +45,20 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		c.AbortBadRequest("form parsing error")
 		return
 	}
+	// Trim whitespace and retrieve form values
+	token := r.Form.Get("botToken")
 
-	c.Finalize(sdktypes.NewVars().Set(botToken, r.Form.Get("botToken"), true))
+	// Test the Discord authentication details.
+	ctx := extrazap.AttachLoggerToContext(l, r.Context())
+	api := DiscordAPI{
+		Token: token,
+	}
+	err := api.Test(ctx)
+	if err != nil {
+		l.Warn("Discord authentication test failed", zap.Error(err))
+		c.AbortBadRequest("Discord authentication test failed: " + err.Error())
+		return
+	}
+
+	c.Finalize(sdktypes.NewVars().Set(botToken, token, true))
 }
