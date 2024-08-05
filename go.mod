@@ -28,6 +28,7 @@ require (
 	github.com/descope/go-sdk v1.6.4
 	github.com/dghubble/gologin/v2 v2.5.0
 	github.com/dghubble/sessions v0.4.1
+	github.com/bwmarrin/discordgo v0.28.1
 	github.com/fatih/color v1.17.0
 	github.com/fergusstrange/embedded-postgres v1.27.0
 	github.com/flosch/pongo2/v6 v6.0.0
