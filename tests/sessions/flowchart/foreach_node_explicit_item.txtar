@@ -1,0 +1,24 @@
+["meow 1st","meow 2nd","meow 3rd"]
+
+-- main.flowchart.yaml main --
+version: v1
+
+nodes:
+  - name: main
+    action:
+      foreach:
+        items: ["1st", "2nd", "3rd"]
+        call:
+          target: nodes.worker
+          args: 
+            item: ^^ states.foreach.item
+    goto: nodes.end
+
+  - name: worker
+    result: "^^ 'meow ' + states.nodes.main.foreach.item"
+
+  - name: end
+    action:
+      print:
+        value: "^^ states.results.main"
+  

@@ -114,10 +114,25 @@ func (th *thread) evalInputs(static bool) (map[string]any, error) {
 	}
 
 	if !static {
-		var err error
-		if inputs["states"], err = kittehs.TransformMapValuesError(frame.states, th.w.Unwrap); err != nil {
-			return nil, fmt.Errorf("transform state: %w", err)
+		states, err := kittehs.TransformMapValuesError(frame.states, th.w.Unwrap)
+		if err != nil {
+			return nil, fmt.Errorf("transform nodes state: %w", err)
 		}
+
+		nodes := map[string]any{}
+
+		for _, tn := range th.nodes {
+			if nodes[tn.node.Name], err = kittehs.TransformMapValuesError(tn.states, th.w.Unwrap); err != nil {
+				return nil, fmt.Errorf("transform nodes state: %w", err)
+			}
+		}
+
+		if states == nil {
+			states = map[string]any{}
+		}
+
+		states["nodes"] = nodes
+		inputs["states"] = states
 	}
 
 	if curr := frame.node; curr != nil {

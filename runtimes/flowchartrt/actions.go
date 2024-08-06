@@ -73,7 +73,7 @@ func (th *thread) runCallAction(ctx context.Context, c *ast.CallAction, setResul
 
 	if state := th.frame().getState("call"); len(state) > 0 {
 		// this is a return from a node call. should always happen after a frame pop.
-		th.frame().setState("call", nil)
+		th.setState("call", nil)
 		setResult(th.frame().lastResult)
 		return nil, nil
 	}
@@ -134,13 +134,11 @@ func (th *thread) runCallAction(ctx context.Context, c *ast.CallAction, setResul
 			return nil, nil
 		}
 
-		f := th.frame()
-
-		th.push(kwargs)
-
-		f.setState("call", map[string]sdktypes.Value{
+		th.setState("call", map[string]sdktypes.Value{
 			"args": sdktypes.NewDictValueFromStringMap(kwargs),
 		})
+
+		th.push(kwargs)
 
 		return n, nil
 	}
@@ -237,7 +235,7 @@ func (th *thread) runForEachAction(ctx context.Context, l *ast.ForEachAction) (*
 	}
 
 	if i >= n {
-		th.frame().setState("foreach", nil)
+		th.setState("foreach", nil)
 		return nil, nil
 	}
 
@@ -245,7 +243,7 @@ func (th *thread) runForEachAction(ctx context.Context, l *ast.ForEachAction) (*
 		return nil, fmt.Errorf("items index: %w", err)
 	}
 
-	th.frame().setState("foreach", state)
+	th.setState("foreach", state)
 
 	next, err := th.runCallAction(ctx, l.Call, setResult)
 	if err != nil {
