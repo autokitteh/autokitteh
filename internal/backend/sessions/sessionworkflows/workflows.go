@@ -183,20 +183,29 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 
 	data, err := ws.getSessionData(wctx, params.SessionID)
 	if err == nil {
-		telemetry.Metrics.Sessions.Update(1, map[string]string{"session_id": sessionID, "type": "start"})
+		telemetry.Metrics.Sessions.Add(1, telemetry.Labels{"session_id": sessionID, "type": "started"})
+		// FIXME: or [see RFC]
+		telemetry.UpdateSessionCounter(sessionID, sdktypes.SessionStateTypeCreated)
+
 		z.Info("session workflow: started")
 		prints, err = runWorkflow(wctx, z, ws, data, params.Debug)
 	}
 
 	if err != nil {
-		telemetry.Metrics.Sessions.Update(-1, map[string]string{"session_id": sessionID, "type": "err"})
-
 		z := z.With(zap.Error(err))
 
 		if errors.Is(err, workflow.ErrCanceled) || errors.Is(wctx.Err(), workflow.ErrCanceled) {
+			telemetry.Metrics.Sessions.Add(-1, telemetry.Labels{"session_id": sessionID, "type": "stopped"})
+			// FIXME: or [see RFC]
+			telemetry.UpdateSessionCounter(sessionID, sdktypes.SessionStateTypeStopped)
+
 			z.Info("session workflow: canceled")
 			ws.stopped(ctx, params.SessionID)
 		} else {
+			telemetry.Metrics.Sessions.Add(-1, telemetry.Labels{"session_id": sessionID, "type": "errored"})
+			// FIXME: or [see RFC]
+			telemetry.UpdateSessionCounter(sessionID, sdktypes.SessionStateTypeError)
+
 			ws.errored(ctx, params.SessionID, err, prints)
 
 			if _, ok := sdktypes.FromError(err); ok {
@@ -209,7 +218,10 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 			}
 		}
 	} else {
-		telemetry.Metrics.Sessions.Update(-1, map[string]string{"session_id": sessionID, "type": "complete"})
+		telemetry.Metrics.Sessions.Add(-1, telemetry.Labels{"session_id": sessionID, "type": "completed"})
+		// FIXME: or [see RFC]
+		telemetry.UpdateSessionCounter(sessionID, sdktypes.SessionStateTypeCompleted)
+
 		z.Info("session workflow: completed")
 	}
 

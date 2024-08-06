@@ -28,36 +28,43 @@ var Configs = configset.Set[Config]{
 	Dev:     &Config{Enabled: false, ServiceName: "ak", Endpoint: "localhost:4318"},
 }
 
-func toMetricAttrs(attrs map[string]string) []attribute.KeyValue {
+type (
+	Labels map[string]string
+	labels struct {
+		allowed []string
+	}
+)
+
+func (l labels) toOpenTelemetryAttrs(attrs map[string]string) []attribute.KeyValue {
 	var result []attribute.KeyValue
-	for k, v := range attrs {
-		result = append(result, attribute.String(k, v))
+	for _, label := range l.allowed {
+		if v, ok := attrs[label]; ok {
+			result = append(result, attribute.String(label, v))
+		}
 	}
 	return result
 }
 
-type Metric interface {
-	Update(value int64, attrs map[string]string)
-}
-
 type Counter struct {
 	counter api.Int64Counter
+	labels
 }
 
 type UpDownCounter struct {
 	counter api.Int64UpDownCounter
+	labels
 }
 
-func (m Counter) Update(value int64, attrs map[string]string) {
+func (m Counter) Add(value int64, attrs map[string]string) {
 	// REVIEW: should we check/report if we get a negative value
 	if enabled {
-		m.counter.Add(context.Background(), value, api.WithAttributes(toMetricAttrs(attrs)...))
+		m.counter.Add(context.Background(), value, api.WithAttributes(m.toOpenTelemetryAttrs(attrs)...))
 	}
 }
 
-func (m UpDownCounter) Update(value int64, attrs map[string]string) {
+func (m UpDownCounter) Add(value int64, attrs map[string]string) {
 	if enabled {
-		m.counter.Add(context.Background(), value, api.WithAttributes(toMetricAttrs(attrs)...))
+		m.counter.Add(context.Background(), value, api.WithAttributes(m.toOpenTelemetryAttrs(attrs)...))
 	}
 }
 
