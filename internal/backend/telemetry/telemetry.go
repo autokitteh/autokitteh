@@ -100,7 +100,6 @@ func Init(z *zap.Logger, cfg *Config) {
 		schemaURL,
 		semconv.ServiceNameKey.String(cfg.ServiceName),
 	)
-	fmt.Println("with service name", cfg.ServiceName)
 
 	// REVIEW: consider using controller?
 	meterProvider := metric.NewMeterProvider(
