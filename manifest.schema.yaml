@@ -125,10 +125,10 @@
         "value": {
           "type": "string"
         },
-        "is_secret": {
+        "secret": {
           "type": "boolean"
         },
-        "is_required": {
+        "optional": {
           "type": "boolean"
         }
       },
