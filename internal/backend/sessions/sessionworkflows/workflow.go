@@ -62,7 +62,7 @@ type sessionWorkflow struct {
 
 	callSeq uint32
 
-	signals map[string]uint64 // map signals to next sequence number
+	lastReadEventSeqForSignal map[string]uint64 // map signals to last read event seq num.
 
 	state sdktypes.SessionState
 }
@@ -80,13 +80,13 @@ func runWorkflow(
 	debug bool,
 ) (prints []string, err error) {
 	w := &sessionWorkflow{
-		z:       z,
-		data:    data,
-		poller:  sdktypes.Nothing,
-		ws:      ws,
-		fakers:  make(map[string]sdktypes.Value),
-		debug:   debug,
-		signals: make(map[string]uint64),
+		z:                         z,
+		data:                      data,
+		poller:                    sdktypes.Nothing,
+		ws:                        ws,
+		fakers:                    make(map[string]sdktypes.Value),
+		debug:                     debug,
+		lastReadEventSeqForSignal: make(map[string]uint64),
 	}
 
 	var cinfos map[string]connInfo
@@ -111,7 +111,7 @@ func runWorkflow(
 
 func (w *sessionWorkflow) cleanupSignals(ctx workflow.Context) {
 	goCtx := temporalclient.NewWorkflowContextAsGOContext(ctx)
-	for signalID := range w.signals {
+	for signalID := range w.lastReadEventSeqForSignal {
 		if err := w.ws.svcs.DB.RemoveSignal(goCtx, signalID); err != nil {
 			// No need to to any handling in case of an error, it won't be used again
 			// at most we would have db garabge we can clear up later with background jobs
@@ -332,17 +332,14 @@ func (w *sessionWorkflow) createEventSubscription(ctx context.Context, connectio
 		return "", fmt.Errorf("connection %q not found", connectionName)
 	}
 
+	// must be set before signal is saved, otherwise the signal might reach the workflow before
+	// the map is read.
+	w.lastReadEventSeqForSignal[signalID] = minSequence
+
 	cid := connection.ID()
 	if err := workflow.ExecuteLocalActivity(wctx, w.ws.svcs.DB.SaveSignal, signalID, workflowID, cid, filter).Get(wctx, nil); err != nil {
 		return "", fmt.Errorf("save signal: %w", err)
 	}
-
-	var c sdktypes.Connection
-	if err := workflow.ExecuteLocalActivity(wctx, w.ws.svcs.Connections.Get, cid).Get(wctx, &c); err != nil {
-		return "", fmt.Errorf("get connection: %w", err)
-	}
-
-	w.signals[signalID] = minSequence
 
 	return signalID, nil
 }
@@ -378,16 +375,16 @@ func (w *sessionWorkflow) getNextEvent(ctx context.Context, signalID string) (ma
 	iid := sdktypes.NewIDFromUUID[sdktypes.IntegrationID](signal.Connection.IntegrationID)
 	cid := sdktypes.NewIDFromUUID[sdktypes.ConnectionID](&signal.Connection.ConnectionID)
 
-	minSequenceNumber, ok := w.signals[signalID]
+	minSequenceNumber, ok := w.lastReadEventSeqForSignal[signalID]
 	if !ok {
-		w.z.Panic("signal not found")
+		return nil, fmt.Errorf("no such subscription %q", signalID)
 	}
 
 	filter := sdkservices.ListEventsFilter{
 		IntegrationID:     iid,
 		ConnectionID:      cid,
 		Limit:             1,
-		MinSequenceNumber: minSequenceNumber,
+		MinSequenceNumber: minSequenceNumber + 1,
 		Order:             sdkservices.ListOrderAscending,
 	}
 
@@ -434,7 +431,7 @@ func (w *sessionWorkflow) getNextEvent(ctx context.Context, signalID string) (ma
 		w.z.Panic("get event", zap.Error(err))
 	}
 
-	w.signals[signalID] = event.Seq() + 1
+	w.lastReadEventSeqForSignal[signalID] = event.Seq()
 
 	return event.Data(), nil
 }
@@ -446,7 +443,7 @@ func (w *sessionWorkflow) removeEventSubscription(ctx context.Context, signalID 
 		w.z.Panic("remove signal", zap.Error(err))
 	}
 
-	delete(w.signals, signalID)
+	delete(w.lastReadEventSeqForSignal, signalID)
 }
 
 func (w *sessionWorkflow) run(wctx workflow.Context) (prints []string, err error) {

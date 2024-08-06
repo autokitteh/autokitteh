@@ -1,0 +1,46 @@
+ak deploy --manifest project.yaml
+return code == 0
+
+http get /http/myproject/start
+resp code == 200
+
+ak session watch ses_0000000000000000000000000a --end-state RUNNING
+return code == 0
+
+http post /http/myproject/meow 1
+resp code == 200
+
+http post /http/myproject/meow 2
+resp code == 200
+
+ak session watch ses_0000000000000000000000000a --end-state COMPLETED
+return code == 0
+
+ak session log --prints-only --no-timestamps
+output equals file prints.txt
+
+-- prints.txt --
+1
+2
+
+-- project.yaml --
+version: v1
+
+project:
+  name: myproject
+  connections:
+    - name: myhttp
+      integration: http
+  triggers:
+    - name: http_start
+      connection: myhttp
+      event_type: get
+      data:
+        path: start
+      call: program.star:on_http_start
+
+-- program.star --
+def on_http_start():
+  s = subscribe("myhttp", "data.url.path == '/meow'")
+  print(next_event(s)['body'].text())
+  print(next_event(s)['body'].text())
