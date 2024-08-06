@@ -332,17 +332,14 @@ func (w *sessionWorkflow) createEventSubscription(ctx context.Context, connectio
 		return "", fmt.Errorf("connection %q not found", connectionName)
 	}
 
+	// must be set before signal is saved, otherwise the signal might reach the workflow before
+	// the map is read.
+	w.lastReadEventSeqForSignal[signalID] = minSequence
+
 	cid := connection.ID()
 	if err := workflow.ExecuteLocalActivity(wctx, w.ws.svcs.DB.SaveSignal, signalID, workflowID, cid, filter).Get(wctx, nil); err != nil {
 		return "", fmt.Errorf("save signal: %w", err)
 	}
-
-	var c sdktypes.Connection
-	if err := workflow.ExecuteLocalActivity(wctx, w.ws.svcs.Connections.Get, cid).Get(wctx, &c); err != nil {
-		return "", fmt.Errorf("get connection: %w", err)
-	}
-
-	w.lastReadEventSeqForSignal[signalID] = minSequence
 
 	return signalID, nil
 }
