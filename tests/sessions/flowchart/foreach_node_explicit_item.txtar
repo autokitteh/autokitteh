@@ -10,12 +10,10 @@ nodes:
         items: ["1st", "2nd", "3rd"]
         call:
           target: nodes.worker
-          args: 
-            item: ^^ states.foreach.item
     goto: nodes.end
 
   - name: worker
-    result: "^^ 'meow ' + states.nodes.main.foreach.item"
+    result: "^^ 'meow ' + states.nodes.main.item"
 
   - name: end
     action:

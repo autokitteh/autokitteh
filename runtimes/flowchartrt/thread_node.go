@@ -16,19 +16,27 @@ type threadNode struct {
 func (tn *threadNode) toValue() sdktypes.Value { return tn.th.r.nodeToValue(tn.mod.path, tn.node) }
 
 func (tn *threadNode) setState(k string, v map[string]sdktypes.Value) {
-	if v != nil {
-		if tn.states == nil {
-			tn.states = make(map[string]sdktypes.Value)
+	if v == nil {
+		if tn.states != nil {
+			delete(tn.states, k)
 		}
+	}
 
-		sym := sdktypes.NewSymbolValue(sdktypes.NewSymbol(k))
+	if tn.states == nil {
+		tn.states = make(map[string]sdktypes.Value)
+	}
 
-		tn.states[k] = kittehs.Must1(sdktypes.NewStructValue(sym, v))
+	if k == "" {
+		for k, v := range v {
+			tn.states[k] = v
+		}
 
 		return
 	}
 
-	if tn.states != nil {
-		delete(tn.states, k)
-	}
+	sym := sdktypes.NewSymbolValue(sdktypes.NewSymbol(k))
+
+	tn.states[k] = kittehs.Must1(sdktypes.NewStructValue(sym, v))
+
+	return
 }

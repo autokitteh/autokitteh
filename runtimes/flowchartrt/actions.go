@@ -245,6 +245,8 @@ func (th *thread) runForEachAction(ctx context.Context, l *ast.ForEachAction) (*
 
 	th.setState("foreach", state)
 
+	th.frame().node.setState("", state)
+
 	next, err := th.runCallAction(ctx, l.Call, setResult)
 	if err != nil {
 		return nil, err
