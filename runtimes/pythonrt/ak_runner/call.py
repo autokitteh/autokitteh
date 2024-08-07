@@ -50,6 +50,10 @@ class AKCall:
         if is_deterministic(fn):
             return False
 
+        # Function from same module should not run as activity
+        if self.is_module_func(fn):
+            return False
+
         return True
 
     def set_module(self, mod):

@@ -159,7 +159,10 @@ def inspect(args):
 
     entries = []
     for path in code_dir.glob("**/*.py"):
-        entries.extend(inspect_file(code_dir, path))
+        try:
+            entries.extend(inspect_file(code_dir, path))
+        except Exception as err:
+            raise RuntimeError(f"inspecting {path}: {err}")
 
     # Stdout is read by Go, don't print anything else
     print(json.dumps(entries), file=args.output)
