@@ -3,7 +3,6 @@ package telemetry
 import (
 	"context"
 	"fmt"
-	"reflect"
 	"strings"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/configset"
@@ -28,68 +27,53 @@ var Configs = configset.Set[Config]{
 	Dev:     &Config{Enabled: false, ServiceName: "ak", Endpoint: "localhost:4318"},
 }
 
-type (
-	Labels map[string]string
-	labels struct {
-		allowed []string
+func verifyConfig(cfg *Config) *Config {
+	if cfg == nil {
+		return Configs.Default
 	}
-)
-
-func (l labels) toOpenTelemetryAttrs(attrs map[string]string) []attribute.KeyValue {
-	var result []attribute.KeyValue
-	for _, label := range l.allowed {
-		if v, ok := attrs[label]; ok {
-			result = append(result, attribute.String(label, v))
-		}
+	if cfg.ServiceName == "" {
+		cfg.ServiceName = Configs.Default.ServiceName
 	}
-	return result
-}
-
-type Counter struct {
-	counter api.Int64Counter
-	labels
-}
-
-type UpDownCounter struct {
-	counter api.Int64UpDownCounter
-	labels
-}
-
-func (m Counter) Add(value int64, attrs map[string]string) {
-	// REVIEW: should we check/report if we get a negative value
-	if enabled {
-		m.counter.Add(context.Background(), value, api.WithAttributes(m.toOpenTelemetryAttrs(attrs)...))
+	if cfg.Endpoint == "" {
+		cfg.Endpoint = Configs.Default.Endpoint
 	}
+	return cfg
 }
 
-func (m UpDownCounter) Add(value int64, attrs map[string]string) {
-	if enabled {
-		m.counter.Add(context.Background(), value, api.WithAttributes(m.toOpenTelemetryAttrs(attrs)...))
+type Labels map[string]string
+
+func toOTELAttrs(attrs Labels) (otelAttrs []attribute.KeyValue) {
+	for k, v := range attrs {
+		otelAttrs = append(otelAttrs, attribute.String(k, v))
 	}
+	return otelAttrs
 }
 
-var enabled = false
-
-func metricName(field reflect.Value, fieldType reflect.StructField) string {
-	metricName := fieldType.Name
-	metricName = strings.ReplaceAll(metricName, "_", ".")
-	metricName = "ak." + strings.ToLower(metricName)
-	switch field.Interface().(type) {
-	case Counter:
-		metricName = metricName + ".counter"
-	case UpDownCounter:
-		metricName = metricName + ".gauge"
+func WithLabels(labels Labels) api.MeasurementOption {
+	var attrs []attribute.KeyValue
+	for k, v := range labels {
+		attrs = append(attrs, attribute.String(k, v))
 	}
-	return metricName
+	return api.WithAttributes(attrs...)
 }
 
-func Init(z *zap.Logger, cfg *Config) {
-	enabled = cfg.Enabled
-	if !enabled {
+type Telemetry struct {
+	z           *zap.Logger
+	enabled     bool
+	serviceName string
+}
+
+func New(z *zap.Logger, cfg *Config) *Telemetry {
+	cfg = verifyConfig(cfg)
+
+	telemetry := &Telemetry{z: z, enabled: cfg.Enabled, serviceName: cfg.ServiceName}
+
+	if !telemetry.enabled {
 		z.Warn("metrics are disabled")
+		return telemetry
 	}
 
-	// REVIEW: insecure? port? maybe over GRPC?
+	// REVIEW: encryption? GRPC?
 	// REVIEW: should we use AK env or maybe standard OTEL onses?
 	//         - OTEL_EXPORTER_OTLP_ENDPOINT or OTEL_EXPORTER_OTLP_METRICS_ENDPOINT
 	exporter, err := otlpmetrichttp.New(
@@ -105,7 +89,7 @@ func Init(z *zap.Logger, cfg *Config) {
 	schemaURL := "https://opentelemetry.io/schemas/1.1.0"
 	resourceAttrs := resource.NewWithAttributes(
 		schemaURL,
-		semconv.ServiceNameKey.String(cfg.ServiceName),
+		semconv.ServiceNameKey.String(telemetry.serviceName),
 	)
 
 	// REVIEW: consider using controller?
@@ -115,35 +99,28 @@ func Init(z *zap.Logger, cfg *Config) {
 	)
 
 	otel.SetMeterProvider(meterProvider) // set global meter provider
-	meter := otel.GetMeterProvider().Meter("ak")
+	return telemetry
+}
 
-	metricsValue := reflect.ValueOf(&Metrics).Elem()
-	metricsType := metricsValue.Type()
+type NoOpCounter struct {
+	api.Int64UpDownCounter
+}
 
-	for i := 0; i < metricsValue.NumField(); i++ {
-		field := metricsValue.Field(i)
-		fieldType := metricsType.Field(i)
+func (NoOpCounter) Add(context.Context, int64, ...api.AddOption) {}
+func (NoOpCounter) int64UpDownCounter()                          {}
 
-		metricName := metricName(field, fieldType)
-		description := api.WithDescription(metricName)
-
-		var err error
-		switch field.Interface().(type) {
-		case Counter:
-			int64Counter, err1 := meter.Int64Counter(metricName, description)
-			if err = err1; err == nil {
-				field.Set(reflect.ValueOf(Counter{counter: int64Counter}))
-			}
-		case UpDownCounter:
-			int64UpDownCounter, err1 := meter.Int64UpDownCounter(metricName, description)
-			if err = err1; err == nil {
-				field.Set(reflect.ValueOf(UpDownCounter{counter: int64UpDownCounter}))
-			}
-		default:
-			err = fmt.Errorf("not implemented metric type: %s", fieldType.Name)
-		}
-		if err != nil {
-			z.Error("failed to create metric", zap.String("type", fieldType.Name), zap.Error(err))
-		}
+func (t *Telemetry) NewOtelUpDownCounter(name string, description string) api.Int64UpDownCounter {
+	if !t.enabled {
+		return NoOpCounter{}
 	}
+	meter := otel.GetMeterProvider().Meter(t.serviceName)
+	if !strings.HasPrefix(name, t.serviceName) {
+		name = fmt.Sprintf("%s.%s", t.serviceName, name)
+	}
+	metric, err := meter.Int64UpDownCounter(name, api.WithDescription(description))
+	if err != nil {
+		t.z.Error("failed to create metric", zap.String("name", name), zap.Error(err))
+		// REVIEW: should we panic? kittehs.Must?
+	}
+	return metric
 }

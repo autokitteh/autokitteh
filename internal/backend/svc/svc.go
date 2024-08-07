@@ -250,9 +250,10 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		Component(
 			"telemetry",
 			telemetry.Configs,
-			fx.Invoke(func(lc fx.Lifecycle, zap *zap.Logger, cfg *telemetry.Config) {
-				telemetry.Init(zap, cfg)
-			}),
+			fx.Provide(telemetry.New),
+			//fx.Invoke(func(lc fx.Lifecycle, zap *zap.Logger, cfg *telemetry.Config) {
+			//	telemetry.Init(zap, cfg)
+			//}),
 		),
 
 		Component(
