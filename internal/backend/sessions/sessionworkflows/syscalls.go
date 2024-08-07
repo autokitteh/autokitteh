@@ -198,12 +198,17 @@ Get the next event on this signal (has to exists since we got a signal on it)
 return this event
 */
 func (w *sessionWorkflow) nextEvent(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
-	if len(kwargs) > 0 {
-		return sdktypes.InvalidValue, errors.New("unexpected keyword arguments")
+	var timeout time.Duration
+	if err := sdkmodule.UnpackArgs(nil, kwargs, "timeout=?", timeout); err != nil {
+		return sdktypes.InvalidValue, err
 	}
 
 	if len(args) == 0 {
 		return sdktypes.InvalidValue, errors.New("expecting at least one signal")
+	}
+
+	if timeout < 0 {
+		return sdktypes.InvalidValue, errors.New("timeout must be a non-negative value")
 	}
 
 	signals := kittehs.Transform(args, func(v sdktypes.Value) string { return v.GetString().Value() })
@@ -220,9 +225,13 @@ func (w *sessionWorkflow) nextEvent(ctx context.Context, args []sdktypes.Value, 
 	}
 
 	// no event, wait for first signal
-	signalID, err := w.waitOnFirstSignal(ctx, signals)
+	signalID, err := w.waitOnFirstSignal(ctx, signals, timeout)
 	if err != nil {
 		return sdktypes.InvalidValue, err
+	}
+
+	if signalID == "" {
+		return sdktypes.Nothing, nil
 	}
 
 	// get next event on this signal
