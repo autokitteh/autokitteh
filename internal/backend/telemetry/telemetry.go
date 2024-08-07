@@ -106,12 +106,13 @@ func New(z *zap.Logger, cfg *Config) *Telemetry {
 
 type NoOpCounter struct {
 	api.Int64UpDownCounter
+	api.Int64Counter
 }
 
 func (NoOpCounter) Add(context.Context, int64, ...api.AddOption) {}
 func (NoOpCounter) int64UpDownCounter()                          {}
 
-func (t *Telemetry) NewOtelUpDownCounter(name string, description string) api.Int64UpDownCounter {
+func (t *Telemetry) NewUpDownCounter(name string, description string) api.Int64UpDownCounter {
 	if !t.enabled {
 		return NoOpCounter{}
 	}
@@ -120,6 +121,22 @@ func (t *Telemetry) NewOtelUpDownCounter(name string, description string) api.In
 		name = fmt.Sprintf("%s.%s", t.serviceName, name)
 	}
 	metric, err := meter.Int64UpDownCounter(name, api.WithDescription(description))
+	if err != nil {
+		t.z.Error("failed to create metric", zap.String("name", name), zap.Error(err))
+		// REVIEW: should we panic? kittehs.Must?
+	}
+	return metric
+}
+
+func (t *Telemetry) NewCounter(name string, description string) api.Int64Counter {
+	if !t.enabled {
+		return NoOpCounter{}
+	}
+	meter := otel.GetMeterProvider().Meter(t.serviceName)
+	if !strings.HasPrefix(name, t.serviceName) {
+		name = fmt.Sprintf("%s.%s", t.serviceName, name)
+	}
+	metric, err := meter.Int64Counter(name, api.WithDescription(description))
 	if err != nil {
 		t.z.Error("failed to create metric", zap.String("name", name), zap.Error(err))
 		// REVIEW: should we panic? kittehs.Must?

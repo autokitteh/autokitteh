@@ -190,7 +190,7 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 
 	data, err := ws.getSessionData(wctx, params.SessionID)
 	if err == nil {
-		updateSessionCounter(sessionID, sdktypes.SessionStateTypeCreated)
+		sessionsCreatedCounter.Add(ctx, 1)
 
 		z.Info("session workflow: started")
 		prints, err = runWorkflow(wctx, z, ws, data, params.Debug)
@@ -200,12 +200,12 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 		z := z.With(zap.Error(err))
 
 		if errors.Is(err, workflow.ErrCanceled) || errors.Is(wctx.Err(), workflow.ErrCanceled) {
-			updateSessionCounter(sessionID, sdktypes.SessionStateTypeStopped)
+			sessionsStoppedCounter.Add(ctx, 1)
 
 			z.Info("session workflow: canceled")
 			ws.stopped(ctx, params.SessionID)
 		} else {
-			updateSessionCounter(sessionID, sdktypes.SessionStateTypeError)
+			sessionsErroredCounter.Add(ctx, 1)
 			ws.errored(ctx, params.SessionID, err, prints)
 
 			if _, ok := sdktypes.FromError(err); ok {
@@ -218,7 +218,7 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 			}
 		}
 	} else {
-		updateSessionCounter(sessionID, sdktypes.SessionStateTypeCompleted)
+		sessionsCompletedCounter.Add(ctx, 1)
 		z.Info("session workflow: completed")
 	}
 
