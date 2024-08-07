@@ -1,6 +1,8 @@
 package twilio
 
 import (
+	"context"
+
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
@@ -40,6 +42,28 @@ func New(vars sdkservices.Vars) sdkservices.Integration {
 				sdkmodule.WithArgs("to", "from_number?", "messaging_service_sid?", "body?", "media_url?", "content_sid?"),
 			),
 		),
+		connStatus(vars),
 		sdkintegrations.WithConnectionConfigFromVars(vars),
 	)
+}
+
+func connStatus(vs sdkservices.Vars) sdkintegrations.OptFn {
+	return sdkintegrations.WithConnectionStatus(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
+		if !cid.IsValid() {
+			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "init required"), nil
+		}
+
+		vs, err := vs.Get(ctx, sdktypes.NewVarScopeID(cid))
+		if err != nil {
+			return sdktypes.InvalidStatus, err
+		}
+
+		a := vs.Get(sdktypes.NewSymbol("AccountSID"))
+		u := vs.Get(sdktypes.NewSymbol("Username"))
+		if a.Name() == u.Name() {
+			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "using auth token"), nil
+		}
+
+		return sdktypes.NewStatus(sdktypes.StatusCodeOK, "using api key"), nil
+	})
 }
