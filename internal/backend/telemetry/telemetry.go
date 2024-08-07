@@ -97,23 +97,21 @@ func New(z *zap.Logger, cfg *Config) *Telemetry {
 	return telemetry
 }
 
-type NoOpCounter struct {
+type NoOpMetric struct {
 	api.Int64UpDownCounter
 	api.Int64Counter
 }
 
-func (NoOpCounter) Add(context.Context, int64, ...api.AddOption) {}
-func (NoOpCounter) int64UpDownCounter()                          {}
+func (NoOpMetric) Add(context.Context, int64, ...api.AddOption) {}
 
-func (t *Telemetry) NewUpDownCounter(name string, description string) api.Int64UpDownCounter {
-	if !t.enabled {
-		return NoOpCounter{}
-	}
+func newMetric[T any](t *Telemetry, name string, description string,
+	createFunc func(meter api.Meter, name string, description string) (T, error),
+) T {
 	meter := otel.GetMeterProvider().Meter(t.serviceName)
 	if !strings.HasPrefix(name, t.serviceName) {
 		name = fmt.Sprintf("%s.%s", t.serviceName, name)
 	}
-	metric, err := meter.Int64UpDownCounter(name, api.WithDescription(description))
+	metric, err := createFunc(meter, name, description)
 	if err != nil {
 		t.z.Error("failed to create metric", zap.String("name", name), zap.Error(err))
 		// REVIEW: should we panic? kittehs.Must?
@@ -121,18 +119,22 @@ func (t *Telemetry) NewUpDownCounter(name string, description string) api.Int64U
 	return metric
 }
 
+func (t *Telemetry) NewUpDownCounter(name string, description string) api.Int64UpDownCounter {
+	if !t.enabled {
+		return NoOpMetric{}
+	}
+	createFunc := func(meter api.Meter, name string, description string) (api.Int64UpDownCounter, error) {
+		return meter.Int64UpDownCounter(name, api.WithDescription(description))
+	}
+	return newMetric(t, name, description, createFunc)
+}
+
 func (t *Telemetry) NewCounter(name string, description string) api.Int64Counter {
 	if !t.enabled {
-		return NoOpCounter{}
+		return NoOpMetric{}
 	}
-	meter := otel.GetMeterProvider().Meter(t.serviceName)
-	if !strings.HasPrefix(name, t.serviceName) {
-		name = fmt.Sprintf("%s.%s", t.serviceName, name)
+	createFunc := func(meter api.Meter, name string, description string) (api.Int64Counter, error) {
+		return meter.Int64Counter(name, api.WithDescription(description))
 	}
-	metric, err := meter.Int64Counter(name, api.WithDescription(description))
-	if err != nil {
-		t.z.Error("failed to create metric", zap.String("name", name), zap.Error(err))
-		// REVIEW: should we panic? kittehs.Must?
-	}
-	return metric
+	return newMetric(t, name, description, createFunc)
 }
