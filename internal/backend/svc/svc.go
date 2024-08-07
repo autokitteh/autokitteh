@@ -247,14 +247,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		fx.Invoke(storegrpcsvc.Init),
 		fx.Invoke(triggersgrpcsvc.Init),
 		fx.Invoke(varsgrpcsvc.Init),
-		Component(
-			"telemetry",
-			telemetry.Configs,
-			fx.Provide(telemetry.New),
-			//fx.Invoke(func(lc fx.Lifecycle, zap *zap.Logger, cfg *telemetry.Config) {
-			//	telemetry.Init(zap, cfg)
-			//}),
-		),
+		Component("telemetry", telemetry.Configs, fx.Provide(telemetry.New)),
 
 		Component(
 			"http",
