@@ -69,7 +69,7 @@ func New(z *zap.Logger, cfg *Config) *Telemetry {
 	telemetry := &Telemetry{z: z, enabled: cfg.Enabled, serviceName: cfg.ServiceName}
 
 	if !telemetry.enabled {
-		z.Warn("metrics are disabled")
+		z.Info("metrics are disabled")
 		return telemetry
 	}
 
