@@ -10,5 +10,4 @@ atlassian-python-api ~= 3.41
 google-api-python-client ~= 2.122
 google-auth-httplib2 ~= 0.2
 google-auth-oauthlib ~= 1.2
-jira ~= 3.8
 slack-sdk ~= 3.27
