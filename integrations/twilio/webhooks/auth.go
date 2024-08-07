@@ -1,9 +1,11 @@
 package webhooks
 
 import (
+	"context"
 	"net/http"
 	"strings"
 
+	"github.com/twilio/twilio-go"
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
@@ -23,6 +25,9 @@ type Vars struct {
 	AccountSID string
 	Username   string `vars:"secret"`
 	Password   string `vars:"secret"`
+}
+type TwilioTest struct {
+	Vars Vars
 }
 
 // HandleAuth saves a new autokitteh connection with user-submitted Twilio secrets.
@@ -52,10 +57,50 @@ func (h handler) HandleAuth(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// TODO(ENG-1156): Test the authentication details.
+	api := TwilioTest{Vars: Vars{
+		AccountSID: accountSID,
+		Username:   username,
+		Password:   password,
+	}}
+	ctx := context.Background()
+
+	_, err := api.Test(ctx)
+	if err != nil {
+		l.Warn("Twilio authentication test failed", zap.Error(err))
+		c.AbortBadRequest("Twilio authentication test failed: " + err.Error())
+		return
+	}
 
 	c.Finalize(sdktypes.EncodeVars(Vars{
 		AccountSID: accountSID,
 		Username:   username,
 		Password:   password,
 	}))
+}
+
+type TestResponse struct {
+	AccountSID   string `json:"AccountSID"`
+	FriendlyName string `json:"FriendlyName"`
+	Status       string `json:"Status"`
+}
+
+func (a TwilioTest) Test(ctx context.Context) (*TestResponse, error) {
+	// Create a new Twilio client using the provided username and password
+	client := twilio.NewRestClientWithParams(twilio.ClientParams{
+		Username: a.Vars.Username,
+		Password: a.Vars.Password,
+	})
+
+	// Fetch the account details
+	resp, err := client.Api.FetchAccount(a.Vars.AccountSID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Parse and return the response
+	return &TestResponse{
+		AccountSID:   *resp.Sid,
+		FriendlyName: *resp.FriendlyName,
+		Status:       *resp.Status,
+	}, nil
 }
