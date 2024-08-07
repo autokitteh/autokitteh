@@ -1,13 +1,15 @@
 import json
 import pickle
+import re
 from base64 import b64encode
 from socket import socketpair
 from threading import Thread
 from time import sleep
+from types import ModuleType
 from unittest.mock import MagicMock
 
 import pytest
-from autokitteh import decorators
+from autokitteh import activity, decorators
 from conftest import testdata
 from loader_test import simple_dir
 
@@ -201,3 +203,36 @@ def test_call_non_func():
     ak_call = ak_runner.AKCall(comm)
     with pytest.raises(ValueError):
         ak_call("hello")
+
+
+def test_should_run_as_activity():
+    mod_name = "ak_test_module_name"
+    mod = ModuleType(mod_name)
+
+    ak_call = ak_runner.AKCall(None)
+
+    def fn():
+        pass
+
+    # loading
+    assert not ak_call.should_run_as_activity(fn)
+    ak_call.set_module(mod)
+
+    # after loading
+    assert ak_call.should_run_as_activity(fn)
+
+    # Function from same module
+    fn.__module__ = mod_name
+    assert not ak_call.should_run_as_activity(fn)
+
+    # Marked activity
+    fn = activity(fn)
+    assert ak_call.should_run_as_activity(fn)
+
+    # In activity
+    ak_call.in_activity = True
+    assert not ak_call.should_run_as_activity(fn)
+    ak_call.in_activity = False
+
+    # Deterministic
+    assert not ak_call.should_run_as_activity(re.compile)
