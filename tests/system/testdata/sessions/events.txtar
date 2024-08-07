@@ -22,6 +22,7 @@ output equals file prints.txt
 -- prints.txt --
 1
 2
+None
 
 -- project.yaml --
 version: v1
@@ -44,3 +45,4 @@ def on_http_start():
   s = subscribe("myhttp", "data.url.path == '/meow'")
   print(next_event(s)['body'].text())
   print(next_event(s)['body'].text())
+  print(next_event(s), timeout=5)
