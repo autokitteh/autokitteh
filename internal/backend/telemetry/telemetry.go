@@ -84,6 +84,8 @@ func New(z *zap.Logger, cfg *Config) *Telemetry {
 	)
 	if err != nil {
 		z.Error("failed to create metric exporter: %v", zap.Error(err))
+		telemetry.enabled = false
+		return telemetry
 	}
 
 	schemaURL := "https://opentelemetry.io/schemas/1.1.0"
