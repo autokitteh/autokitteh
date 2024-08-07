@@ -42,13 +42,6 @@ func verifyConfig(cfg *Config) *Config {
 
 type Labels map[string]string
 
-func toOTELAttrs(attrs Labels) (otelAttrs []attribute.KeyValue) {
-	for k, v := range attrs {
-		otelAttrs = append(otelAttrs, attribute.String(k, v))
-	}
-	return otelAttrs
-}
-
 func WithLabels(labels Labels) api.MeasurementOption {
 	var attrs []attribute.KeyValue
 	for k, v := range labels {
