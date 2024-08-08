@@ -13,8 +13,8 @@ var (
 )
 
 func initMetrics(t *telemetry.Telemetry) {
-	sessionsCreatedCounter = t.NewCounter("sessions.created", "Created sessions counter")
-	sessionsCompletedCounter = t.NewCounter("sessions.completed", "Completed sessions counter")
-	sessionsErroredCounter = t.NewCounter("sessions.errored", "Errored sessions counter")
-	sessionsStoppedCounter = t.NewCounter("sessions.stopped", "Stopped sessions counter")
+	sessionsCreatedCounter, _ = t.NewCounter("sessions.created", "Created sessions counter")
+	sessionsCompletedCounter, _ = t.NewCounter("sessions.completed", "Completed sessions counter")
+	sessionsErroredCounter, _ = t.NewCounter("sessions.errored", "Errored sessions counter")
+	sessionsStoppedCounter, _ = t.NewCounter("sessions.stopped", "Stopped sessions counter")
 }

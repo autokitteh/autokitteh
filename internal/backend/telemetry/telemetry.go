@@ -9,8 +9,9 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
-	api "go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/metric"
+	noop "go.opentelemetry.io/otel/metric/noop"
+	sdk "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
 	semconv "go.opentelemetry.io/otel/semconv/v1.20.0"
 	"go.uber.org/zap"
@@ -36,7 +37,7 @@ func (cfg *Config) fixConfig() {
 	}
 }
 
-func WithLabels(args ...string) api.MeasurementOption {
+func WithLabels(args ...string) metric.MeasurementOption {
 	var attrs []attribute.KeyValue
 	if len(args)%2 != 0 {
 		args = args[:len(args)-1] // strip the last one. TODO: log?
@@ -44,21 +45,20 @@ func WithLabels(args ...string) api.MeasurementOption {
 	for i := 0; i < len(args); i += 2 {
 		attrs = append(attrs, attribute.String(args[i], args[i+1]))
 	}
-	return api.WithAttributes(attrs...)
+	return metric.WithAttributes(attrs...)
 }
 
 type Telemetry struct {
-	l           *zap.Logger
-	enabled     bool
-	serviceName string
+	l   *zap.Logger
+	cfg Config
 }
 
 func New(z *zap.Logger, cfg *Config) *Telemetry {
 	cfg.fixConfig() // just ensure that endpoint and service name are set
 
-	telemetry := &Telemetry{l: z, enabled: cfg.Enabled, serviceName: cfg.ServiceName}
+	telemetry := &Telemetry{l: z, cfg: *cfg}
 
-	if !telemetry.enabled {
+	if !telemetry.cfg.Enabled {
 		z.Info("metrics are disabled")
 		return telemetry
 	}
@@ -72,64 +72,57 @@ func New(z *zap.Logger, cfg *Config) *Telemetry {
 	)
 	if err != nil {
 		z.Error("failed to create metric exporter: %v", zap.Error(err))
-		telemetry.enabled = false
+		telemetry.cfg.Enabled = false
 		return telemetry
 	}
 
 	const schemaURL = "https://opentelemetry.io/schemas/1.1.0"
 	resourceAttrs := resource.NewWithAttributes(
 		schemaURL,
-		semconv.ServiceNameKey.String(telemetry.serviceName),
+		semconv.ServiceNameKey.String(telemetry.cfg.ServiceName),
 	)
 
 	// NOTE: do we need a better control ober batching/sending. Should we use controller?
-	meterProvider := metric.NewMeterProvider(
-		metric.WithReader(metric.NewPeriodicReader(exporter)),
-		metric.WithResource(resourceAttrs),
+	meterProvider := sdk.NewMeterProvider(
+		sdk.WithReader(sdk.NewPeriodicReader(exporter)),
+		sdk.WithResource(resourceAttrs),
 	)
 
 	otel.SetMeterProvider(meterProvider) // set global meter provider
 	return telemetry
 }
 
-type NoOpMetric struct {
-	api.Int64UpDownCounter
-	api.Int64Counter
+func (t *Telemetry) ensureServiceName(name string) string {
+	if !strings.HasPrefix(name, t.cfg.ServiceName) {
+		name = fmt.Sprintf("%s.%s", t.cfg.ServiceName, name)
+	}
+	return name
 }
 
-func (NoOpMetric) Add(context.Context, int64, ...api.AddOption) {}
-
-func newMetric[T any](t *Telemetry, name string, description string,
-	createFunc func(meter api.Meter, name string, description string) (T, error),
-) T {
-	meter := otel.GetMeterProvider().Meter(t.serviceName)
-	if !strings.HasPrefix(name, t.serviceName) {
-		name = fmt.Sprintf("%s.%s", t.serviceName, name)
+func (t *Telemetry) NewUpDownCounter(name string, description string) (metric.Int64UpDownCounter, error) {
+	if !t.cfg.Enabled {
+		return noop.Int64UpDownCounter{}, nil
 	}
-	metric, err := createFunc(meter, name, description)
+	meter := otel.GetMeterProvider().Meter(t.cfg.ServiceName)
+	name = t.ensureServiceName(name)
+	metric, err := meter.Int64UpDownCounter(name, metric.WithDescription(description))
 	if err != nil {
 		t.l.Error("failed to create metric", zap.String("name", name), zap.Error(err))
-		// REVIEW: should we panic? kittehs.Must?
+		return noop.Int64UpDownCounter{}, err
 	}
-	return metric
+	return metric, nil
 }
 
-func (t *Telemetry) NewUpDownCounter(name string, description string) api.Int64UpDownCounter {
-	if !t.enabled {
-		return NoOpMetric{}
+func (t *Telemetry) NewCounter(name string, description string) (metric.Int64Counter, error) {
+	if !t.cfg.Enabled {
+		return noop.Int64Counter{}, nil
 	}
-	createFunc := func(meter api.Meter, name string, description string) (api.Int64UpDownCounter, error) {
-		return meter.Int64UpDownCounter(name, api.WithDescription(description))
+	meter := otel.GetMeterProvider().Meter(t.cfg.ServiceName)
+	name = t.ensureServiceName(name)
+	metric, err := meter.Int64Counter(name, metric.WithDescription(description))
+	if err != nil {
+		t.l.Error("failed to create metric", zap.String("name", name), zap.Error(err))
+		return noop.Int64Counter{}, err
 	}
-	return newMetric(t, name, description, createFunc)
-}
-
-func (t *Telemetry) NewCounter(name string, description string) api.Int64Counter {
-	if !t.enabled {
-		return NoOpMetric{}
-	}
-	createFunc := func(meter api.Meter, name string, description string) (api.Int64Counter, error) {
-		return meter.Int64Counter(name, api.WithDescription(description))
-	}
-	return newMetric(t, name, description, createFunc)
+	return metric, nil
 }
