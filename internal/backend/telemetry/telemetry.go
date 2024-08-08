@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/configset"
+	"go.autokitteh.dev/autokitteh/sdk/sdklogger"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
@@ -28,19 +29,20 @@ var Configs = configset.Set[Config]{
 	Dev:     &Config{Enabled: false, ServiceName: "ak", Endpoint: "localhost:4318"},
 }
 
-func (cfg *Config) fixConfig() {
+func fixConfig(cfg Config) Config {
 	if cfg.ServiceName == "" {
 		cfg.ServiceName = Configs.Default.ServiceName
 	}
 	if cfg.Endpoint == "" {
 		cfg.Endpoint = Configs.Default.Endpoint
 	}
+	return cfg
 }
 
 func WithLabels(args ...string) metric.MeasurementOption {
 	var attrs []attribute.KeyValue
 	if len(args)%2 != 0 {
-		args = args[:len(args)-1] // strip the last one. TODO: log?
+		sdklogger.DPanic("invalid telemetry labels")
 	}
 	for i := 0; i < len(args); i += 2 {
 		attrs = append(attrs, attribute.String(args[i], args[i+1]))
@@ -53,17 +55,15 @@ type Telemetry struct {
 	cfg Config
 }
 
-func New(z *zap.Logger, cfg *Config) *Telemetry {
-	cfg.fixConfig() // just ensure that endpoint and service name are set
-
-	telemetry := &Telemetry{l: z, cfg: *cfg}
+func New(z *zap.Logger, cfg *Config) (*Telemetry, error) {
+	telemetry := &Telemetry{l: z, cfg: fixConfig(*cfg)} // just ensure that endpoint and service name are set
 
 	if !telemetry.cfg.Enabled {
 		z.Info("metrics are disabled")
-		return telemetry
+		return telemetry, nil
 	}
 
-	// TODO: [ENG-1445] GRPC?
+	// TODO(ENG-1445): gRPC?
 	exporter, err := otlpmetrichttp.New(
 		context.Background(),
 		otlpmetrichttp.WithInsecure(),
@@ -73,7 +73,7 @@ func New(z *zap.Logger, cfg *Config) *Telemetry {
 	if err != nil {
 		z.Error("failed to create metric exporter: %v", zap.Error(err))
 		telemetry.cfg.Enabled = false
-		return telemetry
+		return telemetry, err
 	}
 
 	const schemaURL = "https://opentelemetry.io/schemas/1.1.0"
@@ -89,7 +89,7 @@ func New(z *zap.Logger, cfg *Config) *Telemetry {
 	)
 
 	otel.SetMeterProvider(meterProvider) // set global meter provider
-	return telemetry
+	return telemetry, nil
 }
 
 func (t *Telemetry) ensureServiceName(name string) string {
