@@ -83,7 +83,7 @@ func newDBServices(t *testing.T) (sdkservices.DBServices, *dbFixture) {
 	varSvc := vars.New(z, gdb, nil)
 	sesSvc := sessions.New(z, nil, gdb,
 		sessionsvcs.Svcs{DB: gdb, Builds: bldSvc, Connections: conSvc, Deployments: depSvc, Envs: envSvc, Triggers: trgSvc, Vars: varSvc},
-		telemetry.New(z, telemetry.Configs.Dev))
+		kittehs.Must1(telemetry.New(z, &telemetry.Config{Enabled: false})))
 
 	return &dbs{
 		intSvc: intSvc,
