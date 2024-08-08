@@ -36,12 +36,13 @@ func (cfg *Config) fixConfig() {
 	}
 }
 
-type Labels map[string]string
-
-func WithLabels(labels Labels) api.MeasurementOption {
+func WithLabels(args ...string) api.MeasurementOption {
 	var attrs []attribute.KeyValue
-	for k, v := range labels {
-		attrs = append(attrs, attribute.String(k, v))
+	if len(args)%2 != 0 {
+		args = args[:len(args)-1] // strip the last one. TODO: log?
+	}
+	for i := 0; i < len(args); i += 2 {
+		attrs = append(attrs, attribute.String(args[i], args[i+1]))
 	}
 	return api.WithAttributes(attrs...)
 }
