@@ -6,6 +6,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/integrations/internal/extrazap"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -44,6 +45,17 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		c.AbortBadRequest("form parsing error")
 		return
 	}
+	// Test the OpenAI authentication details.
+	ctx := extrazap.AttachLoggerToContext(l, r.Context())
+	api := OpenAIAPI{
+		APIKey: r.Form.Get("key"),
+	}
+	err := api.Test(ctx)
+	if err != nil {
+		l.Warn("OpenAI authentication test failed", zap.Error(err))
+		c.AbortBadRequest("OpenAI authentication test failed: " + err.Error())
+		return
+	}
 
-	c.Finalize(sdktypes.NewVars().Set(apiKeyVar, r.Form.Get("key"), true))
+	c.Finalize(sdktypes.NewVars().Set(apiKeyVar, api.APIKey, true))
 }
