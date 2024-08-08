@@ -27,17 +27,13 @@ var Configs = configset.Set[Config]{
 	Dev:     &Config{Enabled: false, ServiceName: "ak", Endpoint: "localhost:4318"},
 }
 
-func verifyConfig(cfg *Config) *Config {
-	if cfg == nil {
-		return Configs.Default
-	}
+func (cfg *Config) fixConfig() {
 	if cfg.ServiceName == "" {
 		cfg.ServiceName = Configs.Default.ServiceName
 	}
 	if cfg.Endpoint == "" {
 		cfg.Endpoint = Configs.Default.Endpoint
 	}
-	return cfg
 }
 
 type Labels map[string]string
@@ -57,7 +53,7 @@ type Telemetry struct {
 }
 
 func New(z *zap.Logger, cfg *Config) *Telemetry {
-	cfg = verifyConfig(cfg)
+	cfg.fixConfig() // just ensure that endpoint and service name are set
 
 	telemetry := &Telemetry{z: z, enabled: cfg.Enabled, serviceName: cfg.ServiceName}
 
@@ -66,14 +62,12 @@ func New(z *zap.Logger, cfg *Config) *Telemetry {
 		return telemetry
 	}
 
-	// REVIEW: encryption? GRPC?
-	// REVIEW: should we use AK env or maybe standard OTEL onses?
-	//         - OTEL_EXPORTER_OTLP_ENDPOINT or OTEL_EXPORTER_OTLP_METRICS_ENDPOINT
+	// TODO: [ENG-1445] GRPC?
 	exporter, err := otlpmetrichttp.New(
 		context.Background(),
 		otlpmetrichttp.WithInsecure(),
 		otlpmetrichttp.WithEndpoint(cfg.Endpoint),
-		// otlpmetrichttp.WithURLPath("/"), // /v1/metrics by default, unless set
+		// metrics will be sent to ENDPOINT:/v1/Metrcis. Use WithURLPath to override
 	)
 	if err != nil {
 		z.Error("failed to create metric exporter: %v", zap.Error(err))
@@ -81,13 +75,13 @@ func New(z *zap.Logger, cfg *Config) *Telemetry {
 		return telemetry
 	}
 
-	schemaURL := "https://opentelemetry.io/schemas/1.1.0"
+	const schemaURL = "https://opentelemetry.io/schemas/1.1.0"
 	resourceAttrs := resource.NewWithAttributes(
 		schemaURL,
 		semconv.ServiceNameKey.String(telemetry.serviceName),
 	)
 
-	// REVIEW: consider using controller?
+	// NOTE: do we need a better control ober batching/sending. Should we use controller?
 	meterProvider := metric.NewMeterProvider(
 		metric.WithReader(metric.NewPeriodicReader(exporter)),
 		metric.WithResource(resourceAttrs),
