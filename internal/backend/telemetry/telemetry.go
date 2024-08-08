@@ -48,7 +48,7 @@ func WithLabels(args ...string) api.MeasurementOption {
 }
 
 type Telemetry struct {
-	z           *zap.Logger
+	l           *zap.Logger
 	enabled     bool
 	serviceName string
 }
@@ -56,7 +56,7 @@ type Telemetry struct {
 func New(z *zap.Logger, cfg *Config) *Telemetry {
 	cfg.fixConfig() // just ensure that endpoint and service name are set
 
-	telemetry := &Telemetry{z: z, enabled: cfg.Enabled, serviceName: cfg.ServiceName}
+	telemetry := &Telemetry{l: z, enabled: cfg.Enabled, serviceName: cfg.ServiceName}
 
 	if !telemetry.enabled {
 		z.Info("metrics are disabled")
@@ -108,7 +108,7 @@ func newMetric[T any](t *Telemetry, name string, description string,
 	}
 	metric, err := createFunc(meter, name, description)
 	if err != nil {
-		t.z.Error("failed to create metric", zap.String("name", name), zap.Error(err))
+		t.l.Error("failed to create metric", zap.String("name", name), zap.Error(err))
 		// REVIEW: should we panic? kittehs.Must?
 	}
 	return metric
