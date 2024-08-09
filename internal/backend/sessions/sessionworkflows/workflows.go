@@ -17,6 +17,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessioncalls"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessiondata"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionsvcs"
+	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -50,7 +51,14 @@ const (
 
 func workflowID(sessionID sdktypes.SessionID) string { return sessionID.String() }
 
-func New(z *zap.Logger, cfg Config, sessions sdkservices.Sessions, svcs *sessionsvcs.Svcs, calls sessioncalls.Calls) Workflows {
+func New(z *zap.Logger,
+	cfg Config,
+	sessions sdkservices.Sessions,
+	svcs *sessionsvcs.Svcs,
+	calls sessioncalls.Calls,
+	telemetry *telemetry.Telemetry,
+) Workflows {
+	initMetrics(telemetry)
 	return &workflows{z: z, cfg: cfg, sessions: sessions, calls: calls, svcs: svcs}
 }
 
@@ -166,7 +174,8 @@ func (ws *workflows) getSessionDebugData(data *sessiondata.Data, prints []string
 }
 
 func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkflowParams) (debug any, _ error) {
-	z := ws.z.With(zap.String("session_id", params.SessionID.String()))
+	sessionID := params.SessionID.String()
+	z := ws.z.With(zap.String("session_id", sessionID))
 
 	wctx = workflow.WithLocalActivityOptions(wctx, workflow.LocalActivityOptions{
 		ScheduleToCloseTimeout: ws.cfg.Temporal.LocalScheduleToCloseTimeout,
@@ -181,6 +190,9 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 
 	data, err := ws.getSessionData(wctx, params.SessionID)
 	if err == nil {
+		sessionsCreatedCounter.Add(ctx, 1)
+
+		z.Info("session workflow: started")
 		prints, err = runWorkflow(wctx, z, ws, data, params.Debug)
 	}
 
@@ -188,20 +200,26 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 		z := z.With(zap.Error(err))
 
 		if errors.Is(err, workflow.ErrCanceled) || errors.Is(wctx.Err(), workflow.ErrCanceled) {
-			z.Debug("workflow canceled")
+			sessionsStoppedCounter.Add(ctx, 1)
+
+			z.Info("session workflow: canceled")
 			ws.stopped(ctx, params.SessionID)
 		} else {
+			sessionsErroredCounter.Add(ctx, 1)
 			ws.errored(ctx, params.SessionID, err, prints)
 
 			if _, ok := sdktypes.FromError(err); ok {
 				// User level error, no need to indicate the workflow as errored.
 				err = nil
 
-				z.Debug("program error")
+				z.Info("session workflow: program error")
 			} else {
-				z.Error("workflow error")
+				z.Error("session workflow: error")
 			}
 		}
+	} else {
+		sessionsCompletedCounter.Add(ctx, 1)
+		z.Info("session workflow: completed")
 	}
 
 	if data != nil {
