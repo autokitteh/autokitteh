@@ -7,10 +7,10 @@ project:
   # Unique system wide.
   name: http
   # Variables are used to store project specific configuration, which
-  # can be accessed from the project's code using:
-  #  load("env", "<ENV_VAR_NAME>")
-  # example:
-  #  load("env", "myvar")
+  # can be accessed from the project's code.
+  # For example, in Python using:
+  #  os.getenv("NAME")
+  # (see also: https://docs.autokitteh.com/develop/python#working-with-secrets)
   vars:
     - # Variable name.
       name: myvar
@@ -19,11 +19,10 @@ project:
     - name: myvar2
       # Deploy activation will not fail if this variable is not set.
       optional: true
-  # Connections map integrations to a specific project.
-  # A connection is used in project code using:
-  #  load("@<integration_name>", "<connection_name>")
-  # example:
-  #  load("@http", "myhttp")
+    - # Secret variables are not exposed in the UI. Can be set via UI though.
+      # Since no `optional` field is specified, it is mandatory.
+      name: shhhh
+      secret: true
   connections:
     # HTTP: Allows to fire triggers when an incoming HTTP request
     #       is received on <autokitteh_base_url>/http/<project_name>/...
