@@ -322,7 +322,12 @@ func (w *sessionWorkflow) createEventSubscription(ctx context.Context, connectio
 		return "", fmt.Errorf("get current sequence: %w", err)
 	}
 
-	signalID := uuid.New().String()
+	var signalID string
+	if err := workflow.SideEffect(wctx, func(wctx workflow.Context) any {
+		return uuid.New().String()
+	}).Get(&signalID); err != nil {
+		return "", fmt.Errorf("generate signal id: %w", err)
+	}
 
 	_, connection := kittehs.FindFirst(w.data.Connections, func(c sdktypes.Connection) bool {
 		return c.Name().String() == connectionName
