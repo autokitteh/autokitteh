@@ -201,7 +201,7 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 		if workflow.IsReplaying(wctx) && data.Session.State().IsFinal() {
 			// HACK: If we somehow get a signal to this workflow after it completed,
 			//       in certain delicate timing, the workflow rekicks in replay.
-			// 		 Though replay would work just fine, and result in a no-op,
+			//       Though replay would work just fine, and result in a no-op,
 			//       it's nice to not have to run through its entirely. Temporal
 			//       just seems to ignore it...
 			z.Warn("already completed")
