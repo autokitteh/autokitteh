@@ -1,3 +1,5 @@
+# TODO(ENG-1407): re-enable once underlying issue is solved.
+
 ak deploy --manifest project.yaml
 return code == 0
 
