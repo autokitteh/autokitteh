@@ -226,14 +226,14 @@ func (w *sessionWorkflow) nextEvent(ctx context.Context, args []sdktypes.Value, 
 
 	wctx := sessioncontext.GetWorkflowContext(ctx)
 
-	var f workflow.Future
+	var timeoutFuture workflow.Future
 	if timeout != 0 {
-		f = workflow.NewTimer(wctx, timeout)
+		timeoutFuture = workflow.NewTimer(wctx, timeout)
 	}
 
 	for {
 		// no event, wait for first signal
-		signalID, err := w.waitOnFirstSignal(wctx, signals, f)
+		signalID, err := w.waitOnFirstSignal(wctx, signals, timeoutFuture)
 		if err != nil {
 			return sdktypes.InvalidValue, err
 		}
