@@ -79,7 +79,7 @@ func newSessionsMiddleware(next http.Handler, sessions authsessions.Store) http.
 		if user := authcontext.GetAuthnUser(ctx); !user.IsValid() {
 			session, err := sessions.Get(r)
 			if err != nil {
-				http.Error(w, "invalid session", http.StatusUnauthorized)
+				http.Redirect(w, r, "/login", http.StatusFound)
 				return
 			}
 
