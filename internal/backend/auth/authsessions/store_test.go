@@ -43,12 +43,12 @@ func (b baseMockSessionStore) Destroy(w http.ResponseWriter, name string) {
 	b.destroy(w, name)
 }
 
-func TestStoreGetNoLoggedinCookieReturnError(t *testing.T) {
+func TestStoreGetNoLoggedinCookie(t *testing.T) {
 	s := store{store: baseMockSessionStore{}}
 	r := http.Request{}
 	sd, err := s.Get(&r)
 	assert.Nil(t, sd)
-	assert.ErrorIs(t, err, http.ErrNoCookie)
+	assert.Nil(t, err)
 }
 
 func TestStoreGetInvalidLoggedInCookie(t *testing.T) {

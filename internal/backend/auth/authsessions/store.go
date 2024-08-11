@@ -94,6 +94,9 @@ func (s store) Set(w http.ResponseWriter, data *sessionData) error {
 func (s store) Get(req *http.Request) (*sessionData, error) {
 	loggedIn, err := req.Cookie(loggedInCookie)
 	if err != nil {
+		if errors.Is(err, http.ErrNoCookie) {
+			return nil, nil
+		}
 		return nil, err
 	}
 
