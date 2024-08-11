@@ -177,7 +177,7 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 	sessionID := params.SessionID.String()
 	wi := workflow.GetInfo(wctx)
 	z := ws.z.With(
-		zap.String("seswion_id", sessionID),
+		zap.String("session_id", sessionID),
 		zap.Bool("replay", workflow.IsReplaying(wctx)),
 		zap.String("workflow_id", wi.WorkflowExecution.ID),
 		zap.String("run_id", wi.WorkflowExecution.RunID),

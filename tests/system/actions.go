@@ -24,6 +24,7 @@ func splitToArgs(cmdArgs string) []string {
 }
 
 func runAction(t *testing.T, akPath, akAddr, step string) (any, error) {
+	t.Logf("*** ACTION: %q", step)
 	match := actions.FindStringSubmatch(step)
 	switch match[1] {
 	case "setenv":
