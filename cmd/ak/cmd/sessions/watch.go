@@ -3,6 +3,7 @@ package sessions
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -13,10 +14,10 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-var endState string
+var endState, endPrintRE string
 
 var watchCmd = common.StandardCommand(&cobra.Command{
-	Use:   "watch [sessions ID] [--fail] [--end-state <state>] [--timeout <duration>] [--poll-interval <duration>] [--no-timestamps] [--quiet] [--prints-only]",
+	Use:   "watch [sessions ID] [--fail] [--end-state <state>] [--end-print-re <re>] [--timeout <duration>] [--poll-interval <duration>] [--no-timestamps] [--quiet] [--prints-only]",
 	Short: "Watch session runtime logs (prints, calls, errors, state changes)",
 	Args:  cobra.MaximumNArgs(1),
 
@@ -43,7 +44,7 @@ var watchCmd = common.StandardCommand(&cobra.Command{
 			return fmt.Errorf("end state: %w", err)
 		}
 
-		_, err = sessionWatch(sid, endState)
+		_, err = sessionWatch(sid, endState, endPrintRE)
 		return err
 	},
 })
@@ -51,6 +52,7 @@ var watchCmd = common.StandardCommand(&cobra.Command{
 func init() {
 	// Command-specific flags.
 	watchCmd.Flags().StringVarP(&endState, "end-state", "e", "", "stop watching when state is reached")
+	watchCmd.Flags().StringVarP(&endPrintRE, "end-print-re", "r", "", "stop watching when a print matching regex is reached")
 
 	watchCmd.Flags().DurationVarP(&watchTimeout, "timeout", "t", 0, "timeout duration")
 	watchCmd.Flags().DurationVarP(&pollInterval, "poll-interval", "i", defaultPollInterval, "poll interval")
@@ -61,7 +63,17 @@ func init() {
 	common.AddFailIfNotFoundFlag(watchCmd)
 }
 
-func sessionWatch(sid sdktypes.SessionID, endState sdktypes.SessionStateType) ([]sdktypes.SessionLogRecord, error) {
+func sessionWatch(sid sdktypes.SessionID, endState sdktypes.SessionStateType, endPrintRE string) ([]sdktypes.SessionLogRecord, error) {
+	matchPrint := func(string) bool { return false }
+
+	if endPrintRE != "" {
+		pre, err := regexp.Compile(endPrintRE)
+		if err != nil {
+			return nil, fmt.Errorf("invalid regex: %w", err)
+		}
+		matchPrint = pre.MatchString
+	}
+
 	var state sdktypes.SessionStateType
 	var rs []sdktypes.SessionLogRecord
 
@@ -82,6 +94,7 @@ func sessionWatch(sid sdktypes.SessionID, endState sdktypes.SessionStateType) ([
 		}
 
 		currCtx, cancel := common.WithLimitedContext(ctx)
+		defer cancel()
 
 		s, err := sessions().Get(currCtx, sid)
 		if err != nil {
@@ -93,34 +106,34 @@ func sessionWatch(sid sdktypes.SessionID, endState sdktypes.SessionStateType) ([
 
 		f.Skip = int32(len(rs))
 		f.PageToken = ""
-		res, err := sessions().GetLog(currCtx, f)
-		if err != nil {
-			cancel()
-			return nil, err
-		}
+		first := true
 
-		logs := res.Log.Records()
+		for first || f.PageToken != "" {
+			first = false
 
-		printLogs(logs)
-
-		f.PageToken = res.NextPageToken
-
-		rs = append(rs, logs...)
-		f.Skip = 0
-
-		for f.PageToken != "" {
-			res, err = sessions().GetLog(currCtx, f)
+			res, err := sessions().GetLog(currCtx, f)
 			if err != nil {
 				cancel()
 				return nil, err
 			}
 
 			logs := res.Log.Records()
+
+			for _, log := range logs {
+				if p, ok := log.GetPrint(); ok {
+					if matchPrint(p) {
+						cancel()
+						return rs, nil
+					}
+				}
+			}
+
 			printLogs(logs)
 
-			rs = append(rs, logs...)
-
 			f.PageToken = res.NextPageToken
+
+			rs = append(rs, logs...)
+			f.Skip = 0
 		}
 
 		cancel()
