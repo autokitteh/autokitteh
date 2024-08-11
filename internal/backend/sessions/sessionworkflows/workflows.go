@@ -175,15 +175,15 @@ func (ws *workflows) getSessionDebugData(data *sessiondata.Data, prints []string
 
 func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkflowParams) (debug any, _ error) {
 	sessionID := params.SessionID.String()
-	si := workflow.GetInfo(wctx)
+	wi := workflow.GetInfo(wctx)
 	z := ws.z.With(
-		zap.String("session_id", sessionID),
+		zap.String("seswion_id", sessionID),
 		zap.Bool("replay", workflow.IsReplaying(wctx)),
-		zap.String("workflow_id", si.WorkflowExecution.ID),
-		zap.String("run_id", si.WorkflowExecution.RunID),
+		zap.String("workflow_id", wi.WorkflowExecution.ID),
+		zap.String("run_id", wi.WorkflowExecution.RunID),
 	)
 
-	z.Info("session workflow started", zap.Int32("attempt", si.Attempt))
+	z.Info("session workflow started", zap.Int32("attempt", wi.Attempt))
 
 	wctx = workflow.WithLocalActivityOptions(wctx, workflow.LocalActivityOptions{
 		ScheduleToCloseTimeout: ws.cfg.Temporal.LocalScheduleToCloseTimeout,
@@ -204,7 +204,7 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 			//       Though replay would work just fine, and result in a no-op,
 			//       it's nice to not have to run through its entirely. Temporal
 			//       just seems to ignore it...
-			z.Warn("already completed")
+			z.Info("already completed")
 			return nil, nil
 		}
 
