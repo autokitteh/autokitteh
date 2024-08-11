@@ -349,21 +349,28 @@ func (w *sessionWorkflow) createEventSubscription(ctx context.Context, connectio
 	return signalID, nil
 }
 
-func (w *sessionWorkflow) waitOnFirstSignal(ctx context.Context, signals []string) (string, error) {
-	wctx := sessioncontext.GetWorkflowContext(ctx)
+// Returns "", nil on timeout.
+func (w *sessionWorkflow) waitOnFirstSignal(wctx workflow.Context, signals []string, f workflow.Future) (string, error) {
 	selector := workflow.NewSelector(wctx)
 
-	var signalID string
-	for _, signal := range signals {
-		func(s string) {
-			selector.AddReceive(workflow.GetSignalChannel(wctx, s), func(c workflow.ReceiveChannel, more bool) {
-				c.Receive(wctx, nil) // we don't really care about the signal data
-				signalID = s
-			})
-		}(signal)
+	if f != nil {
+		selector.AddFuture(f, func(workflow.Future) {})
 	}
 
-	// this will wait for first signal
+	var signalID string
+
+	for _, signal := range signals {
+		selector.AddReceive(workflow.GetSignalChannel(wctx, signal), func(c workflow.ReceiveChannel, _ bool) {
+			// clear all pending signals.
+			for c.ReceiveAsync(nil) {
+				// nop
+			}
+
+			signalID = signal
+		})
+	}
+
+	// this will wait for first signal or timeout.
 	selector.Select(wctx)
 
 	return signalID, nil
