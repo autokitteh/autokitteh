@@ -95,7 +95,7 @@ var testCmd = common.StandardCommand(&cobra.Command{
 			return fmt.Errorf("start session: %w", err)
 		}
 		pageSize = 10
-		rs, err := sessionWatch(sid, sdktypes.SessionStateTypeUnspecified)
+		rs, err := sessionWatch(sid, sdktypes.SessionStateTypeUnspecified, "")
 		if err != nil {
 			return err
 		}

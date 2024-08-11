@@ -45,7 +45,7 @@ var restartCmd = common.StandardCommand(&cobra.Command{
 		common.RenderKVIfV("session_id", sid)
 
 		if watch {
-			_, err := sessionWatch(sid, sdktypes.SessionStateTypeUnspecified)
+			_, err := sessionWatch(sid, sdktypes.SessionStateTypeUnspecified, "")
 			return err
 		}
 
