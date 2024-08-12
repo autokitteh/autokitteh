@@ -7,7 +7,6 @@ import (
 	"go.uber.org/fx"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
-	"go.autokitteh.dev/autokitteh/internal/backend/auth/authloginhttpsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authsessions"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authtokens"
 	"go.autokitteh.dev/autokitteh/internal/backend/configset"
@@ -97,7 +96,7 @@ func New(deps Deps) AuthMiddlewareDecorator {
 		f := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if deps.Cfg.Required {
 				if user := authcontext.GetAuthnUser(r.Context()); !user.IsValid() {
-					authloginhttpsvc.RedirectToLogin(w, r, r.URL)
+					http.Error(w, "invalid session", http.StatusUnauthorized)
 					return
 				}
 			}
