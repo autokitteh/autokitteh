@@ -96,7 +96,7 @@ func New(deps Deps) AuthMiddlewareDecorator {
 		f := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if deps.Cfg.Required {
 				if user := authcontext.GetAuthnUser(r.Context()); !user.IsValid() {
-					http.Error(w, "invalid session", http.StatusUnauthorized)
+					http.Error(w, "unauthorized user", http.StatusUnauthorized)
 					return
 				}
 			}
