@@ -29,6 +29,11 @@ message SaveResponse {
 
 message GetRequest {
   string event_id = 1 [(buf.validate.field).string.min_len = 1];
+
+  // true: all values returned will be string values
+  //       that contain the native values in JSON format.
+  // false: all values returned are properly boxed.
+  bool json_values = 2;
 }
 
 message GetResponse {
@@ -41,6 +46,9 @@ message ListRequest {
   string event_type = 3;
   uint32 max_results = 4;
   string order = 5; // ASC or DESC values are supported
+
+  // see GetRequest.json_values.
+  bool json_values = 6;
 }
 
 message ListResponse {

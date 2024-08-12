@@ -48,7 +48,15 @@ func (s *server) Get(ctx context.Context, req *connect.Request[eventsv1.GetReque
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	return connect.NewResponse(&eventsv1.GetResponse{Event: event.ToProto()}), nil
+	eventpb := event.ToProto()
+
+	if msg.JsonValues {
+		if eventpb.Data, err = kittehs.TransformMapValuesError(eventpb.Data, sdktypes.ValueProtoToJSONStringValue); err != nil {
+			return nil, sdkerrors.AsConnectError(err)
+		}
+	}
+
+	return connect.NewResponse(&eventsv1.GetResponse{Event: eventpb}), nil
 }
 
 func (s *server) List(ctx context.Context, req *connect.Request[eventsv1.ListRequest]) (*connect.Response[eventsv1.ListResponse], error) {
@@ -96,9 +104,17 @@ func (s *server) List(ctx context.Context, req *connect.Request[eventsv1.ListReq
 		return nil, connect.NewError(connect.CodeUnknown, fmt.Errorf("server error: %w", err))
 	}
 
-	eventsPB := kittehs.Transform(events, sdktypes.ToProto)
+	eventspb := kittehs.Transform(events, sdktypes.ToProto)
 
-	return connect.NewResponse(&eventsv1.ListResponse{Events: eventsPB}), nil
+	if msg.JsonValues {
+		for _, eventpb := range eventspb {
+			if eventpb.Data, err = kittehs.TransformMapValuesError(eventpb.Data, sdktypes.ValueProtoToJSONStringValue); err != nil {
+				return nil, sdkerrors.AsConnectError(err)
+			}
+		}
+	}
+
+	return connect.NewResponse(&eventsv1.ListResponse{Events: eventspb}), nil
 }
 
 func (s *server) Save(ctx context.Context, req *connect.Request[eventsv1.SaveRequest]) (*connect.Response[eventsv1.SaveResponse], error) {
