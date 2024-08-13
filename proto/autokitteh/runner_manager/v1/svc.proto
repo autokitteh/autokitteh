@@ -1,0 +1,56 @@
+syntax = "proto3";
+
+package autokitteh.runner_manager.v1;
+
+message ContainerConfig {
+  string image = 1;
+  // TBD by @efiShtain
+}
+
+message StartRequest {
+  ContainerConfig container_config = 1;
+
+  // user code as tar archive
+  bytes build_artifact = 2;
+  // vars from manifest, secrets and connections
+  map<string, string> vars = 3;
+
+  string worker_address = 4;
+}
+
+message StartResponse {
+  string runner_id = 1;
+  string runner_address = 2;
+  string error = 3;
+}
+
+message RunnerHealthRequest {
+  string runner_id = 1;
+}
+
+message RunnerHealthResponse {
+  bool healthy = 1;
+  string error = 2;
+}
+
+message StopRequest {
+  string runner_id = 1;
+}
+
+message StopResponse {
+  string error = 1;
+}
+
+message HealthRequest {}
+
+message HealthResponse {
+  string error = 1;
+}
+
+service RunnerManagerService {
+  rpc Start(StartRequest) returns (StartResponse) {}
+  rpc RunnerHealth(RunnerHealthRequest) returns (RunnerHealthResponse) {}
+  rpc Stop(StopRequest) returns (StopResponse) {}
+
+  rpc Health(HealthRequest) returns (HealthResponse) {}
+}

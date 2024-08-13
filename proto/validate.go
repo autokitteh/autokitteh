@@ -23,6 +23,7 @@ import (
 	oauthv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/oauth/v1"
 	programv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/program/v1"
 	projectsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/projects/v1"
+	runner_managerv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/runner_manager/v1"
 	runtimesv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/runtimes/v1"
 	sessionsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/sessions/v1"
 	storev1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/store/v1"
@@ -80,6 +81,7 @@ var fds = []protoreflect.FileDescriptor{
 	programv1.File_autokitteh_program_v1_program_proto,
 	projectsv1.File_autokitteh_projects_v1_project_proto,
 	projectsv1.File_autokitteh_projects_v1_svc_proto,
+	runner_managerv1.File_autokitteh_runner_manager_v1_svc_proto,
 	runtimesv1.File_autokitteh_runtimes_v1_build_proto,
 	runtimesv1.File_autokitteh_runtimes_v1_runtime_proto,
 	runtimesv1.File_autokitteh_runtimes_v1_svc_proto,
