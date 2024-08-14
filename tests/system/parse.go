@@ -16,13 +16,16 @@ const (
 )
 
 var (
-	steps = regexp.MustCompile(`^(ak|http|output|req|resp|return|wait|setenv)\s`)
+	steps = regexp.MustCompile(`^(ak|http|output|req|resp|return|wait|setenv|capture_jq)\s`)
 
 	// ak *
 	// http <get|post> *
 	actions = regexp.MustCompile(`^(ak|http\s+(get|post)|wait|setenv)\s+(.+)`)
 	// wait <duration> for session <session ID>
 	waitAction = regexp.MustCompile(`^wait\s+(.+)\s+(for|unless)\s+session\s+(.+)`)
+
+	// capture_jq <name> <jq expression>
+	jqCheck = regexp.MustCompile(`^capture_jq\s+(\w+)\s+(.+)`)
 
 	// output <equals|equals_json|contains|regex> [file] *
 	akCheckOutput = regexp.MustCompile(`^output\s+(equals|equals_json|contains|regex)\s+(file\s+)?(.+|'.*')`)
@@ -140,6 +143,11 @@ func parseTestFile(t *testing.T, a *txtar.Archive) []string {
 		case "resp":
 			if !httpCheckOutput.MatchString(line) && !httpCheckStatus.MatchString(line) && !httpCheckHeader.MatchString(line) {
 				t.Errorf("invalid HTTP response check in line %d: %s", i+1, line)
+				errors++
+			}
+		case "capture_jq":
+			if !jqCheck.MatchString(line) {
+				t.Errorf("invalid jq capture in line %d: %s", i+1, line)
 				errors++
 			}
 		}
