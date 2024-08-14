@@ -84,15 +84,11 @@ class AKCall:
 
         if not self.should_run_as_activity(func):
             log.info(
-                "calling %s (args=%r, kw=%r) directly (in_activity=%s)",
-                func.__name__,
-                args,
-                kw,
-                self.in_activity,
+                "calling %s directly (in_activity=%s)", func.__name__, self.in_activity
             )
             return func(*args, **kw)
 
-        log.info("ACTION: activity call %s(%r, %r)", func.__name__, args, kw)
+        log.info("ACTION: activity call %s", func.__name__)
         self.in_activity = True
         try:
             self.call_info = CallInfo(func, args, kw)

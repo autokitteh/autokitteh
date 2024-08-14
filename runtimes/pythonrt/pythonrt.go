@@ -15,6 +15,7 @@ import (
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"golang.org/x/exp/maps"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/logger"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
@@ -315,7 +316,6 @@ func (py *pySvc) Run(
 	envMap := kittehs.TransformMap(env, func(key string, value sdktypes.Value) (string, string) {
 		return key, value.GetString().Value()
 	})
-	py.log.Info("env", zap.Any("env", envMap))
 
 	tarData := compiled[archiveKey]
 	if tarData == nil {
@@ -616,13 +616,13 @@ func (py *pySvc) injectHTTPBody(ctx context.Context, data sdktypes.Value, event 
 // Call handles a function call from autokitteh.
 // First used of Call start a workflow, later invocations are activity calls.
 func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
-	py.log.Info("call", zap.String("func", v.String()))
+	fn := v.GetFunction()
+	py.log.Info("call", zap.String("func", fn.Name().String()))
 	if py.run.proc == nil {
 		py.log.Error("call - python not running")
 		return sdktypes.InvalidValue, fmt.Errorf("python not running")
 	}
 
-	fn := v.GetFunction()
 	if !fn.IsValid() {
 		py.log.Error("call - invalid function", zap.Any("function", v))
 		return sdktypes.InvalidValue, fmt.Errorf("%#v is not a function", v)
@@ -637,7 +637,7 @@ func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 		}
 		event[key] = goVal
 	}
-	py.log.Info("event", zap.Any("event", event))
+	py.log.Info("event", zap.Any("keys", maps.Keys(event)))
 
 	if err := py.injectHTTPBody(ctx, kwargs["data"], event, py.cbs); err != nil {
 		return sdktypes.InvalidValue, err
@@ -656,7 +656,7 @@ func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 		Name: fnName,
 		Data: fn.Data(),
 	}
-	py.log.Info("callback to Python", zap.Any("message", cbm))
+	py.log.Info("callback to Python")
 
 	if err := py.comm.Send(cbm); err != nil {
 		py.log.Error("send to python", zap.Error(err))
@@ -696,7 +696,7 @@ func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 		py.log.Error("from python", zap.Error(err))
 		return sdktypes.InvalidValue, err
 	}
-	py.log.Info("python return", zap.Any("message", rm))
+	py.log.Info("python return")
 
 	return sdktypes.NewBytesValue(rm.Value), nil
 }
