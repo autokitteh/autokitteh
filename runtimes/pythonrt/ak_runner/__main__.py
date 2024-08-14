@@ -78,7 +78,7 @@ def run(args):
     log.info("python: %r, version: %r", sys.executable, py_version)
     log.info("sock: %r, tar: %r, module: %r", args.sock, args.tar, module_name)
     code_dir = extract_code(args.tar)
-    log.info("code dir: %r", code_dir)
+    log.info("code dir: %r", str(code_dir))
 
     py_file = code_dir / args.path
     if not py_file.exists():

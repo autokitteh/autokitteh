@@ -171,12 +171,6 @@ func (py *pySvc) Build(ctx context.Context, fsys fs.FS, path string, values []sd
 		return sdktypes.InvalidBuildArtifact, err
 	}
 
-	exports, err := pyExports(ctx, py.pyExe, fsys)
-	if err != nil {
-		py.log.Error("get exports", zap.Error(err))
-		return sdktypes.InvalidBuildArtifact, err
-	}
-
 	compiledData := map[string][]byte{
 		archiveKey: data,
 	}
@@ -200,9 +194,8 @@ func (py *pySvc) Build(ctx context.Context, fsys fs.FS, path string, values []sd
 		compiledData[hdr.Name] = nil
 	}
 
-	buildExports := kittehs.Transform(exports, asBuildExport)
 	var art sdktypes.BuildArtifact
-	art = art.WithCompiledData(compiledData).WithExports(buildExports)
+	art = art.WithCompiledData(compiledData)
 
 	return art, nil
 }
@@ -295,7 +288,7 @@ func (py *pySvc) Run(
 ) (sdkservices.Run, error) {
 	py.xid = sdktypes.NewExecutorID(runID) // Should be first
 	py.log = py.log.With(zap.String("run_id", runID.String()))
-	py.log.Info("run", zap.String("path", mainPath))
+	py.log.Info("run", zap.String("mainPath", mainPath))
 
 	if err := py.loadSyscall(values); err != nil {
 		return nil, err
