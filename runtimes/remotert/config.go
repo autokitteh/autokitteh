@@ -3,11 +3,11 @@ package remotert
 import "errors"
 
 type RemoteRuntimeConfig struct {
-	RunnerAddress []string
+	ManagerAddress []string
 }
 
 func (c RemoteRuntimeConfig) validate() error {
-	if len(c.RunnerAddress) == 0 {
+	if len(c.ManagerAddress) == 0 {
 		return errors.New("no runner manager address")
 	}
 

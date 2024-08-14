@@ -15,10 +15,10 @@ func New() sdkservices.Runtimes {
 	runtimes := []*sdkruntimes.Runtime{
 		starlarkruntimesvc.Runtime,
 		configruntimesvc.Runtime,
-		// pythonruntime.Runtime,
+		// pythonrt.Runtime,
 	}
 	err := remotert.Configure(remotert.RemoteRuntimeConfig{
-		RunnerAddress: []string{"localhost:9291"},
+		ManagerAddress: []string{"localhost:9291"},
 	})
 
 	if err == nil {
