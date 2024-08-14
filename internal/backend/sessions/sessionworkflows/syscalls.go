@@ -39,9 +39,9 @@ func (w *sessionWorkflow) syscall(ctx context.Context, args []sdktypes.Value, kw
 
 	switch op {
 	case pollOp:
-		return w.setPoller(args, kwargs)
+		return w.setPoller(ctx, args, kwargs)
 	case fakeOp:
-		return w.fake(args, kwargs)
+		return w.fake(ctx, args, kwargs)
 	case sleepOp:
 		return w.sleep(ctx, args, kwargs)
 	case startOp:
@@ -57,7 +57,7 @@ func (w *sessionWorkflow) syscall(ctx context.Context, args []sdktypes.Value, kw
 	}
 }
 
-func (w *sessionWorkflow) fake(args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
+func (w *sessionWorkflow) fake(_ context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
 	var orig, fake sdktypes.Value
 
 	if err := sdkmodule.UnpackArgs(args, kwargs, "orig", &orig, "fake", &fake); err != nil {
@@ -91,7 +91,7 @@ func (w *sessionWorkflow) fake(args []sdktypes.Value, kwargs map[string]sdktypes
 	return prev, nil
 }
 
-func (w *sessionWorkflow) setPoller(args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
+func (w *sessionWorkflow) setPoller(_ context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
 	var fn sdktypes.Value
 
 	if err := sdkmodule.UnpackArgs(args, kwargs, "fn", &fn); err != nil {

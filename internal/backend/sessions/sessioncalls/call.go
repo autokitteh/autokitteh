@@ -10,9 +10,9 @@ import (
 	"go.temporal.io/sdk/workflow"
 	"go.uber.org/zap"
 
-	"go.autokitteh.dev/autokitteh/internal/backend/akmodules"
-	akmodule "go.autokitteh.dev/autokitteh/internal/backend/akmodules/ak"
+	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessioncontext"
+	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionworkflows/modules"
 	"go.autokitteh.dev/autokitteh/sdk/sdkexecutor"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -56,7 +56,7 @@ func (cs *calls) invoke(ctx context.Context, callv sdktypes.Value, args []sdktyp
 
 	f := callv.GetFunction()
 
-	if iid := xid.ToIntegrationID(); iid.IsValid() && !f.HasFlag(sdktypes.PureFunctionFlag) && !akmodules.IsAKModuleExecutorID(xid) {
+	if iid := xid.ToIntegrationID(); iid.IsValid() && !f.HasFlag(sdktypes.PureFunctionFlag) && !modules.IsAKModuleExecutorID(xid) {
 		// The executor is an integration, and not a pure function or a session module that must run in a session workflow,
 		// so it can run in any worker and using a stateless integration.
 
@@ -107,7 +107,7 @@ func (cs *calls) invoke(ctx context.Context, callv sdktypes.Value, args []sdktyp
 		if errors.Is(err, context.DeadlineExceeded) {
 			v = sdktypes.InvalidValue
 			err = sdktypes.NewProgramError(
-				akmodule.TimeoutError,
+				fixtures.TimeoutError,
 				nil,
 				map[string]string{
 					"duration": timeout.String(),

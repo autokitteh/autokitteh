@@ -26,34 +26,34 @@ def nop():
 
 # EXPORT: poll
 def poll(fn, pollerfn):
-    orig = ak.syscall("poll", pollerfn)
+    orig = ak.poll(pollerfn)
     r = fn()
-    ak.syscall("poll", orig)
+    ak.poll(orig)
     return r
 
 # EXPORT: fake
 def fake(*args, **kwargs):
-    return ak.syscall("fake", *args, **kwargs)
+    return ak.fake(*args, **kwargs)
 
 # EXPORT: sleep
 def sleep(*args, **kwargs):
-    return ak.syscall("sleep", *args, **kwargs)
+    return ak.sleep(*args, **kwargs)
 
 # EXPORT: start
 def start(*args, **kwargs):
-    return ak.syscall("start", *args, **kwargs)
+    return ak.start(*args, **kwargs)
 
 # EXPORT: subscribe
 def subscribe(*args, **kwargs):
-    return ak.syscall("subscribe", *args, **kwargs)    
+    return ak.subscribe(*args, **kwargs)    
 
 # EXPORT: next_event
 def next_event(*args, **kwargs):
-    return ak.syscall("next_event", *args, **kwargs)
+    return ak.next_event(*args, **kwargs)
 
 # EXPORT: unsubscribe
 def unsubscribe(*args, **kwargs):
-    return ak.syscall("unsubscribe", *args, **kwargs)
+    return ak.unsubscribe(*args, **kwargs)
 
 # EXPORT: test
 def test():
