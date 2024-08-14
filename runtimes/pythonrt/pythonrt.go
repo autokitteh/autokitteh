@@ -301,7 +301,6 @@ func (py *pySvc) Run(
 		return nil, err
 	}
 
-	py.xid = sdktypes.NewExecutorID(runID)
 	py.log.Info("executor", zap.String("id", py.xid.String()))
 	py.cbs = cbs
 	py.firstCall = true // State for Call.
