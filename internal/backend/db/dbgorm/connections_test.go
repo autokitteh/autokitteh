@@ -8,6 +8,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 func (f *dbFixture) createConnectionsAndAssert(t *testing.T, connections ...scheme.Connection) {
@@ -24,7 +25,7 @@ func (f *dbFixture) assertConnectionDeleted(t *testing.T, connections ...scheme.
 }
 
 func preConnectionTest(t *testing.T) *dbFixture {
-	f := newDBFixture()
+	f := newDBFixture().withUser(sdktypes.DefaultUser)
 	findAndAssertCount[scheme.Connection](t, f, 0, "") // no connections
 	return f
 }
@@ -65,6 +66,44 @@ func TestCreateConnectionForeignKeys(t *testing.T) {
 	// test with existing assets
 	c = f.newConnection(i, p, i)
 	f.createConnectionsAndAssert(t, c)
+}
+
+func TestCreateConnectionSameName(t *testing.T) {
+	// test createConneciton without any dependencies, since they are soft-foreign keys and could be nil
+	f := preConnectionTest(t)
+
+	// test createConnection with the same name
+	connName := "same name"
+
+	// should prevent creating same name connection even if no project specified (e.g. cron)
+	c1 := f.newConnection(connName)
+	c2 := f.newConnection(connName)
+	f.createConnectionsAndAssert(t, c1)
+	assert.ErrorIs(t, f.gormdb.createConnection(f.ctx, &c2), gorm.ErrDuplicatedKey)
+
+	// should fail, since conneciton belong to the same project
+	p1 := f.newProject()
+	f.createProjectsAndAssert(t, p1)
+	c3 := f.newConnection(p1, connName)
+	// should clash with the global connection name
+	assert.ErrorIs(t, f.gormdb.createConnection(f.ctx, &c3), gorm.ErrDuplicatedKey)
+	// delete global connection and recheck that now is ok
+	assert.NoError(t, f.gormdb.deleteConnection(f.ctx, c1.ConnectionID))
+	f.createConnectionsAndAssert(t, c3)
+
+	// duplicated name within the same project
+	c4 := f.newConnection(p1, connName)
+	assert.ErrorIs(t, f.gormdb.createConnection(f.ctx, &c4), gorm.ErrDuplicatedKey)
+
+	// after deletion, we can create new connection with the same name in the project
+	assert.NoError(t, f.gormdb.deleteConnection(f.ctx, c3.ConnectionID))
+	f.createConnectionsAndAssert(t, c4)
+
+	// and we could create connection with the same name for another project
+	p2 := f.newProject()
+	f.createProjectsAndAssert(t, p2)
+	c5 := f.newConnection(p2, connName)
+	f.createConnectionsAndAssert(t, c5)
 }
 
 func TestDeleteConnection(t *testing.T) {

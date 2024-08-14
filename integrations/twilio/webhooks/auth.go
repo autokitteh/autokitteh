@@ -32,14 +32,14 @@ func (h handler) HandleAuth(w http.ResponseWriter, r *http.Request) {
 	// Check "Content-Type" header.
 	contentType := r.Header.Get(headerContentType)
 	if !strings.HasPrefix(contentType, contentTypeForm) {
-		c.Abort("unexpected content type")
+		c.AbortBadRequest("unexpected content type")
 		return
 	}
 
 	// Read and parse POST request body.
 	if err := r.ParseForm(); err != nil {
 		l.Warn("Failed to parse incoming HTTP request", zap.Error(err))
-		c.Abort("form parsing error")
+		c.AbortBadRequest("form parsing error")
 		return
 	}
 

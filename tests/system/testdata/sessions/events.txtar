@@ -1,0 +1,66 @@
+# TODO(ENG-1407): re-enable once underlying issue is solved.
+
+ak deploy --manifest project.yaml
+return code == 0
+
+http get /http/myproject/start
+resp code == 200
+
+ak session watch ses_00000000000000000000000008 --end-state RUNNING
+return code == 0
+
+http post /http/myproject/woof a
+resp code == 200
+
+http post /http/myproject/meow b
+resp code == 200
+
+http post /http/myproject/meow c
+resp code == 200
+
+ak session watch ses_00000000000000000000000008 -r "3 None"
+return code == 0
+
+http post /http/myproject/woof d
+resp code == 200
+
+ak session watch ses_00000000000000000000000008 --end-state COMPLETED
+return code == 0
+
+ak session log --prints-only --no-timestamps
+output equals file prints.txt
+
+-- prints.txt --
+1 a
+2 b
+3 None
+4 c
+5 d
+done
+
+-- project.yaml --
+version: v1
+
+project:
+  name: myproject
+  connections:
+    - name: myhttp
+      integration: http
+  triggers:
+    - name: http_start
+      connection: myhttp
+      event_type: get
+      data:
+        path: start
+      call: program.star:on_http_start
+
+-- program.star --
+def on_http_start():
+  s1 = subscribe("myhttp", "data.url.path == '/meow'")
+  s2 = subscribe("myhttp", "data.url.path == '/woof'")
+  print(1, next_event(s1, s2)['body'].text())
+  print(2, next_event(s1)['body'].text())
+  print(3, next_event(s2, timeout=1))
+  print(4, next_event(s1, s2, timeout=2)['body'].text())
+  print(5, next_event(s1, s2, timeout=2)['body'].text())
+  print("done")

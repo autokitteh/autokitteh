@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>AutoKitteh - Atlassian Confluence - Connection Error</title>
+    <title>AutoKitteh - {{.name}} - Connection Success</title>
     <link
       rel="apple-touch-icon"
       sizes="180x180"
@@ -20,9 +20,8 @@
       href="/static/favicon-16x16.png"
     />
     <link rel="manifest" href="/static/site.webmanifest" />
-    <link rel="stylesheet" type="text/css" href="styles.css" />
+    <link rel="stylesheet" type="text/css" href="/{{.id}}/connect/styles.css" />
     <meta name="robots" content="noindex, nofollow" />
-    <script src="error.js" defer></script>
   </head>
 
   <body>
@@ -31,16 +30,14 @@
     </a>
 
     <table class="title">
-      <td>
-        <img class="logo" src="/static/images/confluence.svg" alt="Logo" />
-      </td>
-      <td><h1>Atlassian Confluence - Connection Error</h1></td>
+      <td><img class="logo" src="{{.logo}}" alt="Logo" /></td>
+      <td><h1>{{.name}} - Connection Success</h1></td>
     </table>
 
-    <p class="error" id="error"></p>
+    <p>You can now close this browser tab</p>
 
-    <p class="info">
-      <button class="submit-btn" id="retry">Try Again</button>
-    </p>
+    <script>
+      window.open("", "_self").close();
+    </script>
   </body>
 </html>

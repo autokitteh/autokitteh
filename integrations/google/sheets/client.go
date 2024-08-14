@@ -25,8 +25,7 @@ const (
 )
 
 type api struct {
-	Vars  sdkservices.Vars
-	Scope string
+	vars sdkservices.Vars
 }
 
 var integrationID = sdktypes.NewIntegrationIDFromName("googlesheets")
@@ -62,7 +61,7 @@ func New(cvars sdkservices.Vars) sdkservices.Integration {
 }
 
 func ExportedFunctions(cvars sdkservices.Vars, scope string, prefix bool) []sdkmodule.Optfn {
-	a := api{Vars: cvars, Scope: scope}
+	a := api{vars: cvars}
 	return []sdkmodule.Optfn{
 		sdkmodule.ExportFunction(
 			withOrWithout(prefix, "a1_range"),
@@ -140,7 +139,7 @@ func (a api) connectionData(ctx context.Context) (*vars.Vars, error) {
 		return nil, err
 	}
 
-	vs, err := a.Vars.Reveal(ctx, sdktypes.NewVarScopeID(cid))
+	vs, err := a.vars.Reveal(ctx, sdktypes.NewVarScopeID(cid))
 	if err != nil {
 		return nil, err
 	}

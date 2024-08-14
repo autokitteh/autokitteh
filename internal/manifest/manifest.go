@@ -55,7 +55,8 @@ type Var struct {
 
 	Name     string `yaml:"name" json:"name" jsonschema:"required"`
 	Value    string `yaml:"value,omitempty" json:"value,omitempty"`
-	IsSecret bool   `yaml:"is_secret,omitempty" json:"is_secret,omitempty"`
+	Secret   bool   `yaml:"secret,omitempty" json:"secret,omitempty"`
+	Optional bool   `yaml:"optional,omitempty" json:"optional,omitempty"`
 }
 
 func (v Var) GetKey() string { return v.ParentKey + "/" + v.Name }

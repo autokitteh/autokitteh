@@ -40,9 +40,14 @@ func NewConnectionInit(l *zap.Logger, w http.ResponseWriter, r *http.Request, i 
 	}, l
 }
 
-// Abort is the same as [AbortWithStatus] with HTTP 400 (Bad Request).
-func (c ConnectionInit) Abort(err string) {
+// AbortBadRequest is the same as [AbortWithStatus] with HTTP 400 (Bad Request).
+func (c ConnectionInit) AbortBadRequest(err string) {
 	c.AbortWithStatus(http.StatusBadRequest, err)
+}
+
+// AbortServerError is the same as [AbortWithStatus] with HTTP 500 (Internal Server Error).
+func (c ConnectionInit) AbortServerError(err string) {
+	c.AbortWithStatus(http.StatusInternalServerError, err)
 }
 
 // Abort aborts the connection initialization flow due to
@@ -56,11 +61,11 @@ func (c ConnectionInit) AbortWithStatus(status int, err string) {
 		u := "vscode://autokitteh.autokitteh?cid=%s&status=%d&error=%s"
 		u = fmt.Sprintf(u, c.ConnectionID, status, url.QueryEscape(err))
 		http.Redirect(c.Writer, c.Request, u, http.StatusFound)
-	case "web":
+	case "web": // SaaS web UI (non-OAuth connections)
 		http.Error(c.Writer, err, status)
 	default: // Local server ("cli", "dash", etc.)
-		u := c.Integration.ConnectionURL().Path + "/error.html?cid=%s&origin=%s&error=%s"
-		u = fmt.Sprintf(u, c.ConnectionID, origin, url.QueryEscape(err))
+		u := "/connections/%s/error?origin=%s&status=%d&error=%s"
+		u = fmt.Sprintf(u, c.ConnectionID, origin, status, url.QueryEscape(err))
 		http.Redirect(c.Writer, c.Request, u, http.StatusFound)
 	}
 }
@@ -73,14 +78,14 @@ func (c ConnectionInit) AbortWithStatus(status int, err string) {
 func (c ConnectionInit) Finalize(data []sdktypes.Var) {
 	vars, err := kittehs.EncodeURLData(data)
 	if err != nil {
-		c.logger.Warn("Connection data encoding error", zap.Error(err))
-		c.AbortWithStatus(http.StatusInternalServerError, "connection data encoding error")
+		c.logger.Error("Connection data encoding error", zap.Error(err))
+		c.AbortServerError("connection data encoding error")
 		return
 	}
 
 	if _, err = sdktypes.StrictParseConnectionID(c.ConnectionID); err != nil {
 		c.logger.Warn("Invalid connection ID")
-		c.Abort("invalid connection ID")
+		c.AbortBadRequest("invalid connection ID")
 		return
 	}
 

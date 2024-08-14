@@ -13,7 +13,7 @@ import (
 
 type Config struct {
 	Zap      zap.Config `koanf:"zap"`
-	Level    int        `koanf:"level"`    // -1 = Debug, 0 = Info, etc.
+	Level    string     `koanf:"level"`    // Lower-case or all caps, default = "info".
 	Encoding string     `koanf:"encoding"` // "json" or "console".
 }
 
@@ -37,7 +37,15 @@ func (onPanicHook) OnWrite(ce *zapcore.CheckedEntry, fs []zapcore.Field) {
 }
 
 func New(cfg *Config) (*zap.Logger, error) {
-	cfg.Zap.Level.SetLevel(zapcore.Level(cfg.Level)) // Default = 0 = Info.
+	// Optional override for the default level (0 = info).
+	if cfg.Level != "" {
+		// Accept lower-case or all-caps level names, as defined by Zap.
+		level, err := zapcore.ParseLevel(cfg.Level)
+		if err != nil {
+			return nil, err
+		}
+		cfg.Zap.Level.SetLevel(level)
+	}
 
 	// Optional override for the default encoding:
 	// AK default mode = Zap production config = "json" encoding,

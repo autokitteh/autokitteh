@@ -32,7 +32,7 @@ func (f *dbFixture) assertProjectDeleted(t *testing.T, projects ...scheme.Projec
 }
 
 func preProjectTest(t *testing.T) *dbFixture {
-	f := newDBFixture()
+	f := newDBFixture().withUser(sdktypes.DefaultUser)
 	findAndAssertCount[scheme.Project](t, f, 0, "") // no projects
 	return f
 }
@@ -263,4 +263,16 @@ func TestDeleteProjectAndDependents(t *testing.T) {
 	f.assertSignalsDeleted(t, sig)
 	f.assertConnectionDeleted(t, c)
 	f.assertProjectDeleted(t, p1)
+}
+
+func TestUpdateProject(t *testing.T) {
+	f := preProjectTest(t).WithDebug()
+
+	p := f.newProject()
+	f.createProjectsAndAssert(t, p)
+
+	// update project
+	p.Name = p.Name + "_updated"
+	assert.NoError(t, f.gormdb.updateProject(f.ctx, &p))
+	findAndAssertOne(t, f, p, "project_id = ?", p.ProjectID)
 }

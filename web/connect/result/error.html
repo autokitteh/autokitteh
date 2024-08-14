@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>AutoKitteh - Slack - Connection Error</title>
+    <title>AutoKitteh - {{.name}} - Connection Error</title>
     <link
       rel="apple-touch-icon"
       sizes="180x180"
@@ -20,9 +20,12 @@
       href="/static/favicon-16x16.png"
     />
     <link rel="manifest" href="/static/site.webmanifest" />
-    <link rel="stylesheet" type="text/css" href="styles.css" />
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="/{{.integ}}/connect/styles.css"
+    />
     <meta name="robots" content="noindex, nofollow" />
-    <script src="error.js" defer></script>
   </head>
 
   <body>
@@ -31,14 +34,19 @@
     </a>
 
     <table class="title">
-      <td><img class="logo" src="/static/images/slack.svg" alt="Logo" /></td>
-      <td><h1>Slack - Connection Error</h1></td>
+      <td><img class="logo" src="{{.logo}}" alt="Logo" /></td>
+      <td><h1>{{.name}} - Connection Error</h1></td>
     </table>
 
-    <p class="error" id="error"></p>
+    <p class="error">{{.error}}</p>
 
     <p class="info">
-      <button class="submit-btn" id="retry">Try Again</button>
+      <button
+        class="submit-btn"
+        onclick="window.location.href = '/{{.integ}}/connect/?cid={{.cid}}&origin={{.origin}}';"
+      >
+        Try Again
+      </button>
     </p>
   </body>
 </html>

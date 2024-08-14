@@ -15,7 +15,7 @@ const (
 	contentTypeForm   = "application/x-www-form-urlencoded"
 )
 
-var BotToken = sdktypes.NewSymbol("BotToken")
+var botToken = sdktypes.NewSymbol("BotToken")
 
 // handler is an autokitteh webhook which implements [http.Handler]
 // to save data from web form submissions as connections.
@@ -34,16 +34,16 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Check "Content-Type" header.
 	contentType := r.Header.Get(headerContentType)
 	if !strings.HasPrefix(contentType, contentTypeForm) {
-		c.Abort("unexpected content type")
+		c.AbortBadRequest("unexpected content type")
 		return
 	}
 
 	// Read and parse POST request body.
 	if err := r.ParseForm(); err != nil {
 		l.Warn("Failed to parse incoming HTTP request", zap.Error(err))
-		c.Abort("form parsing error")
+		c.AbortBadRequest("form parsing error")
 		return
 	}
 
-	c.Finalize(sdktypes.NewVars().Set(BotToken, r.Form.Get("botToken"), true))
+	c.Finalize(sdktypes.NewVars().Set(botToken, r.Form.Get("botToken"), true))
 }

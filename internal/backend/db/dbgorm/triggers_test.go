@@ -44,7 +44,7 @@ func (f *dbFixture) createCronConnection(t *testing.T) scheme.Connection {
 }
 
 func preTriggerTest(t *testing.T) *dbFixture {
-	f := newDBFixture()
+	f := newDBFixture().withUser(sdktypes.DefaultUser)
 	findAndAssertCount[scheme.Trigger](t, f, 0, "") // no triggers
 	return f
 }

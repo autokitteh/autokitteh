@@ -45,9 +45,10 @@ func (s Svc) setVar(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req struct {
-		Name     sdktypes.Symbol `json:"name"`
-		Value    string          `json:"value"`
-		IsSecret bool            `json:"is_secret"`
+		Name       sdktypes.Symbol `json:"name"`
+		Value      string          `json:"value"`
+		IsSecret   bool            `json:"is_secret"`
+		IsOptional bool            `json:"is_optional"`
 	}
 
 	bs, err := io.ReadAll(r.Body)
@@ -61,7 +62,7 @@ func (s Svc) setVar(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	v := sdktypes.NewVar(req.Name, req.Value, req.IsSecret).WithScopeID(sid)
+	v := sdktypes.NewVar(req.Name).SetValue(req.Value).SetSecret(req.IsSecret).SetOptional(req.IsOptional).WithScopeID(sid)
 
 	if err := s.Svcs.Vars().Set(r.Context(), v); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -84,9 +85,15 @@ func (s Svc) genVarsList(w http.ResponseWriter, r *http.Request, sid sdktypes.Va
 			if cv.IsSecret() {
 				v = "🤐"
 			}
+
+			n := cv.Name().String()
+			if cv.IsOptional() {
+				n = "<em>" + n + "</em>"
+			}
+
 			return []template.HTML{
 				template.HTML(`<input type="checkbox" name="vars" value="` + cv.Name().String() + `">`),
-				template.HTML(cv.Name().String()),
+				template.HTML(n),
 				template.HTML(v),
 			}
 		}),

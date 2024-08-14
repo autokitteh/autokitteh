@@ -26,14 +26,14 @@ func (h handler) handlePAT(w http.ResponseWriter, r *http.Request) {
 	// Check "Content-Type" header.
 	contentType := r.Header.Get(headerContentType)
 	if !strings.HasPrefix(contentType, contentTypeForm) {
-		c.Abort("unexpected content type")
+		c.AbortBadRequest("unexpected content type")
 		return
 	}
 
 	// Read and parse POST request body.
 	if err := r.ParseForm(); err != nil {
 		l.Warn("Failed to parse incoming HTTP request", zap.Error(err))
-		c.Abort("form parsing error")
+		c.AbortBadRequest("form parsing error")
 		return
 	}
 
@@ -47,18 +47,24 @@ func (h handler) handlePAT(w http.ResponseWriter, r *http.Request) {
 	user, _, err := client.Users.Get(ctx, "")
 	if err != nil {
 		l.Warn("Unusable GitHub PAT", zap.Error(err))
-		c.Abort("unusable PAT error: " + err.Error())
+		c.AbortBadRequest("unusable PAT error: " + err.Error())
 		return
 	}
 
 	if user == nil || user.Login == nil {
 		l.Warn("Unexpected response from GitHub API", zap.Any("user", user))
-		c.Abort("unexpected response from GitHub API")
+		c.AbortBadRequest("unexpected response from GitHub API")
 		return
 	}
 
 	userJSON, _ := json.Marshal(user)
 	_, patKey := filepath.Split(webhook)
+
+	if patKey == "" {
+		l.Warn("Invalid webhook URL")
+		c.AbortBadRequest("invalid webhook URL")
+		return
+	}
 
 	c.Finalize(sdktypes.NewVars().
 		Set(vars.PAT, pat, true).

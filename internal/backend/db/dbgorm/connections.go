@@ -19,7 +19,20 @@ func (gdb *gormdb) withUserConnections(ctx context.Context) *gorm.DB {
 }
 
 func (gdb *gormdb) createConnection(ctx context.Context, conn *scheme.Connection) error {
-	createFunc := func(tx *gorm.DB, uid string) error { return tx.Create(conn).Error }
+	createFunc := func(tx *gorm.DB, uid string) error {
+		// ensure there is no connection with the same name for the same project
+		var count int64
+		if err := tx.
+			Model(&scheme.Connection{}).
+			Scopes(withUserEntity(ctx, gdb, "connection", uid)).
+			Where("name = ?", conn.Name).Where("project_id = ? or project_id is NULL", conn.ProjectID).Count(&count).Error; err != nil {
+			return err
+		}
+		if count > 0 {
+			return gorm.ErrDuplicatedKey // active/non-deleted connection was found.
+		}
+		return tx.Create(conn).Error
+	}
 	return gdb.createEntityWithOwnership(ctx, createFunc, conn, conn.ProjectID)
 }
 

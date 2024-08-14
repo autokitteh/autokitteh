@@ -7,6 +7,7 @@ import (
 	"gorm.io/gorm"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 // func (f *dbFixture) createEventRecordsAndAssert(t *testing.T, eventRecord scheme.EventRecord) {
@@ -15,7 +16,7 @@ import (
 // }
 
 func preEventRecordTest(t *testing.T) *dbFixture {
-	f := newDBFixture()
+	f := newDBFixture().withUser(sdktypes.DefaultUser)
 	findAndAssertCount[scheme.EventRecord](t, f, 0, "") // no event records
 
 	e := f.newEvent()

@@ -44,7 +44,7 @@ func ParseJSON(r io.Reader) (sdktypes.Value, error) {
 		return sdktypes.InvalidValue, err
 	}
 
-	return sdktypes.DefaultValueWrapper.Wrap(m)
+	return sdktypes.WrapValue(m)
 }
 
 func ParseRawJSON(r io.Reader) (sdktypes.Value, error) {
@@ -69,7 +69,7 @@ func ParseYAML(r io.Reader) (sdktypes.Value, error) {
 		return sdktypes.InvalidValue, err
 	}
 
-	return sdktypes.DefaultValueWrapper.Wrap(m)
+	return sdktypes.WrapValue(m)
 }
 
 func ParseRawYAML(r io.Reader) (sdktypes.Value, error) {
@@ -94,7 +94,7 @@ func ParseXML(r io.Reader) (sdktypes.Value, error) {
 		return sdktypes.InvalidValue, err
 	}
 
-	return sdktypes.DefaultValueWrapper.Wrap(m)
+	return sdktypes.WrapValue(m)
 }
 
 func ParseText(r io.Reader) (sdktypes.Value, error) {
@@ -114,7 +114,7 @@ func ParseCSV(r io.Reader) (sdktypes.Value, error) {
 		return sdktypes.InvalidValue, err
 	}
 
-	v := kittehs.Must1(sdktypes.DefaultValueWrapper.Wrap(rs))
+	v := kittehs.Must1(sdktypes.WrapValue(rs))
 
 	return sdktypes.NewDictValueFromStringMap(map[string]sdktypes.Value{
 		"data": v,

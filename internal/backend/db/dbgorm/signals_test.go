@@ -8,6 +8,7 @@ import (
 	"gorm.io/gorm"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 func (f *dbFixture) saveSignalsAndAssert(t *testing.T, signals ...scheme.Signal) {
@@ -23,10 +24,15 @@ func (f *dbFixture) assertSignalsDeleted(t *testing.T, signals ...scheme.Signal)
 	}
 }
 
-func TestSaveSignal(t *testing.T) {
-	f := newDBFixture()
-	foreignKeys(f.gormdb, false)                   // no foreign keys
+func preSignalTest(t *testing.T) *dbFixture {
+	f := newDBFixture().withUser(sdktypes.DefaultUser)
 	findAndAssertCount[scheme.Signal](t, f, 0, "") // no signals
+	return f
+}
+
+func TestSaveSignal(t *testing.T) {
+	f := preSignalTest(t)
+	foreignKeys(f.gormdb, false) // no foreign keys
 
 	sig := f.newSignal()
 	// test createSignal
@@ -34,8 +40,7 @@ func TestSaveSignal(t *testing.T) {
 }
 
 func TestSaveSignelForeignKeys(t *testing.T) {
-	f := newDBFixture()
-	findAndAssertCount[scheme.Signal](t, f, 0, "") // no signals
+	f := preSignalTest(t)
 
 	// prepare
 	sig := f.newSignal()
@@ -56,9 +61,8 @@ func TestSaveSignelForeignKeys(t *testing.T) {
 }
 
 func TestDeleteSignal(t *testing.T) {
-	f := newDBFixture()
-	foreignKeys(f.gormdb, false)                   // no foreign keys
-	findAndAssertCount[scheme.Signal](t, f, 0, "") // no signals
+	f := preSignalTest(t)
+	foreignKeys(f.gormdb, false) // no foreign keys
 
 	sig := f.newSignal()
 	f.saveSignalsAndAssert(t, sig)

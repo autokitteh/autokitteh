@@ -23,14 +23,14 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 	// Check "Content-Type" header.
 	contentType := r.Header.Get(headerContentType)
 	if !strings.HasPrefix(contentType, contentTypeForm) {
-		c.Abort("unexpected content type")
+		c.AbortBadRequest("unexpected content type")
 		return
 	}
 
 	// Read and parse POST request body.
 	if err := r.ParseForm(); err != nil {
 		l.Warn("Failed to parse incoming HTTP request", zap.Error(err))
-		c.Abort("form parsing error")
+		c.AbortBadRequest("form parsing error")
 		return
 	}
 
@@ -41,12 +41,12 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 	u, err := url.Parse(b)
 	if err != nil {
 		l.Warn("Failed to parse base URL", zap.Error(err))
-		c.Abort("failed to parse base URL")
+		c.AbortBadRequest("base URL parsing error")
 		return
 	}
 
 	// Ensure the base URL is formatted as we expect.
-	b = fmt.Sprintf("%s://%s\n", u.Scheme, u.Host)
+	b = fmt.Sprintf("%s://%s", u.Scheme, u.Host)
 
 	initData := sdktypes.NewVars().Set(baseURL, b, false).Set(token, t, true)
 	if e != "" {

@@ -54,7 +54,7 @@ func returnCmd[R any, C resulter[R]](cmd C) (sdktypes.Value, error) {
 		return sdktypes.InvalidValue, err
 	}
 
-	wrapped, err := sdktypes.DefaultValueWrapper.Wrap(ret)
+	wrapped, err := sdktypes.WrapValue(ret)
 	if err != nil {
 		return sdktypes.InvalidValue, fmt.Errorf("wrap: %w", err)
 	}

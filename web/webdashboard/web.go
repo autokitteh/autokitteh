@@ -32,7 +32,7 @@ func Tmpl(r *http.Request) *template.Template {
 			"ProcessID": func() any { return fixtures.ProcessID() },
 			"Version":   func() any { return version.Version },
 			"Uptime":    func() any { return fixtures.Uptime().Truncate(time.Second) },
-			"Duration":  func() time.Duration { return time.Since(httpsvc.GetT0(r.Context())).Truncate(time.Microsecond) },
+			"Duration":  func() time.Duration { return time.Since(httpsvc.GetStartTime(r.Context())).Truncate(time.Microsecond) },
 		}).
 		ParseFS(tmplFS, "*.html"))
 }
