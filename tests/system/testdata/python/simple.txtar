@@ -2,14 +2,14 @@ ak deploy -m autokitteh.yaml -f simple.py
 return code == 0
 output equals file deploy.txt
 
-http post /http/py_simple/events
+http get /http/py_simple/events
 resp code == 200
 
 wait 5s for session ses_00000000000000000000000008
 
 ak session log --no-timestamps --order desc --prints-only
 return code == 0
-output equals file session-log.txt
+output equals file session-logs.txt
 
 -- autokitteh.yaml --
 version: v1
