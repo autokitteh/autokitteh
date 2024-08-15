@@ -35,7 +35,9 @@ func NewSessionData(user sdktypes.User) sessionData {
 }
 
 type store struct {
-	store sessions.Store[[]byte]
+	store  sessions.Store[[]byte]
+	domain string
+	secure bool
 }
 
 type Store interface {
@@ -55,8 +57,23 @@ func New(cfg *Config) (Store, error) {
 		return nil, fmt.Errorf("invalid key pairs: %w", err)
 	}
 
+	domain := cfg.Domain
+	if !strings.HasPrefix(domain, ".") {
+		domain = fmt.Sprintf(".%s", cfg.Domain)
+	}
+
+	cookieConfig := sessions.CookieConfig{
+		Domain:   cfg.Domain,
+		Path:     "/",
+		Secure:   cfg.Secure,
+		HTTPOnly: true,
+		SameSite: cfg.SameSite,
+	}
+
 	return &store{
-		store: sessions.NewCookieStore[[]byte](cfg.Cookie, keyPairs...),
+		store:  sessions.NewCookieStore[[]byte](&cookieConfig, keyPairs...),
+		domain: domain,
+		secure: cfg.Secure,
 	}, nil
 }
 
@@ -83,9 +100,12 @@ func (s store) Set(w http.ResponseWriter, data *sessionData) error {
 	}
 
 	http.SetCookie(w, &http.Cookie{
-		Name:  loggedInCookie,
-		Value: fmt.Sprintf("%d", data.Validator),
-		Path:  "/",
+		Name:     loggedInCookie,
+		Value:    fmt.Sprintf("%d", data.Validator),
+		Path:     "/",
+		Domain:   s.domain,
+		SameSite: http.SameSiteNoneMode,
+		Secure:   s.secure,
 	})
 
 	return nil
