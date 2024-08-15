@@ -6,6 +6,7 @@
 # So, `re` is OK, `random` is not
 
 import datetime
+import json
 
 
 def is_deterministic(fn):
@@ -71,7 +72,6 @@ modules = {
     "html.parser",
     "ipaddress",
     "itertools",
-    "json",
     "lzma",
     "math",
     "operator",
@@ -151,4 +151,7 @@ functions = builtin_types | {
     datetime.time.utcoffset,
     datetime.time.dst,
     datetime.time.tzname,
+    # json.dump & json.load work with files
+    json.dumps,
+    json.loads,
 }

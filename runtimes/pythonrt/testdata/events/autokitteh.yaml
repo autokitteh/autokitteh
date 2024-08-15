@@ -2,15 +2,8 @@ version: v1
 
 project:
   name: events
-  connections:
-    - name: http1
-      integration: "http"
-    - name: http_event
-      integration: "http"      
   triggers:
-    - name: get
-      connection: http1
+    - name: grumpy
+      webhook: {}
       event_type: get
-      data:
-        path: test
-      entrypoint: events.py:on_http_get
+      call: events.py:on_http_get
