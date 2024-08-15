@@ -103,6 +103,8 @@ func runTestSteps(t *testing.T, steps []string, akPath, akAddr string) {
 			continue
 		}
 
+		step = expandCapture(step)
+
 		// Actions: ak, http, wait.
 		if actions.MatchString(step) {
 			// Before starting a new action, if there's a pending HTTP
@@ -160,7 +162,7 @@ func runTestSteps(t *testing.T, steps []string, akPath, akAddr string) {
 		}
 
 		// Checks: ak output, ak return code, http resp.
-		if err := runCheck(step, ak, httpResp); err != nil {
+		if err := runCheck(t, step, ak, httpResp); err != nil {
 			t.Errorf("line %d: %s", actionIndex+1, steps[actionIndex])
 			t.Errorf("line %d: %s", i+1, step)
 			// Fail-fast, don't run subsequent test steps.

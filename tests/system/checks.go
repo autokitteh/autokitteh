@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"testing"
 
 	"github.com/hexops/gotextdiff"
 	"github.com/hexops/gotextdiff/myers"
@@ -14,7 +15,7 @@ import (
 	jd "github.com/josephburnett/jd/lib"
 )
 
-func runCheck(step string, ak *akResult, resp *httpResponse) error {
+func runCheck(t *testing.T, step string, ak *akResult, resp *httpResponse) error {
 	match := steps.FindStringSubmatch(step)
 	switch match[1] {
 	case "output":
@@ -23,6 +24,8 @@ func runCheck(step string, ak *akResult, resp *httpResponse) error {
 		return checkAKReturnCode(step, ak)
 	case "resp":
 		return checkHTTPResponse(step, resp)
+	case "capture_jq":
+		return captureJQ(t, step, ak, resp)
 	default:
 		return errors.New("unhandled check")
 	}
