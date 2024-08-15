@@ -9,17 +9,19 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"net"
 	"os"
 	"os/exec"
 	"path"
 	"strings"
 
+	"github.com/google/uuid"
+	"go.autokitteh.dev/autokitteh/runtimes/pythonrt/pb"
+
 	"go.uber.org/zap"
 )
 
 var (
-	//go:embed ak_runner/*.py
+	//go:embed runner/*.py
 	runnerPyCode embed.FS
 
 	//go:embed requirements.txt
@@ -145,8 +147,7 @@ func pyExeInfo(ctx context.Context, exePath string) (exeInfo, error) {
 type pyRunInfo struct {
 	userRootDir string
 	pyRootDir   string
-	sockPath    string
-	lis         net.Listener
+	client      pb.RunnerClient
 	proc        *os.Process
 }
 
@@ -163,13 +164,11 @@ func (ri *pyRunInfo) Cleanup() {
 type runOptions struct {
 	log            *zap.Logger
 	pyExe          string            // Python executable to use
-	tarData        []byte            // tar data from build stage
 	entryPoint     string            // simple.py:greet
 	env            map[string]string // Python process environment
 	stdout, stderr io.Writer
+	port           int
 }
-
-const runnerMod = "ak_runner"
 
 func runPython(opts runOptions) (*pyRunInfo, error) {
 	runOK := false
@@ -202,22 +201,26 @@ func runPython(opts runOptions) (*pyRunInfo, error) {
 		return nil, err
 	}
 
-	ri.sockPath = path.Join(ri.pyRootDir, "ak.sock")
-	opts.log.Info("socket", zap.String("path", ri.sockPath))
-
-	ri.lis, err = net.Listen("unix", ri.sockPath)
+	pyPort, err := freePort()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("cannot find free port: %w", err)
 	}
 
-	cmd := exec.Command(opts.pyExe, "-u", "-m", runnerMod, "run", ri.sockPath, tarPath, opts.entryPoint)
-	cmd.Dir = ri.pyRootDir
+	mainPy := path.Join(ri.pyRootDir, "main.py")
+	cmd := exec.Command(
+		opts.pyExe, "-u", mainPy,
+		"--worker-address", fmt.Sprintf("localhost:%d", opts.port),
+		"--port", fmt.Sprintf("%d", pyPort),
+		"--runner-id", uuid.NewString(),
+		"--code-dir", ri.pyRootDir,
+	)
+	// cmd.Dir = ri.pyRootDir # TODO: Check if required
 	cmd.Env = overrideEnv(opts.env, ri.pyRootDir, ri.userRootDir)
 	cmd.Stdout = opts.stdout
 	cmd.Stderr = opts.stderr
 
 	if err := cmd.Start(); err != nil {
-		ri.lis.Close()
+		rsvc.Close()
 		return nil, err
 	}
 

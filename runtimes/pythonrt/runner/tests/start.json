@@ -1,0 +1,7 @@
+{
+  "run_id": "run_9",
+  "entry_point": "program.py:on_event",
+  "event": {
+    "data": "eyJuYW1lIjogImpvZSIsICJhY3Rpb24iOiAibG9naW4ifQ=="
+  }
+}

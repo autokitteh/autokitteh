@@ -1,14 +1,12 @@
 import inspect
-from collections import namedtuple
 from pathlib import Path
 from time import sleep
 
 import autokitteh
 from autokitteh import decorators
 
-from . import log
-from .comm import Comm, MessageType
-from .deterministic import is_deterministic
+import log
+from deterministic import is_deterministic
 
 # Functions that are called back to ak
 AK_FUNCS = {
@@ -17,8 +15,6 @@ AK_FUNCS = {
     autokitteh.unsubscribe,
     sleep,
 }
-
-CallInfo = namedtuple("CallInfo", "fn args kw")
 
 
 def is_marked_activity(fn):
@@ -29,13 +25,12 @@ def is_marked_activity(fn):
 class AKCall:
     """Callable wrapping functions with activities."""
 
-    def __init__(self, comm: Comm):
-        self.comm = comm
+    def __init__(self, runner):
+        self.runner = runner
 
         self.in_activity = False
         self.loading = True  # Loading module
         self.module = None  # Module for "local" function, filled by "run"
-        self.call_info = None
 
     def is_module_func(self, fn):
         return fn.__module__ == self.module.__name__
@@ -50,7 +45,6 @@ class AKCall:
         if is_deterministic(fn):
             return False
 
-        # Function from same module should not run as activity
         if self.is_module_func(fn):
             return False
 
@@ -75,12 +69,7 @@ class AKCall:
                 return func(*args, **kw)
 
             log.info("ak function call: %s(%r, %r)", func.__name__, args, kw)
-            self.comm.send_call(func.__name__, args, kw)
-            msg = self.comm.recv(MessageType.call_return)
-            value = msg["payload"]["value"]
-            if func is autokitteh.next_event:
-                value = autokitteh.AttrDict(value)
-            return value
+            return self.runner.syscall(func, args, kw)
 
         if not self.should_run_as_activity(func):
             log.info(
@@ -95,22 +84,10 @@ class AKCall:
         log.info("ACTION: activity call %s(%r, %r)", func.__name__, args, kw)
         self.in_activity = True
         try:
-            self.call_info = CallInfo(func, args, kw)
-            self.comm.send_activity(func.__name__, args, kw)
-            message = self.comm.recv(MessageType.callback, MessageType.response)
+            if self.is_module_func(func):
+                # Pickle can't handle function from our loaded module
+                func = func.__name__
 
-            if message["type"] == MessageType.callback:
-                if self.call_info is None:
-                    name = message["payload"]["name"]
-                    raise RuntimeError(f"{name} callback, but call_info is None")
-
-                fn, args, kw = self.call_info
-                self.call_info = None
-                value = fn(*args, **kw)
-                self.comm.send_response(value)
-                message = self.comm.recv(MessageType.response)
-
-            # Reply message, either from current call or playback
-            return self.comm.extract_response(message)
+            return self.runner.call_in_activity(func, args, kw)
         finally:
             self.in_activity = False

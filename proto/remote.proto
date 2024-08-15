@@ -1,0 +1,219 @@
+// This is temporarly here until we find a good home for it
+syntax = "proto3";
+
+// Until we decide where
+option go_package="go.autokitteh.dev/autokitteh/runtimes/pythonrt/pb";
+
+message ContainerConfig {
+  string image = 1;
+  // TBD by @efiShtain
+}
+
+message Event {
+  bytes data = 1; // raw event from connection
+}
+
+message HealthRequest {
+}
+
+message HealthResponse {
+  string error = 1;
+}
+
+// TODO: Will become Start once we split to files
+// Tell runner manager to start a runner
+message StartRunnerRequest {
+  ContainerConfig container_config = 1;
+
+  // user code as tar archive
+  bytes build_artifact = 2;
+  // vars from manifest, secrets and connections
+  map<string, string> vars = 3;
+
+  string worker_address = 4;
+}
+
+message StartRunnerResponse {
+  string runner_id = 1;
+  string runner_address = 2;
+  string error = 3;
+}
+
+message RunnerHealthRequest {
+  string runner_id = 1;
+}
+
+message RunnerHealthResponse {
+  bool healthy = 1;
+  string error = 2;
+}
+
+message StopRequest {
+  string runner_id = 1;
+}
+
+message StopResponse {
+  string error = 1;
+}
+
+service RunnerManager {
+  rpc Start(StartRunnerRequest) returns (StartRunnerResponse) {}
+  rpc RunnerHealth(RunnerHealthRequest) returns (RunnerHealthResponse) {}
+  rpc Stop(StopRequest) returns (StopResponse) {}
+
+  rpc Health(HealthRequest) returns (HealthResponse) {}
+}
+
+message StartRequest {
+  string run_id = 1;
+  string entry_point = 2; // "main.py:on_event"
+  Event event = 3;
+}
+
+message StartResponse {
+  string error = 1;
+  repeated Frame traceback = 2;
+}
+
+message Frame {
+  string filename = 1;
+  uint32 lineno = 2;
+  string code = 3;
+  string name = 4;
+}
+
+message ExecuteRequest {
+  string call_id = 1;
+}
+
+message ExecuteResponse {
+  bytes result = 1;
+  string error = 2;
+  repeated Frame traceback = 3;
+}
+
+message ActivityReplyRequest {
+  string call_id = 1;
+  bytes result = 2;
+}
+
+message ActivityReplyResponse {
+  string error = 1;
+}
+
+message ExportsRequest {
+  string file_name = 1;
+}
+
+message ExportsResponse {
+  repeated string exports = 1;
+  string error = 2;
+}
+
+service Runner {
+  // Get exports
+  rpc Exports(ExportsRequest) returns (ExportsResponse) {}
+  // Called at start of session
+  rpc Start(StartRequest) returns (StartResponse) {} // initial session event
+  // Execute a function in the runtime (skipped if it's a reply)
+  rpc Execute(ExecuteRequest) returns (ExecuteResponse) {}
+  // Reply from activity
+  rpc ActivityReply(ActivityReplyRequest) returns (ActivityReplyResponse) {}
+
+  rpc Health(HealthRequest) returns (HealthResponse) {}
+}
+
+
+message CallInfo {
+  string function = 1;
+  repeated string args = 2;
+  map<string, string> kwargs = 3;
+}
+
+message ActivityRequest {
+  string runner_id = 1;
+  string call_id = 2;
+  // call ID must be deterministic for replays
+  CallInfo call_info = 3; // for ak display
+}
+
+message ActivityResponse {
+  string error = 1;
+}
+
+message DoneRequest {
+  string run_id = 1;
+  bytes result = 2;
+  string error = 3;
+  repeated Frame traceback = 4;
+}
+
+message DoneResponse {
+}
+
+message SleepRequest {
+  string run_id = 1;
+  int64 duration_ms = 2;
+}
+
+message SleepResponse {
+  string error = 1;
+}
+
+message SubscribeRequest {
+  string run_id = 1;
+  string connection_id = 2;
+  string filter = 3;
+}
+
+message SubscribeResponse {
+  string signal_id = 1;
+  string error = 2;
+}
+
+message NextEventRequest {
+  string run_id = 1;
+  repeated string signal_id = 2;
+  int64 timeout_ms = 3;
+}
+
+message NextEventResponse {
+  Event event = 1;
+  string error = 3;
+}
+
+message UnsubscribeRequest {
+  string run_id = 1;
+  string signal_id = 2;
+}
+
+message UnsubscribeResponse {
+  string error = 1;
+}
+
+message LogRequest {
+  string runner_id = 1;
+  string message = 2;
+}
+
+message LogResponse {
+  string error = 1;
+}
+
+
+service Worker {
+  // Runner starting activity
+  rpc Activity(ActivityRequest) returns (ActivityResponse) {}
+  // Runner done with activity
+  rpc Done(DoneRequest) returns (DoneResponse) {}
+  // Session logs
+  rpc Log(LogRequest) returns (LogResponse) {}
+
+  // ak functions
+  rpc Sleep(SleepRequest) returns (SleepResponse) {}
+  rpc Subscribe(SubscribeRequest) returns (SubscribeResponse) {}
+  rpc NextEvent(NextEventRequest) returns (NextEventResponse) {}
+  rpc Unsubscribe(UnsubscribeRequest) returns (UnsubscribeResponse) {}
+
+  rpc Health(HealthRequest) returns (HealthResponse) {}
+}

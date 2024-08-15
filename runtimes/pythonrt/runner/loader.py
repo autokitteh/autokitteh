@@ -3,7 +3,7 @@ import builtins
 from pathlib import Path
 from types import ModuleType
 
-from . import log
+import log
 
 
 def name_of(node, code_lines):
@@ -41,10 +41,10 @@ class Transformer(ast.NodeTransformer):
         return call
 
 
-def load_code(root_path, action_fn, module_name):
+def load_code(root_path: Path, action_fn, module_name: str):
     """Load user code into a module, instrumenting function calls."""
     log.info("importing %r", module_name)
-    file_name = Path(root_path) / (module_name + ".py")
+    file_name = root_path / (module_name + ".py")
     with open(file_name) as fp:
         src = fp.read()
 
@@ -60,3 +60,16 @@ def load_code(root_path, action_fn, module_name):
     exec(code, module.__dict__)
 
     return module
+
+
+def exports(code_dir, file_name):
+    full_path = code_dir / file_name
+    with open(full_path) as fp:
+        code = fp.read()
+
+    tree = ast.parse(code, file_name, "exec")
+    for node in tree.body:
+        if not isinstance(node, (ast.FunctionDef, ast.ClassDef)):
+            continue
+
+        yield node.name

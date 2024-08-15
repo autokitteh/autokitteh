@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/logger"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
@@ -40,14 +39,14 @@ type pySvc struct {
 	log       *zap.Logger
 	run       *pyRunInfo
 	xid       sdktypes.ExecutorID
+	runID     sdktypes.RunID
 	cbs       *sdkservices.RunCallbacks
 	exports   map[string]sdktypes.Value
 	firstCall bool
-	comm      *Comm
 	stdout    *streamLogger
 	stderr    *streamLogger
-	syscallFn sdktypes.Value
 	pyExe     string
+	remote    *remoteSvc
 }
 
 var minPyVersion = Version{
@@ -171,12 +170,6 @@ func (py *pySvc) Build(ctx context.Context, fsys fs.FS, path string, values []sd
 		return sdktypes.InvalidBuildArtifact, err
 	}
 
-	exports, err := pyExports(ctx, py.pyExe, fsys)
-	if err != nil {
-		py.log.Error("get exports", zap.Error(err))
-		return sdktypes.InvalidBuildArtifact, err
-	}
-
 	compiledData := map[string][]byte{
 		archiveKey: data,
 	}
@@ -200,9 +193,18 @@ func (py *pySvc) Build(ctx context.Context, fsys fs.FS, path string, values []sd
 		compiledData[hdr.Name] = nil
 	}
 
+	/* TODO: remove?
+	exports, err := pyExports(ctx, py.pyExe, fsys)
+	if err != nil {
+		py.log.Error("get exports", zap.Error(err))
+		return sdktypes.InvalidBuildArtifact, err
+	}
+
+
 	buildExports := kittehs.Transform(exports, asBuildExport)
+	*/
 	var art sdktypes.BuildArtifact
-	art = art.WithCompiledData(compiledData).WithExports(buildExports)
+	art = art.WithCompiledData(compiledData) //.WithExports(buildExports)
 
 	return art, nil
 }
@@ -230,52 +232,26 @@ func entriesToValues(xid sdktypes.ExecutorID, entries []string) (map[string]sdkt
 	return values, nil
 }
 
-func pyLevelToZap(level string) zapcore.Level {
-	switch level {
-	case "DEBUG":
-		return zap.DebugLevel
-	case "INFO":
-		return zap.InfoLevel
-	case "WARNING":
-		return zap.WarnLevel
-	case "ERROR":
-		return zap.ErrorLevel
-	}
-
-	return zap.InfoLevel
-}
-
-func (py *pySvc) handleLog(msg Message) error {
-	log, err := extractMessage[LogMessage](msg)
-	if err != nil {
-		return err
-	}
-
-	level := pyLevelToZap(log.Level)
-	py.log.Log(level, log.Message, zap.String("source", "python"))
-	return nil
-}
-
-func (py *pySvc) loadSyscall(values map[string]sdktypes.Value) error {
+func (py *pySvc) loadSyscall(values map[string]sdktypes.Value) (sdktypes.Value, error) {
 	ak, ok := values["ak"]
 	if !ok {
-		return nil
+		py.log.Warn("can't find `ak` in values")
+		return sdktypes.InvalidValue, nil
 	}
 
 	if !ak.IsStruct() {
-		return fmt.Errorf("`ak` is not a struct")
+		return sdktypes.InvalidValue, fmt.Errorf("`ak` is not a struct")
 	}
 
 	syscall, ok := ak.GetStruct().Fields()["syscall"]
 	if !ok {
-		return fmt.Errorf("`syscall` not found in `ak`")
+		return sdktypes.InvalidValue, fmt.Errorf("`syscall` not found in `ak`")
 	}
 	if !syscall.IsFunction() {
-		return fmt.Errorf("`syscall` is not a function")
+		return sdktypes.InvalidValue, fmt.Errorf("`syscall` is not a function")
 	}
 
-	py.syscallFn = syscall
-	return nil
+	return syscall, nil
 }
 
 /*
@@ -293,13 +269,10 @@ func (py *pySvc) Run(
 	values map[string]sdktypes.Value,
 	cbs *sdkservices.RunCallbacks,
 ) (sdkservices.Run, error) {
+	py.runID = runID
 	py.xid = sdktypes.NewExecutorID(runID) // Should be first
 	py.log = py.log.With(zap.String("run_id", runID.String()))
 	py.log.Info("run", zap.String("path", mainPath))
-
-	if err := py.loadSyscall(values); err != nil {
-		return nil, err
-	}
 
 	py.log.Info("executor", zap.String("id", py.xid.String()))
 	py.cbs = cbs
@@ -323,6 +296,26 @@ func (py *pySvc) Run(
 
 	py.stdout = newStreamLogger("[stdout] ", cbs.Print, runID)
 	py.stderr = newStreamLogger("[stderr] ", cbs.Print, runID)
+
+	syscallFn, err := py.loadSyscall(values)
+	if err != nil {
+		return nil, fmt.Errorf("can't load syscall: %w", err)
+	}
+
+	rsvc := remoteSvc{
+		log:   py.log,
+		cbs:   cbs,
+		runID: runID,
+	}
+	if syscallFn.IsValid() {
+		rsvc.syscallFn = syscallFn
+	}
+
+	if err := rsvc.Start(); err != nil {
+		return nil, fmt.Errorf("can't start remote service: %w", err)
+	}
+	py.remote = &rsvc
+
 	opts := runOptions{
 		log:        py.log,
 		pyExe:      py.pyExe,
@@ -331,6 +324,7 @@ func (py *pySvc) Run(
 		env:        envMap,
 		stdout:     py.stdout,
 		stderr:     py.stderr,
+		port:       rsvc.port,
 	}
 	ri, err := runPython(opts)
 	if err != nil {
@@ -405,7 +399,7 @@ func (py *pySvc) Run(
 	return py, nil
 }
 
-func (py *pySvc) ID() sdktypes.RunID              { return py.xid.ToRunID() }
+func (py *pySvc) ID() sdktypes.RunID              { return py.runID }
 func (py *pySvc) ExecutorID() sdktypes.ExecutorID { return py.xid }
 
 func (py *pySvc) Values() map[string]sdktypes.Value {
@@ -515,7 +509,7 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, event map[str
 		py.log.Info("callback", zap.String("func", cbm.Name))
 		val, err := py.cbs.Call(
 			ctx,
-			py.xid.ToRunID(),
+			py.runID,
 			// The Python function to call is encoded in the payload
 			fn,
 			kittehs.Transform(cbm.Args, sdktypes.NewStringValue),
@@ -592,7 +586,7 @@ func (py *pySvc) injectHTTPBody(ctx context.Context, data sdktypes.Value, event 
 		return nil
 	}
 
-	out, err := cbs.Call(ctx, py.xid.ToRunID(), fn, nil, nil)
+	out, err := cbs.Call(ctx, py.runID, fn, nil, nil)
 	if err != nil {
 		return err
 	}
@@ -698,51 +692,4 @@ func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 	py.log.Info("python return", zap.Any("message", rm))
 
 	return sdktypes.NewBytesValue(rm.Value), nil
-}
-
-func packSyscallArgs(msg CallMessage) ([]sdktypes.Value, map[string]sdktypes.Value, error) {
-	args := make([]sdktypes.Value, len(msg.Args)+1)
-	args[0] = sdktypes.NewStringValue(msg.FuncName)
-	// Can't use kittehs.Transform since we want to handle errors.
-	for i, arg := range msg.Args {
-		var err error
-		args[i+1], err = sdktypes.WrapValue(arg)
-		if err != nil {
-			return nil, nil, fmt.Errorf("%s: unsupported argument: %#v - %w", msg.FuncName, arg, err)
-		}
-	}
-
-	kw := make(map[string]sdktypes.Value, len(msg.Kw))
-	for key, val := range msg.Kw {
-		v, err := sdktypes.WrapValue(val)
-		if err != nil {
-			return nil, nil, fmt.Errorf("%s: unsupported kwarg: %s:%#v - %w", msg.FuncName, key, val, err)
-		}
-		kw[key] = v
-	}
-
-	return args, kw, nil
-}
-
-func (py *pySvc) handleCall(ctx context.Context, msg CallMessage) error {
-	if !py.syscallFn.IsValid() {
-		return fmt.Errorf("no syscall function")
-	}
-
-	args, kw, err := packSyscallArgs(msg)
-	if err != nil {
-		return fmt.Errorf("syscall of %#v - %w", msg, err)
-	}
-
-	out, err := py.cbs.Call(ctx, py.xid.ToRunID(), py.syscallFn, args, kw)
-	if err != nil {
-		return fmt.Errorf("call %#v - %w", msg, err)
-	}
-
-	value, err := unwrap(out)
-	if err != nil {
-		return fmt.Errorf("call %#v, got %#v - %w", msg, out, err)
-	}
-
-	return py.comm.Send(ReturnMessage{Value: value})
 }

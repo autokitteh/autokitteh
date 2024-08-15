@@ -1,0 +1,258 @@
+import json
+import pickle
+from concurrent.futures import Future, ThreadPoolExecutor
+from multiprocessing import cpu_count
+from pathlib import Path
+from threading import Lock
+from uuid import uuid4
+
+import grpc
+import remote_pb2 as pb
+import remote_pb2_grpc as rpc
+import loader
+import log
+from call import AKCall
+from grpc_reflection.v1alpha import reflection
+from syscalls import SysCalls
+
+
+class ActivityError(Exception):
+    pass
+
+
+def parse_entry_point(entry_point):
+    """
+    >>> parse_entry_point('review.py:on_github_pull_request')
+    ('review', 'on_github_pull_request')
+    """
+    if ":" not in entry_point:
+        raise ValueError(f"{entry_point!r} - missing :")
+
+    file_name, func_name = entry_point.split(":", 1)
+    if not file_name.endswith(".py"):
+        raise ValueError(f"{entry_point!r} - not a Python file")
+
+    return file_name[:-3], func_name
+
+
+class Runner(rpc.RunnerServicer):
+    def __init__(self, id, worker, code_dir):
+        self.id = id
+        self.worker: rpc.WorkerStub = worker
+        self.code_dir = Path(code_dir)
+
+        if not self.code_dir.is_dir():
+            raise ValueError(f"{code_dir!r} not found")
+
+        self.executor = ThreadPoolExecutor()
+
+        self.lock = Lock()
+        self.calls = {}  # id -> (fn, args, kw)
+        self.replies = {}  # id -> future
+
+    def Exports(self, request: pb.ExportsRequest, context):
+        if request.file_name == "":
+            context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
+            return pb.ExportsResponse(error="missing file name")
+
+        try:
+            exports = list(loader.exports(self.code_dir, request.file_name))
+        except OSError as err:
+            context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
+            return pb.ExportsResponse(error=str(err))
+
+        return pb.ExportsResponse(exports=exports)
+
+    def Start(self, request: pb.StartRequest, context):
+        log.info("start request: %r", request)
+        self.run_id = request.run_id
+        self.syscalls = SysCalls(self.run_id, self.worker)
+        mod_name, fn_name = parse_entry_point(request.entry_point)
+
+        call = AKCall(self)
+        mod = loader.load_code(self.code_dir, call, mod_name)
+        fn = getattr(mod, fn_name, None)
+        if not callable(fn):
+            context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
+            return pb.StartResponse(error=f"function {fn_name!r} not found")
+
+        event = json.loads(request.event.data)
+        log.info("start event: %r", event)
+
+        self.executor.submit(self.on_event, fn, event)
+
+        resp = pb.StartResponse()
+        return resp
+
+    def Execute(self, request: pb.ExecuteRequest, context):
+        with self.lock:
+            call_info = self.calls.pop(request.call_id, None)
+
+        if call_info is None:
+            error = f"call_id {request.call_id!r} not found"
+            with self.lock:
+                fut = self.replies.pop(request.call_id, None)
+                if fut:
+                    fut.set_exception(ActivityError(error))
+
+            context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
+            return pb.ExecuteResponse(error=error)
+
+        fn, args, kw = call_info
+        result = err = None
+        try:
+            result = fn(*args, **kw)
+        except Exception as e:
+            err = e
+
+        resp = pb.ExecuteResponse(
+            result=pickle.dumps(result, protocol=0),
+            error=str(err) if err else "",
+            # TODO: traceback
+        )
+        if err is not None:
+            context.set_code(grpc.StatusCode.ABORTED)
+        return resp
+
+    def ActivityReply(self, request: pb.ActivityReplyRequest, context):
+        with self.lock:
+            fut = self.replies.pop(request.call_id, None)
+
+        if fut is None:
+            log.error("call_id %r not found", request.call_id)
+            context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
+            return pb.ActivityReplyResponse(
+                error=f"call_id {request.call_id!r} not found"
+            )
+
+        try:
+            result = pickle.loads(request.result)
+        except Exception as err:
+            log.exception(f"call_id {request.call_id!r}: result pickle: {err}")
+            fut.set_exception(ActivityError(err))
+            context.set_code(grpc.StatusCode.INTERNAL)
+            return pb.ActivityReplyResponse(
+                error=f"call_id {request.call_id!r}: result pickle: {err}",
+            )
+
+        fut.set_result(result)
+        return pb.ActivityReplyResponse()
+
+    def call_in_activity(self, fn, *args, **kw):
+        fut = self.start_activity(fn, *args, **kw)
+        return fut.result()
+
+    def start_activity(self, fn, *args, **kw) -> Future:
+        call_id = uuid4().hex
+        log.info("activity: call_id %r", call_id)
+        with self.lock:
+            self.replies[call_id] = fut = Future()
+            self.calls[call_id] = (fn, args, kw)
+
+        req = pb.ActivityRequest(
+            runner_id=self.id,
+            call_id=call_id,
+            call_info=pb.CallInfo(
+                function=fn.__name__,
+                args=[repr(a) for a in args],
+                kwargs={k: repr(v) for k, v in kw.items()},
+            ),
+        )
+        log.info("activity: sending %r", req)
+        resp = self.worker.Activity(req)
+        if resp.error:
+            raise ActivityError(resp.error)
+        log.info("activity request ended")
+        return fut
+
+    def on_event(self, fn, event):
+        """Simulate user code for now"""
+        log.info("on_event: start: %r", event)
+        fut = self.start_activity(fn, event)
+        log.info("on_event: waiting for activity")
+        result = fut.result()
+        log.info("on_event: activity result: %r", result)
+
+        req = pb.DoneRequest(
+            run_id=self.run_id,
+            # TODO: We want value that AK can understand (proto.Value)
+            result=pickle.dumps(result, protocol=0),
+        )
+        resp = self.worker.Done(req)
+        if resp.Error:
+            log.error("on_event: done error: %r", resp.error)
+
+    def syscall(self, fn, args, kw):
+        return self.syscalls.call(fn, args, kw)
+
+
+def is_valid_port(port):
+    return port >= 0 and port <= 65535
+
+
+def validate_args(args):
+    if not is_valid_port(args.port):
+        raise ValueError(f"invalid port: {args.port!r}")
+
+    if ":" not in args.worker_address:
+        raise ValueError("worker address must be in the form host:port")
+    host, port = args.worker_address.split(":")
+    if host == "":
+        raise ValueError(f"empty host in {args.worker_address!r}")
+
+    port = int(port)
+    if not is_valid_port(port):
+        raise ValueError(f"invalid port in {args.worker_address!r}")
+
+    if args.runner_id == "":
+        raise ValueError("runner ID cannot be empty")
+
+
+if __name__ == "__main__":
+    from argparse import ArgumentParser
+
+    parser = ArgumentParser(description="Python runner")
+    parser.add_argument(
+        "--worker-address", help="Worker address (host:port)", default="localhost:9292"
+    )
+    parser.add_argument(
+        "--skip-check-worker",
+        help="do not check connection to worker on startup",
+        action="store_true",
+    )
+    parser.add_argument("--port", help="port to listen on", default=9293, type=int)
+    parser.add_argument("--runner-id", help="runner ID", default="runner-1")
+    parser.add_argument(
+        "--code-dir", help="directory of user code", default="/workflow"
+    )
+    args = parser.parse_args()
+
+    try:
+        validate_args(args)
+    except ValueError as err:
+        raise SystemExit(f"error: {err}")
+
+    chan = grpc.insecure_channel(args.worker_address)
+    worker = rpc.WorkerStub(chan)
+    if not args.skip_check_worker:
+        req = pb.HealthRequest()
+        try:
+            resp = worker.Health(req)
+        except grpc.RpcError as err:
+            raise SystemExit(f"error: worker not available - {err}")
+
+    log.info("connected to worker at %r", args.worker_address)
+
+    server = grpc.server(ThreadPoolExecutor(max_workers=cpu_count() * 8))
+    runner = Runner(args.runner_id, worker, args.code_dir)
+    rpc.add_RunnerServicer_to_server(runner, server)
+    services = (
+        pb.DESCRIPTOR.services_by_name["Runner"].full_name,
+        reflection.SERVICE_NAME,
+    )
+    reflection.enable_server_reflection(services, server)
+
+    server.add_insecure_port(f"[::]:{args.port}")
+    server.start()
+    log.info("server running on port %d", args.port)
+    server.wait_for_termination()

@@ -39,3 +39,25 @@ py-dist: py-deps
 py-dist-publish-test: py-deps
 	python3 -m poetry config repositories.test-pypi https://test.pypi.org/legacy/
 	python3 -m poetry publish --repository test-pypi
+
+.PHONY: remote-py
+remote-py:
+	python -m grpc_tools.protoc \
+		-I . \
+		--python_out=../runtimes/pythonrt/runner \
+		--pyi_out=../runtimes/pythonrt/runner \
+		--grpc_python_out=../runtimes/pythonrt/runner \
+		remote.proto
+
+.PHONY: remote-go
+remote-go:
+	mkdir -p ../runtimes/pythonrt/pb
+	protoc \
+		--go_out=../runtimes/pythonrt/pb \
+		--go_opt=paths=source_relative \
+		--go-grpc_out=../runtimes/pythonrt/pb \
+		--go-grpc_opt=paths=source_relative \
+		remote.proto
+
+.PHONY: remote
+remote: remote-py remote-go
