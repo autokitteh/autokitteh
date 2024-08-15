@@ -37,7 +37,8 @@ func init() {
 
 func runtimes() sdkservices.Runtimes {
 	if local {
-		return backendRuntimes.New()
+		// TODO: what is local ? what to do about logger ? which config ?
+		return backendRuntimes.New(nil, nil)
 	}
 	return common.Client().Runtimes()
 }

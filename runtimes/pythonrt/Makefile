@@ -11,25 +11,23 @@ test: test-py test-go
 ci: deps test-py
 
 test-py:
-	ruff check .
-	ruff format --check
-	python -m pytest
+	cd runner && $(MAKE) test
 
 # You can set the TESTOPTS to pass options to `go test`
 test-go:
 	golangci-lint run ./...
-	go test $(TESTOPTS) -v
+	go test -v $(TESTOPTS)
 
 deps:
-	python -m pip install -r dev-requirements.txt
+	cd runner && $(MAKE) install-deps
 
 # The below targets are for local testing.
 
-deploy-workflow:
+deploy-simple:
 	ak deploy -m ./testdata/simple/autokitteh.yaml -d ./testdata/simple/
 
-run-workflow:
-	curl -i -X POST -d '{"user": "joe", "event": "login"}' http://localhost:9980/http/py_simple/trigger_url_path_py
+run-simple:
+	go run ./testdata/trigger_webhook.go
 
 deploy-issues:
 	ak deploy -m ./testdata/issues/autokitteh.yaml -d ./testdata/issues/
@@ -38,7 +36,7 @@ temporal-ui:
 	$(open) http://localhost:8233
 
 ngrok:
-	ngrok http --domain autokitteh-miki.ngrok.dev 9980
+	ngrok http --domain autokitteh-${USER}.ngrok.dev 9980
 
 ngrok-prod:
 	ngrok http --domain autokitteh.ngrok.dev 9980

@@ -3,8 +3,12 @@ package proto
 import (
 	"embed"
 	"fmt"
+<<<<<<< HEAD:proto/proto_test.go
 	"path/filepath"
 	"regexp"
+=======
+	"strings"
+>>>>>>> c7fa511c (fix proto validation):proto/validate_test.go
 	"testing"
 )
 
@@ -36,6 +40,11 @@ func scan(t *testing.T, check func(t *testing.T, path, fn, dn string)) {
 		for _, f := range fs {
 			if f.IsDir() {
 				t.Errorf("%s is a directory, unrecognized structure", dn)
+				continue
+			}
+
+			// TODO: Once we use buf to generate, remove this
+			if strings.HasSuffix(f.Name(), "remote.proto") {
 				continue
 			}
 

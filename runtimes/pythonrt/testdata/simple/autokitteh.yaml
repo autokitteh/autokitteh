@@ -10,6 +10,3 @@ project:
   vars:
     - name: USER
       value: Garfield
-
-# Invoke the trigger with:
-#   curl -d HELLO http://localhost:9980/http/py_simple/events

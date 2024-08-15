@@ -1,5 +1,5 @@
 .PHONY: all
-all: buf-format-check buf-lint buf-gen
+all: buf-format-check buf-lint buf-gen remote
 
 .PHONY: buf-format-check
 buf-format-check:
@@ -26,9 +26,17 @@ clean:
 	rm -fR gen
 	rm -fR dist
 
+.PHONY: deps
+deps: go-deps py-deps
+
+.PHONY: go-deps
+go-deps:
+	go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+
 .PHONY: py-deps
 py-deps:
-	python3 -m pip install --upgrade poetry
+	python3 -m pip install --upgrade poetry 'grpcio-tools ~= 1.66'
 
 .PHONY: py-dist
 py-dist: py-deps
@@ -39,3 +47,31 @@ py-dist: py-deps
 py-dist-publish-test: py-deps
 	python3 -m poetry config repositories.test-pypi https://test.pypi.org/legacy/
 	python3 -m poetry publish --repository test-pypi
+
+remote_pb_dir = autokitteh/remote/v1
+remote_pb = $(remote_pb_dir)/remote.proto
+remote_py_out = ../runtimes/pythonrt/runner
+remote_go_out = gen/go/autokitteh/remote/v1
+
+.PHONY: remote-py
+remote-py:
+	python -m grpc_tools.protoc \
+		-I $(remote_pb_dir) \
+		--python_out=$(remote_py_out)\
+		--pyi_out=$(remote_py_out) \
+		--grpc_python_out=$(remote_py_out) \
+		$(remote_pb)
+
+.PHONY: remote-go
+remote-go:
+	mkdir -p $(remote_go_out)
+	protoc \
+		-I $(remote_pb_dir) \
+		--go_out=$(remote_go_out) \
+		--go_opt=paths=source_relative \
+		--go-grpc_out=$(remote_go_out) \
+		--go-grpc_opt=paths=source_relative \
+		$(remote_pb)
+
+.PHONY: remote
+remote: remote-py remote-go

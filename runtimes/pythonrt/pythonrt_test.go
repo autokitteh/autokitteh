@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"net/http"
 	"os"
 	"path"
 	"strings"
@@ -16,9 +17,19 @@ import (
 
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
+	"go.uber.org/zap"
+	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
 
 	"github.com/stretchr/testify/require"
 )
+
+func TestMain(m *testing.M) {
+	code := m.Run()
+	runnerManager = nil
+	configuredRunnerType = runnerTypeNotConfigured
+	os.Exit(code)
+}
 
 func validateTar(t *testing.T, tarData []byte, fsys fs.FS) {
 	inTar := make(map[string]bool)
@@ -129,6 +140,26 @@ func newCallbacks(svc *pySvc) *sdkservices.RunCallbacks {
 	return &cbs
 }
 
+func setupServer(l *zap.Logger) *http.Server {
+	ConfigureWorkerGRPCHandler(l)
+	server := &http.Server{
+		Addr:    "localhost:9980",
+		Handler: h2c.NewHandler(Server, &http2.Server{}),
+	}
+
+	if err := ConfigureLocalRunnerManager(l, LocalRunnerConfig{WorkerAddress: "localhost:9980"}); err != nil {
+		panic(err)
+	}
+
+	go func() {
+		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			panic(err)
+		}
+	}()
+
+	return server
+}
+
 func Test_pySvc_Run(t *testing.T) {
 	skipIfNoPython(t)
 
@@ -151,6 +182,11 @@ func Test_pySvc_Run(t *testing.T) {
 	mod, values := newValues(t, runID)
 	xid := sdktypes.NewExecutorID(runID)
 
+	server := setupServer(svc.log)
+	defer func() {
+		_ = server.Shutdown(context.Background())
+	}()
+
 	run, err := svc.Run(ctx, runID, mainPath, compiled, values, cbs)
 	require.NoError(t, err, "run")
 
@@ -165,6 +201,7 @@ func Test_pySvc_Run(t *testing.T) {
 	}
 	_, err = run.Call(ctx, fn, nil, kwargs)
 	require.NoError(t, err, "call")
+
 }
 
 var isGoodVersionCasess = []struct {
@@ -194,7 +231,8 @@ func TestNewBadVersion(t *testing.T) {
 	genExe(t, exe, minPyVersion.Major, minPyVersion.Minor-1)
 	t.Setenv(exeEnvKey, exe)
 
-	_, err := New()
+	l := zap.New(nil)
+	err := ConfigureLocalRunnerManager(l, LocalRunnerConfig{})
 	require.Error(t, err)
 }
 
@@ -203,14 +241,18 @@ func TestPythonFromEnv(t *testing.T) {
 	pyExe := path.Join(envDir, "pypy3")
 	t.Setenv(exeEnvKey, pyExe)
 
-	_, err := New()
+	l := zap.New(nil)
+	err := ConfigureLocalRunnerManager(l, LocalRunnerConfig{})
 	require.Error(t, err)
 
 	genExe(t, pyExe, minPyVersion.Major, minPyVersion.Minor)
-	r, err := New()
+	err = ConfigureLocalRunnerManager(l, LocalRunnerConfig{})
 	require.NoError(t, err)
 
-	py, ok := r.(*pySvc)
+	_, err = New()
+	require.NoError(t, err)
+
+	py, ok := runnerManager.(*localRunnerManager)
 	require.True(t, ok)
 	require.Equal(t, pyExe, py.pyExe)
 
@@ -243,28 +285,6 @@ func Test_pySvc_Build_PyCache(t *testing.T) {
 	}
 }
 
-func TestCleanup(t *testing.T) {
-	var ri pyRunInfo
-	var err error
-
-	ri.pyRootDir, err = os.MkdirTemp("", "test-pyrt-py")
-	require.NoError(t, err)
-	ri.userRootDir, err = os.MkdirTemp("", "test-pyrt-user")
-	require.NoError(t, err)
-
-	defer func() {
-		_ = recover() // ignore panic
-		require.NoDirExists(t, ri.pyRootDir)
-		require.NoDirExists(t, ri.userRootDir)
-	}()
-
-	svc := newSVC(t)
-	svc.run = &ri
-
-	_, err = svc.initialCall(context.Background(), "greet", nil) // will panic
-	require.Error(t, err)
-}
-
 var progErrCode = []byte(`
 def handle(event):
     1 / 0
@@ -273,6 +293,7 @@ def handle(event):
 func TestProgramError(t *testing.T) {
 	skipIfNoPython(t)
 
+	// ConfigureLocalRunnerManager()
 	pyFile := "progerr.py"
 	var buf bytes.Buffer
 	tw := tar.NewWriter(&buf)
@@ -292,6 +313,11 @@ func TestProgramError(t *testing.T) {
 
 	require.NoError(t, err)
 	svc := newSVC(t)
+	server := setupServer(svc.log)
+
+	defer func() {
+		_ = server.Shutdown(context.Background())
+	}()
 
 	runID := sdktypes.NewRunID()
 	mod, values := newValues(t, runID)

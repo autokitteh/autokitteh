@@ -184,7 +184,6 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		Component("events", configset.Empty, fx.Provide(events.New)),
 		Component("triggers", configset.Empty, fx.Provide(triggers.New)),
 		Component("oauth", configset.Empty, fx.Provide(oauth.New)),
-		Component("runtimes", configset.Empty, fx.Provide(runtimes.New)),
 
 		Component("healthcheck", configset.Empty, fx.Provide(healthchecker.New)),
 		Component(
@@ -310,6 +309,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 				})
 			}),
 		),
+		Component("runtimes", runtimes.Configs, fx.Provide(runtimes.New)),
 		fx.Invoke(func(muxes *muxes.Muxes) {
 			muxes.NoAuth.HandleFunc("GET /id", func(w http.ResponseWriter, r *http.Request) {
 				fmt.Fprint(w, fixtures.ProcessID())

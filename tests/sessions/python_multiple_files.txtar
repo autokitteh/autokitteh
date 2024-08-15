@@ -1,4 +1,4 @@
-[stdout] meow, world!
+meow, world!
 
 -- main.py:main --
 import foo

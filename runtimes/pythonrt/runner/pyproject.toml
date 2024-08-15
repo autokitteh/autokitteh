@@ -1,0 +1,54 @@
+[project]
+name = "runner"
+version = "0.1.0"
+dependencies = [
+	"autokitteh == 0.3.*",
+	"grpcio ~= 1.66",
+	# TODO: Newest version conflicts with google-generativeai
+	"grpcio-reflection ~= 1.66",
+	#"grpcio-reflection ~= 1.31",
+]
+
+[project.optional-dependencies]
+all = [
+	# Development
+	"ruff ~= 0.6",
+	"pytest ~= 8.3",
+
+	# AK Environment
+	"atlassian-python-api ~= 3.41",
+	"boto3 ~= 1.35",
+	"discord.py ~= 2.4",
+	"google-api-python-client ~= 2.144",
+	"google-auth-httplib2 ~= 0.2",
+	"google-auth-oauthlib ~= 1.2",
+	#"google-generativeai == 0.7.2",
+	"jira ~= 3.8",
+	"openai ~= 1.44",
+	"PyGithub ~= 2.4",
+	"redis ~= 5.0",
+	"slack-sdk ~= 3.32",
+	"twilio ~= 9.3",
+
+	# General
+	"beautifulsoup4 ~= 4.12",
+	"PyYAML ~= 6.0",
+	"requests ~= 2.32",
+]
+
+[tool.setuptools.packages]
+find = {}
+
+[tool.pytest.ini_options]
+addopts = """
+	-v 
+	--doctest-modules 
+	--ignore tests/workflows
+"""
+
+[tool.ruff]
+# Ignore protbuf generated files
+extend-exclude = ["*.pyi", "*_pb2*.py"]
+
+[tool.ruff.format]
+quote-style = "double"
