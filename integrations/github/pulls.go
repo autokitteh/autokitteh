@@ -37,7 +37,7 @@ func (i integration) createPullRequest(ctx context.Context, args []sdktypes.Valu
 	}
 
 	// Invoke the API method.
-	gh, err := i.NewClient(ctx, owner)
+	gh, err := i.NewClient(ctx)
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
@@ -79,7 +79,7 @@ func (i integration) getPullRequest(ctx context.Context, args []sdktypes.Value, 
 	}
 
 	// Invoke the API method.
-	gh, err := i.NewClient(ctx, owner)
+	gh, err := i.NewClient(ctx)
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
@@ -118,7 +118,7 @@ func (i integration) listPullRequests(ctx context.Context, args []sdktypes.Value
 	}
 
 	// Invoke the API method.
-	gh, err := i.NewClient(ctx, owner)
+	gh, err := i.NewClient(ctx)
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
@@ -154,7 +154,7 @@ func (i integration) listPullRequestFiles(ctx context.Context, args []sdktypes.V
 	}
 
 	// Invoke the API method.
-	gh, err := i.NewClient(ctx, owner)
+	gh, err := i.NewClient(ctx)
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
@@ -190,7 +190,7 @@ func (i integration) requestReview(ctx context.Context, args []sdktypes.Value, k
 	}
 
 	// Invoke the API method.
-	gh, err := i.NewClient(ctx, owner)
+	gh, err := i.NewClient(ctx)
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}

@@ -33,7 +33,8 @@ const (
 	enterpriseURLEnvVar = "GITHUB_ENTERPRISE_URL"
 )
 
-func (i integration) NewClient(ctx context.Context, user string) (*github.Client, error) {
+// TODO: Remove "user"
+func (i integration) NewClient(ctx context.Context) (*github.Client, error) {
 	// Extract the connection token from the given context.
 	cid, err := sdkmodule.FunctionConnectionIDFromContext(ctx)
 	if err != nil {
@@ -46,30 +47,30 @@ func (i integration) NewClient(ctx context.Context, user string) (*github.Client
 	if pat := data.Get(vars.PAT); pat.IsValid() {
 		return github.NewTokenClient(ctx, pat.Value()), nil
 	} else {
-		return i.newClientWithInstallJWT(data, user)
+		return i.newClientWithInstallJWT(data)
 	}
 }
 
 // NewClientWithInstallJWT returns a GitHub client that
 // uses a newly-generated GitHub app installation JWT.
-func (i integration) newClientWithInstallJWT(data sdktypes.Vars, user string) (*github.Client, error) {
+func (i integration) newClientWithInstallJWT(data sdktypes.Vars) (*github.Client, error) {
 	// Initialize and return a GitHub client with a JWT.
-	s := data.GetValue(vars.UserAppID(user))
+	s := data.GetValue(vars.AppID)
 	if s == "" {
-		return nil, fmt.Errorf("app ID not found for owner %q", user)
+		return nil, fmt.Errorf("app ID not found")
 	}
 	aid, err := strconv.ParseInt(s, 10, 64)
 	if err != nil {
-		return nil, fmt.Errorf("invalid app ID %q for owner %q", s, user)
+		return nil, fmt.Errorf("invalid app ID %q", s)
 	}
 
-	s = data.GetValue(vars.UserInstallID(user))
+	s = data.GetValue(vars.InstallID)
 	if s == "" {
-		return nil, fmt.Errorf("install ID not found for owner %q", user)
+		return nil, fmt.Errorf("install ID not found")
 	}
 	iid, err := strconv.ParseInt(s, 10, 64)
 	if err != nil {
-		return nil, fmt.Errorf("invalid nstall ID %q for owner %q", s, user)
+		return nil, fmt.Errorf("invalid install ID %q", s)
 	}
 
 	return i.newClientWithInstallJWTFromGitHubIDs(aid, iid)

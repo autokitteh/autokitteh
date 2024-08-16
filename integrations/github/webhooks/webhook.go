@@ -137,7 +137,7 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Transform the received GitHub event into an autokitteh event.
+	// Transform the received GitHub event into an AutoKitteh event.
 	data, err := transformEvent(l, w, ghEvent)
 	if err != nil {
 		return

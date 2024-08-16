@@ -24,7 +24,7 @@ func (i integration) createCheckRun(ctx context.Context, args []sdktypes.Value, 
 	}
 
 	// Invoke the API method.
-	gh, err := i.NewClient(ctx, owner)
+	gh, err := i.NewClient(ctx)
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
@@ -54,7 +54,7 @@ func (i integration) updateCheckRun(ctx context.Context, args []sdktypes.Value, 
 	}
 
 	// Invoke the API method.
-	gh, err := i.NewClient(ctx, owner)
+	gh, err := i.NewClient(ctx)
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
