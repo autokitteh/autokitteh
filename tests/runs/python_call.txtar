@@ -1,0 +1,9 @@
+[stdout] woof, world!
+[stdout] meow, world!
+
+-- main.py foo --
+
+def foo(_):
+    print("meow, world!")
+
+print("woof, world!")

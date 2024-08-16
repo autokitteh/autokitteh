@@ -1,0 +1,9 @@
+meow, world!
+
+-- main.star --
+load("config.yaml", "foo")
+
+print("{}, world!".format(foo))
+
+-- config.yaml --
+foo: meow

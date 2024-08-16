@@ -102,6 +102,7 @@ func LoggerFxOpt() fx.Option {
 		"logger",
 		fx.Provide(fxGetConfig("logger", kittehs.Must1(chooseConfig(logger.Configs)))),
 		fx.Provide(logger.New),
+		fx.Provide(func(l *zap.Logger) *zap.SugaredLogger { return l.Sugar() }),
 	)
 }
 
@@ -133,7 +134,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 	return []fx.Option{
 		fx.Supply(cfg),
 		LoggerFxOpt(),
-		fx.Invoke(func(lc fx.Lifecycle, db db.DB) { HookOnStart(lc, db.Setup) }),
+		Invoke("db", func(lc fx.Lifecycle, db db.DB) { HookOnStart(lc, db.Setup) }),
 
 		Component("auth", configset.Empty, fx.Provide(authsvc.New)),
 		Component("authjwttokens", authjwttokens.Configs, fx.Provide(authjwttokens.New)),
@@ -197,8 +198,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		Component("events", configset.Empty, fx.Provide(events.New)),
 		Component("triggers", configset.Empty, fx.Provide(triggers.New)),
 		Component("oauth", configset.Empty, fx.Provide(oauth.New)),
-		Component("runtimes", configset.Empty, fx.Provide(runtimes.New)),
-
+		Component("runtimes", runtimes.Configs, fx.Provide(runtimes.New)),
 		Component("healthcheck", configset.Empty, fx.Provide(healthchecker.New)),
 		Component(
 			"schedule",
@@ -207,7 +207,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		),
 		// TODO: consider design where the workflow is an implementation detail of the scheduler and does not need to be exposed.
 		Component(
-			"scheduleWorkflow",
+			"scheduleworkflow",
 			configset.Empty,
 			fx.Provide(schedule.NewSchedulerWorkflow),
 			fx.Invoke(func(lc fx.Lifecycle, swf schedule.SchedulerWorkflow) { HookOnStart(lc, swf.Start) }),
@@ -229,24 +229,24 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 			}),
 		),
 		fx.Provide(func(s fxServices) sdkservices.Services { return &s }),
-		fx.Invoke(authgrpcsvc.Init),
-		fx.Invoke(applygrpcsvc.Init),
-		fx.Invoke(buildsgrpcsvc.Init),
-		fx.Invoke(connectionsgrpcsvc.Init),
-		fx.Invoke(deploymentsgrpcsvc.Init),
-		fx.Invoke(dispatchergrpcsvc.Init),
-		fx.Invoke(envsgrpcsvc.Init),
-		fx.Invoke(eventsgrpcsvc.Init),
-		fx.Invoke(integrationsgrpcsvc.Init),
-		fx.Invoke(oauth.Init),
-		fx.Invoke(projectsgrpcsvc.Init),
-		fx.Invoke(func(z *zap.Logger, runtimes sdkservices.Runtimes, muxes *muxes.Muxes) {
-			sdkruntimessvc.Init(z, runtimes, muxes.Auth)
+		Invoke("authgrpcsvc", authgrpcsvc.Init),
+		Invoke("applygrpcsvc", applygrpcsvc.Init),
+		Invoke("buildsgrpcsvc", buildsgrpcsvc.Init),
+		Invoke("connectionsgrpcsvc", connectionsgrpcsvc.Init),
+		Invoke("deploymentsgrpcsvc", deploymentsgrpcsvc.Init),
+		Invoke("dispatchergrpcsvc", dispatchergrpcsvc.Init),
+		Invoke("envsgrcpsvc", envsgrpcsvc.Init),
+		Invoke("eventsgrpcsvc", eventsgrpcsvc.Init),
+		Invoke("integrationsgrpcsvc", integrationsgrpcsvc.Init),
+		Invoke("oauth", oauth.Init),
+		Invoke("projectsgrpcsvc", projectsgrpcsvc.Init),
+		Invoke("runtimessvc", func(sl *zap.SugaredLogger, runtimes sdkservices.Runtimes, muxes *muxes.Muxes) {
+			sdkruntimessvc.Init(sl, runtimes, muxes.Auth)
 		}),
-		fx.Invoke(sessionsgrpcsvc.Init),
-		fx.Invoke(storegrpcsvc.Init),
-		fx.Invoke(triggersgrpcsvc.Init),
-		fx.Invoke(varsgrpcsvc.Init),
+		Invoke("sessionsgrpcsvc", sessionsgrpcsvc.Init),
+		Invoke("storegrpcsvc", storegrpcsvc.Init),
+		Invoke("triggersgrpcsvc", triggersgrpcsvc.Init),
+		Invoke("varsgrpcsvc", varsgrpcsvc.Init),
 		Component("telemetry", telemetry.Configs, fx.Provide(telemetry.New)),
 
 		Component(
@@ -303,13 +303,13 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 			}),
 		),
 		Component("authloginhttpsvc", authloginhttpsvc.Configs, fx.Invoke(authloginhttpsvc.Init)),
-		fx.Invoke(func(muxes *muxes.Muxes, h integrationsweb.Handler) {
+		Invoke("integrations", func(muxes *muxes.Muxes, h integrationsweb.Handler) {
 			muxes.NoAuth.Handle("GET /i/{$}", &h)
 		}),
-		fx.Invoke(dashboardsvc.Init),
-		fx.Invoke(oauth.InitWebhook),
+		Invoke("dashboard", dashboardsvc.Init),
+		Invoke("oauth", oauth.InitWebhook),
 		Component("integrations", integrations.Configs, fx.Provide(integrations.New)),
-		fx.Invoke(func(lc fx.Lifecycle, l *zap.Logger, muxes *muxes.Muxes, vs sdkservices.Vars, o sdkservices.OAuth, d dispatcher.Dispatcher, c sdkservices.Connections, p sdkservices.Projects) {
+		Invoke("integrations", func(lc fx.Lifecycle, l *zap.Logger, muxes *muxes.Muxes, vs sdkservices.Vars, o sdkservices.OAuth, d dispatcher.Dispatcher, c sdkservices.Connections, p sdkservices.Projects) {
 			HookOnStart(lc, func(ctx context.Context) error {
 				return integrations.Start(ctx, l, muxes.NoAuth, muxes.Auth, vs, o, d, c, p)
 			})

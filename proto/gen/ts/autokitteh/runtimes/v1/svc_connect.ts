@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { BuildRequest, BuildResponse, DescribeRequest, DescribeResponse, ListRequest, ListResponse, RunRequest, RunResponse } from "./svc_pb.js";
+import { BidiRunRequest, BidiRunResponse, Build1Request, Build1Response, BuildRequest, BuildResponse, DescribeRequest, DescribeResponse, ListRequest, ListResponse, RunRequest, RunResponse } from "./svc_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -53,6 +53,24 @@ export const RuntimesService = {
       I: RunRequest,
       O: RunResponse,
       kind: MethodKind.ServerStreaming,
+    },
+    /**
+     * @generated from rpc autokitteh.runtimes.v1.RuntimesService.BidiRun
+     */
+    bidiRun: {
+      name: "BidiRun",
+      I: BidiRunRequest,
+      O: BidiRunResponse,
+      kind: MethodKind.BiDiStreaming,
+    },
+    /**
+     * @generated from rpc autokitteh.runtimes.v1.RuntimesService.Build1
+     */
+    build1: {
+      name: "Build1",
+      I: Build1Request,
+      O: Build1Response,
+      kind: MethodKind.Unary,
     },
   }
 } as const;

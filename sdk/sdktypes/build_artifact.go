@@ -27,6 +27,10 @@ func (BuildArtifactTraits) Validate(m *BuildArtifactPB) error {
 
 func (BuildArtifactTraits) StrictValidate(m *BuildArtifactPB) error { return nil }
 
+func NewBuildArtifact(compiled map[string][]byte) BuildArtifact {
+	return forceFromProto[BuildArtifact](&BuildArtifactPB{CompiledData: compiled})
+}
+
 func BuildArtifactFromProto(m *BuildArtifactPB) (BuildArtifact, error) {
 	return FromProto[BuildArtifact](m)
 }

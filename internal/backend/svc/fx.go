@@ -3,6 +3,8 @@ package svc
 import (
 	"context"
 	"fmt"
+	"os"
+	"strings"
 
 	"go.uber.org/fx"
 	"go.uber.org/fx/fxevent"
@@ -10,7 +12,38 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/configset"
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
 )
+
+var components = kittehs.FilterZeroes(strings.Split(os.Getenv("AK_COMPONENTS"), ","))
+
+func isComponentEnabled(name string) bool {
+	if len(components) == 0 {
+		return true
+	}
+
+	enabled := false
+
+	for _, c := range components {
+		if c == "" {
+			continue
+		}
+
+		if c[0] == '-' {
+			if len(c) == 1 || c[1:] == name || c[1:] == "*" {
+				enabled = false
+			}
+
+			continue
+		}
+
+		if c == name || c == "*" {
+			enabled = true
+		}
+	}
+
+	return enabled
+}
 
 // TODO: need this so RunOptions would not needed to be passed every time Component is called. This is ugly, fix.
 var fxRunOpts RunOptions
@@ -27,7 +60,19 @@ func chooseConfig[T any](set configset.Set[T]) (T, error) {
 	return set.Choose(configset.Mode(fxRunOpts.Mode))
 }
 
+func Invoke(name string, funcs ...any) fx.Option {
+	if !isComponentEnabled(name) {
+		return fx.Module(name, fx.Invoke(func(sl *zap.SugaredLogger) { sl.Info("disabled") }))
+	}
+
+	return fx.Invoke(funcs...)
+}
+
 func Component[T any](name string, set configset.Set[T], opts ...fx.Option) fx.Option {
+	if !isComponentEnabled(name) {
+		return fx.Module(name, fx.Invoke(func(sl *zap.SugaredLogger) { sl.Info("disabled") }))
+	}
+
 	config, err := chooseConfig(set)
 	if err != nil {
 		return fx.Error(fmt.Errorf("%s: %w", name, err))
@@ -37,7 +82,8 @@ func Component[T any](name string, set configset.Set[T], opts ...fx.Option) fx.O
 		name,
 		append(
 			[]fx.Option{
-				fx.Decorate(func(z *zap.Logger) *zap.Logger { return z.Named(name) }),
+				fx.Decorate(func(l *zap.Logger) *zap.Logger { return l.Named(name) }),
+				fx.Decorate(func(sl *zap.SugaredLogger) *zap.SugaredLogger { return sl.Named(name) }),
 				fx.Provide(fxGetConfig(name, config), fx.Private),
 				fx.Invoke(func(cfg *Config, c *T) { cfg.Store(name, c) }),
 			},

@@ -7,6 +7,7 @@ import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialM
 import { Message, proto3 } from "@bufbuild/protobuf";
 import { Runtime } from "./runtime_pb.js";
 import { Error } from "../../program/v1/program_pb.js";
+import { Artifact } from "./build_pb.js";
 import { Value } from "../../values/v1/values_pb.js";
 
 /**
@@ -209,9 +210,9 @@ export class BuildRequest extends Message<BuildRequest> {
  */
 export class BuildResponse extends Message<BuildResponse> {
   /**
-   * @generated from field: bytes artifact = 1;
+   * @generated from field: bytes build_file = 1;
    */
-  artifact = new Uint8Array(0);
+  buildFile = new Uint8Array(0);
 
   /**
    * @generated from field: autokitteh.program.v1.Error error = 2;
@@ -226,7 +227,7 @@ export class BuildResponse extends Message<BuildResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "autokitteh.runtimes.v1.BuildResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "artifact", kind: "scalar", T: 12 /* ScalarType.BYTES */ },
+    { no: 1, name: "build_file", kind: "scalar", T: 12 /* ScalarType.BYTES */ },
     { no: 2, name: "error", kind: "message", T: Error },
   ]);
 
@@ -244,6 +245,104 @@ export class BuildResponse extends Message<BuildResponse> {
 
   static equals(a: BuildResponse | PlainMessage<BuildResponse> | undefined, b: BuildResponse | PlainMessage<BuildResponse> | undefined): boolean {
     return proto3.util.equals(BuildResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message autokitteh.runtimes.v1.Build1Request
+ */
+export class Build1Request extends Message<Build1Request> {
+  /**
+   * @generated from field: map<string, bytes> resources = 1;
+   */
+  resources: { [key: string]: Uint8Array } = {};
+
+  /**
+   * @generated from field: repeated string symbols = 2;
+   */
+  symbols: string[] = [];
+
+  /**
+   * @generated from field: string path = 3;
+   */
+  path = "";
+
+  /**
+   * @generated from field: string runtime_name = 4;
+   */
+  runtimeName = "";
+
+  constructor(data?: PartialMessage<Build1Request>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "autokitteh.runtimes.v1.Build1Request";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "resources", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 12 /* ScalarType.BYTES */} },
+    { no: 2, name: "symbols", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 3, name: "path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "runtime_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Build1Request {
+    return new Build1Request().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): Build1Request {
+    return new Build1Request().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): Build1Request {
+    return new Build1Request().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: Build1Request | PlainMessage<Build1Request> | undefined, b: Build1Request | PlainMessage<Build1Request> | undefined): boolean {
+    return proto3.util.equals(Build1Request, a, b);
+  }
+}
+
+/**
+ * @generated from message autokitteh.runtimes.v1.Build1Response
+ */
+export class Build1Response extends Message<Build1Response> {
+  /**
+   * @generated from field: autokitteh.runtimes.v1.Artifact artifact = 1;
+   */
+  artifact?: Artifact;
+
+  /**
+   * @generated from field: autokitteh.program.v1.Error error = 2;
+   */
+  error?: Error;
+
+  constructor(data?: PartialMessage<Build1Response>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "autokitteh.runtimes.v1.Build1Response";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "artifact", kind: "message", T: Artifact },
+    { no: 2, name: "error", kind: "message", T: Error },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Build1Response {
+    return new Build1Response().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): Build1Response {
+    return new Build1Response().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): Build1Response {
+    return new Build1Response().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: Build1Response | PlainMessage<Build1Response> | undefined, b: Build1Response | PlainMessage<Build1Response> | undefined): boolean {
+    return proto3.util.equals(Build1Response, a, b);
   }
 }
 
@@ -350,6 +449,638 @@ export class RunResponse extends Message<RunResponse> {
 
   static equals(a: RunResponse | PlainMessage<RunResponse> | undefined, b: RunResponse | PlainMessage<RunResponse> | undefined): boolean {
     return proto3.util.equals(RunResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message autokitteh.runtimes.v1.BidiRunCall
+ */
+export class BidiRunCall extends Message<BidiRunCall> {
+  /**
+   * @generated from field: autokitteh.values.v1.Value value = 1;
+   */
+  value?: Value;
+
+  /**
+   * @generated from field: repeated autokitteh.values.v1.Value args = 2;
+   */
+  args: Value[] = [];
+
+  /**
+   * @generated from field: map<string, autokitteh.values.v1.Value> kwargs = 4;
+   */
+  kwargs: { [key: string]: Value } = {};
+
+  constructor(data?: PartialMessage<BidiRunCall>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "autokitteh.runtimes.v1.BidiRunCall";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "value", kind: "message", T: Value },
+    { no: 2, name: "args", kind: "message", T: Value, repeated: true },
+    { no: 4, name: "kwargs", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: Value} },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): BidiRunCall {
+    return new BidiRunCall().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): BidiRunCall {
+    return new BidiRunCall().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): BidiRunCall {
+    return new BidiRunCall().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: BidiRunCall | PlainMessage<BidiRunCall> | undefined, b: BidiRunCall | PlainMessage<BidiRunCall> | undefined): boolean {
+    return proto3.util.equals(BidiRunCall, a, b);
+  }
+}
+
+/**
+ * @generated from message autokitteh.runtimes.v1.BidiRunCallReturn
+ */
+export class BidiRunCallReturn extends Message<BidiRunCallReturn> {
+  /**
+   * @generated from oneof autokitteh.runtimes.v1.BidiRunCallReturn.result
+   */
+  result: {
+    /**
+     * @generated from field: autokitteh.values.v1.Value value = 1;
+     */
+    value: Value;
+    case: "value";
+  } | {
+    /**
+     * @generated from field: autokitteh.program.v1.Error error = 2;
+     */
+    value: Error;
+    case: "error";
+  } | { case: undefined; value?: undefined } = { case: undefined };
+
+  constructor(data?: PartialMessage<BidiRunCallReturn>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "autokitteh.runtimes.v1.BidiRunCallReturn";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "value", kind: "message", T: Value, oneof: "result" },
+    { no: 2, name: "error", kind: "message", T: Error, oneof: "result" },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): BidiRunCallReturn {
+    return new BidiRunCallReturn().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): BidiRunCallReturn {
+    return new BidiRunCallReturn().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): BidiRunCallReturn {
+    return new BidiRunCallReturn().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: BidiRunCallReturn | PlainMessage<BidiRunCallReturn> | undefined, b: BidiRunCallReturn | PlainMessage<BidiRunCallReturn> | undefined): boolean {
+    return proto3.util.equals(BidiRunCallReturn, a, b);
+  }
+}
+
+/**
+ * @generated from message autokitteh.runtimes.v1.BidiRunLoadReturn
+ */
+export class BidiRunLoadReturn extends Message<BidiRunLoadReturn> {
+  /**
+   * @generated from field: map<string, autokitteh.values.v1.Value> values = 1;
+   */
+  values: { [key: string]: Value } = {};
+
+  /**
+   * @generated from field: autokitteh.program.v1.Error error = 2;
+   */
+  error?: Error;
+
+  constructor(data?: PartialMessage<BidiRunLoadReturn>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "autokitteh.runtimes.v1.BidiRunLoadReturn";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "values", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: Value} },
+    { no: 2, name: "error", kind: "message", T: Error },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): BidiRunLoadReturn {
+    return new BidiRunLoadReturn().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): BidiRunLoadReturn {
+    return new BidiRunLoadReturn().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): BidiRunLoadReturn {
+    return new BidiRunLoadReturn().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: BidiRunLoadReturn | PlainMessage<BidiRunLoadReturn> | undefined, b: BidiRunLoadReturn | PlainMessage<BidiRunLoadReturn> | undefined): boolean {
+    return proto3.util.equals(BidiRunLoadReturn, a, b);
+  }
+}
+
+/**
+ * @generated from message autokitteh.runtimes.v1.BidiRunRequest
+ */
+export class BidiRunRequest extends Message<BidiRunRequest> {
+  /**
+   * @generated from oneof autokitteh.runtimes.v1.BidiRunRequest.request
+   */
+  request: {
+    /**
+     * @generated from field: autokitteh.runtimes.v1.BidiRunRequest.Start start = 1;
+     */
+    value: BidiRunRequest_Start;
+    case: "start";
+  } | {
+    /**
+     * @generated from field: autokitteh.runtimes.v1.BidiRunRequest.Start1 start1 = 2;
+     */
+    value: BidiRunRequest_Start1;
+    case: "start1";
+  } | {
+    /**
+     * @generated from field: autokitteh.runtimes.v1.BidiRunCall call = 3;
+     */
+    value: BidiRunCall;
+    case: "call";
+  } | {
+    /**
+     * @generated from field: autokitteh.runtimes.v1.BidiRunCallReturn call_return = 4;
+     */
+    value: BidiRunCallReturn;
+    case: "callReturn";
+  } | {
+    /**
+     * @generated from field: autokitteh.runtimes.v1.BidiRunLoadReturn load_return = 5;
+     */
+    value: BidiRunLoadReturn;
+    case: "loadReturn";
+  } | {
+    /**
+     * @generated from field: autokitteh.runtimes.v1.BidiRunRequest.NewRunIDValue new_run_id_value = 6;
+     */
+    value: BidiRunRequest_NewRunIDValue;
+    case: "newRunIdValue";
+  } | { case: undefined; value?: undefined } = { case: undefined };
+
+  constructor(data?: PartialMessage<BidiRunRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "autokitteh.runtimes.v1.BidiRunRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "start", kind: "message", T: BidiRunRequest_Start, oneof: "request" },
+    { no: 2, name: "start1", kind: "message", T: BidiRunRequest_Start1, oneof: "request" },
+    { no: 3, name: "call", kind: "message", T: BidiRunCall, oneof: "request" },
+    { no: 4, name: "call_return", kind: "message", T: BidiRunCallReturn, oneof: "request" },
+    { no: 5, name: "load_return", kind: "message", T: BidiRunLoadReturn, oneof: "request" },
+    { no: 6, name: "new_run_id_value", kind: "message", T: BidiRunRequest_NewRunIDValue, oneof: "request" },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): BidiRunRequest {
+    return new BidiRunRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): BidiRunRequest {
+    return new BidiRunRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): BidiRunRequest {
+    return new BidiRunRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: BidiRunRequest | PlainMessage<BidiRunRequest> | undefined, b: BidiRunRequest | PlainMessage<BidiRunRequest> | undefined): boolean {
+    return proto3.util.equals(BidiRunRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message autokitteh.runtimes.v1.BidiRunRequest.StartData
+ */
+export class BidiRunRequest_StartData extends Message<BidiRunRequest_StartData> {
+  /**
+   * @generated from field: string run_id = 1;
+   */
+  runId = "";
+
+  /**
+   * @generated from field: map<string, autokitteh.values.v1.Value> globals = 2;
+   */
+  globals: { [key: string]: Value } = {};
+
+  /**
+   * @generated from field: string path = 3;
+   */
+  path = "";
+
+  constructor(data?: PartialMessage<BidiRunRequest_StartData>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "autokitteh.runtimes.v1.BidiRunRequest.StartData";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "run_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "globals", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: Value} },
+    { no: 3, name: "path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): BidiRunRequest_StartData {
+    return new BidiRunRequest_StartData().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): BidiRunRequest_StartData {
+    return new BidiRunRequest_StartData().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): BidiRunRequest_StartData {
+    return new BidiRunRequest_StartData().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: BidiRunRequest_StartData | PlainMessage<BidiRunRequest_StartData> | undefined, b: BidiRunRequest_StartData | PlainMessage<BidiRunRequest_StartData> | undefined): boolean {
+    return proto3.util.equals(BidiRunRequest_StartData, a, b);
+  }
+}
+
+/**
+ * @generated from message autokitteh.runtimes.v1.BidiRunRequest.Start
+ */
+export class BidiRunRequest_Start extends Message<BidiRunRequest_Start> {
+  /**
+   * @generated from field: bytes build_file = 1;
+   */
+  buildFile = new Uint8Array(0);
+
+  /**
+   * @generated from field: autokitteh.runtimes.v1.BidiRunRequest.StartData data = 2;
+   */
+  data?: BidiRunRequest_StartData;
+
+  constructor(data?: PartialMessage<BidiRunRequest_Start>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "autokitteh.runtimes.v1.BidiRunRequest.Start";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "build_file", kind: "scalar", T: 12 /* ScalarType.BYTES */ },
+    { no: 2, name: "data", kind: "message", T: BidiRunRequest_StartData },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): BidiRunRequest_Start {
+    return new BidiRunRequest_Start().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): BidiRunRequest_Start {
+    return new BidiRunRequest_Start().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): BidiRunRequest_Start {
+    return new BidiRunRequest_Start().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: BidiRunRequest_Start | PlainMessage<BidiRunRequest_Start> | undefined, b: BidiRunRequest_Start | PlainMessage<BidiRunRequest_Start> | undefined): boolean {
+    return proto3.util.equals(BidiRunRequest_Start, a, b);
+  }
+}
+
+/**
+ * @generated from message autokitteh.runtimes.v1.BidiRunRequest.Start1
+ */
+export class BidiRunRequest_Start1 extends Message<BidiRunRequest_Start1> {
+  /**
+   * @generated from field: string runtime_name = 1;
+   */
+  runtimeName = "";
+
+  /**
+   * @generated from field: autokitteh.runtimes.v1.Artifact artifact = 2;
+   */
+  artifact?: Artifact;
+
+  /**
+   * @generated from field: autokitteh.runtimes.v1.BidiRunRequest.StartData data = 3;
+   */
+  data?: BidiRunRequest_StartData;
+
+  constructor(data?: PartialMessage<BidiRunRequest_Start1>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "autokitteh.runtimes.v1.BidiRunRequest.Start1";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "runtime_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "artifact", kind: "message", T: Artifact },
+    { no: 3, name: "data", kind: "message", T: BidiRunRequest_StartData },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): BidiRunRequest_Start1 {
+    return new BidiRunRequest_Start1().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): BidiRunRequest_Start1 {
+    return new BidiRunRequest_Start1().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): BidiRunRequest_Start1 {
+    return new BidiRunRequest_Start1().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: BidiRunRequest_Start1 | PlainMessage<BidiRunRequest_Start1> | undefined, b: BidiRunRequest_Start1 | PlainMessage<BidiRunRequest_Start1> | undefined): boolean {
+    return proto3.util.equals(BidiRunRequest_Start1, a, b);
+  }
+}
+
+/**
+ * @generated from message autokitteh.runtimes.v1.BidiRunRequest.Call
+ */
+export class BidiRunRequest_Call extends Message<BidiRunRequest_Call> {
+  /**
+   * @generated from field: autokitteh.values.v1.Value value = 1;
+   */
+  value?: Value;
+
+  /**
+   * @generated from field: repeated autokitteh.values.v1.Value args = 2;
+   */
+  args: Value[] = [];
+
+  /**
+   * @generated from field: map<string, autokitteh.values.v1.Value> kwargs = 4;
+   */
+  kwargs: { [key: string]: Value } = {};
+
+  constructor(data?: PartialMessage<BidiRunRequest_Call>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "autokitteh.runtimes.v1.BidiRunRequest.Call";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "value", kind: "message", T: Value },
+    { no: 2, name: "args", kind: "message", T: Value, repeated: true },
+    { no: 4, name: "kwargs", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: Value} },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): BidiRunRequest_Call {
+    return new BidiRunRequest_Call().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): BidiRunRequest_Call {
+    return new BidiRunRequest_Call().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): BidiRunRequest_Call {
+    return new BidiRunRequest_Call().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: BidiRunRequest_Call | PlainMessage<BidiRunRequest_Call> | undefined, b: BidiRunRequest_Call | PlainMessage<BidiRunRequest_Call> | undefined): boolean {
+    return proto3.util.equals(BidiRunRequest_Call, a, b);
+  }
+}
+
+/**
+ * @generated from message autokitteh.runtimes.v1.BidiRunRequest.NewRunIDValue
+ */
+export class BidiRunRequest_NewRunIDValue extends Message<BidiRunRequest_NewRunIDValue> {
+  /**
+   * @generated from field: string run_id = 1;
+   */
+  runId = "";
+
+  constructor(data?: PartialMessage<BidiRunRequest_NewRunIDValue>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "autokitteh.runtimes.v1.BidiRunRequest.NewRunIDValue";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "run_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): BidiRunRequest_NewRunIDValue {
+    return new BidiRunRequest_NewRunIDValue().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): BidiRunRequest_NewRunIDValue {
+    return new BidiRunRequest_NewRunIDValue().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): BidiRunRequest_NewRunIDValue {
+    return new BidiRunRequest_NewRunIDValue().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: BidiRunRequest_NewRunIDValue | PlainMessage<BidiRunRequest_NewRunIDValue> | undefined, b: BidiRunRequest_NewRunIDValue | PlainMessage<BidiRunRequest_NewRunIDValue> | undefined): boolean {
+    return proto3.util.equals(BidiRunRequest_NewRunIDValue, a, b);
+  }
+}
+
+/**
+ * @generated from message autokitteh.runtimes.v1.BidiRunResponse
+ */
+export class BidiRunResponse extends Message<BidiRunResponse> {
+  /**
+   * @generated from oneof autokitteh.runtimes.v1.BidiRunResponse.response
+   */
+  response: {
+    /**
+     * @generated from field: autokitteh.runtimes.v1.BidiRunResponse.Print print = 1;
+     */
+    value: BidiRunResponse_Print;
+    case: "print";
+  } | {
+    /**
+     * @generated from field: autokitteh.runtimes.v1.BidiRunCall call = 2;
+     */
+    value: BidiRunCall;
+    case: "call";
+  } | {
+    /**
+     * @generated from field: autokitteh.runtimes.v1.BidiRunCallReturn call_return = 3;
+     */
+    value: BidiRunCallReturn;
+    case: "callReturn";
+  } | {
+    /**
+     * @generated from field: autokitteh.runtimes.v1.BidiRunResponse.Load load = 4;
+     */
+    value: BidiRunResponse_Load;
+    case: "load";
+  } | {
+    /**
+     * response to start.
+     *
+     * @generated from field: autokitteh.runtimes.v1.BidiRunLoadReturn start_return = 5;
+     */
+    value: BidiRunLoadReturn;
+    case: "startReturn";
+  } | {
+    /**
+     * @generated from field: autokitteh.runtimes.v1.BidiRunResponse.NewRunID new_run_id = 6;
+     */
+    value: BidiRunResponse_NewRunID;
+    case: "newRunId";
+  } | { case: undefined; value?: undefined } = { case: undefined };
+
+  constructor(data?: PartialMessage<BidiRunResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "autokitteh.runtimes.v1.BidiRunResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "print", kind: "message", T: BidiRunResponse_Print, oneof: "response" },
+    { no: 2, name: "call", kind: "message", T: BidiRunCall, oneof: "response" },
+    { no: 3, name: "call_return", kind: "message", T: BidiRunCallReturn, oneof: "response" },
+    { no: 4, name: "load", kind: "message", T: BidiRunResponse_Load, oneof: "response" },
+    { no: 5, name: "start_return", kind: "message", T: BidiRunLoadReturn, oneof: "response" },
+    { no: 6, name: "new_run_id", kind: "message", T: BidiRunResponse_NewRunID, oneof: "response" },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): BidiRunResponse {
+    return new BidiRunResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): BidiRunResponse {
+    return new BidiRunResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): BidiRunResponse {
+    return new BidiRunResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: BidiRunResponse | PlainMessage<BidiRunResponse> | undefined, b: BidiRunResponse | PlainMessage<BidiRunResponse> | undefined): boolean {
+    return proto3.util.equals(BidiRunResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message autokitteh.runtimes.v1.BidiRunResponse.Print
+ */
+export class BidiRunResponse_Print extends Message<BidiRunResponse_Print> {
+  /**
+   * @generated from field: string text = 1;
+   */
+  text = "";
+
+  constructor(data?: PartialMessage<BidiRunResponse_Print>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "autokitteh.runtimes.v1.BidiRunResponse.Print";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "text", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): BidiRunResponse_Print {
+    return new BidiRunResponse_Print().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): BidiRunResponse_Print {
+    return new BidiRunResponse_Print().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): BidiRunResponse_Print {
+    return new BidiRunResponse_Print().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: BidiRunResponse_Print | PlainMessage<BidiRunResponse_Print> | undefined, b: BidiRunResponse_Print | PlainMessage<BidiRunResponse_Print> | undefined): boolean {
+    return proto3.util.equals(BidiRunResponse_Print, a, b);
+  }
+}
+
+/**
+ * @generated from message autokitteh.runtimes.v1.BidiRunResponse.Load
+ */
+export class BidiRunResponse_Load extends Message<BidiRunResponse_Load> {
+  /**
+   * @generated from field: string path = 1;
+   */
+  path = "";
+
+  constructor(data?: PartialMessage<BidiRunResponse_Load>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "autokitteh.runtimes.v1.BidiRunResponse.Load";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): BidiRunResponse_Load {
+    return new BidiRunResponse_Load().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): BidiRunResponse_Load {
+    return new BidiRunResponse_Load().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): BidiRunResponse_Load {
+    return new BidiRunResponse_Load().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: BidiRunResponse_Load | PlainMessage<BidiRunResponse_Load> | undefined, b: BidiRunResponse_Load | PlainMessage<BidiRunResponse_Load> | undefined): boolean {
+    return proto3.util.equals(BidiRunResponse_Load, a, b);
+  }
+}
+
+/**
+ * @generated from message autokitteh.runtimes.v1.BidiRunResponse.NewRunID
+ */
+export class BidiRunResponse_NewRunID extends Message<BidiRunResponse_NewRunID> {
+  constructor(data?: PartialMessage<BidiRunResponse_NewRunID>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "autokitteh.runtimes.v1.BidiRunResponse.NewRunID";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): BidiRunResponse_NewRunID {
+    return new BidiRunResponse_NewRunID().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): BidiRunResponse_NewRunID {
+    return new BidiRunResponse_NewRunID().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): BidiRunResponse_NewRunID {
+    return new BidiRunResponse_NewRunID().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: BidiRunResponse_NewRunID | PlainMessage<BidiRunResponse_NewRunID> | undefined, b: BidiRunResponse_NewRunID | PlainMessage<BidiRunResponse_NewRunID> | undefined): boolean {
+    return proto3.util.equals(BidiRunResponse_NewRunID, a, b);
   }
 }
 

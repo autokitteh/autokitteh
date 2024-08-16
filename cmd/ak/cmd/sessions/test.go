@@ -53,6 +53,9 @@ var testCmd = common.StandardCommand(&cobra.Command{
 				return fmt.Errorf("no entrypoint specified and no files found in txtar archive")
 			}
 
+			// txtar coloring in vscode doesn't like ':', so replace it with a space.
+			a.Files[0].Name = strings.ReplaceAll(a.Files[0].Name, " ", ":")
+
 			if ep, err = sdktypes.StrictParseCodeLocation(a.Files[0].Name); err != nil {
 				return fmt.Errorf("invalid entrypoint: %w", err)
 			}

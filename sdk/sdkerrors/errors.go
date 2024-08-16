@@ -50,6 +50,10 @@ func NewInvalidArgumentError(f string, vs ...any) error {
 
 // re-wrap sdk as connect error
 func AsConnectError(err error) error {
+	if errors.Is(err, &connect.Error{}) {
+		return err
+	}
+
 	// in protovalidate Error() is defined on pointer type and there is no error object
 	var validationError *protovalidate.ValidationError
 	if errors.As(err, &validationError) {

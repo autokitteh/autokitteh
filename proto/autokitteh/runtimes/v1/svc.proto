@@ -3,6 +3,7 @@ syntax = "proto3";
 package autokitteh.runtimes.v1;
 
 import "autokitteh/program/v1/program.proto";
+import "autokitteh/runtimes/v1/build.proto";
 import "autokitteh/runtimes/v1/runtime.proto";
 import "autokitteh/values/v1/values.proto";
 import "buf/validate/validate.proto";
@@ -30,7 +31,19 @@ message BuildRequest {
 }
 
 message BuildResponse {
-  bytes artifact = 1;
+  bytes build_file = 1;
+  program.v1.Error error = 2;
+}
+
+message Build1Request {
+  map<string, bytes> resources = 1;
+  repeated string symbols = 2 [(buf.validate.field).repeated.items.string.min_len = 1];
+  string path = 3 [(buf.validate.field).string.min_len = 1];
+  string runtime_name = 4 [(buf.validate.field).string.min_len = 1];
+}
+
+message Build1Response {
+  Artifact artifact = 1;
   program.v1.Error error = 2;
 }
 
@@ -51,6 +64,96 @@ message RunResponse {
   map<string, values.v1.Value> result = 3;
 }
 
+message BidiRunCall {
+  values.v1.Value value = 1;
+  repeated values.v1.Value args = 2 [(buf.validate.field).repeated.items.required = true];
+  map<string, values.v1.Value> kwargs = 4 [
+    (buf.validate.field).map.keys.string.min_len = 1,
+    (buf.validate.field).map.values.required = true
+  ];
+}
+
+message BidiRunCallReturn {
+  oneof result {
+    values.v1.Value value = 1;
+    program.v1.Error error = 2;
+  }
+}
+
+message BidiRunLoadReturn {
+  map<string, values.v1.Value> values = 1 [
+    (buf.validate.field).map.keys.string.min_len = 1,
+    (buf.validate.field).map.values.required = true
+  ];
+
+  program.v1.Error error = 2;
+}
+
+message BidiRunRequest {
+  message StartData {
+    string run_id = 1 [(buf.validate.field).string.min_len = 1];
+    map<string, values.v1.Value> globals = 2 [
+      (buf.validate.field).map.keys.string.min_len = 1,
+      (buf.validate.field).map.values.required = true
+    ];
+    string path = 3;
+  }
+
+  message Start {
+    bytes build_file = 1;
+    StartData data = 2 [(buf.validate.field).required = true];
+  }
+
+  message Start1 {
+    string runtime_name = 1 [(buf.validate.field).string.min_len = 1];
+    Artifact artifact = 2 [(buf.validate.field).required = true];
+    StartData data = 3 [(buf.validate.field).required = true];
+  }
+
+  message Call {
+    values.v1.Value value = 1;
+    repeated values.v1.Value args = 2 [(buf.validate.field).repeated.items.required = true];
+    map<string, values.v1.Value> kwargs = 4 [
+      (buf.validate.field).map.keys.string.min_len = 1,
+      (buf.validate.field).map.values.required = true
+    ];
+  }
+
+  message NewRunIDValue {
+    string run_id = 1 [(buf.validate.field).string.min_len = 1];
+  }
+
+  oneof request {
+    Start start = 1;
+    Start1 start1 = 2;
+    BidiRunCall call = 3;
+    BidiRunCallReturn call_return = 4;
+    BidiRunLoadReturn load_return = 5;
+    NewRunIDValue new_run_id_value = 6;
+  }
+}
+
+message BidiRunResponse {
+  message Print {
+    string text = 1;
+  }
+
+  message Load {
+    string path = 1;
+  }
+
+  message NewRunID {}
+
+  oneof response {
+    Print print = 1;
+    BidiRunCall call = 2;
+    BidiRunCallReturn call_return = 3;
+    Load load = 4;
+    BidiRunLoadReturn start_return = 5; // response to start.
+    NewRunID new_run_id = 6;
+  }
+}
+
 // Runtimes are expected to be registered during deploy (from configuration).
 // Dynamic registration of runtimes will not be supported.
 service RuntimesService {
@@ -63,4 +166,8 @@ service RuntimesService {
   // This is a simplified version that should be used
   // for testing and local runs only.
   rpc Run(RunRequest) returns (stream RunResponse);
+
+  rpc BidiRun(stream BidiRunRequest) returns (stream BidiRunResponse);
+
+  rpc Build1(Build1Request) returns (Build1Response);
 }

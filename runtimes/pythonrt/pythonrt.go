@@ -32,6 +32,7 @@ var (
 		})),
 		New: New,
 	}
+
 	venvPath = path.Join(xdg.DataHomeDir(), "venv")
 	venvPy   = path.Join(venvPath, "bin", "python")
 )

@@ -5,6 +5,7 @@ import (
 
 	backendRuntimes "go.autokitteh.dev/autokitteh/backend/runtimes"
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
+	"go.autokitteh.dev/autokitteh/sdk/sdklogger"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 )
 
@@ -37,7 +38,17 @@ func init() {
 
 func runtimes() sdkservices.Runtimes {
 	if local {
-		return backendRuntimes.New()
+		var cfg backendRuntimes.Config
+
+		if _, err := common.Config().Get("runtimes", &cfg.Runtimes); err != nil {
+			sdklogger.Panic(err)
+		}
+
+		rts, err := backendRuntimes.New(nil, &cfg)
+		if err != nil {
+			sdklogger.Panic(err)
+		}
+		return rts
 	}
 	return common.Client().Runtimes()
 }

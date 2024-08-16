@@ -42,6 +42,10 @@ const (
 	RuntimesServiceBuildProcedure = "/autokitteh.runtimes.v1.RuntimesService/Build"
 	// RuntimesServiceRunProcedure is the fully-qualified name of the RuntimesService's Run RPC.
 	RuntimesServiceRunProcedure = "/autokitteh.runtimes.v1.RuntimesService/Run"
+	// RuntimesServiceBidiRunProcedure is the fully-qualified name of the RuntimesService's BidiRun RPC.
+	RuntimesServiceBidiRunProcedure = "/autokitteh.runtimes.v1.RuntimesService/BidiRun"
+	// RuntimesServiceBuild1Procedure is the fully-qualified name of the RuntimesService's Build1 RPC.
+	RuntimesServiceBuild1Procedure = "/autokitteh.runtimes.v1.RuntimesService/Build1"
 )
 
 // RuntimesServiceClient is a client for the autokitteh.runtimes.v1.RuntimesService service.
@@ -52,6 +56,8 @@ type RuntimesServiceClient interface {
 	// This is a simplified version that should be used
 	// for testing and local runs only.
 	Run(context.Context, *connect.Request[v1.RunRequest]) (*connect.ServerStreamForClient[v1.RunResponse], error)
+	BidiRun(context.Context) *connect.BidiStreamForClient[v1.BidiRunRequest, v1.BidiRunResponse]
+	Build1(context.Context, *connect.Request[v1.Build1Request]) (*connect.Response[v1.Build1Response], error)
 }
 
 // NewRuntimesServiceClient constructs a client for the autokitteh.runtimes.v1.RuntimesService
@@ -84,6 +90,16 @@ func NewRuntimesServiceClient(httpClient connect.HTTPClient, baseURL string, opt
 			baseURL+RuntimesServiceRunProcedure,
 			opts...,
 		),
+		bidiRun: connect.NewClient[v1.BidiRunRequest, v1.BidiRunResponse](
+			httpClient,
+			baseURL+RuntimesServiceBidiRunProcedure,
+			opts...,
+		),
+		build1: connect.NewClient[v1.Build1Request, v1.Build1Response](
+			httpClient,
+			baseURL+RuntimesServiceBuild1Procedure,
+			opts...,
+		),
 	}
 }
 
@@ -93,6 +109,8 @@ type runtimesServiceClient struct {
 	list     *connect.Client[v1.ListRequest, v1.ListResponse]
 	build    *connect.Client[v1.BuildRequest, v1.BuildResponse]
 	run      *connect.Client[v1.RunRequest, v1.RunResponse]
+	bidiRun  *connect.Client[v1.BidiRunRequest, v1.BidiRunResponse]
+	build1   *connect.Client[v1.Build1Request, v1.Build1Response]
 }
 
 // Describe calls autokitteh.runtimes.v1.RuntimesService.Describe.
@@ -115,6 +133,16 @@ func (c *runtimesServiceClient) Run(ctx context.Context, req *connect.Request[v1
 	return c.run.CallServerStream(ctx, req)
 }
 
+// BidiRun calls autokitteh.runtimes.v1.RuntimesService.BidiRun.
+func (c *runtimesServiceClient) BidiRun(ctx context.Context) *connect.BidiStreamForClient[v1.BidiRunRequest, v1.BidiRunResponse] {
+	return c.bidiRun.CallBidiStream(ctx)
+}
+
+// Build1 calls autokitteh.runtimes.v1.RuntimesService.Build1.
+func (c *runtimesServiceClient) Build1(ctx context.Context, req *connect.Request[v1.Build1Request]) (*connect.Response[v1.Build1Response], error) {
+	return c.build1.CallUnary(ctx, req)
+}
+
 // RuntimesServiceHandler is an implementation of the autokitteh.runtimes.v1.RuntimesService
 // service.
 type RuntimesServiceHandler interface {
@@ -124,6 +152,8 @@ type RuntimesServiceHandler interface {
 	// This is a simplified version that should be used
 	// for testing and local runs only.
 	Run(context.Context, *connect.Request[v1.RunRequest], *connect.ServerStream[v1.RunResponse]) error
+	BidiRun(context.Context, *connect.BidiStream[v1.BidiRunRequest, v1.BidiRunResponse]) error
+	Build1(context.Context, *connect.Request[v1.Build1Request]) (*connect.Response[v1.Build1Response], error)
 }
 
 // NewRuntimesServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -152,6 +182,16 @@ func NewRuntimesServiceHandler(svc RuntimesServiceHandler, opts ...connect.Handl
 		svc.Run,
 		opts...,
 	)
+	runtimesServiceBidiRunHandler := connect.NewBidiStreamHandler(
+		RuntimesServiceBidiRunProcedure,
+		svc.BidiRun,
+		opts...,
+	)
+	runtimesServiceBuild1Handler := connect.NewUnaryHandler(
+		RuntimesServiceBuild1Procedure,
+		svc.Build1,
+		opts...,
+	)
 	return "/autokitteh.runtimes.v1.RuntimesService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case RuntimesServiceDescribeProcedure:
@@ -162,6 +202,10 @@ func NewRuntimesServiceHandler(svc RuntimesServiceHandler, opts ...connect.Handl
 			runtimesServiceBuildHandler.ServeHTTP(w, r)
 		case RuntimesServiceRunProcedure:
 			runtimesServiceRunHandler.ServeHTTP(w, r)
+		case RuntimesServiceBidiRunProcedure:
+			runtimesServiceBidiRunHandler.ServeHTTP(w, r)
+		case RuntimesServiceBuild1Procedure:
+			runtimesServiceBuild1Handler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -185,4 +229,12 @@ func (UnimplementedRuntimesServiceHandler) Build(context.Context, *connect.Reque
 
 func (UnimplementedRuntimesServiceHandler) Run(context.Context, *connect.Request[v1.RunRequest], *connect.ServerStream[v1.RunResponse]) error {
 	return connect.NewError(connect.CodeUnimplemented, errors.New("autokitteh.runtimes.v1.RuntimesService.Run is not implemented"))
+}
+
+func (UnimplementedRuntimesServiceHandler) BidiRun(context.Context, *connect.BidiStream[v1.BidiRunRequest, v1.BidiRunResponse]) error {
+	return connect.NewError(connect.CodeUnimplemented, errors.New("autokitteh.runtimes.v1.RuntimesService.BidiRun is not implemented"))
+}
+
+func (UnimplementedRuntimesServiceHandler) Build1(context.Context, *connect.Request[v1.Build1Request]) (*connect.Response[v1.Build1Response], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("autokitteh.runtimes.v1.RuntimesService.Build1 is not implemented"))
 }

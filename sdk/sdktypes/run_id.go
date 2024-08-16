@@ -6,6 +6,8 @@ type RunID = id[runIDTraits]
 
 type runIDTraits struct{}
 
+var InvalidRunID RunID
+
 func (runIDTraits) Prefix() string { return runIDKind }
 
 func NewRunID() RunID                    { return newID[RunID]() }
