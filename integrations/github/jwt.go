@@ -33,7 +33,6 @@ const (
 	enterpriseURLEnvVar = "GITHUB_ENTERPRISE_URL"
 )
 
-// TODO: Remove "user"
 func (i integration) NewClient(ctx context.Context) (*github.Client, error) {
 	// Extract the connection token from the given context.
 	cid, err := sdkmodule.FunctionConnectionIDFromContext(ctx)
