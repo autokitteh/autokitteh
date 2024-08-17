@@ -10,7 +10,7 @@ nodes:
         target: nodes.phrase
         args:
           sound: "meow"
-    result: "^^ 'phrase: ' + states.results.main"
+    result: "^^ 'phrase: ' + states.nodes.main"
     goto: nodes.end
 
   - name: phrase
@@ -19,4 +19,4 @@ nodes:
   - name: end
     action:
       print:
-        value: ^^ states.results.main
+        value: ^^ states.nodes.main

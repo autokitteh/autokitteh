@@ -27,7 +27,7 @@ nodes:
       call:
         target: imports.foo.bar
         args:
-          answer: states.results.main
+          answer: states.nodes.main
 
 -- foo.star --
 def bar(answer):

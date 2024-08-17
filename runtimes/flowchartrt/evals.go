@@ -122,9 +122,15 @@ func (th *thread) evalInputs(static bool) (map[string]any, error) {
 		nodes := map[string]any{}
 
 		for _, tn := range th.nodes {
-			if nodes[tn.node.Name], err = kittehs.TransformMapValuesError(tn.states, th.w.Unwrap); err != nil {
-				return nil, fmt.Errorf("transform nodes state: %w", err)
+			var u any
+
+			if v := tn.value; v.IsValid() && !v.IsNothing() {
+				if u, err = th.w.Unwrap(v); err != nil {
+					return nil, fmt.Errorf("unwrap node value %q: %w", tn.node.Name, err)
+				}
 			}
+
+			nodes[tn.node.Name] = u
 		}
 
 		if states == nil {

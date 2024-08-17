@@ -15,10 +15,10 @@ nodes:
         args:
           # getting these from the session inputs
           url: "http://{{ args.ak_addr }}/uptime"
-    result: ^cel^ states.results.main.body.json
+    result: ^cel^ states.nodes.main.body.json
     goto: nodes.end
 
   - name: end
     action:
       print:
-        value: ^cel^ states.results.main.seconds >= 0
+        value: ^cel^ states.nodes.main.seconds >= 0

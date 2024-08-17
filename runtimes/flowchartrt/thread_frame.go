@@ -1,8 +1,6 @@
 package flowchartrt
 
 import (
-	"fmt"
-
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -54,17 +52,16 @@ func (f *frame) updateResult(update func(sdktypes.Value) sdktypes.Value) {
 	k := sdktypes.NewStringValue(f.node.node.Name)
 
 	curr := kittehs.Must1(result.GetKey(k))
+	next := update(curr)
 
-	result = kittehs.Must1(result.SetKey(k, update(curr)))
+	result = kittehs.Must1(result.SetKey(k, next))
 
 	f.states["results"] = result
+
+	f.node.setValue(next)
 }
 
 func (f *frame) setResult(v sdktypes.Value) {
-	if !v.IsValid() {
-		fmt.Println("oops")
-	}
-
 	f.updateResult(func(sdktypes.Value) sdktypes.Value { return v })
 }
 

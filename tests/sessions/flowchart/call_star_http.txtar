@@ -15,13 +15,13 @@ nodes:
           args:
             # getting these from the session inputs
             host: ^^ args.ak_addr
-      result: ^^ states.results.main.body.json
+      result: ^^ states.nodes.main.body.json
       goto: nodes.end
 
     - name: end
       action:
         print:
-          value: "^^ states.results.main.seconds >= 0"
+          value: "^^ states.nodes.main.seconds >= 0"
 
 -- foo.star --
 def uptime(host):

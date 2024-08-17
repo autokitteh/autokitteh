@@ -21,6 +21,6 @@ nodes:
     - name: end
       action:
         print:
-          value: ^^ states.results.main.startsWith('ses_')
+          value: ^^ states.nodes.main.startsWith('ses_')
 
 # TODO: check actual results from the async call.

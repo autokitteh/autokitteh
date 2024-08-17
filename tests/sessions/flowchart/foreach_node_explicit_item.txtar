@@ -18,5 +18,5 @@ nodes:
   - name: end
     action:
       print:
-        value: "^^ states.results.main"
+        value: "^^ states.nodes.main"
   

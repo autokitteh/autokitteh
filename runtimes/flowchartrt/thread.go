@@ -83,7 +83,6 @@ func (r *run) newThread(entrypoint sdktypes.Value, args map[string]sdktypes.Valu
 
 func (th *thread) setState(k string, v map[string]sdktypes.Value) {
 	th.frame().setState(k, v)
-	th.frame().node.setState(k, v)
 }
 
 func (th *thread) push(args map[string]sdktypes.Value) {

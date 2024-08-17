@@ -17,7 +17,7 @@ nodes:
       call:
         target: imports.foo.foo
         args:
-          x: "^^ 'meow, %s'.format([states.results.main])"
+          x: "^^ 'meow, %s'.format([states.nodes.main])"
 
 -- foo.star --
 def foo(x):

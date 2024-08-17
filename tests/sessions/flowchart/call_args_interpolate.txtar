@@ -17,7 +17,7 @@ nodes:
       call:
         target: imports.foo.say
         args:
-          sound: ^p^{{ states.results.main }}, world!
+          sound: ^p^{{ states.nodes.main }}, world!
     goto: nodes.print2
 
   - name: print2
@@ -26,7 +26,7 @@ nodes:
         target: imports.foo.pick
         args:
           sounds:
-            moo: ^go^{{ .states.results.main }}, earth!
+            moo: ^go^{{ .states.nodes.main }}, earth!
           i: moo
     goto: nodes.print3
 
@@ -36,14 +36,14 @@ nodes:
         target: imports.foo.pick
         args:
           sounds:
-            - ^^ states.results.main + ", hadera!"
+            - ^^ states.nodes.main + ", hadera!"
           i: 0
     goto: nodes.end
 
   - name: end
     action:
       print:
-        value: ^p^ {{ states.results.print1 }} {{ states.results.print2 }} {{ states.results.print3 }}
+        value: ^p^ {{ states.nodes.print1 }} {{ states.nodes.print2 }} {{ states.nodes.print3 }}
 
 -- foo.star --
 def say(sound):
