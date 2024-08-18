@@ -162,7 +162,7 @@ message SleepResponse {
 
 message SubscribeRequest {
   string run_id = 1;
-  string connection_id = 2;
+  string connection = 2;
   string filter = 3;
 }
 
@@ -173,7 +173,7 @@ message SubscribeResponse {
 
 message NextEventRequest {
   string run_id = 1;
-  repeated string signal_id = 2;
+  repeated string signal_ids = 2;
   int64 timeout_ms = 3;
 }
 
@@ -193,10 +193,20 @@ message UnsubscribeResponse {
 
 message LogRequest {
   string runner_id = 1;
-  string message = 2;
+  string level = 2;
+  string message = 3;
 }
 
 message LogResponse {
+  string error = 1;
+}
+
+message PrintRequest {
+  string run_id = 1;
+  string message = 2;
+}
+
+message PrintResponse {
   string error = 1;
 }
 
@@ -208,6 +218,8 @@ service Worker {
   rpc Done(DoneRequest) returns (DoneResponse) {}
   // Session logs
   rpc Log(LogRequest) returns (LogResponse) {}
+  // Print to session log
+  rpc Print(PrintRequest) returns (PrintResponse) {}
 
   // ak functions
   rpc Sleep(SleepRequest) returns (SleepResponse) {}
