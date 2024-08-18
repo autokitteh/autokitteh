@@ -58,7 +58,7 @@ func New(cfg *Config) (Store, error) {
 	}
 
 	domain := cfg.Domain
-	if !strings.HasPrefix(domain, ".") {
+	if len(domain) > 0 && !strings.HasPrefix(domain, ".") {
 		domain = fmt.Sprintf(".%s", cfg.Domain)
 	}
 

@@ -17,7 +17,6 @@ var Configs = configset.Set[Config]{
 	Default: &Config{
 		SameSite: http.SameSiteNoneMode,
 		Secure:   true,
-		Domain:   "autokitteh.cloud",
 	},
 	Dev: &Config{
 		Secure:     false,
