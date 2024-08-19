@@ -26,7 +26,7 @@ func (i integration) getUser(ctx context.Context, args []sdktypes.Value, kwargs 
 		// According to github docs, this endpoint requires no permissions.
 		gh, err = i.newAnonymousClient()
 	} else {
-		gh, err = i.NewClient(ctx, owner)
+		gh, err = i.NewClient(ctx)
 	}
 	if err != nil {
 		return sdktypes.InvalidValue, err
@@ -66,7 +66,7 @@ func (i integration) searchUsers(ctx context.Context, args []sdktypes.Value, kwa
 		// According to github docs, this endpoint requires no permissions.
 		gh, err = i.newAnonymousClient()
 	} else {
-		gh, err = i.NewClient(ctx, owner)
+		gh, err = i.NewClient(ctx)
 	}
 	if err != nil {
 		return sdktypes.InvalidValue, err

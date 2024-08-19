@@ -101,7 +101,6 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
-
       - name: Session tests
         run: make bin/ak test-sessions
 

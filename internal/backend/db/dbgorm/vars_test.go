@@ -1,7 +1,6 @@
 package dbgorm
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -60,7 +59,10 @@ func TestSetVar(t *testing.T) {
 	v2 := f.newVar("v2", "envScope", env)
 	f.setVarsAndAssert(t, v2)
 
-	fmt.Println("!!! here")
+	v3 := f.newVar("v3", "envScope", env)
+	v3.IsOptional = true
+	f.setVarsAndAssert(t, v3)
+
 	// test scopeID as foreign keys to either connectionID or envID
 	assert.NoError(t, f.gormdb.deleteConnection(f.ctx, c.ConnectionID))
 	assert.ErrorIs(t, f.gormdb.setVar(f.ctx, &v1), gorm.ErrForeignKeyViolated)
@@ -69,10 +71,10 @@ func TestSetVar(t *testing.T) {
 	assert.ErrorIs(t, f.gormdb.setVar(f.ctx, &v2), gorm.ErrForeignKeyViolated)
 
 	// scopeID is zero, thus violates foreign key constraint
-	v3 := f.newVar("v3", "invalid")
-	assert.Equal(t, v3.ScopeID, sdktypes.UUID{}) // zero
-	assert.Equal(t, v3.VarID, sdktypes.UUID{})   // zero
-	assert.ErrorIs(t, f.gormdb.setVar(f.ctx, &v3), gorm.ErrForeignKeyViolated)
+	v4 := f.newVar("v4", "invalid")
+	assert.Equal(t, v4.ScopeID, sdktypes.UUID{}) // zero
+	assert.Equal(t, v4.VarID, sdktypes.UUID{})   // zero
+	assert.ErrorIs(t, f.gormdb.setVar(f.ctx, &v4), gorm.ErrForeignKeyViolated)
 }
 
 func TestReSetVar(t *testing.T) {

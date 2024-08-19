@@ -249,6 +249,7 @@ func describeFunctionValue(opts *SessionLogRecordDescribeOptions, w io.Writer, v
 }
 
 var sessionLogDescUnwrapper = ValueWrapper{
+	SafeForJSON: true,
 	Preunwrap: func(v Value) (Value, error) {
 		if v.IsFunction() {
 			return NewStringValuef("|function: %v|", v.GetFunction().Name()), nil

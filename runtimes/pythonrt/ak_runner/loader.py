@@ -6,27 +6,10 @@ from types import ModuleType
 from . import log
 
 
-def name_of(node):
-    """Name of call node (e.g. 'requests.get')"""
-    if isinstance(node, ast.Subscript):
-        name = node.value.id
-        slice = node.slice.value
-        return f'{name}["{slice}"]'
-
-    if isinstance(node, ast.Constant):
-        return node.value
-
-    if isinstance(node, ast.Attribute):
-        prefix = name_of(node.value)
-        return f"{prefix}.{node.attr}"
-
-    if isinstance(node, ast.Call):
-        return name_of(node.func)
-
-    if isinstance(node, ast.Name):
-        return node.id
-
-    raise ValueError(f"unknown AST node type: {node!r}")
+def name_of(node, code_lines):
+    line = code_lines[node.lineno - 1]
+    name = line[node.col_offset : node.end_col_offset]
+    return name
 
 
 ACTION_NAME = "_ak_call"
@@ -36,14 +19,15 @@ BUILTIN = {v for v in dir(builtins) if callable(getattr(builtins, v))}
 class Transformer(ast.NodeTransformer):
     """Replace 'fn(a, b)' with '_ak_call(fn, a, b)'."""
 
-    def __init__(self, file_name):
+    def __init__(self, file_name, src):
         self.file_name = file_name
+        self.code_lines = src.splitlines()
 
     def visit_Call(self, node):
         # Recurse, see https://docs.python.org/3/library/ast.html#ast.NodeVisitor.generic_visit
         self.generic_visit(node)
 
-        name = name_of(node.func)
+        name = name_of(node.func, self.code_lines)
 
         if not name or name in BUILTIN:
             return node
@@ -65,7 +49,7 @@ def load_code(root_path, action_fn, module_name):
         src = fp.read()
 
     tree = ast.parse(src, file_name, "exec")
-    trans = Transformer(file_name)
+    trans = Transformer(file_name, src)
     patched_tree = trans.visit(tree)
     ast.fix_missing_locations(patched_tree)
 

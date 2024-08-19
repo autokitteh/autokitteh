@@ -108,16 +108,17 @@ func (h handler) handleEvent(w http.ResponseWriter, r *http.Request) {
 }
 
 // All non-"content" event types (with the created/updated/removed suffix).
+// "content" is actually included, to support "content_updated" events.
 // https://developer.atlassian.com/cloud/confluence/modules/webhook/
 // https://confluence.atlassian.com/conf715/managing-webhooks-1096098349.html
 var simpleEntities = []string{
 	"attachment", "blog", "blueprint_page", "comment",
-	"group", "label", "page", "relation", "space",
+	"content", "group", "label", "page", "relation", "space",
 }
 
 func extractEntityType(l *zap.Logger, atlassianEvent map[string]any, category string) (string, bool) {
 	if category == "" {
-		l.Warn("Unexpected Confluence event callback: missing category in URL ")
+		l.Warn("Unexpected Confluence event callback: missing category in URL")
 		return "", false
 	}
 
@@ -142,7 +143,10 @@ func extractEntityType(l *zap.Logger, atlassianEvent map[string]any, category st
 		}
 	}
 
-	l.Error("Unrecognized Confluence event", zap.Any("event", atlassianEvent))
+	l.Error("Unrecognized Confluence event",
+		zap.String("category", category),
+		zap.Any("event", atlassianEvent),
+	)
 	return "", false
 }
 
@@ -168,7 +172,7 @@ func extractBaseURL(atlassianEvent map[string]any) string {
 func constructEvent(l *zap.Logger, atlassianEvent map[string]any, eventType string) (sdktypes.Event, error) {
 	l = l.With(zap.Any("event", atlassianEvent))
 
-	wrapped, err := sdktypes.DefaultValueWrapper.Wrap(atlassianEvent)
+	wrapped, err := sdktypes.WrapValue(atlassianEvent)
 	if err != nil {
 		l.Error("Failed to wrap Atlassian event", zap.Error(err))
 		return sdktypes.InvalidEvent, err

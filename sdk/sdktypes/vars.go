@@ -15,7 +15,10 @@ func NewVars(vs ...Var) Vars { return vs }
 
 func (vs Vars) WithPrefix(prefix string) Vars {
 	return kittehs.Transform(vs, func(v Var) Var {
-		return NewVar(NewSymbol(prefix+v.Name().String()), v.Value(), v.IsSecret())
+		return NewVar(NewSymbol(prefix + v.Name().String())).
+			SetValue(v.Value()).
+			SetSecret(v.IsSecret()).
+			SetOptional(v.IsOptional())
 	})
 }
 
@@ -23,7 +26,7 @@ func (vs Vars) Append(others ...Var) Vars { return append(vs, others...) }
 
 // panics if n is an invalid var name.
 func (vs Vars) Set(n Symbol, v string, isSecret bool) Vars {
-	return vs.Append(NewVar(n, v, isSecret))
+	return vs.Append(NewVar(n).SetSecret(isSecret).SetValue(v))
 }
 
 func (vs Vars) Encode(x any) Vars { return vs.Append(EncodeVars(x)...) }
@@ -78,7 +81,7 @@ func EncodeVars(in any) (vs Vars) {
 
 		v := fv.Interface().(string)
 
-		vs = vs.Append(NewVar(n, v, tag == "secret"))
+		vs = vs.Append(NewVar(n).SetValue(v).SetSecret(tag == "secret"))
 	}
 
 	return

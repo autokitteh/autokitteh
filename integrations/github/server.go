@@ -31,9 +31,7 @@ func Start(l *zap.Logger, mux *http.ServeMux, v sdkservices.Vars, o sdkservices.
 	mux.HandleFunc("POST "+patPath, h.handlePAT)
 
 	// Event webhooks.
-	// TODO: Use Go 1.22's pattern wildcards to have 2 separate event
-	// handler functions (https://go.dev/blog/routing-enhancements).
 	eventHandler := webhooks.NewHandler(l, v, d, integrationID)
-	mux.Handle("POST "+webhooks.WebhookPath+"/", eventHandler) // User events.
-	mux.Handle("POST "+webhooks.WebhookPath, eventHandler)     // App events.
+	mux.Handle("POST "+webhooks.WebhookPath+"/{id}", eventHandler) // User events.
+	mux.Handle("POST "+webhooks.WebhookPath, eventHandler)         // App events.
 }

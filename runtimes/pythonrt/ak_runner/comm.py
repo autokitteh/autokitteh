@@ -54,24 +54,16 @@ class Comm:
         data = pickle.dumps(data, protocol=0)
         return b64encode(data).decode("utf-8")
 
-    def send_activity(self, fn, args, kw):
-        data = (fn, args, kw)
+    def send_activity(self, func_name, args, kw):
         message = {
             "type": MessageType.callback,
             "payload": {
-                "name": fn if isinstance(fn, str) else fn.__name__,
+                "name": func_name,
                 "args": [repr(a) for a in args],
                 "kw": {k: repr(v) for k, v in kw.items()},
-                "data": self._picklize(data),
             },
         }
         self._send(message)
-
-    def extract_activity(self, message):
-        payload = message["payload"]
-        data = b64decode(payload["data"])
-        payload["data"] = pickle.loads(data)
-        return payload
 
     def send_exported(self, entries):
         message = {

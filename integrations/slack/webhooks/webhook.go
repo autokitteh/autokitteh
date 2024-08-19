@@ -148,7 +148,7 @@ func transformEvent(l *zap.Logger, slackEvent any, eventType string) (sdktypes.E
 		zap.Any("event", slackEvent),
 	)
 
-	wrapped, err := sdktypes.DefaultValueWrapper.Wrap(slackEvent)
+	wrapped, err := sdktypes.WrapValue(slackEvent)
 	if err != nil {
 		l.Error("Failed to wrap Slack event", zap.Error(err))
 		return sdktypes.InvalidEvent, err

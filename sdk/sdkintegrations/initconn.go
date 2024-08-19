@@ -40,9 +40,14 @@ func NewConnectionInit(l *zap.Logger, w http.ResponseWriter, r *http.Request, i 
 	}, l
 }
 
-// Abort is the same as [AbortWithStatus] with HTTP 400 (Bad Request).
-func (c ConnectionInit) Abort(err string) {
+// AbortBadRequest is the same as [AbortWithStatus] with HTTP 400 (Bad Request).
+func (c ConnectionInit) AbortBadRequest(err string) {
 	c.AbortWithStatus(http.StatusBadRequest, err)
+}
+
+// AbortServerError is the same as [AbortWithStatus] with HTTP 500 (Internal Server Error).
+func (c ConnectionInit) AbortServerError(err string) {
+	c.AbortWithStatus(http.StatusInternalServerError, err)
 }
 
 // Abort aborts the connection initialization flow due to
@@ -73,14 +78,14 @@ func (c ConnectionInit) AbortWithStatus(status int, err string) {
 func (c ConnectionInit) Finalize(data []sdktypes.Var) {
 	vars, err := kittehs.EncodeURLData(data)
 	if err != nil {
-		c.logger.Warn("Connection data encoding error", zap.Error(err))
-		c.AbortWithStatus(http.StatusInternalServerError, "connection data encoding error")
+		c.logger.Error("Connection data encoding error", zap.Error(err))
+		c.AbortServerError("connection data encoding error")
 		return
 	}
 
 	if _, err = sdktypes.StrictParseConnectionID(c.ConnectionID); err != nil {
 		c.logger.Warn("Invalid connection ID")
-		c.Abort("invalid connection ID")
+		c.AbortBadRequest("invalid connection ID")
 		return
 	}
 

@@ -67,18 +67,18 @@ func New(cfg *Config, vars sdkservices.Vars) sdkservices.Integrations {
 	return sdkintegrations.New(ints)
 }
 
-func Start(_ context.Context, l *zap.Logger, mux *http.ServeMux, vars sdkservices.Vars, o sdkservices.OAuth, d sdkservices.Dispatcher, c sdkservices.Connections, p sdkservices.Projects) error {
-	aws.Start(l, mux)
-	chatgpt.Start(l, mux)
-	confluence.Start(l, mux, vars, o, d)
-	discord.Start(l, mux)
-	github.Start(l, mux, vars, o, d)
-	gemini.Start(l, mux)
-	google.Start(l, mux, vars, o, d)
-	httpint.Start(l, mux, d, c, p)
-	jira.Start(l, mux, vars, o, d)
-	slack.Start(l, mux, vars, d)
-	twilio.Start(l, mux, vars, d)
+func Start(_ context.Context, l *zap.Logger, muxNoAuth *http.ServeMux, muxAuth *http.ServeMux, vars sdkservices.Vars, o sdkservices.OAuth, d sdkservices.Dispatcher, c sdkservices.Connections, p sdkservices.Projects) error {
+	aws.Start(l, muxNoAuth)
+	chatgpt.Start(l, muxNoAuth)
+	confluence.Start(l, muxNoAuth, vars, o, d)
+	discord.Start(l, muxNoAuth)
+	github.Start(l, muxNoAuth, vars, o, d)
+	gemini.Start(l, muxNoAuth)
+	google.Start(l, muxNoAuth, muxAuth, vars, o, d)
+	httpint.Start(l, muxNoAuth, d, c, p)
+	jira.Start(l, muxNoAuth, vars, o, d)
+	slack.Start(l, muxNoAuth, vars, d)
+	twilio.Start(l, muxNoAuth, vars, d)
 
 	return nil
 }

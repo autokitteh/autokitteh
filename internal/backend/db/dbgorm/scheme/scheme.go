@@ -112,11 +112,12 @@ func ParseConnection(c Connection) (sdktypes.Connection, error) {
 
 type Var struct {
 	// varID is scopeID. just mapped directly for reusing the join code
-	VarID    sdktypes.UUID `gorm:"primaryKey;index;type:uuid;not null"`
-	ScopeID  sdktypes.UUID `gorm:"-"`
-	Name     string        `gorm:"primaryKey;index;not null"`
-	Value    string
-	IsSecret bool
+	VarID      sdktypes.UUID `gorm:"primaryKey;index;type:uuid;not null"`
+	ScopeID    sdktypes.UUID `gorm:"-"`
+	Name       string        `gorm:"primaryKey;index;not null"`
+	Value      string
+	IsSecret   bool
+	IsOptional bool
 
 	IntegrationID sdktypes.UUID `gorm:"index;type:uuid"`
 
@@ -193,7 +194,7 @@ func ParseIntegration(i Integration) (sdktypes.Integration, error) {
 
 type Project struct {
 	ProjectID sdktypes.UUID `gorm:"primaryKey;type:uuid;not null"`
-	Name      string        `gorm:"index"`
+	Name      string        `gorm:"index;not null"`
 	RootURL   string
 	Resources []byte
 	DeletedAt gorm.DeletedAt `gorm:"index"`

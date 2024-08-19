@@ -98,10 +98,8 @@ var webhookEvents = map[string][]string{
 		"blog_updated",
 		"comment_updated",
 		"content_updated",
-		"content_permissions_updated",
 		"page_updated",
 		"space_logo_updated",
-		"space_permissions_updated",
 		"space_updated",
 	},
 }

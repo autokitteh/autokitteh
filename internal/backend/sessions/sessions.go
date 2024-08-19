@@ -11,6 +11,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessioncalls"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionsvcs"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionworkflows"
+	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -28,21 +29,23 @@ type sessions struct {
 
 	workflows sessionworkflows.Workflows
 	calls     sessioncalls.Calls
+	telemetry *telemetry.Telemetry
 }
 
 var _ Sessions = (*sessions)(nil)
 
-func New(z *zap.Logger, config *Config, db db.DB, svcs sessionsvcs.Svcs) Sessions {
+func New(z *zap.Logger, config *Config, db db.DB, svcs sessionsvcs.Svcs, telemetry *telemetry.Telemetry) Sessions {
 	return &sessions{
-		config: config,
-		svcs:   &svcs,
-		z:      z,
+		config:    config,
+		svcs:      &svcs,
+		z:         z,
+		telemetry: telemetry,
 	}
 }
 
 func (s *sessions) StartWorkers(ctx context.Context) error {
 	s.calls = sessioncalls.New(s.z.Named("sessionworkflows"), s.config.Calls, s.svcs)
-	s.workflows = sessionworkflows.New(s.z.Named("sessionworkflows"), s.config.Workflows, s, s.svcs, s.calls)
+	s.workflows = sessionworkflows.New(s.z.Named("sessionworkflows"), s.config.Workflows, s, s.svcs, s.calls, s.telemetry)
 
 	if err := s.workflows.StartWorkers(ctx); err != nil {
 		return fmt.Errorf("workflow workflows: %w", err)

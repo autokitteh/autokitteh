@@ -28,8 +28,8 @@ func (s Svc) initConnections() {
 	s.Muxes.Auth.HandleFunc("GET /connections/{id}/success", h.Success)
 
 	s.Muxes.Auth.HandleFunc("DELETE /connections/{id}/vars", s.rmAllConnectionVars)
-	s.Muxes.Auth.HandleFunc("GET /connections/{id}/test", s.testConnection)
-	s.Muxes.Auth.HandleFunc("GET /connections/{id}/refresh", s.refreshConnection)
+	s.Muxes.Auth.HandleFunc("POST /connections/{id}/test", s.testConnection)
+	s.Muxes.Auth.HandleFunc("POST /connections/{id}/refresh", s.refreshConnection)
 }
 
 type connection struct{ sdktypes.Connection }

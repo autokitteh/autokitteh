@@ -3,26 +3,24 @@ package authsessions
 import (
 	"net/http"
 
-	"github.com/dghubble/sessions"
-
 	"go.autokitteh.dev/autokitteh/internal/backend/configset"
 )
 
 type Config struct {
-	Cookie     *sessions.CookieConfig
+	SameSite   http.SameSite
 	CookieKeys string `koanf:"cookie_keys"` // pairs of hash and block keys.
+	Domain     string `koanf:"ui_domain"`
+	Secure     bool
 }
 
 var Configs = configset.Set[Config]{
 	Default: &Config{
-		Cookie: func() *sessions.CookieConfig {
-			c := sessions.DefaultCookieConfig
-			c.SameSite = http.SameSiteNoneMode
-			return c
-		}(),
+		SameSite: http.SameSiteNoneMode,
+		Secure:   true,
 	},
 	Dev: &Config{
-		Cookie:     sessions.DebugCookieConfig,
+		Secure:     false,
+		SameSite:   http.SameSiteLaxMode,
 		CookieKeys: "0000000000000000000000000000000000000000000000000000000000000000,0000000000000000000000000000000000000000000000000000000000000000",
 	},
 }

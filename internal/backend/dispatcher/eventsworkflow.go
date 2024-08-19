@@ -171,7 +171,8 @@ func (d *dispatcher) signalWorkflows(ctx context.Context, event sdktypes.Event) 
 		return err
 	}
 
-	z.Debug("found signal candidates", zap.Int("count", len(signals)))
+	z.Debug(fmt.Sprintf("found %d signal candidates", len(signals)))
+
 	for _, signal := range signals {
 		match, err := event.Matches(signal.Filter)
 		l := z.With(zap.String("signal_id", signal.SignalID),

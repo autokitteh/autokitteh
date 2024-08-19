@@ -68,11 +68,11 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 		// This event is for a user-defined webhook, not an app.
-		path := strings.Split(r.URL.Path, "/")
-		suffix := path[len(path)-1]
-		ctx := r.Context()
+		webhookID := r.PathValue("id")
+		l := l.With(zap.String("webhookID", webhookID))
 
-		cids, err := h.vars.FindConnectionIDs(ctx, h.integrationID, vars.PATKey, suffix)
+		ctx := r.Context()
+		cids, err := h.vars.FindConnectionIDs(ctx, h.integrationID, vars.PATKey, webhookID)
 		if err != nil {
 			l.Error("Failed to find connection IDs", zap.Error(err))
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -80,13 +80,11 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 
 		for _, cid := range cids {
+			l := l.With(zap.String("connectionID", cid.String()))
+
 			data, err := h.vars.Reveal(ctx, sdktypes.NewVarScopeID(cid), vars.PATSecret)
 			if err != nil {
-				l.Warn("Unrecognized connection for user event payload",
-					zap.String("suffix", suffix),
-					zap.String("cid", cid.String()),
-					zap.Error(err),
-				)
+				l.Error("Unrecognized connection for user event payload", zap.Error(err))
 				http.Error(w, "Internal Server error", http.StatusInternalServerError)
 				return
 			}
@@ -97,10 +95,27 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				http.Error(w, "Bad Request", http.StatusBadRequest)
 				return
 			}
+
+			if payload != nil {
+				userCID = cid
+				break // Successful validation with non-empty payload - no need to repeat.
+			}
+		}
+
+		// The loop above tries to validate and parse the event, by finding the
+		// AK connection corresponding to the webhook ID and using its secret.
+		// If the payload is still nil at this point, then either the event is
+		// fake (not from GitHub), or a relevant connection could not be found.
+		// Either way, we report success (HTTP 200) and do nothing.
+		if payload == nil {
+			l.Info("Received GitHub event from user webhook, but no relevant connection found")
+			return
 		}
 	}
 
 	eventType := github.WebHookType(r)
+	l = l.With(zap.String("eventType", eventType))
+
 	ghEvent, err := github.ParseWebHook(eventType, payload)
 	if err != nil {
 		l.Warn("Received unrecognized event type",
@@ -122,7 +137,7 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Transform the received GitHub event into an autokitteh event.
+	// Transform the received GitHub event into an AutoKitteh event.
 	data, err := transformEvent(l, w, ghEvent)
 	if err != nil {
 		return
@@ -133,7 +148,6 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	})
 	if err != nil {
 		l.Error("Failed to convert protocol buffer to SDK event",
-			zap.String("eventType", eventType),
 			zap.Any("data", data),
 			zap.Error(err),
 		)
@@ -191,7 +205,7 @@ func extractInstallationID(event any) (inst string, err error) {
 
 // transformEvent transforms a received GitHub event into an autokitteh event.
 func transformEvent(l *zap.Logger, w http.ResponseWriter, event any) (map[string]*sdktypes.ValuePB, error) {
-	wrapped, err := sdktypes.DefaultValueWrapper.Wrap(event)
+	wrapped, err := sdktypes.WrapValue(event)
 	if err != nil {
 		l.Error("Failed to wrap GitHub event", zap.Any("event", event), zap.Error(err))
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)

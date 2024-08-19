@@ -24,6 +24,7 @@ func splitToArgs(cmdArgs string) []string {
 }
 
 func runAction(t *testing.T, akPath, akAddr, step string) (any, error) {
+	t.Logf("*** ACTION: %q", step)
 	match := actions.FindStringSubmatch(step)
 	switch match[1] {
 	case "setenv":
@@ -33,7 +34,8 @@ func runAction(t *testing.T, akPath, akAddr, step string) (any, error) {
 		return runClient(akPath, args)
 	case "http get", "http post":
 		method := strings.ToUpper(match[2])
-		return &httpRequest{method: method, url: match[3]}, nil
+		url, body, _ := strings.Cut(match[3], " ")
+		return &httpRequest{method: method, url: url, body: body}, nil
 	case "wait":
 		return waitForSession(akPath, akAddr, step)
 	default:

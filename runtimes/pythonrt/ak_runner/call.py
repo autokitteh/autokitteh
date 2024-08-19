@@ -1,4 +1,5 @@
 import inspect
+from collections import namedtuple
 from pathlib import Path
 from time import sleep
 
@@ -17,6 +18,8 @@ AK_FUNCS = {
     sleep,
 }
 
+CallInfo = namedtuple("CallInfo", "fn args kw")
+
 
 def is_marked_activity(fn):
     """Return true if function is marked as an activity."""
@@ -32,6 +35,7 @@ class AKCall:
         self.in_activity = False
         self.loading = True  # Loading module
         self.module = None  # Module for "local" function, filled by "run"
+        self.call_info = None
 
     def is_module_func(self, fn):
         return fn.__module__ == self.module.__name__
@@ -46,6 +50,7 @@ class AKCall:
         if is_deterministic(fn):
             return False
 
+        # Function from same module should not run as activity
         if self.is_module_func(fn):
             return False
 
@@ -90,20 +95,17 @@ class AKCall:
         log.info("ACTION: activity call %s(%r, %r)", func.__name__, args, kw)
         self.in_activity = True
         try:
-            if self.is_module_func(func):
-                # Pickle can't handle function from our loaded module
-                func = func.__name__
-            self.comm.send_activity(func, args, kw)
+            self.call_info = CallInfo(func, args, kw)
+            self.comm.send_activity(func.__name__, args, kw)
             message = self.comm.recv(MessageType.callback, MessageType.response)
 
             if message["type"] == MessageType.callback:
-                payload = self.comm.extract_activity(message)
-                fn, args, kw = payload["data"]
-                if isinstance(fn, str):
-                    fn = getattr(self.module, fn, None)
-                    if fn is None:
-                        mod_name = self.module.__name__
-                        raise ValueError(f"function {fn!r} not found in {mod_name!r}")
+                if self.call_info is None:
+                    name = message["payload"]["name"]
+                    raise RuntimeError(f"{name} callback, but call_info is None")
+
+                fn, args, kw = self.call_info
+                self.call_info = None
                 value = fn(*args, **kw)
                 self.comm.send_response(value)
                 message = self.comm.recv(MessageType.response)

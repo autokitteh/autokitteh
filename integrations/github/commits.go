@@ -26,7 +26,7 @@ func (i integration) listCommits(ctx context.Context, args []sdktypes.Value, kwa
 	}
 
 	// Invoke the API method.
-	gh, err := i.NewClient(ctx, owner)
+	gh, err := i.NewClient(ctx)
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}

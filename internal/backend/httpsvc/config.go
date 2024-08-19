@@ -79,9 +79,10 @@ var Configs = configset.Set[Config]{
 			ErrorsLevel:      zap.NewAtomicLevelAt(zap.WarnLevel),
 			UnimportantRegexes: []string{
 				`^/autokitteh.+/(Get|List)$`, // gRPC Get and List methods
-				`/(healthz|readyz)$`,         // Kubernetes health checks
+				`^/oauth/|/oauth$|/save$`,    // Connection initialization
 			},
 			UnloggedRegexes: []string{
+				`/(healthz|readyz)$`,                           // Kubernetes health checks
 				`\.(css|html|ico|js|png|svg|txt|webmanifest)$`, // Static web content
 			},
 		},

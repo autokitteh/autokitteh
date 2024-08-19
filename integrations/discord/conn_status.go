@@ -23,7 +23,7 @@ func connStatus(cvars sdkservices.Vars) sdkintegrations.OptFn {
 			return sdktypes.InvalidStatus, err
 		}
 
-		if vs.Has(BotToken) {
+		if vs.Has(botToken) {
 			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "using bot token"), nil
 		}
 

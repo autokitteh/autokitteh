@@ -7,4 +7,5 @@ message Var {
   string name = 2;
   string value = 3;
   bool is_secret = 4;
+  bool is_optional = 5; // value can be empty.
 }

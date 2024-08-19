@@ -15,14 +15,15 @@ import (
 
 type ctxKey string
 
-var t0CtxKey = ctxKey("t0")
+var startTimeCtxKey = ctxKey("t0")
 
-func GetT0(ctx context.Context) time.Time {
-	if t0, ok := ctx.Value(t0CtxKey).(time.Time); ok {
-		return t0
+func GetStartTime(ctx context.Context) time.Time {
+	if startTime, ok := ctx.Value(startTimeCtxKey).(time.Time); ok {
+		return startTime
 	}
 
-	return time.Time{}
+	// No start time? Duration = 0, not start time = 0.
+	return time.Now()
 }
 
 type responseInterceptor struct {
@@ -59,49 +60,46 @@ func intercept(z *zap.Logger, cfg *LoggerConfig, extractors []RequestLogExtracto
 	unlogged := regexp.MustCompile(strings.Join(cfg.UnloggedRegexes, `|`))
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		if unlogged.MatchString(r.URL.Path) {
-			next.ServeHTTP(w, r)
+		w.Header().Set("X-AutoKitteh-Process-ID", fixtures.ProcessID())
+
+		l := z.With(zap.String("method", r.Method), zap.String("path", r.URL.Path))
+		rwi := &responseInterceptor{ResponseWriter: w, StatusCode: http.StatusOK, logger: l}
+
+		w.Header().Set("Trailer", "X-AutoKitteh-Duration")
+
+		// Call the next handler in the chain, and calculate the duration.
+		startTime := time.Now()
+		r = r.WithContext(context.WithValue(r.Context(), startTimeCtxKey, startTime))
+
+		next.ServeHTTP(rwi, r)
+
+		duration := time.Since(startTime)
+		w.Header().Add("X-AutoKitteh-Duration", duration.Truncate(time.Microsecond).String())
+
+		// Don't log some requests, unless they result in an error.
+		if unlogged.MatchString(r.URL.Path) && rwi.StatusCode < 400 {
 			return
 		}
 
-		w.Header().Set("X-AutoKitteh-Process-ID", fixtures.ProcessID())
-
-		z := z.With(zap.String("method", r.Method), zap.String("path", r.URL.Path))
-		msg := fmt.Sprintf("HTTP request: %s %s", r.Method, r.URL.Path)
-
+		// Otherwise, determine the log level based on the request's
+		// URL path and the response's HTTP status code.
 		level := cfg.ImportantLevel.Level()
 		if unimportant.MatchString(r.URL.Path) {
 			level = cfg.UnimportantLevel.Level()
 		}
+		if rwi.StatusCode >= 400 {
+			level = cfg.ErrorsLevel.Level()
+		}
 
-		if ce := z.Check(level, msg); ce != nil {
+		l = l.With(zap.Int("statusCode", rwi.StatusCode), zap.Duration("duration", duration))
+		msg := fmt.Sprintf("Response to incoming HTTP request: %s %s", r.Method, r.URL.Path)
+		if ce := l.Check(level, msg); ce != nil {
 			var fields []zap.Field
 			for _, x := range extractors {
 				fields = append(fields, x(r)...)
 			}
 
 			ce.Write(fields...)
-		}
-
-		rwi := &responseInterceptor{ResponseWriter: w, StatusCode: http.StatusOK, logger: z}
-
-		w.Header().Set("Trailer", "X-AutoKitteh-Duration")
-
-		t0 := time.Now()
-		r = r.WithContext(context.WithValue(r.Context(), t0CtxKey, t0))
-
-		next.ServeHTTP(rwi, r)
-		d := time.Since(t0)
-
-		w.Header().Add("X-AutoKitteh-Duration", d.Truncate(time.Microsecond).String())
-
-		if rwi.StatusCode >= 400 {
-			level = cfg.ErrorsLevel.Level()
-		}
-
-		msg = strings.Replace(msg, "request", "response", 1)
-		if ce := z.Check(level, msg); ce != nil {
-			ce.Write(zap.Int("statusCode", rwi.StatusCode), zap.Duration("duration", d))
 		}
 	}, nil
 }

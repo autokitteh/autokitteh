@@ -76,7 +76,7 @@ project:
     - name: TEST_VAR
       value: "meow"
     - name: TEST_SECRET_VAR1
-      is_secret: true
+      secret: true
       value: "woof"
 
 -- b.json --

@@ -91,6 +91,6 @@ func handleGenericGRPCCall() sdkexecutor.Function {
 			return sdktypes.Nothing, err
 		}
 
-		return sdktypes.DefaultValueWrapper.Wrap(res)
+		return sdktypes.WrapValue(res)
 	}
 }

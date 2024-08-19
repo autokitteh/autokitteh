@@ -16,7 +16,7 @@ func (i integration) getCopilotBilling(ctx context.Context, args []sdktypes.Valu
 		return sdktypes.InvalidValue, err
 	}
 
-	gh, err := i.NewClient(ctx, org)
+	gh, err := i.NewClient(ctx)
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
@@ -39,7 +39,7 @@ func (i integration) listCopilotSeats(ctx context.Context, args []sdktypes.Value
 		return sdktypes.InvalidValue, err
 	}
 
-	gh, err := i.NewClient(ctx, org)
+	gh, err := i.NewClient(ctx)
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
@@ -62,7 +62,7 @@ func (i integration) addCopilotTeams(ctx context.Context, args []sdktypes.Value,
 		return sdktypes.InvalidValue, err
 	}
 
-	gh, err := i.NewClient(ctx, org)
+	gh, err := i.NewClient(ctx)
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
@@ -85,7 +85,7 @@ func (i integration) removeCopilotTeams(ctx context.Context, args []sdktypes.Val
 		return sdktypes.InvalidValue, err
 	}
 
-	gh, err := i.NewClient(ctx, org)
+	gh, err := i.NewClient(ctx)
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
@@ -108,7 +108,7 @@ func (i integration) addCopilotUsers(ctx context.Context, args []sdktypes.Value,
 		return sdktypes.InvalidValue, err
 	}
 
-	gh, err := i.NewClient(ctx, org)
+	gh, err := i.NewClient(ctx)
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
@@ -131,7 +131,7 @@ func (i integration) removeCopilotUsers(ctx context.Context, args []sdktypes.Val
 		return sdktypes.InvalidValue, err
 	}
 
-	gh, err := i.NewClient(ctx, org)
+	gh, err := i.NewClient(ctx)
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
@@ -151,7 +151,7 @@ func (i integration) getCopilotSeatDetails(ctx context.Context, args []sdktypes.
 		return sdktypes.InvalidValue, err
 	}
 
-	gh, err := i.NewClient(ctx, org)
+	gh, err := i.NewClient(ctx)
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}

@@ -14,6 +14,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/projects"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionsvcs"
+	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
 	"go.autokitteh.dev/autokitteh/internal/backend/triggers"
 	"go.autokitteh.dev/autokitteh/internal/backend/vars"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
@@ -70,10 +71,11 @@ func newDBServices(t *testing.T) (sdkservices.DBServices, *dbFixture) {
 	var gdb db.DB = f.gormdb
 
 	z := zaptest.NewLogger(t) // FIXME: or gormdb.z?
+	telemetry := kittehs.Must1(telemetry.New(z, &telemetry.Config{Enabled: false}))
 
 	intSvc := newIntegrationsSvc(t, f)
-	bldSvc := builds.New(builds.Builds{Z: z, DB: gdb})
-	prjSvc := projects.New(projects.Projects{Z: z, DB: gdb})
+	bldSvc := builds.New(builds.Builds{Z: z, DB: gdb}, telemetry)
+	prjSvc := projects.New(projects.Projects{Z: z, DB: gdb}, telemetry)
 	depSvc := deployments.New(z, gdb)
 	conSvc := connections.New(connections.Connections{Z: z, DB: gdb, Integrations: intSvc})
 	envSvc := envs.New(z, gdb)
@@ -81,7 +83,8 @@ func newDBServices(t *testing.T) (sdkservices.DBServices, *dbFixture) {
 	trgSvc := triggers.New(z, gdb, nil)
 	varSvc := vars.New(z, gdb, nil)
 	sesSvc := sessions.New(z, nil, gdb,
-		sessionsvcs.Svcs{DB: gdb, Builds: bldSvc, Connections: conSvc, Deployments: depSvc, Envs: envSvc, Triggers: trgSvc, Vars: varSvc})
+		sessionsvcs.Svcs{DB: gdb, Builds: bldSvc, Connections: conSvc, Deployments: depSvc, Envs: envSvc, Triggers: trgSvc, Vars: varSvc},
+		telemetry)
 
 	return &dbs{
 		intSvc: intSvc,

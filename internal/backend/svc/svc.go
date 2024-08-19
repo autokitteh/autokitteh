@@ -58,6 +58,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/sessionsgrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/store"
 	"go.autokitteh.dev/autokitteh/internal/backend/storegrpcsvc"
+	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	"go.autokitteh.dev/autokitteh/internal/backend/triggers"
 	"go.autokitteh.dev/autokitteh/internal/backend/triggersgrpcsvc"
@@ -246,6 +247,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		fx.Invoke(storegrpcsvc.Init),
 		fx.Invoke(triggersgrpcsvc.Init),
 		fx.Invoke(varsgrpcsvc.Init),
+		Component("telemetry", telemetry.Configs, fx.Provide(telemetry.New)),
 
 		Component(
 			"http",
@@ -309,7 +311,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		Component("integrations", integrations.Configs, fx.Provide(integrations.New)),
 		fx.Invoke(func(lc fx.Lifecycle, l *zap.Logger, muxes *muxes.Muxes, vs sdkservices.Vars, o sdkservices.OAuth, d dispatcher.Dispatcher, c sdkservices.Connections, p sdkservices.Projects) {
 			HookOnStart(lc, func(ctx context.Context) error {
-				return integrations.Start(ctx, l, muxes.NoAuth, vs, o, d, c, p)
+				return integrations.Start(ctx, l, muxes.NoAuth, muxes.Auth, vs, o, d, c, p)
 			})
 		}),
 		fx.Invoke(func(z *zap.Logger, muxes *muxes.Muxes) {

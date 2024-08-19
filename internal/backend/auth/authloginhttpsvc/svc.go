@@ -191,7 +191,7 @@ func (a *svc) newSuccessLoginHandler(user sdktypes.User) http.Handler {
 			return
 		}
 
-		sd := authsessions.SessionData{User: user}
+		sd := authsessions.NewSessionData(user)
 
 		if err := a.Deps.Sessions.Set(w, &sd); err != nil {
 			a.Z.Error("failed storing session", zap.Error(err))

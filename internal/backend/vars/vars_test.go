@@ -57,7 +57,7 @@ func TestGetVarNotFound(t *testing.T) {
 		secrets: secretsMock{},
 	}
 
-	vv := sdktypes.NewVar(sdktypes.NewSymbol("efi"), "value", false)
+	vv := sdktypes.NewVar(sdktypes.NewSymbol("efi")).SetValue("value")
 	result, err := v.Get(context.Background(), vv.ScopeID(), sdktypes.Symbol{})
 
 	require.Nil(t, err, "error should not be")
@@ -68,7 +68,7 @@ func TestGetVarNotFound(t *testing.T) {
 func TestGetVarFound(t *testing.T) {
 	d := dbMock{}
 	callCounter := 0
-	vv := sdktypes.NewVar(sdktypes.NewSymbol("efi"), "value", false)
+	vv := sdktypes.NewVar(sdktypes.NewSymbol("efi")).SetValue("value")
 
 	d.GetVarsFunc = func(context.Context, sdktypes.VarScopeID, []sdktypes.Symbol) (sdktypes.Vars, error) {
 		callCounter = callCounter + 1
@@ -110,7 +110,7 @@ func TestSetVar(t *testing.T) {
 		secrets: secretsMock{},
 	}
 
-	va := sdktypes.NewVar(sdktypes.NewSymbol("test"), "value", false)
+	va := sdktypes.NewVar(sdktypes.NewSymbol("test")).SetValue("value")
 	err := v.Set(context.TODO(), va)
 
 	require.Nil(t, err)
@@ -145,7 +145,7 @@ func TestSetSecretVar(t *testing.T) {
 	}
 
 	expecteValue := "value"
-	va := sdktypes.NewVar(sdktypes.NewSymbol("test"), expecteValue, true)
+	va := sdktypes.NewVar(sdktypes.NewSymbol("test")).SetValue(expecteValue).SetSecret(true)
 	expectedSecretKey := varSecretKey(va)
 	err := v.Set(context.TODO(), va)
 
@@ -186,8 +186,8 @@ func TestSetMultipleSecretVar(t *testing.T) {
 		secrets: s,
 	}
 
-	va := sdktypes.NewVar(sdktypes.NewSymbol("test"), "1", true)
-	va2 := sdktypes.NewVar(sdktypes.NewSymbol("test2"), "2", true)
+	va := sdktypes.NewVar(sdktypes.NewSymbol("test")).SetValue("1").SetSecret(true)
+	va2 := sdktypes.NewVar(sdktypes.NewSymbol("test2")).SetValue("2").SetSecret(true)
 
 	err := v.Set(context.TODO(), va, va2)
 
