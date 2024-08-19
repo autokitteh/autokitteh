@@ -11,6 +11,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
+	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
 	"go.autokitteh.dev/autokitteh/sdk/sdkbuildfile"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -23,7 +24,10 @@ type Builds struct {
 	DB db.DB
 }
 
-func New(b Builds) sdkservices.Builds { return &b }
+func New(b Builds, telemetry *telemetry.Telemetry) sdkservices.Builds {
+	initMetrics(telemetry)
+	return &b
+}
 
 func (b *Builds) Get(ctx context.Context, id sdktypes.BuildID) (sdktypes.Build, error) {
 	return b.DB.GetBuild(ctx, id)

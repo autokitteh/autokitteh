@@ -10,6 +10,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
+	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkruntimes"
@@ -26,7 +27,10 @@ type Projects struct {
 	Runtimes sdkservices.Runtimes
 }
 
-func New(p Projects) sdkservices.Projects { return &p }
+func New(p Projects, telemetry *telemetry.Telemetry) sdkservices.Projects {
+	initMetrics(telemetry)
+	return &p
+}
 
 func (ps *Projects) Create(ctx context.Context, project sdktypes.Project) (sdktypes.ProjectID, error) {
 	project = project.WithNewID()
