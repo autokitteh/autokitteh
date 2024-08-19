@@ -22,6 +22,5 @@ var Configs = configset.Set[Config]{
 		Secure:     false,
 		SameSite:   http.SameSiteLaxMode,
 		CookieKeys: "0000000000000000000000000000000000000000000000000000000000000000,0000000000000000000000000000000000000000000000000000000000000000",
-		Domain:     "localhost",
 	},
 }
