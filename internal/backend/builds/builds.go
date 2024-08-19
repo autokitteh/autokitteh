@@ -54,6 +54,7 @@ func (b *Builds) Save(ctx context.Context, build sdktypes.Build, data []byte) (s
 		return sdktypes.InvalidBuildID, err
 	}
 
+	buildsCreatedCounter.Add(ctx, 1)
 	return build.ID(), nil
 }
 

@@ -59,6 +59,7 @@ func (ps *Projects) Create(ctx context.Context, project sdktypes.Project) (sdkty
 		return sdktypes.InvalidProjectID, err
 	}
 
+	projectsCreatedCounter.Add(ctx, 1)
 	return project.ID(), nil
 }
 
