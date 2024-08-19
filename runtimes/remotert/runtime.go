@@ -71,6 +71,7 @@ type svc struct {
 	runnerClient  pb.RunnerClient
 	firstCall     bool
 	mainPath      string
+	exports       map[string]sdktypes.Value
 }
 
 // Returns sdktypes.ProgramErrorAsError if not internal error.
@@ -129,6 +130,16 @@ func (s *svc) Run(
 	if rh.Error != "" {
 		return nil, fmt.Errorf("runner health: %w", err)
 	}
+
+	exports, err := s.runnerClient.Exports(context.Background(), &pb.ExportsRequest{})
+	if err != nil || exports.Error != "" {
+		return nil, fmt.Errorf("failed fetching exports")
+	}
+
+	s.exports = kittehs.ListToMap(exports.Exports, func(e string) (string, sdktypes.Value) {
+		return e, sdktypes.NewStringValue(e)
+	})
+	// exports.Exports
 
 	return s, nil
 

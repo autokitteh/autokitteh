@@ -216,6 +216,8 @@ var RunnerManager_ServiceDesc = grpc.ServiceDesc{
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type RunnerClient interface {
+	// Get exports
+	Exports(ctx context.Context, in *ExportsRequest, opts ...grpc.CallOption) (*ExportsResponse, error)
 	// Called at start of session
 	Start(ctx context.Context, in *StartRequest, opts ...grpc.CallOption) (*StartResponse, error)
 	// Execute a function in the runtime (skipped if it's a reply)
@@ -231,6 +233,15 @@ type runnerClient struct {
 
 func NewRunnerClient(cc grpc.ClientConnInterface) RunnerClient {
 	return &runnerClient{cc}
+}
+
+func (c *runnerClient) Exports(ctx context.Context, in *ExportsRequest, opts ...grpc.CallOption) (*ExportsResponse, error) {
+	out := new(ExportsResponse)
+	err := c.cc.Invoke(ctx, "/Runner/Exports", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *runnerClient) Start(ctx context.Context, in *StartRequest, opts ...grpc.CallOption) (*StartResponse, error) {
@@ -273,6 +284,8 @@ func (c *runnerClient) Health(ctx context.Context, in *HealthRequest, opts ...gr
 // All implementations must embed UnimplementedRunnerServer
 // for forward compatibility
 type RunnerServer interface {
+	// Get exports
+	Exports(context.Context, *ExportsRequest) (*ExportsResponse, error)
 	// Called at start of session
 	Start(context.Context, *StartRequest) (*StartResponse, error)
 	// Execute a function in the runtime (skipped if it's a reply)
@@ -287,6 +300,9 @@ type RunnerServer interface {
 type UnimplementedRunnerServer struct {
 }
 
+func (UnimplementedRunnerServer) Exports(context.Context, *ExportsRequest) (*ExportsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Exports not implemented")
+}
 func (UnimplementedRunnerServer) Start(context.Context, *StartRequest) (*StartResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Start not implemented")
 }
@@ -310,6 +326,24 @@ type UnsafeRunnerServer interface {
 
 func RegisterRunnerServer(s grpc.ServiceRegistrar, srv RunnerServer) {
 	s.RegisterService(&Runner_ServiceDesc, srv)
+}
+
+func _Runner_Exports_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ExportsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RunnerServer).Exports(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/Runner/Exports",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RunnerServer).Exports(ctx, req.(*ExportsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _Runner_Start_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -391,6 +425,10 @@ var Runner_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "Runner",
 	HandlerType: (*RunnerServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "Exports",
+			Handler:    _Runner_Exports_Handler,
+		},
 		{
 			MethodName: "Start",
 			Handler:    _Runner_Start_Handler,
