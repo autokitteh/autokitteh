@@ -2,12 +2,14 @@ package dbgorm
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"gorm.io/gorm"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
+	deploymentsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/deployments/v1"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -53,20 +55,39 @@ func (gdb *gormdb) deleteDeploymentsAndDependents(ctx context.Context, depIDs []
 	return db.Delete(&scheme.Deployment{}, "deployment_id IN ?", depIDs).Error
 }
 
-func (gdb *gormdb) updateDeploymentState(ctx context.Context, deploymentID sdktypes.UUID, state sdktypes.DeploymentState) error {
-	d := &scheme.Deployment{DeploymentID: deploymentID}
-
-	return gdb.transaction(ctx, func(tx *tx) error {
+func (gdb *gormdb) updateDeploymentState(
+	ctx context.Context,
+	deploymentID sdktypes.UUID,
+	state sdktypes.DeploymentState,
+) (sdktypes.DeploymentState, error) {
+	d := scheme.Deployment{DeploymentID: deploymentID}
+	var oldState int32 = 0
+	if err := gdb.transaction(ctx, func(tx *tx) error {
 		if err := tx.isCtxUserEntity(ctx, deploymentID); err != nil {
 			return err
 		}
 
-		result := tx.db.Model(d).Updates(map[string]any{"state": int32(state.ToProto()), "updated_at": time.Now()})
+		if err := tx.db.Model(&d).Select("state").First(&oldState).Error; err != nil {
+			return err
+		}
+		fmt.Printf("updating %v -> %v\n", deploymentsv1.DeploymentState(oldState), state)
+
+		// q = q.Clauses(clause.Returning{Columns: []clause.Column{{Name: "state"}}})
+
+		result := tx.db.Model(&d).Updates(map[string]any{"state": int32(state.ToProto()), "updated_at": time.Now()}) //.Scan(&oldState)
+
 		if result.Error != nil {
 			return result.Error
 		}
 		return nil
-	})
+	}); err != nil {
+		return sdktypes.DeploymentStateUnspecified, err
+	}
+	state, err := sdktypes.DeploymentStateFromProto(deploymentsv1.DeploymentState(oldState))
+	if err != nil {
+		return sdktypes.DeploymentStateUnspecified, err
+	}
+	return state, nil
 }
 
 func (gdb *gormdb) getDeployment(ctx context.Context, deploymentID sdktypes.UUID) (*scheme.Deployment, error) {
@@ -152,8 +173,9 @@ func (db *gormdb) DeleteDeployment(ctx context.Context, deploymentID sdktypes.De
 	return translateError(db.deleteDeployment(ctx, deploymentID.UUIDValue()))
 }
 
-func (db *gormdb) UpdateDeploymentState(ctx context.Context, id sdktypes.DeploymentID, state sdktypes.DeploymentState) error {
-	return translateError(db.updateDeploymentState(ctx, id.UUIDValue(), state))
+func (db *gormdb) UpdateDeploymentState(ctx context.Context, id sdktypes.DeploymentID, state sdktypes.DeploymentState) (sdktypes.DeploymentState, error) {
+	state, err := db.updateDeploymentState(ctx, id.UUIDValue(), state)
+	return state, translateError(err)
 }
 
 func (db *gormdb) GetDeployment(ctx context.Context, id sdktypes.DeploymentID) (sdktypes.Deployment, error) {
