@@ -25,6 +25,15 @@ def jira_client(connection: str, **kwargs) -> Jira:
 
     Args:
         connection: AutoKitteh connection name.
+        **kwargs: Additional keyword arguments passed to the Jira client.
+            Common options include:
+            - 'url': URL of the Jira instance.
+            - 'username': Username for Jira authentication.
+            - 'password': Password for Jira authentication.
+            - 'token': API token for Jira authentication.
+            - 'verify_ssl': Boolean to verify SSL certificates.
+            For a full list of accepted arguments, see:
+            https://github.com/atlassian-api/atlassian-python-api/blob/master/atlassian/rest_client.py#L48
 
     Returns:
         Atlassian-Python-API Jira client.
