@@ -39,24 +39,17 @@ def github_client(connection: str, **kwargs) -> Github:
         return Github(Auth.Token(pat), **kwargs)
 
     # GitHub App (JWT)
-    app_name = os.getenv("GITHUB_APP_NAME")
     private_key = os.getenv("GITHUB_PRIVATE_KEY")
-    if app_name and private_key:
-        app_id = os.getenv(f"{connection}__app_id__{app_name}")
-        if not app_id:
-            raise ConnectionInitError(connection)
-
-        install_id = os.getenv(f"{connection}__install_id__{app_name}")
-        if not install_id:
-            raise ConnectionInitError(connection)
-
-        app = GithubIntegration(auth=Auth.AppAuth(int(app_id), private_key), **kwargs)
-        return app.get_github_for_installation(int(install_id))
-
-    # Errors
-    elif app_name:
+    if not private_key:
         raise EnvVarError("GITHUB_PRIVATE_KEY", "missing")
-    elif private_key:
-        raise EnvVarError("GITHUB_APP_NAME", "missing")
-    else:
+
+    app_id = os.getenv(f"{connection}__app_id")
+    if not app_id:
         raise ConnectionInitError(connection)
+
+    install_id = os.getenv(f"{connection}__install_id")
+    if not install_id:
+        raise ConnectionInitError(connection)
+
+    app = GithubIntegration(auth=Auth.AppAuth(int(app_id), private_key), **kwargs)
+    return app.get_github_for_installation(int(install_id))

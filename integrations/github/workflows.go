@@ -27,7 +27,7 @@ func (i integration) triggerWorkflow(ctx context.Context, args []sdktypes.Value,
 	}
 
 	// Invoke the API method.
-	gh, err := i.NewClient(ctx, owner)
+	gh, err := i.NewClient(ctx)
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
@@ -57,7 +57,7 @@ func (i integration) listWorkflows(ctx context.Context, args []sdktypes.Value, k
 	}
 
 	// Invoke the API method.
-	gh, err := i.NewClient(ctx, owner)
+	gh, err := i.NewClient(ctx)
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}

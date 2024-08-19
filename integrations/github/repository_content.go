@@ -55,7 +55,7 @@ func (i integration) createOrUpdateFile(ctx context.Context, args []sdktypes.Val
 		opts.SHA = &sha
 	}
 
-	gh, err := i.NewClient(ctx, owner)
+	gh, err := i.NewClient(ctx)
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
@@ -82,7 +82,7 @@ func (i integration) getContents(ctx context.Context, args []sdktypes.Value, kwa
 		return sdktypes.InvalidValue, err
 	}
 
-	gh, err := i.NewClient(ctx, owner)
+	gh, err := i.NewClient(ctx)
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}

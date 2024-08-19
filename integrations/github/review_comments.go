@@ -40,7 +40,7 @@ func (i integration) createReviewComment(ctx context.Context, args []sdktypes.Va
 	}
 
 	// Invoke the API method.
-	gh, err := i.NewClient(ctx, owner)
+	gh, err := i.NewClient(ctx)
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
@@ -73,7 +73,7 @@ func (i integration) createReviewCommentReply(ctx context.Context, args []sdktyp
 	}
 
 	// Invoke the API method.
-	gh, err := i.NewClient(ctx, owner)
+	gh, err := i.NewClient(ctx)
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
@@ -104,7 +104,7 @@ func (i integration) deleteReviewComment(ctx context.Context, args []sdktypes.Va
 	}
 
 	// Invoke the API method.
-	gh, err := i.NewClient(ctx, owner)
+	gh, err := i.NewClient(ctx)
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
@@ -135,7 +135,7 @@ func (i integration) getReviewComment(ctx context.Context, args []sdktypes.Value
 	}
 
 	// Invoke the API method.
-	gh, err := i.NewClient(ctx, owner)
+	gh, err := i.NewClient(ctx)
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
@@ -175,7 +175,7 @@ func (i integration) listPullRequestReviewComments(ctx context.Context, args []s
 	}
 
 	// Invoke the API method.
-	gh, err := i.NewClient(ctx, owner)
+	gh, err := i.NewClient(ctx)
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
@@ -229,7 +229,7 @@ func (i integration) updateReviewComment(ctx context.Context, args []sdktypes.Va
 	}
 
 	// Invoke the API method.
-	gh, err := i.NewClient(ctx, owner)
+	gh, err := i.NewClient(ctx)
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}

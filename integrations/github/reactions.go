@@ -24,7 +24,7 @@ func (i integration) createReactionForCommitComment(ctx context.Context, args []
 	}
 
 	// Invoke the API method.
-	gh, err := i.NewClient(ctx, owner)
+	gh, err := i.NewClient(ctx)
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
@@ -54,7 +54,7 @@ func (i integration) createReactionForIssue(ctx context.Context, args []sdktypes
 	}
 
 	// Invoke the API method.
-	gh, err := i.NewClient(ctx, owner)
+	gh, err := i.NewClient(ctx)
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
@@ -84,7 +84,7 @@ func (i integration) createReactionForIssueComment(ctx context.Context, args []s
 	}
 
 	// Invoke the API method.
-	gh, err := i.NewClient(ctx, owner)
+	gh, err := i.NewClient(ctx)
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
@@ -113,7 +113,7 @@ func (i integration) createReactionForPullRequestReviewComment(ctx context.Conte
 	}
 
 	// Invoke the API method.
-	gh, err := i.NewClient(ctx, owner)
+	gh, err := i.NewClient(ctx)
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
