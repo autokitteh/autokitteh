@@ -195,18 +195,18 @@ func TestUpdateDeploymentStateReturning(t *testing.T) {
 
 	_, d := createBuildAndDeployment(t, f)
 
-	state := sdktypes.DeploymentStateUnspecified
-	f.assertDeploymentState(t, d.DeploymentID, int32(state.ToProto()))
+	prevState := sdktypes.DeploymentStateUnspecified
+	f.assertDeploymentState(t, d.DeploymentID, int32(prevState.ToProto()))
 
-	state = sdktypes.DeploymentStateActive
-	f.gormdb.updateDeploymentState(f.ctx, d.DeploymentID, state)
-	f.assertDeploymentState(t, d.DeploymentID, int32(state.ToProto()))
-
-	state = sdktypes.DeploymentStateDraining
-	f.gormdb.updateDeploymentState(f.ctx, d.DeploymentID, state)
-	f.assertDeploymentState(t, d.DeploymentID, int32(state.ToProto()))
-
-	state = sdktypes.DeploymentStateInactive
-	f.gormdb.updateDeploymentState(f.ctx, d.DeploymentID, state)
-	f.assertDeploymentState(t, d.DeploymentID, int32(state.ToProto()))
+	states := []sdktypes.DeploymentState{
+		sdktypes.DeploymentStateActive, sdktypes.DeploymentStateDraining, sdktypes.DeploymentStateInactive,
+	}
+	for i := 0; i < 3; i++ {
+		newState := states[i]
+		prevStateFromUpdate, err := f.gormdb.updateDeploymentState(f.ctx, d.DeploymentID, newState)
+		assert.NoError(t, err)
+		f.assertDeploymentState(t, d.DeploymentID, int32(newState.ToProto()))
+		assert.Equal(t, prevState, prevStateFromUpdate)
+		prevState = newState
+	}
 }
