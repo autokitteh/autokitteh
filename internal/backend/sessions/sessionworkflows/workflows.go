@@ -211,11 +211,11 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 				return nil, nil
 			}
 			fields = append(fields, zap.Int32("attempt", wi.Attempt))
-			startTime = data.Session.CreatedAt()
 		} else {
-			startTime = time.Now()
 			sessionsCreatedCounter.Add(ctx, 1)
 		}
+
+		startTime = data.Session.CreatedAt()
 		l.Info("session workflow: started", fields...)
 		prints, err = runWorkflow(wctx, l, ws, data, params.Debug)
 		duration = time.Since(startTime)
