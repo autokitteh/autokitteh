@@ -86,10 +86,7 @@ func (gdb *gormdb) updateDeploymentState(
 	}); err != nil {
 		return sdktypes.DeploymentStateUnspecified, err
 	}
-	state, err := sdktypes.DeploymentStateFromProto(deploymentsv1.DeploymentState(oldState))
-	if err != nil {
-		return sdktypes.DeploymentStateUnspecified, err
-	}
+	state = kittehs.Must1(sdktypes.DeploymentStateFromProto(deploymentsv1.DeploymentState(oldState)))
 	return state, nil
 }
 
