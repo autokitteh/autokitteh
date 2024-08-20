@@ -49,7 +49,6 @@ func TestCreateConnectionForeignKeys(t *testing.T) {
 	b := f.newBuild()
 	f.saveBuildsAndAssert(t, b)
 	f.createProjectsAndAssert(t, p)
-	f.createIntegrationsAndAssert(t, i)
 
 	// negative test with non-existing assets
 	// use buildID as unexisting IDs and to allow us to pass ownership checks

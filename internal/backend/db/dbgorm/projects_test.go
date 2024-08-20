@@ -235,7 +235,6 @@ func TestDeleteProjectAndDependents(t *testing.T) {
 	s3d1e1p2.DeploymentID = &d1e1p2.DeploymentID
 
 	f.createProjectsAndAssert(t, p1, p2)
-	f.createIntegrationsAndAssert(t, i)
 	f.createConnectionsAndAssert(t, c)
 	f.createEnvsAndAssert(t, e1p1, e2p1, e1p2)
 	f.createTriggersAndAssert(t, t1, t2)

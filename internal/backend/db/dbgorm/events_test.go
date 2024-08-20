@@ -49,7 +49,6 @@ func TestCreateEventForeignKeys(t *testing.T) {
 	b := f.newBuild()
 
 	f.saveBuildsAndAssert(t, b)
-	f.createIntegrationsAndAssert(t, i)
 	f.createConnectionsAndAssert(t, c)
 
 	// negative test with non-existing assets
