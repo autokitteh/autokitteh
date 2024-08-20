@@ -2,7 +2,6 @@ package dbgorm
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"gorm.io/gorm"
@@ -60,8 +59,17 @@ func (gdb *gormdb) updateDeploymentState(
 	deploymentID sdktypes.UUID,
 	state sdktypes.DeploymentState,
 ) (sdktypes.DeploymentState, error) {
+	// NOTES:
+	// - we want to return the old state of the deployment before it was updated.
+	// - using RETURNING clause in UPDATE will return the new value, not the old one
+	// - in postgres it's possible to use `UPDATE tbl t1 ... FROM tbl t2.. RETURNING t2.column`,
+	//   e.g. effectively returning the old value before being updated). Unfortunately it won't work
+	//   in SQLite, since RETURNING could use only canonical table name, and not the alias.
+	// - that's why we are using two queries: one to get the old value, and the other to update it.
+
 	d := scheme.Deployment{DeploymentID: deploymentID}
 	var oldState int32 = 0
+
 	if err := gdb.transaction(ctx, func(tx *tx) error {
 		if err := tx.isCtxUserEntity(ctx, deploymentID); err != nil {
 			return err
@@ -70,14 +78,9 @@ func (gdb *gormdb) updateDeploymentState(
 		if err := tx.db.Model(&d).Select("state").First(&oldState).Error; err != nil {
 			return err
 		}
-		fmt.Printf("updating %v -> %v\n", deploymentsv1.DeploymentState(oldState), state)
 
-		// q = q.Clauses(clause.Returning{Columns: []clause.Column{{Name: "state"}}})
-
-		result := tx.db.Model(&d).Updates(map[string]any{"state": int32(state.ToProto()), "updated_at": time.Now()}) //.Scan(&oldState)
-
-		if result.Error != nil {
-			return result.Error
+		if err := tx.db.Model(&d).Update("state", int32(state.ToProto())).Error; err != nil {
+			return err
 		}
 		return nil
 	}); err != nil {
