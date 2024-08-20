@@ -250,7 +250,8 @@ func TestDeleteProjectAndDependents(t *testing.T) {
 
 	// set deployments state to inactive and delete project and its dependents.
 	for _, d := range []*scheme.Deployment{&d1e1p1, &d2e1p1, &d1e2p1} {
-		assert.NoError(t, f.gormdb.updateDeploymentState(f.ctx, d.DeploymentID, sdktypes.DeploymentStateInactive))
+		_, err := f.gormdb.updateDeploymentState(f.ctx, d.DeploymentID, sdktypes.DeploymentStateInactive)
+		assert.NoError(t, err)
 	}
 
 	err = f.gormdb.deleteProjectAndDependents(f.ctx, p1.ProjectID)

@@ -8,6 +8,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
+	deploymentsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/deployments/v1"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -53,20 +54,40 @@ func (gdb *gormdb) deleteDeploymentsAndDependents(ctx context.Context, depIDs []
 	return db.Delete(&scheme.Deployment{}, "deployment_id IN ?", depIDs).Error
 }
 
-func (gdb *gormdb) updateDeploymentState(ctx context.Context, deploymentID sdktypes.UUID, state sdktypes.DeploymentState) error {
-	d := &scheme.Deployment{DeploymentID: deploymentID}
+func (gdb *gormdb) updateDeploymentState(
+	ctx context.Context,
+	deploymentID sdktypes.UUID,
+	state sdktypes.DeploymentState,
+) (sdktypes.DeploymentState, error) {
+	// NOTES:
+	// - we want to return the old state of the deployment before it was updated.
+	// - using RETURNING clause in UPDATE will return the new value, not the old one
+	// - in postgres it's possible to use `UPDATE tbl t1 ... FROM tbl t2.. RETURNING t2.column`,
+	//   e.g. effectively returning the old value before being updated). Unfortunately it won't work
+	//   in SQLite, since RETURNING could use only canonical table name, and not the alias.
+	// - that's why we are using two queries: one to get the old value, and the other to update it.
 
-	return gdb.transaction(ctx, func(tx *tx) error {
+	d := scheme.Deployment{DeploymentID: deploymentID}
+	var oldState int32 = 0
+
+	if err := gdb.transaction(ctx, func(tx *tx) error {
 		if err := tx.isCtxUserEntity(ctx, deploymentID); err != nil {
 			return err
 		}
 
-		result := tx.db.Model(d).Updates(map[string]any{"state": int32(state.ToProto()), "updated_at": time.Now()})
-		if result.Error != nil {
-			return result.Error
+		if err := tx.db.Model(&d).Select("state").First(&oldState).Error; err != nil {
+			return err
+		}
+
+		if err := tx.db.Model(&d).Update("state", int32(state.ToProto())).Error; err != nil {
+			return err
 		}
 		return nil
-	})
+	}); err != nil {
+		return sdktypes.DeploymentStateUnspecified, err
+	}
+	state = kittehs.Must1(sdktypes.DeploymentStateFromProto(deploymentsv1.DeploymentState(oldState)))
+	return state, nil
 }
 
 func (gdb *gormdb) getDeployment(ctx context.Context, deploymentID sdktypes.UUID) (*scheme.Deployment, error) {
@@ -152,8 +173,9 @@ func (db *gormdb) DeleteDeployment(ctx context.Context, deploymentID sdktypes.De
 	return translateError(db.deleteDeployment(ctx, deploymentID.UUIDValue()))
 }
 
-func (db *gormdb) UpdateDeploymentState(ctx context.Context, id sdktypes.DeploymentID, state sdktypes.DeploymentState) error {
-	return translateError(db.updateDeploymentState(ctx, id.UUIDValue(), state))
+func (db *gormdb) UpdateDeploymentState(ctx context.Context, id sdktypes.DeploymentID, state sdktypes.DeploymentState) (sdktypes.DeploymentState, error) {
+	state, err := db.updateDeploymentState(ctx, id.UUIDValue(), state)
+	return state, translateError(err)
 }
 
 func (db *gormdb) GetDeployment(ctx context.Context, id sdktypes.DeploymentID) (sdktypes.Deployment, error) {
