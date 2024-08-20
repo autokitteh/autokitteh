@@ -194,23 +194,29 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 
 	var prints []string
 	var duration time.Duration
+	var startTime time.Time
+	fields := []zap.Field{}
 
 	data, err := ws.getSessionData(wctx, params.SessionID)
 	if err == nil {
-		if workflow.IsReplaying(wctx) && data.Session.State().IsFinal() {
-			// HACK: If we somehow get a signal to this workflow after it completed,
-			//       in certain delicate timing, the workflow rekicks in replay.
-			//       Though replay would work just fine, and result in a no-op,
-			//       it's nice to not have to run through its entirely. Temporal
-			//       just seems to ignore it...
-			l.Info("already completed")
-			return nil, nil
+
+		if workflow.IsReplaying(wctx) {
+			if data.Session.State().IsFinal() {
+				// HACK: If we somehow get a signal to this workflow after it completed,
+				//       in certain delicate timing, the workflow rekicks in replay.
+				//       Though replay would work just fine, and result in a no-op,
+				//       it's nice to not have to run through its entirely. Temporal
+				//       just seems to ignore it...
+				l.Info("already completed")
+				return nil, nil
+			}
+			fields = append(fields, zap.Int32("attempt", wi.Attempt))
+			startTime = data.Session.CreatedAt()
+		} else {
+			startTime = time.Now()
+			sessionsCreatedCounter.Add(ctx, 1)
 		}
-
-		sessionsCreatedCounter.Add(ctx, 1)
-
-		l.Info("session workflow: started", zap.Int32("attempt", wi.Attempt))
-		startTime := time.Now()
+		l.Info("session workflow: started", fields...)
 		prints, err = runWorkflow(wctx, l, ws, data, params.Debug)
 		duration = time.Since(startTime)
 		sessionDurationHistogram.Record(ctx, duration.Milliseconds())
