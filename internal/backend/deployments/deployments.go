@@ -25,6 +25,7 @@ func New(z *zap.Logger, db db.DB, telemetry *telemetry.Telemetry) sdkservices.De
 }
 
 func (d *deployments) Activate(ctx context.Context, id sdktypes.DeploymentID) error {
+	l := d.z.With(zap.String("deployment_id", id.String()))
 	err := d.db.Transaction(ctx, func(tx db.DB) error {
 		deployment, err := tx.GetDeployment(ctx, id)
 		if err != nil {
@@ -70,11 +71,13 @@ func (d *deployments) Activate(ctx context.Context, id sdktypes.DeploymentID) er
 
 		return nil
 	})
-	if err == nil {
-		d.z.Info("deployment activated", zap.String("deployment_id", id.String()))
-	} else {
-		d.z.Error("deployment activation failed", zap.String("deployment_id", id.String()), zap.Error(err))
+	if err != nil {
+		l.Error("deployment activation failed", zap.Error(err))
+		return err
 	}
+
+	l.Info("deployment activated")
+	return nil
 }
 
 func (d *deployments) Test(ctx context.Context, id sdktypes.DeploymentID) error {
