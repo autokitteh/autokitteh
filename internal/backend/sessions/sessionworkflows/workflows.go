@@ -176,14 +176,12 @@ func (ws *workflows) getSessionDebugData(data *sessiondata.Data, prints []string
 func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkflowParams) (debug any, _ error) {
 	sessionID := params.SessionID.String()
 	wi := workflow.GetInfo(wctx)
-	z := ws.z.With(
+	l := ws.z.With(
 		zap.String("session_id", sessionID),
 		zap.Bool("replay", workflow.IsReplaying(wctx)),
 		zap.String("workflow_id", wi.WorkflowExecution.ID),
 		zap.String("run_id", wi.WorkflowExecution.RunID),
 	)
-
-	z.Info("session workflow started", zap.Int32("attempt", wi.Attempt))
 
 	wctx = workflow.WithLocalActivityOptions(wctx, workflow.LocalActivityOptions{
 		ScheduleToCloseTimeout: ws.cfg.Temporal.LocalScheduleToCloseTimeout,
@@ -195,32 +193,43 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 	//                blow us up due to non determinism.
 
 	var prints []string
+	var duration time.Duration
+	var startTime time.Time
+	fields := []zap.Field{}
 
 	data, err := ws.getSessionData(wctx, params.SessionID)
 	if err == nil {
-		if workflow.IsReplaying(wctx) && data.Session.State().IsFinal() {
-			// HACK: If we somehow get a signal to this workflow after it completed,
-			//       in certain delicate timing, the workflow rekicks in replay.
-			//       Though replay would work just fine, and result in a no-op,
-			//       it's nice to not have to run through its entirely. Temporal
-			//       just seems to ignore it...
-			z.Info("already completed")
-			return nil, nil
+
+		if workflow.IsReplaying(wctx) {
+			if data.Session.State().IsFinal() {
+				// HACK: If we somehow get a signal to this workflow after it completed,
+				//       in certain delicate timing, the workflow rekicks in replay.
+				//       Though replay would work just fine, and result in a no-op,
+				//       it's nice to not have to run through its entirely. Temporal
+				//       just seems to ignore it...
+				l.Info("already completed")
+				return nil, nil
+			}
+			fields = append(fields, zap.Int32("attempt", wi.Attempt))
+		} else {
+			sessionsCreatedCounter.Add(ctx, 1)
 		}
 
-		sessionsCreatedCounter.Add(ctx, 1)
-
-		z.Info("session workflow: started")
-		prints, err = runWorkflow(wctx, z, ws, data, params.Debug)
+		startTime = data.Session.CreatedAt()
+		l.Info("session workflow: started", fields...)
+		prints, err = runWorkflow(wctx, l, ws, data, params.Debug)
+		duration = time.Since(startTime)
+		sessionDurationHistogram.Record(ctx, duration.Milliseconds())
+		l = l.With(zap.Duration("duration", duration))
 	}
 
 	if err != nil {
-		z := z.With(zap.Error(err))
+		l := l.With(zap.Error(err))
 
 		if errors.Is(err, workflow.ErrCanceled) || errors.Is(wctx.Err(), workflow.ErrCanceled) {
 			sessionsStoppedCounter.Add(ctx, 1)
 
-			z.Info("session workflow: canceled")
+			l.Info("session workflow: canceled")
 			ws.stopped(ctx, params.SessionID)
 		} else {
 			sessionsErroredCounter.Add(ctx, 1)
@@ -230,14 +239,14 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 				// User level error, no need to indicate the workflow as errored.
 				err = nil
 
-				z.Info("session workflow: program error")
+				l.Info("session workflow: program error")
 			} else {
-				z.Error("session workflow: error")
+				l.Error("session workflow: error")
 			}
 		}
 	} else {
 		sessionsCompletedCounter.Add(ctx, 1)
-		z.Info("session workflow: completed")
+		l.Info("session workflow: completed")
 	}
 
 	if data != nil {

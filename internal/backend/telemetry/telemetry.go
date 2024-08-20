@@ -126,3 +126,17 @@ func (t *Telemetry) NewCounter(name string, description string) (metric.Int64Cou
 	}
 	return metric, nil
 }
+
+func (t *Telemetry) NewHistogram(name string, description string) (metric.Int64Histogram, error) {
+	if !t.cfg.Enabled {
+		return noop.Int64Histogram{}, nil
+	}
+	meter := otel.GetMeterProvider().Meter(t.cfg.ServiceName)
+	name = t.ensureServiceName(name)
+	metric, err := meter.Int64Histogram(name, metric.WithDescription(description))
+	if err != nil {
+		t.l.Error("failed to create metric", zap.String("name", name), zap.Error(err))
+		return noop.Int64Histogram{}, err
+	}
+	return metric, nil
+}
