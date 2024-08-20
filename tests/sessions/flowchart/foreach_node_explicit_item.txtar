@@ -3,20 +3,33 @@
 -- main.flowchart.yaml main --
 version: v1
 
+imports:
+  - name: foo
+    path: "foo.star"
+
 nodes:
   - name: main
     action:
+      call:
+        target: "imports.foo.bar"
+    goto: nodes.loop
+
+  - name: loop
+    action:
       foreach:
-        items: ["1st", "2nd", "3rd"]
+        items: "^^ states.nodes.main"
         call:
           target: nodes.worker
     goto: nodes.end
 
   - name: worker
-    result: "^^ 'meow ' + states.nodes.main.item"
+    result: "^^ 'meow ' + states.nodes.loop.item"
 
   - name: end
     action:
       print:
-        value: "^^ states.nodes.main"
-  
+        value: "^^ states.nodes.loop"
+
+-- foo.star --
+def bar():
+  return ["1st", "2nd", "3rd"]

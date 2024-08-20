@@ -1,0 +1,60 @@
+{"propsValue": {"accountId": "123456", "region": "1", "resourceId": "1", "service": "ec2"}}
+{"propsValue": {"accountId": "123456", "region": "2", "resourceId": "2", "service": "ec2"}}
+{"propsValue": {"accountId": "123456", "region": "3", "resourceId": "3", "service": "ec2"}}
+
+-- rita.flowchart.yaml step_3 --
+version: "v1"
+
+imports:
+  - name: "openops"
+    path: "openops.star"
+
+options:
+  interpolate_all_strings: true
+  default_interpolation: "p"
+
+nodes:
+  - name: "step_3"
+    title: "EBS Get Volumes"
+    action:
+      call:
+        target: "imports.openops.returnArray"
+    goto: "nodes.step_5"
+  - name: "step_5"
+    title: "Get Account ID"
+    action:
+      call:
+        target: "imports.openops.returnNumber"
+    goto: "nodes.step_4"
+  - name: "step_4"
+    title: "Loop on Items"
+    action:
+      foreach:
+        items: "^cel^ states.nodes.step_3"
+        call:
+          target: "nodes.step_1"
+          async: false
+  - name: "step_1"
+    title: "Build ARN"
+    action:
+      call:
+        target: "imports.openops.returnString"
+        args:
+          propsValue:
+            region: "^cel^ states.nodes.step_4['item']['region']"
+            service: "ec2"
+            accountId: "{{states.nodes.step_5}}"
+            resourceId: "{{states.nodes.step_4.item.VolumeId}}"
+
+
+-- openops.star --
+
+def returnArray():
+    return [{"region":"1", "VolumeId": "1"},{"region":"2", "VolumeId": "2"},{"region":"3", "VolumeId": "3"}]
+
+def returnNumber():
+    return 123456
+
+def returnString(**kwargs):
+    print(kwargs)
+    return "test"
