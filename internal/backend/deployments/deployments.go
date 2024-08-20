@@ -23,10 +23,10 @@ func New(z *zap.Logger, db db.DB) sdkservices.Deployments {
 }
 
 func (d *deployments) Activate(ctx context.Context, id sdktypes.DeploymentID) error {
-	return d.db.Transaction(ctx, func(tx db.DB) error {
+	err := d.db.Transaction(ctx, func(tx db.DB) error {
 		deployment, err := tx.GetDeployment(ctx, id)
 		if err != nil {
-			return fmt.Errorf("deployment: %w", err)
+			return fmt.Errorf("get deployment: %w", err)
 		}
 
 		if deployment.State() == sdktypes.DeploymentStateActive {
@@ -53,21 +53,26 @@ func (d *deployments) Activate(ctx context.Context, id sdktypes.DeploymentID) er
 			State: sdktypes.DeploymentStateActive,
 		})
 		if err != nil {
-			return fmt.Errorf("list active deployment: %w", err)
+			return fmt.Errorf("list active deployments: %w", err)
 		}
 
 		for _, d := range deployments {
 			if err := drain(ctx, tx, d.ID()); err != nil {
-				return err
+				return fmt.Errorf("drain deployment: %w", err)
 			}
 		}
 
-		if _, err := tx.UpdateDeploymentState(ctx, id, sdktypes.DeploymentStateActive); err != nil {
+		if err := updateDeploymentState(ctx, tx, id, sdktypes.DeploymentStateActive); err != nil {
 			return fmt.Errorf("activate deployment: %w", err)
 		}
 
 		return nil
 	})
+	if err == nil {
+		d.z.Info("deployment activated", zap.String("deployment_id", id.String()))
+	} else {
+		d.z.Error("deployment activation failed", zap.String("deployment_id", id.String()), zap.Error(err))
+	}
 }
 
 func (d *deployments) Test(ctx context.Context, id sdktypes.DeploymentID) error {
@@ -100,6 +105,7 @@ func (d *deployments) Create(ctx context.Context, deployment sdktypes.Deployment
 }
 
 func deactivate(ctx context.Context, tx db.DB, id sdktypes.DeploymentID) error {
+	// TODO: single query?
 	resultRunning, err := tx.ListSessions(ctx, sdkservices.ListSessionsFilter{
 		DeploymentID: id,
 		StateType:    sdktypes.SessionStateTypeRunning,
@@ -122,8 +128,7 @@ func deactivate(ctx context.Context, tx db.DB, id sdktypes.DeploymentID) error {
 		return fmt.Errorf("deployment still has pending sessions, drain first: %w", sdkerrors.ErrConflict)
 	}
 
-	_, err = tx.UpdateDeploymentState(ctx, id, sdktypes.DeploymentStateInactive)
-	return err
+	return updateDeploymentState(ctx, tx, id, sdktypes.DeploymentStateInactive)
 }
 
 func (d *deployments) Deactivate(ctx context.Context, id sdktypes.DeploymentID) error {
@@ -133,7 +138,7 @@ func (d *deployments) Deactivate(ctx context.Context, id sdktypes.DeploymentID) 
 }
 
 func drain(ctx context.Context, tx db.DB, id sdktypes.DeploymentID) error {
-	if _, err := tx.UpdateDeploymentState(ctx, id, sdktypes.DeploymentStateDraining); err != nil {
+	if err := updateDeploymentState(ctx, tx, id, sdktypes.DeploymentStateDraining); err != nil {
 		return err
 	}
 
@@ -141,6 +146,27 @@ func drain(ctx context.Context, tx db.DB, id sdktypes.DeploymentID) error {
 		return fmt.Errorf("deployment.deactivate(%v): %w", id, err)
 	}
 
+	return nil
+}
+
+func updateDeploymentState(ctx context.Context, db db.DB, id sdktypes.DeploymentID, state sdktypes.DeploymentState) error {
+	oldState, err := db.UpdateDeploymentState(ctx, id, state)
+	if err != nil {
+		return err
+	}
+
+	updateStateCounter := func(state sdktypes.DeploymentState, val int64) {
+		switch state {
+		case sdktypes.DeploymentStateActive:
+			deploymentsActiveCounter.Add(ctx, val)
+		case sdktypes.DeploymentStateDraining:
+			deploymentsDrainingCounter.Add(ctx, val)
+		case sdktypes.DeploymentStateInactive:
+			deploymentsInactiveCounter.Add(ctx, val)
+		}
+	}
+	updateStateCounter(state, 1)
+	updateStateCounter(oldState, -1)
 	return nil
 }
 
