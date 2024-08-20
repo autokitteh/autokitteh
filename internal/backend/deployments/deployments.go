@@ -8,6 +8,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
+	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -18,7 +19,8 @@ type deployments struct {
 	db db.DB
 }
 
-func New(z *zap.Logger, db db.DB) sdkservices.Deployments {
+func New(z *zap.Logger, db db.DB, telemetry *telemetry.Telemetry) sdkservices.Deployments {
+	initMetrics(telemetry)
 	return &deployments{z: z, db: db}
 }
 
