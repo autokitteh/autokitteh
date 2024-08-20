@@ -191,7 +191,7 @@ func TestDeleteDeploymentForeignKeys(t *testing.T) {
 */
 
 func TestUpdateDeploymentStateReturning(t *testing.T) {
-	f := preDeploymentTest(t).WithDebug()
+	f := preDeploymentTest(t)
 
 	_, d := createBuildAndDeployment(t, f)
 
