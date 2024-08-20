@@ -14,5 +14,5 @@ var (
 func initMetrics(t *telemetry.Telemetry) {
 	deploymentsActiveCounter, _ = t.NewUpDownCounter("deployments.activated", "Activated deployments counter")
 	deploymentsDrainingCounter, _ = t.NewUpDownCounter("deployments.drained", "Drained deployments counter")
-	deploymentsDrainingCounter, _ = t.NewUpDownCounter("deployments.deactivated", "Deactivated deployments counter")
+	deploymentsInactiveCounter, _ = t.NewUpDownCounter("deployments.deactivated", "Deactivated deployments counter")
 }
