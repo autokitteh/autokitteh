@@ -11,16 +11,15 @@ import (
 	"go.temporal.io/sdk/workflow"
 	"go.uber.org/zap"
 
-	"go.autokitteh.dev/autokitteh/internal/backend/akmodules/ak"
-	osmodule "go.autokitteh.dev/autokitteh/internal/backend/akmodules/os"
-	"go.autokitteh.dev/autokitteh/internal/backend/akmodules/store"
-	timemodule "go.autokitteh.dev/autokitteh/internal/backend/akmodules/time"
 	akCtx "go.autokitteh.dev/autokitteh/internal/backend/context"
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessioncalls"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessioncontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessiondata"
+	osmodule "go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionworkflows/modules/os"
+	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionworkflows/modules/store"
+	timemodule "go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionworkflows/modules/time"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
@@ -282,7 +281,7 @@ func (w *sessionWorkflow) initConnections(ctx workflow.Context) (map[string]conn
 
 func (w *sessionWorkflow) initGlobalModules() (map[string]sdktypes.Value, error) {
 	execs := map[string]sdkexecutor.Executor{
-		"ak":    ak.New(w.syscall, w.data, w.ws.svcs),
+		"ak":    w.newModule(),
 		"time":  timemodule.New(),
 		"store": store.New(w.data.Env.ID(), w.data.ProjectID, w.ws.svcs.RedisClient),
 	}

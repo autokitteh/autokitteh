@@ -13,10 +13,10 @@ import (
 	"go.temporal.io/sdk/workflow"
 	"go.uber.org/zap"
 
-	"go.autokitteh.dev/autokitteh/internal/backend/akmodules"
 	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessioncontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionsvcs"
+	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionworkflows/modules"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	"go.autokitteh.dev/autokitteh/sdk/sdkexecutor"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -50,7 +50,7 @@ type calls struct {
 	//                 instance. These activities have to run on these instances
 	//                 since they must be able to access instance specific state
 	//                 or available to run on the same worker as the workflow
-	//                 (such as session modules, in akmodules).
+	//                 (such as session modules, in modules).
 	//                 This state is the workflow state as constructed by the
 	//                 user script.
 	generalWorker worker.Worker
@@ -149,7 +149,7 @@ func (cs *calls) Call(ctx workflow.Context, params *CallParams) (sdktypes.Sessio
 		xid := fnvf.ExecutorID()
 
 		// either a non-integration (like a run) or a session module.
-		local := !xid.IsIntegrationID() || akmodules.IsAKModuleExecutorID(xid)
+		local := !xid.IsIntegrationID() || modules.IsAKModuleExecutorID(xid)
 
 		if local {
 			cs.executorsForSessionsMu.Lock()

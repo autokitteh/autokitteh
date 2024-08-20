@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"go.autokitteh.dev/autokitteh/internal/backend/akmodules/ak"
+	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
@@ -29,7 +29,7 @@ func parseCallSpec(spec sdktypes.SessionCallSpec) (v sdktypes.Value, args []sdkt
 	if len(args) > 0 {
 		last := args[len(args)-1]
 
-		if st := last.GetStruct(); st.IsValid() && st.Ctor().GetSymbol().Symbol() == ak.CallOptsCtorSymbol {
+		if st := last.GetStruct(); st.IsValid() && st.Ctor().GetSymbol().Symbol() == fixtures.CallOptsCtorSymbol {
 			if err = last.UnwrapInto(&opts); err != nil {
 				err = fmt.Errorf("invalid opts: %w", err)
 				return
