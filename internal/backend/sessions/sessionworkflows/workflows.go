@@ -220,15 +220,16 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 		prints, err = runWorkflow(wctx, l, ws, data, params.Debug)
 		duration = time.Since(startTime)
 		sessionDurationHistogram.Record(ctx, duration.Milliseconds())
+		l = l.With(zap.Duration("duration", duration))
 	}
 
 	if err != nil {
-		sl := l.With(zap.Error(err))
+		l := l.With(zap.Error(err))
 
 		if errors.Is(err, workflow.ErrCanceled) || errors.Is(wctx.Err(), workflow.ErrCanceled) {
 			sessionsStoppedCounter.Add(ctx, 1)
 
-			sl.Info("session workflow: canceled", zap.Duration("duration", duration))
+			l.Info("session workflow: canceled")
 			ws.stopped(ctx, params.SessionID)
 		} else {
 			sessionsErroredCounter.Add(ctx, 1)
@@ -238,14 +239,14 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 				// User level error, no need to indicate the workflow as errored.
 				err = nil
 
-				sl.Info("session workflow: program error", zap.Duration("duration", duration))
+				l.Info("session workflow: program error")
 			} else {
-				sl.Error("session workflow: error", zap.Duration("duration", duration))
+				l.Error("session workflow: error")
 			}
 		}
 	} else {
 		sessionsCompletedCounter.Add(ctx, 1)
-		l.Info("session workflow: completed", zap.Duration("duration", duration))
+		l.Info("session workflow: completed")
 	}
 
 	if data != nil {
