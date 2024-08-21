@@ -8,13 +8,13 @@ import (
 // deployment lifecycle: inactive (upon creation) -> active (upon activation) -> draining (optional) -> inactive
 
 var (
-	deploymentsActiveCounter   metric.Int64UpDownCounter
-	deploymentsDrainingCounter metric.Int64UpDownCounter
-	deploymentsCreatedCounter  metric.Int64Counter
+	deploymentsActiveGauge    metric.Int64UpDownCounter
+	deploymentsDrainingGauge  metric.Int64UpDownCounter
+	deploymentsCreatedCounter metric.Int64Counter
 )
 
 func initMetrics(t *telemetry.Telemetry) {
-	deploymentsActiveCounter, _ = t.NewUpDownCounter("deployments.activated", "Activated deployments counter")
-	deploymentsDrainingCounter, _ = t.NewUpDownCounter("deployments.drained", "Drained deployments counter")
+	deploymentsActiveGauge, _ = t.NewUpDownCounter("deployments.active", "Active deployments gauge")
+	deploymentsDrainingGauge, _ = t.NewUpDownCounter("deployments.draining", "Draining deployments gauge")
 	deploymentsCreatedCounter, _ = t.NewCounter("deployments.created", "Created deployments counter")
 }
