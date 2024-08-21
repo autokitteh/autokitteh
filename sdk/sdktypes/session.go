@@ -49,6 +49,10 @@ func (p Session) WithNewID() Session {
 	return Session{p.forceUpdate(func(pb *SessionPB) { pb.SessionId = NewSessionID().String() })}
 }
 
+func (p Session) WithNoID() Session {
+	return Session{p.forceUpdate(func(pb *SessionPB) { pb.SessionId = "" })}
+}
+
 func (p Session) ID() SessionID { return kittehs.Must1(ParseSessionID(p.read().SessionId)) }
 
 func (p Session) DeploymentID() DeploymentID {

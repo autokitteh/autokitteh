@@ -36,6 +36,7 @@ var restartCmd = common.StandardCommand(&cobra.Command{
 			err = fmt.Errorf("session ID %q not found", args[0])
 			return common.NewExitCodeError(common.NotFoundExitCode, err)
 		}
+		s = s.WithNoID() // remove sessionID
 
 		sid, err := sessions().Start(ctx, s)
 		if err != nil {
