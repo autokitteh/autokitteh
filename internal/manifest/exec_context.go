@@ -46,9 +46,13 @@ func (c *execContext) resolveIntegrationID(ctx context.Context, name string) (sd
 	}
 
 	in, _, err := c.resolver.IntegrationNameOrID(ctx, name)
+	if err != nil {
+		return sdktypes.InvalidIntegrationID, err
+	}
+
 	iid := in.ID()
 	c.integrations[name] = iid
-	return iid, err
+	return iid, nil
 }
 
 func (c *execContext) resolveEnvID(ctx context.Context, envID string) (sdktypes.EnvID, error) {
