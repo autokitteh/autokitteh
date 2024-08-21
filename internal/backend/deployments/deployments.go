@@ -164,9 +164,9 @@ func updateDeploymentState(ctx context.Context, db db.DB, id sdktypes.Deployment
 	updateStateCounter := func(state sdktypes.DeploymentState, val int64) {
 		switch state {
 		case sdktypes.DeploymentStateActive:
-			deploymentsActiveCounter.Add(ctx, val)
+			deploymentsActiveGauge.Add(ctx, val)
 		case sdktypes.DeploymentStateDraining:
-			deploymentsDrainingCounter.Add(ctx, val)
+			deploymentsDrainingGauge.Add(ctx, val)
 		}
 	}
 	updateStateCounter(state, 1)
