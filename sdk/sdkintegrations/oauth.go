@@ -29,7 +29,8 @@ func (d OAuthData) ToVars() sdktypes.Vars {
 		Expiry:       d.Token.Expiry.String(),
 	}
 
-	return sdktypes.EncodeVars(data).WithPrefix("oauth_")
+	return sdktypes.EncodeVars(data).WithPrefix("oauth_").
+		Set(sdktypes.NewSymbol("authType"), "oauth", false)
 }
 
 func DecodeOAuthData(raw string) (data *OAuthData, err error) {

@@ -130,6 +130,7 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 	user := string(*i.Account.Login)
 
 	c.Finalize(sdktypes.NewVars().
+		Set(vars.AuthType, "oauth", false).
 		Set(vars.AppID, appID, false).
 		Set(vars.InstallID, installID, false).
 		Set(vars.InstallKey(appID, installID), user, false))
