@@ -7,6 +7,8 @@ import (
 )
 
 var (
+	AuthType = sdktypes.NewSymbol("authType")
+
 	// GitHub app (OAuth)
 	AppID     = sdktypes.NewSymbol("app_id")
 	InstallID = sdktypes.NewSymbol("install_id")
