@@ -50,7 +50,9 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 
 	initData := sdktypes.NewVars().Set(baseURL, b, false).Set(token, t, true)
 	if e != "" {
-		initData = initData.Set(email, e, true)
+		initData = initData.Set(email, e, true).Set(authType, "apiToken", false)
+	} else {
+		initData = initData.Set(authType, "pat", false)
 	}
 
 	c.Finalize(initData)
