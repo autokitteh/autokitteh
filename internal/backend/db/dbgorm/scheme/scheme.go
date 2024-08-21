@@ -470,6 +470,13 @@ type Deployment struct {
 	Ownership *Ownership `gorm:"polymorphic:Entity;"`
 }
 
+func (d *Deployment) BeforeUpdate(tx *gorm.DB) (err error) {
+	if tx.Statement.Changed() { // if any fields changed
+		tx.Statement.SetColumn("UpdatedAt", time.Now())
+	}
+	return nil
+}
+
 func ParseDeployment(d Deployment) (sdktypes.Deployment, error) {
 	deployment, err := sdktypes.StrictDeploymentFromProto(&sdktypes.DeploymentPB{
 		DeploymentId: sdktypes.NewIDFromUUID[sdktypes.DeploymentID](&d.DeploymentID).String(),

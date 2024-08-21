@@ -50,6 +50,12 @@ func (f *dbFixture) assertDeploymentsDeleted(t *testing.T, deployments ...scheme
 	}
 }
 
+func (f *dbFixture) assertDeploymentState(t *testing.T, id sdktypes.UUID, state int32) {
+	d, err := f.gormdb.getDeployment(f.ctx, id)
+	assert.NoError(t, err)
+	assert.Equal(t, state, d.State)
+}
+
 func preDeploymentTest(t *testing.T) *dbFixture {
 	f := newDBFixture().withUser(sdktypes.DefaultUser)
 	f.listDeploymentsAndAssert(t, 0) // no deployments
@@ -183,3 +189,24 @@ func TestDeleteDeploymentForeignKeys(t *testing.T) {
 	// deployment is soft-deleted, so no need to check foreign keys meanwhile
 }
 */
+
+func TestUpdateDeploymentStateReturning(t *testing.T) {
+	f := preDeploymentTest(t)
+
+	_, d := createBuildAndDeployment(t, f)
+
+	prevState := sdktypes.DeploymentStateUnspecified
+	f.assertDeploymentState(t, d.DeploymentID, int32(prevState.ToProto()))
+
+	states := []sdktypes.DeploymentState{
+		sdktypes.DeploymentStateActive, sdktypes.DeploymentStateDraining, sdktypes.DeploymentStateInactive,
+	}
+	for i := 0; i < len(states); i++ {
+		newState := states[i]
+		prevStateFromUpdate, err := f.gormdb.updateDeploymentState(f.ctx, d.DeploymentID, newState)
+		assert.NoError(t, err)
+		f.assertDeploymentState(t, d.DeploymentID, int32(newState.ToProto()))
+		assert.Equal(t, prevState, prevStateFromUpdate)
+		prevState = newState
+	}
+}

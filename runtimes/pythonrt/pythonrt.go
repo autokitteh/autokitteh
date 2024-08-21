@@ -15,6 +15,8 @@ import (
 	"time"
 
 	"go.uber.org/zap"
+
+	"golang.org/x/exp/maps"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
@@ -40,18 +42,19 @@ var (
 )
 
 type pySvc struct {
-	log      *zap.Logger
-	run      *pyRunInfo
-	xid      sdktypes.ExecutorID
-	runID    sdktypes.RunID
-	cbs      *sdkservices.RunCallbacks
-	exports  map[string]sdktypes.Value
-	stdout   *streamLogger
-	stderr   *streamLogger
-	pyExe    string
-	fileName string // main user code file name (entry point)
-	remote   *remoteSvc
-	runner   pb.RunnerClient
+	log       *zap.Logger
+	run       *pyRunInfo
+	xid       sdktypes.ExecutorID
+	runID     sdktypes.RunID
+	cbs       *sdkservices.RunCallbacks
+	exports   map[string]sdktypes.Value
+	stdout    *streamLogger
+	stderr    *streamLogger
+	pyExe     string
+	fileName  string // main user code file name (entry point)
+	remote    *remoteSvc
+	runner    pb.RunnerClient
+	firstCall bool // first call is the trigger, other calls are activities
 }
 
 var minPyVersion = Version{
@@ -77,7 +80,8 @@ func New() (sdkservices.Runtime, error) {
 	log = log.With(zap.String("runtime", "python"))
 
 	svc := pySvc{
-		log: log,
+		log:       log,
+		firstCall: true,
 	}
 
 	userPython := true
@@ -312,7 +316,6 @@ func (py *pySvc) Run(
 	envMap := kittehs.TransformMap(env, func(key string, value sdktypes.Value) (string, string) {
 		return key, value.GetString().Value()
 	})
-	py.log.Info("env", zap.Any("env", envMap))
 
 	tarData := compiled[archiveKey]
 	if tarData == nil {
@@ -404,134 +407,6 @@ func (py *pySvc) Close() {
 	// We kill the Python process once the initial `Call` is completed.
 }
 
-/*
-// initialCall handles initial call from autokitteh, it does the message loop with Python.
-// We split it from Call since Call is also used to execute activities.
-func (py *pySvc) initialCall(ctx context.Context, funcName string, event map[string]any) (sdktypes.Value, error) {
-	defer func() {
-		py.log.Info("Python subprocess cleanup after initial call is done")
-
-		py.stderr.Close()
-		py.stdout.Close()
-		py.comm.Close()
-
-		if py.run.proc != nil {
-			if err := py.run.proc.Kill(); err != nil {
-				py.log.Warn("kill", zap.Int("pid", py.run.proc.Pid), zap.Error(err))
-			}
-		}
-		py.run.Cleanup()
-		py.run.proc = nil
-	}()
-
-	py.log.Info("initial call", zap.Any("func", funcName))
-
-	// Initial run call.
-	msg := RunMessage{
-		FuncName: funcName,
-		Event:    event,
-	}
-	if err := py.comm.Send(msg); err != nil {
-		return sdktypes.InvalidValue, err
-	}
-
-	// Activity callback loop.
-	for {
-		py.log.Info("waiting for Python call")
-		msg, err := py.comm.Recv()
-		if err != nil {
-			py.log.Error("communication error", zap.Error(err))
-			return sdktypes.InvalidValue, err
-		}
-		py.log.Debug("from python", zap.Any("message", msg))
-
-		if msg.Type == "" {
-			py.log.Error("empty message from python, probably error", zap.Any("message", msg))
-			return sdktypes.InvalidValue, fmt.Errorf("empty message from Python")
-		}
-
-		if msg.Type == messageType[DoneMessage]() {
-			break
-		}
-
-		if msg.Type == messageType[ErrorMessage]() {
-			py.log.Error("python error", zap.Any("message", msg))
-			em, err := extractMessage[ErrorMessage](msg)
-			if err != nil {
-				py.log.Error("error message", zap.Error(err))
-				return sdktypes.InvalidValue, err
-			}
-
-			perr := sdktypes.NewProgramError(
-				sdktypes.NewStringValue(em.Error),
-				py.tracebackToLocation(em.Traceback),
-				map[string]string{"raw": em.Error},
-			)
-			return sdktypes.InvalidValue, perr.ToError()
-		}
-
-		if msg.Type == messageType[LogMessage]() {
-			if err := py.handleLog(msg); err != nil {
-				return sdktypes.InvalidValue, err
-			}
-			continue
-		}
-
-		if msg.Type == messageType[CallMessage]() {
-			call, _ := extractMessage[CallMessage](msg)
-			if err := py.handleCall(ctx, call); err != nil {
-				return sdktypes.InvalidValue, err
-			}
-			continue
-		}
-
-		cbm, err := extractMessage[CallbackMessage](msg)
-		if err != nil {
-			py.log.Error("callback", zap.Error(err))
-			return sdktypes.InvalidValue, err
-		}
-
-		// Generate activity, it'll call Python with the result
-		// The function name is irrelevant, all the information Python needs is in the Payload
-		fn, err := sdktypes.NewFunctionValue(py.xid, cbm.Name, cbm.Data, nil, pyModuleFunc)
-		if err != nil {
-			py.log.Error("create function", zap.Error(err))
-			return sdktypes.InvalidValue, err
-		}
-
-		py.log.Info("callback", zap.String("func", cbm.Name))
-		val, err := py.cbs.Call(
-			ctx,
-			py.runID,
-			// The Python function to call is encoded in the payload
-			fn,
-			kittehs.Transform(cbm.Args, sdktypes.NewStringValue),
-			kittehs.TransformMap(cbm.Kw, func(key, val string) (string, sdktypes.Value) {
-				return key, sdktypes.NewStringValue(val)
-			}),
-		)
-		if err != nil {
-			py.log.Error("callback", zap.Error(err))
-			return sdktypes.InvalidValue, err
-		}
-
-		if !val.IsBytes() {
-			py.log.Error("activity result should be bytes", zap.Any("value", val))
-			return sdktypes.InvalidValue, err
-		}
-
-		reply := ResponseMessage{
-			Value: val.GetBytes().Value(),
-		}
-		if err := py.comm.Send(reply); err != nil {
-			py.log.Error("send value to Python", zap.Error(err))
-			return sdktypes.InvalidValue, err
-		}
-	}
-
-	return sdktypes.Nothing, nil
-}
-
 func (py *pySvc) tracebackToLocation(traceback []Frame) []sdktypes.CallFrame {
 	frames := make([]sdktypes.CallFrame, len(traceback))
 	for i, f := range traceback {
@@ -551,7 +426,6 @@ func (py *pySvc) tracebackToLocation(traceback []Frame) []sdktypes.CallFrame {
 
 	return frames
 }
-*/
 
 // TODO (ENG-624) Remove this once we support callbacks to autokitteh
 func (py *pySvc) injectHTTPBody(ctx context.Context, data sdktypes.Value, event map[string]any, cbs *sdkservices.RunCallbacks) error {
@@ -600,38 +474,49 @@ func (py *pySvc) injectHTTPBody(ctx context.Context, data sdktypes.Value, event 
 	return nil
 }
 
-// Call handles a function call from autokitteh.
-// First used of Call start a workflow, later invocations are activity calls.
-func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
-	py.log.Info("call", zap.String("func", v.String()))
-	if py.run.proc == nil {
-		py.log.Error("call - python not running")
-		return sdktypes.InvalidValue, fmt.Errorf("python not running")
-	}
-
-	fn := v.GetFunction()
-	if !fn.IsValid() {
-		py.log.Error("call - invalid function", zap.Any("function", v))
-		return sdktypes.InvalidValue, fmt.Errorf("%#v is not a function", v)
-	}
-
+func (py *pySvc) kwToEvent(ctx context.Context, kwargs map[string]sdktypes.Value) (map[string]any, error) {
 	// Convert event to JSON
 	event := make(map[string]any, len(kwargs))
 	for key, val := range kwargs {
 		goVal, err := unwrap(val)
 		if err != nil {
-			return sdktypes.InvalidValue, err
+			return nil, err
 		}
 		event[key] = goVal
 	}
-	py.log.Info("event", zap.Any("event", event))
+	py.log.Info("event", zap.Any("keys", maps.Keys(event)))
 
 	if err := py.injectHTTPBody(ctx, kwargs["data"], event, py.cbs); err != nil {
-		return sdktypes.InvalidValue, err
+		return nil, err
 	}
 
-	fnName := fn.Name().String()
-	py.log.Info("call", zap.String("function", fnName))
+	return event, nil
+}
+
+// initialCall handles initial call from autokitteh, it does the message loop with Python.
+// We split it from Call since Call is also used to execute activities.
+func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
+	defer func() {
+		py.log.Info("Python subprocess cleanup after initial call is done")
+
+		py.stderr.Close()
+		py.stdout.Close()
+
+		if py.run.proc != nil {
+			if err := py.run.proc.Kill(); err != nil {
+				py.log.Warn("kill", zap.Int("pid", py.run.proc.Pid), zap.Error(err))
+			}
+		}
+		py.run.Cleanup()
+		py.run.proc = nil
+	}()
+
+	py.log.Info("initial call", zap.Any("func", funcName))
+	event, err := py.kwToEvent(ctx, kwargs)
+	if err != nil {
+		py.log.Error("can't convert event", zap.Error(err))
+		return sdktypes.InvalidValue, fmt.Errorf("can't convert: %w", err)
+	}
 
 	eventData, err := json.Marshal(event)
 	if err != nil {
@@ -640,7 +525,7 @@ func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 
 	req := pb.StartRequest{
 		RunId:      py.runID.String(),
-		EntryPoint: fmt.Sprintf("%s:%s", py.fileName, fnName),
+		EntryPoint: fmt.Sprintf("%s:%s", py.fileName, funcName),
 		Event: &pb.Event{
 			Data: eventData,
 		},
@@ -651,10 +536,64 @@ func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 	}
 
 	select {
-	case err := <-py.remote.error:
-		// TODO: traceback
-		return sdktypes.InvalidValue, err
 	case out := <-py.remote.result:
 		return sdktypes.NewBytesValue(out), nil
+	case err := <-py.remote.error:
+		// TODO: traceback
+		return sdktypes.InvalidValue, fmt.Errorf("%s", err)
+	case <-ctx.Done():
+		return sdktypes.InvalidValue, fmt.Errorf("timeout - %w", ctx.Err())
 	}
 }
+
+// Call handles a function call from autokitteh.
+// First used of Call start a workflow, later invocations are activity calls.
+func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
+	fn := v.GetFunction()
+	if !fn.IsValid() {
+		py.log.Error("call - invalid function", zap.Any("function", v))
+		return sdktypes.InvalidValue, fmt.Errorf("%#v is not a function", v)
+	}
+
+	fnName := fn.Name().String()
+	py.log.Info("call", zap.String("func", fnName))
+
+	if py.run.proc == nil {
+		py.log.Error("call - python not running")
+		return sdktypes.InvalidValue, fmt.Errorf("python not running")
+	}
+
+	if py.firstCall {
+		py.firstCall = false
+		return py.initialCall(ctx, fnName, args, kwargs)
+	}
+
+	// If we're here, it's an activity call
+
+}
+
+/*
+func packSyscallArgs(msg CallMessage) ([]sdktypes.Value, map[string]sdktypes.Value, error) {
+	args := make([]sdktypes.Value, len(msg.Args)+1)
+	args[0] = sdktypes.NewStringValue(msg.FuncName)
+	// Can't use kittehs.Transform since we want to handle errors.
+	for i, arg := range msg.Args {
+		var err error
+		args[i+1], err = sdktypes.WrapValue(arg)
+		if err != nil {
+			return nil, nil, fmt.Errorf("%s: unsupported argument: %#v - %w", msg.FuncName, arg, err)
+		}
+	}
+
+	kw := make(map[string]sdktypes.Value, len(msg.Kw))
+	for key, val := range msg.Kw {
+		v, err := sdktypes.WrapValue(val)
+		if err != nil {
+			return nil, nil, fmt.Errorf("%s: unsupported kwarg: %s:%#v - %w", msg.FuncName, key, val, err)
+		}
+		kw[key] = v
+	}
+
+	return args, kw, nil
+}
+*/

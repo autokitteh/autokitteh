@@ -10,6 +10,9 @@ var (
 	sessionsCompletedCounter metric.Int64Counter
 	sessionsErroredCounter   metric.Int64Counter
 	sessionsStoppedCounter   metric.Int64Counter
+
+	// NOTE: this is session time from AK perspective. Maybe we could ask temporal for better metrics?
+	sessionDurationHistogram metric.Int64Histogram
 )
 
 func initMetrics(t *telemetry.Telemetry) {
@@ -17,4 +20,5 @@ func initMetrics(t *telemetry.Telemetry) {
 	sessionsCompletedCounter, _ = t.NewCounter("sessions.completed", "Completed sessions counter")
 	sessionsErroredCounter, _ = t.NewCounter("sessions.errored", "Errored sessions counter")
 	sessionsStoppedCounter, _ = t.NewCounter("sessions.stopped", "Stopped sessions counter")
+	sessionDurationHistogram, _ = t.NewHistogram("sessions.duration", "Session duration histogram")
 }

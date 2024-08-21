@@ -16,6 +16,14 @@ const (
 	SchedulerConnectionName   = "cron"
 )
 
+var (
+	CallOptsCtorSymbol = sdktypes.NewSymbol("callopts")
+	TimeoutError       = sdktypes.NewSymbolValue(sdktypes.NewSymbol("timeout"))
+
+	// The internal session module.
+	ModuleExecutorID = sdktypes.NewExecutorID(NewBuiltinIntegrationID("ak"))
+)
+
 func NewBuiltinIntegrationID(name string) sdktypes.IntegrationID {
 	return sdktypes.NewIntegrationIDFromName(name)
 }

@@ -10,7 +10,6 @@ google-api-python-client ~= 2.137
 google-auth-httplib2 ~= 0.2
 google-auth-oauthlib ~= 1.2
 google-generativeai ~= 0.7
-jira ~= 3.8
 openai ~= 1.35
 PyGithub ~= 2.3
 redis ~= 5.0

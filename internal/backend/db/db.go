@@ -118,7 +118,7 @@ type DB interface {
 
 	// Returns deployments in ascending order by creation time.
 	ListDeployments(ctx context.Context, filter sdkservices.ListDeploymentsFilter) ([]sdktypes.Deployment, error)
-	UpdateDeploymentState(ctx context.Context, id sdktypes.DeploymentID, state sdktypes.DeploymentState) error
+	UpdateDeploymentState(ctx context.Context, id sdktypes.DeploymentID, state sdktypes.DeploymentState) (oldState sdktypes.DeploymentState, err error)
 	CreateDeployment(ctx context.Context, deployment sdktypes.Deployment) error
 	DeleteDeployment(ctx context.Context, deploymentID sdktypes.DeploymentID) error
 

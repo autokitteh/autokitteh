@@ -2,6 +2,7 @@ package sdktypes
 
 import (
 	"errors"
+	"time"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	sessionv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/sessions/v1"
@@ -61,6 +62,7 @@ func (p Session) Memo() map[string]string  { return p.read().Memo }
 func (p Session) Inputs() map[string]Value {
 	return kittehs.TransformMapValues(p.read().Inputs, forceFromProto[Value])
 }
+func (p Session) CreatedAt() time.Time { return p.read().CreatedAt.AsTime() }
 
 func (p Session) State() SessionStateType {
 	return forceEnumFromProto[SessionStateType](p.read().State)

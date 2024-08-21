@@ -33,7 +33,7 @@ func (i integration) createReview(ctx context.Context, args []sdktypes.Value, kw
 	}
 
 	// Invoke the API method.
-	gh, err := i.NewClient(ctx, owner)
+	gh, err := i.NewClient(ctx)
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
@@ -73,7 +73,7 @@ func (i integration) deletePendingReview(ctx context.Context, args []sdktypes.Va
 	}
 
 	// Invoke the API method.
-	gh, err := i.NewClient(ctx, owner)
+	gh, err := i.NewClient(ctx)
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
@@ -108,7 +108,7 @@ func (i integration) dismissReview(ctx context.Context, args []sdktypes.Value, k
 	}
 
 	// Invoke the API method.
-	gh, err := i.NewClient(ctx, owner)
+	gh, err := i.NewClient(ctx)
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
@@ -145,7 +145,7 @@ func (i integration) getReview(ctx context.Context, args []sdktypes.Value, kwarg
 	}
 
 	// Invoke the API method.
-	gh, err := i.NewClient(ctx, owner)
+	gh, err := i.NewClient(ctx)
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
@@ -181,7 +181,7 @@ func (i integration) listReviews(ctx context.Context, args []sdktypes.Value, kwa
 	}
 
 	// Invoke the API method.
-	gh, err := i.NewClient(ctx, owner)
+	gh, err := i.NewClient(ctx)
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
@@ -227,7 +227,7 @@ func (i integration) listReviewComments(ctx context.Context, args []sdktypes.Val
 	}
 
 	// Invoke the API method.
-	gh, err := i.NewClient(ctx, owner)
+	gh, err := i.NewClient(ctx)
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
@@ -274,7 +274,7 @@ func (i integration) submitReview(ctx context.Context, args []sdktypes.Value, kw
 	}
 
 	// Invoke the API method.
-	gh, err := i.NewClient(ctx, owner)
+	gh, err := i.NewClient(ctx)
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
@@ -312,7 +312,7 @@ func (i integration) updateReview(ctx context.Context, args []sdktypes.Value, kw
 	}
 
 	// Invoke the API method.
-	gh, err := i.NewClient(ctx, owner)
+	gh, err := i.NewClient(ctx)
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}

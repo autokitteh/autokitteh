@@ -62,8 +62,8 @@ func (d *deployments) Activate(ctx context.Context, id sdktypes.DeploymentID) er
 			}
 		}
 
-		if err := tx.UpdateDeploymentState(ctx, id, sdktypes.DeploymentStateActive); err != nil {
-			return fmt.Errorf("activate: %w", err)
+		if _, err := tx.UpdateDeploymentState(ctx, id, sdktypes.DeploymentStateActive); err != nil {
+			return fmt.Errorf("activate deployment: %w", err)
 		}
 
 		return nil
@@ -81,7 +81,7 @@ func (d *deployments) Test(ctx context.Context, id sdktypes.DeploymentID) error 
 			return nil
 		}
 
-		if err := tx.UpdateDeploymentState(ctx, id, sdktypes.DeploymentStateTesting); err != nil {
+		if _, err := tx.UpdateDeploymentState(ctx, id, sdktypes.DeploymentStateTesting); err != nil {
 			return fmt.Errorf("test: %w", err)
 		}
 
@@ -122,7 +122,8 @@ func deactivate(ctx context.Context, tx db.DB, id sdktypes.DeploymentID) error {
 		return fmt.Errorf("deployment still has pending sessions, drain first: %w", sdkerrors.ErrConflict)
 	}
 
-	return tx.UpdateDeploymentState(ctx, id, sdktypes.DeploymentStateInactive)
+	_, err = tx.UpdateDeploymentState(ctx, id, sdktypes.DeploymentStateInactive)
+	return err
 }
 
 func (d *deployments) Deactivate(ctx context.Context, id sdktypes.DeploymentID) error {
@@ -132,7 +133,7 @@ func (d *deployments) Deactivate(ctx context.Context, id sdktypes.DeploymentID) 
 }
 
 func drain(ctx context.Context, tx db.DB, id sdktypes.DeploymentID) error {
-	if err := tx.UpdateDeploymentState(ctx, id, sdktypes.DeploymentStateDraining); err != nil {
+	if _, err := tx.UpdateDeploymentState(ctx, id, sdktypes.DeploymentStateDraining); err != nil {
 		return err
 	}
 
