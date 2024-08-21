@@ -106,6 +106,7 @@ func (d *deployments) Create(ctx context.Context, deployment sdktypes.Deployment
 		return sdktypes.InvalidDeploymentID, err
 	}
 
+	deploymentsCreatedCounter.Add(ctx, 1)
 	return deployment.ID(), nil
 }
 
@@ -166,8 +167,6 @@ func updateDeploymentState(ctx context.Context, db db.DB, id sdktypes.Deployment
 			deploymentsActiveCounter.Add(ctx, val)
 		case sdktypes.DeploymentStateDraining:
 			deploymentsDrainingCounter.Add(ctx, val)
-		case sdktypes.DeploymentStateInactive:
-			deploymentsInactiveCounter.Add(ctx, val)
 		}
 	}
 	updateStateCounter(state, 1)
