@@ -8,6 +8,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
+	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -18,15 +19,17 @@ type deployments struct {
 	db db.DB
 }
 
-func New(z *zap.Logger, db db.DB) sdkservices.Deployments {
+func New(z *zap.Logger, db db.DB, telemetry *telemetry.Telemetry) sdkservices.Deployments {
+	initMetrics(telemetry)
 	return &deployments{z: z, db: db}
 }
 
 func (d *deployments) Activate(ctx context.Context, id sdktypes.DeploymentID) error {
-	return d.db.Transaction(ctx, func(tx db.DB) error {
+	l := d.z.With(zap.String("deployment_id", id.String()))
+	err := d.db.Transaction(ctx, func(tx db.DB) error {
 		deployment, err := tx.GetDeployment(ctx, id)
 		if err != nil {
-			return fmt.Errorf("deployment: %w", err)
+			return fmt.Errorf("get deployment: %w", err)
 		}
 
 		if deployment.State() == sdktypes.DeploymentStateActive {
@@ -53,21 +56,28 @@ func (d *deployments) Activate(ctx context.Context, id sdktypes.DeploymentID) er
 			State: sdktypes.DeploymentStateActive,
 		})
 		if err != nil {
-			return fmt.Errorf("list active deployment: %w", err)
+			return fmt.Errorf("list active deployments: %w", err)
 		}
 
 		for _, d := range deployments {
 			if err := drain(ctx, tx, d.ID()); err != nil {
-				return err
+				return fmt.Errorf("drain deployment: %w", err)
 			}
 		}
 
-		if _, err := tx.UpdateDeploymentState(ctx, id, sdktypes.DeploymentStateActive); err != nil {
+		if err := updateDeploymentState(ctx, tx, id, sdktypes.DeploymentStateActive); err != nil {
 			return fmt.Errorf("activate deployment: %w", err)
 		}
 
 		return nil
 	})
+	if err != nil {
+		l.Error("deployment activation failed", zap.Error(err))
+		return err
+	}
+
+	l.Info("deployment activated")
+	return nil
 }
 
 func (d *deployments) Test(ctx context.Context, id sdktypes.DeploymentID) error {
@@ -96,10 +106,12 @@ func (d *deployments) Create(ctx context.Context, deployment sdktypes.Deployment
 		return sdktypes.InvalidDeploymentID, err
 	}
 
+	deploymentsCreatedCounter.Add(ctx, 1)
 	return deployment.ID(), nil
 }
 
 func deactivate(ctx context.Context, tx db.DB, id sdktypes.DeploymentID) error {
+	// TODO: single query?
 	resultRunning, err := tx.ListSessions(ctx, sdkservices.ListSessionsFilter{
 		DeploymentID: id,
 		StateType:    sdktypes.SessionStateTypeRunning,
@@ -122,8 +134,7 @@ func deactivate(ctx context.Context, tx db.DB, id sdktypes.DeploymentID) error {
 		return fmt.Errorf("deployment still has pending sessions, drain first: %w", sdkerrors.ErrConflict)
 	}
 
-	_, err = tx.UpdateDeploymentState(ctx, id, sdktypes.DeploymentStateInactive)
-	return err
+	return updateDeploymentState(ctx, tx, id, sdktypes.DeploymentStateInactive)
 }
 
 func (d *deployments) Deactivate(ctx context.Context, id sdktypes.DeploymentID) error {
@@ -133,7 +144,7 @@ func (d *deployments) Deactivate(ctx context.Context, id sdktypes.DeploymentID) 
 }
 
 func drain(ctx context.Context, tx db.DB, id sdktypes.DeploymentID) error {
-	if _, err := tx.UpdateDeploymentState(ctx, id, sdktypes.DeploymentStateDraining); err != nil {
+	if err := updateDeploymentState(ctx, tx, id, sdktypes.DeploymentStateDraining); err != nil {
 		return err
 	}
 
@@ -141,6 +152,25 @@ func drain(ctx context.Context, tx db.DB, id sdktypes.DeploymentID) error {
 		return fmt.Errorf("deployment.deactivate(%v): %w", id, err)
 	}
 
+	return nil
+}
+
+func updateDeploymentState(ctx context.Context, db db.DB, id sdktypes.DeploymentID, state sdktypes.DeploymentState) error {
+	oldState, err := db.UpdateDeploymentState(ctx, id, state)
+	if err != nil {
+		return err
+	}
+
+	updateStateCounter := func(state sdktypes.DeploymentState, val int64) {
+		switch state {
+		case sdktypes.DeploymentStateActive:
+			deploymentsActiveCounter.Add(ctx, val)
+		case sdktypes.DeploymentStateDraining:
+			deploymentsDrainingCounter.Add(ctx, val)
+		}
+	}
+	updateStateCounter(state, 1)
+	updateStateCounter(oldState, -1)
 	return nil
 }
 
