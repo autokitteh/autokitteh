@@ -30,6 +30,10 @@ func (c *Connections) Create(ctx context.Context, conn sdktypes.Connection) (sdk
 		return sdktypes.InvalidConnectionID, err
 	}
 
+	if intg == nil {
+		return sdktypes.InvalidConnectionID, sdkerrors.ErrNotFound
+	}
+
 	status := intg.Get().InitialConnectionStatus()
 	if !status.IsValid() {
 		// get the connection status of a new connection.

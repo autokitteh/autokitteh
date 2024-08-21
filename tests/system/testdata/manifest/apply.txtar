@@ -58,6 +58,12 @@ ak manifest apply full.yaml --project-name their_project
 return code == 0
 output equals file expected_on_full_apply_their.txt
 
+# Graceful handling of an manifest file with unknown integration.
+ak manifest apply wrong_integration.yaml
+output equals file wrong_integration_error.txt
+return code == 1
+
+
 -- invalid.yaml --
 This is an invalid YAML file to trigger an error
 
@@ -67,6 +73,28 @@ Error: invalid YAML input: yaml: unmarshal errors:
 
 -- empty.yaml --
 version: v1
+
+-- wrong_integration.yaml --
+version: v1
+
+project:
+  name: my_telepathy_project
+  connections:
+    - name: my_connection
+      # This integration does not exist, obviously.
+      integration: telepathy
+  triggers:
+    - name: read
+      connection: my_connection
+      event_type: read
+      entrypoint: my_program.star:on_mind_read
+
+-- wrong_integration_error.txt --
+[plan] project "my_telepathy_project": not found, will create
+[plan] connection "my_telepathy_project/my_connection": not found, will create
+[plan] trigger "my_telepathy_project/default:my_telepathy_project/my_connection/read": not found, will create
+[exec] create_project "my_telepathy_project": prj_00000000000000000000000009 created
+Error: action create_connection my_telepathy_project/my_connection: integration "telepathy" not found
 
 -- full.yaml --
 version: v1

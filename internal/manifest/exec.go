@@ -59,11 +59,15 @@ func executeAction(ctx context.Context, action actions.Action, execContext *exec
 		pid, err := execContext.resolveProjectID(ctx, action.ProjectKey)
 		if err != nil {
 			return nil, err
+		} else if !pid.IsValid() {
+			return nil, fmt.Errorf("project %q not found", action.ProjectKey)
 		}
 
 		iid, err := execContext.resolveIntegrationID(ctx, action.IntegrationKey)
 		if err != nil {
 			return nil, err
+		} else if !iid.IsValid() {
+			return nil, fmt.Errorf("integration %q not found", action.IntegrationKey)
 		}
 
 		conn := action.Connection.WithProjectID(pid).WithIntegrationID(iid)
@@ -97,6 +101,8 @@ func executeAction(ctx context.Context, action actions.Action, execContext *exec
 		pid, err := execContext.resolveProjectID(ctx, action.ProjectKey)
 		if err != nil {
 			return nil, err
+		} else if !pid.IsValid() {
+			return nil, fmt.Errorf("project %q not found", action.ProjectKey)
 		}
 
 		env := action.Env.WithProjectID(pid)
@@ -131,6 +137,8 @@ func executeAction(ctx context.Context, action actions.Action, execContext *exec
 			eid, err := execContext.resolveEnvID(ctx, action.Env)
 			if err != nil {
 				return nil, err
+			} else if !eid.IsValid() {
+				return nil, fmt.Errorf("env %q not found", action.Env)
 			}
 
 			scopeID = sdktypes.NewVarScopeID(eid)
@@ -138,6 +146,8 @@ func executeAction(ctx context.Context, action actions.Action, execContext *exec
 			cid, err := execContext.resolveConnectionID(ctx, action.Connection)
 			if err != nil {
 				return nil, err
+			} else if !cid.IsValid() {
+				return nil, fmt.Errorf("connection %q not found", action.Connection)
 			}
 
 			scopeID = sdktypes.NewVarScopeID(cid)
@@ -166,14 +176,20 @@ func executeAction(ctx context.Context, action actions.Action, execContext *exec
 		eid, err := execContext.resolveEnvID(ctx, action.EnvKey)
 		if err != nil {
 			return nil, err
+		} else if !eid.IsValid() {
+			return nil, fmt.Errorf("env %q not found", action.EnvKey)
 		}
+
 		trigger := action.Trigger.WithEnvID(eid)
 
 		if action.ConnectionKey != "" {
 			cid, err := execContext.resolveConnectionID(ctx, action.ConnectionKey)
 			if err != nil {
 				return nil, err
+			} else if !cid.IsValid() {
+				return nil, fmt.Errorf("connection %q not found", action.ConnectionKey)
 			}
+
 			trigger = trigger.WithConnectionID(cid)
 		}
 
@@ -191,7 +207,10 @@ func executeAction(ctx context.Context, action actions.Action, execContext *exec
 			cid, err := execContext.resolveConnectionID(ctx, action.ConnectionKey)
 			if err != nil {
 				return nil, err
+			} else if !cid.IsValid() {
+				return nil, fmt.Errorf("connection %q not found", action.ConnectionKey)
 			}
+
 			trigger = trigger.WithConnectionID(cid)
 		}
 
