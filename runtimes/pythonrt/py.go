@@ -149,6 +149,7 @@ type pyRunInfo struct {
 	pyRootDir   string
 	client      pb.RunnerClient
 	proc        *os.Process
+	port        int
 }
 
 func (ri *pyRunInfo) Cleanup() {
@@ -163,11 +164,12 @@ func (ri *pyRunInfo) Cleanup() {
 
 type runOptions struct {
 	log            *zap.Logger
-	pyExe          string            // Python executable to use
-	entryPoint     string            // simple.py:greet
+	pyExe          string // Python executable to use
+	entryPoint     string // simple.py:greet
+	tarData        []byte
 	env            map[string]string // Python process environment
 	stdout, stderr io.Writer
-	port           int
+	workerAddr     string
 }
 
 func runPython(opts runOptions) (*pyRunInfo, error) {
@@ -180,14 +182,18 @@ func runPython(opts runOptions) (*pyRunInfo, error) {
 		}
 	}()
 
+	ri.port, err = freePort()
+	if err != nil {
+		return nil, fmt.Errorf("cannot find free port: %w", err)
+	}
+
 	ri.userRootDir, err = os.MkdirTemp("", "ak-")
 	if err != nil {
 		return nil, err
 	}
 	opts.log.Info("user root dir", zap.String("path", ri.userRootDir))
 
-	tarPath, err := writeTar(ri.userRootDir, opts.tarData)
-	if err != nil {
+	if err := extractTar(ri.userRootDir, opts.tarData); err != nil {
 		return nil, err
 	}
 
@@ -201,16 +207,11 @@ func runPython(opts runOptions) (*pyRunInfo, error) {
 		return nil, err
 	}
 
-	pyPort, err := freePort()
-	if err != nil {
-		return nil, fmt.Errorf("cannot find free port: %w", err)
-	}
-
 	mainPy := path.Join(ri.pyRootDir, "main.py")
 	cmd := exec.Command(
 		opts.pyExe, "-u", mainPy,
-		"--worker-address", fmt.Sprintf("localhost:%d", opts.port),
-		"--port", fmt.Sprintf("%d", pyPort),
+		"--worker-address", opts.workerAddr,
+		"--port", fmt.Sprintf("%d", ri.port),
 		"--runner-id", uuid.NewString(),
 		"--code-dir", ri.pyRootDir,
 	)
@@ -220,7 +221,6 @@ func runPython(opts runOptions) (*pyRunInfo, error) {
 	cmd.Stderr = opts.stderr
 
 	if err := cmd.Start(); err != nil {
-		rsvc.Close()
 		return nil, err
 	}
 
@@ -230,19 +230,38 @@ func runPython(opts runOptions) (*pyRunInfo, error) {
 	return &ri, nil
 }
 
-func writeTar(rootDir string, data []byte) (string, error) {
-	tarName := path.Join(rootDir, "code.tar")
-	file, err := os.Create(tarName)
-	if err != nil {
-		return "", err
-	}
-	defer file.Close()
+func extractTar(rootDir string, data []byte) error {
+	rdr := tar.NewReader(bytes.NewReader(data))
+	for {
+		hdr, err := rdr.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return err
+		}
 
-	if _, err := io.Copy(file, bytes.NewReader(data)); err != nil {
-		return "", err
+		if hdr.FileInfo().IsDir() {
+			continue
+		}
+
+		outPath := path.Join(rootDir, hdr.Name)
+		if err := os.MkdirAll(path.Dir(outPath), 0o755); err != nil {
+			return err
+		}
+
+		file, err := os.Create(outPath)
+		if err != nil {
+			return err
+		}
+
+		_, err = io.Copy(file, rdr)
+		if err != nil {
+			return err
+		}
 	}
 
-	return tarName, err
+	return nil
 }
 
 func adjustPythonPath(env []string, runnerPath string) []string {

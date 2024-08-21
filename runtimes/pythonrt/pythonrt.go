@@ -4,6 +4,7 @@ import (
 	"archive/tar"
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -14,10 +15,13 @@ import (
 	"time"
 
 	"go.uber.org/zap"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/logger"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/internal/xdg"
+	"go.autokitteh.dev/autokitteh/runtimes/pythonrt/pb"
 	"go.autokitteh.dev/autokitteh/sdk/sdkruntimes"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -36,17 +40,18 @@ var (
 )
 
 type pySvc struct {
-	log       *zap.Logger
-	run       *pyRunInfo
-	xid       sdktypes.ExecutorID
-	runID     sdktypes.RunID
-	cbs       *sdkservices.RunCallbacks
-	exports   map[string]sdktypes.Value
-	firstCall bool
-	stdout    *streamLogger
-	stderr    *streamLogger
-	pyExe     string
-	remote    *remoteSvc
+	log      *zap.Logger
+	run      *pyRunInfo
+	xid      sdktypes.ExecutorID
+	runID    sdktypes.RunID
+	cbs      *sdkservices.RunCallbacks
+	exports  map[string]sdktypes.Value
+	stdout   *streamLogger
+	stderr   *streamLogger
+	pyExe    string
+	fileName string // main user code file name (entry point)
+	remote   *remoteSvc
+	runner   pb.RunnerClient
 }
 
 var minPyVersion = Version{
@@ -254,6 +259,26 @@ func (py *pySvc) loadSyscall(values map[string]sdktypes.Value) (sdktypes.Value, 
 	return syscall, nil
 }
 
+func dialRunner(addr string) (pb.RunnerClient, error) {
+	creds := insecure.NewCredentials()
+	conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(creds))
+	if err != nil {
+		return nil, err
+	}
+
+	c := pb.NewRunnerClient(conn)
+	return c, nil
+}
+
+func entryPointFileName(entryPoint string) string {
+	i := strings.Index(entryPoint, ":")
+	if i > 0 {
+		return entryPoint[:i]
+	}
+
+	return entryPoint
+}
+
 /*
 Run starts a Python workflow.
 
@@ -269,6 +294,7 @@ func (py *pySvc) Run(
 	values map[string]sdktypes.Value,
 	cbs *sdkservices.RunCallbacks,
 ) (sdkservices.Run, error) {
+	runnerOK := false
 	py.runID = runID
 	py.xid = sdktypes.NewExecutorID(runID) // Should be first
 	py.log = py.log.With(zap.String("run_id", runID.String()))
@@ -276,7 +302,6 @@ func (py *pySvc) Run(
 
 	py.log.Info("executor", zap.String("id", py.xid.String()))
 	py.cbs = cbs
-	py.firstCall = true // State for Call.
 
 	// Load environment defined by user in the `vars` section of the manifest,
 	// these are injected to the Python subprocess environment.
@@ -302,98 +327,65 @@ func (py *pySvc) Run(
 		return nil, fmt.Errorf("can't load syscall: %w", err)
 	}
 
-	rsvc := remoteSvc{
-		log:   py.log,
-		cbs:   cbs,
-		runID: runID,
-	}
-	if syscallFn.IsValid() {
-		rsvc.syscallFn = syscallFn
-	}
+	rsvc := newRemoteSvc(py.log, cbs, runID, syscallFn)
 
 	if err := rsvc.Start(); err != nil {
 		return nil, fmt.Errorf("can't start remote service: %w", err)
 	}
-	py.remote = &rsvc
+	py.remote = rsvc
+	defer func() {
+		if !runnerOK {
+			rsvc.Stop()
+		}
+	}()
 
 	opts := runOptions{
 		log:        py.log,
 		pyExe:      py.pyExe,
-		tarData:    tarData,
 		entryPoint: mainPath,
 		env:        envMap,
 		stdout:     py.stdout,
 		stderr:     py.stderr,
-		port:       rsvc.port,
+		tarData:    tarData,
+		workerAddr: fmt.Sprintf("localhost:%d", rsvc.port),
 	}
 	ri, err := runPython(opts)
 	if err != nil {
 		return nil, err
 	}
-	py.run = ri
-
-	// Kill Python process in case we had errors.
-	killPy := true
 	defer func() {
-		if !killPy {
-			return
+		if err := ri.proc.Kill(); err != nil {
+			py.log.Warn("kill runner", zap.Int("pid", ri.proc.Pid), zap.Error(err))
 		}
-
-		py.log.Error("killing Python", zap.Int("pid", py.run.proc.Pid))
-		if err := py.run.proc.Kill(); err != nil {
-			py.log.Warn("kill", zap.Int("pid", py.run.proc.Pid), zap.Error(err))
+		if !runnerOK {
+			ri.Cleanup()
 		}
-		py.run.Cleanup()
 	}()
 
-	conn, err := py.run.lis.Accept()
+	runnerAddr := fmt.Sprintf("localhost:%d", ri.port)
+	py.runner, err = dialRunner(runnerAddr)
 	if err != nil {
-		py.log.Error("connect to socket", zap.Error(err))
 		return nil, err
 	}
-	py.log.Info("python connected", zap.String("peer", conn.RemoteAddr().String()))
-	py.comm = NewComm(conn)
 
-	// FIXME (ENG-577) We might get activity calls before module is loaded if there are module level function calls.
-	var mod ModuleMessage
-	for {
-		msg, err := py.comm.Recv()
-		if err != nil {
-			py.log.Error("initial message from python", zap.Error(err))
-			return nil, err
-		}
-
-		if msg.Type == "" {
-			py.log.Error("python can't load module", zap.String("module", mainPath))
-			return nil, fmt.Errorf("python can't load %q", mainPath)
-		}
-
-		if msg.Type == messageType[LogMessage]() {
-			if err := py.handleLog(msg); err != nil {
-				return nil, err
-			}
-			continue
-		}
-
-		mod, err = extractMessage[ModuleMessage](msg)
-		if err != nil {
-			py.log.Error("initial message from python", zap.Error(err))
-			return nil, err
-		}
-
-		py.log.Info("module loaded")
-		break
+	py.fileName = entryPointFileName(mainPath)
+	req := pb.ExportsRequest{
+		FileName: py.fileName,
+	}
+	resp, err := py.runner.Exports(ctx, &req)
+	if err != nil {
+		return nil, err
 	}
 
-	py.log.Info("module entries", zap.Any("entries", mod.Entries))
-	exports, err := entriesToValues(py.xid, mod.Entries)
+	py.log.Info("module entries", zap.Any("entries", resp.Exports))
+	exports, err := entriesToValues(py.xid, resp.Exports)
 	if err != nil {
 		py.log.Error("can't create module entries", zap.Error(err))
 		return nil, fmt.Errorf("can't create module entries: %w", err)
 	}
 	py.exports = exports
 
-	killPy = false // All is good, don't kill Python subprocess.
+	runnerOK = true // All is good, don't kill Python subprocess.
 
 	py.log.Info("run done")
 	return py, nil
@@ -412,6 +404,7 @@ func (py *pySvc) Close() {
 	// We kill the Python process once the initial `Call` is completed.
 }
 
+/*
 // initialCall handles initial call from autokitteh, it does the message loop with Python.
 // We split it from Call since Call is also used to execute activities.
 func (py *pySvc) initialCall(ctx context.Context, funcName string, event map[string]any) (sdktypes.Value, error) {
@@ -558,6 +551,7 @@ func (py *pySvc) tracebackToLocation(traceback []Frame) []sdktypes.CallFrame {
 
 	return frames
 }
+*/
 
 // TODO (ENG-624) Remove this once we support callbacks to autokitteh
 func (py *pySvc) injectHTTPBody(ctx context.Context, data sdktypes.Value, event map[string]any, cbs *sdkservices.RunCallbacks) error {
@@ -638,58 +632,29 @@ func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 
 	fnName := fn.Name().String()
 	py.log.Info("call", zap.String("function", fnName))
-	if py.firstCall { // TODO: mutex. Ask Itay
-		py.firstCall = false
 
-		return py.initialCall(ctx, fnName, event)
-	}
-
-	// Activity call
-	cbm := CallbackMessage{
-		Name: fnName,
-		Data: fn.Data(),
-	}
-	py.log.Info("callback to Python", zap.Any("message", cbm))
-
-	if err := py.comm.Send(cbm); err != nil {
-		py.log.Error("send to python", zap.Error(err))
-		return sdktypes.InvalidValue, err
-	}
-
-	var msg Message
-	for { // Consume logs.
-		var err error
-		msg, err = py.comm.Recv()
-		if err != nil {
-			py.log.Error("from python", zap.Error(err))
-			return sdktypes.InvalidValue, err
-		}
-
-		if msg.Type == messageType[LogMessage]() {
-			if err := py.handleLog(msg); err != nil {
-				py.log.Error("handle log", zap.Error(err))
-				return sdktypes.InvalidValue, err
-			}
-			continue
-		}
-
-		if msg.Type == messageType[CallMessage]() {
-			call, _ := extractMessage[CallMessage](msg)
-			if err := py.handleCall(ctx, call); err != nil {
-				return sdktypes.InvalidValue, err
-			}
-			continue
-		}
-
-		break
-	}
-
-	rm, err := extractMessage[ResponseMessage](msg)
+	eventData, err := json.Marshal(event)
 	if err != nil {
-		py.log.Error("from python", zap.Error(err))
+		return sdktypes.InvalidValue, fmt.Errorf("marshal event: %w", err)
+	}
+
+	req := pb.StartRequest{
+		RunId:      py.runID.String(),
+		EntryPoint: fmt.Sprintf("%s:%s", py.fileName, fnName),
+		Event: &pb.Event{
+			Data: eventData,
+		},
+	}
+	if _, err := py.runner.Start(ctx, &req); err != nil {
+		// TODO: Handle traceback
 		return sdktypes.InvalidValue, err
 	}
-	py.log.Info("python return", zap.Any("message", rm))
 
-	return sdktypes.NewBytesValue(rm.Value), nil
+	select {
+	case err := <-py.remote.error:
+		// TODO: traceback
+		return sdktypes.InvalidValue, err
+	case out := <-py.remote.result:
+		return sdktypes.NewBytesValue(out), nil
+	}
 }

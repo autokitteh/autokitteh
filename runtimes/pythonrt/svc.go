@@ -27,6 +27,27 @@ type remoteSvc struct {
 	lis       net.Listener
 	srv       *grpc.Server
 	port      int
+
+	// One of these will signal end of execution
+	result chan []byte
+	error  chan string
+}
+
+func newRemoteSvc(log *zap.Logger, cbs *sdkservices.RunCallbacks, runID sdktypes.RunID, syscallFn sdktypes.Value) *remoteSvc {
+	svc := remoteSvc{
+		log:   log,
+		cbs:   cbs,
+		runID: runID,
+
+		result: make(chan []byte, 1),
+		error:  make(chan error, 1),
+	}
+
+	if syscallFn.IsValid() {
+		svc.syscallFn = syscallFn
+	}
+
+	return &svc
 }
 
 func (s *remoteSvc) Health(context.Context, *pb.HealthRequest) (*pb.HealthResponse, error) {
@@ -158,18 +179,38 @@ func (s *remoteSvc) Unsubscribe(ctx context.Context, req *pb.UnsubscribeRequest)
 	return &pb.UnsubscribeResponse{}, nil
 }
 
-/*
+func (s *remoteSvc) call(ctx context.Context, callID string, fn sdktypes.Value) {
+	out, err := s.cbs.Call(ctx, s.runID, fn, nil, nil)
+	if err != nil {
+		req := &pb.ActivityReplyRequest{
+			CallId: callID,
+		}
+	}
+}
+
 // Runner starting activity
-func (s *RemoteSvc) Activity(_ context.Context, _ *pb.ActivityRequest) (*pb.ActivityResponse, error) {
-	panic("not implemented") // TODO: Implement
+func (s *remoteSvc) Activity(ctx context.Context, req *pb.ActivityRequest) (*pb.ActivityResponse, error) {
+	xid := sdktypes.NewExecutorID(s.runID)
+	name := fmt.Sprintf("fn_%s", req.CallId)
+	fn, err := sdktypes.NewFunctionValue(xid, name, nil, nil, pyModuleFunc)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "new function value: %s", err)
+	}
+
+	go s.call(ctx, req.CallId, fn)
+
+	return &pb.ActivityResponse{}, nil
 }
 
-// Runner done with activity
-func (s *RemoteSvc) Done(_ context.Context, _ *pb.DoneRequest) (*pb.DoneResponse, error) {
-	panic("not implemented") // TODO: Implement
-}
+func (s *remoteSvc) Done(ctx context.Context, req *pb.DoneRequest) (*pb.DoneResponse, error) {
+	if req.Error != "" {
+		s.error <- req.Error
+	} else {
+		s.result <- req.Result
+	}
 
-*/
+	return &pb.DoneResponse{}, nil
+}
 
 func freePort() (int, error) {
 	conn, err := net.Listen("tcp", ":0")
