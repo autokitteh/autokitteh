@@ -45,10 +45,9 @@ func New(cvars sdkservices.Vars) sdkservices.Integration {
 	)
 }
 
-// connStatus is an optional connection status check provided by the
-// integration to AutoKitteh. The possible results are "init required"
-// (the connection is not usable yet) and "using X" (where "X" is the
-// authentication method: OAuth 2.0, Cloud API token, or on-prem PAT).
+// connStatus is an optional connection status check provided by
+// the integration to AutoKitteh. The possible results are "init
+// required" (the connection is not usable yet) and "using X".
 func connStatus(i *integration) sdkintegrations.OptFn {
 	return sdkintegrations.WithConnectionStatus(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
 		if !cid.IsValid() {
@@ -60,16 +59,22 @@ func connStatus(i *integration) sdkintegrations.OptFn {
 			return sdktypes.InvalidStatus, err
 		}
 
-		if vs.Has(oauthAccessToken) {
-			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "using OAuth 2.0"), nil
-		}
-		if vs.Has(email) {
-			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "using API token"), nil
-		}
-		if vs.Has(token) {
-			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "using PAT"), nil
+		at := vs.Get(authType)
+		if !at.IsValid() || at.Value() == "" {
+			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "init required"), nil
 		}
 
-		return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "unrecognized auth"), nil
+		// Align with:
+		// https://github.com/autokitteh/web-platform/blob/main/src/enums/connections/connectionTypes.enum.ts
+		switch at.Value() {
+		case "apiToken":
+			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "using cloud API token"), nil
+		case "oauth":
+			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "using OAuth 2.0"), nil
+		case "pat":
+			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "using on-prem PAT"), nil
+		default:
+			return sdktypes.NewStatus(sdktypes.StatusCodeError, "bad auth type"), nil
+		}
 	})
 }

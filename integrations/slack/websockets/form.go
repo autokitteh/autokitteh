@@ -73,5 +73,6 @@ func (h handler) HandleForm(w http.ResponseWriter, r *http.Request) {
 		TeamID:       authTest.TeamID,
 	}).
 		Set(vars.AppTokenName, appToken, true).
-		Set(vars.BotTokenName, botToken, true))
+		Set(vars.BotTokenName, botToken, true).
+		Set(vars.AuthType, "socketMode", false))
 }

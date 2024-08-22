@@ -52,10 +52,9 @@ func connTest(*integration) sdkintegrations.OptFn {
 	})
 }
 
-// connStatus is an optional connection status check provided by the
-// integration to AutoKitteh. The possible results are "init required"
-// (the connection is not usable yet) and "using X" (where "X" is the
-// authentication method: a GitHub app, or a user's PAT + webhook).
+// connStatus is an optional connection status check provided by
+// the integration to AutoKitteh. The possible results are "init
+// required" (the connection is not usable yet) and "using X".
 func connStatus(i *integration) sdkintegrations.OptFn {
 	return sdkintegrations.WithConnectionStatus(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
 		if !cid.IsValid() {
@@ -67,10 +66,21 @@ func connStatus(i *integration) sdkintegrations.OptFn {
 			return sdktypes.InvalidStatus, err
 		}
 
-		if vs.Has(vars.PAT) {
-			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "using PAT + webhook"), nil
+		at := vs.Get(vars.AuthType)
+		if !at.IsValid() || at.Value() == "" {
+			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "init required"), nil
 		}
-		return sdktypes.NewStatus(sdktypes.StatusCodeOK, "using GitHub app"), nil
+
+		// Align with:
+		// https://github.com/autokitteh/web-platform/blob/main/src/enums/connections/connectionTypes.enum.ts
+		switch at.Value() {
+		case "oauth":
+			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "using GitHub app"), nil
+		case "pat":
+			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "using PAT + webhook"), nil
+		default:
+			return sdktypes.NewStatus(sdktypes.StatusCodeError, "bad auth type"), nil
+		}
 	})
 }
 
