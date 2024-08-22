@@ -45,7 +45,6 @@ func TestCreateConnectionForeignKeys(t *testing.T) {
 	f := preConnectionTest(t)
 
 	p := f.newProject()
-	i := f.newIntegration("test")
 	b := f.newBuild()
 	f.saveBuildsAndAssert(t, b)
 	f.createProjectsAndAssert(t, p)
@@ -63,7 +62,7 @@ func TestCreateConnectionForeignKeys(t *testing.T) {
 	assert.ErrorIs(t, f.gormdb.createConnection(f.ctx, &c), gorm.ErrForeignKeyViolated)
 
 	// test with existing assets
-	c = f.newConnection(i, p, i)
+	c = f.newConnection(p)
 	f.createConnectionsAndAssert(t, c)
 }
 

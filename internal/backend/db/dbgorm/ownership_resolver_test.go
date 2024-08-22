@@ -10,7 +10,6 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/builds"
 	"go.autokitteh.dev/autokitteh/internal/backend/connections"
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
-	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/internal/backend/deployments"
 	"go.autokitteh.dev/autokitteh/internal/backend/envs"
 	"go.autokitteh.dev/autokitteh/internal/backend/events"
@@ -29,12 +28,7 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-var testIntegrationID = sdktypes.NewIntegrationIDFromName("test")
-
-var testIntegration = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
-	IntegrationId: testIntegrationID.String(),
-	UniqueName:    "test",
-}))
+var testIntegrationID = sdktypes.NewIntegrationIDFromName("test").UUIDValue()
 
 type dbs struct {
 	intSvc sdkservices.Integrations
@@ -50,13 +44,9 @@ type dbs struct {
 }
 
 func newIntegrationsSvc(t *testing.T, f *dbFixture) sdkservices.Integrations {
-	i := f.newIntegration("test")
-
 	desc := kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
-		IntegrationId: sdktypes.NewIDFromUUID[sdktypes.IntegrationID](&i.IntegrationID).String(),
-		UniqueName:    i.UniqueName,
-		DisplayName:   i.DisplayName,
-		Description:   i.Description,
+		IntegrationId: sdktypes.NewIDFromUUID[sdktypes.IntegrationID](&testIntegrationID).String(),
+		UniqueName:    "test",
 	}))
 
 	testIntegration := sdkintegrations.NewIntegration(desc, sdkmodule.New())
@@ -223,10 +213,8 @@ func TestResolverSessionIDWithOwnership(t *testing.T) {
 func TestResolverConnectionNameOrIdWithOwnership(t *testing.T) {
 	r, f := createResolverAndFixture(t)
 
-	i := testIntegration
-
 	p := f.newProject()
-	c := f.newConnection(p, scheme.Integration{IntegrationID: i.ID().UUIDValue()})
+	c := f.newConnection(p)
 	f.createProjectsAndAssert(t, p)
 	f.createConnectionsAndAssert(t, c)
 
@@ -348,9 +336,7 @@ func TestResolverProjectNameOrIdWithOwnership(t *testing.T) {
 func TestResolverIntegrationNameOrIdWithOwnership(t *testing.T) {
 	r, f := createResolverAndFixture(t)
 
-	i := testIntegration
-
-	iid := sdktypes.NewIDFromUUID[sdktypes.IntegrationID](testIntegrationID.Value())
+	iid := sdktypes.NewIDFromUUID[sdktypes.IntegrationID](&testIntegrationID)
 	iids := iid.String()
 
 	testCases := []struct {
@@ -358,7 +344,7 @@ func TestResolverIntegrationNameOrIdWithOwnership(t *testing.T) {
 		nameOrID string
 	}{
 		{"integraitonID", iids},
-		{"integraitonName", i.ToProto().UniqueName},
+		{"integraitonName", "test"},
 	}
 
 	// resolve ok
