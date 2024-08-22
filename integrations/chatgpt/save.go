@@ -15,8 +15,6 @@ const (
 	contentTypeForm   = "application/x-www-form-urlencoded"
 )
 
-var apiKeyVar = sdktypes.NewSymbol("api_key")
-
 // handler is an autokitteh webhook which implements [http.Handler]
 // to save data from web form submissions as connections.
 type handler struct {
@@ -45,5 +43,7 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	c.Finalize(sdktypes.NewVars().Set(apiKeyVar, r.Form.Get("key"), true))
+	c.Finalize(sdktypes.NewVars().
+		Set(apiKeyVar, r.Form.Get("key"), true).
+		Set(authType, "apiKey", false))
 }
