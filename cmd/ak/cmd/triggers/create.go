@@ -26,7 +26,7 @@ var createCmd = common.StandardCommand(&cobra.Command{
 	Args:  cobra.NoArgs,
 
 	PreRunE: func(cmd *cobra.Command, args []string) error {
-		common.UnsetEmptyFlags(cmd, "connection", "schedule")
+		common.UnsetEmptyFlags(cmd, "connection", "schedule", "project", "env")
 		return nil
 	},
 
@@ -42,14 +42,20 @@ var createCmd = common.StandardCommand(&cobra.Command{
 		}
 
 		// Project and/or environment are required.
-		p, _, err := r.ProjectNameOrID(ctx, project)
-		if err = common.AddNotFoundErrIfCond(err, p.IsValid()); err != nil {
-			return common.ToExitCodeErrorNotNilErr(err, "project")
+		if project != "" {
+			p, _, err := r.ProjectNameOrID(ctx, project)
+			if err = common.AddNotFoundErrIfCond(err, p.IsValid()); err != nil {
+				return common.ToExitCodeErrorNotNilErr(err, "project")
+			}
 		}
 
-		e, eid, err := r.EnvNameOrID(ctx, env, project)
-		if err = common.AddNotFoundErrIfCond(err, e.IsValid()); err != nil {
-			return common.ToExitCodeErrorNotNilErr(err, "environment")
+		var eid sdktypes.EnvID
+		if env != "" {
+			e, _, err := r.EnvNameOrID(ctx, env, project)
+			if err = common.AddNotFoundErrIfCond(err, e.IsValid()); err != nil {
+				return common.ToExitCodeErrorNotNilErr(err, "environment")
+			}
+			eid = e.ID()
 		}
 
 		// Mode 1: connection is required, event and/or filter
