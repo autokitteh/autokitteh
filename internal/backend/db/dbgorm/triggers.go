@@ -73,6 +73,10 @@ func (gdb *gormdb) listTriggers(ctx context.Context, filter sdkservices.ListTrig
 	return ts, nil
 }
 
+func triggerUniqueName(env string, name string) string {
+	return fmt.Sprintf("%s/%s", env, name)
+}
+
 func (db *gormdb) triggerToRecord(ctx context.Context, trigger sdktypes.Trigger) (*scheme.Trigger, error) {
 	connID := trigger.ConnectionID()
 
@@ -105,7 +109,7 @@ func (db *gormdb) triggerToRecord(ctx context.Context, trigger sdktypes.Trigger)
 	}
 
 	name := trigger.Name()
-	uniqueName := fmt.Sprintf("%s/%s", envID.String(), name)
+	uniqueName := triggerUniqueName(envID.String(), name.String())
 
 	return &scheme.Trigger{
 		TriggerID:    trigger.ID().UUIDValue(),

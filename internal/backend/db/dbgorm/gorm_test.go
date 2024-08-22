@@ -375,6 +375,8 @@ func (f *dbFixture) newEnv(args ...any) scheme.Env {
 			env.ProjectID = a.ProjectID
 		case sdktypes.UUID:
 			env.ProjectID = a
+		case string:
+			env.Name = a
 		}
 	}
 	return env
@@ -406,7 +408,6 @@ func (f *dbFixture) newTrigger(args ...any) scheme.Trigger {
 	t := scheme.Trigger{
 		TriggerID:    id,
 		Name:         name,
-		UniqueName:   name,
 		Data:         datatypes.JSON([]byte("{}")),
 		CodeLocation: "loc",
 	}
@@ -418,8 +419,11 @@ func (f *dbFixture) newTrigger(args ...any) scheme.Trigger {
 			t.ConnectionID = a.ConnectionID
 		case scheme.Env:
 			t.EnvID = a.EnvID
+		case string:
+			t.Name = a
 		}
 	}
+	t.UniqueName = triggerUniqueName(t.EnvID.String(), t.Name)
 	return t
 }
 
