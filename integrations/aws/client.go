@@ -103,9 +103,9 @@ func New(cvars sdkservices.Vars) sdkservices.Integration {
 }
 
 // connStatus is an optional connection status check provided by the
-// integration with AutoKitteh. The possible results are "init required" 
-// (indicating the connection is not yet usable), "using X" (indicating 
-// one of multiple available authentication methods is in use), or 
+// integration with AutoKitteh. The possible results are "init required"
+// (indicating the connection is not yet usable), "using X" (indicating
+// one of multiple available authentication methods is in use), or
 // "initialized" when only one authentication method is available.
 func connStatus(i *integration) sdkintegrations.OptFn {
 	return sdkintegrations.WithConnectionStatus(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
