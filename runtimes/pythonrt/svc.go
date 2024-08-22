@@ -27,20 +27,22 @@ type remoteSvc struct {
 	lis       net.Listener
 	srv       *grpc.Server
 	port      int
+	runner    pb.RunnerClient
 
 	// One of these will signal end of execution
 	result chan []byte
 	error  chan string
 }
 
-func newRemoteSvc(log *zap.Logger, cbs *sdkservices.RunCallbacks, runID sdktypes.RunID, syscallFn sdktypes.Value) *remoteSvc {
+func newRemoteSvc(log *zap.Logger, cbs *sdkservices.RunCallbacks, runner pb.RunnerClient, runID sdktypes.RunID, syscallFn sdktypes.Value) *remoteSvc {
 	svc := remoteSvc{
-		log:   log,
-		cbs:   cbs,
-		runID: runID,
+		log:    log,
+		cbs:    cbs,
+		runner: runner,
+		runID:  runID,
 
 		result: make(chan []byte, 1),
-		error:  make(chan error, 1),
+		error:  make(chan string, 1),
 	}
 
 	if syscallFn.IsValid() {
@@ -181,10 +183,28 @@ func (s *remoteSvc) Unsubscribe(ctx context.Context, req *pb.UnsubscribeRequest)
 
 func (s *remoteSvc) call(ctx context.Context, callID string, fn sdktypes.Value) {
 	out, err := s.cbs.Call(ctx, s.runID, fn, nil, nil)
-	if err != nil {
-		req := &pb.ActivityReplyRequest{
-			CallId: callID,
-		}
+	req := pb.ActivityReplyRequest{
+		CallId: callID,
+	}
+
+	switch {
+	case err != nil:
+		req.Error = fmt.Sprintf("call_id: %s - %s", callID, err)
+		s.log.Error("activity reply error", zap.Error(err))
+	case !out.IsBytes():
+		req.Error = fmt.Sprintf("call output not bytes: %#v", out)
+		s.log.Error("activity reply error", zap.String("error", req.Error))
+	default:
+		data := out.GetBytes().Value()
+		req.Result = data
+	}
+
+	reply, err := s.runner.ActivityReply(ctx, &req)
+	switch {
+	case err != nil:
+		s.log.Error("activity reply error", zap.Error(err))
+	case reply.Error != "":
+		s.log.Error("activity reply error", zap.String("error", reply.Error))
 	}
 }
 

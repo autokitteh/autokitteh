@@ -95,6 +95,7 @@ message ExecuteResponse {
 message ActivityReplyRequest {
   string call_id = 1;
   bytes result = 2;
+  string error = 3;
 }
 
 message ActivityReplyResponse {

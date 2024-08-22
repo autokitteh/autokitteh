@@ -129,12 +129,14 @@ class ExecuteResponse(_message.Message):
     def __init__(self, result: _Optional[bytes] = ..., error: _Optional[str] = ..., traceback: _Optional[_Iterable[_Union[Frame, _Mapping]]] = ...) -> None: ...
 
 class ActivityReplyRequest(_message.Message):
-    __slots__ = ("call_id", "result")
+    __slots__ = ("call_id", "result", "error")
     CALL_ID_FIELD_NUMBER: _ClassVar[int]
     RESULT_FIELD_NUMBER: _ClassVar[int]
+    ERROR_FIELD_NUMBER: _ClassVar[int]
     call_id: str
     result: bytes
-    def __init__(self, call_id: _Optional[str] = ..., result: _Optional[bytes] = ...) -> None: ...
+    error: str
+    def __init__(self, call_id: _Optional[str] = ..., result: _Optional[bytes] = ..., error: _Optional[str] = ...) -> None: ...
 
 class ActivityReplyResponse(_message.Message):
     __slots__ = ("error",)
