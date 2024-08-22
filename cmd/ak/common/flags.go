@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/internal/resolver"
@@ -67,4 +68,20 @@ func ToExitCodeWithSkipNotFoundFlag(cmd *cobra.Command, err error, whats ...stri
 		}
 	}
 	return exitErr
+}
+
+// maybe we could just run this check for all required flags instead of providing explicit ones?
+func UnsetEmptyFlags(cmd *cobra.Command, flags ...string) {
+	flagsMap := make(map[string]struct{}, len(flags))
+	for _, flag := range flags {
+		flagsMap[flag] = struct{}{}
+	}
+
+	cmd.Flags().Visit(func(flag *pflag.Flag) {
+		if _, ok := flagsMap[flag.Name]; ok {
+			if flag.Value.Type() == "string" && flag.Changed && flag.Value.String() == "" {
+				flag.Changed = false
+			}
+		}
+	})
 }
