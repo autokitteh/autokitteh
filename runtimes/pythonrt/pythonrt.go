@@ -407,26 +407,6 @@ func (py *pySvc) Close() {
 	// We kill the Python process once the initial `Call` is completed.
 }
 
-func (py *pySvc) tracebackToLocation(traceback []Frame) []sdktypes.CallFrame {
-	frames := make([]sdktypes.CallFrame, len(traceback))
-	for i, f := range traceback {
-		var err error
-		frames[i], err = sdktypes.CallFrameFromProto(&sdktypes.CallFramePB{
-			Name: f.Name,
-			Location: &sdktypes.CodeLocationPB{
-				Path: f.File,
-				Row:  f.LineNo,
-				Col:  1,
-			},
-		})
-		if err != nil {
-			py.log.Warn("can't translate traceback frame", zap.Error(err))
-		}
-	}
-
-	return frames
-}
-
 // TODO (ENG-624) Remove this once we support callbacks to autokitteh
 func (py *pySvc) injectHTTPBody(ctx context.Context, data sdktypes.Value, event map[string]any, cbs *sdkservices.RunCallbacks) error {
 	if !data.IsStruct() {
