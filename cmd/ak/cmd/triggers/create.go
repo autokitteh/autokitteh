@@ -25,6 +25,11 @@ var createCmd = common.StandardCommand(&cobra.Command{
 	Short: "Create event trigger",
 	Args:  cobra.NoArgs,
 
+	PreRunE: func(cmd *cobra.Command, args []string) error {
+		common.UnsetEmptyFlags(cmd, "connection", "schedule")
+		return nil
+	},
+
 	RunE: func(cmd *cobra.Command, args []string) error {
 		r := resolver.Resolver{Client: common.Client()}
 		ctx, cancel := common.LimitedContext()
