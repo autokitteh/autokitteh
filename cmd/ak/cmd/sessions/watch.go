@@ -2,6 +2,7 @@ package sessions
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"regexp"
 	"time"
@@ -10,14 +11,18 @@ import (
 
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
 	"go.autokitteh.dev/autokitteh/internal/resolver"
+	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-var endState, endPrintRE string
+var (
+	endState, endPrintRE string
+	waitCreated          bool
+)
 
 var watchCmd = common.StandardCommand(&cobra.Command{
-	Use:   "watch [sessions ID] [--fail] [--end-state <state>] [--end-print-re <re>] [--timeout <duration>] [--poll-interval <duration>] [--no-timestamps] [--quiet] [--prints-only]",
+	Use:   "watch [sessions ID] [--fail] [--end-state <state>] [--end-print-re <re>] [--timeout <duration>] [--poll-interval <duration>] [--no-timestamps] [--quiet] [--prints-only] [--wait-created]",
 	Short: "Watch session runtime logs (prints, calls, errors, state changes)",
 	Args:  cobra.MaximumNArgs(1),
 
@@ -60,6 +65,8 @@ func init() {
 	watchCmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "don't print anything, just wait to finish")
 	watchCmd.Flags().BoolVarP(&printsOnly, "just-prints", "p", false, "output only session print messages")
 
+	watchCmd.Flags().BoolVar(&waitCreated, "wait-created", false, "wait for session to exist")
+
 	common.AddFailIfNotFoundFlag(watchCmd)
 }
 
@@ -88,10 +95,14 @@ func sessionWatch(sid sdktypes.SessionID, endState sdktypes.SessionStateType, en
 		defer cancel()
 	}
 
+	first := true
+
 	for !state.IsFinal() && (endState.IsZero() || state != endState) {
-		if len(rs) > 0 {
+		if !first {
 			time.Sleep(pollInterval)
 		}
+
+		first = false
 
 		currCtx, cancel := common.WithLimitedContext(ctx)
 		defer cancel()
@@ -99,6 +110,13 @@ func sessionWatch(sid sdktypes.SessionID, endState sdktypes.SessionStateType, en
 		s, err := sessions().Get(currCtx, sid)
 		if err != nil {
 			cancel()
+
+			if waitCreated && errors.Is(err, sdkerrors.ErrNotFound) {
+				// session might not have been created yet (in test mode we know
+				// in advance the session id).
+				continue
+			}
+
 			return nil, fmt.Errorf("get session: %w", err)
 		}
 
