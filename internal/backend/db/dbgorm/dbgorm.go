@@ -19,7 +19,6 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/migrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
-	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 type Config = gormkitteh.Config
@@ -208,25 +207,6 @@ func (db *gormdb) Debug() db.DB {
 		z:  db.z,
 		db: db.db.Debug(),
 	}
-}
-
-func getOneWTransform[T any, R sdktypes.Object](db *gorm.DB, ctx context.Context, f func(t T) (R, error), where string, args ...any) (R, error) {
-	var (
-		rec     T
-		invalid R
-	)
-
-	// TODO: fetch all records and report if there is more than one record
-	result := db.WithContext(ctx).Where(where, args...).Limit(1).Find(&rec)
-	if result.Error != nil {
-		return invalid, translateError(result.Error)
-	}
-
-	if result.RowsAffected == 0 {
-		return invalid, sdkerrors.ErrNotFound
-	}
-
-	return f(rec)
 }
 
 // NOTE: no ctx is passed since in all places it's already applied

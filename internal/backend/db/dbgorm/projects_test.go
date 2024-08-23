@@ -194,9 +194,8 @@ func TestDeleteProjectAndDependents(t *testing.T) {
 	//     - d1 (s3)
 	p1, p2 := f.newProject(), f.newProject()
 
-	i := f.newIntegration("test")
 	c := f.newConnection()
-	c.IntegrationID = &i.IntegrationID
+	c.IntegrationID = &testIntegrationID
 	c.ProjectID = &p1.ProjectID
 
 	e1p1, e2p1, e1p2 := f.newEnv(), f.newEnv(), f.newEnv()
@@ -235,7 +234,6 @@ func TestDeleteProjectAndDependents(t *testing.T) {
 	s3d1e1p2.DeploymentID = &d1e1p2.DeploymentID
 
 	f.createProjectsAndAssert(t, p1, p2)
-	f.createIntegrationsAndAssert(t, i)
 	f.createConnectionsAndAssert(t, c)
 	f.createEnvsAndAssert(t, e1p1, e2p1, e1p2)
 	f.createTriggersAndAssert(t, t1, t2)
