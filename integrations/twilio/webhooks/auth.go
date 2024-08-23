@@ -20,6 +20,7 @@ const (
 )
 
 type Vars struct {
+	AuthType   string
 	AccountSID string
 	Username   string `vars:"secret"`
 	Password   string `vars:"secret"`
@@ -43,17 +44,23 @@ func (h handler) HandleAuth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	at := ""
+
 	accountSID := r.Form.Get("account_sid")
 	username := accountSID
 	password := r.Form.Get("auth_token")
 	if password == "" {
 		username = r.Form.Get("api_key")
 		password = r.Form.Get("api_secret")
+		at = "apiKey"
+	} else {
+		at = "authToken"
 	}
 
 	// TODO(ENG-1156): Test the authentication details.
 
 	c.Finalize(sdktypes.EncodeVars(Vars{
+		AuthType:   at,
 		AccountSID: accountSID,
 		Username:   username,
 		Password:   password,

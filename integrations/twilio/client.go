@@ -1,6 +1,10 @@
 package twilio
 
 import (
+	"context"
+
+	// "go.autokitteh.dev/autokitteh/integrations/twilio/webhooks"
+	"go.autokitteh.dev/autokitteh/integrations/twilio/webhooks"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
@@ -29,7 +33,7 @@ var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.Integrati
 }))
 
 func New(vars sdkservices.Vars) sdkservices.Integration {
-	i := integration{vars: vars}
+	i := &integration{vars: vars}
 
 	return sdkintegrations.NewIntegration(
 		desc,
@@ -40,6 +44,49 @@ func New(vars sdkservices.Vars) sdkservices.Integration {
 				sdkmodule.WithArgs("to", "from_number?", "messaging_service_sid?", "body?", "media_url?", "content_sid?"),
 			),
 		),
+		connStatus(i),
 		sdkintegrations.WithConnectionConfigFromVars(vars),
 	)
+}
+
+// connStatus is an optional connection status check provided by the
+// integration with AutoKitteh. The possible results are "init required"
+// (indicating the connection is not yet usable), "using X" (indicating
+// one of multiple available authentication methods is in use), or
+// "initialized" when only one authentication method is available.
+func connStatus(i *integration) sdkintegrations.OptFn {
+	return sdkintegrations.WithConnectionStatus(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
+		if !cid.IsValid() {
+			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "init required"), nil
+		}
+
+		vs, err := i.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
+		if err != nil {
+			return sdktypes.InvalidStatus, err
+		}
+
+		var decodedVars webhooks.Vars
+		vs.Decode(&decodedVars)
+
+		s, err := sdktypes.ParseSymbol("AuthType")
+		if err != nil {
+			return sdktypes.InvalidStatus, err
+		}
+
+		at := vs.Get(s)
+		if !at.IsValid() || at.Value() == "" {
+			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "init required"), nil
+		}
+
+		// Align with:
+		// https://github.com/autokitteh/web-platform/blob/main/src/enums/connections/connectionTypes.enum.ts
+		switch at.Value() {
+		case "apiKey":
+			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "using api key"), nil
+		case "authToken":
+			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "using auth token"), nil
+		default:
+			return sdktypes.NewStatus(sdktypes.StatusCodeError, "bad auth type"), nil
+		}
+	})
 }
