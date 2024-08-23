@@ -66,6 +66,33 @@ func (th *thread) evalCELExpr(ctx context.Context, expr string, static bool, inp
 	return th.evalProgram(ctx, prg, inputs)
 }
 
+func (th *thread) evalInterpolatedCELExpr(ctx context.Context, expr string, static bool, inputs map[string]any) (sdktypes.Value, error) {
+	i := kittehs.Interpolator{
+		Left:  "{{",
+		Right: "}}",
+		EvaluateExpr: func(expr string) (string, error) {
+			v, err := th.evalCELExpr(ctx, expr, static, inputs)
+			if err != nil {
+				return "", err
+			}
+
+			u, err := v.Unwrap()
+			if err != nil {
+				return "", err
+			}
+
+			return fmt.Sprint(u), nil
+		},
+	}
+
+	out, err := i.Execute(expr)
+	if err != nil {
+		return sdktypes.InvalidValue, err
+	}
+
+	return sdktypes.NewStringValue(out), nil
+}
+
 func (th *thread) evalPongo2Expr(expr string, inputs map[string]any) (sdktypes.Value, error) {
 	expr = strings.ReplaceAll(expr, "%{{", `{{ "{{" }}`)
 	expr = strings.ReplaceAll(expr, "%}}", `{{ "}}" }}`)
@@ -217,6 +244,9 @@ func (th *thread) resolveValue(ctx context.Context, v sdktypes.Value, static boo
 			switch kind {
 			case "cel", "":
 				v, err = th.evalCELExpr(ctx, rest, static, inputs)
+
+			case "icel":
+				v, err = th.evalInterpolatedCELExpr(ctx, rest, static, inputs)
 
 			case "p":
 				v, err = th.evalPongo2Expr(rest, inputs)

@@ -11,7 +11,7 @@ imports:
 
 options:
   interpolate_all_strings: true
-  default_interpolation: "p"
+  default_interpolation: "icel"
 
 nodes:
   - name: "step_3"
@@ -41,7 +41,7 @@ nodes:
         target: "imports.openops.returnString"
         args:
           propsValue:
-            region: "^cel^ states.nodes.step_4['item']['region']"
+            region: "{{ states.nodes.step_4['item']['region'] }}"
             service: "ec2"
             accountId: "{{states.nodes.step_5}}"
             resourceId: "{{states.nodes.step_4.item.VolumeId}}"
