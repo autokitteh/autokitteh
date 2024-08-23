@@ -24,8 +24,6 @@ func Populate(ctx context.Context, db DB, objs ...sdktypes.Object) (err error) {
 			err = db.CreateConnection(ctx, obj)
 		case sdktypes.Deployment:
 			err = db.CreateDeployment(ctx, obj)
-		case sdktypes.Integration:
-			err = db.CreateIntegration(ctx, obj)
 		case sdktypes.Session:
 			err = db.CreateSession(ctx, obj)
 		default:

@@ -431,31 +431,19 @@ func (f *dbFixture) newConnection(args ...any) scheme.Connection {
 	id := newTestID()
 	name := idToName(id, "con")
 	c := scheme.Connection{
-		ConnectionID: id,
-		Name:         name,
+		IntegrationID: &testIntegrationID,
+		ConnectionID:  id,
+		Name:          name,
 	}
 	for _, a := range args {
 		switch a := a.(type) {
 		case scheme.Project:
 			c.ProjectID = &a.ProjectID
-		case scheme.Integration:
-			c.IntegrationID = &a.IntegrationID
 		case string:
 			c.Name = a
 		}
 	}
 	return c
-}
-
-func (f *dbFixture) newIntegration(name string) scheme.Integration {
-	id := sdktypes.NewIntegrationIDFromName(name).UUIDValue()
-	return scheme.Integration{
-		IntegrationID: id,
-		UniqueName:    name,
-		DisplayName:   name,
-		Description:   name + " integration",
-		UserLinks:     datatypes.JSON([]byte("{}")),
-	}
 }
 
 func (f *dbFixture) newEvent(args ...any) scheme.Event {
