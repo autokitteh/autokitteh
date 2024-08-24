@@ -13,7 +13,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1c\x61utokitteh/vars/v1/var.proto\x12\x12\x61utokitteh.vars.v1\"\x88\x01\n\x03Var\x12\x19\n\x08scope_id\x18\x01 \x01(\tR\x07scopeId\x12\x12\n\x04name\x18\x02 \x01(\tR\x04name\x12\x14\n\x05value\x18\x03 \x01(\tR\x05value\x12\x1b\n\tis_secret\x18\x04 \x01(\x08R\x08isSecret\x12\x1f\n\x0bis_optional\x18\x05 \x01(\x08R\nisOptionalB\xd1\x01\n\x16\x63om.autokitteh.vars.v1B\x08VarProtoP\x01ZCgo.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/vars/v1;varsv1\xa2\x02\x03\x41VX\xaa\x02\x12\x41utokitteh.Vars.V1\xca\x02\x12\x41utokitteh\\Vars\\V1\xe2\x02\x1e\x41utokitteh\\Vars\\V1\\GPBMetadata\xea\x02\x14\x41utokitteh::Vars::V1b\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1c\x61utokitteh/vars/v1/var.proto\x12\x12\x61utokitteh.vars.v1\"\xaa\x01\n\x03Var\x12\x19\n\x08scope_id\x18\x01 \x01(\tR\x07scopeId\x12\x12\n\x04name\x18\x02 \x01(\tR\x04name\x12\x14\n\x05value\x18\x03 \x01(\tR\x05value\x12\x1b\n\tis_secret\x18\x04 \x01(\x08R\x08isSecret\x12\x1f\n\x0bis_optional\x18\x05 \x01(\x08R\nisOptional\x12 \n\x0b\x64\x65scription\x18\x06 \x01(\tR\x0b\x64\x65scriptionB\xd1\x01\n\x16\x63om.autokitteh.vars.v1B\x08VarProtoP\x01ZCgo.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/vars/v1;varsv1\xa2\x02\x03\x41VX\xaa\x02\x12\x41utokitteh.Vars.V1\xca\x02\x12\x41utokitteh\\Vars\\V1\xe2\x02\x1e\x41utokitteh\\Vars\\V1\\GPBMetadata\xea\x02\x14\x41utokitteh::Vars::V1b\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -22,5 +22,5 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   DESCRIPTOR._options = None
   DESCRIPTOR._serialized_options = b'\n\026com.autokitteh.vars.v1B\010VarProtoP\001ZCgo.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/vars/v1;varsv1\242\002\003AVX\252\002\022Autokitteh.Vars.V1\312\002\022Autokitteh\\Vars\\V1\342\002\036Autokitteh\\Vars\\V1\\GPBMetadata\352\002\024Autokitteh::Vars::V1'
   _globals['_VAR']._serialized_start=53
-  _globals['_VAR']._serialized_end=189
+  _globals['_VAR']._serialized_end=223
 # @@protoc_insertion_point(module_scope)

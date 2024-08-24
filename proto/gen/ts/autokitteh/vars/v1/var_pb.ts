@@ -37,6 +37,11 @@ export class Var extends Message<Var> {
    */
   isOptional = false;
 
+  /**
+   * @generated from field: string description = 6;
+   */
+  description = "";
+
   constructor(data?: PartialMessage<Var>) {
     super();
     proto3.util.initPartial(data, this);
@@ -50,6 +55,7 @@ export class Var extends Message<Var> {
     { no: 3, name: "value", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "is_secret", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 5, name: "is_optional", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 6, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Var {

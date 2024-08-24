@@ -53,10 +53,11 @@ func (c Connection) GetKey() string { return c.ProjectKey + "/" + c.Name }
 type Var struct {
 	ParentKey string `yaml:"-" json:"-"` // associated with env or connection.
 
-	Name     string `yaml:"name" json:"name" jsonschema:"required"`
-	Value    string `yaml:"value,omitempty" json:"value,omitempty"`
-	Secret   bool   `yaml:"secret,omitempty" json:"secret,omitempty"`
-	Optional bool   `yaml:"optional,omitempty" json:"optional,omitempty"`
+	Name        string `yaml:"name" json:"name" jsonschema:"required"`
+	Value       string `yaml:"value,omitempty" json:"value,omitempty"`
+	Secret      bool   `yaml:"secret,omitempty" json:"secret,omitempty"`
+	Optional    bool   `yaml:"optional,omitempty" json:"optional,omitempty"`
+	Description string `yaml:"description,omitempty" json:"description,omitempty"`
 }
 
 func (v Var) GetKey() string { return v.ParentKey + "/" + v.Name }

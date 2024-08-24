@@ -7,6 +7,7 @@
 <input type="checkbox" id="var-secret" />🤐&nbsp;
 <input type="text" id="var-value" placeholder="value" />
 <input type="checkbox" id="var-optional" />optional&nbsp;
+<input type="text" id="var-desc" placeholder="description" />
 
 {{ template "list_table_" . }}
 
@@ -18,7 +19,6 @@
         if (!confirm(`Delete ${keys.length ? keys.length : "all"} vars?`)) {
             return
         }
-
 
         fetch(`/vars/{{ .Scope }}${keys.length ? "?names=" + keys.join(",") : ''}`, {
             method: "DELETE",
@@ -40,6 +40,7 @@
         const value = document.getElementById('var-value').value
         const is_secret = document.getElementById('var-secret').checked
         const is_optional = document.getElementById('var-optional').checked
+        const description = document.getElementById('var-desc').value
 
         if (!name) {
             alert("Name is required")
@@ -49,7 +50,7 @@
         fetch(`/vars/{{ .Scope }}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ name, value, is_secret, is_optional }),
+            body: JSON.stringify({ name, value, is_secret, is_optional, description }),
         }).then(response => {
             if (response.ok) {
                 location.reload()

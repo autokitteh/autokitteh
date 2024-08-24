@@ -11,10 +11,13 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-var secret, optional bool
+var (
+	secret, optional bool
+	description      string
+)
 
 var setCmd = common.StandardCommand(&cobra.Command{
-	Use:     "set <key> [<value>] [--secret] [--optional] <--env=.. | --connection=....> [--project=...]",
+	Use:     "set <key> [<value>] [--secret] [--description <DESC>] [--optional] <--env=.. | --connection=....> [--project=...]",
 	Short:   "Set variable",
 	Long:    "Set a variable. If <value> is not specified it will be read from standard input.",
 	Aliases: []string{"s"},
@@ -44,7 +47,7 @@ var setCmd = common.StandardCommand(&cobra.Command{
 			value = string(data)
 		}
 
-		ev := sdktypes.NewVar(n).SetValue(value).SetSecret(secret).SetOptional(optional).WithScopeID(id)
+		ev := sdktypes.NewVar(n).SetValue(value).SetSecret(secret).SetOptional(optional).WithScopeID(id).SetDescription(description)
 		if err != nil {
 			return fmt.Errorf("invalid variable: %w", err)
 		}
@@ -61,6 +64,7 @@ var setCmd = common.StandardCommand(&cobra.Command{
 
 func init() {
 	// Command-specific flags.
-	setCmd.Flags().BoolVarP(&secret, "secret", "s", false, "this value is secret")
-	setCmd.Flags().BoolVarP(&optional, "optional", "o", false, "this value is optional")
+	setCmd.Flags().BoolVarP(&secret, "secret", "s", false, "this var is secret")
+	setCmd.Flags().BoolVarP(&optional, "optional", "o", false, "this var is optional")
+	setCmd.Flags().StringVarP(&description, "description", "d", "", "var description")
 }
