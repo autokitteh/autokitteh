@@ -72,7 +72,7 @@ func (m *module) externalClient(ctx context.Context) (*redis.Client, error) {
 		return nil, err
 	}
 
-	vars, err := m.vars.Reveal(ctx, sdktypes.NewVarScopeID(cid), urlVarName)
+	vars, err := m.vars.Get(ctx, sdktypes.NewVarScopeID(cid), urlVarName)
 	if err != nil {
 		return nil, err
 	}

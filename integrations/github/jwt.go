@@ -39,7 +39,7 @@ func (i integration) NewClient(ctx context.Context) (*github.Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	data, err := i.vars.Reveal(ctx, sdktypes.NewVarScopeID(cid))
+	data, err := i.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
 	if err != nil {
 		return nil, err
 	}

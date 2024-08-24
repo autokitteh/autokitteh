@@ -30,14 +30,12 @@ class DeleteResponse(_message.Message):
     def __init__(self) -> None: ...
 
 class GetRequest(_message.Message):
-    __slots__ = ["scope_id", "names", "reveal"]
+    __slots__ = ["scope_id", "names"]
     SCOPE_ID_FIELD_NUMBER: _ClassVar[int]
     NAMES_FIELD_NUMBER: _ClassVar[int]
-    REVEAL_FIELD_NUMBER: _ClassVar[int]
     scope_id: str
     names: _containers.RepeatedScalarFieldContainer[str]
-    reveal: bool
-    def __init__(self, scope_id: _Optional[str] = ..., names: _Optional[_Iterable[str]] = ..., reveal: bool = ...) -> None: ...
+    def __init__(self, scope_id: _Optional[str] = ..., names: _Optional[_Iterable[str]] = ...) -> None: ...
 
 class GetResponse(_message.Message):
     __slots__ = ["vars"]
