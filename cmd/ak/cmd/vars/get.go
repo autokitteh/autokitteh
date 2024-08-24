@@ -33,12 +33,7 @@ var getCmd = common.StandardCommand(&cobra.Command{
 		ctx, cancel := common.LimitedContext()
 		defer cancel()
 
-		get := vars().Get
-		if reveal {
-			get = vars().Reveal
-		}
-
-		vs, err := get(ctx, id, ks...)
+		vs, err := vars().Get(ctx, id, ks...)
 		if err != nil {
 			return fmt.Errorf("get variable(s): %w", err)
 		}

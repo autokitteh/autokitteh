@@ -48,7 +48,7 @@ func Start(l *zap.Logger, mux *http.ServeMux, vs sdkservices.Vars, d sdkservices
 	}
 
 	for _, cid := range cids {
-		data, err := vs.Reveal(context.Background(), sdktypes.NewVarScopeID(cid))
+		data, err := vs.Get(context.Background(), sdktypes.NewVarScopeID(cid))
 		if err != nil {
 			l.Error("Missing data for Slack Socket Mode app", zap.Error(err))
 			continue

@@ -40,7 +40,7 @@ func (i integration) createMessage(ctx context.Context, args []sdktypes.Value, k
 		return sdktypes.InvalidValue, err
 	}
 
-	vars, err := i.vars.Reveal(ctx, sdktypes.NewVarScopeID(cid))
+	vars, err := i.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}

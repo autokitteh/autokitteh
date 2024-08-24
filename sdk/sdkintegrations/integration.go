@@ -39,7 +39,7 @@ func WithConnectionConfigFromVars(cvars sdkservices.Vars) OptFn {
 				return nil, nil
 			}
 
-			vs, err := cvars.Reveal(ctx, sdktypes.NewVarScopeID(cid))
+			vs, err := cvars.Get(ctx, sdktypes.NewVarScopeID(cid))
 			if err != nil {
 				return nil, err
 			}
