@@ -167,13 +167,6 @@ export class GetRequest extends Message<GetRequest> {
    */
   names: string[] = [];
 
-  /**
-   * if true, returns secret values. if false, secret values are omitted.
-   *
-   * @generated from field: bool reveal = 3;
-   */
-  reveal = false;
-
   constructor(data?: PartialMessage<GetRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -184,7 +177,6 @@ export class GetRequest extends Message<GetRequest> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "scope_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "names", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 3, name: "reveal", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetRequest {
