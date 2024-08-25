@@ -60,6 +60,10 @@ var metrics = struct {
 }{make(map[string]metric.Int64Counter), make(map[string]metric.Int64Histogram)}
 
 func updateMetric(ctx context.Context, t *telemetry.Telemetry, path string, statusCode int, duration time.Duration) (err error) {
+	// path will be like "/autokitteh.projects.v1.ProjectsService/Create"
+	// 1. check this is an internal API path, e.g. starts with "/autokitteh."
+	// 2. extract service (`projects`) and API name (`create`)
+
 	if !strings.HasPrefix(path, "/autokitteh.") {
 		return nil // only internal service APIs
 	}
@@ -82,7 +86,7 @@ func updateMetric(ctx context.Context, t *telemetry.Telemetry, path string, stat
 
 	counter, ok := metrics.counters[cntName]
 	if !ok {
-		if counter, err = t.NewCounter(cntName, fmt.Sprintf("HTTP request counter (%s)", cntName)); err != nil {
+		if counter, err = t.NewCounter(cntName, fmt.Sprintf("GRPC request counter (%s)", cntName)); err != nil {
 			return err
 		}
 		metrics.counters[cntName] = counter
@@ -90,7 +94,7 @@ func updateMetric(ctx context.Context, t *telemetry.Telemetry, path string, stat
 
 	histogram, ok := metrics.durations[histName]
 	if !ok {
-		if histogram, err = t.NewHistogram(histName, fmt.Sprintf("HTTP request duration (%s)", histName)); err != nil {
+		if histogram, err = t.NewHistogram(histName, fmt.Sprintf("GRPC request duration (%s)", histName)); err != nil {
 			return err
 		}
 		metrics.durations[histName] = histogram
