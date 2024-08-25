@@ -43,6 +43,9 @@ var setCmd = common.StandardCommand(&cobra.Command{
 			}
 			value = string(data)
 		}
+		if value == "" {
+			return fmt.Errorf("no value provided")
+		}
 
 		ev := sdktypes.NewVar(n).SetValue(value).SetSecret(secret).SetOptional(optional).WithScopeID(id)
 		if err != nil {
