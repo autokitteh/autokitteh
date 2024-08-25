@@ -1,8 +1,6 @@
 package vars
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
 
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
@@ -29,24 +27,29 @@ func init() {
 	// Flag shared by all subcommands.
 	// We don't define it as a single persistent flag here
 	// because then we wouldn't be able to mark it as required.
-	getCmd.Flags().StringVarP(&env, "env", "e", "", "environment name or ID")
-	setCmd.Flags().StringVarP(&env, "env", "e", "", "environment name or ID")
-	deleteCmd.Flags().StringVarP(&env, "env", "e", "", "environment name or ID")
 
-	getCmd.Flags().StringVarP(&conn, "connection", "c", "", "connection name or ID")
-	setCmd.Flags().StringVarP(&conn, "connection", "c", "", "connection name or ID")
-	deleteCmd.Flags().StringVarP(&conn, "connection", "c", "", "connection name or ID")
+	getCmd.Flags().VarP(common.NewNonEmptyString("", &env), "env", "e", "environment name or ID")
+	setCmd.Flags().VarP(common.NewNonEmptyString("", &env), "env", "e", "environment name or ID")
+	deleteCmd.Flags().VarP(common.NewNonEmptyString("", &env), "env", "e", "environment name or ID")
+
+	getCmd.Flags().VarP(common.NewNonEmptyString("", &conn), "connection", "c", "connection name or ID")
+	setCmd.Flags().VarP(common.NewNonEmptyString("", &conn), "connection", "c", "connection name or ID")
+	deleteCmd.Flags().VarP(common.NewNonEmptyString("", &conn), "connection", "c", "connection name or ID")
 
 	getCmd.MarkFlagsMutuallyExclusive("env", "connection")
 	setCmd.MarkFlagsMutuallyExclusive("env", "connection")
 	deleteCmd.MarkFlagsMutuallyExclusive("env", "connection")
 
+	// although either "env" or "connection" is required, if nothing is provided, then
+	// var will be resolved from the default env (e.g. env="").
+	// So `env' and `connection` are not marked with OneRequiredFlag here.
+
 	// Flag shared by all subcommands.
 	// We don't define it as a single persistent flag here for aesthetic
 	// conformance with the "env" flag, and "project" in other "envs" sibling commands.
-	getCmd.Flags().StringVarP(&project, "project", "p", "", "project name or ID")
-	setCmd.Flags().StringVarP(&project, "project", "p", "", "project name or ID")
-	deleteCmd.Flags().StringVarP(&project, "project", "p", "", "project name or ID")
+	getCmd.Flags().VarP(common.NewNonEmptyString("", &project), "project", "p", "project name or ID")
+	setCmd.Flags().VarP(common.NewNonEmptyString("", &project), "project", "p", "project name or ID")
+	deleteCmd.Flags().VarP(common.NewNonEmptyString("", &project), "project", "p", "project name or ID")
 
 	// Subcommands.
 	varsCmd.AddCommand(setCmd)
@@ -64,27 +67,24 @@ func resolveScopeID() (sdktypes.VarScopeID, error) {
 	ctx, cancel := common.LimitedContext()
 	defer cancel()
 
+	if project != "" {
+		p, _, err := r.ProjectNameOrID(ctx, project)
+		if err = common.AddNotFoundErrIfCond(err, p.IsValid()); err != nil {
+			return sdktypes.InvalidVarScopeID, common.ToExitCodeErrorNotNilErr(err, "project")
+		}
+	}
+
 	if conn != "" {
 		c, id, err := r.ConnectionNameOrID(ctx, conn, project)
-		if err != nil {
-			return sdktypes.InvalidVarScopeID, err
+		if err = common.AddNotFoundErrIfCond(err, c.IsValid()); err != nil {
+			return sdktypes.InvalidVarScopeID, common.ToExitCodeErrorNotNilErr(err, "connection")
 		}
-		if !c.IsValid() {
-			err = fmt.Errorf("connection %q not found", conn)
-			return sdktypes.InvalidVarScopeID, common.NewExitCodeError(common.NotFoundExitCode, err)
-		}
-
 		return sdktypes.NewVarScopeID(id), nil
 	}
 
 	e, id, err := r.EnvNameOrID(ctx, env, project)
-	if err != nil {
-		return sdktypes.InvalidVarScopeID, err
+	if err = common.AddNotFoundErrIfCond(err, e.IsValid()); err != nil {
+		return sdktypes.InvalidVarScopeID, common.ToExitCodeErrorNotNilErr(err, "environment")
 	}
-	if !e.IsValid() {
-		err = fmt.Errorf("environment %q not found", env)
-		return sdktypes.InvalidVarScopeID, common.NewExitCodeError(common.NotFoundExitCode, err)
-	}
-
 	return sdktypes.NewVarScopeID(id), nil
 }
