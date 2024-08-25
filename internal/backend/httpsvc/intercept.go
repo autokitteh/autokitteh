@@ -54,9 +54,12 @@ func (r *responseInterceptor) Flush() {
 
 type RequestLogExtractor func(*http.Request) []zap.Field
 
-var requestCounters map[string]metric.Int64Counter
+var metrics = struct {
+	counters  map[string]metric.Int64Counter
+	durations map[string]metric.Int64Histogram
+}{make(map[string]metric.Int64Counter), make(map[string]metric.Int64Histogram)}
 
-func updateMetric(ctx context.Context, l *zap.Logger, t *telemetry.Telemetry, path string, statusCode int, duration time.Duration) (err error) {
+func updateMetric(ctx context.Context, t *telemetry.Telemetry, path string, statusCode int, duration time.Duration) (err error) {
 	if !strings.HasPrefix(path, "/autokitteh.") {
 		return nil // only internal service APIs
 	}
@@ -74,18 +77,27 @@ func updateMetric(ctx context.Context, l *zap.Logger, t *telemetry.Telemetry, pa
 	}
 	service = dotParts[1]
 
-	metricName := fmt.Sprintf("api.%s/%s", service, api)
+	cntName := fmt.Sprintf("api.%s.%s", service, api)
+	histName := fmt.Sprintf("api.%s.%s.duration", service, api)
 
-	counter, ok := requestCounters[metricName]
+	counter, ok := metrics.counters[cntName]
 	if !ok {
-		counter, err = t.NewCounter(metricName, fmt.Sprintf("HTTP request counter (%s)", metricName))
-		if err != nil {
-			l.Error("Failed to create counter", zap.String("metricName", metricName), zap.Error(err))
+		if counter, err = t.NewCounter(cntName, fmt.Sprintf("HTTP request counter (%s)", cntName)); err != nil {
 			return err
 		}
-
+		metrics.counters[cntName] = counter
 	}
+
+	histogram, ok := metrics.durations[histName]
+	if !ok {
+		if histogram, err = t.NewHistogram(histName, fmt.Sprintf("HTTP request duration (%s)", histName)); err != nil {
+			return err
+		}
+		metrics.durations[histName] = histogram
+	}
+
 	counter.Add(ctx, 1, telemetry.WithLabels("status", string(statusCode)))
+	histogram.Record(ctx, duration.Milliseconds(), telemetry.WithLabels("status", string(statusCode)))
 	return nil
 }
 
@@ -112,7 +124,7 @@ func intercept(z *zap.Logger, cfg *LoggerConfig, extractors []RequestLogExtracto
 		next.ServeHTTP(rwi, r)
 
 		duration := time.Since(startTime).Truncate(time.Microsecond)
-		updateMetric(r.Context(), l, telemetry, r.URL.Path, rwi.StatusCode, duration)
+		updateMetric(r.Context(), telemetry, r.URL.Path, rwi.StatusCode, duration)
 
 		w.Header().Add("X-AutoKitteh-Duration", duration.String())
 
