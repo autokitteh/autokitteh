@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -100,8 +101,8 @@ func updateMetric(ctx context.Context, t *telemetry.Telemetry, path string, stat
 		metrics.durations[histName] = histogram
 	}
 
-	counter.Add(ctx, 1, telemetry.WithLabels("status", string(statusCode)))
-	histogram.Record(ctx, duration.Milliseconds(), telemetry.WithLabels("status", string(statusCode)))
+	counter.Add(ctx, 1, telemetry.WithLabels("status", strconv.Itoa(statusCode)))
+	histogram.Record(ctx, duration.Milliseconds(), telemetry.WithLabels("status", strconv.Itoa(statusCode)))
 	return nil
 }
 
