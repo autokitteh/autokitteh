@@ -5,8 +5,11 @@ import (
 	"context"
 	"fmt"
 	"io/fs"
+	"os"
+	"strconv"
 
 	"connectrpc.com/connect"
+	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	runtimesv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/runtimes/v1"
@@ -19,12 +22,15 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
+var bidi, _ = strconv.ParseBool(os.Getenv("BIDI_RUN"))
+
 type client struct {
 	client runtimesv1connect.RuntimesServiceClient
+	sl     *zap.SugaredLogger
 }
 
 func New(p sdkclient.Params) sdkservices.Runtimes {
-	return &client{client: internal.New(runtimesv1connect.NewRuntimesServiceClient, p)}
+	return &client{client: internal.New(runtimesv1connect.NewRuntimesServiceClient, p), sl: p.Safe().L.Sugar()}
 }
 
 func (c *client) Run(
@@ -35,50 +41,13 @@ func (c *client) Run(
 	globals map[string]sdktypes.Value,
 	cbs *sdkservices.RunCallbacks,
 ) (sdkservices.Run, error) {
-	var a bytes.Buffer
-	if err := build.Write(&a); err != nil {
-		return nil, fmt.Errorf("failed to write build file: %w", err)
+	run := c.run
+
+	if bidi {
+		run = c.bidiRun
 	}
 
-	stream, err := c.client.Run(ctx, connect.NewRequest(&runtimesv1.RunRequest{
-		RunId:    rid.String(),
-		Path:     path,
-		Globals:  kittehs.TransformMapValues(globals, sdktypes.ToProto),
-		Artifact: a.Bytes(),
-	}))
-	if err != nil {
-		return nil, rpcerrors.ToSDKError(err)
-	}
-
-	var result map[string]sdktypes.Value
-
-	for stream.Receive() {
-		msg := stream.Msg()
-		if msg.Error != nil {
-			stream.Close()
-			perr, err := sdktypes.ProgramErrorFromProto(msg.Error)
-			if err != nil {
-				return nil, fmt.Errorf("invalid error: %w", err)
-			}
-			return nil, perr.ToError()
-		}
-
-		if msg.Print != "" {
-			cbs.Print(ctx, rid, msg.Print)
-		}
-
-		if msg.Result != nil {
-			result, err = kittehs.TransformMapValuesError(msg.Result, sdktypes.StrictValueFromProto)
-			if err != nil {
-				stream.Close()
-				return nil, fmt.Errorf("invalid result: %w", err)
-			}
-		}
-	}
-
-	// TODO: in the future when we'll support calling run functions
-	//       we'll pass the stream to the run object and let it handle it.
-	return &run{stream: stream, rid: rid, result: result}, nil
+	return run(ctx, rid, path, build, globals, cbs)
 }
 
 func (c *client) Build(ctx context.Context, fs fs.FS, symbols []sdktypes.Symbol, memo map[string]string) (*sdkbuildfile.BuildFile, error) {
@@ -108,7 +77,7 @@ func (c *client) Build(ctx context.Context, fs fs.FS, symbols []sdktypes.Symbol,
 		return nil, perr.ToError()
 	}
 
-	return sdkbuildfile.Read(bytes.NewReader(resp.Msg.Artifact))
+	return sdkbuildfile.Read(bytes.NewReader(resp.Msg.BuildFile))
 }
 
 func (c *client) List(ctx context.Context) ([]sdktypes.Runtime, error) {
@@ -143,5 +112,5 @@ func (c *client) New(ctx context.Context, name sdktypes.Symbol) (sdkservices.Run
 		return nil, fmt.Errorf("invalid runtime: %w", err)
 	}
 
-	return &runtime{desc: desc}, nil
+	return &runtime{desc: desc, client: c}, nil
 }

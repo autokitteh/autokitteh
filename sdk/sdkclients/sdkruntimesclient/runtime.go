@@ -2,15 +2,22 @@ package sdkruntimesclient
 
 import (
 	"context"
+	"fmt"
 	"io/fs"
 
-	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
+	"connectrpc.com/connect"
+
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
+	runtimesv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/runtimes/v1"
+	"go.autokitteh.dev/autokitteh/sdk/internal/rpcerrors"
+	"go.autokitteh.dev/autokitteh/sdk/sdkclients/internal"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 type runtime struct {
-	desc sdktypes.Runtime
+	desc   sdktypes.Runtime
+	client *client
 }
 
 func (r *runtime) Get() sdktypes.Runtime { return r.desc }
@@ -21,7 +28,36 @@ func (r *runtime) Build(
 	path string,
 	symbols []sdktypes.Symbol,
 ) (sdktypes.BuildArtifact, error) {
-	return sdktypes.InvalidBuildArtifact, sdkerrors.ErrNotImplemented
+	resources, err := kittehs.FSToMap(fs)
+	if err != nil {
+		return sdktypes.InvalidBuildArtifact, err
+	}
+
+	resp, err := r.client.client.Build1(ctx, connect.NewRequest(&runtimesv1.Build1Request{
+		Resources:   resources,
+		Symbols:     kittehs.TransformToStrings(symbols),
+		Path:        path,
+		RuntimeName: r.desc.Name().String(),
+	}))
+	if err != nil {
+		return sdktypes.InvalidBuildArtifact, rpcerrors.ToSDKError(err)
+	}
+
+	if err := internal.Validate(resp.Msg); err != nil {
+		return sdktypes.InvalidBuildArtifact, err
+	}
+
+	if resp.Msg.Error != nil {
+		perr, err := sdktypes.ProgramErrorFromProto(resp.Msg.Error)
+		if err != nil {
+			err = fmt.Errorf("decode error: %w", err)
+		} else {
+			err = perr.ToError()
+		}
+		return sdktypes.InvalidBuildArtifact, err
+	}
+
+	return sdktypes.BuildArtifactFromProto(resp.Msg.Artifact)
 }
 
 func (r *runtime) Run(
@@ -32,5 +68,5 @@ func (r *runtime) Run(
 	values map[string]sdktypes.Value,
 	cbs *sdkservices.RunCallbacks,
 ) (sdkservices.Run, error) {
-	return nil, sdkerrors.ErrNotImplemented
+	return r.client.bidiRun1(ctx, r.desc.Name(), rid, mainPath, compiled, values, cbs)
 }

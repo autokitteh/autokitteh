@@ -49,6 +49,9 @@ var testCmd = common.StandardCommand(&cobra.Command{
 
 		expectedPrints = strings.TrimRight(string(a.Comment), "\n")
 
+		entryPoint := strings.ReplaceAll(a.Files[0].Name, " ", ":")
+		a.Files[0].Name, _, _ = strings.Cut(entryPoint, ":")
+
 		fs, err := kittehs.TxtarToFS(a)
 		if err != nil {
 			return fmt.Errorf("internal error: %w", err)
@@ -62,7 +65,7 @@ var testCmd = common.StandardCommand(&cobra.Command{
 			path = filepath.Clean(a.Files[0].Name)
 		}
 
-		vs, prints, err := run(cmd.Context(), b, path)
+		vs, prints, err := run(cmd.Context(), b, entryPoint)
 		if err != nil {
 			return err
 		}
