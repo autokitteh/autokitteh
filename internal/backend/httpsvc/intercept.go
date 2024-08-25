@@ -2,15 +2,18 @@ package httpsvc
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"regexp"
 	"strings"
 	"time"
 
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
+	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
 )
 
 type ctxKey string
@@ -51,7 +54,42 @@ func (r *responseInterceptor) Flush() {
 
 type RequestLogExtractor func(*http.Request) []zap.Field
 
-func intercept(z *zap.Logger, cfg *LoggerConfig, extractors []RequestLogExtractor, next http.Handler) (http.HandlerFunc, error) {
+var requestCounters map[string]metric.Int64Counter
+
+func updateMetric(ctx context.Context, l *zap.Logger, t *telemetry.Telemetry, path string, statusCode int, duration time.Duration) (err error) {
+	if !strings.HasPrefix(path, "/autokitteh.") {
+		return nil // only internal service APIs
+	}
+
+	slashParts := strings.Split(path, "/")
+	if len(slashParts) < 3 {
+		return errors.New("invalid API path")
+	}
+	api := strings.ToLower(slashParts[2])
+
+	var service string
+	dotParts := strings.Split(slashParts[1], ".")
+	if len(dotParts) < 2 {
+		return errors.New("invalid service path")
+	}
+	service = dotParts[1]
+
+	metricName := fmt.Sprintf("api.%s/%s", service, api)
+
+	counter, ok := requestCounters[metricName]
+	if !ok {
+		counter, err = t.NewCounter(metricName, fmt.Sprintf("HTTP request counter (%s)", metricName))
+		if err != nil {
+			l.Error("Failed to create counter", zap.String("metricName", metricName), zap.Error(err))
+			return err
+		}
+
+	}
+	counter.Add(ctx, 1)
+	return nil
+}
+
+func intercept(z *zap.Logger, cfg *LoggerConfig, extractors []RequestLogExtractor, next http.Handler, telemetry *telemetry.Telemetry) (http.HandlerFunc, error) {
 	// MustCompile is appropriate here because the patterns are static
 	// and errors in them should be caught at startup. Furthermore, we
 	// combine them into a single regular expression, because efficiency is
@@ -73,8 +111,10 @@ func intercept(z *zap.Logger, cfg *LoggerConfig, extractors []RequestLogExtracto
 
 		next.ServeHTTP(rwi, r)
 
-		duration := time.Since(startTime)
-		w.Header().Add("X-AutoKitteh-Duration", duration.Truncate(time.Microsecond).String())
+		duration := time.Since(startTime).Truncate(time.Microsecond)
+		updateMetric(r.Context(), l, telemetry, r.URL.Path, rwi.StatusCode, duration)
+
+		w.Header().Add("X-AutoKitteh-Duration", duration.String())
 
 		// Don't log some requests, unless they result in an error.
 		if unlogged.MatchString(r.URL.Path) && rwi.StatusCode < 400 {

@@ -255,7 +255,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 			httpsvc.Configs,
 			fx.Provide(func(lc fx.Lifecycle, z *zap.Logger, cfg *httpsvc.Config,
 				wrapAuth authhttpmiddleware.AuthMiddlewareDecorator,
-				authHdrExtractor authhttpmiddleware.AuthHeaderExtractor,
+				authHdrExtractor authhttpmiddleware.AuthHeaderExtractor, telemetry *telemetry.Telemetry,
 			) (svc httpsvc.Svc, all *muxes.Muxes, err error) {
 				svc, err = httpsvc.New(
 					lc, z, cfg,
@@ -287,6 +287,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 							return nil
 						},
 					},
+					telemetry,
 				)
 				if err != nil {
 					return
