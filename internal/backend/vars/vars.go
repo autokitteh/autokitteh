@@ -90,10 +90,6 @@ func (v *Vars) Delete(ctx context.Context, sid sdktypes.VarScopeID, names ...sdk
 }
 
 func (v *Vars) Get(ctx context.Context, sid sdktypes.VarScopeID, names ...sdktypes.Symbol) (sdktypes.Vars, error) {
-	return v.db.GetVars(ctx, sid, names)
-}
-
-func (v *Vars) Reveal(ctx context.Context, sid sdktypes.VarScopeID, names ...sdktypes.Symbol) (sdktypes.Vars, error) {
 	vars, err := v.db.GetVars(ctx, sid, names)
 	if err != nil {
 		return nil, err
@@ -107,7 +103,7 @@ func (v *Vars) Reveal(ctx context.Context, sid sdktypes.VarScopeID, names ...sdk
 		key := varSecretKey(va)
 		value, err := v.secrets.Get(ctx, key)
 		if err != nil {
-			return sdktypes.Var{}, err
+			return sdktypes.InvalidVar, err
 		}
 
 		return va.SetValue(value), nil

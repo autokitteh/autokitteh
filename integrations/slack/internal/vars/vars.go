@@ -13,6 +13,8 @@ type Vars struct {
 }
 
 var (
+	AuthType = sdktypes.NewSymbol("authType")
+
 	// Socket Mode
 	AppTokenName = sdktypes.NewSymbol("AppToken")
 	BotTokenName = sdktypes.NewSymbol("BotToken")

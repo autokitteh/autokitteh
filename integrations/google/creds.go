@@ -71,7 +71,7 @@ func (h handler) handleCreds(w http.ResponseWriter, r *http.Request) {
 	case "", "json":
 		ctx := extrazap.AttachLoggerToContext(l, r.Context())
 		vs := sdktypes.EncodeVars(&vars.Vars{JSON: r.PostFormValue("json"), FormID: formID})
-		h.finalize(ctx, c, vs)
+		h.finalize(ctx, c, vs.Set(vars.AuthType, "jsonKey", false))
 
 	// User OAuth connect? Redirect to AutoKitteh's OAuth starting point.
 	case "oauth":

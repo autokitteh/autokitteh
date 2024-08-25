@@ -31,8 +31,9 @@ func (TriggerTraits) Validate(m *TriggerPB) error {
 
 func (TriggerTraits) StrictValidate(m *TriggerPB) error {
 	return errors.Join(
-		mandatory("env_id", m.EnvId),
 		mandatory("name", m.Name),
+		mandatory("connection_id", m.ConnectionId),
+		mandatory("env_id", m.EnvId),
 	)
 }
 

@@ -67,6 +67,7 @@ func (h handler) handlePAT(w http.ResponseWriter, r *http.Request) {
 	}
 
 	c.Finalize(sdktypes.NewVars().
+		Set(vars.AuthType, "pat", false).
 		Set(vars.PAT, pat, true).
 		Set(vars.PATKey, patKey, false).
 		Set(vars.PATSecret, secret, true).

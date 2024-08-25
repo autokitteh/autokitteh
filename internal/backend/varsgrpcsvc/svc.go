@@ -66,12 +66,7 @@ func (s *server) Get(ctx context.Context, req *connect.Request[varsv1.GetRequest
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	f := s.vars.Get
-	if req.Msg.Reveal {
-		f = s.vars.Reveal
-	}
-
-	vs, err := f(ctx, sid, ns...)
+	vs, err := s.vars.Get(ctx, sid, ns...)
 	if err != nil {
 		return nil, sdkerrors.AsConnectError(err)
 	}

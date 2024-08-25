@@ -5,6 +5,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap/zaptest"
+
 	"go.autokitteh.dev/autokitteh/internal/backend/builds"
 	"go.autokitteh.dev/autokitteh/internal/backend/connections"
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
@@ -24,8 +26,9 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-	"go.uber.org/zap/zaptest"
 )
+
+var testIntegrationID = sdktypes.NewIntegrationIDFromName("test").UUIDValue()
 
 type dbs struct {
 	intSvc sdkservices.Integrations
@@ -41,14 +44,9 @@ type dbs struct {
 }
 
 func newIntegrationsSvc(t *testing.T, f *dbFixture) sdkservices.Integrations {
-	i := f.newIntegration("test")
-	f.createIntegrationsAndAssert(t, i)
-
 	desc := kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
-		IntegrationId: sdktypes.NewIDFromUUID[sdktypes.IntegrationID](&i.IntegrationID).String(),
-		UniqueName:    i.UniqueName,
-		DisplayName:   i.DisplayName,
-		Description:   i.Description,
+		IntegrationId: sdktypes.NewIDFromUUID[sdktypes.IntegrationID](&testIntegrationID).String(),
+		UniqueName:    "test",
 	}))
 
 	testIntegration := sdkintegrations.NewIntegration(desc, sdkmodule.New())
@@ -76,7 +74,7 @@ func newDBServices(t *testing.T) (sdkservices.DBServices, *dbFixture) {
 	intSvc := newIntegrationsSvc(t, f)
 	bldSvc := builds.New(builds.Builds{Z: z, DB: gdb}, telemetry)
 	prjSvc := projects.New(projects.Projects{Z: z, DB: gdb}, telemetry)
-	depSvc := deployments.New(z, gdb)
+	depSvc := deployments.New(z, gdb, telemetry)
 	conSvc := connections.New(connections.Connections{Z: z, DB: gdb, Integrations: intSvc})
 	envSvc := envs.New(z, gdb)
 	evtSvc := events.New(z, gdb)
@@ -215,15 +213,8 @@ func TestResolverSessionIDWithOwnership(t *testing.T) {
 func TestResolverConnectionNameOrIdWithOwnership(t *testing.T) {
 	r, f := createResolverAndFixture(t)
 
-	// since we are passing via service, connection should be defined properly otherwise
-	// will fail in parsing, e.g. have project and integration defined
-	ii, err := f.gormdb.listIntegrations(f.ctx)
-	assert.NoError(t, err)
-	assert.GreaterOrEqual(t, len(ii), 1)
-	i := ii[0] // get the first integraiton. Created in createResolverAndFixture
-
 	p := f.newProject()
-	c := f.newConnection(p, i)
+	c := f.newConnection(p)
 	f.createProjectsAndAssert(t, p)
 	f.createConnectionsAndAssert(t, c)
 
@@ -244,8 +235,9 @@ func TestResolverConnectionNameOrIdWithOwnership(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			c, _, err := r.ConnectionNameOrID(f.ctx, tc.nameOrID, tc.project)
-			assert.NoError(t, err)
-			assert.Equal(t, cid, c.ID())
+			if assert.NoError(t, err) {
+				assert.Equal(t, cid, c.ID())
+			}
 		})
 	}
 
@@ -344,12 +336,7 @@ func TestResolverProjectNameOrIdWithOwnership(t *testing.T) {
 func TestResolverIntegrationNameOrIdWithOwnership(t *testing.T) {
 	r, f := createResolverAndFixture(t)
 
-	ii, err := f.gormdb.listIntegrations(f.ctx)
-	assert.NoError(t, err)
-	assert.GreaterOrEqual(t, len(ii), 1)
-	i := ii[0] // get the first integraiton. Created in createResolverAndFixture
-
-	iid := sdktypes.NewIDFromUUID[sdktypes.IntegrationID](&i.IntegrationID)
+	iid := sdktypes.NewIDFromUUID[sdktypes.IntegrationID](&testIntegrationID)
 	iids := iid.String()
 
 	testCases := []struct {
@@ -357,7 +344,7 @@ func TestResolverIntegrationNameOrIdWithOwnership(t *testing.T) {
 		nameOrID string
 	}{
 		{"integraitonID", iids},
-		{"integraitonName", i.DisplayName},
+		{"integraitonName", "test"},
 	}
 
 	// resolve ok

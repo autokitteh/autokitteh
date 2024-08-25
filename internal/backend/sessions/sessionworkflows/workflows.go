@@ -217,9 +217,15 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 
 		startTime = data.Session.CreatedAt()
 		l.Info("session workflow: started", fields...)
+
 		prints, err = runWorkflow(wctx, l, ws, data, params.Debug)
+
 		duration = time.Since(startTime)
-		sessionDurationHistogram.Record(ctx, duration.Milliseconds())
+		sessionStatus := "succeeded"
+		if err != nil {
+			sessionStatus = "failed"
+		}
+		sessionDurationHistogram.Record(ctx, duration.Milliseconds(), telemetry.WithLabels("status", sessionStatus))
 		l = l.With(zap.Duration("duration", duration))
 	}
 

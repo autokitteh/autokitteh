@@ -5,16 +5,17 @@ import (
 )
 
 var (
+	authType = sdktypes.NewSymbol("authType")
+
 	baseURL = sdktypes.NewSymbol("BaseURL")
 	token   = sdktypes.NewSymbol("Token")
 	email   = sdktypes.NewSymbol("Email")
 
-	oauthAccessToken = sdktypes.NewSymbol("oauth_AccessToken")
-	accessID         = sdktypes.NewSymbol("AccessID")
-	accessURL        = sdktypes.NewSymbol("AccessURL")
-	accessName       = sdktypes.NewSymbol("AccessName")
-	accessScope      = sdktypes.NewSymbol("AccessScope")
-	accessAvatarURL  = sdktypes.NewSymbol("AccessAvatarURL")
+	accessID        = sdktypes.NewSymbol("AccessID")
+	accessURL       = sdktypes.NewSymbol("AccessURL")
+	accessName      = sdktypes.NewSymbol("AccessName")
+	accessScope     = sdktypes.NewSymbol("AccessScope")
+	accessAvatarURL = sdktypes.NewSymbol("AccessAvatarURL")
 )
 
 func webhookID(category string) sdktypes.Symbol {
