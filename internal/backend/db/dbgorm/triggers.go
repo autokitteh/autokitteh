@@ -82,7 +82,7 @@ func (db *gormdb) triggerToRecord(ctx context.Context, trigger sdktypes.Trigger)
 
 	conn, err := db.GetConnection(ctx, connID)
 	if err != nil {
-		return nil, fmt.Errorf("get trigger connection: %w", err)
+		return nil, fmt.Errorf("connection: %w", err)
 	}
 
 	projID := conn.ProjectID()
@@ -126,7 +126,7 @@ func (db *gormdb) triggerToRecord(ctx context.Context, trigger sdktypes.Trigger)
 }
 
 func (db *gormdb) CreateTrigger(ctx context.Context, trigger sdktypes.Trigger) error {
-	if err := trigger.Strict(); err != nil {
+	if err := trigger.Strict(); err != nil { // name, connection, env but not project
 		return err
 	}
 
