@@ -1,7 +1,6 @@
 package triggers
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/spf13/cobra"
@@ -15,8 +14,7 @@ import (
 
 var (
 	call, event, filter, name, project, schedule string
-
-	data map[string]string
+	data                                         map[string]string
 )
 
 var createCmd = common.StandardCommand(&cobra.Command{
@@ -69,7 +67,6 @@ var createCmd = common.StandardCommand(&cobra.Command{
 			cid = sdktypes.BuiltinSchedulerConnectionID
 			event = fixtures.SchedulerEventTriggerType
 			data[fixtures.ScheduleExpression] = schedule
-			connection = fixtures.SchedulerConnectionName
 		}
 
 		// Finally, create and print the trigger.
@@ -108,12 +105,12 @@ func init() {
 	createCmd.Flags().StringVarP(&call, "call", "l", "", `entry-point to call ("filename:function")`)
 	kittehs.Must0(createCmd.MarkFlagRequired("call"))
 
-	createCmd.Flags().StringVarP(&project, "project", "p", "", "project name or ID")
-	createCmd.Flags().StringVarP(&env, "env", "e", "", "environment name or ID")
+	createCmd.Flags().VarP(common.NewNonEmptyString("", &project), "project", "p", "project name or ID")
+	createCmd.Flags().VarP(common.NewNonEmptyString("", &env), "env", "e", "environment name or ID")
 	createCmd.MarkFlagsOneRequired("project", "env")
 
-	createCmd.Flags().StringVarP(&connection, "connection", "c", "", "connection name or ID")
-	createCmd.Flags().StringVarP(&schedule, "schedule", "s", "", "schedule expression (cron or extended)")
+	createCmd.Flags().VarP(common.NewNonEmptyString("", &connection), "connection", "c", "connection name or ID")
+	createCmd.Flags().VarP(common.NewNonEmptyString("", &schedule), "schedule", "s", "schedule expression (cron or extended)")
 	createCmd.MarkFlagsOneRequired("connection", "schedule")
 	createCmd.MarkFlagsMutuallyExclusive("connection", "schedule")
 
