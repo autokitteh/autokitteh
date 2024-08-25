@@ -191,6 +191,8 @@ func (s *svc) Run(
 		time.Sleep(1 * time.Second)
 	}
 
+	// ws.svcs[s.runnerID] = s
+	ws.svcs["runner-1"] = s
 	// if err != nil {
 	// 	return nil, fmt.Errorf("could not verify runner health %w", err)
 	// }
