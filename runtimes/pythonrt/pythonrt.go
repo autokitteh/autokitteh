@@ -41,20 +41,25 @@ var (
 	venvPy   = path.Join(venvPath, "bin", "python")
 )
 
+type Runner interface {
+	Start(pyExe string, tarData []byte, env map[string]string, workerAddr string) error
+	Close() error
+}
+
 type pySvc struct {
-	log       *zap.Logger
-	run       *pyRunInfo
-	xid       sdktypes.ExecutorID
-	runID     sdktypes.RunID
-	cbs       *sdkservices.RunCallbacks
-	exports   map[string]sdktypes.Value
-	stdout    *streamLogger
-	stderr    *streamLogger
-	pyExe     string
-	fileName  string // main user code file name (entry point)
-	remote    *remoteSvc
-	runner    pb.RunnerClient
-	firstCall bool // first call is the trigger, other calls are activities
+	log          *zap.Logger
+	xid          sdktypes.ExecutorID
+	runID        sdktypes.RunID
+	cbs          *sdkservices.RunCallbacks
+	exports      map[string]sdktypes.Value
+	stdout       *streamLogger
+	stderr       *streamLogger
+	pyExe        string
+	fileName     string // main user code file name (entry point)
+	remote       *remoteSvc
+	runner       Runner
+	runnerClient pb.RunnerClient
+	firstCall    bool // first call is the trigger, other calls are activities
 }
 
 var minPyVersion = Version{
@@ -72,6 +77,35 @@ func isGoodVersion(v Version) bool {
 
 const exeEnvKey = "AK_WORKER_PYTHON"
 
+func isFile(path string) bool {
+	finfo, err := os.Stat(path)
+	if err != nil {
+		return false
+	}
+
+	return !finfo.IsDir()
+}
+
+func pythonToRun(log *zap.Logger) (string, bool, error) {
+	pyExe := os.Getenv(exeEnvKey)
+	if pyExe != "" {
+		log.Info("python from env", zap.String("python", pyExe))
+		if !isFile(pyExe) {
+			log.Error("can't python from env: %q", zap.String("path", pyExe))
+			return "", false, fmt.Errorf("%q: not a file", pyExe)
+		}
+
+		return pyExe, true, nil
+	}
+
+	pyExe, err := findPython()
+	if err != nil {
+		return "", false, err
+	}
+
+	return pyExe, false, nil
+}
+
 func New() (sdkservices.Runtime, error) {
 	log, err := logger.New(logger.Configs.Dev) // TODO (ENG-553): From configuration
 	if err != nil {
@@ -84,18 +118,9 @@ func New() (sdkservices.Runtime, error) {
 		firstCall: true,
 	}
 
-	userPython := true
-	pyExe := os.Getenv(exeEnvKey)
-	if pyExe == "" {
-		pyExe, err = findPython()
-		if err != nil {
-			return nil, err
-		}
-		userPython = false
-	}
-
-	if userPython {
-		log.Info("user python", zap.String("python", pyExe))
+	pyExe, isUserPy, err := pythonToRun(log)
+	if err != nil {
+		return nil, err
 	}
 
 	const timeout = 3 * time.Second
@@ -114,7 +139,7 @@ func New() (sdkservices.Runtime, error) {
 	}
 
 	// If user supplies which Python to use, we use it "as-is" without creating venv
-	if !userPython {
+	if !isUserPy {
 		if err := ensureVEnv(log, pyExe); err != nil {
 			return nil, fmt.Errorf("create venv: %w", err)
 		}
@@ -147,22 +172,9 @@ func ensureVEnv(log *zap.Logger, pyExe string) error {
 
 func (*pySvc) Get() sdktypes.Runtime { return Runtime.Desc }
 
-const archiveKey = "archive"
+const archiveKey = "code.tar"
 
-func asBuildExport(e Export) sdktypes.BuildExport {
-	pb := sdktypes.BuildExportPB{
-		Symbol: e.Name,
-		Location: &sdktypes.CodeLocationPB{
-			Path: e.File,
-			Row:  uint32(e.Line),
-			Col:  1,
-		},
-	}
-
-	b, _ := sdktypes.BuildExportFromProto(&pb)
-	return b
-}
-
+// TODO: Move build to runner
 func (py *pySvc) Build(ctx context.Context, fsys fs.FS, path string, values []sdktypes.Symbol) (sdktypes.BuildArtifact, error) {
 	py.log.Info("build Python module", zap.String("path", path))
 
@@ -202,18 +214,11 @@ func (py *pySvc) Build(ctx context.Context, fsys fs.FS, path string, values []sd
 		compiledData[hdr.Name] = nil
 	}
 
-	/* TODO: remove?
-	exports, err := pyExports(ctx, py.pyExe, fsys)
-	if err != nil {
-		py.log.Error("get exports", zap.Error(err))
-		return sdktypes.InvalidBuildArtifact, err
-	}
-
-
-	buildExports := kittehs.Transform(exports, asBuildExport)
-	*/
 	var art sdktypes.BuildArtifact
-	art = art.WithCompiledData(compiledData) //.WithExports(buildExports)
+	art = art.WithCompiledData(compiledData)
+
+	// TODO: We don't have exports for now, UI can change singleshot to a text
+	// box instead of dropdown
 
 	return art, nil
 }
@@ -271,9 +276,15 @@ func dialRunner(addr string) (pb.RunnerClient, error) {
 	}
 
 	c := pb.NewRunnerClient(conn)
+
+	if err := waitForServer("runner", c, time.Second); err != nil {
+		return nil, err
+	}
 	return c, nil
 }
 
+// entryPointFileName strips the handler from the entry point
+// "porgram.py:on_event" -> "program.py"
 func entryPointFileName(entryPoint string) string {
 	i := strings.Index(entryPoint, ":")
 	if i > 0 {
@@ -286,7 +297,7 @@ func entryPointFileName(entryPoint string) string {
 /*
 Run starts a Python workflow.
 
-It'll load the Python module and send back the list of exported names.
+It'll load the Python module and set the list of exported names.
 mainPath is in the form `issues.py:on_issue`, Python will load the `issues` module.
 Run *does not* execute a function in the Python module, this happens in Call.
 */
@@ -298,6 +309,7 @@ func (py *pySvc) Run(
 	values map[string]sdktypes.Value,
 	cbs *sdkservices.RunCallbacks,
 ) (sdkservices.Run, error) {
+
 	runnerOK := false
 	py.runID = runID
 	py.xid = sdktypes.NewExecutorID(runID) // Should be first
@@ -322,51 +334,50 @@ func (py *pySvc) Run(
 		return nil, fmt.Errorf("%q note found in compiled data", archiveKey)
 	}
 
-	py.stdout = newStreamLogger("[stdout] ", cbs.Print, runID)
-	py.stderr = newStreamLogger("[stderr] ", cbs.Print, runID)
-
 	syscallFn, err := py.loadSyscall(values)
 	if err != nil {
 		return nil, fmt.Errorf("can't load syscall: %w", err)
 	}
 
 	rsvc := newRemoteSvc(py.log, cbs, runID, syscallFn)
-
 	if err := rsvc.Start(); err != nil {
 		return nil, fmt.Errorf("can't start remote service: %w", err)
 	}
+
 	py.remote = rsvc
+	py.log.Info("svc running", zap.Int("port", rsvc.port))
+
 	defer func() {
 		if !runnerOK {
-			rsvc.Stop()
+			if err := rsvc.Close(); err != nil {
+				py.log.Warn("close svc", zap.Error(err))
+			}
 		}
 	}()
 
-	opts := runOptions{
-		log:        py.log,
-		pyExe:      py.pyExe,
-		entryPoint: mainPath,
-		env:        envMap,
-		stdout:     py.stdout,
-		stderr:     py.stderr,
-		tarData:    tarData,
-		workerAddr: fmt.Sprintf("localhost:%d", rsvc.port),
+	runner := PyRunner{
+		log:    py.log,
+		stdout: newStreamLogger("[stdout] ", cbs.Print, runID),
+		stderr: newStreamLogger("[stderr] ", cbs.Print, runID),
 	}
-	ri, err := runPython(opts)
-	if err != nil {
-		return nil, err
+	workerAddr := fmt.Sprintf("localhost:%d", rsvc.port)
+	if err := runner.Start(py.pyExe, tarData, envMap, workerAddr); err != nil {
+		return nil, fmt.Errorf("start runner - %w", err)
 	}
+	py.runner = &runner
+
 	defer func() {
-		if err := ri.proc.Kill(); err != nil {
-			py.log.Warn("kill runner", zap.Int("pid", ri.proc.Pid), zap.Error(err))
+		if runnerOK {
+			return
 		}
-		if !runnerOK {
-			ri.Cleanup()
+
+		if err := runner.Close(); err != nil {
+			py.log.Warn("close runner", zap.Error(err))
 		}
 	}()
 
-	runnerAddr := fmt.Sprintf("localhost:%d", ri.port)
-	py.runner, err = dialRunner(runnerAddr)
+	runnerAddr := fmt.Sprintf("localhost:%d", runner.port)
+	py.runnerClient, err = dialRunner(runnerAddr)
 	if err != nil {
 		return nil, err
 	}
@@ -375,7 +386,7 @@ func (py *pySvc) Run(
 	req := pb.ExportsRequest{
 		FileName: py.fileName,
 	}
-	resp, err := py.runner.Exports(ctx, &req)
+	resp, err := py.runnerClient.Exports(ctx, &req)
 	if err != nil {
 		return nil, err
 	}
@@ -482,13 +493,13 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktyp
 		py.stderr.Close()
 		py.stdout.Close()
 
-		if py.run.proc != nil {
-			if err := py.run.proc.Kill(); err != nil {
-				py.log.Warn("kill", zap.Int("pid", py.run.proc.Pid), zap.Error(err))
-			}
+		if err := py.runner.Close(); err != nil {
+			py.log.Warn("close runner", zap.Error(err))
 		}
-		py.run.Cleanup()
-		py.run.proc = nil
+
+		if err := py.remote.Close(); err != nil {
+			py.log.Warn("remote close", zap.Error(err))
+		}
 	}()
 
 	py.log.Info("initial call", zap.Any("func", funcName))
@@ -510,7 +521,7 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktyp
 			Data: eventData,
 		},
 	}
-	if _, err := py.runner.Start(ctx, &req); err != nil {
+	if _, err := py.runnerClient.Start(ctx, &req); err != nil {
 		// TODO: Handle traceback
 		return sdktypes.InvalidValue, err
 	}
@@ -538,42 +549,23 @@ func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 	fnName := fn.Name().String()
 	py.log.Info("call", zap.String("func", fnName))
 
-	if py.run.proc == nil {
-		py.log.Error("call - python not running")
-		return sdktypes.InvalidValue, fmt.Errorf("python not running")
-	}
-
 	if py.firstCall {
 		py.firstCall = false
 		return py.initialCall(ctx, fnName, args, kwargs)
 	}
 
 	// If we're here, it's an activity call
-
-}
-
-/*
-func packSyscallArgs(msg CallMessage) ([]sdktypes.Value, map[string]sdktypes.Value, error) {
-	args := make([]sdktypes.Value, len(msg.Args)+1)
-	args[0] = sdktypes.NewStringValue(msg.FuncName)
-	// Can't use kittehs.Transform since we want to handle errors.
-	for i, arg := range msg.Args {
-		var err error
-		args[i+1], err = sdktypes.WrapValue(arg)
-		if err != nil {
-			return nil, nil, fmt.Errorf("%s: unsupported argument: %#v - %w", msg.FuncName, arg, err)
-		}
+	callID := string(fn.Data())
+	req := pb.ExecuteRequest{
+		CallId: callID,
+	}
+	resp, err := py.runnerClient.Execute(ctx, &req)
+	switch {
+	case err != nil:
+		return sdktypes.InvalidValue, err
+	case resp.Error != "":
+		return sdktypes.InvalidValue, fmt.Errorf("%s", resp.Error)
 	}
 
-	kw := make(map[string]sdktypes.Value, len(msg.Kw))
-	for key, val := range msg.Kw {
-		v, err := sdktypes.WrapValue(val)
-		if err != nil {
-			return nil, nil, fmt.Errorf("%s: unsupported kwarg: %s:%#v - %w", msg.FuncName, key, val, err)
-		}
-		kw[key] = v
-	}
-
-	return args, kw, nil
+	return sdktypes.NewBytesValue(resp.Result), nil
 }
-*/

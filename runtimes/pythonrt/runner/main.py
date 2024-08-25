@@ -50,7 +50,7 @@ class Runner(rpc.RunnerServicer):
         self.calls = {}  # id -> (fn, args, kw)
         self.replies = {}  # id -> future
 
-    def Exports(self, request: pb.ExportsRequest, context):
+    def Exports(self, request: pb.ExportsRequest, context: grpc.ServicerContext):
         if request.file_name == "":
             context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
             return pb.ExportsResponse(error="missing file name")
@@ -63,7 +63,7 @@ class Runner(rpc.RunnerServicer):
 
         return pb.ExportsResponse(exports=exports)
 
-    def Start(self, request: pb.StartRequest, context):
+    def Start(self, request: pb.StartRequest, context: grpc.ServicerContext):
         log.info("start request: %r", request)
         self.run_id = request.run_id
         self.syscalls = SysCalls(self.run_id, self.worker)
@@ -84,7 +84,7 @@ class Runner(rpc.RunnerServicer):
         resp = pb.StartResponse()
         return resp
 
-    def Execute(self, request: pb.ExecuteRequest, context):
+    def Execute(self, request: pb.ExecuteRequest, context: grpc.ServicerContext):
         with self.lock:
             call_info = self.calls.pop(request.call_id, None)
 
@@ -114,7 +114,9 @@ class Runner(rpc.RunnerServicer):
             context.set_code(grpc.StatusCode.ABORTED)
         return resp
 
-    def ActivityReply(self, request: pb.ActivityReplyRequest, context):
+    def ActivityReply(
+        self, request: pb.ActivityReplyRequest, context: grpc.ServicerContext
+    ):
         with self.lock:
             fut = self.replies.pop(request.call_id, None)
 
@@ -137,6 +139,9 @@ class Runner(rpc.RunnerServicer):
 
         fut.set_result(result)
         return pb.ActivityReplyResponse()
+
+    def Health(self, request: pb.HealthRequest, context: grpc.ServicerContext):
+        return pb.HealthResponse()
 
     def call_in_activity(self, fn, *args, **kw):
         fut = self.start_activity(fn, *args, **kw)

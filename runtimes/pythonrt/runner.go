@@ -5,7 +5,7 @@ import (
 	"bytes"
 	"context"
 	"embed"
-	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -15,8 +15,6 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
-	"go.autokitteh.dev/autokitteh/runtimes/pythonrt/pb"
-
 	"go.uber.org/zap"
 )
 
@@ -27,6 +25,102 @@ var (
 	//go:embed requirements.txt
 	requirementsData []byte
 )
+
+type PyRunner struct {
+	log         *zap.Logger
+	userRootDir string
+	pyRootDir   string
+	port        int
+	proc        *os.Process
+	stdout      io.Writer
+	stderr      io.Writer
+}
+
+func (r *PyRunner) Close() error {
+	var err error
+
+	if r.userRootDir != "" {
+		if uerr := os.RemoveAll(r.userRootDir); uerr != nil {
+			err = errors.Join(err, fmt.Errorf("clean user dir %q - %w", r.userRootDir, uerr))
+		}
+	}
+
+	if r.pyRootDir != "" {
+		if perr := os.RemoveAll(r.pyRootDir); perr != nil {
+			err = errors.Join(err, fmt.Errorf("clean runner dir %q - %w", r.pyRootDir, perr))
+		}
+	}
+
+	if r.proc != nil {
+		if kerr := r.proc.Kill(); kerr != nil {
+			err = errors.Join(err, fmt.Errorf("kill runner (pid=%d) - %w", r.proc.Pid, kerr))
+		}
+	}
+
+	return err
+}
+
+func (r *PyRunner) Start(pyExe string, tarData []byte, env map[string]string, workerAddr string) error {
+	runOK := false
+
+	defer func() {
+		if !runOK {
+			if err := r.Close(); err != nil {
+				r.log.Warn("cleanup runner", zap.Error(err))
+			}
+		}
+	}()
+
+	port, err := freePort()
+	if err != nil {
+		return fmt.Errorf("cannot find free port: %w", err)
+	}
+	r.port = port
+
+	ur, err := os.MkdirTemp("", "ak-")
+	if err != nil {
+		return fmt.Errorf("create user directory - %w", err)
+	}
+	r.userRootDir = ur
+	r.log.Info("user root dir", zap.String("path", r.userRootDir))
+
+	if err := extractTar(r.userRootDir, tarData); err != nil {
+		return fmt.Errorf("extract user tar - %w", err)
+	}
+
+	pr, err := os.MkdirTemp("", "ak-")
+	if err != nil {
+		return fmt.Errorf("create runner dir - %w", err)
+	}
+	r.pyRootDir = pr
+	r.log.Info("python root dir", zap.String("path", r.pyRootDir))
+
+	if err := copyFS(runnerPyCode, r.pyRootDir); err != nil {
+		return fmt.Errorf("copy runner code - %w", err)
+	}
+
+	mainPy := path.Join(r.pyRootDir, "runner", "main.py")
+	cmd := exec.Command(
+		pyExe, "-u", mainPy,
+		"--worker-address", workerAddr,
+		"--port", fmt.Sprintf("%d", r.port),
+		"--runner-id", uuid.NewString(),
+		"--code-dir", r.pyRootDir,
+	)
+	// cmd.Dir = r.PyRootDir # TODO: Check if required
+	cmd.Env = overrideEnv(env, r.pyRootDir, r.userRootDir)
+	cmd.Stdout = r.stdout
+	cmd.Stderr = r.stderr
+
+	if err := cmd.Start(); err != nil {
+		return fmt.Errorf("start runner - %w", err)
+	}
+
+	runOK = true // signal we're good to cleanup
+	r.proc = cmd.Process
+
+	return nil
+}
 
 func createTar(fs fs.FS) ([]byte, error) {
 	var buf bytes.Buffer
@@ -144,92 +238,6 @@ func pyExeInfo(ctx context.Context, exePath string) (exeInfo, error) {
 	return info, nil
 }
 
-type pyRunInfo struct {
-	userRootDir string
-	pyRootDir   string
-	client      pb.RunnerClient
-	proc        *os.Process
-	port        int
-}
-
-func (ri *pyRunInfo) Cleanup() {
-	if ri.userRootDir != "" {
-		os.RemoveAll(ri.userRootDir)
-	}
-
-	if ri.pyRootDir != "" {
-		os.RemoveAll(ri.pyRootDir)
-	}
-}
-
-type runOptions struct {
-	log            *zap.Logger
-	pyExe          string // Python executable to use
-	entryPoint     string // simple.py:greet
-	tarData        []byte
-	env            map[string]string // Python process environment
-	stdout, stderr io.Writer
-	workerAddr     string
-}
-
-func runPython(opts runOptions) (*pyRunInfo, error) {
-	runOK := false
-	var ri pyRunInfo
-	var err error
-	defer func() {
-		if !runOK {
-			ri.Cleanup()
-		}
-	}()
-
-	ri.port, err = freePort()
-	if err != nil {
-		return nil, fmt.Errorf("cannot find free port: %w", err)
-	}
-
-	ri.userRootDir, err = os.MkdirTemp("", "ak-")
-	if err != nil {
-		return nil, err
-	}
-	opts.log.Info("user root dir", zap.String("path", ri.userRootDir))
-
-	if err := extractTar(ri.userRootDir, opts.tarData); err != nil {
-		return nil, err
-	}
-
-	ri.pyRootDir, err = os.MkdirTemp("", "ak-")
-	if err != nil {
-		return nil, err
-	}
-	opts.log.Info("python root dir", zap.String("path", ri.pyRootDir))
-
-	if err := copyFS(runnerPyCode, ri.pyRootDir); err != nil {
-		return nil, err
-	}
-
-	mainPy := path.Join(ri.pyRootDir, "main.py")
-	cmd := exec.Command(
-		opts.pyExe, "-u", mainPy,
-		"--worker-address", opts.workerAddr,
-		"--port", fmt.Sprintf("%d", ri.port),
-		"--runner-id", uuid.NewString(),
-		"--code-dir", ri.pyRootDir,
-	)
-	// cmd.Dir = ri.pyRootDir # TODO: Check if required
-	cmd.Env = overrideEnv(opts.env, ri.pyRootDir, ri.userRootDir)
-	cmd.Stdout = opts.stdout
-	cmd.Stderr = opts.stderr
-
-	if err := cmd.Start(); err != nil {
-		return nil, err
-	}
-
-	runOK = true // signal we're good to cleanup
-	ri.proc = cmd.Process
-
-	return &ri, nil
-}
-
 func extractTar(rootDir string, data []byte) error {
 	rdr := tar.NewReader(bytes.NewReader(data))
 	for {
@@ -317,60 +325,4 @@ func createVEnv(pyExe string, venvPath string) error {
 	}
 
 	return nil
-}
-
-type Export struct {
-	Name string
-	File string
-	Line int
-}
-
-func pyExports(ctx context.Context, pyExe string, fsys fs.FS) ([]Export, error) {
-	tmpDir, err := os.MkdirTemp("", "ak-inspect-")
-	if err != nil {
-		return nil, err
-	}
-	defer os.RemoveAll(tmpDir)
-
-	if err := copyFS(fsys, tmpDir); err != nil {
-		return nil, err
-	}
-
-	runnerDir, err := os.MkdirTemp("", "ak-inspect-")
-	if err != nil {
-		return nil, err
-	}
-	defer os.RemoveAll(runnerDir)
-
-	if err := copyFS(runnerPyCode, runnerDir); err != nil {
-		return nil, err
-	}
-
-	outFile, err := os.CreateTemp("", "")
-	if err != nil {
-		return nil, fmt.Errorf("create temp file: %w", err)
-	}
-	outFile.Close()
-
-	cmd := exec.CommandContext(ctx, pyExe, "-m", runnerMod, "inspect", tmpDir, outFile.Name())
-	var buf bytes.Buffer
-	cmd.Stdout = &buf
-	cmd.Stderr = &buf
-	cmd.Env = adjustPythonPath(os.Environ(), runnerDir)
-	if err := cmd.Run(); err != nil {
-		return nil, fmt.Errorf("inspect: %w.\nPython output: %s", err, buf.String())
-	}
-
-	file, err := os.Open(outFile.Name())
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
-
-	var exports []Export
-	if err := json.NewDecoder(file).Decode(&exports); err != nil {
-		return nil, err
-	}
-
-	return exports, nil
 }

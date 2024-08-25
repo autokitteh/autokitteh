@@ -126,20 +126,20 @@ func Test_findPython(t *testing.T) {
 	t.Setenv("PATH", dirName)
 
 	// No Python
-	_, err := findPython()
+	_, err := findSystemPython()
 	require.Error(t, err)
 
 	// python
 	pyExe := path.Join(dirName, "python")
 	genExe(t, pyExe, minPyVersion.Major, minPyVersion.Minor)
-	out, err := findPython()
+	out, err := findSystemPython()
 	require.NoError(t, err)
 	require.Equal(t, pyExe, out)
 
 	// python & python3, should be python3
 	py3Exe := path.Join(dirName, "python3")
 	genExe(t, py3Exe, minPyVersion.Major, minPyVersion.Minor)
-	out, err = findPython()
+	out, err = findSystemPython()
 	require.NoError(t, err)
 	require.Equal(t, py3Exe, out)
 
@@ -154,7 +154,7 @@ func Test_findPython(t *testing.T) {
 	link := path.Join(dirName, "python3")
 	err = os.Symlink(exe, link)
 	require.NoError(t, err)
-	out, err = findPython()
+	out, err = findSystemPython()
 	require.NoError(t, err)
 	require.Equal(t, link, out)
 }

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
+	"time"
 
 	"go.autokitteh.dev/autokitteh/runtimes/pythonrt/pb"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -13,6 +14,7 @@ import (
 	"go.uber.org/zap/zapcore"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/reflection"
 	"google.golang.org/grpc/status"
 )
@@ -34,12 +36,11 @@ type remoteSvc struct {
 	error  chan string
 }
 
-func newRemoteSvc(log *zap.Logger, cbs *sdkservices.RunCallbacks, runner pb.RunnerClient, runID sdktypes.RunID, syscallFn sdktypes.Value) *remoteSvc {
+func newRemoteSvc(log *zap.Logger, cbs *sdkservices.RunCallbacks, runID sdktypes.RunID, syscallFn sdktypes.Value) *remoteSvc {
 	svc := remoteSvc{
-		log:    log,
-		cbs:    cbs,
-		runner: runner,
-		runID:  runID,
+		log:   log,
+		cbs:   cbs,
+		runID: runID,
 
 		result: make(chan []byte, 1),
 		error:  make(chan string, 1),
@@ -211,8 +212,9 @@ func (s *remoteSvc) call(ctx context.Context, callID string, fn sdktypes.Value) 
 // Runner starting activity
 func (s *remoteSvc) Activity(ctx context.Context, req *pb.ActivityRequest) (*pb.ActivityResponse, error) {
 	xid := sdktypes.NewExecutorID(s.runID)
-	name := fmt.Sprintf("fn_%s", req.CallId)
-	fn, err := sdktypes.NewFunctionValue(xid, name, nil, nil, pyModuleFunc)
+	fnName := req.CallInfo.Function
+	fnData := []byte(req.CallId)
+	fn, err := sdktypes.NewFunctionValue(xid, fnName, fnData, nil, pyModuleFunc)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "new function value: %s", err)
 	}
@@ -230,6 +232,29 @@ func (s *remoteSvc) Done(ctx context.Context, req *pb.DoneRequest) (*pb.DoneResp
 	}
 
 	return &pb.DoneResponse{}, nil
+}
+
+type Healther interface {
+	Health(ctx context.Context, in *pb.HealthRequest, opts ...grpc.CallOption) (*pb.HealthResponse, error)
+}
+
+func waitForServer(name string, h Healther, timeout time.Duration) error {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	start := time.Now()
+	var req pb.HealthRequest
+
+	for time.Since(start) <= timeout {
+		resp, err := h.Health(ctx, &req)
+		if err != nil || resp.Error != "" {
+			time.Sleep(10 * time.Millisecond)
+			continue
+		}
+
+		return nil
+	}
+
+	return fmt.Errorf("%s not ready after %v", name, timeout)
 }
 
 func freePort() (int, error) {
@@ -270,14 +295,29 @@ func (s *remoteSvc) Start() error {
 		}
 	}()
 
-	return nil
+	clientAddr := fmt.Sprintf("localhost:%d", s.port)
+	creds := insecure.NewCredentials()
+	conn, err := grpc.NewClient(clientAddr, grpc.WithTransportCredentials(creds))
+	if err != nil {
+		return err
+	}
+
+	client := pb.NewWorkerClient(conn)
+	return waitForServer("worker", client, time.Second)
 }
 
-func (s *remoteSvc) Stop() {
-	s.srv.Stop()
-	if err := s.lis.Close(); err != nil {
-		s.log.Error("close listener", zap.Error(err))
+func (s *remoteSvc) Close() error {
+	if s.srv == nil {
+		return nil
 	}
+
+	s.srv.Stop()
+
+	if err := s.lis.Close(); err != nil {
+		return fmt.Errorf("close listener - %w", err)
+	}
+
+	return nil
 }
 
 func newInterceptor(log *zap.Logger) func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
