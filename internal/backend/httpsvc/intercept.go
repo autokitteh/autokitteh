@@ -128,7 +128,7 @@ func intercept(z *zap.Logger, cfg *LoggerConfig, extractors []RequestLogExtracto
 		next.ServeHTTP(rwi, r)
 
 		duration := time.Since(startTime).Truncate(time.Microsecond)
-		updateMetric(r.Context(), telemetry, r.URL.Path, rwi.StatusCode, duration)
+		_ = updateMetric(r.Context(), telemetry, r.URL.Path, rwi.StatusCode, duration) // ignore metric init error
 
 		w.Header().Add("X-AutoKitteh-Duration", duration.String())
 
