@@ -11,6 +11,7 @@ import (
 	"connectrpc.com/grpcreflect"
 	"github.com/rs/cors"
 	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
+	"go.autokitteh.dev/autokitteh/runtimes/remotert"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 	"golang.org/x/net/http2"
@@ -103,6 +104,12 @@ func New(lc fx.Lifecycle, z *zap.Logger, cfg *Config, reflectors []string, extra
 				}
 
 				z.Debug("server closed")
+			}()
+
+			go func() {
+				if err := remotert.RegisterWorkerGRPCEndpoints(ln); !errors.Is(http.ErrServerClosed, err) {
+					z.Panic("server error", zap.Error(err))
+				}
 			}()
 
 			return nil

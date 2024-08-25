@@ -2,7 +2,10 @@ package remotert
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
+	"time"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -34,12 +37,44 @@ func (*svc) Get() sdktypes.Runtime {
 }
 
 func (s *svc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
+	fn := v.GetFunction()
 	if s.firstCall {
 		s.firstCall = false
-		s.runnerClient.Start(context.Background(), &pb.StartRequest{RunId: s.runID.String(), EntryPoint: s.mainPath})
+		// Convert event to JSON
+		event := make(map[string]any, len(kwargs))
+		for key, val := range kwargs {
+			goVal, err := unwrap(val)
+			if err != nil {
+				return sdktypes.InvalidValue, err
+			}
+			event[key] = goVal
+		}
+
+		jsonBytes, err := json.Marshal(event)
+		if err != nil {
+			return sdktypes.InvalidValue, err
+		}
+
+		eventpb := pb.Event{Data: jsonBytes}
+		entrypoint := fmt.Sprintf("%s:%s", s.mainPath, fn.Name())
+		resp, err := s.runnerClient.Start(context.Background(), &pb.StartRequest{RunId: s.runID.String(), EntryPoint: entrypoint, Event: &eventpb})
+		if err != nil {
+			return sdktypes.InvalidValue, err
+		}
+		if resp.Error != "" {
+			return sdktypes.InvalidValue, errors.New(resp.Error)
+		}
 	}
-	s.runnerClient.Execute(context.Background(), &pb.ExecuteRequest{})
-	return sdktypes.InvalidValue, nil
+	resp, err := s.runnerClient.Execute(context.Background(), &pb.ExecuteRequest{})
+
+	if err != nil {
+		return sdktypes.InvalidValue, err
+	}
+	if resp.Error != "" {
+		return sdktypes.InvalidValue, errors.New(resp.Error)
+	}
+
+	return sdktypes.NewBytesValue(resp.Result), nil
 }
 
 func (s *svc) ID() sdktypes.RunID {
@@ -47,14 +82,15 @@ func (s *svc) ID() sdktypes.RunID {
 }
 
 func (s *svc) Close() {
-	resp, err := runner.Stop(context.Background(), &pb.StopRequest{RunnerId: s.runnerID})
-	if err != nil {
-		fmt.Println(fmt.Sprintf("error calling stop runner :%w", err))
-	}
+	fmt.Println("not closing")
+	// resp, err := runner.Stop(context.Background(), &pb.StopRequest{RunnerId: s.runnerID})
+	// if err != nil {
+	// 	fmt.Printf("error calling stop runner :%s\n", err.Error())
+	// }
 
-	if resp.Error != "" {
-		fmt.Println(fmt.Sprintf("stop runner returned error :%w", resp.Error))
-	}
+	// if resp.Error != "" {
+	// 	fmt.Printf("stop runner returned error :%s\n", resp.Error)
+	// }
 }
 
 func (s *svc) ExecutorID() sdktypes.ExecutorID { return s.runID }
@@ -72,6 +108,28 @@ type svc struct {
 	firstCall     bool
 	mainPath      string
 	exports       map[string]sdktypes.Value
+}
+
+var pyModuleFunc = kittehs.Must1(sdktypes.ModuleFunctionFromProto(&sdktypes.ModuleFunctionPB{
+	Input: []*sdktypes.ModuleFunctionFieldPB{
+		{Name: "created_at"},
+		{Name: "data"},
+		{Name: "event_id"},
+		{Name: "integration_id"},
+	},
+}))
+
+func entriesToValues(xid sdktypes.ExecutorID, entries []string) (map[string]sdktypes.Value, error) {
+	values := make(map[string]sdktypes.Value)
+	for _, name := range entries {
+		fn, err := sdktypes.NewFunctionValue(xid, name, nil, nil, pyModuleFunc)
+		if err != nil {
+			return nil, err
+		}
+		values[name] = fn
+	}
+
+	return values, nil
 }
 
 // Returns sdktypes.ProgramErrorAsError if not internal error.
@@ -110,7 +168,7 @@ func (s *svc) Run(
 	}
 
 	if resp.Error != "" {
-		return nil, fmt.Errorf("staring runner %w", resp.Error)
+		return nil, fmt.Errorf("staring runner %s", resp.Error)
 	}
 
 	s.runnerID = resp.RunnerId
@@ -123,22 +181,36 @@ func (s *svc) Run(
 	}
 
 	s.runnerClient = pb.NewRunnerClient(conn)
-	rh, err := s.runnerClient.Health(ctx, &pb.HealthRequest{})
-	if err != nil {
-		return nil, fmt.Errorf("could not verify runner health %w", err)
-	}
-	if rh.Error != "" {
-		return nil, fmt.Errorf("runner health: %w", err)
+	var runnerHealthResponse *pb.HealthResponse
+	for {
+		runnerHealthResponse, err = s.runnerClient.Health(ctx, &pb.HealthRequest{})
+		if err == nil && runnerHealthResponse.Error == "" {
+			break
+		}
+		fmt.Println("retry health check")
+		time.Sleep(1 * time.Second)
 	}
 
-	exports, err := s.runnerClient.Exports(context.Background(), &pb.ExportsRequest{})
+	// if err != nil {
+	// 	return nil, fmt.Errorf("could not verify runner health %w", err)
+	// }
+	// if runnerHealthResponse.Error != "" {
+	// 	return nil, fmt.Errorf("runner health: %w", err)
+	// }
+
+	exports, err := s.runnerClient.Exports(context.Background(), &pb.ExportsRequest{
+		FileName: mainPath,
+	})
+
 	if err != nil || exports.Error != "" {
 		return nil, fmt.Errorf("failed fetching exports")
 	}
 
-	s.exports = kittehs.ListToMap(exports.Exports, func(e string) (string, sdktypes.Value) {
-		return e, sdktypes.NewStringValue(e)
-	})
+	exportsMap, err := entriesToValues(s.runID, exports.Exports)
+	if err != nil {
+		return nil, err
+	}
+	s.exports = exportsMap
 	// exports.Exports
 
 	return s, nil
@@ -167,24 +239,6 @@ func Configure(cfg RemoteRuntimeConfig) error {
 		return fmt.Errorf("runner manager health: %w", err)
 	}
 
-	// c := &http.Client{
-	// 	Transport: &http2.Transport{
-	// 		AllowHTTP: true,
-	// 		DialTLS: func(network, addr string, cfg *tls.Config) (net.Conn, error) {
-	// 			return net.Dial(network, addr)
-	// 		},
-	// 	},
-	// }
-
-	// runner = runner_managerv1connect.NewRunnerManagerServiceClient(c, addr, connect.WithGRPC())
-
-	// resp, err := runner.Health(context.Background(), &connect.Request[runner_managerv1.HealthRequest]{})
-	// if err != nil {
-	// 	return fmt.Errorf("could not verify runner manager health")
-	// }
-	// if resp.Msg.Error != "" {
-	// 	return fmt.Errorf("runner manager health error: %w", err)
-	// }
 	config = cfg
 
 	return nil
@@ -197,6 +251,7 @@ func New() (sdkservices.Runtime, error) {
 	}
 
 	log = log.With(zap.String("runtime", "remote"))
+	log.Debug("init")
 	if err := config.validate(); err != nil {
 		return nil, fmt.Errorf("remotert: invalid config %w", err)
 	}

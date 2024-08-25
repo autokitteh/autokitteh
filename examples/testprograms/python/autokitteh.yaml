@@ -1,7 +1,7 @@
 version: v1
 
 project:
-  name: python3
+  name: pythonremotes
   connections:
     - name: myhttp
       integration: "http"
