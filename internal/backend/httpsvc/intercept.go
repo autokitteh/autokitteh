@@ -85,7 +85,7 @@ func updateMetric(ctx context.Context, l *zap.Logger, t *telemetry.Telemetry, pa
 		}
 
 	}
-	counter.Add(ctx, 1)
+	counter.Add(ctx, 1, telemetry.WithLabels("status", string(statusCode)))
 	return nil
 }
 
