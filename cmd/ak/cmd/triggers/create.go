@@ -38,37 +38,28 @@ var createCmd = common.StandardCommand(&cobra.Command{
 		}
 
 		// Project and/or environment are required.
-		p, _, err := r.ProjectNameOrID(ctx, project)
-		if err != nil {
-			return err
-		}
-		if project != "" && !p.IsValid() {
-			err = resolver.NotFoundError{Type: "project", Name: project}
-			return common.NewExitCodeError(common.NotFoundExitCode, err)
+		if project != "" {
+			p, _, err := r.ProjectNameOrID(ctx, project)
+			if err = common.AddNotFoundErrIfCond(err, p.IsValid()); err != nil {
+				return common.ToExitCodeErrorNotNilErr(err, "project")
+			}
 		}
 
-		e, eid, err := r.EnvNameOrID(ctx, env, project)
-		if err != nil {
-			return err
-		}
-		if env != "" && !e.IsValid() {
-			err = resolver.NotFoundError{Type: "environment", Name: env}
-			return common.NewExitCodeError(common.NotFoundExitCode, err)
+		var eid sdktypes.EnvID
+		if env != "" {
+			e, _, err := r.EnvNameOrID(ctx, env, project)
+			if err = common.AddNotFoundErrIfCond(err, e.IsValid()); err != nil {
+				return common.ToExitCodeErrorNotNilErr(err, "environment")
+			}
+			eid = e.ID()
 		}
 
 		// Mode 1: connection is required, event and/or filter
 		// and/or data are required, and schedule is not allowed.
 		c, cid, err := r.ConnectionNameOrID(ctx, connection, project)
 		if connection != "" {
-			if err != nil {
-				if errors.As(err, resolver.NotFoundErrorType) {
-					err = common.NewExitCodeError(common.NotFoundExitCode, err)
-				}
-				return err
-			}
-			if !c.IsValid() {
-				err = resolver.NotFoundError{Type: "connection", Name: connection}
-				return common.NewExitCodeError(common.NotFoundExitCode, err)
+			if err = common.AddNotFoundErrIfCond(err, c.IsValid()); err != nil {
+				return common.ToExitCodeErrorNotNilErr(err, "connection")
 			}
 		}
 
