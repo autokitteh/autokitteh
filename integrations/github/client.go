@@ -3,6 +3,7 @@ package github
 import (
 	"context"
 
+	"go.autokitteh.dev/autokitteh/integrations"
 	"go.autokitteh.dev/autokitteh/integrations/github/internal/vars"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
@@ -71,12 +72,10 @@ func connStatus(i *integration) sdkintegrations.OptFn {
 			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "init required"), nil
 		}
 
-		// Align with:
-		// https://github.com/autokitteh/web-platform/blob/main/src/enums/connections/connectionTypes.enum.ts
 		switch at.Value() {
-		case "oauth":
+		case integrations.OAuth:
 			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "using GitHub app"), nil
-		case "pat":
+		case integrations.PAT:
 			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "using PAT + webhook"), nil
 		default:
 			return sdktypes.NewStatus(sdktypes.StatusCodeError, "bad auth type"), nil
