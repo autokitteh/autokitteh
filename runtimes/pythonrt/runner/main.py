@@ -111,10 +111,12 @@ class Runner(rpc.RunnerServicer):
             context.abort(grpc.StatusCode.INVALID_ARGUMENT, error)
 
         fn, args, kw = call_info
+        log.info("calling %s, args=%r, kw=%r", full_func_name(fn), args, kw)
         result = err = None
         try:
             result = fn(*args, **kw)
         except Exception as e:
+            log.exception("calling %s: %s", full_func_name(fn), e)
             err = e
 
         resp = pb.ExecuteResponse(
@@ -195,6 +197,7 @@ class Runner(rpc.RunnerServicer):
         try:
             result = fn(event)
         except Exception as e:
+            log.exception("calling %s: %s", full_func_name(fn), e)
             err = e
 
         req = pb.DoneRequest(
