@@ -123,9 +123,8 @@ func connStatus(i *integration) sdkintegrations.OptFn {
 			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "init required"), nil
 		}
 
-		// Align with:
-		// https://github.com/autokitteh/web-platform/blob/main/src/enums/connections/connectionTypes.enum.ts
 		switch at.Value() {
+		// TODO: Add a const
 		case "awsConfig":
 			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "initialized"), nil
 		default:
