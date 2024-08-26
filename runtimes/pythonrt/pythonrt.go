@@ -339,7 +339,7 @@ func (py *pySvc) Run(
 		return nil, fmt.Errorf("can't load syscall: %w", err)
 	}
 
-	rsvc := newRemoteSvc(py.log, cbs, runID, syscallFn)
+	rsvc := newRemoteSvc(py.log, cbs, runID, py.xid, syscallFn)
 	if err := rsvc.Start(); err != nil {
 		return nil, fmt.Errorf("can't start remote service: %w", err)
 	}
@@ -398,6 +398,7 @@ func (py *pySvc) Run(
 		return nil, fmt.Errorf("can't create module entries: %w", err)
 	}
 	py.exports = exports
+	rsvc.runner = py.runnerClient
 
 	runnerOK = true // All is good, don't kill Python subprocess.
 
@@ -533,7 +534,7 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktyp
 		// TODO: traceback
 		return sdktypes.InvalidValue, fmt.Errorf("%s", err)
 	case <-ctx.Done():
-		return sdktypes.InvalidValue, fmt.Errorf("timeout - %w", ctx.Err())
+		return sdktypes.InvalidValue, fmt.Errorf("context expired - %w", ctx.Err())
 	}
 }
 
@@ -550,6 +551,7 @@ func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 	py.log.Info("call", zap.String("func", fnName))
 
 	if py.firstCall {
+		py.remote.callCtx = ctx
 		py.firstCall = false
 		return py.initialCall(ctx, fnName, args, kwargs)
 	}

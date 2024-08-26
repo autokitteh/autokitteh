@@ -1,17 +1,17 @@
 import json
 import pickle
+from base64 import b64decode
 from concurrent.futures import Future, ThreadPoolExecutor
 from multiprocessing import cpu_count
 from pathlib import Path
 from threading import Lock
-from uuid import uuid4
 
 import grpc
 import loader
 import log
 import remote_pb2 as pb
 import remote_pb2_grpc as rpc
-from call import AKCall, func_full_name
+from call import AKCall, full_func_name
 from grpc_reflection.v1alpha import reflection
 from syscalls import SysCalls
 
@@ -49,6 +49,7 @@ class Runner(rpc.RunnerServicer):
         self.lock = Lock()
         self.calls = {}  # id -> (fn, args, kw)
         self.replies = {}  # id -> future
+        self._next_id = 0
 
     def Exports(self, request: pb.ExportsRequest, context: grpc.ServicerContext):
         if request.file_name == "":
@@ -82,6 +83,14 @@ class Runner(rpc.RunnerServicer):
             )
 
         event = json.loads(request.event.data)
+
+        # Go passes HTTP event body as base64 encode string
+        body = event.get("data", {}).get("body")
+        if isinstance(body, str):
+            try:
+                event["data"]["body"] = b64decode(body)
+            except ValueError:
+                pass
         log.info("start event: %r", event)
 
         self.executor.submit(self.on_event, fn, event)
@@ -154,8 +163,9 @@ class Runner(rpc.RunnerServicer):
         return fut.result()
 
     def start_activity(self, fn, *args, **kw) -> Future:
-        log.info("calling %s, args=%r, kw=%r", func_full_name(fn), args, kw)
-        call_id = uuid4().hex
+        fn_name = full_func_name(fn)
+        log.info("calling %s, args=%r, kw=%r", fn_name, args, kw)
+        call_id = self.next_call_id()
         log.info("call_id %r", call_id)
         with self.lock:
             self.replies[call_id] = fut = Future()
@@ -165,7 +175,7 @@ class Runner(rpc.RunnerServicer):
             runner_id=self.id,
             call_id=call_id,
             call_info=pb.CallInfo(
-                function=fn.__name__,
+                function=fn.__name__,  # AK rejects json.loads
                 args=[repr(a) for a in args],
                 kwargs={k: repr(v) for k, v in kw.items()},
             ),
@@ -199,6 +209,11 @@ class Runner(rpc.RunnerServicer):
 
     def syscall(self, fn, args, kw):
         return self.syscalls.call(fn, args, kw)
+
+    def next_call_id(self) -> str:
+        with self.lock:
+            self._next_id += 1
+            return f"call_id_{self._next_id:03d}"
 
 
 def is_valid_port(port):

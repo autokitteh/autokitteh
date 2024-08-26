@@ -22,7 +22,7 @@ def is_marked_activity(fn):
     return getattr(fn, decorators.ACTIVITY_ATTR, False)
 
 
-def func_full_name(fn):
+def full_func_name(fn):
     module = getattr(fn, "__module__", None)
     if module:
         return f"{module}.{fn.__name__}"
@@ -63,7 +63,7 @@ class AKCall:
         self.loading = False
 
     def __call__(self, func, *args, **kw):
-        log.info("__call__: %s, args=%r, kw=%r", func_full_name(func), args, kw)
+        log.info("__call__: %s, args=%r, kw=%r", full_func_name(func), args, kw)
         if not callable(func):
             frames = inspect.stack()
             if len(frames) > 1:
@@ -80,7 +80,7 @@ class AKCall:
             log.info("ak function call: %s(%r, %r)", func.__name__, args, kw)
             return self.runner.syscall(func, args, kw)
 
-        full_name = func_full_name(func)
+        full_name = full_func_name(func)
         if not self.should_run_as_activity(func):
             log.info(
                 "calling %s directly (in_activity=%s)", full_name, self.in_activity
