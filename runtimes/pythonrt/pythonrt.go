@@ -277,7 +277,7 @@ func dialRunner(addr string) (pb.RunnerClient, error) {
 
 	c := pb.NewRunnerClient(conn)
 
-	if err := waitForServer("runner", c, time.Second); err != nil {
+	if err := waitForServer("runner", c, 100*time.Second); err != nil {
 		return nil, err
 	}
 	return c, nil

@@ -39,6 +39,12 @@ type PyRunner struct {
 func (r *PyRunner) Close() error {
 	var err error
 
+	if r.proc != nil {
+		if kerr := r.proc.Kill(); kerr != nil {
+			err = errors.Join(err, fmt.Errorf("kill runner (pid=%d) - %w", r.proc.Pid, kerr))
+		}
+	}
+
 	if r.userRootDir != "" {
 		if uerr := os.RemoveAll(r.userRootDir); uerr != nil {
 			err = errors.Join(err, fmt.Errorf("clean user dir %q - %w", r.userRootDir, uerr))
@@ -48,12 +54,6 @@ func (r *PyRunner) Close() error {
 	if r.pyRootDir != "" {
 		if perr := os.RemoveAll(r.pyRootDir); perr != nil {
 			err = errors.Join(err, fmt.Errorf("clean runner dir %q - %w", r.pyRootDir, perr))
-		}
-	}
-
-	if r.proc != nil {
-		if kerr := r.proc.Kill(); kerr != nil {
-			err = errors.Join(err, fmt.Errorf("kill runner (pid=%d) - %w", r.proc.Pid, kerr))
 		}
 	}
 
@@ -105,12 +105,15 @@ func (r *PyRunner) Start(pyExe string, tarData []byte, env map[string]string, wo
 		"--worker-address", workerAddr,
 		"--port", fmt.Sprintf("%d", r.port),
 		"--runner-id", uuid.NewString(),
-		"--code-dir", r.pyRootDir,
+		"--code-dir", r.userRootDir,
 	)
+	r.log.Debug("running python", zap.String("command", cmd.String()))
 	// cmd.Dir = r.PyRootDir # TODO: Check if required
 	cmd.Env = overrideEnv(env, r.pyRootDir, r.userRootDir)
-	cmd.Stdout = r.stdout
-	cmd.Stderr = r.stderr
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	//cmd.Stdout = r.stdout
+	//cmd.Stderr = r.stderr
 
 	if err := cmd.Start(); err != nil {
 		return fmt.Errorf("start runner - %w", err)

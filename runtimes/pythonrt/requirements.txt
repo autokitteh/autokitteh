@@ -20,6 +20,12 @@ twilio ~= 9.2
 
 autokitteh ~= 0.2
 
+# Runner
+
+grpcio ~= 1.65
+# grpcio-reflection 1.65 conflicts with google-generativeai
+grpcio-reflection ~= 1.31
+
 # General
 
 beautifulsoup4 ~= 4.12

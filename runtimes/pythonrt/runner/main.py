@@ -7,11 +7,11 @@ from threading import Lock
 from uuid import uuid4
 
 import grpc
-import remote_pb2 as pb
-import remote_pb2_grpc as rpc
 import loader
 import log
-from call import AKCall
+import remote_pb2 as pb
+import remote_pb2_grpc as rpc
+from call import AKCall, func_full_name
 from grpc_reflection.v1alpha import reflection
 from syscalls import SysCalls
 
@@ -52,14 +52,15 @@ class Runner(rpc.RunnerServicer):
 
     def Exports(self, request: pb.ExportsRequest, context: grpc.ServicerContext):
         if request.file_name == "":
-            context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
-            return pb.ExportsResponse(error="missing file name")
+            context.abort(
+                grpc.StatusCode.INVALID_ARGUMENT,
+                "missing file name",
+            )
 
         try:
             exports = list(loader.exports(self.code_dir, request.file_name))
         except OSError as err:
-            context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
-            return pb.ExportsResponse(error=str(err))
+            context.abort(grpc.StatusCode.INVALID_ARGUMENT, str(err))
 
         return pb.ExportsResponse(exports=exports)
 
@@ -71,18 +72,21 @@ class Runner(rpc.RunnerServicer):
 
         call = AKCall(self)
         mod = loader.load_code(self.code_dir, call, mod_name)
+        call.set_module(mod)
+
         fn = getattr(mod, fn_name, None)
         if not callable(fn):
-            context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
-            return pb.StartResponse(error=f"function {fn_name!r} not found")
+            context.abort(
+                grpc.StatusCode.INVALID_ARGUMENT,
+                f"function {fn_name!r} not found",
+            )
 
         event = json.loads(request.event.data)
         log.info("start event: %r", event)
 
         self.executor.submit(self.on_event, fn, event)
 
-        resp = pb.StartResponse()
-        return resp
+        return pb.StartResponse()
 
     def Execute(self, request: pb.ExecuteRequest, context: grpc.ServicerContext):
         with self.lock:
@@ -95,8 +99,7 @@ class Runner(rpc.RunnerServicer):
                 if fut:
                     fut.set_exception(ActivityError(error))
 
-            context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
-            return pb.ExecuteResponse(error=error)
+            context.abort(grpc.StatusCode.INVALID_ARGUMENT, error)
 
         fn, args, kw = call_info
         result = err = None
@@ -110,8 +113,11 @@ class Runner(rpc.RunnerServicer):
             error=str(err) if err else "",
             # TODO: traceback
         )
+
         if err is not None:
             context.set_code(grpc.StatusCode.ABORTED)
+            context.set_details(resp.error)
+
         return resp
 
     def ActivityReply(
@@ -122,9 +128,9 @@ class Runner(rpc.RunnerServicer):
 
         if fut is None:
             log.error("call_id %r not found", request.call_id)
-            context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
-            return pb.ActivityReplyResponse(
-                error=f"call_id {request.call_id!r} not found"
+            context.abort(
+                grpc.StatusCode.INVALID_ARGUMENT,
+                "call_id {request.call_id!r} not found",
             )
 
         try:
@@ -132,9 +138,9 @@ class Runner(rpc.RunnerServicer):
         except Exception as err:
             log.exception(f"call_id {request.call_id!r}: result pickle: {err}")
             fut.set_exception(ActivityError(err))
-            context.set_code(grpc.StatusCode.INTERNAL)
-            return pb.ActivityReplyResponse(
-                error=f"call_id {request.call_id!r}: result pickle: {err}",
+            context.abort(
+                grpc.StatusCode.INTERNAL,
+                f"call_id {request.call_id!r}: result pickle: {err}",
             )
 
         fut.set_result(result)
@@ -148,8 +154,9 @@ class Runner(rpc.RunnerServicer):
         return fut.result()
 
     def start_activity(self, fn, *args, **kw) -> Future:
+        log.info("calling %s, args=%r, kw=%r", func_full_name(fn), args, kw)
         call_id = uuid4().hex
-        log.info("activity: call_id %r", call_id)
+        log.info("call_id %r", call_id)
         with self.lock:
             self.replies[call_id] = fut = Future()
             self.calls[call_id] = (fn, args, kw)
@@ -171,17 +178,20 @@ class Runner(rpc.RunnerServicer):
         return fut
 
     def on_event(self, fn, event):
-        """Simulate user code for now"""
         log.info("on_event: start: %r", event)
-        fut = self.start_activity(fn, event)
-        log.info("on_event: waiting for activity")
-        result = fut.result()
-        log.info("on_event: activity result: %r", result)
+
+        # TODO: This is similar to Execute, merge?
+        err = result = None
+        try:
+            result = fn(event)
+        except Exception as e:
+            err = e
 
         req = pb.DoneRequest(
             run_id=self.run_id,
             # TODO: We want value that AK can understand (proto.Value)
             result=pickle.dumps(result, protocol=0),
+            error=str(err),
         )
         resp = self.worker.Done(req)
         if resp.Error:
