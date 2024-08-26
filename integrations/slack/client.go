@@ -3,6 +3,7 @@ package slack
 import (
 	"context"
 
+	"go.autokitteh.dev/autokitteh/integrations"
 	"go.autokitteh.dev/autokitteh/integrations/slack/api/auth"
 	"go.autokitteh.dev/autokitteh/integrations/slack/api/bookmarks"
 	"go.autokitteh.dev/autokitteh/integrations/slack/api/bots"
@@ -65,12 +66,10 @@ func connStatus(cvars sdkservices.Vars) sdkintegrations.OptFn {
 			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "init required"), nil
 		}
 
-		// Align with:
-		// https://github.com/autokitteh/web-platform/blob/main/src/enums/connections/connectionTypes.enum.ts
 		switch at.Value() {
-		case "oauth":
+		case integrations.OAuth:
 			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "using OAuth v2"), nil
-		case "socketMode":
+		case integrations.SocketMode:
 			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "using Socket Mode"), nil
 		default:
 			return sdktypes.NewStatus(sdktypes.StatusCodeError, "bad auth type"), nil
