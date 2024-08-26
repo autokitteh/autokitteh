@@ -84,7 +84,6 @@ type Connection struct {
 	DeletedAt gorm.DeletedAt `gorm:"index"`
 
 	// enforce foreign keys
-	// Integration *Integration FIXME: ENG-590
 	Project   *Project
 	Ownership *Ownership `gorm:"polymorphic:Entity;"`
 
@@ -116,11 +115,6 @@ type Var struct {
 	Value      string
 	IsSecret   bool
 	IsOptional bool
-
-	IntegrationID sdktypes.UUID `gorm:"index;type:uuid"`
-
-	// enforce foreign keys
-	// Integration *Integration // FIXME: ENG-590
 }
 
 // simple hook to populate ScopeID after retrieving a Var from the database
@@ -180,7 +174,6 @@ type Event struct {
 	DeletedAt gorm.DeletedAt `gorm:"index"`
 
 	// enforce foreign keys
-	// Integration *Integration // FIXME: ENG-590
 	Connection *Connection
 	Ownership  *Ownership `gorm:"polymorphic:Entity;"`
 }

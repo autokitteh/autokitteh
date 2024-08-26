@@ -90,6 +90,15 @@ export class GetRequest extends Message<GetRequest> {
    */
   eventId = "";
 
+  /**
+   * true: all values returned will be string values
+   *       that contain the native values in JSON format.
+   * false: all values returned are properly boxed.
+   *
+   * @generated from field: bool json_values = 2;
+   */
+  jsonValues = false;
+
   constructor(data?: PartialMessage<GetRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -99,6 +108,7 @@ export class GetRequest extends Message<GetRequest> {
   static readonly typeName = "autokitteh.events.v1.GetRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "event_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "json_values", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetRequest {
@@ -186,6 +196,13 @@ export class ListRequest extends Message<ListRequest> {
    */
   order = "";
 
+  /**
+   * see GetRequest.json_values.
+   *
+   * @generated from field: bool json_values = 6;
+   */
+  jsonValues = false;
+
   constructor(data?: PartialMessage<ListRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -199,6 +216,7 @@ export class ListRequest extends Message<ListRequest> {
     { no: 3, name: "event_type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "max_results", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 5, name: "order", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "json_values", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListRequest {

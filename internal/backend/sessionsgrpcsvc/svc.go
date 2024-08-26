@@ -145,7 +145,26 @@ func (s *server) GetLog(ctx context.Context, req *connect.Request[sessionsv1.Get
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	return connect.NewResponse(&sessionsv1.GetLogResponse{Log: hist.Log.ToProto(), Count: hist.TotalCount, NextPageToken: hist.NextPageToken}), nil
+	logpb := hist.Log.ToProto()
+	if req.Msg.JsonValues {
+		for _, r := range logpb.Records {
+			if c := r.CallAttemptComplete; c != nil {
+				if c.Result.Value, err = sdktypes.ValueProtoToJSONStringValue(c.Result.Value); err != nil {
+					return nil, err
+				}
+			} else if c := r.CallSpec; c != nil {
+				if c.Args, err = kittehs.TransformError(c.Args, sdktypes.ValueProtoToJSONStringValue); err != nil {
+					return nil, err
+				}
+
+				if c.Kwargs, err = kittehs.TransformMapValuesError(c.Kwargs, sdktypes.ValueProtoToJSONStringValue); err != nil {
+					return nil, err
+				}
+			}
+		}
+	}
+
+	return connect.NewResponse(&sessionsv1.GetLogResponse{Log: logpb, Count: hist.TotalCount, NextPageToken: hist.NextPageToken}), nil
 }
 
 func (s *server) List(ctx context.Context, req *connect.Request[sessionsv1.ListRequest]) (*connect.Response[sessionsv1.ListResponse], error) {
