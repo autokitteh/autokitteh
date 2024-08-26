@@ -181,3 +181,23 @@ func TestDeleteVar(t *testing.T) {
 	assert.NoError(t, f.gormdb.deleteVars(f.ctx, v.ScopeID, v.Name))
 	f.assertVarDeleted(t, v)
 }
+
+func TestFincConnectionIDByVar(t *testing.T) {
+	f := preVarTest(t).WithDebug()
+	c1, env1 := createConnectionAndEnv(t, f)
+	c2, env2 := createConnectionAndEnv(t, f)
+
+	ve1 := f.newVar("v", "e1", env1)
+	vc1 := f.newVar("v", "c1", c1)
+	ve2 := f.newVar("v", "e2", env2)
+	vc2 := f.newVar("v", "c2", c2)
+	f.setVarsAndAssert(t, ve1)
+	f.setVarsAndAssert(t, vc1)
+	f.setVarsAndAssert(t, ve2)
+	f.setVarsAndAssert(t, vc2)
+
+	// test findConnectionIDsByVar
+	vars, err := f.gormdb.findConnectionIDsByVar(f.ctx, *c1.IntegrationID, "v", "")
+	assert.NoError(t, err)
+	assert.Equal(t, vars, []sdktypes.UUID{vc1.ScopeID, vc2.ScopeID})
+}
