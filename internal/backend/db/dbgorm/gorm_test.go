@@ -392,6 +392,7 @@ func (f *dbFixture) newVar(name string, val string, args ...any) scheme.Var {
 		switch a := a.(type) {
 		case scheme.Connection:
 			v.ScopeID = a.ConnectionID
+			v.IntegrationID = *a.IntegrationID
 		case scheme.Env:
 			v.ScopeID = a.EnvID
 		case sdktypes.UUID:
