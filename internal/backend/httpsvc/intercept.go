@@ -2,15 +2,12 @@ package httpsvc
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 	"regexp"
-	"strconv"
 	"strings"
 	"time"
 
-	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
@@ -54,57 +51,6 @@ func (r *responseInterceptor) Flush() {
 }
 
 type RequestLogExtractor func(*http.Request) []zap.Field
-
-var metrics = struct {
-	counters  map[string]metric.Int64Counter
-	durations map[string]metric.Int64Histogram
-}{make(map[string]metric.Int64Counter), make(map[string]metric.Int64Histogram)}
-
-func updateMetric(ctx context.Context, t *telemetry.Telemetry, path string, statusCode int, duration time.Duration) (err error) {
-	// path will be like "/autokitteh.projects.v1.ProjectsService/Create"
-	// 1. check this is an internal API path, e.g. starts with "/autokitteh."
-	// 2. extract service (`projects`) and API name (`create`)
-
-	if !strings.HasPrefix(path, "/autokitteh.") {
-		return nil // only internal service APIs
-	}
-
-	slashParts := strings.Split(path, "/")
-	if len(slashParts) < 3 {
-		return errors.New("invalid API path")
-	}
-	api := strings.ToLower(slashParts[2])
-
-	var service string
-	dotParts := strings.Split(slashParts[1], ".")
-	if len(dotParts) < 2 {
-		return errors.New("invalid service path")
-	}
-	service = dotParts[1]
-
-	cntName := fmt.Sprintf("api.%s.%s", service, api)
-	histName := fmt.Sprintf("api.%s.%s.duration", service, api)
-
-	counter, ok := metrics.counters[cntName]
-	if !ok {
-		if counter, err = t.NewCounter(cntName, fmt.Sprintf("GRPC request counter (%s)", cntName)); err != nil {
-			return err
-		}
-		metrics.counters[cntName] = counter
-	}
-
-	histogram, ok := metrics.durations[histName]
-	if !ok {
-		if histogram, err = t.NewHistogram(histName, fmt.Sprintf("GRPC request duration (%s)", histName)); err != nil {
-			return err
-		}
-		metrics.durations[histName] = histogram
-	}
-
-	counter.Add(ctx, 1, telemetry.WithLabels("status", strconv.Itoa(statusCode)))
-	histogram.Record(ctx, duration.Milliseconds(), telemetry.WithLabels("status", strconv.Itoa(statusCode)))
-	return nil
-}
 
 func intercept(z *zap.Logger, cfg *LoggerConfig, extractors []RequestLogExtractor, next http.Handler, telemetry *telemetry.Telemetry) (http.HandlerFunc, error) {
 	// MustCompile is appropriate here because the patterns are static
