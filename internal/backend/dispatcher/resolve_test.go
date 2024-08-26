@@ -49,7 +49,7 @@ func TestResolveEnv(t *testing.T) {
 
 	svcs := &wf.Services{
 		Envs:     envs.New(z, testdb),
-		Projects: &projects.Projects{DB: testdb, Z: z},
+		Projects: &projects.Projects{DB: testdb, SL: z.Sugar()},
 	}
 
 	tests := []struct {

@@ -25,10 +25,18 @@ func IsIntegrationID(s string) bool { return IsIDOf[integrationIDTraits](s) }
 
 const integrationIDFromNamePrefix = "3kth"
 
-func NewIntegrationIDFromName(name string) IntegrationID {
+func NewIntegrationIDFromStringName(name string) IntegrationID {
+	return NewIntegrationIDFromName(NewSymbol(name))
+}
+
+func NewIntegrationIDFromName(name Symbol) IntegrationID {
+	sname := name.String()
+
 	// a hint to the original name is encoded in the ID.
 	idName := strings.Map(func(r rune) rune {
 		switch r {
+		case '_':
+			return 'z'
 		case 'i', 'l':
 			return '1'
 		case 'o':
@@ -38,14 +46,14 @@ func NewIntegrationIDFromName(name string) IntegrationID {
 		default:
 			return r
 		}
-	}, name)
+	}, sname)
 
 	if len(idName) > 6 {
 		idName = idName[:6]
 	}
 	idName = fmt.Sprintf("%06s", idName)
 
-	txt := fmt.Sprintf("%s_%s%06s%016x", integrationIDKind, integrationIDFromNamePrefix, idName, kittehs.HashString64(name))
+	txt := fmt.Sprintf("%s_%s%06s%016x", integrationIDKind, integrationIDFromNamePrefix, idName, kittehs.HashString64(sname))
 
 	return kittehs.Must1(ParseIntegrationID(txt))
 }

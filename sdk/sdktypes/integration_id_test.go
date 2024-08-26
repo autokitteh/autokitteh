@@ -18,7 +18,7 @@ func TestNamedID(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			id := NewIntegrationIDFromName(tt.name)
+			id := NewIntegrationIDFromName(NewSymbol(tt.name))
 			assert.Equal(t, tt.want, id.String())
 		})
 	}

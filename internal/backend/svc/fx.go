@@ -38,6 +38,7 @@ func Component[T any](name string, set configset.Set[T], opts ...fx.Option) fx.O
 		append(
 			[]fx.Option{
 				fx.Decorate(func(z *zap.Logger) *zap.Logger { return z.Named(name) }),
+				fx.Decorate(func(z *zap.SugaredLogger) *zap.SugaredLogger { return z.Named(name) }),
 				fx.Provide(fxGetConfig(name, config), fx.Private),
 				fx.Invoke(func(cfg *Config, c *T) { cfg.Store(name, c) }),
 			},

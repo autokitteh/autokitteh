@@ -49,17 +49,7 @@ func (d *dispatcher) getEventSessionData(ctx context.Context, event sdktypes.Eve
 		z = z.With(zap.String("env_id", optsEnvID.String()))
 	}
 
-	cid := event.ConnectionID()
-
-	conn, err := d.Services.Connections.Get(ctx, cid)
-	if err != nil { // any error, including NotFound
-		z.Error("get connection", zap.Error(err))
-		return nil, err
-	}
-
-	iid := conn.IntegrationID()
-
-	ts, err := d.Services.Triggers.List(ctx, sdkservices.ListTriggersFilter{ConnectionID: cid})
+	ts, err := d.Services.Triggers.List(ctx, sdkservices.ListTriggersFilter{ConnectionID: event.ConnectionID()})
 	if err != nil {
 		return nil, fmt.Errorf("list triggers: %w", err)
 	}
@@ -85,14 +75,6 @@ func (d *dispatcher) getEventSessionData(ctx context.Context, event sdktypes.Eve
 
 		if !envID.IsValid() && optsEnvID.IsValid() && envID != optsEnvID {
 			z.Debug("irrelevant env", zap.String("expected", optsEnvID.String()))
-			continue
-		}
-
-		relevant, additionalTriggerData, err := processSpecialTrigger(t, iid, event)
-		if err != nil {
-			continue
-		} else if !relevant {
-			z.Debug("irrelevant event for special trigger")
 			continue
 		}
 
@@ -135,7 +117,7 @@ func (d *dispatcher) getEventSessionData(ctx context.Context, event sdktypes.Eve
 
 		cl := t.CodeLocation()
 		for _, dep := range deployments {
-			sds = append(sds, wf.SessionData{Deployment: dep, CodeLocation: cl, Trigger: t, AdditionalTriggerData: additionalTriggerData})
+			sds = append(sds, wf.SessionData{Deployment: dep, CodeLocation: cl, Trigger: t})
 			z.Debug("relevant deployment found", zap.String("deployment_id", dep.ID().String()))
 		}
 	}

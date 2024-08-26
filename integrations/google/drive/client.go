@@ -9,7 +9,7 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-var integrationID = sdktypes.NewIntegrationIDFromName("googledrive")
+var integrationID = sdktypes.NewIntegrationIDFromStringName("googledrive")
 
 var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
 	IntegrationId: integrationID.String(),

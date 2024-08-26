@@ -10,7 +10,7 @@ import (
 
 type integration struct{ vars sdkservices.Vars }
 
-var integrationID = sdktypes.NewIntegrationIDFromName("twilio")
+var integrationID = sdktypes.NewIntegrationIDFromStringName("twilio")
 
 var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
 	IntegrationId: integrationID.String(),

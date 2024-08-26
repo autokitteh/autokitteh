@@ -11,7 +11,7 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-var integrationID = sdktypes.NewIntegrationIDFromName("google")
+var integrationID = sdktypes.NewIntegrationIDFromStringName("google")
 
 var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
 	IntegrationId: integrationID.String(),

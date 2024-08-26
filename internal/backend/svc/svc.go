@@ -102,6 +102,7 @@ func LoggerFxOpt() fx.Option {
 		"logger",
 		fx.Provide(fxGetConfig("logger", kittehs.Must1(chooseConfig(logger.Configs)))),
 		fx.Provide(logger.New),
+		fx.Provide(func(l *zap.Logger) *zap.SugaredLogger { return l.Sugar() }),
 	)
 }
 
@@ -181,7 +182,12 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		),
 		Component("store", store.Configs, fx.Provide(store.New)),
 		Component("builds", configset.Empty, fx.Provide(builds.New)),
-		Component("connections", configset.Empty, fx.Provide(connections.New)),
+		Component(
+			"connections",
+			configset.Empty,
+			fx.Provide(connections.New),
+			fx.Provide(func(c connections.Connections) sdkservices.Connections { return c }),
+		),
 		Component("deployments", configset.Empty, fx.Provide(deployments.New)),
 		Component("projects", configset.Empty, fx.Provide(projects.New)),
 		Component("projectsgrpcsvc", projectsgrpcsvc.Configs, fx.Provide(projectsgrpcsvc.New)),

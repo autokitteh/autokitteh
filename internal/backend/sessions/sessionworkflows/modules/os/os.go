@@ -18,7 +18,7 @@ import (
 )
 
 var (
-	ExecutorID = sdktypes.NewExecutorID(fixtures.NewBuiltinIntegrationID("os"))
+	ExecutorID = sdktypes.NewExecutorID(fixtures.NewBuiltinIntegrationID("_os"))
 
 	retCtor = sdktypes.NewSymbolValue(kittehs.Must1(sdktypes.ParseSymbol("exec")))
 )

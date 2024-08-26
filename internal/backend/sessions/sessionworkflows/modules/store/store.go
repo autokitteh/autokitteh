@@ -15,7 +15,7 @@ import (
 
 const moduleName = "store"
 
-var ExecutorID = sdktypes.NewExecutorID(fixtures.NewBuiltinIntegrationID("store"))
+var ExecutorID = sdktypes.NewExecutorID(fixtures.NewBuiltinIntegrationID("_store"))
 
 func New(envID sdktypes.EnvID, projectID sdktypes.ProjectID, client *redis.Client) sdkexecutor.Executor {
 	mod := redisint.NewInternalModule(

@@ -37,6 +37,20 @@ func (IntegrationTraits) StrictValidate(m *IntegrationPB) error {
 	)
 }
 
+func NewIntegration(id IntegrationID, name Symbol) Integration {
+	return kittehs.Must1(StrictIntegrationFromProto(&IntegrationPB{
+		IntegrationId: id.String(),
+		UniqueName:    name.String(),
+	}))
+}
+
+func NewIntegrationFromName(name Symbol) Integration {
+	return kittehs.Must1(StrictIntegrationFromProto(&IntegrationPB{
+		IntegrationId: NewIntegrationIDFromName(name).String(),
+		UniqueName:    name.String(),
+	}))
+}
+
 func IntegrationFromProto(m *IntegrationPB) (Integration, error) { return FromProto[Integration](m) }
 func StrictIntegrationFromProto(m *IntegrationPB) (Integration, error) {
 	return Strict(IntegrationFromProto(m))

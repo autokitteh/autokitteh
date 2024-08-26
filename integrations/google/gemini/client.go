@@ -8,7 +8,7 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-var integrationID = sdktypes.NewIntegrationIDFromName("googlegemini")
+var integrationID = sdktypes.NewIntegrationIDFromStringName("googlegemini")
 
 var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
 	IntegrationId: integrationID.String(),

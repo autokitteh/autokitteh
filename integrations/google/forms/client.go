@@ -25,7 +25,7 @@ type api struct {
 	cid  sdktypes.ConnectionID
 }
 
-var integrationID = sdktypes.NewIntegrationIDFromName("googleforms")
+var integrationID = sdktypes.NewIntegrationIDFromStringName("googleforms")
 
 var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
 	IntegrationId: integrationID.String(),

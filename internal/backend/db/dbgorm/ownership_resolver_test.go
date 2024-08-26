@@ -28,7 +28,7 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-var testIntegrationID = sdktypes.NewIntegrationIDFromName("test").UUIDValue()
+var testIntegrationID = sdktypes.NewIntegrationIDFromStringName("test").UUIDValue()
 
 type dbs struct {
 	intSvc sdkservices.Integrations
@@ -43,15 +43,20 @@ type dbs struct {
 	varSvc sdkservices.Vars
 }
 
-func newIntegrationsSvc(t *testing.T, f *dbFixture) sdkservices.Integrations {
-	desc := kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
-		IntegrationId: sdktypes.NewIDFromUUID[sdktypes.IntegrationID](&testIntegrationID).String(),
-		UniqueName:    "test",
-	}))
+var (
+	testIntegration = sdkintegrations.NewIntegration(
+		kittehs.Must1(
+			sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
+				IntegrationId: sdktypes.NewIDFromUUID[sdktypes.IntegrationID](&testIntegrationID).String(),
+				UniqueName:    "test",
+			},
+			),
+		),
+		sdkmodule.New(),
+	)
 
-	testIntegration := sdkintegrations.NewIntegration(desc, sdkmodule.New())
-	return sdkintegrations.New([]sdkservices.Integration{testIntegration})
-}
+	intSvc = sdkintegrations.New([]sdkservices.Integration{testIntegration})
+)
 
 func (dbs *dbs) Builds() sdkservices.Builds             { return dbs.bldSvc }
 func (dbs *dbs) Deployments() sdkservices.Deployments   { return dbs.depSvc }
@@ -71,11 +76,10 @@ func newDBServices(t *testing.T) (sdkservices.DBServices, *dbFixture) {
 	z := zaptest.NewLogger(t) // FIXME: or gormdb.z?
 	telemetry := kittehs.Must1(telemetry.New(z, &telemetry.Config{Enabled: false}))
 
-	intSvc := newIntegrationsSvc(t, f)
 	bldSvc := builds.New(builds.Builds{Z: z, DB: gdb}, telemetry)
-	prjSvc := projects.New(projects.Projects{Z: z, DB: gdb}, telemetry)
+	prjSvc := projects.New(projects.Projects{SL: z.Sugar(), DB: gdb}, telemetry)
 	depSvc := deployments.New(z, gdb, telemetry)
-	conSvc := connections.New(connections.Connections{Z: z, DB: gdb, Integrations: intSvc})
+	conSvc := connections.New(gdb, intSvc)
 	envSvc := envs.New(z, gdb)
 	evtSvc := events.New(z, gdb)
 	trgSvc := triggers.New(z, gdb, nil)

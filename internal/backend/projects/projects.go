@@ -8,6 +8,7 @@ import (
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/connections"
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
 	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
@@ -21,10 +22,11 @@ import (
 type Projects struct {
 	fx.In
 
-	Z        *zap.Logger
-	DB       db.DB
-	Builds   sdkservices.Builds
-	Runtimes sdkservices.Runtimes
+	SL          *zap.SugaredLogger
+	DB          db.DB
+	Builds      sdkservices.Builds
+	Runtimes    sdkservices.Runtimes
+	Connections connections.Connections
 }
 
 func New(p Projects, telemetry *telemetry.Telemetry) sdkservices.Projects {
@@ -34,6 +36,8 @@ func New(p Projects, telemetry *telemetry.Telemetry) sdkservices.Projects {
 
 func (ps *Projects) Create(ctx context.Context, project sdktypes.Project) (sdktypes.ProjectID, error) {
 	project = project.WithNewID()
+
+	sl := ps.SL.With("project_id", project.ID())
 
 	if !project.Name().IsValid() {
 		project = project.WithName(sdktypes.NewRandomSymbol())
@@ -45,10 +49,12 @@ func (ps *Projects) Create(ctx context.Context, project sdktypes.Project) (sdkty
 
 	// ensure there is a default cron connection (for all projects)
 	if cronConnection, err := ps.DB.GetConnection(ctx, sdktypes.BuiltinSchedulerConnectionID); errors.Is(err, sdkerrors.ErrNotFound) {
-		cronConnection = cronConnection.WithID(sdktypes.BuiltinSchedulerConnectionID).WithName(sdktypes.NewSymbol(fixtures.SchedulerConnectionName))
+		cronConnection = cronConnection.WithID(sdktypes.BuiltinSchedulerConnectionID).WithName(fixtures.SchedulerConnectionName)
 		if err = ps.DB.CreateConnection(ctx, cronConnection); err != nil && !errors.Is(err, sdkerrors.ErrAlreadyExists) { // just sanity
 			return sdktypes.InvalidProjectID, err
 		}
+
+		sl.Info("created default cron connection", "cid", cronConnection.ID())
 	}
 
 	env := kittehs.Must1(sdktypes.EnvFromProto(&sdktypes.EnvPB{ProjectId: project.ID().String(), Name: "default"}))
@@ -97,13 +103,7 @@ func (ps *Projects) Build(ctx context.Context, projectID sdktypes.ProjectID) (sd
 		return sdktypes.InvalidBuildID, errors.New("no resources set")
 	}
 
-	bi, err := sdkruntimes.Build(
-		ctx,
-		ps.Runtimes,
-		fs,
-		nil,
-		nil,
-	)
+	bi, err := sdkruntimes.Build(ctx, ps.Runtimes, fs, nil, nil)
 	if err != nil {
 		return sdktypes.InvalidBuildID, err
 	}

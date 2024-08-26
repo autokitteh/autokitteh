@@ -8,7 +8,7 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-var integrationID = sdktypes.NewIntegrationIDFromName("discord")
+var integrationID = sdktypes.NewIntegrationIDFromStringName("discord")
 
 var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
 	IntegrationId: integrationID.String(),

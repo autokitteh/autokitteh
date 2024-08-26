@@ -4,9 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"go.uber.org/fx"
-	"go.uber.org/zap"
-
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
@@ -14,18 +11,23 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-type Connections struct {
-	fx.In
-
-	Z            *zap.Logger
-	DB           db.DB
-	Integrations sdkservices.Integrations
+type connections struct {
+	db           db.DB
+	integrations sdkservices.Integrations
 }
 
-func New(c Connections) sdkservices.Connections { return &c }
+type Connections interface {
+	sdkservices.Connections
 
-func (c *Connections) Create(ctx context.Context, conn sdktypes.Connection) (sdktypes.ConnectionID, error) {
-	intg, err := c.Integrations.GetByID(ctx, conn.IntegrationID())
+	CreateInternalConnection(context.Context, sdktypes.Connection) (sdktypes.ConnectionID, error)
+}
+
+func New(db db.DB, ints sdkservices.Integrations) Connections {
+	return &connections{db: db, integrations: ints}
+}
+
+func (c *connections) create(ctx context.Context, conn sdktypes.Connection) (sdktypes.ConnectionID, error) {
+	intg, err := c.integrations.GetByID(ctx, conn.IntegrationID())
 	if err != nil {
 		return sdktypes.InvalidConnectionID, err
 	}
@@ -44,27 +46,35 @@ func (c *Connections) Create(ctx context.Context, conn sdktypes.Connection) (sdk
 
 	conn = conn.WithStatus(status).WithNewID()
 
-	if err := c.DB.CreateConnection(ctx, conn); err != nil {
+	if err := c.db.CreateConnection(ctx, conn); err != nil {
 		return sdktypes.InvalidConnectionID, err
 	}
 
 	return conn.ID(), nil
 }
 
-func (c *Connections) Update(ctx context.Context, conn sdktypes.Connection) error {
-	if err := c.DB.UpdateConnection(ctx, conn); err != nil {
+func (c *connections) CreateInternalConnection(ctx context.Context, conn sdktypes.Connection) (sdktypes.ConnectionID, error) {
+	return c.create(ctx, conn)
+}
+
+func (c *connections) Create(ctx context.Context, conn sdktypes.Connection) (sdktypes.ConnectionID, error) {
+	return c.create(ctx, conn)
+}
+
+func (c *connections) Update(ctx context.Context, conn sdktypes.Connection) error {
+	if err := c.db.UpdateConnection(ctx, conn); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (c *Connections) Delete(ctx context.Context, id sdktypes.ConnectionID) error {
-	return c.DB.DeleteConnection(ctx, id)
+func (c *connections) Delete(ctx context.Context, id sdktypes.ConnectionID) error {
+	return c.db.DeleteConnection(ctx, id)
 }
 
-func (c *Connections) List(ctx context.Context, filter sdkservices.ListConnectionsFilter) ([]sdktypes.Connection, error) {
-	conns, err := c.DB.ListConnections(ctx, filter, false)
+func (c *connections) List(ctx context.Context, filter sdkservices.ListConnectionsFilter) ([]sdktypes.Connection, error) {
+	conns, err := c.db.ListConnections(ctx, filter, false)
 	if err != nil {
 		return nil, err
 	}
@@ -74,16 +84,16 @@ func (c *Connections) List(ctx context.Context, filter sdkservices.ListConnectio
 	})
 }
 
-func (c *Connections) getIntegration(ctx context.Context, id sdktypes.ConnectionID) (sdkservices.Integration, error) {
+func (c *connections) getIntegration(ctx context.Context, id sdktypes.ConnectionID) (sdkservices.Integration, error) {
 	conn, err := c.Get(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 
-	return c.Integrations.GetByID(ctx, conn.IntegrationID())
+	return c.integrations.GetByID(ctx, conn.IntegrationID())
 }
 
-func (c *Connections) Test(ctx context.Context, id sdktypes.ConnectionID) (sdktypes.Status, error) {
+func (c *connections) Test(ctx context.Context, id sdktypes.ConnectionID) (sdktypes.Status, error) {
 	i, err := c.getIntegration(ctx, id)
 	if err != nil {
 		return sdktypes.InvalidStatus, err
@@ -96,7 +106,7 @@ func (c *Connections) Test(ctx context.Context, id sdktypes.ConnectionID) (sdkty
 	return sdktypes.InvalidStatus, sdkerrors.ErrNotImplemented
 }
 
-func (c *Connections) RefreshStatus(ctx context.Context, id sdktypes.ConnectionID) (sdktypes.Status, error) {
+func (c *connections) RefreshStatus(ctx context.Context, id sdktypes.ConnectionID) (sdktypes.Status, error) {
 	i, err := c.getIntegration(ctx, id)
 	if err != nil {
 		return sdktypes.InvalidStatus, err
@@ -114,20 +124,20 @@ func (c *Connections) RefreshStatus(ctx context.Context, id sdktypes.ConnectionI
 	return st, nil
 }
 
-func (c *Connections) Get(ctx context.Context, id sdktypes.ConnectionID) (sdktypes.Connection, error) {
-	conn, err := c.DB.GetConnection(ctx, id)
+func (c *connections) Get(ctx context.Context, id sdktypes.ConnectionID) (sdktypes.Connection, error) {
+	conn, err := c.db.GetConnection(ctx, id)
 	if err != nil || !conn.IsValid() {
 		return sdktypes.InvalidConnection, err
 	}
 	return c.enrichConnection(ctx, conn)
 }
 
-func (c *Connections) enrichConnection(ctx context.Context, conn sdktypes.Connection) (sdktypes.Connection, error) {
+func (c *connections) enrichConnection(ctx context.Context, conn sdktypes.Connection) (sdktypes.Connection, error) {
 	if !conn.IntegrationID().IsValid() && conn.ID() == sdktypes.BuiltinSchedulerConnectionID {
 		return conn, nil
 	}
 
-	intg, err := c.Integrations.GetByID(ctx, conn.IntegrationID())
+	intg, err := c.integrations.GetByID(ctx, conn.IntegrationID())
 	if err != nil {
 		return sdktypes.InvalidConnection, err
 	}

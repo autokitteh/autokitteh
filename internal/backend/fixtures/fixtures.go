@@ -13,10 +13,11 @@ const (
 	SchedulerEventTriggerType = "scheduler"
 	SchedulerTickEventType    = "schedule_tick"
 	ScheduleExpression        = "schedule"
-	SchedulerConnectionName   = "cron"
 )
 
 var (
+	SchedulerConnectionName = sdktypes.NewSymbol("cron")
+
 	CallOptsCtorSymbol = sdktypes.NewSymbol("callopts")
 	TimeoutError       = sdktypes.NewSymbolValue(sdktypes.NewSymbol("timeout"))
 
@@ -25,7 +26,7 @@ var (
 )
 
 func NewBuiltinIntegrationID(name string) sdktypes.IntegrationID {
-	return sdktypes.NewIntegrationIDFromName(name)
+	return sdktypes.NewIntegrationIDFromStringName(name)
 }
 
 func NewBuiltinIntegrationExecutorID(name string) sdktypes.ExecutorID {

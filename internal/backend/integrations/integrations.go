@@ -20,11 +20,11 @@ import (
 	"go.autokitteh.dev/autokitteh/integrations/google/gmail"
 	"go.autokitteh.dev/autokitteh/integrations/google/sheets"
 	"go.autokitteh.dev/autokitteh/integrations/grpc"
-	httpint "go.autokitteh.dev/autokitteh/integrations/http"
 	"go.autokitteh.dev/autokitteh/integrations/redis"
 	"go.autokitteh.dev/autokitteh/integrations/slack"
 	"go.autokitteh.dev/autokitteh/integrations/twilio"
 	"go.autokitteh.dev/autokitteh/internal/backend/configset"
+	httpint "go.autokitteh.dev/autokitteh/internal/backend/integrations/http"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 )
@@ -40,6 +40,7 @@ var Configs = configset.Set[Config]{
 
 func New(cfg *Config, vars sdkservices.Vars) sdkservices.Integrations {
 	ints := []sdkservices.Integration{
+		httpint.Integration,
 		aws.New(vars),
 		calendar.New(vars),
 		chatgpt.New(vars),
@@ -52,7 +53,6 @@ func New(cfg *Config, vars sdkservices.Vars) sdkservices.Integrations {
 		gemini.New(vars),
 		google.New(vars),
 		grpc.New(),
-		httpint.New(vars),
 		jira.New(vars),
 		redis.New(vars),
 		sheets.New(vars),
@@ -68,6 +68,7 @@ func New(cfg *Config, vars sdkservices.Vars) sdkservices.Integrations {
 }
 
 func Start(_ context.Context, l *zap.Logger, muxNoAuth *http.ServeMux, muxAuth *http.ServeMux, vars sdkservices.Vars, o sdkservices.OAuth, d sdkservices.Dispatcher, c sdkservices.Connections, p sdkservices.Projects) error {
+	httpint.Start(l, muxNoAuth, d, c, p)
 	aws.Start(l, muxNoAuth)
 	chatgpt.Start(l, muxNoAuth)
 	confluence.Start(l, muxNoAuth, vars, o, d)
@@ -75,7 +76,6 @@ func Start(_ context.Context, l *zap.Logger, muxNoAuth *http.ServeMux, muxAuth *
 	github.Start(l, muxNoAuth, vars, o, d)
 	gemini.Start(l, muxNoAuth)
 	google.Start(l, muxNoAuth, muxAuth, vars, o, d)
-	httpint.Start(l, muxNoAuth, d, c, p)
 	jira.Start(l, muxNoAuth, vars, o, d)
 	slack.Start(l, muxNoAuth, vars, d)
 	twilio.Start(l, muxNoAuth, vars, d)

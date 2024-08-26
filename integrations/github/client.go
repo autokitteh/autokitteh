@@ -15,7 +15,7 @@ type integration struct {
 	vars sdkservices.Vars
 }
 
-var integrationID = sdktypes.NewIntegrationIDFromName("github")
+var integrationID = sdktypes.NewIntegrationIDFromStringName("github")
 
 var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
 	IntegrationId: integrationID.String(),

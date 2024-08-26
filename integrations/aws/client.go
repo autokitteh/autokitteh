@@ -71,7 +71,7 @@ func initOpts(vars sdkservices.Vars) (opts []sdkmodule.Optfn) {
 	return
 }
 
-var integrationID = sdktypes.NewIntegrationIDFromName("aws")
+var integrationID = sdktypes.NewIntegrationIDFromStringName("aws")
 
 var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
 	IntegrationId: integrationID.String(),

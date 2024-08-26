@@ -5,15 +5,16 @@ import (
 	"fmt"
 	"maps"
 
+	"go.temporal.io/sdk/workflow"
+	"go.uber.org/fx"
+	"go.uber.org/zap"
+
 	akCtx "go.autokitteh.dev/autokitteh/internal/backend/context"
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-	"go.temporal.io/sdk/workflow"
-	"go.uber.org/fx"
-	"go.uber.org/zap"
 )
 
 const (
@@ -54,10 +55,9 @@ type Workflow struct {
 }
 
 type SessionData struct {
-	Deployment            sdktypes.Deployment
-	CodeLocation          sdktypes.CodeLocation
-	Trigger               sdktypes.Trigger
-	AdditionalTriggerData map[string]sdktypes.Value
+	Deployment   sdktypes.Deployment
+	CodeLocation sdktypes.CodeLocation
+	Trigger      sdktypes.Trigger
 }
 
 // used by both dispatcher and scheduler
@@ -79,21 +79,6 @@ func CreateSessionsForWorkflow(event sdktypes.Event, sessionsData []SessionData)
 		if t := sd.Trigger; t.IsValid() {
 			inputs = maps.Clone(inputs)
 			triggerInputs := t.ToValues()
-
-			if len(sd.AdditionalTriggerData) != 0 {
-				fs := sd.AdditionalTriggerData
-				if fs == nil {
-					fs = make(map[string]sdktypes.Value)
-				}
-
-				if data, ok := triggerInputs["data"]; ok {
-					maps.Copy(fs, data.GetStruct().Fields())
-				}
-
-				if triggerInputs["data"], err = sdktypes.NewStructValue(dataSymbolValue, fs); err != nil {
-					return nil, fmt.Errorf("trigger: %w", err)
-				}
-			}
 
 			if inputs["trigger"], err = sdktypes.NewStructValue(triggerInputsSymbolValue, triggerInputs); err != nil {
 				return nil, fmt.Errorf("trigger: %w", err)

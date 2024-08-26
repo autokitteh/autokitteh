@@ -7,7 +7,7 @@ return code == 0
 
 ak session start -d dep_00000000000000000000000005 --watch --no-timestamps --entrypoint main.star
 return code == 0
-output contains 'url=test_url'
+output contains 'something=test_something'
 output contains 'secret=shhhh'
 
 -- manifest.yaml --
@@ -17,13 +17,13 @@ project:
   name: my_project
   connections:
     - name: my_connection
-      integration: http
+      integration: slack
       vars:
-        - name: url
-          value: test_url
+        - name: something
+          value: test_something
 
 -- main.star --
-load("env", "my_connection__url", "my_connection__test_secret")
+load("env", "my_connection__something", "my_connection__test_secret")
 
-print("url={}".format(my_connection__url))
+print("something={}".format(my_connection__something))
 print("secret={}".format(my_connection__test_secret))

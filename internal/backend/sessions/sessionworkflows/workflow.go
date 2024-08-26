@@ -17,6 +17,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessioncalls"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessioncontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessiondata"
+	httpmodule "go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionworkflows/modules/http"
 	osmodule "go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionworkflows/modules/os"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionworkflows/modules/store"
 	timemodule "go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionworkflows/modules/time"
@@ -262,6 +263,10 @@ func (w *sessionWorkflow) initConnections(ctx workflow.Context) (map[string]conn
 			return nil, fmt.Errorf("connect to integration %q: %w", iid, err)
 		}
 
+		if vs == nil {
+			vs = make(map[string]sdktypes.Value)
+		}
+
 		const infoVarName = "_ak_info"
 		if !vs[infoVarName].IsValid() {
 			if vs[infoVarName], err = sdktypes.WrapValue(cinfo); err != nil {
@@ -283,6 +288,7 @@ func (w *sessionWorkflow) initGlobalModules() (map[string]sdktypes.Value, error)
 	execs := map[string]sdkexecutor.Executor{
 		"ak":    w.newModule(),
 		"time":  timemodule.New(),
+		"http":  httpmodule.New(),
 		"store": store.New(w.data.Env.ID(), w.data.ProjectID, w.ws.svcs.RedisClient),
 	}
 

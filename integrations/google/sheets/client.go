@@ -28,7 +28,7 @@ type api struct {
 	vars sdkservices.Vars
 }
 
-var integrationID = sdktypes.NewIntegrationIDFromName("googlesheets")
+var integrationID = sdktypes.NewIntegrationIDFromStringName("googlesheets")
 
 var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
 	IntegrationId: integrationID.String(),

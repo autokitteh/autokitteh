@@ -67,6 +67,7 @@ var createCmd = common.StandardCommand(&cobra.Command{
 			cid = sdktypes.BuiltinSchedulerConnectionID
 			event = fixtures.SchedulerEventTriggerType
 			data[fixtures.ScheduleExpression] = schedule
+			connection = fixtures.SchedulerConnectionName.String()
 		}
 
 		// Finally, create and print the trigger.

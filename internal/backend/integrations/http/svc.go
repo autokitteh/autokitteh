@@ -3,32 +3,33 @@ package http
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"go.uber.org/zap"
 
-	"go.autokitteh.dev/autokitteh/integrations/internal/extrazap"
+	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
+	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-	"go.autokitteh.dev/autokitteh/web/static"
 )
 
-const (
-	// savePath is the URL path for our handler to save a new autokitteh
-	// connection, after the user submits its details via a web form.
-	savePath = "POST /i/http/save"
+var (
+	IntegrationName = sdktypes.NewSymbol("http")
+	IntegrationID   = fixtures.NewBuiltinIntegrationID("http")
+	IntegrationDesc = sdktypes.NewIntegration(IntegrationID, IntegrationName)
+	Integration     = sdkintegrations.NewIntegration(IntegrationDesc, nil)
 )
 
-// handler is an autokitteh webhook which implements [http.Handler] to
-// receive, dispatch, and acknowledge asynchronous event notifications.
-type handler struct {
-	logger     *zap.Logger
+type svc struct {
+	l          *zap.Logger
 	dispatcher sdkservices.Dispatcher
 	conns      sdkservices.Connections
 	projs      sdkservices.Projects
@@ -42,17 +43,12 @@ func routePrefix(ns string) string {
 }
 
 func Start(l *zap.Logger, mux *http.ServeMux, d sdkservices.Dispatcher, c sdkservices.Connections, p sdkservices.Projects) {
-	h := handler{logger: l, dispatcher: d, conns: c, projs: p}
-	mux.Handle(routePrefix("{ns}")+"*", h)
-
-	// Save new autokitteh connections with user-submitted HTTP secrets.
-	uiPath := fmt.Sprintf("GET %s/", desc.ConnectionURL().Path)
-	mux.Handle(uiPath, http.FileServer(http.FS(static.HTTPWebContent)))
-	mux.HandleFunc(savePath, h.handleAuth)
+	s := svc{l: l, dispatcher: d, conns: c, projs: p}
+	mux.Handle(routePrefix("{ns}")+"*", &s)
 }
 
-func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	l := h.logger.With(zap.String("urlPath", r.URL.Path))
+func (s *svc) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	l := s.l.With(zap.String("urlPath", r.URL.Path))
 	l.Info("Incoming HTTP request")
 
 	ns := r.PathValue("ns")
@@ -119,7 +115,7 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx := extrazap.AttachLoggerToContext(l, r.Context())
+	ctx := r.Context()
 
 	pname, err := sdktypes.StrictParseSymbol(strings.SplitN(env, "/", 2)[0])
 	if err != nil {
@@ -128,7 +124,7 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	p, err := h.projs.GetByName(ctx, pname)
+	p, err := s.projs.GetByName(ctx, pname)
 	if err != nil {
 		if errors.Is(err, sdkerrors.ErrNotFound) {
 			l.Debug("project not found", zap.String("project", pname.String()))
@@ -140,7 +136,7 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Retrieve all the relevant connections for this event.
-	conns, err := h.conns.List(ctx, sdkservices.ListConnectionsFilter{
+	conns, err := s.conns.List(ctx, sdkservices.ListConnectionsFilter{
 		IntegrationID: IntegrationID,
 		ProjectID:     p.ID(),
 	})
@@ -151,16 +147,15 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Dispatch the event to all of them, for asynchronous handling.
-	h.dispatchAsyncEventsToConnections(ctx, conns, env, event)
+	s.dispatch(ctx, conns, env, event)
 }
 
-func (h handler) dispatchAsyncEventsToConnections(ctx context.Context, cs []sdktypes.Connection, env string, event sdktypes.Event) {
-	l := extrazap.ExtractLoggerFromContext(ctx)
+func (s *svc) dispatch(ctx context.Context, cs []sdktypes.Connection, env string, event sdktypes.Event) {
 	for _, c := range cs {
 		cid := c.ID()
 		opts := &sdkservices.DispatchOptions{Env: env}
-		eid, err := h.dispatcher.Dispatch(ctx, event.WithConnectionID(cid), opts)
-		l := l.With(
+		eid, err := s.dispatcher.Dispatch(ctx, event.WithConnectionID(cid), opts)
+		l := s.l.With(
 			zap.String("connectionID", cid.String()),
 			zap.String("eventID", eid.String()),
 		)
@@ -170,4 +165,48 @@ func (h handler) dispatchAsyncEventsToConnections(ctx context.Context, cs []sdkt
 		}
 		l.Debug("Event dispatched")
 	}
+}
+
+func bodyToStruct(body []byte, form url.Values) sdktypes.Value {
+	var (
+		v        any
+		jsonBody sdktypes.Value
+	)
+
+	jsonDecoder := json.NewDecoder(bytes.NewReader(body))
+	jsonDecoder.UseNumber()
+
+	if err := jsonDecoder.Decode(&v); err != nil {
+		jsonBody = kittehs.Must1(sdktypes.NewConstFunctionError("json", err))
+	} else if vv, err := sdktypes.WrapValue(v); err != nil {
+		jsonBody = kittehs.Must1(sdktypes.NewConstFunctionError("json", err))
+	} else {
+		jsonBody = kittehs.Must1(sdktypes.NewConstFunctionValue("json", vv))
+	}
+
+	// add form() only for requests (when not nil) and not for responses
+	if form != nil {
+		formBody := kittehs.Must1(sdktypes.NewConstFunctionValue("form", sdktypes.NewDictValueFromStringMap(
+			kittehs.TransformMapValues(form, func(vs []string) sdktypes.Value {
+				return sdktypes.NewStringValue(strings.Join(vs, ","))
+			}),
+		)))
+		return kittehs.Must1(sdktypes.NewStructValue(
+			sdktypes.NewStringValue("body"),
+			map[string]sdktypes.Value{
+				"text":  kittehs.Must1(sdktypes.NewConstFunctionValue("text", sdktypes.NewStringValue(string(body)))),
+				"bytes": kittehs.Must1(sdktypes.NewConstFunctionValue("bytes", sdktypes.NewBytesValue(body))),
+				"json":  jsonBody,
+				"form":  formBody,
+			},
+		))
+	}
+	return kittehs.Must1(sdktypes.NewStructValue(
+		sdktypes.NewStringValue("body"),
+		map[string]sdktypes.Value{
+			"text":  kittehs.Must1(sdktypes.NewConstFunctionValue("text", sdktypes.NewStringValue(string(body)))),
+			"bytes": kittehs.Must1(sdktypes.NewConstFunctionValue("bytes", sdktypes.NewBytesValue(body))),
+			"json":  jsonBody,
+		},
+	))
 }

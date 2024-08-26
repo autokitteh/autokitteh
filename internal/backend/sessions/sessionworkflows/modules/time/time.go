@@ -15,7 +15,7 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-var ExecutorID = sdktypes.NewExecutorID(fixtures.NewBuiltinIntegrationID("time"))
+var ExecutorID = sdktypes.NewExecutorID(fixtures.NewBuiltinIntegrationID("_time"))
 
 func New() sdkexecutor.Executor {
 	return fixtures.NewBuiltinExecutor(
