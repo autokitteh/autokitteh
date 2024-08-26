@@ -28,7 +28,7 @@ RUN --mount=type=cache,target=/go/pkg/mod/ \
     CGO_ENABLED=0 go build -o /bin/ak -ldflags="${LDFLAGS}" ./cmd/ak
 EOF
 
-FROM python:3.12 AS python_deps
+FROM python:3.12-bookworm AS python_deps
 
 WORKDIR /app
 
@@ -55,7 +55,7 @@ RUN /app/env/bin/python3 -m pip install --no-cache-dir -r requirements.txt
 # Create a new stage for running the application that contains the minimal
 # runtime dependencies for the application.
 
-FROM python:3.12-alpine3.20 AS final
+FROM python:3.12-slim-bookworm AS final
 
 
 # Create a non-privileged user 
