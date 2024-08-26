@@ -86,8 +86,10 @@ which covers:
 - Resilience demo
 
 The open-source AutoKitteh server is used mostly for self-hosted and on-prem
-installations. Our managed cloud iPaaS offering is currently in beta - for
-details, contact us at meow@autokitteh.com.
+installations.
+
+Our managed cloud iPaaS offering is currently in beta - for details, contact
+us at meow@autokitteh.com.
 
 ## Build From Source
 
