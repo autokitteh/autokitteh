@@ -160,11 +160,11 @@ class Runner(rpc.RunnerServicer):
     def Health(self, request: pb.HealthRequest, context: grpc.ServicerContext):
         return pb.HealthResponse()
 
-    def call_in_activity(self, fn, *args, **kw):
-        fut = self.start_activity(fn, *args, **kw)
+    def call_in_activity(self, fn, args, kw):
+        fut = self.start_activity(fn, args, kw)
         return fut.result()
 
-    def start_activity(self, fn, *args, **kw) -> Future:
+    def start_activity(self, fn, args, kw) -> Future:
         fn_name = full_func_name(fn)
         log.info("calling %s, args=%r, kw=%r", fn_name, args, kw)
         call_id = self.next_call_id()
@@ -241,6 +241,12 @@ def validate_args(args):
         raise ValueError("runner ID cannot be empty")
 
 
+class LoggingInterceptor(grpc.ServerInterceptor):
+    def intercept_service(self, continuation, handler_call_details):
+        log.info("call %s", handler_call_details.method)
+        return continuation(handler_call_details)
+
+
 if __name__ == "__main__":
     from argparse import ArgumentParser
 
@@ -276,7 +282,10 @@ if __name__ == "__main__":
 
     log.info("connected to worker at %r", args.worker_address)
 
-    server = grpc.server(ThreadPoolExecutor(max_workers=cpu_count() * 8))
+    server = grpc.server(
+        thread_pool=ThreadPoolExecutor(max_workers=cpu_count() * 8),
+        interceptors=[LoggingInterceptor()],
+    )
     runner = Runner(args.runner_id, worker, args.code_dir)
     rpc.add_RunnerServicer_to_server(runner, server)
     services = (
