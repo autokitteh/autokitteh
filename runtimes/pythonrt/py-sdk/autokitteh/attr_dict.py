@@ -18,7 +18,8 @@ class AttrDict(dict):
                 value = AttrDict(value)
             return value
         except KeyError:
-            raise AttributeError(name)
+            # "from None" will remove the confusing KeyError from the stack trace
+            raise AttributeError(name) from None
 
     def __setattr__(self, name: str, value):
         # The default __getattr__ doesn't fail but also don't change values.
