@@ -87,18 +87,20 @@ class GetResponse(_message.Message):
     def __init__(self, session: _Optional[_Union[_session_pb2.Session, _Mapping]] = ...) -> None: ...
 
 class GetLogRequest(_message.Message):
-    __slots__ = ["session_id", "page_size", "skip", "page_token", "ascending"]
+    __slots__ = ["session_id", "json_values", "ascending", "page_size", "skip", "page_token"]
     SESSION_ID_FIELD_NUMBER: _ClassVar[int]
+    JSON_VALUES_FIELD_NUMBER: _ClassVar[int]
+    ASCENDING_FIELD_NUMBER: _ClassVar[int]
     PAGE_SIZE_FIELD_NUMBER: _ClassVar[int]
     SKIP_FIELD_NUMBER: _ClassVar[int]
     PAGE_TOKEN_FIELD_NUMBER: _ClassVar[int]
-    ASCENDING_FIELD_NUMBER: _ClassVar[int]
     session_id: str
+    json_values: bool
+    ascending: bool
     page_size: int
     skip: int
     page_token: str
-    ascending: bool
-    def __init__(self, session_id: _Optional[str] = ..., page_size: _Optional[int] = ..., skip: _Optional[int] = ..., page_token: _Optional[str] = ..., ascending: bool = ...) -> None: ...
+    def __init__(self, session_id: _Optional[str] = ..., json_values: bool = ..., ascending: bool = ..., page_size: _Optional[int] = ..., skip: _Optional[int] = ..., page_token: _Optional[str] = ...) -> None: ...
 
 class GetLogResponse(_message.Message):
     __slots__ = ["log", "count", "next_page_token"]

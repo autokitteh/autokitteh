@@ -74,6 +74,14 @@ message GetResponse {
 
 message GetLogRequest {
   string session_id = 1 [(buf.validate.field).string.min_len = 1];
+
+  // true: all values returned will be string values
+  //       that contain the native values in JSON format.
+  // false: all values returned are properly boxed.
+  bool json_values = 2;
+
+  bool ascending = 11;
+
   int32 page_size = 20;
 
   int32 skip = 21 [(buf.validate.field).cel = {
@@ -83,7 +91,6 @@ message GetLogRequest {
   }];
 
   string page_token = 22;
-  bool ascending = 11;
 }
 
 message GetLogResponse {
