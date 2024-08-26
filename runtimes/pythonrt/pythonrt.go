@@ -321,8 +321,8 @@ func (py *pySvc) Run(
 		return nil, fmt.Errorf("%q note found in compiled data", archiveKey)
 	}
 
-	py.stdout = newStreamLogger("[stdout] ", cbs.Print, runID)
-	py.stderr = newStreamLogger("[stderr] ", cbs.Print, runID)
+	py.stdout = newStreamLogger(ctx, "[stdout] ", cbs.Print, runID)
+	py.stderr = newStreamLogger(ctx, "[stderr] ", cbs.Print, runID)
 	opts := runOptions{
 		log:        py.log,
 		pyExe:      py.pyExe,
@@ -641,6 +641,9 @@ func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 	if err := py.injectHTTPBody(ctx, kwargs["data"], event, py.cbs); err != nil {
 		return sdktypes.InvalidValue, err
 	}
+
+	py.stdout.SetCtx(ctx)
+	py.stderr.SetCtx(ctx)
 
 	fnName := fn.Name().String()
 	py.log.Info("call", zap.String("function", fnName))
