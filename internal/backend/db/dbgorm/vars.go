@@ -95,7 +95,7 @@ func (gdb *gormdb) listVars(ctx context.Context, scopeID sdktypes.UUID, names ..
 	return vars, nil
 }
 
-func (gdb *gormdb) findConnectionIDsByVar(ctx context.Context, integrationID sdktypes.UUID, name string, v string) ([]scheme.Var, error) {
+func (gdb *gormdb) findConnectionIDsByVar(ctx context.Context, integrationID sdktypes.UUID, name string, v string) ([]sdktypes.UUID, error) {
 	db := gdb.withUserVars(ctx).Where("integration_id = ? AND name = ?", integrationID, name)
 	if v != "" {
 		db = db.Where("value = ? AND is_secret is false", v)
@@ -104,14 +104,11 @@ func (gdb *gormdb) findConnectionIDsByVar(ctx context.Context, integrationID sdk
 	// Note(s):
 	// - will skip not user owned vars
 	// - not checking if scope is deleted, since scope deletion will cascade deletion of relevant vars
-	var vars []scheme.Var
-	if err := db.Distinct("var_id").Find(&vars).Error; err != nil {
+	var ids []sdktypes.UUID
+	if err := db.Model(&scheme.Var{}).Distinct("var_id").Find(&ids).Error; err != nil {
 		return nil, err
 	}
-	for i := range vars {
-		vars[i].ScopeID = vars[i].VarID
-	}
-	return vars, nil
+	return ids, nil
 }
 
 // FIXME: do we need to handle slice here? it seems to be unused anywhere and (meanwhile) compicates uniformal handling
@@ -192,12 +189,12 @@ func (db *gormdb) FindConnectionIDsByVar(ctx context.Context, iid sdktypes.Integ
 		return nil, sdkerrors.NewInvalidArgumentError("integration id is invalid")
 	}
 
-	vs, err := db.findConnectionIDsByVar(ctx, iid.UUIDValue(), n.String(), v)
+	ids, err := db.findConnectionIDsByVar(ctx, iid.UUIDValue(), n.String(), v)
 	if err != nil {
 		return nil, translateError(err)
 	}
 
-	return kittehs.TransformError(vs, func(r scheme.Var) (sdktypes.ConnectionID, error) {
-		return sdktypes.NewIDFromUUID[sdktypes.ConnectionID](&r.ScopeID), nil
+	return kittehs.TransformError(ids, func(id sdktypes.UUID) (sdktypes.ConnectionID, error) {
+		return sdktypes.NewIDFromUUID[sdktypes.ConnectionID](&id), nil
 	})
 }
