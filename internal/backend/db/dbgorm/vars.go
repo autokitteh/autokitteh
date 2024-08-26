@@ -150,11 +150,12 @@ func (db *gormdb) SetVars(ctx context.Context, vars []sdktypes.Var) error {
 		}
 
 		vr := scheme.Var{
-			ScopeID:    v.ScopeID().AsID().UUIDValue(), // scopeID is varID in DB
-			Name:       v.Name().String(),
-			Value:      v.Value(),
-			IsSecret:   v.IsSecret(),
-			IsOptional: v.IsOptional(),
+			ScopeID:       v.ScopeID().AsID().UUIDValue(), // scopeID is varID in DB
+			Name:          v.Name().String(),
+			Value:         v.Value(),
+			IsSecret:      v.IsSecret(),
+			IsOptional:    v.IsOptional(),
+			IntegrationID: iid.UUIDValue(),
 		}
 		if err := db.setVar(ctx, &vr); err != nil {
 			return translateError(err)
