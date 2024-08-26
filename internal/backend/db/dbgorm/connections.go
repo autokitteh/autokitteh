@@ -117,7 +117,7 @@ func (db *gormdb) CreateConnection(ctx context.Context, conn sdktypes.Connection
 
 	c := scheme.Connection{
 		ConnectionID:  conn.ID().UUIDValue(),
-		IntegrationID: scheme.UUIDOrNil(conn.IntegrationID().UUIDValue()), // TODO(ENG-158): need to verify integration id
+		IntegrationID: scheme.UUIDOrNil(conn.IntegrationID().UUIDValue()),
 		ProjectID:     scheme.UUIDOrNil(conn.ProjectID().UUIDValue()),
 		Name:          conn.Name().String(),
 		StatusCode:    int32(conn.Status().Code().ToProto()),
