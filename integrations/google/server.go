@@ -55,7 +55,7 @@ func Start(l *zap.Logger, muxNoAuth *http.ServeMux, muxAuth *http.ServeMux, v sd
 
 	h := NewHTTPHandler(l, o, v, d)
 	muxAuth.HandleFunc("GET "+oauthPath, h.handleOAuth)
-	muxNoAuth.HandleFunc("POST "+credsPath, h.handleCreds)
+	muxAuth.HandleFunc("POST "+credsPath, h.handleCreds)
 
 	// Event webhooks.
 	muxNoAuth.HandleFunc("POST "+formsWebhookPath, h.handleFormsNotification)
