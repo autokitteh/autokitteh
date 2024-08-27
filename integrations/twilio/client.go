@@ -3,7 +3,7 @@ package twilio
 import (
 	"context"
 
-	// "go.autokitteh.dev/autokitteh/integrations/twilio/webhooks"
+	"go.autokitteh.dev/autokitteh/integrations"
 	"go.autokitteh.dev/autokitteh/integrations/twilio/webhooks"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
@@ -49,11 +49,9 @@ func New(vars sdkservices.Vars) sdkservices.Integration {
 	)
 }
 
-// connStatus is an optional connection status check provided by the
-// integration with AutoKitteh. The possible results are "init required"
-// (indicating the connection is not yet usable), "using X" (indicating
-// one of multiple available authentication methods is in use), or
-// "initialized" when only one authentication method is available.
+// connStatus is an optional connection status check provided by
+// the integration to AutoKitteh. The possible results are "init
+// required" (the connection is not usable yet) and "using X".
 func connStatus(i *integration) sdkintegrations.OptFn {
 	return sdkintegrations.WithConnectionStatus(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
 		if !cid.IsValid() {
@@ -68,22 +66,15 @@ func connStatus(i *integration) sdkintegrations.OptFn {
 		var decodedVars webhooks.Vars
 		vs.Decode(&decodedVars)
 
-		s, err := sdktypes.ParseSymbol("AuthType")
-		if err != nil {
-			return sdktypes.InvalidStatus, err
-		}
-
-		at := vs.Get(s)
+		at := vs.Get(webhooks.AuthType)
 		if !at.IsValid() || at.Value() == "" {
 			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "init required"), nil
 		}
 
-		// Align with:
-		// https://github.com/autokitteh/web-platform/blob/main/src/enums/connections/connectionTypes.enum.ts
 		switch at.Value() {
-		case "apiKey":
+		case integrations.APIKey:
 			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "using api key"), nil
-		case "authToken":
+		case integrations.APIToken:
 			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "using auth token"), nil
 		default:
 			return sdktypes.NewStatus(sdktypes.StatusCodeError, "bad auth type"), nil

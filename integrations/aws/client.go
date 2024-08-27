@@ -16,6 +16,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sns"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 
+	"go.autokitteh.dev/autokitteh/integrations"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdklogger"
@@ -102,11 +103,9 @@ func New(cvars sdkservices.Vars) sdkservices.Integration {
 	)
 }
 
-// connStatus is an optional connection status check provided by the
-// integration with AutoKitteh. The possible results are "init required"
-// (indicating the connection is not yet usable), "using X" (indicating
-// one of multiple available authentication methods is in use), or
-// "initialized" when only one authentication method is available.
+// connStatus is an optional connection status check provided by
+// the integration to AutoKitteh. The possible results are "init
+// required" (the connection is not usable yet) and "initialized".
 func connStatus(i *integration) sdkintegrations.OptFn {
 	return sdkintegrations.WithConnectionStatus(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
 		if !cid.IsValid() {
@@ -123,11 +122,9 @@ func connStatus(i *integration) sdkintegrations.OptFn {
 			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "init required"), nil
 		}
 
-		switch at.Value() {
-		// TODO: Add a const
-		case "awsConfig":
+		if at.Value() == integrations.Init {
 			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "initialized"), nil
-		default:
+		} else {
 			return sdktypes.NewStatus(sdktypes.StatusCodeError, "bad auth type"), nil
 		}
 	})
