@@ -13,8 +13,8 @@ const (
 	// oauthPath is the URL path for our handler to save new OAuth-based connections.
 	oauthPath = "/jira/oauth"
 
-	// savePath is the URL path for our handler to save a new API token / PAT
-	// connection, after the user submits its details via a web form.
+	// savePath is the URL path for our handler to save new token-based
+	// connections, after users submit them via a web form.
 	savePath = "/jira/save"
 
 	// WebhookPath is the URL path for our webhook to handle asynchronous events.

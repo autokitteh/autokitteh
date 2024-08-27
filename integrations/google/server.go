@@ -11,12 +11,12 @@ import (
 )
 
 const (
-	// credsPath is the URL path for our handler to save a new autokitteh
-	// credentials-based connection, after the user submits it via a web form.
-	credsPath = "/google/save"
-
 	// oauthPath is the URL path for our handler to save new OAuth-based connections.
 	oauthPath = "/google/oauth"
+
+	// savePath is the URL path for our handler to save new JSON key-based
+	// connections, after users submit them via a web form.
+	savePath = "/google/save"
 
 	// formsWebhookPath is the URL path to receive incoming Google Forms push notifications.
 	formsWebhookPath = "/googleforms/notif"
@@ -56,7 +56,7 @@ func Start(l *zap.Logger, noAuth *http.ServeMux, auth *http.ServeMux, v sdkservi
 	// through AutoKitteh's auth middleware to extract the user ID from a cookie.
 	h := NewHTTPHandler(l, o, v, d)
 	auth.HandleFunc("GET "+oauthPath, h.handleOAuth)
-	auth.HandleFunc("POST "+credsPath, h.handleCreds)
+	auth.HandleFunc("POST "+savePath, h.handleCreds)
 
 	// Event webhooks (unauthenticated by definition).
 	noAuth.HandleFunc("POST "+formsWebhookPath, h.handleFormsNotification)

@@ -15,13 +15,13 @@ import (
 )
 
 const (
-	// formPath is the URL path for our handler to save a new
-	// autokitteh connection, based on a user-submitted form.
-	formPath = "/slack/save"
-
 	// oauthPath is the URL path for our handler to save
 	// new OAuth-based connections.
 	oauthPath = "/slack/oauth"
+
+	// savePath is the URL path for our handler to save new Socket Mode
+	// connections, after users submit them via a web form.
+	savePath = "/slack/save"
 )
 
 // Start initializes all the HTTP handlers of the Slack integration.
@@ -38,7 +38,7 @@ func Start(l *zap.Logger, noAuth *http.ServeMux, auth *http.ServeMux, v sdkservi
 	auth.Handle("GET "+oauthPath, NewHandler(l))
 
 	wsh := websockets.NewHandler(l, v, d, desc)
-	auth.HandleFunc("POST "+formPath, wsh.HandleForm)
+	auth.HandleFunc("POST "+savePath, wsh.HandleForm)
 
 	// Event webhooks (unauthenticated by definition).
 	whh := webhooks.NewHandler(l, v, d, integrationID)

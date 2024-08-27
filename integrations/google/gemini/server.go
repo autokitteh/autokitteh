@@ -9,8 +9,8 @@ import (
 )
 
 const (
-	// savePath is the URL path for our handler to save a new autokitteh
-	// connection, after the user submits its details via a web form.
+	// savePath is the URL path for our handler to save new
+	// connections, after users submit them via a web form.
 	savePath = "/googlegemini/save"
 )
 
