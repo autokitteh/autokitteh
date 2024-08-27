@@ -136,7 +136,7 @@ func (h handler) finalize(ctx context.Context, c sdkintegrations.ConnectionInit,
 	}
 
 	// Redirect to the post-init handler to finish the connection setup.
-	c.Finalize(vsl)
+	c.Finalize(vs)
 }
 
 func oauthURL(form url.Values, c sdkintegrations.ConnectionInit) string {
