@@ -15,9 +15,9 @@ const (
 	// oauthPath is the URL path for our handler to save new OAuth-based connections.
 	oauthPath = "/github/oauth"
 
-	// patPath is the URL path for our webhook to save a new autokitteh
-	// PAT-based connection, after the user submits it via a web form.
-	patPath = "/github/save"
+	// savePath is the URL path for our handler to save new PAT-based
+	// connections, after users submit them via a web form.
+	savePath = "/github/save"
 )
 
 // Start initializes all the HTTP handlers of the GitHub integration.
@@ -34,7 +34,7 @@ func Start(l *zap.Logger, noAuth *http.ServeMux, auth *http.ServeMux, v sdkservi
 	// through AutoKitteh's auth middleware to extract the user ID from a cookie.
 	h := NewHandler(l, o)
 	auth.HandleFunc("GET "+oauthPath, h.handleOAuth)
-	auth.HandleFunc("POST "+patPath, h.handlePAT)
+	auth.HandleFunc("POST "+savePath, h.handlePAT)
 
 	// Event webhooks (unauthenticated by definition).
 	eventHandler := webhooks.NewHandler(l, v, d, integrationID)

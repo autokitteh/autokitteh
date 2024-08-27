@@ -257,6 +257,6 @@ def google_id(url: str) -> str:
     """
     match = re.match(r"(.*/d/(e/)?)?([\w-]{20,})", url)
     if match:
-        return match.group(2)
+        return match.group(3)
     else:
         raise ValueError(f'Invalid Google ID in "{url}"')

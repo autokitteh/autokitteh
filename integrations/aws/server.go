@@ -12,8 +12,8 @@ const (
 	// uiPath is the URL root path of a simple web UI to interact with users.
 	uiPath = "/aws/connect/"
 
-	// savePath is the URL path for our handler to save a new autokitteh
-	// connection, after the user submits its details via a web form.
+	// savePath is the URL path for our handler to save new
+	// connections, after users submit them via a web form.
 	savePath = "/aws/save"
 )
 
