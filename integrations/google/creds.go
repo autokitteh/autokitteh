@@ -123,11 +123,6 @@ func (h handler) finalize(ctx context.Context, c sdkintegrations.ConnectionInit,
 		return
 	}
 
-	// Reset the list of vars because "h.vars.Set()" modifies the values of secret vars.
-	vsl = kittehs.TransformMapToList(vs.ToMap(), func(_ sdktypes.Symbol, v sdktypes.Var) sdktypes.Var {
-		return v.WithScopeID(sdktypes.NewVarScopeID(cid))
-	})
-
 	if err := forms.UpdateWatches(ctx, h.vars, cid); err != nil {
 		l.Error("Google Forms watches creation error", zap.Error(err))
 		c.AbortServerError("form watches creation error")
@@ -141,7 +136,7 @@ func (h handler) finalize(ctx context.Context, c sdkintegrations.ConnectionInit,
 	}
 
 	// Redirect to the post-init handler to finish the connection setup.
-	c.Finalize(vsl)
+	c.Finalize(vs)
 }
 
 func oauthURL(form url.Values, c sdkintegrations.ConnectionInit) string {
