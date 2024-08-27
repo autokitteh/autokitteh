@@ -63,6 +63,29 @@ ak manifest apply wrong_integration.yaml
 output equals file wrong_integration_error.txt
 return code == 1
 
+# Set vars in one of the project
+ak var set cat mew -p my_project -e default
+return code == 0
+
+ak var set dog woof -p my_project -e default
+return code == 0
+
+# Reapply the manifest
+ak manifest apply full.yaml --project-name my_project
+return code == 0
+output equals file expected_on_full_reapply.txt
+
+# Check that vars are properly modified.
+
+# this value changes because manifest explicitly sets it.
+ak var get cat -p my_project -e default
+return code == 0
+output equals 'cat="meow"'
+
+# this value does not change since manifest does not specify a value for it.
+ak var get dog -p my_project -e default
+return code == 0
+output equals 'dog="woof"'
 
 -- invalid.yaml --
 This is an invalid YAML file to trigger an error
@@ -101,6 +124,11 @@ version: v1
 
 project:
   name: my_project
+  vars:
+    - name: cat
+      value: meow
+    - name: dog
+      optional: true
   connections:
     - name: my_connection
       integration: http
@@ -112,17 +140,40 @@ project:
 
 -- expected_on_full_apply.txt --
 [plan] project "my_project": not found, will create
+[plan] var "my_project/default/cat": not found, will set
+[plan] var "my_project/default/dog": not found, will set
 [plan] connection "my_project/my_connection": not found, will create
 [plan] trigger "my_project/default:my_project/my_connection/get": not found, will create
 [exec] create_project "my_project": prj_00000000000000000000000001 created
+[exec] set_var "my_project/default/cat": env_00000000000000000000000002 updated
+[exec] set_var "my_project/default/dog": env_00000000000000000000000002 updated
 [exec] create_connection "my_project/my_connection": con_00000000000000000000000003 created
 [exec] create_trigger "my_project/default:my_project/my_connection/get": trg_00000000000000000000000004 created
 
+-- expected_on_full_reapply.txt --
+[plan] project "my_project": found, id="prj_00000000000000000000000001"
+[plan] project "my_project": no changes needed
+[plan] env "my_project/default": found, id="env_00000000000000000000000002"
+[plan] env "my_project/default": no changes needed
+[plan] var "my_project/default/cat": differs, will set
+[plan] var "my_project/default/dog": differs, will set
+[plan] project "my_project": found 1 connections
+[plan] connection "my_project/my_connection": no changes needed
+[plan] project "my_project": found 1 triggers
+[plan] trigger "my_project/default:my_project/my_connection/get": found, id="trg_00000000000000000000000004"
+[plan] trigger "my_project/default:my_project/my_connection/get": no changes needed
+[exec] set_var "my_project/default/cat": env_00000000000000000000000002 updated
+[exec] set_var "my_project/default/dog": env_00000000000000000000000002 updated
+
 -- expected_on_full_apply_their.txt --
 [plan] project "their_project": not found, will create
+[plan] var "their_project/default/cat": not found, will set
+[plan] var "their_project/default/dog": not found, will set
 [plan] connection "their_project/my_connection": not found, will create
 [plan] trigger "their_project/default:their_project/my_connection/get": not found, will create
 [exec] create_project "their_project": prj_00000000000000000000000005 created
+[exec] set_var "their_project/default/cat": env_00000000000000000000000006 updated
+[exec] set_var "their_project/default/dog": env_00000000000000000000000006 updated
 [exec] create_connection "their_project/my_connection": con_00000000000000000000000007 created
 [exec] create_trigger "their_project/default:their_project/my_connection/get": trg_00000000000000000000000008 created
 

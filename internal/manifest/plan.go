@@ -199,7 +199,13 @@ func planDefaultEnv(ctx context.Context, mvars []*Var, client sdkservices.Servic
 			return nil, fmt.Errorf("invalid var name: %w", err)
 		}
 
-		desired := sdktypes.NewVar(n).SetValue(mvar.Value).SetSecret(mvar.Secret).SetOptional(mvar.Optional).WithScopeID(sid)
+		desired := sdktypes.NewVar(n).SetSecret(mvar.Secret).SetOptional(mvar.Optional).WithScopeID(sid)
+
+		if mv := mvar.Value; mv != nil {
+			desired = desired.SetValue(*mv)
+		} else {
+			desired = desired.SetValue(v.Value())
+		}
 
 		setAction := actions.SetVarAction{Key: mvar.GetKey(), Env: envKeyer.GetKey(), Var: desired}
 
@@ -211,14 +217,13 @@ func planDefaultEnv(ctx context.Context, mvars []*Var, client sdkservices.Servic
 		} else if !envID.IsValid() {
 			// var was found, hence we must have an envID.
 			sdklogger.Panic("envID is nil")
+		} else if !v.Equal(desired) {
+			log("differs, will set")
+			add(setAction)
 		} else {
-			currVal := v.Value()
-
-			if currVal != mvar.Value {
-				log("differs, will set")
-				add(setAction)
-			}
+			log("no change needed")
 		}
+
 	}
 
 	hasVar := kittehs.ContainedIn(mvarNames...)
@@ -318,9 +323,14 @@ func planConnectionVars(mconn Connection, cid sdktypes.ConnectionID, cvars sdkty
 			return nil, fmt.Errorf("invalid var name: %w", err)
 		}
 
-		want := sdktypes.NewVar(n).SetValue(mvar.Value).SetSecret(mvar.Secret).SetOptional(mvar.Optional).WithScopeID(sdktypes.NewVarScopeID(cid))
+		got := cvars.Get(n)
 
-		got := cvars.Get(want.Name())
+		want := sdktypes.NewVar(n).SetSecret(mvar.Secret).SetOptional(mvar.Optional).WithScopeID(sdktypes.NewVarScopeID(cid))
+		if mv := mvar.Value; mv != nil {
+			want = want.SetValue(*mv)
+		} else {
+			want = want.SetValue(got.Value())
+		}
 
 		handled = append(handled, n)
 

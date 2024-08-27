@@ -36,6 +36,18 @@ ak var get key -p my_project
 return code == 0
 output equals 'key="updated"'
 
+# Update only var attributes
+ak var set key -p my_project --secret
+return code == 0
+
+ak var get key -p my_project
+return code == 0
+output equals 'key=<secret>'
+
+ak var get key -p my_project --reveal
+return code == 0
+output equals 'key="updated"'
+
 # Set secret var
 ak var set key_secret secret_value -p my_project --secret
 return code == 0

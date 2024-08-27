@@ -16,7 +16,7 @@ var secret, optional bool
 var setCmd = common.StandardCommand(&cobra.Command{
 	Use:     "set <key> [<value>] [--secret] [--optional] <--env=.. | --connection=....> [--project=...]",
 	Short:   "Set variable",
-	Long:    "Set a variable. If <value> is not specified it will be read from standard input.",
+	Long:    `Set a variable. If <value> is "-", it is read from stdin.`,
 	Aliases: []string{"s"},
 	Args:    cobra.RangeArgs(1, 2),
 
@@ -32,16 +32,35 @@ var setCmd = common.StandardCommand(&cobra.Command{
 		}
 
 		var value string
-		if len(args) == 2 {
-			value = args[1]
-		} else {
-			const maxVarSize = 1 << 20 // 1MB
-			r := io.LimitReader(os.Stdin, maxVarSize)
-			data, err := io.ReadAll(r)
-			if err != nil {
-				return err
+
+		isValueSet := len(args) > 1
+
+		if isValueSet {
+			if args[1] != "-" {
+				value = args[1]
+			} else {
+				const maxVarSize = 1 << 20 // 1MB
+				r := io.LimitReader(os.Stdin, maxVarSize)
+				data, err := io.ReadAll(r)
+				if err != nil {
+					return err
+				}
+				value = string(data)
 			}
-			value = string(data)
+		} else {
+			// get current var in order not to overwrite it with empty.
+
+			ctx, cancel := common.LimitedContext()
+			defer cancel()
+
+			vs, err := vars().Get(ctx, id, n)
+			if err != nil {
+				return fmt.Errorf("get variable: %w", err)
+			}
+
+			if len(vs) > 0 {
+				value = vs[0].Value()
+			}
 		}
 
 		ev := sdktypes.NewVar(n).SetValue(value).SetSecret(secret).SetOptional(optional).WithScopeID(id)
