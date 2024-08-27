@@ -45,7 +45,7 @@ type webhook struct {
 }
 
 // https://developer.atlassian.com/cloud/confluence/modules/webhook/
-// https://confluence.atlassian.com/conf715/managing-webhooks-1096098349.html
+// https://confluence.atlassian.com/doc/managing-webhooks-1021225606.html
 var webhookEvents = map[string][]string{
 	"added": {
 		"label_added",
