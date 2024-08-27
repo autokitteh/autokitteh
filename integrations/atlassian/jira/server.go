@@ -13,7 +13,7 @@ const (
 	// oauthPath is the URL path for our handler to save new OAuth-based connections.
 	oauthPath = "/jira/oauth"
 
-	// savePath is the URL path for our handler to save new PAT-based
+	// savePath is the URL path for our handler to save new token-based
 	// connections, after users submit them via a web form.
 	savePath = "/jira/save"
 
