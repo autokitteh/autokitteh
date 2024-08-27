@@ -41,14 +41,22 @@ func routePrefix(ns string) string {
 	return fmt.Sprintf("/http/%s/", ns)
 }
 
-func Start(l *zap.Logger, mux *http.ServeMux, d sdkservices.Dispatcher, c sdkservices.Connections, p sdkservices.Projects) {
-	h := handler{logger: l, dispatcher: d, conns: c, projs: p}
-	mux.Handle(routePrefix("{ns}")+"*", h)
-
-	// Save new autokitteh connections with user-submitted HTTP secrets.
+// Start initializes all the HTTP handlers of the HTTP integration.
+// This includes connection UIs, initialization webhooks, and event webhooks.
+func Start(l *zap.Logger, noAuth *http.ServeMux, auth *http.ServeMux, d sdkservices.Dispatcher, c sdkservices.Connections, p sdkservices.Projects) {
+	// Connection UI.
 	uiPath := fmt.Sprintf("GET %s/", desc.ConnectionURL().Path)
-	mux.Handle(uiPath, http.FileServer(http.FS(static.HTTPWebContent)))
-	mux.HandleFunc(savePath, h.handleAuth)
+	noAuth.Handle(uiPath, http.FileServer(http.FS(static.HTTPWebContent)))
+
+	// Init webhooks save connection vars (via "c.Finalize" calls), so they need
+	// to have an authenticated user context, so the DB layer won't reject them.
+	// For this purpose, init webhooks are managed by the "auth" mux, which passes
+	// through AutoKitteh's auth middleware to extract the user ID from a cookie.
+	h := handler{logger: l, dispatcher: d, conns: c, projs: p}
+	auth.HandleFunc(savePath, h.handleAuth)
+
+	// Event webhooks (unauthenticated by definition).
+	noAuth.Handle(routePrefix("{ns}")+"*", h)
 }
 
 func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
