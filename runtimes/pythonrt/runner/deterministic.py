@@ -152,6 +152,6 @@ functions = builtin_types | {
     datetime.time.dst,
     datetime.time.tzname,
     # json.dump & json.load work with files
-    #    json.dumps,
-    #    json.loads,
+    json.dumps,
+    json.loads,
 }
