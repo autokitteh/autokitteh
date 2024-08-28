@@ -27,13 +27,13 @@ var (
 )
 
 type PyRunner struct {
-	log         *zap.Logger
-	userRootDir string
-	pyRootDir   string
-	port        int
-	proc        *os.Process
-	stdout      io.Writer
-	stderr      io.Writer
+	log       *zap.Logger
+	userDir   string
+	runnerDir string
+	port      int
+	proc      *os.Process
+	stdout    io.Writer
+	stderr    io.Writer
 }
 
 func (r *PyRunner) Close() error {
@@ -45,15 +45,15 @@ func (r *PyRunner) Close() error {
 		}
 	}
 
-	if r.userRootDir != "" {
-		if uerr := os.RemoveAll(r.userRootDir); uerr != nil {
-			err = errors.Join(err, fmt.Errorf("clean user dir %q - %w", r.userRootDir, uerr))
+	if r.userDir != "" {
+		if uerr := os.RemoveAll(r.userDir); uerr != nil {
+			err = errors.Join(err, fmt.Errorf("clean user dir %q - %w", r.userDir, uerr))
 		}
 	}
 
-	if r.pyRootDir != "" {
-		if perr := os.RemoveAll(r.pyRootDir); perr != nil {
-			err = errors.Join(err, fmt.Errorf("clean runner dir %q - %w", r.pyRootDir, perr))
+	if r.runnerDir != "" {
+		if perr := os.RemoveAll(r.runnerDir); perr != nil {
+			err = errors.Join(err, fmt.Errorf("clean runner dir %q - %w", r.runnerDir, perr))
 		}
 	}
 
@@ -77,39 +77,39 @@ func (r *PyRunner) Start(pyExe string, tarData []byte, env map[string]string, wo
 	}
 	r.port = port
 
-	ur, err := os.MkdirTemp("", "ak-")
+	userDir, err := os.MkdirTemp("", "ak-user-")
 	if err != nil {
 		return fmt.Errorf("create user directory - %w", err)
 	}
-	r.userRootDir = ur
-	r.log.Info("user root dir", zap.String("path", r.userRootDir))
+	r.userDir = userDir
+	r.log.Info("user root dir", zap.String("path", r.userDir))
 
-	if err := extractTar(r.userRootDir, tarData); err != nil {
+	if err := extractTar(r.userDir, tarData); err != nil {
 		return fmt.Errorf("extract user tar - %w", err)
 	}
 
-	pr, err := os.MkdirTemp("", "ak-")
+	runnerDir, err := os.MkdirTemp("", "ak-runner-")
 	if err != nil {
 		return fmt.Errorf("create runner dir - %w", err)
 	}
-	r.pyRootDir = pr
-	r.log.Info("python root dir", zap.String("path", r.pyRootDir))
+	r.runnerDir = runnerDir
+	r.log.Info("python root dir", zap.String("path", r.runnerDir))
 
-	if err := copyFS(runnerPyCode, r.pyRootDir); err != nil {
+	if err := copyFS(runnerPyCode, r.runnerDir); err != nil {
 		return fmt.Errorf("copy runner code - %w", err)
 	}
 
-	mainPy := path.Join(r.pyRootDir, "runner", "main.py")
+	mainPy := path.Join(r.runnerDir, "runner", "main.py")
 	cmd := exec.Command(
 		pyExe, "-u", mainPy,
 		"--worker-address", workerAddr,
 		"--port", fmt.Sprintf("%d", r.port),
 		"--runner-id", uuid.NewString(),
-		"--code-dir", r.userRootDir,
+		"--code-dir", r.userDir,
 	)
 	r.log.Debug("running python", zap.String("command", cmd.String()))
 	// cmd.Dir = r.PyRootDir # TODO: Check if required
-	cmd.Env = overrideEnv(env, r.pyRootDir, r.userRootDir)
+	cmd.Env = overrideEnv(env, r.runnerDir, r.userDir)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	//cmd.Stdout = r.stdout

@@ -83,7 +83,7 @@ message Frame {
 }
 
 message ExecuteRequest {
-  string call_id = 1;
+  bytes data = 1;
 }
 
 message ExecuteResponse {
@@ -93,7 +93,7 @@ message ExecuteResponse {
 }
 
 message ActivityReplyRequest {
-  string call_id = 1;
+  bytes data = 1;
   bytes result = 2;
   string error = 3;
 }
@@ -133,7 +133,7 @@ message CallInfo {
 
 message ActivityRequest {
   string runner_id = 1;
-  string call_id = 2;
+  bytes data = 2;
   // call ID must be deterministic for replays
   CallInfo call_info = 3; // for ak display
 }

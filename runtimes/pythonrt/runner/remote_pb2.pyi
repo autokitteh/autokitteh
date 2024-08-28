@@ -113,10 +113,10 @@ class Frame(_message.Message):
     def __init__(self, filename: _Optional[str] = ..., lineno: _Optional[int] = ..., code: _Optional[str] = ..., name: _Optional[str] = ...) -> None: ...
 
 class ExecuteRequest(_message.Message):
-    __slots__ = ("call_id",)
-    CALL_ID_FIELD_NUMBER: _ClassVar[int]
-    call_id: str
-    def __init__(self, call_id: _Optional[str] = ...) -> None: ...
+    __slots__ = ("data",)
+    DATA_FIELD_NUMBER: _ClassVar[int]
+    data: bytes
+    def __init__(self, data: _Optional[bytes] = ...) -> None: ...
 
 class ExecuteResponse(_message.Message):
     __slots__ = ("result", "error", "traceback")
@@ -129,14 +129,14 @@ class ExecuteResponse(_message.Message):
     def __init__(self, result: _Optional[bytes] = ..., error: _Optional[str] = ..., traceback: _Optional[_Iterable[_Union[Frame, _Mapping]]] = ...) -> None: ...
 
 class ActivityReplyRequest(_message.Message):
-    __slots__ = ("call_id", "result", "error")
-    CALL_ID_FIELD_NUMBER: _ClassVar[int]
+    __slots__ = ("data", "result", "error")
+    DATA_FIELD_NUMBER: _ClassVar[int]
     RESULT_FIELD_NUMBER: _ClassVar[int]
     ERROR_FIELD_NUMBER: _ClassVar[int]
-    call_id: str
+    data: bytes
     result: bytes
     error: str
-    def __init__(self, call_id: _Optional[str] = ..., result: _Optional[bytes] = ..., error: _Optional[str] = ...) -> None: ...
+    def __init__(self, data: _Optional[bytes] = ..., result: _Optional[bytes] = ..., error: _Optional[str] = ...) -> None: ...
 
 class ActivityReplyResponse(_message.Message):
     __slots__ = ("error",)
@@ -176,14 +176,14 @@ class CallInfo(_message.Message):
     def __init__(self, function: _Optional[str] = ..., args: _Optional[_Iterable[str]] = ..., kwargs: _Optional[_Mapping[str, str]] = ...) -> None: ...
 
 class ActivityRequest(_message.Message):
-    __slots__ = ("runner_id", "call_id", "call_info")
+    __slots__ = ("runner_id", "data", "call_info")
     RUNNER_ID_FIELD_NUMBER: _ClassVar[int]
-    CALL_ID_FIELD_NUMBER: _ClassVar[int]
+    DATA_FIELD_NUMBER: _ClassVar[int]
     CALL_INFO_FIELD_NUMBER: _ClassVar[int]
     runner_id: str
-    call_id: str
+    data: bytes
     call_info: CallInfo
-    def __init__(self, runner_id: _Optional[str] = ..., call_id: _Optional[str] = ..., call_info: _Optional[_Union[CallInfo, _Mapping]] = ...) -> None: ...
+    def __init__(self, runner_id: _Optional[str] = ..., data: _Optional[bytes] = ..., call_info: _Optional[_Union[CallInfo, _Mapping]] = ...) -> None: ...
 
 class ActivityResponse(_message.Message):
     __slots__ = ("error",)

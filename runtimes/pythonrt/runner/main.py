@@ -98,13 +98,14 @@ class Runner(rpc.RunnerServicer):
         return pb.StartResponse()
 
     def Execute(self, request: pb.ExecuteRequest, context: grpc.ServicerContext):
+        call_id = request.data.decode()
         with self.lock:
-            call_info = self.calls.pop(request.call_id, None)
+            call_info = self.calls.pop(call_id, None)
 
         if call_info is None:
-            error = f"call_id {request.call_id!r} not found"
+            error = f"call_id {call_id!r} not found"
             with self.lock:
-                fut = self.replies.pop(request.call_id, None)
+                fut = self.replies.pop(call_id, None)
                 if fut:
                     fut.set_exception(ActivityError(error))
 
@@ -134,24 +135,23 @@ class Runner(rpc.RunnerServicer):
     def ActivityReply(
         self, request: pb.ActivityReplyRequest, context: grpc.ServicerContext
     ):
+        call_id = request.data.decode()
         with self.lock:
-            fut = self.replies.pop(request.call_id, None)
+            fut = self.replies.pop(call_id, None)
 
         if fut is None:
-            log.error("call_id %r not found", request.call_id)
+            log.error("call_id %r not found", call_id)
             context.abort(
-                grpc.StatusCode.INVALID_ARGUMENT,
-                "call_id {request.call_id!r} not found",
+                grpc.StatusCode.INVALID_ARGUMENT, "call_id {call_id!r} not found"
             )
 
         try:
             result = pickle.loads(request.result)
         except Exception as err:
-            log.exception(f"call_id {request.call_id!r}: result pickle: {err}")
+            log.exception(f"call_id {call_id!r}: result pickle: {err}")
             fut.set_exception(ActivityError(err))
             context.abort(
-                grpc.StatusCode.INTERNAL,
-                f"call_id {request.call_id!r}: result pickle: {err}",
+                grpc.StatusCode.INTERNAL, f"call_id {call_id!r}: result pickle: {err}"
             )
 
         fut.set_result(result)
@@ -175,7 +175,7 @@ class Runner(rpc.RunnerServicer):
 
         req = pb.ActivityRequest(
             runner_id=self.id,
-            call_id=call_id,
+            data=call_id.encode(),
             call_info=pb.CallInfo(
                 function=fn.__name__,  # AK rejects json.loads
                 args=[repr(a) for a in args],

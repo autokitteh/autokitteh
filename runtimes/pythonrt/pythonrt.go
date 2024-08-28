@@ -550,16 +550,19 @@ func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 	fnName := fn.Name().String()
 	py.log.Info("call", zap.String("func", fnName))
 
+	py.remote.callCtx.Push(ctx)
+	defer func() {
+		py.remote.callCtx.Pop()
+	}()
+
 	if py.firstCall {
-		py.remote.callCtx = ctx
 		py.firstCall = false
 		return py.initialCall(ctx, fnName, args, kwargs)
 	}
 
 	// If we're here, it's an activity call
-	callID := string(fn.Data())
 	req := pb.ExecuteRequest{
-		CallId: callID,
+		Data: fn.Data(),
 	}
 	resp, err := py.runnerClient.Execute(ctx, &req)
 	switch {

@@ -31,7 +31,7 @@ type remoteSvc struct {
 	srv       *grpc.Server
 	port      int
 	runner    pb.RunnerClient
-	callCtx   context.Context
+	callCtx   Stack[context.Context]
 
 	// One of these will signal end of execution
 	result chan []byte
@@ -98,7 +98,7 @@ func (s *remoteSvc) Sleep(ctx context.Context, req *pb.SleepRequest) (*pb.SleepR
 
 	secs := float64(req.DurationMs) / 1000.0
 	args := []sdktypes.Value{sdktypes.NewFloatValue(secs)}
-	_, err := s.cbs.Call(s.callCtx, s.runID, s.syscallFn, args, nil)
+	_, err := s.cbs.Call(s.callCtx.Top(), s.runID, s.syscallFn, args, nil)
 	var resp pb.SleepResponse
 	if err != nil {
 		resp.Error = err.Error()
@@ -117,7 +117,7 @@ func (s *remoteSvc) Subscribe(ctx context.Context, req *pb.SubscribeRequest) (*p
 		sdktypes.NewStringValue(req.Connection),
 		sdktypes.NewStringValue(req.Filter),
 	}
-	out, err := s.cbs.Call(s.callCtx, s.runID, s.syscallFn, args, nil)
+	out, err := s.cbs.Call(s.callCtx.Top(), s.runID, s.syscallFn, args, nil)
 	if err != nil {
 		err = status.Errorf(codes.Internal, "subscribe(%s, %s) -> %s", req.Connection, req.Filter, err)
 		return &pb.SubscribeResponse{Error: err.Error()}, err
@@ -146,7 +146,7 @@ func (s *remoteSvc) NextEvent(ctx context.Context, req *pb.NextEventRequest) (*p
 		kw["timeout"] = sdktypes.NewFloatValue(float64(req.TimeoutMs) / 1000.0)
 	}
 
-	val, err := s.cbs.Call(s.callCtx, s.runID, s.syscallFn, args, kw)
+	val, err := s.cbs.Call(s.callCtx.Top(), s.runID, s.syscallFn, args, kw)
 	if err != nil {
 		err = status.Errorf(codes.Internal, "next_event(%s, %s) -> %s", req.SignalIds, req.TimeoutMs, err)
 		return &pb.NextEventResponse{Error: err.Error()}, err
@@ -176,7 +176,7 @@ func (s *remoteSvc) Unsubscribe(ctx context.Context, req *pb.UnsubscribeRequest)
 	args := []sdktypes.Value{
 		sdktypes.NewStringValue(req.SignalId),
 	}
-	_, err := s.cbs.Call(s.callCtx, s.runID, s.syscallFn, args, nil)
+	_, err := s.cbs.Call(s.callCtx.Top(), s.runID, s.syscallFn, args, nil)
 	if err != nil {
 		err = status.Errorf(codes.Internal, "subscribe(%s) -> %s", req.SignalId, err)
 		return &pb.UnsubscribeResponse{Error: err.Error()}, err
@@ -185,15 +185,33 @@ func (s *remoteSvc) Unsubscribe(ctx context.Context, req *pb.UnsubscribeRequest)
 	return &pb.UnsubscribeResponse{}, nil
 }
 
-func (s *remoteSvc) call(ctx context.Context, callID string, fn sdktypes.Value) {
-	out, err := s.cbs.Call(s.callCtx, s.runID, fn, nil, nil)
-	req := pb.ActivityReplyRequest{
-		CallId: callID,
+func (s *remoteSvc) call(ctx context.Context, val sdktypes.Value) {
+	req := pb.ActivityReplyRequest{}
+
+	// We want to send reply in any case
+	defer func() {
+		reply, err := s.runner.ActivityReply(ctx, &req)
+		switch {
+		case err != nil:
+			s.log.Error("activity reply error", zap.Error(err))
+		case reply.Error != "":
+			s.log.Error("activity reply error", zap.String("error", reply.Error))
+		}
+	}()
+
+	if !val.IsFunction() {
+		s.log.Error("bad function", zap.Any("val", val))
+		req.Error = fmt.Sprintf("%#v is not a function", val)
+		return
 	}
+
+	fn := val.GetFunction()
+	req.Data = fn.Data()
+	out, err := s.cbs.Call(s.callCtx.Top(), s.runID, val, nil, nil)
 
 	switch {
 	case err != nil:
-		req.Error = fmt.Sprintf("call_id: %s - %s", callID, err)
+		req.Error = fmt.Sprintf("%s - %s", fn.Name().String(), err)
 		s.log.Error("activity reply error", zap.Error(err))
 	case !out.IsBytes():
 		req.Error = fmt.Sprintf("call output not bytes: %#v", out)
@@ -202,27 +220,18 @@ func (s *remoteSvc) call(ctx context.Context, callID string, fn sdktypes.Value) 
 		data := out.GetBytes().Value()
 		req.Result = data
 	}
-
-	reply, err := s.runner.ActivityReply(ctx, &req)
-	switch {
-	case err != nil:
-		s.log.Error("activity reply error", zap.Error(err))
-	case reply.Error != "":
-		s.log.Error("activity reply error", zap.String("error", reply.Error))
-	}
 }
 
 // Runner starting activity
 func (s *remoteSvc) Activity(ctx context.Context, req *pb.ActivityRequest) (*pb.ActivityResponse, error) {
 	fnName := req.CallInfo.Function
-	s.log.Info("activity", zap.String("function", fnName), zap.String("callID", req.CallId))
-	fnData := []byte(req.CallId)
-	fn, err := sdktypes.NewFunctionValue(s.xid, fnName, fnData, nil, pyModuleFunc)
+	s.log.Info("activity", zap.String("function", fnName))
+	fn, err := sdktypes.NewFunctionValue(s.xid, fnName, req.Data, nil, pyModuleFunc)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "new function value: %s", err)
 	}
 
-	go s.call(ctx, req.CallId, fn)
+	go s.call(ctx, fn)
 
 	return &pb.ActivityResponse{}, nil
 }
