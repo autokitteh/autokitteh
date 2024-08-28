@@ -1,3 +1,4 @@
+// gRPC server that accepts calls from the Python runner
 package pythonrt
 
 import (
