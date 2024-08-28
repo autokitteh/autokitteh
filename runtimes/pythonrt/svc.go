@@ -32,7 +32,12 @@ type remoteSvc struct {
 	srv       *grpc.Server
 	port      int
 	runner    pb.RunnerClient
-	callCtx   Stack[context.Context]
+
+	// We need the right context to send to cbs
+	// It can be either the initial context (start of flow) or call context (current activity)
+	// We don't have nested activities
+	initialCtx context.Context
+	callCtx    context.Context
 
 	// One of these will signal end of execution
 	result chan []byte
@@ -86,7 +91,7 @@ func (s *remoteSvc) Log(ctx context.Context, req *pb.LogRequest) (*pb.LogRespons
 }
 
 func (s *remoteSvc) Print(ctx context.Context, req *pb.PrintRequest) (*pb.PrintResponse, error) {
-	s.cbs.Print(s.callCtx.Top(), s.runID, req.Message)
+	s.cbs.Print(s.ctx(), s.runID, req.Message)
 	return &pb.PrintResponse{}, nil
 }
 
@@ -102,7 +107,7 @@ func (s *remoteSvc) Sleep(ctx context.Context, req *pb.SleepRequest) (*pb.SleepR
 		sdktypes.NewStringValue("sleep"),
 		sdktypes.NewFloatValue(secs),
 	}
-	_, err := s.cbs.Call(s.callCtx.Top(), s.runID, s.syscallFn, args, nil)
+	_, err := s.cbs.Call(s.ctx(), s.runID, s.syscallFn, args, nil)
 	var resp pb.SleepResponse
 	if err != nil {
 		resp.Error = err.Error()
@@ -122,7 +127,7 @@ func (s *remoteSvc) Subscribe(ctx context.Context, req *pb.SubscribeRequest) (*p
 		sdktypes.NewStringValue(req.Connection),
 		sdktypes.NewStringValue(req.Filter),
 	}
-	out, err := s.cbs.Call(s.callCtx.Top(), s.runID, s.syscallFn, args, nil)
+	out, err := s.cbs.Call(s.ctx(), s.runID, s.syscallFn, args, nil)
 	if err != nil {
 		err = status.Errorf(codes.Internal, "subscribe(%s, %s) -> %s", req.Connection, req.Filter, err)
 		return &pb.SubscribeResponse{Error: err.Error()}, err
@@ -152,7 +157,7 @@ func (s *remoteSvc) NextEvent(ctx context.Context, req *pb.NextEventRequest) (*p
 		kw["timeout"] = sdktypes.NewFloatValue(float64(req.TimeoutMs) / 1000.0)
 	}
 
-	val, err := s.cbs.Call(s.callCtx.Top(), s.runID, s.syscallFn, args, kw)
+	val, err := s.cbs.Call(s.ctx(), s.runID, s.syscallFn, args, kw)
 	if err != nil {
 		err = status.Errorf(codes.Internal, "next_event(%s, %d) -> %s", req.SignalIds, req.TimeoutMs, err)
 		return &pb.NextEventResponse{Error: err.Error()}, err
@@ -183,7 +188,7 @@ func (s *remoteSvc) Unsubscribe(ctx context.Context, req *pb.UnsubscribeRequest)
 		sdktypes.NewStringValue("unsubsribe"),
 		sdktypes.NewStringValue(req.SignalId),
 	}
-	_, err := s.cbs.Call(s.callCtx.Top(), s.runID, s.syscallFn, args, nil)
+	_, err := s.cbs.Call(s.ctx(), s.runID, s.syscallFn, args, nil)
 	if err != nil {
 		err = status.Errorf(codes.Internal, "subscribe(%s) -> %s", req.SignalId, err)
 		return &pb.UnsubscribeResponse{Error: err.Error()}, err
@@ -216,7 +221,7 @@ func (s *remoteSvc) call(val sdktypes.Value) {
 
 	fn := val.GetFunction()
 	req.Data = fn.Data()
-	out, err := s.cbs.Call(s.callCtx.Top(), s.runID, val, nil, nil)
+	out, err := s.cbs.Call(s.ctx(), s.runID, val, nil, nil)
 
 	switch {
 	case err != nil:
@@ -339,6 +344,14 @@ func (s *remoteSvc) Close() error {
 	}
 
 	return nil
+}
+
+func (s *remoteSvc) ctx() context.Context {
+	if s.callCtx != nil {
+		return s.callCtx
+	}
+
+	return s.initialCtx
 }
 
 func newInterceptor(log *zap.Logger) func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
