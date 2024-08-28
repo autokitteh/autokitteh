@@ -1,6 +1,10 @@
 package twilio
 
 import (
+	"context"
+
+	"go.autokitteh.dev/autokitteh/integrations"
+	"go.autokitteh.dev/autokitteh/integrations/twilio/webhooks"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
@@ -29,7 +33,7 @@ var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.Integrati
 }))
 
 func New(vars sdkservices.Vars) sdkservices.Integration {
-	i := integration{vars: vars}
+	i := &integration{vars: vars}
 
 	return sdkintegrations.NewIntegration(
 		desc,
@@ -40,6 +44,40 @@ func New(vars sdkservices.Vars) sdkservices.Integration {
 				sdkmodule.WithArgs("to", "from_number?", "messaging_service_sid?", "body?", "media_url?", "content_sid?"),
 			),
 		),
+		connStatus(i),
 		sdkintegrations.WithConnectionConfigFromVars(vars),
 	)
+}
+
+// connStatus is an optional connection status check provided by
+// the integration to AutoKitteh. The possible results are "init
+// required" (the connection is not usable yet) and "using X".
+func connStatus(i *integration) sdkintegrations.OptFn {
+	return sdkintegrations.WithConnectionStatus(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
+		if !cid.IsValid() {
+			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "init required"), nil
+		}
+
+		vs, err := i.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
+		if err != nil {
+			return sdktypes.InvalidStatus, err
+		}
+
+		var decodedVars webhooks.Vars
+		vs.Decode(&decodedVars)
+
+		at := vs.Get(webhooks.AuthType)
+		if !at.IsValid() || at.Value() == "" {
+			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "init required"), nil
+		}
+
+		switch at.Value() {
+		case integrations.APIKey:
+			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "using API key"), nil
+		case integrations.APIToken:
+			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "using auth token"), nil
+		default:
+			return sdktypes.NewStatus(sdktypes.StatusCodeError, "bad auth type"), nil
+		}
+	})
 }
