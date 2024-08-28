@@ -15,23 +15,29 @@ const (
 	// oauthPath is the URL path for our handler to save new OAuth-based connections.
 	oauthPath = "/github/oauth"
 
-	// patPath is the URL path for our webhook to save a new autokitteh
-	// PAT-based connection, after the user submits it via a web form.
-	patPath = "/github/save"
+	// savePath is the URL path for our handler to save new PAT-based
+	// connections, after users submit them via a web form.
+	savePath = "/github/save"
 )
 
-func Start(l *zap.Logger, mux *http.ServeMux, v sdkservices.Vars, o sdkservices.OAuth, d sdkservices.Dispatcher) {
-	// Connection UI + handlers.
+// Start initializes all the HTTP handlers of the GitHub integration.
+// This includes connection UIs, initialization webhooks, and event webhooks.
+func Start(l *zap.Logger, noAuth *http.ServeMux, auth *http.ServeMux, v sdkservices.Vars, o sdkservices.OAuth, d sdkservices.Dispatcher) {
+	// Connection UI.
 	uiPath := "GET " + desc.ConnectionURL().Path + "/"
-	mux.HandleFunc(uiPath, connect.ServeHTTP)
-	mux.Handle(uiPath+"{filename}", http.FileServer(http.FS(static.GitHubWebContent)))
+	noAuth.HandleFunc(uiPath, connect.ServeHTTP)
+	noAuth.Handle(uiPath+"{filename}", http.FileServer(http.FS(static.GitHubWebContent)))
 
+	// Init webhooks save connection vars (via "c.Finalize" calls), so they need
+	// to have an authenticated user context, so the DB layer won't reject them.
+	// For this purpose, init webhooks are managed by the "auth" mux, which passes
+	// through AutoKitteh's auth middleware to extract the user ID from a cookie.
 	h := NewHandler(l, o)
-	mux.HandleFunc("GET "+oauthPath, h.handleOAuth)
-	mux.HandleFunc("POST "+patPath, h.handlePAT)
+	auth.HandleFunc("GET "+oauthPath, h.handleOAuth)
+	auth.HandleFunc("POST "+savePath, h.handlePAT)
 
-	// Event webhooks.
+	// Event webhooks (unauthenticated by definition).
 	eventHandler := webhooks.NewHandler(l, v, d, integrationID)
-	mux.Handle("POST "+webhooks.WebhookPath+"/{id}", eventHandler) // User events.
-	mux.Handle("POST "+webhooks.WebhookPath, eventHandler)         // App events.
+	noAuth.Handle("POST "+webhooks.WebhookPath+"/{id}", eventHandler) // User events.
+	noAuth.Handle("POST "+webhooks.WebhookPath, eventHandler)         // App events.
 }
