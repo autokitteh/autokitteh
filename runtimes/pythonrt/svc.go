@@ -85,7 +85,7 @@ func (s *remoteSvc) Log(ctx context.Context, req *pb.LogRequest) (*pb.LogRespons
 }
 
 func (s *remoteSvc) Print(ctx context.Context, req *pb.PrintRequest) (*pb.PrintResponse, error) {
-	s.cbs.Print(ctx, s.runID, req.Message)
+	s.cbs.Print(s.callCtx.Top(), s.runID, req.Message)
 	return &pb.PrintResponse{}, nil
 }
 
@@ -185,11 +185,13 @@ func (s *remoteSvc) Unsubscribe(ctx context.Context, req *pb.UnsubscribeRequest)
 	return &pb.UnsubscribeResponse{}, nil
 }
 
-func (s *remoteSvc) call(ctx context.Context, val sdktypes.Value) {
+func (s *remoteSvc) call(val sdktypes.Value) {
 	req := pb.ActivityReplyRequest{}
 
 	// We want to send reply in any case
 	defer func() {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
 		reply, err := s.runner.ActivityReply(ctx, &req)
 		switch {
 		case err != nil:
@@ -231,7 +233,7 @@ func (s *remoteSvc) Activity(ctx context.Context, req *pb.ActivityRequest) (*pb.
 		return nil, status.Errorf(codes.Internal, "new function value: %s", err)
 	}
 
-	go s.call(ctx, fn)
+	go s.call(fn)
 
 	return &pb.ActivityResponse{}, nil
 }

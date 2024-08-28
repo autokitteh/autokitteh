@@ -204,7 +204,7 @@ class Runner(rpc.RunnerServicer):
             run_id=self.run_id,
             # TODO: We want value that AK can understand (proto.Value)
             result=pickle.dumps(result, protocol=0),
-            error=str(err),
+            error=str(err) if err else "",
         )
         resp = self.worker.Done(req)
         if resp.Error:
