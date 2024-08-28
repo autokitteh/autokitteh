@@ -11,9 +11,7 @@ test: test-py test-go
 ci: deps test-py
 
 test-py:
-	ruff check .
-	ruff format --check
-	python -m pytest
+	cd runner && $(MAKE) test
 
 # You can set the TESTOPTS to pass options to `go test`
 test-go:
