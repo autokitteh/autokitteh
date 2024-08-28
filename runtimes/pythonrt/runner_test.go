@@ -58,7 +58,7 @@ func Test_createVEnv(t *testing.T) {
 //go:embed testdata/simple.tar
 var tarData []byte
 
-func Test_runPython(t *testing.T) {
+func Test_Runner_Start(t *testing.T) {
 	skipIfNoPython(t)
 
 	log := zap.NewExample()
@@ -70,6 +70,12 @@ func Test_runPython(t *testing.T) {
 		envKey: "B",
 	}
 
+	r := PyRunner{
+		log: log,
+	}
+	err := r.Start("python", tarData, env, "")
+	require.NoError(t, err)
+
 	opts := runOptions{
 		log:        log,
 		pyExe:      "python",
@@ -80,7 +86,6 @@ func Test_runPython(t *testing.T) {
 		stderr:     os.Stderr,
 	}
 	ri, err := runPython(opts)
-	require.NoError(t, err)
 	defer ri.proc.Kill() //nolint:all
 
 	procEnv := processEnv(t, ri.proc.Pid)

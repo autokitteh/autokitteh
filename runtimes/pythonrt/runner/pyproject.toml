@@ -3,8 +3,9 @@ name = "runner"
 version = "0.1.0"
 dependencies = [
 	"autokitteh ~= 0.2",
-	"grpcio ~= 1.65",
-	"grpcio-reflection ~= 1.65",
+	"grpcio ~= 1.66",
+	# TODO: Newest version (1.65) conflicts with google-generativeai
+	"grpcio-reflection ~= 1.66",
 ]
 
 [project.optional-dependencies]

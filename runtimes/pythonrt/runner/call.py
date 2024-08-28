@@ -63,7 +63,6 @@ class AKCall:
         self.loading = False
 
     def __call__(self, func, *args, **kw):
-        log.info("__call__: %s, args=%r, kw=%r", full_func_name(func), args, kw)
         if not callable(func):
             frames = inspect.stack()
             if len(frames) > 1:
@@ -73,6 +72,7 @@ class AKCall:
 
             raise ValueError(f"{func!r} is not callable (user bug at {file}:{lnum}?)")
 
+        log.info("__call__: %s, args=%r, kw=%r", full_func_name(func), args, kw)
         if func in AK_FUNCS:
             if self.in_activity and func is sleep:
                 return func(*args, **kw)

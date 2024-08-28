@@ -17,8 +17,8 @@ class SyscallError(Exception):
 
 
 class SysCalls:
-    def __init__(self, run_id, worker):
-        self.run_id = run_id
+    def __init__(self, runner_id, worker):
+        self.runner_id = runner_id
         self.worker: rpc.WorkerStub = worker
 
         self.ak_funcs = {
@@ -41,7 +41,7 @@ class SysCalls:
             raise ValueError("negative secs")
 
         req = pb.SleepRequest(
-            run_id=self.run_id,
+            runner_id=self.runner_id,
             duration_ms=int(secs * 1000),
         )
         resp = self.worker.Sleep(req)
@@ -55,7 +55,7 @@ class SysCalls:
             raise ValueError("missing connection_id or filter")
 
         req = pb.SubscribeRequest(
-            run_id=self.run_id, connection_id=connection_id, filter=filter
+            runner_id=self.runner_id, connection_id=connection_id, filter=filter
         )
         resp = self.worker.Subscribe(req)
         if resp.error:
@@ -66,7 +66,7 @@ class SysCalls:
         (id,) = extract_args(["subscription_id"], args, kw)
         if not id:
             raise ValueError("empty subscription_id")
-        req = pb.NextEventRequest(run_id=self.run_id, signal_id=id)
+        req = pb.NextEventRequest(runner_id=self.runner_id, signal_id=id)
         resp = self.worker.NextEvent(req)
         if resp.error:
             raise SyscallError(f"next_event: {resp.error}")

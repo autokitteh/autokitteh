@@ -67,8 +67,7 @@ class Runner(rpc.RunnerServicer):
 
     def Start(self, request: pb.StartRequest, context: grpc.ServicerContext):
         log.info("start request: %r", request)
-        self.run_id = request.run_id
-        self.syscalls = SysCalls(self.run_id, self.worker)
+        self.syscalls = SysCalls(self.id, self.worker)
         mod_name, fn_name = parse_entry_point(request.entry_point)
 
         call = AKCall(self)

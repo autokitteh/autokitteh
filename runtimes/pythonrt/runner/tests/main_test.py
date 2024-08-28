@@ -34,7 +34,7 @@ def test_start():
 
     event_data = json.dumps({"body": {"path": "/info", "method": "GET"}})
     event = pb.Event(data=event_data.encode())
-    req = pb.StartRequest(run_id="run1", entry_point="program.py:on_event", event=event)
+    req = pb.StartRequest(entry_point="program.py:on_event", event=event)
     resp = runner.Start(req, None)
     assert resp.error == ""
 
@@ -52,7 +52,7 @@ def test_execute():
 
     call_id = uuid4().hex
     runner.calls[call_id] = (sub, [1, 7], {})
-    req = pb.ExecuteRequest(call_id=call_id)
+    req = pb.ExecuteRequest(data=call_id.encode())
     resp = runner.Execute(req, None)
     assert resp.error == ""
     value = pickle.loads(resp.result)
@@ -70,7 +70,7 @@ def test_activity_reply():
     runner.replies[call_id] = fut
     value = 42
     req = pb.ActivityReplyRequest(
-        call_id=call_id,
+        data=call_id.encode(),
         result=pickle.dumps(value, protocol=0),
     )
     resp = runner.ActivityReply(req, None)
