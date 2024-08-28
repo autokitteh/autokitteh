@@ -29,10 +29,10 @@ type api struct {
 	cid  sdktypes.ConnectionID
 }
 
-var integrationID = sdktypes.NewIntegrationIDFromName("gmail")
+var IntegrationID = sdktypes.NewIntegrationIDFromName("gmail")
 
 var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
-	IntegrationId: integrationID.String(),
+	IntegrationId: IntegrationID.String(),
 	UniqueName:    "gmail",
 	DisplayName:   "Gmail",
 	Description:   "Gmail is an email service provided by Google.",

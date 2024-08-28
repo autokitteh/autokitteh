@@ -11,14 +11,10 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-var (
-	gmailIntegrationID  = sdktypes.NewIntegrationIDFromName("gmail")
-	formsIntegrationID  = sdktypes.NewIntegrationIDFromName("googleforms")
-	googleIntegrationID = sdktypes.NewIntegrationIDFromName("google")
-)
+var integrationID = sdktypes.NewIntegrationIDFromName("google")
 
 var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
-	IntegrationId: googleIntegrationID.String(),
+	IntegrationId: integrationID.String(),
 	UniqueName:    "google",
 	DisplayName:   "Google (All APIs)",
 	Description:   "Aggregation of all available Google APIs.",

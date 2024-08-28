@@ -40,7 +40,7 @@ func (h handler) handleFormsNotification(w http.ResponseWriter, r *http.Request)
 
 	// Find all the connection IDs associated with the watch ID.
 	ctx := extrazap.AttachLoggerToContext(l, r.Context())
-	cids, err := h.vars.FindConnectionIDs(ctx, formsIntegrationID, name, watchID)
+	cids, err := h.vars.FindConnectionIDs(ctx, forms.IntegrationID, name, watchID)
 	if err != nil {
 		l.Error("Failed to find connection IDs", zap.Error(err))
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -107,7 +107,7 @@ func (h handler) handleGmailNotification(w http.ResponseWriter, r *http.Request)
 
 	// Find all the connection IDs associated with the email address.
 	ctx := extrazap.AttachLoggerToContext(l, r.Context())
-	cids, err := h.vars.FindConnectionIDs(ctx, gmailIntegrationID, vars.UserEmail, notif.EmailAddress)
+	cids, err := h.vars.FindConnectionIDs(ctx, gmail.IntegrationID, vars.UserEmail, notif.EmailAddress)
 	if err != nil {
 		l.Error("Failed to find connection IDs", zap.Error(err))
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
