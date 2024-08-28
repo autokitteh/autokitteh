@@ -154,7 +154,7 @@ func (s *remoteSvc) NextEvent(ctx context.Context, req *pb.NextEventRequest) (*p
 
 	val, err := s.cbs.Call(s.callCtx.Top(), s.runID, s.syscallFn, args, kw)
 	if err != nil {
-		err = status.Errorf(codes.Internal, "next_event(%s, %s) -> %s", req.SignalIds, req.TimeoutMs, err)
+		err = status.Errorf(codes.Internal, "next_event(%s, %d) -> %s", req.SignalIds, req.TimeoutMs, err)
 		return &pb.NextEventResponse{Error: err.Error()}, err
 	}
 

@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.autokitteh.dev/autokitteh/runtimes/pythonrt/pb"
 	"go.uber.org/zap"
 )
 
@@ -58,7 +59,7 @@ func Test_createVEnv(t *testing.T) {
 //go:embed testdata/simple.tar
 var tarData []byte
 
-func Test_Runner_Start(t *testing.T) {
+func TestRunner_Start(t *testing.T) {
 	skipIfNoPython(t)
 
 	log := zap.NewExample()
@@ -76,19 +77,9 @@ func Test_Runner_Start(t *testing.T) {
 	err := r.Start("python", tarData, env, "")
 	require.NoError(t, err)
 
-	opts := runOptions{
-		log:        log,
-		pyExe:      "python",
-		tarData:    tarData,
-		entryPoint: "simple.py",
-		env:        env,
-		stdout:     os.Stdout,
-		stderr:     os.Stderr,
-	}
-	ri, err := runPython(opts)
-	defer ri.proc.Kill() //nolint:all
+	defer r.Close() //nolint:all
 
-	procEnv := processEnv(t, ri.proc.Pid)
+	procEnv := processEnv(t, r.proc.Pid)
 	require.Equal(t, env[envKey], procEnv[envKey], "env override")
 }
 
@@ -131,20 +122,20 @@ func Test_findPython(t *testing.T) {
 	t.Setenv("PATH", dirName)
 
 	// No Python
-	_, err := findSystemPython()
+	_, err := findPython()
 	require.Error(t, err)
 
 	// python
 	pyExe := path.Join(dirName, "python")
 	genExe(t, pyExe, minPyVersion.Major, minPyVersion.Minor)
-	out, err := findSystemPython()
+	out, err := findPython()
 	require.NoError(t, err)
 	require.Equal(t, pyExe, out)
 
 	// python & python3, should be python3
 	py3Exe := path.Join(dirName, "python3")
 	genExe(t, py3Exe, minPyVersion.Major, minPyVersion.Minor)
-	out, err = findSystemPython()
+	out, err = findPython()
 	require.NoError(t, err)
 	require.Equal(t, py3Exe, out)
 
@@ -159,7 +150,7 @@ func Test_findPython(t *testing.T) {
 	link := path.Join(dirName, "python3")
 	err = os.Symlink(exe, link)
 	require.NoError(t, err)
-	out, err = findSystemPython()
+	out, err = findPython()
 	require.NoError(t, err)
 	require.Equal(t, link, out)
 }
@@ -196,19 +187,29 @@ func Test_parsePyVersion(t *testing.T) {
 func Test_pyExports(t *testing.T) {
 	skipIfNoPython(t)
 
-	fsys := os.DirFS("testdata/simple")
+	log := zap.NewExample()
+	defer log.Sync() //nolint:all
+
+	r := PyRunner{
+		log: log,
+	}
+	err := r.Start("python", tarData, nil, "")
+	require.NoError(t, err)
+
+	defer r.Close() //nolint:all
+
+	client, err := dialRunner(fmt.Sprintf("localhost:%d", r.port))
+	require.NoError(t, err)
+	req := pb.ExportsRequest{
+		FileName: "simple.py",
+	}
 	ctx, cancel := testCtx(t)
 	defer cancel()
 
-	exports, err := pyExports(ctx, "python", fsys)
+	resp, err := client.Exports(ctx, &req)
 	require.NoError(t, err)
 
-	expected := []Export{
-		{File: "simple.py", Name: "greet", Line: 12},
-		{File: "simple.py", Name: "printer", Line: 24},
-	}
-	require.Equal(t, expected, exports)
-
+	require.Equal(t, []string{"greet"}, resp.Exports)
 }
 
 const testRunnerPath = "/tmp/zzz/ak_runner"
@@ -238,4 +239,20 @@ func Test_adjustPYTHONPATH(t *testing.T) {
 			require.Equal(t, tc.expected, out)
 		})
 	}
+}
+
+func TestRunner_Close(t *testing.T) {
+	log := zap.NewExample()
+	defer log.Sync() //nolint:all
+	r := PyRunner{
+		log: log,
+	}
+
+	err := r.Start("python", tarData, nil, "")
+	require.NoError(t, err)
+
+	r.Close()
+
+	require.NoDirExists(t, r.runnerDir)
+	require.NoDirExists(t, r.userDir)
 }

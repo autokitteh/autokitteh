@@ -243,28 +243,6 @@ func Test_pySvc_Build_PyCache(t *testing.T) {
 	}
 }
 
-func TestCleanup(t *testing.T) {
-	var ri pyRunInfo
-	var err error
-
-	ri.pyRootDir, err = os.MkdirTemp("", "test-pyrt-py")
-	require.NoError(t, err)
-	ri.userRootDir, err = os.MkdirTemp("", "test-pyrt-user")
-	require.NoError(t, err)
-
-	defer func() {
-		_ = recover() // ignore panic
-		require.NoDirExists(t, ri.pyRootDir)
-		require.NoDirExists(t, ri.userRootDir)
-	}()
-
-	svc := newSVC(t)
-	svc.run = &ri
-
-	_, err = svc.initialCall(context.Background(), "greet", nil) // will panic
-	require.Error(t, err)
-}
-
 var progErrCode = []byte(`
 def handle(event):
     1 / 0
