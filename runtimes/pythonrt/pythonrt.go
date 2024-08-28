@@ -516,7 +516,6 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktyp
 	}
 
 	req := pb.StartRequest{
-		RunId:      py.runID.String(),
 		EntryPoint: fmt.Sprintf("%s:%s", py.fileName, funcName),
 		Event: &pb.Event{
 			Data: eventData,
