@@ -67,8 +67,7 @@ func connStatus(i *integration) sdkintegrations.OptFn {
 
 		if at.Value() == integrations.Init {
 			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "initialized"), nil
-		} else {
-			return sdktypes.NewStatus(sdktypes.StatusCodeError, "bad auth type"), nil
 		}
+		return sdktypes.NewStatus(sdktypes.StatusCodeError, "bad auth type"), nil
 	})
 }

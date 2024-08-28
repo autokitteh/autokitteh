@@ -46,7 +46,7 @@ func (h handler) HandleAuth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	at := ""
+	at := integrations.APIToken
 
 	accountSID := r.Form.Get("account_sid")
 	username := accountSID
@@ -55,8 +55,6 @@ func (h handler) HandleAuth(w http.ResponseWriter, r *http.Request) {
 		username = r.Form.Get("api_key")
 		password = r.Form.Get("api_secret")
 		at = integrations.APIKey
-	} else {
-		at = integrations.APIToken
 	}
 
 	// TODO(ENG-1156): Test the authentication details.

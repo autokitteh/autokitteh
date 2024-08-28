@@ -73,7 +73,7 @@ func connStatus(i *integration) sdkintegrations.OptFn {
 
 		switch at.Value() {
 		case integrations.APIKey:
-			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "using api key"), nil
+			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "using API key"), nil
 		case integrations.APIToken:
 			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "using auth token"), nil
 		default:
