@@ -12,8 +12,8 @@ import (
 )
 
 var (
-	gmailIntegrationID = sdktypes.NewIntegrationIDFromName("gmail")
-	formsIntegrationID = sdktypes.NewIntegrationIDFromName("googleforms")
+	gmailIntegrationID  = sdktypes.NewIntegrationIDFromName("gmail")
+	formsIntegrationID  = sdktypes.NewIntegrationIDFromName("googleforms")
 	googleIntegrationID = sdktypes.NewIntegrationIDFromName("google")
 )
 
