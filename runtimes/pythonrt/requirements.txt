@@ -9,7 +9,7 @@ discord.py ~= 2.4
 google-api-python-client ~= 2.137
 google-auth-httplib2 ~= 0.2
 google-auth-oauthlib ~= 1.2
-google-generativeai ~= 0.7
+# google-generativeai ~= 0.7
 openai ~= 1.35
 PyGithub ~= 2.3
 redis ~= 5.0
@@ -22,9 +22,10 @@ autokitteh ~= 0.2
 
 # Runner
 
-grpcio ~= 1.65
+grpcio ~= 1.66
 # grpcio-reflection 1.65 conflicts with google-generativeai
-grpcio-reflection ~= 1.31
+# grpcio-reflection ~= 1.31
+grpcio-reflection ~= 1.66
 
 # General
 

@@ -98,7 +98,10 @@ func (s *remoteSvc) Sleep(ctx context.Context, req *pb.SleepRequest) (*pb.SleepR
 	}
 
 	secs := float64(req.DurationMs) / 1000.0
-	args := []sdktypes.Value{sdktypes.NewFloatValue(secs)}
+	args := []sdktypes.Value{
+		sdktypes.NewStringValue("sleep"),
+		sdktypes.NewFloatValue(secs),
+	}
 	_, err := s.cbs.Call(s.callCtx.Top(), s.runID, s.syscallFn, args, nil)
 	var resp pb.SleepResponse
 	if err != nil {
@@ -115,6 +118,7 @@ func (s *remoteSvc) Subscribe(ctx context.Context, req *pb.SubscribeRequest) (*p
 	}
 
 	args := []sdktypes.Value{
+		sdktypes.NewStringValue("subscribe"),
 		sdktypes.NewStringValue(req.Connection),
 		sdktypes.NewStringValue(req.Filter),
 	}
@@ -137,9 +141,10 @@ func (s *remoteSvc) NextEvent(ctx context.Context, req *pb.NextEventRequest) (*p
 		return nil, status.Error(codes.InvalidArgument, "timeout < 0")
 	}
 
-	args := make([]sdktypes.Value, len(req.SignalIds))
+	args := make([]sdktypes.Value, len(req.SignalIds)+1)
+	args[0] = sdktypes.NewStringValue("next_event")
 	for i, id := range req.SignalIds {
-		args[i] = sdktypes.NewStringValue(id)
+		args[i+1] = sdktypes.NewStringValue(id)
 	}
 	// timeout is kw only
 	kw := make(map[string]sdktypes.Value)
@@ -175,6 +180,7 @@ func (s *remoteSvc) NextEvent(ctx context.Context, req *pb.NextEventRequest) (*p
 
 func (s *remoteSvc) Unsubscribe(ctx context.Context, req *pb.UnsubscribeRequest) (*pb.UnsubscribeResponse, error) {
 	args := []sdktypes.Value{
+		sdktypes.NewStringValue("unsubsribe"),
 		sdktypes.NewStringValue(req.SignalId),
 	}
 	_, err := s.cbs.Call(s.callCtx.Top(), s.runID, s.syscallFn, args, nil)
