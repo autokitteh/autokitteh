@@ -526,6 +526,7 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktyp
 		return sdktypes.InvalidValue, err
 	}
 
+	// Wait for client Done message
 	select {
 	case out := <-py.remote.result:
 		return sdktypes.NewBytesValue(out), nil
