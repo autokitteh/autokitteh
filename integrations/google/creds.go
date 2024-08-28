@@ -32,7 +32,7 @@ func (h handler) handleCreds(w http.ResponseWriter, r *http.Request) {
 
 	// Check "Content-Type" header.
 	contentType := r.Header.Get(headerContentType)
-	if !strings.HasPrefix(contentType, contentTypeForm) {
+	if r.Method == http.MethodPost && !strings.HasPrefix(contentType, contentTypeForm) {
 		c.AbortBadRequest("unexpected content type")
 		return
 	}
@@ -66,7 +66,7 @@ func (h handler) handleCreds(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	switch r.PostFormValue("auth_type") {
+	switch r.FormValue("auth_type") {
 	// GCP service-account JSON-key connection? Save the JSON key.
 	case "", "json":
 		ctx := extrazap.AttachLoggerToContext(l, r.Context())
@@ -75,12 +75,12 @@ func (h handler) handleCreds(w http.ResponseWriter, r *http.Request) {
 
 	// User OAuth connect? Redirect to AutoKitteh's OAuth starting point.
 	case "oauth":
-		http.Redirect(w, r, oauthURL(r.PostForm, c), http.StatusFound)
+		http.Redirect(w, r, oauthURL(r.Form, c), http.StatusFound)
 
 	// Unknown mode.
 	default:
-		l.Error("Unexpected auth type", zap.String("auth_type", r.PostFormValue("auth_type")))
-		c.AbortServerError(fmt.Sprintf("unexpected auth type %q", r.PostFormValue("auth_type")))
+		l.Error("Unexpected auth type", zap.String("auth_type", r.FormValue("auth_type")))
+		c.AbortServerError(fmt.Sprintf("unexpected auth type %q", r.FormValue("auth_type")))
 	}
 }
 

@@ -56,7 +56,8 @@ func Start(l *zap.Logger, noAuth *http.ServeMux, auth *http.ServeMux, v sdkservi
 	// through AutoKitteh's auth middleware to extract the user ID from a cookie.
 	h := NewHTTPHandler(l, o, v, d)
 	auth.HandleFunc("GET "+oauthPath, h.handleOAuth)
-	auth.HandleFunc("POST "+savePath, h.handleCreds)
+	auth.HandleFunc("GET "+savePath, h.handleCreds)  // Passthrough for OAuth.
+	auth.HandleFunc("POST "+savePath, h.handleCreds) // Save JSON key.
 
 	// Event webhooks (unauthenticated by definition).
 	noAuth.HandleFunc("POST "+formsWebhookPath, h.handleFormsNotification)
