@@ -65,9 +65,8 @@ service RunnerManager {
 }
 
 message StartRequest {
-  string run_id = 1;
-  string entry_point = 2; // "main.py:on_event"
-  Event event = 3;
+  string entry_point = 1; // "main.py:on_event"
+  Event event = 2;
 }
 
 message StartResponse {
@@ -143,7 +142,7 @@ message ActivityResponse {
 }
 
 message DoneRequest {
-  string run_id = 1;
+  string runner_id = 1;
   bytes result = 2;
   string error = 3;
   repeated Frame traceback = 4;
@@ -153,7 +152,7 @@ message DoneResponse {
 }
 
 message SleepRequest {
-  string run_id = 1;
+  string runner_id = 1;
   int64 duration_ms = 2;
 }
 
@@ -162,7 +161,7 @@ message SleepResponse {
 }
 
 message SubscribeRequest {
-  string run_id = 1;
+  string runner_id = 1;
   string connection = 2;
   string filter = 3;
 }
@@ -173,7 +172,7 @@ message SubscribeResponse {
 }
 
 message NextEventRequest {
-  string run_id = 1;
+  string runner_id = 1;
   repeated string signal_ids = 2;
   int64 timeout_ms = 3;
 }
@@ -184,7 +183,7 @@ message NextEventResponse {
 }
 
 message UnsubscribeRequest {
-  string run_id = 1;
+  string runner_id = 1;
   string signal_id = 2;
 }
 
@@ -203,7 +202,7 @@ message LogResponse {
 }
 
 message PrintRequest {
-  string run_id = 1;
+  string runner_id = 1;
   string message = 2;
 }
 
