@@ -27,7 +27,7 @@ def full_func_name(fn):
     if module:
         return f"{module}.{fn.__name__}"
 
-    return fn.__name
+    return fn.__name__
 
 
 class AKCall:
