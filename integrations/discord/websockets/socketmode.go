@@ -26,6 +26,8 @@ func NewHandler(l *zap.Logger) handler {
 }
 
 func (h handler) OpenSocketModeConnection(botToken string) {
+	// TODO: fill in later to support more than one connection
+
 	dg, err := discordgo.New("Bot " + botToken)
 	if err != nil {
 		fmt.Println("Error creating Discord session,", err)
@@ -65,13 +67,13 @@ func (h handler) dispatchAsyncEventsToConnections(cids []sdktypes.ConnectionID, 
 }
 
 // Transform the received Slack event into an AutoKitteh event.
-func transformEvent(l *zap.Logger, slackEvent any, eventType string) (sdktypes.Event, error) {
+func transformEvent(l *zap.Logger, discordEvent any, eventType string) (sdktypes.Event, error) {
 	l = l.With(
 		zap.String("eventType", eventType),
-		zap.Any("event", slackEvent),
+		zap.Any("event", discordEvent),
 	)
 
-	wrapped, err := sdktypes.WrapValue(slackEvent)
+	wrapped, err := sdktypes.WrapValue(discordEvent)
 	if err != nil {
 		l.Error("Failed to wrap Slack event", zap.Error(err))
 		return sdktypes.InvalidEvent, err
