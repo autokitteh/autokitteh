@@ -17,8 +17,7 @@ func (vs Vars) WithPrefix(prefix string) Vars {
 	return kittehs.Transform(vs, func(v Var) Var {
 		return NewVar(NewSymbol(prefix + v.Name().String())).
 			SetValue(v.Value()).
-			SetSecret(v.IsSecret()).
-			SetOptional(v.IsOptional())
+			SetSecret(v.IsSecret())
 	})
 }
 

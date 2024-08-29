@@ -127,15 +127,13 @@
         },
         "secret": {
           "type": "boolean"
-        },
-        "optional": {
-          "type": "boolean"
         }
       },
       "additionalProperties": false,
       "type": "object",
       "required": [
-        "name"
+        "name",
+        "value"
       ]
     }
   }
