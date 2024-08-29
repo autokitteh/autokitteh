@@ -6,9 +6,12 @@ import (
 
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/integrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
+
+var AuthType = sdktypes.NewSymbol("authType")
 
 const (
 	// AuthPath is the URL path for our webhook to save a new autokitteh
@@ -43,12 +46,15 @@ func (h handler) HandleAuth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	at := integrations.APIToken
+
 	accountSID := r.Form.Get("account_sid")
 	username := accountSID
 	password := r.Form.Get("auth_token")
 	if password == "" {
 		username = r.Form.Get("api_key")
 		password = r.Form.Get("api_secret")
+		at = integrations.APIKey
 	}
 
 	// TODO(ENG-1156): Test the authentication details.
@@ -57,5 +63,5 @@ func (h handler) HandleAuth(w http.ResponseWriter, r *http.Request) {
 		AccountSID: accountSID,
 		Username:   username,
 		Password:   password,
-	}))
+	}).Set(AuthType, at, false))
 }

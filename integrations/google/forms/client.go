@@ -25,10 +25,10 @@ type api struct {
 	cid  sdktypes.ConnectionID
 }
 
-var integrationID = sdktypes.NewIntegrationIDFromName("googleforms")
+var IntegrationID = sdktypes.NewIntegrationIDFromName("googleforms")
 
 var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
-	IntegrationId: integrationID.String(),
+	IntegrationId: IntegrationID.String(),
 	UniqueName:    "googleforms",
 	DisplayName:   "Google Forms",
 	Description:   "Google Forms is a survey administration software that part of the Google Workspace office suite.",

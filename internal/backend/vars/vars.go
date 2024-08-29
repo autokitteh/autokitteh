@@ -31,6 +31,10 @@ func varSecretKey(secret sdktypes.Var) string {
 
 func (v *Vars) SetConnections(conns sdkservices.Connections) { v.conns = conns }
 
+// Set sets the given variables in the database. If any of the variables are
+// secrets, it stores them in the secret store. Note that this function modifies
+// the values of secret variables to be the secret key in the secret store.
+// Do not change this behavior - it's useful, even though it's unexpected.
 func (v *Vars) Set(ctx context.Context, vs ...sdktypes.Var) error {
 	for i, va := range vs {
 		if va.IsSecret() {

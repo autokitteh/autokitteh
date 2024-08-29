@@ -6,6 +6,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/integrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -48,5 +49,5 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		AccessKeyID: strings.TrimSpace(r.FormValue("access_key")),
 		SecretKey:   strings.TrimSpace(r.FormValue("secret_key")),
 		Token:       strings.TrimSpace(r.FormValue("token")),
-	}))
+	}).Set(authType, integrations.Init, false))
 }
