@@ -13,6 +13,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.autokitteh.dev/autokitteh/runtimes/pythonrt/pb"
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 	"go.uber.org/zap"
 )
 
@@ -190,10 +191,17 @@ func Test_pyExports(t *testing.T) {
 	log := zap.NewExample()
 	defer log.Sync() //nolint:all
 
+	runID := sdktypes.NewRunID()
+	xid := sdktypes.NewExecutorID(runID)
+	svc := newRemoteSvc(log, nil, runID, xid, sdktypes.Nothing)
+	err := svc.Start()
+	require.NoError(t, err)
+
+	workerAddr := fmt.Sprintf("localhost:%d", svc.port)
 	r := PyRunner{
 		log: log,
 	}
-	err := r.Start("python", tarData, nil, "")
+	err = r.Start("python", tarData, nil, workerAddr)
 	require.NoError(t, err)
 
 	defer r.Close() //nolint:all

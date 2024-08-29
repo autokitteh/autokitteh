@@ -1,5 +1,7 @@
 import json
 import pickle
+import sys
+from traceback import TracebackException, print_exception
 from base64 import b64decode
 from concurrent.futures import Future, ThreadPoolExecutor
 from multiprocessing import cpu_count
@@ -33,6 +35,28 @@ def parse_entry_point(entry_point):
         raise ValueError(f"{entry_point!r} - not a Python file")
 
     return file_name[:-3], func_name
+
+
+def exc_traceback(err):
+    """Format traceback to JSONable list."""
+    te = TracebackException.from_exception(err)
+    return [
+        pb.Frame(
+            filename=frame.filename,
+            lineno=frame.lineno,
+            code=frame.line,
+            name=frame.name,
+        )
+        for frame in te.stack
+    ]
+
+
+def display_err(fn, err):
+    func_name = full_func_name(fn)
+    log.exception("calling %s: %s", func_name, err)
+    # Print the error to stderr so it'll show in session logs
+    print(f"error: {err}", file=sys.stderr)
+    print_exception(err, file=sys.stderr)
 
 
 class Runner(rpc.RunnerServicer):
@@ -116,16 +140,18 @@ class Runner(rpc.RunnerServicer):
         try:
             result = fn(*args, **kw)
         except Exception as e:
-            log.exception("calling %s: %s", full_func_name(fn), e)
+            display_err(fn, e)
             err = e
 
         resp = pb.ExecuteResponse(
             result=pickle.dumps(result, protocol=0),
-            error=str(err) if err else "",
-            # TODO: traceback
         )
 
-        if err is not None:
+        if err:
+            resp.error = str(err)
+            tb = exc_traceback(err)
+            resp.traceback.extend(tb)
+
             context.set_code(grpc.StatusCode.ABORTED)
             context.set_details(resp.error)
 
@@ -196,15 +222,21 @@ class Runner(rpc.RunnerServicer):
         try:
             result = fn(event)
         except Exception as e:
-            log.exception("calling %s: %s", full_func_name(fn), e)
+            display_err(fn, e)
             err = e
 
+        log.info("on_event: end: result=%r, err=%r", result, err)
         req = pb.DoneRequest(
-            run_id=self.run_id,
+            runner_id=self.id,
             # TODO: We want value that AK can understand (proto.Value)
             result=pickle.dumps(result, protocol=0),
-            error=str(err) if err else "",
         )
+
+        if err:
+            req.error = str(err)
+            tb = exc_traceback(err)
+            req.traceback.extend(tb)
+
         resp = self.worker.Done(req)
         if resp.Error:
             log.error("on_event: done error: %r", resp.error)

@@ -83,7 +83,7 @@ class SysCalls:
         if not id:
             raise ValueError("empty subscription_id")
 
-        req = pb.UnsubscribeRequest(run_id=self.run_id, signal_id=id)
+        req = pb.UnsubscribeRequest(runner_id=self.runner_id, signal_id=id)
         resp = self.worker.Unsubscribe(req)
         if resp.error:
             raise SyscallError(f"unsubscribe: {resp.error}")

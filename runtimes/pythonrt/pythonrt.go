@@ -527,15 +527,45 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktyp
 	}
 
 	// Wait for client Done message
+	var done *pb.DoneRequest
 	select {
-	case out := <-py.remote.result:
-		return sdktypes.NewBytesValue(out), nil
-	case err := <-py.remote.error:
-		// TODO: traceback
-		return sdktypes.InvalidValue, fmt.Errorf("%s", err)
+	case v := <-py.remote.done:
+		done = v
 	case <-ctx.Done():
 		return sdktypes.InvalidValue, fmt.Errorf("context expired - %w", ctx.Err())
 	}
+
+	if done.Error != "" {
+		perr := sdktypes.NewProgramError(
+			sdktypes.NewStringValue(done.Error),
+			py.tracebackToLocation(done.Traceback),
+			map[string]string{"raw": done.Error},
+		)
+		return sdktypes.InvalidValue, perr.ToError()
+	}
+
+	return sdktypes.NewBytesValue(done.Result), nil
+}
+
+func (py *pySvc) tracebackToLocation(traceback []*pb.Frame) []sdktypes.CallFrame {
+	frames := make([]sdktypes.CallFrame, len(traceback))
+	for i, f := range traceback {
+		var err error
+		frames[i], err = sdktypes.CallFrameFromProto(&sdktypes.CallFramePB{
+			Name: f.Name,
+			Location: &sdktypes.CodeLocationPB{
+				Path: f.Filename,
+				Row:  f.Lineno,
+				Col:  1,
+				Name: f.Name,
+			},
+		})
+		if err != nil {
+			py.log.Warn("can't translate traceback frame", zap.Error(err))
+		}
+	}
+
+	return frames
 }
 
 // Call handles a function call from autokitteh.
@@ -550,15 +580,16 @@ func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 	fnName := fn.Name().String()
 	py.log.Info("call", zap.String("func", fnName))
 
-	py.remote.callCtx.Push(ctx)
-	defer func() {
-		py.remote.callCtx.Pop()
-	}()
-
 	if py.firstCall {
 		py.firstCall = false
+		py.remote.initialCtx = ctx
 		return py.initialCall(ctx, fnName, args, kwargs)
 	}
+
+	py.remote.callCtx = ctx
+	defer func() {
+		py.remote.callCtx = nil
+	}()
 
 	// If we're here, it's an activity call
 	req := pb.ExecuteRequest{

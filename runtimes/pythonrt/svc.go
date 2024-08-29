@@ -40,8 +40,7 @@ type remoteSvc struct {
 	callCtx    context.Context
 
 	// One of these will signal end of execution
-	result chan []byte
-	error  chan string
+	done chan *pb.DoneRequest
 }
 
 func newRemoteSvc(log *zap.Logger, cbs *sdkservices.RunCallbacks, runID sdktypes.RunID, xid sdktypes.ExecutorID, syscallFn sdktypes.Value) *remoteSvc {
@@ -51,8 +50,8 @@ func newRemoteSvc(log *zap.Logger, cbs *sdkservices.RunCallbacks, runID sdktypes
 		runID: runID,
 		xid:   xid,
 
-		result: make(chan []byte, 1),
-		error:  make(chan string, 1),
+		// Buffered so gRPC handler won't get stuck
+		done: make(chan *pb.DoneRequest, 1),
 	}
 
 	if syscallFn.IsValid() {
@@ -251,12 +250,7 @@ func (s *remoteSvc) Activity(ctx context.Context, req *pb.ActivityRequest) (*pb.
 }
 
 func (s *remoteSvc) Done(ctx context.Context, req *pb.DoneRequest) (*pb.DoneResponse, error) {
-	if req.Error != "" {
-		s.error <- req.Error
-	} else {
-		s.result <- req.Result
-	}
-
+	s.done <- req
 	return &pb.DoneResponse{}, nil
 }
 
