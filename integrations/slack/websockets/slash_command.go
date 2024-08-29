@@ -56,20 +56,15 @@ func (h handler) handleSlashCommand(e *socketmode.Event, c *socketmode.Client) {
 	// Dispatch the event to all of them, for asynchronous handling.
 	h.dispatchAsyncEventsToConnections(cids, akEvent)
 
-	// https://api.slack.com/apis/connections/socket#acknowledge
-	if len(cmd.Text) == 0 {
-		c.Ack(*e.Request)
-		return
-	}
-
 	// https://api.slack.com/apis/connections/socket#command
+	// https://api.slack.com/apis/connections/socket#acknowledge
 	c.Ack(*e.Request, map[string][]map[string]any{
 		"blocks": {
 			{
 				"type": "section",
 				"text": map[string]string{
 					"type": "mrkdwn",
-					"text": fmt.Sprintf("Your command: `%s`", cmd.Text),
+					"text": fmt.Sprintf("Your command: `%s %s`", cmd.Command, cmd.Text),
 				},
 			},
 		},
