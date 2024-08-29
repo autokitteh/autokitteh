@@ -33,7 +33,7 @@ project:
   name: my_project
   connections:
     - name: my_connection
-      integration: http
+      integration: webhooks
   triggers:
     - name: http_get_short
       connection: my_connection

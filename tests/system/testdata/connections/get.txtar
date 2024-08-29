@@ -3,7 +3,7 @@ ak project create --name my_project
 return code == 0
 output equals 'project_id: prj_00000000000000000000000001'
 
-ak connection create my_connection --project my_project --integration http -q
+ak connection create my_connection --project my_project --integration test -q
 return code == 0
 output equals 'connection_id: con_00000000000000000000000003'
 
@@ -34,7 +34,7 @@ ak connection get my_project/my_connection
 return code == 0
 output contains 'connection_id:"con_00000000000000000000000003"'
 output contains 'project_id:"prj_00000000000000000000000001"'
-output contains 'integration_id:"int_3kth00httpf1201a7ed83f7cd5"'
+output contains 'integration_id:"int_3kth00test8c093f7e9fccbf69"'
 output contains 'name:"my_connection"'
 
 ak connection get con_00000000000000000000000003 -J
@@ -45,15 +45,12 @@ output equals file expected_connection.json
 {
   "connection": {
     "connection_id": "con_00000000000000000000000003",
-    "integration_id": "int_3kth00httpf1201a7ed83f7cd5",
+    "integration_id": "int_3kth00test8c093f7e9fccbf69",
     "project_id": "prj_00000000000000000000000001",
     "name": "my_connection",
     "status": {},
-    "capabilities": {
-      "supports_connection_init": true
-    },
+    "capabilities": {},
     "links": {
-      "init_url": "/connections/con_00000000000000000000000003/init",
       "self_url": "/connections/con_00000000000000000000000003"
     }
   }

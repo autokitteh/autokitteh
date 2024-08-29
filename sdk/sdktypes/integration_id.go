@@ -29,6 +29,8 @@ func NewIntegrationIDFromName(name string) IntegrationID {
 	// a hint to the original name is encoded in the ID.
 	idName := strings.Map(func(r rune) rune {
 		switch r {
+		case '_':
+			return 'z'
 		case 'i', 'l':
 			return '1'
 		case 'o':

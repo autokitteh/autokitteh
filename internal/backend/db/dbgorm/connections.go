@@ -2,6 +2,7 @@ package dbgorm
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/google/uuid"
@@ -122,6 +123,7 @@ func (db *gormdb) CreateConnection(ctx context.Context, conn sdktypes.Connection
 		Name:          conn.Name().String(),
 		StatusCode:    int32(conn.Status().Code().ToProto()),
 		StatusMessage: conn.Status().Message(),
+		Links:         kittehs.Must1(json.Marshal(conn.Links())),
 	}
 
 	return translateError(db.createConnection(ctx, &c))
@@ -147,6 +149,11 @@ func (db *gormdb) UpdateConnection(ctx context.Context, conn sdktypes.Connection
 	if len(data) == 0 {
 		return nil
 	}
+
+	if links := conn.Links(); links != nil {
+		data["links"] = kittehs.Must1(json.Marshal(links))
+	}
+
 	return translateError(db.updateConnection(ctx, conn.ID().UUIDValue(), data))
 }
 

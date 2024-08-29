@@ -21,11 +21,11 @@ ak connection delete con_3kthcr0n000000000000000000
 return code == 0
 
 # Preconditions: create connections.
-ak connection create my_connection_1 --project my_project --integration http -q
+ak connection create my_connection_1 --project my_project --integration test -q
 return code == 0
 output equals 'connection_id: con_00000000000000000000000003'
 
-ak connection create my_connection_2 --project my_project --integration http -q
+ak connection create my_connection_2 --project my_project --integration test -q
 return code == 0
 output equals 'connection_id: con_00000000000000000000000004'
 
@@ -40,7 +40,7 @@ return code == 0
 output equals file expected_all_unformatted.json
 
 # List all connections after filtering.
-ak connection list --integration http -J
+ak connection list --integration test -J
 return code == 0
 output equals file expected_all_formatted.json
 
@@ -58,35 +58,29 @@ return code == 10
 output equals 'Error: integration not found'
 
 -- expected_all_unformatted.json --
-{"connection_id":"con_00000000000000000000000003","integration_id":"int_3kth00httpf1201a7ed83f7cd5","project_id":"prj_00000000000000000000000001","name":"my_connection_1","status":{},"capabilities":{"supports_connection_init":true},"links":{"init_url":"/connections/con_00000000000000000000000003/init","self_url":"/connections/con_00000000000000000000000003"}}
-{"connection_id":"con_00000000000000000000000004","integration_id":"int_3kth00httpf1201a7ed83f7cd5","project_id":"prj_00000000000000000000000001","name":"my_connection_2","status":{},"capabilities":{"supports_connection_init":true},"links":{"init_url":"/connections/con_00000000000000000000000004/init","self_url":"/connections/con_00000000000000000000000004"}}
+{"connection_id":"con_00000000000000000000000003","integration_id":"int_3kth00test8c093f7e9fccbf69","project_id":"prj_00000000000000000000000001","name":"my_connection_1","status":{},"capabilities":{},"links":{"self_url":"/connections/con_00000000000000000000000003"}}
+{"connection_id":"con_00000000000000000000000004","integration_id":"int_3kth00test8c093f7e9fccbf69","project_id":"prj_00000000000000000000000001","name":"my_connection_2","status":{},"capabilities":{},"links":{"self_url":"/connections/con_00000000000000000000000004"}}
 
 -- expected_all_formatted.json --
 {
   "connection_id": "con_00000000000000000000000003",
-  "integration_id": "int_3kth00httpf1201a7ed83f7cd5",
+  "integration_id": "int_3kth00test8c093f7e9fccbf69",
   "project_id": "prj_00000000000000000000000001",
   "name": "my_connection_1",
   "status": {},
-  "capabilities": {
-    "supports_connection_init": true
-  },
+  "capabilities": {},
   "links": {
-    "init_url": "/connections/con_00000000000000000000000003/init",
     "self_url": "/connections/con_00000000000000000000000003"
   }
 }
 {
   "connection_id": "con_00000000000000000000000004",
-  "integration_id": "int_3kth00httpf1201a7ed83f7cd5",
+  "integration_id": "int_3kth00test8c093f7e9fccbf69",
   "project_id": "prj_00000000000000000000000001",
   "name": "my_connection_2",
   "status": {},
-  "capabilities": {
-    "supports_connection_init": true
-  },
+  "capabilities": {},
   "links": {
-    "init_url": "/connections/con_00000000000000000000000004/init",
     "self_url": "/connections/con_00000000000000000000000004"
   }
 }

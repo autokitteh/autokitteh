@@ -2,6 +2,7 @@ package sdktypes
 
 import (
 	"errors"
+	"maps"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	connectionv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/connections/v1"
@@ -109,10 +110,16 @@ func (l Links) InitURL() string {
 
 func (p Connection) Links() Links { return p.read().Links }
 func (p Connection) WithLinks(links Links) Connection {
-	return Connection{p.forceUpdate(func(pb *ConnectionPB) { pb.Links = links })}
+	return Connection{p.forceUpdate(func(pb *ConnectionPB) {
+		if pb.Links == nil {
+			pb.Links = make(map[string]string, len(links))
+		}
+
+		maps.Copy(pb.Links, links)
+	})}
 }
 
-func (p Connection) AddLink(name, value string) Connection {
+func (p Connection) WithLink(name, value string) Connection {
 	return Connection{p.forceUpdate(func(pb *ConnectionPB) {
 		if pb.Links == nil {
 			pb.Links = make(Links)

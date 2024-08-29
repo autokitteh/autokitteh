@@ -20,7 +20,7 @@ project:
   name: my_project
   connections:
     - name: my_connection
-      integration: http
+      integration: webhooks
   triggers:
     - name: get
       connection: my_connection
@@ -46,7 +46,7 @@ project:
         "name": "my_connection"
       },
       "project": "my_project",
-      "integration": "http"
+      "integration": "webhooks"
     }
   },
   {

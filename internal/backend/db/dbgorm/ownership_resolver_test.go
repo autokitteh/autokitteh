@@ -75,7 +75,7 @@ func newDBServices(t *testing.T) (sdkservices.DBServices, *dbFixture) {
 	bldSvc := builds.New(builds.Builds{Z: z, DB: gdb}, telemetry)
 	prjSvc := projects.New(projects.Projects{Z: z, DB: gdb}, telemetry)
 	depSvc := deployments.New(z, gdb, telemetry)
-	conSvc := connections.New(connections.Connections{Z: z, DB: gdb, Integrations: intSvc})
+	conSvc := connections.New(gdb, intSvc, nil)
 	envSvc := envs.New(z, gdb)
 	evtSvc := events.New(z, gdb)
 	trgSvc := triggers.New(z, gdb, nil)

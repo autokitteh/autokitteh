@@ -64,7 +64,11 @@ func NewIntegration(
 		opt(i)
 	}
 
-	i.desc = desc.UpdateModule(mod.Describe())
+	if mod != nil {
+		desc = desc.UpdateModule(mod.Describe())
+	}
+
+	i.desc = desc
 
 	if i.connTest != nil {
 		i.desc = i.desc.WithConnectionCapabilities(i.desc.ConnectionCapabilities().WithSupportsConnectionTest(true))
@@ -90,6 +94,10 @@ func NewIntegration(
 func (i *integration) Get() sdktypes.Integration { return i.desc }
 
 func (i *integration) Configure(ctx context.Context, cid sdktypes.ConnectionID) (vs map[string]sdktypes.Value, cfg map[string]string, err error) {
+	if i.mod == nil {
+		return nil, nil, nil
+	}
+
 	if vs, err = i.mod.Configure(ctx, sdktypes.NewExecutorID(i.desc.ID()), cid); err != nil {
 		return
 	}

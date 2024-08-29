@@ -2,32 +2,11 @@ version: v1
 
 project:
   name: http
-  vars:
-    - name: DOG
-      value: "woof"
-    - name: CAT
-      value: "meow"
   connections:
-    - name: myhttp
-      integration: "http"
-      vars:
-        - name: COW
-          value: "moo"
-        - name: PIG
-          value: "oink"
+    - name: mywebhooks
+      integration: webhooks
   triggers:
     - name: get
       event_type: get
-      connection: myhttp
+      connection: mywebhooks
       entrypoint: http.star:on_http_get
-      data:
-        path: "get"
-    - name: post
-      filter: "data.method == 'POST'"
-      connection: myhttp
-      entrypoint: http.star:on_http_post
-    - name: test
-      connection: myhttp
-      call: http.star:on_http_test
-      data:
-        path: "/test/{a}/{b...}"

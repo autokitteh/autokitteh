@@ -80,6 +80,7 @@ type Connection struct {
 	Name          string
 	StatusCode    int32 `gorm:"index"`
 	StatusMessage string
+	Links         datatypes.JSON
 
 	DeletedAt gorm.DeletedAt `gorm:"index"`
 
@@ -91,6 +92,11 @@ type Connection struct {
 }
 
 func ParseConnection(c Connection) (sdktypes.Connection, error) {
+	var links map[string]string
+	if err := json.Unmarshal(c.Links, &links); err != nil {
+		return sdktypes.InvalidConnection, fmt.Errorf("links: %w", err)
+	}
+
 	conn, err := sdktypes.StrictConnectionFromProto(&sdktypes.ConnectionPB{
 		ConnectionId:  sdktypes.NewIDFromUUID[sdktypes.ConnectionID](&c.ConnectionID).String(),
 		IntegrationId: sdktypes.NewIDFromUUID[sdktypes.IntegrationID](c.IntegrationID).String(),
@@ -100,6 +106,7 @@ func ParseConnection(c Connection) (sdktypes.Connection, error) {
 			Code:    commonv1.Status_Code(c.StatusCode),
 			Message: c.StatusMessage,
 		},
+		Links: links,
 	})
 	if err != nil {
 		return sdktypes.InvalidConnection, fmt.Errorf("invalid connection record: %w", err)
