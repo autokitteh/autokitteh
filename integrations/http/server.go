@@ -12,6 +12,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/integrations/internal/extrazap"
+	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -43,20 +44,20 @@ func routePrefix(ns string) string {
 
 // Start initializes all the HTTP handlers of the HTTP integration.
 // This includes connection UIs, initialization webhooks, and event webhooks.
-func Start(l *zap.Logger, noAuth *http.ServeMux, auth *http.ServeMux, d sdkservices.Dispatcher, c sdkservices.Connections, p sdkservices.Projects) {
+func Start(l *zap.Logger, muxes *muxes.Muxes, d sdkservices.Dispatcher, c sdkservices.Connections, p sdkservices.Projects) {
 	// Connection UI.
 	uiPath := fmt.Sprintf("GET %s/", desc.ConnectionURL().Path)
-	noAuth.Handle(uiPath, http.FileServer(http.FS(static.HTTPWebContent)))
+	muxes.NoAuth.Handle(uiPath, http.FileServer(http.FS(static.HTTPWebContent)))
 
 	// Init webhooks save connection vars (via "c.Finalize" calls), so they need
 	// to have an authenticated user context, so the DB layer won't reject them.
 	// For this purpose, init webhooks are managed by the "auth" mux, which passes
 	// through AutoKitteh's auth middleware to extract the user ID from a cookie.
 	h := handler{logger: l, dispatcher: d, conns: c, projs: p}
-	auth.HandleFunc(savePath, h.handleAuth)
+	muxes.Auth.HandleFunc(savePath, h.handleAuth)
 
 	// Event webhooks (unauthenticated by definition).
-	noAuth.Handle(routePrefix("{ns}")+"*", h)
+	muxes.NoAuth.Handle(routePrefix("{ns}")+"*", h)
 }
 
 func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

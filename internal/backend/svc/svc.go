@@ -45,7 +45,6 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/health/healthchecker"
 	"go.autokitteh.dev/autokitteh/internal/backend/health/healthreporter"
 	"go.autokitteh.dev/autokitteh/internal/backend/httpsvc"
-	"go.autokitteh.dev/autokitteh/internal/backend/integrations"
 	"go.autokitteh.dev/autokitteh/internal/backend/integrationsgrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/logger"
 	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
@@ -248,7 +247,6 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		fx.Invoke(triggersgrpcsvc.Init),
 		fx.Invoke(varsgrpcsvc.Init),
 		Component("telemetry", telemetry.Configs, fx.Provide(telemetry.New)),
-
 		Component(
 			"http",
 			httpsvc.Configs,
@@ -308,12 +306,6 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		}),
 		fx.Invoke(dashboardsvc.Init),
 		fx.Invoke(oauth.InitWebhook),
-		Component("integrations", integrations.Configs, fx.Provide(integrations.New)),
-		fx.Invoke(func(lc fx.Lifecycle, l *zap.Logger, muxes *muxes.Muxes, vs sdkservices.Vars, o sdkservices.OAuth, d dispatcher.Dispatcher, c sdkservices.Connections, p sdkservices.Projects) {
-			HookOnStart(lc, func(ctx context.Context) error {
-				return integrations.Start(ctx, l, muxes.NoAuth, muxes.Auth, vs, o, d, c, p)
-			})
-		}),
 		fx.Invoke(func(z *zap.Logger, muxes *muxes.Muxes) {
 			srv := http.FileServer(http.FS(static.RootWebContent))
 			muxes.NoAuth.Handle("GET /static/", http.StripPrefix("/static/", srv))
@@ -374,6 +366,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 				})
 			}),
 		),
+		integrationsFXOption(),
 		fx.Invoke(func(z *zap.Logger, lc fx.Lifecycle, muxes *muxes.Muxes, h healthreporter.HealthReporter) {
 			var ready atomic.Bool
 

@@ -6,6 +6,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/web/static"
 )
@@ -26,40 +27,40 @@ const (
 
 // Start initializes all the HTTP handlers of all the Google integrations.
 // This includes connection UIs, initialization webhooks, and event webhooks.
-func Start(l *zap.Logger, noAuth *http.ServeMux, auth *http.ServeMux, v sdkservices.Vars, o sdkservices.OAuth, d sdkservices.Dispatcher) {
+func Start(l *zap.Logger, muxes *muxes.Muxes, v sdkservices.Vars, o sdkservices.OAuth, d sdkservices.Dispatcher) {
 	uiPath := "GET " + desc.ConnectionURL().Path + "/"
 
 	// Connection UI.
-	noAuth.Handle(uiPath, http.FileServer(http.FS(static.GoogleWebContent)))
+	muxes.NoAuth.Handle(uiPath, http.FileServer(http.FS(static.GoogleWebContent)))
 
 	urlPath := strings.ReplaceAll(uiPath, "google", "gmail")
-	noAuth.Handle(urlPath, http.FileServer(http.FS(static.GmailWebContent)))
+	muxes.NoAuth.Handle(urlPath, http.FileServer(http.FS(static.GmailWebContent)))
 
 	urlPath = strings.ReplaceAll(uiPath, "google", "googlecalendar")
-	noAuth.Handle(urlPath, http.FileServer(http.FS(static.GoogleCalendarWebContent)))
+	muxes.NoAuth.Handle(urlPath, http.FileServer(http.FS(static.GoogleCalendarWebContent)))
 
 	urlPath = strings.ReplaceAll(uiPath, "google", "googlechat")
-	noAuth.Handle(urlPath, http.FileServer(http.FS(static.GoogleChatWebContent)))
+	muxes.NoAuth.Handle(urlPath, http.FileServer(http.FS(static.GoogleChatWebContent)))
 
 	urlPath = strings.ReplaceAll(uiPath, "google", "googledrive")
-	noAuth.Handle(urlPath, http.FileServer(http.FS(static.GoogleDriveWebContent)))
+	muxes.NoAuth.Handle(urlPath, http.FileServer(http.FS(static.GoogleDriveWebContent)))
 
 	urlPath = strings.ReplaceAll(uiPath, "google", "googleforms")
-	noAuth.Handle(urlPath, http.FileServer(http.FS(static.GoogleFormsWebContent)))
+	muxes.NoAuth.Handle(urlPath, http.FileServer(http.FS(static.GoogleFormsWebContent)))
 
 	urlPath = strings.ReplaceAll(uiPath, "google", "googlesheets")
-	noAuth.Handle(urlPath, http.FileServer(http.FS(static.GoogleSheetsWebContent)))
+	muxes.NoAuth.Handle(urlPath, http.FileServer(http.FS(static.GoogleSheetsWebContent)))
 
 	// Init webhooks save connection vars (via "c.Finalize" calls), so they need
 	// to have an authenticated user context, so the DB layer won't reject them.
 	// For this purpose, init webhooks are managed by the "auth" mux, which passes
 	// through AutoKitteh's auth middleware to extract the user ID from a cookie.
 	h := NewHTTPHandler(l, o, v, d)
-	auth.HandleFunc("GET "+oauthPath, h.handleOAuth)
-	auth.HandleFunc("GET "+savePath, h.handleCreds)  // Passthrough for OAuth.
-	auth.HandleFunc("POST "+savePath, h.handleCreds) // Save JSON key.
+	muxes.Auth.HandleFunc("GET "+oauthPath, h.handleOAuth)
+	muxes.Auth.HandleFunc("GET "+savePath, h.handleCreds)  // Passthrough for OAuth.
+	muxes.Auth.HandleFunc("POST "+savePath, h.handleCreds) // Save JSON key.
 
 	// Event webhooks (unauthenticated by definition).
-	noAuth.HandleFunc("POST "+formsWebhookPath, h.handleFormsNotification)
-	noAuth.HandleFunc("POST "+gmailWebhookPath, h.handleGmailNotification)
+	muxes.NoAuth.HandleFunc("POST "+formsWebhookPath, h.handleFormsNotification)
+	muxes.NoAuth.HandleFunc("POST "+gmailWebhookPath, h.handleGmailNotification)
 }
