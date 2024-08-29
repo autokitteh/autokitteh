@@ -62,7 +62,7 @@ func (s Svc) setVar(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	v := sdktypes.NewVar(req.Name).SetValue(req.Value).SetSecret(req.IsSecret).SetOptional(req.IsOptional).WithScopeID(sid)
+	v := sdktypes.NewVar(req.Name).SetValue(req.Value).SetSecret(req.IsSecret).WithScopeID(sid)
 
 	if err := s.Svcs.Vars().Set(r.Context(), v); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -87,12 +87,9 @@ func (s Svc) genVarsList(w http.ResponseWriter, r *http.Request, sid sdktypes.Va
 			}
 
 			n := cv.Name().String()
-			if cv.IsOptional() {
-				n = "<em>" + n + "</em>"
-			}
 
 			return []template.HTML{
-				template.HTML(`<input type="checkbox" name="vars" value="` + cv.Name().String() + `">`),
+				template.HTML(`<input type="checkbox" name="vars" value="` + n + `">`),
 				template.HTML(n),
 				template.HTML(v),
 			}

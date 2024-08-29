@@ -151,7 +151,6 @@ func (db *gormdb) SetVars(ctx context.Context, vars []sdktypes.Var) error {
 			Name:          v.Name().String(),
 			Value:         v.Value(),
 			IsSecret:      v.IsSecret(),
-			IsOptional:    v.IsOptional(),
 			IntegrationID: iid.UUIDValue(),
 		}
 		if err := db.setVar(ctx, &vr); err != nil {
@@ -179,7 +178,7 @@ func (db *gormdb) GetVars(ctx context.Context, sid sdktypes.VarScopeID, names []
 				return sdktypes.InvalidVar, err
 			}
 
-			return sdktypes.NewVar(n).SetValue(r.Value).SetSecret(r.IsSecret).SetOptional(r.IsOptional).WithScopeID(sid), nil
+			return sdktypes.NewVar(n).SetValue(r.Value).SetSecret(r.IsSecret).WithScopeID(sid), nil
 		},
 	)
 }
