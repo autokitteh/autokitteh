@@ -33,7 +33,7 @@ func Start(l *zap.Logger, muxes *muxes.Muxes, v sdkservices.Vars, d sdkservices.
 	// through AutoKitteh's auth middleware to extract the user ID from a cookie.
 	muxes.Auth.Handle("POST "+savePath, NewHTTPHandler(l))
 
-	wsh := websockets.NewHandler(l)
+	wsh := websockets.NewHandler(l, v, d, desc)
 
 	// Initialize WebSocket pool.
 	cids, err := v.FindConnectionIDs(context.Background(), integrationID, vars.BotTokenName, "")
@@ -50,7 +50,8 @@ func Start(l *zap.Logger, muxes *muxes.Muxes, v sdkservices.Vars, d sdkservices.
 		}
 
 		botToken := data.GetValue(vars.BotTokenName)
+		botID := data.GetValue(vars.BotID)
 
-		wsh.OpenSocketModeConnection(botToken)
+		wsh.OpenSocketModeConnection(botID, botToken)
 	}
 }

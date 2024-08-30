@@ -2,7 +2,7 @@ package websockets
 
 import (
 	"context"
-	"fmt"
+	"sync"
 
 	"github.com/bwmarrin/discordgo"
 	"go.uber.org/zap"
@@ -17,37 +17,51 @@ type handler struct {
 	logger        *zap.Logger
 	vars          sdkservices.Vars
 	dispatcher    sdkservices.Dispatcher
+	integration   sdktypes.Integration
 	integrationID sdktypes.IntegrationID
 }
 
-// TODO: fill in the remaining fields
-func NewHandler(l *zap.Logger) handler {
-	return handler{logger: l}
+func NewHandler(l *zap.Logger, v sdkservices.Vars, d sdkservices.Dispatcher, i sdktypes.Integration) handler {
+	return handler{
+		logger:        l,
+		vars:          v,
+		dispatcher:    d,
+		integration:   i,
+		integrationID: i.ID(),
+	}
 }
 
-func (h handler) OpenSocketModeConnection(botToken string) {
-	// TODO: fill in later to support more than one connection
+var (
+	webSocketClients = make(map[string]*discordgo.Session)
+
+	mu = &sync.Mutex{}
+)
+
+func (h handler) OpenSocketModeConnection(botID, botToken string) {
+	mu.Lock()
+	defer mu.Unlock()
+
+	// No need to open multiple connections for the same app - yet.
+	if _, ok := webSocketClients[botID]; ok {
+		return
+	}
 
 	dg, err := discordgo.New("Bot " + botToken)
 	if err != nil {
-		fmt.Println("Error creating Discord session,", err)
+		h.logger.Error("Error creating Discord session", zap.Error(err))
 		return
 	}
 
-	// Register your event handlers here
-	dg.AddHandler(h.HandleDiscordMessage)
+	addHandlers(dg, h)
 
 	// Open a WebSocket connection to Discord
 	err = dg.Open()
-	if err != nil {
-		fmt.Println("Error opening connection,", err)
-		return
+
+	if err == nil {
+		webSocketClients[botID] = dg
+		return // Normal process termination.
 	}
-
-	fmt.Println("Bot is now running.")
-
-	// Prevent the program from exiting
-	select {}
+	h.logger.Error("Failed to open Discord WebSocket connection", zap.Error(err))
 }
 
 func (h handler) dispatchAsyncEventsToConnections(cids []sdktypes.ConnectionID, e sdktypes.Event) {
@@ -66,7 +80,7 @@ func (h handler) dispatchAsyncEventsToConnections(cids []sdktypes.ConnectionID, 
 	}
 }
 
-// Transform the received Slack event into an AutoKitteh event.
+// Transform the received Discord event into an AutoKitteh event.
 func transformEvent(l *zap.Logger, discordEvent any, eventType string) (sdktypes.Event, error) {
 	l = l.With(
 		zap.String("eventType", eventType),
@@ -75,13 +89,13 @@ func transformEvent(l *zap.Logger, discordEvent any, eventType string) (sdktypes
 
 	wrapped, err := sdktypes.WrapValue(discordEvent)
 	if err != nil {
-		l.Error("Failed to wrap Slack event", zap.Error(err))
+		l.Error("Failed to wrap Discord event", zap.Error(err))
 		return sdktypes.InvalidEvent, err
 	}
 
 	data, err := wrapped.ToStringValuesMap()
 	if err != nil {
-		l.Error("Failed to convert wrapped Slack event", zap.Error(err))
+		l.Error("Failed to convert wrapped Discord event", zap.Error(err))
 		return sdktypes.InvalidEvent, err
 	}
 
@@ -98,4 +112,15 @@ func transformEvent(l *zap.Logger, discordEvent any, eventType string) (sdktypes
 	}
 
 	return akEvent, nil
+}
+
+func addHandlers(dg *discordgo.Session, h handler) {
+	// messages
+	dg.AddHandler(h.HandleMessageCreate)
+	dg.AddHandler(h.HandleMessageDelete)
+	dg.AddHandler(h.HandleMessageUpdate)
+
+	// guilds
+	dg.AddHandler(h.HandleGuildMemberAdd)
+	dg.AddHandler(h.HandleGuildMemberRemove)
 }

@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/bwmarrin/discordgo"
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/integrations"
@@ -45,7 +46,31 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	bt := r.Form.Get("botToken")
+
+	// get the bot's ID
+	bot, err := infoWithToken(bt)
+	if err != nil {
+		l.Warn("Failed to create new bot", zap.Error(err))
+		c.AbortBadRequest("failed to create new bot")
+		return
+	}
+
 	c.Finalize(sdktypes.NewVars().
-		Set(vars.BotTokenName, r.Form.Get("botToken"), true).
+		Set(vars.BotID, bot.ID, false).
+		Set(vars.BotTokenName, bt, true).
 		Set(authType, integrations.Init, false))
+}
+
+func infoWithToken(botToken string) (*discordgo.User, error) {
+	dg, err := discordgo.New("Bot " + botToken)
+	if err != nil {
+		return nil, err
+	}
+
+	bot, err := dg.User("@me")
+	if err != nil {
+		return nil, err
+	}
+	return bot, nil
 }

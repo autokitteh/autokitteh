@@ -9,22 +9,27 @@ import (
 	"go.autokitteh.dev/autokitteh/integrations/discord/internal/vars"
 )
 
-const (
-	MessagePath = "/discord/message"
-)
-
-func (h *handler) HandleDiscordMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
-	// Transform the received Slack event into an AutoKitteh event.
-	akEvent, err := transformEvent(h.logger, m, "message")
+func (h *handler) handleMessage(_ *discordgo.Session, m any, eventType string) {
+	akEvent, err := transformEvent(h.logger, m, eventType)
 	if err != nil {
 		return
 	}
-	// Retrieve all the relevant connections for this event.
 	cids, err := h.vars.FindConnectionIDs(context.Background(), h.integrationID, vars.BotTokenName, "")
 	if err != nil {
 		h.logger.Error("Failed to find connection IDs", zap.Error(err))
 		return
 	}
-	// Dispatch the event to all of them, for asynchronous handling.
 	h.dispatchAsyncEventsToConnections(cids, akEvent)
+}
+
+func (h *handler) HandleMessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
+	h.handleMessage(s, m, "message_create")
+}
+
+func (h *handler) HandleMessageUpdate(s *discordgo.Session, m *discordgo.MessageUpdate) {
+	h.handleMessage(s, m, "message_update")
+}
+
+func (h *handler) HandleMessageDelete(s *discordgo.Session, m *discordgo.MessageDelete) {
+	h.handleMessage(s, m, "message_delete")
 }

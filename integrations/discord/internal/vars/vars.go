@@ -2,4 +2,7 @@ package vars
 
 import "go.autokitteh.dev/autokitteh/sdk/sdktypes"
 
-var BotTokenName = sdktypes.NewSymbol("BotToken")
+var (
+	BotTokenName = sdktypes.NewSymbol("BotToken")
+	BotID        = sdktypes.NewSymbol("BotID")
+)
