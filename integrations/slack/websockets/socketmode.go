@@ -50,7 +50,7 @@ func (h handler) OpenSocketModeConnection(appID, botToken, appToken string) {
 	defer mu.Unlock()
 
 	// No need to open multiple connections for the same app - yet.
-	// See: https://docs.autokitteh.com/tutorials/new_connections/slack.
+	// See: https://docs.autokitteh.com/integrations/slack/connection
 	if _, ok := webSocketClients[appID]; ok {
 		return
 	}
