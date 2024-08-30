@@ -119,8 +119,4 @@ func addHandlers(dg *discordgo.Session, h handler) {
 	dg.AddHandler(h.HandleMessageCreate)
 	dg.AddHandler(h.HandleMessageDelete)
 	dg.AddHandler(h.HandleMessageUpdate)
-
-	// guilds
-	dg.AddHandler(h.HandleGuildMemberAdd)
-	dg.AddHandler(h.HandleGuildMemberRemove)
 }
