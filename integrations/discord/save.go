@@ -59,7 +59,7 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	c.Finalize(sdktypes.NewVars().
 		Set(vars.BotID, bot.ID, false).
 		Set(vars.BotTokenName, bt, true).
-		Set(authType, integrations.Init, false))
+		Set(vars.AuthType, integrations.Init, false))
 }
 
 func infoWithToken(botToken string) (*discordgo.User, error) {
