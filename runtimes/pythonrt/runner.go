@@ -112,8 +112,6 @@ func (r *PyRunner) Start(pyExe string, tarData []byte, env map[string]string, wo
 	cmd.Env = overrideEnv(env, r.runnerDir, r.userDir)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	//cmd.Stdout = r.stdout
-	//cmd.Stderr = r.stderr
 
 	if err := cmd.Start(); err != nil {
 		return fmt.Errorf("start runner - %w", err)

@@ -52,8 +52,6 @@ type pySvc struct {
 	runID        sdktypes.RunID
 	cbs          *sdkservices.RunCallbacks
 	exports      map[string]sdktypes.Value
-	stdout       *streamLogger
-	stderr       *streamLogger
 	pyExe        string
 	fileName     string // main user code file name (entry point)
 	remote       *remoteSvc
@@ -356,9 +354,7 @@ func (py *pySvc) Run(
 	}()
 
 	runner := PyRunner{
-		log:    py.log,
-		stdout: newStreamLogger("[stdout] ", cbs.Print, runID),
-		stderr: newStreamLogger("[stderr] ", cbs.Print, runID),
+		log: py.log,
 	}
 	workerAddr := fmt.Sprintf("localhost:%d", rsvc.port)
 	if err := runner.Start(py.pyExe, tarData, envMap, workerAddr); err != nil {
@@ -490,9 +486,6 @@ func (py *pySvc) kwToEvent(ctx context.Context, kwargs map[string]sdktypes.Value
 func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
 	defer func() {
 		py.log.Info("Python subprocess cleanup after initial call is done")
-
-		py.stderr.Close()
-		py.stdout.Close()
 
 		if err := py.runner.Close(); err != nil {
 			py.log.Warn("close runner", zap.Error(err))

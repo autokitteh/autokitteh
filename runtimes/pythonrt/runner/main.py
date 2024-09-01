@@ -1,12 +1,14 @@
+import builtins
 import json
 import pickle
 import sys
-from traceback import TracebackException, print_exception
 from base64 import b64decode
 from concurrent.futures import Future, ThreadPoolExecutor
+from io import StringIO
 from multiprocessing import cpu_count
 from pathlib import Path
 from threading import Lock
+from traceback import TracebackException, print_exception
 
 import grpc
 import loader
@@ -74,6 +76,7 @@ class Runner(rpc.RunnerServicer):
         self.calls = {}  # id -> (fn, args, kw)
         self.replies = {}  # id -> future
         self._next_id = 0
+        self._orig_print = print
 
     def Exports(self, request: pb.ExportsRequest, context: grpc.ServicerContext):
         if request.file_name == "":
@@ -97,6 +100,8 @@ class Runner(rpc.RunnerServicer):
         call = AKCall(self)
         mod = loader.load_code(self.code_dir, call, mod_name)
         call.set_module(mod)
+
+        builtins.print = self.ak_print  # Inject print
 
         fn = getattr(mod, fn_name, None)
         if not callable(fn):
@@ -248,6 +253,22 @@ class Runner(rpc.RunnerServicer):
         with self.lock:
             self._next_id += 1
             return f"call_id_{self._next_id:03d}"
+
+    def ak_print(self, *objects, sep=" ", end="\n", file=None, flush=False):
+        io = StringIO()
+        self._orig_print(*objects, sep=sep, end=end, flush=flush, file=io)
+        text = io.getvalue()
+        self._orig_print(text, file=file)  # Print also to original destination
+
+        req = pb.PrintRequest(
+            runner_id=self.id,
+            message=text,
+        )
+
+        try:
+            self.worker.Print(req)
+        except grpc.RpcError as err:
+            log.error("print: %s", err)
 
 
 def is_valid_port(port):
