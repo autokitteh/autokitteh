@@ -8,6 +8,8 @@ type Vars struct {
 	OAuthData string `var:"secret"`
 	JSON      string `var:"secret"`
 
+	CalendarID string
+
 	FormID               string
 	FormResponsesWatchID string
 	FormSchemaWatchID    string
@@ -18,6 +20,8 @@ var (
 
 	OAuthData = sdktypes.NewSymbol("OAuthData")
 	JSON      = sdktypes.NewSymbol("JSON")
+
+	CalendarID = sdktypes.NewSymbol("CalendarID")
 
 	FormID               = sdktypes.NewSymbol("FormID")
 	FormResponsesWatchID = sdktypes.NewSymbol("FormResponsesWatchID")
