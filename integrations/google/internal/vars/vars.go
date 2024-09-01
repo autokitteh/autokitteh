@@ -22,8 +22,10 @@ var (
 	JSON      = sdktypes.NewSymbol("JSON")
 
 	CalendarID               = sdktypes.NewSymbol("CalendarID")
+	CalendarEventsWatchID    = sdktypes.NewSymbol("CalendarEventsWatchID")
 	CalendarEventsWatchResID = sdktypes.NewSymbol("CalendarEventsWatchResID")
 	CalendarEventsWatchExp   = sdktypes.NewSymbol("CalendarEventsWatchExp")
+	CalendarEventsSyncToken  = sdktypes.NewSymbol("CalendarEventsSyncToken")
 
 	FormID               = sdktypes.NewSymbol("FormID")
 	FormResponsesWatchID = sdktypes.NewSymbol("FormResponsesWatchID")

@@ -44,8 +44,15 @@ func UpdateWatches(ctx context.Context, v sdkservices.Vars, connID sdktypes.Conn
 		return err
 	}
 
-	// And save its IDs.
+	// Save all of its IDs.
 	err = a.saveWatchChannel(ctx, connID, watchChannel)
+	if err != nil {
+		return err
+	}
+
+	// Initialize the watch channel's sync token, for event enrichment
+	// (https://developers.google.com/calendar/api/guides/sync).
+	err = a.syncEvents(ctx, calID)
 	if err != nil {
 		return err
 	}
@@ -58,6 +65,7 @@ func (a api) saveWatchChannel(ctx context.Context, cid sdktypes.ConnectionID, wc
 	sid := sdktypes.NewVarScopeID(cid)
 
 	vs := sdktypes.NewVars().
+		Set(vars.CalendarEventsWatchID, wc.Id, false).
 		Set(vars.CalendarEventsWatchResID, wc.ResourceId, false).
 		Set(vars.CalendarEventsWatchExp, expiration, false)
 

@@ -1,8 +1,8 @@
-package forms
+package calendar
 
 import (
 	"context"
-	"strings"
+	"errors"
 
 	"go.uber.org/zap"
 	"google.golang.org/api/forms/v1"
@@ -13,47 +13,42 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-func ConstructEvent(ctx context.Context, vars sdkservices.Vars, formsEvent map[string]any, cids []sdktypes.ConnectionID) (sdktypes.Event, error) {
+func ConstructEvent(ctx context.Context, vars sdkservices.Vars, cids []sdktypes.ConnectionID) (sdktypes.Event, error) {
 	l := extrazap.ExtractLoggerFromContext(ctx)
 	if len(cids) == 0 {
 		return sdktypes.InvalidEvent, nil
 	}
 
-	// Enrich the event with relevant data, using API calls.
-	a := api{vars: vars, cid: cids[0]}
-	switch WatchEventType(formsEvent["event_type"].(string)) {
-	case WatchSchemaChanges:
-		form, err := a.getForm(ctx)
-		if err != nil {
-			l.Error("Failed to get form", zap.Error(err))
-			// Don't abort, dispatch the event without this data.
-		}
-		formsEvent["form"] = form
+	// Enrich the event with relevant data, using the connection's sync token.
+	a := api{logger: l, vars: vars, cid: cids[0]}
+	events, err := a.listEvents(ctx)
+	if err != nil {
+		l.Error("Failed to list events", zap.Error(err))
+		return sdktypes.InvalidEvent, err
+	}
 
-	case WatchNewResponses:
-		responses, err := a.listResponses(ctx)
-		if err != nil {
-			l.Error("Failed to list responses", zap.Error(err))
-			// Don't abort, dispatch the event without this data.
-		}
-		formsEvent["response"] = lastResponse(responses)
+	if len(events) != 1 {
+		l.Error("Number of Google Calendar events for incoming notification != 1",
+			zap.Int("numEvents", len(events)),
+		)
+		return sdktypes.InvalidEvent, errors.New("unexpected Google Calendar events")
 	}
 
 	// Convert the raw data to an AutoKitteh event.
-	wrapped, err := sdktypes.WrapValue(formsEvent)
+	wrapped, err := sdktypes.WrapValue(events[0])
 	if err != nil {
-		l.Error("Failed to wrap Google Forms event", zap.Error(err))
+		l.Error("Failed to wrap Google Calendar event", zap.Error(err))
 		return sdktypes.InvalidEvent, err
 	}
 
 	data, err := wrapped.ToStringValuesMap()
 	if err != nil {
-		l.Error("Failed to convert wrapped Google Forms event", zap.Error(err))
+		l.Error("Failed to convert wrapped Google Calendar event", zap.Error(err))
 		return sdktypes.InvalidEvent, err
 	}
 
 	akEvent, err := sdktypes.EventFromProto(&sdktypes.EventPB{
-		EventType: strings.ToLower(formsEvent["event_type"].(string)),
+		EventType: "calendar_event",
 		Data:      kittehs.TransformMapValues(data, sdktypes.ToProto),
 	})
 	if err != nil {

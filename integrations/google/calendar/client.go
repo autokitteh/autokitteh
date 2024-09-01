@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"time"
 
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
@@ -28,10 +29,10 @@ type api struct {
 	cid    sdktypes.ConnectionID
 }
 
-var integrationID = sdktypes.NewIntegrationIDFromName("googlecalendar")
+var IntegrationID = sdktypes.NewIntegrationIDFromName("googlecalendar")
 
 var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
-	IntegrationId: integrationID.String(),
+	IntegrationId: IntegrationID.String(),
 	UniqueName:    "googlecalendar",
 	DisplayName:   "Google Calendar",
 	Description:   "Google Calendar is a time-management and scheduling calendar service developed by Google.",
@@ -210,4 +211,107 @@ func (a api) stopWatch(ctx context.Context, cid sdktypes.ConnectionID) error {
 		return err
 	}
 	return nil
+}
+
+// https://developers.google.com/calendar/api/guides/sync
+// TODO: Store event start times in DB, to support upcoming-event notifs.
+func (a api) syncEvents(ctx context.Context, calID string) error {
+	client, err := a.calendarClient(ctx)
+	if err != nil {
+		return err
+	}
+
+	// Initial request.
+	req := client.Events.List(calID).ShowHiddenInvitations(true).SingleEvents(true)
+	req = req.TimeMin(time.Now().UTC().Format(time.RFC3339))
+	resp, err := req.Do()
+	if err != nil {
+		return err
+	}
+
+	// https://developers.google.com/calendar/api/guides/pagination
+	for resp.NextPageToken != "" {
+		a.logger.Debug("Requesting next page of Google Calendar events",
+			zap.String("pageToken", resp.NextPageToken),
+		)
+
+		req = req.PageToken(resp.NextPageToken)
+		resp, err = req.Do()
+		if err != nil {
+			return err
+		}
+	}
+
+	// Update the sync token for the next request.
+	v := sdktypes.NewVar(vars.CalendarEventsSyncToken).SetValue(resp.NextSyncToken)
+	if err = a.vars.Set(ctx, v.WithScopeID(sdktypes.NewVarScopeID(a.cid))); err != nil {
+		return err
+	}
+	a.logger.Debug("Google Calendar connection's new events sync token",
+		zap.String("cid", a.cid.String()),
+		zap.String("syncToken", resp.NextSyncToken),
+	)
+
+	return nil
+}
+
+// https://developers.google.com/calendar/api/v3/reference/events/list
+func (a api) listEvents(ctx context.Context) ([]*calendar.Event, error) {
+	client, err := a.calendarClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	vs, err := a.vars.Get(ctx, sdktypes.NewVarScopeID(a.cid))
+	if err != nil {
+		return nil, err
+	}
+
+	// https://developers.google.com/calendar/api/guides/sync
+	// TODO: Does this fail too because there's no AK user ID?
+	syncToken := vs.Get(vars.CalendarEventsSyncToken).Value()
+	a.logger.Debug("Google Calendar connection's existing events sync token",
+		zap.String("cid", a.cid.String()),
+		zap.String("syncToken", syncToken),
+	)
+
+	var events []*calendar.Event
+
+	// TODO: Does this fail too because there's no AK user ID?
+	req := client.Events.List(vs.Get(vars.CalendarID).Value())
+	req = req.ShowHiddenInvitations(true).SingleEvents(true)
+	// TODO: Does this fail too because there's no AK user ID?
+	resp, err := req.SyncToken(vs.Get(vars.CalendarEventsSyncToken).Value()).Do()
+	if err != nil {
+		return nil, err
+	}
+	events = append(events, resp.Items...)
+
+	// https://developers.google.com/calendar/api/guides/pagination
+	for resp.NextPageToken != "" {
+		a.logger.Debug("Requesting next page of Google Calendar events",
+			zap.String("pageToken", resp.NextPageToken),
+		)
+
+		req = req.PageToken(resp.NextPageToken)
+		resp, err = req.Do()
+		if err != nil {
+			return nil, err
+		}
+
+		events = append(events, resp.Items...)
+	}
+
+	// TODO: Update the sync token for the next request.
+	// (Currently blocked because this handler can't have an authenticated AK user ID).
+	// v := sdktypes.NewVar(vars.CalendarEventsSyncToken).SetValue(resp.NextSyncToken)
+	// if err = a.vars.Set(ctx, v.WithScopeID(sdktypes.NewVarScopeID(a.cid))); err != nil {
+	// 	return nil, err
+	// }
+	// a.logger.Debug("Google Calendar connection's new events sync token",
+	// 	zap.String("cid", a.cid.String()),
+	// 	zap.String("syncToken", resp.NextSyncToken),
+	// )
+
+	return events, nil
 }

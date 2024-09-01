@@ -19,6 +19,8 @@ const (
 	// connections, after users submit them via a web form.
 	savePath = "/google/save"
 
+	// calWebhookPath is the URL path to receive incoming Google Calendar push notifications.
+	calWebhookPath = "/googlecalendar/notif"
 	// formsWebhookPath is the URL path to receive incoming Google Forms push notifications.
 	formsWebhookPath = "/googleforms/notif"
 	// gmailWebhookPath is the URL path to receive incoming Gmail push notifications.
@@ -61,6 +63,7 @@ func Start(l *zap.Logger, muxes *muxes.Muxes, v sdkservices.Vars, o sdkservices.
 	muxes.Auth.HandleFunc("POST "+savePath, h.handleCreds) // Save JSON key.
 
 	// Event webhooks (unauthenticated by definition).
+	muxes.NoAuth.HandleFunc("POST "+calWebhookPath, h.handleCalNotification)
 	muxes.NoAuth.HandleFunc("POST "+formsWebhookPath, h.handleFormsNotification)
 	muxes.NoAuth.HandleFunc("POST "+gmailWebhookPath, h.handleGmailNotification)
 }
