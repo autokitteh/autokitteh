@@ -34,6 +34,14 @@ func ConstructEvent(ctx context.Context, vars sdkservices.Vars, cids []sdktypes.
 		return sdktypes.InvalidEvent, errors.New("unexpected Google Calendar events")
 	}
 
+	// https://developers.google.com/calendar/api/v3/reference/events#resource
+	eventType := "event_updated"
+	if events[0].Status == "cancelled" {
+		eventType = "event_deleted"
+	} else if events[0].Sequence == 0 {
+		eventType = "event_created"
+	}
+
 	// Convert the raw data to an AutoKitteh event.
 	wrapped, err := sdktypes.WrapValue(events[0])
 	if err != nil {
@@ -48,7 +56,7 @@ func ConstructEvent(ctx context.Context, vars sdkservices.Vars, cids []sdktypes.
 	}
 
 	akEvent, err := sdktypes.EventFromProto(&sdktypes.EventPB{
-		EventType: "calendar_event",
+		EventType: eventType,
 		Data:      kittehs.TransformMapValues(data, sdktypes.ToProto),
 	})
 	if err != nil {
