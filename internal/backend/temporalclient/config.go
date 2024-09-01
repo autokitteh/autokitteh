@@ -43,8 +43,8 @@ type Config struct {
 
 var (
 	defaultMonitorConfig = MonitorConfig{
-		CheckHealthInterval: time.Minute,
-		CheckHealthTimeout:  10 * time.Second,
+		CheckHealthInterval: 10000 * time.Minute,
+		CheckHealthTimeout:  10000 * time.Second,
 		LogLevel:            zap.NewAtomicLevelAt(zapcore.WarnLevel),
 	}
 

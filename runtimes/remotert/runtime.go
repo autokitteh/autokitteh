@@ -32,40 +32,99 @@ var (
 	runner pb.RunnerManagerClient
 )
 
+type svc struct {
+	ctx   context.Context // workflow context ?
+	runID sdktypes.ExecutorID
+	cbs   *sdkservices.RunCallbacks
+
+	firstCall bool
+	mainPath  string
+	exports   map[string]sdktypes.Value
+
+	// Runner
+	runnerID           string
+	runnerAddress      string
+	runnerClient       pb.RunnerClient
+	doneChan           chan []byte // runner report done
+	errorChan          chan string // runner report error
+	runnerRequestsChan chan *pb.ActivityRequest
+}
+
 func (*svc) Get() sdktypes.Runtime {
 	return Runtime.Desc
 }
 
-func (s *svc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
-	fn := v.GetFunction()
-	if s.firstCall {
-		s.firstCall = false
-		// Convert event to JSON
-		event := make(map[string]any, len(kwargs))
-		for key, val := range kwargs {
-			goVal, err := unwrap(val)
+func (s *svc) stopRunner(ctx context.Context) {
+	_, err := runner.Stop(ctx, &pb.StopRequest{
+		RunnerId: s.runnerID,
+	})
+	if err != nil {
+		fmt.Printf("failed stopping runner id %s: %s", s.runnerID, err)
+	}
+}
+
+func (s *svc) handleInitialCall(ctx context.Context, v sdktypes.FunctionValue, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
+	defer s.stopRunner(ctx)
+
+	event := make(map[string]any, len(kwargs))
+	for key, val := range kwargs {
+		goVal, err := unwrap(val)
+		if err != nil {
+			return sdktypes.InvalidValue, err
+		}
+		event[key] = goVal
+	}
+
+	jsonBytes, err := json.Marshal(event)
+	if err != nil {
+		return sdktypes.InvalidValue, err
+	}
+
+	eventpb := pb.Event{Data: jsonBytes}
+	entrypoint := fmt.Sprintf("%s:%s", s.mainPath, v.Name())
+	resp, err := s.runnerClient.Start(context.Background(), &pb.StartRequest{EntryPoint: entrypoint, Event: &eventpb})
+	if err != nil {
+		return sdktypes.InvalidValue, err
+	}
+	if resp.Error != "" {
+		return sdktypes.InvalidValue, errors.New(resp.Error)
+	}
+
+	// wait for done
+	for {
+		select {
+		case req := <-s.runnerRequestsChan:
+			f := kittehs.Must1(sdktypes.NewFunctionValue(s.runID, req.CallInfo.Function, []byte(req.Data), nil, pyModuleFunc))
+			res, err := s.cbs.Call(s.ctx, s.runID.ToRunID(), f, nil, nil)
+			response := &pb.ActivityReplyRequest{}
 			if err != nil {
-				return sdktypes.InvalidValue, err
+				response.Error = err.Error()
+			} else {
+				response.Data = res.GetBytes().Value()
 			}
-			event[key] = goVal
-		}
 
-		jsonBytes, err := json.Marshal(event)
-		if err != nil {
-			return sdktypes.InvalidValue, err
-		}
-
-		eventpb := pb.Event{Data: jsonBytes}
-		entrypoint := fmt.Sprintf("%s:%s", s.mainPath, fn.Name())
-		resp, err := s.runnerClient.Start(context.Background(), &pb.StartRequest{RunId: s.runID.String(), EntryPoint: entrypoint, Event: &eventpb})
-		if err != nil {
-			return sdktypes.InvalidValue, err
-		}
-		if resp.Error != "" {
-			return sdktypes.InvalidValue, errors.New(resp.Error)
+			_, err = s.runnerClient.ActivityReply(ctx, response)
+			if err != nil {
+				return sdktypes.NewBytesValue([]byte(err.Error())), nil
+			}
+		case res := <-s.doneChan:
+			return sdktypes.NewBytesValue(res), nil
+		case err := <-s.errorChan:
+			return sdktypes.NewBytesValue([]byte(err)), nil
 		}
 	}
-	resp, err := s.runnerClient.Execute(context.Background(), &pb.ExecuteRequest{})
+}
+
+func (s *svc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
+	fn := v.GetFunction()
+
+	if s.firstCall {
+		s.firstCall = false
+		return s.handleInitialCall(ctx, fn, args, kwargs)
+	}
+
+	cid := fn.Data()
+	resp, err := s.runnerClient.Execute(context.Background(), &pb.ExecuteRequest{Data: cid})
 
 	if err != nil {
 		return sdktypes.InvalidValue, err
@@ -83,31 +142,12 @@ func (s *svc) ID() sdktypes.RunID {
 
 func (s *svc) Close() {
 	fmt.Println("not closing")
-	// resp, err := runner.Stop(context.Background(), &pb.StopRequest{RunnerId: s.runnerID})
-	// if err != nil {
-	// 	fmt.Printf("error calling stop runner :%s\n", err.Error())
-	// }
-
-	// if resp.Error != "" {
-	// 	fmt.Printf("stop runner returned error :%s\n", resp.Error)
-	// }
 }
 
 func (s *svc) ExecutorID() sdktypes.ExecutorID { return s.runID }
 
 func (s *svc) Values() map[string]sdktypes.Value {
 	return s.exports
-}
-
-type svc struct {
-	runID         sdktypes.ExecutorID
-	cbs           *sdkservices.RunCallbacks
-	runnerID      string
-	runnerAddress string
-	runnerClient  pb.RunnerClient
-	firstCall     bool
-	mainPath      string
-	exports       map[string]sdktypes.Value
 }
 
 var pyModuleFunc = kittehs.Must1(sdktypes.ModuleFunctionFromProto(&sdktypes.ModuleFunctionPB{
@@ -145,6 +185,11 @@ func (s *svc) Run(
 	s.mainPath = mainPath
 	s.cbs = cbs
 	s.firstCall = true // State for Call.
+	s.ctx = ctx
+
+	s.doneChan = make(chan []byte, 1)
+	s.errorChan = make(chan string, 1)
+	s.runnerRequestsChan = make(chan *pb.ActivityRequest, 1)
 
 	// Load environment defined by user in the `vars` section of the manifest,
 	// these are injected to the Python subprocess environment.
@@ -192,7 +237,7 @@ func (s *svc) Run(
 	}
 
 	// ws.svcs[s.runnerID] = s
-	ws.svcs["runner-1"] = s
+	ws.runnerIDsToRuntime["runner-1"] = s
 	// if err != nil {
 	// 	return nil, fmt.Errorf("could not verify runner health %w", err)
 	// }

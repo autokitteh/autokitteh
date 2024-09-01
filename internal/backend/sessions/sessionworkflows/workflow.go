@@ -34,7 +34,7 @@ const (
 	envVarsModuleName     = "env"
 	integrationPathPrefix = "@"
 
-	limitedTimeout = 5 * time.Second
+	limitedTimeout = 5 * time.Minute
 )
 
 func withLimitedTimeout(ctx context.Context) (context.Context, func()) {

@@ -2,19 +2,19 @@ package remotert
 
 import (
 	"context"
+	"fmt"
 
 	"go.autokitteh.dev/autokitteh/runtimes/remotert/pb"
-	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 	"google.golang.org/grpc"
 )
 
 type workerServer struct {
 	pb.UnimplementedWorkerServer
-	svcs map[string]*svc
+	runnerIDsToRuntime map[string]*svc
 }
 
 var ws = workerServer{
-	svcs: map[string]*svc{},
+	runnerIDsToRuntime: map[string]*svc{},
 }
 
 func (w *workerServer) Health(ctx context.Context, req *pb.HealthRequest) (*pb.HealthResponse, error) {
@@ -25,8 +25,24 @@ func (w *workerServer) Health(ctx context.Context, req *pb.HealthRequest) (*pb.H
 	return &resp, nil
 }
 
+func (w *workerServer) Done(ctx context.Context, req *pb.DoneRequest) (*pb.DoneResponse, error) {
+	runner, ok := w.runnerIDsToRuntime[req.RunnerId]
+	resp := &pb.DoneResponse{}
+	if !ok {
+		return resp, nil
+	}
+
+	if req.Error != "" {
+		runner.errorChan <- req.Error
+		return resp, nil
+	}
+
+	runner.doneChan <- req.Result
+	return resp, nil
+}
+
 func (w *workerServer) Activity(ctx context.Context, req *pb.ActivityRequest) (*pb.ActivityResponse, error) {
-	runner, ok := w.svcs[req.RunnerId]
+	runner, ok := w.runnerIDsToRuntime[req.RunnerId]
 	if !ok {
 		return &pb.ActivityResponse{
 			Error: "Unknown runner id",
@@ -34,10 +50,8 @@ func (w *workerServer) Activity(ctx context.Context, req *pb.ActivityRequest) (*
 	}
 
 	go func() {
-		_, err := runner.cbs.Call(ctx, runner.runID.ToRunID(), sdktypes.NewStringValue(req.CallId), nil, nil)
-		if err != nil {
-			return
-		}
+		fmt.Println("EFI---CALLING ACTIVITY")
+		runner.runnerRequestsChan <- req
 	}()
 
 	return &pb.ActivityResponse{}, nil
