@@ -135,10 +135,13 @@ func oauthConfig() *oauth2.Config {
 		ClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
 		Endpoint:     google.Endpoint,
 		RedirectURL:  fmt.Sprintf("https://%s/oauth/redirect/google", addr),
+		// https://developers.google.com/identity/protocols/oauth2/scopes#script
 		Scopes: []string{
+			// Non-sensitive.
 			googleoauth2.OpenIDScope,
 			googleoauth2.UserinfoEmailScope,
 			googleoauth2.UserinfoProfileScope,
+			// Sensitive.
 			forms.FormsBodyScope,
 			forms.FormsResponsesReadonlyScope,
 		},
