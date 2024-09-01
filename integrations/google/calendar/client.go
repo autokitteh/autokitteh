@@ -214,7 +214,7 @@ func (a api) stopWatch(ctx context.Context, cid sdktypes.ConnectionID) error {
 }
 
 // https://developers.google.com/calendar/api/guides/sync
-// TODO: Store event start times in DB, to support upcoming-event notifs.
+// TODO(ENG-1499): Store event data in DB, to support event start/end notifs.
 func (a api) syncEvents(ctx context.Context, calID string) error {
 	client, err := a.calendarClient(ctx)
 	if err != nil {
@@ -302,7 +302,7 @@ func (a api) listEvents(ctx context.Context) ([]*calendar.Event, error) {
 		events = append(events, resp.Items...)
 	}
 
-	// TODO: Update the sync token for the next request.
+	// TODO(ENG-952): Update the sync token for the next request.
 	// (Currently blocked because this handler can't have an authenticated AK user ID).
 	// v := sdktypes.NewVar(vars.CalendarEventsSyncToken).SetValue(resp.NextSyncToken)
 	// if err = a.vars.Set(ctx, v.WithScopeID(sdktypes.NewVarScopeID(a.cid))); err != nil {
