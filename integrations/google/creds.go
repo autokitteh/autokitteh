@@ -82,9 +82,9 @@ func (h handler) handleCreds(w http.ResponseWriter, r *http.Request) {
 	case "", "json":
 		ctx := extrazap.AttachLoggerToContext(l, r.Context())
 		vs := sdktypes.EncodeVars(&vars.Vars{
-			JSON: r.PostFormValue("json"),
+			JSON:       r.PostFormValue("json"),
 			CalendarID: calID,
-			FormID: formID,
+			FormID:     formID,
 		})
 		h.finalize(ctx, c, vs.Set(vars.AuthType, "jsonKey", false))
 
