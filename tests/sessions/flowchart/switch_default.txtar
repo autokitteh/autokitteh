@@ -7,7 +7,7 @@ nodes:
     - name: sw
       action:
         switch:
-          - if: "^^ 1 != 1"
+          - if: "^^ 1 == 2"
             goto: nodes.omgomgomg
           - goto: nodes.yay
       goto: nodes.end # should never reach here

@@ -10,7 +10,7 @@ nodes:
     - name: sw
       action:
         switch:
-          - if: "1 == 2"
+          - if: "^^ 1 == 2"
             goto: nodes.omgomgomg
       goto: nodes.end
 
