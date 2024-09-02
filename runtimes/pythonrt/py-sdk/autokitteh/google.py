@@ -17,11 +17,12 @@ from .errors import ConnectionInitError, EnvVarError
 def gmail_client(connection: str, **kwargs):
     """Initialize a Gmail client, based on an AutoKitteh connection.
 
-    API reference:
-    https://developers.google.com/resources/api-libraries/documentation/gmail/v1/python/latest/gmail_v1.users.html
+    API documentation:
+    https://docs.autokitteh.com/integrations/google/gmail/python
 
     Code samples:
-    https://github.com/googleworkspace/python-samples/tree/main/gmail
+    - https://github.com/autokitteh/samples/tree/main/google/gmail
+    - https://github.com/googleworkspace/python-samples/tree/main/gmail
 
     Args:
         connection: AutoKitteh connection name.
@@ -75,8 +76,8 @@ def google_calendar_client(connection: str, **kwargs):
 def google_drive_client(connection: str, **kwargs):
     """Initialize a Google Drive client, based on an AutoKitteh connection.
 
-    API reference:
-    https://developers.google.com/resources/api-libraries/documentation/drive/v3/python/latest/
+    API documentation:
+    https://docs.autokitteh.com/integrations/google/drive/python
 
     Code samples:
     https://github.com/googleworkspace/python-samples/tree/main/drive
@@ -103,11 +104,12 @@ def google_drive_client(connection: str, **kwargs):
 def google_forms_client(connection: str, **kwargs):
     """Initialize a Google Forms client, based on an AutoKitteh connection.
 
-    API reference:
-    https://googleapis.github.io/google-api-python-client/docs/dyn/forms_v1.html
+    API documentation:
+    https://docs.autokitteh.com/integrations/google/forms/python
 
     Code samples:
-    https://github.com/googleworkspace/python-samples/tree/main/forms
+    - https://github.com/autokitteh/samples/tree/main/google/forms
+    - https://github.com/googleworkspace/python-samples/tree/main/forms
 
     Args:
         connection: AutoKitteh connection name.
@@ -132,11 +134,12 @@ def google_forms_client(connection: str, **kwargs):
 def google_sheets_client(connection: str, **kwargs):
     """Initialize a Google Sheets client, based on an AutoKitteh connection.
 
-    API reference:
-    https://developers.google.com/resources/api-libraries/documentation/sheets/v4/python/latest/sheets_v4.spreadsheets.html
+    API documentation:
+    https://docs.autokitteh.com/integrations/google/sheets/python
 
     Code samples:
-    https://github.com/googleworkspace/python-samples/tree/main/sheets
+    - https://github.com/autokitteh/samples/tree/main/google/sheets
+    - https://github.com/googleworkspace/python-samples/tree/main/sheets
 
     Args:
         connection: AutoKitteh connection name.
