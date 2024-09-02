@@ -5,7 +5,6 @@ import (
 	"errors"
 
 	"go.uber.org/zap"
-	"google.golang.org/api/forms/v1"
 
 	"go.autokitteh.dev/autokitteh/integrations/internal/extrazap"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
@@ -65,19 +64,4 @@ func ConstructEvent(ctx context.Context, vars sdkservices.Vars, cids []sdktypes.
 	}
 
 	return akEvent, nil
-}
-
-func lastResponse(responses []*forms.FormResponse) *forms.FormResponse {
-	if len(responses) == 0 {
-		return &forms.FormResponse{}
-	}
-
-	last := responses[0]
-	for _, r := range responses {
-		if r.LastSubmittedTime > last.LastSubmittedTime {
-			last = r
-		}
-	}
-
-	return last
 }
