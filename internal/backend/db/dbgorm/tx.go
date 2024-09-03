@@ -12,6 +12,7 @@ import (
 
 type tx struct {
 	gormdb
+	ctx  *context.Context
 	done bool
 }
 
@@ -61,6 +62,7 @@ func (db *gormdb) transaction(ctx context.Context, f func(tx *tx) error) error {
 						cfg:   db.cfg,
 						owner: db.owner,
 					},
+					ctx: &ctx,
 				},
 			)
 		})
