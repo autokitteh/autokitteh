@@ -12,7 +12,7 @@ import (
 
 type tx struct {
 	gormdb
-	ctx  *context.Context
+	ctx  context.Context
 	done bool
 }
 
@@ -51,7 +51,6 @@ func (db *gormdb) Transaction(ctx context.Context, f func(db db.DB) error) error
 }
 
 func (db *gormdb) transaction(ctx context.Context, f func(tx *tx) error) error {
-	ctx = context.WithoutCancel(ctx) // do not cancel db transaction in the middle
 	return db.locked(func(db *gormdb) error {
 		return db.db.WithContext(ctx).Transaction(func(txdb *gorm.DB) error {
 			return f(
@@ -62,7 +61,7 @@ func (db *gormdb) transaction(ctx context.Context, f func(tx *tx) error) error {
 						cfg:   db.cfg,
 						owner: db.owner,
 					},
-					ctx: &ctx,
+					ctx: ctx,
 				},
 			)
 		})
