@@ -524,20 +524,53 @@ func (w *sessionWorkflow) run(wctx workflow.Context) (prints []string, err error
 
 	entryPoint := w.data.Session.EntryPoint()
 
-	run, err := sdkruntimes.Run(
-		ctx,
-		sdkruntimes.RunParams{
-			Runtimes:             w.ws.svcs.Runtimes,
-			BuildFile:            w.data.BuildFile,
-			Globals:              w.globals,
-			RunID:                runID,
-			FallthroughCallbacks: cbs,
-			EntryPointPath:       entryPoint.Path(),
-		},
-	)
-	if err != nil {
-		// TODO(ENG-130): discriminate between infra and real errors.
-		return prints, err
+	type runOrErr struct {
+		run sdkservices.Run
+		err error
+	}
+
+	runDone := make(chan runOrErr)
+
+	go func() {
+		time.Sleep(20 * time.Second)
+
+		// This can take a while to complete since it might provision resources et al,
+		// but since it might call back into the workflow via the callbacks, it must
+		// still run a in a workflow context rather than an activity.
+		// TODO: Consider just running this from an activity.
+		run, err := sdkruntimes.Run(
+			ctx,
+			sdkruntimes.RunParams{
+				Runtimes:             w.ws.svcs.Runtimes,
+				BuildFile:            w.data.BuildFile,
+				Globals:              w.globals,
+				RunID:                runID,
+				FallthroughCallbacks: cbs,
+				EntryPointPath:       entryPoint.Path(),
+			},
+		)
+
+		runDone <- runOrErr{run, err}
+	}()
+
+	var run sdkservices.Run
+
+	for run == nil {
+		select {
+		case <-time.After(time.Second): // TODO: adjust according to deadlock timeout.
+			if err := workflow.Sleep(wctx, time.Millisecond); err != nil {
+				return prints, err
+			}
+		case r := <-runDone:
+			if r.err != nil {
+				// TODO(ENG-130): discriminate between infra and real errors.
+				return prints, r.err
+			}
+
+			run = r.run
+		case <-ctx.Done():
+			return prints, ctx.Err()
+		}
 	}
 
 	kittehs.Must0(w.executors.AddExecutor(fmt.Sprintf("run_%s", run.ID().Value()), run))
