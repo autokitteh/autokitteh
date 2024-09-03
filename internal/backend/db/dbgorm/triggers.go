@@ -30,7 +30,7 @@ func (gdb *gormdb) createTrigger(ctx context.Context, trigger *scheme.Trigger) e
 
 func (gdb *gormdb) deleteTrigger(ctx context.Context, triggerID sdktypes.UUID) error {
 	return gdb.transaction(ctx, func(tx *tx) error {
-		if err := tx.isCtxUserEntity(ctx, triggerID); err != nil {
+		if err := tx.isCtxUserEntity(tx.ctx, triggerID); err != nil {
 			return err
 		}
 		return tx.db.Delete(&scheme.Trigger{TriggerID: triggerID}).Error
@@ -39,7 +39,7 @@ func (gdb *gormdb) deleteTrigger(ctx context.Context, triggerID sdktypes.UUID) e
 
 func (gdb *gormdb) updateTrigger(ctx context.Context, triggerID sdktypes.UUID, data map[string]any) error {
 	return gdb.transaction(ctx, func(tx *tx) error {
-		if err := tx.isCtxUserEntity(ctx, triggerID); err != nil {
+		if err := tx.isCtxUserEntity(tx.ctx, triggerID); err != nil {
 			return err
 		}
 		allowedFields := []string{"ConnectionID", "EventType", "Filter", "CodeLocation", "Data"}
