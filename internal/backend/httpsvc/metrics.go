@@ -20,10 +20,8 @@ type apiMetrics struct {
 
 var metrics sync.Map
 
-// metrics    map[string]apiMetrics
-// metricsMux sync.Mutex
-
-func getServiceAPIMetrics(serviceAPI string, t *telemetry.Telemetry) (*apiMetrics, error) {
+// obtains service API metrics, creating them if not already present
+func acquireServiceAPIMetrics(serviceAPI string, t *telemetry.Telemetry) (*apiMetrics, error) {
 	if m, ok := metrics.Load(serviceAPI); ok {
 		return m.(*apiMetrics), nil
 	}
@@ -40,7 +38,7 @@ func getServiceAPIMetrics(serviceAPI string, t *telemetry.Telemetry) (*apiMetric
 		return nil, err
 	}
 	m := apiMetrics{counter, histogram}
-	metrics.LoadOrStore(serviceAPI, &m)
+	metrics.LoadOrStore(serviceAPI, &m) // when called concurrently, this will not overwrite if already set
 	return &m, nil
 }
 
@@ -67,7 +65,7 @@ func updateMetric(ctx context.Context, t *telemetry.Telemetry, path string, stat
 	service = dotParts[1]
 
 	serviceAPI := fmt.Sprintf("%s.%s", service, api) // e.g. "projects.create"
-	m, err := getServiceAPIMetrics(serviceAPI, t)
+	m, err := acquireServiceAPIMetrics(serviceAPI, t)
 	if err != nil {
 		return err
 	}
