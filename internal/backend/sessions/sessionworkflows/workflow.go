@@ -2,6 +2,7 @@ package sessionworkflows
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"maps"
 	"strings"
@@ -524,18 +525,40 @@ func (w *sessionWorkflow) run(wctx workflow.Context) (prints []string, err error
 
 	entryPoint := w.data.Session.EntryPoint()
 
-	run, err := sdkruntimes.Run(
-		ctx,
-		sdkruntimes.RunParams{
-			Runtimes:             w.ws.svcs.Runtimes,
-			BuildFile:            w.data.BuildFile,
-			Globals:              w.globals,
-			RunID:                runID,
-			FallthroughCallbacks: cbs,
-			EntryPointPath:       entryPoint.Path(),
-		},
+	var (
+		run    sdkservices.Run
+		runErr error
 	)
-	if err != nil {
+
+	workflow.GoNamed(wctx, fmt.Sprintf("%v_run", runID), func(workflow.Context) {
+		// This can take a while to complete since it might provision resources et al,
+		// but since it might call back into the workflow via the callbacks, it must
+		// still run a in a workflow context rather than an activity.
+		run, runErr = sdkruntimes.Run(
+			ctx,
+			sdkruntimes.RunParams{
+				Runtimes:             w.ws.svcs.Runtimes,
+				BuildFile:            w.data.BuildFile,
+				Globals:              w.globals,
+				RunID:                runID,
+				FallthroughCallbacks: cbs,
+				EntryPointPath:       entryPoint.Path(),
+			},
+		)
+
+		if run == nil && runErr == nil {
+			runErr = errors.New("nil run")
+		}
+	})
+
+	if err := workflow.Await(
+		wctx,
+		func() bool { return run != nil || runErr != nil },
+	); err != nil {
+		return prints, err
+	}
+
+	if runErr != nil {
 		// TODO(ENG-130): discriminate between infra and real errors.
 		return prints, err
 	}
