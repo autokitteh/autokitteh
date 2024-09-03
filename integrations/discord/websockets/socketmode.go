@@ -34,7 +34,7 @@ func NewHandler(l *zap.Logger, v sdkservices.Vars, d sdkservices.Dispatcher, i s
 var (
 	webSocketClients = make(map[string]*discordgo.Session)
 
-	mu = &sync.Mutex{}
+	mu sync.RWMutex
 )
 
 func (h handler) OpenSocketModeConnection(botID, botToken string) {
