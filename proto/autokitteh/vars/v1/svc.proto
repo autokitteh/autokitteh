@@ -23,7 +23,6 @@ message DeleteResponse {}
 message GetRequest {
   string scope_id = 1 [(buf.validate.field).string.min_len = 1];
   repeated string names = 2; // if empty, get all.
-  bool reveal = 3; // if true, returns secret values. if false, secret values are omitted.
 }
 
 message GetResponse {

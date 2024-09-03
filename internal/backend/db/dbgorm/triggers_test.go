@@ -146,3 +146,32 @@ func TestDeleteTrigger(t *testing.T) {
 	assert.NoError(t, f.gormdb.deleteTrigger(f.ctx, tr.TriggerID))
 	f.assertTriggersDeleted(t, tr)
 }
+
+func TestDuplicatedTrigger(t *testing.T) {
+	f := preTriggerTest(t).WithDebug()
+
+	p1 := f.newProject()
+	p2 := f.newProject()
+	c := f.newConnection() // trigger doesn't check for connection's projectID
+	e1 := f.newEnv(p1, "env")
+	e11 := f.newEnv(p1, "env1")
+	e2 := f.newEnv(p2, "env")
+	f.createProjectsAndAssert(t, p1, p2)
+	f.createConnectionsAndAssert(t, c)
+	f.createEnvsAndAssert(t, e1, e11, e2)
+
+	// test create two triggers with the same name for the same project and same environment
+	tr1 := f.newTrigger(p1, c, e1, "trg")
+	f.createTriggersAndAssert(t, tr1)
+
+	tr2 := f.newTrigger(p1, c, e1, "trg")
+	assert.ErrorIs(t, f.gormdb.createTrigger(f.ctx, &tr2), gorm.ErrDuplicatedKey)
+
+	// could create the same named trigger for the same project but different environment
+	tr3 := f.newTrigger(p1, c, e11, "trg")
+	f.createTriggersAndAssert(t, tr3)
+
+	// could create the same named trigger for the different project
+	tr4 := f.newTrigger(p2, c, e2, "trg")
+	f.createTriggersAndAssert(t, tr4)
+}

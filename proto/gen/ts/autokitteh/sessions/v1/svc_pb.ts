@@ -394,6 +394,20 @@ export class GetLogRequest extends Message<GetLogRequest> {
   sessionId = "";
 
   /**
+   * true: all values returned will be string values
+   *       that contain the native values in JSON format.
+   * false: all values returned are properly boxed.
+   *
+   * @generated from field: bool json_values = 2;
+   */
+  jsonValues = false;
+
+  /**
+   * @generated from field: bool ascending = 11;
+   */
+  ascending = false;
+
+  /**
    * @generated from field: int32 page_size = 20;
    */
   pageSize = 0;
@@ -408,11 +422,6 @@ export class GetLogRequest extends Message<GetLogRequest> {
    */
   pageToken = "";
 
-  /**
-   * @generated from field: bool ascending = 11;
-   */
-  ascending = false;
-
   constructor(data?: PartialMessage<GetLogRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -422,10 +431,11 @@ export class GetLogRequest extends Message<GetLogRequest> {
   static readonly typeName = "autokitteh.sessions.v1.GetLogRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "session_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "json_values", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 11, name: "ascending", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 20, name: "page_size", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 21, name: "skip", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 22, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 11, name: "ascending", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetLogRequest {

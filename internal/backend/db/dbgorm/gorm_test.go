@@ -375,6 +375,8 @@ func (f *dbFixture) newEnv(args ...any) scheme.Env {
 			env.ProjectID = a.ProjectID
 		case sdktypes.UUID:
 			env.ProjectID = a
+		case string:
+			env.Name = a
 		}
 	}
 	return env
@@ -390,6 +392,7 @@ func (f *dbFixture) newVar(name string, val string, args ...any) scheme.Var {
 		switch a := a.(type) {
 		case scheme.Connection:
 			v.ScopeID = a.ConnectionID
+			v.IntegrationID = *a.IntegrationID
 		case scheme.Env:
 			v.ScopeID = a.EnvID
 		case sdktypes.UUID:
@@ -406,7 +409,6 @@ func (f *dbFixture) newTrigger(args ...any) scheme.Trigger {
 	t := scheme.Trigger{
 		TriggerID:    id,
 		Name:         name,
-		UniqueName:   name,
 		Data:         datatypes.JSON([]byte("{}")),
 		CodeLocation: "loc",
 	}
@@ -418,8 +420,11 @@ func (f *dbFixture) newTrigger(args ...any) scheme.Trigger {
 			t.ConnectionID = a.ConnectionID
 		case scheme.Env:
 			t.EnvID = a.EnvID
+		case string:
+			t.Name = a
 		}
 	}
+	t.UniqueName = triggerUniqueName(t.EnvID.String(), t.Name)
 	return t
 }
 
@@ -427,31 +432,19 @@ func (f *dbFixture) newConnection(args ...any) scheme.Connection {
 	id := newTestID()
 	name := idToName(id, "con")
 	c := scheme.Connection{
-		ConnectionID: id,
-		Name:         name,
+		IntegrationID: &testIntegrationID,
+		ConnectionID:  id,
+		Name:          name,
 	}
 	for _, a := range args {
 		switch a := a.(type) {
 		case scheme.Project:
 			c.ProjectID = &a.ProjectID
-		case scheme.Integration:
-			c.IntegrationID = &a.IntegrationID
 		case string:
 			c.Name = a
 		}
 	}
 	return c
-}
-
-func (f *dbFixture) newIntegration(name string) scheme.Integration {
-	id := sdktypes.NewIntegrationIDFromName(name).UUIDValue()
-	return scheme.Integration{
-		IntegrationID: id,
-		UniqueName:    name,
-		DisplayName:   name,
-		Description:   name + " integration",
-		UserLinks:     datatypes.JSON([]byte("{}")),
-	}
 }
 
 func (f *dbFixture) newEvent(args ...any) scheme.Event {

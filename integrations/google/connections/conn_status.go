@@ -3,6 +3,7 @@ package connections
 import (
 	"context"
 
+	"go.autokitteh.dev/autokitteh/integrations"
 	"go.autokitteh.dev/autokitteh/integrations/google/internal/vars"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -28,12 +29,10 @@ func ConnStatus(cvars sdkservices.Vars) sdkintegrations.OptFn {
 			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "init required"), nil
 		}
 
-		// Align with:
-		// https://github.com/autokitteh/web-platform/blob/main/src/enums/connections/connectionTypes.enum.ts
 		switch at.Value() {
-		case "jsonKey":
+		case integrations.JSONKey:
 			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "using JSON key"), nil
-		case "oauth":
+		case integrations.OAuth:
 			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "using OAuth 2.0"), nil
 		default:
 			return sdktypes.NewStatus(sdktypes.StatusCodeError, "bad auth type"), nil

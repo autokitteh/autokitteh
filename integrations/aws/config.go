@@ -29,7 +29,7 @@ func getAWSConfig(ctx context.Context, vars sdkservices.Vars) (*aws.Config, erro
 		return defaultAWSConfig, nil
 	}
 
-	cvars, err := vars.Reveal(ctx, sdktypes.NewVarScopeID(cid))
+	cvars, err := vars.Get(ctx, sdktypes.NewVarScopeID(cid))
 	if err != nil {
 		return nil, err
 	}

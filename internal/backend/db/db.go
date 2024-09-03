@@ -123,13 +123,6 @@ type DB interface {
 	DeleteDeployment(ctx context.Context, deploymentID sdktypes.DeploymentID) error
 
 	// -----------------------------------------------------------------------
-	CreateIntegration(ctx context.Context, i sdktypes.Integration) error
-	UpdateIntegration(ctx context.Context, i sdktypes.Integration) error
-	DeleteIntegration(ctx context.Context, id sdktypes.IntegrationID) error
-	GetIntegration(ctx context.Context, id sdktypes.IntegrationID) (sdktypes.Integration, error)
-	ListIntegrations(ctx context.Context) ([]sdktypes.Integration, error)
-
-	// -----------------------------------------------------------------------
 	CreateSession(ctx context.Context, session sdktypes.Session) error
 	GetSession(ctx context.Context, sessionID sdktypes.SessionID) (sdktypes.Session, error)
 	GetSessionLog(ctx context.Context, filter sdkservices.ListSessionLogRecordsFilter) (sdkservices.GetLogResults, error)

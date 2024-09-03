@@ -52,7 +52,7 @@ func (i integration) createChatCompletion(ctx context.Context, args []sdktypes.V
 		return sdktypes.InvalidValue, err
 	}
 
-	cvars, err := i.vars.Reveal(ctx, sdktypes.NewVarScopeID(cid))
+	cvars, err := i.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}

@@ -77,16 +77,19 @@ the rest:
 
 ## Getting Started
 
-Visit our [docs](https://docs.autokitteh.com/) here:
+See our [quickstart guide](https://docs.autokitteh.com/get_started/quickstart),
+which covers:
 
-- [Installation](https://docs.autokitteh.com/get_started/install)
-- [Starting a self-hosted server](https://docs.autokitteh.com/get_started/start_server)
-- [CLI quickstart guide](https://docs.autokitteh.com/get_started/client/cli/quickstart)
-- [VS Code extension](https://docs.autokitteh.com/get_started/client/vscode)
+- Installation
+- Starting a self-hosted server
+- Creating and deploying a project
+- Resilience demo
 
 The open-source AutoKitteh server is used mostly for self-hosted and on-prem
-installations. Our managed cloud iPaaS offering is currently in beta - for
-details, contact us at meow@autokitteh.com.
+installations.
+
+Our managed cloud iPaaS offering is currently in beta - for details, contact
+us at meow@autokitteh.com.
 
 ## Build From Source
 

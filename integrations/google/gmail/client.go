@@ -29,10 +29,10 @@ type api struct {
 	cid  sdktypes.ConnectionID
 }
 
-var integrationID = sdktypes.NewIntegrationIDFromName("gmail")
+var IntegrationID = sdktypes.NewIntegrationIDFromName("gmail")
 
 var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
-	IntegrationId: integrationID.String(),
+	IntegrationId: IntegrationID.String(),
 	UniqueName:    "gmail",
 	DisplayName:   "Gmail",
 	Description:   "Gmail is an email service provided by Google.",
@@ -269,7 +269,7 @@ func (a api) connectionData(ctx context.Context) (*vars.Vars, error) {
 		cid = a.cid // Fallback during authentication flows.
 	}
 
-	vs, err := a.vars.Reveal(ctx, sdktypes.NewVarScopeID(cid))
+	vs, err := a.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
 	if err != nil {
 		return nil, err
 	}

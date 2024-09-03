@@ -82,7 +82,7 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		for _, cid := range cids {
 			l := l.With(zap.String("connectionID", cid.String()))
 
-			data, err := h.vars.Reveal(ctx, sdktypes.NewVarScopeID(cid), vars.PATSecret)
+			data, err := h.vars.Get(ctx, sdktypes.NewVarScopeID(cid), vars.PATSecret)
 			if err != nil {
 				l.Error("Unrecognized connection for user event payload", zap.Error(err))
 				http.Error(w, "Internal Server error", http.StatusInternalServerError)

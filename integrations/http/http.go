@@ -234,7 +234,7 @@ func (i integration) getConnectionAuth(ctx context.Context) (string, error) {
 		return "", err
 	}
 
-	vars, err := i.vars.Reveal(ctx, sdktypes.NewVarScopeID(cid))
+	vars, err := i.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
 	if err != nil {
 		return "", err
 	}

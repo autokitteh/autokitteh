@@ -55,7 +55,7 @@ func (gdb *gormdb) deleteConnectionsAndVars(what string, id sdktypes.UUID) error
 
 func (gdb *gormdb) deleteConnection(ctx context.Context, id sdktypes.UUID) error {
 	return gdb.transaction(ctx, func(tx *tx) error {
-		if err := tx.isCtxUserEntity(ctx, id); err != nil {
+		if err := tx.isCtxUserEntity(tx.ctx, id); err != nil {
 			return err
 		}
 		// delete connection and associated vars
@@ -65,7 +65,7 @@ func (gdb *gormdb) deleteConnection(ctx context.Context, id sdktypes.UUID) error
 
 func (gdb *gormdb) updateConnection(ctx context.Context, id sdktypes.UUID, data map[string]any) error {
 	return gdb.transaction(ctx, func(tx *tx) error {
-		if err := tx.isCtxUserEntity(ctx, id); err != nil {
+		if err := tx.isCtxUserEntity(tx.ctx, id); err != nil {
 			return err
 		}
 		return tx.db.Model(&scheme.Connection{ConnectionID: id}).Updates(data).Error
@@ -117,7 +117,7 @@ func (db *gormdb) CreateConnection(ctx context.Context, conn sdktypes.Connection
 
 	c := scheme.Connection{
 		ConnectionID:  conn.ID().UUIDValue(),
-		IntegrationID: scheme.UUIDOrNil(conn.IntegrationID().UUIDValue()), // TODO(ENG-158): need to verify integration id
+		IntegrationID: scheme.UUIDOrNil(conn.IntegrationID().UUIDValue()),
 		ProjectID:     scheme.UUIDOrNil(conn.ProjectID().UUIDValue()),
 		Name:          conn.Name().String(),
 		StatusCode:    int32(conn.Status().Code().ToProto()),

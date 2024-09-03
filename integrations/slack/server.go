@@ -9,46 +9,53 @@ import (
 	"go.autokitteh.dev/autokitteh/integrations/slack/internal/vars"
 	"go.autokitteh.dev/autokitteh/integrations/slack/webhooks"
 	"go.autokitteh.dev/autokitteh/integrations/slack/websockets"
+	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 	"go.autokitteh.dev/autokitteh/web/static"
 )
 
 const (
-	// formPath is the URL path for our handler to save a new
-	// autokitteh connection, based on a user-submitted form.
-	formPath = "/slack/save"
-
 	// oauthPath is the URL path for our handler to save
 	// new OAuth-based connections.
 	oauthPath = "/slack/oauth"
+
+	// savePath is the URL path for our handler to save new Socket Mode
+	// connections, after users submit them via a web form.
+	savePath = "/slack/save"
 )
 
-func Start(l *zap.Logger, mux *http.ServeMux, vs sdkservices.Vars, d sdkservices.Dispatcher) {
-	// Connection UI + save handlers.
+// Start initializes all the HTTP handlers of the Slack integration.
+// This includes connection UIs, initialization webhooks, and event webhooks.
+func Start(l *zap.Logger, muxes *muxes.Muxes, v sdkservices.Vars, d sdkservices.Dispatcher) {
+	// Connection UI.
 	uiPath := "GET " + desc.ConnectionURL().Path + "/"
-	mux.Handle(uiPath, http.FileServer(http.FS(static.SlackWebContent)))
+	muxes.NoAuth.Handle(uiPath, http.FileServer(http.FS(static.SlackWebContent)))
 
-	mux.Handle("GET "+oauthPath, NewHandler(l))
+	// Init webhooks save connection vars (via "c.Finalize" calls), so they need
+	// to have an authenticated user context, so the DB layer won't reject them.
+	// For this purpose, init webhooks are managed by the "auth" mux, which passes
+	// through AutoKitteh's auth middleware to extract the user ID from a cookie.
+	muxes.Auth.Handle("GET "+oauthPath, NewHandler(l))
 
-	wsh := websockets.NewHandler(l, vs, d, desc)
-	mux.HandleFunc("POST "+formPath, wsh.HandleForm)
+	wsh := websockets.NewHandler(l, v, d, desc)
+	muxes.Auth.HandleFunc("POST "+savePath, wsh.HandleForm)
 
-	// Event webhooks.
-	whh := webhooks.NewHandler(l, vs, d, integrationID)
-	mux.HandleFunc("POST "+webhooks.BotEventPath, whh.HandleBotEvent)
-	mux.HandleFunc("POST "+webhooks.SlashCommandPath, whh.HandleSlashCommand)
-	mux.HandleFunc("POST "+webhooks.InteractionPath, whh.HandleInteraction)
+	// Event webhooks (unauthenticated by definition).
+	whh := webhooks.NewHandler(l, v, d, integrationID)
+	muxes.NoAuth.HandleFunc("POST "+webhooks.BotEventPath, whh.HandleBotEvent)
+	muxes.NoAuth.HandleFunc("POST "+webhooks.SlashCommandPath, whh.HandleSlashCommand)
+	muxes.NoAuth.HandleFunc("POST "+webhooks.InteractionPath, whh.HandleInteraction)
 
 	// Initialize WebSocket pool.
-	cids, err := vs.FindConnectionIDs(context.Background(), integrationID, vars.AppTokenName, "")
+	cids, err := v.FindConnectionIDs(context.Background(), integrationID, vars.AppTokenName, "")
 	if err != nil {
 		l.Error("Failed to list WebSocket-based connection IDs", zap.Error(err))
 		return
 	}
 
 	for _, cid := range cids {
-		data, err := vs.Reveal(context.Background(), sdktypes.NewVarScopeID(cid))
+		data, err := v.Get(context.Background(), sdktypes.NewVarScopeID(cid))
 		if err != nil {
 			l.Error("Missing data for Slack Socket Mode app", zap.Error(err))
 			continue

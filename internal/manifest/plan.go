@@ -199,7 +199,7 @@ func planDefaultEnv(ctx context.Context, mvars []*Var, client sdkservices.Servic
 			return nil, fmt.Errorf("invalid var name: %w", err)
 		}
 
-		desired := sdktypes.NewVar(n).SetValue(mvar.Value).SetSecret(mvar.Secret).SetOptional(mvar.Optional).WithScopeID(sid)
+		desired := sdktypes.NewVar(n).SetValue(mvar.Value).SetSecret(mvar.Secret).WithScopeID(sid)
 
 		setAction := actions.SetVarAction{Key: mvar.GetKey(), Env: envKeyer.GetKey(), Var: desired}
 
@@ -318,7 +318,7 @@ func planConnectionVars(mconn Connection, cid sdktypes.ConnectionID, cvars sdkty
 			return nil, fmt.Errorf("invalid var name: %w", err)
 		}
 
-		want := sdktypes.NewVar(n).SetValue(mvar.Value).SetSecret(mvar.Secret).SetOptional(mvar.Optional).WithScopeID(sdktypes.NewVarScopeID(cid))
+		want := sdktypes.NewVar(n).SetValue(mvar.Value).SetSecret(mvar.Secret).WithScopeID(sdktypes.NewVarScopeID(cid))
 
 		got := cvars.Get(want.Name())
 

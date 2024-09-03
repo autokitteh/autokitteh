@@ -5,6 +5,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
 	"go.autokitteh.dev/autokitteh/web/static"
 )
 
@@ -12,13 +13,20 @@ const (
 	// uiPath is the URL root path of a simple web UI to interact with users.
 	uiPath = "/aws/connect/"
 
-	// savePath is the URL path for our handler to save a new autokitteh
-	// connection, after the user submits its details via a web form.
+	// savePath is the URL path for our handler to save new
+	// connections, after users submit them via a web form.
 	savePath = "/aws/save"
 )
 
-func Start(l *zap.Logger, mux *http.ServeMux) {
-	// New connection UI + form submission handler.
-	mux.Handle(uiPath, http.FileServer(http.FS(static.AWSWebContent)))
-	mux.Handle(savePath, NewHTTPHandler(l))
+// Start initializes all the HTTP handlers of the AWS integration.
+// This includes connection UIs and initialization webhooks.
+func Start(l *zap.Logger, muxes *muxes.Muxes) {
+	// Connection UI.
+	muxes.NoAuth.Handle(uiPath, http.FileServer(http.FS(static.AWSWebContent)))
+
+	// Init webhooks save connection vars (via "c.Finalize" calls), so they need
+	// to have an authenticated user context, so the DB layer won't reject them.
+	// For this purpose, init webhooks are managed by the "auth" mux, which passes
+	// through AutoKitteh's auth middleware to extract the user ID from a cookie.
+	muxes.Auth.Handle(savePath, NewHTTPHandler(l))
 }

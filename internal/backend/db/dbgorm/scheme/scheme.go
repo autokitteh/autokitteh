@@ -13,7 +13,6 @@ import (
 	commonv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/common/v1"
 	deploymentsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/deployments/v1"
 	eventsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/events/v1"
-	integrationsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/integrations/v1"
 	sessionsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/sessions/v1"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -38,7 +37,6 @@ var Tables = []any{
 	&Env{},
 	&Event{},
 	&EventRecord{},
-	&Integration{},
 	&Ownership{},
 	&Project{},
 	&Secret{},
@@ -86,7 +84,6 @@ type Connection struct {
 	DeletedAt gorm.DeletedAt `gorm:"index"`
 
 	// enforce foreign keys
-	// Integration *Integration FIXME: ENG-590
 	Project   *Project
 	Ownership *Ownership `gorm:"polymorphic:Entity;"`
 
@@ -112,17 +109,12 @@ func ParseConnection(c Connection) (sdktypes.Connection, error) {
 
 type Var struct {
 	// varID is scopeID. just mapped directly for reusing the join code
-	VarID      sdktypes.UUID `gorm:"primaryKey;index;type:uuid;not null"`
-	ScopeID    sdktypes.UUID `gorm:"-"`
-	Name       string        `gorm:"primaryKey;index;not null"`
-	Value      string
-	IsSecret   bool
-	IsOptional bool
-
-	IntegrationID sdktypes.UUID `gorm:"index;type:uuid"`
-
-	// enforce foreign keys
-	// Integration *Integration // FIXME: ENG-590
+	VarID         sdktypes.UUID `gorm:"primaryKey;index;type:uuid;not null"`
+	ScopeID       sdktypes.UUID `gorm:"-"`
+	Name          string        `gorm:"primaryKey;index;not null"`
+	Value         string
+	IsSecret      bool
+	IntegrationID sdktypes.UUID `gorm:"index;type:uuid"` // var lookup by integration id
 }
 
 // simple hook to populate ScopeID after retrieving a Var from the database
@@ -136,60 +128,6 @@ func (v *Var) BeforeCreate(tx *gorm.DB) (err error) {
 		return gorm.ErrInvalidField
 	}
 	return nil
-}
-
-type Integration struct {
-	// Unique internal identifier.
-	IntegrationID sdktypes.UUID `gorm:"primaryKey;type:uuid;not null"`
-
-	// Unique external (and URL-safe) identifier.
-	UniqueName string `gorm:"uniqueIndex"`
-
-	// Optional user-facing metadata.
-
-	DisplayName string
-	Description string
-	LogoURL     string
-	UserLinks   datatypes.JSON
-	// TODO: Tags
-
-	// TODO(ENG-346): Connection UI specification instead of a URL.
-	ConnectionURL string
-
-	// TODO: Functions
-
-	// TODO: Events
-
-	// TODO(ENG-112): https://gorm.io/docs/models.html#gorm-Model?
-
-	APIKey     string
-	SigningKey string
-}
-
-func ParseIntegration(i Integration) (sdktypes.Integration, error) {
-	var uls map[string]string
-	err := json.Unmarshal(i.UserLinks, &uls)
-	if err != nil {
-		return sdktypes.InvalidIntegration, fmt.Errorf("integration user links: %w", err)
-	}
-
-	integ, err := sdktypes.StrictIntegrationFromProto(&integrationsv1.Integration{
-		IntegrationId: sdktypes.NewIDFromUUID[sdktypes.IntegrationID](&i.IntegrationID).String(),
-		UniqueName:    i.UniqueName,
-		DisplayName:   i.DisplayName,
-		Description:   i.Description,
-		LogoUrl:       i.LogoURL,
-		UserLinks:     uls,
-		// TODO: Tags
-		// TODO(ENG-346): Connection UI specification instead of a URL.
-		ConnectionUrl: i.ConnectionURL,
-		// TODO: Functions
-		// TODO: Events
-	})
-	if err != nil {
-		return sdktypes.InvalidIntegration, fmt.Errorf("invalid integration record: %w", err)
-	}
-	return integ, nil
 }
 
 type Project struct {
@@ -236,7 +174,6 @@ type Event struct {
 	DeletedAt gorm.DeletedAt `gorm:"index"`
 
 	// enforce foreign keys
-	// Integration *Integration // FIXME: ENG-590
 	Connection *Connection
 	Ownership  *Ownership `gorm:"polymorphic:Entity;"`
 }

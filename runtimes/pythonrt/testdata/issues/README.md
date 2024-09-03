@@ -44,4 +44,4 @@ $ ngrok http --domain autokitteh-miki.ngrok.dev 9980
 
 
 [issue]: https://github.com/testkitteh/miki/issues/
-[gh]: https://docs.autokitteh.com/config/integrations/github
+[gh]: https://docs.autokitteh.com/integrations/github/config

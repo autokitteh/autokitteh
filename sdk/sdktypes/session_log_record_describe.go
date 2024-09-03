@@ -248,20 +248,9 @@ func describeFunctionValue(opts *SessionLogRecordDescribeOptions, w io.Writer, v
 	}
 }
 
-var sessionLogDescUnwrapper = ValueWrapper{
-	SafeForJSON: true,
-	Preunwrap: func(v Value) (Value, error) {
-		if v.IsFunction() {
-			return NewStringValuef("|function: %v|", v.GetFunction().Name()), nil
-		}
-
-		return v, nil
-	},
-}
-
 func describeValue(opts *SessionLogRecordDescribeOptions, w io.Writer, v Value) {
 	if opts.UnwrapValues {
-		x, err := sessionLogDescUnwrapper.Unwrap(v)
+		x, err := valueStringUnwrapper.Unwrap(v)
 		if err != nil {
 			fmt.Fprintf(w, "unwrap: %v\n", err)
 			return

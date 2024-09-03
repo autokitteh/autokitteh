@@ -20,10 +20,12 @@ class SaveResponse(_message.Message):
     def __init__(self, event_id: _Optional[str] = ...) -> None: ...
 
 class GetRequest(_message.Message):
-    __slots__ = ["event_id"]
+    __slots__ = ["event_id", "json_values"]
     EVENT_ID_FIELD_NUMBER: _ClassVar[int]
+    JSON_VALUES_FIELD_NUMBER: _ClassVar[int]
     event_id: str
-    def __init__(self, event_id: _Optional[str] = ...) -> None: ...
+    json_values: bool
+    def __init__(self, event_id: _Optional[str] = ..., json_values: bool = ...) -> None: ...
 
 class GetResponse(_message.Message):
     __slots__ = ["event"]
@@ -32,18 +34,20 @@ class GetResponse(_message.Message):
     def __init__(self, event: _Optional[_Union[_event_pb2.Event, _Mapping]] = ...) -> None: ...
 
 class ListRequest(_message.Message):
-    __slots__ = ["integration_id", "connection_id", "event_type", "max_results", "order"]
+    __slots__ = ["integration_id", "connection_id", "event_type", "max_results", "order", "json_values"]
     INTEGRATION_ID_FIELD_NUMBER: _ClassVar[int]
     CONNECTION_ID_FIELD_NUMBER: _ClassVar[int]
     EVENT_TYPE_FIELD_NUMBER: _ClassVar[int]
     MAX_RESULTS_FIELD_NUMBER: _ClassVar[int]
     ORDER_FIELD_NUMBER: _ClassVar[int]
+    JSON_VALUES_FIELD_NUMBER: _ClassVar[int]
     integration_id: str
     connection_id: str
     event_type: str
     max_results: int
     order: str
-    def __init__(self, integration_id: _Optional[str] = ..., connection_id: _Optional[str] = ..., event_type: _Optional[str] = ..., max_results: _Optional[int] = ..., order: _Optional[str] = ...) -> None: ...
+    json_values: bool
+    def __init__(self, integration_id: _Optional[str] = ..., connection_id: _Optional[str] = ..., event_type: _Optional[str] = ..., max_results: _Optional[int] = ..., order: _Optional[str] = ..., json_values: bool = ...) -> None: ...
 
 class ListResponse(_message.Message):
     __slots__ = ["events"]

@@ -215,7 +215,7 @@ func getConnection(ctx context.Context, varsSvc sdkservices.Vars) (*oauth2.Token
 		return nil, err
 	}
 
-	vs, err := varsSvc.Reveal(ctx, sdktypes.NewVarScopeID(cid))
+	vs, err := varsSvc.Get(ctx, sdktypes.NewVarScopeID(cid))
 	if err != nil {
 		return nil, err
 	}

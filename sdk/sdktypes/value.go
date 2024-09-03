@@ -2,6 +2,7 @@ package sdktypes
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -163,3 +164,38 @@ func (v Value) ToStringValuesMap() (map[string]Value, error) {
 
 func (v Value) Unwrap() (any, error)     { return UnwrapValue(v) }
 func (v Value) UnwrapInto(dst any) error { return UnwrapValueInto(dst, v) }
+
+// An unwrapper that is alway safe to serialize to string afterwards.
+var valueStringUnwrapper = ValueWrapper{
+	SafeForJSON: true,
+	Preunwrap: func(v Value) (Value, error) {
+		if v.IsFunction() {
+			return NewStringValuef("|function: %v|", v.GetFunction().Name()), nil
+		}
+
+		return v, nil
+	},
+}
+
+func ValueProtoToJSONStringValue(pb *ValuePB) (*ValuePB, error) {
+	if pb == nil {
+		return nil, nil
+	}
+
+	v, err := ValueFromProto(pb)
+	if err != nil {
+		return nil, fmt.Errorf("decode: %w", err)
+	}
+
+	u, err := valueStringUnwrapper.Unwrap(v)
+	if err != nil {
+		return nil, fmt.Errorf("unwrap: %w", err)
+	}
+
+	j, err := json.Marshal(u)
+	if err != nil {
+		return nil, fmt.Errorf("marshal: %w", err)
+	}
+
+	return NewStringValue(string(j)).ToProto(), nil
+}

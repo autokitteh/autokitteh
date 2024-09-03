@@ -6,17 +6,18 @@ import (
 
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/web/static"
 )
 
 const (
-	// credsPath is the URL path for our handler to save a new autokitteh
-	// credentials-based connection, after the user submits it via a web form.
-	credsPath = "/google/save"
-
 	// oauthPath is the URL path for our handler to save new OAuth-based connections.
 	oauthPath = "/google/oauth"
+
+	// savePath is the URL path for our handler to save new JSON key-based
+	// connections, after users submit them via a web form.
+	savePath = "/google/save"
 
 	// formsWebhookPath is the URL path to receive incoming Google Forms push notifications.
 	formsWebhookPath = "/googleforms/notif"
@@ -24,40 +25,42 @@ const (
 	gmailWebhookPath = "/gmail/notif"
 )
 
-func Start(l *zap.Logger, muxNoAuth *http.ServeMux, muxAuth *http.ServeMux, v sdkservices.Vars, o sdkservices.OAuth, d sdkservices.Dispatcher) {
-	// Note: there is a need to set some variable before calling `finalize' in `handleOauth'.
-	// This could be possible only if there is authenticated user present in context (otherwise DB layer will reject the operations).
-	// Therefore, oauthPath is routed via muxAuth, which will pass through auth middleware and extract authenticated user
-	// from the cookie to update the context.
-
+// Start initializes all the HTTP handlers of all the Google integrations.
+// This includes connection UIs, initialization webhooks, and event webhooks.
+func Start(l *zap.Logger, muxes *muxes.Muxes, v sdkservices.Vars, o sdkservices.OAuth, d sdkservices.Dispatcher) {
 	uiPath := "GET " + desc.ConnectionURL().Path + "/"
 
-	// New connection UIs + handlers.
-	muxNoAuth.Handle(uiPath, http.FileServer(http.FS(static.GoogleWebContent)))
+	// Connection UI.
+	muxes.NoAuth.Handle(uiPath, http.FileServer(http.FS(static.GoogleWebContent)))
 
 	urlPath := strings.ReplaceAll(uiPath, "google", "gmail")
-	muxNoAuth.Handle(urlPath, http.FileServer(http.FS(static.GmailWebContent)))
+	muxes.NoAuth.Handle(urlPath, http.FileServer(http.FS(static.GmailWebContent)))
 
 	urlPath = strings.ReplaceAll(uiPath, "google", "googlecalendar")
-	muxNoAuth.Handle(urlPath, http.FileServer(http.FS(static.GoogleCalendarWebContent)))
+	muxes.NoAuth.Handle(urlPath, http.FileServer(http.FS(static.GoogleCalendarWebContent)))
 
 	urlPath = strings.ReplaceAll(uiPath, "google", "googlechat")
-	muxNoAuth.Handle(urlPath, http.FileServer(http.FS(static.GoogleChatWebContent)))
+	muxes.NoAuth.Handle(urlPath, http.FileServer(http.FS(static.GoogleChatWebContent)))
 
 	urlPath = strings.ReplaceAll(uiPath, "google", "googledrive")
-	muxNoAuth.Handle(urlPath, http.FileServer(http.FS(static.GoogleDriveWebContent)))
+	muxes.NoAuth.Handle(urlPath, http.FileServer(http.FS(static.GoogleDriveWebContent)))
 
 	urlPath = strings.ReplaceAll(uiPath, "google", "googleforms")
-	muxNoAuth.Handle(urlPath, http.FileServer(http.FS(static.GoogleFormsWebContent)))
+	muxes.NoAuth.Handle(urlPath, http.FileServer(http.FS(static.GoogleFormsWebContent)))
 
 	urlPath = strings.ReplaceAll(uiPath, "google", "googlesheets")
-	muxNoAuth.Handle(urlPath, http.FileServer(http.FS(static.GoogleSheetsWebContent)))
+	muxes.NoAuth.Handle(urlPath, http.FileServer(http.FS(static.GoogleSheetsWebContent)))
 
+	// Init webhooks save connection vars (via "c.Finalize" calls), so they need
+	// to have an authenticated user context, so the DB layer won't reject them.
+	// For this purpose, init webhooks are managed by the "auth" mux, which passes
+	// through AutoKitteh's auth middleware to extract the user ID from a cookie.
 	h := NewHTTPHandler(l, o, v, d)
-	muxAuth.HandleFunc("GET "+oauthPath, h.handleOAuth)
-	muxNoAuth.HandleFunc("POST "+credsPath, h.handleCreds)
+	muxes.Auth.HandleFunc("GET "+oauthPath, h.handleOAuth)
+	muxes.Auth.HandleFunc("GET "+savePath, h.handleCreds)  // Passthrough for OAuth.
+	muxes.Auth.HandleFunc("POST "+savePath, h.handleCreds) // Save JSON key.
 
-	// Event webhooks.
-	muxNoAuth.HandleFunc("POST "+formsWebhookPath, h.handleFormsNotification)
-	muxNoAuth.HandleFunc("POST "+gmailWebhookPath, h.handleGmailNotification)
+	// Event webhooks (unauthenticated by definition).
+	muxes.NoAuth.HandleFunc("POST "+formsWebhookPath, h.handleFormsNotification)
+	muxes.NoAuth.HandleFunc("POST "+gmailWebhookPath, h.handleGmailNotification)
 }

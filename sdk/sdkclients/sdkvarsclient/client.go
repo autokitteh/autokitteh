@@ -47,11 +47,10 @@ func (c *client) Delete(ctx context.Context, sid sdktypes.VarScopeID, names ...s
 	return internal.Validate(resp.Msg)
 }
 
-func (c *client) get(ctx context.Context, reveal bool, sid sdktypes.VarScopeID, names ...sdktypes.Symbol) (sdktypes.Vars, error) {
+func (c *client) Get(ctx context.Context, sid sdktypes.VarScopeID, names ...sdktypes.Symbol) (sdktypes.Vars, error) {
 	resp, err := c.client.Get(ctx, connect.NewRequest(&varsv1.GetRequest{
 		ScopeId: sid.String(),
 		Names:   kittehs.TransformToStrings(names),
-		Reveal:  reveal,
 	}))
 	if err != nil {
 		return nil, rpcerrors.ToSDKError(err)
@@ -62,14 +61,6 @@ func (c *client) get(ctx context.Context, reveal bool, sid sdktypes.VarScopeID, 
 	}
 
 	return kittehs.TransformError[*varsv1.Var, sdktypes.Var](resp.Msg.Vars, sdktypes.FromProto)
-}
-
-func (c *client) Get(ctx context.Context, sid sdktypes.VarScopeID, names ...sdktypes.Symbol) (sdktypes.Vars, error) {
-	return c.get(ctx, false, sid, names...)
-}
-
-func (c *client) Reveal(ctx context.Context, sid sdktypes.VarScopeID, names ...sdktypes.Symbol) (sdktypes.Vars, error) {
-	return c.get(ctx, true, sid, names...)
 }
 
 func (c *client) FindConnectionIDs(ctx context.Context, iid sdktypes.IntegrationID, name sdktypes.Symbol, value string) ([]sdktypes.ConnectionID, error) {

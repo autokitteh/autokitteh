@@ -25,10 +25,10 @@ type api struct {
 	cid  sdktypes.ConnectionID
 }
 
-var integrationID = sdktypes.NewIntegrationIDFromName("googleforms")
+var IntegrationID = sdktypes.NewIntegrationIDFromName("googleforms")
 
 var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
-	IntegrationId: integrationID.String(),
+	IntegrationId: IntegrationID.String(),
 	UniqueName:    "googleforms",
 	DisplayName:   "Google Forms",
 	Description:   "Google Forms is a survey administration software that part of the Google Workspace office suite.",
@@ -113,7 +113,7 @@ func (a api) connectionData(ctx context.Context) (*vars.Vars, error) {
 		cid = a.cid // Fallback during authentication flows.
 	}
 
-	vs, err := a.vars.Reveal(ctx, sdktypes.NewVarScopeID(cid))
+	vs, err := a.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
 	if err != nil {
 		return nil, err
 	}

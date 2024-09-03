@@ -30,7 +30,7 @@ func (gdb *gormdb) createTrigger(ctx context.Context, trigger *scheme.Trigger) e
 
 func (gdb *gormdb) deleteTrigger(ctx context.Context, triggerID sdktypes.UUID) error {
 	return gdb.transaction(ctx, func(tx *tx) error {
-		if err := tx.isCtxUserEntity(ctx, triggerID); err != nil {
+		if err := tx.isCtxUserEntity(tx.ctx, triggerID); err != nil {
 			return err
 		}
 		return tx.db.Delete(&scheme.Trigger{TriggerID: triggerID}).Error
@@ -39,7 +39,7 @@ func (gdb *gormdb) deleteTrigger(ctx context.Context, triggerID sdktypes.UUID) e
 
 func (gdb *gormdb) updateTrigger(ctx context.Context, triggerID sdktypes.UUID, data map[string]any) error {
 	return gdb.transaction(ctx, func(tx *tx) error {
-		if err := tx.isCtxUserEntity(ctx, triggerID); err != nil {
+		if err := tx.isCtxUserEntity(tx.ctx, triggerID); err != nil {
 			return err
 		}
 		allowedFields := []string{"ConnectionID", "EventType", "Filter", "CodeLocation", "Data"}
@@ -73,12 +73,16 @@ func (gdb *gormdb) listTriggers(ctx context.Context, filter sdkservices.ListTrig
 	return ts, nil
 }
 
+func triggerUniqueName(env string, name string) string {
+	return fmt.Sprintf("%s/%s", env, name)
+}
+
 func (db *gormdb) triggerToRecord(ctx context.Context, trigger sdktypes.Trigger) (*scheme.Trigger, error) {
 	connID := trigger.ConnectionID()
 
 	conn, err := db.GetConnection(ctx, connID)
 	if err != nil {
-		return nil, fmt.Errorf("get trigger connection: %w", err)
+		return nil, fmt.Errorf("connection: %w", err)
 	}
 
 	projID := conn.ProjectID()
@@ -105,7 +109,7 @@ func (db *gormdb) triggerToRecord(ctx context.Context, trigger sdktypes.Trigger)
 	}
 
 	name := trigger.Name()
-	uniqueName := fmt.Sprintf("%s/%s", envID.String(), name)
+	uniqueName := triggerUniqueName(envID.String(), name.String())
 
 	return &scheme.Trigger{
 		TriggerID:    trigger.ID().UUIDValue(),
@@ -122,7 +126,7 @@ func (db *gormdb) triggerToRecord(ctx context.Context, trigger sdktypes.Trigger)
 }
 
 func (db *gormdb) CreateTrigger(ctx context.Context, trigger sdktypes.Trigger) error {
-	if err := trigger.Strict(); err != nil {
+	if err := trigger.Strict(); err != nil { // name, connection, env but not project
 		return err
 	}
 
