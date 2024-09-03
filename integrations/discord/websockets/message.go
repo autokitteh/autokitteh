@@ -9,7 +9,7 @@ import (
 	"go.autokitteh.dev/autokitteh/integrations/discord/internal/vars"
 )
 
-func (h *handler) handleMessage(_ *discordgo.Session, m any, eventType string) {
+func (h *handler) handleMessage(msg any, eventType string) {
 	akEvent, err := transformEvent(h.logger, m, eventType)
 	if err != nil {
 		return
