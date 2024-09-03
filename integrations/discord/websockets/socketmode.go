@@ -54,7 +54,7 @@ func (h handler) OpenSocketModeConnection(botID, botToken string) {
 
 	addHandlers(dg, h)
 
-	// Open a WebSocket connection to Discord
+	// Open a WebSocket connection to Discord.
 	err = dg.Open()
 
 	if err == nil {
