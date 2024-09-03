@@ -41,16 +41,16 @@ func (gdb *gormdb) createProject(ctx context.Context, project *scheme.Project) e
 
 func (gdb *gormdb) deleteProject(ctx context.Context, projectID sdktypes.UUID) error {
 	return gdb.transaction(ctx, func(tx *tx) error {
-		if err := tx.isCtxUserEntity(ctx, projectID); err != nil {
+		if err := tx.isCtxUserEntity(*tx.ctx, projectID); err != nil {
 			return err
 		}
-		return tx.deleteProjectAndDependents(ctx, projectID)
+		return tx.deleteProjectAndDependents(*tx.ctx, projectID)
 	})
 }
 
 // delete project, its envs, deployments, sessions and build
 func (gdb *gormdb) deleteProjectAndDependents(ctx context.Context, projectID sdktypes.UUID) error {
-	// NOTE: should be transactional and with context applied
+	// NOTE: should be transactional
 
 	deploymentStates, err := gdb.getProjectDeployments(ctx, projectID)
 	if err != nil {
@@ -107,7 +107,7 @@ func (gdb *gormdb) deleteProjectAndDependents(ctx context.Context, projectID sdk
 func (gdb *gormdb) updateProject(ctx context.Context, p *scheme.Project) error {
 	// REVIEW: security? any specific fields to allow? resources to disallow?
 	return gdb.transaction(ctx, func(tx *tx) error {
-		if err := tx.isCtxUserEntity(ctx, p.ProjectID); err != nil {
+		if err := tx.isCtxUserEntity(*tx.ctx, p.ProjectID); err != nil {
 			return err
 		}
 

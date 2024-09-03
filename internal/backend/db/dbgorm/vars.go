@@ -26,10 +26,10 @@ func (gdb *gormdb) setVar(ctx context.Context, vr *scheme.Var) error {
 		return err
 	}
 	return gdb.transaction(ctx, func(tx *tx) error {
-		db := tx.db.WithContext(ctx)
+		db := tx.db
 
 		// if no records were found then fail with foreign keys validation (#1), since there should be one
-		oo, err := tx.owner.EnsureUserAccessToEntitiesWithOwnership(ctx, db, uid, vr.ScopeID)
+		oo, err := tx.owner.EnsureUserAccessToEntitiesWithOwnership(*tx.ctx, db, uid, vr.ScopeID)
 		if err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return gorm.ErrForeignKeyViolated
@@ -73,7 +73,7 @@ func varsCommonQuery(db *gorm.DB, scopeID sdktypes.UUID, names []string) *gorm.D
 
 func (gdb *gormdb) deleteVars(ctx context.Context, scopeID sdktypes.UUID, names ...string) error {
 	return gdb.transaction(ctx, func(tx *tx) error {
-		if err := tx.isCtxUserEntity(ctx, scopeID); err != nil {
+		if err := tx.isCtxUserEntity(*tx.ctx, scopeID); err != nil {
 			return err
 		}
 		return varsCommonQuery(tx.db, scopeID, names).Delete(&scheme.Var{}).Error

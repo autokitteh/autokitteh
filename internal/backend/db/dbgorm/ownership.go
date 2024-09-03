@@ -135,7 +135,7 @@ func (gdb *gormdb) createEntityWithOwnership(
 	}
 
 	return gdb.transaction(ctx, func(tx *tx) error {
-		if err := tx.isUserEntity(ctx, uid, idsToVerifyOwnership...); err != nil {
+		if err := tx.isUserEntity(*tx.ctx, uid, idsToVerifyOwnership...); err != nil {
 			return err
 		}
 		if err := create(tx.db, uid); err != nil { // create
