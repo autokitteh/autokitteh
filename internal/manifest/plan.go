@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 
-	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/internal/manifest/internal/actions"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
@@ -413,7 +412,10 @@ func planTriggers(ctx context.Context, mtriggers []*Trigger, client sdkservices.
 		mtrigger := *mtrigger
 		projPrefix := projName + "/"
 		mtrigger.EnvKey = projPrefix + defaultEnvName
-		mtrigger.ConnectionKey = projPrefix + mtrigger.ConnectionKey
+
+		if mtrigger.ConnectionKey != nil {
+			*mtrigger.ConnectionKey = projPrefix + *mtrigger.ConnectionKey
+		}
 
 		log := log.For("trigger", mtrigger)
 
@@ -421,50 +423,47 @@ func planTriggers(ctx context.Context, mtriggers []*Trigger, client sdkservices.
 			return t.Name().String() == mtrigger.Name
 		})
 
-		ep := mtrigger.Entrypoint
-		if ep == "" {
-			ep = mtrigger.Call
-		}
-		loc, err := sdktypes.ParseCodeLocation(ep)
+		loc, err := sdktypes.ParseCodeLocation(mtrigger.Call)
 		if err != nil {
 			return nil, fmt.Errorf("trigger %q: invalid entrypoint: %w", mtrigger.GetKey(), err)
-		}
-
-		connectionID := curr.ConnectionID()
-		// schedule could be specified in manifest either in dedicated or in `data' sections. Ensure schedule is present in data section
-		if mtrigger.Schedule != "" {
-			if schedule, found := mtrigger.Data[fixtures.ScheduleExpression]; found {
-				if schedule != mtrigger.Schedule {
-					return nil, fmt.Errorf("trigger %q: conflicting schedules specified: %q != %q", mtrigger.GetKey(), mtrigger.Schedule, schedule)
-				}
-			}
-			if mtrigger.Data == nil {
-				mtrigger.Data = make(map[string]any)
-			}
-			mtrigger.Data[fixtures.ScheduleExpression] = mtrigger.Schedule // ensure that schedule is present in data section
-
-			if mtrigger.ConnectionKey == projPrefix { // there is a schedule section and no connection was specified, means it's a scheduler trigger
-				mtrigger.EventType = fixtures.SchedulerEventTriggerType
-				mtrigger.ConnectionKey = "" // just simplify comparison later in exec plan
-				connectionID = sdktypes.BuiltinSchedulerConnectionID
-			}
-		}
-
-		data, err := kittehs.TransformMapValuesError(mtrigger.Data, sdktypes.WrapValue)
-		if err != nil {
-			return nil, fmt.Errorf("trigger %q: invalid additional data: %w", mtrigger.GetKey(), err)
 		}
 
 		desired, err := sdktypes.TriggerFromProto(&sdktypes.TriggerPB{
 			Filter:       mtrigger.Filter,
 			EventType:    mtrigger.EventType,
 			CodeLocation: loc.ToProto(),
-			Data:         kittehs.TransformMapValues(data, sdktypes.ToProto),
 			Name:         mtrigger.Name,
-			ConnectionId: connectionID.String(),
 		})
 		if err != nil {
 			return nil, fmt.Errorf("trigger %q: invalid: %w", mtrigger.GetKey(), err)
+		}
+
+		if mtrigger.Webhook != nil || mtrigger.Type == "webhook" {
+			if mtrigger.Type != "" && mtrigger.Type != "webhook" {
+				return nil, fmt.Errorf("trigger %q: type %q is not supported for webhook", mtrigger.GetKey(), mtrigger.Type)
+			}
+
+			desired = desired.WithWebhook()
+		}
+
+		if mtrigger.ConnectionKey != nil || mtrigger.Type == "connection" {
+			if mtrigger.Type != "" && mtrigger.Type != "connection" {
+				return nil, fmt.Errorf("trigger %q: type %q is not supported for connection", mtrigger.GetKey(), mtrigger.Type)
+			}
+
+			desired = desired.WithSourceType(sdktypes.TriggerSourceTypeConnection)
+		}
+
+		if mtrigger.Schedule != nil || mtrigger.Type == "schedule" {
+			if mtrigger.Type != "" && mtrigger.Type != "schedule" {
+				return nil, fmt.Errorf("trigger %q: type %q is not supported for schedule", mtrigger.GetKey(), mtrigger.Type)
+			}
+
+			desired = desired.WithSchedule(*mtrigger.Schedule)
+		}
+
+		if desired.SourceType() == sdktypes.TriggerSourceTypeUnspecified {
+			return nil, fmt.Errorf("trigger %q: concrete type not specified", mtrigger.GetKey())
 		}
 
 		if !curr.IsValid() {
@@ -473,6 +472,12 @@ func planTriggers(ctx context.Context, mtriggers []*Trigger, client sdkservices.
 		} else {
 			matchedTriggerIDs = append(matchedTriggerIDs, curr.ID().String())
 			log.Printf("found, id=%q", curr.ID())
+
+			if desired.SourceType() != curr.SourceType() {
+				return nil, fmt.Errorf("trigger %q: source type cannot be updated", mtrigger.GetKey())
+			}
+
+			curr = curr.WithWebhookSlug("")
 
 			// TODO: `curr' may have actual connectionID (if not a scheduler trigger)
 			// while for `desired' we need to resolve it from connectionKey

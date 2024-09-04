@@ -1,30 +1,28 @@
-# TODO(ENG-1407): re-enable once underlying issue is solved.
-
 ak deploy --manifest project.yaml
 return code == 0
 
-http get /http/myproject/start
-resp code == 200
+http get /webhooks/2222222222222222222226
+resp code == 202
 
-ak session watch ses_00000000000000000000000008 --end-state RUNNING --wait-created
+ak session watch ses_0000000000000000000000000c --end-state RUNNING --wait-created
 return code == 0
 
-http post /http/myproject/woof a
-resp code == 200
+http post /webhooks/2222222222222222222228 a
+resp code == 202
 
-http post /http/myproject/meow b
-resp code == 200
+http post /webhooks/222222222222222222222A b
+resp code == 202
 
-http post /http/myproject/meow c
-resp code == 200
+http post /webhooks/222222222222222222222A c
+resp code == 202
 
-ak session watch ses_00000000000000000000000008 -r "3 None"
+ak session watch ses_0000000000000000000000000c -r "3 None"
 return code == 0
 
-http post /http/myproject/woof d
-resp code == 200
+http post /webhooks/2222222222222222222228 d
+resp code == 202
 
-ak session watch ses_00000000000000000000000008 --end-state COMPLETED
+ak session watch ses_0000000000000000000000000c --end-state COMPLETED
 return code == 0
 
 ak session log --prints-only --no-timestamps
@@ -43,21 +41,19 @@ version: v1
 
 project:
   name: myproject
-  connections:
-    - name: myhttp
-      integration: http
   triggers:
     - name: http_start
-      connection: myhttp
-      event_type: get
-      data:
-        path: start
+      type: webhook
       call: program.star:on_http_start
+    - name: http1
+      type: webhook
+    - name: http2
+      type: webhook
 
 -- program.star --
 def on_http_start():
-  s1 = subscribe("myhttp", "data.url.path == '/meow'")
-  s2 = subscribe("myhttp", "data.url.path == '/woof'")
+  s1 = subscribe("http2")
+  s2 = subscribe("http1")
   print(1, next_event(s2)['body'].text())
   print(2, next_event(s1)['body'].text())
   print(3, next_event(s2, timeout=1))

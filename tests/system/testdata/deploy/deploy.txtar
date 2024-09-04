@@ -64,23 +64,18 @@ version: v1
 
 project:
   name: my_project
-  connections:
-    - name: my_connection
-      integration: http
   triggers:
     - name: get
-      connection: my_connection
+      type: webhook
       event_type: get
-      entrypoint: my_program.star:on_http_get
+      call: my_program.star:on_http_get
 
 -- expected_output_1.txt --
 [plan] project "my_project": not found, will create
-[plan] connection "my_project/my_connection": not found, will create
-[plan] trigger "my_project/default:my_project/my_connection/get": not found, will create
+[plan] trigger "my_project/default:/get": not found, will create
 [exec] create_project "my_project": prj_00000000000000000000000001 created
-[exec] create_connection "my_project/my_connection": con_00000000000000000000000003 created
-[exec] create_trigger "my_project/default:my_project/my_connection/get": trg_00000000000000000000000004 created
-[!!!!] Connection created, and can be initialized. Please run this to complete: ak connection init con_00000000000000000000000003
+[exec] create_trigger "my_project/default:/get": trg_00000000000000000000000003 created
+[!!!!] Trigger created. Webhook path is "/webhooks/2222222222222222222226"
 [exec] create_build: created "bld_00000000000000000000000005"
 [exec] create_deployment: created "dep_00000000000000000000000006"
 [exec] activate_deployment: activated
@@ -90,11 +85,10 @@ project:
 [plan] project "my_project": no changes needed
 [plan] env "my_project/default": found, id="env_00000000000000000000000002"
 [plan] env "my_project/default": no changes needed
-[plan] project "my_project": found 1 connections
-[plan] connection "my_project/my_connection": no changes needed
+[plan] project "my_project": found 0 connections
 [plan] project "my_project": found 1 triggers
-[plan] trigger "my_project/default:my_project/my_connection/get": found, id="trg_00000000000000000000000004"
-[plan] trigger "my_project/default:my_project/my_connection/get": no changes needed
+[plan] trigger "my_project/default:/get": found, id="trg_00000000000000000000000003"
+[plan] trigger "my_project/default:/get": no changes needed
 [exec] create_build: created "bld_00000000000000000000000007"
 [exec] create_deployment: created "dep_00000000000000000000000008"
 [exec] activate_deployment: activated

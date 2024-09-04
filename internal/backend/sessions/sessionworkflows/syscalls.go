@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/google/uuid"
 	"go.temporal.io/sdk/workflow"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessioncontext"
@@ -167,21 +168,40 @@ func (w *sessionWorkflow) start(ctx context.Context, args []sdktypes.Value, kwar
 }
 
 func (w *sessionWorkflow) subscribe(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
-	var (
-		connectionName string
-		filter         string
-	)
+	var name, filter string
 
-	if err := sdkmodule.UnpackArgs(args, kwargs, "connection_name", &connectionName, "filter", &filter); err != nil {
+	if err := sdkmodule.UnpackArgs(args, kwargs, "name", &name, "filter?", &filter); err != nil {
 		return sdktypes.InvalidValue, err
 	}
 
-	signalID, err := w.createEventSubscription(ctx, connectionName, filter)
+	_, connection := kittehs.FindFirst(w.data.Connections, func(c sdktypes.Connection) bool {
+		return c.Name().String() == name
+	})
+
+	_, trigger := kittehs.FindFirst(w.data.Triggers, func(t sdktypes.Trigger) bool {
+		return t.Name().String() == name
+	})
+
+	if connection.IsValid() && trigger.IsValid() {
+		return sdktypes.InvalidValue, errors.New("ambigous source name - matching both a connection and a trigger")
+	}
+
+	var did sdktypes.EventDestinationID
+
+	if connection.IsValid() {
+		did = sdktypes.NewEventDestinationID(connection.ID())
+	} else if trigger.IsValid() {
+		did = sdktypes.NewEventDestinationID(trigger.ID())
+	} else {
+		return sdktypes.InvalidValue, fmt.Errorf("source %q not found", name)
+	}
+
+	signalID, err := w.createEventSubscription(sessioncontext.GetWorkflowContext(ctx), filter, did)
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
 
-	return sdktypes.WrapValue(signalID)
+	return sdktypes.WrapValue(signalID.String())
 }
 
 /*
@@ -211,7 +231,12 @@ func (w *sessionWorkflow) nextEvent(ctx context.Context, args []sdktypes.Value, 
 		return sdktypes.InvalidValue, errors.New("timeout must be a non-negative value")
 	}
 
-	signals := kittehs.Transform(args, func(v sdktypes.Value) string { return v.GetString().Value() })
+	signals, err := kittehs.TransformError(args, func(v sdktypes.Value) (uuid.UUID, error) {
+		return uuid.Parse(v.GetString().Value())
+	})
+	if err != nil {
+		return sdktypes.InvalidValue, err
+	}
 
 	// check if there is an event already in one of the signals
 	for _, signalID := range signals {
@@ -238,7 +263,7 @@ func (w *sessionWorkflow) nextEvent(ctx context.Context, args []sdktypes.Value, 
 			return sdktypes.InvalidValue, err
 		}
 
-		if signalID == "" {
+		if signalID == uuid.Nil {
 			return sdktypes.Nothing, nil
 		}
 
@@ -261,7 +286,12 @@ func (w *sessionWorkflow) unsubscribe(ctx context.Context, args []sdktypes.Value
 		return sdktypes.InvalidValue, err
 	}
 
-	w.removeEventSubscription(ctx, signalID)
+	uuid, err := uuid.Parse(signalID)
+	if err != nil {
+		return sdktypes.InvalidValue, err
+	}
+
+	w.removeEventSubscription(ctx, uuid)
 
 	return sdktypes.Nothing, nil
 }

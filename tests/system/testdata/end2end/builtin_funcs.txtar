@@ -3,8 +3,8 @@ ak deploy --manifest project.yaml
 return code == 0
 
 # Send HTTP GET request to trigger deployment to start new session.
-http get /http/my_project/my_url_path
-resp code == 200
+http get /webhooks/2222222222222222222226
+resp code == 202
 
 wait 5s for session ses_00000000000000000000000008
 
@@ -29,19 +29,14 @@ version: v1
 
 project:
   name: my_project
-  connections:
-    - name: my_connection
-      integration: http
   triggers:
     - name: http_get
-      connection: my_connection
+      type: webhook
       event_type: get
-      data:
-        path: my_url_path
       call: program.star:on_http_get
 
 -- program.star --
-def on_http_get(data):
+def on_http_get():
     # runtimes/starlarkrt/internal/libs/rand/rand.go
     rand.seed(0x533d)
     print("1st random int with seed: %d" % rand.intn(10))

@@ -121,6 +121,34 @@ func (r Resolver) ConnectionNameOrID(ctx context.Context, nameOrID, project stri
 	}
 }
 
+// TriggerNameOrID returns a trigger, based on the given name or
+// ID. If the input is empty, we return nil but not an error.
+func (r Resolver) TriggerNameOrID(ctx context.Context, nameOrID, project string) (c sdktypes.Trigger, cid sdktypes.TriggerID, err error) {
+	if nameOrID == "" {
+		return
+	}
+
+	if sdktypes.IsConnectionID(nameOrID) {
+		return r.TriggerID(ctx, nameOrID)
+	}
+
+	parts := strings.Split(nameOrID, separator)
+	switch len(parts) {
+	case 1:
+		if project == "" {
+			err = fmt.Errorf("invalid trigger name %q: missing project prefix", nameOrID)
+		} else {
+			return r.triggerByFullName(ctx, project, parts[0], nameOrID)
+		}
+		return
+	case 2:
+		return r.triggerByFullName(ctx, parts[0], parts[1], nameOrID)
+	default:
+		err = fmt.Errorf("invalid trigger name %q: too many parts", nameOrID)
+		return
+	}
+}
+
 func (r Resolver) connectionByID(ctx context.Context, id string) (c sdktypes.Connection, cid sdktypes.ConnectionID, err error) {
 	if cid, err = sdktypes.StrictParseConnectionID(id); err != nil {
 		err = fmt.Errorf("invalid connection ID %q: %w", id, err)
@@ -158,6 +186,31 @@ func (r Resolver) connectionByFullName(ctx context.Context, projNameOrID, connNa
 	}
 
 	return sdktypes.InvalidConnection, sdktypes.InvalidConnectionID, NotFoundError{Type: "connection", Name: fullName}
+}
+
+// TODO: add type and maybe id to sdkerrors.ErrNotFound and replace NotFoundError below
+func (r Resolver) triggerByFullName(ctx context.Context, projNameOrID, triggerName, fullName string) (sdktypes.Trigger, sdktypes.TriggerID, error) {
+	p, pid, err := r.ProjectNameOrID(ctx, projNameOrID)
+	if err != nil {
+		return sdktypes.InvalidTrigger, sdktypes.InvalidTriggerID, err
+	}
+	if !p.IsValid() {
+		return sdktypes.InvalidTrigger, sdktypes.InvalidTriggerID, NotFoundError{Type: "project", Name: projNameOrID}
+	}
+
+	f := sdkservices.ListTriggersFilter{ProjectID: pid}
+	cs, err := r.Client.Triggers().List(ctx, f)
+	if err != nil {
+		return sdktypes.InvalidTrigger, sdktypes.InvalidTriggerID, fmt.Errorf("list triggers: %w", err)
+	}
+
+	for _, c := range cs {
+		if c.Name().String() == triggerName {
+			return c, c.ID(), nil
+		}
+	}
+
+	return sdktypes.InvalidTrigger, sdktypes.InvalidTriggerID, NotFoundError{Type: "trigger", Name: fullName}
 }
 
 // EnvNameOrID returns an environment, based on the given environment
@@ -292,7 +345,7 @@ func (r Resolver) IntegrationNameOrID(ctx context.Context, nameOrID string) (sdk
 }
 
 func (r Resolver) integrationByID(ctx context.Context, id string) (sdktypes.Integration, sdktypes.IntegrationID, error) {
-	iid, err := sdktypes.StrictParseIntegrationID(id)
+	iid, err := sdktypes.Strict(sdktypes.ParseIntegrationID(id))
 	if err != nil {
 		return sdktypes.InvalidIntegration, sdktypes.InvalidIntegrationID, fmt.Errorf("invalid integration ID %q: %w", id, err)
 	}

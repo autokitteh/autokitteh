@@ -56,7 +56,7 @@ func TestMain(m *testing.M) {
 	cfg, _ = cfg.Explicit()
 	cfg.Ownership = "users"
 	db := setupDB(cfg)
-	z := zap.NewExample()
+	z := kittehs.Must1(zap.NewDevelopment())
 	gormDB = gormdb{db: db, cfg: cfg, mu: nil, z: z}
 	gormDB.setupOwnershipChecker(z)
 
@@ -284,7 +284,7 @@ func assertDeleted[T any](t *testing.T, f *dbFixture, m T) {
 
 var (
 	testDummyID  = kittehs.Must1(uuid.FromBytes([]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}))
-	testSignalID = "00000000000000000000000001"
+	testSignalID = kittehs.Must1(uuid.NewV7())
 )
 
 func (f *dbFixture) newSession(args ...any) scheme.Session {
@@ -409,22 +409,22 @@ func (f *dbFixture) newTrigger(args ...any) scheme.Trigger {
 	t := scheme.Trigger{
 		TriggerID:    id,
 		Name:         name,
-		Data:         datatypes.JSON([]byte("{}")),
 		CodeLocation: "loc",
+		SourceType:   sdktypes.TriggerSourceTypeConnection.String(),
 	}
 	for _, a := range args {
 		switch a := a.(type) {
 		case scheme.Project:
 			t.ProjectID = a.ProjectID
 		case scheme.Connection:
-			t.ConnectionID = a.ConnectionID
+			t.ConnectionID = &a.ConnectionID
 		case scheme.Env:
 			t.EnvID = a.EnvID
 		case string:
 			t.Name = a
 		}
 	}
-	t.UniqueName = triggerUniqueName(t.EnvID.String(), t.Name)
+	t.UniqueName = triggerUniqueName(t.EnvID.String(), sdktypes.NewSymbol(t.Name))
 	return t
 }
 

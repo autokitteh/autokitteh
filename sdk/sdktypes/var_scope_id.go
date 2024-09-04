@@ -12,7 +12,7 @@ type VarScopeID struct{ id[typeid.AnyPrefix] }
 var InvalidVarScopeID VarScopeID
 
 type concreteVarScopeID interface {
-	EnvID | ConnectionID
+	EnvID | ConnectionID | TriggerID
 	ID
 }
 
@@ -32,7 +32,7 @@ func ParseVarScopeID(s string) (VarScopeID, error) {
 	}
 
 	switch parsed.Kind() {
-	case envIDKind, connectionIDKind:
+	case envIDKind, connectionIDKind, triggerIDKind:
 		return VarScopeID{parsed}, nil
 	default:
 		return InvalidVarScopeID, sdkerrors.NewInvalidArgumentError("invalid executor id")
@@ -41,8 +41,10 @@ func ParseVarScopeID(s string) (VarScopeID, error) {
 
 func (e VarScopeID) ToEnvID() EnvID               { id, _ := ParseEnvID(e.String()); return id }
 func (e VarScopeID) ToConnectionID() ConnectionID { id, _ := ParseConnectionID(e.String()); return id }
+func (e VarScopeID) ToTriggerID() TriggerID       { id, _ := ParseTriggerID(e.String()); return id }
 
 func (e VarScopeID) IsEnvID() bool        { return e.Kind() == envIDKind }
 func (e VarScopeID) IsConnectionID() bool { return e.Kind() == connectionIDKind }
+func (e VarScopeID) IsTriggerID() bool    { return e.Kind() == triggerIDKind }
 
 func (e VarScopeID) AsID() ID { return e }

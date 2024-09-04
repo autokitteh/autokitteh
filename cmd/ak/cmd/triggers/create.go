@@ -6,7 +6,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
-	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/internal/resolver"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -14,12 +13,14 @@ import (
 
 var (
 	call, event, filter, name, project, schedule string
-	data                                         map[string]string
+	webhook                                      bool
 )
 
 var createCmd = common.StandardCommand(&cobra.Command{
-	Use: `create -n name --call file:func [-p project] [-e env] -c connection [-E event] [-f filter] [--data key=value]...
-             create -n name --call file:func [-p project] [-e env] -s "schedule"`,
+	Use: `create -n name --call file:func [-p project] [-e env] -c connection [-E event] [-f filter]
+             create -n name --call file:func [-p project] [-e env] -s "schedule"
+  			 create -n name --call file:func [-p project] [-e env] --webhook
+`,
 
 	Short: "Create event trigger",
 	Args:  cobra.NoArgs,
@@ -52,39 +53,30 @@ var createCmd = common.StandardCommand(&cobra.Command{
 			eid = e.ID()
 		}
 
-		// Mode 1: connection is required, event and/or filter
-		// and/or data are required, and schedule is not allowed.
-		c, cid, err := r.ConnectionNameOrID(ctx, connection, project)
-		if connection != "" {
-			if err = common.AddNotFoundErrIfCond(err, c.IsValid()); err != nil {
-				return common.ToExitCodeErrorNotNilErr(err, "connection")
-			}
-		}
-
-		// Mode 2: schedule is required, connection/event/filter are not allowed.
-		// TODO(ENG-1004): Verify validity of schedule expression.
-		if schedule != "" {
-			cid = sdktypes.BuiltinSchedulerConnectionID
-			event = fixtures.SchedulerEventTriggerType
-			data[fixtures.ScheduleExpression] = schedule
-		}
-
-		// Finally, create and print the trigger.
-		m := kittehs.TransformMapValues(data, func(v string) *sdktypes.ValuePB {
-			return sdktypes.ToProto(sdktypes.NewStringValue(v))
-		})
-
-		t, err := sdktypes.StrictTriggerFromProto(&sdktypes.TriggerPB{
+		t, err := sdktypes.TriggerFromProto(&sdktypes.TriggerPB{
 			Name:         name,
 			EnvId:        eid.String(),
-			ConnectionId: cid.String(),
 			EventType:    event,
 			Filter:       filter,
-			Data:         m,
 			CodeLocation: cl.ToProto(),
 		})
 		if err != nil {
 			return fmt.Errorf("invalid trigger: %w", err)
+		}
+
+		if connection != "" {
+			_, cid, err := r.ConnectionNameOrID(ctx, connection, project)
+			if err != nil {
+				return common.ToExitCodeErrorNotNilErr(err, "connection")
+			}
+
+			t = t.WithConnectionID(cid)
+		} else if schedule != "" {
+			t = t.WithSchedule(schedule)
+		} else if webhook {
+			t = t.WithWebhook()
+		} else {
+			return fmt.Errorf("missing connection, schedule or webhook")
 		}
 
 		tid, err := triggers().Create(ctx, t)
@@ -110,15 +102,15 @@ func init() {
 	createCmd.MarkFlagsOneRequired("project", "env")
 
 	createCmd.Flags().VarP(common.NewNonEmptyString("", &connection), "connection", "c", "connection name or ID")
+	createCmd.Flags().BoolVarP(&webhook, "webhook", "w", false, "trigger uses a webhook")
+
 	createCmd.Flags().VarP(common.NewNonEmptyString("", &schedule), "schedule", "s", "schedule expression (cron or extended)")
-	createCmd.MarkFlagsOneRequired("connection", "schedule")
-	createCmd.MarkFlagsMutuallyExclusive("connection", "schedule")
+	createCmd.MarkFlagsOneRequired("connection", "schedule", "webhook")
+	createCmd.MarkFlagsMutuallyExclusive("connection", "schedule", "webhook")
 
 	createCmd.Flags().StringVarP(&event, "event", "E", "", "optional event type, based on connection")
 	createCmd.Flags().StringVarP(&filter, "filter", "f", "", "optional event data filter expression")
-	createCmd.Flags().StringToStringVarP(&data, "data", "d", map[string]string{}, "optional event config key-value pairs")
-	createCmd.MarkFlagsMutuallyExclusive("schedule", "event")
-	createCmd.MarkFlagsMutuallyExclusive("schedule", "filter")
-	createCmd.MarkFlagsMutuallyExclusive("schedule", "data")
-	createCmd.MarkFlagsOneRequired("event", "filter", "data", "schedule")
+	createCmd.MarkFlagsMutuallyExclusive("schedule", "webhook", "event")
+	createCmd.MarkFlagsMutuallyExclusive("schedule", "webhook")
+	createCmd.MarkFlagsOneRequired("event", "schedule", "webhook")
 }

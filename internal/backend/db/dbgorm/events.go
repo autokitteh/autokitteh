@@ -42,8 +42,8 @@ func (gdb *gormdb) listEvents(ctx context.Context, filter sdkservices.ListEvents
 	if filter.IntegrationID.IsValid() {
 		q = q.Where("integration_id = ?", filter.IntegrationID.UUIDValue())
 	}
-	if filter.ConnectionID.IsValid() {
-		q = q.Where("connection_id = ?", filter.ConnectionID.UUIDValue())
+	if filter.DestinationID.IsValid() {
+		q = q.Where("destination_id = ?", filter.DestinationID.UUIDValue())
 	}
 	if filter.EventType != "" {
 		q = q.Where("event_type = ?", filter.EventType)
@@ -76,15 +76,17 @@ func (db *gormdb) SaveEvent(ctx context.Context, event sdktypes.Event) error {
 		return err
 	}
 
-	connectionID := event.ConnectionID() // could be invalid/zero
+	connectionID := event.DestinationID().ToConnectionID()
 
 	e := scheme.Event{
-		EventID:      event.ID().UUIDValue(),
-		ConnectionID: scheme.UUIDOrNil(connectionID.UUIDValue()),
-		EventType:    event.Type(),
-		Data:         kittehs.Must1(json.Marshal(event.Data())),
-		Memo:         kittehs.Must1(json.Marshal(event.Memo())),
-		CreatedAt:    event.CreatedAt(),
+		EventID:       event.ID().UUIDValue(),
+		DestinationID: event.DestinationID().UUIDValue(),
+		ConnectionID:  scheme.UUIDOrNil(connectionID.UUIDValue()),
+		TriggerID:     scheme.UUIDOrNil(event.DestinationID().ToTriggerID().UUIDValue()),
+		EventType:     event.Type(),
+		Data:          kittehs.Must1(json.Marshal(event.Data())),
+		Memo:          kittehs.Must1(json.Marshal(event.Memo())),
+		CreatedAt:     event.CreatedAt(),
 	}
 
 	if connectionID.IsValid() { // only if exists

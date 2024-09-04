@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
 	akCtx "go.autokitteh.dev/autokitteh/internal/backend/context"
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
@@ -258,7 +259,6 @@ func TestCreateTriggerWithOwnership(t *testing.T) {
 	f := preOwnershipTest(t)
 
 	p, c, e := f.createProjectConnectionEnv(t)
-	cronCon := f.createCronConnection(t)
 
 	t1 := f.newTrigger(p, e, c)
 	f.createTriggersAndAssert(t, t1)
@@ -274,8 +274,6 @@ func TestCreateTriggerWithOwnership(t *testing.T) {
 	// user is not owning only env (project is owned by user and connection is shared) - still unauthorized
 	p2 := f.newProject()
 	f.createProjectsAndAssert(t, p2)
-	t5 := f.newTrigger(p2, e, cronCon)
-	assert.ErrorIs(t, f.gormdb.createTrigger(f.ctx, &t5), sdkerrors.ErrUnauthorized)
 }
 
 func TestSetVarWithOwnership(t *testing.T) {
@@ -598,12 +596,12 @@ func TestGetTriggerWithOwnership(t *testing.T) {
 	// different user
 	f.withUser(u2)
 
-	_, err := f.gormdb.getTrigger(f.ctx, trg.TriggerID)
+	_, err := f.gormdb.getTriggerByID(f.ctx, trg.TriggerID)
 	assert.Error(t, err, sdkerrors.ErrUnauthorized)
 
 	// with system orginators - full access
 	withSystemOrginators(t, f, func(t *testing.T, f *dbFixture) {
-		_, err = f.gormdb.getTrigger(f.ctx, trg.TriggerID)
+		_, err = f.gormdb.getTriggerByID(f.ctx, trg.TriggerID)
 		assert.NoError(t, err)
 	})
 }

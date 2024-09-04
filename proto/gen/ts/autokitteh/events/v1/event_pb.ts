@@ -110,11 +110,11 @@ export class Event extends Message<Event> {
   eventId = "";
 
   /**
-   * could be empty.
+   * connection_id or trigger_id.
    *
-   * @generated from field: string connection_id = 2;
+   * @generated from field: string destination_id = 2;
    */
-  connectionId = "";
+  destinationId = "";
 
   /**
    * @generated from field: string event_type = 3;
@@ -150,7 +150,7 @@ export class Event extends Message<Event> {
   static readonly typeName = "autokitteh.events.v1.Event";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "event_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "connection_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "destination_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "event_type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "data", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: Value} },
     { no: 5, name: "memo", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },

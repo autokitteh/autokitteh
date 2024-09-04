@@ -45,8 +45,8 @@ func New(cfg *Config, ropts RunOptions) (Service, error) {
 	)
 
 	service.app = fx.New(opts...)
-	if service.app.Err() != nil {
-		return nil, service.app.Err()
+	if err := service.app.Err(); err != nil {
+		return nil, err
 	}
 
 	return &service, nil

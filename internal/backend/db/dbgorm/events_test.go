@@ -85,7 +85,7 @@ func TestGetEvent(t *testing.T) {
 	assert.Equal(t, e, *e2)
 
 	assert.NoError(t, f.gormdb.deleteEvent(f.ctx, e.EventID))
-	_, err = f.gormdb.getTrigger(f.ctx, e.EventID)
+	_, err = f.gormdb.getTriggerByID(f.ctx, e.EventID)
 	assert.ErrorIs(t, err, gorm.ErrRecordNotFound)
 }
 

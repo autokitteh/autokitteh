@@ -1,4 +1,5 @@
-// Adapted from https://github.com/qri-io/starlib/blob/master/http/http.go
+// Adapted from https://github.com/qri-io/starlib/blob/master/http/http.go.
+
 package http
 
 import (
@@ -13,6 +14,7 @@ import (
 	"net/url"
 	"strings"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkexecutor"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
@@ -22,6 +24,8 @@ import (
 // TODO(ENG-242): limit outreach ("RequestGuard" at
 // https://github.com/qri-io/starlib/blob/master/http/http.go#L59)
 
+var ExecutorID = sdktypes.NewExecutorID(fixtures.NewBuiltinIntegrationID("http"))
+
 const (
 	authHeader        = "Authorization"
 	contentTypeHeader = "Content-Type"
@@ -29,14 +33,6 @@ const (
 	contentTypeForm      = "application/x-www-form-urlencoded"
 	contentTypeJSON      = "application/json"
 	contentTypeMultipart = "multipart/form-data"
-)
-
-var args = sdkmodule.WithArgs(
-	"url",
-	"params?",
-	"headers?",
-	"data?",
-	"json?",
 )
 
 const (
@@ -51,6 +47,81 @@ type request struct {
 	body            *bytes.Buffer
 	bodyType        string
 	contentLen      int64
+}
+
+func New() sdkexecutor.Executor {
+	args := sdkmodule.WithArgs(
+		"url",
+		"params?",
+		"headers?",
+		"data?",
+		"json?",
+	)
+
+	return fixtures.NewBuiltinExecutor(
+		ExecutorID,
+		sdkmodule.ExportFunction(
+			"delete",
+			doRequest(http.MethodDelete),
+			sdkmodule.WithFuncDoc("https://www.rfc-editor.org/rfc/rfc9110#DELETE"),
+			args),
+		sdkmodule.ExportFunction(
+			"get",
+			doRequest(http.MethodGet),
+			sdkmodule.WithFuncDoc("https://www.rfc-editor.org/rfc/rfc9110#GET"),
+			args),
+		sdkmodule.ExportFunction(
+			"head",
+			doRequest(http.MethodHead),
+			sdkmodule.WithFuncDoc("https://www.rfc-editor.org/rfc/rfc9110#HEAD"),
+			args),
+		sdkmodule.ExportFunction(
+			"options",
+			doRequest(http.MethodOptions),
+			sdkmodule.WithFuncDoc("https://www.rfc-editor.org/rfc/rfc9110#OPTIONS"),
+			args),
+		sdkmodule.ExportFunction(
+			"patch",
+			doRequest(http.MethodPatch),
+			sdkmodule.WithFuncDoc("https://www.rfc-editor.org/rfc/rfc5789"),
+			args),
+		sdkmodule.ExportFunction(
+			"post",
+			doRequest(http.MethodPost),
+			sdkmodule.WithFuncDoc("https://www.rfc-editor.org/rfc/rfc9110#POST"),
+			args),
+		sdkmodule.ExportFunction(
+			"put",
+			doRequest(http.MethodPut),
+			sdkmodule.WithFuncDoc("https://www.rfc-editor.org/rfc/rfc9110#PUT"),
+			args),
+	)
+}
+
+// doRequest is a factory function for generating autokitteh
+// functions for different HTTP request methods.
+func doRequest(method string) sdkexecutor.Function {
+	return func(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
+		// Parse the input arguments.
+		var (
+			err error
+			req request
+		)
+
+		// parse args and kwargs
+		if err = unpackAndParseArgs(&req, method, args, kwargs); err != nil {
+			return sdktypes.InvalidValue, err
+		}
+
+		// Construct and send HTTP request.
+		res, err := sendHttpRequest(ctx, req, method)
+		if err != nil {
+			return sdktypes.InvalidValue, err
+		}
+
+		// Parse and return the response.
+		return toStruct(res)
+	}
 }
 
 func unpackAndParseArgs(req *request, method string, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (err error) {
@@ -226,22 +297,6 @@ func setQueryParams(rawURL *string, params map[string]string) error {
 	return nil
 }
 
-// getConnection returns the secret data associated with this connection, if there is any.
-func (i integration) getConnectionAuth(ctx context.Context) (string, error) {
-	// Extract the connection token from the given context.
-	cid, err := sdkmodule.FunctionConnectionIDFromContext(ctx)
-	if err != nil {
-		return "", err
-	}
-
-	vars, err := i.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
-	if err != nil {
-		return "", err
-	}
-
-	return vars.GetValue(authVar), nil
-}
-
 func createHttpRequest(ctx context.Context, req request, method string) (*http.Request, error) {
 	httpReq, err := http.NewRequestWithContext(ctx, method, req.url, nil)
 	if err != nil {
@@ -292,46 +347,6 @@ func sendHttpRequest(ctx context.Context, req request, method string) (*http.Res
 		return nil, err
 	}
 	return res, nil
-}
-
-// request is a factory function for generating autokitteh
-// functions for different HTTP request methods.
-func (i integration) request(method string) sdkexecutor.Function {
-	return func(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
-		// Parse the input arguments.
-		var (
-			err error
-			req request
-		)
-
-		// parse args and kwargs
-		if err = unpackAndParseArgs(&req, method, args, kwargs); err != nil {
-			return sdktypes.InvalidValue, err
-		}
-
-		auth, err := i.getConnectionAuth(ctx)
-		if err != nil {
-			return sdktypes.InvalidValue, err
-		}
-
-		// Add the Authorization HTTP header?
-		if auth != "" {
-			// If the Authorization header is set explicitly, it
-			// should override the connection's default authorization.
-			if _, ok := req.headers[authHeader]; !ok {
-				req.headers[authHeader] = auth
-			}
-		}
-
-		// Construct and send HTTP request.
-		res, err := sendHttpRequest(ctx, req, method)
-		if err != nil {
-			return sdktypes.InvalidValue, err
-		}
-
-		// Parse and return the response.
-		return toStruct(res)
-	}
 }
 
 // toStruct converts an HTTP response to an autokitteh struct.

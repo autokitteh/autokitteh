@@ -3,31 +3,26 @@ package triggers
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
-	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
+	"go.autokitteh.dev/autokitteh/internal/backend/scheduler"
+	"go.autokitteh.dev/autokitteh/internal/backend/webhookssvc"
+	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-// NOTE(s):
-// 1. atomicity. Create temporal schedule and save trigger aren't atomic (and not temporal workflow).
-//    It's possible that AK will crash after creating schedule but before saving trigger. In this case
-//    the schedule will be orphaned. It will continue to be triggered by temporal, but will fail to run,
-//    since it needs to fetch the trigger form DB.
-//    We need to decide how to handle this case
-// 2. Same note on any non-atomic schedule creation and DB/trigger update
-
 type triggers struct {
-	z         *zap.Logger
+	sl        *zap.SugaredLogger
 	db        db.DB
-	scheduler sdkservices.Scheduler
+	scheduler *scheduler.Scheduler
 }
 
-func New(z *zap.Logger, db db.DB, tsc sdkservices.Scheduler) sdkservices.Triggers {
-	return &triggers{db: db, z: z, scheduler: tsc}
+func New(l *zap.Logger, db db.DB, scheduler *scheduler.Scheduler) sdkservices.Triggers {
+	return &triggers{db: db, sl: l.Sugar(), scheduler: scheduler}
 }
 
 func (m *triggers) Create(ctx context.Context, trigger sdktypes.Trigger) (sdktypes.TriggerID, error) {
@@ -35,17 +30,29 @@ func (m *triggers) Create(ctx context.Context, trigger sdktypes.Trigger) (sdktyp
 		return sdktypes.InvalidTriggerID, errors.New("trigger id already defined")
 	}
 
-	trigger = trigger.WithNewID()
-
-	if trigger.ConnectionID() == sdktypes.BuiltinSchedulerConnectionID {
-		if schedule, _ := trigger.Data()[fixtures.ScheduleExpression].ToString(); schedule != "" {
-			if err := m.scheduler.Create(ctx, trigger.ID().String(), schedule, trigger.ID()); err != nil {
-				return sdktypes.InvalidTriggerID, err
-			}
-		}
+	if trigger.WebhookSlug() != "" {
+		return sdktypes.InvalidTriggerID, sdkerrors.NewInvalidArgumentError("webhook slug cannot be set")
 	}
 
-	// FIXME: see atomicity NOTE above
+	trigger = trigger.WithNewID()
+
+	sl := m.sl.With("trigger_id", trigger.ID())
+
+	switch trigger.SourceType() {
+	case sdktypes.TriggerSourceTypeWebhook:
+		trigger = webhookssvc.InitTrigger(trigger)
+		sl.With("slug", trigger.WebhookSlug()).Infof("creating webhook trigger with slug %q", trigger.WebhookSlug())
+	case sdktypes.TriggerSourceTypeSchedule:
+		if err := m.scheduler.Create(ctx, trigger.ID(), trigger.Schedule()); err != nil {
+			return sdktypes.InvalidTriggerID, fmt.Errorf("create schedule: %w", err)
+		}
+		sl.With("schedule", trigger.Schedule()).Infof("creating schedule trigger with spec %q", trigger.Schedule())
+	case sdktypes.TriggerSourceTypeConnection:
+		sl.With("connection", trigger.ConnectionID()).Infof("creating connection trigger with connection %q", trigger.ConnectionID())
+	default:
+		return sdktypes.InvalidTriggerID, sdkerrors.NewInvalidArgumentError("unsupported source type")
+	}
+
 	if err := m.db.CreateTrigger(ctx, trigger); err != nil {
 		return sdktypes.InvalidTriggerID, err
 	}
@@ -53,56 +60,57 @@ func (m *triggers) Create(ctx context.Context, trigger sdktypes.Trigger) (sdktyp
 	return trigger.ID(), nil
 }
 
-func (m *triggers) Update(ctx context.Context, trigger sdktypes.Trigger) error {
-	triggerID := trigger.ID()
-	prevTrigger, err := m.db.GetTrigger(ctx, triggerID)
+func (m *triggers) Update(ctx context.Context, next sdktypes.Trigger) error {
+	next = next.WithWebhookSlug("") // ignore webhook slug.
+
+	if next.Equal(sdktypes.InvalidTrigger) {
+		// no update
+		return nil
+	}
+
+	triggerID := next.ID()
+	curr, err := m.db.GetTriggerByID(ctx, triggerID)
 	if err != nil {
 		return err
 	}
 
-	prevData := prevTrigger.Data()
-	prevScheduleVal, isSchedulerPrevTrigger := prevData[fixtures.ScheduleExpression]
-	isSchedulerPrevTrigger = isSchedulerPrevTrigger && prevTrigger.ConnectionID() == sdktypes.BuiltinSchedulerConnectionID
+	if next.Equal(curr) {
+		// no update
+		return nil
+	}
 
-	data := trigger.Data()
-	scheduleVal, isSchedulerTrigger := data[fixtures.ScheduleExpression]
-	schedule, _ := scheduleVal.ToString()
-	isSchedulerTrigger = isSchedulerTrigger && trigger.ConnectionID() == sdktypes.BuiltinSchedulerConnectionID
+	if curr.SourceType() != next.SourceType() {
+		return sdkerrors.NewInvalidArgumentError("cannot update source type")
+	}
 
-	if isSchedulerPrevTrigger {
-		if !isSchedulerTrigger { // scheduler trigger -> trigger
-			err = m.scheduler.Delete(ctx, triggerID.String())
-		} else { // scheduler trigger -> scheduler trigger
-			if schedule != prevScheduleVal.String() { // schedule changed
-				err = m.scheduler.Update(ctx, triggerID.String(), schedule)
-			}
+	if next.SourceType() == sdktypes.TriggerSourceTypeSchedule {
+		if err := m.scheduler.Update(ctx, triggerID, next.Schedule()); err != nil {
+			return fmt.Errorf("update schedule: %w", err)
 		}
-	} else if isSchedulerTrigger { // trigger -> scheduler trigger
-		err = m.scheduler.Create(ctx, triggerID.String(), schedule, triggerID)
 	}
 
-	if err != nil {
-		return err
-	}
-	return m.db.UpdateTrigger(ctx, trigger)
+	return m.db.UpdateTrigger(ctx, next)
 }
 
 // Delete implements sdkservices.Triggers.
 func (m *triggers) Delete(ctx context.Context, triggerID sdktypes.TriggerID) error {
-	trigger, err := m.db.GetTrigger(ctx, triggerID)
+	trigger, err := m.db.GetTriggerByID(ctx, triggerID)
 	if err != nil {
 		return err
 	}
 
-	if trigger.ConnectionID() == sdktypes.BuiltinSchedulerConnectionID {
-		err = m.scheduler.Delete(ctx, triggerID.String())
+	if trigger.SourceType() == sdktypes.TriggerSourceTypeSchedule {
+		if err := m.scheduler.Delete(ctx, triggerID); err != nil {
+			return fmt.Errorf("delete schedule: %w", err)
+		}
 	}
+
 	return errors.Join(err, m.db.DeleteTrigger(ctx, triggerID))
 }
 
 // Get implements sdkservices.Triggers.
 func (m *triggers) Get(ctx context.Context, triggerID sdktypes.TriggerID) (sdktypes.Trigger, error) {
-	return m.db.GetTrigger(ctx, triggerID)
+	return m.db.GetTriggerByID(ctx, triggerID)
 }
 
 // List implements sdkservices.Triggers.

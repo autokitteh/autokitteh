@@ -6,7 +6,6 @@
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
 import { Message, proto3 } from "@bufbuild/protobuf";
 import { CodeLocation } from "../../program/v1/program_pb.js";
-import { Value } from "../../values/v1/values_pb.js";
 
 /**
  * @generated from message autokitteh.triggers.v1.Trigger
@@ -23,13 +22,11 @@ export class Trigger extends Message<Trigger> {
   name = "";
 
   /**
-   * @generated from field: string connection_id = 3;
+   * @generated from field: autokitteh.triggers.v1.Trigger.SourceType source_type = 3;
    */
-  connectionId = "";
+  sourceType = Trigger_SourceType.UNSPECIFIED;
 
   /**
-   * if empty, applies to all envs.
-   *
    * @generated from field: string env_id = 4;
    */
   envId = "";
@@ -50,9 +47,27 @@ export class Trigger extends Message<Trigger> {
   filter = "";
 
   /**
-   * @generated from field: map<string, autokitteh.values.v1.Value> data = 8;
+   * if source_type == CONNECTION.
+   *
+   * @generated from field: string connection_id = 50;
    */
-  data: { [key: string]: Value } = {};
+  connectionId = "";
+
+  /**
+   * if source_type == SCHEDULE.
+   *
+   * @generated from field: string schedule = 51;
+   */
+  schedule = "";
+
+  /**
+   * read only.
+   *
+   * if source_type == WEBHOOK, after creation.
+   *
+   * @generated from field: string webhook_slug = 100;
+   */
+  webhookSlug = "";
 
   constructor(data?: PartialMessage<Trigger>) {
     super();
@@ -64,12 +79,14 @@ export class Trigger extends Message<Trigger> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "trigger_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "connection_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "source_type", kind: "enum", T: proto3.getEnumType(Trigger_SourceType) },
     { no: 4, name: "env_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "event_type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "code_location", kind: "message", T: CodeLocation },
     { no: 7, name: "filter", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 8, name: "data", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: Value} },
+    { no: 50, name: "connection_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 51, name: "schedule", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 100, name: "webhook_slug", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Trigger {
@@ -88,4 +105,36 @@ export class Trigger extends Message<Trigger> {
     return proto3.util.equals(Trigger, a, b);
   }
 }
+
+/**
+ * @generated from enum autokitteh.triggers.v1.Trigger.SourceType
+ */
+export enum Trigger_SourceType {
+  /**
+   * @generated from enum value: SOURCE_TYPE_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: SOURCE_TYPE_CONNECTION = 1;
+   */
+  CONNECTION = 1,
+
+  /**
+   * @generated from enum value: SOURCE_TYPE_WEBHOOK = 2;
+   */
+  WEBHOOK = 2,
+
+  /**
+   * @generated from enum value: SOURCE_TYPE_SCHEDULE = 3;
+   */
+  SCHEDULE = 3,
+}
+// Retrieve enum metadata with: proto3.getEnumType(Trigger_SourceType)
+proto3.util.setEnumType(Trigger_SourceType, "autokitteh.triggers.v1.Trigger.SourceType", [
+  { no: 0, name: "SOURCE_TYPE_UNSPECIFIED" },
+  { no: 1, name: "SOURCE_TYPE_CONNECTION" },
+  { no: 2, name: "SOURCE_TYPE_WEBHOOK" },
+  { no: 3, name: "SOURCE_TYPE_SCHEDULE" },
+]);
 

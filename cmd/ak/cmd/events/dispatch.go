@@ -44,7 +44,7 @@ var dispatchCmd = common.StandardCommand(&cobra.Command{
 				return err
 			}
 
-			pb.ConnectionId = cid.String()
+			pb.DestinationId = cid.String()
 		}
 		if eventType != "" {
 			pb.EventType = eventType

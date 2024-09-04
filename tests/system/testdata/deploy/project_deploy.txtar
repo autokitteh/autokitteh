@@ -32,7 +32,7 @@ return code == 0
 output contains 'build_id: bld_00000000000000000000000003'
 output contains 'deployment_id: dep_00000000000000000000000004'
 
-# Deploy project from a directory tree with multiple files.
+# Deploy project from a directory tree wit multiple files.
 ak project deploy my_project --dir directory
 return code == 0
 output contains 'build_id: bld_00000000000000000000000005'
