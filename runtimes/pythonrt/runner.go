@@ -106,7 +106,6 @@ func (r *PyRunner) Start(pyExe string, tarData []byte, env map[string]string, wo
 		"--code-dir", r.userDir,
 	)
 	r.log.Debug("running python", zap.String("command", cmd.String()))
-	// cmd.Dir = r.PyRootDir # TODO: Check if required
 	cmd.Env = overrideEnv(env, r.runnerDir, r.userDir)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr

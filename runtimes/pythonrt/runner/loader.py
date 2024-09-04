@@ -1,5 +1,6 @@
 import ast
 import builtins
+import sys
 from pathlib import Path
 from types import ModuleType
 
@@ -42,7 +43,10 @@ class Transformer(ast.NodeTransformer):
 
 
 def load_code(root_path: Path, action_fn, module_name: str):
-    """Load user code into a module, instrumenting function calls."""
+    """Load user code into a module, instrumenting function calls.
+
+    root_path must be in sys.path if there are local imports in the loaded module.
+    """
     log.info("importing %r", module_name)
     file_name = root_path / (module_name + ".py")
     with open(file_name) as fp:

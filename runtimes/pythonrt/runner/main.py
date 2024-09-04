@@ -65,10 +65,7 @@ class Runner(rpc.RunnerServicer):
     def __init__(self, id, worker, code_dir):
         self.id = id
         self.worker: rpc.WorkerStub = worker
-        self.code_dir = Path(code_dir)
-
-        if not self.code_dir.is_dir():
-            raise ValueError(f"{code_dir!r} not found")
+        self.code_dir = code_dir
 
         self.executor = ThreadPoolExecutor()
 
@@ -299,6 +296,14 @@ class LoggingInterceptor(grpc.ServerInterceptor):
         return continuation(handler_call_details)
 
 
+def dir_type(value):
+    path = Path(value)
+    if not path.is_dir():
+        raise ValueError(f"{value!r} is not a directory")
+
+    return path
+
+
 if __name__ == "__main__":
     from argparse import ArgumentParser
 
@@ -314,7 +319,10 @@ if __name__ == "__main__":
     parser.add_argument("--port", help="port to listen on", default=9293, type=int)
     parser.add_argument("--runner-id", help="runner ID", default="runner-1")
     parser.add_argument(
-        "--code-dir", help="directory of user code", default="/workflow"
+        "--code-dir",
+        help="directory of user code",
+        default="/workflow",
+        type=dir_type,
     )
     args = parser.parse_args()
 
@@ -322,6 +330,9 @@ if __name__ == "__main__":
         validate_args(args)
     except ValueError as err:
         raise SystemExit(f"error: {err}")
+
+    # Support importing local files
+    sys.path.append(str(args.code_dir))
 
     chan = grpc.insecure_channel(args.worker_address)
     worker = rpc.WorkerStub(chan)
