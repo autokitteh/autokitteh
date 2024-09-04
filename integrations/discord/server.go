@@ -31,12 +31,12 @@ func Start(l *zap.Logger, muxes *muxes.Muxes, v sdkservices.Vars, d sdkservices.
 	// to have an authenticated user context, so the DB layer won't reject them.
 	// For this purpose, init webhooks are managed by the "auth" mux, which passes
 	// through AutoKitteh's auth middleware to extract the user ID from a cookie.
-	muxes.Auth.Handle("POST "+savePath, NewHTTPHandler(l))
+	muxes.Auth.Handle("POST "+savePath, websockets.NewHandler(l, v, d, desc))
 
 	wsh := websockets.NewHandler(l, v, d, desc)
 
 	// Initialize WebSocket pool.
-	cids, err := v.FindConnectionIDs(context.Background(), integrationID, vars.BotTokenName, "")
+	cids, err := v.FindConnectionIDs(context.Background(), integrationID, vars.BotToken, "")
 	if err != nil {
 		l.Error("Failed to list WebSocket-based connection IDs", zap.Error(err))
 		return
@@ -49,6 +49,6 @@ func Start(l *zap.Logger, muxes *muxes.Muxes, v sdkservices.Vars, d sdkservices.
 			continue
 		}
 
-		wsh.OpenSocketModeConnection(data.GetValue(vars.BotID), data.GetValue(vars.BotTokenName))
+		wsh.OpenSocketModeConnection(data.GetValue(vars.BotID), data.GetValue(vars.BotToken))
 	}
 }

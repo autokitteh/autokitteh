@@ -2,7 +2,6 @@ package websockets
 
 import (
 	"context"
-	"sync"
 
 	"github.com/bwmarrin/discordgo"
 	"go.uber.org/zap"
@@ -31,34 +30,19 @@ func NewHandler(l *zap.Logger, v sdkservices.Vars, d sdkservices.Dispatcher, i s
 	}
 }
 
-var (
-	webSocketClients = make(map[string]*discordgo.Session)
-
-	mu sync.RWMutex
-)
-
 func (h handler) OpenSocketModeConnection(botID, botToken string) {
-	mu.Lock()
-	defer mu.Unlock()
-
-	// No need to open multiple connections for the same app - yet.
-	if _, ok := webSocketClients[botID]; ok {
-		return
-	}
-
 	dg, err := discordgo.New("Bot " + botToken)
 	if err != nil {
 		h.logger.Error("Error creating Discord session", zap.Error(err))
 		return
 	}
 
-	addHandlers(dg, h)
+	h.addHandlers(dg)
 
 	// Open a WebSocket connection to Discord.
 	err = dg.Open()
 
 	if err == nil {
-		webSocketClients[botID] = dg
 		return // Normal process termination.
 	}
 	h.logger.Error("Failed to open Discord WebSocket connection", zap.Error(err))
@@ -81,8 +65,8 @@ func (h handler) dispatchAsyncEventsToConnections(cids []sdktypes.ConnectionID, 
 }
 
 // Transform the received Discord event into an AutoKitteh event.
-func transformEvent(l *zap.Logger, discordEvent any, eventType string) (sdktypes.Event, error) {
-	l = l.With(
+func (h handler) transformEvent(discordEvent any, eventType string) (sdktypes.Event, error) {
+	l := h.logger.With(
 		zap.String("eventType", eventType),
 		zap.Any("event", discordEvent),
 	)
@@ -114,9 +98,8 @@ func transformEvent(l *zap.Logger, discordEvent any, eventType string) (sdktypes
 	return akEvent, nil
 }
 
-func addHandlers(dg *discordgo.Session, h handler) {
-	// messages
-	dg.AddHandler(h.HandleMessageCreate)
-	dg.AddHandler(h.HandleMessageDelete)
-	dg.AddHandler(h.HandleMessageUpdate)
+func (h handler) addHandlers(dg *discordgo.Session) {
+	dg.AddHandler(h.handleMessageCreate)
+	dg.AddHandler(h.handleMessageDelete)
+	dg.AddHandler(h.handleMessageUpdate)
 }

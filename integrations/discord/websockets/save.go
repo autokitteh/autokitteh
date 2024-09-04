@@ -1,6 +1,7 @@
-package discord
+package websockets
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -18,19 +19,9 @@ const (
 	contentTypeForm   = "application/x-www-form-urlencoded"
 )
 
-// handler is an autokitteh webhook which implements [http.Handler]
-// to save data from web form submissions as connections.
-type handler struct {
-	logger *zap.Logger
-}
-
-func NewHTTPHandler(l *zap.Logger) http.Handler {
-	return handler{logger: l}
-}
-
 // ServeHTTP saves a new autokitteh connection with user-submitted data.
 func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	c, l := sdkintegrations.NewConnectionInit(h.logger, w, r, desc)
+	c, l := sdkintegrations.NewConnectionInit(h.logger, w, r, h.integration)
 
 	// Check "Content-Type" header.
 	contentType := r.Header.Get(headerContentType)
@@ -48,17 +39,18 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	bt := r.Form.Get("botToken")
 
-	// get the bot's ID
 	bot, err := infoWithToken(bt)
 	if err != nil {
-		l.Warn("Failed to create new bot", zap.Error(err))
-		c.AbortBadRequest("failed to create new bot")
+		l.Warn("Failed to initialize bot client with provided token", zap.Error(err))
+		c.AbortBadRequest("failed to use the provided token")
 		return
 	}
 
+	h.OpenSocketModeConnection(bot.ID, bt)
+
 	c.Finalize(sdktypes.NewVars().
 		Set(vars.BotID, bot.ID, false).
-		Set(vars.BotTokenName, bt, true).
+		Set(vars.BotToken, bt, true).
 		Set(vars.AuthType, integrations.Init, false))
 }
 
@@ -70,7 +62,7 @@ func infoWithToken(botToken string) (*discordgo.User, error) {
 
 	bot, err := dg.User("@me")
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("user(me): %w", err)
 	}
 	return bot, nil
 }
