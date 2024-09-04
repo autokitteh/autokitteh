@@ -32,8 +32,6 @@ type PyRunner struct {
 	runnerDir string
 	port      int
 	proc      *os.Process
-	stdout    io.Writer
-	stderr    io.Writer
 }
 
 func (r *PyRunner) Close() error {
