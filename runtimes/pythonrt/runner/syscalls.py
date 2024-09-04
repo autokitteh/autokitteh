@@ -55,7 +55,7 @@ class SysCalls:
             raise ValueError("missing connection_id or filter")
 
         req = pb.SubscribeRequest(
-            runner_id=self.runner_id, connection_id=connection_id, filter=filter
+            runner_id=self.runner_id, connection=connection_id, filter=filter
         )
         resp = self.worker.Subscribe(req)
         if resp.error:
@@ -66,7 +66,7 @@ class SysCalls:
         (id,) = extract_args(["subscription_id"], args, kw)
         if not id:
             raise ValueError("empty subscription_id")
-        req = pb.NextEventRequest(runner_id=self.runner_id, signal_id=id)
+        req = pb.NextEventRequest(runner_id=self.runner_id, signal_ids=[id])
         resp = self.worker.NextEvent(req)
         if resp.error:
             raise SyscallError(f"next_event: {resp.error}")
