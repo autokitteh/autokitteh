@@ -1,6 +1,6 @@
 [project]
 name = 'autokitteh'
-# If you bump minor or major, update ../requirements.txt as well
+# If you bump minor or major, update ../runner/pyproject.toml as well
 version = '0.2.8'
 description = 'AutoKitteh Python SDK'
 readme = 'README.md'
@@ -13,7 +13,6 @@ build-backend = "setuptools.build_meta"
 
 [project.optional-dependencies]
 # The AutoKitteh enviornment when running workflows
-# This should be in sync with ../requirements.txt
 all = [
 	"atlassian-python-api ~= 3.41",
 	"beautifulsoup4 ~= 4.12",

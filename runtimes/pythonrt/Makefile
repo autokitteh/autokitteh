@@ -16,10 +16,10 @@ test-py:
 # You can set the TESTOPTS to pass options to `go test`
 test-go:
 	golangci-lint run ./...
-	go test $(TESTOPTS) -v
+	go test -v $(TESTOPTS)
 
 deps:
-	python -m pip install -r dev-requirements.txt
+	cd runner && $(MAKE) install-deps
 
 # The below targets are for local testing.
 

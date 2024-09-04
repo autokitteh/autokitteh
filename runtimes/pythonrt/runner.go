@@ -22,8 +22,8 @@ var (
 	//go:embed runner/*.py
 	runnerPyCode embed.FS
 
-	//go:embed requirements.txt
-	requirementsData []byte
+	//go:embed runner/pyproject.toml
+	pyProjectTOML []byte
 )
 
 type PyRunner struct {
@@ -303,21 +303,28 @@ func createVEnv(pyExe string, venvPath string) error {
 		return fmt.Errorf("create venv: %w", err)
 	}
 
-	file, err := os.CreateTemp("", "")
+	tmpDir, err := os.MkdirTemp("", "ak-proj")
 	if err != nil {
 		return err
 	}
 
-	if _, err := io.Copy(file, bytes.NewReader(requirementsData)); err != nil {
-		file.Close()
+	outFile := path.Join(tmpDir, "pyproject.toml")
+	file, err := os.Create(outFile)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	if _, err := io.Copy(file, bytes.NewReader(pyProjectTOML)); err != nil {
 		return fmt.Errorf("copy requirements to %q: %w", file.Name(), err)
 	}
 	file.Close()
 
 	venvPy := path.Join(venvPath, "bin", "python")
-	cmd = exec.Command(venvPy, "-m", "pip", "install", "-r", file.Name())
+	cmd = exec.Command(venvPy, "-m", "pip", "install", ".[all]")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+	cmd.Dir = tmpDir
 
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("install dependencies from %q: %w", file.Name(), err)
