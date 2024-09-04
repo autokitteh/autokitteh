@@ -46,10 +46,9 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.OpenSocketModeConnection(bot.ID, bt)
+	h.OpenSocketModeConnection(bot.ID)
 
 	c.Finalize(sdktypes.NewVars().
-		Set(vars.BotID, bot.ID, false).
 		Set(vars.BotToken, bt, true).
 		Set(vars.AuthType, integrations.Init, false))
 }

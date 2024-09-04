@@ -49,6 +49,6 @@ func Start(l *zap.Logger, muxes *muxes.Muxes, v sdkservices.Vars, d sdkservices.
 			continue
 		}
 
-		wsh.OpenSocketModeConnection(data.GetValue(vars.BotID), data.GetValue(vars.BotToken))
+		wsh.OpenSocketModeConnection(data.GetValue(vars.BotToken))
 	}
 }
