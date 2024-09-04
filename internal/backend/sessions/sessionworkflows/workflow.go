@@ -468,6 +468,7 @@ func (w *sessionWorkflow) run(wctx workflow.Context) (prints []string, err error
 	// some other thing that calls the Call callback from within an activity. The latter is not supported.
 	ctx = context.WithValue(ctx, workflowContextKey, wctx)
 
+	// TODO: replace with activity.IsActivity
 	isFromActivity := func(ctx context.Context) bool { return ctx.Value(workflowContextKey) == nil }
 
 	newRunID := func() (runID sdktypes.RunID) {
@@ -479,10 +480,16 @@ func (w *sessionWorkflow) run(wctx workflow.Context) (prints []string, err error
 		return
 	}
 
+	var run sdkservices.Run
+
 	cbs := sdkservices.RunCallbacks{
 		NewRunID: newRunID,
 		Load:     w.load,
 		Call: func(callCtx context.Context, runID sdktypes.RunID, v sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
+			if run == nil {
+				return sdktypes.InvalidValue, fmt.Errorf("cannot call before the run is initialized")
+			}
+
 			if xid := v.GetFunction().ExecutorID(); xid.ToRunID() == runID && w.executors.GetCaller(xid) == nil {
 				// This happens only during initial evaluation (the first run because invoking the entrypoint function),
 				// and the runtime tries to call itself in order to start an activity with its own functions.
@@ -500,7 +507,7 @@ func (w *sessionWorkflow) run(wctx workflow.Context) (prints []string, err error
 
 			prints = append(prints, text)
 
-			if isFromActivity(printCtx) {
+			if isFromActivity(printCtx) || run == nil {
 				// TODO: We do this since we're already in an activity. We need to either
 				//       manually retry this (maybe even using the heartbeat to know if it's
 				//       already been processed), or we need to aggregate the prints
@@ -524,20 +531,49 @@ func (w *sessionWorkflow) run(wctx workflow.Context) (prints []string, err error
 
 	entryPoint := w.data.Session.EntryPoint()
 
-	run, err := sdkruntimes.Run(
-		ctx,
-		sdkruntimes.RunParams{
-			Runtimes:             w.ws.svcs.Runtimes,
-			BuildFile:            w.data.BuildFile,
-			Globals:              w.globals,
-			RunID:                runID,
-			FallthroughCallbacks: cbs,
-			EntryPointPath:       entryPoint.Path(),
-		},
-	)
-	if err != nil {
-		// TODO(ENG-130): discriminate between infra and real errors.
-		return prints, err
+	type runOrErr struct {
+		run sdkservices.Run
+		err error
+	}
+
+	runDone := make(chan runOrErr)
+
+	go func() {
+		// This can take a while to complete since it might provision resources et al,
+		// but since it might call back into the workflow via the callbacks, it must
+		// still run a in a workflow context rather than an activity.
+		// TODO: Consider just running this from an activity.
+		run, err := sdkruntimes.Run(
+			ctx,
+			sdkruntimes.RunParams{
+				Runtimes:             w.ws.svcs.Runtimes,
+				BuildFile:            w.data.BuildFile,
+				Globals:              w.globals,
+				RunID:                runID,
+				FallthroughCallbacks: cbs,
+				EntryPointPath:       entryPoint.Path(),
+			},
+		)
+
+		runDone <- runOrErr{run, err}
+	}()
+
+	for run == nil {
+		select {
+		case <-time.After(workflowDeadlockTimeout / 2):
+			if err := workflow.Sleep(wctx, time.Millisecond); err != nil {
+				return prints, err
+			}
+		case r := <-runDone:
+			if r.err != nil {
+				// TODO(ENG-130): discriminate between infra and real errors.
+				return prints, r.err
+			}
+
+			run = r.run
+		case <-ctx.Done():
+			return prints, ctx.Err()
+		}
 	}
 
 	kittehs.Must0(w.executors.AddExecutor(fmt.Sprintf("run_%s", run.ID().Value()), run))

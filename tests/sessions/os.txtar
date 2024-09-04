@@ -8,13 +8,14 @@ exec(exitcode = 0, files = {"woof.txt": b"woof\n"}, output = "")
 [None, "write key must not contain '..'"]
 [None, "write key must be a relative path"]
 
--- main.star --
-print(os.command('/bin/sh', '-c', 'echo meow'))
-print(os.command('/bin/sh', '-c', 'echo hiss; exit 1'))
-print(os.shell('echo woof'))
-print(os.shell('cat meow.txt', write={'meow.txt': 'meow, world!'}))
-print(os.shell('echo woof > woof.txt', read=['woof.txt']))
-print(os.shell('echo meow; sleep 50', ak_timeout=2, ak_catch=True))
-print(os.shell('echo meow', ak_timeout=2, ak_catch=True))
-print(os.shell('cat meow.txt', write={'../meow.txt': 'meow, world!'}, ak_catch=True))
-print(os.shell('cat meow.txt', write={'/meow.txt': 'meow, world!'}, ak_catch=True))
+-- main.star:main --
+def main():
+    print(os.command('/bin/sh', '-c', 'echo meow'))
+    print(os.command('/bin/sh', '-c', 'echo hiss; exit 1'))
+    print(os.shell('echo woof'))
+    print(os.shell('cat meow.txt', write={'meow.txt': 'meow, world!'}))
+    print(os.shell('echo woof > woof.txt', read=['woof.txt']))
+    print(os.shell('echo meow; sleep 50', ak_timeout=2, ak_catch=True))
+    print(os.shell('echo meow', ak_timeout=2, ak_catch=True))
+    print(os.shell('cat meow.txt', write={'../meow.txt': 'meow, world!'}, ak_catch=True))
+    print(os.shell('cat meow.txt', write={'/meow.txt': 'meow, world!'}, ak_catch=True))

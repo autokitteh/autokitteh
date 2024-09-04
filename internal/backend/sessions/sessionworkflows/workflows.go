@@ -24,6 +24,8 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
+const workflowDeadlockTimeout = time.Second * 10
+
 type Workflows interface {
 	StartWorkers(context.Context) error
 	StartWorkflow(ctx context.Context, session sdktypes.Session, debug bool) error
@@ -66,7 +68,7 @@ func (ws *workflows) StartWorkers(ctx context.Context) error {
 	opts := ws.cfg.Temporal.Worker
 	opts.DisableRegistrationAliasing = true
 	opts.OnFatalError = func(err error) { ws.z.Error("temporal worker error", zap.Error(err)) }
-	opts.DeadlockDetectionTimeout = time.Second * 10
+	opts.DeadlockDetectionTimeout = workflowDeadlockTimeout
 
 	ws.worker = worker.New(ws.svcs.TemporalClient(), taskQueueName, opts)
 

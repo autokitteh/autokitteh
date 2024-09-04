@@ -1,4 +1,4 @@
-(None, "cannot call self during initial evaluation")
+(None, "cannot call before the run is initialized")
 
 -- main.star --
 print(catch(activity(len).run, "george"))
