@@ -1,4 +1,4 @@
-package websockets
+package discord 
 
 import (
 	"context"

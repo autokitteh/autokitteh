@@ -1,4 +1,4 @@
-package websockets
+package discord 
 
 import (
 	"context"
@@ -16,7 +16,6 @@ type handler struct {
 	logger        *zap.Logger
 	vars          sdkservices.Vars
 	dispatcher    sdkservices.Dispatcher
-	integration   sdktypes.Integration
 	integrationID sdktypes.IntegrationID
 }
 
@@ -25,7 +24,6 @@ func NewHandler(l *zap.Logger, v sdkservices.Vars, d sdkservices.Dispatcher, i s
 		logger:        l,
 		vars:          v,
 		dispatcher:    d,
-		integration:   i,
 		integrationID: i.ID(),
 	}
 }
@@ -62,7 +60,7 @@ func (h handler) dispatchAsyncEventsToConnections(cids []sdktypes.ConnectionID, 
 	}
 }
 
-// Transform the received Discord event into an AutoKitteh event.
+// transformEvent transforms the received Discord event into an AutoKitteh event.
 func (h handler) transformEvent(discordEvent any, eventType string) (sdktypes.Event, error) {
 	l := h.logger.With(
 		zap.String("eventType", eventType),

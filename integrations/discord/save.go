@@ -1,4 +1,4 @@
-package websockets
+package discord
 
 import (
 	"fmt"
@@ -19,9 +19,10 @@ const (
 	contentTypeForm   = "application/x-www-form-urlencoded"
 )
 
+
 // ServeHTTP saves a new autokitteh connection with user-submitted data.
 func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	c, l := sdkintegrations.NewConnectionInit(h.logger, w, r, h.integration)
+	c, l := sdkintegrations.NewConnectionInit(h.logger, w, r, desc)
 
 	// Check "Content-Type" header.
 	contentType := r.Header.Get(headerContentType)
