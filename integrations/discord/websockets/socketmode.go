@@ -30,7 +30,7 @@ func NewHandler(l *zap.Logger, v sdkservices.Vars, d sdkservices.Dispatcher, i s
 	}
 }
 
-func (h handler) OpenSocketModeConnection(botToken string) {
+func (h handler) OpenWebSocketConnection(botToken string) {
 	dg, err := discordgo.New("Bot " + botToken)
 	if err != nil {
 		h.logger.Error("Error creating Discord session", zap.Error(err))

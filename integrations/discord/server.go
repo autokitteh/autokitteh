@@ -45,10 +45,10 @@ func Start(l *zap.Logger, muxes *muxes.Muxes, v sdkservices.Vars, d sdkservices.
 	for _, cid := range cids {
 		data, err := v.Get(context.Background(), sdktypes.NewVarScopeID(cid))
 		if err != nil {
-			l.Error("Missing data for Discord Socket Mode", zap.Error(err))
+			l.Error("Missing data for Discord WebSocket connection", zap.Error(err))
 			continue
 		}
 
-		wsh.OpenSocketModeConnection(data.GetValue(vars.BotToken))
+		wsh.OpenWebSocketConnection(data.GetValue(vars.BotToken))
 	}
 }
