@@ -2,7 +2,7 @@
 syntax = "proto3";
 
 // Until we decide where
-option go_package="go.autokitteh.dev/autokitteh/runtimes/pythonrt/pb";
+option go_package = "go.autokitteh.dev/autokitteh/runtimes/pythonrt/pb";
 
 message ContainerConfig {
   string image = 1;
@@ -13,8 +13,7 @@ message Event {
   bytes data = 1; // raw event from connection
 }
 
-message HealthRequest {
-}
+message HealthRequest {}
 
 message HealthResponse {
   string error = 1;
@@ -123,7 +122,6 @@ service Runner {
   rpc Health(HealthRequest) returns (HealthResponse) {}
 }
 
-
 message CallInfo {
   string function = 1;
   repeated string args = 2;
@@ -148,8 +146,7 @@ message DoneRequest {
   repeated Frame traceback = 4;
 }
 
-message DoneResponse {
-}
+message DoneResponse {}
 
 message SleepRequest {
   string runner_id = 1;
@@ -209,7 +206,6 @@ message PrintRequest {
 message PrintResponse {
   string error = 1;
 }
-
 
 service Worker {
   // Runner starting activity
