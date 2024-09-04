@@ -37,19 +37,20 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	bt := r.Form.Get("botToken")
+	token := r.Form.Get("botToken")
 
-	bot, err := infoWithToken(bt)
+	bot, err := infoWithToken(token)
 	if err != nil {
 		l.Warn("Failed to initialize bot client with provided token", zap.Error(err))
 		c.AbortBadRequest("failed to use the provided token")
 		return
 	}
 
-	h.OpenSocketModeConnection(bot.ID)
+	h.OpenSocketModeConnection(token)
 
 	c.Finalize(sdktypes.NewVars().
-		Set(vars.BotToken, bt, true).
+		Set(vars.BotID, bot.ID, false).
+		Set(vars.BotToken, token, true).
 		Set(vars.AuthType, integrations.Init, false))
 }
 
