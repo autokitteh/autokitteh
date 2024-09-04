@@ -43,21 +43,22 @@ py-dist-publish-test: py-deps
 .PHONY: remote-py
 remote-py:
 	python -m grpc_tools.protoc \
-		-I . \
+		-I remote \
 		--python_out=../runtimes/pythonrt/runner \
 		--pyi_out=../runtimes/pythonrt/runner \
 		--grpc_python_out=../runtimes/pythonrt/runner \
-		remote.proto
+		remote/remote.proto
 
 .PHONY: remote-go
 remote-go:
 	mkdir -p ../runtimes/pythonrt/pb
 	protoc \
+		-I remote \
 		--go_out=../runtimes/pythonrt/pb \
 		--go_opt=paths=source_relative \
 		--go-grpc_out=../runtimes/pythonrt/pb \
 		--go-grpc_opt=paths=source_relative \
-		remote.proto
+		remote/remote.proto
 
 .PHONY: remote
 remote: remote-py remote-go

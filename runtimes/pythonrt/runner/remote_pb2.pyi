@@ -18,10 +18,8 @@ class Event(_message.Message):
     def __init__(self, data: _Optional[bytes] = ...) -> None: ...
 
 class HealthRequest(_message.Message):
-    __slots__ = ("call_id",)
-    CALL_ID_FIELD_NUMBER: _ClassVar[int]
-    call_id: str
-    def __init__(self, call_id: _Optional[str] = ...) -> None: ...
+    __slots__ = ()
+    def __init__(self) -> None: ...
 
 class HealthResponse(_message.Message):
     __slots__ = ("error",)
