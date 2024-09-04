@@ -15,6 +15,7 @@ import loader
 import log
 import remote_pb2 as pb
 import remote_pb2_grpc as rpc
+from autokitteh import AttrDict
 from call import AKCall, full_func_name
 from grpc_reflection.v1alpha import reflection
 from syscalls import SysCalls
@@ -118,6 +119,7 @@ class Runner(rpc.RunnerServicer):
                 pass
         log.info("start event: %r", event)
 
+        event = AttrDict(event)
         self.executor.submit(self.on_event, fn, event)
 
         return pb.StartResponse()
