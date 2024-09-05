@@ -74,7 +74,7 @@ func integrationsFXOption() fx.Option {
 				aws.Start(l, muxes)
 				chatgpt.Start(l, muxes)
 				confluence.Start(l, muxes, svcs.Vars(), svcs.OAuth(), svcs.Dispatcher())
-				discord.Start(l, muxes)
+				discord.Start(l, muxes, svcs.Vars(), svcs.Dispatcher())
 				github.Start(l, muxes, svcs.Vars(), svcs.OAuth(), svcs.Dispatcher())
 				gemini.Start(l, muxes)
 				google.Start(l, muxes, svcs.Vars(), svcs.OAuth(), svcs.Dispatcher())
