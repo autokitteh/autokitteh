@@ -60,7 +60,7 @@ project:
 [plan] trigger "my_project/default:/get": not found, will create
 [exec] create_project "my_project": prj_00000000000000000000000001 created
 [exec] create_trigger "my_project/default:/get": trg_00000000000000000000000003 created
-[!!!!] Trigger created. Webhook path is "/webhooks/2222222222222222222226"
+[!!!!] trigger created, webhook path is "/webhooks/2222222222222222222226"
 [exec] create_build: created "bld_00000000000000000000000005"
 [exec] create_deployment: created "dep_00000000000000000000000006"
 [exec] activate_deployment: activated
