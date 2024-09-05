@@ -31,7 +31,7 @@ func (h handler) handleCalNotification(w http.ResponseWriter, r *http.Request) {
 		zap.String("messageNumber", r.Header.Get("X-Goog-Message-Number")),
 	)
 	if resState == "sync" {
-		l.Debug("Ignoring Google Calendar watch creation notification")
+		l.Info("Ignoring Google Calendar watch creation notification")
 		return
 	}
 	l.Info("Received Google Calendar notification")
