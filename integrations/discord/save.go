@@ -19,7 +19,6 @@ const (
 	contentTypeForm   = "application/x-www-form-urlencoded"
 )
 
-
 // ServeHTTP saves a new autokitteh connection with user-submitted data.
 func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	c, l := sdkintegrations.NewConnectionInit(h.logger, w, r, desc)
