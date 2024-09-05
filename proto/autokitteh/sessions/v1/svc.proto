@@ -65,6 +65,11 @@ message ListResponse {
 message GetRequest {
   string session_id = 1 [(buf.validate.field).string.min_len = 1];
 
+  // true: all values returned will be string values
+  //       that contain the native values in JSON format.
+  // false: all values returned are properly boxed.
+  bool json_values = 2;
+
   // TODO: FieldMask.
 }
 

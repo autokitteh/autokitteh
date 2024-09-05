@@ -75,10 +75,12 @@ class ListResponse(_message.Message):
     def __init__(self, sessions: _Optional[_Iterable[_Union[_session_pb2.Session, _Mapping]]] = ..., count: _Optional[int] = ..., next_page_token: _Optional[str] = ...) -> None: ...
 
 class GetRequest(_message.Message):
-    __slots__ = ["session_id"]
+    __slots__ = ["session_id", "json_values"]
     SESSION_ID_FIELD_NUMBER: _ClassVar[int]
+    JSON_VALUES_FIELD_NUMBER: _ClassVar[int]
     session_id: str
-    def __init__(self, session_id: _Optional[str] = ...) -> None: ...
+    json_values: bool
+    def __init__(self, session_id: _Optional[str] = ..., json_values: bool = ...) -> None: ...
 
 class GetResponse(_message.Message):
     __slots__ = ["session"]

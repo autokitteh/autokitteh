@@ -319,6 +319,15 @@ export class GetRequest extends Message<GetRequest> {
    */
   sessionId = "";
 
+  /**
+   * true: all values returned will be string values
+   *       that contain the native values in JSON format.
+   * false: all values returned are properly boxed.
+   *
+   * @generated from field: bool json_values = 2;
+   */
+  jsonValues = false;
+
   constructor(data?: PartialMessage<GetRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -328,6 +337,7 @@ export class GetRequest extends Message<GetRequest> {
   static readonly typeName = "autokitteh.sessions.v1.GetRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "session_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "json_values", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetRequest {
