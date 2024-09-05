@@ -72,6 +72,7 @@ var createCmd = common.StandardCommand(&cobra.Command{
 
 			t = t.WithConnectionID(cid)
 		} else if schedule != "" {
+			// TODO(ENG-1004): Verify validity of schedule expression.
 			t = t.WithSchedule(schedule)
 		} else if webhook {
 			t = t.WithWebhook()

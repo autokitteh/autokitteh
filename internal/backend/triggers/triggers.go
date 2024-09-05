@@ -30,6 +30,10 @@ func (m *triggers) Create(ctx context.Context, trigger sdktypes.Trigger) (sdktyp
 		return sdktypes.InvalidTriggerID, errors.New("trigger id already defined")
 	}
 
+	if err := trigger.Strict(); err != nil {
+		return sdktypes.InvalidTriggerID, err
+	}
+
 	if trigger.WebhookSlug() != "" {
 		return sdktypes.InvalidTriggerID, sdkerrors.NewInvalidArgumentError("webhook slug cannot be set")
 	}
@@ -38,58 +42,67 @@ func (m *triggers) Create(ctx context.Context, trigger sdktypes.Trigger) (sdktyp
 
 	sl := m.sl.With("trigger_id", trigger.ID())
 
-	switch trigger.SourceType() {
-	case sdktypes.TriggerSourceTypeWebhook:
+	if trigger.SourceType() == sdktypes.TriggerSourceTypeWebhook {
 		trigger = webhookssvc.InitTrigger(trigger)
-		sl.With("slug", trigger.WebhookSlug()).Infof("creating webhook trigger with slug %q", trigger.WebhookSlug())
-	case sdktypes.TriggerSourceTypeSchedule:
-		if err := m.scheduler.Create(ctx, trigger.ID(), trigger.Schedule()); err != nil {
-			return sdktypes.InvalidTriggerID, fmt.Errorf("create schedule: %w", err)
-		}
-		sl.With("schedule", trigger.Schedule()).Infof("creating schedule trigger with spec %q", trigger.Schedule())
-	case sdktypes.TriggerSourceTypeConnection:
-		sl.With("connection", trigger.ConnectionID()).Infof("creating connection trigger with connection %q", trigger.ConnectionID())
-	default:
-		return sdktypes.InvalidTriggerID, sdkerrors.NewInvalidArgumentError("unsupported source type")
 	}
 
 	if err := m.db.CreateTrigger(ctx, trigger); err != nil {
 		return sdktypes.InvalidTriggerID, err
 	}
 
+	switch trigger.SourceType() {
+	case sdktypes.TriggerSourceTypeWebhook:
+		sl.With("slug", trigger.WebhookSlug()).Infof("created webhook trigger with slug %q", trigger.WebhookSlug())
+	case sdktypes.TriggerSourceTypeSchedule:
+		// TODO: If this fails, we need to remove the trigger.
+		if err := m.scheduler.Create(ctx, trigger.ID(), trigger.Schedule()); err != nil {
+			return sdktypes.InvalidTriggerID, fmt.Errorf("create schedule: %w", err)
+		}
+		sl.With("schedule", trigger.Schedule()).Infof("created schedule trigger with spec %q", trigger.Schedule())
+	case sdktypes.TriggerSourceTypeConnection:
+		sl.With("connection", trigger.ConnectionID()).Infof("created connection trigger with connection %q", trigger.ConnectionID())
+	default:
+		return sdktypes.InvalidTriggerID, sdkerrors.NewInvalidArgumentError("unsupported source type")
+	}
+
 	return trigger.ID(), nil
 }
 
-func (m *triggers) Update(ctx context.Context, next sdktypes.Trigger) error {
-	next = next.WithWebhookSlug("") // ignore webhook slug.
+func (m *triggers) Update(ctx context.Context, trigger sdktypes.Trigger) error {
+	trigger = trigger.WithWebhookSlug("") // ignore webhook slug.
 
-	if next.Equal(sdktypes.InvalidTrigger) {
+	if trigger.IsZero() {
 		// no update
 		return nil
 	}
 
-	triggerID := next.ID()
+	triggerID := trigger.ID()
 	curr, err := m.db.GetTriggerByID(ctx, triggerID)
 	if err != nil {
 		return err
 	}
 
-	if next.Equal(curr) {
+	if trigger.Equal(curr) {
 		// no update
 		return nil
 	}
 
-	if curr.SourceType() != next.SourceType() {
+	if curr.SourceType() != trigger.SourceType() {
 		return sdkerrors.NewInvalidArgumentError("cannot update source type")
 	}
 
-	if next.SourceType() == sdktypes.TriggerSourceTypeSchedule {
-		if err := m.scheduler.Update(ctx, triggerID, next.Schedule()); err != nil {
+	if err := m.db.UpdateTrigger(ctx, trigger); err != nil {
+		return err
+	}
+
+	if trigger.SourceType() == sdktypes.TriggerSourceTypeSchedule {
+		// TODO: if this fails, we need to revert the trigger.
+		if err := m.scheduler.Update(ctx, triggerID, trigger.Schedule()); err != nil {
 			return fmt.Errorf("update schedule: %w", err)
 		}
 	}
 
-	return m.db.UpdateTrigger(ctx, next)
+	return nil
 }
 
 // Delete implements sdkservices.Triggers.
@@ -99,13 +112,18 @@ func (m *triggers) Delete(ctx context.Context, triggerID sdktypes.TriggerID) err
 		return err
 	}
 
+	if err := m.db.DeleteTrigger(ctx, triggerID); err != nil {
+		return fmt.Errorf("delete webhook: %w", err)
+	}
+
 	if trigger.SourceType() == sdktypes.TriggerSourceTypeSchedule {
+		// If this fails, the trigger will not work, which is fine.
 		if err := m.scheduler.Delete(ctx, triggerID); err != nil {
 			return fmt.Errorf("delete schedule: %w", err)
 		}
 	}
 
-	return errors.Join(err, m.db.DeleteTrigger(ctx, triggerID))
+	return nil
 }
 
 // Get implements sdkservices.Triggers.

@@ -59,6 +59,7 @@ func (o object[T, M]) isObject()              {}
 func (o object[M, T]) IsValid() bool          { var zero M; return o.m != zero }
 func (o object[M, T]) ToProto() M             { return clone(o.m) }
 func (o object[M, T]) Message() proto.Message { return o.ToProto() }
+func (o object[M, T]) IsZero() bool           { return proto.Size(o.m) == 0 }
 
 // the returned message will not always be the message stored in the object.
 func (o *object[M, T]) read() M {

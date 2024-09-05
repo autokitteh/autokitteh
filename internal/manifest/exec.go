@@ -203,7 +203,8 @@ func executeAction(ctx context.Context, action actions.Action, execContext *exec
 	case actions.UpdateTriggerAction:
 		trigger := action.Trigger
 
-		if key := action.ConnectionKey; key != nil { // convert scheduler -> normal trigger, or just update connection
+		// convert scheduler -> normal trigger, or just update connection
+		if key := action.ConnectionKey; key != nil {
 			cid, err := execContext.resolveConnectionID(ctx, *key)
 			if err != nil {
 				return nil, err
