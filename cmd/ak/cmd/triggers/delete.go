@@ -10,7 +10,7 @@ import (
 )
 
 var deleteCmd = common.StandardCommand(&cobra.Command{
-	Use:     "delete <trigger ID>",
+	Use:     "delete <trigger name or ID> [--project project]",
 	Short:   "Delete event trigger",
 	Aliases: []string{"rm"},
 	Args:    cobra.ExactArgs(1),
@@ -20,7 +20,7 @@ var deleteCmd = common.StandardCommand(&cobra.Command{
 		ctx, cancel := common.LimitedContext()
 		defer cancel()
 
-		t, id, err := r.TriggerID(ctx, args[0])
+		t, id, err := r.TriggerNameOrID(ctx, args[0], project)
 		if err != nil {
 			return err
 		}
@@ -36,3 +36,7 @@ var deleteCmd = common.StandardCommand(&cobra.Command{
 		return nil
 	},
 })
+
+func init() {
+	deleteCmd.Flags().VarP(common.NewNonEmptyString("", &project), "project", "p", "project name or ID")
+}
