@@ -14,7 +14,6 @@ all = [
 	# Development
 	"ruff",
 	"pytest",
-	"grpcio-tools ~= 1.66",
 
 	# AK Environment
 	"atlassian-python-api ~= 3.41",
@@ -24,7 +23,7 @@ all = [
 	"google-api-python-client ~= 2.137",
 	"google-auth-httplib2 ~= 0.2",
 	"google-auth-oauthlib ~= 1.2",
-	"google-generativeai == 0.7.2", # FIXME: Conflicts with grpc-reflection
+	"google-generativeai == 0.7.2",
 	"jira ~= 3.8",
 	"openai ~= 1.35",
 	"PyGithub ~= 2.3",

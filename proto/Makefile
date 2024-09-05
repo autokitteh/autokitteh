@@ -40,6 +40,10 @@ py-dist-publish-test: py-deps
 	python3 -m poetry config repositories.test-pypi https://test.pypi.org/legacy/
 	python3 -m poetry publish --repository test-pypi
 
+.PHONY: py-grpc-tools
+py-grpc-tools:
+	python -m pip install 'grpcio-tools ~= 1.66'
+
 .PHONY: remote-py
 remote-py:
 	python -m grpc_tools.protoc \
