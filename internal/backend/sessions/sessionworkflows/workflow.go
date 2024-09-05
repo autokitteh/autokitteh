@@ -536,7 +536,7 @@ func (w *sessionWorkflow) run(wctx workflow.Context) (prints []string, err error
 		err error
 	}
 
-	runDone := make(chan runOrErr)
+	runDone := make(chan runOrErr, 1)
 
 	go func() {
 		// This can take a while to complete since it might provision resources et al,
