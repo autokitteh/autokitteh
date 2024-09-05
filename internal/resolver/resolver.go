@@ -128,7 +128,7 @@ func (r Resolver) TriggerNameOrID(ctx context.Context, nameOrID, project string)
 		return
 	}
 
-	if sdktypes.IsConnectionID(nameOrID) {
+	if sdktypes.IsTriggerID(nameOrID) {
 		return r.TriggerID(ctx, nameOrID)
 	}
 
