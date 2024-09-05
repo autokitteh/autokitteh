@@ -53,6 +53,8 @@ type object[M comparableMessage, T objectTraits[M]] struct {
 	m M
 }
 
+func (o object[M, T]) ProtoSize() int { return proto.Size(o.m) }
+
 func clone[M proto.Message](m M) M { return proto.Clone(m).(M) }
 
 func (o object[T, M]) isObject()              {}

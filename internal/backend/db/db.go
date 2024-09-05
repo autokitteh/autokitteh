@@ -154,4 +154,8 @@ type DB interface {
 
 	// -----------------------------------------------------------------------
 	GetOwnership(ctx context.Context, entityID sdktypes.UUID) (string, error)
+
+	SetValue(ctx context.Context, envID sdktypes.EnvID, key string, v sdktypes.Value) error
+	GetValue(ctx context.Context, envID sdktypes.EnvID, key string) (sdktypes.Value, error)
+	ListValues(ctx context.Context, envID sdktypes.EnvID) (map[string]sdktypes.Value, error)
 }
