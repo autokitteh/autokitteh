@@ -126,9 +126,7 @@ func (h handler) HandleSlashCommand(w http.ResponseWriter, r *http.Request) {
 	// https://api.slack.com/interactivity/slash-commands#responding_to_commands
 	// https://api.slack.com/interactivity/slash-commands#responding_response_url
 	// https://api.slack.com/interactivity/slash-commands#enabling-interactivity-with-slash-commands__best-practices
-	if len(cmd.Text) == 0 {
-		return
-	}
 	w.Header().Add(api.HeaderContentType, api.ContentTypeJSONCharsetUTF8)
-	fmt.Fprintf(w, "{\"response_type\": \"ephemeral\", \"text\": \"Your command: `%s`\"}", cmd.Text)
+	resp := "{\"response_type\": \"ephemeral\", \"text\": \"Your command: `%s %s`\"}"
+	fmt.Fprintf(w, resp, cmd.Command, cmd.Text)
 }

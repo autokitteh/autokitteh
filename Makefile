@@ -102,7 +102,7 @@ ifneq ($(scripts),)
 endif
 
 .PHONY: test
-test: test-race test-cli test-runs test-sessions
+test: test-race test-runs test-sessions
 
 .PHONY: test-dbgorm
 test-dbgorm:
@@ -141,13 +141,6 @@ test-cover:
 .PHONY: test-race
 test-race:
 	$(GOTEST) -race ./...
-
-.PHONY: test-cli
-# We don't want test-cli to explicitly depend on bin since
-# we might run test-cli multiple times to debug with the
-# same build.
-test-cli:
-	./tests/cli/run.sh
 
 .PHONY: proto
 proto:

@@ -16,11 +16,7 @@ project:
       name: myvar
       # Variable value.
       value: "myvalue"
-    - name: myvar2
-      # Deploy activation will not fail if this variable is not set.
-      optional: true
     - # Secret variables are not exposed in the UI. Can be set via UI though.
-      # Since no `optional` field is specified, it is mandatory.
       name: shhhh
       secret: true
   connections:

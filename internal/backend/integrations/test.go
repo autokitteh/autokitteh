@@ -22,7 +22,7 @@ var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.Integrati
 	Description:   "Test integration",
 }))
 
-func newTestIntegration() sdkservices.Integration {
+func NewTestIntegration() sdkservices.Integration {
 	var i test
 
 	return sdkintegrations.NewIntegration(desc, sdkmodule.New(

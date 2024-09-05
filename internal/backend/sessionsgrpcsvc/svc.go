@@ -93,7 +93,16 @@ func (s *server) Get(ctx context.Context, req *connect.Request[sessionsv1.GetReq
 	if err != nil {
 		return nil, sdkerrors.AsConnectError(err)
 	}
-	return connect.NewResponse(&sessionsv1.GetResponse{Session: session.ToProto()}), nil
+
+	pb := session.ToProto()
+
+	if req.Msg.JsonValues {
+		if pb.Inputs, err = kittehs.TransformMapValuesError(pb.Inputs, sdktypes.ValueProtoToJSONStringValue); err != nil {
+			return nil, err
+		}
+	}
+
+	return connect.NewResponse(&sessionsv1.GetResponse{Session: pb}), nil
 }
 
 func (s *server) Stop(ctx context.Context, req *connect.Request[sessionsv1.StopRequest]) (*connect.Response[sessionsv1.StopResponse], error) {

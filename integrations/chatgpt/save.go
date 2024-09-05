@@ -6,6 +6,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/integrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -14,8 +15,6 @@ const (
 	headerContentType = "Content-Type"
 	contentTypeForm   = "application/x-www-form-urlencoded"
 )
-
-var apiKeyVar = sdktypes.NewSymbol("api_key")
 
 // handler is an autokitteh webhook which implements [http.Handler]
 // to save data from web form submissions as connections.
@@ -45,5 +44,7 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	c.Finalize(sdktypes.NewVars().Set(apiKeyVar, r.Form.Get("key"), true))
+	c.Finalize(sdktypes.NewVars().
+		Set(apiKeyVar, r.Form.Get("key"), true).
+		Set(authType, integrations.Init, false))
 }
