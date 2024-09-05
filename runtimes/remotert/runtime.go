@@ -9,6 +9,7 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/metadata"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/logger"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
@@ -82,7 +83,8 @@ func (s *svc) handleInitialCall(ctx context.Context, v sdktypes.FunctionValue, a
 
 	eventpb := pb.Event{Data: jsonBytes}
 	entrypoint := fmt.Sprintf("%s:%s", s.mainPath, v.Name())
-	resp, err := s.runnerClient.Start(context.Background(), &pb.StartRequest{EntryPoint: entrypoint, Event: &eventpb})
+	hCtx := metadata.AppendToOutgoingContext(ctx, "runner", s.runnerAddress)
+	resp, err := s.runnerClient.Start(hCtx, &pb.StartRequest{EntryPoint: entrypoint, Event: &eventpb})
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
@@ -103,7 +105,8 @@ func (s *svc) handleInitialCall(ctx context.Context, v sdktypes.FunctionValue, a
 				response.Data = res.GetBytes().Value()
 			}
 
-			_, err = s.runnerClient.ActivityReply(ctx, response)
+			hCtx := metadata.AppendToOutgoingContext(ctx, "runner", s.runnerAddress)
+			_, err = s.runnerClient.ActivityReply(hCtx, response)
 			if err != nil {
 				return sdktypes.NewBytesValue([]byte(err.Error())), nil
 			}
@@ -181,15 +184,18 @@ func (s *svc) Run(
 	values map[string]sdktypes.Value,
 	cbs *sdkservices.RunCallbacks,
 ) (sdkservices.Run, error) {
-	s.runID = sdktypes.NewExecutorID(runID) // Should be first
-	s.mainPath = mainPath
-	s.cbs = cbs
-	s.firstCall = true // State for Call.
-	s.ctx = ctx
 
-	s.doneChan = make(chan []byte, 1)
-	s.errorChan = make(chan string, 1)
-	s.runnerRequestsChan = make(chan *pb.ActivityRequest, 1)
+	newSvc := s
+
+	newSvc.runID = sdktypes.NewExecutorID(runID) // Should be first
+	newSvc.mainPath = mainPath
+	newSvc.cbs = cbs
+	newSvc.firstCall = true // State for Call.
+	newSvc.ctx = ctx
+
+	newSvc.doneChan = make(chan []byte, 1)
+	newSvc.errorChan = make(chan string, 1)
+	newSvc.runnerRequestsChan = make(chan *pb.ActivityRequest, 1)
 
 	// Load environment defined by user in the `vars` section of the manifest,
 	// these are injected to the Python subprocess environment.
@@ -207,7 +213,7 @@ func (s *svc) Run(
 		return nil, fmt.Errorf("%q note found in compiled data", "archive")
 	}
 
-	resp, err := runner.Start(ctx, &pb.StartRunnerRequest{BuildArtifact: tarData, Vars: envMap, WorkerAddress: "localhost:9980"})
+	resp, err := runner.Start(ctx, &pb.StartRunnerRequest{BuildArtifact: tarData, Vars: envMap, WorkerAddress: "0.tcp.eu.ngrok.io:10487"})
 	if err != nil {
 		return nil, fmt.Errorf("staring runner %w", err)
 	}
@@ -216,28 +222,34 @@ func (s *svc) Run(
 		return nil, fmt.Errorf("staring runner %s", resp.Error)
 	}
 
-	s.runnerID = resp.RunnerId
-	s.runnerAddress = resp.RunnerAddress
+	newSvc.runnerID = resp.RunnerId
+	newSvc.runnerAddress = resp.RunnerAddress
 
 	creds := insecure.NewCredentials()
-	conn, err := grpc.NewClient(s.runnerAddress, grpc.WithTransportCredentials(creds))
+	conn, err := grpc.NewClient("0.0.0.0:7777", grpc.WithTransportCredentials(creds))
+
+	// conn, err := grpc.NewClient(s.runnerAddress, grpc.WithTransportCredentials(creds))
 	if err != nil {
 		return nil, err
 	}
 
-	s.runnerClient = pb.NewRunnerClient(conn)
+	newSvc.runnerClient = pb.NewRunnerClient(conn)
 	var runnerHealthResponse *pb.HealthResponse
+	hCtx := metadata.AppendToOutgoingContext(ctx, "runner", resp.RunnerAddress)
 	for {
-		runnerHealthResponse, err = s.runnerClient.Health(ctx, &pb.HealthRequest{})
+
+		runnerHealthResponse, err = newSvc.runnerClient.Health(hCtx, &pb.HealthRequest{})
 		if err == nil && runnerHealthResponse.Error == "" {
 			break
 		}
-		fmt.Println("retry health check")
+		fmt.Println("retry health check", newSvc.runnerID)
 		time.Sleep(1 * time.Second)
 	}
 
 	// ws.svcs[s.runnerID] = s
-	ws.runnerIDsToRuntime["runner-1"] = s
+	ws.mu.Lock()
+	ws.runnerIDsToRuntime[newSvc.runnerID] = newSvc
+	ws.mu.Unlock()
 	// if err != nil {
 	// 	return nil, fmt.Errorf("could not verify runner health %w", err)
 	// }
@@ -245,7 +257,7 @@ func (s *svc) Run(
 	// 	return nil, fmt.Errorf("runner health: %w", err)
 	// }
 
-	exports, err := s.runnerClient.Exports(context.Background(), &pb.ExportsRequest{
+	exports, err := newSvc.runnerClient.Exports(hCtx, &pb.ExportsRequest{
 		FileName: mainPath,
 	})
 
@@ -257,10 +269,10 @@ func (s *svc) Run(
 	if err != nil {
 		return nil, err
 	}
-	s.exports = exportsMap
+	newSvc.exports = exportsMap
 	// exports.Exports
 
-	return s, nil
+	return newSvc, nil
 
 }
 

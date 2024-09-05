@@ -18,7 +18,7 @@ func New() sdkservices.Runtimes {
 		// pythonrt.Runtime,
 	}
 	err := remotert.Configure(remotert.RemoteRuntimeConfig{
-		ManagerAddress: []string{"localhost:9291"},
+		ManagerAddress: []string{"localhost:7777"},
 	})
 
 	if err == nil {
