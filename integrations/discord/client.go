@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"go.autokitteh.dev/autokitteh/integrations"
+	"go.autokitteh.dev/autokitteh/integrations/discord/internal/vars"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
@@ -14,8 +15,6 @@ import (
 type integration struct{ vars sdkservices.Vars }
 
 var (
-	authType      = sdktypes.NewSymbol("authType")
-	botToken      = sdktypes.NewSymbol("BotToken")
 	integrationID = sdktypes.NewIntegrationIDFromName("discord")
 )
 
@@ -60,7 +59,7 @@ func connStatus(i *integration) sdkintegrations.OptFn {
 			return sdktypes.InvalidStatus, err
 		}
 
-		at := vs.Get(authType)
+		at := vs.Get(vars.AuthType)
 		if !at.IsValid() || at.Value() == "" {
 			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "init required"), nil
 		}
