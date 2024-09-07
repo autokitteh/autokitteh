@@ -20,7 +20,6 @@ import (
 	"go.autokitteh.dev/autokitteh/integrations/google/gmail"
 	"go.autokitteh.dev/autokitteh/integrations/google/sheets"
 	"go.autokitteh.dev/autokitteh/integrations/grpc"
-	httpint "go.autokitteh.dev/autokitteh/integrations/http"
 	"go.autokitteh.dev/autokitteh/integrations/redis"
 	"go.autokitteh.dev/autokitteh/integrations/slack"
 	"go.autokitteh.dev/autokitteh/integrations/twilio"
@@ -68,7 +67,6 @@ func integrationsFXOption() fx.Option {
 		integration("sheets", configset.Empty, sheets.New),
 		integration("slack", configset.Empty, slack.New),
 		integration("twilio", configset.Empty, twilio.New),
-		integration("http", configset.Empty, httpint.New),
 		fx.Invoke(func(lc fx.Lifecycle, l *zap.Logger, muxes *muxes.Muxes, svcs sdkservices.Services) {
 			HookOnStart(lc, func(ctx context.Context) error {
 				aws.Start(l, muxes)
@@ -81,7 +79,6 @@ func integrationsFXOption() fx.Option {
 				jira.Start(l, muxes, svcs.Vars(), svcs.OAuth(), svcs.Dispatcher())
 				slack.Start(l, muxes, svcs.Vars(), svcs.Dispatcher())
 				twilio.Start(l, muxes, svcs.Vars(), svcs.Dispatcher())
-				httpint.Start(l, muxes, svcs.Dispatcher(), svcs.Connections(), svcs.Projects())
 				return nil
 			})
 		}),
@@ -90,9 +87,9 @@ func integrationsFXOption() fx.Option {
 			integrationConfigs,
 			fx.Provide(
 				fx.Annotate(
-					func(is []sdkservices.Integration, cfg *integrationsConfig) sdkservices.Integrations {
+					func(is []sdkservices.Integration, cfg *integrationsConfig, vars sdkservices.Vars) sdkservices.Integrations {
 						if cfg.Test {
-							is = append(is, integrations.NewTestIntegration())
+							is = append(is, integrations.NewTestIntegration(vars))
 						}
 
 						return sdkintegrations.New(is)

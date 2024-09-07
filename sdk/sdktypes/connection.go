@@ -28,11 +28,11 @@ func (ConnectionTraits) Validate(m *ConnectionPB) error {
 }
 
 func (ConnectionTraits) StrictValidate(m *ConnectionPB) error {
-	var errs []error = []error{mandatory("name", m.Name)}
-	if m.ConnectionId != BuiltinSchedulerConnectionID.String() {
-		errs = append(errs, mandatory("project_id", m.ProjectId), mandatory("integration_id", m.IntegrationId))
-	}
-	return errors.Join(errs...)
+	return errors.Join(
+		mandatory("name", m.Name),
+		mandatory("project_id", m.ProjectId),
+		mandatory("integration_id", m.IntegrationId),
+	)
 }
 
 func ConnectionFromProto(m *ConnectionPB) (Connection, error) { return FromProto[Connection](m) }

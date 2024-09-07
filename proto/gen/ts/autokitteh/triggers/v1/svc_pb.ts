@@ -5,7 +5,7 @@
 
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
 import { Message, proto3 } from "@bufbuild/protobuf";
-import { Trigger } from "./trigger_pb.js";
+import { Trigger, Trigger_SourceType } from "./trigger_pb.js";
 
 /**
  * @generated from message autokitteh.triggers.v1.CreateRequest
@@ -310,6 +310,11 @@ export class ListRequest extends Message<ListRequest> {
    */
   projectId = "";
 
+  /**
+   * @generated from field: autokitteh.triggers.v1.Trigger.SourceType source_type = 4;
+   */
+  sourceType = Trigger_SourceType.UNSPECIFIED;
+
   constructor(data?: PartialMessage<ListRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -321,6 +326,7 @@ export class ListRequest extends Message<ListRequest> {
     { no: 1, name: "env_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "connection_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "source_type", kind: "enum", T: proto3.getEnumType(Trigger_SourceType) },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListRequest {

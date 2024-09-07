@@ -22,6 +22,8 @@ func StrictParseUserID(s string) (UserID, error) { return Strict(ParseUserID(s))
 
 var InvalidUserID UserID
 
+var BuiltinDefaultUserID = kittehs.Must1(ParseUserID("usr_3kthdf1t000000000000000000"))
+
 // TODO: ENG-1112
 func NewUserIDFromUserData(provider string, email string, name string) UserID {
 	if provider == "ak" && email == "a@k" && name == "dflt" {

@@ -71,24 +71,7 @@
       ]
     },
     "Trigger": {
-      "oneOf": [
-        {
-          "required": [
-            "call"
-          ],
-          "title": "call"
-        },
-        {
-          "required": [
-            "entrypoint"
-          ],
-          "title": "entrypoint"
-        }
-      ],
       "properties": {
-        "connection": {
-          "type": "string"
-        },
         "name": {
           "type": "string"
         },
@@ -98,16 +81,26 @@
         "filter": {
           "type": "string"
         },
+        "type": {
+          "type": "string",
+          "enum": [
+            "schedule",
+            "webhook",
+            "connection"
+          ]
+        },
         "schedule": {
           "type": "string"
         },
-        "data": {
+        "webhook": {
+          "properties": {},
+          "additionalProperties": false,
           "type": "object"
         },
-        "call": {
+        "connection": {
           "type": "string"
         },
-        "entrypoint": {
+        "call": {
           "type": "string"
         }
       },

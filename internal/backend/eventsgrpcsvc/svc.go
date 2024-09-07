@@ -71,7 +71,7 @@ func (s *server) List(ctx context.Context, req *connect.Request[eventsv1.ListReq
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	cid, err := sdktypes.ParseConnectionID(msg.ConnectionId)
+	did, err := sdktypes.ParseEventDestinationID(msg.DestinationId)
 	if err != nil {
 		return nil, sdkerrors.AsConnectError(err)
 	}
@@ -93,7 +93,7 @@ func (s *server) List(ctx context.Context, req *connect.Request[eventsv1.ListReq
 
 	filter := sdkservices.ListEventsFilter{
 		IntegrationID: iid,
-		ConnectionID:  cid,
+		DestinationID: did,
 		EventType:     msg.EventType,
 		Limit:         int(msg.MaxResults),
 		Order:         order,

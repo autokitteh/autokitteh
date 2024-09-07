@@ -20,50 +20,51 @@ project:
   name: my_project
   connections:
     - name: my_connection
-      integration: http
+      integration: test
   triggers:
-    - name: get
+    - name: meow
       connection: my_connection
       event_type: get
-      entrypoint: my_program.star:on_http_get
+      call: my_program.star:on_test
 
 -- a.json --
 [
   {
-    "type": "create_project",
     "action": {
       "key": "my_project",
       "project": {
         "name": "my_project"
       }
-    }
+    },
+    "type": "create_project"
   },
   {
-    "type": "create_connection",
     "action": {
-      "key": "my_project/my_connection",
       "connection": {
         "name": "my_connection"
       },
-      "project": "my_project",
-      "integration": "http"
-    }
+      "integration": "test",
+      "key": "my_project/my_connection",
+      "project": "my_project"
+    },
+    "type": "create_connection"
   },
   {
-    "type": "create_trigger",
     "action": {
-      "key": "my_project/default:my_project/my_connection/get",
       "connection": "my_project/my_connection",
       "env": "my_project/default",
+      "key": "my_project/default:connection:my_project/my_connection/meow",
       "trigger": {
-        "name": "get",
-        "event_type": "get",
         "code_location": {
-          "path": "my_program.star",
-          "name": "on_http_get"
-        }
+          "name": "on_test",
+          "path": "my_program.star"
+        },
+        "event_type": "get",
+        "name": "meow",
+        "source_type": "SOURCE_TYPE_CONNECTION"
       }
-    }
+    },
+    "type": "create_trigger"
   }
 ]
 

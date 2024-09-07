@@ -10,7 +10,10 @@ import (
 
 type User struct{ object[*UserPB, UserTraits] }
 
-var InvalidUser User
+var (
+	DefaultUser = NewUser("ak", map[string]string{"name": "dflt", "email": "a@k"})
+	InvalidUser User
+)
 
 type UserPB = userv1.User
 

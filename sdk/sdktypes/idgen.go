@@ -13,7 +13,7 @@ type UUID = uuid.UUID
 
 func SetIDGenerator(f func() UUID) { uuidGenerator = f }
 
-func newUUID() []byte { id := uuidGenerator(); return id[:] }
+func NewUUID() uuid.UUID { return uuidGenerator() }
 
 func UUIDGenerator() UUID {
 	return uuid.Must(uuid.NewV7())
@@ -36,7 +36,7 @@ func NewSequentialIDGeneratorForTesting(init uint64) func() UUID {
 }
 
 func intn(n int) int {
-	uuid := newUUID()
+	uuid := NewUUID()
 	ui64 := binary.BigEndian.Uint64(uuid[8:])
 	return int(ui64 % uint64(n))
 }

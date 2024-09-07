@@ -12,11 +12,9 @@ _sym_db = _symbol_database.Default()
 
 
 from autokitteh_pb.program.v1 import program_pb2 as autokitteh_dot_program_dot_v1_dot_program__pb2
-from autokitteh_pb.values.v1 import values_pb2 as autokitteh_dot_values_dot_v1_dot_values__pb2
-from buf.validate import validate_pb2 as buf_dot_validate_dot_validate__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n$autokitteh/triggers/v1/trigger.proto\x12\x16\x61utokitteh.triggers.v1\x1a#autokitteh/program/v1/program.proto\x1a!autokitteh/values/v1/values.proto\x1a\x1b\x62uf/validate/validate.proto\"\x97\x03\n\x07Trigger\x12\x1d\n\ntrigger_id\x18\x01 \x01(\tR\ttriggerId\x12\x12\n\x04name\x18\x02 \x01(\tR\x04name\x12#\n\rconnection_id\x18\x03 \x01(\tR\x0c\x63onnectionId\x12\x15\n\x06\x65nv_id\x18\x04 \x01(\tR\x05\x65nvId\x12\x1d\n\nevent_type\x18\x05 \x01(\tR\teventType\x12Q\n\rcode_location\x18\x06 \x01(\x0b\x32#.autokitteh.program.v1.CodeLocationB\x07\xfa\xf7\x18\x03\xc8\x01\x01R\x0c\x63odeLocation\x12\x16\n\x06\x66ilter\x18\x07 \x01(\tR\x06\x66ilter\x12=\n\x04\x64\x61ta\x18\x08 \x03(\x0b\x32).autokitteh.triggers.v1.Trigger.DataEntryR\x04\x64\x61ta\x1aT\n\tDataEntry\x12\x10\n\x03key\x18\x01 \x01(\tR\x03key\x12\x31\n\x05value\x18\x02 \x01(\x0b\x32\x1b.autokitteh.values.v1.ValueR\x05value:\x02\x38\x01\x42\xf1\x01\n\x1a\x63om.autokitteh.triggers.v1B\x0cTriggerProtoP\x01ZKgo.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/triggers/v1;triggersv1\xa2\x02\x03\x41TX\xaa\x02\x16\x41utokitteh.Triggers.V1\xca\x02\x16\x41utokitteh\\Triggers\\V1\xe2\x02\"Autokitteh\\Triggers\\V1\\GPBMetadata\xea\x02\x18\x41utokitteh::Triggers::V1b\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n$autokitteh/triggers/v1/trigger.proto\x12\x16\x61utokitteh.triggers.v1\x1a#autokitteh/program/v1/program.proto\"\xff\x03\n\x07Trigger\x12\x1d\n\ntrigger_id\x18\x01 \x01(\tR\ttriggerId\x12\x12\n\x04name\x18\x02 \x01(\tR\x04name\x12K\n\x0bsource_type\x18\x03 \x01(\x0e\x32*.autokitteh.triggers.v1.Trigger.SourceTypeR\nsourceType\x12\x15\n\x06\x65nv_id\x18\x04 \x01(\tR\x05\x65nvId\x12\x1d\n\nevent_type\x18\x05 \x01(\tR\teventType\x12H\n\rcode_location\x18\x06 \x01(\x0b\x32#.autokitteh.program.v1.CodeLocationR\x0c\x63odeLocation\x12\x16\n\x06\x66ilter\x18\x07 \x01(\tR\x06\x66ilter\x12#\n\rconnection_id\x18\x32 \x01(\tR\x0c\x63onnectionId\x12\x1a\n\x08schedule\x18\x33 \x01(\tR\x08schedule\x12!\n\x0cwebhook_slug\x18\x64 \x01(\tR\x0bwebhookSlug\"x\n\nSourceType\x12\x1b\n\x17SOURCE_TYPE_UNSPECIFIED\x10\x00\x12\x1a\n\x16SOURCE_TYPE_CONNECTION\x10\x01\x12\x17\n\x13SOURCE_TYPE_WEBHOOK\x10\x02\x12\x18\n\x14SOURCE_TYPE_SCHEDULE\x10\x03\x42\xf1\x01\n\x1a\x63om.autokitteh.triggers.v1B\x0cTriggerProtoP\x01ZKgo.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/triggers/v1;triggersv1\xa2\x02\x03\x41TX\xaa\x02\x16\x41utokitteh.Triggers.V1\xca\x02\x16\x41utokitteh\\Triggers\\V1\xe2\x02\"Autokitteh\\Triggers\\V1\\GPBMetadata\xea\x02\x18\x41utokitteh::Triggers::V1b\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -24,12 +22,8 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'autokitteh.triggers.v1.trig
 if _descriptor._USE_C_DESCRIPTORS == False:
   DESCRIPTOR._options = None
   DESCRIPTOR._serialized_options = b'\n\032com.autokitteh.triggers.v1B\014TriggerProtoP\001ZKgo.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/triggers/v1;triggersv1\242\002\003ATX\252\002\026Autokitteh.Triggers.V1\312\002\026Autokitteh\\Triggers\\V1\342\002\"Autokitteh\\Triggers\\V1\\GPBMetadata\352\002\030Autokitteh::Triggers::V1'
-  _TRIGGER_DATAENTRY._options = None
-  _TRIGGER_DATAENTRY._serialized_options = b'8\001'
-  _TRIGGER.fields_by_name['code_location']._options = None
-  _TRIGGER.fields_by_name['code_location']._serialized_options = b'\372\367\030\003\310\001\001'
-  _globals['_TRIGGER']._serialized_start=166
-  _globals['_TRIGGER']._serialized_end=573
-  _globals['_TRIGGER_DATAENTRY']._serialized_start=489
-  _globals['_TRIGGER_DATAENTRY']._serialized_end=573
+  _globals['_TRIGGER']._serialized_start=102
+  _globals['_TRIGGER']._serialized_end=613
+  _globals['_TRIGGER_SOURCETYPE']._serialized_start=493
+  _globals['_TRIGGER_SOURCETYPE']._serialized_end=613
 # @@protoc_insertion_point(module_scope)

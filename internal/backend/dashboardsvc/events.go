@@ -49,8 +49,8 @@ func (s Svc) listEvents(w http.ResponseWriter, r *http.Request, f sdkservices.Li
 		drops = append(drops, "integration_id")
 	}
 
-	if f.ConnectionID.IsValid() {
-		drops = append(drops, "connection_id")
+	if f.DestinationID.IsValid() {
+		drops = append(drops, "destination_id")
 	}
 
 	return genListData(f, kittehs.Transform(sdkCs, toEvent), drops...), nil

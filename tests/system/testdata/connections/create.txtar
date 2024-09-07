@@ -4,7 +4,7 @@ return code == 0
 output equals 'project_id: prj_00000000000000000000000001'
 
 # Negative test: create connection without name.
-ak connection create --project my_project --integration http
+ak connection create --project my_project --integration test
 output equals 'Error: accepts 1 arg(s), received 0'
 return code == 1
 
@@ -13,19 +13,19 @@ ak connection create my_connection
 output equals 'Error: required flag(s) "project", "integration" not set'
 return code == 1
 
-ak connection create my_connection --project my_project
+ak connection create my_connection --project test
 output equals 'Error: required flag(s) "integration" not set'
 return code == 1
 
-ak connection create my_connection --integration http
+ak connection create my_connection --integration test
 output equals 'Error: required flag(s) "project" not set'
 return code == 1
 
-ak connection create my_connection --project my_project
+ak connection create my_connection --project test
 output equals 'Error: required flag(s) "integration" not set'
 return code == 1
 
 # Create connection.
-ak connection create my_connection --project my_project --integration http -q
+ak connection create my_connection --project my_project --integration test -q
 return code == 0
 output equals 'connection_id: con_00000000000000000000000003'

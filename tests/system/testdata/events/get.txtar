@@ -7,27 +7,28 @@ ak event get evt_000000000000000n0nex1stent --fail
 output equals 'Error: event not found'
 return code == 10
 
-# Preconditions: create project and connection.
-ak project create --name my_project
+ak deploy --manifest project.yaml
 return code == 0
-output equals project_id: prj_00000000000000000000000001
-
-ak connection create my_connection --project my_project --integration http -q
-return code == 0
-output equals 'connection_id: con_00000000000000000000000003'
-
-# Negative test: invalid project name (dash disallowed)
-http get /http/my-project  
-resp code == 404
-
-# Negative test: unexisting project
-http get /http/my_project1
-resp code == 404
 
 # Send HTTP GET request to create new event.
-http get /http/my_project
-resp code == 200
+http get /webhooks/2222222222222222222226
+resp code == 202
 
 # Get first event, with/out JSON.
-ak event get evt_00000000000000000000000004
-output regex 'event_id:"evt_0+4"\s+connection_id:"con_0+3"\s+event_type:"get"'
+ak event get evt_00000000000000000000000007
+output regex 'event_id:"evt_0+7"\s.+\sevent_type:"get"'
+
+-- project.yaml --
+version: v1
+
+project:
+  name: my_project
+  triggers:
+    - name: http
+      type: webhook
+      call: program.star:on_http
+
+-- program.star --
+def on_http(data, trigger, event):
+    pass
+

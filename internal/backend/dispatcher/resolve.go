@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	wf "go.autokitteh.dev/autokitteh/internal/backend/workflows"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -17,7 +16,7 @@ import (
 //     that project. If the project does not have a default env, but have a single env,
 //     it will return that env. If the project has more than a single env, it will fail.
 //   - If the env string is of the form 'project/env', it will return that env.
-func resolveEnv(ctx context.Context, svcs *wf.Services, env string) (sdktypes.EnvID, error) {
+func (d *Dispatcher) resolveEnv(ctx context.Context, env string) (sdktypes.EnvID, error) {
 	if env == "" {
 		return sdktypes.InvalidEnvID, nil
 	}
@@ -32,12 +31,12 @@ func resolveEnv(ctx context.Context, svcs *wf.Services, env string) (sdktypes.En
 			return sdktypes.InvalidEnvID, err
 		}
 
-		p, err := svcs.Projects.GetByName(ctx, name)
+		p, err := d.Projects.GetByName(ctx, name)
 		if err != nil {
 			return sdktypes.InvalidEnvID, fmt.Errorf("project: %w", err)
 		}
 
-		envs, err := svcs.Envs.List(ctx, p.ID())
+		envs, err := d.Envs.List(ctx, p.ID())
 		if err != nil {
 			return sdktypes.InvalidEnvID, err
 		}
@@ -70,7 +69,7 @@ func resolveEnv(ctx context.Context, svcs *wf.Services, env string) (sdktypes.En
 		return sdktypes.InvalidEnvID, err
 	}
 
-	p, err := svcs.Projects.GetByName(context.Background(), name)
+	p, err := d.Projects.GetByName(context.Background(), name)
 	if err != nil {
 		return sdktypes.InvalidEnvID, err
 	}
@@ -82,7 +81,7 @@ func resolveEnv(ctx context.Context, svcs *wf.Services, env string) (sdktypes.En
 		return sdktypes.InvalidEnvID, err
 	}
 
-	e, err := svcs.Envs.GetByName(ctx, p.ID(), name)
+	e, err := d.Envs.GetByName(ctx, p.ID(), name)
 	if err != nil {
 		return sdktypes.InvalidEnvID, err
 	}

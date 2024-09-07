@@ -9,7 +9,6 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbfactory"
 	"go.autokitteh.dev/autokitteh/internal/backend/envs"
 	"go.autokitteh.dev/autokitteh/internal/backend/projects"
-	wf "go.autokitteh.dev/autokitteh/internal/backend/workflows"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -47,7 +46,7 @@ func TestResolveEnv(t *testing.T) {
 
 	z := zap.NewNop()
 
-	svcs := &wf.Services{
+	d := &Dispatcher{
 		Envs:     envs.New(z, testdb),
 		Projects: &projects.Projects{DB: testdb, Z: z},
 	}
@@ -115,7 +114,7 @@ func TestResolveEnv(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.in, func(t *testing.T) {
-			got, err := resolveEnv(ctx, svcs, test.in)
+			got, err := d.resolveEnv(ctx, test.in)
 			if err != nil {
 				if !test.err {
 					t.Errorf("resolveEnv() unexpected error = %v", err)

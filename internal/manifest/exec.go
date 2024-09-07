@@ -182,12 +182,12 @@ func executeAction(ctx context.Context, action actions.Action, execContext *exec
 
 		trigger := action.Trigger.WithEnvID(eid)
 
-		if action.ConnectionKey != "" {
-			cid, err := execContext.resolveConnectionID(ctx, action.ConnectionKey)
+		if key := action.ConnectionKey; key != nil {
+			cid, err := execContext.resolveConnectionID(ctx, *key)
 			if err != nil {
 				return nil, err
 			} else if !cid.IsValid() {
-				return nil, fmt.Errorf("connection %q not found", action.ConnectionKey)
+				return nil, fmt.Errorf("connection %q not found", *key)
 			}
 
 			trigger = trigger.WithConnectionID(cid)
@@ -203,12 +203,13 @@ func executeAction(ctx context.Context, action actions.Action, execContext *exec
 	case actions.UpdateTriggerAction:
 		trigger := action.Trigger
 
-		if action.ConnectionKey != "" { // convert scheduler -> normal trigger, or just update connection
-			cid, err := execContext.resolveConnectionID(ctx, action.ConnectionKey)
+		// convert scheduler -> normal trigger, or just update connection
+		if key := action.ConnectionKey; key != nil {
+			cid, err := execContext.resolveConnectionID(ctx, *key)
 			if err != nil {
 				return nil, err
 			} else if !cid.IsValid() {
-				return nil, fmt.Errorf("connection %q not found", action.ConnectionKey)
+				return nil, fmt.Errorf("connection %q not found", *key)
 			}
 
 			trigger = trigger.WithConnectionID(cid)

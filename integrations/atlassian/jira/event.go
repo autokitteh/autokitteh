@@ -181,7 +181,7 @@ func constructEvent(l *zap.Logger, jiraEvent map[string]any) (sdktypes.Event, er
 func (h handler) dispatchAsyncEventsToConnections(ctx context.Context, cids []sdktypes.ConnectionID, e sdktypes.Event) {
 	l := extrazap.ExtractLoggerFromContext(ctx)
 	for _, cid := range cids {
-		eid, err := h.dispatcher.Dispatch(ctx, e.WithConnectionID(cid), nil)
+		eid, err := h.dispatcher.Dispatch(ctx, e.WithConnectionDestinationID(cid), nil)
 		l := l.With(
 			zap.String("connectionID", cid.String()),
 			zap.String("eventID", eid.String()),
