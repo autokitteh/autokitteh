@@ -125,7 +125,7 @@ func New(lc fx.Lifecycle, z *zap.Logger, cfg *Config, reflectors []string, extra
 			}
 
 			go func() {
-				if err := server.Serve(ln); !errors.Is(http.ErrServerClosed, err) {
+				if err := server.Serve(ln); !errors.Is(err, http.ErrServerClosed) {
 					z.Panic("server error", zap.Error(err))
 				}
 

@@ -39,7 +39,8 @@ func (s *Service) Start(muxes *muxes.Muxes) {
 }
 
 func InitTrigger(trigger sdktypes.Trigger) sdktypes.Trigger {
-	return trigger.WithWebhookSlug(typeid.Must(typeid.WithPrefix("")).String())
+	unique := typeid.Must(typeid.FromUUIDWithPrefix("", sdktypes.NewUUID().String()))
+	return trigger.WithWebhookSlug(unique.String())
 }
 
 func (s *Service) ServeHTTP(w http.ResponseWriter, r *http.Request) {
