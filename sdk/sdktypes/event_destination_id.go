@@ -3,7 +3,6 @@ package sdktypes
 import (
 	"go.jetify.com/typeid"
 
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 )
 
@@ -17,7 +16,7 @@ type concreteEventDestinationID interface {
 }
 
 func NewEventDestinationID[T concreteEventDestinationID](in T) EventDestinationID {
-	parsed := kittehs.Must1(ParseID[id[typeid.AnyPrefix]](in.String()))
+	parsed := typeid.Must(ParseID[id[typeid.AnyPrefix]](in.String()))
 	return EventDestinationID{parsed}
 }
 

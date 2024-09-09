@@ -14,8 +14,6 @@ import (
 
 	"go.jetify.com/typeid"
 	"go.uber.org/zap"
-
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
 )
 
 const (
@@ -173,7 +171,7 @@ func registerWebhook(l *zap.Logger, base, user, key, category string) (int, stri
 
 	webhookBase := os.Getenv("WEBHOOK_ADDRESS")
 	url := fmt.Sprintf("https://%s/confluence/webhook/%s", webhookBase, category)
-	secret := kittehs.Must1(typeid.WithPrefix("")).String()
+	secret := typeid.Must(typeid.WithPrefix("")).String()
 	r := webhook{
 		Name:        "AutoKitteh",
 		Description: time.Now().UTC().String(),
