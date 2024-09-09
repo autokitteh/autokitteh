@@ -113,7 +113,7 @@ func TestDeleteTriggerForeignKeys(t *testing.T) {
 	// trigger could be deleted, even if it refenced by event, since trigger is soft deleted
 	assert.ErrorIs(t, f.gormdb.deleteTrigger(f.ctx, trg.TriggerID), gorm.ErrForeignKeyViolated)
 
-	f.gormdb.deleteEvent(f.ctx, evt.EventID)
+	_ = f.gormdb.deleteEvent(f.ctx, evt.EventID)
 	assert.NoError(t, f.gormdb.deleteTrigger(f.ctx, trg.TriggerID))
 }
 
