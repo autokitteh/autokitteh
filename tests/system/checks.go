@@ -94,13 +94,12 @@ func checkAKReturnCode(step string, ak *akResult) error {
 		return fmt.Errorf("failed to parse expected return code: %w", err)
 	}
 	if expected != ak.returnCode {
-		var sb strings.Builder
-		sb.WriteString(fmt.Sprintf("got return code %d, want %d", ak.returnCode, expected))
+		msg := fmt.Sprintf("got return code %d, want %d", ak.returnCode, expected)
 		// Append the AK output for context, if there is any.
 		if ak.output != "" {
-			sb.WriteString("\n" + ak.output)
+			msg += "\n" + ak.output
 		}
-		return fmt.Errorf(sb.String())
+		return errors.New(msg)
 	}
 	return nil
 }
@@ -137,7 +136,7 @@ func checkHTTPStatusCode(step string, resp *httpResponse) error {
 		if resp.body != "" {
 			sb.WriteString("\n" + resp.body)
 		}
-		return fmt.Errorf(sb.String())
+		return errors.New(sb.String())
 	}
 	return nil
 }

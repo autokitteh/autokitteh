@@ -11,7 +11,7 @@ ak deploy --manifest project.yaml
 return code == 0
 
 # Send HTTP GET request to create new event.
-http get /webhooks/2222222222222222222226
+http get /webhooks/00000000000000000000000004
 resp code == 202
 
 # Get first event, with/out JSON.
@@ -31,4 +31,3 @@ project:
 -- program.star --
 def on_http(data, trigger, event):
     pass
-

@@ -10,7 +10,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/lithammer/shortuuid/v4"
+	"go.jetify.com/typeid"
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
@@ -35,11 +35,12 @@ func New(l *zap.Logger, db db.DB, dispatcher sdkservices.Dispatcher) *Service {
 
 func (s *Service) Start(muxes *muxes.Muxes) {
 	muxes.NoAuth.Handle(WebhooksPathPrefix+"{slug}", s)
-	muxes.NoAuth.Handle(WebhooksPathPrefix+"{slug}/*", s)
+	muxes.NoAuth.Handle(WebhooksPathPrefix+"{slug}/", s)
 }
 
 func InitTrigger(trigger sdktypes.Trigger) sdktypes.Trigger {
-	return trigger.WithWebhookSlug(shortuuid.DefaultEncoder.Encode(sdktypes.NewUUID()))
+	unique := typeid.Must(typeid.FromUUIDWithPrefix("", sdktypes.NewUUID().String()))
+	return trigger.WithWebhookSlug(unique.String())
 }
 
 func (s *Service) ServeHTTP(w http.ResponseWriter, r *http.Request) {

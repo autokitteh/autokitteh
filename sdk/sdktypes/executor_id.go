@@ -3,7 +3,6 @@ package sdktypes
 import (
 	"go.jetify.com/typeid"
 
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 )
 
@@ -17,7 +16,7 @@ type concreteExecutorID interface {
 }
 
 func NewExecutorID[T concreteExecutorID](in T) ExecutorID {
-	parsed := kittehs.Must1(ParseID[id[typeid.AnyPrefix]](in.String()))
+	parsed := typeid.Must(ParseID[id[typeid.AnyPrefix]](in.String()))
 	return ExecutorID{parsed}
 }
 

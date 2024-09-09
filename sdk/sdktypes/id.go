@@ -100,7 +100,7 @@ func (i *id[T]) UnmarshalJSON(data []byte) (err error) { err = json.Unmarshal(da
 
 func newID[ID id[T], T idTraits]() ID {
 	uuid := NewUUID()
-	return ID(id[T]{tid: kittehs.Must1(typeid.FromUUIDBytes[typeid.TypeID[T]](uuid[:]))})
+	return ID(id[T]{tid: typeid.Must(typeid.FromUUIDBytes[typeid.TypeID[T]](uuid[:]))})
 }
 
 func NewIDFromUUID[ID id[T], T idTraits](uuid *UUID) ID {
@@ -108,7 +108,7 @@ func NewIDFromUUID[ID id[T], T idTraits](uuid *UUID) ID {
 		var zero ID
 		return zero
 	}
-	return ID(id[T]{tid: kittehs.Must1(typeid.FromUUIDBytes[typeid.TypeID[T]](uuid[:]))})
+	return ID(id[T]{tid: typeid.Must(typeid.FromUUIDBytes[typeid.TypeID[T]](uuid[:]))})
 }
 
 func ParseID[ID id[T], T idTraits](s string) (ID, error) {

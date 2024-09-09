@@ -158,7 +158,8 @@ func PrintSuggestions(cmd *cobra.Command, effects manifest.Effects) {
 			}
 
 			if slug := t.WebhookSlug(); slug != "" {
-				fmt.Fprintf(cmd.ErrOrStderr(), "[!!!!] trigger %q created, webhook path is \"%s%s\"\n", t.Name(), webhookssvc.WebhooksPathPrefix, slug)
+				urlPath := webhookssvc.WebhooksPathPrefix + slug
+				fmt.Fprintf(cmd.ErrOrStderr(), "[!!!!] trigger %q created, webhook path is %q\n", t.Name(), urlPath)
 			}
 		}
 
