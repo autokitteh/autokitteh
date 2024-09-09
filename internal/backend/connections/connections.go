@@ -123,10 +123,6 @@ func (c *Connections) Get(ctx context.Context, id sdktypes.ConnectionID) (sdktyp
 }
 
 func (c *Connections) enrichConnection(ctx context.Context, conn sdktypes.Connection) (sdktypes.Connection, error) {
-	if !conn.IntegrationID().IsValid() && conn.ID() == sdktypes.BuiltinSchedulerConnectionID {
-		return conn, nil
-	}
-
 	intg, err := c.Integrations.GetByID(ctx, conn.IntegrationID())
 	if err != nil {
 		return sdktypes.InvalidConnection, err

@@ -9,7 +9,6 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionsvcs"
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkbuildfile"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -69,6 +68,10 @@ func Get(ctx context.Context, z *zap.Logger, svcs *sessionsvcs.Svcs, sessionID s
 		return nil, err
 	}
 
+	if data.Connections, err = svcs.Connections.List(ctx, sdkservices.ListConnectionsFilter{ProjectID: data.ProjectID}); err != nil {
+		return nil, fmt.Errorf("connections.list: %w", err)
+	}
+
 	if envID := data.Session.EnvID(); envID.IsValid() {
 		if data.Env, err = retrieve(ctx, z, envID, svcs.Envs.GetByID); err != nil {
 			return nil, err
@@ -78,22 +81,8 @@ func Get(ctx context.Context, z *zap.Logger, svcs *sessionsvcs.Svcs, sessionID s
 			return nil, fmt.Errorf("sessions can only run on projects")
 		}
 
-		if data.Connections, err = svcs.Connections.List(ctx, sdkservices.ListConnectionsFilter{ProjectID: data.ProjectID}); err != nil {
-			return nil, fmt.Errorf("connections.list: %w", err)
-		}
-
-		for _, conn := range data.Connections {
-			ts, err := svcs.Triggers.List(ctx, sdkservices.ListTriggersFilter{ConnectionID: conn.ID()})
-			if err != nil {
-				return nil, fmt.Errorf("triggers.list(%v): %w", conn.ID(), err)
-			}
-
-			ts = kittehs.Filter(ts, func(t sdktypes.Trigger) bool {
-				triggerEnvID := t.EnvID()
-				return !triggerEnvID.IsValid() || triggerEnvID == envID
-			})
-
-			data.Triggers = append(data.Triggers, ts...)
+		if data.Triggers, err = svcs.Triggers.List(ctx, sdkservices.ListTriggersFilter{EnvID: envID}); err != nil {
+			return nil, fmt.Errorf("triggers.list(%v): %w", envID, err)
 		}
 
 		// TODO: merge mappings?

@@ -36,13 +36,6 @@ func (f *dbFixture) createProjectConnectionEnv(t *testing.T) (scheme.Project, sc
 	return p, c, env
 }
 
-func (f *dbFixture) createCronConnection(t *testing.T) scheme.Connection {
-	cronCon := f.newConnection()
-	cronCon.ConnectionID = sdktypes.BuiltinSchedulerConnectionID.UUIDValue()
-	f.createConnectionsAndAssert(t, cronCon)
-	return cronCon
-}
-
 func preTriggerTest(t *testing.T) *dbFixture {
 	f := newDBFixture().withUser(sdktypes.DefaultUser)
 	findAndAssertCount[scheme.Trigger](t, f, 0, "") // no triggers
@@ -67,12 +60,12 @@ func TestGetTrigger(t *testing.T) {
 	f.createTriggersAndAssert(t, t1)
 
 	// test getTrigger
-	t2, err := f.gormdb.getTrigger(f.ctx, t1.TriggerID)
+	t2, err := f.gormdb.getTriggerByID(f.ctx, t1.TriggerID)
 	assert.NoError(t, err)
 	assert.Equal(t, t1, *t2)
 
 	assert.NoError(t, f.gormdb.deleteTrigger(f.ctx, t1.TriggerID))
-	_, err = f.gormdb.getTrigger(f.ctx, t1.TriggerID)
+	_, err = f.gormdb.getTriggerByID(f.ctx, t1.TriggerID)
 	assert.ErrorIs(t, err, gorm.ErrRecordNotFound)
 }
 
@@ -82,7 +75,6 @@ func TestCreateTriggerForeignKeys(t *testing.T) {
 	b := f.newBuild()
 	p, c, e := f.createProjectConnectionEnv(t)
 	f.saveBuildsAndAssert(t, b)
-	cronCon := f.createCronConnection(t)
 
 	// negative test with non-existing assets
 
@@ -90,29 +82,23 @@ func TestCreateTriggerForeignKeys(t *testing.T) {
 	t1 := f.newTrigger()
 	assert.Equal(t, t1.ProjectID, sdktypes.UUID{})
 	assert.Equal(t, t1.EnvID, sdktypes.UUID{})
-	assert.Equal(t, t1.ConnectionID, sdktypes.UUID{})
+	assert.Nil(t, t1.ConnectionID)
 	assert.ErrorIs(t, f.gormdb.createTrigger(f.ctx, &t1), gorm.ErrForeignKeyViolated)
 
-	// user owned projectID and EnvID, but default/zero connection
-	t2 := f.newTrigger(p, e)
-	assert.ErrorIs(t, f.gormdb.createTrigger(f.ctx, &t2), gorm.ErrForeignKeyViolated)
 	// change connection to builtin scheduler connection (now user owned) - should be allowed
-	t2.ConnectionID = cronCon.ConnectionID
-	f.createTriggersAndAssert(t, t2)
-	assert.NoError(t, f.gormdb.isCtxUserEntity(f.ctx, t2.TriggerID))
 
 	// use buildID (owned by user to pass user ownership test) to fake unexisting IDs
-	t3 := f.newTrigger(p, c, e)
-	t3.EnvID = b.BuildID // no such envID, since it's a buildID
-	assert.ErrorIs(t, f.gormdb.createTrigger(f.ctx, &t3), gorm.ErrForeignKeyViolated)
-	t3.EnvID = e.EnvID
+	t2 := f.newTrigger(p, c, e)
+	t2.EnvID = b.BuildID // no such envID, since it's a buildID
+	assert.ErrorIs(t, f.gormdb.createTrigger(f.ctx, &t2), gorm.ErrForeignKeyViolated)
+	t2.EnvID = e.EnvID
 
-	t3.ConnectionID = b.BuildID // no such connectionID, since it's a buildID
-	assert.ErrorIs(t, f.gormdb.createTrigger(f.ctx, &t3), gorm.ErrForeignKeyViolated)
-	t3.ConnectionID = c.ConnectionID
+	t2.ConnectionID = &b.BuildID // no such connectionID, since it's a buildID
+	assert.ErrorIs(t, f.gormdb.createTrigger(f.ctx, &t2), gorm.ErrForeignKeyViolated)
+	t2.ConnectionID = &c.ConnectionID
 
 	// test with existing assets
-	f.createTriggersAndAssert(t, t3)
+	f.createTriggersAndAssert(t, t2)
 }
 
 func TestListTriggers(t *testing.T) {

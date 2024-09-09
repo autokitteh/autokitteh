@@ -131,7 +131,7 @@ func (s Svc) connection(w http.ResponseWriter, r *http.Request) {
 	}
 
 	events, err := s.listEvents(w, r, sdkservices.ListEventsFilter{
-		ConnectionID: sdkC.ID(),
+		DestinationID: sdktypes.NewEventDestinationID(sdkC.ID()),
 	})
 	if err != nil {
 		return

@@ -2,20 +2,21 @@
 ak deploy --manifest schedule.yaml --file cron.star
 return code == 0
 
-ak trigger list
+ak trigger list -j
 return code == 0
-output regex 'trigger_id:"trg_0+3" +name:"cron" +connection_id:"con_3kthcr0n0+".*?event_type:"scheduler".*data:{key:"schedule" +value:{string:{v:"\*/1 \* \* \* \* \* \*"}}}'
+output equals_json file triggers.json
 
-wait 5s for session ses_00000000000000000000000007
-ak session log ses_00000000000000000000000007 --no-timestamps --prints-only
-return code == 0
-output equals 'cron'
-
-wait 5s for session ses_0000000000000000000000000a
-ak session log ses_0000000000000000000000000a --no-timestamps --prints-only
+wait 5s for session ses_00000000000000000000000008
+ak session log ses_00000000000000000000000008 --no-timestamps --prints-only
 return code == 0
 output equals 'cron'
 
+wait 5s for session ses_0000000000000000000000000c
+ak session log ses_0000000000000000000000000c --no-timestamps --prints-only
+return code == 0
+output equals 'cron'
+
+-- TODO: ENG-1504 --
 # remove trigger and effectively cancel cron
 ak trigger delete trg_00000000000000000000000003
 #ak deploy --manifest no_schedule.yaml --file cron.star
@@ -30,7 +31,6 @@ wait 3s unless session ses_0000000000000000000000000d
 ak session list
 return code == 0
 output regex '(?m)^session_id:"ses_0+a.*\n^session_id:"ses_0+7.*$'
-
 
 -- schedule.yaml --
 version: v1
@@ -50,3 +50,16 @@ project:
 -- cron.star --
 def on_cron_trigger():
     print("cron")
+
+-- triggers.json --
+{
+  "trigger_id": "trg_00000000000000000000000003",
+  "name": "cron",
+  "source_type": "SOURCE_TYPE_SCHEDULE",
+  "env_id": "env_00000000000000000000000002",
+  "code_location": {
+    "path": "cron.star",
+    "name": "on_cron_trigger"
+  },
+  "schedule": "*/1 * * * * * *"
+}

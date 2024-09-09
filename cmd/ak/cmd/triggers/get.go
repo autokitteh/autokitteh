@@ -8,7 +8,7 @@ import (
 )
 
 var getCmd = common.StandardCommand(&cobra.Command{
-	Use:   "get <trigger ID> [--fail]",
+	Use:   "get <trigger name or ID> [--fail] [--project project]",
 	Short: "Get event trigger details",
 	Args:  cobra.ExactArgs(1),
 
@@ -17,7 +17,7 @@ var getCmd = common.StandardCommand(&cobra.Command{
 		ctx, cancel := common.LimitedContext()
 		defer cancel()
 
-		t, _, err := r.TriggerID(ctx, args[0])
+		t, _, err := r.TriggerNameOrID(ctx, args[0], project)
 		err = common.AddNotFoundErrIfCond(err, t.IsValid())
 		if err = common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "trigger"); err == nil {
 			common.RenderKVIfV("trigger", t)
@@ -29,4 +29,6 @@ var getCmd = common.StandardCommand(&cobra.Command{
 func init() {
 	// Command-specific flags.
 	common.AddFailIfNotFoundFlag(getCmd)
+
+	getCmd.Flags().VarP(common.NewNonEmptyString("", &project), "project", "p", "project name or ID")
 }

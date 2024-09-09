@@ -93,7 +93,7 @@ us at meow@autokitteh.com.
 
 ## Build From Source
 
-The following requires [Go version 1.22](https://go.dev/dl/) or greater.
+The following requires [Go version 1.23](https://go.dev/dl/) or greater.
 
 ```shell
 $ git clone https://github.com/autokitteh/autokitteh.git
@@ -107,7 +107,7 @@ $ ak version
 
 - buf
 - docker
-- go >= 1.22
+- go >= 1.23
 - golangci-lint (auto-downloaded during builds if missing)
 - shellcheck (auto-pulled via docker during builds if missing)
 

@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 
+	"github.com/google/uuid"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 
@@ -94,9 +95,10 @@ type DB interface {
 	// -----------------------------------------------------------------------
 	CreateTrigger(context.Context, sdktypes.Trigger) error
 	UpdateTrigger(context.Context, sdktypes.Trigger) error
-	GetTrigger(context.Context, sdktypes.TriggerID) (sdktypes.Trigger, error)
+	GetTriggerByID(context.Context, sdktypes.TriggerID) (sdktypes.Trigger, error)
 	DeleteTrigger(context.Context, sdktypes.TriggerID) error
 	ListTriggers(context.Context, sdkservices.ListTriggersFilter) ([]sdktypes.Trigger, error)
+	GetTriggerByWebhookSlug(ctx context.Context, slug string) (sdktypes.Trigger, error)
 
 	// -----------------------------------------------------------------------
 	GetBuild(ctx context.Context, buildID sdktypes.BuildID) (sdktypes.Build, error)
@@ -142,10 +144,10 @@ type DB interface {
 
 	// -----------------------------------------------------------------------
 	// TODO(ENG-917): Do not expose scheme outside of DB.
-	SaveSignal(ctx context.Context, signalID string, workflowID string, connectionID sdktypes.ConnectionID, filter string) (string, error)
-	GetSignal(ctx context.Context, signalID string) (scheme.Signal, error)
-	RemoveSignal(ctx context.Context, signalID string) error
-	ListSignalsWaitingOnConnection(ctx context.Context, connectionID sdktypes.ConnectionID) ([]scheme.Signal, error)
+	SaveSignal(ctx context.Context, signalID uuid.UUID, workflowID string, dstID sdktypes.EventDestinationID, filter string) error
+	GetSignal(ctx context.Context, signalID uuid.UUID) (scheme.Signal, error)
+	RemoveSignal(ctx context.Context, signalID uuid.UUID) error
+	ListWaitingSignals(ctx context.Context, dstID sdktypes.EventDestinationID) ([]scheme.Signal, error)
 
 	// -----------------------------------------------------------------------
 	SetSecret(ctx context.Context, key string, value string) error

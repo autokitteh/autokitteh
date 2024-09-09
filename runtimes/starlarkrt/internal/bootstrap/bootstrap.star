@@ -24,17 +24,6 @@
 def nop():
     pass
 
-# EXPORT: poll
-def poll(fn, pollerfn):
-    orig = ak.poll(pollerfn)
-    r = fn()
-    ak.poll(orig)
-    return r
-
-# EXPORT: fake
-def fake(*args, **kwargs):
-    return ak.fake(*args, **kwargs)
-
 # EXPORT: sleep
 def sleep(*args, **kwargs):
     return ak.sleep(*args, **kwargs)

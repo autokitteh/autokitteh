@@ -131,10 +131,16 @@ func (s *server) List(ctx context.Context, req *connect.Request[triggersv1.ListR
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
+	stype, err := sdktypes.TriggerSourceTypeFromProto(msg.SourceType)
+	if err != nil {
+		return nil, sdkerrors.AsConnectError(err)
+	}
+
 	filter := sdkservices.ListTriggersFilter{
 		EnvID:        eid,
 		ConnectionID: cid,
 		ProjectID:    pid,
+		SourceType:   stype,
 	}
 
 	triggers, err := s.triggers.List(ctx, filter)

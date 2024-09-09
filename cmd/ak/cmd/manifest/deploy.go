@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
+	"go.autokitteh.dev/autokitteh/internal/backend/webhookssvc"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/internal/manifest"
 	"go.autokitteh.dev/autokitteh/internal/resolver"
@@ -146,26 +147,39 @@ func PrintSuggestions(cmd *cobra.Command, effects manifest.Effects) {
 			continue
 		}
 
-		cid, ok := effect.SubjectID.(sdktypes.ConnectionID)
-		if !ok {
-			continue
-		}
+		if tid, ok := effect.SubjectID.(sdktypes.TriggerID); ok {
+			ctx, cancel := common.LimitedContext()
+			defer cancel()
 
-		ctx, cancel := common.LimitedContext()
-		defer cancel()
-
-		c, err := common.Client().Connections().Get(ctx, cid)
-		if err != nil {
-			fmt.Fprintf(cmd.ErrOrStderr(), "error getting connection %v: %v\n", cid, err)
-			continue
-		}
-
-		if l := c.Links().InitURL(); l != "" {
-			action := "and can be initialized"
-			if c.Capabilities().RequiresConnectionInit() {
-				action = "but requires initialization"
+			t, err := common.Client().Triggers().Get(ctx, tid)
+			if err != nil {
+				fmt.Fprintf(cmd.ErrOrStderr(), "error getting trigger %v: %v\n", tid, err)
+				continue
 			}
-			fmt.Fprintf(cmd.ErrOrStderr(), "[!!!!] Connection created, %s. Please run this to complete: ak connection init %v\n", action, cid)
+
+			if slug := t.WebhookSlug(); slug != "" {
+				urlPath := webhookssvc.WebhooksPathPrefix + slug
+				fmt.Fprintf(cmd.ErrOrStderr(), "[!!!!] trigger %q created, webhook path is %q\n", t.Name(), urlPath)
+			}
+		}
+
+		if cid, ok := effect.SubjectID.(sdktypes.ConnectionID); ok {
+			ctx, cancel := common.LimitedContext()
+			defer cancel()
+
+			c, err := common.Client().Connections().Get(ctx, cid)
+			if err != nil {
+				fmt.Fprintf(cmd.ErrOrStderr(), "error getting connection %v: %v\n", cid, err)
+				continue
+			}
+
+			if l := c.Links().InitURL(); l != "" {
+				action := "and can be initialized"
+				if c.Capabilities().RequiresConnectionInit() {
+					action = "but requires initialization"
+				}
+				fmt.Fprintf(cmd.ErrOrStderr(), "[!!!!] Connection created, %s. Please run this to complete: ak connection init %v\n", action, cid)
+			}
 		}
 	}
 }

@@ -6,7 +6,7 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-var ctxKey = struct{}{}
+type ctxKey struct{}
 
 type callContext struct {
 	module *module
@@ -14,14 +14,14 @@ type callContext struct {
 }
 
 func wrapCallContext(ctx context.Context, m *module, fnv sdktypes.Value) context.Context {
-	return context.WithValue(ctx, ctxKey, &callContext{
+	return context.WithValue(ctx, ctxKey{}, &callContext{
 		module: m,
 		fnv:    fnv,
 	})
 }
 
 func callContextFromContext(ctx context.Context) *callContext {
-	if c, ok := ctx.Value(ctxKey).(*callContext); ok {
+	if c, ok := ctx.Value(ctxKey{}).(*callContext); ok {
 		return c
 	}
 	return &callContext{}

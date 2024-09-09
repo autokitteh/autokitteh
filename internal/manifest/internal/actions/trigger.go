@@ -4,7 +4,7 @@ import "go.autokitteh.dev/autokitteh/sdk/sdktypes"
 
 type CreateTriggerAction struct {
 	Key           string           `json:"key"`
-	ConnectionKey string           `json:"connection"`
+	ConnectionKey *string          `json:"connection"`
 	EnvKey        string           `json:"env"`
 	Trigger       sdktypes.Trigger `json:"trigger"`
 }
@@ -19,7 +19,7 @@ func init() { registerActionType[CreateTriggerAction]() }
 
 type UpdateTriggerAction struct {
 	Key           string           `json:"key"`
-	ConnectionKey string           `json:"connection"`
+	ConnectionKey *string          `json:"connection"`
 	EnvKey        string           `json:"env"`
 	Trigger       sdktypes.Trigger `json:"trigger"`
 }

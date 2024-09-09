@@ -47,7 +47,7 @@ var saveCmd = common.StandardCommand(&cobra.Command{
 				return fmt.Errorf("connection %q not found", connection)
 			}
 
-			pb.ConnectionId = cid.String()
+			pb.DestinationId = cid.String()
 		}
 		if len(data) > 0 {
 			m, err := kittehs.ListToMapError(data, parseDataKeyValue)

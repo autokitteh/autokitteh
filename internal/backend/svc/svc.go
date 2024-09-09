@@ -51,7 +51,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/oauth"
 	"go.autokitteh.dev/autokitteh/internal/backend/projects"
 	"go.autokitteh.dev/autokitteh/internal/backend/projectsgrpcsvc"
-	"go.autokitteh.dev/autokitteh/internal/backend/schedule"
+	"go.autokitteh.dev/autokitteh/internal/backend/scheduler"
 	"go.autokitteh.dev/autokitteh/internal/backend/secrets"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessionsgrpcsvc"
@@ -63,6 +63,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/triggersgrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/vars"
 	"go.autokitteh.dev/autokitteh/internal/backend/varsgrpcsvc"
+	"go.autokitteh.dev/autokitteh/internal/backend/webhookssvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/webtools"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/internal/version"
@@ -200,23 +201,25 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 
 		Component("healthcheck", configset.Empty, fx.Provide(healthchecker.New)),
 		Component(
-			"schedule",
+			"scheduler",
 			configset.Empty,
-			fx.Provide(schedule.New),
-		),
-		// TODO: consider design where the workflow is an implementation detail of the scheduler and does not need to be exposed.
-		Component(
-			"scheduleWorkflow",
-			configset.Empty,
-			fx.Provide(schedule.NewSchedulerWorkflow),
-			fx.Invoke(func(lc fx.Lifecycle, swf schedule.SchedulerWorkflow) { HookOnStart(lc, swf.Start) }),
+			fx.Provide(scheduler.New),
+			fx.Invoke(
+				func(lc fx.Lifecycle, sch *scheduler.Scheduler, d sdkservices.Dispatcher) {
+					HookOnStart(lc, func(ctx context.Context) error {
+						return sch.Start(ctx, d)
+					})
+				},
+			),
 		),
 		Component(
 			"dispatcher",
 			configset.Empty,
-			fx.Provide(dispatcher.New),
-			fx.Provide(func(d dispatcher.Dispatcher) sdkservices.Dispatcher { return d }),
-			fx.Invoke(func(lc fx.Lifecycle, d dispatcher.Dispatcher) { HookOnStart(lc, d.Start) }),
+			fx.Provide(func(lc fx.Lifecycle, d dispatcher.Dispatcher) sdkservices.Dispatcher {
+				dd := dispatcher.New(d)
+				HookOnStart(lc, d.Start)
+				return dd
+			}),
 		),
 		Component(
 			"webtools",
@@ -227,7 +230,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 				HookOnStart(lc, t.Setup)
 			}),
 		),
-		fx.Provide(func(s fxServices) sdkservices.Services { return &s }),
+		fx.Provide(func(s sdkservices.ServicesStruct) sdkservices.Services { return &s }),
 		fx.Invoke(authgrpcsvc.Init),
 		fx.Invoke(applygrpcsvc.Init),
 		fx.Invoke(buildsgrpcsvc.Init),
@@ -252,7 +255,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 			httpsvc.Configs,
 			fx.Provide(func(lc fx.Lifecycle, z *zap.Logger, cfg *httpsvc.Config,
 				wrapAuth authhttpmiddleware.AuthMiddlewareDecorator,
-				authHdrExtractor authhttpmiddleware.AuthHeaderExtractor,
+				authHdrExtractor authhttpmiddleware.AuthHeaderExtractor, telemetry *telemetry.Telemetry,
 			) (svc httpsvc.Svc, all *muxes.Muxes, err error) {
 				svc, err = httpsvc.New(
 					lc, z, cfg,
@@ -284,6 +287,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 							return nil
 						},
 					},
+					telemetry,
 				)
 				if err != nil {
 					return
@@ -306,6 +310,15 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		}),
 		fx.Invoke(dashboardsvc.Init),
 		fx.Invoke(oauth.InitWebhook),
+		Component(
+			"webhooks",
+			configset.Empty,
+			fx.Provide(webhookssvc.New),
+			fx.Invoke(func(lc fx.Lifecycle, w *webhookssvc.Service, muxes *muxes.Muxes) {
+				HookSimpleOnStart(lc, func() { w.Start(muxes) })
+			}),
+		),
+		integrationsFXOption(),
 		fx.Invoke(func(z *zap.Logger, muxes *muxes.Muxes) {
 			srv := http.FileServer(http.FS(static.RootWebContent))
 			muxes.NoAuth.Handle("GET /static/", http.StripPrefix("/static/", srv))
@@ -366,7 +379,6 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 				})
 			}),
 		),
-		integrationsFXOption(),
 		fx.Invoke(func(z *zap.Logger, lc fx.Lifecycle, muxes *muxes.Muxes, h healthreporter.HealthReporter) {
 			var ready atomic.Bool
 
@@ -420,7 +432,7 @@ func NewOpts(cfg *Config, ropts RunOptions) []fx.Option {
 		printModeWarning(ropts.Mode)
 	}
 
-	var svcs sdkservices.Services = &fxServices{}
+	var svcs sdkservices.Services = &sdkservices.ServicesStruct{}
 
 	return append(opts, fx.Populate(svcs))
 }

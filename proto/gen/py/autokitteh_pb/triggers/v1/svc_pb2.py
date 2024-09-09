@@ -15,7 +15,7 @@ from autokitteh_pb.triggers.v1 import trigger_pb2 as autokitteh_dot_triggers_dot
 from buf.validate import validate_pb2 as buf_dot_validate_dot_validate__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n autokitteh/triggers/v1/svc.proto\x12\x16\x61utokitteh.triggers.v1\x1a$autokitteh/triggers/v1/trigger.proto\x1a\x1b\x62uf/validate/validate.proto\"\x95\x03\n\rCreateRequest\x12\x39\n\x07trigger\x18\x01 \x01(\x0b\x32\x1f.autokitteh.triggers.v1.TriggerR\x07trigger:\xc8\x02\xfa\xf7\x18\xc3\x02\x1ax\n trigger.trigger_id_must_be_empty\x12 trigger_id must not be specified\x1a\x32has(this.trigger) && this.trigger.trigger_id == \'\'\x1a\xc6\x01\n#trigger.trigger_qualifiers_required\x12\x32\x61t least one is required: event_type, filter, data\x1akhas(this.trigger) && (this.trigger.event_type != \'\' || this.trigger.filter != \'\' || has(this.trigger.data))\"9\n\x0e\x43reateResponse\x12\'\n\ntrigger_id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\ttriggerId\"\x86\x03\n\rUpdateRequest\x12\x39\n\x07trigger\x18\x01 \x01(\x0b\x32\x1f.autokitteh.triggers.v1.TriggerR\x07trigger:\xb9\x02\xfa\xf7\x18\xb4\x02\x1ai\n\x1btrigger.trigger_id_required\x12\x16trigger_id is required\x1a\x32has(this.trigger) && this.trigger.trigger_id != \'\'\x1a\xc6\x01\n#trigger.trigger_qualifiers_required\x12\x32\x61t least one is required: event_type, filter, data\x1akhas(this.trigger) && (this.trigger.event_type != \'\' || this.trigger.filter != \'\' || has(this.trigger.data))\"\x10\n\x0eUpdateResponse\"8\n\rDeleteRequest\x12\'\n\ntrigger_id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\ttriggerId\"\x10\n\x0e\x44\x65leteResponse\"5\n\nGetRequest\x12\'\n\ntrigger_id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\ttriggerId\"H\n\x0bGetResponse\x12\x39\n\x07trigger\x18\x01 \x01(\x0b\x32\x1f.autokitteh.triggers.v1.TriggerR\x07trigger\"h\n\x0bListRequest\x12\x15\n\x06\x65nv_id\x18\x01 \x01(\tR\x05\x65nvId\x12#\n\rconnection_id\x18\x02 \x01(\tR\x0c\x63onnectionId\x12\x1d\n\nproject_id\x18\x03 \x01(\tR\tprojectId\"Y\n\x0cListResponse\x12I\n\x08triggers\x18\x01 \x03(\x0b\x32\x1f.autokitteh.triggers.v1.TriggerB\x0c\xfa\xf7\x18\x08\x92\x01\x05\"\x03\xc8\x01\x01R\x08triggers2\xbf\x03\n\x0fTriggersService\x12W\n\x06\x43reate\x12%.autokitteh.triggers.v1.CreateRequest\x1a&.autokitteh.triggers.v1.CreateResponse\x12W\n\x06Update\x12%.autokitteh.triggers.v1.UpdateRequest\x1a&.autokitteh.triggers.v1.UpdateResponse\x12W\n\x06\x44\x65lete\x12%.autokitteh.triggers.v1.DeleteRequest\x1a&.autokitteh.triggers.v1.DeleteResponse\x12N\n\x03Get\x12\".autokitteh.triggers.v1.GetRequest\x1a#.autokitteh.triggers.v1.GetResponse\x12Q\n\x04List\x12#.autokitteh.triggers.v1.ListRequest\x1a$.autokitteh.triggers.v1.ListResponseB\xed\x01\n\x1a\x63om.autokitteh.triggers.v1B\x08SvcProtoP\x01ZKgo.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/triggers/v1;triggersv1\xa2\x02\x03\x41TX\xaa\x02\x16\x41utokitteh.Triggers.V1\xca\x02\x16\x41utokitteh\\Triggers\\V1\xe2\x02\"Autokitteh\\Triggers\\V1\\GPBMetadata\xea\x02\x18\x41utokitteh::Triggers::V1b\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n autokitteh/triggers/v1/svc.proto\x12\x16\x61utokitteh.triggers.v1\x1a$autokitteh/triggers/v1/trigger.proto\x1a\x1b\x62uf/validate/validate.proto\"\xca\x01\n\rCreateRequest\x12\x39\n\x07trigger\x18\x01 \x01(\x0b\x32\x1f.autokitteh.triggers.v1.TriggerR\x07trigger:~\xfa\xf7\x18z\x1ax\n trigger.trigger_id_must_be_empty\x12 trigger_id must not be specified\x1a\x32has(this.trigger) && this.trigger.trigger_id == \'\'\"9\n\x0e\x43reateResponse\x12\'\n\ntrigger_id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\ttriggerId\"\xbb\x01\n\rUpdateRequest\x12\x39\n\x07trigger\x18\x01 \x01(\x0b\x32\x1f.autokitteh.triggers.v1.TriggerR\x07trigger:o\xfa\xf7\x18k\x1ai\n\x1btrigger.trigger_id_required\x12\x16trigger_id is required\x1a\x32has(this.trigger) && this.trigger.trigger_id != \'\'\"\x10\n\x0eUpdateResponse\"8\n\rDeleteRequest\x12\'\n\ntrigger_id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\ttriggerId\"\x10\n\x0e\x44\x65leteResponse\"5\n\nGetRequest\x12\'\n\ntrigger_id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\ttriggerId\"H\n\x0bGetResponse\x12\x39\n\x07trigger\x18\x01 \x01(\x0b\x32\x1f.autokitteh.triggers.v1.TriggerR\x07trigger\"\xb5\x01\n\x0bListRequest\x12\x15\n\x06\x65nv_id\x18\x01 \x01(\tR\x05\x65nvId\x12#\n\rconnection_id\x18\x02 \x01(\tR\x0c\x63onnectionId\x12\x1d\n\nproject_id\x18\x03 \x01(\tR\tprojectId\x12K\n\x0bsource_type\x18\x04 \x01(\x0e\x32*.autokitteh.triggers.v1.Trigger.SourceTypeR\nsourceType\"Y\n\x0cListResponse\x12I\n\x08triggers\x18\x01 \x03(\x0b\x32\x1f.autokitteh.triggers.v1.TriggerB\x0c\xfa\xf7\x18\x08\x92\x01\x05\"\x03\xc8\x01\x01R\x08triggers2\xbf\x03\n\x0fTriggersService\x12W\n\x06\x43reate\x12%.autokitteh.triggers.v1.CreateRequest\x1a&.autokitteh.triggers.v1.CreateResponse\x12W\n\x06Update\x12%.autokitteh.triggers.v1.UpdateRequest\x1a&.autokitteh.triggers.v1.UpdateResponse\x12W\n\x06\x44\x65lete\x12%.autokitteh.triggers.v1.DeleteRequest\x1a&.autokitteh.triggers.v1.DeleteResponse\x12N\n\x03Get\x12\".autokitteh.triggers.v1.GetRequest\x1a#.autokitteh.triggers.v1.GetResponse\x12Q\n\x04List\x12#.autokitteh.triggers.v1.ListRequest\x1a$.autokitteh.triggers.v1.ListResponseB\xed\x01\n\x1a\x63om.autokitteh.triggers.v1B\x08SvcProtoP\x01ZKgo.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/triggers/v1;triggersv1\xa2\x02\x03\x41TX\xaa\x02\x16\x41utokitteh.Triggers.V1\xca\x02\x16\x41utokitteh\\Triggers\\V1\xe2\x02\"Autokitteh\\Triggers\\V1\\GPBMetadata\xea\x02\x18\x41utokitteh::Triggers::V1b\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -24,11 +24,11 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   DESCRIPTOR._options = None
   DESCRIPTOR._serialized_options = b'\n\032com.autokitteh.triggers.v1B\010SvcProtoP\001ZKgo.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/triggers/v1;triggersv1\242\002\003ATX\252\002\026Autokitteh.Triggers.V1\312\002\026Autokitteh\\Triggers\\V1\342\002\"Autokitteh\\Triggers\\V1\\GPBMetadata\352\002\030Autokitteh::Triggers::V1'
   _CREATEREQUEST._options = None
-  _CREATEREQUEST._serialized_options = b'\372\367\030\303\002\032x\n trigger.trigger_id_must_be_empty\022 trigger_id must not be specified\0322has(this.trigger) && this.trigger.trigger_id == \'\'\032\306\001\n#trigger.trigger_qualifiers_required\0222at least one is required: event_type, filter, data\032khas(this.trigger) && (this.trigger.event_type != \'\' || this.trigger.filter != \'\' || has(this.trigger.data))'
+  _CREATEREQUEST._serialized_options = b'\372\367\030z\032x\n trigger.trigger_id_must_be_empty\022 trigger_id must not be specified\0322has(this.trigger) && this.trigger.trigger_id == \'\''
   _CREATERESPONSE.fields_by_name['trigger_id']._options = None
   _CREATERESPONSE.fields_by_name['trigger_id']._serialized_options = b'\372\367\030\004r\002\020\001'
   _UPDATEREQUEST._options = None
-  _UPDATEREQUEST._serialized_options = b'\372\367\030\264\002\032i\n\033trigger.trigger_id_required\022\026trigger_id is required\0322has(this.trigger) && this.trigger.trigger_id != \'\'\032\306\001\n#trigger.trigger_qualifiers_required\0222at least one is required: event_type, filter, data\032khas(this.trigger) && (this.trigger.event_type != \'\' || this.trigger.filter != \'\' || has(this.trigger.data))'
+  _UPDATEREQUEST._serialized_options = b'\372\367\030k\032i\n\033trigger.trigger_id_required\022\026trigger_id is required\0322has(this.trigger) && this.trigger.trigger_id != \'\''
   _DELETEREQUEST.fields_by_name['trigger_id']._options = None
   _DELETEREQUEST.fields_by_name['trigger_id']._serialized_options = b'\372\367\030\004r\002\020\001'
   _GETREQUEST.fields_by_name['trigger_id']._options = None
@@ -36,25 +36,25 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _LISTRESPONSE.fields_by_name['triggers']._options = None
   _LISTRESPONSE.fields_by_name['triggers']._serialized_options = b'\372\367\030\010\222\001\005\"\003\310\001\001'
   _globals['_CREATEREQUEST']._serialized_start=128
-  _globals['_CREATEREQUEST']._serialized_end=533
-  _globals['_CREATERESPONSE']._serialized_start=535
-  _globals['_CREATERESPONSE']._serialized_end=592
-  _globals['_UPDATEREQUEST']._serialized_start=595
-  _globals['_UPDATEREQUEST']._serialized_end=985
-  _globals['_UPDATERESPONSE']._serialized_start=987
-  _globals['_UPDATERESPONSE']._serialized_end=1003
-  _globals['_DELETEREQUEST']._serialized_start=1005
-  _globals['_DELETEREQUEST']._serialized_end=1061
-  _globals['_DELETERESPONSE']._serialized_start=1063
-  _globals['_DELETERESPONSE']._serialized_end=1079
-  _globals['_GETREQUEST']._serialized_start=1081
-  _globals['_GETREQUEST']._serialized_end=1134
-  _globals['_GETRESPONSE']._serialized_start=1136
-  _globals['_GETRESPONSE']._serialized_end=1208
-  _globals['_LISTREQUEST']._serialized_start=1210
-  _globals['_LISTREQUEST']._serialized_end=1314
-  _globals['_LISTRESPONSE']._serialized_start=1316
-  _globals['_LISTRESPONSE']._serialized_end=1405
-  _globals['_TRIGGERSSERVICE']._serialized_start=1408
-  _globals['_TRIGGERSSERVICE']._serialized_end=1855
+  _globals['_CREATEREQUEST']._serialized_end=330
+  _globals['_CREATERESPONSE']._serialized_start=332
+  _globals['_CREATERESPONSE']._serialized_end=389
+  _globals['_UPDATEREQUEST']._serialized_start=392
+  _globals['_UPDATEREQUEST']._serialized_end=579
+  _globals['_UPDATERESPONSE']._serialized_start=581
+  _globals['_UPDATERESPONSE']._serialized_end=597
+  _globals['_DELETEREQUEST']._serialized_start=599
+  _globals['_DELETEREQUEST']._serialized_end=655
+  _globals['_DELETERESPONSE']._serialized_start=657
+  _globals['_DELETERESPONSE']._serialized_end=673
+  _globals['_GETREQUEST']._serialized_start=675
+  _globals['_GETREQUEST']._serialized_end=728
+  _globals['_GETRESPONSE']._serialized_start=730
+  _globals['_GETRESPONSE']._serialized_end=802
+  _globals['_LISTREQUEST']._serialized_start=805
+  _globals['_LISTREQUEST']._serialized_end=986
+  _globals['_LISTRESPONSE']._serialized_start=988
+  _globals['_LISTRESPONSE']._serialized_end=1077
+  _globals['_TRIGGERSSERVICE']._serialized_start=1080
+  _globals['_TRIGGERSSERVICE']._serialized_end=1527
 # @@protoc_insertion_point(module_scope)

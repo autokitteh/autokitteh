@@ -63,21 +63,16 @@ func (v Var) GetKey() string { return v.ParentKey + "/" + v.Name }
 type Trigger struct {
 	EnvKey string `yaml:"-" json:"-"` // associated with env.
 
-	ConnectionKey string `yaml:"connection,omitempty" json:"connection,omitempty"` // jsonscheme: FIXME: ENG-862
-	Name          string `yaml:"name" json:"name"`
-	EventType     string `yaml:"event_type,omitempty" json:"event_type,omitempty"`
-	Filter        string `yaml:"filter,omitempty" json:"filter,omitempty"`
+	Name      string `yaml:"name" json:"name"`
+	EventType string `yaml:"event_type,omitempty" json:"event_type,omitempty"`
+	Filter    string `yaml:"filter,omitempty" json:"filter,omitempty"`
 
-	// for scheduled trigger. Schedule could be passed in `data` section as well
-	Schedule string `yaml:"schedule,omitempty" json:"schedule,omitempty"` // jsonscheme: FIXME: ENG-862
+	Type          string    `yaml:"type,omitempty" json:"type,omitempty" jsonschema:"enum=schedule,enum=webhook,enum=connection"`
+	Schedule      *string   `yaml:"schedule,omitempty" json:"schedule,omitempty"`
+	Webhook       *struct{} `yaml:"webhook,omitempty" json:"webhook,omitempty"`
+	ConnectionKey *string   `yaml:"connection,omitempty" json:"connection,omitempty" `
 
-	// Arbitrary data to be passed with the trigger.
-	// The dispatcher can use this data, for example, to extract HTTP path parameters.
-	// For example: `data: { "path": "/a/{b}/{c...}"}`, if the connection is an HTTP connection.
-	Data map[string]any `yaml:"data,omitempty" json:"data,omitempty"`
-
-	Call       string `yaml:"call,omitempty" json:"call,omitempty" jsonschema:"oneof_required=call"`
-	Entrypoint string `yaml:"entrypoint,omitempty" json:"entrypoint,omitempty" jsonschema:"oneof_required=entrypoint"`
+	Call string `yaml:"call,omitempty" json:"call,omitempty"`
 }
 
 func (t Trigger) GetKey() string {
@@ -87,5 +82,15 @@ func (t Trigger) GetKey() string {
 		id = t.EnvKey + ":"
 	}
 
-	return id + t.ConnectionKey + "/" + t.Name
+	what := ""
+
+	if t.Schedule != nil {
+		what = "schdule:" + *t.Schedule
+	} else if t.Webhook != nil {
+		what = "webhook"
+	} else if t.ConnectionKey != nil {
+		what = "connection:" + *t.ConnectionKey
+	}
+
+	return id + what + "/" + t.Name
 }
