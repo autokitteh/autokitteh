@@ -10,7 +10,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/lithammer/shortuuid/v4"
+	"go.jetify.com/typeid"
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
@@ -39,7 +39,7 @@ func (s *Service) Start(muxes *muxes.Muxes) {
 }
 
 func InitTrigger(trigger sdktypes.Trigger) sdktypes.Trigger {
-	return trigger.WithWebhookSlug(shortuuid.DefaultEncoder.Encode(sdktypes.NewUUID()))
+	return trigger.WithWebhookSlug(typeid.Must(typeid.WithPrefix("")).String())
 }
 
 func (s *Service) ServeHTTP(w http.ResponseWriter, r *http.Request) {
