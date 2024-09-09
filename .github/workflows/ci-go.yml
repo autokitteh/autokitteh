@@ -54,7 +54,7 @@ jobs:
         with:
           # Keep the same version in "/Makefile"!
           # See: https://github.com/golangci/golangci-lint
-          version: v1.56.2
+          version: v1.60.3
           # https://github.com/golangci/golangci-lint-action/issues/244
           skip-cache: true
           # https://github.com/golangci/golangci-lint-action/issues/308
