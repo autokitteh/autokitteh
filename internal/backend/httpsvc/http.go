@@ -10,6 +10,7 @@ import (
 
 	"connectrpc.com/grpcreflect"
 	"github.com/rs/cors"
+	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 	"golang.ngrok.com/ngrok"
@@ -31,7 +32,7 @@ type svc struct {
 func (s *svc) Mux() *http.ServeMux { return s.mux }
 func (s *svc) Addr() string        { return s.addr }
 
-func New(lc fx.Lifecycle, z *zap.Logger, cfg *Config, reflectors []string, extractors []RequestLogExtractor) (Svc, error) {
+func New(lc fx.Lifecycle, z *zap.Logger, cfg *Config, reflectors []string, extractors []RequestLogExtractor, telemetry *telemetry.Telemetry) (Svc, error) {
 	rootMux := http.NewServeMux()
 
 	cors := cors.New(cors.Options{
@@ -43,7 +44,7 @@ func New(lc fx.Lifecycle, z *zap.Logger, cfg *Config, reflectors []string, extra
 
 	interceptedMux := http.NewServeMux()
 
-	interceptor, err := intercept(z, &cfg.Logger, extractors, interceptedMux)
+	interceptor, err := intercept(z, &cfg.Logger, extractors, interceptedMux, telemetry)
 	if err != nil {
 		return nil, fmt.Errorf("interceptor: %w", err)
 	}
