@@ -10,7 +10,6 @@ type callActivityInputs struct {
 	SessionID sdktypes.SessionID
 	Seq       uint32
 	Debug     bool
-	Poller    sdktypes.Value
 }
 
 type callActivityOutputs struct {
@@ -37,7 +36,7 @@ func (cs *calls) sessionCallActivity(ctx context.Context, params *callActivityIn
 		err error
 	)
 
-	ret.Debug, ret.Attempt, err = cs.executeCall(ctx, params.SessionID, params.Seq, params.Poller, executors)
+	ret.Debug, ret.Attempt, err = cs.executeCall(ctx, params.SessionID, params.Seq, executors)
 
 	if !params.Debug {
 		// don't let temporal know about the debug data.

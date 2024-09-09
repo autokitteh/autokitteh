@@ -57,9 +57,6 @@ type sessionWorkflow struct {
 	executors sdkexecutor.Executors
 	globals   map[string]sdktypes.Value
 
-	poller sdktypes.Value
-	fakers map[string]sdktypes.Value
-
 	callSeq uint32
 
 	lastReadEventSeqForSignal map[uuid.UUID]uint64 // map signals to last read event seq num.
@@ -82,9 +79,7 @@ func runWorkflow(
 	w := &sessionWorkflow{
 		z:                         z,
 		data:                      data,
-		poller:                    sdktypes.Nothing,
 		ws:                        ws,
-		fakers:                    make(map[string]sdktypes.Value),
 		debug:                     debug,
 		lastReadEventSeqForSignal: make(map[uuid.UUID]uint64),
 	}
@@ -171,26 +166,13 @@ func (w *sessionWorkflow) call(ctx workflow.Context, runID sdktypes.RunID, v sdk
 
 	z := w.z.With(zap.Any("run_id", runID), zap.Any("v", v), zap.Uint32("seq", w.callSeq))
 
-	f := v.GetFunction()
-
 	z.Debug("call requested")
 
-	// TODO: make sure that fake is pure starlark?
-	callvID := f.UniqueID()
-	fake, useFake := w.fakers[callvID]
-	if useFake {
-		z.With(zap.Any("fake", fake))
-		v = fake
-		z.Debug("using fake")
-	}
-
 	result, err := w.ws.calls.Call(ctx, &sessioncalls.CallParams{
-		SessionID:     w.data.SessionID,
-		CallSpec:      sdktypes.NewSessionCallSpec(v, args, kwargs, w.callSeq),
-		Debug:         w.debug,
-		ForceInternal: useFake,
-		Poller:        w.getPoller(),
-		Executors:     &w.executors, // HACK
+		SessionID: w.data.SessionID,
+		CallSpec:  sdktypes.NewSessionCallSpec(v, args, kwargs, w.callSeq),
+		Debug:     w.debug,
+		Executors: &w.executors, // HACK
 	})
 	if err != nil {
 		return sdktypes.InvalidValue, err

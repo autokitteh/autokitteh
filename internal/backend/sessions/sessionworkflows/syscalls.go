@@ -16,8 +16,6 @@ import (
 )
 
 const (
-	pollOp        = "poll"
-	fakeOp        = "fake"
 	sleepOp       = "sleep"
 	startOp       = "start"
 	subscribeOp   = "subscribe"
@@ -39,10 +37,6 @@ func (w *sessionWorkflow) syscall(ctx context.Context, args []sdktypes.Value, kw
 	args = args[1:]
 
 	switch op {
-	case pollOp:
-		return w.setPoller(ctx, args, kwargs)
-	case fakeOp:
-		return w.fake(ctx, args, kwargs)
 	case sleepOp:
 		return w.sleep(ctx, args, kwargs)
 	case startOp:
@@ -56,70 +50,6 @@ func (w *sessionWorkflow) syscall(ctx context.Context, args []sdktypes.Value, kw
 	default:
 		return sdktypes.InvalidValue, fmt.Errorf("unknown op %q", op)
 	}
-}
-
-func (w *sessionWorkflow) fake(_ context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
-	var orig, fake sdktypes.Value
-
-	if err := sdkmodule.UnpackArgs(args, kwargs, "orig", &orig, "fake", &fake); err != nil {
-		return sdktypes.InvalidValue, err
-	}
-
-	// TODO: better make sure `orig` is an action call and `fake` is a runner call.
-	if !orig.IsFunction() {
-		return sdktypes.InvalidValue, fmt.Errorf("orig must be a function value")
-	}
-
-	del := !fake.IsValid() || fake.IsNothing()
-
-	if !del && !fake.IsFunction() {
-		return sdktypes.InvalidValue, fmt.Errorf("fake must be a function value")
-	}
-
-	id := orig.GetFunction().UniqueID()
-
-	prev := w.fakers[id]
-	if !prev.IsValid() {
-		prev = sdktypes.Nothing
-	}
-
-	if del {
-		delete(w.fakers, id)
-	} else {
-		w.fakers[id] = fake
-	}
-
-	return prev, nil
-}
-
-func (w *sessionWorkflow) setPoller(_ context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
-	var fn sdktypes.Value
-
-	if err := sdkmodule.UnpackArgs(args, kwargs, "fn", &fn); err != nil {
-		return sdktypes.InvalidValue, err
-	}
-
-	if fn.IsValid() && !fn.IsFunction() && !fn.IsNothing() {
-		return sdktypes.InvalidValue, fmt.Errorf("value must be either a function or nothing")
-	}
-
-	prev := w.poller
-
-	if !fn.IsValid() {
-		fn = sdktypes.Nothing
-	}
-
-	w.poller = fn
-
-	return prev, nil
-}
-
-func (w *sessionWorkflow) getPoller() sdktypes.Value {
-	if w.poller.IsNothing() {
-		return sdktypes.InvalidValue
-	}
-
-	return w.poller
 }
 
 func (w *sessionWorkflow) sleep(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {

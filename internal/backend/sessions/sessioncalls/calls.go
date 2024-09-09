@@ -23,12 +23,10 @@ import (
 )
 
 type CallParams struct {
-	SessionID     sdktypes.SessionID
-	Debug         bool
-	ForceInternal bool
-	CallSpec      sdktypes.SessionCallSpec
+	SessionID sdktypes.SessionID
+	Debug     bool
+	CallSpec  sdktypes.SessionCallSpec
 
-	Poller    sdktypes.Value         // TODO: need to be in Call.
 	Executors *sdkexecutor.Executors // needed for session specific calls (global modules, script functions).
 }
 
@@ -133,7 +131,7 @@ func (cs *calls) Call(ctx workflow.Context, params *CallParams) (sdktypes.Sessio
 
 	goCtx := temporalclient.NewWorkflowContextAsGOContext(ctx)
 
-	if params.ForceInternal || fnvf.HasFlag(sdktypes.PureFunctionFlag) {
+	if fnvf.HasFlag(sdktypes.PureFunctionFlag) {
 		z.Debug("function call outside activity")
 
 		var err error
@@ -142,7 +140,7 @@ func (cs *calls) Call(ctx workflow.Context, params *CallParams) (sdktypes.Sessio
 			goCtx = sessioncontext.WithWorkflowContext(goCtx, ctx)
 		}
 
-		if _, attempt, err = cs.executeCall(goCtx, params.SessionID, seq, params.Poller, params.Executors); err != nil {
+		if _, attempt, err = cs.executeCall(goCtx, params.SessionID, seq, params.Executors); err != nil {
 			return sdktypes.NewSessionCallAttemptResult(sdktypes.InvalidValue, fmt.Errorf("internal call: %w", err)), nil
 		}
 	} else {
@@ -198,7 +196,6 @@ func (cs *calls) Call(ctx workflow.Context, params *CallParams) (sdktypes.Sessio
 					SessionID: params.SessionID,
 					Seq:       seq,
 					Debug:     params.Debug,
-					Poller:    params.Poller,
 				},
 			)
 			if err := future.Get(ctx, &ret); err != nil {
