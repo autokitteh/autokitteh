@@ -198,7 +198,6 @@ project:
       "path": "my_program.star",
       "name": "on_http_get"
     },
-    "webhook_slug": "2222222222222222222228"
+    "webhook_slug": "00000000000000000000000006"
   }
 }
-
