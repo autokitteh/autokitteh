@@ -1,7 +1,7 @@
 ak deploy --manifest project.yaml
 return code == 0
 
-http get /webhooks/2222222222222222222226/short
+http get /webhooks/00000000000000000000000004/short
 resp code == 202
 
 wait 5s for session ses_00000000000000000000000008
@@ -10,7 +10,7 @@ ak session log --prints-only
 return code == 0
 output contains 'True'
 
-http get /webhooks/2222222222222222222226/long
+http get /webhooks/00000000000000000000000004/long
 resp code == 202
 
 ak session watch ses_0000000000000000000000000c --end-state RUNNING
