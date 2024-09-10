@@ -81,7 +81,7 @@ func Get(ctx context.Context, z *zap.Logger, svcs *sessionsvcs.Svcs, sessionID s
 		if data.Connections, err = svcs.Connections.List(ctx, cfilter); err != nil {
 			return nil, fmt.Errorf("connections.list: %w", err)
 		}
-	
+
 		tfilter := sdkservices.ListTriggersFilter{EnvID: envID}
 		if data.Triggers, err = svcs.Triggers.List(ctx, tfilter); err != nil {
 			return nil, fmt.Errorf("triggers.list(%v): %w", envID, err)
