@@ -95,7 +95,7 @@ func describeCallSpec(opts *SessionLogRecordDescribeOptions, w io.Writer, s Sess
 	w = opts.indent(w)
 
 	fmt.Fprintln(w, "Function:")
-	describeFunctionValue(opts, opts.indent(w), s.Function())
+	describeFunctionValue(opts.indent(w), s.Function())
 
 	for i, a := range s.m.Args {
 		fmt.Fprintf(w, "Arg #%d:\n", i)
@@ -123,7 +123,7 @@ func describeState(opts *SessionLogRecordDescribeOptions, w io.Writer, s Session
 			fmt.Fprintln(w, call.GetFunction().Name())
 			w := opts.indent(w)
 			fmt.Fprintln(w, "Call:")
-			describeFunctionValue(opts, opts.indent(w), call)
+			describeFunctionValue(opts.indent(w), call)
 		} else {
 			fmt.Fprintln(w, "")
 		}
@@ -207,7 +207,7 @@ func describeCallstack(_ *SessionLogRecordDescribeOptions, w io.Writer, fs []Cal
 	}
 }
 
-func describeFunctionValue(opts *SessionLogRecordDescribeOptions, w io.Writer, v Value) {
+func describeFunctionValue(w io.Writer, v Value) {
 	f := v.GetFunction()
 	if !f.IsValid() {
 		fmt.Fprintln(w, "invalid function")

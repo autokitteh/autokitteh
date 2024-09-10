@@ -7,8 +7,6 @@ import (
 	"os"
 
 	"go.jetify.com/typeid"
-
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
 )
 
 //go:embed index.html
@@ -21,7 +19,7 @@ func ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// this webhook will be signed and verified. The only requirement
 	// is uniqueness, which TypeID guarantees (UUIDv7 contains both
 	// a millisecond-precision timestamp and a random value).
-	random := kittehs.Must1(typeid.WithPrefix(""))
+	random := typeid.Must(typeid.WithPrefix(""))
 	data := map[string]string{
 		"address": os.Getenv("WEBHOOK_ADDRESS"),
 		"path":    random.String(),

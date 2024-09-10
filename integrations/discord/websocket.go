@@ -47,7 +47,7 @@ func (h handler) OpenWebSocketConnection(botToken string) {
 func (h handler) dispatchAsyncEventsToConnections(cids []sdktypes.ConnectionID, e sdktypes.Event) {
 	ctx := extrazap.AttachLoggerToContext(h.logger, context.Background())
 	for _, cid := range cids {
-		eid, err := h.dispatcher.Dispatch(ctx, e.WithConnectionID(cid), nil)
+		eid, err := h.dispatcher.Dispatch(ctx, e.WithConnectionDestinationID(cid), nil)
 		l := h.logger.With(
 			zap.String("connectionID", cid.String()),
 			zap.String("eventID", eid.String()),

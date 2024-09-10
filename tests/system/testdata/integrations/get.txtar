@@ -16,15 +16,13 @@ output equals 'Error: integration not found'
 return code == 10
 
 # Get integration by name.
-ak integration get http
+ak integration get test
 return code == 0
-output contains 'key:"get"'
-output contains 'key:"post"'
+output contains 'key:"freeze"'
 
 # Get integration by ID.
-ak integration get int_3kth00httpf1201a7ed83f7cd5
+ak integration get int_3kth00testaf9d33c5697341f0
 return code == 0
-output contains 'unique_name:"http"'
-output contains 'display_name:"HTTP"'
-output contains 'logo_url:'
+output contains 'unique_name:"test"'
+output contains 'display_name:"Test"'
 output contains 'functions:'

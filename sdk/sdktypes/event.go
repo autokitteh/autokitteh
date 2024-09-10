@@ -24,7 +24,6 @@ type EventTraits struct{}
 func (EventTraits) Validate(m *EventPB) error {
 	return errors.Join(
 		idField[EventID]("event_id", m.EventId),
-		idField[ConnectionID]("connection_id", m.ConnectionId),
 	)
 }
 
@@ -32,7 +31,14 @@ func (EventTraits) StrictValidate(m *EventPB) error {
 	return errors.Join(
 		mandatory("event_id", m.EventId),
 		mandatory("created_at", m.CreatedAt),
+		mandatory("destination_id", m.DestinationId),
 	)
+}
+
+func NewEvent[T concreteEventDestinationID](dstID T) Event {
+	return kittehs.Must1(EventFromProto(&EventPB{})).
+		WithNewID().
+		WithDestinationID(NewEventDestinationID(dstID))
 }
 
 func EventFromProto(m *EventPB) (Event, error)       { return FromProto[Event](m) }
@@ -52,17 +58,28 @@ func (e Event) WithMemo(memo map[string]string) Event {
 	return Event{e.forceUpdate(func(m *EventPB) { m.Memo = memo })}
 }
 
-func (e Event) WithConnectionID(cid ConnectionID) Event {
-	return Event{e.forceUpdate(func(m *EventPB) { m.ConnectionId = cid.String() })}
+func (e Event) WithDestinationID(id EventDestinationID) Event {
+	return Event{e.forceUpdate(func(m *EventPB) { m.DestinationId = id.String() })}
+}
+
+func (e Event) WithConnectionDestinationID(id ConnectionID) Event {
+	return e.WithDestinationID(NewEventDestinationID(id))
+}
+
+func (e Event) WithTriggerDestinationID(id TriggerID) Event {
+	return e.WithDestinationID(NewEventDestinationID(id))
+}
+
+func (e Event) DestinationID() EventDestinationID {
+	return kittehs.Must1(ParseEventDestinationID(e.read().DestinationId))
 }
 
 func (e Event) Memo() map[string]string { return e.read().Memo }
 
-func (e Event) ConnectionID() ConnectionID {
-	return kittehs.Must1(ParseConnectionID(e.read().ConnectionId))
-}
-
 func (e Event) Type() string { return e.read().EventType }
+func (e Event) WithType(t string) Event {
+	return Event{e.forceUpdate(func(m *EventPB) { m.EventType = t })}
+}
 
 func (e Event) ToValues() map[string]Value {
 	if !e.IsValid() {
@@ -79,14 +96,16 @@ func (e Event) ToValues() map[string]Value {
 				forceFromProto[Value],
 			),
 		)),
+		"created_at": NewTimeValue(e.CreatedAt()),
 	}
 }
 
 func (e Event) CreatedAt() time.Time { return e.read().CreatedAt.AsTime() }
+func (e Event) Seq() uint64          { return e.read().Seq }
+
 func (e Event) Data() map[string]Value {
 	return kittehs.TransformMapValues(e.read().Data, forceFromProto[Value])
 }
-func (e Event) Seq() uint64 { return e.read().Seq }
 
 func (e Event) WithData(data map[string]Value) Event {
 	return Event{e.forceUpdate(func(m *EventPB) { m.Data = kittehs.TransformMapValues(data, func(v Value) *ValuePB { return v.m }) })}
@@ -98,6 +117,10 @@ var eventFilterEnv = kittehs.Must1(cel.NewEnv(
 ))
 
 func VerifyEventFilter(filter string) error {
+	if filter == "" {
+		return nil
+	}
+
 	if _, err := eventFilterEnv.Compile(filter); err != nil {
 		return err.Err()
 	}

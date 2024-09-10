@@ -22,7 +22,8 @@ message EventRecord {
 
 message Event {
   string event_id = 1;
-  string connection_id = 2; // could be empty.
+
+  string destination_id = 2; // connection_id or trigger_id.
 
   string event_type = 3;
 

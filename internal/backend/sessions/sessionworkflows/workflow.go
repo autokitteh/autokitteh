@@ -17,6 +17,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessioncalls"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessioncontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessiondata"
+	httpmodule "go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionworkflows/modules/http"
 	osmodule "go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionworkflows/modules/os"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionworkflows/modules/store"
 	timemodule "go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionworkflows/modules/time"
@@ -56,12 +57,9 @@ type sessionWorkflow struct {
 	executors sdkexecutor.Executors
 	globals   map[string]sdktypes.Value
 
-	poller sdktypes.Value
-	fakers map[string]sdktypes.Value
-
 	callSeq uint32
 
-	lastReadEventSeqForSignal map[string]uint64 // map signals to last read event seq num.
+	lastReadEventSeqForSignal map[uuid.UUID]uint64 // map signals to last read event seq num.
 
 	state sdktypes.SessionState
 }
@@ -81,11 +79,9 @@ func runWorkflow(
 	w := &sessionWorkflow{
 		z:                         z,
 		data:                      data,
-		poller:                    sdktypes.Nothing,
 		ws:                        ws,
-		fakers:                    make(map[string]sdktypes.Value),
 		debug:                     debug,
-		lastReadEventSeqForSignal: make(map[string]uint64),
+		lastReadEventSeqForSignal: make(map[uuid.UUID]uint64),
 	}
 
 	var cinfos map[string]connInfo
@@ -114,7 +110,7 @@ func (w *sessionWorkflow) cleanupSignals(ctx workflow.Context) {
 		if err := w.ws.svcs.DB.RemoveSignal(goCtx, signalID); err != nil {
 			// No need to to any handling in case of an error, it won't be used again
 			// at most we would have db garabge we can clear up later with background jobs
-			w.z.Warn(fmt.Sprintf("failed removing signal %s, err: %s", signalID, err), zap.String("signalID", signalID), zap.Error(err))
+			w.z.Warn(fmt.Sprintf("failed removing signal %s, err: %s", signalID, err), zap.Any("signalID", signalID), zap.Error(err))
 		}
 	}
 }
@@ -170,26 +166,13 @@ func (w *sessionWorkflow) call(ctx workflow.Context, runID sdktypes.RunID, v sdk
 
 	z := w.z.With(zap.Any("run_id", runID), zap.Any("v", v), zap.Uint32("seq", w.callSeq))
 
-	f := v.GetFunction()
-
 	z.Debug("call requested")
 
-	// TODO: make sure that fake is pure starlark?
-	callvID := f.UniqueID()
-	fake, useFake := w.fakers[callvID]
-	if useFake {
-		z.With(zap.Any("fake", fake))
-		v = fake
-		z.Debug("using fake")
-	}
-
 	result, err := w.ws.calls.Call(ctx, &sessioncalls.CallParams{
-		SessionID:     w.data.SessionID,
-		CallSpec:      sdktypes.NewSessionCallSpec(v, args, kwargs, w.callSeq),
-		Debug:         w.debug,
-		ForceInternal: useFake,
-		Poller:        w.getPoller(),
-		Executors:     &w.executors, // HACK
+		SessionID: w.data.SessionID,
+		CallSpec:  sdktypes.NewSessionCallSpec(v, args, kwargs, w.callSeq),
+		Debug:     w.debug,
+		Executors: &w.executors, // HACK
 	})
 	if err != nil {
 		return sdktypes.InvalidValue, err
@@ -262,6 +245,10 @@ func (w *sessionWorkflow) initConnections(ctx workflow.Context) (map[string]conn
 			return nil, fmt.Errorf("connect to integration %q: %w", iid, err)
 		}
 
+		if vs == nil {
+			vs = make(map[string]sdktypes.Value)
+		}
+
 		const infoVarName = "_ak_info"
 		if !vs[infoVarName].IsValid() {
 			if vs[infoVarName], err = sdktypes.WrapValue(cinfo); err != nil {
@@ -283,6 +270,7 @@ func (w *sessionWorkflow) initGlobalModules() (map[string]sdktypes.Value, error)
 	execs := map[string]sdkexecutor.Executor{
 		"ak":    w.newModule(),
 		"time":  timemodule.New(),
+		"http":  httpmodule.New(),
 		"store": store.New(w.data.Env.ID(), w.data.ProjectID, w.ws.svcs.RedisClient),
 	}
 
@@ -308,58 +296,49 @@ func (w *sessionWorkflow) initGlobalModules() (map[string]sdktypes.Value, error)
 	return vs, nil
 }
 
-func (w *sessionWorkflow) createEventSubscription(ctx context.Context, connectionName, filter string) (string, error) {
+func (w *sessionWorkflow) createEventSubscription(wctx workflow.Context, filter string, did sdktypes.EventDestinationID) (uuid.UUID, error) {
 	if err := sdktypes.VerifyEventFilter(filter); err != nil {
 		w.z.Debug("invalid filter in workflow code", zap.Error(err))
-		return "", fmt.Errorf("invalid filter: %w", err)
+		return uuid.UUID{}, fmt.Errorf("invalid filter: %w", err)
 	}
-	wctx := sessioncontext.GetWorkflowContext(ctx)
+
 	workflowID := workflow.GetInfo(wctx).WorkflowExecution.ID
 
 	var minSequence uint64
 	if err := workflow.ExecuteLocalActivity(wctx, w.ws.svcs.DB.GetLatestEventSequence).Get(wctx, &minSequence); err != nil {
-		return "", fmt.Errorf("get current sequence: %w", err)
+		return uuid.UUID{}, fmt.Errorf("get current sequence: %w", err)
 	}
 
-	var signalID string
+	var signalID uuid.UUID
 	if err := workflow.SideEffect(wctx, func(wctx workflow.Context) any {
-		return uuid.New().String()
+		return uuid.New()
 	}).Get(&signalID); err != nil {
-		return "", fmt.Errorf("generate signal id: %w", err)
-	}
-
-	_, connection := kittehs.FindFirst(w.data.Connections, func(c sdktypes.Connection) bool {
-		return c.Name().String() == connectionName
-	})
-
-	if !connection.IsValid() {
-		return "", fmt.Errorf("connection %q not found", connectionName)
+		return uuid.UUID{}, fmt.Errorf("generate signal id: %w", err)
 	}
 
 	// must be set before signal is saved, otherwise the signal might reach the workflow before
 	// the map is read.
 	w.lastReadEventSeqForSignal[signalID] = minSequence
 
-	cid := connection.ID()
-	if err := workflow.ExecuteLocalActivity(wctx, w.ws.svcs.DB.SaveSignal, signalID, workflowID, cid, filter).Get(wctx, nil); err != nil {
-		return "", fmt.Errorf("save signal: %w", err)
+	if err := workflow.ExecuteLocalActivity(wctx, w.ws.svcs.DB.SaveSignal, signalID, workflowID, did, filter).Get(wctx, nil); err != nil {
+		return uuid.UUID{}, fmt.Errorf("save signal: %w", err)
 	}
 
 	return signalID, nil
 }
 
 // Returns "", nil on timeout.
-func (w *sessionWorkflow) waitOnFirstSignal(wctx workflow.Context, signals []string, f workflow.Future) (string, error) {
+func (w *sessionWorkflow) waitOnFirstSignal(wctx workflow.Context, signals []uuid.UUID, f workflow.Future) (uuid.UUID, error) {
 	selector := workflow.NewSelector(wctx)
 
 	if f != nil {
 		selector.AddFuture(f, func(workflow.Future) {})
 	}
 
-	var signalID string
+	var signalID uuid.UUID
 
 	for _, signal := range signals {
-		selector.AddReceive(workflow.GetSignalChannel(wctx, signal), func(c workflow.ReceiveChannel, _ bool) {
+		selector.AddReceive(workflow.GetSignalChannel(wctx, signal.String()), func(c workflow.ReceiveChannel, _ bool) {
 			// clear all pending signals.
 			for c.ReceiveAsync(nil) {
 				// nop
@@ -375,7 +354,7 @@ func (w *sessionWorkflow) waitOnFirstSignal(wctx workflow.Context, signals []str
 	return signalID, nil
 }
 
-func (w *sessionWorkflow) getNextEvent(ctx context.Context, signalID string) (map[string]sdktypes.Value, error) {
+func (w *sessionWorkflow) getNextEvent(ctx context.Context, signalID uuid.UUID) (map[string]sdktypes.Value, error) {
 	wctx := sessioncontext.GetWorkflowContext(ctx)
 
 	var signal scheme.Signal
@@ -383,8 +362,14 @@ func (w *sessionWorkflow) getNextEvent(ctx context.Context, signalID string) (ma
 		w.z.Panic("get signal", zap.Error(err))
 	}
 
-	iid := sdktypes.NewIDFromUUID[sdktypes.IntegrationID](signal.Connection.IntegrationID)
-	cid := sdktypes.NewIDFromUUID[sdktypes.ConnectionID](&signal.Connection.ConnectionID)
+	var did sdktypes.EventDestinationID
+	if signal.ConnectionID != nil {
+		did = sdktypes.NewEventDestinationID(sdktypes.NewIDFromUUID[sdktypes.ConnectionID](signal.ConnectionID))
+	} else if signal.TriggerID != nil {
+		did = sdktypes.NewEventDestinationID(sdktypes.NewIDFromUUID[sdktypes.TriggerID](signal.TriggerID))
+	} else {
+		return nil, fmt.Errorf("invalid signal %v: no connection or trigger ids, got %v", signalID, signal.DestinationID)
+	}
 
 	minSequenceNumber, ok := w.lastReadEventSeqForSignal[signalID]
 	if !ok {
@@ -392,8 +377,7 @@ func (w *sessionWorkflow) getNextEvent(ctx context.Context, signalID string) (ma
 	}
 
 	filter := sdkservices.ListEventsFilter{
-		IntegrationID:     iid,
-		ConnectionID:      cid,
+		DestinationID:     did,
 		Limit:             1,
 		MinSequenceNumber: minSequenceNumber + 1,
 		Order:             sdkservices.ListOrderAscending,
@@ -447,7 +431,7 @@ func (w *sessionWorkflow) getNextEvent(ctx context.Context, signalID string) (ma
 	return event.Data(), nil
 }
 
-func (w *sessionWorkflow) removeEventSubscription(ctx context.Context, signalID string) {
+func (w *sessionWorkflow) removeEventSubscription(ctx context.Context, signalID uuid.UUID) {
 	wctx := sessioncontext.GetWorkflowContext(ctx)
 
 	if err := workflow.ExecuteLocalActivity(wctx, w.ws.svcs.DB.RemoveSignal, signalID).Get(wctx, nil); err != nil {
@@ -536,7 +520,7 @@ func (w *sessionWorkflow) run(wctx workflow.Context) (prints []string, err error
 		err error
 	}
 
-	runDone := make(chan runOrErr)
+	runDone := make(chan runOrErr, 1)
 
 	go func() {
 		// This can take a while to complete since it might provision resources et al,

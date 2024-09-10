@@ -3,16 +3,26 @@ syntax = "proto3";
 package autokitteh.triggers.v1;
 
 import "autokitteh/program/v1/program.proto";
-import "autokitteh/values/v1/values.proto";
-import "buf/validate/validate.proto";
 
 message Trigger {
+  enum SourceType {
+    SOURCE_TYPE_UNSPECIFIED = 0;
+    SOURCE_TYPE_CONNECTION = 1;
+    SOURCE_TYPE_WEBHOOK = 2;
+    SOURCE_TYPE_SCHEDULE = 3;
+  }
+
   string trigger_id = 1;
   string name = 2;
-  string connection_id = 3;
-  string env_id = 4; // if empty, applies to all envs.
+  SourceType source_type = 3;
+  string env_id = 4;
   string event_type = 5;
-  program.v1.CodeLocation code_location = 6 [(buf.validate.field).required = true];
+  program.v1.CodeLocation code_location = 6;
   string filter = 7;
-  map<string, values.v1.Value> data = 8;
+
+  string connection_id = 50; // if source_type == CONNECTION.
+  string schedule = 51; // if source_type == SCHEDULE.
+
+  // read only.
+  string webhook_slug = 100; // if source_type == WEBHOOK, after creation.
 }

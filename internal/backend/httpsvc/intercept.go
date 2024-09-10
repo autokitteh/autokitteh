@@ -11,6 +11,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
+	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
 )
 
 type ctxKey string
@@ -51,7 +52,7 @@ func (r *responseInterceptor) Flush() {
 
 type RequestLogExtractor func(*http.Request) []zap.Field
 
-func intercept(z *zap.Logger, cfg *LoggerConfig, extractors []RequestLogExtractor, next http.Handler) (http.HandlerFunc, error) {
+func intercept(z *zap.Logger, cfg *LoggerConfig, extractors []RequestLogExtractor, next http.Handler, telemetry *telemetry.Telemetry) (http.HandlerFunc, error) {
 	// MustCompile is appropriate here because the patterns are static
 	// and errors in them should be caught at startup. Furthermore, we
 	// combine them into a single regular expression, because efficiency is
@@ -74,7 +75,9 @@ func intercept(z *zap.Logger, cfg *LoggerConfig, extractors []RequestLogExtracto
 		next.ServeHTTP(rwi, r)
 
 		duration := time.Since(startTime)
-		w.Header().Add("X-AutoKitteh-Duration", duration.Truncate(time.Microsecond).String())
+		_ = updateMetric(r.Context(), telemetry, r.URL.Path, rwi.StatusCode, duration) // ignore metric init error
+
+		w.Header().Add("X-AutoKitteh-Duration", duration.String())
 
 		// Don't log some requests, unless they result in an error.
 		if unlogged.MatchString(r.URL.Path) && rwi.StatusCode < 400 {

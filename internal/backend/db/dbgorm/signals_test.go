@@ -46,15 +46,17 @@ func TestSaveSignelForeignKeys(t *testing.T) {
 	sig := f.newSignal()
 	conn := f.newConnection()
 
-	sig.ConnectionID = conn.ConnectionID
+	sig.DestinationID = conn.ConnectionID
+	sig.ConnectionID = &conn.ConnectionID
 
 	f.createConnectionsAndAssert(t, conn)
 
 	// negative test with non-existing assets
 
-	sig.ConnectionID = uuid.New()
+	sig.DestinationID = uuid.New()
+	sig.ConnectionID = &sig.DestinationID
 	assert.ErrorIs(t, f.gormdb.saveSignal(f.ctx, &sig), gorm.ErrForeignKeyViolated)
-	sig.ConnectionID = conn.ConnectionID
+	sig.ConnectionID = &conn.ConnectionID
 
 	// test with existing assets
 	f.saveSignalsAndAssert(t, sig)

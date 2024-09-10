@@ -2,7 +2,6 @@ package dbgorm
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"gorm.io/gorm"
@@ -20,9 +19,6 @@ func (gdb *gormdb) withUserTriggers(ctx context.Context) *gorm.DB {
 
 func (gdb *gormdb) createTrigger(ctx context.Context, trigger *scheme.Trigger) error {
 	idsToVerify := []*sdktypes.UUID{&trigger.ProjectID, &trigger.EnvID}
-	if trigger.ConnectionID != sdktypes.BuiltinSchedulerConnectionID.UUIDValue() {
-		idsToVerify = append(idsToVerify, &trigger.ConnectionID)
-	}
 	createFunc := func(tx *gorm.DB, uid string) error { return tx.Create(trigger).Error }
 	return gormErrNotFoundToForeignKey(
 		gdb.createEntityWithOwnership(ctx, createFunc, trigger, idsToVerify...))
@@ -42,12 +38,12 @@ func (gdb *gormdb) updateTrigger(ctx context.Context, triggerID sdktypes.UUID, d
 		if err := tx.isCtxUserEntity(tx.ctx, triggerID); err != nil {
 			return err
 		}
-		allowedFields := []string{"ConnectionID", "EventType", "Filter", "CodeLocation", "Data"}
+		allowedFields := []string{"ConnectionID", "EventType", "Filter", "CodeLocation", "Data", "WebhookSlug"}
 		return tx.db.Model(&scheme.Trigger{TriggerID: triggerID}).Select(allowedFields).Updates(data).Error
 	})
 }
 
-func (gdb *gormdb) getTrigger(ctx context.Context, triggerID sdktypes.UUID) (*scheme.Trigger, error) {
+func (gdb *gormdb) getTriggerByID(ctx context.Context, triggerID sdktypes.UUID) (*scheme.Trigger, error) {
 	return getOne[scheme.Trigger](gdb.withUserTriggers(ctx), "trigger_id = ?", triggerID)
 }
 
@@ -62,6 +58,10 @@ func (gdb *gormdb) listTriggers(ctx context.Context, filter sdkservices.ListTrig
 		q = q.Where("connection_id = ?", filter.ConnectionID.UUIDValue())
 	}
 
+	if !filter.SourceType.IsZero() {
+		q = q.Where("source_type = ?", filter.SourceType.String())
+	}
+
 	if filter.ProjectID.IsValid() {
 		q = q.Where("project_id = ?", filter.ProjectID.UUIDValue())
 	}
@@ -73,55 +73,33 @@ func (gdb *gormdb) listTriggers(ctx context.Context, filter sdkservices.ListTrig
 	return ts, nil
 }
 
-func triggerUniqueName(env string, name string) string {
-	return fmt.Sprintf("%s/%s", env, name)
+func triggerUniqueName(env string, name sdktypes.Symbol) string {
+	return fmt.Sprintf("%s/%s", env, name.String())
 }
 
 func (db *gormdb) triggerToRecord(ctx context.Context, trigger sdktypes.Trigger) (*scheme.Trigger, error) {
-	connID := trigger.ConnectionID()
-
-	conn, err := db.GetConnection(ctx, connID)
-	if err != nil {
-		return nil, fmt.Errorf("connection: %w", err)
-	}
-
-	projID := conn.ProjectID()
 	envID := trigger.EnvID()
-	if envID.IsValid() {
-		env, err := db.GetEnvByID(ctx, envID)
-		if err != nil {
-			return nil, fmt.Errorf("get trigger env: %w", err)
-		}
-
-		if projID.IsValid() && projID != env.ProjectID() {
-			return nil, fmt.Errorf("env and connection project mismatch: %v != %v", projID, env.ProjectID())
-		}
-		projID = env.ProjectID()
-	}
-
-	if !projID.IsValid() {
-		return nil, fmt.Errorf("cannot guess projectID from either Env or Connection")
-	}
-
-	data, err := json.Marshal(trigger.Data())
+	env, err := db.GetEnvByID(ctx, envID)
 	if err != nil {
-		return nil, fmt.Errorf("marshal trigger data: %w", err)
+		return nil, fmt.Errorf("get trigger env: %w", err)
 	}
+	projID := env.ProjectID()
 
-	name := trigger.Name()
-	uniqueName := triggerUniqueName(envID.String(), name.String())
+	uniqueName := triggerUniqueName(envID.String(), trigger.Name())
 
 	return &scheme.Trigger{
 		TriggerID:    trigger.ID().UUIDValue(),
 		EnvID:        envID.UUIDValue(),
 		ProjectID:    projID.UUIDValue(),
-		ConnectionID: connID.UUIDValue(),
+		ConnectionID: trigger.ConnectionID().UUIDValuePtr(),
+		SourceType:   trigger.SourceType().String(),
 		EventType:    trigger.EventType(),
 		Filter:       trigger.Filter(),
 		CodeLocation: trigger.CodeLocation().CanonicalString(),
 		Name:         trigger.Name().String(),
-		Data:         data,
 		UniqueName:   uniqueName,
+		WebhookSlug:  trigger.WebhookSlug(),
+		Schedule:     trigger.Schedule(),
 	}, nil
 }
 
@@ -144,7 +122,7 @@ func (db *gormdb) DeleteTrigger(ctx context.Context, id sdktypes.TriggerID) erro
 }
 
 func (db *gormdb) UpdateTrigger(ctx context.Context, trigger sdktypes.Trigger) error {
-	curr, err := db.GetTrigger(ctx, trigger.ID())
+	curr, err := db.GetTriggerByID(ctx, trigger.ID())
 	if err != nil {
 		return err
 	}
@@ -161,20 +139,21 @@ func (db *gormdb) UpdateTrigger(ctx context.Context, trigger sdktypes.Trigger) e
 	// update and set null fields as well, e.g. nullify connection, data etc..
 	updateData := map[string]any{
 		"ConnectionID": t.ConnectionID,
+		"SourceType":   t.SourceType,
 		"EventType":    t.EventType,
 		"Filter":       t.Filter,
 		"CodeLocation": t.CodeLocation,
-		"Data":         t.Data,
 	}
 	return translateError(db.updateTrigger(ctx, trigger.ID().UUIDValue(), updateData))
 }
 
-func (db *gormdb) GetTrigger(ctx context.Context, triggerID sdktypes.TriggerID) (sdktypes.Trigger, error) {
-	t, err := db.getTrigger(ctx, triggerID.UUIDValue())
-	if t == nil || err != nil {
+func (db *gormdb) GetTriggerByID(ctx context.Context, triggerID sdktypes.TriggerID) (sdktypes.Trigger, error) {
+	r, err := db.getTriggerByID(ctx, triggerID.UUIDValue())
+	if r == nil || err != nil {
 		return sdktypes.InvalidTrigger, translateError(err)
 	}
-	return scheme.ParseTrigger(*t)
+
+	return scheme.ParseTrigger(*r)
 }
 
 func (db *gormdb) ListTriggers(ctx context.Context, filter sdkservices.ListTriggersFilter) ([]sdktypes.Trigger, error) {
@@ -183,4 +162,13 @@ func (db *gormdb) ListTriggers(ctx context.Context, filter sdkservices.ListTrigg
 		return nil, translateError(err)
 	}
 	return kittehs.TransformError(ts, scheme.ParseTrigger)
+}
+
+func (db *gormdb) GetTriggerByWebhookSlug(ctx context.Context, slug string) (sdktypes.Trigger, error) {
+	r, err := getOne[scheme.Trigger](db.withUserTriggers(ctx), "webhook_slug = ?", slug)
+	if err != nil {
+		return sdktypes.InvalidTrigger, translateError(err)
+	}
+
+	return scheme.ParseTrigger(*r)
 }

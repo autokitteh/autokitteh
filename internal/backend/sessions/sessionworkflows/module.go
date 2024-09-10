@@ -12,17 +12,14 @@ import (
 
 func (w *sessionWorkflow) newModule() sdkexecutor.Executor {
 	flags := sdkmodule.WithFlags(
-		sdktypes.PureFunctionFlag,           // no need to run in an activity, we must have it in the workflow.
-		sdktypes.PrivilidgedFunctionFlag,    // provide workflow context.
-		sdktypes.DisablePollingFunctionFlag, // no polling.
+		sdktypes.PureFunctionFlag,        // no need to run in an activity, we must have it in the workflow.
+		sdktypes.PrivilidgedFunctionFlag, // provide workflow context.
 	)
 
 	return fixtures.NewBuiltinExecutor(
 		fixtures.ModuleExecutorID,
 		sdkmodule.ExportValue("timeout_error", sdkmodule.WithValue(fixtures.TimeoutError)),
 		sdkmodule.ExportFunction("syscall", w.syscall, flags),
-		sdkmodule.ExportFunction("poll", w.setPoller, flags),
-		sdkmodule.ExportFunction("fake", w.fake, flags),
 		sdkmodule.ExportFunction("sleep", w.sleep, flags),
 		sdkmodule.ExportFunction("start", w.start, flags),
 		sdkmodule.ExportFunction("subscribe", w.subscribe, flags),

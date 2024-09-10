@@ -14,6 +14,7 @@ import (
 	deploymentsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/deployments/v1"
 	eventsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/events/v1"
 	sessionsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/sessions/v1"
+	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
@@ -162,8 +163,10 @@ type Secret struct {
 
 type Event struct {
 	EventID       sdktypes.UUID  `gorm:"uniqueIndex;type:uuid;not null"`
+	DestinationID sdktypes.UUID  `gorm:"index;type:uuid;not null"`
 	IntegrationID *sdktypes.UUID `gorm:"index;type:uuid"`
 	ConnectionID  *sdktypes.UUID `gorm:"index;type:uuid"`
+	TriggerID     *sdktypes.UUID `gorm:"index;type:uuid"`
 
 	EventType string `gorm:"index:idx_event_type_seq,priority:1;index:idx_event_type"`
 	Data      datatypes.JSON
@@ -175,6 +178,7 @@ type Event struct {
 
 	// enforce foreign keys
 	Connection *Connection
+	Trigger    *Trigger
 	Ownership  *Ownership `gorm:"polymorphic:Entity;"`
 }
 
@@ -191,14 +195,24 @@ func ParseEvent(e Event) (sdktypes.Event, error) {
 		return sdktypes.InvalidEvent, fmt.Errorf("event memo: %w", err)
 	}
 
+	var did sdktypes.EventDestinationID
+
+	if uuid := e.ConnectionID; uuid != nil {
+		did = sdktypes.NewEventDestinationID(sdktypes.NewIDFromUUID[sdktypes.ConnectionID](uuid))
+	} else if uuid := e.TriggerID; uuid != nil {
+		did = sdktypes.NewEventDestinationID(sdktypes.NewIDFromUUID[sdktypes.TriggerID](uuid))
+	} else {
+		return sdktypes.InvalidEvent, sdkerrors.NewInvalidArgumentError("event must have a connection or trigger")
+	}
+
 	return sdktypes.StrictEventFromProto(&sdktypes.EventPB{
-		EventId:      sdktypes.NewIDFromUUID[sdktypes.EventID](&e.EventID).String(),
-		ConnectionId: sdktypes.NewIDFromUUID[sdktypes.ConnectionID](e.ConnectionID).String(),
-		EventType:    e.EventType,
-		Data:         kittehs.TransformMapValues(data, sdktypes.ToProto),
-		Memo:         memo,
-		CreatedAt:    timestamppb.New(e.CreatedAt),
-		Seq:          e.Seq,
+		EventId:       sdktypes.NewIDFromUUID[sdktypes.EventID](&e.EventID).String(),
+		EventType:     e.EventType,
+		Data:          kittehs.TransformMapValues(data, sdktypes.ToProto),
+		Memo:          memo,
+		CreatedAt:     timestamppb.New(e.CreatedAt),
+		Seq:           e.Seq,
+		DestinationId: did.String(),
 	})
 }
 
@@ -247,14 +261,14 @@ func ParseEnv(e Env) (sdktypes.Env, error) {
 type Trigger struct {
 	TriggerID sdktypes.UUID `gorm:"primaryKey;type:uuid;not null"`
 
-	ProjectID    sdktypes.UUID `gorm:"index;type:uuid;not null"`
-	ConnectionID sdktypes.UUID `gorm:"index;type:uuid;not null"`
-	EnvID        sdktypes.UUID `gorm:"index;type:uuid;not null"`
+	ProjectID    sdktypes.UUID  `gorm:"index;type:uuid;not null"`
+	SourceType   string         `gorm:"index"`
+	ConnectionID *sdktypes.UUID `gorm:"index;type:uuid"`
+	EnvID        sdktypes.UUID  `gorm:"index;type:uuid;not null"`
 	Name         string
 	EventType    string
 	Filter       string
 	CodeLocation string
-	Data         datatypes.JSON
 
 	// enforce foreign keys
 	Project    *Project
@@ -263,8 +277,10 @@ type Trigger struct {
 	Ownership  *Ownership `gorm:"polymorphic:Entity;"`
 
 	// Makes sure name is unique - this is the env_id with name.
-	// If name is emptyy, will be env_id with a random string.
-	UniqueName string `gorm:"uniqueIndex"`
+	UniqueName string `gorm:"uniqueIndex;not null"`
+
+	WebhookSlug string `gorm:"index"`
+	Schedule    string
 }
 
 func ParseTrigger(e Trigger) (sdktypes.Trigger, error) {
@@ -273,20 +289,22 @@ func ParseTrigger(e Trigger) (sdktypes.Trigger, error) {
 		return sdktypes.InvalidTrigger, fmt.Errorf("loc: %w", err)
 	}
 
-	var data map[string]sdktypes.Value
-	if err := json.Unmarshal(e.Data, &data); err != nil {
-		return sdktypes.InvalidTrigger, fmt.Errorf("data: %w", err)
+	srcType, err := sdktypes.ParseTriggerSourceType(e.SourceType)
+	if err != nil {
+		return sdktypes.InvalidTrigger, fmt.Errorf("source type: %w", err)
 	}
 
 	return sdktypes.StrictTriggerFromProto(&sdktypes.TriggerPB{
 		TriggerId:    sdktypes.NewIDFromUUID[sdktypes.TriggerID](&e.TriggerID).String(),
 		EnvId:        sdktypes.NewIDFromUUID[sdktypes.EnvID](&e.EnvID).String(),
-		ConnectionId: sdktypes.NewIDFromUUID[sdktypes.ConnectionID](&e.ConnectionID).String(),
+		SourceType:   srcType.ToProto(),
+		ConnectionId: sdktypes.NewIDFromUUID[sdktypes.ConnectionID](e.ConnectionID).String(),
 		EventType:    e.EventType,
 		Filter:       e.Filter,
 		CodeLocation: loc.ToProto(),
 		Name:         e.Name,
-		Data:         kittehs.TransformMapValues(data, sdktypes.ToProto),
+		WebhookSlug:  e.WebhookSlug,
+		Schedule:     e.Schedule,
 	})
 }
 
@@ -478,14 +496,17 @@ func ParseDeploymentWithSessionStats(d DeploymentWithStats) (sdktypes.Deployment
 }
 
 type Signal struct {
-	SignalID     string        `gorm:"primaryKey"`
-	ConnectionID sdktypes.UUID `gorm:"index:idx_connection_id_event_type;type:uuid;not null"`
-	CreatedAt    time.Time
-	WorkflowID   string
-	Filter       string
+	SignalID      sdktypes.UUID  `gorm:"primaryKey;type:uuid;not null"`
+	DestinationID sdktypes.UUID  `gorm:"index;type:uuid;not null"`
+	ConnectionID  *sdktypes.UUID `gorm:"type:uuid"`
+	TriggerID     *sdktypes.UUID `gorm:"type:uuid"`
+	CreatedAt     time.Time
+	WorkflowID    string
+	Filter        string
 
 	// enforce foreign key
 	Connection *Connection
+	Trigger    *Trigger
 }
 
 type Ownership struct {

@@ -7,9 +7,9 @@ import "buf/validate/validate.proto";
 
 message SaveRequest {
   option (buf.validate.message).cel = {
-    id: "events.missing_connection_id"
-    message: "missing connection_id"
-    expression: "has(this.event) && this.event.connection_id != ''"
+    id: "events.missing_destination_id"
+    message: "missing destination_id"
+    expression: "has(this.event) && this.event.destination_id != ''"
   };
 
   option (buf.validate.message).cel = {
@@ -42,7 +42,7 @@ message GetResponse {
 
 message ListRequest {
   string integration_id = 1;
-  string connection_id = 2;
+  string destination_id = 2;
   string event_type = 3;
   uint32 max_results = 4;
   string order = 5; // ASC or DESC values are supported

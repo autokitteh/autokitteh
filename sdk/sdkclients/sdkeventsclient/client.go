@@ -66,7 +66,7 @@ func (c *client) List(ctx context.Context, filter sdkservices.ListEventsFilter) 
 		&eventsv1.ListRequest{
 			IntegrationId: filter.IntegrationID.String(),
 			EventType:     filter.EventType,
-			ConnectionId:  filter.ConnectionID.String(),
+			DestinationId: filter.DestinationID.String(),
 			MaxResults:    uint32(filter.Limit),
 			Order:         string(filter.Order),
 		},

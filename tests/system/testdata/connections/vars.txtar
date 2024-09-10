@@ -2,8 +2,16 @@
 ak deploy --manifest manifest.yaml
 return code == 0
 
-ak var set test_secret shhhh --secret --connection my_project/my_connection
+ak var set secret shhhh --secret --connection my_project/my_connection
 return code == 0
+
+ak var get --connection my_project/my_connection
+output contains 'url="test_url"'
+output contains 'secret=<secret>'
+
+ak var get --connection my_project/my_connection --reveal
+output contains 'url="test_url"'
+output contains 'secret="shhhh"'
 
 ak session start -d dep_00000000000000000000000005 --watch --no-timestamps --entrypoint main.star
 return code == 0
@@ -17,13 +25,13 @@ project:
   name: my_project
   connections:
     - name: my_connection
-      integration: http
+      integration: test
       vars:
         - name: url
           value: test_url
 
 -- main.star --
-load("env", "my_connection__url", "my_connection__test_secret")
+load("env", "my_connection__url", "my_connection__secret")
 
 print("url={}".format(my_connection__url))
-print("secret={}".format(my_connection__test_secret))
+print("secret={}".format(my_connection__secret))

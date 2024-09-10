@@ -22,16 +22,20 @@ var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.Integrati
 	Description:   "Test integration",
 }))
 
-func NewTestIntegration() sdkservices.Integration {
+func NewTestIntegration(vars sdkservices.Vars) sdkservices.Integration {
 	var i test
 
-	return sdkintegrations.NewIntegration(desc, sdkmodule.New(
-		sdkmodule.ExportFunction(
-			"freeze",
-			i.freeze,
-			sdkmodule.WithArgs("duration?", "allow_cancel?"),
+	return sdkintegrations.NewIntegration(
+		desc,
+		sdkmodule.New(
+			sdkmodule.ExportFunction(
+				"freeze",
+				i.freeze,
+				sdkmodule.WithArgs("duration?", "allow_cancel?"),
+			),
 		),
-	))
+		sdkintegrations.WithConnectionConfigFromVars(vars),
+	)
 }
 
 func (i test) freeze(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {

@@ -3,6 +3,7 @@ package sdktypes
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/google/uuid"
 	"go.jetify.com/typeid"
@@ -85,11 +86,21 @@ func (i id[T]) UUIDValue() UUID {
 	return uuid.UUID(i.tid.UUIDBytes())
 }
 
+func (i id[T]) UUIDValuePtr() *UUID {
+	if !i.IsValid() {
+		return nil
+	}
+
+	uuid := uuid.UUID(i.tid.UUIDBytes())
+	return &uuid
+}
+
 func (i id[T]) MarshalJSON() ([]byte, error)           { return json.Marshal(i.tid) }
 func (i *id[T]) UnmarshalJSON(data []byte) (err error) { err = json.Unmarshal(data, &i.tid); return }
 
 func newID[ID id[T], T idTraits]() ID {
-	return ID(id[T]{tid: kittehs.Must1(typeid.FromUUIDBytes[typeid.TypeID[T]](newUUID()))})
+	uuid := NewUUID()
+	return ID(id[T]{tid: typeid.Must(typeid.FromUUIDBytes[typeid.TypeID[T]](uuid[:]))})
 }
 
 func NewIDFromUUID[ID id[T], T idTraits](uuid *UUID) ID {
@@ -97,7 +108,7 @@ func NewIDFromUUID[ID id[T], T idTraits](uuid *UUID) ID {
 		var zero ID
 		return zero
 	}
-	return ID(id[T]{tid: kittehs.Must1(typeid.FromUUIDBytes[typeid.TypeID[T]](uuid[:]))})
+	return ID(id[T]{tid: typeid.Must(typeid.FromUUIDBytes[typeid.TypeID[T]](uuid[:]))})
 }
 
 func ParseID[ID id[T], T idTraits](s string) (ID, error) {
@@ -121,3 +132,26 @@ func IsIDOf[T idTraits](s string) bool {
 }
 
 func IsID(s string) bool { return IsIDOf[typeid.AnyPrefix](s) }
+
+func newNamedIDString(name, kind string) string {
+	// a hint to the original name is encoded in the ID.
+	idName := strings.Map(func(r rune) rune {
+		switch r {
+		case 'i', 'l':
+			return '1'
+		case 'o':
+			return '0'
+		case 'u':
+			return 'v'
+		default:
+			return r
+		}
+	}, name)
+
+	if len(idName) > 6 {
+		idName = idName[:6]
+	}
+	idName = fmt.Sprintf("%06s", idName)
+
+	return fmt.Sprintf("%s_3kth%06s%016x", kind, idName, kittehs.HashString64(kind+","+name))
+}

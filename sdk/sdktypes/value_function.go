@@ -74,10 +74,9 @@ func init() {
 type FunctionFlag string
 
 const (
-	PrivilidgedFunctionFlag    FunctionFlag = "privilidged" // pass workflow context.
-	PureFunctionFlag           FunctionFlag = "pure"        // do not run in an activity.
-	DisablePollingFunctionFlag FunctionFlag = "no-poll"     // do not poll.
-	ConstFunctionFlag          FunctionFlag = "const"       // result is serialized in data.
+	PrivilidgedFunctionFlag FunctionFlag = "privilidged" // pass workflow context.
+	PureFunctionFlag        FunctionFlag = "pure"        // do not run in an activity.
+	ConstFunctionFlag       FunctionFlag = "const"       // result is serialized in data.
 )
 
 func (ff FunctionFlag) String() string { return string(ff) }
@@ -87,8 +86,7 @@ func validateFunctionFlags(fs []string) error {
 
 	for _, f := range fs {
 		switch f {
-		case PrivilidgedFunctionFlag.String(), PureFunctionFlag.String(),
-			DisablePollingFunctionFlag.String(), ConstFunctionFlag.String():
+		case PrivilidgedFunctionFlag.String(), PureFunctionFlag.String(), ConstFunctionFlag.String():
 			return nil
 		default:
 			errs = append(errs, fmt.Errorf("invalid function flag %q", f))

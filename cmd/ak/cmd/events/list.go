@@ -6,6 +6,7 @@ import (
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
 	"go.autokitteh.dev/autokitteh/internal/resolver"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 var listOrder string
@@ -24,11 +25,19 @@ var listCmd = common.StandardCommand(&cobra.Command{
 		defer cancel()
 
 		if connection != "" {
-			_, cid, err := r.ConnectionNameOrID(ctx, args[0], "")
+			_, cid, err := r.ConnectionNameOrID(ctx, connection, "")
 			if err = common.AddNotFoundErrIfCond(err, cid.IsValid()); err != nil {
 				return common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "connection")
 			}
-			f.ConnectionID = cid
+			f.DestinationID = sdktypes.NewEventDestinationID(cid)
+		}
+
+		if trigger != "" {
+			_, tid, err := r.TriggerNameOrID(ctx, trigger, "")
+			if err = common.AddNotFoundErrIfCond(err, tid.IsValid()); err != nil {
+				return common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "trigger")
+			}
+			f.DestinationID = sdktypes.NewEventDestinationID(tid)
 		}
 
 		if integration != "" {
@@ -54,9 +63,10 @@ func init() {
 	// Command-specific flags.
 	listCmd.Flags().StringVarP(&integration, "integration", "i", "", "integration name or ID")
 	listCmd.Flags().StringVarP(&connection, "connection", "c", "", "connection name or ID")
+	listCmd.Flags().StringVarP(&trigger, "trigger", "t", "", "trigger name or ID")
 	listCmd.Flags().StringVarP(&eventType, "event-type", "e", "", "event type")
 	listCmd.Flags().StringVarP(&listOrder, "order", "o", "DESC", "events order, should be DESC or ASC, default is DESC")
-	listCmd.MarkFlagsOneRequired("integration", "connection")
+	listCmd.MarkFlagsOneRequired("integration", "connection", "trigger")
 
 	common.AddFailIfNotFoundFlag(listCmd)
 }

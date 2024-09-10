@@ -91,6 +91,7 @@ func (c *client) List(ctx context.Context, filter sdkservices.ListTriggersFilter
 			EnvId:        filter.EnvID.String(),
 			ConnectionId: filter.ConnectionID.String(),
 			ProjectId:    filter.ProjectID.String(),
+			SourceType:   filter.SourceType.ToProto(),
 		},
 	))
 	if err != nil {

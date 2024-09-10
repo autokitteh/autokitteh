@@ -20,12 +20,6 @@ project:
       name: shhhh
       secret: true
   connections:
-    # HTTP: Allows to fire triggers when an incoming HTTP request
-    #       is received on <autokitteh_base_url>/http/<project_name>/...
-    - # Connection name. Unique project-wide.
-      name: myhttp
-      # Integration name to use for this connection.
-      integration: "http"
     # Redis
     - name: myredis
       integration: "redis"
@@ -52,22 +46,33 @@ project:
       integration: "google"
   # Triggers specify how to route incoming events generated from the connections to this project.
   triggers:
-    - name: http_get
+    - # Webhook trigger.
+      # The trigger name.
+      # This is applicable for all trigger types.
+      name: http_get
       # Optional: event_type. For HTTP this is the method.
+      # This is applicable for all trigger types.
       event_type: get
       # Optional: event filter, specified in CEL (https://github.com/google/cel-spec).
-      # All event data is available to the filter via the `data` field.
       # The event type is available via the `type` field.
+      # This is applicable for all trigger types.
       filter: "data.path == 'meow' && type == 'GET'"
-      # Name of the connection the event originated from.
-      connection: myhttp
       # Function to call when the event is received.
-      call: http.star:on_http_get
-      data:
-        # Optional: path pattern. Can include named parameters.
-        # Each parameter is enclosed in {}. Last parameter
-        # can be suffixed with "..."", which will cause it to
-        # capture the rest of the path.
-        # Last parameter can also be "{$}", which specifies
-        # it expects an exact match.
-        path: "/test/{a}/{b...}"
+      # This is applicable for all trigger types.
+      call: main.star:on_http_get
+      # This indicates that the trigger is a webhook trigger.
+      webhook: {}
+    - # Schedule trigger.
+      name: every_minute
+      # Function to call when the event is received.
+      call: main.star:on_every_minute
+      # The schedule.
+      schedule: "*/1 * * * *"
+    - # Connection trigger.
+      name: slack_message
+      # Optional: event_type
+      event_type: message
+      # Function to call when the event is received.
+      call: main.star:on_slack_message
+      # The connection to receive events from.
+      connection: myslack
