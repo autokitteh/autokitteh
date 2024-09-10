@@ -65,6 +65,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/varsgrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/webhookssvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/webtools"
+	"go.autokitteh.dev/autokitteh/internal/config"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/internal/version"
 	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/auth/v1/authv1connect"
@@ -129,7 +130,7 @@ var pprofConfigs = configset.Set[pprofConfig]{
 
 type HTTPServerAddr string
 
-func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
+func makeFxOpts(cfg *config.Config, opts RunOptions) []fx.Option {
 	return []fx.Option{
 		fx.Supply(cfg),
 		LoggerFxOpt(),
@@ -413,7 +414,7 @@ type RunOptions struct {
 	TemporalClient client.Client // use this instead of creating a new temporal client.
 }
 
-func NewOpts(cfg *Config, ropts RunOptions) []fx.Option {
+func NewOpts(cfg *config.Config, ropts RunOptions) []fx.Option {
 	setFXRunOpts(ropts)
 
 	opts := makeFxOpts(cfg, ropts)
@@ -437,7 +438,7 @@ func NewOpts(cfg *Config, ropts RunOptions) []fx.Option {
 	return append(opts, fx.Populate(svcs))
 }
 
-func StartDB(ctx context.Context, cfg *Config, ropt RunOptions) (db.DB, error) {
+func StartDB(ctx context.Context, cfg *config.Config, ropt RunOptions) (db.DB, error) {
 	setFXRunOpts(ropt)
 
 	var db db.DB

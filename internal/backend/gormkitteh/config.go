@@ -15,10 +15,10 @@ type Config struct {
 	// with an empty DSN, which will make sqlite use a temporary database
 	// (see https://www.sqlite.org/inmemorydb.html).
 	// If `Type` is "require" (RequireExplicitDSNType), `DSN` must be specified.
-	Type  string `koanf:"type"`
-	DSN   string `koanf:"dsn"`
-	Debug bool   `koanf:"debug"`
-
+	Type               string        `koanf:"type"`
+	DSN                string        `koanf:"dsn"`
+	Debug              bool          `koanf:"debug"`
+	ListOfStuff        []string      `koanf:"list"`
 	SlowQueryThreshold time.Duration `koanf:"slow_query_threshold"`
 
 	// If true, DB migrations will run automatically.
