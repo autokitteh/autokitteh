@@ -18,7 +18,6 @@ type Config struct {
 	Type               string        `koanf:"type"`
 	DSN                string        `koanf:"dsn"`
 	Debug              bool          `koanf:"debug"`
-	ListOfStuff        []string      `koanf:"list"`
 	SlowQueryThreshold time.Duration `koanf:"slow_query_threshold"`
 
 	// If true, DB migrations will run automatically.
