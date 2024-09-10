@@ -31,9 +31,9 @@ func (gdb *gormdb) deleteTrigger(ctx context.Context, triggerID sdktypes.UUID) e
 		}
 
 		// enforce foreign keys constrains while soft-deleting
-		var count int64
-		tx.db.Model(&scheme.Event{}).Where("deleted_at is NULL and trigger_id = ?", triggerID).Count(&count)
-		if count > 0 {
+		var referencedCnt int
+		tx.db.Model(&scheme.Event{}).Select("1").Where("deleted_at is NULL and trigger_id = ?", triggerID).First(&referencedCnt)
+		if referencedCnt > 0 {
 			return fmt.Errorf("FOREIGN KEY: %w", gorm.ErrForeignKeyViolated)
 		}
 
