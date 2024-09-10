@@ -240,7 +240,7 @@ func TestDeleteProjectAndDependents(t *testing.T) {
 }
 
 func TestUpdateProject(t *testing.T) {
-	f := preProjectTest(t).WithDebug()
+	f := preProjectTest(t)
 
 	p := f.newProject()
 	f.createProjectsAndAssert(t, p)

@@ -130,7 +130,7 @@ func TestDeleteConnectionForeignKeys(t *testing.T) {
 }
 
 func TestDeleteConnectionAndVars(t *testing.T) {
-	f := preConnectionTest(t).WithDebug()
+	f := preConnectionTest(t)
 
 	p := f.newProject()
 	c1, c2, c3 := f.newConnection(p), f.newConnection(p), f.newConnection(p)

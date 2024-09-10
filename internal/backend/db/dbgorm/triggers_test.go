@@ -148,7 +148,7 @@ func TestDeleteTrigger(t *testing.T) {
 }
 
 func TestDuplicatedTrigger(t *testing.T) {
-	f := preTriggerTest(t).WithDebug()
+	f := preTriggerTest(t)
 
 	p1 := f.newProject()
 	p2 := f.newProject()
