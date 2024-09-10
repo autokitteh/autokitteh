@@ -259,28 +259,30 @@ func ParseEnv(e Env) (sdktypes.Env, error) {
 }
 
 type Trigger struct {
-	TriggerID sdktypes.UUID `gorm:"primaryKey;type:uuid;not null"`
-
+	TriggerID    sdktypes.UUID  `gorm:"primaryKey;type:uuid;not null"`
 	ProjectID    sdktypes.UUID  `gorm:"index;type:uuid;not null"`
-	SourceType   string         `gorm:"index"`
 	ConnectionID *sdktypes.UUID `gorm:"index;type:uuid"`
 	EnvID        sdktypes.UUID  `gorm:"index;type:uuid;not null"`
-	Name         string
+
+	SourceType   string `gorm:"index"`
 	EventType    string
 	Filter       string
 	CodeLocation string
 
-	// enforce foreign keys
-	Project    *Project
-	Env        *Env
-	Connection *Connection
-	Ownership  *Ownership `gorm:"polymorphic:Entity;"`
-
+	Name string
 	// Makes sure name is unique - this is the env_id with name.
-	UniqueName string `gorm:"uniqueIndex;not null"`
+	UniqueName string `gorm:"uniqueIndex;not null"` // env_id + name
 
 	WebhookSlug string `gorm:"index"`
 	Schedule    string
+
+	DeletedAt gorm.DeletedAt `gorm:"index"`
+
+	// enforce foreign keys
+	Project    *Project
+	Connection *Connection
+	Env        *Env
+	Ownership  *Ownership `gorm:"polymorphic:Entity;"`
 }
 
 func ParseTrigger(e Trigger) (sdktypes.Trigger, error) {

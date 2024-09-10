@@ -460,6 +460,8 @@ func (f *dbFixture) newEvent(args ...any) scheme.Event {
 		switch a := a.(type) {
 		case scheme.Connection:
 			e.ConnectionID = &a.ConnectionID
+		case scheme.Trigger:
+			e.TriggerID = &a.TriggerID
 		}
 	}
 	return e
