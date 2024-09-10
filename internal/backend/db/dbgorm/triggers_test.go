@@ -102,7 +102,7 @@ func TestCreateTriggerForeignKeys(t *testing.T) {
 }
 
 func TestDeleteTriggerForeignKeys(t *testing.T) {
-	f := preTriggerTest(t).WithDebug()
+	f := preTriggerTest(t)
 	p, c, e := f.createProjectConnectionEnv(t)
 
 	trg := f.newTrigger(p, c, e)
@@ -110,11 +110,9 @@ func TestDeleteTriggerForeignKeys(t *testing.T) {
 	evt := f.newEvent(trg)
 	f.createEventsAndAssert(t, evt)
 
-	// trigger could be deleted, even if it refenced by event, since trigger is soft deleted
-	assert.ErrorIs(t, f.gormdb.deleteTrigger(f.ctx, trg.TriggerID), gorm.ErrForeignKeyViolated)
-
-	_ = f.gormdb.deleteEvent(f.ctx, evt.EventID)
-	assert.NoError(t, f.gormdb.deleteTrigger(f.ctx, trg.TriggerID))
+	// trigger could be deleted, even if it refenced by non-deleted event
+	findAndAssertOne(t, f, evt, "trigger_id = ?", trg.TriggerID)    // non-deleted event
+	assert.NoError(t, f.gormdb.deleteTrigger(f.ctx, trg.TriggerID)) // deleted trigger
 }
 
 func TestListTriggers(t *testing.T) {
