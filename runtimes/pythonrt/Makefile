@@ -25,11 +25,11 @@ deps:
 
 # The below targets are for local testing.
 
-deploy-workflow:
+deploy-simple:
 	ak deploy -m ./testdata/simple/autokitteh.yaml -d ./testdata/simple/
 
-run-workflow:
-	curl -i -X POST -d '{"user": "joe", "event": "login"}' http://localhost:9980/http/py_simple/trigger_url_path_py
+run-simple:
+	go run ./testdata/trigger_webhook.go
 
 deploy-issues:
 	ak deploy -m ./testdata/issues/autokitteh.yaml -d ./testdata/issues/

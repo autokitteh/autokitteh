@@ -205,6 +205,10 @@ def test_call_non_func():
         ak_call("hello")
 
 
+class List(list):
+    pass
+
+
 def test_should_run_as_activity():
     mod_name = "ak_test_module_name"
     mod = ModuleType(mod_name)
@@ -236,3 +240,7 @@ def test_should_run_as_activity():
 
     # Deterministic
     assert not ak_call.should_run_as_activity(re.compile)
+
+    # Subclass of built-in type
+    lst = List()
+    assert not ak_call.should_run_as_activity(lst.count)

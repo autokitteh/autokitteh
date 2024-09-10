@@ -14,6 +14,9 @@ def greet(event):
     print(f"simple: USER: {USER}")  # From 'var' in manifest
     print(f"simple: event: {event!r}")
 
+    items = event.items()
+    print("ITEMS:", items)
+
     body = event["data"]["body"]
     print(f"BODY: {body!r}")
     request = json.loads(body)

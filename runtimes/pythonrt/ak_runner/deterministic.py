@@ -17,11 +17,10 @@ def is_deterministic(fn):
         return True
 
     if hasattr(fn, "__self__"):  # A bound method
-        cls = fn.__self__.__class__
-        if cls in builtin_types:
+        if isinstance(fn.__self__, builtin_types):
             return True
 
-        mod = cls.__module__
+        mod = fn.__self__.__class__.__module__
         if mod != "builtins" and mod in modules:
             return True
 
@@ -30,7 +29,7 @@ def is_deterministic(fn):
 
 # Please keep the following sorted in alphabetical order.
 
-builtin_types = {
+builtin_types = (
     bytearray,
     bytes,
     dict,
@@ -41,7 +40,7 @@ builtin_types = {
     set,
     str,
     tuple,
-}
+)
 
 # Modules are represented as strings func.__module__ is a string
 modules = {
@@ -98,7 +97,7 @@ modules = {
     "zoneninfo",
 }
 
-functions = builtin_types | {
+functions = set(builtin_types) | {
     datetime.date,
     datetime.date.fromisocalendar,
     datetime.date.fromisoformat,
