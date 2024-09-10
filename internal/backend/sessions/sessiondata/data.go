@@ -68,10 +68,6 @@ func Get(ctx context.Context, z *zap.Logger, svcs *sessionsvcs.Svcs, sessionID s
 		return nil, err
 	}
 
-	if data.Connections, err = svcs.Connections.List(ctx, sdkservices.ListConnectionsFilter{ProjectID: data.ProjectID}); err != nil {
-		return nil, fmt.Errorf("connections.list: %w", err)
-	}
-
 	if envID := data.Session.EnvID(); envID.IsValid() {
 		if data.Env, err = retrieve(ctx, z, envID, svcs.Envs.GetByID); err != nil {
 			return nil, err
@@ -81,7 +77,13 @@ func Get(ctx context.Context, z *zap.Logger, svcs *sessionsvcs.Svcs, sessionID s
 			return nil, fmt.Errorf("sessions can only run on projects")
 		}
 
-		if data.Triggers, err = svcs.Triggers.List(ctx, sdkservices.ListTriggersFilter{EnvID: envID}); err != nil {
+		cfilter := sdkservices.ListConnectionsFilter{ProjectID: data.ProjectID}
+		if data.Connections, err = svcs.Connections.List(ctx, cfilter); err != nil {
+			return nil, fmt.Errorf("connections.list: %w", err)
+		}
+
+		tfilter := sdkservices.ListTriggersFilter{EnvID: envID}
+		if data.Triggers, err = svcs.Triggers.List(ctx, tfilter); err != nil {
 			return nil, fmt.Errorf("triggers.list(%v): %w", envID, err)
 		}
 
