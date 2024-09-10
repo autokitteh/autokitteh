@@ -10,11 +10,7 @@ import (
 
 	"connectrpc.com/grpcreflect"
 	"github.com/rs/cors"
-<<<<<<< HEAD
 	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
-	"go.autokitteh.dev/autokitteh/runtimes/remotert"
-=======
->>>>>>> b3892d36 (WIP, start activity not working properly yet)
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 	"golang.org/x/net/http2"
