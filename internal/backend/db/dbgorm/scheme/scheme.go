@@ -296,6 +296,10 @@ func ParseTrigger(e Trigger) (sdktypes.Trigger, error) {
 		return sdktypes.InvalidTrigger, fmt.Errorf("source type: %w", err)
 	}
 
+	if srcType == sdktypes.TriggerSourceTypeUnspecified {
+		srcType = sdktypes.TriggerSourceTypeConnection
+	}
+
 	return sdktypes.StrictTriggerFromProto(&sdktypes.TriggerPB{
 		TriggerId:    sdktypes.NewIDFromUUID[sdktypes.TriggerID](&e.TriggerID).String(),
 		EnvId:        sdktypes.NewIDFromUUID[sdktypes.EnvID](&e.EnvID).String(),
