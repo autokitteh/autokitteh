@@ -35,7 +35,7 @@ def discord_client(connection: str, intents=None, **kwargs) -> discord.Client:
     return discord.Client(intents=intents, **kwargs)
 
 
-def get_bot_token(connection: str):
+def bot_token(connection: str):
     check_connection_name(connection)
 
     bot_token = os.getenv(connection + "__BotToken")
