@@ -84,6 +84,7 @@ func (s *remoteSvc) Log(ctx context.Context, req *pb.LogRequest) (*pb.LogRespons
 	if req.Level == "" {
 		return nil, status.Error(codes.InvalidArgument, "empty level")
 	}
+
 	level := pyLevelToZap(req.Level)
 	s.log.Log(level, req.Message, zap.String("source", "python"))
 	return &pb.LogResponse{}, nil

@@ -41,6 +41,7 @@ class AKCall:
         self.module = None  # Module for "local" function, filled by "run"
 
     def is_module_func(self, fn):
+        # TODO: Check for all funcs in user code directory
         return fn.__module__ == self.module.__name__
 
     def should_run_as_activity(self, fn):

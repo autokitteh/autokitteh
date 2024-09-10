@@ -33,6 +33,7 @@ class Transformer(ast.NodeTransformer):
             return node
 
         log.info("%s:%d: patching %s with action", self.file_name, node.lineno, name)
+        # urlopen("https://autokitteh.h") -> _call(urlopen, "https://autokitteh.com")
         call = ast.Call(
             func=ast.Name(id=ACTION_NAME, ctx=ast.Load()),
             args=[node.func] + node.args,
