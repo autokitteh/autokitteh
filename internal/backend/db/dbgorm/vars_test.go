@@ -138,7 +138,7 @@ func (f *dbFixture) testListVar(t *testing.T, v scheme.Var) {
 }
 
 func TestListVar(t *testing.T) {
-	f := preVarTest(t).WithDebug()
+	f := preVarTest(t)
 
 	c, e := createConnectionAndEnv(t, f)
 
@@ -152,7 +152,7 @@ func TestListVar(t *testing.T) {
 }
 
 func TestListProjVars(t *testing.T) {
-	f := preVarTest(t).WithDebug()
+	f := preVarTest(t)
 
 	c, e := createConnectionAndEnv(t, f)
 
@@ -179,7 +179,7 @@ func TestDeleteVar(t *testing.T) {
 }
 
 func TestFincConnectionIDByVar(t *testing.T) {
-	f := preVarTest(t).WithDebug()
+	f := preVarTest(t)
 	c1, env1 := createConnectionAndEnv(t, f)
 	c2, env2 := createConnectionAndEnv(t, f)
 
