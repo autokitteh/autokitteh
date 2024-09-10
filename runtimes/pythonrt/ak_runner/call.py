@@ -79,6 +79,9 @@ class AKCall:
             msg = self.comm.recv(MessageType.call_return)
             value = msg["payload"]["value"]
             if func is autokitteh.next_event:
+                value = {} if value is None else value  # None means timeout
+                if not isinstance(value, dict):
+                    raise TypeError(f"next_event returned {value!r}, expected dict")
                 value = autokitteh.AttrDict(value)
             return value
 
