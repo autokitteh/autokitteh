@@ -88,5 +88,23 @@ func (*svc) Build(ctx context.Context, fsys fs.FS, path string, symbols []sdktyp
 	var art sdktypes.BuildArtifact
 	art = art.WithCompiledData(compiledData).WithExports([]sdktypes.BuildExport{sdkexport})
 
+	// resp, err := runner.Start(ctx, &pb.StartRunnerRequest{BuildArtifact: data, Vars: nil, WorkerAddress: "host.docker.internal:9980"})
+	// if err != nil {
+	// 	return sdktypes.InvalidBuildArtifact, fmt.Errorf("staring runner %w", err)
+	// }
+
+	// if resp.Error != "" {
+	// 	return sdktypes.InvalidBuildArtifact, fmt.Errorf("staring runner %s", resp.Error)
+	// }
+
+	// stopResp, err := runner.Stop(ctx, &pb.StopRequest{RunnerId: resp.RunnerId})
+	// if err != nil {
+	// 	fmt.Printf("failed stopping build runner: %s\n", err)
+	// }
+
+	// if stopResp.Error != "" {
+	// 	fmt.Printf("failed stopping build runner: %s\n", err)
+	// }
+
 	return art, nil
 }

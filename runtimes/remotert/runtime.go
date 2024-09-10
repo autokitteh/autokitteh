@@ -213,7 +213,7 @@ func (s *svc) Run(
 		return nil, fmt.Errorf("%q note found in compiled data", "archive")
 	}
 
-	resp, err := runner.Start(ctx, &pb.StartRunnerRequest{BuildArtifact: tarData, Vars: envMap, WorkerAddress: "0.tcp.eu.ngrok.io:10487"})
+	resp, err := runner.Start(ctx, &pb.StartRunnerRequest{BuildArtifact: tarData, Vars: envMap, WorkerAddress: "host.docker.internal:9980"})
 	if err != nil {
 		return nil, fmt.Errorf("staring runner %w", err)
 	}
