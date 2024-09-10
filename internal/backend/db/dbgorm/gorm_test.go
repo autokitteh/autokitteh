@@ -474,9 +474,17 @@ func (f *dbFixture) newEventRecord() scheme.EventRecord {
 	}
 }
 
-func (f *dbFixture) newSignal() scheme.Signal {
-	return scheme.Signal{
+func (f *dbFixture) newSignal(args ...any) scheme.Signal {
+	s := scheme.Signal{
 		SignalID:  testSignalID,
 		CreatedAt: now,
 	}
+	for _, a := range args {
+		switch a := a.(type) {
+		case scheme.Connection:
+			s.ConnectionID = &a.ConnectionID
+			s.DestinationID = a.ConnectionID
+		}
+	}
+	return s
 }
