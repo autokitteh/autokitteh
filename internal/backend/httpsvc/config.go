@@ -11,12 +11,6 @@ type httpH2CConfig struct {
 	Enable bool `koanf:"enable"`
 }
 
-type ngrokConfig struct {
-	Enable    bool   `koanf:"enable"`
-	AuthToken string `koanf:"auth_token"`
-	Domain    string `koanf:"domain"`
-}
-
 type LoggerConfig struct {
 	ImportantLevel   zap.AtomicLevel `koanf:"important_log_level"`
 	UnimportantLevel zap.AtomicLevel `koanf:"unimportant_log_level"`
@@ -53,8 +47,6 @@ type Config struct {
 	// port to avoid conflict with an already running service.
 	AddrFilename         string `koanf:"addr_filename"`
 	EnableGRPCReflection bool   `koanf:"reflection"`
-
-	Ngrok ngrokConfig `koanf:"ngrok"`
 
 	Logger LoggerConfig `koanf:"logger"`
 
