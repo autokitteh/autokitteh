@@ -37,7 +37,7 @@ func init() {
 
 func runtimes() sdkservices.Runtimes {
 	if local {
-		return backendRuntimes.New()
+		return backendRuntimes.New(backendRuntimes.Configs.Default)
 	}
 	return common.Client().Runtimes()
 }
