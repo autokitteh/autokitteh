@@ -13,8 +13,6 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
-	"golang.ngrok.com/ngrok"
-	"golang.ngrok.com/ngrok/config"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 )
@@ -72,33 +70,7 @@ func New(lc fx.Lifecycle, z *zap.Logger, cfg *Config, reflectors []string, extra
 
 	lc.Append(fx.Hook{
 		OnStart: func(context.Context) error {
-			var (
-				ln  net.Listener
-				err error
-			)
-
-			if cfg.Ngrok.Enable {
-				z.Info("using ngrok to serve apis")
-
-				token := cfg.Ngrok.AuthToken
-				if token == "" {
-					token = os.Getenv("NGROK_AUTHTOKEN")
-				}
-
-				var tun ngrok.Tunnel
-				if tun, err = ngrok.Listen(
-					context.Background(),
-					config.HTTPEndpoint(
-						config.WithDomain(cfg.Ngrok.Domain),
-					),
-					ngrok.WithAuthtoken(token),
-				); err == nil {
-					ln = tun
-				}
-			} else {
-				ln, err = net.Listen("tcp", server.Addr)
-			}
-
+			ln, err := net.Listen("tcp", server.Addr)
 			if err != nil {
 				return fmt.Errorf("listen: %w", err)
 			}
