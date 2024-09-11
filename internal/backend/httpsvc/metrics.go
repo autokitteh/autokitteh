@@ -2,15 +2,15 @@ package httpsvc
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
 
-	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
+
+	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
 )
 
 type apiMetrics struct {
@@ -42,35 +42,52 @@ func acquireServiceAPIMetrics(serviceAPI string, t *telemetry.Telemetry) (*apiMe
 	return &m, nil
 }
 
-func updateMetric(ctx context.Context, t *telemetry.Telemetry, path string, statusCode int, duration time.Duration) (err error) {
+// See TestGetMetricNameFromPath for examples.
+func getMetricNameFromPath(path string) string {
 	// path will be like "/autokitteh.projects.v1.ProjectsService/Create"
 	// 1. check this is an internal API path, e.g. starts with "/autokitteh."
 	// 2. extract service (`projects`) and API name (`create`)
 
-	if !strings.HasPrefix(path, "/autokitteh.") {
-		return nil // only internal service APIs
+	path, found := strings.CutPrefix(path, "/autokitteh.")
+	if !found {
+		// only internal service APIs
+		return ""
 	}
 
-	slashParts := strings.Split(path, "/")
-	if len(slashParts) < 3 {
-		return errors.New("invalid API path")
+	svc, method, found := strings.Cut(path, "/")
+	if !found {
+		return ""
 	}
-	api := strings.ToLower(slashParts[2])
 
-	var service string
-	dotParts := strings.Split(slashParts[1], ".")
-	if len(dotParts) < 2 {
-		return errors.New("invalid service path")
+	// 0 - package, 1 - version, 2 - service name
+	dotParts := strings.SplitN(svc, ".", 3)
+	if len(dotParts) < 3 {
+		return ""
 	}
-	service = dotParts[1]
 
-	serviceAPI := fmt.Sprintf("%s.%s", service, api) // e.g. "projects.create"
-	m, err := acquireServiceAPIMetrics(serviceAPI, t)
+	service := strings.ToLower(strings.TrimSuffix(dotParts[2], "Service"))
+
+	pkg, ver := dotParts[0], dotParts[1]
+
+	if pkg != service {
+		service = pkg + "_" + service
+	}
+
+	return fmt.Sprintf("%s.%s.%s", service, ver, strings.ToLower(method)) // e.g. "projects.v1.create"
+}
+
+func updateMetric(ctx context.Context, t *telemetry.Telemetry, path string, statusCode int, duration time.Duration) {
+	name := getMetricNameFromPath(path)
+	if name == "" {
+		return
+	}
+
+	m, err := acquireServiceAPIMetrics(name, t)
 	if err != nil {
-		return err
+		return
 	}
 
-	m.counter.Add(ctx, 1, telemetry.WithLabels("status", strconv.Itoa(statusCode)))
-	m.duration.Record(ctx, duration.Milliseconds(), telemetry.WithLabels("status", strconv.Itoa(statusCode)))
-	return nil
+	attrs := metric.WithAttributes(attribute.Int("status", statusCode))
+	m.counter.Add(ctx, 1, attrs)
+	m.duration.Record(ctx, duration.Milliseconds(), attrs)
 }
