@@ -30,7 +30,8 @@ var (
 		New: New,
 	}
 	config RemoteRuntimeConfig
-	runner pb.RunnerManagerClient
+	// runner pb.RunnerManagerClient
+	remoteManagers []pb.RunnerManagerClient
 )
 
 type svc struct {
@@ -41,6 +42,9 @@ type svc struct {
 	firstCall bool
 	mainPath  string
 	exports   map[string]sdktypes.Value
+
+	// Runner Manager
+	runnerManager pb.RunnerManagerClient
 
 	// Runner
 	runnerID           string
@@ -56,7 +60,7 @@ func (*svc) Get() sdktypes.Runtime {
 }
 
 func (s *svc) stopRunner(ctx context.Context) {
-	_, err := runner.Stop(ctx, &pb.StopRequest{
+	_, err := s.runnerManager.Stop(ctx, &pb.StopRequest{
 		RunnerId: s.runnerID,
 	})
 	if err != nil {
@@ -206,14 +210,15 @@ func (s *svc) Run(
 	envMap := kittehs.TransformMap(env, func(key string, value sdktypes.Value) (string, string) {
 		return key, value.GetString().Value()
 	})
-	// py.log.Info("env", zap.Any("env", envMap))
 
 	tarData := compiled["archive"]
 	if tarData == nil {
 		return nil, fmt.Errorf("%q note found in compiled data", "archive")
 	}
 
-	resp, err := runner.Start(ctx, &pb.StartRunnerRequest{BuildArtifact: tarData, Vars: envMap, WorkerAddress: "host.docker.internal:9980"})
+	// TODO: choose a random runnerManager somehow
+	runnerManager := remoteManagers[0]
+	resp, err := runnerManager.Start(ctx, &pb.StartRunnerRequest{BuildArtifact: tarData, Vars: envMap, WorkerAddress: "host.docker.internal:9980"})
 	if err != nil {
 		return nil, fmt.Errorf("staring runner %w", err)
 	}
@@ -222,11 +227,12 @@ func (s *svc) Run(
 		return nil, fmt.Errorf("staring runner %s", resp.Error)
 	}
 
+	newSvc.runnerManager = runnerManager
 	newSvc.runnerID = resp.RunnerId
 	newSvc.runnerAddress = resp.RunnerAddress
 
 	creds := insecure.NewCredentials()
-	conn, err := grpc.NewClient("0.0.0.0:7777", grpc.WithTransportCredentials(creds))
+	conn, err := grpc.NewClient(resp.RunnerAddress, grpc.WithTransportCredentials(creds))
 
 	// conn, err := grpc.NewClient(s.runnerAddress, grpc.WithTransportCredentials(creds))
 	if err != nil {
@@ -236,8 +242,9 @@ func (s *svc) Run(
 	newSvc.runnerClient = pb.NewRunnerClient(conn)
 	var runnerHealthResponse *pb.HealthResponse
 	hCtx := metadata.AppendToOutgoingContext(ctx, "runner", resp.RunnerAddress)
-	for {
+	const maxConnectionRetries = 5
 
+	for range maxConnectionRetries {
 		runnerHealthResponse, err = newSvc.runnerClient.Health(hCtx, &pb.HealthRequest{})
 		if err == nil && runnerHealthResponse.Error == "" {
 			break
@@ -273,7 +280,6 @@ func (s *svc) Run(
 	// exports.Exports
 
 	return newSvc, nil
-
 }
 
 func Configure(cfg RemoteRuntimeConfig) error {
@@ -281,21 +287,24 @@ func Configure(cfg RemoteRuntimeConfig) error {
 		return err
 	}
 
-	addr := cfg.ManagerAddress[0]
+	for _, addr := range cfg.ManagerAddress {
 
-	creds := insecure.NewCredentials()
-	conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(creds))
-	if err != nil {
-		return err
-	}
+		creds := insecure.NewCredentials()
+		conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(creds))
+		if err != nil {
+			return err
+		}
 
-	runner = pb.NewRunnerManagerClient(conn)
-	resp, err := runner.Health(context.Background(), &pb.HealthRequest{})
-	if err != nil {
-		return fmt.Errorf("could not verify runner manager health")
-	}
-	if resp.Error != "" {
-		return fmt.Errorf("runner manager health: %w", err)
+		runner := pb.NewRunnerManagerClient(conn)
+		resp, err := runner.Health(context.Background(), &pb.HealthRequest{})
+		if err != nil {
+			return fmt.Errorf("could not verify runner manager health")
+		}
+		if resp.Error != "" {
+			return fmt.Errorf("runner manager health: %w", err)
+		}
+
+		remoteManagers = append(remoteManagers, runner)
 	}
 
 	config = cfg
@@ -315,7 +324,7 @@ func New() (sdkservices.Runtime, error) {
 		return nil, fmt.Errorf("remotert: invalid config %w", err)
 	}
 
-	if runner == nil {
+	if len(remoteManagers) == 0 {
 		return nil, fmt.Errorf("runner not started")
 	}
 
