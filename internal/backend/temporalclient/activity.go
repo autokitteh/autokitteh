@@ -12,6 +12,8 @@ var defaultActivityConfig = ActivityConfig{
 	StartToCloseTimeout: 10 * time.Minute,
 }
 
+// Common way to define configuration that can be used in multiple modules,
+// saving the need to repeat the same configuration in each module.
 type ActivityConfig struct {
 	ScheduleToCloseTimeout time.Duration `koanf:"schedule_to_close_timeout"`
 	StartToCloseTimeout    time.Duration `koanf:"start_to_close_timeout"`
@@ -22,10 +24,10 @@ type ActivityConfig struct {
 // other overrides self.
 func (ac ActivityConfig) With(other ActivityConfig) ActivityConfig {
 	return ActivityConfig{
-		StartToCloseTimeout:    kittehs.Choose(other.StartToCloseTimeout, ac.StartToCloseTimeout),
-		ScheduleToCloseTimeout: kittehs.Choose(other.ScheduleToCloseTimeout, ac.ScheduleToCloseTimeout),
-		HeartbeatTimeout:       kittehs.Choose(other.HeartbeatTimeout, ac.HeartbeatTimeout, defaultActivityConfig.HeartbeatTimeout),
-		ScheduleToStartTimeout: kittehs.Choose(other.ScheduleToStartTimeout, ac.ScheduleToStartTimeout),
+		StartToCloseTimeout:    kittehs.FirstNonZero(other.StartToCloseTimeout, ac.StartToCloseTimeout),
+		ScheduleToCloseTimeout: kittehs.FirstNonZero(other.ScheduleToCloseTimeout, ac.ScheduleToCloseTimeout),
+		HeartbeatTimeout:       kittehs.FirstNonZero(other.HeartbeatTimeout, ac.HeartbeatTimeout, defaultActivityConfig.HeartbeatTimeout),
+		ScheduleToStartTimeout: kittehs.FirstNonZero(other.ScheduleToStartTimeout, ac.ScheduleToStartTimeout),
 	}
 }
 
