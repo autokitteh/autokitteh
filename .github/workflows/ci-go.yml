@@ -50,13 +50,11 @@ jobs:
       - name: Detect unformatted Go
         run: make gofmt-check
       - name: Run Go linters
-        uses: golangci/golangci-lint-action@v3
+        uses: golangci/golangci-lint-action@v6
         with:
           # Keep the same version in "/Makefile"!
           # See: https://github.com/golangci/golangci-lint
           version: v1.60.3
-          # https://github.com/golangci/golangci-lint-action/issues/244
-          skip-cache: true
           # https://github.com/golangci/golangci-lint-action/issues/308
           args: --timeout=5m
 
