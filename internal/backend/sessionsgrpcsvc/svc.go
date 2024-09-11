@@ -2,10 +2,8 @@ package sessionsgrpcsvc
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"strings"
 
 	"connectrpc.com/connect"
 
@@ -42,20 +40,11 @@ func (s *server) Start(ctx context.Context, req *connect.Request[sessionsv1.Star
 	}
 
 	for k, v := range msg.JsonInputs {
-		d := json.NewDecoder(strings.NewReader(v))
-		d.UseNumber()
-
-		var x any
-		if err := d.Decode(&x); err != nil {
-			err = sdkerrors.NewInvalidArgumentError(`json_inputs["%s"]: %w`, k, err)
-			return nil, sdkerrors.AsConnectError(err)
-		}
-
 		if msg.Session.Inputs == nil {
 			msg.Session.Inputs = make(map[string]*sdktypes.ValuePB)
 		}
 
-		v, err := sdktypes.WrapValue(x)
+		v, err := sdktypes.WrapValue(v)
 		if err != nil {
 			err = sdkerrors.NewInvalidArgumentError(`json_inputs["%s"]: %w`, k, err)
 			return nil, sdkerrors.AsConnectError(fmt.Errorf(`json_inputs["%s"]: %w`, k, err))
