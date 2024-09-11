@@ -27,6 +27,9 @@ type Config struct {
 	AutoMigrate bool `koanf:"auto_migrate"`
 
 	Ownership string `koanf:"ownership"`
+
+	MaxOpenConns int `koanf:"max_open_conns"`
+	MaxIdleConns int `koanf:"max_idle_conns"`
 }
 
 func (c Config) Explicit() (*Config, error) {
