@@ -76,6 +76,17 @@ func (db *gormdb) Connect(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("opendb: %w", err)
 	}
+	sqlDB, err := client.DB()
+	if err != nil {
+		return err
+	}
+
+	if db.cfg.MaxOpenConns > 0 {
+		sqlDB.SetMaxOpenConns(db.cfg.MaxOpenConns)
+	}
+	if db.cfg.MaxIdleConns > 0 {
+		sqlDB.SetMaxIdleConns(db.cfg.MaxIdleConns)
+	}
 
 	db.db = client
 	return nil

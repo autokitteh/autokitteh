@@ -23,11 +23,6 @@ var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.Integrati
 	DisplayName:   "Atlassian Confluence",
 	Description:   "Atlassian Confluence is a corporate wiki developed by Atlassian.",
 	LogoUrl:       "/static/images/confluence.svg",
-	UserLinks: map[string]string{
-		"1 REST API":                    "https://developer.atlassian.com/cloud/confluence/rest/v2/intro/",
-		"2 Atlassian Python client API": "https://atlassian-python-api.readthedocs.io/",
-		"3 Atlassian Python examples":   "https://github.com/atlassian-api/atlassian-python-api/tree/master/examples/confluence",
-	},
 	ConnectionUrl: "/confluence/connect",
 	ConnectionCapabilities: &sdktypes.ConnectionCapabilitiesPB{
 		RequiresConnectionInit: true,

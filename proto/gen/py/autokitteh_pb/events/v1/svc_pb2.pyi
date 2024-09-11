@@ -54,27 +54,3 @@ class ListResponse(_message.Message):
     EVENTS_FIELD_NUMBER: _ClassVar[int]
     events: _containers.RepeatedCompositeFieldContainer[_event_pb2.Event]
     def __init__(self, events: _Optional[_Iterable[_Union[_event_pb2.Event, _Mapping]]] = ...) -> None: ...
-
-class ListEventRecordsRequest(_message.Message):
-    __slots__ = ["event_id", "state"]
-    EVENT_ID_FIELD_NUMBER: _ClassVar[int]
-    STATE_FIELD_NUMBER: _ClassVar[int]
-    event_id: str
-    state: _event_pb2.EventState
-    def __init__(self, event_id: _Optional[str] = ..., state: _Optional[_Union[_event_pb2.EventState, str]] = ...) -> None: ...
-
-class ListEventRecordsResponse(_message.Message):
-    __slots__ = ["records"]
-    RECORDS_FIELD_NUMBER: _ClassVar[int]
-    records: _containers.RepeatedCompositeFieldContainer[_event_pb2.EventRecord]
-    def __init__(self, records: _Optional[_Iterable[_Union[_event_pb2.EventRecord, _Mapping]]] = ...) -> None: ...
-
-class AddEventRecordRequest(_message.Message):
-    __slots__ = ["record"]
-    RECORD_FIELD_NUMBER: _ClassVar[int]
-    record: _event_pb2.EventRecord
-    def __init__(self, record: _Optional[_Union[_event_pb2.EventRecord, _Mapping]] = ...) -> None: ...
-
-class AddEventRecordResponse(_message.Message):
-    __slots__ = []
-    def __init__(self) -> None: ...
