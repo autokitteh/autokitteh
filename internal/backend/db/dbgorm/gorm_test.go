@@ -102,7 +102,6 @@ type dbFixture struct {
 	db            *gorm.DB
 	gormdb        *gormdb
 	ctx           context.Context
-	eventID       sdktypes.UUID
 	eventSequence int
 }
 
