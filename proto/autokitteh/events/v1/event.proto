@@ -5,21 +5,6 @@ package autokitteh.events.v1;
 import "autokitteh/values/v1/values.proto";
 import "google/protobuf/timestamp.proto";
 
-enum EventState {
-  EVENT_STATE_UNSPECIFIED = 0;
-  EVENT_STATE_SAVED = 1;
-  EVENT_STATE_PROCESSING = 2;
-  EVENT_STATE_COMPLETED = 3;
-  EVENT_STATE_FAILED = 4;
-}
-
-message EventRecord {
-  uint32 seq = 1;
-  string event_id = 2;
-  EventState state = 3;
-  google.protobuf.Timestamp created_at = 4;
-}
-
 message Event {
   string event_id = 1;
 

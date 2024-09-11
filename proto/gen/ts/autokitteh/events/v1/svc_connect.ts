@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { AddEventRecordRequest, AddEventRecordResponse, GetRequest, GetResponse, ListEventRecordsRequest, ListEventRecordsResponse, ListRequest, ListResponse, SaveRequest, SaveResponse } from "./svc_pb.js";
+import { GetRequest, GetResponse, ListRequest, ListResponse, SaveRequest, SaveResponse } from "./svc_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -39,24 +39,6 @@ export const EventsService = {
       name: "List",
       I: ListRequest,
       O: ListResponse,
-      kind: MethodKind.Unary,
-    },
-    /**
-     * @generated from rpc autokitteh.events.v1.EventsService.ListEventRecords
-     */
-    listEventRecords: {
-      name: "ListEventRecords",
-      I: ListEventRecordsRequest,
-      O: ListEventRecordsResponse,
-      kind: MethodKind.Unary,
-    },
-    /**
-     * @generated from rpc autokitteh.events.v1.EventsService.AddEventRecord
-     */
-    addEventRecord: {
-      name: "AddEventRecord",
-      I: AddEventRecordRequest,
-      O: AddEventRecordResponse,
       kind: MethodKind.Unary,
     },
   }

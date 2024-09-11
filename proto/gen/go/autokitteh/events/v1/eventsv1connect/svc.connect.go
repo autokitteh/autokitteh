@@ -39,12 +39,6 @@ const (
 	EventsServiceGetProcedure = "/autokitteh.events.v1.EventsService/Get"
 	// EventsServiceListProcedure is the fully-qualified name of the EventsService's List RPC.
 	EventsServiceListProcedure = "/autokitteh.events.v1.EventsService/List"
-	// EventsServiceListEventRecordsProcedure is the fully-qualified name of the EventsService's
-	// ListEventRecords RPC.
-	EventsServiceListEventRecordsProcedure = "/autokitteh.events.v1.EventsService/ListEventRecords"
-	// EventsServiceAddEventRecordProcedure is the fully-qualified name of the EventsService's
-	// AddEventRecord RPC.
-	EventsServiceAddEventRecordProcedure = "/autokitteh.events.v1.EventsService/AddEventRecord"
 )
 
 // EventsServiceClient is a client for the autokitteh.events.v1.EventsService service.
@@ -53,8 +47,6 @@ type EventsServiceClient interface {
 	Get(context.Context, *connect.Request[v1.GetRequest]) (*connect.Response[v1.GetResponse], error)
 	// List returns events without their data.
 	List(context.Context, *connect.Request[v1.ListRequest]) (*connect.Response[v1.ListResponse], error)
-	ListEventRecords(context.Context, *connect.Request[v1.ListEventRecordsRequest]) (*connect.Response[v1.ListEventRecordsResponse], error)
-	AddEventRecord(context.Context, *connect.Request[v1.AddEventRecordRequest]) (*connect.Response[v1.AddEventRecordResponse], error)
 }
 
 // NewEventsServiceClient constructs a client for the autokitteh.events.v1.EventsService service. By
@@ -82,26 +74,14 @@ func NewEventsServiceClient(httpClient connect.HTTPClient, baseURL string, opts 
 			baseURL+EventsServiceListProcedure,
 			opts...,
 		),
-		listEventRecords: connect.NewClient[v1.ListEventRecordsRequest, v1.ListEventRecordsResponse](
-			httpClient,
-			baseURL+EventsServiceListEventRecordsProcedure,
-			opts...,
-		),
-		addEventRecord: connect.NewClient[v1.AddEventRecordRequest, v1.AddEventRecordResponse](
-			httpClient,
-			baseURL+EventsServiceAddEventRecordProcedure,
-			opts...,
-		),
 	}
 }
 
 // eventsServiceClient implements EventsServiceClient.
 type eventsServiceClient struct {
-	save             *connect.Client[v1.SaveRequest, v1.SaveResponse]
-	get              *connect.Client[v1.GetRequest, v1.GetResponse]
-	list             *connect.Client[v1.ListRequest, v1.ListResponse]
-	listEventRecords *connect.Client[v1.ListEventRecordsRequest, v1.ListEventRecordsResponse]
-	addEventRecord   *connect.Client[v1.AddEventRecordRequest, v1.AddEventRecordResponse]
+	save *connect.Client[v1.SaveRequest, v1.SaveResponse]
+	get  *connect.Client[v1.GetRequest, v1.GetResponse]
+	list *connect.Client[v1.ListRequest, v1.ListResponse]
 }
 
 // Save calls autokitteh.events.v1.EventsService.Save.
@@ -119,24 +99,12 @@ func (c *eventsServiceClient) List(ctx context.Context, req *connect.Request[v1.
 	return c.list.CallUnary(ctx, req)
 }
 
-// ListEventRecords calls autokitteh.events.v1.EventsService.ListEventRecords.
-func (c *eventsServiceClient) ListEventRecords(ctx context.Context, req *connect.Request[v1.ListEventRecordsRequest]) (*connect.Response[v1.ListEventRecordsResponse], error) {
-	return c.listEventRecords.CallUnary(ctx, req)
-}
-
-// AddEventRecord calls autokitteh.events.v1.EventsService.AddEventRecord.
-func (c *eventsServiceClient) AddEventRecord(ctx context.Context, req *connect.Request[v1.AddEventRecordRequest]) (*connect.Response[v1.AddEventRecordResponse], error) {
-	return c.addEventRecord.CallUnary(ctx, req)
-}
-
 // EventsServiceHandler is an implementation of the autokitteh.events.v1.EventsService service.
 type EventsServiceHandler interface {
 	Save(context.Context, *connect.Request[v1.SaveRequest]) (*connect.Response[v1.SaveResponse], error)
 	Get(context.Context, *connect.Request[v1.GetRequest]) (*connect.Response[v1.GetResponse], error)
 	// List returns events without their data.
 	List(context.Context, *connect.Request[v1.ListRequest]) (*connect.Response[v1.ListResponse], error)
-	ListEventRecords(context.Context, *connect.Request[v1.ListEventRecordsRequest]) (*connect.Response[v1.ListEventRecordsResponse], error)
-	AddEventRecord(context.Context, *connect.Request[v1.AddEventRecordRequest]) (*connect.Response[v1.AddEventRecordResponse], error)
 }
 
 // NewEventsServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -160,16 +128,6 @@ func NewEventsServiceHandler(svc EventsServiceHandler, opts ...connect.HandlerOp
 		svc.List,
 		opts...,
 	)
-	eventsServiceListEventRecordsHandler := connect.NewUnaryHandler(
-		EventsServiceListEventRecordsProcedure,
-		svc.ListEventRecords,
-		opts...,
-	)
-	eventsServiceAddEventRecordHandler := connect.NewUnaryHandler(
-		EventsServiceAddEventRecordProcedure,
-		svc.AddEventRecord,
-		opts...,
-	)
 	return "/autokitteh.events.v1.EventsService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case EventsServiceSaveProcedure:
@@ -178,10 +136,6 @@ func NewEventsServiceHandler(svc EventsServiceHandler, opts ...connect.HandlerOp
 			eventsServiceGetHandler.ServeHTTP(w, r)
 		case EventsServiceListProcedure:
 			eventsServiceListHandler.ServeHTTP(w, r)
-		case EventsServiceListEventRecordsProcedure:
-			eventsServiceListEventRecordsHandler.ServeHTTP(w, r)
-		case EventsServiceAddEventRecordProcedure:
-			eventsServiceAddEventRecordHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -201,12 +155,4 @@ func (UnimplementedEventsServiceHandler) Get(context.Context, *connect.Request[v
 
 func (UnimplementedEventsServiceHandler) List(context.Context, *connect.Request[v1.ListRequest]) (*connect.Response[v1.ListResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("autokitteh.events.v1.EventsService.List is not implemented"))
-}
-
-func (UnimplementedEventsServiceHandler) ListEventRecords(context.Context, *connect.Request[v1.ListEventRecordsRequest]) (*connect.Response[v1.ListEventRecordsResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("autokitteh.events.v1.EventsService.ListEventRecords is not implemented"))
-}
-
-func (UnimplementedEventsServiceHandler) AddEventRecord(context.Context, *connect.Request[v1.AddEventRecordRequest]) (*connect.Response[v1.AddEventRecordResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("autokitteh.events.v1.EventsService.AddEventRecord is not implemented"))
 }

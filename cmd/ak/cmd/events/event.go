@@ -6,7 +6,6 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/events/records"
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
 	valuesv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/values/v1"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -39,8 +38,6 @@ func init() {
 	eventCmd.AddCommand(listCmd)
 	eventCmd.AddCommand(redispatchCmd)
 	eventCmd.AddCommand(saveCmd)
-
-	records.AddSubcommands(eventCmd)
 }
 
 func events() sdkservices.Events {
