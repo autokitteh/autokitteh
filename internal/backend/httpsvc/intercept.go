@@ -75,7 +75,7 @@ func intercept(z *zap.Logger, cfg *LoggerConfig, extractors []RequestLogExtracto
 		next.ServeHTTP(rwi, r)
 
 		duration := time.Since(startTime)
-		_ = updateMetric(r.Context(), telemetry, r.URL.Path, rwi.StatusCode, duration) // ignore metric init error
+		updateMetric(r.Context(), telemetry, r.URL.Path, rwi.StatusCode, duration)
 
 		w.Header().Add("X-AutoKitteh-Duration", duration.String())
 
@@ -95,7 +95,7 @@ func intercept(z *zap.Logger, cfg *LoggerConfig, extractors []RequestLogExtracto
 		}
 
 		l = l.With(zap.Int("statusCode", rwi.StatusCode), zap.Duration("duration", duration))
-		msg := fmt.Sprintf("Response to incoming HTTP request: %s %s", r.Method, r.URL.Path)
+		msg := fmt.Sprintf("HTTP Response: %s %s", r.Method, r.URL.Path)
 		if ce := l.Check(level, msg); ce != nil {
 			var fields []zap.Field
 			for _, x := range extractors {
