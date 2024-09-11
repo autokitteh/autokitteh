@@ -85,6 +85,9 @@ message GetLogRequest {
   // false: all values returned are properly boxed.
   bool json_values = 2;
 
+  // If set, prints will not be returned.
+  bool ignore_prints = 3;
+
   bool ascending = 11;
 
   int32 page_size = 20;

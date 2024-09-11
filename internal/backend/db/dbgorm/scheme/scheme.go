@@ -297,6 +297,7 @@ type SessionLogRecord struct {
 	SessionID sdktypes.UUID `gorm:"primaryKey:SessionID;type:uuid;not null"`
 	Seq       uint64        `gorm:"primaryKey;not null"`
 	Data      datatypes.JSON
+	Type      string `gorm:"index"`
 
 	// enforce foreign keys
 	Session *Session

@@ -23,7 +23,8 @@ type ListSessionResult struct {
 }
 
 type ListSessionLogRecordsFilter struct {
-	SessionID sdktypes.SessionID
+	SessionID    sdktypes.SessionID
+	IgnorePrints bool
 	sdktypes.PaginationRequest
 }
 

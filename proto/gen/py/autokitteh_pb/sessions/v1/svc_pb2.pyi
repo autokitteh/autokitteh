@@ -89,20 +89,22 @@ class GetResponse(_message.Message):
     def __init__(self, session: _Optional[_Union[_session_pb2.Session, _Mapping]] = ...) -> None: ...
 
 class GetLogRequest(_message.Message):
-    __slots__ = ["session_id", "json_values", "ascending", "page_size", "skip", "page_token"]
+    __slots__ = ["session_id", "json_values", "ignore_prints", "ascending", "page_size", "skip", "page_token"]
     SESSION_ID_FIELD_NUMBER: _ClassVar[int]
     JSON_VALUES_FIELD_NUMBER: _ClassVar[int]
+    IGNORE_PRINTS_FIELD_NUMBER: _ClassVar[int]
     ASCENDING_FIELD_NUMBER: _ClassVar[int]
     PAGE_SIZE_FIELD_NUMBER: _ClassVar[int]
     SKIP_FIELD_NUMBER: _ClassVar[int]
     PAGE_TOKEN_FIELD_NUMBER: _ClassVar[int]
     session_id: str
     json_values: bool
+    ignore_prints: bool
     ascending: bool
     page_size: int
     skip: int
     page_token: str
-    def __init__(self, session_id: _Optional[str] = ..., json_values: bool = ..., ascending: bool = ..., page_size: _Optional[int] = ..., skip: _Optional[int] = ..., page_token: _Optional[str] = ...) -> None: ...
+    def __init__(self, session_id: _Optional[str] = ..., json_values: bool = ..., ignore_prints: bool = ..., ascending: bool = ..., page_size: _Optional[int] = ..., skip: _Optional[int] = ..., page_token: _Optional[str] = ...) -> None: ...
 
 class GetLogResponse(_message.Message):
     __slots__ = ["log", "count", "next_page_token"]

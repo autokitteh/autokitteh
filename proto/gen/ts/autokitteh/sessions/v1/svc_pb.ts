@@ -413,6 +413,13 @@ export class GetLogRequest extends Message<GetLogRequest> {
   jsonValues = false;
 
   /**
+   * If set, prints will not be returned.
+   *
+   * @generated from field: bool ignore_prints = 3;
+   */
+  ignorePrints = false;
+
+  /**
    * @generated from field: bool ascending = 11;
    */
   ascending = false;
@@ -442,6 +449,7 @@ export class GetLogRequest extends Message<GetLogRequest> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "session_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "json_values", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 3, name: "ignore_prints", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 11, name: "ascending", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 20, name: "page_size", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 21, name: "skip", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
