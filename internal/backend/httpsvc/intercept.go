@@ -95,7 +95,7 @@ func intercept(z *zap.Logger, cfg *LoggerConfig, extractors []RequestLogExtracto
 		}
 
 		l = l.With(zap.Int("statusCode", rwi.StatusCode), zap.Duration("duration", duration))
-		msg := fmt.Sprintf("HTTP: %s %s", r.Method, r.URL.Path)
+		msg := fmt.Sprintf("HTTP Response: %s %s", r.Method, r.URL.Path)
 		if ce := l.Check(level, msg); ce != nil {
 			var fields []zap.Field
 			for _, x := range extractors {
