@@ -45,6 +45,8 @@ func New(cfg *Config) (*zap.Logger, error) {
 			return nil, err
 		}
 		cfg.Zap.Level.SetLevel(level)
+	} else {
+		cfg.Zap.Level.SetLevel(zapcore.InfoLevel)
 	}
 
 	// Optional override for the default encoding:
