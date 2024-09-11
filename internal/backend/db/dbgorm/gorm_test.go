@@ -467,13 +467,6 @@ func (f *dbFixture) newEvent(args ...any) scheme.Event {
 	return e
 }
 
-func (f *dbFixture) newEventRecord() scheme.EventRecord {
-	return scheme.EventRecord{
-		EventID:   testDummyID,
-		CreatedAt: now,
-	}
-}
-
 func (f *dbFixture) newSignal(args ...any) scheme.Signal {
 	s := scheme.Signal{
 		SignalID:  testSignalID,

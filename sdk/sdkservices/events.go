@@ -33,6 +33,4 @@ type Events interface {
 	Get(ctx context.Context, eventID sdktypes.EventID) (sdktypes.Event, error)
 	// List returns events without their data.
 	List(ctx context.Context, filter ListEventsFilter) ([]sdktypes.Event, error)
-	AddEventRecord(context.Context, sdktypes.EventRecord) error
-	ListEventRecords(context.Context, ListEventRecordsFilter) ([]sdktypes.EventRecord, error)
 }

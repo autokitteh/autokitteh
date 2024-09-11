@@ -238,14 +238,10 @@ func (d *Dispatcher) eventsWorkflow(wctx workflow.Context, input eventsWorkflowI
 		return nil, sdkerrors.ErrNotFound
 	}
 
-	// Set event to processing
-	d.createEventRecord(ctx, input.EventID, sdktypes.EventStateProcessing)
-
 	// Fetch event related data
 	sds, err := d.getEventSessionData(ctx, event, input.Options)
 	if err != nil {
 		logger.Error("Failed processing event", "EventID", input.EventID, "error", err)
-		d.createEventRecord(ctx, input.EventID, sdktypes.EventStateFailed)
 		return nil, nil
 	}
 
@@ -264,16 +260,8 @@ func (d *Dispatcher) eventsWorkflow(wctx workflow.Context, input eventsWorkflowI
 	if err != nil {
 		return nil, err
 	}
-	// Set event to Completed
-	d.createEventRecord(ctx, input.EventID, sdktypes.EventStateCompleted)
-	return nil, nil
-}
 
-func (d *Dispatcher) createEventRecord(ctx context.Context, eventID sdktypes.EventID, state sdktypes.EventState) {
-	record := sdktypes.NewEventRecord(eventID, state)
-	if err := d.Events.AddEventRecord(ctx, record); err != nil {
-		d.L.Panic("Failed setting event state", zap.String("eventID", eventID.String()), zap.String("state", state.String()), zap.Error(err))
-	}
+	return nil, nil
 }
 
 func (d *Dispatcher) startSessions(wctx workflow.Context, event sdktypes.Event, sessions []sdktypes.Session) error {

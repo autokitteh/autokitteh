@@ -37,13 +37,3 @@ func (e *events) Save(ctx context.Context, event sdktypes.Event) (sdktypes.Event
 
 	return event.ID(), nil
 }
-
-// Save implements sdkservices.EventRecords.
-func (e *events) AddEventRecord(ctx context.Context, eventRecord sdktypes.EventRecord) error {
-	return e.db.AddEventRecord(ctx, eventRecord)
-}
-
-// ListEventRecords implements sdkservices.Events.
-func (e *events) ListEventRecords(ctx context.Context, filter sdkservices.ListEventRecordsFilter) ([]sdktypes.EventRecord, error) {
-	return e.db.ListEventRecords(ctx, filter)
-}

@@ -81,30 +81,3 @@ func (c *client) List(ctx context.Context, filter sdkservices.ListEventsFilter) 
 
 	return kittehs.TransformError(resp.Msg.Events, sdktypes.StrictEventFromProto)
 }
-
-func (c *client) ListEventRecords(ctx context.Context, filter sdkservices.ListEventRecordsFilter) ([]sdktypes.EventRecord, error) {
-	resp, err := c.client.ListEventRecords(ctx, connect.NewRequest(&eventsv1.ListEventRecordsRequest{EventId: filter.EventID.String()}))
-	if err != nil {
-		return nil, rpcerrors.ToSDKError(err)
-	}
-
-	if err := internal.Validate(resp.Msg); err != nil {
-		return nil, err
-	}
-
-	return kittehs.TransformError(resp.Msg.Records, sdktypes.StrictEventRecordFromProto)
-}
-
-// AddEventRecord implements sdkservices.Events.
-func (c *client) AddEventRecord(ctx context.Context, eventRecord sdktypes.EventRecord) error {
-	resp, err := c.client.AddEventRecord(ctx, connect.NewRequest(&eventsv1.AddEventRecordRequest{Record: eventRecord.ToProto()}))
-	if err != nil {
-		return rpcerrors.ToSDKError(err)
-	}
-
-	if err := internal.Validate(resp.Msg); err != nil {
-		return err
-	}
-
-	return nil
-}

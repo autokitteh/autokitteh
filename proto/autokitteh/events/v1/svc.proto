@@ -56,27 +56,6 @@ message ListResponse {
   repeated Event events = 1;
 }
 
-message ListEventRecordsRequest {
-  string event_id = 1 [(buf.validate.field).string.min_len = 1];
-  EventState state = 3 [(buf.validate.field).enum.defined_only = true];
-}
-
-message ListEventRecordsResponse {
-  repeated EventRecord records = 1 [(buf.validate.field).repeated.items.required = true];
-}
-
-message AddEventRecordRequest {
-  option (buf.validate.message).cel = {
-    id: "events.event_record_must_have_event_id"
-    message: "missing event id"
-    expression: "has(this.record) && this.record.event_id != ''"
-  };
-
-  EventRecord record = 1;
-}
-
-message AddEventRecordResponse {}
-
 service EventsService {
   rpc Save(SaveRequest) returns (SaveResponse);
 
@@ -84,8 +63,4 @@ service EventsService {
 
   // List returns events without their data.
   rpc List(ListRequest) returns (ListResponse);
-
-  rpc ListEventRecords(ListEventRecordsRequest) returns (ListEventRecordsResponse);
-
-  rpc AddEventRecord(AddEventRecordRequest) returns (AddEventRecordResponse);
 }
