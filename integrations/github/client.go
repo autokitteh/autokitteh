@@ -24,11 +24,6 @@ var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.Integrati
 	DisplayName:   "GitHub",
 	Description:   "GitHub is a development platform with distributed version control, issue tracking, continuous integration, and more.",
 	LogoUrl:       "/static/images/github.svg",
-	UserLinks: map[string]string{
-		"1 REST API":          "https://docs.github.com/rest",
-		"2 Go client API":     "https://pkg.go.dev/github.com/google/go-github/v57/github",
-		"3 Python client API": "https://pygithub.readthedocs.io/en/stable/",
-	},
 	ConnectionUrl: "/github/connect",
 	ConnectionCapabilities: &sdktypes.ConnectionCapabilitiesPB{
 		RequiresConnectionInit: true,
