@@ -7,6 +7,8 @@ import (
 	"maps"
 	"time"
 
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/worker"
 	"go.temporal.io/sdk/workflow"
@@ -222,12 +224,15 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 
 		prints, err = runWorkflow(wctx, l, ws, data, params.Debug)
 
-		duration = time.Since(startTime)
-		sessionStatus := "succeeded"
-		if err != nil {
-			sessionStatus = "failed"
-		}
-		sessionDurationHistogram.Record(ctx, duration.Milliseconds(), telemetry.WithLabels("status", sessionStatus))
+		sessionDurationHistogram.Record(
+			ctx,
+			time.Since(startTime).Milliseconds(),
+			metric.WithAttributes(
+				attribute.Bool("replay", workflow.IsReplaying(wctx)),
+				attribute.Bool("success", err == nil),
+			),
+		)
+
 		l = l.With(zap.Duration("duration", duration))
 	}
 
