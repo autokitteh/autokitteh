@@ -28,7 +28,7 @@ clean:
 
 .PHONY: py-deps
 py-deps:
-	python3 -m pip install --upgrade poetry
+	python3 -m pip install --upgrade poetry 'grpcio-tools ~= 1.66'
 
 .PHONY: py-dist
 py-dist: py-deps
@@ -39,10 +39,6 @@ py-dist: py-deps
 py-dist-publish-test: py-deps
 	python3 -m poetry config repositories.test-pypi https://test.pypi.org/legacy/
 	python3 -m poetry publish --repository test-pypi
-
-.PHONY: py-grpc-tools
-py-grpc-tools:
-	python -m pip install 'grpcio-tools ~= 1.66'
 
 remote_pb_dir = autokitteh/remote/v1
 remote_pb = $(remote_pb_dir)/remote.proto
@@ -70,5 +66,4 @@ remote-go:
 		$(remote_pb)
 
 .PHONY: remote
-remote: remote-py
-#remote-go
+remote: remote-py remote-go
