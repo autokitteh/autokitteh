@@ -9,7 +9,7 @@ import (
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 
-	"go.autokitteh.dev/autokitteh/internal/backend/db"
+	"go.autokitteh.dev/autokitteh/internal/backend/types"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	commonv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/common/v1"
 	deploymentsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/deployments/v1"
@@ -496,7 +496,7 @@ type Signal struct {
 	Trigger    *Trigger
 }
 
-func ParseSignal(r *Signal) (*db.Signal, error) {
+func ParseSignal(r *Signal) (*types.Signal, error) {
 	var dstID sdktypes.EventDestinationID
 
 	if r.ConnectionID != nil {
@@ -507,7 +507,7 @@ func ParseSignal(r *Signal) (*db.Signal, error) {
 		return nil, sdkerrors.NewInvalidArgumentError("signal must have a connection or trigger")
 	}
 
-	return &db.Signal{
+	return &types.Signal{
 		ID:            r.SignalID,
 		DestinationID: dstID,
 		WorkflowID:    r.WorkflowID,

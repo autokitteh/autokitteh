@@ -12,7 +12,6 @@ import (
 	"go.uber.org/zap"
 
 	akCtx "go.autokitteh.dev/autokitteh/internal/backend/context"
-	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessioncalls"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessioncontext"
@@ -22,6 +21,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionworkflows/modules/store"
 	timemodule "go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionworkflows/modules/time"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
+	"go.autokitteh.dev/autokitteh/internal/backend/types"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkexecutor"
@@ -320,7 +320,7 @@ func (w *sessionWorkflow) createEventSubscription(wctx workflow.Context, filter 
 	// the map is read.
 	w.lastReadEventSeqForSignal[signalID] = minSequence
 
-	signal := db.Signal{
+	signal := types.Signal{
 		ID:            signalID,
 		WorkflowID:    workflowID,
 		DestinationID: did,
@@ -364,7 +364,7 @@ func (w *sessionWorkflow) waitOnFirstSignal(wctx workflow.Context, signals []uui
 func (w *sessionWorkflow) getNextEvent(ctx context.Context, signalID uuid.UUID) (map[string]sdktypes.Value, error) {
 	wctx := sessioncontext.GetWorkflowContext(ctx)
 
-	var signal *db.Signal
+	var signal *types.Signal
 	if err := workflow.ExecuteLocalActivity(wctx, w.ws.svcs.DB.GetSignal, signalID).Get(wctx, &signal); err != nil {
 		w.z.Panic("get signal", zap.Error(err))
 	}

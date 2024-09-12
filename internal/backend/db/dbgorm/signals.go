@@ -5,8 +5,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
+	"go.autokitteh.dev/autokitteh/internal/backend/types"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -15,7 +15,7 @@ func (db *gormdb) saveSignal(ctx context.Context, signal *scheme.Signal) error {
 	return db.db.WithContext(ctx).Create(signal).Error
 }
 
-func (db *gormdb) SaveSignal(ctx context.Context, signal *db.Signal) error {
+func (db *gormdb) SaveSignal(ctx context.Context, signal *types.Signal) error {
 	s := scheme.Signal{
 		DestinationID: signal.DestinationID.UUIDValue(),
 		ConnectionID:  signal.DestinationID.ToConnectionID().UUIDValuePtr(),
@@ -28,7 +28,7 @@ func (db *gormdb) SaveSignal(ctx context.Context, signal *db.Signal) error {
 	return translateError(db.saveSignal(ctx, &s))
 }
 
-func (db *gormdb) ListWaitingSignals(ctx context.Context, dstID sdktypes.EventDestinationID) ([]*db.Signal, error) {
+func (db *gormdb) ListWaitingSignals(ctx context.Context, dstID sdktypes.EventDestinationID) ([]*types.Signal, error) {
 	var rs []*scheme.Signal
 	q := db.db.WithContext(ctx).Where("destination_id = ?", dstID.UUIDValue())
 	if err := q.Find(&rs).Error; err != nil {
@@ -41,7 +41,7 @@ func (db *gormdb) RemoveSignal(ctx context.Context, signalID uuid.UUID) error {
 	return translateError(db.db.WithContext(ctx).Delete(&scheme.Signal{SignalID: signalID}).Error)
 }
 
-func (db *gormdb) GetSignal(ctx context.Context, signalID uuid.UUID) (*db.Signal, error) {
+func (db *gormdb) GetSignal(ctx context.Context, signalID uuid.UUID) (*types.Signal, error) {
 	var signal scheme.Signal
 
 	q := db.db.
