@@ -144,7 +144,6 @@ func (s Svc) event(w http.ResponseWriter, r *http.Request) {
 		Title       string
 		ID          string
 		EventJSON   template.HTML
-		LogJSON     template.HTML
 		DataJSON    template.HTML
 		Deployments any
 	}{

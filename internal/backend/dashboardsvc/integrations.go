@@ -48,13 +48,11 @@ func (s Svc) integration(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sdkI, err := s.Svcs.Integrations().GetByID(r.Context(), iid)
+	intg, err := s.Svcs.Integrations().GetByID(r.Context(), iid)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
-	intg := sdkI.Get()
 
 	if err := webdashboard.Tmpl(r).ExecuteTemplate(w, "integration.html", struct {
 		Title           string
