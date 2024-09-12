@@ -24,10 +24,6 @@ const (
 	ListOrderDescending ListOrder = "DESC"
 )
 
-type ListEventRecordsFilter struct {
-	EventID sdktypes.EventID
-}
-
 type Events interface {
 	Save(ctx context.Context, event sdktypes.Event) (sdktypes.EventID, error)
 	Get(ctx context.Context, eventID sdktypes.EventID) (sdktypes.Event, error)
