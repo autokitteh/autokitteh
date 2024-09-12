@@ -146,7 +146,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		Component(
 			"temporalclient",
 			temporalclient.Configs,
-			fx.Provide(func(cfg *temporalclient.Config, z *zap.Logger) (temporalclient.Client, error) {
+			fx.Provide(func(cfg *temporalclient.Config, z *zap.Logger) (temporalclient.Client, temporalclient.LazyTemporalClient, error) {
 				if opts.TemporalClient != nil {
 					return temporalclient.NewFromClient(&cfg.Monitor, z, opts.TemporalClient)
 				}

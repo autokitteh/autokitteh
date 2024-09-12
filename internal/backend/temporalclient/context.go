@@ -12,6 +12,9 @@ type WorkflowContextAsGoContext struct {
 	done chan struct{}
 }
 
+// Creates a new GO context that gets the Done() signal from the workflow context.
+// Performing long running operations in the returned context will block the workflow execution,
+// which will result in Temporal's deadlock detector kicking in and kickking your butt.
 func NewWorkflowContextAsGOContext(ctx workflow.Context) context.Context {
 	done := make(chan struct{})
 
