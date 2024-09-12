@@ -12,9 +12,9 @@ import (
 
 func (h *handler) handleEvent(event any, eventType string) {
 	l := h.logger.With(zap.String("eventType", eventType))
+
 	// TODO(ENG-1546) - Add support for more event types
 	var authorID string
-
 	switch e := event.(type) {
 	case *discordgo.MessageCreate:
 		authorID = e.Author.ID
