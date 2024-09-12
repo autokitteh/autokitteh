@@ -9,6 +9,7 @@ import (
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/types"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	commonv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/common/v1"
 	deploymentsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/deployments/v1"
@@ -493,6 +494,25 @@ type Signal struct {
 	// enforce foreign key
 	Connection *Connection
 	Trigger    *Trigger
+}
+
+func ParseSignal(r *Signal) (*types.Signal, error) {
+	var dstID sdktypes.EventDestinationID
+
+	if r.ConnectionID != nil {
+		dstID = sdktypes.NewEventDestinationID(sdktypes.NewIDFromUUID[sdktypes.ConnectionID](r.ConnectionID))
+	} else if r.TriggerID != nil {
+		dstID = sdktypes.NewEventDestinationID(sdktypes.NewIDFromUUID[sdktypes.TriggerID](r.TriggerID))
+	} else {
+		return nil, sdkerrors.NewInvalidArgumentError("signal must have a connection or trigger")
+	}
+
+	return &types.Signal{
+		ID:            r.SignalID,
+		DestinationID: dstID,
+		WorkflowID:    r.WorkflowID,
+		Filter:        r.Filter,
+	}, nil
 }
 
 type Ownership struct {

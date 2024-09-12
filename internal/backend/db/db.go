@@ -7,8 +7,8 @@ import (
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 
-	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/internal/backend/health/healthreporter"
+	"go.autokitteh.dev/autokitteh/internal/backend/types"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -142,10 +142,10 @@ type DB interface {
 
 	// -----------------------------------------------------------------------
 	// TODO(ENG-917): Do not expose scheme outside of DB.
-	SaveSignal(ctx context.Context, signalID uuid.UUID, workflowID string, dstID sdktypes.EventDestinationID, filter string) error
-	GetSignal(ctx context.Context, signalID uuid.UUID) (scheme.Signal, error)
+	SaveSignal(ctx context.Context, signal *types.Signal) error
+	GetSignal(ctx context.Context, signalID uuid.UUID) (*types.Signal, error)
 	RemoveSignal(ctx context.Context, signalID uuid.UUID) error
-	ListWaitingSignals(ctx context.Context, dstID sdktypes.EventDestinationID) ([]scheme.Signal, error)
+	ListWaitingSignals(ctx context.Context, dstID sdktypes.EventDestinationID) ([]*types.Signal, error)
 
 	// -----------------------------------------------------------------------
 	SetSecret(ctx context.Context, key string, value string) error
