@@ -10,6 +10,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/integrations/google/calendar"
 	"go.autokitteh.dev/autokitteh/integrations/google/forms"
 	"go.autokitteh.dev/autokitteh/integrations/google/gmail"
 	"go.autokitteh.dev/autokitteh/integrations/google/internal/vars"
@@ -44,6 +45,16 @@ func (h handler) handleCreds(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Special case: save Google Calendar ID.
+	calID := r.PostFormValue("cal_id")
+	if calID != "" {
+		if err := h.saveCalendarID(r.Context(), c, calID); err != nil {
+			l.Error("Google Calendar ID saving error", zap.Error(err))
+			c.AbortServerError("calendar ID saving error")
+			return
+		}
+	}
+
 	// Special case: validate & save Google Forms ID.
 	formID := r.PostFormValue("form_id")
 	if formID != "" {
@@ -70,7 +81,11 @@ func (h handler) handleCreds(w http.ResponseWriter, r *http.Request) {
 	// GCP service-account JSON-key connection? Save the JSON key.
 	case "", "json":
 		ctx := extrazap.AttachLoggerToContext(l, r.Context())
-		vs := sdktypes.EncodeVars(&vars.Vars{JSON: r.PostFormValue("json"), FormID: formID})
+		vs := sdktypes.EncodeVars(&vars.Vars{
+			JSON:       r.PostFormValue("json"),
+			CalendarID: calID,
+			FormID:     formID,
+		})
 		h.finalize(ctx, c, vs.Set(vars.AuthType, "jsonKey", false))
 
 	// User OAuth connect? Redirect to AutoKitteh's OAuth starting point.
@@ -82,6 +97,20 @@ func (h handler) handleCreds(w http.ResponseWriter, r *http.Request) {
 		l.Error("Unexpected auth type", zap.String("auth_type", r.FormValue("auth_type")))
 		c.AbortServerError(fmt.Sprintf("unexpected auth type %q", r.FormValue("auth_type")))
 	}
+}
+
+func (h handler) saveCalendarID(ctx context.Context, c sdkintegrations.ConnectionInit, calID string) error {
+	// Sanity check: the connection ID is valid.
+	cid, err := sdktypes.StrictParseConnectionID(c.ConnectionID)
+	if err != nil {
+		return fmt.Errorf("connection ID parsing error: %w", err)
+	}
+
+	v := sdktypes.NewVar(vars.CalendarID).SetValue(calID).WithScopeID(sdktypes.NewVarScopeID(cid))
+	if err := h.vars.Set(ctx, v); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (h handler) saveFormID(ctx context.Context, c sdkintegrations.ConnectionInit, formID string) error {
@@ -111,8 +140,8 @@ func (h handler) finalize(ctx context.Context, c sdkintegrations.ConnectionInit,
 		return
 	}
 
-	// Unique step for Google integrations (specifically for Gmail and Forms):
-	// save the auth data before creating/updating event watches.
+	// Unique step for Google integrations (specifically Calendar, Forms, and
+	// Gmail): save the auth data before creating/updating event watches.
 	vsl := kittehs.TransformMapToList(vs.ToMap(), func(_ sdktypes.Symbol, v sdktypes.Var) sdktypes.Var {
 		return v.WithScopeID(sdktypes.NewVarScopeID(cid))
 	})
@@ -120,6 +149,12 @@ func (h handler) finalize(ctx context.Context, c sdkintegrations.ConnectionInit,
 	if err := h.vars.Set(ctx, vsl...); err != nil {
 		l.Error("Connection data saving error", zap.Error(err))
 		c.AbortServerError("connection data saving error")
+		return
+	}
+
+	if err := calendar.UpdateWatches(ctx, h.vars, cid); err != nil {
+		l.Error("Google Calendar watches creation error", zap.Error(err))
+		c.AbortServerError("calendar watches creation error")
 		return
 	}
 

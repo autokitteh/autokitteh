@@ -10,6 +10,7 @@ import (
 	googleoauth2 "google.golang.org/api/oauth2/v2"
 	"google.golang.org/api/option"
 
+	"go.autokitteh.dev/autokitteh/integrations/google/calendar"
 	"go.autokitteh.dev/autokitteh/integrations/google/forms"
 	"go.autokitteh.dev/autokitteh/integrations/google/gmail"
 	"go.autokitteh.dev/autokitteh/integrations/google/internal/vars"
@@ -76,8 +77,8 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Unique step for Google integrations (specifically for Gmail and Forms):
-	// save the auth data before creating/updating event watches.
+	// Unique step for Google integrations (specifically Calendar, Forms, and
+	// Gmail): save the auth data before creating/updating event watches.
 	vs := sdktypes.NewVars(sdktypes.NewVar(vars.OAuthData).SetValue(raw).SetSecret(true)).
 		Set(vars.JSON, "", true).Append(data.ToVars()...).Append(user...)
 
@@ -88,6 +89,12 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 	if err := h.vars.Set(ctx, vsl...); err != nil {
 		l.Error("Connection data saving error", zap.Error(err))
 		c.AbortServerError("connection data saving error")
+		return
+	}
+
+	if err := calendar.UpdateWatches(ctx, h.vars, cid); err != nil {
+		l.Error("Google Calendar watches creation error", zap.Error(err))
+		c.AbortServerError("calendar watches creation error")
 		return
 	}
 

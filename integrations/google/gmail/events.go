@@ -13,6 +13,9 @@ import (
 
 func ConstructEvent(ctx context.Context, vars sdkservices.Vars, gmailEvent map[string]any, cids []sdktypes.ConnectionID) (sdktypes.Event, error) {
 	l := extrazap.ExtractLoggerFromContext(ctx)
+	if len(cids) == 0 {
+		return sdktypes.InvalidEvent, nil
+	}
 
 	// TODO(ENG-1235): Enrich the event with relevant data, using API calls.
 
