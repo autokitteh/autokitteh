@@ -688,6 +688,58 @@ export class SessionLogRecord extends Message<SessionLogRecord> {
 }
 
 /**
+ * Bitfield.
+ *
+ * @generated from enum autokitteh.sessions.v1.SessionLogRecord.Type
+ */
+export enum SessionLogRecord_Type {
+  /**
+   * @generated from enum value: TYPE_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: TYPE_PRINT = 1;
+   */
+  PRINT = 1,
+
+  /**
+   * @generated from enum value: TYPE_CALL_SPEC = 2;
+   */
+  CALL_SPEC = 2,
+
+  /**
+   * @generated from enum value: TYPE_CALL_ATTEMPT_START = 4;
+   */
+  CALL_ATTEMPT_START = 4,
+
+  /**
+   * @generated from enum value: TYPE_CALL_ATTEMPT_COMPLETE = 8;
+   */
+  CALL_ATTEMPT_COMPLETE = 8,
+
+  /**
+   * @generated from enum value: TYPE_STATE = 16;
+   */
+  STATE = 16,
+
+  /**
+   * @generated from enum value: TYPE_STOP_REQUEST = 32;
+   */
+  STOP_REQUEST = 32,
+}
+// Retrieve enum metadata with: proto3.getEnumType(SessionLogRecord_Type)
+proto3.util.setEnumType(SessionLogRecord_Type, "autokitteh.sessions.v1.SessionLogRecord.Type", [
+  { no: 0, name: "TYPE_UNSPECIFIED" },
+  { no: 1, name: "TYPE_PRINT" },
+  { no: 2, name: "TYPE_CALL_SPEC" },
+  { no: 4, name: "TYPE_CALL_ATTEMPT_START" },
+  { no: 8, name: "TYPE_CALL_ATTEMPT_COMPLETE" },
+  { no: 16, name: "TYPE_STATE" },
+  { no: 32, name: "TYPE_STOP_REQUEST" },
+]);
+
+/**
  * @generated from message autokitteh.sessions.v1.SessionLogRecord.Print
  */
 export class SessionLogRecord_Print extends Message<SessionLogRecord_Print> {

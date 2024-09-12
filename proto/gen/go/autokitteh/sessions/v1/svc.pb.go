@@ -521,12 +521,12 @@ type GetLogRequest struct {
 	//
 	// false: all values returned are properly boxed.
 	JsonValues bool `protobuf:"varint,2,opt,name=json_values,json=jsonValues,proto3" json:"json_values,omitempty"`
-	// If set, prints will not be returned.
-	IgnorePrints bool   `protobuf:"varint,3,opt,name=ignore_prints,json=ignorePrints,proto3" json:"ignore_prints,omitempty"`
-	Ascending    bool   `protobuf:"varint,11,opt,name=ascending,proto3" json:"ascending,omitempty"`
-	PageSize     int32  `protobuf:"varint,20,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
-	Skip         int32  `protobuf:"varint,21,opt,name=skip,proto3" json:"skip,omitempty"`
-	PageToken    string `protobuf:"bytes,22,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
+	// Bitmask: If 0 or 0xFF, include all.
+	Types     SessionLogRecord_Type `protobuf:"varint,3,opt,name=types,proto3,enum=autokitteh.sessions.v1.SessionLogRecord_Type" json:"types,omitempty"`
+	Ascending bool                  `protobuf:"varint,11,opt,name=ascending,proto3" json:"ascending,omitempty"`
+	PageSize  int32                 `protobuf:"varint,20,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	Skip      int32                 `protobuf:"varint,21,opt,name=skip,proto3" json:"skip,omitempty"`
+	PageToken string                `protobuf:"bytes,22,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
 }
 
 func (x *GetLogRequest) Reset() {
@@ -575,11 +575,11 @@ func (x *GetLogRequest) GetJsonValues() bool {
 	return false
 }
 
-func (x *GetLogRequest) GetIgnorePrints() bool {
+func (x *GetLogRequest) GetTypes() SessionLogRecord_Type {
 	if x != nil {
-		return x.IgnorePrints
+		return x.Types
 	}
-	return false
+	return SessionLogRecord_TYPE_UNSPECIFIED
 }
 
 func (x *GetLogRequest) GetAscending() bool {
@@ -847,14 +847,16 @@ var file_autokitteh_sessions_v1_svc_proto_rawDesc = []byte{
 	0x75, 0x74, 0x6f, 0x6b, 0x69, 0x74, 0x74, 0x65, 0x68, 0x2e, 0x73, 0x65, 0x73, 0x73, 0x69, 0x6f,
 	0x6e, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x53, 0x65, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x42, 0x07, 0xfa,
 	0xf7, 0x18, 0x03, 0xc8, 0x01, 0x01, 0x52, 0x07, 0x73, 0x65, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x22,
-	0xa1, 0x02, 0x0a, 0x0d, 0x47, 0x65, 0x74, 0x4c, 0x6f, 0x67, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
+	0xc1, 0x02, 0x0a, 0x0d, 0x47, 0x65, 0x74, 0x4c, 0x6f, 0x67, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
 	0x74, 0x12, 0x27, 0x0a, 0x0a, 0x73, 0x65, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x5f, 0x69, 0x64, 0x18,
 	0x01, 0x20, 0x01, 0x28, 0x09, 0x42, 0x08, 0xfa, 0xf7, 0x18, 0x04, 0x72, 0x02, 0x10, 0x01, 0x52,
 	0x09, 0x73, 0x65, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x49, 0x64, 0x12, 0x1f, 0x0a, 0x0b, 0x6a, 0x73,
 	0x6f, 0x6e, 0x5f, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x73, 0x18, 0x02, 0x20, 0x01, 0x28, 0x08, 0x52,
-	0x0a, 0x6a, 0x73, 0x6f, 0x6e, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x73, 0x12, 0x23, 0x0a, 0x0d, 0x69,
-	0x67, 0x6e, 0x6f, 0x72, 0x65, 0x5f, 0x70, 0x72, 0x69, 0x6e, 0x74, 0x73, 0x18, 0x03, 0x20, 0x01,
-	0x28, 0x08, 0x52, 0x0c, 0x69, 0x67, 0x6e, 0x6f, 0x72, 0x65, 0x50, 0x72, 0x69, 0x6e, 0x74, 0x73,
+	0x0a, 0x6a, 0x73, 0x6f, 0x6e, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x73, 0x12, 0x43, 0x0a, 0x05, 0x74,
+	0x79, 0x70, 0x65, 0x73, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0e, 0x32, 0x2d, 0x2e, 0x61, 0x75, 0x74,
+	0x6f, 0x6b, 0x69, 0x74, 0x74, 0x65, 0x68, 0x2e, 0x73, 0x65, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x73,
+	0x2e, 0x76, 0x31, 0x2e, 0x53, 0x65, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x4c, 0x6f, 0x67, 0x52, 0x65,
+	0x63, 0x6f, 0x72, 0x64, 0x2e, 0x54, 0x79, 0x70, 0x65, 0x52, 0x05, 0x74, 0x79, 0x70, 0x65, 0x73,
 	0x12, 0x1c, 0x0a, 0x09, 0x61, 0x73, 0x63, 0x65, 0x6e, 0x64, 0x69, 0x6e, 0x67, 0x18, 0x0b, 0x20,
 	0x01, 0x28, 0x08, 0x52, 0x09, 0x61, 0x73, 0x63, 0x65, 0x6e, 0x64, 0x69, 0x6e, 0x67, 0x12, 0x1b,
 	0x0a, 0x09, 0x70, 0x61, 0x67, 0x65, 0x5f, 0x73, 0x69, 0x7a, 0x65, 0x18, 0x14, 0x20, 0x01, 0x28,
@@ -944,22 +946,23 @@ func file_autokitteh_sessions_v1_svc_proto_rawDescGZIP() []byte {
 
 var file_autokitteh_sessions_v1_svc_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
 var file_autokitteh_sessions_v1_svc_proto_goTypes = []interface{}{
-	(*StartRequest)(nil),   // 0: autokitteh.sessions.v1.StartRequest
-	(*StartResponse)(nil),  // 1: autokitteh.sessions.v1.StartResponse
-	(*StopRequest)(nil),    // 2: autokitteh.sessions.v1.StopRequest
-	(*StopResponse)(nil),   // 3: autokitteh.sessions.v1.StopResponse
-	(*ListRequest)(nil),    // 4: autokitteh.sessions.v1.ListRequest
-	(*ListResponse)(nil),   // 5: autokitteh.sessions.v1.ListResponse
-	(*GetRequest)(nil),     // 6: autokitteh.sessions.v1.GetRequest
-	(*GetResponse)(nil),    // 7: autokitteh.sessions.v1.GetResponse
-	(*GetLogRequest)(nil),  // 8: autokitteh.sessions.v1.GetLogRequest
-	(*GetLogResponse)(nil), // 9: autokitteh.sessions.v1.GetLogResponse
-	(*DeleteRequest)(nil),  // 10: autokitteh.sessions.v1.DeleteRequest
-	(*DeleteResponse)(nil), // 11: autokitteh.sessions.v1.DeleteResponse
-	nil,                    // 12: autokitteh.sessions.v1.StartRequest.JsonInputsEntry
-	(*Session)(nil),        // 13: autokitteh.sessions.v1.Session
-	(SessionStateType)(0),  // 14: autokitteh.sessions.v1.SessionStateType
-	(*SessionLog)(nil),     // 15: autokitteh.sessions.v1.SessionLog
+	(*StartRequest)(nil),       // 0: autokitteh.sessions.v1.StartRequest
+	(*StartResponse)(nil),      // 1: autokitteh.sessions.v1.StartResponse
+	(*StopRequest)(nil),        // 2: autokitteh.sessions.v1.StopRequest
+	(*StopResponse)(nil),       // 3: autokitteh.sessions.v1.StopResponse
+	(*ListRequest)(nil),        // 4: autokitteh.sessions.v1.ListRequest
+	(*ListResponse)(nil),       // 5: autokitteh.sessions.v1.ListResponse
+	(*GetRequest)(nil),         // 6: autokitteh.sessions.v1.GetRequest
+	(*GetResponse)(nil),        // 7: autokitteh.sessions.v1.GetResponse
+	(*GetLogRequest)(nil),      // 8: autokitteh.sessions.v1.GetLogRequest
+	(*GetLogResponse)(nil),     // 9: autokitteh.sessions.v1.GetLogResponse
+	(*DeleteRequest)(nil),      // 10: autokitteh.sessions.v1.DeleteRequest
+	(*DeleteResponse)(nil),     // 11: autokitteh.sessions.v1.DeleteResponse
+	nil,                        // 12: autokitteh.sessions.v1.StartRequest.JsonInputsEntry
+	(*Session)(nil),            // 13: autokitteh.sessions.v1.Session
+	(SessionStateType)(0),      // 14: autokitteh.sessions.v1.SessionStateType
+	(SessionLogRecord_Type)(0), // 15: autokitteh.sessions.v1.SessionLogRecord.Type
+	(*SessionLog)(nil),         // 16: autokitteh.sessions.v1.SessionLog
 }
 var file_autokitteh_sessions_v1_svc_proto_depIdxs = []int32{
 	13, // 0: autokitteh.sessions.v1.StartRequest.session:type_name -> autokitteh.sessions.v1.Session
@@ -967,24 +970,25 @@ var file_autokitteh_sessions_v1_svc_proto_depIdxs = []int32{
 	14, // 2: autokitteh.sessions.v1.ListRequest.state_type:type_name -> autokitteh.sessions.v1.SessionStateType
 	13, // 3: autokitteh.sessions.v1.ListResponse.sessions:type_name -> autokitteh.sessions.v1.Session
 	13, // 4: autokitteh.sessions.v1.GetResponse.session:type_name -> autokitteh.sessions.v1.Session
-	15, // 5: autokitteh.sessions.v1.GetLogResponse.log:type_name -> autokitteh.sessions.v1.SessionLog
-	0,  // 6: autokitteh.sessions.v1.SessionsService.Start:input_type -> autokitteh.sessions.v1.StartRequest
-	2,  // 7: autokitteh.sessions.v1.SessionsService.Stop:input_type -> autokitteh.sessions.v1.StopRequest
-	4,  // 8: autokitteh.sessions.v1.SessionsService.List:input_type -> autokitteh.sessions.v1.ListRequest
-	6,  // 9: autokitteh.sessions.v1.SessionsService.Get:input_type -> autokitteh.sessions.v1.GetRequest
-	8,  // 10: autokitteh.sessions.v1.SessionsService.GetLog:input_type -> autokitteh.sessions.v1.GetLogRequest
-	10, // 11: autokitteh.sessions.v1.SessionsService.Delete:input_type -> autokitteh.sessions.v1.DeleteRequest
-	1,  // 12: autokitteh.sessions.v1.SessionsService.Start:output_type -> autokitteh.sessions.v1.StartResponse
-	3,  // 13: autokitteh.sessions.v1.SessionsService.Stop:output_type -> autokitteh.sessions.v1.StopResponse
-	5,  // 14: autokitteh.sessions.v1.SessionsService.List:output_type -> autokitteh.sessions.v1.ListResponse
-	7,  // 15: autokitteh.sessions.v1.SessionsService.Get:output_type -> autokitteh.sessions.v1.GetResponse
-	9,  // 16: autokitteh.sessions.v1.SessionsService.GetLog:output_type -> autokitteh.sessions.v1.GetLogResponse
-	11, // 17: autokitteh.sessions.v1.SessionsService.Delete:output_type -> autokitteh.sessions.v1.DeleteResponse
-	12, // [12:18] is the sub-list for method output_type
-	6,  // [6:12] is the sub-list for method input_type
-	6,  // [6:6] is the sub-list for extension type_name
-	6,  // [6:6] is the sub-list for extension extendee
-	0,  // [0:6] is the sub-list for field type_name
+	15, // 5: autokitteh.sessions.v1.GetLogRequest.types:type_name -> autokitteh.sessions.v1.SessionLogRecord.Type
+	16, // 6: autokitteh.sessions.v1.GetLogResponse.log:type_name -> autokitteh.sessions.v1.SessionLog
+	0,  // 7: autokitteh.sessions.v1.SessionsService.Start:input_type -> autokitteh.sessions.v1.StartRequest
+	2,  // 8: autokitteh.sessions.v1.SessionsService.Stop:input_type -> autokitteh.sessions.v1.StopRequest
+	4,  // 9: autokitteh.sessions.v1.SessionsService.List:input_type -> autokitteh.sessions.v1.ListRequest
+	6,  // 10: autokitteh.sessions.v1.SessionsService.Get:input_type -> autokitteh.sessions.v1.GetRequest
+	8,  // 11: autokitteh.sessions.v1.SessionsService.GetLog:input_type -> autokitteh.sessions.v1.GetLogRequest
+	10, // 12: autokitteh.sessions.v1.SessionsService.Delete:input_type -> autokitteh.sessions.v1.DeleteRequest
+	1,  // 13: autokitteh.sessions.v1.SessionsService.Start:output_type -> autokitteh.sessions.v1.StartResponse
+	3,  // 14: autokitteh.sessions.v1.SessionsService.Stop:output_type -> autokitteh.sessions.v1.StopResponse
+	5,  // 15: autokitteh.sessions.v1.SessionsService.List:output_type -> autokitteh.sessions.v1.ListResponse
+	7,  // 16: autokitteh.sessions.v1.SessionsService.Get:output_type -> autokitteh.sessions.v1.GetResponse
+	9,  // 17: autokitteh.sessions.v1.SessionsService.GetLog:output_type -> autokitteh.sessions.v1.GetLogResponse
+	11, // 18: autokitteh.sessions.v1.SessionsService.Delete:output_type -> autokitteh.sessions.v1.DeleteResponse
+	13, // [13:19] is the sub-list for method output_type
+	7,  // [7:13] is the sub-list for method input_type
+	7,  // [7:7] is the sub-list for extension type_name
+	7,  // [7:7] is the sub-list for extension extendee
+	0,  // [0:7] is the sub-list for field type_name
 }
 
 func init() { file_autokitteh_sessions_v1_svc_proto_init() }

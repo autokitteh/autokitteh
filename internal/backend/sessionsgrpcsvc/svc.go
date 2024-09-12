@@ -143,8 +143,8 @@ func (s *server) GetLog(ctx context.Context, req *connect.Request[sessionsv1.Get
 			PageSize:  msg.PageSize,
 			Ascending: msg.Ascending,
 		},
-		SessionID:    sessionID,
-		IgnorePrints: msg.IgnorePrints,
+		Types:     msg.Types,
+		SessionID: sessionID,
 	}
 
 	hist, err := s.sessions.GetLog(ctx, filter)
