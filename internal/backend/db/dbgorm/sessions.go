@@ -18,6 +18,15 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
+const (
+	printSessionLogRecordType               = "print"
+	stateSessionLogRecordType               = "state"
+	stopSessionLogRecordType                = "stop_request"
+	callSpecSessionLogRecordType            = "call_spec"
+	callAttemptStartSessionLogRecordType    = "call_attempt_start"
+	callAttemptCompleteSessionLogRecordType = "call_attempt_complete"
+)
+
 func (gdb *gormdb) withUserSessions(ctx context.Context) *gorm.DB {
 	return gdb.withUserEntity(ctx, "session")
 }
@@ -33,7 +42,7 @@ func (gdb *gormdb) createSession(ctx context.Context, session *scheme.Session) e
 		if err := tx.Create(session).Error; err != nil {
 			return err
 		}
-		return createLogRecord(tx, logr)
+		return createLogRecord(tx, logr, stateSessionLogRecordType)
 	}
 
 	return gdb.createEntityWithOwnership(ctx, createFunc, session, idsToVerify...)
@@ -62,7 +71,7 @@ func (gdb *gormdb) updateSessionState(ctx context.Context, sessionID sdktypes.UU
 		if err := tx.db.Model(&scheme.Session{SessionID: sessionID}).Updates(sessionStateUpdate).Error; err != nil {
 			return err
 		}
-		return createLogRecord(tx.db, logr)
+		return createLogRecord(tx.db, logr, stateSessionLogRecordType)
 	})
 }
 
@@ -123,17 +132,18 @@ func (gdb *gormdb) listSessions(ctx context.Context, f sdkservices.ListSessionsF
 }
 
 // --- log records ---
-func createLogRecord(db *gorm.DB, logr *scheme.SessionLogRecord) error {
+func createLogRecord(db *gorm.DB, logr *scheme.SessionLogRecord, typ string) error {
 	logr.Seq = uint64(time.Now().UnixMicro())
+	logr.Type = typ
 	return db.Create(logr).Error
 }
 
-func (gdb *gormdb) addSessionLogRecord(ctx context.Context, logr *scheme.SessionLogRecord) error {
+func (gdb *gormdb) addSessionLogRecord(ctx context.Context, logr *scheme.SessionLogRecord, typ string) error {
 	return gdb.transaction(ctx, func(tx *tx) error {
 		if err := tx.isCtxUserEntity(tx.ctx, logr.SessionID); err != nil {
 			return gormErrNotFoundToForeignKey(err) // session should be present
 		}
-		return createLogRecord(tx.db, logr)
+		return createLogRecord(tx.db, logr, typ)
 	})
 }
 
@@ -164,6 +174,23 @@ func (gdb *gormdb) getSessionLogRecords(ctx context.Context, filter sdkservices.
 			} else {
 				q = q.Where("seq < ?", filter.PageToken)
 			}
+		}
+
+		if types := filter.Types; types != 0 {
+			specific := func(t sdktypes.SessionLogRecordType, name string) {
+				op := "=="
+				if types&t == 0 {
+					op = "!="
+				}
+				q = tx.db.Where(fmt.Sprintf("type %s ?", op), name)
+			}
+
+			specific(sdktypes.PrintSessionLogRecordType, printSessionLogRecordType)
+			specific(sdktypes.StateSessionLogRecordType, stateSessionLogRecordType)
+			specific(sdktypes.StopRequestSessionLogRecordType, stopSessionLogRecordType)
+			specific(sdktypes.CallSpecSessionLogRecordType, callSpecSessionLogRecordType)
+			specific(sdktypes.CallAttemptStartSessionLogRecordType, callAttemptStartSessionLogRecordType)
+			specific(sdktypes.CallAttemptCompleteSessionLogRecordType, callAttemptCompleteSessionLogRecordType)
 		}
 
 		// Default is desc order
@@ -200,7 +227,7 @@ func (gdb *gormdb) createSessionCall(ctx context.Context, sessionID sdktypes.UUI
 		if err := tx.db.Create(&callSpec).Error; err != nil {
 			return err
 		}
-		return createLogRecord(tx.db, logr)
+		return createLogRecord(tx.db, logr, callSpecSessionLogRecordType)
 	})
 }
 
@@ -259,7 +286,8 @@ func (gdb *gormdb) startSessionCallAttempt(ctx context.Context, sessionID sdktyp
 		if err := tx.db.Create(&callAttempt).Error; err != nil {
 			return err
 		}
-		return createLogRecord(tx.db, logr)
+
+		return createLogRecord(tx.db, logr, callAttemptStartSessionLogRecordType)
 	})
 	return
 }
@@ -286,7 +314,7 @@ func (gdb *gormdb) completeSessionCallAttempt(ctx context.Context, sessionID sdk
 		} else if res.RowsAffected == 0 {
 			return sdkerrors.ErrNotFound
 		}
-		return createLogRecord(tx.db, logr)
+		return createLogRecord(tx.db, logr, callAttemptCompleteSessionLogRecordType)
 	})
 }
 
@@ -398,7 +426,7 @@ func (db *gormdb) AddSessionPrint(ctx context.Context, sessionID sdktypes.Sessio
 	if err != nil {
 		return err
 	}
-	return translateError(db.addSessionLogRecord(ctx, logr))
+	return translateError(db.addSessionLogRecord(ctx, logr, printSessionLogRecordType))
 }
 
 func (db *gormdb) AddSessionStopRequest(ctx context.Context, sessionID sdktypes.SessionID, reason string) error {
@@ -406,7 +434,7 @@ func (db *gormdb) AddSessionStopRequest(ctx context.Context, sessionID sdktypes.
 	if err != nil {
 		return err
 	}
-	return translateError(db.addSessionLogRecord(ctx, logr))
+	return translateError(db.addSessionLogRecord(ctx, logr, stopSessionLogRecordType))
 }
 
 func (db *gormdb) GetSessionLog(ctx context.Context, filter sdkservices.ListSessionLogRecordsFilter) (sdkservices.GetLogResults, error) {

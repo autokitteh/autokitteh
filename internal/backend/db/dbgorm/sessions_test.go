@@ -236,13 +236,13 @@ func TestAddSessionLogRecordUnexistingSession(t *testing.T) {
 	s := f.newSession(sdktypes.SessionStateTypeCompleted)
 	logr := f.newSessionLogRecord() // invalid sessionID
 
-	assert.ErrorIs(t, f.gormdb.addSessionLogRecord(f.ctx, &logr), gorm.ErrForeignKeyViolated)
+	assert.ErrorIs(t, f.gormdb.addSessionLogRecord(f.ctx, &logr, ""), gorm.ErrForeignKeyViolated)
 
 	f.createSessionsAndAssert(t, s) // will create session and session record as well
 
 	// ensure that with valid sessionID log could be added
 	logr.SessionID = s.SessionID
-	assert.NoError(t, f.gormdb.addSessionLogRecord(f.ctx, &logr))
+	assert.NoError(t, f.gormdb.addSessionLogRecord(f.ctx, &logr, ""))
 }
 
 func TestAddSessionPrintLogRecord(t *testing.T) {
@@ -254,7 +254,7 @@ func TestAddSessionPrintLogRecord(t *testing.T) {
 	assert.NoError(t, err)
 
 	f.createSessionsAndAssert(t, s) // will create session and session record as well
-	assert.NoError(t, f.gormdb.addSessionLogRecord(f.ctx, logr))
+	assert.NoError(t, f.gormdb.addSessionLogRecord(f.ctx, logr, ""))
 
 	testLastLogRecord(t, f, 2, s.SessionID, l)
 }
@@ -268,7 +268,7 @@ func TestSessionLogRecordListOrder(t *testing.T) {
 	assert.NoError(t, err)
 
 	f.createSessionsAndAssert(t, s) // will create session and session record as well
-	assert.NoError(t, f.gormdb.addSessionLogRecord(f.ctx, logr))
+	assert.NoError(t, f.gormdb.addSessionLogRecord(f.ctx, logr, ""))
 
 	sid := sdktypes.NewIDFromUUID[sdktypes.SessionID](&s.SessionID)
 
@@ -309,7 +309,7 @@ func TestSessionLogRecordPageSizeAndTotalCount(t *testing.T) {
 	assert.NoError(t, err)
 
 	f.createSessionsAndAssert(t, s) // will create session and session record as well
-	assert.NoError(t, f.gormdb.addSessionLogRecord(f.ctx, logr))
+	assert.NoError(t, f.gormdb.addSessionLogRecord(f.ctx, logr, ""))
 
 	sid := sdktypes.NewIDFromUUID[sdktypes.SessionID](&s.SessionID)
 	logs, n, err := f.gormdb.getSessionLogRecords(f.ctx,
@@ -332,7 +332,7 @@ func TestSessionLogRecordSkipAll(t *testing.T) {
 	assert.NoError(t, err)
 
 	f.createSessionsAndAssert(t, s) // will create session and session record as well
-	assert.NoError(t, f.gormdb.addSessionLogRecord(f.ctx, logr))
+	assert.NoError(t, f.gormdb.addSessionLogRecord(f.ctx, logr, ""))
 
 	sid := sdktypes.NewIDFromUUID[sdktypes.SessionID](&s.SessionID)
 	logs, n, err := f.gormdb.getSessionLogRecords(f.ctx,
@@ -355,7 +355,7 @@ func TestSessionLogRecordSkip(t *testing.T) {
 	assert.NoError(t, err)
 
 	f.createSessionsAndAssert(t, s) // will create session and session record as well
-	assert.NoError(t, f.gormdb.addSessionLogRecord(f.ctx, logr))
+	assert.NoError(t, f.gormdb.addSessionLogRecord(f.ctx, logr, ""))
 
 	sid := sdktypes.NewIDFromUUID[sdktypes.SessionID](&s.SessionID)
 	logs, n, err := f.gormdb.getSessionLogRecords(f.ctx,
@@ -378,7 +378,7 @@ func TestSessionLogRecordNextPageTokenEmpty(t *testing.T) {
 	assert.NoError(t, err)
 
 	f.createSessionsAndAssert(t, s) // will create session and session record as well
-	assert.NoError(t, f.gormdb.addSessionLogRecord(f.ctx, logr))
+	assert.NoError(t, f.gormdb.addSessionLogRecord(f.ctx, logr, ""))
 
 	sid := sdktypes.NewIDFromUUID[sdktypes.SessionID](&s.SessionID)
 	res, err := f.gormdb.GetSessionLog(context.Background(),
@@ -402,8 +402,8 @@ func TestSessionLogRecordNextPageTokenNotEmpty(t *testing.T) {
 	assert.NoError(t, err)
 
 	f.createSessionsAndAssert(t, s) // will create session and session record as well
-	assert.NoError(t, f.gormdb.addSessionLogRecord(f.ctx, logr))
-	assert.NoError(t, f.gormdb.addSessionLogRecord(f.ctx, logr))
+	assert.NoError(t, f.gormdb.addSessionLogRecord(f.ctx, logr, ""))
+	assert.NoError(t, f.gormdb.addSessionLogRecord(f.ctx, logr, ""))
 
 	sid := sdktypes.NewIDFromUUID[sdktypes.SessionID](&s.SessionID)
 	res, err := f.gormdb.GetSessionLog(context.Background(),

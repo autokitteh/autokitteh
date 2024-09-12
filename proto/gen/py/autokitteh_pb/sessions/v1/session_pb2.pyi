@@ -138,6 +138,22 @@ class Call(_message.Message):
 
 class SessionLogRecord(_message.Message):
     __slots__ = ["t", "process_id", "print", "call_spec", "call_attempt_start", "call_attempt_complete", "state", "stop_request"]
+    class Type(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
+        __slots__ = []
+        TYPE_UNSPECIFIED: _ClassVar[SessionLogRecord.Type]
+        TYPE_PRINT: _ClassVar[SessionLogRecord.Type]
+        TYPE_CALL_SPEC: _ClassVar[SessionLogRecord.Type]
+        TYPE_CALL_ATTEMPT_START: _ClassVar[SessionLogRecord.Type]
+        TYPE_CALL_ATTEMPT_COMPLETE: _ClassVar[SessionLogRecord.Type]
+        TYPE_STATE: _ClassVar[SessionLogRecord.Type]
+        TYPE_STOP_REQUEST: _ClassVar[SessionLogRecord.Type]
+    TYPE_UNSPECIFIED: SessionLogRecord.Type
+    TYPE_PRINT: SessionLogRecord.Type
+    TYPE_CALL_SPEC: SessionLogRecord.Type
+    TYPE_CALL_ATTEMPT_START: SessionLogRecord.Type
+    TYPE_CALL_ATTEMPT_COMPLETE: SessionLogRecord.Type
+    TYPE_STATE: SessionLogRecord.Type
+    TYPE_STOP_REQUEST: SessionLogRecord.Type
     class Print(_message.Message):
         __slots__ = ["text"]
         TEXT_FIELD_NUMBER: _ClassVar[int]
