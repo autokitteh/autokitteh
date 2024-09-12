@@ -36,7 +36,7 @@ temporal-ui:
 	$(open) http://localhost:8233
 
 ngrok:
-	ngrok http --domain autokitteh-miki.ngrok.dev 9980
+	ngrok http --domain autokitteh-${USER}.ngrok.dev 9980
 
 ngrok-prod:
 	ngrok http --domain autokitteh.ngrok.dev 9980
