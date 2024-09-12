@@ -67,20 +67,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/webtools"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/internal/version"
-	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/auth/v1/authv1connect"
-	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/builds/v1/buildsv1connect"
-	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/connections/v1/connectionsv1connect"
-	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/deployments/v1/deploymentsv1connect"
-	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/dispatcher/v1/dispatcherv1connect"
-	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/envs/v1/envsv1connect"
-	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/events/v1/eventsv1connect"
-	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/integrations/v1/integrationsv1connect"
-	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/oauth/v1/oauthv1connect"
-	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/projects/v1/projectsv1connect"
-	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/runtimes/v1/runtimesv1connect"
-	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/sessions/v1/sessionsv1connect"
-	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/triggers/v1/triggersv1connect"
-	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/vars/v1/varsv1connect"
+	"go.autokitteh.dev/autokitteh/proto"
 	"go.autokitteh.dev/autokitteh/sdk/sdkruntimessvc"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -259,22 +246,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 			) (svc httpsvc.Svc, all *muxes.Muxes, err error) {
 				svc, err = httpsvc.New(
 					lc, z, cfg,
-					[]string{
-						authv1connect.AuthServiceName,
-						buildsv1connect.BuildsServiceName,
-						connectionsv1connect.ConnectionsServiceName,
-						deploymentsv1connect.DeploymentsServiceName,
-						dispatcherv1connect.DispatcherServiceName,
-						envsv1connect.EnvsServiceName,
-						eventsv1connect.EventsServiceName,
-						integrationsv1connect.IntegrationsServiceName,
-						oauthv1connect.OAuthServiceName,
-						projectsv1connect.ProjectsServiceName,
-						runtimesv1connect.RuntimesServiceName,
-						sessionsv1connect.SessionsServiceName,
-						triggersv1connect.TriggersServiceName,
-						varsv1connect.VarsServiceName,
-					},
+					proto.ServiceNames,
 					[]httpsvc.RequestLogExtractor{
 						// Note: auth middleware will be connected after interceptor, so in httpsvc and interceptor handler
 						// there is (still) no parsed user in the httpRequest context. So in order to log the user in the
