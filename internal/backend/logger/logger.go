@@ -19,7 +19,13 @@ type Config struct {
 
 var Configs = configset.Set[Config]{
 	Default: &Config{Zap: zap.NewProductionConfig()},
-	Dev:     &Config{Zap: zap.NewDevelopmentConfig()},
+	Dev: &Config{
+		Zap: func() zap.Config {
+			cfg := zap.NewDevelopmentConfig()
+			cfg.Level = zap.NewAtomicLevelAt(zapcore.InfoLevel)
+			return cfg
+		}(),
+	},
 }
 
 type onFatalHook struct{}
