@@ -5,10 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"go.autokitteh.dev/autokitteh/internal/backend/configset"
-	"go.autokitteh.dev/autokitteh/sdk/sdklogger"
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
 	"go.opentelemetry.io/otel/metric"
 	noop "go.opentelemetry.io/otel/metric/noop"
@@ -16,6 +13,8 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	semconv "go.opentelemetry.io/otel/semconv/v1.20.0"
 	"go.uber.org/zap"
+
+	"go.autokitteh.dev/autokitteh/internal/backend/configset"
 )
 
 type Config struct {
@@ -37,17 +36,6 @@ func fixConfig(cfg Config) Config {
 		cfg.Endpoint = Configs.Default.Endpoint
 	}
 	return cfg
-}
-
-func WithLabels(args ...string) metric.MeasurementOption {
-	var attrs []attribute.KeyValue
-	if len(args)%2 != 0 {
-		sdklogger.DPanic("invalid telemetry labels")
-	}
-	for i := 0; i < len(args); i += 2 {
-		attrs = append(attrs, attribute.String(args[i], args[i+1]))
-	}
-	return metric.WithAttributes(attrs...)
 }
 
 type Telemetry struct {
