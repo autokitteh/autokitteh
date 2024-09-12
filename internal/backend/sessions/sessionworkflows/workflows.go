@@ -69,6 +69,7 @@ func New(z *zap.Logger,
 func (ws *workflows) StartWorkers(ctx context.Context) error {
 	opts := ws.cfg.Temporal.Worker
 	opts.DisableRegistrationAliasing = true
+	opts.MaxConcurrentWorkflowTaskExecutionSize = 150
 	opts.OnFatalError = func(err error) { ws.z.Error("temporal worker error", zap.Error(err)) }
 	opts.DeadlockDetectionTimeout = workflowDeadlockTimeout
 

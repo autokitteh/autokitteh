@@ -24,7 +24,7 @@ import (
 var (
 	Runtime = &sdkruntimes.Runtime{
 		Desc: kittehs.Must1(sdktypes.StrictRuntimeFromProto(&sdktypes.RuntimePB{
-			Name:           "remote",
+			Name:           "python",
 			FileExtensions: []string{"py"},
 		})),
 		New: New,
@@ -53,6 +53,7 @@ type svc struct {
 	doneChan           chan []byte // runner report done
 	errorChan          chan string // runner report error
 	runnerRequestsChan chan *pb.ActivityRequest
+	runnerPrintChan    chan *pb.PrintRequest
 }
 
 func (*svc) Get() sdktypes.Runtime {
@@ -99,6 +100,8 @@ func (s *svc) handleInitialCall(ctx context.Context, v sdktypes.FunctionValue, a
 	// wait for done
 	for {
 		select {
+		case req := <-s.runnerPrintChan:
+			s.cbs.Print(s.ctx, s.runID.ToRunID(), req.Message)
 		case req := <-s.runnerRequestsChan:
 			f := kittehs.Must1(sdktypes.NewFunctionValue(s.runID, req.CallInfo.Function, []byte(req.Data), nil, pyModuleFunc))
 			res, err := s.cbs.Call(s.ctx, s.runID.ToRunID(), f, nil, nil)
@@ -200,7 +203,7 @@ func (s *svc) Run(
 	newSvc.doneChan = make(chan []byte, 1)
 	newSvc.errorChan = make(chan string, 1)
 	newSvc.runnerRequestsChan = make(chan *pb.ActivityRequest, 1)
-
+	newSvc.runnerPrintChan = make(chan *pb.PrintRequest, 1)
 	// Load environment defined by user in the `vars` section of the manifest,
 	// these are injected to the Python subprocess environment.
 	env, err := cbs.Load(ctx, runID, "env")
@@ -218,7 +221,7 @@ func (s *svc) Run(
 
 	// TODO: choose a random runnerManager somehow
 	runnerManager := remoteManagers[0]
-	resp, err := runnerManager.Start(ctx, &pb.StartRunnerRequest{BuildArtifact: tarData, Vars: envMap, WorkerAddress: "host.docker.internal:9980"})
+	resp, err := runnerManager.Start(ctx, &pb.StartRunnerRequest{BuildArtifact: tarData, Vars: envMap, WorkerAddress: "172.17.0.1:9980"})
 	if err != nil {
 		return nil, fmt.Errorf("staring runner %w", err)
 	}

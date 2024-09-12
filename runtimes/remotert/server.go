@@ -31,6 +31,19 @@ func (w *workerServer) Health(ctx context.Context, req *pb.HealthRequest) (*pb.H
 func (w *workerServer) Print(ctx context.Context, req *pb.PrintRequest) (*pb.PrintResponse, error) {
 	var resp pb.PrintResponse
 
+	w.mu.Lock()
+	runner, ok := w.runnerIDsToRuntime[req.RunnerId]
+	w.mu.Unlock()
+	if !ok {
+		return &pb.PrintResponse{
+			Error: "Unknown runner id",
+		}, nil
+	}
+
+	go func() {
+		runner.runnerPrintChan <- req
+	}()
+
 	return &resp, nil
 }
 

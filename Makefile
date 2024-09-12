@@ -162,3 +162,8 @@ generate-migrations:
 .PHONY: tailwindcss
 tailwindcss:
 	npx --yes tailwindcss build -o web/static/tailwind.css
+
+.PHONY: sync_runner
+sync_runner:
+	rsync -azP --exclude '.git' --exclude 'bin'  -e "ssh -i ~/.ssh/ak-dev-test.pem"  ./ admin@10.1.54.62:/home/admin/autokitteh
+	rsync -azP --exclude '.git' --exclude 'bin'  -e "ssh -i ~/.ssh/ak-dev-test.pem"  ./ admin@10.1.31.176:/home/admin/autokitteh
