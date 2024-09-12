@@ -12,7 +12,7 @@ import (
 	"go.uber.org/zap"
 
 	akCtx "go.autokitteh.dev/autokitteh/internal/backend/context"
-	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
+	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessioncalls"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessioncontext"
@@ -320,7 +320,14 @@ func (w *sessionWorkflow) createEventSubscription(wctx workflow.Context, filter 
 	// the map is read.
 	w.lastReadEventSeqForSignal[signalID] = minSequence
 
-	if err := workflow.ExecuteLocalActivity(wctx, w.ws.svcs.DB.SaveSignal, signalID, workflowID, did, filter).Get(wctx, nil); err != nil {
+	signal := db.Signal{
+		ID:            signalID,
+		WorkflowID:    workflowID,
+		DestinationID: did,
+		Filter:        filter,
+	}
+
+	if err := workflow.ExecuteLocalActivity(wctx, w.ws.svcs.DB.SaveSignal, &signal).Get(wctx, nil); err != nil {
 		return uuid.UUID{}, fmt.Errorf("save signal: %w", err)
 	}
 
@@ -357,18 +364,9 @@ func (w *sessionWorkflow) waitOnFirstSignal(wctx workflow.Context, signals []uui
 func (w *sessionWorkflow) getNextEvent(ctx context.Context, signalID uuid.UUID) (map[string]sdktypes.Value, error) {
 	wctx := sessioncontext.GetWorkflowContext(ctx)
 
-	var signal scheme.Signal
+	var signal *db.Signal
 	if err := workflow.ExecuteLocalActivity(wctx, w.ws.svcs.DB.GetSignal, signalID).Get(wctx, &signal); err != nil {
 		w.z.Panic("get signal", zap.Error(err))
-	}
-
-	var did sdktypes.EventDestinationID
-	if signal.ConnectionID != nil {
-		did = sdktypes.NewEventDestinationID(sdktypes.NewIDFromUUID[sdktypes.ConnectionID](signal.ConnectionID))
-	} else if signal.TriggerID != nil {
-		did = sdktypes.NewEventDestinationID(sdktypes.NewIDFromUUID[sdktypes.TriggerID](signal.TriggerID))
-	} else {
-		return nil, fmt.Errorf("invalid signal %v: no connection or trigger ids, got %v", signalID, signal.DestinationID)
 	}
 
 	minSequenceNumber, ok := w.lastReadEventSeqForSignal[signalID]
@@ -377,7 +375,7 @@ func (w *sessionWorkflow) getNextEvent(ctx context.Context, signalID uuid.UUID) 
 	}
 
 	filter := sdkservices.ListEventsFilter{
-		DestinationID:     did,
+		DestinationID:     signal.DestinationID,
 		Limit:             1,
 		MinSequenceNumber: minSequenceNumber + 1,
 		Order:             sdkservices.ListOrderAscending,
