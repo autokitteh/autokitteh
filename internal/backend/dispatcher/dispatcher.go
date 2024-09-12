@@ -4,8 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"go.temporal.io/sdk/client"
-	"go.temporal.io/sdk/worker"
+	"go.temporal.io/sdk/workflow"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 
@@ -17,15 +16,16 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-const taskQueueName = "events"
+const (
+	taskQueueName = "events"
+	workflowName  = "event"
+)
 
-type Dispatcher struct {
+type Svcs struct {
 	fx.In
 
-	L *zap.Logger
-
 	db.DB
-	temporalclient.Client
+	temporalclient.LazyTemporalClient
 	sdkservices.Events
 	sdkservices.Triggers
 	sdkservices.Deployments
@@ -34,35 +34,58 @@ type Dispatcher struct {
 	sdkservices.Envs
 }
 
-func New(d Dispatcher) *Dispatcher {
-	return &d
+type Dispatcher struct {
+	sl   *zap.SugaredLogger
+	cfg  *Config
+	svcs Svcs
+}
+
+var _ sdkservices.Dispatcher = (*Dispatcher)(nil)
+
+func New(l *zap.SugaredLogger, cfg *Config, svcs Svcs) *Dispatcher {
+	return &Dispatcher{sl: l, cfg: cfg, svcs: svcs}
 }
 
 func (d *Dispatcher) Dispatch(ctx context.Context, event sdktypes.Event, opts *sdkservices.DispatchOptions) (sdktypes.EventID, error) {
 	ctx = akCtx.WithRequestOrginator(ctx, akCtx.Dispatcher)
-	ctx = akCtx.WithOwnershipOf(ctx, d.DB.GetOwnership, event.DestinationID().UUIDValue())
+	ctx = akCtx.WithOwnershipOf(ctx, d.svcs.DB.GetOwnership, event.DestinationID().UUIDValue())
 
-	eventID, err := d.Events.Save(ctx, event)
+	eid, err := d.svcs.Events.Save(ctx, event)
 	if err != nil {
 		return sdktypes.InvalidEventID, fmt.Errorf("save event: %w", err)
 	}
 
-	z := d.L.With(zap.String("event_id", eventID.String()))
+	event = event.WithID(eid)
 
-	z.Debug("event saved")
+	sl := d.sl.With("event_id", eid)
 
-	if err := d.startWorkflow(ctx, eventID, opts); err != nil {
-		z.Error("startWorkflow failed, orphaned event", zap.Error(err))
+	sl.Infof("event %v saved", eid)
 
-		return sdktypes.InvalidEventID, fmt.Errorf("event %v saved, but startWorkflow failed: %w", eventID, err)
+	r, err := d.svcs.LazyTemporalClient().ExecuteWorkflow(
+		ctx,
+		d.cfg.Workflow.ToStartWorkflowOptions(
+			taskQueueName,
+			eid.String(),
+			fmt.Sprintf("event %v", eid),
+			nil,
+		),
+		workflowName,
+		eventsWorkflowInput{Event: event, Options: opts},
+	)
+	if err != nil {
+		return sdktypes.InvalidEventID, fmt.Errorf("failed starting workflow: %w", err)
 	}
 
-	return eventID, nil
+	sl.With("run", r).Infof("started dispatcher workflow %v for %v", r, eid)
+
+	return eid, nil
 }
 
 func (d *Dispatcher) Redispatch(ctx context.Context, eventID sdktypes.EventID, opts *sdkservices.DispatchOptions) (sdktypes.EventID, error) {
+	sl := d.sl.With("event_id", eventID)
+
 	ctx = akCtx.WithRequestOrginator(ctx, akCtx.Dispatcher)
-	event, err := d.Events.Get(ctx, eventID)
+	event, err := d.svcs.Events.Get(ctx, eventID)
 	if err != nil {
 		return sdktypes.InvalidEventID, err
 	}
@@ -78,34 +101,33 @@ func (d *Dispatcher) Redispatch(ctx context.Context, eventID sdktypes.EventID, o
 	memo["redispatch_of"] = eventID.String()
 	event = event.WithMemo(memo)
 
-	return d.Dispatch(ctx, event, opts)
+	newEventID, err := d.Dispatch(ctx, event, opts)
+	if err != nil {
+		sl.With("err", err).Errorf("failed redispatching event %v: %v", eventID, err)
+		return sdktypes.InvalidEventID, fmt.Errorf("failed redispatching event %v: %w", eventID, err)
+	}
+
+	sl.With("new_event_id", newEventID).Infof("redispatched event %v as %v", eventID, newEventID)
+
+	return newEventID, err
 }
 
 func (d *Dispatcher) Start(context.Context) error {
-	w := worker.New(d.Client.Temporal(), taskQueueName, worker.Options{Identity: "Dispatcher"})
-	w.RegisterWorkflow(d.eventsWorkflow)
+	w := temporalclient.NewWorker(d.sl.Desugar(), d.svcs.LazyTemporalClient(), taskQueueName, temporalclient.WorkerConfig{})
+	if w == nil {
+		return nil
+	}
+
+	w.RegisterWorkflowWithOptions(
+		d.eventsWorkflow,
+		workflow.RegisterOptions{Name: workflowName},
+	)
+
+	d.registerActivities(w)
 
 	if err := w.Start(); err != nil {
 		return fmt.Errorf("worker start: %w", err)
 	}
-	return nil
-}
-
-func (d *Dispatcher) startWorkflow(ctx context.Context, eventID sdktypes.EventID, opts *sdkservices.DispatchOptions) error {
-	options := client.StartWorkflowOptions{
-		ID:        eventID.String(),
-		TaskQueue: taskQueueName,
-	}
-	input := eventsWorkflowInput{
-		EventID: eventID,
-		Options: opts,
-	}
-	_, err := d.Client.Temporal().ExecuteWorkflow(ctx, options, d.eventsWorkflow, input)
-	if err != nil {
-		d.L.Error("Failed starting workflow", zap.String("eventID", eventID.String()), zap.Error(err))
-		return fmt.Errorf("failed starting workflow: %w", err)
-	}
-	d.L.Info("Started workflow", zap.String("eventID", eventID.String()))
 
 	return nil
 }
