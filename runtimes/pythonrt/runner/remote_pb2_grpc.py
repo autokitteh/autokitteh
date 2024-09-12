@@ -35,22 +35,22 @@ class RunnerManagerStub(object):
             channel: A grpc.Channel.
         """
         self.Start = channel.unary_unary(
-                '/RunnerManager/Start',
+                '/autokitteh.remote.v1.RunnerManager/Start',
                 request_serializer=remote__pb2.StartRunnerRequest.SerializeToString,
                 response_deserializer=remote__pb2.StartRunnerResponse.FromString,
                 _registered_method=True)
         self.RunnerHealth = channel.unary_unary(
-                '/RunnerManager/RunnerHealth',
+                '/autokitteh.remote.v1.RunnerManager/RunnerHealth',
                 request_serializer=remote__pb2.RunnerHealthRequest.SerializeToString,
                 response_deserializer=remote__pb2.RunnerHealthResponse.FromString,
                 _registered_method=True)
         self.Stop = channel.unary_unary(
-                '/RunnerManager/Stop',
+                '/autokitteh.remote.v1.RunnerManager/Stop',
                 request_serializer=remote__pb2.StopRequest.SerializeToString,
                 response_deserializer=remote__pb2.StopResponse.FromString,
                 _registered_method=True)
         self.Health = channel.unary_unary(
-                '/RunnerManager/Health',
+                '/autokitteh.remote.v1.RunnerManager/Health',
                 request_serializer=remote__pb2.HealthRequest.SerializeToString,
                 response_deserializer=remote__pb2.HealthResponse.FromString,
                 _registered_method=True)
@@ -108,9 +108,9 @@ def add_RunnerManagerServicer_to_server(servicer, server):
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-            'RunnerManager', rpc_method_handlers)
+            'autokitteh.remote.v1.RunnerManager', rpc_method_handlers)
     server.add_generic_rpc_handlers((generic_handler,))
-    server.add_registered_method_handlers('RunnerManager', rpc_method_handlers)
+    server.add_registered_method_handlers('autokitteh.remote.v1.RunnerManager', rpc_method_handlers)
 
 
  # This class is part of an EXPERIMENTAL API.
@@ -131,7 +131,7 @@ class RunnerManager(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/RunnerManager/Start',
+            '/autokitteh.remote.v1.RunnerManager/Start',
             remote__pb2.StartRunnerRequest.SerializeToString,
             remote__pb2.StartRunnerResponse.FromString,
             options,
@@ -158,7 +158,7 @@ class RunnerManager(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/RunnerManager/RunnerHealth',
+            '/autokitteh.remote.v1.RunnerManager/RunnerHealth',
             remote__pb2.RunnerHealthRequest.SerializeToString,
             remote__pb2.RunnerHealthResponse.FromString,
             options,
@@ -185,7 +185,7 @@ class RunnerManager(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/RunnerManager/Stop',
+            '/autokitteh.remote.v1.RunnerManager/Stop',
             remote__pb2.StopRequest.SerializeToString,
             remote__pb2.StopResponse.FromString,
             options,
@@ -212,7 +212,7 @@ class RunnerManager(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/RunnerManager/Health',
+            '/autokitteh.remote.v1.RunnerManager/Health',
             remote__pb2.HealthRequest.SerializeToString,
             remote__pb2.HealthResponse.FromString,
             options,
@@ -236,27 +236,27 @@ class RunnerStub(object):
             channel: A grpc.Channel.
         """
         self.Exports = channel.unary_unary(
-                '/Runner/Exports',
+                '/autokitteh.remote.v1.Runner/Exports',
                 request_serializer=remote__pb2.ExportsRequest.SerializeToString,
                 response_deserializer=remote__pb2.ExportsResponse.FromString,
                 _registered_method=True)
         self.Start = channel.unary_unary(
-                '/Runner/Start',
+                '/autokitteh.remote.v1.Runner/Start',
                 request_serializer=remote__pb2.StartRequest.SerializeToString,
                 response_deserializer=remote__pb2.StartResponse.FromString,
                 _registered_method=True)
         self.Execute = channel.unary_unary(
-                '/Runner/Execute',
+                '/autokitteh.remote.v1.Runner/Execute',
                 request_serializer=remote__pb2.ExecuteRequest.SerializeToString,
                 response_deserializer=remote__pb2.ExecuteResponse.FromString,
                 _registered_method=True)
         self.ActivityReply = channel.unary_unary(
-                '/Runner/ActivityReply',
+                '/autokitteh.remote.v1.Runner/ActivityReply',
                 request_serializer=remote__pb2.ActivityReplyRequest.SerializeToString,
                 response_deserializer=remote__pb2.ActivityReplyResponse.FromString,
                 _registered_method=True)
         self.Health = channel.unary_unary(
-                '/Runner/Health',
+                '/autokitteh.remote.v1.Runner/Health',
                 request_serializer=remote__pb2.HealthRequest.SerializeToString,
                 response_deserializer=remote__pb2.HealthResponse.FromString,
                 _registered_method=True)
@@ -329,9 +329,9 @@ def add_RunnerServicer_to_server(servicer, server):
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-            'Runner', rpc_method_handlers)
+            'autokitteh.remote.v1.Runner', rpc_method_handlers)
     server.add_generic_rpc_handlers((generic_handler,))
-    server.add_registered_method_handlers('Runner', rpc_method_handlers)
+    server.add_registered_method_handlers('autokitteh.remote.v1.Runner', rpc_method_handlers)
 
 
  # This class is part of an EXPERIMENTAL API.
@@ -352,7 +352,7 @@ class Runner(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/Runner/Exports',
+            '/autokitteh.remote.v1.Runner/Exports',
             remote__pb2.ExportsRequest.SerializeToString,
             remote__pb2.ExportsResponse.FromString,
             options,
@@ -379,7 +379,7 @@ class Runner(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/Runner/Start',
+            '/autokitteh.remote.v1.Runner/Start',
             remote__pb2.StartRequest.SerializeToString,
             remote__pb2.StartResponse.FromString,
             options,
@@ -406,7 +406,7 @@ class Runner(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/Runner/Execute',
+            '/autokitteh.remote.v1.Runner/Execute',
             remote__pb2.ExecuteRequest.SerializeToString,
             remote__pb2.ExecuteResponse.FromString,
             options,
@@ -433,7 +433,7 @@ class Runner(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/Runner/ActivityReply',
+            '/autokitteh.remote.v1.Runner/ActivityReply',
             remote__pb2.ActivityReplyRequest.SerializeToString,
             remote__pb2.ActivityReplyResponse.FromString,
             options,
@@ -460,7 +460,7 @@ class Runner(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/Runner/Health',
+            '/autokitteh.remote.v1.Runner/Health',
             remote__pb2.HealthRequest.SerializeToString,
             remote__pb2.HealthResponse.FromString,
             options,
@@ -484,47 +484,47 @@ class WorkerStub(object):
             channel: A grpc.Channel.
         """
         self.Activity = channel.unary_unary(
-                '/Worker/Activity',
+                '/autokitteh.remote.v1.Worker/Activity',
                 request_serializer=remote__pb2.ActivityRequest.SerializeToString,
                 response_deserializer=remote__pb2.ActivityResponse.FromString,
                 _registered_method=True)
         self.Done = channel.unary_unary(
-                '/Worker/Done',
+                '/autokitteh.remote.v1.Worker/Done',
                 request_serializer=remote__pb2.DoneRequest.SerializeToString,
                 response_deserializer=remote__pb2.DoneResponse.FromString,
                 _registered_method=True)
         self.Log = channel.unary_unary(
-                '/Worker/Log',
+                '/autokitteh.remote.v1.Worker/Log',
                 request_serializer=remote__pb2.LogRequest.SerializeToString,
                 response_deserializer=remote__pb2.LogResponse.FromString,
                 _registered_method=True)
         self.Print = channel.unary_unary(
-                '/Worker/Print',
+                '/autokitteh.remote.v1.Worker/Print',
                 request_serializer=remote__pb2.PrintRequest.SerializeToString,
                 response_deserializer=remote__pb2.PrintResponse.FromString,
                 _registered_method=True)
         self.Sleep = channel.unary_unary(
-                '/Worker/Sleep',
+                '/autokitteh.remote.v1.Worker/Sleep',
                 request_serializer=remote__pb2.SleepRequest.SerializeToString,
                 response_deserializer=remote__pb2.SleepResponse.FromString,
                 _registered_method=True)
         self.Subscribe = channel.unary_unary(
-                '/Worker/Subscribe',
+                '/autokitteh.remote.v1.Worker/Subscribe',
                 request_serializer=remote__pb2.SubscribeRequest.SerializeToString,
                 response_deserializer=remote__pb2.SubscribeResponse.FromString,
                 _registered_method=True)
         self.NextEvent = channel.unary_unary(
-                '/Worker/NextEvent',
+                '/autokitteh.remote.v1.Worker/NextEvent',
                 request_serializer=remote__pb2.NextEventRequest.SerializeToString,
                 response_deserializer=remote__pb2.NextEventResponse.FromString,
                 _registered_method=True)
         self.Unsubscribe = channel.unary_unary(
-                '/Worker/Unsubscribe',
+                '/autokitteh.remote.v1.Worker/Unsubscribe',
                 request_serializer=remote__pb2.UnsubscribeRequest.SerializeToString,
                 response_deserializer=remote__pb2.UnsubscribeResponse.FromString,
                 _registered_method=True)
         self.Health = channel.unary_unary(
-                '/Worker/Health',
+                '/autokitteh.remote.v1.Worker/Health',
                 request_serializer=remote__pb2.HealthRequest.SerializeToString,
                 response_deserializer=remote__pb2.HealthResponse.FromString,
                 _registered_method=True)
@@ -642,9 +642,9 @@ def add_WorkerServicer_to_server(servicer, server):
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-            'Worker', rpc_method_handlers)
+            'autokitteh.remote.v1.Worker', rpc_method_handlers)
     server.add_generic_rpc_handlers((generic_handler,))
-    server.add_registered_method_handlers('Worker', rpc_method_handlers)
+    server.add_registered_method_handlers('autokitteh.remote.v1.Worker', rpc_method_handlers)
 
 
  # This class is part of an EXPERIMENTAL API.
@@ -665,7 +665,7 @@ class Worker(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/Worker/Activity',
+            '/autokitteh.remote.v1.Worker/Activity',
             remote__pb2.ActivityRequest.SerializeToString,
             remote__pb2.ActivityResponse.FromString,
             options,
@@ -692,7 +692,7 @@ class Worker(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/Worker/Done',
+            '/autokitteh.remote.v1.Worker/Done',
             remote__pb2.DoneRequest.SerializeToString,
             remote__pb2.DoneResponse.FromString,
             options,
@@ -719,7 +719,7 @@ class Worker(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/Worker/Log',
+            '/autokitteh.remote.v1.Worker/Log',
             remote__pb2.LogRequest.SerializeToString,
             remote__pb2.LogResponse.FromString,
             options,
@@ -746,7 +746,7 @@ class Worker(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/Worker/Print',
+            '/autokitteh.remote.v1.Worker/Print',
             remote__pb2.PrintRequest.SerializeToString,
             remote__pb2.PrintResponse.FromString,
             options,
@@ -773,7 +773,7 @@ class Worker(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/Worker/Sleep',
+            '/autokitteh.remote.v1.Worker/Sleep',
             remote__pb2.SleepRequest.SerializeToString,
             remote__pb2.SleepResponse.FromString,
             options,
@@ -800,7 +800,7 @@ class Worker(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/Worker/Subscribe',
+            '/autokitteh.remote.v1.Worker/Subscribe',
             remote__pb2.SubscribeRequest.SerializeToString,
             remote__pb2.SubscribeResponse.FromString,
             options,
@@ -827,7 +827,7 @@ class Worker(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/Worker/NextEvent',
+            '/autokitteh.remote.v1.Worker/NextEvent',
             remote__pb2.NextEventRequest.SerializeToString,
             remote__pb2.NextEventResponse.FromString,
             options,
@@ -854,7 +854,7 @@ class Worker(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/Worker/Unsubscribe',
+            '/autokitteh.remote.v1.Worker/Unsubscribe',
             remote__pb2.UnsubscribeRequest.SerializeToString,
             remote__pb2.UnsubscribeResponse.FromString,
             options,
@@ -881,7 +881,7 @@ class Worker(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/Worker/Health',
+            '/autokitteh.remote.v1.Worker/Health',
             remote__pb2.HealthRequest.SerializeToString,
             remote__pb2.HealthResponse.FromString,
             options,

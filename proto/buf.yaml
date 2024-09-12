@@ -1,7 +1,7 @@
 version: v1
 build:
   excludes:
-    - remote
+    - autokitteh/remote/
 deps:
   - buf.build/bufbuild/protovalidate
 breaking:
@@ -10,5 +10,3 @@ breaking:
 lint:
   use:
     - DEFAULT
-  ignore:
-    - remote.proto

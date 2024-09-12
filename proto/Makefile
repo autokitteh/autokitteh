@@ -1,5 +1,5 @@
 .PHONY: all
-all: buf-format-check buf-lint buf-gen
+all: buf-format-check buf-lint buf-gen remote
 
 .PHONY: buf-format-check
 buf-format-check:
@@ -44,25 +44,31 @@ py-dist-publish-test: py-deps
 py-grpc-tools:
 	python -m pip install 'grpcio-tools ~= 1.66'
 
+remote_pb_dir = autokitteh/remote/v1
+remote_pb = $(remote_pb_dir)/remote.proto
+remote_py_out = ../runtimes/pythonrt/runner
+remote_go_out = gen/go/autokitteh/remote/v1
+
 .PHONY: remote-py
 remote-py:
 	python -m grpc_tools.protoc \
-		-I remote \
-		--python_out=../runtimes/pythonrt/runner \
-		--pyi_out=../runtimes/pythonrt/runner \
-		--grpc_python_out=../runtimes/pythonrt/runner \
-		remote/remote.proto
+		-I $(remote_pb_dir) \
+		--python_out=$(remote_py_out)\
+		--pyi_out=$(remote_py_out) \
+		--grpc_python_out=$(remote_py_out) \
+		$(remote_pb)
 
 .PHONY: remote-go
 remote-go:
-	mkdir -p ../runtimes/pythonrt/pb
+	mkdir -p $(remote_go_out)
 	protoc \
-		-I remote \
-		--go_out=../runtimes/pythonrt/pb \
+		-I $(remote_pb_dir) \
+		--go_out=$(remote_go_out) \
 		--go_opt=paths=source_relative \
-		--go-grpc_out=../runtimes/pythonrt/pb \
+		--go-grpc_out=$(remote_go_out) \
 		--go-grpc_opt=paths=source_relative \
-		remote/remote.proto
+		$(remote_pb)
 
 .PHONY: remote
-remote: remote-py remote-go
+remote: remote-py
+#remote-go

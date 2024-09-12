@@ -8,7 +8,7 @@ import (
 	"net"
 	"time"
 
-	"go.autokitteh.dev/autokitteh/runtimes/pythonrt/pb"
+	pb "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/remote/v1"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 	"go.uber.org/zap"

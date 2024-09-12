@@ -6,7 +6,7 @@
 // - protoc             v5.27.3
 // source: remote.proto
 
-package pb
+package v1
 
 import (
 	context "context"
@@ -21,10 +21,10 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	RunnerManager_Start_FullMethodName        = "/RunnerManager/Start"
-	RunnerManager_RunnerHealth_FullMethodName = "/RunnerManager/RunnerHealth"
-	RunnerManager_Stop_FullMethodName         = "/RunnerManager/Stop"
-	RunnerManager_Health_FullMethodName       = "/RunnerManager/Health"
+	RunnerManager_Start_FullMethodName        = "/autokitteh.remote.v1.RunnerManager/Start"
+	RunnerManager_RunnerHealth_FullMethodName = "/autokitteh.remote.v1.RunnerManager/RunnerHealth"
+	RunnerManager_Stop_FullMethodName         = "/autokitteh.remote.v1.RunnerManager/Stop"
+	RunnerManager_Health_FullMethodName       = "/autokitteh.remote.v1.RunnerManager/Health"
 )
 
 // RunnerManagerClient is the client API for RunnerManager service.
@@ -212,7 +212,7 @@ func _RunnerManager_Health_Handler(srv interface{}, ctx context.Context, dec fun
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var RunnerManager_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "RunnerManager",
+	ServiceName: "autokitteh.remote.v1.RunnerManager",
 	HandlerType: (*RunnerManagerServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
@@ -237,11 +237,11 @@ var RunnerManager_ServiceDesc = grpc.ServiceDesc{
 }
 
 const (
-	Runner_Exports_FullMethodName       = "/Runner/Exports"
-	Runner_Start_FullMethodName         = "/Runner/Start"
-	Runner_Execute_FullMethodName       = "/Runner/Execute"
-	Runner_ActivityReply_FullMethodName = "/Runner/ActivityReply"
-	Runner_Health_FullMethodName        = "/Runner/Health"
+	Runner_Exports_FullMethodName       = "/autokitteh.remote.v1.Runner/Exports"
+	Runner_Start_FullMethodName         = "/autokitteh.remote.v1.Runner/Start"
+	Runner_Execute_FullMethodName       = "/autokitteh.remote.v1.Runner/Execute"
+	Runner_ActivityReply_FullMethodName = "/autokitteh.remote.v1.Runner/ActivityReply"
+	Runner_Health_FullMethodName        = "/autokitteh.remote.v1.Runner/Health"
 )
 
 // RunnerClient is the client API for Runner service.
@@ -470,7 +470,7 @@ func _Runner_Health_Handler(srv interface{}, ctx context.Context, dec func(inter
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var Runner_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "Runner",
+	ServiceName: "autokitteh.remote.v1.Runner",
 	HandlerType: (*RunnerServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
@@ -499,15 +499,15 @@ var Runner_ServiceDesc = grpc.ServiceDesc{
 }
 
 const (
-	Worker_Activity_FullMethodName    = "/Worker/Activity"
-	Worker_Done_FullMethodName        = "/Worker/Done"
-	Worker_Log_FullMethodName         = "/Worker/Log"
-	Worker_Print_FullMethodName       = "/Worker/Print"
-	Worker_Sleep_FullMethodName       = "/Worker/Sleep"
-	Worker_Subscribe_FullMethodName   = "/Worker/Subscribe"
-	Worker_NextEvent_FullMethodName   = "/Worker/NextEvent"
-	Worker_Unsubscribe_FullMethodName = "/Worker/Unsubscribe"
-	Worker_Health_FullMethodName      = "/Worker/Health"
+	Worker_Activity_FullMethodName    = "/autokitteh.remote.v1.Worker/Activity"
+	Worker_Done_FullMethodName        = "/autokitteh.remote.v1.Worker/Done"
+	Worker_Log_FullMethodName         = "/autokitteh.remote.v1.Worker/Log"
+	Worker_Print_FullMethodName       = "/autokitteh.remote.v1.Worker/Print"
+	Worker_Sleep_FullMethodName       = "/autokitteh.remote.v1.Worker/Sleep"
+	Worker_Subscribe_FullMethodName   = "/autokitteh.remote.v1.Worker/Subscribe"
+	Worker_NextEvent_FullMethodName   = "/autokitteh.remote.v1.Worker/NextEvent"
+	Worker_Unsubscribe_FullMethodName = "/autokitteh.remote.v1.Worker/Unsubscribe"
+	Worker_Health_FullMethodName      = "/autokitteh.remote.v1.Worker/Health"
 )
 
 // WorkerClient is the client API for Worker service.
@@ -870,7 +870,7 @@ func _Worker_Health_Handler(srv interface{}, ctx context.Context, dec func(inter
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var Worker_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "Worker",
+	ServiceName: "autokitteh.remote.v1.Worker",
 	HandlerType: (*WorkerServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{

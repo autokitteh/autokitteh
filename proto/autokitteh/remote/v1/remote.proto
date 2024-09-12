@@ -1,8 +1,10 @@
 // This is temporarly here until we find a good home for it
 syntax = "proto3";
 
+package autokitteh.remote.v1;
+
 // Until we decide where
-option go_package = "go.autokitteh.dev/autokitteh/runtimes/pythonrt/pb";
+option go_package = "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/remote/v1";
 
 message ContainerConfig {
   string image = 1;
