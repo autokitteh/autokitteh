@@ -28,6 +28,8 @@ jobs:
           python-version: "3.12"
       - name: Install Python tools
         run: make -C proto py-deps
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v3
       - name: Set up Buf
         uses: bufbuild/buf-setup-action@v1
         with:
