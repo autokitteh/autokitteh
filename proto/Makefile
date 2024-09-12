@@ -26,6 +26,14 @@ clean:
 	rm -fR gen
 	rm -fR dist
 
+.PHONY: deps
+deps: go-deps py-deps
+
+.PHONY: go-deps
+go-deps:
+	go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+
 .PHONY: py-deps
 py-deps:
 	python3 -m pip install --upgrade poetry 'grpcio-tools ~= 1.66'
