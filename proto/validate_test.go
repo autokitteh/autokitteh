@@ -3,6 +3,7 @@ package proto
 import (
 	"embed"
 	"fmt"
+	"strings"
 	"testing"
 )
 
@@ -49,6 +50,11 @@ func TestAllValidated(t *testing.T) {
 		for _, f := range fs {
 			if f.IsDir() {
 				t.Errorf("%s is a directory, unrecognized structure", dn)
+				continue
+			}
+
+			// TODO: Once we use buf to generate, remove this
+			if strings.HasSuffix(f.Name(), "remote.proto") {
 				continue
 			}
 
