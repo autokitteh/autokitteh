@@ -34,7 +34,7 @@ func (s *server) Get(ctx context.Context, req *connect.Request[integrationsv1.Ge
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	var i sdkservices.Integration
+	var i sdktypes.Integration
 
 	if req.Msg.IntegrationId != "" {
 		id, err := sdktypes.StrictParseIntegrationID(req.Msg.IntegrationId)
@@ -56,7 +56,7 @@ func (s *server) Get(ctx context.Context, req *connect.Request[integrationsv1.Ge
 		}
 	}
 
-	return connect.NewResponse(&integrationsv1.GetResponse{Integration: i.Get().ToProto()}), nil
+	return connect.NewResponse(&integrationsv1.GetResponse{Integration: i.ToProto()}), nil
 }
 
 func (s *server) List(ctx context.Context, req *connect.Request[integrationsv1.ListRequest]) (*connect.Response[integrationsv1.ListResponse], error) {

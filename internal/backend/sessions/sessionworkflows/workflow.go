@@ -214,7 +214,7 @@ func (w *sessionWorkflow) initConnections(ctx workflow.Context) (map[string]conn
 	for _, conn := range w.data.Connections {
 		name, cid, iid := conn.Name().String(), conn.ID(), conn.IntegrationID()
 
-		intg, err := w.ws.svcs.Integrations.GetByID(goCtx, iid)
+		intg, err := w.ws.svcs.Integrations.Attach(goCtx, iid)
 		if err != nil {
 			return nil, fmt.Errorf("get integration %q: %w", iid, err)
 		}

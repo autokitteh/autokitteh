@@ -29,16 +29,6 @@ class EventsServiceStub(object):
                 request_serializer=autokitteh_dot_events_dot_v1_dot_svc__pb2.ListRequest.SerializeToString,
                 response_deserializer=autokitteh_dot_events_dot_v1_dot_svc__pb2.ListResponse.FromString,
                 )
-        self.ListEventRecords = channel.unary_unary(
-                '/autokitteh.events.v1.EventsService/ListEventRecords',
-                request_serializer=autokitteh_dot_events_dot_v1_dot_svc__pb2.ListEventRecordsRequest.SerializeToString,
-                response_deserializer=autokitteh_dot_events_dot_v1_dot_svc__pb2.ListEventRecordsResponse.FromString,
-                )
-        self.AddEventRecord = channel.unary_unary(
-                '/autokitteh.events.v1.EventsService/AddEventRecord',
-                request_serializer=autokitteh_dot_events_dot_v1_dot_svc__pb2.AddEventRecordRequest.SerializeToString,
-                response_deserializer=autokitteh_dot_events_dot_v1_dot_svc__pb2.AddEventRecordResponse.FromString,
-                )
 
 
 class EventsServiceServicer(object):
@@ -63,18 +53,6 @@ class EventsServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def ListEventRecords(self, request, context):
-        """Missing associated documentation comment in .proto file."""
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
-    def AddEventRecord(self, request, context):
-        """Missing associated documentation comment in .proto file."""
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
 
 def add_EventsServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -92,16 +70,6 @@ def add_EventsServiceServicer_to_server(servicer, server):
                     servicer.List,
                     request_deserializer=autokitteh_dot_events_dot_v1_dot_svc__pb2.ListRequest.FromString,
                     response_serializer=autokitteh_dot_events_dot_v1_dot_svc__pb2.ListResponse.SerializeToString,
-            ),
-            'ListEventRecords': grpc.unary_unary_rpc_method_handler(
-                    servicer.ListEventRecords,
-                    request_deserializer=autokitteh_dot_events_dot_v1_dot_svc__pb2.ListEventRecordsRequest.FromString,
-                    response_serializer=autokitteh_dot_events_dot_v1_dot_svc__pb2.ListEventRecordsResponse.SerializeToString,
-            ),
-            'AddEventRecord': grpc.unary_unary_rpc_method_handler(
-                    servicer.AddEventRecord,
-                    request_deserializer=autokitteh_dot_events_dot_v1_dot_svc__pb2.AddEventRecordRequest.FromString,
-                    response_serializer=autokitteh_dot_events_dot_v1_dot_svc__pb2.AddEventRecordResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -161,39 +129,5 @@ class EventsService(object):
         return grpc.experimental.unary_unary(request, target, '/autokitteh.events.v1.EventsService/List',
             autokitteh_dot_events_dot_v1_dot_svc__pb2.ListRequest.SerializeToString,
             autokitteh_dot_events_dot_v1_dot_svc__pb2.ListResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
-
-    @staticmethod
-    def ListEventRecords(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/autokitteh.events.v1.EventsService/ListEventRecords',
-            autokitteh_dot_events_dot_v1_dot_svc__pb2.ListEventRecordsRequest.SerializeToString,
-            autokitteh_dot_events_dot_v1_dot_svc__pb2.ListEventRecordsResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
-
-    @staticmethod
-    def AddEventRecord(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/autokitteh.events.v1.EventsService/AddEventRecord',
-            autokitteh_dot_events_dot_v1_dot_svc__pb2.AddEventRecordRequest.SerializeToString,
-            autokitteh_dot_events_dot_v1_dot_svc__pb2.AddEventRecordResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

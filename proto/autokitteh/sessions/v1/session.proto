@@ -91,6 +91,17 @@ message Call {
 }
 
 message SessionLogRecord {
+  // Bitfield.
+  enum Type {
+    TYPE_UNSPECIFIED = 0;
+    TYPE_PRINT = 1;
+    TYPE_CALL_SPEC = 2;
+    TYPE_CALL_ATTEMPT_START = 4;
+    TYPE_CALL_ATTEMPT_COMPLETE = 8;
+    TYPE_STATE = 16;
+    TYPE_STOP_REQUEST = 32;
+  }
+
   message Print {
     string text = 1;
   }

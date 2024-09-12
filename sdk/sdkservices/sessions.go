@@ -24,6 +24,7 @@ type ListSessionResult struct {
 
 type ListSessionLogRecordsFilter struct {
 	SessionID sdktypes.SessionID
+	Types     sdktypes.SessionLogRecordType // bitmask
 	sdktypes.PaginationRequest
 }
 

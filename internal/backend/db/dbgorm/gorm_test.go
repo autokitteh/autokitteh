@@ -102,7 +102,6 @@ type dbFixture struct {
 	db            *gorm.DB
 	gormdb        *gormdb
 	ctx           context.Context
-	eventID       sdktypes.UUID
 	eventSequence int
 }
 
@@ -467,16 +466,17 @@ func (f *dbFixture) newEvent(args ...any) scheme.Event {
 	return e
 }
 
-func (f *dbFixture) newEventRecord() scheme.EventRecord {
-	return scheme.EventRecord{
-		EventID:   testDummyID,
-		CreatedAt: now,
-	}
-}
-
-func (f *dbFixture) newSignal() scheme.Signal {
-	return scheme.Signal{
+func (f *dbFixture) newSignal(args ...any) scheme.Signal {
+	s := scheme.Signal{
 		SignalID:  testSignalID,
 		CreatedAt: now,
 	}
+	for _, a := range args {
+		switch a := a.(type) {
+		case scheme.Connection:
+			s.ConnectionID = &a.ConnectionID
+			s.DestinationID = a.ConnectionID
+		}
+	}
+	return s
 }

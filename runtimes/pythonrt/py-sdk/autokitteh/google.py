@@ -21,7 +21,7 @@ def gmail_client(connection: str, **kwargs):
     https://docs.autokitteh.com/integrations/google/gmail/python
 
     Code samples:
-    - https://github.com/autokitteh/samples/tree/main/google/gmail
+    - https://github.com/autokitteh/kittehub/tree/main/samples/google/gmail
     - https://github.com/googleworkspace/python-samples/tree/main/gmail
 
     Args:
@@ -51,7 +51,7 @@ def google_calendar_client(connection: str, **kwargs):
     https://developers.google.com/resources/api-libraries/documentation/calendar/v3/python/latest/
 
     Code samples:
-    https://github.com/googleworkspace/python-samples/tree/main/calendar
+    https://github.com/autokitteh/kittehub/tree/main/samples/google/calendar
 
     Args:
         connection: AutoKitteh connection name.
@@ -108,7 +108,7 @@ def google_forms_client(connection: str, **kwargs):
     https://docs.autokitteh.com/integrations/google/forms/python
 
     Code samples:
-    - https://github.com/autokitteh/samples/tree/main/google/forms
+    - https://github.com/autokitteh/kittehub/tree/main/samples/google/forms
     - https://github.com/googleworkspace/python-samples/tree/main/forms
 
     Args:
@@ -138,7 +138,7 @@ def google_sheets_client(connection: str, **kwargs):
     https://docs.autokitteh.com/integrations/google/sheets/python
 
     Code samples:
-    - https://github.com/autokitteh/samples/tree/main/google/sheets
+    - https://github.com/autokitteh/kittehub/tree/main/samples/google/sheets
     - https://github.com/googleworkspace/python-samples/tree/main/sheets
 
     Args:

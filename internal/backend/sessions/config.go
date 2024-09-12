@@ -9,12 +9,14 @@ import (
 )
 
 type Config struct {
-	Workflows sessionworkflows.Config `koanf:"workflows"`
-	Calls     sessioncalls.Config     `koanf:"calls"`
-	Debug     bool                    `koanf:"debug"`
+	Workflows    sessionworkflows.Config `koanf:"workflows"`
+	Calls        sessioncalls.Config     `koanf:"calls"`
+	Debug        bool                    `koanf:"debug"`
+	EnableWorker bool                    `koanf:"enable_worker"`
 }
 
 var defaultConfig = Config{
+	EnableWorker: true,
 	Workflows: sessionworkflows.Config{
 		Temporal: sessionworkflows.TemporalConfig{
 			WorkflowTaskTimeout:         time.Hour,

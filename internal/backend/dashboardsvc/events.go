@@ -78,12 +78,6 @@ func (s Svc) event(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rs, err := s.Svcs.Events().ListEventRecords(r.Context(), sdkservices.ListEventRecordsFilter{EventID: eid})
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
 	vw := sdktypes.DefaultValueWrapper
 	vw.SafeForJSON = true
 	vw.IgnoreFunctions = true
@@ -150,14 +144,12 @@ func (s Svc) event(w http.ResponseWriter, r *http.Request) {
 		Title       string
 		ID          string
 		EventJSON   template.HTML
-		LogJSON     template.HTML
 		DataJSON    template.HTML
 		Deployments any
 	}{
 		Title:       "Event: " + sdkE.ID().String(),
 		ID:          sdkE.ID().String(),
 		EventJSON:   marshalObject(sdkE.WithData(nil).ToProto()),
-		LogJSON:     template.HTML(kittehs.Must1(kittehs.MarshalProtoSliceJSON(kittehs.Transform(rs, sdktypes.ToProto)))),
 		DataJSON:    template.HTML(jsonData),
 		Deployments: deployments,
 	}); err != nil {

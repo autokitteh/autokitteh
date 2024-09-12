@@ -11,24 +11,31 @@ import (
 	"strconv"
 	"time"
 
+	"go.opentelemetry.io/otel/attribute"
 	"go.temporal.io/api/serviceerror"
 	"go.temporal.io/sdk/client"
+	"go.temporal.io/sdk/contrib/opentelemetry"
 	"go.temporal.io/sdk/testsuite"
 	"go.uber.org/zap"
 	zapadapter "logur.dev/adapter/zap"
 	"logur.dev/logur"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
 	"go.autokitteh.dev/autokitteh/internal/backend/health/healthreporter"
 	"go.autokitteh.dev/autokitteh/internal/xdg"
 )
 
-type Client interface {
-	Start(context.Context) error
-	Stop(context.Context) error
-	Temporal() client.Client
-	TemporalAddr() (frontend, ui string)
-	healthreporter.HealthReporter
-}
+type (
+	LazyTemporalClient = func() client.Client
+
+	Client interface {
+		Start(context.Context) error
+		Stop(context.Context) error
+		Temporal() client.Client
+		TemporalAddr() (frontend, ui string)
+		healthreporter.HealthReporter
+	}
+)
 
 type impl struct {
 	client  client.Client
@@ -40,14 +47,15 @@ type impl struct {
 	opts    client.Options
 }
 
-func NewFromClient(cfg *MonitorConfig, z *zap.Logger, tclient client.Client) (Client, error) {
+func NewFromClient(cfg *MonitorConfig, z *zap.Logger, tclient client.Client) (Client, LazyTemporalClient, error) {
 	if cfg == nil {
 		cfg = &MonitorConfig{}
 	}
-	return &impl{z: z, cfg: &Config{Monitor: *cfg}, client: tclient, done: make(chan struct{})}, nil
+	return &impl{z: z, cfg: &Config{Monitor: *cfg}, client: tclient, done: make(chan struct{})},
+		func() client.Client { return tclient }, nil
 }
 
-func New(cfg *Config, z *zap.Logger) (Client, error) {
+func New(cfg *Config, z *zap.Logger) (Client, LazyTemporalClient, error) {
 	var tlsConfig *tls.Config
 	if cfg.TLS.Enabled {
 		var cert tls.Certificate
@@ -57,16 +65,16 @@ func New(cfg *Config, z *zap.Logger) (Client, error) {
 		} else if cfg.TLS.CertFilePath != "" && cfg.TLS.KeyFilePath != "" {
 			cert, err = tls.LoadX509KeyPair(cfg.TLS.CertFilePath, cfg.TLS.KeyFilePath)
 		} else {
-			return nil, errors.New("tls enabled without certificate or key")
+			return nil, nil, errors.New("tls enabled without certificate or key")
 		}
 
 		if err != nil {
-			return nil, fmt.Errorf("load x509 key pair: %w", err)
+			return nil, nil, fmt.Errorf("load x509 key pair: %w", err)
 		}
 		tlsConfig = &tls.Config{Certificates: []tls.Certificate{cert}}
 	}
 
-	return &impl{
+	impl := &impl{
 		z:    z,
 		cfg:  cfg,
 		done: make(chan struct{}),
@@ -77,8 +85,18 @@ func New(cfg *Config, z *zap.Logger) (Client, error) {
 			ConnectionOptions: client.ConnectionOptions{
 				TLS: tlsConfig,
 			},
+			Identity: fixtures.ProcessID(),
+			MetricsHandler: opentelemetry.NewMetricsHandler(
+				opentelemetry.MetricsHandlerOptions{
+					InitialAttributes: attribute.NewSet(
+						attribute.String("process_id", fixtures.ProcessID()),
+					),
+				},
+			),
 		},
-	}, nil
+	}
+
+	return impl, impl.Temporal, nil
 }
 
 func (c *impl) startDevServer(ctx context.Context) error {

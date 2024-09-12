@@ -12,7 +12,6 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	commonv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/common/v1"
 	deploymentsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/deployments/v1"
-	eventsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/events/v1"
 	sessionsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/sessions/v1"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -37,7 +36,6 @@ var Tables = []any{
 	&Deployment{},
 	&Env{},
 	&Event{},
-	&EventRecord{},
 	&Ownership{},
 	&Project{},
 	&Secret{},
@@ -216,25 +214,6 @@ func ParseEvent(e Event) (sdktypes.Event, error) {
 	})
 }
 
-type EventRecord struct {
-	EventID   sdktypes.UUID `gorm:"primaryKey;type:uuid;not null"`
-	Seq       uint32        `gorm:"primaryKey"`
-	State     int32         `gorm:"index"`
-	CreatedAt time.Time
-
-	// enforce foreign keys
-	Event *Event `gorm:"references:EventID"`
-}
-
-func ParseEventRecord(e EventRecord) (sdktypes.EventRecord, error) {
-	return sdktypes.StrictEventRecordFromProto(&sdktypes.EventRecordPB{
-		Seq:       e.Seq,
-		EventId:   sdktypes.NewIDFromUUID[sdktypes.EventID](&e.EventID).String(),
-		State:     eventsv1.EventState(e.State),
-		CreatedAt: timestamppb.New(e.CreatedAt),
-	})
-}
-
 type Env struct {
 	EnvID     sdktypes.UUID `gorm:"primaryKey;type:uuid;not null"`
 	ProjectID sdktypes.UUID `gorm:"index;type:uuid;not null"`
@@ -296,6 +275,10 @@ func ParseTrigger(e Trigger) (sdktypes.Trigger, error) {
 		return sdktypes.InvalidTrigger, fmt.Errorf("source type: %w", err)
 	}
 
+	if srcType == sdktypes.TriggerSourceTypeUnspecified {
+		srcType = sdktypes.TriggerSourceTypeConnection
+	}
+
 	return sdktypes.StrictTriggerFromProto(&sdktypes.TriggerPB{
 		TriggerId:    sdktypes.NewIDFromUUID[sdktypes.TriggerID](&e.TriggerID).String(),
 		EnvId:        sdktypes.NewIDFromUUID[sdktypes.EnvID](&e.EnvID).String(),
@@ -314,6 +297,7 @@ type SessionLogRecord struct {
 	SessionID sdktypes.UUID `gorm:"primaryKey:SessionID;type:uuid;not null"`
 	Seq       uint64        `gorm:"primaryKey;not null"`
 	Data      datatypes.JSON
+	Type      string `gorm:"index"`
 
 	// enforce foreign keys
 	Session *Session

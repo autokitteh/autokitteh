@@ -88,8 +88,6 @@ type DB interface {
 	SaveEvent(context.Context, sdktypes.Event) error
 	GetEventByID(context.Context, sdktypes.EventID) (sdktypes.Event, error)
 	ListEvents(context.Context, sdkservices.ListEventsFilter) ([]sdktypes.Event, error)
-	AddEventRecord(context.Context, sdktypes.EventRecord) error
-	ListEventRecords(context.Context, sdkservices.ListEventRecordsFilter) ([]sdktypes.EventRecord, error)
 	GetLatestEventSequence(context.Context) (uint64, error)
 
 	// -----------------------------------------------------------------------

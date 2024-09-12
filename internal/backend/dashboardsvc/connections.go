@@ -120,7 +120,7 @@ func (s Svc) connection(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if sdkI == nil || !sdkI.Get().IsValid() {
+	if !sdkI.IsValid() {
 		http.Error(w, "Integration not found", http.StatusNotFound)
 		return
 	}
@@ -182,12 +182,12 @@ func (s Svc) init(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if !integ.Get().IsValid() {
+	if !integ.IsValid() {
 		http.Error(w, "integration not found", http.StatusNotFound)
 		return
 	}
 
-	http.Redirect(w, r, fmt.Sprintf("%s?cid=%v&origin=%s", integ.Get().ConnectionURL(), cid, origin), http.StatusFound)
+	http.Redirect(w, r, fmt.Sprintf("%s?cid=%v&origin=%s", integ.ConnectionURL(), cid, origin), http.StatusFound)
 }
 
 // postInit is the last step in the connection initialization flow.

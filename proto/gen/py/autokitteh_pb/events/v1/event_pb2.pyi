@@ -1,37 +1,11 @@
 from autokitteh_pb.values.v1 import values_pb2 as _values_pb2
 from google.protobuf import timestamp_pb2 as _timestamp_pb2
 from google.protobuf.internal import containers as _containers
-from google.protobuf.internal import enum_type_wrapper as _enum_type_wrapper
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
 from typing import ClassVar as _ClassVar, Mapping as _Mapping, Optional as _Optional, Union as _Union
 
 DESCRIPTOR: _descriptor.FileDescriptor
-
-class EventState(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
-    __slots__ = []
-    EVENT_STATE_UNSPECIFIED: _ClassVar[EventState]
-    EVENT_STATE_SAVED: _ClassVar[EventState]
-    EVENT_STATE_PROCESSING: _ClassVar[EventState]
-    EVENT_STATE_COMPLETED: _ClassVar[EventState]
-    EVENT_STATE_FAILED: _ClassVar[EventState]
-EVENT_STATE_UNSPECIFIED: EventState
-EVENT_STATE_SAVED: EventState
-EVENT_STATE_PROCESSING: EventState
-EVENT_STATE_COMPLETED: EventState
-EVENT_STATE_FAILED: EventState
-
-class EventRecord(_message.Message):
-    __slots__ = ["seq", "event_id", "state", "created_at"]
-    SEQ_FIELD_NUMBER: _ClassVar[int]
-    EVENT_ID_FIELD_NUMBER: _ClassVar[int]
-    STATE_FIELD_NUMBER: _ClassVar[int]
-    CREATED_AT_FIELD_NUMBER: _ClassVar[int]
-    seq: int
-    event_id: str
-    state: EventState
-    created_at: _timestamp_pb2.Timestamp
-    def __init__(self, seq: _Optional[int] = ..., event_id: _Optional[str] = ..., state: _Optional[_Union[EventState, str]] = ..., created_at: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ...) -> None: ...
 
 class Event(_message.Message):
     __slots__ = ["event_id", "destination_id", "event_type", "data", "memo", "created_at", "seq"]

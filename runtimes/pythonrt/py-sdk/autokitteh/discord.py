@@ -33,3 +33,13 @@ def discord_client(connection: str, intents=None, **kwargs) -> discord.Client:
         raise ConnectionInitError(connection)
 
     return discord.Client(intents=intents, **kwargs)
+
+
+def bot_token(connection: str):
+    check_connection_name(connection)
+
+    bot_token = os.getenv(connection + "__BotToken")
+    if not bot_token:
+        raise ConnectionInitError(connection)
+
+    return bot_token

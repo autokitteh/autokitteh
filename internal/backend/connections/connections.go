@@ -30,14 +30,19 @@ func (c *Connections) Create(ctx context.Context, conn sdktypes.Connection) (sdk
 		return sdktypes.InvalidConnectionID, err
 	}
 
-	if intg == nil {
+	if !intg.IsValid() {
 		return sdktypes.InvalidConnectionID, sdkerrors.ErrNotFound
 	}
 
-	status := intg.Get().InitialConnectionStatus()
+	status := intg.InitialConnectionStatus()
 	if !status.IsValid() {
+		i, err := c.Integrations.Attach(ctx, conn.IntegrationID())
+		if err != nil {
+			return sdktypes.InvalidConnectionID, err
+		}
+
 		// get the connection status of a new connection.
-		if status, err = intg.GetConnectionStatus(ctx, sdktypes.InvalidConnectionID); err != nil {
+		if status, err = i.GetConnectionStatus(ctx, sdktypes.InvalidConnectionID); err != nil {
 			return sdktypes.InvalidConnectionID, err
 		}
 	}
@@ -74,17 +79,17 @@ func (c *Connections) List(ctx context.Context, filter sdkservices.ListConnectio
 	})
 }
 
-func (c *Connections) getIntegration(ctx context.Context, id sdktypes.ConnectionID) (sdkservices.Integration, error) {
+func (c *Connections) attachIntegration(ctx context.Context, id sdktypes.ConnectionID) (sdkservices.Integration, error) {
 	conn, err := c.Get(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 
-	return c.Integrations.GetByID(ctx, conn.IntegrationID())
+	return c.Integrations.Attach(ctx, conn.IntegrationID())
 }
 
 func (c *Connections) Test(ctx context.Context, id sdktypes.ConnectionID) (sdktypes.Status, error) {
-	i, err := c.getIntegration(ctx, id)
+	i, err := c.attachIntegration(ctx, id)
 	if err != nil {
 		return sdktypes.InvalidStatus, err
 	}
@@ -97,7 +102,7 @@ func (c *Connections) Test(ctx context.Context, id sdktypes.ConnectionID) (sdkty
 }
 
 func (c *Connections) RefreshStatus(ctx context.Context, id sdktypes.ConnectionID) (sdktypes.Status, error) {
-	i, err := c.getIntegration(ctx, id)
+	i, err := c.attachIntegration(ctx, id)
 	if err != nil {
 		return sdktypes.InvalidStatus, err
 	}
@@ -128,7 +133,7 @@ func (c *Connections) enrichConnection(ctx context.Context, conn sdktypes.Connec
 		return sdktypes.InvalidConnection, err
 	}
 
-	caps := intg.Get().ConnectionCapabilities()
+	caps := intg.ConnectionCapabilities()
 
 	// These links are directing to `dashboardsvc`.
 
