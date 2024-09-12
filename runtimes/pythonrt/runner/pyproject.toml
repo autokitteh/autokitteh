@@ -2,7 +2,7 @@
 name = "runner"
 version = "0.1.0"
 dependencies = [
-	"autokitteh ~= 0.3",
+	"autokitteh == 0.3.*",
 	"grpcio ~= 1.66",
 	# TODO: Newest version conflicts with google-generativeai
 	"grpcio-reflection ~= 1.66",
