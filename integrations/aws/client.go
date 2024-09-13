@@ -7,6 +7,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/eventbridge"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
@@ -99,6 +100,7 @@ func New(cvars sdkservices.Vars) sdkservices.Integration {
 		desc,
 		sdkmodule.New(initOpts(cvars)...),
 		connStatus(i),
+		connTest(i),
 		sdkintegrations.WithConnectionConfigFromVars(cvars),
 	)
 }
@@ -126,5 +128,36 @@ func connStatus(i *integration) sdkintegrations.OptFn {
 			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "Initialized"), nil
 		}
 		return sdktypes.NewStatus(sdktypes.StatusCodeError, "Bad auth type"), nil
+	})
+}
+
+func connTest(i *integration) sdkintegrations.OptFn {
+	return sdkintegrations.WithConnectionTest(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
+		vs, err := i.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
+		if err != nil {
+			return sdktypes.InvalidStatus, err
+		}
+
+		cfg, err := config.LoadDefaultConfig(ctx,
+			config.WithRegion(vs.GetValueByString("Region")),
+			config.WithCredentialsProvider(
+				credentials.NewStaticCredentialsProvider(
+					vs.GetValueByString("AccessKeyID"),
+					vs.GetValueByString("SecretKey"),
+					vs.GetValueByString("Token"))),
+		)
+		if err != nil {
+			return sdktypes.InvalidStatus, err
+		}
+
+		// Create an S3 client
+		s3Client := s3.NewFromConfig(cfg)
+
+		_, err = s3Client.ListBuckets(ctx, &s3.ListBucketsInput{})
+		if err != nil {
+			return sdktypes.NewStatus(sdktypes.StatusCodeError, "failed to connect to AWS instance"), nil
+		}
+
+		return sdktypes.NewStatus(sdktypes.StatusCodeOK, "connection test was succesfull"), nil
 	})
 }
