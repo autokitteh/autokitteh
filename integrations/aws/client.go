@@ -16,6 +16,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/sns"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
 
 	"go.autokitteh.dev/autokitteh/integrations"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
@@ -150,13 +151,13 @@ func connTest(i *integration) sdkintegrations.OptFn {
 			return sdktypes.InvalidStatus, err
 		}
 
-		s3Client := s3.NewFromConfig(cfg)
+		stsClient := sts.NewFromConfig(cfg)
 
-		_, err = s3Client.ListBuckets(ctx, &s3.ListBucketsInput{})
+		_, err = stsClient.GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
 		if err != nil {
-			return sdktypes.NewStatus(sdktypes.StatusCodeError, "failed to connect to AWS instance"), nil
+			return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), nil
 		}
 
-		return sdktypes.NewStatus(sdktypes.StatusCodeOK, "connection test was succesfull"), nil
+		return sdktypes.NewStatus(sdktypes.StatusCodeOK, ""), nil
 	})
 }
