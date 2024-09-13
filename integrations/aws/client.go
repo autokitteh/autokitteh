@@ -150,7 +150,6 @@ func connTest(i *integration) sdkintegrations.OptFn {
 			return sdktypes.InvalidStatus, err
 		}
 
-		// Create an S3 client
 		s3Client := s3.NewFromConfig(cfg)
 
 		_, err = s3Client.ListBuckets(ctx, &s3.ListBucketsInput{})
