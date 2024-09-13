@@ -3,6 +3,8 @@ package discord
 import (
 	"context"
 
+	"github.com/bwmarrin/discordgo"
+
 	"go.autokitteh.dev/autokitteh/integrations"
 	"go.autokitteh.dev/autokitteh/integrations/discord/internal/vars"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
@@ -39,6 +41,7 @@ func New(cvars sdkservices.Vars) sdkservices.Integration {
 		desc,
 		sdkmodule.New( /* No exported functions for Starlark */ ),
 		connStatus(i),
+		connTest(i),
 		sdkintegrations.WithConnectionConfigFromVars(cvars),
 	)
 }
@@ -66,5 +69,27 @@ func connStatus(i *integration) sdkintegrations.OptFn {
 			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "Initialized"), nil
 		}
 		return sdktypes.NewStatus(sdktypes.StatusCodeError, "Bad auth type"), nil
+	})
+}
+
+func connTest(i *integration) sdkintegrations.OptFn {
+	return sdkintegrations.WithConnectionTest(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
+		vs, err := i.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
+		if err != nil {
+			return sdktypes.InvalidStatus, err
+		}
+
+		token := vs.Get(vars.BotToken).Value()
+		dg, err := discordgo.New("Bot " + token)
+		if err != nil {
+			return sdktypes.InvalidStatus, err
+		}
+
+		_, err = dg.User("@me")
+		if err != nil {
+			return sdktypes.NewStatus(sdktypes.StatusCodeError, "failed to connect to Discord instance"), nil
+		}
+
+		return sdktypes.NewStatus(sdktypes.StatusCodeOK, "connection test was succesfull"), nil
 	})
 }
