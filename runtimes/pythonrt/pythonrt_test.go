@@ -55,7 +55,7 @@ func isFSFile(fsys fs.FS, path string) bool {
 }
 
 func newSVC(t *testing.T) *pySvc {
-	rt, err := New()
+	rt, err := newSvc()
 	require.NoError(t, err, "New")
 	svc, ok := rt.(*pySvc)
 	require.Truef(t, ok, "type assertion failed, got %T", rt)
@@ -117,7 +117,8 @@ func newCallbacks(svc *pySvc) *sdkservices.RunCallbacks {
 			rid sdktypes.RunID,
 			v sdktypes.Value,
 			args []sdktypes.Value,
-			kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
+			kwargs map[string]sdktypes.Value,
+		) (sdktypes.Value, error) {
 			return svc.Call(ctx, v, args, kwargs)
 		},
 		Load: func(ctx context.Context, rid sdktypes.RunID, path string) (map[string]sdktypes.Value, error) {
@@ -194,7 +195,7 @@ func TestNewBadVersion(t *testing.T) {
 	genExe(t, exe, minPyVersion.Major, minPyVersion.Minor-1)
 	t.Setenv(exeEnvKey, exe)
 
-	_, err := New()
+	_, err := newSvc()
 	require.Error(t, err)
 }
 
@@ -203,17 +204,16 @@ func TestPythonFromEnv(t *testing.T) {
 	pyExe := path.Join(envDir, "pypy3")
 	t.Setenv(exeEnvKey, pyExe)
 
-	_, err := New()
+	_, err := newSvc()
 	require.Error(t, err)
 
 	genExe(t, pyExe, minPyVersion.Major, minPyVersion.Minor)
-	r, err := New()
+	r, err := newSvc()
 	require.NoError(t, err)
 
 	py, ok := r.(*pySvc)
 	require.True(t, ok)
 	require.Equal(t, pyExe, py.pyExe)
-
 }
 
 func Test_pySvc_Build_PyCache(t *testing.T) {
@@ -279,7 +279,7 @@ func TestProgramError(t *testing.T) {
 	hdr := &tar.Header{
 		Name: pyFile,
 		Size: int64(len(progErrCode)),
-		Mode: 0644,
+		Mode: 0o644,
 	}
 	err := tw.WriteHeader(hdr)
 	require.NoError(t, err)

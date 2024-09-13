@@ -68,7 +68,7 @@ func getExports(path string, f *syntax.File) (exports []sdktypes.BuildExport) {
 }
 
 // TODO: we might want to stream the build product data as it might be big? Or we just limit the build size.
-func Build(ctx context.Context, fs fs.FS, path string, symbols []sdktypes.Symbol) (sdktypes.BuildArtifact, error) {
+func Build(ctx context.Context, cfg *Config, fs fs.FS, path string, symbols []sdktypes.Symbol) (sdktypes.BuildArtifact, error) {
 	data := make(map[string][]byte)
 
 	type external struct {

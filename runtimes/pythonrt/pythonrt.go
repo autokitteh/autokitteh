@@ -25,13 +25,15 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
+func New() *sdkruntimes.Runtime { return Runtime }
+
 var (
 	Runtime = &sdkruntimes.Runtime{
 		Desc: kittehs.Must1(sdktypes.StrictRuntimeFromProto(&sdktypes.RuntimePB{
 			Name:           "python",
 			FileExtensions: []string{"py"},
 		})),
-		New: New,
+		New: newSvc,
 	}
 	venvPath = path.Join(xdg.DataHomeDir(), "venv")
 	venvPy   = path.Join(venvPath, "bin", "python")
@@ -66,7 +68,7 @@ func isGoodVersion(v Version) bool {
 
 const exeEnvKey = "AK_WORKER_PYTHON"
 
-func New() (sdkservices.Runtime, error) {
+func newSvc() (sdkservices.Runtime, error) {
 	log, err := logger.New(logger.Configs.Dev) // TODO (ENG-553): From configuration
 	if err != nil {
 		return nil, err

@@ -42,6 +42,7 @@ func (r *run) ID() sdktypes.RunID { return r.runID }
 
 func Run(
 	ctx context.Context,
+	cfg *Config,
 	runID sdktypes.RunID,
 	mainPath string,
 	compiled map[string][]byte,

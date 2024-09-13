@@ -1,4 +1,4 @@
-package runtime
+package configrt
 
 import (
 	"context"
@@ -10,14 +10,14 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
+func New() *sdkruntimes.Runtime { return Runtime }
+
 var Runtime = &sdkruntimes.Runtime{
 	Desc: desc,
-	New:  func() (sdkservices.Runtime, error) { return New(), nil },
+	New:  func() (sdkservices.Runtime, error) { return svc{}, nil },
 }
 
 type svc struct{}
-
-func New() sdkservices.Runtime { return svc{} }
 
 func (svc) Get() sdktypes.Runtime { return desc }
 

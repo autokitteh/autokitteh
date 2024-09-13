@@ -7,7 +7,7 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 	"os"
-	"runtime"
+	goruntime "runtime"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -17,7 +17,6 @@ import (
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 
-	"go.autokitteh.dev/autokitteh/backend/runtimes"
 	"go.autokitteh.dev/autokitteh/internal/backend/applygrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authgrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authhttpmiddleware"
@@ -184,7 +183,6 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		Component("events", configset.Empty, fx.Provide(events.New)),
 		Component("triggers", configset.Empty, fx.Provide(triggers.New)),
 		Component("oauth", configset.Empty, fx.Provide(oauth.New)),
-		Component("runtimes", configset.Empty, fx.Provide(runtimes.New)),
 
 		Component("healthcheck", configset.Empty, fx.Provide(healthchecker.New)),
 		Component(
@@ -291,6 +289,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 			}),
 		),
 		integrationsFXOption(),
+		runtimesFXOption(),
 		fx.Invoke(func(z *zap.Logger, muxes *muxes.Muxes) {
 			srv := http.FileServer(http.FS(static.RootWebContent))
 			muxes.NoAuth.Handle("GET /static/", http.StripPrefix("/static/", srv))
@@ -373,7 +372,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 
 			HookSimpleOnStart(lc, func() {
 				ready.Store(true)
-				z.Info("ready", zap.String("version", version.Version), zap.String("id", fixtures.ProcessID()), zap.Int("gomaxprocs", runtime.GOMAXPROCS(0)))
+				z.Info("ready", zap.String("version", version.Version), zap.String("id", fixtures.ProcessID()), zap.Int("gomaxprocs", goruntime.GOMAXPROCS(0)))
 			})
 		}),
 	}
