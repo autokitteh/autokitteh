@@ -93,10 +93,9 @@ func connTest(i *integration) sdkintegrations.OptFn {
 
 		token := vs.GetValueByString("oauth_AccessToken")
 
-		res, err := accessibleResources(nil, baseURL, token)
-		print(res)
+		_, err = accessibleResources(nil, baseURL, token)
 		if err != nil {
-			return sdktypes.NewStatus(sdktypes.StatusCodeError, "failed to connect to Confluence instance"), nil
+			return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), nil
 		}
 		return sdktypes.NewStatus(sdktypes.StatusCodeOK, ""), nil
 	})
