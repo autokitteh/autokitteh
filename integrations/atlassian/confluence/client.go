@@ -78,7 +78,7 @@ func connStatus(i *integration) sdkintegrations.OptFn {
 func connTest(i *integration) sdkintegrations.OptFn {
 	return sdkintegrations.WithConnectionTest(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
 		if !cid.IsValid() {
-			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "init required"), nil
+			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
 		}
 
 		vs, err := i.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
@@ -88,7 +88,7 @@ func connTest(i *integration) sdkintegrations.OptFn {
 
 		baseURL, err := apiBaseURL()
 		if err != nil {
-			return sdktypes.NewStatus(sdktypes.StatusCodeError, "invalid Atlassian base URL"), nil
+			return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), nil
 		}
 
 		token := vs.GetValueByString("oauth_AccessToken")
