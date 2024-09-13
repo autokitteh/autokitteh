@@ -6,7 +6,6 @@ import (
 
 	"go.temporal.io/sdk/workflow"
 
-	akCtx "go.autokitteh.dev/autokitteh/internal/backend/context"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	"go.autokitteh.dev/autokitteh/internal/backend/types"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
@@ -60,10 +59,6 @@ func (d *Dispatcher) startSessions(wctx workflow.Context, event sdktypes.Event, 
 			sl.With("err", err).Errorf("could not initialize session: %v", err)
 			continue
 		}
-
-		ctx := temporalclient.NewWorkflowContextAsGOContext(wctx)
-		ctx = akCtx.WithRequestOrginator(ctx, akCtx.SessionWorkflow)
-		ctx = akCtx.WithOwnershipOf(ctx, d.svcs.DB.GetOwnership, event.ID().UUIDValue())
 
 		var sid sdktypes.SessionID
 
