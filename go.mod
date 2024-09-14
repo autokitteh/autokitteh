@@ -76,6 +76,7 @@ require (
 	go.starlark.net v0.0.0-20240725214946-42030a7cedce
 	go.temporal.io/api v1.39.0
 	go.temporal.io/sdk v1.29.0
+	go.temporal.io/sdk/contrib/opentelemetry v0.6.0
 	go.uber.org/automaxprocs v1.5.3
 	go.uber.org/dig v1.18.0
 	go.uber.org/fx v1.22.2
@@ -238,7 +239,6 @@ require (
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.54.0 // indirect
 	go.opentelemetry.io/otel/trace v1.29.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.3.1 // indirect
-	go.temporal.io/sdk/contrib/opentelemetry v0.6.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.27.0 // indirect
 	golang.org/x/sync v0.8.0 // indirect
