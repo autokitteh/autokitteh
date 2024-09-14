@@ -2,11 +2,11 @@ package server
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/spf13/cobra"
 
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
 )
 
 var migrateCmd = common.StandardCommand(&cobra.Command{
@@ -16,18 +16,18 @@ var migrateCmd = common.StandardCommand(&cobra.Command{
 	Args:    cobra.NoArgs,
 
 	RunE: func(cmd *cobra.Command, args []string) error {
-		mode, err := common.GetMode()
+		mode, err := common.ParseModeFlag()
 		if err != nil {
 			return err
 		}
 
 		db, err := InitDB(common.Config(), mode)
 		if err != nil {
-			return fmt.Errorf("init db: %w", err)
+			return kittehs.ErrorWithPrefix("init DB", err)
 		}
 
 		if err := db.Migrate(context.Background()); err != nil {
-			return fmt.Errorf("migrate: %w", err)
+			return kittehs.ErrorWithPrefix("migrate", err)
 		}
 
 		return nil

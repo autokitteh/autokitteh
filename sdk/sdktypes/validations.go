@@ -36,7 +36,7 @@ func nonzeroMessage(m proto.Message) error {
 	})
 
 	if isZero {
-		return fmt.Errorf("empty")
+		return errors.New("empty")
 	}
 
 	return nil
@@ -57,7 +57,7 @@ func oneOfMessage(m proto.Message, ignores ...string) error {
 	})
 
 	if count != 1 {
-		return fmt.Errorf("exactly one field must be set")
+		return errors.New("exactly one field must be set")
 	}
 
 	return nil
@@ -65,32 +65,33 @@ func oneOfMessage(m proto.Message, ignores ...string) error {
 
 func indexedObject[O ~struct{ object[M, T] }, M comparableMessage, T objectTraits[M]](i int, m M) error {
 	if err := strictValidate[M, T](m); err != nil {
-		return fmt.Errorf("%d: %w", i, err)
+		return kittehs.ErrorWithValue(i, err)
 	}
 	return nil
 }
 
 func objectField[_ ~struct{ object[M, T] }, M comparableMessage, T objectTraits[M]](name string, m M) error {
 	if err := validate[M, T](m); err != nil {
-		return fmt.Errorf("%s: %w", name, err)
+		return kittehs.ErrorWithValue(name, err)
 	}
 	return nil
 }
 
 func objectsSlice[O ~struct{ object[M, T] }, M comparableMessage, T objectTraits[M]](ms []M) error {
-	return kittehs.ErrorWithPrefix(kittehs.ValidateList(ms, indexedObject[O, M, T]))
+	return kittehs.ErrorWithValue(kittehs.ValidateList(ms, indexedObject[O, M, T]))
 }
 
 func objectsSliceField[O ~struct{ object[M, T] }, M comparableMessage, T objectTraits[M]](name string, ms []M) error {
-	if err := kittehs.ErrorWithPrefix(kittehs.ValidateList(ms, indexedObject[O, M, T])); err != nil {
-		return fmt.Errorf("%s: %w", name, err)
+	err := kittehs.ErrorWithValue(kittehs.ValidateList(ms, indexedObject[O, M, T]))
+	if err != nil {
+		return kittehs.ErrorWithValue(name, err)
 	}
 	return nil
 }
 
 func idField[ID id[T], T idTraits](name string, s string) error {
 	if _, err := ParseID[ID](s); err != nil {
-		return fmt.Errorf("%s: %w", name, err)
+		return kittehs.ErrorWithValue(name, err)
 	}
 	return nil
 }
@@ -125,7 +126,7 @@ func objectsMapField[O ~struct{ object[M, T] }, M comparableMessage, T objectTra
 		return nil
 	}
 
-	return fmt.Errorf("%s: %w", name, err)
+	return kittehs.ErrorWithValue(name, err)
 }
 
 func valuesMapField(name string, m map[string]*valuev1.Value) error {
@@ -134,21 +135,21 @@ func valuesMapField(name string, m map[string]*valuev1.Value) error {
 
 func nameField(name string, s string) error {
 	if _, err := ParseSymbol(s); err != nil {
-		return fmt.Errorf("%s: %w", name, err)
+		return kittehs.ErrorWithValue(name, err)
 	}
 	return nil
 }
 
 func executorIDField(name string, s string) error {
 	if _, err := ParseExecutorID(s); err != nil {
-		return fmt.Errorf("%s: %w", name, err)
+		return kittehs.ErrorWithValue(name, err)
 	}
 	return nil
 }
 
 func enumField[W ~struct{ enum[T, E] }, T enumTraits, E ~int32](name string, v E) error {
 	if _, err := EnumFromProto[W, T, E](v); err != nil {
-		return fmt.Errorf("%s: %w", name, err)
+		return kittehs.ErrorWithValue(name, err)
 	}
 	return nil
 }
@@ -159,14 +160,14 @@ func urlField(name string, s string) error {
 	}
 
 	if _, err := url.Parse(s); err != nil {
-		return fmt.Errorf("%s: %w", name, err)
+		return kittehs.ErrorWithValue(name, err)
 	}
 	return nil
 }
 
 func symbolField(name string, s string) error {
 	if _, err := ParseSymbol(s); err != nil {
-		return fmt.Errorf("%s: %w", name, err)
+		return kittehs.ErrorWithValue(name, err)
 	}
 	return nil
 }

@@ -1,7 +1,7 @@
 package runtimes
 
 import (
-	"fmt"
+	"errors"
 	"io"
 	"io/fs"
 	"os"
@@ -45,14 +45,14 @@ var buildCmd = common.StandardCommand(&cobra.Command{
 
 		if txtarFile {
 			if len(args) > 1 {
-				return fmt.Errorf("txtar works with a single file or stdin")
+				return errors.New("txtar works with a single file or stdin")
 			}
 
 			var r io.Reader = os.Stdin
 			if len(args) > 0 {
 				f, err := os.Open(args[0])
 				if err != nil {
-					return fmt.Errorf("open: %w", err)
+					return kittehs.ErrorWithPrefix("open file", err)
 				}
 
 				defer f.Close()
@@ -62,13 +62,13 @@ var buildCmd = common.StandardCommand(&cobra.Command{
 
 			bs, err := io.ReadAll(r)
 			if err != nil {
-				return fmt.Errorf("read: %w", err)
+				return kittehs.ErrorWithPrefix("read input", err)
 			}
 
 			a := txtar.Parse(bs)
 
 			if srcFS, err = kittehs.TxtarToFS(a); err != nil {
-				return fmt.Errorf("internal error: %w", err)
+				return kittehs.ErrorWithPrefix("extract txtar", err)
 			}
 
 			if srcFS, err = fs.Sub(srcFS, dir); err != nil {
@@ -93,7 +93,7 @@ var buildCmd = common.StandardCommand(&cobra.Command{
 		}
 
 		if err := b.Write(dst); err != nil {
-			return fmt.Errorf("write output: %w", err)
+			return kittehs.ErrorWithPrefix("write output", err)
 		}
 
 		if describe {
@@ -126,7 +126,7 @@ func outputFile() (*os.File, error) {
 
 	f, err := os.OpenFile(output, os.O_CREATE|os.O_WRONLY, 0o600)
 	if err != nil {
-		return nil, fmt.Errorf("create file: %w", err)
+		return nil, kittehs.ErrorWithPrefix("open output file", err)
 	}
 
 	return f, nil

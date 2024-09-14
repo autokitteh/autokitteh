@@ -63,8 +63,9 @@ func planProject(ctx context.Context, mproj *Project, client sdkservices.Service
 
 	var curr sdktypes.Project
 	if !opts.fromScratch {
-		if curr, err = sdkerrors.IgnoreNotFoundErr(client.Projects().GetByName(ctx, name)); err != nil {
-			return nil, fmt.Errorf("get: %w", err)
+		curr, err = sdkerrors.IgnoreNotFoundErr(client.Projects().GetByName(ctx, name))
+		if err != nil {
+			return nil, kittehs.ErrorWithPrefix("get project", err)
 		}
 	}
 
@@ -103,21 +104,21 @@ func planProject(ctx context.Context, mproj *Project, client sdkservices.Service
 	// TODO: Remove all non-default environments.
 	envActions, err := planDefaultEnv(ctx, mproj.Vars, client, mproj.Name, pid, optfns...)
 	if err != nil {
-		return nil, fmt.Errorf("envs: %w", err)
+		return nil, kittehs.ErrorWithPrefix("default env", err)
 	}
 
 	add(envActions...)
 
 	connActions, err := planConnections(ctx, mproj.Connections, client, mproj.Name, pid, optfns...)
 	if err != nil {
-		return nil, fmt.Errorf("connections: %w", err)
+		return nil, kittehs.ErrorWithPrefix("connections", err)
 	}
 
 	add(connActions...)
 
 	triggerActions, err := planTriggers(ctx, mproj.Triggers, client, mproj.Name, pid, optfns...)
 	if err != nil {
-		return nil, fmt.Errorf("triggers: %w", err)
+		return nil, kittehs.ErrorWithPrefix("triggers", err)
 	}
 
 	add(triggerActions...)
@@ -148,7 +149,7 @@ func planDefaultEnv(ctx context.Context, mvars []*Var, client sdkservices.Servic
 
 	if pid.IsValid() {
 		if curr, err = client.Envs().GetByName(ctx, pid, name); err != nil {
-			return nil, fmt.Errorf("get env: %w", err)
+			return nil, kittehs.ErrorWithPrefix("get env", err)
 		}
 	}
 
@@ -180,7 +181,7 @@ func planDefaultEnv(ctx context.Context, mvars []*Var, client sdkservices.Servic
 
 	if envID.IsValid() {
 		if vars, err = client.Vars().Get(ctx, sid); err != nil {
-			return nil, fmt.Errorf("get vars: %w", err)
+			return nil, kittehs.ErrorWithPrefix("get vars", err)
 		}
 	}
 
@@ -195,7 +196,7 @@ func planDefaultEnv(ctx context.Context, mvars []*Var, client sdkservices.Servic
 
 		n, err := sdktypes.StrictParseSymbol(mvar.Name)
 		if err != nil {
-			return nil, fmt.Errorf("invalid var name: %w", err)
+			return nil, kittehs.ErrorWithPrefix("invalid var name", err)
 		}
 
 		desired := sdktypes.NewVar(n).SetValue(mvar.Value).SetSecret(mvar.Secret).WithScopeID(sid)
@@ -245,7 +246,7 @@ func planConnections(ctx context.Context, mconns []*Connection, client sdkservic
 
 	if pid.IsValid() && !opts.fromScratch {
 		if conns, err = client.Connections().List(ctx, sdkservices.ListConnectionsFilter{ProjectID: pid}); err != nil {
-			return nil, fmt.Errorf("list connections: %w", err)
+			return nil, kittehs.ErrorWithPrefix("list connections", err)
 		}
 
 		log.Printf("found %d connections", len(conns))
@@ -277,12 +278,12 @@ func planConnections(ctx context.Context, mconns []*Connection, client sdkservic
 		var cvars []sdktypes.Var
 		if cid.IsValid() {
 			if cvars, err = client.Vars().Get(ctx, sid); err != nil {
-				return nil, fmt.Errorf("get connection vars: %w", err)
+				return nil, kittehs.ErrorWithPrefix("get connection vars", err)
 			}
 		}
 
 		if as, err = planConnectionVars(mconn, cid, cvars, optfns...); err != nil {
-			return nil, fmt.Errorf("connection vars %q: %w", mconn.GetKey(), err)
+			return nil, fmt.Errorf("connection var %q: %w", mconn.GetKey(), err)
 		}
 
 		add(as...)
@@ -314,7 +315,7 @@ func planConnectionVars(mconn Connection, cid sdktypes.ConnectionID, cvars sdkty
 
 		n, err := sdktypes.ParseSymbol(mvar.Name)
 		if err != nil {
-			return nil, fmt.Errorf("invalid var name: %w", err)
+			return nil, kittehs.ErrorWithPrefix("invalid var name", err)
 		}
 
 		want := sdktypes.NewVar(n).SetValue(mvar.Value).SetSecret(mvar.Secret).WithScopeID(sdktypes.NewVarScopeID(cid))
@@ -365,12 +366,20 @@ func planConnection(mconn *Connection, curr sdktypes.Connection, optfns ...Optio
 		Name: mconn.Name,
 	})
 	if err != nil {
-		return sdktypes.InvalidConnectionID, nil, fmt.Errorf("invalid: %w", err)
+		return sdktypes.InvalidConnectionID, nil, kittehs.ErrorWithPrefix("invalid connection", err)
 	}
 
 	if !curr.IsValid() {
 		log.Printf("not found, will create")
-		return sdktypes.InvalidConnectionID, []actions.Action{actions.CreateConnectionAction{Key: mconn.GetKey(), ProjectKey: mconn.ProjectKey, IntegrationKey: mconn.IntegrationKey, Connection: desired}}, nil
+		actions := []actions.Action{
+			actions.CreateConnectionAction{
+				Key:            mconn.GetKey(),
+				ProjectKey:     mconn.ProjectKey,
+				IntegrationKey: mconn.IntegrationKey,
+				Connection:     desired,
+			},
+		}
+		return sdktypes.InvalidConnectionID, actions, nil
 	}
 
 	desired = desired.
@@ -384,7 +393,13 @@ func planConnection(mconn *Connection, curr sdktypes.Connection, optfns ...Optio
 	}
 
 	log.Printf("not as desired, will update")
-	return curr.ID(), []actions.Action{actions.UpdateConnectionAction{Key: mconn.GetKey(), Connection: desired}}, nil
+	actions := []actions.Action{
+		actions.UpdateConnectionAction{
+			Key:        mconn.GetKey(),
+			Connection: desired,
+		},
+	}
+	return curr.ID(), actions, nil
 }
 
 func planTriggers(ctx context.Context, mtriggers []*Trigger, client sdkservices.Services, projName string, pid sdktypes.ProjectID, optfns ...Option) ([]actions.Action, error) {
@@ -399,8 +414,9 @@ func planTriggers(ctx context.Context, mtriggers []*Trigger, client sdkservices.
 
 	if pid.IsValid() && !opts.fromScratch {
 		var err error
-		if triggers, err = client.Triggers().List(ctx, sdkservices.ListTriggersFilter{ProjectID: pid}); err != nil {
-			return nil, fmt.Errorf("list triggers: %w", err)
+		triggers, err = client.Triggers().List(ctx, sdkservices.ListTriggersFilter{ProjectID: pid})
+		if err != nil {
+			return nil, kittehs.ErrorWithPrefix("list triggers", err)
 		}
 
 		log.For("project", stringKeyer(projName)).Printf("found %d triggers", len(triggers))

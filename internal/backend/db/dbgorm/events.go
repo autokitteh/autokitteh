@@ -3,7 +3,6 @@ package dbgorm
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 
 	"gorm.io/gorm"
 
@@ -92,7 +91,7 @@ func (db *gormdb) SaveEvent(ctx context.Context, event sdktypes.Event) error {
 	if connectionID.IsValid() { // only if exists
 		conn, err := db.GetConnection(ctx, connectionID)
 		if err != nil {
-			return fmt.Errorf("connection: %w", err)
+			return kittehs.ErrorWithPrefix("get connection", err)
 		}
 
 		if !conn.IsValid() {

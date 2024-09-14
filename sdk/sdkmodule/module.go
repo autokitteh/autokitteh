@@ -64,14 +64,15 @@ func (m *module) Configure(ctx context.Context, xid sdktypes.ExecutorID, cid sdk
 
 		var err error
 		if values[k], err = v.fn(xid, data); err != nil {
-			return nil, fmt.Errorf("%q: %w", k, err)
+			return nil, kittehs.ErrorWithValue(k, err)
 		}
 	}
 
 	for k, f := range m.opts.funcs {
 		var err error
-		if values[k], err = sdktypes.NewFunctionValue(xid, k, data, f.flags, kittehs.Must1(sdktypes.ModuleFunctionFromProto(&f.desc))); err != nil {
-			return nil, fmt.Errorf("%q: %w", k, err)
+		values[k], err = sdktypes.NewFunctionValue(xid, k, data, f.flags, kittehs.Must1(sdktypes.ModuleFunctionFromProto(&f.desc)))
+		if err != nil {
+			return nil, kittehs.ErrorWithValue(k, err)
 		}
 	}
 

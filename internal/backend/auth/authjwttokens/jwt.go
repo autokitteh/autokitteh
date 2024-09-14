@@ -12,6 +12,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authtokens"
 	"go.autokitteh.dev/autokitteh/internal/backend/configset"
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
@@ -43,7 +44,7 @@ var Configs = configset.Set[Config]{
 func New(cfg *Config) (authtokens.Tokens, error) {
 	key, err := hex.DecodeString(cfg.SignKey)
 	if err != nil {
-		return nil, fmt.Errorf("invalid sign key: %w", err)
+		return nil, kittehs.ErrorWithPrefix("invalid signing key", err)
 	}
 
 	if len(key) != hashSize {
@@ -56,12 +57,12 @@ func New(cfg *Config) (authtokens.Tokens, error) {
 func (js *tokens) Create(user sdktypes.User) (string, error) {
 	uj, err := user.MarshalJSON()
 	if err != nil {
-		return "", fmt.Errorf("marshal: %w", err)
+		return "", kittehs.ErrorWithPrefix("marshal JSON", err)
 	}
 
 	uuid, err := uuid.NewV7()
 	if err != nil {
-		return "", fmt.Errorf("uuid: %w", err)
+		return "", kittehs.ErrorWithPrefix("generate UUID", err)
 	}
 
 	claim := j.RegisteredClaims{
@@ -88,7 +89,7 @@ func (js *tokens) Parse(token string) (sdktypes.User, error) {
 
 	var u sdktypes.User
 	if err := u.UnmarshalJSON([]byte(claims.Subject)); err != nil {
-		return sdktypes.InvalidUser, fmt.Errorf("unmarshal: %w", err)
+		return sdktypes.InvalidUser, kittehs.ErrorWithPrefix("unmarshal JSON", err)
 	}
 
 	return u, nil

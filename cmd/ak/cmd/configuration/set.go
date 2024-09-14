@@ -14,6 +14,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/backend/svc"
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/internal/xdg"
 )
 
@@ -31,7 +32,7 @@ var setCmd = common.StandardCommand(&cobra.Command{
 		if _, err := common.NewDevSvc(true); err != nil {
 			filename := common.ConfigYAMLFilePath()
 			err = dig.RootCause(err)
-			return fmt.Errorf("%q: invalid configuration: %w", filename, err)
+			return fmt.Errorf("invalid config file %q: %w", filename, err)
 		}
 
 		possibleConfigs := common.Config().ListAll()
@@ -59,7 +60,7 @@ var setCmd = common.StandardCommand(&cobra.Command{
 		}
 
 		if err := os.WriteFile(common.ConfigYAMLFilePath(), data, filePermissions); err != nil {
-			return fmt.Errorf("write file: %w", err)
+			return kittehs.ErrorWithPrefix("write file", err)
 		}
 
 		return nil
@@ -73,7 +74,7 @@ func validateArgs(args []string, possibleConfigs []string) error {
 
 	key := args[0]
 	if key == "" {
-		return fmt.Errorf("key cannot be empty")
+		return errors.New("key cannot be empty")
 	}
 
 	if !slices.Contains(possibleConfigs, key) {
@@ -90,7 +91,7 @@ func currentConfig() (map[string]any, error) {
 	data, err := os.ReadFile(filename)
 	if err != nil {
 		if !errors.Is(err, os.ErrNotExist) {
-			return nil, fmt.Errorf("read file: %w", err)
+			return nil, kittehs.ErrorWithPrefix("read file", err)
 		}
 		return cfg, nil
 	}
@@ -128,13 +129,13 @@ func setKeyValue(cfg map[string]any, key, val string) error {
 func validateConfig(data []byte) error {
 	temp, err := os.MkdirTemp("", "")
 	if err != nil {
-		return fmt.Errorf("create temporary directory: %w", err)
+		return kittehs.ErrorWithPrefix("create temporary directory", err)
 	}
 	defer os.RemoveAll(temp)
 
 	path := filepath.Join(temp, common.ConfigYAMLFileName)
 	if err := os.WriteFile(path, data, filePermissions); err != nil {
-		return fmt.Errorf("write file: %w", err)
+		return kittehs.ErrorWithPrefix("write file", err)
 	}
 
 	path = os.Getenv(xdg.ConfigEnvVar)
@@ -150,12 +151,11 @@ func validateConfig(data []byte) error {
 	os.Setenv(xdg.ConfigEnvVar, temp)
 
 	if err := common.InitConfig(nil); err != nil {
-		return fmt.Errorf("init temp config: %w", err)
+		return kittehs.ErrorWithPrefix("init temporary config", err)
 	}
 
 	if _, err := common.NewDevSvc(true); err != nil {
-		err = dig.RootCause(err)
-		return fmt.Errorf("configuration is invalid: %w", err)
+		return kittehs.ErrorWithPrefix("invalid config", dig.RootCause(err))
 	}
 
 	return nil

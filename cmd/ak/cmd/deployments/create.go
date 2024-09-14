@@ -41,19 +41,19 @@ var createCmd = common.StandardCommand(&cobra.Command{
 			BuildId: buildID,
 		})
 		if err != nil {
-			return fmt.Errorf("invalid deployment: %w", err)
+			return kittehs.ErrorWithPrefix("invalid deployment", err)
 		}
 
 		did, err := deployments().Create(ctx, deployment)
 		if err != nil {
-			return fmt.Errorf("create deployment: %w", err)
+			return kittehs.ErrorWithPrefix("create deployment", err)
 		}
 
 		common.RenderKV("deployment_id", did)
 
 		if activate {
 			if err := deployments().Activate(ctx, did); err != nil {
-				return fmt.Errorf("activate deployment: %w", err)
+				return kittehs.ErrorWithPrefix("activate deployment", err)
 			}
 		}
 

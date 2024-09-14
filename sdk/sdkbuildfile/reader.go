@@ -45,7 +45,7 @@ func IsBuildFile(r io.Reader) bool {
 func ReadVersion(r io.Reader) (string, error) {
 	gr, err := gzip.NewReader(r)
 	if err != nil {
-		return "", fmt.Errorf("gzip: %w", err)
+		return "", kittehs.ErrorWithPrefix("gzip", err)
 	}
 
 	defer gr.Close()
@@ -54,7 +54,7 @@ func ReadVersion(r io.Reader) (string, error) {
 
 	hdr, err := tr.Next()
 	if err != nil {
-		return "", fmt.Errorf("read tar header: %w", err)
+		return "", kittehs.ErrorWithPrefix("read tar header", err)
 	}
 
 	if hdr.Name != filenames.version {
@@ -69,7 +69,7 @@ func ReadVersion(r io.Reader) (string, error) {
 
 	v, err := decodeVersion(buf.String())
 	if err != nil {
-		return "", fmt.Errorf("decode version: %w", err)
+		return "", kittehs.ErrorWithPrefix("decode version", err)
 	}
 
 	return v, nil
@@ -82,7 +82,7 @@ func ReadVersion(r io.Reader) (string, error) {
 func Read(r io.Reader) (*BuildFile, error) {
 	gr, err := gzip.NewReader(r)
 	if err != nil {
-		return nil, fmt.Errorf("gzip: %w", err)
+		return nil, kittehs.ErrorWithPrefix("gzip", err)
 	}
 
 	defer gr.Close()
@@ -98,7 +98,7 @@ func Read(r io.Reader) (*BuildFile, error) {
 				break
 			}
 
-			return nil, fmt.Errorf("read next tar file: %w", err)
+			return nil, kittehs.ErrorWithPrefix("read next tar file", err)
 		}
 
 		path := hdr.Name
@@ -116,7 +116,7 @@ func Read(r io.Reader) (*BuildFile, error) {
 		switch path {
 		case filenames.version:
 			if v, err := decodeVersion(buf.String()); err != nil {
-				return nil, fmt.Errorf("decode version: %w", err)
+				return nil, kittehs.ErrorWithPrefix("decode version", err)
 			} else if v != version {
 				return nil, fmt.Errorf("unsupported build file format version %q != %q", v, version)
 			}
@@ -142,7 +142,7 @@ func Read(r io.Reader) (*BuildFile, error) {
 
 			n, err := sdktypes.ParseSymbol(name)
 			if err != nil {
-				return nil, fmt.Errorf("invalid runtime name: %w", err)
+				return nil, kittehs.ErrorWithPrefix("parse runtime name", err)
 			}
 
 			if err := readRuntimeFile(&bf, n, rest, &buf); err != nil {

@@ -1,39 +1,42 @@
 package common
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
 
 	"go.autokitteh.dev/autokitteh/backend/svc"
 	"go.autokitteh.dev/autokitteh/internal/backend/configset"
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
 )
 
 var mode string
 
-// Get the mode initialized using AddModeFlag.
-func GetMode() (m configset.Mode, err error) {
+// AddModeFlag adds the AutoKitteh service mode flag
+// to the given CLI command. See also [ParseModeFlag].
+func AddModeFlag(cmd *cobra.Command) {
+	cmd.Flags().StringVarP(&mode, "mode", "m", "", "AutoKitteh service mode (default|dev|test)")
+}
+
+// ParseModeFlag returns the parsed value of the AutoKitteh
+// service mode CLI flag, initialized with [AddModeFlag].
+func ParseModeFlag() (m configset.Mode, err error) {
 	if m, err = configset.ParseMode(mode); err != nil {
-		err = fmt.Errorf("parse mode: %w", err)
+		err = kittehs.ErrorWithPrefix("parse mode", err)
 	}
 	return
 }
 
-// Returns a new service initialized with dev mode.
+// NewDevSvc returns a new AutoKitteh service in dev mode.
 func NewDevSvc(silent bool) (svc.Service, error) {
 	return svc.New(Config(), svc.RunOptions{Mode: configset.Dev, Silent: silent})
 }
 
-// Returns a new service initialized with the mode set by AddModeFlag.
+// Returns a new AutoKitteh service initialized with the mode
+// defined by [AddModeFlag] and parsed by [ParseModeFlag].
 func NewSvc(silent bool) (svc.Service, error) {
-	m, err := GetMode()
+	m, err := ParseModeFlag()
 	if err != nil {
-		return nil, fmt.Errorf("invalid mode: %w", err)
+		return nil, err
 	}
 
 	return svc.New(Config(), svc.RunOptions{Mode: m, Silent: silent})
-}
-
-func AddModeFlag(cmd *cobra.Command) {
-	cmd.Flags().StringVarP(&mode, "mode", "m", "", "service mode (default|dev|test)")
 }

@@ -1,7 +1,6 @@
 package projects
 
 import (
-	"fmt"
 	"os"
 	"path"
 	"path/filepath"
@@ -9,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/internal/resolver"
 )
 
@@ -26,7 +26,7 @@ var downloadCmd = common.StandardCommand(&cobra.Command{
 
 		p, pid, err := r.ProjectNameOrID(ctx, args[0])
 		if err = common.AddNotFoundErrIfCond(err, p.IsValid()); err != nil {
-			return common.ToExitCodeErrorNotNilErr(err, "project")
+			return common.ToExitCodeError(err, "project")
 		}
 
 		resources, err := projects().DownloadResources(ctx, pid)
@@ -38,11 +38,11 @@ var downloadCmd = common.StandardCommand(&cobra.Command{
 			fulllPath := filepath.Join(outputDirectory, filename)
 
 			if err := os.MkdirAll(path.Dir(fulllPath), 0o755); err != nil {
-				return fmt.Errorf("create output directory: %w", err)
+				return kittehs.ErrorWithPrefix("create output directory", err)
 			}
 
 			if err := os.WriteFile(fulllPath, data, 0o644); err != nil {
-				return fmt.Errorf("write file: %w", err)
+				return kittehs.ErrorWithPrefix("write file", err)
 			}
 		}
 

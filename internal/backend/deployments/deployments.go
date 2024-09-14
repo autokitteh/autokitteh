@@ -9,6 +9,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -29,7 +30,7 @@ func (d *deployments) Activate(ctx context.Context, id sdktypes.DeploymentID) er
 	err := d.db.Transaction(ctx, func(tx db.DB) error {
 		deployment, err := tx.GetDeployment(ctx, id)
 		if err != nil {
-			return fmt.Errorf("get deployment: %w", err)
+			return kittehs.ErrorWithPrefix("get deployment", err)
 		}
 
 		if deployment.State() == sdktypes.DeploymentStateActive {
@@ -41,17 +42,17 @@ func (d *deployments) Activate(ctx context.Context, id sdktypes.DeploymentID) er
 			State: sdktypes.DeploymentStateActive,
 		})
 		if err != nil {
-			return fmt.Errorf("list active deployments: %w", err)
+			return kittehs.ErrorWithPrefix("list active deployments", err)
 		}
 
 		for _, d := range deployments {
 			if err := drain(ctx, tx, d.ID()); err != nil {
-				return fmt.Errorf("drain deployment: %w", err)
+				return kittehs.ErrorWithPrefix("drain deployment", err)
 			}
 		}
 
 		if err := updateDeploymentState(ctx, tx, id, sdktypes.DeploymentStateActive); err != nil {
-			return fmt.Errorf("activate deployment: %w", err)
+			return kittehs.ErrorWithPrefix("activate deployment", err)
 		}
 
 		return nil
@@ -69,7 +70,7 @@ func (d *deployments) Test(ctx context.Context, id sdktypes.DeploymentID) error 
 	return d.db.Transaction(ctx, func(tx db.DB) error {
 		deployment, err := tx.GetDeployment(ctx, id)
 		if err != nil {
-			return fmt.Errorf("deployment: %w", err)
+			return kittehs.ErrorWithPrefix("get deployment", err)
 		}
 
 		if deployment.State() == sdktypes.DeploymentStateTesting {
@@ -77,7 +78,7 @@ func (d *deployments) Test(ctx context.Context, id sdktypes.DeploymentID) error 
 		}
 
 		if _, err := tx.UpdateDeploymentState(ctx, id, sdktypes.DeploymentStateTesting); err != nil {
-			return fmt.Errorf("test: %w", err)
+			return kittehs.ErrorWithPrefix("test deployment", err)
 		}
 
 		return nil
@@ -103,7 +104,7 @@ func deactivate(ctx context.Context, tx db.DB, id sdktypes.DeploymentID) error {
 		CountOnly:    true,
 	})
 	if err != nil {
-		return fmt.Errorf("sessions.count: %w", err)
+		return kittehs.ErrorWithPrefix("count running sessions", err)
 	}
 
 	resultCreated, err := tx.ListSessions(ctx, sdkservices.ListSessionsFilter{
@@ -112,11 +113,11 @@ func deactivate(ctx context.Context, tx db.DB, id sdktypes.DeploymentID) error {
 		CountOnly:    true,
 	})
 	if err != nil {
-		return fmt.Errorf("sessions.count: %w", err)
+		return kittehs.ErrorWithPrefix("count created sessions", err)
 	}
 
 	if resultRunning.TotalCount+resultCreated.TotalCount > 0 {
-		return fmt.Errorf("deployment still has pending sessions, drain first: %w", sdkerrors.ErrConflict)
+		return kittehs.ErrorWithPrefix("deployment still has pending sessions, drain first", sdkerrors.ErrConflict)
 	}
 
 	return updateDeploymentState(ctx, tx, id, sdktypes.DeploymentStateInactive)

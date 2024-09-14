@@ -85,10 +85,8 @@ func (s *server) List(ctx context.Context, req *connect.Request[eventsv1.ListReq
 
 	// verify order is valid
 	if order != sdkservices.ListOrderAscending && order != sdkservices.ListOrderDescending {
-		return nil, connect.NewError(
-			connect.CodeInvalidArgument,
-			fmt.Errorf("order should be either %s or %s", sdkservices.ListOrderAscending, sdkservices.ListOrderDescending),
-		)
+		err := fmt.Errorf("order should be either %s or %s", sdkservices.ListOrderAscending, sdkservices.ListOrderDescending)
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
 	filter := sdkservices.ListEventsFilter{
@@ -101,7 +99,7 @@ func (s *server) List(ctx context.Context, req *connect.Request[eventsv1.ListReq
 
 	events, err := s.events.List(ctx, filter)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeUnknown, fmt.Errorf("server error: %w", err))
+		return nil, connect.NewError(connect.CodeUnknown, kittehs.ErrorWithPrefix("server error", err))
 	}
 
 	eventspb := kittehs.Transform(events, sdktypes.ToProto)
@@ -131,7 +129,7 @@ func (s *server) Save(ctx context.Context, req *connect.Request[eventsv1.SaveReq
 
 	eid, err := s.events.Save(ctx, event)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeUnknown, fmt.Errorf("server error: %w", err))
+		return nil, connect.NewError(connect.CodeUnknown, kittehs.ErrorWithPrefix("server error", err))
 	}
 
 	return connect.NewResponse(&eventsv1.SaveResponse{EventId: eid.String()}), nil

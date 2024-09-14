@@ -31,13 +31,13 @@ func Build(rts sdkservices.Runtimes, srcFS fs.FS, paths []string, syms []sdktype
 
 		var err error
 		if srcFS, err = kittehs.MapToMemFS(files); err != nil {
-			return nil, fmt.Errorf("create memory filesystem: %w", err)
+			return nil, kittehs.ErrorWithPrefix("create memory filesystem", err)
 		}
 	}
 
 	b, err := rts.Build(ctx, srcFS, syms, nil)
 	if err != nil {
-		return nil, fmt.Errorf("create build: %w", err)
+		return nil, kittehs.ErrorWithPrefix("create build", err)
 	}
 
 	return b, nil
@@ -50,7 +50,7 @@ func BuildProject(project string, dirPaths, filePaths []string) (sdktypes.BuildI
 
 	p, pid, err := r.ProjectNameOrID(ctx, project)
 	if err = AddNotFoundErrIfCond(err, p.IsValid()); err != nil {
-		return sdktypes.InvalidBuildID, ToExitCodeErrorNotNilErr(err, "project")
+		return sdktypes.InvalidBuildID, ToExitCodeError(err, "project")
 	}
 
 	uploads := make(map[string][]byte)
@@ -79,12 +79,12 @@ func BuildProject(project string, dirPaths, filePaths []string) (sdktypes.BuildI
 
 	// Communicate with the server in 2 steps.
 	if err := Client().Projects().SetResources(ctx, pid, uploads); err != nil {
-		return sdktypes.InvalidBuildID, fmt.Errorf("set resources: %w", err)
+		return sdktypes.InvalidBuildID, kittehs.ErrorWithPrefix("set resources", err)
 	}
 
 	bid, err := Client().Projects().Build(ctx, pid)
 	if err != nil {
-		return sdktypes.InvalidBuildID, fmt.Errorf("build project: %w", err)
+		return sdktypes.InvalidBuildID, kittehs.ErrorWithPrefix("build project", err)
 	}
 
 	return bid, nil
@@ -102,7 +102,7 @@ func walk(basePath string, uploads map[string][]byte) fs.WalkDirFunc {
 		// Upload a single file, relative to the base path.
 		relPath, err := filepath.Rel(basePath, path)
 		if err != nil {
-			return fmt.Errorf("relative path: %w", err)
+			return kittehs.ErrorWithPrefix("relative path", err)
 		}
 
 		contents, err := os.ReadFile(path)

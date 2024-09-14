@@ -109,7 +109,7 @@ func (v Value) ToDuration() (time.Duration, error) {
 	case StringValue:
 		return time.ParseDuration(v.Value())
 	default:
-		return 0, fmt.Errorf("value not convertible to duration")
+		return 0, errors.New("value not convertible to duration")
 	}
 }
 
@@ -122,7 +122,7 @@ func (v Value) ToTime() (time.Time, error) {
 	case IntegerValue:
 		return time.Unix(v.Value(), 0), nil
 	default:
-		return time.Time{}, fmt.Errorf("value not convertible to time")
+		return time.Time{}, errors.New("value not convertible to time")
 	}
 }
 
@@ -184,17 +184,17 @@ func ValueProtoToJSONStringValue(pb *ValuePB) (*ValuePB, error) {
 
 	v, err := ValueFromProto(pb)
 	if err != nil {
-		return nil, fmt.Errorf("decode: %w", err)
+		return nil, kittehs.ErrorWithPrefix("decode proto", err)
 	}
 
 	u, err := valueStringUnwrapper.Unwrap(v)
 	if err != nil {
-		return nil, fmt.Errorf("unwrap: %w", err)
+		return nil, kittehs.ErrorWithPrefix("unwrap value", err)
 	}
 
 	j, err := json.Marshal(u)
 	if err != nil {
-		return nil, fmt.Errorf("marshal: %w", err)
+		return nil, kittehs.ErrorWithPrefix("marshal JSON", err)
 	}
 
 	return NewStringValue(string(j)).ToProto(), nil

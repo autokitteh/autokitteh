@@ -2,7 +2,6 @@ package sdkeventsclient
 
 import (
 	"context"
-	"fmt"
 
 	"connectrpc.com/connect"
 
@@ -36,7 +35,7 @@ func (c *client) Save(ctx context.Context, event sdktypes.Event) (sdktypes.Event
 
 	eventId, err := sdktypes.Strict(sdktypes.ParseEventID(resp.Msg.EventId))
 	if err != nil {
-		return sdktypes.InvalidEventID, fmt.Errorf("invalid event id: %w", err)
+		return sdktypes.InvalidEventID, kittehs.ErrorWithPrefix("invalid event ID", err)
 	}
 
 	return eventId, nil
@@ -56,7 +55,7 @@ func (c *client) Get(ctx context.Context, eventId sdktypes.EventID) (sdktypes.Ev
 
 	event, err := sdktypes.EventFromProto(resp.Msg.Event)
 	if err != nil {
-		return sdktypes.InvalidEvent, fmt.Errorf("invalid event: %w", err)
+		return sdktypes.InvalidEvent, kittehs.ErrorWithPrefix("invalid event", err)
 	}
 	return event, nil
 }

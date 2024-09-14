@@ -2,7 +2,6 @@ package gmail
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	"go.uber.org/zap"
@@ -10,6 +9,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/integrations/google/internal/vars"
 	"go.autokitteh.dev/autokitteh/integrations/internal/extrazap"
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -31,7 +31,7 @@ func UpdateWatch(ctx context.Context, v sdkservices.Vars, cid sdktypes.Connectio
 
 	watch, err := api{vars: v, cid: cid}.watch(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to create Gmail watch: %w", err)
+		return kittehs.ErrorWithPrefix("failed to create Gmail watch", err)
 	}
 
 	l.Info("Created Gmail user mailbox watch", zap.Any("watch", watch))

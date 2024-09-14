@@ -27,6 +27,7 @@ import (
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/triggers"
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/vars"
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/internal/xdg"
 )
 
@@ -53,7 +54,7 @@ var RootCmd = common.StandardCommand(&cobra.Command{
 		path := filepath.Join(xdg.ConfigHomeDir(), ".env")
 		if err := godotenv.Load(path); err != nil {
 			if !errors.Is(err, os.ErrNotExist) {
-				return fmt.Errorf(".env loading error: %w", err)
+				return kittehs.ErrorWithPrefix(".env file loading error", err)
 			}
 		}
 
@@ -63,7 +64,7 @@ var RootCmd = common.StandardCommand(&cobra.Command{
 		}
 
 		if err := common.InitConfig(confmap); err != nil {
-			return fmt.Errorf("root init config: %w", err)
+			return kittehs.ErrorWithPrefix("init root config", err)
 		}
 
 		return common.InitRPCClient(token)

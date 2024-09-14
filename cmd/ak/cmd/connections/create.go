@@ -51,18 +51,18 @@ var createCmd = common.StandardCommand(&cobra.Command{
 			Name:          args[0],
 		})
 		if err != nil {
-			return fmt.Errorf("invalid connection: %w", err)
+			return kittehs.ErrorWithPrefix("invalid connection", err)
 		}
 
 		cid, err := connections().Create(ctx, c)
 		if err != nil {
-			return fmt.Errorf("create connection: %w", err)
+			return kittehs.ErrorWithPrefix("create connection", err)
 		}
 
 		if !quiet {
 			conn, err := connections().Get(ctx, cid)
 			if err != nil {
-				return fmt.Errorf("get connection: %w", err)
+				return kittehs.ErrorWithPrefix("get connection", err)
 			}
 
 			if l := conn.Links().InitURL(); l != "" {
