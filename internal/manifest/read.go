@@ -13,7 +13,7 @@ import (
 func Read(data []byte, path string) (*Manifest, error) {
 	var manifest Manifest
 	if err := yaml.Unmarshal(data, &manifest); err != nil {
-		return nil, kittehs.ErrorWithPrefix("YAML unmarshal error", err)
+		return nil, err
 	}
 
 	res, err := gojsonschema.Validate(

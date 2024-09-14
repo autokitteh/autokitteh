@@ -62,7 +62,7 @@ var createCmd = common.StandardCommand(&cobra.Command{
 			CodeLocation: cl.ToProto(),
 		})
 		if err != nil {
-			kittehs.ErrorWithPrefix("invalid trigger proto", err)
+			return kittehs.ErrorWithPrefix("invalid trigger proto", err)
 		}
 
 		if connection != "" {
