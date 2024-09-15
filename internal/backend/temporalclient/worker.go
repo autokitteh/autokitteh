@@ -16,6 +16,7 @@ var defaultWorkerConfig = WorkerConfig{}
 // Common way to define configuration that can be used in multiple modules,
 // saving the need to repeat the same configuration in each module.
 type WorkerConfig struct {
+	Disable                 bool          `koanf:"disable"`
 	WorkflowDeadlockTimeout time.Duration `koanf:"workflow_deadlock_timeout"`
 }
 
@@ -26,7 +27,13 @@ func (wc WorkerConfig) With(other WorkerConfig) WorkerConfig {
 	}
 }
 
+// NewWorker creates a new Temporal worker. If the worker is disabled, returns nil.
 func NewWorker(l *zap.Logger, client client.Client, qname string, cfg WorkerConfig) worker.Worker {
+	if cfg.Disable {
+		l.With(zap.String("queue_name", qname)).Info(fmt.Sprintf("temporal worker for queue %q is disabled", qname))
+		return nil
+	}
+
 	cfg = defaultWorkerConfig.With(cfg)
 	opts := worker.Options{
 		DisableRegistrationAliasing: true,

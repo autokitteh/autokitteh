@@ -47,8 +47,8 @@ def gmail_client(connection: str, **kwargs):
 def google_calendar_client(connection: str, **kwargs):
     """Initialize a Google Calendar client, based on an AutoKitteh connection.
 
-    API reference:
-    https://developers.google.com/resources/api-libraries/documentation/calendar/v3/python/latest/
+    API documentation:
+    https://docs.autokitteh.com/integrations/google/calendar/python
 
     Code samples:
     https://github.com/autokitteh/kittehub/tree/main/samples/google/calendar
@@ -260,6 +260,6 @@ def google_id(url: str) -> str:
     """
     match = re.match(r"(.*/d/(e/)?)?([\w-]{20,})", url)
     if match:
-        return match.group(2)
+        return match.group(3)
     else:
         raise ValueError(f'Invalid Google ID in "{url}"')
