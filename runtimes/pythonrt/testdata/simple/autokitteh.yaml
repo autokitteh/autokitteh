@@ -2,14 +2,11 @@ version: v1
 
 project:
   name: py_simple
-  connections:
-    - name: http_trigger
-      integration: http
   triggers:
     - name: events
-      connection: http_trigger
       event_type: post
-      entrypoint: simple.py:greet
+      call: simple.py:greet
+      webhook: {}
   vars:
     - name: USER
       value: Garfield
