@@ -111,12 +111,15 @@ class Runner(rpc.RunnerServicer):
         event = json.loads(request.event.data)
 
         # Go passes HTTP event body as base64 encode string
-        body = event.get("data", {}).get("body")
-        if isinstance(body, str):
-            try:
-                event["data"]["body"] = b64decode(body)
-            except ValueError:
-                pass
+        data = event.get("data")
+        if isinstance(data, dict):
+            body = data.get("body")
+            if isinstance(body, str):
+                try:
+                    event["data"]["body"] = b64decode(body)
+                except ValueError:
+                    pass
+
         log.info("start event: %r", event)
 
         event = AttrDict(event)

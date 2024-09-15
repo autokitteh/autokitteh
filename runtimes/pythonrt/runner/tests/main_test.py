@@ -77,3 +77,22 @@ def test_activity_reply():
     assert resp.error == ""
     assert fut.done()
     assert fut.result() == value
+
+
+def test_event_str_body():
+    runner = main.Runner("r1", None, workflows.simple)
+    runner.on_event = lambda fn, event: None
+
+    event = json.dumps(
+        {
+            "data": "odie",
+        }
+    )
+
+    req = pb.StartRequest(
+        entry_point="program.py:on_event",
+        event=pb.Event(
+            data=event.encode(),
+        ),
+    )
+    runner.Start(req, None)

@@ -5,9 +5,10 @@ from subprocess import run
 from sys import executable
 from tempfile import NamedTemporaryFile
 
-from conftest import test_dir
+from conftest import test_dir, testdata
 
-import ak_runner.__main__ as main
+from runner import main
+import runner.remote_pb2 as pb
 
 # Set PYTHONPATH so `python -m ak_runner` will work
 env = environ.copy()
@@ -94,3 +95,22 @@ def test_inspect_run_code(tmp_path):
         {"name": "handler", "file": "run.py", "line": 9},
     ]
     assert reply == expected
+
+
+def test_event_str_body():
+    runner = main.Runner("r1", testdata / "simple", "/tmp")
+    runner.on_event = lambda fn, event: None
+
+    event = json.dumps(
+        {
+            "data": "odie",
+        }
+    )
+
+    req = pb.StartRequest(
+        entry_point="simple.py:greet",
+        event=pb.Event(
+            data=event.encode(),
+        ),
+    )
+    runner.Start(req, None)

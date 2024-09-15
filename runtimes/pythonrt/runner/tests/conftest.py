@@ -10,5 +10,8 @@ class _Workflows:
     def __getattr__(self, name):
         return self.root_dir / name
 
+    def __dir__(self):
+        return [p.name for p in self.root_dir.glob("*") if p.is_dir()]
+
 
 workflows = _Workflows()

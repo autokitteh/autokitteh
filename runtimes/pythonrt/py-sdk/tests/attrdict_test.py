@@ -1,6 +1,6 @@
 import pytest
 
-from ak_runner.attrdict import AttrDict
+from autokitteh.attr_dict import AttrDict
 
 
 def test_AttrDict():
