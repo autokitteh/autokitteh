@@ -24,13 +24,13 @@ import (
 const WebhooksPathPrefix = "/webhooks/"
 
 type Service struct {
-	sl         *zap.SugaredLogger
+	logger     *zap.Logger
 	dispatcher sdkservices.Dispatcher
 	db         db.DB
 }
 
 func New(l *zap.Logger, db db.DB, dispatcher sdkservices.Dispatcher) *Service {
-	return &Service{sl: l.Sugar(), db: db, dispatcher: dispatcher}
+	return &Service{logger: l, db: db, dispatcher: dispatcher}
 }
 
 func (s *Service) Start(muxes *muxes.Muxes) {
@@ -46,7 +46,12 @@ func InitTrigger(trigger sdktypes.Trigger) sdktypes.Trigger {
 func (s *Service) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	slug := r.PathValue("slug")
 
-	sl := s.sl.With("url", r.URL.String(), "method", r.Method, "slug", slug)
+	sl := s.logger.With(
+		zap.String("method", r.Method),
+		zap.String("url", r.URL.String()),
+		zap.String("slug", slug),
+	).Sugar()
+
 	sl.Infof("webhook request: %s %s", r.Method, r.URL.Path)
 
 	ctx := r.Context()
@@ -98,79 +103,75 @@ func requestToData(r *http.Request) (map[string]sdktypes.Value, error) {
 	}
 
 	r.Body = io.NopCloser(bytes.NewReader(body))
-	_ = r.ParseForm()
-
-	url := r.URL
+	r.ParseForm()
 
 	return map[string]sdktypes.Value{
-		"url": kittehs.Must1(sdktypes.NewStructValue(
-			sdktypes.NewStringValue("url"),
-			map[string]sdktypes.Value{
-				"scheme":       sdktypes.NewStringValue(url.Scheme),
-				"opaque":       sdktypes.NewStringValue(url.Opaque),
-				"host":         sdktypes.NewStringValue(url.Host),
-				"fragment":     sdktypes.NewStringValue(url.Fragment),
-				"raw_fragment": sdktypes.NewStringValue(url.RawFragment),
-				"raw":          sdktypes.NewStringValue(url.RawPath),
-				"path":         sdktypes.NewStringValue(url.Path),
-				"raw_query":    sdktypes.NewStringValue(url.RawQuery),
-				"query": sdktypes.NewDictValueFromStringMap(
-					kittehs.TransformMapValues(url.Query(), func(vs []string) sdktypes.Value {
-						return sdktypes.NewStringValue(strings.Join(vs, ","))
-					}),
-				),
-			},
-		)),
-		"method": sdktypes.NewStringValue(r.Method),
+		"body": bodyData(body, r.PostForm),
 		"headers": sdktypes.NewDictValueFromStringMap(
 			kittehs.TransformMapValues(r.Header, func(vs []string) sdktypes.Value {
-				return sdktypes.NewStringValue(strings.Join(vs, ","))
+				return sdktypes.NewStringValue(strings.Join(vs, ", "))
 			}),
 		),
-		"body": bodyToStruct(body, r.Form),
+		"method":  sdktypes.NewStringValue(r.Method),
+		"raw_url": sdktypes.NewStringValue(r.URL.String()),
+		"url":     urlData(r.URL),
 	}, nil
 }
 
-func bodyToStruct(body []byte, form url.Values) sdktypes.Value {
-	var (
-		v        any
-		jsonBody sdktypes.Value
-	)
-
-	jsonDecoder := json.NewDecoder(bytes.NewReader(body))
-	jsonDecoder.UseNumber()
-
-	if err := jsonDecoder.Decode(&v); err != nil {
-		jsonBody = kittehs.Must1(sdktypes.NewConstFunctionError("json", err))
-	} else if vv, err := sdktypes.WrapValue(v); err != nil {
-		jsonBody = kittehs.Must1(sdktypes.NewConstFunctionError("json", err))
-	} else {
-		jsonBody = kittehs.Must1(sdktypes.NewConstFunctionValue("json", vv))
+func bodyData(body []byte, form url.Values) sdktypes.Value {
+	bytes := sdktypes.Nothing
+	if len(body) > 0 {
+		bytes = sdktypes.NewBytesValue(body)
 	}
 
-	// add form() only for requests (when not nil) and not for responses
-	if form != nil {
-		formBody := kittehs.Must1(sdktypes.NewConstFunctionValue("form", sdktypes.NewDictValueFromStringMap(
-			kittehs.TransformMapValues(form, func(vs []string) sdktypes.Value {
-				return sdktypes.NewStringValue(strings.Join(vs, ","))
-			}),
-		)))
-		return kittehs.Must1(sdktypes.NewStructValue(
-			sdktypes.NewStringValue("body"),
-			map[string]sdktypes.Value{
-				"text":  kittehs.Must1(sdktypes.NewConstFunctionValue("text", sdktypes.NewStringValue(string(body)))),
-				"bytes": kittehs.Must1(sdktypes.NewConstFunctionValue("bytes", sdktypes.NewBytesValue(body))),
-				"json":  jsonBody,
-				"form":  formBody,
-			},
-		))
-	}
-	return kittehs.Must1(sdktypes.NewStructValue(
-		sdktypes.NewStringValue("body"),
+	return sdktypes.NewDictValueFromStringMap(
 		map[string]sdktypes.Value{
-			"text":  kittehs.Must1(sdktypes.NewConstFunctionValue("text", sdktypes.NewStringValue(string(body)))),
-			"bytes": kittehs.Must1(sdktypes.NewConstFunctionValue("bytes", sdktypes.NewBytesValue(body))),
-			"json":  jsonBody,
+			"bytes": bytes,
+			"form":  formData(form),
+			"json":  jsonData(body),
 		},
-	))
+	)
+}
+
+func formData(form url.Values) sdktypes.Value {
+	if len(form) == 0 {
+		return sdktypes.Nothing
+	}
+
+	return sdktypes.NewDictValueFromStringMap(
+		kittehs.TransformMapValues(form, func(vs []string) sdktypes.Value {
+			return sdktypes.NewStringValue(strings.Join(vs, ", "))
+		}),
+	)
+}
+
+func jsonData(body []byte) sdktypes.Value {
+	var v any
+	d := json.NewDecoder(bytes.NewReader(body))
+	d.UseNumber()
+
+	if err := d.Decode(&v); err != nil {
+		return sdktypes.Nothing
+	} else if vv, err := sdktypes.WrapValue(v); err != nil {
+		return sdktypes.Nothing
+	} else {
+		return vv
+	}
+}
+
+func urlData(u *url.URL) sdktypes.Value {
+	return sdktypes.NewDictValueFromStringMap(
+		map[string]sdktypes.Value{
+			"fragment": sdktypes.NewStringValue(u.Fragment),
+			"path":     sdktypes.NewStringValue(u.Path),
+			"query": sdktypes.NewDictValueFromStringMap(
+				kittehs.TransformMapValues(u.Query(), func(vs []string) sdktypes.Value {
+					return sdktypes.NewStringValue(strings.Join(vs, ", "))
+				}),
+			),
+			"raw_fragment": sdktypes.NewStringValue(u.RawFragment),
+			"raw_path":     sdktypes.NewStringValue(u.RawPath),
+			"raw_query":    sdktypes.NewStringValue(u.RawQuery),
+		},
+	)
 }
