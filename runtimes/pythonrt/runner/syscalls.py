@@ -68,17 +68,14 @@ class SysCalls:
             raise ValueError("empty subscription_id")
 
         timeout = kw.get("timeout")
-        if len(args) == 2:
-            timeout = args[1]
-
-        if timeout:
+        if timeout is not None:
             if not isinstance(timeout, timedelta):
                 raise TypeError(f"timeout should be timedelta, got {type(timeout)}")
             if timeout <= timedelta(0):
                 raise ValueError(f"bad timeout: {timeout!r}")
 
         req = pb.NextEventRequest(runner_id=self.runner_id, signal_ids=[id])
-        if timeout:
+        if timeout is not None:
             req.timeout_ms = int(timeout.total_seconds() * 1000)
         resp = self.worker.NextEvent(req)
         if resp.error:
