@@ -42,8 +42,8 @@ type Dispatcher struct {
 
 var _ sdkservices.Dispatcher = (*Dispatcher)(nil)
 
-func New(l *zap.SugaredLogger, cfg *Config, svcs Svcs) *Dispatcher {
-	return &Dispatcher{sl: l, cfg: cfg, svcs: svcs}
+func New(l *zap.Logger, cfg *Config, svcs Svcs) *Dispatcher {
+	return &Dispatcher{sl: l.Sugar(), cfg: cfg, svcs: svcs}
 }
 
 func (d *Dispatcher) Dispatch(ctx context.Context, event sdktypes.Event, opts *sdkservices.DispatchOptions) (sdktypes.EventID, error) {

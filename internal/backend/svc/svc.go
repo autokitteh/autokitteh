@@ -203,7 +203,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 			"dispatcher",
 			dispatcher.Configs,
 			fx.Provide(func(lc fx.Lifecycle, l *zap.Logger, cfg *dispatcher.Config, svcs dispatcher.Svcs) sdkservices.Dispatcher {
-				d := dispatcher.New(l.Sugar(), cfg, svcs)
+				d := dispatcher.New(l, cfg, svcs)
 				HookOnStart(lc, d.Start)
 				return d
 			}),
