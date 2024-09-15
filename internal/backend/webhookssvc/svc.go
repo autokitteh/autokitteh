@@ -103,7 +103,7 @@ func requestToData(r *http.Request) (map[string]sdktypes.Value, error) {
 	}
 
 	r.Body = io.NopCloser(bytes.NewReader(body))
-	r.ParseForm()
+	_ = r.ParseForm()
 
 	return map[string]sdktypes.Value{
 		"body": bodyData(body, r.PostForm),
