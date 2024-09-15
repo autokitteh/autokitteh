@@ -46,9 +46,11 @@ func StrictEventFromProto(m *EventPB) (Event, error) { return Strict(EventFromPr
 
 func (p Event) ID() EventID { return kittehs.Must1(ParseEventID(p.read().EventId)) }
 
-func (e Event) WithNewID() Event {
-	return Event{e.forceUpdate(func(m *EventPB) { m.EventId = NewEventID().String() })}
+func (e Event) WithID(id EventID) Event {
+	return Event{e.forceUpdate(func(m *EventPB) { m.EventId = id.String() })}
 }
+
+func (e Event) WithNewID() Event { return e.WithID(NewEventID()) }
 
 func (e Event) WithCreatedAt(t time.Time) Event {
 	return Event{e.forceUpdate(func(m *EventPB) { m.CreatedAt = timestamppb.New(t) })}

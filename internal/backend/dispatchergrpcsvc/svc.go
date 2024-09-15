@@ -5,7 +5,6 @@ import (
 
 	"connectrpc.com/connect"
 
-	"go.autokitteh.dev/autokitteh/internal/backend/dispatcher"
 	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
 	"go.autokitteh.dev/autokitteh/proto"
 	dispatcher1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/dispatcher/v1"
@@ -16,14 +15,14 @@ import (
 )
 
 type server struct {
-	dispatcher dispatcher.Dispatcher
+	dispatcher sdkservices.Dispatcher
 
 	dispatcherv1connect.UnimplementedDispatcherServiceHandler
 }
 
 var _ dispatcherv1connect.DispatcherServiceHandler = (*server)(nil)
 
-func Init(muxes *muxes.Muxes, dispatcher dispatcher.Dispatcher) {
+func Init(muxes *muxes.Muxes, dispatcher sdkservices.Dispatcher) {
 	srv := server{dispatcher: dispatcher}
 
 	path, namer := dispatcherv1connect.NewDispatcherServiceHandler(&srv)
