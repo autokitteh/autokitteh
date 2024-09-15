@@ -1,5 +1,6 @@
 """Un/subscribe and consume AutoKitteh connection events."""
 
+from datetime import timedelta
 from uuid import uuid4
 
 from .attr_dict import AttrDict
@@ -17,7 +18,7 @@ def unsubscribe(subscription_id: str) -> None:
     pass
 
 
-def next_event(subscription_id: str) -> AttrDict:
+def next_event(subscription_id: str, timeout: timedelta = None) -> AttrDict:
     """Get the next event from the subscription."""
     # Dummy implementation for local development.
     return AttrDict()

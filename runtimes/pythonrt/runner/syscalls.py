@@ -4,12 +4,12 @@ Convert general func(*args, **kw) to a specific gRPC call to worker.
 """
 
 import json
+from datetime import timedelta
 
-from autokitteh import AttrDict
-
+import log
 import remote_pb2 as pb
 import remote_pb2_grpc as rpc
-import log
+from autokitteh import AttrDict
 
 
 class SyscallError(Exception):
@@ -66,17 +66,34 @@ class SysCalls:
         (id,) = extract_args(["subscription_id"], args, kw)
         if not id:
             raise ValueError("empty subscription_id")
+
+        timeout = kw.get("timeout")
+        if len(args) == 2:
+            timeout = args[1]
+
+        if timeout:
+            if not isinstance(timeout, timedelta):
+                raise TypeError(f"timeout should be timedelta, got {type(timeout)}")
+            if timeout <= timedelta(0):
+                raise ValueError(f"bad timeout: {timeout!r}")
+
         req = pb.NextEventRequest(runner_id=self.runner_id, signal_ids=[id])
+        if timeout:
+            req.timeout_ms = int(timeout.total_seconds() * 1000)
         resp = self.worker.NextEvent(req)
         if resp.error:
             raise SyscallError(f"next_event: {resp.error}")
 
         try:
-            data = json.loads(resp.event.data)
+            value = json.loads(resp.event.data)
         except (ValueError, TypeError, AttributeError) as err:
             raise SyscallError(f"next_event: invalid event: {err}")
 
-        return AttrDict(data) if isinstance(data, dict) else data
+        value = {} if value is None else value  # None means timeout
+        if not isinstance(value, dict):
+            raise TypeError(f"next_event returned {value!r}, expected dict")
+        value = AttrDict(value)
+        return value
 
     def ak_unsubscribe(self, *args, **kw):
         (id,) = extract_args(["subscription_id"], args, kw)
