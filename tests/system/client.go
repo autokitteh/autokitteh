@@ -50,10 +50,10 @@ func buildAKBinary(t *testing.T) string {
 		t.Fatalf("failed to switch to parent directory: %v", err)
 	}
 
-	// output, err := exec.Command("make", "ak").CombinedOutput()
-	// if err != nil {
-	// 	t.Fatalf("failed to build client: %v\n%s", err, output)
-	// }
+	output, err := exec.Command("make", "ak").CombinedOutput()
+	if err != nil {
+		t.Fatalf("failed to build client: %v\n%s", err, output)
+	}
 
 	return filepath.Join(akRootDir, "bin", "ak")
 }

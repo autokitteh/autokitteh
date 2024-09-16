@@ -13,8 +13,9 @@ import (
 
 type Config struct {
 	RemoteRunnerEndpoints []string `koanf:"remote_runner_endpoints"`
-	RemoteRunner          bool     `koanf:"enable_remote_runner"`
-	WorkerAddress         string   `koanf:"worker_address"`
+	//TODO: maybe should be runner type which can be local/docker/remote/ ?
+	EnableRemoteRunner bool   `koanf:"enable_remote_runner"`
+	WorkerAddress      string `koanf:"worker_address"`
 	// TODO: This is a hack to prevent running configure on pythonrt in each test
 	// which currently install venv everytime and takes a really long time
 	// need to find a way to share the venv once for all tests
@@ -24,11 +25,12 @@ type Config struct {
 var Configs = configset.Set[Config]{
 	Default: &Config{
 		RemoteRunnerEndpoints: []string{"localhost:9291"},
-		RemoteRunner:          false,
+		EnableRemoteRunner:    false,
 		WorkerAddress:         "localhost:9980",
 	},
 	Test: &Config{
 		LazyLoadLocalVEnv: true,
+		WorkerAddress:     "localhost:9980",
 	},
 }
 
@@ -44,7 +46,7 @@ func New(cfg *Config, l *zap.Logger) sdkservices.Runtimes {
 		cfg = Configs.Default
 	}
 
-	if cfg.RemoteRunner {
+	if cfg.EnableRemoteRunner {
 		if len(cfg.RemoteRunnerEndpoints) == 0 {
 			panic("remote runner is enabled but no runner endpoints provided")
 		}
