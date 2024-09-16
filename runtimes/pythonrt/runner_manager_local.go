@@ -26,8 +26,9 @@ type localRunnerManager struct {
 }
 
 type LocalRunnerConfig struct {
-	WorkerAddress string
-	LazyLoadVEnv  bool
+	WorkerAddress         string
+	LazyLoadVEnv          bool
+	WorkerAddressProvider func() string
 }
 
 func ConfigureLocalRunnerManager(log *zap.Logger, cfg LocalRunnerConfig) error {
@@ -68,6 +69,7 @@ func ConfigureLocalRunnerManager(log *zap.Logger, cfg LocalRunnerConfig) error {
 	// If user supplies which Python to use, we use it "as-is" without creating venv
 	if !isUserPy {
 		if !cfg.LazyLoadVEnv {
+			log.Info("ensuring venv on start")
 			if err := ensureVEnv(log, pyExe); err != nil {
 				return fmt.Errorf("create venv: %w", err)
 			}
@@ -76,6 +78,7 @@ func ConfigureLocalRunnerManager(log *zap.Logger, cfg LocalRunnerConfig) error {
 	} else {
 		lm.pyExe = pyExe
 	}
+
 	log.Info("using python", zap.String("exe", lm.pyExe))
 
 	configuredRunnerType = runnerTypeLocal
@@ -89,10 +92,20 @@ func (l *localRunnerManager) Start(ctx context.Context, buildArtifacts []byte, v
 	}
 
 	if l.cfg.LazyLoadVEnv {
-		l.logger.Info("ensuring venv")
+		l.logger.Info("ensuring venv lazy")
 		if err := ensureVEnv(l.logger, l.pyExe); err != nil {
 			return "", nil, fmt.Errorf("create venv: %w", err)
 		}
+	}
+
+	if l.workerAddress == "" {
+		l.workerAddress = l.cfg.WorkerAddressProvider()
+		if l.workerAddress == "" {
+			l.logger.Error("worker address could not be set")
+			return "", nil, errors.New("worker address wasnt provided and could not be inferred")
+		}
+
+		l.logger.Info("worker address inferred", zap.String("workerAddress", l.workerAddress))
 	}
 
 	if err := r.Start(l.pyExe, buildArtifacts, vars, l.workerAddress); err != nil {
