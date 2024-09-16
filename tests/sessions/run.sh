@@ -53,6 +53,7 @@ up() {
         if [[ "${LL}" =~ "ready" ]]; then
             break
         fi
+        echo "${LL}"
     done < <(tail -f "${logfn}")
 
     echo "autokitteh is ready"
