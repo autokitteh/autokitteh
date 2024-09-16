@@ -85,11 +85,11 @@ func New() (sdkservices.Runtime, error) {
 		log:       log,
 		firstCall: true,
 		channels: comChannels{
-			done:    make(chan *pb.DoneRequest),
-			err:     make(chan string),
-			request: make(chan *pb.ActivityRequest),
-			print:   make(chan *pb.PrintRequest),
-			log:     make(chan *pb.LogRequest),
+			done:    make(chan *pb.DoneRequest, 1),
+			err:     make(chan string, 1),
+			request: make(chan *pb.ActivityRequest, 1),
+			print:   make(chan *pb.PrintRequest, 1),
+			log:     make(chan *pb.LogRequest, 1),
 		},
 	}
 
