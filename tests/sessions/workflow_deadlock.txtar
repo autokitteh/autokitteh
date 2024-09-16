@@ -1,0 +1,9 @@
+True
+done
+
+-- main.star:main --
+load("testtools", "freeze")
+
+def main():
+    print(freeze(20))
+    print("done")

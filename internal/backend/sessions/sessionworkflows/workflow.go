@@ -18,6 +18,7 @@ import (
 	httpmodule "go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionworkflows/modules/http"
 	osmodule "go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionworkflows/modules/os"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionworkflows/modules/store"
+	testtoolsmodule "go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionworkflows/modules/testtools"
 	timemodule "go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionworkflows/modules/time"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	"go.autokitteh.dev/autokitteh/internal/backend/types"
@@ -264,6 +265,12 @@ func (w *sessionWorkflow) initGlobalModules() (map[string]sdktypes.Value, error)
 		execs["os"] = osmodule.New()
 	} else {
 		vs["os"] = sdktypes.Nothing
+	}
+
+	if w.ws.cfg.Test {
+		execs["testtools"] = testtoolsmodule.New()
+	} else {
+		vs["testtools"] = sdktypes.Nothing
 	}
 
 	for name, exec := range execs {

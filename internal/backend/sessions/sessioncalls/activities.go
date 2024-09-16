@@ -78,8 +78,10 @@ func (cs *calls) sessionCallActivity(ctx context.Context, params *callActivityIn
 		return &callActivityOutputs{Retry: true}, nil
 	}
 
-	ctx, done := BeginHeartbeat(ctx, cs.config.ActivityHeartbeatInterval)
-	defer done()
+	if !params.CallSpec.Function().GetFunction().HasFlag(sdktypes.DisableAutoHeartbeat) {
+		_, done := BeginHeartbeat(ctx, cs.config.ActivityHeartbeatInterval)
+		defer done()
+	}
 
 	result, err := cs.executeCall(ctx, params.CallSpec, executors)
 	if err != nil {

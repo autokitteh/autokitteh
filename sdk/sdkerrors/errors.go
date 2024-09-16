@@ -31,6 +31,14 @@ func IgnoreNotFoundErr[T any](in T, err error) (T, error) {
 	return in, nil
 }
 
+func IgnoreErrAlreadyExists(err error) error {
+	if errors.Is(err, ErrAlreadyExists) {
+		return nil
+	}
+
+	return err
+}
+
 type ErrInvalidArgument struct {
 	Underlying error
 }
