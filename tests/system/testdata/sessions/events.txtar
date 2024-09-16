@@ -54,9 +54,9 @@ project:
 def on_http_start():
   s1 = subscribe("http2")
   s2 = subscribe("http1")
-  print(1, next_event(s2)['body'].text())
-  print(2, next_event(s1)['body'].text())
+  print(1, next_event(s2)['body']['bytes'])
+  print(2, next_event(s1)['body']['bytes'])
   print(3, next_event(s2, timeout=1))
-  print(4, next_event(s1, s2, timeout=2)['body'].text())
-  print(5, next_event(s1, s2, timeout=2)['body'].text())
+  print(4, next_event(s1, s2, timeout=2)['body']['bytes'])
+  print(5, next_event(s1, s2, timeout=2)['body']['bytes'])
   print("done")

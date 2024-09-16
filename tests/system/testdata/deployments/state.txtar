@@ -39,7 +39,7 @@ project:
 
 -- program.star --
 def on_http_get(event):
-    if event.data.url.path.endswith('short'):
+    if event.data.raw_url.endswith('short'):
       print(ak.is_deployment_active())
       return
 

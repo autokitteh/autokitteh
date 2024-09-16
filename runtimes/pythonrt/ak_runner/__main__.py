@@ -117,10 +117,10 @@ def run(args):
 
     # Inject HTTP body
     # TODO (ENG-624) change this once we support callbacks to autokitteh
-    body = event.get("data", {}).get("body")
+    body = event.get("data", {}).get("body", {}).get("bytes")
     if isinstance(body, str):
         try:
-            event["data"]["body"] = b64decode(body)
+            event["data"]["body"]["bytes"] = b64decode(body)
         except ValueError:
             pass
 

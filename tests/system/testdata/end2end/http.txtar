@@ -43,7 +43,7 @@ def on_http(data, trigger, event):
     "state": {
         "completed": {
             "prints": [
-                "data(body = body(bytes = \u003cbuilt-in function .bytes\u003e, form = \u003cbuilt-in function .form\u003e, json = \u003cbuilt-in function .json\u003e, text = \u003cbuilt-in function .text\u003e), headers = {\"Accept-Encoding\": \"gzip\", \"User-Agent\": \"Go-http-client/1.1\"}, method = \"GET\", url = url(fragment = \"\", host = \"\", opaque = \"\", path = \"/webhooks/00000000000000000000000004/\", query = {}, raw = \"\", raw_fragment = \"\", raw_query = \"\", scheme = \"\"))",
+                "data(body = {\"form\": None, \"bytes\": None, \"json\": None}, headers = {\"Accept-Encoding\": \"gzip\", \"User-Agent\": \"Go-http-client/1.1\"}, method = \"GET\", raw_url = \"/webhooks/00000000000000000000000004/\", url = {\"fragment\": \"\", \"raw_path\": \"\", \"query\": {}, \"raw_fragment\": \"\", \"raw_query\": \"\", \"path\": \"/webhooks/00000000000000000000000004/\"})",
                 "get",
                 "trigger(name = \"http\")"
             ],
@@ -81,7 +81,7 @@ def on_http(data, trigger, event):
     "state": {
         "completed": {
             "prints": [
-                "data(body = body(bytes = \u003cbuilt-in function .bytes\u003e, form = \u003cbuilt-in function .form\u003e, json = \u003cbuilt-in function .json\u003e, text = \u003cbuilt-in function .text\u003e), headers = {\"Accept-Encoding\": \"gzip\", \"User-Agent\": \"Go-http-client/1.1\", \"Content-Length\": \"0\"}, method = \"POST\", url = url(fragment = \"\", host = \"\", opaque = \"\", path = \"/webhooks/00000000000000000000000004/test/aaa/bbb/ccc\", query = {}, raw = \"\", raw_fragment = \"\", raw_query = \"\", scheme = \"\"))",
+                "data(body = {\"form\": None, \"bytes\": None, \"json\": None}, headers = {\"Accept-Encoding\": \"gzip\", \"User-Agent\": \"Go-http-client/1.1\", \"Content-Length\": \"0\"}, method = \"POST\", raw_url = \"/webhooks/00000000000000000000000004/test/aaa/bbb/ccc\", url = {\"fragment\": \"\", \"raw_path\": \"\", \"query\": {}, \"raw_fragment\": \"\", \"raw_query\": \"\", \"path\": \"/webhooks/00000000000000000000000004/test/aaa/bbb/ccc\"})",
                 "post",
                 "trigger(name = \"http\")"
             ],
