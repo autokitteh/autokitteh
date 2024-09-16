@@ -40,7 +40,7 @@ func runtimes() sdkservices.Runtimes {
 	if local {
 		// TODO: what is local ? what to do about logger ? which config ?
 		l := zap.New(nil)
-		return backendRuntimes.New(&backendRuntimes.Config{LazyLoadLocalVEnv: true}, l)
+		return backendRuntimes.New(&backendRuntimes.Config{LazyLoadLocalVEnv: true}, l, nil)
 	}
 	return common.Client().Runtimes()
 }

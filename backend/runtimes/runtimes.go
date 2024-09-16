@@ -2,6 +2,7 @@ package runtimes
 
 import (
 	"go.autokitteh.dev/autokitteh/internal/backend/configset"
+	"go.autokitteh.dev/autokitteh/internal/backend/httpsvc"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	configruntimesvc "go.autokitteh.dev/autokitteh/runtimes/configrt/runtimesvc"
 	pythonruntime "go.autokitteh.dev/autokitteh/runtimes/pythonrt"
@@ -26,15 +27,14 @@ var Configs = configset.Set[Config]{
 	Default: &Config{
 		RemoteRunnerEndpoints: []string{"localhost:9291"},
 		EnableRemoteRunner:    false,
-		WorkerAddress:         "localhost:9980",
+		// WorkerAddress:         "localhost:9980",
 	},
 	Test: &Config{
 		LazyLoadLocalVEnv: true,
-		WorkerAddress:     "localhost:9980",
 	},
 }
 
-func New(cfg *Config, l *zap.Logger) sdkservices.Runtimes {
+func New(cfg *Config, l *zap.Logger, svc httpsvc.Svc) sdkservices.Runtimes {
 	runtimes := []*sdkruntimes.Runtime{
 		starlarkruntimesvc.Runtime,
 		configruntimesvc.Runtime,
@@ -60,14 +60,15 @@ func New(cfg *Config, l *zap.Logger) sdkservices.Runtimes {
 	} else {
 		if err := pythonruntime.ConfigureLocalRunnerManager(l,
 			pythonruntime.LocalRunnerConfig{
-				WorkerAddress: cfg.WorkerAddress,
-				LazyLoadVEnv:  cfg.LazyLoadLocalVEnv,
+				WorkerAddress:         cfg.WorkerAddress,
+				LazyLoadVEnv:          cfg.LazyLoadLocalVEnv,
+				WorkerAddressProvider: func() string { return svc.Addr() },
 			},
 		); err != nil {
 			l.Panic("configure local runner manager", zap.Error(err))
 		}
 
-		l.Info("local runner configured", zap.String("worker address", cfg.WorkerAddress))
+		l.Info("local runner configured")
 	}
 
 	pythonruntime.ConfigureWorkerGRPCHandler(l)
