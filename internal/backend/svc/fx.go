@@ -48,7 +48,7 @@ func Component[T any](name string, set configset.Set[T], opts ...fx.Option) fx.O
 
 func fxLogger(z *zap.Logger) fxevent.Logger {
 	l := &fxevent.ZapLogger{Logger: z.Named("fx")}
-	l.UseLogLevel(zapcore.DebugLevel)
+	l.UseLogLevel(zapcore.DebugLevel - 1)
 	l.UseErrorLevel(zapcore.ErrorLevel)
 	return l
 }
