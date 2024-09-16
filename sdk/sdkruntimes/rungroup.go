@@ -3,8 +3,8 @@ package sdkruntimes
 import (
 	"context"
 	"errors"
+	"fmt"
 
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -50,7 +50,7 @@ func (g *group) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Valu
 
 	run, ok := g.runs[sdktypes.NewExecutorID(runID)]
 	if !ok {
-		return sdktypes.InvalidValue, kittehs.ErrorWithPrefix("run ID not found", sdkerrors.ErrNotFound)
+		return sdktypes.InvalidValue, fmt.Errorf("run ID not found: %w", sdkerrors.ErrNotFound)
 	}
 
 	return run.Call(ctx, v, args, kwargs)

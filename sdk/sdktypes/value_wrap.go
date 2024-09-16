@@ -8,7 +8,6 @@ import (
 	"reflect"
 	"time"
 
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 )
 
@@ -19,7 +18,7 @@ func (w ValueWrapper) Wrap(v any) (Value, error) {
 	if w.Prewrap != nil {
 		var err error
 		if v, err = w.Prewrap(v); err != nil {
-			return InvalidValue, kittehs.ErrorWithPrefix("pre-wrap", err)
+			return InvalidValue, fmt.Errorf("pre-wrap: %w", err)
 		}
 	}
 
@@ -47,7 +46,7 @@ func (w ValueWrapper) Wrap(v any) (Value, error) {
 		var buf bytes.Buffer
 
 		if _, err := buf.ReadFrom(r); err != nil {
-			return InvalidValue, kittehs.ErrorWithPrefix("read", err)
+			return InvalidValue, fmt.Errorf("read: %w", err)
 		}
 
 		if w.WrapReaderAsString {
@@ -60,7 +59,7 @@ func (w ValueWrapper) Wrap(v any) (Value, error) {
 	if msg, ok := v.(json.RawMessage); ok {
 		var vv Value
 		if err := json.Unmarshal(msg, &vv); err != nil {
-			return InvalidValue, kittehs.ErrorWithPrefix("unmarshal JSON", err)
+			return InvalidValue, fmt.Errorf("unmarshal JSON: %w", err)
 		}
 		return vv, nil
 	}
@@ -105,7 +104,7 @@ func (w ValueWrapper) Wrap(v any) (Value, error) {
 
 			wfv, err := w.Wrap(fv.Interface())
 			if err != nil {
-				err = kittehs.ErrorWithPrefix("unable to wrap struct field", err)
+				err = fmt.Errorf("unable to wrap struct field: %w", err)
 				return InvalidValue, err
 			}
 

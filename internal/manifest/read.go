@@ -21,7 +21,7 @@ func Read(data []byte, path string) (*Manifest, error) {
 		gojsonschema.NewGoLoader(&manifest),
 	)
 	if err != nil {
-		return nil, kittehs.ErrorWithPrefix("YAML validation error", err)
+		return nil, fmt.Errorf("YAML validation error: %w", err)
 	}
 
 	if !res.Valid() {

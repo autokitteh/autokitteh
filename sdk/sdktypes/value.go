@@ -184,17 +184,17 @@ func ValueProtoToJSONStringValue(pb *ValuePB) (*ValuePB, error) {
 
 	v, err := ValueFromProto(pb)
 	if err != nil {
-		return nil, kittehs.ErrorWithPrefix("decode proto", err)
+		return nil, fmt.Errorf("decode proto: %w", err)
 	}
 
 	u, err := valueStringUnwrapper.Unwrap(v)
 	if err != nil {
-		return nil, kittehs.ErrorWithPrefix("unwrap value", err)
+		return nil, fmt.Errorf("unwrap value: %w", err)
 	}
 
 	j, err := json.Marshal(u)
 	if err != nil {
-		return nil, kittehs.ErrorWithPrefix("marshal JSON", err)
+		return nil, fmt.Errorf("marshal JSON: %w", err)
 	}
 
 	return NewStringValue(string(j)).ToProto(), nil

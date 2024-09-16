@@ -3,13 +3,13 @@ package triggers
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/scheduler"
 	"go.autokitteh.dev/autokitteh/internal/backend/webhookssvc"
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -56,7 +56,7 @@ func (m *triggers) Create(ctx context.Context, trigger sdktypes.Trigger) (sdktyp
 	case sdktypes.TriggerSourceTypeSchedule:
 		// TODO: If this fails, we need to remove the trigger.
 		if err := m.scheduler.Create(ctx, trigger.ID(), trigger.Schedule()); err != nil {
-			return sdktypes.InvalidTriggerID, kittehs.ErrorWithPrefix("create schedule", err)
+			return sdktypes.InvalidTriggerID, fmt.Errorf("create schedule: %w", err)
 		}
 		sl.With("schedule", trigger.Schedule()).Infof("created schedule trigger with spec %q", trigger.Schedule())
 	case sdktypes.TriggerSourceTypeConnection:
@@ -98,7 +98,7 @@ func (m *triggers) Update(ctx context.Context, trigger sdktypes.Trigger) error {
 	if trigger.SourceType() == sdktypes.TriggerSourceTypeSchedule {
 		// TODO: if this fails, we need to revert the trigger.
 		if err := m.scheduler.Update(ctx, triggerID, trigger.Schedule()); err != nil {
-			return kittehs.ErrorWithPrefix("update schedule", err)
+			return fmt.Errorf("update schedule: %w", err)
 		}
 	}
 
@@ -113,13 +113,13 @@ func (m *triggers) Delete(ctx context.Context, triggerID sdktypes.TriggerID) err
 	}
 
 	if err := m.db.DeleteTrigger(ctx, triggerID); err != nil {
-		return kittehs.ErrorWithPrefix("delete trigger", err)
+		return fmt.Errorf("delete trigger: %w", err)
 	}
 
 	if trigger.SourceType() == sdktypes.TriggerSourceTypeSchedule {
 		// If this fails, the trigger will not work, which is fine.
 		if err := m.scheduler.Delete(ctx, triggerID); err != nil {
-			return kittehs.ErrorWithPrefix("delete schedule", err)
+			return fmt.Errorf("delete schedule: %w", err)
 		}
 	}
 

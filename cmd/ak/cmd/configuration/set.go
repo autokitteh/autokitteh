@@ -14,7 +14,6 @@ import (
 
 	"go.autokitteh.dev/autokitteh/backend/svc"
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/internal/xdg"
 )
 
@@ -60,7 +59,7 @@ var setCmd = common.StandardCommand(&cobra.Command{
 		}
 
 		if err := os.WriteFile(common.ConfigYAMLFilePath(), data, filePermissions); err != nil {
-			return kittehs.ErrorWithPrefix("write file", err)
+			return fmt.Errorf("write file: %w", err)
 		}
 
 		return nil
@@ -91,7 +90,7 @@ func currentConfig() (map[string]any, error) {
 	data, err := os.ReadFile(filename)
 	if err != nil {
 		if !errors.Is(err, os.ErrNotExist) {
-			return nil, kittehs.ErrorWithPrefix("read file", err)
+			return nil, fmt.Errorf("read file: %w", err)
 		}
 		return cfg, nil
 	}
@@ -129,13 +128,13 @@ func setKeyValue(cfg map[string]any, key, val string) error {
 func validateConfig(data []byte) error {
 	temp, err := os.MkdirTemp("", "")
 	if err != nil {
-		return kittehs.ErrorWithPrefix("create temporary directory", err)
+		return fmt.Errorf("create temporary directory: %w", err)
 	}
 	defer os.RemoveAll(temp)
 
 	path := filepath.Join(temp, common.ConfigYAMLFileName)
 	if err := os.WriteFile(path, data, filePermissions); err != nil {
-		return kittehs.ErrorWithPrefix("write file", err)
+		return fmt.Errorf("write file: %w", err)
 	}
 
 	path = os.Getenv(xdg.ConfigEnvVar)
@@ -151,11 +150,11 @@ func validateConfig(data []byte) error {
 	os.Setenv(xdg.ConfigEnvVar, temp)
 
 	if err := common.InitConfig(nil); err != nil {
-		return kittehs.ErrorWithPrefix("init temporary config", err)
+		return fmt.Errorf("init temporary config: %w", err)
 	}
 
 	if _, err := common.NewDevSvc(true); err != nil {
-		return kittehs.ErrorWithPrefix("invalid config", dig.RootCause(err))
+		return fmt.Errorf("invalid config: %w", dig.RootCause(err))
 	}
 
 	return nil

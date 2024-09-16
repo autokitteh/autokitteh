@@ -40,7 +40,7 @@ func ToExitCodeError(err error, whats ...string) error {
 		code = NotFoundExitCode
 	case errors.Is(err, sdkerrors.ErrFailedPrecondition):
 		// Replace "failed precondition" with "failed precondition: <whats>".
-		err = kittehs.ErrorWithValue(strings.Join(whats, " "), err)
+		err = fmt.Errorf("%w: %s", err, strings.Join(whats, " "))
 		code = FailedPrecondition
 	}
 

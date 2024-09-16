@@ -2,6 +2,7 @@ package kittehs
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -48,7 +49,7 @@ func TestTransformError(t *testing.T) {
 		return i, nil
 	})
 
-	assert.Equal(t, err, ErrorWithValue(4, errHiss))
+	assert.Equal(t, err, fmt.Errorf("%w: %v", errHiss, 4))
 	assert.Nil(t, xs)
 
 	xs, err = TransformError(ints[:2], func(i int) (int, error) {

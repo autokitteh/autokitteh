@@ -64,7 +64,7 @@ func (m *module) Configure(ctx context.Context, xid sdktypes.ExecutorID, cid sdk
 
 		var err error
 		if values[k], err = v.fn(xid, data); err != nil {
-			return nil, kittehs.ErrorWithValue(k, err)
+			return nil, fmt.Errorf("%w: %s", err, k)
 		}
 	}
 
@@ -72,7 +72,7 @@ func (m *module) Configure(ctx context.Context, xid sdktypes.ExecutorID, cid sdk
 		var err error
 		values[k], err = sdktypes.NewFunctionValue(xid, k, data, f.flags, kittehs.Must1(sdktypes.ModuleFunctionFromProto(&f.desc)))
 		if err != nil {
-			return nil, kittehs.ErrorWithValue(k, err)
+			return nil, fmt.Errorf("%w: %s", err, k)
 		}
 	}
 

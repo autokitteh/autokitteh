@@ -2,6 +2,7 @@ package runtimes
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"io/fs"
 	"os"
@@ -52,7 +53,7 @@ var buildCmd = common.StandardCommand(&cobra.Command{
 			if len(args) > 0 {
 				f, err := os.Open(args[0])
 				if err != nil {
-					return kittehs.ErrorWithPrefix("open file", err)
+					return fmt.Errorf("open file: %w", err)
 				}
 
 				defer f.Close()
@@ -62,13 +63,13 @@ var buildCmd = common.StandardCommand(&cobra.Command{
 
 			bs, err := io.ReadAll(r)
 			if err != nil {
-				return kittehs.ErrorWithPrefix("read input", err)
+				return fmt.Errorf("read input: %w", err)
 			}
 
 			a := txtar.Parse(bs)
 
 			if srcFS, err = kittehs.TxtarToFS(a); err != nil {
-				return kittehs.ErrorWithPrefix("extract txtar", err)
+				return fmt.Errorf("extract txtar: %w", err)
 			}
 
 			if srcFS, err = fs.Sub(srcFS, dir); err != nil {
@@ -93,7 +94,7 @@ var buildCmd = common.StandardCommand(&cobra.Command{
 		}
 
 		if err := b.Write(dst); err != nil {
-			return kittehs.ErrorWithPrefix("write output", err)
+			return fmt.Errorf("write output: %w", err)
 		}
 
 		if describe {
@@ -126,7 +127,7 @@ func outputFile() (*os.File, error) {
 
 	f, err := os.OpenFile(output, os.O_CREATE|os.O_WRONLY, 0o600)
 	if err != nil {
-		return nil, kittehs.ErrorWithPrefix("open output file", err)
+		return nil, fmt.Errorf("open output file: %w", err)
 	}
 
 	return f, nil

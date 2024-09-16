@@ -22,7 +22,7 @@ func buildWithRuntime(
 ) error {
 	p, err := rt.Build(ctx, fs, path, symbols)
 	if err != nil {
-		return kittehs.ErrorWithPrefix("build runtime", err)
+		return fmt.Errorf("build runtime: %w", err)
 	}
 
 	return data.MergeFrom(
@@ -46,7 +46,7 @@ func Build(
 
 	rtdescs, err := rts.List(ctx)
 	if err != nil {
-		return nil, kittehs.ErrorWithPrefix("list runtimes", err)
+		return nil, fmt.Errorf("list runtimes: %w", err)
 	}
 
 	var q []sdktypes.BuildRequirement
@@ -72,7 +72,7 @@ func Build(
 
 		return nil
 	}); err != nil {
-		return nil, kittehs.ErrorWithPrefix("walk dir", err)
+		return nil, fmt.Errorf("walk dir: %w", err)
 	}
 
 	type rtCacheEntry struct {

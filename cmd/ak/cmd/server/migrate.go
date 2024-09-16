@@ -2,11 +2,11 @@ package server
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/spf13/cobra"
 
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
 )
 
 var migrateCmd = common.StandardCommand(&cobra.Command{
@@ -23,11 +23,11 @@ var migrateCmd = common.StandardCommand(&cobra.Command{
 
 		db, err := InitDB(common.Config(), mode)
 		if err != nil {
-			return kittehs.ErrorWithPrefix("init DB", err)
+			return fmt.Errorf("init DB: %w", err)
 		}
 
 		if err := db.Migrate(context.Background()); err != nil {
-			return kittehs.ErrorWithPrefix("migrate", err)
+			return fmt.Errorf("migrate: %w", err)
 		}
 
 		return nil

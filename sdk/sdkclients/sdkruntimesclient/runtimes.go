@@ -3,6 +3,7 @@ package sdkruntimesclient
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io/fs"
 
 	"connectrpc.com/connect"
@@ -36,7 +37,7 @@ func (c *client) Run(
 ) (sdkservices.Run, error) {
 	var a bytes.Buffer
 	if err := build.Write(&a); err != nil {
-		return nil, kittehs.ErrorWithPrefix("write build file", err)
+		return nil, fmt.Errorf("write build file: %w", err)
 	}
 
 	stream, err := c.client.Run(ctx, connect.NewRequest(&runtimesv1.RunRequest{
@@ -57,7 +58,7 @@ func (c *client) Run(
 			stream.Close()
 			perr, err := sdktypes.ProgramErrorFromProto(msg.Error)
 			if err != nil {
-				return nil, kittehs.ErrorWithPrefix("invalid error", err)
+				return nil, fmt.Errorf("invalid error: %w", err)
 			}
 			return nil, perr.ToError()
 		}
@@ -70,7 +71,7 @@ func (c *client) Run(
 			result, err = kittehs.TransformMapValuesError(msg.Result, sdktypes.StrictValueFromProto)
 			if err != nil {
 				stream.Close()
-				return nil, kittehs.ErrorWithPrefix("invalid result", err)
+				return nil, fmt.Errorf("invalid result: %w", err)
 			}
 		}
 	}
@@ -102,7 +103,7 @@ func (c *client) Build(ctx context.Context, fs fs.FS, symbols []sdktypes.Symbol,
 	if resp.Msg.Error != nil {
 		perr, err := sdktypes.ProgramErrorFromProto(resp.Msg.Error)
 		if err != nil {
-			return nil, kittehs.ErrorWithPrefix("invalid error", err)
+			return nil, fmt.Errorf("invalid error: %w", err)
 		}
 		return nil, perr.ToError()
 	}
@@ -139,7 +140,7 @@ func (c *client) New(ctx context.Context, name sdktypes.Symbol) (sdkservices.Run
 
 	desc, err := sdktypes.StrictRuntimeFromProto(resp.Msg.Runtime)
 	if err != nil {
-		return nil, kittehs.ErrorWithPrefix("invalid runtime", err)
+		return nil, fmt.Errorf("invalid runtime: %w", err)
 	}
 
 	return &runtime{desc: desc}, nil

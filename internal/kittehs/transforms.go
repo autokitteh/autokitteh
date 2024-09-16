@@ -54,7 +54,7 @@ func TransformError[A, B any](as []A, f func(A) (B, error)) ([]B, error) {
 	for i, a := range as {
 		var err error
 		if bs[i], err = f(a); err != nil {
-			return nil, ErrorWithValue(a, err)
+			return nil, fmt.Errorf("%w: %v", err, a)
 		}
 	}
 

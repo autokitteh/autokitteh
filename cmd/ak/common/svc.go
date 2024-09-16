@@ -1,11 +1,12 @@
 package common
 
 import (
+	"fmt"
+
 	"github.com/spf13/cobra"
 
 	"go.autokitteh.dev/autokitteh/backend/svc"
 	"go.autokitteh.dev/autokitteh/internal/backend/configset"
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
 )
 
 var mode string
@@ -20,7 +21,7 @@ func AddModeFlag(cmd *cobra.Command) {
 // service mode CLI flag, initialized with [AddModeFlag].
 func ParseModeFlag() (m configset.Mode, err error) {
 	if m, err = configset.ParseMode(mode); err != nil {
-		err = kittehs.ErrorWithPrefix("parse mode", err)
+		err = fmt.Errorf("parse mode: %w", err)
 	}
 	return
 }

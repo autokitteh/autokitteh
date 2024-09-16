@@ -8,7 +8,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
 )
 
 var upCmd = common.StandardCommand(&cobra.Command{
@@ -19,18 +18,18 @@ var upCmd = common.StandardCommand(&cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		_, err := maxprocs.Set()
 		if err != nil {
-			return kittehs.ErrorWithPrefix("maxprocs set", err)
+			return fmt.Errorf("maxprocs set: %w", err)
 		}
 
 		ctx := cmd.Root().Context()
 
 		app, err := common.NewSvc(false)
 		if err != nil {
-			return kittehs.ErrorWithPrefix("new service", err)
+			return fmt.Errorf("new service: %w", err)
 		}
 
 		if err := app.Start(ctx); err != nil {
-			return kittehs.ErrorWithPrefix("fx app start", err)
+			return fmt.Errorf("fx app start: %w", err)
 		}
 
 		<-app.Wait()

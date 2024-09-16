@@ -71,20 +71,20 @@ var deployCmd = common.StandardCommand(&cobra.Command{
 			BuildId: bid.String(),
 		})
 		if err != nil {
-			return kittehs.ErrorWithPrefix("invalid deployment", err)
+			return fmt.Errorf("invalid deployment: %w", err)
 		}
 
 		dep := common.Client().Deployments()
 		did, err := dep.Create(ctx, deployment)
 		if err != nil {
-			return kittehs.ErrorWithPrefix("create deployment", err)
+			return fmt.Errorf("create deployment: %w", err)
 		}
 		logFunc(cmd, "exec")(fmt.Sprintf("create_deployment: created %q", did))
 
 		// Step 5: activate the deployment
 		// (see also the "deployment" parent command).
 		if err := dep.Activate(ctx, did); err != nil {
-			return kittehs.ErrorWithPrefix("activate deployment", err)
+			return fmt.Errorf("activate deploymen: %w", err)
 		}
 		logFunc(cmd, "exec")("activate_deployment: activated")
 

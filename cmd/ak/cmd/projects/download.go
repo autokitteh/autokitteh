@@ -1,6 +1,7 @@
 package projects
 
 import (
+	"fmt"
 	"os"
 	"path"
 	"path/filepath"
@@ -8,7 +9,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/internal/resolver"
 )
 
@@ -38,11 +38,11 @@ var downloadCmd = common.StandardCommand(&cobra.Command{
 			fulllPath := filepath.Join(outputDirectory, filename)
 
 			if err := os.MkdirAll(path.Dir(fulllPath), 0o755); err != nil {
-				return kittehs.ErrorWithPrefix("create output directory", err)
+				return fmt.Errorf("create output directory: %w", err)
 			}
 
 			if err := os.WriteFile(fulllPath, data, 0o644); err != nil {
-				return kittehs.ErrorWithPrefix("write file", err)
+				return fmt.Errorf("write file: %w", err)
 			}
 		}
 

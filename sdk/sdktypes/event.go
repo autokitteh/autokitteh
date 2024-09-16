@@ -2,6 +2,7 @@ package sdktypes
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 	"time"
 
@@ -134,7 +135,7 @@ func eventFilterField(name string, expr string) error {
 
 	_, issues := eventFilterEnv.Compile(expr)
 	if err := issues.Err(); err != nil {
-		return kittehs.ErrorWithPrefix(name, err)
+		return fmt.Errorf("%s: %w", name, err)
 	}
 
 	return nil
@@ -157,27 +158,27 @@ func (e Event) Matches(expr string) (bool, error) {
 
 	ast, issues := eventFilterEnv.Compile(expr)
 	if err := issues.Err(); err != nil {
-		return false, kittehs.ErrorWithPrefix("compile", err)
+		return false, fmt.Errorf("compile: %w", err)
 	}
 
 	prg, err := eventFilterEnv.Program(ast)
 	if err != nil {
-		return false, kittehs.ErrorWithPrefix("program", err)
+		return false, fmt.Errorf("program: %w", err)
 	}
 
 	data, err := kittehs.TransformMapValuesError(e.Data(), matchUnwrapper.Unwrap)
 	if err != nil {
-		return false, kittehs.ErrorWithPrefix("unwrap event", err)
+		return false, fmt.Errorf("unwrap event: %w", err)
 	}
 
 	out, _, err := prg.Eval(map[string]any{"data": data, "event_type": e.Type()})
 	if err != nil {
-		return false, kittehs.ErrorWithPrefix("program eval", err)
+		return false, fmt.Errorf("program eval: %w", err)
 	}
 
 	b, err := out.ConvertToNative(reflect.TypeOf(true))
 	if err != nil {
-		return false, kittehs.ErrorWithPrefix("expression result not bool", err)
+		return false, fmt.Errorf("expression result not bool: %w", err)
 	}
 
 	return b.(bool), nil

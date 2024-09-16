@@ -30,10 +30,10 @@ var saveCmd = common.StandardCommand(&cobra.Command{
 		if filename != "" {
 			text, err := os.ReadFile(filename)
 			if err != nil {
-				return kittehs.ErrorWithPrefix("read file", err)
+				return fmt.Errorf("read file: %w", err)
 			}
 			if err := json.Unmarshal(text, &event); err != nil {
-				return kittehs.ErrorWithPrefix("unmarshal JSON", err)
+				return fmt.Errorf("unmarshal JSON: %w", err)
 			}
 			pb = event.ToProto()
 		}
@@ -66,12 +66,12 @@ var saveCmd = common.StandardCommand(&cobra.Command{
 
 		e, err := sdktypes.EventFromProto(pb)
 		if err != nil {
-			return kittehs.ErrorWithPrefix("invalid event", err)
+			return fmt.Errorf("invalid event: %w", err)
 		}
 
 		eid, err := events().Save(ctx, e)
 		if err != nil {
-			return kittehs.ErrorWithPrefix("save event", err)
+			return fmt.Errorf("save event: %w", err)
 		}
 
 		common.RenderKV("event_id", eid)

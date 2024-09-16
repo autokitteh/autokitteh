@@ -65,33 +65,33 @@ func oneOfMessage(m proto.Message, ignores ...string) error {
 
 func indexedObject[O ~struct{ object[M, T] }, M comparableMessage, T objectTraits[M]](i int, m M) error {
 	if err := strictValidate[M, T](m); err != nil {
-		return kittehs.ErrorWithValue(i, err)
+		return errorForValue(i, err)
 	}
 	return nil
 }
 
 func objectField[_ ~struct{ object[M, T] }, M comparableMessage, T objectTraits[M]](name string, m M) error {
 	if err := validate[M, T](m); err != nil {
-		return kittehs.ErrorWithValue(name, err)
+		return errorForValue(name, err)
 	}
 	return nil
 }
 
 func objectsSlice[O ~struct{ object[M, T] }, M comparableMessage, T objectTraits[M]](ms []M) error {
-	return kittehs.ErrorWithValue(kittehs.ValidateList(ms, indexedObject[O, M, T]))
+	return errorForValue(kittehs.ValidateList(ms, indexedObject[O, M, T]))
 }
 
 func objectsSliceField[O ~struct{ object[M, T] }, M comparableMessage, T objectTraits[M]](name string, ms []M) error {
-	err := kittehs.ErrorWithValue(kittehs.ValidateList(ms, indexedObject[O, M, T]))
+	err := errorForValue(kittehs.ValidateList(ms, indexedObject[O, M, T]))
 	if err != nil {
-		return kittehs.ErrorWithValue(name, err)
+		return errorForValue(name, err)
 	}
 	return nil
 }
 
 func idField[ID id[T], T idTraits](name string, s string) error {
 	if _, err := ParseID[ID](s); err != nil {
-		return kittehs.ErrorWithValue(name, err)
+		return errorForValue(name, err)
 	}
 	return nil
 }
@@ -126,7 +126,7 @@ func objectsMapField[O ~struct{ object[M, T] }, M comparableMessage, T objectTra
 		return nil
 	}
 
-	return kittehs.ErrorWithValue(name, err)
+	return errorForValue(name, err)
 }
 
 func valuesMapField(name string, m map[string]*valuev1.Value) error {
@@ -135,21 +135,21 @@ func valuesMapField(name string, m map[string]*valuev1.Value) error {
 
 func nameField(name string, s string) error {
 	if _, err := ParseSymbol(s); err != nil {
-		return kittehs.ErrorWithValue(name, err)
+		return errorForValue(name, err)
 	}
 	return nil
 }
 
 func executorIDField(name string, s string) error {
 	if _, err := ParseExecutorID(s); err != nil {
-		return kittehs.ErrorWithValue(name, err)
+		return errorForValue(name, err)
 	}
 	return nil
 }
 
 func enumField[W ~struct{ enum[T, E] }, T enumTraits, E ~int32](name string, v E) error {
 	if _, err := EnumFromProto[W, T, E](v); err != nil {
-		return kittehs.ErrorWithValue(name, err)
+		return errorForValue(name, err)
 	}
 	return nil
 }
@@ -160,14 +160,26 @@ func urlField(name string, s string) error {
 	}
 
 	if _, err := url.Parse(s); err != nil {
-		return kittehs.ErrorWithValue(name, err)
+		return errorForValue(name, err)
 	}
 	return nil
 }
 
 func symbolField(name string, s string) error {
 	if _, err := ParseSymbol(s); err != nil {
-		return kittehs.ErrorWithValue(name, err)
+		return errorForValue(name, err)
 	}
 	return nil
+}
+
+// errorForValue wraps the given error by appending the value to
+// it. If the error is nil, it also returns nil. The error comes
+// before the value and not after, because it describes what's
+// wrong with the value. This allows additional error wrapping.
+// Example: "loop error: counter must be positive: -1".
+func errorForValue[T any](value T, err error) error {
+	if err == nil {
+		return nil
+	}
+	return fmt.Errorf("%w: %v", err, value)
 }
