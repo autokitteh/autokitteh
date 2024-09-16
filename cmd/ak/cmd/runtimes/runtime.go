@@ -2,6 +2,7 @@ package runtimes
 
 import (
 	"github.com/spf13/cobra"
+	"go.uber.org/zap"
 
 	backendRuntimes "go.autokitteh.dev/autokitteh/backend/runtimes"
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
@@ -38,7 +39,8 @@ func init() {
 func runtimes() sdkservices.Runtimes {
 	if local {
 		// TODO: what is local ? what to do about logger ? which config ?
-		return backendRuntimes.New(nil, nil)
+		l := zap.New(nil)
+		return backendRuntimes.New(&backendRuntimes.Config{LazyLoadLocalVEnv: true}, l)
 	}
 	return common.Client().Runtimes()
 }
