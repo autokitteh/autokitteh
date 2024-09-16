@@ -48,6 +48,11 @@ func Component[T any](name string, set configset.Set[T], opts ...fx.Option) fx.O
 
 func fxLogger(z *zap.Logger) fxevent.Logger {
 	l := &fxevent.ZapLogger{Logger: z.Named("fx")}
+	// When Zap writes a log message, it checks that the message's logging level
+	// is >= AK's (configurable) logging threshold. "Debug" (-1) is the lowest
+	// (i.e. noisiest) possible logging level, so setting FX's info logging to
+	// "Debug - 1" means that it will never be >= AK's logging threshold,
+	// which means that FX will never log info messages, only errors.
 	l.UseLogLevel(zapcore.DebugLevel - 1)
 	l.UseErrorLevel(zapcore.ErrorLevel)
 	return l
