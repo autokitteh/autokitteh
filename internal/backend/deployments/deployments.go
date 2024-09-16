@@ -69,7 +69,7 @@ func (d *deployments) Test(ctx context.Context, id sdktypes.DeploymentID) error 
 	return d.db.Transaction(ctx, func(tx db.DB) error {
 		deployment, err := tx.GetDeployment(ctx, id)
 		if err != nil {
-			return fmt.Errorf("deployment: %w", err)
+			return fmt.Errorf("get deployment: %w", err)
 		}
 
 		if deployment.State() == sdktypes.DeploymentStateTesting {
@@ -77,7 +77,7 @@ func (d *deployments) Test(ctx context.Context, id sdktypes.DeploymentID) error 
 		}
 
 		if _, err := tx.UpdateDeploymentState(ctx, id, sdktypes.DeploymentStateTesting); err != nil {
-			return fmt.Errorf("test: %w", err)
+			return fmt.Errorf("test deployment: %w", err)
 		}
 
 		return nil
@@ -103,7 +103,7 @@ func deactivate(ctx context.Context, tx db.DB, id sdktypes.DeploymentID) error {
 		CountOnly:    true,
 	})
 	if err != nil {
-		return fmt.Errorf("sessions.count: %w", err)
+		return fmt.Errorf("count running sessions: %w", err)
 	}
 
 	resultCreated, err := tx.ListSessions(ctx, sdkservices.ListSessionsFilter{
@@ -112,7 +112,7 @@ func deactivate(ctx context.Context, tx db.DB, id sdktypes.DeploymentID) error {
 		CountOnly:    true,
 	})
 	if err != nil {
-		return fmt.Errorf("sessions.count: %w", err)
+		return fmt.Errorf("count created sessions: %w", err)
 	}
 
 	if resultRunning.TotalCount+resultCreated.TotalCount > 0 {

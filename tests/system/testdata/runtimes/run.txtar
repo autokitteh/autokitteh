@@ -144,7 +144,7 @@ And quiet sleep and a sweet dream when the long trick’s over.
 {"values":{"num_cats":{"integer":{"v":"4"}},"num_dogs":{"integer":{"v":"2"}}}}
 
 -- multi_single_remote_error.txt --
-Error: create build: build error for "multi/main.star": runtime_build: open("multi/cats.star"): not a directory: cats.star: file does not exist
+Error: create build: build error for "multi/main.star": build runtime: open: not a directory: cats.star: file does not exist
 
 -- cats-output.json --
 {

@@ -26,7 +26,7 @@ var downloadCmd = common.StandardCommand(&cobra.Command{
 
 		p, pid, err := r.ProjectNameOrID(ctx, args[0])
 		if err = common.AddNotFoundErrIfCond(err, p.IsValid()); err != nil {
-			return common.ToExitCodeErrorNotNilErr(err, "project")
+			return common.ToExitCodeError(err, "project")
 		}
 
 		resources, err := projects().DownloadResources(ctx, pid)

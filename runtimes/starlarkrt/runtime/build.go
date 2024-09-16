@@ -106,7 +106,7 @@ func Build(ctx context.Context, fs fs.FS, path string, symbols []sdktypes.Symbol
 
 		fr, err := fs.Open(path)
 		if err != nil {
-			return sdktypes.InvalidBuildArtifact, fmt.Errorf("open(%q): %w", path, err)
+			return sdktypes.InvalidBuildArtifact, fmt.Errorf("open: %w", err)
 		}
 
 		src, err := io.ReadAll(fr)

@@ -142,7 +142,7 @@ func Read(r io.Reader) (*BuildFile, error) {
 
 			n, err := sdktypes.ParseSymbol(name)
 			if err != nil {
-				return nil, fmt.Errorf("invalid runtime name: %w", err)
+				return nil, fmt.Errorf("parse runtime name: %w", err)
 			}
 
 			if err := readRuntimeFile(&bf, n, rest, &buf); err != nil {

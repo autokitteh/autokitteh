@@ -170,17 +170,17 @@ func (e Event) Matches(expr string) (bool, error) {
 
 	data, err := kittehs.TransformMapValuesError(e.Data(), matchUnwrapper.Unwrap)
 	if err != nil {
-		return false, fmt.Errorf("convert: %w", err)
+		return false, fmt.Errorf("unwrap event: %w", err)
 	}
 
 	out, _, err := prg.Eval(map[string]any{"data": data, "event_type": e.Type()})
 	if err != nil {
-		return false, fmt.Errorf("eval: %w", err)
+		return false, fmt.Errorf("program eval: %w", err)
 	}
 
 	b, err := out.ConvertToNative(reflect.TypeOf(true))
 	if err != nil {
-		return false, fmt.Errorf("expression result is not a boolean: %w", err)
+		return false, fmt.Errorf("expression result not bool: %w", err)
 	}
 
 	return b.(bool), nil

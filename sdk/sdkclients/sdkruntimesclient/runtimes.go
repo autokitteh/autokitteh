@@ -37,7 +37,7 @@ func (c *client) Run(
 ) (sdkservices.Run, error) {
 	var a bytes.Buffer
 	if err := build.Write(&a); err != nil {
-		return nil, fmt.Errorf("failed to write build file: %w", err)
+		return nil, fmt.Errorf("write build file: %w", err)
 	}
 
 	stream, err := c.client.Run(ctx, connect.NewRequest(&runtimesv1.RunRequest{

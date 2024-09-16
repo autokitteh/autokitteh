@@ -18,7 +18,7 @@ func (w ValueWrapper) Wrap(v any) (Value, error) {
 	if w.Prewrap != nil {
 		var err error
 		if v, err = w.Prewrap(v); err != nil {
-			return InvalidValue, fmt.Errorf("prewrap: %w", err)
+			return InvalidValue, fmt.Errorf("pre-wrap: %w", err)
 		}
 	}
 
@@ -59,7 +59,7 @@ func (w ValueWrapper) Wrap(v any) (Value, error) {
 	if msg, ok := v.(json.RawMessage); ok {
 		var vv Value
 		if err := json.Unmarshal(msg, &vv); err != nil {
-			return InvalidValue, fmt.Errorf("unmarshal value error: %w", err)
+			return InvalidValue, fmt.Errorf("unmarshal JSON: %w", err)
 		}
 		return vv, nil
 	}
@@ -104,7 +104,8 @@ func (w ValueWrapper) Wrap(v any) (Value, error) {
 
 			wfv, err := w.Wrap(fv.Interface())
 			if err != nil {
-				return InvalidValue, fmt.Errorf("unable to convert struct field: %w", err)
+				err = fmt.Errorf("unable to wrap struct field: %w", err)
+				return InvalidValue, err
 			}
 
 			n := w.fromStructCaser(vfs.Name)

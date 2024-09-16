@@ -2,6 +2,7 @@ package sdkruntimes
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
@@ -37,19 +38,19 @@ func (g *group) ExecutorID() sdktypes.ExecutorID { return sdktypes.NewExecutorID
 
 func (g *group) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
 	if !v.IsFunction() {
-		return sdktypes.InvalidValue, fmt.Errorf("callee must be a function value")
+		return sdktypes.InvalidValue, errors.New("callee must be a function value")
 	}
 
 	executorID := v.GetFunction().ExecutorID()
 
 	runID := executorID.ToRunID()
 	if !runID.IsValid() {
-		return sdktypes.InvalidValue, fmt.Errorf("executor is not a run")
+		return sdktypes.InvalidValue, errors.New("executor is not a run")
 	}
 
 	run, ok := g.runs[sdktypes.NewExecutorID(runID)]
 	if !ok {
-		return sdktypes.InvalidValue, fmt.Errorf("run id not found: %w", sdkerrors.ErrNotFound)
+		return sdktypes.InvalidValue, fmt.Errorf("run ID not found: %w", sdkerrors.ErrNotFound)
 	}
 
 	return run.Call(ctx, v, args, kwargs)

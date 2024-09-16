@@ -27,7 +27,7 @@ func New(l *zap.Logger, db db.DB, scheduler *scheduler.Scheduler) sdkservices.Tr
 
 func (m *triggers) Create(ctx context.Context, trigger sdktypes.Trigger) (sdktypes.TriggerID, error) {
 	if trigger.ID().IsValid() {
-		return sdktypes.InvalidTriggerID, errors.New("trigger id already defined")
+		return sdktypes.InvalidTriggerID, errors.New("trigger ID already defined")
 	}
 
 	if err := trigger.Strict(); err != nil {
@@ -113,7 +113,7 @@ func (m *triggers) Delete(ctx context.Context, triggerID sdktypes.TriggerID) err
 	}
 
 	if err := m.db.DeleteTrigger(ctx, triggerID); err != nil {
-		return fmt.Errorf("delete webhook: %w", err)
+		return fmt.Errorf("delete trigger: %w", err)
 	}
 
 	if trigger.SourceType() == sdktypes.TriggerSourceTypeSchedule {
