@@ -7,7 +7,7 @@ import (
 )
 
 func (s Svc) initToken() {
-	s.Muxes.Auth.HandleFunc("GET /token", s.token)
+	s.Muxes.Auth.HandleFunc("GET /dashboard/token", s.token)
 }
 
 func (s Svc) token(w http.ResponseWriter, r *http.Request) {

@@ -124,21 +124,21 @@
     <div class="navbar">
         <ul>
             <li class="inert"><a target="_self">autokitteh <tt>{{ Version }}</tt></a></li>
-            <li><a href="/projects">projects</a></li>
-            <li><a href="/envs">envs</a></li>
-            <li><a href="/connections">connections</a></li>
-            <li><a href="/integrations">integrations</a></li>
-            <li><a href="/triggers">triggers</a></li>
-            <li><a href="/deployments">deployments</a></li>
-            <li><a href="/builds">builds</a></li>
-            <li><a href="/sessions">sessions</a></li>
-            <li><a href="/events">events</a></li>
+            <li><a href="/dashboard/projects">projects</a></li>
+            <li><a href="/dashboard/envs">envs</a></li>
+            <li><a href="/dashboard/connections">connections</a></li>
+            <li><a href="/dashboard/integrations">integrations</a></li>
+            <li><a href="/dashboard/triggers">triggers</a></li>
+            <li><a href="/dashboard/deployments">deployments</a></li>
+            <li><a href="/dashboard/builds">builds</a></li>
+            <li><a href="/dashboard/sessions">sessions</a></li>
+            <li><a href="/dashboard/events">events</a></li>
 
             <div class="topnav-right">
                 {{ if User }}
-                <li class="inert"><a href="/auth"><tt>{{ User }}</tt></a></li>
+                <li class="inert"><a href="/dashboard/auth"><tt>{{ User }}</tt></a></li>
                 {{ else }}
-                <li><a href="/login">login</a></li>
+                <li><a href="/dashboard/login">login</a></li>
                 {{ end }}
             </div>
         </ul>

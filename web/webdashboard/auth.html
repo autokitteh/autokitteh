@@ -9,7 +9,7 @@
 
 <pre>{{ .UserJSON }}</pre>
 
-<button onclick="window.location.href='/logout'">Logout</button>
+<button onclick="window.location.href='/dashboard/logout'">Logout</button>
 {{ else }}
 <p>You are not logged in.</p>
 {{ end }}
@@ -23,7 +23,7 @@
 
 <script>
     function createToken() {
-        fetch('/auth/tokens', { method: 'POST', })
+        fetch('/dashboard/auth/tokens', { method: 'POST', })
             .then(response => response.json())
             .then(data => {
                 document.getElementById('token').innerHTML = data;

@@ -47,7 +47,7 @@ export PYTHONPATH=$(PWD)/runtimes/pythonrt/py-sdk
 # 5. Build the entire Go codebase
 # 6. Build AK binary with version and/or debug info
 # 7. Run all automated tests (unit + integration)
-all: gofmt-check lint shellcheck proto build bin/ak test
+all: gofmt-check lint shellcheck proto web build bin/ak test
 
 .PHONY: clean
 clean:
@@ -162,3 +162,8 @@ generate-migrations:
 .PHONY: tailwindcss
 tailwindcss:
 	npx --yes tailwindcss build -o web/static/tailwind.css
+
+.PHONY: web
+web:
+	rm -fR web/webplatform/dist
+	cd web/webplatform && unzip autokitteh-web-*.zip

@@ -16,11 +16,11 @@
 <script>
     function deleteProject() {
         if (confirm("Delete this project?")) {
-            fetch("/projects/{{ .ID }}", {
+            fetch("/dashboard/projects/{{ .ID }}", {
                 method: "DELETE",
             }).then(response => {
                 if (response.ok) {
-                    window.location.href = "/projects";
+                    window.location.href = "/dashboard/projects";
                 } else {
                     console.error(response);
                     alert("Failed to delete project: " + response.statusText);

@@ -1,8 +1,8 @@
 {{ template "header_" . }}
 
 <h1>Session: <tt>{{ .ID }}</tt></h1>
-<button onclick="window.location.href='/sessions/{{ .ID }}/stop'" {{ if not .IsActive }}disabled{{ end }}>Stop</button>
-<button onclick="window.location.href='/sessions/{{ .ID }}/stop?force=true'" {{ if not .IsActive }}disabled{{ end }}>Force Stop</button>
+<button onclick="window.location.href='/dashboard/sessions/{{ .ID }}/stop'" {{ if not .IsActive }}disabled{{ end }}>Stop</button>
+<button onclick="window.location.href='/dashboard/sessions/{{ .ID }}/stop?force=true'" {{ if not .IsActive }}disabled{{ end }}>Force Stop</button>
 <pre>{{ .SessionJSON }}</pre>
 
 <h2>Inputs</h2>

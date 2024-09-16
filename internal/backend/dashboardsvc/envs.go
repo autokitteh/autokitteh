@@ -11,8 +11,8 @@ import (
 )
 
 func (s Svc) initEnvs() {
-	s.Muxes.Auth.HandleFunc("/envs", s.envs)
-	s.Muxes.Auth.HandleFunc("/envs/{eid}", s.env)
+	s.Muxes.Auth.HandleFunc("/dashboard/envs", s.envs)
+	s.Muxes.Auth.HandleFunc("/dashboard/envs/{eid}", s.env)
 }
 
 type env struct{ sdktypes.Env }

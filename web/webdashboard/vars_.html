@@ -20,7 +20,7 @@
         }
 
 
-        fetch(`/vars/{{ .Scope }}${keys.length ? "?names=" + keys.join(",") : ''}`, {
+        fetch(`/dashboard/vars/{{ .Scope }}${keys.length ? "?names=" + keys.join(",") : ''}`, {
             method: "DELETE",
         }).then(response => {
             if (response.ok) {
@@ -46,7 +46,7 @@
             return
         }
 
-        fetch(`/vars/{{ .Scope }}`, {
+        fetch(`/dashboard/vars/{{ .Scope }}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ name, value, is_secret, is_optional }),

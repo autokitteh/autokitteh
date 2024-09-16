@@ -10,8 +10,8 @@ import (
 )
 
 func (s Svc) initIntegrations() {
-	s.Muxes.Auth.HandleFunc("/integrations", s.integrations)
-	s.Muxes.Auth.HandleFunc("/integrations/{iid}", s.integration)
+	s.Muxes.Auth.HandleFunc("/dashboard/integrations", s.integrations)
+	s.Muxes.Auth.HandleFunc("/dashboard/integrations/{iid}", s.integration)
 }
 
 type integration struct{ sdktypes.Integration }

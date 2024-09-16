@@ -13,9 +13,9 @@ import (
 )
 
 func (s Svc) initEvents() {
-	s.Muxes.Auth.HandleFunc("/events", s.events)
-	s.Muxes.Auth.HandleFunc("/events/{eid}", s.event)
-	s.Muxes.Auth.HandleFunc("/events/{eid}/redispatch", s.redispatchEvent)
+	s.Muxes.Auth.HandleFunc("/dashboard/events", s.events)
+	s.Muxes.Auth.HandleFunc("/dashboard/events/{eid}", s.event)
+	s.Muxes.Auth.HandleFunc("/dashboard/events/{eid}/redispatch", s.redispatchEvent)
 }
 
 type event struct{ sdktypes.Event }
@@ -181,5 +181,5 @@ func (s Svc) redispatchEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, "/events/"+eid1.String(), http.StatusSeeOther)
+	http.Redirect(w, r, "/dashboard/events/"+eid1.String(), http.StatusSeeOther)
 }

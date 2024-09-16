@@ -16,12 +16,12 @@ import (
 func (s Svc) initDeployments() {
 	deployments := s.Svcs.Deployments()
 
-	s.Muxes.Auth.HandleFunc("/deployments", s.deployments)
-	s.Muxes.Auth.HandleFunc("/deployments/{did}", s.deployment)
-	s.Muxes.Auth.HandleFunc("/deployments/{did}/activate", s.deploymentAction(deployments.Activate))
-	s.Muxes.Auth.HandleFunc("/deployments/{did}/deactivate", s.deploymentAction(deployments.Deactivate))
-	s.Muxes.Auth.HandleFunc("/deployments/{did}/drain", s.deploymentAction(deployments.Drain))
-	s.Muxes.Auth.HandleFunc("/deployments/{did}/test", s.deploymentAction(deployments.Test))
+	s.Muxes.Auth.HandleFunc("/dashboard/deployments", s.deployments)
+	s.Muxes.Auth.HandleFunc("/dashboard/deployments/{did}", s.deployment)
+	s.Muxes.Auth.HandleFunc("/dashboard/deployments/{did}/activate", s.deploymentAction(deployments.Activate))
+	s.Muxes.Auth.HandleFunc("/dashboard/deployments/{did}/deactivate", s.deploymentAction(deployments.Deactivate))
+	s.Muxes.Auth.HandleFunc("/dashboard/deployments/{did}/drain", s.deploymentAction(deployments.Drain))
+	s.Muxes.Auth.HandleFunc("/dashboard/deployments/{did}/test", s.deploymentAction(deployments.Test))
 }
 
 type deployment struct{ sdktypes.Deployment }
@@ -112,6 +112,6 @@ func (s Svc) deploymentAction(act func(context.Context, sdktypes.DeploymentID) e
 			return
 		}
 
-		http.Redirect(w, r, "/deployments/"+did.String(), http.StatusSeeOther)
+		http.Redirect(w, r, "/dashboard/deployments/"+did.String(), http.StatusSeeOther)
 	}
 }

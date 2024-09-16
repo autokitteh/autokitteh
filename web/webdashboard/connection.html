@@ -3,7 +3,7 @@
 <h1>Connection: <tt>{{ .Name }}</tt></h1>
 
 {{ if .Caps.SupportsConnectionInit }}
-<button onclick='location.href="/connections/{{ .ID }}/init/dash"'>Initialize
+<button onclick='location.href="/dashboard/connections/{{ .ID }}/init/dash"'>Initialize
     {{ if .Caps.RequiresConnectionInit }}(required){{ end }}</button>
 {{ end }}
 

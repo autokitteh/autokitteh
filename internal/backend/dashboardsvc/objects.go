@@ -18,7 +18,7 @@ var routes = map[string]string{
 }
 
 func (s Svc) initObjects() {
-	s.Muxes.Auth.HandleFunc("/objects/{id}", s.objects)
+	s.Muxes.Auth.HandleFunc("/dashboard/objects/{id}", s.objects)
 }
 
 func (s Svc) objects(w http.ResponseWriter, r *http.Request) {
@@ -31,7 +31,7 @@ func (s Svc) objects(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if dst, ok := routes[prefix]; ok {
-		http.Redirect(w, r, "/"+dst+"/"+id, http.StatusFound)
+		http.Redirect(w, r, "/dashboard/"+dst+"/"+id, http.StatusFound)
 		return
 	}
 

@@ -13,9 +13,9 @@ import (
 )
 
 func (s Svc) initSessions() {
-	s.Muxes.Auth.HandleFunc("/sessions", s.sessions)
-	s.Muxes.Auth.HandleFunc("/sessions/{sid}", s.session)
-	s.Muxes.Auth.HandleFunc("/sessions/{sid}/stop", s.stopSession)
+	s.Muxes.Auth.HandleFunc("/dashboard/sessions", s.sessions)
+	s.Muxes.Auth.HandleFunc("/dashboard/sessions/{sid}", s.session)
+	s.Muxes.Auth.HandleFunc("/dashboard/sessions/{sid}/stop", s.stopSession)
 }
 
 type session struct{ sdktypes.Session }
@@ -156,5 +156,5 @@ func (s Svc) stopSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, fmt.Sprintf("/sessions/%v", sid), http.StatusSeeOther)
+	http.Redirect(w, r, fmt.Sprintf("/dashboard/sessions/%v", sid), http.StatusSeeOther)
 }

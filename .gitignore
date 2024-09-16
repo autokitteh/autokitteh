@@ -6,6 +6,7 @@ bin/
 gen/
 !/proto/gen/
 tmp/
+web/gen
 
 ### https://github.com/github/gitignore/blob/main/Global/Redis.gitignore
 

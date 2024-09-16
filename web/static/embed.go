@@ -5,7 +5,7 @@ import (
 )
 
 //go:embed images/* *.png *.svg *.html *.ico *.txt *.webmanifest *.css *.js
-var RootWebContent embed.FS
+var StaticWebContent embed.FS
 
 //go:embed aws/connect
 var AWSWebContent embed.FS

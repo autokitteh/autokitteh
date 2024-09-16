@@ -17,19 +17,19 @@ import (
 func (s Svc) initConnections() {
 	// These paths should correspond to the ones enriched in the connection service.
 
-	s.Muxes.Auth.HandleFunc("GET /connections", s.connections)
-	s.Muxes.Auth.HandleFunc("GET /connections/{cid}", s.connection)
+	s.Muxes.Auth.HandleFunc("GET /dashboard/connections", s.connections)
+	s.Muxes.Auth.HandleFunc("GET /dashboard/connections/{cid}", s.connection)
 
-	s.Muxes.Auth.HandleFunc("GET /connections/{id}/init/{origin}", s.init)
-	s.Muxes.Auth.HandleFunc("GET /connections/{id}/postinit", s.postInit)
+	s.Muxes.Auth.HandleFunc("GET /dashboard/connections/{id}/init/{origin}", s.init)
+	s.Muxes.Auth.HandleFunc("GET /dashboard/connections/{id}/postinit", s.postInit)
 
 	h := result.NewHandler(s.Svcs)
-	s.Muxes.Auth.HandleFunc("GET /connections/{id}/error", h.Error)
-	s.Muxes.Auth.HandleFunc("GET /connections/{id}/success", h.Success)
+	s.Muxes.Auth.HandleFunc("GET /dashboard/connections/{id}/error", h.Error)
+	s.Muxes.Auth.HandleFunc("GET /dashboard/connections/{id}/success", h.Success)
 
-	s.Muxes.Auth.HandleFunc("DELETE /connections/{id}/vars", s.rmAllConnectionVars)
-	s.Muxes.Auth.HandleFunc("POST /connections/{id}/test", s.testConnection)
-	s.Muxes.Auth.HandleFunc("POST /connections/{id}/refresh", s.refreshConnection)
+	s.Muxes.Auth.HandleFunc("DELETE /dashboard/connections/{id}/vars", s.rmAllConnectionVars)
+	s.Muxes.Auth.HandleFunc("POST /dashboard/connections/{id}/test", s.testConnection)
+	s.Muxes.Auth.HandleFunc("POST /dashboard/connections/{id}/refresh", s.refreshConnection)
 }
 
 type connection struct{ sdktypes.Connection }
@@ -223,9 +223,9 @@ func (s Svc) postInit(w http.ResponseWriter, r *http.Request) {
 	case "vscode":
 		u = "vscode://autokitteh.autokitteh?cid=%s"
 	case "web", "web-oauth": // Another redirect just to get rid of the secrets in the URL.
-		u = "/connections/%s/success"
+		u = "/dashboard/connections/%s/success"
 	default: // Local server ("cli", "dash", etc.)
-		u = "/connections/%s?msg=Connection initialized 😸"
+		u = "/dashboard/connections/%s?msg=Connection initialized 😸"
 	}
 	http.Redirect(w, r, fmt.Sprintf(u, cid), http.StatusFound)
 }

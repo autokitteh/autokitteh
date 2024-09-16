@@ -9,8 +9,8 @@ import (
 )
 
 func (s Svc) initTriggers() {
-	s.Muxes.Auth.HandleFunc("/triggers", s.triggers)
-	s.Muxes.Auth.HandleFunc("/triggers/{tid}", s.trigger)
+	s.Muxes.Auth.HandleFunc("/dashboard/triggers", s.triggers)
+	s.Muxes.Auth.HandleFunc("/dashboard/triggers/{tid}", s.trigger)
 }
 
 type trigger struct{ sdktypes.Trigger }

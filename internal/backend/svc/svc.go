@@ -73,6 +73,7 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 	integrationsweb "go.autokitteh.dev/autokitteh/web/integrations"
 	"go.autokitteh.dev/autokitteh/web/static"
+	"go.autokitteh.dev/autokitteh/web/webplatform"
 )
 
 var warningColor = color.New(color.FgRed).Add(color.Bold).SprintFunc()
@@ -266,19 +267,22 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 				}
 
 				// Replace the original mux with a main mux and also expose the original mux as the no-auth one.
-				authMux := http.NewServeMux()
 
 				mux := svc.Mux()
-				mux.Handle("/", wrapAuth(authMux))
+				authMux := http.NewServeMux()
+				nonAuthMux := http.NewServeMux()
 
-				all = &muxes.Muxes{Auth: authMux, NoAuth: mux}
+				// We try the non authenticated handler first, then if not found there - in the auth mux.
+				mux.Handle("/", httpsvc.NewConcatinatedHandler(nonAuthMux, wrapAuth(authMux)))
+
+				all = &muxes.Muxes{Auth: authMux, NoAuth: nonAuthMux}
 
 				return
 			}),
 		),
 		Component("authloginhttpsvc", authloginhttpsvc.Configs, fx.Invoke(authloginhttpsvc.Init)),
 		fx.Invoke(func(muxes *muxes.Muxes, h integrationsweb.Handler) {
-			muxes.NoAuth.Handle("GET /i/{$}", &h)
+			muxes.Auth.Handle("GET /dashboard/i/{$}", &h)
 		}),
 		fx.Invoke(dashboardsvc.Init),
 		fx.Invoke(oauth.InitWebhook),
@@ -292,13 +296,12 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		),
 		integrationsFXOption(),
 		fx.Invoke(func(z *zap.Logger, muxes *muxes.Muxes) {
-			srv := http.FileServer(http.FS(static.RootWebContent))
-			muxes.NoAuth.Handle("GET /static/", http.StripPrefix("/static/", srv))
-			muxes.NoAuth.Handle("GET /favicon-16x16.png", srv)
-			muxes.NoAuth.Handle("GET /favicon-32x32.png", srv)
-			muxes.NoAuth.Handle("GET /favicon.ico", srv)
-			muxes.NoAuth.Handle("GET /robots.txt", srv)
-			muxes.NoAuth.Handle("GET /site.webmanifest", srv)
+			static := http.FileServer(http.FS(static.StaticWebContent))
+			muxes.NoAuth.Handle("GET /static/", http.StripPrefix("/static/", static))
+		}),
+		fx.Invoke(func(z *zap.Logger, muxes *muxes.Muxes) {
+			webplatform := http.FileServer(http.FS(webplatform.FS()))
+			muxes.NoAuth.Handle("/", webplatform)
 		}),
 		Component(
 			"banner",

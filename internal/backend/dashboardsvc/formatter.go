@@ -19,7 +19,7 @@ var (
 
 func formatField(k, v string) template.HTML {
 	if strings.HasSuffix(k, "_id") && sdktypes.IsID(v) {
-		v = fmt.Sprintf("<a href='/objects/%s'>%s</a>", v, v)
+		v = fmt.Sprintf("<a href='/dashboard/objects/%s'>%s</a>", v, v)
 	} else if strings.HasSuffix(k, "_url") {
 		v = fmt.Sprintf("<a href='%s'>%s</a>", v, v)
 	}
@@ -28,7 +28,7 @@ func formatField(k, v string) template.HTML {
 }
 
 func formatText(txt string) template.HTML {
-	txt = idRegexp.ReplaceAllString(txt, `$1<a href="/objects/$2">$2</a>`)
+	txt = idRegexp.ReplaceAllString(txt, `$1<a href="/dashboard/objects/$2">$2</a>`)
 	txt = urlRegexp.ReplaceAllString(txt, `<a href="$0">$0</a>`)
 	txt = urlFieldRegexp.ReplaceAllString(txt, `_url": "<a href="$1">$1</a>"`)
 	return template.HTML(txt)

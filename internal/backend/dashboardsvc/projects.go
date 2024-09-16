@@ -14,9 +14,9 @@ import (
 )
 
 func (s Svc) initProjects() {
-	s.Muxes.Auth.HandleFunc("/projects", s.projects)
-	s.Muxes.Auth.HandleFunc("GET /projects/{pid}", s.project)
-	s.Muxes.Auth.HandleFunc("DELETE /projects/{pid}", s.deleteProject)
+	s.Muxes.Auth.HandleFunc("/dashboard/projects", s.projects)
+	s.Muxes.Auth.HandleFunc("GET /dashboard/projects/{pid}", s.project)
+	s.Muxes.Auth.HandleFunc("DELETE /dashboard/projects/{pid}", s.deleteProject)
 }
 
 type project struct{ sdktypes.Project }
