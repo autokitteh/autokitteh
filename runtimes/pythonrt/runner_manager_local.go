@@ -89,6 +89,7 @@ func (l *localRunnerManager) Start(ctx context.Context, buildArtifacts []byte, v
 	}
 
 	if l.cfg.LazyLoadVEnv {
+		l.logger.Info("ensuring venv")
 		if err := ensureVEnv(l.logger, l.pyExe); err != nil {
 			return "", nil, fmt.Errorf("create venv: %w", err)
 		}
