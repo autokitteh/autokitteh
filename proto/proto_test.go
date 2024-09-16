@@ -3,12 +3,9 @@ package proto
 import (
 	"embed"
 	"fmt"
-<<<<<<< HEAD:proto/proto_test.go
 	"path/filepath"
 	"regexp"
-=======
 	"strings"
->>>>>>> c7fa511c (fix proto validation):proto/validate_test.go
 	"testing"
 )
 
