@@ -84,7 +84,7 @@ var deployCmd = common.StandardCommand(&cobra.Command{
 		// Step 5: activate the deployment
 		// (see also the "deployment" parent command).
 		if err := dep.Activate(ctx, did); err != nil {
-			return fmt.Errorf("activate deploymen: %w", err)
+			return fmt.Errorf("activate deployment: %w", err)
 		}
 		logFunc(cmd, "exec")("activate_deployment: activated")
 
