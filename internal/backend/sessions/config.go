@@ -36,6 +36,7 @@ var Configs = configset.Set[Config]{
 		c.Calls.ActivityHeartbeatInterval = time.Second * 15
 		c.Calls.Activity.HeartbeatTimeout = time.Minute
 		c.Workflows.OSModule = true
+		c.Workflows.Test = true
 		return &c
 	}(),
 }

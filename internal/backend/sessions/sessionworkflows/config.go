@@ -18,4 +18,7 @@ type Config struct {
 	OSModule bool `koanf:"os_module"`
 
 	SlowOperationTimeout time.Duration `koanf:"slow_operation_timeout"`
+
+	// Enable test tools.
+	Test bool `koanf:"test"`
 }

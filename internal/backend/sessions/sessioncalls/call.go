@@ -13,6 +13,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessioncontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionworkflows/modules"
+	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionworkflows/modules/testtools"
 	"go.autokitteh.dev/autokitteh/sdk/sdkexecutor"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -66,10 +67,22 @@ func (cs *calls) invoke(ctx context.Context, callv sdktypes.Value, args []sdktyp
 		}
 	}
 
-	v, err := caller.Call(ctx, callv, args, kwargs)
+	v, err := func() (v sdktypes.Value, err error) {
+		defer func() {
+			if r := recover(); r != nil {
+				err = fmt.Errorf("panic: %v", r)
+			}
+		}()
+
+		return caller.Call(ctx, callv, args, kwargs)
+	}()
 	if err != nil {
 		if errors.Is(err, workflow.ErrCanceled) && errors.Is(ctx.Err(), context.DeadlineExceeded) {
 			err = context.DeadlineExceeded
+		}
+
+		if errors.Is(err, testtools.ErrTestHard) {
+			return sdktypes.InvalidSessionCallAttemptResult, err
 		}
 
 		if errors.Is(err, context.DeadlineExceeded) {
@@ -100,22 +113,12 @@ func (cs *calls) executeCall(ctx context.Context, call sdktypes.SessionCallSpec,
 
 	l = l.With(zap.Any("func", callv))
 
-	l.Debug("calling")
+	l.Debug("invoking")
 
-	var result sdktypes.SessionCallAttemptResult
-
-	func() {
-		defer func() {
-			if reason := recover(); reason != nil {
-				result = sdktypes.NewSessionCallAttemptResult(sdktypes.InvalidValue, fmt.Errorf("panic: %v", reason))
-				return
-			}
-		}()
-
-		if result, err = cs.invoke(ctx, callv, args, kwargs, executors, opts.Timeout); err != nil {
-			l.Sugar().With("err", err).Panicf("call integration: %v", err)
-		}
-	}()
+	result, err := cs.invoke(ctx, callv, args, kwargs, executors, opts.Timeout)
+	if err != nil {
+		return sdktypes.InvalidSessionCallAttemptResult, err
+	}
 
 	if err := result.GetError(); err != nil {
 		l.Debug("call returned an error", zap.Error(err))
