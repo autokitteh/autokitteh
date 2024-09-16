@@ -66,6 +66,7 @@ func ConfigureLocalRunnerManager(log *zap.Logger, cfg LocalRunnerConfig) error {
 		cfg:              cfg,
 	}
 
+	lm.pyExe = pyExe
 	// If user supplies which Python to use, we use it "as-is" without creating venv
 	if !isUserPy {
 		if !cfg.LazyLoadVEnv {
@@ -73,10 +74,9 @@ func ConfigureLocalRunnerManager(log *zap.Logger, cfg LocalRunnerConfig) error {
 			if err := ensureVEnv(log, pyExe); err != nil {
 				return fmt.Errorf("create venv: %w", err)
 			}
+			lm.pyExe = venvPy
 		}
-		lm.pyExe = venvPy
-	} else {
-		lm.pyExe = pyExe
+
 	}
 
 	log.Info("using python", zap.String("exe", lm.pyExe))
@@ -96,6 +96,7 @@ func (l *localRunnerManager) Start(ctx context.Context, buildArtifacts []byte, v
 		if err := ensureVEnv(l.logger, l.pyExe); err != nil {
 			return "", nil, fmt.Errorf("create venv: %w", err)
 		}
+		l.pyExe = venvPy
 	}
 
 	if l.workerAddress == "" {

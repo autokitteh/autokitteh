@@ -39,12 +39,6 @@ up() {
 
     echo "starting autokitteh"
 
-    # if [[ ${name} == python_* ]]; then
-    #     echo "python test"
-    #      "${ak_filename}" --config "http.addr=:0" --config "runtimes.lazy_load_local_venv=false" --config "http.addr_filename=${addr_filename}" up -m test >& "${logfn}" &
-    # else
-         
-    # fi
     "${ak_filename}" --config "http.addr=:0" --config "runtimes.lazy_load_local_venv=true" --config "http.addr_filename=${addr_filename}" up -m test >& "${logfn}" &
     echo "waiting for autokitteh to be ready"
 
@@ -53,7 +47,6 @@ up() {
         if [[ "${LL}" =~ "ready" ]]; then
             break
         fi
-        echo "${LL}"
     done < <(tail -f "${logfn}")
 
     echo "autokitteh is ready"
