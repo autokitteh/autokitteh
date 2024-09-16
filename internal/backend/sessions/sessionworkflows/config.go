@@ -3,22 +3,19 @@ package sessionworkflows
 import (
 	"time"
 
-	"go.temporal.io/sdk/worker"
+	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 )
 
 type Config struct {
-	Temporal TemporalConfig `koanf:"temporal"`
-	Workflow WorkflowConfig `koanf:"workflow"`
+	SessionWorkflow     temporalclient.WorkflowConfig `koanf:"session_workflow"`
+	TerminationWorkflow temporalclient.WorkflowConfig `koanf:"termination_workflow"`
+
+	Activity temporalclient.ActivityConfig `koanf:"activity"`
+
+	Worker temporalclient.WorkerConfig `koanf:"worker"`
 
 	// Enable internal test functionality.
-	Test     bool `koanf:"test"`
 	OSModule bool `koanf:"os_module"`
-}
 
-type TemporalConfig struct {
-	WorkflowTaskTimeout         time.Duration  `koanf:"workflow_task_timeout"`
-	LocalScheduleToCloseTimeout time.Duration  `koanf:"local_schedule_to_close_timeout"`
-	Worker                      worker.Options `koanf:"worker"`
+	SlowOperationTimeout time.Duration `koanf:"slow_operation_timeout"`
 }
-
-type WorkflowConfig struct{}

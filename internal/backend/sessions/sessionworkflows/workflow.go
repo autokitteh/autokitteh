@@ -5,13 +5,12 @@ import (
 	"fmt"
 	"maps"
 	"strings"
-	"time"
 
 	"github.com/google/uuid"
+	"go.temporal.io/sdk/activity"
 	"go.temporal.io/sdk/workflow"
 	"go.uber.org/zap"
 
-	akCtx "go.autokitteh.dev/autokitteh/internal/backend/context"
 	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessioncalls"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessioncontext"
@@ -33,23 +32,15 @@ import (
 const (
 	envVarsModuleName     = "env"
 	integrationPathPrefix = "@"
-
-	limitedTimeout = 5 * time.Second
 )
-
-func withLimitedTimeout(ctx context.Context) (context.Context, func()) {
-	return context.WithTimeout(ctx, limitedTimeout)
-}
 
 var envVarsExecutorID = sdktypes.NewExecutorID(fixtures.NewBuiltinIntegrationID(envVarsModuleName))
 
 type sessionWorkflow struct {
-	z  *zap.Logger
+	l  *zap.Logger
 	ws *workflows
 
 	data *sessiondata.Data
-
-	debug bool
 
 	// All the members belows must be built deterministically by the workflow.
 	// They are not persisted in the database.
@@ -60,8 +51,6 @@ type sessionWorkflow struct {
 	callSeq uint32
 
 	lastReadEventSeqForSignal map[uuid.UUID]uint64 // map signals to last read event seq num.
-
-	state sdktypes.SessionState
 }
 
 type connInfo struct {
@@ -70,23 +59,21 @@ type connInfo struct {
 }
 
 func runWorkflow(
-	ctx workflow.Context,
-	z *zap.Logger,
+	wctx workflow.Context,
+	l *zap.Logger,
 	ws *workflows,
 	data *sessiondata.Data,
-	debug bool,
 ) (prints []string, err error) {
 	w := &sessionWorkflow{
-		z:                         z,
+		l:                         l,
 		data:                      data,
 		ws:                        ws,
-		debug:                     debug,
 		lastReadEventSeqForSignal: make(map[uuid.UUID]uint64),
 	}
 
 	var cinfos map[string]connInfo
 
-	if cinfos, err = w.initConnections(ctx); err != nil {
+	if cinfos, err = w.initConnections(wctx); err != nil {
 		return
 	}
 
@@ -98,9 +85,13 @@ func runWorkflow(
 		return
 	}
 
-	prints, err = w.run(ctx)
+	prints, err = w.run(wctx, l)
 
-	w.cleanupSignals(ctx)
+	// context might have been canceled, create a disconnected one.
+	wctx, cancel := workflow.NewDisconnectedContext(wctx)
+	w.cleanupSignals(wctx)
+	cancel()
+
 	return
 }
 
@@ -110,17 +101,13 @@ func (w *sessionWorkflow) cleanupSignals(ctx workflow.Context) {
 		if err := w.ws.svcs.DB.RemoveSignal(goCtx, signalID); err != nil {
 			// No need to to any handling in case of an error, it won't be used again
 			// at most we would have db garabge we can clear up later with background jobs
-			w.z.Warn(fmt.Sprintf("failed removing signal %s, err: %s", signalID, err), zap.Any("signalID", signalID), zap.Error(err))
+			w.l.Sugar().With("signalID", signalID, "err", err).Warnf("failed removing signal %v, err: %v", signalID, err)
 		}
 	}
 }
 
-func (w *sessionWorkflow) updateState(ctx workflow.Context, state sdktypes.SessionState) error {
-	w.z.Debug("update state", zap.Any("state", state))
-
-	w.state = state
-
-	return workflow.ExecuteLocalActivity(ctx, w.ws.svcs.DB.UpdateSessionState, w.data.SessionID, state).Get(ctx, nil)
+func (w *sessionWorkflow) updateState(wctx workflow.Context, state sdktypes.SessionState) error {
+	return w.ws.updateSessionState(wctx, w.data.Session.ID(), state)
 }
 
 func (w *sessionWorkflow) loadIntegrationConnections(path string) (map[string]sdktypes.Value, error) {
@@ -157,22 +144,13 @@ func (w *sessionWorkflow) load(ctx context.Context, _ sdktypes.RunID, path strin
 	return vs, nil
 }
 
-func (w *sessionWorkflow) call(ctx workflow.Context, runID sdktypes.RunID, v sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
-	if f := v.GetFunction(); f.HasFlag(sdktypes.ConstFunctionFlag) {
-		return f.ConstValue()
-	}
-
+func (w *sessionWorkflow) call(ctx workflow.Context, _ sdktypes.RunID, v sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
 	w.callSeq++
 
-	z := w.z.With(zap.Any("run_id", runID), zap.Any("v", v), zap.Uint32("seq", w.callSeq))
-
-	z.Debug("call requested")
-
 	result, err := w.ws.calls.Call(ctx, &sessioncalls.CallParams{
-		SessionID: w.data.SessionID,
+		SessionID: w.data.Session.ID(),
 		CallSpec:  sdktypes.NewSessionCallSpec(v, args, kwargs, w.callSeq),
-		Debug:     w.debug,
-		Executors: &w.executors, // HACK
+		Executors: &w.executors,
 	})
 	if err != nil {
 		return sdktypes.InvalidValue, err
@@ -206,26 +184,32 @@ func (w *sessionWorkflow) initEnvModule(cinfos map[string]connInfo) error {
 
 func integrationModulePrefix(name string) string { return fmt.Sprintf("__%v__", name) }
 
-func (w *sessionWorkflow) initConnections(ctx workflow.Context) (map[string]connInfo, error) {
+func (w *sessionWorkflow) initConnections(wctx workflow.Context) (map[string]connInfo, error) {
+	// In theory, all this code is reaching external systems for integrations, but since
+	// all the integrations are currently bundled with the AK binary, the operations
+	// are instantaneous. No need to use activities and such right now.
+
 	cinfos := make(map[string]connInfo, len(w.data.Connections))
 
-	goCtx := temporalclient.NewWorkflowContextAsGOContext(ctx)
+	goCtx := temporalclient.NewWorkflowContextAsGOContext(wctx)
 
 	for _, conn := range w.data.Connections {
 		name, cid, iid := conn.Name().String(), conn.ID(), conn.IntegrationID()
 
 		intg, err := w.ws.svcs.Integrations.Attach(goCtx, iid)
 		if err != nil {
-			return nil, fmt.Errorf("get integration %q: %w", iid, err)
+			return nil, fmt.Errorf("attach to integration %q: %w", iid, err)
 		}
 
 		if intg == nil {
 			return nil, fmt.Errorf("integration %q not found", iid)
 		}
 
+		uniqueName := intg.Get().UniqueName().String()
+
 		// In modules, we register the connection prefixed with its integration name.
 		// This allows us to query all connections for a given integration in the load callback.
-		scope := integrationModulePrefix(intg.Get().UniqueName().String()) + name
+		scope := integrationModulePrefix(uniqueName) + name
 		if w.executors.GetValues(scope) != nil {
 			return nil, fmt.Errorf("conflicting connection %q", name)
 		}
@@ -235,7 +219,7 @@ func (w *sessionWorkflow) initConnections(ctx workflow.Context) (map[string]conn
 		}
 
 		cinfo := connInfo{
-			IntegrationName: intg.Get().UniqueName().String(),
+			IntegrationName: uniqueName,
 		}
 
 		// mod's executor id is the integration id.
@@ -297,28 +281,33 @@ func (w *sessionWorkflow) initGlobalModules() (map[string]sdktypes.Value, error)
 }
 
 func (w *sessionWorkflow) createEventSubscription(wctx workflow.Context, filter string, did sdktypes.EventDestinationID) (uuid.UUID, error) {
+	wctx = temporalclient.WithActivityOptions(wctx, taskQueueName, w.ws.cfg.Activity)
+
+	sl := w.l.Sugar().With("destination_id", did)
+
 	if err := sdktypes.VerifyEventFilter(filter); err != nil {
-		w.z.Debug("invalid filter in workflow code", zap.Error(err))
-		return uuid.UUID{}, fmt.Errorf("invalid filter: %w", err)
+		sl.With("err", err).Infof("invalid filter in workflow code: %v", err)
+		return uuid.Nil, sdkerrors.NewInvalidArgumentError("invalid filter: %w", err)
 	}
 
-	workflowID := workflow.GetInfo(wctx).WorkflowExecution.ID
-
-	var minSequence uint64
-	if err := workflow.ExecuteLocalActivity(wctx, w.ws.svcs.DB.GetLatestEventSequence).Get(wctx, &minSequence); err != nil {
-		return uuid.UUID{}, fmt.Errorf("get current sequence: %w", err)
-	}
-
+	// generate a unique signal id.
 	var signalID uuid.UUID
 	if err := workflow.SideEffect(wctx, func(wctx workflow.Context) any {
 		return uuid.New()
 	}).Get(&signalID); err != nil {
-		return uuid.UUID{}, fmt.Errorf("generate signal id: %w", err)
+		return uuid.Nil, fmt.Errorf("generate signal id: %w", err)
+	}
+
+	var minSequence uint64
+	if err := workflow.ExecuteActivity(wctx, getLastEventSequenceActivityName).Get(wctx, &minSequence); err != nil {
+		return uuid.Nil, fmt.Errorf("get current sequence: %w", err)
 	}
 
 	// must be set before signal is saved, otherwise the signal might reach the workflow before
-	// the map is read.
+	// the map is updated.
 	w.lastReadEventSeqForSignal[signalID] = minSequence
+
+	workflowID := workflow.GetInfo(wctx).WorkflowExecution.ID
 
 	signal := types.Signal{
 		ID:            signalID,
@@ -327,9 +316,11 @@ func (w *sessionWorkflow) createEventSubscription(wctx workflow.Context, filter 
 		Filter:        filter,
 	}
 
-	if err := workflow.ExecuteLocalActivity(wctx, w.ws.svcs.DB.SaveSignal, &signal).Get(wctx, nil); err != nil {
-		return uuid.UUID{}, fmt.Errorf("save signal: %w", err)
+	if err := workflow.ExecuteActivity(wctx, saveSignalActivityName, &signal).Get(wctx, nil); err != nil {
+		return uuid.Nil, fmt.Errorf("save signal: %w", err)
 	}
+
+	sl.Info("created event subscription %v", signalID)
 
 	return signalID, nil
 }
@@ -361,103 +352,69 @@ func (w *sessionWorkflow) waitOnFirstSignal(wctx workflow.Context, signals []uui
 	return signalID, nil
 }
 
-func (w *sessionWorkflow) getNextEvent(ctx context.Context, signalID uuid.UUID) (map[string]sdktypes.Value, error) {
+func (w *sessionWorkflow) getNextEvent(ctx context.Context, sigid uuid.UUID) (map[string]sdktypes.Value, error) {
+	sl := w.l.Sugar().With("signal_id", sigid)
+
 	wctx := sessioncontext.GetWorkflowContext(ctx)
+	wctx = temporalclient.WithActivityOptions(wctx, taskQueueName, w.ws.cfg.Activity)
 
-	var signal *types.Signal
-	if err := workflow.ExecuteLocalActivity(wctx, w.ws.svcs.DB.GetSignal, signalID).Get(wctx, &signal); err != nil {
-		w.z.Panic("get signal", zap.Error(err))
-	}
-
-	minSequenceNumber, ok := w.lastReadEventSeqForSignal[signalID]
+	minSequenceNumber, ok := w.lastReadEventSeqForSignal[sigid]
 	if !ok {
-		return nil, fmt.Errorf("no such subscription %q", signalID)
+		return nil, fmt.Errorf("no such subscription %q", sigid)
 	}
 
-	filter := sdkservices.ListEventsFilter{
-		DestinationID:     signal.DestinationID,
-		Limit:             1,
-		MinSequenceNumber: minSequenceNumber + 1,
-		Order:             sdkservices.ListOrderAscending,
-	}
+	var event sdktypes.Event
 
-	var eventID sdktypes.EventID
-	if err := workflow.ExecuteLocalActivity(wctx, func(ctx context.Context) (sdktypes.EventID, error) {
-		for {
-			evs, err := w.ws.svcs.DB.ListEvents(ctx, filter)
-			if err != nil {
-				return sdktypes.InvalidEventID, err
-			}
+	fut := workflow.ExecuteActivity(
+		wctx,
+		getSignalEventActivityName,
+		sigid,
+		minSequenceNumber,
+	)
 
-			if len(evs) == 0 {
-				return sdktypes.InvalidEventID, nil
-			}
-
-			ev, err := w.ws.svcs.DB.GetEventByID(ctx, evs[0].ID())
-			if err != nil {
-				return sdktypes.InvalidEventID, err
-			}
-
-			filter.MinSequenceNumber = ev.Seq() + 1
-
-			match, err := ev.Matches(signal.Filter)
-			if err != nil {
-				// TODO(ENG-566): inform user.
-				w.z.Info("invalid signal filter", zap.Error(err), zap.String("filter", signal.Filter))
-				continue
-			}
-
-			if match {
-				return ev.ID(), nil
-			}
+	if err := fut.Get(wctx, &event); err != nil {
+		// was the context cancelled?
+		if wctx.Err() != nil {
+			return nil, err
 		}
-	}).Get(wctx, &eventID); err != nil {
-		w.z.Panic("get signal", zap.Error(err))
+
+		return nil, fmt.Errorf("get signal event %v: %w", sigid, err)
 	}
 
-	if !eventID.IsValid() {
+	if !event.IsValid() {
 		return nil, nil
 	}
 
-	event, err := w.ws.svcs.DB.GetEventByID(ctx, eventID)
-	if err != nil {
-		w.z.Panic("get event", zap.Error(err))
-	}
+	w.lastReadEventSeqForSignal[sigid] = event.Seq()
 
-	w.lastReadEventSeqForSignal[signalID] = event.Seq()
+	sl.With("event_id", event.ID).Infof("got event %v", event.ID())
 
 	return event.Data(), nil
 }
 
 func (w *sessionWorkflow) removeEventSubscription(ctx context.Context, signalID uuid.UUID) {
+	sl := w.l.Sugar().With("signal_id", signalID)
+
 	wctx := sessioncontext.GetWorkflowContext(ctx)
 
-	if err := workflow.ExecuteLocalActivity(wctx, w.ws.svcs.DB.RemoveSignal, signalID).Get(wctx, nil); err != nil {
-		w.z.Panic("remove signal", zap.Error(err))
+	if err := workflow.ExecuteActivity(wctx, w.ws.svcs.DB.RemoveSignal, signalID).Get(wctx, nil); err != nil {
+		// it is not a critical error, we can just log it. no need to panic.
+		sl.With(err).Errorf("remove signal: %v", signalID, err)
 	}
 
 	delete(w.lastReadEventSeqForSignal, signalID)
 }
 
-func (w *sessionWorkflow) run(wctx workflow.Context) (prints []string, err error) {
-	type contextKey string
-	workflowContextKey := contextKey("autokitteh_workflow_context")
+func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (prints []string, err error) {
+	sl := l.Sugar()
 
-	ctx := temporalclient.NewWorkflowContextAsGOContext(wctx)
-	ctx = akCtx.WithRequestOrginator(ctx, akCtx.SessionWorkflow)
-
-	// This will allow us to identify if the call context is from a workflow (script code run), or
-	// some other thing that calls the Call callback from within an activity. The latter is not supported.
-	ctx = context.WithValue(ctx, workflowContextKey, wctx)
-
-	// TODO: replace with activity.IsActivity
-	isFromActivity := func(ctx context.Context) bool { return ctx.Value(workflowContextKey) == nil }
+	sid := w.data.Session.ID()
 
 	newRunID := func() (runID sdktypes.RunID) {
 		if err := workflow.SideEffect(wctx, func(workflow.Context) any {
 			return sdktypes.NewRunID()
 		}).Get(&runID); err != nil {
-			w.z.Panic("new run id side effect", zap.Error(err))
+			sl.With("err", err).Panicf("new run id side effect: %v", err)
 		}
 		return
 	}
@@ -468,39 +425,67 @@ func (w *sessionWorkflow) run(wctx workflow.Context) (prints []string, err error
 		NewRunID: newRunID,
 		Load:     w.load,
 		Call: func(callCtx context.Context, runID sdktypes.RunID, v sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
+			if f := v.GetFunction(); f.HasFlag(sdktypes.ConstFunctionFlag) {
+				sl.Debug("const function call")
+				return f.ConstValue()
+			}
+
+			isActivity := activity.IsActivity(callCtx)
+
+			sl := sl.With("run_id", runID, "is_activity", isActivity, "v", v)
+
 			if run == nil {
+				sl.Debug("run not initialized")
 				return sdktypes.InvalidValue, fmt.Errorf("cannot call before the run is initialized")
 			}
 
 			if xid := v.GetFunction().ExecutorID(); xid.ToRunID() == runID && w.executors.GetCaller(xid) == nil {
+				sl.Debug("self call during initialization")
+
 				// This happens only during initial evaluation (the first run because invoking the entrypoint function),
 				// and the runtime tries to call itself in order to start an activity with its own functions.
 				return sdktypes.InvalidValue, fmt.Errorf("cannot call self during initial evaluation")
 			}
 
-			if isFromActivity(callCtx) {
+			if isActivity {
+				sl.Debug("nested activity call")
 				return sdktypes.InvalidValue, fmt.Errorf("nested activities are not supported")
 			}
 
 			return w.call(wctx, runID, v, args, kwargs)
 		},
 		Print: func(printCtx context.Context, runID sdktypes.RunID, text string) {
-			w.z.Debug("print", zap.String("run_id", runID.String()), zap.String("text", text))
+			isActivity := activity.IsActivity(printCtx)
+
+			sl := sl.With("run_id", runID, "is_activity", isActivity)
+
+			sl.Debugw("print", zap.String("text", text))
 
 			prints = append(prints, text)
 
-			if isFromActivity(printCtx) || run == nil {
-				// TODO: We do this since we're already in an activity. We need to either
-				//       manually retry this (maybe even using the heartbeat to know if it's
-				//       already been processed), or we need to aggregate the prints
-				//       and just perform them in the workflow after the activity is done.
-				err = w.ws.svcs.DB.AddSessionPrint(printCtx, w.data.SessionID, text)
+			if run == nil || isActivity {
+				// run == nil: Since initial run is running via temporalclient.LongRunning, we
+				// cannot use the workflow context to report prints.
+				//
+				// TODO(ENG-1554): we need to retry here.
+				err = w.ws.svcs.DB.AddSessionPrint(printCtx, sid, text)
 			} else {
-				err = workflow.ExecuteLocalActivity(wctx, w.ws.svcs.DB.AddSessionPrint, w.data.SessionID, text).Get(wctx, nil)
+				// TODO(ENG-1467): Currently the python runtime is calling Print from a
+				//                 separate goroutine. This is a workaround to detect
+				//                 that behaviour and in that case just write the
+				//                 print directly into the DB since we cannot launch
+				//                 an activity from a separate goroutine.
+				if temporalclient.IsWorkflowContextAsGoContext(printCtx) {
+					err = workflow.ExecuteActivity(wctx, addSessionPrintActivityName, sid, text).Get(wctx, nil)
+				} else if !workflow.IsReplaying(wctx) {
+					err = w.ws.svcs.DB.AddSessionPrint(printCtx, sid, text)
+				}
 			}
 
+			// We do not consider print failure as a critical error, since we don't want to hold back the
+			// workflow for potential user debugging prints. Just log the error and move on.
 			if err != nil {
-				w.z.Error("failed to add print session record", zap.String("run_id", runID.String()), zap.String("text", text))
+				sl.With("err", err).Errorf("failed to add print session record: %v", err)
 			}
 		},
 	}
@@ -508,54 +493,31 @@ func (w *sessionWorkflow) run(wctx workflow.Context) (prints []string, err error
 	runID := newRunID()
 
 	if err := w.updateState(wctx, sdktypes.NewSessionStateRunning(runID, sdktypes.InvalidValue)); err != nil {
-		return prints, err
+		return nil, err
 	}
 
 	entryPoint := w.data.Session.EntryPoint()
 
-	type runOrErr struct {
-		run sdkservices.Run
-		err error
-	}
-
-	runDone := make(chan runOrErr, 1)
-
-	go func() {
-		// This can take a while to complete since it might provision resources et al,
-		// but since it might call back into the workflow via the callbacks, it must
-		// still run a in a workflow context rather than an activity.
-		// TODO: Consider just running this from an activity.
-		run, err := sdkruntimes.Run(
-			ctx,
-			sdkruntimes.RunParams{
-				Runtimes:             w.ws.svcs.Runtimes,
-				BuildFile:            w.data.BuildFile,
-				Globals:              w.globals,
-				RunID:                runID,
-				FallthroughCallbacks: cbs,
-				EntryPointPath:       entryPoint.Path(),
-			},
-		)
-
-		runDone <- runOrErr{run, err}
-	}()
-
-	for run == nil {
-		select {
-		case <-time.After(workflowDeadlockTimeout / 2):
-			if err := workflow.Sleep(wctx, time.Millisecond); err != nil {
-				return prints, err
-			}
-		case r := <-runDone:
-			if r.err != nil {
-				// TODO(ENG-130): discriminate between infra and real errors.
-				return prints, r.err
-			}
-
-			run = r.run
-		case <-ctx.Done():
-			return prints, ctx.Err()
-		}
+	run, err = temporalclient.LongRunning(
+		wctx,
+		w.ws.cfg.Worker.WorkflowDeadlockTimeout/2,
+		w.ws.cfg.SlowOperationTimeout,
+		func(ctx context.Context) (sdkservices.Run, error) {
+			return sdkruntimes.Run(
+				ctx,
+				sdkruntimes.RunParams{
+					Runtimes:             w.ws.svcs.Runtimes,
+					BuildFile:            w.data.BuildFile,
+					Globals:              w.globals,
+					RunID:                runID,
+					FallthroughCallbacks: cbs,
+					EntryPointPath:       entryPoint.Path(),
+				},
+			)
+		},
+	)
+	if err != nil {
+		return nil, err
 	}
 
 	kittehs.Must0(w.executors.AddExecutor(fmt.Sprintf("run_%s", run.ID().Value()), run))
@@ -581,18 +543,15 @@ func (w *sessionWorkflow) run(wctx workflow.Context) (prints []string, err error
 			return prints, err
 		}
 
-		argNames := callValue.GetFunction().ArgNames() // sdktypes.GetFunctionValueArgsNames(callValue)
-		kwargs := kittehs.FilterMapKeys(
-			w.data.Session.Inputs(),
-			kittehs.ContainedIn(argNames...),
-		)
+		argNames := callValue.GetFunction().ArgNames()
+		kwargs := kittehs.FilterMapKeys(w.data.Session.Inputs(), kittehs.ContainedIn(argNames...))
+
+		ctx := temporalclient.NewWorkflowContextAsGOContext(wctx)
 
 		if retVal, err = run.Call(ctx, callValue, nil, kwargs); err != nil {
 			return prints, err
 		}
 	}
 
-	state := sdktypes.NewSessionStateCompleted(prints, run.Values(), retVal)
-
-	return prints, w.updateState(wctx, state)
+	return prints, w.updateState(wctx, sdktypes.NewSessionStateCompleted(prints, run.Values(), retVal))
 }

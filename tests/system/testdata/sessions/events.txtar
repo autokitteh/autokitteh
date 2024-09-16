@@ -7,6 +7,9 @@ resp code == 202
 ak session watch ses_0000000000000000000000000c --end-state RUNNING --wait-created
 return code == 0
 
+ak session watch ses_0000000000000000000000000c -r "ready"
+return code == 0
+
 http post /webhooks/00000000000000000000000006 a
 resp code == 202
 
@@ -27,6 +30,7 @@ return code == 0
 
 ak session log --prints-only --no-timestamps
 output equals file prints.txt
+
 
 -- prints.txt --
 1 a
@@ -54,6 +58,7 @@ project:
 def on_http_start():
   s1 = subscribe("http2")
   s2 = subscribe("http1")
+  print("ready")
   print(1, next_event(s2)['body']['bytes'])
   print(2, next_event(s1)['body']['bytes'])
   print(3, next_event(s2, timeout=1))
