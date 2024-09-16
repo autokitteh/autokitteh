@@ -23,6 +23,9 @@ var defaultConfig = Config{
 		},
 	},
 	Calls: sessioncalls.Config{
+		// Not sure 15s is a good default (taken from "Dev" - see below),
+		// but without a non-zero value AK panics when starting workflows.
+		ActivityHeartbeatInterval: time.Second * 15,
 		UniqueActivity: temporalclient.ActivityConfig{
 			ScheduleToStartTimeout: time.Second * 5,
 		},
@@ -33,7 +36,8 @@ var Configs = configset.Set[Config]{
 	Default: &defaultConfig,
 	Dev: func() *Config {
 		c := defaultConfig
-		c.Calls.ActivityHeartbeatInterval = time.Second * 15
+		// Moved to "defaultConfig" - see above:
+		// c.Calls.ActivityHeartbeatInterval = time.Second * 15
 		c.Calls.Activity.HeartbeatTimeout = time.Minute
 		c.Workflows.OSModule = true
 		c.Workflows.Test = true
