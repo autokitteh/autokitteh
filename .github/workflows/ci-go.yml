@@ -84,6 +84,10 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12" # Should be in sync with runtimes/pythonrt/pythonrt.go:minPyVersion
       - name: Session tests
         run: make bin/ak test-sessions
 
