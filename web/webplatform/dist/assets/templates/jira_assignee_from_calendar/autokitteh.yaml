@@ -1,0 +1,30 @@
+# This YAML file is a declarative manifest that describes the setup of
+# an AutoKitteh project that sets the assignee of new Atlassian Jira
+# issues based on an on-call rotation in a shared Google Calendar.
+#
+# Before deploying this AutoKitteh project:
+# - Set "SHARED_CALENDAR_ID" to the URL of the shared Google Calendar
+#   ("primary" is the default calendar of the authenticated user)
+# - Set "JIRA_PROJECT_KEY" in the trigger's filter expression
+#
+# After creating this AutoKitteh project by applying this file,
+# initialize its Jira connection.
+
+version: v1
+
+project:
+  name: jira_assignee_from_calendar
+  vars:
+    - name: SHARED_CALENDAR_ID
+      value: primary
+  connections:
+    - name: google_calendar_connection
+      integration: googlecalendar
+    - name: jira_connection
+      integration: jira
+  triggers:
+    - name: jira_issue_created
+      connection: jira_connection
+      event_type: issue_created
+      filter: data.issue.fields.project.key == "JIRA_PROJECT_KEY"
+      call: program.py:on_jira_issue_created

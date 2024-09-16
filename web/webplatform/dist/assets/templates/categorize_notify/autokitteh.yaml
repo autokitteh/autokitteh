@@ -1,0 +1,26 @@
+# This YAML file is a declarative manifest that describes the setup of
+# an AutoKitteh sample project that demonstrates integration with 
+# Gmail, ChatGPT, and Slack.
+#
+# After applying this file, initialize this AutoKitteh project's
+# ChatGPT, Gmail, and Slack connections.
+
+version: v1
+
+project:
+  name: categorize_notify
+  connections:
+    - name: my_chatgpt
+      integration: chatgpt
+    - name: my_gmail
+      integration: gmail
+    - name: my_http
+      integration: http
+    - name: my_slack
+      integration: slack
+  triggers:
+    - name: http_get
+      connection: my_http
+      event_type: get
+      # Triggered by GET request to http://localhost:9980/http/categorize_notify/
+      call: program.py:on_http_get

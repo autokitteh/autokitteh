@@ -111,3 +111,4 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
+!web/webplatform/dist

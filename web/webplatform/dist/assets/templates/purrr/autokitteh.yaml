@@ -1,0 +1,71 @@
+# This YAML file is a declarative manifest that describes the setup
+# of the AutoKitteh project "Pull Request Review Reminder" (PuRRR).
+# PuRRR integrates GitHub and Slack to streamline code reviews.
+#
+# Before applying this file:
+# - Modify the values in the project's "vars" section, if desired
+# - Modify the Redis connection string, if needed
+#
+# After applying this file, initialize this AutoKitteh project's
+# GitHub and Slack connections.
+
+version: v1
+
+project:
+  name: purrr
+  vars:
+    # Default TTL for Redis cache = 30 days (to forget stale PRs).
+    - name: REDIS_TTL
+      value: 720h
+    # Default PR channel names: "pr_<number>_<title>".
+    - name: SLACK_CHANNEL_PREFIX
+      value: "pr_"
+    # Create this channel / replace with your own / specify "" to disable it.
+    - name: SLACK_DEBUG_CHANNEL
+      value: purrr-debug
+    # Create this channel / replace with your own / specify "" to disable it.
+    - name: SLACK_LOG_CHANNEL
+      value: purrr-log
+  connections:
+    - name: github
+      integration: github
+    - name: redis
+      integration: redis
+      vars:
+        - name: URL
+          value: redis://localhost:6379/0 # Modify this if needed.
+    - name: slack
+      integration: slack
+  triggers:
+    - name: github_issue_comment
+      connection: github
+      event_type: issue_comment
+      call: github_issue_comment.star:on_github_issue_comment
+    - name: github_pull_request
+      connection: github
+      event_type: pull_request
+      call: github_pr.star:on_github_pull_request
+    - name: github_pull_request_review
+      connection: github
+      event_type: pull_request_review
+      call: github_pr_review.star:on_github_pull_request_review
+    - name: github_pull_request_review_comment
+      connection: github
+      event_type: pull_request_review_comment
+      call: github_review_comment.star:on_github_pull_request_review_comment
+    - name: github_pull_request_review_thread
+      connection: github
+      event_type: pull_request_review_thread
+      call: github_thread.star:on_github_pull_request_review_thread
+    - name: slack_message
+      connection: slack
+      event_type: message
+      call: slack_message.star:on_slack_message
+    - name: slack_reaction_added
+      connection: slack
+      event_type: reaction_added
+      call: slack_reaction.star:on_slack_reaction_added
+    - name: slack_slash_command
+      connection: slack
+      event_type: slash_command
+      call: slack_cmd.star:on_slack_slash_command
