@@ -117,6 +117,7 @@ def run(args):
 
     # Inject HTTP body
     # TODO (ENG-624) change this once we support callbacks to autokitteh
+
     data = event.get("data")
     if isinstance(data, dict):
         body = data.get("body")

@@ -72,7 +72,7 @@ return code == 1
 This is an invalid YAML file to trigger an error
 
 -- invalid_error.txt --
-Error: invalid YAML input: yaml: unmarshal errors:
+Error: yaml: unmarshal errors:
   line 1: cannot unmarshal !!str `This is...` into manifest.Manifest
 
 -- empty.yaml --

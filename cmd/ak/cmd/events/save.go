@@ -33,7 +33,7 @@ var saveCmd = common.StandardCommand(&cobra.Command{
 				return fmt.Errorf("read file: %w", err)
 			}
 			if err := json.Unmarshal(text, &event); err != nil {
-				return fmt.Errorf("unmarshal JSON in %q: %w", filename, err)
+				return fmt.Errorf("unmarshal JSON: %w", err)
 			}
 			pb = event.ToProto()
 		}

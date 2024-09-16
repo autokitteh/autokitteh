@@ -13,6 +13,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessioncontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionworkflows/modules"
+	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionworkflows/modules/testtools"
 	"go.autokitteh.dev/autokitteh/sdk/sdkexecutor"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -66,10 +67,22 @@ func (cs *calls) invoke(ctx context.Context, callv sdktypes.Value, args []sdktyp
 		}
 	}
 
-	v, err := caller.Call(ctx, callv, args, kwargs)
+	v, err := func() (v sdktypes.Value, err error) {
+		defer func() {
+			if r := recover(); r != nil {
+				err = fmt.Errorf("panic: %v", r)
+			}
+		}()
+
+		return caller.Call(ctx, callv, args, kwargs)
+	}()
 	if err != nil {
 		if errors.Is(err, workflow.ErrCanceled) && errors.Is(ctx.Err(), context.DeadlineExceeded) {
 			err = context.DeadlineExceeded
+		}
+
+		if errors.Is(err, testtools.ErrTestHard) {
+			return sdktypes.InvalidSessionCallAttemptResult, err
 		}
 
 		if errors.Is(err, context.DeadlineExceeded) {
@@ -88,60 +101,34 @@ func (cs *calls) invoke(ctx context.Context, callv sdktypes.Value, args []sdktyp
 }
 
 // This is executed either in an activity (for regular calls) or directly in a workflow (for internal calls).
-func (cs *calls) executeCall(ctx context.Context, sessionID sdktypes.SessionID, seq uint32, executors *sdkexecutor.Executors) (debug any, attempt uint32, _ error) {
-	z := cs.z.With(zap.Uint32("seq", seq))
+func (cs *calls) executeCall(ctx context.Context, call sdktypes.SessionCallSpec, executors *sdkexecutor.Executors) (sdktypes.SessionCallAttemptResult, error) {
+	seq := call.Seq()
 
-	call, err := cs.svcs.DB.GetSessionCallSpec(ctx, sessionID, seq)
-	if err != nil {
-		return nil, 0, fmt.Errorf("db.get_call: %w", err)
-	}
+	l := cs.l.With(zap.Uint32("seq", seq))
 
 	callv, args, kwargs, opts, err := parseCallSpec(call)
 	if err != nil {
-		return nil, 0, err
+		return sdktypes.InvalidSessionCallAttemptResult, err
 	}
 
-	z = z.With(zap.Any("function", callv))
+	l = l.With(zap.Any("func", callv))
 
-	if attempt, err = cs.svcs.DB.StartSessionCallAttempt(ctx, sessionID, seq); err != nil {
-		return nil, 0, err
+	l.Debug("invoking")
+
+	result, err := cs.invoke(ctx, callv, args, kwargs, executors, opts.Timeout)
+	if err != nil {
+		return sdktypes.InvalidSessionCallAttemptResult, err
 	}
-
-	z.Debug("calling")
-
-	var result sdktypes.SessionCallAttemptResult
-
-	func() {
-		defer func() {
-			if reason := recover(); reason != nil {
-				result = sdktypes.NewSessionCallAttemptResult(sdktypes.InvalidValue, fmt.Errorf("panic: %v", reason))
-				return
-			}
-		}()
-
-		if result, err = cs.invoke(ctx, callv, args, kwargs, executors, opts.Timeout); err != nil {
-			z.Panic("call integration", zap.Error(err))
-		}
-	}()
 
 	if err := result.GetError(); err != nil {
-		z.Debug("call returned an error", zap.Error(err))
+		l.Debug("call returned an error", zap.Error(err))
 	} else {
-		z.Debug("call returned a value")
+		l.Debug("call returned a value")
 	}
 
 	if opts.Catch {
 		result = sdktypes.NewSessionCallAttemptResult(result.ToValueTuple(), nil)
 	}
 
-	// TODO: this is an error in db access inside the activity. If this fails we might be in a troubling state.
-	//       need to at least manually retry this.
-	if err := cs.svcs.DB.CompleteSessionCallAttempt(
-		ctx, sessionID, seq, attempt,
-		sdktypes.NewSessionCallAttemptComplete(true, 0, result),
-	); err != nil {
-		return nil, 0, err
-	}
-
-	return call, attempt, nil
+	return result, nil
 }

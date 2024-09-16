@@ -2,7 +2,6 @@ package sessionsvcs
 
 import (
 	"github.com/redis/go-redis/v9"
-	"go.temporal.io/sdk/client"
 	"go.uber.org/fx"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
@@ -25,7 +24,5 @@ type Svcs struct {
 	Vars         sdkservices.Vars
 
 	RedisClient *redis.Client
-	Temporal    temporalclient.Client
+	Temporal    temporalclient.LazyTemporalClient
 }
-
-func (s *Svcs) TemporalClient() client.Client { return s.Temporal.Temporal() }

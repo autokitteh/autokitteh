@@ -67,7 +67,7 @@ func (d *Dispatcher) startSessions(wctx workflow.Context, event sdktypes.Event, 
 			continue
 		}
 
-		sl.With("session_id", sid).Infof("started session %v", sid)
+		sl.With("session_id", sid).Infof("started session %v for %v", sid, eid)
 
 		started = append(started, sid)
 	}
@@ -80,7 +80,7 @@ func (d *Dispatcher) eventsWorkflow(wctx workflow.Context, input eventsWorkflowI
 	eid := event.ID()
 
 	sl := d.sl.With("event_id", eid)
-	sl.Debug("started events workflow for %v", eid)
+	sl.Infof("events workflow started for %v", eid)
 
 	wctx = temporalclient.WithActivityOptions(wctx, taskQueueName, d.cfg.Activity)
 

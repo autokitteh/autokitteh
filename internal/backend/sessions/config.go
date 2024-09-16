@@ -6,31 +6,28 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/configset"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessioncalls"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionworkflows"
+	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 )
 
 type Config struct {
+	EnableWorker bool                    `koanf:"enable_worker"`
 	Workflows    sessionworkflows.Config `koanf:"workflows"`
 	Calls        sessioncalls.Config     `koanf:"calls"`
-	Debug        bool                    `koanf:"debug"`
-	EnableWorker bool                    `koanf:"enable_worker"`
 }
 
 var defaultConfig = Config{
 	EnableWorker: true,
 	Workflows: sessionworkflows.Config{
-		Temporal: sessionworkflows.TemporalConfig{
-			WorkflowTaskTimeout:         time.Hour,
-			LocalScheduleToCloseTimeout: time.Second * 5,
+		Worker: temporalclient.WorkerConfig{
+			WorkflowDeadlockTimeout: time.Second * 10, // TODO: bring down to 1s.
 		},
 	},
 	Calls: sessioncalls.Config{
-		Temporal: sessioncalls.TemporalConfig{
-			ActivityHeartbeatInterval:      time.Second * 1,
-			ActivityHeartbeatTimeout:       time.Second * 3,
-			ActivityScheduleToCloseTimeout: time.Hour,
-			ActivityStartToCloseTimeout:    time.Minute * 45,
-			LocalScheduleToCloseTimeout:    time.Second * 5,
-			ActivityScheduleToStartTimeout: time.Second * 5,
+		// Not sure 15s is a good default (taken from "Dev" - see below),
+		// but without a non-zero value AK panics when starting workflows.
+		ActivityHeartbeatInterval: time.Second * 15,
+		UniqueActivity: temporalclient.ActivityConfig{
+			ScheduleToStartTimeout: time.Second * 5,
 		},
 	},
 }
@@ -39,9 +36,11 @@ var Configs = configset.Set[Config]{
 	Default: &defaultConfig,
 	Dev: func() *Config {
 		c := defaultConfig
-		c.Calls.Temporal.ActivityHeartbeatTimeout = time.Minute * 3
-		c.Debug = true
+		// Moved to "defaultConfig" - see above:
+		// c.Calls.ActivityHeartbeatInterval = time.Second * 15
+		c.Calls.Activity.HeartbeatTimeout = time.Minute
 		c.Workflows.OSModule = true
+		c.Workflows.Test = true
 		return &c
 	}(),
 }

@@ -31,7 +31,7 @@ var setCmd = common.StandardCommand(&cobra.Command{
 		if _, err := common.NewDevSvc(true); err != nil {
 			filename := common.ConfigYAMLFilePath()
 			err = dig.RootCause(err)
-			return fmt.Errorf("%q: invalid configuration: %w", filename, err)
+			return fmt.Errorf("invalid config file %q: %w", filename, err)
 		}
 
 		possibleConfigs := common.Config().ListAll()
@@ -73,7 +73,7 @@ func validateArgs(args []string, possibleConfigs []string) error {
 
 	key := args[0]
 	if key == "" {
-		return fmt.Errorf("key cannot be empty")
+		return errors.New("key cannot be empty")
 	}
 
 	if !slices.Contains(possibleConfigs, key) {
@@ -150,12 +150,11 @@ func validateConfig(data []byte) error {
 	os.Setenv(xdg.ConfigEnvVar, temp)
 
 	if err := common.InitConfig(nil); err != nil {
-		return fmt.Errorf("init temp config: %w", err)
+		return fmt.Errorf("init temporary config: %w", err)
 	}
 
 	if _, err := common.NewDevSvc(true); err != nil {
-		err = dig.RootCause(err)
-		return fmt.Errorf("configuration is invalid: %w", err)
+		return fmt.Errorf("invalid config: %w", dig.RootCause(err))
 	}
 
 	return nil

@@ -151,8 +151,21 @@ func (BooleanValue) isConcreteValue() {}
 
 func (s BooleanValue) Value() bool { return s.read().V }
 
-func NewBooleanValue(v bool) Value {
+func boolValue(v bool) Value {
 	return forceFromProto[Value](&ValuePB{Boolean: &BooleanValuePB{V: v}})
+}
+
+var (
+	TrueValue  = boolValue(true)
+	FalseValue = boolValue(false)
+)
+
+func NewBooleanValue(v bool) Value {
+	if v {
+		return TrueValue
+	}
+
+	return FalseValue
 }
 
 func (v Value) IsBoolean() bool          { return v.read().Boolean != nil }

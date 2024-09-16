@@ -77,6 +77,7 @@ const (
 	PrivilidgedFunctionFlag FunctionFlag = "privilidged" // pass workflow context.
 	PureFunctionFlag        FunctionFlag = "pure"        // do not run in an activity.
 	ConstFunctionFlag       FunctionFlag = "const"       // result is serialized in data.
+	DisableAutoHeartbeat    FunctionFlag = "noheartbeat" // disable auto heartbeat.
 )
 
 func (ff FunctionFlag) String() string { return string(ff) }

@@ -92,7 +92,7 @@ func (db *gormdb) SaveEvent(ctx context.Context, event sdktypes.Event) error {
 	if connectionID.IsValid() { // only if exists
 		conn, err := db.GetConnection(ctx, connectionID)
 		if err != nil {
-			return fmt.Errorf("connection: %w", err)
+			return fmt.Errorf("get connection: %w", err)
 		}
 
 		if !conn.IsValid() {

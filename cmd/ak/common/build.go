@@ -50,7 +50,7 @@ func BuildProject(project string, dirPaths, filePaths []string) (sdktypes.BuildI
 
 	p, pid, err := r.ProjectNameOrID(ctx, project)
 	if err = AddNotFoundErrIfCond(err, p.IsValid()); err != nil {
-		return sdktypes.InvalidBuildID, ToExitCodeErrorNotNilErr(err, "project")
+		return sdktypes.InvalidBuildID, ToExitCodeError(err, "project")
 	}
 
 	uploads := make(map[string][]byte)

@@ -1,0 +1,11 @@
+start
+
+-- main.star:main --
+load("testtools", "fail_workflow")
+
+def main():
+    print("start")
+    # catch would not be able to catch the error.
+    print(catch(fail_workflow(hard=True)))
+    # this would not be printed.
+    print("done")
