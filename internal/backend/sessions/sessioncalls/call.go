@@ -88,26 +88,19 @@ func (cs *calls) invoke(ctx context.Context, callv sdktypes.Value, args []sdktyp
 }
 
 // This is executed either in an activity (for regular calls) or directly in a workflow (for internal calls).
-func (cs *calls) executeCall(ctx context.Context, sessionID sdktypes.SessionID, seq uint32, executors *sdkexecutor.Executors) (debug any, attempt uint32, _ error) {
-	z := cs.z.With(zap.Uint32("seq", seq))
+func (cs *calls) executeCall(ctx context.Context, call sdktypes.SessionCallSpec, executors *sdkexecutor.Executors) (sdktypes.SessionCallAttemptResult, error) {
+	seq := call.Seq()
 
-	call, err := cs.svcs.DB.GetSessionCallSpec(ctx, sessionID, seq)
-	if err != nil {
-		return nil, 0, fmt.Errorf("db.get_call: %w", err)
-	}
+	l := cs.l.With(zap.Uint32("seq", seq))
 
 	callv, args, kwargs, opts, err := parseCallSpec(call)
 	if err != nil {
-		return nil, 0, err
+		return sdktypes.InvalidSessionCallAttemptResult, err
 	}
 
-	z = z.With(zap.Any("function", callv))
+	l = l.With(zap.Any("func", callv))
 
-	if attempt, err = cs.svcs.DB.StartSessionCallAttempt(ctx, sessionID, seq); err != nil {
-		return nil, 0, err
-	}
-
-	z.Debug("calling")
+	l.Debug("calling")
 
 	var result sdktypes.SessionCallAttemptResult
 
@@ -120,28 +113,19 @@ func (cs *calls) executeCall(ctx context.Context, sessionID sdktypes.SessionID, 
 		}()
 
 		if result, err = cs.invoke(ctx, callv, args, kwargs, executors, opts.Timeout); err != nil {
-			z.Panic("call integration", zap.Error(err))
+			l.Sugar().With("err", err).Panicf("call integration: %v", err)
 		}
 	}()
 
 	if err := result.GetError(); err != nil {
-		z.Debug("call returned an error", zap.Error(err))
+		l.Debug("call returned an error", zap.Error(err))
 	} else {
-		z.Debug("call returned a value")
+		l.Debug("call returned a value")
 	}
 
 	if opts.Catch {
 		result = sdktypes.NewSessionCallAttemptResult(result.ToValueTuple(), nil)
 	}
 
-	// TODO: this is an error in db access inside the activity. If this fails we might be in a troubling state.
-	//       need to at least manually retry this.
-	if err := cs.svcs.DB.CompleteSessionCallAttempt(
-		ctx, sessionID, seq, attempt,
-		sdktypes.NewSessionCallAttemptComplete(true, 0, result),
-	); err != nil {
-		return nil, 0, err
-	}
-
-	return call, attempt, nil
+	return result, nil
 }

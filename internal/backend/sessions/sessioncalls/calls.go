@@ -7,7 +7,6 @@ import (
 	"sync"
 
 	enumspb "go.temporal.io/api/enums/v1"
-	"go.temporal.io/sdk/activity"
 	"go.temporal.io/sdk/temporal"
 	"go.temporal.io/sdk/worker"
 	"go.temporal.io/sdk/workflow"
@@ -24,7 +23,6 @@ import (
 
 type CallParams struct {
 	SessionID sdktypes.SessionID
-	Debug     bool
 	CallSpec  sdktypes.SessionCallSpec
 
 	Executors *sdkexecutor.Executors // needed for session specific calls (global modules, script functions).
@@ -36,7 +34,7 @@ type Calls interface {
 }
 
 type calls struct {
-	z      *zap.Logger
+	l      *zap.Logger
 	config Config
 	svcs   *sessionsvcs.Svcs
 
@@ -61,17 +59,16 @@ type calls struct {
 }
 
 const (
-	taskQueueName    = "session_call_activities"
-	callActivityName = "session_call_activity"
+	generalTaskQueueName = "session_call_activities"
 )
 
 func uniqueWorkerCallTaskQueueName() string {
-	return fmt.Sprintf("%s_%s", taskQueueName, fixtures.ProcessID())
+	return fmt.Sprintf("%s_%s", generalTaskQueueName, fixtures.ProcessID())
 }
 
-func New(z *zap.Logger, config Config, svcs *sessionsvcs.Svcs) Calls {
+func New(l *zap.Logger, config Config, svcs *sessionsvcs.Svcs) Calls {
 	return &calls{
-		z:                    z,
+		l:                    l,
 		config:               config,
 		svcs:                 svcs,
 		executorsForSessions: make(map[sdktypes.SessionID]*sdkexecutor.Executors, 16),
@@ -79,113 +76,121 @@ func New(z *zap.Logger, config Config, svcs *sessionsvcs.Svcs) Calls {
 }
 
 func (cs *calls) StartWorkers(ctx context.Context) error {
-	opts := cs.config.Temporal.Worker
-	opts.DisableRegistrationAliasing = true
-	opts.OnFatalError = func(err error) { cs.z.Error("temporal worker error", zap.Error(err)) }
-	opts.DisableWorkflowWorker = true // these workers serve only activities.
+	cs.generalWorker = temporalclient.NewWorker(cs.l.Named("sessionscallsworker"), cs.svcs.Temporal(), generalTaskQueueName, cs.config.GeneralWorker)
+	cs.uniqueWorker = temporalclient.NewWorker(cs.l.Named("sessionscallsworker"), cs.svcs.Temporal(), uniqueWorkerCallTaskQueueName(), cs.config.UniqueWorker)
 
-	cs.generalWorker = worker.New(cs.svcs.TemporalClient(), taskQueueName, opts)
-	cs.uniqueWorker = worker.New(cs.svcs.TemporalClient(), uniqueWorkerCallTaskQueueName(), opts)
+	cs.registerActivities()
 
-	cs.generalWorker.RegisterActivityWithOptions(
-		cs.sessionCallActivity,
-		activity.RegisterOptions{
-			Name:                          callActivityName,
-			DisableAlreadyRegisteredCheck: true,
-		},
-	)
-
-	cs.uniqueWorker.RegisterActivityWithOptions(
-		cs.sessionCallActivity,
-		activity.RegisterOptions{
-			Name:                          callActivityName,
-			DisableAlreadyRegisteredCheck: true,
-		},
-	)
-
-	if err := cs.generalWorker.Start(); err != nil {
-		return err
+	if w := cs.generalWorker; w != nil {
+		if err := w.Start(); err != nil {
+			return err
+		}
 	}
 
-	return cs.uniqueWorker.Start()
+	if w := cs.uniqueWorker; w != nil {
+		if err := w.Start(); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
-func (cs *calls) Call(ctx workflow.Context, params *CallParams) (sdktypes.SessionCallAttemptResult, error) {
+func (cs *calls) Call(wctx workflow.Context, params *CallParams) (sdktypes.SessionCallAttemptResult, error) {
 	spec := params.CallSpec
+	sid := params.SessionID
 
 	fnv, _, _ := spec.Data()
 	fnvf := fnv.GetFunction()
 
 	seq := spec.Seq()
 
-	z := cs.z.With(zap.String("session_id", params.SessionID.String()), zap.Uint32("seq", seq), zap.Any("v", fnv))
+	sl := cs.l.Sugar().With("session_id", sid, "seq", seq, "v", fnv)
 
-	// TODO: If replaying, make sure arguments are the same?
-	if err := workflow.ExecuteLocalActivity(
-		ctx, cs.svcs.DB.CreateSessionCall, params.SessionID, spec,
-	).Get(ctx, nil); err != nil {
-		return sdktypes.InvalidSessionCallAttemptResult, fmt.Errorf("db.create_call: %w", err)
+	wctx = workflow.WithActivityOptions(wctx, cs.config.activityConfig().ToOptions(generalTaskQueueName))
+
+	fut := workflow.ExecuteActivity(
+		wctx,
+		createSessionCallActivityName,
+		sid,
+		spec,
+	)
+	if err := fut.Get(wctx, nil); err != nil {
+		return sdktypes.InvalidSessionCallAttemptResult, fmt.Errorf("create_call: %w", err)
 	}
 
 	var attempt uint32
 
-	goCtx := temporalclient.NewWorkflowContextAsGOContext(ctx)
+	fut = workflow.ExecuteActivity(
+		wctx,
+		createSessionCallAttemptActivityName,
+		sid,
+		seq,
+	)
+	if err := fut.Get(wctx, &attempt); err != nil {
+		return sdktypes.InvalidSessionCallAttemptResult, fmt.Errorf("create_session_call_attempt: %w", err)
+	}
+
+	var result sdktypes.SessionCallAttemptResult
 
 	if fnvf.HasFlag(sdktypes.PureFunctionFlag) {
-		z.Debug("function call outside activity")
-
-		var err error
+		goCtx := temporalclient.NewWorkflowContextAsGOContext(wctx)
 
 		if fnvf.HasFlag(sdktypes.PrivilidgedFunctionFlag) {
-			goCtx = sessioncontext.WithWorkflowContext(goCtx, ctx)
+			goCtx = sessioncontext.WithWorkflowContext(goCtx, wctx)
 		}
 
-		if _, attempt, err = cs.executeCall(goCtx, params.SessionID, seq, params.Executors); err != nil {
+		var err error
+		if result, err = cs.executeCall(goCtx, params.CallSpec, params.Executors); err != nil {
+			sl.With("err", err).Infof("pure call failed: %v", err)
 			return sdktypes.NewSessionCallAttemptResult(sdktypes.InvalidValue, fmt.Errorf("internal call: %w", err)), nil
 		}
 	} else {
 		xid := fnvf.ExecutorID()
 
 		// either a non-integration (like a run) or a session module.
-		local := !xid.IsIntegrationID() || modules.IsAKModuleExecutorID(xid)
+		unique := !xid.IsIntegrationID() || modules.IsAKModuleExecutorID(xid)
 
-		if local {
+		sl := sl.With("unique", unique)
+
+		if unique {
+			sl.Info("unique call")
+
+			// store the executors in global scope so when the unique worker activity is executed
+			// is could get the session specific executors.
+
 			cs.executorsForSessionsMu.Lock()
 			cs.executorsForSessions[params.SessionID] = params.Executors
 			cs.executorsForSessionsMu.Unlock()
 
 			defer func() {
 				cs.executorsForSessionsMu.Lock()
-				delete(cs.executorsForSessions, params.SessionID)
+				delete(cs.executorsForSessions, sid)
 				cs.executorsForSessionsMu.Unlock()
 			}()
 		}
 
 		for retry := true; retry; {
-			aopts := workflow.ActivityOptions{
-				TaskQueue:              taskQueueName,
-				ActivityID:             fmt.Sprintf("session_call_%s_%d", params.SessionID.Value(), seq),
-				ScheduleToCloseTimeout: cs.config.Temporal.ActivityScheduleToCloseTimeout,
-				HeartbeatTimeout:       cs.config.Temporal.ActivityHeartbeatTimeout,
-			}
+			aopts := cs.config.activityConfig().ToOptions(generalTaskQueueName)
 
-			if local {
+			if unique {
 				// When a local execution is required, it is scheduled on a unique worker. These local executions
 				// need access to the state that is built by the workflow.
 
-				if aopts.TaskQueue = uniqueWorkerCallTaskQueueName(); aopts.TaskQueue == "" {
+				uniqueTaskQueueName := uniqueWorkerCallTaskQueueName()
+				if uniqueTaskQueueName == "" {
 					return sdktypes.InvalidSessionCallAttemptResult, errors.New("local session worker for activities is not registerd")
 				}
 
-				aopts.ScheduleToStartTimeout = cs.config.Temporal.ActivityScheduleToStartTimeout
-				if aopts.ScheduleToStartTimeout == 0 {
-					z.Warn("call activity schedule-to-start timeout is 0 and local exec is needed")
+				cfg := cs.config.uniqueActivityConfig()
+				if cfg.ScheduleToStartTimeout == 0 {
+					sl.Warn("call activity schedule-to-start timeout is 0 and local exec is needed")
 				}
 
-				aopts.ActivityID = "local_" + aopts.ActivityID
+				aopts = cfg.ToOptions(uniqueTaskQueueName)
 			}
 
-			actx := workflow.WithActivityOptions(ctx, aopts)
+			actx := workflow.WithActivityOptions(wctx, aopts)
 
 			var ret callActivityOutputs
 
@@ -193,42 +198,49 @@ func (cs *calls) Call(ctx workflow.Context, params *CallParams) (sdktypes.Sessio
 				actx,
 				callActivityName,
 				&callActivityInputs{
-					SessionID: params.SessionID,
-					Seq:       seq,
-					Debug:     params.Debug,
+					SessionID: sid,
+					CallSpec:  params.CallSpec,
+					Unique:    unique,
 				},
 			)
-			if err := future.Get(ctx, &ret); err != nil {
+			if err := future.Get(wctx, &ret); err != nil {
 				var terr *temporal.TimeoutError
 				if ok := errors.As(err, &terr); ok && terr.TimeoutType() == enumspb.TIMEOUT_TYPE_SCHEDULE_TO_START {
 					// An activity that was scheduled on a unique worker (ie the workflow worker) did not get to be started.
 					// This might happen in cases of scale-down events or a recovery from a crashed worker.
 					// In this case we just reshecule it again.
-					z.Warn("call activity schedule to start timeout, retrying")
+					sl.Warn("call activity schedule to start timeout, retrying")
 					continue
 				}
 
 				return sdktypes.InvalidSessionCallAttemptResult, fmt.Errorf("call activity error: %w", err)
 			}
 
-			attempt = ret.Attempt
-
 			if retry = ret.Retry; retry {
 				// An activity scheduled on a unique worker started to run after a crash before the associated workflow
 				// got started. Since in this case the required session executors where not registered, we just
 				// retry the activity and give a chance to the workflow register the session workers.
-				z.Warn("call activity retrying explicitly")
+				sl.Warn("call activity retrying explicitly")
+				continue
 			}
+
+			result = ret.Result
 		}
 	}
 
-	// Do not execute in an activity: we don't want to expose the activity result to Temporal.
-	result, err := cs.svcs.DB.GetSessionCallAttemptResult(goCtx, params.SessionID, seq, int64(attempt))
-	if err != nil {
-		return sdktypes.InvalidSessionCallAttemptResult, fmt.Errorf("db.get_session_call_attempt: %w", err)
-	}
+	sl.Debug("call returned", zap.Uint32("attempts", attempt+1), zap.Any("result", result))
 
-	z.Debug("call returned", zap.Uint32("attempts", attempt+1), zap.Any("result", result))
+	fut = workflow.ExecuteActivity(
+		wctx,
+		completeSessionCallAttemptActivityName,
+		sid,
+		seq,
+		attempt,
+		sdktypes.NewSessionCallAttemptComplete(true, 0, result),
+	)
+	if err := fut.Get(wctx, nil); err != nil {
+		return sdktypes.InvalidSessionCallAttemptResult, fmt.Errorf("complete_session_call_attempt: %w", err)
+	}
 
 	return result, nil
 }

@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"io"
 
-	"go.uber.org/zap"
-
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionsvcs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkbuildfile"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
@@ -16,7 +14,6 @@ import (
 )
 
 type Data struct {
-	SessionID   sdktypes.SessionID      `json:"session_id"`
 	ProjectID   sdktypes.ProjectID      `json:"project_id"`
 	Session     sdktypes.Session        `json:"session"`
 	Env         sdktypes.Env            `json:"env"`
@@ -27,13 +24,17 @@ type Data struct {
 	Connections []sdktypes.Connection   `json:"connections"`
 }
 
-func retrieve[I sdktypes.ID, R sdktypes.Object](ctx context.Context, z *zap.Logger, id I, f func(context.Context, I) (R, error)) (R, error) {
+type ConnInfo struct {
+	Config          map[string]string `json:"config"`
+	IntegrationName string            `json:"integration_name"`
+}
+
+func retrieve[I sdktypes.ID, R sdktypes.Object](ctx context.Context, id I, f func(context.Context, I) (R, error)) (R, error) {
 	var invalid R
 
 	r, err := sdkerrors.IgnoreNotFoundErr(f(ctx, id))
 
 	if err != nil {
-		z.DPanic("get", zap.Error(err), zap.String("id", id.String()))
 		return invalid, fmt.Errorf("get %q: %w", id, err)
 	} else if !r.IsValid() {
 		return invalid, fmt.Errorf("%q not found", id)
@@ -54,22 +55,17 @@ func downloadBuild(ctx context.Context, buildID sdktypes.BuildID, builds sdkserv
 	return io.ReadAll(r)
 }
 
-// Get session related data using local activities in order not to expose data to Temporal.
-func Get(ctx context.Context, z *zap.Logger, svcs *sessionsvcs.Svcs, sessionID sdktypes.SessionID) (*Data, error) {
+func Get(ctx context.Context, svcs *sessionsvcs.Svcs, session sdktypes.Session) (*Data, error) {
 	var err error
 
 	data := Data{
-		SessionID: sessionID,
+		Session: session,
 	}
 
 	// TODO(ENG-207): Consider doing all retrievals using one big happy join.
 
-	if data.Session, err = retrieve(ctx, z, sessionID, svcs.DB.GetSession); err != nil {
-		return nil, err
-	}
-
 	if envID := data.Session.EnvID(); envID.IsValid() {
-		if data.Env, err = retrieve(ctx, z, envID, svcs.Envs.GetByID); err != nil {
+		if data.Env, err = retrieve(ctx, envID, svcs.Envs.GetByID); err != nil {
 			return nil, err
 		}
 
@@ -87,8 +83,6 @@ func Get(ctx context.Context, z *zap.Logger, svcs *sessionsvcs.Svcs, sessionID s
 			return nil, fmt.Errorf("triggers.list(%v): %w", envID, err)
 		}
 
-		// TODO: merge mappings?
-
 		if data.Vars, err = svcs.Vars.Get(ctx, sdktypes.NewVarScopeID(envID)); err != nil {
 			return nil, fmt.Errorf("get vars: %w", err)
 		}
@@ -96,13 +90,13 @@ func Get(ctx context.Context, z *zap.Logger, svcs *sessionsvcs.Svcs, sessionID s
 
 	buildID := data.Session.BuildID()
 
-	if data.Build, err = retrieve(ctx, z, buildID, svcs.Builds.Get); err != nil {
+	if data.Build, err = retrieve(ctx, buildID, svcs.Builds.Get); err != nil {
 		return nil, err
 	}
 
 	buildData, err := downloadBuild(ctx, buildID, svcs.Builds)
 	if err != nil {
-		z.Panic("download build data", zap.Error(err), zap.String("build_id", buildID.String()))
+		return nil, fmt.Errorf("download build: %w", err)
 	}
 
 	if data.BuildFile, err = sdkbuildfile.Read(bytes.NewBuffer(buildData)); err != nil {
