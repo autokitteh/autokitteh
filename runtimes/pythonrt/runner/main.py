@@ -62,6 +62,24 @@ def display_err(fn, err):
     print_exception(err, file=sys.stderr)
 
 
+# Go passes HTTP event.data.body.bytes as base64 encode string
+def fix_http_body(event):
+    data = event.get("data")
+    if not isinstance(data, dict):
+        return
+
+    body = data.get("body")
+    if not isinstance(body, dict):
+        return
+
+    payload = body.get("bytes")
+    if isinstance(payload, str):
+        try:
+            body["bytes"] = b64decode(payload)
+        except ValueError:
+            pass
+
+
 class Runner(rpc.RunnerServicer):
     def __init__(self, id, worker, code_dir):
         self.id = id
@@ -110,15 +128,7 @@ class Runner(rpc.RunnerServicer):
 
         event = json.loads(request.event.data)
 
-        # Go passes HTTP event body as base64 encode string
-        body = event.get("data", {}).get("body")
-        if isinstance(body, str):
-            try:
-                event["data"]["body"] = b64decode(body)
-            except ValueError:
-                pass
-        log.info("start event: %r", event)
-
+        fix_http_body(event)
         event = AttrDict(event)
         self.executor.submit(self.on_event, fn, event)
 
