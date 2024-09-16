@@ -23,7 +23,7 @@ var defaultConfig = Config{
 		},
 	},
 	Calls: sessioncalls.Config{
-		// Not sure 15s (taken from "Dev" - see below) is a good default,
+		// Not sure 15s is a good default (taken from "Dev" - see below),
 		// but without a non-zero value AK panics when starting workflows.
 		ActivityHeartbeatInterval: time.Second * 15,
 		UniqueActivity: temporalclient.ActivityConfig{
