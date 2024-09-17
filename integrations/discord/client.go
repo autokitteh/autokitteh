@@ -72,6 +72,9 @@ func connStatus(i *integration) sdkintegrations.OptFn {
 	})
 }
 
+// connTest is an optional connection test provided by the integration
+// to AutoKitteh. It is used to verify that the connection is working
+// as expected. The possible results are "OK" and "error".
 func connTest(i *integration) sdkintegrations.OptFn {
 	return sdkintegrations.WithConnectionTest(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
 		vs, err := i.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
