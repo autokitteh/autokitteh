@@ -2,6 +2,9 @@ package twilio
 
 import (
 	"context"
+	"fmt"
+	"io"
+	"net/http"
 
 	"go.autokitteh.dev/autokitteh/integrations"
 	"go.autokitteh.dev/autokitteh/integrations/twilio/webhooks"
@@ -45,6 +48,7 @@ func New(vars sdkservices.Vars) sdkservices.Integration {
 			),
 		),
 		connStatus(i),
+		connTest(i),
 		sdkintegrations.WithConnectionConfigFromVars(vars),
 	)
 }
@@ -79,5 +83,62 @@ func connStatus(i *integration) sdkintegrations.OptFn {
 		default:
 			return sdktypes.NewStatus(sdktypes.StatusCodeError, "Bad auth type"), nil
 		}
+	})
+}
+
+// connTest is an optional connection test provided by the integration
+// to AutoKitteh. It is used to verify that the connection is working
+// as expected. The possible results are "OK" and "error".
+func connTest(i *integration) sdkintegrations.OptFn {
+	return sdkintegrations.WithConnectionTest(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
+		if !cid.IsValid() {
+			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
+		}
+
+		vs, err := i.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
+		if err != nil {
+			return sdktypes.InvalidStatus, err
+		}
+
+		at := vs.Get(webhooks.AuthType)
+		if !at.IsValid() || at.Value() == "" {
+			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
+		}
+
+		var decodedVars webhooks.Vars
+		vs.Decode(&decodedVars)
+		accountSID := decodedVars.AccountSID
+		authSID := accountSID
+		authToken := ""
+
+		if at.Value() == integrations.APIKey {
+			authSID = decodedVars.Username
+		}
+		authToken = decodedVars.Password
+
+		url := fmt.Sprintf("https://api.twilio.com/2010-04-01/Accounts/%s.json", accountSID)
+		req, err := http.NewRequest("GET", url, nil)
+		if err != nil {
+			return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), nil
+		}
+
+		req.SetBasicAuth(authSID, authToken)
+		client := &http.Client{}
+		resp, err := client.Do(req)
+		if err != nil {
+			return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), nil
+		}
+		defer resp.Body.Close()
+
+		_, err = io.ReadAll(resp.Body)
+		if err != nil {
+			return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), nil
+		}
+
+		if resp.StatusCode != http.StatusOK {
+			return sdktypes.NewStatus(sdktypes.StatusCodeError, fmt.Sprintf("Request failed. Status Code: %d", resp.StatusCode)), nil
+		}
+
+		return sdktypes.NewStatus(sdktypes.StatusCodeOK, ""), nil
 	})
 }
