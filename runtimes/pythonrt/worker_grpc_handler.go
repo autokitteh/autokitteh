@@ -189,7 +189,7 @@ func (s *workerGRPCHandler) Sleep(ctx context.Context, req *pb.SleepRequest) (*p
 	case err := <-msg.errorChannel:
 		err = status.Errorf(codes.Internal, "sleep(%f) -> %s", secs, err)
 		return &pb.SleepResponse{Error: err.Error()}, err
-	case _ = <-msg.successChannel:
+	case <-msg.successChannel:
 		return &pb.SleepResponse{}, nil
 	}
 }
@@ -306,8 +306,7 @@ func (s *workerGRPCHandler) Unsubscribe(ctx context.Context, req *pb.Unsubscribe
 	case err := <-msg.errorChannel:
 		err = status.Errorf(codes.Internal, "subscribe(%s) -> %s", req.SignalId, err)
 		return &pb.UnsubscribeResponse{Error: err.Error()}, err
-	case _ = <-msg.successChannel:
-
+	case <-msg.successChannel:
 		return &pb.UnsubscribeResponse{}, nil
 	}
 
