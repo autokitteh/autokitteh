@@ -21,9 +21,10 @@ func (h *handler) handleEvent(event any, eventType string) {
 	case *discordgo.MessageUpdate:
 		authorID = e.Author.ID
 	case *discordgo.MessageDelete:
-		authorID = e.Author.ID
+		// Deleted messages don't have an author
+		authorID = ""
 	default:
-		l.Error("Unsupported event type", zap.String("eventType", eventType))
+		l.Error("Unsupported event type")
 		return
 	}
 
