@@ -27,9 +27,7 @@ type Config struct {
 
 var Configs = configset.Set[Config]{
 	Default: &Config{
-		RemoteRunnerEndpoints: []string{"localhost:9291"},
-		EnableRemoteRunner:    false,
-		// WorkerAddress:         "localhost:9980",
+		EnableRemoteRunner: false,
 	},
 	Test: &Config{
 		LazyLoadLocalVEnv: true,
