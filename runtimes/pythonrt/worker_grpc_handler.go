@@ -5,6 +5,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"net/http"
 	"sync"
 
 	pb "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/remote/v1"
@@ -27,7 +29,6 @@ var (
 		runnerIDsToRuntime: map[string]*pySvc{},
 		mu:                 new(sync.Mutex),
 	}
-	Server *grpc.Server
 )
 
 // GRPC Server Handling
@@ -41,10 +42,11 @@ func newInterceptor(log *zap.Logger) func(ctx context.Context, req any, info *gr
 	return fn
 }
 
-func ConfigureWorkerGRPCHandler(l *zap.Logger) {
+func ConfigureWorkerGRPCHandler(l *zap.Logger, mux *http.ServeMux) {
 	srv := grpc.NewServer(grpc.UnaryInterceptor(newInterceptor(l)))
 	pb.RegisterWorkerServer(srv, &w)
-	Server = srv
+	path := fmt.Sprintf("/%s/", pb.Worker_ServiceDesc.ServiceName)
+	mux.Handle(path, srv)
 }
 
 func addRunnerToServer(runnerID string, svc *pySvc) error {

@@ -73,7 +73,5 @@ func New(cfg *Config, l *zap.Logger, svc httpsvc.Svc) (sdkservices.Runtimes, err
 		l.Info("local runner configured")
 	}
 
-	pythonruntime.ConfigureWorkerGRPCHandler(l)
-
 	return sdkruntimes.New(runtimes)
 }

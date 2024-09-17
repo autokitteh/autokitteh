@@ -141,10 +141,11 @@ func newCallbacks(svc *pySvc) *sdkservices.RunCallbacks {
 }
 
 func setupServer(l *zap.Logger) *http.Server {
-	ConfigureWorkerGRPCHandler(l)
+	mux := &http.ServeMux{}
+	ConfigureWorkerGRPCHandler(l, mux)
 	server := &http.Server{
 		Addr:    "localhost:9980",
-		Handler: h2c.NewHandler(Server, &http2.Server{}),
+		Handler: h2c.NewHandler(mux, &http2.Server{}),
 	}
 
 	if err := ConfigureLocalRunnerManager(l, LocalRunnerConfig{WorkerAddress: "localhost:9980"}); err != nil {
