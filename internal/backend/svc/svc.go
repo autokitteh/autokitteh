@@ -68,6 +68,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/internal/version"
 	"go.autokitteh.dev/autokitteh/proto"
+	"go.autokitteh.dev/autokitteh/runtimes/pythonrt"
 	"go.autokitteh.dev/autokitteh/sdk/sdkruntimessvc"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -309,7 +310,12 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 				})
 			}),
 		),
-		Component("runtimes", runtimes.Configs, fx.Provide(runtimes.New)),
+		Component("runtimes",
+			runtimes.Configs,
+			fx.Provide(runtimes.New),
+			fx.Invoke(func(z *zap.Logger, muxes *muxes.Muxes) {
+				pythonrt.ConfigureWorkerGRPCHandler(z, muxes.NoAuth)
+			})),
 		fx.Invoke(func(muxes *muxes.Muxes) {
 			muxes.NoAuth.HandleFunc("GET /id", func(w http.ResponseWriter, r *http.Request) {
 				fmt.Fprint(w, fixtures.ProcessID())

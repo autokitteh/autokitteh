@@ -12,7 +12,6 @@ import (
 
 	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
 	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
-	"go.autokitteh.dev/autokitteh/runtimes/pythonrt"
 )
 
 type ctxKey string
@@ -73,11 +72,11 @@ func intercept(z *zap.Logger, cfg *LoggerConfig, extractors []RequestLogExtracto
 		startTime := time.Now()
 		r = r.WithContext(context.WithValue(r.Context(), startTimeCtxKey, startTime))
 
-		if strings.HasPrefix(r.URL.Path, "/autokitteh.remote.v1.Worker") {
-			pythonrt.Server.ServeHTTP(rwi, r)
-		} else {
-			next.ServeHTTP(rwi, r)
-		}
+		// if strings.HasPrefix(r.URL.Path, "/autokitteh.remote.v1.Worker") {
+		// 	pythonrt.Server.ServeHTTP(rwi, r)
+		// } else {
+		next.ServeHTTP(rwi, r)
+		// }
 
 		duration := time.Since(startTime)
 		updateMetric(r.Context(), telemetry, r.URL.Path, rwi.StatusCode, duration)
