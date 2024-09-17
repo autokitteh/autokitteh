@@ -1,9 +1,11 @@
 package runtimes
 
 import (
+	"errors"
+	"fmt"
+
 	"go.autokitteh.dev/autokitteh/internal/backend/configset"
 	"go.autokitteh.dev/autokitteh/internal/backend/httpsvc"
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	configruntimesvc "go.autokitteh.dev/autokitteh/runtimes/configrt/runtimesvc"
 	pythonruntime "go.autokitteh.dev/autokitteh/runtimes/pythonrt"
 	starlarkruntimesvc "go.autokitteh.dev/autokitteh/runtimes/starlarkrt/runtimesvc"
@@ -34,7 +36,7 @@ var Configs = configset.Set[Config]{
 	},
 }
 
-func New(cfg *Config, l *zap.Logger, svc httpsvc.Svc) sdkservices.Runtimes {
+func New(cfg *Config, l *zap.Logger, svc httpsvc.Svc) (sdkservices.Runtimes, error) {
 	runtimes := []*sdkruntimes.Runtime{
 		starlarkruntimesvc.Runtime,
 		configruntimesvc.Runtime,
@@ -48,13 +50,13 @@ func New(cfg *Config, l *zap.Logger, svc httpsvc.Svc) sdkservices.Runtimes {
 
 	if cfg.EnableRemoteRunner {
 		if len(cfg.RemoteRunnerEndpoints) == 0 {
-			panic("remote runner is enabled but no runner endpoints provided")
+			return nil, errors.New("remote runner is enabled but no runner endpoints provided")
 		}
 		if err := pythonruntime.ConfigureRemoteRunnerManager(pythonruntime.RemoteRuntimeConfig{
 			ManagerAddress: cfg.RemoteRunnerEndpoints,
 			WorkerAddress:  cfg.WorkerAddress,
 		}); err != nil {
-			l.Panic("configure remote runner manager", zap.Error(err))
+			return nil, fmt.Errorf("configure remote runner manager: %w", err)
 		}
 		l.Info("remote runner configued")
 	} else {
@@ -65,7 +67,7 @@ func New(cfg *Config, l *zap.Logger, svc httpsvc.Svc) sdkservices.Runtimes {
 				WorkerAddressProvider: func() string { return svc.Addr() },
 			},
 		); err != nil {
-			l.Panic("configure local runner manager", zap.Error(err))
+			return nil, fmt.Errorf("configure local runner manager: %w", err)
 		}
 
 		l.Info("local runner configured")
@@ -73,5 +75,5 @@ func New(cfg *Config, l *zap.Logger, svc httpsvc.Svc) sdkservices.Runtimes {
 
 	pythonruntime.ConfigureWorkerGRPCHandler(l)
 
-	return kittehs.Must1(sdkruntimes.New(runtimes))
+	return sdkruntimes.New(runtimes)
 }
