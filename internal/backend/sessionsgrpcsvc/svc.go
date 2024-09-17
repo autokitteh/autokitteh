@@ -143,6 +143,7 @@ func (s *server) GetLog(ctx context.Context, req *connect.Request[sessionsv1.Get
 			PageSize:  msg.PageSize,
 			Ascending: msg.Ascending,
 		},
+		Types:     msg.Types,
 		SessionID: sessionID,
 	}
 

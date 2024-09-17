@@ -24,11 +24,6 @@ var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.Integrati
 	DisplayName:   "GitHub",
 	Description:   "GitHub is a development platform with distributed version control, issue tracking, continuous integration, and more.",
 	LogoUrl:       "/static/images/github.svg",
-	UserLinks: map[string]string{
-		"1 REST API":          "https://docs.github.com/rest",
-		"2 Go client API":     "https://pkg.go.dev/github.com/google/go-github/v57/github",
-		"3 Python client API": "https://pygithub.readthedocs.io/en/stable/",
-	},
 	ConnectionUrl: "/github/connect",
 	ConnectionCapabilities: &sdktypes.ConnectionCapabilitiesPB{
 		RequiresConnectionInit: true,
@@ -54,12 +49,12 @@ func connTest(*integration) sdkintegrations.OptFn {
 }
 
 // connStatus is an optional connection status check provided by
-// the integration to AutoKitteh. The possible results are "init
-// required" (the connection is not usable yet) and "using X".
+// the integration to AutoKitteh. The possible results are "Init
+// required" (the connection is not usable yet) and "Using X".
 func connStatus(i *integration) sdkintegrations.OptFn {
 	return sdkintegrations.WithConnectionStatus(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
 		if !cid.IsValid() {
-			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "init required"), nil
+			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
 		}
 
 		vs, err := i.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
@@ -69,16 +64,16 @@ func connStatus(i *integration) sdkintegrations.OptFn {
 
 		at := vs.Get(vars.AuthType)
 		if !at.IsValid() || at.Value() == "" {
-			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "init required"), nil
+			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
 		}
 
 		switch at.Value() {
 		case integrations.OAuth:
-			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "using GitHub app"), nil
+			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "Using GitHub app"), nil
 		case integrations.PAT:
-			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "using PAT + webhook"), nil
+			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "Using PAT + webhook"), nil
 		default:
-			return sdktypes.NewStatus(sdktypes.StatusCodeError, "bad auth type"), nil
+			return sdktypes.NewStatus(sdktypes.StatusCodeError, "Bad auth type"), nil
 		}
 	})
 }

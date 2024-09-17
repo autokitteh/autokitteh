@@ -64,14 +64,13 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request, t *template.T
 	}
 
 	// Generate the HTML page with the integration details.
-	i := integ.Get()
 	data := map[string]string{
 		"cid":    cid.String(),
 		"origin": r.URL.Query().Get("origin"),
 		"error":  r.URL.Query().Get("error"),
-		"integ":  i.UniqueName().String(),
-		"name":   i.DisplayName(),
-		"logo":   i.LogoURL().String(),
+		"integ":  integ.UniqueName().String(),
+		"name":   integ.DisplayName(),
+		"logo":   integ.LogoURL().String(),
 	}
 
 	w.WriteHeader(statusCode)

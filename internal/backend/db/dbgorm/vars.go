@@ -113,10 +113,11 @@ func (gdb *gormdb) findConnectionIDsByVar(ctx context.Context, integrationID sdk
 
 // FIXME: do we need to handle slice here? it seems to be unused anywhere and (meanwhile) compicates uniformal handling
 func (db *gormdb) SetVars(ctx context.Context, vars []sdktypes.Var) error {
-	if i, err := kittehs.ValidateList(vars, func(_ int, v sdktypes.Var) error {
+	i, err := kittehs.ValidateList(vars, func(_ int, v sdktypes.Var) error {
 		return v.Strict()
-	}); err != nil {
-		return fmt.Errorf("#%d: %w", i, err)
+	})
+	if err != nil {
+		return fmt.Errorf("var #%d: %w", i, err)
 	}
 
 	cids := kittehs.Transform(vars, func(v sdktypes.Var) sdktypes.ConnectionID {

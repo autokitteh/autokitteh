@@ -11,12 +11,6 @@ type httpH2CConfig struct {
 	Enable bool `koanf:"enable"`
 }
 
-type ngrokConfig struct {
-	Enable    bool   `koanf:"enable"`
-	AuthToken string `koanf:"auth_token"`
-	Domain    string `koanf:"domain"`
-}
-
 type LoggerConfig struct {
 	ImportantLevel   zap.AtomicLevel `koanf:"important_log_level"`
 	UnimportantLevel zap.AtomicLevel `koanf:"unimportant_log_level"`
@@ -54,8 +48,6 @@ type Config struct {
 	AddrFilename         string `koanf:"addr_filename"`
 	EnableGRPCReflection bool   `koanf:"reflection"`
 
-	Ngrok ngrokConfig `koanf:"ngrok"`
-
 	Logger LoggerConfig `koanf:"logger"`
 
 	CORS CORSConfig `koanf:"cors"`
@@ -78,8 +70,8 @@ var Configs = configset.Set[Config]{
 			ImportantLevel:   zap.NewAtomicLevelAt(zap.InfoLevel),
 			ErrorsLevel:      zap.NewAtomicLevelAt(zap.WarnLevel),
 			UnimportantRegexes: []string{
-				`^/autokitteh.+/(Get|List)$`, // gRPC Get and List methods
-				`^/oauth/|/oauth$|/save$`,    // Connection initialization
+				`^/autokitteh.+/(Get|List).*`, // gRPC Get and List methods
+				`^/oauth/|/oauth$|/save$`,     // Connection initialization
 			},
 			UnloggedRegexes: []string{
 				`/(healthz|readyz)$`,                           // Kubernetes health checks

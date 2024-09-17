@@ -15,27 +15,28 @@ import (
 
 func ConstructEvent(ctx context.Context, vars sdkservices.Vars, formsEvent map[string]any, cids []sdktypes.ConnectionID) (sdktypes.Event, error) {
 	l := extrazap.ExtractLoggerFromContext(ctx)
+	if len(cids) == 0 {
+		return sdktypes.InvalidEvent, nil
+	}
 
 	// Enrich the event with relevant data, using API calls.
-	if len(cids) > 0 {
-		a := api{vars: vars, cid: cids[0]}
-		switch WatchEventType(formsEvent["event_type"].(string)) {
-		case WatchSchemaChanges:
-			form, err := a.getForm(ctx)
-			if err != nil {
-				l.Error("Failed to get form", zap.Error(err))
-				// Don't abort, dispatch the event without this data.
-			}
-			formsEvent["form"] = form
-
-		case WatchNewResponses:
-			responses, err := a.listResponses(ctx)
-			if err != nil {
-				l.Error("Failed to list responses", zap.Error(err))
-				// Don't abort, dispatch the event without this data.
-			}
-			formsEvent["response"] = lastResponse(responses)
+	a := api{vars: vars, cid: cids[0]}
+	switch WatchEventType(formsEvent["event_type"].(string)) {
+	case WatchSchemaChanges:
+		form, err := a.getForm(ctx)
+		if err != nil {
+			l.Error("Failed to get form", zap.Error(err))
+			// Don't abort, dispatch the event without this data.
 		}
+		formsEvent["form"] = form
+
+	case WatchNewResponses:
+		responses, err := a.listResponses(ctx)
+		if err != nil {
+			l.Error("Failed to list responses", zap.Error(err))
+			// Don't abort, dispatch the event without this data.
+		}
+		formsEvent["response"] = lastResponse(responses)
 	}
 
 	// Convert the raw data to an AutoKitteh event.

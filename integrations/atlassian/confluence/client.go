@@ -23,11 +23,6 @@ var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.Integrati
 	DisplayName:   "Atlassian Confluence",
 	Description:   "Atlassian Confluence is a corporate wiki developed by Atlassian.",
 	LogoUrl:       "/static/images/confluence.svg",
-	UserLinks: map[string]string{
-		"1 REST API":                    "https://developer.atlassian.com/cloud/confluence/rest/v2/intro/",
-		"2 Atlassian Python client API": "https://atlassian-python-api.readthedocs.io/",
-		"3 Atlassian Python examples":   "https://github.com/atlassian-api/atlassian-python-api/tree/master/examples/confluence",
-	},
 	ConnectionUrl: "/confluence/connect",
 	ConnectionCapabilities: &sdktypes.ConnectionCapabilitiesPB{
 		RequiresConnectionInit: true,
@@ -45,12 +40,12 @@ func New(cvars sdkservices.Vars) sdkservices.Integration {
 }
 
 // connStatus is an optional connection status check provided by
-// the integration to AutoKitteh. The possible results are "init
-// required" (the connection is not usable yet) and "using X".
+// the integration to AutoKitteh. The possible results are "Init
+// required" (the connection is not usable yet) and "Using X".
 func connStatus(i *integration) sdkintegrations.OptFn {
 	return sdkintegrations.WithConnectionStatus(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
 		if !cid.IsValid() {
-			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "init required"), nil
+			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
 		}
 
 		vs, err := i.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
@@ -60,18 +55,18 @@ func connStatus(i *integration) sdkintegrations.OptFn {
 
 		at := vs.Get(authType)
 		if !at.IsValid() || at.Value() == "" {
-			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "init required"), nil
+			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
 		}
 
 		switch at.Value() {
 		case integrations.APIToken:
-			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "using cloud API token"), nil
+			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "Using cloud API token"), nil
 		case integrations.OAuth:
-			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "using OAuth 2.0"), nil
+			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "Using OAuth 2.0"), nil
 		case integrations.PAT:
-			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "using on-prem PAT"), nil
+			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "Using on-prem PAT"), nil
 		default:
-			return sdktypes.NewStatus(sdktypes.StatusCodeError, "bad auth type"), nil
+			return sdktypes.NewStatus(sdktypes.StatusCodeError, "Bad auth type"), nil
 		}
 	})
 }

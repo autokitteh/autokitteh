@@ -9,6 +9,17 @@ function toggleTab(id) {
   }
   document.getElementById("toggle" + id).classList.add("active");
 
+  // Synchronize the calendar ID text fields.
+  if (id === "tab1") {
+    jsonValue = document.getElementById("calIdJson").value;
+    document.getElementById("calIdOauth").value = jsonValue;
+    document.getElementById("calIdJson").value = "";
+  } else {
+    oauthValue = document.getElementById("calIdOauth").value;
+    document.getElementById("calIdJson").value = oauthValue;
+    document.getElementById("calIdOauth").value = "";
+  }
+
   // Update the tab contents.
   const tabs = document.getElementsByClassName("tab");
   for (let i = 0; i < tabs.length; i++) {

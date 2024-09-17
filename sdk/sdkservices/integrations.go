@@ -12,14 +12,16 @@ import (
 type Integrations interface {
 	// Get returns the instance of an integration which has already been registered
 	// in the autokitteh server, and is available for usage by runtime connections.
-	GetByID(ctx context.Context, id sdktypes.IntegrationID) (Integration, error)
-	GetByName(ctx context.Context, name sdktypes.Symbol) (Integration, error)
+	GetByID(ctx context.Context, id sdktypes.IntegrationID) (sdktypes.Integration, error)
+	GetByName(ctx context.Context, name sdktypes.Symbol) (sdktypes.Integration, error)
 
 	// List returns an enumeration - with optional filtering - of all
 	// the integrations which have been registered in the autokitteh
 	// server, and are available for usage by runtime connections.
 	// TODO: Add an optional tag-search-term filter argument.
 	List(ctx context.Context, nameSubstring string) ([]sdktypes.Integration, error)
+
+	Attach(ctx context.Context, id sdktypes.IntegrationID) (Integration, error)
 }
 
 // Integration is implemented for each external service, to let the autokitteh

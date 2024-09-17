@@ -1,4 +1,4 @@
-h1:he3NT0azBbeycwJ59NysrSptJSrHm2k9rvUGSAxDTtU=
+h1:mL0TPnVojZP31mTLXN7BWpFTXbVPf/2CKt5edNiKz0o=
 20240704121932_baseline.sql h1:1JS9FYe08Ef0wTpJIeeL4wIqHc8E/RXhuqmTI/FwkzY=
 20240714051207_no-db-user.sql h1:tx0AwepNeeL/XWD74sLRGwisrkNs4lyH/H4BG/663FQ=
 20240727114921_project-not-nil-name.sql h1:ZG3tDLzQSxd81S4BDe/IOMktltkurwyuFwu5gkqQvrA=
@@ -8,3 +8,5 @@ h1:he3NT0azBbeycwJ59NysrSptJSrHm2k9rvUGSAxDTtU=
 20240829001637_kill-optional-vars.sql h1:R3XvLppPVGC9fJA8TWXzQKMUvojQ/Ny8Vk0wa4USBso=
 20240904081936_trigger-dests.sql h1:MzxtpMxKcTcNzSjWQKaqZnLzLD4P7qdLpEfVSco418I=
 20240909105812_trigger-soft-delete.sql h1:5ky8CL5rsixJQlcAhA18lMXTbzSWduxRcIseO79ff6U=
+20240911195022_kill-event-records.sql h1:EH50xvzot5qQju90bR5RGxSoV0Xk2CzWtiQkpsbRqlQ=
+20240912005819_session-log-type.sql h1:ziE5//rddsEd4ssU1MDmyc03Opxb4nKHqg8aGDhjnc4=

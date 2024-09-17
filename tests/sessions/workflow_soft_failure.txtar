@@ -1,0 +1,11 @@
+start
+(None, "soft test error")
+done
+
+-- main.star:main --
+load("testtools", "fail_workflow")
+
+def main():
+    print("start")
+    print(catch(fail_workflow))
+    print("done")

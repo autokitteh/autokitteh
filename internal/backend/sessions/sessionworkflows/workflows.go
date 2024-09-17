@@ -7,38 +7,43 @@ import (
 	"maps"
 	"time"
 
-	"go.temporal.io/sdk/client"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
+	"go.temporal.io/api/serviceerror"
 	"go.temporal.io/sdk/worker"
 	"go.temporal.io/sdk/workflow"
 	"go.uber.org/zap"
 
 	akCtx "go.autokitteh.dev/autokitteh/internal/backend/context"
-	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessioncalls"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessiondata"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionsvcs"
 	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
+	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-const workflowDeadlockTimeout = time.Second * 10
+const (
+	taskQueueName       = "sessions"
+	sessionWorkflowName = "session"
+
+	terminateSessionWorkflowName = "terminate_session"
+)
 
 type Workflows interface {
 	StartWorkers(context.Context) error
-	StartWorkflow(ctx context.Context, session sdktypes.Session, debug bool) error
+	StartWorkflow(ctx context.Context, session sdktypes.Session) error
 	StopWorkflow(ctx context.Context, sessionID sdktypes.SessionID, reason string, force bool) error
 }
 
 type sessionWorkflowParams struct {
-	SessionID sdktypes.SessionID
-	Debug     bool
+	Data *sessiondata.Data
 }
 
 type workflows struct {
-	z        *zap.Logger
+	l        *zap.Logger
 	cfg      Config
 	worker   worker.Worker
 	svcs     *sessionsvcs.Svcs
@@ -46,14 +51,10 @@ type workflows struct {
 	calls    sessioncalls.Calls
 }
 
-const (
-	taskQueueName       = "session_workflows"
-	sessionWorkflowName = "session_workflow"
-)
-
 func workflowID(sessionID sdktypes.SessionID) string { return sessionID.String() }
 
-func New(z *zap.Logger,
+func New(
+	l *zap.Logger,
 	cfg Config,
 	sessions sdkservices.Sessions,
 	svcs *sessionsvcs.Svcs,
@@ -61,281 +62,193 @@ func New(z *zap.Logger,
 	telemetry *telemetry.Telemetry,
 ) Workflows {
 	initMetrics(telemetry)
-	return &workflows{z: z, cfg: cfg, sessions: sessions, calls: calls, svcs: svcs}
+	return &workflows{l: l, cfg: cfg, sessions: sessions, calls: calls, svcs: svcs}
 }
 
 func (ws *workflows) StartWorkers(ctx context.Context) error {
-	opts := ws.cfg.Temporal.Worker
-	opts.DisableRegistrationAliasing = true
-	opts.OnFatalError = func(err error) { ws.z.Error("temporal worker error", zap.Error(err)) }
-	opts.DeadlockDetectionTimeout = workflowDeadlockTimeout
-
-	ws.worker = worker.New(ws.svcs.TemporalClient(), taskQueueName, opts)
+	ws.worker = temporalclient.NewWorker(ws.l.Named("sessionworkflowsworker"), ws.svcs.Temporal(), taskQueueName, ws.cfg.Worker)
+	if ws.worker == nil {
+		return nil
+	}
 
 	ws.worker.RegisterWorkflowWithOptions(
 		ws.sessionWorkflow,
 		workflow.RegisterOptions{Name: sessionWorkflowName},
 	)
 
+	ws.worker.RegisterWorkflowWithOptions(
+		ws.terminateSessionWorkflow,
+		workflow.RegisterOptions{Name: terminateSessionWorkflowName},
+	)
+
+	ws.registerActivities()
+
 	return ws.worker.Start()
 }
 
-func (ws *workflows) StartWorkflow(ctx context.Context, session sdktypes.Session, debug bool) error {
-	ctx = akCtx.WithRequestOrginator(ctx, akCtx.SessionWorkflow)
-
+func (ws *workflows) StartWorkflow(ctx context.Context, session sdktypes.Session) error {
 	sessionID := session.ID()
 
-	wid := workflowID(sessionID)
-
-	z := ws.z.With(zap.String("session_id", sessionID.String()), zap.String("workflow_id", wid))
-
-	// NOTE: If we have a crash here, after CreateSession and before ExecuteWorkflow
-	//       we might have a zombie session id. It should be ok as it is rare
-	//       and the user will get a 501.
+	l := ws.l.Sugar().With("session_id", sessionID)
 
 	memo := map[string]string{
 		"session_id":    sessionID.Value().String(),
 		"deployment_id": session.DeploymentID().String(),
 		"entrypoint":    session.EntryPoint().CanonicalString(),
-		"workflow_id":   wid,
+		"workflow_id":   workflowID(sessionID),
 	}
 	maps.Copy(memo, session.Memo())
 
-	swopts := client.StartWorkflowOptions{
-		ID:                  workflowID(sessionID),
-		TaskQueue:           taskQueueName,
-		WorkflowTaskTimeout: ws.cfg.Temporal.WorkflowTaskTimeout,
-		Memo:                kittehs.TransformMapValues(memo, func(s string) any { return s }),
+	data, err := sessiondata.Get(akCtx.WithRequestOrginator(ctx, akCtx.SessionWorkflow), ws.svcs, session)
+	if err != nil {
+		return fmt.Errorf("get session data: %w", err)
 	}
 
-	r, err := ws.svcs.TemporalClient().ExecuteWorkflow(
+	r, err := ws.svcs.Temporal().ExecuteWorkflow(
 		ctx,
-		swopts,
+		ws.cfg.SessionWorkflow.ToStartWorkflowOptions(
+			taskQueueName,
+			workflowID(sessionID),
+			fmt.Sprintf("session %v", sessionID),
+			memo,
+		),
 		sessionWorkflowName,
-		&sessionWorkflowParams{SessionID: sessionID, Debug: debug},
+		&sessionWorkflowParams{Data: data},
 	)
 	if err != nil {
 		return fmt.Errorf("execute session workflow: %w", err)
 	}
 
-	z.Info("executed session workflow", zap.String("workflow_run_id", r.GetRunID()))
+	l.With("workflow_id", r.GetID(), "run_id", r.GetRunID(), "memo", memo).Infof("initiated session workflow %v", r.GetID())
 
 	return nil
 }
 
-func (ws *workflows) getSessionData(wctx workflow.Context, sessionID sdktypes.SessionID) (*sessiondata.Data, error) {
-	ctx := temporalclient.NewWorkflowContextAsGOContext(wctx)
-	ctx = akCtx.WithRequestOrginator(ctx, akCtx.SessionWorkflow)
-
-	// This cannot run through activity as it would expose potentialy sensitive data to temporal.
-	data, err := sessiondata.Get(ctx, ws.z, ws.svcs, sessionID)
-	if err != nil {
-		return nil, fmt.Errorf("session data: %w", err)
-	}
-
-	return data, nil
-}
-
-func (ws *workflows) cleanupSession(ctx context.Context, data *sessiondata.Data) {
-	z := ws.z.With(zap.String("session_id", data.SessionID.String()))
+func (ws *workflows) cleanupSession(wctx workflow.Context, data *sessiondata.Data) {
+	sl := ws.l.Sugar().With("session_id", data.Session.ID())
 
 	if depID := data.Session.DeploymentID(); depID.IsValid() {
-		// We cannot rely on workflow context here as it might have been canceled.
-		go func() {
-			ctx, cancel := withLimitedTimeout(ctx)
-			defer cancel()
-
-			if err := ws.deactivateDrainedDeployment(ctx, depID); err != nil {
-				z.Error("deactivate drained deployment failed", zap.Error(err))
-			}
-		}()
+		fut := workflow.ExecuteActivity(
+			wctx,
+			deactivateDrainedDeploymentActivityName,
+			depID,
+		)
+		if err := fut.Get(wctx, nil); err != nil {
+			sl.With("err", err).Errorf("deactivate drained deployment error: %v", err)
+		}
 	}
 }
 
-func (ws *workflows) getSessionDebugData(data *sessiondata.Data, prints []string) any {
-	z := ws.z.With(zap.String("session_id", data.SessionID.String()))
-
-	// We use background as the workflow might have been canceled.
-	ctx, cancel := withLimitedTimeout(context.Background())
-	defer cancel()
-	ctx = akCtx.WithRequestOrginator(ctx, akCtx.SessionWorkflow)
-
-	history, err := ws.sessions.GetLog(ctx, sdkservices.ListSessionLogRecordsFilter{SessionID: data.SessionID})
-	if err != nil {
-		z.Warn("get history failed", zap.Error(err))
-		return "error retreiving history"
-	}
-
-	return struct {
-		Prints  []string
-		History sdktypes.SessionLog
-	}{
-		Prints:  prints,
-		History: history.Log,
-	}
-}
-
-func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkflowParams) (debug any, _ error) {
-	sessionID := params.SessionID.String()
+func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkflowParams) error {
 	wi := workflow.GetInfo(wctx)
-	l := ws.z.With(
-		zap.String("session_id", sessionID),
+	sid := params.Data.Session.ID()
+	l := ws.l.With(
+		zap.String("session_id", sid.String()),
 		zap.Bool("replay", workflow.IsReplaying(wctx)),
 		zap.String("workflow_id", wi.WorkflowExecution.ID),
 		zap.String("run_id", wi.WorkflowExecution.RunID),
+		zap.Int32("attempt", wi.Attempt),
 	)
 
-	wctx = workflow.WithLocalActivityOptions(wctx, workflow.LocalActivityOptions{
-		ScheduleToCloseTimeout: ws.cfg.Temporal.LocalScheduleToCloseTimeout,
-	})
+	wctx = temporalclient.WithActivityOptions(wctx, taskQueueName, ws.cfg.Activity)
 
-	ctx := akCtx.WithRequestOrginator(context.Background(), akCtx.SessionWorkflow)
+	// metrics is using context for the data contained, not for cancellations, as it stores in memory.
+	// if it will be stuck anyway for some reason, the workflow deadlock timeout would kick in.
+	metricsCtx := context.Background()
 
 	// TODO(ENG-322): Save data in snapshot, otherwise changes between retries would
 	//                blow us up due to non determinism.
 
-	var prints []string
-	var duration time.Duration
-	var startTime time.Time
-	fields := []zap.Field{}
-
-	data, err := ws.getSessionData(wctx, params.SessionID)
-	if err == nil {
-
-		if workflow.IsReplaying(wctx) {
-			if data.Session.State().IsFinal() {
-				// HACK: If we somehow get a signal to this workflow after it completed,
-				//       in certain delicate timing, the workflow rekicks in replay.
-				//       Though replay would work just fine, and result in a no-op,
-				//       it's nice to not have to run through its entirely. Temporal
-				//       just seems to ignore it...
-				l.Info("already completed")
-				return nil, nil
-			}
-			fields = append(fields, zap.Int32("attempt", wi.Attempt))
-		} else {
-			sessionsCreatedCounter.Add(ctx, 1)
+	if workflow.IsReplaying(wctx) {
+		if params.Data.Session.State().IsFinal() {
+			// HACK: If we somehow get a signal to this workflow after it completed,
+			//       in certain delicate timing, the workflow rekicks in replay.
+			//       Though replay would work just fine, and result in a no-op,
+			//       it's nice to not have to run through its entirely. Temporal
+			//       just seems to ignore it...
+			l.Info("already completed")
+			sessionStaleReplaysCounter.Add(metricsCtx, 1)
+			return nil
 		}
-
-		startTime = data.Session.CreatedAt()
-		l.Info("session workflow: started", fields...)
-
-		prints, err = runWorkflow(wctx, l, ws, data, params.Debug)
-
-		duration = time.Since(startTime)
-		sessionStatus := "succeeded"
-		if err != nil {
-			sessionStatus = "failed"
-		}
-		sessionDurationHistogram.Record(ctx, duration.Milliseconds(), telemetry.WithLabels("status", sessionStatus))
-		l = l.With(zap.Duration("duration", duration))
 	}
+
+	l.Info("session workflow started")
+
+	sessionsCreatedCounter.Add(
+		metricsCtx,
+		1,
+		metric.WithAttributes(attribute.Bool("replay", workflow.IsReplaying(wctx))),
+	)
+
+	startTime := time.Now() // we want actual start time for metrics.
+	prints, err := runWorkflow(wctx, l, ws, params.Data)
+	duration := time.Since(startTime)
+
+	// from this point on we should not be doing anything really that should be cancelled.
+	// the original wctx might have been cancelled, so we work with a disconnected context
+	// to avoid any belated non-timely cancellations.
+	dwctx, done := workflow.NewDisconnectedContext(wctx)
+	defer done()
+
+	sessionDurationHistogram.Record(
+		metricsCtx,
+		duration.Milliseconds(),
+		metric.WithAttributes(
+			attribute.Bool("replay", workflow.IsReplaying(wctx)),
+			attribute.Bool("success", err == nil),
+		),
+	)
+
+	l = l.With(zap.Duration("duration", duration))
 
 	if err != nil {
 		l := l.With(zap.Error(err))
 
-		if errors.Is(err, workflow.ErrCanceled) || errors.Is(wctx.Err(), workflow.ErrCanceled) {
-			sessionsStoppedCounter.Add(ctx, 1)
+		if wctxErr := wctx.Err(); errors.Is(err, workflow.ErrCanceled) || errors.Is(wctxErr, workflow.ErrCanceled) {
+			sessionsStoppedCounter.Add(metricsCtx, 1)
 
-			l.Info("session workflow: canceled")
-			ws.stopped(ctx, params.SessionID)
+			l.With(zap.Any("ctx_err", wctxErr)).Info("session workflow canceled")
+
+			ws.stopped(dwctx, sid)
 		} else {
-			sessionsErroredCounter.Add(ctx, 1)
-			ws.errored(ctx, params.SessionID, err, prints)
+			sessionsErroredCounter.Add(metricsCtx, 1)
+
+			ws.errored(dwctx, sid, err, prints)
 
 			if _, ok := sdktypes.FromError(err); ok {
-				// User level error, no need to indicate the workflow as errored.
-				err = nil
-
-				l.Info("session workflow: program error")
+				// User level error (convertable to ProgramError), no need to indicate the workflow as errored.
+				l.Info("session workflow program error")
 			} else {
-				l.Error("session workflow: error")
+				l.Sugar().Errorf("session workflow error: %v", err)
 			}
 		}
 	} else {
-		sessionsCompletedCounter.Add(ctx, 1)
-		l.Info("session workflow: completed")
+		sessionsCompletedCounter.Add(metricsCtx, 1)
+		l.Info("session workflow completed with no errors")
 	}
 
-	if data != nil {
-		ws.cleanupSession(ctx, data)
+	ws.cleanupSession(dwctx, params.Data)
 
-		if params.Debug {
-			debug = ws.getSessionDebugData(data, prints)
-		}
-	}
-
-	return debug, err
+	return err
 }
 
-func (ws *workflows) stopped(ctx context.Context, sessionID sdktypes.SessionID) {
-	ctx, cancel := withLimitedTimeout(ctx)
-	defer cancel()
+// workflow is stopped, so this assumes the given wctx is a disconnected context.
+func (ws *workflows) stopped(wctx workflow.Context, sessionID sdktypes.SessionID) {
+	var reason string
 
-	reason := "<unknown>"
-
-	if log, err := ws.svcs.DB.GetSessionLog(ctx, sdkservices.ListSessionLogRecordsFilter{SessionID: sessionID}); err == nil {
-		for _, rec := range log.Log.Records() {
-			if r, ok := rec.GetStopRequest(); ok {
-				reason = r
-				break
-			}
-		}
+	if err := workflow.ExecuteActivity(wctx, getSessionStopReasonActivityName, sessionID).Get(wctx, &reason); err != nil {
+		// error here is always a temporal error since the local activity above would never return an error.
+		// it is just nice like that.
+		// in any case, getting the reason is not critical, so we just log it and move on.
+		ws.l.Sugar().With("session_id", sessionID.String(), "err", err).Errorf("get stop reason error: %v", err)
+		reason = "<unknown>"
 	}
 
-	_ = ws.updateSessionState(ctx, sessionID, sdktypes.NewSessionStateStopped(reason))
+	_ = ws.updateSessionState(wctx, sessionID, sdktypes.NewSessionStateStopped(reason))
 }
 
-func (ws *workflows) errored(ctx context.Context, sessionID sdktypes.SessionID, err error, prints []string) {
-	ctx, cancel := withLimitedTimeout(ctx)
-	defer cancel()
-
-	_ = ws.updateSessionState(ctx, sessionID, sdktypes.NewSessionStateError(err, prints))
-}
-
-func (ws *workflows) deactivateDrainedDeployment(ctx context.Context, deploymentID sdktypes.DeploymentID) error {
-	deactivate := false
-
-	if err := ws.svcs.DB.Transaction(ctx, func(tx db.DB) error {
-		dep, err := tx.GetDeployment(ctx, deploymentID)
-		if err != nil {
-			return fmt.Errorf("deployments.get: %w", err)
-		}
-
-		// TODO [ENG-1238]: use single query for this and move this to the db layer?
-		if dep.State() == sdktypes.DeploymentStateDraining {
-			resultRunning, err := tx.ListSessions(ctx, sdkservices.ListSessionsFilter{
-				DeploymentID: deploymentID,
-				StateType:    sdktypes.SessionStateTypeCreated,
-				CountOnly:    true,
-			})
-			if err != nil {
-				return fmt.Errorf("sessions.count: %w", err)
-			}
-
-			resultCreated, err := tx.ListSessions(ctx, sdkservices.ListSessionsFilter{
-				DeploymentID: deploymentID,
-				StateType:    sdktypes.SessionStateTypeRunning,
-				CountOnly:    true,
-			})
-			if err != nil {
-				return fmt.Errorf("sessions.count: %w", err)
-			}
-
-			deactivate = resultRunning.TotalCount+resultCreated.TotalCount == 0
-		}
-		return nil
-	}); err != nil {
-		return fmt.Errorf("transaction: %w", err)
-	}
-
-	if deactivate {
-		if err := ws.svcs.Deployments.Deactivate(ctx, deploymentID); err != nil {
-			return fmt.Errorf("deployment.deactivate(%v): %w", deploymentID, err)
-		}
-	}
-
-	return nil
+func (ws *workflows) errored(wctx workflow.Context, sessionID sdktypes.SessionID, err error, prints []string) {
+	_ = ws.updateSessionState(wctx, sessionID, sdktypes.NewSessionStateError(err, prints))
 }
 
 func (ws *workflows) StopWorkflow(ctx context.Context, sessionID sdktypes.SessionID, reason string, force bool) error {
@@ -343,19 +256,27 @@ func (ws *workflows) StopWorkflow(ctx context.Context, sessionID sdktypes.Sessio
 	ctx = akCtx.WithRequestOrginator(ctx, akCtx.SessionWorkflow)
 
 	if force {
-		// TODO(ENG-206): Is there a race condition here with update session?
-
-		if err := ws.svcs.TemporalClient().TerminateWorkflow(ctx, wid, "", reason); err != nil {
-			// TODO: translate error
-			return fmt.Errorf("temporal: %w", err)
+		// run the termination in a separate workflow to avoid having the workflow terminated but not updated in
+		// the db if the caller croaks.
+		r, err := ws.svcs.Temporal().ExecuteWorkflow(
+			ctx,
+			ws.cfg.TerminationWorkflow.ToStartWorkflowOptions(
+				taskQueueName,
+				"terminate_"+wid,
+				fmt.Sprintf("stop %v", sessionID),
+				nil,
+			),
+			terminateSessionWorkflowName,
+			sessionID,
+			reason,
+		)
+		if err != nil {
+			return fmt.Errorf("execute terminate workflow: %w", err)
 		}
 
-		// TODO: we might want to create a workflow that forcibly terminates another workflow. That way
-		//       we can avoid a dirty state if the terminator crashes between the temporal termination
-		//       and the state update. Another way is to periodically check on all workflows and make sure
-		//       that they are indeed running in termporal once in a while.
-
-		return ws.updateSessionState(ctx, sessionID, sdktypes.NewSessionStateStopped(reason))
+		// wait for the deed to be done, as the termination workflow itself should not block on anything,
+		// this should be quick.
+		return r.Get(ctx, nil)
 	}
 
 	// In case of non-forceful termination, we log the request politely. This will also
@@ -364,19 +285,22 @@ func (ws *workflows) StopWorkflow(ctx context.Context, sessionID sdktypes.Sessio
 		return err
 	}
 
-	if err := ws.svcs.TemporalClient().CancelWorkflow(ctx, wid, ""); err != nil {
-		// TODO: translate errors.
+	// Since the cancellation is polite, it is not guaranteed to be successful.
+	// We should not be waiting for the cancellation to actually go through, just ask
+	// temporal nicely to do it, unlike the forceful termination done above.
+	if err := ws.svcs.Temporal().CancelWorkflow(ctx, wid, ""); err != nil {
+		var notFound *serviceerror.NotFound
+		if errors.As(err, &notFound) {
+			return sdkerrors.ErrNotFound
+		}
+
 		return err
 	}
 
 	return nil
 }
 
-func (ws *workflows) updateSessionState(ctx context.Context, sessionID sdktypes.SessionID, state sdktypes.SessionState) error {
-	if err := ws.svcs.DB.UpdateSessionState(ctx, sessionID, state); err != nil {
-		ws.z.With(zap.String("session_id", sessionID.String())).Error("update session", zap.Error(err))
-		return err
-	}
-
-	return nil
+func (ws *workflows) updateSessionState(wctx workflow.Context, sessionID sdktypes.SessionID, state sdktypes.SessionState) error {
+	ws.l.Sugar().With("session_id", sessionID, "state", state.Type()).Infof("updating session state to %v", state.Type())
+	return workflow.ExecuteActivity(wctx, updateSessionStateActivityName, sessionID, state).Get(wctx, nil)
 }

@@ -37,13 +37,6 @@ var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.Integrati
 	DisplayName:   "Gmail",
 	Description:   "Gmail is an email service provided by Google.",
 	LogoUrl:       "/static/images/gmail.svg",
-	UserLinks: map[string]string{
-		"1 API overview":       "https://developers.google.com/gmail/api/guides",
-		"2 REST API reference": "https://developers.google.com/gmail/api/reference/rest",
-		"3 Go client API":      "https://pkg.go.dev/google.golang.org/api/gmail/v1",
-		"4 Python client API":  "https://developers.google.com/resources/api-libraries/documentation/gmail/v1/python/latest/gmail_v1.users.html",
-		"5 Python samples":     "https://github.com/googleworkspace/python-samples/tree/main/gmail",
-	},
 	ConnectionUrl: "/gmail/connect",
 	ConnectionCapabilities: &sdktypes.ConnectionCapabilitiesPB{
 		RequiresConnectionInit: true,
@@ -296,10 +289,13 @@ func oauthConfig() *oauth2.Config {
 		ClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
 		Endpoint:     google.Endpoint,
 		RedirectURL:  fmt.Sprintf("https://%s/oauth/redirect/google", addr),
+		// https://developers.google.com/gmail/api/auth/scopes
 		Scopes: []string{
+			// Non-sensitive.
 			googleoauth2.OpenIDScope,
 			googleoauth2.UserinfoEmailScope,
 			googleoauth2.UserinfoProfileScope,
+			// Restricted.
 			gmail.GmailModifyScope,
 			gmail.GmailSettingsBasicScope,
 		},

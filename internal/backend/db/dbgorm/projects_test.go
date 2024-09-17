@@ -185,54 +185,28 @@ func TestDeleteProjectAndDependents(t *testing.T) {
 	// initialize:
 	// - p1
 	//   - e1
-	//     - d1 (s1), d2
+	//     - d1 (s1)
+	//     - d2
 	//   - e2
 	//     - d1 (s2)
 	//   - t1, t2
 	// - p2
 	//   - e1
 	//     - d1 (s3)
+
 	p1, p2 := f.newProject(), f.newProject()
+	c := f.newConnection(p1)
+	e1p1, e2p1, e1p2 := f.newEnv(p1), f.newEnv(p1), f.newEnv(p2)
 
-	c := f.newConnection()
-	c.IntegrationID = &testIntegrationID
-	c.ProjectID = &p1.ProjectID
-
-	e1p1, e2p1, e1p2 := f.newEnv(), f.newEnv(), f.newEnv()
-	e1p1.ProjectID = p1.ProjectID
-	e2p1.ProjectID = p1.ProjectID
-	e1p2.ProjectID = p2.ProjectID
-
-	t1, t2 := f.newTrigger(), f.newTrigger()
-	t1.ProjectID = p1.ProjectID
-	t1.EnvID = e1p1.EnvID
-	t1.ConnectionID = &c.ConnectionID
-	t2.ProjectID = p1.ProjectID
-	t2.EnvID = e2p1.EnvID
-	t2.ConnectionID = &c.ConnectionID
-
-	sig := f.newSignal()
-	sig.DestinationID = c.ConnectionID
-	sig.ConnectionID = &c.ConnectionID
-
+	t1, t2 := f.newTrigger(p1, c, e1p1), f.newTrigger(p1, c, e2p1)
 	b := f.newBuild()
+	d1e1p1, d2e1p1, d1e2p1, d1e1p2 := f.newDeployment(e1p1, b), f.newDeployment(e1p1, b), f.newDeployment(e2p1, b), f.newDeployment(e1p2, b)
 
-	d1e1p1, d2e1p1, d1e2p1, d1e1p2 := f.newDeployment(), f.newDeployment(), f.newDeployment(), f.newDeployment()
-	d1e1p1.EnvID = &e1p1.EnvID
-	d2e1p1.EnvID = &e1p1.EnvID
-	d1e2p1.EnvID = &e2p1.EnvID
-	d1e1p2.EnvID = &e1p2.EnvID
-	d1e1p1.BuildID = b.BuildID
-	d2e1p1.BuildID = b.BuildID
-	d1e2p1.BuildID = b.BuildID
-	d1e1p2.BuildID = b.BuildID
+	s1d1e1p1 := f.newSession(sdktypes.SessionStateTypeCompleted, d1e1p1)
+	s2d1e2p1 := f.newSession(sdktypes.SessionStateTypeError, d1e2p1)
+	s3d1e1p2 := f.newSession(sdktypes.SessionStateTypeCompleted, d1e1p2)
 
-	s1d1e1p1 := f.newSession(sdktypes.SessionStateTypeCompleted)
-	s2d1e2p1 := f.newSession(sdktypes.SessionStateTypeError)
-	s3d1e1p2 := f.newSession(sdktypes.SessionStateTypeCompleted)
-	s1d1e1p1.DeploymentID = &d1e1p1.DeploymentID
-	s2d1e2p1.DeploymentID = &d1e2p1.DeploymentID
-	s3d1e1p2.DeploymentID = &d1e1p2.DeploymentID
+	sig := f.newSignal(c)
 
 	f.createProjectsAndAssert(t, p1, p2)
 	f.createConnectionsAndAssert(t, c)
@@ -266,7 +240,7 @@ func TestDeleteProjectAndDependents(t *testing.T) {
 }
 
 func TestUpdateProject(t *testing.T) {
-	f := preProjectTest(t).WithDebug()
+	f := preProjectTest(t)
 
 	p := f.newProject()
 	f.createProjectsAndAssert(t, p)

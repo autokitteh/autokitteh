@@ -36,7 +36,7 @@ func (c *client) Save(ctx context.Context, event sdktypes.Event) (sdktypes.Event
 
 	eventId, err := sdktypes.Strict(sdktypes.ParseEventID(resp.Msg.EventId))
 	if err != nil {
-		return sdktypes.InvalidEventID, fmt.Errorf("invalid event id: %w", err)
+		return sdktypes.InvalidEventID, fmt.Errorf("invalid event ID: %w", err)
 	}
 
 	return eventId, nil
@@ -80,31 +80,4 @@ func (c *client) List(ctx context.Context, filter sdkservices.ListEventsFilter) 
 	}
 
 	return kittehs.TransformError(resp.Msg.Events, sdktypes.StrictEventFromProto)
-}
-
-func (c *client) ListEventRecords(ctx context.Context, filter sdkservices.ListEventRecordsFilter) ([]sdktypes.EventRecord, error) {
-	resp, err := c.client.ListEventRecords(ctx, connect.NewRequest(&eventsv1.ListEventRecordsRequest{EventId: filter.EventID.String()}))
-	if err != nil {
-		return nil, rpcerrors.ToSDKError(err)
-	}
-
-	if err := internal.Validate(resp.Msg); err != nil {
-		return nil, err
-	}
-
-	return kittehs.TransformError(resp.Msg.Records, sdktypes.StrictEventRecordFromProto)
-}
-
-// AddEventRecord implements sdkservices.Events.
-func (c *client) AddEventRecord(ctx context.Context, eventRecord sdktypes.EventRecord) error {
-	resp, err := c.client.AddEventRecord(ctx, connect.NewRequest(&eventsv1.AddEventRecordRequest{Record: eventRecord.ToProto()}))
-	if err != nil {
-		return rpcerrors.ToSDKError(err)
-	}
-
-	if err := internal.Validate(resp.Msg); err != nil {
-		return err
-	}
-
-	return nil
 }

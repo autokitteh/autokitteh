@@ -1,5 +1,6 @@
 import inspect
 from collections import namedtuple
+from datetime import timedelta
 from pathlib import Path
 from time import sleep
 
@@ -75,11 +76,22 @@ class AKCall:
                 return func(*args, **kw)
 
             log.info("ak function call: %s(%r, %r)", func.__name__, args, kw)
+
+            if func is autokitteh.next_event:
+                timeout = kw.get("timeout")
+                if isinstance(timeout, timedelta):
+                    kw["timeout"] = timeout.total_seconds()
+
             self.comm.send_call(func.__name__, args, kw)
             msg = self.comm.recv(MessageType.call_return)
             value = msg["payload"]["value"]
+
             if func is autokitteh.next_event:
+                value = {} if value is None else value  # None means timeout
+                if not isinstance(value, dict):
+                    raise TypeError(f"next_event returned {value!r}, expected dict")
                 value = autokitteh.AttrDict(value)
+
             return value
 
         if not self.should_run_as_activity(func):

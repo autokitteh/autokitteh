@@ -16,7 +16,7 @@ function toggleTab(id) {
     document.getElementById("formIdJson").value = "";
   } else {
     oauthValue = document.getElementById("formIdOauth").value;
-    document.getElementById("formIdJson").value = jsonValue;
+    document.getElementById("formIdJson").value = oauthValue;
     document.getElementById("formIdOauth").value = "";
   }
 

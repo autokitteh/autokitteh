@@ -85,10 +85,8 @@ func (s *server) List(ctx context.Context, req *connect.Request[eventsv1.ListReq
 
 	// verify order is valid
 	if order != sdkservices.ListOrderAscending && order != sdkservices.ListOrderDescending {
-		return nil, connect.NewError(
-			connect.CodeInvalidArgument,
-			fmt.Errorf("order should be either %s or %s", sdkservices.ListOrderAscending, sdkservices.ListOrderDescending),
-		)
+		err := fmt.Errorf("order should be either %s or %s", sdkservices.ListOrderAscending, sdkservices.ListOrderDescending)
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
 	filter := sdkservices.ListEventsFilter{
@@ -135,50 +133,4 @@ func (s *server) Save(ctx context.Context, req *connect.Request[eventsv1.SaveReq
 	}
 
 	return connect.NewResponse(&eventsv1.SaveResponse{EventId: eid.String()}), nil
-}
-
-func (s *server) AddEventRecord(ctx context.Context, req *connect.Request[eventsv1.AddEventRecordRequest]) (*connect.Response[eventsv1.AddEventRecordResponse], error) {
-	msg := req.Msg
-
-	if err := proto.Validate(msg); err != nil {
-		return nil, sdkerrors.AsConnectError(err)
-	}
-
-	record, err := sdktypes.EventRecordFromProto(msg.Record)
-	if err != nil {
-		return nil, sdkerrors.AsConnectError(err)
-	}
-
-	err = s.events.AddEventRecord(ctx, record)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeUnknown, fmt.Errorf("server error: %w", err))
-	}
-
-	return connect.NewResponse(&eventsv1.AddEventRecordResponse{}), nil
-}
-
-func (s *server) ListEventRecords(ctx context.Context, req *connect.Request[eventsv1.ListEventRecordsRequest]) (*connect.Response[eventsv1.ListEventRecordsResponse], error) {
-	msg := req.Msg
-
-	if err := proto.Validate(msg); err != nil {
-		return nil, sdkerrors.AsConnectError(err)
-	}
-
-	eid, err := sdktypes.ParseEventID(msg.EventId)
-	if err != nil {
-		return nil, sdkerrors.AsConnectError(err)
-	}
-
-	filter := sdkservices.ListEventRecordsFilter{
-		EventID: eid,
-	}
-
-	records, err := s.events.ListEventRecords(ctx, filter)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeUnknown, fmt.Errorf("server error: %w", err))
-	}
-
-	recordsPB := kittehs.Transform(records, sdktypes.ToProto)
-
-	return connect.NewResponse(&eventsv1.ListEventRecordsResponse{Records: recordsPB}), nil
 }

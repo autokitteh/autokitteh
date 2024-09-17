@@ -5,7 +5,7 @@
 
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
 import { Message, proto3, protoInt64 } from "@bufbuild/protobuf";
-import { Session, SessionLog, SessionStateType } from "./session_pb.js";
+import { Session, SessionLog, SessionLogRecord_Type, SessionStateType } from "./session_pb.js";
 
 /**
  * @generated from message autokitteh.sessions.v1.StartRequest
@@ -413,6 +413,13 @@ export class GetLogRequest extends Message<GetLogRequest> {
   jsonValues = false;
 
   /**
+   * Bitmask: If 0 or 0xFF, include all.
+   *
+   * @generated from field: autokitteh.sessions.v1.SessionLogRecord.Type types = 3;
+   */
+  types = SessionLogRecord_Type.UNSPECIFIED;
+
+  /**
    * @generated from field: bool ascending = 11;
    */
   ascending = false;
@@ -442,6 +449,7 @@ export class GetLogRequest extends Message<GetLogRequest> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "session_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "json_values", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 3, name: "types", kind: "enum", T: proto3.getEnumType(SessionLogRecord_Type) },
     { no: 11, name: "ascending", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 20, name: "page_size", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 21, name: "skip", kind: "scalar", T: 5 /* ScalarType.INT32 */ },

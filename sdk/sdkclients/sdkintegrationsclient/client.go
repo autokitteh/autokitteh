@@ -23,23 +23,32 @@ func New(p sdkclient.Params) sdkservices.Integrations {
 	return &client{client: internal.New(integrationsv1connect.NewIntegrationsServiceClient, p)}
 }
 
-func (c *client) get(ctx context.Context, id sdktypes.IntegrationID, name sdktypes.Symbol) (sdkservices.Integration, error) {
+func (c *client) get(ctx context.Context, id sdktypes.IntegrationID, name sdktypes.Symbol) (sdktypes.Integration, error) {
 	resp, err := c.client.Get(ctx, connect.NewRequest(&integrationsv1.GetRequest{
 		IntegrationId: id.String(),
 		Name:          name.String(),
 	}))
 	if err != nil {
-		return nil, rpcerrors.ToSDKError(err)
+		return sdktypes.InvalidIntegration, rpcerrors.ToSDKError(err)
 	}
 	if err := internal.Validate(resp.Msg); err != nil {
-		return nil, err
+		return sdktypes.InvalidIntegration, err
 	}
 
 	if resp.Msg.Integration == nil {
-		return nil, nil
+		return sdktypes.InvalidIntegration, nil
 	}
 
 	desc, err := sdktypes.StrictIntegrationFromProto(resp.Msg.Integration)
+	if err != nil {
+		return sdktypes.InvalidIntegration, err
+	}
+
+	return desc, nil
+}
+
+func (c *client) Attach(ctx context.Context, id sdktypes.IntegrationID) (sdkservices.Integration, error) {
+	desc, err := c.GetByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -47,11 +56,11 @@ func (c *client) get(ctx context.Context, id sdktypes.IntegrationID, name sdktyp
 	return &integration{desc: desc, client: c.client}, nil
 }
 
-func (c *client) GetByID(ctx context.Context, id sdktypes.IntegrationID) (sdkservices.Integration, error) {
+func (c *client) GetByID(ctx context.Context, id sdktypes.IntegrationID) (sdktypes.Integration, error) {
 	return c.get(ctx, id, sdktypes.InvalidSymbol)
 }
 
-func (c *client) GetByName(ctx context.Context, name sdktypes.Symbol) (sdkservices.Integration, error) {
+func (c *client) GetByName(ctx context.Context, name sdktypes.Symbol) (sdktypes.Integration, error) {
 	return c.get(ctx, sdktypes.InvalidIntegrationID, name)
 }
 

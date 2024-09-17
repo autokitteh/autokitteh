@@ -49,8 +49,7 @@ func TestTransformError(t *testing.T) {
 		return i, nil
 	})
 
-	expected := fmt.Errorf("%w: %v", errHiss, 4)
-	assert.Equal(t, err, expected)
+	assert.Equal(t, err, fmt.Errorf("%w: %v", errHiss, 4))
 	assert.Nil(t, xs)
 
 	xs, err = TransformError(ints[:2], func(i int) (int, error) {

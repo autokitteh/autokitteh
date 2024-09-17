@@ -1,13 +1,13 @@
 # Development requirements
 
-pytest ~= 8.0
-ruff ~= 0.4
-sphinx ~= 7.3
+pytest ~= 8.3
+ruff ~= 0.6
+sphinx ~= 8.0
 
 # AutoKitteh integrations
 
 atlassian-python-api ~= 3.41
-google-api-python-client ~= 2.122
+google-api-python-client ~= 2.144
 google-auth-httplib2 ~= 0.2
 google-auth-oauthlib ~= 1.2
-slack-sdk ~= 3.27
+slack-sdk ~= 3.32

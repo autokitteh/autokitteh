@@ -1,6 +1,7 @@
 package triggers
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/spf13/cobra"
@@ -19,7 +20,7 @@ var (
 var createCmd = common.StandardCommand(&cobra.Command{
 	Use: `create -n name --call file:func [-p project] [-e env] -c connection [-E event] [-f filter]
              create -n name --call file:func [-p project] [-e env] -s "schedule"
-  			 create -n name --call file:func [-p project] [-e env] --webhook
+             create -n name --call file:func [-p project] [-e env] --webhook
 `,
 
 	Short: "Create event trigger",
@@ -40,7 +41,7 @@ var createCmd = common.StandardCommand(&cobra.Command{
 		if project != "" {
 			p, _, err := r.ProjectNameOrID(ctx, project)
 			if err = common.AddNotFoundErrIfCond(err, p.IsValid()); err != nil {
-				return common.ToExitCodeErrorNotNilErr(err, "project")
+				return common.ToExitCodeError(err, "project")
 			}
 		}
 
@@ -48,7 +49,7 @@ var createCmd = common.StandardCommand(&cobra.Command{
 		if env != "" {
 			e, _, err := r.EnvNameOrID(ctx, env, project)
 			if err = common.AddNotFoundErrIfCond(err, e.IsValid()); err != nil {
-				return common.ToExitCodeErrorNotNilErr(err, "environment")
+				return common.ToExitCodeError(err, "environment")
 			}
 			eid = e.ID()
 		}
@@ -61,13 +62,13 @@ var createCmd = common.StandardCommand(&cobra.Command{
 			CodeLocation: cl.ToProto(),
 		})
 		if err != nil {
-			return fmt.Errorf("invalid trigger: %w", err)
+			return fmt.Errorf("invalid trigger proto: %w", err)
 		}
 
 		if connection != "" {
 			_, cid, err := r.ConnectionNameOrID(ctx, connection, project)
 			if err != nil {
-				return common.ToExitCodeErrorNotNilErr(err, "connection")
+				return common.ToExitCodeError(err, "connection")
 			}
 
 			t = t.WithConnectionID(cid)
@@ -77,7 +78,7 @@ var createCmd = common.StandardCommand(&cobra.Command{
 		} else if webhook {
 			t = t.WithWebhook()
 		} else {
-			return fmt.Errorf("missing connection, schedule or webhook")
+			return errors.New("missing connection, schedule or webhook")
 		}
 
 		tid, err := triggers().Create(ctx, t)

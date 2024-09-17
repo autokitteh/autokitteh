@@ -33,11 +33,6 @@ var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.Integrati
 	DisplayName:   "Google Forms",
 	Description:   "Google Forms is a survey administration software that part of the Google Workspace office suite.",
 	LogoUrl:       "/static/images/google_forms.svg",
-	UserLinks: map[string]string{
-		"1 REST API reference": "https://developers.google.com/forms/api/reference/rest",
-		"2 Python client API":  "https://googleapis.github.io/google-api-python-client/docs/dyn/forms_v1.html",
-		"3 Python samples":     "https://github.com/googleworkspace/python-samples/tree/main/forms",
-	},
 	ConnectionUrl: "/googleforms/connect",
 	ConnectionCapabilities: &sdktypes.ConnectionCapabilitiesPB{
 		RequiresConnectionInit: true,
@@ -140,10 +135,13 @@ func oauthConfig() *oauth2.Config {
 		ClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
 		Endpoint:     google.Endpoint,
 		RedirectURL:  fmt.Sprintf("https://%s/oauth/redirect/google", addr),
+		// https://developers.google.com/identity/protocols/oauth2/scopes#script
 		Scopes: []string{
+			// Non-sensitive.
 			googleoauth2.OpenIDScope,
 			googleoauth2.UserinfoEmailScope,
 			googleoauth2.UserinfoProfileScope,
+			// Sensitive.
 			forms.FormsBodyScope,
 			forms.FormsResponsesReadonlyScope,
 		},
