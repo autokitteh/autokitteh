@@ -47,8 +47,8 @@ def gmail_client(connection: str, **kwargs):
 def google_calendar_client(connection: str, **kwargs):
     """Initialize a Google Calendar client, based on an AutoKitteh connection.
 
-    API reference:
-    https://developers.google.com/resources/api-libraries/documentation/calendar/v3/python/latest/
+    API documentation:
+    https://docs.autokitteh.com/integrations/google/calendar/python
 
     Code samples:
     https://github.com/autokitteh/kittehub/tree/main/samples/google/calendar
