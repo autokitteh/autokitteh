@@ -34,12 +34,20 @@ var (
 	venvPy   = path.Join(venvPath, "bin", "python")
 )
 
+type callbackMessage struct {
+	args           []sdktypes.Value
+	kwargs         map[string]sdktypes.Value
+	successChannel chan sdktypes.Value
+	errorChannel   chan error
+}
+
 type comChannels struct {
-	done    chan *pb.DoneRequest
-	err     chan string
-	request chan *pb.ActivityRequest
-	print   chan *pb.PrintRequest
-	log     chan *pb.LogRequest
+	done     chan *pb.DoneRequest
+	err      chan string
+	request  chan *pb.ActivityRequest
+	print    chan *pb.PrintRequest
+	log      chan *pb.LogRequest
+	callback chan callbackMessage
 }
 
 type pySvc struct {
@@ -85,11 +93,12 @@ func New() (sdkservices.Runtime, error) {
 		log:       log,
 		firstCall: true,
 		channels: comChannels{
-			done:    make(chan *pb.DoneRequest, 1),
-			err:     make(chan string, 1),
-			request: make(chan *pb.ActivityRequest, 1),
-			print:   make(chan *pb.PrintRequest, 1),
-			log:     make(chan *pb.LogRequest, 1),
+			done:     make(chan *pb.DoneRequest, 1),
+			err:      make(chan string, 1),
+			request:  make(chan *pb.ActivityRequest, 1),
+			print:    make(chan *pb.PrintRequest, 1),
+			log:      make(chan *pb.LogRequest, 1),
+			callback: make(chan callbackMessage, 1),
 		},
 	}
 
@@ -225,12 +234,6 @@ func (py *pySvc) Run(
 		}
 		py.cleanup(ctx)
 	}()
-
-	// runnerAddr := fmt.Sprintf("localhost:%d", runner.port)
-	// py.runnerClient, err = dialRunner(runnerAddr)
-	// if err != nil {
-	// 	return nil, err
-	// }
 
 	py.fileName = entryPointFileName(mainPath)
 	req := pb.ExportsRequest{
@@ -420,10 +423,33 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktyp
 		return sdktypes.InvalidValue, err
 	}
 
+	cancellableCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	runnerHealthChan := make(chan error, 1)
+	go func() {
+		for {
+			select {
+			case <-cancellableCtx.Done():
+				py.log.Debug("health check loop stopped")
+				return
+			case <-time.After(10 * time.Second):
+				if err := runnerManager.RunnerHealth(ctx, py.runnerID); err != nil {
+					runnerHealthChan <- err
+					return
+				}
+			}
+		}
+	}()
+
 	// Wait for client Done message
 	var done *pb.DoneRequest
 	for {
 		select {
+		case healthErr := <-runnerHealthChan:
+			if healthErr != nil {
+				return sdktypes.InvalidValue, fmt.Errorf("runner health check failed: %w", healthErr)
+			}
 		case r := <-py.channels.log:
 			level := pyLevelToZap(r.Level)
 			py.log.Log(level, r.Message, zap.String("source", "python"))
@@ -435,6 +461,13 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktyp
 			// it was already checked before we got here
 			fn, _ := sdktypes.NewFunctionValue(py.xid, fnName, r.Data, nil, pyModuleFunc)
 			py.call(fn)
+		case cb := <-py.channels.callback:
+			val, err := py.cbs.Call(ctx, py.runID, py.syscallFn, cb.args, cb.kwargs)
+			if err != nil {
+				cb.errorChannel <- err
+			} else {
+				cb.successChannel <- val
+			}
 		case v := <-py.channels.done:
 			done = v
 			if done.Error != "" {
