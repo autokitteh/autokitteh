@@ -1,9 +1,4 @@
 import inspect
-<<<<<<< HEAD:runtimes/pythonrt/ak_runner/call.py
-from collections import namedtuple
-from datetime import timedelta
-=======
->>>>>>> 36cf2396 (refactor python rt for local and remote runners):runtimes/pythonrt/runner/call.py
 from pathlib import Path
 from time import sleep
 
@@ -84,27 +79,7 @@ class AKCall:
                 return func(*args, **kw)
 
             log.info("ak function call: %s(%r, %r)", func.__name__, args, kw)
-<<<<<<< HEAD:runtimes/pythonrt/ak_runner/call.py
-
-            if func is autokitteh.next_event:
-                timeout = kw.get("timeout")
-                if isinstance(timeout, timedelta):
-                    kw["timeout"] = timeout.total_seconds()
-
-            self.comm.send_call(func.__name__, args, kw)
-            msg = self.comm.recv(MessageType.call_return)
-            value = msg["payload"]["value"]
-
-            if func is autokitteh.next_event:
-                value = {} if value is None else value  # None means timeout
-                if not isinstance(value, dict):
-                    raise TypeError(f"next_event returned {value!r}, expected dict")
-                value = autokitteh.AttrDict(value)
-
-            return value
-=======
             return self.runner.syscall(func, args, kw)
->>>>>>> 36cf2396 (refactor python rt for local and remote runners):runtimes/pythonrt/runner/call.py
 
         full_name = full_func_name(func)
         if not self.should_run_as_activity(func):
