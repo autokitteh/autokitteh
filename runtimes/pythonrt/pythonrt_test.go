@@ -208,10 +208,13 @@ func Test_pySvc_Run(t *testing.T) {
 	fn, err := sdktypes.NewFunctionValue(xid, "greet", nil, nil, mod)
 	require.NoError(t, err, "new function")
 
+	body := sdktypes.NewDictValueFromStringMap(map[string]sdktypes.Value{
+		"bytes": sdktypes.NewBytesValue([]byte(`{"user": "joe", "id": 7}`)),
+	})
 	kwargs := map[string]sdktypes.Value{
 		"event_id": sdktypes.NewStringValue("007"),
 		"data": sdktypes.NewDictValueFromStringMap(map[string]sdktypes.Value{
-			"body": sdktypes.NewBytesValue([]byte(`{"user": "joe", "id": 7}`)),
+			"body": body,
 		}),
 	}
 	_, err = run.Call(ctx, fn, nil, kwargs)
