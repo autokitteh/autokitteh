@@ -32,13 +32,6 @@ type LocalRunnerConfig struct {
 }
 
 func ConfigureLocalRunnerManager(log *zap.Logger, cfg LocalRunnerConfig) error {
-	// if configuredRunnerType != runnerTypeNotConfigured {
-	// 	if configuredRunnerType == runnerTypeLocal {
-	// 		return nil
-	// 	}
-	// 	return errors.New("runner type already configured, cannot configure twice")
-	// }
-
 	pyExe, isUserPy, err := pythonToRun(log)
 	if err != nil {
 		return err
