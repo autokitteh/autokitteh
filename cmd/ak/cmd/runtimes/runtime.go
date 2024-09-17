@@ -6,6 +6,7 @@ import (
 
 	backendRuntimes "go.autokitteh.dev/autokitteh/backend/runtimes"
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 )
 
@@ -40,7 +41,7 @@ func runtimes() sdkservices.Runtimes {
 	if local {
 		// TODO: what is local ? what to do about logger ? which config ?
 		l := zap.New(nil)
-		return backendRuntimes.New(&backendRuntimes.Config{LazyLoadLocalVEnv: true}, l, nil)
+		return kittehs.Must1(backendRuntimes.New(&backendRuntimes.Config{LazyLoadLocalVEnv: true}, l, nil))
 	}
 	return common.Client().Runtimes()
 }
