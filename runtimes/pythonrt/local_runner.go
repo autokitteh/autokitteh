@@ -13,6 +13,7 @@ import (
 	"os/exec"
 	"path"
 	"strings"
+	"syscall"
 
 	"github.com/google/uuid"
 	"go.uber.org/zap"
@@ -130,6 +131,10 @@ func (r *LocalPython) Start(pyExe string, tarData []byte, env map[string]string,
 	r.proc = cmd.Process
 
 	return nil
+}
+
+func (r *LocalPython) Health() error {
+	return r.proc.Signal(syscall.Signal(0))
 }
 
 func createTar(fs fs.FS) ([]byte, error) {

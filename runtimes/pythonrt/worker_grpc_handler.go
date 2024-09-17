@@ -148,6 +148,19 @@ func (s *workerGRPCHandler) Activity(ctx context.Context, req *pb.ActivityReques
 
 // ak functions
 
+func makeCallbackMessage(args []sdktypes.Value, kwargs map[string]sdktypes.Value) callbackMessage {
+	callbackChan := make(chan sdktypes.Value)
+	errorChannel := make(chan error)
+
+	msg := callbackMessage{
+		args:           args,
+		kwargs:         kwargs,
+		successChannel: callbackChan,
+		errorChannel:   errorChannel,
+	}
+	return msg
+}
+
 func (s *workerGRPCHandler) Sleep(ctx context.Context, req *pb.SleepRequest) (*pb.SleepResponse, error) {
 	if req.DurationMs < 0 {
 		return nil, status.Error(codes.InvalidArgument, "negative time")
@@ -167,14 +180,18 @@ func (s *workerGRPCHandler) Sleep(ctx context.Context, req *pb.SleepRequest) (*p
 		sdktypes.NewStringValue("sleep"),
 		sdktypes.NewFloatValue(secs),
 	}
-	_, err := runner.cbs.Call(runner.ctx, runner.runID, runner.syscallFn, args, nil)
-	var resp pb.SleepResponse
-	if err != nil {
-		resp.Error = err.Error()
-		err = status.Errorf(codes.Internal, "sleep(%f) -> %s", secs, err)
-	}
 
-	return &resp, err
+	msg := makeCallbackMessage(args, nil)
+
+	runner.channels.callback <- msg
+
+	select {
+	case err := <-msg.errorChannel:
+		err = status.Errorf(codes.Internal, "sleep(%f) -> %s", secs, err)
+		return &pb.SleepResponse{Error: err.Error()}, err
+	case _ = <-msg.successChannel:
+		return &pb.SleepResponse{}, nil
+	}
 }
 
 func (s *workerGRPCHandler) Subscribe(ctx context.Context, req *pb.SubscribeRequest) (*pb.SubscribeResponse, error) {
@@ -196,15 +213,17 @@ func (s *workerGRPCHandler) Subscribe(ctx context.Context, req *pb.SubscribeRequ
 		sdktypes.NewStringValue(req.Connection),
 		sdktypes.NewStringValue(req.Filter),
 	}
-	out, err := runner.cbs.Call(runner.ctx, runner.runID, runner.syscallFn, args, nil)
-	if err != nil {
+	msg := makeCallbackMessage(args, nil)
+	runner.channels.callback <- msg
+
+	select {
+	case err := <-msg.errorChannel:
 		err = status.Errorf(codes.Internal, "subscribe(%s, %s) -> %s", req.Connection, req.Filter, err)
 		return &pb.SubscribeResponse{Error: err.Error()}, err
+	case val := <-msg.successChannel:
+		signalID := val.GetString().Value()
+		return &pb.SubscribeResponse{SignalId: signalID}, nil
 	}
-
-	signalID := out.GetString().Value()
-	resp := pb.SubscribeResponse{SignalId: signalID}
-	return &resp, nil
 }
 
 func (s *workerGRPCHandler) NextEvent(ctx context.Context, req *pb.NextEventRequest) (*pb.NextEventResponse, error) {
@@ -235,30 +254,34 @@ func (s *workerGRPCHandler) NextEvent(ctx context.Context, req *pb.NextEventRequ
 		kw["timeout"] = sdktypes.NewFloatValue(float64(req.TimeoutMs) / 1000.0)
 	}
 
-	val, err := runner.cbs.Call(runner.ctx, runner.runID, runner.syscallFn, args, kw)
-	if err != nil {
+	msg := makeCallbackMessage(args, kw)
+
+	runner.channels.callback <- msg
+
+	select {
+	case err := <-msg.errorChannel:
 		err = status.Errorf(codes.Internal, "next_event(%s, %d) -> %s", req.SignalIds, req.TimeoutMs, err)
 		return &pb.NextEventResponse{Error: err.Error()}, err
-	}
+	case val := <-msg.successChannel:
+		out, err := val.Unwrap()
+		if err != nil {
+			err = status.Errorf(codes.Internal, "can't unwrap %v - %s", val, err)
+			return &pb.NextEventResponse{Error: err.Error()}, err
+		}
 
-	out, err := val.Unwrap()
-	if err != nil {
-		err = status.Errorf(codes.Internal, "can't unwrap %v - %s", val, err)
-		return &pb.NextEventResponse{Error: err.Error()}, err
-	}
+		data, err := json.Marshal(out)
+		if err != nil {
+			err = status.Errorf(codes.Internal, "can't json.Marshal %v - %s", out, err)
+			return &pb.NextEventResponse{Error: err.Error()}, err
+		}
 
-	data, err := json.Marshal(out)
-	if err != nil {
-		err = status.Errorf(codes.Internal, "can't json.Marshal %v - %s", out, err)
-		return &pb.NextEventResponse{Error: err.Error()}, err
+		resp := pb.NextEventResponse{
+			Event: &pb.Event{
+				Data: data,
+			},
+		}
+		return &resp, nil
 	}
-
-	resp := pb.NextEventResponse{
-		Event: &pb.Event{
-			Data: data,
-		},
-	}
-	return &resp, nil
 }
 
 func (s *workerGRPCHandler) Unsubscribe(ctx context.Context, req *pb.UnsubscribeRequest) (*pb.UnsubscribeResponse, error) {
@@ -275,11 +298,17 @@ func (s *workerGRPCHandler) Unsubscribe(ctx context.Context, req *pb.Unsubscribe
 		sdktypes.NewStringValue("unsubsribe"),
 		sdktypes.NewStringValue(req.SignalId),
 	}
-	_, err := runner.cbs.Call(runner.ctx, runner.runID, runner.syscallFn, args, nil)
-	if err != nil {
+
+	msg := makeCallbackMessage(args, nil)
+	runner.channels.callback <- msg
+
+	select {
+	case err := <-msg.errorChannel:
 		err = status.Errorf(codes.Internal, "subscribe(%s) -> %s", req.SignalId, err)
 		return &pb.UnsubscribeResponse{Error: err.Error()}, err
+	case _ = <-msg.successChannel:
+
+		return &pb.UnsubscribeResponse{}, nil
 	}
 
-	return &pb.UnsubscribeResponse{}, nil
 }

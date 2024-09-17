@@ -167,7 +167,6 @@ func setupServer(l *zap.Logger) (*http.Server, error) {
 	case <-time.After(2 * time.Second): // give server time to start
 		return server, nil
 	}
-
 }
 
 func Test_pySvc_Run(t *testing.T) {

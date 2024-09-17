@@ -121,7 +121,17 @@ func (l *localRunnerManager) Start(ctx context.Context, buildArtifacts []byte, v
 	return r.id.String(), client, nil
 }
 
-func (*localRunnerManager) RunnerHealth(ctx context.Context, runnerID string) error { return nil }
+func (l *localRunnerManager) RunnerHealth(ctx context.Context, runnerID string) error {
+	l.mu.Lock()
+	runner, ok := l.runnerIDToRunner[runnerID]
+	l.mu.Unlock()
+
+	if !ok {
+		return errors.New("runner not found")
+	}
+
+	return runner.Health()
+}
 
 func (l *localRunnerManager) Stop(ctx context.Context, runnerID string) error {
 	l.mu.Lock()
