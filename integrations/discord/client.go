@@ -87,9 +87,9 @@ func connTest(i *integration) sdkintegrations.OptFn {
 
 		_, err = dg.User("@me")
 		if err != nil {
-			return sdktypes.NewStatus(sdktypes.StatusCodeError, "failed to connect to Discord instance"), nil
+			return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), nil
 		}
 
-		return sdktypes.NewStatus(sdktypes.StatusCodeOK, "connection test was succesfull"), nil
+		return sdktypes.NewStatus(sdktypes.StatusCodeOK, ""), nil
 	})
 }
