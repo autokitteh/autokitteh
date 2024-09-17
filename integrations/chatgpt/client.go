@@ -81,6 +81,9 @@ func connStatus(i *integration) sdkintegrations.OptFn {
 	})
 }
 
+// connTest is an optional connection test provided by the integration
+// to AutoKitteh. It is used to verify that the connection is working
+// as expected. The possible results are "OK" and "error".
 func connTest(i *integration) sdkintegrations.OptFn {
 	return sdkintegrations.WithConnectionTest(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
 		vs, err := i.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
@@ -92,9 +95,9 @@ func connTest(i *integration) sdkintegrations.OptFn {
 		client := openai.NewClient(apiKey)
 		_, err = client.ListModels(ctx)
 		if err != nil {
-			return sdktypes.NewStatus(sdktypes.StatusCodeError, "failed to connect to OpenAI instance"), nil
+			return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), nil
 		}
 
-		return sdktypes.NewStatus(sdktypes.StatusCodeOK, "connection test was succesfull"), nil
+		return sdktypes.NewStatus(sdktypes.StatusCodeOK, ""), nil
 	})
 }
