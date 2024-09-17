@@ -140,7 +140,7 @@ func newCallbacks(svc *pySvc) *sdkservices.RunCallbacks {
 	return &cbs
 }
 
-func setupServer(l *zap.Logger) *http.Server {
+func setupServer(l *zap.Logger) (*http.Server, error) {
 	mux := &http.ServeMux{}
 	ConfigureWorkerGRPCHandler(l, mux)
 	server := &http.Server{
@@ -149,16 +149,25 @@ func setupServer(l *zap.Logger) *http.Server {
 	}
 
 	if err := ConfigureLocalRunnerManager(l, LocalRunnerConfig{WorkerAddress: "localhost:9980"}); err != nil {
-		panic(err)
+		return nil, err
 	}
+
+	errChan := make(chan error)
 
 	go func() {
 		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			panic(err)
+			errChan <- err
+			return
 		}
 	}()
 
-	return server
+	select {
+	case err := <-errChan:
+		return nil, err
+	case <-time.After(2 * time.Second): // give server time to start
+		return server, nil
+	}
+
 }
 
 func Test_pySvc_Run(t *testing.T) {
@@ -183,9 +192,15 @@ func Test_pySvc_Run(t *testing.T) {
 	mod, values := newValues(t, runID)
 	xid := sdktypes.NewExecutorID(runID)
 
-	server := setupServer(svc.log)
+	server, err := setupServer(svc.log)
+	if err != nil {
+		t.Fatal(err)
+	}
 	defer func() {
-		_ = server.Shutdown(context.Background())
+		if err := server.Shutdown(context.Background()); err != nil {
+			t.Log(err)
+		}
+
 	}()
 
 	run, err := svc.Run(ctx, runID, mainPath, compiled, values, cbs)
@@ -314,7 +329,10 @@ func TestProgramError(t *testing.T) {
 
 	require.NoError(t, err)
 	svc := newSVC(t)
-	server := setupServer(svc.log)
+	server, err := setupServer(svc.log)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	defer func() {
 		_ = server.Shutdown(context.Background())
