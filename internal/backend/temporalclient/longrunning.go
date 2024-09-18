@@ -53,14 +53,20 @@ func LongRunning[T any](
 		totalCh = time.After(total)
 	}
 
+	if err := workflow.Sleep(wctx, 5*time.Second); err != nil {
+		cancel(err)
+		return zero, err
+	}
+
 	for {
 		select {
-		case <-time.After(min(interval, minInterval)):
-			// don't let the temporal deadlock detector kick in.
-			if err := workflow.Sleep(wctx, time.Millisecond); err != nil {
-				cancel(err)
-				return zero, err
-			}
+		// case <-time.After(min(interval, minInterval)):
+		// 	// don't let the temporal deadlock detector kick in.
+		// 	fmt.Println("here")
+		// 	if err := workflow.Sleep(wctx, time.Millisecond); err != nil {
+		// 		cancel(err)
+		// 		return zero, err
+		// 	}
 		case r := <-done:
 			if r.err != nil {
 				return zero, r.err
