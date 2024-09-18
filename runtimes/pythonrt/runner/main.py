@@ -118,11 +118,11 @@ class Runner(rpc.RunnerServicer):
                 res = self.worker.IsActiveRunner(req)
                 if res.error:
                     break
-            except grpc.RpcError as e:
+            except grpc.RpcError:
                 break
             time.sleep(period)
 
-        log.error("error from should keep running, killing self")
+        log.error("could not verify if should keep running, killing self")
         os._exit(1) 
 
     def Start(self, request: pb.StartRequest, context: grpc.ServicerContext):
