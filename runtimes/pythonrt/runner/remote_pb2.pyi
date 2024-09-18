@@ -298,3 +298,17 @@ class PrintResponse(_message.Message):
     ERROR_FIELD_NUMBER: _ClassVar[int]
     error: str
     def __init__(self, error: _Optional[str] = ...) -> None: ...
+
+class IsActiveRunnerRequest(_message.Message):
+    __slots__ = ("runner_id",)
+    RUNNER_ID_FIELD_NUMBER: _ClassVar[int]
+    runner_id: str
+    def __init__(self, runner_id: _Optional[str] = ...) -> None: ...
+
+class IsActiveRunnerResponse(_message.Message):
+    __slots__ = ("is_active", "error")
+    IS_ACTIVE_FIELD_NUMBER: _ClassVar[int]
+    ERROR_FIELD_NUMBER: _ClassVar[int]
+    is_active: bool
+    error: str
+    def __init__(self, is_active: bool = ..., error: _Optional[str] = ...) -> None: ...

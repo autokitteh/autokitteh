@@ -499,15 +499,16 @@ var Runner_ServiceDesc = grpc.ServiceDesc{
 }
 
 const (
-	Worker_Activity_FullMethodName    = "/autokitteh.remote.v1.Worker/Activity"
-	Worker_Done_FullMethodName        = "/autokitteh.remote.v1.Worker/Done"
-	Worker_Log_FullMethodName         = "/autokitteh.remote.v1.Worker/Log"
-	Worker_Print_FullMethodName       = "/autokitteh.remote.v1.Worker/Print"
-	Worker_Sleep_FullMethodName       = "/autokitteh.remote.v1.Worker/Sleep"
-	Worker_Subscribe_FullMethodName   = "/autokitteh.remote.v1.Worker/Subscribe"
-	Worker_NextEvent_FullMethodName   = "/autokitteh.remote.v1.Worker/NextEvent"
-	Worker_Unsubscribe_FullMethodName = "/autokitteh.remote.v1.Worker/Unsubscribe"
-	Worker_Health_FullMethodName      = "/autokitteh.remote.v1.Worker/Health"
+	Worker_Activity_FullMethodName       = "/autokitteh.remote.v1.Worker/Activity"
+	Worker_Done_FullMethodName           = "/autokitteh.remote.v1.Worker/Done"
+	Worker_Log_FullMethodName            = "/autokitteh.remote.v1.Worker/Log"
+	Worker_Print_FullMethodName          = "/autokitteh.remote.v1.Worker/Print"
+	Worker_Sleep_FullMethodName          = "/autokitteh.remote.v1.Worker/Sleep"
+	Worker_Subscribe_FullMethodName      = "/autokitteh.remote.v1.Worker/Subscribe"
+	Worker_NextEvent_FullMethodName      = "/autokitteh.remote.v1.Worker/NextEvent"
+	Worker_Unsubscribe_FullMethodName    = "/autokitteh.remote.v1.Worker/Unsubscribe"
+	Worker_Health_FullMethodName         = "/autokitteh.remote.v1.Worker/Health"
+	Worker_IsActiveRunner_FullMethodName = "/autokitteh.remote.v1.Worker/IsActiveRunner"
 )
 
 // WorkerClient is the client API for Worker service.
@@ -528,6 +529,7 @@ type WorkerClient interface {
 	NextEvent(ctx context.Context, in *NextEventRequest, opts ...grpc.CallOption) (*NextEventResponse, error)
 	Unsubscribe(ctx context.Context, in *UnsubscribeRequest, opts ...grpc.CallOption) (*UnsubscribeResponse, error)
 	Health(ctx context.Context, in *HealthRequest, opts ...grpc.CallOption) (*HealthResponse, error)
+	IsActiveRunner(ctx context.Context, in *IsActiveRunnerRequest, opts ...grpc.CallOption) (*IsActiveRunnerResponse, error)
 }
 
 type workerClient struct {
@@ -628,6 +630,16 @@ func (c *workerClient) Health(ctx context.Context, in *HealthRequest, opts ...gr
 	return out, nil
 }
 
+func (c *workerClient) IsActiveRunner(ctx context.Context, in *IsActiveRunnerRequest, opts ...grpc.CallOption) (*IsActiveRunnerResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(IsActiveRunnerResponse)
+	err := c.cc.Invoke(ctx, Worker_IsActiveRunner_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // WorkerServer is the server API for Worker service.
 // All implementations must embed UnimplementedWorkerServer
 // for forward compatibility.
@@ -646,6 +658,7 @@ type WorkerServer interface {
 	NextEvent(context.Context, *NextEventRequest) (*NextEventResponse, error)
 	Unsubscribe(context.Context, *UnsubscribeRequest) (*UnsubscribeResponse, error)
 	Health(context.Context, *HealthRequest) (*HealthResponse, error)
+	IsActiveRunner(context.Context, *IsActiveRunnerRequest) (*IsActiveRunnerResponse, error)
 	mustEmbedUnimplementedWorkerServer()
 }
 
@@ -682,6 +695,9 @@ func (UnimplementedWorkerServer) Unsubscribe(context.Context, *UnsubscribeReques
 }
 func (UnimplementedWorkerServer) Health(context.Context, *HealthRequest) (*HealthResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Health not implemented")
+}
+func (UnimplementedWorkerServer) IsActiveRunner(context.Context, *IsActiveRunnerRequest) (*IsActiveRunnerResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method IsActiveRunner not implemented")
 }
 func (UnimplementedWorkerServer) mustEmbedUnimplementedWorkerServer() {}
 func (UnimplementedWorkerServer) testEmbeddedByValue()                {}
@@ -866,6 +882,24 @@ func _Worker_Health_Handler(srv interface{}, ctx context.Context, dec func(inter
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Worker_IsActiveRunner_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(IsActiveRunnerRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(WorkerServer).IsActiveRunner(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Worker_IsActiveRunner_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(WorkerServer).IsActiveRunner(ctx, req.(*IsActiveRunnerRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Worker_ServiceDesc is the grpc.ServiceDesc for Worker service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -908,6 +942,10 @@ var Worker_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Health",
 			Handler:    _Worker_Health_Handler,
+		},
+		{
+			MethodName: "IsActiveRunner",
+			Handler:    _Worker_IsActiveRunner_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

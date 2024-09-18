@@ -10,7 +10,8 @@ from autokitteh import AttrDict
 import remote_pb2 as pb
 import remote_pb2_grpc as rpc
 import log
-
+import grpc
+import os 
 
 class SyscallError(Exception):
     pass
@@ -44,9 +45,15 @@ class SysCalls:
             runner_id=self.runner_id,
             duration_ms=int(secs * 1000),
         )
-        resp = self.worker.Sleep(req)
-        if resp.error:
-            raise SyscallError(f"sleep: {resp.error}")
+
+        try:
+            resp = self.worker.Sleep(req)
+            if resp.error:
+                raise SyscallError(f"sleep: {resp.error}")
+        except grpc.RpcError as e:
+            if e.code() == grpc.StatusCode.UNAVAILABLE:
+                os._exit(1)
+            raise e
 
     def ak_subscribe(self, args, kw):
         log.info("ak_subscribe: %r %r", args, kw)
