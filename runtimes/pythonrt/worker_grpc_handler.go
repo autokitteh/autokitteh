@@ -32,18 +32,18 @@ var (
 )
 
 // GRPC Server Handling
-func newInterceptor(log *zap.Logger) func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
-	fn := func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
-		log.Info("call", zap.String("method", info.FullMethod))
+// func newInterceptor(log *zap.Logger) func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
+// 	fn := func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
+// 		log.Info("call", zap.String("method", info.FullMethod))
 
-		return handler(ctx, req)
-	}
+// 		return handler(ctx, req)
+// 	}
 
-	return fn
-}
+// 	return fn
+// }
 
 func ConfigureWorkerGRPCHandler(l *zap.Logger, mux *http.ServeMux) {
-	srv := grpc.NewServer(grpc.UnaryInterceptor(newInterceptor(l)))
+	srv := grpc.NewServer()
 	pb.RegisterWorkerServer(srv, &w)
 	path := fmt.Sprintf("/%s/", pb.Worker_ServiceDesc.ServiceName)
 	mux.Handle(path, srv)
@@ -76,6 +76,15 @@ func removeRunnerFromServer(runnerID string) error {
 // TODO: add runner ID to health check so we can verify it
 func (s *workerGRPCHandler) Health(ctx context.Context, req *pb.HealthRequest) (*pb.HealthResponse, error) {
 	return &pb.HealthResponse{}, nil
+}
+func (s *workerGRPCHandler) IsActiveRunner(ctx context.Context, req *pb.IsActiveRunnerRequest) (*pb.IsActiveRunnerResponse, error) {
+	w.mu.Lock()
+	_, ok := w.runnerIDsToRuntime[req.RunnerId]
+	w.mu.Unlock()
+	if !ok {
+		return &pb.IsActiveRunnerResponse{Error: "runner id unknown"}, status.Error(codes.FailedPrecondition, "runner id unknownn")
+	}
+	return &pb.IsActiveRunnerResponse{}, nil
 }
 
 func (s *workerGRPCHandler) Log(ctx context.Context, req *pb.LogRequest) (*pb.LogResponse, error) {

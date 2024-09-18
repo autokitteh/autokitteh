@@ -19,8 +19,9 @@ from autokitteh import AttrDict
 from call import AKCall, full_func_name
 from grpc_reflection.v1alpha import reflection
 from syscalls import SysCalls
-
-
+import threading
+import os
+import time
 class ActivityError(Exception):
     pass
 
@@ -93,6 +94,7 @@ class Runner(rpc.RunnerServicer):
         self.replies = {}  # id -> future
         self._next_id = 0
         self._orig_print = print
+        self._did_start = False
 
     def Exports(self, request: pb.ExportsRequest, context: grpc.ServicerContext):
         if request.file_name == "":
@@ -108,8 +110,29 @@ class Runner(rpc.RunnerServicer):
 
         return pb.ExportsResponse(exports=exports)
 
+    def ShouldKeepRunning(self, intial_delay=10, period=10):
+        time.sleep(intial_delay)
+        while True:
+            try:
+                req = pb.IsActiveRunnerRequest(runner_id=self.id)
+                res = self.worker.IsActiveRunner(req)
+                if res.error:
+                    break
+            except grpc.RpcError as e:
+                break
+            time.sleep(period)
+
+        log.error("error from should keep running, killing self")
+        os._exit(1) 
+
     def Start(self, request: pb.StartRequest, context: grpc.ServicerContext):
+        if self._did_start:
+            log.error("already called start before")
+            return pb.StartResponse(error="start already called")
+        
+        self._did_start = True
         log.info("start request: %r", request)
+        
         self.syscalls = SysCalls(self.id, self.worker)
         mod_name, fn_name = parse_entry_point(request.entry_point)
 
@@ -263,7 +286,7 @@ class Runner(rpc.RunnerServicer):
             self._next_id += 1
             return f"call_id_{self._next_id:03d}"
 
-    def ak_print(self, *objects, sep=" ", end="\n", file=None, flush=False):
+    def ak_print(self, *objects, sep=" ", end="", file=None, flush=False):
         io = StringIO()
         self._orig_print(*objects, sep=sep, end=end, flush=flush, file=io)
         text = io.getvalue()
@@ -372,4 +395,10 @@ if __name__ == "__main__":
     server.add_insecure_port(f"[::]:{args.port}")
     server.start()
     log.info("server running on port %d", args.port)
+
+    should_keep_running_thread = threading.Thread(target=runner.ShouldKeepRunning)
+    should_keep_running_thread.daemon = True  # Daemon thread will exit when the main program exits
+    should_keep_running_thread.start()
+    log.info("setup should keep running thread")
+
     server.wait_for_termination()
