@@ -209,6 +209,15 @@ message PrintResponse {
   string error = 1;
 }
 
+message IsActiveRunnerRequest {
+  string runner_id = 1;
+}
+
+message IsActiveRunnerResponse {
+  bool is_active = 1;
+  string error = 2;
+}
+
 service Worker {
   // Runner starting activity
   rpc Activity(ActivityRequest) returns (ActivityResponse) {}
@@ -226,4 +235,6 @@ service Worker {
   rpc Unsubscribe(UnsubscribeRequest) returns (UnsubscribeResponse) {}
 
   rpc Health(HealthRequest) returns (HealthResponse) {}
+
+  rpc IsActiveRunner(IsActiveRunnerRequest) returns (IsActiveRunnerResponse) {}
 }

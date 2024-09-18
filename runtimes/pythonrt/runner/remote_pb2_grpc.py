@@ -528,6 +528,11 @@ class WorkerStub(object):
                 request_serializer=remote__pb2.HealthRequest.SerializeToString,
                 response_deserializer=remote__pb2.HealthResponse.FromString,
                 _registered_method=True)
+        self.IsActiveRunner = channel.unary_unary(
+                '/autokitteh.remote.v1.Worker/IsActiveRunner',
+                request_serializer=remote__pb2.IsActiveRunnerRequest.SerializeToString,
+                response_deserializer=remote__pb2.IsActiveRunnerResponse.FromString,
+                _registered_method=True)
 
 
 class WorkerServicer(object):
@@ -592,6 +597,12 @@ class WorkerServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def IsActiveRunner(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_WorkerServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -639,6 +650,11 @@ def add_WorkerServicer_to_server(servicer, server):
                     servicer.Health,
                     request_deserializer=remote__pb2.HealthRequest.FromString,
                     response_serializer=remote__pb2.HealthResponse.SerializeToString,
+            ),
+            'IsActiveRunner': grpc.unary_unary_rpc_method_handler(
+                    servicer.IsActiveRunner,
+                    request_deserializer=remote__pb2.IsActiveRunnerRequest.FromString,
+                    response_serializer=remote__pb2.IsActiveRunnerResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -884,6 +900,33 @@ class Worker(object):
             '/autokitteh.remote.v1.Worker/Health',
             remote__pb2.HealthRequest.SerializeToString,
             remote__pb2.HealthResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def IsActiveRunner(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/autokitteh.remote.v1.Worker/IsActiveRunner',
+            remote__pb2.IsActiveRunnerRequest.SerializeToString,
+            remote__pb2.IsActiveRunnerResponse.FromString,
             options,
             channel_credentials,
             insecure,
