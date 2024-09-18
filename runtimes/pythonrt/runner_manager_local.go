@@ -116,9 +116,9 @@ func (l *localRunnerManager) Start(ctx context.Context, buildArtifacts []byte, v
 	}
 
 	l.mu.Lock()
-	l.runnerIDToRunner[r.id.String()] = r
+	l.runnerIDToRunner[r.id] = r
 	l.mu.Unlock()
-	return r.id.String(), client, nil
+	return r.id, client, nil
 }
 
 func (l *localRunnerManager) RunnerHealth(ctx context.Context, runnerID string) error {
