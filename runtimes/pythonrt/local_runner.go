@@ -33,7 +33,7 @@ type LocalPython struct {
 	runnerDir string
 	port      int
 	proc      *os.Process
-	id        uuid.UUID
+	id        string
 }
 
 func (r *LocalPython) Close() error {
@@ -109,19 +109,21 @@ func (r *LocalPython) Start(pyExe string, tarData []byte, env map[string]string,
 		return fmt.Errorf("copy runner code - %w", err)
 	}
 
-	r.id = uuid.New()
+	r.id = uuid.NewString()
 	mainPy := path.Join(r.runnerDir, "runner", "main.py")
 	cmd := exec.Command(
 		pyExe, "-u", mainPy,
 		"--worker-address", workerAddr,
 		"--port", fmt.Sprintf("%d", r.port),
-		"--runner-id", r.id.String(),
+		"--runner-id", r.id,
 		"--code-dir", r.userDir,
 	)
-	r.log.Debug("running python", zap.String("command", cmd.String()))
 	cmd.Env = overrideEnv(env, r.runnerDir, r.userDir)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+
+	// make sure runner is killed if ak is killed
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 
 	if err := cmd.Start(); err != nil {
 		return fmt.Errorf("start runner - %w", err)
@@ -129,7 +131,7 @@ func (r *LocalPython) Start(pyExe string, tarData []byte, env map[string]string,
 
 	runOK = true // signal we're good to cleanup
 	r.proc = cmd.Process
-
+	r.log.Info("started python runner", zap.String("command", cmd.String()), zap.Int("pid", r.proc.Pid))
 	return nil
 }
 
