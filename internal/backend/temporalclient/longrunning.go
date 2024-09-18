@@ -8,7 +8,7 @@ import (
 	"go.temporal.io/sdk/workflow"
 )
 
-const minInterval = 500 * time.Millisecond
+// const minInterval = 500 * time.Millisecond
 
 // LongRunning allows to execute the `f`, which does not
 // perform any temporal operations (ie calling temporal using `wctx`)
@@ -53,16 +53,15 @@ func LongRunning[T any](
 		totalCh = time.After(total)
 	}
 
-	if err := workflow.Sleep(wctx, 5*time.Second); err != nil {
-		cancel(err)
-		return zero, err
-	}
+	// if err := workflow.Sleep(wctx, minInterval); err != nil {
+	// 	cancel(err)
+	// 	return zero, err
+	// }
 
 	for {
 		select {
 		// case <-time.After(min(interval, minInterval)):
 		// 	// don't let the temporal deadlock detector kick in.
-		// 	fmt.Println("here")
 		// 	if err := workflow.Sleep(wctx, time.Millisecond); err != nil {
 		// 		cancel(err)
 		// 		return zero, err
