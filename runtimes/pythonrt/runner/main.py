@@ -286,7 +286,7 @@ class Runner(rpc.RunnerServicer):
             self._next_id += 1
             return f"call_id_{self._next_id:03d}"
 
-    def ak_print(self, *objects, sep=" ", end="", file=None, flush=False):
+    def ak_print(self, *objects, sep=" ", end="\n", file=None, flush=False):
         io = StringIO()
         self._orig_print(*objects, sep=sep, end=end, flush=flush, file=io)
         text = io.getvalue()
