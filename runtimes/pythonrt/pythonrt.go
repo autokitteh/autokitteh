@@ -83,7 +83,7 @@ func (py *pySvc) cleanup(ctx context.Context) {
 }
 
 func New() (sdkservices.Runtime, error) {
-	log, err := logger.New(logger.Configs.Dev) // TODO (ENG-553): From configuration
+	log, err := logger.New(logger.Configs.Default) // TODO (ENG-553): From configuration
 	if err != nil {
 		return nil, err
 	}
