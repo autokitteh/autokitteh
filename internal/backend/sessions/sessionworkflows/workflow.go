@@ -465,6 +465,11 @@ func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (prints []st
 		Print: func(printCtx context.Context, runID sdktypes.RunID, text string) {
 			isActivity := activity.IsActivity(printCtx)
 
+			// Trim single trailing space, but no other spaces.
+			if text[len(text)-1] == '\n' {
+				text = text[:len(text)-1]
+			}
+
 			sl := sl.With("run_id", runID, "is_activity", isActivity)
 
 			sl.Debugw("print", zap.String("text", text))
