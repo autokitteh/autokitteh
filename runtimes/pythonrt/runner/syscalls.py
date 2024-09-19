@@ -11,7 +11,8 @@ import remote_pb2 as pb
 import remote_pb2_grpc as rpc
 import log
 import grpc
-import os 
+import os
+
 
 class SyscallError(Exception):
     pass
