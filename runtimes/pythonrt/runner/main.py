@@ -22,6 +22,8 @@ from syscalls import SysCalls
 import threading
 import os
 import time
+
+
 class ActivityError(Exception):
     pass
 
@@ -123,16 +125,16 @@ class Runner(rpc.RunnerServicer):
             time.sleep(period)
 
         log.error("could not verify if should keep running, killing self")
-        os._exit(1) 
+        os._exit(1)
 
     def Start(self, request: pb.StartRequest, context: grpc.ServicerContext):
         if self._did_start:
             log.error("already called start before")
             return pb.StartResponse(error="start already called")
-        
+
         self._did_start = True
         log.info("start request: %r", request)
-        
+
         self.syscalls = SysCalls(self.id, self.worker)
         mod_name, fn_name = parse_entry_point(request.entry_point)
 
@@ -397,7 +399,9 @@ if __name__ == "__main__":
     log.info("server running on port %d", args.port)
 
     should_keep_running_thread = threading.Thread(target=runner.ShouldKeepRunning)
-    should_keep_running_thread.daemon = True  # Daemon thread will exit when the main program exits
+    should_keep_running_thread.daemon = (
+        True  # Daemon thread will exit when the main program exits
+    )
     should_keep_running_thread.start()
     log.info("setup should keep running thread")
 
