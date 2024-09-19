@@ -15,7 +15,7 @@ import (
 
 const (
 	serverHTTPAddrFile = "ak_server_addr.txt"
-	serverReadyTimeout = 5 * time.Second
+	serverReadyTimeout = 20 * time.Second
 )
 
 // Start the AK server, as an in-process goroutine rather than a separate
