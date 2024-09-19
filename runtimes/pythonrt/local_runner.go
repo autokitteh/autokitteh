@@ -17,6 +17,8 @@ import (
 
 	"github.com/google/uuid"
 	"go.uber.org/zap"
+
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
 )
 
 var (
@@ -118,7 +120,7 @@ func (r *LocalPython) Start(pyExe string, tarData []byte, env map[string]string,
 		"--runner-id", r.id,
 		"--code-dir", r.userDir,
 	)
-	cmd.Env = overrideEnv(env, r.runnerDir, r.userDir)
+	cmd.Env = overrideEnv(env, r.runnerDir)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
@@ -250,27 +252,12 @@ func extractTar(rootDir string, data []byte) error {
 	return nil
 }
 
-func adjustPythonPath(env []string, runnerPath string) []string {
-	// Iterate in reverse since last value overrides
-	for i := len(env) - 1; i >= 0; i-- {
-		v := env[i]
-		if strings.HasPrefix(v, "PYTHONPATH=") {
-			env[i] = fmt.Sprintf("%s:%s", v, runnerPath)
-			return env
-		}
-	}
+func overrideEnv(envMap map[string]string, runnerPath string) []string {
+	env := kittehs.TransformMapToList(envMap, func(k, v string) string {
+		return fmt.Sprintf("%s=%s", k, v)
+	})
 
 	return append(env, fmt.Sprintf("PYTHONPATH=%s", runnerPath))
-}
-
-func overrideEnv(envMap map[string]string, runnerPath, userCodePath string) []string {
-	env := os.Environ()
-	// Append AK values to end to override (see Env docs in https://pkg.go.dev/os/exec#Cmd)
-	for k, v := range envMap {
-		env = append(env, fmt.Sprintf("%s=%s", k, v))
-	}
-
-	return adjustPythonPath(env, runnerPath)
 }
 
 func createVEnv(pyExe string, venvPath string) error {

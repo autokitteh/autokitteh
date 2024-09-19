@@ -183,7 +183,7 @@ func Test_parsePyVersion(t *testing.T) {
 	}
 }
 
-//TODO: What to here
+// TODO: What to here
 // func Test_pyExports(t *testing.T) {
 // 	skipIfNoPython(t)
 
@@ -237,15 +237,6 @@ var adjustCases = []struct {
 		env:      []string{"PYTHONPATH=x", "HOME=/home/ak", "PYTHONPATH=y"},
 		expected: []string{"PYTHONPATH=x", "HOME=/home/ak", "PYTHONPATH=y:" + testRunnerPath},
 	},
-}
-
-func Test_adjustPYTHONPATH(t *testing.T) {
-	for _, tc := range adjustCases {
-		t.Run(tc.name, func(t *testing.T) {
-			out := adjustPythonPath(tc.env, testRunnerPath)
-			require.Equal(t, tc.expected, out)
-		})
-	}
 }
 
 func TestRunner_Close(t *testing.T) {

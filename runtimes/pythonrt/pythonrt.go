@@ -192,6 +192,7 @@ func (py *pySvc) Run(
 
 	// Load environment defined by user in the `vars` section of the manifest,
 	// these are injected to the Python subprocess environment.
+	// Question: if this doesn't include connection vars, where do we add them?
 	env, err := cbs.Load(ctx, runID, "env")
 	if err != nil {
 		return nil, fmt.Errorf("can't load env : %w", err)
@@ -394,7 +395,7 @@ func (py *pySvc) call(val sdktypes.Value) {
 
 // initialCall handles initial call from autokitteh, it does the message loop with Python.
 // We split it from Call since Call is also used to execute activities.
-func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
+func (py *pySvc) initialCall(ctx context.Context, funcName string, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
 	defer func() {
 		py.cleanup(ctx)
 		py.log.Info("Python subprocess cleanup after initial call is done")
@@ -510,6 +511,7 @@ func (py *pySvc) tracebackToLocation(traceback []*pb.Frame) []sdktypes.CallFrame
 
 // Call handles a function call from autokitteh.
 // First used of Call start a workflow, later invocations are activity calls.
+// NOTE: "args" is unused - can we remove it?
 func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
 	fn := v.GetFunction()
 	if !fn.IsValid() {
@@ -522,7 +524,7 @@ func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 
 	if py.firstCall {
 		py.firstCall = false
-		return py.initialCall(ctx, fnName, args, kwargs)
+		return py.initialCall(ctx, fnName, kwargs)
 	}
 
 	// If we're here, it's an activity call
