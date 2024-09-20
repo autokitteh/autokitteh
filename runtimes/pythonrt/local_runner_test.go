@@ -219,26 +219,6 @@ func Test_parsePyVersion(t *testing.T) {
 // 	require.Equal(t, []string{"greet"}, resp.Exports)
 // }
 
-const testRunnerPath = "/tmp/zzz/ak_runner"
-
-var adjustCases = []struct {
-	name     string
-	env      []string
-	expected []string
-}{
-	{"empty env", nil, []string{"PYTHONPATH=" + testRunnerPath}},
-	{
-		name:     "regular",
-		env:      []string{"HOME=/home/ak", "PYTHONPATH=x"},
-		expected: []string{"HOME=/home/ak", "PYTHONPATH=x:" + testRunnerPath},
-	},
-	{
-		name:     "last",
-		env:      []string{"PYTHONPATH=x", "HOME=/home/ak", "PYTHONPATH=y"},
-		expected: []string{"PYTHONPATH=x", "HOME=/home/ak", "PYTHONPATH=y:" + testRunnerPath},
-	},
-}
-
 func TestRunner_Close(t *testing.T) {
 	log := zap.NewExample()
 	defer log.Sync() //nolint:all
