@@ -28,12 +28,13 @@ var (
 )
 
 type LocalPython struct {
-	log       *zap.Logger
-	userDir   string
-	runnerDir string
-	port      int
-	proc      *os.Process
-	id        string
+	log           *zap.Logger
+	userDir       string
+	runnerDir     string
+	port          int
+	proc          *os.Process
+	id            string
+	logRunnerCode bool
 }
 
 func (r *LocalPython) Close() error {
@@ -119,8 +120,10 @@ func (r *LocalPython) Start(pyExe string, tarData []byte, env map[string]string,
 		"--code-dir", r.userDir,
 	)
 	cmd.Env = overrideEnv(env, r.runnerDir, r.userDir)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	if r.logRunnerCode {
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+	}
 
 	// make sure runner is killed if ak is killed
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}

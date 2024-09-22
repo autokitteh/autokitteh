@@ -23,11 +23,13 @@ type Config struct {
 	// which currently install venv everytime and takes a really long time
 	// need to find a way to share the venv once for all tests
 	LazyLoadLocalVEnv bool `koanf:"lazy_load_local_venv"`
+	LogRunnerCode     bool `koanf:"log_runner_code"`
 }
 
 var Configs = configset.Set[Config]{
 	Default: &Config{
 		EnableRemoteRunner: false,
+		LogRunnerCode:      false,
 	},
 	Test: &Config{
 		LazyLoadLocalVEnv: true,
@@ -59,10 +61,11 @@ func New(cfg *Config, l *zap.Logger, svc httpsvc.Svc) (sdkservices.Runtimes, err
 		l.Info("remote runner configued")
 	} else {
 		if err := pythonruntime.ConfigureLocalRunnerManager(l,
-			pythonruntime.LocalRunnerConfig{
+			pythonruntime.LocalRunnerManagerConfig{
 				WorkerAddress:         cfg.WorkerAddress,
 				LazyLoadVEnv:          cfg.LazyLoadLocalVEnv,
 				WorkerAddressProvider: func() string { return svc.Addr() },
+				LogCodeRunnerCode:     cfg.LogRunnerCode,
 			},
 		); err != nil {
 			return nil, fmt.Errorf("configure local runner manager: %w", err)
