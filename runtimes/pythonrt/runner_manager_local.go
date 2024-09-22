@@ -22,16 +22,17 @@ type localRunnerManager struct {
 	runnerIDToRunner map[string]*LocalPython
 	mu               *sync.Mutex
 	workerAddress    string
-	cfg              LocalRunnerConfig
+	cfg              LocalRunnerManagerConfig
 }
 
-type LocalRunnerConfig struct {
+type LocalRunnerManagerConfig struct {
 	WorkerAddress         string
 	LazyLoadVEnv          bool
 	WorkerAddressProvider func() string
+	LogCodeRunnerCode     bool
 }
 
-func ConfigureLocalRunnerManager(log *zap.Logger, cfg LocalRunnerConfig) error {
+func ConfigureLocalRunnerManager(log *zap.Logger, cfg LocalRunnerManagerConfig) error {
 	pyExe, isUserPy, err := pythonToRun(log)
 	if err != nil {
 		return err
@@ -81,7 +82,8 @@ func ConfigureLocalRunnerManager(log *zap.Logger, cfg LocalRunnerConfig) error {
 
 func (l *localRunnerManager) Start(ctx context.Context, buildArtifacts []byte, vars map[string]string) (string, pb.RunnerClient, error) {
 	r := &LocalPython{
-		log: l.logger,
+		log:           l.logger,
+		logRunnerCode: l.cfg.LogCodeRunnerCode,
 	}
 
 	if l.cfg.LazyLoadVEnv {

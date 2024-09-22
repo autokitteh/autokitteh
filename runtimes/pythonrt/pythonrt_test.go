@@ -148,7 +148,7 @@ func setupServer(l *zap.Logger) (*http.Server, error) {
 		Handler: h2c.NewHandler(mux, &http2.Server{}),
 	}
 
-	if err := ConfigureLocalRunnerManager(l, LocalRunnerConfig{WorkerAddress: "localhost:9980"}); err != nil {
+	if err := ConfigureLocalRunnerManager(l, LocalRunnerManagerConfig{WorkerAddress: "localhost:9980"}); err != nil {
 		return nil, err
 	}
 
@@ -250,7 +250,7 @@ func TestNewBadVersion(t *testing.T) {
 	t.Setenv(exeEnvKey, exe)
 
 	l := zap.New(nil)
-	err := ConfigureLocalRunnerManager(l, LocalRunnerConfig{})
+	err := ConfigureLocalRunnerManager(l, LocalRunnerManagerConfig{})
 	require.Error(t, err)
 }
 
@@ -260,11 +260,11 @@ func TestPythonFromEnv(t *testing.T) {
 	t.Setenv(exeEnvKey, pyExe)
 
 	l := zap.New(nil)
-	err := ConfigureLocalRunnerManager(l, LocalRunnerConfig{})
+	err := ConfigureLocalRunnerManager(l, LocalRunnerManagerConfig{})
 	require.Error(t, err)
 
 	genExe(t, pyExe, minPyVersion.Major, minPyVersion.Minor)
-	err = ConfigureLocalRunnerManager(l, LocalRunnerConfig{})
+	err = ConfigureLocalRunnerManager(l, LocalRunnerManagerConfig{})
 	require.NoError(t, err)
 
 	_, err = New()
