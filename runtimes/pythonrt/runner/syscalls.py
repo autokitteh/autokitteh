@@ -58,7 +58,7 @@ class SysCalls:
         req = pb.SubscribeRequest(
             runner_id=self.runner_id, connection=connection_id, filter=filter
         )
-        resp = call_grpc('subscribe', self.worker.Subscribe, req)
+        resp = call_grpc("subscribe", self.worker.Subscribe, req)
         return resp.signal_id
 
     def ak_next_event(self, args, kw):
@@ -67,7 +67,7 @@ class SysCalls:
             raise ValueError("empty subscription_id")
         req = pb.NextEventRequest(runner_id=self.runner_id, signal_ids=[id])
 
-        resp = call_grpc('next_event', self.worker.NextEvent, req)
+        resp = call_grpc("next_event", self.worker.NextEvent, req)
 
         try:
             data = json.loads(resp.event.data)
@@ -88,6 +88,7 @@ class SysCalls:
 # Can't use None since it's a valid value
 _missing = object()
 
+
 def call_grpc(name, fn, args):
     try:
         resp = fn(args)
@@ -97,8 +98,7 @@ def call_grpc(name, fn, args):
     except grpc.RpcError as e:
         if e.code() == grpc.StatusCode.UNAVAILABLE or grpc.StatusCode.CANCELLED:
             os._exit(1)
-        raise e 
-
+        raise e
 
 
 def extract_args(names, args, kw):
