@@ -302,7 +302,11 @@ class Runner(rpc.RunnerServicer):
         try:
             self.worker.Print(req)
         except grpc.RpcError as err:
+            if err.code() == grpc.StatusCode.UNAVAILABLE or grpc.StatusCode.CANCELLED:
+                log.error("grpc canclled or unavailable, killing self")
+                os._exit(1)
             log.error("print: %s", err)
+
 
 
 def is_valid_port(port):
