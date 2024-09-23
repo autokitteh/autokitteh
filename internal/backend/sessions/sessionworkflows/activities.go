@@ -11,7 +11,6 @@ import (
 	"go.temporal.io/sdk/workflow"
 	"go.uber.org/zap"
 
-	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/types"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -19,15 +18,14 @@ import (
 )
 
 const (
-	updateSessionStateActivityName          = "update_session_state"
-	terminateWorkflowActivityName           = "terminate_workflow"
-	deactivateDrainedDeploymentActivityName = "deactivate_drained_deployment"
-	saveSignalActivityName                  = "save_signal"
-	getLastEventSequenceActivityName        = "get_last_event_sequence"
-	getSessionStopReasonActivityName        = "get_session_stop_reason"
-	getSignalEventActivityName              = "get_signal_event"
-	removeSignalActivityName                = "remove_signal"
-	addSessionPrintActivityName             = "add_session_print"
+	updateSessionStateActivityName   = "update_session_state"
+	terminateWorkflowActivityName    = "terminate_workflow"
+	saveSignalActivityName           = "save_signal"
+	getLastEventSequenceActivityName = "get_last_event_sequence"
+	getSessionStopReasonActivityName = "get_session_stop_reason"
+	getSignalEventActivityName       = "get_signal_event"
+	removeSignalActivityName         = "remove_signal"
+	addSessionPrintActivityName      = "add_session_print"
 )
 
 func (ws *workflows) registerActivities() {
@@ -39,11 +37,6 @@ func (ws *workflows) registerActivities() {
 	ws.worker.RegisterActivityWithOptions(
 		ws.terminateWorkflow,
 		activity.RegisterOptions{Name: terminateWorkflowActivityName},
-	)
-
-	ws.worker.RegisterActivityWithOptions(
-		ws.deactivateDrainedDeployment,
-		activity.RegisterOptions{Name: deactivateDrainedDeploymentActivityName},
 	)
 
 	ws.worker.RegisterActivityWithOptions(
@@ -157,58 +150,6 @@ func (ws *workflows) saveSignal(ctx context.Context, signal *types.Signal) error
 			return nil
 		}
 		return err
-	}
-
-	return nil
-}
-
-// a deployment might need to be deactivated if it is in draining state and has no running sessions left.
-func (ws *workflows) deactivateDrainedDeployment(ctx context.Context, deploymentID sdktypes.DeploymentID) error {
-	sl := ws.l.Sugar().With("deployment_id", deploymentID)
-
-	deactivate := false
-
-	if err := ws.svcs.DB.Transaction(ctx, func(tx db.DB) error {
-		dep, err := tx.GetDeployment(ctx, deploymentID)
-		if err != nil {
-			return fmt.Errorf("deployments.get: %w", err)
-		}
-
-		// TODO [ENG-1238]: use single query for this and move this to the db layer?
-		if dep.State() == sdktypes.DeploymentStateDraining {
-			resultRunning, err := tx.ListSessions(ctx, sdkservices.ListSessionsFilter{
-				DeploymentID: deploymentID,
-				StateType:    sdktypes.SessionStateTypeCreated,
-				CountOnly:    true,
-			})
-			if err != nil {
-				return fmt.Errorf("sessions.count: %w", err)
-			}
-
-			resultCreated, err := tx.ListSessions(ctx, sdkservices.ListSessionsFilter{
-				DeploymentID: deploymentID,
-				StateType:    sdktypes.SessionStateTypeRunning,
-				CountOnly:    true,
-			})
-			if err != nil {
-				return fmt.Errorf("sessions.count: %w", err)
-			}
-
-			deactivate = resultRunning.TotalCount+resultCreated.TotalCount == 0
-
-			sl.Debugf("%d running sessions, %d created sessions => deactivate: %v", resultRunning.TotalCount, resultCreated.TotalCount, deactivate)
-		}
-
-		return nil
-	}); err != nil {
-		return fmt.Errorf("transaction: %w", err)
-	}
-
-	if deactivate {
-		sl.Infof("deactivating drained deployment %v", deploymentID)
-		if err := ws.svcs.Deployments.Deactivate(ctx, deploymentID); err != nil {
-			return fmt.Errorf("deployment.deactivate(%v): %w", deploymentID, err)
-		}
 	}
 
 	return nil

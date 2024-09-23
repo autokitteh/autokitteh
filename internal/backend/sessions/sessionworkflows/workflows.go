@@ -124,21 +124,6 @@ func (ws *workflows) StartWorkflow(ctx context.Context, session sdktypes.Session
 	return nil
 }
 
-func (ws *workflows) cleanupSession(wctx workflow.Context, data *sessiondata.Data) {
-	sl := ws.l.Sugar().With("session_id", data.Session.ID())
-
-	if depID := data.Session.DeploymentID(); depID.IsValid() {
-		fut := workflow.ExecuteActivity(
-			wctx,
-			deactivateDrainedDeploymentActivityName,
-			depID,
-		)
-		if err := fut.Get(wctx, nil); err != nil {
-			sl.With("err", err).Errorf("deactivate drained deployment error: %v", err)
-		}
-	}
-}
-
 func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkflowParams) error {
 	wi := workflow.GetInfo(wctx)
 	sid := params.Data.Session.ID()
@@ -226,8 +211,6 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 		sessionsCompletedCounter.Add(metricsCtx, 1)
 		l.Info("session workflow completed with no errors")
 	}
-
-	ws.cleanupSession(dwctx, params.Data)
 
 	return err
 }
