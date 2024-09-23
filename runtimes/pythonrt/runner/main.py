@@ -308,7 +308,6 @@ class Runner(rpc.RunnerServicer):
             log.error("print: %s", err)
 
 
-
 def is_valid_port(port):
     return port >= 0 and port <= 65535
 
