@@ -353,12 +353,12 @@ func pyLevelToZap(level string) zapcore.Level {
 	return zap.InfoLevel
 }
 
-func (py *pySvc) call(val sdktypes.Value) {
+func (py *pySvc) call(ctx context.Context, val sdktypes.Value) {
 	req := pb.ActivityReplyRequest{}
 
 	// We want to send reply in any case
 	defer func() {
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		ctx, cancel := context.WithTimeout(ctx, time.Second)
 		defer cancel()
 		reply, err := py.runner.ActivityReply(ctx, &req)
 		switch {
@@ -460,7 +460,7 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktyp
 			py.log.Info("activity", zap.String("function", fnName))
 			// it was already checked before we got here
 			fn, _ := sdktypes.NewFunctionValue(py.xid, fnName, r.Data, nil, pyModuleFunc)
-			py.call(fn)
+			py.call(ctx, fn)
 		case cb := <-py.channels.callback:
 			val, err := py.cbs.Call(ctx, py.runID, py.syscallFn, cb.args, cb.kwargs)
 			if err != nil {
@@ -480,7 +480,6 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktyp
 			}
 
 			return sdktypes.NewBytesValue(done.Result), nil
-
 		case <-ctx.Done():
 			return sdktypes.InvalidValue, fmt.Errorf("context expired - %w", ctx.Err())
 		}
