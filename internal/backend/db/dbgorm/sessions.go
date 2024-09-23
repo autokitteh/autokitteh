@@ -192,7 +192,7 @@ func (gdb *gormdb) getSessionLogRecords(ctx context.Context, filter sdkservices.
 			specific(sdktypes.CallAttemptStartSessionLogRecordType, callAttemptStartSessionLogRecordType)
 			specific(sdktypes.CallAttemptCompleteSessionLogRecordType, callAttemptCompleteSessionLogRecordType)
 
-			q = tx.db.Where("type in (?)", qtypes)
+			q = q.Where("type in (?)", qtypes)
 		}
 
 		// Default is desc order
