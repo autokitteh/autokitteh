@@ -29,10 +29,12 @@ type Config struct {
 var Configs = configset.Set[Config]{
 	Default: &Config{
 		EnableRemoteRunner: false,
-		LogRunnerCode:      false,
 	},
 	Test: &Config{
 		LazyLoadLocalVEnv: true,
+	},
+	Dev: &Config{
+		LogRunnerCode: true,
 	},
 }
 
