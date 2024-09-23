@@ -47,14 +47,7 @@ class SysCalls:
             duration_ms=int(secs * 1000),
         )
 
-        try:
-            resp = self.worker.Sleep(req)
-            if resp.error:
-                raise SyscallError(f"sleep: {resp.error}")
-        except grpc.RpcError as e:
-            if e.code() == grpc.StatusCode.UNAVAILABLE:
-                os._exit(1)
-            raise e
+        call_grpc("sleep", self.worker.Sleep, req)
 
     def ak_subscribe(self, args, kw):
         log.info("ak_subscribe: %r %r", args, kw)
@@ -65,9 +58,7 @@ class SysCalls:
         req = pb.SubscribeRequest(
             runner_id=self.runner_id, connection=connection_id, filter=filter
         )
-        resp = self.worker.Subscribe(req)
-        if resp.error:
-            raise SyscallError(f"subscribe: {resp.error}")
+        resp = call_grpc('subscribe', self.worker.Subscribe, req)
         return resp.signal_id
 
     def ak_next_event(self, args, kw):
@@ -75,9 +66,8 @@ class SysCalls:
         if not id:
             raise ValueError("empty subscription_id")
         req = pb.NextEventRequest(runner_id=self.runner_id, signal_ids=[id])
-        resp = self.worker.NextEvent(req)
-        if resp.error:
-            raise SyscallError(f"next_event: {resp.error}")
+
+        resp = call_grpc('next_event', self.worker.NextEvent, req)
 
         try:
             data = json.loads(resp.event.data)
@@ -92,13 +82,23 @@ class SysCalls:
             raise ValueError("empty subscription_id")
 
         req = pb.UnsubscribeRequest(runner_id=self.runner_id, signal_id=id)
-        resp = self.worker.Unsubscribe(req)
-        if resp.error:
-            raise SyscallError(f"unsubscribe: {resp.error}")
+        call_grpc("unsubscribe", self.worker.Unsubscribe, req)
 
 
 # Can't use None since it's a valid value
 _missing = object()
+
+def call_grpc(name, fn, args):
+    try:
+        resp = fn(args)
+        if resp.error:
+            raise SyscallError(f"{name}: {resp.error}")
+        return resp
+    except grpc.RpcError as e:
+        if e.code() == grpc.StatusCode.UNAVAILABLE or grpc.StatusCode.CANCELLED:
+            os._exit(1)
+        raise e 
+
 
 
 def extract_args(names, args, kw):
