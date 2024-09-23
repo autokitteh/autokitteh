@@ -127,9 +127,11 @@ func (ws *workflows) StartWorkflow(ctx context.Context, session sdktypes.Session
 func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkflowParams) error {
 	wi := workflow.GetInfo(wctx)
 	sid := params.Data.Session.ID()
+	isReplaying := workflow.IsReplaying(wctx)
+
 	l := ws.l.With(
 		zap.String("session_id", sid.String()),
-		zap.Bool("replay", workflow.IsReplaying(wctx)),
+		zap.Bool("replay", isReplaying),
 		zap.String("workflow_id", wi.WorkflowExecution.ID),
 		zap.String("run_id", wi.WorkflowExecution.RunID),
 		zap.Int32("attempt", wi.Attempt),
@@ -144,7 +146,7 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 	// TODO(ENG-322): Save data in snapshot, otherwise changes between retries would
 	//                blow us up due to non determinism.
 
-	if workflow.IsReplaying(wctx) {
+	if isReplaying {
 		if params.Data.Session.State().IsFinal() {
 			// HACK: If we somehow get a signal to this workflow after it completed,
 			//       in certain delicate timing, the workflow rekicks in replay.
@@ -162,7 +164,7 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 	sessionsCreatedCounter.Add(
 		metricsCtx,
 		1,
-		metric.WithAttributes(attribute.Bool("replay", workflow.IsReplaying(wctx))),
+		metric.WithAttributes(attribute.Bool("replay", isReplaying)),
 	)
 
 	startTime := time.Now() // we want actual start time for metrics.
@@ -179,7 +181,7 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 		metricsCtx,
 		duration.Milliseconds(),
 		metric.WithAttributes(
-			attribute.Bool("replay", workflow.IsReplaying(wctx)),
+			attribute.Bool("replay", isReplaying),
 			attribute.Bool("success", err == nil),
 		),
 	)
