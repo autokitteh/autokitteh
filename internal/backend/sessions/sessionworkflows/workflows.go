@@ -181,7 +181,6 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 		metric.WithAttributes(attribute.Bool("replay", isReplaying)),
 	)
 
-	invocationDelay := time.Since(eventTime)
 	startTime := time.Now() // we want actual start time for metrics.
 	prints, err := runWorkflow(wctx, l, ws, params.Data)
 	duration := time.Since(startTime)
@@ -198,7 +197,7 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 	l = l.With(zap.Duration("duration", duration))
 
 	if eventTime != (time.Time{}) {
-		invocationDelay = time.Since(eventTime)
+		invocationDelay := time.Since(eventTime)
 		l = l.With(zap.Duration("invocation_delay", invocationDelay))
 
 		if !isReplaying {
