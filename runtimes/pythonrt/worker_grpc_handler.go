@@ -197,7 +197,7 @@ func (s *workerGRPCHandler) Sleep(ctx context.Context, req *pb.SleepRequest) (*p
 	select {
 	case err := <-msg.errorChannel:
 		err = status.Errorf(codes.Internal, "sleep(%f) -> %s", secs, err)
-		return &pb.SleepResponse{Error: err.Error()}, err
+		return &pb.SleepResponse{Error: err.Error()}, nil
 	case <-msg.successChannel:
 		return &pb.SleepResponse{}, nil
 	}
@@ -228,7 +228,7 @@ func (s *workerGRPCHandler) Subscribe(ctx context.Context, req *pb.SubscribeRequ
 	select {
 	case err := <-msg.errorChannel:
 		err = status.Errorf(codes.Internal, "subscribe(%s, %s) -> %s", req.Connection, req.Filter, err)
-		return &pb.SubscribeResponse{Error: err.Error()}, err
+		return &pb.SubscribeResponse{Error: err.Error()}, nil
 	case val := <-msg.successChannel:
 		signalID := val.GetString().Value()
 		return &pb.SubscribeResponse{SignalId: signalID}, nil
@@ -270,7 +270,7 @@ func (s *workerGRPCHandler) NextEvent(ctx context.Context, req *pb.NextEventRequ
 	select {
 	case err := <-msg.errorChannel:
 		err = status.Errorf(codes.Internal, "next_event(%s, %d) -> %s", req.SignalIds, req.TimeoutMs, err)
-		return &pb.NextEventResponse{Error: err.Error()}, err
+		return &pb.NextEventResponse{Error: err.Error()}, nil
 	case val := <-msg.successChannel:
 		out, err := val.Unwrap()
 		if err != nil {

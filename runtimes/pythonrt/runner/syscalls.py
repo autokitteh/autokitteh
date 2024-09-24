@@ -93,9 +93,11 @@ def call_grpc(name, fn, args):
     try:
         resp = fn(args)
         if resp.error:
+            print("here1")
             raise SyscallError(f"{name}: {resp.error}")
         return resp
     except grpc.RpcError as e:
+        print("here2")
         if e.code() == grpc.StatusCode.UNAVAILABLE or grpc.StatusCode.CANCELLED:
             os._exit(1)
         raise e
