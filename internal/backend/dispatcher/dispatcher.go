@@ -56,7 +56,6 @@ func (d *Dispatcher) Dispatch(ctx context.Context, event sdktypes.Event, opts *s
 	if err != nil {
 		return sdktypes.InvalidEventID, fmt.Errorf("save event: %w", err)
 	}
-
 	event = event.WithID(eid)
 
 	sl := d.sl.With("event_id", eid)
