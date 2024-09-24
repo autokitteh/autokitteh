@@ -505,12 +505,11 @@ func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (prints []st
 
 	entryPoint := w.data.Session.EntryPoint()
 
-	run, err = temporalclient.LongRunning(
-		wctx,
-		w.ws.cfg.Worker.WorkflowDeadlockTimeout/2,
-		w.ws.cfg.SlowOperationTimeout,
-		func(ctx context.Context) (sdkservices.Run, error) {
-			return sdkruntimes.Run(
+	ctx := temporalclient.NewWorkflowContextAsGOContext(wctx)
+
+	temporalclient.WithoutDeadlockDetection(
+		func() {
+			run, err = sdkruntimes.Run(
 				ctx,
 				sdkruntimes.RunParams{
 					Runtimes:             w.ws.svcs.Runtimes,
@@ -523,6 +522,7 @@ func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (prints []st
 			)
 		},
 	)
+
 	if err != nil {
 		return nil, err
 	}
@@ -552,8 +552,6 @@ func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (prints []st
 
 		argNames := callValue.GetFunction().ArgNames()
 		kwargs := kittehs.FilterMapKeys(w.data.Session.Inputs(), kittehs.ContainedIn(argNames...))
-
-		ctx := temporalclient.NewWorkflowContextAsGOContext(wctx)
 
 		if retVal, err = run.Call(ctx, callValue, nil, kwargs); err != nil {
 			return prints, err
