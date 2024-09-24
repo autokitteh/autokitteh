@@ -47,7 +47,7 @@ type comChannels struct {
 	request  chan *pb.ActivityRequest
 	print    chan *pb.PrintRequest
 	log      chan *pb.LogRequest
-	callback chan callbackMessage
+	callback chan *callbackMessage
 }
 
 type pySvc struct {
@@ -98,7 +98,7 @@ func New() (sdkservices.Runtime, error) {
 			request:  make(chan *pb.ActivityRequest, 1),
 			print:    make(chan *pb.PrintRequest, 1),
 			log:      make(chan *pb.LogRequest, 1),
-			callback: make(chan callbackMessage, 1),
+			callback: make(chan *callbackMessage, 1),
 		},
 	}
 
@@ -227,7 +227,6 @@ func (py *pySvc) Run(
 
 	py.runner = runner
 	py.runnerID = runnerID
-
 	defer func() {
 		if runnerOK {
 			return

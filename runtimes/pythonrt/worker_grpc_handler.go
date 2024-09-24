@@ -82,7 +82,7 @@ func (s *workerGRPCHandler) IsActiveRunner(ctx context.Context, req *pb.IsActive
 	_, ok := w.runnerIDsToRuntime[req.RunnerId]
 	w.mu.Unlock()
 	if !ok {
-		return &pb.IsActiveRunnerResponse{Error: "runner id unknown"}, status.Error(codes.FailedPrecondition, "runner id unknownn")
+		return &pb.IsActiveRunnerResponse{Error: "runner id unknown"}, nil
 	}
 	return &pb.IsActiveRunnerResponse{}, nil
 }
@@ -157,11 +157,11 @@ func (s *workerGRPCHandler) Activity(ctx context.Context, req *pb.ActivityReques
 
 // ak functions
 
-func makeCallbackMessage(args []sdktypes.Value, kwargs map[string]sdktypes.Value) callbackMessage {
+func makeCallbackMessage(args []sdktypes.Value, kwargs map[string]sdktypes.Value) *callbackMessage {
 	callbackChan := make(chan sdktypes.Value)
 	errorChannel := make(chan error)
 
-	msg := callbackMessage{
+	msg := &callbackMessage{
 		args:           args,
 		kwargs:         kwargs,
 		successChannel: callbackChan,
