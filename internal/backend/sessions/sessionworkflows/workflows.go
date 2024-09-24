@@ -126,7 +126,21 @@ func (ws *workflows) StartWorkflow(ctx context.Context, session sdktypes.Session
 
 func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkflowParams) error {
 	wi := workflow.GetInfo(wctx)
-	sid := params.Data.Session.ID()
+	session := params.Data.Session
+	sid := session.ID()
+
+	// get session time (it was created not long after event dispatch) and then update it with actual event time if found
+	eventTime := time.Time{}
+	if eventWrapped, ok := session.Inputs()["event"]; ok {
+		if eventUnwrapped, err := sdktypes.UnwrapValue(eventWrapped); err == nil {
+			if eventMap, ok := eventUnwrapped.(map[string]any); ok {
+				if createdAt, ok := eventMap["created_at"].(time.Time); ok {
+					eventTime = createdAt
+				}
+			}
+		}
+	}
+
 	isReplaying := workflow.IsReplaying(wctx)
 
 	l := ws.l.With(
@@ -167,6 +181,7 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 		metric.WithAttributes(attribute.Bool("replay", isReplaying)),
 	)
 
+	invocationDelay := time.Since(eventTime)
 	startTime := time.Now() // we want actual start time for metrics.
 	prints, err := runWorkflow(wctx, l, ws, params.Data)
 	duration := time.Since(startTime)
@@ -177,16 +192,19 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 	dwctx, done := workflow.NewDisconnectedContext(wctx)
 	defer done()
 
-	sessionDurationHistogram.Record(
-		metricsCtx,
-		duration.Milliseconds(),
-		metric.WithAttributes(
-			attribute.Bool("replay", isReplaying),
-			attribute.Bool("success", err == nil),
-		),
-	)
+	sessionDurationHistogram.Record(metricsCtx, duration.Milliseconds(),
+		metric.WithAttributes(attribute.Bool("replay", isReplaying), attribute.Bool("success", err == nil)))
 
 	l = l.With(zap.Duration("duration", duration))
+
+	if eventTime != (time.Time{}) {
+		invocationDelay = time.Since(eventTime)
+		l = l.With(zap.Duration("invocation_delay", invocationDelay))
+
+		if !isReplaying {
+			sessionInvocationDelayHistogram.Record(metricsCtx, invocationDelay.Milliseconds())
+		}
+	}
 
 	if err != nil {
 		l := l.With(zap.Error(err))
