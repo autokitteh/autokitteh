@@ -3,6 +3,11 @@ package github
 import (
 	"context"
 
+	// "fmt"
+	// "net/http"
+
+	"github.com/google/go-github/v60/github"
+
 	"go.autokitteh.dev/autokitteh/integrations"
 	"go.autokitteh.dev/autokitteh/integrations/github/internal/vars"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
@@ -10,6 +15,8 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
+	// "go.uber.org/zap"
+	// "golang.org/x/oauth2"
 )
 
 type integration struct {
@@ -41,13 +48,6 @@ func New(cvars sdkservices.Vars) sdkservices.Integration {
 	)
 }
 
-func connTest(*integration) sdkintegrations.OptFn {
-	return sdkintegrations.WithConnectionTest(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
-		// TODO
-		return sdktypes.NewStatus(sdktypes.StatusCodeUnspecified, `¯\_(ツ)_/¯`), nil
-	})
-}
-
 // connStatus is an optional connection status check provided by
 // the integration to AutoKitteh. The possible results are "Init
 // required" (the connection is not usable yet) and "Using X".
@@ -75,6 +75,35 @@ func connStatus(i *integration) sdkintegrations.OptFn {
 		default:
 			return sdktypes.NewStatus(sdktypes.StatusCodeError, "Bad auth type"), nil
 		}
+	})
+}
+
+type ctxKey struct{}
+
+func connTest(i *integration) sdkintegrations.OptFn {
+	return sdkintegrations.WithConnectionTest(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
+		vs, err := i.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
+		if err != nil {
+			return sdktypes.InvalidStatus, err
+		}
+
+		var gh *github.Client
+		if pat := vs.Get(vars.PAT); pat.IsValid() {
+			gh = github.NewClient(nil).WithAuthToken(vs.GetValue(vars.PAT))
+		} else {
+			gh, err = i.newClientWithInstallJWT(vs)
+			if err != nil {
+				return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), nil
+			}
+		}
+
+		// Make an API call that works for PAT & OAuth
+		_, _, err = gh.RateLimit.Get(ctx)
+		if err != nil {
+			return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), nil
+		}
+
+		return sdktypes.NewStatus(sdktypes.StatusCodeOK, ""), nil
 	})
 }
 
