@@ -403,8 +403,9 @@ func (w *sessionWorkflow) removeEventSubscription(ctx context.Context, signalID 
 	sl := w.l.Sugar().With("signal_id", signalID)
 
 	wctx := sessioncontext.GetWorkflowContext(ctx)
+	wctx = temporalclient.WithActivityOptions(wctx, taskQueueName, w.ws.cfg.Activity)
 
-	if err := workflow.ExecuteActivity(wctx, w.ws.svcs.DB.RemoveSignal, signalID).Get(wctx, nil); err != nil {
+	if err := workflow.ExecuteActivity(wctx, removeSignalActivityName, signalID).Get(wctx, nil); err != nil {
 		// it is not a critical error, we can just log it. no need to panic.
 		sl.With(err).Errorf("remove signal: %v", signalID, err)
 	}
