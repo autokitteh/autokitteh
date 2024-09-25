@@ -69,7 +69,7 @@ func (db *gormdb) GormDB() *gorm.DB { return db.db }
 
 func (db *gormdb) Connect(ctx context.Context) error {
 	var l *zap.Logger
-	if db.cfg.Debug	{
+	if db.cfg.Debug {
 		l = db.z.Named("gorm")
 	}
 	client, err := gormkitteh.OpenZ(l, db.cfg, func(cfg *gorm.Config) {
