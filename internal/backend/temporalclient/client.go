@@ -15,6 +15,7 @@ import (
 	"go.temporal.io/api/serviceerror"
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/contrib/opentelemetry"
+	"go.temporal.io/sdk/converter"
 	"go.temporal.io/sdk/testsuite"
 	"go.uber.org/zap"
 	zapadapter "logur.dev/adapter/zap"
@@ -74,6 +75,11 @@ func New(cfg *Config, z *zap.Logger) (Client, LazyTemporalClient, error) {
 		tlsConfig = &tls.Config{Certificates: []tls.Certificate{cert}}
 	}
 
+	dc, err := NewDataConverter(&cfg.DataConverter, converter.GetDefaultDataConverter())
+	if err != nil {
+		return nil, nil, fmt.Errorf("new data converter: %w", err)
+	}
+
 	impl := &impl{
 		z:    z,
 		cfg:  cfg,
@@ -93,6 +99,7 @@ func New(cfg *Config, z *zap.Logger) (Client, LazyTemporalClient, error) {
 					),
 				},
 			),
+			DataConverter: dc,
 		},
 	}
 
