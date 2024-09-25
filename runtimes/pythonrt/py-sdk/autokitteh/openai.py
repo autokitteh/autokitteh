@@ -28,7 +28,8 @@ def openai_client(connection: str) -> OpenAI:
     """
     check_connection_name(connection)
 
-    api_key = os.getenv(connection + "__api_key")
+    api_key = os.getenv(connection + "__apiKey")
+
     if not api_key:
         raise ConnectionInitError(connection)
 
