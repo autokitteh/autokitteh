@@ -7,6 +7,9 @@ import (
 //go:embed images/* *.png *.svg *.html *.ico *.txt *.webmanifest *.css *.js
 var RootWebContent embed.FS
 
+//go:embed asana/connect
+var AsanaWebContent embed.FS
+
 //go:embed aws/connect
 var AWSWebContent embed.FS
 
