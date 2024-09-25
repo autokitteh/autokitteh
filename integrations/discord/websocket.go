@@ -2,6 +2,7 @@ package discord
 
 import (
 	"context"
+	"sync"
 
 	"github.com/bwmarrin/discordgo"
 	"go.uber.org/zap"
@@ -28,7 +29,23 @@ func NewHandler(l *zap.Logger, v sdkservices.Vars, d sdkservices.Dispatcher, i s
 	}
 }
 
+var (
+	// Key = botToken (ensures one WebSocket per bot).
+	discordSessions = make(map[string]*discordgo.Session)
+
+	mu = &sync.Mutex{}
+)
+
 func (h handler) OpenWebSocketConnection(botToken string) {
+	// Ensure multiple users don't reference the same bot at the same time.
+	mu.Lock()
+	defer mu.Unlock()
+
+	// Check if a session already exists for this bot token.
+	if _, ok := discordSessions[botToken]; ok {
+		return
+	}
+
 	dg, err := discordgo.New("Bot " + botToken)
 	if err != nil {
 		h.logger.Error("Error creating Discord session", zap.Error(err))
@@ -38,10 +55,12 @@ func (h handler) OpenWebSocketConnection(botToken string) {
 	h.addHandlers(dg)
 
 	// Open a WebSocket connection to Discord.
-	if err := dg.Open(); err == nil {
-		return // Connection opened successfully, normal termination.
+	if err := dg.Open(); err != nil {
+		h.logger.Error("Failed to open Discord WebSocket connection", zap.Error(err))
+		return
 	}
-	h.logger.Error("Failed to open Discord WebSocket connection", zap.Error(err))
+
+	discordSessions[botToken] = dg
 }
 
 func (h handler) dispatchAsyncEventsToConnections(cids []sdktypes.ConnectionID, e sdktypes.Event) {
