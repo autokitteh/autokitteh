@@ -11,7 +11,7 @@ import (
 	"go.autokitteh.dev/autokitteh/web/webplatform"
 )
 
-const defaultPort = 9990
+const defaultPort = 9982
 
 type Config struct {
 	Port int `koanf:"port"` // 0 - disabled
