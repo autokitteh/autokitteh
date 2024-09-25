@@ -81,7 +81,7 @@ func TestSameKey(t *testing.T) {
 
 func TestOldKey(t *testing.T) {
 	buf := make([]byte, keySize*2)
-	io.CopyN(bytes.NewBuffer(buf), rand.Reader, int64(cap(buf)))
+	_, _ = io.CopyN(bytes.NewBuffer(buf), rand.Reader, int64(cap(buf)))
 
 	cvt1 := kittehs.Must1(initConverter(t, bytes.NewReader(buf), []string{"key2"}))
 
