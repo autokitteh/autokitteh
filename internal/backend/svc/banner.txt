@@ -2,7 +2,7 @@
         _..--~~~~--.._             autokitteh   {{ .Version }}
      _--              --_          PID:         {{ .PID }}
     '                    `         gRPC/HTTP:   {{ .Addr }}
-   '                      `        UI:          {{ .UIAddr }}
+   '                      `        Web:         {{ .WebAddr }}
   '                        `       {{ .Mode }}
  |                    |\   |       
  |                    | \  |       {{ .Temporal }}
