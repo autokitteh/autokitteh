@@ -19,7 +19,7 @@ type Config struct {
 
 var Configs = configset.Set[Config]{
 	Default: &Config{},
-	Dev:     &Config{Port: 9990},
+	Dev:     &Config{Port: defaultPort},
 	Test:    &Config{},
 }
 
@@ -45,10 +45,12 @@ func (w *Svc) Start(context.Context) error {
 		return nil
 	}
 
-	fs, err := webplatform.LoadFS()
+	fs, version, err := webplatform.LoadFS()
 	if err != nil {
 		return err
 	}
+
+	l := w.l.With(zap.String("version", version), zap.Int("port", w.Config.Port))
 
 	srv := &http.Server{
 		Addr:    fmt.Sprintf("localhost:%d", w.Config.Port),
@@ -60,14 +62,14 @@ func (w *Svc) Start(context.Context) error {
 	go func() {
 		err := srv.ListenAndServe()
 		if err != nil {
-			w.l.Error("web platform server error", zap.Error(err))
+			l.Error("web platform server error", zap.Error(err))
 			return
 		}
 
-		w.l.Info("web platform server stopped")
+		l.Info("web platform server stopped")
 	}()
 
-	w.l.Info("web platform server started", zap.String("addr", w.addr))
+	l.Info("web platform server started")
 
 	return nil
 }

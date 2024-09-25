@@ -15,15 +15,15 @@ import (
 	"github.com/psanford/memfs"
 )
 
-//go:embed *.zip
+//go:embed autokitteh-web-*.zip
 var zipFS embed.FS
 
 // Loads the first zip file found in the embedded filesystem and
 // extracts the content under its dist/ directory in a memory filesystem.
-func LoadFS() (fs.FS, error) {
+func LoadFS() (fs.FS, string, error) {
 	des, err := fs.ReadDir(zipFS, ".")
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	_, de := kittehs.FindFirst(des, func(de fs.DirEntry) bool {
@@ -31,20 +31,24 @@ func LoadFS() (fs.FS, error) {
 	})
 
 	if de == nil {
-		return nil, errors.New("no zip file found")
+		return nil, "", errors.New("no zip file found")
 	}
 
-	data, err := fs.ReadFile(zipFS, de.Name())
+	zipFilename := de.Name()
+
+	memfs := memfs.New()
+
+	version := strings.TrimSuffix(zipFilename, ".zip")
+
+	data, err := fs.ReadFile(zipFS, zipFilename)
 	if err != nil {
-		return nil, err
+		return nil, version, err
 	}
 
 	r, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
 	if err != nil {
-		return nil, err
+		return nil, version, err
 	}
-
-	memfs := memfs.New()
 
 	for _, f := range r.File {
 		name := f.Name
@@ -57,25 +61,25 @@ func LoadFS() (fs.FS, error) {
 
 		fr, err := f.Open()
 		if err != nil {
-			return nil, err
+			return nil, version, err
 		}
 
 		data, err := io.ReadAll(fr)
 		if err != nil {
 			fr.Close()
-			return nil, err
+			return nil, version, err
 		}
 
 		fr.Close()
 
 		if err := memfs.MkdirAll(filepath.Dir(name), 0o755); err != nil {
-			return nil, err
+			return nil, version, err
 		}
 
 		if err := memfs.WriteFile(name, data, 0o644); err != nil {
-			return nil, err
+			return nil, version, err
 		}
 	}
 
-	return memfs, nil
+	return memfs, version, nil
 }
