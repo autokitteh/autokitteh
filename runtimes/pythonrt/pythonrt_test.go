@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"net"
 	"net/http"
 	"os"
 	"path"
@@ -15,6 +16,7 @@ import (
 	"testing"
 	"time"
 
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 	"go.uber.org/zap"
@@ -72,6 +74,19 @@ func newSVC(t *testing.T) *pySvc {
 	require.Truef(t, ok, "type assertion failed, got %T", rt)
 
 	return svc
+}
+
+func TestConfigureLocalRuntime(t *testing.T) {
+	l := kittehs.Must1(zap.NewDevelopment())
+
+	err := ConfigureLocalRunnerManager(l, LocalRunnerManagerConfig{})
+	require.Error(t, err, "should fail on not set worker address")
+
+	err = ConfigureLocalRunnerManager(l, LocalRunnerManagerConfig{WorkerAddress: "0.0.0.0:123"})
+	require.NoError(t, err, "should succeed to configure")
+
+	err = ConfigureLocalRunnerManager(l, LocalRunnerManagerConfig{WorkerAddressProvider: func() string { return "" }})
+	require.NoError(t, err, "should succeed to configure")
 }
 
 func Test_pySvc_Get(t *testing.T) {
@@ -140,22 +155,26 @@ func newCallbacks(svc *pySvc) *sdkservices.RunCallbacks {
 	return &cbs
 }
 
-func setupServer(l *zap.Logger) (*http.Server, error) {
+func setupServer(l *zap.Logger) (net.Listener, error) {
 	mux := &http.ServeMux{}
 	ConfigureWorkerGRPCHandler(l, mux)
-	server := &http.Server{
-		Addr:    "localhost:9980",
-		Handler: h2c.NewHandler(mux, &http2.Server{}),
+	listener, err := net.Listen("tcp", ":0")
+	if err != nil {
+		return nil, err
 	}
 
-	if err := ConfigureLocalRunnerManager(l, LocalRunnerManagerConfig{WorkerAddress: "localhost:9980"}); err != nil {
+	if err := ConfigureLocalRunnerManager(l, LocalRunnerManagerConfig{
+		WorkerAddressProvider: func() string {
+			port := listener.Addr().(*net.TCPAddr).Port
+			return fmt.Sprintf("localhost:%d", port)
+		},
+	}); err != nil {
 		return nil, err
 	}
 
 	errChan := make(chan error)
-
 	go func() {
-		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		if err := http.Serve(listener, h2c.NewHandler(mux, &http2.Server{})); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			errChan <- err
 			return
 		}
@@ -165,7 +184,7 @@ func setupServer(l *zap.Logger) (*http.Server, error) {
 	case err := <-errChan:
 		return nil, err
 	case <-time.After(2 * time.Second): // give server time to start
-		return server, nil
+		return listener, nil
 	}
 }
 
@@ -196,7 +215,7 @@ func Test_pySvc_Run(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer func() {
-		if err := server.Shutdown(context.Background()); err != nil {
+		if err := server.Close(); err != nil {
 			t.Log(err)
 		}
 
@@ -264,7 +283,7 @@ func TestPythonFromEnv(t *testing.T) {
 	require.Error(t, err)
 
 	genExe(t, pyExe, minPyVersion.Major, minPyVersion.Minor)
-	err = ConfigureLocalRunnerManager(l, LocalRunnerManagerConfig{})
+	err = ConfigureLocalRunnerManager(l, LocalRunnerManagerConfig{WorkerAddress: "0.0.0.0:0"})
 	require.NoError(t, err)
 
 	_, err = New()
@@ -337,7 +356,7 @@ func TestProgramError(t *testing.T) {
 	}
 
 	defer func() {
-		_ = server.Shutdown(context.Background())
+		_ = server.Close()
 	}()
 
 	runID := sdktypes.NewRunID()

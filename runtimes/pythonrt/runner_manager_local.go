@@ -52,6 +52,11 @@ func ConfigureLocalRunnerManager(log *zap.Logger, cfg LocalRunnerManagerConfig) 
 		const format = "python >= %d.%d required, found %q"
 		return fmt.Errorf(format, minPyVersion.Major, minPyVersion.Minor, info.VersionString)
 	}
+
+	if cfg.WorkerAddress == "" && cfg.WorkerAddressProvider == nil {
+		return errors.New("either workerAddress or workerAddressProvider should be supplied")
+	}
+
 	lm := &localRunnerManager{
 		logger:           log,
 		runnerIDToRunner: map[string]*LocalPython{},
