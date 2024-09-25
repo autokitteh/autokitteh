@@ -41,8 +41,14 @@ func (r *LocalPython) Close() error {
 	var err error
 
 	if r.proc != nil {
+
 		if kerr := r.proc.Kill(); kerr != nil {
 			err = errors.Join(err, fmt.Errorf("kill runner (pid=%d) - %w", r.proc.Pid, kerr))
+		}
+
+		_, waitErr := r.proc.Wait()
+		if waitErr != nil {
+			err = errors.Join(err, fmt.Errorf("wait runner (pid=%d) - %w", r.proc.Pid, waitErr))
 		}
 	}
 
