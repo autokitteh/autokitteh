@@ -63,8 +63,9 @@ func planProject(ctx context.Context, mproj *Project, client sdkservices.Service
 
 	var curr sdktypes.Project
 	if !opts.fromScratch {
-		if curr, err = sdkerrors.IgnoreNotFoundErr(client.Projects().GetByName(ctx, name)); err != nil {
-			return nil, fmt.Errorf("get: %w", err)
+		curr, err = sdkerrors.IgnoreNotFoundErr(client.Projects().GetByName(ctx, name))
+		if err != nil {
+			return nil, fmt.Errorf("get project: %w", err)
 		}
 	}
 
@@ -103,7 +104,7 @@ func planProject(ctx context.Context, mproj *Project, client sdkservices.Service
 	// TODO: Remove all non-default environments.
 	envActions, err := planDefaultEnv(ctx, mproj.Vars, client, mproj.Name, pid, optfns...)
 	if err != nil {
-		return nil, fmt.Errorf("envs: %w", err)
+		return nil, fmt.Errorf("default env: %w", err)
 	}
 
 	add(envActions...)
@@ -282,7 +283,7 @@ func planConnections(ctx context.Context, mconns []*Connection, client sdkservic
 		}
 
 		if as, err = planConnectionVars(mconn, cid, cvars, optfns...); err != nil {
-			return nil, fmt.Errorf("connection vars %q: %w", mconn.GetKey(), err)
+			return nil, fmt.Errorf("connection var %q: %w", mconn.GetKey(), err)
 		}
 
 		add(as...)
@@ -365,12 +366,20 @@ func planConnection(mconn *Connection, curr sdktypes.Connection, optfns ...Optio
 		Name: mconn.Name,
 	})
 	if err != nil {
-		return sdktypes.InvalidConnectionID, nil, fmt.Errorf("invalid: %w", err)
+		return sdktypes.InvalidConnectionID, nil, fmt.Errorf("invalid connection: %w", err)
 	}
 
 	if !curr.IsValid() {
 		log.Printf("not found, will create")
-		return sdktypes.InvalidConnectionID, []actions.Action{actions.CreateConnectionAction{Key: mconn.GetKey(), ProjectKey: mconn.ProjectKey, IntegrationKey: mconn.IntegrationKey, Connection: desired}}, nil
+		actions := []actions.Action{
+			actions.CreateConnectionAction{
+				Key:            mconn.GetKey(),
+				ProjectKey:     mconn.ProjectKey,
+				IntegrationKey: mconn.IntegrationKey,
+				Connection:     desired,
+			},
+		}
+		return sdktypes.InvalidConnectionID, actions, nil
 	}
 
 	desired = desired.
@@ -384,7 +393,13 @@ func planConnection(mconn *Connection, curr sdktypes.Connection, optfns ...Optio
 	}
 
 	log.Printf("not as desired, will update")
-	return curr.ID(), []actions.Action{actions.UpdateConnectionAction{Key: mconn.GetKey(), Connection: desired}}, nil
+	actions := []actions.Action{
+		actions.UpdateConnectionAction{
+			Key:        mconn.GetKey(),
+			Connection: desired,
+		},
+	}
+	return curr.ID(), actions, nil
 }
 
 func planTriggers(ctx context.Context, mtriggers []*Trigger, client sdkservices.Services, projName string, pid sdktypes.ProjectID, optfns ...Option) ([]actions.Action, error) {
@@ -399,7 +414,8 @@ func planTriggers(ctx context.Context, mtriggers []*Trigger, client sdkservices.
 
 	if pid.IsValid() && !opts.fromScratch {
 		var err error
-		if triggers, err = client.Triggers().List(ctx, sdkservices.ListTriggersFilter{ProjectID: pid}); err != nil {
+		triggers, err = client.Triggers().List(ctx, sdkservices.ListTriggersFilter{ProjectID: pid})
+		if err != nil {
 			return nil, fmt.Errorf("list triggers: %w", err)
 		}
 

@@ -20,31 +20,31 @@ func AddFailIfError(cmd *cobra.Command) {
 	cmd.Flags().BoolP("fail", "f", false, "fail on error")
 }
 
-func ToExitCodeErrorNotNilErr(err error, whats ...string) ExitCodeError {
-	msg := strings.Join(whats, " ")
-	var code int = GenericFailure
-
-	switch {
-	case errors.Is(err, sdkerrors.ErrNotFound):
-		return NewExitCodeError(NotFoundExitCode, fmt.Errorf("%s not found", msg))
-	case errors.Is(err, sdkerrors.ErrFailedPrecondition):
-		msg = fmt.Sprintf("on %s", msg)
-		code = FailedPrecondition
-	case errors.As(err, resolver.NotFoundErrorType):
-		return NewExitCodeError(NotFoundExitCode, fmt.Errorf("%s not found", msg))
-	}
-	if msg == "" {
-		return NewExitCodeError(code, err)
-	}
-	// return NewExitCodeError(code, fmt.Errorf("%w: %s", err, msg))
-	return NewExitCodeError(code, err)
-}
-
+// ToExitCodeError wraps the given error with an OS exit code.
+// If the error is nil, it also returns nil.
 func ToExitCodeError(err error, whats ...string) error {
 	if err == nil {
 		return nil
 	}
-	return ToExitCodeErrorNotNilErr(err, whats...)
+
+	var code int = GenericFailure
+
+	switch {
+	case errors.Is(err, sdkerrors.ErrNotFound):
+		// Replace "not found" with "<whats> not found".
+		err = fmt.Errorf("%s not found", strings.Join(whats, " "))
+		code = NotFoundExitCode
+	case errors.As(err, resolver.NotFoundErrorType):
+		// Replace "<type> [name] not found" with "<whats> not found".
+		err = fmt.Errorf("%s not found", strings.Join(whats, " "))
+		code = NotFoundExitCode
+	case errors.Is(err, sdkerrors.ErrFailedPrecondition):
+		// Replace "failed precondition" with "failed precondition: <whats>".
+		err = fmt.Errorf("%w: %s", err, strings.Join(whats, " "))
+		code = FailedPrecondition
+	}
+
+	return NewExitCodeError(code, err)
 }
 
 // keep given error, if passed or return notFound if !found condition
@@ -55,16 +55,20 @@ func AddNotFoundErrIfCond(err error, found bool) error {
 	return err
 }
 
+// ToExitCodeWithSkipNotFoundFlag returns the given command's error (may be nil) with an OS
+// exit code, but considers the "--fail" flag: if set to false, we skip "not found" errors.
 func ToExitCodeWithSkipNotFoundFlag(cmd *cobra.Command, err error, whats ...string) error {
 	if err == nil {
 		return nil
 	}
-	exitErr := ToExitCodeErrorNotNilErr(err, whats...)
+
+	exitErr := ToExitCodeError(err, whats...).(ExitCodeError) // This cast is always safe.
 	if exitErr.Code == NotFoundExitCode {
 		flags := cmd.Flags()
 		if flags.Lookup("fail") != nil && !kittehs.Must1(flags.GetBool("fail")) {
 			return nil
 		}
 	}
+
 	return exitErr
 }

@@ -22,7 +22,7 @@ func buildWithRuntime(
 ) error {
 	p, err := rt.Build(ctx, fs, path, symbols)
 	if err != nil {
-		return fmt.Errorf("runtime_build: %w", err)
+		return fmt.Errorf("build runtime: %w", err)
 	}
 
 	return data.MergeFrom(
@@ -46,7 +46,7 @@ func Build(
 
 	rtdescs, err := rts.List(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("list: %w", err)
+		return nil, fmt.Errorf("list runtimes: %w", err)
 	}
 
 	var q []sdktypes.BuildRequirement

@@ -1,0 +1,9 @@
+3
+done
+
+-- main.star:main --
+load("testtools", "fail_activity")
+
+def main():
+    print(fail_activity(n=3, hard=True))
+    print("done")

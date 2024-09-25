@@ -10,7 +10,6 @@ import (
 	"github.com/pressly/goose/v3"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 
 	_ "ariga.io/atlas-provider-gorm/gormschema"
 
@@ -71,7 +70,6 @@ func (db *gormdb) GormDB() *gorm.DB { return db.db }
 func (db *gormdb) Connect(ctx context.Context) error {
 	client, err := gormkitteh.OpenZ(db.z.Named("gorm"), db.cfg, func(cfg *gorm.Config) {
 		cfg.SkipDefaultTransaction = true
-		cfg.Logger = logger.Default
 	})
 	if err != nil {
 		return fmt.Errorf("opendb: %w", err)

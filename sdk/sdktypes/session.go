@@ -35,7 +35,6 @@ func (SessionTraits) Validate(m *SessionPB) error {
 func (SessionTraits) StrictValidate(m *SessionPB) error {
 	return errors.Join(
 		mandatory("entrypoint", m.Entrypoint),
-		mandatory("session_id", m.SessionId),
 		mandatory("build_id", m.BuildId),
 	)
 }

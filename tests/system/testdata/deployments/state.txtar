@@ -16,6 +16,9 @@ resp code == 202
 ak session watch ses_0000000000000000000000000c --end-state RUNNING
 return code == 0
 
+ak session watch ses_0000000000000000000000000c -r "still alive!"
+return code == 0
+
 ak deployment drain dep_00000000000000000000000006
 return code == 0
 
@@ -23,7 +26,6 @@ wait 5s for session ses_0000000000000000000000000b
 
 ak session log --prints-only
 return code == 0
-output contains 'still alive!'
 output contains 'done'
 
 -- project.yaml --
@@ -39,7 +41,7 @@ project:
 
 -- program.star --
 def on_http_get(event):
-    if event.data.url.path.endswith('short'):
+    if event.data.raw_url.endswith('short'):
       print(ak.is_deployment_active())
       return
 

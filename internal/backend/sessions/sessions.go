@@ -24,7 +24,7 @@ type Sessions interface {
 }
 type sessions struct {
 	config *Config
-	z      *zap.Logger
+	l      *zap.Logger
 	svcs   *sessionsvcs.Svcs
 
 	workflows sessionworkflows.Workflows
@@ -34,25 +34,25 @@ type sessions struct {
 
 var _ Sessions = (*sessions)(nil)
 
-func New(z *zap.Logger, config *Config, db db.DB, svcs sessionsvcs.Svcs, telemetry *telemetry.Telemetry) Sessions {
+func New(l *zap.Logger, config *Config, db db.DB, svcs sessionsvcs.Svcs, telemetry *telemetry.Telemetry) Sessions {
 	return &sessions{
 		config:    config,
 		svcs:      &svcs,
-		z:         z,
+		l:         l,
 		telemetry: telemetry,
 	}
 }
 
 func (s *sessions) StartWorkers(ctx context.Context) error {
-
-	s.calls = sessioncalls.New(s.z.Named("sessionworkflows"), s.config.Calls, s.svcs)
-	s.workflows = sessionworkflows.New(s.z.Named("sessionworkflows"), s.config.Workflows, s, s.svcs, s.calls, s.telemetry)
+	s.calls = sessioncalls.New(s.l.Named("sessionworkflows"), s.config.Calls, s.svcs)
+	s.workflows = sessionworkflows.New(s.l.Named("sessionworkflows"), s.config.Workflows, s, s.svcs, s.calls, s.telemetry)
 
 	if !s.config.EnableWorker {
-		s.z.Info("Session worker: disabled")
+		s.l.Info("Session worker: disabled")
 		return nil
 	}
-	s.z.Info("Session worker: enabled")
+
+	s.l.Info("Session worker: enabled")
 
 	if err := s.workflows.StartWorkers(ctx); err != nil {
 		return fmt.Errorf("workflow workflows: %w", err)
@@ -93,28 +93,39 @@ func (s *sessions) Delete(ctx context.Context, sessionID sdktypes.SessionID) err
 		return fmt.Errorf("%w: cannot delete session, invalid state: %s, session_id: %s", sdkerrors.ErrFailedPrecondition, session.State(), sessionID.String())
 	}
 
-	err = s.svcs.DB.DeleteSession(ctx, sessionID)
-	s.z.With(zap.String("session_id", sessionID.String())).Info("delete")
-	return err
+	if err = s.svcs.DB.DeleteSession(ctx, sessionID); err != nil {
+		return err
+	}
+
+	s.l.Sugar().With("session_id", sessionID).Infof("deleted %v", sessionID)
+
+	return nil
 }
 
 func (s *sessions) Start(ctx context.Context, session sdktypes.Session) (sdktypes.SessionID, error) {
 	if session.ID().IsValid() {
 		return sdktypes.InvalidSessionID, sdkerrors.NewInvalidArgumentError("session id is not nil")
 	}
-	ctx = akCtx.WithRequestOrginator(ctx, akCtx.SessionWorkflow)
+
+	if err := session.Strict(); err != nil {
+		return sdktypes.InvalidSessionID, err
+	}
 
 	session = session.WithNewID()
-	z := s.z.With(zap.String("session_id", session.ID().String()))
+	sid := session.ID()
+	l := s.l.With(zap.Any("session_id", sid))
+
+	ctx = akCtx.WithRequestOrginator(ctx, akCtx.SessionWorkflow)
+	ctx = akCtx.WithOwnershipOf(ctx, s.svcs.DB.GetOwnership, session.EnvID().UUIDValue())
 
 	if err := s.svcs.DB.CreateSession(ctx, session); err != nil {
 		return sdktypes.InvalidSessionID, fmt.Errorf("start session: %w", err)
 	}
 
-	if err := s.workflows.StartWorkflow(ctx, session, s.config.Debug); err != nil {
+	if err := s.workflows.StartWorkflow(ctx, session); err != nil {
 		err = fmt.Errorf("start workflow: %w", err)
 		if uerr := s.svcs.DB.UpdateSessionState(ctx, session.ID(), sdktypes.NewSessionStateError(err, nil)); uerr != nil {
-			z.Error("update session state", zap.Error(err))
+			l.Sugar().With("err", err).Error("update session state: %v")
 		}
 		return sdktypes.InvalidSessionID, fmt.Errorf("start workflow: %w", err)
 	}

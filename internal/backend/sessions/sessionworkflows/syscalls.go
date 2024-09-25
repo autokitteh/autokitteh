@@ -85,7 +85,7 @@ func (w *sessionWorkflow) start(ctx context.Context, args []sdktypes.Value, kwar
 	}
 
 	session := sdktypes.NewSession(w.data.Build.ID(), cl, inputs, memo).
-		WithParentSessionID(w.data.SessionID).
+		WithParentSessionID(w.data.Session.ID()).
 		WithDeploymentID(w.data.Session.DeploymentID()).
 		WithEnvID(w.data.Env.ID())
 
@@ -131,7 +131,7 @@ func (w *sessionWorkflow) subscribe(ctx context.Context, args []sdktypes.Value, 
 		return sdktypes.InvalidValue, err
 	}
 
-	return sdktypes.WrapValue(signalID.String())
+	return sdktypes.NewStringValue(signalID.String()), nil
 }
 
 /*

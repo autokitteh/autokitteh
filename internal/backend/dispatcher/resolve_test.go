@@ -47,8 +47,10 @@ func TestResolveEnv(t *testing.T) {
 	z := zap.NewNop()
 
 	d := &Dispatcher{
-		Envs:     envs.New(z, testdb),
-		Projects: &projects.Projects{DB: testdb, Z: z},
+		svcs: Svcs{
+			Envs:     envs.New(z, testdb),
+			Projects: &projects.Projects{DB: testdb, Z: z},
+		},
 	}
 
 	tests := []struct {

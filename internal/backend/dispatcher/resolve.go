@@ -31,12 +31,12 @@ func (d *Dispatcher) resolveEnv(ctx context.Context, env string) (sdktypes.EnvID
 			return sdktypes.InvalidEnvID, err
 		}
 
-		p, err := d.Projects.GetByName(ctx, name)
+		p, err := d.svcs.Projects.GetByName(ctx, name)
 		if err != nil {
 			return sdktypes.InvalidEnvID, fmt.Errorf("project: %w", err)
 		}
 
-		envs, err := d.Envs.List(ctx, p.ID())
+		envs, err := d.svcs.Envs.List(ctx, p.ID())
 		if err != nil {
 			return sdktypes.InvalidEnvID, err
 		}
@@ -69,7 +69,7 @@ func (d *Dispatcher) resolveEnv(ctx context.Context, env string) (sdktypes.EnvID
 		return sdktypes.InvalidEnvID, err
 	}
 
-	p, err := d.Projects.GetByName(context.Background(), name)
+	p, err := d.svcs.Projects.GetByName(context.Background(), name)
 	if err != nil {
 		return sdktypes.InvalidEnvID, err
 	}
@@ -81,7 +81,7 @@ func (d *Dispatcher) resolveEnv(ctx context.Context, env string) (sdktypes.EnvID
 		return sdktypes.InvalidEnvID, err
 	}
 
-	e, err := d.Envs.GetByName(ctx, p.ID(), name)
+	e, err := d.svcs.Envs.GetByName(ctx, p.ID(), name)
 	if err != nil {
 		return sdktypes.InvalidEnvID, err
 	}

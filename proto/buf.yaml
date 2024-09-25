@@ -6,4 +6,4 @@ breaking:
     - FILE
 lint:
   use:
-    - DEFAULT
+    - STANDARD

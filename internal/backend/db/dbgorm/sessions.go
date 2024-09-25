@@ -177,12 +177,12 @@ func (gdb *gormdb) getSessionLogRecords(ctx context.Context, filter sdkservices.
 		}
 
 		if types := filter.Types; types != 0 {
+			var qtypes []string
+
 			specific := func(t sdktypes.SessionLogRecordType, name string) {
-				op := "=="
-				if types&t == 0 {
-					op = "!="
+				if types&t != 0 {
+					qtypes = append(qtypes, name)
 				}
-				q = tx.db.Where(fmt.Sprintf("type %s ?", op), name)
 			}
 
 			specific(sdktypes.PrintSessionLogRecordType, printSessionLogRecordType)
@@ -191,6 +191,8 @@ func (gdb *gormdb) getSessionLogRecords(ctx context.Context, filter sdkservices.
 			specific(sdktypes.CallSpecSessionLogRecordType, callSpecSessionLogRecordType)
 			specific(sdktypes.CallAttemptStartSessionLogRecordType, callAttemptStartSessionLogRecordType)
 			specific(sdktypes.CallAttemptCompleteSessionLogRecordType, callAttemptCompleteSessionLogRecordType)
+
+			q = q.Where("type in (?)", qtypes)
 		}
 
 		// Default is desc order

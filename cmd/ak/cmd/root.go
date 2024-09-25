@@ -53,7 +53,7 @@ var RootCmd = common.StandardCommand(&cobra.Command{
 		path := filepath.Join(xdg.ConfigHomeDir(), ".env")
 		if err := godotenv.Load(path); err != nil {
 			if !errors.Is(err, os.ErrNotExist) {
-				return fmt.Errorf(".env loading error: %w", err)
+				return fmt.Errorf(".env file loading error: %w", err)
 			}
 		}
 
@@ -63,7 +63,7 @@ var RootCmd = common.StandardCommand(&cobra.Command{
 		}
 
 		if err := common.InitConfig(confmap); err != nil {
-			return fmt.Errorf("root init config: %w", err)
+			return fmt.Errorf("init root config: %w", err)
 		}
 
 		return common.InitRPCClient(token)

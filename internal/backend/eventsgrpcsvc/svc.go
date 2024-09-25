@@ -85,10 +85,8 @@ func (s *server) List(ctx context.Context, req *connect.Request[eventsv1.ListReq
 
 	// verify order is valid
 	if order != sdkservices.ListOrderAscending && order != sdkservices.ListOrderDescending {
-		return nil, connect.NewError(
-			connect.CodeInvalidArgument,
-			fmt.Errorf("order should be either %s or %s", sdkservices.ListOrderAscending, sdkservices.ListOrderDescending),
-		)
+		err := fmt.Errorf("order should be either %s or %s", sdkservices.ListOrderAscending, sdkservices.ListOrderDescending)
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
 	filter := sdkservices.ListEventsFilter{
