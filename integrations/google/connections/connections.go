@@ -76,7 +76,7 @@ func ConnTest(cvars sdkservices.Vars) sdkintegrations.OptFn {
 			return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), nil
 		}
 
-		// Make a simple API call to verify credentials
+		// Make a simple API call to verify credentials.
 		resp, err := client.Get("https://www.googleapis.com/oauth2/v2/userinfo?alt=json")
 		if err != nil {
 			return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), nil
