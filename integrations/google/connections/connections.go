@@ -64,7 +64,6 @@ func ConnTest(cvars sdkservices.Vars) sdkintegrations.OptFn {
 		}
 
 		var client *http.Client
-
 		switch at.Value() {
 		case "oauth":
 			client, err = getOAuthClient(vs.GetValueByString("oauth_AccessToken"))
@@ -73,7 +72,6 @@ func ConnTest(cvars sdkservices.Vars) sdkintegrations.OptFn {
 		default:
 			return sdktypes.NewStatus(sdktypes.StatusCodeError, "Unsupported auth type"), nil
 		}
-
 		if err != nil {
 			return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), nil
 		}
