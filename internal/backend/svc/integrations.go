@@ -6,9 +6,9 @@ import (
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/integrations/asana"
 	"go.autokitteh.dev/autokitteh/integrations/atlassian/confluence"
 	"go.autokitteh.dev/autokitteh/integrations/atlassian/jira"
-	"go.autokitteh.dev/autokitteh/integrations/asana"
 	"go.autokitteh.dev/autokitteh/integrations/aws"
 	"go.autokitteh.dev/autokitteh/integrations/chatgpt"
 	"go.autokitteh.dev/autokitteh/integrations/discord"
