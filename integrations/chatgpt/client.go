@@ -93,8 +93,7 @@ func connTest(i *integration) sdkintegrations.OptFn {
 
 		apiKey := vs.Get(apiKeyVar).Value()
 		client := openai.NewClient(apiKey)
-		_, err = client.ListModels(ctx)
-		if err != nil {
+		if _, err = client.ListModels(ctx); err != nil {
 			return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), nil
 		}
 
