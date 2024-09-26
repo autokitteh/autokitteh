@@ -82,6 +82,10 @@ type ctxKey struct{}
 
 func connTest(i *integration) sdkintegrations.OptFn {
 	return sdkintegrations.WithConnectionTest(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
+		if !cid.IsValid() {
+			return sdktypes.NewStatus(sdktypes.StatusCodeError, "Init required"), nil
+		}
+
 		vs, err := i.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
 		if err != nil {
 			return sdktypes.InvalidStatus, err
