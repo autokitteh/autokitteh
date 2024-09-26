@@ -64,6 +64,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/vars"
 	"go.autokitteh.dev/autokitteh/internal/backend/varsgrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/webhookssvc"
+	"go.autokitteh.dev/autokitteh/internal/backend/webplatform"
 	"go.autokitteh.dev/autokitteh/internal/backend/webtools"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/internal/version"
@@ -212,9 +213,18 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 			"webtools",
 			webtools.Configs,
 			fx.Provide(webtools.New),
-			fx.Invoke(func(lc fx.Lifecycle, muxes *muxes.Muxes, t webtools.Svc) {
-				t.Init(muxes)
-				HookOnStart(lc, t.Setup)
+			fx.Invoke(func(lc fx.Lifecycle, muxes *muxes.Muxes, svc webtools.Svc) {
+				svc.Init(muxes)
+				HookOnStart(lc, svc.Setup)
+			}),
+		),
+		Component(
+			"webplatform",
+			webplatform.Configs,
+			fx.Provide(webplatform.New),
+			fx.Invoke(func(lc fx.Lifecycle, svc *webplatform.Svc) {
+				HookOnStart(lc, svc.Start)
+				HookOnStop(lc, svc.Stop)
 			}),
 		),
 		fx.Provide(func(s sdkservices.ServicesStruct) sdkservices.Services { return &s }),
@@ -303,10 +313,10 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		Component(
 			"banner",
 			bannerConfigs,
-			fx.Invoke(func(cfg *bannerConfig, lc fx.Lifecycle, z *zap.Logger, httpsvc httpsvc.Svc, tclient temporalclient.Client) {
+			fx.Invoke(func(cfg *bannerConfig, lc fx.Lifecycle, z *zap.Logger, httpsvc httpsvc.Svc, tclient temporalclient.Client, wp *webplatform.Svc) {
 				HookSimpleOnStart(lc, func() {
 					temporalFrontendAddr, temporalUIAddr := tclient.TemporalAddr()
-					printBanner(cfg, opts, httpsvc.Addr(), temporalFrontendAddr, temporalUIAddr)
+					printBanner(cfg, opts, httpsvc.Addr(), wp.Addr(), temporalFrontendAddr, temporalUIAddr)
 				})
 			}),
 		),
