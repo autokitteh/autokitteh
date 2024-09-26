@@ -6,6 +6,7 @@ from time import sleep
 
 import autokitteh
 from autokitteh import decorators
+from autokitteh import google
 
 from . import log
 from .comm import Comm, MessageType
@@ -16,6 +17,7 @@ AK_FUNCS = {
     autokitteh.next_event,
     autokitteh.subscribe,
     autokitteh.unsubscribe,
+    google.google_refresh_handler,
     sleep,
 }
 

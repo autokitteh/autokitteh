@@ -28,6 +28,8 @@ class Transformer(ast.NodeTransformer):
         self.generic_visit(node)
 
         name = name_of(node.func, self.code_lines)
+        print(str(node))
+        print(str(name))
 
         if not name or name in BUILTIN:
             return node
