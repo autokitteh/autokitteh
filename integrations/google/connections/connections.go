@@ -93,12 +93,8 @@ func ConnTest(cvars sdkservices.Vars) sdkintegrations.OptFn {
 }
 
 func getOAuthClient(acsTkn string) (*http.Client, error) {
-	token := &oauth2.Token{
-		AccessToken: acsTkn,
-		TokenType:   "Bearer",
-	}
-
-	tokenSource := oauth2.StaticTokenSource(token)
+	t := &oauth2.Token{AccessToken: acsTkn, TokenType: "Bearer"}
+	tokenSource := oauth2.StaticTokenSource(t)
 	return oauth2.NewClient(context.Background(), tokenSource), nil
 }
 
