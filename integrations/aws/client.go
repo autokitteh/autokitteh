@@ -154,9 +154,7 @@ func connTest(i *integration) sdkintegrations.OptFn {
 			return sdktypes.InvalidStatus, err
 		}
 
-		stsClient := sts.NewFromConfig(cfg)
-
-		_, err = stsClient.GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
+		_, err = sts.NewFromConfig(cfg).GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
 		if err != nil {
 			return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), nil
 		}
