@@ -3,9 +3,6 @@ package github
 import (
 	"context"
 
-	// "fmt"
-	// "net/http"
-
 	"github.com/google/go-github/v60/github"
 
 	"go.autokitteh.dev/autokitteh/integrations"
@@ -15,8 +12,6 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-	// "go.uber.org/zap"
-	// "golang.org/x/oauth2"
 )
 
 type integration struct {
@@ -77,8 +72,6 @@ func connStatus(i *integration) sdkintegrations.OptFn {
 		}
 	})
 }
-
-type ctxKey struct{}
 
 func connTest(i *integration) sdkintegrations.OptFn {
 	return sdkintegrations.WithConnectionTest(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
