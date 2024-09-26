@@ -78,7 +78,7 @@ func (cs *calls) sessionCallActivity(ctx context.Context, params *callActivityIn
 		return &callActivityOutputs{Retry: true}, nil
 	}
 
-	if !params.CallSpec.Function().GetFunction().HasFlag(sdktypes.DisableAutoHeartbeat) {
+	if !params.CallSpec.Function().GetFunction().HasFlag(sdktypes.DisableAutoHeartbeat) && cs.config.ActivityHeartbeatInterval > 0 {
 		_, done := BeginHeartbeat(ctx, cs.config.ActivityHeartbeatInterval)
 		defer done()
 	}
