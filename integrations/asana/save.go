@@ -86,5 +86,5 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Finalize the connection with the valid PAT
 	c.Finalize(sdktypes.NewVars().
 		Set(pat, ps, true).
-		Set(authType, integrations.Init, false))
+		Set(authType, integrations.PAT, false))
 }
