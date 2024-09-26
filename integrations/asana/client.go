@@ -16,7 +16,7 @@ import (
 type integration struct{ vars sdkservices.Vars }
 
 var (
-	patSecret     = sdktypes.NewSymbol("pat_secret")
+	pat           = sdktypes.NewSymbol("pat")
 	authType      = sdktypes.NewSymbol("authType")
 	integrationID = sdktypes.NewIntegrationIDFromName("asana")
 )
@@ -66,10 +66,14 @@ func connStatus(i *integration) sdkintegrations.OptFn {
 			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
 		}
 
-		if at.Value() == integrations.Init {
-			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "Initialized"), nil
+		switch at.Value() {
+		case integrations.OAuth:
+			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "Using Asana app"), nil
+		case integrations.PAT:
+			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "Using PAT"), nil
+		default:
+			return sdktypes.NewStatus(sdktypes.StatusCodeError, "Bad auth type"), nil
 		}
-		return sdktypes.NewStatus(sdktypes.StatusCodeError, "Bad auth type"), nil
 	})
 }
 
@@ -92,11 +96,10 @@ func connTest(i *integration) sdkintegrations.OptFn {
 			return sdktypes.InvalidStatus, err
 		}
 
-		ps := vs.Get(patSecret).Value()
-		req.Header.Add("Authorization", "Bearer "+ps)
+		pat := vs.Get(pat).Value()
+		req.Header.Add("Authorization", "Bearer "+pat)
 
-		client := &http.Client{}
-		resp, err := client.Do(req)
+		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
 			return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), nil
 		}

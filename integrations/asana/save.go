@@ -47,36 +47,44 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Test the PAT's usability
 	req, err := http.NewRequest("GET", "https://app.asana.com/api/1.0/users/me", nil)
 	if err != nil {
-		l.Warn("Failed to create HTTP request", zap.Error(err))
-		c.AbortBadRequest("request creation error")
+		l.Error("Failed to create HTTP request", zap.Error(err)) // This is likely an internal server error
+		c.AbortServerError("request creation error")
 		return
 	}
 
-	ps := r.Form.Get("patSecret")
+	ps := r.Form.Get("pat")
+	if ps == "" {
+		l.Warn("PAT not provided in request form")
+		c.AbortBadRequest("PAT is missing")
+		return
+	}
+
 	req.Header.Add("Authorization", "Bearer "+ps)
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		l.Warn("Failed to execute HTTP request", zap.Error(err))
-		c.AbortBadRequest("execution error")
+		l.Error("Failed to execute HTTP request", zap.Error(err))
+		c.AbortServerError("execution error")
 		return
 	}
 	defer resp.Body.Close()
 
 	_, err = io.ReadAll(resp.Body)
 	if err != nil {
-		l.Warn("Failed to read response body", zap.Error(err))
-		c.AbortBadRequest("response reading error")
+		l.Error("Failed to read response body", zap.Error(err))
+		c.AbortServerError("response reading error")
 		return
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		l.Warn("Token is invalid or an error occurred")
+		l.Warn("Token is invalid or an error occurred", zap.Int("status_code", resp.StatusCode))
 		c.AbortBadRequest("invalid token or error occurred")
+		return
 	}
 
+	// Finalize the connection with the valid PAT
 	c.Finalize(sdktypes.NewVars().
-		Set(patSecret, ps, true).
+		Set(pat, ps, true).
 		Set(authType, integrations.Init, false))
 }
