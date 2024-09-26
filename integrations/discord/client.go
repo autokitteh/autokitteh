@@ -88,8 +88,7 @@ func connTest(i *integration) sdkintegrations.OptFn {
 			return sdktypes.InvalidStatus, err
 		}
 
-		_, err = dg.User("@me")
-		if err != nil {
+		if _, err = dg.User("@me"); err != nil {
 			return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), nil
 		}
 
