@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"go.uber.org/zap"
 
@@ -52,9 +53,21 @@ func (w *Svc) Start(context.Context) error {
 
 	l := w.l.With(zap.String("version", version), zap.Int("port", w.Config.Port))
 
+	fsrv := http.FileServer(http.FS(fs))
+
 	srv := &http.Server{
-		Addr:    fmt.Sprintf("localhost:%d", w.Config.Port),
-		Handler: http.FileServer(http.FS(fs)),
+		Addr: fmt.Sprintf("localhost:%d", w.Config.Port),
+		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// If path actually exists in fs, serve it.
+			if f, _ := fs.Open(strings.TrimPrefix(r.URL.Path, "/")); f != nil {
+				f.Close()
+				fsrv.ServeHTTP(w, r)
+				return
+			}
+
+			// Otherwise redirect all other queries to /index.html.
+			http.ServeFileFS(w, r, fs, "/index.html")
+		}),
 	}
 
 	w.addr = srv.Addr
