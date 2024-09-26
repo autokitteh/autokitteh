@@ -2,16 +2,16 @@ package gemini
 
 import (
 	"context"
-	"fmt"
-	"io"
-	"net/http"
-	"strings"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
+
+	"github.com/google/generative-ai-go/genai"
+	"google.golang.org/api/iterator"
+	"google.golang.org/api/option"
 )
 
 var integrationID = sdktypes.NewIntegrationIDFromName("googlegemini")
@@ -60,33 +60,22 @@ func connTest(cvars sdkservices.Vars) sdkintegrations.OptFn {
 		if !apiKey.IsValid() || apiKey.Value() == "" {
 			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
 		}
-		url := "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" + apiKey.Value()
-		requestBody := `{
-				"contents": [{
-					"parts": [{"text": "Hello, Gemini!"}]
-				}]
-			}`
 
-		req, err := http.NewRequest("POST", url, strings.NewReader(requestBody))
-		if err != nil {
-			return sdktypes.InvalidStatus, err
-		}
-
-		req.Header.Set("Content-Type", "application/json")
-		client := &http.Client{}
-		resp, err := client.Do(req)
+		client, err := genai.NewClient(ctx, option.WithAPIKey(apiKey.Value()))
 		if err != nil {
 			return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), nil
 		}
-		defer resp.Body.Close()
+		defer client.Close()
 
-		_, err = io.ReadAll(resp.Body)
-		if err != nil {
-			return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), nil
-		}
-
-		if resp.StatusCode != http.StatusOK {
-			return sdktypes.NewStatus(sdktypes.StatusCodeError, fmt.Sprintf("Request failed. Status Code: %d", resp.StatusCode)), nil
+		iter := client.ListModels(ctx)
+		for {
+			_, err := iter.Next()
+			if err == iterator.Done {
+				break
+			}
+			if err != nil {
+				return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), nil
+			}
 		}
 
 		return sdktypes.NewStatus(sdktypes.StatusCodeOK, ""), nil

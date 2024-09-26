@@ -2,9 +2,6 @@ package twilio
 
 import (
 	"context"
-	"fmt"
-	"io"
-	"net/http"
 
 	"go.autokitteh.dev/autokitteh/integrations"
 	"go.autokitteh.dev/autokitteh/integrations/twilio/webhooks"
@@ -13,6 +10,8 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
+
+	"github.com/twilio/twilio-go"
 )
 
 type integration struct{ vars sdkservices.Vars }
@@ -116,29 +115,15 @@ func connTest(i *integration) sdkintegrations.OptFn {
 		}
 		authToken = decodedVars.Password
 
-		url := fmt.Sprintf("https://api.twilio.com/2010-04-01/Accounts/%s.json", accountSID)
-		req, err := http.NewRequest("GET", url, nil)
+		client := twilio.NewRestClientWithParams(twilio.ClientParams{
+			Username: authSID,
+			Password: authToken,
+		})
+
+		_, err = client.Api.FetchAccount(accountSID)
 		if err != nil {
 			return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), nil
 		}
-
-		req.SetBasicAuth(authSID, authToken)
-		client := &http.Client{}
-		resp, err := client.Do(req)
-		if err != nil {
-			return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), nil
-		}
-		defer resp.Body.Close()
-
-		_, err = io.ReadAll(resp.Body)
-		if err != nil {
-			return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), nil
-		}
-
-		if resp.StatusCode != http.StatusOK {
-			return sdktypes.NewStatus(sdktypes.StatusCodeError, fmt.Sprintf("Request failed. Status Code: %d", resp.StatusCode)), nil
-		}
-
 		return sdktypes.NewStatus(sdktypes.StatusCodeOK, ""), nil
 	})
 }

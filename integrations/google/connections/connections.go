@@ -92,8 +92,8 @@ func ConnTest(cvars sdkservices.Vars) sdkintegrations.OptFn {
 	})
 }
 
-func getOAuthClient(acsTkn string) (*http.Client, error) {
-	t := &oauth2.Token{AccessToken: acsTkn, TokenType: "Bearer"}
+func getOAuthClient(token string) (*http.Client, error) {
+	t := &oauth2.Token{AccessToken: token, TokenType: "Bearer"}
 	tokenSource := oauth2.StaticTokenSource(t)
 	return oauth2.NewClient(context.Background(), tokenSource), nil
 }
