@@ -47,7 +47,7 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Test the PAT's usability
 	req, err := http.NewRequest("GET", "https://app.asana.com/api/1.0/users/me", nil)
 	if err != nil {
-		l.Error("Failed to create HTTP request", zap.Error(err)) // This is likely an internal server error
+		l.Error("Failed to create HTTP request", zap.Error(err))
 		c.AbortServerError("request creation error")
 		return
 	}
@@ -65,7 +65,7 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	resp, err := client.Do(req)
 	if err != nil {
 		l.Error("Failed to execute HTTP request", zap.Error(err))
-		c.AbortServerError("execution error")
+		c.AbortBadRequest("execution error")
 		return
 	}
 	defer resp.Body.Close()
