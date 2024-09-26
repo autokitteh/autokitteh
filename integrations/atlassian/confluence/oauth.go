@@ -97,7 +97,7 @@ func accessibleResources(l *zap.Logger, baseURL string, token string) ([]resourc
 	u := fmt.Sprintf("%s/oauth/token/accessible-resources", baseURL)
 	req, err := http.NewRequest("GET", u, nil)
 	if err != nil {
-		l.Warn("Failed to construct HTTP request for OAuth token test", zap.Error(err))
+		logWarnIfNotNil(l, "Failed to construct HTTP request for OAuth token test", zap.Error(err))
 		return nil, err
 	}
 
@@ -105,13 +105,13 @@ func accessibleResources(l *zap.Logger, baseURL string, token string) ([]resourc
 
 	resp, err := httpClient.Do(req)
 	if err != nil {
-		l.Warn("Failed to request accessible resources for OAuth token", zap.Error(err))
+		logWarnIfNotNil(l, "Failed to request accessible resources for OAuth token", zap.Error(err))
 		return nil, err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		l.Warn("Unexpected response on accessible resources", zap.Int("status", resp.StatusCode))
+		logWarnIfNotNil(l, "Unexpected response on accessible resources", zap.Int("status", resp.StatusCode))
 		return nil, fmt.Errorf("accessible resources: unexpected status code %d", resp.StatusCode)
 	}
 
@@ -125,6 +125,12 @@ func accessibleResources(l *zap.Logger, baseURL string, token string) ([]resourc
 	}
 
 	return res, nil
+}
+
+func logWarnIfNotNil(l *zap.Logger, msg string, fields ...zap.Field) {
+	if l != nil {
+		l.Warn(msg, fields...)
+	}
 }
 
 func (r resource) toVars() sdktypes.Vars {

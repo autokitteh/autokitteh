@@ -43,6 +43,7 @@ func New(vs sdkservices.Vars) sdkservices.Integration {
 		desc,
 		sdkmodule.New(exportFuncs(vs)...),
 		connStatus(vs),
+		connTest(vs),
 		sdkintegrations.WithConnectionConfigFromVars(vs),
 	)
 }
@@ -74,6 +75,45 @@ func connStatus(cvars sdkservices.Vars) sdkintegrations.OptFn {
 		default:
 			return sdktypes.NewStatus(sdktypes.StatusCodeError, "Bad auth type"), nil
 		}
+	})
+}
+
+// connTest is an optional connection test provided by the integration
+// to AutoKitteh. It is used to verify that the connection is working
+// as expected. The possible results are "OK" and "error".
+func connTest(cvars sdkservices.Vars) sdkintegrations.OptFn {
+	return sdkintegrations.WithConnectionTest(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
+		if !cid.IsValid() {
+			return sdktypes.NewStatus(sdktypes.StatusCodeError, "Init required"), nil
+		}
+
+		vs, err := cvars.Get(ctx, sdktypes.NewVarScopeID(cid))
+		if err != nil {
+			return sdktypes.InvalidStatus, err
+		}
+
+		at := vs.Get(vars.AuthType)
+		if !at.IsValid() || at.Value() == "" {
+			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
+		}
+
+		token := ""
+
+		switch at.Value() {
+		case integrations.OAuth:
+			token = vs.GetValueByString("oauth_AccessToken")
+		case integrations.SocketMode:
+			token = vs.Get(vars.BotTokenName).Value()
+		default:
+			return sdktypes.NewStatus(sdktypes.StatusCodeError, "Bad auth type"), nil
+		}
+
+		_, err = auth.TestWithToken(ctx, token)
+		if err != nil {
+			return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), nil
+		}
+
+		return sdktypes.NewStatus(sdktypes.StatusCodeOK, ""), nil
 	})
 }
 

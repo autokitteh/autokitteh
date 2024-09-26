@@ -52,6 +52,7 @@ func New(cvars sdkservices.Vars) sdkservices.Integration {
 		desc,
 		sdkmodule.New(opts...),
 		connections.ConnStatus(cvars),
+		connections.ConnTest(cvars),
 		sdkintegrations.WithConnectionConfigFromVars(cvars))
 }
 

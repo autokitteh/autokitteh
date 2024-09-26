@@ -7,6 +7,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/eventbridge"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
@@ -15,6 +16,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/sns"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
 
 	"go.autokitteh.dev/autokitteh/integrations"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
@@ -99,6 +101,7 @@ func New(cvars sdkservices.Vars) sdkservices.Integration {
 		desc,
 		sdkmodule.New(initOpts(cvars)...),
 		connStatus(i),
+		connTest(i),
 		sdkintegrations.WithConnectionConfigFromVars(cvars),
 	)
 }
@@ -126,5 +129,40 @@ func connStatus(i *integration) sdkintegrations.OptFn {
 			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "Initialized"), nil
 		}
 		return sdktypes.NewStatus(sdktypes.StatusCodeError, "Bad auth type"), nil
+	})
+}
+
+// connTest is an optional connection test provided by the integration
+// to AutoKitteh. It is used to verify that the connection is working
+// as expected. The possible results are "OK" and "error".
+func connTest(i *integration) sdkintegrations.OptFn {
+	return sdkintegrations.WithConnectionTest(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
+		if !cid.IsValid() {
+			return sdktypes.NewStatus(sdktypes.StatusCodeError, "Init required"), nil
+		}
+
+		vs, err := i.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
+		if err != nil {
+			return sdktypes.InvalidStatus, err
+		}
+
+		cfg, err := config.LoadDefaultConfig(ctx,
+			config.WithRegion(vs.GetValueByString("Region")),
+			config.WithCredentialsProvider(
+				credentials.NewStaticCredentialsProvider(
+					vs.GetValueByString("AccessKeyID"),
+					vs.GetValueByString("SecretKey"),
+					vs.GetValueByString("Token"))),
+		)
+		if err != nil {
+			return sdktypes.InvalidStatus, err
+		}
+
+		_, err = sts.NewFromConfig(cfg).GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
+		if err != nil {
+			return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), nil
+		}
+
+		return sdktypes.NewStatus(sdktypes.StatusCodeOK, ""), nil
 	})
 }

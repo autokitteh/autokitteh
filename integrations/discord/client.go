@@ -3,6 +3,8 @@ package discord
 import (
 	"context"
 
+	"github.com/bwmarrin/discordgo"
+
 	"go.autokitteh.dev/autokitteh/integrations"
 	"go.autokitteh.dev/autokitteh/integrations/discord/internal/vars"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
@@ -39,6 +41,7 @@ func New(cvars sdkservices.Vars) sdkservices.Integration {
 		desc,
 		sdkmodule.New( /* No exported functions for Starlark */ ),
 		connStatus(i),
+		connTest(i),
 		sdkintegrations.WithConnectionConfigFromVars(cvars),
 	)
 }
@@ -66,5 +69,33 @@ func connStatus(i *integration) sdkintegrations.OptFn {
 			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "Initialized"), nil
 		}
 		return sdktypes.NewStatus(sdktypes.StatusCodeError, "Bad auth type"), nil
+	})
+}
+
+// connTest is an optional connection test provided by the integration
+// to AutoKitteh. It is used to verify that the connection is working
+// as expected. The possible results are "OK" and "error".
+func connTest(i *integration) sdkintegrations.OptFn {
+	return sdkintegrations.WithConnectionTest(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
+		if !cid.IsValid() {
+			return sdktypes.NewStatus(sdktypes.StatusCodeError, "Init required"), nil
+		}
+
+		vs, err := i.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
+		if err != nil {
+			return sdktypes.InvalidStatus, err
+		}
+
+		token := vs.Get(vars.BotToken).Value()
+		dg, err := discordgo.New("Bot " + token)
+		if err != nil {
+			return sdktypes.InvalidStatus, err
+		}
+
+		if _, err = dg.User("@me"); err != nil {
+			return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), nil
+		}
+
+		return sdktypes.NewStatus(sdktypes.StatusCodeOK, ""), nil
 	})
 }

@@ -35,6 +35,7 @@ func New(cvars sdkservices.Vars) sdkservices.Integration {
 		desc,
 		sdkmodule.New( /* No exported functions for Starlark */ ),
 		connStatus(i),
+		connTest(i),
 		sdkintegrations.WithConnectionConfigFromVars(cvars),
 	)
 }
@@ -45,7 +46,7 @@ func New(cvars sdkservices.Vars) sdkservices.Integration {
 func connStatus(i *integration) sdkintegrations.OptFn {
 	return sdkintegrations.WithConnectionStatus(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
 		if !cid.IsValid() {
-			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
+			return sdktypes.NewStatus(sdktypes.StatusCodeError, "Init required"), nil
 		}
 
 		vs, err := i.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
@@ -68,5 +69,35 @@ func connStatus(i *integration) sdkintegrations.OptFn {
 		default:
 			return sdktypes.NewStatus(sdktypes.StatusCodeError, "Bad auth type"), nil
 		}
+	})
+}
+
+// connTest is an optional connection test provided by the integration
+// to AutoKitteh. It is used to verify that the connection is working
+// as expected. The possible results are "OK" and "error".
+func connTest(i *integration) sdkintegrations.OptFn {
+	return sdkintegrations.WithConnectionTest(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
+		if !cid.IsValid() {
+			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
+		}
+
+		vs, err := i.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
+		if err != nil {
+			return sdktypes.InvalidStatus, err
+		}
+
+		baseURL, err := apiBaseURL()
+		if err != nil {
+			return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), nil
+		}
+
+		token := vs.GetValueByString("oauth_AccessToken")
+
+		res, err := accessibleResources(nil, baseURL, token)
+		print(res)
+		if err != nil {
+			return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), nil
+		}
+		return sdktypes.NewStatus(sdktypes.StatusCodeOK, ""), nil
 	})
 }

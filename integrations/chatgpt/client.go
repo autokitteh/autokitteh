@@ -3,6 +3,8 @@ package chatgpt
 import (
 	"context"
 
+	openai "github.com/sashabaranov/go-openai"
+
 	"go.autokitteh.dev/autokitteh/integrations"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
@@ -48,6 +50,7 @@ func New(vars sdkservices.Vars) sdkservices.Integration {
 			),
 		),
 		connStatus(i),
+		connTest(i),
 		sdkintegrations.WithConnectionConfigFromVars(vars),
 	)
 }
@@ -75,5 +78,29 @@ func connStatus(i *integration) sdkintegrations.OptFn {
 			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "Initialized"), nil
 		}
 		return sdktypes.NewStatus(sdktypes.StatusCodeError, "Bad auth type"), nil
+	})
+}
+
+// connTest is an optional connection test provided by the integration
+// to AutoKitteh. It is used to verify that the connection is working
+// as expected. The possible results are "OK" and "error".
+func connTest(i *integration) sdkintegrations.OptFn {
+	return sdkintegrations.WithConnectionTest(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
+		if !cid.IsValid() {
+			return sdktypes.NewStatus(sdktypes.StatusCodeError, "Init required"), nil
+		}
+
+		vs, err := i.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
+		if err != nil {
+			return sdktypes.InvalidStatus, err
+		}
+
+		apiKey := vs.Get(apiKeyVar).Value()
+		client := openai.NewClient(apiKey)
+		if _, err = client.ListModels(ctx); err != nil {
+			return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), nil
+		}
+
+		return sdktypes.NewStatus(sdktypes.StatusCodeOK, ""), nil
 	})
 }
