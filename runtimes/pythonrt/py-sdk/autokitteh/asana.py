@@ -6,7 +6,7 @@ from .connections import check_connection_name
 from .errors import ConnectionInitError
 
 
-def asana_client(connection: str) -> asana.Client:
+def asana_client(connection: str) -> asana.ApiClient:
     """Initialize an Asana client, based on an AutoKitteh connection.
 
     API reference:
