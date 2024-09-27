@@ -499,16 +499,17 @@ var Runner_ServiceDesc = grpc.ServiceDesc{
 }
 
 const (
-	Worker_Activity_FullMethodName       = "/autokitteh.remote.v1.Worker/Activity"
-	Worker_Done_FullMethodName           = "/autokitteh.remote.v1.Worker/Done"
-	Worker_Log_FullMethodName            = "/autokitteh.remote.v1.Worker/Log"
-	Worker_Print_FullMethodName          = "/autokitteh.remote.v1.Worker/Print"
-	Worker_Sleep_FullMethodName          = "/autokitteh.remote.v1.Worker/Sleep"
-	Worker_Subscribe_FullMethodName      = "/autokitteh.remote.v1.Worker/Subscribe"
-	Worker_NextEvent_FullMethodName      = "/autokitteh.remote.v1.Worker/NextEvent"
-	Worker_Unsubscribe_FullMethodName    = "/autokitteh.remote.v1.Worker/Unsubscribe"
-	Worker_Health_FullMethodName         = "/autokitteh.remote.v1.Worker/Health"
-	Worker_IsActiveRunner_FullMethodName = "/autokitteh.remote.v1.Worker/IsActiveRunner"
+	Worker_Activity_FullMethodName           = "/autokitteh.remote.v1.Worker/Activity"
+	Worker_Done_FullMethodName               = "/autokitteh.remote.v1.Worker/Done"
+	Worker_Log_FullMethodName                = "/autokitteh.remote.v1.Worker/Log"
+	Worker_Print_FullMethodName              = "/autokitteh.remote.v1.Worker/Print"
+	Worker_Sleep_FullMethodName              = "/autokitteh.remote.v1.Worker/Sleep"
+	Worker_Subscribe_FullMethodName          = "/autokitteh.remote.v1.Worker/Subscribe"
+	Worker_NextEvent_FullMethodName          = "/autokitteh.remote.v1.Worker/NextEvent"
+	Worker_Unsubscribe_FullMethodName        = "/autokitteh.remote.v1.Worker/Unsubscribe"
+	Worker_RefreshGoogleOAuth_FullMethodName = "/autokitteh.remote.v1.Worker/RefreshGoogleOAuth"
+	Worker_Health_FullMethodName             = "/autokitteh.remote.v1.Worker/Health"
+	Worker_IsActiveRunner_FullMethodName     = "/autokitteh.remote.v1.Worker/IsActiveRunner"
 )
 
 // WorkerClient is the client API for Worker service.
@@ -523,11 +524,12 @@ type WorkerClient interface {
 	Log(ctx context.Context, in *LogRequest, opts ...grpc.CallOption) (*LogResponse, error)
 	// Print to session log
 	Print(ctx context.Context, in *PrintRequest, opts ...grpc.CallOption) (*PrintResponse, error)
-	// ak functions
+	// AutoKitteh functions
 	Sleep(ctx context.Context, in *SleepRequest, opts ...grpc.CallOption) (*SleepResponse, error)
 	Subscribe(ctx context.Context, in *SubscribeRequest, opts ...grpc.CallOption) (*SubscribeResponse, error)
 	NextEvent(ctx context.Context, in *NextEventRequest, opts ...grpc.CallOption) (*NextEventResponse, error)
 	Unsubscribe(ctx context.Context, in *UnsubscribeRequest, opts ...grpc.CallOption) (*UnsubscribeResponse, error)
+	RefreshGoogleOAuth(ctx context.Context, in *RefreshGoogleOAuthRequest, opts ...grpc.CallOption) (*RefreshGoogleOAuthResponse, error)
 	Health(ctx context.Context, in *HealthRequest, opts ...grpc.CallOption) (*HealthResponse, error)
 	IsActiveRunner(ctx context.Context, in *IsActiveRunnerRequest, opts ...grpc.CallOption) (*IsActiveRunnerResponse, error)
 }
@@ -620,6 +622,16 @@ func (c *workerClient) Unsubscribe(ctx context.Context, in *UnsubscribeRequest, 
 	return out, nil
 }
 
+func (c *workerClient) RefreshGoogleOAuth(ctx context.Context, in *RefreshGoogleOAuthRequest, opts ...grpc.CallOption) (*RefreshGoogleOAuthResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RefreshGoogleOAuthResponse)
+	err := c.cc.Invoke(ctx, Worker_RefreshGoogleOAuth_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *workerClient) Health(ctx context.Context, in *HealthRequest, opts ...grpc.CallOption) (*HealthResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(HealthResponse)
@@ -652,11 +664,12 @@ type WorkerServer interface {
 	Log(context.Context, *LogRequest) (*LogResponse, error)
 	// Print to session log
 	Print(context.Context, *PrintRequest) (*PrintResponse, error)
-	// ak functions
+	// AutoKitteh functions
 	Sleep(context.Context, *SleepRequest) (*SleepResponse, error)
 	Subscribe(context.Context, *SubscribeRequest) (*SubscribeResponse, error)
 	NextEvent(context.Context, *NextEventRequest) (*NextEventResponse, error)
 	Unsubscribe(context.Context, *UnsubscribeRequest) (*UnsubscribeResponse, error)
+	RefreshGoogleOAuth(context.Context, *RefreshGoogleOAuthRequest) (*RefreshGoogleOAuthResponse, error)
 	Health(context.Context, *HealthRequest) (*HealthResponse, error)
 	IsActiveRunner(context.Context, *IsActiveRunnerRequest) (*IsActiveRunnerResponse, error)
 	mustEmbedUnimplementedWorkerServer()
@@ -692,6 +705,9 @@ func (UnimplementedWorkerServer) NextEvent(context.Context, *NextEventRequest) (
 }
 func (UnimplementedWorkerServer) Unsubscribe(context.Context, *UnsubscribeRequest) (*UnsubscribeResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Unsubscribe not implemented")
+}
+func (UnimplementedWorkerServer) RefreshGoogleOAuth(context.Context, *RefreshGoogleOAuthRequest) (*RefreshGoogleOAuthResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RefreshGoogleOAuth not implemented")
 }
 func (UnimplementedWorkerServer) Health(context.Context, *HealthRequest) (*HealthResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Health not implemented")
@@ -864,6 +880,24 @@ func _Worker_Unsubscribe_Handler(srv interface{}, ctx context.Context, dec func(
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Worker_RefreshGoogleOAuth_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RefreshGoogleOAuthRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(WorkerServer).RefreshGoogleOAuth(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Worker_RefreshGoogleOAuth_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(WorkerServer).RefreshGoogleOAuth(ctx, req.(*RefreshGoogleOAuthRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Worker_Health_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(HealthRequest)
 	if err := dec(in); err != nil {
@@ -938,6 +972,10 @@ var Worker_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Unsubscribe",
 			Handler:    _Worker_Unsubscribe_Handler,
+		},
+		{
+			MethodName: "RefreshGoogleOAuth",
+			Handler:    _Worker_RefreshGoogleOAuth_Handler,
 		},
 		{
 			MethodName: "Health",

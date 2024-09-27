@@ -190,6 +190,16 @@ message UnsubscribeResponse {
   string error = 1;
 }
 
+message RefreshGoogleOAuthRequest {
+  string connection_id = 1;
+}
+
+message RefreshGoogleOAuthResponse {
+  string token = 1;
+  string expiry = 2;
+  string error = 3;
+}
+
 message LogRequest {
   string runner_id = 1;
   string level = 2;
@@ -228,11 +238,13 @@ service Worker {
   // Print to session log
   rpc Print(PrintRequest) returns (PrintResponse) {}
 
-  // ak functions
+  // AutoKitteh functions
   rpc Sleep(SleepRequest) returns (SleepResponse) {}
   rpc Subscribe(SubscribeRequest) returns (SubscribeResponse) {}
   rpc NextEvent(NextEventRequest) returns (NextEventResponse) {}
   rpc Unsubscribe(UnsubscribeRequest) returns (UnsubscribeResponse) {}
+
+  rpc RefreshGoogleOAuth(RefreshGoogleOAuthRequest) returns (RefreshGoogleOAuthResponse) {}
 
   rpc Health(HealthRequest) returns (HealthResponse) {}
 

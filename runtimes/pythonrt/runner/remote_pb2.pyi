@@ -269,6 +269,22 @@ class UnsubscribeResponse(_message.Message):
     error: str
     def __init__(self, error: _Optional[str] = ...) -> None: ...
 
+class RefreshGoogleOAuthRequest(_message.Message):
+    __slots__ = ("connection_id",)
+    CONNECTION_ID_FIELD_NUMBER: _ClassVar[int]
+    connection_id: str
+    def __init__(self, connection_id: _Optional[str] = ...) -> None: ...
+
+class RefreshGoogleOAuthResponse(_message.Message):
+    __slots__ = ("token", "expiry", "error")
+    TOKEN_FIELD_NUMBER: _ClassVar[int]
+    EXPIRY_FIELD_NUMBER: _ClassVar[int]
+    ERROR_FIELD_NUMBER: _ClassVar[int]
+    token: str
+    expiry: str
+    error: str
+    def __init__(self, token: _Optional[str] = ..., expiry: _Optional[str] = ..., error: _Optional[str] = ...) -> None: ...
+
 class LogRequest(_message.Message):
     __slots__ = ("runner_id", "level", "message")
     RUNNER_ID_FIELD_NUMBER: _ClassVar[int]
