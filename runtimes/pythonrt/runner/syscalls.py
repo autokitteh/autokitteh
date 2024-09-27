@@ -28,6 +28,7 @@ class SysCalls:
             "subscribe": self.ak_subscribe,
             "next_event": self.ak_next_event,
             "unsubscribe": self.ak_unsubscribe,
+            "google_refresh_handler": self.ak_google_refresh_handler,
         }
 
     def call(self, fn, args, kw):
@@ -65,8 +66,8 @@ class SysCalls:
         (id,) = extract_args(["subscription_id"], args, kw)
         if not id:
             raise ValueError("empty subscription_id")
-        req = pb.NextEventRequest(runner_id=self.runner_id, signal_ids=[id])
 
+        req = pb.NextEventRequest(runner_id=self.runner_id, signal_ids=[id])
         resp = call_grpc("next_event", self.worker.NextEvent, req)
 
         try:
@@ -83,6 +84,15 @@ class SysCalls:
 
         req = pb.UnsubscribeRequest(runner_id=self.runner_id, signal_id=id)
         call_grpc("unsubscribe", self.worker.Unsubscribe, req)
+
+    def ak_google_refresh_handler(self, *args, **kw):
+        log.info("ak_google_refresh_handler: %r %r", args, kw)
+        print(f"ak_google_refresh_handler: {args} {kw}")
+
+        # req = pb.RefreshGoogleOAuthRequest()
+        # resp = call_grpc("rgoogle_refresh_handler", self.worker.RefreshGoogleOAuth, req)
+        # print(resp)
+        # return "TODO: token", "TODO: expiry"
 
 
 # Can't use None since it's a valid value

@@ -523,6 +523,11 @@ class WorkerStub(object):
                 request_serializer=remote__pb2.UnsubscribeRequest.SerializeToString,
                 response_deserializer=remote__pb2.UnsubscribeResponse.FromString,
                 _registered_method=True)
+        self.RefreshGoogleOAuth = channel.unary_unary(
+                '/autokitteh.remote.v1.Worker/RefreshGoogleOAuth',
+                request_serializer=remote__pb2.RefreshGoogleOAuthRequest.SerializeToString,
+                response_deserializer=remote__pb2.RefreshGoogleOAuthResponse.FromString,
+                _registered_method=True)
         self.Health = channel.unary_unary(
                 '/autokitteh.remote.v1.Worker/Health',
                 request_serializer=remote__pb2.HealthRequest.SerializeToString,
@@ -567,7 +572,7 @@ class WorkerServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def Sleep(self, request, context):
-        """ak functions
+        """AutoKitteh functions
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -586,6 +591,12 @@ class WorkerServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def Unsubscribe(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def RefreshGoogleOAuth(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -645,6 +656,11 @@ def add_WorkerServicer_to_server(servicer, server):
                     servicer.Unsubscribe,
                     request_deserializer=remote__pb2.UnsubscribeRequest.FromString,
                     response_serializer=remote__pb2.UnsubscribeResponse.SerializeToString,
+            ),
+            'RefreshGoogleOAuth': grpc.unary_unary_rpc_method_handler(
+                    servicer.RefreshGoogleOAuth,
+                    request_deserializer=remote__pb2.RefreshGoogleOAuthRequest.FromString,
+                    response_serializer=remote__pb2.RefreshGoogleOAuthResponse.SerializeToString,
             ),
             'Health': grpc.unary_unary_rpc_method_handler(
                     servicer.Health,
@@ -873,6 +889,33 @@ class Worker(object):
             '/autokitteh.remote.v1.Worker/Unsubscribe',
             remote__pb2.UnsubscribeRequest.SerializeToString,
             remote__pb2.UnsubscribeResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def RefreshGoogleOAuth(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/autokitteh.remote.v1.Worker/RefreshGoogleOAuth',
+            remote__pb2.RefreshGoogleOAuthRequest.SerializeToString,
+            remote__pb2.RefreshGoogleOAuthResponse.FromString,
             options,
             channel_credentials,
             insecure,
