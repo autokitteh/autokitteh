@@ -241,8 +241,8 @@ def __google_creds_oauth2(connection: str, scopes: list[str]):
             }
         )
 
-    if creds.expired:
-        creds.refresh(Request())
+    # TODO: if creds.expired:
+    creds.refresh(Request())
 
     return creds
 
@@ -264,7 +264,7 @@ def google_refresh_handler(request, scopes: list[str]) -> tuple[str, datetime]:
     Returns:
         New access token and its expiry date.
     """
-    print("NOT OVERRIDDEN!!!")
+    print("NOT OVERRIDDEN!!!")  # TODO: Remove this line
     return "DUMMY TOKEN", datetime.now(UTC).replace(tzinfo=None)
 
 
