@@ -25,7 +25,7 @@ func ConstructEvent(ctx context.Context, vars sdkservices.Vars, cids []sdktypes.
 		return sdktypes.InvalidEvent, err
 	}
 
-	// TODO: Workaround until ENG:1612
+	// TODO: Workaround until ENG-1612
 	if len(events) == 0 {
 		return sdktypes.InvalidEvent, nil
 	}
