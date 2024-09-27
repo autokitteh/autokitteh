@@ -2,7 +2,6 @@ package calendar
 
 import (
 	"context"
-	"errors"
 
 	"go.uber.org/zap"
 
@@ -26,23 +25,22 @@ func ConstructEvent(ctx context.Context, vars sdkservices.Vars, cids []sdktypes.
 		return sdktypes.InvalidEvent, err
 	}
 
-	if len(events) != 1 {
-		l.Error("Number of Google Calendar events for incoming notification != 1",
-			zap.Int("numEvents", len(events)),
-		)
-		return sdktypes.InvalidEvent, errors.New("unexpected Google Calendar events")
+	// TODO: Workaround until ENG-1612
+	if len(events) == 0 {
+		return sdktypes.InvalidEvent, nil
 	}
+	latestEvent := events[len(events)-1]
 
 	// https://developers.google.com/calendar/api/v3/reference/events#resource
 	eventType := "event_updated"
-	if events[0].Status == "cancelled" {
+	if latestEvent.Status == "cancelled" {
 		eventType = "event_deleted"
-	} else if events[0].Sequence == 0 {
+	} else if latestEvent.Sequence == 0 {
 		eventType = "event_created"
 	}
 
 	// Convert the raw data to an AutoKitteh event.
-	wrapped, err := sdktypes.WrapValue(events[0])
+	wrapped, err := sdktypes.WrapValue(latestEvent)
 	if err != nil {
 		l.Error("Failed to wrap Google Calendar event", zap.Error(err))
 		return sdktypes.InvalidEvent, err
