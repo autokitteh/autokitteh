@@ -26,6 +26,9 @@ func ConstructEvent(ctx context.Context, vars sdkservices.Vars, cids []sdktypes.
 	}
 
 	// TODO: Workaround until ENG:1612
+	if len(events) == 0 {
+		return sdktypes.InvalidEvent, nil
+	}
 	latestEvent := events[len(events)-1]
 
 	// https://developers.google.com/calendar/api/v3/reference/events#resource
