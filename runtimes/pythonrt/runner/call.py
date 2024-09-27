@@ -4,6 +4,7 @@ from time import sleep
 
 import autokitteh
 from autokitteh import decorators
+from autokitteh import google
 
 import log
 from deterministic import is_deterministic
@@ -13,6 +14,9 @@ AK_FUNCS = {
     autokitteh.next_event,
     autokitteh.subscribe,
     autokitteh.unsubscribe,
+
+    google.google_refresh_handler,
+
     sleep,
 }
 
@@ -74,11 +78,13 @@ class AKCall:
             raise ValueError(f"{func!r} is not callable (user bug at {file}:{lnum}?)")
 
         log.info("__call__: %s, args=%r, kw=%r", full_func_name(func), args, kw)
+        print(f"__call__: {full_func_name(func)}, args={args!r}, kw={kw!r}")
         if func in AK_FUNCS:
             if self.in_activity and func is sleep:
                 return func(*args, **kw)
 
             log.info("ak function call: %s(%r, %r)", func.__name__, args, kw)
+            print(f"ak function call: {func.__name__}({args!r}, {kw!r})")
             return self.runner.syscall(func, args, kw)
 
         full_name = full_func_name(func)
@@ -86,9 +92,11 @@ class AKCall:
             log.info(
                 "calling %s directly (in_activity=%s)", full_name, self.in_activity
             )
+            print(f"calling {full_name} directly (in_activity={self.in_activity})")
             return func(*args, **kw)
 
         log.info("ACTION: activity call %s", full_name)
+        print(f"ACTION: activity call {full_name}")
         self.in_activity = True
         try:
             return self.runner.call_in_activity(func, args, kw)

@@ -320,3 +320,7 @@ func (s *workerGRPCHandler) Unsubscribe(ctx context.Context, req *pb.Unsubscribe
 	}
 
 }
+
+func (s *workerGRPCHandler) refreshGoogleOAuth(ctx context.Context, req *pb.RefreshGoogleOAuthRequest) (*pb.RefreshGoogleOAuthResponse, error) {
+	return &pb.RefreshGoogleOAuthResponse{}, nil
+}
