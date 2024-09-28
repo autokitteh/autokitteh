@@ -15,13 +15,9 @@ import (
 	"go.autokitteh.dev/autokitteh/integrations/github"
 	"go.autokitteh.dev/autokitteh/integrations/google"
 	"go.autokitteh.dev/autokitteh/integrations/google/calendar"
-	"go.autokitteh.dev/autokitteh/integrations/google/drive"
 	"go.autokitteh.dev/autokitteh/integrations/google/forms"
 	"go.autokitteh.dev/autokitteh/integrations/google/gemini"
 	"go.autokitteh.dev/autokitteh/integrations/google/gmail"
-	"go.autokitteh.dev/autokitteh/integrations/google/sheets"
-	"go.autokitteh.dev/autokitteh/integrations/grpc"
-	"go.autokitteh.dev/autokitteh/integrations/redis"
 	"go.autokitteh.dev/autokitteh/integrations/slack"
 	"go.autokitteh.dev/autokitteh/integrations/twilio"
 	"go.autokitteh.dev/autokitteh/internal/backend/configset"
@@ -57,16 +53,12 @@ func integrationsFXOption() fx.Option {
 		integration("chatgpt", configset.Empty, chatgpt.New),
 		integration("confluence", configset.Empty, confluence.New),
 		integration("discord", configset.Empty, discord.New),
-		integration("drive", configset.Empty, drive.New),
 		integration("forms", configset.Empty, forms.New),
 		integration("github", configset.Empty, github.New),
 		integration("gmail", configset.Empty, gmail.New),
 		integration("gemini", configset.Empty, gemini.New),
 		integration("google", configset.Empty, google.New),
-		integration("grpc", configset.Empty, grpc.New),
 		integration("jira", configset.Empty, jira.New),
-		integration("redis", configset.Empty, redis.New),
-		integration("sheets", configset.Empty, sheets.New),
 		integration("slack", configset.Empty, slack.New),
 		integration("twilio", configset.Empty, twilio.New),
 		fx.Invoke(func(lc fx.Lifecycle, l *zap.Logger, muxes *muxes.Muxes, svcs sdkservices.Services) {

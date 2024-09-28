@@ -4,26 +4,11 @@ package extrazap
 
 import (
 	"context"
-	"time"
 
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
 type ctxKey struct{}
-
-// NewDevelopmentLogger builds a customized development logger which is even
-// more user-friendly than [zap.NewDevelopment].
-func NewDevelopmentLogger() *zap.Logger {
-	c := zap.NewDevelopmentConfig()
-	c.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
-	c.EncoderConfig.EncodeTime = zapcore.TimeEncoderOfLayout(time.DateTime)
-	// TODO: Pretty-print tags like zerolog, instead of a JSON string?
-	// TODO: Color "error" and "Error" tag values in red, like zerolog?
-	// cfg.EncoderConfig.ConsoleSeparator = " "
-	// TODO: Check out https://github.com/charmbracelet/log
-	return zap.Must(c.Build())
-}
 
 // AttachLoggerToContext returns a copy of the given context with the given logger
 // attached to it. Neither the given context nor the given logger are affected.

@@ -42,7 +42,7 @@ var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.Integrati
 func New(cvars sdkservices.Vars) sdkservices.Integration {
 	return sdkintegrations.NewIntegration(
 		desc,
-		sdkmodule.New( /* No exported functions for Starlark */ ),
+		sdkmodule.Empty,
 		connections.ConnStatus(cvars),
 		connections.ConnTest(cvars),
 		sdkintegrations.WithConnectionConfigFromVars(cvars),

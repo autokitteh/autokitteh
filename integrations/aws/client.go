@@ -73,13 +73,6 @@ func initDefaultConfig() {
 	defaultAWSConfig = &cfg
 }
 
-func initOpts(vars sdkservices.Vars) (opts []sdkmodule.Optfn) {
-	for _, svc := range svcs {
-		opts = append(opts, kittehs.Must1(importServiceMethods(vars, svc.name, svc.fn))...)
-	}
-	return
-}
-
 var integrationID = sdktypes.NewIntegrationIDFromName("aws")
 
 var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
@@ -99,7 +92,7 @@ func New(cvars sdkservices.Vars) sdkservices.Integration {
 	i := &integration{vars: cvars}
 	return sdkintegrations.NewIntegration(
 		desc,
-		sdkmodule.New(initOpts(cvars)...),
+		sdkmodule.Empty,
 		connStatus(i),
 		connTest(i),
 		sdkintegrations.WithConnectionConfigFromVars(cvars),
