@@ -6,25 +6,19 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"os"
 	"strings"
 
 	"go.temporal.io/sdk/converter"
-)
-
-const (
-	configKeyEnvVarPrefix = "AK_DATACONV_ENCRYPTION_KEY_"
 )
 
 type DataConverterEncryptionConfig struct {
 	// If `Encrypt` is true, `KeyNames` must have at least one key name specified.
 	Encrypt bool `koanf:"encrypt"`
 
-	// Comma-separated list of key names.
-	// First key in the active encryption key. All the rest are for decryption only.
-	// For each name, the encryption key is fetched from the environment, named as
-	// "AK_DATACONV_ENCRYPTION_KEY_<name>". Each key is 64 characters long, hex-encoded.
-	KeyNames string `koanf:"key_names"`
+	// Comma-separated list of key names and values.
+	// First key is used for encryption, others are used only for decryption.
+	// Example: "key1=<64 char hex>,keys=<64 char hex>"
+	Keys string `koanf:"keys"`
 }
 
 type DataConverterConfig struct {
@@ -41,21 +35,39 @@ func NewDataConverter(cfg *DataConverterConfig, parent converter.DataConverter) 
 	var codecs []converter.PayloadCodec
 
 	if cfg.Encryption.Encrypt {
-		if len(cfg.Encryption.KeyNames) == 0 {
+		if len(cfg.Encryption.Keys) == 0 {
 			return nil, ErrNoKeys
 		}
 
-		names := strings.Split(cfg.Encryption.KeyNames, ",")
+		pairs := strings.Split(cfg.Encryption.Keys, ",")
 
-		ciphers := make(map[string]cipher.AEAD, len(names))
-		for _, name := range names {
+		codec := encryptionCodec{
+			ciphers: make(map[string]cipher.AEAD, len(pairs)),
+		}
+
+		for _, pair := range pairs {
+			n, v, ok := strings.Cut(pair, "=")
+			if !ok {
+				return nil, fmt.Errorf("invalid key-value pair %q", pair)
+			}
+
+			n, v = strings.TrimSpace(n), strings.TrimSpace(v)
+
+			if len(n) == 0 {
+				return nil, fmt.Errorf("empty key name")
+			}
+
+			if codec.main == "" {
+				codec.main = n
+			}
+
 			var err error
-			if ciphers[name], err = newCipher(strings.TrimSpace(name)); err != nil {
-				return nil, err
+			if codec.ciphers[n], err = newCipher(v); err != nil {
+				return nil, fmt.Errorf("key %q: %w", n, err)
 			}
 		}
 
-		codecs = append(codecs, &encryptionCodec{main: names[0], ciphers: ciphers})
+		codecs = append(codecs, &codec)
 	}
 
 	if cfg.Compress {
@@ -65,25 +77,20 @@ func NewDataConverter(cfg *DataConverterConfig, parent converter.DataConverter) 
 	return converter.NewCodecDataConverter(parent, codecs...), nil
 }
 
-func newCipher(name string) (cipher.AEAD, error) {
-	key, ok := os.LookupEnv(configKeyEnvVarPrefix + strings.ToUpper(name))
-	if !ok {
-		return nil, fmt.Errorf("%w: %q", ErrKeyNotFound, name)
-	}
-
-	bs, err := hex.DecodeString(key)
+func newCipher(hexKey string) (cipher.AEAD, error) {
+	bs, err := hex.DecodeString(hexKey)
 	if err != nil {
-		return nil, fmt.Errorf("invalid encryption key %q: %w", name, err)
+		return nil, fmt.Errorf("invalid encryption key: %w", err)
 	}
 
 	c, err := aes.NewCipher(bs)
 	if err != nil {
-		return nil, fmt.Errorf("new cipher %q: %w", name, err)
+		return nil, fmt.Errorf("new cipher: %w", err)
 	}
 
 	gcm, err := cipher.NewGCM(c)
 	if err != nil {
-		return nil, fmt.Errorf("new gcm %q: %w", name, err)
+		return nil, fmt.Errorf("new gcm: %w", err)
 	}
 
 	return gcm, nil

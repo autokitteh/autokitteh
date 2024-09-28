@@ -5,7 +5,6 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"io"
-	"os"
 	"strings"
 	"testing"
 
@@ -20,23 +19,23 @@ import (
 const keySize = 32
 
 func initConverter(t *testing.T, r io.Reader, keyNames []string) (converter.DataConverter, error) {
-	key1 := make([]byte, keySize)
-	_, err := io.ReadFull(r, key1)
-	require.NoError(t, err)
+	keys := make(map[string]string)
 
-	key2 := make([]byte, keySize)
-	_, err = io.ReadFull(r, key2)
-	require.NoError(t, err)
-
-	os.Setenv("AK_DATACONV_ENCRYPTION_KEY_KEY1", hex.EncodeToString(key1))
-	os.Setenv("AK_DATACONV_ENCRYPTION_KEY_KEY2", hex.EncodeToString(key2))
+	for _, k := range keyNames {
+		bs := make([]byte, keySize)
+		n, err := io.ReadFull(r, bs)
+		require.NoError(t, err)
+		require.Equal(t, keySize, n)
+		keys[k] = hex.EncodeToString(bs)
+		t.Logf("key %q: %s", k, keys[k])
+	}
 
 	return NewDataConverter(
 		&DataConverterConfig{
 			Compress: true,
 			Encryption: DataConverterEncryptionConfig{
-				Encrypt:  true,
-				KeyNames: strings.Join(keyNames, ","),
+				Encrypt: true,
+				Keys:    strings.Join(kittehs.Transform(keyNames, func(k string) string { return k + "=" + keys[k] }), ","),
 			},
 		},
 		converter.GetDefaultDataConverter(),
@@ -46,11 +45,6 @@ func initConverter(t *testing.T, r io.Reader, keyNames []string) (converter.Data
 func TestNoKeys(t *testing.T) {
 	_, err := initConverter(t, rand.Reader, nil)
 	assert.EqualError(t, err, ErrNoKeys.Error())
-}
-
-func TestNoSuchKey(t *testing.T) {
-	_, err := initConverter(t, rand.Reader, []string{"key3"})
-	assert.EqualError(t, err, ErrKeyNotFound.Error()+`: "key3"`)
 }
 
 func TestSameKey(t *testing.T) {
@@ -80,7 +74,7 @@ func TestSameKey(t *testing.T) {
 }
 
 func TestOldKey(t *testing.T) {
-	buf := make([]byte, keySize*2)
+	buf := make([]byte, 2*keySize)
 	_, _ = io.CopyN(bytes.NewBuffer(buf), rand.Reader, int64(cap(buf)))
 
 	cvt1 := kittehs.Must1(initConverter(t, bytes.NewReader(buf), []string{"key2"}))
@@ -91,7 +85,7 @@ func TestOldKey(t *testing.T) {
 	encoded, err := cvt1.ToPayloads(v1, v2)
 	require.NoError(t, err)
 
-	cvt2 := kittehs.Must1(initConverter(t, bytes.NewReader(buf), []string{"key1,key2"}))
+	cvt2 := kittehs.Must1(initConverter(t, bytes.NewReader(buf), []string{"key1", "key2"}))
 
 	var (
 		vv1 sdktypes.Value
