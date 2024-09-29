@@ -1,25 +1,27 @@
-version: v1
+version: v2
 managed:
   enabled: true
-  go_package_prefix:
-    default: go.autokitteh.dev/autokitteh/proto/gen/go
-    except:
-      - buf.build/bufbuild/protovalidate
+  disable:
+    - file_option: go_package
+      module: buf.build/bufbuild/protovalidate
+  override:
+    - file_option: go_package_prefix
+      value: go.autokitteh.dev/autokitteh/proto/gen/go
 plugins:
-  - plugin: buf.build/protocolbuffers/go:v1.31.0
+  - remote: buf.build/protocolbuffers/go:v1.31.0
     out: gen/go
     opt: paths=source_relative
-  - plugin: buf.build/connectrpc/go:v1.11.0
+  - remote: buf.build/connectrpc/go:v1.11.0
     out: gen/go
     opt: paths=source_relative
-  - plugin: buf.build/grpc/python:v1.58.1
+  - remote: buf.build/grpc/python:v1.58.1
     out: gen/py
-  - plugin: buf.build/protocolbuffers/python:v24.3
+  - remote: buf.build/protocolbuffers/python:v24.3
     out: gen/py
     opt: pyi_out
-  - plugin: buf.build/bufbuild/es:v1.5.1
-    opt: target=ts
+  - remote: buf.build/bufbuild/es:v1.5.1
     out: gen/ts
-  - plugin: buf.build/connectrpc/es:v1.1.4
     opt: target=ts
+  - remote: buf.build/connectrpc/es:v1.1.4
     out: gen/ts
+    opt: target=ts
