@@ -1,7 +1,11 @@
 version: v2
 deps:
-  - buf.build/bufbuild/protovalidate
+    - buf.build/bufbuild/protovalidate
+modules:
+  - path: .
 lint:
+  ignore:
+    - autokitteh/remote
   use:
     - STANDARD
   except:
@@ -12,5 +16,5 @@ breaking:
   use:
     - FILE
   except:
-    - EXTENSION_NO_DELETE
-    - FIELD_SAME_DEFAULT
+  - EXTENSION_NO_DELETE
+  - FIELD_SAME_DEFAULT
