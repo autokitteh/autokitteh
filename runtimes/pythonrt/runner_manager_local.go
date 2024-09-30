@@ -75,7 +75,6 @@ func ConfigureLocalRunnerManager(log *zap.Logger, cfg LocalRunnerManagerConfig) 
 			}
 			lm.pyExe = venvPy
 		}
-
 	}
 
 	log.Info("using python", zap.String("exe", lm.pyExe))
@@ -113,7 +112,7 @@ func (l *localRunnerManager) Start(ctx context.Context, buildArtifacts []byte, v
 		return "", nil, err
 	}
 
-	runnerAddr := fmt.Sprintf("localhost:%d", r.port)
+	runnerAddr := fmt.Sprintf(":%d", r.port)
 	client, err := dialRunner(runnerAddr)
 	if err != nil {
 		if err := r.Close(); err != nil {
