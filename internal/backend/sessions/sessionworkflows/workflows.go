@@ -128,19 +128,6 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 	wi := workflow.GetInfo(wctx)
 	session := params.Data.Session
 	sid := session.ID()
-
-	// get session time (it was created not long after event dispatch) and then update it with actual event time if found
-	eventTime := time.Time{}
-	if eventWrapped, ok := session.Inputs()["event"]; ok {
-		if eventUnwrapped, err := sdktypes.UnwrapValue(eventWrapped); err == nil {
-			if eventMap, ok := eventUnwrapped.(map[string]any); ok {
-				if createdAt, ok := eventMap["created_at"].(time.Time); ok {
-					eventTime = createdAt
-				}
-			}
-		}
-	}
-
 	isReplaying := workflow.IsReplaying(wctx)
 
 	l := ws.l.With(
@@ -150,6 +137,25 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 		zap.String("run_id", wi.WorkflowExecution.RunID),
 		zap.Int32("attempt", wi.Attempt),
 	)
+
+	eventTime := struct {
+		createdAt time.Time
+		valid     bool
+	}{
+		createdAt: time.Time{},
+		valid:     false,
+	}
+
+	if eventWrapped, ok := session.Inputs()["event"]; ok {
+		if eventUnwrapped, err := sdktypes.UnwrapValue(eventWrapped); err == nil {
+			if eventMap, ok := eventUnwrapped.(map[string]any); ok {
+				if createdAt, ok := eventMap["created_at"].(time.Time); ok {
+					eventTime.createdAt = createdAt
+					eventTime.valid = true
+				}
+			}
+		}
+	}
 
 	wctx = temporalclient.WithActivityOptions(wctx, taskQueueName, ws.cfg.Activity)
 
@@ -196,8 +202,8 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 
 	l = l.With(zap.Duration("duration", duration))
 
-	if eventTime != (time.Time{}) {
-		invocationDelay := time.Since(eventTime)
+	if eventTime.valid {
+		invocationDelay := time.Since(eventTime.createdAt)
 		l = l.With(zap.Duration("invocation_delay", invocationDelay))
 
 		if !isReplaying {
