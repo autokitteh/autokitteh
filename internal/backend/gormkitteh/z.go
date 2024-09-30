@@ -15,8 +15,8 @@ func OpenZ(z *zap.Logger, cfg *Config, f func(*gorm.Config)) (*gorm.DB, error) {
 	return Open(cfg, func(c *gorm.Config) {
 		l := &zapgorm2.Logger{
 			ZapLogger:                 z,
-			LogLevel:                  logger.Info, // lowest possible. will be checked vs. zap logger level
-			SlowThreshold:             cfg.SlowQueryThreshold,
+			LogLevel:                  logger.Warn,            // prevent logging SQL queries by default
+			SlowThreshold:             cfg.SlowQueryThreshold, // slow queries will be reported if !0
 			IgnoreRecordNotFoundError: true,
 		}
 
@@ -28,8 +28,8 @@ func OpenZ(z *zap.Logger, cfg *Config, f func(*gorm.Config)) (*gorm.DB, error) {
 		// (we cannon lower level with zap.IncreaseLevel(), unfortunately or extract encoder and writer from the original core)
 		// so, if explicit debug is requested - switch to default gorm logger (which will log to stdout)
 		if cfg.Debug {
-			c.Logger = logger.Default
-			l.LogLevel = logger.Info
+			c.Logger = logger.Default // use default gorm logger (stdout)
+			l.LogLevel = logger.Info  // log queries in debug mode
 		}
 	})
 }
