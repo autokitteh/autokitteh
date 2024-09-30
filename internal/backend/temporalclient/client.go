@@ -15,6 +15,7 @@ import (
 	"go.temporal.io/api/serviceerror"
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/contrib/opentelemetry"
+	"go.temporal.io/sdk/converter"
 	"go.temporal.io/sdk/testsuite"
 	"go.uber.org/zap"
 	zapadapter "logur.dev/adapter/zap"
@@ -39,7 +40,7 @@ type (
 
 type impl struct {
 	client  client.Client
-	z       *zap.Logger
+	l       *zap.Logger
 	cfg     *Config
 	srv     *testsuite.DevServer
 	logFile *os.File
@@ -47,15 +48,15 @@ type impl struct {
 	opts    client.Options
 }
 
-func NewFromClient(cfg *MonitorConfig, z *zap.Logger, tclient client.Client) (Client, LazyTemporalClient, error) {
+func NewFromClient(cfg *MonitorConfig, l *zap.Logger, tclient client.Client) (Client, LazyTemporalClient, error) {
 	if cfg == nil {
 		cfg = &MonitorConfig{}
 	}
-	return &impl{z: z, cfg: &Config{Monitor: *cfg}, client: tclient, done: make(chan struct{})},
+	return &impl{l: l, cfg: &Config{Monitor: *cfg}, client: tclient, done: make(chan struct{})},
 		func() client.Client { return tclient }, nil
 }
 
-func New(cfg *Config, z *zap.Logger) (Client, LazyTemporalClient, error) {
+func New(cfg *Config, l *zap.Logger) (Client, LazyTemporalClient, error) {
 	var tlsConfig *tls.Config
 	if cfg.TLS.Enabled {
 		var cert tls.Certificate
@@ -74,14 +75,19 @@ func New(cfg *Config, z *zap.Logger) (Client, LazyTemporalClient, error) {
 		tlsConfig = &tls.Config{Certificates: []tls.Certificate{cert}}
 	}
 
+	dc, err := NewDataConverter(l, &cfg.DataConverter, converter.GetDefaultDataConverter())
+	if err != nil {
+		return nil, nil, fmt.Errorf("new data converter: %w", err)
+	}
+
 	impl := &impl{
-		z:    z,
+		l:    l,
 		cfg:  cfg,
 		done: make(chan struct{}),
 		opts: client.Options{
 			HostPort:  cfg.HostPort,
 			Namespace: cfg.Namespace,
-			Logger:    logur.LoggerToKV(zapadapter.New(z.WithOptions(zap.IncreaseLevel(cfg.Monitor.LogLevel)))),
+			Logger:    logur.LoggerToKV(zapadapter.New(l.WithOptions(zap.IncreaseLevel(cfg.Monitor.LogLevel)))),
 			ConnectionOptions: client.ConnectionOptions{
 				TLS: tlsConfig,
 			},
@@ -93,6 +99,7 @@ func New(cfg *Config, z *zap.Logger) (Client, LazyTemporalClient, error) {
 					),
 				},
 			),
+			DataConverter: dc,
 		},
 	}
 
@@ -115,7 +122,7 @@ func (c *impl) startDevServer(ctx context.Context) error {
 		return fmt.Errorf("start Temporal dev server: %w", err)
 	}
 
-	c.z.Info("Started Temporal dev server", zap.String("address", c.srv.FrontendHostPort()))
+	c.l.Info("Started Temporal dev server", zap.String("address", c.srv.FrontendHostPort()))
 
 	if c.client != nil {
 		c.client.Close()
@@ -226,7 +233,7 @@ func (c *impl) Start(context.Context) error {
 					return fmt.Errorf("temporal client: %w", err)
 				}
 
-				c.z.Info("Cannot connect to Temporal, starting Temporal dev server")
+				c.l.Info("Cannot connect to Temporal, starting Temporal dev server")
 
 				if err := c.startDevServer(ctx); err != nil {
 					return err
@@ -238,7 +245,7 @@ func (c *impl) Start(context.Context) error {
 	// Start health check monitor.
 
 	if c.cfg.Monitor.CheckHealthInterval == 0 {
-		c.z.Warn("Periodic Temporal health checks are disabled")
+		c.l.Warn("Periodic Temporal health checks are disabled")
 		return nil
 	}
 
@@ -247,11 +254,11 @@ func (c *impl) Start(context.Context) error {
 		for {
 			err := c.healthCheck(context.Background())
 			if err == nil && !ok {
-				c.z.Info("Connection to Temporal is healthy")
+				c.l.Info("Connection to Temporal is healthy")
 				ok = true
 			} else if err != nil {
 				// TODO: stats.
-				c.z.Error("Temporal health check error", zap.Error(err))
+				c.l.Error("Temporal health check error", zap.Error(err))
 				ok = false
 			}
 

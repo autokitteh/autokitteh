@@ -38,6 +38,8 @@ type Config struct {
 	DevServer testsuite.DevServerOptions `koanf:"dev_server"`
 	TLS       tlsConfig                  `koanf:"tls"`
 
+	DataConverter DataConverterConfig `koanf:"data_converter"`
+
 	EnableHelperRedirect bool `koanf:"enable_helper_redirect"`
 }
 
@@ -51,6 +53,12 @@ var (
 	Configs = configset.Set[Config]{
 		Default: &Config{
 			Monitor: defaultMonitorConfig,
+			DataConverter: DataConverterConfig{
+				Compress: true,
+				Encryption: DataConverterEncryptionConfig{
+					Encrypt: true,
+				},
+			},
 		},
 		Dev: &Config{
 			Monitor:               defaultMonitorConfig,
