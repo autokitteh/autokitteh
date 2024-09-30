@@ -21,6 +21,8 @@ const (
 	subscribeOp   = "subscribe"
 	nextEventOp   = "next_event"
 	unsubscribeOp = "unsubscribe"
+
+	refreshGoogleOAuthOp = "google_refresh_handler"
 )
 
 func (w *sessionWorkflow) syscall(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
@@ -47,6 +49,8 @@ func (w *sessionWorkflow) syscall(ctx context.Context, args []sdktypes.Value, kw
 		return w.nextEvent(ctx, args, kwargs)
 	case unsubscribeOp:
 		return w.unsubscribe(ctx, args, kwargs)
+	case refreshGoogleOAuthOp:
+		return w.refreshGoogleOAuth(ctx, args, kwargs)
 	default:
 		return sdktypes.InvalidValue, fmt.Errorf("unknown op %q", op)
 	}

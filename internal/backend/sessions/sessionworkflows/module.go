@@ -27,6 +27,7 @@ func (w *sessionWorkflow) newModule() sdkexecutor.Executor {
 		sdkmodule.ExportFunction("next_event", w.nextEvent, flags),
 		sdkmodule.ExportFunction("callopts", callopts, flags),
 		sdkmodule.ExportFunction("is_deployment_active", w.isDeploymentActive),
+		sdkmodule.ExportFunction("google_refresh_handler", w.refreshGoogleOAuth, flags),
 	)
 }
 
