@@ -465,6 +465,11 @@ func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (prints []st
 		Print: func(printCtx context.Context, runID sdktypes.RunID, text string) {
 			isActivity := activity.IsActivity(printCtx)
 
+			// Trim single trailing space, but no other spaces.
+			if text[len(text)-1] == '\n' {
+				text = text[:len(text)-1]
+			}
+
 			sl := sl.With("run_id", runID, "is_activity", isActivity)
 
 			sl.Debugw("print", zap.String("text", text))
@@ -493,7 +498,7 @@ func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (prints []st
 			// We do not consider print failure as a critical error, since we don't want to hold back the
 			// workflow for potential user debugging prints. Just log the error and move on.
 			if err != nil {
-				sl.With("err", err).Errorf("failed to add print session record: %v", err)
+				sl.With("err", err).Debugf("failed to add print session record: %v", err)
 			}
 		},
 	}

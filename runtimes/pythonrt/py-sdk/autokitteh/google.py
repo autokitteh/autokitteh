@@ -234,7 +234,7 @@ def __google_creds_oauth2(connection: str, refresh_token: str, scopes: list[str]
         raise EnvVarError("GOOGLE_CLIENT_ID", "missing")
 
     client_secret = os.getenv("GOOGLE_CLIENT_SECRET")
-    if not client_id:
+    if not client_secret:
         raise EnvVarError("GOOGLE_CLIENT_SECRET", "missing")
 
     creds = credentials.Credentials.from_authorized_user_info(

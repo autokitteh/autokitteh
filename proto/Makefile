@@ -20,17 +20,17 @@ buf-build:
 buf-gen: buf-build
 	buf generate --include-imports
 	./scripts/fixpy.sh
+	buf generate --template buf.remote.gen.yaml --include-imports
+	./scripts/fix_remote_py.sh
+
+	
 
 .PHONY: clean
 clean:
 	rm -fR gen
 	rm -fR dist
-
-.PHONY: py-deps
-py-deps:
-	python3 -m pip install --upgrade poetry
-
 .PHONY: py-dist
+
 py-dist: py-deps
 	rm -fR dist
 	python3 -m poetry build

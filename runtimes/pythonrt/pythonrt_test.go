@@ -8,17 +8,30 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"net"
+	"net/http"
 	"os"
 	"path"
 	"strings"
 	"testing"
 	"time"
 
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
+	"go.uber.org/zap"
+	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
 
 	"github.com/stretchr/testify/require"
 )
+
+func TestMain(m *testing.M) {
+	code := m.Run()
+	runnerManager = nil
+	configuredRunnerType = runnerTypeNotConfigured
+	os.Exit(code)
+}
 
 func validateTar(t *testing.T, tarData []byte, fsys fs.FS) {
 	inTar := make(map[string]bool)
@@ -61,6 +74,19 @@ func newSVC(t *testing.T) *pySvc {
 	require.Truef(t, ok, "type assertion failed, got %T", rt)
 
 	return svc
+}
+
+func TestConfigureLocalRuntime(t *testing.T) {
+	l := kittehs.Must1(zap.NewDevelopment())
+
+	err := ConfigureLocalRunnerManager(l, LocalRunnerManagerConfig{})
+	require.Error(t, err, "should fail on not set worker address")
+
+	err = ConfigureLocalRunnerManager(l, LocalRunnerManagerConfig{WorkerAddress: "0.0.0.0:123"})
+	require.NoError(t, err, "should succeed to configure")
+
+	err = ConfigureLocalRunnerManager(l, LocalRunnerManagerConfig{WorkerAddressProvider: func() string { return "" }})
+	require.NoError(t, err, "should succeed to configure")
 }
 
 func Test_pySvc_Get(t *testing.T) {
@@ -129,6 +155,39 @@ func newCallbacks(svc *pySvc) *sdkservices.RunCallbacks {
 	return &cbs
 }
 
+func setupServer(l *zap.Logger) (net.Listener, error) {
+	mux := &http.ServeMux{}
+	ConfigureWorkerGRPCHandler(l, mux)
+	listener, err := net.Listen("tcp", ":0")
+	if err != nil {
+		return nil, err
+	}
+
+	if err := ConfigureLocalRunnerManager(l, LocalRunnerManagerConfig{
+		WorkerAddressProvider: func() string {
+			port := listener.Addr().(*net.TCPAddr).Port
+			return fmt.Sprintf("localhost:%d", port)
+		},
+	}); err != nil {
+		return nil, err
+	}
+
+	errChan := make(chan error)
+	go func() {
+		if err := http.Serve(listener, h2c.NewHandler(mux, &http2.Server{})); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			errChan <- err
+			return
+		}
+	}()
+
+	select {
+	case err := <-errChan:
+		return nil, err
+	case <-time.After(2 * time.Second): // give server time to start
+		return listener, nil
+	}
+}
+
 func Test_pySvc_Run(t *testing.T) {
 	skipIfNoPython(t)
 
@@ -151,20 +210,35 @@ func Test_pySvc_Run(t *testing.T) {
 	mod, values := newValues(t, runID)
 	xid := sdktypes.NewExecutorID(runID)
 
+	server, err := setupServer(svc.log)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if err := server.Close(); err != nil {
+			t.Log(err)
+		}
+
+	}()
+
 	run, err := svc.Run(ctx, runID, mainPath, compiled, values, cbs)
 	require.NoError(t, err, "run")
 
 	fn, err := sdktypes.NewFunctionValue(xid, "greet", nil, nil, mod)
 	require.NoError(t, err, "new function")
 
+	body := sdktypes.NewDictValueFromStringMap(map[string]sdktypes.Value{
+		"bytes": sdktypes.NewBytesValue([]byte(`{"user": "joe", "id": 7}`)),
+	})
 	kwargs := map[string]sdktypes.Value{
 		"event_id": sdktypes.NewStringValue("007"),
 		"data": sdktypes.NewDictValueFromStringMap(map[string]sdktypes.Value{
-			"body": sdktypes.NewBytesValue([]byte(`{"user": "joe", "id": 7}`)),
+			"body": body,
 		}),
 	}
 	_, err = run.Call(ctx, fn, nil, kwargs)
 	require.NoError(t, err, "call")
+
 }
 
 var isGoodVersionCasess = []struct {
@@ -194,7 +268,8 @@ func TestNewBadVersion(t *testing.T) {
 	genExe(t, exe, minPyVersion.Major, minPyVersion.Minor-1)
 	t.Setenv(exeEnvKey, exe)
 
-	_, err := New()
+	l := zap.New(nil)
+	err := ConfigureLocalRunnerManager(l, LocalRunnerManagerConfig{})
 	require.Error(t, err)
 }
 
@@ -203,14 +278,18 @@ func TestPythonFromEnv(t *testing.T) {
 	pyExe := path.Join(envDir, "pypy3")
 	t.Setenv(exeEnvKey, pyExe)
 
-	_, err := New()
+	l := zap.New(nil)
+	err := ConfigureLocalRunnerManager(l, LocalRunnerManagerConfig{})
 	require.Error(t, err)
 
 	genExe(t, pyExe, minPyVersion.Major, minPyVersion.Minor)
-	r, err := New()
+	err = ConfigureLocalRunnerManager(l, LocalRunnerManagerConfig{WorkerAddress: "0.0.0.0:0"})
 	require.NoError(t, err)
 
-	py, ok := r.(*pySvc)
+	_, err = New()
+	require.NoError(t, err)
+
+	py, ok := runnerManager.(*localRunnerManager)
 	require.True(t, ok)
 	require.Equal(t, pyExe, py.pyExe)
 
@@ -243,28 +322,6 @@ func Test_pySvc_Build_PyCache(t *testing.T) {
 	}
 }
 
-func TestCleanup(t *testing.T) {
-	var ri pyRunInfo
-	var err error
-
-	ri.pyRootDir, err = os.MkdirTemp("", "test-pyrt-py")
-	require.NoError(t, err)
-	ri.userRootDir, err = os.MkdirTemp("", "test-pyrt-user")
-	require.NoError(t, err)
-
-	defer func() {
-		_ = recover() // ignore panic
-		require.NoDirExists(t, ri.pyRootDir)
-		require.NoDirExists(t, ri.userRootDir)
-	}()
-
-	svc := newSVC(t)
-	svc.run = &ri
-
-	_, err = svc.initialCall(context.Background(), "greet", nil) // will panic
-	require.Error(t, err)
-}
-
 var progErrCode = []byte(`
 def handle(event):
     1 / 0
@@ -273,6 +330,7 @@ def handle(event):
 func TestProgramError(t *testing.T) {
 	skipIfNoPython(t)
 
+	// ConfigureLocalRunnerManager()
 	pyFile := "progerr.py"
 	var buf bytes.Buffer
 	tw := tar.NewWriter(&buf)
@@ -292,6 +350,14 @@ func TestProgramError(t *testing.T) {
 
 	require.NoError(t, err)
 	svc := newSVC(t)
+	server, err := setupServer(svc.log)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer func() {
+		_ = server.Close()
+	}()
 
 	runID := sdktypes.NewRunID()
 	mod, values := newValues(t, runID)

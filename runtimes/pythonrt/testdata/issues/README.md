@@ -33,7 +33,7 @@ $ ak up -m dev
 Create a ngrok tunnel:
 
 ```
-$ ngrok http --domain autokitteh-miki.ngrok.dev 9980
+$ ngrok http --domain autokitteh-${USER}.ngrok.dev 9980
 ```
 
 - Open http://localhost:9980 and create a GitHub integration

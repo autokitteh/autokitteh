@@ -39,8 +39,7 @@ up() {
 
     echo "starting autokitteh"
 
-    "${ak_filename}" --config "http.addr=:0" --config "http.addr_filename=${addr_filename}" up -m test >& "${logfn}" &
-
+    "${ak_filename}" --config "http.addr=:0" --config "runtimes.lazy_load_local_venv=true" --config "http.addr_filename=${addr_filename}" up -m test >& "${logfn}" &
     echo "waiting for autokitteh to be ready"
 
     while IFS= read -r LL || [[ -n "$LL" ]]; do
@@ -93,7 +92,7 @@ for f in tests/sessions/${TESTS}; do
 
     AK="${PWD}/${ak_filename} -C http.service_url=http://$(cat ${addr_filename})"
 
-    ${AK} session test --quiet "${f}"
+    ${AK} session test "${f}"
 
     down 
 done
