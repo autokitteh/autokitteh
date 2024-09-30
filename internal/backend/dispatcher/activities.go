@@ -51,6 +51,7 @@ type sessionData struct {
 	Deployment   sdktypes.Deployment
 	CodeLocation sdktypes.CodeLocation
 	Trigger      sdktypes.Trigger
+	Connection   sdktypes.Connection
 }
 
 func (d *Dispatcher) listWaitingSignals(ctx context.Context, dstid sdktypes.EventDestinationID) ([]*types.Signal, error) {
@@ -190,9 +191,16 @@ func (d *Dispatcher) getEventSessionData(ctx context.Context, event sdktypes.Eve
 			continue
 		}
 
+		c, err := d.svcs.Connections.Get(ctx, t.ConnectionID())
+		if err != nil {
+			sl.With("err", err).Errorf("could not fetch connection %v: %v", t.ConnectionID(), err)
+
+			// fallthrough - not critical, informational only.
+		}
+
 		cl := t.CodeLocation()
 		for _, dep := range deployments {
-			sds = append(sds, sessionData{Deployment: dep, CodeLocation: cl, Trigger: t})
+			sds = append(sds, sessionData{Deployment: dep, CodeLocation: cl, Trigger: t, Connection: c})
 			sl.Infof("relevant deployment %v found for %v", dep.ID(), eid)
 		}
 	}
