@@ -22,6 +22,7 @@ buf-gen: buf-build
 	./scripts/fixpy.sh
 	buf generate --template buf.remote.gen.yaml --include-imports
 	./scripts/fix_remote_py.sh
+
 	
 
 .PHONY: clean

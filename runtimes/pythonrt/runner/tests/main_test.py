@@ -15,7 +15,7 @@ from uuid import uuid4
 
 from conftest import workflows
 
-import remote_pb2 as pb
+import pb.autokitteh.remote.v1.remote_pb2 as pb
 import main
 
 

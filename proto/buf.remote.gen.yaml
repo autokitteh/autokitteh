@@ -17,8 +17,6 @@ plugins:
     out: gen/go
     # You almost always want to set this option with protoc-gen-go-grpc
     opt: paths=source_relative    
-  - remote: buf.build/grpc/python:v1.58.1
-    out: ../runtimes/pythonrt/runner/pb
   - remote: buf.build/protocolbuffers/python:v24.3
     out: ../runtimes/pythonrt/runner/pb
     opt: pyi_out
