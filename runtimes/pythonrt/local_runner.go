@@ -20,7 +20,7 @@ import (
 )
 
 var (
-	//go:embed runner/*.py
+	//go:embed runner/*.py runner/pb/*
 	runnerPyCode embed.FS
 
 	//go:embed runner/pyproject.toml

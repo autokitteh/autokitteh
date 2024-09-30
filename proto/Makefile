@@ -1,5 +1,5 @@
 .PHONY: all
-all: buf-format-check buf-lint buf-gen remote
+all: buf-format-check buf-lint buf-gen
 
 .PHONY: buf-format-check
 buf-format-check:
@@ -19,9 +19,9 @@ buf-build:
 .PHONY: buf-gen
 buf-gen: buf-build
 	buf generate --include-imports
-	sleep 1
-	buf generate --template buf.remote.gen.yaml --include-imports
 	./scripts/fixpy.sh
+	buf generate --template buf.remote.gen.yaml --include-imports
+	./scripts/fix_remote_py.sh
 	
 
 .PHONY: clean

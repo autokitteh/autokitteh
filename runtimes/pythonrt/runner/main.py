@@ -13,8 +13,8 @@ from traceback import TracebackException, print_exception
 import grpc
 import loader
 import log
-import remote_pb2 as pb
-import remote_pb2_grpc as rpc
+import pb.autokitteh.remote.v1.remote_pb2 as pb
+import pb.autokitteh.remote.v1.remote_pb2_grpc as rpc
 from autokitteh import AttrDict
 from call import AKCall, full_func_name
 from grpc_reflection.v1alpha import reflection

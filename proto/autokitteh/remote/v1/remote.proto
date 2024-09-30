@@ -4,7 +4,7 @@ syntax = "proto3";
 package autokitteh.remote.v1;
 
 // Until we decide where
-option go_package = "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/remote/v1";
+// option go_package = "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/remote/v1";
 
 message ContainerConfig {
   string image = 1;

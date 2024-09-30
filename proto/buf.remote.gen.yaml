@@ -11,17 +11,17 @@ plugins:
   - remote: buf.build/protocolbuffers/go:v1.31.0
     out: gen/go
     opt: paths=source_relative
+  - remote: buf.build/grpc/go:v1.5.1
+    # Make sure to generate your grpc-go code to the same
+    # directory as protoc-gen-go
+    out: gen/go
+    # You almost always want to set this option with protoc-gen-go-grpc
+    opt: paths=source_relative    
   - remote: buf.build/grpc/python:v1.58.1
-    out: gen/py
+    out: ../runtimes/pythonrt/runner/pb
   - remote: buf.build/protocolbuffers/python:v24.3
-    out: gen/py
+    out: ../runtimes/pythonrt/runner/pb
     opt: pyi_out
-  - remote: buf.build/bufbuild/es:v1.5.1
-    out: gen/ts
-    opt: target=ts
-  - remote: buf.build/connectrpc/es:v1.1.4
-    out: gen/ts
-    opt: target=ts
 
 inputs:
   - directory: .

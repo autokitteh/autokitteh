@@ -7,8 +7,8 @@ import json
 
 from autokitteh import AttrDict
 
-import remote_pb2 as pb
-import remote_pb2_grpc as rpc
+import pb.autokitteh.remote.v1.remote_pb2 as pb
+import pb.autokitteh.remote.v1.remote_pb2_grpc as rpc
 import log
 import grpc
 import os
