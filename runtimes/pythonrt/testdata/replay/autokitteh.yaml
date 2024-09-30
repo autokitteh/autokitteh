@@ -3,17 +3,11 @@ version: v1
 
 project:
   name: py_replay
-  connections:
-    - name: http_trigger
-      integration: http
   triggers:
-    - connection: http_trigger
-      name: events
+    - name: events
       event_type: post
-      entrypoint: replay.py:on_event
+      call: replay.py:on_event
+      webhook: {}
   vars:
     - name: USER
       value: Garfield
-
-# Invoke the trigger with:
-#   curl -d HELLO http://localhost:9980/http/py_replay/event
