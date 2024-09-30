@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"go.temporal.io/sdk/converter"
+	"go.uber.org/zap"
 )
 
 type DataConverterEncryptionConfig struct {
@@ -17,7 +18,8 @@ type DataConverterEncryptionConfig struct {
 
 	// Comma-separated list of key names and values.
 	// First key is used for encryption, others are used only for decryption.
-	// Example: "key1=<64 char hex>,keys=<64 char hex>"
+	// Format: "key1=<64 char hex>,keys=<64 char hex>"
+	// Example: "key1=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef,key2=abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789"
 	Keys string `koanf:"keys"`
 }
 
@@ -31,7 +33,7 @@ var (
 	ErrKeyNotFound = errors.New("encryption key not found in environment")
 )
 
-func NewDataConverter(cfg *DataConverterConfig, parent converter.DataConverter) (converter.DataConverter, error) {
+func NewDataConverter(l *zap.Logger, cfg *DataConverterConfig, parent converter.DataConverter) (converter.DataConverter, error) {
 	var codecs []converter.PayloadCodec
 
 	if cfg.Encryption.Encrypt {
@@ -44,6 +46,8 @@ func NewDataConverter(cfg *DataConverterConfig, parent converter.DataConverter) 
 		codec := encryptionCodec{
 			ciphers: make(map[string]cipher.AEAD, len(pairs)),
 		}
+
+		var names []string
 
 		for _, pair := range pairs {
 			n, v, ok := strings.Cut(pair, "=")
@@ -65,9 +69,15 @@ func NewDataConverter(cfg *DataConverterConfig, parent converter.DataConverter) 
 			if codec.ciphers[n], err = newCipher(v); err != nil {
 				return nil, fmt.Errorf("key %q: %w", n, err)
 			}
+
+			names = append(names, n)
 		}
 
+		l.Info("temporal encryption is enabled", zap.Strings("keys", names), zap.String("main_key", codec.main))
+
 		codecs = append(codecs, &codec)
+	} else {
+		l.Warn("temporal encryption is disabled")
 	}
 
 	if cfg.Compress {

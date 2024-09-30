@@ -22,7 +22,7 @@ func TestStartDevServer(t *testing.T) {
 		},
 		opts: client.Options{},
 		done: make(chan struct{}),
-		z:    zaptest.NewLogger(t),
+		l:    zaptest.NewLogger(t),
 	}
 
 	ctx := context.Background()

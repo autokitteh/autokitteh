@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.temporal.io/sdk/converter"
+	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -31,6 +32,7 @@ func initConverter(t *testing.T, r io.Reader, keyNames []string) (converter.Data
 	}
 
 	return NewDataConverter(
+		zap.NewNop(),
 		&DataConverterConfig{
 			Compress: true,
 			Encryption: DataConverterEncryptionConfig{
