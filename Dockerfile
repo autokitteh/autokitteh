@@ -44,18 +44,6 @@ RUN python -m pip install .[all]
 
 FROM python:3.11-slim AS final
 
-# Install any runtime dependencies 
-# RUN --mount=type=cache,target=/var/cache/apk \
-#     apk --update add \
-#     ca-certificates \
-#     tzdata \
-#     && \
-#     update-ca-certificates
-
-# COPY ./scripts/gcc-on-arm.sh /tmp
-# RUN /tmp/gcc-on-arm.sh
-# RUN rm /tmp/gcc-on-arm.sh
-
 # Create a non-privileged user 
 # See https://docs.docker.com/develop/develop-images/dockerfile_best-practices/#user
 ARG UID=10001
@@ -69,12 +57,6 @@ RUN adduser \
 USER appuser
 
 COPY --chown=appuser:appuser --from=pydeps /usr/local/lib/python3.11/site-packages /usr/lib/python3.11/site-packages
-
-# Create initial venv
-# RUN python3 -m venv ~/.local/share/autokitteh/venv
-# COPY ./runtimes/pythonrt/pyproject.toml pyproject.toml
-# RUN ~/.local/share/autokitteh/venv/bin/python -m pip install .[all]
-
 
 # Copy the executable from the "build" stage.
 COPY --chown=appuser:appuser --from=build /bin/ak /bin/
