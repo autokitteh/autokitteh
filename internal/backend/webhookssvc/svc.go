@@ -94,9 +94,8 @@ func (s *Service) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Autokitteh-Event-ID", eid.String())
 	w.WriteHeader(http.StatusAccepted)
-	fmt.Fprintf(w, `{"event_id": "%v"}`, eid)
 }
 
 func requestToData(r *http.Request) (map[string]sdktypes.Value, error) {
