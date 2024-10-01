@@ -26,12 +26,14 @@ type Svcs struct {
 
 	db.DB
 	temporalclient.LazyTemporalClient
-	sdkservices.Events
-	sdkservices.Triggers
+
+	sdkservices.Connections
 	sdkservices.Deployments
-	sdkservices.Sessions
-	sdkservices.Projects
 	sdkservices.Envs
+	sdkservices.Events
+	sdkservices.Projects
+	sdkservices.Sessions
+	sdkservices.Triggers
 }
 
 type Dispatcher struct {

@@ -368,6 +368,7 @@ func (db *gormdb) CreateSession(ctx context.Context, session sdktypes.Session) e
 		Entrypoint:       session.EntryPoint().CanonicalString(),
 		CurrentStateType: int(sdktypes.SessionStateTypeCreated.ToProto()),
 		Inputs:           kittehs.Must1(json.Marshal(session.Inputs())),
+		Memo:             kittehs.Must1(json.Marshal(session.Memo())),
 		CreatedAt:        now,
 		UpdatedAt:        now,
 	}
