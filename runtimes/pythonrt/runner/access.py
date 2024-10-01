@@ -30,7 +30,7 @@ class Proxy:
         self._secret_attr = attr
 
     def __getattribute__(self, attr):
-        if attr in ("_obj", "_secret_attr"):
+        if attr in ("__dict__", "_obj", "_secret_attr"):
             raise AttributeError(attr)
 
         secret_attr = object.__getattribute__(self, "_secret_attr")
