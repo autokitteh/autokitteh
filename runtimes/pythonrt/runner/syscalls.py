@@ -4,14 +4,14 @@ Convert general func(*args, **kw) to a specific gRPC call to worker.
 """
 
 import json
+import os
+from datetime import timedelta
 
-from autokitteh import AttrDict
-
+import grpc
+import log
 import pb.autokitteh.remote.v1.remote_pb2 as pb
 import pb.autokitteh.remote.v1.remote_pb2_grpc as rpc
-import log
-import grpc
-import os
+from autokitteh import AttrDict
 
 
 class SyscallError(Exception):
@@ -66,6 +66,13 @@ class SysCalls:
         if not id:
             raise ValueError("empty subscription_id")
         req = pb.NextEventRequest(runner_id=self.runner_id, signal_ids=[id])
+
+        timeout = kw.get("timeout")
+        if isinstance(timeout, timedelta):
+            timeout = timeout.total_seconds()
+
+        if timeout:
+            req.timeout_ms = int(timeout * 1000)
 
         resp = call_grpc("next_event", self.worker.NextEvent, req)
 
