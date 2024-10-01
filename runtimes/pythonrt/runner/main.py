@@ -421,7 +421,8 @@ if __name__ == "__main__":
     server.start()
     log.info("server running on port %d", args.port)
 
-    Thread(target=runner.should_keep_running, daemon=True).start()
+    if not args.skip_check_worker:
+        Thread(target=runner.should_keep_running, daemon=True).start()
     log.info("setup should keep running thread")
 
     server.wait_for_termination()

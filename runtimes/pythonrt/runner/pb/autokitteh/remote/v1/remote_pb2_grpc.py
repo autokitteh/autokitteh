@@ -2,7 +2,7 @@
 """Client and server classes corresponding to protobuf-defined services."""
 import grpc
 
-from . import remote_pb2 as autokitteh_dot_remote_dot_v1_dot_remote__pb2
+from pb.autokitteh.remote.v1 import remote_pb2 as autokitteh_dot_remote_dot_v1_dot_remote__pb2
 
 
 class RunnerManagerStub(object):
@@ -503,6 +503,11 @@ class WorkerStub(object):
                 request_serializer=autokitteh_dot_remote_dot_v1_dot_remote__pb2.UnsubscribeRequest.SerializeToString,
                 response_deserializer=autokitteh_dot_remote_dot_v1_dot_remote__pb2.UnsubscribeResponse.FromString,
                 _registered_method=True)
+        self.RefreshOAuthToken = channel.unary_unary(
+                '/autokitteh.remote.v1.Worker/RefreshOAuthToken',
+                request_serializer=autokitteh_dot_remote_dot_v1_dot_remote__pb2.RefreshRequest.SerializeToString,
+                response_deserializer=autokitteh_dot_remote_dot_v1_dot_remote__pb2.RefreshResponse.FromString,
+                _registered_method=True)
         self.Health = channel.unary_unary(
                 '/autokitteh.remote.v1.Worker/Health',
                 request_serializer=autokitteh_dot_remote_dot_v1_dot_remote__pb2.HealthRequest.SerializeToString,
@@ -571,6 +576,13 @@ class WorkerServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def RefreshOAuthToken(self, request, context):
+        """Utility functions
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def Health(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -625,6 +637,11 @@ def add_WorkerServicer_to_server(servicer, server):
                     servicer.Unsubscribe,
                     request_deserializer=autokitteh_dot_remote_dot_v1_dot_remote__pb2.UnsubscribeRequest.FromString,
                     response_serializer=autokitteh_dot_remote_dot_v1_dot_remote__pb2.UnsubscribeResponse.SerializeToString,
+            ),
+            'RefreshOAuthToken': grpc.unary_unary_rpc_method_handler(
+                    servicer.RefreshOAuthToken,
+                    request_deserializer=autokitteh_dot_remote_dot_v1_dot_remote__pb2.RefreshRequest.FromString,
+                    response_serializer=autokitteh_dot_remote_dot_v1_dot_remote__pb2.RefreshResponse.SerializeToString,
             ),
             'Health': grpc.unary_unary_rpc_method_handler(
                     servicer.Health,
@@ -853,6 +870,33 @@ class Worker(object):
             '/autokitteh.remote.v1.Worker/Unsubscribe',
             autokitteh_dot_remote_dot_v1_dot_remote__pb2.UnsubscribeRequest.SerializeToString,
             autokitteh_dot_remote_dot_v1_dot_remote__pb2.UnsubscribeResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def RefreshOAuthToken(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/autokitteh.remote.v1.Worker/RefreshOAuthToken',
+            autokitteh_dot_remote_dot_v1_dot_remote__pb2.RefreshRequest.SerializeToString,
+            autokitteh_dot_remote_dot_v1_dot_remote__pb2.RefreshResponse.FromString,
             options,
             channel_credentials,
             insecure,
