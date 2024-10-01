@@ -320,3 +320,8 @@ func (s *workerGRPCHandler) Unsubscribe(ctx context.Context, req *pb.Unsubscribe
 	}
 
 }
+
+func (s *workerGRPCHandler) RefreshOAuthToken(context.Context, *pb.RefreshRequest) (*pb.RefreshResponse, error) {
+	// TODO: @daabr to implement
+	return nil, status.Error(codes.Unimplemented, "not yet")
+}
