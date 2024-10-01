@@ -19,7 +19,6 @@ from autokitteh import AttrDict
 from call import AKCall, full_func_name
 from grpc_reflection.v1alpha import reflection
 from syscalls import SysCalls
-import os
 import time
 
 

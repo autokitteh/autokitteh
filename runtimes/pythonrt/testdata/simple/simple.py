@@ -5,14 +5,11 @@ import json
 from os import getenv
 
 import autokitteh
-from autokitteh.connections import refresh_oauth
 
 HOME, USER = getenv("HOME"), getenv("USER")
 
 
 def greet(event):
-    refresh_oauth("lassie")
-
     print(f"simple: HOME: {HOME}")  # From environment
     print(f"simple: USER: {USER}")  # From 'var' in manifest
     print(f"simple: event: {event!r}")
