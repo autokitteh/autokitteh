@@ -191,11 +191,13 @@ func (d *Dispatcher) getEventSessionData(ctx context.Context, event sdktypes.Eve
 			continue
 		}
 
-		c, err := d.svcs.Connections.Get(ctx, t.ConnectionID())
-		if err != nil {
-			sl.With("err", err).Errorf("could not fetch connection %v: %v", t.ConnectionID(), err)
-
-			// fallthrough - not critical, informational only.
+		var c sdktypes.Connection
+		if cid := t.ConnectionID(); cid.IsValid() { // only if this trigger has conneciton defined
+			c, err = d.svcs.Connections.Get(ctx, t.ConnectionID())
+			if err != nil {
+				sl.With("err", err).Errorf("could not fetch connection %v: %v", t.ConnectionID(), err)
+				// fallthrough - not critical, informational only.
+			}
 		}
 
 		cl := t.CodeLocation()
