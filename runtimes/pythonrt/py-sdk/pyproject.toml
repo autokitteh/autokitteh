@@ -1,5 +1,6 @@
 [project]
 name = 'autokitteh'
+# If you bump minor or major, update ../requirements.txt as well
 version = '0.3.2'
 description = 'AutoKitteh Python SDK'
 readme = 'README.md'
@@ -13,7 +14,7 @@ build-backend = "setuptools.build_meta"
 [project.optional-dependencies]
 # The AutoKitteh enviornment when running workflows
 all = [
-	# Integrations
+	"asana ~= 5.0",
 	"atlassian-python-api ~= 3.41",
 	"boto3 ~= 1.35",
 	"discord.py ~= 2.4",

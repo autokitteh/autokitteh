@@ -29,7 +29,10 @@ func (e *events) List(ctx context.Context, filter sdkservices.ListEventsFilter) 
 }
 
 func (e *events) Save(ctx context.Context, event sdktypes.Event) (sdktypes.EventID, error) {
-	event = event.WithNewID().WithCreatedAt(time.Now())
+	event = event.WithNewID()
+	if event.CreatedAt() == time.Unix(0, 0).UTC() {
+		event = event.WithCreatedAt(time.Now())
+	}
 
 	if err := e.db.SaveEvent(ctx, event); err != nil {
 		return sdktypes.InvalidEventID, err

@@ -356,6 +356,7 @@ type Session struct {
 	CreatedAt        time.Time
 	UpdatedAt        time.Time
 	DeletedAt        gorm.DeletedAt `gorm:"index"`
+	Memo             datatypes.JSON
 
 	// enforce foreign keys
 	Build      *Build
@@ -378,6 +379,13 @@ func ParseSession(s Session) (sdktypes.Session, error) {
 		}
 	}
 
+	var memo map[string]string
+	if len(s.Memo) != 0 {
+		if err := json.Unmarshal(s.Memo, &memo); err != nil {
+			return sdktypes.InvalidSession, fmt.Errorf("memo: %w", err)
+		}
+	}
+
 	session, err := sdktypes.StrictSessionFromProto(&sdktypes.SessionPB{
 		SessionId:    sdktypes.NewIDFromUUID[sdktypes.SessionID](&s.SessionID).String(),
 		BuildId:      sdktypes.NewIDFromUUID[sdktypes.BuildID](s.BuildID).String(),
@@ -389,6 +397,7 @@ func ParseSession(s Session) (sdktypes.Session, error) {
 		CreatedAt:    timestamppb.New(s.CreatedAt),
 		UpdatedAt:    timestamppb.New(s.UpdatedAt),
 		State:        sessionsv1.SessionStateType(s.CurrentStateType),
+		Memo:         memo,
 	})
 	if err != nil {
 		return sdktypes.InvalidSession, err
