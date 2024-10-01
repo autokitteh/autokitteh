@@ -20,10 +20,6 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-const (
-	googleScope = "google"
-)
-
 type api struct {
 	vars sdkservices.Vars
 	cid  sdktypes.ConnectionID
