@@ -25,7 +25,8 @@ var Configs = configset.Set[Config]{
 		Type:               gormkitteh.RequireExplicitDSNType,
 	},
 	Dev: &Config{
-		DSN: "sqlite:file:" + filepath.Join(xdg.DataHomeDir(), "autokitteh.sqlite"),
+		SlowQueryThreshold: 200 * time.Millisecond, // gorm default
+		DSN:                "sqlite:file:" + filepath.Join(xdg.DataHomeDir(), "autokitteh.sqlite"),
 	},
 	Test: &Config{},
 }
