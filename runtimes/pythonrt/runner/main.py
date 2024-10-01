@@ -1,7 +1,10 @@
 import builtins
 import json
+import os
 import pickle
 import sys
+import threading
+import time
 from base64 import b64decode
 from concurrent.futures import Future, ThreadPoolExecutor
 from io import StringIO
@@ -10,6 +13,7 @@ from pathlib import Path
 from threading import Lock
 from traceback import TracebackException, print_exception
 
+import access
 import grpc
 import loader
 import log
@@ -19,9 +23,6 @@ from autokitteh import AttrDict
 from call import AKCall, full_func_name
 from grpc_reflection.v1alpha import reflection
 from syscalls import SysCalls
-import threading
-import os
-import time
 
 
 class ActivityError(Exception):
@@ -373,6 +374,7 @@ if __name__ == "__main__":
 
     # Support importing local files
     sys.path.append(str(args.code_dir))
+    access.hide_ak_secrets()
 
     chan = grpc.insecure_channel(args.worker_address)
     worker = rpc.WorkerStub(chan)
