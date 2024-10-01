@@ -3,6 +3,7 @@ package dispatcher
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"go.temporal.io/sdk/workflow"
 	"go.uber.org/fx"
@@ -52,11 +53,11 @@ func (d *Dispatcher) Dispatch(ctx context.Context, event sdktypes.Event, opts *s
 	ctx = akCtx.WithRequestOrginator(ctx, akCtx.Dispatcher)
 	ctx = akCtx.WithOwnershipOf(ctx, d.svcs.DB.GetOwnership, event.DestinationID().UUIDValue())
 
+	event = event.WithCreatedAt(time.Now())
 	eid, err := d.svcs.Events.Save(ctx, event)
 	if err != nil {
 		return sdktypes.InvalidEventID, fmt.Errorf("save event: %w", err)
 	}
-
 	event = event.WithID(eid)
 
 	sl := d.sl.With("event_id", eid)
