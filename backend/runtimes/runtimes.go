@@ -3,6 +3,7 @@ package runtimes
 import (
 	"errors"
 	"fmt"
+	"net"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/configset"
 	"go.autokitteh.dev/autokitteh/internal/backend/httpsvc"
@@ -18,6 +19,7 @@ type Config struct {
 	RemoteRunnerEndpoints []string `koanf:"remote_runner_endpoints"`
 	//TODO: maybe should be runner type which can be local/docker/remote/ ?
 	EnableRemoteRunner bool   `koanf:"enable_remote_runner"`
+	PythonRunnerType   string `koanf:"python_runner_type"`
 	WorkerAddress      string `koanf:"worker_address"`
 	// TODO: This is a hack to prevent running configure on pythonrt in each test
 	// which currently install venv everytime and takes a really long time
@@ -34,7 +36,8 @@ var Configs = configset.Set[Config]{
 		LazyLoadLocalVEnv: true,
 	},
 	Dev: &Config{
-		LogRunnerCode: true,
+		LogRunnerCode:    true,
+		PythonRunnerType: "docker",
 	},
 }
 
@@ -50,7 +53,18 @@ func New(cfg *Config, l *zap.Logger, svc httpsvc.Svc) (sdkservices.Runtimes, err
 		cfg = Configs.Default
 	}
 
-	if cfg.EnableRemoteRunner {
+	switch cfg.PythonRunnerType {
+	case "docker":
+		if err := pythonruntime.ConfigureDockerRunnerManager(l, pythonruntime.DockerRuntimeConfig{
+			WorkerAddressProvider: func() string {
+				_, port, _ := net.SplitHostPort(svc.Addr())
+				return fmt.Sprintf("host.docker.internal:%s", port)
+			},
+		}); err != nil {
+			return nil, fmt.Errorf("configure docker runner manager: %w", err)
+		}
+		l.Info("docker runner configured")
+	case "remote":
 		if len(cfg.RemoteRunnerEndpoints) == 0 {
 			return nil, errors.New("remote runner is enabled but no runner endpoints provided")
 		}
@@ -61,7 +75,7 @@ func New(cfg *Config, l *zap.Logger, svc httpsvc.Svc) (sdkservices.Runtimes, err
 			return nil, fmt.Errorf("configure remote runner manager: %w", err)
 		}
 		l.Info("remote runner configued")
-	} else {
+	default:
 		if err := pythonruntime.ConfigureLocalRunnerManager(l,
 			pythonruntime.LocalRunnerManagerConfig{
 				WorkerAddress:         cfg.WorkerAddress,

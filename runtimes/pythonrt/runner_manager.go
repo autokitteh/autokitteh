@@ -40,6 +40,7 @@ var (
 const (
 	runnerTypeLocal         runnerType = "local_runner"
 	runnerTypeRemote        runnerType = "remote_runner"
+	runnerTypeDocker        runnerType = "docker_runner"
 	runnerTypeNotConfigured runnerType = "not_configured"
 )
 
