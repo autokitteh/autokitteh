@@ -514,6 +514,7 @@ func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (prints []st
 	ctx := temporalclient.NewWorkflowContextAsGOContext(wctx)
 
 	temporalclient.WithoutDeadlockDetection(
+		wctx,
 		func() {
 			run, err = sdkruntimes.Run(
 				ctx,
