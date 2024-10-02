@@ -34,7 +34,7 @@ func ConfigureDockerRunnerManager(log *zap.Logger, cfg DockerRuntimeConfig) erro
 		return err
 	}
 
-	dc, err := NewDockerClient()
+	dc, err := NewDockerClient(log)
 	if err != nil {
 		return err
 	}

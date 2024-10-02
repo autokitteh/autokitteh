@@ -3,7 +3,6 @@ package pythonrt
 import (
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	"os"
 	"sync"
@@ -17,6 +16,7 @@ import (
 	"github.com/docker/docker/pkg/archive"
 	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/docker/go-connections/nat"
+	"go.uber.org/zap"
 )
 
 const (
@@ -33,9 +33,10 @@ type dockerClient struct {
 	runnerLabels    map[string]string
 	logBuildProcess bool
 	logRunner       bool
+	logger          *zap.Logger
 }
 
-func NewDockerClient() (*dockerClient, error) {
+func NewDockerClient(logger *zap.Logger) (*dockerClient, error) {
 	apiClient, err := client.NewClientWithOpts(client.FromEnv)
 	if err != nil {
 		return nil, err
@@ -47,16 +48,19 @@ func NewDockerClient() (*dockerClient, error) {
 		runnerLabels:    map[string]string{runnersLabel: ""},
 		activeRunnerIDs: map[string]struct{}{},
 		allRunnerIDs:    map[string]struct{}{},
+		logger:          logger,
 	}
 
-	dc.SyncCurrentState()
+	if err := dc.SyncCurrentState(); err != nil {
+		return nil, err
+	}
 
 	return dc, nil
 }
 
-func (d *dockerClient) close() error {
-	return d.client.Close()
-}
+// func (d *dockerClient) close() error {
+// 	return d.client.Close()
+// }
 
 func (d *dockerClient) ensureNetwork() (string, error) {
 	inspectResult, err := d.client.NetworkInspect(context.Background(), networkName, network.InspectOptions{})
@@ -117,10 +121,14 @@ func (d *dockerClient) StartRunner(runnerImage string, cmd []string) (string, st
 			Follow:     true,
 		})
 		defer reader.Close()
-		_, err = stdcopy.StdCopy(os.Stdout, os.Stderr, reader)
+		if d.logRunner {
+			_, err = stdcopy.StdCopy(os.Stdout, os.Stderr, reader)
+		} else {
+			_, err = io.Copy(io.Discard, reader)
+		}
+
 		if err != nil {
-			fmt.Println(err)
-			panic(err)
+			d.logger.Warn("error reading runner logs", zap.Error(err), zap.String("runner_id", resp.ID))
 		}
 	}()
 
@@ -209,29 +217,19 @@ func (d *dockerClient) BuildImage(name, directory string) error {
 	// Build the image
 	resp, err := d.client.ImageBuild(context.Background(), tar, options)
 	if err != nil {
-		fmt.Printf("Error building image: %v\n", err)
+		d.logger.Error("Error building image", zap.Error(err))
 		return err
 	}
 	defer resp.Body.Close()
 
-	// scanner := bufio.NewScanner(resp.Body)
-	// fmt.Println("\n\nBuilding container started")
-	// for scanner.Scan() {
-	// 	type stream struct {
-	// 		Stream string `json:"stream"`
-	// 	}
+	if d.logBuildProcess {
+		_, err = io.Copy(os.Stdout, resp.Body)
+	} else {
+		_, err = io.Copy(io.Discard, resp.Body)
+	}
 
-	// 	var s stream
-	// 	if err := json.Unmarshal(scanner.Bytes(), &s); err != nil {
-	// 		panic(err)
-	// 	}
-	// 	fmt.Println(s.Stream)
-	// }
-	// _, err = io.ReadAll(resp.Body)
-
-	_, err = io.Copy(os.Stdout, resp.Body)
 	if err != nil {
-		fmt.Printf("Error printing build output: %v\n", err)
+		d.logger.Error("Error printing build output", zap.Error(err))
 		return err
 	}
 
@@ -244,7 +242,7 @@ func (d *dockerClient) BuildImage(name, directory string) error {
 		return errors.New("failed creating image")
 	}
 
-	fmt.Println("Image built successfully")
+	d.logger.Info("Image built successfully")
 	return nil
 }
 

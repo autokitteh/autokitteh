@@ -69,7 +69,7 @@ func prepareUserCode(code []byte, gzipped bool) (string, error) {
 	if hasRequirementsFile {
 		dockerfile = []byte(dockerfileWithDeps)
 	}
-	if err := os.WriteFile(path.Join(tmpDir, "Dockerfile"), dockerfile, 777); err != nil {
+	if err := os.WriteFile(path.Join(tmpDir, "Dockerfile"), dockerfile, 0o777); err != nil {
 		return "", err
 	}
 
