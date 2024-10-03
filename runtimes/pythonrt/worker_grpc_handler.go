@@ -8,13 +8,19 @@ import (
 	"fmt"
 	"net/http"
 	"sync"
+	"time"
 
-	pb "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/remote/v1"
-	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
+	"github.com/google/uuid"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
+
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
+	pb "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/remote/v1"
+	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 type workerGRPCHandler struct {
@@ -24,12 +30,10 @@ type workerGRPCHandler struct {
 	mu                 *sync.Mutex
 }
 
-var (
-	w = workerGRPCHandler{
-		runnerIDsToRuntime: map[string]*pySvc{},
-		mu:                 new(sync.Mutex),
-	}
-)
+var w = workerGRPCHandler{
+	runnerIDsToRuntime: map[string]*pySvc{},
+	mu:                 new(sync.Mutex),
+}
 
 // GRPC Server Handling
 // func newInterceptor(log *zap.Logger) func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
@@ -77,6 +81,7 @@ func removeRunnerFromServer(runnerID string) error {
 func (s *workerGRPCHandler) Health(ctx context.Context, req *pb.HealthRequest) (*pb.HealthResponse, error) {
 	return &pb.HealthResponse{}, nil
 }
+
 func (s *workerGRPCHandler) IsActiveRunner(ctx context.Context, req *pb.IsActiveRunnerRequest) (*pb.IsActiveRunnerResponse, error) {
 	w.mu.Lock()
 	_, ok := w.runnerIDsToRuntime[req.RunnerId]
@@ -132,7 +137,6 @@ func (s *workerGRPCHandler) Done(ctx context.Context, req *pb.DoneRequest) (*pb.
 
 // Runner starting activity
 func (s *workerGRPCHandler) Activity(ctx context.Context, req *pb.ActivityRequest) (*pb.ActivityResponse, error) {
-
 	w.mu.Lock()
 	runner, ok := w.runnerIDsToRuntime[req.RunnerId]
 	w.mu.Unlock()
@@ -157,17 +161,34 @@ func (s *workerGRPCHandler) Activity(ctx context.Context, req *pb.ActivityReques
 
 // ak functions
 
-func makeCallbackMessage(args []sdktypes.Value, kwargs map[string]sdktypes.Value) *callbackMessage {
+func rpcSyscall[Resp proto.Message](
+	rid string,
+	callf func(context.Context, sdkservices.RunSyscalls) (sdktypes.Value, error),
+	errf func(error) Resp,
+	vf func(sdktypes.Value) Resp,
+) (Resp, error) {
+	w.mu.Lock()
+	runner, ok := w.runnerIDsToRuntime[rid]
+	w.mu.Unlock()
+	if !ok {
+		return errf(errors.New("runner id unknown")), nil
+	}
+
 	callbackChan := make(chan sdktypes.Value)
 	errorChannel := make(chan error)
 
-	msg := &callbackMessage{
-		args:           args,
-		kwargs:         kwargs,
+	runner.channels.callback <- &callbackMessage{
+		f:              callf,
 		successChannel: callbackChan,
 		errorChannel:   errorChannel,
 	}
-	return msg
+
+	select {
+	case err := <-errorChannel:
+		return errf(status.Errorf(codes.Internal, "syscall -> %v", err)), nil
+	case v := <-callbackChan:
+		return vf(v), nil
+	}
 }
 
 func (s *workerGRPCHandler) Sleep(ctx context.Context, req *pb.SleepRequest) (*pb.SleepResponse, error) {
@@ -175,32 +196,14 @@ func (s *workerGRPCHandler) Sleep(ctx context.Context, req *pb.SleepRequest) (*p
 		return nil, status.Error(codes.InvalidArgument, "negative time")
 	}
 
-	w.mu.Lock()
-	runner, ok := w.runnerIDsToRuntime[req.RunnerId]
-	w.mu.Unlock()
-	if !ok {
-		return &pb.SleepResponse{
-			Error: "Unknown runner id",
-		}, nil
-	}
-
-	secs := float64(req.DurationMs) / 1000.0
-	args := []sdktypes.Value{
-		sdktypes.NewStringValue("sleep"),
-		sdktypes.NewFloatValue(secs),
-	}
-
-	msg := makeCallbackMessage(args, nil)
-
-	runner.channels.callback <- msg
-
-	select {
-	case err := <-msg.errorChannel:
-		err = status.Errorf(codes.Internal, "sleep(%f) -> %s", secs, err)
-		return &pb.SleepResponse{Error: err.Error()}, nil
-	case <-msg.successChannel:
-		return &pb.SleepResponse{}, nil
-	}
+	return rpcSyscall(
+		req.RunnerId,
+		func(ctx context.Context, syscalls sdkservices.RunSyscalls) (sdktypes.Value, error) {
+			return sdktypes.Nothing, syscalls.Sleep(ctx, time.Duration(req.DurationMs)*time.Millisecond)
+		},
+		func(err error) *pb.SleepResponse { return &pb.SleepResponse{Error: err.Error()} },
+		func(v sdktypes.Value) *pb.SleepResponse { return &pb.SleepResponse{} },
+	)
 }
 
 func (s *workerGRPCHandler) Subscribe(ctx context.Context, req *pb.SubscribeRequest) (*pb.SubscribeResponse, error) {
@@ -208,31 +211,21 @@ func (s *workerGRPCHandler) Subscribe(ctx context.Context, req *pb.SubscribeRequ
 		return nil, status.Error(codes.InvalidArgument, "missing connection name or filter")
 	}
 
-	w.mu.Lock()
-	runner, ok := w.runnerIDsToRuntime[req.RunnerId]
-	w.mu.Unlock()
-	if !ok {
-		return &pb.SubscribeResponse{
-			Error: "Unknown runner id",
-		}, nil
-	}
+	return rpcSyscall(
+		req.RunnerId,
+		func(ctx context.Context, syscalls sdkservices.RunSyscalls) (sdktypes.Value, error) {
+			id, err := syscalls.Subscribe(ctx, req.Connection, req.Filter)
+			if err != nil {
+				return sdktypes.InvalidValue, err
+			}
 
-	args := []sdktypes.Value{
-		sdktypes.NewStringValue("subscribe"),
-		sdktypes.NewStringValue(req.Connection),
-		sdktypes.NewStringValue(req.Filter),
-	}
-	msg := makeCallbackMessage(args, nil)
-	runner.channels.callback <- msg
-
-	select {
-	case err := <-msg.errorChannel:
-		err = status.Errorf(codes.Internal, "subscribe(%s, %s) -> %s", req.Connection, req.Filter, err)
-		return &pb.SubscribeResponse{Error: err.Error()}, nil
-	case val := <-msg.successChannel:
-		signalID := val.GetString().Value()
-		return &pb.SubscribeResponse{SignalId: signalID}, nil
-	}
+			return sdktypes.NewStringValue(id.String()), nil
+		},
+		func(err error) *pb.SubscribeResponse { return &pb.SubscribeResponse{Error: err.Error()} },
+		func(v sdktypes.Value) *pb.SubscribeResponse {
+			return &pb.SubscribeResponse{SignalId: v.GetString().Value()}
+		},
+	)
 }
 
 func (s *workerGRPCHandler) NextEvent(ctx context.Context, req *pb.NextEventRequest) (*pb.NextEventResponse, error) {
@@ -243,80 +236,53 @@ func (s *workerGRPCHandler) NextEvent(ctx context.Context, req *pb.NextEventRequ
 		return nil, status.Error(codes.InvalidArgument, "timeout < 0")
 	}
 
-	w.mu.Lock()
-	runner, ok := w.runnerIDsToRuntime[req.RunnerId]
-	w.mu.Unlock()
-	if !ok {
-		return &pb.NextEventResponse{
-			Error: "Unknown runner id",
-		}, nil
-	}
-
-	args := make([]sdktypes.Value, len(req.SignalIds)+1)
-	args[0] = sdktypes.NewStringValue("next_event")
-	for i, id := range req.SignalIds {
-		args[i+1] = sdktypes.NewStringValue(id)
-	}
-	// timeout is kw only
-	kw := make(map[string]sdktypes.Value)
-	if req.TimeoutMs > 0 {
-		kw["timeout"] = sdktypes.NewFloatValue(float64(req.TimeoutMs) / 1000.0)
-	}
-
-	msg := makeCallbackMessage(args, kw)
-
-	runner.channels.callback <- msg
-
-	select {
-	case err := <-msg.errorChannel:
-		err = status.Errorf(codes.Internal, "next_event(%s, %d) -> %s", req.SignalIds, req.TimeoutMs, err)
+	uuids, err := kittehs.TransformError(req.SignalIds, uuid.Parse)
+	if err != nil {
 		return &pb.NextEventResponse{Error: err.Error()}, nil
-	case val := <-msg.successChannel:
-		out, err := val.Unwrap()
-		if err != nil {
-			err = status.Errorf(codes.Internal, "can't unwrap %v - %s", val, err)
-			return &pb.NextEventResponse{Error: err.Error()}, err
-		}
-
-		data, err := json.Marshal(out)
-		if err != nil {
-			err = status.Errorf(codes.Internal, "can't json.Marshal %v - %s", out, err)
-			return &pb.NextEventResponse{Error: err.Error()}, err
-		}
-
-		resp := pb.NextEventResponse{
-			Event: &pb.Event{
-				Data: data,
-			},
-		}
-		return &resp, nil
 	}
+
+	return rpcSyscall(
+		req.RunnerId,
+		func(ctx context.Context, syscalls sdkservices.RunSyscalls) (sdktypes.Value, error) {
+			return syscalls.NextEvent(ctx, uuids, time.Duration(req.TimeoutMs)*time.Millisecond)
+		},
+		func(err error) *pb.NextEventResponse { return &pb.NextEventResponse{Error: err.Error()} },
+		func(val sdktypes.Value) *pb.NextEventResponse {
+			out, err := val.Unwrap()
+			if err != nil {
+				err = status.Errorf(codes.Internal, "can't unwrap %v - %s", val, err)
+				return &pb.NextEventResponse{Error: err.Error()}
+			}
+
+			data, err := json.Marshal(out)
+			if err != nil {
+				err = status.Errorf(codes.Internal, "can't json.Marshal %v - %s", out, err)
+				return &pb.NextEventResponse{Error: err.Error()}
+			}
+
+			return &pb.NextEventResponse{
+				Event: &pb.Event{
+					Data: data,
+				},
+			}
+		},
+	)
 }
 
 func (s *workerGRPCHandler) Unsubscribe(ctx context.Context, req *pb.UnsubscribeRequest) (*pb.UnsubscribeResponse, error) {
-	w.mu.Lock()
-	runner, ok := w.runnerIDsToRuntime[req.RunnerId]
-	w.mu.Unlock()
-	if !ok {
+	sigid, err := uuid.Parse(req.SignalId)
+	if err != nil {
 		return &pb.UnsubscribeResponse{
-			Error: "Unknown runner id",
+			Error: err.Error(),
 		}, nil
 	}
 
-	args := []sdktypes.Value{
-		sdktypes.NewStringValue("unsubsribe"),
-		sdktypes.NewStringValue(req.SignalId),
-	}
-
-	msg := makeCallbackMessage(args, nil)
-	runner.channels.callback <- msg
-
-	select {
-	case err := <-msg.errorChannel:
-		err = status.Errorf(codes.Internal, "subscribe(%s) -> %s", req.SignalId, err)
-		return &pb.UnsubscribeResponse{Error: err.Error()}, err
-	case <-msg.successChannel:
-		return &pb.UnsubscribeResponse{}, nil
-	}
-
+	return rpcSyscall(
+		req.RunnerId,
+		func(ctx context.Context, syscalls sdkservices.RunSyscalls) (sdktypes.Value, error) {
+			return sdktypes.Nothing, syscalls.Unsubscribe(ctx, sigid)
+		},
+		func(err error) *pb.UnsubscribeResponse { return &pb.UnsubscribeResponse{Error: err.Error()} },
+		func(sdktypes.Value) *pb.UnsubscribeResponse { return &pb.UnsubscribeResponse{} },
+	)
 }

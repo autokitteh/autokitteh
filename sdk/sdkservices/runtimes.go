@@ -3,6 +3,9 @@ package sdkservices
 import (
 	"context"
 	"io/fs"
+	"time"
+
+	"github.com/google/uuid"
 
 	"go.autokitteh.dev/autokitteh/sdk/sdkbuildfile"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
@@ -48,6 +51,20 @@ type (
 	RunCallFunc  = func(ctx context.Context, rid sdktypes.RunID, v sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error)
 	RunPrintFunc = func(ctx context.Context, rid sdktypes.RunID, text string)
 	NewRunIDFunc = func() sdktypes.RunID
+
+	RunSleepFunc       = func(ctx context.Context, t time.Duration) error
+	RunStartFunc       = func(ctx context.Context, entrypoint sdktypes.CodeLocation, inputs map[string]sdktypes.Value, memo map[string]string) (string, error)
+	RunSubscribeFunc   = func(ctx context.Context, name, filter string) (uuid.UUID, error)
+	RunUnsubscribeFunc = func(ctx context.Context, id uuid.UUID) error
+	RunNextEventFunc   = func(ctx context.Context, subscriptions []uuid.UUID, t time.Duration) (sdktypes.Value, error)
+
+	RunSyscalls struct {
+		Sleep       RunSleepFunc
+		Start       RunStartFunc
+		Subscribe   RunSubscribeFunc
+		Unsubscribe RunUnsubscribeFunc
+		NextEvent   RunNextEventFunc
+	}
 )
 
 type RunCallbacks struct {
@@ -60,6 +77,8 @@ type RunCallbacks struct {
 	Print RunPrintFunc
 
 	NewRunID NewRunIDFunc
+
+	Syscalls *RunSyscalls
 }
 
 type Run interface {
@@ -95,3 +114,44 @@ func (rc *RunCallbacks) SafePrint(ctx context.Context, rid sdktypes.RunID, text 
 }
 
 func (rc *RunCallbacks) SafeNewRunID() sdktypes.RunID { return sdktypes.NewRunID() }
+
+func (rc *RunCallbacks) SafeSyscalls() *RunSyscalls {
+	sc := rc.Syscalls
+
+	if rc == nil {
+		sc = &RunSyscalls{}
+	}
+
+	if sc.Sleep == nil {
+		sc.Sleep = func(ctx context.Context, t time.Duration) error {
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case <-time.After(t):
+				return nil
+			}
+		}
+	}
+
+	if sc.NextEvent == nil {
+		sc.NextEvent = func(context.Context, []uuid.UUID, time.Duration) (sdktypes.Value, error) {
+			return sdktypes.InvalidValue, sdkerrors.ErrNotImplemented
+		}
+	}
+
+	if sc.Start == nil {
+		sc.Start = func(context.Context, sdktypes.CodeLocation, map[string]sdktypes.Value, map[string]string) (string, error) {
+			return "", sdkerrors.ErrNotImplemented
+		}
+	}
+
+	if sc.Subscribe == nil {
+		sc.Subscribe = func(context.Context, string, string) (uuid.UUID, error) { return uuid.Nil, sdkerrors.ErrNotImplemented }
+	}
+
+	if sc.Unsubscribe == nil {
+		sc.Unsubscribe = func(context.Context, uuid.UUID) error { return nil }
+	}
+
+	return sc
+}

@@ -12,6 +12,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessioncontext"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
+	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
@@ -23,32 +24,76 @@ const (
 	unsubscribeOp = "unsubscribe"
 )
 
-func (w *sessionWorkflow) syscall(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
-	if len(args) == 0 {
-		return sdktypes.InvalidValue, fmt.Errorf("expecting syscall operation name as first argument")
+func (w *sessionWorkflow) syscalls() *sdkservices.RunSyscalls {
+	call := func(ctx context.Context, name string, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
+		v := w.akModule.Values()[name]
+
+		wctx := sessioncontext.GetWorkflowContext(ctx)
+		if wctx == nil {
+			return sdktypes.InvalidValue, errors.New("missing workflow context")
+		}
+
+		return w.call(wctx, v, args, kwargs)
 	}
 
-	var op string
+	return &sdkservices.RunSyscalls{
+		Sleep: func(ctx context.Context, t time.Duration) error {
+			_, err := call(ctx, sleepOp, []sdktypes.Value{sdktypes.NewDurationValue(t)}, nil)
+			return err
+		},
+		Start: func(ctx context.Context, entrypoint sdktypes.CodeLocation, inputs map[string]sdktypes.Value, memo map[string]string) (string, error) {
+			v, err := call(
+				ctx,
+				startOp,
+				nil,
+				map[string]sdktypes.Value{
+					"loc":    sdktypes.NewStringValue(entrypoint.String()),
+					"inputs": sdktypes.NewDictValueFromStringMap(inputs),
+					"memo":   sdktypes.NewDictValueFromStringMap(kittehs.TransformMapValues(memo, sdktypes.NewStringValue)),
+				},
+			)
+			if err != nil {
+				return "", err
+			}
 
-	if err := sdktypes.DefaultValueWrapper.UnwrapInto(&op, args[0]); err != nil {
-		return sdktypes.InvalidValue, err
-	}
+			return v.GetString().Value(), nil
+		},
+		Subscribe: func(ctx context.Context, name, filter string) (uuid.UUID, error) {
+			v, err := call(
+				ctx,
+				subscribeOp,
+				nil,
+				map[string]sdktypes.Value{
+					"name":   sdktypes.NewStringValue(name),
+					"filter": sdktypes.NewStringValue(filter),
+				},
+			)
+			if err != nil {
+				return uuid.Nil, err
+			}
 
-	args = args[1:]
+			return uuid.Parse(v.GetString().Value())
+		},
+		Unsubscribe: func(ctx context.Context, signalID uuid.UUID) error {
+			_, err := call(
+				ctx,
+				unsubscribeOp,
+				[]sdktypes.Value{sdktypes.NewStringValue(signalID.String())},
+				nil,
+			)
 
-	switch op {
-	case sleepOp:
-		return w.sleep(ctx, args, kwargs)
-	case startOp:
-		return w.start(ctx, args, kwargs)
-	case subscribeOp:
-		return w.subscribe(ctx, args, kwargs)
-	case nextEventOp:
-		return w.nextEvent(ctx, args, kwargs)
-	case unsubscribeOp:
-		return w.unsubscribe(ctx, args, kwargs)
-	default:
-		return sdktypes.InvalidValue, fmt.Errorf("unknown op %q", op)
+			return err
+		},
+		NextEvent: func(ctx context.Context, subscriptions []uuid.UUID, t time.Duration) (sdktypes.Value, error) {
+			return call(
+				ctx,
+				nextEventOp,
+				kittehs.Transform(subscriptions, func(id uuid.UUID) sdktypes.Value { return sdktypes.NewStringValue(id.String()) }),
+				map[string]sdktypes.Value{
+					"timeout": sdktypes.NewDurationValue(t),
+				},
+			)
+		},
 	}
 }
 
