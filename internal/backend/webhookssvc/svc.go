@@ -87,12 +87,14 @@ func (s *Service) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if _, err := s.dispatcher.Dispatch(ctx, event, nil); err != nil {
+	eid, err := s.dispatcher.Dispatch(ctx, event, nil)
+	if err != nil {
 		sl.Errorw("dispatch failed", "event", event, "err", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 
+	w.Header().Set("AutoKitteh-Event-ID", eid.String())
 	w.WriteHeader(http.StatusAccepted)
 }
 
