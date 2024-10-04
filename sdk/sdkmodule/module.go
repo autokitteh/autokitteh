@@ -24,6 +24,8 @@ type module struct {
 	opts moduleOpts
 }
 
+var Empty = New()
+
 func New(optfns ...Optfn) Module {
 	opts := moduleOpts{
 		funcs: make(map[string]*funcOpts),
