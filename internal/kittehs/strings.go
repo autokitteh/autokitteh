@@ -47,14 +47,6 @@ func MatchLongestSuffix(s string, suffixes []string) string {
 	return longest
 }
 
-func PadLeft(s string, r rune, n int) string {
-	if len(s) >= n {
-		return s
-	}
-
-	return strings.Repeat(string(r), n-len(s)) + s
-}
-
 // NormalizeURL ensures that the given URL has the right scheme
 // prefix, and no suffix (e.g. path) after the host address.
 func NormalizeURL(rawURL string, secure bool) (string, error) {
