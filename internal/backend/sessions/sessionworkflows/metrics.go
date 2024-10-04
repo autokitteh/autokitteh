@@ -13,7 +13,9 @@ var (
 	sessionsProgramErrorsCounter metric.Int64Counter
 	sessionsStoppedCounter       metric.Int64Counter
 	sessionStaleReplaysCounter   metric.Int64Counter
-	sessionDurationHistogram     metric.Int64Histogram
+
+	sessionDurationHistogram        metric.Int64Histogram
+	sessionInvocationDelayHistogram metric.Int64Histogram
 )
 
 func initMetrics(t *telemetry.Telemetry) {
@@ -22,6 +24,8 @@ func initMetrics(t *telemetry.Telemetry) {
 	sessionsErroredCounter, _ = t.NewCounter("sessions.errored", "Errored sessions counter")
 	sessionsProgramErrorsCounter, _ = t.NewCounter("sessions.program_errors", "Program errors sessions counter")
 	sessionsStoppedCounter, _ = t.NewCounter("sessions.stopped", "Stopped sessions counter")
-	sessionDurationHistogram, _ = t.NewHistogram("sessions.duration", "Session duration histogram")
 	sessionStaleReplaysCounter, _ = t.NewCounter("sessions.stale_replays", "Stale replays sessions counter")
+
+	sessionDurationHistogram, _ = t.NewHistogram("sessions.duration", "Session duration histogram")
+	sessionInvocationDelayHistogram, _ = t.NewHistogram("sessions.invocation_delay", "Session invocation delay (time from event till session start) histogram")
 }
