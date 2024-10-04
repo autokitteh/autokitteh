@@ -3,7 +3,7 @@ package httpsvc
 import (
 	"go.uber.org/zap"
 
-	"go.autokitteh.dev/autokitteh/internal/backend/configset"
+	"go.autokitteh.dev/autokitteh/internal/backend/config"
 	"go.autokitteh.dev/autokitteh/sdk/sdkclients/sdkclient"
 )
 
@@ -53,7 +53,9 @@ type Config struct {
 	CORS CORSConfig `koanf:"cors"`
 }
 
-var Configs = configset.Set[Config]{
+func (Config) Validate() error { return nil }
+
+var Configs = config.Set[Config]{
 	Default: &Config{
 		Addr:                 "0.0.0.0:" + sdkclient.DefaultPort,
 		ServiceUrl:           sdkclient.DefaultLocalURL,

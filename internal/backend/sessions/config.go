@@ -1,9 +1,10 @@
 package sessions
 
 import (
+	"errors"
 	"time"
 
-	"go.autokitteh.dev/autokitteh/internal/backend/configset"
+	"go.autokitteh.dev/autokitteh/internal/backend/config"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessioncalls"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionworkflows"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
@@ -13,6 +14,17 @@ type Config struct {
 	EnableWorker bool                    `koanf:"enable_worker"`
 	Workflows    sessionworkflows.Config `koanf:"workflows"`
 	Calls        sessioncalls.Config     `koanf:"calls"`
+}
+
+func (c Config) Validate() error {
+	if !c.EnableWorker {
+		return nil
+	}
+
+	return errors.Join(
+		c.Workflows.Validate(),
+		c.Calls.Validate(),
+	)
 }
 
 var defaultConfig = Config{
@@ -33,7 +45,7 @@ var defaultConfig = Config{
 	},
 }
 
-var Configs = configset.Set[Config]{
+var Configs = config.Set[Config]{
 	Default: &defaultConfig,
 	Dev: func() *Config {
 		c := defaultConfig

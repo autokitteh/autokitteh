@@ -1,6 +1,7 @@
 package sessionworkflows
 
 import (
+	"errors"
 	"time"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
@@ -21,4 +22,13 @@ type Config struct {
 
 	// Enable test tools.
 	Test bool `koanf:"test"`
+}
+
+func (c Config) Validate() error {
+	return errors.Join(
+		c.SessionWorkflow.Validate(),
+		c.TerminationWorkflow.Validate(),
+		c.Activity.Validate(),
+		c.Worker.Validate(),
+	)
 }

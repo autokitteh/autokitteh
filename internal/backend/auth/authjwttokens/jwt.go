@@ -11,7 +11,7 @@ import (
 	"github.com/google/uuid"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authtokens"
-	"go.autokitteh.dev/autokitteh/internal/backend/configset"
+	"go.autokitteh.dev/autokitteh/internal/backend/config"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
@@ -26,11 +26,16 @@ type Config struct {
 	SignKey string `koanf:"sign_key"`
 }
 
+func (c Config) Validate() error {
+	_, err := parseKey(c.SignKey)
+	return err
+}
+
 type tokens struct {
 	signKey []byte
 }
 
-var Configs = configset.Set[Config]{
+var Configs = config.Set[Config]{
 	Default: &Config{},
 	Dev: &Config{
 		SignKey: strings.Repeat("00", hashSize),
@@ -40,14 +45,23 @@ var Configs = configset.Set[Config]{
 	},
 }
 
-func New(cfg *Config) (authtokens.Tokens, error) {
-	key, err := hex.DecodeString(cfg.SignKey)
+func parseKey(s string) ([]byte, error) {
+	key, err := hex.DecodeString(s)
 	if err != nil {
 		return nil, fmt.Errorf("invalid signing key: %w", err)
 	}
 
 	if len(key) != hashSize {
 		return nil, fmt.Errorf("invalid key len: %d != desired %d", len(key), hashSize)
+	}
+
+	return key, nil
+}
+
+func New(cfg *Config) (authtokens.Tokens, error) {
+	key, err := parseKey(cfg.SignKey)
+	if err != nil {
+		return nil, fmt.Errorf("signing key: %w", err)
 	}
 
 	return &tokens{signKey: key}, nil

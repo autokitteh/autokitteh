@@ -9,7 +9,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
-	"go.autokitteh.dev/autokitteh/internal/backend/configset"
+	"go.autokitteh.dev/autokitteh/internal/backend/config"
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm"
 	"go.autokitteh.dev/autokitteh/internal/backend/gormkitteh"
@@ -19,7 +19,7 @@ import (
 
 type Config = gormkitteh.Config
 
-var Configs = configset.Set[Config]{
+var Configs = config.Set[Config]{
 	Default: &Config{
 		SlowQueryThreshold: 300 * time.Millisecond,
 		Type:               gormkitteh.RequireExplicitDSNType,

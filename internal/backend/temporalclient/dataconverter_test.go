@@ -35,7 +35,7 @@ func initConverter(t *testing.T, r io.Reader, keyNames []string) (converter.Data
 		zap.NewNop(),
 		&DataConverterConfig{
 			Compress: true,
-			Encryption: DataConverterEncryptionConfig{
+			Encryption: dataConverterEncryptionConfig{
 				Encrypt: true,
 				Keys:    strings.Join(kittehs.Transform(keyNames, func(k string) string { return k + "=" + keys[k] }), ","),
 			},

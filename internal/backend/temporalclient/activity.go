@@ -21,6 +21,8 @@ type ActivityConfig struct {
 	ScheduleToStartTimeout time.Duration `koanf:"schedule_to_start_timeout"`
 }
 
+func (ac ActivityConfig) Validate() error { return nil }
+
 // other overrides self.
 func (ac ActivityConfig) With(other ActivityConfig) ActivityConfig {
 	return ActivityConfig{

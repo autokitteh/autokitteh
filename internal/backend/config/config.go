@@ -1,11 +1,10 @@
-package svc
+package config
 
 import (
 	"errors"
 	"fmt"
 	"os"
 	"reflect"
-	"slices"
 	"strings"
 
 	"github.com/knadh/koanf/parsers/yaml"
@@ -17,8 +16,7 @@ import (
 
 // TODO: need to find a way to list all expected keys.
 type Config struct {
-	k       *koanf.Koanf
-	configs map[string]any
+	k *koanf.Koanf
 }
 
 func (c *Config) Get(path string, dst any) (bool, error) {
@@ -77,11 +75,7 @@ func LoadConfig(envVarPrefix string, confmapvs map[string]any, yamlPath string) 
 		return nil, fmt.Errorf("load confmap: %w", err)
 	}
 
-	return &Config{k: k, configs: map[string]any{}}, nil
-}
-
-func (c *Config) Store(name string, config any) {
-	c.configs[name] = config
+	return &Config{k: k}, nil
 }
 
 func parseKoanfTags(prefix string, v reflect.Value) []string {
@@ -108,15 +102,4 @@ func parseKoanfTags(prefix string, v reflect.Value) []string {
 	}
 
 	return result
-}
-
-func (c *Config) ListAll() []string {
-	var all []string
-	for name, config := range c.configs {
-		all = append(all, parseKoanfTags(name, reflect.Indirect(reflect.ValueOf(config)))...)
-	}
-
-	slices.Sort(all)
-
-	return all
 }

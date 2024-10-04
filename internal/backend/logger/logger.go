@@ -6,7 +6,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
-	"go.autokitteh.dev/autokitteh/internal/backend/configset"
+	"go.autokitteh.dev/autokitteh/internal/backend/config"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdklogger"
 )
@@ -17,7 +17,12 @@ type Config struct {
 	Encoding string     `koanf:"encoding"` // "json" or "console".
 }
 
-var Configs = configset.Set[Config]{
+func (c Config) Validate() error {
+	_, err := build(&c)
+	return err
+}
+
+var Configs = config.Set[Config]{
 	Default: &Config{Zap: zap.NewProductionConfig()},
 	Dev: &Config{
 		Zap: func() zap.Config {
@@ -42,7 +47,7 @@ func (onPanicHook) OnWrite(ce *zapcore.CheckedEntry, fs []zapcore.Field) {
 	zapcore.WriteThenPanic.OnWrite(ce, fs)
 }
 
-func New(cfg *Config) (*zap.Logger, error) {
+func build(cfg *Config) (*zap.Logger, error) {
 	// Optional override for the default level (0 = info).
 	if cfg.Level != "" {
 		// Accept lower-case or all-caps level names, as defined by Zap.
@@ -68,11 +73,15 @@ func New(cfg *Config) (*zap.Logger, error) {
 		cfg.Zap.EncoderConfig.ConsoleSeparator = " "
 	}
 
-	z, err := cfg.Zap.Build(
+	return cfg.Zap.Build(
 		zap.WithFatalHook(onFatalHook{}),
 		zap.WithPanicHook(onPanicHook{}),
 		zap.AddStacktrace(zap.ErrorLevel),
 	)
+}
+
+func New(cfg *Config) (*zap.Logger, error) {
+	z, err := build(cfg)
 	if err != nil {
 		return nil, err
 	}

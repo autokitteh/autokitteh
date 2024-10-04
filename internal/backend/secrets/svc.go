@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"go.uber.org/zap"
+
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
-	"go.uber.org/zap"
 )
 
 type Secrets interface {
@@ -20,6 +21,8 @@ const (
 	SecretProviderAWSSecretManager = "awsSecretManager"
 	SecretProviderVault            = "vault"
 )
+
+var providers = []string{SecretProviderAWSSecretManager, SecretProviderDatabase, SecretProviderVault}
 
 type secrets struct {
 	cfg      *Config
@@ -57,7 +60,6 @@ func New(cfg *Config, z *zap.Logger, db db.DB) (Secrets, error) {
 		z:        z,
 		provider: provider,
 	}, nil
-
 }
 
 func (s *secrets) Get(ctx context.Context, key string) (string, error) {

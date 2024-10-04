@@ -8,7 +8,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
-	"go.autokitteh.dev/autokitteh/internal/backend/configset"
+	"go.autokitteh.dev/autokitteh/internal/backend/config"
 	"go.autokitteh.dev/autokitteh/internal/xdg"
 )
 
@@ -43,6 +43,8 @@ type Config struct {
 	EnableHelperRedirect bool `koanf:"enable_helper_redirect"`
 }
 
+func (c Config) Validate() error { return nil }
+
 var (
 	defaultMonitorConfig = MonitorConfig{
 		CheckHealthInterval: time.Minute,
@@ -50,12 +52,12 @@ var (
 		LogLevel:            zap.NewAtomicLevelAt(zapcore.WarnLevel),
 	}
 
-	Configs = configset.Set[Config]{
+	Configs = config.Set[Config]{
 		Default: &Config{
 			Monitor: defaultMonitorConfig,
 			DataConverter: DataConverterConfig{
 				Compress: true,
-				Encryption: DataConverterEncryptionConfig{
+				Encryption: dataConverterEncryptionConfig{
 					Encrypt: true,
 				},
 			},
