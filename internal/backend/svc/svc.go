@@ -86,7 +86,11 @@ func printModeWarning(mode configset.Mode) {
 	)
 }
 
-func LoggerFxOpt() fx.Option {
+func LoggerFxOpt(silent bool) fx.Option {
+	if silent {
+		return fx.Supply(zap.NewNop())
+	}
+
 	return fx.Module(
 		"logger",
 		fx.Provide(fxGetConfig("logger", kittehs.Must1(chooseConfig(logger.Configs)))),
@@ -121,7 +125,7 @@ type HTTPServerAddr string
 func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 	return []fx.Option{
 		fx.Supply(cfg),
-		LoggerFxOpt(),
+		LoggerFxOpt(opts.Silent),
 		fx.Invoke(func(lc fx.Lifecycle, db db.DB) { HookOnStart(lc, db.Setup) }),
 
 		Component("auth", configset.Empty, fx.Provide(authsvc.New)),
@@ -432,7 +436,7 @@ func StartDB(ctx context.Context, cfg *Config, ropt RunOptions) (db.DB, error) {
 
 	if err := fx.New(
 		fx.Supply(cfg),
-		LoggerFxOpt(),
+		LoggerFxOpt(ropt.Silent),
 		DBFxOpt(),
 		fx.Populate(&db),
 	).Start(ctx); err != nil {
