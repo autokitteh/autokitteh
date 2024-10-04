@@ -94,7 +94,7 @@ func (s *Service) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Autokitteh-Event-ID", eid.String())
+	w.Header().Set("AutoKitteh-Event-ID", eid.String())
 	w.WriteHeader(http.StatusAccepted)
 }
 
