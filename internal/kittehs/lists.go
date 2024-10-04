@@ -25,25 +25,12 @@ func NewFilter[T any](f func(T) bool) func([]T) []T {
 }
 
 func ContainedIn[T comparable](xs ...T) func(T) bool {
-	return func(t T) bool {
-		for _, x := range xs {
-			if x == t {
-				return true
-			}
-		}
-
-		return false
-	}
-}
-
-func FirstError(errs []error) error {
-	for _, err := range errs {
-		if err != nil {
-			return err
-		}
+	m := make(map[T]bool, len(xs))
+	for _, x := range xs {
+		m[x] = true
 	}
 
-	return nil
+	return func(t T) bool { return m[t] }
 }
 
 // This does not guard against duplicate keys.
@@ -91,16 +78,6 @@ func FindFirst[T any](vs []T, f func(T) bool) (int, T) {
 	return -1, t
 }
 
-func Any(xs ...bool) bool {
-	for _, x := range xs {
-		if x {
-			return true
-		}
-	}
-
-	return false
-}
-
 func All(xs ...bool) bool {
 	for _, x := range xs {
 		if !x {
@@ -109,34 +86,4 @@ func All(xs ...bool) bool {
 	}
 
 	return true
-}
-
-func IsUnique[X any, Y comparable](xs []X, f func(X) Y) bool {
-	m := make(map[Y]bool)
-	for _, x := range xs {
-		y := f(x)
-		if m[y] {
-			return false
-		}
-		m[y] = true
-	}
-
-	return true
-}
-
-func FoldLeft[X, A any](xs []X, f func(a A, x X) A, a A) A {
-	for _, x := range xs {
-		a = f(a, x)
-	}
-
-	return a
-}
-
-func Head[T any](xs []T) (t T) {
-	if len(xs) == 0 {
-		return
-	}
-
-	t = xs[0]
-	return
 }
