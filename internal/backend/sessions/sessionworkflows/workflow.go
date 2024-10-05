@@ -394,7 +394,7 @@ func (w *sessionWorkflow) getNextEvent(ctx context.Context, sigid uuid.UUID) (ma
 
 	w.lastReadEventSeqForSignal[sigid] = event.Seq()
 
-	sl.With("event_id", event.ID).Infof("got event %v", event.ID())
+	sl.With("event_id", event.ID()).Infof("got event %v", event.ID())
 
 	return event.Data(), nil
 }
