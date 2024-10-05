@@ -9,12 +9,13 @@ import (
 	"net/http"
 	"sync"
 
-	pb "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/remote/v1"
-	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	pb "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/remote/v1"
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 type workerGRPCHandler struct {
@@ -24,12 +25,10 @@ type workerGRPCHandler struct {
 	mu                 *sync.Mutex
 }
 
-var (
-	w = workerGRPCHandler{
-		runnerIDsToRuntime: map[string]*pySvc{},
-		mu:                 new(sync.Mutex),
-	}
-)
+var w = workerGRPCHandler{
+	runnerIDsToRuntime: map[string]*pySvc{},
+	mu:                 new(sync.Mutex),
+}
 
 // GRPC Server Handling
 // func newInterceptor(log *zap.Logger) func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
@@ -77,6 +76,7 @@ func removeRunnerFromServer(runnerID string) error {
 func (s *workerGRPCHandler) Health(ctx context.Context, req *pb.HealthRequest) (*pb.HealthResponse, error) {
 	return &pb.HealthResponse{}, nil
 }
+
 func (s *workerGRPCHandler) IsActiveRunner(ctx context.Context, req *pb.IsActiveRunnerRequest) (*pb.IsActiveRunnerResponse, error) {
 	w.mu.Lock()
 	_, ok := w.runnerIDsToRuntime[req.RunnerId]
@@ -132,7 +132,6 @@ func (s *workerGRPCHandler) Done(ctx context.Context, req *pb.DoneRequest) (*pb.
 
 // Runner starting activity
 func (s *workerGRPCHandler) Activity(ctx context.Context, req *pb.ActivityRequest) (*pb.ActivityResponse, error) {
-
 	w.mu.Lock()
 	runner, ok := w.runnerIDsToRuntime[req.RunnerId]
 	w.mu.Unlock()
@@ -272,7 +271,7 @@ func (s *workerGRPCHandler) NextEvent(ctx context.Context, req *pb.NextEventRequ
 		err = status.Errorf(codes.Internal, "next_event(%s, %d) -> %s", req.SignalIds, req.TimeoutMs, err)
 		return &pb.NextEventResponse{Error: err.Error()}, nil
 	case val := <-msg.successChannel:
-		out, err := val.Unwrap()
+		out, err := sdktypes.ValueWrapper{SafeForJSON: true}.Unwrap(val)
 		if err != nil {
 			err = status.Errorf(codes.Internal, "can't unwrap %v - %s", val, err)
 			return &pb.NextEventResponse{Error: err.Error()}, err
@@ -318,5 +317,4 @@ func (s *workerGRPCHandler) Unsubscribe(ctx context.Context, req *pb.Unsubscribe
 	case <-msg.successChannel:
 		return &pb.UnsubscribeResponse{}, nil
 	}
-
 }
