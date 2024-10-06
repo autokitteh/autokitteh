@@ -18,26 +18,24 @@ import (
 type Config struct {
 	RemoteRunnerEndpoints []string `koanf:"remote_runner_endpoints"`
 	//TODO: maybe should be runner type which can be local/docker/remote/ ?
-	EnableRemoteRunner bool   `koanf:"enable_remote_runner"`
-	PythonRunnerType   string `koanf:"python_runner_type"`
-	WorkerAddress      string `koanf:"worker_address"`
+	PythonRunnerType string `koanf:"python_runner_type"`
+	WorkerAddress    string `koanf:"worker_address"`
 	// TODO: This is a hack to prevent running configure on pythonrt in each test
 	// which currently install venv everytime and takes a really long time
 	// need to find a way to share the venv once for all tests
 	LazyLoadLocalVEnv bool `koanf:"lazy_load_local_venv"`
 	LogRunnerCode     bool `koanf:"log_runner_code"`
+	LogBuildCode      bool `koanf:"log_build_code"`
 }
 
 var Configs = configset.Set[Config]{
-	Default: &Config{
-		EnableRemoteRunner: false,
+	Default: &Config{},
+	Dev: &Config{
+		LogRunnerCode: true,
+		LogBuildCode:  true,
 	},
 	Test: &Config{
 		LazyLoadLocalVEnv: true,
-	},
-	Dev: &Config{
-		LogRunnerCode:    true,
-		PythonRunnerType: "docker",
 	},
 }
 
@@ -56,6 +54,8 @@ func New(cfg *Config, l *zap.Logger, svc httpsvc.Svc) (sdkservices.Runtimes, err
 	switch cfg.PythonRunnerType {
 	case "docker":
 		if err := pythonruntime.ConfigureDockerRunnerManager(l, pythonruntime.DockerRuntimeConfig{
+			LogRunnerCode: cfg.LogRunnerCode,
+			LogBuildCode:  cfg.LogBuildCode,
 			WorkerAddressProvider: func() string {
 				_, port, _ := net.SplitHostPort(svc.Addr())
 				return fmt.Sprintf("host.docker.internal:%s", port)

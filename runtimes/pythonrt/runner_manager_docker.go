@@ -113,7 +113,7 @@ func (rm *dockerRunnerManager) Start(ctx context.Context, buildArtifacts []byte,
 		return "", nil, fmt.Errorf("start runner: %w", err)
 	}
 
-	runnerAddr := fmt.Sprintf("localhost:%s", port)
+	runnerAddr := fmt.Sprintf("127.0.0.1:%s", port)
 	client, err := dialRunner(runnerAddr)
 	if err != nil {
 
