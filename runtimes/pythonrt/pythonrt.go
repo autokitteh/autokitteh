@@ -35,8 +35,7 @@ var (
 )
 
 type callbackMessage struct {
-	args           []sdktypes.Value
-	kwargs         map[string]sdktypes.Value
+	f              func(context.Context, sdkservices.RunSyscalls) (sdktypes.Value, error)
 	successChannel chan sdktypes.Value
 	errorChannel   chan error
 }
@@ -393,7 +392,7 @@ func (py *pySvc) call(ctx context.Context, val sdktypes.Value) {
 
 // initialCall handles initial call from autokitteh, it does the message loop with Python.
 // We split it from Call since Call is also used to execute activities.
-func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
+func (py *pySvc) initialCall(ctx context.Context, funcName string, _ []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
 	defer func() {
 		py.cleanup(ctx)
 		py.log.Info("Python subprocess cleanup after initial call is done")
@@ -461,7 +460,7 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktyp
 			fn, _ := sdktypes.NewFunctionValue(py.xid, fnName, r.Data, nil, pyModuleFunc)
 			py.call(ctx, fn)
 		case cb := <-py.channels.callback:
-			val, err := py.cbs.Call(ctx, py.runID, py.syscallFn, cb.args, cb.kwargs)
+			val, err := cb.f(ctx, *py.cbs.Syscalls)
 			if err != nil {
 				cb.errorChannel <- err
 			} else {

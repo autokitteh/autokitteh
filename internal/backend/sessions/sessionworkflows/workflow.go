@@ -49,6 +49,8 @@ type sessionWorkflow struct {
 	executors sdkexecutor.Executors
 	globals   map[string]sdktypes.Value
 
+	akModule sdkexecutor.Executor
+
 	callSeq uint32
 
 	lastReadEventSeqForSignal map[uuid.UUID]uint64 // map signals to last read event seq num.
@@ -97,12 +99,14 @@ func runWorkflow(
 }
 
 func (w *sessionWorkflow) cleanupSignals(ctx workflow.Context) {
+	sl := w.l.Sugar()
+
 	goCtx := temporalclient.NewWorkflowContextAsGOContext(ctx)
 	for signalID := range w.lastReadEventSeqForSignal {
 		if err := w.ws.svcs.DB.RemoveSignal(goCtx, signalID); err != nil {
 			// No need to to any handling in case of an error, it won't be used again
 			// at most we would have db garabge we can clear up later with background jobs
-			w.l.Sugar().With("signalID", signalID, "err", err).Warnf("failed removing signal %v, err: %v", signalID, err)
+			sl.With("signalID", signalID, "err", err).Warnf("failed removing signal %v, err: %v", signalID, err)
 		}
 	}
 }
@@ -145,10 +149,10 @@ func (w *sessionWorkflow) load(ctx context.Context, _ sdktypes.RunID, path strin
 	return vs, nil
 }
 
-func (w *sessionWorkflow) call(ctx workflow.Context, _ sdktypes.RunID, v sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
+func (w *sessionWorkflow) call(wctx workflow.Context, v sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
 	w.callSeq++
 
-	result, err := w.ws.calls.Call(ctx, &sessioncalls.CallParams{
+	result, err := w.ws.calls.Call(wctx, &sessioncalls.CallParams{
 		SessionID: w.data.Session.ID(),
 		CallSpec:  sdktypes.NewSessionCallSpec(v, args, kwargs, w.callSeq),
 		Executors: &w.executors,
@@ -252,8 +256,10 @@ func (w *sessionWorkflow) initConnections(wctx workflow.Context) (map[string]con
 }
 
 func (w *sessionWorkflow) initGlobalModules() (map[string]sdktypes.Value, error) {
+	akModule := w.newModule()
+
 	execs := map[string]sdkexecutor.Executor{
-		"ak":    w.newModule(),
+		"ak":    akModule,
 		"time":  timemodule.New(),
 		"http":  httpmodule.New(),
 		"store": store.New(w.data.Env.ID(), w.data.ProjectID, w.ws.svcs.RedisClient),
@@ -430,6 +436,7 @@ func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (prints []st
 	var run sdkservices.Run
 
 	cbs := sdkservices.RunCallbacks{
+		Syscalls: w.syscalls(),
 		NewRunID: newRunID,
 		Load:     w.load,
 		Call: func(callCtx context.Context, runID sdktypes.RunID, v sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
@@ -438,13 +445,14 @@ func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (prints []st
 				return f.ConstValue()
 			}
 
-			isActivity := activity.IsActivity(callCtx)
-
-			sl := sl.With("run_id", runID, "is_activity", isActivity, "v", v)
-
 			if run == nil {
 				sl.Debug("run not initialized")
 				return sdktypes.InvalidValue, fmt.Errorf("cannot call before the run is initialized")
+			}
+
+			if activity.IsActivity(callCtx) {
+				sl.Debug("nested activity call")
+				return sdktypes.InvalidValue, fmt.Errorf("nested activities are not supported")
 			}
 
 			if xid := v.GetFunction().ExecutorID(); xid.ToRunID() == runID && w.executors.GetCaller(xid) == nil {
@@ -455,12 +463,7 @@ func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (prints []st
 				return sdktypes.InvalidValue, fmt.Errorf("cannot call self during initial evaluation")
 			}
 
-			if isActivity {
-				sl.Debug("nested activity call")
-				return sdktypes.InvalidValue, fmt.Errorf("nested activities are not supported")
-			}
-
-			return w.call(wctx, runID, v, args, kwargs)
+			return w.call(wctx, v, args, kwargs)
 		},
 		Print: func(printCtx context.Context, runID sdktypes.RunID, text string) {
 			isActivity := activity.IsActivity(printCtx)
