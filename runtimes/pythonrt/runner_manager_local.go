@@ -12,8 +12,6 @@ import (
 	"time"
 
 	"go.uber.org/zap"
-
-	pb "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/remote/v1"
 )
 
 type localRunnerManager struct {
@@ -84,7 +82,7 @@ func ConfigureLocalRunnerManager(log *zap.Logger, cfg LocalRunnerManagerConfig) 
 	return nil
 }
 
-func (l *localRunnerManager) Start(ctx context.Context, buildArtifacts []byte, vars map[string]string) (string, pb.RunnerClient, error) {
+func (l *localRunnerManager) Start(ctx context.Context, buildArtifacts []byte, vars map[string]string) (string, *RunnerClient, error) {
 	r := &LocalPython{
 		log:           l.logger,
 		logRunnerCode: l.cfg.LogCodeRunnerCode,
