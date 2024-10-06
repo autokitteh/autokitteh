@@ -64,6 +64,7 @@ func dialRunner(addr string) (pb.RunnerClient, error) {
 	c := pb.NewRunnerClient(conn)
 
 	if err := waitForServer("runner", c, 10*time.Second); err != nil {
+		conn.Close()
 		return nil, err
 	}
 	return c, nil

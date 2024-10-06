@@ -257,14 +257,19 @@ type RunnerClient interface {
 	// Reply from activity
 	ActivityReply(ctx context.Context, in *ActivityReplyRequest, opts ...grpc.CallOption) (*ActivityReplyResponse, error)
 	Health(ctx context.Context, in *HealthRequest, opts ...grpc.CallOption) (*HealthResponse, error)
+	Close() error
 }
 
 type runnerClient struct {
-	cc grpc.ClientConnInterface
+	cc *grpc.ClientConn
 }
 
-func NewRunnerClient(cc grpc.ClientConnInterface) RunnerClient {
+func NewRunnerClient(cc *grpc.ClientConn) RunnerClient {
 	return &runnerClient{cc}
+}
+
+func (c *runnerClient) Close() error {
+	return c.cc.Close()
 }
 
 func (c *runnerClient) Exports(ctx context.Context, in *ExportsRequest, opts ...grpc.CallOption) (*ExportsResponse, error) {
