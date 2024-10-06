@@ -36,7 +36,7 @@ type dockerClient struct {
 	logger          *zap.Logger
 }
 
-func NewDockerClient(logger *zap.Logger) (*dockerClient, error) {
+func NewDockerClient(logger *zap.Logger, logRunner, logBuildProcess bool) (*dockerClient, error) {
 	apiClient, err := client.NewClientWithOpts(client.FromEnv)
 	if err != nil {
 		return nil, err
@@ -49,6 +49,8 @@ func NewDockerClient(logger *zap.Logger) (*dockerClient, error) {
 		activeRunnerIDs: map[string]struct{}{},
 		allRunnerIDs:    map[string]struct{}{},
 		logger:          logger,
+		logBuildProcess: logBuildProcess,
+		logRunner:       logRunner,
 	}
 
 	if err := dc.SyncCurrentState(); err != nil {
