@@ -61,7 +61,7 @@ type pySvc struct {
 	// remote       *workerGRPCHandler
 
 	// runner       Runner
-	runner pb.RunnerClient
+	runner *RunnerClient
 	// runnerManager pb.RunnerManagerClient
 	runnerID string
 
@@ -74,6 +74,10 @@ type pySvc struct {
 
 func (py *pySvc) cleanup(ctx context.Context) {
 	if err := runnerManager.Stop(ctx, py.runnerID); err != nil {
+		py.log.Warn("stop manager", zap.Error(err))
+	}
+
+	if err := py.runner.Close(); err != nil {
 		py.log.Warn("close runner", zap.Error(err))
 	}
 

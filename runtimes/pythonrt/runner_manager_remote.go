@@ -65,7 +65,7 @@ func ConfigureRemoteRunnerManager(cfg RemoteRuntimeConfig) error {
 	return nil
 }
 
-func (*remoteRunnerManager) Start(ctx context.Context, buildArtifacts []byte, vars map[string]string) (string, pb.RunnerClient, error) {
+func (*remoteRunnerManager) Start(ctx context.Context, buildArtifacts []byte, vars map[string]string) (string, *RunnerClient, error) {
 	return "", nil, nil
 }
 func (*remoteRunnerManager) RunnerHealth(ctx context.Context, runnerID string) error { return nil }
