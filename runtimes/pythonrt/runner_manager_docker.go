@@ -6,8 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"sync"
-	"time"
 
+	"github.com/google/uuid"
 	"go.uber.org/zap"
 
 	pb "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/remote/v1"
@@ -105,7 +105,7 @@ func (rm *dockerRunnerManager) Start(ctx context.Context, buildArtifacts []byte,
 		return "", nil, fmt.Errorf("build image: %w", err)
 	}
 
-	runnerID := fmt.Sprintf("runner-%d", time.Now().UnixNano())
+	runnerID := fmt.Sprintf("runner-%s", uuid.NewString())
 	cmd := createStartCommand("main.py", rm.workerAddressProvider(), runnerID)
 
 	cid, port, err := rm.client.StartRunner(containerName, cmd)
