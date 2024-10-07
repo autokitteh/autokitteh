@@ -66,7 +66,12 @@ func New(
 }
 
 func (ws *workflows) StartWorkers(ctx context.Context) error {
-	ws.worker = temporalclient.NewWorker(ws.l.Named("sessionworkflowsworker"), ws.svcs.Temporal(), taskQueueName, ws.cfg.Worker)
+	ws.worker = temporalclient.NewWorker(
+		ws.l.Named("sessionworkflowsworker"),
+		ws.svcs.Temporal(),
+		taskQueueName,
+		ws.cfg.Worker,
+	)
 	if ws.worker == nil {
 		return nil
 	}
@@ -104,14 +109,18 @@ func (ws *workflows) StartWorkflow(ctx context.Context, session sdktypes.Session
 		return fmt.Errorf("get session data: %w", err)
 	}
 
+	wopts := ws.cfg.SessionWorkflow.ToStartWorkflowOptions(
+		taskQueueName,
+		workflowID(sessionID),
+		fmt.Sprintf("session %v", sessionID),
+		memo,
+	)
+
+	wopts.WorkflowTaskTimeout = time.Second
+
 	r, err := ws.svcs.Temporal().ExecuteWorkflow(
 		ctx,
-		ws.cfg.SessionWorkflow.ToStartWorkflowOptions(
-			taskQueueName,
-			workflowID(sessionID),
-			fmt.Sprintf("session %v", sessionID),
-			memo,
-		),
+		wopts,
 		sessionWorkflowName,
 		&sessionWorkflowParams{Data: data},
 	)
