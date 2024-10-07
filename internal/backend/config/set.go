@@ -17,27 +17,14 @@ func (emptyComponentConfig) Validate() error { return nil }
 var EmptyComponentConfig emptyComponentConfig
 
 type baseSet interface {
-	hasDefault() bool
-	default_() ComponentConfig
-
-	hasDev() bool
-	dev() ComponentConfig
-
-	hasTest() bool
-	test() ComponentConfig
+	isSet()
 }
 
 type Set[T ComponentConfig] struct {
 	Default, Dev, Test *T
 }
 
-func (s Set[T]) default_() ComponentConfig { return *s.Default }
-func (s Set[T]) dev() ComponentConfig      { return *s.Dev }
-func (s Set[T]) test() ComponentConfig     { return *s.Test }
-
-func (s Set[T]) hasDefault() bool { return s.Default != nil }
-func (s Set[T]) hasDev() bool     { return s.Dev != nil }
-func (s Set[T]) hasTest() bool    { return s.Test != nil }
+func (s Set[T]) isSet() {}
 
 var EmptySet = Set[emptyComponentConfig]{Default: &EmptyComponentConfig}
 

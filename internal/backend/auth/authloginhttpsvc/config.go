@@ -45,9 +45,8 @@ func (c oauth2Config) cookieConfig() gologin.CookieConfig {
 }
 
 type descopeConfig struct {
-	Enabled       bool   `koanf:"enabled"`
-	ProjectID     string `koanf:"project_id"`
-	ManagementKey string `koanf:"management_key"`
+	Enabled   bool   `koanf:"enabled"`
+	ProjectID string `koanf:"project_id"`
 }
 
 func (c descopeConfig) Validate() error {
@@ -57,10 +56,6 @@ func (c descopeConfig) Validate() error {
 
 	if c.ProjectID == "" {
 		return errors.New("project_id is required")
-	}
-
-	if c.ManagementKey == "" {
-		return errors.New("management_key is required")
 	}
 
 	return nil
@@ -74,7 +69,7 @@ type Config struct {
 	// Allowed login patterns, separated by commas.
 	// Pattern format is either of:
 	// - "" or "*" - matches any login
-	// - "*@host"  - matches any login from host
+	// - "*@domain"  - matches any login, but only from domain
 	// - otherwise - matches exact login
 	AllowedLogins string `koanf:"allowed_logins"`
 }

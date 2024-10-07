@@ -18,7 +18,7 @@ func registerDescopeRoutes(mux *http.ServeMux, cfg descopeConfig, onSuccess func
 		return errors.New("descope login is enabled, but missing DESCOPE_PROJECT_ID")
 	}
 
-	client, err := client.NewWithConfig(&client.Config{ProjectID: cfg.ProjectID, ManagementKey: cfg.ManagementKey})
+	client, err := client.NewWithConfig(&client.Config{ProjectID: cfg.ProjectID})
 	if err != nil {
 		return err
 	}
