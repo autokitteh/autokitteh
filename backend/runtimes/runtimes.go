@@ -53,12 +53,15 @@ func New(cfg *Config, l *zap.Logger, svc httpsvc.Svc) (sdkservices.Runtimes, err
 
 	switch cfg.PythonRunnerType {
 	case "docker":
+		if cfg.WorkerAddress == "" {
+			return nil, errors.New("worker address is required for docker runner")
+		}
 		if err := pythonruntime.ConfigureDockerRunnerManager(l, pythonruntime.DockerRuntimeConfig{
 			LogRunnerCode: cfg.LogRunnerCode,
 			LogBuildCode:  cfg.LogBuildCode,
 			WorkerAddressProvider: func() string {
 				_, port, _ := net.SplitHostPort(svc.Addr())
-				return fmt.Sprintf("host.docker.internal:%s", port)
+				return fmt.Sprintf("%s:%s", cfg.WorkerAddress, port)
 			},
 		}); err != nil {
 			return nil, fmt.Errorf("configure docker runner manager: %w", err)
