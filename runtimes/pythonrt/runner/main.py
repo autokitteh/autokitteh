@@ -7,7 +7,7 @@ from concurrent.futures import Future, ThreadPoolExecutor
 from io import StringIO
 from multiprocessing import cpu_count
 from pathlib import Path
-from threading import Lock
+from threading import Lock, Timer
 from traceback import TracebackException, print_exception
 
 import grpc
@@ -82,6 +82,10 @@ def fix_http_body(event):
         except ValueError:
             pass
 
+def killIfStartWasntCalled(runner):
+    if not runner.did_start:
+        print("Start was not called, killing self")
+        os._exit(1)
 
 class Runner(rpc.RunnerServicer):
     def __init__(self, id, worker, code_dir):
@@ -96,8 +100,12 @@ class Runner(rpc.RunnerServicer):
         self.replies = {}  # id -> future
         self._next_id = 0
         self._orig_print = print
-        self._did_start = False
+        self.did_start = False
+        s = Timer(10.0, killIfStartWasntCalled, [self])
+        s.start()
 
+    
+    
     def Exports(self, request: pb.ExportsRequest, context: grpc.ServicerContext):
         if request.file_name == "":
             context.abort(
@@ -128,11 +136,11 @@ class Runner(rpc.RunnerServicer):
         os._exit(1)
 
     def Start(self, request: pb.StartRequest, context: grpc.ServicerContext):
-        if self._did_start:
+        if self.did_start:
             log.error("already called start before")
             return pb.StartResponse(error="start already called")
 
-        self._did_start = True
+        self.did_start = True
         log.info("start request: %r", request)
 
         self.syscalls = SysCalls(self.id, self.worker)
@@ -331,9 +339,15 @@ def validate_args(args):
 
 
 class LoggingInterceptor(grpc.ServerInterceptor):
+    runner_id = None
+
     def intercept_service(self, continuation, handler_call_details):
-        log.info("call %s", handler_call_details.method)
+        log.info("runner_id %s, call %s", self.runner_id, handler_call_details.method)
         return continuation(handler_call_details)
+    
+    def __init__(self, runner_id) -> None:
+        self.runner_id = runner_id
+        super().__init__()
 
 
 def dir_type(value):
@@ -387,7 +401,7 @@ if __name__ == "__main__":
 
     server = grpc.server(
         thread_pool=ThreadPoolExecutor(max_workers=cpu_count() * 8),
-        interceptors=[LoggingInterceptor()],
+        interceptors=[LoggingInterceptor(args.runner_id)],
     )
     runner = Runner(args.runner_id, worker, args.code_dir)
     rpc.add_RunnerServicer_to_server(runner, server)
