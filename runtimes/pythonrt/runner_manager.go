@@ -2,6 +2,7 @@ package pythonrt
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -74,8 +75,8 @@ func dialRunner(addr string) (*RunnerClient, error) {
 	c := RunnerClient{pb.NewRunnerClient(conn), conn}
 
 	if err := waitForServer("runner", &c, 10*time.Second); err != nil {
-		conn.Close()
-		return nil, err
+		connCloseErr := conn.Close()
+		return nil, errors.Join(err, connCloseErr)
 	}
 	return &c, nil
 }
