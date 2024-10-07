@@ -46,7 +46,7 @@ func initConverter(t *testing.T, r io.Reader, keyNames []string) (converter.Data
 
 func TestNoKeys(t *testing.T) {
 	_, err := initConverter(t, rand.Reader, nil)
-	assert.EqualError(t, err, ErrNoKeys.Error())
+	assert.EqualError(t, err, "codecs: "+ErrNoKeys.Error())
 }
 
 func TestSameKey(t *testing.T) {
