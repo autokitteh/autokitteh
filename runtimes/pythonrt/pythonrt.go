@@ -470,7 +470,10 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, _ []sdktypes.
 				return
 			case <-time.After(10 * time.Second):
 				if err := runnerManager.RunnerHealth(ctx, py.runnerID); err != nil {
-					runnerHealthChan <- err
+					py.log.Warn("health loop check err", zap.Error(err))
+
+					// FIXME: need a better solution. Now just stuck here and let temporal panic on deadlock and retry
+					// runnerHealthChan <- err
 					return
 				}
 			}

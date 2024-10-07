@@ -46,7 +46,6 @@ func (r *LocalPython) Close() error {
 	var err error
 
 	if r.proc != nil {
-
 		if kerr := r.proc.Kill(); kerr != nil {
 			err = errors.Join(err, fmt.Errorf("kill runner (pid=%d) - %w", r.proc.Pid, kerr))
 		}
@@ -164,6 +163,32 @@ func (r *LocalPython) Start(pyExe string, tarData []byte, env map[string]string,
 }
 
 func (r *LocalPython) Health() error {
+	if _, err := os.FindProcess(r.proc.Pid); err != nil {
+		return fmt.Errorf("runner heath: no runner proc found. %w ", err)
+	}
+
+	var status syscall.WaitStatus
+	if pid, err := syscall.Wait4(r.proc.Pid, &status, syscall.WNOHANG, nil); err == nil && pid == r.proc.Pid {
+		if status.Signaled() {
+			sig := status.Signal()
+			switch sig {
+			case syscall.SIGKILL, syscall.SIGTERM, syscall.SIGABRT, syscall.SIGSEGV, syscall.SIGBUS:
+				err = fmt.Errorf("runner health: proc terminated by signal %v", sig)
+			default:
+				// maybe process communicates with itself? do nothing meanwhile
+				return nil
+			}
+			if err == nil {
+				err = fmt.Errorf("runner health: unexpected proc state")
+			}
+
+			r.Close() // FIXME: not ideal :( should be called by the caller?
+			return err
+
+		}
+		// REVIEW: should we check status.Exited? should we care about status.Stopped()?
+	}
+
 	return r.proc.Signal(syscall.Signal(0))
 }
 
