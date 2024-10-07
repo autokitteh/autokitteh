@@ -16,12 +16,13 @@ import (
 	"testing"
 	"time"
 
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
-	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
-	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 	"go.uber.org/zap"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
+
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
+	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 
 	"github.com/stretchr/testify/require"
 )
@@ -143,7 +144,8 @@ func newCallbacks(svc *pySvc) *sdkservices.RunCallbacks {
 			rid sdktypes.RunID,
 			v sdktypes.Value,
 			args []sdktypes.Value,
-			kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
+			kwargs map[string]sdktypes.Value,
+		) (sdktypes.Value, error) {
 			return svc.Call(ctx, v, args, kwargs)
 		},
 		Load: func(ctx context.Context, rid sdktypes.RunID, path string) (map[string]sdktypes.Value, error) {
@@ -218,7 +220,6 @@ func Test_pySvc_Run(t *testing.T) {
 		if err := server.Close(); err != nil {
 			t.Log(err)
 		}
-
 	}()
 
 	run, err := svc.Run(ctx, runID, mainPath, compiled, values, cbs)
@@ -238,7 +239,6 @@ func Test_pySvc_Run(t *testing.T) {
 	}
 	_, err = run.Call(ctx, fn, nil, kwargs)
 	require.NoError(t, err, "call")
-
 }
 
 var isGoodVersionCasess = []struct {
@@ -292,7 +292,6 @@ func TestPythonFromEnv(t *testing.T) {
 	py, ok := runnerManager.(*localRunnerManager)
 	require.True(t, ok)
 	require.Equal(t, pyExe, py.pyExe)
-
 }
 
 func Test_pySvc_Build_PyCache(t *testing.T) {
@@ -330,14 +329,13 @@ def handle(event):
 func TestProgramError(t *testing.T) {
 	skipIfNoPython(t)
 
-	// ConfigureLocalRunnerManager()
 	pyFile := "progerr.py"
 	var buf bytes.Buffer
 	tw := tar.NewWriter(&buf)
 	hdr := &tar.Header{
 		Name: pyFile,
 		Size: int64(len(progErrCode)),
-		Mode: 0644,
+		Mode: 0o644,
 	}
 	err := tw.WriteHeader(hdr)
 	require.NoError(t, err)

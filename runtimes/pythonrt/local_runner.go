@@ -132,7 +132,7 @@ func (r *LocalPython) Start(pyExe string, tarData []byte, env map[string]string,
 	}
 
 	// make sure runner is killed if ak is killed
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	setCmdSysAttrPGID(cmd)
 
 	if err := cmd.Start(); err != nil {
 		return fmt.Errorf("start runner - %w", err)
