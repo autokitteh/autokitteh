@@ -468,6 +468,10 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktyp
 				cb.successChannel <- val
 			}
 		case v := <-py.channels.done:
+			pCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
+			defer cancel()
+			py.drainPrints(pCtx)
+
 			done = v
 			if done.Error != "" {
 				perr := sdktypes.NewProgramError(
@@ -481,6 +485,17 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktyp
 			return sdktypes.NewBytesValue(done.Result), nil
 		case <-ctx.Done():
 			return sdktypes.InvalidValue, fmt.Errorf("context expired - %w", ctx.Err())
+		}
+	}
+}
+
+func (py *pySvc) drainPrints(ctx context.Context) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case r := <-py.channels.print:
+			py.cbs.Print(ctx, py.runID, r.Message)
 		}
 	}
 }
