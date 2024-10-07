@@ -18,6 +18,7 @@ import (
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/envs"
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/events"
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/experimental"
+	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/export"
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/integrations"
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/manifest"
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/projects"
@@ -98,6 +99,7 @@ func init() {
 	RootCmd.AddCommand(deployCmd)
 	RootCmd.AddCommand(upCmd)
 	RootCmd.AddCommand(versionCmd)
+	RootCmd.AddCommand(export.Cmd)
 
 	// Top-level parent commands.
 	auth.AddSubcommands(RootCmd)
