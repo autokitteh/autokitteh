@@ -13,9 +13,6 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-// Flags shared by the "create" and "list" subcommands.
-var env, connection string
-
 var Cmd = common.StandardCommand(&cobra.Command{
 	Use:     "export <project name or ID>",
 	Short:   "Export project",
@@ -115,6 +112,10 @@ func export(cmd *cobra.Command, args []string) error {
 			return err
 		}
 		vars, err := r.Client.Vars().Get(ctx, sid)
+		if err != nil {
+			return err
+		}
+
 		for _, v := range vars {
 			if v.IsSecret() {
 				continue
