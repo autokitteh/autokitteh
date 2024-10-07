@@ -71,11 +71,11 @@ func dialRunner(addr string) (*RunnerClient, error) {
 		return nil, err
 	}
 
-	c := &RunnerClient{pb.NewRunnerClient(conn), conn}
+	c := RunnerClient{pb.NewRunnerClient(conn), conn}
 
-	if err := waitForServer("runner", c, 10*time.Second); err != nil {
+	if err := waitForServer("runner", &c, 10*time.Second); err != nil {
 		conn.Close()
 		return nil, err
 	}
-	return c, nil
+	return &c, nil
 }
