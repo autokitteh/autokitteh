@@ -26,8 +26,8 @@ type (
 	}
 )
 
-func (c *RunnerClient) Close() {
-	c.cc.Close()
+func (c *RunnerClient) Close() error {
+	return c.cc.Close()
 }
 
 var (

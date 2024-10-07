@@ -74,9 +74,12 @@ type pySvc struct {
 
 func (py *pySvc) cleanup(ctx context.Context) {
 	if err := runnerManager.Stop(ctx, py.runnerID); err != nil {
+		py.log.Warn("stop manager", zap.Error(err))
+	}
+
+	if err := py.runner.Close(); err != nil {
 		py.log.Warn("close runner", zap.Error(err))
 	}
-	py.runner.Close()
 
 	if err := removeRunnerFromServer(py.runnerID); err != nil {
 		py.log.Warn("remove runner from grpc", zap.Error(err))
