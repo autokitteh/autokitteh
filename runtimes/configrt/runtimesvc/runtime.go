@@ -28,6 +28,7 @@ func (svc) Build(ctx context.Context, fs fs.FS, path string, _ []sdktypes.Symbol
 func (svc) Run(
 	_ context.Context,
 	runID sdktypes.RunID,
+	sessionID sdktypes.SessionID,
 	mainPath string,
 	compiled map[string][]byte,
 	_ map[string]sdktypes.Value,

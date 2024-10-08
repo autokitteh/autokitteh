@@ -179,6 +179,7 @@ Run *does not* execute a function in the Python module, this happens in Call.
 func (py *pySvc) Run(
 	ctx context.Context,
 	runID sdktypes.RunID,
+	sessionID sdktypes.SessionID,
 	mainPath string,
 	compiled map[string][]byte,
 	values map[string]sdktypes.Value,
