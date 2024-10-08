@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"fmt"
 
 	"go.uber.org/fx"
 	"go.uber.org/zap"
@@ -14,6 +13,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
+	"go.autokitteh.dev/autokitteh/internal/manifest"
 	"go.autokitteh.dev/autokitteh/sdk/sdkruntimes"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -172,11 +172,9 @@ func (ps *Projects) exportManifest(ctx context.Context, projectID sdktypes.Proje
 		return nil, err
 	}
 
-	var buf bytes.Buffer
-	fmt.Fprintln(&buf, "version: v1")
-	fmt.Fprintln(&buf)
-	fmt.Fprintln(&buf, "project:")
-	fmt.Fprintf(&buf, "  name: %s\n", prj.Name().String())
+	p := manifest.Project{
+		Name: prj.Name().String(),
+	}
 
 	cf := sdkservices.ListConnectionsFilter{
 		ProjectID: prj.ID(),
@@ -185,18 +183,17 @@ func (ps *Projects) exportManifest(ctx context.Context, projectID sdktypes.Proje
 	if err != nil {
 		return nil, err
 	}
-
-	if len(conns) > 0 {
-		fmt.Fprintln(&buf, "  connections:")
-		for _, c := range conns {
-			name := c.Name().String()
-			fmt.Fprintf(&buf, "    - name: %s\n", yamlize(name))
-			integ, err := ps.Integrations.GetByID(ctx, c.IntegrationID())
-			if err != nil {
-				return nil, err
-			}
-			fmt.Fprintf(&buf, "      integration: %s\n", yamlize(integ.UniqueName().String()))
+	for _, c := range conns {
+		mc := manifest.Connection{
+			Name: c.Name().String(),
 		}
+
+		integ, err := ps.Integrations.GetByID(ctx, c.IntegrationID())
+		if err != nil {
+			return nil, err
+		}
+		mc.IntegrationKey = integ.UniqueName().String()
+		p.Connections = append(p.Connections, &mc)
 	}
 
 	tf := sdkservices.ListTriggersFilter{
@@ -207,31 +204,34 @@ func (ps *Projects) exportManifest(ctx context.Context, projectID sdktypes.Proje
 		return nil, err
 	}
 
-	fmt.Fprintln(&buf, "  triggers:")
-
 	for _, t := range triggers {
-		fmt.Fprintf(&buf, "    - name: %s\n", t.Name().String())
-		fmt.Fprintf(&buf, "      call: %s\n", t.CodeLocation().CanonicalString())
+		mt := manifest.Trigger{
+			Name: t.Name().String(),
+			Call: t.CodeLocation().CanonicalString(),
+		}
 		if filter := t.Filter(); filter != "" {
-			fmt.Fprintf(&buf, "      filter: %s\n", filter)
+			mt.Filter = filter
 		}
 		if etype := t.EventType(); etype != "" {
-			fmt.Fprintf(&buf, "      event_type: %s\n", etype)
+			mt.EventType = etype
 		}
 
 		switch t.SourceType() {
 		case sdktypes.TriggerSourceTypeWebhook:
-			fmt.Fprintln(&buf, "      webhook: {}")
-			// TODO: More types
+			var wh struct{}
+			mt.Webhook = &wh
 		case sdktypes.TriggerSourceTypeSchedule:
-			fmt.Fprintf(&buf, "      schedule: %s\n", yamlize(t.Schedule()))
+			sched := t.Schedule()
+			mt.Schedule = &sched
 		case sdktypes.TriggerSourceTypeConnection:
 			conn, err := ps.DB.GetConnection(ctx, t.ConnectionID())
 			if err != nil {
 				return nil, err
 			}
-			fmt.Fprintf(&buf, "      connection: %s\n", yamlize(conn.Name().String()))
+			cname := conn.Name().String()
+			mt.ConnectionKey = &cname
 		}
+		p.Triggers = append(p.Triggers, &mt)
 	}
 
 	envs, err := ps.DB.ListProjectEnvs(ctx, prj.ID())
@@ -239,8 +239,6 @@ func (ps *Projects) exportManifest(ctx context.Context, projectID sdktypes.Proje
 		return nil, err
 	}
 
-	// Collect vars first, print only if there are some
-	varsMap := make(map[string]string)
 	for _, env := range envs {
 		sid, err := sdktypes.Strict(sdktypes.ParseVarScopeID(env.ID().String()))
 		if err != nil {
@@ -255,23 +253,18 @@ func (ps *Projects) exportManifest(ctx context.Context, projectID sdktypes.Proje
 			if v.IsSecret() {
 				continue
 			}
-			varsMap[v.Name().String()] = v.Value()
+			v := manifest.Var{
+				Name:  v.Name().String(),
+				Value: v.Value(),
+			}
+			p.Vars = append(p.Vars, &v)
 		}
 	}
 
-	if len(varsMap) > 0 {
-		fmt.Fprintln(&buf, "  vars:")
-		for n, v := range varsMap {
-			fmt.Fprintf(&buf, "    - name: %s\n", n)
-			fmt.Fprintf(&buf, "      value: %s\n", yamlize(v))
-		}
+	m := manifest.Manifest{
+		Version: manifest.Version,
+		Project: &p,
 	}
 
-	return buf.Bytes(), nil
-}
-
-func yamlize(v string) string {
-	data, _ := yaml.Marshal(v)
-	// Trim newline added by yaml.Marshal
-	return string(data[:len(data)-1])
+	return yaml.Marshal(m)
 }
