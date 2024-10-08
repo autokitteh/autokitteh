@@ -1,12 +1,15 @@
 package projects
 
 import (
+	"archive/zip"
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 
 	"go.uber.org/fx"
 	"go.uber.org/zap"
+	"gopkg.in/yaml.v2"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
@@ -19,10 +22,11 @@ import (
 type Projects struct {
 	fx.In
 
-	Z        *zap.Logger
-	DB       db.DB
-	Builds   sdkservices.Builds
-	Runtimes sdkservices.Runtimes
+	Z            *zap.Logger
+	DB           db.DB
+	Builds       sdkservices.Builds
+	Runtimes     sdkservices.Runtimes
+	Integrations sdkservices.Integrations
 }
 
 func New(p Projects, telemetry *telemetry.Telemetry) sdkservices.Projects {
@@ -113,4 +117,161 @@ func (ps *Projects) SetResources(ctx context.Context, projectID sdktypes.Project
 
 func (ps *Projects) DownloadResources(ctx context.Context, projectID sdktypes.ProjectID) (map[string][]byte, error) {
 	return ps.DB.GetProjectResources(ctx, projectID)
+}
+
+func (ps *Projects) Export(ctx context.Context, projectID sdktypes.ProjectID) ([]byte, error) {
+	const manifestFileName = "autokitteh.yaml"
+	hasManifest := false
+	var buf bytes.Buffer
+	w := zip.NewWriter(&buf)
+
+	rscs, err := ps.DownloadResources(ctx, projectID)
+	if err != nil {
+		return nil, err
+	}
+
+	for name, data := range rscs {
+		f, err := w.Create(name)
+		if err != nil {
+			return nil, err
+		}
+		_, err = f.Write(data)
+		if err != nil {
+			return nil, err
+		}
+		if name == manifestFileName {
+			hasManifest = true
+		}
+	}
+
+	if !hasManifest {
+		manifest, err := ps.exportManifest(ctx, projectID)
+		if err != nil {
+			return nil, err
+		}
+		f, err := w.Create("autokitteh.yaml")
+		if err != nil {
+			return nil, err
+		}
+		_, err = f.Write(manifest)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if err := w.Close(); err != nil {
+		return nil, err
+	}
+
+	return buf.Bytes(), nil
+}
+
+func (ps *Projects) exportManifest(ctx context.Context, projectID sdktypes.ProjectID) ([]byte, error) {
+	prj, err := ps.DB.GetProjectByID(ctx, projectID)
+	if err != nil {
+		return nil, err
+	}
+
+	var buf bytes.Buffer
+	fmt.Fprintln(&buf, "version: v1")
+	fmt.Fprintln(&buf)
+	fmt.Fprintln(&buf, "project:")
+	fmt.Fprintf(&buf, "  name: %s\n", prj.Name().String())
+
+	cf := sdkservices.ListConnectionsFilter{
+		ProjectID: prj.ID(),
+	}
+	conns, err := ps.DB.ListConnections(ctx, cf, false)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(conns) > 0 {
+		fmt.Fprintln(&buf, "  connections:")
+		for _, c := range conns {
+			name := c.Name().String()
+			fmt.Fprintf(&buf, "    - name: %s\n", yamlize(name))
+			integ, err := ps.Integrations.GetByID(ctx, c.IntegrationID())
+			if err != nil {
+				return nil, err
+			}
+			fmt.Fprintf(&buf, "      integration: %s\n", yamlize(integ.UniqueName().String()))
+		}
+	}
+
+	tf := sdkservices.ListTriggersFilter{
+		ProjectID: prj.ID(),
+	}
+	triggers, err := ps.DB.ListTriggers(ctx, tf)
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Fprintln(&buf, "  triggers:")
+
+	for _, t := range triggers {
+		fmt.Fprintf(&buf, "    - name: %s\n", t.Name().String())
+		fmt.Fprintf(&buf, "      call: %s\n", t.CodeLocation().CanonicalString())
+		if filter := t.Filter(); filter != "" {
+			fmt.Fprintf(&buf, "      filter: %s\n", filter)
+		}
+		if etype := t.EventType(); etype != "" {
+			fmt.Fprintf(&buf, "      event_type: %s\n", etype)
+		}
+
+		switch t.SourceType() {
+		case sdktypes.TriggerSourceTypeWebhook:
+			fmt.Fprintln(&buf, "      webhook: {}")
+			// TODO: More types
+		case sdktypes.TriggerSourceTypeSchedule:
+			fmt.Fprintf(&buf, "      schedule: %s\n", yamlize(t.Schedule()))
+		case sdktypes.TriggerSourceTypeConnection:
+			conn, err := ps.DB.GetConnection(ctx, t.ConnectionID())
+			if err != nil {
+				return nil, err
+			}
+			fmt.Fprintf(&buf, "      connection: %s\n", yamlize(conn.Name().String()))
+		}
+	}
+
+	envs, err := ps.DB.ListProjectEnvs(ctx, prj.ID())
+	if err != nil {
+		return nil, err
+	}
+
+	// Collect vars first, print only if there are some
+	varsMap := make(map[string]string)
+	for _, env := range envs {
+		sid, err := sdktypes.Strict(sdktypes.ParseVarScopeID(env.ID().String()))
+		if err != nil {
+			return nil, err
+		}
+		vars, err := ps.DB.GetVars(ctx, sid, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range vars {
+			if v.IsSecret() {
+				continue
+			}
+			varsMap[v.Name().String()] = v.Value()
+		}
+	}
+
+	if len(varsMap) > 0 {
+		fmt.Fprintln(&buf, "  vars:")
+		for n, v := range varsMap {
+			fmt.Fprintf(&buf, "    - name: %s\n", n)
+			fmt.Fprintf(&buf, "      value: %s\n", yamlize(v))
+		}
+	}
+
+	return buf.Bytes(), nil
+}
+
+func yamlize(v string) string {
+	data, _ := yaml.Marshal(v)
+	// Trim newline added by yaml.Marshal
+	return string(data[:len(data)-1])
 }

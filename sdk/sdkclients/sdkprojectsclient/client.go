@@ -194,3 +194,20 @@ func (c *client) DownloadResources(ctx context.Context, pid sdktypes.ProjectID) 
 
 	return resp.Msg.Resources, nil
 }
+
+func (c *client) Export(ctx context.Context, pid sdktypes.ProjectID) ([]byte, error) {
+	req := projectsv1.ExportRequest{
+		ProjectId: pid.String(),
+	}
+
+	resp, err := c.client.Export(ctx, connect.NewRequest(&req))
+	if err != nil {
+		return nil, rpcerrors.ToSDKError(err)
+	}
+
+	if err := internal.Validate(resp.Msg); err != nil {
+		return nil, err
+	}
+
+	return resp.Msg.Project, nil
+}
