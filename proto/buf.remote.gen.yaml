@@ -16,10 +16,12 @@ plugins:
     # directory as protoc-gen-go
     out: gen/go
     # You almost always want to set this option with protoc-gen-go-grpc
-    opt: paths=source_relative    
+    opt: paths=source_relative
   - remote: buf.build/protocolbuffers/python:v24.3
     out: ../runtimes/pythonrt/runner/pb
     opt: pyi_out
+  - remote: buf.build/grpc/python:v1.66.2
+    out: ../runtimes/pythonrt/runner/pb
 
 inputs:
   - directory: .
