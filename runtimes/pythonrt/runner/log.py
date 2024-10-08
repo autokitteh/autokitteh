@@ -11,7 +11,7 @@ class JsonFormatter(logging.Formatter):
             "level": record.levelname,
             "date": self.formatTime(record),
             "message": record.getMessage(),
-            "module": record.module,
+            "filename": record.filename,
             "lineno": record.lineno,
         }
         return json.dumps(record_dict)
