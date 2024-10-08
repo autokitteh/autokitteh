@@ -30,15 +30,16 @@ var (
 )
 
 type LocalPython struct {
-	log           *zap.Logger
-	userDir       string
-	runnerDir     string
-	port          int
-	proc          *os.Process
-	id            string
-	logRunnerCode bool
-	sessionID     sdktypes.SessionID
-	runnerLogger  *zapio.Writer
+	log                *zap.Logger
+	userDir            string
+	runnerDir          string
+	port               int
+	proc               *os.Process
+	id                 string
+	logRunnerCode      bool
+	sessionID          sdktypes.SessionID
+	stdoutRunnerLogger *zapio.Writer
+	stderrRunnerLogger *zapio.Writer
 }
 
 func (r *LocalPython) Close() error {
@@ -68,12 +69,17 @@ func (r *LocalPython) Close() error {
 		}
 	}
 
-	if r.runnerLogger != nil {
-		if rlerr := r.runnerLogger.Close(); rlerr != nil {
-			err = errors.Join(err, fmt.Errorf("close runner logger - %w", rlerr))
+	if r.stdoutRunnerLogger != nil {
+		if rlerr := r.stdoutRunnerLogger.Close(); rlerr != nil {
+			err = errors.Join(err, fmt.Errorf("close stdout runner logger - %w", rlerr))
 		}
 	}
 
+	if r.stderrRunnerLogger != nil {
+		if rlerr := r.stderrRunnerLogger.Close(); rlerr != nil {
+			err = errors.Join(err, fmt.Errorf("close stderr runner logger - %w", rlerr))
+		}
+	}
 	return err
 }
 
@@ -138,9 +144,10 @@ func (r *LocalPython) Start(pyExe string, tarData []byte, env map[string]string,
 	cmd.Env = overrideEnv(env, r.runnerDir, r.userDir)
 
 	if r.logRunnerCode {
-		r.runnerLogger = &zapio.Writer{Log: r.log, Level: zap.InfoLevel}
-		cmd.Stdout = r.runnerLogger
-		cmd.Stderr = r.runnerLogger
+		r.stdoutRunnerLogger = &zapio.Writer{Log: r.log.With(zap.String("stream", "stdout")), Level: zap.InfoLevel}
+		cmd.Stdout = r.stdoutRunnerLogger
+		r.stderrRunnerLogger = &zapio.Writer{Log: r.log.With(zap.String("stream", "stderr")), Level: zap.InfoLevel}
+		cmd.Stderr = r.stderrRunnerLogger
 	}
 
 	// make sure runner is killed if ak is killed
