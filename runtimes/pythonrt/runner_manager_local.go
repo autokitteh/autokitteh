@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 	"go.uber.org/zap"
 )
 
@@ -82,15 +83,17 @@ func ConfigureLocalRunnerManager(log *zap.Logger, cfg LocalRunnerManagerConfig) 
 	return nil
 }
 
-func (l *localRunnerManager) Start(ctx context.Context, buildArtifacts []byte, vars map[string]string) (string, *RunnerClient, error) {
+func (l *localRunnerManager) Start(ctx context.Context, sessionID sdktypes.SessionID, buildArtifacts []byte, vars map[string]string) (string, *RunnerClient, error) {
+	log := l.logger.With(zap.String("session_id", sessionID.String()))
 	r := &LocalPython{
-		log:           l.logger,
+		log:           log,
 		logRunnerCode: l.cfg.LogCodeRunnerCode,
+		sessionID:     sessionID,
 	}
 
 	if l.cfg.LazyLoadVEnv {
-		l.logger.Info("ensuring venv lazy")
-		if err := ensureVEnv(l.logger, l.pyExe); err != nil {
+		log.Info("ensuring venv lazy")
+		if err := ensureVEnv(log, l.pyExe); err != nil {
 			return "", nil, fmt.Errorf("create venv: %w", err)
 		}
 		l.pyExe = venvPy
@@ -99,11 +102,11 @@ func (l *localRunnerManager) Start(ctx context.Context, buildArtifacts []byte, v
 	if l.workerAddress == "" {
 		l.workerAddress = l.cfg.WorkerAddressProvider()
 		if l.workerAddress == "" {
-			l.logger.Error("worker address could not be set")
+			log.Error("worker address could not be set")
 			return "", nil, errors.New("worker address wasnt provided and could not be inferred")
 		}
 
-		l.logger.Info("worker address inferred", zap.String("workerAddress", l.workerAddress))
+		log.Info("worker address inferred", zap.String("workerAddress", l.workerAddress))
 	}
 
 	if err := r.Start(l.pyExe, buildArtifacts, vars, l.workerAddress); err != nil {
@@ -111,11 +114,11 @@ func (l *localRunnerManager) Start(ctx context.Context, buildArtifacts []byte, v
 	}
 
 	runnerAddr := fmt.Sprintf("127.0.0.1:%d", r.port)
-	l.logger.Debug("dialing runner", zap.String("addr", runnerAddr))
+	log.Debug("dialing runner", zap.String("addr", runnerAddr))
 	client, err := dialRunner(runnerAddr)
 	if err != nil {
 		if err := r.Close(); err != nil {
-			l.logger.Warn("close runner", zap.Error(err))
+			log.Warn("close runner", zap.Error(err))
 		}
 		return "", nil, err
 	}

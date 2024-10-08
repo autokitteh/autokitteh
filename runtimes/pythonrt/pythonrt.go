@@ -51,13 +51,14 @@ type comChannels struct {
 }
 
 type pySvc struct {
-	ctx      context.Context
-	log      *zap.Logger
-	xid      sdktypes.ExecutorID
-	runID    sdktypes.RunID
-	cbs      *sdkservices.RunCallbacks
-	exports  map[string]sdktypes.Value
-	fileName string // main user code file name (entry point)
+	ctx       context.Context
+	log       *zap.Logger
+	xid       sdktypes.ExecutorID
+	runID     sdktypes.RunID
+	sessionID sdktypes.SessionID
+	cbs       *sdkservices.RunCallbacks
+	exports   map[string]sdktypes.Value
+	fileName  string // main user code file name (entry point)
 	// remote       *workerGRPCHandler
 
 	// runner       Runner
@@ -179,6 +180,7 @@ Run *does not* execute a function in the Python module, this happens in Call.
 func (py *pySvc) Run(
 	ctx context.Context,
 	runID sdktypes.RunID,
+	sessionID sdktypes.SessionID,
 	mainPath string,
 	compiled map[string][]byte,
 	values map[string]sdktypes.Value,
@@ -187,8 +189,9 @@ func (py *pySvc) Run(
 	runnerOK := false
 	py.ctx = ctx
 	py.runID = runID
+	py.sessionID = sessionID
 	py.xid = sdktypes.NewExecutorID(runID) // Should be first
-	py.log = py.log.With(zap.String("run_id", runID.String()))
+	py.log = py.log.With(zap.String("run_id", runID.String()), zap.String("session_id", sessionID.String()))
 	py.log.Info("run", zap.String("path", mainPath))
 
 	py.log.Info("executor", zap.String("id", py.xid.String()))
@@ -214,7 +217,7 @@ func (py *pySvc) Run(
 		return nil, fmt.Errorf("can't load syscall: %w", err)
 	}
 
-	runnerID, runner, err := runnerManager.Start(ctx, tarData, envMap)
+	runnerID, runner, err := runnerManager.Start(ctx, sessionID, tarData, envMap)
 	if err != nil {
 		return nil, fmt.Errorf("starting runner: %w", err)
 	}
