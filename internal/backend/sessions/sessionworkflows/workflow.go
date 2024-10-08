@@ -534,6 +534,7 @@ func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (prints []st
 					RunID:                runID,
 					FallthroughCallbacks: cbs,
 					EntryPointPath:       entryPoint.Path(),
+					SessionID:            w.data.Session.ID(),
 				},
 			)
 		},

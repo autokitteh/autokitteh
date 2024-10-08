@@ -135,7 +135,7 @@ func run(ctx context.Context, b *sdkbuildfile.BuildFile, path string) (map[strin
 		defer cancel()
 	}
 
-	run, err := runtimes().Run(ctx, sdktypes.NewRunID(), path, b, nil, cbs)
+	run, err := runtimes().Run(ctx, sdktypes.NewRunID(), sdktypes.InvalidSessionID, path, b, nil, cbs)
 	if err != nil {
 		return nil, nil, fmt.Errorf("run build: %w", err)
 	}
