@@ -209,5 +209,5 @@ func (c *client) Export(ctx context.Context, pid sdktypes.ProjectID) ([]byte, er
 		return nil, err
 	}
 
-	return resp.Msg.Project, nil
+	return resp.Msg.ZipArchive, nil
 }

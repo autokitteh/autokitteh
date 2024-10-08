@@ -140,7 +140,7 @@ class ExportRequest(_message.Message):
     def __init__(self, project_id: _Optional[str] = ...) -> None: ...
 
 class ExportResponse(_message.Message):
-    __slots__ = ["project"]
-    PROJECT_FIELD_NUMBER: _ClassVar[int]
-    project: bytes
-    def __init__(self, project: _Optional[bytes] = ...) -> None: ...
+    __slots__ = ["zip_archive"]
+    ZIP_ARCHIVE_FIELD_NUMBER: _ClassVar[int]
+    zip_archive: bytes
+    def __init__(self, zip_archive: _Optional[bytes] = ...) -> None: ...

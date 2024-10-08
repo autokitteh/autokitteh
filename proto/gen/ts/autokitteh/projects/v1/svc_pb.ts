@@ -731,9 +731,9 @@ export class ExportResponse extends Message<ExportResponse> {
   /**
    * Zip of the mainfest + files
    *
-   * @generated from field: bytes project = 1;
+   * @generated from field: bytes zip_archive = 1;
    */
-  project = new Uint8Array(0);
+  zipArchive = new Uint8Array(0);
 
   constructor(data?: PartialMessage<ExportResponse>) {
     super();
@@ -743,7 +743,7 @@ export class ExportResponse extends Message<ExportResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "autokitteh.projects.v1.ExportResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "project", kind: "scalar", T: 12 /* ScalarType.BYTES */ },
+    { no: 1, name: "zip_archive", kind: "scalar", T: 12 /* ScalarType.BYTES */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ExportResponse {

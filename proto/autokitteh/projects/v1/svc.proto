@@ -110,7 +110,7 @@ message ExportRequest {
 
 message ExportResponse {
   // Zip of the mainfest + files
-  bytes project = 1 [(buf.validate.field).bytes.min_len = 10];
+  bytes zip_archive = 1 [(buf.validate.field).bytes.min_len = 10];
 }
 
 service ProjectsService {

@@ -277,7 +277,7 @@ func (s *Server) Export(ctx context.Context, req *connect.Request[projectsv1.Exp
 	}
 
 	resp := projectsv1.ExportResponse{
-		Project: zipData,
+		ZipArchive: zipData,
 	}
 
 	return connect.NewResponse(&resp), nil
