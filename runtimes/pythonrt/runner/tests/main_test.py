@@ -30,6 +30,7 @@ def test_start():
         id="runner1",
         worker=None,
         code_dir=workflows.simple,
+        server=None,
     )
 
     event_data = json.dumps({"body": {"path": "/info", "method": "GET"}})
@@ -48,6 +49,7 @@ def test_execute():
         id="runner1",
         worker=None,
         code_dir=workflows.simple,
+        server=None,
     )
 
     call_id = uuid4().hex
@@ -64,6 +66,7 @@ def test_activity_reply():
         id="runner1",
         worker=None,
         code_dir=workflows.simple,
+        server=None,
     )
     call_id = uuid4().hex
     fut = Future()

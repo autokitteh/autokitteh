@@ -20,8 +20,9 @@ from call import AKCall, full_func_name
 from grpc_reflection.v1alpha import reflection
 from syscalls import SysCalls
 import threading
-import os
 import time
+
+SERVER_GRACE = 3  # seconds
 
 
 class ActivityError(Exception):
@@ -84,10 +85,11 @@ def fix_http_body(event):
 
 
 class Runner(rpc.RunnerServicer):
-    def __init__(self, id, worker, code_dir):
+    def __init__(self, id, worker, code_dir, server):
         self.id = id
         self.worker: rpc.WorkerStub = worker
         self.code_dir = code_dir
+        self.server: grpc.Server = server
 
         self.executor = ThreadPoolExecutor()
 
@@ -125,7 +127,7 @@ class Runner(rpc.RunnerServicer):
             time.sleep(period)
 
         log.error("could not verify if should keep running, killing self")
-        os._exit(1)
+        self.server.stop(SERVER_GRACE)
 
     def Start(self, request: pb.StartRequest, context: grpc.ServicerContext):
         if self._did_start:
@@ -304,7 +306,7 @@ class Runner(rpc.RunnerServicer):
         except grpc.RpcError as err:
             if err.code() == grpc.StatusCode.UNAVAILABLE or grpc.StatusCode.CANCELLED:
                 log.error("grpc canclled or unavailable, killing self")
-                os._exit(1)
+                self.server.stop(SERVER_GRACE)
             log.error("print: %s", err)
 
 
