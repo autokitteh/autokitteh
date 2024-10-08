@@ -7,7 +7,7 @@ import (
 
 	"connectrpc.com/connect"
 
-	"go.autokitteh.dev/autokitteh/internal/backend/configset"
+	"go.autokitteh.dev/autokitteh/internal/backend/config"
 	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/proto"
@@ -22,7 +22,14 @@ type Config struct {
 	MaxUploadSize int `koanf:"max_upload_size"`
 }
 
-var Configs = configset.Set[Config]{
+func (c Config) Validate() error {
+	if c.MaxUploadSize <= 0 {
+		return errors.New("max_upload_size must be greater than 0")
+	}
+	return nil
+}
+
+var Configs = config.Set[Config]{
 	Default: &Config{
 		MaxUploadSize: 1 * 1024 * 1024, // 1MB
 	},

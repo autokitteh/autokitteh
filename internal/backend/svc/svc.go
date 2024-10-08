@@ -27,7 +27,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/builds"
 	"go.autokitteh.dev/autokitteh/internal/backend/buildsgrpcsvc"
-	"go.autokitteh.dev/autokitteh/internal/backend/configset"
+	"go.autokitteh.dev/autokitteh/internal/backend/config"
 	"go.autokitteh.dev/autokitteh/internal/backend/connections"
 	"go.autokitteh.dev/autokitteh/internal/backend/connectionsgrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/dashboardsvc"
@@ -79,7 +79,7 @@ import (
 
 var warningColor = color.New(color.FgRed).Add(color.Bold).SprintFunc()
 
-func printModeWarning(mode configset.Mode) {
+func printModeWarning(mode config.Mode) {
 	fmt.Fprint(
 		os.Stderr,
 		warningColor(fmt.Sprintf("\n*** %s MODE *** NEVER USE IN PRODUCTION\n\n", strings.ToUpper(string(mode)))),
@@ -116,19 +116,21 @@ type pprofConfig struct {
 	Port   int  `koanf:"port"`
 }
 
-var pprofConfigs = configset.Set[pprofConfig]{
+func (pprofConfig) Validate() error { return nil }
+
+var pprofConfigs = config.Set[pprofConfig]{
 	Default: &pprofConfig{Enable: true, Port: 6060},
 }
 
 type HTTPServerAddr string
 
-func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
+func makeFxOpts(cfg *config.Config, opts RunOptions) []fx.Option {
 	return []fx.Option{
 		fx.Supply(cfg),
 		LoggerFxOpt(opts.Silent),
 		fx.Invoke(func(lc fx.Lifecycle, db db.DB) { HookOnStart(lc, db.Setup) }),
 
-		Component("auth", configset.Empty, fx.Provide(authsvc.New)),
+		Component("auth", config.EmptySet, fx.Provide(authsvc.New)),
 		Component("authjwttokens", authjwttokens.Configs, fx.Provide(authjwttokens.New)),
 		Component("authsessions", authsessions.Configs, fx.Provide(authsessions.New)),
 		Component("authhttpmiddleware", authhttpmiddleware.Configs,
@@ -173,28 +175,28 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 			fx.Invoke(func(lc fx.Lifecycle, s sessions.Sessions) { HookOnStart(lc, s.StartWorkers) }),
 		),
 		Component("store", store.Configs, fx.Provide(store.New)),
-		Component("builds", configset.Empty, fx.Provide(builds.New)),
-		Component("connections", configset.Empty, fx.Provide(connections.New)),
-		Component("deployments", configset.Empty, fx.Provide(deployments.New)),
-		Component("projects", configset.Empty, fx.Provide(projects.New)),
+		Component("builds", config.EmptySet, fx.Provide(builds.New)),
+		Component("connections", config.EmptySet, fx.Provide(connections.New)),
+		Component("deployments", config.EmptySet, fx.Provide(deployments.New)),
+		Component("projects", config.EmptySet, fx.Provide(projects.New)),
 		Component("projectsgrpcsvc", projectsgrpcsvc.Configs, fx.Provide(projectsgrpcsvc.New)),
-		Component("envs", configset.Empty, fx.Provide(envs.New)),
+		Component("envs", config.EmptySet, fx.Provide(envs.New)),
 		Component(
 			"vars",
-			configset.Empty,
+			config.EmptySet,
 			fx.Provide(vars.New),
 			fx.Provide(func(v *vars.Vars) sdkservices.Vars { return v }),
 			fx.Invoke(func(v *vars.Vars, c sdkservices.Connections) { v.SetConnections(c) }),
 		),
 		Component("secrets", secrets.Configs, fx.Provide(secrets.New)),
-		Component("events", configset.Empty, fx.Provide(events.New)),
-		Component("triggers", configset.Empty, fx.Provide(triggers.New)),
-		Component("oauth", configset.Empty, fx.Provide(oauth.New)),
+		Component("events", config.EmptySet, fx.Provide(events.New)),
+		Component("triggers", config.EmptySet, fx.Provide(triggers.New)),
+		Component("oauth", config.EmptySet, fx.Provide(oauth.New)),
 
-		Component("healthcheck", configset.Empty, fx.Provide(healthchecker.New)),
+		Component("healthcheck", config.EmptySet, fx.Provide(healthchecker.New)),
 		Component(
 			"scheduler",
-			configset.Empty,
+			config.EmptySet,
 			fx.Provide(scheduler.New),
 			fx.Invoke(
 				func(lc fx.Lifecycle, sch *scheduler.Scheduler, d sdkservices.Dispatcher) {
@@ -298,7 +300,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		fx.Invoke(oauth.InitWebhook),
 		Component(
 			"webhooks",
-			configset.Empty,
+			config.EmptySet,
 			fx.Provide(webhookssvc.New),
 			fx.Invoke(func(lc fx.Lifecycle, w *webhookssvc.Service, muxes *muxes.Muxes) {
 				HookSimpleOnStart(lc, func() { w.Start(muxes) })
@@ -400,12 +402,12 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 }
 
 type RunOptions struct {
-	Mode           configset.Mode
+	Mode           config.Mode
 	Silent         bool          // No logs at all
 	TemporalClient client.Client // use this instead of creating a new temporal client.
 }
 
-func NewOpts(cfg *Config, ropts RunOptions) []fx.Option {
+func NewOpts(cfg *config.Config, ropts RunOptions) []fx.Option {
 	setFXRunOpts(ropts)
 
 	opts := makeFxOpts(cfg, ropts)
@@ -429,7 +431,7 @@ func NewOpts(cfg *Config, ropts RunOptions) []fx.Option {
 	return append(opts, fx.Populate(svcs))
 }
 
-func StartDB(ctx context.Context, cfg *Config, ropt RunOptions) (db.DB, error) {
+func StartDB(ctx context.Context, cfg *config.Config, ropt RunOptions) (db.DB, error) {
 	setFXRunOpts(ropt)
 
 	var db db.DB

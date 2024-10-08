@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"sort"
 	"strings"
 
@@ -10,7 +11,7 @@ import (
 	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 
-	"go.autokitteh.dev/autokitteh/internal/backend/configset"
+	"go.autokitteh.dev/autokitteh/internal/backend/config"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -23,7 +24,16 @@ type Config struct {
 	ServerURL string `koanf:"server_url"`
 }
 
-var Configs = configset.Set[Config]{
+func (c Config) Validate() error {
+	if c.ServerURL == "" || c.ServerURL == miniredisURL {
+		return nil
+	}
+
+	_, err := url.Parse(c.ServerURL)
+	return err
+}
+
+var Configs = config.Set[Config]{
 	Default: &Config{},
 	Dev: &Config{
 		ServerURL: miniredisURL,

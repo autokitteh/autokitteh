@@ -14,6 +14,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/backend/svc"
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
+	"go.autokitteh.dev/autokitteh/internal/backend/config"
 	"go.autokitteh.dev/autokitteh/internal/xdg"
 )
 
@@ -28,13 +29,11 @@ var setCmd = common.StandardCommand(&cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// Required to check current configuration is valid
 		// and load all possible configuration keys.
-		if _, err := common.NewDevSvc(true); err != nil {
-			filename := common.ConfigYAMLFilePath()
-			err = dig.RootCause(err)
-			return fmt.Errorf("invalid config file %q: %w", filename, err)
+		if _, err := common.NewDevSvcOpts(true); err != nil {
+			return err
 		}
 
-		possibleConfigs := common.Config().ListAll()
+		possibleConfigs := config.ListAll()
 		if err := validateArgs(args, possibleConfigs); err != nil {
 			return err
 		}
@@ -153,7 +152,7 @@ func validateConfig(data []byte) error {
 		return fmt.Errorf("init temporary config: %w", err)
 	}
 
-	if _, err := common.NewDevSvc(true); err != nil {
+	if _, err := common.NewDevSvcOpts(true); err != nil {
 		return fmt.Errorf("invalid config: %w", dig.RootCause(err))
 	}
 

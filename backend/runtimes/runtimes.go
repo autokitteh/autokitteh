@@ -4,19 +4,20 @@ import (
 	"errors"
 	"fmt"
 
-	"go.autokitteh.dev/autokitteh/internal/backend/configset"
+	"go.uber.org/zap"
+
+	"go.autokitteh.dev/autokitteh/internal/backend/config"
 	"go.autokitteh.dev/autokitteh/internal/backend/httpsvc"
 	configruntimesvc "go.autokitteh.dev/autokitteh/runtimes/configrt/runtimesvc"
 	pythonruntime "go.autokitteh.dev/autokitteh/runtimes/pythonrt"
 	starlarkruntimesvc "go.autokitteh.dev/autokitteh/runtimes/starlarkrt/runtimesvc"
 	"go.autokitteh.dev/autokitteh/sdk/sdkruntimes"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
-	"go.uber.org/zap"
 )
 
 type Config struct {
 	RemoteRunnerEndpoints []string `koanf:"remote_runner_endpoints"`
-	//TODO: maybe should be runner type which can be local/docker/remote/ ?
+	// TODO: maybe should be runner type which can be local/docker/remote/ ?
 	EnableRemoteRunner bool   `koanf:"enable_remote_runner"`
 	WorkerAddress      string `koanf:"worker_address"`
 	// TODO: This is a hack to prevent running configure on pythonrt in each test
@@ -26,7 +27,15 @@ type Config struct {
 	LogRunnerCode     bool `koanf:"log_runner_code"`
 }
 
-var Configs = configset.Set[Config]{
+func (c Config) Validate() error {
+	if c.EnableRemoteRunner && len(c.RemoteRunnerEndpoints) == 0 {
+		return errors.New("remote runner is enabled but no runner endpoints provided")
+	}
+
+	return nil
+}
+
+var Configs = config.Set[Config]{
 	Default: &Config{
 		EnableRemoteRunner: false,
 	},
@@ -45,15 +54,11 @@ func New(cfg *Config, l *zap.Logger, svc httpsvc.Svc) (sdkservices.Runtimes, err
 		pythonruntime.Runtime,
 	}
 
-	//TODO: need to rethink
-	if cfg == nil {
-		cfg = Configs.Default
+	if err := cfg.Validate(); err != nil {
+		return nil, fmt.Errorf("config: %w", err)
 	}
 
 	if cfg.EnableRemoteRunner {
-		if len(cfg.RemoteRunnerEndpoints) == 0 {
-			return nil, errors.New("remote runner is enabled but no runner endpoints provided")
-		}
 		if err := pythonruntime.ConfigureRemoteRunnerManager(pythonruntime.RemoteRuntimeConfig{
 			ManagerAddress: cfg.RemoteRunnerEndpoints,
 			WorkerAddress:  cfg.WorkerAddress,

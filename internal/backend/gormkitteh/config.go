@@ -32,6 +32,11 @@ type Config struct {
 	MaxIdleConns int `koanf:"max_idle_conns"`
 }
 
+func (c Config) Validate() error {
+	_, err := c.Explicit()
+	return err
+}
+
 func (c Config) Explicit() (*Config, error) {
 	if c.Type == RequireExplicitDSNType {
 		if c.DSN == "" {

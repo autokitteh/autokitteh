@@ -1,9 +1,11 @@
 package authloginhttpsvc
 
 import (
+	"errors"
+
 	"github.com/dghubble/gologin/v2"
 
-	"go.autokitteh.dev/autokitteh/internal/backend/configset"
+	"go.autokitteh.dev/autokitteh/internal/backend/config"
 )
 
 type oauth2Config struct {
@@ -12,6 +14,26 @@ type oauth2Config struct {
 	ClientSecret string                `koanf:"client_secret"`
 	RedirectURL  string                `koanf:"redirect_url"`
 	Cookie       *gologin.CookieConfig `koanf:"cookie"`
+}
+
+func (c oauth2Config) Validate() error {
+	if !c.Enabled {
+		return nil
+	}
+
+	if c.ClientID == "" {
+		return errors.New("client_id is required")
+	}
+
+	if c.ClientSecret == "" {
+		return errors.New("client_secret is required")
+	}
+
+	if c.RedirectURL == "" {
+		return errors.New("redirect_url is required")
+	}
+
+	return nil
 }
 
 func (c oauth2Config) cookieConfig() gologin.CookieConfig {
@@ -23,9 +45,20 @@ func (c oauth2Config) cookieConfig() gologin.CookieConfig {
 }
 
 type descopeConfig struct {
-	Enabled       bool   `koanf:"enabled"`
-	ProjectID     string `koanf:"project_id"`
-	ManagementKey string `koanf:"management_key"`
+	Enabled   bool   `koanf:"enabled"`
+	ProjectID string `koanf:"project_id"`
+}
+
+func (c descopeConfig) Validate() error {
+	if !c.Enabled {
+		return nil
+	}
+
+	if c.ProjectID == "" {
+		return errors.New("project_id is required")
+	}
+
+	return nil
 }
 
 type Config struct {
@@ -35,13 +68,21 @@ type Config struct {
 
 	// Allowed login patterns, separated by commas.
 	// Pattern format is either of:
-	// - "*"       - matches any login
-	// - "*@host"  - matches any login from host
+	// - "" or "*" - matches any login
+	// - "*@domain"  - matches any login, but only from domain
 	// - otherwise - matches exact login
 	AllowedLogins string `koanf:"allowed_logins"`
 }
 
-var Configs = configset.Set[Config]{
+func (c Config) Validate() error {
+	return errors.Join(
+		c.GoogleOAuth.Validate(),
+		c.GithubOAuth.Validate(),
+		c.Descope.Validate(),
+	)
+}
+
+var Configs = config.Set[Config]{
 	Default: &Config{},
 	Dev: &Config{
 		GoogleOAuth: oauth2Config{
