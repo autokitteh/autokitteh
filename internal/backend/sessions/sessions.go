@@ -89,7 +89,7 @@ func (s *sessions) Delete(ctx context.Context, sessionID sdktypes.SessionID) err
 
 	// delete only finalized sessions.
 	if state := session.State(); !state.IsFinal() {
-		return fmt.Errorf("%w: cannot delete session, not in final state: %s, session_id: %s", sdkerrors.ErrFailedPrecondition, session.State(), sessionID.String())
+		return fmt.Errorf("%w: cannot delete session, not in final state: %s, session_id: %v", sdkerrors.ErrFailedPrecondition, state, sessionID)
 	}
 
 	if err = s.svcs.DB.DeleteSession(ctx, sessionID); err != nil {
