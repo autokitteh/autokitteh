@@ -39,6 +39,17 @@ func IgnoreErrAlreadyExists(err error) error {
 	return err
 }
 
+type RetryableError struct {
+	Message string
+	Err     error
+}
+
+func (e RetryableError) Error() string { return fmt.Sprintf("%s: %v", e.Message, e.Err) }
+func (e RetryableError) Unwrap() error { return e.Err }
+func NewRetryableError(f string, vs ...any) error {
+	return RetryableError{Err: fmt.Errorf(f, vs...)}
+}
+
 type ErrInvalidArgument struct {
 	Underlying error
 }
