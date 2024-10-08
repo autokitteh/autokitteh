@@ -10,8 +10,6 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/resolver"
 )
 
-var outputFile = "-"
-
 var exportCmd = common.StandardCommand(&cobra.Command{
 	Use:     "export <project name or ID>",
 	Short:   "Export project",
