@@ -469,13 +469,25 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, _ []sdktypes.
 				py.log.Debug("health check loop stopped")
 				return
 			case <-time.After(10 * time.Second):
-				if err := runnerManager.RunnerHealth(ctx, py.runnerID); err != nil {
-					py.log.Warn("health loop check err", zap.Error(err))
+				healthReq := pb.HealthRequest{}
 
-					// FIXME: need a better solution. Now just stuck here and let temporal panic on deadlock and retry
-					// runnerHealthChan <- err
+				resp, err := py.runner.Health(ctx, &healthReq)
+				if err != nil { // no network/lost packet.load? for sanity check the state locally via IPC/signals
+					err = runnerManager.RunnerHealth(ctx, py.runnerID)
+				} else if resp.Error != "" {
+					err = fmt.Errorf("runner health: failed. %s", resp.Error)
+				}
+				if err != nil {
+					py.log.Warn("runner health failed", zap.Error(err))
+
+					// TODO: ENG-1675 - cleanup runner junk
+
+					// FIXME: runner is not healthy/answering. So meanwhile in order to restart session,
+					// we'll just return and let temporal panic on deadlock and retry the session
+					// runnerHealthChan <- fmt.Errorf("runner health check failed: %w", err)
 					return
 				}
+
 			}
 		}
 	}()
