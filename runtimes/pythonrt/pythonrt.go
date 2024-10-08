@@ -489,6 +489,7 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktyp
 	}
 }
 
+// drainPrints drains the print channel at the end of a run.
 func (py *pySvc) drainPrints(ctx context.Context) {
 	for {
 		select {
