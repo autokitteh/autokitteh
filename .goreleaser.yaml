@@ -15,7 +15,6 @@ builds:
     goos:
       - linux
       - darwin
-      - windows
     goarch:
       - amd64
       - arm64
@@ -30,9 +29,6 @@ archives:
   - files:
       - none*
     format: tar.gz
-    format_overrides:
-      - goos: windows
-        format: zip
     # this name template makes the OS and Arch compatible with the results of `uname`.
     name_template: >-
       {{ tolower .ProjectName }}_{{ .Os }}_
