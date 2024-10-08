@@ -2,6 +2,7 @@ import logging
 from logging import LogRecord
 import json
 
+
 class JsonFormatter(logging.Formatter):
     """Formatter to dump error message into JSON"""
 
@@ -14,7 +15,8 @@ class JsonFormatter(logging.Formatter):
             "lineno": record.lineno,
         }
         return json.dumps(record_dict)
-    
+
+
 formatter = JsonFormatter()
 
 _log = logging.getLogger()
