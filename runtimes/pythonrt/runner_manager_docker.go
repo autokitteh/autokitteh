@@ -10,7 +10,7 @@ import (
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 
-	pb "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/remote/v1"
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 type DockerRuntimeConfig struct {
@@ -87,7 +87,7 @@ func createStartCommand(entrypoint, workerAddress, runnerID string) []string {
 	}
 }
 
-func (rm *dockerRunnerManager) Start(ctx context.Context, buildArtifacts []byte, vars map[string]string) (string, pb.RunnerClient, error) {
+func (rm *dockerRunnerManager) Start(ctx context.Context, sessionID sdktypes.SessionID, buildArtifacts []byte, vars map[string]string) (string, *RunnerClient, error) {
 	if len(buildArtifacts) == 0 {
 		return "", nil, errors.New("no build artifacts")
 	}
@@ -108,7 +108,7 @@ func (rm *dockerRunnerManager) Start(ctx context.Context, buildArtifacts []byte,
 	runnerID := fmt.Sprintf("runner-%s", uuid.NewString())
 	cmd := createStartCommand("main.py", rm.workerAddressProvider(), runnerID)
 
-	cid, port, err := rm.client.StartRunner(containerName, cmd)
+	cid, port, err := rm.client.StartRunner(containerName, sessionID, cmd)
 	if err != nil {
 		return "", nil, fmt.Errorf("start runner: %w", err)
 	}

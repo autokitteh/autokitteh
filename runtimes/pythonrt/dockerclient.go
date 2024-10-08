@@ -16,7 +16,9 @@ import (
 	"github.com/docker/docker/pkg/archive"
 	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/docker/go-connections/nat"
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapio"
 )
 
 const (
@@ -87,7 +89,7 @@ func (d *dockerClient) ensureNetwork() (string, error) {
 	return inspectResult.ID, nil
 }
 
-func (d *dockerClient) StartRunner(runnerImage string, cmd []string) (string, string, error) {
+func (d *dockerClient) StartRunner(runnerImage string, sessionID sdktypes.SessionID, cmd []string) (string, string, error) {
 	resp, err := d.client.ContainerCreate(context.Background(),
 		&container.Config{
 			Image: runnerImage,
@@ -123,8 +125,14 @@ func (d *dockerClient) StartRunner(runnerImage string, cmd []string) (string, st
 			Follow:     true,
 		})
 		defer reader.Close()
+
 		if d.logRunner {
-			_, err = stdcopy.StdCopy(os.Stdout, os.Stderr, reader)
+			l := d.logger.With(zap.String("runner_id", resp.ID), zap.String("session_id", sessionID.String()))
+			stdourWriter := zapio.Writer{Log: l.With(zap.String("stream", "stdout"))}
+			stderrWriter := zapio.Writer{Log: l.With(zap.String("stream", "stderr"))}
+			_, err = stdcopy.StdCopy(&stdourWriter, &stderrWriter, reader)
+			defer stdourWriter.Close()
+			defer stderrWriter.Close()
 		} else {
 			_, err = io.Copy(io.Discard, reader)
 		}
