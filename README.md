@@ -41,7 +41,7 @@ backend business processes, and more.
 executing the code as durable workflows, and managing these workflows.
 
 **API:** AutoKitteh is an API-first platform. All services are available via
-gPRC / HTTP.
+gRPC / HTTP.
 
 **Built-in integrations:** Slack, GitHub, Twilio, ChatGPT, Gemini, Gmail,
 Google Calendar, HTTP, gRPC and many more. It's easy to add new integrations.
