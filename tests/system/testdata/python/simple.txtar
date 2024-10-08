@@ -1,0 +1,56 @@
+ak deploy -m autokitteh.yaml -f simple.py
+return code == 0
+output equals file deploy.txt
+
+http get /http/py_simple/events
+resp code == 200
+
+wait 5s for session ses_00000000000000000000000008
+
+ak session log --no-timestamps --order desc --prints-only
+return code == 0
+output equals file session-logs.txt
+
+-- autokitteh.yaml --
+version: v1
+
+project:
+  name: py_simple
+  connections:
+    - name: http_trigger
+      integration: http
+  triggers:
+    - name: events
+      connection: http_trigger
+      event_type: get
+      entrypoint: simple.py:greet
+  vars:
+    - name: USER
+      value: Garfield
+
+-- simple.py --
+
+from os import getenv
+
+USER = getenv("USER")
+
+
+def greet(event):
+    print(f"USER: {USER}")
+
+-- deploy.txt --
+[plan] project "py_simple": not found, will create
+[plan] var "py_simple/default/USER": not found, will set
+[plan] connection "py_simple/http_trigger": not found, will create
+[plan] trigger "py_simple/default:py_simple/http_trigger/events": not found, will create
+[exec] create_project "py_simple": prj_00000000000000000000000001 created
+[exec] set_var "py_simple/default/USER": env_00000000000000000000000002 updated
+[exec] create_connection "py_simple/http_trigger": con_00000000000000000000000003 created
+[exec] create_trigger "py_simple/default:py_simple/http_trigger/events": trg_00000000000000000000000004 created
+[!!!!] Connection created, and can be initialized. Please run this to complete: ak connection init con_00000000000000000000000003
+[exec] create_build: created "bld_00000000000000000000000005"
+[exec] create_deployment: created "dep_00000000000000000000000006"
+[exec] activate_deployment: activated
+
+-- session-logs.txt --
+[stdout] USER: Garfield
