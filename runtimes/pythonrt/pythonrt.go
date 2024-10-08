@@ -17,6 +17,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/internal/xdg"
 	pb "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/remote/v1"
+	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkruntimes"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -482,9 +483,7 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, _ []sdktypes.
 
 					// TODO: ENG-1675 - cleanup runner junk
 
-					// FIXME: runner is not healthy/answering. So meanwhile in order to restart session,
-					// we'll just return and let temporal panic on deadlock and retry the session
-					// runnerHealthChan <- fmt.Errorf("runner health check failed: %w", err)
+					runnerHealthChan <- err
 					return
 				}
 
@@ -498,7 +497,7 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, _ []sdktypes.
 		select {
 		case healthErr := <-runnerHealthChan:
 			if healthErr != nil {
-				return sdktypes.InvalidValue, fmt.Errorf("runner health check failed: %w", healthErr)
+				return sdktypes.InvalidValue, sdkerrors.NewRetryableError("runner health: %w", healthErr)
 			}
 		case r := <-py.channels.log:
 			level := pyLevelToZap(r.Level)
