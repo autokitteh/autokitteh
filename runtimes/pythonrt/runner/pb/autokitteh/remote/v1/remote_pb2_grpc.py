@@ -18,22 +18,22 @@ class RunnerManagerStub(object):
                 '/autokitteh.remote.v1.RunnerManager/Start',
                 request_serializer=autokitteh_dot_remote_dot_v1_dot_remote__pb2.StartRunnerRequest.SerializeToString,
                 response_deserializer=autokitteh_dot_remote_dot_v1_dot_remote__pb2.StartRunnerResponse.FromString,
-                )
+                _registered_method=True)
         self.RunnerHealth = channel.unary_unary(
                 '/autokitteh.remote.v1.RunnerManager/RunnerHealth',
                 request_serializer=autokitteh_dot_remote_dot_v1_dot_remote__pb2.RunnerHealthRequest.SerializeToString,
                 response_deserializer=autokitteh_dot_remote_dot_v1_dot_remote__pb2.RunnerHealthResponse.FromString,
-                )
+                _registered_method=True)
         self.Stop = channel.unary_unary(
                 '/autokitteh.remote.v1.RunnerManager/Stop',
                 request_serializer=autokitteh_dot_remote_dot_v1_dot_remote__pb2.StopRequest.SerializeToString,
                 response_deserializer=autokitteh_dot_remote_dot_v1_dot_remote__pb2.StopResponse.FromString,
-                )
+                _registered_method=True)
         self.Health = channel.unary_unary(
                 '/autokitteh.remote.v1.RunnerManager/Health',
                 request_serializer=autokitteh_dot_remote_dot_v1_dot_remote__pb2.HealthRequest.SerializeToString,
                 response_deserializer=autokitteh_dot_remote_dot_v1_dot_remote__pb2.HealthResponse.FromString,
-                )
+                _registered_method=True)
 
 
 class RunnerManagerServicer(object):
@@ -90,6 +90,7 @@ def add_RunnerManagerServicer_to_server(servicer, server):
     generic_handler = grpc.method_handlers_generic_handler(
             'autokitteh.remote.v1.RunnerManager', rpc_method_handlers)
     server.add_generic_rpc_handlers((generic_handler,))
+    server.add_registered_method_handlers('autokitteh.remote.v1.RunnerManager', rpc_method_handlers)
 
 
  # This class is part of an EXPERIMENTAL API.
@@ -107,11 +108,21 @@ class RunnerManager(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/autokitteh.remote.v1.RunnerManager/Start',
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/autokitteh.remote.v1.RunnerManager/Start',
             autokitteh_dot_remote_dot_v1_dot_remote__pb2.StartRunnerRequest.SerializeToString,
             autokitteh_dot_remote_dot_v1_dot_remote__pb2.StartRunnerResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
 
     @staticmethod
     def RunnerHealth(request,
@@ -124,11 +135,21 @@ class RunnerManager(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/autokitteh.remote.v1.RunnerManager/RunnerHealth',
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/autokitteh.remote.v1.RunnerManager/RunnerHealth',
             autokitteh_dot_remote_dot_v1_dot_remote__pb2.RunnerHealthRequest.SerializeToString,
             autokitteh_dot_remote_dot_v1_dot_remote__pb2.RunnerHealthResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
 
     @staticmethod
     def Stop(request,
@@ -141,11 +162,21 @@ class RunnerManager(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/autokitteh.remote.v1.RunnerManager/Stop',
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/autokitteh.remote.v1.RunnerManager/Stop',
             autokitteh_dot_remote_dot_v1_dot_remote__pb2.StopRequest.SerializeToString,
             autokitteh_dot_remote_dot_v1_dot_remote__pb2.StopResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
 
     @staticmethod
     def Health(request,
@@ -158,11 +189,21 @@ class RunnerManager(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/autokitteh.remote.v1.RunnerManager/Health',
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/autokitteh.remote.v1.RunnerManager/Health',
             autokitteh_dot_remote_dot_v1_dot_remote__pb2.HealthRequest.SerializeToString,
             autokitteh_dot_remote_dot_v1_dot_remote__pb2.HealthResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
 
 
 class RunnerStub(object):
@@ -178,27 +219,27 @@ class RunnerStub(object):
                 '/autokitteh.remote.v1.Runner/Exports',
                 request_serializer=autokitteh_dot_remote_dot_v1_dot_remote__pb2.ExportsRequest.SerializeToString,
                 response_deserializer=autokitteh_dot_remote_dot_v1_dot_remote__pb2.ExportsResponse.FromString,
-                )
+                _registered_method=True)
         self.Start = channel.unary_unary(
                 '/autokitteh.remote.v1.Runner/Start',
                 request_serializer=autokitteh_dot_remote_dot_v1_dot_remote__pb2.StartRequest.SerializeToString,
                 response_deserializer=autokitteh_dot_remote_dot_v1_dot_remote__pb2.StartResponse.FromString,
-                )
+                _registered_method=True)
         self.Execute = channel.unary_unary(
                 '/autokitteh.remote.v1.Runner/Execute',
                 request_serializer=autokitteh_dot_remote_dot_v1_dot_remote__pb2.ExecuteRequest.SerializeToString,
                 response_deserializer=autokitteh_dot_remote_dot_v1_dot_remote__pb2.ExecuteResponse.FromString,
-                )
+                _registered_method=True)
         self.ActivityReply = channel.unary_unary(
                 '/autokitteh.remote.v1.Runner/ActivityReply',
                 request_serializer=autokitteh_dot_remote_dot_v1_dot_remote__pb2.ActivityReplyRequest.SerializeToString,
                 response_deserializer=autokitteh_dot_remote_dot_v1_dot_remote__pb2.ActivityReplyResponse.FromString,
-                )
+                _registered_method=True)
         self.Health = channel.unary_unary(
                 '/autokitteh.remote.v1.Runner/Health',
                 request_serializer=autokitteh_dot_remote_dot_v1_dot_remote__pb2.HealthRequest.SerializeToString,
                 response_deserializer=autokitteh_dot_remote_dot_v1_dot_remote__pb2.HealthResponse.FromString,
-                )
+                _registered_method=True)
 
 
 class RunnerServicer(object):
@@ -270,6 +311,7 @@ def add_RunnerServicer_to_server(servicer, server):
     generic_handler = grpc.method_handlers_generic_handler(
             'autokitteh.remote.v1.Runner', rpc_method_handlers)
     server.add_generic_rpc_handlers((generic_handler,))
+    server.add_registered_method_handlers('autokitteh.remote.v1.Runner', rpc_method_handlers)
 
 
  # This class is part of an EXPERIMENTAL API.
@@ -287,11 +329,21 @@ class Runner(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/autokitteh.remote.v1.Runner/Exports',
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/autokitteh.remote.v1.Runner/Exports',
             autokitteh_dot_remote_dot_v1_dot_remote__pb2.ExportsRequest.SerializeToString,
             autokitteh_dot_remote_dot_v1_dot_remote__pb2.ExportsResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
 
     @staticmethod
     def Start(request,
@@ -304,11 +356,21 @@ class Runner(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/autokitteh.remote.v1.Runner/Start',
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/autokitteh.remote.v1.Runner/Start',
             autokitteh_dot_remote_dot_v1_dot_remote__pb2.StartRequest.SerializeToString,
             autokitteh_dot_remote_dot_v1_dot_remote__pb2.StartResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
 
     @staticmethod
     def Execute(request,
@@ -321,11 +383,21 @@ class Runner(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/autokitteh.remote.v1.Runner/Execute',
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/autokitteh.remote.v1.Runner/Execute',
             autokitteh_dot_remote_dot_v1_dot_remote__pb2.ExecuteRequest.SerializeToString,
             autokitteh_dot_remote_dot_v1_dot_remote__pb2.ExecuteResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
 
     @staticmethod
     def ActivityReply(request,
@@ -338,11 +410,21 @@ class Runner(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/autokitteh.remote.v1.Runner/ActivityReply',
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/autokitteh.remote.v1.Runner/ActivityReply',
             autokitteh_dot_remote_dot_v1_dot_remote__pb2.ActivityReplyRequest.SerializeToString,
             autokitteh_dot_remote_dot_v1_dot_remote__pb2.ActivityReplyResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
 
     @staticmethod
     def Health(request,
@@ -355,11 +437,21 @@ class Runner(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/autokitteh.remote.v1.Runner/Health',
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/autokitteh.remote.v1.Runner/Health',
             autokitteh_dot_remote_dot_v1_dot_remote__pb2.HealthRequest.SerializeToString,
             autokitteh_dot_remote_dot_v1_dot_remote__pb2.HealthResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
 
 
 class WorkerStub(object):
@@ -375,52 +467,52 @@ class WorkerStub(object):
                 '/autokitteh.remote.v1.Worker/Activity',
                 request_serializer=autokitteh_dot_remote_dot_v1_dot_remote__pb2.ActivityRequest.SerializeToString,
                 response_deserializer=autokitteh_dot_remote_dot_v1_dot_remote__pb2.ActivityResponse.FromString,
-                )
+                _registered_method=True)
         self.Done = channel.unary_unary(
                 '/autokitteh.remote.v1.Worker/Done',
                 request_serializer=autokitteh_dot_remote_dot_v1_dot_remote__pb2.DoneRequest.SerializeToString,
                 response_deserializer=autokitteh_dot_remote_dot_v1_dot_remote__pb2.DoneResponse.FromString,
-                )
+                _registered_method=True)
         self.Log = channel.unary_unary(
                 '/autokitteh.remote.v1.Worker/Log',
                 request_serializer=autokitteh_dot_remote_dot_v1_dot_remote__pb2.LogRequest.SerializeToString,
                 response_deserializer=autokitteh_dot_remote_dot_v1_dot_remote__pb2.LogResponse.FromString,
-                )
+                _registered_method=True)
         self.Print = channel.unary_unary(
                 '/autokitteh.remote.v1.Worker/Print',
                 request_serializer=autokitteh_dot_remote_dot_v1_dot_remote__pb2.PrintRequest.SerializeToString,
                 response_deserializer=autokitteh_dot_remote_dot_v1_dot_remote__pb2.PrintResponse.FromString,
-                )
+                _registered_method=True)
         self.Sleep = channel.unary_unary(
                 '/autokitteh.remote.v1.Worker/Sleep',
                 request_serializer=autokitteh_dot_remote_dot_v1_dot_remote__pb2.SleepRequest.SerializeToString,
                 response_deserializer=autokitteh_dot_remote_dot_v1_dot_remote__pb2.SleepResponse.FromString,
-                )
+                _registered_method=True)
         self.Subscribe = channel.unary_unary(
                 '/autokitteh.remote.v1.Worker/Subscribe',
                 request_serializer=autokitteh_dot_remote_dot_v1_dot_remote__pb2.SubscribeRequest.SerializeToString,
                 response_deserializer=autokitteh_dot_remote_dot_v1_dot_remote__pb2.SubscribeResponse.FromString,
-                )
+                _registered_method=True)
         self.NextEvent = channel.unary_unary(
                 '/autokitteh.remote.v1.Worker/NextEvent',
                 request_serializer=autokitteh_dot_remote_dot_v1_dot_remote__pb2.NextEventRequest.SerializeToString,
                 response_deserializer=autokitteh_dot_remote_dot_v1_dot_remote__pb2.NextEventResponse.FromString,
-                )
+                _registered_method=True)
         self.Unsubscribe = channel.unary_unary(
                 '/autokitteh.remote.v1.Worker/Unsubscribe',
                 request_serializer=autokitteh_dot_remote_dot_v1_dot_remote__pb2.UnsubscribeRequest.SerializeToString,
                 response_deserializer=autokitteh_dot_remote_dot_v1_dot_remote__pb2.UnsubscribeResponse.FromString,
-                )
+                _registered_method=True)
         self.Health = channel.unary_unary(
                 '/autokitteh.remote.v1.Worker/Health',
                 request_serializer=autokitteh_dot_remote_dot_v1_dot_remote__pb2.HealthRequest.SerializeToString,
                 response_deserializer=autokitteh_dot_remote_dot_v1_dot_remote__pb2.HealthResponse.FromString,
-                )
+                _registered_method=True)
         self.IsActiveRunner = channel.unary_unary(
                 '/autokitteh.remote.v1.Worker/IsActiveRunner',
                 request_serializer=autokitteh_dot_remote_dot_v1_dot_remote__pb2.IsActiveRunnerRequest.SerializeToString,
                 response_deserializer=autokitteh_dot_remote_dot_v1_dot_remote__pb2.IsActiveRunnerResponse.FromString,
-                )
+                _registered_method=True)
 
 
 class WorkerServicer(object):
@@ -548,6 +640,7 @@ def add_WorkerServicer_to_server(servicer, server):
     generic_handler = grpc.method_handlers_generic_handler(
             'autokitteh.remote.v1.Worker', rpc_method_handlers)
     server.add_generic_rpc_handlers((generic_handler,))
+    server.add_registered_method_handlers('autokitteh.remote.v1.Worker', rpc_method_handlers)
 
 
  # This class is part of an EXPERIMENTAL API.
@@ -565,11 +658,21 @@ class Worker(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/autokitteh.remote.v1.Worker/Activity',
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/autokitteh.remote.v1.Worker/Activity',
             autokitteh_dot_remote_dot_v1_dot_remote__pb2.ActivityRequest.SerializeToString,
             autokitteh_dot_remote_dot_v1_dot_remote__pb2.ActivityResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
 
     @staticmethod
     def Done(request,
@@ -582,11 +685,21 @@ class Worker(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/autokitteh.remote.v1.Worker/Done',
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/autokitteh.remote.v1.Worker/Done',
             autokitteh_dot_remote_dot_v1_dot_remote__pb2.DoneRequest.SerializeToString,
             autokitteh_dot_remote_dot_v1_dot_remote__pb2.DoneResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
 
     @staticmethod
     def Log(request,
@@ -599,11 +712,21 @@ class Worker(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/autokitteh.remote.v1.Worker/Log',
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/autokitteh.remote.v1.Worker/Log',
             autokitteh_dot_remote_dot_v1_dot_remote__pb2.LogRequest.SerializeToString,
             autokitteh_dot_remote_dot_v1_dot_remote__pb2.LogResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
 
     @staticmethod
     def Print(request,
@@ -616,11 +739,21 @@ class Worker(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/autokitteh.remote.v1.Worker/Print',
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/autokitteh.remote.v1.Worker/Print',
             autokitteh_dot_remote_dot_v1_dot_remote__pb2.PrintRequest.SerializeToString,
             autokitteh_dot_remote_dot_v1_dot_remote__pb2.PrintResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
 
     @staticmethod
     def Sleep(request,
@@ -633,11 +766,21 @@ class Worker(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/autokitteh.remote.v1.Worker/Sleep',
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/autokitteh.remote.v1.Worker/Sleep',
             autokitteh_dot_remote_dot_v1_dot_remote__pb2.SleepRequest.SerializeToString,
             autokitteh_dot_remote_dot_v1_dot_remote__pb2.SleepResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
 
     @staticmethod
     def Subscribe(request,
@@ -650,11 +793,21 @@ class Worker(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/autokitteh.remote.v1.Worker/Subscribe',
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/autokitteh.remote.v1.Worker/Subscribe',
             autokitteh_dot_remote_dot_v1_dot_remote__pb2.SubscribeRequest.SerializeToString,
             autokitteh_dot_remote_dot_v1_dot_remote__pb2.SubscribeResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
 
     @staticmethod
     def NextEvent(request,
@@ -667,11 +820,21 @@ class Worker(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/autokitteh.remote.v1.Worker/NextEvent',
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/autokitteh.remote.v1.Worker/NextEvent',
             autokitteh_dot_remote_dot_v1_dot_remote__pb2.NextEventRequest.SerializeToString,
             autokitteh_dot_remote_dot_v1_dot_remote__pb2.NextEventResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
 
     @staticmethod
     def Unsubscribe(request,
@@ -684,11 +847,21 @@ class Worker(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/autokitteh.remote.v1.Worker/Unsubscribe',
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/autokitteh.remote.v1.Worker/Unsubscribe',
             autokitteh_dot_remote_dot_v1_dot_remote__pb2.UnsubscribeRequest.SerializeToString,
             autokitteh_dot_remote_dot_v1_dot_remote__pb2.UnsubscribeResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
 
     @staticmethod
     def Health(request,
@@ -701,11 +874,21 @@ class Worker(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/autokitteh.remote.v1.Worker/Health',
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/autokitteh.remote.v1.Worker/Health',
             autokitteh_dot_remote_dot_v1_dot_remote__pb2.HealthRequest.SerializeToString,
             autokitteh_dot_remote_dot_v1_dot_remote__pb2.HealthResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
 
     @staticmethod
     def IsActiveRunner(request,
@@ -718,8 +901,18 @@ class Worker(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/autokitteh.remote.v1.Worker/IsActiveRunner',
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/autokitteh.remote.v1.Worker/IsActiveRunner',
             autokitteh_dot_remote_dot_v1_dot_remote__pb2.IsActiveRunnerRequest.SerializeToString,
             autokitteh_dot_remote_dot_v1_dot_remote__pb2.IsActiveRunnerResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
