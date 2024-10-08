@@ -168,6 +168,7 @@ func setupServer(l *zap.Logger) (net.Listener, error) {
 			port := listener.Addr().(*net.TCPAddr).Port
 			return fmt.Sprintf("localhost:%d", port)
 		},
+		LogCodeRunnerCode: true,
 	}); err != nil {
 		return nil, err
 	}

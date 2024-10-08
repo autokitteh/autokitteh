@@ -391,7 +391,7 @@ if __name__ == "__main__":
         thread_pool=ThreadPoolExecutor(max_workers=cpu_count() * 8),
         interceptors=[LoggingInterceptor()],
     )
-    runner = Runner(args.runner_id, worker, args.code_dir)
+    runner = Runner(args.runner_id, worker, args.code_dir, server)
     rpc.add_RunnerServicer_to_server(runner, server)
     services = (
         pb.DESCRIPTOR.services_by_name["Runner"].full_name,
