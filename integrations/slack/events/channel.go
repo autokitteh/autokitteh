@@ -1,6 +1,7 @@
 package events
 
 import (
+	"bytes"
 	"encoding/json"
 	"net/http"
 
@@ -79,6 +80,9 @@ func ChannelGroupHandler(l *zap.Logger, w http.ResponseWriter, body []byte, cb *
 			return nil
 		}
 	}
+
+	// Workaround for ENG-980: "is_moved: 0" should be "is_moved: false".
+	body = bytes.ReplaceAll(body, []byte(`"is_moved":0`), []byte(`"is_moved":false`))
 
 	// Parse and return the inner event details.
 	j := &channelGroupContainer{}
