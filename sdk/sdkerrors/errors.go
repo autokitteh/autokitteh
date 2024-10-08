@@ -44,10 +44,12 @@ type RetryableError struct {
 	Err     error
 }
 
-func (e RetryableError) Error() string { return fmt.Sprintf("%s: %v", e.Message, e.Err) }
-func (e RetryableError) Unwrap() error { return e.Err }
+var RetryableErrorType *RetryableError
+
+func (e *RetryableError) Error() string { return fmt.Sprintf("%s: %v", e.Message, e.Err) }
+func (e *RetryableError) Unwrap() error { return e.Err }
 func NewRetryableError(f string, vs ...any) error {
-	return RetryableError{Err: fmt.Errorf(f, vs...)}
+	return &RetryableError{Err: fmt.Errorf(f, vs...)}
 }
 
 type ErrInvalidArgument struct {
