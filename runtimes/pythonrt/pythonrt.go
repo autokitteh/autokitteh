@@ -475,7 +475,7 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, _ []sdktypes.
 				if err != nil { // no network/lost packet.load? for sanity check the state locally via IPC/signals
 					err = runnerManager.RunnerHealth(ctx, py.runnerID)
 				} else if resp.Error != "" {
-					err = fmt.Errorf("runner health: failed. %s", resp.Error)
+					err = fmt.Errorf("grpc: %s", resp.Error)
 				}
 				if err != nil {
 					py.log.Warn("runner health failed", zap.Error(err))

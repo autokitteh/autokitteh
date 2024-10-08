@@ -167,7 +167,7 @@ func (r *LocalPython) Health() error {
 
 	pid, err := syscall.Wait4(r.proc.Pid, &status, syscall.WNOHANG, nil)
 	if err != nil {
-		return fmt.Errorf("runner health: wait proc: %w", err)
+		return fmt.Errorf("wait proc: %w", err)
 	}
 
 	if pid == r.proc.Pid { // state changed
@@ -175,21 +175,21 @@ func (r *LocalPython) Health() error {
 			sig := status.Signal()
 			switch sig {
 			case syscall.SIGKILL, syscall.SIGTERM, syscall.SIGABRT, syscall.SIGSEGV, syscall.SIGBUS:
-				return fmt.Errorf("runner health: proc signaled (%v)", sig)
+				return fmt.Errorf("proc signaled (%v)", sig)
 			default:
 				// maybe process communicates with itself? do nothing meanwhile
 				return nil
 			}
 		}
 		if status.Exited() {
-			return fmt.Errorf("runner health: proc exited with %d", status.ExitStatus())
+			return fmt.Errorf("proc exited with %d", status.ExitStatus())
 		}
 	}
 
 	err = r.proc.Signal(syscall.Signal(0))
 	if err != nil {
 		if _, err := os.FindProcess(r.proc.Pid); err != nil {
-			return fmt.Errorf("runner heath: no runner proc found. %w ", err)
+			return fmt.Errorf("no runner proc found. %w ", err)
 		}
 	}
 	return err
