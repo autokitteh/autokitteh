@@ -16,7 +16,9 @@ import (
 	"syscall"
 
 	"github.com/google/uuid"
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapio"
 )
 
 var (
@@ -35,6 +37,8 @@ type LocalPython struct {
 	proc          *os.Process
 	id            string
 	logRunnerCode bool
+	sessionID     sdktypes.SessionID
+	runnerLogger  *zapio.Writer
 }
 
 func (r *LocalPython) Close() error {
@@ -61,6 +65,12 @@ func (r *LocalPython) Close() error {
 	if r.runnerDir != "" {
 		if perr := os.RemoveAll(r.runnerDir); perr != nil {
 			err = errors.Join(err, fmt.Errorf("clean runner dir %q - %w", r.runnerDir, perr))
+		}
+	}
+
+	if r.runnerLogger != nil {
+		if rlrr := r.runnerLogger.Close(); rlrr != nil {
+			err = errors.Join(err, fmt.Errorf("close runner logger - %w", rlrr))
 		}
 	}
 
@@ -126,9 +136,11 @@ func (r *LocalPython) Start(pyExe string, tarData []byte, env map[string]string,
 		"--code-dir", r.userDir,
 	)
 	cmd.Env = overrideEnv(env, r.runnerDir, r.userDir)
+
 	if r.logRunnerCode {
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
+		r.runnerLogger = &zapio.Writer{Log: r.log, Level: zap.InfoLevel}
+		cmd.Stdout = r.runnerLogger
+		cmd.Stderr = r.runnerLogger
 	}
 
 	// make sure runner is killed if ak is killed
