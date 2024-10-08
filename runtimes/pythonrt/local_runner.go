@@ -69,8 +69,8 @@ func (r *LocalPython) Close() error {
 	}
 
 	if r.runnerLogger != nil {
-		if rlrr := r.runnerLogger.Close(); rlrr != nil {
-			err = errors.Join(err, fmt.Errorf("close runner logger - %w", rlrr))
+		if rlerr := r.runnerLogger.Close(); rlerr != nil {
+			err = errors.Join(err, fmt.Errorf("close runner logger - %w", rlerr))
 		}
 	}
 
