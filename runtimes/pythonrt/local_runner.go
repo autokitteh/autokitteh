@@ -46,7 +46,6 @@ func (r *LocalPython) Close() error {
 	var err error
 
 	if r.proc != nil {
-
 		if kerr := r.proc.Kill(); kerr != nil {
 			err = errors.Join(err, fmt.Errorf("kill runner (pid=%d) - %w", r.proc.Pid, kerr))
 		}
@@ -164,7 +163,36 @@ func (r *LocalPython) Start(pyExe string, tarData []byte, env map[string]string,
 }
 
 func (r *LocalPython) Health() error {
-	return r.proc.Signal(syscall.Signal(0))
+	var status syscall.WaitStatus
+
+	pid, err := syscall.Wait4(r.proc.Pid, &status, syscall.WNOHANG, nil)
+	if err != nil {
+		return fmt.Errorf("wait proc: %w", err)
+	}
+
+	if pid == r.proc.Pid { // state changed
+		if status.Signaled() {
+			sig := status.Signal()
+			switch sig {
+			case syscall.SIGKILL, syscall.SIGTERM, syscall.SIGABRT, syscall.SIGSEGV, syscall.SIGBUS:
+				return fmt.Errorf("proc signaled (%v)", sig)
+			default:
+				// maybe process communicates with itself? do nothing meanwhile
+				return nil
+			}
+		}
+		if status.Exited() {
+			return fmt.Errorf("proc exited with %d", status.ExitStatus())
+		}
+	}
+
+	err = r.proc.Signal(syscall.Signal(0))
+	if err != nil {
+		if _, err := os.FindProcess(r.proc.Pid); err != nil {
+			return fmt.Errorf("no runner proc found. %w ", err)
+		}
+	}
+	return err
 }
 
 func createTar(fs fs.FS) ([]byte, error) {

@@ -17,6 +17,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/internal/xdg"
 	pb "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/remote/v1"
+	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkruntimes"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -469,10 +470,23 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, _ []sdktypes.
 				py.log.Debug("health check loop stopped")
 				return
 			case <-time.After(10 * time.Second):
-				if err := runnerManager.RunnerHealth(ctx, py.runnerID); err != nil {
+				healthReq := pb.HealthRequest{}
+
+				resp, err := py.runner.Health(ctx, &healthReq)
+				if err != nil { // no network/lost packet.load? for sanity check the state locally via IPC/signals
+					err = runnerManager.RunnerHealth(ctx, py.runnerID)
+				} else if resp.Error != "" {
+					err = fmt.Errorf("grpc: %s", resp.Error)
+				}
+				if err != nil {
+					py.log.Error("runner health failed", zap.Error(err))
+
+					// TODO: ENG-1675 - cleanup runner junk
+
 					runnerHealthChan <- err
 					return
 				}
+
 			}
 		}
 	}()
@@ -483,7 +497,7 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, _ []sdktypes.
 		select {
 		case healthErr := <-runnerHealthChan:
 			if healthErr != nil {
-				return sdktypes.InvalidValue, fmt.Errorf("runner health check failed: %w", healthErr)
+				return sdktypes.InvalidValue, sdkerrors.NewRetryableError("runner health: %w", healthErr)
 			}
 		case r := <-py.channels.log:
 			level := pyLevelToZap(r.Level)
