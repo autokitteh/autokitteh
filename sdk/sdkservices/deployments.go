@@ -18,7 +18,6 @@ type Deployments interface {
 	Create(ctx context.Context, deployment sdktypes.Deployment) (sdktypes.DeploymentID, error)
 	Activate(ctx context.Context, deploymentID sdktypes.DeploymentID) error
 	Deactivate(ctx context.Context, deploymentID sdktypes.DeploymentID) error
-	Drain(ctx context.Context, deploymentID sdktypes.DeploymentID) error
 	Get(ctx context.Context, id sdktypes.DeploymentID) (sdktypes.Deployment, error)
 	Test(ctx context.Context, deploymentID sdktypes.DeploymentID) error
 	List(ctx context.Context, filter ListDeploymentsFilter) ([]sdktypes.Deployment, error)

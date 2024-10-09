@@ -2,6 +2,7 @@ package dbgorm
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"gorm.io/gorm"
@@ -200,4 +201,30 @@ func (db *gormdb) ListDeployments(ctx context.Context, filter sdkservices.ListDe
 		}
 		return kittehs.TransformError(ds, scheme.ParseDeployment)
 	}
+}
+
+func (db *gormdb) DeploymentHasActiveSessions(ctx context.Context, id sdktypes.DeploymentID) (bool, error) {
+	r, err := db.ListSessions(ctx, sdkservices.ListSessionsFilter{
+		DeploymentID: id,
+		StateType:    sdktypes.SessionStateTypeCreated,
+		CountOnly:    true,
+	})
+	if err != nil {
+		return false, fmt.Errorf("count created sessions: %w", err)
+	}
+
+	if r.TotalCount > 0 {
+		return true, nil
+	}
+
+	r, err = db.ListSessions(ctx, sdkservices.ListSessionsFilter{
+		DeploymentID: id,
+		StateType:    sdktypes.SessionStateTypeRunning,
+		CountOnly:    true,
+	})
+	if err != nil {
+		return false, fmt.Errorf("count running sessions: %w", err)
+	}
+
+	return r.TotalCount > 0, nil
 }

@@ -31,12 +31,6 @@ message ActivateRequest {
 
 message ActivateResponse {}
 
-message DrainRequest {
-  string deployment_id = 1 [(buf.validate.field).string.min_len = 1];
-}
-
-message DrainResponse {}
-
 message DeactivateRequest {
   string deployment_id = 1 [(buf.validate.field).string.min_len = 1];
 }
@@ -85,11 +79,8 @@ service DeploymentsService {
   // Activate a deployment, automatically drains all others.
   rpc Activate(ActivateRequest) returns (ActivateResponse);
 
-  // Drain a deployment.
-  rpc Drain(DrainRequest) returns (DrainResponse);
-
-  // Deactivate a deployment - forcefully stops all sessions associated
-  // with the deployment.
+  // Deactivate a deployment. If deployment has any active sessions,
+  // deployment will be drained first.
   rpc Deactivate(DeactivateRequest) returns (DeactivateResponse);
 
   rpc Test(TestRequest) returns (TestResponse);

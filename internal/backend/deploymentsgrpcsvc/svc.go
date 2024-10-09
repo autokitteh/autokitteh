@@ -134,26 +134,6 @@ func (s *server) Test(ctx context.Context, req *connect.Request[deploymentsv1.Te
 	return connect.NewResponse(&deploymentsv1.TestResponse{}), nil
 }
 
-func (s *server) Drain(ctx context.Context, req *connect.Request[deploymentsv1.DrainRequest]) (*connect.Response[deploymentsv1.DrainResponse], error) {
-	msg := req.Msg
-
-	if err := proto.Validate(msg); err != nil {
-		return nil, sdkerrors.AsConnectError(err)
-	}
-
-	did, err := sdktypes.Strict(sdktypes.ParseDeploymentID(msg.DeploymentId))
-	if err != nil {
-		return nil, sdkerrors.AsConnectError(err)
-	}
-
-	err = s.deployments.Drain(ctx, did)
-	if err != nil {
-		return nil, sdkerrors.AsConnectError(err)
-	}
-
-	return connect.NewResponse(&deploymentsv1.DrainResponse{}), nil
-}
-
 func (s *server) Deactivate(ctx context.Context, req *connect.Request[deploymentsv1.DeactivateRequest]) (*connect.Response[deploymentsv1.DeactivateResponse], error) {
 	msg := req.Msg
 

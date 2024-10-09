@@ -20,7 +20,6 @@ func (s Svc) initDeployments() {
 	s.Muxes.Auth.HandleFunc("/deployments/{did}", s.deployment)
 	s.Muxes.Auth.HandleFunc("/deployments/{did}/activate", s.deploymentAction(deployments.Activate))
 	s.Muxes.Auth.HandleFunc("/deployments/{did}/deactivate", s.deploymentAction(deployments.Deactivate))
-	s.Muxes.Auth.HandleFunc("/deployments/{did}/drain", s.deploymentAction(deployments.Drain))
 	s.Muxes.Auth.HandleFunc("/deployments/{did}/test", s.deploymentAction(deployments.Test))
 }
 
