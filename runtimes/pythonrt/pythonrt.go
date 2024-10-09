@@ -468,7 +468,7 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktyp
 				cb.successChannel <- val
 			}
 		case v := <-py.channels.done:
-			pCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
+			pCtx, cancel := context.WithTimeout(ctx, time.Second)
 			defer cancel()
 			py.drainPrints(pCtx)
 
