@@ -82,10 +82,12 @@ def fix_http_body(event):
         except ValueError:
             pass
 
+
 def killIfStartWasntCalled(runner):
     if not runner.did_start:
         print("Start was not called, killing self")
         os._exit(1)
+
 
 class Runner(rpc.RunnerServicer):
     def __init__(self, id, worker, code_dir):
@@ -104,8 +106,6 @@ class Runner(rpc.RunnerServicer):
         s = Timer(10.0, killIfStartWasntCalled, [self])
         s.start()
 
-    
-    
     def Exports(self, request: pb.ExportsRequest, context: grpc.ServicerContext):
         if request.file_name == "":
             context.abort(
@@ -344,7 +344,7 @@ class LoggingInterceptor(grpc.ServerInterceptor):
     def intercept_service(self, continuation, handler_call_details):
         log.info("runner_id %s, call %s", self.runner_id, handler_call_details.method)
         return continuation(handler_call_details)
-    
+
     def __init__(self, runner_id) -> None:
         self.runner_id = runner_id
         super().__init__()
