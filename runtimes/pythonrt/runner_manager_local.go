@@ -31,7 +31,7 @@ type LocalRunnerManagerConfig struct {
 	LogCodeRunnerCode     bool
 }
 
-func ConfigureLocalRunnerManager(log *zap.Logger, cfg LocalRunnerManagerConfig) error {
+func configureLocalRunnerManager(log *zap.Logger, cfg LocalRunnerManagerConfig) error {
 	pyExe, isUserPy, err := pythonToRun(log)
 	if err != nil {
 		return err

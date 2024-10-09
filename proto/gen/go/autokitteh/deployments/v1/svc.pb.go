@@ -201,91 +201,6 @@ func (*ActivateResponse) Descriptor() ([]byte, []int) {
 	return file_autokitteh_deployments_v1_svc_proto_rawDescGZIP(), []int{3}
 }
 
-type DrainRequest struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	DeploymentId string `protobuf:"bytes,1,opt,name=deployment_id,json=deploymentId,proto3" json:"deployment_id,omitempty"`
-}
-
-func (x *DrainRequest) Reset() {
-	*x = DrainRequest{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_autokitteh_deployments_v1_svc_proto_msgTypes[4]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *DrainRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*DrainRequest) ProtoMessage() {}
-
-func (x *DrainRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_autokitteh_deployments_v1_svc_proto_msgTypes[4]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use DrainRequest.ProtoReflect.Descriptor instead.
-func (*DrainRequest) Descriptor() ([]byte, []int) {
-	return file_autokitteh_deployments_v1_svc_proto_rawDescGZIP(), []int{4}
-}
-
-func (x *DrainRequest) GetDeploymentId() string {
-	if x != nil {
-		return x.DeploymentId
-	}
-	return ""
-}
-
-type DrainResponse struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-}
-
-func (x *DrainResponse) Reset() {
-	*x = DrainResponse{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_autokitteh_deployments_v1_svc_proto_msgTypes[5]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *DrainResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*DrainResponse) ProtoMessage() {}
-
-func (x *DrainResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_autokitteh_deployments_v1_svc_proto_msgTypes[5]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use DrainResponse.ProtoReflect.Descriptor instead.
-func (*DrainResponse) Descriptor() ([]byte, []int) {
-	return file_autokitteh_deployments_v1_svc_proto_rawDescGZIP(), []int{5}
-}
-
 type DeactivateRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -297,7 +212,7 @@ type DeactivateRequest struct {
 func (x *DeactivateRequest) Reset() {
 	*x = DeactivateRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_autokitteh_deployments_v1_svc_proto_msgTypes[6]
+		mi := &file_autokitteh_deployments_v1_svc_proto_msgTypes[4]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -310,7 +225,7 @@ func (x *DeactivateRequest) String() string {
 func (*DeactivateRequest) ProtoMessage() {}
 
 func (x *DeactivateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_autokitteh_deployments_v1_svc_proto_msgTypes[6]
+	mi := &file_autokitteh_deployments_v1_svc_proto_msgTypes[4]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -323,7 +238,7 @@ func (x *DeactivateRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeactivateRequest.ProtoReflect.Descriptor instead.
 func (*DeactivateRequest) Descriptor() ([]byte, []int) {
-	return file_autokitteh_deployments_v1_svc_proto_rawDescGZIP(), []int{6}
+	return file_autokitteh_deployments_v1_svc_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *DeactivateRequest) GetDeploymentId() string {
@@ -342,7 +257,7 @@ type DeactivateResponse struct {
 func (x *DeactivateResponse) Reset() {
 	*x = DeactivateResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_autokitteh_deployments_v1_svc_proto_msgTypes[7]
+		mi := &file_autokitteh_deployments_v1_svc_proto_msgTypes[5]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -355,7 +270,7 @@ func (x *DeactivateResponse) String() string {
 func (*DeactivateResponse) ProtoMessage() {}
 
 func (x *DeactivateResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_autokitteh_deployments_v1_svc_proto_msgTypes[7]
+	mi := &file_autokitteh_deployments_v1_svc_proto_msgTypes[5]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -368,7 +283,7 @@ func (x *DeactivateResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeactivateResponse.ProtoReflect.Descriptor instead.
 func (*DeactivateResponse) Descriptor() ([]byte, []int) {
-	return file_autokitteh_deployments_v1_svc_proto_rawDescGZIP(), []int{7}
+	return file_autokitteh_deployments_v1_svc_proto_rawDescGZIP(), []int{5}
 }
 
 type TestRequest struct {
@@ -382,7 +297,7 @@ type TestRequest struct {
 func (x *TestRequest) Reset() {
 	*x = TestRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_autokitteh_deployments_v1_svc_proto_msgTypes[8]
+		mi := &file_autokitteh_deployments_v1_svc_proto_msgTypes[6]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -395,7 +310,7 @@ func (x *TestRequest) String() string {
 func (*TestRequest) ProtoMessage() {}
 
 func (x *TestRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_autokitteh_deployments_v1_svc_proto_msgTypes[8]
+	mi := &file_autokitteh_deployments_v1_svc_proto_msgTypes[6]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -408,7 +323,7 @@ func (x *TestRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TestRequest.ProtoReflect.Descriptor instead.
 func (*TestRequest) Descriptor() ([]byte, []int) {
-	return file_autokitteh_deployments_v1_svc_proto_rawDescGZIP(), []int{8}
+	return file_autokitteh_deployments_v1_svc_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *TestRequest) GetDeploymentId() string {
@@ -427,7 +342,7 @@ type TestResponse struct {
 func (x *TestResponse) Reset() {
 	*x = TestResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_autokitteh_deployments_v1_svc_proto_msgTypes[9]
+		mi := &file_autokitteh_deployments_v1_svc_proto_msgTypes[7]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -440,7 +355,7 @@ func (x *TestResponse) String() string {
 func (*TestResponse) ProtoMessage() {}
 
 func (x *TestResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_autokitteh_deployments_v1_svc_proto_msgTypes[9]
+	mi := &file_autokitteh_deployments_v1_svc_proto_msgTypes[7]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -453,7 +368,7 @@ func (x *TestResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TestResponse.ProtoReflect.Descriptor instead.
 func (*TestResponse) Descriptor() ([]byte, []int) {
-	return file_autokitteh_deployments_v1_svc_proto_rawDescGZIP(), []int{9}
+	return file_autokitteh_deployments_v1_svc_proto_rawDescGZIP(), []int{7}
 }
 
 type ListRequest struct {
@@ -471,7 +386,7 @@ type ListRequest struct {
 func (x *ListRequest) Reset() {
 	*x = ListRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_autokitteh_deployments_v1_svc_proto_msgTypes[10]
+		mi := &file_autokitteh_deployments_v1_svc_proto_msgTypes[8]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -484,7 +399,7 @@ func (x *ListRequest) String() string {
 func (*ListRequest) ProtoMessage() {}
 
 func (x *ListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_autokitteh_deployments_v1_svc_proto_msgTypes[10]
+	mi := &file_autokitteh_deployments_v1_svc_proto_msgTypes[8]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -497,7 +412,7 @@ func (x *ListRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListRequest.ProtoReflect.Descriptor instead.
 func (*ListRequest) Descriptor() ([]byte, []int) {
-	return file_autokitteh_deployments_v1_svc_proto_rawDescGZIP(), []int{10}
+	return file_autokitteh_deployments_v1_svc_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *ListRequest) GetEnvId() string {
@@ -547,7 +462,7 @@ type ListResponse struct {
 func (x *ListResponse) Reset() {
 	*x = ListResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_autokitteh_deployments_v1_svc_proto_msgTypes[11]
+		mi := &file_autokitteh_deployments_v1_svc_proto_msgTypes[9]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -560,7 +475,7 @@ func (x *ListResponse) String() string {
 func (*ListResponse) ProtoMessage() {}
 
 func (x *ListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_autokitteh_deployments_v1_svc_proto_msgTypes[11]
+	mi := &file_autokitteh_deployments_v1_svc_proto_msgTypes[9]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -573,7 +488,7 @@ func (x *ListResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListResponse.ProtoReflect.Descriptor instead.
 func (*ListResponse) Descriptor() ([]byte, []int) {
-	return file_autokitteh_deployments_v1_svc_proto_rawDescGZIP(), []int{11}
+	return file_autokitteh_deployments_v1_svc_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *ListResponse) GetDeployments() []*Deployment {
@@ -594,7 +509,7 @@ type GetRequest struct {
 func (x *GetRequest) Reset() {
 	*x = GetRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_autokitteh_deployments_v1_svc_proto_msgTypes[12]
+		mi := &file_autokitteh_deployments_v1_svc_proto_msgTypes[10]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -607,7 +522,7 @@ func (x *GetRequest) String() string {
 func (*GetRequest) ProtoMessage() {}
 
 func (x *GetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_autokitteh_deployments_v1_svc_proto_msgTypes[12]
+	mi := &file_autokitteh_deployments_v1_svc_proto_msgTypes[10]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -620,7 +535,7 @@ func (x *GetRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetRequest.ProtoReflect.Descriptor instead.
 func (*GetRequest) Descriptor() ([]byte, []int) {
-	return file_autokitteh_deployments_v1_svc_proto_rawDescGZIP(), []int{12}
+	return file_autokitteh_deployments_v1_svc_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *GetRequest) GetDeploymentId() string {
@@ -641,7 +556,7 @@ type GetResponse struct {
 func (x *GetResponse) Reset() {
 	*x = GetResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_autokitteh_deployments_v1_svc_proto_msgTypes[13]
+		mi := &file_autokitteh_deployments_v1_svc_proto_msgTypes[11]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -654,7 +569,7 @@ func (x *GetResponse) String() string {
 func (*GetResponse) ProtoMessage() {}
 
 func (x *GetResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_autokitteh_deployments_v1_svc_proto_msgTypes[13]
+	mi := &file_autokitteh_deployments_v1_svc_proto_msgTypes[11]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -667,7 +582,7 @@ func (x *GetResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetResponse.ProtoReflect.Descriptor instead.
 func (*GetResponse) Descriptor() ([]byte, []int) {
-	return file_autokitteh_deployments_v1_svc_proto_rawDescGZIP(), []int{13}
+	return file_autokitteh_deployments_v1_svc_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *GetResponse) GetDeployment() *Deployment {
@@ -688,7 +603,7 @@ type DeleteRequest struct {
 func (x *DeleteRequest) Reset() {
 	*x = DeleteRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_autokitteh_deployments_v1_svc_proto_msgTypes[14]
+		mi := &file_autokitteh_deployments_v1_svc_proto_msgTypes[12]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -701,7 +616,7 @@ func (x *DeleteRequest) String() string {
 func (*DeleteRequest) ProtoMessage() {}
 
 func (x *DeleteRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_autokitteh_deployments_v1_svc_proto_msgTypes[14]
+	mi := &file_autokitteh_deployments_v1_svc_proto_msgTypes[12]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -714,7 +629,7 @@ func (x *DeleteRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteRequest.ProtoReflect.Descriptor instead.
 func (*DeleteRequest) Descriptor() ([]byte, []int) {
-	return file_autokitteh_deployments_v1_svc_proto_rawDescGZIP(), []int{14}
+	return file_autokitteh_deployments_v1_svc_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *DeleteRequest) GetDeploymentId() string {
@@ -733,7 +648,7 @@ type DeleteResponse struct {
 func (x *DeleteResponse) Reset() {
 	*x = DeleteResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_autokitteh_deployments_v1_svc_proto_msgTypes[15]
+		mi := &file_autokitteh_deployments_v1_svc_proto_msgTypes[13]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -746,7 +661,7 @@ func (x *DeleteResponse) String() string {
 func (*DeleteResponse) ProtoMessage() {}
 
 func (x *DeleteResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_autokitteh_deployments_v1_svc_proto_msgTypes[15]
+	mi := &file_autokitteh_deployments_v1_svc_proto_msgTypes[13]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -759,7 +674,7 @@ func (x *DeleteResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteResponse.ProtoReflect.Descriptor instead.
 func (*DeleteResponse) Descriptor() ([]byte, []int) {
-	return file_autokitteh_deployments_v1_svc_proto_rawDescGZIP(), []int{15}
+	return file_autokitteh_deployments_v1_svc_proto_rawDescGZIP(), []int{13}
 }
 
 var File_autokitteh_deployments_v1_svc_proto protoreflect.FileDescriptor
@@ -807,11 +722,6 @@ var file_autokitteh_deployments_v1_svc_proto_rawDesc = []byte{
 	0x6e, 0x74, 0x5f, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x42, 0x08, 0xfa, 0xf7, 0x18,
 	0x04, 0x72, 0x02, 0x10, 0x01, 0x52, 0x0c, 0x64, 0x65, 0x70, 0x6c, 0x6f, 0x79, 0x6d, 0x65, 0x6e,
 	0x74, 0x49, 0x64, 0x22, 0x12, 0x0a, 0x10, 0x41, 0x63, 0x74, 0x69, 0x76, 0x61, 0x74, 0x65, 0x52,
-	0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x3d, 0x0a, 0x0c, 0x44, 0x72, 0x61, 0x69, 0x6e,
-	0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x2d, 0x0a, 0x0d, 0x64, 0x65, 0x70, 0x6c, 0x6f,
-	0x79, 0x6d, 0x65, 0x6e, 0x74, 0x5f, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x42, 0x08,
-	0xfa, 0xf7, 0x18, 0x04, 0x72, 0x02, 0x10, 0x01, 0x52, 0x0c, 0x64, 0x65, 0x70, 0x6c, 0x6f, 0x79,
-	0x6d, 0x65, 0x6e, 0x74, 0x49, 0x64, 0x22, 0x0f, 0x0a, 0x0d, 0x44, 0x72, 0x61, 0x69, 0x6e, 0x52,
 	0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x42, 0x0a, 0x11, 0x44, 0x65, 0x61, 0x63, 0x74,
 	0x69, 0x76, 0x61, 0x74, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x2d, 0x0a, 0x0d,
 	0x64, 0x65, 0x70, 0x6c, 0x6f, 0x79, 0x6d, 0x65, 0x6e, 0x74, 0x5f, 0x69, 0x64, 0x18, 0x01, 0x20,
@@ -857,7 +767,7 @@ var file_autokitteh_deployments_v1_svc_proto_rawDesc = []byte{
 	0x74, 0x5f, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x42, 0x08, 0xfa, 0xf7, 0x18, 0x04,
 	0x72, 0x02, 0x10, 0x01, 0x52, 0x0c, 0x64, 0x65, 0x70, 0x6c, 0x6f, 0x79, 0x6d, 0x65, 0x6e, 0x74,
 	0x49, 0x64, 0x22, 0x10, 0x0a, 0x0e, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x52, 0x65, 0x73, 0x70,
-	0x6f, 0x6e, 0x73, 0x65, 0x32, 0x86, 0x06, 0x0a, 0x12, 0x44, 0x65, 0x70, 0x6c, 0x6f, 0x79, 0x6d,
+	0x6f, 0x6e, 0x73, 0x65, 0x32, 0xaa, 0x05, 0x0a, 0x12, 0x44, 0x65, 0x70, 0x6c, 0x6f, 0x79, 0x6d,
 	0x65, 0x6e, 0x74, 0x73, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x12, 0x5d, 0x0a, 0x06, 0x43,
 	0x72, 0x65, 0x61, 0x74, 0x65, 0x12, 0x28, 0x2e, 0x61, 0x75, 0x74, 0x6f, 0x6b, 0x69, 0x74, 0x74,
 	0x65, 0x68, 0x2e, 0x64, 0x65, 0x70, 0x6c, 0x6f, 0x79, 0x6d, 0x65, 0x6e, 0x74, 0x73, 0x2e, 0x76,
@@ -871,58 +781,52 @@ var file_autokitteh_deployments_v1_svc_proto_rawDesc = []byte{
 	0x73, 0x74, 0x1a, 0x2b, 0x2e, 0x61, 0x75, 0x74, 0x6f, 0x6b, 0x69, 0x74, 0x74, 0x65, 0x68, 0x2e,
 	0x64, 0x65, 0x70, 0x6c, 0x6f, 0x79, 0x6d, 0x65, 0x6e, 0x74, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x41,
 	0x63, 0x74, 0x69, 0x76, 0x61, 0x74, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12,
-	0x5a, 0x0a, 0x05, 0x44, 0x72, 0x61, 0x69, 0x6e, 0x12, 0x27, 0x2e, 0x61, 0x75, 0x74, 0x6f, 0x6b,
-	0x69, 0x74, 0x74, 0x65, 0x68, 0x2e, 0x64, 0x65, 0x70, 0x6c, 0x6f, 0x79, 0x6d, 0x65, 0x6e, 0x74,
-	0x73, 0x2e, 0x76, 0x31, 0x2e, 0x44, 0x72, 0x61, 0x69, 0x6e, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
-	0x74, 0x1a, 0x28, 0x2e, 0x61, 0x75, 0x74, 0x6f, 0x6b, 0x69, 0x74, 0x74, 0x65, 0x68, 0x2e, 0x64,
-	0x65, 0x70, 0x6c, 0x6f, 0x79, 0x6d, 0x65, 0x6e, 0x74, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x44, 0x72,
-	0x61, 0x69, 0x6e, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x69, 0x0a, 0x0a, 0x44,
-	0x65, 0x61, 0x63, 0x74, 0x69, 0x76, 0x61, 0x74, 0x65, 0x12, 0x2c, 0x2e, 0x61, 0x75, 0x74, 0x6f,
-	0x6b, 0x69, 0x74, 0x74, 0x65, 0x68, 0x2e, 0x64, 0x65, 0x70, 0x6c, 0x6f, 0x79, 0x6d, 0x65, 0x6e,
-	0x74, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x44, 0x65, 0x61, 0x63, 0x74, 0x69, 0x76, 0x61, 0x74, 0x65,
-	0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x2d, 0x2e, 0x61, 0x75, 0x74, 0x6f, 0x6b, 0x69,
-	0x74, 0x74, 0x65, 0x68, 0x2e, 0x64, 0x65, 0x70, 0x6c, 0x6f, 0x79, 0x6d, 0x65, 0x6e, 0x74, 0x73,
-	0x2e, 0x76, 0x31, 0x2e, 0x44, 0x65, 0x61, 0x63, 0x74, 0x69, 0x76, 0x61, 0x74, 0x65, 0x52, 0x65,
-	0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x57, 0x0a, 0x04, 0x54, 0x65, 0x73, 0x74, 0x12, 0x26,
-	0x2e, 0x61, 0x75, 0x74, 0x6f, 0x6b, 0x69, 0x74, 0x74, 0x65, 0x68, 0x2e, 0x64, 0x65, 0x70, 0x6c,
-	0x6f, 0x79, 0x6d, 0x65, 0x6e, 0x74, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x54, 0x65, 0x73, 0x74, 0x52,
-	0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x27, 0x2e, 0x61, 0x75, 0x74, 0x6f, 0x6b, 0x69, 0x74,
+	0x69, 0x0a, 0x0a, 0x44, 0x65, 0x61, 0x63, 0x74, 0x69, 0x76, 0x61, 0x74, 0x65, 0x12, 0x2c, 0x2e,
+	0x61, 0x75, 0x74, 0x6f, 0x6b, 0x69, 0x74, 0x74, 0x65, 0x68, 0x2e, 0x64, 0x65, 0x70, 0x6c, 0x6f,
+	0x79, 0x6d, 0x65, 0x6e, 0x74, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x44, 0x65, 0x61, 0x63, 0x74, 0x69,
+	0x76, 0x61, 0x74, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x2d, 0x2e, 0x61, 0x75,
+	0x74, 0x6f, 0x6b, 0x69, 0x74, 0x74, 0x65, 0x68, 0x2e, 0x64, 0x65, 0x70, 0x6c, 0x6f, 0x79, 0x6d,
+	0x65, 0x6e, 0x74, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x44, 0x65, 0x61, 0x63, 0x74, 0x69, 0x76, 0x61,
+	0x74, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x57, 0x0a, 0x04, 0x54, 0x65,
+	0x73, 0x74, 0x12, 0x26, 0x2e, 0x61, 0x75, 0x74, 0x6f, 0x6b, 0x69, 0x74, 0x74, 0x65, 0x68, 0x2e,
+	0x64, 0x65, 0x70, 0x6c, 0x6f, 0x79, 0x6d, 0x65, 0x6e, 0x74, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x54,
+	0x65, 0x73, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x27, 0x2e, 0x61, 0x75, 0x74,
+	0x6f, 0x6b, 0x69, 0x74, 0x74, 0x65, 0x68, 0x2e, 0x64, 0x65, 0x70, 0x6c, 0x6f, 0x79, 0x6d, 0x65,
+	0x6e, 0x74, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x54, 0x65, 0x73, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f,
+	0x6e, 0x73, 0x65, 0x12, 0x57, 0x0a, 0x04, 0x4c, 0x69, 0x73, 0x74, 0x12, 0x26, 0x2e, 0x61, 0x75,
+	0x74, 0x6f, 0x6b, 0x69, 0x74, 0x74, 0x65, 0x68, 0x2e, 0x64, 0x65, 0x70, 0x6c, 0x6f, 0x79, 0x6d,
+	0x65, 0x6e, 0x74, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x4c, 0x69, 0x73, 0x74, 0x52, 0x65, 0x71, 0x75,
+	0x65, 0x73, 0x74, 0x1a, 0x27, 0x2e, 0x61, 0x75, 0x74, 0x6f, 0x6b, 0x69, 0x74, 0x74, 0x65, 0x68,
+	0x2e, 0x64, 0x65, 0x70, 0x6c, 0x6f, 0x79, 0x6d, 0x65, 0x6e, 0x74, 0x73, 0x2e, 0x76, 0x31, 0x2e,
+	0x4c, 0x69, 0x73, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x54, 0x0a, 0x03,
+	0x47, 0x65, 0x74, 0x12, 0x25, 0x2e, 0x61, 0x75, 0x74, 0x6f, 0x6b, 0x69, 0x74, 0x74, 0x65, 0x68,
+	0x2e, 0x64, 0x65, 0x70, 0x6c, 0x6f, 0x79, 0x6d, 0x65, 0x6e, 0x74, 0x73, 0x2e, 0x76, 0x31, 0x2e,
+	0x47, 0x65, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x26, 0x2e, 0x61, 0x75, 0x74,
+	0x6f, 0x6b, 0x69, 0x74, 0x74, 0x65, 0x68, 0x2e, 0x64, 0x65, 0x70, 0x6c, 0x6f, 0x79, 0x6d, 0x65,
+	0x6e, 0x74, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x47, 0x65, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e,
+	0x73, 0x65, 0x12, 0x5d, 0x0a, 0x06, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x12, 0x28, 0x2e, 0x61,
+	0x75, 0x74, 0x6f, 0x6b, 0x69, 0x74, 0x74, 0x65, 0x68, 0x2e, 0x64, 0x65, 0x70, 0x6c, 0x6f, 0x79,
+	0x6d, 0x65, 0x6e, 0x74, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x52,
+	0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x29, 0x2e, 0x61, 0x75, 0x74, 0x6f, 0x6b, 0x69, 0x74,
 	0x74, 0x65, 0x68, 0x2e, 0x64, 0x65, 0x70, 0x6c, 0x6f, 0x79, 0x6d, 0x65, 0x6e, 0x74, 0x73, 0x2e,
-	0x76, 0x31, 0x2e, 0x54, 0x65, 0x73, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12,
-	0x57, 0x0a, 0x04, 0x4c, 0x69, 0x73, 0x74, 0x12, 0x26, 0x2e, 0x61, 0x75, 0x74, 0x6f, 0x6b, 0x69,
+	0x76, 0x31, 0x2e, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
+	0x65, 0x42, 0x82, 0x02, 0x0a, 0x1d, 0x63, 0x6f, 0x6d, 0x2e, 0x61, 0x75, 0x74, 0x6f, 0x6b, 0x69,
 	0x74, 0x74, 0x65, 0x68, 0x2e, 0x64, 0x65, 0x70, 0x6c, 0x6f, 0x79, 0x6d, 0x65, 0x6e, 0x74, 0x73,
-	0x2e, 0x76, 0x31, 0x2e, 0x4c, 0x69, 0x73, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a,
-	0x27, 0x2e, 0x61, 0x75, 0x74, 0x6f, 0x6b, 0x69, 0x74, 0x74, 0x65, 0x68, 0x2e, 0x64, 0x65, 0x70,
-	0x6c, 0x6f, 0x79, 0x6d, 0x65, 0x6e, 0x74, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x4c, 0x69, 0x73, 0x74,
-	0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x54, 0x0a, 0x03, 0x47, 0x65, 0x74, 0x12,
-	0x25, 0x2e, 0x61, 0x75, 0x74, 0x6f, 0x6b, 0x69, 0x74, 0x74, 0x65, 0x68, 0x2e, 0x64, 0x65, 0x70,
-	0x6c, 0x6f, 0x79, 0x6d, 0x65, 0x6e, 0x74, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x47, 0x65, 0x74, 0x52,
-	0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x26, 0x2e, 0x61, 0x75, 0x74, 0x6f, 0x6b, 0x69, 0x74,
-	0x74, 0x65, 0x68, 0x2e, 0x64, 0x65, 0x70, 0x6c, 0x6f, 0x79, 0x6d, 0x65, 0x6e, 0x74, 0x73, 0x2e,
-	0x76, 0x31, 0x2e, 0x47, 0x65, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x5d,
-	0x0a, 0x06, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x12, 0x28, 0x2e, 0x61, 0x75, 0x74, 0x6f, 0x6b,
-	0x69, 0x74, 0x74, 0x65, 0x68, 0x2e, 0x64, 0x65, 0x70, 0x6c, 0x6f, 0x79, 0x6d, 0x65, 0x6e, 0x74,
-	0x73, 0x2e, 0x76, 0x31, 0x2e, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65,
-	0x73, 0x74, 0x1a, 0x29, 0x2e, 0x61, 0x75, 0x74, 0x6f, 0x6b, 0x69, 0x74, 0x74, 0x65, 0x68, 0x2e,
-	0x64, 0x65, 0x70, 0x6c, 0x6f, 0x79, 0x6d, 0x65, 0x6e, 0x74, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x44,
-	0x65, 0x6c, 0x65, 0x74, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x42, 0x82, 0x02,
-	0x0a, 0x1d, 0x63, 0x6f, 0x6d, 0x2e, 0x61, 0x75, 0x74, 0x6f, 0x6b, 0x69, 0x74, 0x74, 0x65, 0x68,
-	0x2e, 0x64, 0x65, 0x70, 0x6c, 0x6f, 0x79, 0x6d, 0x65, 0x6e, 0x74, 0x73, 0x2e, 0x76, 0x31, 0x42,
-	0x08, 0x53, 0x76, 0x63, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x50, 0x01, 0x5a, 0x51, 0x67, 0x6f, 0x2e,
-	0x61, 0x75, 0x74, 0x6f, 0x6b, 0x69, 0x74, 0x74, 0x65, 0x68, 0x2e, 0x64, 0x65, 0x76, 0x2f, 0x61,
-	0x75, 0x74, 0x6f, 0x6b, 0x69, 0x74, 0x74, 0x65, 0x68, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2f,
-	0x67, 0x65, 0x6e, 0x2f, 0x67, 0x6f, 0x2f, 0x61, 0x75, 0x74, 0x6f, 0x6b, 0x69, 0x74, 0x74, 0x65,
-	0x68, 0x2f, 0x64, 0x65, 0x70, 0x6c, 0x6f, 0x79, 0x6d, 0x65, 0x6e, 0x74, 0x73, 0x2f, 0x76, 0x31,
-	0x3b, 0x64, 0x65, 0x70, 0x6c, 0x6f, 0x79, 0x6d, 0x65, 0x6e, 0x74, 0x73, 0x76, 0x31, 0xa2, 0x02,
-	0x03, 0x41, 0x44, 0x58, 0xaa, 0x02, 0x19, 0x41, 0x75, 0x74, 0x6f, 0x6b, 0x69, 0x74, 0x74, 0x65,
-	0x68, 0x2e, 0x44, 0x65, 0x70, 0x6c, 0x6f, 0x79, 0x6d, 0x65, 0x6e, 0x74, 0x73, 0x2e, 0x56, 0x31,
-	0xca, 0x02, 0x19, 0x41, 0x75, 0x74, 0x6f, 0x6b, 0x69, 0x74, 0x74, 0x65, 0x68, 0x5c, 0x44, 0x65,
-	0x70, 0x6c, 0x6f, 0x79, 0x6d, 0x65, 0x6e, 0x74, 0x73, 0x5c, 0x56, 0x31, 0xe2, 0x02, 0x25, 0x41,
-	0x75, 0x74, 0x6f, 0x6b, 0x69, 0x74, 0x74, 0x65, 0x68, 0x5c, 0x44, 0x65, 0x70, 0x6c, 0x6f, 0x79,
-	0x6d, 0x65, 0x6e, 0x74, 0x73, 0x5c, 0x56, 0x31, 0x5c, 0x47, 0x50, 0x42, 0x4d, 0x65, 0x74, 0x61,
-	0x64, 0x61, 0x74, 0x61, 0xea, 0x02, 0x1b, 0x41, 0x75, 0x74, 0x6f, 0x6b, 0x69, 0x74, 0x74, 0x65,
-	0x68, 0x3a, 0x3a, 0x44, 0x65, 0x70, 0x6c, 0x6f, 0x79, 0x6d, 0x65, 0x6e, 0x74, 0x73, 0x3a, 0x3a,
-	0x56, 0x31, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x2e, 0x76, 0x31, 0x42, 0x08, 0x53, 0x76, 0x63, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x50, 0x01, 0x5a,
+	0x51, 0x67, 0x6f, 0x2e, 0x61, 0x75, 0x74, 0x6f, 0x6b, 0x69, 0x74, 0x74, 0x65, 0x68, 0x2e, 0x64,
+	0x65, 0x76, 0x2f, 0x61, 0x75, 0x74, 0x6f, 0x6b, 0x69, 0x74, 0x74, 0x65, 0x68, 0x2f, 0x70, 0x72,
+	0x6f, 0x74, 0x6f, 0x2f, 0x67, 0x65, 0x6e, 0x2f, 0x67, 0x6f, 0x2f, 0x61, 0x75, 0x74, 0x6f, 0x6b,
+	0x69, 0x74, 0x74, 0x65, 0x68, 0x2f, 0x64, 0x65, 0x70, 0x6c, 0x6f, 0x79, 0x6d, 0x65, 0x6e, 0x74,
+	0x73, 0x2f, 0x76, 0x31, 0x3b, 0x64, 0x65, 0x70, 0x6c, 0x6f, 0x79, 0x6d, 0x65, 0x6e, 0x74, 0x73,
+	0x76, 0x31, 0xa2, 0x02, 0x03, 0x41, 0x44, 0x58, 0xaa, 0x02, 0x19, 0x41, 0x75, 0x74, 0x6f, 0x6b,
+	0x69, 0x74, 0x74, 0x65, 0x68, 0x2e, 0x44, 0x65, 0x70, 0x6c, 0x6f, 0x79, 0x6d, 0x65, 0x6e, 0x74,
+	0x73, 0x2e, 0x56, 0x31, 0xca, 0x02, 0x19, 0x41, 0x75, 0x74, 0x6f, 0x6b, 0x69, 0x74, 0x74, 0x65,
+	0x68, 0x5c, 0x44, 0x65, 0x70, 0x6c, 0x6f, 0x79, 0x6d, 0x65, 0x6e, 0x74, 0x73, 0x5c, 0x56, 0x31,
+	0xe2, 0x02, 0x25, 0x41, 0x75, 0x74, 0x6f, 0x6b, 0x69, 0x74, 0x74, 0x65, 0x68, 0x5c, 0x44, 0x65,
+	0x70, 0x6c, 0x6f, 0x79, 0x6d, 0x65, 0x6e, 0x74, 0x73, 0x5c, 0x56, 0x31, 0x5c, 0x47, 0x50, 0x42,
+	0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0xea, 0x02, 0x1b, 0x41, 0x75, 0x74, 0x6f, 0x6b,
+	0x69, 0x74, 0x74, 0x65, 0x68, 0x3a, 0x3a, 0x44, 0x65, 0x70, 0x6c, 0x6f, 0x79, 0x6d, 0x65, 0x6e,
+	0x74, 0x73, 0x3a, 0x3a, 0x56, 0x31, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -937,50 +841,46 @@ func file_autokitteh_deployments_v1_svc_proto_rawDescGZIP() []byte {
 	return file_autokitteh_deployments_v1_svc_proto_rawDescData
 }
 
-var file_autokitteh_deployments_v1_svc_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
+var file_autokitteh_deployments_v1_svc_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
 var file_autokitteh_deployments_v1_svc_proto_goTypes = []interface{}{
 	(*CreateRequest)(nil),      // 0: autokitteh.deployments.v1.CreateRequest
 	(*CreateResponse)(nil),     // 1: autokitteh.deployments.v1.CreateResponse
 	(*ActivateRequest)(nil),    // 2: autokitteh.deployments.v1.ActivateRequest
 	(*ActivateResponse)(nil),   // 3: autokitteh.deployments.v1.ActivateResponse
-	(*DrainRequest)(nil),       // 4: autokitteh.deployments.v1.DrainRequest
-	(*DrainResponse)(nil),      // 5: autokitteh.deployments.v1.DrainResponse
-	(*DeactivateRequest)(nil),  // 6: autokitteh.deployments.v1.DeactivateRequest
-	(*DeactivateResponse)(nil), // 7: autokitteh.deployments.v1.DeactivateResponse
-	(*TestRequest)(nil),        // 8: autokitteh.deployments.v1.TestRequest
-	(*TestResponse)(nil),       // 9: autokitteh.deployments.v1.TestResponse
-	(*ListRequest)(nil),        // 10: autokitteh.deployments.v1.ListRequest
-	(*ListResponse)(nil),       // 11: autokitteh.deployments.v1.ListResponse
-	(*GetRequest)(nil),         // 12: autokitteh.deployments.v1.GetRequest
-	(*GetResponse)(nil),        // 13: autokitteh.deployments.v1.GetResponse
-	(*DeleteRequest)(nil),      // 14: autokitteh.deployments.v1.DeleteRequest
-	(*DeleteResponse)(nil),     // 15: autokitteh.deployments.v1.DeleteResponse
-	(*Deployment)(nil),         // 16: autokitteh.deployments.v1.Deployment
-	(DeploymentState)(0),       // 17: autokitteh.deployments.v1.DeploymentState
+	(*DeactivateRequest)(nil),  // 4: autokitteh.deployments.v1.DeactivateRequest
+	(*DeactivateResponse)(nil), // 5: autokitteh.deployments.v1.DeactivateResponse
+	(*TestRequest)(nil),        // 6: autokitteh.deployments.v1.TestRequest
+	(*TestResponse)(nil),       // 7: autokitteh.deployments.v1.TestResponse
+	(*ListRequest)(nil),        // 8: autokitteh.deployments.v1.ListRequest
+	(*ListResponse)(nil),       // 9: autokitteh.deployments.v1.ListResponse
+	(*GetRequest)(nil),         // 10: autokitteh.deployments.v1.GetRequest
+	(*GetResponse)(nil),        // 11: autokitteh.deployments.v1.GetResponse
+	(*DeleteRequest)(nil),      // 12: autokitteh.deployments.v1.DeleteRequest
+	(*DeleteResponse)(nil),     // 13: autokitteh.deployments.v1.DeleteResponse
+	(*Deployment)(nil),         // 14: autokitteh.deployments.v1.Deployment
+	(DeploymentState)(0),       // 15: autokitteh.deployments.v1.DeploymentState
 }
 var file_autokitteh_deployments_v1_svc_proto_depIdxs = []int32{
-	16, // 0: autokitteh.deployments.v1.CreateRequest.deployment:type_name -> autokitteh.deployments.v1.Deployment
-	17, // 1: autokitteh.deployments.v1.ListRequest.state:type_name -> autokitteh.deployments.v1.DeploymentState
-	16, // 2: autokitteh.deployments.v1.ListResponse.deployments:type_name -> autokitteh.deployments.v1.Deployment
-	16, // 3: autokitteh.deployments.v1.GetResponse.deployment:type_name -> autokitteh.deployments.v1.Deployment
+	14, // 0: autokitteh.deployments.v1.CreateRequest.deployment:type_name -> autokitteh.deployments.v1.Deployment
+	15, // 1: autokitteh.deployments.v1.ListRequest.state:type_name -> autokitteh.deployments.v1.DeploymentState
+	14, // 2: autokitteh.deployments.v1.ListResponse.deployments:type_name -> autokitteh.deployments.v1.Deployment
+	14, // 3: autokitteh.deployments.v1.GetResponse.deployment:type_name -> autokitteh.deployments.v1.Deployment
 	0,  // 4: autokitteh.deployments.v1.DeploymentsService.Create:input_type -> autokitteh.deployments.v1.CreateRequest
 	2,  // 5: autokitteh.deployments.v1.DeploymentsService.Activate:input_type -> autokitteh.deployments.v1.ActivateRequest
-	4,  // 6: autokitteh.deployments.v1.DeploymentsService.Drain:input_type -> autokitteh.deployments.v1.DrainRequest
-	6,  // 7: autokitteh.deployments.v1.DeploymentsService.Deactivate:input_type -> autokitteh.deployments.v1.DeactivateRequest
-	8,  // 8: autokitteh.deployments.v1.DeploymentsService.Test:input_type -> autokitteh.deployments.v1.TestRequest
-	10, // 9: autokitteh.deployments.v1.DeploymentsService.List:input_type -> autokitteh.deployments.v1.ListRequest
-	12, // 10: autokitteh.deployments.v1.DeploymentsService.Get:input_type -> autokitteh.deployments.v1.GetRequest
-	14, // 11: autokitteh.deployments.v1.DeploymentsService.Delete:input_type -> autokitteh.deployments.v1.DeleteRequest
-	1,  // 12: autokitteh.deployments.v1.DeploymentsService.Create:output_type -> autokitteh.deployments.v1.CreateResponse
-	3,  // 13: autokitteh.deployments.v1.DeploymentsService.Activate:output_type -> autokitteh.deployments.v1.ActivateResponse
-	5,  // 14: autokitteh.deployments.v1.DeploymentsService.Drain:output_type -> autokitteh.deployments.v1.DrainResponse
-	7,  // 15: autokitteh.deployments.v1.DeploymentsService.Deactivate:output_type -> autokitteh.deployments.v1.DeactivateResponse
-	9,  // 16: autokitteh.deployments.v1.DeploymentsService.Test:output_type -> autokitteh.deployments.v1.TestResponse
-	11, // 17: autokitteh.deployments.v1.DeploymentsService.List:output_type -> autokitteh.deployments.v1.ListResponse
-	13, // 18: autokitteh.deployments.v1.DeploymentsService.Get:output_type -> autokitteh.deployments.v1.GetResponse
-	15, // 19: autokitteh.deployments.v1.DeploymentsService.Delete:output_type -> autokitteh.deployments.v1.DeleteResponse
-	12, // [12:20] is the sub-list for method output_type
-	4,  // [4:12] is the sub-list for method input_type
+	4,  // 6: autokitteh.deployments.v1.DeploymentsService.Deactivate:input_type -> autokitteh.deployments.v1.DeactivateRequest
+	6,  // 7: autokitteh.deployments.v1.DeploymentsService.Test:input_type -> autokitteh.deployments.v1.TestRequest
+	8,  // 8: autokitteh.deployments.v1.DeploymentsService.List:input_type -> autokitteh.deployments.v1.ListRequest
+	10, // 9: autokitteh.deployments.v1.DeploymentsService.Get:input_type -> autokitteh.deployments.v1.GetRequest
+	12, // 10: autokitteh.deployments.v1.DeploymentsService.Delete:input_type -> autokitteh.deployments.v1.DeleteRequest
+	1,  // 11: autokitteh.deployments.v1.DeploymentsService.Create:output_type -> autokitteh.deployments.v1.CreateResponse
+	3,  // 12: autokitteh.deployments.v1.DeploymentsService.Activate:output_type -> autokitteh.deployments.v1.ActivateResponse
+	5,  // 13: autokitteh.deployments.v1.DeploymentsService.Deactivate:output_type -> autokitteh.deployments.v1.DeactivateResponse
+	7,  // 14: autokitteh.deployments.v1.DeploymentsService.Test:output_type -> autokitteh.deployments.v1.TestResponse
+	9,  // 15: autokitteh.deployments.v1.DeploymentsService.List:output_type -> autokitteh.deployments.v1.ListResponse
+	11, // 16: autokitteh.deployments.v1.DeploymentsService.Get:output_type -> autokitteh.deployments.v1.GetResponse
+	13, // 17: autokitteh.deployments.v1.DeploymentsService.Delete:output_type -> autokitteh.deployments.v1.DeleteResponse
+	11, // [11:18] is the sub-list for method output_type
+	4,  // [4:11] is the sub-list for method input_type
 	4,  // [4:4] is the sub-list for extension type_name
 	4,  // [4:4] is the sub-list for extension extendee
 	0,  // [0:4] is the sub-list for field type_name
@@ -1042,30 +942,6 @@ func file_autokitteh_deployments_v1_svc_proto_init() {
 			}
 		}
 		file_autokitteh_deployments_v1_svc_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*DrainRequest); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_autokitteh_deployments_v1_svc_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*DrainResponse); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_autokitteh_deployments_v1_svc_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*DeactivateRequest); i {
 			case 0:
 				return &v.state
@@ -1077,7 +953,7 @@ func file_autokitteh_deployments_v1_svc_proto_init() {
 				return nil
 			}
 		}
-		file_autokitteh_deployments_v1_svc_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
+		file_autokitteh_deployments_v1_svc_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*DeactivateResponse); i {
 			case 0:
 				return &v.state
@@ -1089,7 +965,7 @@ func file_autokitteh_deployments_v1_svc_proto_init() {
 				return nil
 			}
 		}
-		file_autokitteh_deployments_v1_svc_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
+		file_autokitteh_deployments_v1_svc_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*TestRequest); i {
 			case 0:
 				return &v.state
@@ -1101,7 +977,7 @@ func file_autokitteh_deployments_v1_svc_proto_init() {
 				return nil
 			}
 		}
-		file_autokitteh_deployments_v1_svc_proto_msgTypes[9].Exporter = func(v interface{}, i int) interface{} {
+		file_autokitteh_deployments_v1_svc_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*TestResponse); i {
 			case 0:
 				return &v.state
@@ -1113,7 +989,7 @@ func file_autokitteh_deployments_v1_svc_proto_init() {
 				return nil
 			}
 		}
-		file_autokitteh_deployments_v1_svc_proto_msgTypes[10].Exporter = func(v interface{}, i int) interface{} {
+		file_autokitteh_deployments_v1_svc_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*ListRequest); i {
 			case 0:
 				return &v.state
@@ -1125,7 +1001,7 @@ func file_autokitteh_deployments_v1_svc_proto_init() {
 				return nil
 			}
 		}
-		file_autokitteh_deployments_v1_svc_proto_msgTypes[11].Exporter = func(v interface{}, i int) interface{} {
+		file_autokitteh_deployments_v1_svc_proto_msgTypes[9].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*ListResponse); i {
 			case 0:
 				return &v.state
@@ -1137,7 +1013,7 @@ func file_autokitteh_deployments_v1_svc_proto_init() {
 				return nil
 			}
 		}
-		file_autokitteh_deployments_v1_svc_proto_msgTypes[12].Exporter = func(v interface{}, i int) interface{} {
+		file_autokitteh_deployments_v1_svc_proto_msgTypes[10].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*GetRequest); i {
 			case 0:
 				return &v.state
@@ -1149,7 +1025,7 @@ func file_autokitteh_deployments_v1_svc_proto_init() {
 				return nil
 			}
 		}
-		file_autokitteh_deployments_v1_svc_proto_msgTypes[13].Exporter = func(v interface{}, i int) interface{} {
+		file_autokitteh_deployments_v1_svc_proto_msgTypes[11].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*GetResponse); i {
 			case 0:
 				return &v.state
@@ -1161,7 +1037,7 @@ func file_autokitteh_deployments_v1_svc_proto_init() {
 				return nil
 			}
 		}
-		file_autokitteh_deployments_v1_svc_proto_msgTypes[14].Exporter = func(v interface{}, i int) interface{} {
+		file_autokitteh_deployments_v1_svc_proto_msgTypes[12].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*DeleteRequest); i {
 			case 0:
 				return &v.state
@@ -1173,7 +1049,7 @@ func file_autokitteh_deployments_v1_svc_proto_init() {
 				return nil
 			}
 		}
-		file_autokitteh_deployments_v1_svc_proto_msgTypes[15].Exporter = func(v interface{}, i int) interface{} {
+		file_autokitteh_deployments_v1_svc_proto_msgTypes[13].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*DeleteResponse); i {
 			case 0:
 				return &v.state
@@ -1192,7 +1068,7 @@ func file_autokitteh_deployments_v1_svc_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_autokitteh_deployments_v1_svc_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   16,
+			NumMessages:   14,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

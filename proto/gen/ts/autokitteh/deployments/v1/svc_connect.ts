@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { ActivateRequest, ActivateResponse, CreateRequest, CreateResponse, DeactivateRequest, DeactivateResponse, DeleteRequest, DeleteResponse, DrainRequest, DrainResponse, GetRequest, GetResponse, ListRequest, ListResponse, TestRequest, TestResponse } from "./svc_pb.js";
+import { ActivateRequest, ActivateResponse, CreateRequest, CreateResponse, DeactivateRequest, DeactivateResponse, DeleteRequest, DeleteResponse, GetRequest, GetResponse, ListRequest, ListResponse, TestRequest, TestResponse } from "./svc_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -33,19 +33,8 @@ export const DeploymentsService = {
       kind: MethodKind.Unary,
     },
     /**
-     * Drain a deployment.
-     *
-     * @generated from rpc autokitteh.deployments.v1.DeploymentsService.Drain
-     */
-    drain: {
-      name: "Drain",
-      I: DrainRequest,
-      O: DrainResponse,
-      kind: MethodKind.Unary,
-    },
-    /**
-     * Deactivate a deployment - forcefully stops all sessions associated
-     * with the deployment.
+     * Deactivate a deployment. If deployment has any active sessions,
+     * deployment will be drained first.
      *
      * @generated from rpc autokitteh.deployments.v1.DeploymentsService.Deactivate
      */

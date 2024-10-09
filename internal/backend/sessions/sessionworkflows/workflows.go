@@ -241,6 +241,8 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 		l.Info("session workflow completed with no errors")
 	}
 
+	_ = workflow.ExecuteActivity(wctx, deactivateDrainedDeploymentActivityName, session.DeploymentID()).Get(wctx, nil)
+
 	return err
 }
 

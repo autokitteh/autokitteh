@@ -2,7 +2,6 @@ package deployments
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"go.uber.org/zap"
@@ -45,8 +44,10 @@ func (d *deployments) Activate(ctx context.Context, id sdktypes.DeploymentID) er
 		}
 
 		for _, d := range deployments {
-			if err := drain(ctx, tx, d.ID()); err != nil {
-				return fmt.Errorf("drain deployment: %w", err)
+			if d.State() != sdktypes.DeploymentStateInactive || d.State() != sdktypes.DeploymentStateDraining {
+				if err := deactivate(ctx, tx, d.ID()); err != nil {
+					return fmt.Errorf("deactivate deployment: %w", err)
+				}
 			}
 		}
 
@@ -95,46 +96,23 @@ func (d *deployments) Create(ctx context.Context, deployment sdktypes.Deployment
 	return deployment.ID(), nil
 }
 
-func deactivate(ctx context.Context, tx db.DB, id sdktypes.DeploymentID) error {
-	// TODO: single query?
-	resultRunning, err := tx.ListSessions(ctx, sdkservices.ListSessionsFilter{
-		DeploymentID: id,
-		StateType:    sdktypes.SessionStateTypeRunning,
-		CountOnly:    true,
-	})
-	if err != nil {
-		return fmt.Errorf("count running sessions: %w", err)
-	}
-
-	resultCreated, err := tx.ListSessions(ctx, sdkservices.ListSessionsFilter{
-		DeploymentID: id,
-		StateType:    sdktypes.SessionStateTypeCreated,
-		CountOnly:    true,
-	})
-	if err != nil {
-		return fmt.Errorf("count created sessions: %w", err)
-	}
-
-	if resultRunning.TotalCount+resultCreated.TotalCount > 0 {
-		return fmt.Errorf("deployment still has pending sessions, drain first: %w", sdkerrors.ErrConflict)
-	}
-
-	return updateDeploymentState(ctx, tx, id, sdktypes.DeploymentStateInactive)
-}
-
 func (d *deployments) Deactivate(ctx context.Context, id sdktypes.DeploymentID) error {
-	return d.db.Transaction(ctx, func(tx db.DB) error {
-		return deactivate(ctx, tx, id)
-	})
+	return d.db.Transaction(ctx, func(tx db.DB) error { return deactivate(ctx, tx, id) })
 }
 
-func drain(ctx context.Context, tx db.DB, id sdktypes.DeploymentID) error {
-	if err := updateDeploymentState(ctx, tx, id, sdktypes.DeploymentStateDraining); err != nil {
+func deactivate(ctx context.Context, tx db.DB, id sdktypes.DeploymentID) error {
+	active, err := tx.DeploymentHasActiveSessions(ctx, id)
+	if err != nil {
 		return err
 	}
 
-	if err := deactivate(ctx, tx, id); err != nil && !errors.Is(err, sdkerrors.ErrConflict) {
-		return fmt.Errorf("deployment.deactivate(%v): %w", id, err)
+	state := sdktypes.DeploymentStateInactive
+	if active {
+		state = sdktypes.DeploymentStateDraining
+	}
+
+	if err := updateDeploymentState(ctx, tx, id, state); err != nil {
+		return err
 	}
 
 	return nil
@@ -157,22 +135,6 @@ func updateDeploymentState(ctx context.Context, db db.DB, id sdktypes.Deployment
 	updateStateCounter(state, 1)
 	updateStateCounter(oldState, -1)
 	return nil
-}
-
-func (d *deployments) Drain(ctx context.Context, id sdktypes.DeploymentID) error {
-	return d.db.Transaction(ctx, func(tx db.DB) error {
-		dep, err := tx.GetDeployment(ctx, id)
-		if err != nil {
-			return err
-		}
-
-		state := dep.State()
-		if state != sdktypes.DeploymentStateActive && state != sdktypes.DeploymentStateTesting {
-			return sdkerrors.ErrConflict
-		}
-
-		return drain(ctx, tx, id)
-	})
 }
 
 func (d *deployments) Delete(ctx context.Context, id sdktypes.DeploymentID) error {

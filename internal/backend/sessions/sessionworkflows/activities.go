@@ -11,6 +11,7 @@ import (
 	"go.temporal.io/sdk/workflow"
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/types"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -18,14 +19,15 @@ import (
 )
 
 const (
-	updateSessionStateActivityName   = "update_session_state"
-	terminateWorkflowActivityName    = "terminate_workflow"
-	saveSignalActivityName           = "save_signal"
-	getLastEventSequenceActivityName = "get_last_event_sequence"
-	getSessionStopReasonActivityName = "get_session_stop_reason"
-	getSignalEventActivityName       = "get_signal_event"
-	removeSignalActivityName         = "remove_signal"
-	addSessionPrintActivityName      = "add_session_print"
+	updateSessionStateActivityName          = "update_session_state"
+	terminateWorkflowActivityName           = "terminate_workflow"
+	saveSignalActivityName                  = "save_signal"
+	getLastEventSequenceActivityName        = "get_last_event_sequence"
+	getSessionStopReasonActivityName        = "get_session_stop_reason"
+	getSignalEventActivityName              = "get_signal_event"
+	removeSignalActivityName                = "remove_signal"
+	addSessionPrintActivityName             = "add_session_print"
+	deactivateDrainedDeploymentActivityName = "deactivate_drained_deployment"
 )
 
 func (ws *workflows) registerActivities() {
@@ -68,6 +70,44 @@ func (ws *workflows) registerActivities() {
 		ws.svcs.DB.AddSessionPrint,
 		activity.RegisterOptions{Name: addSessionPrintActivityName},
 	)
+
+	ws.worker.RegisterActivityWithOptions(
+		ws.deactivateDrainedDeployment,
+		activity.RegisterOptions{Name: deactivateDrainedDeploymentActivityName},
+	)
+}
+
+func (ws *workflows) deactivateDrainedDeployment(ctx context.Context, did sdktypes.DeploymentID) error {
+	sl := ws.l.Sugar().With("deployment_id", did)
+
+	return ws.svcs.DB.Transaction(ctx, func(tx db.DB) error {
+		d, err := tx.GetDeployment(ctx, did)
+		if err != nil {
+			return fmt.Errorf("get: %w", err)
+		}
+
+		if d.State() != sdktypes.DeploymentStateDraining {
+			return nil
+		}
+
+		active, err := tx.DeploymentHasActiveSessions(ctx, did)
+		if err != nil {
+			return fmt.Errorf("check active sessions: %w", err)
+		}
+
+		if active {
+			sl.Infof("deployment %v is draining, but still has active sessions", did)
+			return nil
+		}
+
+		if _, err := tx.UpdateDeploymentState(ctx, did, sdktypes.DeploymentStateInactive); err != nil {
+			return fmt.Errorf("update: %w", err)
+		}
+
+		sl.Info("deactivated drained deployment %v", did)
+
+		return nil
+	})
 }
 
 func (ws *workflows) getSignalEvent(ctx context.Context, sigid uuid.UUID, minSeq uint64) (sdktypes.Event, error) {
