@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net"
 	"path"
 	"strings"
 	"time"
@@ -88,7 +89,23 @@ func (py *pySvc) cleanup(ctx context.Context) {
 }
 
 func New(cfg *Config, l *zap.Logger, getLocalAddr func() string) (*sdkruntimes.Runtime, error) {
-	if cfg.EnableRemoteRunner {
+	switch cfg.RunnerType {
+	case "docker":
+		if cfg.WorkerAddress == "" {
+			return nil, errors.New("worker address is required for docker runner")
+		}
+		if err := configureDockerRunnerManager(l, DockerRuntimeConfig{
+			LogRunnerCode: cfg.LogRunnerCode,
+			LogBuildCode:  cfg.LogBuildCode,
+			WorkerAddressProvider: func() string {
+				_, port, _ := net.SplitHostPort(getLocalAddr())
+				return fmt.Sprintf("%s:%s", cfg.WorkerAddress, port)
+			},
+		}); err != nil {
+			return nil, fmt.Errorf("configure docker runner manager: %w", err)
+		}
+		l.Info("docker runner configured")
+	case "remote":
 		if len(cfg.RemoteRunnerEndpoints) == 0 {
 			return nil, errors.New("remote runner is enabled but no runner endpoints provided")
 		}
@@ -98,8 +115,8 @@ func New(cfg *Config, l *zap.Logger, getLocalAddr func() string) (*sdkruntimes.R
 		}); err != nil {
 			return nil, fmt.Errorf("configure remote runner manager: %w", err)
 		}
-		l.Info("configued remote runner")
-	} else {
+		l.Info("remote runner configued")
+	default:
 		if err := configureLocalRunnerManager(l,
 			LocalRunnerManagerConfig{
 				WorkerAddress:         cfg.WorkerAddress,
@@ -111,7 +128,7 @@ func New(cfg *Config, l *zap.Logger, getLocalAddr func() string) (*sdkruntimes.R
 			return nil, fmt.Errorf("configure local runner manager: %w", err)
 		}
 
-		l.Info("configued local runner")
+		l.Info("local runner configured")
 	}
 
 	return &sdkruntimes.Runtime{
