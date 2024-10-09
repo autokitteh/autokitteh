@@ -27,15 +27,7 @@ type dockerRunnerManager struct {
 	workerAddressProvider func() string
 }
 
-func (c DockerRuntimeConfig) validate() error {
-	return nil
-}
-
 func configureDockerRunnerManager(log *zap.Logger, cfg DockerRuntimeConfig) error {
-	if err := cfg.validate(); err != nil {
-		return err
-	}
-
 	dc, err := NewDockerClient(log, cfg.LogRunnerCode, cfg.LogBuildCode)
 	if err != nil {
 		return err
@@ -48,10 +40,13 @@ func configureDockerRunnerManager(log *zap.Logger, cfg DockerRuntimeConfig) erro
 
 	log.Info(fmt.Sprintf("docker connected and synced succesffully, there are %d active runners on network %s", dc.ActiveRunnersCount(), networkName))
 
-	if len(dc.activeRunnerIDs) != 0 {
+	// we don't reconnect to existing runners, we start new ones
+	// so in case server started and there are some runners running
+	// we stop them
+	if len(dc.activeRunnerIDs) > 0 {
 		log.Info("Stopping orphand runners")
 		for rid := range dc.activeRunnerIDs {
-			if err := dc.StopRunner(rid); err != nil {
+			if err := dc.StopRunner(context.Background(), rid); err != nil {
 				log.Warn(fmt.Sprintf("failed stopping runner %s: %s", rid, err.Error()))
 				continue
 			}
@@ -101,14 +96,14 @@ func (rm *dockerRunnerManager) Start(ctx context.Context, sessionID sdktypes.Ses
 	version := fmt.Sprintf("u%x", hash)
 	containerName := fmt.Sprintf("usercode:%s", version)
 
-	if err := rm.client.BuildImage(containerName, codePath); err != nil {
+	if err := rm.client.BuildImage(ctx, containerName, codePath); err != nil {
 		return "", nil, fmt.Errorf("build image: %w", err)
 	}
 
 	runnerID := fmt.Sprintf("runner-%s", uuid.NewString())
 	cmd := createStartCommand("main.py", rm.workerAddressProvider(), runnerID)
 
-	cid, port, err := rm.client.StartRunner(containerName, sessionID, cmd)
+	cid, port, err := rm.client.StartRunner(ctx, containerName, sessionID, cmd)
 	if err != nil {
 		return "", nil, fmt.Errorf("start runner: %w", err)
 	}
@@ -117,7 +112,7 @@ func (rm *dockerRunnerManager) Start(ctx context.Context, sessionID sdktypes.Ses
 	client, err := dialRunner(runnerAddr)
 	if err != nil {
 
-		if err := rm.client.StopRunner(cid); err != nil {
+		if err := rm.client.StopRunner(ctx, cid); err != nil {
 			rm.logger.Warn("close runner", zap.Error(err))
 		}
 		return "", nil, err
@@ -157,6 +152,6 @@ func (rm *dockerRunnerManager) Stop(ctx context.Context, runnerID string) error 
 		return errors.New("runner not found")
 	}
 
-	return rm.client.StopRunner(cid)
+	return rm.client.StopRunner(ctx, cid)
 }
 func (*dockerRunnerManager) Health(ctx context.Context) error { return nil }

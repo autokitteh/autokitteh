@@ -62,19 +62,18 @@ func NewDockerClient(logger *zap.Logger, logRunner, logBuildProcess bool) (*dock
 	return dc, nil
 }
 
-// func (d *dockerClient) close() error {
-// 	return d.client.Close()
-// }
-
 func (d *dockerClient) ensureNetwork() (string, error) {
-	inspectResult, err := d.client.NetworkInspect(context.Background(), networkName, network.InspectOptions{})
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	inspectResult, err := d.client.NetworkInspect(ctx, networkName, network.InspectOptions{})
 	if err != nil {
 		if !client.IsErrNotFound(err) {
 			return "", err
 		}
 
 		noICCNetworkOptions := map[string]string{"com.docker.network.bridge.enable_icc": "false"}
-		n, err := d.client.NetworkCreate(context.Background(), networkName, network.CreateOptions{Options: noICCNetworkOptions})
+		n, err := d.client.NetworkCreate(ctx, networkName, network.CreateOptions{Options: noICCNetworkOptions})
 		if err != nil {
 			return "", err
 		}
@@ -89,8 +88,8 @@ func (d *dockerClient) ensureNetwork() (string, error) {
 	return inspectResult.ID, nil
 }
 
-func (d *dockerClient) StartRunner(runnerImage string, sessionID sdktypes.SessionID, cmd []string) (string, string, error) {
-	resp, err := d.client.ContainerCreate(context.Background(),
+func (d *dockerClient) StartRunner(ctx context.Context, runnerImage string, sessionID sdktypes.SessionID, cmd []string) (string, string, error) {
+	resp, err := d.client.ContainerCreate(ctx,
 		&container.Config{
 			Image: runnerImage,
 			Cmd:   cmd,
@@ -110,7 +109,7 @@ func (d *dockerClient) StartRunner(runnerImage string, sessionID sdktypes.Sessio
 		return "", "", err
 	}
 
-	if err := d.client.ContainerStart(context.Background(), resp.ID, container.StartOptions{}); err != nil {
+	if err := d.client.ContainerStart(ctx, resp.ID, container.StartOptions{}); err != nil {
 		return "", "", err
 	}
 
@@ -118,49 +117,10 @@ func (d *dockerClient) StartRunner(runnerImage string, sessionID sdktypes.Sessio
 	d.allRunnerIDs[resp.ID] = struct{}{}
 	d.mu.Unlock()
 
-	go func() {
-		reader, _ := d.client.ContainerLogs(context.Background(), resp.ID, container.LogsOptions{
-			ShowStdout: true,
-			ShowStderr: true,
-			Follow:     true,
-		})
-		defer reader.Close()
-
-		if d.logRunner {
-			l := d.logger.With(zap.String("runner_id", resp.ID), zap.String("session_id", sessionID.String()))
-			stdourWriter := zapio.Writer{Log: l.With(zap.String("stream", "stdout"))}
-			stderrWriter := zapio.Writer{Log: l.With(zap.String("stream", "stderr"))}
-			_, err = stdcopy.StdCopy(&stdourWriter, &stderrWriter, reader)
-			defer stdourWriter.Close()
-			defer stderrWriter.Close()
-		} else {
-			_, err = io.Copy(io.Discard, reader)
-		}
-
-		if err != nil {
-			d.logger.Warn("error reading runner logs", zap.Error(err), zap.String("runner_id", resp.ID))
-		}
-	}()
-
-	var port string
-
-	for i := 0; i < 10; i++ {
-		inspect, err := d.client.ContainerInspect(context.Background(), resp.ID)
-		if err != nil {
-			return "", "", err
-		}
-
-		ports, ok := inspect.NetworkSettings.Ports[nat.Port(internalRunnerPort)]
-		if ok && len(ports) > 0 {
-			port = ports[0].HostPort
-			break
-		}
-
-		time.Sleep(1000 * time.Millisecond)
-	}
-
-	if port == "" {
-		return "", "", errors.New("couldn't find port")
+	d.setupContainerLogging(ctx, resp.ID, sessionID)
+	port, err := d.nextFreePort(ctx, resp.ID)
+	if err != nil {
+		return "", "", err
 	}
 
 	d.mu.Lock()
@@ -168,6 +128,53 @@ func (d *dockerClient) StartRunner(runnerImage string, sessionID sdktypes.Sessio
 	d.mu.Unlock()
 
 	return resp.ID, port, nil
+}
+
+func (d *dockerClient) nextFreePort(ctx context.Context, cid string) (string, error) {
+
+	for i := 0; i < 10; i++ {
+		inspect, err := d.client.ContainerInspect(ctx, cid)
+		if err != nil {
+			return "", err
+		}
+
+		ports, ok := inspect.NetworkSettings.Ports[nat.Port(internalRunnerPort)]
+		if ok && len(ports) > 0 {
+			port := ports[0].HostPort
+			return port, nil
+		}
+
+		time.Sleep(time.Second)
+	}
+
+	return "", errors.New("couldn't find port")
+}
+
+func (d *dockerClient) setupContainerLogging(ctx context.Context, cid string, sessionID sdktypes.SessionID) {
+	go func() {
+		reader, _ := d.client.ContainerLogs(ctx, cid, container.LogsOptions{
+			ShowStdout: true,
+			ShowStderr: true,
+			Follow:     true,
+		})
+		defer reader.Close()
+		var err error
+		l := d.logger.With(zap.String("container_id", cid), zap.String("session_id", sessionID.String()))
+
+		if d.logRunner {
+			stdourWriter := zapio.Writer{Log: l.With(zap.String("stream", "stdout"))}
+			stderrWriter := zapio.Writer{Log: l.With(zap.String("stream", "stderr"))}
+			_, err = stdcopy.StdCopy(&stdourWriter, &stderrWriter, reader)
+			defer stdourWriter.Close()
+			defer stderrWriter.Close()
+		} else {
+			_, _ = io.Copy(io.Discard, reader)
+		}
+
+		if err != nil {
+			l.Warn("error reading container logs", zap.Error(err))
+		}
+	}()
 }
 
 func (d *dockerClient) SyncCurrentState() error {
@@ -178,6 +185,10 @@ func (d *dockerClient) SyncCurrentState() error {
 
 	d.mu.Lock()
 	defer d.mu.Unlock()
+
+	// reset the state
+	d.allRunnerIDs = map[string]struct{}{}
+	d.activeRunnerIDs = map[string]struct{}{}
 
 	for _, c := range listedContainers {
 		if _, ok := c.Labels[runnersLabel]; !ok {
@@ -195,8 +206,8 @@ func (d *dockerClient) SyncCurrentState() error {
 	return nil
 }
 
-func (d *dockerClient) ImageExists(imageName string) (bool, error) {
-	images, err := d.client.ImageList(context.Background(), image.ListOptions{All: true})
+func (d *dockerClient) ImageExists(ctx context.Context, imageName string) (bool, error) {
+	images, err := d.client.ImageList(ctx, image.ListOptions{All: true})
 	if err != nil {
 		return false, err
 	}
@@ -212,7 +223,7 @@ func (d *dockerClient) ImageExists(imageName string) (bool, error) {
 	return false, nil
 }
 
-func (d *dockerClient) BuildImage(name, directory string) error {
+func (d *dockerClient) BuildImage(ctx context.Context, name, directory string) error {
 	tar, err := archive.TarWithOptions(directory, &archive.TarOptions{})
 	if err != nil {
 		return err
@@ -225,25 +236,23 @@ func (d *dockerClient) BuildImage(name, directory string) error {
 	}
 
 	// Build the image
-	resp, err := d.client.ImageBuild(context.Background(), tar, options)
+	resp, err := d.client.ImageBuild(ctx, tar, options)
 	if err != nil {
 		d.logger.Error("Error building image", zap.Error(err))
 		return err
 	}
 	defer resp.Body.Close()
 
+	var dest io.Writer = io.Discard
 	if d.logBuildProcess {
-		_, err = io.Copy(os.Stdout, resp.Body)
-	} else {
-		_, err = io.Copy(io.Discard, resp.Body)
+		dest = os.Stdout
 	}
-
-	if err != nil {
+	if _, err := io.Copy(dest, resp.Body); err != nil {
 		d.logger.Error("Error printing build output", zap.Error(err))
 		return err
 	}
 
-	exists, err := d.ImageExists(name)
+	exists, err := d.ImageExists(ctx, name)
 	if err != nil {
 		return err
 	}
@@ -257,10 +266,14 @@ func (d *dockerClient) BuildImage(name, directory string) error {
 }
 
 func (d *dockerClient) ActiveRunnersCount() int {
+	d.mu.Lock()
+	defer d.mu.Unlock()
 	return len(d.activeRunnerIDs)
 }
 
 func (d *dockerClient) GetActiveRunners() map[string]struct{} {
+	d.mu.Lock()
+	defer d.mu.Unlock()
 	return d.activeRunnerIDs
 }
 
@@ -274,25 +287,37 @@ func (d *dockerClient) IsRunning(runnerID string) (bool, error) {
 
 }
 
-func (d *dockerClient) StopRunner(id string) error {
-	if _, ok := d.allRunnerIDs[id]; !ok {
+func (d *dockerClient) StopRunner(ctx context.Context, id string) error {
+	// this is to unlock as fast as possible
+	// since stopping a container can take a while
+	d.mu.Lock()
+	_, isRunnerID := d.allRunnerIDs[id]
+	if isRunnerID {
+		delete(d.allRunnerIDs, id)
+	}
+	_, isActiveRunner := d.activeRunnerIDs[id]
+	if isActiveRunner {
+		delete(d.activeRunnerIDs, id)
+	}
+	d.mu.Unlock()
+
+	if !isRunnerID {
 		return nil
 	}
 
-	if _, ok := d.activeRunnerIDs[id]; ok {
-		var timeout int // default to 0, kill now
-		err := d.client.ContainerStop(context.Background(), id, container.StopOptions{Timeout: &timeout})
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+	if isActiveRunner {
+		timeout := 0 // default to 0, kill now
+		err := d.client.ContainerStop(ctx, id, container.StopOptions{Timeout: &timeout})
 		if err != nil {
 			return err
 		}
 	}
 
-	if err := d.client.ContainerRemove(context.Background(), id, container.RemoveOptions{}); err != nil {
+	if err := d.client.ContainerRemove(ctx, id, container.RemoveOptions{}); err != nil {
 		return err
 	}
-
-	delete(d.allRunnerIDs, id)
-	delete(d.activeRunnerIDs, id)
 
 	return nil
 }
