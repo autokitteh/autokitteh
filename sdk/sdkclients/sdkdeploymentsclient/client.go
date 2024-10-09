@@ -70,20 +70,6 @@ func (c *client) Deactivate(ctx context.Context, id sdktypes.DeploymentID) error
 	return nil
 }
 
-// Drain implements sdkservices.Deployments.
-func (c *client) Drain(ctx context.Context, id sdktypes.DeploymentID) error {
-	resp, err := c.client.Drain(ctx, connect.NewRequest(&deploymentsv1.DrainRequest{DeploymentId: id.String()}))
-	if err != nil {
-		return rpcerrors.ToSDKError(err)
-	}
-
-	if err := internal.Validate(resp.Msg); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 // Test implements sdkservices.Deployments.
 func (c *client) Test(ctx context.Context, id sdktypes.DeploymentID) error {
 	resp, err := c.client.Test(ctx, connect.NewRequest(&deploymentsv1.TestRequest{DeploymentId: id.String()}))
