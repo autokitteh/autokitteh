@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 
 	"go.uber.org/fx"
 	"go.uber.org/zap"
@@ -119,8 +120,7 @@ func (ps *Projects) DownloadResources(ctx context.Context, projectID sdktypes.Pr
 	return ps.DB.GetProjectResources(ctx, projectID)
 }
 
-var origHeader = []byte(`
-# This is the original autokitteh.yaml specific by the user.
+var origHeader = []byte(`# This is the original autokitteh.yaml specific by the user.
 # Look at autokitteh.yaml for current state of the project.
 
 `)
@@ -236,9 +236,9 @@ func (ps *Projects) exportManifest(ctx context.Context, projectID sdktypes.Proje
 			sched := t.Schedule()
 			mt.Schedule = &sched
 		case sdktypes.TriggerSourceTypeConnection:
-			conn, err := ps.DB.GetConnection(ctx, t.ConnectionID())
-			if err != nil {
-				return nil, err
+			conn, found := findConnection(t.ConnectionID(), conns)
+			if !found {
+				return nil, fmt.Errorf("trigger %s: connection %s not found", t.ID(), t.ConnectionID())
 			}
 			cname := conn.Name().String()
 			mt.ConnectionKey = &cname
@@ -279,4 +279,14 @@ func (ps *Projects) exportManifest(ctx context.Context, projectID sdktypes.Proje
 	}
 
 	return yaml.Marshal(m)
+}
+
+func findConnection(id sdktypes.ConnectionID, conns []sdktypes.Connection) (sdktypes.Connection, bool) {
+	for _, c := range conns {
+		if c.ID() == id {
+			return c, true
+		}
+	}
+
+	return sdktypes.Connection{}, false
 }
