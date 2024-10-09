@@ -206,11 +206,11 @@ func (db *gormdb) ListDeployments(ctx context.Context, filter sdkservices.ListDe
 func (db *gormdb) DeploymentHasActiveSessions(ctx context.Context, id sdktypes.DeploymentID) (bool, error) {
 	r, err := db.ListSessions(ctx, sdkservices.ListSessionsFilter{
 		DeploymentID: id,
-		StateType:    sdktypes.SessionStateTypeRunning,
+		StateType:    sdktypes.SessionStateTypeCreated,
 		CountOnly:    true,
 	})
 	if err != nil {
-		return false, fmt.Errorf("count running sessions: %w", err)
+		return false, fmt.Errorf("count created sessions: %w", err)
 	}
 
 	if r.TotalCount > 0 {
@@ -219,11 +219,11 @@ func (db *gormdb) DeploymentHasActiveSessions(ctx context.Context, id sdktypes.D
 
 	r, err = db.ListSessions(ctx, sdkservices.ListSessionsFilter{
 		DeploymentID: id,
-		StateType:    sdktypes.SessionStateTypeCreated,
+		StateType:    sdktypes.SessionStateTypeRunning,
 		CountOnly:    true,
 	})
 	if err != nil {
-		return false, fmt.Errorf("count created sessions: %w", err)
+		return false, fmt.Errorf("count running sessions: %w", err)
 	}
 
 	return r.TotalCount > 0, nil
