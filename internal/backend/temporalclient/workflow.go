@@ -16,8 +16,6 @@ type WorkflowConfig struct {
 	WorkflowTaskTimeout time.Duration `koanf:"workflow_task_timeout"`
 }
 
-func (wc WorkflowConfig) Validate() error { return nil }
-
 // other overrides self.
 func (wc WorkflowConfig) With(other WorkflowConfig) WorkflowConfig {
 	return WorkflowConfig{

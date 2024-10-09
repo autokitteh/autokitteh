@@ -1,14 +1,14 @@
 package webtools
 
-import "go.autokitteh.dev/autokitteh/internal/backend/config"
+import (
+	"go.autokitteh.dev/autokitteh/internal/backend/configset"
+)
 
 type Config struct {
 	Enabled bool `koanf:"enabled"`
 }
 
-func (Config) Validate() error { return nil }
-
-var Configs = config.Set[Config]{
+var Configs = configset.Set[Config]{
 	Default: &Config{},
 	Dev:     &Config{Enabled: true},
 }

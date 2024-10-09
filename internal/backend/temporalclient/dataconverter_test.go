@@ -35,7 +35,7 @@ func initConverter(t *testing.T, r io.Reader, keyNames []string) (converter.Data
 		zap.NewNop(),
 		&DataConverterConfig{
 			Compress: true,
-			Encryption: dataConverterEncryptionConfig{
+			Encryption: DataConverterEncryptionConfig{
 				Encrypt: true,
 				Keys:    strings.Join(kittehs.Transform(keyNames, func(k string) string { return k + "=" + keys[k] }), ","),
 			},
@@ -46,7 +46,7 @@ func initConverter(t *testing.T, r io.Reader, keyNames []string) (converter.Data
 
 func TestNoKeys(t *testing.T) {
 	_, err := initConverter(t, rand.Reader, nil)
-	assert.EqualError(t, err, "codecs: "+ErrNoKeys.Error())
+	assert.EqualError(t, err, ErrNoKeys.Error())
 }
 
 func TestSameKey(t *testing.T) {

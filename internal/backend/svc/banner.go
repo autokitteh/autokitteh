@@ -8,7 +8,7 @@ import (
 
 	"github.com/fatih/color"
 
-	"go.autokitteh.dev/autokitteh/internal/backend/config"
+	"go.autokitteh.dev/autokitteh/internal/backend/configset"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/internal/version"
 )
@@ -17,9 +17,7 @@ type bannerConfig struct {
 	Show bool `koanf:"show"`
 }
 
-func (bannerConfig) Validate() error { return nil }
-
-var bannerConfigs = config.Set[bannerConfig]{
+var bannerConfigs = configset.Set[bannerConfig]{
 	Default: &bannerConfig{},
 	Dev:     &bannerConfig{Show: true},
 }

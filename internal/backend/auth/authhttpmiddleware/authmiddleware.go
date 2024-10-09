@@ -9,7 +9,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authsessions"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authtokens"
-	"go.autokitteh.dev/autokitteh/internal/backend/config"
+	"go.autokitteh.dev/autokitteh/internal/backend/configset"
 	akCtx "go.autokitteh.dev/autokitteh/internal/backend/context"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -19,9 +19,7 @@ type Config struct {
 	AllowDefaultUser bool `koanf:"allow_default_user"`
 }
 
-func (Config) Validate() error { return nil }
-
-var Configs = config.Set[Config]{
+var Configs = configset.Set[Config]{
 	Default: &Config{Required: true},
 	Dev:     &Config{AllowDefaultUser: true},
 	Test:    &Config{AllowDefaultUser: true},

@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"go.autokitteh.dev/autokitteh/config"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authjwttokens"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -26,10 +27,6 @@ var (
 	sessionStateAll   = regexp.MustCompile(`state:SESSION_STATE_TYPE_`)
 	token             = "INVALID_TOKEN"
 )
-
-func serviceURLArg(akAddr string) []string {
-	return []string{"--config", "http.service_url=http://" + akAddr}
-}
 
 func init() {
 	js := kittehs.Must1(authjwttokens.New(authjwttokens.Configs.Test))
@@ -102,7 +99,7 @@ func waitForSession(akPath, akAddr, step string) (string, error) {
 	}
 
 	// Check the session state with the AK client.
-	args := append(serviceURLArg(akAddr), "session", "get", id)
+	args := append(config.ServiceUrlArg(akAddr), "session", "get", id)
 	startTime := time.Now()
 
 	sessionFound := false
@@ -125,13 +122,13 @@ func waitForSession(akPath, akAddr, step string) (string, error) {
 	// error handling
 	text := fmt.Sprintf("session %s not done after %s", id, duration)
 
-	args = append(serviceURLArg(akAddr), "event", "list", "--integration=http")
+	args = append(config.ServiceUrlArg(akAddr), "event", "list", "--integration=http")
 	result, err := runClient(akPath, args)
 	if err == nil {
 		text += fmt.Sprintf("\nEvent list:\n%s", result.output)
 	}
 
-	args = append(serviceURLArg(akAddr), "session", "list", "-J")
+	args = append(config.ServiceUrlArg(akAddr), "session", "list", "-J")
 	result, err = runClient(akPath, args)
 	if err == nil {
 		text += fmt.Sprintf("\n---\nSession list:\n%s", result.output)

@@ -3,7 +3,7 @@ package authsessions
 import (
 	"net/http"
 
-	"go.autokitteh.dev/autokitteh/internal/backend/config"
+	"go.autokitteh.dev/autokitteh/internal/backend/configset"
 )
 
 type Config struct {
@@ -13,12 +13,7 @@ type Config struct {
 	Secure     bool
 }
 
-func (c Config) Validate() error {
-	_, err := parseCookieKeys(c.CookieKeys)
-	return err
-}
-
-var Configs = config.Set[Config]{
+var Configs = configset.Set[Config]{
 	Default: &Config{
 		SameSite: http.SameSiteNoneMode,
 		Secure:   true,

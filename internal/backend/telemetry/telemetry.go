@@ -14,7 +14,7 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.20.0"
 	"go.uber.org/zap"
 
-	"go.autokitteh.dev/autokitteh/internal/backend/config"
+	"go.autokitteh.dev/autokitteh/internal/backend/configset"
 )
 
 type Config struct {
@@ -23,9 +23,7 @@ type Config struct {
 	Endpoint    string `koanf:"endpoint"`
 }
 
-func (Config) Validate() error { return nil }
-
-var Configs = config.Set[Config]{
+var Configs = configset.Set[Config]{
 	Default: &Config{Enabled: true, ServiceName: "ak", Endpoint: "localhost:4318"},
 	Dev:     &Config{Enabled: false, ServiceName: "ak", Endpoint: "localhost:4318"},
 }

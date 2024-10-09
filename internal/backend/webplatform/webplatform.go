@@ -8,7 +8,7 @@ import (
 
 	"go.uber.org/zap"
 
-	"go.autokitteh.dev/autokitteh/internal/backend/config"
+	"go.autokitteh.dev/autokitteh/internal/backend/configset"
 	"go.autokitteh.dev/autokitteh/web/webplatform"
 )
 
@@ -18,15 +18,7 @@ type Config struct {
 	Port int `koanf:"port"` // 0 - disabled
 }
 
-func (c Config) Validate() error {
-	if c.Port < 0 || c.Port > 65535 {
-		return fmt.Errorf("invalid port: %d", c.Port)
-	}
-
-	return nil
-}
-
-var Configs = config.Set[Config]{
+var Configs = configset.Set[Config]{
 	Default: &Config{},
 	Dev:     &Config{Port: defaultPort},
 	Test:    &Config{},

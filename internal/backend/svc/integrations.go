@@ -24,7 +24,7 @@ import (
 	"go.autokitteh.dev/autokitteh/integrations/redis"
 	"go.autokitteh.dev/autokitteh/integrations/slack"
 	"go.autokitteh.dev/autokitteh/integrations/twilio"
-	"go.autokitteh.dev/autokitteh/internal/backend/config"
+	"go.autokitteh.dev/autokitteh/internal/backend/configset"
 	"go.autokitteh.dev/autokitteh/internal/backend/integrations"
 	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
@@ -35,14 +35,12 @@ type integrationsConfig struct {
 	Test bool `koanf:"test"`
 }
 
-func (integrationsConfig) Validate() error { return nil }
-
-var integrationConfigs = config.Set[integrationsConfig]{
+var integrationConfigs = configset.Set[integrationsConfig]{
 	Default: &integrationsConfig{},
 	Dev:     &integrationsConfig{Test: true},
 }
 
-func integration[T config.ComponentConfig](name string, cfg config.Set[T], init any) fx.Option {
+func integration[T any](name string, cfg configset.Set[T], init any) fx.Option {
 	return Component(name, cfg, fx.Provide(
 		fx.Annotate(
 			init,
@@ -53,24 +51,24 @@ func integration[T config.ComponentConfig](name string, cfg config.Set[T], init 
 
 func integrationsFXOption() fx.Option {
 	return fx.Options(
-		integration("asana", config.EmptySet, asana.New),
-		integration("aws", config.EmptySet, aws.New),
-		integration("calendar", config.EmptySet, calendar.New),
-		integration("chatgpt", config.EmptySet, chatgpt.New),
-		integration("confluence", config.EmptySet, confluence.New),
-		integration("discord", config.EmptySet, discord.New),
-		integration("drive", config.EmptySet, drive.New),
-		integration("forms", config.EmptySet, forms.New),
-		integration("github", config.EmptySet, github.New),
-		integration("gmail", config.EmptySet, gmail.New),
-		integration("gemini", config.EmptySet, gemini.New),
-		integration("google", config.EmptySet, google.New),
-		integration("grpc", config.EmptySet, grpc.New),
-		integration("jira", config.EmptySet, jira.New),
-		integration("redis", config.EmptySet, redis.New),
-		integration("sheets", config.EmptySet, sheets.New),
-		integration("slack", config.EmptySet, slack.New),
-		integration("twilio", config.EmptySet, twilio.New),
+		integration("asana", configset.Empty, asana.New),
+		integration("aws", configset.Empty, aws.New),
+		integration("calendar", configset.Empty, calendar.New),
+		integration("chatgpt", configset.Empty, chatgpt.New),
+		integration("confluence", configset.Empty, confluence.New),
+		integration("discord", configset.Empty, discord.New),
+		integration("drive", configset.Empty, drive.New),
+		integration("forms", configset.Empty, forms.New),
+		integration("github", configset.Empty, github.New),
+		integration("gmail", configset.Empty, gmail.New),
+		integration("gemini", configset.Empty, gemini.New),
+		integration("google", configset.Empty, google.New),
+		integration("grpc", configset.Empty, grpc.New),
+		integration("jira", configset.Empty, jira.New),
+		integration("redis", configset.Empty, redis.New),
+		integration("sheets", configset.Empty, sheets.New),
+		integration("slack", configset.Empty, slack.New),
+		integration("twilio", configset.Empty, twilio.New),
 		fx.Invoke(func(lc fx.Lifecycle, l *zap.Logger, muxes *muxes.Muxes, svcs sdkservices.Services) {
 			HookOnStart(lc, func(ctx context.Context) error {
 				asana.Start(l, muxes)
