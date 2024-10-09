@@ -10,6 +10,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 
 	pb "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/remote/v1"
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 type RemoteRuntimeConfig struct {
@@ -30,7 +31,7 @@ func (c RemoteRuntimeConfig) validate() error {
 	return nil
 }
 
-func ConfigureRemoteRunnerManager(cfg RemoteRuntimeConfig) error {
+func configureRemoteRunnerManager(cfg RemoteRuntimeConfig) error {
 	if err := cfg.validate(); err != nil {
 		return err
 	}
@@ -65,7 +66,7 @@ func ConfigureRemoteRunnerManager(cfg RemoteRuntimeConfig) error {
 	return nil
 }
 
-func (*remoteRunnerManager) Start(ctx context.Context, buildArtifacts []byte, vars map[string]string) (string, *RunnerClient, error) {
+func (*remoteRunnerManager) Start(ctx context.Context, sessionID sdktypes.SessionID, buildArtifacts []byte, vars map[string]string) (string, *RunnerClient, error) {
 	return "", nil, nil
 }
 func (*remoteRunnerManager) RunnerHealth(ctx context.Context, runnerID string) error { return nil }

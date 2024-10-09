@@ -2,8 +2,8 @@
 
 
 from .deployment_pb2 import (DeploymentState,Deployment,)
-from .svc_pb2 import (CreateRequest,CreateResponse,ActivateRequest,ActivateResponse,DrainRequest,DrainResponse,DeactivateRequest,DeactivateResponse,TestRequest,TestResponse,ListRequest,ListResponse,GetRequest,GetResponse,DeleteRequest,DeleteResponse,)
+from .svc_pb2 import (CreateRequest,CreateResponse,ActivateRequest,ActivateResponse,DeactivateRequest,DeactivateResponse,TestRequest,TestResponse,ListRequest,ListResponse,GetRequest,GetResponse,DeleteRequest,DeleteResponse,)
 from .svc_pb2_grpc import (DeploymentsServiceStub,DeploymentsServiceServicer,DeploymentsService,)
 
 
-__all__ = ["DeploymentsServiceStub","DeploymentsServiceServicer","DeploymentsService","CreateRequest","CreateResponse","ActivateRequest","ActivateResponse","DrainRequest","DrainResponse","DeactivateRequest","DeactivateResponse","TestRequest","TestResponse","ListRequest","ListResponse","GetRequest","GetResponse","DeleteRequest","DeleteResponse","DeploymentState","Deployment",]
+__all__ = ["DeploymentsServiceStub","DeploymentsServiceServicer","DeploymentsService","CreateRequest","CreateResponse","ActivateRequest","ActivateResponse","DeactivateRequest","DeactivateResponse","TestRequest","TestResponse","ListRequest","ListResponse","GetRequest","GetResponse","DeleteRequest","DeleteResponse","DeploymentState","Deployment",]

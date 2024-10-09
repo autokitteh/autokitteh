@@ -1,4 +1,4 @@
-package runtime
+package configrt
 
 import (
 	"context"
@@ -10,14 +10,14 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-var Runtime = &sdkruntimes.Runtime{
-	Desc: desc,
-	New:  func() (sdkservices.Runtime, error) { return New(), nil },
-}
-
 type svc struct{}
 
-func New() sdkservices.Runtime { return svc{} }
+func New() *sdkruntimes.Runtime {
+	return &sdkruntimes.Runtime{
+		Desc: desc,
+		New:  func() (sdkservices.Runtime, error) { return &svc{}, nil },
+	}
+}
 
 func (svc) Get() sdktypes.Runtime { return desc }
 
@@ -28,6 +28,7 @@ func (svc) Build(ctx context.Context, fs fs.FS, path string, _ []sdktypes.Symbol
 func (svc) Run(
 	_ context.Context,
 	runID sdktypes.RunID,
+	sessionID sdktypes.SessionID,
 	mainPath string,
 	compiled map[string][]byte,
 	_ map[string]sdktypes.Value,

@@ -42,6 +42,7 @@ func New(rts []*Runtime) (sdkservices.Runtimes, error) {
 func (s runtimes) Run(
 	ctx context.Context,
 	rid sdktypes.RunID,
+	sid sdktypes.SessionID,
 	path string,
 	build *sdkbuildfile.BuildFile,
 	globals map[string]sdktypes.Value,
@@ -54,6 +55,7 @@ func (s runtimes) Run(
 	return Run(ctx, RunParams{
 		Runtimes:             s,
 		RunID:                rid,
+		SessionID:            sid,
 		EntryPointPath:       path,
 		BuildFile:            build,
 		Globals:              globals,

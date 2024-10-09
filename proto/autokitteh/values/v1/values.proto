@@ -96,6 +96,17 @@ message Function {
   repeated string flags = 5;
 }
 
+message Custom {
+  // Executor used to generate this data.
+  string executor_id = 1;
+
+  // Data generated and comprehensible only to the generating executor.
+  bytes data = 2;
+
+  // Value representation of this data for display and cross-executor compatibility.
+  Value value = 3;
+}
+
 message Value {
   // one of the following fields must be set.
   Nothing nothing = 1;
@@ -113,4 +124,5 @@ message Value {
   Module module = 13;
   Symbol symbol = 14;
   Function function = 15;
+  Custom custom = 16;
 }

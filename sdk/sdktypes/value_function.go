@@ -87,7 +87,7 @@ func validateFunctionFlags(fs []string) error {
 
 	for _, f := range fs {
 		switch f {
-		case PrivilidgedFunctionFlag.String(), PureFunctionFlag.String(), ConstFunctionFlag.String():
+		case PrivilidgedFunctionFlag.String(), PureFunctionFlag.String(), ConstFunctionFlag.String(), DisableAutoHeartbeat.String():
 			return nil
 		default:
 			errs = append(errs, fmt.Errorf("invalid function flag %q", f))

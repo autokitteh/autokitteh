@@ -16,6 +16,7 @@ type RunParams struct {
 	BuildFile            *sdkbuildfile.BuildFile
 	Globals              map[string]sdktypes.Value
 	RunID                sdktypes.RunID
+	SessionID            sdktypes.SessionID
 	FallthroughCallbacks sdkservices.RunCallbacks
 	EntryPointPath       string
 }
@@ -55,6 +56,7 @@ func Run(ctx context.Context, params RunParams) (sdkservices.Run, error) {
 		runParams.Globals = nil // TODO: globals: figure out which values to pass here.
 		runParams.RunID = loadRunID
 		runParams.FallthroughCallbacks = cbs
+		runParams.SessionID = params.SessionID
 
 		r, err := run(ctx, runParams, path)
 		if err != nil {
@@ -119,6 +121,7 @@ func run(ctx context.Context, params RunParams, path string) (sdkservices.Run, e
 	return rt.Run(
 		ctx,
 		params.RunID,
+		params.SessionID,
 		path,
 		brt.Artifact.CompiledData(),
 		params.Globals,

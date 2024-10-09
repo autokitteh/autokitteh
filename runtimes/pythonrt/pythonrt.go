@@ -3,6 +3,7 @@ package pythonrt
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"path"
 	"strings"
@@ -13,7 +14,6 @@ import (
 
 	"golang.org/x/exp/maps"
 
-	"go.autokitteh.dev/autokitteh/internal/backend/logger"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/internal/xdg"
 	pb "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/remote/v1"
@@ -23,13 +23,11 @@ import (
 )
 
 var (
-	Runtime = &sdkruntimes.Runtime{
-		Desc: kittehs.Must1(sdktypes.StrictRuntimeFromProto(&sdktypes.RuntimePB{
-			Name:           "python",
-			FileExtensions: []string{"py"},
-		})),
-		New: New,
-	}
+	desc = kittehs.Must1(sdktypes.StrictRuntimeFromProto(&sdktypes.RuntimePB{
+		Name:           "python",
+		FileExtensions: []string{"py"},
+	}))
+
 	venvPath = path.Join(xdg.DataHomeDir(), "venv")
 	venvPy   = path.Join(venvPath, "bin", "python")
 )
@@ -51,13 +49,15 @@ type comChannels struct {
 }
 
 type pySvc struct {
-	ctx      context.Context
-	log      *zap.Logger
-	xid      sdktypes.ExecutorID
-	runID    sdktypes.RunID
-	cbs      *sdkservices.RunCallbacks
-	exports  map[string]sdktypes.Value
-	fileName string // main user code file name (entry point)
+	cfg       *Config
+	ctx       context.Context
+	log       *zap.Logger
+	xid       sdktypes.ExecutorID
+	runID     sdktypes.RunID
+	sessionID sdktypes.SessionID
+	cbs       *sdkservices.RunCallbacks
+	exports   map[string]sdktypes.Value
+	fileName  string // main user code file name (entry point)
 	// remote       *workerGRPCHandler
 
 	// runner       Runner
@@ -86,15 +86,45 @@ func (py *pySvc) cleanup(ctx context.Context) {
 	}
 }
 
-func New() (sdkservices.Runtime, error) {
-	log, err := logger.New(logger.Configs.Default) // TODO (ENG-553): From configuration
-	if err != nil {
-		return nil, err
+func New(cfg *Config, l *zap.Logger, getLocalAddr func() string) (*sdkruntimes.Runtime, error) {
+	if cfg.EnableRemoteRunner {
+		if len(cfg.RemoteRunnerEndpoints) == 0 {
+			return nil, errors.New("remote runner is enabled but no runner endpoints provided")
+		}
+		if err := configureRemoteRunnerManager(RemoteRuntimeConfig{
+			ManagerAddress: cfg.RemoteRunnerEndpoints,
+			WorkerAddress:  cfg.WorkerAddress,
+		}); err != nil {
+			return nil, fmt.Errorf("configure remote runner manager: %w", err)
+		}
+		l.Info("configued remote runner")
+	} else {
+		if err := configureLocalRunnerManager(l,
+			LocalRunnerManagerConfig{
+				WorkerAddress:         cfg.WorkerAddress,
+				LazyLoadVEnv:          cfg.LazyLoadLocalVEnv,
+				WorkerAddressProvider: getLocalAddr,
+				LogCodeRunnerCode:     cfg.LogRunnerCode,
+			},
+		); err != nil {
+			return nil, fmt.Errorf("configure local runner manager: %w", err)
+		}
+
+		l.Info("configued local runner")
 	}
-	log = log.With(zap.String("runtime", "python"))
+
+	return &sdkruntimes.Runtime{
+		Desc: desc,
+		New:  func() (sdkservices.Runtime, error) { return newSvc(cfg, l) },
+	}, nil
+}
+
+func newSvc(cfg *Config, l *zap.Logger) (sdkservices.Runtime, error) {
+	l = l.With(zap.String("runtime", "python"))
 
 	svc := pySvc{
-		log:       log,
+		cfg:       cfg,
+		log:       l,
 		firstCall: true,
 		channels: comChannels{
 			done:     make(chan *pb.DoneRequest, 1),
@@ -109,7 +139,7 @@ func New() (sdkservices.Runtime, error) {
 	return &svc, nil
 }
 
-func (*pySvc) Get() sdktypes.Runtime { return Runtime.Desc }
+func (py *pySvc) Get() sdktypes.Runtime { return desc }
 
 const archiveKey = "code.tar"
 
@@ -179,6 +209,7 @@ Run *does not* execute a function in the Python module, this happens in Call.
 func (py *pySvc) Run(
 	ctx context.Context,
 	runID sdktypes.RunID,
+	sessionID sdktypes.SessionID,
 	mainPath string,
 	compiled map[string][]byte,
 	values map[string]sdktypes.Value,
@@ -187,8 +218,9 @@ func (py *pySvc) Run(
 	runnerOK := false
 	py.ctx = ctx
 	py.runID = runID
+	py.sessionID = sessionID
 	py.xid = sdktypes.NewExecutorID(runID) // Should be first
-	py.log = py.log.With(zap.String("run_id", runID.String()))
+	py.log = py.log.With(zap.String("run_id", runID.String()), zap.String("session_id", sessionID.String()))
 	py.log.Info("run", zap.String("path", mainPath))
 
 	py.log.Info("executor", zap.String("id", py.xid.String()))
@@ -214,7 +246,7 @@ func (py *pySvc) Run(
 		return nil, fmt.Errorf("can't load syscall: %w", err)
 	}
 
-	runnerID, runner, err := runnerManager.Start(ctx, tarData, envMap)
+	runnerID, runner, err := runnerManager.Start(ctx, sessionID, tarData, envMap)
 	if err != nil {
 		return nil, fmt.Errorf("starting runner: %w", err)
 	}
@@ -397,7 +429,7 @@ func (py *pySvc) call(ctx context.Context, val sdktypes.Value) {
 
 // initialCall handles initial call from autokitteh, it does the message loop with Python.
 // We split it from Call since Call is also used to execute activities.
-func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
+func (py *pySvc) initialCall(ctx context.Context, funcName string, _ []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
 	defer func() {
 		py.cleanup(ctx)
 		py.log.Info("Python subprocess cleanup after initial call is done")

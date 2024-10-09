@@ -4,9 +4,12 @@ import (
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 
-	backendRuntimes "go.autokitteh.dev/autokitteh/backend/runtimes"
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
+	"go.autokitteh.dev/autokitteh/runtimes/configrt"
+	"go.autokitteh.dev/autokitteh/runtimes/pythonrt"
+	"go.autokitteh.dev/autokitteh/runtimes/starlarkrt"
+	"go.autokitteh.dev/autokitteh/sdk/sdkruntimes"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 )
 
@@ -39,9 +42,15 @@ func init() {
 
 func runtimes() sdkservices.Runtimes {
 	if local {
-		// TODO: what is local ? what to do about logger ? which config ?
-		l := zap.New(nil)
-		return kittehs.Must1(backendRuntimes.New(&backendRuntimes.Config{LazyLoadLocalVEnv: true}, l, nil))
+		return kittehs.Must1(sdkruntimes.New([]*sdkruntimes.Runtime{
+			starlarkrt.New(),
+			configrt.New(),
+			kittehs.Must1(pythonrt.New(
+				&pythonrt.Config{LazyLoadLocalVEnv: true},
+				zap.NewNop(),
+				func() string { return "localhost" },
+			)),
+		}))
 	}
 	return common.Client().Runtimes()
 }

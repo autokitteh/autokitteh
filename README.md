@@ -6,6 +6,8 @@ AutoKitteh is a **developer** platform for workflow automation and
 orchestration. It is an easy-to-use, code-based alternative to no/low-code
 platforms (such as Zapier, Workato, Make.com, n8n) with unlimited flexibility.
 
+**You write in vanilla Python, we make it durable** 🪄
+
 In addition, it is a **durable execution** platform for long-running and
 reliable workflows. It is based on [Temporal](https://temporal.io/), hiding
 many of its infrastructure and coding complexities.
@@ -39,7 +41,7 @@ backend business processes, and more.
 executing the code as durable workflows, and managing these workflows.
 
 **API:** AutoKitteh is an API-first platform. All services are available via
-gPRC / HTTP.
+gRPC / HTTP.
 
 **Built-in integrations:** Slack, GitHub, Twilio, ChatGPT, Gemini, Gmail,
 Google Calendar, HTTP, gRPC and many more. It's easy to add new integrations.
