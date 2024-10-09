@@ -141,6 +141,7 @@ func (r *LocalPython) Start(pyExe string, tarData []byte, env map[string]string,
 		"--code-dir", r.userDir,
 	)
 	cmd.Env = overrideEnv(env, r.runnerDir, r.userDir)
+	cmd.Dir = r.userDir
 
 	if r.logRunnerCode {
 		r.stdoutRunnerLogger = &zapio.Writer{Log: r.log.With(zap.String("stream", "stdout")), Level: zap.InfoLevel}
