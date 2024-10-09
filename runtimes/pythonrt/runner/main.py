@@ -20,6 +20,7 @@ from call import AKCall, full_func_name
 from grpc_reflection.v1alpha import reflection
 from syscalls import SysCalls
 from time import sleep
+import os
 
 SERVER_GRACE_TIMEOUT = 3  # seconds
 
