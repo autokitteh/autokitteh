@@ -46,7 +46,7 @@ func (h handler) handleCreds(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Special case: save Google Calendar ID.
-	calID := r.PostFormValue("cal_id")
+	calID := r.FormValue("cal_id")
 	if calID != "" {
 		if err := h.saveCalendarID(r.Context(), c, calID); err != nil {
 			l.Error("Google Calendar ID saving error", zap.Error(err))
@@ -56,7 +56,7 @@ func (h handler) handleCreds(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Special case: validate & save Google Forms ID.
-	formID := r.PostFormValue("form_id")
+	formID := r.FormValue("form_id")
 	if formID != "" {
 		ok, err := regexp.MatchString(`[\w-]{20,}`, formID)
 		if err != nil {
