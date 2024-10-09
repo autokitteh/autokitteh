@@ -12,7 +12,7 @@ import (
 	"go.uber.org/zap"
 )
 
-type dataConverterEncryptionConfig struct {
+type DataConverterEncryptionConfig struct {
 	// If `Encrypt` is true, `KeyNames` must have at least one key name specified.
 	Encrypt bool `koanf:"encrypt"`
 
@@ -25,12 +25,7 @@ type dataConverterEncryptionConfig struct {
 
 type DataConverterConfig struct {
 	Compress   bool                          `koanf:"compress"`
-	Encryption dataConverterEncryptionConfig `koanf:"encryption"`
-}
-
-func (c DataConverterConfig) Validate() error {
-	_, err := newCodecs(zap.NewNop(), &c)
-	return err
+	Encryption DataConverterEncryptionConfig `koanf:"encryption"`
 }
 
 var (
@@ -38,7 +33,7 @@ var (
 	ErrKeyNotFound = errors.New("encryption key not found in environment")
 )
 
-func newCodecs(l *zap.Logger, cfg *DataConverterConfig) ([]converter.PayloadCodec, error) {
+func NewDataConverter(l *zap.Logger, cfg *DataConverterConfig, parent converter.DataConverter) (converter.DataConverter, error) {
 	var codecs []converter.PayloadCodec
 
 	if cfg.Encryption.Encrypt {
@@ -87,15 +82,6 @@ func newCodecs(l *zap.Logger, cfg *DataConverterConfig) ([]converter.PayloadCode
 
 	if cfg.Compress {
 		codecs = append(codecs, converter.NewZlibCodec(converter.ZlibCodecOptions{AlwaysEncode: true}))
-	}
-
-	return codecs, nil
-}
-
-func NewDataConverter(l *zap.Logger, cfg *DataConverterConfig, parent converter.DataConverter) (converter.DataConverter, error) {
-	codecs, err := newCodecs(l, cfg)
-	if err != nil {
-		return nil, fmt.Errorf("codecs: %w", err)
 	}
 
 	return converter.NewCodecDataConverter(parent, codecs...), nil

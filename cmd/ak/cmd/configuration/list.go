@@ -8,7 +8,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
-	"go.autokitteh.dev/autokitteh/internal/backend/config"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 )
 
@@ -25,13 +24,14 @@ var listCmd = common.StandardCommand(&cobra.Command{
 		// for every mode. We use dev so it wont break on missing
 		// vars.
 
-		// Build the service options so that configs would be populated.
+		// Initialize the service so that configs would be populated.
 		// Configset modes don't matter since all modes share the same keys.
-		if _, err := common.NewDevSvcOpts(true); err != nil {
+		if _, err := common.NewDevSvc(true); err != nil {
 			return err
 		}
 
-		cs := kittehs.Transform(config.ListAll(), formatConfig)
+		// TODO: Fix this to return real values ASAP, see PR #323
+		cs := kittehs.Transform(common.Config().ListAll(), formatConfig)
 		sort.Strings(cs)
 		fmt.Println(strings.Join(cs, "\n"))
 
@@ -43,6 +43,7 @@ func init() {
 	listCmd.Flags().BoolVarP(&envVars, "env-vars", "e", false, "print key names as environment variables (default = false)")
 }
 
+// TODO: Fix this to return real values ASAP, see PR #323
 func formatConfig(s string) string {
 	if envVars {
 		s = common.EnvVarPrefix + strings.ToUpper(strings.ReplaceAll(s, ".", "__"))

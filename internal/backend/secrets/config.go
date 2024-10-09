@@ -1,10 +1,7 @@
 package secrets
 
 import (
-	"fmt"
-	"slices"
-
-	"go.autokitteh.dev/autokitteh/internal/backend/config"
+	"go.autokitteh.dev/autokitteh/internal/backend/configset"
 )
 
 type awsSecretManagerConfig struct{}
@@ -20,17 +17,11 @@ type Config struct {
 	Vault            *vaultConfig            `koanf:"vault"`
 }
 
-func (c Config) Validate() error {
-	if c.Provider != "" && !slices.Contains(providers, c.Provider) {
-		return fmt.Errorf("invalid secret provider: %s", c.Provider)
+var (
+	Configs = configset.Set[Config]{
+		Default: &Config{},
+		Dev: &Config{
+			Provider: SecretProviderDatabase,
+		},
 	}
-
-	return nil
-}
-
-var Configs = config.Set[Config]{
-	Default: &Config{},
-	Dev: &Config{
-		Provider: SecretProviderDatabase,
-	},
-}
+)

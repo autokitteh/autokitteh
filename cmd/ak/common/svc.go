@@ -4,10 +4,9 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
-	"go.uber.org/fx"
 
 	"go.autokitteh.dev/autokitteh/backend/svc"
-	"go.autokitteh.dev/autokitteh/internal/backend/config"
+	"go.autokitteh.dev/autokitteh/internal/backend/configset"
 )
 
 var mode string
@@ -20,20 +19,16 @@ func AddModeFlag(cmd *cobra.Command) {
 
 // ParseModeFlag returns the parsed value of the AutoKitteh
 // service mode CLI flag, initialized with [AddModeFlag].
-func ParseModeFlag() (m config.Mode, err error) {
-	if m, err = config.ParseMode(mode); err != nil {
+func ParseModeFlag() (m configset.Mode, err error) {
+	if m, err = configset.ParseMode(mode); err != nil {
 		err = fmt.Errorf("parse mode: %w", err)
 	}
 	return
 }
 
-func NewDevSvcOpts(silent bool) ([]fx.Option, error) {
-	opts := svc.NewFXOpts(Config(), svc.RunOptions{Mode: config.Dev, Silent: silent})
-	if err := fx.ValidateApp(opts...); err != nil {
-		return nil, err
-	}
-
-	return opts, nil
+// NewDevSvc returns a new AutoKitteh service in dev mode.
+func NewDevSvc(silent bool) (svc.Service, error) {
+	return svc.New(Config(), svc.RunOptions{Mode: configset.Dev, Silent: silent})
 }
 
 // Returns a new AutoKitteh service initialized with the mode

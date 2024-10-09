@@ -47,24 +47,15 @@ type Store interface {
 	Delete(http.ResponseWriter)
 }
 
-func parseCookieKeys(keys string) ([][]byte, error) {
-	rawKeyPairs := kittehs.Transform(strings.Split(keys, ","), strings.TrimSpace)
+func New(cfg *Config) (Store, error) {
+	rawKeyPairs := kittehs.Transform(strings.Split(cfg.CookieKeys, ","), strings.TrimSpace)
 	if len(rawKeyPairs)&1 != 0 {
 		return nil, errors.New("key pairs must be an even length list of hex encoded keys")
 	}
 
-	pairs, err := kittehs.TransformError(rawKeyPairs, hex.DecodeString)
+	keyPairs, err := kittehs.TransformError(rawKeyPairs, hex.DecodeString)
 	if err != nil {
 		return nil, fmt.Errorf("invalid key pairs: %w", err)
-	}
-
-	return pairs, nil
-}
-
-func New(cfg *Config) (Store, error) {
-	keyPairs, err := parseCookieKeys(cfg.CookieKeys)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse cookie keys: %w", err)
 	}
 
 	domain := cfg.Domain

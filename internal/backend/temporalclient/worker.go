@@ -20,10 +20,6 @@ type WorkerConfig struct {
 	WorkflowDeadlockTimeout time.Duration `koanf:"workflow_deadlock_timeout"`
 }
 
-func (wc WorkerConfig) Validate() error {
-	return nil
-}
-
 // other overrides self.
 func (wc WorkerConfig) With(other WorkerConfig) WorkerConfig {
 	return WorkerConfig{
