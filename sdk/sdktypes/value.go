@@ -30,6 +30,15 @@ func validateValue(m *ValuePB) error {
 		objectField[DictValue]("dict", m.Dict),
 		objectField[StructValue]("struct", m.Struct),
 		objectField[ModuleValue]("module", m.Module),
+		objectField[FunctionValue]("function", m.Function),
+		objectField[NothingValue]("nothing", m.Nothing),
+		objectField[IntegerValue]("integer", m.Integer),
+		objectField[FloatValue]("float", m.Float),
+		objectField[BooleanValue]("boolean", m.Boolean),
+		objectField[BytesValue]("bytes", m.Bytes),
+		objectField[DurationValue]("duration", m.Duration),
+		objectField[TimeValue]("time", m.Time),
+		objectField[CustomValue]("custom", m.Custom),
 	)
 }
 
@@ -69,6 +78,8 @@ func NewValue(cv concreteValue) Value {
 		return kittehs.Must1(NewStructValue(cv.Ctor(), cv.Fields()))
 	case ModuleValue:
 		return kittehs.Must1(NewModuleValue(cv.Name(), cv.Members()))
+	case CustomValue:
+		return kittehs.Must1(NewCustomValue(cv.ExecutorID(), cv.Data(), cv.Value()))
 	default:
 		sdklogger.DPanic("unknown concrete value type")
 	}
@@ -100,6 +111,8 @@ func (v Value) Concrete() concreteValue {
 
 func (v Value) ToDuration() (time.Duration, error) {
 	switch v := v.Concrete().(type) {
+	case CustomValue:
+		return v.Value().ToDuration()
 	case DurationValue:
 		return v.Value(), nil
 	case IntegerValue:
@@ -115,6 +128,8 @@ func (v Value) ToDuration() (time.Duration, error) {
 
 func (v Value) ToTime() (time.Time, error) {
 	switch v := v.Concrete().(type) {
+	case CustomValue:
+		return v.Value().ToTime()
 	case TimeValue:
 		return v.Value(), nil
 	case StringValue:
@@ -128,6 +143,8 @@ func (v Value) ToTime() (time.Time, error) {
 
 func (v Value) ToString() (string, error) {
 	switch v := v.Concrete().(type) {
+	case CustomValue:
+		return v.Value().ToString()
 	case StringValue:
 		return v.Value(), nil
 	case IntegerValue:
@@ -151,6 +168,8 @@ func (v Value) ToString() (string, error) {
 
 func (v Value) ToStringValuesMap() (map[string]Value, error) {
 	switch v := v.Concrete().(type) {
+	case CustomValue:
+		return v.Value().ToStringValuesMap()
 	case DictValue:
 		return v.ToStringValuesMap()
 	case StructValue:
