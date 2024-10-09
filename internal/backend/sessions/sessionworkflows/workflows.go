@@ -235,7 +235,7 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 				l.Sugar().Errorf("session workflow error: %v", err)
 				if errors.As(err, &sdkerrors.RetryableErrorType) {
 					sessionsRetryErrorsCounter.Add(metricsCtx, 1)
-					l.DPanic("panic session to retry")
+					l.Panic("panic session to retry")
 				} else {
 					sessionsErroredCounter.Add(metricsCtx, 1)
 				}
