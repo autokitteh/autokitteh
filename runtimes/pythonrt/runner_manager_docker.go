@@ -31,7 +31,7 @@ func (c DockerRuntimeConfig) validate() error {
 	return nil
 }
 
-func ConfigureDockerRunnerManager(log *zap.Logger, cfg DockerRuntimeConfig) error {
+func configureDockerRunnerManager(log *zap.Logger, cfg DockerRuntimeConfig) error {
 	if err := cfg.validate(); err != nil {
 		return err
 	}
