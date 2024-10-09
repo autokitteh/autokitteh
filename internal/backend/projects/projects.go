@@ -136,8 +136,10 @@ func (ps *Projects) Export(ctx context.Context, projectID sdktypes.ProjectID) ([
 	}
 
 	for name, data := range rscs {
+		writeHeader := false
 		if name == manifestFileName {
 			name = "autokitteh-user.yaml"
+			writeHeader = true
 		}
 
 		f, err := w.Create(name)
@@ -145,7 +147,7 @@ func (ps *Projects) Export(ctx context.Context, projectID sdktypes.ProjectID) ([
 			return nil, err
 		}
 
-		if name == manifestFileName {
+		if writeHeader {
 			if _, err := f.Write(origHeader); err != nil {
 				return nil, err
 			}
