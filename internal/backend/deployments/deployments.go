@@ -96,39 +96,12 @@ func (d *deployments) Create(ctx context.Context, deployment sdktypes.Deployment
 	return deployment.ID(), nil
 }
 
-func hasActiveSessions(ctx context.Context, tx db.DB, id sdktypes.DeploymentID) (bool, error) {
-	// TODO: single query?
-	r, err := tx.ListSessions(ctx, sdkservices.ListSessionsFilter{
-		DeploymentID: id,
-		StateType:    sdktypes.SessionStateTypeRunning,
-		CountOnly:    true,
-	})
-	if err != nil {
-		return false, fmt.Errorf("count running sessions: %w", err)
-	}
-
-	if r.TotalCount > 0 {
-		return true, nil
-	}
-
-	r, err = tx.ListSessions(ctx, sdkservices.ListSessionsFilter{
-		DeploymentID: id,
-		StateType:    sdktypes.SessionStateTypeCreated,
-		CountOnly:    true,
-	})
-	if err != nil {
-		return false, fmt.Errorf("count created sessions: %w", err)
-	}
-
-	return r.TotalCount > 0, nil
-}
-
 func (d *deployments) Deactivate(ctx context.Context, id sdktypes.DeploymentID) error {
 	return d.db.Transaction(ctx, func(tx db.DB) error { return deactivate(ctx, tx, id) })
 }
 
 func deactivate(ctx context.Context, tx db.DB, id sdktypes.DeploymentID) error {
-	active, err := hasActiveSessions(ctx, tx, id)
+	active, err := tx.DeploymentHasActiveSessions(ctx, id)
 	if err != nil {
 		return err
 	}

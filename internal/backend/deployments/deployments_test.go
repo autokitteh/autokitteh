@@ -37,6 +37,10 @@ type testDB struct {
 
 func (db *testDB) Transaction(_ context.Context, f func(tx db.DB) error) error { return f(db) }
 
+func (db *testDB) DeploymentHasActiveSessions(_ context.Context, id sdktypes.DeploymentID) (bool, error) {
+	return db.deployments[id].NumRunningSessions > 0, nil
+}
+
 func (db *testDB) GetDeployment(_ context.Context, id sdktypes.DeploymentID) (sdktypes.Deployment, error) {
 	d, ok := db.deployments[id]
 	if !ok {
