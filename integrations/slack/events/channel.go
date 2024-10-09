@@ -1,9 +1,9 @@
 package events
 
 import (
-	"bytes"
 	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"go.uber.org/zap"
 
@@ -42,6 +42,19 @@ func ChannelCreatedHandler(l *zap.Logger, w http.ResponseWriter, body []byte, cb
 	return j.Event
 }
 
+// Workaround for ENG-980: is_moved should be boolean, but is sometimes 0.
+type BoolOrInt bool
+
+// UnmarshalJSON replaces [json.Unmarshal] to support 0 and 1 as false and true.
+func (b *BoolOrInt) UnmarshalJSON(data []byte) error {
+	v, err := strconv.ParseBool(string(data))
+	if err == nil {
+		return err
+	}
+	*b = (BoolOrInt)(v)
+	return nil
+}
+
 // https://api.slack.com/events/channel_archive
 // https://api.slack.com/events/channel_unarchive
 // https://api.slack.com/events/group_archive
@@ -49,13 +62,13 @@ func ChannelCreatedHandler(l *zap.Logger, w http.ResponseWriter, body []byte, cb
 // https://api.slack.com/events/group_unarchive
 // https://api.slack.com/events/member_joined_channel
 type ChannelGroupEvent struct {
-	Type        string `json:"type,omitempty"`
-	Channel     string `json:"channel,omitempty"`
-	ChannelType string `json:"channel_type,omitempty"`
-	User        string `json:"user,omitempty"`
-	Inviter     string `json:"inviter,omitempty"`
-	IsMoved     bool   `json:"is_moved,omitempty"`
-	EventTS     string `json:"event_ts,omitempty"`
+	Type        string    `json:"type,omitempty"`
+	Channel     string    `json:"channel,omitempty"`
+	ChannelType string    `json:"channel_type,omitempty"`
+	User        string    `json:"user,omitempty"`
+	Inviter     string    `json:"inviter,omitempty"`
+	IsMoved     BoolOrInt `json:"is_moved,omitempty"`
+	EventTS     string    `json:"event_ts,omitempty"`
 }
 
 type channelGroupContainer struct {
@@ -80,9 +93,6 @@ func ChannelGroupHandler(l *zap.Logger, w http.ResponseWriter, body []byte, cb *
 			return nil
 		}
 	}
-
-	// Workaround for ENG-980: "is_moved: 0" should be "is_moved: false".
-	body = bytes.ReplaceAll(body, []byte(`"is_moved":0`), []byte(`"is_moved":false`))
 
 	// Parse and return the inner event details.
 	j := &channelGroupContainer{}
