@@ -21,7 +21,7 @@ from grpc_reflection.v1alpha import reflection
 from syscalls import SysCalls
 from time import sleep
 
-SERVER_GRACE = 3  # seconds
+SERVER_GRACE_TIMEOUT = 3  # seconds
 
 
 class ActivityError(Exception):
@@ -117,7 +117,7 @@ class Runner(rpc.RunnerServicer):
         sleep(initial_delay)
         if not self._start_called:
             log.error("Start not called after %dsec", initial_delay)
-            self.server.stop(SERVER_GRACE)
+            self.server.stop(SERVER_GRACE_TIMEOUT)
             return
 
         # Check that we are still active
@@ -132,7 +132,7 @@ class Runner(rpc.RunnerServicer):
             sleep(period)
 
         log.error("could not verify if should keep running, killing self")
-        self.server.stop(SERVER_GRACE)
+        self.server.stop(SERVER_GRACE_TIMEOUT)
 
     def Start(self, request: pb.StartRequest, context: grpc.ServicerContext):
         if self._start_called:
@@ -311,7 +311,7 @@ class Runner(rpc.RunnerServicer):
         except grpc.RpcError as err:
             if err.code() == grpc.StatusCode.UNAVAILABLE or grpc.StatusCode.CANCELLED:
                 log.error("grpc canclled or unavailable, killing self")
-                self.server.stop(SERVER_GRACE)
+                self.server.stop(SERVER_GRACE_TIMEOUT)
             log.error("print: %s", err)
 
 
