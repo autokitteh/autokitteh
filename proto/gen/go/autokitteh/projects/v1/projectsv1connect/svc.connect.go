@@ -54,6 +54,8 @@ const (
 	// ProjectsServiceDownloadResourcesProcedure is the fully-qualified name of the ProjectsService's
 	// DownloadResources RPC.
 	ProjectsServiceDownloadResourcesProcedure = "/autokitteh.projects.v1.ProjectsService/DownloadResources"
+	// ProjectsServiceExportProcedure is the fully-qualified name of the ProjectsService's Export RPC.
+	ProjectsServiceExportProcedure = "/autokitteh.projects.v1.ProjectsService/Export"
 )
 
 // ProjectsServiceClient is a client for the autokitteh.projects.v1.ProjectsService service.
@@ -68,6 +70,7 @@ type ProjectsServiceClient interface {
 	ListForOwner(context.Context, *connect.Request[v1.ListForOwnerRequest]) (*connect.Response[v1.ListForOwnerResponse], error)
 	SetResources(context.Context, *connect.Request[v1.SetResourcesRequest]) (*connect.Response[v1.SetResourcesResponse], error)
 	DownloadResources(context.Context, *connect.Request[v1.DownloadResourcesRequest]) (*connect.Response[v1.DownloadResourcesResponse], error)
+	Export(context.Context, *connect.Request[v1.ExportRequest]) (*connect.Response[v1.ExportResponse], error)
 }
 
 // NewProjectsServiceClient constructs a client for the autokitteh.projects.v1.ProjectsService
@@ -125,6 +128,11 @@ func NewProjectsServiceClient(httpClient connect.HTTPClient, baseURL string, opt
 			baseURL+ProjectsServiceDownloadResourcesProcedure,
 			opts...,
 		),
+		export: connect.NewClient[v1.ExportRequest, v1.ExportResponse](
+			httpClient,
+			baseURL+ProjectsServiceExportProcedure,
+			opts...,
+		),
 	}
 }
 
@@ -139,6 +147,7 @@ type projectsServiceClient struct {
 	listForOwner      *connect.Client[v1.ListForOwnerRequest, v1.ListForOwnerResponse]
 	setResources      *connect.Client[v1.SetResourcesRequest, v1.SetResourcesResponse]
 	downloadResources *connect.Client[v1.DownloadResourcesRequest, v1.DownloadResourcesResponse]
+	export            *connect.Client[v1.ExportRequest, v1.ExportResponse]
 }
 
 // Create calls autokitteh.projects.v1.ProjectsService.Create.
@@ -186,6 +195,11 @@ func (c *projectsServiceClient) DownloadResources(ctx context.Context, req *conn
 	return c.downloadResources.CallUnary(ctx, req)
 }
 
+// Export calls autokitteh.projects.v1.ProjectsService.Export.
+func (c *projectsServiceClient) Export(ctx context.Context, req *connect.Request[v1.ExportRequest]) (*connect.Response[v1.ExportResponse], error) {
+	return c.export.CallUnary(ctx, req)
+}
+
 // ProjectsServiceHandler is an implementation of the autokitteh.projects.v1.ProjectsService
 // service.
 type ProjectsServiceHandler interface {
@@ -199,6 +213,7 @@ type ProjectsServiceHandler interface {
 	ListForOwner(context.Context, *connect.Request[v1.ListForOwnerRequest]) (*connect.Response[v1.ListForOwnerResponse], error)
 	SetResources(context.Context, *connect.Request[v1.SetResourcesRequest]) (*connect.Response[v1.SetResourcesResponse], error)
 	DownloadResources(context.Context, *connect.Request[v1.DownloadResourcesRequest]) (*connect.Response[v1.DownloadResourcesResponse], error)
+	Export(context.Context, *connect.Request[v1.ExportRequest]) (*connect.Response[v1.ExportResponse], error)
 }
 
 // NewProjectsServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -252,6 +267,11 @@ func NewProjectsServiceHandler(svc ProjectsServiceHandler, opts ...connect.Handl
 		svc.DownloadResources,
 		opts...,
 	)
+	projectsServiceExportHandler := connect.NewUnaryHandler(
+		ProjectsServiceExportProcedure,
+		svc.Export,
+		opts...,
+	)
 	return "/autokitteh.projects.v1.ProjectsService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case ProjectsServiceCreateProcedure:
@@ -272,6 +292,8 @@ func NewProjectsServiceHandler(svc ProjectsServiceHandler, opts ...connect.Handl
 			projectsServiceSetResourcesHandler.ServeHTTP(w, r)
 		case ProjectsServiceDownloadResourcesProcedure:
 			projectsServiceDownloadResourcesHandler.ServeHTTP(w, r)
+		case ProjectsServiceExportProcedure:
+			projectsServiceExportHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -315,4 +337,8 @@ func (UnimplementedProjectsServiceHandler) SetResources(context.Context, *connec
 
 func (UnimplementedProjectsServiceHandler) DownloadResources(context.Context, *connect.Request[v1.DownloadResourcesRequest]) (*connect.Response[v1.DownloadResourcesResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("autokitteh.projects.v1.ProjectsService.DownloadResources is not implemented"))
+}
+
+func (UnimplementedProjectsServiceHandler) Export(context.Context, *connect.Request[v1.ExportRequest]) (*connect.Response[v1.ExportResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("autokitteh.projects.v1.ProjectsService.Export is not implemented"))
 }
