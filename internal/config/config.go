@@ -1,4 +1,4 @@
-package svc
+package config
 
 import (
 	"errors"
@@ -66,8 +66,12 @@ func LoadConfig(envVarPrefix string, confmapvs map[string]any, yamlPath string) 
 		// Env variables should have the following convention to support hierarchical keys:
 		// PREFIX_PARENT1__CHILD1__REQUIRED_KEY_NAME
 		// meaning heirarchy is separated by `__` and the name it self use one `_``.
-		if err := k.Load(env.Provider(envVarPrefix, "__", func(s string) string {
-			return strings.ToLower(strings.TrimPrefix(s, envVarPrefix))
+		if err := k.Load(env.ProviderWithValue(envVarPrefix, "__", func(key, value string) (string, interface{}) {
+			key = strings.ToLower(strings.TrimPrefix(key, envVarPrefix))
+			if strings.Contains(value, ",") {
+				return key, strings.Split(value, ",")
+			}
+			return key, value
 		}), nil); err != nil {
 			return nil, fmt.Errorf("load env: %w", err)
 		}
