@@ -253,3 +253,32 @@ func (s *Server) DownloadResources(ctx context.Context, req *connect.Request[pro
 
 	return connect.NewResponse(&projectsv1.DownloadResourcesResponse{Resources: resources}), nil
 }
+
+func (s *Server) Export(ctx context.Context, req *connect.Request[projectsv1.ExportRequest]) (*connect.Response[projectsv1.ExportResponse], error) {
+
+	msg := req.Msg
+
+	if err := proto.Validate(msg); err != nil {
+		return nil, sdkerrors.AsConnectError(err)
+	}
+
+	pid, err := sdktypes.ParseProjectID(msg.ProjectId)
+	if err != nil {
+		return nil, sdkerrors.AsConnectError(err)
+	}
+
+	if !pid.IsValid() {
+		return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("project_id: %w", err))
+	}
+
+	zipData, err := s.projects.Export(ctx, pid)
+	if err != nil {
+		return nil, sdkerrors.AsConnectError(err)
+	}
+
+	resp := projectsv1.ExportResponse{
+		ZipArchive: zipData,
+	}
+
+	return connect.NewResponse(&resp), nil
+}
