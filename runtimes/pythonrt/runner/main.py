@@ -7,7 +7,7 @@ from concurrent.futures import Future, ThreadPoolExecutor
 from io import StringIO
 from multiprocessing import cpu_count
 from pathlib import Path
-from threading import Lock
+from threading import Lock, Thread
 from traceback import TracebackException, print_exception
 
 import grpc
@@ -19,8 +19,7 @@ from autokitteh import AttrDict
 from call import AKCall, full_func_name
 from grpc_reflection.v1alpha import reflection
 from syscalls import SysCalls
-import threading
-import time
+from time import sleep
 
 SERVER_GRACE = 3  # seconds
 
@@ -98,7 +97,7 @@ class Runner(rpc.RunnerServicer):
         self.replies = {}  # id -> future
         self._next_id = 0
         self._orig_print = print
-        self._did_start = False
+        self._start_called = False
 
     def Exports(self, request: pb.ExportsRequest, context: grpc.ServicerContext):
         if request.file_name == "":
@@ -114,8 +113,14 @@ class Runner(rpc.RunnerServicer):
 
         return pb.ExportsResponse(exports=exports)
 
-    def ShouldKeepRunning(self, intial_delay=10, period=10):
-        time.sleep(intial_delay)
+    def should_keep_running(self, initial_delay=10, period=10):
+        sleep(initial_delay)
+        if not self._start_called:
+            log.error("Start not called after %dsec", initial_delay)
+            self.server.stop(SERVER_GRACE)
+            return
+
+        # Check that we are still active
         while True:
             try:
                 req = pb.IsActiveRunnerRequest(runner_id=self.id)
@@ -124,17 +129,17 @@ class Runner(rpc.RunnerServicer):
                     break
             except grpc.RpcError:
                 break
-            time.sleep(period)
+            sleep(period)
 
         log.error("could not verify if should keep running, killing self")
         self.server.stop(SERVER_GRACE)
 
     def Start(self, request: pb.StartRequest, context: grpc.ServicerContext):
-        if self._did_start:
+        if self._start_called:
             log.error("already called start before")
             return pb.StartResponse(error="start already called")
 
-        self._did_start = True
+        self._start_called = True
         log.info("start request: %r", request)
 
         self.syscalls = SysCalls(self.id, self.worker)
@@ -403,11 +408,7 @@ if __name__ == "__main__":
     server.start()
     log.info("server running on port %d", args.port)
 
-    should_keep_running_thread = threading.Thread(target=runner.ShouldKeepRunning)
-    should_keep_running_thread.daemon = (
-        True  # Daemon thread will exit when the main program exits
-    )
-    should_keep_running_thread.start()
+    Thread(target=runner.should_keep_running, daemon=True).start()
     log.info("setup should keep running thread")
 
     server.wait_for_termination()
