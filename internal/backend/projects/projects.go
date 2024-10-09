@@ -119,9 +119,14 @@ func (ps *Projects) DownloadResources(ctx context.Context, projectID sdktypes.Pr
 	return ps.DB.GetProjectResources(ctx, projectID)
 }
 
+var origHeader = []byte(`
+# This is the original autokitteh.yaml specific by the user.
+# Look at autokitteh.yaml for current state of the project.
+
+`)
+
 func (ps *Projects) Export(ctx context.Context, projectID sdktypes.ProjectID) ([]byte, error) {
 	const manifestFileName = "autokitteh.yaml"
-	hasManifest := false
 	var buf bytes.Buffer
 	w := zip.NewWriter(&buf)
 
@@ -131,32 +136,37 @@ func (ps *Projects) Export(ctx context.Context, projectID sdktypes.ProjectID) ([
 	}
 
 	for name, data := range rscs {
+		if name == manifestFileName {
+			name = "autokitteh-user.yaml"
+		}
+
 		f, err := w.Create(name)
 		if err != nil {
 			return nil, err
+		}
+
+		if name == manifestFileName {
+			if _, err := f.Write(origHeader); err != nil {
+				return nil, err
+			}
 		}
 		_, err = f.Write(data)
 		if err != nil {
 			return nil, err
 		}
-		if name == manifestFileName {
-			hasManifest = true
-		}
 	}
 
-	if !hasManifest {
-		manifest, err := ps.exportManifest(ctx, projectID)
-		if err != nil {
-			return nil, err
-		}
-		f, err := w.Create("autokitteh.yaml")
-		if err != nil {
-			return nil, err
-		}
-		_, err = f.Write(manifest)
-		if err != nil {
-			return nil, err
-		}
+	manifest, err := ps.exportManifest(ctx, projectID)
+	if err != nil {
+		return nil, err
+	}
+	f, err := w.Create("autokitteh.yaml")
+	if err != nil {
+		return nil, err
+	}
+	_, err = f.Write(manifest)
+	if err != nil {
+		return nil, err
 	}
 
 	if err := w.Close(); err != nil {
