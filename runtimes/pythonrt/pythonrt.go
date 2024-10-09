@@ -479,7 +479,7 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, _ []sdktypes.
 					err = fmt.Errorf("grpc: %s", resp.Error)
 				}
 				if err != nil {
-					py.log.Warn("runner health failed", zap.Error(err))
+					py.log.Error("runner health failed", zap.Error(err))
 
 					// TODO: ENG-1675 - cleanup runner junk
 
