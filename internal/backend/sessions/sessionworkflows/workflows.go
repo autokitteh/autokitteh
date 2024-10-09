@@ -236,9 +236,8 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 				if errors.As(err, &sdkerrors.RetryableErrorType) {
 					sessionsRetryErrorsCounter.Add(metricsCtx, 1)
 					l.Panic("panic session to retry")
-				} else {
-					sessionsErroredCounter.Add(metricsCtx, 1)
 				}
+				sessionsErroredCounter.Add(metricsCtx, 1)
 			}
 		}
 	} else {
