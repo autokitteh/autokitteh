@@ -1,4 +1,4 @@
-package runtimesvc
+package starlarkrt
 
 import (
 	"context"
@@ -10,23 +10,23 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-var Runtime = &sdkruntimes.Runtime{
-	Desc: desc,
-	New:  func() (sdkservices.Runtime, error) { return New(), nil },
+func New() *sdkruntimes.Runtime {
+	return &sdkruntimes.Runtime{
+		Desc: desc,
+		New:  func() (sdkservices.Runtime, error) { return svc{}, nil },
+	}
 }
 
 type svc struct{}
 
-func New() sdkservices.Runtime { return svc{} }
-
 func (svc) Get() sdktypes.Runtime { return desc }
 
 // TODO: we might want to stream the build product data as it might be big? Or we just limit the build size.
-func (svc) Build(ctx context.Context, fs fs.FS, path string, values []sdktypes.Symbol) (sdktypes.BuildArtifact, error) {
+func (s svc) Build(ctx context.Context, fs fs.FS, path string, values []sdktypes.Symbol) (sdktypes.BuildArtifact, error) {
 	return runtime.Build(ctx, fs, path, values)
 }
 
-func (svc) Run(
+func (s svc) Run(
 	ctx context.Context,
 	runID sdktypes.RunID,
 	sessionID sdktypes.SessionID,

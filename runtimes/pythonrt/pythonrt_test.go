@@ -16,12 +16,13 @@ import (
 	"testing"
 	"time"
 
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
-	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
-	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 	"go.uber.org/zap"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
+
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
+	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 
 	"github.com/stretchr/testify/require"
 )
@@ -68,7 +69,7 @@ func isFSFile(fsys fs.FS, path string) bool {
 }
 
 func newSVC(t *testing.T) *pySvc {
-	rt, err := New()
+	rt, err := newSvc(Configs.Default, zap.NewNop())
 	require.NoError(t, err, "New")
 	svc, ok := rt.(*pySvc)
 	require.Truef(t, ok, "type assertion failed, got %T", rt)
@@ -79,13 +80,13 @@ func newSVC(t *testing.T) *pySvc {
 func TestConfigureLocalRuntime(t *testing.T) {
 	l := kittehs.Must1(zap.NewDevelopment())
 
-	err := ConfigureLocalRunnerManager(l, LocalRunnerManagerConfig{})
+	err := configureLocalRunnerManager(l, LocalRunnerManagerConfig{})
 	require.Error(t, err, "should fail on not set worker address")
 
-	err = ConfigureLocalRunnerManager(l, LocalRunnerManagerConfig{WorkerAddress: "0.0.0.0:123"})
+	err = configureLocalRunnerManager(l, LocalRunnerManagerConfig{WorkerAddress: "0.0.0.0:123"})
 	require.NoError(t, err, "should succeed to configure")
 
-	err = ConfigureLocalRunnerManager(l, LocalRunnerManagerConfig{WorkerAddressProvider: func() string { return "" }})
+	err = configureLocalRunnerManager(l, LocalRunnerManagerConfig{WorkerAddressProvider: func() string { return "" }})
 	require.NoError(t, err, "should succeed to configure")
 }
 
@@ -143,7 +144,8 @@ func newCallbacks(svc *pySvc) *sdkservices.RunCallbacks {
 			rid sdktypes.RunID,
 			v sdktypes.Value,
 			args []sdktypes.Value,
-			kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
+			kwargs map[string]sdktypes.Value,
+		) (sdktypes.Value, error) {
 			return svc.Call(ctx, v, args, kwargs)
 		},
 		Load: func(ctx context.Context, rid sdktypes.RunID, path string) (map[string]sdktypes.Value, error) {
@@ -163,7 +165,7 @@ func setupServer(l *zap.Logger) (net.Listener, error) {
 		return nil, err
 	}
 
-	if err := ConfigureLocalRunnerManager(l, LocalRunnerManagerConfig{
+	if err := configureLocalRunnerManager(l, LocalRunnerManagerConfig{
 		WorkerAddressProvider: func() string {
 			port := listener.Addr().(*net.TCPAddr).Port
 			return fmt.Sprintf("localhost:%d", port)
@@ -218,7 +220,6 @@ func Test_pySvc_Run(t *testing.T) {
 		if err := server.Close(); err != nil {
 			t.Log(err)
 		}
-
 	}()
 
 	sessionID := sdktypes.NewSessionID()
@@ -239,7 +240,6 @@ func Test_pySvc_Run(t *testing.T) {
 	}
 	_, err = run.Call(ctx, fn, nil, kwargs)
 	require.NoError(t, err, "call")
-
 }
 
 var isGoodVersionCasess = []struct {
@@ -270,7 +270,7 @@ func TestNewBadVersion(t *testing.T) {
 	t.Setenv(exeEnvKey, exe)
 
 	l := zap.New(nil)
-	err := ConfigureLocalRunnerManager(l, LocalRunnerManagerConfig{})
+	err := configureLocalRunnerManager(l, LocalRunnerManagerConfig{})
 	require.Error(t, err)
 }
 
@@ -280,20 +280,19 @@ func TestPythonFromEnv(t *testing.T) {
 	t.Setenv(exeEnvKey, pyExe)
 
 	l := zap.New(nil)
-	err := ConfigureLocalRunnerManager(l, LocalRunnerManagerConfig{})
+	err := configureLocalRunnerManager(l, LocalRunnerManagerConfig{})
 	require.Error(t, err)
 
 	genExe(t, pyExe, minPyVersion.Major, minPyVersion.Minor)
-	err = ConfigureLocalRunnerManager(l, LocalRunnerManagerConfig{WorkerAddress: "0.0.0.0:0"})
+	err = configureLocalRunnerManager(l, LocalRunnerManagerConfig{WorkerAddress: "0.0.0.0:0"})
 	require.NoError(t, err)
 
-	_, err = New()
+	_, err = newSvc(Configs.Default, zap.NewNop())
 	require.NoError(t, err)
 
 	py, ok := runnerManager.(*localRunnerManager)
 	require.True(t, ok)
 	require.Equal(t, pyExe, py.pyExe)
-
 }
 
 func Test_pySvc_Build_PyCache(t *testing.T) {
@@ -331,14 +330,14 @@ def handle(event):
 func TestProgramError(t *testing.T) {
 	skipIfNoPython(t)
 
-	// ConfigureLocalRunnerManager()
+	// configureLocalRunnerManager()
 	pyFile := "progerr.py"
 	var buf bytes.Buffer
 	tw := tar.NewWriter(&buf)
 	hdr := &tar.Header{
 		Name: pyFile,
 		Size: int64(len(progErrCode)),
-		Mode: 0644,
+		Mode: 0o644,
 	}
 	err := tw.WriteHeader(hdr)
 	require.NoError(t, err)

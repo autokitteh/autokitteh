@@ -31,7 +31,7 @@ func (c RemoteRuntimeConfig) validate() error {
 	return nil
 }
 
-func ConfigureRemoteRunnerManager(cfg RemoteRuntimeConfig) error {
+func configureRemoteRunnerManager(cfg RemoteRuntimeConfig) error {
 	if err := cfg.validate(); err != nil {
 		return err
 	}
