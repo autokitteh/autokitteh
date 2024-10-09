@@ -56,7 +56,7 @@ func (db *testDB) ListDeployments(ctx context.Context, filter sdkservices.ListDe
 			continue
 		}
 
-		if filter.EnvID.IsValid() && filter.EnvID != filter.EnvID {
+		if filter.EnvID.IsValid() && filter.EnvID != envID {
 			continue
 		}
 
