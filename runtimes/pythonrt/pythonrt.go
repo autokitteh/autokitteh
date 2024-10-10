@@ -406,7 +406,7 @@ func pyLevelToZap(level string) zapcore.Level {
 	return zap.InfoLevel
 }
 
-func (py *pySvc) call(ctx context.Context, val sdktypes.Value) {
+func (py *pySvc) call(ctx context.Context, val sdktypes.Value, args []sdktypes.Value, kw map[string]sdktypes.Value) {
 	req := pb.ActivityReplyRequest{}
 
 	// We want to send reply in any case
@@ -430,7 +430,7 @@ func (py *pySvc) call(ctx context.Context, val sdktypes.Value) {
 
 	fn := val.GetFunction()
 	req.Data = fn.Data()
-	out, err := py.cbs.Call(py.ctx, py.runID, val, nil, nil)
+	out, err := py.cbs.Call(py.ctx, py.runID, val, args, kw)
 
 	switch {
 	case err != nil:
@@ -522,11 +522,25 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, _ []sdktypes.
 		case r := <-py.channels.print:
 			py.cbs.Print(ctx, py.runID, r.Message)
 		case r := <-py.channels.request:
-			fnName := r.CallInfo.Function
+			var (
+				fnName = "pyFunc"
+				args   []sdktypes.Value
+				kw     map[string]sdktypes.Value
+			)
+
+			if r.CallInfo != nil {
+				fnName = r.CallInfo.Function
+				args = kittehs.Transform(r.CallInfo.Args, func(s string) sdktypes.Value { return sdktypes.NewStringValue(s) })
+				kw = kittehs.TransformMap(r.CallInfo.Kwargs, func(k, v string) (string, sdktypes.Value) { return k, sdktypes.NewStringValue(v) })
+			}
+
 			py.log.Info("activity", zap.String("function", fnName))
 			// it was already checked before we got here
-			fn, _ := sdktypes.NewFunctionValue(py.xid, fnName, r.Data, nil, pyModuleFunc)
-			py.call(ctx, fn)
+			fn, err := sdktypes.NewFunctionValue(py.xid, fnName, r.Data, nil, pyModuleFunc)
+			if err != nil {
+				return sdktypes.InvalidValue, err
+			}
+			py.call(ctx, fn, args, kw)
 		case cb := <-py.channels.callback:
 			val, err := py.cbs.Call(ctx, py.runID, py.syscallFn, cb.args, cb.kwargs)
 			if err != nil {
