@@ -353,8 +353,17 @@ func (w *sessionWorkflow) waitOnFirstSignal(wctx workflow.Context, signals []uui
 		})
 	}
 
+	var cancelled bool
+
+	// Select doesn't respond to cancellations unless we add a receive on the context done channel.
+	selector.AddReceive(wctx.Done(), func(c workflow.ReceiveChannel, _ bool) { cancelled = true })
+
 	// this will wait for first signal or timeout.
 	selector.Select(wctx)
+
+	if cancelled {
+		return uuid.Nil, wctx.Err()
+	}
 
 	return signalID, nil
 }
@@ -394,7 +403,7 @@ func (w *sessionWorkflow) getNextEvent(ctx context.Context, sigid uuid.UUID) (ma
 
 	w.lastReadEventSeqForSignal[sigid] = event.Seq()
 
-	sl.With("event_id", event.ID).Infof("got event %v", event.ID())
+	sl.With("event_id", event.ID()).Infof("got event %v", event.ID())
 
 	return event.Data(), nil
 }
@@ -514,6 +523,7 @@ func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (prints []st
 	ctx := temporalclient.NewWorkflowContextAsGOContext(wctx)
 
 	temporalclient.WithoutDeadlockDetection(
+		wctx,
 		func() {
 			run, err = sdkruntimes.Run(
 				ctx,
@@ -524,6 +534,7 @@ func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (prints []st
 					RunID:                runID,
 					FallthroughCallbacks: cbs,
 					EntryPointPath:       entryPoint.Path(),
+					SessionID:            w.data.Session.ID(),
 				},
 			)
 		},

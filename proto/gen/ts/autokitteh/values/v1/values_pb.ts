@@ -646,6 +646,61 @@ export class Function extends Message<Function> {
 }
 
 /**
+ * @generated from message autokitteh.values.v1.Custom
+ */
+export class Custom extends Message<Custom> {
+  /**
+   * Executor used to generate this data.
+   *
+   * @generated from field: string executor_id = 1;
+   */
+  executorId = "";
+
+  /**
+   * Data generated and comprehensible only to the generating executor.
+   *
+   * @generated from field: bytes data = 2;
+   */
+  data = new Uint8Array(0);
+
+  /**
+   * Value representation of this data for display and cross-executor compatibility.
+   *
+   * @generated from field: autokitteh.values.v1.Value value = 3;
+   */
+  value?: Value;
+
+  constructor(data?: PartialMessage<Custom>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "autokitteh.values.v1.Custom";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "executor_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "data", kind: "scalar", T: 12 /* ScalarType.BYTES */ },
+    { no: 3, name: "value", kind: "message", T: Value },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Custom {
+    return new Custom().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): Custom {
+    return new Custom().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): Custom {
+    return new Custom().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: Custom | PlainMessage<Custom> | undefined, b: Custom | PlainMessage<Custom> | undefined): boolean {
+    return proto3.util.equals(Custom, a, b);
+  }
+}
+
+/**
  * @generated from message autokitteh.values.v1.Value
  */
 export class Value extends Message<Value> {
@@ -726,6 +781,11 @@ export class Value extends Message<Value> {
    */
   function?: Function;
 
+  /**
+   * @generated from field: autokitteh.values.v1.Custom custom = 16;
+   */
+  custom?: Custom;
+
   constructor(data?: PartialMessage<Value>) {
     super();
     proto3.util.initPartial(data, this);
@@ -749,6 +809,7 @@ export class Value extends Message<Value> {
     { no: 13, name: "module", kind: "message", T: Module },
     { no: 14, name: "symbol", kind: "message", T: Symbol },
     { no: 15, name: "function", kind: "message", T: Function },
+    { no: 16, name: "custom", kind: "message", T: Custom },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Value {

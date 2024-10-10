@@ -1,4 +1,4 @@
-package runtimesvc
+package starlarkrt
 
 import (
 	"go.autokitteh.dev/autokitteh/internal/kittehs"

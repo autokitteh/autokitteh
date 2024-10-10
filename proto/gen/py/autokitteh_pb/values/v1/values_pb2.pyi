@@ -130,8 +130,18 @@ class Function(_message.Message):
     flags: _containers.RepeatedScalarFieldContainer[str]
     def __init__(self, executor_id: _Optional[str] = ..., name: _Optional[str] = ..., desc: _Optional[_Union[_module_pb2.Function, _Mapping]] = ..., data: _Optional[bytes] = ..., flags: _Optional[_Iterable[str]] = ...) -> None: ...
 
+class Custom(_message.Message):
+    __slots__ = ["executor_id", "data", "value"]
+    EXECUTOR_ID_FIELD_NUMBER: _ClassVar[int]
+    DATA_FIELD_NUMBER: _ClassVar[int]
+    VALUE_FIELD_NUMBER: _ClassVar[int]
+    executor_id: str
+    data: bytes
+    value: Value
+    def __init__(self, executor_id: _Optional[str] = ..., data: _Optional[bytes] = ..., value: _Optional[_Union[Value, _Mapping]] = ...) -> None: ...
+
 class Value(_message.Message):
-    __slots__ = ["nothing", "boolean", "string", "integer", "float", "list", "set", "dict", "bytes", "time", "duration", "struct", "module", "symbol", "function"]
+    __slots__ = ["nothing", "boolean", "string", "integer", "float", "list", "set", "dict", "bytes", "time", "duration", "struct", "module", "symbol", "function", "custom"]
     NOTHING_FIELD_NUMBER: _ClassVar[int]
     BOOLEAN_FIELD_NUMBER: _ClassVar[int]
     STRING_FIELD_NUMBER: _ClassVar[int]
@@ -147,6 +157,7 @@ class Value(_message.Message):
     MODULE_FIELD_NUMBER: _ClassVar[int]
     SYMBOL_FIELD_NUMBER: _ClassVar[int]
     FUNCTION_FIELD_NUMBER: _ClassVar[int]
+    CUSTOM_FIELD_NUMBER: _ClassVar[int]
     nothing: Nothing
     boolean: Boolean
     string: String
@@ -162,4 +173,5 @@ class Value(_message.Message):
     module: Module
     symbol: Symbol
     function: Function
-    def __init__(self, nothing: _Optional[_Union[Nothing, _Mapping]] = ..., boolean: _Optional[_Union[Boolean, _Mapping]] = ..., string: _Optional[_Union[String, _Mapping]] = ..., integer: _Optional[_Union[Integer, _Mapping]] = ..., float: _Optional[_Union[Float, _Mapping]] = ..., list: _Optional[_Union[List, _Mapping]] = ..., set: _Optional[_Union[Set, _Mapping]] = ..., dict: _Optional[_Union[Dict, _Mapping]] = ..., bytes: _Optional[_Union[Bytes, _Mapping]] = ..., time: _Optional[_Union[Time, _Mapping]] = ..., duration: _Optional[_Union[Duration, _Mapping]] = ..., struct: _Optional[_Union[Struct, _Mapping]] = ..., module: _Optional[_Union[Module, _Mapping]] = ..., symbol: _Optional[_Union[Symbol, _Mapping]] = ..., function: _Optional[_Union[Function, _Mapping]] = ...) -> None: ...
+    custom: Custom
+    def __init__(self, nothing: _Optional[_Union[Nothing, _Mapping]] = ..., boolean: _Optional[_Union[Boolean, _Mapping]] = ..., string: _Optional[_Union[String, _Mapping]] = ..., integer: _Optional[_Union[Integer, _Mapping]] = ..., float: _Optional[_Union[Float, _Mapping]] = ..., list: _Optional[_Union[List, _Mapping]] = ..., set: _Optional[_Union[Set, _Mapping]] = ..., dict: _Optional[_Union[Dict, _Mapping]] = ..., bytes: _Optional[_Union[Bytes, _Mapping]] = ..., time: _Optional[_Union[Time, _Mapping]] = ..., duration: _Optional[_Union[Duration, _Mapping]] = ..., struct: _Optional[_Union[Struct, _Mapping]] = ..., module: _Optional[_Union[Module, _Mapping]] = ..., symbol: _Optional[_Union[Symbol, _Mapping]] = ..., function: _Optional[_Union[Function, _Mapping]] = ..., custom: _Optional[_Union[Custom, _Mapping]] = ...) -> None: ...

@@ -1,0 +1,27 @@
+# Negative tests: build nonexistent project, by name/ID.
+# Precondition: create project.
+ak deploy -m autokitteh.yaml
+return code == 0
+# output equals 'project_id: prj_00000000000000000000000001'
+
+ak project export -o /tmp/simple.zip simple
+return code == 0
+# TODO: How to check that's a valid zip file? or event that the output file exists
+
+-- program.py --
+def handle(event):
+	print('EVENT:', event)
+
+-- autokitteh.yaml --
+version: v1
+
+project:
+  name: simple
+  triggers:
+    - name: events
+      event_type: post
+      call: program.py:handle
+      webhook: {}
+  vars:
+    - name: USER
+      value: Garfield

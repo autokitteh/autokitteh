@@ -39,9 +39,6 @@ const (
 	// DeploymentsServiceActivateProcedure is the fully-qualified name of the DeploymentsService's
 	// Activate RPC.
 	DeploymentsServiceActivateProcedure = "/autokitteh.deployments.v1.DeploymentsService/Activate"
-	// DeploymentsServiceDrainProcedure is the fully-qualified name of the DeploymentsService's Drain
-	// RPC.
-	DeploymentsServiceDrainProcedure = "/autokitteh.deployments.v1.DeploymentsService/Drain"
 	// DeploymentsServiceDeactivateProcedure is the fully-qualified name of the DeploymentsService's
 	// Deactivate RPC.
 	DeploymentsServiceDeactivateProcedure = "/autokitteh.deployments.v1.DeploymentsService/Deactivate"
@@ -62,10 +59,8 @@ type DeploymentsServiceClient interface {
 	Create(context.Context, *connect.Request[v1.CreateRequest]) (*connect.Response[v1.CreateResponse], error)
 	// Activate a deployment, automatically drains all others.
 	Activate(context.Context, *connect.Request[v1.ActivateRequest]) (*connect.Response[v1.ActivateResponse], error)
-	// Drain a deployment.
-	Drain(context.Context, *connect.Request[v1.DrainRequest]) (*connect.Response[v1.DrainResponse], error)
-	// Deactivate a deployment - forcefully stops all sessions associated
-	// with the deployment.
+	// Deactivate a deployment. If deployment has any active sessions,
+	// deployment will be drained first.
 	Deactivate(context.Context, *connect.Request[v1.DeactivateRequest]) (*connect.Response[v1.DeactivateResponse], error)
 	Test(context.Context, *connect.Request[v1.TestRequest]) (*connect.Response[v1.TestResponse], error)
 	List(context.Context, *connect.Request[v1.ListRequest]) (*connect.Response[v1.ListResponse], error)
@@ -92,11 +87,6 @@ func NewDeploymentsServiceClient(httpClient connect.HTTPClient, baseURL string, 
 		activate: connect.NewClient[v1.ActivateRequest, v1.ActivateResponse](
 			httpClient,
 			baseURL+DeploymentsServiceActivateProcedure,
-			opts...,
-		),
-		drain: connect.NewClient[v1.DrainRequest, v1.DrainResponse](
-			httpClient,
-			baseURL+DeploymentsServiceDrainProcedure,
 			opts...,
 		),
 		deactivate: connect.NewClient[v1.DeactivateRequest, v1.DeactivateResponse](
@@ -131,7 +121,6 @@ func NewDeploymentsServiceClient(httpClient connect.HTTPClient, baseURL string, 
 type deploymentsServiceClient struct {
 	create     *connect.Client[v1.CreateRequest, v1.CreateResponse]
 	activate   *connect.Client[v1.ActivateRequest, v1.ActivateResponse]
-	drain      *connect.Client[v1.DrainRequest, v1.DrainResponse]
 	deactivate *connect.Client[v1.DeactivateRequest, v1.DeactivateResponse]
 	test       *connect.Client[v1.TestRequest, v1.TestResponse]
 	list       *connect.Client[v1.ListRequest, v1.ListResponse]
@@ -147,11 +136,6 @@ func (c *deploymentsServiceClient) Create(ctx context.Context, req *connect.Requ
 // Activate calls autokitteh.deployments.v1.DeploymentsService.Activate.
 func (c *deploymentsServiceClient) Activate(ctx context.Context, req *connect.Request[v1.ActivateRequest]) (*connect.Response[v1.ActivateResponse], error) {
 	return c.activate.CallUnary(ctx, req)
-}
-
-// Drain calls autokitteh.deployments.v1.DeploymentsService.Drain.
-func (c *deploymentsServiceClient) Drain(ctx context.Context, req *connect.Request[v1.DrainRequest]) (*connect.Response[v1.DrainResponse], error) {
-	return c.drain.CallUnary(ctx, req)
 }
 
 // Deactivate calls autokitteh.deployments.v1.DeploymentsService.Deactivate.
@@ -185,10 +169,8 @@ type DeploymentsServiceHandler interface {
 	Create(context.Context, *connect.Request[v1.CreateRequest]) (*connect.Response[v1.CreateResponse], error)
 	// Activate a deployment, automatically drains all others.
 	Activate(context.Context, *connect.Request[v1.ActivateRequest]) (*connect.Response[v1.ActivateResponse], error)
-	// Drain a deployment.
-	Drain(context.Context, *connect.Request[v1.DrainRequest]) (*connect.Response[v1.DrainResponse], error)
-	// Deactivate a deployment - forcefully stops all sessions associated
-	// with the deployment.
+	// Deactivate a deployment. If deployment has any active sessions,
+	// deployment will be drained first.
 	Deactivate(context.Context, *connect.Request[v1.DeactivateRequest]) (*connect.Response[v1.DeactivateResponse], error)
 	Test(context.Context, *connect.Request[v1.TestRequest]) (*connect.Response[v1.TestResponse], error)
 	List(context.Context, *connect.Request[v1.ListRequest]) (*connect.Response[v1.ListResponse], error)
@@ -210,11 +192,6 @@ func NewDeploymentsServiceHandler(svc DeploymentsServiceHandler, opts ...connect
 	deploymentsServiceActivateHandler := connect.NewUnaryHandler(
 		DeploymentsServiceActivateProcedure,
 		svc.Activate,
-		opts...,
-	)
-	deploymentsServiceDrainHandler := connect.NewUnaryHandler(
-		DeploymentsServiceDrainProcedure,
-		svc.Drain,
 		opts...,
 	)
 	deploymentsServiceDeactivateHandler := connect.NewUnaryHandler(
@@ -248,8 +225,6 @@ func NewDeploymentsServiceHandler(svc DeploymentsServiceHandler, opts ...connect
 			deploymentsServiceCreateHandler.ServeHTTP(w, r)
 		case DeploymentsServiceActivateProcedure:
 			deploymentsServiceActivateHandler.ServeHTTP(w, r)
-		case DeploymentsServiceDrainProcedure:
-			deploymentsServiceDrainHandler.ServeHTTP(w, r)
 		case DeploymentsServiceDeactivateProcedure:
 			deploymentsServiceDeactivateHandler.ServeHTTP(w, r)
 		case DeploymentsServiceTestProcedure:
@@ -275,10 +250,6 @@ func (UnimplementedDeploymentsServiceHandler) Create(context.Context, *connect.R
 
 func (UnimplementedDeploymentsServiceHandler) Activate(context.Context, *connect.Request[v1.ActivateRequest]) (*connect.Response[v1.ActivateResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("autokitteh.deployments.v1.DeploymentsService.Activate is not implemented"))
-}
-
-func (UnimplementedDeploymentsServiceHandler) Drain(context.Context, *connect.Request[v1.DrainRequest]) (*connect.Response[v1.DrainResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("autokitteh.deployments.v1.DeploymentsService.Drain is not implemented"))
 }
 
 func (UnimplementedDeploymentsServiceHandler) Deactivate(context.Context, *connect.Request[v1.DeactivateRequest]) (*connect.Response[v1.DeactivateResponse], error) {

@@ -116,27 +116,3 @@ func TransformMapValuesError[A comparable, B0, B1 any](m map[A]B0, f func(B0) (B
 func TransformToStrings[T any](ts []T) []string {
 	return Transform(ts, func(t T) string { return ToString(t) })
 }
-
-func TransformUnptr[T any](in []*T) (out []T) {
-	if in == nil {
-		return nil
-	}
-
-	out = make([]T, len(in))
-	for i, t := range in {
-		out[i] = *t
-	}
-	return
-}
-
-func TransformPtr[T any](in []T) (out []*T) {
-	if in == nil {
-		return nil
-	}
-
-	out = make([]*T, len(in))
-	for i, t := range in {
-		out[i] = func(t T) *T { return &t }(t)
-	}
-	return
-}

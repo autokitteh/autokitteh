@@ -687,3 +687,79 @@ export class DownloadResourcesResponse extends Message<DownloadResourcesResponse
   }
 }
 
+/**
+ * @generated from message autokitteh.projects.v1.ExportRequest
+ */
+export class ExportRequest extends Message<ExportRequest> {
+  /**
+   * @generated from field: string project_id = 1;
+   */
+  projectId = "";
+
+  constructor(data?: PartialMessage<ExportRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "autokitteh.projects.v1.ExportRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ExportRequest {
+    return new ExportRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ExportRequest {
+    return new ExportRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ExportRequest {
+    return new ExportRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ExportRequest | PlainMessage<ExportRequest> | undefined, b: ExportRequest | PlainMessage<ExportRequest> | undefined): boolean {
+    return proto3.util.equals(ExportRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message autokitteh.projects.v1.ExportResponse
+ */
+export class ExportResponse extends Message<ExportResponse> {
+  /**
+   * Zip of the mainfest + files
+   *
+   * @generated from field: bytes zip_archive = 1;
+   */
+  zipArchive = new Uint8Array(0);
+
+  constructor(data?: PartialMessage<ExportResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "autokitteh.projects.v1.ExportResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "zip_archive", kind: "scalar", T: 12 /* ScalarType.BYTES */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ExportResponse {
+    return new ExportResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ExportResponse {
+    return new ExportResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ExportResponse {
+    return new ExportResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ExportResponse | PlainMessage<ExportResponse> | undefined, b: ExportResponse | PlainMessage<ExportResponse> | undefined): boolean {
+    return proto3.util.equals(ExportResponse, a, b);
+  }
+}
+

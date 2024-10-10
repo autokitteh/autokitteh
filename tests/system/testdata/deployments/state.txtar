@@ -19,14 +19,22 @@ return code == 0
 ak session watch ses_0000000000000000000000000c -r "still alive!"
 return code == 0
 
-ak deployment drain dep_00000000000000000000000006
+ak deployment deactivate dep_00000000000000000000000006
 return code == 0
+
+ak deployment get dep_00000000000000000000000006
+return code == 0
+output contains 'DEPLOYMENT_STATE_DRAINING'
 
 wait 5s for session ses_0000000000000000000000000b
 
 ak session log --prints-only
 return code == 0
 output contains 'done'
+
+ak deployment get dep_00000000000000000000000006
+return code == 0
+output contains 'DEPLOYMENT_STATE_INACTIVE'
 
 -- project.yaml --
 version: v1
@@ -48,4 +56,5 @@ def on_http_get(event):
     while ak.is_deployment_active():
         print("still alive!")
         sleep(1)
+
     print("done")

@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { BuildRequest, BuildResponse, CreateRequest, CreateResponse, DeleteRequest, DeleteResponse, DownloadResourcesRequest, DownloadResourcesResponse, GetRequest, GetResponse, ListForOwnerRequest, ListForOwnerResponse, ListRequest, ListResponse, SetResourcesRequest, SetResourcesResponse, UpdateRequest, UpdateResponse } from "./svc_pb.js";
+import { BuildRequest, BuildResponse, CreateRequest, CreateResponse, DeleteRequest, DeleteResponse, DownloadResourcesRequest, DownloadResourcesResponse, ExportRequest, ExportResponse, GetRequest, GetResponse, ListForOwnerRequest, ListForOwnerResponse, ListRequest, ListResponse, SetResourcesRequest, SetResourcesResponse, UpdateRequest, UpdateResponse } from "./svc_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -93,6 +93,15 @@ export const ProjectsService = {
       name: "DownloadResources",
       I: DownloadResourcesRequest,
       O: DownloadResourcesResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * @generated from rpc autokitteh.projects.v1.ProjectsService.Export
+     */
+    export: {
+      name: "Export",
+      I: ExportRequest,
+      O: ExportResponse,
       kind: MethodKind.Unary,
     },
   }

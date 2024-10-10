@@ -14,7 +14,7 @@ sys.path.insert(0, str(sdk_dir))  # Add the project root to the path
 project = "autokitteh"
 copyright = "2024, AutoKitteh"
 author = "AutoKitteh"
-release = "0.3.1"
+release = "0.3.2"
 
 
 # -- General configuration ---------------------------------------------------

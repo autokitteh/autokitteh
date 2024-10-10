@@ -28,7 +28,6 @@ func init() {
 	deploymentCmd.AddCommand(createCmd)
 	deploymentCmd.AddCommand(deactivateCmd)
 	deploymentCmd.AddCommand(deleteCmd)
-	deploymentCmd.AddCommand(drainCmd)
 	deploymentCmd.AddCommand(getCmd)
 	deploymentCmd.AddCommand(listCmd)
 }

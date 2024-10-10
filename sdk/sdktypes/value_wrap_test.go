@@ -35,6 +35,12 @@ var (
 	}))
 
 	stringIntStruct = kittehs.Must1(sdktypes.NewStructValue(sdktypes.NewStringValue("ctor"), stringIntMap))
+
+	cv = kittehs.Must1(sdktypes.NewCustomValue(
+		sdktypes.NewExecutorID(sdktypes.NewRunID()),
+		[]byte("meow"),
+		sdktypes.NewStringValue("meow"),
+	))
 )
 
 // TODO: These tests are not exhaustive.
@@ -339,6 +345,11 @@ func TestUnwrapIntoSpecials(t *testing.T) {
 	if assert.NoError(t, ww.UnwrapInto(&r, sdktypes.NewBytesValue([]byte("woof")))) {
 		assert.Nil(t, r)
 	}
+
+	var s string
+	if assert.NoError(t, ww.UnwrapInto(&s, cv)) {
+		assert.Equal(t, "meow", s)
+	}
 }
 
 func TestUnwrapIntoValue(t *testing.T) {
@@ -353,6 +364,11 @@ func TestUnwrapIntoValue(t *testing.T) {
 		if assert.NoError(t, w.UnwrapInto(&m, sdktypes.NewValue(d))) {
 			assert.Equal(t, map[string]int{"one": 1, "two": 2, "three": 3}, m)
 		}
+	}
+
+	var s sdktypes.StringValue
+	if assert.NoError(t, w.UnwrapInto(&s, cv)) {
+		assert.Equal(t, "meow", s.Value())
 	}
 }
 

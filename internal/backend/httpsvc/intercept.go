@@ -61,27 +61,22 @@ func intercept(z *zap.Logger, cfg *LoggerConfig, extractors []RequestLogExtracto
 	unlogged := regexp.MustCompile(strings.Join(cfg.UnloggedRegexes, `|`))
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("X-AutoKitteh-Process-ID", fixtures.ProcessID())
+		w.Header().Set("AutoKitteh-Process-ID", fixtures.ProcessID())
+		// https://pkg.go.dev/net/http#example-ResponseWriter-Trailers
+		w.Header().Set("Trailer", "AutoKitteh-Duration")
 
 		l := z.With(zap.String("method", r.Method), zap.String("path", r.URL.Path))
 		rwi := &responseInterceptor{ResponseWriter: w, StatusCode: http.StatusOK, logger: l}
-
-		w.Header().Set("Trailer", "X-AutoKitteh-Duration")
 
 		// Call the next handler in the chain, and calculate the duration.
 		startTime := time.Now()
 		r = r.WithContext(context.WithValue(r.Context(), startTimeCtxKey, startTime))
 
-		// if strings.HasPrefix(r.URL.Path, "/autokitteh.remote.v1.Worker") {
-		// 	pythonrt.Server.ServeHTTP(rwi, r)
-		// } else {
 		next.ServeHTTP(rwi, r)
-		// }
 
 		duration := time.Since(startTime)
 		updateMetric(r.Context(), telemetry, r.URL.Path, rwi.StatusCode, duration)
-
-		w.Header().Add("X-AutoKitteh-Duration", duration.String())
+		w.Header().Set("AutoKitteh-Duration", duration.String())
 
 		// Don't log some requests, unless they result in an error.
 		if unlogged.MatchString(r.URL.Path) && rwi.StatusCode < 400 {

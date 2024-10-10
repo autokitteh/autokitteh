@@ -3,7 +3,9 @@ package pythonrt
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"net"
 	"path"
 	"strings"
 	"time"
@@ -13,23 +15,21 @@ import (
 
 	"golang.org/x/exp/maps"
 
-	"go.autokitteh.dev/autokitteh/internal/backend/logger"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/internal/xdg"
 	pb "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/remote/v1"
+	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkruntimes"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 var (
-	Runtime = &sdkruntimes.Runtime{
-		Desc: kittehs.Must1(sdktypes.StrictRuntimeFromProto(&sdktypes.RuntimePB{
-			Name:           "python",
-			FileExtensions: []string{"py"},
-		})),
-		New: New,
-	}
+	desc = kittehs.Must1(sdktypes.StrictRuntimeFromProto(&sdktypes.RuntimePB{
+		Name:           "python",
+		FileExtensions: []string{"py"},
+	}))
+
 	venvPath = path.Join(xdg.DataHomeDir(), "venv")
 	venvPy   = path.Join(venvPath, "bin", "python")
 )
@@ -51,17 +51,19 @@ type comChannels struct {
 }
 
 type pySvc struct {
-	ctx      context.Context
-	log      *zap.Logger
-	xid      sdktypes.ExecutorID
-	runID    sdktypes.RunID
-	cbs      *sdkservices.RunCallbacks
-	exports  map[string]sdktypes.Value
-	fileName string // main user code file name (entry point)
+	cfg       *Config
+	ctx       context.Context
+	log       *zap.Logger
+	xid       sdktypes.ExecutorID
+	runID     sdktypes.RunID
+	sessionID sdktypes.SessionID
+	cbs       *sdkservices.RunCallbacks
+	exports   map[string]sdktypes.Value
+	fileName  string // main user code file name (entry point)
 	// remote       *workerGRPCHandler
 
 	// runner       Runner
-	runner pb.RunnerClient
+	runner *RunnerClient
 	// runnerManager pb.RunnerManagerClient
 	runnerID string
 
@@ -74,6 +76,10 @@ type pySvc struct {
 
 func (py *pySvc) cleanup(ctx context.Context) {
 	if err := runnerManager.Stop(ctx, py.runnerID); err != nil {
+		py.log.Warn("stop manager", zap.Error(err))
+	}
+
+	if err := py.runner.Close(); err != nil {
 		py.log.Warn("close runner", zap.Error(err))
 	}
 
@@ -82,15 +88,61 @@ func (py *pySvc) cleanup(ctx context.Context) {
 	}
 }
 
-func New() (sdkservices.Runtime, error) {
-	log, err := logger.New(logger.Configs.Default) // TODO (ENG-553): From configuration
-	if err != nil {
-		return nil, err
+func New(cfg *Config, l *zap.Logger, getLocalAddr func() string) (*sdkruntimes.Runtime, error) {
+	switch cfg.RunnerType {
+	case "docker":
+		if cfg.WorkerAddress == "" {
+			return nil, errors.New("worker address is required for docker runner")
+		}
+		if err := configureDockerRunnerManager(l, DockerRuntimeConfig{
+			LogRunnerCode: cfg.LogRunnerCode,
+			LogBuildCode:  cfg.LogBuildCode,
+			WorkerAddressProvider: func() string {
+				_, port, _ := net.SplitHostPort(getLocalAddr())
+				return fmt.Sprintf("%s:%s", cfg.WorkerAddress, port)
+			},
+		}); err != nil {
+			return nil, fmt.Errorf("configure docker runner manager: %w", err)
+		}
+		l.Info("docker runner configured")
+	case "remote":
+		if len(cfg.RemoteRunnerEndpoints) == 0 {
+			return nil, errors.New("remote runner is enabled but no runner endpoints provided")
+		}
+		if err := configureRemoteRunnerManager(RemoteRuntimeConfig{
+			ManagerAddress: cfg.RemoteRunnerEndpoints,
+			WorkerAddress:  cfg.WorkerAddress,
+		}); err != nil {
+			return nil, fmt.Errorf("configure remote runner manager: %w", err)
+		}
+		l.Info("remote runner configued")
+	default:
+		if err := configureLocalRunnerManager(l,
+			LocalRunnerManagerConfig{
+				WorkerAddress:         cfg.WorkerAddress,
+				LazyLoadVEnv:          cfg.LazyLoadLocalVEnv,
+				WorkerAddressProvider: getLocalAddr,
+				LogCodeRunnerCode:     cfg.LogRunnerCode,
+			},
+		); err != nil {
+			return nil, fmt.Errorf("configure local runner manager: %w", err)
+		}
+
+		l.Info("local runner configured")
 	}
-	log = log.With(zap.String("runtime", "python"))
+
+	return &sdkruntimes.Runtime{
+		Desc: desc,
+		New:  func() (sdkservices.Runtime, error) { return newSvc(cfg, l) },
+	}, nil
+}
+
+func newSvc(cfg *Config, l *zap.Logger) (sdkservices.Runtime, error) {
+	l = l.With(zap.String("runtime", "python"))
 
 	svc := pySvc{
-		log:       log,
+		cfg:       cfg,
+		log:       l,
 		firstCall: true,
 		channels: comChannels{
 			done:     make(chan *pb.DoneRequest, 1),
@@ -105,7 +157,7 @@ func New() (sdkservices.Runtime, error) {
 	return &svc, nil
 }
 
-func (*pySvc) Get() sdktypes.Runtime { return Runtime.Desc }
+func (py *pySvc) Get() sdktypes.Runtime { return desc }
 
 const archiveKey = "code.tar"
 
@@ -175,6 +227,7 @@ Run *does not* execute a function in the Python module, this happens in Call.
 func (py *pySvc) Run(
 	ctx context.Context,
 	runID sdktypes.RunID,
+	sessionID sdktypes.SessionID,
 	mainPath string,
 	compiled map[string][]byte,
 	values map[string]sdktypes.Value,
@@ -183,8 +236,9 @@ func (py *pySvc) Run(
 	runnerOK := false
 	py.ctx = ctx
 	py.runID = runID
+	py.sessionID = sessionID
 	py.xid = sdktypes.NewExecutorID(runID) // Should be first
-	py.log = py.log.With(zap.String("run_id", runID.String()))
+	py.log = py.log.With(zap.String("run_id", runID.String()), zap.String("session_id", sessionID.String()))
 	py.log.Info("run", zap.String("path", mainPath))
 
 	py.log.Info("executor", zap.String("id", py.xid.String()))
@@ -210,7 +264,7 @@ func (py *pySvc) Run(
 		return nil, fmt.Errorf("can't load syscall: %w", err)
 	}
 
-	runnerID, runner, err := runnerManager.Start(ctx, tarData, envMap)
+	runnerID, runner, err := runnerManager.Start(ctx, sessionID, tarData, envMap)
 	if err != nil {
 		return nil, fmt.Errorf("starting runner: %w", err)
 	}
@@ -393,7 +447,7 @@ func (py *pySvc) call(ctx context.Context, val sdktypes.Value) {
 
 // initialCall handles initial call from autokitteh, it does the message loop with Python.
 // We split it from Call since Call is also used to execute activities.
-func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
+func (py *pySvc) initialCall(ctx context.Context, funcName string, _ []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
 	defer func() {
 		py.cleanup(ctx)
 		py.log.Info("Python subprocess cleanup after initial call is done")
@@ -433,10 +487,23 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktyp
 				py.log.Debug("health check loop stopped")
 				return
 			case <-time.After(10 * time.Second):
-				if err := runnerManager.RunnerHealth(ctx, py.runnerID); err != nil {
+				healthReq := pb.HealthRequest{}
+
+				resp, err := py.runner.Health(ctx, &healthReq)
+				if err != nil { // no network/lost packet.load? for sanity check the state locally via IPC/signals
+					err = runnerManager.RunnerHealth(ctx, py.runnerID)
+				} else if resp.Error != "" {
+					err = fmt.Errorf("grpc: %s", resp.Error)
+				}
+				if err != nil {
+					py.log.Error("runner health failed", zap.Error(err))
+
+					// TODO: ENG-1675 - cleanup runner junk
+
 					runnerHealthChan <- err
 					return
 				}
+
 			}
 		}
 	}()
@@ -447,7 +514,7 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktyp
 		select {
 		case healthErr := <-runnerHealthChan:
 			if healthErr != nil {
-				return sdktypes.InvalidValue, fmt.Errorf("runner health check failed: %w", healthErr)
+				return sdktypes.InvalidValue, sdkerrors.NewRetryableError("runner health: %w", healthErr)
 			}
 		case r := <-py.channels.log:
 			level := pyLevelToZap(r.Level)
@@ -468,6 +535,10 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktyp
 				cb.successChannel <- val
 			}
 		case v := <-py.channels.done:
+			pCtx, cancel := context.WithTimeout(ctx, time.Second)
+			defer cancel()
+			py.drainPrints(pCtx)
+
 			done = v
 			if done.Error != "" {
 				perr := sdktypes.NewProgramError(
@@ -481,6 +552,18 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktyp
 			return sdktypes.NewBytesValue(done.Result), nil
 		case <-ctx.Done():
 			return sdktypes.InvalidValue, fmt.Errorf("context expired - %w", ctx.Err())
+		}
+	}
+}
+
+// drainPrints drains the print channel at the end of a run.
+func (py *pySvc) drainPrints(ctx context.Context) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case r := <-py.channels.print:
+			py.cbs.Print(ctx, py.runID, r.Message)
 		}
 	}
 }

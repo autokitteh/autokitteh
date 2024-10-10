@@ -41,6 +41,8 @@ func (w *ValueWrapper) unwrap(v Value) (any, error) {
 	switch v := v.Concrete().(type) {
 	case NothingValue:
 		return nil, nil
+	case CustomValue:
+		return w.Unwrap(v.Value())
 	case FunctionValue:
 		if w.IgnoreFunctions {
 			return nil, nil
@@ -162,6 +164,10 @@ func (w ValueWrapper) UnwrapInto(dst any, v Value) error {
 func UnwrapValueInto(dst any, v Value) error { return DefaultValueWrapper.UnwrapInto(dst, v) }
 
 func (w ValueWrapper) unwrapInto(path string, dstv reflect.Value, v Value) error {
+	if v.IsCustom() {
+		return w.unwrapInto(path, dstv, v.GetCustom().Value())
+	}
+
 	if w.Preunwrap != nil {
 		v, err := w.Preunwrap(v)
 		if err != nil {
@@ -338,6 +344,9 @@ func (w ValueWrapper) unwrapContainerInto(path string, dstv reflect.Value, v Val
 	dstk := dstt.Kind()
 
 	switch v := v.Concrete().(type) {
+	case CustomValue:
+		return true, w.unwrapInto(path, dstv, v.Value())
+
 	case ListValue, SetValue:
 		var isSet bool
 		var vs []Value

@@ -1,4 +1,4 @@
-package runtime
+package configrt
 
 import (
 	"go.autokitteh.dev/autokitteh/internal/kittehs"

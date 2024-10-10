@@ -16,7 +16,9 @@ import (
 	"syscall"
 
 	"github.com/google/uuid"
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapio"
 )
 
 var (
@@ -28,20 +30,22 @@ var (
 )
 
 type LocalPython struct {
-	log           *zap.Logger
-	userDir       string
-	runnerDir     string
-	port          int
-	proc          *os.Process
-	id            string
-	logRunnerCode bool
+	log                *zap.Logger
+	userDir            string
+	runnerDir          string
+	port               int
+	proc               *os.Process
+	id                 string
+	logRunnerCode      bool
+	sessionID          sdktypes.SessionID
+	stdoutRunnerLogger *zapio.Writer
+	stderrRunnerLogger *zapio.Writer
 }
 
 func (r *LocalPython) Close() error {
 	var err error
 
 	if r.proc != nil {
-
 		if kerr := r.proc.Kill(); kerr != nil {
 			err = errors.Join(err, fmt.Errorf("kill runner (pid=%d) - %w", r.proc.Pid, kerr))
 		}
@@ -64,6 +68,17 @@ func (r *LocalPython) Close() error {
 		}
 	}
 
+	if r.stdoutRunnerLogger != nil {
+		if rlerr := r.stdoutRunnerLogger.Close(); rlerr != nil {
+			err = errors.Join(err, fmt.Errorf("close stdout runner logger - %w", rlerr))
+		}
+	}
+
+	if r.stderrRunnerLogger != nil {
+		if rlerr := r.stderrRunnerLogger.Close(); rlerr != nil {
+			err = errors.Join(err, fmt.Errorf("close stderr runner logger - %w", rlerr))
+		}
+	}
 	return err
 }
 
@@ -126,9 +141,13 @@ func (r *LocalPython) Start(pyExe string, tarData []byte, env map[string]string,
 		"--code-dir", r.userDir,
 	)
 	cmd.Env = overrideEnv(env, r.runnerDir, r.userDir)
+	cmd.Dir = r.userDir
+
 	if r.logRunnerCode {
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
+		r.stdoutRunnerLogger = &zapio.Writer{Log: r.log.With(zap.String("stream", "stdout")), Level: zap.InfoLevel}
+		cmd.Stdout = r.stdoutRunnerLogger
+		r.stderrRunnerLogger = &zapio.Writer{Log: r.log.With(zap.String("stream", "stderr")), Level: zap.InfoLevel}
+		cmd.Stderr = r.stderrRunnerLogger
 	}
 
 	// make sure runner is killed if ak is killed
@@ -145,7 +164,36 @@ func (r *LocalPython) Start(pyExe string, tarData []byte, env map[string]string,
 }
 
 func (r *LocalPython) Health() error {
-	return r.proc.Signal(syscall.Signal(0))
+	var status syscall.WaitStatus
+
+	pid, err := syscall.Wait4(r.proc.Pid, &status, syscall.WNOHANG, nil)
+	if err != nil {
+		return fmt.Errorf("wait proc: %w", err)
+	}
+
+	if pid == r.proc.Pid { // state changed
+		if status.Signaled() {
+			sig := status.Signal()
+			switch sig {
+			case syscall.SIGKILL, syscall.SIGTERM, syscall.SIGABRT, syscall.SIGSEGV, syscall.SIGBUS:
+				return fmt.Errorf("proc signaled (%v)", sig)
+			default:
+				// maybe process communicates with itself? do nothing meanwhile
+				return nil
+			}
+		}
+		if status.Exited() {
+			return fmt.Errorf("proc exited with %d", status.ExitStatus())
+		}
+	}
+
+	err = r.proc.Signal(syscall.Signal(0))
+	if err != nil {
+		if _, err := os.FindProcess(r.proc.Pid); err != nil {
+			return fmt.Errorf("no runner proc found. %w ", err)
+		}
+	}
+	return err
 }
 
 func createTar(fs fs.FS) ([]byte, error) {

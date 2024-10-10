@@ -43,7 +43,7 @@ type dbs struct {
 	varSvc sdkservices.Vars
 }
 
-func newIntegrationsSvc(t *testing.T, f *dbFixture) sdkservices.Integrations {
+func newIntegrationsSvc() sdkservices.Integrations {
 	desc := kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
 		IntegrationId: sdktypes.NewIDFromUUID[sdktypes.IntegrationID](&testIntegrationID).String(),
 		UniqueName:    "test",
@@ -71,7 +71,7 @@ func newDBServices(t *testing.T) (sdkservices.DBServices, *dbFixture) {
 	z := zaptest.NewLogger(t) // FIXME: or gormdb.z?
 	telemetry := kittehs.Must1(telemetry.New(z, &telemetry.Config{Enabled: false}))
 
-	intSvc := newIntegrationsSvc(t, f)
+	intSvc := newIntegrationsSvc()
 	bldSvc := builds.New(builds.Builds{Z: z, DB: gdb}, telemetry)
 	prjSvc := projects.New(projects.Projects{Z: z, DB: gdb}, telemetry)
 	depSvc := deployments.New(z, gdb, telemetry)

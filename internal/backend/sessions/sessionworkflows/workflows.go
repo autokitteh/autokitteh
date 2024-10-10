@@ -126,7 +126,8 @@ func (ws *workflows) StartWorkflow(ctx context.Context, session sdktypes.Session
 
 func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkflowParams) error {
 	wi := workflow.GetInfo(wctx)
-	sid := params.Data.Session.ID()
+	session := params.Data.Session
+	sid := session.ID()
 	isReplaying := workflow.IsReplaying(wctx)
 
 	l := ws.l.With(
@@ -136,6 +137,25 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 		zap.String("run_id", wi.WorkflowExecution.RunID),
 		zap.Int32("attempt", wi.Attempt),
 	)
+
+	eventTime := struct {
+		createdAt time.Time
+		valid     bool
+	}{
+		createdAt: time.Time{},
+		valid:     false,
+	}
+
+	if eventWrapped, ok := session.Inputs()["event"]; ok {
+		if eventUnwrapped, err := sdktypes.UnwrapValue(eventWrapped); err == nil {
+			if eventMap, ok := eventUnwrapped.(map[string]any); ok {
+				if createdAt, ok := eventMap["created_at"].(time.Time); ok {
+					eventTime.createdAt = createdAt
+					eventTime.valid = true
+				}
+			}
+		}
+	}
 
 	wctx = temporalclient.WithActivityOptions(wctx, taskQueueName, ws.cfg.Activity)
 
@@ -177,16 +197,19 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 	dwctx, done := workflow.NewDisconnectedContext(wctx)
 	defer done()
 
-	sessionDurationHistogram.Record(
-		metricsCtx,
-		duration.Milliseconds(),
-		metric.WithAttributes(
-			attribute.Bool("replay", isReplaying),
-			attribute.Bool("success", err == nil),
-		),
-	)
+	sessionDurationHistogram.Record(metricsCtx, duration.Milliseconds(),
+		metric.WithAttributes(attribute.Bool("replay", isReplaying), attribute.Bool("success", err == nil)))
 
 	l = l.With(zap.Duration("duration", duration))
+
+	if eventTime.valid {
+		invocationDelay := time.Since(eventTime.createdAt)
+		l = l.With(zap.Duration("invocation_delay", invocationDelay))
+
+		if !isReplaying {
+			sessionInvocationDelayHistogram.Record(metricsCtx, invocationDelay.Milliseconds())
+		}
+	}
 
 	if err != nil {
 		l := l.With(zap.Error(err))
@@ -198,7 +221,6 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 
 			ws.stopped(dwctx, sid)
 		} else {
-			sessionsErroredCounter.Add(metricsCtx, 1)
 
 			ws.errored(dwctx, sid, err, prints)
 
@@ -211,12 +233,19 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 				err = nil
 			} else {
 				l.Sugar().Errorf("session workflow error: %v", err)
+				if errors.As(err, &sdkerrors.RetryableErrorType) {
+					sessionsRetryErrorsCounter.Add(metricsCtx, 1)
+					l.Panic("panic session to retry")
+				}
+				sessionsErroredCounter.Add(metricsCtx, 1)
 			}
 		}
 	} else {
 		sessionsCompletedCounter.Add(metricsCtx, 1)
 		l.Info("session workflow completed with no errors")
 	}
+
+	_ = workflow.ExecuteActivity(wctx, deactivateDrainedDeploymentActivityName, session.DeploymentID()).Get(wctx, nil)
 
 	return err
 }

@@ -5,19 +5,20 @@ import json
 from os import getenv
 
 import autokitteh
+from printer import display
 
 HOME, USER = getenv("HOME"), getenv("USER")
 
 
 def greet(event):
-    print(f"simple: HOME: {HOME}")  # From environment
-    print(f"simple: USER: {USER}")  # From 'var' in manifest
-    print(f"simple: event: {event!r}")
+    display(f"simple: HOME: {HOME}")  # From environment
+    display(f"simple: USER: {USER}")  # From 'var' in manifest
+    display(f"simple: event: {event!r}")
 
     body = event.data.body.bytes
-    print(f"BODY: {body!r}")
+    display(f"BODY: {body!r}")
     request = json.loads(body)
-    print(f"REQUEST: {request!r}")
+    display(f"REQUEST: {request!r}")
 
 
 @autokitteh.activity

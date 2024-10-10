@@ -30,6 +30,7 @@ func New(p sdkclient.Params) sdkservices.Runtimes {
 func (c *client) Run(
 	ctx context.Context,
 	rid sdktypes.RunID,
+	sessionID sdktypes.SessionID,
 	path string,
 	build *sdkbuildfile.BuildFile,
 	globals map[string]sdktypes.Value,

@@ -7,7 +7,7 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 	"os"
-	"runtime"
+	goruntime "runtime"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -17,7 +17,6 @@ import (
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 
-	"go.autokitteh.dev/autokitteh/backend/runtimes"
 	"go.autokitteh.dev/autokitteh/internal/backend/applygrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authgrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authhttpmiddleware"
@@ -69,7 +68,6 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/internal/version"
 	"go.autokitteh.dev/autokitteh/proto"
-	"go.autokitteh.dev/autokitteh/runtimes/pythonrt"
 	"go.autokitteh.dev/autokitteh/sdk/sdkruntimessvc"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -86,7 +84,11 @@ func printModeWarning(mode configset.Mode) {
 	)
 }
 
-func LoggerFxOpt() fx.Option {
+func LoggerFxOpt(silent bool) fx.Option {
+	if silent {
+		return fx.Supply(zap.NewNop())
+	}
+
 	return fx.Module(
 		"logger",
 		fx.Provide(fxGetConfig("logger", kittehs.Must1(chooseConfig(logger.Configs)))),
@@ -121,7 +123,7 @@ type HTTPServerAddr string
 func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 	return []fx.Option{
 		fx.Supply(cfg),
-		LoggerFxOpt(),
+		LoggerFxOpt(opts.Silent),
 		fx.Invoke(func(lc fx.Lifecycle, db db.DB) { HookOnStart(lc, db.Setup) }),
 
 		Component("auth", configset.Empty, fx.Provide(authsvc.New)),
@@ -186,7 +188,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		Component("events", configset.Empty, fx.Provide(events.New)),
 		Component("triggers", configset.Empty, fx.Provide(triggers.New)),
 		Component("oauth", configset.Empty, fx.Provide(oauth.New)),
-
+		runtimesFXOption(),
 		Component("healthcheck", configset.Empty, fx.Provide(healthchecker.New)),
 		Component(
 			"scheduler",
@@ -320,12 +322,6 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 				})
 			}),
 		),
-		Component("runtimes",
-			runtimes.Configs,
-			fx.Provide(runtimes.New),
-			fx.Invoke(func(z *zap.Logger, muxes *muxes.Muxes) {
-				pythonrt.ConfigureWorkerGRPCHandler(z, muxes.NoAuth)
-			})),
 		fx.Invoke(func(muxes *muxes.Muxes) {
 			muxes.NoAuth.HandleFunc("GET /id", func(w http.ResponseWriter, r *http.Request) {
 				fmt.Fprint(w, fixtures.ProcessID())
@@ -389,7 +385,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 
 			HookSimpleOnStart(lc, func() {
 				ready.Store(true)
-				z.Info("ready", zap.String("version", version.Version), zap.String("id", fixtures.ProcessID()), zap.Int("gomaxprocs", runtime.GOMAXPROCS(0)))
+				z.Info("ready", zap.String("version", version.Version), zap.String("id", fixtures.ProcessID()), zap.Int("gomaxprocs", goruntime.GOMAXPROCS(0)))
 			})
 		}),
 	}
@@ -432,7 +428,7 @@ func StartDB(ctx context.Context, cfg *Config, ropt RunOptions) (db.DB, error) {
 
 	if err := fx.New(
 		fx.Supply(cfg),
-		LoggerFxOpt(),
+		LoggerFxOpt(ropt.Silent),
 		DBFxOpt(),
 		fx.Populate(&db),
 	).Start(ctx); err != nil {

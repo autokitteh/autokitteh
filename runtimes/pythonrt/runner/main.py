@@ -19,7 +19,10 @@ from autokitteh import AttrDict
 from call import AKCall, full_func_name
 from grpc_reflection.v1alpha import reflection
 from syscalls import SysCalls
-import time
+from time import sleep
+import os
+
+SERVER_GRACE_TIMEOUT = 3  # seconds
 
 
 class ActivityError(Exception):
@@ -81,21 +84,26 @@ def fix_http_body(event):
             pass
 
 
+def killIfStartWasntCalled(runner):
+    if not runner.did_start:
+        print("Start was not called, killing self")
+        os._exit(1)
+
+
 class Runner(rpc.RunnerServicer):
     def __init__(self, id, worker, code_dir, server):
         self.id = id
         self.worker: rpc.WorkerStub = worker
         self.code_dir = code_dir
-        self.server = server
+        self.server: grpc.Server = server
 
         self.executor = ThreadPoolExecutor()
-
         self.lock = Lock()
         self.calls = {}  # id -> (fn, args, kw)
         self.replies = {}  # id -> future
         self._next_id = 0
         self._orig_print = print
-        self._did_start = False
+        self._start_called = False
 
     def Exports(self, request: pb.ExportsRequest, context: grpc.ServicerContext):
         if request.file_name == "":
@@ -111,8 +119,13 @@ class Runner(rpc.RunnerServicer):
 
         return pb.ExportsResponse(exports=exports)
 
-    def should_keep_running(self, intial_delay=10, period=10):
-        time.sleep(intial_delay)
+    def should_keep_running(self, initial_delay=10, period=10):
+        sleep(initial_delay)
+        if not self._start_called:
+            log.error("Start not called after %dsec", initial_delay)
+            self.server.stop(SERVER_GRACE_TIMEOUT)
+            return
+
         while True:
             try:
                 req = pb.IsActiveRunnerRequest(runner_id=self.id)
@@ -121,17 +134,16 @@ class Runner(rpc.RunnerServicer):
                     break
             except grpc.RpcError:
                 break
-            time.sleep(period)
+            sleep(period)
 
-        log.error("could not verify if should keep running, killing self")
-        self.server.stop(grace=period)
+        self.server.stop(SERVER_GRACE_TIMEOUT)
 
     def Start(self, request: pb.StartRequest, context: grpc.ServicerContext):
-        if self._did_start:
+        if self._start_called:
             log.error("already called start before")
             return pb.StartResponse(error="start already called")
 
-        self._did_start = True
+        self._start_called = True
         log.info("start request: %r", request)
 
         self.syscalls = SysCalls(self.id, self.worker)
@@ -303,7 +315,7 @@ class Runner(rpc.RunnerServicer):
         except grpc.RpcError as err:
             if err.code() == grpc.StatusCode.UNAVAILABLE or grpc.StatusCode.CANCELLED:
                 log.error("grpc canclled or unavailable, killing self")
-                self.server.stop(5)
+                self.server.stop(SERVER_GRACE_TIMEOUT)
             log.error("print: %s", err)
 
 
@@ -330,9 +342,15 @@ def validate_args(args):
 
 
 class LoggingInterceptor(grpc.ServerInterceptor):
+    runner_id = None
+
     def intercept_service(self, continuation, handler_call_details):
-        log.info("call %s", handler_call_details.method)
+        log.info("runner_id %s, call %s", self.runner_id, handler_call_details.method)
         return continuation(handler_call_details)
+
+    def __init__(self, runner_id) -> None:
+        self.runner_id = runner_id
+        super().__init__()
 
 
 def dir_type(value):
@@ -386,7 +404,7 @@ if __name__ == "__main__":
 
     server = grpc.server(
         thread_pool=ThreadPoolExecutor(max_workers=cpu_count() * 8),
-        interceptors=[LoggingInterceptor()],
+        interceptors=[LoggingInterceptor(args.runner_id)],
     )
     runner = Runner(args.runner_id, worker, args.code_dir, server)
     rpc.add_RunnerServicer_to_server(runner, server)

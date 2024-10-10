@@ -2,6 +2,7 @@ package webhooks
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"os"
@@ -136,9 +137,19 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	// ghEvent is used to validate the payload and extract the installation ID.
+	// To preserve the original event format instead of using the go-github event format,
+	// we unmarshal the payload into a map and use that map to transform the event.
+	var jsonEvent map[string]any
+	err = json.Unmarshal(payload, &jsonEvent)
+	if err != nil {
+		l.Error("Failed to unmarshal payload to map", zap.Error(err))
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
 
 	// Transform the received GitHub event into an AutoKitteh event.
-	data, err := transformEvent(l, w, ghEvent)
+	data, err := transformEvent(l, w, jsonEvent)
 	if err != nil {
 		return
 	}

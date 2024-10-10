@@ -20,7 +20,7 @@ plugins:
   - remote: buf.build/protocolbuffers/python:v24.3
     out: ../runtimes/pythonrt/runner/pb
     opt: pyi_out
-  - remote: buf.build/grpc/python:v1.66.1
+  - remote: buf.build/grpc/python:v1.66.2
     out: ../runtimes/pythonrt/runner/pb
 
 inputs:

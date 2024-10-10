@@ -8,7 +8,9 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 )
 
-var defaultWorkflowConfig = WorkflowConfig{}
+var defaultWorkflowConfig = WorkflowConfig{
+	WorkflowTaskTimeout: 60 * time.Second,
+}
 
 // Common way to define configuration that can be used in multiple modules,
 // saving the need to repeat the same configuration in each module.

@@ -24,11 +24,6 @@ class DeploymentsServiceStub(object):
                 request_serializer=autokitteh_dot_deployments_dot_v1_dot_svc__pb2.ActivateRequest.SerializeToString,
                 response_deserializer=autokitteh_dot_deployments_dot_v1_dot_svc__pb2.ActivateResponse.FromString,
                 )
-        self.Drain = channel.unary_unary(
-                '/autokitteh.deployments.v1.DeploymentsService/Drain',
-                request_serializer=autokitteh_dot_deployments_dot_v1_dot_svc__pb2.DrainRequest.SerializeToString,
-                response_deserializer=autokitteh_dot_deployments_dot_v1_dot_svc__pb2.DrainResponse.FromString,
-                )
         self.Deactivate = channel.unary_unary(
                 '/autokitteh.deployments.v1.DeploymentsService/Deactivate',
                 request_serializer=autokitteh_dot_deployments_dot_v1_dot_svc__pb2.DeactivateRequest.SerializeToString,
@@ -72,16 +67,9 @@ class DeploymentsServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def Drain(self, request, context):
-        """Drain a deployment.
-        """
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
     def Deactivate(self, request, context):
-        """Deactivate a deployment - forcefully stops all sessions associated
-        with the deployment.
+        """Deactivate a deployment. If deployment has any active sessions,
+        deployment will be drained first.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -123,11 +111,6 @@ def add_DeploymentsServiceServicer_to_server(servicer, server):
                     servicer.Activate,
                     request_deserializer=autokitteh_dot_deployments_dot_v1_dot_svc__pb2.ActivateRequest.FromString,
                     response_serializer=autokitteh_dot_deployments_dot_v1_dot_svc__pb2.ActivateResponse.SerializeToString,
-            ),
-            'Drain': grpc.unary_unary_rpc_method_handler(
-                    servicer.Drain,
-                    request_deserializer=autokitteh_dot_deployments_dot_v1_dot_svc__pb2.DrainRequest.FromString,
-                    response_serializer=autokitteh_dot_deployments_dot_v1_dot_svc__pb2.DrainResponse.SerializeToString,
             ),
             'Deactivate': grpc.unary_unary_rpc_method_handler(
                     servicer.Deactivate,
@@ -195,23 +178,6 @@ class DeploymentsService(object):
         return grpc.experimental.unary_unary(request, target, '/autokitteh.deployments.v1.DeploymentsService/Activate',
             autokitteh_dot_deployments_dot_v1_dot_svc__pb2.ActivateRequest.SerializeToString,
             autokitteh_dot_deployments_dot_v1_dot_svc__pb2.ActivateResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
-
-    @staticmethod
-    def Drain(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/autokitteh.deployments.v1.DeploymentsService/Drain',
-            autokitteh_dot_deployments_dot_v1_dot_svc__pb2.DrainRequest.SerializeToString,
-            autokitteh_dot_deployments_dot_v1_dot_svc__pb2.DrainResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 

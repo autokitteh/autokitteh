@@ -104,6 +104,15 @@ message DownloadResourcesResponse {
   map<string, bytes> resources = 2;
 }
 
+message ExportRequest {
+  string project_id = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+message ExportResponse {
+  // Zip of the mainfest + files
+  bytes zip_archive = 1 [(buf.validate.field).bytes.min_len = 10];
+}
+
 service ProjectsService {
   rpc Create(CreateRequest) returns (CreateResponse);
 
@@ -122,4 +131,6 @@ service ProjectsService {
 
   rpc SetResources(SetResourcesRequest) returns (SetResourcesResponse);
   rpc DownloadResources(DownloadResourcesRequest) returns (DownloadResourcesResponse);
+
+  rpc Export(ExportRequest) returns (ExportResponse);
 }

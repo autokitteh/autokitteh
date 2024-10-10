@@ -29,6 +29,12 @@ func (f abuser) ToStrings(*commonpb.Payloads) []string {
 //
 // See also https://github.com/temporalio/temporal/issues/6546.
 // Blame Maxim, not me.
-func WithoutDeadlockDetection(f func()) {
-	_ = workflow.DataConverterWithoutDeadlockDetection(abuser(f)).ToStrings(nil)
+func WithoutDeadlockDetection(wctx workflow.Context, f func()) {
+	cvt := workflow.DataConverterWithoutDeadlockDetection(abuser(f))
+
+	// The data converter without deadlock detection is ContextAware,
+	// and it must have the workflow context in order to work.
+	cvt = cvt.(workflow.ContextAware).WithWorkflowContext(wctx)
+
+	_ = cvt.ToStrings(nil)
 }

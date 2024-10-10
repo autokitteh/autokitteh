@@ -16,6 +16,7 @@ all = [
 	"pytest ~= 8.3",
 
 	# AK Environment
+	"asana ~= 5.0",
 	"atlassian-python-api ~= 3.41",
 	"boto3 ~= 1.35",
 	"discord.py ~= 2.4",
