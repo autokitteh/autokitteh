@@ -13,15 +13,26 @@ import (
 func (h *handler) handleEvent(event any, eventType string) {
 	l := h.logger.With(zap.String("eventType", eventType))
 
-	// TODO(ENG-1546) - Add support for more event types
-	var authorID string
+	var initiatorID string
 	switch e := event.(type) {
 	case *discordgo.MessageCreate:
-		authorID = e.Author.ID
+		initiatorID = e.Author.ID
 	case *discordgo.MessageUpdate:
-		authorID = e.Author.ID
+		initiatorID = e.Author.ID
 	case *discordgo.MessageDelete:
-		authorID = "" // Deleted messages don't have an author
+		initiatorID = "" // Deleted messages don't have an author
+	case *discordgo.MessageReactionAdd:
+		initiatorID = e.UserID
+	case *discordgo.MessageReactionRemove:
+		initiatorID = e.UserID
+	case *discordgo.PresenceUpdate:
+		initiatorID = e.User.ID
+	case *discordgo.ThreadCreate:
+		initiatorID = e.OwnerID
+	case *discordgo.ThreadUpdate:
+		initiatorID = e.OwnerID
+	case *discordgo.ThreadDelete:
+		initiatorID = e.OwnerID
 	default:
 		l.Error("Unsupported event type")
 		return
@@ -46,7 +57,7 @@ func (h *handler) handleEvent(event any, eventType string) {
 			l.Error("Failed to get connection vars", zap.String("connectionID", cid.String()), zap.Error(err))
 			continue
 		}
-		if vs.Get(vars.BotID).Value() == authorID {
+		if vs.Get(vars.BotID).Value() == initiatorID {
 			l.Debug("Skipping event for connection", zap.String("connectionID", cid.String()))
 			continue
 		}
@@ -66,4 +77,28 @@ func (h *handler) handleMessageUpdate(s *discordgo.Session, m *discordgo.Message
 
 func (h *handler) handleMessageDelete(s *discordgo.Session, m *discordgo.MessageDelete) {
 	h.handleEvent(m, "message_delete")
+}
+
+func (h *handler) handleMessageReactionAdd(s *discordgo.Session, m *discordgo.MessageReactionAdd) {
+	h.handleEvent(m, "message_reaction_add")
+}
+
+func (h *handler) handleMessageReactionRemove(s *discordgo.Session, m *discordgo.MessageReactionRemove) {
+	h.handleEvent(m, "message_reaction_remove")
+}
+
+func (h *handler) handlePresenceUpdate(s *discordgo.Session, p *discordgo.PresenceUpdate) {
+	h.handleEvent(p, "presence_update")
+}
+
+func (h *handler) handleThreadCreate(s *discordgo.Session, t *discordgo.ThreadCreate) {
+	h.handleEvent(t, "thread_create")
+}
+
+func (h *handler) handleThreadUpdate(s *discordgo.Session, t *discordgo.ThreadUpdate) {
+	h.handleEvent(t, "thread_update")
+}
+
+func (h *handler) handleThreadDelete(s *discordgo.Session, t *discordgo.ThreadDelete) {
+	h.handleEvent(t, "thread_delete")
 }
