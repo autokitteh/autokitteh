@@ -156,7 +156,7 @@ class Runner(rpc.RunnerServicer):
         mod = loader.load_code(self.code_dir, call, mod_name)
         call.set_module(mod)
 
-        builtins.print = self.ak_print  # Inject print
+        # builtins.print = self.ak_print  # Inject print
 
         fn = getattr(mod, fn_name, None)
         if not callable(fn):
@@ -210,27 +210,21 @@ class Runner(rpc.RunnerServicer):
 
         return resp
 
-    def ActivityReply(
-        self, request: pb.ActivityReplyRequest, context: grpc.ServicerContext
-    ):
+    def ActivityReply(self, request: pb.ActivityReplyRequest, context: grpc.ServicerContext):
         call_id = request.data.decode()
         with self.lock:
             fut = self.replies.pop(call_id, None)
 
         if fut is None:
             log.error("call_id %r not found", call_id)
-            context.abort(
-                grpc.StatusCode.INVALID_ARGUMENT, "call_id {call_id!r} not found"
-            )
+            context.abort(grpc.StatusCode.INVALID_ARGUMENT, "call_id {call_id!r} not found")
 
         try:
             result = pickle.loads(request.result)
         except Exception as err:
             log.exception(f"call_id {call_id!r}: result pickle: {err}")
             fut.set_exception(ActivityError(err))
-            context.abort(
-                grpc.StatusCode.INTERNAL, f"call_id {call_id!r}: result pickle: {err}"
-            )
+            context.abort(grpc.StatusCode.INTERNAL, f"call_id {call_id!r}: result pickle: {err}")
 
         fut.set_result(result)
         return pb.ActivityReplyResponse()

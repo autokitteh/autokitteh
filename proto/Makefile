@@ -14,6 +14,7 @@ buf-lint:
 .PHONY: buf-build
 buf-build:
 	rm -rf gen
+	rm -fR ../../runtimes/pythonrt/runner/pb
 	buf build
 
 .PHONY: buf-gen
@@ -29,6 +30,7 @@ buf-gen: buf-build
 clean:
 	rm -fR gen
 	rm -fR dist
+	rm -fR ../../runtimes/pythonrt/runner/pb
 .PHONY: py-dist
 
 py-dist: py-deps
