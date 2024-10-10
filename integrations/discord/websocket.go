@@ -46,6 +46,7 @@ func (h handler) OpenWebSocketConnection(botToken string) {
 		return
 	}
 
+	// TODO(ENG-1691): Narrow down the intents to only the ones we need.
 	intents := discordgo.IntentsAll
 
 	dg, err := discordgo.New("Bot " + botToken)
@@ -124,6 +125,6 @@ func (h handler) addHandlers(dg *discordgo.Session) {
 	dg.AddHandler(h.handleMessageReactionRemove)
 	dg.AddHandler(h.handlePresenceUpdate)
 	dg.AddHandler(h.handleThreadCreate)
-	dg.AddHandler(h.handleThreadUpdate)
 	dg.AddHandler(h.handleThreadDelete)
+	dg.AddHandler(h.handleThreadUpdate)
 }
