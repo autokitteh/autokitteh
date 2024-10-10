@@ -98,7 +98,6 @@ class Runner(rpc.RunnerServicer):
         self.server: grpc.Server = server
 
         self.executor = ThreadPoolExecutor()
-
         self.lock = Lock()
         self.calls = {}  # id -> (fn, args, kw)
         self.replies = {}  # id -> future
@@ -127,7 +126,6 @@ class Runner(rpc.RunnerServicer):
             self.server.stop(SERVER_GRACE_TIMEOUT)
             return
 
-        # Check that we are still active
         while True:
             try:
                 req = pb.IsActiveRunnerRequest(runner_id=self.id)
@@ -138,7 +136,6 @@ class Runner(rpc.RunnerServicer):
                 break
             sleep(period)
 
-        log.error("could not verify if should keep running, killing self")
         self.server.stop(SERVER_GRACE_TIMEOUT)
 
     def Start(self, request: pb.StartRequest, context: grpc.ServicerContext):
@@ -421,7 +418,8 @@ if __name__ == "__main__":
     server.start()
     log.info("server running on port %d", args.port)
 
-    Thread(target=runner.should_keep_running, daemon=True).start()
+    if not args.skip_check_worker:
+        Thread(target=runner.should_keep_running, daemon=True).start()
     log.info("setup should keep running thread")
 
     server.wait_for_termination()

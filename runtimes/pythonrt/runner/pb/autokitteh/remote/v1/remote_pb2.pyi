@@ -1,3 +1,4 @@
+from google.protobuf import timestamp_pb2 as _timestamp_pb2
 from google.protobuf.internal import containers as _containers
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
@@ -312,3 +313,21 @@ class IsActiveRunnerResponse(_message.Message):
     is_active: bool
     error: str
     def __init__(self, is_active: bool = ..., error: _Optional[str] = ...) -> None: ...
+
+class RefreshRequest(_message.Message):
+    __slots__ = ["runner_id", "token"]
+    RUNNER_ID_FIELD_NUMBER: _ClassVar[int]
+    TOKEN_FIELD_NUMBER: _ClassVar[int]
+    runner_id: str
+    token: str
+    def __init__(self, runner_id: _Optional[str] = ..., token: _Optional[str] = ...) -> None: ...
+
+class RefreshResponse(_message.Message):
+    __slots__ = ["token", "expires", "error"]
+    TOKEN_FIELD_NUMBER: _ClassVar[int]
+    EXPIRES_FIELD_NUMBER: _ClassVar[int]
+    ERROR_FIELD_NUMBER: _ClassVar[int]
+    token: str
+    expires: _timestamp_pb2.Timestamp
+    error: str
+    def __init__(self, token: _Optional[str] = ..., expires: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ..., error: _Optional[str] = ...) -> None: ...
