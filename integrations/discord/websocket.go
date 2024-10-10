@@ -46,12 +46,15 @@ func (h handler) OpenWebSocketConnection(botToken string) {
 		return
 	}
 
+	intents := discordgo.IntentsAll
+
 	dg, err := discordgo.New("Bot " + botToken)
 	if err != nil {
 		h.logger.Error("Error creating Discord session", zap.Error(err))
 		return
 	}
 
+	dg.Identify.Intents = intents
 	h.addHandlers(dg)
 
 	// Open a WebSocket connection to Discord.
@@ -117,4 +120,10 @@ func (h handler) addHandlers(dg *discordgo.Session) {
 	dg.AddHandler(h.handleMessageCreate)
 	dg.AddHandler(h.handleMessageDelete)
 	dg.AddHandler(h.handleMessageUpdate)
+	dg.AddHandler(h.handleMessageReactionAdd)
+	dg.AddHandler(h.handleMessageReactionRemove)
+	dg.AddHandler(h.handlePresenceUpdate)
+	dg.AddHandler(h.handleThreadCreate)
+	dg.AddHandler(h.handleThreadUpdate)
+	dg.AddHandler(h.handleThreadDelete)
 }
