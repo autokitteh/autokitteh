@@ -146,7 +146,7 @@ func (r *LocalPython) Start(pyExe string, tarData []byte, env map[string]string,
 	if r.logRunnerCode {
 		r.stdoutRunnerLogger = &zapio.Writer{Log: r.log.With(zap.String("stream", "stdout")), Level: zap.InfoLevel}
 		cmd.Stdout = r.stdoutRunnerLogger
-		r.stderrRunnerLogger = &zapio.Writer{Log: r.log.With(zap.String("stream", "stderr")), Level: zap.InfoLevel}
+		r.stderrRunnerLogger = &zapio.Writer{Log: r.log.With(zap.String("stream", "stderr")), Level: zap.ErrorLevel}
 		cmd.Stderr = r.stderrRunnerLogger
 	}
 
