@@ -20,6 +20,7 @@ from call import AKCall, full_func_name
 from grpc_reflection.v1alpha import reflection
 from syscalls import SysCalls
 from time import sleep
+import os
 
 SERVER_GRACE_TIMEOUT = 3  # seconds
 
@@ -81,6 +82,12 @@ def fix_http_body(event):
             body["bytes"] = b64decode(payload)
         except ValueError:
             pass
+
+
+def killIfStartWasntCalled(runner):
+    if not runner.did_start:
+        print("Start was not called, killing self")
+        os._exit(1)
 
 
 class Runner(rpc.RunnerServicer):
@@ -338,9 +345,15 @@ def validate_args(args):
 
 
 class LoggingInterceptor(grpc.ServerInterceptor):
+    runner_id = None
+
     def intercept_service(self, continuation, handler_call_details):
-        log.info("call %s", handler_call_details.method)
+        log.info("runner_id %s, call %s", self.runner_id, handler_call_details.method)
         return continuation(handler_call_details)
+
+    def __init__(self, runner_id) -> None:
+        self.runner_id = runner_id
+        super().__init__()
 
 
 def dir_type(value):
@@ -394,7 +407,7 @@ if __name__ == "__main__":
 
     server = grpc.server(
         thread_pool=ThreadPoolExecutor(max_workers=cpu_count() * 8),
-        interceptors=[LoggingInterceptor()],
+        interceptors=[LoggingInterceptor(args.runner_id)],
     )
     runner = Runner(args.runner_id, worker, args.code_dir, server)
     rpc.add_RunnerServicer_to_server(runner, server)
