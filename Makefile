@@ -16,7 +16,7 @@ ifndef GO_BUILD_OPTS
 ifdef DEBUG
 GO_BUILD_OPTS=-gcflags=all="-N -l"
 else
-GO_BUILD_OPTS=
+GO_BUILD_OPTS=-trimpath
 endif
 endif
 
