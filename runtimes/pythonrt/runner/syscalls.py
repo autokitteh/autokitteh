@@ -76,7 +76,7 @@ class SysCalls:
 
         return AttrDict(data) if isinstance(data, dict) else data
 
-    def ak_unsubscribe(self, *args, **kw):
+    def ak_unsubscribe(self, args, kw):
         (id,) = extract_args(["subscription_id"], args, kw)
         if not id:
             raise ValueError("empty subscription_id")
