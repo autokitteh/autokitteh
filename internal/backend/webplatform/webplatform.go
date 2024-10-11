@@ -61,6 +61,15 @@ func (w *Svc) Start(context.Context) error {
 			// If path actually exists in fs, serve it.
 			if f, _ := fs.Open(strings.TrimPrefix(r.URL.Path, "/")); f != nil {
 				f.Close()
+
+				// HACK(ENG-1690): ServeHTTP tries to Seek when serving paths
+				// with unknown file extensions. Since memfs does not support
+				// Seek, we avoid this by setting the content type to text/plain \
+				// explicitly.
+				if strings.HasPrefix(r.URL.Path, "/assets/templates/") {
+					w.Header().Add("Content-Type", "text/plain; charset=utf-8")
+				}
+
 				fsrv.ServeHTTP(w, r)
 				return
 			}
