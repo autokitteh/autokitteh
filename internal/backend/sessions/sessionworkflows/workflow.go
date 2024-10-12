@@ -567,10 +567,7 @@ func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (prints []st
 			return prints, err
 		}
 
-		argNames := callValue.GetFunction().ArgNames()
-		kwargs := kittehs.FilterMapKeys(w.data.Session.Inputs(), kittehs.ContainedIn(argNames...))
-
-		if retVal, err = run.Call(ctx, callValue, nil, kwargs); err != nil {
+		if retVal, err = run.Call(ctx, callValue, nil, w.data.Session.Inputs()); err != nil {
 			return prints, err
 		}
 	}

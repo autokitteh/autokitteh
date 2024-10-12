@@ -93,7 +93,7 @@ endif
 lint: $(OUTDIR)/tools/golangci-lint
 	$(OUTDIR)/tools/golangci-lint run
 
-scripts=$(shell find . -name \*.sh)
+scripts=$(shell find . -name \*.sh -not -path "*/.venv/*")
 
 .PHONY: shellcheck
 shellcheck:
