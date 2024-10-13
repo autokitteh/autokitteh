@@ -1,26 +1,27 @@
-import builtins
-import json
-import pickle
-import sys
 from base64 import b64decode
+import builtins
 from concurrent.futures import Future, ThreadPoolExecutor
 from io import StringIO
+import json
 from multiprocessing import cpu_count
+import os
 from pathlib import Path
+import pickle
+import sys
 from threading import Lock, Thread
+from time import sleep
 from traceback import TracebackException, print_exception
 
 import grpc
+from grpc_reflection.v1alpha import reflection
+
 import loader
 import log
 import pb.autokitteh.remote.v1.remote_pb2 as pb
 import pb.autokitteh.remote.v1.remote_pb2_grpc as rpc
 from autokitteh import AttrDict
 from call import AKCall, full_func_name
-from grpc_reflection.v1alpha import reflection
 from syscalls import SysCalls
-from time import sleep
-import os
 
 SERVER_GRACE_TIMEOUT = 3  # seconds
 
