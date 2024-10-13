@@ -227,7 +227,6 @@ type UsersOwnershipChecker struct {
 func (c *UsersOwnershipChecker) EnsureUserAccessToEntitiesWithOwnership(
 	ctx context.Context, db *gorm.DB, uid string, ids ...sdktypes.UUID,
 ) (ownerships []scheme.Ownership, err error) {
-	c.z.Debug("isUserEntity", zap.String("origin", akCtx.RequestOrginator(ctx).String()), zap.Any("entityIDs", ids), zap.Any("uid", uid))
 	ownerships, err = ensureUserAccessToEntitiesWithOwnerships(db, uid, ids...)
 	if akCtx.RequestOrginator(ctx) != akCtx.User && errors.Is(err, sdkerrors.ErrUnauthorized) {
 		err = nil // ignore not authorized, but keep all other (e.g. NotFound) - see var
