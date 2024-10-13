@@ -529,7 +529,6 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, _ []sdktypes.
 				kw = kittehs.TransformMap(r.CallInfo.Kwargs, func(k, v string) (string, sdktypes.Value) { return k, sdktypes.NewStringValue(v) })
 			}
 
-			py.log.Info("activity", zap.String("function", fnName))
 			// it was already checked before we got here
 			fn, err := sdktypes.NewFunctionValue(py.xid, fnName, r.Data, nil, pyModuleFunc)
 			if err != nil {
