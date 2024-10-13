@@ -2,7 +2,7 @@
 """Client and server classes corresponding to protobuf-defined services."""
 import grpc
 
-from pb.autokitteh.remote.v1 import remote_pb2 as autokitteh_dot_remote_dot_v1_dot_remote__pb2
+from . import remote_pb2 as autokitteh_dot_remote_dot_v1_dot_remote__pb2
 
 
 class RunnerManagerStub(object):
