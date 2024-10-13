@@ -13,8 +13,6 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
-	"golang.org/x/exp/maps"
-
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/internal/xdg"
 	pb "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/remote/v1"
@@ -380,7 +378,6 @@ func (py *pySvc) kwToEvent(ctx context.Context, kwargs map[string]sdktypes.Value
 		}
 		event[key] = goVal
 	}
-	py.log.Info("event", zap.Any("keys", maps.Keys(event)))
 
 	if err := py.injectHTTPBody(ctx, kwargs["data"], event, py.cbs); err != nil {
 		return nil, err
