@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"net"
 	"path"
 	"strings"
@@ -327,69 +328,9 @@ func (py *pySvc) Close() {
 	// We kill the Python process once the initial `Call` is completed.
 }
 
-// TODO (ENG-624) Remove this once we support callbacks to autokitteh
-func (py *pySvc) injectHTTPBody(ctx context.Context, data sdktypes.Value, event map[string]any, cbs *sdkservices.RunCallbacks) error {
-	if !data.IsStruct() {
-		return nil
-	}
-
-	evtData, ok := event["data"]
-	if !ok {
-		return nil
-	}
-
-	fields := data.GetStruct().Fields()
-	body, ok := fields["body"]
-	if !ok {
-		return nil
-	}
-
-	if !body.IsStruct() {
-		return nil
-	}
-
-	fields = body.GetStruct().Fields()
-	fn, ok := fields["bytes"]
-	if !ok || !fn.IsFunction() {
-		return nil
-	}
-
-	out, err := cbs.Call(ctx, py.runID, fn, nil, nil)
-	if err != nil {
-		return err
-	}
-
-	if !out.IsBytes() {
-		return nil
-	}
-
-	bodyData := out.GetBytes().Value()
-
-	m, ok := evtData.(map[string]any)
-	if !ok {
-		return nil
-	}
-
-	m["body"] = bodyData
-	return nil
-}
-
-func (py *pySvc) kwToEvent(ctx context.Context, kwargs map[string]sdktypes.Value) (map[string]any, error) {
-	// Convert event to JSON
-	event := make(map[string]any, len(kwargs))
-	for key, val := range kwargs {
-		goVal, err := unwrap(val)
-		if err != nil {
-			return nil, err
-		}
-		event[key] = goVal
-	}
-
-	if err := py.injectHTTPBody(ctx, kwargs["data"], event, py.cbs); err != nil {
-		return nil, err
-	}
-
-	return event, nil
+func (py *pySvc) kwToEvent(kwargs map[string]sdktypes.Value) (map[string]any, error) {
+	unw := sdktypes.ValueWrapper{IgnoreFunctions: true, SafeForJSON: true}.Unwrap
+	return kittehs.TransformMapValuesError(kwargs, unw)
 }
 
 func pyLevelToZap(level string) zapcore.Level {
@@ -448,18 +389,24 @@ func (py *pySvc) call(ctx context.Context, val sdktypes.Value, args []sdktypes.V
 
 // initialCall handles initial call from autokitteh, it does the message loop with Python.
 // We split it from Call since Call is also used to execute activities.
-func (py *pySvc) initialCall(ctx context.Context, funcName string, _ []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
+func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
+	if len(args) > 0 {
+		return sdktypes.InvalidValue, fmt.Errorf("initial call can't have positional args")
+	}
+
 	defer func() {
 		py.cleanup(ctx)
 		py.log.Info("Python subprocess cleanup after initial call is done")
 	}()
 
 	py.log.Info("initial call", zap.Any("func", funcName))
-	event, err := py.kwToEvent(ctx, kwargs)
+	event, err := py.kwToEvent(kwargs)
 	if err != nil {
 		py.log.Error("can't convert event", zap.Error(err))
 		return sdktypes.InvalidValue, fmt.Errorf("can't convert: %w", err)
 	}
+
+	py.log.Info("event", zap.Any("keys", maps.Keys(event)))
 
 	eventData, err := json.Marshal(event)
 	if err != nil {
