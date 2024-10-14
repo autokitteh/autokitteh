@@ -92,9 +92,8 @@ func (s *workerGRPCHandler) Log(ctx context.Context, req *pb.LogRequest) (*pb.Lo
 	}
 
 	w.mu.Lock()
-	defer w.mu.Unlock()
-
 	runner, ok := w.runnerIDsToRuntime[req.RunnerId]
+	w.mu.Unlock()
 	if !ok {
 		return &pb.LogResponse{Error: "unknown runner ID"}, nil
 	}
@@ -105,9 +104,8 @@ func (s *workerGRPCHandler) Log(ctx context.Context, req *pb.LogRequest) (*pb.Lo
 
 func (s *workerGRPCHandler) Print(ctx context.Context, req *pb.PrintRequest) (*pb.PrintResponse, error) {
 	w.mu.Lock()
-	defer w.mu.Unlock()
-
 	runner, ok := w.runnerIDsToRuntime[req.RunnerId]
+	w.mu.Unlock()
 	if !ok {
 		return &pb.PrintResponse{Error: "unknown runner ID"}, nil
 	}
@@ -118,9 +116,8 @@ func (s *workerGRPCHandler) Print(ctx context.Context, req *pb.PrintRequest) (*p
 
 func (s *workerGRPCHandler) Done(ctx context.Context, req *pb.DoneRequest) (*pb.DoneResponse, error) {
 	w.mu.Lock()
-	defer w.mu.Unlock()
-
 	runner, ok := w.runnerIDsToRuntime[req.RunnerId]
+	w.mu.Unlock()
 	if !ok {
 		return &pb.DoneResponse{}, nil
 	}
@@ -132,9 +129,8 @@ func (s *workerGRPCHandler) Done(ctx context.Context, req *pb.DoneRequest) (*pb.
 // Runner starting activity
 func (s *workerGRPCHandler) Activity(ctx context.Context, req *pb.ActivityRequest) (*pb.ActivityResponse, error) {
 	w.mu.Lock()
-	defer w.mu.Unlock()
-
 	runner, ok := w.runnerIDsToRuntime[req.RunnerId]
+	w.mu.Unlock()
 	if !ok {
 		return &pb.ActivityResponse{Error: "unknown runner ID"}, nil
 	}
@@ -172,9 +168,8 @@ func (s *workerGRPCHandler) Sleep(ctx context.Context, req *pb.SleepRequest) (*p
 	}
 
 	w.mu.Lock()
-	defer w.mu.Unlock()
-
 	runner, ok := w.runnerIDsToRuntime[req.RunnerId]
+	w.mu.Unlock()
 	if !ok {
 		return &pb.SleepResponse{Error: "unknown runner ID"}, nil
 	}
@@ -203,9 +198,8 @@ func (s *workerGRPCHandler) Subscribe(ctx context.Context, req *pb.SubscribeRequ
 	}
 
 	w.mu.Lock()
-	defer w.mu.Unlock()
-
 	runner, ok := w.runnerIDsToRuntime[req.RunnerId]
+	w.mu.Unlock()
 	if !ok {
 		return &pb.SubscribeResponse{Error: "unknown runner ID"}, nil
 	}
@@ -237,9 +231,8 @@ func (s *workerGRPCHandler) NextEvent(ctx context.Context, req *pb.NextEventRequ
 	}
 
 	w.mu.Lock()
-	defer w.mu.Unlock()
-
 	runner, ok := w.runnerIDsToRuntime[req.RunnerId]
+	w.mu.Unlock()
 	if !ok {
 		return &pb.NextEventResponse{Error: "unknown runner ID"}, nil
 	}
@@ -286,9 +279,8 @@ func (s *workerGRPCHandler) NextEvent(ctx context.Context, req *pb.NextEventRequ
 
 func (s *workerGRPCHandler) Unsubscribe(ctx context.Context, req *pb.UnsubscribeRequest) (*pb.UnsubscribeResponse, error) {
 	w.mu.Lock()
-	defer w.mu.Unlock()
-
 	runner, ok := w.runnerIDsToRuntime[req.RunnerId]
+	w.mu.Unlock()
 	if !ok {
 		return &pb.UnsubscribeResponse{Error: "Unknown runner id"}, nil
 	}
@@ -311,9 +303,8 @@ func (s *workerGRPCHandler) Unsubscribe(ctx context.Context, req *pb.Unsubscribe
 
 func (s *workerGRPCHandler) RefreshOAuthToken(ctx context.Context, req *pb.RefreshRequest) (*pb.RefreshResponse, error) {
 	w.mu.Lock()
-	defer w.mu.Unlock()
-
 	runner, ok := w.runnerIDsToRuntime[req.RunnerId]
+	w.mu.Unlock()
 	if !ok {
 		return &pb.RefreshResponse{Error: "unknown runner ID"}, nil
 	}
