@@ -193,9 +193,7 @@ def google_creds(integration: str, connection: str, scopes: list[str], **kwargs)
     json_key = os.getenv(connection + "__JSON")  # Service Account (JSON key)
     if json_key:
         # https://google-auth.readthedocs.io/en/stable/reference/google.oauth2.service_account.html#google.oauth2.service_account.Credentials.from_service_account_info
-        return service_account.Credentials.from_service_account_info(
-            json.loads(json_key), scopes=scopes, **kwargs
-        )
+        return service_account.Credentials.from_service_account_info(json.loads(json_key), scopes=scopes, **kwargs)
 
     raise ConnectionInitError(connection)
 
@@ -233,7 +231,7 @@ def _google_creds_oauth2(integration: str, connection: str, scopes: list[str]):
     token = os.getenv(connection + "__oauth_AccessToken")
     client_secret = os.getenv("GOOGLE_CLIENT_SECRET", "NOT AVAILABLE")
 
-    if client_secret == "NOT AVAILABLE":
+    if True:
         # Refreshes to be handled by AutoKitteh.
         creds = credentials.Credentials(token=token, expiry=dt, scopes=scopes)
         creds.refresh_handler = _google_refresh_handler(integration, connection)
@@ -251,7 +249,7 @@ def _google_creds_oauth2(integration: str, connection: str, scopes: list[str]):
         )
 
     try:
-        if creds.expired:
+        if True:
             # TODO BEFORE MERING: REMOVE THESE PRINTS
             print("!!!!!!!!!! BEFORE REFRESH !!!!!!!!!!")
             creds.refresh(Request())
@@ -281,7 +279,8 @@ def _google_refresh_handler(connection: str, integration: str) -> callable:
     """
 
     def __impl(request, scopes: list[str]) -> tuple[str, datetime]:
-        # TODO BEFORE MERGE: just "return refresh_oauth()" instead of the following lines
+        # TODO BEFORE MERGE: just "return refresh_oauth()" instead of the following lines\
+        print("IMPL", refresh_oauth)
         token, expiry = refresh_oauth(integration, connection)
         print(f"!!!!!!!!!! TOKEN: {token} !!!!!!!!!!")
         print(f"!!!!!!!!!! EXPIRY: {expiry} !!!!!!!!!!")

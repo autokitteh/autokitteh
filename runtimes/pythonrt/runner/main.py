@@ -159,7 +159,9 @@ class Runner(rpc.RunnerServicer):
 
         # Monkey patch some functions
         builtins.print = self.ak_print
+        print("BEFORE", connections.refresh_oauth)
         connections.refresh_oauth = self.syscalls.ak_refresh_oauth
+        print("AFTER", connections.refresh_oauth)
 
         fn = getattr(mod, fn_name, None)
         if not callable(fn):
@@ -213,27 +215,21 @@ class Runner(rpc.RunnerServicer):
 
         return resp
 
-    def ActivityReply(
-        self, request: pb.ActivityReplyRequest, context: grpc.ServicerContext
-    ):
+    def ActivityReply(self, request: pb.ActivityReplyRequest, context: grpc.ServicerContext):
         call_id = request.data.decode()
         with self.lock:
             fut = self.replies.pop(call_id, None)
 
         if fut is None:
             log.error("call_id %r not found", call_id)
-            context.abort(
-                grpc.StatusCode.INVALID_ARGUMENT, "call_id {call_id!r} not found"
-            )
+            context.abort(grpc.StatusCode.INVALID_ARGUMENT, "call_id {call_id!r} not found")
 
         try:
             result = pickle.loads(request.result)
         except Exception as err:
             log.exception(f"call_id {call_id!r}: result pickle: {err}")
             fut.set_exception(ActivityError(err))
-            context.abort(
-                grpc.StatusCode.INTERNAL, f"call_id {call_id!r}: result pickle: {err}"
-            )
+            context.abort(grpc.StatusCode.INTERNAL, f"call_id {call_id!r}: result pickle: {err}")
 
         fut.set_result(result)
         return pb.ActivityReplyResponse()
@@ -371,9 +367,7 @@ if __name__ == "__main__":
     from argparse import ArgumentParser
 
     parser = ArgumentParser(description="Python runner")
-    parser.add_argument(
-        "--worker-address", help="Worker address (host:port)", default="localhost:9292"
-    )
+    parser.add_argument("--worker-address", help="Worker address (host:port)", default="localhost:9292")
     parser.add_argument(
         "--skip-check-worker",
         help="do not check connection to worker on startup",
