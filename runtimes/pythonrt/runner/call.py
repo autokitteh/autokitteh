@@ -3,8 +3,8 @@ from pathlib import Path
 from time import sleep
 
 import autokitteh
+from autokitteh import connections
 from autokitteh import decorators
-from autokitteh.connections import refresh_oauth
 
 import log
 from deterministic import is_deterministic
@@ -14,7 +14,7 @@ AK_FUNCS = {
     autokitteh.next_event,
     autokitteh.subscribe,
     autokitteh.unsubscribe,
-    refresh_oauth,
+    connections.refresh_oauth,
     sleep,
 }
 

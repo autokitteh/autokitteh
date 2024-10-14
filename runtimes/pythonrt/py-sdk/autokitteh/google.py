@@ -6,12 +6,13 @@ import os
 import re
 
 from google.auth.transport.requests import Request
+from google.auth.exceptions import RefreshError
 import google.oauth2.credentials as credentials
 import google.oauth2.service_account as service_account
 from googleapiclient.discovery import build
 
-from .connections import check_connection_name
-from .errors import ConnectionInitError, EnvVarError
+from .connections import check_connection_name, refresh_oauth
+from .errors import ConnectionInitError, OAuthRefreshError
 
 
 def gmail_client(connection: str, **kwargs):
@@ -33,7 +34,7 @@ def gmail_client(connection: str, **kwargs):
     Raises:
         ValueError: AutoKitteh connection name is invalid.
         ConnectionInitError: AutoKitteh connection was not initialized yet.
-        EnvVarError: Required environment variable is missing or invalid.
+        OAuthRefreshError: OAuth token refresh failed.
     """
     # https://developers.google.com/gmail/api/auth/scopes
     default_scopes = [
@@ -62,7 +63,7 @@ def google_calendar_client(connection: str, **kwargs):
     Raises:
         ValueError: AutoKitteh connection name is invalid.
         ConnectionInitError: AutoKitteh connection was not initialized yet.
-        EnvVarError: Required environment variable is missing or invalid.
+        OAuthRefreshError: OAuth token refresh failed.
     """
     # https://developers.google.com/calendar/api/auth
     default_scopes = [
@@ -91,7 +92,7 @@ def google_drive_client(connection: str, **kwargs):
     Raises:
         ValueError: AutoKitteh connection name is invalid.
         ConnectionInitError: AutoKitteh connection was not initialized yet.
-        EnvVarError: Required environment variable is missing or invalid.
+        OAuthRefreshError: OAuth token refresh failed.
     """
     # https://developers.google.com/drive/api/guides/api-specific-auth
     default_scopes = [
@@ -120,7 +121,7 @@ def google_forms_client(connection: str, **kwargs):
     Raises:
         ValueError: AutoKitteh connection name is invalid.
         ConnectionInitError: AutoKitteh connection was not initialized yet.
-        EnvVarError: Required environment variable is missing or invalid.
+        OAuthRefreshError: OAuth token refresh failed.
     """
     # https://developers.google.com/identity/protocols/oauth2/scopes#script
     default_scopes = [
@@ -150,7 +151,7 @@ def google_sheets_client(connection: str, **kwargs):
     Raises:
         ValueError: AutoKitteh connection name is invalid.
         ConnectionInitError: AutoKitteh connection was not initialized yet.
-        EnvVarError: Required environment variable is missing or invalid.
+        OAuthRefreshError: OAuth token refresh failed.
     """
     # https://developers.google.com/sheets/api/scopes
     default_scopes = ["https://www.googleapis.com/auth/spreadsheets"]
@@ -181,34 +182,32 @@ def google_creds(connection: str, scopes: list[str], **kwargs):
     Raises:
         ValueError: AutoKitteh connection name is invalid.
         ConnectionInitError: AutoKitteh connection was not initialized yet.
-        EnvVarError: Required environment variable is missing or invalid.
+        OAuthRefreshError: OAuth token refresh failed.
     """
     check_connection_name(connection)
 
+    if os.getenv(connection + "__authType") == "oauth":  # User (OAuth 2.0)
+        return _google_creds_oauth2(connection, scopes)
+
     json_key = os.getenv(connection + "__JSON")  # Service Account (JSON key)
     if json_key:
-        info = json.loads(json_key)
         # https://google-auth.readthedocs.io/en/stable/reference/google.oauth2.service_account.html#google.oauth2.service_account.Credentials.from_service_account_info
         return service_account.Credentials.from_service_account_info(
-            info, scopes=scopes, **kwargs
+            json.loads(json_key), scopes=scopes, **kwargs
         )
-
-    refresh_token = os.getenv(connection + "__oauth_RefreshToken")  # User (OAuth 2.0)
-    if refresh_token:
-        return __google_creds_oauth2(connection, refresh_token, scopes)
 
     raise ConnectionInitError(connection)
 
 
-def __google_creds_oauth2(connection: str, refresh_token: str, scopes: list[str]):
+def _google_creds_oauth2(connection: str, scopes: list[str]):
     """Initialize user credentials for Google APIs using OAuth 2.0.
 
     For more details, see:
-    https://google-auth.readthedocs.io/en/stable/reference/google.oauth2.credentials.html#google.oauth2.credentials.Credentials.from_authorized_user_info
+    - https://google-auth.readthedocs.io/en/stable/reference/google.oauth2.credentials.html#google.oauth2.credentials.Credentials.from_authorized_user_info
+    - https://github.com/googleapis/google-auth-library-python/blob/main/google/oauth2/credentials.py
 
     Args:
         connection: AutoKitteh connection name.
-        refresh_token: OAuth 2.0 refresh token.
         scopes: List of OAuth permission scopes.
 
     Returns:
@@ -217,7 +216,7 @@ def __google_creds_oauth2(connection: str, refresh_token: str, scopes: list[str]
 
     Raises:
         ConnectionInitError: AutoKitteh connection was not initialized yet.
-        EnvVarError: Required environment variable is missing or invalid.
+        OAuthRefreshError: OAuth token refresh failed.
     """
     expiry = os.getenv(connection + "__oauth_Expiry")
     if not expiry:
@@ -225,32 +224,65 @@ def __google_creds_oauth2(connection: str, refresh_token: str, scopes: list[str]
 
     # Convert Go's time string (e.g. "2024-06-20 19:18:17 -0700 PDT") to
     # an ISO-8601 string that Python can parse with timezone awareness.
-    timestamp = re.sub(r" [A-Z]+.*", "", expiry)
-    timestamp = re.sub(r"\.\d+", "", timestamp)  # Also ignore sub-second precision.
-    dt = datetime.fromisoformat(timestamp).astimezone(UTC)
+    expiry = re.sub(r" [A-Z]+.*", "", expiry)
+    expiry = re.sub(r"\.\d+", "", expiry)  # Also ignore sub-second precision.
+    dt = datetime.fromisoformat(expiry).astimezone(UTC).replace(tzinfo=None)
 
-    client_id = os.getenv("GOOGLE_CLIENT_ID")
-    if not client_id:
-        raise EnvVarError("GOOGLE_CLIENT_ID", "missing")
+    token = os.getenv(connection + "__oauth_AccessToken")
+    # TODO(ENG-1391): client_secret = os.getenv("GOOGLE_CLIENT_SECRET", "NOT AVAILABLE")
+    client_secret = "NOT AVAILABLE"
 
-    client_secret = os.getenv("GOOGLE_CLIENT_SECRET")
-    if not client_secret:
-        raise EnvVarError("GOOGLE_CLIENT_SECRET", "missing")
+    if client_secret == "NOT AVAILABLE":
+        # Refreshes handled by AutoKitteh.
+        creds = credentials.Credentials(token=token, expiry=dt, scopes=scopes)
+        creds.refresh_handler = _google_refresh_handler
+    else:
+        # Refreshes handled by the client, as usual.
+        creds = credentials.Credentials.from_authorized_user_info(
+            {
+                "token": token,
+                "refresh_token": os.getenv(connection + "__oauth_RefreshToken"),
+                "expiry": dt.isoformat(),
+                "client_id": os.getenv("GOOGLE_CLIENT_ID"),
+                "client_secret": client_secret,
+                "scopes": scopes,
+            }
+        )
 
-    creds = credentials.Credentials.from_authorized_user_info(
-        {
-            "token": os.getenv(connection + "__oauth_AccessToken"),
-            "refresh_token": refresh_token,
-            "expiry": dt.replace(tzinfo=None).isoformat(),
-            "client_id": client_id,
-            "client_secret": client_secret,
-            "scopes": scopes,
-        }
-    )
-    if creds.expired:
+    try:
+        # TODO(ENG-1391): Uncomment "if", remove prints
+        # if creds.expired:
+        print("!!!!!!!!!! BEFORE REFRESH !!!!!!!!!!")
         creds.refresh(Request())
+        print("!!!!!!!!!! AFTER REFRESH !!!!!!!!!!")
+    except RefreshError as e:
+        print(f"!!!!!!!!!! REFRESH ERROR: {e} !!!!!!!!!!")
+        raise OAuthRefreshError(connection, e)
 
     return creds
+
+
+def _google_refresh_handler(request, scopes: list[str]) -> tuple[str, datetime]:
+    """Refresh handler for OAuth 2.0 user redentials for Google APIs.
+    Overriden by AutoKitteh to keep the Google client secret
+    hidden from workflows, and unused in local development.
+
+    For more details, see:
+    - https://google-auth.readthedocs.io/en/stable/reference/google.oauth2.credentials.html
+    - https://github.com/googleapis/google-auth-library-python/blob/main/google/oauth2/credentials.py
+
+    Args:
+        request: Google's adapter for the Requests library.
+        scopes: List of OAuth permission scopes.
+
+    Returns:
+        New access token and its expiry date.
+    """
+    # TODO(ENG-1391): return refresh_oauth()
+    token, expiry = refresh_oauth()
+    print(f"!!!!!!!!!! TOKEN: {token} !!!!!!!!!!")
+    print(f"!!!!!!!!!! EXPIRY: {expiry} !!!!!!!!!!")
+    return token, expiry
 
 
 def google_id(url: str) -> str:
