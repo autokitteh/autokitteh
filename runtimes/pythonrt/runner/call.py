@@ -3,7 +3,6 @@ from pathlib import Path
 from time import sleep
 
 import autokitteh
-from autokitteh import connections
 from autokitteh import decorators
 
 import log
@@ -14,7 +13,6 @@ AK_FUNCS = {
     autokitteh.next_event,
     autokitteh.subscribe,
     autokitteh.unsubscribe,
-    connections.refresh_oauth,
     sleep,
 }
 

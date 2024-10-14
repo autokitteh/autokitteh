@@ -219,7 +219,8 @@ message IsActiveRunnerResponse {
 
 message RefreshRequest {
   string runner_id = 1;
-  string token = 2;
+  string connection = 2;
+  repeated string scopes = 3;
 }
 
 message RefreshResponse {

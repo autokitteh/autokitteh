@@ -24,7 +24,6 @@ class SysCalls:
 
         self.ak_funcs = {
             "next_event": self.ak_next_event,
-            "refresh_oauth": self.ak_refresh_oauth,
             "sleep": self.ak_sleep,
             "subscribe": self.ak_subscribe,
             "unsubscribe": self.ak_unsubscribe,
@@ -84,11 +83,11 @@ class SysCalls:
         req = pb.UnsubscribeRequest(runner_id=self.runner_id, signal_id=id)
         call_grpc("unsubscribe", self.worker.Unsubscribe, req)
 
-    def ak_refresh_oauth(self, args, kw):
-        (token,) = extract_args(["token"], args, kw)
+    def ak_refresh_oauth(self, connection_name, scopes):
         req = pb.RefreshRequest(
             runner_id=self.runner_id,
-            token=token,
+            connection: connection_name,
+            scopes: scopes,
         )
         resp: pb.RefreshResponse = call_grpc(
             "refresh_oauth", self.worker.RefreshOAuthToken, req

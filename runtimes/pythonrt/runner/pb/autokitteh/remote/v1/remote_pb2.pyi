@@ -315,12 +315,14 @@ class IsActiveRunnerResponse(_message.Message):
     def __init__(self, is_active: bool = ..., error: _Optional[str] = ...) -> None: ...
 
 class RefreshRequest(_message.Message):
-    __slots__ = ["runner_id", "token"]
+    __slots__ = ["runner_id", "connection", "scopes"]
     RUNNER_ID_FIELD_NUMBER: _ClassVar[int]
-    TOKEN_FIELD_NUMBER: _ClassVar[int]
+    CONNECTION_FIELD_NUMBER: _ClassVar[int]
+    SCOPES_FIELD_NUMBER: _ClassVar[int]
     runner_id: str
-    token: str
-    def __init__(self, runner_id: _Optional[str] = ..., token: _Optional[str] = ...) -> None: ...
+    connection: str
+    scopes: _containers.RepeatedScalarFieldContainer[str]
+    def __init__(self, runner_id: _Optional[str] = ..., connection: _Optional[str] = ..., scopes: _Optional[_Iterable[str]] = ...) -> None: ...
 
 class RefreshResponse(_message.Message):
     __slots__ = ["token", "expires", "error"]
