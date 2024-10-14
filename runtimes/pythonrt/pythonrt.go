@@ -39,12 +39,18 @@ type callbackMessage struct {
 	errorChannel   chan error
 }
 
+type logMessage struct {
+	message     string
+	level       string
+	doneChannel chan struct{}
+}
+
 type comChannels struct {
 	done     chan *pb.DoneRequest
 	err      chan string
 	request  chan *pb.ActivityRequest
-	print    chan *pb.PrintRequest
-	log      chan *pb.LogRequest
+	print    chan *logMessage
+	log      chan *logMessage
 	callback chan *callbackMessage
 }
 
@@ -146,8 +152,8 @@ func newSvc(cfg *Config, l *zap.Logger) (sdkservices.Runtime, error) {
 			done:     make(chan *pb.DoneRequest, 1),
 			err:      make(chan string, 1),
 			request:  make(chan *pb.ActivityRequest, 1),
-			print:    make(chan *pb.PrintRequest, 1),
-			log:      make(chan *pb.LogRequest, 1),
+			print:    make(chan *logMessage, 1),
+			log:      make(chan *logMessage, 1),
 			callback: make(chan *callbackMessage, 1),
 		},
 	}
@@ -512,10 +518,12 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, _ []sdktypes.
 				return sdktypes.InvalidValue, sdkerrors.NewRetryableError("runner health: %w", healthErr)
 			}
 		case r := <-py.channels.log:
-			level := pyLevelToZap(r.Level)
-			py.log.Log(level, r.Message, zap.String("source", "python"))
+			level := pyLevelToZap(r.level)
+			py.log.Log(level, r.message)
+			close(r.doneChannel)
 		case r := <-py.channels.print:
-			py.cbs.Print(ctx, py.runID, r.Message)
+			py.cbs.Print(ctx, py.runID, r.message)
+			close(r.doneChannel)
 		case r := <-py.channels.request:
 			var (
 				fnName = "pyFunc"
@@ -571,7 +579,7 @@ func (py *pySvc) drainPrints(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case r := <-py.channels.print:
-			py.cbs.Print(ctx, py.runID, r.Message)
+			py.cbs.Print(ctx, py.runID, r.message)
 		}
 	}
 }

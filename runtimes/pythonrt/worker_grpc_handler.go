@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"sync"
+	"time"
 
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -17,6 +18,8 @@ import (
 	pb "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/remote/v1"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
+
+const runnerChResponseTimeout = 5 * time.Second
 
 type workerGRPCHandler struct {
 	pb.UnimplementedWorkerServer
@@ -101,8 +104,17 @@ func (s *workerGRPCHandler) Log(ctx context.Context, req *pb.LogRequest) (*pb.Lo
 		}, nil
 	}
 
-	runner.channels.log <- req
-	return &pb.LogResponse{}, nil
+	m := makeLogMessage(req.Level, req.Message)
+	runner.channels.log <- m
+
+	select {
+	case <-m.doneChannel:
+		return &pb.LogResponse{}, nil
+	case <-time.After(runnerChResponseTimeout):
+		return &pb.LogResponse{
+			Error: "timeout",
+		}, nil
+	}
 }
 
 func (s *workerGRPCHandler) Print(ctx context.Context, req *pb.PrintRequest) (*pb.PrintResponse, error) {
@@ -115,8 +127,17 @@ func (s *workerGRPCHandler) Print(ctx context.Context, req *pb.PrintRequest) (*p
 		}, nil
 	}
 
-	runner.channels.print <- req
-	return &pb.PrintResponse{}, nil
+	m := makeLogMessage(req.Message, "info")
+
+	runner.channels.print <- m
+	select {
+	case <-m.doneChannel:
+		return &pb.PrintResponse{}, nil
+	case <-time.After(runnerChResponseTimeout):
+		return &pb.PrintResponse{
+			Error: "timeout",
+		}, nil
+	}
 }
 
 func (s *workerGRPCHandler) Done(ctx context.Context, req *pb.DoneRequest) (*pb.DoneResponse, error) {
@@ -157,8 +178,8 @@ func (s *workerGRPCHandler) Activity(ctx context.Context, req *pb.ActivityReques
 // ak functions
 
 func makeCallbackMessage(args []sdktypes.Value, kwargs map[string]sdktypes.Value) *callbackMessage {
-	callbackChan := make(chan sdktypes.Value)
-	errorChannel := make(chan error)
+	callbackChan := make(chan sdktypes.Value, 1)
+	errorChannel := make(chan error, 1)
 
 	msg := &callbackMessage{
 		args:           args,
@@ -167,6 +188,14 @@ func makeCallbackMessage(args []sdktypes.Value, kwargs map[string]sdktypes.Value
 		errorChannel:   errorChannel,
 	}
 	return msg
+}
+
+func makeLogMessage(message string, level string) *logMessage {
+	return &logMessage{
+		level:       level,
+		message:     message,
+		doneChannel: make(chan struct{}, 1),
+	}
 }
 
 func (s *workerGRPCHandler) Sleep(ctx context.Context, req *pb.SleepRequest) (*pb.SleepResponse, error) {
