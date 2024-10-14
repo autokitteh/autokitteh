@@ -44,10 +44,12 @@ func ConfigureWorkerGRPCHandler(l *zap.Logger, mux *http.ServeMux) {
 func addRunnerToServer(runnerID string, svc *pySvc) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
+
 	_, ok := w.runnerIDsToRuntime[runnerID]
 	if ok {
 		return errors.New("already registered")
 	}
+
 	w.runnerIDsToRuntime[runnerID] = svc
 	return nil
 }
@@ -55,10 +57,12 @@ func addRunnerToServer(runnerID string, svc *pySvc) error {
 func removeRunnerFromServer(runnerID string) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
+
 	_, ok := w.runnerIDsToRuntime[runnerID]
 	if !ok {
-		return errors.New("unknown runner id")
+		return errors.New("unknown runner ID")
 	}
+
 	delete(w.runnerIDsToRuntime, runnerID)
 	return nil
 }
@@ -72,11 +76,13 @@ func (s *workerGRPCHandler) Health(ctx context.Context, req *pb.HealthRequest) (
 
 func (s *workerGRPCHandler) IsActiveRunner(ctx context.Context, req *pb.IsActiveRunnerRequest) (*pb.IsActiveRunnerResponse, error) {
 	w.mu.Lock()
+	defer w.mu.Unlock()
+
 	_, ok := w.runnerIDsToRuntime[req.RunnerId]
-	w.mu.Unlock()
 	if !ok {
-		return &pb.IsActiveRunnerResponse{Error: "runner id unknown"}, nil
+		return &pb.IsActiveRunnerResponse{Error: "unknown runner ID"}, nil
 	}
+
 	return &pb.IsActiveRunnerResponse{}, nil
 }
 
@@ -86,12 +92,11 @@ func (s *workerGRPCHandler) Log(ctx context.Context, req *pb.LogRequest) (*pb.Lo
 	}
 
 	w.mu.Lock()
+	defer w.mu.Unlock()
+
 	runner, ok := w.runnerIDsToRuntime[req.RunnerId]
-	w.mu.Unlock()
 	if !ok {
-		return &pb.LogResponse{
-			Error: "Unknown runner id",
-		}, nil
+		return &pb.LogResponse{Error: "unknown runner ID"}, nil
 	}
 
 	runner.channels.log <- req
@@ -100,12 +105,11 @@ func (s *workerGRPCHandler) Log(ctx context.Context, req *pb.LogRequest) (*pb.Lo
 
 func (s *workerGRPCHandler) Print(ctx context.Context, req *pb.PrintRequest) (*pb.PrintResponse, error) {
 	w.mu.Lock()
+	defer w.mu.Unlock()
+
 	runner, ok := w.runnerIDsToRuntime[req.RunnerId]
-	w.mu.Unlock()
 	if !ok {
-		return &pb.PrintResponse{
-			Error: "Unknown runner id",
-		}, nil
+		return &pb.PrintResponse{Error: "unknown runner ID"}, nil
 	}
 
 	runner.channels.print <- req
@@ -114,11 +118,13 @@ func (s *workerGRPCHandler) Print(ctx context.Context, req *pb.PrintRequest) (*p
 
 func (s *workerGRPCHandler) Done(ctx context.Context, req *pb.DoneRequest) (*pb.DoneResponse, error) {
 	w.mu.Lock()
+	defer w.mu.Unlock()
+
 	runner, ok := w.runnerIDsToRuntime[req.RunnerId]
-	w.mu.Unlock()
 	if !ok {
 		return &pb.DoneResponse{}, nil
 	}
+
 	runner.channels.done <- req
 	return &pb.DoneResponse{}, nil
 }
@@ -126,12 +132,11 @@ func (s *workerGRPCHandler) Done(ctx context.Context, req *pb.DoneRequest) (*pb.
 // Runner starting activity
 func (s *workerGRPCHandler) Activity(ctx context.Context, req *pb.ActivityRequest) (*pb.ActivityResponse, error) {
 	w.mu.Lock()
+	defer w.mu.Unlock()
+
 	runner, ok := w.runnerIDsToRuntime[req.RunnerId]
-	w.mu.Unlock()
 	if !ok {
-		return &pb.ActivityResponse{
-			Error: "runner id unknown",
-		}, nil
+		return &pb.ActivityResponse{Error: "unknown runner ID"}, nil
 	}
 
 	fnName := req.CallInfo.Function
@@ -143,7 +148,6 @@ func (s *workerGRPCHandler) Activity(ctx context.Context, req *pb.ActivityReques
 	}
 
 	runner.channels.request <- req
-
 	return &pb.ActivityResponse{}, nil
 }
 
@@ -168,12 +172,11 @@ func (s *workerGRPCHandler) Sleep(ctx context.Context, req *pb.SleepRequest) (*p
 	}
 
 	w.mu.Lock()
+	defer w.mu.Unlock()
+
 	runner, ok := w.runnerIDsToRuntime[req.RunnerId]
-	w.mu.Unlock()
 	if !ok {
-		return &pb.SleepResponse{
-			Error: "Unknown runner id",
-		}, nil
+		return &pb.SleepResponse{Error: "unknown runner ID"}, nil
 	}
 
 	secs := float64(req.DurationMs) / 1000.0
@@ -183,7 +186,6 @@ func (s *workerGRPCHandler) Sleep(ctx context.Context, req *pb.SleepRequest) (*p
 	}
 
 	msg := makeCallbackMessage(args, nil)
-
 	runner.channels.callback <- msg
 
 	select {
@@ -201,12 +203,11 @@ func (s *workerGRPCHandler) Subscribe(ctx context.Context, req *pb.SubscribeRequ
 	}
 
 	w.mu.Lock()
+	defer w.mu.Unlock()
+
 	runner, ok := w.runnerIDsToRuntime[req.RunnerId]
-	w.mu.Unlock()
 	if !ok {
-		return &pb.SubscribeResponse{
-			Error: "Unknown runner id",
-		}, nil
+		return &pb.SubscribeResponse{Error: "unknown runner ID"}, nil
 	}
 
 	args := []sdktypes.Value{
@@ -236,12 +237,11 @@ func (s *workerGRPCHandler) NextEvent(ctx context.Context, req *pb.NextEventRequ
 	}
 
 	w.mu.Lock()
+	defer w.mu.Unlock()
+
 	runner, ok := w.runnerIDsToRuntime[req.RunnerId]
-	w.mu.Unlock()
 	if !ok {
-		return &pb.NextEventResponse{
-			Error: "Unknown runner id",
-		}, nil
+		return &pb.NextEventResponse{Error: "unknown runner ID"}, nil
 	}
 
 	args := make([]sdktypes.Value, len(req.SignalIds)+1)
@@ -256,7 +256,6 @@ func (s *workerGRPCHandler) NextEvent(ctx context.Context, req *pb.NextEventRequ
 	}
 
 	msg := makeCallbackMessage(args, kw)
-
 	runner.channels.callback <- msg
 
 	select {
@@ -287,19 +286,17 @@ func (s *workerGRPCHandler) NextEvent(ctx context.Context, req *pb.NextEventRequ
 
 func (s *workerGRPCHandler) Unsubscribe(ctx context.Context, req *pb.UnsubscribeRequest) (*pb.UnsubscribeResponse, error) {
 	w.mu.Lock()
+	defer w.mu.Unlock()
+
 	runner, ok := w.runnerIDsToRuntime[req.RunnerId]
-	w.mu.Unlock()
 	if !ok {
-		return &pb.UnsubscribeResponse{
-			Error: "Unknown runner id",
-		}, nil
+		return &pb.UnsubscribeResponse{Error: "Unknown runner id"}, nil
 	}
 
 	args := []sdktypes.Value{
 		sdktypes.NewStringValue("unsubsribe"),
 		sdktypes.NewStringValue(req.SignalId),
 	}
-
 	msg := makeCallbackMessage(args, nil)
 	runner.channels.callback <- msg
 
@@ -314,8 +311,9 @@ func (s *workerGRPCHandler) Unsubscribe(ctx context.Context, req *pb.Unsubscribe
 
 func (s *workerGRPCHandler) RefreshOAuthToken(ctx context.Context, req *pb.RefreshRequest) (*pb.RefreshResponse, error) {
 	w.mu.Lock()
+	defer w.mu.Unlock()
+
 	runner, ok := w.runnerIDsToRuntime[req.RunnerId]
-	w.mu.Unlock()
 	if !ok {
 		return &pb.RefreshResponse{Error: "unknown runner ID"}, nil
 	}
