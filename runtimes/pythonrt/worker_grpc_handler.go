@@ -7,13 +7,17 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"os"
 	"sync"
 
 	"go.uber.org/zap"
+	"golang.org/x/oauth2"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/oauth"
 	pb "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/remote/v1"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -29,17 +33,6 @@ var w = workerGRPCHandler{
 	runnerIDsToRuntime: map[string]*pySvc{},
 	mu:                 new(sync.Mutex),
 }
-
-// GRPC Server Handling
-// func newInterceptor(log *zap.Logger) func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
-// 	fn := func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
-// 		log.Info("call", zap.String("method", info.FullMethod))
-
-// 		return handler(ctx, req)
-// 	}
-
-// 	return fn
-// }
 
 func ConfigureWorkerGRPCHandler(l *zap.Logger, mux *http.ServeMux) {
 	srv := grpc.NewServer()
@@ -319,7 +312,29 @@ func (s *workerGRPCHandler) Unsubscribe(ctx context.Context, req *pb.Unsubscribe
 	}
 }
 
-func (s *workerGRPCHandler) RefreshOAuthToken(context.Context, *pb.RefreshRequest) (*pb.RefreshResponse, error) {
-	// TODO: @daabr to implement
-	return nil, status.Error(codes.Unimplemented, "not yet")
+func (s *workerGRPCHandler) RefreshOAuthToken(ctx context.Context, req *pb.RefreshRequest) (*pb.RefreshResponse, error) {
+	w.mu.Lock()
+	runner, ok := w.runnerIDsToRuntime[req.RunnerId]
+	w.mu.Unlock()
+	if !ok {
+		return &pb.RefreshResponse{Error: "unknown runner ID"}, nil
+	}
+
+	// Get the integration's OAuth configuration.
+	cfg, _, err := oauth.New(runner.log).Get(ctx, req.Integration)
+	if err != nil {
+		return &pb.RefreshResponse{Error: err.Error()}, nil
+	}
+
+	// Get a fresh access token.
+	t := &oauth2.Token{RefreshToken: os.Getenv(req.Connection + "__oauth_RefreshToken")}
+	t, err = cfg.TokenSource(ctx, t).Token()
+	if err != nil {
+		return &pb.RefreshResponse{Error: err.Error()}, nil
+	}
+
+	return &pb.RefreshResponse{
+		Token:   t.AccessToken,
+		Expires: timestamppb.New(t.Expiry),
+	}, nil
 }
