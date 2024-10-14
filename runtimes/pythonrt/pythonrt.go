@@ -13,8 +13,6 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
-	"golang.org/x/exp/maps"
-
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/internal/xdg"
 	pb "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/remote/v1"
@@ -238,10 +236,8 @@ func (py *pySvc) Run(
 	py.runID = runID
 	py.sessionID = sessionID
 	py.xid = sdktypes.NewExecutorID(runID) // Should be first
-	py.log = py.log.With(zap.String("run_id", runID.String()), zap.String("session_id", sessionID.String()))
-	py.log.Info("run", zap.String("path", mainPath))
+	py.log = py.log.With(zap.String("run_id", runID.String()), zap.String("session_id", sessionID.String()), zap.String("path", mainPath))
 
-	py.log.Info("executor", zap.String("id", py.xid.String()))
 	py.cbs = cbs
 
 	// Load environment defined by user in the `vars` section of the manifest,
@@ -298,7 +294,7 @@ func (py *pySvc) Run(
 		return nil, err
 	}
 
-	py.log.Info("module entries", zap.Any("entries", resp.Exports))
+	py.log.Debug("loaded exports", zap.Any("entries", resp.Exports))
 	exports, err := entriesToValues(py.xid, resp.Exports)
 	if err != nil {
 		py.log.Error("can't create module entries", zap.Error(err))
@@ -308,7 +304,7 @@ func (py *pySvc) Run(
 
 	runnerOK = true // All is good, don't kill Python subprocess.
 
-	py.log.Info("run done")
+	py.log.Info("run created")
 	return py, nil
 }
 
@@ -382,7 +378,6 @@ func (py *pySvc) kwToEvent(ctx context.Context, kwargs map[string]sdktypes.Value
 		}
 		event[key] = goVal
 	}
-	py.log.Info("event", zap.Any("keys", maps.Keys(event)))
 
 	if err := py.injectHTTPBody(ctx, kwargs["data"], event, py.cbs); err != nil {
 		return nil, err
@@ -534,7 +529,6 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, _ []sdktypes.
 				kw = kittehs.TransformMap(r.CallInfo.Kwargs, func(k, v string) (string, sdktypes.Value) { return k, sdktypes.NewStringValue(v) })
 			}
 
-			py.log.Info("activity", zap.String("function", fnName))
 			// it was already checked before we got here
 			fn, err := sdktypes.NewFunctionValue(py.xid, fnName, r.Data, nil, pyModuleFunc)
 			if err != nil {
