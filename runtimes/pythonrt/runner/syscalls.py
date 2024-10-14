@@ -84,21 +84,20 @@ class SysCalls:
         req = pb.UnsubscribeRequest(runner_id=self.runner_id, signal_id=id)
         call_grpc("unsubscribe", self.worker.Unsubscribe, req)
 
-    def ak_refresh_oauth(integration: str, self, connection: str, scopes: list[str]):
-        # TODO BEFORE MERGING: REMOVE PRINTS
+    def ak_refresh_oauth(integration: str, self, connection: str):
+        # TODO BEFORE MERGING: REMOVE ALL PRINTS
         print("!!!!!!!!!! refresh_oauth IS overriden !!!!!!!!!!")
-        print("@@@@@@@@@@ connection: ", connection)
-        print("########## integration: ", integration)
-        print("$$$$$$$$$$ scopes: ", scopes)
+        print("@@@@@@@@@@ integration: ", integration)
+        print("########## connection: ", connection)
         req = pb.RefreshRequest(
             runner_id=self.runner_id,
             connection=connection,
             integration=integration,
-            scopes=scopes,
         )
         resp: pb.RefreshResponse = call_grpc(
             "refresh_oauth", self.worker.RefreshOAuthToken, req
         )
+        print("!!!!!!!!!! resp: ", resp)
         return resp.token, resp.expires.ToDatetime()
 
 

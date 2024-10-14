@@ -282,7 +282,7 @@ def _google_refresh_handler(connection: str, integration: str) -> callable:
 
     def __impl(request, scopes: list[str]) -> tuple[str, datetime]:
         # TODO BEFORE MERGE: just "return refresh_oauth()" instead of the following lines
-        token, expiry = refresh_oauth(integration, connection, scopes)
+        token, expiry = refresh_oauth(integration, connection)
         print(f"!!!!!!!!!! TOKEN: {token} !!!!!!!!!!")
         print(f"!!!!!!!!!! EXPIRY: {expiry} !!!!!!!!!!")
         return token, expiry
