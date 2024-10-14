@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"maps"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"go.starlark.net/starlark"
@@ -155,13 +156,18 @@ func Run(
 }
 
 func (r *run) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
-	fv, err := r.vctx.ToStarlarkValue(v)
+	slfv, err := r.vctx.ToStarlarkValue(v)
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
 
+	fv := v.GetFunction()
+	if !fv.IsValid() {
+		return sdktypes.InvalidValue, fmt.Errorf("not a function: %v", v)
+	}
+
 	th := &starlark.Thread{
-		Name:  v.GetFunction().UniqueID(),
+		Name:  fv.UniqueID(),
 		Print: func(_ *starlark.Thread, text string) { r.cbs.SafePrint(ctx, r.runID, text) },
 	}
 
@@ -183,6 +189,10 @@ func (r *run) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Value,
 
 	slkwargs := make([]starlark.Tuple, 0, len(kwargs))
 	for k, v := range kwargs {
+		if !slices.Contains(fv.ArgNames(), k) {
+			continue
+		}
+
 		slv, err := r.vctx.ToStarlarkValue(v)
 		if err != nil {
 			return sdktypes.InvalidValue, fmt.Errorf("kwarg with key %q transform: %w", k, err)
@@ -194,7 +204,7 @@ func (r *run) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Value,
 		}))
 	}
 
-	slretv, err := starlark.Call(th, fv, slargs, slkwargs)
+	slretv, err := starlark.Call(th, slfv, slargs, slkwargs)
 	if err != nil {
 		return sdktypes.InvalidValue, translateError(err, nil)
 	}
