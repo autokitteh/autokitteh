@@ -7,10 +7,11 @@ import json
 import os
 
 import grpc
+
+from autokitteh import AttrDict
 import log
 import pb.autokitteh.remote.v1.remote_pb2 as pb
 import pb.autokitteh.remote.v1.remote_pb2_grpc as rpc
-from autokitteh import AttrDict
 
 
 class SyscallError(Exception):
@@ -83,11 +84,14 @@ class SysCalls:
         req = pb.UnsubscribeRequest(runner_id=self.runner_id, signal_id=id)
         call_grpc("unsubscribe", self.worker.Unsubscribe, req)
 
-    def ak_refresh_oauth(self, connection_name, scopes):
+    def ak_refresh_oauth(self, connection: str, scopes: list[str]):
+        print("!!!!!!!!!! refresh_oauth IS overriden !!!!!!!!!!")
+        print("@@@@@@@@@@ connection: ", connection)
+        print("########## scopes: ", scopes)
         req = pb.RefreshRequest(
             runner_id=self.runner_id,
-            connection: connection_name,
-            scopes: scopes,
+            connection=connection,
+            scopes=scopes,
         )
         resp: pb.RefreshResponse = call_grpc(
             "refresh_oauth", self.worker.RefreshOAuthToken, req

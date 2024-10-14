@@ -21,7 +21,7 @@ import pb.autokitteh.remote.v1.remote_pb2 as pb
 import pb.autokitteh.remote.v1.remote_pb2_grpc as rpc
 from autokitteh import AttrDict, connections
 from call import AKCall, full_func_name
-from syscalls import SysCalls, ak_refresh_oauth
+from syscalls import SysCalls
 
 SERVER_GRACE_TIMEOUT = 3  # seconds
 
@@ -159,7 +159,7 @@ class Runner(rpc.RunnerServicer):
 
         # Monkey patch some functions
         builtins.print = self.ak_print
-        connections.refresh_oauth = ak_refresh_oauth
+        connections.refresh_oauth = self.syscalls.ak_refresh_oauth
 
         fn = getattr(mod, fn_name, None)
         if not callable(fn):

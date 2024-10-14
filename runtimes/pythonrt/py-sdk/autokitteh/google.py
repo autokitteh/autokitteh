@@ -235,7 +235,7 @@ def _google_creds_oauth2(connection: str, scopes: list[str]):
     if client_secret == "NOT AVAILABLE":
         # Refreshes handled by AutoKitteh.
         creds = credentials.Credentials(token=token, expiry=dt, scopes=scopes)
-        creds.refresh_handler = _google_refresh_handler
+        creds.refresh_handler = _google_refresh_handler(connection)
     else:
         # Refreshes handled by the client, as usual.
         creds = credentials.Credentials.from_authorized_user_info(
@@ -262,10 +262,8 @@ def _google_creds_oauth2(connection: str, scopes: list[str]):
     return creds
 
 
-def _google_refresh_handler(request, scopes: list[str]) -> tuple[str, datetime]:
+def _google_refresh_handler(connection: str) -> callable:
     """Refresh handler for OAuth 2.0 user redentials for Google APIs.
-    Overriden by AutoKitteh to keep the Google client secret
-    hidden from workflows, and unused in local development.
 
     For more details, see:
     - https://google-auth.readthedocs.io/en/stable/reference/google.oauth2.credentials.html
@@ -278,11 +276,17 @@ def _google_refresh_handler(request, scopes: list[str]) -> tuple[str, datetime]:
     Returns:
         New access token and its expiry date.
     """
-    # TODO(ENG-1391): return refresh_oauth()
-    token, expiry = refresh_oauth()
-    print(f"!!!!!!!!!! TOKEN: {token} !!!!!!!!!!")
-    print(f"!!!!!!!!!! EXPIRY: {expiry} !!!!!!!!!!")
-    return token, expiry
+
+    def __impl(request, scopes: list[str]) -> tuple[str, datetime]:
+        # "refresh_oauth" is overriden by AutoKitteh to keep the Google client
+        # secret hidden from workflows, and unused in local development.
+        # TODO(ENG-1391): return refresh_oauth()
+        token, expiry = refresh_oauth(connection, scopes)
+        print(f"!!!!!!!!!! TOKEN: {token} !!!!!!!!!!")
+        print(f"!!!!!!!!!! EXPIRY: {expiry} !!!!!!!!!!")
+        return token, expiry
+
+    return __impl
 
 
 def google_id(url: str) -> str:

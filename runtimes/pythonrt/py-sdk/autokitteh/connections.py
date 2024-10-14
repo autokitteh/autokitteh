@@ -1,6 +1,6 @@
 """AutoKitteh connection-related utilities."""
 
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 import re
 
 
@@ -17,9 +17,7 @@ def check_connection_name(connection: str) -> None:
         raise ValueError(f"Invalid AutoKitteh connection name: {connection!r}")
 
 
-def refresh_oauth(connection_name: str, scopes: list[str]) -> tuple[str, datetime]:
+def refresh_oauth(connection: str, scopes: list[str]) -> tuple[str, datetime]:
     """Mock function to refresh OAuth tokens, overriden by AutoKitteh runner."""
-    # raise RuntimeError("refresh_oauth should be overriden by AutoKitteh")
     print("!!!!!!!!!! refresh_oauth not overriden !!!!!!!!!!")
-    expiry = datetime.now(UTC).replace(tzinfo=None) + timedelta(hours=1)
-    return "DUMMY TOKEN", expiry
+    return "DUMMY TOKEN", datetime.now(UTC).replace(tzinfo=None)
