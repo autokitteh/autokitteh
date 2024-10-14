@@ -17,7 +17,9 @@ def check_connection_name(connection: str) -> None:
         raise ValueError(f"Invalid AutoKitteh connection name: {connection!r}")
 
 
-def refresh_oauth(connection: str, scopes: list[str]) -> tuple[str, datetime]:
+def refresh_oauth(
+    integration: str, connection: str, scopes: list[str]
+) -> tuple[str, datetime]:
     """Mock function to refresh OAuth tokens, overriden by AutoKitteh runner."""
-    print("!!!!!!!!!! refresh_oauth not overriden !!!!!!!!!!")
+    print("!!!!!!!!!! SDK's refresh_oauth not overriden !!!!!!!!!!")
     return "DUMMY TOKEN", datetime.now(UTC).replace(tzinfo=None)

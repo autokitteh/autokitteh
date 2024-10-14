@@ -140,7 +140,7 @@ func (r *LocalPython) Start(pyExe string, tarData []byte, env map[string]string,
 		"--runner-id", r.id,
 		"--code-dir", r.userDir,
 	)
-	cmd.Env = overrideEnv(env, r.runnerDir, r.userDir)
+	cmd.Env = overrideEnv(env, r.runnerDir)
 	cmd.Dir = r.userDir
 
 	if r.logRunnerCode {
@@ -320,7 +320,7 @@ func adjustPythonPath(env []string, runnerPath string) []string {
 	return append(env, fmt.Sprintf("PYTHONPATH=%s", runnerPath))
 }
 
-func overrideEnv(envMap map[string]string, runnerPath, userCodePath string) []string {
+func overrideEnv(envMap map[string]string, runnerPath string) []string {
 	env := os.Environ()
 	// Append AK values to end to override (see Env docs in https://pkg.go.dev/os/exec#Cmd)
 	for k, v := range envMap {

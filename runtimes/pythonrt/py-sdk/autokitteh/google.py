@@ -5,8 +5,8 @@ import json
 import os
 import re
 
-from google.auth.transport.requests import Request
 from google.auth.exceptions import RefreshError
+from google.auth.transport.requests import Request
 import google.oauth2.credentials as credentials
 import google.oauth2.service_account as service_account
 from googleapiclient.discovery import build
@@ -41,7 +41,7 @@ def gmail_client(connection: str, **kwargs):
         "https://www.googleapis.com/auth/gmail.modify",
         "https://www.googleapis.com/auth/gmail.settings.basic",
     ]
-    creds = google_creds(connection, default_scopes, **kwargs)
+    creds = google_creds("gmail", connection, default_scopes, **kwargs)
     return build("gmail", "v1", credentials=creds, **kwargs)
 
 
@@ -70,7 +70,7 @@ def google_calendar_client(connection: str, **kwargs):
         "https://www.googleapis.com/auth/calendar",
         "https://www.googleapis.com/auth/calendar.events",
     ]
-    creds = google_creds(connection, default_scopes, **kwargs)
+    creds = google_creds("googlecalendar", connection, default_scopes, **kwargs)
     return build("calendar", "v3", credentials=creds, **kwargs)
 
 
@@ -98,7 +98,7 @@ def google_drive_client(connection: str, **kwargs):
     default_scopes = [
         "https://www.googleapis.com/auth/drive",
     ]
-    creds = google_creds(connection, default_scopes, **kwargs)
+    creds = google_creds("googledrive", connection, default_scopes, **kwargs)
     return build("drive", "v3", credentials=creds, **kwargs)
 
 
@@ -128,7 +128,7 @@ def google_forms_client(connection: str, **kwargs):
         "https://www.googleapis.com/auth/forms.body",
         "https://www.googleapis.com/auth/forms.responses.readonly",
     ]
-    creds = google_creds(connection, default_scopes, **kwargs)
+    creds = google_creds("googleforms", connection, default_scopes, **kwargs)
     return build("forms", "v1", credentials=creds, **kwargs)
 
 
@@ -155,11 +155,11 @@ def google_sheets_client(connection: str, **kwargs):
     """
     # https://developers.google.com/sheets/api/scopes
     default_scopes = ["https://www.googleapis.com/auth/spreadsheets"]
-    creds = google_creds(connection, default_scopes, **kwargs)
+    creds = google_creds("googlesheets", connection, default_scopes, **kwargs)
     return build("sheets", "v4", credentials=creds, **kwargs)
 
 
-def google_creds(connection: str, scopes: list[str], **kwargs):
+def google_creds(integration: str, connection: str, scopes: list[str], **kwargs):
     """Initialize credentials for a Google APIs client, for service discovery.
 
     This function supports both AutoKitteh connection modes:
@@ -172,6 +172,7 @@ def google_creds(connection: str, scopes: list[str], **kwargs):
     https://googleapis.github.io/google-api-python-client/docs/epy/googleapiclient.discovery-module.html#build
 
     Args:
+        integration: AutoKitteh integration name.
         connection: AutoKitteh connection name.
         scopes: List of OAuth permission scopes.
 
@@ -187,7 +188,7 @@ def google_creds(connection: str, scopes: list[str], **kwargs):
     check_connection_name(connection)
 
     if os.getenv(connection + "__authType") == "oauth":  # User (OAuth 2.0)
-        return _google_creds_oauth2(connection, scopes)
+        return _google_creds_oauth2(integration, connection, scopes)
 
     json_key = os.getenv(connection + "__JSON")  # Service Account (JSON key)
     if json_key:
@@ -199,7 +200,7 @@ def google_creds(connection: str, scopes: list[str], **kwargs):
     raise ConnectionInitError(connection)
 
 
-def _google_creds_oauth2(connection: str, scopes: list[str]):
+def _google_creds_oauth2(integration: str, connection: str, scopes: list[str]):
     """Initialize user credentials for Google APIs using OAuth 2.0.
 
     For more details, see:
@@ -207,6 +208,7 @@ def _google_creds_oauth2(connection: str, scopes: list[str]):
     - https://github.com/googleapis/google-auth-library-python/blob/main/google/oauth2/credentials.py
 
     Args:
+        integration: AutoKitteh integration name.
         connection: AutoKitteh connection name.
         scopes: List of OAuth permission scopes.
 
@@ -229,15 +231,14 @@ def _google_creds_oauth2(connection: str, scopes: list[str]):
     dt = datetime.fromisoformat(expiry).astimezone(UTC).replace(tzinfo=None)
 
     token = os.getenv(connection + "__oauth_AccessToken")
-    # TODO(ENG-1391): client_secret = os.getenv("GOOGLE_CLIENT_SECRET", "NOT AVAILABLE")
-    client_secret = "NOT AVAILABLE"
+    client_secret = os.getenv("GOOGLE_CLIENT_SECRET", "NOT AVAILABLE")
 
     if client_secret == "NOT AVAILABLE":
-        # Refreshes handled by AutoKitteh.
+        # Refreshes to be handled by AutoKitteh.
         creds = credentials.Credentials(token=token, expiry=dt, scopes=scopes)
-        creds.refresh_handler = _google_refresh_handler(connection)
+        creds.refresh_handler = _google_refresh_handler(integration, connection)
     else:
-        # Refreshes handled by the client, as usual.
+        # Refreshes to be handled by the Python client, as usual.
         creds = credentials.Credentials.from_authorized_user_info(
             {
                 "token": token,
@@ -250,11 +251,11 @@ def _google_creds_oauth2(connection: str, scopes: list[str]):
         )
 
     try:
-        # TODO(ENG-1391): Uncomment "if", remove prints
-        # if creds.expired:
-        print("!!!!!!!!!! BEFORE REFRESH !!!!!!!!!!")
-        creds.refresh(Request())
-        print("!!!!!!!!!! AFTER REFRESH !!!!!!!!!!")
+        if creds.expired:
+            # TODO BEFORE MERING: REMOVE THESE PRINTS
+            print("!!!!!!!!!! BEFORE REFRESH !!!!!!!!!!")
+            creds.refresh(Request())
+            print("!!!!!!!!!! AFTER REFRESH !!!!!!!!!!")
     except RefreshError as e:
         print(f"!!!!!!!!!! REFRESH ERROR: {e} !!!!!!!!!!")
         raise OAuthRefreshError(connection, e)
@@ -262,26 +263,26 @@ def _google_creds_oauth2(connection: str, scopes: list[str]):
     return creds
 
 
-def _google_refresh_handler(connection: str) -> callable:
-    """Refresh handler for OAuth 2.0 user redentials for Google APIs.
+def _google_refresh_handler(connection: str, integration: str) -> callable:
+    """Refresh handler for OAuth 2.0 user credentials for Google APIs.
 
     For more details, see:
     - https://google-auth.readthedocs.io/en/stable/reference/google.oauth2.credentials.html
     - https://github.com/googleapis/google-auth-library-python/blob/main/google/oauth2/credentials.py
 
     Args:
-        request: Google's adapter for the Requests library.
-        scopes: List of OAuth permission scopes.
+        connection: AutoKitteh connection name.
+        integration: AutoKitteh integration name.
 
     Returns:
-        New access token and its expiry date.
+        Generated function (based on the input) to return a fresh access token
+        and its expiry date. Overriden by AutoKitteh to keep the Google client
+        secret hidden from workflows, and unused in local development.
     """
 
     def __impl(request, scopes: list[str]) -> tuple[str, datetime]:
-        # "refresh_oauth" is overriden by AutoKitteh to keep the Google client
-        # secret hidden from workflows, and unused in local development.
-        # TODO(ENG-1391): return refresh_oauth()
-        token, expiry = refresh_oauth(connection, scopes)
+        # TODO BEFORE MERGE: just "return refresh_oauth()" instead of the following lines
+        token, expiry = refresh_oauth(integration, connection, scopes)
         print(f"!!!!!!!!!! TOKEN: {token} !!!!!!!!!!")
         print(f"!!!!!!!!!! EXPIRY: {expiry} !!!!!!!!!!")
         return token, expiry

@@ -219,8 +219,9 @@ message IsActiveRunnerResponse {
 
 message RefreshRequest {
   string runner_id = 1;
-  string connection = 2;
-  repeated string scopes = 3;
+  string integration = 2;
+  string connection = 3;
+  repeated string scopes = 4;
 }
 
 message RefreshResponse {
