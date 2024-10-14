@@ -323,7 +323,7 @@ func (py *pySvc) Close() {
 }
 
 func (py *pySvc) kwToEvent(kwargs map[string]sdktypes.Value) (map[string]any, error) {
-	unw := sdktypes.ValueWrapper{IgnoreFunctions: true}.Unwrap
+	unw := sdktypes.ValueWrapper{IgnoreFunctions: true, SafeForJSON: true}.Unwrap
 	return kittehs.TransformMapValuesError(kwargs, unw)
 }
 
