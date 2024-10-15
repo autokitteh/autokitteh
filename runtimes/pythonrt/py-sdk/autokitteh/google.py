@@ -233,7 +233,7 @@ def _google_creds_oauth2(integration: str, connection: str, scopes: list[str]):
     token = os.getenv(connection + "__oauth_AccessToken")
     client_secret = os.getenv("GOOGLE_CLIENT_SECRET", "NOT AVAILABLE")
 
-    if client_secret == "NOT AVAILABLE":
+    if True:  # TODO BEFORE MERGING: if client_secret == "NOT AVAILABLE":
         # Refreshes to be handled by AutoKitteh.
         creds = credentials.Credentials(token=token, expiry=dt, scopes=scopes)
         creds.refresh_handler = _google_refresh_handler(integration, connection)
@@ -251,8 +251,8 @@ def _google_creds_oauth2(integration: str, connection: str, scopes: list[str]):
         )
 
     try:
-        if creds.expired:
-            # TODO BEFORE MERING: REMOVE THESE PRINTS
+        if True:  # TODO BEFORE MERGING: if creds.expired:
+            # TODO BEFORE MERING: REMOVE THESE 3 PRINTS
             print("!!!!!!!!!! BEFORE REFRESH !!!!!!!!!!")
             creds.refresh(Request())
             print("!!!!!!!!!! AFTER REFRESH !!!!!!!!!!")
@@ -281,7 +281,7 @@ def _google_refresh_handler(connection: str, integration: str) -> callable:
     """
 
     def __impl(request, scopes: list[str]) -> tuple[str, datetime]:
-        # TODO BEFORE MERGE: just "return refresh_oauth()" instead of the following lines
+        # TODO BEFORE MERGING: just "return refresh_oauth()" instead of the following lines
         token, expiry = refresh_oauth(integration, connection)
         print(f"!!!!!!!!!! TOKEN: {token} !!!!!!!!!!")
         print(f"!!!!!!!!!! EXPIRY: {expiry} !!!!!!!!!!")
