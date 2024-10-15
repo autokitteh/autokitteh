@@ -147,7 +147,9 @@ func (r *LocalPython) Start(pyExe string, tarData []byte, env map[string]string,
 	if r.logRunnerCode {
 		r.stdoutRunnerLogger = &zapio.Writer{Log: r.log.With(zap.String("stream", "stdout")), Level: zap.InfoLevel}
 		cmd.Stdout = r.stdoutRunnerLogger
-		r.stderrRunnerLogger = &zapio.Writer{Log: r.log.With(zap.String("stream", "stderr")), Level: zap.ErrorLevel}
+		// Why warn instead of error? (1) We're using stdout too much, (2) Python errors are not
+		// necessarily AK errors, and (3) errors include a stack trace, which is irrelevant here.
+		r.stderrRunnerLogger = &zapio.Writer{Log: r.log.With(zap.String("stream", "stderr")), Level: zap.WarnLevel}
 		cmd.Stderr = r.stderrRunnerLogger
 	}
 

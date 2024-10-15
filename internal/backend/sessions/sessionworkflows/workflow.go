@@ -505,9 +505,11 @@ func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (prints []st
 			}
 
 			// We do not consider print failure as a critical error, since we don't want to hold back the
-			// workflow for potential user debugging prints. Just log the error and move on.
+			// workflow for potential user debugging prints. Just log the error and move on. Nevertheless,
+			// this is a problem to be aware of, because errors cause the loss of valuable debugging data
+			// (because the workflow context is canceled).
 			if err != nil {
-				sl.With("err", err).Debugf("failed to add print session record: %v", err)
+				sl.With("text", text).Warnf("failed to add print session record: %v", err)
 			}
 		},
 	}

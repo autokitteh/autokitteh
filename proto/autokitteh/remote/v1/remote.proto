@@ -3,8 +3,7 @@ syntax = "proto3";
 
 package autokitteh.remote.v1;
 
-// Until we decide where
-// option go_package = "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/remote/v1";
+import "google/protobuf/timestamp.proto";
 
 message ContainerConfig {
   string image = 1;
@@ -218,6 +217,18 @@ message IsActiveRunnerResponse {
   string error = 2;
 }
 
+message RefreshRequest {
+  string runner_id = 1;
+  string integration = 2;
+  string connection = 3;
+}
+
+message RefreshResponse {
+  string token = 1;
+  google.protobuf.Timestamp expires = 2;
+  string error = 3;
+}
+
 service Worker {
   // Runner starting activity
   rpc Activity(ActivityRequest) returns (ActivityResponse) {}
@@ -234,7 +245,8 @@ service Worker {
   rpc NextEvent(NextEventRequest) returns (NextEventResponse) {}
   rpc Unsubscribe(UnsubscribeRequest) returns (UnsubscribeResponse) {}
 
+  // Utility functions
+  rpc RefreshOAuthToken(RefreshRequest) returns (RefreshResponse) {}
   rpc Health(HealthRequest) returns (HealthResponse) {}
-
   rpc IsActiveRunner(IsActiveRunnerRequest) returns (IsActiveRunnerResponse) {}
 }

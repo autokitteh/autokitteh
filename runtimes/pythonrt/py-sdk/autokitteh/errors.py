@@ -1,5 +1,7 @@
 """AutoKitteh SDK errors."""
 
+from google.auth.exceptions import RefreshError
+
 
 class AutoKittehError(Exception):
     """Generic base class for all errors in the AutoKitteh SDK."""
@@ -12,11 +14,18 @@ class ConnectionInitError(AutoKittehError):
     """A required AutoKitteh connection was not initialized yet."""
 
     def __init__(self, connection: str):
-        super().__init__(f'AutoKitteh connection "{connection}" not initialized')
+        super().__init__(f"AutoKitteh connection {connection!r} not initialized")
 
 
 class EnvVarError(AutoKittehError):
     """A required environment variable is missing or invalid."""
 
     def __init__(self, env_var: str, desc: str):
-        super().__init__(f'Environment variable "{env_var}" is {desc}')
+        super().__init__(f"Environment variable {env_var!r} is {desc}")
+
+
+class OAuthRefreshError(AutoKittehError):
+    """OAuth token refresh failed."""
+
+    def __init__(self, connection: str, error: RefreshError):
+        super().__init__(f"OAuth refresh failed for {connection!r} connection: {error}")

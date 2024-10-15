@@ -1,26 +1,27 @@
-import builtins
-import json
-import pickle
-import sys
 from base64 import b64decode
+import builtins
 from concurrent.futures import Future, ThreadPoolExecutor
 from io import StringIO
+import json
 from multiprocessing import cpu_count
+import os
 from pathlib import Path
+import pickle
+import sys
 from threading import Lock, Thread
+from time import sleep
 from traceback import TracebackException, print_exception
 
 import grpc
+from grpc_reflection.v1alpha import reflection
+
 import loader
 import log
 import pb.autokitteh.remote.v1.remote_pb2 as pb
 import pb.autokitteh.remote.v1.remote_pb2_grpc as rpc
-from autokitteh import AttrDict
+from autokitteh import AttrDict, connections
 from call import AKCall, full_func_name
-from grpc_reflection.v1alpha import reflection
 from syscalls import SysCalls
-from time import sleep
-import os
 
 SERVER_GRACE_TIMEOUT = 3  # seconds
 
@@ -152,11 +153,13 @@ class Runner(rpc.RunnerServicer):
         self.syscalls = SysCalls(self.id, self.worker)
         mod_name, fn_name = parse_entry_point(request.entry_point)
 
+        # Monkey patch some functions, should come before we import user code
+        builtins.print = self.ak_print
+        connections.refresh_oauth = self.syscalls.ak_refresh_oauth
+
         call = AKCall(self)
         mod = loader.load_code(self.code_dir, call, mod_name)
         call.set_module(mod)
-
-        builtins.print = self.ak_print  # Inject print
 
         fn = getattr(mod, fn_name, None)
         if not callable(fn):
@@ -421,7 +424,8 @@ if __name__ == "__main__":
     server.start()
     log.info("server running on port %d", args.port)
 
-    Thread(target=runner.should_keep_running, daemon=True).start()
+    if not args.skip_check_worker:
+        Thread(target=runner.should_keep_running, daemon=True).start()
     log.info("setup should keep running thread")
 
     server.wait_for_termination()

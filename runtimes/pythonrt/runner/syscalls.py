@@ -4,14 +4,14 @@ Convert general func(*args, **kw) to a specific gRPC call to worker.
 """
 
 import json
+import os
+
+import grpc
 
 from autokitteh import AttrDict
-
+import log
 import pb.autokitteh.remote.v1.remote_pb2 as pb
 import pb.autokitteh.remote.v1.remote_pb2_grpc as rpc
-import log
-import grpc
-import os
 
 
 class SyscallError(Exception):
@@ -24,9 +24,9 @@ class SysCalls:
         self.worker: rpc.WorkerStub = worker
 
         self.ak_funcs = {
+            "next_event": self.ak_next_event,
             "sleep": self.ak_sleep,
             "subscribe": self.ak_subscribe,
-            "next_event": self.ak_next_event,
             "unsubscribe": self.ak_unsubscribe,
         }
 
@@ -83,6 +83,19 @@ class SysCalls:
 
         req = pb.UnsubscribeRequest(runner_id=self.runner_id, signal_id=id)
         call_grpc("unsubscribe", self.worker.Unsubscribe, req)
+
+    def ak_refresh_oauth(self, integration: str, connection: str):
+        req = pb.RefreshRequest(
+            runner_id=self.runner_id,
+            integration=integration,
+            connection=connection,
+        )
+        resp: pb.RefreshResponse = call_grpc(
+            "refresh_oauth", self.worker.RefreshOAuthToken, req
+        )
+        if resp.error:
+            raise SyscallError(f"refresh_oauth: {resp.error}")
+        return resp.token, resp.expires.ToDatetime()
 
 
 # Can't use None since it's a valid value
