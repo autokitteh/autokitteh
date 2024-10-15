@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"path/filepath"
 	"strings"
 	"syscall"
 
@@ -140,7 +141,7 @@ func (r *LocalPython) Start(pyExe string, tarData []byte, env map[string]string,
 		"--runner-id", r.id,
 		"--code-dir", r.userDir,
 	)
-	cmd.Env = overrideEnv(env, r.runnerDir, r.userDir)
+	cmd.Env = overrideEnv(env, r.runnerDir)
 	cmd.Dir = r.userDir
 
 	if r.logRunnerCode {
@@ -273,7 +274,9 @@ func parsePyVersion(s string) (major, minor int, err error) {
 	return
 }
 
+// extractTar extracts a project deployment tar file into a random directory.
 func extractTar(rootDir string, data []byte) error {
+	rootDir = filepath.Clean(rootDir)
 	rdr := tar.NewReader(bytes.NewReader(data))
 	for {
 		hdr, err := rdr.Next()
@@ -288,7 +291,13 @@ func extractTar(rootDir string, data []byte) error {
 			continue
 		}
 
-		outPath := path.Join(rootDir, hdr.Name)
+		outPath := filepath.Clean(path.Join(rootDir, hdr.Name))
+
+		// Prevent "zip slips": we generate the tar file, but better safe than sorry.
+		if !strings.HasPrefix(outPath, rootDir) {
+			return fmt.Errorf("extracted file %q is outside root dir", hdr.Name)
+		}
+
 		if err := os.MkdirAll(path.Dir(outPath), 0o755); err != nil {
 			return err
 		}
@@ -320,7 +329,7 @@ func adjustPythonPath(env []string, runnerPath string) []string {
 	return append(env, fmt.Sprintf("PYTHONPATH=%s", runnerPath))
 }
 
-func overrideEnv(envMap map[string]string, runnerPath, userCodePath string) []string {
+func overrideEnv(envMap map[string]string, runnerPath string) []string {
 	env := os.Environ()
 	// Append AK values to end to override (see Env docs in https://pkg.go.dev/os/exec#Cmd)
 	for k, v := range envMap {
