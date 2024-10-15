@@ -233,7 +233,7 @@ def _google_creds_oauth2(integration: str, connection: str, scopes: list[str]):
     token = os.getenv(connection + "__oauth_AccessToken")
     client_secret = os.getenv("GOOGLE_CLIENT_SECRET", "NOT AVAILABLE")
 
-    if True:  # TODO BEFORE MERGING: if client_secret == "NOT AVAILABLE":
+    if client_secret == "NOT AVAILABLE":
         # Refreshes to be handled by AutoKitteh.
         creds = credentials.Credentials(token=token, expiry=dt, scopes=scopes)
         creds.refresh_handler = _google_refresh_handler(integration, connection)
@@ -251,19 +251,15 @@ def _google_creds_oauth2(integration: str, connection: str, scopes: list[str]):
         )
 
     try:
-        if True:  # TODO BEFORE MERGING: if creds.expired:
-            # TODO BEFORE MERING: REMOVE THESE 3 PRINTS
-            print("!!!!!!!!!! BEFORE REFRESH !!!!!!!!!!")
+        if creds.expired:
             creds.refresh(Request())
-            print("!!!!!!!!!! AFTER REFRESH !!!!!!!!!!")
     except RefreshError as e:
-        print(f"!!!!!!!!!! REFRESH ERROR: {e} !!!!!!!!!!")
         raise OAuthRefreshError(connection, e)
 
     return creds
 
 
-def _google_refresh_handler(connection: str, integration: str) -> callable:
+def _google_refresh_handler(integration: str, connection: str) -> callable:
     """Refresh handler for OAuth 2.0 user credentials for Google APIs.
 
     For more details, see:
@@ -271,8 +267,8 @@ def _google_refresh_handler(connection: str, integration: str) -> callable:
     - https://github.com/googleapis/google-auth-library-python/blob/main/google/oauth2/credentials.py
 
     Args:
-        connection: AutoKitteh connection name.
         integration: AutoKitteh integration name.
+        connection: AutoKitteh connection name.
 
     Returns:
         Generated function (based on the input) to return a fresh access token
@@ -280,14 +276,10 @@ def _google_refresh_handler(connection: str, integration: str) -> callable:
         secret hidden from workflows, and unused in local development.
     """
 
-    def __impl(request, scopes: list[str]) -> tuple[str, datetime]:
-        # TODO BEFORE MERGING: just "return refresh_oauth()" instead of the following lines
-        token, expiry = refresh_oauth(integration, connection)
-        print(f"!!!!!!!!!! TOKEN: {token} !!!!!!!!!!")
-        print(f"!!!!!!!!!! EXPIRY: {expiry} !!!!!!!!!!")
-        return token, expiry
+    def impl(request, scopes: list[str]) -> tuple[str, datetime]:
+        return refresh_oauth()
 
-    return __impl
+    return impl
 
 
 def google_id(url: str) -> str:
