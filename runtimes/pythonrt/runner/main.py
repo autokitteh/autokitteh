@@ -153,13 +153,14 @@ class Runner(rpc.RunnerServicer):
         self.syscalls = SysCalls(self.id, self.worker)
         mod_name, fn_name = parse_entry_point(request.entry_point)
 
+        # Monkey patch some functions, should come before we import user code
+        builtins.print = self.ak_print
+        connections.refresh_oauth = self.syscalls.ak_refresh_oauth
+
         call = AKCall(self)
         mod = loader.load_code(self.code_dir, call, mod_name)
         call.set_module(mod)
 
-        # Monkey patch some functions
-        builtins.print = self.ak_print
-        connections.refresh_oauth = self.syscalls.ak_refresh_oauth
 
         fn = getattr(mod, fn_name, None)
         if not callable(fn):
