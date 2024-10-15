@@ -161,7 +161,6 @@ class Runner(rpc.RunnerServicer):
         mod = loader.load_code(self.code_dir, call, mod_name)
         call.set_module(mod)
 
-
         fn = getattr(mod, fn_name, None)
         if not callable(fn):
             context.abort(
