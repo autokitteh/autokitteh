@@ -158,6 +158,18 @@ message SleepResponse {
   string error = 1;
 }
 
+message StartSessionRequest {
+  string runner_id = 1;
+  string loc = 2;
+  bytes data = 3;
+  bytes memo = 4;
+}
+
+message StartSessionResponse {
+  string session_id = 1;
+  string error = 2;
+}
+
 message SubscribeRequest {
   string runner_id = 1;
   string connection = 2;
@@ -244,6 +256,7 @@ service Worker {
   rpc Subscribe(SubscribeRequest) returns (SubscribeResponse) {}
   rpc NextEvent(NextEventRequest) returns (NextEventResponse) {}
   rpc Unsubscribe(UnsubscribeRequest) returns (UnsubscribeResponse) {}
+  rpc StartSession(StartSessionRequest) returns (StartSessionResponse) {}
 
   // Utility functions
   rpc RefreshOAuthToken(RefreshRequest) returns (RefreshResponse) {}

@@ -2,7 +2,7 @@
 
 from .attr_dict import AttrDict
 from .decorators import activity
-from .events import next_event, subscribe, unsubscribe
+from .events import next_event, subscribe, unsubscribe, start
 from . import errors
 
 
@@ -11,6 +11,7 @@ __all__ = [
     "activity",
     "errors",
     "next_event",
+    "start",
     "subscribe",
     "unsubscribe",
 ]

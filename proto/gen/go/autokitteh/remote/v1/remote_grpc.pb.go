@@ -507,6 +507,7 @@ const (
 	Worker_Subscribe_FullMethodName         = "/autokitteh.remote.v1.Worker/Subscribe"
 	Worker_NextEvent_FullMethodName         = "/autokitteh.remote.v1.Worker/NextEvent"
 	Worker_Unsubscribe_FullMethodName       = "/autokitteh.remote.v1.Worker/Unsubscribe"
+	Worker_StartSession_FullMethodName      = "/autokitteh.remote.v1.Worker/StartSession"
 	Worker_RefreshOAuthToken_FullMethodName = "/autokitteh.remote.v1.Worker/RefreshOAuthToken"
 	Worker_Health_FullMethodName            = "/autokitteh.remote.v1.Worker/Health"
 	Worker_IsActiveRunner_FullMethodName    = "/autokitteh.remote.v1.Worker/IsActiveRunner"
@@ -529,6 +530,7 @@ type WorkerClient interface {
 	Subscribe(ctx context.Context, in *SubscribeRequest, opts ...grpc.CallOption) (*SubscribeResponse, error)
 	NextEvent(ctx context.Context, in *NextEventRequest, opts ...grpc.CallOption) (*NextEventResponse, error)
 	Unsubscribe(ctx context.Context, in *UnsubscribeRequest, opts ...grpc.CallOption) (*UnsubscribeResponse, error)
+	StartSession(ctx context.Context, in *StartSessionRequest, opts ...grpc.CallOption) (*StartSessionResponse, error)
 	// Utility functions
 	RefreshOAuthToken(ctx context.Context, in *RefreshRequest, opts ...grpc.CallOption) (*RefreshResponse, error)
 	Health(ctx context.Context, in *HealthRequest, opts ...grpc.CallOption) (*HealthResponse, error)
@@ -623,6 +625,16 @@ func (c *workerClient) Unsubscribe(ctx context.Context, in *UnsubscribeRequest, 
 	return out, nil
 }
 
+func (c *workerClient) StartSession(ctx context.Context, in *StartSessionRequest, opts ...grpc.CallOption) (*StartSessionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(StartSessionResponse)
+	err := c.cc.Invoke(ctx, Worker_StartSession_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *workerClient) RefreshOAuthToken(ctx context.Context, in *RefreshRequest, opts ...grpc.CallOption) (*RefreshResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(RefreshResponse)
@@ -670,6 +682,7 @@ type WorkerServer interface {
 	Subscribe(context.Context, *SubscribeRequest) (*SubscribeResponse, error)
 	NextEvent(context.Context, *NextEventRequest) (*NextEventResponse, error)
 	Unsubscribe(context.Context, *UnsubscribeRequest) (*UnsubscribeResponse, error)
+	StartSession(context.Context, *StartSessionRequest) (*StartSessionResponse, error)
 	// Utility functions
 	RefreshOAuthToken(context.Context, *RefreshRequest) (*RefreshResponse, error)
 	Health(context.Context, *HealthRequest) (*HealthResponse, error)
@@ -707,6 +720,9 @@ func (UnimplementedWorkerServer) NextEvent(context.Context, *NextEventRequest) (
 }
 func (UnimplementedWorkerServer) Unsubscribe(context.Context, *UnsubscribeRequest) (*UnsubscribeResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Unsubscribe not implemented")
+}
+func (UnimplementedWorkerServer) StartSession(context.Context, *StartSessionRequest) (*StartSessionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method StartSession not implemented")
 }
 func (UnimplementedWorkerServer) RefreshOAuthToken(context.Context, *RefreshRequest) (*RefreshResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RefreshOAuthToken not implemented")
@@ -882,6 +898,24 @@ func _Worker_Unsubscribe_Handler(srv interface{}, ctx context.Context, dec func(
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Worker_StartSession_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(StartSessionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(WorkerServer).StartSession(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Worker_StartSession_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(WorkerServer).StartSession(ctx, req.(*StartSessionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Worker_RefreshOAuthToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(RefreshRequest)
 	if err := dec(in); err != nil {
@@ -974,6 +1008,10 @@ var Worker_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Unsubscribe",
 			Handler:    _Worker_Unsubscribe_Handler,
+		},
+		{
+			MethodName: "StartSession",
+			Handler:    _Worker_StartSession_Handler,
 		},
 		{
 			MethodName: "RefreshOAuthToken",
