@@ -17,7 +17,6 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessiondata"
 	httpmodule "go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionworkflows/modules/http"
 	osmodule "go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionworkflows/modules/os"
-	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionworkflows/modules/store"
 	testtoolsmodule "go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionworkflows/modules/testtools"
 	timemodule "go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionworkflows/modules/time"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
@@ -253,10 +252,9 @@ func (w *sessionWorkflow) initConnections(wctx workflow.Context) (map[string]con
 
 func (w *sessionWorkflow) initGlobalModules() (map[string]sdktypes.Value, error) {
 	execs := map[string]sdkexecutor.Executor{
-		"ak":    w.newModule(),
-		"time":  timemodule.New(),
-		"http":  httpmodule.New(),
-		"store": store.New(w.data.Env.ID(), w.data.ProjectID, w.ws.svcs.RedisClient),
+		"ak":   w.newModule(),
+		"time": timemodule.New(),
+		"http": httpmodule.New(),
 	}
 
 	vs := make(map[string]sdktypes.Value, len(execs))

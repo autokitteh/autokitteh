@@ -14,9 +14,6 @@ return code == 0
 output contains '1st random int with seed: 5'
 output contains '2nd random int with seed: 2'
 output contains '3rd random int with seed: 1'
-output contains 'Store set = OK'
-output contains 'Store get = value'
-output contains 'Store del = 1'
 output regex ' \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{1,9} \+0000 UTC'
 output contains 'done'
 
@@ -45,13 +42,6 @@ def on_http_get():
 
     # runtimes/starlarkrt/internal/bootstrap/bootstrap.star
     sleep(1)
-
-    # integrations/redis/redis.go
-    key = "builtin_funcs_test_key"
-    if store.set(key, "value", ttl = "1m") == "OK":
-        print("Store set = OK")
-    print("Store get = %s" % store.get(key))
-    print("Store del = %d" % store.delete(key))
 
     # backend/internal/akmodules/time/time.go
     print(time.now())

@@ -40,7 +40,7 @@ func New(cvars sdkservices.Vars) sdkservices.Integration {
 	i := &integration{vars: cvars}
 	return sdkintegrations.NewIntegration(
 		desc,
-		sdkmodule.New(),
+		sdkmodule.Empty,
 		connStatus(i),
 		connTest(i),
 		sdkintegrations.WithConnectionConfigFromVars(cvars),
