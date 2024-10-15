@@ -2,6 +2,7 @@ package webplatform
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -9,6 +10,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/configset"
+	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/web/webplatform"
 )
 
@@ -27,12 +29,14 @@ var Configs = configset.Set[Config]{
 type Svc struct {
 	Config *Config
 
-	addr string
-	l    *zap.Logger
-	srv  *http.Server
+	addr    string
+	l       *zap.Logger
+	srv     *http.Server
+	version string
 }
 
-func (w *Svc) Addr() string { return w.addr }
+func (w *Svc) Addr() string    { return w.addr }
+func (w *Svc) Version() string { return w.version }
 
 func New(cfg *Config, l *zap.Logger) *Svc {
 	return &Svc{
@@ -48,10 +52,15 @@ func (w *Svc) Start(context.Context) error {
 
 	fs, version, err := webplatform.LoadFS()
 	if err != nil {
+		if errors.Is(err, sdkerrors.ErrNotFound) {
+			w.l.Warn("web platform distribution not found, web platform server disabled")
+			return nil
+		}
 		return err
 	}
 
 	l := w.l.With(zap.String("version", version), zap.Int("port", w.Config.Port))
+	w.version = version
 
 	fsrv := http.FileServer(http.FS(fs))
 

@@ -27,7 +27,7 @@ var banner string
 
 var bannerTemplate = template.Must(template.New("banner").Parse(banner))
 
-func printBanner(cfg *bannerConfig, opts RunOptions, addr, wpAddr, temporalFrontendAddr, temporalUIAddr string) {
+func printBanner(cfg *bannerConfig, opts RunOptions, addr, wpAddr, wpVersion, temporalFrontendAddr, temporalUIAddr string) {
 	if !cfg.Show {
 		return
 	}
@@ -37,20 +37,26 @@ func printBanner(cfg *bannerConfig, opts RunOptions, addr, wpAddr, temporalFront
 
 	var mode string
 	if opts.Mode != "" {
-		mode = "Mode:        " + fieldColor(opts.Mode) + " "
+		mode = "Mode:         " + fieldColor(opts.Mode) + " "
 	}
 
 	if temporalFrontendAddr != "" {
-		temporalFrontendAddr = "Temporal:    " + fieldColor(temporalFrontendAddr) + " "
+		temporalFrontendAddr = "Temporal:     " + fieldColor(temporalFrontendAddr) + " "
 	}
 
 	if temporalUIAddr != "" {
-		temporalUIAddr = "Temporal UI: " + fieldColor(temporalUIAddr) + " "
+		temporalUIAddr = "Temporal UI:  " + fieldColor(temporalUIAddr) + " "
 	}
 
 	webAddr := fmt.Sprintf("http://%s", addr)
 	if wpAddr != "" {
 		webAddr = fmt.Sprintf("http://%s", wpAddr)
+	}
+
+	if wpVersion != "" {
+		wpVersion = " v" + wpVersion + ":"
+	} else {
+		wpVersion = ":        "
 	}
 
 	kittehs.Must0(bannerTemplate.Execute(os.Stderr, struct {
@@ -60,6 +66,7 @@ func printBanner(cfg *bannerConfig, opts RunOptions, addr, wpAddr, temporalFront
 		WebPlatformAddr      string
 		Eye                  string
 		WebAddr              string
+		WebVer               string
 		Mode                 string
 		Temporal, TemporalUI string
 	}{
@@ -68,6 +75,7 @@ func printBanner(cfg *bannerConfig, opts RunOptions, addr, wpAddr, temporalFront
 		Addr:            fieldColor(addr),
 		WebPlatformAddr: fieldColor(wpAddr),
 		WebAddr:         fieldColor(webAddr),
+		WebVer:          wpVersion,
 		Eye:             eyeColor("▀"),
 		Mode:            mode,
 		Temporal:        temporalFrontendAddr,
