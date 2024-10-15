@@ -277,7 +277,7 @@ def _google_refresh_handler(integration: str, connection: str) -> callable:
     """
 
     def impl(request, scopes: list[str]) -> tuple[str, datetime]:
-        return refresh_oauth()
+        return refresh_oauth(integration, connection)
 
     return impl
 
