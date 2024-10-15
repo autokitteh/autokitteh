@@ -131,7 +131,7 @@ func getPrivateKey() []byte {
 	}
 	// This is solely for unit tests. It's safe dead code in production because
 	// in production we check that the environment variable exists.
-	k, err := rsa.GenerateKey(rand.Reader, 1024)
+	k, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		return nil
 	}
