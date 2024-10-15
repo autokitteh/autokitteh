@@ -56,7 +56,7 @@ func (h handler) handleEvent(w http.ResponseWriter, r *http.Request) {
 	// Verify the JWT in the event's "Authorization" header.
 	token := r.Header.Get(headerAuthorization)
 	if !verifyJWT(l, strings.TrimPrefix(token, "Bearer ")) {
-		l.Warn("Incoming Jira event with bad header", zap.String(headerAuthorization, token))
+		l.Warn("Incoming Jira event with bad Authorization header")
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
