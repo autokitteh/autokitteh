@@ -88,13 +88,17 @@ func (d *dockerClient) ensureNetwork() (string, error) {
 	return inspectResult.ID, nil
 }
 
-func (d *dockerClient) StartRunner(ctx context.Context, runnerImage string, sessionID sdktypes.SessionID, cmd []string) (string, string, error) {
+func (d *dockerClient) StartRunner(ctx context.Context, runnerImage string, sessionID sdktypes.SessionID, cmd []string, vars map[string]string) (string, string, error) {
+	envVars := make([]string, 0, len(vars))
+	for k, v := range vars {
+		envVars = append(envVars, k+"="+v)
+	}
 	resp, err := d.client.ContainerCreate(ctx,
 		&container.Config{
 			Image: runnerImage,
 			Cmd:   cmd,
 			Tty:   false,
-
+			Env:   envVars,
 			ExposedPorts: map[nat.Port]struct{}{
 				nat.Port(internalRunnerPort): {},
 			},
@@ -103,6 +107,7 @@ func (d *dockerClient) StartRunner(ctx context.Context, runnerImage string, sess
 		&container.HostConfig{
 			NetworkMode:  container.NetworkMode(networkName),
 			PortBindings: nat.PortMap{internalRunnerPort: []nat.PortBinding{{HostIP: "0.0.0.0"}}},
+			Tmpfs:        map[string]string{"/tmp": "size=64m"},
 		}, nil, nil, "")
 
 	if err != nil {
