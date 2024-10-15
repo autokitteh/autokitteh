@@ -75,7 +75,7 @@ func (w *sessionWorkflow) start(ctx context.Context, args []sdktypes.Value, kwar
 		memo   map[string]string
 	)
 
-	if err := sdkmodule.UnpackArgs(args, kwargs, "loc", &loc, "inputs?", &inputs, "memo=?", &memo); err != nil {
+	if err := sdkmodule.UnpackArgs(args, kwargs, "loc", &loc, "inputs?", &inputs, "memo?", &memo); err != nil {
 		return sdktypes.InvalidValue, err
 	}
 

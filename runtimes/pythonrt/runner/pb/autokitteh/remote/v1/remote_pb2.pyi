@@ -220,6 +220,26 @@ class SleepResponse(_message.Message):
     error: str
     def __init__(self, error: _Optional[str] = ...) -> None: ...
 
+class StartSessionRequest(_message.Message):
+    __slots__ = ["runner_id", "loc", "data", "memo"]
+    RUNNER_ID_FIELD_NUMBER: _ClassVar[int]
+    LOC_FIELD_NUMBER: _ClassVar[int]
+    DATA_FIELD_NUMBER: _ClassVar[int]
+    MEMO_FIELD_NUMBER: _ClassVar[int]
+    runner_id: str
+    loc: str
+    data: bytes
+    memo: bytes
+    def __init__(self, runner_id: _Optional[str] = ..., loc: _Optional[str] = ..., data: _Optional[bytes] = ..., memo: _Optional[bytes] = ...) -> None: ...
+
+class StartSessionResponse(_message.Message):
+    __slots__ = ["session_id", "error"]
+    SESSION_ID_FIELD_NUMBER: _ClassVar[int]
+    ERROR_FIELD_NUMBER: _ClassVar[int]
+    session_id: str
+    error: str
+    def __init__(self, session_id: _Optional[str] = ..., error: _Optional[str] = ...) -> None: ...
+
 class SubscribeRequest(_message.Message):
     __slots__ = ["runner_id", "connection", "filter"]
     RUNNER_ID_FIELD_NUMBER: _ClassVar[int]

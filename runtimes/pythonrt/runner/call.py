@@ -13,6 +13,7 @@ AK_FUNCS = {
     autokitteh.next_event,
     autokitteh.subscribe,
     autokitteh.unsubscribe,
+    autokitteh.start,
     sleep,
 }
 

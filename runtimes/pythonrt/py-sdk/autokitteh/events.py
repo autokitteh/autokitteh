@@ -22,3 +22,9 @@ def next_event(subscription_id: str, *, timeout: timedelta = None) -> AttrDict:
     """Get the next event from the subscription."""
     # Dummy implementation for local development.
     return AttrDict()
+
+
+def start(loc: str, data: dict[str, any], memo: dict[str, str] = None) -> str:
+    """Start a new session."""
+    # Dummy implementation for local development.
+    pass

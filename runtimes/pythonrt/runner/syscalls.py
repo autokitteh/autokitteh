@@ -28,6 +28,7 @@ class SysCalls:
             "sleep": self.ak_sleep,
             "subscribe": self.ak_subscribe,
             "unsubscribe": self.ak_unsubscribe,
+            "start": self.ak_start,
         }
 
     def call(self, fn, args, kw):
@@ -35,6 +36,43 @@ class SysCalls:
         if method is None:
             raise ValueError(f"unknown ak function: {fn.__name__!r}")
         return method(args, kw)
+
+    def ak_start(self, args, kw):
+        log.info("ak_start: %r %r", args, kw)
+        (loc, data, memo) = extract_args(["loc", "data?", "memo?"], args, kw)
+
+        if data is None:
+            data = {}
+        if memo is None:
+            memo = {}
+
+        if not isinstance(data, dict):
+            raise ValueError("data must be a dict")
+
+        if not isinstance(memo, dict):
+            raise ValueError("memo must be a dict")
+
+        if not isinstance(loc, str):
+            raise ValueError("loc must be a string")
+
+        try:
+            json_data = json.dumps(data)
+        except (ValueError, TypeError) as err:
+            raise ValueError(f"start: invalid data: {err}")
+
+        try:
+            json_memo = json.dumps(memo)
+        except (ValueError, TypeError) as err:
+            raise ValueError(f"start: invalid memo: {err}")
+
+        req = pb.StartSessionRequest(
+            runner_id=self.runner_id,
+            loc=loc,
+            data=json_data.encode(),
+            memo=json_memo.encode(),
+        )
+        resp = call_grpc("start", self.worker.StartSession, req)
+        return resp.session_id
 
     def ak_sleep(self, args, kw):
         log.info("ak_sleep: %r %r", args, kw)
@@ -123,12 +161,23 @@ def extract_args(names, args, kw):
     ['sig1', 1.2]
     >>> extract_args(["id", "timeout"], [], {"id": "sig1", "timeout": 1.2})
     ['sig1', 1.2]
+    >>> extract_args(["id", "timeout?"], [], {"id": "sig1", "timeout": 1.2})
+    ['sig1', 1.2]
+    >>> extract_args(["id", "timeout?"], [], {"id": "sig1"})
+    ['sig1', None]
+    >>> extract_args(["id", "timeout?"], ["sig1"], {})
+    ['sig1', None]
     """
     values = []
     for i, name in enumerate(names):
+        optional = name.endswith("?")
+        if optional:
+            name = name[:-1]
         v = args[i] if i < len(args) else kw.get(name, _missing)
         if v is _missing:
-            raise ValueError(f"missing {name!r}")
+            if not optional:
+                raise ValueError(f"missing {name!r}")
+            v = None
         values.append(v)
 
     return values

@@ -19,6 +19,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/oauth"
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	pb "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/remote/v1"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -218,6 +219,49 @@ func (s *workerGRPCHandler) Sleep(ctx context.Context, req *pb.SleepRequest) (*p
 		return &pb.SleepResponse{Error: err.Error()}, nil
 	case <-msg.successChannel:
 		return &pb.SleepResponse{}, nil
+	}
+}
+
+func (s *workerGRPCHandler) StartSession(ctx context.Context, req *pb.StartSessionRequest) (*pb.StartSessionResponse, error) {
+	w.mu.Lock()
+	runner, ok := w.runnerIDsToRuntime[req.RunnerId]
+	w.mu.Unlock()
+	if !ok {
+		return &pb.StartSessionResponse{
+			Error: "Unknown runner id",
+		}, nil
+	}
+
+	var data map[string]any
+	if err := json.Unmarshal(req.Data, &data); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "can't unmarshal data: %s", err)
+	}
+
+	var memo map[string]string
+	if err := json.Unmarshal(req.Memo, &memo); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "can't unmarshal memo: %s", err)
+	}
+
+	vdata, err := kittehs.TransformMapValuesError(data, sdktypes.DefaultValueWrapper.Wrap)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "can't wrap data: %s", err)
+	}
+
+	args := []sdktypes.Value{
+		sdktypes.NewStringValue("start"),
+		sdktypes.NewStringValue(req.Loc),
+		sdktypes.NewDictValueFromStringMap(vdata),
+		sdktypes.NewDictValueFromStringMap(kittehs.TransformMapValues(memo, sdktypes.NewStringValue)),
+	}
+	msg := makeCallbackMessage(args, nil)
+	runner.channels.callback <- msg
+
+	select {
+	case err := <-msg.errorChannel:
+		err = status.Errorf(codes.Internal, "start(%s) -> %s", req.Loc, err)
+		return &pb.StartSessionResponse{Error: err.Error()}, nil
+	case val := <-msg.successChannel:
+		return &pb.StartSessionResponse{SessionId: val.GetString().Value()}, nil
 	}
 }
 
