@@ -1,10 +1,12 @@
 package dashboardsvc
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/web/webdashboard"
 )
 
@@ -14,7 +16,7 @@ func (s Svc) initAuth() {
 }
 
 func (s Svc) auth(w http.ResponseWriter, r *http.Request) {
-	userJSON := marshalObject(authcontext.GetAuthnUser(r.Context()).ToProto())
+	userJSON := kittehs.Must1(json.Marshal(authcontext.GetAuthnUser(r.Context())))
 
 	if err := webdashboard.Tmpl(r).ExecuteTemplate(w, "auth.html", struct {
 		Title    string

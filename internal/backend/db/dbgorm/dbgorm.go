@@ -38,17 +38,6 @@ type gormdb struct {
 
 var _ db.DB = (*gormdb)(nil)
 
-func (db *gormdb) setupOwnershipChecker(z *zap.Logger) {
-	z.Info("ownership", zap.String("checker", db.cfg.Ownership))
-	z = z.With(zap.String("checker", db.cfg.Ownership))
-	switch db.cfg.Ownership {
-	case "none":
-		db.owner = &PermissiveOwnershipChecker{z}
-	default: // users
-		db.owner = &UsersOwnershipChecker{z}
-	}
-}
-
 func New(z *zap.Logger, cfg *Config) (db.DB, error) {
 	cfg, err := cfg.Explicit()
 	if err != nil {
@@ -60,7 +49,6 @@ func New(z *zap.Logger, cfg *Config) (db.DB, error) {
 	if cfg.Type == "sqlite" {
 		db.mu = new(sync.Mutex)
 	}
-	db.setupOwnershipChecker(z)
 
 	return db, nil
 }

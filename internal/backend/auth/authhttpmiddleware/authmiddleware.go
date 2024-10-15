@@ -10,7 +10,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authsessions"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authtokens"
 	"go.autokitteh.dev/autokitteh/internal/backend/configset"
-	akCtx "go.autokitteh.dev/autokitteh/internal/backend/context"
+	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
@@ -31,18 +31,19 @@ type Deps struct {
 	fx.In
 
 	Cfg      *Config
+	Users    sdkservices.Users
 	Sessions authsessions.Store `optional:"true"`
 	Tokens   authtokens.Tokens  `optional:"true"`
 }
 
 func newTokensMiddleware(next http.Handler, deps Deps) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		ctx := akCtx.WithRequestOrginator(r.Context(), akCtx.User)
-		user := authcontext.GetAuthnUser(ctx)
+		ctx := r.Context()
+		user := authcontext.GetAuthnUser(r.Context())
 		authHdr := r.Header.Get("Authorization")
 
 		if deps.Cfg.AllowDefaultUser {
-			if user.IsValid() || authHdr != "" {
+			if !user.IsValid() || authHdr != "" {
 				http.Error(w, "only default user is allowed", http.StatusUnauthorized)
 				return
 			}
@@ -52,12 +53,19 @@ func newTokensMiddleware(next http.Handler, deps Deps) http.HandlerFunc {
 				kind, payload, _ := strings.Cut(authHdr, " ")
 				switch kind {
 				case "Bearer":
-					var err error
-					if user, err = deps.Tokens.Parse(payload); err != nil {
+					uid, err := deps.Tokens.Parse(payload)
+					if err != nil {
 						http.Error(w, "invalid token", http.StatusUnauthorized)
 						return
 					}
-					ctx = authcontext.SetAuthnUser(ctx, user)
+
+					u, err := deps.Users.GetByID(r.Context(), uid)
+					if err != nil {
+						http.Error(w, "invalid user", http.StatusUnauthorized)
+						return
+					}
+
+					ctx = authcontext.SetAuthnUser(ctx, u)
 
 				default:
 					http.Error(w, "invalid authorization header", http.StatusUnauthorized)
@@ -71,11 +79,11 @@ func newTokensMiddleware(next http.Handler, deps Deps) http.HandlerFunc {
 	}
 }
 
-func newSessionsMiddleware(next http.Handler, sessions authsessions.Store) http.HandlerFunc {
+func newSessionsMiddleware(next http.Handler, sessions authsessions.Store, users sdkservices.Users) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
-		if user := authcontext.GetAuthnUser(ctx); !user.IsValid() {
+		if u := authcontext.GetAuthnUser(ctx); !u.IsValid() {
 			session, err := sessions.Get(r)
 			if err != nil {
 				http.Error(w, "invalid session", http.StatusUnauthorized)
@@ -83,7 +91,13 @@ func newSessionsMiddleware(next http.Handler, sessions authsessions.Store) http.
 			}
 
 			if session != nil {
-				r = r.WithContext(authcontext.SetAuthnUser(ctx, session.User))
+				u, err := users.GetByID(r.Context(), session.UserID)
+				if err != nil {
+					http.Error(w, "invalid user", http.StatusUnauthorized)
+					return
+				}
+
+				r = r.WithContext(authcontext.SetAuthnUser(ctx, u))
 			}
 		}
 
@@ -105,7 +119,7 @@ func New(deps Deps) AuthMiddlewareDecorator {
 		})
 
 		if deps.Sessions != nil {
-			f = newSessionsMiddleware(f, deps.Sessions)
+			f = newSessionsMiddleware(f, deps.Sessions, deps.Users)
 		}
 
 		if deps.Tokens != nil {
@@ -116,33 +130,33 @@ func New(deps Deps) AuthMiddlewareDecorator {
 	}
 }
 
-type AuthHeaderExtractor func(*http.Request) sdktypes.User
+type AuthHeaderExtractor func(*http.Request) sdktypes.UserID
 
 // Auth middleware is extracting, parsing and adding user to the request context (see newTokensMiddleware above)
 // Unfortunately the main log is in interceptor, and auth middleware chained several hops after the interceptor
 // handler, where httpRequest is logged. So this function duplicates partly the extraction logic of
 // newTokensMiddleware in order to be applied earlier in chain and log the user passed in the request.
 func AuthorizationHeaderExtractor(deps Deps) AuthHeaderExtractor {
-	return func(r *http.Request) sdktypes.User {
+	return func(r *http.Request) sdktypes.UserID {
 		if deps.Tokens == nil {
-			return sdktypes.InvalidUser
+			return sdktypes.InvalidUserID
 		}
 
 		auth := r.Header.Get("Authorization")
 		if auth == "" {
-			return sdktypes.InvalidUser
+			return sdktypes.InvalidUserID
 		}
 
 		kind, payload, _ := strings.Cut(auth, " ")
 		if kind != "Bearer" {
-			return sdktypes.InvalidUser
+			return sdktypes.InvalidUserID
 		}
 
-		user, err := deps.Tokens.Parse(payload)
+		uid, err := deps.Tokens.Parse(payload)
 		if err != nil {
-			return sdktypes.InvalidUser
+			return sdktypes.InvalidUserID
 		}
 
-		return user
+		return uid
 	}
 }

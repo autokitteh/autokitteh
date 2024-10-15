@@ -7,18 +7,86 @@ import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialM
 import { Message, proto3 } from "@bufbuild/protobuf";
 
 /**
+ * @generated from message autokitteh.users.v1.UserAuthProvider
+ */
+export class UserAuthProvider extends Message<UserAuthProvider> {
+  /**
+   * provider name (descope, google, etc).
+   *
+   * @generated from field: string name = 1;
+   */
+  name = "";
+
+  /**
+   * provider level id.
+   *
+   * @generated from field: string user_id = 2;
+   */
+  userId = "";
+
+  /**
+   * @generated from field: string email = 3;
+   */
+  email = "";
+
+  /**
+   * arbitrary provider data we'd like to store for future reference.
+   *
+   * @generated from field: bytes data = 4;
+   */
+  data = new Uint8Array(0);
+
+  constructor(data?: PartialMessage<UserAuthProvider>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "autokitteh.users.v1.UserAuthProvider";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "data", kind: "scalar", T: 12 /* ScalarType.BYTES */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UserAuthProvider {
+    return new UserAuthProvider().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UserAuthProvider {
+    return new UserAuthProvider().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UserAuthProvider {
+    return new UserAuthProvider().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: UserAuthProvider | PlainMessage<UserAuthProvider> | undefined, b: UserAuthProvider | PlainMessage<UserAuthProvider> | undefined): boolean {
+    return proto3.util.equals(UserAuthProvider, a, b);
+  }
+}
+
+/**
  * @generated from message autokitteh.users.v1.User
  */
 export class User extends Message<User> {
   /**
-   * @generated from field: string provider = 1;
+   * autokitteh level id.
+   *
+   * @generated from field: string user_id = 1;
    */
-  provider = "";
+  userId = "";
 
   /**
-   * @generated from field: map<string, string> data = 2;
+   * @generated from field: string primary_email = 2;
    */
-  data: { [key: string]: string } = {};
+  primaryEmail = "";
+
+  /**
+   * @generated from field: repeated autokitteh.users.v1.UserAuthProvider auth_providers = 3;
+   */
+  authProviders: UserAuthProvider[] = [];
 
   constructor(data?: PartialMessage<User>) {
     super();
@@ -28,8 +96,9 @@ export class User extends Message<User> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "autokitteh.users.v1.User";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "provider", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "data", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 1, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "primary_email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "auth_providers", kind: "message", T: UserAuthProvider, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): User {

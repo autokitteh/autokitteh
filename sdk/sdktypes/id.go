@@ -103,12 +103,12 @@ func newID[ID id[T], T idTraits]() ID {
 	return ID(id[T]{tid: typeid.Must(typeid.FromUUIDBytes[typeid.TypeID[T]](uuid[:]))})
 }
 
-func NewIDFromUUID[ID id[T], T idTraits](uuid *UUID) ID {
-	if uuid == nil {
+func NewIDFromUUID[ID id[T], T idTraits](in UUID) ID {
+	if in == uuid.Nil {
 		var zero ID
 		return zero
 	}
-	return ID(id[T]{tid: typeid.Must(typeid.FromUUIDBytes[typeid.TypeID[T]](uuid[:]))})
+	return ID(id[T]{tid: typeid.Must(typeid.FromUUIDBytes[typeid.TypeID[T]](in[:]))})
 }
 
 func ParseID[ID id[T], T idTraits](s string) (ID, error) {

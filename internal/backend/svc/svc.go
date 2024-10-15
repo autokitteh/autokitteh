@@ -264,8 +264,8 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 						// there is (still) no parsed user in the httpRequest context. So in order to log the user in the
 						// same place where httpRequest is logged we need to extract it from the header
 						func(r *http.Request) []zap.Field {
-							if user := authHdrExtractor(r); user.IsValid() {
-								return []zap.Field{zap.String("user", user.Title())}
+							if uid := authHdrExtractor(r); uid.IsValid() {
+								return []zap.Field{zap.String("user_id", uid.String())}
 							}
 
 							return nil

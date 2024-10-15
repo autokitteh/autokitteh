@@ -21,14 +21,7 @@ func Tmpl(r *http.Request) *template.Template {
 	return template.Must(template.New("").
 		Funcs(sprig.FuncMap()).
 		Funcs(map[string]any{
-			"User": func() any {
-				u := authcontext.GetAuthnUser(r.Context())
-				if !u.IsValid() {
-					return nil
-				}
-
-				return u.Title()
-			},
+			"UserID":    func() any { return authcontext.GetAuthnUser(r.Context()).ID() },
 			"ProcessID": func() any { return fixtures.ProcessID() },
 			"Version":   func() any { return version.Version },
 			"Uptime":    func() any { return fixtures.Uptime().Truncate(time.Second) },

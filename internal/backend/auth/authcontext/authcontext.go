@@ -8,10 +8,7 @@ import (
 
 type ctxKey string
 
-var (
-	userCtxKey   = ctxKey("user")
-	userIDCtxKey = ctxKey("userid")
-)
+var userCtxKey = ctxKey("user")
 
 func GetAuthnUser(ctx context.Context) sdktypes.User {
 	if v := ctx.Value(userCtxKey); v != nil {
@@ -25,18 +22,4 @@ func SetAuthnUser(ctx context.Context, user sdktypes.User) context.Context {
 		return ctx
 	}
 	return context.WithValue(ctx, userCtxKey, user)
-}
-
-func GetAuthnUserID(ctx context.Context) string {
-	if v := ctx.Value(userIDCtxKey); v != nil {
-		return v.(string)
-	}
-	return ""
-}
-
-func SetAuthnUserID(ctx context.Context, userID string) context.Context {
-	if userID == "" {
-		return ctx
-	}
-	return context.WithValue(ctx, userIDCtxKey, userID)
 }

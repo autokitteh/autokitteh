@@ -37,7 +37,6 @@ var Tables = []any{
 	&Deployment{},
 	&Env{},
 	&Event{},
-	&Ownership{},
 	&Project{},
 	&Secret{},
 	&Session{},
@@ -46,6 +45,7 @@ var Tables = []any{
 	&SessionLogRecord{},
 	&Signal{},
 	&Trigger{},
+	&User{},
 }
 
 type Build struct {
@@ -56,8 +56,7 @@ type Build struct {
 	DeletedAt gorm.DeletedAt `gorm:"index"`
 
 	// enforce foreign keys
-	Project   *Project
-	Ownership *Ownership `gorm:"polymorphic:Entity;"`
+	Project *Project
 }
 
 func ParseBuild(b Build) (sdktypes.Build, error) {
@@ -84,8 +83,7 @@ type Connection struct {
 	DeletedAt gorm.DeletedAt `gorm:"index"`
 
 	// enforce foreign keys
-	Project   *Project
-	Ownership *Ownership `gorm:"polymorphic:Entity;"`
+	Project *Project
 
 	// TODO(ENG-111): Also call "Preload()" where relevant
 }
@@ -136,7 +134,6 @@ type Project struct {
 	RootURL   string
 	Resources []byte
 	DeletedAt gorm.DeletedAt `gorm:"index"`
-	Ownership *Ownership     `gorm:"polymorphic:Entity;"`
 }
 
 func ParseProject(r Project) (sdktypes.Project, error) {
@@ -178,7 +175,6 @@ type Event struct {
 	// enforce foreign keys
 	Connection *Connection
 	Trigger    *Trigger
-	Ownership  *Ownership `gorm:"polymorphic:Entity;"`
 }
 
 func ParseEvent(e Event) (sdktypes.Event, error) {
@@ -226,8 +222,7 @@ type Env struct {
 	MembershipID string `gorm:"uniqueIndex"`
 
 	// enforce foreign keys
-	Project   *Project
-	Ownership *Ownership `gorm:"polymorphic:Entity;"`
+	Project *Project
 }
 
 func ParseEnv(e Env) (sdktypes.Env, error) {
@@ -262,7 +257,6 @@ type Trigger struct {
 	Project    *Project
 	Connection *Connection
 	Env        *Env
-	Ownership  *Ownership `gorm:"polymorphic:Entity;"`
 }
 
 func ParseTrigger(e Trigger) (sdktypes.Trigger, error) {
@@ -362,8 +356,7 @@ type Session struct {
 	Build      *Build
 	Env        *Env
 	Deployment *Deployment
-	Event      *Event     `gorm:"references:EventID"`
-	Ownership  *Ownership `gorm:"polymorphic:Entity;"`
+	Event      *Event `gorm:"references:EventID"`
 }
 
 func ParseSession(s Session) (sdktypes.Session, error) {
@@ -416,9 +409,8 @@ type Deployment struct {
 	DeletedAt    gorm.DeletedAt `gorm:"index"`
 
 	// enforce foreign keys
-	Env       *Env
-	Build     *Build
-	Ownership *Ownership `gorm:"polymorphic:Entity;"`
+	Env   *Env
+	Build *Build
 }
 
 func (d *Deployment) BeforeUpdate(tx *gorm.DB) (err error) {
@@ -524,12 +516,13 @@ func ParseSignal(r *Signal) (*types.Signal, error) {
 	}, nil
 }
 
-type Ownership struct {
-	EntityID   sdktypes.UUID `gorm:"primaryKey;type:uuid;not null"`
-	EntityType string        `gorm:"not null"`
+type User struct {
+	UserID      sdktypes.UUID     `gorm:"primaryKey;type:uuid;not null"`
+	Credentials []UserCredentials `gorm:"foreignKey:UserID"`
+}
 
-	UserID string `gorm:"not null"`
-
-	// TODO: Polymorphic associations won't enforce foreign key to entities in different tables
-	// we might need to have separated ownership tables for each entity.
+type UserCredentials struct {
+	UserID     sdktypes.UUID `gorm:"primaryKey;type:uuid;not null"`
+	Provider   string        `gorm:"primaryKey;type:string;not null"`
+	ProviderID string        `gorm:"primaryKey;type:string;not null"`
 }

@@ -53,7 +53,7 @@ func NewTest(t *testing.T, objs []sdktypes.Object) db.DB {
 		t.Fatalf("Setup: %v", err)
 	}
 
-	ctx = authcontext.SetAuthnUser(ctx, sdktypes.DefaultUser)
+	ctx = authcontext.SetAuthnUser(ctx, authcontext.DefaultUser)
 	if err := db.Populate(ctx, testdb, objs...); err != nil {
 		t.Fatalf("Populate: %v", err)
 	}

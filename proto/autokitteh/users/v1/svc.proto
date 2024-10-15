@@ -1,0 +1,46 @@
+syntax = "proto3";
+
+package autokitteh.users.v1;
+
+import "autokitteh/users/v1/user.proto";
+import "buf/validate/validate.proto";
+
+message GetRequest {
+  string user_id = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+message GetResponse {
+  users.v1.User user = 1 [(buf.validate.field).required = true];
+}
+
+message CreateRequest {
+  users.v1.User user = 1 [(buf.validate.field).required = true];
+}
+
+message CreateResponse {
+  string user_id = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+message FindByProviderRequest {
+  users.v1.UserAuthProvider provider = 1 [(buf.validate.field).required = true];
+}
+
+message FindByProviderResponse {
+  string user_id = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+message FindByProviderOrCreateRequest {
+  users.v1.UserAuthProvider provider = 1 [(buf.validate.field).required = true];
+}
+
+message FindByProviderOrCreateResponse {
+  string user_id = 1 [(buf.validate.field).string.min_len = 1];
+  bool created = 2;
+}
+
+service UsersService {
+  rpc Create(CreateRequest) returns (CreateResponse);
+  rpc FindByProvider(FindByProviderRequest) returns (FindByProviderResponse);
+  rpc FindByProviderOrCreate(FindByProviderOrCreateRequest) returns (FindByProviderOrCreateResponse);
+  rpc Get(GetRequest) returns (GetResponse);
+}

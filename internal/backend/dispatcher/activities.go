@@ -10,7 +10,6 @@ import (
 	"go.temporal.io/sdk/activity"
 	"go.temporal.io/sdk/worker"
 
-	akCtx "go.autokitteh.dev/autokitteh/internal/backend/context"
 	"go.autokitteh.dev/autokitteh/internal/backend/types"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
@@ -59,16 +58,10 @@ func (d *Dispatcher) listWaitingSignals(ctx context.Context, dstid sdktypes.Even
 }
 
 func (d *Dispatcher) startSession(ctx context.Context, session sdktypes.Session) (sdktypes.SessionID, error) {
-	ctx = akCtx.WithRequestOrginator(ctx, akCtx.Dispatcher)
-	ctx = akCtx.WithOwnershipOf(ctx, d.svcs.DB.GetOwnership, session.EnvID().UUIDValue())
-
 	return d.svcs.Sessions.Start(ctx, session)
 }
 
 func (d *Dispatcher) getEventSessionData(ctx context.Context, event sdktypes.Event, opts *sdkservices.DispatchOptions) ([]sessionData, error) {
-	ctx = akCtx.WithRequestOrginator(ctx, akCtx.EventWorkflow)
-	ctx = akCtx.WithOwnershipOf(ctx, d.svcs.DB.GetOwnership, event.DestinationID().UUIDValue())
-
 	eid := event.ID()
 	dstid := event.DestinationID()
 

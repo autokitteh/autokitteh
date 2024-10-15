@@ -152,7 +152,4 @@ type DB interface {
 	SetSecret(ctx context.Context, key string, value string) error
 	GetSecret(ctx context.Context, key string) (string, error)
 	DeleteSecret(ctx context.Context, key string) error
-
-	// -----------------------------------------------------------------------
-	GetOwnership(ctx context.Context, entityID sdktypes.UUID) (string, error)
 }
