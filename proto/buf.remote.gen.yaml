@@ -27,3 +27,4 @@ inputs:
   - directory: .
     paths:
       - autokitteh/remote
+      - autokitteh/values

@@ -1,3 +1,5 @@
+runner_pb_dir="../../runtimes/pythonrt/runner/pb"
+
 .PHONY: all
 all: buf-format-check buf-lint buf-gen
 
@@ -14,6 +16,7 @@ buf-lint:
 .PHONY: buf-build
 buf-build:
 	rm -rf gen
+	rm -fR $(runner_pb_dir)
 	buf build
 
 .PHONY: buf-gen
@@ -29,6 +32,7 @@ buf-gen: buf-build
 clean:
 	rm -fR gen
 	rm -fR dist
+	rm -fR $(runner_pb_dir)
 .PHONY: py-dist
 
 py-dist: py-deps
