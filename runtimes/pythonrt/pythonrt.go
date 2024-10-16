@@ -65,6 +65,7 @@ type pySvc struct {
 	cbs       *sdkservices.RunCallbacks
 	exports   map[string]sdktypes.Value
 	fileName  string // main user code file name (entry point)
+	envVars   map[string]string
 	// remote       *workerGRPCHandler
 
 	// runner       Runner
@@ -253,7 +254,7 @@ func (py *pySvc) Run(
 	if err != nil {
 		return nil, fmt.Errorf("can't load env : %w", err)
 	}
-	envMap := kittehs.TransformMap(env, func(key string, value sdktypes.Value) (string, string) {
+	py.envVars = kittehs.TransformMap(env, func(key string, value sdktypes.Value) (string, string) {
 		return key, value.GetString().Value()
 	})
 
@@ -267,7 +268,7 @@ func (py *pySvc) Run(
 		return nil, fmt.Errorf("can't load syscall: %w", err)
 	}
 
-	runnerID, runner, err := runnerManager.Start(ctx, sessionID, tarData, envMap)
+	runnerID, runner, err := runnerManager.Start(ctx, sessionID, tarData, py.envVars)
 	if err != nil {
 		return nil, fmt.Errorf("starting runner: %w", err)
 	}
