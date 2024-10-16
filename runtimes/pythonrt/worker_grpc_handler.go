@@ -387,11 +387,12 @@ func (s *workerGRPCHandler) RefreshOAuthToken(ctx context.Context, req *pb.Refre
 		return &pb.RefreshResponse{Error: err.Error()}, nil
 	}
 
+	// Get a fresh access token.
 	refreshToken, ok := runner.envVars[req.Connection+"__oauth_RefreshToken"]
 	if !ok {
 		return &pb.RefreshResponse{Error: "missing refresh token"}, nil
 	}
-	// Get a fresh access token.
+
 	t := &oauth2.Token{RefreshToken: refreshToken}
 	t, err = cfg.TokenSource(ctx, t).Token()
 	if err != nil {
