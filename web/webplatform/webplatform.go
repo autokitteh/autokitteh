@@ -4,41 +4,49 @@ import (
 	"archive/zip"
 	"bytes"
 	"embed"
-	"errors"
 	"io"
 	"io/fs"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
+	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 
 	"github.com/psanford/memfs"
 )
 
-//go:embed autokitteh-web-*.zip
+//go:embed *.zip
 var zipFS embed.FS
+
+var distRegex = regexp.MustCompile(`^autokitteh-web-v(\d+\.\d+\.\d+)\.zip$`)
+
+func DistFilename() (string, error) {
+	des, err := fs.ReadDir(zipFS, ".")
+	if err != nil {
+		return "", err
+	}
+
+	_, de := kittehs.FindFirst(des, func(de fs.DirEntry) bool { return distRegex.MatchString(de.Name()) })
+	if de == nil {
+		return "", sdkerrors.ErrNotFound
+	}
+
+	return de.Name(), nil
+}
 
 // Loads the first zip file found in the embedded filesystem and
 // extracts the content under its dist/ directory in a memory filesystem.
 func LoadFS() (fs.FS, string, error) {
-	des, err := fs.ReadDir(zipFS, ".")
+	zipFilename, err := DistFilename()
 	if err != nil {
 		return nil, "", err
 	}
 
-	_, de := kittehs.FindFirst(des, func(de fs.DirEntry) bool {
-		return de.Type().IsRegular() && strings.HasSuffix(de.Name(), ".zip")
-	})
-
-	if de == nil {
-		return nil, "", errors.New("no zip file found")
-	}
-
-	zipFilename := de.Name()
-
 	memfs := memfs.New()
 
-	version := strings.TrimSuffix(zipFilename, ".zip")
+	ms := distRegex.FindAllStringSubmatch(zipFilename, -1)
+	version := ms[0][1]
 
 	data, err := fs.ReadFile(zipFS, zipFilename)
 	if err != nil {

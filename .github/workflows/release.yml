@@ -24,6 +24,9 @@ jobs:
           cache-dependency-path: ${{env.WORKING_DIRECTORY}}/go.sum
           go-version-file: ${{env.WORKING_DIRECTORY}}/go.mod
 
+      - name: Fetch web platform
+        run: make webplatform
+
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v5
         with:
@@ -58,6 +61,8 @@ jobs:
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
+      - name: Fetch web platform
+        run: make webplatform
       - name: Build And Push
         uses: docker/build-push-action@v4
         with:

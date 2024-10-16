@@ -41,17 +41,19 @@ export AK_SYSTEST_USE_PROC_SVC=1
 export PYTHONPATH=$(PWD)/runtimes/pythonrt/py-sdk
 
 # 1. Detect unformatted Go files
-# 2. Run golangci-lint (Go linters)
-# 3. Run shellcheck (shell scripts linter)
+# 2. Run shellcheck (shell scripts linter)
+# 3. Download latest web platform
 # 4. Rebuild protocol buffer stubs
 # 5. Build the entire Go codebase
-# 6. Build AK binary with version and/or debug info
-# 7. Run all automated tests (unit + integration)
-all: gofmt-check lint shellcheck proto build bin/ak test
+# 6. Run golangci-lint (Go linters)
+# 7. Build AK binary with version and/or debug info
+# 8. Run all automated tests (unit + integration)
+all: gofmt-check shellcheck webplatform proto lint build bin/ak test
 
 .PHONY: clean
 clean:
 	rm -rf $(OUTDIR)
+	make -C web/webplatform clean
 
 .PHONY: ak
 ak: bin/ak
@@ -162,3 +164,7 @@ generate-migrations:
 .PHONY: tailwindcss
 tailwindcss:
 	npx --yes tailwindcss build -o web/static/tailwind.css
+
+.PHONY: webplatform
+webplatform:
+	make -C ./web/webplatform

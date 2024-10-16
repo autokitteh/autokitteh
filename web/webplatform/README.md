@@ -1,1 +1,1 @@
-To update the webplatform version, just replace the distribution zip file in this directory with the new one.
+To update the webplatform version, modify the `VERSION` file and run `fetch.sh`.

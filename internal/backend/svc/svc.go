@@ -318,7 +318,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 			fx.Invoke(func(cfg *bannerConfig, lc fx.Lifecycle, z *zap.Logger, httpsvc httpsvc.Svc, tclient temporalclient.Client, wp *webplatform.Svc) {
 				HookSimpleOnStart(lc, func() {
 					temporalFrontendAddr, temporalUIAddr := tclient.TemporalAddr()
-					printBanner(cfg, opts, httpsvc.Addr(), wp.Addr(), temporalFrontendAddr, temporalUIAddr)
+					printBanner(cfg, opts, httpsvc.Addr(), wp.Addr(), wp.Version(), temporalFrontendAddr, temporalUIAddr)
 				})
 			}),
 		),

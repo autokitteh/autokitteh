@@ -1,0 +1,1 @@
+This is not really a zip file, just a placeholder to prevent go embed from failing if no distribution was downloaded.
