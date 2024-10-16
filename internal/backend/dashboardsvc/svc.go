@@ -13,7 +13,7 @@ type Svc struct {
 	fx.In
 
 	Svcs  sdkservices.Services
-	Muxes *muxes.Muxes
+	Muxes *muxes.AuxMuxes
 }
 
 func Init(svc Svc) {

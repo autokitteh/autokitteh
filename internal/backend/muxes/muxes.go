@@ -2,4 +2,9 @@ package muxes
 
 import "net/http"
 
-type Muxes struct{ Auth, NoAuth *http.ServeMux }
+type (
+	muxes struct{ Auth, NoAuth *http.ServeMux }
+
+	Muxes    muxes
+	AuxMuxes muxes
+)

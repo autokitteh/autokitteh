@@ -34,19 +34,22 @@ type CORSConfig struct {
 
 type Config struct {
 	// local server address, set to run server on different port
-	Addr string `koanf:"addr"`
+	Addr    string `koanf:"addr"`
+	AuxAddr string `koanf:"aux_addr"`
 
 	// ak service url, used in client to connect to connect to specific ak server
 	ServiceUrl string `koanf:"service_url"`
 
 	H2C httpH2CConfig `koanf:"h2c"`
 
-	// If not empty, write HTTP port to this file.
+	// If not empty, write main HTTP port to this file.
 	// This is useful when starting with port 0, which means to get
 	// the next port. This is done in testing to start on an unused
 	// port to avoid conflict with an already running service.
-	AddrFilename         string `koanf:"addr_filename"`
-	EnableGRPCReflection bool   `koanf:"reflection"`
+	AddrFilename string `koanf:"addr_filename"`
+
+	// Enable gRPC reflection for the main mux.
+	EnableGRPCReflection bool `koanf:"reflection"`
 
 	Logger LoggerConfig `koanf:"logger"`
 
@@ -56,6 +59,7 @@ type Config struct {
 var Configs = configset.Set[Config]{
 	Default: &Config{
 		Addr:                 "0.0.0.0:" + sdkclient.DefaultPort,
+		AuxAddr:              "0.0.0.0:9983",
 		ServiceUrl:           sdkclient.DefaultLocalURL,
 		H2C:                  httpH2CConfig{Enable: true},
 		EnableGRPCReflection: true,
