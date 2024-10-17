@@ -105,7 +105,7 @@ func (cs *calls) Call(wctx workflow.Context, params *CallParams) (sdktypes.Sessi
 
 	seq := spec.Seq()
 
-	sl := cs.l.Sugar().With("session_id", sid, "seq", seq, "v", fnv)
+	l := cs.l.With(zap.Any("session_id", sid), zap.Any("seq", seq), zap.Any("v", fnv))
 
 	wctx = workflow.WithActivityOptions(wctx, cs.config.activityConfig().ToOptions(generalTaskQueueName))
 
@@ -142,7 +142,7 @@ func (cs *calls) Call(wctx workflow.Context, params *CallParams) (sdktypes.Sessi
 
 		var err error
 		if result, err = cs.executeCall(goCtx, params.CallSpec, params.Executors); err != nil {
-			sl.With("err", err).Infof("pure call failed: %v", err)
+			l.With(zap.Error(err)).Sugar().Infof("pure call failed: %v", err)
 			return sdktypes.NewSessionCallAttemptResult(sdktypes.InvalidValue, fmt.Errorf("internal call: %w", err)), nil
 		}
 	} else {
@@ -151,10 +151,10 @@ func (cs *calls) Call(wctx workflow.Context, params *CallParams) (sdktypes.Sessi
 		// either a non-integration (like a run) or a session module.
 		unique := !xid.IsIntegrationID() || modules.IsAKModuleExecutorID(xid)
 
-		sl := sl.With("unique", unique)
+		l := l.With(zap.Bool("unique", unique))
 
 		if unique {
-			sl.Info("unique call")
+			l.Info("unique call")
 
 			// store the executors in global scope so when the unique worker activity is executed
 			// is could get the session specific executors.
@@ -184,7 +184,7 @@ func (cs *calls) Call(wctx workflow.Context, params *CallParams) (sdktypes.Sessi
 
 				cfg := cs.config.uniqueActivityConfig()
 				if cfg.ScheduleToStartTimeout == 0 {
-					sl.Warn("call activity schedule-to-start timeout is 0 and local exec is needed")
+					l.Warn("call activity schedule-to-start timeout is 0 and local exec is needed")
 				}
 
 				aopts = cfg.ToOptions(uniqueTaskQueueName)
@@ -209,7 +209,7 @@ func (cs *calls) Call(wctx workflow.Context, params *CallParams) (sdktypes.Sessi
 					// An activity that was scheduled on a unique worker (ie the workflow worker) did not get to be started.
 					// This might happen in cases of scale-down events or a recovery from a crashed worker.
 					// In this case we just reshecule it again.
-					sl.Warn("call activity schedule to start timeout, retrying")
+					l.Warn("call activity schedule to start timeout, retrying")
 					continue
 				}
 
@@ -220,7 +220,7 @@ func (cs *calls) Call(wctx workflow.Context, params *CallParams) (sdktypes.Sessi
 				// An activity scheduled on a unique worker started to run after a crash before the associated workflow
 				// got started. Since in this case the required session executors where not registered, we just
 				// retry the activity and give a chance to the workflow register the session workers.
-				sl.Warn("call activity retrying explicitly")
+				l.Warn("call activity retrying explicitly")
 				continue
 			}
 
@@ -228,7 +228,7 @@ func (cs *calls) Call(wctx workflow.Context, params *CallParams) (sdktypes.Sessi
 		}
 	}
 
-	sl.Debug("call returned", zap.Uint32("attempts", attempt+1), zap.Any("result", result))
+	l.Debug("call returned", zap.Uint32("attempts", attempt+1))
 
 	fut = workflow.ExecuteActivity(
 		wctx,

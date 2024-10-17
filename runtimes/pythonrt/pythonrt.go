@@ -356,7 +356,7 @@ func (py *pySvc) call(ctx context.Context, val sdktypes.Value, args []sdktypes.V
 
 	reply := func(req *pb.ActivityReplyRequest) {
 		if req.Error != "" {
-			py.log.Error("activity reply error", zap.String("error", req.Error))
+			py.log.Warn("activity reply error", zap.String("error", req.Error))
 		}
 
 		req.Data = fn.Data()
@@ -367,9 +367,9 @@ func (py *pySvc) call(ctx context.Context, val sdktypes.Value, args []sdktypes.V
 		reply, err := py.runner.ActivityReply(ctx, req)
 		switch {
 		case err != nil:
-			py.log.Error("activity reply error", zap.Error(err))
+			py.log.Warn("activity reply error", zap.Error(err))
 		case reply.Error != "":
-			py.log.Error("activity reply error", zap.String("error", reply.Error))
+			py.log.Warn("activity reply error", zap.String("reply error", reply.Error))
 		}
 	}
 
