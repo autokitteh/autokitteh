@@ -543,6 +543,10 @@ func (py *pySvc) emitPrintsAndLogs(ctx context.Context) {
 
 // drainPrints drains the print channel at the end of a run.
 func (py *pySvc) drainPrints(ctx context.Context) {
+	// emit already accumulated prints and logs.
+	py.emitPrintsAndLogs(ctx)
+
+	// flush the rest of the prints and logs.
 	for {
 		select {
 		case <-ctx.Done():
