@@ -153,8 +153,9 @@ class Runner(rpc.RunnerServicer):
         self.syscalls = SysCalls(self.id, self.worker)
         mod_name, fn_name = parse_entry_point(request.entry_point)
 
-        # Monkey patch some functions, should come before we import user code
+        # Monkey patch some functions, should come before we import user code.
         builtins.print = self.ak_print
+        connections.encode_jwt = self.syscalls.ak_encode_jwt
         connections.refresh_oauth = self.syscalls.ak_refresh_oauth
 
         call = AKCall(self)

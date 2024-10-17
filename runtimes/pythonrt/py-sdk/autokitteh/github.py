@@ -1,12 +1,13 @@
 """Initialize a GitHub client, based on an AutoKitteh connection."""
 
 import os
+import time
 from urllib.parse import urljoin
 
-from github import Auth, Github, GithubIntegration
+from github import Auth, Consts, Github, GithubIntegration
 
-from .connections import check_connection_name
-from .errors import ConnectionInitError, EnvVarError
+from .connections import check_connection_name, encode_jwt
+from .errors import ConnectionInitError
 
 
 def github_client(connection: str, **kwargs) -> Github:
@@ -23,7 +24,6 @@ def github_client(connection: str, **kwargs) -> Github:
     Raises:
         ValueError: AutoKitteh connection name or GitHub app IDs are invalid.
         ConnectionInitError: AutoKitteh connection was not initialized yet.
-        EnvVarError: Required environment variable is missing or invalid.
     """
     check_connection_name(connection)
 
@@ -39,10 +39,6 @@ def github_client(connection: str, **kwargs) -> Github:
         return Github(Auth.Token(pat), **kwargs)
 
     # GitHub App (JWT)
-    private_key = os.getenv("GITHUB_PRIVATE_KEY")
-    if not private_key:
-        raise EnvVarError("GITHUB_PRIVATE_KEY", "missing")
-
     app_id = os.getenv(f"{connection}__app_id")
     if not app_id:
         raise ConnectionInitError(connection)
@@ -51,5 +47,30 @@ def github_client(connection: str, **kwargs) -> Github:
     if not install_id:
         raise ConnectionInitError(connection)
 
-    app = GithubIntegration(auth=Auth.AppAuth(int(app_id), private_key), **kwargs)
+    app = GithubIntegration(auth=AppAuth(int(app_id), connection), **kwargs)
     return app.get_github_for_installation(int(install_id))
+
+
+class AppAuth(Auth.AppAuth):
+    """Generate JWTs without exposing the GitHub app's private key.
+
+    Based on: https://github.com/PyGithub/PyGithub/blob/main/github/Auth.py
+    """
+
+    def __init__(self, app_id: int, ak_connection_name: str):
+        self._app_id = app_id
+        self._private_key = ak_connection_name
+        self._jwt_expiry = Consts.DEFAULT_JWT_EXPIRY
+        self._jwt_issued_at = Consts.DEFAULT_JWT_ISSUED_AT
+        self._jwt_algorithm = Consts.DEFAULT_JWT_ALGORITHM
+
+    def create_jwt(self, expiration: int | None = None) -> str:
+        now = int(time.time())
+        payload = {
+            "iat": now + self._jwt_issued_at,
+            "exp": now + (expiration if expiration is not None else self._jwt_expiry),
+            "iss": self._app_id,
+        }
+        # This is the only change from the original code: replace the call to jwt.encode().
+        # We don't monkey-patch it because the jwt module is usable outside the GitHub client too.
+        return encode_jwt(payload, self.private_key, self._jwt_algorithm)

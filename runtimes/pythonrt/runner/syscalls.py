@@ -26,9 +26,9 @@ class SysCalls:
         self.ak_funcs = {
             "next_event": self.ak_next_event,
             "sleep": self.ak_sleep,
+            "start": self.ak_start,
             "subscribe": self.ak_subscribe,
             "unsubscribe": self.ak_unsubscribe,
-            "start": self.ak_start,
         }
 
     def call(self, fn, args, kw):
@@ -121,6 +121,18 @@ class SysCalls:
 
         req = pb.UnsubscribeRequest(runner_id=self.runner_id, signal_id=id)
         call_grpc("unsubscribe", self.worker.Unsubscribe, req)
+
+    def ak_encode_jwt(self, payload: dict[str, int], connection: str, algorithm: str):
+        req = pb.EncodeJWTRequest(
+            runner_id=self.runner_id,
+            payload=payload,
+            connection=connection,
+            algorithm=algorithm,
+        )
+        resp: pb.EncodeJWTResponse = call_grpc("encode_jwt", self.worker.EncodeJWT, req)
+        if resp.error:
+            raise SyscallError(f"encode_jwt: {resp.error}")
+        return resp.jwt
 
     def ak_refresh_oauth(self, integration: str, connection: str):
         req = pb.RefreshRequest(

@@ -508,6 +508,11 @@ class WorkerStub(object):
                 request_serializer=autokitteh_dot_remote_dot_v1_dot_remote__pb2.StartSessionRequest.SerializeToString,
                 response_deserializer=autokitteh_dot_remote_dot_v1_dot_remote__pb2.StartSessionResponse.FromString,
                 _registered_method=True)
+        self.EncodeJWT = channel.unary_unary(
+                '/autokitteh.remote.v1.Worker/EncodeJWT',
+                request_serializer=autokitteh_dot_remote_dot_v1_dot_remote__pb2.EncodeJWTRequest.SerializeToString,
+                response_deserializer=autokitteh_dot_remote_dot_v1_dot_remote__pb2.EncodeJWTResponse.FromString,
+                _registered_method=True)
         self.RefreshOAuthToken = channel.unary_unary(
                 '/autokitteh.remote.v1.Worker/RefreshOAuthToken',
                 request_serializer=autokitteh_dot_remote_dot_v1_dot_remote__pb2.RefreshRequest.SerializeToString,
@@ -587,9 +592,15 @@ class WorkerServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def RefreshOAuthToken(self, request, context):
+    def EncodeJWT(self, request, context):
         """Utility functions
         """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def RefreshOAuthToken(self, request, context):
+        """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
@@ -653,6 +664,11 @@ def add_WorkerServicer_to_server(servicer, server):
                     servicer.StartSession,
                     request_deserializer=autokitteh_dot_remote_dot_v1_dot_remote__pb2.StartSessionRequest.FromString,
                     response_serializer=autokitteh_dot_remote_dot_v1_dot_remote__pb2.StartSessionResponse.SerializeToString,
+            ),
+            'EncodeJWT': grpc.unary_unary_rpc_method_handler(
+                    servicer.EncodeJWT,
+                    request_deserializer=autokitteh_dot_remote_dot_v1_dot_remote__pb2.EncodeJWTRequest.FromString,
+                    response_serializer=autokitteh_dot_remote_dot_v1_dot_remote__pb2.EncodeJWTResponse.SerializeToString,
             ),
             'RefreshOAuthToken': grpc.unary_unary_rpc_method_handler(
                     servicer.RefreshOAuthToken,
@@ -913,6 +929,33 @@ class Worker(object):
             '/autokitteh.remote.v1.Worker/StartSession',
             autokitteh_dot_remote_dot_v1_dot_remote__pb2.StartSessionRequest.SerializeToString,
             autokitteh_dot_remote_dot_v1_dot_remote__pb2.StartSessionResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def EncodeJWT(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/autokitteh.remote.v1.Worker/EncodeJWT',
+            autokitteh_dot_remote_dot_v1_dot_remote__pb2.EncodeJWTRequest.SerializeToString,
+            autokitteh_dot_remote_dot_v1_dot_remote__pb2.EncodeJWTResponse.FromString,
             options,
             channel_credentials,
             insecure,

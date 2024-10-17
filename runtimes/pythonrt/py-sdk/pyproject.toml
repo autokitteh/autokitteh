@@ -1,7 +1,7 @@
 [project]
 name = 'autokitteh'
 # If you bump minor or major, update ../requirements.txt as well
-version = '0.3.2'
+version = '0.3.4'
 description = 'AutoKitteh Python SDK'
 readme = 'README.md'
 license = {file = 'LICENSE'}
