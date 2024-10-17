@@ -290,10 +290,10 @@ func (w *sessionWorkflow) initGlobalModules() (map[string]sdktypes.Value, error)
 func (w *sessionWorkflow) createEventSubscription(wctx workflow.Context, filter string, did sdktypes.EventDestinationID) (uuid.UUID, error) {
 	wctx = temporalclient.WithActivityOptions(wctx, taskQueueName, w.ws.cfg.Activity)
 
-	sl := w.l.Sugar().With("destination_id", did)
+	l := w.l.With(zap.Any("destination_id", did))
 
 	if err := sdktypes.VerifyEventFilter(filter); err != nil {
-		sl.With("err", err).Infof("invalid filter in workflow code: %v", err)
+		l.With(zap.Error(err)).Sugar().Infof("invalid filter in workflow code: %v", err)
 		return uuid.Nil, sdkerrors.NewInvalidArgumentError("invalid filter: %w", err)
 	}
 
@@ -302,7 +302,7 @@ func (w *sessionWorkflow) createEventSubscription(wctx workflow.Context, filter 
 	if err := workflow.SideEffect(wctx, func(wctx workflow.Context) any {
 		return uuid.New()
 	}).Get(&signalID); err != nil {
-		return uuid.Nil, fmt.Errorf("generate signal id: %w", err)
+		return uuid.Nil, fmt.Errorf("generate signal ID: %w", err)
 	}
 
 	var minSequence uint64
@@ -327,7 +327,7 @@ func (w *sessionWorkflow) createEventSubscription(wctx workflow.Context, filter 
 		return uuid.Nil, fmt.Errorf("save signal: %w", err)
 	}
 
-	sl.Info("created event subscription %v", signalID)
+	l.Sugar().Infof("created event subscription: %v", signalID)
 
 	return signalID, nil
 }
@@ -368,15 +368,15 @@ func (w *sessionWorkflow) waitOnFirstSignal(wctx workflow.Context, signals []uui
 	return signalID, nil
 }
 
-func (w *sessionWorkflow) getNextEvent(ctx context.Context, sigid uuid.UUID) (map[string]sdktypes.Value, error) {
-	sl := w.l.Sugar().With("signal_id", sigid)
+func (w *sessionWorkflow) getNextEvent(ctx context.Context, signalID uuid.UUID) (map[string]sdktypes.Value, error) {
+	l := w.l.With(zap.Any("signal_id", signalID))
 
 	wctx := sessioncontext.GetWorkflowContext(ctx)
 	wctx = temporalclient.WithActivityOptions(wctx, taskQueueName, w.ws.cfg.Activity)
 
-	minSequenceNumber, ok := w.lastReadEventSeqForSignal[sigid]
+	minSequenceNumber, ok := w.lastReadEventSeqForSignal[signalID]
 	if !ok {
-		return nil, fmt.Errorf("no such subscription %q", sigid)
+		return nil, fmt.Errorf("no such subscription %q", signalID)
 	}
 
 	var event sdktypes.Event
@@ -384,7 +384,7 @@ func (w *sessionWorkflow) getNextEvent(ctx context.Context, sigid uuid.UUID) (ma
 	fut := workflow.ExecuteActivity(
 		wctx,
 		getSignalEventActivityName,
-		sigid,
+		signalID,
 		minSequenceNumber,
 	)
 
@@ -394,44 +394,42 @@ func (w *sessionWorkflow) getNextEvent(ctx context.Context, sigid uuid.UUID) (ma
 			return nil, err
 		}
 
-		return nil, fmt.Errorf("get signal event %v: %w", sigid, err)
+		return nil, fmt.Errorf("get signal event %v: %w", signalID, err)
 	}
 
 	if !event.IsValid() {
 		return nil, nil
 	}
 
-	w.lastReadEventSeqForSignal[sigid] = event.Seq()
+	w.lastReadEventSeqForSignal[signalID] = event.Seq()
 
-	sl.With("event_id", event.ID()).Infof("got event %v", event.ID())
+	l.With(zap.Any("event_id", event.ID())).Sugar().Infof("got event: %v", event.ID())
 
 	return event.Data(), nil
 }
 
 func (w *sessionWorkflow) removeEventSubscription(ctx context.Context, signalID uuid.UUID) {
-	sl := w.l.Sugar().With("signal_id", signalID)
+	l := w.l.With(zap.Any("signal_id", signalID))
 
 	wctx := sessioncontext.GetWorkflowContext(ctx)
 	wctx = temporalclient.WithActivityOptions(wctx, taskQueueName, w.ws.cfg.Activity)
 
 	if err := workflow.ExecuteActivity(wctx, removeSignalActivityName, signalID).Get(wctx, nil); err != nil {
 		// it is not a critical error, we can just log it. no need to panic.
-		sl.With(err).Errorf("remove signal: %v", signalID, err)
+		l.With(zap.Error(err)).Sugar().Errorf("remove signal: %v", err)
 	}
 
 	delete(w.lastReadEventSeqForSignal, signalID)
 }
 
 func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (prints []string, err error) {
-	sl := l.Sugar()
-
 	sid := w.data.Session.ID()
 
 	newRunID := func() (runID sdktypes.RunID) {
 		if err := workflow.SideEffect(wctx, func(workflow.Context) any {
 			return sdktypes.NewRunID()
 		}).Get(&runID); err != nil {
-			sl.With("err", err).Panicf("new run id side effect: %v", err)
+			l.With(zap.Error(err)).Sugar().Panicf("new run ID side effect: %v", err)
 		}
 		return
 	}
@@ -443,21 +441,21 @@ func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (prints []st
 		Load:     w.load,
 		Call: func(callCtx context.Context, runID sdktypes.RunID, v sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
 			if f := v.GetFunction(); f.HasFlag(sdktypes.ConstFunctionFlag) {
-				sl.Debug("const function call")
+				l.Debug("const function call")
 				return f.ConstValue()
 			}
 
 			isActivity := activity.IsActivity(callCtx)
 
-			sl := sl.With("run_id", runID, "is_activity", isActivity, "v", v)
+			l = l.With(zap.Any("run_id", runID), zap.Bool("is_activity", isActivity), zap.Any("v", v))
 
 			if run == nil {
-				sl.Debug("run not initialized")
+				l.Debug("run not initialized")
 				return sdktypes.InvalidValue, fmt.Errorf("cannot call before the run is initialized")
 			}
 
 			if xid := v.GetFunction().ExecutorID(); xid.ToRunID() == runID && w.executors.GetCaller(xid) == nil {
-				sl.Debug("self call during initialization")
+				l.Debug("self call during initialization")
 
 				// This happens only during initial evaluation (the first run because invoking the entrypoint function),
 				// and the runtime tries to call itself in order to start an activity with its own functions.
@@ -465,7 +463,7 @@ func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (prints []st
 			}
 
 			if isActivity {
-				sl.Debug("nested activity call")
+				l.Debug("nested activity call")
 				return sdktypes.InvalidValue, fmt.Errorf("nested activities are not supported")
 			}
 
@@ -479,9 +477,8 @@ func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (prints []st
 				text = text[:len(text)-1]
 			}
 
-			sl := sl.With("run_id", runID, "is_activity", isActivity)
-
-			sl.Debugw("print", zap.String("text", text))
+			l := l.With(zap.Any("run_id", runID), zap.Bool("is_activity", isActivity))
+			l.Debug("print", zap.String("text", text))
 
 			prints = append(prints, text)
 
@@ -509,7 +506,7 @@ func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (prints []st
 			// this is a problem to be aware of, because errors cause the loss of valuable debugging data
 			// (because the workflow context is canceled).
 			if err != nil {
-				sl.With("text", text).Warnf("failed to add print session record: %v", err)
+				l.With(zap.String("text", text)).Sugar().Warnf("failed to add print session record: %v", err)
 			}
 		},
 	}
