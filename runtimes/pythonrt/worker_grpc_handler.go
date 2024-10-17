@@ -106,7 +106,7 @@ func (s *workerGRPCHandler) Log(ctx context.Context, req *pb.LogRequest) (*pb.Lo
 	if !runner.firstCall {
 		// If we're not in the first call, the prints channel is not listened on since
 		// the select loop is stuck on the initialCall function.
-		// Cccumulate the prints which will be reported when the call is done.
+		// Accumulate the prints which will be reported when the call is done.
 		runner.accLogs = append(runner.accLogs, m)
 		return &pb.LogResponse{}, nil
 	}
@@ -138,7 +138,7 @@ func (s *workerGRPCHandler) Print(ctx context.Context, req *pb.PrintRequest) (*p
 	if !runner.firstCall {
 		// If we're not in the first call, the prints channel is not listened on since
 		// the select loop is stuck on the initialCall function.
-		// Cccumulate the prints which will be reported when the call is done.
+		// Accumulate the prints which will be reported when the call is done.
 		runner.accPrints = append(runner.accPrints, m)
 		return &pb.PrintResponse{}, nil
 	}
