@@ -103,7 +103,18 @@ func (s *workerGRPCHandler) Log(ctx context.Context, req *pb.LogRequest) (*pb.Lo
 		return &pb.LogResponse{Error: "unknown runner ID"}, nil
 	}
 
-	m := makeLogMessage(req.Level, req.Message)
+	m := &logMessage{level: req.Level, message: req.Message}
+
+	if !runner.firstCall {
+		// If we're not in the first call, the prints channel is not listened on since
+		// the select loop is stuck on the initialCall function.
+		// Accumulate the prints which will be reported when the call is done.
+		runner.accLogs = append(runner.accLogs, m)
+		return &pb.LogResponse{}, nil
+	}
+
+	m.doneChannel = make(chan struct{})
+
 	runner.channels.log <- m
 
 	select {
@@ -124,7 +135,17 @@ func (s *workerGRPCHandler) Print(ctx context.Context, req *pb.PrintRequest) (*p
 		return &pb.PrintResponse{Error: "unknown runner ID"}, nil
 	}
 
-	m := makeLogMessage(req.Message, "info")
+	m := &logMessage{level: "info", message: req.Message}
+
+	if !runner.firstCall {
+		// If we're not in the first call, the prints channel is not listened on since
+		// the select loop is stuck on the initialCall function.
+		// Accumulate the prints which will be reported when the call is done.
+		runner.accPrints = append(runner.accPrints, m)
+		return &pb.PrintResponse{}, nil
+	}
+
+	m.doneChannel = make(chan struct{})
 
 	runner.channels.print <- m
 	select {
@@ -183,14 +204,6 @@ func makeCallbackMessage(args []sdktypes.Value, kwargs map[string]sdktypes.Value
 		errorChannel:   errorChannel,
 	}
 	return msg
-}
-
-func makeLogMessage(message string, level string) *logMessage {
-	return &logMessage{
-		level:       level,
-		message:     message,
-		doneChannel: make(chan struct{}, 1),
-	}
 }
 
 func (s *workerGRPCHandler) Sleep(ctx context.Context, req *pb.SleepRequest) (*pb.SleepResponse, error) {
