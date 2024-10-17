@@ -17,7 +17,13 @@ def check_connection_name(connection: str) -> None:
         raise ValueError(f"Invalid AutoKitteh connection name: {connection!r}")
 
 
+def encode_jwt(payload: dict[str, int], connection: str, algorithm: str) -> str:
+    """Mock function to generate JWTs, overriden by the AutoKitteh runner."""
+    print("!!!!!!!!!! SDK's encode_jwt() not overriden !!!!!!!!!!")
+    return "DUMMY JWT"
+
+
 def refresh_oauth(integration: str, connection: str) -> tuple[str, datetime]:
-    """Mock function to refresh OAuth tokens, overriden by AutoKitteh runner."""
-    print("!!!!!!!!!! SDK's refresh_oauth not overriden !!!!!!!!!!")
+    """Mock function to refresh OAuth tokens, overriden by the AutoKitteh runner."""
+    print("!!!!!!!!!! SDK's refresh_oauth() not overriden !!!!!!!!!!")
     return "DUMMY TOKEN", datetime.now(UTC).replace(tzinfo=None)

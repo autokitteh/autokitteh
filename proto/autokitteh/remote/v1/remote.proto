@@ -229,6 +229,18 @@ message IsActiveRunnerResponse {
   string error = 2;
 }
 
+message EncodeJWTRequest {
+  string runner_id = 1;
+  map<string, int64> payload = 2;
+  string connection = 3;
+  string algorithm = 4;
+}
+
+message EncodeJWTResponse {
+  string jwt = 1;
+  string error = 2;
+}
+
 message RefreshRequest {
   string runner_id = 1;
   string integration = 2;
@@ -259,6 +271,7 @@ service Worker {
   rpc StartSession(StartSessionRequest) returns (StartSessionResponse) {}
 
   // Utility functions
+  rpc EncodeJWT(EncodeJWTRequest) returns (EncodeJWTResponse) {}
   rpc RefreshOAuthToken(RefreshRequest) returns (RefreshResponse) {}
   rpc Health(HealthRequest) returns (HealthResponse) {}
   rpc IsActiveRunner(IsActiveRunnerRequest) returns (IsActiveRunnerResponse) {}

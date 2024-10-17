@@ -334,6 +334,33 @@ class IsActiveRunnerResponse(_message.Message):
     error: str
     def __init__(self, is_active: bool = ..., error: _Optional[str] = ...) -> None: ...
 
+class EncodeJWTRequest(_message.Message):
+    __slots__ = ["runner_id", "payload", "connection", "algorithm"]
+    class PayloadEntry(_message.Message):
+        __slots__ = ["key", "value"]
+        KEY_FIELD_NUMBER: _ClassVar[int]
+        VALUE_FIELD_NUMBER: _ClassVar[int]
+        key: str
+        value: int
+        def __init__(self, key: _Optional[str] = ..., value: _Optional[int] = ...) -> None: ...
+    RUNNER_ID_FIELD_NUMBER: _ClassVar[int]
+    PAYLOAD_FIELD_NUMBER: _ClassVar[int]
+    CONNECTION_FIELD_NUMBER: _ClassVar[int]
+    ALGORITHM_FIELD_NUMBER: _ClassVar[int]
+    runner_id: str
+    payload: _containers.ScalarMap[str, int]
+    connection: str
+    algorithm: str
+    def __init__(self, runner_id: _Optional[str] = ..., payload: _Optional[_Mapping[str, int]] = ..., connection: _Optional[str] = ..., algorithm: _Optional[str] = ...) -> None: ...
+
+class EncodeJWTResponse(_message.Message):
+    __slots__ = ["jwt", "error"]
+    JWT_FIELD_NUMBER: _ClassVar[int]
+    ERROR_FIELD_NUMBER: _ClassVar[int]
+    jwt: str
+    error: str
+    def __init__(self, jwt: _Optional[str] = ..., error: _Optional[str] = ...) -> None: ...
+
 class RefreshRequest(_message.Message):
     __slots__ = ["runner_id", "integration", "connection"]
     RUNNER_ID_FIELD_NUMBER: _ClassVar[int]
