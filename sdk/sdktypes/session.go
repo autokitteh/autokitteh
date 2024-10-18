@@ -66,6 +66,9 @@ func (p Session) Inputs() map[string]Value {
 	return kittehs.TransformMapValues(p.read().Inputs, forceFromProto[Value])
 }
 func (p Session) CreatedAt() time.Time { return p.read().CreatedAt.AsTime() }
+func (p Session) ParentSessionID() SessionID {
+	return kittehs.Must1(ParseSessionID(p.read().ParentSessionId))
+}
 
 func (p Session) State() SessionStateType {
 	return forceEnumFromProto[SessionStateType](p.read().State)

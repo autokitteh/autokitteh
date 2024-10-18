@@ -59,6 +59,10 @@ func (sch *Scheduler) Create(ctx context.Context, tid sdktypes.TriggerID, schedu
 				TaskQueue: taskQueueName,
 				Args:      []any{tid},
 			},
+			Memo: map[string]any{
+				"trigger_id":   tid.String(),
+				"trigger_uuid": tid.UUIDValue().String(),
+			},
 		},
 	)
 	if err != nil {
