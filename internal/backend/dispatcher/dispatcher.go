@@ -64,13 +64,21 @@ func (d *Dispatcher) Dispatch(ctx context.Context, event sdktypes.Event, opts *s
 
 	sl.Infof("event %v saved", eid)
 
+	memo := map[string]string{
+		"event_id":         eid.String(),
+		"event_uuid":       eid.UUIDValue().String(),
+		"destination_id":   event.DestinationID().String(),
+		"destination_uuid": event.DestinationID().UUIDValue().String(),
+		"seq":              fmt.Sprintf("%d", event.Seq()),
+	}
+
 	r, err := d.svcs.LazyTemporalClient().ExecuteWorkflow(
 		ctx,
 		d.cfg.Workflow.ToStartWorkflowOptions(
 			taskQueueName,
 			eid.String(),
 			fmt.Sprintf("event %v", eid),
-			nil,
+			memo,
 		),
 		workflowName,
 		eventsWorkflowInput{Event: event, Options: opts},

@@ -92,11 +92,18 @@ func (ws *workflows) StartWorkflow(ctx context.Context, session sdktypes.Session
 	l := ws.l.Sugar().With("session_id", sessionID)
 
 	memo := map[string]string{
-		"session_id":    sessionID.Value().String(),
-		"deployment_id": session.DeploymentID().String(),
-		"entrypoint":    session.EntryPoint().CanonicalString(),
-		"workflow_id":   workflowID(sessionID),
+		"session_id":      sessionID.Value().String(),
+		"session_uuid":    sessionID.UUIDValue().String(),
+		"deployment_id":   session.DeploymentID().String(),
+		"deployment_uuid": session.DeploymentID().UUIDValue().String(),
+		"workflow_id":     workflowID(sessionID),
 	}
+
+	if session.ParentSessionID().IsValid() {
+		memo["parent_session_id"] = session.ParentSessionID().String()
+		memo["parent_session_uuid"] = session.ParentSessionID().UUIDValue().String()
+	}
+
 	maps.Copy(memo, session.Memo())
 
 	data, err := sessiondata.Get(akCtx.WithRequestOrginator(ctx, akCtx.SessionWorkflow), ws.svcs, session)
