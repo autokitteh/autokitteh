@@ -122,17 +122,12 @@ func requestToData(r *http.Request) (map[string]sdktypes.Value, error) {
 			}),
 		),
 		"trailers": sdktypes.NewDictValueFromStringMap(
-			kittehs.TransformMapValues(r.Header, func(vs []string) sdktypes.Value {
+			kittehs.TransformMapValues(r.Trailer, func(vs []string) sdktypes.Value {
 				return sdktypes.NewStringValue(strings.Join(vs, ", "))
 			})),
-		"method":            sdktypes.NewStringValue(r.Method),
-		"raw_url":           sdktypes.NewStringValue(r.URL.String()),
-		"url":               urlData(r.URL),
-		"request_uri":       sdktypes.NewStringValue(r.RequestURI),
-		"content_length":    sdktypes.NewIntegerValue(r.ContentLength),
-		"transfer_encoding": kittehs.Must1(sdktypes.NewListValue(kittehs.Transform(r.TransferEncoding, sdktypes.NewStringValue))),
-		"host":              sdktypes.NewStringValue(r.Host),
-		"remote_addr":       sdktypes.NewStringValue(r.RemoteAddr),
+		"method":  sdktypes.NewStringValue(r.Method),
+		"raw_url": sdktypes.NewStringValue(r.RequestURI),
+		"url":     urlData(r.URL),
 	}, nil
 }
 
