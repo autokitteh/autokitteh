@@ -96,7 +96,7 @@ def google_drive_client(connection: str, **kwargs):
     """
     # https://developers.google.com/drive/api/guides/api-specific-auth
     default_scopes = [
-        "https://www.googleapis.com/auth/drive",
+        "https://www.googleapis.com/auth/drive.file",  # See ENG-1701
     ]
     creds = google_creds("googledrive", connection, default_scopes, **kwargs)
     return build("drive", "v3", credentials=creds, **kwargs)

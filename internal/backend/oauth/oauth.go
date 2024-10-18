@@ -172,6 +172,7 @@ func New(l *zap.Logger) sdkservices.OAuth {
 					googleoauth2.OpenIDScope,
 					googleoauth2.UserinfoEmailScope,
 					googleoauth2.UserinfoProfileScope,
+					drive.DriveFileScope, // See ENG-1701
 					// Sensitive.
 					calendar.CalendarScope,
 					calendar.CalendarEventsScope,
@@ -182,7 +183,7 @@ func New(l *zap.Logger) sdkservices.OAuth {
 					forms.FormsResponsesReadonlyScope,
 					sheets.SpreadsheetsScope,
 					// Restricted.
-					drive.DriveScope,
+					// drive.DriveScope, // See ENG-1701
 					gmail.GmailModifyScope,
 					gmail.GmailSettingsBasicScope,
 				},
@@ -240,8 +241,9 @@ func New(l *zap.Logger) sdkservices.OAuth {
 					googleoauth2.OpenIDScope,
 					googleoauth2.UserinfoEmailScope,
 					googleoauth2.UserinfoProfileScope,
+					drive.DriveFileScope, // See ENG-1701
 					// Restricted.
-					drive.DriveScope,
+					// drive.DriveScope, // See ENG-1701
 				},
 			},
 
