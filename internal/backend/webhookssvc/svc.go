@@ -125,9 +125,9 @@ func requestToData(r *http.Request) (map[string]sdktypes.Value, error) {
 			kittehs.TransformMapValues(r.Trailer, func(vs []string) sdktypes.Value {
 				return sdktypes.NewStringValue(strings.Join(vs, ", "))
 			})),
-		"method":            sdktypes.NewStringValue(r.Method),
-		"raw_url":           sdktypes.NewStringValue(r.RequestURI),
-		"url":               urlData(r.URL),
+		"method":  sdktypes.NewStringValue(r.Method),
+		"raw_url": sdktypes.NewStringValue(r.RequestURI),
+		"url":     urlData(r.URL),
 	}, nil
 }
 
