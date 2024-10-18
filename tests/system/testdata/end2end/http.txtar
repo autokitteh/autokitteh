@@ -43,7 +43,7 @@ def on_http(data, trigger, event):
     "state": {
         "completed": {
             "prints": [
-                "data(body = {\"form\": None, \"bytes\": None, \"json\": None}, headers = {\"Accept-Encoding\": \"gzip\", \"User-Agent\": \"Go-http-client/1.1\"}, method = \"GET\", raw_url = \"/webhooks/00000000000000000000000004/\", url = {\"fragment\": \"\", \"raw_path\": \"\", \"query\": {}, \"raw_fragment\": \"\", \"raw_query\": \"\", \"path\": \"/webhooks/00000000000000000000000004/\"})",
+                "data(body = {\"form\": None, \"bytes\": None, \"json\": None}, headers = {\"Accept-Encoding\": \"gzip\", \"User-Agent\": \"Go-http-client/1.1\"}, method = \"GET\", raw_url = \"/webhooks/00000000000000000000000004/\", trailers = {}, url = {\"fragment\": \"\", \"raw_path\": \"\", \"query\": {}, \"raw_fragment\": \"\", \"raw_query\": \"\", \"path\": \"/webhooks/00000000000000000000000004/\"})",
                 "get",
                 "trigger(name = \"http\")"
             ],
