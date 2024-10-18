@@ -36,7 +36,7 @@ def github_client(connection: str, **kwargs) -> Github:
     # PAT + webhook
     pat = os.getenv(f"{connection}__pat")
     if pat:
-        return Github(Auth.Token(pat), **kwargs)
+        return Github(auth=Auth.Token(pat), **kwargs)
 
     # GitHub App (JWT)
     app_id = os.getenv(f"{connection}__app_id")
