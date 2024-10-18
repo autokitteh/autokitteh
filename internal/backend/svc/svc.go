@@ -71,7 +71,6 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdkruntimessvc"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-	integrationsweb "go.autokitteh.dev/autokitteh/web/integrations"
 	"go.autokitteh.dev/autokitteh/web/static"
 )
 
@@ -224,7 +223,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 			"webplatform",
 			webplatform.Configs,
 			fx.Provide(webplatform.New),
-			fx.Invoke(func(lc fx.Lifecycle, svc *webplatform.Svc) {
+			fx.Invoke(func(lc fx.Lifecycle, svc *webplatform.Svc, muxes *muxes.Muxes) {
 				HookOnStart(lc, svc.Start)
 				HookOnStop(lc, svc.Stop)
 			}),
@@ -255,7 +254,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 			fx.Provide(func(lc fx.Lifecycle, z *zap.Logger, cfg *httpsvc.Config,
 				wrapAuth authhttpmiddleware.AuthMiddlewareDecorator,
 				authHdrExtractor authhttpmiddleware.AuthHeaderExtractor, telemetry *telemetry.Telemetry,
-			) (svc httpsvc.Svc, all *muxes.Muxes, err error) {
+			) (svc httpsvc.Svc, main *muxes.Muxes, aux *muxes.AuxMuxes, err error) {
 				svc, err = httpsvc.New(
 					lc, z, cfg,
 					proto.ServiceNames,
@@ -278,20 +277,20 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 				}
 
 				// Replace the original mux with a main mux and also expose the original mux as the no-auth one.
-				authMux := http.NewServeMux()
+				mainAuthMux := http.NewServeMux()
+				mainMux := svc.MainMux()
+				mainMux.Handle("/", wrapAuth(mainAuthMux))
+				main = &muxes.Muxes{Auth: mainAuthMux, NoAuth: mainMux}
 
-				mux := svc.Mux()
-				mux.Handle("/", wrapAuth(authMux))
-
-				all = &muxes.Muxes{Auth: authMux, NoAuth: mux}
+				auxMux := svc.AuxMux()
+				auxAuthMux := http.NewServeMux()
+				auxMux.Handle("/", wrapAuth(auxAuthMux))
+				aux = &muxes.AuxMuxes{Auth: auxAuthMux, NoAuth: auxMux}
 
 				return
 			}),
 		),
 		Component("authloginhttpsvc", authloginhttpsvc.Configs, fx.Invoke(authloginhttpsvc.Init)),
-		fx.Invoke(func(muxes *muxes.Muxes, h integrationsweb.Handler) {
-			muxes.NoAuth.Handle("GET /i/{$}", &h)
-		}),
 		fx.Invoke(dashboardsvc.Init),
 		fx.Invoke(oauth.InitWebhook),
 		Component(
@@ -303,7 +302,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 			}),
 		),
 		integrationsFXOption(),
-		fx.Invoke(func(z *zap.Logger, muxes *muxes.Muxes) {
+		fx.Invoke(func(z *zap.Logger, muxes *muxes.AuxMuxes) {
 			srv := http.FileServer(http.FS(static.RootWebContent))
 			muxes.NoAuth.Handle("GET /static/", http.StripPrefix("/static/", srv))
 			muxes.NoAuth.Handle("GET /favicon-16x16.png", srv)
@@ -315,13 +314,20 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		Component(
 			"banner",
 			bannerConfigs,
-			fx.Invoke(func(cfg *bannerConfig, lc fx.Lifecycle, z *zap.Logger, httpsvc httpsvc.Svc, tclient temporalclient.Client, wp *webplatform.Svc) {
-				HookSimpleOnStart(lc, func() {
-					temporalFrontendAddr, temporalUIAddr := tclient.TemporalAddr()
-					printBanner(cfg, opts, httpsvc.Addr(), wp.Addr(), wp.Version(), temporalFrontendAddr, temporalUIAddr)
-				})
+			fx.Invoke(func(lc fx.Lifecycle, b banner, cfg *bannerConfig) {
+				if cfg.Show {
+					HookSimpleOnStart(lc, func() { b.Print(os.Stderr, opts, false) })
+				}
 			}),
 		),
+		fx.Invoke(func(lc fx.Lifecycle, muxes *muxes.Muxes, banner banner) {
+			muxes.NoAuth.HandleFunc("/{$}", func(w http.ResponseWriter, r *http.Request) {
+				fmt.Fprint(w, `<html><body style="background-color: black; color: white;"><tt style="white-space: pre-wrap;">`)
+				banner.Print(w, opts, true)
+				fmt.Fprintf(w, "\n\n%s", fixtures.ProcessID())
+				fmt.Fprint(w, "</tt></body></html>")
+			})
+		}),
 		fx.Invoke(func(muxes *muxes.Muxes) {
 			muxes.NoAuth.HandleFunc("GET /id", func(w http.ResponseWriter, r *http.Request) {
 				fmt.Fprint(w, fixtures.ProcessID())
