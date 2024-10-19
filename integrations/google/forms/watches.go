@@ -43,7 +43,7 @@ func UpdateWatches(ctx context.Context, v sdkservices.Vars, cid sdktypes.Connect
 	extrazap.AttachLoggerToContext(l, ctx)
 	watches, err := a.watchesList(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to list form watches: %w", err)
+		return fmt.Errorf("failed to list watches for form ID %q: %w", formID, err)
 	}
 	ws := kittehs.ListToMap(watches, func(w *forms.Watch) (WatchEventType, *forms.Watch) {
 		return WatchEventType(w.EventType), w
