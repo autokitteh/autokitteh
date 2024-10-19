@@ -106,6 +106,7 @@ func (s *svc) exchange(w http.ResponseWriter, r *http.Request) {
 	// Convert the OAuth code into a refresh token / user access token.
 	code := r.FormValue("code")
 	if code == "" {
+		l.Warn("Missing code parameter in OAuth redirect", zap.String("url", r.RequestURI))
 		abort(w, r, intg, sub[1], sub[2], "missing code parameter")
 		return
 	}
