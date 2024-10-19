@@ -20,28 +20,38 @@ import (
 )
 
 type bannerConfig struct {
-	Show bool `koanf:"show"`
+	Show    bool `koanf:"show"`
+	Minimal bool `koanf:"minimal"`
 }
 
 var bannerConfigs = configset.Set[bannerConfig]{
-	Default: &bannerConfig{},
-	Dev:     &bannerConfig{Show: true},
+	Default: &bannerConfig{
+		Minimal: true, // when shown in web.
+	},
+	Dev: &bannerConfig{Show: true},
 }
+
+//go:embed banner-minimal.txt
+var bannerMinimalTxt string
 
 //go:embed banner.txt
 var bannerTxt string
 
-var bannerTemplate = template.Must(template.New("banner").Parse(bannerTxt))
+var (
+	bannerTemplate         = template.Must(template.New("banner").Parse(bannerTxt))
+	bannerMininmalTemplate = template.Must(template.New("banner").Parse(bannerMinimalTxt))
+)
 
 type banner struct {
 	fx.In
 
+	Cfg     *bannerConfig
 	HTTPSvc httpsvc.Svc
 	TClient temporalclient.Client
 	Web     *webplatform.Svc
 }
 
-func (b *banner) Print(w io.Writer, opts RunOptions, html bool) {
+func (b banner) Print(w io.Writer, opts RunOptions, html bool) {
 	temporalFrontendAddr, temporalUIAddr := b.TClient.TemporalAddr()
 
 	var (
@@ -69,15 +79,15 @@ func (b *banner) Print(w io.Writer, opts RunOptions, html bool) {
 
 	var mode string
 	if opts.Mode != "" {
-		mode = "Mode:         " + fielder(opts.Mode) + " "
+		mode = "Mode:          " + fielder(opts.Mode) + " "
 	}
 
 	if temporalFrontendAddr != "" {
-		temporalFrontendAddr = "Temporal:     " + fielder(temporalFrontendAddr) + " "
+		temporalFrontendAddr = "Temporal:      " + fielder(temporalFrontendAddr) + " "
 	}
 
 	if temporalUIAddr != "" {
-		temporalUIAddr = "Temporal UI:  " + fielder(temporalUIAddr) + " "
+		temporalUIAddr = "Temporal UI:   " + fielder(temporalUIAddr) + " "
 	}
 
 	addr := b.HTTPSvc.MainAddr()
@@ -94,10 +104,15 @@ func (b *banner) Print(w io.Writer, opts RunOptions, html bool) {
 	if wpVersion != "" {
 		wpVersion = " v" + wpVersion + ":"
 	} else {
-		wpVersion = ":        "
+		wpVersion = ":         "
 	}
 
-	kittehs.Must0(bannerTemplate.Execute(w, struct {
+	tmpl := bannerTemplate
+	if b.Cfg.Minimal {
+		tmpl = bannerMininmalTemplate
+	}
+
+	kittehs.Must0(tmpl.Execute(w, struct {
 		Version              string
 		PID                  string
 		Addr                 string
@@ -108,6 +123,7 @@ func (b *banner) Print(w io.Writer, opts RunOptions, html bool) {
 		AuxAddr              string
 		Mode                 string
 		Temporal, TemporalUI string
+		ServiceURL           string
 	}{
 		Version:         fielder(version.Version),
 		PID:             fielder(fmt.Sprintf("%d", os.Getpid())),
@@ -120,5 +136,6 @@ func (b *banner) Print(w io.Writer, opts RunOptions, html bool) {
 		Mode:            mode,
 		Temporal:        temporalFrontendAddr,
 		TemporalUI:      temporalUIAddr,
+		ServiceURL:      fielder(b.HTTPSvc.MainURL()),
 	}))
 }

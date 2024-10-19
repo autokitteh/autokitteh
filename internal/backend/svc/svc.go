@@ -333,20 +333,19 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		Component(
 			"banner",
 			bannerConfigs,
-			fx.Invoke(func(lc fx.Lifecycle, b banner, cfg *bannerConfig) {
-				if cfg.Show {
+			fx.Invoke(func(lc fx.Lifecycle, b banner, muxes *muxes.Muxes) {
+				if b.Cfg.Show {
 					HookSimpleOnStart(lc, func() { b.Print(os.Stderr, opts, false) })
 				}
+
+				muxes.Main.NoAuth.HandleFunc("/{$}", func(w http.ResponseWriter, r *http.Request) {
+					fmt.Fprint(w, `<html><body style="background-color: black; color: white;"><tt style="white-space: pre-wrap;">`)
+					b.Print(w, opts, true)
+					fmt.Fprintf(w, "\n\n%s", fixtures.ProcessID())
+					fmt.Fprint(w, "</tt></body></html>")
+				})
 			}),
 		),
-		fx.Invoke(func(lc fx.Lifecycle, muxes *muxes.Muxes, banner banner) {
-			muxes.Main.NoAuth.HandleFunc("/{$}", func(w http.ResponseWriter, r *http.Request) {
-				fmt.Fprint(w, `<html><body style="background-color: black; color: white;"><tt style="white-space: pre-wrap;">`)
-				banner.Print(w, opts, true)
-				fmt.Fprintf(w, "\n\n%s", fixtures.ProcessID())
-				fmt.Fprint(w, "</tt></body></html>")
-			})
-		}),
 		fx.Invoke(func(muxes *muxes.Muxes) {
 			muxes.Main.NoAuth.HandleFunc("GET /id", func(w http.ResponseWriter, r *http.Request) {
 				fmt.Fprint(w, fixtures.ProcessID())

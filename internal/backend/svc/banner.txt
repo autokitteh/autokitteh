@@ -1,9 +1,9 @@
 
-        _..--~~~~--.._             autokitteh    {{ .Version }}
-     _--              --_          PID:          {{ .PID }}
-    '                    `         gRPC/HTTP:    {{ .Addr }}
-   '                      `        Web{{ .WebVer }}  {{ .WebAddr }}
-  '                        `       Aux:          {{ .AuxAddr }}
+        _..--~~~~--.._             autokitteh     {{ .Version }}
+     _--              --_          PID:           {{ .PID }}
+    '                    `         gRPC/HTTP API: {{ .Addr }}
+   '                      `        Web{{ .WebVer }}   {{ .WebAddr }}
+  '                        `       Aux:           {{ .AuxAddr }}
  |                    |\   |       {{ .Mode }}
  |                    | \  |       
  |          .,    _,-~   \ |       {{ .Temporal }}
