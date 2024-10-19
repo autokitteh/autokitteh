@@ -27,7 +27,7 @@ func Init(muxes *muxes.Muxes, client sdkservices.Services) {
 	srv := server{client: client}
 
 	path, namer := applyv1connect.NewApplyServiceHandler(&srv)
-	muxes.Auth.Handle(path, namer)
+	muxes.Main.Auth.Handle(path, namer)
 }
 
 func (s *server) Apply(ctx context.Context, req *connect.Request[applyv1.ApplyRequest]) (*connect.Response[applyv1.ApplyResponse], error) {

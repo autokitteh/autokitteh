@@ -30,7 +30,7 @@ func Init(muxes *muxes.Muxes, store sdkservices.Store) {
 	srv := server{store: store}
 
 	path, handler := storev1connect.NewStoreServiceHandler(&srv)
-	muxes.Auth.Handle(path, handler)
+	muxes.Main.Auth.Handle(path, handler)
 }
 
 func (s *server) List(ctx context.Context, req *connect.Request[storev1.ListRequest]) (*connect.Response[storev1.ListResponse], error) {

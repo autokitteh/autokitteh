@@ -27,7 +27,7 @@ func Init(muxes *muxes.Muxes, deployments sdkservices.Deployments) {
 	srv := server{deployments: deployments}
 
 	path, namer := deploymentsv1connect.NewDeploymentsServiceHandler(&srv)
-	muxes.Auth.Handle(path, namer)
+	muxes.Main.Auth.Handle(path, namer)
 }
 
 func (s *server) Create(ctx context.Context, req *connect.Request[deploymentsv1.CreateRequest]) (*connect.Response[deploymentsv1.CreateResponse], error) {

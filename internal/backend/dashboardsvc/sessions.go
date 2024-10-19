@@ -13,9 +13,9 @@ import (
 )
 
 func (s Svc) initSessions() {
-	s.Muxes.Auth.HandleFunc("/sessions", s.sessions)
-	s.Muxes.Auth.HandleFunc("/sessions/{sid}", s.session)
-	s.Muxes.Auth.HandleFunc("/sessions/{sid}/stop", s.stopSession)
+	s.Muxes.Aux.Auth.HandleFunc("/sessions", s.sessions)
+	s.Muxes.Aux.Auth.HandleFunc("/sessions/{sid}", s.session)
+	s.Muxes.Aux.Auth.HandleFunc("/sessions/{sid}/stop", s.stopSession)
 }
 
 type session struct{ sdktypes.Session }

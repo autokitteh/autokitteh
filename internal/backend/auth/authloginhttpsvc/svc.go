@@ -50,7 +50,7 @@ func (a *svc) registerRoutes(muxes *muxes.Muxes) error {
 	var loginPaths []string
 
 	if a.Cfg.GoogleOAuth.Enabled {
-		if err := registerGoogleOAuthRoutes(muxes.NoAuth, a.Deps.Cfg.GoogleOAuth, a.newSuccessLoginHandler); err != nil {
+		if err := registerGoogleOAuthRoutes(muxes.Main.NoAuth, a.Deps.Cfg.GoogleOAuth, a.newSuccessLoginHandler); err != nil {
 			return err
 		}
 
@@ -58,7 +58,7 @@ func (a *svc) registerRoutes(muxes *muxes.Muxes) error {
 	}
 
 	if a.Cfg.GithubOAuth.Enabled {
-		if err := registerGithubOAuthRoutes(muxes.NoAuth, a.Cfg.GithubOAuth, a.newSuccessLoginHandler); err != nil {
+		if err := registerGithubOAuthRoutes(muxes.Main.NoAuth, a.Cfg.GithubOAuth, a.newSuccessLoginHandler); err != nil {
 			return err
 		}
 
@@ -70,19 +70,19 @@ func (a *svc) registerRoutes(muxes *muxes.Muxes) error {
 			return fmt.Errorf("cannot enable descope with other providers enabled")
 		}
 
-		if err := registerDescopeRoutes(muxes.NoAuth, a.Cfg.Descope, a.newSuccessLoginHandler); err != nil {
+		if err := registerDescopeRoutes(muxes.Main.NoAuth, a.Cfg.Descope, a.newSuccessLoginHandler); err != nil {
 			return err
 		}
 
 		loginPaths = append(loginPaths, descopeLoginPath)
 	}
 
-	muxes.Auth.HandleFunc("/logout", func(w http.ResponseWriter, r *http.Request) {
+	muxes.Main.Auth.HandleFunc("/logout", func(w http.ResponseWriter, r *http.Request) {
 		a.Deps.Sessions.Delete(w)
 		http.Redirect(w, r, "/", http.StatusFound)
 	})
 
-	muxes.NoAuth.HandleFunc("/login", func(w http.ResponseWriter, r *http.Request) {
+	muxes.Main.NoAuth.HandleFunc("/login", func(w http.ResponseWriter, r *http.Request) {
 		if len(loginPaths) == 0 {
 			http.Error(w, "login is not supported", http.StatusForbidden)
 			return
@@ -98,7 +98,7 @@ func (a *svc) registerRoutes(muxes *muxes.Muxes) error {
 		}
 	})
 
-	muxes.NoAuth.HandleFunc("/auth/cli-login", func(w http.ResponseWriter, r *http.Request) {
+	muxes.Main.NoAuth.HandleFunc("/auth/cli-login", func(w http.ResponseWriter, r *http.Request) {
 		p := r.URL.Query().Get("p")
 		if _, err := strconv.ParseUint(p, 10, 16); err != nil {
 			http.Error(w, "invalid port", http.StatusBadRequest)
@@ -113,7 +113,7 @@ func (a *svc) registerRoutes(muxes *muxes.Muxes) error {
 		RedirectToLogin(w, r, url)
 	})
 
-	muxes.Auth.HandleFunc("/auth/finish-cli-login", func(w http.ResponseWriter, r *http.Request) {
+	muxes.Main.Auth.HandleFunc("/auth/finish-cli-login", func(w http.ResponseWriter, r *http.Request) {
 		p := r.URL.Query().Get("p")
 		if _, err := strconv.ParseUint(p, 10, 16); err != nil {
 			http.Error(w, "invalid port", http.StatusBadRequest)
@@ -135,11 +135,11 @@ func (a *svc) registerRoutes(muxes *muxes.Muxes) error {
 		http.Redirect(w, r, fmt.Sprintf("http://localhost:%s/?token=%s", p, token), http.StatusFound)
 	})
 
-	muxes.NoAuth.HandleFunc("/auth/vscode-login", func(w http.ResponseWriter, r *http.Request) {
+	muxes.Main.NoAuth.HandleFunc("/auth/vscode-login", func(w http.ResponseWriter, r *http.Request) {
 		RedirectToLogin(w, r, &url.URL{Path: "/auth/finish-vscode-login"})
 	})
 
-	muxes.Auth.HandleFunc("/auth/finish-vscode-login", func(w http.ResponseWriter, r *http.Request) {
+	muxes.Main.Auth.HandleFunc("/auth/finish-vscode-login", func(w http.ResponseWriter, r *http.Request) {
 		u := authcontext.GetAuthnUser(r.Context())
 		if !u.IsValid() {
 			http.Error(w, "unable to identify user", http.StatusInternalServerError)
@@ -155,7 +155,7 @@ func (a *svc) registerRoutes(muxes *muxes.Muxes) error {
 		http.Redirect(w, r, fmt.Sprintf("vscode://autokitteh.autokitteh/authenticate?token=%s", token), http.StatusFound)
 	})
 
-	muxes.Auth.HandleFunc("/whoami", func(w http.ResponseWriter, r *http.Request) {
+	muxes.Main.Auth.HandleFunc("/whoami", func(w http.ResponseWriter, r *http.Request) {
 		u := authcontext.GetAuthnUser(r.Context())
 		if !u.IsValid() {
 			fmt.Fprint(w, "You are not logged in")

@@ -23,7 +23,7 @@ func Init(muxes *muxes.Muxes, auth sdkservices.Auth) {
 	srv := server{auth: auth}
 
 	path, namer := authv1connect.NewAuthServiceHandler(&srv)
-	muxes.Auth.Handle(path, namer)
+	muxes.Main.Auth.Handle(path, namer)
 }
 
 func (s *server) WhoAmI(ctx context.Context, req *connect.Request[authv1.WhoAmIRequest]) (*connect.Response[authv1.WhoAmIResponse], error) {

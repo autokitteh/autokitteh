@@ -3,14 +3,13 @@
 <h1>Connection: <tt>{{ .Name }}</tt></h1>
 
 {{ if .Caps.SupportsConnectionInit }}
-<button onclick='location.href="/connections/{{ .ID }}/init/dash"'>Initialize
+<button onclick='location.href="{{ .MainURL }}/connections/{{ .ID }}/init/dash"'>Initialize
     {{ if .Caps.RequiresConnectionInit }}(required){{ end }}</button>
 {{ end }}
 
 {{ if .Caps.SupportsConnectionTest }}
 <button onclick='testConnection()'>Test</button> <input type="text" id="test-result" readonly hidden>
 {{ end }}
-
 
 <pre>{{ .JSON }}</pre>
 
@@ -21,7 +20,7 @@
 
 <script>
     function testConnection() {
-        fetch("/connections/{{ .ID }}/test", {
+        fetch("{{ .MainURL }}/connections/{{ .ID }}/test", {
             method: "POST",
         }).then(async response => {
             if (response.ok) {

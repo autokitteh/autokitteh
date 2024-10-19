@@ -3,11 +3,11 @@
      _--              --_          PID:          {{ .PID }}
     '                    `         gRPC/HTTP:    {{ .Addr }}
    '                      `        Web{{ .WebVer }}  {{ .WebAddr }}
-  '                        `       {{ .Mode }}
- |                    |\   |       
- |                    | \  |       {{ .Temporal }}
- |          .,    _,-~   \ |       {{ .TemporalUI }}
-  \         \ `.-'        \/ 
+  '                        `       Aux:          {{ .AuxAddr }}
+ |                    |\   |       {{ .Mode }}
+ |                    | \  |       
+ |          .,    _,-~   \ |       {{ .Temporal }}
+  \         \ `.-'        \/       {{ .TemporalUI }}
    `         \        {{ .Eye }}
     \         \    {{ .Eye }}         
      `._       \             

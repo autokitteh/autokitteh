@@ -30,22 +30,22 @@ const (
 func Start(l *zap.Logger, muxes *muxes.Muxes, v sdkservices.Vars, d sdkservices.Dispatcher) {
 	// Connection UI.
 	uiPath := "GET " + desc.ConnectionURL().Path + "/"
-	muxes.NoAuth.Handle(uiPath, http.FileServer(http.FS(static.SlackWebContent)))
+	muxes.Main.NoAuth.Handle(uiPath, http.FileServer(http.FS(static.SlackWebContent)))
 
 	// Init webhooks save connection vars (via "c.Finalize" calls), so they need
 	// to have an authenticated user context, so the DB layer won't reject them.
 	// For this purpose, init webhooks are managed by the "auth" mux, which passes
 	// through AutoKitteh's auth middleware to extract the user ID from a cookie.
-	muxes.Auth.Handle("GET "+oauthPath, NewHandler(l))
+	muxes.Main.Auth.Handle("GET "+oauthPath, NewHandler(l))
 
 	wsh := websockets.NewHandler(l, v, d, desc)
-	muxes.Auth.HandleFunc("POST "+savePath, wsh.HandleForm)
+	muxes.Main.Auth.HandleFunc("POST "+savePath, wsh.HandleForm)
 
 	// Event webhooks (unauthenticated by definition).
 	whh := webhooks.NewHandler(l, v, d, integrationID)
-	muxes.NoAuth.HandleFunc("POST "+webhooks.BotEventPath, whh.HandleBotEvent)
-	muxes.NoAuth.HandleFunc("POST "+webhooks.SlashCommandPath, whh.HandleSlashCommand)
-	muxes.NoAuth.HandleFunc("POST "+webhooks.InteractionPath, whh.HandleInteraction)
+	muxes.Main.NoAuth.HandleFunc("POST "+webhooks.BotEventPath, whh.HandleBotEvent)
+	muxes.Main.NoAuth.HandleFunc("POST "+webhooks.SlashCommandPath, whh.HandleSlashCommand)
+	muxes.Main.NoAuth.HandleFunc("POST "+webhooks.InteractionPath, whh.HandleInteraction)
 
 	// Initialize WebSocket pool.
 	cids, err := v.FindConnectionIDs(context.Background(), integrationID, vars.AppTokenName, "")

@@ -27,7 +27,7 @@ func Init(muxes *muxes.Muxes, vars sdkservices.Vars) {
 	srv := server{vars: vars}
 
 	path, handler := varsv1connect.NewVarsServiceHandler(&srv)
-	muxes.Auth.Handle(path, handler)
+	muxes.Main.Auth.Handle(path, handler)
 }
 
 func (s *server) Set(ctx context.Context, req *connect.Request[varsv1.SetRequest]) (*connect.Response[varsv1.SetResponse], error) {

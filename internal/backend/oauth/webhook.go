@@ -25,8 +25,12 @@ type svc struct {
 
 func InitWebhook(l *zap.Logger, muxes *muxes.Muxes, c sdkservices.Services) {
 	s := &svc{logger: l, svcs: c}
-	muxes.Auth.HandleFunc("GET /oauth/start/{intg}", s.start)
-	muxes.NoAuth.HandleFunc("GET /oauth/redirect/{intg}", s.exchange)
+
+	muxes.Main.Auth.HandleFunc("GET /oauth/start/{intg}", s.start)
+	muxes.Main.NoAuth.HandleFunc("GET /oauth/redirect/{intg}", s.exchange)
+
+	muxes.Aux.Auth.HandleFunc("GET /oauth/start/{intg}", s.start)
+	muxes.Aux.NoAuth.HandleFunc("GET /oauth/redirect/{intg}", s.exchange)
 }
 
 func (s *svc) start(w http.ResponseWriter, r *http.Request) {

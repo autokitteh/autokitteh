@@ -13,8 +13,8 @@ import (
 )
 
 func (s Svc) initVars() {
-	s.Muxes.Auth.HandleFunc("DELETE /vars/{sid}", s.deleteVars)
-	s.Muxes.Auth.HandleFunc("POST /vars/{sid}", s.setVar)
+	s.Muxes.Aux.Auth.HandleFunc("DELETE /vars/{sid}", s.deleteVars)
+	s.Muxes.Aux.Auth.HandleFunc("POST /vars/{sid}", s.setVar)
 }
 
 func (s Svc) deleteVars(w http.ResponseWriter, r *http.Request) {

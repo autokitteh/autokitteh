@@ -26,19 +26,19 @@ const (
 func Start(l *zap.Logger, muxes *muxes.Muxes, v sdkservices.Vars, o sdkservices.OAuth, d sdkservices.Dispatcher) {
 	// Connection UI.
 	uiPath := "GET " + desc.ConnectionURL().Path + "/"
-	muxes.NoAuth.HandleFunc(uiPath, connect.ServeHTTP)
-	muxes.NoAuth.Handle(uiPath+"{filename}", http.FileServer(http.FS(static.GitHubWebContent)))
+	muxes.Main.NoAuth.HandleFunc(uiPath, connect.ServeHTTP)
+	muxes.Main.NoAuth.Handle(uiPath+"{filename}", http.FileServer(http.FS(static.GitHubWebContent)))
 
 	// Init webhooks save connection vars (via "c.Finalize" calls), so they need
 	// to have an authenticated user context, so the DB layer won't reject them.
 	// For this purpose, init webhooks are managed by the "auth" mux, which passes
 	// through AutoKitteh's auth middleware to extract the user ID from a cookie.
 	h := NewHandler(l, o)
-	muxes.Auth.HandleFunc("GET "+oauthPath, h.handleOAuth)
-	muxes.Auth.HandleFunc("POST "+savePath, h.handlePAT)
+	muxes.Main.Auth.HandleFunc("GET "+oauthPath, h.handleOAuth)
+	muxes.Main.Auth.HandleFunc("POST "+savePath, h.handlePAT)
 
 	// Event webhooks (unauthenticated by definition).
 	eventHandler := webhooks.NewHandler(l, v, d, integrationID)
-	muxes.NoAuth.Handle("POST "+webhooks.WebhookPath+"/{id}", eventHandler) // User events.
-	muxes.NoAuth.Handle("POST "+webhooks.WebhookPath, eventHandler)         // App events.
+	muxes.Main.NoAuth.Handle("POST "+webhooks.WebhookPath+"/{id}", eventHandler) // User events.
+	muxes.Main.NoAuth.Handle("POST "+webhooks.WebhookPath, eventHandler)         // App events.
 }

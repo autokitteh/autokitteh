@@ -45,10 +45,10 @@ func runtimesFXOption() fx.Option {
 			"pythonrt",
 			pythonrt.Configs,
 			func(cfg *pythonrt.Config, l *zap.Logger, httpsvc httpsvc.Svc) (*sdkruntimes.Runtime, error) {
-				return pythonrt.New(cfg, l, httpsvc.Addr)
+				return pythonrt.New(cfg, l, httpsvc.MainAddr)
 			},
 			fx.Invoke(func(l *zap.Logger, muxes *muxes.Muxes) {
-				pythonrt.ConfigureWorkerGRPCHandler(l, muxes.NoAuth)
+				pythonrt.ConfigureWorkerGRPCHandler(l, muxes.Main.NoAuth)
 			}),
 		),
 

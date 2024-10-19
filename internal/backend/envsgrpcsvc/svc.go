@@ -28,7 +28,7 @@ func Init(muxes *muxes.Muxes, envs sdkservices.Envs) {
 	srv := server{envs: envs}
 
 	path, handler := envsv1connect.NewEnvsServiceHandler(&srv)
-	muxes.Auth.Handle(path, handler)
+	muxes.Main.Auth.Handle(path, handler)
 }
 
 func (s *server) Create(ctx context.Context, req *connect.Request[envsv1.CreateRequest]) (*connect.Response[envsv1.CreateResponse], error) {

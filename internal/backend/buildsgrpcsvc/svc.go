@@ -30,7 +30,7 @@ func Init(muxes *muxes.Muxes, builds sdkservices.Builds) {
 	srv := server{builds: builds}
 
 	path, namer := buildsv1connect.NewBuildsServiceHandler(&srv)
-	muxes.Auth.Handle(path, namer)
+	muxes.Main.Auth.Handle(path, namer)
 }
 
 func (s *server) Get(ctx context.Context, req *connect.Request[buildsv1.GetRequest]) (*connect.Response[buildsv1.GetResponse], error) {

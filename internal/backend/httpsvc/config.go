@@ -34,49 +34,60 @@ type CORSConfig struct {
 
 type Config struct {
 	// local server address, set to run server on different port
-	Addr string `koanf:"addr"`
+	Addr    string `koanf:"addr"`
+	AuxAddr string `koanf:"aux_addr"`
 
 	// ak service url, used in client to connect to connect to specific ak server
-	ServiceUrl string `koanf:"service_url"`
+	ServiceURL string `koanf:"service_url"`
 
 	H2C httpH2CConfig `koanf:"h2c"`
 
-	// If not empty, write HTTP port to this file.
+	// If not empty, write main HTTP port to this file.
 	// This is useful when starting with port 0, which means to get
 	// the next port. This is done in testing to start on an unused
 	// port to avoid conflict with an already running service.
-	AddrFilename         string `koanf:"addr_filename"`
-	EnableGRPCReflection bool   `koanf:"reflection"`
+	AddrFilename string `koanf:"addr_filename"`
+
+	// Enable gRPC reflection for the main mux.
+	EnableGRPCReflection bool `koanf:"reflection"`
 
 	Logger LoggerConfig `koanf:"logger"`
 
 	CORS CORSConfig `koanf:"cors"`
 }
 
-var Configs = configset.Set[Config]{
-	Default: &Config{
-		Addr:                 "0.0.0.0:" + sdkclient.DefaultPort,
-		ServiceUrl:           sdkclient.DefaultLocalURL,
-		H2C:                  httpH2CConfig{Enable: true},
-		EnableGRPCReflection: true,
-		CORS: CORSConfig{
-			AllowedOrigins:   []string{"*"},
-			AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"},
-			AllowedHeaders:   []string{"*"},
-			AllowCredentials: true,
+var defaultConfg = Config{
+	Addr:                 "0.0.0.0:" + sdkclient.DefaultPort,
+	AuxAddr:              "0.0.0.0:9983",
+	ServiceURL:           sdkclient.DefaultCloudURL,
+	H2C:                  httpH2CConfig{Enable: true},
+	EnableGRPCReflection: true,
+	CORS: CORSConfig{
+		AllowedOrigins:   []string{"*"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"},
+		AllowedHeaders:   []string{"*"},
+		AllowCredentials: true,
+	},
+	Logger: LoggerConfig{
+		UnimportantLevel: zap.NewAtomicLevelAt(zap.DebugLevel),
+		ImportantLevel:   zap.NewAtomicLevelAt(zap.InfoLevel),
+		ErrorsLevel:      zap.NewAtomicLevelAt(zap.WarnLevel),
+		UnimportantRegexes: []string{
+			`^/autokitteh.+/(Get|List).*`, // gRPC Get and List methods
+			`^/oauth/|/oauth$|/save$`,     // Connection initialization
 		},
-		Logger: LoggerConfig{
-			UnimportantLevel: zap.NewAtomicLevelAt(zap.DebugLevel),
-			ImportantLevel:   zap.NewAtomicLevelAt(zap.InfoLevel),
-			ErrorsLevel:      zap.NewAtomicLevelAt(zap.WarnLevel),
-			UnimportantRegexes: []string{
-				`^/autokitteh.+/(Get|List).*`, // gRPC Get and List methods
-				`^/oauth/|/oauth$|/save$`,     // Connection initialization
-			},
-			UnloggedRegexes: []string{
-				`/(healthz|readyz)$`,                           // Kubernetes health checks
-				`\.(css|html|ico|js|png|svg|txt|webmanifest)$`, // Static web content
-			},
+		UnloggedRegexes: []string{
+			`/(healthz|readyz)$`,                           // Kubernetes health checks
+			`\.(css|html|ico|js|png|svg|txt|webmanifest)$`, // Static web content
 		},
 	},
+}
+
+var Configs = configset.Set[Config]{
+	Default: &defaultConfg,
+	Dev: func() *Config {
+		c := defaultConfg
+		c.ServiceURL = sdkclient.DefaultLocalURL
+		return &c
+	}(),
 }

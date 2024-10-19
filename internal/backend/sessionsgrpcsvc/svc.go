@@ -31,7 +31,7 @@ func Init(muxes *muxes.Muxes, sessions sdkservices.Sessions) {
 	srv := server{sessions: sessions}
 
 	path, handler := sessionsv1connect.NewSessionsServiceHandler(&srv)
-	muxes.Auth.Handle(path, handler)
+	muxes.Main.Auth.Handle(path, handler)
 }
 
 func (s *server) Start(ctx context.Context, req *connect.Request[sessionsv1.StartRequest]) (*connect.Response[sessionsv1.StartResponse], error) {

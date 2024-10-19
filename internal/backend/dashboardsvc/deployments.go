@@ -16,11 +16,11 @@ import (
 func (s Svc) initDeployments() {
 	deployments := s.Svcs.Deployments()
 
-	s.Muxes.Auth.HandleFunc("/deployments", s.deployments)
-	s.Muxes.Auth.HandleFunc("/deployments/{did}", s.deployment)
-	s.Muxes.Auth.HandleFunc("/deployments/{did}/activate", s.deploymentAction(deployments.Activate))
-	s.Muxes.Auth.HandleFunc("/deployments/{did}/deactivate", s.deploymentAction(deployments.Deactivate))
-	s.Muxes.Auth.HandleFunc("/deployments/{did}/test", s.deploymentAction(deployments.Test))
+	s.Muxes.Aux.Auth.HandleFunc("/deployments", s.deployments)
+	s.Muxes.Aux.Auth.HandleFunc("/deployments/{did}", s.deployment)
+	s.Muxes.Aux.Auth.HandleFunc("/deployments/{did}/activate", s.deploymentAction(deployments.Activate))
+	s.Muxes.Aux.Auth.HandleFunc("/deployments/{did}/deactivate", s.deploymentAction(deployments.Deactivate))
+	s.Muxes.Aux.Auth.HandleFunc("/deployments/{did}/test", s.deploymentAction(deployments.Test))
 }
 
 type deployment struct{ sdktypes.Deployment }

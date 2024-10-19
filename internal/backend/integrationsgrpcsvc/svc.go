@@ -26,7 +26,7 @@ var _ integrationsv1connect.IntegrationsServiceHandler = (*server)(nil)
 func Init(muxes *muxes.Muxes, integrations sdkservices.Integrations) {
 	s := server{integrations: integrations}
 	path, handler := integrationsv1connect.NewIntegrationsServiceHandler(&s)
-	muxes.Auth.Handle(path, handler)
+	muxes.Main.Auth.Handle(path, handler)
 }
 
 func (s *server) Get(ctx context.Context, req *connect.Request[integrationsv1.GetRequest]) (*connect.Response[integrationsv1.GetResponse], error) {

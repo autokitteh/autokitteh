@@ -13,9 +13,9 @@ import (
 )
 
 func (s Svc) initEvents() {
-	s.Muxes.Auth.HandleFunc("/events", s.events)
-	s.Muxes.Auth.HandleFunc("/events/{eid}", s.event)
-	s.Muxes.Auth.HandleFunc("/events/{eid}/redispatch", s.redispatchEvent)
+	s.Muxes.Aux.Auth.HandleFunc("/events", s.events)
+	s.Muxes.Aux.Auth.HandleFunc("/events/{eid}", s.event)
+	s.Muxes.Aux.Auth.HandleFunc("/events/{eid}/redispatch", s.redispatchEvent)
 }
 
 type event struct{ sdktypes.Event }

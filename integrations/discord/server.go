@@ -24,7 +24,7 @@ const (
 func Start(l *zap.Logger, muxes *muxes.Muxes, v sdkservices.Vars, d sdkservices.Dispatcher) {
 	// Connection UI.
 	uiPath := "GET " + desc.ConnectionURL().Path + "/"
-	muxes.NoAuth.Handle(uiPath, http.FileServer(http.FS(static.DiscordWebContent)))
+	muxes.Main.NoAuth.Handle(uiPath, http.FileServer(http.FS(static.DiscordWebContent)))
 
 	// Init webhooks save connection vars (via "c.Finalize" calls), so they need
 	// to have an authenticated user context, so the DB layer won't reject them.
@@ -32,7 +32,7 @@ func Start(l *zap.Logger, muxes *muxes.Muxes, v sdkservices.Vars, d sdkservices.
 	// through AutoKitteh's auth middleware to extract the user ID from a cookie.
 	wsh := NewHandler(l, v, d, desc)
 
-	muxes.Auth.Handle("POST "+savePath, wsh)
+	muxes.Main.Auth.Handle("POST "+savePath, wsh)
 
 	// Initialize WebSocket pool.
 	cids, err := v.FindConnectionIDs(context.Background(), integrationID, vars.BotToken, "")
