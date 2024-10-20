@@ -14,7 +14,7 @@ _sym_db = _symbol_database.Default()
 from google.protobuf import timestamp_pb2 as google_dot_protobuf_dot_timestamp__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n autokitteh/builds/v1/build.proto\x12\x14\x61utokitteh.builds.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"|\n\x05\x42uild\x12\x19\n\x08\x62uild_id\x18\x01 \x01(\tR\x07\x62uildId\x12\x1d\n\nproject_id\x18\x02 \x01(\tR\tprojectId\x12\x39\n\ncreated_at\x18\x03 \x01(\x0b\x32\x1a.google.protobuf.TimestampR\tcreatedAtB\xe1\x01\n\x18\x63om.autokitteh.builds.v1B\nBuildProtoP\x01ZGgo.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/builds/v1;buildsv1\xa2\x02\x03\x41\x42X\xaa\x02\x14\x41utokitteh.Builds.V1\xca\x02\x14\x41utokitteh\\Builds\\V1\xe2\x02 Autokitteh\\Builds\\V1\\GPBMetadata\xea\x02\x16\x41utokitteh::Builds::V1b\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n autokitteh/builds/v1/build.proto\x12\x14\x61utokitteh.builds.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\x9b\x01\n\x05\x42uild\x12\x19\n\x08\x62uild_id\x18\x01 \x01(\tR\x07\x62uildId\x12\x1d\n\nproject_id\x18\x02 \x01(\tR\tprojectId\x12\x39\n\ncreated_at\x18\x03 \x01(\x0b\x32\x1a.google.protobuf.TimestampR\tcreatedAt\x12\x1d\n\ncreated_by\x18\x64 \x01(\tR\tcreatedByB\xe1\x01\n\x18\x63om.autokitteh.builds.v1B\nBuildProtoP\x01ZGgo.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/builds/v1;buildsv1\xa2\x02\x03\x41\x42X\xaa\x02\x14\x41utokitteh.Builds.V1\xca\x02\x14\x41utokitteh\\Builds\\V1\xe2\x02 Autokitteh\\Builds\\V1\\GPBMetadata\xea\x02\x16\x41utokitteh::Builds::V1b\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -22,6 +22,6 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'autokitteh.builds.v1.build_
 if _descriptor._USE_C_DESCRIPTORS == False:
   DESCRIPTOR._options = None
   DESCRIPTOR._serialized_options = b'\n\030com.autokitteh.builds.v1B\nBuildProtoP\001ZGgo.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/builds/v1;buildsv1\242\002\003ABX\252\002\024Autokitteh.Builds.V1\312\002\024Autokitteh\\Builds\\V1\342\002 Autokitteh\\Builds\\V1\\GPBMetadata\352\002\026Autokitteh::Builds::V1'
-  _globals['_BUILD']._serialized_start=91
-  _globals['_BUILD']._serialized_end=215
+  _globals['_BUILD']._serialized_start=92
+  _globals['_BUILD']._serialized_end=247
 # @@protoc_insertion_point(module_scope)

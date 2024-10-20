@@ -6,7 +6,6 @@ import (
 
 	"go.uber.org/zap"
 
-	akCtx "go.autokitteh.dev/autokitteh/internal/backend/context"
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessioncalls"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionsvcs"
@@ -113,9 +112,6 @@ func (s *sessions) Start(ctx context.Context, session sdktypes.Session) (sdktype
 	session = session.WithNewID()
 	sid := session.ID()
 	l := s.l.With(zap.Any("session_id", sid))
-
-	ctx = akCtx.WithRequestOrginator(ctx, akCtx.SessionWorkflow)
-	ctx = akCtx.WithOwnershipOf(ctx, s.svcs.DB.GetOwnership, session.EnvID().UUIDValue())
 
 	if err := s.svcs.DB.CreateSession(ctx, session); err != nil {
 		return sdktypes.InvalidSessionID, fmt.Errorf("start session: %w", err)

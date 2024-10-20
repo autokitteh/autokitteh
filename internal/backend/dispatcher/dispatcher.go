@@ -9,7 +9,6 @@ import (
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 
-	akCtx "go.autokitteh.dev/autokitteh/internal/backend/context"
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
@@ -50,9 +49,6 @@ func New(l *zap.Logger, cfg *Config, svcs Svcs) *Dispatcher {
 }
 
 func (d *Dispatcher) Dispatch(ctx context.Context, event sdktypes.Event, opts *sdkservices.DispatchOptions) (sdktypes.EventID, error) {
-	ctx = akCtx.WithRequestOrginator(ctx, akCtx.Dispatcher)
-	ctx = akCtx.WithOwnershipOf(ctx, d.svcs.DB.GetOwnership, event.DestinationID().UUIDValue())
-
 	event = event.WithCreatedAt(time.Now())
 	eid, err := d.svcs.Events.Save(ctx, event)
 	if err != nil {
@@ -95,7 +91,6 @@ func (d *Dispatcher) Dispatch(ctx context.Context, event sdktypes.Event, opts *s
 func (d *Dispatcher) Redispatch(ctx context.Context, eventID sdktypes.EventID, opts *sdkservices.DispatchOptions) (sdktypes.EventID, error) {
 	sl := d.sl.With("event_id", eventID)
 
-	ctx = akCtx.WithRequestOrginator(ctx, akCtx.Dispatcher)
 	event, err := d.svcs.Events.Get(ctx, eventID)
 	if err != nil {
 		return sdktypes.InvalidEventID, err

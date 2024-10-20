@@ -89,6 +89,7 @@ var fds = []protoreflect.FileDescriptor{
 	triggersv1.File_autokitteh_triggers_v1_svc_proto,
 	triggersv1.File_autokitteh_triggers_v1_trigger_proto,
 	usersv1.File_autokitteh_users_v1_user_proto,
+	usersv1.File_autokitteh_users_v1_svc_proto,
 	valuesv1.File_autokitteh_values_v1_values_proto,
 	varsv1.File_autokitteh_vars_v1_svc_proto,
 	varsv1.File_autokitteh_vars_v1_var_proto,

@@ -1,7 +1,7 @@
 package sdktypes
 
 import (
-	"fmt"
+	"errors"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 
@@ -10,48 +10,46 @@ import (
 
 type User struct{ object[*UserPB, UserTraits] }
 
-var (
-	DefaultUser = NewUser("ak", map[string]string{"name": "dflt", "email": "a@k"})
-	InvalidUser User
-)
+var InvalidUser User
 
 type UserPB = userv1.User
 
 type UserTraits struct{}
 
-func (UserTraits) Validate(m *UserPB) error       { return nil }
-func (UserTraits) StrictValidate(m *UserPB) error { return nil }
+func (UserTraits) Validate(m *UserPB) error {
+	return errors.Join(
+		idField[UserID]("user_id", m.UserId),
+	)
+}
+
+func (UserTraits) StrictValidate(m *UserPB) error {
+	return errors.Join(
+		mandatory("user_id", m.UserId),
+		mandatory("primary_email", m.PrimaryEmail),
+	)
+}
 
 func UserFromProto(m *UserPB) (User, error) { return FromProto[User](m) }
 
-func (u User) Provider() string        { return u.read().Provider }
-func (u User) Data() map[string]string { return u.read().Data }
-
-func NewUser(provider string, data map[string]string) User {
+func NewUser(id UserID, primaryEmail string) User {
 	return kittehs.Must1(UserFromProto(&UserPB{
-		Provider: provider,
-		Data:     data,
+		UserId:       id.String(),
+		PrimaryEmail: primaryEmail,
 	}))
 }
 
-func (u User) Login() string {
-	data := u.Data()
-	if id := data["email"]; id != "" {
-		return id
-	}
+func (u User) ID() UserID           { return kittehs.Must1(ParseUserID(u.read().UserId)) }
+func (u User) PrimaryEmail() Symbol { return kittehs.Must1(ParseSymbol(u.read().PrimaryEmail)) }
 
-	if id := data["id"]; id != "" {
-		return fmt.Sprintf("%s:%s", u.Provider(), id)
-	}
-
-	return ""
+func (u User) AuthProviders() []UserAuthProvider {
+	return kittehs.Must1(kittehs.TransformError(u.read().AuthProviders, UserAuthProviderFromProto))
 }
 
-// Used for display only.
-func (u User) Title() (id string) {
-	if id = u.Login(); id == "" {
-		id = "<unknown>"
-	}
-
-	return
+func (u User) WithAuthProvider(p UserAuthProvider) User {
+	return User{u.forceUpdate(func(m *UserPB) { m.AuthProviders = append(m.AuthProviders, p.read()) })}
 }
+
+var DefaultUser = kittehs.Must1(UserFromProto(&UserPB{
+	UserId:       kittehs.Must1(ParseUserID("usr_3vser000000000000000000001")).String(),
+	PrimaryEmail: kittehs.GetenvOr("DEFAULT_USER_EMAIL", "autokitteh@localhost"),
+}))

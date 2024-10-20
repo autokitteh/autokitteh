@@ -6,21 +6,26 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
+
+var testUID = sdktypes.NewUserID()
 
 func newStore(t *testing.T) Store {
 	cfg := Configs.Dev
 	s, err := New(cfg)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	return s
 }
 
-func newRequestWithLoggedInCookie(value int64) http.Request {
+func newRequestWithLoggedInCookie(value string) http.Request {
 	return http.Request{
 		Header: http.Header{
-			"Cookie": []string{fmt.Sprintf("ak_logged_in=%d", value)},
+			"Cookie": []string{fmt.Sprintf("ak_logged_in=%s", value)},
 		},
 	}
 }
@@ -42,12 +47,12 @@ func TestStoreGetInvalidLoggedInCookie(t *testing.T) {
 	}
 	sd, err := s.Get(&r)
 	assert.Nil(t, sd)
-	assert.Equal(t, err.Error(), "invalid logged in cookie")
+	assert.Error(t, err, "invalid logged in cookie")
 }
 
 func TestStoreGetNoSessionCookie(t *testing.T) {
 	s := newStore(t)
-	r := newRequestWithLoggedInCookie(8383)
+	r := newRequestWithLoggedInCookie(uuid.NewString())
 	sd, err := s.Get(&r)
 	assert.Nil(t, sd)
 	assert.Nil(t, err)
@@ -55,7 +60,7 @@ func TestStoreGetNoSessionCookie(t *testing.T) {
 
 func TestStoreGetInvalidSessionCookie(t *testing.T) {
 	s := newStore(t)
-	r := newRequestWithLoggedInCookie(8383)
+	r := newRequestWithLoggedInCookie(uuid.NewString())
 
 	r.AddCookie(&http.Cookie{
 		Name:  sessionName,
@@ -70,14 +75,14 @@ func TestStoreGetInvalidSessionCookie(t *testing.T) {
 func TestStoreGetValidatorMismatch(t *testing.T) {
 	s := newStore(t)
 	w := httptest.NewRecorder()
-	validator := int64(123)
+	validator := uuid.NewString()
 	err := s.Set(w, &sessionData{
-		User:      sdktypes.DefaultUser,
+		UserID:    testUID,
 		Validator: validator,
 	})
 	assert.Nil(t, err)
 
-	otherValidator := validator + 1
+	otherValidator := uuid.NewString()
 	r := newRequestWithLoggedInCookie(otherValidator)
 	r.AddCookie(w.Result().Cookies()[0])
 
@@ -89,9 +94,9 @@ func TestStoreGetValidatorMismatch(t *testing.T) {
 func TestStoreSetGetSuccess(t *testing.T) {
 	s := newStore(t)
 	w := httptest.NewRecorder()
-	validator := int64(123)
+	validator := uuid.NewString()
 	expectedSessionData := &sessionData{
-		User:      sdktypes.DefaultUser,
+		UserID:    testUID,
 		Validator: validator,
 	}
 	err := s.Set(w, expectedSessionData)
@@ -105,5 +110,5 @@ func TestStoreSetGetSuccess(t *testing.T) {
 	sd, err := s.Get(&r)
 	assert.Nil(t, err)
 	assert.Equal(t, sd.Validator, expectedSessionData.Validator)
-	assert.Equal(t, sd.User, expectedSessionData.User)
+	assert.Equal(t, sd.UserID, expectedSessionData.UserID)
 }

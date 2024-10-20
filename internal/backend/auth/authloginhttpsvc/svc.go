@@ -2,11 +2,11 @@ package authloginhttpsvc
 
 import (
 	_ "embed"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
-	"strings"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authloginhttpsvc/web"
@@ -14,6 +14,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authtokens"
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
+	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 
 	"go.uber.org/fx"
@@ -24,25 +25,18 @@ type Deps struct {
 	fx.In
 
 	Muxes    *muxes.Muxes
-	Z        *zap.Logger
+	L        *zap.Logger
 	Cfg      *Config
 	DB       db.DB
 	Sessions authsessions.Store
 	Tokens   authtokens.Tokens
+	Users    sdkservices.Users
 }
 
-type svc struct {
-	Deps
-
-	loginMatcher func(string) bool
-}
+type svc struct{ Deps }
 
 func Init(deps Deps) error {
-	svc := &svc{
-		Deps:         deps,
-		loginMatcher: compileLoginMatchers(strings.Split(deps.Cfg.AllowedLogins, ",")),
-	}
-
+	svc := &svc{Deps: deps}
 	return svc.registerRoutes(deps.Muxes)
 }
 
@@ -126,7 +120,7 @@ func (a *svc) registerRoutes(muxes *muxes.Muxes) error {
 			return
 		}
 
-		token, err := a.Tokens.Create(u)
+		token, err := a.Tokens.Create(u.ID())
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -146,7 +140,7 @@ func (a *svc) registerRoutes(muxes *muxes.Muxes) error {
 			return
 		}
 
-		token, err := a.Tokens.Create(u)
+		token, err := a.Tokens.Create(u.ID())
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -162,44 +156,40 @@ func (a *svc) registerRoutes(muxes *muxes.Muxes) error {
 			return
 		}
 
-		bs, err := u.MarshalJSON()
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
 		w.Header().Add("Content-Type", "application/json")
-		if _, err := w.Write(bs); err != nil {
-			a.Z.Error("failed writing response", zap.Error(err))
+
+		if err := json.NewEncoder(w).Encode(u); err != nil {
+			a.L.Error("failed writing response", zap.Error(err))
 		}
 	})
 
 	return nil
 }
 
-func (a *svc) newSuccessLoginHandler(user sdktypes.User) http.Handler {
-	fn := func(w http.ResponseWriter, req *http.Request) {
-		if !user.IsValid() {
-			a.Z.Warn("user not found")
-			http.Error(w, "user not found", http.StatusForbidden)
-			return
-		}
+func (a *svc) newSuccessLoginHandler(p sdktypes.UserAuthProvider) http.Handler {
+	sl := a.L.Sugar().With("provider", p.Name(), "user_id", p.UserID())
 
-		if !a.loginMatcher(user.Login()) {
-			a.Z.Warn("user not allowed to login", zap.String("user", user.Login()))
-			http.Error(w, "user not allowed to login", http.StatusForbidden)
-			return
-		}
-
-		sd := authsessions.NewSessionData(user)
-
-		if err := a.Deps.Sessions.Set(w, &sd); err != nil {
-			a.Z.Error("failed storing session", zap.Error(err))
+	fn := func(w http.ResponseWriter, r *http.Request) {
+		uid, created, err := a.Users.FindByProviderOrCreate(r.Context(), p)
+		if err != nil {
+			sl.With("err", err).Errorf("failed finding or creating user: %v", err)
 			http.Error(w, "internal server error", http.StatusInternalServerError)
 			return
 		}
 
-		http.Redirect(w, req, getRedirect(req), http.StatusFound)
+		if created {
+			sl.Infof("created new user: %v", uid)
+		}
+
+		sd := authsessions.NewSessionData(uid)
+
+		if err := a.Deps.Sessions.Set(w, &sd); err != nil {
+			sl.With("err", err).Errorf("failed storing session: %v", err)
+			http.Error(w, "internal server error", http.StatusInternalServerError)
+			return
+		}
+
+		http.Redirect(w, r, getRedirect(r), http.StatusFound)
 	}
 
 	return http.HandlerFunc(fn)

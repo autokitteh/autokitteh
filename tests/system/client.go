@@ -30,8 +30,8 @@ var (
 
 func init() {
 	js := kittehs.Must1(authjwttokens.New(authjwttokens.Configs.Test))
-	user := sdktypes.NewUser("ak", map[string]string{"email": "foo@bar", "name": "Test User"})
-	token = kittehs.Must1(js.Create(user))
+	user := sdktypes.NewUser(sdktypes.NewUserID(), "test@localhost")
+	token = kittehs.Must1(js.Create(user.ID()))
 }
 
 func buildAKBinary(t *testing.T) string {

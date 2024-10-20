@@ -18,6 +18,7 @@ import (
 	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/sessions/v1/sessionsv1connect"
 	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/store/v1/storev1connect"
 	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/triggers/v1/triggersv1connect"
+	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/users/v1/usersv1connect"
 	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/vars/v1/varsv1connect"
 )
 
@@ -40,4 +41,5 @@ var ServiceNames = []string{
 	storev1connect.StoreServiceName,
 	triggersv1connect.TriggersServiceName,
 	varsv1connect.VarsServiceName,
+	usersv1connect.UsersServiceName,
 }

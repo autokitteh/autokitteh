@@ -2,7 +2,17 @@ syntax = "proto3";
 
 package autokitteh.users.v1;
 
+import "buf/validate/validate.proto";
+
+message UserAuthProvider {
+  string name = 1 [(buf.validate.field).string.min_len = 1]; // provider name (descope, google, etc).
+  string user_id = 2 [(buf.validate.field).string.min_len = 1]; // provider level id.
+  string email = 3;
+  bytes data = 4; // arbitrary provider data we'd like to store for future reference.
+}
+
 message User {
-  string provider = 1;
-  map<string, string> data = 2;
+  string user_id = 1; // autokitteh level id.
+  string primary_email = 2;
+  repeated UserAuthProvider auth_providers = 3 [(buf.validate.field).repeated.items.required = true];
 }

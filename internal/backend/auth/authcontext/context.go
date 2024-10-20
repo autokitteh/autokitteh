@@ -8,11 +8,9 @@ import (
 
 type ctxKey string
 
-var (
-	userCtxKey   = ctxKey("user")
-	userIDCtxKey = ctxKey("userid")
-)
+var userCtxKey = ctxKey("user")
 
+// Get the authenticated user.
 func GetAuthnUser(ctx context.Context) sdktypes.User {
 	if v := ctx.Value(userCtxKey); v != nil {
 		return v.(sdktypes.User)
@@ -20,23 +18,10 @@ func GetAuthnUser(ctx context.Context) sdktypes.User {
 	return sdktypes.InvalidUser
 }
 
+// This function is used to set the authenticated user in the context.
 func SetAuthnUser(ctx context.Context, user sdktypes.User) context.Context {
 	if !user.IsValid() {
 		return ctx
 	}
 	return context.WithValue(ctx, userCtxKey, user)
-}
-
-func GetAuthnUserID(ctx context.Context) string {
-	if v := ctx.Value(userIDCtxKey); v != nil {
-		return v.(string)
-	}
-	return ""
-}
-
-func SetAuthnUserID(ctx context.Context, userID string) context.Context {
-	if userID == "" {
-		return ctx
-	}
-	return context.WithValue(ctx, userIDCtxKey, userID)
 }

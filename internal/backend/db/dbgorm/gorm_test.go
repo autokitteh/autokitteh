@@ -30,6 +30,8 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
+var testIntegrationID = sdktypes.NewIntegrationIDFromName("test").UUIDValue()
+
 var (
 	now    time.Time
 	dbType string
@@ -58,7 +60,6 @@ func TestMain(m *testing.M) {
 	db := setupDB(cfg)
 	z := kittehs.Must1(zap.NewDevelopment())
 	gormDB = gormdb{db: db, cfg: cfg, mu: nil, z: z}
-	gormDB.setupOwnershipChecker(z)
 
 	ctx := context.Background()
 	if err := gormDB.Setup(ctx); err != nil { // ensure migration/schemas

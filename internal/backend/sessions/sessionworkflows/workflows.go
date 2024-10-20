@@ -14,7 +14,6 @@ import (
 	"go.temporal.io/sdk/workflow"
 	"go.uber.org/zap"
 
-	akCtx "go.autokitteh.dev/autokitteh/internal/backend/context"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessioncalls"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessiondata"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionsvcs"
@@ -106,7 +105,7 @@ func (ws *workflows) StartWorkflow(ctx context.Context, session sdktypes.Session
 
 	maps.Copy(memo, session.Memo())
 
-	data, err := sessiondata.Get(akCtx.WithRequestOrginator(ctx, akCtx.SessionWorkflow), ws.svcs, session)
+	data, err := sessiondata.Get(ctx, ws.svcs, session)
 	if err != nil {
 		return fmt.Errorf("get session data: %w", err)
 	}
@@ -278,7 +277,6 @@ func (ws *workflows) errored(wctx workflow.Context, sessionID sdktypes.SessionID
 
 func (ws *workflows) StopWorkflow(ctx context.Context, sessionID sdktypes.SessionID, reason string, force bool) error {
 	wid := workflowID(sessionID)
-	ctx = akCtx.WithRequestOrginator(ctx, akCtx.SessionWorkflow)
 
 	if force {
 		// run the termination in a separate workflow to avoid having the workflow terminated but not updated in

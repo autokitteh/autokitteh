@@ -53,8 +53,8 @@ func New(cfg *Config) (authtokens.Tokens, error) {
 	return &tokens{signKey: key}, nil
 }
 
-func (js *tokens) Create(user sdktypes.User) (string, error) {
-	uj, err := user.MarshalJSON()
+func (js *tokens) Create(uid sdktypes.UserID) (string, error) {
+	uj, err := uid.MarshalJSON()
 	if err != nil {
 		return "", fmt.Errorf("marshal JSON: %w", err)
 	}
@@ -74,22 +74,22 @@ func (js *tokens) Create(user sdktypes.User) (string, error) {
 	return j.NewWithClaims(method, claim).SignedString(js.signKey)
 }
 
-func (js *tokens) Parse(token string) (sdktypes.User, error) {
+func (js *tokens) Parse(token string) (sdktypes.UserID, error) {
 	var claims j.RegisteredClaims
 
 	t, err := j.ParseWithClaims(token, &claims, func(t *j.Token) (interface{}, error) { return js.signKey, nil })
 	if err != nil {
-		return sdktypes.InvalidUser, err // TODO: better error handling
+		return sdktypes.InvalidUserID, err // TODO: better error handling
 	}
 
 	if !t.Valid {
-		return sdktypes.InvalidUser, errors.New("invalid token")
+		return sdktypes.InvalidUserID, errors.New("invalid token")
 	}
 
-	var u sdktypes.User
-	if err := u.UnmarshalJSON([]byte(claims.Subject)); err != nil {
-		return sdktypes.InvalidUser, fmt.Errorf("unmarshal JSON: %w", err)
+	var uid sdktypes.UserID
+	if err := uid.UnmarshalJSON([]byte(claims.Subject)); err != nil {
+		return sdktypes.InvalidUserID, fmt.Errorf("unmarshal JSON: %w", err)
 	}
 
-	return u, nil
+	return uid, nil
 }

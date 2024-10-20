@@ -33,11 +33,9 @@ func UUIDOrNil(uuid sdktypes.UUID) *sdktypes.UUID {
 var Tables = []any{
 	&Build{},
 	&Connection{},
-	&Var{},
 	&Deployment{},
 	&Env{},
 	&Event{},
-	&Ownership{},
 	&Project{},
 	&Secret{},
 	&Session{},
@@ -46,6 +44,8 @@ var Tables = []any{
 	&SessionLogRecord{},
 	&Signal{},
 	&Trigger{},
+	&User{},
+	&Var{},
 }
 
 type Build struct {
@@ -56,14 +56,13 @@ type Build struct {
 	DeletedAt gorm.DeletedAt `gorm:"index"`
 
 	// enforce foreign keys
-	Project   *Project
-	Ownership *Ownership `gorm:"polymorphic:Entity;"`
+	Project *Project
 }
 
 func ParseBuild(b Build) (sdktypes.Build, error) {
 	build, err := sdktypes.StrictBuildFromProto(&sdktypes.BuildPB{
-		BuildId:   sdktypes.NewIDFromUUID[sdktypes.BuildID](&b.BuildID).String(),
-		ProjectId: sdktypes.NewIDFromUUID[sdktypes.ProjectID](b.ProjectID).String(),
+		BuildId:   sdktypes.IDFromUUID[sdktypes.BuildID](b.BuildID).String(),
+		ProjectId: sdktypes.IDFromUUIDPtr[sdktypes.ProjectID](b.ProjectID).String(),
 		CreatedAt: timestamppb.New(b.CreatedAt),
 	})
 	if err != nil {
@@ -84,17 +83,16 @@ type Connection struct {
 	DeletedAt gorm.DeletedAt `gorm:"index"`
 
 	// enforce foreign keys
-	Project   *Project
-	Ownership *Ownership `gorm:"polymorphic:Entity;"`
+	Project *Project
 
 	// TODO(ENG-111): Also call "Preload()" where relevant
 }
 
 func ParseConnection(c Connection) (sdktypes.Connection, error) {
 	conn, err := sdktypes.StrictConnectionFromProto(&sdktypes.ConnectionPB{
-		ConnectionId:  sdktypes.NewIDFromUUID[sdktypes.ConnectionID](&c.ConnectionID).String(),
-		IntegrationId: sdktypes.NewIDFromUUID[sdktypes.IntegrationID](c.IntegrationID).String(),
-		ProjectId:     sdktypes.NewIDFromUUID[sdktypes.ProjectID](c.ProjectID).String(),
+		ConnectionId:  sdktypes.IDFromUUID[sdktypes.ConnectionID](c.ConnectionID).String(),
+		IntegrationId: sdktypes.IDFromUUIDPtr[sdktypes.IntegrationID](c.IntegrationID).String(),
+		ProjectId:     sdktypes.IDFromUUIDPtr[sdktypes.ProjectID](c.ProjectID).String(),
 		Name:          c.Name,
 		Status: &sdktypes.StatusPB{
 			Code:    commonv1.Status_Code(c.StatusCode),
@@ -136,12 +134,11 @@ type Project struct {
 	RootURL   string
 	Resources []byte
 	DeletedAt gorm.DeletedAt `gorm:"index"`
-	Ownership *Ownership     `gorm:"polymorphic:Entity;"`
 }
 
 func ParseProject(r Project) (sdktypes.Project, error) {
 	p, err := sdktypes.StrictProjectFromProto(&sdktypes.ProjectPB{
-		ProjectId: sdktypes.NewIDFromUUID[sdktypes.ProjectID](&r.ProjectID).String(),
+		ProjectId: sdktypes.IDFromUUID[sdktypes.ProjectID](r.ProjectID).String(),
 		Name:      r.Name,
 	})
 	if err != nil {
@@ -178,7 +175,6 @@ type Event struct {
 	// enforce foreign keys
 	Connection *Connection
 	Trigger    *Trigger
-	Ownership  *Ownership `gorm:"polymorphic:Entity;"`
 }
 
 func ParseEvent(e Event) (sdktypes.Event, error) {
@@ -197,15 +193,15 @@ func ParseEvent(e Event) (sdktypes.Event, error) {
 	var did sdktypes.EventDestinationID
 
 	if uuid := e.ConnectionID; uuid != nil {
-		did = sdktypes.NewEventDestinationID(sdktypes.NewIDFromUUID[sdktypes.ConnectionID](uuid))
+		did = sdktypes.NewEventDestinationID(sdktypes.IDFromUUIDPtr[sdktypes.ConnectionID](uuid))
 	} else if uuid := e.TriggerID; uuid != nil {
-		did = sdktypes.NewEventDestinationID(sdktypes.NewIDFromUUID[sdktypes.TriggerID](uuid))
+		did = sdktypes.NewEventDestinationID(sdktypes.IDFromUUIDPtr[sdktypes.TriggerID](uuid))
 	} else {
 		return sdktypes.InvalidEvent, sdkerrors.NewInvalidArgumentError("event must have a connection or trigger")
 	}
 
 	return sdktypes.StrictEventFromProto(&sdktypes.EventPB{
-		EventId:       sdktypes.NewIDFromUUID[sdktypes.EventID](&e.EventID).String(),
+		EventId:       sdktypes.IDFromUUID[sdktypes.EventID](e.EventID).String(),
 		EventType:     e.EventType,
 		Data:          kittehs.TransformMapValues(data, sdktypes.ToProto),
 		Memo:          memo,
@@ -226,14 +222,13 @@ type Env struct {
 	MembershipID string `gorm:"uniqueIndex"`
 
 	// enforce foreign keys
-	Project   *Project
-	Ownership *Ownership `gorm:"polymorphic:Entity;"`
+	Project *Project
 }
 
 func ParseEnv(e Env) (sdktypes.Env, error) {
 	return sdktypes.StrictEnvFromProto(&sdktypes.EnvPB{
-		EnvId:     sdktypes.NewIDFromUUID[sdktypes.EnvID](&e.EnvID).String(),
-		ProjectId: sdktypes.NewIDFromUUID[sdktypes.ProjectID](&e.ProjectID).String(),
+		EnvId:     sdktypes.IDFromUUID[sdktypes.EnvID](e.EnvID).String(),
+		ProjectId: sdktypes.IDFromUUID[sdktypes.ProjectID](e.ProjectID).String(),
 		Name:      e.Name,
 	})
 }
@@ -262,7 +257,6 @@ type Trigger struct {
 	Project    *Project
 	Connection *Connection
 	Env        *Env
-	Ownership  *Ownership `gorm:"polymorphic:Entity;"`
 }
 
 func ParseTrigger(e Trigger) (sdktypes.Trigger, error) {
@@ -281,10 +275,10 @@ func ParseTrigger(e Trigger) (sdktypes.Trigger, error) {
 	}
 
 	return sdktypes.StrictTriggerFromProto(&sdktypes.TriggerPB{
-		TriggerId:    sdktypes.NewIDFromUUID[sdktypes.TriggerID](&e.TriggerID).String(),
-		EnvId:        sdktypes.NewIDFromUUID[sdktypes.EnvID](&e.EnvID).String(),
+		TriggerId:    sdktypes.IDFromUUID[sdktypes.TriggerID](e.TriggerID).String(),
+		EnvId:        sdktypes.IDFromUUID[sdktypes.EnvID](e.EnvID).String(),
 		SourceType:   srcType.ToProto(),
-		ConnectionId: sdktypes.NewIDFromUUID[sdktypes.ConnectionID](e.ConnectionID).String(),
+		ConnectionId: sdktypes.IDFromUUIDPtr[sdktypes.ConnectionID](e.ConnectionID).String(),
 		EventType:    e.EventType,
 		Filter:       e.Filter,
 		CodeLocation: loc.ToProto(),
@@ -362,8 +356,7 @@ type Session struct {
 	Build      *Build
 	Env        *Env
 	Deployment *Deployment
-	Event      *Event     `gorm:"references:EventID"`
-	Ownership  *Ownership `gorm:"polymorphic:Entity;"`
+	Event      *Event `gorm:"references:EventID"`
 }
 
 func ParseSession(s Session) (sdktypes.Session, error) {
@@ -387,11 +380,11 @@ func ParseSession(s Session) (sdktypes.Session, error) {
 	}
 
 	session, err := sdktypes.StrictSessionFromProto(&sdktypes.SessionPB{
-		SessionId:    sdktypes.NewIDFromUUID[sdktypes.SessionID](&s.SessionID).String(),
-		BuildId:      sdktypes.NewIDFromUUID[sdktypes.BuildID](s.BuildID).String(),
-		EnvId:        sdktypes.NewIDFromUUID[sdktypes.EnvID](s.EnvID).String(),
-		DeploymentId: sdktypes.NewIDFromUUID[sdktypes.DeploymentID](s.DeploymentID).String(),
-		EventId:      sdktypes.NewIDFromUUID[sdktypes.EventID](s.EventID).String(),
+		SessionId:    sdktypes.IDFromUUID[sdktypes.SessionID](s.SessionID).String(),
+		BuildId:      sdktypes.IDFromUUIDPtr[sdktypes.BuildID](s.BuildID).String(),
+		EnvId:        sdktypes.IDFromUUIDPtr[sdktypes.EnvID](s.EnvID).String(),
+		DeploymentId: sdktypes.IDFromUUIDPtr[sdktypes.DeploymentID](s.DeploymentID).String(),
+		EventId:      sdktypes.IDFromUUIDPtr[sdktypes.EventID](s.EventID).String(),
 		Entrypoint:   ep.ToProto(),
 		Inputs:       kittehs.TransformMapValues(inputs, sdktypes.ToProto),
 		CreatedAt:    timestamppb.New(s.CreatedAt),
@@ -416,9 +409,8 @@ type Deployment struct {
 	DeletedAt    gorm.DeletedAt `gorm:"index"`
 
 	// enforce foreign keys
-	Env       *Env
-	Build     *Build
-	Ownership *Ownership `gorm:"polymorphic:Entity;"`
+	Env   *Env
+	Build *Build
 }
 
 func (d *Deployment) BeforeUpdate(tx *gorm.DB) (err error) {
@@ -430,9 +422,9 @@ func (d *Deployment) BeforeUpdate(tx *gorm.DB) (err error) {
 
 func ParseDeployment(d Deployment) (sdktypes.Deployment, error) {
 	deployment, err := sdktypes.StrictDeploymentFromProto(&sdktypes.DeploymentPB{
-		DeploymentId: sdktypes.NewIDFromUUID[sdktypes.DeploymentID](&d.DeploymentID).String(),
-		BuildId:      sdktypes.NewIDFromUUID[sdktypes.BuildID](&d.BuildID).String(),
-		EnvId:        sdktypes.NewIDFromUUID[sdktypes.EnvID](d.EnvID).String(),
+		DeploymentId: sdktypes.IDFromUUID[sdktypes.DeploymentID](d.DeploymentID).String(),
+		BuildId:      sdktypes.IDFromUUID[sdktypes.BuildID](d.BuildID).String(),
+		EnvId:        sdktypes.IDFromUUIDPtr[sdktypes.EnvID](d.EnvID).String(),
 		State:        deploymentsv1.DeploymentState(d.State),
 		CreatedAt:    timestamppb.New(d.CreatedAt),
 		UpdatedAt:    timestamppb.New(d.UpdatedAt),
@@ -455,9 +447,9 @@ type DeploymentWithStats struct {
 
 func ParseDeploymentWithSessionStats(d DeploymentWithStats) (sdktypes.Deployment, error) {
 	deployment, err := sdktypes.StrictDeploymentFromProto(&sdktypes.DeploymentPB{
-		DeploymentId: sdktypes.NewIDFromUUID[sdktypes.DeploymentID](&d.DeploymentID).String(),
-		BuildId:      sdktypes.NewIDFromUUID[sdktypes.BuildID](&d.BuildID).String(),
-		EnvId:        sdktypes.NewIDFromUUID[sdktypes.EnvID](d.EnvID).String(),
+		DeploymentId: sdktypes.IDFromUUID[sdktypes.DeploymentID](d.DeploymentID).String(),
+		BuildId:      sdktypes.IDFromUUID[sdktypes.BuildID](d.BuildID).String(),
+		EnvId:        sdktypes.IDFromUUIDPtr[sdktypes.EnvID](d.EnvID).String(),
 		State:        deploymentsv1.DeploymentState(d.State),
 		CreatedAt:    timestamppb.New(d.CreatedAt),
 		UpdatedAt:    timestamppb.New(d.UpdatedAt),
@@ -509,9 +501,9 @@ func ParseSignal(r *Signal) (*types.Signal, error) {
 	var dstID sdktypes.EventDestinationID
 
 	if r.ConnectionID != nil {
-		dstID = sdktypes.NewEventDestinationID(sdktypes.NewIDFromUUID[sdktypes.ConnectionID](r.ConnectionID))
+		dstID = sdktypes.NewEventDestinationID(sdktypes.IDFromUUIDPtr[sdktypes.ConnectionID](r.ConnectionID))
 	} else if r.TriggerID != nil {
-		dstID = sdktypes.NewEventDestinationID(sdktypes.NewIDFromUUID[sdktypes.TriggerID](r.TriggerID))
+		dstID = sdktypes.NewEventDestinationID(sdktypes.IDFromUUIDPtr[sdktypes.TriggerID](r.TriggerID))
 	} else {
 		return nil, sdkerrors.NewInvalidArgumentError("signal must have a connection or trigger")
 	}
@@ -524,12 +516,13 @@ func ParseSignal(r *Signal) (*types.Signal, error) {
 	}, nil
 }
 
-type Ownership struct {
-	EntityID   sdktypes.UUID `gorm:"primaryKey;type:uuid;not null"`
-	EntityType string        `gorm:"not null"`
+type User struct {
+	UserID      sdktypes.UUID     `gorm:"primaryKey;type:uuid;not null"`
+	Credentials []UserCredentials `gorm:"foreignKey:UserID"`
+}
 
-	UserID string `gorm:"not null"`
-
-	// TODO: Polymorphic associations won't enforce foreign key to entities in different tables
-	// we might need to have separated ownership tables for each entity.
+type UserCredentials struct {
+	UserID     sdktypes.UUID `gorm:"primaryKey;type:uuid;not null"`
+	Provider   string        `gorm:"primaryKey;type:string;not null"`
+	ProviderID string        `gorm:"primaryKey;type:string;not null"`
 }

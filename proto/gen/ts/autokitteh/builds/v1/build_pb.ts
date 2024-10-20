@@ -27,6 +27,11 @@ export class Build extends Message<Build> {
    */
   createdAt?: Timestamp;
 
+  /**
+   * @generated from field: string created_by = 100;
+   */
+  createdBy = "";
+
   constructor(data?: PartialMessage<Build>) {
     super();
     proto3.util.initPartial(data, this);
@@ -38,6 +43,7 @@ export class Build extends Message<Build> {
     { no: 1, name: "build_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "created_at", kind: "message", T: Timestamp },
+    { no: 100, name: "created_by", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Build {

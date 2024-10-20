@@ -118,16 +118,6 @@ func (f *dbFixture) testListVar(t *testing.T, v scheme.Var) {
 	assert.NoError(t, err)
 	assert.Len(t, vars, 0)
 
-	// delete scope - either Connection or Env
-	var o scheme.Ownership
-	assert.NoError(t, f.db.Where("entity_id = ?", v.ScopeID).First(&o).Error)
-	switch o.EntityType {
-	case "Connection":
-		assert.NoError(t, f.gormdb.deleteConnection(f.ctx, v.ScopeID))
-	case "Env":
-		assert.NoError(t, f.gormdb.deleteEnv(f.ctx, v.ScopeID))
-	}
-
 	// test var was deleted due to scope deletion
 	f.assertVarDeleted(t, v)
 

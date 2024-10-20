@@ -1,6 +1,7 @@
 package authloginhttpsvc
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
 
@@ -14,7 +15,7 @@ import (
 
 const googleLoginPath = "/auth/google/login"
 
-func registerGoogleOAuthRoutes(mux *http.ServeMux, cfg oauth2Config, onSuccess func(sdktypes.User) http.Handler) error {
+func registerGoogleOAuthRoutes(mux *http.ServeMux, cfg oauth2Config, onSuccess func(sdktypes.UserAuthProvider) http.Handler) error {
 	if cfg.ClientID == "" {
 		return errors.New("google login is enabled, but missing GOOGLE_CLIENT_ID")
 	}
@@ -44,14 +45,28 @@ func registerGoogleOAuthRoutes(mux *http.ServeMux, cfg oauth2Config, onSuccess f
 			return
 		}
 
-		onSuccess(sdktypes.NewUser(
-			"google",
-			map[string]string{
-				"id":    gu.Id,
-				"name":  gu.Name,
-				"email": gu.Email,
-			},
-		))
+		if gu.Id == "" || gu.Name == "" || gu.Email == "" {
+			http.Error(w, "google user missing data", http.StatusInternalServerError)
+			return
+		}
+
+		details, err := json.Marshal(map[string]string{
+			"id":    gu.Id,
+			"name":  gu.Name,
+			"email": gu.Email,
+		})
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		p, err := sdktypes.NewUserAuthProvider("google", gu.Id, gu.Email, details)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		onSuccess(p).ServeHTTP(w, r)
 	})
 
 	mux.Handle("/auth/google/callback", google.StateHandler(cfg.cookieConfig(), google.CallbackHandler(&oauth2Config, googleOnSuccess, nil)))
