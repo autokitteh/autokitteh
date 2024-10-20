@@ -26,6 +26,9 @@ var (
 	//go:embed runner
 	runnerPyCode embed.FS
 
+	//go:embed all:py-sdk
+	pysdk embed.FS
+
 	//go:embed runner/pyproject.toml
 	pyProjectTOML []byte
 )
@@ -365,16 +368,30 @@ func createVEnv(pyExe string, venvPath string) error {
 	if _, err := io.Copy(file, bytes.NewReader(pyProjectTOML)); err != nil {
 		return fmt.Errorf("copy requirements to %q: %w", file.Name(), err)
 	}
-	file.Close()
 
 	venvPy := path.Join(venvPath, "bin", "python")
-	cmd = exec.Command(venvPy, "-m", "pip", "install", ".[all]")
+	if err := install(venvPy, tmpDir, []string{"-m", "pip", "install", ".[all]"}); err != nil {
+		return fmt.Errorf("install dependencies from %q: %w", file.Name(), err)
+	}
+
+	if err := copyFS(pysdk, tmpDir); err != nil {
+		return err
+	}
+
+	if err = install(venvPy, path.Join(tmpDir, "/py-sdk"), []string{"-m", "pip", "install", "."}); err != nil {
+		return fmt.Errorf("install autokitteh py sdk %w", err)
+	}
+	return nil
+}
+
+func install(pyPath, cwd string, args []string) error {
+	cmd := exec.Command(pyPath, args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	cmd.Dir = tmpDir
+	cmd.Dir = cwd
 
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("install dependencies from %q: %w", file.Name(), err)
+		return err
 	}
 
 	return nil
