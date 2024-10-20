@@ -77,5 +77,9 @@ func prepareUserCode(code []byte, gzipped bool) (string, error) {
 		return "", err
 	}
 
+	if err := copyFS(pysdk, tmpDir); err != nil {
+		return "", err
+	}
+
 	return tmpDir, nil
 }

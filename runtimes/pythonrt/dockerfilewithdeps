@@ -4,6 +4,9 @@ WORKDIR /runner
 COPY pyproject.toml .
 RUN python -m pip install .[all]
 
+COPY py-sdk py-sdk
+RUN cd py-sdk && python -m pip install .
+
 COPY workflow/user_requirements.txt .
 RUN  python -m pip install -r user_requirements.txt 
 

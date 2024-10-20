@@ -4,6 +4,9 @@ WORKDIR /runner
 COPY pyproject.toml .
 RUN python -m pip install .[all]
 
+COPY py-sdk py-sdk
+RUN cd py-sdk && python -m pip install .
+
 # https://stackoverflow.com/questions/78599865/how-to-install-missing-python-modules-on-distroless-image
 FROM gcr.io/distroless/python3-debian12
 
