@@ -74,7 +74,7 @@ func createStartCommand(entrypoint, workerAddress, runnerID string) []string {
 	return []string{
 		entrypoint,
 		"--code-dir",
-		"workflow",
+		"/workflow",
 		"--worker-address",
 		workerAddress,
 		"--runner-id",
@@ -101,7 +101,7 @@ func (rm *dockerRunnerManager) Start(ctx context.Context, sessionID sdktypes.Ses
 	}
 
 	runnerID := fmt.Sprintf("runner-%s", uuid.NewString())
-	cmd := createStartCommand("main.py", rm.workerAddressProvider(), runnerID)
+	cmd := createStartCommand("/runner/main.py", rm.workerAddressProvider(), runnerID)
 
 	cid, port, err := rm.client.StartRunner(ctx, containerName, sessionID, cmd, vars)
 	if err != nil {
