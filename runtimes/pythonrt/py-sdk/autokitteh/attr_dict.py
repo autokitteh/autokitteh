@@ -25,3 +25,6 @@ class AttrDict(dict):
         # The default __getattr__ doesn't fail but also don't change values.
         cls = self.__class__.__name__
         raise NotImplementedError(f"{cls} does not support setting attributes")
+
+    def __dir__(self):
+        return self.keys()
