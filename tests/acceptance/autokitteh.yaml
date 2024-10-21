@@ -1,0 +1,27 @@
+version: v1
+
+project:
+  name: integration_tests
+  connections:
+    - name: github_conn
+      integration: github
+    - name: gmail_conn
+      integration: gmail
+    - name: calendar_conn
+      integration: googlecalendar
+    - name: forms_conn
+      integration: googleforms
+    - name: slack_conn
+      integration: slack
+  triggers:
+    - name: github_issue_comment
+      connection: github_conn
+      event_type: issue_comment
+      call: events.py:on_github_issue_comment
+    - name: http_request
+      type: webhook
+      call: events.py:on_http_request
+    - name: slack_message
+      connection: slack_conn
+      event_type: message
+      call: events.py:on_slack_message
