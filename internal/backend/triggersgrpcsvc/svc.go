@@ -28,7 +28,7 @@ func Init(muxes *muxes.Muxes, triggers sdkservices.Triggers) {
 	srv := server{triggers: triggers}
 
 	path, namer := triggersv1connect.NewTriggersServiceHandler(&srv)
-	muxes.Auth.Handle(path, namer)
+	muxes.Main.Auth.Handle(path, namer)
 }
 
 func (s *server) Create(ctx context.Context, req *connect.Request[triggersv1.CreateRequest]) (*connect.Response[triggersv1.CreateResponse], error) {

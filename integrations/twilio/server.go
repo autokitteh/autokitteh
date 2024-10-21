@@ -18,14 +18,14 @@ func Start(l *zap.Logger, muxes *muxes.Muxes, v sdkservices.Vars, d sdkservices.
 
 	// Connection UI.
 	uiPath := "GET " + desc.ConnectionURL().Path + "/"
-	muxes.NoAuth.Handle(uiPath, http.FileServer(http.FS(static.TwilioWebContent)))
+	muxes.Main.NoAuth.Handle(uiPath, http.FileServer(http.FS(static.TwilioWebContent)))
 
 	// Init webhooks save connection vars (via "c.Finalize" calls), so they need
 	// to have an authenticated user context, so the DB layer won't reject them.
 	// For this purpose, init webhooks are managed by the "auth" mux, which passes
 	// through AutoKitteh's auth middleware to extract the user ID from a cookie.
-	muxes.Auth.HandleFunc(webhooks.AuthPath, h.HandleAuth)
+	muxes.Main.Auth.HandleFunc(webhooks.AuthPath, h.HandleAuth)
 
 	// Event webhook (unauthenticated by definition).
-	muxes.NoAuth.HandleFunc(webhooks.MessagePath, h.HandleMessage)
+	muxes.Main.NoAuth.HandleFunc(webhooks.MessagePath, h.HandleMessage)
 }

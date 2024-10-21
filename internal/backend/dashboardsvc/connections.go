@@ -1,8 +1,6 @@
 package dashboardsvc
 
 import (
-	"encoding/json"
-	"fmt"
 	"html/template"
 	"net/http"
 
@@ -10,26 +8,13 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-	"go.autokitteh.dev/autokitteh/web/connect/result"
 	"go.autokitteh.dev/autokitteh/web/webdashboard"
 )
 
 func (s Svc) initConnections() {
-	// These paths should correspond to the ones enriched in the connection service.
-
-	s.Muxes.Auth.HandleFunc("GET /connections", s.connections)
-	s.Muxes.Auth.HandleFunc("GET /connections/{cid}", s.connection)
-
-	s.Muxes.Auth.HandleFunc("GET /connections/{id}/init/{origin}", s.init)
-	s.Muxes.Auth.HandleFunc("GET /connections/{id}/postinit", s.postInit)
-
-	h := result.NewHandler(s.Svcs)
-	s.Muxes.Auth.HandleFunc("GET /connections/{id}/error", h.Error)
-	s.Muxes.Auth.HandleFunc("GET /connections/{id}/success", h.Success)
-
-	s.Muxes.Auth.HandleFunc("DELETE /connections/{id}/vars", s.rmAllConnectionVars)
-	s.Muxes.Auth.HandleFunc("POST /connections/{id}/test", s.testConnection)
-	s.Muxes.Auth.HandleFunc("POST /connections/{id}/refresh", s.refreshConnection)
+	s.Muxes.Aux.Auth.HandleFunc("GET /connections", s.connections)
+	s.Muxes.Aux.Auth.HandleFunc("GET /connections/{cid}", s.connection)
+	s.Muxes.Aux.Auth.HandleFunc("DELETE /connections/{id}/vars", s.rmAllConnectionVars)
 }
 
 type connection struct{ sdktypes.Connection }
@@ -138,96 +123,26 @@ func (s Svc) connection(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := webdashboard.Tmpl(r).ExecuteTemplate(w, "connection.html", struct {
-		Title  string
-		ID     string
-		Name   string
-		JSON   template.HTML
-		Vars   list
-		Events list
-		Caps   any
+		MainURL string
+		Title   string
+		ID      string
+		Name    string
+		JSON    template.HTML
+		Vars    list
+		Events  list
+		Caps    any
 	}{
-		Title:  "Connection: " + p.Name().String(),
-		ID:     cid.String(),
-		Name:   p.Name().String(),
-		JSON:   marshalObject(sdkC.ToProto()),
-		Vars:   cvars,
-		Events: events,
-		Caps:   p.Capabilities().ToProto(),
+		MainURL: s.Muxes.MainURL,
+		Title:   "Connection: " + p.Name().String(),
+		ID:      cid.String(),
+		Name:    p.Name().String(),
+		JSON:    marshalObject(sdkC.ToProto()),
+		Vars:    cvars,
+		Events:  events,
+		Caps:    p.Capabilities().ToProto(),
 	}); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
-}
-
-func (s Svc) init(w http.ResponseWriter, r *http.Request) {
-	id, origin := r.PathValue("id"), r.PathValue("origin")
-
-	cid, err := sdktypes.StrictParseConnectionID(id)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	conn, err := s.Svcs.Connections().Get(r.Context(), cid)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	if !conn.IsValid() {
-		http.Error(w, "connection not found", http.StatusNotFound)
-		return
-	}
-
-	integ, err := s.Svcs.Integrations().GetByID(r.Context(), conn.IntegrationID())
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	if !integ.IsValid() {
-		http.Error(w, "integration not found", http.StatusNotFound)
-		return
-	}
-
-	http.Redirect(w, r, fmt.Sprintf("%s?cid=%v&origin=%s", integ.ConnectionURL(), cid, origin), http.StatusFound)
-}
-
-// postInit is the last step in the connection initialization flow.
-// It saves the connection's data in the connection's scope, and
-// redirects the user to the last HTTP response, based on its origin
-// (local AK server / local VS Code extension / SaaS web UI).
-func (s Svc) postInit(w http.ResponseWriter, r *http.Request) {
-	vars, origin := r.URL.Query().Get("vars"), r.URL.Query().Get("origin")
-
-	var data []sdktypes.Var
-	if err := kittehs.DecodeURLData(vars, &data); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	cid, err := sdktypes.StrictParseConnectionID(r.PathValue("id"))
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	data = kittehs.Transform(data, func(v sdktypes.Var) sdktypes.Var {
-		return v.WithScopeID(sdktypes.NewVarScopeID(cid))
-	})
-
-	if err := s.Svcs.Vars().Set(r.Context(), data...); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	var u string
-	switch origin {
-	case "vscode":
-		u = "vscode://autokitteh.autokitteh?cid=%s"
-	case "web", "web-oauth": // Another redirect just to get rid of the secrets in the URL.
-		u = "/connections/%s/success"
-	default: // Local server ("cli", "dash", etc.)
-		u = "/connections/%s?msg=Connection initialized 😸"
-	}
-	http.Redirect(w, r, fmt.Sprintf(u, cid), http.StatusFound)
 }
 
 func (s Svc) rmAllConnectionVars(w http.ResponseWriter, r *http.Request) {
@@ -243,48 +158,4 @@ func (s Svc) rmAllConnectionVars(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-}
-
-func (s Svc) testConnection(w http.ResponseWriter, r *http.Request) {
-	id := r.PathValue("id")
-
-	cid, err := sdktypes.StrictParseConnectionID(id)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	st, err := s.Svcs.Connections().Test(r.Context(), cid)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	if err := json.NewEncoder(w).Encode(st); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-}
-
-func (s Svc) refreshConnection(w http.ResponseWriter, r *http.Request) {
-	id := r.PathValue("id")
-
-	cid, err := sdktypes.StrictParseConnectionID(id)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	st, err := s.Svcs.Connections().RefreshStatus(r.Context(), cid)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	if err := json.NewEncoder(w).Encode(st); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	http.Redirect(w, r, fmt.Sprintf("/connections/%s", id), http.StatusFound)
 }

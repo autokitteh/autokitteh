@@ -34,8 +34,8 @@ func New(l *zap.Logger, db db.DB, dispatcher sdkservices.Dispatcher) *Service {
 }
 
 func (s *Service) Start(muxes *muxes.Muxes) {
-	muxes.NoAuth.Handle(WebhooksPathPrefix+"{slug}", s)
-	muxes.NoAuth.Handle(WebhooksPathPrefix+"{slug}/", s)
+	muxes.Main.NoAuth.Handle(WebhooksPathPrefix+"{slug}", s)
+	muxes.Main.NoAuth.Handle(WebhooksPathPrefix+"{slug}/", s)
 }
 
 func InitTrigger(trigger sdktypes.Trigger) sdktypes.Trigger {

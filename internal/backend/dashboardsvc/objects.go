@@ -18,7 +18,7 @@ var routes = map[string]string{
 }
 
 func (s Svc) initObjects() {
-	s.Muxes.Auth.HandleFunc("/objects/{id}", s.objects)
+	s.Muxes.Aux.Auth.HandleFunc("/objects/{id}", s.objects)
 }
 
 func (s Svc) objects(w http.ResponseWriter, r *http.Request) {

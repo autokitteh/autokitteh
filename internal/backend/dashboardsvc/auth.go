@@ -9,8 +9,8 @@ import (
 )
 
 func (s Svc) initAuth() {
-	s.Muxes.Auth.HandleFunc("/auth/{$}", s.auth)
-	s.Muxes.Auth.HandleFunc("POST /auth/tokens", s.createToken)
+	s.Muxes.Aux.Auth.HandleFunc("/auth/{$}", s.auth)
+	s.Muxes.Aux.Auth.HandleFunc("POST /auth/tokens", s.createToken)
 }
 
 func (s Svc) auth(w http.ResponseWriter, r *http.Request) {

@@ -25,7 +25,7 @@ var _ connectionsv1connect.ConnectionsServiceHandler = (*server)(nil)
 func Init(muxes *muxes.Muxes, connections sdkservices.Connections) {
 	s := server{connections: connections}
 	path, handler := connectionsv1connect.NewConnectionsServiceHandler(&s)
-	muxes.Auth.Handle(path, handler)
+	muxes.Main.Auth.Handle(path, handler)
 }
 
 func (s *server) Create(ctx context.Context, req *connect.Request[connectionsv1.CreateRequest]) (*connect.Response[connectionsv1.CreateResponse], error) {

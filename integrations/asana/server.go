@@ -22,11 +22,11 @@ const (
 // This includes connection UIs and initialization webhooks.
 func Start(l *zap.Logger, muxes *muxes.Muxes) {
 	// Connection UI.
-	muxes.NoAuth.Handle(uiPath, http.FileServer(http.FS(static.AsanaWebContent)))
+	muxes.Main.NoAuth.Handle(uiPath, http.FileServer(http.FS(static.AsanaWebContent)))
 
 	// Init webhooks save connection vars (via "c.Finalize" calls), so they need
 	// to have an authenticated user context, so the DB layer won't reject them.
 	// For this purpose, init webhooks are managed by the "auth" mux, which passes
 	// through AutoKitteh's auth middleware to extract the user ID from a cookie.
-	muxes.Auth.Handle(savePath, NewHTTPHandler(l))
+	muxes.Main.Auth.Handle(savePath, NewHTTPHandler(l))
 }

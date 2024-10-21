@@ -14,8 +14,8 @@ import (
 )
 
 func (s Svc) initBuilds() {
-	s.Muxes.Auth.HandleFunc("/builds", s.builds)
-	s.Muxes.Auth.HandleFunc("/builds/{bid}", s.build)
+	s.Muxes.Aux.Auth.HandleFunc("/builds", s.builds)
+	s.Muxes.Aux.Auth.HandleFunc("/builds/{bid}", s.build)
 }
 
 type build struct{ sdktypes.Build }
