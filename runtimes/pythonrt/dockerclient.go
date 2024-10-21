@@ -102,7 +102,8 @@ func (d *dockerClient) StartRunner(ctx context.Context, runnerImage string, sess
 			ExposedPorts: map[nat.Port]struct{}{
 				nat.Port(internalRunnerPort): {},
 			},
-			Labels: d.runnerLabels,
+			Labels:     d.runnerLabels,
+			WorkingDir: "/workflow",
 		},
 		&container.HostConfig{
 			NetworkMode:  container.NetworkMode(networkName),

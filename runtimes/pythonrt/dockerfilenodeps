@@ -13,6 +13,7 @@ FROM gcr.io/distroless/python3-debian12
 COPY --from=build /usr/local/lib/python3.11/site-packages /usr/lib/python3.11/site-packages
 COPY --from=build /usr/local/bin /usr/local/bin
 
-WORKDIR /runner
-COPY . .
+COPY runner /runner
+COPY workflow /workflow
+
 ENV PYTHONPATH=/usr/lib/python3.11/site-packages
