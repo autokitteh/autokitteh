@@ -508,6 +508,7 @@ const (
 	Worker_NextEvent_FullMethodName         = "/autokitteh.remote.v1.Worker/NextEvent"
 	Worker_Unsubscribe_FullMethodName       = "/autokitteh.remote.v1.Worker/Unsubscribe"
 	Worker_StartSession_FullMethodName      = "/autokitteh.remote.v1.Worker/StartSession"
+	Worker_EncodeJWT_FullMethodName         = "/autokitteh.remote.v1.Worker/EncodeJWT"
 	Worker_RefreshOAuthToken_FullMethodName = "/autokitteh.remote.v1.Worker/RefreshOAuthToken"
 	Worker_Health_FullMethodName            = "/autokitteh.remote.v1.Worker/Health"
 	Worker_IsActiveRunner_FullMethodName    = "/autokitteh.remote.v1.Worker/IsActiveRunner"
@@ -532,6 +533,7 @@ type WorkerClient interface {
 	Unsubscribe(ctx context.Context, in *UnsubscribeRequest, opts ...grpc.CallOption) (*UnsubscribeResponse, error)
 	StartSession(ctx context.Context, in *StartSessionRequest, opts ...grpc.CallOption) (*StartSessionResponse, error)
 	// Utility functions
+	EncodeJWT(ctx context.Context, in *EncodeJWTRequest, opts ...grpc.CallOption) (*EncodeJWTResponse, error)
 	RefreshOAuthToken(ctx context.Context, in *RefreshRequest, opts ...grpc.CallOption) (*RefreshResponse, error)
 	Health(ctx context.Context, in *HealthRequest, opts ...grpc.CallOption) (*HealthResponse, error)
 	IsActiveRunner(ctx context.Context, in *IsActiveRunnerRequest, opts ...grpc.CallOption) (*IsActiveRunnerResponse, error)
@@ -635,6 +637,16 @@ func (c *workerClient) StartSession(ctx context.Context, in *StartSessionRequest
 	return out, nil
 }
 
+func (c *workerClient) EncodeJWT(ctx context.Context, in *EncodeJWTRequest, opts ...grpc.CallOption) (*EncodeJWTResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(EncodeJWTResponse)
+	err := c.cc.Invoke(ctx, Worker_EncodeJWT_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *workerClient) RefreshOAuthToken(ctx context.Context, in *RefreshRequest, opts ...grpc.CallOption) (*RefreshResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(RefreshResponse)
@@ -684,6 +696,7 @@ type WorkerServer interface {
 	Unsubscribe(context.Context, *UnsubscribeRequest) (*UnsubscribeResponse, error)
 	StartSession(context.Context, *StartSessionRequest) (*StartSessionResponse, error)
 	// Utility functions
+	EncodeJWT(context.Context, *EncodeJWTRequest) (*EncodeJWTResponse, error)
 	RefreshOAuthToken(context.Context, *RefreshRequest) (*RefreshResponse, error)
 	Health(context.Context, *HealthRequest) (*HealthResponse, error)
 	IsActiveRunner(context.Context, *IsActiveRunnerRequest) (*IsActiveRunnerResponse, error)
@@ -723,6 +736,9 @@ func (UnimplementedWorkerServer) Unsubscribe(context.Context, *UnsubscribeReques
 }
 func (UnimplementedWorkerServer) StartSession(context.Context, *StartSessionRequest) (*StartSessionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method StartSession not implemented")
+}
+func (UnimplementedWorkerServer) EncodeJWT(context.Context, *EncodeJWTRequest) (*EncodeJWTResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method EncodeJWT not implemented")
 }
 func (UnimplementedWorkerServer) RefreshOAuthToken(context.Context, *RefreshRequest) (*RefreshResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RefreshOAuthToken not implemented")
@@ -916,6 +932,24 @@ func _Worker_StartSession_Handler(srv interface{}, ctx context.Context, dec func
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Worker_EncodeJWT_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(EncodeJWTRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(WorkerServer).EncodeJWT(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Worker_EncodeJWT_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(WorkerServer).EncodeJWT(ctx, req.(*EncodeJWTRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Worker_RefreshOAuthToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(RefreshRequest)
 	if err := dec(in); err != nil {
@@ -1012,6 +1046,10 @@ var Worker_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "StartSession",
 			Handler:    _Worker_StartSession_Handler,
+		},
+		{
+			MethodName: "EncodeJWT",
+			Handler:    _Worker_EncodeJWT_Handler,
 		},
 		{
 			MethodName: "RefreshOAuthToken",

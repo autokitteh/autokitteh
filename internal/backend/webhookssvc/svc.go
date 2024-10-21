@@ -80,6 +80,13 @@ func (s *Service) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		EventType:     strings.ToLower(r.Method),
 		Data:          kittehs.TransformMapValues(data, sdktypes.ToProto),
 		DestinationId: t.ID().String(),
+		Memo: map[string]string{
+			"method":       r.Method,
+			"webhook_slug": slug,
+			"remote_addr":  r.RemoteAddr,
+			"trigger_id":   t.ID().String(),
+			"trigger_uuid": t.ID().UUIDValue().String(),
+		},
 	})
 	if err != nil {
 		sl.Errorw("failed to convert protocol buffer to event", "event_type", r.Method, "data", data, "err", err)
@@ -114,8 +121,12 @@ func requestToData(r *http.Request) (map[string]sdktypes.Value, error) {
 				return sdktypes.NewStringValue(strings.Join(vs, ", "))
 			}),
 		),
+		"trailers": sdktypes.NewDictValueFromStringMap(
+			kittehs.TransformMapValues(r.Trailer, func(vs []string) sdktypes.Value {
+				return sdktypes.NewStringValue(strings.Join(vs, ", "))
+			})),
 		"method":  sdktypes.NewStringValue(r.Method),
-		"raw_url": sdktypes.NewStringValue(r.URL.String()),
+		"raw_url": sdktypes.NewStringValue(r.RequestURI),
 		"url":     urlData(r.URL),
 	}, nil
 }

@@ -7,9 +7,11 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"os"
 	"sync"
 	"time"
 
+	"github.com/golang-jwt/jwt/v5"
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
 	"google.golang.org/grpc"
@@ -101,7 +103,18 @@ func (s *workerGRPCHandler) Log(ctx context.Context, req *pb.LogRequest) (*pb.Lo
 		return &pb.LogResponse{Error: "unknown runner ID"}, nil
 	}
 
-	m := makeLogMessage(req.Level, req.Message)
+	m := &logMessage{level: req.Level, message: req.Message}
+
+	if !runner.firstCall {
+		// If we're not in the first call, the prints channel is not listened on since
+		// the select loop is stuck on the initialCall function.
+		// Accumulate the prints which will be reported when the call is done.
+		runner.accLogs = append(runner.accLogs, m)
+		return &pb.LogResponse{}, nil
+	}
+
+	m.doneChannel = make(chan struct{})
+
 	runner.channels.log <- m
 
 	select {
@@ -122,7 +135,17 @@ func (s *workerGRPCHandler) Print(ctx context.Context, req *pb.PrintRequest) (*p
 		return &pb.PrintResponse{Error: "unknown runner ID"}, nil
 	}
 
-	m := makeLogMessage(req.Message, "info")
+	m := &logMessage{level: "info", message: req.Message}
+
+	if !runner.firstCall {
+		// If we're not in the first call, the prints channel is not listened on since
+		// the select loop is stuck on the initialCall function.
+		// Accumulate the prints which will be reported when the call is done.
+		runner.accPrints = append(runner.accPrints, m)
+		return &pb.PrintResponse{}, nil
+	}
+
+	m.doneChannel = make(chan struct{})
 
 	runner.channels.print <- m
 	select {
@@ -181,14 +204,6 @@ func makeCallbackMessage(args []sdktypes.Value, kwargs map[string]sdktypes.Value
 		errorChannel:   errorChannel,
 	}
 	return msg
-}
-
-func makeLogMessage(message string, level string) *logMessage {
-	return &logMessage{
-		level:       level,
-		message:     message,
-		doneChannel: make(chan struct{}, 1),
-	}
 }
 
 func (s *workerGRPCHandler) Sleep(ctx context.Context, req *pb.SleepRequest) (*pb.SleepResponse, error) {
@@ -371,6 +386,37 @@ func (s *workerGRPCHandler) Unsubscribe(ctx context.Context, req *pb.Unsubscribe
 	case <-msg.successChannel:
 		return &pb.UnsubscribeResponse{}, nil
 	}
+}
+
+func (s *workerGRPCHandler) EncodeJWT(ctx context.Context, req *pb.EncodeJWTRequest) (*pb.EncodeJWTResponse, error) {
+	// GitHub's JWTs must be signed using the RS256 algorithm:
+	// https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/generating-a-json-web-token-jwt-for-a-github-app
+	if req.Algorithm != jwt.SigningMethodRS256.Name {
+		return &pb.EncodeJWTResponse{Error: fmt.Sprintf("unsupported signing method: %s", req.Algorithm)}, nil
+	}
+
+	claims := jwt.MapClaims{}
+	for key, value := range req.Payload {
+		claims[key] = value
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
+
+	pem, ok := os.LookupEnv("GITHUB_PRIVATE_KEY")
+	if !ok {
+		return &pb.EncodeJWTResponse{Error: "missing GitHub private key"}, nil
+	}
+
+	key, err := jwt.ParseRSAPrivateKeyFromPEM([]byte(pem))
+	if err != nil {
+		return &pb.EncodeJWTResponse{Error: fmt.Sprintf("invalid GitHub private key: %v", err)}, nil
+	}
+
+	signed, err := token.SignedString(key)
+	if err != nil {
+		return &pb.EncodeJWTResponse{Error: fmt.Sprintf("failed to sign JWT: %v", err)}, nil
+	}
+	return &pb.EncodeJWTResponse{Jwt: signed}, nil
 }
 
 func (s *workerGRPCHandler) RefreshOAuthToken(ctx context.Context, req *pb.RefreshRequest) (*pb.RefreshResponse, error) {

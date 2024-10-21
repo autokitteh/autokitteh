@@ -172,6 +172,7 @@ func (a api) watchEvents(ctx context.Context, connID sdktypes.ConnectionID, user
 	}
 
 	gerr, ok := err.(*googleapi.Error)
+	a.logger.Warn("Google Calendar watch channel creation error", zap.Any("googleApiError", gerr))
 	if !ok || gerr.Code != 400 || len(gerr.Errors) != 1 {
 		return nil, err
 	}
@@ -182,12 +183,12 @@ func (a api) watchEvents(ctx context.Context, connID sdktypes.ConnectionID, user
 	// If the channel already exists, stop and recreate it.
 	a.logger.Info("Google Calendar watch channel already exists - stopping and recreating")
 	if err := a.stopWatch(ctx, connID); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("stop existing watch channel: %w", err)
 	}
 
 	resp, err = req.Do()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("recreate watch channel: %w", err)
 	}
 	return resp, nil
 }

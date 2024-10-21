@@ -10,7 +10,7 @@ import pickle
 import sys
 from threading import Lock, Thread
 from time import sleep
-from traceback import TracebackException, print_exception
+from traceback import TracebackException, format_exception
 
 import grpc
 from grpc_reflection.v1alpha import reflection
@@ -62,9 +62,11 @@ def exc_traceback(err):
 def display_err(fn, err):
     func_name = full_func_name(fn)
     log.exception("calling %s: %s", func_name, err)
+
+    exc = "".join(format_exception(err))
+
     # Print the error to stderr so it'll show in session logs
-    print(f"error: {err}", file=sys.stderr)
-    print_exception(err, file=sys.stderr)
+    print(f"error: {err}\n\n{exc}", file=sys.stderr)
 
 
 # Go passes HTTP event.data.body.bytes as base64 encode string
@@ -153,8 +155,9 @@ class Runner(rpc.RunnerServicer):
         self.syscalls = SysCalls(self.id, self.worker)
         mod_name, fn_name = parse_entry_point(request.entry_point)
 
-        # Monkey patch some functions, should come before we import user code
+        # Monkey patch some functions, should come before we import user code.
         builtins.print = self.ak_print
+        connections.encode_jwt = self.syscalls.ak_encode_jwt
         connections.refresh_oauth = self.syscalls.ak_refresh_oauth
 
         call = AKCall(self)
@@ -196,7 +199,9 @@ class Runner(rpc.RunnerServicer):
         try:
             result = fn(*args, **kw)
         except Exception as e:
-            display_err(fn, e)
+            # NOPE: display_err(fn, e)
+            # This emits wierd additional data that the users will not want
+            # to see and confuse them.
             err = e
 
         resp = pb.ExecuteResponse(
@@ -207,9 +212,6 @@ class Runner(rpc.RunnerServicer):
             resp.error = str(err)
             tb = exc_traceback(err)
             resp.traceback.extend(tb)
-
-            context.set_code(grpc.StatusCode.ABORTED)
-            context.set_details(resp.error)
 
         return resp
 
@@ -224,6 +226,13 @@ class Runner(rpc.RunnerServicer):
             log.error("call_id %r not found", call_id)
             context.abort(
                 grpc.StatusCode.INVALID_ARGUMENT, "call_id {call_id!r} not found"
+            )
+
+        if request.error:
+            fut.set_exception(ActivityError(request.error))
+            context.abort(
+                grpc.StatusCode.ABORTED,
+                f"call_id {call_id!r}: activity error: {request.error}",
             )
 
         try:

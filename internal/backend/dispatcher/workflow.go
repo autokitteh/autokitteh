@@ -177,6 +177,9 @@ func (d *Dispatcher) signalWorkflows(wctx workflow.Context, event sdktypes.Event
 func newSession(eid sdktypes.EventID, inputs map[string]sdktypes.Value, data sessionData) (sdktypes.Session, error) {
 	memo := make(map[string]string)
 
+	memo["event_id"] = eid.String()
+	memo["event_uuid"] = eid.UUIDValue().String()
+
 	if t := data.Trigger; t.IsValid() {
 		inputs = maps.Clone(inputs)
 		triggerInputs := t.ToValues()
@@ -194,14 +197,13 @@ func newSession(eid sdktypes.EventID, inputs map[string]sdktypes.Value, data ses
 		}
 
 		memo["trigger_id"] = t.ID().String()
-		memo["trigger_name"] = t.Name().String()
-		memo["trigger_event_type"] = t.EventType()
+		memo["trigger_uuid"] = t.ID().UUIDValue().String()
 		memo["trigger_source_type"] = t.SourceType().String()
 	}
 
 	if c := data.Connection; c.IsValid() {
 		memo["connection_id"] = c.ID().String()
-		memo["connection_name"] = c.Name().String()
+		memo["connection_uuid"] = c.ID().UUIDValue().String()
 	}
 
 	dep := data.Deployment
