@@ -27,13 +27,13 @@ jobs:
       - name: Download modules
         run: go mod download
       - name: Build
-        run: make build bin
+        run: time make build bin
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11" # Should be in sync with runtimes/pythonrt/pythonrt.go:minPyVersion
       - name: Test
-        run: make test-unit
+        run: time make test-unit
 
   static-analysis:
     name: Static analysis
@@ -71,7 +71,7 @@ jobs:
           go-version-file: go.mod
 
       - name: Run tests
-        run: make bin/ak test-runs
+        run: time make bin/ak test-runs
 
   test-sessions:
     name: Session tests
@@ -89,7 +89,7 @@ jobs:
         with:
           python-version: "3.12" # Should be in sync with runtimes/pythonrt/pythonrt.go:minPyVersion
       - name: Session tests
-        run: make bin/ak test-sessions
+        run: time make bin/ak test-sessions
 
   publish_docker_image:
     needs:
