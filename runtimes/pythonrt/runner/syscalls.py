@@ -100,10 +100,17 @@ class SysCalls:
         return resp.signal_id
 
     def ak_next_event(self, args, kw):
-        (id,) = extract_args(["subscription_id"], args, kw)
+        log.info("ak_next_event: %r %r", args, kw)
+        (
+            id,
+            timeout,
+        ) = extract_args(["subscription_id", "timeout?"], args, kw)
         if not id:
             raise ValueError("empty subscription_id")
+
         req = pb.NextEventRequest(runner_id=self.runner_id, signal_ids=[id])
+        if timeout:
+            req.timeout_ms = int(timeout * 1000)
 
         resp = call_grpc("next_event", self.worker.NextEvent, req)
 
