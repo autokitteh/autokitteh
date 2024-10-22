@@ -29,6 +29,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/configset"
 	"go.autokitteh.dev/autokitteh/internal/backend/connections"
 	"go.autokitteh.dev/autokitteh/internal/backend/connectionsgrpcsvc"
+	"go.autokitteh.dev/autokitteh/internal/backend/connectionsinitsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/dashboardsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbfactory"
@@ -294,6 +295,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		}),
 		fx.Invoke(dashboardsvc.Init),
 		fx.Invoke(oauth.InitWebhook),
+		fx.Invoke(connectionsinitsvc.Init),
 		Component(
 			"webhooks",
 			configset.Empty,
