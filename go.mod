@@ -61,7 +61,7 @@ require (
 	github.com/knadh/koanf/v2 v2.1.1
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c
 	github.com/pressly/goose/v3 v3.22.0
-	github.com/psanford/memfs v0.0.0-20230130182539-4dbf7e3e865e
+	github.com/psanford/memfs v0.0.0-20241019191636-4ef911798f9b
 	github.com/qri-io/starlib v0.5.0
 	github.com/redis/go-redis/v9 v9.6.1
 	github.com/rs/cors v1.11.1
