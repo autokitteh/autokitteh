@@ -168,3 +168,7 @@ tailwindcss:
 .PHONY: webplatform
 webplatform:
 	make -C ./web/webplatform
+
+.PHONY: venv
+venv:
+	python3 -m venv .venv

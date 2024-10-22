@@ -1,3 +1,4 @@
+from autokitteh.values.v1 import values_pb2 as _values_pb2
 from google.protobuf import timestamp_pb2 as _timestamp_pb2
 from google.protobuf.internal import containers as _containers
 from google.protobuf import descriptor as _descriptor
@@ -14,9 +15,16 @@ class ContainerConfig(_message.Message):
 
 class Event(_message.Message):
     __slots__ = ["data"]
+    class DataEntry(_message.Message):
+        __slots__ = ["key", "value"]
+        KEY_FIELD_NUMBER: _ClassVar[int]
+        VALUE_FIELD_NUMBER: _ClassVar[int]
+        key: str
+        value: _values_pb2.Value
+        def __init__(self, key: _Optional[str] = ..., value: _Optional[_Union[_values_pb2.Value, _Mapping]] = ...) -> None: ...
     DATA_FIELD_NUMBER: _ClassVar[int]
-    data: bytes
-    def __init__(self, data: _Optional[bytes] = ...) -> None: ...
+    data: _containers.MessageMap[str, _values_pb2.Value]
+    def __init__(self, data: _Optional[_Mapping[str, _values_pb2.Value]] = ...) -> None: ...
 
 class HealthRequest(_message.Message):
     __slots__ = []
@@ -112,20 +120,31 @@ class Frame(_message.Message):
     def __init__(self, filename: _Optional[str] = ..., lineno: _Optional[int] = ..., code: _Optional[str] = ..., name: _Optional[str] = ...) -> None: ...
 
 class ExecuteRequest(_message.Message):
-    __slots__ = ["data"]
-    DATA_FIELD_NUMBER: _ClassVar[int]
-    data: bytes
-    def __init__(self, data: _Optional[bytes] = ...) -> None: ...
+    __slots__ = ["value", "args", "kwargs"]
+    class KwargsEntry(_message.Message):
+        __slots__ = ["key", "value"]
+        KEY_FIELD_NUMBER: _ClassVar[int]
+        VALUE_FIELD_NUMBER: _ClassVar[int]
+        key: str
+        value: _values_pb2.Value
+        def __init__(self, key: _Optional[str] = ..., value: _Optional[_Union[_values_pb2.Value, _Mapping]] = ...) -> None: ...
+    VALUE_FIELD_NUMBER: _ClassVar[int]
+    ARGS_FIELD_NUMBER: _ClassVar[int]
+    KWARGS_FIELD_NUMBER: _ClassVar[int]
+    value: _values_pb2.Value
+    args: _containers.RepeatedCompositeFieldContainer[_values_pb2.Value]
+    kwargs: _containers.MessageMap[str, _values_pb2.Value]
+    def __init__(self, value: _Optional[_Union[_values_pb2.Value, _Mapping]] = ..., args: _Optional[_Iterable[_Union[_values_pb2.Value, _Mapping]]] = ..., kwargs: _Optional[_Mapping[str, _values_pb2.Value]] = ...) -> None: ...
 
 class ExecuteResponse(_message.Message):
     __slots__ = ["result", "error", "traceback"]
     RESULT_FIELD_NUMBER: _ClassVar[int]
     ERROR_FIELD_NUMBER: _ClassVar[int]
     TRACEBACK_FIELD_NUMBER: _ClassVar[int]
-    result: bytes
+    result: _values_pb2.Value
     error: str
     traceback: _containers.RepeatedCompositeFieldContainer[Frame]
-    def __init__(self, result: _Optional[bytes] = ..., error: _Optional[str] = ..., traceback: _Optional[_Iterable[_Union[Frame, _Mapping]]] = ...) -> None: ...
+    def __init__(self, result: _Optional[_Union[_values_pb2.Value, _Mapping]] = ..., error: _Optional[str] = ..., traceback: _Optional[_Iterable[_Union[Frame, _Mapping]]] = ...) -> None: ...
 
 class ActivityReplyRequest(_message.Message):
     __slots__ = ["data", "result", "error"]
@@ -133,9 +152,9 @@ class ActivityReplyRequest(_message.Message):
     RESULT_FIELD_NUMBER: _ClassVar[int]
     ERROR_FIELD_NUMBER: _ClassVar[int]
     data: bytes
-    result: bytes
+    result: _values_pb2.Value
     error: str
-    def __init__(self, data: _Optional[bytes] = ..., result: _Optional[bytes] = ..., error: _Optional[str] = ...) -> None: ...
+    def __init__(self, data: _Optional[bytes] = ..., result: _Optional[_Union[_values_pb2.Value, _Mapping]] = ..., error: _Optional[str] = ...) -> None: ...
 
 class ActivityReplyResponse(_message.Message):
     __slots__ = ["error"]
@@ -269,12 +288,12 @@ class NextEventRequest(_message.Message):
     def __init__(self, runner_id: _Optional[str] = ..., signal_ids: _Optional[_Iterable[str]] = ..., timeout_ms: _Optional[int] = ...) -> None: ...
 
 class NextEventResponse(_message.Message):
-    __slots__ = ["event", "error"]
-    EVENT_FIELD_NUMBER: _ClassVar[int]
+    __slots__ = ["value", "error"]
+    VALUE_FIELD_NUMBER: _ClassVar[int]
     ERROR_FIELD_NUMBER: _ClassVar[int]
-    event: Event
+    value: _values_pb2.Value
     error: str
-    def __init__(self, event: _Optional[_Union[Event, _Mapping]] = ..., error: _Optional[str] = ...) -> None: ...
+    def __init__(self, value: _Optional[_Union[_values_pb2.Value, _Mapping]] = ..., error: _Optional[str] = ...) -> None: ...
 
 class UnsubscribeRequest(_message.Message):
     __slots__ = ["runner_id", "signal_id"]

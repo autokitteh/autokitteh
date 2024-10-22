@@ -2,7 +2,6 @@ package pythonrt
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"maps"
@@ -331,11 +330,6 @@ func (py *pySvc) Close() {
 	// We kill the Python process once the initial `Call` is completed.
 }
 
-func (py *pySvc) kwToEvent(kwargs map[string]sdktypes.Value) (map[string]any, error) {
-	unw := sdktypes.ValueWrapper{IgnoreFunctions: true, SafeForJSON: true}.Unwrap
-	return kittehs.TransformMapValuesError(kwargs, unw)
-}
-
 func pyLevelToZap(level string) zapcore.Level {
 	switch level {
 	case "DEBUG":
@@ -387,7 +381,7 @@ func (py *pySvc) call(ctx context.Context, val sdktypes.Value, args []sdktypes.V
 		return
 	}
 
-	reply(&pb.ActivityReplyRequest{Result: out.GetBytes().Value()})
+	reply(&pb.ActivityReplyRequest{Result: out.ToProto()})
 }
 
 // initialCall handles initial call from autokitteh, it does the message loop with Python.
@@ -403,23 +397,13 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktyp
 	}()
 
 	py.log.Info("initial call", zap.Any("func", funcName))
-	event, err := py.kwToEvent(kwargs)
-	if err != nil {
-		py.log.Error("can't convert event", zap.Error(err))
-		return sdktypes.InvalidValue, fmt.Errorf("can't convert: %w", err)
-	}
 
-	py.log.Info("event", zap.Any("keys", maps.Keys(event)))
-
-	eventData, err := json.Marshal(event)
-	if err != nil {
-		return sdktypes.InvalidValue, fmt.Errorf("marshal event: %w", err)
-	}
+	py.log.Info("event", zap.Any("keys", maps.Keys(kwargs)))
 
 	req := pb.StartRequest{
 		EntryPoint: fmt.Sprintf("%s:%s", py.fileName, funcName),
 		Event: &pb.Event{
-			Data: eventData,
+			Data: kittehs.TransformMapValues(kwargs, sdktypes.ToProto),
 		},
 	}
 	if _, err := py.runner.Start(ctx, &req); err != nil {
@@ -599,17 +583,21 @@ func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 
 	// If we're here, it's an activity call
 	req := pb.ExecuteRequest{
-		Data: fn.Data(),
+		Value:  v.ToProto(),
+		Args:   kittehs.Transform(args, sdktypes.ToProto),
+		Kwargs: kittehs.TransformMapValues(kwargs, sdktypes.ToProto),
 	}
+
 	resp, err := py.runner.Execute(ctx, &req)
+
+	py.emitPrintsAndLogs(ctx)
+
 	switch {
 	case err != nil:
 		return sdktypes.InvalidValue, err
 	case resp.Error != "":
 		return sdktypes.InvalidValue, fmt.Errorf("%s", resp.Error)
+	default:
+		return sdktypes.ValueFromProto(resp.Result)
 	}
-
-	py.emitPrintsAndLogs(ctx)
-
-	return sdktypes.NewBytesValue(resp.Result), nil
 }

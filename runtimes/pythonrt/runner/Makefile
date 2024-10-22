@@ -6,6 +6,9 @@ test:
 	ruff format --check
 	python -m pytest
 
+debug-test:
+	pytest --capture=no --log-cli-level=INFO --pdb
+
 install-deps:
 	python -m pip install .[all]
 	rm -rf build *.egg-info

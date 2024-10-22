@@ -3,6 +3,7 @@ syntax = "proto3";
 
 package autokitteh.remote.v1;
 
+import "autokitteh/values/v1/values.proto";
 import "google/protobuf/timestamp.proto";
 
 message ContainerConfig {
@@ -11,7 +12,7 @@ message ContainerConfig {
 }
 
 message Event {
-  bytes data = 1; // raw event from connection
+  map<string, values.v1.Value> data = 3;
 }
 
 message HealthRequest {}
@@ -82,18 +83,20 @@ message Frame {
 }
 
 message ExecuteRequest {
-  bytes data = 1;
+  values.v1.Value value = 1;
+  repeated values.v1.Value args = 2;
+  map<string, values.v1.Value> kwargs = 3;
 }
 
 message ExecuteResponse {
-  bytes result = 1;
+  values.v1.Value result = 1;
   string error = 2;
   repeated Frame traceback = 3;
 }
 
 message ActivityReplyRequest {
   bytes data = 1;
-  bytes result = 2;
+  values.v1.Value result = 2;
   string error = 3;
 }
 
@@ -188,8 +191,8 @@ message NextEventRequest {
 }
 
 message NextEventResponse {
-  Event event = 1;
-  string error = 3;
+  values.v1.Value value = 1;
+  string error = 2;
 }
 
 message UnsubscribeRequest {

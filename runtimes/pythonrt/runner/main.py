@@ -2,7 +2,6 @@ from base64 import b64decode
 import builtins
 from concurrent.futures import Future, ThreadPoolExecutor
 from io import StringIO
-import json
 from multiprocessing import cpu_count
 import os
 from pathlib import Path
@@ -19,9 +18,10 @@ import loader
 import log
 import pb.autokitteh.remote.v1.remote_pb2 as pb
 import pb.autokitteh.remote.v1.remote_pb2_grpc as rpc
-from autokitteh import AttrDict, connections
+from autokitteh import connections
 from call import AKCall, full_func_name
 from syscalls import SysCalls
+from values import Wrapper
 
 SERVER_GRACE_TIMEOUT = 3  # seconds
 
@@ -108,6 +108,7 @@ class Runner(rpc.RunnerServicer):
         self._next_id = 0
         self._orig_print = print
         self._start_called = False
+        self._w = Wrapper(id)
 
     def Exports(self, request: pb.ExportsRequest, context: grpc.ServicerContext):
         if request.file_name == "":
@@ -156,7 +157,7 @@ class Runner(rpc.RunnerServicer):
         mod_name, fn_name = parse_entry_point(request.entry_point)
 
         # Monkey patch some functions, should come before we import user code.
-        builtins.print = self.ak_print
+        _ = builtins.print  # = self.ak_print
         connections.encode_jwt = self.syscalls.ak_encode_jwt
         connections.refresh_oauth = self.syscalls.ak_refresh_oauth
 
@@ -171,23 +172,22 @@ class Runner(rpc.RunnerServicer):
                 f"function {fn_name!r} not found",
             )
 
-        event = json.loads(request.event.data)
+        event = {k: self._w.unwrap(v) for k, v in request.event.data.items()}
 
-        fix_http_body(event)
-        event = AttrDict(event)
+        # TODO? fix_http_body(event)
         self.executor.submit(self.on_event, fn, event)
 
         return pb.StartResponse()
 
     def Execute(self, request: pb.ExecuteRequest, context: grpc.ServicerContext):
-        call_id = request.data.decode()
+        call_id = request.value.function.data.decode()
         with self.lock:
-            call_info = self.calls.pop(call_id, None)
+            call_info = self.calls.get(call_id, None)
 
         if call_info is None:
             error = f"call_id {call_id!r} not found"
             with self.lock:
-                fut = self.replies.pop(call_id, None)
+                fut = self.replies.get(call_id, None)
                 if fut:
                     fut.set_exception(ActivityError(error))
 
@@ -204,23 +204,24 @@ class Runner(rpc.RunnerServicer):
             # to see and confuse them.
             err = e
 
-        resp = pb.ExecuteResponse(
-            result=pickle.dumps(result, protocol=0),
-        )
-
         if err:
-            resp.error = str(err)
             tb = exc_traceback(err)
             resp.traceback.extend(tb)
 
-        return resp
+            return pb.ExecuteResponse(
+                error=str(err),
+            )
+
+        return pb.ExecuteResponse(
+            result=self._w.wrap_in_custom(result),
+        )
 
     def ActivityReply(
         self, request: pb.ActivityReplyRequest, context: grpc.ServicerContext
     ):
         call_id = request.data.decode()
         with self.lock:
-            fut = self.replies.pop(call_id, None)
+            fut = self.replies.get(call_id, None)
 
         if fut is None:
             log.error("call_id %r not found", call_id)
@@ -236,7 +237,7 @@ class Runner(rpc.RunnerServicer):
             )
 
         try:
-            result = pickle.loads(request.result)
+            result = self._w.unwrap(request.result)
         except Exception as err:
             log.exception(f"call_id {call_id!r}: result pickle: {err}")
             fut.set_exception(ActivityError(err))

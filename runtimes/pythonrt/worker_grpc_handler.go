@@ -343,24 +343,7 @@ func (s *workerGRPCHandler) NextEvent(ctx context.Context, req *pb.NextEventRequ
 		err = status.Errorf(codes.Internal, "next_event(%s, %d) -> %s", req.SignalIds, req.TimeoutMs, err)
 		return &pb.NextEventResponse{Error: err.Error()}, nil
 	case val := <-msg.successChannel:
-		out, err := sdktypes.ValueWrapper{SafeForJSON: true}.Unwrap(val)
-		if err != nil {
-			err = status.Errorf(codes.Internal, "can't unwrap %v - %s", val, err)
-			return &pb.NextEventResponse{Error: err.Error()}, err
-		}
-
-		data, err := json.Marshal(out)
-		if err != nil {
-			err = status.Errorf(codes.Internal, "can't json.Marshal %v - %s", out, err)
-			return &pb.NextEventResponse{Error: err.Error()}, err
-		}
-
-		resp := pb.NextEventResponse{
-			Event: &pb.Event{
-				Data: data,
-			},
-		}
-		return &resp, nil
+		return &pb.NextEventResponse{Value: val.ToProto()}, nil
 	}
 }
 

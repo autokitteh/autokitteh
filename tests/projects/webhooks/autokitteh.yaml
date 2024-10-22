@@ -1,0 +1,8 @@
+version: v1
+
+project:
+  name: webhooks
+  triggers:
+    - name: webhook
+      webhook: {}
+      call: main.py:on_webhook
