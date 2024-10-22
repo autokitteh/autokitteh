@@ -50,7 +50,7 @@ func (w *Svc) Start(context.Context) error {
 		return nil
 	}
 
-	fs, version, err := webplatform.LoadFS()
+	webfs, version, err := webplatform.LoadFS()
 	if err != nil {
 		if errors.Is(err, sdkerrors.ErrNotFound) {
 			w.l.Warn("web platform distribution not found, web platform server disabled")
@@ -62,29 +62,20 @@ func (w *Svc) Start(context.Context) error {
 	l := w.l.With(zap.String("version", version), zap.Int("port", w.Config.Port))
 	w.version = version
 
-	fsrv := http.FileServer(http.FS(fs))
+	fsrv := http.FileServer(http.FS(webfs))
 
 	srv := &http.Server{
 		Addr: fmt.Sprintf("localhost:%d", w.Config.Port),
 		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// If path actually exists in fs, serve it.
-			if f, _ := fs.Open(strings.TrimPrefix(r.URL.Path, "/")); f != nil {
+			if f, _ := webfs.Open(strings.TrimPrefix(r.URL.Path, "/")); f != nil {
 				f.Close()
-
-				// HACK(ENG-1690): ServeHTTP tries to Seek when serving paths
-				// with unknown file extensions. Since memfs does not support
-				// Seek, we avoid this by setting the content type to text/plain \
-				// explicitly.
-				if strings.HasPrefix(r.URL.Path, "/assets/templates/") {
-					w.Header().Add("Content-Type", "text/plain; charset=utf-8")
-				}
-
 				fsrv.ServeHTTP(w, r)
 				return
 			}
 
 			// Otherwise redirect all other queries to /index.html.
-			http.ServeFileFS(w, r, fs, "/index.html")
+			http.ServeFileFS(w, r, webfs, "/index.html")
 		}),
 	}
 
