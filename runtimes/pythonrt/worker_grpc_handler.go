@@ -373,7 +373,7 @@ func (s *workerGRPCHandler) Unsubscribe(ctx context.Context, req *pb.Unsubscribe
 	}
 
 	args := []sdktypes.Value{
-		sdktypes.NewStringValue("unsubsribe"),
+		sdktypes.NewStringValue("unsubscribe"),
 		sdktypes.NewStringValue(req.SignalId),
 	}
 	msg := makeCallbackMessage(args, nil)
@@ -381,7 +381,7 @@ func (s *workerGRPCHandler) Unsubscribe(ctx context.Context, req *pb.Unsubscribe
 
 	select {
 	case err := <-msg.errorChannel:
-		err = status.Errorf(codes.Internal, "subscribe(%s) -> %s", req.SignalId, err)
+		err = status.Errorf(codes.Internal, "unsubscribe(%s) -> %s", req.SignalId, err)
 		return &pb.UnsubscribeResponse{Error: err.Error()}, err
 	case <-msg.successChannel:
 		return &pb.UnsubscribeResponse{}, nil
