@@ -1,7 +1,8 @@
 package sdkclients
 
 import (
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
+	"sync"
+
 	"go.autokitteh.dev/autokitteh/sdk/sdkclients/sdkauthclient"
 	"go.autokitteh.dev/autokitteh/sdk/sdkclients/sdkbuildsclient"
 	"go.autokitteh.dev/autokitteh/sdk/sdkclients/sdkclient"
@@ -44,21 +45,21 @@ func New(params sdkclient.Params) sdkservices.Services {
 	return &client{
 		params: params, // just a dumb struct, no need to be lazy here.
 
-		auth:         kittehs.Lazy1(sdkauthclient.New, params),
-		builds:       kittehs.Lazy1(sdkbuildsclient.New, params),
-		connections:  kittehs.Lazy1(sdkconnectionsclient.New, params),
-		deployments:  kittehs.Lazy1(sdkdeploymentsclient.New, params),
-		dispatcher:   kittehs.Lazy1(sdkdispatcherclient.New, params),
-		envs:         kittehs.Lazy1(sdkenvsclient.New, params),
-		events:       kittehs.Lazy1(sdkeventsclient.New, params),
-		integrations: kittehs.Lazy1(sdkintegrationsclient.New, params),
-		oauth:        kittehs.Lazy1(sdkoauthclient.New, params),
-		projects:     kittehs.Lazy1(sdkprojectsclient.New, params),
-		runtimes:     kittehs.Lazy1(sdkruntimesclient.New, params),
-		sessions:     kittehs.Lazy1(sdksessionsclient.New, params),
-		store:        kittehs.Lazy1(sdkstoreclient.New, params),
-		triggers:     kittehs.Lazy1(sdktriggerclient.New, params),
-		vars:         kittehs.Lazy1(sdkvarsclient.New, params),
+		auth:         lazyCache(sdkauthclient.New, params),
+		builds:       lazyCache(sdkbuildsclient.New, params),
+		connections:  lazyCache(sdkconnectionsclient.New, params),
+		deployments:  lazyCache(sdkdeploymentsclient.New, params),
+		dispatcher:   lazyCache(sdkdispatcherclient.New, params),
+		envs:         lazyCache(sdkenvsclient.New, params),
+		events:       lazyCache(sdkeventsclient.New, params),
+		integrations: lazyCache(sdkintegrationsclient.New, params),
+		oauth:        lazyCache(sdkoauthclient.New, params),
+		projects:     lazyCache(sdkprojectsclient.New, params),
+		runtimes:     lazyCache(sdkruntimesclient.New, params),
+		sessions:     lazyCache(sdksessionsclient.New, params),
+		store:        lazyCache(sdkstoreclient.New, params),
+		triggers:     lazyCache(sdktriggerclient.New, params),
+		vars:         lazyCache(sdkvarsclient.New, params),
 	}
 }
 
@@ -77,3 +78,18 @@ func (c *client) Sessions() sdkservices.Sessions         { return c.sessions() }
 func (c *client) Store() sdkservices.Store               { return c.store() }
 func (c *client) Triggers() sdkservices.Triggers         { return c.triggers() }
 func (c *client) Vars() sdkservices.Vars                 { return c.vars() }
+
+// lazyCache wraps a function and a single input. The first call to the wrapper
+// calls the wrapped function. Subsequent calls return the first result.
+func lazyCache[T, P any](f func(P) T, p P) func() T {
+	var (
+		t    T
+		once sync.Once
+	)
+
+	return func() T {
+		once.Do(func() { t = f(p) })
+
+		return t
+	}
+}
