@@ -5,11 +5,12 @@ import (
 	"errors"
 	"fmt"
 
+	"go.temporal.io/sdk/activity"
 	"go.temporal.io/sdk/client"
-	"go.temporal.io/sdk/worker"
 	"go.temporal.io/sdk/workflow"
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/configset"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -18,27 +19,43 @@ import (
 
 const (
 	taskQueueName = "scheduler-task-queue"
-	workerID      = "scheduler-worker"
 	workflowName  = "scheduler_workflow"
+	activityName  = "scheduler_activity"
 )
 
+type Config struct {
+	Worker   temporalclient.WorkerConfig   `koanf:"worker"`
+	Workflow temporalclient.WorkflowConfig `koanf:"workflow"`
+	Activity temporalclient.ActivityConfig `koanf:"activity"`
+}
+
+var Configs = configset.Set[Config]{
+	Default: &Config{},
+}
+
 type Scheduler struct {
+	cfg        *Config
 	temporal   temporalclient.Client
 	sl         *zap.SugaredLogger
 	dispatcher sdkservices.Dispatcher
 	triggers   sdkservices.Triggers
 }
 
-func New(l *zap.Logger, tc temporalclient.Client) *Scheduler {
-	return &Scheduler{sl: l.Sugar(), temporal: tc}
+func New(l *zap.Logger, tc temporalclient.Client, cfg *Config) *Scheduler {
+	return &Scheduler{sl: l.Sugar(), temporal: tc, cfg: cfg}
 }
 
 func (sch *Scheduler) Start(ctx context.Context, dispatcher sdkservices.Dispatcher, triggers sdkservices.Triggers) error {
 	sch.dispatcher = dispatcher
 	sch.triggers = triggers
 
-	w := worker.New(sch.temporal.Temporal(), taskQueueName, worker.Options{Identity: workerID})
+	w := temporalclient.NewWorker(sch.sl.Desugar(), sch.temporal.Temporal(), taskQueueName, sch.cfg.Worker)
+	if w == nil {
+		return nil
+	}
+
 	w.RegisterWorkflowWithOptions(sch.workflow, workflow.RegisterOptions{Name: workflowName})
+	w.RegisterActivityWithOptions(sch.activity, activity.RegisterOptions{Name: activityName})
 
 	if err := w.Start(); err != nil {
 		return fmt.Errorf("schedule wf: worker start: %w", err)
@@ -110,13 +127,8 @@ func (sch *Scheduler) Update(ctx context.Context, tid sdktypes.TriggerID, schedu
 	return nil
 }
 
-func (sch *Scheduler) workflow(wctx workflow.Context, tid sdktypes.TriggerID) error {
+func (sch *Scheduler) activity(ctx context.Context, tid sdktypes.TriggerID) error {
 	sl := sch.sl.With("trigger_id", tid)
-
-	ctx := temporalclient.NewWorkflowContextAsGOContext(wctx)
-
-	// It's ok to run all these straight in the workflow - they're all should be
-	// pretty fast.
 
 	t, err := sch.triggers.Get(ctx, tid)
 	if err != nil {
@@ -143,4 +155,12 @@ func (sch *Scheduler) workflow(wctx workflow.Context, tid sdktypes.TriggerID) er
 	sl.With("event_id", eid).Infof("schedule event workflow for %v dispatched as %v", tid, eid)
 
 	return nil
+}
+
+func (sch *Scheduler) workflow(wctx workflow.Context, tid sdktypes.TriggerID) error {
+	return workflow.ExecuteActivity(
+		temporalclient.WithActivityOptions(wctx, taskQueueName, sch.cfg.Activity),
+		activityName,
+		tid,
+	).Get(wctx, nil)
 }

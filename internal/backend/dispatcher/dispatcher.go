@@ -124,7 +124,7 @@ func (d *Dispatcher) Redispatch(ctx context.Context, eventID sdktypes.EventID, o
 }
 
 func (d *Dispatcher) Start(context.Context) error {
-	w := temporalclient.NewWorker(d.sl.Desugar(), d.svcs.LazyTemporalClient(), taskQueueName, temporalclient.WorkerConfig{})
+	w := temporalclient.NewWorker(d.sl.Desugar(), d.svcs.LazyTemporalClient(), taskQueueName, d.cfg.Worker)
 	if w == nil {
 		return nil
 	}
