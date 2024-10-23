@@ -18,7 +18,7 @@ def unsubscribe(subscription_id: str) -> None:
     pass
 
 
-def next_event(subscription_id: str, *, timeout: timedelta = None) -> AttrDict:
+def next_event(subscription_id: str, *, timeout: int = None) -> AttrDict:
     """Get the next event from the subscription."""
     # Dummy implementation for local development.
     return AttrDict()
