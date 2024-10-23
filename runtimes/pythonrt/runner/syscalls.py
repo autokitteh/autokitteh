@@ -102,16 +102,16 @@ class SysCalls:
     def ak_next_event(self, args, kw):
         log.info("ak_next_event: %r %r", args, kw)
         (
-            id,
+            ids,
             timeout,
         ) = extract_args(["subscription_id", "timeout?"], args, kw)
-        if not id:
+        if not ids:
             raise ValueError("empty subscription_id")
 
-        if isinstance(id, str):
-            id = [id]
+        if isinstance(ids, str):
+            ids = [ids]
 
-        req = pb.NextEventRequest(runner_id=self.runner_id, signal_ids=id)
+        req = pb.NextEventRequest(runner_id=self.runner_id, signal_ids=ids)
         if timeout:
             req.timeout_ms = int(timeout * 1000)
 
