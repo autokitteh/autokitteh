@@ -12,10 +12,10 @@ import (
 	"go.autokitteh.dev/autokitteh/web/webdashboard"
 )
 
-func (s Svc) initSessions() {
-	s.Muxes.Auth.HandleFunc("/sessions", s.sessions)
-	s.Muxes.Auth.HandleFunc("/sessions/{sid}", s.session)
-	s.Muxes.Auth.HandleFunc("/sessions/{sid}/stop", s.stopSession)
+func (s *svc) initSessions() {
+	s.HandleFunc(rootPath+"sessions", s.sessions)
+	s.HandleFunc(rootPath+"sessions/{sid}", s.session)
+	s.HandleFunc(rootPath+"sessions/{sid}/stop", s.stopSession)
 }
 
 type session struct{ sdktypes.Session }
@@ -29,8 +29,8 @@ func (p session) ExtraFields() map[string]any { return nil }
 
 func toSession(sdkP sdktypes.Session) session { return session{sdkP} }
 
-func (s Svc) listSessions(w http.ResponseWriter, r *http.Request, f sdkservices.ListSessionsFilter) (list, error) {
-	sdkCs, err := s.Svcs.Sessions().List(r.Context(), f)
+func (s *svc) listSessions(w http.ResponseWriter, r *http.Request, f sdkservices.ListSessionsFilter) (list, error) {
+	sdkCs, err := s.Sessions().List(r.Context(), f)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return list{}, err
@@ -56,7 +56,7 @@ func (s Svc) listSessions(w http.ResponseWriter, r *http.Request, f sdkservices.
 	return genListData(f, kittehs.Transform(sdkCs.Sessions, toSession), drops...), nil
 }
 
-func (s Svc) sessions(w http.ResponseWriter, r *http.Request) {
+func (s *svc) sessions(w http.ResponseWriter, r *http.Request) {
 	ts, err := s.listSessions(w, r, sdkservices.ListSessionsFilter{
 		PaginationRequest: sdktypes.PaginationRequest{
 			PageSize:  int32(getQueryNum(r, "sessions_page_size", 50)),
@@ -71,20 +71,20 @@ func (s Svc) sessions(w http.ResponseWriter, r *http.Request) {
 	renderList(w, r, "sessions", ts)
 }
 
-func (s Svc) session(w http.ResponseWriter, r *http.Request) {
+func (s *svc) session(w http.ResponseWriter, r *http.Request) {
 	sid, err := sdktypes.StrictParseSessionID(r.PathValue("sid"))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	sdkS, err := s.Svcs.Sessions().Get(r.Context(), sid)
+	sdkS, err := s.Sessions().Get(r.Context(), sid)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	log, err := s.Svcs.Sessions().GetLog(r.Context(), sdkservices.ListSessionLogRecordsFilter{SessionID: sid})
+	log, err := s.Sessions().GetLog(r.Context(), sdkservices.ListSessionLogRecordsFilter{SessionID: sid})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -141,7 +141,7 @@ func (s Svc) session(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s Svc) stopSession(w http.ResponseWriter, r *http.Request) {
+func (s *svc) stopSession(w http.ResponseWriter, r *http.Request) {
 	sid, err := sdktypes.StrictParseSessionID(r.PathValue("sid"))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -151,10 +151,10 @@ func (s Svc) stopSession(w http.ResponseWriter, r *http.Request) {
 	reason := r.URL.Query().Get("reason")
 	force := getQueryBool(r, "force", false)
 
-	if err := s.Svcs.Sessions().Stop(r.Context(), sid, reason, force); err != nil {
+	if err := s.Sessions().Stop(r.Context(), sid, reason, force); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	http.Redirect(w, r, fmt.Sprintf("/sessions/%v", sid), http.StatusSeeOther)
+	http.Redirect(w, r, fmt.Sprintf(rootPath+"/sessions/%v", sid), http.StatusSeeOther)
 }

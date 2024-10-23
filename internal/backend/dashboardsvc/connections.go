@@ -11,10 +11,10 @@ import (
 	"go.autokitteh.dev/autokitteh/web/webdashboard"
 )
 
-func (s Svc) initConnections() {
-	s.Muxes.Auth.HandleFunc("GET /connections", s.connections)
-	s.Muxes.Auth.HandleFunc("GET /connections/{cid}", s.connection)
-	s.Muxes.Auth.HandleFunc("DELETE /connections/{id}/vars", s.rmAllConnectionVars)
+func (s *svc) initConnections() {
+	s.HandleFunc("GET "+rootPath+"connections", s.connections)
+	s.HandleFunc("GET "+rootPath+"connections/{cid}", s.connection)
+	s.HandleFunc("DELETE "+rootPath+"connections/{id}/vars", s.rmAllConnectionVars)
 }
 
 type connection struct{ sdktypes.Connection }
@@ -42,8 +42,8 @@ func (p connection) ExtraFields() map[string]any {
 
 func toConnection(sdkC sdktypes.Connection) connection { return connection{sdkC} }
 
-func (s Svc) listConnections(w http.ResponseWriter, r *http.Request, f sdkservices.ListConnectionsFilter) (list, error) {
-	sdkCs, err := s.Svcs.Connections().List(r.Context(), f)
+func (s *svc) listConnections(w http.ResponseWriter, r *http.Request, f sdkservices.ListConnectionsFilter) (list, error) {
+	sdkCs, err := s.Connections().List(r.Context(), f)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return list{}, err
@@ -57,7 +57,7 @@ func (s Svc) listConnections(w http.ResponseWriter, r *http.Request, f sdkservic
 	return genListData(f, kittehs.Transform(sdkCs, toConnection), drops...), nil
 }
 
-func (s Svc) connections(w http.ResponseWriter, r *http.Request) {
+func (s *svc) connections(w http.ResponseWriter, r *http.Request) {
 	l, err := s.listConnections(w, r, sdkservices.ListConnectionsFilter{})
 	if err != nil {
 		return
@@ -66,14 +66,14 @@ func (s Svc) connections(w http.ResponseWriter, r *http.Request) {
 	renderList(w, r, "connections", l)
 }
 
-func (s Svc) getConnection(w http.ResponseWriter, r *http.Request) (sdktypes.Connection, bool) {
+func (s *svc) getConnection(w http.ResponseWriter, r *http.Request) (sdktypes.Connection, bool) {
 	cid, err := sdktypes.StrictParseConnectionID(r.PathValue("cid"))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return sdktypes.InvalidConnection, false
 	}
 
-	sdkC, err := s.Svcs.Connections().Get(r.Context(), cid)
+	sdkC, err := s.Connections().Get(r.Context(), cid)
 	if err != nil {
 		status := http.StatusInternalServerError
 		if err == sdkerrors.ErrNotFound {
@@ -91,7 +91,7 @@ func (s Svc) getConnection(w http.ResponseWriter, r *http.Request) (sdktypes.Con
 	return sdkC, true
 }
 
-func (s Svc) connection(w http.ResponseWriter, r *http.Request) {
+func (s *svc) connection(w http.ResponseWriter, r *http.Request) {
 	sdkC, ok := s.getConnection(w, r)
 	if !ok {
 		return
@@ -100,7 +100,7 @@ func (s Svc) connection(w http.ResponseWriter, r *http.Request) {
 	p := toConnection(sdkC)
 	cid := sdkC.ID()
 
-	sdkI, err := s.Svcs.Integrations().GetByID(r.Context(), sdkC.IntegrationID())
+	sdkI, err := s.Integrations().GetByID(r.Context(), sdkC.IntegrationID())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -143,7 +143,7 @@ func (s Svc) connection(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s Svc) rmAllConnectionVars(w http.ResponseWriter, r *http.Request) {
+func (s *svc) rmAllConnectionVars(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 
 	cid, err := sdktypes.StrictParseConnectionID(id)
@@ -152,7 +152,7 @@ func (s Svc) rmAllConnectionVars(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.Svcs.Vars().Delete(r.Context(), sdktypes.NewVarScopeID(cid)); err != nil {
+	if err := s.Vars().Delete(r.Context(), sdktypes.NewVarScopeID(cid)); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

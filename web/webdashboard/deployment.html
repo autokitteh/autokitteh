@@ -1,10 +1,10 @@
 {{ template "header_" . }}
 
 <h1>Deployment: <tt>{{ .ID }}</tt></h1>
-<button onclick="window.location.href='/deployments/{{ .ID }}/activate'" {{ if eq .State "ACTIVE" }}disabled{{ end }}>Activate</button>
-<button onclick="window.location.href='/deployments/{{ .ID }}/deactivate'" {{ if eq .State "INACTIVE" }}disabled{{ end }}>Deactivate</button>
-<button onclick="window.location.href='/deployments/{{ .ID }}/drain'" {{ if or (eq .State "INACTIVE") (eq .State "DRAINING") }}disabled{{ end }}>Drain</button>
-<button onclick="window.location.href='/deployments/{{ .ID }}/test'" {{ if eq .State "TESTING" }}disabled{{ end }}>Test</button>
+<button onclick="window.location.href='/internal/dashboard/deployments/{{ .ID }}/activate'" {{ if eq .State "ACTIVE" }}disabled{{ end }}>Activate</button>
+<button onclick="window.location.href='/internal/dashboard/deployments/{{ .ID }}/deactivate'" {{ if eq .State "INACTIVE" }}disabled{{ end }}>Deactivate</button>
+<button onclick="window.location.href='/internal/dashboard/deployments/{{ .ID }}/drain'" {{ if or (eq .State "INACTIVE") (eq .State "DRAINING") }}disabled{{ end }}>Drain</button>
+<button onclick="window.location.href='/internal/dashboard/deployments/{{ .ID }}/test'" {{ if eq .State "TESTING" }}disabled{{ end }}>Test</button>
 
 <pre>{{ .JSON }}</pre>
 
