@@ -108,7 +108,10 @@ class SysCalls:
         if not id:
             raise ValueError("empty subscription_id")
 
-        req = pb.NextEventRequest(runner_id=self.runner_id, signal_ids=[id])
+        if isinstance(id, str):
+            id = [id]
+
+        req = pb.NextEventRequest(runner_id=self.runner_id, signal_ids=id)
         if timeout:
             req.timeout_ms = int(timeout * 1000)
 
