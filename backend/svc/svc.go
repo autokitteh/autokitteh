@@ -7,15 +7,16 @@ import (
 
 	"go.autokitteh.dev/autokitteh/internal/backend/httpsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/svc"
+	"go.autokitteh.dev/autokitteh/internal/config"
 )
 
 type (
 	RunOptions = svc.RunOptions
-	Config     = svc.Config
+	Config     = config.Config
 )
 
 var (
-	LoadConfig = svc.LoadConfig
+	LoadConfig = config.LoadConfig
 	StartDB    = svc.StartDB
 )
 
