@@ -2,6 +2,7 @@ package scheduler
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"go.temporal.io/sdk/client"
@@ -10,6 +11,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
+	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -24,14 +26,16 @@ type Scheduler struct {
 	temporal   temporalclient.Client
 	sl         *zap.SugaredLogger
 	dispatcher sdkservices.Dispatcher
+	triggers   sdkservices.Triggers
 }
 
 func New(l *zap.Logger, tc temporalclient.Client) *Scheduler {
 	return &Scheduler{sl: l.Sugar(), temporal: tc}
 }
 
-func (sch *Scheduler) Start(ctx context.Context, dispatcher sdkservices.Dispatcher) error {
+func (sch *Scheduler) Start(ctx context.Context, dispatcher sdkservices.Dispatcher, triggers sdkservices.Triggers) error {
 	sch.dispatcher = dispatcher
+	sch.triggers = triggers
 
 	w := worker.New(sch.temporal.Temporal(), taskQueueName, worker.Options{Identity: workerID})
 	w.RegisterWorkflowWithOptions(sch.workflow, workflow.RegisterOptions{Name: workflowName})
@@ -109,11 +113,29 @@ func (sch *Scheduler) Update(ctx context.Context, tid sdktypes.TriggerID, schedu
 func (sch *Scheduler) workflow(wctx workflow.Context, tid sdktypes.TriggerID) error {
 	sl := sch.sl.With("trigger_id", tid)
 
-	event := sdktypes.NewEvent(tid).WithType("tick")
-
 	ctx := temporalclient.NewWorkflowContextAsGOContext(wctx)
 
-	eid, err := sch.dispatcher.Dispatch(ctx, event, nil)
+	// It's ok to run all these straight in the workflow - they're all should be
+	// pretty fast.
+
+	t, err := sch.triggers.Get(ctx, tid)
+	if err != nil {
+		if !errors.Is(err, sdkerrors.ErrNotFound) {
+			return fmt.Errorf("get trigger: %w", err)
+		}
+	}
+
+	if !t.IsValid() {
+		sl.Warnf("trigger %v not found, removing schedule", tid)
+
+		if err := sch.Delete(ctx, tid); err != nil {
+			return fmt.Errorf("delete schedule: %w", err)
+		}
+
+		return nil
+	}
+
+	eid, err := sch.dispatcher.Dispatch(ctx, sdktypes.NewEvent(tid).WithType("tick"), nil)
 	if err != nil {
 		return fmt.Errorf("dispatch event: %w", err)
 	}

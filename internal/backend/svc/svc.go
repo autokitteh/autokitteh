@@ -196,9 +196,9 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 			configset.Empty,
 			fx.Provide(scheduler.New),
 			fx.Invoke(
-				func(lc fx.Lifecycle, sch *scheduler.Scheduler, d sdkservices.Dispatcher) {
+				func(lc fx.Lifecycle, sch *scheduler.Scheduler, d sdkservices.Dispatcher, ts sdkservices.Triggers) {
 					HookOnStart(lc, func(ctx context.Context) error {
-						return sch.Start(ctx, d)
+						return sch.Start(ctx, d, ts)
 					})
 				},
 			),
