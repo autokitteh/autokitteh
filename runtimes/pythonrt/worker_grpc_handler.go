@@ -91,6 +91,33 @@ func (s *workerGRPCHandler) IsActiveRunner(ctx context.Context, req *pb.IsActive
 	return &pb.IsActiveRunnerResponse{}, nil
 }
 
+func pushMsg(initialCall bool, ch chan *logMessage, m *logMessage) error {
+	if initialCall {
+		// If we're not in the first call, the prints channel is not listened on since
+		// the select loop is stuck on the initialCall function.
+		// Accumulate the prints which will be reported when the call is done.
+
+		select {
+		case ch <- m:
+			return nil
+		case <-time.After(time.Second):
+			// just to check print is not full.
+			return status.Error(codes.Internal, "channel full")
+		}
+	}
+
+	m.doneChannel = make(chan struct{})
+
+	ch <- m
+
+	select {
+	case <-m.doneChannel:
+		return nil
+	case <-time.After(runnerChResponseTimeout):
+		return errors.New("timeout")
+	}
+}
+
 func (s *workerGRPCHandler) Log(ctx context.Context, req *pb.LogRequest) (*pb.LogResponse, error) {
 	if req.Level == "" {
 		return nil, status.Error(codes.InvalidArgument, "empty level")
@@ -105,26 +132,11 @@ func (s *workerGRPCHandler) Log(ctx context.Context, req *pb.LogRequest) (*pb.Lo
 
 	m := &logMessage{level: req.Level, message: req.Message}
 
-	if !runner.firstCall {
-		// If we're not in the first call, the prints channel is not listened on since
-		// the select loop is stuck on the initialCall function.
-		// Accumulate the prints which will be reported when the call is done.
-		runner.accLogs = append(runner.accLogs, m)
-		return &pb.LogResponse{}, nil
+	if err := pushMsg(runner.firstCall, runner.channels.log, m); err != nil {
+		return &pb.LogResponse{Error: err.Error()}, nil
 	}
 
-	m.doneChannel = make(chan struct{})
-
-	runner.channels.log <- m
-
-	select {
-	case <-m.doneChannel:
-		return &pb.LogResponse{}, nil
-	case <-time.After(runnerChResponseTimeout):
-		return &pb.LogResponse{
-			Error: "timeout",
-		}, nil
-	}
+	return &pb.LogResponse{}, nil
 }
 
 func (s *workerGRPCHandler) Print(ctx context.Context, req *pb.PrintRequest) (*pb.PrintResponse, error) {
@@ -137,25 +149,11 @@ func (s *workerGRPCHandler) Print(ctx context.Context, req *pb.PrintRequest) (*p
 
 	m := &logMessage{level: "info", message: req.Message}
 
-	if !runner.firstCall {
-		// If we're not in the first call, the prints channel is not listened on since
-		// the select loop is stuck on the initialCall function.
-		// Accumulate the prints which will be reported when the call is done.
-		runner.accPrints = append(runner.accPrints, m)
-		return &pb.PrintResponse{}, nil
+	if err := pushMsg(runner.firstCall, runner.channels.log, m); err != nil {
+		return nil, err
 	}
 
-	m.doneChannel = make(chan struct{})
-
-	runner.channels.print <- m
-	select {
-	case <-m.doneChannel:
-		return &pb.PrintResponse{}, nil
-	case <-time.After(runnerChResponseTimeout):
-		return &pb.PrintResponse{
-			Error: "timeout",
-		}, nil
-	}
+	return &pb.PrintResponse{}, nil
 }
 
 func (s *workerGRPCHandler) Done(ctx context.Context, req *pb.DoneRequest) (*pb.DoneResponse, error) {

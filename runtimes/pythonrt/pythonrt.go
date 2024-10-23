@@ -74,8 +74,6 @@ type pySvc struct {
 	runnerID string
 
 	firstCall bool // first call is the trigger, other calls are activities
-	accPrints []*logMessage
-	accLogs   []*logMessage
 
 	channels comChannels
 
@@ -156,8 +154,8 @@ func newSvc(cfg *Config, l *zap.Logger) (sdkservices.Runtime, error) {
 			done:     make(chan *pb.DoneRequest, 1),
 			err:      make(chan string, 1),
 			request:  make(chan *pb.ActivityRequest, 1),
-			print:    make(chan *logMessage, 1),
-			log:      make(chan *logMessage, 1),
+			print:    make(chan *logMessage, 1024),
+			log:      make(chan *logMessage, 1024),
 			callback: make(chan *callbackMessage, 1),
 		},
 	}
@@ -469,10 +467,6 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktyp
 			if healthErr != nil {
 				return sdktypes.InvalidValue, sdkerrors.NewRetryableError("runner health: %w", healthErr)
 			}
-		case r := <-py.channels.log:
-			py.accLogs = append(py.accLogs, r)
-		case r := <-py.channels.print:
-			py.accPrints = append(py.accPrints, r)
 		case r := <-py.channels.request:
 			var (
 				fnName = "pyFunc"
@@ -522,21 +516,19 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktyp
 }
 
 func (py *pySvc) emitPrintsAndLogs(ctx context.Context) {
-	for ; len(py.accPrints) > 0; py.accPrints = py.accPrints[1:] {
-		p := py.accPrints[0]
-		py.cbs.Print(ctx, py.runID, p.message)
+	for r := range py.channels.print {
+		py.cbs.Print(ctx, py.runID, r.message)
 
-		if p.doneChannel != nil {
-			close(p.doneChannel)
+		if r.doneChannel != nil {
+			close(r.doneChannel)
 		}
 	}
 
-	for ; len(py.accLogs) > 0; py.accLogs = py.accLogs[1:] {
-		p := py.accLogs[0]
-		py.log.Log(pyLevelToZap(p.level), p.message)
+	for r := range py.channels.log {
+		py.log.Log(pyLevelToZap(r.level), r.message)
 
-		if p.doneChannel != nil {
-			close(p.doneChannel)
+		if r.doneChannel != nil {
+			close(r.doneChannel)
 		}
 	}
 }

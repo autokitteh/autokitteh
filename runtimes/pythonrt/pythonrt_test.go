@@ -203,6 +203,7 @@ func Test_pySvc_Run(t *testing.T) {
 
 	ctx, cancel := testCtx(t)
 	defer cancel()
+
 	runID := sdktypes.NewRunID()
 	mainPath := "simple.py"
 	compiled := map[string][]byte{
