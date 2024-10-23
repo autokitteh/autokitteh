@@ -325,7 +325,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 			}),
 		),
 		fx.Invoke(func(muxes *muxes.Muxes) {
-			muxes.NoAuth.Handle("/{$}", http.RedirectHandler("https://www.youtube.com/results?search_query=kitten+cams", http.StatusSeeOther))
+			muxes.NoAuth.Handle("/{$}", http.RedirectHandler("https://autokitteh.com", http.StatusSeeOther))
 			muxes.NoAuth.HandleFunc("/internal/{$}", func(w http.ResponseWriter, r *http.Request) {
 				fmt.Fprint(w, `<html><body>
 	<ul>
