@@ -5,13 +5,13 @@ Convert general func(*args, **kw) to a specific gRPC call to worker.
 
 import json
 import os
+from datetime import timedelta
 
 import grpc
-
-from autokitteh import AttrDict
 import log
 import pb.autokitteh.remote.v1.remote_pb2 as pb
 import pb.autokitteh.remote.v1.remote_pb2_grpc as rpc
+from autokitteh import AttrDict
 
 
 class SyscallError(Exception):
@@ -110,7 +110,9 @@ class SysCalls:
 
         req = pb.NextEventRequest(runner_id=self.runner_id, signal_ids=[id])
         if timeout:
-            req.timeout_ms = int(timeout * 1000)
+            if not isinstance(timeout, timedelta):
+                raise TypeError(f"timeout should be timedelta, got {timeout!r}")
+            req.timeout_ms = int(timeout.total_seconds() * 1000)
 
         resp = call_grpc("next_event", self.worker.NextEvent, req)
 

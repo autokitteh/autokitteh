@@ -66,7 +66,7 @@ wrap_test_cases = [
         pb.Value(duration=pb.Duration(v=duration_pb2.Duration(seconds=86400))),
     ),
     (
-        datetime.strptime("09/19/22 13:55:26", "%m/%d/%y %H:%M:%S").astimezone(tz=UTC),
+        datetime(2022, 9, 19, 13, 55, 26, tzinfo=UTC),
         pb.Value(
             time=pb.Time(
                 v=timestamp_pb2.Timestamp(
