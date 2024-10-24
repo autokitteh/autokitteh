@@ -193,12 +193,12 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		Component("healthcheck", configset.Empty, fx.Provide(healthchecker.New)),
 		Component(
 			"scheduler",
-			configset.Empty,
+			scheduler.Configs,
 			fx.Provide(scheduler.New),
 			fx.Invoke(
-				func(lc fx.Lifecycle, sch *scheduler.Scheduler, d sdkservices.Dispatcher) {
+				func(lc fx.Lifecycle, sch *scheduler.Scheduler, d sdkservices.Dispatcher, ts sdkservices.Triggers) {
 					HookOnStart(lc, func(ctx context.Context) error {
-						return sch.Start(ctx, d)
+						return sch.Start(ctx, d, ts)
 					})
 				},
 			),
