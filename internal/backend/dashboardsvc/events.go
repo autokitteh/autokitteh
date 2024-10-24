@@ -12,10 +12,10 @@ import (
 	"go.autokitteh.dev/autokitteh/web/webdashboard"
 )
 
-func (s Svc) initEvents() {
-	s.Muxes.Auth.HandleFunc("/events", s.events)
-	s.Muxes.Auth.HandleFunc("/events/{eid}", s.event)
-	s.Muxes.Auth.HandleFunc("/events/{eid}/redispatch", s.redispatchEvent)
+func (s *svc) initEvents() {
+	s.HandleFunc(rootPath+"events", s.events)
+	s.HandleFunc(rootPath+"events/{eid}", s.event)
+	s.HandleFunc(rootPath+"events/{eid}/redispatch", s.redispatchEvent)
 }
 
 type event struct{ sdktypes.Event }
@@ -29,7 +29,7 @@ func (p event) ExtraFields() map[string]any { return nil }
 
 func toEvent(sdkP sdktypes.Event) event { return event{sdkP} }
 
-func (s Svc) listEvents(w http.ResponseWriter, r *http.Request, f sdkservices.ListEventsFilter) (list, error) {
+func (s *svc) listEvents(w http.ResponseWriter, r *http.Request, f sdkservices.ListEventsFilter) (list, error) {
 	if f.Limit <= 0 {
 		f.Limit = getQueryNum(r, "events_limit", 50)
 	}
@@ -38,7 +38,7 @@ func (s Svc) listEvents(w http.ResponseWriter, r *http.Request, f sdkservices.Li
 		f.MinSequenceNumber = uint64(getQueryNum(r, "events_min_seq", 0))
 	}
 
-	sdkCs, err := s.Svcs.Events().List(r.Context(), f)
+	sdkCs, err := s.Events().List(r.Context(), f)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return list{}, err
@@ -56,7 +56,7 @@ func (s Svc) listEvents(w http.ResponseWriter, r *http.Request, f sdkservices.Li
 	return genListData(f, kittehs.Transform(sdkCs, toEvent), drops...), nil
 }
 
-func (s Svc) events(w http.ResponseWriter, r *http.Request) {
+func (s *svc) events(w http.ResponseWriter, r *http.Request) {
 	ts, err := s.listEvents(w, r, sdkservices.ListEventsFilter{})
 	if err != nil {
 		return
@@ -65,14 +65,14 @@ func (s Svc) events(w http.ResponseWriter, r *http.Request) {
 	renderList(w, r, "events", ts)
 }
 
-func (s Svc) event(w http.ResponseWriter, r *http.Request) {
+func (s *svc) event(w http.ResponseWriter, r *http.Request) {
 	eid, err := sdktypes.ParseEventID(r.PathValue("eid"))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	sdkE, err := s.Svcs.Events().Get(r.Context(), eid)
+	sdkE, err := s.Events().Get(r.Context(), eid)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -88,7 +88,7 @@ func (s Svc) event(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	actives, err := s.Svcs.Deployments().List(r.Context(), sdkservices.ListDeploymentsFilter{
+	actives, err := s.Deployments().List(r.Context(), sdkservices.ListDeploymentsFilter{
 		State: sdktypes.DeploymentStateActive,
 	})
 	if err != nil {
@@ -96,7 +96,7 @@ func (s Svc) event(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	testings, err := s.Svcs.Deployments().List(r.Context(), sdkservices.ListDeploymentsFilter{
+	testings, err := s.Deployments().List(r.Context(), sdkservices.ListDeploymentsFilter{
 		State: sdktypes.DeploymentStateTesting,
 	})
 	if err != nil {
@@ -110,13 +110,13 @@ func (s Svc) event(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	projects, err := s.Svcs.Projects().List(r.Context())
+	projects, err := s.Projects().List(r.Context())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	envs, err := s.Svcs.Envs().List(r.Context(), sdktypes.InvalidProjectID)
+	envs, err := s.Envs().List(r.Context(), sdktypes.InvalidProjectID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -157,7 +157,7 @@ func (s Svc) event(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s Svc) redispatchEvent(w http.ResponseWriter, r *http.Request) {
+func (s *svc) redispatchEvent(w http.ResponseWriter, r *http.Request) {
 	eid, err := sdktypes.ParseEventID(r.PathValue("eid"))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -175,11 +175,11 @@ func (s Svc) redispatchEvent(w http.ResponseWriter, r *http.Request) {
 		DeploymentID: did,
 	}
 
-	eid1, err := s.Svcs.Dispatcher().Redispatch(r.Context(), eid, &opts)
+	eid1, err := s.Dispatcher().Redispatch(r.Context(), eid, &opts)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	http.Redirect(w, r, "/events/"+eid1.String(), http.StatusSeeOther)
+	http.Redirect(w, r, rootPath+"events/"+eid1.String(), http.StatusSeeOther)
 }

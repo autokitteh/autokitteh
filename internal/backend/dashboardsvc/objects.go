@@ -17,11 +17,11 @@ var routes = map[string]string{
 	"evt": "events",
 }
 
-func (s Svc) initObjects() {
-	s.Muxes.Auth.HandleFunc("/objects/{id}", s.objects)
+func (s *svc) initObjects() {
+	s.HandleFunc(rootPath+"objects/{id}", s.objects)
 }
 
-func (s Svc) objects(w http.ResponseWriter, r *http.Request) {
+func (s *svc) objects(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 
 	prefix, _, ok := strings.Cut(id, "_")
@@ -31,7 +31,7 @@ func (s Svc) objects(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if dst, ok := routes[prefix]; ok {
-		http.Redirect(w, r, "/"+dst+"/"+id, http.StatusFound)
+		http.Redirect(w, r, rootPath+dst+"/"+id, http.StatusFound)
 		return
 	}
 

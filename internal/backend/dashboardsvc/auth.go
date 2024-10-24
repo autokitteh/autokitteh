@@ -8,12 +8,12 @@ import (
 	"go.autokitteh.dev/autokitteh/web/webdashboard"
 )
 
-func (s Svc) initAuth() {
-	s.Muxes.Auth.HandleFunc("/auth/{$}", s.auth)
-	s.Muxes.Auth.HandleFunc("POST /auth/tokens", s.createToken)
+func (s *svc) initAuth() {
+	s.HandleFunc(rootPath+"auth/{$}", s.auth)
+	s.HandleFunc("POST "+rootPath+"auth/tokens", s.createToken)
 }
 
-func (s Svc) auth(w http.ResponseWriter, r *http.Request) {
+func (s *svc) auth(w http.ResponseWriter, r *http.Request) {
 	userJSON := marshalObject(authcontext.GetAuthnUser(r.Context()).ToProto())
 
 	if err := webdashboard.Tmpl(r).ExecuteTemplate(w, "auth.html", struct {
@@ -28,8 +28,8 @@ func (s Svc) auth(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s Svc) createToken(w http.ResponseWriter, r *http.Request) {
-	tok, err := s.Svcs.Auth().CreateToken(r.Context())
+func (s *svc) createToken(w http.ResponseWriter, r *http.Request) {
+	tok, err := s.Auth().CreateToken(r.Context())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
