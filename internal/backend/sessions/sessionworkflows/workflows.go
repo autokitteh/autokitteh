@@ -15,6 +15,7 @@ import (
 	"go.uber.org/zap"
 
 	akCtx "go.autokitteh.dev/autokitteh/internal/backend/context"
+	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessioncalls"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessiondata"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionsvcs"
@@ -97,6 +98,7 @@ func (ws *workflows) StartWorkflow(ctx context.Context, session sdktypes.Session
 		"deployment_id":   session.DeploymentID().String(),
 		"deployment_uuid": session.DeploymentID().UUIDValue().String(),
 		"workflow_id":     workflowID(sessionID),
+		"process_id":      fixtures.ProcessID(),
 	}
 
 	if session.ParentSessionID().IsValid() {
@@ -289,7 +291,11 @@ func (ws *workflows) StopWorkflow(ctx context.Context, sessionID sdktypes.Sessio
 				taskQueueName,
 				"terminate_"+wid,
 				fmt.Sprintf("stop %v", sessionID),
-				nil,
+				map[string]string{
+					"process_id":   fixtures.ProcessID(),
+					"session_id":   sessionID.String(),
+					"session_uuid": sessionID.UUIDValue().String(),
+				},
 			),
 			terminateSessionWorkflowName,
 			sessionID,

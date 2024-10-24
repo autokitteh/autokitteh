@@ -11,6 +11,7 @@ import (
 
 	akCtx "go.autokitteh.dev/autokitteh/internal/backend/context"
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
+	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -70,6 +71,7 @@ func (d *Dispatcher) Dispatch(ctx context.Context, event sdktypes.Event, opts *s
 		"destination_id":   event.DestinationID().String(),
 		"destination_uuid": event.DestinationID().UUIDValue().String(),
 		"seq":              fmt.Sprintf("%d", event.Seq()),
+		"process_id":       fixtures.ProcessID(),
 	}
 
 	r, err := d.svcs.LazyTemporalClient().ExecuteWorkflow(
