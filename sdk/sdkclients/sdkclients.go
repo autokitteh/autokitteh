@@ -44,21 +44,21 @@ func New(params sdkclient.Params) sdkservices.Services {
 	return &client{
 		params: params, // just a dumb struct, no need to be lazy here.
 
-		auth:         kittehs.Lazy1(sdkauthclient.New, params),
-		builds:       kittehs.Lazy1(sdkbuildsclient.New, params),
-		connections:  kittehs.Lazy1(sdkconnectionsclient.New, params),
-		deployments:  kittehs.Lazy1(sdkdeploymentsclient.New, params),
-		dispatcher:   kittehs.Lazy1(sdkdispatcherclient.New, params),
-		envs:         kittehs.Lazy1(sdkenvsclient.New, params),
-		events:       kittehs.Lazy1(sdkeventsclient.New, params),
-		integrations: kittehs.Lazy1(sdkintegrationsclient.New, params),
-		oauth:        kittehs.Lazy1(sdkoauthclient.New, params),
-		projects:     kittehs.Lazy1(sdkprojectsclient.New, params),
-		runtimes:     kittehs.Lazy1(sdkruntimesclient.New, params),
-		sessions:     kittehs.Lazy1(sdksessionsclient.New, params),
-		store:        kittehs.Lazy1(sdkstoreclient.New, params),
-		triggers:     kittehs.Lazy1(sdktriggerclient.New, params),
-		vars:         kittehs.Lazy1(sdkvarsclient.New, params),
+		auth:         kittehs.LazyCache(sdkauthclient.New, params),
+		builds:       kittehs.LazyCache(sdkbuildsclient.New, params),
+		connections:  kittehs.LazyCache(sdkconnectionsclient.New, params),
+		deployments:  kittehs.LazyCache(sdkdeploymentsclient.New, params),
+		dispatcher:   kittehs.LazyCache(sdkdispatcherclient.New, params),
+		envs:         kittehs.LazyCache(sdkenvsclient.New, params),
+		events:       kittehs.LazyCache(sdkeventsclient.New, params),
+		integrations: kittehs.LazyCache(sdkintegrationsclient.New, params),
+		oauth:        kittehs.LazyCache(sdkoauthclient.New, params),
+		projects:     kittehs.LazyCache(sdkprojectsclient.New, params),
+		runtimes:     kittehs.LazyCache(sdkruntimesclient.New, params),
+		sessions:     kittehs.LazyCache(sdksessionsclient.New, params),
+		store:        kittehs.LazyCache(sdkstoreclient.New, params),
+		triggers:     kittehs.LazyCache(sdktriggerclient.New, params),
+		vars:         kittehs.LazyCache(sdkvarsclient.New, params),
 	}
 }
 

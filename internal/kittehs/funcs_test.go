@@ -6,11 +6,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestLazy1(t *testing.T) {
+func TestLazyCache(t *testing.T) {
 	n := 0
+	counter := func(int) int { n++; return n }
 
-	l := Lazy1(func(int) int { n++; return n }, 0)
+	f := LazyCache(counter, 0)
 
-	assert.Equal(t, l(), 1)
-	assert.Equal(t, l(), 1)
+	assert.Equal(t, f(), 1)
+	assert.Equal(t, f(), 1)
 }
