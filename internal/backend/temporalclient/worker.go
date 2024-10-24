@@ -8,6 +8,7 @@ import (
 	"go.temporal.io/sdk/worker"
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 )
 
@@ -44,7 +45,7 @@ func NewWorker(l *zap.Logger, client client.Client, qname string, cfg WorkerConf
 		DisableRegistrationAliasing:            true,
 		DeadlockDetectionTimeout:               cfg.WorkflowDeadlockTimeout,
 		OnFatalError:                           func(err error) { l.Error(fmt.Sprintf("temporal worker: %v", err), zap.Error(err)) },
-		Identity:                               qname,
+		Identity:                               fmt.Sprintf("%s__%s", qname, fixtures.ProcessID()),
 		MaxConcurrentWorkflowTaskExecutionSize: cfg.MaxConcurrentWorkflowTaskExecutionSize,
 		MaxConcurrentActivityExecutionSize:     cfg.MaxConcurrentActivityExecutionSize,
 	}
