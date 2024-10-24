@@ -4,28 +4,45 @@ set -euo pipefail
 
 cd "$(dirname "$0")"
 
-VERSION="$(cat VERSION)"
+VERSION="$(cut -w -f 1 < VERSION)"
+SHA="$(cut -w -f 2 < VERSION)"
 FILENAME="autokitteh-web-v${VERSION}.zip"
 
-echo "want version ${VERSION}"
+echo "want version ${VERSION}."
+
+checksum() {
+    echo "verifying checksum..."
+
+    sha=$(shasum -a 256 "$1" | cut -d ' ' -f 1)
+
+    if [[ "${sha}" != "${SHA}" ]]; then
+        echo "checksum mismatch: ${sha} != ${SHA}"
+        exit 1
+    fi
+}
 
 if [[ -r ${FILENAME} ]]; then
-    echo "up to date"
+    echo "required version already downloaded"
+    checksum "${FILENAME}"
+    echo "checksum verified"
     exit 0
 fi
 
 echo "not downloaded yet."
 
-PREV="$(ls -1 autokitteh-web-v*.zip > /dev/null 2>&1 || true)"
-
 echo "fetching ${FILENAME}..."
 
-curl -sL "https://github.com/autokitteh/web-platform/releases/download/v${VERSION}/${FILENAME}" > "${FILENAME}"
+trap 'rm -f ${FILENAME}_' 0
 
-if [[ -z ${PREV} ]]; then
-    echo "removing previous versions..."
-    rm -f "${PREV}"
-fi
+curl -sL "https://github.com/autokitteh/web-platform/releases/download/v${VERSION}/${FILENAME}" > "${FILENAME}_"
+
+checksum "${FILENAME}_"
+
+echo "removing previous versions..."
+rm -f "autokitteh-web-v*.zip"
+
+echo "finalizing version..."
+mv "${FILENAME}_" "${FILENAME}"
 
 echo "testing..."
 
