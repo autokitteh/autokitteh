@@ -1,6 +1,6 @@
 [project]
 name = 'autokitteh'
-version = '0.3.4'
+version = '0.3.5'
 description = 'AutoKitteh Python SDK'
 readme = 'README.md'
 license = {file = 'LICENSE'}
@@ -11,7 +11,7 @@ requires = ["setuptools", "setuptools-scm"]
 build-backend = "setuptools.build_meta"
 
 [project.optional-dependencies]
-# The AutoKitteh enviornment when running workflows
+# The AutoKitteh environment when running workflows
 all = [
 	"asana ~= 5.0",
 	"atlassian-python-api ~= 3.41",
@@ -22,7 +22,7 @@ all = [
 	"google-auth-oauthlib ~= 1.2",
 	#"google-generativeai == 0.7.2",
 	"openai ~= 1.44",
-	"PyGithub ~= 2.4",
+	"PyGithub @ git+https://github.com/PyGithub/PyGithub.git",
 	"redis ~= 5.0",
 	"slack-sdk ~= 3.32",
 	"twilio ~= 9.3",
