@@ -15,8 +15,9 @@
 <script>
     function redispatch() {
         const sel = document.getElementById('redispatch').value;
+        const encodedSel = encodeURIComponent(sel);
 
-        window.location.href = '/internal/dashboard/events/{{ .ID }}/redispatch?did=' + sel;
+        window.location.href = '/internal/dashboard/events/{{ .ID }}/redispatch?did=' + encodedSel;
     }
 </script>
 
