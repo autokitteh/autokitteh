@@ -7,6 +7,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	programv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/program/v1"
+	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdklogger"
 )
 
@@ -94,6 +95,11 @@ func WrapError(err error) ProgramError {
 }
 
 type programError ProgramError
+
+var _ error = programError{}
+
+// This allows `errors.Is(err, sdkerrors.ErrProgram)“ to work.
+func (e programError) Unwrap() error { return sdkerrors.ErrProgram }
 
 func (e programError) Error() string {
 	if !e.IsValid() {

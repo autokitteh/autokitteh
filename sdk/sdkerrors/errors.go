@@ -10,15 +10,15 @@ import (
 
 var (
 	ErrNotImplemented     = errors.New("not implemented")
-	ErrRPC                = errors.New("rpc")
 	ErrAlreadyExists      = errors.New("already exists")
 	ErrNotFound           = errors.New("not found")
 	ErrConflict           = errors.New("conflict")
 	ErrUnauthorized       = errors.New("unauthorized")
 	ErrUnauthenticated    = errors.New("unauthenticated")
-	ErrUnknown            = errors.New("unknown")
+	ErrUnknown            = NewRetryableErrorf("unknown")
 	ErrFailedPrecondition = errors.New("failed precondition")
-	ErrLimitExceeded      = errors.New("limit exceeded")
+	ErrLimitExceeded      = NewRetryableErrorf("limit exceeded")
+	ErrProgram            = errors.New("program error")
 )
 
 func IgnoreNotFoundErr[T any](in T, err error) (T, error) {
@@ -31,24 +31,15 @@ func IgnoreNotFoundErr[T any](in T, err error) (T, error) {
 	return in, nil
 }
 
-func IgnoreErrAlreadyExists(err error) error {
-	if errors.Is(err, ErrAlreadyExists) {
-		return nil
-	}
+type RetryableError struct{ Err error }
 
-	return err
-}
-
-type RetryableError struct {
-	Message string
-	Err     error
-}
-
-func (e *RetryableError) Error() string { return fmt.Sprintf("%s: %v", e.Message, e.Err) }
+func (e *RetryableError) Error() string { return fmt.Sprintf("[retryable] %v", e.Err) }
 func (e *RetryableError) Unwrap() error { return e.Err }
-func NewRetryableError(f string, vs ...any) error {
-	return &RetryableError{Err: fmt.Errorf(f, vs...)}
+func NewRetryableError(err error) error {
+	return &RetryableError{Err: err}
 }
+
+func NewRetryableErrorf(f string, vs ...any) error { return NewRetryableError(fmt.Errorf(f, vs...)) }
 
 func IsRetryableError(err error) bool {
 	var r *RetryableError
@@ -67,6 +58,11 @@ func (e ErrInvalidArgument) Error() string {
 }
 
 func (e ErrInvalidArgument) Unwrap() error { return e.Underlying }
+
+func IsInvalidArgumentError(err error) bool {
+	var invalidArg ErrInvalidArgument
+	return errors.As(err, &invalidArg)
+}
 
 func NewInvalidArgumentError(f string, vs ...any) error {
 	return ErrInvalidArgument{Underlying: fmt.Errorf(f, vs...)}
@@ -97,7 +93,36 @@ func AsConnectError(err error) error {
 		return connect.NewError(connect.CodeUnimplemented, err)
 	case errors.Is(err, ErrFailedPrecondition):
 		return connect.NewError(connect.CodeFailedPrecondition, err)
+	case errors.Is(err, ErrProgram):
+		fallthrough
 	default:
 		return connect.NewError(connect.CodeUnknown, err)
+	}
+}
+
+func ErrorType(err error) string {
+	switch {
+	case errors.Is(err, ErrNotFound):
+		return "not_found"
+	case IsInvalidArgumentError(err):
+		return "invalid_argument"
+	case errors.Is(err, ErrUnauthorized):
+		return "permission_denied"
+	case errors.Is(err, ErrUnauthenticated):
+		return "permission_denied"
+	case errors.Is(err, ErrAlreadyExists):
+		return "already_exists"
+	case errors.Is(err, ErrNotImplemented):
+		return "not_implemented"
+	case errors.Is(err, ErrFailedPrecondition):
+		return "failed_precondition"
+	case errors.Is(err, ErrLimitExceeded):
+		return "limit_exceeded"
+	case errors.Is(err, ErrUnknown):
+		return "unknown"
+	case errors.Is(err, ErrProgram):
+		return "program_error"
+	default:
+		return "unknown_type"
 	}
 }

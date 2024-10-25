@@ -133,7 +133,7 @@ func (sch *Scheduler) activity(ctx context.Context, tid sdktypes.TriggerID) erro
 	t, err := sch.triggers.Get(ctx, tid)
 	if err != nil {
 		if !errors.Is(err, sdkerrors.ErrNotFound) {
-			return fmt.Errorf("get trigger: %w", err)
+			return temporalclient.TranslateError(err, "get trigger %v", tid)
 		}
 	}
 
@@ -141,7 +141,7 @@ func (sch *Scheduler) activity(ctx context.Context, tid sdktypes.TriggerID) erro
 		sl.Warnf("trigger %v not found, removing schedule", tid)
 
 		if err := sch.Delete(ctx, tid); err != nil {
-			return fmt.Errorf("delete schedule: %w", err)
+			return temporalclient.TranslateError(err, "delete schedule for %v", tid)
 		}
 
 		return nil
@@ -149,7 +149,7 @@ func (sch *Scheduler) activity(ctx context.Context, tid sdktypes.TriggerID) erro
 
 	eid, err := sch.dispatcher.Dispatch(ctx, sdktypes.NewEvent(tid).WithType("tick"), nil)
 	if err != nil {
-		return fmt.Errorf("dispatch event: %w", err)
+		return temporalclient.TranslateError(err, "dispatch event for %v", tid)
 	}
 
 	sl.With("event_id", eid).Infof("schedule event workflow for %v dispatched as %v", tid, eid)
