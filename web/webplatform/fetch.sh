@@ -5,7 +5,7 @@ set -euo pipefail
 cd "$(dirname "$0")"
 
 VERSION="$(cut -w -f 1 < VERSION)"
-SHA="$(cut -w -f 2 < VERSION)"
+EXPECTED_SHA="$(cut -w -f 2 < VERSION)"
 FILENAME="autokitteh-web-v${VERSION}.zip"
 
 echo "want version ${VERSION}."
@@ -15,8 +15,8 @@ checksum() {
 
     sha=$(shasum -a 256 "$1" | cut -d ' ' -f 1)
 
-    if [[ "${sha}" != "${SHA}" ]]; then
-        echo "checksum mismatch: ${sha} != ${SHA}"
+    if [[ "${sha}" != "${EXPECTED_SHA}" ]]; then
+        echo "checksum mismatch: ${sha} != ${EXPECTED_SHA}"
         exit 1
     fi
 }
