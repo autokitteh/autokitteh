@@ -3,8 +3,9 @@ package pythonrt
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
+
+	"go.uber.org/zap"
 
 	pb "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/remote/v1"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -48,37 +49,52 @@ type Healther interface {
 	Health(ctx context.Context, in *pb.HealthRequest, opts ...grpc.CallOption) (*pb.HealthResponse, error)
 }
 
-func waitForServer(name string, h Healther, timeout time.Duration) error {
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
-	start := time.Now()
-	var req pb.HealthRequest
+func waitForServer(ctx context.Context, sl *zap.SugaredLogger, name string, h Healther, timeout time.Duration) error {
+	tmo := time.After(timeout)
 
-	for time.Since(start) <= timeout {
-		resp, err := h.Health(ctx, &req)
-		if err != nil || resp.Error != "" {
-			time.Sleep(10 * time.Millisecond)
-			continue
+	const retryInterval = 50 * time.Millisecond
+
+	startTime := time.Now()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-tmo:
+			return errors.New("timeout waiting for " + name + " server")
+		case <-time.After(retryInterval):
+			sl.Debugf("polling server health")
+			resp, err := h.Health(ctx, &pb.HealthRequest{})
+			if err == nil {
+				sl.With("resp", resp).Info("got health response after %s: %v", time.Since(startTime), resp)
+				if resp.Error != "" {
+					return errors.New("error from " + name + " server: " + resp.Error)
+				}
+
+				return nil
+			}
+
+			sl.With("err", err).Debugf("got error: %v", err)
 		}
-
-		return nil
 	}
-
-	return fmt.Errorf("%s not ready after %v", name, timeout)
 }
 
-func dialRunner(addr string) (*RunnerClient, error) {
-	creds := insecure.NewCredentials()
-	conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(creds))
+func dialRunner(ctx context.Context, l *zap.Logger, addr string, t time.Duration) (*RunnerClient, error) {
+	sl := l.Sugar().With("addr", addr)
+
+	sl.Infof("dialing runner at %q", addr)
+
+	conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, err
 	}
 
 	c := RunnerClient{pb.NewRunnerClient(conn), conn}
 
-	if err := waitForServer("runner", &c, 10*time.Second); err != nil {
+	if err := waitForServer(ctx, sl, "runner", &c, t); err != nil {
 		connCloseErr := conn.Close()
 		return nil, errors.Join(err, connCloseErr)
 	}
+
 	return &c, nil
 }

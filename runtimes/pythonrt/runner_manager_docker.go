@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/google/uuid"
 	"go.uber.org/zap"
@@ -17,6 +18,7 @@ type DockerRuntimeConfig struct {
 	WorkerAddressProvider func() string
 	LogRunnerCode         bool
 	LogBuildCode          bool
+	StartDuration         time.Duration
 }
 
 type dockerRunnerManager struct {
@@ -25,6 +27,7 @@ type dockerRunnerManager struct {
 	runnerIDToContainerID map[string]string
 	mu                    *sync.Mutex
 	workerAddressProvider func() string
+	startDuration         time.Duration
 }
 
 func configureDockerRunnerManager(log *zap.Logger, cfg DockerRuntimeConfig) error {
@@ -61,6 +64,7 @@ func configureDockerRunnerManager(log *zap.Logger, cfg DockerRuntimeConfig) erro
 		runnerIDToContainerID: map[string]string{},
 		mu:                    new(sync.Mutex),
 		workerAddressProvider: cfg.WorkerAddressProvider,
+		startDuration:         cfg.StartDuration,
 	}
 
 	configuredRunnerType = runnerTypeDocker
@@ -109,9 +113,8 @@ func (rm *dockerRunnerManager) Start(ctx context.Context, sessionID sdktypes.Ses
 	}
 
 	runnerAddr := fmt.Sprintf("127.0.0.1:%s", port)
-	client, err := dialRunner(runnerAddr)
+	client, err := dialRunner(ctx, rm.logger, runnerAddr, rm.startDuration)
 	if err != nil {
-
 		if err := rm.client.StopRunner(ctx, cid); err != nil {
 			rm.logger.Warn("close runner", zap.Error(err))
 		}
@@ -123,6 +126,7 @@ func (rm *dockerRunnerManager) Start(ctx context.Context, sessionID sdktypes.Ses
 	rm.mu.Unlock()
 	return runnerID, client, nil
 }
+
 func (rm *dockerRunnerManager) RunnerHealth(ctx context.Context, runnerID string) error {
 	rm.mu.Lock()
 	cid, ok := rm.runnerIDToContainerID[runnerID]
