@@ -36,16 +36,11 @@ func prepareUserCode(code []byte, gzipped bool) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	runnerDir := path.Join(tmpDir, "/runner")
-	if err := os.Mkdir(runnerDir, 0o777); err != nil {
+	if err := copyFS(pycode, tmpDir); err != nil {
 		return "", err
 	}
 
-	if err := copyFS(pycode, runnerDir); err != nil {
-		return "", err
-	}
-
-	workflowDir := path.Join(tmpDir, "/workflow")
+	workflowDir := path.Join(tmpDir, "workflow")
 
 	if err := os.Mkdir(workflowDir, 0o777); err != nil {
 		return "", err
