@@ -50,6 +50,10 @@ type Healther interface {
 }
 
 func waitForServer(ctx context.Context, sl *zap.SugaredLogger, name string, h Healther, timeout time.Duration) error {
+	if timeout == 0 {
+		timeout = 10 * time.Second
+	}
+
 	tmo := time.After(timeout)
 
 	const retryInterval = 50 * time.Millisecond
