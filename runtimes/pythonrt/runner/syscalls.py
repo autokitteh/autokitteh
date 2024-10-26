@@ -113,9 +113,11 @@ class SysCalls:
 
         req = pb.NextEventRequest(runner_id=self.runner_id, signal_ids=ids)
         if timeout:
-            if not isinstance(timeout, timedelta):
-                raise TypeError(f"timeout should be timedelta, got {timeout!r}")
-            req.timeout_ms = int(timeout.total_seconds() * 1000)
+            if isinstance(timeout, int):
+                req.timeout_ms = timeout * 1000
+            elif isinstance(timeout, timedelta):
+                req.timeout_ms = int(timeout.total_seconds() * 1000)
+            raise TypeError(f"timeout should be timedelta or int, got {timeout!r}")
 
         resp = call_grpc("next_event", self.worker.NextEvent, req)
 
