@@ -18,8 +18,12 @@ def unsubscribe(subscription_id: str) -> None:
     pass
 
 
-def next_event(subscription_id: str, *, timeout: timedelta = None) -> AttrDict:
-    """Get the next event from the subscription."""
+def next_event(subscription_id: str | list, *, timeout: timedelta = None) -> AttrDict:
+    """Get the next event from the subscription(s).
+
+    If timeout is not None and there are no new events after timeout, this function will
+    return None.
+    """
     # Dummy implementation for local development.
     return AttrDict()
 
