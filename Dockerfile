@@ -40,7 +40,8 @@ WORKDIR /runner
 COPY ./runtimes/pythonrt/runner/pyproject.toml pyproject.toml
 RUN python -m pip install .[all]
 
-
+COPY ./runtimes/pythonrt/py-sdk py-sdk
+RUN cd py-sdk && python -m pip install .
 
 FROM python:3.11-slim AS final
 
