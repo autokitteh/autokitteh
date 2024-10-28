@@ -113,7 +113,6 @@ func findExports(fsys fs.FS) ([]sdktypes.BuildExport, error) {
 
 	out := make([]sdktypes.BuildExport, len(exports))
 	for i, e := range exports {
-
 		loc, err := sdktypes.CodeLocationFromProto(&sdktypes.CodeLocationPB{
 			Path: e.File,
 			Name: e.Name,
@@ -121,8 +120,8 @@ func findExports(fsys fs.FS) ([]sdktypes.BuildExport, error) {
 		if err != nil {
 			return nil, err
 		}
-		exp := sdktypes.NewBuildExport().WithSymbol(sdktypes.NewSymbol(e.Name)).WithLocation(loc)
-		out[i] = exp
+
+		out[i] = sdktypes.NewBuildExport().WithSymbol(sdktypes.NewSymbol(e.Name)).WithLocation(loc)
 	}
 
 	return out, nil
