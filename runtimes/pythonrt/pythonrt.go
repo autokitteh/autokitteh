@@ -17,6 +17,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/internal/xdg"
 	pb "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/remote/v1"
+	pb_value "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/values/v1"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkruntimes"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -482,8 +483,15 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktyp
 
 			if r.CallInfo != nil {
 				fnName = r.CallInfo.Function
-				args = kittehs.Transform(r.CallInfo.Args, func(s string) sdktypes.Value { return sdktypes.NewStringValue(s) })
-				kw = kittehs.TransformMap(r.CallInfo.Kwargs, func(k, v string) (string, sdktypes.Value) { return k, sdktypes.NewStringValue(v) })
+				args = kittehs.Transform(r.CallInfo.Args, func(v *pb_value.Value) sdktypes.Value {
+					// TODO: What if there's an error
+					val, _ := sdktypes.ValueFromProto(v)
+					return val
+				})
+				kw = kittehs.TransformMap(r.CallInfo.Kwargs, func(k string, v *pb_value.Value) (string, sdktypes.Value) {
+					val, _ := sdktypes.ValueFromProto(v)
+					return k, val
+				})
 			}
 
 			// it was already checked before we got here
@@ -514,7 +522,7 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktyp
 				return sdktypes.InvalidValue, perr.ToError()
 			}
 
-			return sdktypes.NewBytesValue(done.Result), nil
+			return sdktypes.ValueFromProto(done.Result)
 		case <-ctx.Done():
 			return sdktypes.InvalidValue, fmt.Errorf("context expired - %w", ctx.Err())
 		}

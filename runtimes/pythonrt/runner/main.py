@@ -1,26 +1,27 @@
-from base64 import b64decode
 import builtins
-from concurrent.futures import Future, ThreadPoolExecutor
-from io import StringIO
 import json
-from multiprocessing import cpu_count
 import os
-from pathlib import Path
 import pickle
 import sys
+from base64 import b64decode
+from concurrent.futures import Future, ThreadPoolExecutor
+from io import StringIO
+from multiprocessing import cpu_count
+from pathlib import Path
 from threading import Lock, Thread
 from time import sleep
 from traceback import TracebackException, format_exception
 
 import grpc
-from grpc_reflection.v1alpha import reflection
-
 import loader
 import log
 import pb.autokitteh.remote.v1.remote_pb2 as pb
 import pb.autokitteh.remote.v1.remote_pb2_grpc as rpc
+import pb.autokitteh.values.v1.values_pb2 as ak_values
+import values
 from autokitteh import AttrDict, connections
 from call import AKCall, full_func_name
+from grpc_reflection.v1alpha import reflection
 from syscalls import SysCalls
 
 SERVER_GRACE_TIMEOUT = 3  # seconds
@@ -268,8 +269,8 @@ class Runner(rpc.RunnerServicer):
             data=call_id.encode(),
             call_info=pb.CallInfo(
                 function=fn.__name__,  # AK rejects json.loads
-                args=[repr(a) for a in args],
-                kwargs={k: repr(v) for k, v in kw.items()},
+                args=[safe_wrap(a) for a in args],
+                kwargs={k: safe_wrap(v) for k, v in kw.items()},
             ),
         )
         log.info("activity: sending %r", req)
@@ -291,10 +292,17 @@ class Runner(rpc.RunnerServicer):
             err = e
 
         log.info("on_event: end: result=%r, err=%r", result, err)
+        try:
+            value = values.wrap(result)
+        except TypeError:
+            data = pickle.dumps(result, protocol=0)
+            value = ak_values.Value(
+                bytes=ak_values.Bytes(v=data),
+            )
+
         req = pb.DoneRequest(
             runner_id=self.id,
-            # TODO: We want value that AK can understand (proto.Value)
-            result=pickle.dumps(result, protocol=0),
+            result=value,
         )
 
         if err:
@@ -332,6 +340,13 @@ class Runner(rpc.RunnerServicer):
                 log.error("grpc canclled or unavailable, killing self")
                 self.server.stop(SERVER_GRACE_TIMEOUT)
             log.error("print: %s", err)
+
+
+def safe_wrap(v):
+    try:
+        return values.wrap(v)
+    except TypeError:
+        return ak_values.Value(string=ak_values.String(v=repr(v)))
 
 
 def is_valid_port(port):

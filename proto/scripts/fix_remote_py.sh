@@ -14,6 +14,7 @@ replace() {
 }
 
 
+replace autokitteh/remote/v1/remote_pb2.py "from autokitteh.values.v1" "from pb.autokitteh.values.v1" 
 replace autokitteh/remote/v1/remote_pb2_grpc.py "from autokitteh.remote.v1 import remote_pb2" "from . import remote_pb2"
 
 replace autokitteh/values/v1/values_pb2.py "from autokitteh." "from pb.autokitteh." 

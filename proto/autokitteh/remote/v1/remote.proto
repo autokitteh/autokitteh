@@ -3,6 +3,7 @@ syntax = "proto3";
 
 package autokitteh.remote.v1;
 
+import "autokitteh/values/v1/values.proto";
 import "google/protobuf/timestamp.proto";
 
 message ContainerConfig {
@@ -125,8 +126,8 @@ service Runner {
 
 message CallInfo {
   string function = 1;
-  repeated string args = 2;
-  map<string, string> kwargs = 3;
+  repeated autokitteh.values.v1.Value args = 2;
+  map<string, autokitteh.values.v1.Value> kwargs = 3;
 }
 
 message ActivityRequest {
@@ -142,7 +143,7 @@ message ActivityResponse {
 
 message DoneRequest {
   string runner_id = 1;
-  bytes result = 2;
+  autokitteh.values.v1.Value result = 2;
   string error = 3;
   repeated Frame traceback = 4;
 }
