@@ -75,8 +75,6 @@ type pySvc struct {
 	runnerID string
 
 	firstCall bool // first call is the trigger, other calls are activities
-	accPrints []*logMessage
-	accLogs   []*logMessage
 
 	channels comChannels
 
@@ -463,17 +461,17 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktyp
 	// Wait for client Done message
 	var done *pb.DoneRequest
 	for {
-		py.emitPrintsAndLogs(ctx)
-
 		select {
 		case healthErr := <-runnerHealthChan:
 			if healthErr != nil {
 				return sdktypes.InvalidValue, sdkerrors.NewRetryableError("runner health: %w", healthErr)
 			}
 		case r := <-py.channels.log:
-			py.accLogs = append(py.accLogs, r)
-		case r := <-py.channels.print:
-			py.accPrints = append(py.accPrints, r)
+			py.log.Log(pyLevelToZap(r.level), r.message)
+			close(r.doneChannel)
+		case p := <-py.channels.print:
+			py.cbs.Print(ctx, py.runID, p.message)
+			close(p.doneChannel)
 		case r := <-py.channels.request:
 			var (
 				fnName = "pyFunc"
@@ -529,31 +527,8 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktyp
 	}
 }
 
-func (py *pySvc) emitPrintsAndLogs(ctx context.Context) {
-	for ; len(py.accPrints) > 0; py.accPrints = py.accPrints[1:] {
-		p := py.accPrints[0]
-		py.cbs.Print(ctx, py.runID, p.message)
-
-		if p.doneChannel != nil {
-			close(p.doneChannel)
-		}
-	}
-
-	for ; len(py.accLogs) > 0; py.accLogs = py.accLogs[1:] {
-		p := py.accLogs[0]
-		py.log.Log(pyLevelToZap(p.level), p.message)
-
-		if p.doneChannel != nil {
-			close(p.doneChannel)
-		}
-	}
-}
-
 // drainPrints drains the print channel at the end of a run.
 func (py *pySvc) drainPrints(ctx context.Context) {
-	// emit already accumulated prints and logs.
-	py.emitPrintsAndLogs(ctx)
-
 	// flush the rest of the prints and logs.
 	for {
 		select {
@@ -605,6 +580,24 @@ func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 		return py.initialCall(ctx, fnName, args, kwargs)
 	}
 
+	done := make(chan struct{})
+	defer close(done)
+
+	go func() {
+		for {
+			select {
+			case r := <-py.channels.log:
+				py.log.Log(pyLevelToZap(r.level), r.message)
+				close(r.doneChannel)
+			case p := <-py.channels.print:
+				py.cbs.Print(ctx, py.runID, p.message)
+				close(p.doneChannel)
+			case <-done:
+				return
+			}
+		}
+	}()
+
 	// If we're here, it's an activity call
 	req := pb.ExecuteRequest{
 		Data: fn.Data(),
@@ -616,8 +609,6 @@ func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 	case resp.Error != "":
 		return sdktypes.InvalidValue, fmt.Errorf("%s", resp.Error)
 	}
-
-	py.emitPrintsAndLogs(ctx)
 
 	return sdktypes.NewBytesValue(resp.Result), nil
 }
