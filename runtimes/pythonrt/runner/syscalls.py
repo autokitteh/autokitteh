@@ -117,7 +117,8 @@ class SysCalls:
                 req.timeout_ms = timeout * 1000
             elif isinstance(timeout, timedelta):
                 req.timeout_ms = int(timeout.total_seconds() * 1000)
-            raise TypeError(f"timeout should be timedelta or int, got {timeout!r}")
+            else:
+                raise TypeError(f"timeout should be timedelta or int, got {timeout!r}")
 
         resp = call_grpc("next_event", self.worker.NextEvent, req)
 
