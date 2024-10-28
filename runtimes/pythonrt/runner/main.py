@@ -1,26 +1,25 @@
-from base64 import b64decode
 import builtins
-from concurrent.futures import Future, ThreadPoolExecutor
-from io import StringIO
 import json
-from multiprocessing import cpu_count
 import os
-from pathlib import Path
 import pickle
 import sys
+from base64 import b64decode
+from concurrent.futures import Future, ThreadPoolExecutor
+from io import StringIO
+from multiprocessing import cpu_count
+from pathlib import Path
 from threading import Lock, Thread
 from time import sleep
 from traceback import TracebackException, format_exception
 
 import grpc
-from grpc_reflection.v1alpha import reflection
-
 import loader
 import log
 import pb.autokitteh.remote.v1.remote_pb2 as pb
 import pb.autokitteh.remote.v1.remote_pb2_grpc as rpc
 from autokitteh import AttrDict, connections
 from call import AKCall, full_func_name
+from grpc_reflection.v1alpha import reflection
 from syscalls import SysCalls
 
 SERVER_GRACE_TIMEOUT = 3  # seconds
@@ -59,6 +58,15 @@ def exc_traceback(err):
     ]
 
 
+pickle_help = """
+=======================================================================================================
+This error means you need to use the @autokitteh.activity decorator.
+See https://docs.autokitteh.com/develop/python/#function-arguments-and-return-values-must-be-pickleable
+for more details.
+=======================================================================================================
+"""
+
+
 def display_err(fn, err):
     func_name = full_func_name(fn)
     log.exception("calling %s: %s", func_name, err)
@@ -67,6 +75,8 @@ def display_err(fn, err):
 
     # Print the error to stderr so it'll show in session logs
     print(f"error: {err}\n\n{exc}", file=sys.stderr)
+    if "pickle" in str(err):
+        print(pickle_help, file=sys.stderr)
 
 
 # Go passes HTTP event.data.body.bytes as base64 encode string
