@@ -4,9 +4,14 @@ import (
 	"archive/tar"
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"io/fs"
+	"os"
+	"os/exec"
+	"path"
 	"strings"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
@@ -58,8 +63,72 @@ func (py *pySvc) Build(ctx context.Context, fsys fs.FS, path string, values []sd
 	var art sdktypes.BuildArtifact
 	art = art.WithCompiledData(compiledData)
 
-	// TODO: We don't have exports for now, UI can change singleshot to a text
-	// box instead of dropdown
+	exports, err := findExports(fsys)
+	if err == nil {
+		art = art.WithExports(exports)
+	} else {
+		py.log.Warn("can't get exports", zap.Error(err))
+
+	}
 
 	return art, nil
+}
+
+func findExports(fsys fs.FS) ([]sdktypes.BuildExport, error) {
+	codeDir, err := os.MkdirTemp("", "ak-proj")
+	if err != nil {
+		return nil, err
+	}
+
+	if err := os.CopyFS(codeDir, fsys); err != nil {
+		return nil, err
+	}
+
+	runnerDir, err := os.MkdirTemp("", "ak-runner")
+	if err != nil {
+		return nil, err
+	}
+	if err := os.CopyFS(runnerDir, runnerPyCode); err != nil {
+		return nil, err
+	}
+
+	pyExe, err := findPython()
+	if err != nil {
+		return nil, err
+	}
+	pyFile := path.Join(runnerDir, "runner", "exports.py")
+	cmd := exec.Command(pyExe, pyFile, codeDir)
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	if err := cmd.Run(); err != nil {
+		return nil, fmt.Errorf("export:\n%s", stderr.String())
+	}
+
+	var exports []Export
+	if err := json.Unmarshal(stdout.Bytes(), &exports); err != nil {
+		return nil, fmt.Errorf("export: %w", err)
+	}
+
+	out := make([]sdktypes.BuildExport, len(exports))
+	for i, e := range exports {
+
+		loc, err := sdktypes.CodeLocationFromProto(&sdktypes.CodeLocationPB{
+			Path: e.File,
+			Name: e.Name,
+		})
+		if err != nil {
+			return nil, err
+		}
+		exp := sdktypes.NewBuildExport().WithSymbol(sdktypes.NewSymbol(e.Name)).WithLocation(loc)
+		out[i] = exp
+	}
+
+	return out, nil
+}
+
+type Export struct {
+	File string
+	Name string
 }
