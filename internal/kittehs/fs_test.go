@@ -27,7 +27,7 @@ func TestFilterFS(t *testing.T) {
 	for name := range m {
 		files = append(files, name)
 	}
-	require.Equal(t, files, matches)
+	require.ElementsMatch(t, files, matches)
 
 	// Ignore files starting with .
 	isOK := func(e fs.DirEntry) bool {
@@ -39,5 +39,5 @@ func TestFilterFS(t *testing.T) {
 	matches, err = fs.Glob(ffs, "*")
 	require.NoError(t, err)
 	files = Filter(files, func(name string) bool { return name[0] != '.' })
-	require.Equal(t, files, matches)
+	require.ElementsMatch(t, files, matches)
 }
