@@ -325,14 +325,26 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 			}),
 		),
 		fx.Invoke(func(muxes *muxes.Muxes) {
-			muxes.NoAuth.HandleFunc("GET /id", func(w http.ResponseWriter, r *http.Request) {
+			muxes.NoAuth.Handle("/{$}", http.RedirectHandler("https://autokitteh.com", http.StatusSeeOther))
+			muxes.NoAuth.HandleFunc("/internal/{$}", func(w http.ResponseWriter, r *http.Request) {
+				fmt.Fprint(w, `<html><body>
+	<ul>
+		<li><a href="/internal/id">id</a></li>
+		<li><a href="/internal/version">version</a></li>
+		<li><a href="/internal/uptime">uptime</a></li>
+		<li><a href="/internal/dashboard">dashboard</a></li>
+	</ul>
+</body></html>`)
+			})
+
+			muxes.NoAuth.HandleFunc("GET /internal/id", func(w http.ResponseWriter, r *http.Request) {
 				fmt.Fprint(w, fixtures.ProcessID())
 			})
-			muxes.NoAuth.HandleFunc("GET /version", func(w http.ResponseWriter, r *http.Request) {
+			muxes.NoAuth.HandleFunc("GET /internal/version", func(w http.ResponseWriter, r *http.Request) {
 				w.Header().Set("Content-Type", "application/json")
 				kittehs.Must0(json.NewEncoder(w).Encode(version.Version))
 			})
-			muxes.NoAuth.HandleFunc("GET /uptime", func(w http.ResponseWriter, r *http.Request) {
+			muxes.NoAuth.HandleFunc("GET /internal/uptime", func(w http.ResponseWriter, r *http.Request) {
 				uptime := fixtures.Uptime().Truncate(time.Second)
 
 				resp := struct {

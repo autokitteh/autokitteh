@@ -13,9 +13,9 @@ import (
 	"go.autokitteh.dev/autokitteh/web/webdashboard"
 )
 
-func (s Svc) initBuilds() {
-	s.Muxes.Auth.HandleFunc("/builds", s.builds)
-	s.Muxes.Auth.HandleFunc("/builds/{bid}", s.build)
+func (s *svc) initBuilds() {
+	s.HandleFunc(rootPath+"builds", s.builds)
+	s.HandleFunc(rootPath+"builds/{bid}", s.build)
 }
 
 type build struct{ sdktypes.Build }
@@ -26,10 +26,10 @@ func (p build) ExtraFields() map[string]any { return nil }
 
 func toBuild(sdkP sdktypes.Build) build { return build{sdkP} }
 
-func (s Svc) listBuilds(w http.ResponseWriter, r *http.Request) (list, error) {
+func (s *svc) listBuilds(w http.ResponseWriter, r *http.Request) (list, error) {
 	f := sdkservices.ListBuildsFilter{}
 
-	sdkCs, err := s.Svcs.Builds().List(r.Context(), f)
+	sdkCs, err := s.Builds().List(r.Context(), f)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return list{}, err
@@ -38,7 +38,7 @@ func (s Svc) listBuilds(w http.ResponseWriter, r *http.Request) (list, error) {
 	return genListData(f, kittehs.Transform(sdkCs, toBuild)), nil
 }
 
-func (s Svc) builds(w http.ResponseWriter, r *http.Request) {
+func (s *svc) builds(w http.ResponseWriter, r *http.Request) {
 	ts, err := s.listBuilds(w, r)
 	if err != nil {
 		return
@@ -47,14 +47,14 @@ func (s Svc) builds(w http.ResponseWriter, r *http.Request) {
 	renderList(w, r, "builds", ts)
 }
 
-func (s Svc) build(w http.ResponseWriter, r *http.Request) {
+func (s *svc) build(w http.ResponseWriter, r *http.Request) {
 	bid, err := sdktypes.StrictParseBuildID(r.PathValue("bid"))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	sdkB, err := s.Svcs.Builds().Get(r.Context(), bid)
+	sdkB, err := s.Builds().Get(r.Context(), bid)
 	if err != nil {
 		status := http.StatusInternalServerError
 		if errors.Is(err, sdkerrors.ErrNotFound) {
@@ -64,7 +64,7 @@ func (s Svc) build(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	bf, err := s.Svcs.Builds().Describe(r.Context(), bid)
+	bf, err := s.Builds().Describe(r.Context(), bid)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
