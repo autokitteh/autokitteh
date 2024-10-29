@@ -87,3 +87,20 @@ func NewFilterFS(fsys fs.FS, pred func(fs.DirEntry) bool) (*FilterFS, error) {
 
 	return &ffs, nil
 }
+
+// ReadDir implements fs.ReadDirFS.
+func (f *FilterFS) ReadDir(name string) ([]fs.DirEntry, error) {
+	entries, err := fs.ReadDir(f.FS, name)
+	if err != nil {
+		return nil, err
+	}
+
+	var filtered []fs.DirEntry
+	for _, entry := range entries {
+		if f.Pred == nil || f.Pred(entry) {
+			filtered = append(filtered, entry)
+		}
+	}
+
+	return filtered, nil
+}
