@@ -302,18 +302,17 @@ class Runner(rpc.RunnerServicer):
             display_err(fn, e)
             err = e
 
-        log.info("on_event: end: result=%r, err=%r", result, err)
-        try:
-            value = values.wrap(result)
-        except TypeError:
-            data = pickle.dumps(result, protocol=0)
-            value = ak_values.Value(
-                bytes=ak_values.Bytes(v=data),
-            )
-
         req = pb.DoneRequest(
             runner_id=self.id,
-            result=value,
+        )
+
+        log.info("on_event: end: result=%r, err=%r", result, err)
+        req.result = ak_values.Value(
+            custom=ak_values.Custom(
+                executor_id=self.id,
+                data=pickle.dumps(result, protocol=0),
+                value=safe_wrap(result),
+            ),
         )
 
         if err:

@@ -70,7 +70,7 @@ A call with function and payload:
 
 ```mermaid
 sequenceDiagram
-    Python-->>Go: Module loaded (exports)
+    Go->>Python: Exports
     Go->>Python: Run(function, payload)
     loop
         Python-->>Go: Activity request (function name, args, payload)
@@ -116,36 +116,7 @@ stateDiagram-v2
 
 ### Communication Protocol
 
-We're using JSON over Unix domain socket, one JSON object per line.
-The reason do this is that `ak_runner.py` should not have any external dependencies outside the standard library.
-Once we introduce an external dependency, it will conflict with the user dependencies.
-
-All messages have top level `type` and `payload`, the `payload` changes depending on the `type`.
-
-**run**
-
-- func_name: Function name (string)
-- event: Data payload (map)
-
-**module**
-
-- entries: List of exported functions (array of strings)
-
-**callback**
-
-- name: Function name (string)
-- args: Function args (array of strings)
-- kw: Mapping of name → value (both strings)
-- data: Pickled (protocol 0) tuple of `(func, args, kw)` encoded in base64
-
-**response**
-
-- value: Return type from Python (base64 of Python's pickle protocol 0)
-
-**done**
-
-- No fields
-
+We're using gRPC, see ../../proto/autokitteh/remote/v1.
 
 ### Integration Testing
 

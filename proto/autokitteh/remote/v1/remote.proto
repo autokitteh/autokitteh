@@ -65,6 +65,7 @@ service RunnerManager {
   rpc Health(HealthRequest) returns (HealthResponse) {}
 }
 
+// ak -> runtime
 message StartRequest {
   string entry_point = 1; // "main.py:on_event"
   Event event = 2;
@@ -82,20 +83,21 @@ message Frame {
   string name = 4;
 }
 
+// runtime -> ak
 message ExecuteRequest {
   bytes data = 1;
 }
 
+// ak -> runtime
 message ExecuteResponse {
-  bytes result = 1;
+  autokitteh.values.v1.Value result = 1;
   string error = 2;
   repeated Frame traceback = 3;
 }
 
 message ActivityReplyRequest {
-  bytes data = 1;
-  bytes result = 2;
-  string error = 3;
+  autokitteh.values.v1.Value result = 1;
+  string error = 2;
 }
 
 message ActivityReplyResponse {

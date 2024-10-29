@@ -378,15 +378,15 @@ func (py *pySvc) call(ctx context.Context, val sdktypes.Value, args []sdktypes.V
 	}
 
 	out, err := py.cbs.Call(py.ctx, py.runID, val, args, kw)
-	if err == nil && !out.IsBytes() {
-		err = fmt.Errorf("call output not bytes: %#v", out)
+	if err == nil && !out.IsCustom() {
+		err = fmt.Errorf("call output not custom: %#v", out)
 	}
 	if err != nil {
 		reply(&pb.ActivityReplyRequest{Error: err.Error()})
 		return
 	}
 
-	reply(&pb.ActivityReplyRequest{Result: out.GetBytes().Value()})
+	reply(&pb.ActivityReplyRequest{Result: out.GetCustom().Data()})
 }
 
 // initialCall handles initial call from autokitteh, it does the message loop with Python.
