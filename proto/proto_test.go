@@ -71,7 +71,7 @@ func TestAllNames(t *testing.T) {
 
 	scan(t, func(t *testing.T, path, fn, dn string) {
 		// We dont use connect for remove, so no need to have it in this list
-		if strings.HasPrefix(path, "autokitteh/remote") {
+		if strings.HasPrefix(path, "autokitteh/user_code") || strings.HasPrefix(path, "autokitteh/runner_manager") {
 			return
 		}
 		bs, err := protos.ReadFile(path)

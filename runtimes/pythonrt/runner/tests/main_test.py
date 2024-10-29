@@ -14,8 +14,8 @@ from sys import executable
 from uuid import uuid4
 
 from conftest import workflows
+import pb.autokitteh.user_code.v1.runner_svc_pb2 as pb
 
-import pb.autokitteh.remote.v1.remote_pb2 as pb
 import main
 
 

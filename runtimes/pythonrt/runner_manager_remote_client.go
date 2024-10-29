@@ -4,12 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 
+	"connectrpc.com/connect"
 	"go.uber.org/zap"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 
-	pb "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/remote/v1"
+	rmv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/runner_manager/v1"
+	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/runner_manager/v1/runner_managerv1connect"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
@@ -20,7 +21,7 @@ type RemoteRuntimeConfig struct {
 
 type remoteRunnerManager struct {
 	logger         *zap.Logger
-	remoteManagers []pb.RunnerManagerServiceClient
+	remoteManagers []runner_managerv1connect.RunnerManagerServiceClient
 }
 
 func (c RemoteRuntimeConfig) validate() error {
@@ -43,18 +44,14 @@ func configureRemoteRunnerManager(cfg RemoteRuntimeConfig) error {
 	rrm := &remoteRunnerManager{}
 
 	for _, addr := range cfg.ManagerAddress {
-		creds := insecure.NewCredentials()
-		conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(creds))
-		if err != nil {
-			return err
-		}
+		runner := runner_managerv1connect.NewRunnerManagerServiceClient(http.DefaultClient, addr, connect.WithGRPC())
 
-		runner := pb.NewRunnerManagerServiceClient(conn)
-		resp, err := runner.Health(context.Background(), &pb.RunnerManagerHealthRequest{})
+		resp, err := runner.Health(context.Background(), connect.NewRequest(&rmv1.HealthRequest{}))
 		if err != nil {
 			return fmt.Errorf("could not verify runner manager health")
 		}
-		if resp.Error != "" {
+
+		if resp.Msg.Error != "" {
 			return fmt.Errorf("runner manager health: %w", err)
 		}
 		rrm.remoteManagers = append(rrm.remoteManagers, runner)

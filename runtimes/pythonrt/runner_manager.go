@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	pb "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/remote/v1"
+	userCode "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/user_code/v1"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 
 	"google.golang.org/grpc"
@@ -23,7 +23,7 @@ type RunnerManager interface {
 type (
 	runnerType   string
 	RunnerClient struct {
-		pb.UserCodeRunnerServiceClient
+		userCode.RunnerServiceClient
 		cc *grpc.ClientConn
 	}
 )
@@ -45,14 +45,14 @@ const (
 )
 
 type Healther interface {
-	Health(ctx context.Context, in *pb.UserCodeRunnerHealthRequest, opts ...grpc.CallOption) (*pb.UserCodeRunnerHealthResponse, error)
+	Health(ctx context.Context, in *userCode.RunnerHealthRequest, opts ...grpc.CallOption) (*userCode.RunnerHealthResponse, error)
 }
 
 func waitForServer(name string, h Healther, timeout time.Duration) error {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 	start := time.Now()
-	var req pb.UserCodeRunnerHealthRequest
+	var req userCode.RunnerHealthRequest
 
 	for time.Since(start) <= timeout {
 		resp, err := h.Health(ctx, &req)
@@ -74,7 +74,7 @@ func dialRunner(addr string) (*RunnerClient, error) {
 		return nil, err
 	}
 
-	c := RunnerClient{pb.NewUserCodeRunnerServiceClient(conn), conn}
+	c := RunnerClient{userCode.NewRunnerServiceClient(conn), conn}
 
 	if err := waitForServer("runner", &c, 10*time.Second); err != nil {
 		connCloseErr := conn.Close()
