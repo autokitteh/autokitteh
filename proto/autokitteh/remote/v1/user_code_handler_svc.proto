@@ -1,127 +1,9 @@
-// This is temporarly here until we find a good home for it
 syntax = "proto3";
 
 package autokitteh.remote.v1;
 
+import "autokitteh/remote/v1/types.proto";
 import "google/protobuf/timestamp.proto";
-
-message ContainerConfig {
-  string image = 1;
-  // TBD by @efiShtain
-}
-
-message Event {
-  bytes data = 1; // raw event from connection
-}
-
-message HealthRequest {}
-
-message HealthResponse {
-  string error = 1;
-}
-
-// TODO: Will become Start once we split to files
-// Tell runner manager to start a runner
-message StartRunnerRequest {
-  ContainerConfig container_config = 1;
-
-  // user code as tar archive
-  bytes build_artifact = 2;
-  // vars from manifest, secrets and connections
-  map<string, string> vars = 3;
-
-  string worker_address = 4;
-}
-
-message StartRunnerResponse {
-  string runner_id = 1;
-  string runner_address = 2;
-  string error = 3;
-}
-
-message RunnerHealthRequest {
-  string runner_id = 1;
-}
-
-message RunnerHealthResponse {
-  bool healthy = 1;
-  string error = 2;
-}
-
-message StopRequest {
-  string runner_id = 1;
-}
-
-message StopResponse {
-  string error = 1;
-}
-
-service RunnerManager {
-  rpc Start(StartRunnerRequest) returns (StartRunnerResponse) {}
-  rpc RunnerHealth(RunnerHealthRequest) returns (RunnerHealthResponse) {}
-  rpc Stop(StopRequest) returns (StopResponse) {}
-
-  rpc Health(HealthRequest) returns (HealthResponse) {}
-}
-
-message StartRequest {
-  string entry_point = 1; // "main.py:on_event"
-  Event event = 2;
-}
-
-message StartResponse {
-  string error = 1;
-  repeated Frame traceback = 2;
-}
-
-message Frame {
-  string filename = 1;
-  uint32 lineno = 2;
-  string code = 3;
-  string name = 4;
-}
-
-message ExecuteRequest {
-  bytes data = 1;
-}
-
-message ExecuteResponse {
-  bytes result = 1;
-  string error = 2;
-  repeated Frame traceback = 3;
-}
-
-message ActivityReplyRequest {
-  bytes data = 1;
-  bytes result = 2;
-  string error = 3;
-}
-
-message ActivityReplyResponse {
-  string error = 1;
-}
-
-message ExportsRequest {
-  string file_name = 1;
-}
-
-message ExportsResponse {
-  repeated string exports = 1;
-  string error = 2;
-}
-
-service Runner {
-  // Get exports
-  rpc Exports(ExportsRequest) returns (ExportsResponse) {}
-  // Called at start of session
-  rpc Start(StartRequest) returns (StartResponse) {} // initial session event
-  // Execute a function in the runtime (skipped if it's a reply)
-  rpc Execute(ExecuteRequest) returns (ExecuteResponse) {}
-  // Reply from activity
-  rpc ActivityReply(ActivityReplyRequest) returns (ActivityReplyResponse) {}
-
-  rpc Health(HealthRequest) returns (HealthResponse) {}
-}
 
 message CallInfo {
   string function = 1;
@@ -156,18 +38,6 @@ message SleepRequest {
 
 message SleepResponse {
   string error = 1;
-}
-
-message StartSessionRequest {
-  string runner_id = 1;
-  string loc = 2;
-  bytes data = 3;
-  bytes memo = 4;
-}
-
-message StartSessionResponse {
-  string session_id = 1;
-  string error = 2;
 }
 
 message SubscribeRequest {
@@ -220,15 +90,17 @@ message PrintResponse {
   string error = 1;
 }
 
-message IsActiveRunnerRequest {
+message StartSessionRequest {
   string runner_id = 1;
+  string loc = 2;
+  bytes data = 3;
+  bytes memo = 4;
 }
 
-message IsActiveRunnerResponse {
-  bool is_active = 1;
+message StartSessionResponse {
+  string session_id = 1;
   string error = 2;
 }
-
 message EncodeJWTRequest {
   string runner_id = 1;
   map<string, int64> payload = 2;
@@ -253,7 +125,21 @@ message RefreshResponse {
   string error = 3;
 }
 
-service Worker {
+message IsActiveRunnerRequest {
+  string runner_id = 1;
+}
+
+message IsActiveRunnerResponse {
+  bool is_active = 1;
+  string error = 2;
+}
+message UserCodeHandlerHealthRequest {}
+
+message UserCodeHandlerHealthResponse {
+  string error = 1;
+}
+
+service UserCodeHandlerService {
   // Runner starting activity
   rpc Activity(ActivityRequest) returns (ActivityResponse) {}
   // Runner done with activity
@@ -273,6 +159,6 @@ service Worker {
   // Utility functions
   rpc EncodeJWT(EncodeJWTRequest) returns (EncodeJWTResponse) {}
   rpc RefreshOAuthToken(RefreshRequest) returns (RefreshResponse) {}
-  rpc Health(HealthRequest) returns (HealthResponse) {}
+  rpc Health(UserCodeHandlerHealthRequest) returns (UserCodeHandlerHealthResponse) {}
   rpc IsActiveRunner(IsActiveRunnerRequest) returns (IsActiveRunnerResponse) {}
 }

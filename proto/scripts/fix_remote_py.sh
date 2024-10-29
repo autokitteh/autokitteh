@@ -14,7 +14,11 @@ replace() {
 }
 
 
-replace autokitteh/remote/v1/remote_pb2_grpc.py "from autokitteh.remote.v1 import remote_pb2" "from . import remote_pb2"
+remote_pb_files=$(grep -l -r "autokitteh.remote.v1" ${out_dir}/autokitteh/remote/v1)
+for file in $remote_pb_files; do
+  file="${file#$out_dir/}"
+  replace "$file" "from.autokitteh.remote.v1" "from ."
+done
 
 replace autokitteh/values/v1/values_pb2.py "from autokitteh." "from pb.autokitteh." 
 replace buf/validate/validate_pb2.py "from buf." "from pb.buf."

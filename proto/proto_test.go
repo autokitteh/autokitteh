@@ -40,11 +40,6 @@ func scan(t *testing.T, check func(t *testing.T, path, fn, dn string)) {
 				continue
 			}
 
-			// TODO: Once we use buf to generate, remove this
-			if strings.HasSuffix(f.Name(), "remote.proto") {
-				continue
-			}
-
 			t.Run(fmt.Sprintf("%s/%s", dn, f.Name()), func(t *testing.T) {
 				check(t, filepath.Join(path, f.Name()), dn, f.Name())
 			})
@@ -75,6 +70,10 @@ func TestAllNames(t *testing.T) {
 	re := regexp.MustCompile(`(?m)^service *([^ ]+) *{$`)
 
 	scan(t, func(t *testing.T, path, fn, dn string) {
+		// We dont use connect for remove, so no need to have it in this list
+		if strings.HasPrefix(path, "autokitteh/remote") {
+			return
+		}
 		bs, err := protos.ReadFile(path)
 		if err != nil {
 			t.Error("failed to read file", err)
