@@ -29,7 +29,7 @@ var Configs = configset.Set[Config]{
 }
 
 type Vars struct {
-	cfg     *Config
+	cfg     Config
 	db      db.DB
 	secrets secrets.Secrets
 	conns   sdkservices.Connections
@@ -37,7 +37,7 @@ type Vars struct {
 }
 
 func New(z *zap.Logger, cfg *Config, db db.DB, secrets secrets.Secrets) *Vars {
-	return &Vars{db: db, z: z, secrets: secrets, cfg: cfg}
+	return &Vars{db: db, z: z, secrets: secrets, cfg: *cfg}
 }
 
 func varSecretKey(secret sdktypes.Var) string {
