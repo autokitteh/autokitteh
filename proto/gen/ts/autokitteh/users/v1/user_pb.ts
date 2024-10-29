@@ -4,7 +4,7 @@
 // @ts-nocheck
 
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
-import { Message, proto3 } from "@bufbuild/protobuf";
+import { Message, proto3, Timestamp } from "@bufbuild/protobuf";
 
 /**
  * @generated from message autokitteh.users.v1.User
@@ -46,6 +46,71 @@ export class User extends Message<User> {
 
   static equals(a: User | PlainMessage<User> | undefined, b: User | PlainMessage<User> | undefined): boolean {
     return proto3.util.equals(User, a, b);
+  }
+}
+
+/**
+ * @generated from message autokitteh.users.v1.UserAuditLogRecord
+ */
+export class UserAuditLogRecord extends Message<UserAuditLogRecord> {
+  /**
+   * @generated from field: string user_id = 1;
+   */
+  userId = "";
+
+  /**
+   * @generated from field: string description = 2;
+   */
+  description = "";
+
+  /**
+   * json encoded data.
+   *
+   * @generated from field: bytes data = 3;
+   */
+  data = new Uint8Array(0);
+
+  /**
+   * if an error occured, this will be set.
+   *
+   * @generated from field: string error = 4;
+   */
+  error = "";
+
+  /**
+   * @generated from field: google.protobuf.Timestamp timestamp = 10;
+   */
+  timestamp?: Timestamp;
+
+  constructor(data?: PartialMessage<UserAuditLogRecord>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "autokitteh.users.v1.UserAuditLogRecord";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "data", kind: "scalar", T: 12 /* ScalarType.BYTES */ },
+    { no: 4, name: "error", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 10, name: "timestamp", kind: "message", T: Timestamp },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UserAuditLogRecord {
+    return new UserAuditLogRecord().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UserAuditLogRecord {
+    return new UserAuditLogRecord().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UserAuditLogRecord {
+    return new UserAuditLogRecord().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: UserAuditLogRecord | PlainMessage<UserAuditLogRecord> | undefined, b: UserAuditLogRecord | PlainMessage<UserAuditLogRecord> | undefined): boolean {
+    return proto3.util.equals(UserAuditLogRecord, a, b);
   }
 }
 

@@ -144,7 +144,12 @@ func (db *gormdb) CreateProject(ctx context.Context, p sdktypes.Project) error {
 		ProjectID: p.ID().UUIDValue(),
 		Name:      p.Name().String(),
 	}
-	return translateError(db.createProject(ctx, &project))
+
+	err := translateError(db.createProject(ctx, &project))
+
+	db.addUserAuditLog(ctx, "create project", p, err)
+
+	return err
 }
 
 func (gdb *gormdb) DeleteProject(ctx context.Context, projectID sdktypes.ProjectID) error {

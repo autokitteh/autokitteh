@@ -1,6 +1,7 @@
 package sdktypes
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/url"
@@ -94,6 +95,10 @@ func idField[ID id[T], T idTraits](name string, s string) error {
 		return errorForValue(name, err)
 	}
 	return nil
+}
+
+func jsonField(name string, s []byte) error {
+	return errorForValue(name, json.Unmarshal(s, new(any)))
 }
 
 func valuesSlice(vs []*valuev1.Value) error { return objectsSlice[Value](vs) }

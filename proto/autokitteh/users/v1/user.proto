@@ -2,7 +2,17 @@ syntax = "proto3";
 
 package autokitteh.users.v1;
 
+import "google/protobuf/timestamp.proto";
+
 message User {
   string provider = 1;
   map<string, string> data = 2;
+}
+
+message UserAuditLogRecord {
+  string user_id = 1;
+  string description = 2;
+  bytes data = 3; // json encoded data.
+  string error = 4; // if an error occured, this will be set.
+  google.protobuf.Timestamp timestamp = 10;
 }
