@@ -9,8 +9,8 @@ from datetime import timedelta
 
 import grpc
 import log
-import pb.autokitteh.remote.v1.remote_pb2 as pb
-import pb.autokitteh.remote.v1.remote_pb2_grpc as rpc
+import pb.autokitteh.remote.v1.user_code_handler_svc_pb2 as pb
+import pb.autokitteh.remote.v1.user_code_handler_svc_pb2_grpc as rpc
 from autokitteh import AttrDict
 
 

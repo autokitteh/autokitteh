@@ -15,8 +15,13 @@ from traceback import TracebackException, format_exception
 import grpc
 import loader
 import log
-import pb.autokitteh.remote.v1.remote_pb2 as pb
-import pb.autokitteh.remote.v1.remote_pb2_grpc as rpc
+
+import pb.autokitteh.remote.v1.types_pb2 as pb_types
+import pb.autokitteh.remote.v1.user_code_runner_svc_pb2 as pb_runner
+import pb.autokitteh.remote.v1.user_code_runner_svc_pb2_grpc as runner_rpc
+import pb.autokitteh.remote.v1.user_code_handler_svc_pb2_grpc as worker_rpc
+import pb.autokitteh.remote.v1.user_code_handler_svc_pb2 as pb_worker
+
 from autokitteh import AttrDict, connections
 from call import AKCall, full_func_name
 from grpc_reflection.v1alpha import reflection
@@ -48,7 +53,7 @@ def exc_traceback(err):
     """Format traceback to JSONable list."""
     te = TracebackException.from_exception(err)
     return [
-        pb.Frame(
+        pb_types.Frame(
             filename=frame.filename,
             lineno=frame.lineno,
             code=frame.line,
@@ -104,10 +109,10 @@ def killIfStartWasntCalled(runner):
         os._exit(1)
 
 
-class Runner(rpc.RunnerServicer):
+class Runner(runner_rpc.UserCodeRunnerService):
     def __init__(self, id, worker, code_dir, server):
         self.id = id
-        self.worker: rpc.WorkerStub = worker
+        self.worker: worker_rpc.UserCodeHandlerServiceStub = worker
         self.code_dir = code_dir
         self.server: grpc.Server = server
 
@@ -120,7 +125,7 @@ class Runner(rpc.RunnerServicer):
         self._orig_print = print
         self._start_called = False
 
-    def Exports(self, request: pb.ExportsRequest, context: grpc.ServicerContext):
+    def Exports(self, request: pb_runner.ExportsRequest, context: grpc.ServicerContext):
         if request.file_name == "":
             context.abort(
                 grpc.StatusCode.INVALID_ARGUMENT,
@@ -132,7 +137,7 @@ class Runner(rpc.RunnerServicer):
         except OSError as err:
             context.abort(grpc.StatusCode.INVALID_ARGUMENT, str(err))
 
-        return pb.ExportsResponse(exports=exports)
+        return pb_runner.ExportsResponse(exports=exports)
 
     def should_keep_running(self, initial_delay=10, period=10):
         sleep(initial_delay)
@@ -144,7 +149,7 @@ class Runner(rpc.RunnerServicer):
         # Check that we are still active
         while True:
             try:
-                req = pb.IsActiveRunnerRequest(runner_id=self.id)
+                req = pb_worker.IsActiveRunnerRequest(runner_id=self.id)
                 res = self.worker.IsActiveRunner(req)
                 if res.error:
                     break
@@ -155,10 +160,10 @@ class Runner(rpc.RunnerServicer):
         log.error("could not verify if should keep running, killing self")
         self.server.stop(SERVER_GRACE_TIMEOUT)
 
-    def Start(self, request: pb.StartRequest, context: grpc.ServicerContext):
+    def Start(self, request: pb_runner.StartRequest, context: grpc.ServicerContext):
         if self._start_called:
             log.error("already called start before")
-            return pb.StartResponse(error="start already called")
+            return pb_runner.StartResponse(error="start already called")
 
         self._start_called = True
         log.info("start request: %r", request)
@@ -188,9 +193,9 @@ class Runner(rpc.RunnerServicer):
         event = AttrDict(event)
         self.executor.submit(self.on_event, fn, event)
 
-        return pb.StartResponse()
+        return pb_runner.StartResponse()
 
-    def Execute(self, request: pb.ExecuteRequest, context: grpc.ServicerContext):
+    def Execute(self, request: pb_runner.ExecuteRequest, context: grpc.ServicerContext):
         call_id = request.data.decode()
         with self.lock:
             call_info = self.calls.pop(call_id, None)
@@ -215,7 +220,7 @@ class Runner(rpc.RunnerServicer):
             # to see and confuse them.
             err = e
 
-        resp = pb.ExecuteResponse(
+        resp = pb_runner.ExecuteResponse(
             result=pickle.dumps(result, protocol=0),
         )
 
@@ -227,7 +232,7 @@ class Runner(rpc.RunnerServicer):
         return resp
 
     def ActivityReply(
-        self, request: pb.ActivityReplyRequest, context: grpc.ServicerContext
+        self, request: pb_runner.ActivityReplyRequest, context: grpc.ServicerContext
     ):
         call_id = request.data.decode()
         with self.lock:
@@ -256,10 +261,10 @@ class Runner(rpc.RunnerServicer):
             )
 
         fut.set_result(result)
-        return pb.ActivityReplyResponse()
+        return pb_runner.ActivityReplyResponse()
 
-    def Health(self, request: pb.HealthRequest, context: grpc.ServicerContext):
-        return pb.HealthResponse()
+    def Health(self, request: pb_runner.UserCodeRunnerHealthRequest, context: grpc.ServicerContext):
+        return pb_runner.UserCodeRunnerHealthResponse()
 
     def call_in_activity(self, fn, args, kw):
         fut = self.start_activity(fn, args, kw)
@@ -274,10 +279,10 @@ class Runner(rpc.RunnerServicer):
             self.replies[call_id] = fut = Future()
             self.calls[call_id] = (fn, args, kw)
 
-        req = pb.ActivityRequest(
+        req = pb_worker.ActivityRequest(
             runner_id=self.id,
             data=call_id.encode(),
-            call_info=pb.CallInfo(
+            call_info=pb_worker.CallInfo(
                 function=fn.__name__,  # AK rejects json.loads
                 args=[repr(a) for a in args],
                 kwargs={k: repr(v) for k, v in kw.items()},
@@ -302,7 +307,7 @@ class Runner(rpc.RunnerServicer):
             err = e
 
         log.info("on_event: end: result=%r, err=%r", result, err)
-        req = pb.DoneRequest(
+        req = pb_worker.DoneRequest(
             runner_id=self.id,
             # TODO: We want value that AK can understand (proto.Value)
             result=pickle.dumps(result, protocol=0),
@@ -331,7 +336,7 @@ class Runner(rpc.RunnerServicer):
         text = io.getvalue()
         self._orig_print(text, file=file)  # Print also to original destination
 
-        req = pb.PrintRequest(
+        req = pb_worker.PrintRequest(
             runner_id=self.id,
             message=text,
         )
@@ -418,9 +423,9 @@ if __name__ == "__main__":
     sys.path.append(str(args.code_dir))
 
     chan = grpc.insecure_channel(args.worker_address)
-    worker = rpc.WorkerStub(chan)
+    worker = worker_rpc.UserCodeHandlerServiceStub(chan)
     if not args.skip_check_worker:
-        req = pb.HealthRequest()
+        req = pb_worker.UserCodeHandlerHealthRequest()
         try:
             resp = worker.Health(req)
         except grpc.RpcError as err:
@@ -433,9 +438,11 @@ if __name__ == "__main__":
         interceptors=[LoggingInterceptor(args.runner_id)],
     )
     runner = Runner(args.runner_id, worker, args.code_dir, server)
-    rpc.add_RunnerServicer_to_server(runner, server)
+    # rpc.add_RunnerServicer_to_server(runner, server)
+    runner_rpc.add_UserCodeRunnerServiceServicer_to_server(runner, server) 
     services = (
-        pb.DESCRIPTOR.services_by_name["Runner"].full_name,
+        # pb.DESCRIPTOR.services_by_name["Runner"].full_name,
+        pb_runner.DESCRIPTOR.services_by_name["UserCodeRunnerService"].full_name,
         reflection.SERVICE_NAME,
     )
     reflection.enable_server_reflection(services, server)

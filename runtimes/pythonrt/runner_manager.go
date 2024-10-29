@@ -23,7 +23,7 @@ type RunnerManager interface {
 type (
 	runnerType   string
 	RunnerClient struct {
-		pb.RunnerClient
+		pb.UserCodeRunnerServiceClient
 		cc *grpc.ClientConn
 	}
 )
@@ -45,14 +45,14 @@ const (
 )
 
 type Healther interface {
-	Health(ctx context.Context, in *pb.HealthRequest, opts ...grpc.CallOption) (*pb.HealthResponse, error)
+	Health(ctx context.Context, in *pb.UserCodeRunnerHealthRequest, opts ...grpc.CallOption) (*pb.UserCodeRunnerHealthResponse, error)
 }
 
 func waitForServer(name string, h Healther, timeout time.Duration) error {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 	start := time.Now()
-	var req pb.HealthRequest
+	var req pb.UserCodeRunnerHealthRequest
 
 	for time.Since(start) <= timeout {
 		resp, err := h.Health(ctx, &req)
@@ -74,7 +74,7 @@ func dialRunner(addr string) (*RunnerClient, error) {
 		return nil, err
 	}
 
-	c := RunnerClient{pb.NewRunnerClient(conn), conn}
+	c := RunnerClient{pb.NewUserCodeRunnerServiceClient(conn), conn}
 
 	if err := waitForServer("runner", &c, 10*time.Second); err != nil {
 		connCloseErr := conn.Close()

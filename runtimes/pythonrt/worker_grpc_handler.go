@@ -28,7 +28,7 @@ import (
 const runnerChResponseTimeout = 5 * time.Second
 
 type workerGRPCHandler struct {
-	pb.UnimplementedWorkerServer
+	pb.UserCodeHandlerServiceServer
 
 	runnerIDsToRuntime map[string]*pySvc
 	mu                 *sync.Mutex
@@ -41,8 +41,8 @@ var w = workerGRPCHandler{
 
 func ConfigureWorkerGRPCHandler(l *zap.Logger, mux *http.ServeMux) {
 	srv := grpc.NewServer()
-	pb.RegisterWorkerServer(srv, &w)
-	path := fmt.Sprintf("/%s/", pb.Worker_ServiceDesc.ServiceName)
+	pb.RegisterUserCodeHandlerServiceServer(srv, &w)
+	path := fmt.Sprintf("/%s/", pb.UserCodeHandlerService_ServiceDesc.ServiceName)
 	mux.Handle(path, srv)
 }
 
@@ -75,8 +75,8 @@ func removeRunnerFromServer(runnerID string) error {
 // GRPC Handlers
 // TODO: call temporal to verify workflow is still active ?
 // TODO: add runner ID to health check so we can verify it
-func (s *workerGRPCHandler) Health(ctx context.Context, req *pb.HealthRequest) (*pb.HealthResponse, error) {
-	return &pb.HealthResponse{}, nil
+func (s *workerGRPCHandler) Health(ctx context.Context, req *pb.UserCodeHandlerHealthRequest) (*pb.UserCodeHandlerHealthResponse, error) {
+	return &pb.UserCodeHandlerHealthResponse{}, nil
 }
 
 func (s *workerGRPCHandler) IsActiveRunner(ctx context.Context, req *pb.IsActiveRunnerRequest) (*pb.IsActiveRunnerResponse, error) {

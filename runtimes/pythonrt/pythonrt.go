@@ -436,7 +436,7 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktyp
 				py.log.Debug("health check loop stopped")
 				return
 			case <-time.After(10 * time.Second):
-				healthReq := pb.HealthRequest{}
+				healthReq := pb.UserCodeRunnerHealthRequest{}
 
 				resp, err := py.runner.Health(ctx, &healthReq)
 				if err != nil { // no network/lost packet.load? for sanity check the state locally via IPC/signals
