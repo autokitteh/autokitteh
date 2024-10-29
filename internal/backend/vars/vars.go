@@ -7,22 +7,37 @@ import (
 
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/configset"
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/secrets"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
+	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
+type Config struct {
+	MaxValueSize       int `koanf:"max_value_size"`
+	MaxNumVarsPerScope int `koanf:"max_num_vars_per_scope"`
+}
+
+var Configs = configset.Set[Config]{
+	Default: &Config{
+		MaxValueSize:       8092,
+		MaxNumVarsPerScope: 64,
+	},
+}
+
 type Vars struct {
+	cfg     *Config
 	db      db.DB
 	secrets secrets.Secrets
 	conns   sdkservices.Connections
 	z       *zap.Logger
 }
 
-func New(z *zap.Logger, db db.DB, secrets secrets.Secrets) *Vars {
-	return &Vars{db: db, z: z, secrets: secrets}
+func New(z *zap.Logger, cfg *Config, db db.DB, secrets secrets.Secrets) *Vars {
+	return &Vars{db: db, z: z, secrets: secrets, cfg: cfg}
 }
 
 func varSecretKey(secret sdktypes.Var) string {
@@ -36,6 +51,8 @@ func (v *Vars) SetConnections(conns sdkservices.Connections) { v.conns = conns }
 // the values of secret variables to be the secret key in the secret store.
 // Do not change this behavior - it's useful, even though it's unexpected.
 func (v *Vars) Set(ctx context.Context, vs ...sdktypes.Var) error {
+	scids := make(map[sdktypes.VarScopeID]bool, len(vs))
+
 	for i, va := range vs {
 		if va.IsSecret() {
 			key := varSecretKey(va)
@@ -45,6 +62,25 @@ func (v *Vars) Set(ctx context.Context, vs ...sdktypes.Var) error {
 			}
 
 			vs[i] = va.SetValue(key)
+		}
+
+		if v.cfg.MaxValueSize != 0 && len(va.Value()) > v.cfg.MaxValueSize {
+			return fmt.Errorf("%w: value size %d exceeds max value size %d", sdkerrors.ErrLimitExceeded, len(va.Value()), v.cfg.MaxValueSize)
+		}
+
+		scids[va.ScopeID()] = true
+	}
+
+	if maxN := v.cfg.MaxNumVarsPerScope; maxN != 0 && len(vs) > maxN {
+		for scid := range scids {
+			n, err := v.db.CountVars(ctx, scid)
+			if err != nil {
+				return err
+			}
+
+			if n > maxN {
+				return fmt.Errorf("%w: number of variables for scope %v %d exceeds max number of variables %d", sdkerrors.ErrLimitExceeded, scid, len(vs), maxN)
+			}
 		}
 	}
 

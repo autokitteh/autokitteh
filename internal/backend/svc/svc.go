@@ -180,7 +180,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		Component("envs", configset.Empty, fx.Provide(envs.New)),
 		Component(
 			"vars",
-			configset.Empty,
+			vars.Configs,
 			fx.Provide(vars.New),
 			fx.Provide(func(v *vars.Vars) sdkservices.Vars { return v }),
 			fx.Invoke(func(v *vars.Vars, c sdkservices.Connections) { v.SetConnections(c) }),

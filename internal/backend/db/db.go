@@ -80,6 +80,7 @@ type DB interface {
 	// -----------------------------------------------------------------------
 	SetVars(context.Context, []sdktypes.Var) error
 	GetVars(context.Context, sdktypes.VarScopeID, []sdktypes.Symbol) ([]sdktypes.Var, error)
+	CountVars(context.Context, sdktypes.VarScopeID) (int, error)
 	DeleteVars(context.Context, sdktypes.VarScopeID, []sdktypes.Symbol) error
 	FindConnectionIDsByVar(context.Context, sdktypes.IntegrationID, sdktypes.Symbol, string) ([]sdktypes.ConnectionID, error)
 
