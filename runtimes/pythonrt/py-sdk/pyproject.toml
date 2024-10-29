@@ -22,7 +22,7 @@ all = [
 	"google-auth-oauthlib ~= 1.2",
 	#"google-generativeai == 0.7.2",
 	"openai ~= 1.44",
-	"PyGithub @ git+https://github.com/PyGithub/PyGithub.git@c44ec52",
+	"PyGithub @ git+https://github.com/PyGithub/PyGithub.git@c44ec523b1830c2d747fcf417b478562854664e8",
 	"redis ~= 5.0",
 	"slack-sdk ~= 3.32",
 	"twilio ~= 9.3",
