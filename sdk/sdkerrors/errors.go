@@ -8,17 +8,27 @@ import (
 	"github.com/bufbuild/protovalidate-go"
 )
 
+type (
+	TypedError interface{ ErrorType() string }
+	typedError struct{ typ string }
+)
+
+func newTypedError(t string) error { return typedError{typ: t} }
+
+func (e typedError) Error() string     { return e.typ }
+func (e typedError) ErrorType() string { return e.typ }
+
 var (
-	ErrNotImplemented     = errors.New("not implemented")
-	ErrAlreadyExists      = errors.New("already exists")
-	ErrNotFound           = errors.New("not found")
-	ErrConflict           = errors.New("conflict")
-	ErrUnauthorized       = errors.New("unauthorized")
-	ErrUnauthenticated    = errors.New("unauthenticated")
+	ErrNotImplemented     = newTypedError("not_implemented")
+	ErrAlreadyExists      = newTypedError("already_exists")
+	ErrNotFound           = newTypedError("not_found")
+	ErrConflict           = newTypedError("conflict")
+	ErrUnauthorized       = newTypedError("unauthorized")
+	ErrUnauthenticated    = newTypedError("unauthenticated")
 	ErrUnknown            = NewRetryableErrorf("unknown")
-	ErrFailedPrecondition = errors.New("failed precondition")
-	ErrLimitExceeded      = NewRetryableErrorf("limit exceeded")
-	ErrProgram            = errors.New("program error")
+	ErrFailedPrecondition = newTypedError("failed_precondition")
+	ErrLimitExceeded      = NewRetryableErrorf("limit_exceeded")
+	ErrProgram            = newTypedError("program_error")
 )
 
 func IgnoreNotFoundErr[T any](in T, err error) (T, error) {
@@ -31,10 +41,14 @@ func IgnoreNotFoundErr[T any](in T, err error) (T, error) {
 	return in, nil
 }
 
-type RetryableError struct{ Err error }
+type RetryableError struct {
+	Err error
+}
 
-func (e *RetryableError) Error() string { return fmt.Sprintf("[retryable] %v", e.Err) }
-func (e *RetryableError) Unwrap() error { return e.Err }
+func (e *RetryableError) Error() string     { return fmt.Sprintf("[retryable] %v", e.Err) }
+func (e *RetryableError) Unwrap() error     { return e.Err }
+func (e *RetryableError) ErrorType() string { return "retryable_" + ErrorType(e.Err) }
+
 func NewRetryableError(err error) error {
 	return &RetryableError{Err: err}
 }
@@ -56,6 +70,8 @@ func (e ErrInvalidArgument) Error() string {
 	}
 	return "invalid argument"
 }
+
+func (e ErrInvalidArgument) ErrorType() string { return "invalid_argument" }
 
 func (e ErrInvalidArgument) Unwrap() error { return e.Underlying }
 
@@ -101,28 +117,15 @@ func AsConnectError(err error) error {
 }
 
 func ErrorType(err error) string {
-	switch {
-	case errors.Is(err, ErrNotFound):
-		return "not_found"
-	case IsInvalidArgumentError(err):
-		return "invalid_argument"
-	case errors.Is(err, ErrUnauthorized):
-		return "permission_denied"
-	case errors.Is(err, ErrUnauthenticated):
-		return "permission_denied"
-	case errors.Is(err, ErrAlreadyExists):
-		return "already_exists"
-	case errors.Is(err, ErrNotImplemented):
-		return "not_implemented"
-	case errors.Is(err, ErrFailedPrecondition):
-		return "failed_precondition"
-	case errors.Is(err, ErrLimitExceeded):
-		return "limit_exceeded"
-	case errors.Is(err, ErrUnknown):
+	terr, ok := err.(TypedError)
+	if !ok {
+		u, ok := err.(interface{ Unwrap() error })
+		if ok {
+			return ErrorType(u.Unwrap())
+		}
+
 		return "unknown"
-	case errors.Is(err, ErrProgram):
-		return "program_error"
-	default:
-		return "unknown_type"
 	}
+
+	return terr.ErrorType()
 }
