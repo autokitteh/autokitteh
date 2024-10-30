@@ -328,9 +328,6 @@ class Runner(rpc.RunnerServicer):
         if resp.Error:
             log.error("on_event: done error: %r", resp.error)
 
-    def syscall(self, fn, args, kw):
-        return self.syscalls.call(fn, args, kw)
-
     def next_call_id(self) -> str:
         with self.lock:
             self._next_id += 1
