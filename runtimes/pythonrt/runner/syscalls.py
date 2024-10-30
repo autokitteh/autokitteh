@@ -19,9 +19,10 @@ class SyscallError(Exception):
 
 
 class SysCalls:
-    def __init__(self, runner_id, worker):
+    def __init__(self, runner_id, worker, log):
         self.runner_id = runner_id
         self.worker: rpc.WorkerStub = worker
+        self.log = log
 
         self.ak_funcs = {
             "next_event": self.ak_next_event,
@@ -37,23 +38,10 @@ class SysCalls:
             raise ValueError(f"unknown ak function: {fn.__name__!r}")
         return method(args, kw)
 
-    def ak_start(self, args, kw):
-        log.info("ak_start: %r %r", args, kw)
-        (loc, data, memo) = extract_args(["loc", "data?", "memo?"], args, kw)
-
-        if data is None:
-            data = {}
-        if memo is None:
-            memo = {}
-
-        if not isinstance(data, dict):
-            raise ValueError("data must be a dict")
-
-        if not isinstance(memo, dict):
-            raise ValueError("memo must be a dict")
-
-        if not isinstance(loc, str):
-            raise ValueError("loc must be a string")
+    def ak_start(self, loc: str, data: dict = None, memo: dict = None) -> str:
+        self.log.info("ak_start: %r", loc)
+        data = {} if data is None else data
+        memo = {} if memo is None else memo
 
         try:
             json_data = json.dumps(data)
@@ -74,15 +62,13 @@ class SysCalls:
         resp = call_grpc("start", self.worker.StartSession, req)
         return resp.session_id
 
-    def ak_sleep(self, args, kw):
-        log.info("ak_sleep: %r %r", args, kw)
-        (secs,) = extract_args(["secs"], args, kw)
-        if secs < 0:
+    def ak_sleep(self, seconds):
+        if seconds < 0:
             raise ValueError("negative secs")
 
         req = pb.SleepRequest(
             runner_id=self.runner_id,
-            duration_ms=int(secs * 1000),
+            duration_ms=int(seconds * 1000),
         )
 
         call_grpc("sleep", self.worker.Sleep, req)
@@ -99,15 +85,10 @@ class SysCalls:
         resp = call_grpc("subscribe", self.worker.Subscribe, req)
         return resp.signal_id
 
-    def ak_next_event(self, args, kw):
-        log.info("ak_next_event: %r %r", args, kw)
-        (
-            ids,
-            timeout,
-        ) = extract_args(["subscription_id", "timeout?"], args, kw)
-        if not ids:
-            raise ValueError("empty subscription_id")
+    def ak_next_event(self, subscription_id, *, timeout=None):
+        log.info("ak_next_event: %r %r", subscription_id, timeout)
 
+        ids = subscription_id
         if isinstance(ids, str):
             ids = [ids]
 

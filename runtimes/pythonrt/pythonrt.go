@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"maps"
 	"net"
 	"path"
 	"strings"
@@ -407,7 +406,7 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktyp
 		return sdktypes.InvalidValue, fmt.Errorf("can't convert: %w", err)
 	}
 
-	py.log.Info("event", zap.Any("keys", maps.Keys(event)))
+	py.log.Info("event", zap.Any("keys", kittehs.TransformMapToList(event, func(k string, v any) string { return k })))
 
 	eventData, err := json.Marshal(event)
 	if err != nil {

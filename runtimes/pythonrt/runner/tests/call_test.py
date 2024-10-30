@@ -20,7 +20,7 @@ def test_sleep():
     ak_call.set_module(mod)
     event = {"type": "login", "user": "puss"}
     mod.handler(event)
-    assert runner.syscall.call_count == 2
+    assert runner.syscalls.ak_sleep.call_count == 2
 
 
 def test_sleep_activity():

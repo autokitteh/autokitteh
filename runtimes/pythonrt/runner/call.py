@@ -1,21 +1,10 @@
 import inspect
+import time
 from pathlib import Path
-from time import sleep
-
-import autokitteh
-from autokitteh import decorators
 
 import log
+from autokitteh import decorators
 from deterministic import is_deterministic
-
-# Functions that are called back to ak
-AK_FUNCS = {
-    autokitteh.next_event,
-    autokitteh.subscribe,
-    autokitteh.unsubscribe,
-    autokitteh.start,
-    sleep,
-}
 
 
 def is_marked_activity(fn):
@@ -74,13 +63,13 @@ class AKCall:
 
             raise ValueError(f"{func!r} is not callable (user bug at {file}:{lnum}?)")
 
-        log.info("__call__: %s, args=%r, kw=%r", full_func_name(func), args, kw)
-        if func in AK_FUNCS:
-            if self.in_activity and func is sleep:
-                return func(*args, **kw)
+        if func is time.sleep:
+            if (n := len(args)) != 1:
+                raise TypeError(f"time.sleep takes exactly one argument ({n} given)")
 
-            log.info("ak function call: %s(%r, %r)", func.__name__, args, kw)
-            return self.runner.syscall(func, args, kw)
+            seconds = args[0]
+            fn = time.sleep if self.in_activity else self.runner.syscalls.ak_sleep
+            return fn(seconds)
 
         full_name = full_func_name(func)
         if not self.should_run_as_activity(func):
