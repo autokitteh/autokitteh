@@ -413,10 +413,6 @@ func (o *oauth) StartFlow(ctx context.Context, intg string, cid sdktypes.Connect
 		return "", errors.New("invalid connection ID")
 	}
 
-	if origin == "" {
-		return "", errors.New("missing origin")
-	}
-
 	// Identify the relevant connection when we get an OAuth response.
 	state := strings.Replace(cid.String(), "con_", "", 1) + "_" + origin
 

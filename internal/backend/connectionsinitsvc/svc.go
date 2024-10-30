@@ -33,6 +33,7 @@ func Init(svcs Svcs) {
 	svcs.Muxes.Auth.HandleFunc("POST /connections/{id}/test", s.testConnection)
 	svcs.Muxes.Auth.HandleFunc("POST /connections/{id}/refresh", s.refreshConnection)
 	svcs.Muxes.Auth.HandleFunc("GET /connections/{id}/init/{origin}", s.init)
+	svcs.Muxes.Auth.HandleFunc("GET /connections/{id}/init", s.init)
 	svcs.Muxes.Auth.HandleFunc("GET /connections/{id}/postinit", s.postInit)
 	svcs.Muxes.Auth.HandleFunc("GET /connections/{id}/success", s.success)
 }

@@ -85,7 +85,7 @@ func (s *svc) exchange(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Ensure the state parameter is well-formed.
-	sub := regexp.MustCompile(`^(.+)_([a-z]+)$`).FindStringSubmatch(state)
+	sub := regexp.MustCompile(`^(.+)_([a-z]*)$`).FindStringSubmatch(state)
 	if len(sub) != 3 {
 		l.Error("Invalid state parameter")
 		http.Error(w, "Invalid state parameter", http.StatusBadRequest)
