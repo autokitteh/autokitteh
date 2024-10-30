@@ -28,14 +28,19 @@ func (db *gormdb) addUserAuditLog(ctx context.Context, description string, data 
 		errStr = err.Error()
 	}
 
-	uuid, err := uuid.Parse(uidStr)
-	if err != nil {
-		l.DPanic("failed to parse uuid", zap.Error(err))
-		return
+	userUUID := uuid.Nil
+
+	if uidStr != "" {
+		if userUUID, err = uuid.Parse(uidStr); err != nil {
+			if err != nil {
+				l.DPanic("failed to parse uuid", zap.Error(err))
+				return
+			}
+		}
 	}
 
 	r := scheme.UserAuditLog{
-		UserID:      uuid,
+		UserID:      userUUID,
 		Description: description,
 		Data:        jsonData,
 		Timestamp:   time.Now().UTC(),
