@@ -19,7 +19,7 @@ def unsubscribe(subscription_id: str) -> None:
 
 
 def next_event(
-    subscription_id: str | list[str], *, timeout: timedelta | int = None
+    subscription_id: str | list[str], *, timeout: timedelta | int | float = None
 ) -> AttrDict:
     """Get the next event from the subscription(s).
 
