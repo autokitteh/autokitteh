@@ -62,7 +62,7 @@ def exc_traceback(err):
 
 pickle_help = """
 =======================================================================================================
-This error means you need to use the @autokitteh.activity decorator.
+The below error means you need to use the @autokitteh.activity decorator.
 See https://docs.autokitteh.com/develop/python/#function-arguments-and-return-values-must-be-pickleable
 for more details.
 =======================================================================================================
@@ -73,12 +73,13 @@ def display_err(fn, err):
     func_name = full_func_name(fn)
     log.exception("calling %s: %s", func_name, err)
 
+    if "pickle" in str(err):
+        print(pickle_help, file=sys.stderr)
+
     exc = "".join(format_exception(err))
 
     # Print the error to stderr so it'll show in session logs
     print(f"error: {err}\n\n{exc}", file=sys.stderr)
-    if "pickle" in str(err):
-        print(pickle_help, file=sys.stderr)
 
 
 # Go passes HTTP event.data.body.bytes as base64 encode string

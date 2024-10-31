@@ -464,7 +464,7 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktyp
 		select {
 		case healthErr := <-runnerHealthChan:
 			if healthErr != nil {
-				return sdktypes.InvalidValue, sdkerrors.NewRetryableError("runner health: %w", healthErr)
+				return sdktypes.InvalidValue, sdkerrors.NewRetryableErrorf("runner health: %w", healthErr)
 			}
 		case r := <-py.channels.log:
 			py.log.Log(pyLevelToZap(r.level), r.message)

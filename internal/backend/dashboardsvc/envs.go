@@ -10,9 +10,9 @@ import (
 	"go.autokitteh.dev/autokitteh/web/webdashboard"
 )
 
-func (s Svc) initEnvs() {
-	s.Muxes.Auth.HandleFunc("/envs", s.envs)
-	s.Muxes.Auth.HandleFunc("/envs/{eid}", s.env)
+func (s *svc) initEnvs() {
+	s.HandleFunc(rootPath+"envs", s.envs)
+	s.HandleFunc(rootPath+"envs/{eid}", s.env)
 }
 
 type env struct{ sdktypes.Env }
@@ -23,8 +23,8 @@ func (p env) ExtraFields() map[string]any { return nil }
 
 func toEnv(sdkE sdktypes.Env) env { return env{sdkE} }
 
-func (s Svc) listEnvs(w http.ResponseWriter, r *http.Request, pid sdktypes.ProjectID) (list, error) {
-	sdkEs, err := s.Svcs.Envs().List(r.Context(), pid)
+func (s *svc) listEnvs(w http.ResponseWriter, r *http.Request, pid sdktypes.ProjectID) (list, error) {
+	sdkEs, err := s.Envs().List(r.Context(), pid)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return list{}, err
@@ -38,7 +38,7 @@ func (s Svc) listEnvs(w http.ResponseWriter, r *http.Request, pid sdktypes.Proje
 	return genListData(pid.String(), kittehs.Transform(sdkEs, toEnv), drops...), nil
 }
 
-func (s Svc) envs(w http.ResponseWriter, r *http.Request) {
+func (s *svc) envs(w http.ResponseWriter, r *http.Request) {
 	l, err := s.listEnvs(w, r, sdktypes.InvalidProjectID)
 	if err != nil {
 		return
@@ -47,14 +47,14 @@ func (s Svc) envs(w http.ResponseWriter, r *http.Request) {
 	renderList(w, r, "envs", l)
 }
 
-func (s Svc) env(w http.ResponseWriter, r *http.Request) {
+func (s *svc) env(w http.ResponseWriter, r *http.Request) {
 	eid, err := sdktypes.StrictParseEnvID(r.PathValue("eid"))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	sdkE, err := s.Svcs.Envs().GetByID(r.Context(), eid)
+	sdkE, err := s.Envs().GetByID(r.Context(), eid)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

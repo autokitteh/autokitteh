@@ -13,10 +13,10 @@ import (
 	"go.autokitteh.dev/autokitteh/web/webdashboard"
 )
 
-func (s Svc) initProjects() {
-	s.Muxes.Auth.HandleFunc("/projects", s.projects)
-	s.Muxes.Auth.HandleFunc("GET /projects/{pid}", s.project)
-	s.Muxes.Auth.HandleFunc("DELETE /projects/{pid}", s.deleteProject)
+func (s *svc) initProjects() {
+	s.HandleFunc(rootPath+"projects", s.projects)
+	s.HandleFunc("GET "+rootPath+"projects/{pid}", s.project)
+	s.HandleFunc("DELETE "+rootPath+"projects/{pid}", s.deleteProject)
 }
 
 type project struct{ sdktypes.Project }
@@ -27,8 +27,8 @@ func (p project) ExtraFields() map[string]any { return nil }
 
 func toProject(sdkP sdktypes.Project) project { return project{sdkP} }
 
-func (s Svc) listProjects(w http.ResponseWriter, r *http.Request) (list, error) {
-	sdkPs, err := s.Svcs.Projects().List(r.Context())
+func (s *svc) listProjects(w http.ResponseWriter, r *http.Request) (list, error) {
+	sdkPs, err := s.Projects().List(r.Context())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return list{}, err
@@ -37,7 +37,7 @@ func (s Svc) listProjects(w http.ResponseWriter, r *http.Request) (list, error) 
 	return genListData(nil, kittehs.Transform(sdkPs, toProject)), nil
 }
 
-func (s Svc) projects(w http.ResponseWriter, r *http.Request) {
+func (s *svc) projects(w http.ResponseWriter, r *http.Request) {
 	ps, err := s.listProjects(w, r)
 	if err != nil {
 		return
@@ -46,14 +46,14 @@ func (s Svc) projects(w http.ResponseWriter, r *http.Request) {
 	renderList(w, r, "projects", ps)
 }
 
-func (s Svc) project(w http.ResponseWriter, r *http.Request) {
+func (s *svc) project(w http.ResponseWriter, r *http.Request) {
 	pid, err := sdktypes.StrictParseProjectID(r.PathValue("pid"))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	sdkP, err := s.Svcs.Projects().GetByID(r.Context(), pid)
+	sdkP, err := s.Projects().GetByID(r.Context(), pid)
 	if err != nil {
 		status := http.StatusInternalServerError
 		if errors.Is(err, sdkerrors.ErrNotFound) {
@@ -105,14 +105,14 @@ func (s Svc) project(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s Svc) deleteProject(w http.ResponseWriter, r *http.Request) {
+func (s *svc) deleteProject(w http.ResponseWriter, r *http.Request) {
 	pid, err := sdktypes.StrictParseProjectID(r.PathValue("pid"))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	if err := s.Svcs.Projects().Delete(r.Context(), pid); err != nil {
+	if err := s.Projects().Delete(r.Context(), pid); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
