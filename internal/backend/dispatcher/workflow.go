@@ -54,7 +54,7 @@ func (d *Dispatcher) startSessions(wctx workflow.Context, event sdktypes.Event, 
 	for _, sd := range sds {
 		sl := sl.With("deployment_id", sd.Deployment.ID(), "trigger_id", sd.Trigger.ID(), "entrypoint", sd.CodeLocation)
 
-		session, err := newSession(event.ID(), inputs, sd)
+		session, err := newSession(event, inputs, sd)
 		if err != nil {
 			sl.With("err", err).Errorf("could not initialize session: %v", err)
 			continue
@@ -174,11 +174,14 @@ func (d *Dispatcher) signalWorkflows(wctx workflow.Context, event sdktypes.Event
 	return wids, nil
 }
 
-func newSession(eid sdktypes.EventID, inputs map[string]sdktypes.Value, data sessionData) (sdktypes.Session, error) {
+func newSession(event sdktypes.Event, inputs map[string]sdktypes.Value, data sessionData) (sdktypes.Session, error) {
 	memo := make(map[string]string)
 
-	memo["event_id"] = eid.String()
-	memo["event_uuid"] = eid.UUIDValue().String()
+	memo["event_id"] = event.ID().String()
+	memo["event_uuid"] = event.ID().UUIDValue().String()
+	memo["event_type"] = event.Type()
+	memo["event_destination_id"] = event.DestinationID().String()
+	memo["event_destination_uuid"] = event.DestinationID().UUIDValue().String()
 
 	if t := data.Trigger; t.IsValid() {
 		inputs = maps.Clone(inputs)
@@ -199,17 +202,19 @@ func newSession(eid sdktypes.EventID, inputs map[string]sdktypes.Value, data ses
 		memo["trigger_id"] = t.ID().String()
 		memo["trigger_uuid"] = t.ID().UUIDValue().String()
 		memo["trigger_source_type"] = t.SourceType().String()
+		memo["trigger_name"] = t.Name().String()
 	}
 
 	if c := data.Connection; c.IsValid() {
 		memo["connection_id"] = c.ID().String()
 		memo["connection_uuid"] = c.ID().UUIDValue().String()
+		memo["connection_name"] = c.Name().String()
 	}
 
 	dep := data.Deployment
 
 	return sdktypes.NewSession(dep.BuildID(), data.CodeLocation, inputs, memo).
 		WithDeploymentID(dep.ID()).
-		WithEventID(eid).
+		WithEventID(event.ID()).
 		WithEnvID(dep.EnvID()), nil
 }
