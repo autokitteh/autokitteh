@@ -218,7 +218,13 @@ class Runner(rpc.RunnerServicer):
             err = e
 
         resp = pb.ExecuteResponse(
-            result=pickle.dumps(result, protocol=0),
+            result=ak_values.Value(
+                custom=ak_values.Custom(
+                    executor_id=self.id,
+                    data=pickle.dumps((call_id, result), protocol=0),
+                    value=safe_wrap(result),
+                ),
+            )
         )
 
         if err:
@@ -231,30 +237,27 @@ class Runner(rpc.RunnerServicer):
     def ActivityReply(
         self, request: pb.ActivityReplyRequest, context: grpc.ServicerContext
     ):
-        call_id = request.data.decode()
+        resp = request.result.custom
+        try:
+            call_id, result = pickle.loads(resp.data)
+        except Exception as err:
+            log.exception(f"can't decode data: pickle: {err}")
+            context.abort(grpc.StatusCode.INTERNAL, f"result pickle: {err}")
+
         with self.lock:
             fut = self.replies.pop(call_id, None)
 
         if fut is None:
             log.error("call_id %r not found", call_id)
             context.abort(
-                grpc.StatusCode.INVALID_ARGUMENT, "call_id {call_id!r} not found"
+                grpc.StatusCode.INVALID_ARGUMENT, f"call_id {call_id!r} not found"
             )
 
         if request.error:
             fut.set_exception(ActivityError(request.error))
             context.abort(
                 grpc.StatusCode.ABORTED,
-                f"call_id {call_id!r}: activity error: {request.error}",
-            )
-
-        try:
-            result = pickle.loads(request.result)
-        except Exception as err:
-            log.exception(f"call_id {call_id!r}: result pickle: {err}")
-            fut.set_exception(ActivityError(err))
-            context.abort(
-                grpc.StatusCode.INTERNAL, f"call_id {call_id!r}: result pickle: {err}"
+                f"activity error: {request.error}",
             )
 
         fut.set_result(result)

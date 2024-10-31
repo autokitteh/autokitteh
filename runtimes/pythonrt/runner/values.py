@@ -121,5 +121,7 @@ def unwrap(v: pb.Value) -> any:
         return v.time.v.ToDatetime(UTC)
     if v.HasField("duration"):
         return v.duration.v.ToTimedelta()
+    if v.HasField("custom"):
+        return unwrap(v.custom.value)
 
     raise TypeError(f"unsupported type: {v}")

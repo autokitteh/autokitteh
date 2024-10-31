@@ -351,42 +351,26 @@ func pyLevelToZap(level string) zapcore.Level {
 }
 
 func (py *pySvc) call(ctx context.Context, val sdktypes.Value, args []sdktypes.Value, kw map[string]sdktypes.Value) {
-	fn := val.GetFunction()
-
-	reply := func(req *pb.ActivityReplyRequest) {
-		if req.Error != "" {
-			py.log.Warn("activity reply error", zap.String("error", req.Error))
-		}
-
-		req.Data = fn.Data()
-
-		ctx, cancel := context.WithTimeout(ctx, time.Second)
-		defer cancel()
-
-		reply, err := py.runner.ActivityReply(ctx, req)
-		switch {
-		case err != nil:
-			py.log.Warn("activity reply error", zap.Error(err))
-		case reply.Error != "":
-			py.log.Warn("activity reply error", zap.String("reply error", reply.Error))
-		}
-	}
-
-	if !val.IsFunction() {
-		reply(&pb.ActivityReplyRequest{Error: fmt.Sprintf("%#v is not a function", val)})
-		return
-	}
+	var req pb.ActivityReplyRequest
 
 	out, err := py.cbs.Call(py.ctx, py.runID, val, args, kw)
-	if err == nil && !out.IsCustom() {
-		err = fmt.Errorf("call output not custom: %#v", out)
-	}
 	if err != nil {
-		reply(&pb.ActivityReplyRequest{Error: err.Error()})
-		return
+		py.log.Warn("activity reply error", zap.Error(err))
+		req.Error = err.Error()
+	} else {
+		req.Result = out.ToProto()
 	}
 
-	reply(&pb.ActivityReplyRequest{Result: out.GetCustom().Data()})
+	ctx, cancel := context.WithTimeout(ctx, time.Second)
+	defer cancel()
+
+	reply, err := py.runner.ActivityReply(ctx, &req)
+	switch {
+	case err != nil:
+		py.log.Warn("activity reply error", zap.Error(err))
+	case reply.Error != "":
+		py.log.Warn("activity reply error", zap.String("reply error", reply.Error))
+	}
 }
 
 // initialCall handles initial call from autokitteh, it does the message loop with Python.
@@ -610,5 +594,5 @@ func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 		return sdktypes.InvalidValue, fmt.Errorf("%s", resp.Error)
 	}
 
-	return sdktypes.NewBytesValue(resp.Result), nil
+	return sdktypes.ValueFromProto(resp.Result)
 }

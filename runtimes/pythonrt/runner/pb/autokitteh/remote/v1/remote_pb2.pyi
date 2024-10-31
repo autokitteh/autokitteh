@@ -123,20 +123,18 @@ class ExecuteResponse(_message.Message):
     RESULT_FIELD_NUMBER: _ClassVar[int]
     ERROR_FIELD_NUMBER: _ClassVar[int]
     TRACEBACK_FIELD_NUMBER: _ClassVar[int]
-    result: bytes
+    result: _values_pb2.Value
     error: str
     traceback: _containers.RepeatedCompositeFieldContainer[Frame]
-    def __init__(self, result: _Optional[bytes] = ..., error: _Optional[str] = ..., traceback: _Optional[_Iterable[_Union[Frame, _Mapping]]] = ...) -> None: ...
+    def __init__(self, result: _Optional[_Union[_values_pb2.Value, _Mapping]] = ..., error: _Optional[str] = ..., traceback: _Optional[_Iterable[_Union[Frame, _Mapping]]] = ...) -> None: ...
 
 class ActivityReplyRequest(_message.Message):
-    __slots__ = ["data", "result", "error"]
-    DATA_FIELD_NUMBER: _ClassVar[int]
+    __slots__ = ["result", "error"]
     RESULT_FIELD_NUMBER: _ClassVar[int]
     ERROR_FIELD_NUMBER: _ClassVar[int]
-    data: bytes
-    result: bytes
+    result: _values_pb2.Value
     error: str
-    def __init__(self, data: _Optional[bytes] = ..., result: _Optional[bytes] = ..., error: _Optional[str] = ...) -> None: ...
+    def __init__(self, result: _Optional[_Union[_values_pb2.Value, _Mapping]] = ..., error: _Optional[str] = ...) -> None: ...
 
 class ActivityReplyResponse(_message.Message):
     __slots__ = ["error"]
