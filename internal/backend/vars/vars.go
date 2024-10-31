@@ -71,20 +71,23 @@ func (v *Vars) Set(ctx context.Context, vs ...sdktypes.Var) error {
 		scids[va.ScopeID()] = true
 	}
 
-	if maxN := v.cfg.MaxNumVarsPerScope; maxN != 0 && len(vs) > maxN {
-		for scid := range scids {
-			n, err := v.db.CountVars(ctx, scid)
-			if err != nil {
-				return err
-			}
+	err := v.db.Transaction(ctx, func(tx db.DB) error {
+		if maxN := v.cfg.MaxNumVarsPerScope; maxN != 0 && len(vs) > maxN {
+			for scid := range scids {
+				n, err := tx.CountVars(ctx, scid)
+				if err != nil {
+					return err
+				}
 
-			if n > maxN {
-				return fmt.Errorf("%w: number of variables for scope %v %d exceeds max number of variables %d", sdkerrors.ErrLimitExceeded, scid, len(vs), maxN)
+				if n > maxN {
+					return fmt.Errorf("%w: number of variables for scope %v %d exceeds max number of variables %d", sdkerrors.ErrLimitExceeded, scid, len(vs), maxN)
+				}
 			}
 		}
-	}
 
-	if err := v.db.SetVars(ctx, vs); err != nil {
+		return tx.SetVars(ctx, vs)
+	})
+	if err != nil {
 		return err
 	}
 
