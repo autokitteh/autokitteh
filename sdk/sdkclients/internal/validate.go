@@ -1,8 +1,6 @@
 package internal
 
 import (
-	"fmt"
-
 	"google.golang.org/protobuf/proto"
 
 	akproto "go.autokitteh.dev/autokitteh/proto"
@@ -12,7 +10,7 @@ import (
 
 func Validate(pb proto.Message) error {
 	if err := akproto.Validate(pb); err != nil {
-		return fmt.Errorf("%w: invalid rpc response: %v", sdkerrors.ErrRPC, err)
+		return sdkerrors.NewInvalidArgumentError("invalid proto message: %v", err)
 	}
 
 	return nil
