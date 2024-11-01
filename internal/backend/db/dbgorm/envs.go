@@ -60,10 +60,13 @@ func (gdb *gormdb) getEnvByName(ctx context.Context, projectID sdktypes.UUID, en
 }
 
 func (gdb *gormdb) listEnvs(ctx context.Context, projectID sdktypes.UUID) ([]scheme.Env, error) {
-	// REVIEW: project could belong to someone else. Just fetch envs belong to user
+	q := gdb.withUserEnvs(ctx)
+	if projectID != sdktypes.InvalidEnvID.UUIDValue() {
+		q = q.Where("project_id = ?", projectID)
+	}
+	q = q.Order("env_id")
 
 	var envs []scheme.Env
-	q := gdb.withUserEnvs(ctx).Where("project_id = ?", projectID).Order("env_id")
 	if err := q.Find(&envs).Error; err != nil {
 		return nil, err
 	}
