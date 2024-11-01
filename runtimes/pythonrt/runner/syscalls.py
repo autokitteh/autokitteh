@@ -119,7 +119,7 @@ class SysCalls:
                 req.timeout_ms = int(timeout.total_seconds() * 1000)
             else:
                 raise TypeError(
-                    f"invalid timeout {timeout!r}, expecting timedelta or number of seconds"
+                    f"timeout {timeout!r} should be a timedelta or number of seconds"
                 )
 
         resp = call_grpc("next_event", self.worker.NextEvent, req)
