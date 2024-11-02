@@ -122,8 +122,14 @@ var pprofConfigs = configset.Set[pprofConfig]{
 type HTTPServerAddr string
 
 func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
+	svcConfig, err := chooseConfig(svcConfigs)
+	if err != nil {
+		return []fx.Option{fx.Error(fmt.Errorf("svc: %w", err))}
+	}
+
 	return []fx.Option{
 		fx.Supply(cfg),
+		fx.Supply(svcConfig),
 		LoggerFxOpt(opts.Silent),
 		fx.Invoke(func(lc fx.Lifecycle, db db.DB) { HookOnStart(lc, db.Setup) }),
 
@@ -325,13 +331,15 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 			}),
 		),
 		fx.Invoke(func(muxes *muxes.Muxes) {
-			muxes.NoAuth.Handle("/{$}", http.RedirectHandler("https://autokitteh.com", http.StatusSeeOther))
+			muxes.NoAuth.Handle("/{$}", http.RedirectHandler(svcConfig.RootRedirect, http.StatusSeeOther))
 			muxes.NoAuth.HandleFunc("/internal/{$}", func(w http.ResponseWriter, r *http.Request) {
 				fmt.Fprint(w, `<html><body>
 	<ul>
 		<li><a href="/internal/id">id</a></li>
 		<li><a href="/internal/version">version</a></li>
 		<li><a href="/internal/uptime">uptime</a></li>
+		<li><a href="/internal/healthz">healthz</a></li>
+		<li><a href="/internal/readyz">readyz</a></li>
 		<li><a href="/internal/dashboard">dashboard</a></li>
 	</ul>
 </body></html>`)
@@ -380,22 +388,28 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		fx.Invoke(func(z *zap.Logger, lc fx.Lifecycle, muxes *muxes.Muxes, h healthreporter.HealthReporter) {
 			var ready atomic.Bool
 
-			muxes.NoAuth.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
+			healthz := func(w http.ResponseWriter, r *http.Request) {
 				if err := h.Report(); err != nil {
 					w.WriteHeader(http.StatusInternalServerError)
 					return
 				}
 				w.WriteHeader(http.StatusOK)
-			})
+			}
 
-			muxes.NoAuth.HandleFunc("GET /readyz", func(w http.ResponseWriter, r *http.Request) {
+			muxes.NoAuth.HandleFunc("GET /healthz", healthz)
+			muxes.NoAuth.HandleFunc("GET /internal/healthz", healthz)
+
+			readyz := func(w http.ResponseWriter, r *http.Request) {
 				if !ready.Load() {
 					w.WriteHeader(http.StatusServiceUnavailable)
 					return
 				}
 
 				w.WriteHeader(http.StatusOK)
-			})
+			}
+
+			muxes.NoAuth.HandleFunc("GET /readyz", readyz)
+			muxes.NoAuth.HandleFunc("GET /internal/readyz", readyz)
 
 			HookSimpleOnStart(lc, func() {
 				ready.Store(true)
