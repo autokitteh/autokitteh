@@ -79,7 +79,7 @@ func newDBServices(t *testing.T) (sdkservices.DBServices, *dbFixture) {
 	envSvc := envs.New(z, gdb)
 	evtSvc := events.New(z, gdb)
 	trgSvc := triggers.New(z, gdb, nil)
-	varSvc := vars.New(z, gdb, nil)
+	varSvc := vars.New(z, &vars.Config{}, gdb, nil)
 	sesSvc := sessions.New(z, nil, gdb,
 		sessionsvcs.Svcs{DB: gdb, Builds: bldSvc, Connections: conSvc, Deployments: depSvc, Envs: envSvc, Triggers: trgSvc, Vars: varSvc},
 		telemetry)

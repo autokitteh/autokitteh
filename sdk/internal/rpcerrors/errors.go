@@ -45,7 +45,7 @@ func ToSDKError(err error) error {
 	case connect.CodeUnknown: // returned as connect.Error, but unrelated to RPC, just unwrap underlying error
 		return connectErr.Unwrap()
 	default:
-		sdkErr = sdkerrors.ErrRPC
+		sdkErr = fmt.Errorf("unknown connect error: %w", connectErr)
 	}
 
 	// err is a connect error (checked in connect.CodeOf), so we can safely cast it
