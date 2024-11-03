@@ -490,6 +490,7 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktyp
 			}
 			py.call(ctx, fn, args, kw)
 		case cb := <-py.channels.callback:
+			py.log.Info("syscall", zap.Any("func", cb.args[0]))
 			val, err := py.cbs.Call(ctx, py.runID, py.syscallFn, cb.args, cb.kwargs)
 			if err != nil {
 				cb.errorChannel <- err
