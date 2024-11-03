@@ -20,6 +20,7 @@ import pb.autokitteh.user_code.v1.runner_svc_pb2 as pb_runner
 import pb.autokitteh.user_code.v1.runner_svc_pb2_grpc as runner_rpc
 import pb.autokitteh.user_code.v1.handler_svc_pb2_grpc as handler_rpc
 import pb.autokitteh.user_code.v1.handler_svc_pb2 as pb_handler
+import pb.autokitteh.user_code.v1.user_code_pb2 as pb_user_code
 
 from autokitteh import AttrDict, connections
 from call import AKCall, full_func_name
@@ -52,7 +53,7 @@ def exc_traceback(err):
     """Format traceback to JSONable list."""
     te = TracebackException.from_exception(err)
     return [
-        pb_handler.Frame(
+        pb_user_code.Frame(
             filename=frame.filename,
             lineno=frame.lineno,
             code=frame.line,
