@@ -282,3 +282,8 @@ func (s *Server) Export(ctx context.Context, req *connect.Request[projectsv1.Exp
 
 	return connect.NewResponse(&resp), nil
 }
+
+func (s *Server) Lint(context.Context, *connect.Request[projectsv1.LintRequest]) (*connect.Response[projectsv1.LintResponse], error) {
+	resp := projectsv1.LintResponse{}
+	return connect.NewResponse(&resp), nil
+}

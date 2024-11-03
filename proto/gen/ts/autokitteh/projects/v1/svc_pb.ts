@@ -763,3 +763,164 @@ export class ExportResponse extends Message<ExportResponse> {
   }
 }
 
+/**
+ * @generated from message autokitteh.projects.v1.LintRequest
+ */
+export class LintRequest extends Message<LintRequest> {
+  /**
+   * @generated from field: string project_id = 1;
+   */
+  projectId = "";
+
+  /**
+   * @generated from field: map<string, bytes> resources = 2;
+   */
+  resources: { [key: string]: Uint8Array } = {};
+
+  constructor(data?: PartialMessage<LintRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "autokitteh.projects.v1.LintRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "resources", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 12 /* ScalarType.BYTES */} },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): LintRequest {
+    return new LintRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): LintRequest {
+    return new LintRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): LintRequest {
+    return new LintRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: LintRequest | PlainMessage<LintRequest> | undefined, b: LintRequest | PlainMessage<LintRequest> | undefined): boolean {
+    return proto3.util.equals(LintRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message autokitteh.projects.v1.CheckViolation
+ */
+export class CheckViolation extends Message<CheckViolation> {
+  /**
+   * @generated from field: string file_name = 1;
+   */
+  fileName = "";
+
+  /**
+   * @generated from field: uint32 line = 2;
+   */
+  line = 0;
+
+  /**
+   * @generated from field: autokitteh.projects.v1.CheckViolation.Level level = 3;
+   */
+  level = CheckViolation_Level.UNSPECIFIED;
+
+  /**
+   * @generated from field: string message = 4;
+   */
+  message = "";
+
+  constructor(data?: PartialMessage<CheckViolation>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "autokitteh.projects.v1.CheckViolation";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "file_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "line", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 3, name: "level", kind: "enum", T: proto3.getEnumType(CheckViolation_Level) },
+    { no: 4, name: "message", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CheckViolation {
+    return new CheckViolation().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CheckViolation {
+    return new CheckViolation().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CheckViolation {
+    return new CheckViolation().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: CheckViolation | PlainMessage<CheckViolation> | undefined, b: CheckViolation | PlainMessage<CheckViolation> | undefined): boolean {
+    return proto3.util.equals(CheckViolation, a, b);
+  }
+}
+
+/**
+ * @generated from enum autokitteh.projects.v1.CheckViolation.Level
+ */
+export enum CheckViolation_Level {
+  /**
+   * @generated from enum value: LEVEL_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: LEVEL_WARNING = 1;
+   */
+  WARNING = 1,
+
+  /**
+   * @generated from enum value: LEVEL_ERROR = 2;
+   */
+  ERROR = 2,
+}
+// Retrieve enum metadata with: proto3.getEnumType(CheckViolation_Level)
+proto3.util.setEnumType(CheckViolation_Level, "autokitteh.projects.v1.CheckViolation.Level", [
+  { no: 0, name: "LEVEL_UNSPECIFIED" },
+  { no: 1, name: "LEVEL_WARNING" },
+  { no: 2, name: "LEVEL_ERROR" },
+]);
+
+/**
+ * @generated from message autokitteh.projects.v1.LintResponse
+ */
+export class LintResponse extends Message<LintResponse> {
+  /**
+   * @generated from field: repeated autokitteh.projects.v1.CheckViolation violations = 1;
+   */
+  violations: CheckViolation[] = [];
+
+  constructor(data?: PartialMessage<LintResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "autokitteh.projects.v1.LintResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "violations", kind: "message", T: CheckViolation, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): LintResponse {
+    return new LintResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): LintResponse {
+    return new LintResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): LintResponse {
+    return new LintResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: LintResponse | PlainMessage<LintResponse> | undefined, b: LintResponse | PlainMessage<LintResponse> | undefined): boolean {
+    return proto3.util.equals(LintResponse, a, b);
+  }
+}
+

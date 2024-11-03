@@ -113,6 +113,28 @@ message ExportResponse {
   bytes zip_archive = 1 [(buf.validate.field).bytes.min_len = 10];
 }
 
+message LintRequest {
+  string project_id = 1 [(buf.validate.field).string.min_len = 1];
+  map<string, bytes> resources = 2;
+}
+
+message CheckViolation {
+  enum Level {
+    LEVEL_UNSPECIFIED = 0;
+    LEVEL_WARNING = 1;
+    LEVEL_ERROR = 2;
+  }
+
+  string file_name = 1;
+  uint32 line = 2;
+  Level level = 3;
+  string message = 4;
+}
+
+message LintResponse {
+  repeated CheckViolation violations = 1;
+}
+
 service ProjectsService {
   rpc Create(CreateRequest) returns (CreateResponse);
 
@@ -133,4 +155,6 @@ service ProjectsService {
   rpc DownloadResources(DownloadResourcesRequest) returns (DownloadResourcesResponse);
 
   rpc Export(ExportRequest) returns (ExportResponse);
+
+  rpc Lint(LintRequest) returns (LintResponse);
 }

@@ -3,6 +3,7 @@ from autokitteh_pb.projects.v1 import project_pb2 as _project_pb2
 from buf.validate import validate_pb2 as _validate_pb2
 from google.protobuf import field_mask_pb2 as _field_mask_pb2
 from google.protobuf.internal import containers as _containers
+from google.protobuf.internal import enum_type_wrapper as _enum_type_wrapper
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
 from typing import ClassVar as _ClassVar, Iterable as _Iterable, Mapping as _Mapping, Optional as _Optional, Union as _Union
@@ -144,3 +145,44 @@ class ExportResponse(_message.Message):
     ZIP_ARCHIVE_FIELD_NUMBER: _ClassVar[int]
     zip_archive: bytes
     def __init__(self, zip_archive: _Optional[bytes] = ...) -> None: ...
+
+class LintRequest(_message.Message):
+    __slots__ = ["project_id", "resources"]
+    class ResourcesEntry(_message.Message):
+        __slots__ = ["key", "value"]
+        KEY_FIELD_NUMBER: _ClassVar[int]
+        VALUE_FIELD_NUMBER: _ClassVar[int]
+        key: str
+        value: bytes
+        def __init__(self, key: _Optional[str] = ..., value: _Optional[bytes] = ...) -> None: ...
+    PROJECT_ID_FIELD_NUMBER: _ClassVar[int]
+    RESOURCES_FIELD_NUMBER: _ClassVar[int]
+    project_id: str
+    resources: _containers.ScalarMap[str, bytes]
+    def __init__(self, project_id: _Optional[str] = ..., resources: _Optional[_Mapping[str, bytes]] = ...) -> None: ...
+
+class CheckViolation(_message.Message):
+    __slots__ = ["file_name", "line", "level", "message"]
+    class Level(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
+        __slots__ = []
+        LEVEL_UNSPECIFIED: _ClassVar[CheckViolation.Level]
+        LEVEL_WARNING: _ClassVar[CheckViolation.Level]
+        LEVEL_ERROR: _ClassVar[CheckViolation.Level]
+    LEVEL_UNSPECIFIED: CheckViolation.Level
+    LEVEL_WARNING: CheckViolation.Level
+    LEVEL_ERROR: CheckViolation.Level
+    FILE_NAME_FIELD_NUMBER: _ClassVar[int]
+    LINE_FIELD_NUMBER: _ClassVar[int]
+    LEVEL_FIELD_NUMBER: _ClassVar[int]
+    MESSAGE_FIELD_NUMBER: _ClassVar[int]
+    file_name: str
+    line: int
+    level: CheckViolation.Level
+    message: str
+    def __init__(self, file_name: _Optional[str] = ..., line: _Optional[int] = ..., level: _Optional[_Union[CheckViolation.Level, str]] = ..., message: _Optional[str] = ...) -> None: ...
+
+class LintResponse(_message.Message):
+    __slots__ = ["violations"]
+    VIOLATIONS_FIELD_NUMBER: _ClassVar[int]
+    violations: _containers.RepeatedCompositeFieldContainer[CheckViolation]
+    def __init__(self, violations: _Optional[_Iterable[_Union[CheckViolation, _Mapping]]] = ...) -> None: ...
