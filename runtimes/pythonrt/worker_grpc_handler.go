@@ -220,6 +220,7 @@ func (s *workerGRPCHandler) Sleep(ctx context.Context, req *pb.SleepRequest) (*p
 }
 
 func (s *workerGRPCHandler) StartSession(ctx context.Context, req *pb.StartSessionRequest) (*pb.StartSessionResponse, error) {
+	s.log.Info("Start session", zap.String("loc", req.Loc))
 	w.mu.Lock()
 	runner, ok := w.runnerIDsToRuntime[req.RunnerId]
 	w.mu.Unlock()
@@ -255,7 +256,9 @@ func (s *workerGRPCHandler) StartSession(ctx context.Context, req *pb.StartSessi
 		sdktypes.NewDictValueFromStringMap(kittehs.TransformMapValues(memo, sdktypes.NewStringValue)),
 	}
 	msg := makeCallbackMessage(args, nil)
+	s.log.Info("start:sending")
 	runner.channels.callback <- msg
+	s.log.Info("start:sent")
 
 	select {
 	case err := <-msg.errorChannel:
