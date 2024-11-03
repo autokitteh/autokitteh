@@ -19,14 +19,24 @@ import (
 	"go.uber.org/zap"
 )
 
+func isBuildFile(entry fs.DirEntry) bool {
+	if strings.Contains(entry.Name(), "__pycache__") {
+		return false
+	}
+
+	if path.Base(entry.Name())[0] == '.' {
+		return false
+	}
+
+	return true
+}
+
 // TODO: Move build to runner
 // TODO: optional, build manager like remote runner vs local runner
 func (py *pySvc) Build(ctx context.Context, fsys fs.FS, path string, values []sdktypes.Symbol) (sdktypes.BuildArtifact, error) {
 	py.log.Info("build Python module", zap.String("path", path))
 
-	ffs, err := kittehs.NewFilterFS(fsys, func(entry fs.DirEntry) bool {
-		return !strings.Contains(entry.Name(), "__pycache__")
-	})
+	ffs, err := kittehs.NewFilterFS(fsys, isBuildFile)
 	if err != nil {
 		return sdktypes.InvalidBuildArtifact, err
 	}

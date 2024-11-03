@@ -11,6 +11,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessioncontext"
+	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkexecutor"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -23,7 +24,7 @@ var (
 	errTestSoft = errors.New("soft test error")
 
 	// A hard eror is intended to be a simulated infrastructure error to trigger a retry.
-	ErrTestHard = errors.New("hard test error")
+	ErrTestHard = sdkerrors.NewRetryableErrorf("hard test error")
 )
 
 func New() sdkexecutor.Executor {

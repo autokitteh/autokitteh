@@ -33,7 +33,6 @@ func UUIDOrNil(uuid sdktypes.UUID) *sdktypes.UUID {
 var Tables = []any{
 	&Build{},
 	&Connection{},
-	&Var{},
 	&Deployment{},
 	&Env{},
 	&Event{},
@@ -46,6 +45,8 @@ var Tables = []any{
 	&SessionLogRecord{},
 	&Signal{},
 	&Trigger{},
+	&Value{},
+	&Var{},
 }
 
 type Build struct {
@@ -532,4 +533,15 @@ type Ownership struct {
 
 	// TODO: Polymorphic associations won't enforce foreign key to entities in different tables
 	// we might need to have separated ownership tables for each entity.
+}
+
+type Value struct {
+	ProjectID sdktypes.UUID `gorm:"primaryKey;type:uuid;not null"`
+	Key       string        `gorm:"primaryKey;not null"`
+	Value     []byte
+
+	UpdatedAt time.Time
+
+	// foreign key
+	Project *Project
 }

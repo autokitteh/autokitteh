@@ -9,9 +9,9 @@ import (
 	"go.autokitteh.dev/autokitteh/web/webdashboard"
 )
 
-func (s Svc) initIntegrations() {
-	s.Muxes.Auth.HandleFunc("/integrations", s.integrations)
-	s.Muxes.Auth.HandleFunc("/integrations/{iid}", s.integration)
+func (s *svc) initIntegrations() {
+	s.HandleFunc(rootPath+"integrations", s.integrations)
+	s.HandleFunc(rootPath+"integrations/{iid}", s.integration)
 }
 
 type integration struct{ sdktypes.Integration }
@@ -22,8 +22,8 @@ func (p integration) ExtraFields() map[string]any { return nil }
 
 func toIntegration(sdkI sdktypes.Integration) integration { return integration{sdkI} }
 
-func (s Svc) listIntegrations(w http.ResponseWriter, r *http.Request) (list, error) {
-	sdkIs, err := s.Svcs.Integrations().List(r.Context(), "")
+func (s *svc) listIntegrations(w http.ResponseWriter, r *http.Request) (list, error) {
+	sdkIs, err := s.Integrations().List(r.Context(), "")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return list{}, err
@@ -32,7 +32,7 @@ func (s Svc) listIntegrations(w http.ResponseWriter, r *http.Request) (list, err
 	return genListData(nil, kittehs.Transform(sdkIs, toIntegration)), nil
 }
 
-func (s Svc) integrations(w http.ResponseWriter, r *http.Request) {
+func (s *svc) integrations(w http.ResponseWriter, r *http.Request) {
 	is, err := s.listIntegrations(w, r)
 	if err != nil {
 		return
@@ -41,14 +41,14 @@ func (s Svc) integrations(w http.ResponseWriter, r *http.Request) {
 	renderList(w, r, "integrations", is)
 }
 
-func (s Svc) integration(w http.ResponseWriter, r *http.Request) {
+func (s *svc) integration(w http.ResponseWriter, r *http.Request) {
 	iid, err := sdktypes.StrictParseIntegrationID(r.PathValue("iid"))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	intg, err := s.Svcs.Integrations().GetByID(r.Context(), iid)
+	intg, err := s.Integrations().GetByID(r.Context(), iid)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

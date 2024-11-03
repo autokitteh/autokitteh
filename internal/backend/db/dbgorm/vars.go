@@ -165,6 +165,17 @@ func (db *gormdb) DeleteVars(ctx context.Context, sid sdktypes.VarScopeID, names
 	return translateError(db.deleteVars(ctx, sid.UUIDValue(), kittehs.TransformToStrings(names)...))
 }
 
+func (gdb *gormdb) CountVars(ctx context.Context, sid sdktypes.VarScopeID) (int, error) {
+	q := varsCommonQuery(gdb.withUserVars(ctx), sid.UUIDValue(), nil)
+
+	var n int64
+	if err := q.Model(&scheme.Var{}).Count(&n).Error; err != nil {
+		return 0, translateError(err)
+	}
+
+	return int(n), nil
+}
+
 func (db *gormdb) GetVars(ctx context.Context, sid sdktypes.VarScopeID, names []sdktypes.Symbol) ([]sdktypes.Var, error) {
 	dbvs, err := db.listVars(ctx, sid.UUIDValue(), kittehs.TransformToStrings(names)...)
 	if err != nil {

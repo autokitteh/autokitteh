@@ -12,12 +12,12 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-func (s Svc) initVars() {
-	s.Muxes.Auth.HandleFunc("DELETE /vars/{sid}", s.deleteVars)
-	s.Muxes.Auth.HandleFunc("POST /vars/{sid}", s.setVar)
+func (s *svc) initVars() {
+	s.HandleFunc("DELETE "+rootPath+"vars/{sid}", s.deleteVars)
+	s.HandleFunc("POST "+rootPath+"vars/{sid}", s.setVar)
 }
 
-func (s Svc) deleteVars(w http.ResponseWriter, r *http.Request) {
+func (s *svc) deleteVars(w http.ResponseWriter, r *http.Request) {
 	keys := strings.Split(r.URL.Query()["names"][0], ",")
 	syms, err := kittehs.TransformError(keys, sdktypes.StrictParseSymbol)
 	if err != nil {
@@ -31,13 +31,13 @@ func (s Svc) deleteVars(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.Svcs.Vars().Delete(r.Context(), sid, syms...); err != nil {
+	if err := s.Vars().Delete(r.Context(), sid, syms...); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 }
 
-func (s Svc) setVar(w http.ResponseWriter, r *http.Request) {
+func (s *svc) setVar(w http.ResponseWriter, r *http.Request) {
 	sid, err := sdktypes.Strict(sdktypes.ParseVarScopeID(r.PathValue("sid")))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -64,14 +64,14 @@ func (s Svc) setVar(w http.ResponseWriter, r *http.Request) {
 
 	v := sdktypes.NewVar(req.Name).SetValue(req.Value).SetSecret(req.IsSecret).WithScopeID(sid)
 
-	if err := s.Svcs.Vars().Set(r.Context(), v); err != nil {
+	if err := s.Vars().Set(r.Context(), v); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 }
 
-func (s Svc) genVarsList(w http.ResponseWriter, r *http.Request, sid sdktypes.VarScopeID) (list, error) {
-	vs, err := s.Svcs.Vars().Get(r.Context(), sid)
+func (s *svc) genVarsList(w http.ResponseWriter, r *http.Request, sid sdktypes.VarScopeID) (list, error) {
+	vs, err := s.Vars().Get(r.Context(), sid)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return list{}, err

@@ -6,12 +6,12 @@ import (
 	"go.autokitteh.dev/autokitteh/web/webdashboard"
 )
 
-func (s Svc) initToken() {
-	s.Muxes.Auth.HandleFunc("GET /token", s.token)
+func (s *svc) initToken() {
+	s.HandleFunc("GET "+rootPath+"token", s.token)
 }
 
-func (s Svc) token(w http.ResponseWriter, r *http.Request) {
-	tok, err := s.Svcs.Auth().CreateToken(r.Context())
+func (s *svc) token(w http.ResponseWriter, r *http.Request) {
+	tok, err := s.Auth().CreateToken(r.Context())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

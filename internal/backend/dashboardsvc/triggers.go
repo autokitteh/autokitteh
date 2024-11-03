@@ -8,9 +8,9 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-func (s Svc) initTriggers() {
-	s.Muxes.Auth.HandleFunc("/triggers", s.triggers)
-	s.Muxes.Auth.HandleFunc("/triggers/{tid}", s.trigger)
+func (s *svc) initTriggers() {
+	s.HandleFunc(rootPath+"triggers", s.triggers)
+	s.HandleFunc(rootPath+"triggers/{tid}", s.trigger)
 }
 
 type trigger struct{ sdktypes.Trigger }
@@ -24,8 +24,8 @@ func (p trigger) ExtraFields() map[string]any { return nil }
 
 func toTrigger(sdkP sdktypes.Trigger) trigger { return trigger{sdkP} }
 
-func (s Svc) listTriggers(w http.ResponseWriter, r *http.Request, f sdkservices.ListTriggersFilter) (list, error) {
-	sdkCs, err := s.Svcs.Triggers().List(r.Context(), f)
+func (s *svc) listTriggers(w http.ResponseWriter, r *http.Request, f sdkservices.ListTriggersFilter) (list, error) {
+	sdkCs, err := s.Triggers().List(r.Context(), f)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return list{}, err
@@ -43,7 +43,7 @@ func (s Svc) listTriggers(w http.ResponseWriter, r *http.Request, f sdkservices.
 	return genListData(f, kittehs.Transform(sdkCs, toTrigger), drops...), nil
 }
 
-func (s Svc) triggers(w http.ResponseWriter, r *http.Request) {
+func (s *svc) triggers(w http.ResponseWriter, r *http.Request) {
 	ts, err := s.listTriggers(w, r, sdkservices.ListTriggersFilter{})
 	if err != nil {
 		return
@@ -52,14 +52,14 @@ func (s Svc) triggers(w http.ResponseWriter, r *http.Request) {
 	renderList(w, r, "triggers", ts)
 }
 
-func (s Svc) trigger(w http.ResponseWriter, r *http.Request) {
+func (s *svc) trigger(w http.ResponseWriter, r *http.Request) {
 	tid, err := sdktypes.StrictParseTriggerID(r.PathValue("tid"))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	sdkP, err := s.Svcs.Triggers().Get(r.Context(), tid)
+	sdkP, err := s.Triggers().Get(r.Context(), tid)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

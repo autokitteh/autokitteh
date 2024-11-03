@@ -92,6 +92,7 @@ require (
 	google.golang.org/api v0.197.0
 	google.golang.org/grpc v1.66.2
 	google.golang.org/protobuf v1.34.2
+	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/yaml.v3 v3.0.1
 	gorm.io/datatypes v1.2.2
 	gorm.io/driver/postgres v1.5.9
@@ -269,7 +270,6 @@ require (
 	golang.org/x/time v0.6.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240903143218-8af14fe29dc1 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240903143218-8af14fe29dc1 // indirect
-	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gorm.io/driver/mysql v1.5.7 // indirect
 	gorm.io/driver/sqlserver v1.5.3 // indirect
 	gotest.tools/v3 v3.5.1 // indirect

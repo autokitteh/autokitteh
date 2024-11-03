@@ -6,6 +6,7 @@ import (
 
 	"go.temporal.io/sdk/activity"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -45,17 +46,17 @@ func (cs *calls) registerActivities() {
 	)
 
 	cs.generalWorker.RegisterActivityWithOptions(
-		cs.createSessionCall,
+		cs.createSessionCallActivity,
 		activity.RegisterOptions{Name: createSessionCallActivityName},
 	)
 
 	cs.generalWorker.RegisterActivityWithOptions(
-		cs.createSessionCallAttempt,
+		cs.createSessionCallAttemptActivity,
 		activity.RegisterOptions{Name: createSessionCallAttemptActivityName},
 	)
 
 	cs.generalWorker.RegisterActivityWithOptions(
-		cs.completeSessionCallAttempt,
+		cs.completeSessionCallAttemptActivity,
 		activity.RegisterOptions{Name: completeSessionCallAttemptActivityName},
 	)
 }
@@ -85,35 +86,35 @@ func (cs *calls) sessionCallActivity(ctx context.Context, params *callActivityIn
 
 	result, err := cs.executeCall(ctx, params.CallSpec, executors)
 	if err != nil {
-		return nil, err
+		return nil, temporalclient.TranslateError(err, "execute call for %v", params.SessionID)
 	}
 
 	return &callActivityOutputs{Result: result}, nil
 }
 
-func (cs *calls) createSessionCall(ctx context.Context, sid sdktypes.SessionID, data sdktypes.SessionCallSpec) error {
+func (cs *calls) createSessionCallActivity(ctx context.Context, sid sdktypes.SessionID, data sdktypes.SessionCallSpec) error {
 	err := cs.svcs.DB.CreateSessionCall(ctx, sid, data)
 	if errors.Is(err, sdkerrors.ErrAlreadyExists) {
 		err = nil
 	}
 
-	return err
+	return temporalclient.TranslateError(err, "create session call for %v", sid)
 }
 
-func (cs *calls) createSessionCallAttempt(ctx context.Context, sid sdktypes.SessionID, seq uint32) (uint32, error) {
+func (cs *calls) createSessionCallAttemptActivity(ctx context.Context, sid sdktypes.SessionID, seq uint32) (uint32, error) {
 	attempt, err := cs.svcs.DB.StartSessionCallAttempt(ctx, sid, seq)
 	if errors.Is(err, sdkerrors.ErrAlreadyExists) {
 		err = nil
 	}
 
-	return attempt, err
+	return attempt, temporalclient.TranslateError(err, "create session call attempt seq %d for %v", seq, sid)
 }
 
-func (cs *calls) completeSessionCallAttempt(ctx context.Context, sid sdktypes.SessionID, seq, attempt uint32, complete sdktypes.SessionCallAttemptComplete) error {
+func (cs *calls) completeSessionCallAttemptActivity(ctx context.Context, sid sdktypes.SessionID, seq, attempt uint32, complete sdktypes.SessionCallAttemptComplete) error {
 	err := cs.svcs.DB.CompleteSessionCallAttempt(ctx, sid, seq, attempt, complete)
 	if errors.Is(err, sdkerrors.ErrAlreadyExists) {
 		err = nil
 	}
 
-	return err
+	return temporalclient.TranslateError(err, "complete session call attempt %d, seq #%d for %v", attempt, seq, sid)
 }
