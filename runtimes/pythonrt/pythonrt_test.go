@@ -171,6 +171,7 @@ func setupServer(l *zap.Logger) (net.Listener, error) {
 			return fmt.Sprintf("localhost:%d", port)
 		},
 		LogCodeRunnerCode: true,
+		StartDuration:     10 * time.Second,
 	}); err != nil {
 		return nil, err
 	}

@@ -107,6 +107,7 @@ func New(cfg *Config, l *zap.Logger, getLocalAddr func() string) (*sdkruntimes.R
 				_, port, _ := net.SplitHostPort(getLocalAddr())
 				return fmt.Sprintf("%s:%s", cfg.WorkerAddress, port)
 			},
+			StartDuration: cfg.StartDuration,
 		}); err != nil {
 			return nil, fmt.Errorf("configure docker runner manager: %w", err)
 		}
@@ -129,6 +130,7 @@ func New(cfg *Config, l *zap.Logger, getLocalAddr func() string) (*sdkruntimes.R
 				LazyLoadVEnv:          cfg.LazyLoadLocalVEnv,
 				WorkerAddressProvider: getLocalAddr,
 				LogCodeRunnerCode:     cfg.LogRunnerCode,
+				StartDuration:         cfg.StartDuration,
 			},
 		); err != nil {
 			return nil, fmt.Errorf("configure local runner manager: %w", err)
