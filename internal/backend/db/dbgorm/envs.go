@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
@@ -61,7 +62,7 @@ func (gdb *gormdb) getEnvByName(ctx context.Context, projectID sdktypes.UUID, en
 
 func (gdb *gormdb) listEnvs(ctx context.Context, projectID sdktypes.UUID) ([]scheme.Env, error) {
 	q := gdb.withUserEnvs(ctx)
-	if projectID != sdktypes.InvalidEnvID.UUIDValue() {
+	if projectID != uuid.Nil {
 		q = q.Where("project_id = ?", projectID)
 	}
 	q = q.Order("env_id")
