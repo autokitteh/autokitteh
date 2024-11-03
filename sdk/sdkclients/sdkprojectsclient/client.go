@@ -211,3 +211,24 @@ func (c *client) Export(ctx context.Context, pid sdktypes.ProjectID) ([]byte, er
 
 	return resp.Msg.ZipArchive, nil
 }
+
+func (c *client) Lint(ctx context.Context, pid sdktypes.ProjectID, resources map[string][]byte) ([]sdktypes.CheckViolation, error) {
+	req := projectsv1.LintRequest{
+		ProjectId: pid.String(),
+		Resources: resources,
+	}
+	resp, err := c.client.Lint(ctx, connect.NewRequest(&req))
+	if err != nil {
+		return nil, rpcerrors.ToSDKError(err)
+	}
+
+	violations := kittehs.Transform(resp.Msg.Violations, func(v *projectsv1.CheckViolation) sdktypes.CheckViolation {
+		return sdktypes.CheckViolation{
+			FileName: v.FileName,
+			Line:     v.Line,
+			Level:    v.Level,
+			Message:  v.Message,
+		}
+	})
+	return violations, nil
+}
