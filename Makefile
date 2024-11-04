@@ -56,7 +56,7 @@ clean:
 	make -C web/webplatform clean
 
 .PHONY: ak
-ak: bin/ak
+ak: webplatform bin/ak
 
 .PHONY: bin
 bin: bin/ak
