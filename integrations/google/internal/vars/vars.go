@@ -8,8 +8,8 @@ type Vars struct {
 	OAuthData string `var:"secret"`
 	JSON      string `var:"secret"`
 
-	CalendarID string
-
+	CalendarID           string
+	DriveID              string
 	FormID               string
 	FormResponsesWatchID string
 	FormSchemaWatchID    string
@@ -26,6 +26,12 @@ var (
 	CalendarEventsWatchResID = sdktypes.NewSymbol("CalendarEventsWatchResID")
 	CalendarEventsWatchExp   = sdktypes.NewSymbol("CalendarEventsWatchExp")
 	CalendarEventsSyncToken  = sdktypes.NewSymbol("CalendarEventsSyncToken")
+
+	DriveID                    = sdktypes.NewSymbol("DriveID")
+	DriveEventsWatchID         = sdktypes.NewSymbol("DriveEventsWatchID")
+	DriveEventsWatchResID      = sdktypes.NewSymbol("DriveEventsWatchResID")
+	DriveEventsWatchExp        = sdktypes.NewSymbol("DriveEventsWatchExp")
+	DriveChangesStartPageToken = sdktypes.NewSymbol("DriveChangesStartPageToken")
 
 	FormID               = sdktypes.NewSymbol("FormID")
 	FormResponsesWatchID = sdktypes.NewSymbol("FormResponsesWatchID")
