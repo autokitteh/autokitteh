@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
@@ -60,10 +61,13 @@ func (gdb *gormdb) getEnvByName(ctx context.Context, projectID sdktypes.UUID, en
 }
 
 func (gdb *gormdb) listEnvs(ctx context.Context, projectID sdktypes.UUID) ([]scheme.Env, error) {
-	// REVIEW: project could belong to someone else. Just fetch envs belong to user
+	q := gdb.withUserEnvs(ctx)
+	if projectID != uuid.Nil {
+		q = q.Where("project_id = ?", projectID)
+	}
+	q = q.Order("env_id")
 
 	var envs []scheme.Env
-	q := gdb.withUserEnvs(ctx).Where("project_id = ?", projectID).Order("env_id")
 	if err := q.Find(&envs).Error; err != nil {
 		return nil, err
 	}

@@ -16,7 +16,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/internal/xdg"
-	pb "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/remote/v1"
+	userCode "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/user_code/v1"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkruntimes"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -47,9 +47,9 @@ type logMessage struct {
 }
 
 type comChannels struct {
-	done     chan *pb.DoneRequest
+	done     chan *userCode.DoneRequest
 	err      chan string
-	request  chan *pb.ActivityRequest
+	request  chan *userCode.ActivityRequest
 	print    chan *logMessage
 	log      chan *logMessage
 	callback chan *callbackMessage
@@ -151,9 +151,9 @@ func newSvc(cfg *Config, l *zap.Logger) (sdkservices.Runtime, error) {
 		log:       l,
 		firstCall: true,
 		channels: comChannels{
-			done:     make(chan *pb.DoneRequest, 1),
+			done:     make(chan *userCode.DoneRequest, 1),
 			err:      make(chan string, 1),
-			request:  make(chan *pb.ActivityRequest, 1),
+			request:  make(chan *userCode.ActivityRequest, 1),
 			print:    make(chan *logMessage, 1),
 			log:      make(chan *logMessage, 1),
 			callback: make(chan *callbackMessage, 1),
@@ -293,7 +293,7 @@ func (py *pySvc) Run(
 	}()
 
 	py.fileName = entryPointFileName(mainPath)
-	req := pb.ExportsRequest{
+	req := userCode.ExportsRequest{
 		FileName: py.fileName,
 	}
 
@@ -352,7 +352,7 @@ func pyLevelToZap(level string) zapcore.Level {
 func (py *pySvc) call(ctx context.Context, val sdktypes.Value, args []sdktypes.Value, kw map[string]sdktypes.Value) {
 	fn := val.GetFunction()
 
-	reply := func(req *pb.ActivityReplyRequest) {
+	reply := func(req *userCode.ActivityReplyRequest) {
 		if req.Error != "" {
 			py.log.Warn("activity reply error", zap.String("error", req.Error))
 		}
@@ -372,7 +372,7 @@ func (py *pySvc) call(ctx context.Context, val sdktypes.Value, args []sdktypes.V
 	}
 
 	if !val.IsFunction() {
-		reply(&pb.ActivityReplyRequest{Error: fmt.Sprintf("%#v is not a function", val)})
+		reply(&userCode.ActivityReplyRequest{Error: fmt.Sprintf("%#v is not a function", val)})
 		return
 	}
 
@@ -381,11 +381,11 @@ func (py *pySvc) call(ctx context.Context, val sdktypes.Value, args []sdktypes.V
 		err = fmt.Errorf("call output not bytes: %#v", out)
 	}
 	if err != nil {
-		reply(&pb.ActivityReplyRequest{Error: err.Error()})
+		reply(&userCode.ActivityReplyRequest{Error: err.Error()})
 		return
 	}
 
-	reply(&pb.ActivityReplyRequest{Result: out.GetBytes().Value()})
+	reply(&userCode.ActivityReplyRequest{Result: out.GetBytes().Value()})
 }
 
 // initialCall handles initial call from autokitteh, it does the message loop with Python.
@@ -414,9 +414,9 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktyp
 		return sdktypes.InvalidValue, fmt.Errorf("marshal event: %w", err)
 	}
 
-	req := pb.StartRequest{
+	req := userCode.StartRequest{
 		EntryPoint: fmt.Sprintf("%s:%s", py.fileName, funcName),
-		Event: &pb.Event{
+		Event: &userCode.Event{
 			Data: eventData,
 		},
 	}
@@ -436,7 +436,7 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktyp
 				py.log.Debug("health check loop stopped")
 				return
 			case <-time.After(10 * time.Second):
-				healthReq := pb.HealthRequest{}
+				healthReq := userCode.RunnerHealthRequest{}
 
 				resp, err := py.runner.Health(ctx, &healthReq)
 				if err != nil { // no network/lost packet.load? for sanity check the state locally via IPC/signals
@@ -458,7 +458,7 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktyp
 	}()
 
 	// Wait for client Done message
-	var done *pb.DoneRequest
+	var done *userCode.DoneRequest
 	for {
 		select {
 		case healthErr := <-runnerHealthChan:
@@ -534,7 +534,7 @@ func (py *pySvc) drainPrints(ctx context.Context) {
 	}
 }
 
-func (py *pySvc) tracebackToLocation(traceback []*pb.Frame) []sdktypes.CallFrame {
+func (py *pySvc) tracebackToLocation(traceback []*userCode.Frame) []sdktypes.CallFrame {
 	frames := make([]sdktypes.CallFrame, len(traceback))
 	for i, f := range traceback {
 		var err error
@@ -591,7 +591,7 @@ func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 	}()
 
 	// If we're here, it's an activity call
-	req := pb.ExecuteRequest{
+	req := userCode.ExecuteRequest{
 		Data: fn.Data(),
 	}
 	resp, err := py.runner.Execute(ctx, &req)

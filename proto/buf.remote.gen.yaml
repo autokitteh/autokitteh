@@ -26,5 +26,5 @@ plugins:
 inputs:
   - directory: .
     paths:
-      - autokitteh/remote
+      - autokitteh/user_code
       - autokitteh/values
