@@ -62,11 +62,11 @@ ak: webplatform bin/ak
 bin: bin/ak
 
 .PHONY: bin/ak
-bin/ak:
+bin/ak: require/go
 	$(GO) build --tags "${TAGS}" -o "$@" -ldflags="$(LDFLAGS)" $(GO_BUILD_OPTS) ./cmd/$(shell basename $@)
 
 .PHONY: build
-build:
+build: require/go
 	mkdir -p $(OUTDIR)
 	$(GO) build $(GO_BUILD_OPTS) ./...
 
@@ -98,16 +98,14 @@ lint: $(OUTDIR)/tools/golangci-lint
 scripts=$(shell find . -name \*.sh -not -path "*/.venv/*")
 
 .PHONY: shellcheck
-shellcheck:
-ifneq ($(scripts),)
-	docker run --rm -v $(shell pwd):/src -w /src koalaman/shellcheck:stable -a $(scripts) -x
-endif
+shellcheck: require/shellcheck
+	shellcheck -a $(scripts) -x
 
 .PHONY: test
 test: test-race test-runs test-sessions
 
 .PHONY: test-dbgorm
-test-dbgorm:
+test-dbgorm: require/go
 	for dbtype in sqlite postgres; do \
 		echo running for $$dbtype; \
 	go test -v ./internal/backend/db/dbgorm -dbtype $$dbtype ; \
@@ -119,12 +117,12 @@ test-dbgorm:
 # but not manual runs of "make" (which depend on "test-race"), or Python CI
 # in GitHub (which uses "runtimes/pythonrt/Makefile").
 .PHONY: test-unit
-test-unit:
+test-unit: require/go
 	$(GOTEST) ./... -skip "(pyExports|pySvc|createVEnv)"
 
 # Subset of "test-unit", for simplicity.
 .PHONY: test-system
-test-system:
+test-system: require/go
 	$(GOTEST) ./tests/system
 
 .PHONY: test-runs
@@ -136,35 +134,55 @@ test-sessions:
 	./tests/sessions/run.sh
 
 .PHONY: test-cover
-test-cover:
+test-cover: require/go
 	$(GOTEST) -covermode=atomic -coverprofile=tmp/cover.out ./...
 	go tool cover -html=tmp/cover.out
 
 .PHONY: test-race
-test-race:
+test-race: require/go
 	$(GOTEST) -race ./...
 
 .PHONY: proto
-proto:
+proto: require/go require/buf
 	make -C proto
 	$(GO) build -v $(GO_BUILD_OPTS) ./proto/...
 	$(GOTEST) ./proto
 
 .PHONY: pythonrt
-pythonrt:
+pythonrt: require/go
 	make -C runtimes/pythonrt/
 
 .PHONY: generate-migrations
-generate-migrations:
+generate-migrations: require/atlas
 	@read -p "Enter migration name: " migration_name; \
 	atlas migrate diff $$migration_name --env sqlite; \
 	atlas migrate diff $$migration_name --env postgres
 
 # Requires nodejs installed
 .PHONY: tailwindcss
-tailwindcss:
+tailwindcss: require/npx
 	npx --yes tailwindcss build -o web/static/tailwind.css
 
 .PHONY: webplatform
-webplatform:
+webplatform: require/go
 	make -C ./web/webplatform
+
+.PHONY: require/go
+require/go:
+	@./scripts/require/go.sh
+
+.PHONY: require/buf
+require/buf:
+	@./scripts/require/buf.sh
+
+.PHONY: require/atlas
+require/atlas:
+	@./scripts/require/atlas.sh
+
+.PHONY: require/npx
+require/npx:
+	@./scripts/require/npx.sh
+
+.PHONY: require/shellcheck
+require/shellcheck:
+	@./scripts/require/shellcheck.sh
