@@ -10,6 +10,7 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/configset"
+	"go.autokitteh.dev/autokitteh/internal/config"
 )
 
 // TODO: need this so RunOptions would not needed to be passed every time Component is called. This is ugly, fix.
@@ -17,9 +18,9 @@ var fxRunOpts RunOptions
 
 func setFXRunOpts(opts RunOptions) { fxRunOpts = opts }
 
-func fxGetConfig[T any](path string, def T) func(c *Config) (*T, error) {
-	return func(c *Config) (*T, error) {
-		return GetConfig(c, path, def)
+func fxGetConfig[T any](path string, def T) func(c *config.Config) (*T, error) {
+	return func(c *config.Config) (*T, error) {
+		return config.GetConfig(c, path, def)
 	}
 }
 
@@ -28,7 +29,7 @@ func chooseConfig[T any](set configset.Set[T]) (T, error) {
 }
 
 func Component[T any](name string, set configset.Set[T], opts ...fx.Option) fx.Option {
-	config, err := chooseConfig(set)
+	cfg, err := chooseConfig(set)
 	if err != nil {
 		return fx.Error(fmt.Errorf("%s: %w", name, err))
 	}
@@ -38,8 +39,8 @@ func Component[T any](name string, set configset.Set[T], opts ...fx.Option) fx.O
 		append(
 			[]fx.Option{
 				fx.Decorate(func(z *zap.Logger) *zap.Logger { return z.Named(name) }),
-				fx.Provide(fxGetConfig(name, config), fx.Private),
-				fx.Invoke(func(cfg *Config, c *T) { cfg.Store(name, c) }),
+				fx.Provide(fxGetConfig(name, cfg), fx.Private),
+				fx.Invoke(func(cfg *config.Config, c *T) { cfg.Store(name, c) }),
 			},
 			opts...,
 		)...,
