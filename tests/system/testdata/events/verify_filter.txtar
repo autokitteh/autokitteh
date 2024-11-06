@@ -1,0 +1,16 @@
+# Valid filter
+ak event verify-filter "event_type == "get""
+return code == 0
+output equals 'result: filter expression is valid'
+
+# Negative tests: verify filter with missing filter argument
+ak event verify-filter
+output equals 'Error: accepts 1 arg(s), received 0'
+return code == 1
+
+# Invalid filter
+ak event verify-filter "undefined_var == 'hello'"
+output contains 'Error: verify filter: ERROR'
+output contains 'undeclared reference to'
+output contains 'undefined_var'
+return code == 1
