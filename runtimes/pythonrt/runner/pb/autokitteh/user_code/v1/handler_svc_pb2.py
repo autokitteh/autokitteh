@@ -12,7 +12,7 @@ _sym_db = _symbol_database.Default()
 
 
 from . import user_code_pb2 as autokitteh_dot_user__code_dot_v1_dot_user__code__pb2
-from autokitteh.values.v1 import values_pb2 as autokitteh_dot_values_dot_v1_dot_values__pb2
+from pb.autokitteh.values.v1 import values_pb2 as autokitteh_dot_values_dot_v1_dot_values__pb2
 from google.protobuf import timestamp_pb2 as google_dot_protobuf_dot_timestamp__pb2
 
 
