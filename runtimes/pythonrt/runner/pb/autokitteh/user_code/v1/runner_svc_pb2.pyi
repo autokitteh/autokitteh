@@ -1,4 +1,5 @@
 from . import user_code_pb2 as _user_code_pb2
+from autokitteh.values.v1 import values_pb2 as _values_pb2
 from google.protobuf.internal import containers as _containers
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
@@ -39,10 +40,10 @@ class ExecuteResponse(_message.Message):
     RESULT_FIELD_NUMBER: _ClassVar[int]
     ERROR_FIELD_NUMBER: _ClassVar[int]
     TRACEBACK_FIELD_NUMBER: _ClassVar[int]
-    result: bytes
+    result: _values_pb2.Value
     error: str
     traceback: _containers.RepeatedCompositeFieldContainer[_user_code_pb2.Frame]
-    def __init__(self, result: _Optional[bytes] = ..., error: _Optional[str] = ..., traceback: _Optional[_Iterable[_Union[_user_code_pb2.Frame, _Mapping]]] = ...) -> None: ...
+    def __init__(self, result: _Optional[_Union[_values_pb2.Value, _Mapping]] = ..., error: _Optional[str] = ..., traceback: _Optional[_Iterable[_Union[_user_code_pb2.Frame, _Mapping]]] = ...) -> None: ...
 
 class StartResponse(_message.Message):
     __slots__ = ["error", "traceback"]
@@ -53,14 +54,12 @@ class StartResponse(_message.Message):
     def __init__(self, error: _Optional[str] = ..., traceback: _Optional[_Iterable[_Union[_user_code_pb2.Frame, _Mapping]]] = ...) -> None: ...
 
 class ActivityReplyRequest(_message.Message):
-    __slots__ = ["data", "result", "error"]
-    DATA_FIELD_NUMBER: _ClassVar[int]
+    __slots__ = ["result", "error"]
     RESULT_FIELD_NUMBER: _ClassVar[int]
     ERROR_FIELD_NUMBER: _ClassVar[int]
-    data: bytes
-    result: bytes
+    result: _values_pb2.Value
     error: str
-    def __init__(self, data: _Optional[bytes] = ..., result: _Optional[bytes] = ..., error: _Optional[str] = ...) -> None: ...
+    def __init__(self, result: _Optional[_Union[_values_pb2.Value, _Mapping]] = ..., error: _Optional[str] = ...) -> None: ...
 
 class ActivityReplyResponse(_message.Message):
     __slots__ = ["error"]

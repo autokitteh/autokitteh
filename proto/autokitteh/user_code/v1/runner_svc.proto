@@ -3,6 +3,7 @@ syntax = "proto3";
 package autokitteh.user_code.v1;
 
 import "autokitteh/user_code/v1/user_code.proto";
+import "autokitteh/values/v1/values.proto";
 
 message ExportsRequest {
   string file_name = 1;
@@ -23,7 +24,7 @@ message ExecuteRequest {
 }
 
 message ExecuteResponse {
-  bytes result = 1;
+  autokitteh.values.v1.Value result = 1;
   string error = 2;
   repeated Frame traceback = 3;
 }
@@ -34,9 +35,8 @@ message StartResponse {
 }
 
 message ActivityReplyRequest {
-  bytes data = 1;
-  bytes result = 2;
-  string error = 3;
+  autokitteh.values.v1.Value result = 1;
+  string error = 2;
 }
 
 message ActivityReplyResponse {

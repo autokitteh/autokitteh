@@ -1,4 +1,5 @@
 from . import user_code_pb2 as _user_code_pb2
+from autokitteh.values.v1 import values_pb2 as _values_pb2
 from google.protobuf import timestamp_pb2 as _timestamp_pb2
 from google.protobuf.internal import containers as _containers
 from google.protobuf import descriptor as _descriptor
@@ -14,15 +15,15 @@ class CallInfo(_message.Message):
         KEY_FIELD_NUMBER: _ClassVar[int]
         VALUE_FIELD_NUMBER: _ClassVar[int]
         key: str
-        value: str
-        def __init__(self, key: _Optional[str] = ..., value: _Optional[str] = ...) -> None: ...
+        value: _values_pb2.Value
+        def __init__(self, key: _Optional[str] = ..., value: _Optional[_Union[_values_pb2.Value, _Mapping]] = ...) -> None: ...
     FUNCTION_FIELD_NUMBER: _ClassVar[int]
     ARGS_FIELD_NUMBER: _ClassVar[int]
     KWARGS_FIELD_NUMBER: _ClassVar[int]
     function: str
-    args: _containers.RepeatedScalarFieldContainer[str]
-    kwargs: _containers.ScalarMap[str, str]
-    def __init__(self, function: _Optional[str] = ..., args: _Optional[_Iterable[str]] = ..., kwargs: _Optional[_Mapping[str, str]] = ...) -> None: ...
+    args: _containers.RepeatedCompositeFieldContainer[_values_pb2.Value]
+    kwargs: _containers.MessageMap[str, _values_pb2.Value]
+    def __init__(self, function: _Optional[str] = ..., args: _Optional[_Iterable[_Union[_values_pb2.Value, _Mapping]]] = ..., kwargs: _Optional[_Mapping[str, _values_pb2.Value]] = ...) -> None: ...
 
 class ActivityRequest(_message.Message):
     __slots__ = ["runner_id", "data", "call_info"]
@@ -47,10 +48,10 @@ class DoneRequest(_message.Message):
     ERROR_FIELD_NUMBER: _ClassVar[int]
     TRACEBACK_FIELD_NUMBER: _ClassVar[int]
     runner_id: str
-    result: bytes
+    result: _values_pb2.Value
     error: str
     traceback: _containers.RepeatedCompositeFieldContainer[_user_code_pb2.Frame]
-    def __init__(self, runner_id: _Optional[str] = ..., result: _Optional[bytes] = ..., error: _Optional[str] = ..., traceback: _Optional[_Iterable[_Union[_user_code_pb2.Frame, _Mapping]]] = ...) -> None: ...
+    def __init__(self, runner_id: _Optional[str] = ..., result: _Optional[_Union[_values_pb2.Value, _Mapping]] = ..., error: _Optional[str] = ..., traceback: _Optional[_Iterable[_Union[_user_code_pb2.Frame, _Mapping]]] = ...) -> None: ...
 
 class DoneResponse(_message.Message):
     __slots__ = []
