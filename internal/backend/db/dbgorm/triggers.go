@@ -8,7 +8,6 @@ import (
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
-	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -36,13 +35,13 @@ func (gdb *gormdb) deleteTrigger(ctx context.Context, triggerID sdktypes.UUID) e
 	})
 }
 
-func (gdb *gormdb) updateTrigger(ctx context.Context, triggerID sdktypes.UUID, data map[string]any) error {
+func (gdb *gormdb) updateTrigger(ctx context.Context, trigger *scheme.Trigger) error {
 	return gdb.transaction(ctx, func(tx *tx) error {
-		if err := tx.isCtxUserEntity(tx.ctx, triggerID); err != nil {
+		if err := tx.isCtxUserEntity(tx.ctx, trigger.TriggerID); err != nil {
 			return err
 		}
-		allowedFields := []string{"ConnectionID", "EventType", "Filter", "CodeLocation", "Data", "WebhookSlug"}
-		return tx.db.Model(&scheme.Trigger{TriggerID: triggerID}).Select(allowedFields).Updates(data).Error
+
+		return tx.db.Model(&scheme.Trigger{TriggerID: trigger.TriggerID}).Updates(trigger).Error
 	})
 }
 
@@ -125,29 +124,23 @@ func (db *gormdb) DeleteTrigger(ctx context.Context, id sdktypes.TriggerID) erro
 }
 
 func (db *gormdb) UpdateTrigger(ctx context.Context, trigger sdktypes.Trigger) error {
-	curr, err := db.GetTriggerByID(ctx, trigger.ID())
-	if err != nil {
-		return err
+	r, err := db.getTriggerByID(ctx, trigger.ID().UUIDValue())
+	if r == nil || err != nil {
+		return translateError(err)
 	}
 
-	if envID := trigger.EnvID(); envID.IsValid() && curr.EnvID() != envID {
-		return sdkerrors.ErrConflict
-	}
+	// We're not checking anything else here and modifiying only the following fields.
+	// This means that there'll be no error if an unmodifyable field is requested
+	// to be changed by the caller, and it will not be modified in the DB.
 
-	// Note: building trigger record involves non-transactionl fetching connectionID and projectID from the DB
-	t, err := db.triggerToRecord(ctx, trigger)
-	if err != nil {
-		return err
-	}
-	// update and set null fields as well, e.g. nullify connection, data etc..
-	updateData := map[string]any{
-		"ConnectionID": t.ConnectionID,
-		"SourceType":   t.SourceType,
-		"EventType":    t.EventType,
-		"Filter":       t.Filter,
-		"CodeLocation": t.CodeLocation,
-	}
-	return translateError(db.updateTrigger(ctx, trigger.ID().UUIDValue(), updateData))
+	r.CodeLocation = trigger.CodeLocation().CanonicalString()
+	r.EventType = trigger.EventType()
+	r.Filter = trigger.Filter()
+	r.Schedule = trigger.Schedule()
+	r.Name = trigger.Name().String()
+	r.UniqueName = triggerUniqueName(r.EnvID.String(), trigger.Name())
+
+	return translateError(db.updateTrigger(ctx, r))
 }
 
 func (db *gormdb) GetTriggerByID(ctx context.Context, triggerID sdktypes.TriggerID) (sdktypes.Trigger, error) {
