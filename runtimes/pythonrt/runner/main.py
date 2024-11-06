@@ -292,8 +292,8 @@ class Runner(runner_rpc.RunnerService):
             data=call_id.encode(),
             call_info=pb_handler.CallInfo(
                 function=fn.__name__,  # AK rejects json.loads
-                args=[repr(a) for a in args],
-                kwargs={k: repr(v) for k, v in kw.items()},
+                args=[safe_wrap(a) for a in args],
+                kwargs={k: safe_wrap(v) for k, v in kw.items()},
             ),
         )
         log.info("activity: sending %r", req)

@@ -3,7 +3,6 @@
 Wraps and unwraps autokitteh values.
 """
 
-import pickle
 from collections import namedtuple
 from datetime import UTC, datetime, timedelta
 from typing import Any, Callable
@@ -11,54 +10,6 @@ from typing import Any, Callable
 import pb.autokitteh.values.v1.values_pb2 as pb
 from google.protobuf.duration_pb2 import Duration
 from google.protobuf.timestamp_pb2 import Timestamp
-
-Nothing = pb.Value(nothing=pb.Nothing())
-
-
-class Wrapper:
-    def __init__(self, executor_id: str):
-        self.executor_id = executor_id
-
-    def wrap_in_custom(self, v: Any) -> pb.Value:
-        """Wrap a custom value.
-
-        This is a convenience function to wrap a custom value.
-        """
-
-        return pb.Value(
-            custom=pb.Custom(
-                executor_id=self.executor_id,
-                data=pickle.dumps(v, protocol=0),
-                value=wrap(v, unhandled=lambda _: "<unpresentable>"),
-            ),
-        )
-
-    def wrap(self, v: Any) -> pb.Value:
-        """Wrap a python value into an autokitteh value.
-
-        If a type is not supported, it is pickled and wrapped as a Custom value.
-        The present_as function is called with the value that is unsupported to get
-        the presentable value for it.
-        """
-
-        return wrap(v, unhandled=self.wrap_in_custom)
-
-    def unwrap(self, v: pb.Value) -> Any:
-        """Unwrap an autokitteh value into a python value.
-
-        If the value is a Custom value, the custom function is called with the value.
-        """
-
-        def custom(v: pb.Value):
-            xid = v.custom.executor_id
-            if v.custom.executor_id != self.executor_id:
-                raise TypeError(
-                    f"can not unwrap custom value from unknown executor {xid} != {self.executor_id}"
-                )
-
-            return pickle.loads(v.custom.data)
-
-        return unwrap(v, custom)
 
 
 def wrap(v: Any, unhandled: Callable[[Any], pb.Value] = None) -> pb.Value:
