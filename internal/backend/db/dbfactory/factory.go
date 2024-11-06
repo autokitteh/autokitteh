@@ -27,6 +27,7 @@ var Configs = configset.Set[Config]{
 	Dev: &Config{
 		SlowQueryThreshold: 200 * time.Millisecond, // gorm default
 		DSN:                "sqlite:file:" + filepath.Join(xdg.DataHomeDir(), "autokitteh.sqlite"),
+		AutoMigrate:        true,
 	},
 	Test: &Config{},
 }
