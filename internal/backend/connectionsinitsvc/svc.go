@@ -101,6 +101,8 @@ func (s Svc) postInit(w http.ResponseWriter, r *http.Request) {
 	switch origin {
 	case "vscode":
 		u = "vscode://autokitteh.autokitteh?cid=%s"
+	case "dash":
+		u = "/internal/dashboard/connections/%s?msg=Success"
 	default:
 		// Another redirect just to get rid of the secrets in the URL.
 		u = "/connections/%s/success"
