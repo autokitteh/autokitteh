@@ -129,10 +129,16 @@ func (db *gormdb) UpdateTrigger(ctx context.Context, trigger sdktypes.Trigger) e
 		return translateError(err)
 	}
 
+	// We're not checking anything else here and modifiying only the following fields.
+	// This means that there'll be no error if an unmodifyable field is requested
+	// to be changed by the caller, and it will not be modified in the DB.
+
 	r.CodeLocation = trigger.CodeLocation().CanonicalString()
 	r.EventType = trigger.EventType()
 	r.Filter = trigger.Filter()
 	r.Schedule = trigger.Schedule()
+	r.Name = trigger.Name().String()
+	r.UniqueName = triggerUniqueName(r.EnvID.String(), trigger.Name())
 
 	return translateError(db.updateTrigger(ctx, r))
 }
