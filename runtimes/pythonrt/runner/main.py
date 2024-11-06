@@ -15,17 +15,18 @@ from traceback import TracebackException, format_exception
 import grpc
 import loader
 import log
-
+import pb.autokitteh.user_code.v1.handler_svc_pb2 as pb_handler
+import pb.autokitteh.user_code.v1.handler_svc_pb2_grpc as handler_rpc
 import pb.autokitteh.user_code.v1.runner_svc_pb2 as pb_runner
 import pb.autokitteh.user_code.v1.runner_svc_pb2_grpc as runner_rpc
-import pb.autokitteh.user_code.v1.handler_svc_pb2_grpc as handler_rpc
-import pb.autokitteh.user_code.v1.handler_svc_pb2 as pb_handler
 import pb.autokitteh.user_code.v1.user_code_pb2 as pb_user_code
-
-from autokitteh import AttrDict, connections
+import pb.autokitteh.values.v1.values_pb2 as pb_values
+import values
 from call import AKCall, full_func_name
 from grpc_reflection.v1alpha import reflection
 from syscalls import SysCalls
+
+from autokitteh import AttrDict, connections
 
 SERVER_GRACE_TIMEOUT = 3  # seconds
 
@@ -221,7 +222,13 @@ class Runner(runner_rpc.RunnerService):
             err = e
 
         resp = pb_runner.ExecuteResponse(
-            result=pickle.dumps(result, protocol=0),
+            result=pb_values.Value(
+                custom=pb_values.Custom(
+                    executor_id=self.id,
+                    data=pickle.dumps((call_id, result), protocol=0),
+                    value=safe_wrap(result),
+                ),
+            )
         )
 
         if err:
@@ -234,7 +241,13 @@ class Runner(runner_rpc.RunnerService):
     def ActivityReply(
         self, request: pb_runner.ActivityReplyRequest, context: grpc.ServicerContext
     ):
-        call_id = request.data.decode()
+        resp = request.result.custom
+        try:
+            call_id, result = pickle.loads(resp.data)
+        except Exception as err:
+            log.exception(f"can't decode data: pickle: {err}")
+            context.abort(grpc.StatusCode.INTERNAL, f"result pickle: {err}")
+
         with self.lock:
             fut = self.replies.pop(call_id, None)
 
@@ -249,15 +262,6 @@ class Runner(runner_rpc.RunnerService):
             context.abort(
                 grpc.StatusCode.ABORTED,
                 f"call_id {call_id!r}: activity error: {request.error}",
-            )
-
-        try:
-            result = pickle.loads(request.result)
-        except Exception as err:
-            log.exception(f"call_id {call_id!r}: result pickle: {err}")
-            fut.set_exception(ActivityError(err))
-            context.abort(
-                grpc.StatusCode.INTERNAL, f"call_id {call_id!r}: result pickle: {err}"
             )
 
         fut.set_result(result)
@@ -313,14 +317,21 @@ class Runner(runner_rpc.RunnerService):
         log.info("on_event: end: result=%r, err=%r", result, err)
         req = pb_handler.DoneRequest(
             runner_id=self.id,
-            # TODO: We want value that AK can understand (proto.Value)
-            result=pickle.dumps(result, protocol=0),
         )
 
+        log.info("on_event: end: result=%r, err=%r", result, err)
         if err:
             req.error = str(err)
             tb = exc_traceback(err)
             req.traceback.extend(tb)
+        else:
+            req.result = pb_values.Value(
+                custom=pb_values.Custom(
+                    executor_id=self.id,
+                    data=pickle.dumps(result, protocol=0),
+                    value=safe_wrap(result),
+                ),
+            )
 
         resp = self.worker.Done(req)
         if resp.Error:
@@ -352,6 +363,13 @@ class Runner(runner_rpc.RunnerService):
                 log.error("grpc canclled or unavailable, killing self")
                 self.server.stop(SERVER_GRACE_TIMEOUT)
             log.error("print: %s", err)
+
+
+def safe_wrap(v):
+    try:
+        return values.wrap(v)
+    except TypeError:
+        return pb_values.Value(string=pb_values.String(v=repr(v)))
 
 
 def is_valid_port(port):

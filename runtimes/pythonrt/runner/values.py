@@ -3,12 +3,12 @@
 Wraps and unwraps autokitteh values.
 """
 
-import pb.autokitteh.values.v1.values_pb2 as pb
-from collections import namedtuple
-from datetime import datetime, timedelta, UTC
 import pickle
-from typing import Callable
+from collections import namedtuple
+from datetime import UTC, datetime, timedelta
+from typing import Any, Callable
 
+import pb.autokitteh.values.v1.values_pb2 as pb
 from google.protobuf.duration_pb2 import Duration
 from google.protobuf.timestamp_pb2 import Timestamp
 
@@ -19,7 +19,7 @@ class Wrapper:
     def __init__(self, executor_id: str):
         self.executor_id = executor_id
 
-    def wrap_in_custom(self, v: any) -> pb.Value:
+    def wrap_in_custom(self, v: Any) -> pb.Value:
         """Wrap a custom value.
 
         This is a convenience function to wrap a custom value.
@@ -33,7 +33,7 @@ class Wrapper:
             ),
         )
 
-    def wrap(self, v: any) -> pb.Value:
+    def wrap(self, v: Any) -> pb.Value:
         """Wrap a python value into an autokitteh value.
 
         If a type is not supported, it is pickled and wrapped as a Custom value.
@@ -43,7 +43,7 @@ class Wrapper:
 
         return wrap(v, unhandled=self.wrap_in_custom)
 
-    def unwrap(self, v: pb.Value) -> any:
+    def unwrap(self, v: pb.Value) -> Any:
         """Unwrap an autokitteh value into a python value.
 
         If the value is a Custom value, the custom function is called with the value.
@@ -61,7 +61,7 @@ class Wrapper:
         return unwrap(v, custom)
 
 
-def wrap(v: any, unhandled: Callable[[any], pb.Value] = None) -> pb.Value:
+def wrap(v: Any, unhandled: Callable[[Any], pb.Value] = None) -> pb.Value:
     """Wrap a python value into an autokitteh value.
 
     If a type is not supported, the unhandled function is called with the value if supplied.
@@ -140,7 +140,7 @@ def wrap(v: any, unhandled: Callable[[any], pb.Value] = None) -> pb.Value:
     raise TypeError(f"unsupported type: {type(v)}")
 
 
-def unwrap(v: pb.Value, custom: Callable[[pb.Value], any] = None) -> any:
+def unwrap(v: pb.Value, custom: Callable[[pb.Value], Any] = None) -> Any:
     """Unwrap an autokitteh value into a python value.
 
     Note that wrap and unwrap are guaranteed to be symmetric.
@@ -183,7 +183,6 @@ def unwrap(v: pb.Value, custom: Callable[[pb.Value], any] = None) -> any:
     if v.HasField("function"):
         return v.function
     if v.HasField("custom"):
-        if v.custom:
-            return custom(v)
+        return unwrap(v.custom.value)
 
     raise TypeError(f"unsupported type: {v}")
