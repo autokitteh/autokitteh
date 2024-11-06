@@ -73,7 +73,7 @@ func (py *pySvc) Build(ctx context.Context, fsys fs.FS, path string, values []sd
 	var art sdktypes.BuildArtifact
 	art = art.WithCompiledData(compiledData)
 
-	exports, err := findExports(fsys)
+	exports, err := findExports(py.log, fsys)
 	if err == nil {
 		art = art.WithExports(exports)
 	} else {
@@ -84,7 +84,23 @@ func (py *pySvc) Build(ctx context.Context, fsys fs.FS, path string, values []sd
 	return art, nil
 }
 
-func findExports(fsys fs.FS) ([]sdktypes.BuildExport, error) {
+func findExports(log *zap.Logger, fsys fs.FS) ([]sdktypes.BuildExport, error) {
+	// TODO(ENG-1784): This has common code with configureLocalRunnerManager, find a way to unite
+	sysPyExe, isUserPy, err := pythonToRun(log)
+	if err != nil {
+		return nil, err
+	}
+
+	var pyExe string
+	if !isUserPy {
+		if err := ensureVEnv(log, sysPyExe); err != nil {
+			return nil, err
+		}
+		pyExe = venvPy
+	} else {
+		pyExe = sysPyExe
+	}
+
 	codeDir, err := os.MkdirTemp("", "ak-proj")
 	if err != nil {
 		return nil, err
@@ -102,10 +118,6 @@ func findExports(fsys fs.FS) ([]sdktypes.BuildExport, error) {
 		return nil, err
 	}
 
-	pyExe, err := findPython()
-	if err != nil {
-		return nil, err
-	}
 	pyFile := path.Join(runnerDir, "runner", "exports.py")
 	cmd := exec.Command(pyExe, pyFile, codeDir)
 	var stdout, stderr bytes.Buffer
