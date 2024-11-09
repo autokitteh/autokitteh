@@ -30,7 +30,7 @@ func ConstructEvent(ctx context.Context, vars sdkservices.Vars, cids []sdktypes.
 	}
 	latestEvent := events[len(events)-1]
 
-	// https://developers.google.com/calendar/api/v3/reference/events#resource
+	// https://developers.google.com/drive/api/reference/rest/v3/files
 	eventType := "file_updated"
 	if latestEvent.Removed {
 		eventType = "file_deleted"

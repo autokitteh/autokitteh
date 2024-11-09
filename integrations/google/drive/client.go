@@ -57,14 +57,6 @@ func New(cvars sdkservices.Vars) sdkservices.Integration {
 	)
 }
 
-func (a api) driveID(ctx context.Context) (string, error) {
-	data, err := a.connectionData(ctx)
-	if err != nil {
-		return "", err
-	}
-	return data.DriveID, nil
-}
-
 func (a api) driveClient(ctx context.Context) (*drive.Service, error) {
 	data, err := a.connectionData(ctx)
 	if err != nil {
@@ -106,14 +98,15 @@ func oauthConfig() *oauth2.Config {
 		ClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
 		Endpoint:     google.Endpoint,
 		RedirectURL:  fmt.Sprintf("https://%s/oauth/redirect/google", addr),
-		// https://developers.google.com/calendar/api/auth
+		// https://developers.google.com/drive/api/guides/api-specific-auth
 		Scopes: []string{
 			// Non-sensitive.
 			googleoauth2.OpenIDScope,
 			googleoauth2.UserinfoEmailScope,
 			googleoauth2.UserinfoProfileScope,
 			// Sensitive.
-			drive.DriveScope,
+			drive.DriveFileScope,
+			// drive.DriveScope,
 		},
 	}
 }
@@ -149,9 +142,9 @@ func (a api) connectionData(ctx context.Context) (*vars.Vars, error) {
 	return &decoded, nil
 }
 
-// https://developers.google.com/calendar/api/guides/push
-// https://developers.google.com/calendar/api/v3/reference/events/watch
-func (a api) watchEvents(ctx context.Context, connID sdktypes.ConnectionID, userEmail, driveID string) (*drive.Channel, error) {
+// https://developers.google.com/drive/api/guides/push
+// https://developers.google.com/drive/api/reference/rest/v3/changes/watch
+func (a api) watchEvents(ctx context.Context, connID sdktypes.ConnectionID, userEmail string) (*drive.Channel, error) {
 	client, err := a.driveClient(ctx)
 	if err != nil {
 		return nil, err
@@ -159,6 +152,12 @@ func (a api) watchEvents(ctx context.Context, connID sdktypes.ConnectionID, user
 
 	startToken, err := client.Changes.GetStartPageToken().Do()
 	if err != nil {
+		return nil, err
+	}
+
+	// Save the start page token for the next request.
+	v := sdktypes.NewVar(vars.DriveChangesStartPageToken).SetValue(startToken.StartPageToken)
+	if err = a.vars.Set(ctx, v.WithScopeID(sdktypes.NewVarScopeID(a.cid))); err != nil {
 		return nil, err
 	}
 
@@ -197,7 +196,7 @@ func (a api) watchEvents(ctx context.Context, connID sdktypes.ConnectionID, user
 	return resp, nil
 }
 
-// https://developers.google.com/calendar/api/v3/reference/channels/stop
+// https://developers.google.com/drive/api/reference/rest/v3/channels/stop
 func (a api) stopWatch(ctx context.Context, cid sdktypes.ConnectionID) error {
 	client, err := a.driveClient(ctx)
 	if err != nil {
@@ -219,30 +218,36 @@ func (a api) stopWatch(ctx context.Context, cid sdktypes.ConnectionID) error {
 	return nil
 }
 
-// https://developers.google.com/calendar/api/guides/sync
-// TODO(ENG-1499): Store event data in DB, to support event start/end notifs.
-func (a api) syncEvents(ctx context.Context, driveID string) error {
+func (a api) createChangeListRequest(client *drive.Service, pageToken string) *drive.ChangesListCall {
+	return client.Changes.List(pageToken).
+		IncludeItemsFromAllDrives(true).
+		SupportsAllDrives(true).
+		IncludeCorpusRemovals(true)
+}
+
+func (a api) initializeChangeTracking(ctx context.Context) error {
 	client, err := a.driveClient(ctx)
 	if err != nil {
 		return err
 	}
 
-	startToken, err := client.Changes.GetStartPageToken().Do()
+	// startToken, err := client.Changes.GetStartPageToken().Do()
+	// if err != nil {
+	// 	return err
+	// }
+	// vs, err := a.vars.Get(ctx, sdktypes.NewVarScopeID(a.cid), vars.DriveChangesStartPageToken)
+	// if err != nil {
+	// 	return err
+	// }
+	// startPageToken := vs.Get(vars.DriveChangesStartPageToken).Value()
+	vs, err := a.vars.Get(ctx, sdktypes.NewVarScopeID(a.cid))
 	if err != nil {
 		return err
 	}
+	startPageToken := vs.Get(vars.DriveChangesStartPageToken).Value()
 
-	// Initial request.
-	req := client.Changes.List(startToken.StartPageToken).
-		IncludeItemsFromAllDrives(true).
-		SupportsAllDrives(true)
-	if driveID != "" {
-		req = req.DriveId(driveID).
-			IncludeCorpusRemovals(true).
-			RestrictToMyDrive(false)
-	}
-
-	resp, err := req.Do()
+	// Initial request
+	resp, err := a.createChangeListRequest(client, startPageToken).Do()
 	if err != nil {
 		return err
 	}
@@ -253,16 +258,7 @@ func (a api) syncEvents(ctx context.Context, driveID string) error {
 			zap.String("pageToken", resp.NextPageToken),
 		)
 
-		req = client.Changes.List(resp.NextPageToken).
-			IncludeItemsFromAllDrives(true).
-			SupportsAllDrives(true)
-		if driveID != "" {
-			req = req.DriveId(driveID).
-				IncludeCorpusRemovals(true).
-				RestrictToMyDrive(false)
-		}
-
-		resp, err = req.Do()
+		resp, err = a.createChangeListRequest(client, resp.NextPageToken).Do()
 		if err != nil {
 			return err
 		}
@@ -283,7 +279,7 @@ func (a api) syncEvents(ctx context.Context, driveID string) error {
 	return nil
 }
 
-// https://developers.google.com/calendar/api/v3/reference/events/list
+// https://developers.google.com/drive/api/reference/rest/v3/changes/list
 func (a api) listEvents(ctx context.Context) ([]*drive.Change, error) {
 	client, err := a.driveClient(ctx)
 	if err != nil {
@@ -304,16 +300,7 @@ func (a api) listEvents(ctx context.Context) ([]*drive.Change, error) {
 	var changes []*drive.Change
 
 	// Initial request with the stored page token
-	req := client.Changes.List(startPageToken).
-		IncludeItemsFromAllDrives(true).
-		SupportsAllDrives(true)
-
-	if driveID := vs.Get(vars.DriveID).Value(); driveID != "" {
-		req = req.DriveId(driveID).
-			IncludeCorpusRemovals(true).
-			RestrictToMyDrive(false)
-	}
-
+	req := a.createChangeListRequest(client, startPageToken)
 	resp, err := req.Do()
 	if err != nil {
 		return nil, err
@@ -326,15 +313,7 @@ func (a api) listEvents(ctx context.Context) ([]*drive.Change, error) {
 			zap.String("pageToken", resp.NextPageToken),
 		)
 
-		req = client.Changes.List(resp.NextPageToken).
-			IncludeItemsFromAllDrives(true).
-			SupportsAllDrives(true)
-		if driveID := vs.Get(vars.DriveID).Value(); driveID != "" {
-			req = req.DriveId(driveID).
-				IncludeCorpusRemovals(true).
-				RestrictToMyDrive(false)
-		}
-
+		req = a.createChangeListRequest(client, resp.NextPageToken)
 		resp, err = req.Do()
 		if err != nil {
 			return nil, err

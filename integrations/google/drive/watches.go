@@ -25,11 +25,7 @@ func UpdateWatches(ctx context.Context, v sdkservices.Vars, connID sdktypes.Conn
 	}
 
 	a := api{logger: l, vars: v, cid: connID}
-	// TODO: fileID? Should we allow users to specify both fileID and driveID?
-	driveID, err := a.driveID(ctx)
-	if err != nil {
-		return err
-	}
+	// TODO(ENG-1789): allow users to specify both fileID and driveID
 
 	// Get the user's email address.
 	vs, err := v.Get(ctx, sdktypes.NewVarScopeID(connID), vars.UserEmail)
@@ -39,9 +35,8 @@ func UpdateWatches(ctx context.Context, v sdkservices.Vars, connID sdktypes.Conn
 	userEmail := vs.Get(vars.UserEmail).Value()
 
 	// Create or renew the events watch channel.
-	l = l.With(zap.String("driveID", driveID))
 	extrazap.AttachLoggerToContext(l, ctx)
-	watchChannel, err := a.watchEvents(ctx, connID, userEmail, driveID)
+	watchChannel, err := a.watchEvents(ctx, connID, userEmail)
 	if err != nil {
 		return err
 	}
@@ -52,9 +47,7 @@ func UpdateWatches(ctx context.Context, v sdkservices.Vars, connID sdktypes.Conn
 		return err
 	}
 
-	// Initialize the watch channel's sync token, for event enrichment
-	// (https://developers.google.com/calendar/api/guides/sync).
-	err = a.syncEvents(ctx, driveID)
+	err = a.initializeChangeTracking(ctx)
 	if err != nil {
 		return err
 	}
