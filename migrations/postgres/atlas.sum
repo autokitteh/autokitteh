@@ -1,4 +1,4 @@
-h1:KlUbKneCc+Sz8ifEsH1G57RQJUNcXzSj7O6cyIizoDw=
+h1:F2nnIL9tzRyRa8SBKCmo79OAZn8eO2JrKLRMHSAePbU=
 20240704121932_baseline.sql h1:1JS9FYe08Ef0wTpJIeeL4wIqHc8E/RXhuqmTI/FwkzY=
 20240714051207_no-db-user.sql h1:tx0AwepNeeL/XWD74sLRGwisrkNs4lyH/H4BG/663FQ=
 20240727114921_project-not-nil-name.sql h1:ZG3tDLzQSxd81S4BDe/IOMktltkurwyuFwu5gkqQvrA=
@@ -13,3 +13,4 @@ h1:KlUbKneCc+Sz8ifEsH1G57RQJUNcXzSj7O6cyIizoDw=
 20240930231925_session-memo.sql h1:qki1Q0TWAkOPsERFSJa790eF/yBcCQDwpE6m4YA4SYU=
 20241031014759_values.sql h1:oB887uLwHpro4y+7t1mEUbIs1z5gnxY0WXTDaXN/Rio=
 20241110012315_project_instead_of_env.sql h1:98tnqcEzJ9yTbtO+dHiKbWuGPqSF2IJoRMOtBNaPiHo=
+20241110035114_users.sql h1:1lEQh0R9Bsz3jSp0dSCyaV3+rkO31Ygkm5WCoU+ZnZo=

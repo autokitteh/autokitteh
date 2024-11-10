@@ -7,6 +7,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"gorm.io/gorm"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
@@ -24,10 +25,7 @@ func (db *gormdb) SetValue(ctx context.Context, pid sdktypes.ProjectID, key stri
 		return sdkerrors.NewInvalidArgumentError("value too large > %d bytes", maxValueSize)
 	}
 
-	uid, err := userIDFromContext(ctx)
-	if err != nil {
-		return err
-	}
+	uid := authcontext.GetAuthnUser(ctx).ID().String()
 
 	return translateError(db.transaction(ctx, func(tx *tx) error {
 		db := tx.db

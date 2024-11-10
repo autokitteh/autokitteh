@@ -3,6 +3,7 @@ package dispatcher
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/google/uuid"
 	"go.temporal.io/api/serviceerror"
@@ -61,7 +62,10 @@ func (d *Dispatcher) listWaitingSignalsActivity(ctx context.Context, dstid sdkty
 
 func (d *Dispatcher) startSessionActivity(ctx context.Context, session sdktypes.Session) (sdktypes.SessionID, error) {
 	ctx = akCtx.WithRequestOrginator(ctx, akCtx.Dispatcher)
-	ctx = akCtx.WithOwnershipOf(ctx, d.svcs.DB.GetOwnership, session.ProjectID().UUIDValue())
+	var err error
+	if ctx, err = akCtx.WithOwnershipOf(ctx, d.svcs.DB.GetOwnership, session.ProjectID().UUIDValue()); err != nil {
+		return sdktypes.InvalidSessionID, fmt.Errorf("ownership: %w", err)
+	}
 
 	sid, err := d.svcs.Sessions.Start(ctx, session)
 	return sid, temporalclient.TranslateError(err, "start session %v", session.ID())
@@ -69,7 +73,10 @@ func (d *Dispatcher) startSessionActivity(ctx context.Context, session sdktypes.
 
 func (d *Dispatcher) getEventSessionDataActivity(ctx context.Context, event sdktypes.Event, opts *sdkservices.DispatchOptions) ([]sessionData, error) {
 	ctx = akCtx.WithRequestOrginator(ctx, akCtx.EventWorkflow)
-	ctx = akCtx.WithOwnershipOf(ctx, d.svcs.DB.GetOwnership, event.DestinationID().UUIDValue())
+	var err error
+	if ctx, err = akCtx.WithOwnershipOf(ctx, d.svcs.DB.GetOwnership, event.DestinationID().UUIDValue()); err != nil {
+		return nil, fmt.Errorf("ownership: %w", err)
+	}
 
 	eid := event.ID()
 	dstid := event.DestinationID()
@@ -80,10 +87,7 @@ func (d *Dispatcher) getEventSessionDataActivity(ctx context.Context, event sdkt
 		opts = &sdkservices.DispatchOptions{}
 	}
 
-	var (
-		optsProjectID sdktypes.ProjectID
-		err           error
-	)
+	var optsProjectID sdktypes.ProjectID
 
 	if opts.Project != "" {
 		sl = sl.With("project", opts.Project)

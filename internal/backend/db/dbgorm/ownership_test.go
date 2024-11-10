@@ -13,8 +13,8 @@ import (
 )
 
 var (
-	u1 = sdktypes.NewUser("ak", map[string]string{"email": "foo@baz", "name": "Test User 1"})
-	u2 = sdktypes.NewUser("ak", map[string]string{"email": "foo@bar", "name": "Test User 2"})
+	u1 = sdktypes.NewUser("foo@baz", "foobaz").WithNewID()
+	u2 = sdktypes.NewUser("foo@bar", "foobar").WithNewID()
 )
 
 func withSystemOrginators(t *testing.T, f *dbFixture, test func(t *testing.T, f *dbFixture)) {

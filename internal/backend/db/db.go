@@ -138,12 +138,17 @@ type DB interface {
 	ListWaitingSignals(ctx context.Context, dstID sdktypes.EventDestinationID) ([]*types.Signal, error)
 
 	// -----------------------------------------------------------------------
+	CreateUser(ctx context.Context, user sdktypes.User) (sdktypes.UserID, error)
+	GetUserByEmail(ctx context.Context, email string) (sdktypes.User, error)
+	GetUserByID(ctx context.Context, id sdktypes.UserID) (sdktypes.User, error)
+
+	// -----------------------------------------------------------------------
 	SetSecret(ctx context.Context, key string, value string) error
 	GetSecret(ctx context.Context, key string) (string, error)
 	DeleteSecret(ctx context.Context, key string) error
 
 	// -----------------------------------------------------------------------
-	GetOwnership(ctx context.Context, entityID sdktypes.UUID) (string, error)
+	GetOwnership(ctx context.Context, entityID sdktypes.UUID) (sdktypes.User, error)
 
 	SetValue(ctx context.Context, pid sdktypes.ProjectID, key string, v sdktypes.Value) error
 	GetValue(ctx context.Context, pid sdktypes.ProjectID, key string) (sdktypes.Value, error)

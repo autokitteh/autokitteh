@@ -51,7 +51,10 @@ func New(l *zap.Logger, cfg *Config, svcs Svcs) *Dispatcher {
 
 func (d *Dispatcher) Dispatch(ctx context.Context, event sdktypes.Event, opts *sdkservices.DispatchOptions) (sdktypes.EventID, error) {
 	ctx = akCtx.WithRequestOrginator(ctx, akCtx.Dispatcher)
-	ctx = akCtx.WithOwnershipOf(ctx, d.svcs.DB.GetOwnership, event.DestinationID().UUIDValue())
+	var err error
+	if ctx, err = akCtx.WithOwnershipOf(ctx, d.svcs.DB.GetOwnership, event.DestinationID().UUIDValue()); err != nil {
+		return sdktypes.InvalidEventID, fmt.Errorf("ownership: %w", err)
+	}
 
 	event = event.WithCreatedAt(time.Now())
 	eid, err := d.svcs.Events.Save(ctx, event)

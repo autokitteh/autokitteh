@@ -115,7 +115,13 @@ func (s *sessions) Start(ctx context.Context, session sdktypes.Session) (sdktype
 	l := s.l.With(zap.Any("session_id", sid))
 
 	ctx = akCtx.WithRequestOrginator(ctx, akCtx.SessionWorkflow)
-	ctx = akCtx.WithOwnershipOf(ctx, s.svcs.DB.GetOwnership, session.ProjectID().UUIDValue())
+
+	if pid := session.ProjectID(); pid.IsValid() {
+		var err error
+		if ctx, err = akCtx.WithOwnershipOf(ctx, s.svcs.DB.GetOwnership, pid.UUIDValue()); err != nil {
+			return sdktypes.InvalidSessionID, fmt.Errorf("ownership: %w", err)
+		}
+	}
 
 	if err := s.svcs.DB.CreateSession(ctx, session); err != nil {
 		return sdktypes.InvalidSessionID, fmt.Errorf("start session: %w", err)

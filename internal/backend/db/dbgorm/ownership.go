@@ -15,35 +15,18 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-func (gdb *gormdb) GetOwnership(ctx context.Context, entityID sdktypes.UUID) (uid string, err error) {
+func (gdb *gormdb) GetOwnership(ctx context.Context, entityID sdktypes.UUID) (sdktypes.User, error) {
 	var o scheme.Ownership
-	if err = gdb.db.WithContext(ctx).Where("entity_id = ?", entityID).Select("user_id").First(&o).Error; err != nil {
-		gdb.z.Error("get ownership", zap.String("id", entityID.String()), zap.Error(err))
-		return
-	}
-	return o.UserID, nil
-}
-
-func userIDFromContext(ctx context.Context) (string, error) {
-	if uid := authcontext.GetAuthnUserID(ctx); uid != "" {
-		return uid, nil
+	if err := gdb.db.WithContext(ctx).Where("entity_id = ?", entityID).Select("user_id").First(&o).Error; err != nil {
+		return sdktypes.InvalidUser, err
 	}
 
-	user := authcontext.GetAuthnUser(ctx)
-	if !user.IsValid() {
-		return "", sdkerrors.NewInvalidArgumentError("unknown user")
+	uid, err := sdktypes.ParseUserID(o.UserID)
+	if err != nil {
+		return sdktypes.InvalidUser, err
 	}
 
-	data := user.Data()
-	name := data["name"]
-	email := data["email"]
-	provider := user.Provider()
-
-	if name == "" || email == "" || provider == "" {
-		return "", sdkerrors.NewInvalidArgumentError("unknown user")
-	}
-
-	return sdktypes.NewUserIDFromUserData(provider, email, name).String(), nil
+	return gdb.GetUserByID(ctx, uid)
 }
 
 // extract entity UUID and Type
@@ -92,15 +75,6 @@ func prepareOwnershipForEntities1(uid string, entities ...any) []scheme.Ownershi
 	return ownerships
 }
 
-func prepareOwnershipForEntities(ctx context.Context, entities ...any) (string, []scheme.Ownership, error) {
-	uid, err := userIDFromContext(ctx)
-	if err != nil {
-		return "", nil, err
-	}
-	oo := prepareOwnershipForEntities1(uid, entities...)
-	return uid, oo, nil
-}
-
 func saveOwnershipForEntities(db *gorm.DB, uid string, oo ...scheme.Ownership) error {
 	for i := range oo { // sanity. ensure same user
 		oo[i].UserID = uid
@@ -112,10 +86,8 @@ func saveOwnershipForEntities(db *gorm.DB, uid string, oo ...scheme.Ownership) e
 func (gdb *gormdb) createEntityWithOwnership(
 	ctx context.Context, create func(tx *gorm.DB, uid string) error, model any, allowedOnID ...*sdktypes.UUID,
 ) error {
-	uid, ownerships, err := prepareOwnershipForEntities(ctx, model)
-	if err != nil {
-		return err
-	}
+	uid := authcontext.GetAuthnUser(ctx).ID().String()
+	ownerships := prepareOwnershipForEntities1(uid, model)
 
 	var idsToVerifyOwnership []sdktypes.UUID
 	if len(allowedOnID) != 0 {
@@ -183,7 +155,7 @@ func (gdb *gormdb) isUserEntity(ctx context.Context, uid string, ids ...sdktypes
 }
 
 func (gdb *gormdb) isCtxUserEntity(ctx context.Context, ids ...sdktypes.UUID) error {
-	uid, _ := userIDFromContext(ctx)
+	uid := authcontext.GetAuthnUser(ctx).ID().String()
 	return gdb.isUserEntity(ctx, uid, ids...)
 }
 
@@ -206,7 +178,7 @@ func withUserEntity(ctx context.Context, gdb *gormdb, entity string, uid string)
 
 // gormdb user+entity scoped godm db + logging
 func (gdb *gormdb) withUserEntity(ctx context.Context, entity string) *gorm.DB {
-	user, _ := userIDFromContext(ctx) // NOTE: ignore possible error
+	user := authcontext.GetAuthnUser(ctx).ID().String() // NOTE: ignore possible error
 	return gdb.owner.JoinUserEntity(ctx, gdb.db.WithContext(ctx), entity, user)
 }
 

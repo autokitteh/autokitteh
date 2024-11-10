@@ -16,7 +16,12 @@ func New[
 	p = p.Safe()
 
 	if p.AuthToken != "" {
-		p.Options = append(p.Options, connect.WithInterceptors(newClientAuthInterceptor(p.AuthToken)))
+		p.Options = append(
+			p.Options,
+			connect.WithInterceptors(
+				newClientAuthUnaryInterceptor(p.AuthToken),
+			),
+		)
 	}
 
 	return f(p.HTTPClient, p.URL, p.Options...)

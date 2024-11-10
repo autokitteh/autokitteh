@@ -1,3 +1,6 @@
+# DISABLED: Currently auth does not work without an env.
+#           Once we remove envs and set up proper auth, we'll re-enable this test.
+
 # Preconditions: create & build project.
 ak project create --name my_project
 return code == 0

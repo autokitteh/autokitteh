@@ -158,7 +158,9 @@ func initGoose(client *sql.DB, dialect string) error {
 }
 
 func (db *gormdb) Migrate(ctx context.Context) error {
-	client := db.client()
+	db.z.Info("migrating")
+
+	client := db.client(true)
 
 	if err := initGoose(client, db.cfg.Type); err != nil {
 		return err
@@ -169,7 +171,7 @@ func (db *gormdb) Migrate(ctx context.Context) error {
 }
 
 func (db *gormdb) MigrationRequired(ctx context.Context) (bool, int64, error) {
-	client := db.client()
+	client := db.client(false)
 	if err := initGoose(client, db.cfg.Type); err != nil {
 		return false, 0, err
 	}
@@ -188,13 +190,7 @@ func (db *gormdb) MigrationRequired(ctx context.Context) (bool, int64, error) {
 	return len(requiredMigrations) > 0, dbversion, nil
 }
 
-func (db *gormdb) Setup(ctx context.Context) error {
-	isSqlite := db.cfg.Type == "sqlite"
-	if isSqlite {
-		foreignKeys(db, false)
-		defer foreignKeys(db, true)
-	}
-
+func (db *gormdb) migrate(ctx context.Context) error {
 	required, dbVersion, err := db.MigrationRequired(ctx)
 	if err != nil {
 		return err
@@ -203,11 +199,47 @@ func (db *gormdb) Setup(ctx context.Context) error {
 		return nil
 	}
 
+	z := db.z.With(zap.Int64("db_version", dbVersion))
+
+	z.Info("migration required")
+
 	if db.cfg.AutoMigrate || dbVersion == 0 {
 		return db.Migrate(ctx)
 	}
 
 	return errors.New("db migrations required") // TODO: maybe more details
+}
+
+func (db *gormdb) seed(ctx context.Context) error {
+	if db.cfg.SeedCommands == "" {
+		return nil
+	}
+
+	db.z.Info("seeding")
+
+	cmd := db.db.WithContext(ctx).Debug().Exec(db.cfg.SeedCommands)
+
+	db.z.Info("done seeding", zap.Int64("rows_affected", cmd.RowsAffected))
+
+	return translateError(cmd.Error)
+}
+
+func (db *gormdb) Setup(ctx context.Context) error {
+	isSqlite := db.cfg.Type == "sqlite"
+	if isSqlite {
+		foreignKeys(db, false)
+		defer foreignKeys(db, true)
+	}
+
+	if err := db.migrate(ctx); err != nil {
+		return err
+	}
+
+	if err := db.seed(ctx); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // TODO: not sure this will work with the connect method
@@ -250,6 +282,11 @@ func delete[T any](db *gorm.DB, ctx context.Context, where string, args ...any) 
 	return nil
 }
 
-func (db *gormdb) client() *sql.DB {
-	return kittehs.Must1(db.db.DB())
+func (db *gormdb) client(debug bool) *sql.DB {
+	q := db.db
+	if debug {
+		q = q.Debug()
+	}
+
+	return kittehs.Must1(q.DB())
 }

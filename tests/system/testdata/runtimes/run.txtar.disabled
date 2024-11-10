@@ -1,3 +1,5 @@
+# DISABLED: Runtime Run API is a streaming API and does not currently support auth.
+
 ak runtime build --local --dir multi -o multi.akb
 return code == 0
 

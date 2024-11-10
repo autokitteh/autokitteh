@@ -45,6 +45,7 @@ var Tables = []any{
 	&SessionLogRecord{},
 	&Signal{},
 	&Trigger{},
+	&User{},
 	&Value{},
 	&Var{},
 }
@@ -521,6 +522,17 @@ func ParseSignal(r *Signal) (*types.Signal, error) {
 	}, nil
 }
 
+type Value struct {
+	ProjectID sdktypes.UUID `gorm:"primaryKey;type:uuid;not null"`
+	Key       string        `gorm:"primaryKey;not null"`
+	Value     []byte
+
+	UpdatedAt time.Time
+
+	// foreign key
+	Project *Project
+}
+
 type Ownership struct {
 	EntityID   sdktypes.UUID `gorm:"primaryKey;type:uuid;not null"`
 	EntityType string        `gorm:"not null"`
@@ -531,13 +543,12 @@ type Ownership struct {
 	// we might need to have separated ownership tables for each entity.
 }
 
-type Value struct {
-	ProjectID sdktypes.UUID `gorm:"primaryKey;type:uuid;not null"`
-	Key       string        `gorm:"primaryKey;not null"`
-	Value     []byte
+type User struct {
+	UserID      sdktypes.UUID `gorm:"primaryKey;type:uuid;not null"`
+	Email       string        `gorm:"uniqueIndex;not null"`
+	DisplayName string
+}
 
-	UpdatedAt time.Time
-
-	// foreign key
-	Project *Project
+func ParseUser(r User) sdktypes.User {
+	return sdktypes.NewUser(r.Email, r.DisplayName).WithID(sdktypes.NewIDFromUUID[sdktypes.UserID](&r.UserID))
 }

@@ -3,18 +3,15 @@ package authloginhttpsvc
 import (
 	"errors"
 	"net/http"
-	"strconv"
 
 	"github.com/dghubble/gologin/v2/github"
 	"golang.org/x/oauth2"
 	githubOAuth2 "golang.org/x/oauth2/github"
-
-	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 const githubLoginPath = "/auth/github/login"
 
-func registerGithubOAuthRoutes(mux *http.ServeMux, cfg oauth2Config, onSuccess func(sdktypes.User) http.Handler) error {
+func registerGithubOAuthRoutes(mux *http.ServeMux, cfg oauth2Config, onSuccess func(*loginData) http.Handler) error {
 	if cfg.ClientID == "" {
 		return errors.New("github login is enabled, but missing GITHUB_CLIENT_ID")
 	}
@@ -48,15 +45,13 @@ func registerGithubOAuthRoutes(mux *http.ServeMux, cfg oauth2Config, onSuccess f
 			return
 		}
 
-		onSuccess(sdktypes.NewUser(
-			"github",
-			map[string]string{
-				"login": *gu.Login,
-				"id":    strconv.FormatInt(*gu.ID, 10),
-				"name":  *gu.Name,
-				"email": *gu.Email,
-			},
-		))
+		ld := loginData{
+			ProviderName: "github",
+			Email:        *gu.Email,
+			DisplayName:  *gu.Name,
+		}
+
+		onSuccess(&ld).ServeHTTP(w, r)
 	})
 
 	mux.Handle("/auth/github/callback", github.StateHandler(cfg.cookieConfig(), github.CallbackHandler(&oauth2Config, githubOnSuccess, nil)))

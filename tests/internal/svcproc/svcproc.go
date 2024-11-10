@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"os/exec"
 	"syscall"
 
@@ -39,8 +40,11 @@ func NewSvcProc(binPath string, cfg *svc.Config, ropts svc.RunOptions) (svc.Serv
 
 func (s *svcProc) Start(ctx context.Context) error {
 	// TODO: Pass user configuration to executable.
-	allow_default_user := true
-	_, _ = s.cfg.Get("authhttpmiddleware.allow_default_user", &allow_default_user)
+	var allowDefaultUser bool
+	_, _ = s.cfg.Get("authhttpmiddleware.use_default_user", &allowDefaultUser)
+
+	var seedCommands string
+	_, _ = s.cfg.Get("db.seed_commands", &seedCommands)
 
 	s.cmd = exec.Command(
 		s.binPath, "up",
@@ -51,10 +55,13 @@ func (s *svcProc) Start(ctx context.Context) error {
 
 		"--config", "http.addr=:0",
 		"--config", "http.addr_filename="+httpAddrFile, // In the test's temporary directory.
-		"--config", fmt.Sprintf("authhttpmiddleware.allow_default_user=%t", allow_default_user),
+		"--config", fmt.Sprintf("authhttpmiddleware.use_default_user=%t", allowDefaultUser),
+		"--config", fmt.Sprintf("db.seed_commands=%s", seedCommands),
 	)
 	// Use same system group to kill ak + all children (temporal, etc.)
 	s.cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	s.cmd.Stdout = os.Stdout
+	s.cmd.Stderr = os.Stderr
 
 	if err := s.cmd.Start(); err != nil {
 		return fmt.Errorf("start subprocess: %w", err)
