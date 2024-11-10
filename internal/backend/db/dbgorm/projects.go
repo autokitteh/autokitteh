@@ -52,7 +52,6 @@ func (gdb *gormdb) deleteProjectVars(ctx context.Context, id sdktypes.UUID) erro
 	// NOTE: should be transactional
 	db := gdb.db.WithContext(ctx)
 
-	// enforce foreign keys constrains while soft-deleting - should be no active deployments
 	var count int64
 	db.Model(&scheme.Deployment{}).Where("deleted_at is NULL and project_id = ?", id).Count(&count)
 	if count > 0 {
