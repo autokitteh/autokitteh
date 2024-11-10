@@ -158,11 +158,6 @@ generate-migrations: require/atlas
 	atlas migrate diff $$migration_name --env sqlite; \
 	atlas migrate diff $$migration_name --env postgres
 
-# Requires nodejs installed
-.PHONY: tailwindcss
-tailwindcss: require/npx
-	npx --yes tailwindcss build -o web/static/tailwind.css
-
 .PHONY: webplatform
 webplatform: require/go
 	make -C ./web/webplatform
