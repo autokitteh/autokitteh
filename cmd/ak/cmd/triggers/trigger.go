@@ -8,7 +8,7 @@ import (
 )
 
 // Flags shared by the "create" and "list" subcommands.
-var env, connection string
+var connection string
 
 var triggerCmd = common.StandardCommand(&cobra.Command{
 	Use:     "trigger",

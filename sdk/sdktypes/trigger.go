@@ -20,7 +20,7 @@ type TriggerTraits struct{}
 func (TriggerTraits) Validate(m *TriggerPB) error {
 	return errors.Join(
 		eventFilterField("filter", m.Filter),
-		idField[EnvID]("env_id", m.EnvId),
+		idField[ProjectID]("project_id", m.ProjectId),
 		idField[TriggerID]("trigger_id", m.TriggerId),
 		objectField[CodeLocation]("code_location", m.CodeLocation),
 		symbolField("name", m.Name),
@@ -48,7 +48,7 @@ func (TriggerTraits) StrictValidate(m *TriggerPB) error {
 	return errors.Join(
 		err,
 		mandatory("name", m.Name),
-		mandatory("env_id", m.EnvId),
+		mandatory("project_id", m.ProjectId),
 		mandatory("source_type", m.SourceType),
 	)
 }
@@ -64,9 +64,9 @@ func (p Trigger) WithID(id TriggerID) Trigger {
 	return Trigger{p.forceUpdate(func(m *TriggerPB) { m.TriggerId = id.String() })}
 }
 
-func (p Trigger) EnvID() EnvID { return kittehs.Must1(ParseEnvID(p.read().EnvId)) }
-func (p Trigger) WithEnvID(id EnvID) Trigger {
-	return Trigger{p.forceUpdate(func(m *TriggerPB) { m.EnvId = id.String() })}
+func (p Trigger) ProjectID() ProjectID { return kittehs.Must1(ParseProjectID(p.read().ProjectId)) }
+func (p Trigger) WithProjectID(id ProjectID) Trigger {
+	return Trigger{p.forceUpdate(func(m *TriggerPB) { m.ProjectId = id.String() })}
 }
 
 func (p Trigger) Name() Symbol { return NewSymbol(p.read().Name) }

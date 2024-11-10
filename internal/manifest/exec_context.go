@@ -2,8 +2,6 @@ package manifest
 
 import (
 	"context"
-	"fmt"
-	"strings"
 
 	"go.autokitteh.dev/autokitteh/internal/resolver"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -16,7 +14,6 @@ type execContext struct {
 
 	projects     map[string]sdktypes.ProjectID
 	integrations map[string]sdktypes.IntegrationID
-	envs         map[string]sdktypes.EnvID
 	connections  map[string]sdktypes.ConnectionID
 }
 
@@ -53,26 +50,6 @@ func (c *execContext) resolveIntegrationID(ctx context.Context, name string) (sd
 	iid := in.ID()
 	c.integrations[name] = iid
 	return iid, nil
-}
-
-func (c *execContext) resolveEnvID(ctx context.Context, envID string) (sdktypes.EnvID, error) {
-	if eid, ok := c.envs[envID]; ok {
-		return eid, nil
-	}
-
-	proj, env, ok := strings.Cut(envID, "/")
-	if !ok {
-		return sdktypes.InvalidEnvID, fmt.Errorf("invalid env id %q", envID)
-	}
-
-	sdkEnv, _, err := c.resolver.EnvNameOrID(ctx, env, proj)
-	if err != nil {
-		return sdktypes.InvalidEnvID, err
-	}
-
-	eid := sdkEnv.ID()
-	c.envs[envID] = eid
-	return eid, nil
 }
 
 func (c *execContext) resolveConnectionID(ctx context.Context, connID string) (sdktypes.ConnectionID, error) {

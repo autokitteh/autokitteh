@@ -1,4 +1,4 @@
-h1:qnBBFbuAcMunY+0BhxnU83k/G3KRGK8T2hJBhBcO7w0=
+h1:wPGLPyYkkTV9WyOQ8Xq2PVMkVghZYL7/pXTIc+vkGsw=
 20240704121927_baseline.sql h1:Urgmm304lCno+ou4WguUjFGiqu2PYoIOlswHpSL1lRg=
 20240714051159_no-db-user.sql h1:FRReTH5AzKrGU3qp0laWWzkgiBc5693KZIpgrjY81d8=
 20240727114913_project-not-nil-name.sql h1:tRZh+O1yx/QZuytlirQJA0f9Ga/m3FDNM9yE5eJDv1I=
@@ -12,3 +12,4 @@ h1:qnBBFbuAcMunY+0BhxnU83k/G3KRGK8T2hJBhBcO7w0=
 20240912005814_session-log-type.sql h1:4JR+I8zcCNYdXvjDB4FWxw3tlcYuMBHHlKnXEkxDAlQ=
 20240930231920_session-memo.sql h1:wfF40bXCYfjLstkPnZlEB5/lAsGG1qIjVEH6OHzxnxo=
 20241031014754_values.sql h1:lZH5utSBPFjHQkbfrJUYDl6YgPoAnV7oISHDL6VV8+s=
+20241110012312_project_instead_of_env.sql h1:nPDrU/IKct8r9B4OIm5b54+Y58WZHxu00JbMdM6yrBM=

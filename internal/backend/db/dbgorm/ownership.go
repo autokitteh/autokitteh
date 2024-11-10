@@ -61,10 +61,6 @@ func entityOwnershipWithIDAndType(entity any) scheme.Ownership {
 		return scheme.Ownership{EntityID: entity.DeploymentID, EntityType: "Deployment"}
 	case *scheme.Deployment:
 		return scheme.Ownership{EntityID: entity.DeploymentID, EntityType: "Deployment"}
-	case scheme.Env:
-		return scheme.Ownership{EntityID: entity.EnvID, EntityType: "Env"}
-	case *scheme.Env:
-		return scheme.Ownership{EntityID: entity.EnvID, EntityType: "Env"}
 	case scheme.Connection:
 		return scheme.Ownership{EntityID: entity.ConnectionID, EntityType: "Connection"}
 	case *scheme.Connection:

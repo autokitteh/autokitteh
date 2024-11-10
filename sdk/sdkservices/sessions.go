@@ -8,7 +8,7 @@ import (
 
 type ListSessionsFilter struct {
 	DeploymentID sdktypes.DeploymentID
-	EnvID        sdktypes.EnvID
+	ProjectID    sdktypes.ProjectID
 	EventID      sdktypes.EventID
 	BuildID      sdktypes.BuildID
 	StateType    sdktypes.SessionStateType

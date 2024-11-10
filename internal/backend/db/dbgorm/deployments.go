@@ -21,7 +21,7 @@ func (gdb *gormdb) withUserDeployments(ctx context.Context) *gorm.DB {
 func (gdb *gormdb) createDeployment(ctx context.Context, d *scheme.Deployment) error {
 	createFunc := func(tx *gorm.DB, uid string) error { return tx.Create(d).Error }
 	return gormErrNotFoundToForeignKey(
-		gdb.createEntityWithOwnership(ctx, createFunc, d, &d.BuildID, d.EnvID))
+		gdb.createEntityWithOwnership(ctx, createFunc, d, &d.BuildID, d.ProjectID))
 }
 
 func (gdb *gormdb) deleteDeployment(ctx context.Context, deploymentID sdktypes.UUID) error {
@@ -101,8 +101,8 @@ func (gdb *gormdb) listDeploymentsCommonQuery(ctx context.Context, filter sdkser
 	if filter.BuildID.IsValid() {
 		q = q.Where("deployments.build_id = ?", filter.BuildID.UUIDValue())
 	}
-	if filter.EnvID.IsValid() {
-		q = q.Where("deployments.env_id = ?", filter.EnvID.UUIDValue())
+	if filter.ProjectID.IsValid() {
+		q = q.Where("deployments.project_id = ?", filter.ProjectID.UUIDValue())
 	}
 	if filter.State != sdktypes.DeploymentStateUnspecified {
 		q = q.Where("deployments.state = ?", filter.State.ToProto())
@@ -162,7 +162,7 @@ func (db *gormdb) CreateDeployment(ctx context.Context, deployment sdktypes.Depl
 	d := scheme.Deployment{
 		DeploymentID: deployment.ID().UUIDValue(),
 		BuildID:      deployment.BuildID().UUIDValue(),
-		EnvID:        scheme.UUIDOrNil(deployment.EnvID().UUIDValue()),
+		ProjectID:    scheme.UUIDOrNil(deployment.ProjectID().UUIDValue()),
 		State:        int32(deployment.State().ToProto()),
 		CreatedAt:    now,
 		UpdatedAt:    now,

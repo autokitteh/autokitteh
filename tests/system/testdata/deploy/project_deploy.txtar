@@ -29,36 +29,36 @@ return code == 10
 # Deploy project from a single file.
 ak project deploy my_project --file single_file.star
 return code == 0
-output contains 'build_id: bld_00000000000000000000000003'
-output contains 'deployment_id: dep_00000000000000000000000004'
+output contains 'build_id: bld_00000000000000000000000002'
+output contains 'deployment_id: dep_00000000000000000000000003'
 
 # Deploy project from a directory tree with multiple files.
 ak project deploy my_project --dir directory
 return code == 0
-output contains 'build_id: bld_00000000000000000000000005'
-output contains 'deployment_id: dep_00000000000000000000000006'
+output contains 'build_id: bld_00000000000000000000000004'
+output contains 'deployment_id: dep_00000000000000000000000005'
 
 # Deploy project from both, alongside each other.
 ak project deploy my_project --file single_file.star --dir directory
 return code == 0
-output contains 'build_id: bld_00000000000000000000000007'
-output contains 'deployment_id: dep_00000000000000000000000008'
+output contains 'build_id: bld_00000000000000000000000006'
+output contains 'deployment_id: dep_00000000000000000000000007'
 
 # Deploy project to default environment, by name/ID.
 ak project deploy my_project --file single_file.star --env default
 return code == 0
-output contains 'build_id: bld_00000000000000000000000009'
-output contains 'deployment_id: dep_0000000000000000000000000a'
+output contains 'build_id: bld_00000000000000000000000008'
+output contains 'deployment_id: dep_00000000000000000000000009'
 
-ak project deploy my_project --file single_file.star --env my_project/default
+ak project deploy my_project --file single_file.star
 return code == 0
-output contains 'build_id: bld_0000000000000000000000000b'
-output contains 'deployment_id: dep_0000000000000000000000000c'
+output contains 'build_id: bld_0000000000000000000000000a'
+output contains 'deployment_id: dep_0000000000000000000000000b'
 
-ak project deploy my_project --file single_file.star --env env_00000000000000000000000002
+ak project deploy my_project --file single_file.star
 return code == 0
-output contains 'build_id: bld_0000000000000000000000000d'
-output contains 'deployment_id: dep_0000000000000000000000000e'
+output contains 'build_id: bld_0000000000000000000000000c'
+output contains 'deployment_id: dep_0000000000000000000000000d'
 
 -- single_file.star --
 print("single_file.star")

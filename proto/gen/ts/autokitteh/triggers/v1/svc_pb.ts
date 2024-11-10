@@ -296,22 +296,17 @@ export class GetResponse extends Message<GetResponse> {
  */
 export class ListRequest extends Message<ListRequest> {
   /**
-   * @generated from field: string env_id = 1;
-   */
-  envId = "";
-
-  /**
-   * @generated from field: string connection_id = 2;
+   * @generated from field: string connection_id = 1;
    */
   connectionId = "";
 
   /**
-   * @generated from field: string project_id = 3;
+   * @generated from field: string project_id = 2;
    */
   projectId = "";
 
   /**
-   * @generated from field: autokitteh.triggers.v1.Trigger.SourceType source_type = 4;
+   * @generated from field: autokitteh.triggers.v1.Trigger.SourceType source_type = 3;
    */
   sourceType = Trigger_SourceType.UNSPECIFIED;
 
@@ -323,10 +318,9 @@ export class ListRequest extends Message<ListRequest> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "autokitteh.triggers.v1.ListRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "env_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "connection_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "source_type", kind: "enum", T: proto3.getEnumType(Trigger_SourceType) },
+    { no: 1, name: "connection_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "source_type", kind: "enum", T: proto3.getEnumType(Trigger_SourceType) },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListRequest {

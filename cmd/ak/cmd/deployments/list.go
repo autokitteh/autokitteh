@@ -37,12 +37,12 @@ var listCmd = common.StandardCommand(&cobra.Command{
 		}
 		f.BuildID = bid
 
-		if env != "" {
-			e, _, err := r.EnvNameOrID(ctx, env, "")
-			if err = common.AddNotFoundErrIfCond(err, e.IsValid()); err != nil {
-				return common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "environment")
+		if project != "" {
+			p, _, err := r.ProjectNameOrID(ctx, project)
+			if err = common.AddNotFoundErrIfCond(err, p.IsValid()); err != nil {
+				return common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "project")
 			}
-			f.EnvID = e.ID()
+			f.ProjectID = p.ID()
 		}
 
 		if f.State, err = sdktypes.ParseDeploymentState(state.String()); err != nil {
@@ -66,7 +66,7 @@ var listCmd = common.StandardCommand(&cobra.Command{
 
 func init() {
 	// Command-specific flags.
-	listCmd.Flags().StringVarP(&env, "env", "e", "", "environment name or ID")
+	listCmd.Flags().StringVarP(&project, "project", "p", "", "project name or ID")
 	listCmd.Flags().StringVarP(&buildID, "build-id", "b", "", "build ID")
 	listCmd.Flags().VarP(&state, "state", "s", strings.Join(possibleStates, "|"))
 	listCmd.Flags().BoolVarP(&includeSessionStats, "include-session-stats", "i", false, "include session stats")

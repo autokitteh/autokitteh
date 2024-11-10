@@ -45,16 +45,16 @@ func (gdb *gormdb) setVar(ctx context.Context, vr *scheme.Var) error {
 		switch oo[0].EntityType {
 		case "Connection":
 			tableName, idField = "connections", "connection_id"
-		case "Env":
-			tableName, idField = "envs", "env_id"
+		case "Project":
+			tableName, idField = "projects", "project_id"
 		default:
-			return gorm.ErrCheckConstraintViolated // should be either Env or Connection
+			return gorm.ErrCheckConstraintViolated // should be either Project or Connection
 		}
 		query := fmt.Sprintf("SELECT deleted_at FROM %s where %s = ? LIMIT 1", tableName, idField)
 		if err := db.Raw(query, vr.ScopeID).Scan(&deletedAt).Error; err != nil {
 			return err
 		}
-		if deletedAt.Valid { // entity (either connection or env) was deleted
+		if deletedAt.Valid { // entity (either connection or project) was deleted
 			return gorm.ErrForeignKeyViolated // emulate foreign keys check (#2)
 		}
 

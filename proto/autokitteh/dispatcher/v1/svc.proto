@@ -15,7 +15,7 @@ message DispatchRequest {
   events.v1.Event event = 1;
 
   string deployment_id = 2;
-  string env = 3; // either env_id or full env path.
+  string project = 3; // either project id or name.
 
   // TODO: auth.
 }
@@ -26,8 +26,8 @@ message DispatchResponse {
 
 message RedispatchRequest {
   string event_id = 1 [(buf.validate.field).string.min_len = 1];
-  string env_id = 3;
-  string deployment_id = 2;
+  string project = 2; // either id or name.
+  string deployment_id = 3;
 }
 
 message RedispatchResponse {

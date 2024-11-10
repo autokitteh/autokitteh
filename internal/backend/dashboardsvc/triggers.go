@@ -16,7 +16,7 @@ func (s *svc) initTriggers() {
 type trigger struct{ sdktypes.Trigger }
 
 func (p trigger) FieldsOrder() []string {
-	return []string{"trigger_id", "name", "connection_id", "env_id"}
+	return []string{"trigger_id", "name", "connection_id", "project_id"}
 }
 
 func (p trigger) HideFields() []string        { return nil }
@@ -32,9 +32,6 @@ func (s *svc) listTriggers(w http.ResponseWriter, r *http.Request, f sdkservices
 	}
 
 	var drops []string
-	if f.EnvID.IsValid() {
-		drops = append(drops, "env_id")
-	}
 
 	if f.ProjectID.IsValid() {
 		drops = append(drops, "project_id")

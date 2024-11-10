@@ -9,13 +9,8 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/internal/manifest/internal/actions"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
-	"go.autokitteh.dev/autokitteh/sdk/sdklogger"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-)
-
-const (
-	defaultEnvName = "default"
 )
 
 var ErrUnsupportedManifestVersion = errors.New("unsupported manifest version")
@@ -102,12 +97,12 @@ func planProject(ctx context.Context, mproj *Project, client sdkservices.Service
 	}
 
 	// TODO: Remove all non-default environments.
-	envActions, err := planDefaultEnv(ctx, mproj.Vars, client, mproj.Name, pid, optfns...)
+	pvarsActions, err := planProjectVars(ctx, mproj.Vars, client, mproj.Name, pid, optfns...)
 	if err != nil {
-		return nil, fmt.Errorf("default env: %w", err)
+		return nil, fmt.Errorf("vars: %w", err)
 	}
 
-	add(envActions...)
+	add(pvarsActions...)
 
 	connActions, err := planConnections(ctx, mproj.Connections, client, mproj.Name, pid, optfns...)
 	if err != nil {
@@ -126,69 +121,28 @@ func planProject(ctx context.Context, mproj *Project, client sdkservices.Service
 	return acc, nil
 }
 
-func planDefaultEnv(ctx context.Context, mvars []*Var, client sdkservices.Services, projName string, pid sdktypes.ProjectID, optfns ...Option) ([]actions.Action, error) {
-	envKeyer := stringKeyer(projName + "/" + defaultEnvName)
+func planProjectVars(ctx context.Context, mvars []*Var, client sdkservices.Services, projName string, pid sdktypes.ProjectID, optfns ...Option) ([]actions.Action, error) {
 	opts := applyOptions(optfns)
-	log := opts.log.For("env", envKeyer)
 
-	if !pid.IsValid() && projName == "" {
-		return nil, errors.New("project must be set")
-	}
-
-	name := kittehs.Must1(sdktypes.ParseSymbol(defaultEnvName))
-
-	desired, err := sdktypes.EnvFromProto(&sdktypes.EnvPB{
-		Name:      name.String(),
-		ProjectId: pid.String(),
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	var curr sdktypes.Env
-
-	if pid.IsValid() {
-		if curr, err = client.Envs().GetByName(ctx, pid, name); err != nil {
-			return nil, fmt.Errorf("get env: %w", err)
-		}
-	}
+	sid := sdktypes.NewVarScopeID(pid)
 
 	var (
-		acc   []actions.Action
-		add   = func(as ...actions.Action) { acc = append(acc, as...) }
-		envID sdktypes.EnvID
+		acc       []actions.Action
+		add       = func(as ...actions.Action) { acc = append(acc, as...) }
+		mvarNames []string
+		err       error
 	)
 
-	if curr.IsValid() {
-		envID = curr.ID()
-
-		log.Printf("found, id=%q", envID)
-
-		desired = desired.WithID(envID)
-
-		if curr.Equal(desired) {
-			log.Printf("no changes needed")
-		} else {
-			log.Printf("not as desired, will update")
-
-			add(actions.UpdateEnvAction{Key: envKeyer.GetKey(), Env: desired})
-		}
-	}
-
-	sid := sdktypes.NewVarScopeID(envID)
-
 	var vars sdktypes.Vars
-
-	if envID.IsValid() {
+	if sid.IsValid() {
 		if vars, err = client.Vars().Get(ctx, sid); err != nil {
 			return nil, fmt.Errorf("get vars: %w", err)
 		}
 	}
 
-	var mvarNames []string
 	for _, mvar := range mvars {
 		mvar := *mvar
-		mvar.ParentKey = projName + "/" + defaultEnvName
+		mvar.ParentKey = projName
 
 		mvarNames = append(mvarNames, mvar.Name)
 
@@ -201,16 +155,13 @@ func planDefaultEnv(ctx context.Context, mvars []*Var, client sdkservices.Servic
 
 		desired := sdktypes.NewVar(n).SetValue(mvar.Value).SetSecret(mvar.Secret).WithScopeID(sid)
 
-		setAction := actions.SetVarAction{Key: mvar.GetKey(), Env: envKeyer.GetKey(), Var: desired}
+		setAction := actions.SetVarAction{Key: mvar.GetKey(), Project: projName, Var: desired}
 
 		log := opts.log.For("var", mvar)
 
 		if !v.IsValid() {
 			log("not found, will set")
 			add(setAction)
-		} else if !envID.IsValid() {
-			// var was found, hence we must have an envID.
-			sdklogger.Panic("envID is nil")
 		} else {
 			currVal := v.Value()
 
@@ -225,7 +176,7 @@ func planDefaultEnv(ctx context.Context, mvars []*Var, client sdkservices.Servic
 	for _, v := range vars {
 		if name := v.Name().String(); !hasVar(name) {
 			log.Printf("env var %q is not in the manifest, will delete", name)
-			add(actions.DeleteVarAction{Key: envKeyer.GetKey() + "/" + name, ScopeID: sid, Name: name})
+			add(actions.DeleteVarAction{Key: projName + "/" + name, ScopeID: sid, Name: name})
 		}
 	}
 
@@ -426,11 +377,10 @@ func planTriggers(ctx context.Context, mtriggers []*Trigger, client sdkservices.
 
 	for _, mtrigger := range mtriggers {
 		mtrigger := *mtrigger
-		projPrefix := projName + "/"
-		mtrigger.EnvKey = projPrefix + defaultEnvName
+		mtrigger.ProjectKey = projName
 
 		if mtrigger.ConnectionKey != nil {
-			*mtrigger.ConnectionKey = projPrefix + *mtrigger.ConnectionKey
+			*mtrigger.ConnectionKey = projName + "/" + *mtrigger.ConnectionKey
 		}
 
 		log := log.For("trigger", mtrigger)
@@ -449,6 +399,7 @@ func planTriggers(ctx context.Context, mtriggers []*Trigger, client sdkservices.
 			EventType:    mtrigger.EventType,
 			CodeLocation: loc.ToProto(),
 			Name:         mtrigger.Name,
+			ProjectId:    pid.String(),
 		})
 		if err != nil {
 			return nil, fmt.Errorf("trigger %q: invalid: %w", mtrigger.GetKey(), err)
@@ -484,7 +435,7 @@ func planTriggers(ctx context.Context, mtriggers []*Trigger, client sdkservices.
 
 		if !curr.IsValid() {
 			log.Printf("not found, will create")
-			add(actions.CreateTriggerAction{Key: mtrigger.GetKey(), ConnectionKey: mtrigger.ConnectionKey, EnvKey: mtrigger.EnvKey, Trigger: desired})
+			add(actions.CreateTriggerAction{Key: mtrigger.GetKey(), ConnectionKey: mtrigger.ConnectionKey, ProjectKey: mtrigger.ProjectKey, Trigger: desired})
 		} else {
 			matchedTriggerIDs = append(matchedTriggerIDs, curr.ID().String())
 			log.Printf("found, id=%q", curr.ID())
@@ -501,13 +452,13 @@ func planTriggers(ctx context.Context, mtriggers []*Trigger, client sdkservices.
 			desired = desired.
 				WithID(curr.ID()).
 				WithName(curr.Name()).
-				WithEnvID(curr.EnvID())
+				WithProjectID(curr.ProjectID())
 
 			if curr.Equal(desired) {
 				log.Printf("no changes needed")
 			} else {
 				log.Printf("not as desired, will update")
-				add(actions.UpdateTriggerAction{Key: mtrigger.GetKey(), ConnectionKey: mtrigger.ConnectionKey, EnvKey: mtrigger.EnvKey, Trigger: desired})
+				add(actions.UpdateTriggerAction{Key: mtrigger.GetKey(), ConnectionKey: mtrigger.ConnectionKey, ProjectKey: mtrigger.ProjectKey, Trigger: desired})
 			}
 		}
 	}

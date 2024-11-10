@@ -7,7 +7,6 @@ import (
 	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/connections/v1/connectionsv1connect"
 	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/deployments/v1/deploymentsv1connect"
 	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/dispatcher/v1/dispatcherv1connect"
-	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/envs/v1/envsv1connect"
 	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/events/v1/eventsv1connect"
 	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/integration_provider/v1/integration_providerv1connect"
 	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/integration_registry/v1/integration_registryv1connect"
@@ -28,7 +27,6 @@ var ServiceNames = []string{
 	connectionsv1connect.ConnectionsServiceName,
 	deploymentsv1connect.DeploymentsServiceName,
 	dispatcherv1connect.DispatcherServiceName,
-	envsv1connect.EnvsServiceName,
 	eventsv1connect.EventsServiceName,
 	integration_providerv1connect.IntegrationProviderServiceName,
 	integration_registryv1connect.IntegrationRegistryServiceName,

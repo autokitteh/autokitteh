@@ -44,17 +44,12 @@ func (s *server) List(ctx context.Context, req *connect.Request[storev1.ListRequ
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	envID, err := sdktypes.ParseEnvID(msg.EnvId)
-	if err != nil {
-		return nil, sdkerrors.AsConnectError(err)
-	}
-
 	projectID, err := sdktypes.ParseProjectID(msg.ProjectId)
 	if err != nil {
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	ks, err := s.store.List(ctx, envID, projectID)
+	ks, err := s.store.List(ctx, projectID)
 	if err != nil {
 		return nil, sdkerrors.AsConnectError(err)
 	}
@@ -73,17 +68,12 @@ func (s *server) Get(ctx context.Context, req *connect.Request[storev1.GetReques
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	envID, err := sdktypes.ParseEnvID(msg.EnvId)
-	if err != nil {
-		return nil, sdkerrors.AsConnectError(err)
-	}
-
 	projectID, err := sdktypes.ParseProjectID(msg.ProjectId)
 	if err != nil {
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	vs, err := s.store.Get(ctx, envID, projectID, msg.Keys)
+	vs, err := s.store.Get(ctx, projectID, msg.Keys)
 	if err != nil {
 		return nil, sdkerrors.AsConnectError(err)
 	}

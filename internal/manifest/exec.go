@@ -17,7 +17,6 @@ func Execute(ctx context.Context, actions actions.Actions, client sdkservices.Se
 
 		projects:     make(map[string]sdktypes.ProjectID),
 		integrations: make(map[string]sdktypes.IntegrationID),
-		envs:         make(map[string]sdktypes.EnvID),
 		connections:  make(map[string]sdktypes.ConnectionID),
 	}
 
@@ -97,51 +96,17 @@ func executeAction(ctx context.Context, action actions.Action, execContext *exec
 
 		return &Effect{SubjectID: action.ConnectionID, Type: Deleted}, nil
 
-	case actions.CreateEnvAction:
-		pid, err := execContext.resolveProjectID(ctx, action.ProjectKey)
-		if err != nil {
-			return nil, err
-		} else if !pid.IsValid() {
-			return nil, fmt.Errorf("project %q not found", action.ProjectKey)
-		}
-
-		env := action.Env.WithProjectID(pid)
-
-		eid, err := execContext.client.Envs().Create(ctx, env)
-		if err != nil {
-			return nil, err
-		}
-
-		execContext.envs[env.Name().String()] = eid
-
-		return &Effect{SubjectID: eid, Type: Created}, nil
-
-	case actions.UpdateEnvAction:
-		err := execContext.client.Envs().Update(ctx, action.Env)
-		if err != nil {
-			return nil, err
-		}
-
-		return &Effect{SubjectID: action.Env.ID(), Type: Updated}, nil
-
-	case actions.DeleteEnvAction:
-		if err := execContext.client.Envs().Remove(ctx, action.EnvID); err != nil {
-			return nil, err
-		}
-
-		return &Effect{SubjectID: action.EnvID, Type: Deleted}, nil
-
 	case actions.SetVarAction:
 		var scopeID sdktypes.VarScopeID
-		if action.Env != "" {
-			eid, err := execContext.resolveEnvID(ctx, action.Env)
+		if action.Project != "" {
+			pid, err := execContext.resolveProjectID(ctx, action.Project)
 			if err != nil {
 				return nil, err
-			} else if !eid.IsValid() {
-				return nil, fmt.Errorf("env %q not found", action.Env)
+			} else if !pid.IsValid() {
+				return nil, fmt.Errorf("project %q not found", action.Project)
 			}
 
-			scopeID = sdktypes.NewVarScopeID(eid)
+			scopeID = sdktypes.NewVarScopeID(pid)
 		} else {
 			cid, err := execContext.resolveConnectionID(ctx, action.Connection)
 			if err != nil {
@@ -173,14 +138,14 @@ func executeAction(ctx context.Context, action actions.Action, execContext *exec
 		return &Effect{SubjectID: action.ScopeID, Type: Updated, Text: fmt.Sprintf("var %q deleted", n)}, nil
 
 	case actions.CreateTriggerAction:
-		eid, err := execContext.resolveEnvID(ctx, action.EnvKey)
+		pid, err := execContext.resolveProjectID(ctx, action.ProjectKey)
 		if err != nil {
 			return nil, err
-		} else if !eid.IsValid() {
-			return nil, fmt.Errorf("env %q not found", action.EnvKey)
+		} else if !pid.IsValid() {
+			return nil, fmt.Errorf("project %q not found", action.ProjectKey)
 		}
 
-		trigger := action.Trigger.WithEnvID(eid)
+		trigger := action.Trigger.WithProjectID(pid)
 
 		if key := action.ConnectionKey; key != nil {
 			cid, err := execContext.resolveConnectionID(ctx, *key)

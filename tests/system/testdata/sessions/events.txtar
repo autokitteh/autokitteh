@@ -1,31 +1,31 @@
 ak deploy --manifest project.yaml
 return code == 0
 
-http get /webhooks/00000000000000000000000004
+http get /webhooks/00000000000000000000000003
 resp code == 202
 
-ak session watch ses_0000000000000000000000000c --end-state RUNNING --wait-created
+ak session watch ses_0000000000000000000000000b --end-state RUNNING --wait-created
 return code == 0
 
-ak session watch ses_0000000000000000000000000c -r "ready"
+ak session watch ses_0000000000000000000000000b -r "ready"
 return code == 0
 
-http post /webhooks/00000000000000000000000006 a
+http post /webhooks/00000000000000000000000005 a
 resp code == 202
 
-http post /webhooks/00000000000000000000000008 b
+http post /webhooks/00000000000000000000000007 b
 resp code == 202
 
-http post /webhooks/00000000000000000000000008 c
+http post /webhooks/00000000000000000000000007 c
 resp code == 202
 
-ak session watch ses_0000000000000000000000000c -r "3 None"
+ak session watch ses_0000000000000000000000000b -r "3 None"
 return code == 0
 
-http post /webhooks/00000000000000000000000006 d
+http post /webhooks/00000000000000000000000005 d
 resp code == 202
 
-ak session watch ses_0000000000000000000000000c --end-state COMPLETED
+ak session watch ses_0000000000000000000000000b --end-state COMPLETED
 return code == 0
 
 ak session log --prints-only --no-timestamps

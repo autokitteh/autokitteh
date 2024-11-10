@@ -30,14 +30,6 @@ var listCmd = common.StandardCommand(&cobra.Command{
 			f.ProjectID = pid
 		}
 
-		if env != "" {
-			e, eid, err := r.EnvNameOrID(ctx, env, project)
-			if err = common.AddNotFoundErrIfCond(err, e.IsValid()); err != nil {
-				return common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "environment")
-			}
-			f.EnvID = eid
-		}
-
 		if connection != "" {
 			c, cid, err := r.ConnectionNameOrID(ctx, connection, project)
 			if err = common.AddNotFoundErrIfCond(err, c.IsValid()); err != nil {
@@ -58,7 +50,6 @@ var listCmd = common.StandardCommand(&cobra.Command{
 func init() {
 	// Command-specific flags.
 	listCmd.Flags().StringVarP(&project, "project", "p", "", "project name or ID")
-	listCmd.Flags().StringVarP(&env, "env", "e", "", "environment name or ID")
 	listCmd.Flags().StringVarP(&connection, "connection", "c", "", "connection name or ID")
 
 	common.AddFailIfNotFoundFlag(listCmd)

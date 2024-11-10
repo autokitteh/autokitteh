@@ -87,7 +87,7 @@ func (w *sessionWorkflow) start(ctx context.Context, args []sdktypes.Value, kwar
 	session := sdktypes.NewSession(w.data.Build.ID(), cl, inputs, memo).
 		WithParentSessionID(w.data.Session.ID()).
 		WithDeploymentID(w.data.Session.DeploymentID()).
-		WithEnvID(w.data.Env.ID())
+		WithProjectID(w.data.Session.ProjectID())
 
 	sessionID, err := w.ws.sessions.Start(ctx, session)
 	if err != nil {

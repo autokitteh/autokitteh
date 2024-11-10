@@ -30,16 +30,14 @@ func (f *dbFixture) assertVarDeleted(t *testing.T, vars ...scheme.Var) {
 	}
 }
 
-func createConnectionAndEnv(t *testing.T, f *dbFixture) (scheme.Connection, scheme.Env) {
+func createConnection(t *testing.T, f *dbFixture) (scheme.Connection, scheme.Project) {
 	p := f.newProject()
 	c := f.newConnection(p)
-	env := f.newEnv(p)
 
 	f.createProjectsAndAssert(t, p)
 	f.createConnectionsAndAssert(t, c)
-	f.createEnvsAndAssert(t, env)
 
-	return c, env
+	return c, p
 }
 
 func preVarTest(t *testing.T) *dbFixture {
@@ -50,20 +48,20 @@ func preVarTest(t *testing.T) *dbFixture {
 
 func TestSetVar(t *testing.T) {
 	f := preVarTest(t)
-	c, env := createConnectionAndEnv(t, f)
+	c, p := createConnection(t, f)
 
 	// test setVar
 	v1 := f.newVar("v1", "connectionScope", c)
 	f.setVarsAndAssert(t, v1)
 
-	v2 := f.newVar("v2", "envScope", env)
+	v2 := f.newVar("v2", "projScope", p)
 	f.setVarsAndAssert(t, v2)
 
 	// test scopeID as foreign keys to either connectionID or envID
 	assert.NoError(t, f.gormdb.deleteConnection(f.ctx, c.ConnectionID))
 	assert.ErrorIs(t, f.gormdb.setVar(f.ctx, &v1), gorm.ErrForeignKeyViolated)
 
-	assert.NoError(t, f.gormdb.deleteEnv(f.ctx, env.EnvID))
+	assert.NoError(t, f.gormdb.deleteProject(f.ctx, p.ProjectID))
 	assert.ErrorIs(t, f.gormdb.setVar(f.ctx, &v2), gorm.ErrForeignKeyViolated)
 
 	// scopeID is zero, thus violates foreign key constraint
@@ -75,9 +73,9 @@ func TestSetVar(t *testing.T) {
 
 func TestReSetVar(t *testing.T) {
 	f := preVarTest(t)
-	_, env := createConnectionAndEnv(t, f)
+	_, p := createConnection(t, f)
 
-	v := f.newVar("foo", "bar", env)
+	v := f.newVar("foo", "bar", p)
 	// test setVar
 	f.setVarsAndAssert(t, v)
 
@@ -124,8 +122,8 @@ func (f *dbFixture) testListVar(t *testing.T, v scheme.Var) {
 	switch o.EntityType {
 	case "Connection":
 		assert.NoError(t, f.gormdb.deleteConnection(f.ctx, v.ScopeID))
-	case "Env":
-		assert.NoError(t, f.gormdb.deleteEnv(f.ctx, v.ScopeID))
+	case "Project":
+		assert.NoError(t, f.gormdb.deleteProject(f.ctx, v.ScopeID))
 	}
 
 	// test var was deleted due to scope deletion
@@ -140,37 +138,37 @@ func (f *dbFixture) testListVar(t *testing.T, v scheme.Var) {
 func TestListVar(t *testing.T) {
 	f := preVarTest(t)
 
-	c, e := createConnectionAndEnv(t, f)
-
-	ve := f.newVar("k", "env scope", e)
-	f.setVarsAndAssert(t, ve)
-	f.testListVar(t, ve)
+	c, p := createConnection(t, f)
 
 	vc := f.newVar("k", "connection scope", c)
 	f.setVarsAndAssert(t, vc)
 	f.testListVar(t, vc)
+
+	ve := f.newVar("k", "project scope", p)
+	f.setVarsAndAssert(t, ve)
+	f.testListVar(t, ve)
 }
 
 func TestListProjVars(t *testing.T) {
 	f := preVarTest(t)
 
-	c, e := createConnectionAndEnv(t, f)
+	c, p := createConnection(t, f)
 
-	ve := f.newVar("k", "env scope", e)
+	ve := f.newVar("k", "project scope", p)
 	vc := f.newVar("k", "connection scope", c)
 	f.setVarsAndAssert(t, ve)
 	f.setVarsAndAssert(t, vc)
 
 	// delete project
-	assert.NoError(t, f.gormdb.deleteProject(f.ctx, e.ProjectID))
+	assert.NoError(t, f.gormdb.deleteProject(f.ctx, p.ProjectID))
 	findAndAssertCount[scheme.Var](t, f, 0, "") // no vars. Both connection and env scope vars were deleted
 }
 
 func TestDeleteVar(t *testing.T) {
 	f := preVarTest(t)
-	_, env := createConnectionAndEnv(t, f)
+	_, p := createConnection(t, f)
 
-	v := f.newVar("foo", "bar", env)
+	v := f.newVar("foo", "bar", p)
 	f.setVarsAndAssert(t, v)
 
 	// test deleteEnvVar
@@ -180,12 +178,12 @@ func TestDeleteVar(t *testing.T) {
 
 func TestFincConnectionIDByVar(t *testing.T) {
 	f := preVarTest(t)
-	c1, env1 := createConnectionAndEnv(t, f)
-	c2, env2 := createConnectionAndEnv(t, f)
+	c1, p1 := createConnection(t, f)
+	c2, p2 := createConnection(t, f)
 
-	ve1 := f.newVar("v", "e1", env1)
+	ve1 := f.newVar("v", "p1", p1)
 	vc1 := f.newVar("v", "c1", c1)
-	ve2 := f.newVar("v", "e2", env2)
+	ve2 := f.newVar("v", "p2", p2)
 	vc2 := f.newVar("v", "c2", c2)
 	f.setVarsAndAssert(t, ve1)
 	f.setVarsAndAssert(t, vc1)

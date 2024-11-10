@@ -14,7 +14,7 @@ var buildCmd = common.StandardCommand(&cobra.Command{
 	Args:  cobra.ExactArgs(1),
 
 	RunE: func(cmd *cobra.Command, args []string) error {
-		id, err := common.BuildProject(args[0], dirPaths, filePaths)
+		id, _, err := common.BuildProject(args[0], dirPaths, filePaths)
 		if err == nil {
 			common.RenderKVIfV("build_id", id)
 		}

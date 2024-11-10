@@ -21,7 +21,7 @@ func (s *svc) initSessions() {
 type session struct{ sdktypes.Session }
 
 func (p session) FieldsOrder() []string {
-	return []string{"created_at", "session_id", "name", "connection_id", "env_id"}
+	return []string{"created_at", "session_id", "name", "connection_id", "project_id"}
 }
 
 func (p session) HideFields() []string        { return nil }
@@ -37,8 +37,8 @@ func (s *svc) listSessions(w http.ResponseWriter, r *http.Request, f sdkservices
 	}
 
 	var drops []string
-	if f.EnvID.IsValid() {
-		drops = append(drops, "env_id")
+	if f.ProjectID.IsValid() {
+		drops = append(drops, "project_id")
 	}
 
 	if f.DeploymentID.IsValid() {

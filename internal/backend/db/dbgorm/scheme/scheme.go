@@ -34,7 +34,7 @@ var Tables = []any{
 	&Build{},
 	&Connection{},
 	&Deployment{},
-	&Env{},
+	&Env{}, // TODO: Remove after migration.
 	&Event{},
 	&Ownership{},
 	&Project{},
@@ -216,6 +216,7 @@ func ParseEvent(e Event) (sdktypes.Event, error) {
 	})
 }
 
+// TODO: Remove after migration.
 type Env struct {
 	EnvID     sdktypes.UUID `gorm:"primaryKey;type:uuid;not null"`
 	ProjectID sdktypes.UUID `gorm:"index;type:uuid;not null"`
@@ -231,19 +232,11 @@ type Env struct {
 	Ownership *Ownership `gorm:"polymorphic:Entity;"`
 }
 
-func ParseEnv(e Env) (sdktypes.Env, error) {
-	return sdktypes.StrictEnvFromProto(&sdktypes.EnvPB{
-		EnvId:     sdktypes.NewIDFromUUID[sdktypes.EnvID](&e.EnvID).String(),
-		ProjectId: sdktypes.NewIDFromUUID[sdktypes.ProjectID](&e.ProjectID).String(),
-		Name:      e.Name,
-	})
-}
-
 type Trigger struct {
 	TriggerID    sdktypes.UUID  `gorm:"primaryKey;type:uuid;not null"`
 	ProjectID    sdktypes.UUID  `gorm:"index;type:uuid;not null"`
 	ConnectionID *sdktypes.UUID `gorm:"index;type:uuid"`
-	EnvID        sdktypes.UUID  `gorm:"index;type:uuid;not null"`
+	EnvID        *sdktypes.UUID `gorm:"index;type:uuid"` // TODO: Remove after migration.
 
 	SourceType   string `gorm:"index"`
 	EventType    string
@@ -251,8 +244,8 @@ type Trigger struct {
 	CodeLocation string
 
 	Name string
-	// Makes sure name is unique - this is the env_id with name.
-	UniqueName string `gorm:"uniqueIndex;not null"` // env_id + name
+	// Makes sure name is unique - this is the project_id with name.
+	UniqueName string `gorm:"uniqueIndex;not null"` // project_id + name
 
 	WebhookSlug string `gorm:"index"`
 	Schedule    string
@@ -262,7 +255,7 @@ type Trigger struct {
 	// enforce foreign keys
 	Project    *Project
 	Connection *Connection
-	Env        *Env
+	Env        *Env       // TODO: Remove after migration.
 	Ownership  *Ownership `gorm:"polymorphic:Entity;"`
 }
 
@@ -283,9 +276,9 @@ func ParseTrigger(e Trigger) (sdktypes.Trigger, error) {
 
 	return sdktypes.StrictTriggerFromProto(&sdktypes.TriggerPB{
 		TriggerId:    sdktypes.NewIDFromUUID[sdktypes.TriggerID](&e.TriggerID).String(),
-		EnvId:        sdktypes.NewIDFromUUID[sdktypes.EnvID](&e.EnvID).String(),
 		SourceType:   srcType.ToProto(),
 		ConnectionId: sdktypes.NewIDFromUUID[sdktypes.ConnectionID](e.ConnectionID).String(),
+		ProjectId:    sdktypes.NewIDFromUUID[sdktypes.ProjectID](&e.ProjectID).String(),
 		EventType:    e.EventType,
 		Filter:       e.Filter,
 		CodeLocation: loc.ToProto(),
@@ -348,7 +341,8 @@ func ParseSessionCallAttemptComplete(c SessionCallAttempt) (d sdktypes.SessionCa
 type Session struct {
 	SessionID        sdktypes.UUID  `gorm:"primaryKey;type:uuid;not null"`
 	BuildID          *sdktypes.UUID `gorm:"index;type:uuid"`
-	EnvID            *sdktypes.UUID `gorm:"index;type:uuid"`
+	EnvID            *sdktypes.UUID `gorm:"index;type:uuid"` // TODO: Remove after migration.
+	ProjectID        *sdktypes.UUID `gorm:"index;type:uuid"`
 	DeploymentID     *sdktypes.UUID `gorm:"index;type:uuid"`
 	EventID          *sdktypes.UUID `gorm:"index;type:uuid"`
 	CurrentStateType int            `gorm:"index"`
@@ -361,7 +355,7 @@ type Session struct {
 
 	// enforce foreign keys
 	Build      *Build
-	Env        *Env
+	Env        *Env // TODO: Remove after migration.
 	Deployment *Deployment
 	Event      *Event     `gorm:"references:EventID"`
 	Ownership  *Ownership `gorm:"polymorphic:Entity;"`
@@ -390,7 +384,7 @@ func ParseSession(s Session) (sdktypes.Session, error) {
 	session, err := sdktypes.StrictSessionFromProto(&sdktypes.SessionPB{
 		SessionId:    sdktypes.NewIDFromUUID[sdktypes.SessionID](&s.SessionID).String(),
 		BuildId:      sdktypes.NewIDFromUUID[sdktypes.BuildID](s.BuildID).String(),
-		EnvId:        sdktypes.NewIDFromUUID[sdktypes.EnvID](s.EnvID).String(),
+		ProjectId:    sdktypes.NewIDFromUUID[sdktypes.ProjectID](s.ProjectID).String(),
 		DeploymentId: sdktypes.NewIDFromUUID[sdktypes.DeploymentID](s.DeploymentID).String(),
 		EventId:      sdktypes.NewIDFromUUID[sdktypes.EventID](s.EventID).String(),
 		Entrypoint:   ep.ToProto(),
@@ -409,7 +403,8 @@ func ParseSession(s Session) (sdktypes.Session, error) {
 
 type Deployment struct {
 	DeploymentID sdktypes.UUID  `gorm:"primaryKey;type:uuid;not null"`
-	EnvID        *sdktypes.UUID `gorm:"index;type:uuid"`
+	EnvID        *sdktypes.UUID `gorm:"index;type:uuid"` // TODO: Remove after migration.
+	ProjectID    *sdktypes.UUID `gorm:"index;type:uuid"`
 	BuildID      sdktypes.UUID  `gorm:"type:uuid;not null"`
 	State        int32
 	CreatedAt    time.Time
@@ -417,7 +412,8 @@ type Deployment struct {
 	DeletedAt    gorm.DeletedAt `gorm:"index"`
 
 	// enforce foreign keys
-	Env       *Env
+	Project   *Project
+	Env       *Env // TODO: Remove after migration.
 	Build     *Build
 	Ownership *Ownership `gorm:"polymorphic:Entity;"`
 }
@@ -433,7 +429,7 @@ func ParseDeployment(d Deployment) (sdktypes.Deployment, error) {
 	deployment, err := sdktypes.StrictDeploymentFromProto(&sdktypes.DeploymentPB{
 		DeploymentId: sdktypes.NewIDFromUUID[sdktypes.DeploymentID](&d.DeploymentID).String(),
 		BuildId:      sdktypes.NewIDFromUUID[sdktypes.BuildID](&d.BuildID).String(),
-		EnvId:        sdktypes.NewIDFromUUID[sdktypes.EnvID](d.EnvID).String(),
+		ProjectId:    sdktypes.NewIDFromUUID[sdktypes.ProjectID](d.ProjectID).String(),
 		State:        deploymentsv1.DeploymentState(d.State),
 		CreatedAt:    timestamppb.New(d.CreatedAt),
 		UpdatedAt:    timestamppb.New(d.UpdatedAt),
@@ -458,7 +454,7 @@ func ParseDeploymentWithSessionStats(d DeploymentWithStats) (sdktypes.Deployment
 	deployment, err := sdktypes.StrictDeploymentFromProto(&sdktypes.DeploymentPB{
 		DeploymentId: sdktypes.NewIDFromUUID[sdktypes.DeploymentID](&d.DeploymentID).String(),
 		BuildId:      sdktypes.NewIDFromUUID[sdktypes.BuildID](&d.BuildID).String(),
-		EnvId:        sdktypes.NewIDFromUUID[sdktypes.EnvID](d.EnvID).String(),
+		ProjectId:    sdktypes.NewIDFromUUID[sdktypes.ProjectID](d.ProjectID).String(),
 		State:        deploymentsv1.DeploymentState(d.State),
 		CreatedAt:    timestamppb.New(d.CreatedAt),
 		UpdatedAt:    timestamppb.New(d.UpdatedAt),

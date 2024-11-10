@@ -48,6 +48,31 @@ func (gdb *gormdb) deleteProject(ctx context.Context, projectID sdktypes.UUID) e
 	})
 }
 
+func (gdb *gormdb) deleteProjectVars(ctx context.Context, id sdktypes.UUID) error {
+	// NOTE: should be transactional
+	db := gdb.db.WithContext(ctx)
+
+	// enforce foreign keys constrains while soft-deleting - should be no active deployments
+	var count int64
+	db.Model(&scheme.Deployment{}).Where("deleted_at is NULL and project_id = ?", id).Count(&count)
+	if count > 0 {
+		return fmt.Errorf("FOREIGN KEY: %w", gorm.ErrForeignKeyViolated)
+	}
+
+	// REVIEW: should we allow deleting only user envs and skipping the others.
+	// The check below will fail of any of provided envs cannot be deleted
+	if err := gdb.isCtxUserEntity(ctx, id); err != nil {
+		return err
+	}
+
+	// delete envs and associated vars
+	if err := db.Where("project_id = ?", id).Delete(&scheme.Project{}).Error; err != nil {
+		return err
+	}
+
+	return db.Where("var_id = ?", id).Delete(&scheme.Var{}).Error
+}
+
 // delete project, its envs, deployments, sessions and build
 func (gdb *gormdb) deleteProjectAndDependents(ctx context.Context, projectID sdktypes.UUID) error {
 	// NOTE: should be transactional
@@ -93,11 +118,7 @@ func (gdb *gormdb) deleteProjectAndDependents(ctx context.Context, projectID sdk
 		return err
 	}
 
-	envIDs, err := gdb.getProjectEnvs(ctx, projectID)
-	if err != nil {
-		return err
-	}
-	if err = gdb.deleteEnvs(ctx, envIDs); err != nil {
+	if err = gdb.deleteProjectVars(ctx, projectID); err != nil {
 		return err
 	}
 
@@ -197,16 +218,11 @@ type DeploymentState struct {
 func (db *gormdb) getProjectDeployments(ctx context.Context, pid sdktypes.UUID) ([]DeploymentState, error) {
 	var pds []DeploymentState
 	res := db.db.WithContext(ctx).Model(&scheme.Deployment{}).
-		Joins("join Envs on Envs.env_id = Deployments.env_id").
-		Where("Envs.project_id = ?", pid).
+		Joins("join Projects on Projects.project_id = Deployments.project_id").
+		Where("Projects.project_id = ?", pid).
 		Select("DISTINCT Deployments.deployment_id, Deployments.state").
 		Find(&pds)
 	return pds, res.Error
-}
-
-func (db *gormdb) getProjectEnvs(ctx context.Context, pid sdktypes.UUID) (envIDs []sdktypes.UUID, err error) {
-	err = db.db.WithContext(ctx).Model(&scheme.Env{}).Where("project_id = ?", pid).Pluck("env_id", &envIDs).Error
-	return envIDs, err
 }
 
 func (db *gormdb) GetProjectResources(ctx context.Context, pid sdktypes.ProjectID) (map[string][]byte, error) {

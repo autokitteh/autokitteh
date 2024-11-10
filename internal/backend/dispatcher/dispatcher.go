@@ -31,7 +31,6 @@ type Svcs struct {
 
 	sdkservices.Connections
 	sdkservices.Deployments
-	sdkservices.Envs
 	sdkservices.Events
 	sdkservices.Projects
 	sdkservices.Sessions

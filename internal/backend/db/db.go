@@ -66,18 +66,6 @@ type DB interface {
 	DeleteProject(context.Context, sdktypes.ProjectID) error
 
 	// -----------------------------------------------------------------------
-	// Returns sdkerrors.ErrAlreadyExists if either id or name is duplicate.
-	CreateEnv(context.Context, sdktypes.Env) error
-
-	// Returns sdkerrors.ErrNotFound if id is not found.
-	GetEnvByID(context.Context, sdktypes.EnvID) (sdktypes.Env, error)
-
-	// Returns sdkerrors.ErrNotFound if name is not found.
-	GetEnvByName(context.Context, sdktypes.ProjectID, sdktypes.Symbol) (sdktypes.Env, error)
-
-	ListProjectEnvs(context.Context, sdktypes.ProjectID) ([]sdktypes.Env, error)
-
-	// -----------------------------------------------------------------------
 	SetVars(context.Context, []sdktypes.Var) error
 	GetVars(context.Context, sdktypes.VarScopeID, []sdktypes.Symbol) ([]sdktypes.Var, error)
 	CountVars(context.Context, sdktypes.VarScopeID) (int, error)

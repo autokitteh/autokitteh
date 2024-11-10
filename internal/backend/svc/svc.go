@@ -37,8 +37,6 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/deploymentsgrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/dispatcher"
 	"go.autokitteh.dev/autokitteh/internal/backend/dispatchergrpcsvc"
-	"go.autokitteh.dev/autokitteh/internal/backend/envs"
-	"go.autokitteh.dev/autokitteh/internal/backend/envsgrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/events"
 	"go.autokitteh.dev/autokitteh/internal/backend/eventsgrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
@@ -183,7 +181,6 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		Component("deployments", configset.Empty, fx.Provide(deployments.New)),
 		Component("projects", configset.Empty, fx.Provide(projects.New)),
 		Component("projectsgrpcsvc", projectsgrpcsvc.Configs, fx.Provide(projectsgrpcsvc.New)),
-		Component("envs", configset.Empty, fx.Provide(envs.New)),
 		Component(
 			"vars",
 			vars.Configs,
@@ -243,7 +240,6 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		fx.Invoke(connectionsgrpcsvc.Init),
 		fx.Invoke(deploymentsgrpcsvc.Init),
 		fx.Invoke(dispatchergrpcsvc.Init),
-		fx.Invoke(envsgrpcsvc.Init),
 		fx.Invoke(eventsgrpcsvc.Init),
 		fx.Invoke(integrationsgrpcsvc.Init),
 		fx.Invoke(oauth.Init),
