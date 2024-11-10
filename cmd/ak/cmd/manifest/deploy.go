@@ -10,6 +10,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/webhookssvc"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/internal/manifest"
+	"go.autokitteh.dev/autokitteh/internal/resolver"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
@@ -42,14 +43,20 @@ var deployCmd = common.StandardCommand(&cobra.Command{
 			dirPaths = append(dirPaths, filepath.Dir(args[0]))
 		}
 
-		bid, pid, err := common.BuildProject(project, dirPaths, filePaths)
+		r := resolver.Resolver{Client: common.Client()}
+		ctx, cancel := common.LimitedContext()
+		defer cancel()
+
+		_, pid, err := r.ProjectNameOrID(ctx, project)
+		if err != nil {
+			return err
+		}
+
+		bid, err := common.BuildProject(pid, dirPaths, filePaths)
 		if err != nil {
 			return err
 		}
 		logFunc(cmd, "exec")(fmt.Sprintf("create_build: created %q", bid))
-
-		ctx, cancel := common.LimitedContext()
-		defer cancel()
 
 		// Step 3: deploy the build
 		// (see also the "deployment" and "project" parent commands).

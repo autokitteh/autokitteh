@@ -5,11 +5,11 @@ return code == 10
 
 # Negative tests: deploy nonexistent project, by name/ID.
 ak deploy --project bad_project --file program.star
-output equals 'Error: project not found'
+output equals 'Error: project: not_found'
 return code == 10
 
 ak deploy --project prj_000000000000000bad0bad0bad --file program.star
-output equals 'Error: project not found'
+output equals 'Error: project: not_found'
 return code == 10
 
 # Deploy based on new manifest.
@@ -46,19 +46,6 @@ ak deploy --project my_project --file single_file.star --dir directory
 return code == 0
 output equals file expected_output_5.txt
 
-# Deploy project to default environment, by name/ID.
-ak deploy --project my_project --file single_file.star --env default
-return code == 0
-output equals file expected_output_6.txt
-
-ak deploy --project my_project --file single_file.star --env my_project/default
-return code == 0
-output equals file expected_output_7.txt
-
-ak deploy --project my_project --file single_file.star --env env_00000000000000000000000002
-return code == 0
-output equals file expected_output_8.txt
-
 -- my_project/manifest.yaml --
 version: v1
 
@@ -76,6 +63,7 @@ project:
 [exec] create_project "my_project": prj_00000000000000000000000001 created
 [exec] create_trigger "my_project:/get": trg_00000000000000000000000002 created
 [!!!!] trigger "get" created, webhook path is "/webhooks/00000000000000000000000003"
+[plan] project "prj_00000000000000000000000001": found, id="prj_00000000000000000000000001"
 [exec] create_build: created "bld_00000000000000000000000004"
 [exec] create_deployment: created "dep_00000000000000000000000005"
 [exec] activate_deployment: activated
@@ -87,6 +75,7 @@ project:
 [plan] project "my_project": found 1 triggers
 [plan] trigger "my_project:/get": found, id="trg_00000000000000000000000002"
 [plan] trigger "my_project:/get": no changes needed
+[plan] project "my_project": found, id="prj_00000000000000000000000001"
 [exec] create_build: created "bld_00000000000000000000000006"
 [exec] create_deployment: created "dep_00000000000000000000000007"
 [exec] activate_deployment: activated
@@ -105,36 +94,18 @@ print("directory/subdirectory/file2.star")
 
 -- expected_output_3.txt --
 [plan] project "my_project": found, id="prj_00000000000000000000000001"
-[exec] create_build: created "bld_00000000000000000000000009"
-[exec] create_deployment: created "dep_0000000000000000000000000a"
+[exec] create_build: created "bld_00000000000000000000000008"
+[exec] create_deployment: created "dep_00000000000000000000000009"
 [exec] activate_deployment: activated
 
 -- expected_output_4.txt --
 [plan] project "my_project": found, id="prj_00000000000000000000000001"
-[exec] create_build: created "bld_0000000000000000000000000b"
-[exec] create_deployment: created "dep_0000000000000000000000000c"
+[exec] create_build: created "bld_0000000000000000000000000a"
+[exec] create_deployment: created "dep_0000000000000000000000000b"
 [exec] activate_deployment: activated
 
 -- expected_output_5.txt --
 [plan] project "my_project": found, id="prj_00000000000000000000000001"
-[exec] create_build: created "bld_0000000000000000000000000d"
-[exec] create_deployment: created "dep_0000000000000000000000000e"
-[exec] activate_deployment: activated
-
--- expected_output_6.txt --
-[plan] project "my_project": found, id="prj_00000000000000000000000001"
-[exec] create_build: created "bld_0000000000000000000000000f"
-[exec] create_deployment: created "dep_0000000000000000000000000g"
-[exec] activate_deployment: activated
-
--- expected_output_7.txt --
-[plan] project "my_project": found, id="prj_00000000000000000000000001"
-[exec] create_build: created "bld_0000000000000000000000000h"
-[exec] create_deployment: created "dep_0000000000000000000000000j"
-[exec] activate_deployment: activated
-
--- expected_output_8.txt --
-[plan] project "my_project": found, id="prj_00000000000000000000000001"
-[exec] create_build: created "bld_0000000000000000000000000k"
-[exec] create_deployment: created "dep_0000000000000000000000000m"
+[exec] create_build: created "bld_0000000000000000000000000c"
+[exec] create_deployment: created "dep_0000000000000000000000000d"
 [exec] activate_deployment: activated

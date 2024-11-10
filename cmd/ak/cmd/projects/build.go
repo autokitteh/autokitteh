@@ -1,10 +1,15 @@
 package projects
 
 import (
+	"errors"
+	"fmt"
+
 	"github.com/spf13/cobra"
 
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
+	"go.autokitteh.dev/autokitteh/internal/resolver"
+	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 )
 
 var buildCmd = common.StandardCommand(&cobra.Command{
@@ -14,7 +19,22 @@ var buildCmd = common.StandardCommand(&cobra.Command{
 	Args:  cobra.ExactArgs(1),
 
 	RunE: func(cmd *cobra.Command, args []string) error {
-		id, _, err := common.BuildProject(args[0], dirPaths, filePaths)
+		r := resolver.Resolver{Client: common.Client()}
+		ctx, cancel := common.LimitedContext()
+		defer cancel()
+
+		_, pid, err := r.ProjectNameOrID(ctx, args[0])
+		if err != nil {
+			err = fmt.Errorf("project: %w", err)
+
+			if errors.Is(err, sdkerrors.ErrNotFound) {
+				err = common.NewExitCodeError(common.NotFoundExitCode, err)
+			}
+
+			return err
+		}
+
+		id, err := common.BuildProject(pid, dirPaths, filePaths)
 		if err == nil {
 			common.RenderKVIfV("build_id", id)
 		}

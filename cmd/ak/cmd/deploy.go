@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -12,6 +13,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/internal/manifest"
 	"go.autokitteh.dev/autokitteh/internal/resolver"
+	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
@@ -40,15 +42,23 @@ var deployCmd = common.StandardCommand(&cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			if projectName != "" {
-				return fmt.Errorf("project name provided without manifest")
+		} else if projectName != "" {
+			return fmt.Errorf("project name provided without manifest")
+		}
+
+		p, pid, err := r.ProjectNameOrID(ctx, project)
+		if err != nil {
+			err = fmt.Errorf("project: %w", err)
+
+			if errors.Is(err, sdkerrors.ErrNotFound) {
+				err = common.NewExitCodeError(common.NotFoundExitCode, err)
 			}
 
-			p, pid, _ := r.ProjectNameOrID(ctx, project)
-			if p.IsValid() {
-				logFunc(cmd, "plan")(fmt.Sprintf("project %q: found, id=%q", project, pid))
-			}
+			return err
+		}
+
+		if p.IsValid() {
+			logFunc(cmd, "plan")(fmt.Sprintf("project %q: found, id=%q", project, pid))
 		}
 
 		// Step 2: build the project (see also the "build" and "project" parent commands).
@@ -59,7 +69,7 @@ var deployCmd = common.StandardCommand(&cobra.Command{
 			dirPaths = append(dirPaths, filepath.Dir(manifestPath))
 		}
 
-		bid, pid, err := common.BuildProject(project, dirPaths, filePaths)
+		bid, err := common.BuildProject(pid, dirPaths, filePaths)
 		if err != nil {
 			return err
 		}

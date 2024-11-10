@@ -73,11 +73,10 @@ func (gdb *gormdb) deleteProjectVars(ctx context.Context, id sdktypes.UUID) erro
 	return db.Where("var_id = ?", id).Delete(&scheme.Var{}).Error
 }
 
-// delete project, its envs, deployments, sessions and build
+// delete project, its envs, deployments, sessions and build.
+// must be called from inside a transaction.
 func (gdb *gormdb) deleteProjectAndDependents(ctx context.Context, projectID sdktypes.UUID) error {
-	// NOTE: should be transactional
-
-	deploymentStates, err := gdb.getProjectDeployments(ctx, projectID)
+	deploymentStates, err := gdb.getProjectDeploymentsStates(ctx, projectID)
 	if err != nil {
 		return err
 	}
@@ -215,13 +214,9 @@ type DeploymentState struct {
 
 // FIXME: apply user scopes from here ---v
 
-func (db *gormdb) getProjectDeployments(ctx context.Context, pid sdktypes.UUID) ([]DeploymentState, error) {
+func (db *gormdb) getProjectDeploymentsStates(ctx context.Context, pid sdktypes.UUID) ([]DeploymentState, error) {
 	var pds []DeploymentState
-	res := db.db.WithContext(ctx).Model(&scheme.Deployment{}).
-		Joins("join Projects on Projects.project_id = Deployments.project_id").
-		Where("Projects.project_id = ?", pid).
-		Select("DISTINCT Deployments.deployment_id, Deployments.state").
-		Find(&pds)
+	res := db.db.WithContext(ctx).Model(&scheme.Deployment{}).Where("project_id = ?", pid).Find(&pds)
 	return pds, res.Error
 }
 

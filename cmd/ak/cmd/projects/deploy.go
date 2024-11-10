@@ -1,12 +1,15 @@
 package projects
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/spf13/cobra"
 
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
+	"go.autokitteh.dev/autokitteh/internal/resolver"
+	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -20,15 +23,27 @@ var deployCmd = common.StandardCommand(&cobra.Command{
 	Args:  cobra.ExactArgs(1),
 
 	RunE: func(cmd *cobra.Command, args []string) error {
+		r := resolver.Resolver{Client: common.Client()}
+		ctx, cancel := common.LimitedContext()
+		defer cancel()
+
+		_, pid, err := r.ProjectNameOrID(ctx, args[0])
+		if err != nil {
+			err = fmt.Errorf("project: %w", err)
+
+			if errors.Is(err, sdkerrors.ErrNotFound) {
+				err = common.NewExitCodeError(common.NotFoundExitCode, err)
+			}
+
+			return err
+		}
+
 		// Step 1: build the project (see the "build" sibling command).
-		bid, pid, err := common.BuildProject(args[0], dirPaths, filePaths)
+		bid, err := common.BuildProject(pid, dirPaths, filePaths)
 		if err != nil {
 			return err
 		}
 		common.RenderKV("build_id", bid)
-
-		ctx, cancel := common.LimitedContext()
-		defer cancel()
 
 		// Step 2: deploy the build (see the "deployment" parent command).
 		deployment, err := sdktypes.DeploymentFromProto(&sdktypes.DeploymentPB{

@@ -96,7 +96,6 @@ func planProject(ctx context.Context, mproj *Project, client sdkservices.Service
 		}
 	}
 
-	// TODO: Remove all non-default environments.
 	pvarsActions, err := planProjectVars(ctx, mproj.Vars, client, mproj.Name, pid, optfns...)
 	if err != nil {
 		return nil, fmt.Errorf("vars: %w", err)

@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
-	"go.autokitteh.dev/autokitteh/internal/resolver"
 	"go.autokitteh.dev/autokitteh/sdk/sdkbuildfile"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -43,28 +42,22 @@ func Build(rts sdkservices.Runtimes, srcFS fs.FS, paths []string, syms []sdktype
 	return b, nil
 }
 
-func BuildProject(project string, dirPaths, filePaths []string) (sdktypes.BuildID, sdktypes.ProjectID, error) {
-	r := resolver.Resolver{Client: Client()}
+func BuildProject(pid sdktypes.ProjectID, dirPaths, filePaths []string) (sdktypes.BuildID, error) {
 	ctx, cancel := LimitedContext()
 	defer cancel()
-
-	p, pid, err := r.ProjectNameOrID(ctx, project)
-	if err = AddNotFoundErrIfCond(err, p.IsValid()); err != nil {
-		return sdktypes.InvalidBuildID, pid, ToExitCodeError(err, "project")
-	}
 
 	uploads := make(map[string][]byte)
 	for _, path := range append(dirPaths, filePaths...) {
 		fi, err := os.Stat(path)
 		if err != nil {
-			return sdktypes.InvalidBuildID, pid, NewExitCodeError(NotFoundExitCode, err)
+			return sdktypes.InvalidBuildID, NewExitCodeError(NotFoundExitCode, err)
 		}
 
 		// Upload an entire directory tree.
 		if fi.IsDir() {
 			err := filepath.WalkDir(path, walk(path, uploads))
 			if err != nil {
-				return sdktypes.InvalidBuildID, sdktypes.InvalidProjectID, err
+				return sdktypes.InvalidBuildID, err
 			}
 			continue
 		}
@@ -72,22 +65,22 @@ func BuildProject(project string, dirPaths, filePaths []string) (sdktypes.BuildI
 		// Upload a single file.
 		contents, err := os.ReadFile(path)
 		if err != nil {
-			return sdktypes.InvalidBuildID, sdktypes.InvalidProjectID, err
+			return sdktypes.InvalidBuildID, err
 		}
 		uploads[fi.Name()] = contents
 	}
 
 	// Communicate with the server in 2 steps.
 	if err := Client().Projects().SetResources(ctx, pid, uploads); err != nil {
-		return sdktypes.InvalidBuildID, sdktypes.InvalidProjectID, fmt.Errorf("set resources: %w", err)
+		return sdktypes.InvalidBuildID, fmt.Errorf("set resources: %w", err)
 	}
 
 	bid, err := Client().Projects().Build(ctx, pid)
 	if err != nil {
-		return sdktypes.InvalidBuildID, sdktypes.InvalidProjectID, fmt.Errorf("build project: %w", err)
+		return sdktypes.InvalidBuildID, fmt.Errorf("build project: %w", err)
 	}
 
-	return bid, pid, nil
+	return bid, nil
 }
 
 func walk(basePath string, uploads map[string][]byte) fs.WalkDirFunc {
