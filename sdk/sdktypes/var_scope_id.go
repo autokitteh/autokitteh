@@ -34,7 +34,7 @@ func ParseVarScopeID(s string) (VarScopeID, error) {
 	case projectIDKind, connectionIDKind, triggerIDKind:
 		return VarScopeID{parsed}, nil
 	default:
-		return InvalidVarScopeID, sdkerrors.NewInvalidArgumentError("invalid executor id")
+		return InvalidVarScopeID, sdkerrors.NewInvalidArgumentError("invalid var scope id")
 	}
 }
 
