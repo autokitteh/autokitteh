@@ -176,7 +176,7 @@ class Runner(runner_rpc.RunnerService):
         connections.encode_jwt = self.syscalls.ak_encode_jwt
         connections.refresh_oauth = self.syscalls.ak_refresh_oauth
 
-        call = AKCall(self)
+        call = AKCall(self, self.code_dir)
         mod = loader.load_code(self.code_dir, call, mod_name)
         call.set_module(mod)
 

@@ -1,4 +1,5 @@
 import ast
+from pathlib import Path
 from unittest.mock import MagicMock
 from autokitteh import AttrDict
 
@@ -24,7 +25,7 @@ def test_load_code():
                 calls.append((fn, args, kw))
             return fn(*args, **kw)
 
-    ak_call = MockCall(runner=MagicMock())
+    ak_call = MockCall(runner=MagicMock(), code_dir=Path("/tmp"))
 
     mod_name = "program"
     mod = loader.load_code(workflows.simple, ak_call, mod_name)
