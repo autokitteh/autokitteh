@@ -86,7 +86,12 @@ func saveOwnershipForEntities(db *gorm.DB, uid string, oo ...scheme.Ownership) e
 func (gdb *gormdb) createEntityWithOwnership(
 	ctx context.Context, create func(tx *gorm.DB, uid string) error, model any, allowedOnID ...*sdktypes.UUID,
 ) error {
-	uid := authcontext.GetAuthnUser(ctx).ID().String()
+	u := authcontext.GetAuthnUser(ctx)
+	if !u.IsValid() {
+		return errors.New("unknown user")
+	}
+
+	uid := u.ID().String()
 	ownerships := prepareOwnershipForEntities1(uid, model)
 
 	var idsToVerifyOwnership []sdktypes.UUID
