@@ -124,6 +124,11 @@ func (s store) Get(req *http.Request) (*sessionData, error) {
 		return nil, err
 	}
 
+	// make sure the cookie value is a UUID.
+	if _, err := uuid.Parse(cookie.Value); err != nil {
+		return nil, errors.New("invalid logged in cookie")
+	}
+
 	session, err := s.store.Get(req, sessionName)
 	if err != nil {
 		if errors.Is(err, http.ErrNoCookie) {
