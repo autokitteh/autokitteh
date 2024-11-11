@@ -231,15 +231,6 @@ func (a api) initializeChangeTracking(ctx context.Context) error {
 		return err
 	}
 
-	// startToken, err := client.Changes.GetStartPageToken().Do()
-	// if err != nil {
-	// 	return err
-	// }
-	// vs, err := a.vars.Get(ctx, sdktypes.NewVarScopeID(a.cid), vars.DriveChangesStartPageToken)
-	// if err != nil {
-	// 	return err
-	// }
-	// startPageToken := vs.Get(vars.DriveChangesStartPageToken).Value()
 	vs, err := a.vars.Get(ctx, sdktypes.NewVarScopeID(a.cid))
 	if err != nil {
 		return err
