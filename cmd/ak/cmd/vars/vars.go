@@ -12,7 +12,7 @@ import (
 )
 
 // Flags shared by all the subcommands.
-var env, project, conn string
+var project, conn string
 
 var varsCmd = common.StandardCommand(&cobra.Command{
 	Use:   "var",
@@ -29,17 +29,9 @@ func init() {
 	// Flag shared by all subcommands.
 	// We don't define it as a single persistent flag here
 	// because then we wouldn't be able to mark it as required.
-	getCmd.Flags().StringVarP(&env, "env", "e", "", "environment name or ID")
-	setCmd.Flags().StringVarP(&env, "env", "e", "", "environment name or ID")
-	deleteCmd.Flags().StringVarP(&env, "env", "e", "", "environment name or ID")
-
 	getCmd.Flags().StringVarP(&conn, "connection", "c", "", "connection name or ID")
 	setCmd.Flags().StringVarP(&conn, "connection", "c", "", "connection name or ID")
 	deleteCmd.Flags().StringVarP(&conn, "connection", "c", "", "connection name or ID")
-
-	getCmd.MarkFlagsMutuallyExclusive("env", "connection")
-	setCmd.MarkFlagsMutuallyExclusive("env", "connection")
-	deleteCmd.MarkFlagsMutuallyExclusive("env", "connection")
 
 	// Flag shared by all subcommands.
 	// We don't define it as a single persistent flag here for aesthetic
@@ -77,12 +69,12 @@ func resolveScopeID() (sdktypes.VarScopeID, error) {
 		return sdktypes.NewVarScopeID(id), nil
 	}
 
-	e, id, err := r.EnvNameOrID(ctx, env, project)
+	p, id, err := r.ProjectNameOrID(ctx, project)
 	if err != nil {
 		return sdktypes.InvalidVarScopeID, err
 	}
-	if !e.IsValid() {
-		err = fmt.Errorf("environment %q not found", env)
+	if !p.IsValid() {
+		err = fmt.Errorf("project %q not found", project)
 		return sdktypes.InvalidVarScopeID, common.NewExitCodeError(common.NotFoundExitCode, err)
 	}
 

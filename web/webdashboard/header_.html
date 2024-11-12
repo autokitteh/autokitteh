@@ -136,9 +136,9 @@
 
             <div class="topnav-right">
                 {{ if User }}
-                <li class="inert"><a href="/auth"><tt>{{ User }}</tt></a></li>
+                <li class="inert"><a href="/internal/dashboard/auth"><tt>{{ User }}</tt></a></li>
                 {{ else }}
-                <li><a href="/internal/dashboard/login">login</a></li>
+                <li><a href="/login">login</a></li>
                 {{ end }}
             </div>
         </ul>

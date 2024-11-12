@@ -12,17 +12,12 @@ import { Value } from "../../values/v1/values_pb.js";
  */
 export class GetRequest extends Message<GetRequest> {
   /**
-   * @generated from field: string env_id = 1;
-   */
-  envId = "";
-
-  /**
-   * @generated from field: string project_id = 2;
+   * @generated from field: string project_id = 1;
    */
   projectId = "";
 
   /**
-   * @generated from field: repeated string keys = 3;
+   * @generated from field: repeated string keys = 2;
    */
   keys: string[] = [];
 
@@ -34,9 +29,8 @@ export class GetRequest extends Message<GetRequest> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "autokitteh.store.v1.GetRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "env_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "keys", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 1, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "keys", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetRequest {
@@ -98,12 +92,7 @@ export class GetResponse extends Message<GetResponse> {
  */
 export class ListRequest extends Message<ListRequest> {
   /**
-   * @generated from field: string env_id = 1;
-   */
-  envId = "";
-
-  /**
-   * @generated from field: string project_id = 2;
+   * @generated from field: string project_id = 1;
    */
   projectId = "";
 
@@ -115,8 +104,7 @@ export class ListRequest extends Message<ListRequest> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "autokitteh.store.v1.ListRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "env_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListRequest {

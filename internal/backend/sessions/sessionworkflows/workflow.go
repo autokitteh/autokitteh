@@ -256,7 +256,7 @@ func (w *sessionWorkflow) initGlobalModules() (map[string]sdktypes.Value, error)
 		"ak":    w.newModule(),
 		"time":  timemodule.New(),
 		"http":  httpmodule.New(),
-		"store": store.New(w.data.Env.ID(), w.data.ProjectID, w.ws.svcs.RedisClient),
+		"store": store.New(w.data.Session.ProjectID(), w.ws.svcs.RedisClient),
 	}
 
 	vs := make(map[string]sdktypes.Value, len(execs))

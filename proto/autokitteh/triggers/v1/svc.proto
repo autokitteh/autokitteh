@@ -46,10 +46,9 @@ message GetResponse {
 }
 
 message ListRequest {
-  string env_id = 1;
-  string connection_id = 2;
-  string project_id = 3;
-  Trigger.SourceType source_type = 4;
+  string connection_id = 1;
+  string project_id = 2;
+  Trigger.SourceType source_type = 3;
 }
 
 message ListResponse {

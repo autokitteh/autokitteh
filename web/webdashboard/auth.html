@@ -17,6 +17,7 @@
 <h2>Tokens</h2>
 
 <button onclick="createToken()">Create</button>
+<button onclick="copyToClipboard()">Copy to clipboard</button>
 <br />
 <br />
 <textarea id="token" rows="4" cols="128" readonly></textarea>
@@ -28,6 +29,14 @@
             .then(data => {
                 document.getElementById('token').innerHTML = data;
             });
+    }
+
+    function copyToClipboard() {
+        var copyText = document.getElementById("token");
+        copyText.select();
+        copyText.setSelectionRange(0, 99999);
+        document.execCommand("copy");
+        copyText.setSelectionRange(0, 0);
     }
 </script>
 

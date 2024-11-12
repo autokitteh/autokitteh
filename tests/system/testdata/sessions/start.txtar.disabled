@@ -1,0 +1,39 @@
+# DISABLED: Currently auth does not work without an env.
+#           Once we remove envs and set up proper auth, we'll re-enable this test.
+
+# Preconditions: create & build project.
+ak project create --name my_project
+return code == 0
+
+ak project build my_project --file main.star
+return code == 0
+output equals 'build_id: bld_00000000000000000000000002'
+
+ak session start --entrypoint main.star:main
+output equals 'Error: at least one of the flags in the group [deployment-id build-id] is required'
+return code == 1
+
+# Start and watch a session.
+ak session start --build-id bld_00000000000000000000000002 --entrypoint main.star:main --input a=1 --input b=2.3 --input c="meow"
+return code == 0
+output equals 'session_id: ses_00000000000000000000000003'
+
+ak session watch ses_00000000000000000000000003 --timeout 5s
+return code == 0
+
+ak session log ses_00000000000000000000000003 --no-timestamps --prints-only
+return code == 0
+output equals file last.txt
+
+-- main.star --
+def main(a, b, c):
+  print(a)
+  print(b)
+  print(c)
+  print("finished")
+
+-- last.txt --
+1
+2.3
+meow
+finished

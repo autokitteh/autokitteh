@@ -24,16 +24,14 @@ func (f *dbFixture) assertTriggersDeleted(t *testing.T, triggers ...scheme.Trigg
 	}
 }
 
-func (f *dbFixture) createProjectConnectionEnv(t *testing.T) (scheme.Project, scheme.Connection, scheme.Env) {
+func (f *dbFixture) createProjectConnection(t *testing.T) (scheme.Project, scheme.Connection) {
 	p := f.newProject()
 	c := f.newConnection(p)
-	env := f.newEnv(p)
 
 	f.createProjectsAndAssert(t, p)
 	f.createConnectionsAndAssert(t, c)
-	f.createEnvsAndAssert(t, env)
 
-	return p, c, env
+	return p, c
 }
 
 func preTriggerTest(t *testing.T) *dbFixture {
@@ -45,8 +43,8 @@ func preTriggerTest(t *testing.T) *dbFixture {
 func TestCreateTrigger(t *testing.T) {
 	f := preTriggerTest(t)
 
-	p, c, env := f.createProjectConnectionEnv(t)
-	tr := f.newTrigger(p, c, env)
+	p, c := f.createProjectConnection(t)
+	tr := f.newTrigger(p, c)
 
 	// test createTrigger
 	f.createTriggersAndAssert(t, tr)
@@ -55,8 +53,8 @@ func TestCreateTrigger(t *testing.T) {
 func TestGetTrigger(t *testing.T) {
 	f := preTriggerTest(t)
 
-	p, c, env := f.createProjectConnectionEnv(t)
-	t1 := f.newTrigger(p, c, env)
+	p, c := f.createProjectConnection(t)
+	t1 := f.newTrigger(p, c)
 	f.createTriggersAndAssert(t, t1)
 
 	// test getTrigger
@@ -73,26 +71,25 @@ func TestCreateTriggerForeignKeys(t *testing.T) {
 	f := preTriggerTest(t)
 
 	b := f.newBuild()
-	p, c, e := f.createProjectConnectionEnv(t)
+	p, c := f.createProjectConnection(t)
 	f.saveBuildsAndAssert(t, b)
 
 	// negative test with non-existing assets
 
-	// zero ProjectID, EnvID and ConnectionID
+	// zero ProjectID and ConnectionID
 	t1 := f.newTrigger()
 	assert.Equal(t, t1.ProjectID, sdktypes.UUID{})
-	assert.Equal(t, t1.EnvID, sdktypes.UUID{})
 	assert.Nil(t, t1.ConnectionID)
 	assert.ErrorIs(t, f.gormdb.createTrigger(f.ctx, &t1), gorm.ErrForeignKeyViolated)
 
 	// change connection to builtin scheduler connection (now user owned) - should be allowed
 
 	// use buildID (owned by user to pass user ownership test) to fake unexisting IDs
-	t2 := f.newTrigger(p, c, e)
-	t2.EnvID = b.BuildID // no such envID, since it's a buildID
+	t2 := f.newTrigger(p, c)
+	t2.ProjectID = b.BuildID // no such projectID, since it's a buildID
 	assert.ErrorIs(t, f.gormdb.createTrigger(f.ctx, &t2), gorm.ErrForeignKeyViolated)
-	t2.EnvID = e.EnvID
 
+	t2.ProjectID = p.ProjectID
 	t2.ConnectionID = &b.BuildID // no such connectionID, since it's a buildID
 	assert.ErrorIs(t, f.gormdb.createTrigger(f.ctx, &t2), gorm.ErrForeignKeyViolated)
 	t2.ConnectionID = &c.ConnectionID
@@ -103,9 +100,9 @@ func TestCreateTriggerForeignKeys(t *testing.T) {
 
 func TestDeleteTriggerForeignKeys(t *testing.T) {
 	f := preTriggerTest(t)
-	p, c, e := f.createProjectConnectionEnv(t)
+	p, c := f.createProjectConnection(t)
 
-	trg := f.newTrigger(p, c, e)
+	trg := f.newTrigger(p, c)
 	f.createTriggersAndAssert(t, trg)
 	evt := f.newEvent(trg)
 	f.createEventsAndAssert(t, evt)
@@ -118,8 +115,8 @@ func TestDeleteTriggerForeignKeys(t *testing.T) {
 func TestListTriggers(t *testing.T) {
 	f := preTriggerTest(t)
 
-	p, c, env := f.createProjectConnectionEnv(t)
-	t1 := f.newTrigger(p, c, env)
+	p, c := f.createProjectConnection(t)
+	t1 := f.newTrigger(p, c)
 	f.createTriggersAndAssert(t, t1)
 
 	// test listTriggers
@@ -138,8 +135,8 @@ func TestListTriggers(t *testing.T) {
 func TestDeleteTrigger(t *testing.T) {
 	f := preTriggerTest(t)
 
-	p, c, env := f.createProjectConnectionEnv(t)
-	tr := f.newTrigger(p, c, env)
+	p, c := f.createProjectConnection(t)
+	tr := f.newTrigger(p, c)
 	f.createTriggersAndAssert(t, tr)
 
 	// test deleteTrigger
@@ -153,25 +150,17 @@ func TestDuplicatedTrigger(t *testing.T) {
 	p1 := f.newProject()
 	p2 := f.newProject()
 	c := f.newConnection() // trigger doesn't check for connection's projectID
-	e1 := f.newEnv(p1, "env")
-	e11 := f.newEnv(p1, "env1")
-	e2 := f.newEnv(p2, "env")
 	f.createProjectsAndAssert(t, p1, p2)
 	f.createConnectionsAndAssert(t, c)
-	f.createEnvsAndAssert(t, e1, e11, e2)
 
 	// test create two triggers with the same name for the same project and same environment
-	tr1 := f.newTrigger(p1, c, e1, "trg")
+	tr1 := f.newTrigger(p1, c, "trg")
 	f.createTriggersAndAssert(t, tr1)
 
-	tr2 := f.newTrigger(p1, c, e1, "trg")
+	tr2 := f.newTrigger(p1, c, "trg")
 	assert.ErrorIs(t, f.gormdb.createTrigger(f.ctx, &tr2), gorm.ErrDuplicatedKey)
 
-	// could create the same named trigger for the same project but different environment
-	tr3 := f.newTrigger(p1, c, e11, "trg")
-	f.createTriggersAndAssert(t, tr3)
-
 	// could create the same named trigger for the different project
-	tr4 := f.newTrigger(p2, c, e2, "trg")
-	f.createTriggersAndAssert(t, tr4)
+	tr3 := f.newTrigger(p2, c, "trg")
+	f.createTriggersAndAssert(t, tr3)
 }

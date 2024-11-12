@@ -6,7 +6,7 @@ import (
 
 type SetVarAction struct {
 	Key        string       `json:"key"`
-	Env        string       `json:"env,omitempty"`
+	Project    string       `json:"project,omitempty"`
 	Connection string       `json:"connection,omitempty"`
 	Var        sdktypes.Var `json:"var"`
 }

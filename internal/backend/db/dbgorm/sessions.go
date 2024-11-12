@@ -37,7 +37,7 @@ func (gdb *gormdb) createSession(ctx context.Context, session *scheme.Session) e
 		return err
 	}
 
-	idsToVerify := []*sdktypes.UUID{session.BuildID, session.EnvID, session.DeploymentID, session.EventID}
+	idsToVerify := []*sdktypes.UUID{session.BuildID, session.ProjectID, session.DeploymentID, session.EventID}
 	createFunc := func(tx *gorm.DB, uid string) error {
 		if err := tx.Create(session).Error; err != nil {
 			return err
@@ -362,7 +362,7 @@ func (db *gormdb) CreateSession(ctx context.Context, session sdktypes.Session) e
 	s := scheme.Session{
 		SessionID:        session.ID().UUIDValue(),
 		BuildID:          scheme.UUIDOrNil(session.BuildID().UUIDValue()),
-		EnvID:            scheme.UUIDOrNil(session.EnvID().UUIDValue()),
+		ProjectID:        scheme.UUIDOrNil(session.ProjectID().UUIDValue()),
 		DeploymentID:     scheme.UUIDOrNil(session.DeploymentID().UUIDValue()),
 		EventID:          scheme.UUIDOrNil(session.EventID().UUIDValue()),
 		Entrypoint:       session.EntryPoint().CanonicalString(),

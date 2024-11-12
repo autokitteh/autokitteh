@@ -22,7 +22,7 @@ func (SessionTraits) Validate(m *SessionPB) error {
 	return errors.Join(
 		enumField[SessionStateType]("state", m.State),
 		idField[BuildID]("build_id", m.BuildId),
-		idField[EnvID]("env_id", m.EnvId),
+		idField[ProjectID]("project_id", m.ProjectId),
 		idField[DeploymentID]("deployment_id", m.DeploymentId),
 		idField[EventID]("event_id", m.EventId),
 		idField[SessionID]("parent_session_id", m.ParentSessionId),
@@ -59,7 +59,7 @@ func (p Session) DeploymentID() DeploymentID {
 }
 func (p Session) EventID() EventID         { return kittehs.Must1(ParseEventID(p.read().EventId)) }
 func (p Session) BuildID() BuildID         { return kittehs.Must1(ParseBuildID(p.read().BuildId)) }
-func (p Session) EnvID() EnvID             { return kittehs.Must1(ParseEnvID(p.read().EnvId)) }
+func (p Session) ProjectID() ProjectID     { return kittehs.Must1(ParseProjectID(p.read().ProjectId)) }
 func (p Session) EntryPoint() CodeLocation { return forceFromProto[CodeLocation](p.read().Entrypoint) }
 func (p Session) Memo() map[string]string  { return p.read().Memo }
 func (p Session) Inputs() map[string]Value {
@@ -97,8 +97,8 @@ func (s Session) WithDeploymentID(id DeploymentID) Session {
 	return Session{s.forceUpdate(func(pb *SessionPB) { pb.DeploymentId = id.String() })}
 }
 
-func (s Session) WithEnvID(id EnvID) Session {
-	return Session{s.forceUpdate(func(pb *SessionPB) { pb.EnvId = id.String() })}
+func (s Session) WithProjectID(id ProjectID) Session {
+	return Session{s.forceUpdate(func(pb *SessionPB) { pb.ProjectId = id.String() })}
 }
 
 func (s Session) WithEventID(id EventID) Session {

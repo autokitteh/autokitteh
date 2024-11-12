@@ -8,12 +8,11 @@ import (
 	"github.com/descope/go-sdk/descope/client"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authloginhttpsvc/web"
-	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 const descopeLoginPath = "/auth/descope/login"
 
-func registerDescopeRoutes(mux *http.ServeMux, cfg descopeConfig, onSuccess func(sdktypes.User) http.Handler) error {
+func registerDescopeRoutes(mux *http.ServeMux, cfg descopeConfig, onSuccess func(*loginData) http.Handler) error {
 	if cfg.ProjectID == "" {
 		return errors.New("descope login is enabled, but missing DESCOPE_PROJECT_ID")
 	}
@@ -55,12 +54,13 @@ func registerDescopeRoutes(mux *http.ServeMux, cfg descopeConfig, onSuccess func
 			return
 		}
 
-		details := map[string]string{
-			"name":  name,
-			"email": email,
+		ld := loginData{
+			ProviderName: "descope",
+			Email:        email,
+			DisplayName:  name,
 		}
 
-		onSuccess(sdktypes.NewUser("descope", details)).ServeHTTP(w, r)
+		onSuccess(&ld).ServeHTTP(w, r)
 	}))
 
 	return nil

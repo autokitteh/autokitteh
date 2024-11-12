@@ -65,18 +65,18 @@ func New(z *zap.Logger, cfg *Config) (sdkservices.Store, *redis.Client, error) {
 	return &store{z: z, client: client}, client, nil
 }
 
-func Prefix(projectID sdktypes.ProjectID, envID sdktypes.EnvID) string {
-	return fmt.Sprintf("%v:%v:", projectID.Value(), envID.Value())
+func Prefix(projectID sdktypes.ProjectID) string {
+	return fmt.Sprintf("%v:", projectID.Value())
 }
 
-func (s *store) List(ctx context.Context, envID sdktypes.EnvID, projectID sdktypes.ProjectID) ([]string, error) {
+func (s *store) List(ctx context.Context, projectID sdktypes.ProjectID) ([]string, error) {
 	if s.client == nil {
 		// return nil in order not to fail any query that doesn't check if redis enabled or not.
 		return nil, nil
 	}
 
 	var (
-		prefix = Prefix(projectID, envID)
+		prefix = Prefix(projectID)
 		cursor uint64
 		ks     []string
 	)
@@ -101,12 +101,12 @@ func (s *store) List(ctx context.Context, envID sdktypes.EnvID, projectID sdktyp
 	return ks, nil
 }
 
-func (s *store) Get(ctx context.Context, envID sdktypes.EnvID, projectID sdktypes.ProjectID, keys []string) (map[string]sdktypes.Value, error) {
+func (s *store) Get(ctx context.Context, projectID sdktypes.ProjectID, keys []string) (map[string]sdktypes.Value, error) {
 	if s.client == nil {
 		return nil, sdkerrors.ErrNotImplemented
 	}
 
-	prefix := Prefix(projectID, envID)
+	prefix := Prefix(projectID)
 
 	vs, err := s.client.MGet(ctx, kittehs.Transform(keys, func(k string) string { return prefix + k })...).Result()
 	if err != nil {

@@ -36,25 +36,17 @@ output equals file expected_connection_details.json
 # - Specifying an env name  
 # - This command's flags  
 # - Other manifest commands since PR #6  
-ak connection get con_00000000000000000000000003 -J
+ak connection get con_00000000000000000000000002 -J
 return code == 0
 output equals file expected_connection_details.json
 
-# Check the actual environment details.
-ak env get my_project/default -J
-return code == 0
-output equals file expected_env_details.json
-
-ak env get env_00000000000000000000000002 -J
-return code == 0
-output equals file expected_env_details.json
 
 # Check the actual trigger details.
-ak trigger get trg_00000000000000000000000004 -J
+ak trigger get trg_00000000000000000000000003 -J
 return code == 0
 output equals file expected_trigger1_details.json
 
-ak trigger get trg_00000000000000000000000005 -J
+ak trigger get trg_00000000000000000000000004 -J
 return code == 0
 output equals file expected_trigger2_details.json
 
@@ -96,8 +88,8 @@ project:
 -- wrong_integration_error.txt --
 [plan] project "my_telepathy_project": not found, will create
 [plan] connection "my_telepathy_project/my_connection": not found, will create
-[plan] trigger "my_telepathy_project/default:connection:my_telepathy_project/my_connection/read": not found, will create
-[exec] create_project "my_telepathy_project": prj_0000000000000000000000000d created
+[plan] trigger "my_telepathy_project:connection:my_telepathy_project/my_connection/read": not found, will create
+[exec] create_project "my_telepathy_project": prj_0000000000000000000000000b created
 Error: action create_connection my_telepathy_project/my_connection: integration "telepathy" not found
 
 -- full.yaml --
@@ -120,22 +112,22 @@ project:
 -- expected_on_full_apply.txt --
 [plan] project "my_project": not found, will create
 [plan] connection "my_project/my_connection": not found, will create
-[plan] trigger "my_project/default:connection:my_project/my_connection/test": not found, will create
-[plan] trigger "my_project/default:/get": not found, will create
+[plan] trigger "my_project:connection:my_project/my_connection/test": not found, will create
+[plan] trigger "my_project:/get": not found, will create
 [exec] create_project "my_project": prj_00000000000000000000000001 created
-[exec] create_connection "my_project/my_connection": con_00000000000000000000000003 created
-[exec] create_trigger "my_project/default:connection:my_project/my_connection/test": trg_00000000000000000000000004 created
-[exec] create_trigger "my_project/default:/get": trg_00000000000000000000000005 created
+[exec] create_connection "my_project/my_connection": con_00000000000000000000000002 created
+[exec] create_trigger "my_project:connection:my_project/my_connection/test": trg_00000000000000000000000003 created
+[exec] create_trigger "my_project:/get": trg_00000000000000000000000004 created
 
 -- expected_on_full_apply_their.txt --
 [plan] project "their_project": not found, will create
 [plan] connection "their_project/my_connection": not found, will create
-[plan] trigger "their_project/default:connection:their_project/my_connection/test": not found, will create
-[plan] trigger "their_project/default:/get": not found, will create
-[exec] create_project "their_project": prj_00000000000000000000000007 created
-[exec] create_connection "their_project/my_connection": con_00000000000000000000000009 created
-[exec] create_trigger "their_project/default:connection:their_project/my_connection/test": trg_0000000000000000000000000a created
-[exec] create_trigger "their_project/default:/get": trg_0000000000000000000000000b created
+[plan] trigger "their_project:connection:their_project/my_connection/test": not found, will create
+[plan] trigger "their_project:/get": not found, will create
+[exec] create_project "their_project": prj_00000000000000000000000006 created
+[exec] create_connection "their_project/my_connection": con_00000000000000000000000007 created
+[exec] create_trigger "their_project:connection:their_project/my_connection/test": trg_00000000000000000000000008 created
+[exec] create_trigger "their_project:/get": trg_00000000000000000000000009 created
 
 -- expected_project_details.json --
 {
@@ -148,56 +140,45 @@ project:
 -- expected_connection_details.json --
 {
   "connection": {
-    "connection_id": "con_00000000000000000000000003",
+    "connection_id": "con_00000000000000000000000002",
     "integration_id": "int_3kth00testaf9d33c5697341f0",
     "project_id": "prj_00000000000000000000000001",
     "name": "my_connection",
     "status": {},
     "capabilities": {},
     "links": {
-      "self_url": "/connections/con_00000000000000000000000003"
+      "self_url": "/connections/con_00000000000000000000000002"
     }
   }
 }
 
-
--- expected_env_details.json --
-{
-  "env": {
-    "env_id": "env_00000000000000000000000002",
-    "project_id": "prj_00000000000000000000000001",
-    "name": "default"
-  }
-}
-
-
 -- expected_trigger1_details.json --
 {
   "trigger": {
-    "trigger_id": "trg_00000000000000000000000004",
+    "trigger_id": "trg_00000000000000000000000003",
     "name": "test",
     "source_type": "SOURCE_TYPE_CONNECTION",
-    "env_id": "env_00000000000000000000000002",
+    "project_id": "prj_00000000000000000000000001",
     "code_location": {
       "path": "my_program.star",
       "name": "on_test"
     },
-    "connection_id": "con_00000000000000000000000003"
+    "connection_id": "con_00000000000000000000000002"
   }
 }
 
 -- expected_trigger2_details.json --
 {
   "trigger": {
-    "trigger_id": "trg_00000000000000000000000005",
+    "trigger_id": "trg_00000000000000000000000004",
     "name": "get",
     "source_type": "SOURCE_TYPE_WEBHOOK",
-    "env_id": "env_00000000000000000000000002",
+    "project_id": "prj_00000000000000000000000001",
     "event_type": "get",
     "code_location": {
       "path": "my_program.star",
       "name": "on_http_get"
     },
-    "webhook_slug": "00000000000000000000000006"
+    "webhook_slug": "00000000000000000000000005"
   }
 }

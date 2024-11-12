@@ -29,8 +29,6 @@ var deployCmd = common.StandardCommand(&cobra.Command{
 	Args:  cobra.ExactArgs(1),
 
 	RunE: func(cmd *cobra.Command, args []string) error {
-		r := resolver.Resolver{Client: common.Client()}
-
 		// Step 1: apply the manifest file (see also the "manifest" parent command).
 		effects, project, err := applyManifest(cmd, args)
 		if err != nil {
@@ -45,30 +43,26 @@ var deployCmd = common.StandardCommand(&cobra.Command{
 			dirPaths = append(dirPaths, filepath.Dir(args[0]))
 		}
 
-		bid, err := common.BuildProject(project, dirPaths, filePaths)
+		r := resolver.Resolver{Client: common.Client()}
+		ctx, cancel := common.LimitedContext()
+		defer cancel()
+
+		_, pid, err := r.ProjectNameOrID(ctx, project)
+		if err != nil {
+			return err
+		}
+
+		bid, err := common.BuildProject(pid, dirPaths, filePaths)
 		if err != nil {
 			return err
 		}
 		logFunc(cmd, "exec")(fmt.Sprintf("create_build: created %q", bid))
 
-		ctx, cancel := common.LimitedContext()
-		defer cancel()
-
-		// Step 3: parse the optional environment argument.
-		e, eid, err := r.EnvNameOrID(ctx, env, project)
-		if err != nil {
-			return err
-		}
-		if !e.IsValid() {
-			err = fmt.Errorf("environment %q not found", env)
-			return common.NewExitCodeError(common.NotFoundExitCode, err)
-		}
-
-		// Step 4: deploy the build
+		// Step 3: deploy the build
 		// (see also the "deployment" and "project" parent commands).
 		deployment, err := sdktypes.DeploymentFromProto(&sdktypes.DeploymentPB{
-			EnvId:   eid.String(),
-			BuildId: bid.String(),
+			ProjectId: pid.String(),
+			BuildId:   bid.String(),
 		})
 		if err != nil {
 			return fmt.Errorf("invalid deployment: %w", err)
