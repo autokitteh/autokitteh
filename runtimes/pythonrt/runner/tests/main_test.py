@@ -8,24 +8,28 @@ Need much more:
 
 import json
 import pickle
+import sys
 from concurrent.futures import Future
 from subprocess import run
-from sys import executable
+from unittest.mock import MagicMock
 from uuid import uuid4
 
-from conftest import workflows
+from conftest import workflows, clear_module_cache
 import pb.autokitteh.user_code.v1.runner_svc_pb2 as runner_pb
 import pb.autokitteh.user_code.v1.user_code_pb2 as user_code
 import main
 
 
 def test_help():
-    cmd = [executable, "main.py", "-h"]
+    cmd = [sys.executable, "main.py", "-h"]
     out = run(cmd)
     assert out.returncode == 0
 
 
 def test_start():
+    mod_name = "program"
+    clear_module_cache(mod_name)
+
     runner = main.Runner(
         id="runner1",
         worker=None,
@@ -35,9 +39,12 @@ def test_start():
 
     event_data = json.dumps({"body": {"path": "/info", "method": "GET"}})
     event = user_code.Event(data=event_data.encode())
-    req = runner_pb.StartRequest(entry_point="program.py:on_event", event=event)
-    resp = runner.Start(req, None)
+    entry_point = f"{mod_name}.py:on_event"
+    req = runner_pb.StartRequest(entry_point=entry_point, event=event)
+    context = MagicMock()
+    resp = runner.Start(req, context)
     assert resp.error == ""
+    assert not context.abort.called
 
 
 def sub(a, b):

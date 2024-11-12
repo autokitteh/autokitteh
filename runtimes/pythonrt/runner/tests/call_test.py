@@ -8,13 +8,14 @@ import call
 import loader
 import pytest
 from autokitteh import activity
-from conftest import workflows
+from conftest import workflows, clear_module_cache
 
 
 def test_sleep():
     runner = MagicMock()
     ak_call = call.AKCall(runner, Path("/tmp"))
     mod_name = "program"
+    clear_module_cache(mod_name)
 
     mod = loader.load_code(workflows.sleeper, ak_call, mod_name)
     ak_call.set_module(mod)
@@ -73,12 +74,14 @@ def test_should_run_as_activity():
 
 
 def test_is_module_func(monkeypatch: pytest.MonkeyPatch):
+    mod_name = "handler"
+    clear_module_cache(mod_name)
     code_dir = workflows.multi_file
     monkeypatch.syspath_prepend(str(code_dir))
 
     runner = MagicMock()
     ak_call = call.AKCall(runner, code_dir)
-    mod = loader.load_code(code_dir, ak_call, "handler")
+    mod = loader.load_code(code_dir, ak_call, mod_name)
     ak_call.set_module(mod)
 
     assert ak_call.is_module_func(mod.on_event)  # Same handler file

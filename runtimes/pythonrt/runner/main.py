@@ -176,9 +176,9 @@ class Runner(runner_rpc.RunnerService):
         connections.encode_jwt = self.syscalls.ak_encode_jwt
         connections.refresh_oauth = self.syscalls.ak_refresh_oauth
 
-        call = AKCall(self, self.code_dir)
-        mod = loader.load_code(self.code_dir, call, mod_name)
-        call.set_module(mod)
+        ak_call = AKCall(self, self.code_dir)
+        mod = loader.load_code(self.code_dir, ak_call, mod_name)
+        ak_call.set_module(mod)
 
         fn = getattr(mod, fn_name, None)
         if not callable(fn):
@@ -424,7 +424,7 @@ if __name__ == "__main__":
         raise SystemExit(f"error: {err}")
 
     # Support importing local files
-    sys.path.append(str(args.code_dir))
+    # sys.path.append(str(args.code_dir))
 
     chan = grpc.insecure_channel(args.worker_address)
     worker = handler_rpc.HandlerServiceStub(chan)
