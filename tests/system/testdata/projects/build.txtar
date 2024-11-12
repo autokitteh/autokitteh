@@ -1,10 +1,10 @@
 # Negative tests: build nonexistent project, by name/ID.
 ak project build bad_project --file program.star
-output equals 'Error: project not found'
+output equals 'Error: project: not_found'
 return code == 10
 
 ak project build prj_000000000000000bad0bad0bad --file program.star
-output equals 'Error: project not found'
+output equals 'Error: project: not_found'
 return code == 10
 
 # Precondition: create project.

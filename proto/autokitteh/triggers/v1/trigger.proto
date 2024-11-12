@@ -15,7 +15,7 @@ message Trigger {
   string trigger_id = 1;
   string name = 2;
   SourceType source_type = 3;
-  string env_id = 4;
+  string project_id = 4;
   string event_type = 5;
   program.v1.CodeLocation code_location = 6;
   string filter = 7;

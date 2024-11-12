@@ -124,19 +124,8 @@ func TestGetProjectDeployments(t *testing.T) {
 	// p2:
 	// - e4: (d4)
 	p1, p2 := f.newProject(), f.newProject()
-	e1, e2, e3, e4 := f.newEnv(), f.newEnv(), f.newEnv(), f.newEnv()
 	d1, d2, d3, d4 := f.newDeployment(), f.newDeployment(), f.newDeployment(), f.newDeployment()
 	b := f.newBuild()
-
-	e1.ProjectID = p1.ProjectID
-	e2.ProjectID = p1.ProjectID
-	e3.ProjectID = p1.ProjectID
-	e4.ProjectID = p2.ProjectID
-
-	d1.EnvID = &e1.EnvID
-	d2.EnvID = &e1.EnvID
-	d3.EnvID = &e2.EnvID
-	d4.EnvID = &e4.EnvID
 
 	d1.BuildID = b.BuildID
 	d2.BuildID = b.BuildID
@@ -144,7 +133,6 @@ func TestGetProjectDeployments(t *testing.T) {
 	d4.BuildID = b.BuildID
 
 	f.createProjectsAndAssert(t, p1, p2)
-	f.createEnvsAndAssert(t, e1, e2, e3, e4)
 	f.saveBuildsAndAssert(t, b)
 	f.createDeploymentsAndAssert(t, d1, d2, d3, d4)
 
@@ -152,31 +140,6 @@ func TestGetProjectDeployments(t *testing.T) {
 	// assert.NoError(t, err)
 	// assert.Equal(t, []sdktypes.UUID{d1.DeploymentID, d2.DeploymentID, d3.DeploymentID},
 	// 	kittehs.Transform(ds, func(d DeploymentState) sdktypes.UUID { return d.DeploymentID }))
-}
-
-func TestGetProjectEnvs(t *testing.T) {
-	f := preProjectTest(t)
-
-	// create two envs - one with deployment and second without
-	p := f.newProject()
-	e1, e2 := f.newEnv(), f.newEnv()
-	d := f.newDeployment()
-	b := f.newBuild()
-
-	e1.ProjectID = p.ProjectID
-	e2.ProjectID = p.ProjectID
-	d.EnvID = &e1.EnvID
-	d.BuildID = b.BuildID
-
-	f.createProjectsAndAssert(t, p)
-	f.createEnvsAndAssert(t, e1, e2)
-	f.saveBuildsAndAssert(t, b)
-	f.createDeploymentsAndAssert(t, d)
-
-	envIDs, err := f.gormdb.getProjectEnvs(f.ctx, p.ProjectID)
-	assert.NoError(t, err)
-	// ensure that we got both envs - even of there is no deployments attached
-	assert.Equal(t, []sdktypes.UUID{e1.EnvID, e2.EnvID}, envIDs)
 }
 
 func TestDeleteProjectAndDependents(t *testing.T) {
@@ -196,11 +159,10 @@ func TestDeleteProjectAndDependents(t *testing.T) {
 
 	p1, p2 := f.newProject(), f.newProject()
 	c := f.newConnection(p1)
-	e1p1, e2p1, e1p2 := f.newEnv(p1), f.newEnv(p1), f.newEnv(p2)
 
-	t1, t2 := f.newTrigger(p1, c, e1p1), f.newTrigger(p1, c, e2p1)
+	t1, t2 := f.newTrigger(p1, c), f.newTrigger(p1, c)
 	b := f.newBuild()
-	d1e1p1, d2e1p1, d1e2p1, d1e1p2 := f.newDeployment(e1p1, b), f.newDeployment(e1p1, b), f.newDeployment(e2p1, b), f.newDeployment(e1p2, b)
+	d1e1p1, d2e1p1, d1e2p1, d1e1p2 := f.newDeployment(p1, b), f.newDeployment(p1, b), f.newDeployment(p1, b), f.newDeployment(p2, b)
 
 	s1d1e1p1 := f.newSession(sdktypes.SessionStateTypeCompleted, d1e1p1)
 	s2d1e2p1 := f.newSession(sdktypes.SessionStateTypeError, d1e2p1)
@@ -210,7 +172,6 @@ func TestDeleteProjectAndDependents(t *testing.T) {
 
 	f.createProjectsAndAssert(t, p1, p2)
 	f.createConnectionsAndAssert(t, c)
-	f.createEnvsAndAssert(t, e1p1, e2p1, e1p2)
 	f.createTriggersAndAssert(t, t1, t2)
 	f.saveSignalsAndAssert(t, sig)
 	f.saveBuildsAndAssert(t, b)
@@ -232,7 +193,6 @@ func TestDeleteProjectAndDependents(t *testing.T) {
 
 	f.assertDeploymentsDeleted(t, d1e1p1, d2e1p1, d1e2p1)
 	f.assertSessionsDeleted(t, s1d1e1p1, s2d1e2p1)
-	f.assertEnvDeleted(t, e1p1, e2p1)
 	f.assertTriggersDeleted(t, t1, t2)
 	f.assertSignalsDeleted(t, sig)
 	f.assertConnectionDeleted(t, c)

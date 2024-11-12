@@ -26,7 +26,7 @@ var testCmd = common.StandardCommand(&cobra.Command{
 	Args:  cobra.ExactArgs(1),
 
 	RunE: func(cmd *cobra.Command, args []string) error {
-		did, eid, bid, ep, err := sessionArgs()
+		did, pid, bid, ep, err := sessionArgs()
 		if err != nil {
 			return err
 		}
@@ -85,7 +85,7 @@ var testCmd = common.StandardCommand(&cobra.Command{
 			}
 		}
 
-		s := sdktypes.NewSession(bid, ep, nil, nil).WithDeploymentID(did).WithEnvID(eid)
+		s := sdktypes.NewSession(bid, ep, nil, nil).WithDeploymentID(did).WithProjectID(pid)
 
 		ctx, cancel := common.LimitedContext()
 		defer cancel()

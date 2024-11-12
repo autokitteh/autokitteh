@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
-	"go.autokitteh.dev/autokitteh/internal/resolver"
 	"go.autokitteh.dev/autokitteh/sdk/sdkbuildfile"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -43,15 +42,9 @@ func Build(rts sdkservices.Runtimes, srcFS fs.FS, paths []string, syms []sdktype
 	return b, nil
 }
 
-func BuildProject(project string, dirPaths, filePaths []string) (sdktypes.BuildID, error) {
-	r := resolver.Resolver{Client: Client()}
+func BuildProject(pid sdktypes.ProjectID, dirPaths, filePaths []string) (sdktypes.BuildID, error) {
 	ctx, cancel := LimitedContext()
 	defer cancel()
-
-	p, pid, err := r.ProjectNameOrID(ctx, project)
-	if err = AddNotFoundErrIfCond(err, p.IsValid()); err != nil {
-		return sdktypes.InvalidBuildID, ToExitCodeError(err, "project")
-	}
 
 	uploads := make(map[string][]byte)
 	for _, path := range append(dirPaths, filePaths...) {

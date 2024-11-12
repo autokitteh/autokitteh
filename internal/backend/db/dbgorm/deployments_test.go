@@ -80,7 +80,7 @@ func TestCreateDeploymentsForeignKeys(t *testing.T) {
 	// check session creation if foreign keys are not nil
 	f := preDeploymentTest(t)
 
-	_, b, e := f.createProjectBuildEnv(t)
+	p, b := f.createProjectBuild(t)
 
 	// negative test with non-existing assets
 	// zero buildID
@@ -89,17 +89,17 @@ func TestCreateDeploymentsForeignKeys(t *testing.T) {
 	assert.ErrorIs(t, f.gormdb.createDeployment(f.ctx, &d1), gorm.ErrForeignKeyViolated)
 
 	// valid env, but zero buildID
-	d2 := f.newDeployment(e)
+	d2 := f.newDeployment(p)
 	assert.Equal(t, d2.BuildID, sdktypes.UUID{}) // zero value for buildID
 	assert.ErrorIs(t, f.gormdb.createDeployment(f.ctx, &d2), gorm.ErrForeignKeyViolated)
 
-	// use existing user-owned buildID as fake unexisting envID
+	// use existing user-owned buildID as fake unexisting projectID
 	d3 := f.newDeployment(b)
-	d3.EnvID = &b.BuildID // no such envID, since it's a buildID
+	d3.ProjectID = &b.BuildID // no such projectID, since it's a buildID
 	assert.ErrorIs(t, f.gormdb.createDeployment(f.ctx, &d3), gorm.ErrForeignKeyViolated)
 
 	// test with existing assets
-	d3.EnvID = &e.EnvID
+	d3.ProjectID = &p.ProjectID
 	f.createDeploymentsAndAssert(t, d3)
 }
 

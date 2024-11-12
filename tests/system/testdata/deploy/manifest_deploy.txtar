@@ -57,25 +57,23 @@ project:
 
 -- expected_output_1st_deploy.txt --
 [plan] project "my_project": not found, will create
-[plan] trigger "my_project/default:/get": not found, will create
+[plan] trigger "my_project:/get": not found, will create
 [exec] create_project "my_project": prj_00000000000000000000000001 created
-[exec] create_trigger "my_project/default:/get": trg_00000000000000000000000003 created
-[!!!!] trigger "get" created, webhook path is "/webhooks/00000000000000000000000004"
-[exec] create_build: created "bld_00000000000000000000000005"
-[exec] create_deployment: created "dep_00000000000000000000000006"
+[exec] create_trigger "my_project:/get": trg_00000000000000000000000002 created
+[!!!!] trigger "get" created, webhook path is "/webhooks/00000000000000000000000003"
+[exec] create_build: created "bld_00000000000000000000000004"
+[exec] create_deployment: created "dep_00000000000000000000000005"
 [exec] activate_deployment: activated
 
 -- expected_output_2nd_deploy.txt --
 [plan] project "my_project": found, id="prj_00000000000000000000000001"
 [plan] project "my_project": no changes needed
-[plan] env "my_project/default": found, id="env_00000000000000000000000002"
-[plan] env "my_project/default": no changes needed
 [plan] project "my_project": found 0 connections
 [plan] project "my_project": found 1 triggers
-[plan] trigger "my_project/default:/get": found, id="trg_00000000000000000000000003"
-[plan] trigger "my_project/default:/get": no changes needed
-[exec] create_build: created "bld_00000000000000000000000007"
-[exec] create_deployment: created "dep_00000000000000000000000008"
+[plan] trigger "my_project:/get": found, id="trg_00000000000000000000000002"
+[plan] trigger "my_project:/get": no changes needed
+[exec] create_build: created "bld_00000000000000000000000006"
+[exec] create_deployment: created "dep_00000000000000000000000007"
 [exec] activate_deployment: activated
 
 -- single_file.star --

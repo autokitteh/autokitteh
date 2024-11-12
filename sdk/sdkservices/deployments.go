@@ -7,7 +7,7 @@ import (
 )
 
 type ListDeploymentsFilter struct {
-	EnvID               sdktypes.EnvID
+	ProjectID           sdktypes.ProjectID
 	BuildID             sdktypes.BuildID
 	State               sdktypes.DeploymentState
 	Limit               uint32

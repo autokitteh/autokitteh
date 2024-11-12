@@ -43,9 +43,9 @@ class StopResponse(_message.Message):
     def __init__(self) -> None: ...
 
 class ListRequest(_message.Message):
-    __slots__ = ["deployment_id", "env_id", "event_id", "build_id", "state_type", "count_only", "page_size", "skip", "page_token"]
+    __slots__ = ["deployment_id", "project_id", "event_id", "build_id", "state_type", "count_only", "page_size", "skip", "page_token"]
     DEPLOYMENT_ID_FIELD_NUMBER: _ClassVar[int]
-    ENV_ID_FIELD_NUMBER: _ClassVar[int]
+    PROJECT_ID_FIELD_NUMBER: _ClassVar[int]
     EVENT_ID_FIELD_NUMBER: _ClassVar[int]
     BUILD_ID_FIELD_NUMBER: _ClassVar[int]
     STATE_TYPE_FIELD_NUMBER: _ClassVar[int]
@@ -54,7 +54,7 @@ class ListRequest(_message.Message):
     SKIP_FIELD_NUMBER: _ClassVar[int]
     PAGE_TOKEN_FIELD_NUMBER: _ClassVar[int]
     deployment_id: str
-    env_id: str
+    project_id: str
     event_id: str
     build_id: str
     state_type: _session_pb2.SessionStateType
@@ -62,7 +62,7 @@ class ListRequest(_message.Message):
     page_size: int
     skip: int
     page_token: str
-    def __init__(self, deployment_id: _Optional[str] = ..., env_id: _Optional[str] = ..., event_id: _Optional[str] = ..., build_id: _Optional[str] = ..., state_type: _Optional[_Union[_session_pb2.SessionStateType, str]] = ..., count_only: bool = ..., page_size: _Optional[int] = ..., skip: _Optional[int] = ..., page_token: _Optional[str] = ...) -> None: ...
+    def __init__(self, deployment_id: _Optional[str] = ..., project_id: _Optional[str] = ..., event_id: _Optional[str] = ..., build_id: _Optional[str] = ..., state_type: _Optional[_Union[_session_pb2.SessionStateType, str]] = ..., count_only: bool = ..., page_size: _Optional[int] = ..., skip: _Optional[int] = ..., page_token: _Optional[str] = ...) -> None: ...
 
 class ListResponse(_message.Message):
     __slots__ = ["sessions", "count", "next_page_token"]

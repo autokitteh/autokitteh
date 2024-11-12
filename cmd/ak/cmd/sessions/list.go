@@ -40,12 +40,12 @@ var listCmd = common.StandardCommand(&cobra.Command{
 			f.DeploymentID = did
 		}
 
-		if env != "" {
-			e, _, err := r.EnvNameOrID(ctx, env, "")
-			if err = common.AddNotFoundErrIfCond(err, e.IsValid()); err != nil {
-				return common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "environment")
+		if project != "" {
+			p, _, err := r.ProjectNameOrID(ctx, project)
+			if err = common.AddNotFoundErrIfCond(err, p.IsValid()); err != nil {
+				return common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "project")
 			}
-			f.EnvID = e.ID()
+			f.ProjectID = p.ID()
 		}
 
 		if eventID != "" {
@@ -92,7 +92,7 @@ var listCmd = common.StandardCommand(&cobra.Command{
 
 func init() {
 	// Command-specific flags.
-	listCmd.Flags().StringVarP(&env, "env", "e", "", "environment name or ID")
+	listCmd.Flags().StringVarP(&project, "project", "p", "", "project name or ID")
 	listCmd.Flags().StringVarP(&deploymentID, "deployment-id", "d", "", "deployment ID")
 	listCmd.Flags().StringVar(&eventID, "event-id", "", "event ID")
 	listCmd.Flags().VarP(&stateType, "state-type", "s", strings.Join(possibleStates, "|"))

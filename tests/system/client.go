@@ -26,12 +26,22 @@ var (
 	sessionStateFinal = regexp.MustCompile(`state:SESSION_STATE_TYPE_(COMPLETED|ERROR|STOPPED)`)
 	sessionStateAll   = regexp.MustCompile(`state:SESSION_STATE_TYPE_`)
 	token             = "INVALID_TOKEN"
+
+	testUserEmail = "zumi@localhost"
+	testUserID    = sdktypes.NewTestUserID(testUserEmail)
+	testUser      = sdktypes.NewUser(testUserEmail, "test").WithID(testUserID)
+
+	seedCommand = fmt.Sprintf(
+		`insert into users(user_id,email,display_name) values (%q,%q,%q);`,
+		testUser.ID().UUIDValue().String(),
+		testUser.Email(),
+		testUser.DisplayName(),
+	)
 )
 
 func init() {
 	js := kittehs.Must1(authjwttokens.New(authjwttokens.Configs.Test))
-	user := sdktypes.NewUser("ak", map[string]string{"email": "foo@bar", "name": "Test User"})
-	token = kittehs.Must1(js.Create(user))
+	token = kittehs.Must1(js.Create(testUser))
 }
 
 func buildAKBinary(t *testing.T) string {

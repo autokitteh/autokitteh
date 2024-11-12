@@ -2,6 +2,7 @@ package dashboardsvc
 
 import (
 	"fmt"
+	"html/template"
 	"net/http"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
@@ -14,15 +15,13 @@ func (s *svc) initAuth() {
 }
 
 func (s *svc) auth(w http.ResponseWriter, r *http.Request) {
-	userJSON := marshalObject(authcontext.GetAuthnUser(r.Context()).ToProto())
-
 	if err := webdashboard.Tmpl(r).ExecuteTemplate(w, "auth.html", struct {
 		Title    string
-		UserJSON string
+		UserJSON template.HTML
 		Token    string
 	}{
 		Title:    "Auth",
-		UserJSON: string(userJSON),
+		UserJSON: marshalObject(authcontext.GetAuthnUser(r.Context()).ToProto()),
 	}); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}

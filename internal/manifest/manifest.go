@@ -51,7 +51,7 @@ type Connection struct {
 func (c Connection) GetKey() string { return c.ProjectKey + "/" + c.Name }
 
 type Var struct {
-	ParentKey string `yaml:"-" json:"-"` // associated with env or connection.
+	ParentKey string `yaml:"-" json:"-"` // associated with project or connection.
 
 	Name   string `yaml:"name" json:"name" jsonschema:"required"`
 	Value  string `yaml:"value" json:"value"`
@@ -61,7 +61,7 @@ type Var struct {
 func (v Var) GetKey() string { return v.ParentKey + "/" + v.Name }
 
 type Trigger struct {
-	EnvKey string `yaml:"-" json:"-"` // associated with env.
+	ProjectKey string `yaml:"-" json:"-"` // associated with project.
 
 	Name      string `yaml:"name" json:"name"`
 	EventType string `yaml:"event_type,omitempty" json:"event_type,omitempty"`
@@ -78,8 +78,8 @@ type Trigger struct {
 func (t Trigger) GetKey() string {
 	var id string
 
-	if t.EnvKey != "" {
-		id = t.EnvKey + ":"
+	if t.ProjectKey != "" {
+		id = t.ProjectKey + ":"
 	}
 
 	what := ""

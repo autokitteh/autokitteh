@@ -8,6 +8,7 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
@@ -21,10 +22,8 @@ func (gdb *gormdb) withUserVars(ctx context.Context) *gorm.DB {
 func (gdb *gormdb) setVar(ctx context.Context, vr *scheme.Var) error {
 	vr.VarID = vr.ScopeID // just ensure
 
-	uid, err := userIDFromContext(ctx)
-	if err != nil {
-		return err
-	}
+	uid := authcontext.GetAuthnUser(ctx).ID().String()
+
 	return gdb.transaction(ctx, func(tx *tx) error {
 		db := tx.db
 
@@ -45,16 +44,16 @@ func (gdb *gormdb) setVar(ctx context.Context, vr *scheme.Var) error {
 		switch oo[0].EntityType {
 		case "Connection":
 			tableName, idField = "connections", "connection_id"
-		case "Env":
-			tableName, idField = "envs", "env_id"
+		case "Project":
+			tableName, idField = "projects", "project_id"
 		default:
-			return gorm.ErrCheckConstraintViolated // should be either Env or Connection
+			return gorm.ErrCheckConstraintViolated // should be either Project or Connection
 		}
 		query := fmt.Sprintf("SELECT deleted_at FROM %s where %s = ? LIMIT 1", tableName, idField)
 		if err := db.Raw(query, vr.ScopeID).Scan(&deletedAt).Error; err != nil {
 			return err
 		}
-		if deletedAt.Valid { // entity (either connection or env) was deleted
+		if deletedAt.Valid { // entity (either connection or project) was deleted
 			return gorm.ErrForeignKeyViolated // emulate foreign keys check (#2)
 		}
 

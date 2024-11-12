@@ -5,7 +5,7 @@ output equals 'project_id: prj_00000000000000000000000001'
 
 ak connection create my_connection --project my_project --integration test -q
 return code == 0
-output equals 'connection_id: con_00000000000000000000000003'
+output equals 'connection_id: con_00000000000000000000000002'
 
 # Negative tests: get nonexistent connection name/ID, with/out --fail flag.
 ak connection get my_project/bad_connection
@@ -32,26 +32,26 @@ return code == 1
 # Get connection by name/ID, with/out JSON flag.
 ak connection get my_project/my_connection
 return code == 0
-output contains 'connection_id:"con_00000000000000000000000003"'
+output contains 'connection_id:"con_00000000000000000000000002"'
 output contains 'project_id:"prj_00000000000000000000000001"'
 output contains 'integration_id:"int_3kth00testaf9d33c5697341f0"'
 output contains 'name:"my_connection"'
 
-ak connection get con_00000000000000000000000003 -J
+ak connection get con_00000000000000000000000002 -J
 return code == 0
 output equals file expected_connection.json
 
 -- expected_connection.json --
 {
   "connection": {
-    "connection_id": "con_00000000000000000000000003",
+    "connection_id": "con_00000000000000000000000002",
     "integration_id": "int_3kth00testaf9d33c5697341f0",
     "project_id": "prj_00000000000000000000000001",
     "name": "my_connection",
     "status": {},
     "capabilities": {},
     "links": {
-      "self_url": "/connections/con_00000000000000000000000003"
+      "self_url": "/connections/con_00000000000000000000000002"
     }
   }
 }

@@ -11,9 +11,10 @@ from google.protobuf.internal import builder as _builder
 _sym_db = _symbol_database.Default()
 
 
+from buf.validate import validate_pb2 as buf_dot_validate_dot_validate__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1e\x61utokitteh/users/v1/user.proto\x12\x13\x61utokitteh.users.v1\"\x94\x01\n\x04User\x12\x1a\n\x08provider\x18\x01 \x01(\tR\x08provider\x12\x37\n\x04\x64\x61ta\x18\x02 \x03(\x0b\x32#.autokitteh.users.v1.User.DataEntryR\x04\x64\x61ta\x1a\x37\n\tDataEntry\x12\x10\n\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n\x05value\x18\x02 \x01(\tR\x05value:\x02\x38\x01\x42\xd9\x01\n\x17\x63om.autokitteh.users.v1B\tUserProtoP\x01ZEgo.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/users/v1;usersv1\xa2\x02\x03\x41UX\xaa\x02\x13\x41utokitteh.Users.V1\xca\x02\x13\x41utokitteh\\Users\\V1\xe2\x02\x1f\x41utokitteh\\Users\\V1\\GPBMetadata\xea\x02\x15\x41utokitteh::Users::V1b\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1e\x61utokitteh/users/v1/user.proto\x12\x13\x61utokitteh.users.v1\x1a\x1b\x62uf/validate/validate.proto\"~\n\x04User\x12\x17\n\x07user_id\x18\x01 \x01(\tR\x06userId\x12\x1e\n\x05\x65mail\x18\x02 \x01(\tB\x08\xfa\xf7\x18\x04r\x02`\x01R\x05\x65mail\x12!\n\x0c\x64isplay_name\x18\x03 \x01(\tR\x0b\x64isplayName\x12\x1a\n\x08\x64isabled\x18\x04 \x01(\x08R\x08\x64isabledB\xd9\x01\n\x17\x63om.autokitteh.users.v1B\tUserProtoP\x01ZEgo.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/users/v1;usersv1\xa2\x02\x03\x41UX\xaa\x02\x13\x41utokitteh.Users.V1\xca\x02\x13\x41utokitteh\\Users\\V1\xe2\x02\x1f\x41utokitteh\\Users\\V1\\GPBMetadata\xea\x02\x15\x41utokitteh::Users::V1b\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -21,10 +22,8 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'autokitteh.users.v1.user_pb
 if _descriptor._USE_C_DESCRIPTORS == False:
   DESCRIPTOR._options = None
   DESCRIPTOR._serialized_options = b'\n\027com.autokitteh.users.v1B\tUserProtoP\001ZEgo.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/users/v1;usersv1\242\002\003AUX\252\002\023Autokitteh.Users.V1\312\002\023Autokitteh\\Users\\V1\342\002\037Autokitteh\\Users\\V1\\GPBMetadata\352\002\025Autokitteh::Users::V1'
-  _USER_DATAENTRY._options = None
-  _USER_DATAENTRY._serialized_options = b'8\001'
-  _globals['_USER']._serialized_start=56
-  _globals['_USER']._serialized_end=204
-  _globals['_USER_DATAENTRY']._serialized_start=149
-  _globals['_USER_DATAENTRY']._serialized_end=204
+  _USER.fields_by_name['email']._options = None
+  _USER.fields_by_name['email']._serialized_options = b'\372\367\030\004r\002`\001'
+  _globals['_USER']._serialized_start=84
+  _globals['_USER']._serialized_end=210
 # @@protoc_insertion_point(module_scope)

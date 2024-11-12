@@ -2,6 +2,7 @@ package authjwttokens
 
 import (
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -30,6 +31,10 @@ type tokens struct {
 	signKey []byte
 }
 
+type token struct {
+	User sdktypes.User
+}
+
 var Configs = configset.Set[Config]{
 	Default: &Config{},
 	Dev: &Config{
@@ -53,31 +58,32 @@ func New(cfg *Config) (authtokens.Tokens, error) {
 	return &tokens{signKey: key}, nil
 }
 
-func (js *tokens) Create(user sdktypes.User) (string, error) {
-	uj, err := user.MarshalJSON()
-	if err != nil {
-		return "", fmt.Errorf("marshal JSON: %w", err)
-	}
-
+func (js *tokens) Create(u sdktypes.User) (string, error) {
 	uuid, err := uuid.NewV7()
 	if err != nil {
 		return "", fmt.Errorf("generate UUID: %w", err)
 	}
 
+	tok := token{User: u}
+	bs, err := json.Marshal(tok)
+	if err != nil {
+		return "", fmt.Errorf("marshal token: %w", err)
+	}
+
 	claim := j.RegisteredClaims{
 		IssuedAt: j.NewNumericDate(time.Now()),
 		Issuer:   issuer,
-		Subject:  string(uj),
+		Subject:  string(bs),
 		ID:       uuid.String(),
 	}
 
 	return j.NewWithClaims(method, claim).SignedString(js.signKey)
 }
 
-func (js *tokens) Parse(token string) (sdktypes.User, error) {
+func (js *tokens) Parse(raw string) (sdktypes.User, error) {
 	var claims j.RegisteredClaims
 
-	t, err := j.ParseWithClaims(token, &claims, func(t *j.Token) (interface{}, error) { return js.signKey, nil })
+	t, err := j.ParseWithClaims(raw, &claims, func(t *j.Token) (interface{}, error) { return js.signKey, nil })
 	if err != nil {
 		return sdktypes.InvalidUser, err // TODO: better error handling
 	}
@@ -86,10 +92,10 @@ func (js *tokens) Parse(token string) (sdktypes.User, error) {
 		return sdktypes.InvalidUser, errors.New("invalid token")
 	}
 
-	var u sdktypes.User
-	if err := u.UnmarshalJSON([]byte(claims.Subject)); err != nil {
-		return sdktypes.InvalidUser, fmt.Errorf("unmarshal JSON: %w", err)
+	var tok token
+	if err := json.Unmarshal([]byte(claims.Subject), &tok); err != nil {
+		return sdktypes.InvalidUser, fmt.Errorf("unmarshal token: %w", err)
 	}
 
-	return u, nil
+	return tok.User, nil
 }

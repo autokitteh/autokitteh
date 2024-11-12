@@ -303,8 +303,8 @@ func (f *dbFixture) newSession(args ...any) scheme.Session {
 			s.BuildID = &a.BuildID
 		case scheme.Deployment:
 			s.DeploymentID = &a.DeploymentID
-		case scheme.Env:
-			s.EnvID = &a.EnvID
+		case scheme.Project:
+			s.ProjectID = &a.ProjectID
 		case scheme.Event:
 			s.EventID = &a.EventID
 		}
@@ -344,8 +344,8 @@ func (f *dbFixture) newDeployment(args ...any) scheme.Deployment {
 		switch a := a.(type) {
 		case scheme.Build:
 			d.BuildID = a.BuildID
-		case scheme.Env:
-			d.EnvID = &a.EnvID
+		case scheme.Project:
+			d.ProjectID = &a.ProjectID
 		}
 	}
 	return d
@@ -360,27 +360,6 @@ func (f *dbFixture) newProject() scheme.Project {
 	}
 }
 
-func (f *dbFixture) newEnv(args ...any) scheme.Env {
-	id := newTestID()
-	name := idToName(id, "env")
-	env := scheme.Env{
-		EnvID:        id,
-		Name:         name,
-		MembershipID: name,
-	}
-	for _, a := range args {
-		switch a := a.(type) {
-		case scheme.Project:
-			env.ProjectID = a.ProjectID
-		case sdktypes.UUID:
-			env.ProjectID = a
-		case string:
-			env.Name = a
-		}
-	}
-	return env
-}
-
 func (f *dbFixture) newVar(name string, val string, args ...any) scheme.Var {
 	v := scheme.Var{
 		ScopeID: testDummyID,
@@ -392,8 +371,8 @@ func (f *dbFixture) newVar(name string, val string, args ...any) scheme.Var {
 		case scheme.Connection:
 			v.ScopeID = a.ConnectionID
 			v.IntegrationID = *a.IntegrationID
-		case scheme.Env:
-			v.ScopeID = a.EnvID
+		case scheme.Project:
+			v.ScopeID = a.ProjectID
 		case sdktypes.UUID:
 			v.ScopeID = a
 		}
@@ -417,13 +396,11 @@ func (f *dbFixture) newTrigger(args ...any) scheme.Trigger {
 			t.ProjectID = a.ProjectID
 		case scheme.Connection:
 			t.ConnectionID = &a.ConnectionID
-		case scheme.Env:
-			t.EnvID = a.EnvID
 		case string:
 			t.Name = a
 		}
 	}
-	t.UniqueName = triggerUniqueName(t.EnvID.String(), sdktypes.NewSymbol(t.Name))
+	t.UniqueName = triggerUniqueName(t.ProjectID.String(), sdktypes.NewSymbol(t.Name))
 	return t
 }
 
