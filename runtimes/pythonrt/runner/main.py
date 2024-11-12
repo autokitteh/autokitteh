@@ -324,14 +324,12 @@ class Runner(runner_rpc.RunnerService):
             tb = exc_traceback(err)
             req.traceback.extend(tb)
         else:
-            req.result = pb_values.Value(
-                custom=pb_values.Custom(
-                    data=pickle.dumps(result, protocol=0),
-                    value=safe_wrap(result),
-                ),
-            )
+            req.result.custom.data = pickle.dumps(result, protocol=0)
+            req.result.custom.value.CopyFrom(safe_wrap(result))
 
+        log.info("DONE: sending")
         resp = self.worker.Done(req)
+        log.info("DONE: sent")
         if resp.Error:
             log.error("on_event: done error: %r", resp.error)
 
