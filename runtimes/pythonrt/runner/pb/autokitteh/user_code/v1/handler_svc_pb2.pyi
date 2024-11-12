@@ -1,5 +1,5 @@
-from autokitteh.user_code.v1 import user_code_pb2 as _user_code_pb2
-from autokitteh.values.v1 import values_pb2 as _values_pb2
+from pb.autokitteh.user_code.v1 import user_code_pb2 as _user_code_pb2
+from pb.autokitteh.values.v1 import values_pb2 as _values_pb2
 from google.protobuf import timestamp_pb2 as _timestamp_pb2
 from google.protobuf.internal import containers as _containers
 from google.protobuf import descriptor as _descriptor

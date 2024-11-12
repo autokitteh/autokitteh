@@ -16,7 +16,12 @@ replace() {
 
 replace autokitteh/module/v1/module_pb2.py "from buf." "from pb.buf."
 replace autokitteh/user_code/v1/handler_svc_pb2.py "from autokitteh." "from pb.autokitteh." 
+replace autokitteh/user_code/v1/handler_svc_pb2.pyi "from autokitteh." "from pb.autokitteh." 
+replace autokitteh/user_code/v1/handler_svc_pb2_grpc.py "from autokitteh." "from pb.autokitteh." 
 replace autokitteh/user_code/v1/runner_svc_pb2.py "from autokitteh." "from pb.autokitteh." 
+replace autokitteh/user_code/v1/runner_svc_pb2.pyi "from autokitteh." "from pb.autokitteh." 
+replace autokitteh/user_code/v1/runner_svc_pb2_grpc.py "from autokitteh." "from pb.autokitteh." 
 replace autokitteh/values/v1/values_pb2.py "from autokitteh." "from pb.autokitteh." 
 replace autokitteh/values/v1/values_pb2.py "from buf." "from pb.buf."
+replace autokitteh/values/v1/values_pb2.pyi "from buf." "from pb.buf."
 replace buf/validate/validate_pb2.py "from buf." "from pb.buf."
