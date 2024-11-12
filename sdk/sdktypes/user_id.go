@@ -1,6 +1,8 @@
 package sdktypes
 
-import "go.autokitteh.dev/autokitteh/internal/kittehs"
+import (
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
+)
 
 const userIDKind = "usr"
 

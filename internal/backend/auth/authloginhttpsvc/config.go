@@ -35,11 +35,14 @@ type Config struct {
 
 	// If set, reject logins from new users, meaning users that are
 	// not already in the database are rejected.
-	RejectNewUsers bool `koanf:"reject_new_users"`
+	RejectNewUsers   bool `koanf:"reject_new_users"`
+	UseLegacyUserIDs bool `koanf:"use_legacy_user_ids"`
 }
 
 var Configs = configset.Set[Config]{
-	Default: &Config{},
+	Default: &Config{
+		UseLegacyUserIDs: true,
+	},
 	Dev: &Config{
 		GoogleOAuth: oauth2Config{
 			RedirectURL: "http://localhost:9980/auth/google/callback",

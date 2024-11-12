@@ -175,7 +175,7 @@ func (a *svc) registerRoutes(muxes *muxes.Muxes) error {
 }
 
 func (a *svc) newSuccessLoginHandler(ld *loginData) http.Handler {
-	sl := a.L.Sugar().With("data", ld)
+	sl := a.L.Sugar().With("login_data", ld)
 
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		u, err := a.Users.GetByEmail(r.Context(), ld.Email)
@@ -203,6 +203,13 @@ func (a *svc) newSuccessLoginHandler(ld *loginData) http.Handler {
 			}
 
 			u := sdktypes.NewUser(ld.Email, ld.DisplayName)
+
+			if a.Cfg.UseLegacyUserIDs {
+				u = u.WithID(newLegacyUserIDFromUserData(ld))
+
+				sl.With("legacy_user_id", u.ID()).Infof("using legacy user id: %v", u.ID())
+			}
+
 			if uid, err = a.Users.Create(r.Context(), u); err != nil {
 				sl.With("err", err).Errorf("failed creating user: %v", err)
 				http.Error(w, "internal server error", http.StatusInternalServerError)
