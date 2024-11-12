@@ -8,7 +8,6 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdkclients/sdkconnectionsclient"
 	"go.autokitteh.dev/autokitteh/sdk/sdkclients/sdkdeploymentsclient"
 	"go.autokitteh.dev/autokitteh/sdk/sdkclients/sdkdispatcherclient"
-	"go.autokitteh.dev/autokitteh/sdk/sdkclients/sdkenvsclient"
 	"go.autokitteh.dev/autokitteh/sdk/sdkclients/sdkeventsclient"
 	"go.autokitteh.dev/autokitteh/sdk/sdkclients/sdkintegrationsclient"
 	"go.autokitteh.dev/autokitteh/sdk/sdkclients/sdkoauthclient"
@@ -27,7 +26,6 @@ type client struct {
 	connections  func() sdkservices.Connections
 	deployments  func() sdkservices.Deployments
 	dispatcher   func() sdkservices.Dispatcher
-	envs         func() sdkservices.Envs
 	events       func() sdkservices.Events
 	integrations func() sdkservices.Integrations
 	oauth        func() sdkservices.OAuth
@@ -49,7 +47,6 @@ func New(params sdkclient.Params) sdkservices.Services {
 		connections:  kittehs.LazyCache(sdkconnectionsclient.New, params),
 		deployments:  kittehs.LazyCache(sdkdeploymentsclient.New, params),
 		dispatcher:   kittehs.LazyCache(sdkdispatcherclient.New, params),
-		envs:         kittehs.LazyCache(sdkenvsclient.New, params),
 		events:       kittehs.LazyCache(sdkeventsclient.New, params),
 		integrations: kittehs.LazyCache(sdkintegrationsclient.New, params),
 		oauth:        kittehs.LazyCache(sdkoauthclient.New, params),
@@ -67,7 +64,6 @@ func (c *client) Builds() sdkservices.Builds             { return c.builds() }
 func (c *client) Connections() sdkservices.Connections   { return c.connections() }
 func (c *client) Deployments() sdkservices.Deployments   { return c.deployments() }
 func (c *client) Dispatcher() sdkservices.Dispatcher     { return c.dispatcher() }
-func (c *client) Envs() sdkservices.Envs                 { return c.envs() }
 func (c *client) Events() sdkservices.Events             { return c.events() }
 func (c *client) Integrations() sdkservices.Integrations { return c.integrations() }
 func (c *client) OAuth() sdkservices.OAuth               { return c.oauth() }

@@ -14,7 +14,7 @@ import (
 var activate bool
 
 var createCmd = common.StandardCommand(&cobra.Command{
-	Use:     "create <--build-id=...> <--env=...> [--activate]",
+	Use:     "create <--build-id=...> <--project=...> [--activate]",
 	Short:   "Create new deployment",
 	Aliases: []string{"c"},
 	Args:    cobra.NoArgs,
@@ -30,15 +30,15 @@ var createCmd = common.StandardCommand(&cobra.Command{
 			return err
 		}
 
-		e, eid, err := r.EnvNameOrID(ctx, env, "")
-		err = common.AddNotFoundErrIfCond(err, e.IsValid())
-		if err = common.ToExitCodeWithSkipNotFoundFlag(cmd, err, fmt.Sprintf("environment %q", env)); err != nil {
+		p, pid, err := r.ProjectNameOrID(ctx, project)
+		err = common.AddNotFoundErrIfCond(err, p.IsValid())
+		if err = common.ToExitCodeWithSkipNotFoundFlag(cmd, err, fmt.Sprintf("project %q", project)); err != nil {
 			return err
 		}
 
 		deployment, err := sdktypes.DeploymentFromProto(&sdktypes.DeploymentPB{
-			EnvId:   eid.String(),
-			BuildId: buildID,
+			ProjectId: pid.String(),
+			BuildId:   buildID,
 		})
 		if err != nil {
 			return fmt.Errorf("invalid deployment: %w", err)
@@ -66,8 +66,8 @@ func init() {
 	createCmd.Flags().StringVarP(&buildID, "build-id", "b", "", "build ID")
 	kittehs.Must0(createCmd.MarkFlagRequired("build-id"))
 
-	createCmd.Flags().StringVarP(&env, "env", "e", "", "environment name or ID")
-	kittehs.Must0(createCmd.MarkFlagRequired("env"))
+	createCmd.Flags().StringVarP(&project, "project", "e", "", "project name or ID")
+	kittehs.Must0(createCmd.MarkFlagRequired("project"))
 
 	createCmd.Flags().BoolVarP(&activate, "activate", "a", false, "auto-activate deployment")
 }

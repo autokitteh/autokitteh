@@ -2,7 +2,11 @@ syntax = "proto3";
 
 package autokitteh.users.v1;
 
+import "buf/validate/validate.proto";
+
 message User {
-  string provider = 1;
-  map<string, string> data = 2;
+  string user_id = 1;
+  string email = 2 [(buf.validate.field).string.email = true];
+  string display_name = 3;
+  bool disabled = 4;
 }

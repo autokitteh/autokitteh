@@ -36,8 +36,8 @@ func (d *deployments) Activate(ctx context.Context, id sdktypes.DeploymentID) er
 		}
 
 		deployments, err := tx.ListDeployments(ctx, sdkservices.ListDeploymentsFilter{
-			EnvID: deployment.EnvID(),
-			State: sdktypes.DeploymentStateActive,
+			ProjectID: deployment.ProjectID(),
+			State:     sdktypes.DeploymentStateActive,
 		})
 		if err != nil {
 			return fmt.Errorf("list active deployments: %w", err)

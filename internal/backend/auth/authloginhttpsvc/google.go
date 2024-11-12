@@ -6,15 +6,13 @@ import (
 
 	"github.com/dghubble/gologin/v2/google"
 
-	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-
 	"golang.org/x/oauth2"
 	googleOAuth2 "golang.org/x/oauth2/google"
 )
 
 const googleLoginPath = "/auth/google/login"
 
-func registerGoogleOAuthRoutes(mux *http.ServeMux, cfg oauth2Config, onSuccess func(sdktypes.User) http.Handler) error {
+func registerGoogleOAuthRoutes(mux *http.ServeMux, cfg oauth2Config, onSuccess func(*loginData) http.Handler) error {
 	if cfg.ClientID == "" {
 		return errors.New("google login is enabled, but missing GOOGLE_CLIENT_ID")
 	}
@@ -44,14 +42,18 @@ func registerGoogleOAuthRoutes(mux *http.ServeMux, cfg oauth2Config, onSuccess f
 			return
 		}
 
-		onSuccess(sdktypes.NewUser(
-			"google",
-			map[string]string{
-				"id":    gu.Id,
-				"name":  gu.Name,
-				"email": gu.Email,
-			},
-		))
+		if gu.Id == "" || gu.Name == "" || gu.Email == "" {
+			http.Error(w, "google user missing data", http.StatusInternalServerError)
+			return
+		}
+
+		ld := loginData{
+			ProviderName: "google",
+			Email:        gu.Email,
+			DisplayName:  gu.Name,
+		}
+
+		onSuccess(&ld).ServeHTTP(w, r)
 	})
 
 	mux.Handle("/auth/google/callback", google.StateHandler(cfg.cookieConfig(), google.CallbackHandler(&oauth2Config, googleOnSuccess, nil)))

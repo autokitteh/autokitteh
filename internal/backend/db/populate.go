@@ -12,8 +12,6 @@ func Populate(ctx context.Context, db DB, objs ...sdktypes.Object) (err error) {
 		switch obj := obj.(type) {
 		case sdktypes.Project:
 			err = db.CreateProject(ctx, obj)
-		case sdktypes.Env:
-			err = db.CreateEnv(ctx, obj)
 		case sdktypes.Event:
 			err = db.SaveEvent(ctx, obj)
 		case sdktypes.Var:

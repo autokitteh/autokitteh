@@ -72,11 +72,6 @@ func (s *svc) project(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	es, err := s.listEnvs(w, r, pid)
-	if err != nil {
-		return
-	}
-
 	ts, err := s.listTriggers(w, r, sdkservices.ListTriggersFilter{ProjectID: pid})
 	if err != nil {
 		return
@@ -88,7 +83,6 @@ func (s *svc) project(w http.ResponseWriter, r *http.Request) {
 		Name        string
 		JSON        template.HTML
 		Connections list
-		Envs        list
 		Triggers    list
 		Sessions    list
 		ID          string
@@ -97,7 +91,6 @@ func (s *svc) project(w http.ResponseWriter, r *http.Request) {
 		Name:        p.Name().String(),
 		JSON:        marshalObject(sdkP.ToProto()),
 		Connections: cs,
-		Envs:        es,
 		Triggers:    ts,
 		ID:          p.ID().String(),
 	}); err != nil {

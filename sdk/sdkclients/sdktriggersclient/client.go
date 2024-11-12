@@ -88,7 +88,6 @@ func (c *client) Get(ctx context.Context, triggerID sdktypes.TriggerID) (sdktype
 func (c *client) List(ctx context.Context, filter sdkservices.ListTriggersFilter) ([]sdktypes.Trigger, error) {
 	resp, err := c.client.List(ctx, connect.NewRequest(
 		&triggersv1.ListRequest{
-			EnvId:        filter.EnvID.String(),
 			ConnectionId: filter.ConnectionID.String(),
 			ProjectId:    filter.ProjectID.String(),
 			SourceType:   filter.SourceType.ToProto(),

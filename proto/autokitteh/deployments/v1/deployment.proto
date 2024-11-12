@@ -16,8 +16,8 @@ enum DeploymentState {
 
 message Deployment {
   // immutable fields.
-  string deployment_id = 1;
-  string env_id = 2 [(buf.validate.field).string.min_len = 1];
+  string project_id = 1 [(buf.validate.field).string.min_len = 1];
+  string deployment_id = 2;
   string build_id = 3 [(buf.validate.field).string.min_len = 1];
 
   // mutable fields.

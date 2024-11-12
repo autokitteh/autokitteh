@@ -7,6 +7,6 @@ import (
 )
 
 type Store interface {
-	Get(ctx context.Context, envID sdktypes.EnvID, projectID sdktypes.ProjectID, keys []string) (map[string]sdktypes.Value, error)
-	List(ctx context.Context, envID sdktypes.EnvID, projectID sdktypes.ProjectID) ([]string, error)
+	Get(ctx context.Context, pid sdktypes.ProjectID, keys []string) (map[string]sdktypes.Value, error)
+	List(ctx context.Context, pid sdktypes.ProjectID) ([]string, error)
 }

@@ -84,7 +84,6 @@ func (c *client) GetLog(ctx context.Context, filter sdkservices.ListSessionLogRe
 		PageToken: filter.PageToken,
 		Ascending: filter.Ascending,
 	}))
-
 	if err != nil {
 		return sdkservices.GetLogResults{Log: sdktypes.InvalidSessionLog}, rpcerrors.ToSDKError(err)
 	}
@@ -101,7 +100,8 @@ func (c *client) GetLog(ctx context.Context, filter sdkservices.ListSessionLogRe
 		Log: log,
 		PaginationResult: sdktypes.PaginationResult{
 			TotalCount:    resp.Msg.Count,
-			NextPageToken: resp.Msg.NextPageToken},
+			NextPageToken: resp.Msg.NextPageToken,
+		},
 	}
 
 	return result, nil
@@ -110,7 +110,7 @@ func (c *client) GetLog(ctx context.Context, filter sdkservices.ListSessionLogRe
 func (c *client) List(ctx context.Context, filter sdkservices.ListSessionsFilter) (sdkservices.ListSessionResult, error) {
 	resp, err := c.client.List(ctx, connect.NewRequest(&sessionsv1.ListRequest{
 		DeploymentId: filter.DeploymentID.String(),
-		EnvId:        filter.EnvID.String(),
+		ProjectId:    filter.ProjectID.String(),
 		EventId:      filter.EventID.String(),
 		BuildId:      filter.BuildID.String(),
 		StateType:    filter.StateType.ToProto(),

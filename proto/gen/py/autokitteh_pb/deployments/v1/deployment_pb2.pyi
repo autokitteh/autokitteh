@@ -23,7 +23,7 @@ DEPLOYMENT_STATE_DRAINING: DeploymentState
 DEPLOYMENT_STATE_INACTIVE: DeploymentState
 
 class Deployment(_message.Message):
-    __slots__ = ["deployment_id", "env_id", "build_id", "state", "created_at", "updated_at", "sessions_stats"]
+    __slots__ = ["project_id", "deployment_id", "build_id", "state", "created_at", "updated_at", "sessions_stats"]
     class SessionStats(_message.Message):
         __slots__ = ["state", "count"]
         STATE_FIELD_NUMBER: _ClassVar[int]
@@ -31,18 +31,18 @@ class Deployment(_message.Message):
         state: _session_pb2.SessionStateType
         count: int
         def __init__(self, state: _Optional[_Union[_session_pb2.SessionStateType, str]] = ..., count: _Optional[int] = ...) -> None: ...
+    PROJECT_ID_FIELD_NUMBER: _ClassVar[int]
     DEPLOYMENT_ID_FIELD_NUMBER: _ClassVar[int]
-    ENV_ID_FIELD_NUMBER: _ClassVar[int]
     BUILD_ID_FIELD_NUMBER: _ClassVar[int]
     STATE_FIELD_NUMBER: _ClassVar[int]
     CREATED_AT_FIELD_NUMBER: _ClassVar[int]
     UPDATED_AT_FIELD_NUMBER: _ClassVar[int]
     SESSIONS_STATS_FIELD_NUMBER: _ClassVar[int]
+    project_id: str
     deployment_id: str
-    env_id: str
     build_id: str
     state: DeploymentState
     created_at: _timestamp_pb2.Timestamp
     updated_at: _timestamp_pb2.Timestamp
     sessions_stats: _containers.RepeatedCompositeFieldContainer[Deployment.SessionStats]
-    def __init__(self, deployment_id: _Optional[str] = ..., env_id: _Optional[str] = ..., build_id: _Optional[str] = ..., state: _Optional[_Union[DeploymentState, str]] = ..., created_at: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ..., updated_at: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ..., sessions_stats: _Optional[_Iterable[_Union[Deployment.SessionStats, _Mapping]]] = ...) -> None: ...
+    def __init__(self, project_id: _Optional[str] = ..., deployment_id: _Optional[str] = ..., build_id: _Optional[str] = ..., state: _Optional[_Union[DeploymentState, str]] = ..., created_at: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ..., updated_at: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ..., sessions_stats: _Optional[_Iterable[_Union[Deployment.SessionStats, _Mapping]]] = ...) -> None: ...

@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -12,11 +13,12 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/internal/manifest"
 	"go.autokitteh.dev/autokitteh/internal/resolver"
+	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 var (
-	manifestPath, project, env, projectName string
+	manifestPath, project, projectName string
 
 	filePaths, dirPaths []string
 )
@@ -40,15 +42,23 @@ var deployCmd = common.StandardCommand(&cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			if projectName != "" {
-				return fmt.Errorf("project name provided without manifest")
+		} else if projectName != "" {
+			return fmt.Errorf("project name provided without manifest")
+		}
+
+		p, pid, err := r.ProjectNameOrID(ctx, project)
+		if err != nil {
+			err = fmt.Errorf("project: %w", err)
+
+			if errors.Is(err, sdkerrors.ErrNotFound) {
+				err = common.NewExitCodeError(common.NotFoundExitCode, err)
 			}
 
-			p, pid, _ := r.ProjectNameOrID(ctx, project)
-			if p.IsValid() {
-				logFunc(cmd, "plan")(fmt.Sprintf("project %q: found, id=%q", project, pid))
-			}
+			return err
+		}
+
+		if p.IsValid() {
+			logFunc(cmd, "plan")(fmt.Sprintf("project %q: found, id=%q", project, pid))
 		}
 
 		// Step 2: build the project (see also the "build" and "project" parent commands).
@@ -59,24 +69,17 @@ var deployCmd = common.StandardCommand(&cobra.Command{
 			dirPaths = append(dirPaths, filepath.Dir(manifestPath))
 		}
 
-		bid, err := common.BuildProject(project, dirPaths, filePaths)
+		bid, err := common.BuildProject(pid, dirPaths, filePaths)
 		if err != nil {
 			return err
 		}
 		logFunc(cmd, "exec")(fmt.Sprintf("create_build: created %q", bid))
 
-		// Step 3: parse the optional environment argument.
-		e, eid, err := r.EnvNameOrID(ctx, env, project)
-		err = common.AddNotFoundErrIfCond(err, e.IsValid())
-		if err = common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "environment"); err != nil {
-			return err
-		}
-
-		// Step 4: deploy the build
+		// Step 3: deploy the build
 		// (see also the "deployment" and "project" parent commands).
 		deployment, err := sdktypes.DeploymentFromProto(&sdktypes.DeploymentPB{
-			EnvId:   eid.String(),
-			BuildId: bid.String(),
+			ProjectId: pid.String(),
+			BuildId:   bid.String(),
 		})
 		if err != nil {
 			return fmt.Errorf("invalid deployment: %w", err)
@@ -111,8 +114,6 @@ func init() {
 	deployCmd.Flags().StringArrayVarP(&filePaths, "file", "f", []string{}, "0 or more file paths")
 	kittehs.Must0(deployCmd.MarkFlagDirname("dir"))
 	kittehs.Must0(deployCmd.MarkFlagFilename("file"))
-
-	deployCmd.Flags().StringVarP(&env, "env", "e", "", "environment name or ID")
 }
 
 func applyManifest(cmd *cobra.Command, manifestPath, projectName string) (string, error) {

@@ -867,9 +867,9 @@ export class Session extends Message<Session> {
   buildId = "";
 
   /**
-   * @generated from field: string env_id = 3;
+   * @generated from field: string project_id = 3;
    */
-  envId = "";
+  projectId = "";
 
   /**
    * @generated from field: autokitteh.program.v1.CodeLocation entrypoint = 4;
@@ -928,7 +928,7 @@ export class Session extends Message<Session> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "session_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "build_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "env_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "entrypoint", kind: "message", T: CodeLocation },
     { no: 5, name: "inputs", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: Value} },
     { no: 6, name: "parent_session_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
