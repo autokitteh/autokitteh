@@ -27,7 +27,7 @@ func Tmpl(r *http.Request) *template.Template {
 					return nil
 				}
 
-				return u.Title()
+				return u.Email()
 			},
 			"ProcessID": func() any { return fixtures.ProcessID() },
 			"Version":   func() any { return version.Version },

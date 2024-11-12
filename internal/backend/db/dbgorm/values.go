@@ -7,6 +7,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"gorm.io/gorm"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
@@ -24,10 +25,7 @@ func (db *gormdb) SetValue(ctx context.Context, pid sdktypes.ProjectID, key stri
 		return sdkerrors.NewInvalidArgumentError("value too large > %d bytes", maxValueSize)
 	}
 
-	uid, err := userIDFromContext(ctx)
-	if err != nil {
-		return err
-	}
+	uid := authcontext.GetAuthnUser(ctx).ID().String()
 
 	return translateError(db.transaction(ctx, func(tx *tx) error {
 		db := tx.db
@@ -50,7 +48,7 @@ func (db *gormdb) SetValue(ctx context.Context, pid sdktypes.ProjectID, key stri
 }
 
 func (db *gormdb) GetValue(ctx context.Context, pid sdktypes.ProjectID, key string) (sdktypes.Value, error) {
-	r, err := getOne[scheme.Value](db.withUserEnvs(ctx), "project_id = ? AND key = ?", pid.UUIDValue(), key)
+	r, err := getOne[scheme.Value](db.withUserProjects(ctx), "project_id = ? AND key = ?", pid.UUIDValue(), key)
 	if err != nil {
 		return sdktypes.InvalidValue, translateError(err)
 	}
@@ -66,7 +64,7 @@ func (db *gormdb) GetValue(ctx context.Context, pid sdktypes.ProjectID, key stri
 
 func (db *gormdb) ListValues(ctx context.Context, pid sdktypes.ProjectID) (map[string]sdktypes.Value, error) {
 	var rs []*scheme.Value
-	if err := db.withUserEnvs(ctx).Where("project_id = ?", pid.UUIDValue()).Find(&rs).Error; err != nil {
+	if err := db.withUserProjects(ctx).Where("project_id = ?", pid.UUIDValue()).Find(&rs).Error; err != nil {
 		return nil, translateError(err)
 	}
 

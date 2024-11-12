@@ -17,7 +17,6 @@ type DBServices interface {
 	Projects() Projects
 	Builds() Builds
 	Deployments() Deployments
-	Envs() Envs
 	Connections() Connections
 	Sessions() Sessions
 	Events() Events
@@ -33,7 +32,6 @@ type ServicesStruct struct {
 	Connections_  Connections  `optional:"true"`
 	Deployments_  Deployments  `optional:"true"`
 	Dispatcher_   Dispatcher   `optional:"true"`
-	Envs_         Envs         `optional:"true"`
 	Events_       Events       `optional:"true"`
 	Integrations_ Integrations `optional:"true"`
 	OAuth_        OAuth        `optional:"true"`
@@ -52,7 +50,6 @@ func (s *ServicesStruct) Builds() Builds             { return s.Builds_ }
 func (s *ServicesStruct) Connections() Connections   { return s.Connections_ }
 func (s *ServicesStruct) Deployments() Deployments   { return s.Deployments_ }
 func (s *ServicesStruct) Dispatcher() Dispatcher     { return s.Dispatcher_ }
-func (s *ServicesStruct) Envs() Envs                 { return s.Envs_ }
 func (s *ServicesStruct) Events() Events             { return s.Events_ }
 func (s *ServicesStruct) Integrations() Integrations { return s.Integrations_ }
 func (s *ServicesStruct) OAuth() OAuth               { return s.OAuth_ }

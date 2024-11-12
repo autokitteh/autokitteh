@@ -25,7 +25,7 @@ func TestValues(t *testing.T) {
 	require.NoError(t, err)
 
 	ctx := context.Background()
-	ctx = authcontext.SetAuthnUserID(ctx, sdktypes.BuiltinDefaultUserID.String())
+	ctx = authcontext.SetAuthnUser(ctx, sdktypes.DefaultUser)
 
 	require.NoError(t, db.Connect(ctx))
 	require.NoError(t, db.Setup(ctx))

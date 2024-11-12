@@ -1,6 +1,7 @@
 package projects
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/spf13/cobra"
@@ -8,6 +9,7 @@ import (
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/internal/resolver"
+	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -21,29 +23,32 @@ var deployCmd = common.StandardCommand(&cobra.Command{
 	Args:  cobra.ExactArgs(1),
 
 	RunE: func(cmd *cobra.Command, args []string) error {
+		r := resolver.Resolver{Client: common.Client()}
+		ctx, cancel := common.LimitedContext()
+		defer cancel()
+
+		_, pid, err := r.ProjectNameOrID(ctx, args[0])
+		if err != nil {
+			err = fmt.Errorf("project: %w", err)
+
+			if errors.Is(err, sdkerrors.ErrNotFound) {
+				err = common.NewExitCodeError(common.NotFoundExitCode, err)
+			}
+
+			return err
+		}
+
 		// Step 1: build the project (see the "build" sibling command).
-		bid, err := common.BuildProject(args[0], dirPaths, filePaths)
+		bid, err := common.BuildProject(pid, dirPaths, filePaths)
 		if err != nil {
 			return err
 		}
 		common.RenderKV("build_id", bid)
 
-		// Step 2: parse the optional environment argument.
-		r := resolver.Resolver{Client: common.Client()}
-
-		ctx, cancel := common.LimitedContext()
-		defer cancel()
-
-		e, eid, err := r.EnvNameOrID(ctx, env, args[0])
-		err = common.AddNotFoundErrIfCond(err, e.IsValid())
-		if err = common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "environment"); err != nil {
-			return err
-		}
-
-		// Step 3: deploy the build (see the "deployment" parent command).
+		// Step 2: deploy the build (see the "deployment" parent command).
 		deployment, err := sdktypes.DeploymentFromProto(&sdktypes.DeploymentPB{
-			EnvId:   eid.String(),
-			BuildId: bid.String(),
+			ProjectId: pid.String(),
+			BuildId:   bid.String(),
 		})
 		if err != nil {
 			return fmt.Errorf("invalid deployment: %w", err)
@@ -55,7 +60,7 @@ var deployCmd = common.StandardCommand(&cobra.Command{
 		}
 		common.RenderKV("deployment_id", did)
 
-		// Step 4: activate the deployment (see the "deployment" parent command).
+		// Step 3: activate the deployment (see the "deployment" parent command).
 		if err := deployments().Activate(ctx, did); err != nil {
 			return fmt.Errorf("activate deployment: %w", err)
 		}

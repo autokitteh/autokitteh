@@ -30,6 +30,9 @@ type Config struct {
 
 	MaxOpenConns int `koanf:"max_open_conns"`
 	MaxIdleConns int `koanf:"max_idle_conns"`
+
+	// Run this commands after Setup.
+	SeedCommands string `koanf:"seed_commands"`
 }
 
 func (c Config) Explicit() (*Config, error) {

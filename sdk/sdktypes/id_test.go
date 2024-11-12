@@ -67,3 +67,21 @@ func TestStableIDHash(t *testing.T) {
 	id := kittehs.Must1(ParseProjectID(pidStr))
 	assert.Equal(t, testHash, id.Hash())
 }
+
+func TestNewNamedIDString(t *testing.T) {
+	tests := []struct {
+		in, out string
+	}{
+		{out: "tst_3kth0000008bcc2c7e9f98f09a"},
+		{in: "meow", out: "tst_3kth00me0wef7dc93aa8e6f016"},
+		{in: "meowwoofoink", out: "tst_3kthme0ww0730067fc95b3ff1e"},
+		{in: "meowwoofsqueek", out: "tst_3kthme0ww0c9b069d5c3269215"},
+		{in: "123@#$", out: "tst_3kth12300s632f857c8d36a0d3"},
+	}
+
+	for _, test := range tests {
+		t.Run(test.in, func(t *testing.T) {
+			assert.Equal(t, test.out, newNamedIDString(test.in, "tst"))
+		})
+	}
+}

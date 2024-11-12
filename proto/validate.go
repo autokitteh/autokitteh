@@ -14,7 +14,6 @@ import (
 	connectionsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/connections/v1"
 	deploymentsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/deployments/v1"
 	dispatcherv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/dispatcher/v1"
-	envsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/envs/v1"
 	eventsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/events/v1"
 	integration_providerv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/integration_provider/v1"
 	integration_registryv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/integration_registry/v1"
@@ -67,8 +66,6 @@ var fds = []protoreflect.FileDescriptor{
 	deploymentsv1.File_autokitteh_deployments_v1_deployment_proto,
 	deploymentsv1.File_autokitteh_deployments_v1_svc_proto,
 	dispatcherv1.File_autokitteh_dispatcher_v1_svc_proto,
-	envsv1.File_autokitteh_envs_v1_env_proto,
-	envsv1.File_autokitteh_envs_v1_svc_proto,
 	eventsv1.File_autokitteh_events_v1_event_proto,
 	eventsv1.File_autokitteh_events_v1_svc_proto,
 	integration_providerv1.File_autokitteh_integration_provider_v1_integration_proto,

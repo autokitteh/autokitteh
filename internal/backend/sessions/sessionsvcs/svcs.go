@@ -17,7 +17,6 @@ type Svcs struct {
 	Builds       sdkservices.Builds
 	Connections  sdkservices.Connections
 	Deployments  sdkservices.Deployments
-	Envs         sdkservices.Envs
 	Integrations sdkservices.Integrations
 	Runtimes     sdkservices.Runtimes
 	Triggers     sdkservices.Triggers

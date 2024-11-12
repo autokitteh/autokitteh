@@ -52,14 +52,14 @@ export class Deployment extends Message<Deployment> {
   /**
    * immutable fields.
    *
-   * @generated from field: string deployment_id = 1;
+   * @generated from field: string project_id = 1;
    */
-  deploymentId = "";
+  projectId = "";
 
   /**
-   * @generated from field: string env_id = 2;
+   * @generated from field: string deployment_id = 2;
    */
-  envId = "";
+  deploymentId = "";
 
   /**
    * @generated from field: string build_id = 3;
@@ -96,8 +96,8 @@ export class Deployment extends Message<Deployment> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "autokitteh.deployments.v1.Deployment";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "deployment_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "env_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "deployment_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "build_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "state", kind: "enum", T: proto3.getEnumType(DeploymentState) },
     { no: 10, name: "created_at", kind: "message", T: Timestamp },

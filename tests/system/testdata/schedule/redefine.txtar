@@ -7,8 +7,8 @@ ak trigger list -j
 return code == 0
 output equals_json file triggers.json
 
-wait 5s for session ses_00000000000000000000000008
-ak session log ses_00000000000000000000000008 --no-timestamps --prints-only
+wait 5s for session ses_00000000000000000000000007
+ak session log ses_00000000000000000000000007 --no-timestamps --prints-only
 return code == 0
 output equals 'cron'
 
@@ -45,10 +45,10 @@ def on_cron_trigger():
 
 -- triggers.json --
 {
-  "trigger_id": "trg_00000000000000000000000003",
+  "trigger_id": "trg_00000000000000000000000002",
   "name": "cron",
   "source_type": "SOURCE_TYPE_SCHEDULE",
-  "env_id": "env_00000000000000000000000002",
+  "project_id": "prj_00000000000000000000000001",
   "code_location": {
     "path": "cron.star",
     "name": "on_cron_trigger"

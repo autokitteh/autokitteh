@@ -130,7 +130,7 @@ message SessionLog {
 message Session {
   string session_id = 1;
   string build_id = 2;
-  string env_id = 3;
+  string project_id = 3;
 
   program.v1.CodeLocation entrypoint = 4 [(buf.validate.field).required = true];
 
