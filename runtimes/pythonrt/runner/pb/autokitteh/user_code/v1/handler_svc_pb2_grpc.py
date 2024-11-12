@@ -2,7 +2,7 @@
 """Client and server classes corresponding to protobuf-defined services."""
 import grpc
 
-from . import handler_svc_pb2 as autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2
+from autokitteh.user_code.v1 import handler_svc_pb2 as autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2
 
 
 class HandlerServiceStub(object):
