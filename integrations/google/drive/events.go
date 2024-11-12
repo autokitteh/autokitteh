@@ -34,9 +34,9 @@ func ConstructEvent(ctx context.Context, vars sdkservices.Vars, cids []sdktypes.
 	eventType := "file_updated"
 	if latestEvent.Removed {
 		eventType = "file_deleted"
-	} else if latestEvent.File != nil && latestEvent.File.CreatedTime != "" {
-		eventType = "file_created"
-	}
+	} // else if
+
+	// TODO: ENG-1820 - Handle file creation events
 
 	// Convert the raw data to an AutoKitteh event.
 	wrapped, err := sdktypes.WrapValue(latestEvent)

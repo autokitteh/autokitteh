@@ -106,7 +106,7 @@ func oauthConfig() *oauth2.Config {
 			googleoauth2.UserinfoProfileScope,
 			// Sensitive.
 			drive.DriveFileScope,
-			// drive.DriveScope,
+			// drive.DriveScope, // See ENG-1701
 		},
 	}
 }
@@ -171,6 +171,10 @@ func (a api) watchEvents(ctx context.Context, connID sdktypes.ConnectionID, user
 
 	resp, err := req.Do()
 	if err == nil {
+		v := sdktypes.NewVar(vars.DriveEventsWatchResID).SetValue(resp.ResourceId)
+		if err = a.vars.Set(ctx, v.WithScopeID(sdktypes.NewVarScopeID(a.cid))); err != nil {
+			return nil, err
+		}
 		return resp, nil
 	}
 
@@ -253,18 +257,6 @@ func (a api) initializeChangeTracking(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-	}
-
-	// Update the start page token for the next request
-	if resp.NewStartPageToken != "" {
-		v := sdktypes.NewVar(vars.DriveChangesStartPageToken).SetValue(resp.NewStartPageToken)
-		if err = a.vars.Set(ctx, v.WithScopeID(sdktypes.NewVarScopeID(a.cid))); err != nil {
-			return err
-		}
-		a.logger.Debug("Google Drive connection's new start page token",
-			zap.String("cid", a.cid.String()),
-			zap.String("startPageToken", resp.NewStartPageToken),
-		)
 	}
 
 	return nil
