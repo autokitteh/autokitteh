@@ -113,7 +113,7 @@ class SysCalls:
 
         req = pb.NextEventRequest(runner_id=self.runner_id, signal_ids=ids)
         if timeout:
-            if isinstance(timeout, int, float):
+            if isinstance(timeout, int) or isinstance(timeout, float):
                 req.timeout_ms = int(timeout * 1000)
             elif isinstance(timeout, timedelta):
                 req.timeout_ms = int(timeout.total_seconds() * 1000)
