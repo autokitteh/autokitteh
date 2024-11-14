@@ -8,7 +8,7 @@ from autokitteh.google import google_calendar_client
 from autokitteh.google import google_forms_client
 from autokitteh.slack import slack_client
 
-import print
+import pretty_print
 
 
 def all(event):
@@ -28,7 +28,7 @@ def github_get_repo(_):
 def gmail_get_profile(_):
     gmail = gmail_client("gmail_conn").users()
     profile = gmail.getProfile(userId="me").execute()
-    print.pretty_json("Gmail profile", profile)
+    pretty_print.print_json("Gmail profile", profile)
 
 
 def google_calendar_list(_):
@@ -43,7 +43,7 @@ def google_calendar_list(_):
     while req:
         resp = req.execute()
         for item in resp["items"]:
-            print.pretty_json("Google Calendar", item)
+            pretty_print.print_json("Google Calendar", item)
         req = gcal.calendarList().list_next(req, resp)
 
 
@@ -54,9 +54,9 @@ def google_forms_get(_):
     else:
         forms = google_forms_client("forms_conn").forms()
         form = forms.get(formId=form_id).execute()
-        print.pretty_json("Google Form", form)
+        pretty_print.print_json("Google Form", form)
 
 
 def slack_auth_test(_):
     slack = slack_client("slack_conn")
-    print.pretty_json("Slack auth", slack.auth_test().data)
+    pretty_print.print_json("Slack auth", slack.auth_test().data)
