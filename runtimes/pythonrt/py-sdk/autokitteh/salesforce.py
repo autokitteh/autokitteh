@@ -29,8 +29,6 @@ def salesforce_client(connection: str, **kwargs) -> Salesforce:
     check_connection_name(connection)
 
     oauth_token = os.getenv(connection + "__oauth_AccessToken")
-    for var in os.environ:
-        print(var)
     if not oauth_token:
         raise ConnectionInitError(connection)
 
