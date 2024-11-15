@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>AutoKitteh - Salesforce - New Connection</title>
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="/static/apple-touch-icon.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="/static/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="/static/favicon-16x16.png"
+    />
+    <link rel="manifest" href="/static/site.webmanifest" />
+    <link rel="stylesheet" type="text/css" href="styles.css" />
+    <meta name="robots" content="noindex, nofollow" />
+  </head>
+
+  <body>
+    <a href="/" target="_self">
+      <img class="banner" src="/static/banner.svg" alt="AutoKitteh" />
+    </a>
+
+    <table class="title">
+      <td><img class="logo" src="/static/images/salesforce.png" alt="Logo" /></td>
+      <td>
+        <h1>Salesforce - Create a New Connection</h1>
+      </td>
+    </table>
+
+    <p class="info">Information:</p>
+    <ul class="links">
+      <li>
+        <a
+          href="https://docs.autokitteh.com/integrations/salesforce/config"
+          target="_blank"
+          class="info"
+        >
+          AutoKitteh guide: configuring the Salesforce integration
+        </a>
+      </li>
+      <li>
+        <a
+          href="https://help.salesforce.com/s/articleView?id=sf.remoteaccess_oauth_web_server_flow.htm"
+          target="_blank"
+          class="info"
+        >
+          Background about installing Salesforce apps with OAuth
+        </a>
+      </li>
+    </ul>
+
+    <p class="info">
+      Click the button below to install and authorize<br />
+      the <b>AutoKitteh</b> app in your Salesforce organization
+    </p>
+    <!-- TODO(ENG-799): remove ID once its unused -->
+    <a id="oauth-link" href="/oauth/start/salesforce" class="clickable"
+      >Start OAuth Flow</a
+    >
+
+    <!-- TODO(ENG-799) -->
+    <script>
+      const queryString = window.location.search;
+      document
+        .getElementById("oauth-link")
+        .setAttribute("href", "/oauth/start/salesforce" + queryString);
+    </script>
+  </body>
+</html>
