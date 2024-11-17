@@ -1,6 +1,7 @@
 """AutoKitteh syscalls
 
-Convert general func(*args, **kw) to a specific gRPC call to worker.
+Note: SysCalls.ak_* methods (e.g. ak_start) signature must match the signature of the
+matching function in autokitteh (e.g. autokitteh.start).
 """
 
 import json
@@ -19,41 +20,15 @@ class SyscallError(Exception):
 
 
 class SysCalls:
-    def __init__(self, runner_id, worker):
+    def __init__(self, runner_id, worker, log):
         self.runner_id = runner_id
         self.worker: rpc.WorkerStub = worker
+        self.log = log
 
-        self.ak_funcs = {
-            "next_event": self.ak_next_event,
-            "sleep": self.ak_sleep,
-            "start": self.ak_start,
-            "subscribe": self.ak_subscribe,
-            "unsubscribe": self.ak_unsubscribe,
-        }
-
-    def call(self, fn, args, kw):
-        method = self.ak_funcs.get(fn.__name__)
-        if method is None:
-            raise ValueError(f"unknown ak function: {fn.__name__!r}")
-        return method(args, kw)
-
-    def ak_start(self, args, kw):
-        log.info("ak_start: %r %r", args, kw)
-        (loc, data, memo) = extract_args(["loc", "data?", "memo?"], args, kw)
-
-        if data is None:
-            data = {}
-        if memo is None:
-            memo = {}
-
-        if not isinstance(data, dict):
-            raise ValueError("data must be a dict")
-
-        if not isinstance(memo, dict):
-            raise ValueError("memo must be a dict")
-
-        if not isinstance(loc, str):
-            raise ValueError("loc must be a string")
+    def ak_start(self, loc: str, data: dict = None, memo: dict = None) -> str:
+        self.log.info("ak_start: %r", loc)
+        data = {} if data is None else data
+        memo = {} if memo is None else memo
 
         try:
             json_data = json.dumps(data)
@@ -74,22 +49,20 @@ class SysCalls:
         resp = call_grpc("start", self.worker.StartSession, req)
         return resp.session_id
 
-    def ak_sleep(self, args, kw):
-        log.info("ak_sleep: %r %r", args, kw)
-        (secs,) = extract_args(["secs"], args, kw)
-        if secs < 0:
+    def ak_sleep(self, seconds):
+        log.info("ak_sleep: %r", seconds)
+        if seconds < 0:
             raise ValueError("negative secs")
 
         req = pb.SleepRequest(
             runner_id=self.runner_id,
-            duration_ms=int(secs * 1000),
+            duration_ms=int(seconds * 1000),
         )
 
         call_grpc("sleep", self.worker.Sleep, req)
 
-    def ak_subscribe(self, args, kw):
-        log.info("ak_subscribe: %r %r", args, kw)
-        connection_id, filter = extract_args(["connection_name", "filter"], args, kw)
+    def ak_subscribe(self, connection_id: str, filter: str) -> str:
+        log.info("ak_subscribe: %r %r", connection_id, filter)
         if not connection_id or not filter:
             raise ValueError("missing connection_id or filter")
 
@@ -99,15 +72,10 @@ class SysCalls:
         resp = call_grpc("subscribe", self.worker.Subscribe, req)
         return resp.signal_id
 
-    def ak_next_event(self, args, kw):
-        log.info("ak_next_event: %r %r", args, kw)
-        (
-            ids,
-            timeout,
-        ) = extract_args(["subscription_id", "timeout?"], args, kw)
-        if not ids:
-            raise ValueError("empty subscription_id")
+    def ak_next_event(self, subscription_id, *, timeout=None):
+        log.info("ak_next_event: %r %r", subscription_id, timeout)
 
+        ids = subscription_id
         if isinstance(ids, str):
             ids = [ids]
 
@@ -131,12 +99,9 @@ class SysCalls:
 
         return AttrDict(data) if isinstance(data, dict) else data
 
-    def ak_unsubscribe(self, args, kw):
-        (id,) = extract_args(["subscription_id"], args, kw)
-        if not id:
-            raise ValueError("empty subscription_id")
-
-        req = pb.UnsubscribeRequest(runner_id=self.runner_id, signal_id=id)
+    def ak_unsubscribe(self, subscription_id):
+        log.info("ak_unsubscribe: %r", subscription_id)
+        req = pb.UnsubscribeRequest(runner_id=self.runner_id, signal_id=subscription_id)
         call_grpc("unsubscribe", self.worker.Unsubscribe, req)
 
     def ak_encode_jwt(self, payload: dict[str, int], connection: str, algorithm: str):
@@ -165,10 +130,6 @@ class SysCalls:
         return resp.token, resp.expires.ToDatetime()
 
 
-# Can't use None since it's a valid value
-_missing = object()
-
-
 def call_grpc(name, fn, args):
     try:
         resp = fn(args)
@@ -179,34 +140,3 @@ def call_grpc(name, fn, args):
         if e.code() == grpc.StatusCode.UNAVAILABLE or grpc.StatusCode.CANCELLED:
             os._exit(1)
         raise e
-
-
-def extract_args(names, args, kw):
-    """Extract arguments from args and kw, will raise ValueError if missing.
-
-    >>> extract_args(["id", "timeout"], ["sig1", 1.2], {})
-    ['sig1', 1.2]
-    >>> extract_args(["id", "timeout"], ["sig1"], {"timeout": 1.2})
-    ['sig1', 1.2]
-    >>> extract_args(["id", "timeout"], [], {"id": "sig1", "timeout": 1.2})
-    ['sig1', 1.2]
-    >>> extract_args(["id", "timeout?"], [], {"id": "sig1", "timeout": 1.2})
-    ['sig1', 1.2]
-    >>> extract_args(["id", "timeout?"], [], {"id": "sig1"})
-    ['sig1', None]
-    >>> extract_args(["id", "timeout?"], ["sig1"], {})
-    ['sig1', None]
-    """
-    values = []
-    for i, name in enumerate(names):
-        optional = name.endswith("?")
-        if optional:
-            name = name[:-1]
-        v = args[i] if i < len(args) else kw.get(name, _missing)
-        if v is _missing:
-            if not optional:
-                raise ValueError(f"missing {name!r}")
-            v = None
-        values.append(v)
-
-    return values

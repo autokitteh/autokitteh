@@ -9,7 +9,7 @@ from .attr_dict import AttrDict
 def subscribe(connection_name: str, filter: str) -> str:
     """Subscribe to events on connection. Optional filter is a CEL expression."""
     # Dummy implementation for local development.
-    return uuid4().hex
+    return f"sig_{uuid4().hex}"
 
 
 def unsubscribe(subscription_id: str) -> None:
@@ -30,7 +30,7 @@ def next_event(
     return AttrDict()
 
 
-def start(loc: str, data: dict[str, any], memo: dict[str, str] = None) -> str:
+def start(loc: str, data: dict = None, memo: dict = None) -> str:
     """Start a new session."""
     # Dummy implementation for local development.
-    pass
+    return f"ses_{uuid4().hex}"
