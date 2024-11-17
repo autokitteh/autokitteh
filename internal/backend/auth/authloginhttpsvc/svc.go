@@ -229,6 +229,11 @@ func (a *svc) newSuccessLoginHandler(ld *loginData) http.Handler {
 			return
 		}
 
+		if noredir, _ := strconv.ParseBool(r.URL.Query().Get("noredir")); noredir {
+			fmt.Fprint(w, "login successful")
+			return
+		}
+
 		http.Redirect(w, r, getRedirect(r), http.StatusFound)
 	}
 
