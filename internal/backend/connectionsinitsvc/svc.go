@@ -155,8 +155,9 @@ func (s Svc) refreshConnection(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s Svc) success(w http.ResponseWriter, _ *http.Request) {
-	w.Header().Set("Content-Type", "Content-Type: text/html")
-	fmt.Fprint(w, `<html>
+	w.Header().Set("Content-Type", "text/html")
+	fmt.Fprint(w, `<!DOCTYPE html>
+<html>
 	<body>
 		success - you can now close this tab.
 		<script>window.open("", "_self").close();</script>
