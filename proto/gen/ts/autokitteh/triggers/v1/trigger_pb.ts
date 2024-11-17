@@ -27,9 +27,9 @@ export class Trigger extends Message<Trigger> {
   sourceType = Trigger_SourceType.UNSPECIFIED;
 
   /**
-   * @generated from field: string env_id = 4;
+   * @generated from field: string project_id = 4;
    */
-  envId = "";
+  projectId = "";
 
   /**
    * @generated from field: string event_type = 5;
@@ -80,7 +80,7 @@ export class Trigger extends Message<Trigger> {
     { no: 1, name: "trigger_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "source_type", kind: "enum", T: proto3.getEnumType(Trigger_SourceType) },
-    { no: 4, name: "env_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "event_type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "code_location", kind: "message", T: CodeLocation },
     { no: 7, name: "filter", kind: "scalar", T: 9 /* ScalarType.STRING */ },

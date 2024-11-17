@@ -66,18 +66,6 @@ type DB interface {
 	DeleteProject(context.Context, sdktypes.ProjectID) error
 
 	// -----------------------------------------------------------------------
-	// Returns sdkerrors.ErrAlreadyExists if either id or name is duplicate.
-	CreateEnv(context.Context, sdktypes.Env) error
-
-	// Returns sdkerrors.ErrNotFound if id is not found.
-	GetEnvByID(context.Context, sdktypes.EnvID) (sdktypes.Env, error)
-
-	// Returns sdkerrors.ErrNotFound if name is not found.
-	GetEnvByName(context.Context, sdktypes.ProjectID, sdktypes.Symbol) (sdktypes.Env, error)
-
-	ListProjectEnvs(context.Context, sdktypes.ProjectID) ([]sdktypes.Env, error)
-
-	// -----------------------------------------------------------------------
 	SetVars(context.Context, []sdktypes.Var) error
 	GetVars(context.Context, sdktypes.VarScopeID, []sdktypes.Symbol) ([]sdktypes.Var, error)
 	CountVars(context.Context, sdktypes.VarScopeID) (int, error)
@@ -150,12 +138,17 @@ type DB interface {
 	ListWaitingSignals(ctx context.Context, dstID sdktypes.EventDestinationID) ([]*types.Signal, error)
 
 	// -----------------------------------------------------------------------
+	CreateUser(ctx context.Context, user sdktypes.User) (sdktypes.UserID, error)
+	GetUserByEmail(ctx context.Context, email string) (sdktypes.User, error)
+	GetUserByID(ctx context.Context, id sdktypes.UserID) (sdktypes.User, error)
+
+	// -----------------------------------------------------------------------
 	SetSecret(ctx context.Context, key string, value string) error
 	GetSecret(ctx context.Context, key string) (string, error)
 	DeleteSecret(ctx context.Context, key string) error
 
 	// -----------------------------------------------------------------------
-	GetOwnership(ctx context.Context, entityID sdktypes.UUID) (string, error)
+	GetOwnership(ctx context.Context, entityID sdktypes.UUID) (sdktypes.User, error)
 
 	SetValue(ctx context.Context, pid sdktypes.ProjectID, key string, v sdktypes.Value) error
 	GetValue(ctx context.Context, pid sdktypes.ProjectID, key string) (sdktypes.Value, error)

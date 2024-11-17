@@ -16,7 +16,7 @@ from buf.validate import validate_pb2 as buf_dot_validate_dot_validate__pb2
 from google.protobuf import timestamp_pb2 as google_dot_protobuf_dot_timestamp__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n*autokitteh/deployments/v1/deployment.proto\x12\x19\x61utokitteh.deployments.v1\x1a$autokitteh/sessions/v1/session.proto\x1a\x1b\x62uf/validate/validate.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\xfb\x03\n\nDeployment\x12#\n\rdeployment_id\x18\x01 \x01(\tR\x0c\x64\x65ploymentId\x12\x1f\n\x06\x65nv_id\x18\x02 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x05\x65nvId\x12#\n\x08\x62uild_id\x18\x03 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x07\x62uildId\x12K\n\x05state\x18\x04 \x01(\x0e\x32*.autokitteh.deployments.v1.DeploymentStateB\t\xfa\xf7\x18\x05\x82\x01\x02\x10\x01R\x05state\x12\x39\n\ncreated_at\x18\n \x01(\x0b\x32\x1a.google.protobuf.TimestampR\tcreatedAt\x12\x39\n\nupdated_at\x18\x0b \x01(\x0b\x32\x1a.google.protobuf.TimestampR\tupdatedAt\x12Y\n\x0esessions_stats\x18\x0c \x03(\x0b\x32\x32.autokitteh.deployments.v1.Deployment.SessionStatsR\rsessionsStats\x1a\x64\n\x0cSessionStats\x12>\n\x05state\x18\x01 \x01(\x0e\x32(.autokitteh.sessions.v1.SessionStateTypeR\x05state\x12\x14\n\x05\x63ount\x18\x02 \x01(\rR\x05\x63ount*\xac\x01\n\x0f\x44\x65ploymentState\x12 \n\x1c\x44\x45PLOYMENT_STATE_UNSPECIFIED\x10\x00\x12\x1b\n\x17\x44\x45PLOYMENT_STATE_ACTIVE\x10\x01\x12\x1c\n\x18\x44\x45PLOYMENT_STATE_TESTING\x10\x02\x12\x1d\n\x19\x44\x45PLOYMENT_STATE_DRAINING\x10\x03\x12\x1d\n\x19\x44\x45PLOYMENT_STATE_INACTIVE\x10\x04\x42\x89\x02\n\x1d\x63om.autokitteh.deployments.v1B\x0f\x44\x65ploymentProtoP\x01ZQgo.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/deployments/v1;deploymentsv1\xa2\x02\x03\x41\x44X\xaa\x02\x19\x41utokitteh.Deployments.V1\xca\x02\x19\x41utokitteh\\Deployments\\V1\xe2\x02%Autokitteh\\Deployments\\V1\\GPBMetadata\xea\x02\x1b\x41utokitteh::Deployments::V1b\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n*autokitteh/deployments/v1/deployment.proto\x12\x19\x61utokitteh.deployments.v1\x1a$autokitteh/sessions/v1/session.proto\x1a\x1b\x62uf/validate/validate.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\x83\x04\n\nDeployment\x12\'\n\nproject_id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\tprojectId\x12#\n\rdeployment_id\x18\x02 \x01(\tR\x0c\x64\x65ploymentId\x12#\n\x08\x62uild_id\x18\x03 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x07\x62uildId\x12K\n\x05state\x18\x04 \x01(\x0e\x32*.autokitteh.deployments.v1.DeploymentStateB\t\xfa\xf7\x18\x05\x82\x01\x02\x10\x01R\x05state\x12\x39\n\ncreated_at\x18\n \x01(\x0b\x32\x1a.google.protobuf.TimestampR\tcreatedAt\x12\x39\n\nupdated_at\x18\x0b \x01(\x0b\x32\x1a.google.protobuf.TimestampR\tupdatedAt\x12Y\n\x0esessions_stats\x18\x0c \x03(\x0b\x32\x32.autokitteh.deployments.v1.Deployment.SessionStatsR\rsessionsStats\x1a\x64\n\x0cSessionStats\x12>\n\x05state\x18\x01 \x01(\x0e\x32(.autokitteh.sessions.v1.SessionStateTypeR\x05state\x12\x14\n\x05\x63ount\x18\x02 \x01(\rR\x05\x63ount*\xac\x01\n\x0f\x44\x65ploymentState\x12 \n\x1c\x44\x45PLOYMENT_STATE_UNSPECIFIED\x10\x00\x12\x1b\n\x17\x44\x45PLOYMENT_STATE_ACTIVE\x10\x01\x12\x1c\n\x18\x44\x45PLOYMENT_STATE_TESTING\x10\x02\x12\x1d\n\x19\x44\x45PLOYMENT_STATE_DRAINING\x10\x03\x12\x1d\n\x19\x44\x45PLOYMENT_STATE_INACTIVE\x10\x04\x42\x89\x02\n\x1d\x63om.autokitteh.deployments.v1B\x0f\x44\x65ploymentProtoP\x01ZQgo.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/deployments/v1;deploymentsv1\xa2\x02\x03\x41\x44X\xaa\x02\x19\x41utokitteh.Deployments.V1\xca\x02\x19\x41utokitteh\\Deployments\\V1\xe2\x02%Autokitteh\\Deployments\\V1\\GPBMetadata\xea\x02\x1b\x41utokitteh::Deployments::V1b\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -24,16 +24,16 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'autokitteh.deployments.v1.d
 if _descriptor._USE_C_DESCRIPTORS == False:
   DESCRIPTOR._options = None
   DESCRIPTOR._serialized_options = b'\n\035com.autokitteh.deployments.v1B\017DeploymentProtoP\001ZQgo.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/deployments/v1;deploymentsv1\242\002\003ADX\252\002\031Autokitteh.Deployments.V1\312\002\031Autokitteh\\Deployments\\V1\342\002%Autokitteh\\Deployments\\V1\\GPBMetadata\352\002\033Autokitteh::Deployments::V1'
-  _DEPLOYMENT.fields_by_name['env_id']._options = None
-  _DEPLOYMENT.fields_by_name['env_id']._serialized_options = b'\372\367\030\004r\002\020\001'
+  _DEPLOYMENT.fields_by_name['project_id']._options = None
+  _DEPLOYMENT.fields_by_name['project_id']._serialized_options = b'\372\367\030\004r\002\020\001'
   _DEPLOYMENT.fields_by_name['build_id']._options = None
   _DEPLOYMENT.fields_by_name['build_id']._serialized_options = b'\372\367\030\004r\002\020\001'
   _DEPLOYMENT.fields_by_name['state']._options = None
   _DEPLOYMENT.fields_by_name['state']._serialized_options = b'\372\367\030\005\202\001\002\020\001'
-  _globals['_DEPLOYMENTSTATE']._serialized_start=684
-  _globals['_DEPLOYMENTSTATE']._serialized_end=856
+  _globals['_DEPLOYMENTSTATE']._serialized_start=692
+  _globals['_DEPLOYMENTSTATE']._serialized_end=864
   _globals['_DEPLOYMENT']._serialized_start=174
-  _globals['_DEPLOYMENT']._serialized_end=681
-  _globals['_DEPLOYMENT_SESSIONSTATS']._serialized_start=581
-  _globals['_DEPLOYMENT_SESSIONSTATS']._serialized_end=681
+  _globals['_DEPLOYMENT']._serialized_end=689
+  _globals['_DEPLOYMENT_SESSIONSTATS']._serialized_start=589
+  _globals['_DEPLOYMENT_SESSIONSTATS']._serialized_end=689
 # @@protoc_insertion_point(module_scope)

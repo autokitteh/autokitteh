@@ -45,10 +45,11 @@ func WithRequestOrginator(ctx context.Context, component RequestOrginatorType) c
 	return context.WithValue(ctx, componentCtxKey, component)
 }
 
-func WithOwnershipOf(ctx context.Context, entityOwnership func(context.Context, sdktypes.UUID) (string, error), entityID sdktypes.UUID) context.Context {
-	uid, err := entityOwnership(ctx, entityID)
+func WithOwnershipOf(ctx context.Context, entityOwnership func(context.Context, sdktypes.UUID) (sdktypes.User, error), entityID sdktypes.UUID) (context.Context, error) {
+	u, err := entityOwnership(ctx, entityID)
 	if err != nil {
-		return ctx
+		return ctx, err
 	}
-	return authcontext.SetAuthnUserID(ctx, uid)
+
+	return authcontext.SetAuthnUser(ctx, u), nil
 }

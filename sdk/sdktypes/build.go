@@ -21,7 +21,7 @@ var InvalidBuild Build
 func (BuildTraits) Validate(m *BuildPB) error {
 	return errors.Join(
 		idField[BuildID]("build_id", m.BuildId),
-		idField[ProjectID]("build_id", m.ProjectId),
+		idField[ProjectID]("project_id", m.ProjectId),
 	)
 }
 func (BuildTraits) StrictValidate(m *BuildPB) error { return nil }

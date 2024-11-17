@@ -18,9 +18,9 @@ var (
 )
 
 var createCmd = common.StandardCommand(&cobra.Command{
-	Use: `create -n name --call file:func [-p project] [-e env] -c connection [-E event] [-f filter]
-             create -n name --call file:func [-p project] [-e env] -s "schedule"
-             create -n name --call file:func [-p project] [-e env] --webhook
+	Use: `create -n name --call file:func [-p project] -c connection [-E event] [-f filter]
+             create -n name --call file:func [-p project] -s "schedule"
+             create -n name --call file:func [-p project] --webhook
 `,
 
 	Short: "Create event trigger",
@@ -37,29 +37,22 @@ var createCmd = common.StandardCommand(&cobra.Command{
 			return fmt.Errorf("invalid entry-point to call %q: %w", call, err)
 		}
 
-		// Project and/or environment are required.
-		if project != "" {
-			p, _, err := r.ProjectNameOrID(ctx, project)
-			if err = common.AddNotFoundErrIfCond(err, p.IsValid()); err != nil {
-				return common.ToExitCodeError(err, "project")
-			}
+		// Project is required.
+		if project == "" {
+			return errors.New("missing project")
 		}
 
-		var eid sdktypes.EnvID
-		if env != "" {
-			e, _, err := r.EnvNameOrID(ctx, env, project)
-			if err = common.AddNotFoundErrIfCond(err, e.IsValid()); err != nil {
-				return common.ToExitCodeError(err, "environment")
-			}
-			eid = e.ID()
+		_, pid, err := r.ProjectNameOrID(ctx, project)
+		if err = common.AddNotFoundErrIfCond(err, pid.IsValid()); err != nil {
+			return common.ToExitCodeError(err, "project")
 		}
 
 		t, err := sdktypes.TriggerFromProto(&sdktypes.TriggerPB{
 			Name:         name,
-			EnvId:        eid.String(),
 			EventType:    event,
 			Filter:       filter,
 			CodeLocation: cl.ToProto(),
+			ProjectId:    pid.String(),
 		})
 		if err != nil {
 			return fmt.Errorf("invalid trigger proto: %w", err)
@@ -100,8 +93,6 @@ func init() {
 	kittehs.Must0(createCmd.MarkFlagRequired("call"))
 
 	createCmd.Flags().VarP(common.NewNonEmptyString("", &project), "project", "p", "project name or ID")
-	createCmd.Flags().VarP(common.NewNonEmptyString("", &env), "env", "e", "environment name or ID")
-	createCmd.MarkFlagsOneRequired("project", "env")
 
 	createCmd.Flags().VarP(common.NewNonEmptyString("", &connection), "connection", "c", "connection name or ID")
 	createCmd.Flags().BoolVarP(&webhook, "webhook", "w", false, "trigger uses a webhook")

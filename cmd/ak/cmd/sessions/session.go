@@ -18,7 +18,7 @@ const (
 
 var (
 	// Flags shared by the "list" and "start" subcommands.
-	deploymentID, env, eventID string
+	deploymentID, project, eventID string
 
 	// Flags shared by the "start", "restart", and "watch" subcommands.
 	pollInterval time.Duration

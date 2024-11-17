@@ -66,12 +66,12 @@ func (s *server) List(ctx context.Context, req *connect.Request[deploymentsv1.Li
 		filter.BuildID = bid
 	}
 
-	eid, err := sdktypes.ParseEnvID(msg.EnvId)
+	pid, err := sdktypes.ParseProjectID(msg.ProjectId)
 	if err != nil {
 		return nil, sdkerrors.AsConnectError(err)
 	}
-	if eid.IsValid() {
-		filter.EnvID = eid
+	if pid.IsValid() {
+		filter.ProjectID = pid
 	}
 
 	state, err := sdktypes.DeploymentStateFromProto(msg.State)

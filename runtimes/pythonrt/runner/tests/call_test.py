@@ -1,20 +1,21 @@
 import re
+from pathlib import Path
 from time import sleep
 from types import ModuleType
 from unittest.mock import MagicMock
 
-import pytest
-from autokitteh import activity
-from conftest import workflows
-
 import call
 import loader
+import pytest
+from autokitteh import activity
+from conftest import workflows, clear_module_cache
 
 
 def test_sleep():
     runner = MagicMock()
-    ak_call = call.AKCall(runner)
+    ak_call = call.AKCall(runner, Path("/tmp"))
     mod_name = "program"
+    clear_module_cache(mod_name)
 
     mod = loader.load_code(workflows.sleeper, ak_call, mod_name)
     ak_call.set_module(mod)
@@ -25,7 +26,7 @@ def test_sleep():
 
 def test_sleep_activity():
     comm = MagicMock()
-    ak_call = call.AKCall(comm)
+    ak_call = call.AKCall(comm, Path("/tmp"))
     ak_call.in_activity = True
     ak_call(sleep, 0.1)
 
@@ -34,7 +35,7 @@ def test_sleep_activity():
 
 def test_call_non_func():
     comm = MagicMock()
-    ak_call = call.AKCall(comm)
+    ak_call = call.AKCall(comm, Path("/tmp"))
     with pytest.raises(ValueError):
         ak_call("hello")
 
@@ -43,7 +44,7 @@ def test_should_run_as_activity():
     mod_name = "ak_test_module_name"
     mod = ModuleType(mod_name)
 
-    ak_call = call.AKCall(None)
+    ak_call = call.AKCall(None, Path("/tmp"))
 
     def fn():
         pass
@@ -70,3 +71,19 @@ def test_should_run_as_activity():
 
     # Deterministic
     assert not ak_call.should_run_as_activity(re.compile)
+
+
+def test_is_module_func(monkeypatch: pytest.MonkeyPatch):
+    mod_name = "handler"
+    clear_module_cache(mod_name)
+    code_dir = workflows.multi_file
+    monkeypatch.syspath_prepend(str(code_dir))
+
+    runner = MagicMock()
+    ak_call = call.AKCall(runner, code_dir)
+    mod = loader.load_code(code_dir, ak_call, mod_name)
+    ak_call.set_module(mod)
+
+    assert ak_call.is_module_func(mod.on_event)  # Same handler file
+    assert ak_call.is_module_func(mod.hlog.info)  # Same directory
+    assert not ak_call.is_module_func(mod.json.dump)

@@ -8,7 +8,6 @@ import (
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
-	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -18,7 +17,7 @@ func (gdb *gormdb) withUserTriggers(ctx context.Context) *gorm.DB {
 }
 
 func (gdb *gormdb) createTrigger(ctx context.Context, trigger *scheme.Trigger) error {
-	idsToVerify := []*sdktypes.UUID{&trigger.ProjectID, &trigger.EnvID}
+	idsToVerify := []*sdktypes.UUID{&trigger.ProjectID}
 	createFunc := func(tx *gorm.DB, uid string) error { return tx.Create(trigger).Error }
 	return gormErrNotFoundToForeignKey(
 		gdb.createEntityWithOwnership(ctx, createFunc, trigger, idsToVerify...))
@@ -36,13 +35,13 @@ func (gdb *gormdb) deleteTrigger(ctx context.Context, triggerID sdktypes.UUID) e
 	})
 }
 
-func (gdb *gormdb) updateTrigger(ctx context.Context, triggerID sdktypes.UUID, data map[string]any) error {
+func (gdb *gormdb) updateTrigger(ctx context.Context, trigger *scheme.Trigger) error {
 	return gdb.transaction(ctx, func(tx *tx) error {
-		if err := tx.isCtxUserEntity(tx.ctx, triggerID); err != nil {
+		if err := tx.isCtxUserEntity(tx.ctx, trigger.TriggerID); err != nil {
 			return err
 		}
-		allowedFields := []string{"ConnectionID", "EventType", "Filter", "CodeLocation", "Data", "WebhookSlug"}
-		return tx.db.Model(&scheme.Trigger{TriggerID: triggerID}).Select(allowedFields).Updates(data).Error
+
+		return tx.db.Model(&scheme.Trigger{TriggerID: trigger.TriggerID}).Updates(trigger).Error
 	})
 }
 
@@ -53,8 +52,8 @@ func (gdb *gormdb) getTriggerByID(ctx context.Context, triggerID sdktypes.UUID) 
 func (gdb *gormdb) listTriggers(ctx context.Context, filter sdkservices.ListTriggersFilter) ([]scheme.Trigger, error) {
 	q := gdb.withUserTriggers(ctx)
 
-	if filter.EnvID.IsValid() {
-		q = q.Where("env_id = ?", filter.EnvID.UUIDValue())
+	if filter.ProjectID.IsValid() {
+		q = q.Where("project_id = ?", filter.ProjectID.UUIDValue())
 	}
 
 	if filter.ConnectionID.IsValid() {
@@ -76,24 +75,18 @@ func (gdb *gormdb) listTriggers(ctx context.Context, filter sdkservices.ListTrig
 	return ts, nil
 }
 
-func triggerUniqueName(env string, name sdktypes.Symbol) string {
-	return fmt.Sprintf("%s/%s", env, name.String())
+func triggerUniqueName(p string, name sdktypes.Symbol) string {
+	return fmt.Sprintf("%s/%s", p, name.String())
 }
 
 func (db *gormdb) triggerToRecord(ctx context.Context, trigger sdktypes.Trigger) (*scheme.Trigger, error) {
-	envID := trigger.EnvID()
-	env, err := db.GetEnvByID(ctx, envID)
-	if err != nil {
-		return nil, fmt.Errorf("get trigger env: %w", err)
-	}
-	projID := env.ProjectID()
+	pid := trigger.ProjectID()
 
-	uniqueName := triggerUniqueName(envID.String(), trigger.Name())
+	uniqueName := triggerUniqueName(pid.String(), trigger.Name())
 
 	return &scheme.Trigger{
 		TriggerID:    trigger.ID().UUIDValue(),
-		EnvID:        envID.UUIDValue(),
-		ProjectID:    projID.UUIDValue(),
+		ProjectID:    pid.UUIDValue(),
 		ConnectionID: trigger.ConnectionID().UUIDValuePtr(),
 		SourceType:   trigger.SourceType().String(),
 		EventType:    trigger.EventType(),
@@ -107,7 +100,7 @@ func (db *gormdb) triggerToRecord(ctx context.Context, trigger sdktypes.Trigger)
 }
 
 func (db *gormdb) CreateTrigger(ctx context.Context, trigger sdktypes.Trigger) error {
-	if err := trigger.Strict(); err != nil { // name, connection, env but not project
+	if err := trigger.Strict(); err != nil { // name, connection, and project
 		return err
 	}
 
@@ -125,29 +118,23 @@ func (db *gormdb) DeleteTrigger(ctx context.Context, id sdktypes.TriggerID) erro
 }
 
 func (db *gormdb) UpdateTrigger(ctx context.Context, trigger sdktypes.Trigger) error {
-	curr, err := db.GetTriggerByID(ctx, trigger.ID())
-	if err != nil {
-		return err
+	r, err := db.getTriggerByID(ctx, trigger.ID().UUIDValue())
+	if r == nil || err != nil {
+		return translateError(err)
 	}
 
-	if envID := trigger.EnvID(); envID.IsValid() && curr.EnvID() != envID {
-		return sdkerrors.ErrConflict
-	}
+	// We're not checking anything else here and modifiying only the following fields.
+	// This means that there'll be no error if an unmodifyable field is requested
+	// to be changed by the caller, and it will not be modified in the DB.
 
-	// Note: building trigger record involves non-transactionl fetching connectionID and projectID from the DB
-	t, err := db.triggerToRecord(ctx, trigger)
-	if err != nil {
-		return err
-	}
-	// update and set null fields as well, e.g. nullify connection, data etc..
-	updateData := map[string]any{
-		"ConnectionID": t.ConnectionID,
-		"SourceType":   t.SourceType,
-		"EventType":    t.EventType,
-		"Filter":       t.Filter,
-		"CodeLocation": t.CodeLocation,
-	}
-	return translateError(db.updateTrigger(ctx, trigger.ID().UUIDValue(), updateData))
+	r.CodeLocation = trigger.CodeLocation().CanonicalString()
+	r.EventType = trigger.EventType()
+	r.Filter = trigger.Filter()
+	r.Schedule = trigger.Schedule()
+	r.Name = trigger.Name().String()
+	r.UniqueName = triggerUniqueName(r.ProjectID.String(), trigger.Name())
+
+	return translateError(db.updateTrigger(ctx, r))
 }
 
 func (db *gormdb) GetTriggerByID(ctx context.Context, triggerID sdktypes.TriggerID) (sdktypes.Trigger, error) {

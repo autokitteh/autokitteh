@@ -181,9 +181,9 @@ export class ListRequest extends Message<ListRequest> {
   deploymentId = "";
 
   /**
-   * @generated from field: string env_id = 2;
+   * @generated from field: string project_id = 2;
    */
-  envId = "";
+  projectId = "";
 
   /**
    * @generated from field: string event_id = 3;
@@ -232,7 +232,7 @@ export class ListRequest extends Message<ListRequest> {
   static readonly typeName = "autokitteh.sessions.v1.ListRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "deployment_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "env_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "event_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "build_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "state_type", kind: "enum", T: proto3.getEnumType(SessionStateType) },

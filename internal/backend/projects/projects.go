@@ -13,7 +13,6 @@ import (
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/internal/manifest"
 	"go.autokitteh.dev/autokitteh/sdk/sdkruntimes"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -46,15 +45,7 @@ func (ps *Projects) Create(ctx context.Context, project sdktypes.Project) (sdkty
 		return sdktypes.InvalidProjectID, err
 	}
 
-	env := kittehs.Must1(sdktypes.EnvFromProto(&sdktypes.EnvPB{ProjectId: project.ID().String(), Name: "default"}))
-	env = env.WithNewID()
-
-	if err := ps.DB.Transaction(ctx, func(tx db.DB) error {
-		if err := tx.CreateProject(ctx, project); err != nil {
-			return err
-		}
-		return tx.CreateEnv(ctx, env)
-	}); err != nil {
+	if err := ps.DB.CreateProject(ctx, project); err != nil {
 		return sdktypes.InvalidProjectID, err
 	}
 
@@ -184,13 +175,9 @@ func (ps *Projects) exportManifest(ctx context.Context, projectID sdktypes.Proje
 		return nil, err
 	}
 
-	p := manifest.Project{
-		Name: prj.Name().String(),
-	}
+	p := manifest.Project{Name: prj.Name().String()}
 
-	cf := sdkservices.ListConnectionsFilter{
-		ProjectID: prj.ID(),
-	}
+	cf := sdkservices.ListConnectionsFilter{ProjectID: projectID}
 	conns, err := ps.DB.ListConnections(ctx, cf, false)
 	if err != nil {
 		return nil, err
@@ -209,7 +196,7 @@ func (ps *Projects) exportManifest(ctx context.Context, projectID sdktypes.Proje
 	}
 
 	tf := sdkservices.ListTriggersFilter{
-		ProjectID: prj.ID(),
+		ProjectID: projectID,
 	}
 	triggers, err := ps.DB.ListTriggers(ctx, tf)
 	if err != nil {
@@ -246,31 +233,20 @@ func (ps *Projects) exportManifest(ctx context.Context, projectID sdktypes.Proje
 		p.Triggers = append(p.Triggers, &mt)
 	}
 
-	envs, err := ps.DB.ListProjectEnvs(ctx, prj.ID())
+	vars, err := ps.DB.GetVars(ctx, sdktypes.NewVarScopeID(projectID), nil)
 	if err != nil {
 		return nil, err
 	}
 
-	for _, env := range envs {
-		sid, err := sdktypes.Strict(sdktypes.ParseVarScopeID(env.ID().String()))
-		if err != nil {
-			return nil, err
+	for _, v := range vars {
+		if v.IsSecret() {
+			continue
 		}
-		vars, err := ps.DB.GetVars(ctx, sid, nil)
-		if err != nil {
-			return nil, err
+		v := manifest.Var{
+			Name:  v.Name().String(),
+			Value: v.Value(),
 		}
-
-		for _, v := range vars {
-			if v.IsSecret() {
-				continue
-			}
-			v := manifest.Var{
-				Name:  v.Name().String(),
-				Value: v.Value(),
-			}
-			p.Vars = append(p.Vars, &v)
-		}
+		p.Vars = append(p.Vars, &v)
 	}
 
 	m := manifest.Manifest{

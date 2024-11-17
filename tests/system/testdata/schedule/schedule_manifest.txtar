@@ -6,19 +6,19 @@ ak trigger list -j
 return code == 0
 output equals_json file triggers.json
 
-wait 5s for session ses_00000000000000000000000008
-ak session log ses_00000000000000000000000008 --no-timestamps --prints-only
+wait 5s for session ses_00000000000000000000000007
+ak session log ses_00000000000000000000000007 --no-timestamps --prints-only
 return code == 0
 output equals 'cron'
 
-wait 5s for session ses_0000000000000000000000000c
-ak session log ses_0000000000000000000000000c --no-timestamps --prints-only
+wait 5s for session ses_0000000000000000000000000b
+ak session log ses_0000000000000000000000000b --no-timestamps --prints-only
 return code == 0
 output equals 'cron'
 
 -- TODO: ENG-1504 --
 # remove trigger and effectively cancel cron
-ak trigger delete trg_00000000000000000000000003
+ak trigger delete trg_00000000000000000000000002
 #ak deploy --manifest no_schedule.yaml --file cron.star
 return code == 0
 
@@ -27,10 +27,10 @@ return code == 0
 output equals ''
 
 # only 2 sessions since trigger and schedule were cancelled
-wait 3s unless session ses_0000000000000000000000000d
+wait 3s unless session ses_0000000000000000000000000c
 ak session list
 return code == 0
-output regex '(?m)^session_id:"ses_0+a.*\n^session_id:"ses_0+7.*$'
+output regex '(?m)^session_id:"ses_0+9.*\n^session_id:"ses_0+7.*$'
 
 -- schedule.yaml --
 version: v1
@@ -53,10 +53,10 @@ def on_cron_trigger():
 
 -- triggers.json --
 {
-  "trigger_id": "trg_00000000000000000000000003",
+  "trigger_id": "trg_00000000000000000000000002",
   "name": "cron",
   "source_type": "SOURCE_TYPE_SCHEDULE",
-  "env_id": "env_00000000000000000000000002",
+  "project_id": "prj_00000000000000000000000001",
   "code_location": {
     "path": "cron.star",
     "name": "on_cron_trigger"

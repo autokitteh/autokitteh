@@ -2,18 +2,21 @@ package authloginhttpsvc
 
 import (
 	_ "embed"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
-	"strings"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authloginhttpsvc/web"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authsessions"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authtokens"
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authusers"
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
+	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 
 	"go.uber.org/fx"
@@ -24,26 +27,25 @@ type Deps struct {
 	fx.In
 
 	Muxes    *muxes.Muxes
-	Z        *zap.Logger
+	L        *zap.Logger
 	Cfg      *Config
 	DB       db.DB
 	Sessions authsessions.Store
 	Tokens   authtokens.Tokens
+	Users    authusers.Users
 }
 
-type svc struct {
-	Deps
-
-	loginMatcher func(string) bool
-}
+type svc struct{ Deps }
 
 func Init(deps Deps) error {
-	svc := &svc{
-		Deps:         deps,
-		loginMatcher: compileLoginMatchers(strings.Split(deps.Cfg.AllowedLogins, ",")),
-	}
-
+	svc := &svc{Deps: deps}
 	return svc.registerRoutes(deps.Muxes)
+}
+
+type loginData struct {
+	Email        string
+	DisplayName  string
+	ProviderName string
 }
 
 func (a *svc) registerRoutes(muxes *muxes.Muxes) error {
@@ -162,44 +164,77 @@ func (a *svc) registerRoutes(muxes *muxes.Muxes) error {
 			return
 		}
 
-		bs, err := u.MarshalJSON()
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
 		w.Header().Add("Content-Type", "application/json")
-		if _, err := w.Write(bs); err != nil {
-			a.Z.Error("failed writing response", zap.Error(err))
+
+		if err := json.NewEncoder(w).Encode(u); err != nil {
+			a.L.Error("failed writing response", zap.Error(err))
 		}
 	})
 
 	return nil
 }
 
-func (a *svc) newSuccessLoginHandler(user sdktypes.User) http.Handler {
-	fn := func(w http.ResponseWriter, req *http.Request) {
-		if !user.IsValid() {
-			a.Z.Warn("user not found")
-			http.Error(w, "user not found", http.StatusForbidden)
-			return
-		}
+func (a *svc) newSuccessLoginHandler(ld *loginData) http.Handler {
+	sl := a.L.Sugar().With("login_data", ld)
 
-		if !a.loginMatcher(user.Login()) {
-			a.Z.Warn("user not allowed to login", zap.String("user", user.Login()))
-			http.Error(w, "user not allowed to login", http.StatusForbidden)
-			return
-		}
-
-		sd := authsessions.NewSessionData(user)
-
-		if err := a.Deps.Sessions.Set(w, &sd); err != nil {
-			a.Z.Error("failed storing session", zap.Error(err))
+	fn := func(w http.ResponseWriter, r *http.Request) {
+		u, err := a.Users.GetByEmail(r.Context(), ld.Email)
+		if err != nil && !errors.Is(err, sdkerrors.ErrNotFound) {
+			sl.With("err", err).Errorf("failed getting user by email: %v", err)
 			http.Error(w, "internal server error", http.StatusInternalServerError)
 			return
 		}
 
-		http.Redirect(w, req, getRedirect(req), http.StatusFound)
+		uid := u.ID()
+
+		if u.IsValid() {
+			if u.Disabled() {
+				sl.Infof("disabled user: %v", ld.Email)
+				http.Error(w, "user is disabled", http.StatusForbidden)
+				return
+			}
+		} else {
+			// New user.
+
+			if a.Cfg.RejectNewUsers {
+				sl.Infof("unregistered user: %v", ld.Email)
+				http.Error(w, "unregistered user", http.StatusForbidden)
+				return
+			}
+
+			u := sdktypes.NewUser(ld.Email, ld.DisplayName)
+
+			if a.Cfg.UseLegacyUserIDs {
+				u = u.WithID(newLegacyUserIDFromUserData(ld))
+
+				sl.With("legacy_user_id", u.ID()).Infof("using legacy user id: %v", u.ID())
+			}
+
+			if uid, err = a.Users.Create(r.Context(), u); err != nil {
+				sl.With("err", err).Errorf("failed creating user: %v", err)
+				http.Error(w, "internal server error", http.StatusInternalServerError)
+				return
+			}
+
+			sl = sl.With("user_id", uid)
+
+			sl.With("username", ld.Email).Infof("created user %v for %q", uid, ld.Email)
+		}
+
+		sd := authsessions.NewSessionData(uid)
+
+		if err := a.Deps.Sessions.Set(w, &sd); err != nil {
+			sl.With("err", err).Errorf("failed storing session: %v", err)
+			http.Error(w, "internal server error", http.StatusInternalServerError)
+			return
+		}
+
+		if noredir, _ := strconv.ParseBool(r.URL.Query().Get("noredir")); noredir {
+			fmt.Fprint(w, "login successful")
+			return
+		}
+
+		http.Redirect(w, r, getRedirect(r), http.StatusFound)
 	}
 
 	return http.HandlerFunc(fn)

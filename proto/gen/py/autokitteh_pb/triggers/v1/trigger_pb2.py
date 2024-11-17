@@ -14,7 +14,7 @@ _sym_db = _symbol_database.Default()
 from autokitteh_pb.program.v1 import program_pb2 as autokitteh_dot_program_dot_v1_dot_program__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n$autokitteh/triggers/v1/trigger.proto\x12\x16\x61utokitteh.triggers.v1\x1a#autokitteh/program/v1/program.proto\"\xff\x03\n\x07Trigger\x12\x1d\n\ntrigger_id\x18\x01 \x01(\tR\ttriggerId\x12\x12\n\x04name\x18\x02 \x01(\tR\x04name\x12K\n\x0bsource_type\x18\x03 \x01(\x0e\x32*.autokitteh.triggers.v1.Trigger.SourceTypeR\nsourceType\x12\x15\n\x06\x65nv_id\x18\x04 \x01(\tR\x05\x65nvId\x12\x1d\n\nevent_type\x18\x05 \x01(\tR\teventType\x12H\n\rcode_location\x18\x06 \x01(\x0b\x32#.autokitteh.program.v1.CodeLocationR\x0c\x63odeLocation\x12\x16\n\x06\x66ilter\x18\x07 \x01(\tR\x06\x66ilter\x12#\n\rconnection_id\x18\x32 \x01(\tR\x0c\x63onnectionId\x12\x1a\n\x08schedule\x18\x33 \x01(\tR\x08schedule\x12!\n\x0cwebhook_slug\x18\x64 \x01(\tR\x0bwebhookSlug\"x\n\nSourceType\x12\x1b\n\x17SOURCE_TYPE_UNSPECIFIED\x10\x00\x12\x1a\n\x16SOURCE_TYPE_CONNECTION\x10\x01\x12\x17\n\x13SOURCE_TYPE_WEBHOOK\x10\x02\x12\x18\n\x14SOURCE_TYPE_SCHEDULE\x10\x03\x42\xf1\x01\n\x1a\x63om.autokitteh.triggers.v1B\x0cTriggerProtoP\x01ZKgo.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/triggers/v1;triggersv1\xa2\x02\x03\x41TX\xaa\x02\x16\x41utokitteh.Triggers.V1\xca\x02\x16\x41utokitteh\\Triggers\\V1\xe2\x02\"Autokitteh\\Triggers\\V1\\GPBMetadata\xea\x02\x18\x41utokitteh::Triggers::V1b\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n$autokitteh/triggers/v1/trigger.proto\x12\x16\x61utokitteh.triggers.v1\x1a#autokitteh/program/v1/program.proto\"\x87\x04\n\x07Trigger\x12\x1d\n\ntrigger_id\x18\x01 \x01(\tR\ttriggerId\x12\x12\n\x04name\x18\x02 \x01(\tR\x04name\x12K\n\x0bsource_type\x18\x03 \x01(\x0e\x32*.autokitteh.triggers.v1.Trigger.SourceTypeR\nsourceType\x12\x1d\n\nproject_id\x18\x04 \x01(\tR\tprojectId\x12\x1d\n\nevent_type\x18\x05 \x01(\tR\teventType\x12H\n\rcode_location\x18\x06 \x01(\x0b\x32#.autokitteh.program.v1.CodeLocationR\x0c\x63odeLocation\x12\x16\n\x06\x66ilter\x18\x07 \x01(\tR\x06\x66ilter\x12#\n\rconnection_id\x18\x32 \x01(\tR\x0c\x63onnectionId\x12\x1a\n\x08schedule\x18\x33 \x01(\tR\x08schedule\x12!\n\x0cwebhook_slug\x18\x64 \x01(\tR\x0bwebhookSlug\"x\n\nSourceType\x12\x1b\n\x17SOURCE_TYPE_UNSPECIFIED\x10\x00\x12\x1a\n\x16SOURCE_TYPE_CONNECTION\x10\x01\x12\x17\n\x13SOURCE_TYPE_WEBHOOK\x10\x02\x12\x18\n\x14SOURCE_TYPE_SCHEDULE\x10\x03\x42\xf1\x01\n\x1a\x63om.autokitteh.triggers.v1B\x0cTriggerProtoP\x01ZKgo.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/triggers/v1;triggersv1\xa2\x02\x03\x41TX\xaa\x02\x16\x41utokitteh.Triggers.V1\xca\x02\x16\x41utokitteh\\Triggers\\V1\xe2\x02\"Autokitteh\\Triggers\\V1\\GPBMetadata\xea\x02\x18\x41utokitteh::Triggers::V1b\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -23,7 +23,7 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   DESCRIPTOR._options = None
   DESCRIPTOR._serialized_options = b'\n\032com.autokitteh.triggers.v1B\014TriggerProtoP\001ZKgo.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/triggers/v1;triggersv1\242\002\003ATX\252\002\026Autokitteh.Triggers.V1\312\002\026Autokitteh\\Triggers\\V1\342\002\"Autokitteh\\Triggers\\V1\\GPBMetadata\352\002\030Autokitteh::Triggers::V1'
   _globals['_TRIGGER']._serialized_start=102
-  _globals['_TRIGGER']._serialized_end=613
-  _globals['_TRIGGER_SOURCETYPE']._serialized_start=493
-  _globals['_TRIGGER_SOURCETYPE']._serialized_end=613
+  _globals['_TRIGGER']._serialized_end=621
+  _globals['_TRIGGER_SOURCETYPE']._serialized_start=501
+  _globals['_TRIGGER_SOURCETYPE']._serialized_end=621
 # @@protoc_insertion_point(module_scope)

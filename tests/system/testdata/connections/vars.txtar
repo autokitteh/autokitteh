@@ -13,7 +13,7 @@ ak var get --connection my_project/my_connection --reveal
 output contains 'url="test_url"'
 output contains 'secret="shhhh"'
 
-ak session start -d dep_00000000000000000000000005 --watch --no-timestamps --entrypoint main.star
+ak session start -d dep_00000000000000000000000004 --watch --no-timestamps --entrypoint main.star
 return code == 0
 output contains 'url=test_url'
 output contains 'secret=shhhh'

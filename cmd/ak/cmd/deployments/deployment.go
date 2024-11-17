@@ -8,7 +8,7 @@ import (
 )
 
 // Flags shared by the "create" and "list" subcommands.
-var buildID, env string
+var buildID, project string
 
 var deploymentCmd = common.StandardCommand(&cobra.Command{
 	Use:     "deployment",

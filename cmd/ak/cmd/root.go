@@ -15,7 +15,6 @@ import (
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/configuration"
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/connections"
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/deployments"
-	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/envs"
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/events"
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/experimental"
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/integrations"
@@ -106,7 +105,6 @@ func init() {
 	configuration.AddSubcommands(RootCmd)
 	connections.AddSubcommands(RootCmd)
 	deployments.AddSubcommands(RootCmd)
-	envs.AddSubcommands(RootCmd)
 	events.AddSubcommands(RootCmd)
 	experimental.AddSubcommands(RootCmd)
 	integrations.AddSubcommands(RootCmd)

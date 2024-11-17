@@ -24,6 +24,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authloginhttpsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authsessions"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authsvc"
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authusers"
 	"go.autokitteh.dev/autokitteh/internal/backend/builds"
 	"go.autokitteh.dev/autokitteh/internal/backend/buildsgrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/configset"
@@ -37,8 +38,6 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/deploymentsgrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/dispatcher"
 	"go.autokitteh.dev/autokitteh/internal/backend/dispatchergrpcsvc"
-	"go.autokitteh.dev/autokitteh/internal/backend/envs"
-	"go.autokitteh.dev/autokitteh/internal/backend/envsgrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/events"
 	"go.autokitteh.dev/autokitteh/internal/backend/eventsgrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
@@ -105,6 +104,7 @@ func DBFxOpt() fx.Option {
 			fx.Provide(dbfactory.New),
 			fx.Invoke(func(lc fx.Lifecycle, z *zap.Logger, db db.DB) {
 				HookOnStart(lc, db.Connect)
+				HookOnStart(lc, db.Setup)
 			}),
 		),
 	)
@@ -131,16 +131,19 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		fx.Supply(cfg),
 		fx.Supply(svcConfig),
 		LoggerFxOpt(opts.Silent),
-		fx.Invoke(func(lc fx.Lifecycle, db db.DB) { HookOnStart(lc, db.Setup) }),
+		DBFxOpt(),
 
 		Component("auth", configset.Empty, fx.Provide(authsvc.New)),
 		Component("authjwttokens", authjwttokens.Configs, fx.Provide(authjwttokens.New)),
 		Component("authsessions", authsessions.Configs, fx.Provide(authsessions.New)),
-		Component("authhttpmiddleware", authhttpmiddleware.Configs,
+		Component(
+			"authhttpmiddleware",
+			authhttpmiddleware.Configs,
 			fx.Provide(authhttpmiddleware.New),
-			fx.Provide(authhttpmiddleware.AuthorizationHeaderExtractor)),
+			fx.Provide(authhttpmiddleware.AuthorizationHeaderExtractor),
+		),
+		Component("authusers", configset.Empty, fx.Provide(authusers.New)),
 
-		DBFxOpt(),
 		Component(
 			"temporalclient",
 			temporalclient.Configs,
@@ -183,7 +186,6 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		Component("deployments", configset.Empty, fx.Provide(deployments.New)),
 		Component("projects", configset.Empty, fx.Provide(projects.New)),
 		Component("projectsgrpcsvc", projectsgrpcsvc.Configs, fx.Provide(projectsgrpcsvc.New)),
-		Component("envs", configset.Empty, fx.Provide(envs.New)),
 		Component(
 			"vars",
 			vars.Configs,
@@ -243,7 +245,6 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		fx.Invoke(connectionsgrpcsvc.Init),
 		fx.Invoke(deploymentsgrpcsvc.Init),
 		fx.Invoke(dispatchergrpcsvc.Init),
-		fx.Invoke(envsgrpcsvc.Init),
 		fx.Invoke(eventsgrpcsvc.Init),
 		fx.Invoke(integrationsgrpcsvc.Init),
 		fx.Invoke(oauth.Init),
@@ -271,8 +272,8 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 						// there is (still) no parsed user in the httpRequest context. So in order to log the user in the
 						// same place where httpRequest is logged we need to extract it from the header
 						func(r *http.Request) []zap.Field {
-							if user := authHdrExtractor(r); user.IsValid() {
-								return []zap.Field{zap.String("user", user.Title())}
+							if uid := authHdrExtractor(r); uid.IsValid() {
+								return []zap.Field{zap.String("user_id", uid.String())}
 							}
 
 							return nil

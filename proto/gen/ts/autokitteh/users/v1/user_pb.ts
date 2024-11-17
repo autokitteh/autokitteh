@@ -11,14 +11,24 @@ import { Message, proto3 } from "@bufbuild/protobuf";
  */
 export class User extends Message<User> {
   /**
-   * @generated from field: string provider = 1;
+   * @generated from field: string user_id = 1;
    */
-  provider = "";
+  userId = "";
 
   /**
-   * @generated from field: map<string, string> data = 2;
+   * @generated from field: string email = 2;
    */
-  data: { [key: string]: string } = {};
+  email = "";
+
+  /**
+   * @generated from field: string display_name = 3;
+   */
+  displayName = "";
+
+  /**
+   * @generated from field: bool disabled = 4;
+   */
+  disabled = false;
 
   constructor(data?: PartialMessage<User>) {
     super();
@@ -28,8 +38,10 @@ export class User extends Message<User> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "autokitteh.users.v1.User";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "provider", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "data", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 1, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "disabled", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): User {

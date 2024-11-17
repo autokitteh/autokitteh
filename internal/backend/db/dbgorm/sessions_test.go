@@ -89,14 +89,12 @@ func TestCreateSessionForeignKeys(t *testing.T) {
 	// test with existing assets
 	p := f.newProject()
 	b := f.newBuild()
-	env := f.newEnv(p)
 	d := f.newDeployment(b)
 	evt := f.newEvent()
-	s := f.newSession(sdktypes.SessionStateTypeCompleted, d, b, env, evt)
+	s := f.newSession(sdktypes.SessionStateTypeCompleted, d, b, p, evt)
 
 	f.createProjectsAndAssert(t, p)
 	f.saveBuildsAndAssert(t, b)
-	f.createEnvsAndAssert(t, env)
 	f.createDeploymentsAndAssert(t, d)
 	f.createEventsAndAssert(t, evt)
 	f.createSessionsAndAssert(t, s)
@@ -109,10 +107,6 @@ func TestCreateSessionForeignKeys(t *testing.T) {
 	s2.BuildID = &p.ProjectID // no such buildID, since it's a projectID
 	assert.ErrorIs(t, f.gormdb.createSession(f.ctx, &s2), gorm.ErrForeignKeyViolated)
 	s2.BuildID = nil
-
-	s2.EnvID = &p.ProjectID // no such envID, since it's a projectID
-	assert.ErrorIs(t, f.gormdb.createSession(f.ctx, &s2), gorm.ErrForeignKeyViolated)
-	s2.EnvID = nil
 
 	s2.DeploymentID = &p.ProjectID // no such deploymentID, since it's a projectID
 	assert.ErrorIs(t, f.gormdb.createSession(f.ctx, &s2), gorm.ErrForeignKeyViolated)

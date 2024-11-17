@@ -215,7 +215,7 @@ func (s *server) List(ctx context.Context, req *connect.Request[sessionsv1.ListR
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	if filter.EnvID, err = sdktypes.ParseEnvID(req.Msg.EnvId); err != nil {
+	if filter.ProjectID, err = sdktypes.ParseProjectID(req.Msg.ProjectId); err != nil {
 		return nil, sdkerrors.AsConnectError(err)
 	}
 

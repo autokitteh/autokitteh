@@ -4,8 +4,8 @@ set -euo pipefail
 
 cd "$(dirname "$0")"
 
-VERSION="$(cut -w -f 1 < VERSION)"
-EXPECTED_SHA="$(cut -w -f 2 < VERSION)"
+VERSION="$(cut -d\  -f 1 < VERSION)"
+EXPECTED_SHA="$(cut -d\  -f 2 < VERSION)"
 FILENAME="autokitteh-web-v${VERSION}.zip"
 
 echo "want version ${VERSION}."

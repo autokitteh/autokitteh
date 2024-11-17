@@ -17,12 +17,12 @@ const moduleName = "store"
 
 var ExecutorID = sdktypes.NewExecutorID(fixtures.NewBuiltinIntegrationID("store"))
 
-func New(envID sdktypes.EnvID, projectID sdktypes.ProjectID, client *redis.Client) sdkexecutor.Executor {
+func New(pid sdktypes.ProjectID, client *redis.Client) sdkexecutor.Executor {
 	mod := redisint.NewInternalModule(
 		moduleName,
 		ExecutorID,
 		client,
-		func(s string) string { return store.Prefix(projectID, envID) + s },
+		func(s string) string { return store.Prefix(pid) + s },
 	)
 
 	// context.TODO() is supplied here as the redis integration does not require

@@ -15,6 +15,7 @@ services:
     command: ["up", "--mode=dev"]
     ports:
       - 9980:9980
+      - 9982:9982
     # Enable this to provide environment variables overrides
     # environment:
     #   # default is localhost:7233
@@ -30,12 +31,11 @@ services:
     #   # inline key
     #   AK_TEMPORALCLIENT__TLS__KEY: "<inline prinvate key>"
     #   # Certificate as path
-    #   AK_TEMPORALCLIENT__TLS__CERTIFICATE_FILE_PATH: "<path>"  
+    #   AK_TEMPORALCLIENT__TLS__CERTIFICATE_FILE_PATH: "<path>"
     #   # Key as path
-    #   AK_TEMPORALCLIENT__TLS__KEY_FILE_PATH: "<path>" 
+    #   AK_TEMPORALCLIENT__TLS__KEY_FILE_PATH: "<path>"
     #   # Can be either postgres or sqlite, default is sqlite
-    #   AK_DB__TYPE: "postgres" 
+    #   AK_DB__TYPE: "postgres"
     #   # for sqlite, can be sqlite://<path_to_file> in case you want a persistance sqlite, otherwise the default is in memory
-    #   # for postgres, provide a valid dsn, not all options required "host= dbname= user= password= sslmode= TimeZone" 
-    #   AK_DB__DSN: "host=localhost dbname=autokitteh" 
-      
+    #   # for postgres, provide a valid dsn, not all options required "host= dbname= user= password= sslmode= TimeZone"
+    #   AK_DB__DSN: "host=localhost dbname=autokitteh"

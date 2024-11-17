@@ -25,7 +25,6 @@ func Init(svcs sdkservices.Services, muxes *muxes.Muxes) {
 	svc.initBuilds()
 	svc.initConnections()
 	svc.initDeployments()
-	svc.initEnvs()
 	svc.initEvents()
 	svc.initIntegrations()
 	svc.initObjects()

@@ -23,10 +23,9 @@ func New(p sdkclient.Params) sdkservices.Store {
 	return &client{client: internal.New(storev1connect.NewStoreServiceClient, p)}
 }
 
-func (c *client) List(ctx context.Context, envID sdktypes.EnvID, projectID sdktypes.ProjectID) ([]string, error) {
+func (c *client) List(ctx context.Context, pid sdktypes.ProjectID) ([]string, error) {
 	resp, err := c.client.List(ctx, connect.NewRequest(&storev1.ListRequest{
-		EnvId:     envID.String(),
-		ProjectId: projectID.String(),
+		ProjectId: pid.String(),
 	}))
 	if err != nil {
 		return nil, rpcerrors.ToSDKError(err)
@@ -39,10 +38,9 @@ func (c *client) List(ctx context.Context, envID sdktypes.EnvID, projectID sdkty
 	return resp.Msg.Keys, nil
 }
 
-func (c *client) Get(ctx context.Context, envID sdktypes.EnvID, projectID sdktypes.ProjectID, keys []string) (map[string]sdktypes.Value, error) {
+func (c *client) Get(ctx context.Context, pid sdktypes.ProjectID, keys []string) (map[string]sdktypes.Value, error) {
 	resp, err := c.client.Get(ctx, connect.NewRequest(&storev1.GetRequest{
-		EnvId:     envID.String(),
-		ProjectId: projectID.String(),
+		ProjectId: pid.String(),
 		Keys:      keys,
 	}))
 	if err != nil {
