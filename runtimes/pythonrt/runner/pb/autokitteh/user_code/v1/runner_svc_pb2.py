@@ -11,10 +11,11 @@ from google.protobuf.internal import builder as _builder
 _sym_db = _symbol_database.Default()
 
 
-from . import user_code_pb2 as autokitteh_dot_user__code_dot_v1_dot_user__code__pb2
+from pb.autokitteh.user_code.v1 import user_code_pb2 as autokitteh_dot_user__code_dot_v1_dot_user__code__pb2
+from pb.autokitteh.values.v1 import values_pb2 as autokitteh_dot_values_dot_v1_dot_values__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n(autokitteh/user_code/v1/runner_svc.proto\x12\x17\x61utokitteh.user_code.v1\x1a\'autokitteh/user_code/v1/user_code.proto\"-\n\x0e\x45xportsRequest\x12\x1b\n\tfile_name\x18\x01 \x01(\tR\x08\x66ileName\"A\n\x0f\x45xportsResponse\x12\x18\n\x07\x65xports\x18\x01 \x03(\tR\x07\x65xports\x12\x14\n\x05\x65rror\x18\x02 \x01(\tR\x05\x65rror\"e\n\x0cStartRequest\x12\x1f\n\x0b\x65ntry_point\x18\x01 \x01(\tR\nentryPoint\x12\x34\n\x05\x65vent\x18\x02 \x01(\x0b\x32\x1e.autokitteh.user_code.v1.EventR\x05\x65vent\"$\n\x0e\x45xecuteRequest\x12\x12\n\x04\x64\x61ta\x18\x01 \x01(\x0cR\x04\x64\x61ta\"}\n\x0f\x45xecuteResponse\x12\x16\n\x06result\x18\x01 \x01(\x0cR\x06result\x12\x14\n\x05\x65rror\x18\x02 \x01(\tR\x05\x65rror\x12<\n\ttraceback\x18\x03 \x03(\x0b\x32\x1e.autokitteh.user_code.v1.FrameR\ttraceback\"c\n\rStartResponse\x12\x14\n\x05\x65rror\x18\x01 \x01(\tR\x05\x65rror\x12<\n\ttraceback\x18\x02 \x03(\x0b\x32\x1e.autokitteh.user_code.v1.FrameR\ttraceback\"X\n\x14\x41\x63tivityReplyRequest\x12\x12\n\x04\x64\x61ta\x18\x01 \x01(\x0cR\x04\x64\x61ta\x12\x16\n\x06result\x18\x02 \x01(\x0cR\x06result\x12\x14\n\x05\x65rror\x18\x03 \x01(\tR\x05\x65rror\"-\n\x15\x41\x63tivityReplyResponse\x12\x14\n\x05\x65rror\x18\x01 \x01(\tR\x05\x65rror\"\x15\n\x13RunnerHealthRequest\",\n\x14RunnerHealthResponse\x12\x14\n\x05\x65rror\x18\x01 \x01(\tR\x05\x65rror2\x84\x04\n\rRunnerService\x12^\n\x07\x45xports\x12\'.autokitteh.user_code.v1.ExportsRequest\x1a(.autokitteh.user_code.v1.ExportsResponse\"\x00\x12X\n\x05Start\x12%.autokitteh.user_code.v1.StartRequest\x1a&.autokitteh.user_code.v1.StartResponse\"\x00\x12^\n\x07\x45xecute\x12\'.autokitteh.user_code.v1.ExecuteRequest\x1a(.autokitteh.user_code.v1.ExecuteResponse\"\x00\x12p\n\rActivityReply\x12-.autokitteh.user_code.v1.ActivityReplyRequest\x1a..autokitteh.user_code.v1.ActivityReplyResponse\"\x00\x12g\n\x06Health\x12,.autokitteh.user_code.v1.RunnerHealthRequest\x1a-.autokitteh.user_code.v1.RunnerHealthResponse\"\x00\x42\xf6\x01\n\x1b\x63om.autokitteh.user_code.v1B\x0eRunnerSvcProtoP\x01ZMgo.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/user_code/v1;user_codev1\xa2\x02\x03\x41UX\xaa\x02\x16\x41utokitteh.UserCode.V1\xca\x02\x16\x41utokitteh\\UserCode\\V1\xe2\x02\"Autokitteh\\UserCode\\V1\\GPBMetadata\xea\x02\x18\x41utokitteh::UserCode::V1b\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n(autokitteh/user_code/v1/runner_svc.proto\x12\x17\x61utokitteh.user_code.v1\x1a\'autokitteh/user_code/v1/user_code.proto\x1a!autokitteh/values/v1/values.proto\"-\n\x0e\x45xportsRequest\x12\x1b\n\tfile_name\x18\x01 \x01(\tR\x08\x66ileName\"A\n\x0f\x45xportsResponse\x12\x18\n\x07\x65xports\x18\x01 \x03(\tR\x07\x65xports\x12\x14\n\x05\x65rror\x18\x02 \x01(\tR\x05\x65rror\"e\n\x0cStartRequest\x12\x1f\n\x0b\x65ntry_point\x18\x01 \x01(\tR\nentryPoint\x12\x34\n\x05\x65vent\x18\x02 \x01(\x0b\x32\x1e.autokitteh.user_code.v1.EventR\x05\x65vent\"$\n\x0e\x45xecuteRequest\x12\x12\n\x04\x64\x61ta\x18\x01 \x01(\x0cR\x04\x64\x61ta\"\x9a\x01\n\x0f\x45xecuteResponse\x12\x33\n\x06result\x18\x01 \x01(\x0b\x32\x1b.autokitteh.values.v1.ValueR\x06result\x12\x14\n\x05\x65rror\x18\x02 \x01(\tR\x05\x65rror\x12<\n\ttraceback\x18\x03 \x03(\x0b\x32\x1e.autokitteh.user_code.v1.FrameR\ttraceback\"c\n\rStartResponse\x12\x14\n\x05\x65rror\x18\x01 \x01(\tR\x05\x65rror\x12<\n\ttraceback\x18\x02 \x03(\x0b\x32\x1e.autokitteh.user_code.v1.FrameR\ttraceback\"a\n\x14\x41\x63tivityReplyRequest\x12\x33\n\x06result\x18\x01 \x01(\x0b\x32\x1b.autokitteh.values.v1.ValueR\x06result\x12\x14\n\x05\x65rror\x18\x02 \x01(\tR\x05\x65rror\"-\n\x15\x41\x63tivityReplyResponse\x12\x14\n\x05\x65rror\x18\x01 \x01(\tR\x05\x65rror\"\x15\n\x13RunnerHealthRequest\",\n\x14RunnerHealthResponse\x12\x14\n\x05\x65rror\x18\x01 \x01(\tR\x05\x65rror2\x84\x04\n\rRunnerService\x12^\n\x07\x45xports\x12\'.autokitteh.user_code.v1.ExportsRequest\x1a(.autokitteh.user_code.v1.ExportsResponse\"\x00\x12X\n\x05Start\x12%.autokitteh.user_code.v1.StartRequest\x1a&.autokitteh.user_code.v1.StartResponse\"\x00\x12^\n\x07\x45xecute\x12\'.autokitteh.user_code.v1.ExecuteRequest\x1a(.autokitteh.user_code.v1.ExecuteResponse\"\x00\x12p\n\rActivityReply\x12-.autokitteh.user_code.v1.ActivityReplyRequest\x1a..autokitteh.user_code.v1.ActivityReplyResponse\"\x00\x12g\n\x06Health\x12,.autokitteh.user_code.v1.RunnerHealthRequest\x1a-.autokitteh.user_code.v1.RunnerHealthResponse\"\x00\x42\xf6\x01\n\x1b\x63om.autokitteh.user_code.v1B\x0eRunnerSvcProtoP\x01ZMgo.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/user_code/v1;user_codev1\xa2\x02\x03\x41UX\xaa\x02\x16\x41utokitteh.UserCode.V1\xca\x02\x16\x41utokitteh\\UserCode\\V1\xe2\x02\"Autokitteh\\UserCode\\V1\\GPBMetadata\xea\x02\x18\x41utokitteh::UserCode::V1b\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -22,26 +23,26 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'autokitteh.user_code.v1.run
 if _descriptor._USE_C_DESCRIPTORS == False:
   DESCRIPTOR._options = None
   DESCRIPTOR._serialized_options = b'\n\033com.autokitteh.user_code.v1B\016RunnerSvcProtoP\001ZMgo.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/user_code/v1;user_codev1\242\002\003AUX\252\002\026Autokitteh.UserCode.V1\312\002\026Autokitteh\\UserCode\\V1\342\002\"Autokitteh\\UserCode\\V1\\GPBMetadata\352\002\030Autokitteh::UserCode::V1'
-  _globals['_EXPORTSREQUEST']._serialized_start=110
-  _globals['_EXPORTSREQUEST']._serialized_end=155
-  _globals['_EXPORTSRESPONSE']._serialized_start=157
-  _globals['_EXPORTSRESPONSE']._serialized_end=222
-  _globals['_STARTREQUEST']._serialized_start=224
-  _globals['_STARTREQUEST']._serialized_end=325
-  _globals['_EXECUTEREQUEST']._serialized_start=327
-  _globals['_EXECUTEREQUEST']._serialized_end=363
-  _globals['_EXECUTERESPONSE']._serialized_start=365
-  _globals['_EXECUTERESPONSE']._serialized_end=490
-  _globals['_STARTRESPONSE']._serialized_start=492
-  _globals['_STARTRESPONSE']._serialized_end=591
-  _globals['_ACTIVITYREPLYREQUEST']._serialized_start=593
-  _globals['_ACTIVITYREPLYREQUEST']._serialized_end=681
-  _globals['_ACTIVITYREPLYRESPONSE']._serialized_start=683
-  _globals['_ACTIVITYREPLYRESPONSE']._serialized_end=728
-  _globals['_RUNNERHEALTHREQUEST']._serialized_start=730
-  _globals['_RUNNERHEALTHREQUEST']._serialized_end=751
-  _globals['_RUNNERHEALTHRESPONSE']._serialized_start=753
-  _globals['_RUNNERHEALTHRESPONSE']._serialized_end=797
-  _globals['_RUNNERSERVICE']._serialized_start=800
-  _globals['_RUNNERSERVICE']._serialized_end=1316
+  _globals['_EXPORTSREQUEST']._serialized_start=145
+  _globals['_EXPORTSREQUEST']._serialized_end=190
+  _globals['_EXPORTSRESPONSE']._serialized_start=192
+  _globals['_EXPORTSRESPONSE']._serialized_end=257
+  _globals['_STARTREQUEST']._serialized_start=259
+  _globals['_STARTREQUEST']._serialized_end=360
+  _globals['_EXECUTEREQUEST']._serialized_start=362
+  _globals['_EXECUTEREQUEST']._serialized_end=398
+  _globals['_EXECUTERESPONSE']._serialized_start=401
+  _globals['_EXECUTERESPONSE']._serialized_end=555
+  _globals['_STARTRESPONSE']._serialized_start=557
+  _globals['_STARTRESPONSE']._serialized_end=656
+  _globals['_ACTIVITYREPLYREQUEST']._serialized_start=658
+  _globals['_ACTIVITYREPLYREQUEST']._serialized_end=755
+  _globals['_ACTIVITYREPLYRESPONSE']._serialized_start=757
+  _globals['_ACTIVITYREPLYRESPONSE']._serialized_end=802
+  _globals['_RUNNERHEALTHREQUEST']._serialized_start=804
+  _globals['_RUNNERHEALTHREQUEST']._serialized_end=825
+  _globals['_RUNNERHEALTHRESPONSE']._serialized_start=827
+  _globals['_RUNNERHEALTHRESPONSE']._serialized_end=871
+  _globals['_RUNNERSERVICE']._serialized_start=874
+  _globals['_RUNNERSERVICE']._serialized_end=1390
 # @@protoc_insertion_point(module_scope)

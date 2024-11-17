@@ -16,8 +16,8 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/google/uuid"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
+	"go.jetify.com/typeid"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapio"
 )
@@ -135,7 +135,12 @@ func (r *LocalPython) Start(pyExe string, tarData []byte, env map[string]string,
 		return fmt.Errorf("copy runner code - %w", err)
 	}
 
-	r.id = uuid.NewString()
+	id, err := typeid.WithPrefix("runner")
+	if err != nil {
+		return err
+	}
+	r.id = id.String()
+
 	mainPy := path.Join(r.runnerDir, "runner", "main.py")
 	cmd := exec.Command(
 		pyExe, "-u", mainPy,

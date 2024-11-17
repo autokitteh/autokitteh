@@ -1,5 +1,5 @@
 from autokitteh.module.v1 import module_pb2 as _module_pb2
-from buf.validate import validate_pb2 as _validate_pb2
+from pb.buf.validate import validate_pb2 as _validate_pb2
 from google.protobuf import duration_pb2 as _duration_pb2
 from google.protobuf import timestamp_pb2 as _timestamp_pb2
 from google.protobuf.internal import containers as _containers
