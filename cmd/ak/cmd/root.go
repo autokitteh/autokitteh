@@ -95,7 +95,6 @@ func init() {
 	// Top-level standalone commands.
 	RootCmd.AddCommand(completionCmd)
 	RootCmd.AddCommand(deployCmd)
-	RootCmd.AddCommand(lintCmd)
 	RootCmd.AddCommand(upCmd)
 	RootCmd.AddCommand(versionCmd)
 

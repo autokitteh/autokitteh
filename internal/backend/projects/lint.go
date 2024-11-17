@@ -11,6 +11,8 @@ var (
 	lintChecks []func(manifest *manifest.Manifest) []sdktypes.CheckViolation
 )
 
+const manifestFile = "autokitteh.yaml"
+
 func init() {
 	lintChecks = []func(manifest *manifest.Manifest) []sdktypes.CheckViolation{
 		checkNoTriggers,
@@ -21,7 +23,11 @@ func init() {
 func checkNoTriggers(m *manifest.Manifest) []sdktypes.CheckViolation {
 	if len(m.Project.Triggers) == 0 {
 		return []sdktypes.CheckViolation{
-			{Level: sdktypes.ViolationError, Message: "no triggers"},
+			{
+				FileName: manifestFile,
+				Level:    sdktypes.ViolationError,
+				Message:  "no triggers",
+			},
 		}
 	}
 
@@ -33,8 +39,9 @@ func checkEmptyVars(m *manifest.Manifest) []sdktypes.CheckViolation {
 	for _, v := range m.Project.Vars {
 		if v.Value == "" {
 			violations = append(violations, sdktypes.CheckViolation{
-				Level:   sdktypes.ViolationWarning,
-				Message: fmt.Sprintf("%q is empty", v.Name),
+				FileName: manifestFile,
+				Level:    sdktypes.ViolationWarning,
+				Message:  fmt.Sprintf("%q is empty", v.Name),
 			})
 		}
 	}
