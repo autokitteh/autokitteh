@@ -21,8 +21,8 @@ var (
 		sdktypes.NewDeploymentID(),
 	}
 
-	envID   = sdktypes.NewEnvID()
-	buildID = sdktypes.NewBuildID()
+	projectID = sdktypes.NewProjectID()
+	buildID   = sdktypes.NewBuildID()
 )
 
 type testDeployment struct {
@@ -47,7 +47,7 @@ func (db *testDB) GetDeployment(_ context.Context, id sdktypes.DeploymentID) (sd
 		return sdktypes.InvalidDeployment, sdkerrors.ErrNotFound
 	}
 
-	return sdktypes.NewDeployment(id, envID, buildID).WithID(id).WithState(d.State), nil
+	return sdktypes.NewDeployment(id, projectID, buildID).WithID(id).WithState(d.State), nil
 }
 
 func (db *testDB) ListDeployments(ctx context.Context, filter sdkservices.ListDeploymentsFilter) (deps []sdktypes.Deployment, _ error) {
@@ -56,7 +56,7 @@ func (db *testDB) ListDeployments(ctx context.Context, filter sdkservices.ListDe
 			continue
 		}
 
-		if filter.EnvID.IsValid() && filter.EnvID != envID {
+		if filter.ProjectID.IsValid() && filter.ProjectID != projectID {
 			continue
 		}
 

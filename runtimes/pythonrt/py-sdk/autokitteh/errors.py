@@ -29,3 +29,12 @@ class OAuthRefreshError(AutoKittehError):
 
     def __init__(self, connection: str, error: RefreshError):
         super().__init__(f"OAuth refresh failed for {connection!r} connection: {error}")
+
+
+class AtlassianOAuthError(AutoKittehError):
+    """API calls not supported by OAuth-based Atlassian connections."""
+
+    def __init__(self, connection: str):
+        msg = f"API calls not supported by {connection!r}, "
+        msg += "use a token-based connection instead"
+        super().__init__(msg)

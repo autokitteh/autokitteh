@@ -8,14 +8,12 @@ from typing import ClassVar as _ClassVar, Iterable as _Iterable, Mapping as _Map
 DESCRIPTOR: _descriptor.FileDescriptor
 
 class GetRequest(_message.Message):
-    __slots__ = ["env_id", "project_id", "keys"]
-    ENV_ID_FIELD_NUMBER: _ClassVar[int]
+    __slots__ = ["project_id", "keys"]
     PROJECT_ID_FIELD_NUMBER: _ClassVar[int]
     KEYS_FIELD_NUMBER: _ClassVar[int]
-    env_id: str
     project_id: str
     keys: _containers.RepeatedScalarFieldContainer[str]
-    def __init__(self, env_id: _Optional[str] = ..., project_id: _Optional[str] = ..., keys: _Optional[_Iterable[str]] = ...) -> None: ...
+    def __init__(self, project_id: _Optional[str] = ..., keys: _Optional[_Iterable[str]] = ...) -> None: ...
 
 class GetResponse(_message.Message):
     __slots__ = ["values"]
@@ -31,12 +29,10 @@ class GetResponse(_message.Message):
     def __init__(self, values: _Optional[_Mapping[str, _values_pb2.Value]] = ...) -> None: ...
 
 class ListRequest(_message.Message):
-    __slots__ = ["env_id", "project_id"]
-    ENV_ID_FIELD_NUMBER: _ClassVar[int]
+    __slots__ = ["project_id"]
     PROJECT_ID_FIELD_NUMBER: _ClassVar[int]
-    env_id: str
     project_id: str
-    def __init__(self, env_id: _Optional[str] = ..., project_id: _Optional[str] = ...) -> None: ...
+    def __init__(self, project_id: _Optional[str] = ...) -> None: ...
 
 class ListResponse(_message.Message):
     __slots__ = ["keys"]

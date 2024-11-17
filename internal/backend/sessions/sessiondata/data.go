@@ -14,9 +14,7 @@ import (
 )
 
 type Data struct {
-	ProjectID   sdktypes.ProjectID      `json:"project_id"`
 	Session     sdktypes.Session        `json:"session"`
-	Env         sdktypes.Env            `json:"env"`
 	Vars        []sdktypes.Var          `json:"vars"`
 	Build       sdktypes.Build          `json:"build"`
 	BuildFile   *sdkbuildfile.BuildFile `json:"build_file"`
@@ -58,32 +56,22 @@ func downloadBuild(ctx context.Context, buildID sdktypes.BuildID, builds sdkserv
 func Get(ctx context.Context, svcs *sessionsvcs.Svcs, session sdktypes.Session) (*Data, error) {
 	var err error
 
-	data := Data{
-		Session: session,
-	}
+	data := Data{Session: session}
 
 	// TODO(ENG-207): Consider doing all retrievals using one big happy join.
 
-	if envID := data.Session.EnvID(); envID.IsValid() {
-		if data.Env, err = retrieve(ctx, envID, svcs.Envs.GetByID); err != nil {
-			return nil, err
-		}
-
-		if data.ProjectID = data.Env.ProjectID(); !data.ProjectID.IsValid() {
-			return nil, fmt.Errorf("sessions can only run on projects")
-		}
-
-		cfilter := sdkservices.ListConnectionsFilter{ProjectID: data.ProjectID}
+	if pid := session.ProjectID(); pid.IsValid() {
+		cfilter := sdkservices.ListConnectionsFilter{ProjectID: pid}
 		if data.Connections, err = svcs.Connections.List(ctx, cfilter); err != nil {
 			return nil, fmt.Errorf("connections.list: %w", err)
 		}
 
-		tfilter := sdkservices.ListTriggersFilter{EnvID: envID}
+		tfilter := sdkservices.ListTriggersFilter{ProjectID: pid}
 		if data.Triggers, err = svcs.Triggers.List(ctx, tfilter); err != nil {
-			return nil, fmt.Errorf("triggers.list(%v): %w", envID, err)
+			return nil, fmt.Errorf("triggers.list(%v): %w", pid, err)
 		}
 
-		if data.Vars, err = svcs.Vars.Get(ctx, sdktypes.NewVarScopeID(envID)); err != nil {
+		if data.Vars, err = svcs.Vars.Get(ctx, sdktypes.NewVarScopeID(pid)); err != nil {
 			return nil, fmt.Errorf("get vars: %w", err)
 		}
 	}

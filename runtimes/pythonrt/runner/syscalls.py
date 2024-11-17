@@ -10,8 +10,8 @@ from datetime import timedelta
 
 import grpc
 import log
-import pb.autokitteh.remote.v1.remote_pb2 as pb
-import pb.autokitteh.remote.v1.remote_pb2_grpc as rpc
+import pb.autokitteh.user_code.v1.handler_svc_pb2 as pb
+import pb.autokitteh.user_code.v1.handler_svc_pb2_grpc as rpc
 from autokitteh import AttrDict
 
 
@@ -81,12 +81,14 @@ class SysCalls:
 
         req = pb.NextEventRequest(runner_id=self.runner_id, signal_ids=ids)
         if timeout:
-            if isinstance(timeout, float) or isinstance(timeout, int):
+            if isinstance(timeout, int | float):
                 req.timeout_ms = int(timeout * 1000)
             elif isinstance(timeout, timedelta):
                 req.timeout_ms = int(timeout.total_seconds() * 1000)
             else:
-                raise TypeError(f"timeout should be timedelta or int, got {timeout!r}")
+                raise TypeError(
+                    f"timeout {timeout!r} should be a timedelta or number of seconds"
+                )
 
         resp = call_grpc("next_event", self.worker.NextEvent, req)
 

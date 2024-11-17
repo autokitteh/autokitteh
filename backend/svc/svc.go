@@ -22,7 +22,7 @@ var (
 type ShutdownSignal = fx.ShutdownSignal
 
 type Service interface {
-	Start(context.Context) error
+	Start(ctx context.Context) error
 	Stop(context.Context) error
 	Wait() <-chan ShutdownSignal
 }

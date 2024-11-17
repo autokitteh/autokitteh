@@ -25,7 +25,7 @@ var startCmd = common.StandardCommand(&cobra.Command{
 	Args:  cobra.NoArgs,
 
 	RunE: func(cmd *cobra.Command, args []string) error {
-		did, eid, bid, ep, err := sessionArgs()
+		did, pid, bid, ep, err := sessionArgs()
 		if err != nil {
 			return err
 		}
@@ -38,7 +38,7 @@ var startCmd = common.StandardCommand(&cobra.Command{
 			return err
 		}
 
-		s := sdktypes.NewSession(bid, ep, nil, nil).WithEnvID(eid).WithDeploymentID(did).WithInputs(inputs)
+		s := sdktypes.NewSession(bid, ep, nil, nil).WithProjectID(pid).WithDeploymentID(did).WithInputs(inputs)
 		sid, err := sessions().Start(ctx, s)
 		if err != nil {
 			return fmt.Errorf("start session: %w", err)
@@ -59,7 +59,7 @@ func init() {
 	// Command-specific flags.
 	startCmd.Flags().StringVarP(&deploymentID, "deployment-id", "d", "", "deployment ID, mutually exclusive with --build-id and --env")
 	startCmd.Flags().StringVarP(&buildID, "build-id", "b", "", "build ID, mutually exclusive with --deployment-id")
-	startCmd.Flags().StringVarP(&env, "env", "e", "", "environment name or ID, mutually exclusive with --deployment-id")
+	startCmd.Flags().StringVarP(&project, "project", "o", "", "project name or ID, mutually exclusive with --deployment-id")
 	startCmd.MarkFlagsOneRequired("deployment-id", "build-id")
 
 	startCmd.Flags().StringVarP(&entryPoint, "entrypoint", "p", "", `entry point ("file:function")`)
@@ -103,7 +103,7 @@ func parseinputs() (map[string]sdktypes.Value, error) {
 	return m, nil
 }
 
-func sessionArgs() (did sdktypes.DeploymentID, eid sdktypes.EnvID, bid sdktypes.BuildID, ep sdktypes.CodeLocation, err error) {
+func sessionArgs() (did sdktypes.DeploymentID, pid sdktypes.ProjectID, bid sdktypes.BuildID, ep sdktypes.CodeLocation, err error) {
 	r := resolver.Resolver{Client: common.Client()}
 	ctx, cancel := common.LimitedContext()
 	defer cancel()
@@ -119,7 +119,7 @@ func sessionArgs() (did sdktypes.DeploymentID, eid sdktypes.EnvID, bid sdktypes.
 			return
 		}
 
-		bid, eid = d.BuildID(), d.EnvID()
+		bid, pid = d.BuildID(), d.ProjectID()
 	}
 
 	if buildID != "" {
@@ -135,13 +135,13 @@ func sessionArgs() (did sdktypes.DeploymentID, eid sdktypes.EnvID, bid sdktypes.
 
 	}
 
-	if env != "" {
-		var e sdktypes.Env
-		if e, eid, err = r.EnvNameOrID(ctx, env, ""); err != nil {
+	if project != "" {
+		var e sdktypes.Project
+		if e, pid, err = r.ProjectNameOrID(ctx, project); err != nil {
 			return
 		}
-		if env != "" && !e.IsValid() {
-			err = fmt.Errorf("env %q not found", eventID)
+		if project != "" && !e.IsValid() {
+			err = fmt.Errorf("project %q not found", project)
 			err = common.NewExitCodeError(common.NotFoundExitCode, err)
 			return
 		}

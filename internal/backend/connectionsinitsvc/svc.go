@@ -101,6 +101,8 @@ func (s Svc) postInit(w http.ResponseWriter, r *http.Request) {
 	switch origin {
 	case "vscode":
 		u = "vscode://autokitteh.autokitteh?cid=%s"
+	case "dash":
+		u = "/internal/dashboard/connections/%s?msg=Success"
 	default:
 		// Another redirect just to get rid of the secrets in the URL.
 		u = "/connections/%s/success"
@@ -153,5 +155,12 @@ func (s Svc) refreshConnection(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s Svc) success(w http.ResponseWriter, _ *http.Request) {
-	fmt.Fprint(w, "success - you can now close this tab.")
+	w.Header().Set("Content-Type", "text/html")
+	fmt.Fprint(w, `<!DOCTYPE html>
+<html>
+	<body>
+		success - you can now close this tab.
+		<script>window.open("", "_self").close();</script>
+	</body>
+</html>`)
 }

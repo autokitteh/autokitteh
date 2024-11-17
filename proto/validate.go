@@ -14,7 +14,6 @@ import (
 	connectionsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/connections/v1"
 	deploymentsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/deployments/v1"
 	dispatcherv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/dispatcher/v1"
-	envsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/envs/v1"
 	eventsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/events/v1"
 	integration_providerv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/integration_provider/v1"
 	integration_registryv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/integration_registry/v1"
@@ -23,10 +22,12 @@ import (
 	oauthv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/oauth/v1"
 	programv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/program/v1"
 	projectsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/projects/v1"
+	runnerManager "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/runner_manager/v1"
 	runtimesv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/runtimes/v1"
 	sessionsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/sessions/v1"
 	storev1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/store/v1"
 	triggersv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/triggers/v1"
+	userCode "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/user_code/v1"
 	usersv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/users/v1"
 	valuesv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/values/v1"
 	varsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/vars/v1"
@@ -65,8 +66,6 @@ var fds = []protoreflect.FileDescriptor{
 	deploymentsv1.File_autokitteh_deployments_v1_deployment_proto,
 	deploymentsv1.File_autokitteh_deployments_v1_svc_proto,
 	dispatcherv1.File_autokitteh_dispatcher_v1_svc_proto,
-	envsv1.File_autokitteh_envs_v1_env_proto,
-	envsv1.File_autokitteh_envs_v1_svc_proto,
 	eventsv1.File_autokitteh_events_v1_event_proto,
 	eventsv1.File_autokitteh_events_v1_svc_proto,
 	integration_providerv1.File_autokitteh_integration_provider_v1_integration_proto,
@@ -80,6 +79,10 @@ var fds = []protoreflect.FileDescriptor{
 	programv1.File_autokitteh_program_v1_program_proto,
 	projectsv1.File_autokitteh_projects_v1_project_proto,
 	projectsv1.File_autokitteh_projects_v1_svc_proto,
+	userCode.File_autokitteh_user_code_v1_handler_svc_proto,
+	userCode.File_autokitteh_user_code_v1_runner_svc_proto,
+	userCode.File_autokitteh_user_code_v1_user_code_proto,
+	runnerManager.File_autokitteh_runner_manager_v1_runner_manager_svc_proto,
 	runtimesv1.File_autokitteh_runtimes_v1_build_proto,
 	runtimesv1.File_autokitteh_runtimes_v1_runtime_proto,
 	runtimesv1.File_autokitteh_runtimes_v1_svc_proto,

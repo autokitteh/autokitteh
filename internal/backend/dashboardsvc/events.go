@@ -116,28 +116,18 @@ func (s *svc) event(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	envs, err := s.Envs().List(r.Context(), sdktypes.InvalidProjectID)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
 	// name -> deployment id
 	deployments := kittehs.ListToMap(append(actives, testings...), func(d sdktypes.Deployment) (string, string) {
-		var name string
+		did := d.ID().String()
 
-		_, e := kittehs.FindFirst(envs, func(e sdktypes.Env) bool { return e.ID() == d.EnvID() })
-		if e.IsValid() {
-			name = "/" + e.Name().String()
-			_, p := kittehs.FindFirst(projects, func(p sdktypes.Project) bool { return p.ID() == e.ProjectID() })
-			if p.IsValid() {
-				name = p.Name().String() + name
-			}
-		} else {
-			name = d.ID().String()
+		name := did
+
+		_, p := kittehs.FindFirst(projects, func(p sdktypes.Project) bool { return p.ID() == d.ProjectID() })
+		if p.IsValid() {
+			name = p.Name().String() + "/" + name
 		}
 
-		return fmt.Sprintf("%s [%v]", name, d.State()), d.ID().String()
+		return fmt.Sprintf("%s [%v]", name, d.State()), did
 	})
 
 	if err := webdashboard.Tmpl(r).ExecuteTemplate(w, "event.html", struct {
@@ -171,7 +161,7 @@ func (s *svc) redispatchEvent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	opts := sdkservices.DispatchOptions{
-		Env:          r.URL.Query().Get("env"),
+		Project:      r.URL.Query().Get("project"),
 		DeploymentID: did,
 	}
 

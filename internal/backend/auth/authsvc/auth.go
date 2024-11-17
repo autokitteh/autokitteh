@@ -14,20 +14,17 @@ type auth struct {
 	tokens authtokens.Tokens
 }
 
-func New(tokens authtokens.Tokens) sdkservices.Auth { return &auth{tokens: tokens} }
+func New(tokens authtokens.Tokens) sdkservices.Auth {
+	return &auth{tokens: tokens}
+}
 
 func (a *auth) WhoAmI(ctx context.Context) (sdktypes.User, error) {
-	user := authcontext.GetAuthnUser(ctx)
-	if !user.IsValid() {
-		return sdktypes.InvalidUser, nil
-	}
-
-	return user, nil
+	return authcontext.GetAuthnUser(ctx), nil
 }
 
 func (a *auth) CreateToken(ctx context.Context) (string, error) {
-	user := authcontext.GetAuthnUser(ctx)
-	if !user.IsValid() {
+	u := authcontext.GetAuthnUser(ctx)
+	if !u.IsValid() {
 		return "", sdkerrors.ErrUnauthenticated
 	}
 
@@ -35,5 +32,5 @@ func (a *auth) CreateToken(ctx context.Context) (string, error) {
 		return "", sdkerrors.ErrNotImplemented
 	}
 
-	return a.tokens.Create(user)
+	return a.tokens.Create(u)
 }

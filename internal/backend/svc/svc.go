@@ -24,6 +24,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authloginhttpsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authsessions"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authsvc"
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authusers"
 	"go.autokitteh.dev/autokitteh/internal/backend/builds"
 	"go.autokitteh.dev/autokitteh/internal/backend/buildsgrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/configset"
@@ -37,8 +38,6 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/deploymentsgrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/dispatcher"
 	"go.autokitteh.dev/autokitteh/internal/backend/dispatchergrpcsvc"
-	"go.autokitteh.dev/autokitteh/internal/backend/envs"
-	"go.autokitteh.dev/autokitteh/internal/backend/envsgrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/events"
 	"go.autokitteh.dev/autokitteh/internal/backend/eventsgrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
@@ -105,6 +104,7 @@ func DBFxOpt() fx.Option {
 			fx.Provide(dbfactory.New),
 			fx.Invoke(func(lc fx.Lifecycle, z *zap.Logger, db db.DB) {
 				HookOnStart(lc, db.Connect)
+				HookOnStart(lc, db.Setup)
 			}),
 		),
 	)
@@ -122,19 +122,28 @@ var pprofConfigs = configset.Set[pprofConfig]{
 type HTTPServerAddr string
 
 func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
+	svcConfig, err := chooseConfig(svcConfigs)
+	if err != nil {
+		return []fx.Option{fx.Error(fmt.Errorf("svc: %w", err))}
+	}
+
 	return []fx.Option{
 		fx.Supply(cfg),
+		fx.Supply(svcConfig),
 		LoggerFxOpt(opts.Silent),
-		fx.Invoke(func(lc fx.Lifecycle, db db.DB) { HookOnStart(lc, db.Setup) }),
+		DBFxOpt(),
 
 		Component("auth", configset.Empty, fx.Provide(authsvc.New)),
 		Component("authjwttokens", authjwttokens.Configs, fx.Provide(authjwttokens.New)),
 		Component("authsessions", authsessions.Configs, fx.Provide(authsessions.New)),
-		Component("authhttpmiddleware", authhttpmiddleware.Configs,
+		Component(
+			"authhttpmiddleware",
+			authhttpmiddleware.Configs,
 			fx.Provide(authhttpmiddleware.New),
-			fx.Provide(authhttpmiddleware.AuthorizationHeaderExtractor)),
+			fx.Provide(authhttpmiddleware.AuthorizationHeaderExtractor),
+		),
+		Component("authusers", configset.Empty, fx.Provide(authusers.New)),
 
-		DBFxOpt(),
 		Component(
 			"temporalclient",
 			temporalclient.Configs,
@@ -177,7 +186,6 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		Component("deployments", configset.Empty, fx.Provide(deployments.New)),
 		Component("projects", configset.Empty, fx.Provide(projects.New)),
 		Component("projectsgrpcsvc", projectsgrpcsvc.Configs, fx.Provide(projectsgrpcsvc.New)),
-		Component("envs", configset.Empty, fx.Provide(envs.New)),
 		Component(
 			"vars",
 			vars.Configs,
@@ -237,7 +245,6 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		fx.Invoke(connectionsgrpcsvc.Init),
 		fx.Invoke(deploymentsgrpcsvc.Init),
 		fx.Invoke(dispatchergrpcsvc.Init),
-		fx.Invoke(envsgrpcsvc.Init),
 		fx.Invoke(eventsgrpcsvc.Init),
 		fx.Invoke(integrationsgrpcsvc.Init),
 		fx.Invoke(oauth.Init),
@@ -265,8 +272,8 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 						// there is (still) no parsed user in the httpRequest context. So in order to log the user in the
 						// same place where httpRequest is logged we need to extract it from the header
 						func(r *http.Request) []zap.Field {
-							if user := authHdrExtractor(r); user.IsValid() {
-								return []zap.Field{zap.String("user", user.Title())}
+							if uid := authHdrExtractor(r); uid.IsValid() {
+								return []zap.Field{zap.String("user_id", uid.String())}
 							}
 
 							return nil
@@ -325,13 +332,15 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 			}),
 		),
 		fx.Invoke(func(muxes *muxes.Muxes) {
-			muxes.NoAuth.Handle("/{$}", http.RedirectHandler("https://autokitteh.com", http.StatusSeeOther))
+			muxes.NoAuth.Handle("/{$}", http.RedirectHandler(svcConfig.RootRedirect, http.StatusSeeOther))
 			muxes.NoAuth.HandleFunc("/internal/{$}", func(w http.ResponseWriter, r *http.Request) {
 				fmt.Fprint(w, `<html><body>
 	<ul>
 		<li><a href="/internal/id">id</a></li>
 		<li><a href="/internal/version">version</a></li>
 		<li><a href="/internal/uptime">uptime</a></li>
+		<li><a href="/internal/healthz">healthz</a></li>
+		<li><a href="/internal/readyz">readyz</a></li>
 		<li><a href="/internal/dashboard">dashboard</a></li>
 	</ul>
 </body></html>`)
@@ -380,22 +389,28 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		fx.Invoke(func(z *zap.Logger, lc fx.Lifecycle, muxes *muxes.Muxes, h healthreporter.HealthReporter) {
 			var ready atomic.Bool
 
-			muxes.NoAuth.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
+			healthz := func(w http.ResponseWriter, r *http.Request) {
 				if err := h.Report(); err != nil {
 					w.WriteHeader(http.StatusInternalServerError)
 					return
 				}
 				w.WriteHeader(http.StatusOK)
-			})
+			}
 
-			muxes.NoAuth.HandleFunc("GET /readyz", func(w http.ResponseWriter, r *http.Request) {
+			muxes.NoAuth.HandleFunc("GET /healthz", healthz)
+			muxes.NoAuth.HandleFunc("GET /internal/healthz", healthz)
+
+			readyz := func(w http.ResponseWriter, r *http.Request) {
 				if !ready.Load() {
 					w.WriteHeader(http.StatusServiceUnavailable)
 					return
 				}
 
 				w.WriteHeader(http.StatusOK)
-			})
+			}
+
+			muxes.NoAuth.HandleFunc("GET /readyz", readyz)
+			muxes.NoAuth.HandleFunc("GET /internal/readyz", readyz)
 
 			HookSimpleOnStart(lc, func() {
 				ready.Store(true)

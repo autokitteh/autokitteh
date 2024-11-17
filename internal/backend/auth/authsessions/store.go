@@ -6,11 +6,11 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/dghubble/sessions"
+	"github.com/google/uuid"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -23,14 +23,16 @@ const (
 )
 
 type sessionData struct {
-	User      sdktypes.User
-	Validator int64
+	UserID    sdktypes.UserID
+	Validator string
+	CreatedAt time.Time
 }
 
-func NewSessionData(user sdktypes.User) sessionData {
+func NewSessionData(uid sdktypes.UserID) sessionData {
 	return sessionData{
-		User:      user,
-		Validator: time.Now().Unix(),
+		UserID:    uid,
+		Validator: uuid.NewString(),
+		CreatedAt: time.Now(),
 	}
 }
 
@@ -103,7 +105,7 @@ func (s store) Set(w http.ResponseWriter, data *sessionData) error {
 
 	http.SetCookie(w, &http.Cookie{
 		Name:     loggedInCookie,
-		Value:    fmt.Sprintf("%d", data.Validator),
+		Value:    data.Validator,
 		Path:     "/",
 		Domain:   s.domain,
 		SameSite: s.sameSite,
@@ -114,7 +116,7 @@ func (s store) Set(w http.ResponseWriter, data *sessionData) error {
 }
 
 func (s store) Get(req *http.Request) (*sessionData, error) {
-	loggedIn, err := req.Cookie(loggedInCookie)
+	cookie, err := req.Cookie(loggedInCookie)
 	if err != nil {
 		if errors.Is(err, http.ErrNoCookie) {
 			return nil, nil
@@ -122,8 +124,8 @@ func (s store) Get(req *http.Request) (*sessionData, error) {
 		return nil, err
 	}
 
-	validator, err := strconv.ParseInt(loggedIn.Value, 10, 64)
-	if err != nil {
+	// make sure the cookie value is a UUID.
+	if _, err := uuid.Parse(cookie.Value); err != nil {
 		return nil, errors.New("invalid logged in cookie")
 	}
 
@@ -142,7 +144,7 @@ func (s store) Get(req *http.Request) (*sessionData, error) {
 		return nil, fmt.Errorf("failed to unmarshal user data: %w", err)
 	}
 
-	if validator != sd.Validator {
+	if cookie.Value != sd.Validator {
 		return nil, errors.New("invalid logged in cookie")
 	}
 

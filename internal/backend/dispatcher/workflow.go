@@ -211,10 +211,14 @@ func newSession(event sdktypes.Event, inputs map[string]sdktypes.Value, data ses
 		memo["connection_name"] = c.Name().String()
 	}
 
-	dep := data.Deployment
+	pid := data.Deployment.ProjectID()
 
-	return sdktypes.NewSession(dep.BuildID(), data.CodeLocation, inputs, memo).
-		WithDeploymentID(dep.ID()).
-		WithEventID(event.ID()).
-		WithEnvID(dep.EnvID()), nil
+	memo["project_id"] = pid.String()
+	memo["project_uuid"] = pid.UUIDValue().String()
+
+	return sdktypes.NewSession(data.Deployment.BuildID(), data.CodeLocation, inputs, memo).
+			WithDeploymentID(data.Deployment.ID()).
+			WithEventID(event.ID()).
+			WithProjectID(pid),
+		nil
 }

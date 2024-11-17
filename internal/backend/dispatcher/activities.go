@@ -62,7 +62,10 @@ func (d *Dispatcher) listWaitingSignalsActivity(ctx context.Context, dstid sdkty
 
 func (d *Dispatcher) startSessionActivity(ctx context.Context, session sdktypes.Session) (sdktypes.SessionID, error) {
 	ctx = akCtx.WithRequestOrginator(ctx, akCtx.Dispatcher)
-	ctx = akCtx.WithOwnershipOf(ctx, d.svcs.DB.GetOwnership, session.EnvID().UUIDValue())
+	var err error
+	if ctx, err = akCtx.WithOwnershipOf(ctx, d.svcs.DB.GetOwnership, session.ProjectID().UUIDValue()); err != nil {
+		return sdktypes.InvalidSessionID, fmt.Errorf("ownership: %w", err)
+	}
 
 	sid, err := d.svcs.Sessions.Start(ctx, session)
 	return sid, temporalclient.TranslateError(err, "start session %v", session.ID())
@@ -70,7 +73,10 @@ func (d *Dispatcher) startSessionActivity(ctx context.Context, session sdktypes.
 
 func (d *Dispatcher) getEventSessionDataActivity(ctx context.Context, event sdktypes.Event, opts *sdkservices.DispatchOptions) ([]sessionData, error) {
 	ctx = akCtx.WithRequestOrginator(ctx, akCtx.EventWorkflow)
-	ctx = akCtx.WithOwnershipOf(ctx, d.svcs.DB.GetOwnership, event.DestinationID().UUIDValue())
+	var err error
+	if ctx, err = akCtx.WithOwnershipOf(ctx, d.svcs.DB.GetOwnership, event.DestinationID().UUIDValue()); err != nil {
+		return nil, fmt.Errorf("ownership: %w", err)
+	}
 
 	eid := event.ID()
 	dstid := event.DestinationID()
@@ -81,24 +87,32 @@ func (d *Dispatcher) getEventSessionDataActivity(ctx context.Context, event sdkt
 		opts = &sdkservices.DispatchOptions{}
 	}
 
-	if opts.Env != "" {
-		sl = sl.With("env", opts.Env)
+	var optsProjectID sdktypes.ProjectID
+
+	if opts.Project != "" {
+		sl = sl.With("project", opts.Project)
+
+		if sdktypes.IsProjectID(opts.Project) {
+			if optsProjectID, err = sdktypes.ParseProjectID(opts.Project); err != nil {
+				return nil, temporalclient.TranslateError(sdkerrors.NewInvalidArgumentError("invalid project id: %v", err), "invalid project id")
+			}
+		} else {
+			n, err := sdktypes.ParseSymbol(opts.Project)
+			if err != nil {
+				return nil, temporalclient.TranslateError(sdkerrors.NewInvalidArgumentError("invalid project name: %v", err), "invalid project name")
+			}
+
+			p, err := d.svcs.Projects.GetByName(ctx, n)
+			if err != nil {
+				return nil, temporalclient.TranslateError(sdkerrors.ErrNotFound, "project %q not found", n)
+			}
+
+			optsProjectID = p.ID()
+		}
 	}
 
 	if opts.DeploymentID.IsValid() {
 		sl = sl.With("deployment_id", opts.DeploymentID)
-	}
-
-	optsEnvID, err := d.resolveEnv(ctx, opts.Env)
-	if err != nil {
-		if errors.Is(err, sdkerrors.ErrNotFound) {
-			sl.Infof("env %q not found", opts.Env)
-			return nil, nil
-		}
-		return nil, fmt.Errorf("env: %w", err)
-	}
-	if optsEnvID.IsValid() {
-		sl = sl.With("env_id", optsEnvID)
 	}
 
 	var ts []sdktypes.Trigger
@@ -125,14 +139,19 @@ func (d *Dispatcher) getEventSessionDataActivity(ctx context.Context, event sdkt
 
 	var sds []sessionData
 
-	deploymentsForEnv := make(map[sdktypes.EnvID][]sdktypes.Deployment)
+	deploymentsForProject := make(map[sdktypes.ProjectID][]sdktypes.Deployment)
 
 	eventType := event.Type()
 	for _, t := range ts {
-		envID := t.EnvID()
+		pid := t.ProjectID()
 		triggerEventType := t.EventType()
 
 		sl := sl.With("trigger_id", t.ID())
+
+		if optsProjectID.IsValid() && pid != optsProjectID {
+			sl.Infof("irrelevant project %v != required %v", pid, optsProjectID)
+			continue
+		}
 
 		if !t.CodeLocation().IsValid() {
 			sl.Info("no entry point, ignoring trigger")
@@ -141,11 +160,6 @@ func (d *Dispatcher) getEventSessionDataActivity(ctx context.Context, event sdkt
 
 		if triggerEventType != "" && eventType != triggerEventType {
 			sl.Infof("irrelevant event type %v != required %v", triggerEventType, eventType)
-			continue
-		}
-
-		if !envID.IsValid() && optsEnvID.IsValid() && envID != optsEnvID {
-			sl.Infof("irrelevant env %v != required %v", envID, optsEnvID)
 			continue
 		}
 
@@ -158,39 +172,36 @@ func (d *Dispatcher) getEventSessionDataActivity(ctx context.Context, event sdkt
 			continue
 		}
 
-		deployments, found := deploymentsForEnv[envID]
+		deployments, found := deploymentsForProject[pid]
 		if !found {
-			activeDeployments, err := d.svcs.Deployments.List(ctx, sdkservices.ListDeploymentsFilter{State: sdktypes.DeploymentStateActive, EnvID: envID})
+			activeDeployments, err := d.svcs.Deployments.List(ctx, sdkservices.ListDeploymentsFilter{State: sdktypes.DeploymentStateActive, ProjectID: pid})
 			if err != nil {
-				return nil, temporalclient.TranslateError(err, "list active deployments for %v", envID)
+				return nil, temporalclient.TranslateError(err, "list active deployments for %v", pid)
 			}
 
 			var testingDeployments []sdktypes.Deployment
 
-			if optsEnvID.IsValid() || opts.DeploymentID.IsValid() {
-				testingDeployments, err = d.svcs.Deployments.List(ctx, sdkservices.ListDeploymentsFilter{State: sdktypes.DeploymentStateTesting, EnvID: envID})
+			if opts.DeploymentID.IsValid() {
+				// Only consider testing deployments if a specific deployment is requested.
+				testingDeployments, err = d.svcs.Deployments.List(ctx, sdkservices.ListDeploymentsFilter{State: sdktypes.DeploymentStateTesting, ProjectID: pid})
 				if err != nil {
-					return nil, temporalclient.TranslateError(err, "list testing deployments for %v", envID)
+					return nil, temporalclient.TranslateError(err, "list testing deployments for %v", pid)
 				}
 			}
 
 			if len(activeDeployments)+len(testingDeployments) != 0 {
 				deployments = append(activeDeployments, testingDeployments...)
 
-				if optsEnvID.IsValid() || opts.DeploymentID.IsValid() {
-					deployments = kittehs.Filter(deployments, func(deployment sdktypes.Deployment) bool {
-						return (!optsEnvID.IsValid() || optsEnvID == deployment.EnvID()) &&
-							(!opts.DeploymentID.IsValid() || opts.DeploymentID == deployment.ID())
-					})
+				if opts.DeploymentID.IsValid() {
+					deployments = kittehs.Filter(deployments, func(deployment sdktypes.Deployment) bool { return opts.DeploymentID == deployment.ID() })
 				}
 			}
 
-			deploymentsForEnv[envID] = deployments
-
+			deploymentsForProject[pid] = deployments
 		}
 
 		if len(deployments) == 0 {
-			sl.Info("no deployments for env")
+			sl.Info("no deployments for project")
 			continue
 		}
 

@@ -52,8 +52,8 @@ project:
   {
     "action": {
       "connection": "my_project/my_connection",
-      "env": "my_project/default",
-      "key": "my_project/default:connection:my_project/my_connection/meow",
+      "project": "my_project",
+      "key": "my_project:connection:my_project/my_connection/meow",
       "trigger": {
         "code_location": {
           "name": "on_test",
@@ -94,8 +94,8 @@ project:
   {
     "type": "set_var",
     "action": {
-      "key": "my_project/default/TEST_VAR",
-      "env": "my_project/default",
+      "key": "my_project/TEST_VAR",
+      "project": "my_project",
       "var": {
         "name": "TEST_VAR",
         "value": "meow"
@@ -105,8 +105,8 @@ project:
   {
     "type": "set_var",
     "action": {
-      "key": "my_project/default/TEST_SECRET_VAR1",
-      "env": "my_project/default",
+      "key": "my_project/TEST_SECRET_VAR1",
+      "project": "my_project",
       "var": {
         "name": "TEST_SECRET_VAR1",
         "value": "woof",

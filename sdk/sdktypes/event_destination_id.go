@@ -48,7 +48,7 @@ func (e EventDestinationID) ToTriggerID() TriggerID {
 	return id
 }
 
-func (e EventDestinationID) IsConnectionID() bool { return e.Kind() == envIDKind }
-func (e EventDestinationID) IsTriggerID() bool    { return e.Kind() == connectionIDKind }
+func (e EventDestinationID) IsConnectionID() bool { return e.Kind() == connectionIDKind }
+func (e EventDestinationID) IsTriggerID() bool    { return e.Kind() == triggerIDKind }
 
 func (e EventDestinationID) AsID() ID { return e }

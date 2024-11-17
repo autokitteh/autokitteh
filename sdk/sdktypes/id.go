@@ -136,15 +136,22 @@ func IsID(s string) bool { return IsIDOf[typeid.AnyPrefix](s) }
 func newNamedIDString(name, kind string) string {
 	// a hint to the original name is encoded in the ID.
 	idName := strings.Map(func(r rune) rune {
+		if strings.ContainsRune(ValidIDChars, r) {
+			return r
+		}
+
+		// Convert similar looking chars to something that is in the valid set.
 		switch r {
-		case 'i', 'l':
+		case 'i', 'l', '!':
 			return '1'
-		case 'o':
-			return '0'
 		case 'u':
 			return 'v'
+		case 'o', '@':
+			return '0'
+		case '$':
+			return 's'
 		default:
-			return r
+			return '0'
 		}
 	}, name)
 

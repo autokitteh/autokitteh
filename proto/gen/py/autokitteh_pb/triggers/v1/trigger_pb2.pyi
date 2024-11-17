@@ -7,7 +7,7 @@ from typing import ClassVar as _ClassVar, Mapping as _Mapping, Optional as _Opti
 DESCRIPTOR: _descriptor.FileDescriptor
 
 class Trigger(_message.Message):
-    __slots__ = ["trigger_id", "name", "source_type", "env_id", "event_type", "code_location", "filter", "connection_id", "schedule", "webhook_slug"]
+    __slots__ = ["trigger_id", "name", "source_type", "project_id", "event_type", "code_location", "filter", "connection_id", "schedule", "webhook_slug"]
     class SourceType(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
         __slots__ = []
         SOURCE_TYPE_UNSPECIFIED: _ClassVar[Trigger.SourceType]
@@ -21,7 +21,7 @@ class Trigger(_message.Message):
     TRIGGER_ID_FIELD_NUMBER: _ClassVar[int]
     NAME_FIELD_NUMBER: _ClassVar[int]
     SOURCE_TYPE_FIELD_NUMBER: _ClassVar[int]
-    ENV_ID_FIELD_NUMBER: _ClassVar[int]
+    PROJECT_ID_FIELD_NUMBER: _ClassVar[int]
     EVENT_TYPE_FIELD_NUMBER: _ClassVar[int]
     CODE_LOCATION_FIELD_NUMBER: _ClassVar[int]
     FILTER_FIELD_NUMBER: _ClassVar[int]
@@ -31,11 +31,11 @@ class Trigger(_message.Message):
     trigger_id: str
     name: str
     source_type: Trigger.SourceType
-    env_id: str
+    project_id: str
     event_type: str
     code_location: _program_pb2.CodeLocation
     filter: str
     connection_id: str
     schedule: str
     webhook_slug: str
-    def __init__(self, trigger_id: _Optional[str] = ..., name: _Optional[str] = ..., source_type: _Optional[_Union[Trigger.SourceType, str]] = ..., env_id: _Optional[str] = ..., event_type: _Optional[str] = ..., code_location: _Optional[_Union[_program_pb2.CodeLocation, _Mapping]] = ..., filter: _Optional[str] = ..., connection_id: _Optional[str] = ..., schedule: _Optional[str] = ..., webhook_slug: _Optional[str] = ...) -> None: ...
+    def __init__(self, trigger_id: _Optional[str] = ..., name: _Optional[str] = ..., source_type: _Optional[_Union[Trigger.SourceType, str]] = ..., project_id: _Optional[str] = ..., event_type: _Optional[str] = ..., code_location: _Optional[_Union[_program_pb2.CodeLocation, _Mapping]] = ..., filter: _Optional[str] = ..., connection_id: _Optional[str] = ..., schedule: _Optional[str] = ..., webhook_slug: _Optional[str] = ...) -> None: ...

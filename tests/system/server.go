@@ -27,9 +27,10 @@ func startAKServer(ctx context.Context, akPath string) (svc.Service, string, err
 		"db.type": "sqlite",
 		"db.dsn":  "file:autokitteh.sqlite", // In the test's temporary directory.
 
-		"http.addr":                             ":0",
-		"http.addr_filename":                    serverHTTPAddrFile, // In the test's temporary directory.
-		"authhttpmiddleware.allow_default_user": false,
+		"http.addr":                           ":0",
+		"http.addr_filename":                  serverHTTPAddrFile, // In the test's temporary directory.
+		"authhttpmiddleware.use_default_user": "false",
+		"db.seed_commands":                    seedCommand,
 	}, ""))
 
 	// Instantiate the server, either as a subprocess or in-process.

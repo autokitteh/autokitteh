@@ -3,20 +3,20 @@ ak deploy --manifest project.yaml
 return code == 0
 
 # Send HTTP GET request to trigger deployment to start new session.
-http get /webhooks/00000000000000000000000004/
+http get /webhooks/00000000000000000000000003/
 resp code == 202
 
-wait 5s for session ses_00000000000000000000000008
+wait 5s for session ses_00000000000000000000000007
 
 ak session log --no-timestamps --page-size 1 --order desc -J
 return code == 0
 output equals_json file expected_without_path.json
 
 # Send HTTP POST request to trigger deployment to start new session.
-http post /webhooks/00000000000000000000000004/test/aaa/bbb/ccc
+http post /webhooks/00000000000000000000000003/test/aaa/bbb/ccc
 resp code == 202
 
-wait 5s for session ses_0000000000000000000000000b
+wait 5s for session ses_0000000000000000000000000a
 
 ak session log --no-timestamps --page-size 1 --order desc -J
 return code == 0
@@ -43,14 +43,14 @@ def on_http(data, trigger, event):
     "state": {
         "completed": {
             "prints": [
-                "data(body = {\"form\": None, \"bytes\": None, \"json\": None}, headers = {\"Accept-Encoding\": \"gzip\", \"User-Agent\": \"Go-http-client/1.1\"}, method = \"GET\", raw_url = \"/webhooks/00000000000000000000000004/\", trailers = {}, url = {\"fragment\": \"\", \"raw_path\": \"\", \"query\": {}, \"raw_fragment\": \"\", \"raw_query\": \"\", \"path\": \"/webhooks/00000000000000000000000004/\"})",
+                "data(body = {\"form\": None, \"bytes\": None, \"json\": None}, headers = {\"Accept-Encoding\": \"gzip\", \"User-Agent\": \"Go-http-client/1.1\"}, method = \"GET\", raw_url = \"/webhooks/00000000000000000000000003/\", trailers = {}, url = {\"fragment\": \"\", \"raw_path\": \"\", \"query\": {}, \"raw_fragment\": \"\", \"raw_query\": \"\", \"path\": \"/webhooks/00000000000000000000000003/\"})",
                 "get",
                 "trigger(name = \"http\")"
             ],
             "exports": {
                 "on_http": {
                     "function": {
-                        "executor_id": "run_00000000000000000000000009",
+                        "executor_id": "run_00000000000000000000000008",
                         "name": "on_http",
                         "desc": {
                             "input": [
@@ -81,14 +81,14 @@ def on_http(data, trigger, event):
     "state": {
         "completed": {
             "prints": [
-                "data(body = {\"form\": None, \"bytes\": None, \"json\": None}, headers = {\"Accept-Encoding\": \"gzip\", \"User-Agent\": \"Go-http-client/1.1\", \"Content-Length\": \"0\"}, method = \"POST\", raw_url = \"/webhooks/00000000000000000000000004/test/aaa/bbb/ccc\", trailers = {}, url = {\"fragment\": \"\", \"raw_path\": \"\", \"query\": {}, \"raw_fragment\": \"\", \"raw_query\": \"\", \"path\": \"/webhooks/00000000000000000000000004/test/aaa/bbb/ccc\"})",
+                "data(body = {\"form\": None, \"bytes\": None, \"json\": None}, headers = {\"Accept-Encoding\": \"gzip\", \"User-Agent\": \"Go-http-client/1.1\", \"Content-Length\": \"0\"}, method = \"POST\", raw_url = \"/webhooks/00000000000000000000000003/test/aaa/bbb/ccc\", trailers = {}, url = {\"fragment\": \"\", \"raw_path\": \"\", \"query\": {}, \"raw_fragment\": \"\", \"raw_query\": \"\", \"path\": \"/webhooks/00000000000000000000000003/test/aaa/bbb/ccc\"})",
                 "post",
                 "trigger(name = \"http\")"
             ],
             "exports": {
                 "on_http": {
                     "function": {
-                        "executor_id": "run_0000000000000000000000000c",
+                        "executor_id": "run_0000000000000000000000000b",
                         "name": "on_http",
                         "desc": {
                             "input": [

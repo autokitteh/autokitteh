@@ -11,7 +11,6 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/connections"
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/deployments"
-	"go.autokitteh.dev/autokitteh/internal/backend/envs"
 	"go.autokitteh.dev/autokitteh/internal/backend/events"
 	"go.autokitteh.dev/autokitteh/internal/backend/projects"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions"
@@ -35,7 +34,6 @@ type dbs struct {
 	prjSvc sdkservices.Projects
 	bldSvc sdkservices.Builds
 	depSvc sdkservices.Deployments
-	envSvc sdkservices.Envs
 	conSvc sdkservices.Connections
 	sesSvc sdkservices.Sessions
 	evtSvc sdkservices.Events
@@ -56,7 +54,6 @@ func newIntegrationsSvc() sdkservices.Integrations {
 func (dbs *dbs) Builds() sdkservices.Builds             { return dbs.bldSvc }
 func (dbs *dbs) Deployments() sdkservices.Deployments   { return dbs.depSvc }
 func (dbs *dbs) Projects() sdkservices.Projects         { return dbs.prjSvc }
-func (dbs *dbs) Envs() sdkservices.Envs                 { return dbs.envSvc }
 func (dbs *dbs) Connections() sdkservices.Connections   { return dbs.conSvc }
 func (dbs *dbs) Sessions() sdkservices.Sessions         { return dbs.sesSvc }
 func (dbs *dbs) Events() sdkservices.Events             { return dbs.evtSvc }
@@ -76,12 +73,11 @@ func newDBServices(t *testing.T) (sdkservices.DBServices, *dbFixture) {
 	prjSvc := projects.New(projects.Projects{Z: z, DB: gdb}, telemetry)
 	depSvc := deployments.New(z, gdb, telemetry)
 	conSvc := connections.New(connections.Connections{Z: z, DB: gdb, Integrations: intSvc})
-	envSvc := envs.New(z, gdb)
 	evtSvc := events.New(z, gdb)
 	trgSvc := triggers.New(z, gdb, nil)
 	varSvc := vars.New(z, &vars.Config{}, gdb, nil)
 	sesSvc := sessions.New(z, nil, gdb,
-		sessionsvcs.Svcs{DB: gdb, Builds: bldSvc, Connections: conSvc, Deployments: depSvc, Envs: envSvc, Triggers: trgSvc, Vars: varSvc},
+		sessionsvcs.Svcs{DB: gdb, Builds: bldSvc, Connections: conSvc, Deployments: depSvc, Triggers: trgSvc, Vars: varSvc},
 		telemetry)
 
 	return &dbs{
@@ -89,7 +85,6 @@ func newDBServices(t *testing.T) (sdkservices.DBServices, *dbFixture) {
 		prjSvc: prjSvc,
 		bldSvc: bldSvc,
 		depSvc: depSvc,
-		envSvc: envSvc,
 		conSvc: conSvc,
 		sesSvc: sesSvc,
 		evtSvc: evtSvc,
@@ -126,8 +121,8 @@ func TestResolverBuildIDWithOwnership(t *testing.T) {
 func TestResolverDeploymentIDWithOwnership(t *testing.T) {
 	r, f := createResolverAndFixture(t)
 
-	_, b, e := f.createProjectBuildEnv(t)
-	d := f.newDeployment(b, e)
+	p, b := f.createProjectBuild(t)
+	d := f.newDeployment(b, p)
 	f.createDeploymentsAndAssert(t, d)
 
 	did := sdktypes.NewIDFromUUID[sdktypes.DeploymentID](&d.DeploymentID)
@@ -169,8 +164,8 @@ func TestResolverEventIDWithOwnership(t *testing.T) {
 func TestResolverTriggerIDWithOwnership(t *testing.T) {
 	r, f := createResolverAndFixture(t)
 
-	p, c, e := f.createProjectConnectionEnv(t)
-	trg := f.newTrigger(p, e, c)
+	p, c := f.createProjectConnection(t)
+	trg := f.newTrigger(p, c)
 
 	f.createTriggersAndAssert(t, trg)
 
@@ -251,50 +246,6 @@ func TestResolverConnectionNameOrIdWithOwnership(t *testing.T) {
 	}
 
 	// TODO: check that all users could access default cronConnection?
-}
-
-func TestResolverEnvNameOrIdWithOwnership(t *testing.T) {
-	r, f := createResolverAndFixture(t)
-
-	p := f.newProject()
-	e := f.newEnv(p)
-	f.createProjectsAndAssert(t, p)
-	f.createEnvsAndAssert(t, e)
-
-	eid := sdktypes.NewIDFromUUID[sdktypes.EnvID](&e.EnvID)
-	eids := eid.String()
-
-	pid := sdktypes.NewIDFromUUID[sdktypes.ProjectID](&p.ProjectID)
-	pids := pid.String()
-
-	testCases := []struct {
-		name         string
-		envNameOrID  string
-		projNameOrID string
-	}{
-		{"envID,projectID", eids, pids},
-		{"envID,projectName", eids, p.Name},
-		{"envName,projectID", e.Name, pids},
-		{"envName,projectName", e.Name, p.Name},
-	}
-
-	// resolve ok
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			e, _, err := r.EnvNameOrID(f.ctx, tc.envNameOrID, tc.projNameOrID)
-			assert.NoError(t, err)
-			assert.Equal(t, eid, e.ID())
-		})
-	}
-
-	// fail due to auth
-	f.withUser(u2)
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			_, _, err := r.EnvNameOrID(f.ctx, tc.envNameOrID, tc.projNameOrID)
-			assert.ErrorIs(t, err, sdkerrors.ErrNotFound)
-		})
-	}
 }
 
 func TestResolverProjectNameOrIdWithOwnership(t *testing.T) {

@@ -22,11 +22,11 @@ export class DispatchRequest extends Message<DispatchRequest> {
   deploymentId = "";
 
   /**
-   * either env_id or full env path.
+   * either project id or name.
    *
-   * @generated from field: string env = 3;
+   * @generated from field: string project = 3;
    */
-  env = "";
+  project = "";
 
   constructor(data?: PartialMessage<DispatchRequest>) {
     super();
@@ -38,7 +38,7 @@ export class DispatchRequest extends Message<DispatchRequest> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "event", kind: "message", T: Event },
     { no: 2, name: "deployment_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "env", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DispatchRequest {
@@ -105,12 +105,14 @@ export class RedispatchRequest extends Message<RedispatchRequest> {
   eventId = "";
 
   /**
-   * @generated from field: string env_id = 3;
+   * either id or name.
+   *
+   * @generated from field: string project = 2;
    */
-  envId = "";
+  project = "";
 
   /**
-   * @generated from field: string deployment_id = 2;
+   * @generated from field: string deployment_id = 3;
    */
   deploymentId = "";
 
@@ -123,8 +125,8 @@ export class RedispatchRequest extends Message<RedispatchRequest> {
   static readonly typeName = "autokitteh.dispatcher.v1.RedispatchRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "event_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "env_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "deployment_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "deployment_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RedispatchRequest {

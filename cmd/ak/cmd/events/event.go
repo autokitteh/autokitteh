@@ -38,6 +38,7 @@ func init() {
 	eventCmd.AddCommand(listCmd)
 	eventCmd.AddCommand(redispatchCmd)
 	eventCmd.AddCommand(saveCmd)
+	eventCmd.AddCommand(verifyCmd)
 }
 
 func events() sdkservices.Events {

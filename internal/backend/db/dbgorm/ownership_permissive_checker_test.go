@@ -4,9 +4,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
+
+	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 )
 
 func preOwnershipTestPermissive(t *testing.T) *dbFixture {
@@ -72,9 +73,9 @@ func TestListBuildsWithOwnershipP(t *testing.T) {
 func TestSetVarWithOwnershipP(t *testing.T) {
 	f := preOwnershipTestPermissive(t)
 
-	c, env := createConnectionAndEnv(t, f)
-	v1 := f.newVar("k", "v", env) // env scoped var
-	v2 := f.newVar("k", "v", c)   // connection scoped var
+	c, p := createConnection(t, f)
+	v1 := f.newVar("k", "v", p) // project scoped var
+	v2 := f.newVar("k", "v", c) // connection scoped var
 
 	// different user - authorised to create var for the connection and env owned by different user
 	f.withUser(u2)

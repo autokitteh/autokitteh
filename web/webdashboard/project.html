@@ -4,9 +4,6 @@
 <button onclick="deleteProject()">Delete</button>
 <pre>{{ .JSON }}</pre>
 
-<h2>{{ .Envs.N }} Envs</h2>
-{{ template "list_table_" .Envs}}
-
 <h2>{{ .Connections.N }} Connections</h2>
 {{ template "list_table_" .Connections}}
 

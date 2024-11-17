@@ -3,10 +3,10 @@ ak deploy --manifest project.yaml
 return code == 0
 
 # Send HTTP GET request to trigger deployment to start new session.
-http get /webhooks/00000000000000000000000004
+http get /webhooks/00000000000000000000000003
 resp code == 202
 
-wait 5s for session ses_00000000000000000000000008
+wait 5s for session ses_00000000000000000000000007
 
 # Check session's output and final state.
 ak session log --prints-only --page-size 50

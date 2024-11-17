@@ -8,7 +8,7 @@ from atlassian import Confluence, Jira
 from requests_oauthlib import OAuth2Session
 
 from .connections import check_connection_name
-from .errors import ConnectionInitError, EnvVarError
+from .errors import AtlassianOAuthError, ConnectionInitError, EnvVarError
 
 
 __TOKEN_URL = "https://auth.atlassian.com/oauth/token"
@@ -46,7 +46,8 @@ def jira_client(connection: str, **kwargs) -> Jira:
     check_connection_name(connection)
 
     if os.getenv(connection + "__oauth_AccessToken"):
-        return __atlassian_cloud_oauth2(connection, "jira", Jira, **kwargs)
+        # return __atlassian_cloud_oauth2(connection, "jira", Jira, **kwargs)
+        raise AtlassianOAuthError(connection)
 
     base_url = os.getenv(connection + "__BaseURL")
     token = os.getenv(connection + "__Token")
@@ -130,11 +131,13 @@ def confluence_client(connection: str, **kwargs) -> Confluence:
         ValueError: AutoKitteh connection name is invalid.
         ConnectionInitError: AutoKitteh connection was not initialized yet.
         EnvVarError: Required environment variable is missing or invalid.
+        AtlassianOAuthError
     """
     check_connection_name(connection)
 
     if os.getenv(connection + "__oauth_AccessToken"):
-        return __atlassian_cloud_oauth2(connection, "confluence", Confluence, **kwargs)
+        # return __atlassian_cloud_oauth2(connection, "confluence", Confluence, **kwargs)
+        raise AtlassianOAuthError(connection)
 
     base_url = os.getenv(connection + "__BaseURL")
     token = os.getenv(connection + "__Token")

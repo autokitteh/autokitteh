@@ -5,7 +5,7 @@ modules:
   - path: .
 lint:
   ignore:
-    - autokitteh/remote
+    - autokitteh/user_code
   use:
     - STANDARD
   except:

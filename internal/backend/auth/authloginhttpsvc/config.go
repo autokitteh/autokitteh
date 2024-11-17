@@ -33,16 +33,16 @@ type Config struct {
 	GithubOAuth oauth2Config  `konf:"github_oauth"`
 	Descope     descopeConfig `koanf:"descope"`
 
-	// Allowed login patterns, separated by commas.
-	// Pattern format is either of:
-	// - "*"       - matches any login
-	// - "*@host"  - matches any login from host
-	// - otherwise - matches exact login
-	AllowedLogins string `koanf:"allowed_logins"`
+	// If set, reject logins from new users, meaning users that are
+	// not already in the database are rejected.
+	RejectNewUsers   bool `koanf:"reject_new_users"`
+	UseLegacyUserIDs bool `koanf:"use_legacy_user_ids"`
 }
 
 var Configs = configset.Set[Config]{
-	Default: &Config{},
+	Default: &Config{
+		UseLegacyUserIDs: true,
+	},
 	Dev: &Config{
 		GoogleOAuth: oauth2Config{
 			RedirectURL: "http://localhost:9980/auth/google/callback",

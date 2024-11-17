@@ -1,7 +1,8 @@
 import ast
 import builtins
+import sys
+from importlib.util import spec_from_file_location
 from pathlib import Path
-from types import ModuleType
 
 import log
 
@@ -12,7 +13,7 @@ def name_of(node, code_lines):
     return name
 
 
-ACTION_NAME = "_ak_call"
+AK_CALL_NAME = "_ak_call"
 BUILTIN = {v for v in dir(builtins) if callable(getattr(builtins, v))}
 
 
@@ -32,41 +33,78 @@ class Transformer(ast.NodeTransformer):
         if not name or name in BUILTIN:
             return node
 
-        log.info("%s:%d: patching %s with action", self.file_name, node.lineno, name)
+        log.info("%s:%d: patching %s with ak_call", self.file_name, node.lineno, name)
         # urlopen("https://autokitteh.h") -> _call(urlopen, "https://autokitteh.com")
         call = ast.Call(
-            func=ast.Name(id=ACTION_NAME, ctx=ast.Load()),
+            func=ast.Name(id=AK_CALL_NAME, ctx=ast.Load()),
             args=[node.func] + node.args,
             keywords=node.keywords,
         )
         return call
 
 
-def load_code(root_path: Path, action_fn, module_name: str):
-    """Load user code into a module, instrumenting function calls.
+class Loader:
+    """Implement importlib.Loader"""
 
-    root_path must be in sys.path if there are local imports in the loaded module.
-    """
-    log.info("importing %r", module_name)
-    file_name = root_path / (module_name + ".py")
-    with open(file_name) as fp:
-        src = fp.read()
+    def __init__(self, ak_call):
+        self.ak_call = ak_call
 
-    tree = ast.parse(src, file_name, "exec")
-    trans = Transformer(file_name, src)
-    patched_tree = trans.visit(tree)
-    ast.fix_missing_locations(patched_tree)
+    def exec_module(self, module):
+        log.info("importing %r", module.__file__)
 
-    code = compile(patched_tree, file_name, "exec")
+        with open(module.__file__) as fp:
+            src = fp.read()
 
-    module = ModuleType(module_name)
-    setattr(module, ACTION_NAME, action_fn)
-    exec(code, module.__dict__)
+        tree = ast.parse(src, module.__file__, "exec")
+        trans = Transformer(module.__file__, src)
+        patched_tree = trans.visit(tree)
+        ast.fix_missing_locations(patched_tree)
 
-    return module
+        code = compile(patched_tree, module.__file__, "exec")
+        setattr(module, AK_CALL_NAME, self.ak_call)
+        exec(code, module.__dict__)
+
+    def create_module(self, spec):
+        return None  # Use default module creation
+
+
+class Finder:
+    """An importlib finder that will handler files from user code directory."""
+
+    def __init__(self, code_dir, ak_call):
+        self.code_dir = code_dir
+        self.ak_call = ak_call
+
+    def find_spec(self, fullname: str, path: list[str], target=None):
+        if path:
+            mod_path = Path(path[0])
+            if not mod_path.is_relative_to(self.code_dir):
+                return None
+
+        relative_path = fullname.replace(".", "/")  # json.decoder -> json/decoder
+        # NOTE: We currently don't support packages (directory with __init__.py)
+        # We'll consider that once there's a concrete user request
+        full_path = self.code_dir / (relative_path + ".py")
+        if not full_path.is_file():
+            return None
+
+        loader = Loader(self.ak_call)
+        spec = spec_from_file_location(fullname, full_path, loader=loader)
+        return spec
+
+
+def load_code(root_path: Path, ak_call, module_name: str):
+    """Load user code, patch function calls."""
+    finder = Finder(root_path, ak_call)
+    try:
+        sys.meta_path.insert(0, finder)
+        return __import__(module_name)
+    finally:
+        sys.meta_path.pop(0)
 
 
 def exports(code_dir, file_name):
+    """Returns an iterator of functions & classes defined in file_name."""
     full_path = code_dir / file_name
     with open(full_path) as fp:
         code = fp.read()

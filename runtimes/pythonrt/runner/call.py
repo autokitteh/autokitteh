@@ -1,4 +1,5 @@
 import inspect
+import sys
 import time
 from pathlib import Path
 
@@ -23,16 +24,24 @@ def full_func_name(fn):
 class AKCall:
     """Callable wrapping functions with activities."""
 
-    def __init__(self, runner):
+    def __init__(self, runner, code_dir: Path):
         self.runner = runner
+        self.code_dir = code_dir.resolve()
 
         self.in_activity = False
         self.loading = True  # Loading module
         self.module = None  # Module for "local" function, filled by "run"
 
     def is_module_func(self, fn):
-        # TODO: Check for all funcs in user code directory
-        return fn.__module__ == self.module.__name__
+        if fn.__module__ == self.module.__name__:
+            return True
+
+        mod = sys.modules.get(fn.__module__)
+        if not mod:
+            return False
+
+        mod_dir = Path(mod.__file__).resolve()
+        return mod_dir.is_relative_to(self.code_dir)
 
     def should_run_as_activity(self, fn):
         if self.in_activity or self.loading:

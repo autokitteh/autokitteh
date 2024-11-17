@@ -44,7 +44,7 @@ message TestRequest {
 message TestResponse {}
 
 message ListRequest {
-  string env_id = 1;
+  string project_id = 1;
   string build_id = 2;
   DeploymentState state = 3 [(buf.validate.field).enum.defined_only = true];
   uint32 limit = 4;
