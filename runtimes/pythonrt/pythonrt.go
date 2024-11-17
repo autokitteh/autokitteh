@@ -471,7 +471,7 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktyp
 			if r.CallInfo != nil {
 				fnName = r.CallInfo.Function
 				args = kittehs.Transform(r.CallInfo.Args, func(v *pbValues.Value) sdktypes.Value {
-					// TODO: What if there's an error
+					// TODO(ENG-1838): What if there's an error
 					val, _ := sdktypes.ValueFromProto(v)
 					return val
 				})
