@@ -61,10 +61,12 @@ func (d *Dispatcher) listWaitingSignalsActivity(ctx context.Context, dstid sdkty
 }
 
 func (d *Dispatcher) startSessionActivity(ctx context.Context, session sdktypes.Session) (sdktypes.SessionID, error) {
+	pid := session.ProjectID()
 	ctx = akCtx.WithRequestOrginator(ctx, akCtx.Dispatcher)
 	var err error
-	if ctx, err = akCtx.WithOwnershipOf(ctx, d.svcs.DB.GetOwnership, session.ProjectID().UUIDValue()); err != nil {
-		return sdktypes.InvalidSessionID, fmt.Errorf("ownership: %w", err)
+
+	if ctx, err = akCtx.WithOwnershipOf(ctx, d.svcs.DB.GetOwnership, pid.UUIDValue()); err != nil {
+		return sdktypes.InvalidSessionID, fmt.Errorf("ownership of project %q: %w", pid, err)
 	}
 
 	sid, err := d.svcs.Sessions.Start(ctx, session)
@@ -72,16 +74,17 @@ func (d *Dispatcher) startSessionActivity(ctx context.Context, session sdktypes.
 }
 
 func (d *Dispatcher) getEventSessionDataActivity(ctx context.Context, event sdktypes.Event, opts *sdkservices.DispatchOptions) ([]sessionData, error) {
+	did := event.DestinationID()
 	ctx = akCtx.WithRequestOrginator(ctx, akCtx.EventWorkflow)
 	var err error
-	if ctx, err = akCtx.WithOwnershipOf(ctx, d.svcs.DB.GetOwnership, event.DestinationID().UUIDValue()); err != nil {
-		return nil, fmt.Errorf("ownership: %w", err)
+
+	if ctx, err = akCtx.WithOwnershipOf(ctx, d.svcs.DB.GetOwnership, did.UUIDValue()); err != nil {
+		return nil, fmt.Errorf("ownership of destination %q: %w", did, err)
 	}
 
 	eid := event.ID()
-	dstid := event.DestinationID()
 
-	sl := d.sl.With("event_id", eid, "destination_id", dstid)
+	sl := d.sl.With("event_id", eid, "destination_id", did)
 
 	if opts == nil {
 		opts = &sdkservices.DispatchOptions{}
@@ -117,13 +120,13 @@ func (d *Dispatcher) getEventSessionDataActivity(ctx context.Context, event sdkt
 
 	var ts []sdktypes.Trigger
 
-	if cid := dstid.ToConnectionID(); cid.IsValid() {
+	if cid := did.ToConnectionID(); cid.IsValid() {
 		if ts, err = d.svcs.Triggers.List(ctx, sdkservices.ListTriggersFilter{ConnectionID: cid}); err != nil {
 			return nil, temporalclient.TranslateError(err, "list triggers for %v", cid)
 		}
 
 		sl.Infof("found %d triggers for connection %v", len(ts), cid)
-	} else if tid := dstid.ToTriggerID(); tid.IsValid() {
+	} else if tid := did.ToTriggerID(); tid.IsValid() {
 		t, err := d.svcs.Triggers.Get(ctx, tid)
 		if err != nil {
 			return nil, temporalclient.TranslateError(err, "get trigger %v", tid)

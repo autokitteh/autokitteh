@@ -119,7 +119,7 @@ func (s *sessions) Start(ctx context.Context, session sdktypes.Session) (sdktype
 	if pid := session.ProjectID(); pid.IsValid() {
 		var err error
 		if ctx, err = akCtx.WithOwnershipOf(ctx, s.svcs.DB.GetOwnership, pid.UUIDValue()); err != nil {
-			return sdktypes.InvalidSessionID, fmt.Errorf("ownership: %w", err)
+			return sdktypes.InvalidSessionID, fmt.Errorf("ownership of project %q: %w", pid, err)
 		}
 	}
 

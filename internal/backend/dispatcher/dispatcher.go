@@ -50,10 +50,12 @@ func New(l *zap.Logger, cfg *Config, svcs Svcs) *Dispatcher {
 }
 
 func (d *Dispatcher) Dispatch(ctx context.Context, event sdktypes.Event, opts *sdkservices.DispatchOptions) (sdktypes.EventID, error) {
+	did := event.DestinationID()
 	ctx = akCtx.WithRequestOrginator(ctx, akCtx.Dispatcher)
 	var err error
-	if ctx, err = akCtx.WithOwnershipOf(ctx, d.svcs.DB.GetOwnership, event.DestinationID().UUIDValue()); err != nil {
-		return sdktypes.InvalidEventID, fmt.Errorf("ownership: %w", err)
+
+	if ctx, err = akCtx.WithOwnershipOf(ctx, d.svcs.DB.GetOwnership, did.UUIDValue()); err != nil {
+		return sdktypes.InvalidEventID, fmt.Errorf("ownership of destination %q: %w", did, err)
 	}
 
 	event = event.WithCreatedAt(time.Now())
@@ -64,14 +66,13 @@ func (d *Dispatcher) Dispatch(ctx context.Context, event sdktypes.Event, opts *s
 	event = event.WithID(eid)
 
 	sl := d.sl.With("event_id", eid)
-
 	sl.Infof("event %v saved", eid)
 
 	memo := map[string]string{
 		"event_id":         eid.String(),
 		"event_uuid":       eid.UUIDValue().String(),
-		"destination_id":   event.DestinationID().String(),
-		"destination_uuid": event.DestinationID().UUIDValue().String(),
+		"destination_id":   did.String(),
+		"destination_uuid": did.UUIDValue().String(),
 		"seq":              fmt.Sprintf("%d", event.Seq()),
 		"process_id":       fixtures.ProcessID(),
 	}
