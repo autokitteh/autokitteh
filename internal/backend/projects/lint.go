@@ -106,3 +106,23 @@ func checkConnectionNames(_ sdktypes.ProjectID, m *manifest.Manifest, _ map[stri
 
 	return vs
 }
+
+func checkTriggerNames(_ sdktypes.ProjectID, m *manifest.Manifest, _ map[string][]byte) []*sdktypes.CheckViolation {
+	names := make(map[string]int) // name -> count
+	for _, c := range m.Project.Triggers {
+		names[c.Name]++
+	}
+
+	var vs []*sdktypes.CheckViolation
+	for name, count := range names {
+		if count > 1 {
+			vs = append(vs, &sdktypes.CheckViolation{
+				FileName: manifestFile,
+				Level:    sdktypes.ViolationWarning,
+				Message:  fmt.Sprintf("%d triggers are named %q", count, name),
+			})
+		}
+	}
+
+	return vs
+}

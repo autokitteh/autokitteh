@@ -92,3 +92,23 @@ func Test_checkConnectionNames(t *testing.T) {
 	vs = checkConnectionNames(sdktypes.InvalidProjectID, m, nil)
 	require.Len(t, vs, 2)
 }
+
+func Test_checkTriggerNames(t *testing.T) {
+	m := initialManifest()
+	m.Project.Triggers = []*manifest.Trigger{
+		{Name: "A"},
+		{Name: "B"},
+	}
+	vs := checkTriggerNames(sdktypes.InvalidProjectID, m, nil)
+	require.Len(t, vs, 0)
+
+	m.Project.Triggers = []*manifest.Trigger{
+		{Name: "A"},
+		{Name: "B"},
+		{Name: "B"},
+		{Name: "C"},
+		{Name: "A"},
+	}
+	vs = checkTriggerNames(sdktypes.InvalidProjectID, m, nil)
+	require.Len(t, vs, 2)
+}
