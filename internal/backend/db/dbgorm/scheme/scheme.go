@@ -34,7 +34,6 @@ var Tables = []any{
 	&Build{},
 	&Connection{},
 	&Deployment{},
-	&Env{}, // TODO: Remove after migration.
 	&Event{},
 	&Ownership{},
 	&Project{},
@@ -217,27 +216,10 @@ func ParseEvent(e Event) (sdktypes.Event, error) {
 	})
 }
 
-// TODO: Remove after migration.
-type Env struct {
-	EnvID     sdktypes.UUID `gorm:"primaryKey;type:uuid;not null"`
-	ProjectID sdktypes.UUID `gorm:"index;type:uuid;not null"`
-	Name      string
-	DeletedAt gorm.DeletedAt `gorm:"index"`
-
-	// {pid.uuid}/{name}. easier to detect dups.
-	// See OrgMember for more.
-	MembershipID string `gorm:"uniqueIndex"`
-
-	// enforce foreign keys
-	Project   *Project
-	Ownership *Ownership `gorm:"polymorphic:Entity;"`
-}
-
 type Trigger struct {
 	TriggerID    sdktypes.UUID  `gorm:"primaryKey;type:uuid;not null"`
 	ProjectID    sdktypes.UUID  `gorm:"index;type:uuid;not null"`
 	ConnectionID *sdktypes.UUID `gorm:"index;type:uuid"`
-	EnvID        *sdktypes.UUID `gorm:"index;type:uuid"` // TODO: Remove after migration.
 
 	SourceType   string `gorm:"index"`
 	EventType    string
@@ -256,7 +238,6 @@ type Trigger struct {
 	// enforce foreign keys
 	Project    *Project
 	Connection *Connection
-	Env        *Env       // TODO: Remove after migration.
 	Ownership  *Ownership `gorm:"polymorphic:Entity;"`
 }
 
@@ -342,7 +323,6 @@ func ParseSessionCallAttemptComplete(c SessionCallAttempt) (d sdktypes.SessionCa
 type Session struct {
 	SessionID        sdktypes.UUID  `gorm:"primaryKey;type:uuid;not null"`
 	BuildID          *sdktypes.UUID `gorm:"index;type:uuid"`
-	EnvID            *sdktypes.UUID `gorm:"index;type:uuid"` // TODO: Remove after migration.
 	ProjectID        *sdktypes.UUID `gorm:"index;type:uuid"`
 	DeploymentID     *sdktypes.UUID `gorm:"index;type:uuid"`
 	EventID          *sdktypes.UUID `gorm:"index;type:uuid"`
@@ -356,7 +336,6 @@ type Session struct {
 
 	// enforce foreign keys
 	Build      *Build
-	Env        *Env // TODO: Remove after migration.
 	Deployment *Deployment
 	Event      *Event     `gorm:"references:EventID"`
 	Ownership  *Ownership `gorm:"polymorphic:Entity;"`
@@ -404,7 +383,6 @@ func ParseSession(s Session) (sdktypes.Session, error) {
 
 type Deployment struct {
 	DeploymentID sdktypes.UUID  `gorm:"primaryKey;type:uuid;not null"`
-	EnvID        *sdktypes.UUID `gorm:"index;type:uuid"` // TODO: Remove after migration.
 	ProjectID    *sdktypes.UUID `gorm:"index;type:uuid"`
 	BuildID      sdktypes.UUID  `gorm:"type:uuid;not null"`
 	State        int32
@@ -414,7 +392,6 @@ type Deployment struct {
 
 	// enforce foreign keys
 	Project   *Project
-	Env       *Env // TODO: Remove after migration.
 	Build     *Build
 	Ownership *Ownership `gorm:"polymorphic:Entity;"`
 }
