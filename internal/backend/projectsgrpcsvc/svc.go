@@ -290,13 +290,8 @@ func (s *Server) Lint(ctx context.Context, req *connect.Request[projectsv1.LintR
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	pbVs := make([]*projectsv1.CheckViolation, 0, len(vs))
-	for i := range vs {
-		pbVs = append(pbVs, &vs[i])
-	}
-
 	resp := projectsv1.LintResponse{
-		Violations: pbVs,
+		Violations: vs,
 	}
 	return connect.NewResponse(&resp), nil
 }

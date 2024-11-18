@@ -267,7 +267,7 @@ func findConnection(id sdktypes.ConnectionID, conns []sdktypes.Connection) (sdkt
 	return sdktypes.Connection{}, false
 }
 
-func (ps *Projects) Lint(ctx context.Context, projectID sdktypes.ProjectID, resources map[string][]byte) ([]sdktypes.CheckViolation, error) {
+func (ps *Projects) Lint(ctx context.Context, projectID sdktypes.ProjectID, resources map[string][]byte) ([]*sdktypes.CheckViolation, error) {
 	data, ok := resources["autokitteh.yaml"]
 	if !ok {
 		var err error
@@ -282,7 +282,7 @@ func (ps *Projects) Lint(ctx context.Context, projectID sdktypes.ProjectID, reso
 		return nil, err
 	}
 
-	var violations []sdktypes.CheckViolation
+	var violations []*sdktypes.CheckViolation
 	for _, checker := range lintChecks {
 		violations = append(violations, checker(manifest)...)
 	}

@@ -54,8 +54,7 @@ func runLint(cmd *cobra.Command, args []string) error {
 	}
 
 	w := cmd.OutOrStdout()
-	for i := range vs { // Can't iterate over values, they contain lock.
-		v := &vs[i]
+	for _, v := range vs {
 		level := levelName(v.Level)
 		fmt.Fprintf(w, "%s:%d - %s - %s\n", v.FileName, v.Line, level, v.Message)
 	}
