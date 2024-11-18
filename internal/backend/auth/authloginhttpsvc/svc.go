@@ -204,12 +204,6 @@ func (a *svc) newSuccessLoginHandler(ld *loginData) http.Handler {
 
 			u := sdktypes.NewUser(ld.Email, ld.DisplayName)
 
-			if a.Cfg.UseLegacyUserIDs {
-				u = u.WithID(newLegacyUserIDFromUserData(ld))
-
-				sl.With("legacy_user_id", u.ID()).Infof("using legacy user id: %v", u.ID())
-			}
-
 			if uid, err = a.Users.Create(r.Context(), u); err != nil {
 				sl.With("err", err).Errorf("failed creating user: %v", err)
 				http.Error(w, "internal server error", http.StatusInternalServerError)
