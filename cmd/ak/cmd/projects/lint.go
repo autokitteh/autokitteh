@@ -54,12 +54,18 @@ func runLint(cmd *cobra.Command, args []string) error {
 	}
 
 	w := cmd.OutOrStdout()
+
+	ok := true
 	for _, v := range vs {
 		level := levelName(v.Level)
 		fmt.Fprintf(w, "%s:%d - %s - %s\n", v.FileName, v.Line, level, v.Message)
+
+		if v.Level == projectsv1.CheckViolation_LEVEL_ERROR {
+			ok = false
+		}
 	}
 
-	if len(vs) > 0 {
+	if !ok {
 		return fmt.Errorf("lint errors")
 	}
 

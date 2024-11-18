@@ -282,10 +282,6 @@ func (ps *Projects) Lint(ctx context.Context, projectID sdktypes.ProjectID, reso
 		return nil, err
 	}
 
-	var violations []*sdktypes.CheckViolation
-	for _, checker := range lintChecks {
-		violations = append(violations, checker(manifest)...)
-	}
-
+	violations := Validate(projectID, manifest, resources)
 	return violations, nil
 }
