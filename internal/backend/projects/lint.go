@@ -3,6 +3,7 @@ package projects
 import (
 	"fmt"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/projectsgrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/manifest"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -61,11 +62,12 @@ func checkEmptyVars(_ sdktypes.ProjectID, m *manifest.Manifest, _ map[string][]b
 }
 
 const (
-	mb             = 1 << 20
-	maxProjectSize = 10 * mb
+	mb = 1 << 20
 )
 
 func checkSize(_ sdktypes.ProjectID, _ *manifest.Manifest, resources map[string][]byte) []*sdktypes.CheckViolation {
+	maxProjectSize := projectsgrpcsvc.Configs.Default.MaxUploadSize
+
 	total := 0
 	for _, data := range resources {
 		total += len(data)

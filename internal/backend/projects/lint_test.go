@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.autokitteh.dev/autokitteh/internal/backend/projectsgrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/manifest"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -57,6 +58,8 @@ func Test_checkEmptyVars(t *testing.T) {
 }
 
 func Test_checkSize(t *testing.T) {
+	maxProjectSize := projectsgrpcsvc.Configs.Default.MaxUploadSize
+
 	resources := make(map[string][]byte)
 	resources["one"] = make([]byte, 100)
 	resources["two"] = make([]byte, 200)
