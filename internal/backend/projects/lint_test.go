@@ -1,6 +1,10 @@
 package projects
 
 import (
+	"archive/tar"
+	"bytes"
+	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -111,4 +115,41 @@ func Test_checkTriggerNames(t *testing.T) {
 	}
 	vs = checkTriggerNames(sdktypes.InvalidProjectID, m, nil)
 	require.Len(t, vs, 2)
+}
+
+func createResources(fileName, fnName string) map[string][]byte {
+	codeTmpl := `
+	def %s(event):
+		pass
+	`
+	code := []byte(fmt.Sprintf(codeTmpl, fnName))
+	var buf bytes.Buffer
+	tf := tar.NewWriter(&buf)
+	hdr := tar.Header{
+		Name: fileName,
+		Mode: 0o600,
+		Size: int64(len(code)),
+	}
+
+	tf.WriteHeader(&hdr)
+	tf.Write(code)
+	tf.Close()
+
+	m := map[string][]byte{
+		"code.tar": buf.Bytes(),
+	}
+	return m
+}
+
+func Test_checkHandlers(t *testing.T) {
+	m := initialManifest()
+
+	fileName, fnName, _ := strings.Cut(m.Project.Triggers[0].Call, ":")
+	resources := createResources(fileName, fnName)
+	vs := checkHandlers(sdktypes.InvalidProjectID, m, resources)
+	require.Equal(t, 0, len(vs))
+
+	resources = createResources(fileName, fnName+"ZZZ")
+	vs = checkHandlers(sdktypes.InvalidProjectID, m, resources)
+	require.Equal(t, 1, len(vs))
 }
