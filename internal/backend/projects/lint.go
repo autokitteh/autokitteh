@@ -1,20 +1,24 @@
+/*
+	Project linting
+
+We don't want to run a Python/NodeJS process on every call to lint, so we're using regular expression.
+This means we won't be right every time but close enought for now.
+Later we can think of running a lint/lsp server for these calls.
+*/
 package projects
 
 import (
-	"context"
+	"bufio"
+	"bytes"
 	"fmt"
-	"os"
 	"path"
+	"regexp"
 	"slices"
 	"strings"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/projectsgrpcsvc"
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/internal/manifest"
-	"go.autokitteh.dev/autokitteh/runtimes/pythonrt"
-	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-	"go.uber.org/zap"
 )
 
 type Checker func(projectID sdktypes.ProjectID, manifest *manifest.Manifest, resources map[string][]byte) []*sdktypes.CheckViolation
@@ -27,8 +31,16 @@ const manifestFile = "autokitteh.yaml"
 
 func init() {
 	lintCheckers = []Checker{
+		// Generic
 		checkNoTriggers,
 		checkEmptyVars,
+		checkSize,
+		checkConnectionNames,
+		checkTriggerNames,
+
+		// Runtime
+		checkHandlers,
+		checkCodeConnections,
 	}
 }
 
@@ -50,6 +62,7 @@ var Rules = map[string]string{ // ID -> Descrption
 	"E6": "File not found",
 	"E7": "Syntax error",
 	"E8": "Missing handler",
+	"E9": "Nonexisting connection",
 
 	"W1": "Empty variable",
 }
@@ -79,6 +92,19 @@ func checkEmptyVars(_ sdktypes.ProjectID, m *manifest.Manifest, _ map[string][]b
 				Message:  fmt.Sprintf("%q is empty", v.Name),
 				RuleId:   "W1",
 			})
+		}
+	}
+
+	for _, conn := range m.Project.Connections {
+		for _, v := range conn.Vars {
+			if v.Value == "" {
+				vs = append(vs, &sdktypes.CheckViolation{
+					FileName: manifestFile,
+					Level:    sdktypes.ViolationWarning,
+					Message:  fmt.Sprintf("connection %q: %q is empty", conn.Name, v.Name),
+					RuleId:   "W1",
+				})
+			}
 		}
 	}
 
@@ -205,39 +231,122 @@ func checkHandlers(_ sdktypes.ProjectID, m *manifest.Manifest, resources map[str
 	return vs
 }
 
-func pyExports(fileName string) ([]string, error) {
-	cfg := pythonrt.Config{
-		RunnerType: "local",
+func checkCodeConnections(_ sdktypes.ProjectID, m *manifest.Manifest, resources map[string][]byte) []*sdktypes.CheckViolation {
+	defConns := make(map[string]bool)
+	for _, conn := range m.Project.Connections {
+		defConns[conn.Name] = true
+		// TODO: Should we use GetKey as well?
 	}
-	log := zap.NewExample()
-	getLocalAddr := func() string { return "127.0.0.1" }
 
-	rt, err := pythonrt.New(&cfg, log, getLocalAddr)
-	if err != nil {
+	var vs []*sdktypes.CheckViolation
+	for fileName, code := range resources {
+		fn := codeConnFns[path.Ext(fileName)]
+		if fn == nil {
+			// TODO: Log? Error?
+			continue
+		}
+
+		for _, conn := range fn(code) {
+			if !defConns[conn.Name] {
+				vs = append(vs, &sdktypes.CheckViolation{
+					FileName: fileName,
+					Line:     conn.Line,
+					Message:  fmt.Sprintf("%q - non existing connection", conn.Name),
+					RuleId:   "E9",
+				})
+
+			}
+		}
+	}
+
+	return vs
+}
+
+type connCall struct {
+	Name string
+	Line uint32
+}
+
+var codeConnFns = map[string]func([]byte) []connCall{
+	".py": pyConnCalls,
+}
+
+// asana_client("asana1") -> asana1
+// boto3_client(conn_name) -> boto3_client
+var pyConnCallRe = regexp.MustCompile(`(\w+)\s*\(('|")?([A-Za-z_]\w*)('|")?`)
+
+func pyConnCalls(data []byte) []connCall {
+	var calls []connCall
+	var lnum uint32 = 0
+
+	s := bufio.NewScanner(bytes.NewReader(data))
+	for s.Scan() {
+		lnum++
+		match := pyConnCallRe.FindStringSubmatch(s.Text())
+		if match == nil {
+			continue
+		}
+
+		// FIXME: Ignore comments (e.g. "# boto3_client('aws1')")
+
+		fnName, conn := match[1], match[3]
+		if !pyClientFns[fnName] {
+			continue
+		}
+
+		calls = append(calls, connCall{conn, lnum})
+	}
+
+	if err := s.Err(); err != nil {
+		// TODO: Log
+		return nil
+	}
+
+	return calls
+}
+
+// Should be in sync with runtimes/pythonrt/py-sdk/autokitteh
+var pyClientFns = map[string]bool{
+	"asana_client":           true,
+	"boto3_client":           true,
+	"confluence_client":      true,
+	"discord_client":         true,
+	"github_client":          true,
+	"gmail_client":           true,
+	"google_calendar_client": true,
+	"google_drive_client":    true,
+	"google_forms_client":    true,
+	"google_sheets_client":   true,
+	"jira_client":            true,
+	"openai_client":          true,
+	"redis_client":           true,
+	"slack_client":           true,
+	"twilio_client":          true,
+}
+
+var callRe = regexp.MustCompile(`^(def|class)\s+(\w+)\(`)
+
+func pyExports(data []byte) ([]string, error) {
+	var names []string
+
+	s := bufio.NewScanner(bytes.NewReader(data))
+
+	for s.Scan() {
+		matches := callRe.FindStringSubmatch(s.Text())
+		if matches == nil {
+			continue
+		}
+		names = append(names, matches[2])
+	}
+
+	if err := s.Err(); err != nil {
 		return nil, err
 	}
 
-	runner, err := rt.New()
-	if err != nil {
-		return nil, err
-	}
-
-	cbs := sdkservices.RunCallbacks{
-		Load: func(ctx context.Context, rid sdktypes.RunID, path string) (map[string]sdktypes.Value, error) {
-			return nil, nil
-		},
-	}
-
-	run, err := runner.Run(context.Background(), sdktypes.NewRunID(), sdktypes.NewSessionID(), fileName, nil, nil, &cbs)
-	if err != nil {
-		return nil, err
-	}
-
-	names := kittehs.TransformMapToList(run.Values(), func(k string, v sdktypes.Value) string { return k })
 	return names, nil
 }
 
-var exportsByExt = map[string]func(string) ([]string, error){
+var exportsByExt = map[string]func([]byte) ([]string, error){
 	".py": pyExports,
 }
 
@@ -245,21 +354,11 @@ func fileExports(fileName string, data []byte) ([]string, error) {
 	ext := path.Ext(fileName)
 	exportsFn, ok := exportsByExt[ext]
 	if !ok {
+		// TODO: Do we want to return empty slice without error?
 		return nil, fmt.Errorf("no runtime for %q", fileName)
 	}
 
-	tmp, err := os.CreateTemp("", path.Ext(fileName))
-	if err != nil {
-		return nil, err
-	}
-	defer tmp.Close()
-
-	if _, err := tmp.Write(data); err != nil {
-		return nil, err
-	}
-	tmp.Close()
-
-	names, err := exportsFn(fileName)
+	names, err := exportsFn(data)
 	if err != nil {
 		return nil, err
 	}

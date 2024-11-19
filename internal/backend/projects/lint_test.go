@@ -1,8 +1,6 @@
 package projects
 
 import (
-	"archive/tar"
-	"bytes"
 	"fmt"
 	"strings"
 	"testing"
@@ -19,6 +17,14 @@ func initialManifest() *manifest.Manifest {
 		Version: "v1",
 		Project: &manifest.Project{
 			Name: "test",
+			Connections: []*manifest.Connection{
+				{
+					Name: "conn1",
+					Vars: []*manifest.Var{
+						{Name: "TOK", Value: "s3cr3t"},
+					},
+				},
+			},
 			Triggers: []*manifest.Trigger{
 				{
 					Name:      "events",
@@ -119,32 +125,22 @@ func Test_checkTriggerNames(t *testing.T) {
 
 func createResources(fileName, fnName string) map[string][]byte {
 	codeTmpl := `
-	def %s(event):
-		pass
+def %s(event):
+	pass
 	`
 	code := []byte(fmt.Sprintf(codeTmpl, fnName))
-	var buf bytes.Buffer
-	tf := tar.NewWriter(&buf)
-	hdr := tar.Header{
-		Name: fileName,
-		Mode: 0o600,
-		Size: int64(len(code)),
-	}
-
-	tf.WriteHeader(&hdr)
-	tf.Write(code)
-	tf.Close()
-
 	m := map[string][]byte{
-		"code.tar": buf.Bytes(),
+		fileName: code,
 	}
+
 	return m
 }
 
 func Test_checkHandlers(t *testing.T) {
 	m := initialManifest()
 
-	fileName, fnName, _ := strings.Cut(m.Project.Triggers[0].Call, ":")
+	fileName, fnName, found := strings.Cut(m.Project.Triggers[0].Call, ":")
+	require.Truef(t, found, "bad call - %q", m.Project.Triggers[0].Call)
 	resources := createResources(fileName, fnName)
 	vs := checkHandlers(sdktypes.InvalidProjectID, m, resources)
 	require.Equal(t, 0, len(vs))
@@ -152,4 +148,58 @@ func Test_checkHandlers(t *testing.T) {
 	resources = createResources(fileName, fnName+"ZZZ")
 	vs = checkHandlers(sdktypes.InvalidProjectID, m, resources)
 	require.Equal(t, 1, len(vs))
+}
+
+func Test_pyExports(t *testing.T) {
+	code := []byte(`
+def fn():
+	pass
+
+class cls():
+	pass
+
+# def x
+define = 3
+`)
+
+	names, err := pyExports(code)
+	require.NoError(t, err)
+	require.Equal(t, []string{"fn", "cls"}, names)
+}
+
+func Test_pyConnCalls(t *testing.T) {
+	code := []byte(`
+client = boto3_client("aws1")
+print("hello")
+conn = asana_client('asana2')
+g = gmail_client(conn1)
+`)
+
+	conns := pyConnCalls(code)
+	expected := []connCall{
+		{"aws1", 2},
+		{"asana2", 4},
+		{"conn1", 5},
+	}
+	require.Equal(t, expected, conns)
+}
+
+func Test_checkCodeConnections(t *testing.T) {
+	m := initialManifest()
+	codeTmpl := `
+	boto3_client("%s")
+	`
+
+	code := []byte(fmt.Sprintf(codeTmpl, m.Project.Connections[0].Name))
+	fileName := "handler.py"
+	resources := map[string][]byte{
+		fileName: code,
+	}
+	vs := checkCodeConnections(sdktypes.InvalidProjectID, m, resources)
+	require.Len(t, vs, 0)
+
+	code = []byte(fmt.Sprintf(codeTmpl, m.Project.Connections[0].Name+"ZZZ"))
+	resources[fileName] = code
+	vs = checkCodeConnections(sdktypes.InvalidProjectID, m, resources)
+	require.Len(t, vs, 1)
 }
