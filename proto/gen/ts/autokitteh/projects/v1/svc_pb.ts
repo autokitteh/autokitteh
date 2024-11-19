@@ -830,6 +830,11 @@ export class CheckViolation extends Message<CheckViolation> {
    */
   message = "";
 
+  /**
+   * @generated from field: string rule_id = 5;
+   */
+  ruleId = "";
+
   constructor(data?: PartialMessage<CheckViolation>) {
     super();
     proto3.util.initPartial(data, this);
@@ -842,6 +847,7 @@ export class CheckViolation extends Message<CheckViolation> {
     { no: 2, name: "line", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 3, name: "level", kind: "enum", T: proto3.getEnumType(CheckViolation_Level) },
     { no: 4, name: "message", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "rule_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CheckViolation {

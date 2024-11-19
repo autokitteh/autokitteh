@@ -48,6 +48,7 @@ func runLint(cmd *cobra.Command, args []string) error {
 
 	ctx, cancel := common.LimitedContext()
 	defer cancel()
+	// TODO: A flag for project ID
 	vs, err := projects().Lint(ctx, sdktypes.InvalidProjectID, resources)
 	if err != nil {
 		return err
@@ -58,9 +59,10 @@ func runLint(cmd *cobra.Command, args []string) error {
 	ok := true
 	for _, v := range vs {
 		level := levelName(v.Level)
-		fmt.Fprintf(w, "%s:%d - %s - %s\n", v.FileName, v.Line, level, v.Message)
+		// TODO: JSON?
+		fmt.Fprintf(w, "%s:%d - %s (%s) - %s\n", v.FileName, v.Line, level, v.RuleId, v.Message)
 
-		if v.Level == projectsv1.CheckViolation_LEVEL_ERROR {
+		if v.Level == sdktypes.ViolationError {
 			ok = false
 		}
 	}

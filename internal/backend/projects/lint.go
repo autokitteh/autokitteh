@@ -41,6 +41,19 @@ func Validate(projectID sdktypes.ProjectID, manifest *manifest.Manifest, resourc
 	return vs
 }
 
+var Rules = map[string]string{ // ID -> Descrption
+	"E1": "No triggers defined",
+	"E2": "Project size too large",
+	"E3": "Duplicate connection name",
+	"E4": "Duplicate trigger name",
+	"E5": "Bad `call` format",
+	"E6": "File not found",
+	"E7": "Syntax error",
+	"E8": "Missing handler",
+
+	"W1": "Empty variable",
+}
+
 func checkNoTriggers(_ sdktypes.ProjectID, m *manifest.Manifest, _ map[string][]byte) []*sdktypes.CheckViolation {
 	if len(m.Project.Triggers) == 0 {
 		return []*sdktypes.CheckViolation{
@@ -48,6 +61,7 @@ func checkNoTriggers(_ sdktypes.ProjectID, m *manifest.Manifest, _ map[string][]
 				FileName: manifestFile,
 				Level:    sdktypes.ViolationError,
 				Message:  "no triggers",
+				RuleId:   "E1",
 			},
 		}
 	}
@@ -63,6 +77,7 @@ func checkEmptyVars(_ sdktypes.ProjectID, m *manifest.Manifest, _ map[string][]b
 				FileName: manifestFile,
 				Level:    sdktypes.ViolationWarning,
 				Message:  fmt.Sprintf("%q is empty", v.Name),
+				RuleId:   "W1",
 			})
 		}
 	}
@@ -89,6 +104,7 @@ func checkSize(_ sdktypes.ProjectID, _ *manifest.Manifest, resources map[string]
 				FileName: manifestFile,
 				Level:    sdktypes.ViolationError,
 				Message:  fmt.Sprintf("project size (%.2fMB) exceeds limt of %dMB", sizeMB, maxProjectSize/mb),
+				RuleId:   "E2",
 			},
 		}
 	}
@@ -109,6 +125,7 @@ func checkConnectionNames(_ sdktypes.ProjectID, m *manifest.Manifest, _ map[stri
 				FileName: manifestFile,
 				Level:    sdktypes.ViolationWarning,
 				Message:  fmt.Sprintf("%d connections are named %q", count, name),
+				RuleId:   "E3",
 			})
 		}
 	}
@@ -129,6 +146,7 @@ func checkTriggerNames(_ sdktypes.ProjectID, m *manifest.Manifest, _ map[string]
 				FileName: manifestFile,
 				Level:    sdktypes.ViolationWarning,
 				Message:  fmt.Sprintf("%d triggers are named %q", count, name),
+				RuleId:   "E4",
 			})
 		}
 	}
@@ -146,6 +164,7 @@ func checkHandlers(_ sdktypes.ProjectID, m *manifest.Manifest, resources map[str
 				FileName: manifestFile,
 				Level:    sdktypes.ViolationError,
 				Message:  fmt.Sprintf(`%q - bad call definition (should be something like "handler.py:on_event"`, t.Call),
+				RuleId:   "E5",
 			})
 			continue
 		}
@@ -156,6 +175,7 @@ func checkHandlers(_ sdktypes.ProjectID, m *manifest.Manifest, resources map[str
 				FileName: manifestFile,
 				Level:    sdktypes.ViolationError,
 				Message:  fmt.Sprintf("file %q not found", fileName),
+				RuleId:   "E6",
 			})
 			continue
 		}
@@ -166,6 +186,7 @@ func checkHandlers(_ sdktypes.ProjectID, m *manifest.Manifest, resources map[str
 				FileName: manifestFile,
 				Level:    sdktypes.ViolationError,
 				Message:  fmt.Sprintf("can't parse %q - %s", fileName, err),
+				RuleId:   "E7",
 			})
 			continue
 		}
@@ -175,6 +196,7 @@ func checkHandlers(_ sdktypes.ProjectID, m *manifest.Manifest, resources map[str
 				FileName: manifestFile,
 				Level:    sdktypes.ViolationError,
 				Message:  fmt.Sprintf("%q not found in %q", handler, fileName),
+				RuleId:   "E8",
 			})
 			continue
 		}

@@ -129,6 +129,7 @@ message CheckViolation {
   uint32 line = 2;
   Level level = 3;
   string message = 4;
+  string rule_id = 5;
 }
 
 message LintResponse {
