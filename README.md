@@ -108,10 +108,9 @@ $ ak version
 ## Build Requirements (_Full_ Builds Only)
 
 - buf
-- docker
 - go >= 1.23
+- shellcheck
 - golangci-lint (auto-downloaded during builds if missing)
-- shellcheck (auto-pulled via docker during builds if missing)
 
 ## Recommended Dev Tools
 
@@ -120,6 +119,7 @@ $ ak version
 - jq (for advanced output formatting)
 - atlasgo (for new DB migrations)
 - nodejs >= 20 (only if updating the UI)
+- docker
 
 ## Contact Us
 

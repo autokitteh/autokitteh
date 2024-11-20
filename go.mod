@@ -1,8 +1,6 @@
 module go.autokitteh.dev/autokitteh
 
-go 1.23
-
-toolchain go1.23.1
+go 1.23.1
 
 require (
 	ariga.io/atlas-provider-gorm v0.5.0
