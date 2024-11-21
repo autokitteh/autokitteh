@@ -2,11 +2,11 @@ package projects
 
 import (
 	"fmt"
-	"io"
 	"os"
 
 	"github.com/spf13/cobra"
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
+	"go.autokitteh.dev/autokitteh/internal/resolver"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 
 	projectsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/projects/v1"
@@ -14,13 +14,19 @@ import (
 
 var (
 	lintOpts struct {
-		manifestPath string
+		manifestPath    string
+		projectNameOrID string
+		dirPaths        []string
+		filePaths       []string
 	}
 )
 
 func init() {
 	// Command-specific flags.
 	lintCmd.Flags().StringVarP(&lintOpts.manifestPath, "manifest", "m", "", "YAML manifest file containing project settings")
+	lintCmd.Flags().StringVarP(&lintOpts.projectNameOrID, "project", "p", "", "project name (or ID)")
+	lintCmd.Flags().StringArrayVarP(&lintOpts.dirPaths, "dir", "d", []string{}, "0 or more directory paths")
+	lintCmd.Flags().StringArrayVarP(&lintOpts.filePaths, "file", "f", []string{}, "0 or more file paths")
 }
 
 var lintCmd = common.StandardCommand(&cobra.Command{
@@ -30,26 +36,46 @@ var lintCmd = common.StandardCommand(&cobra.Command{
 	RunE:  runLint,
 })
 
+func buildResources() (map[string][]byte, error) {
+	dirPaths := lintOpts.dirPaths
+	if len(lintOpts.dirPaths)+len(lintOpts.filePaths) == 0 {
+		dirPaths = []string{"."}
+	}
+
+	resources, err := common.CollectUploads(dirPaths, lintOpts.filePaths)
+	if err != nil {
+		return nil, err
+	}
+
+	data, err := os.ReadFile(lintOpts.manifestPath)
+	if err != nil {
+		return nil, err
+	}
+
+	resources["autokitteh.yaml"] = data
+	return resources, nil
+}
+
 func runLint(cmd *cobra.Command, args []string) error {
-	file, err := os.Open(lintOpts.manifestPath)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	data, err := io.ReadAll(file)
-	if err != nil {
-		return err
-	}
-
-	resources := map[string][]byte{
-		"autokitteh.yaml": data,
-	}
-
+	r := resolver.Resolver{Client: common.Client()}
 	ctx, cancel := common.LimitedContext()
 	defer cancel()
-	// TODO: A flag for project ID
-	vs, err := projects().Lint(ctx, sdktypes.InvalidProjectID, resources)
+
+	projectID := sdktypes.InvalidProjectID
+	if lintOpts.projectNameOrID != "" {
+		_, pid, err := r.ProjectNameOrID(ctx, lintOpts.projectNameOrID)
+		if err != nil {
+			return err
+		}
+		projectID = pid
+	}
+
+	resources, err := buildResources()
+	if err != nil {
+		return err
+	}
+
+	vs, err := projects().Lint(ctx, projectID, resources)
 	if err != nil {
 		return err
 	}

@@ -89,7 +89,7 @@ func checkEmptyVars(_ sdktypes.ProjectID, m *manifest.Manifest, _ map[string][]b
 			vs = append(vs, &sdktypes.CheckViolation{
 				FileName: manifestFile,
 				Level:    sdktypes.ViolationWarning,
-				Message:  fmt.Sprintf("%q is empty", v.Name),
+				Message:  fmt.Sprintf("variable %q is empty", v.Name),
 				RuleId:   "W1",
 			})
 		}
@@ -101,7 +101,7 @@ func checkEmptyVars(_ sdktypes.ProjectID, m *manifest.Manifest, _ map[string][]b
 				vs = append(vs, &sdktypes.CheckViolation{
 					FileName: manifestFile,
 					Level:    sdktypes.ViolationWarning,
-					Message:  fmt.Sprintf("connection %q: %q is empty", conn.Name, v.Name),
+					Message:  fmt.Sprintf("connection %q variable %q is empty", conn.Name, v.Name),
 					RuleId:   "W1",
 				})
 			}
