@@ -50,7 +50,7 @@ func (w *Svc) Start(context.Context) error {
 		return nil
 	}
 
-	webfs, version, err := webplatform.LoadFS()
+	webfs, version, err := webplatform.LoadFS(w.l)
 	if err != nil {
 		if errors.Is(err, sdkerrors.ErrNotFound) {
 			w.l.Warn("web platform distribution not found, web platform server disabled")

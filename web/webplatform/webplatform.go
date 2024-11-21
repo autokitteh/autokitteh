@@ -4,11 +4,14 @@ import (
 	"archive/zip"
 	"bytes"
 	"embed"
+	"fmt"
 	"io"
 	"io/fs"
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
@@ -16,7 +19,7 @@ import (
 	"github.com/psanford/memfs"
 )
 
-//go:embed *.zip
+//go:embed VERSION *.zip
 var zipFS embed.FS
 
 var distRegex = regexp.MustCompile(`^autokitteh-web-v(\d+\.\d+\.\d+)\.zip$`)
@@ -27,17 +30,35 @@ func DistFilename() (string, error) {
 		return "", err
 	}
 
-	_, de := kittehs.FindFirst(des, func(de fs.DirEntry) bool { return distRegex.MatchString(de.Name()) })
-	if de == nil {
+	des = kittehs.Filter(des, func(de fs.DirEntry) bool { return distRegex.MatchString(de.Name()) })
+	if n := len(des); n == 0 {
 		return "", sdkerrors.ErrNotFound
+	} else if n != 1 {
+		return "", fmt.Errorf("%w: found %d>1 distribution zip files", sdkerrors.ErrConflict, n)
 	}
 
-	return de.Name(), nil
+	return des[0].Name(), nil
+}
+
+func ensureVersion(l *zap.Logger, loaded string) (bool, error) {
+	bs, err := fs.ReadFile(zipFS, "VERSION")
+	if err != nil {
+		return false, fmt.Errorf("VERSION: %w", sdkerrors.ErrNotFound)
+	}
+
+	expected, _, _ := strings.Cut(string(bs), " ")
+
+	if string(expected) != loaded {
+		l.Sugar().Warnf("expected webplaftorm VERSION %q != loaded distribution version %q. Run `make ak`?", expected, loaded)
+		return false, nil
+	}
+
+	return true, nil
 }
 
 // Loads the first zip file found in the embedded filesystem and
 // extracts the content under its dist/ directory in a memory filesystem.
-func LoadFS() (fs.FS, string, error) {
+func LoadFS(l *zap.Logger) (fs.FS, string, error) {
 	zipFilename, err := DistFilename()
 	if err != nil {
 		return nil, "", err
@@ -47,6 +68,10 @@ func LoadFS() (fs.FS, string, error) {
 
 	ms := distRegex.FindAllStringSubmatch(zipFilename, -1)
 	version := ms[0][1]
+
+	if _, err := ensureVersion(l, version); err != nil {
+		return nil, version, err
+	}
 
 	data, err := fs.ReadFile(zipFS, zipFilename)
 	if err != nil {
