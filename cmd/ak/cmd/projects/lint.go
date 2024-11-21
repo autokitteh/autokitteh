@@ -86,7 +86,8 @@ func runLint(cmd *cobra.Command, args []string) error {
 	for _, v := range vs {
 		level := levelName(v.Level)
 		// TODO: JSON?
-		fmt.Fprintf(w, "%s:%d - %s (%s) - %s\n", v.FileName, v.Line, level, v.RuleId, v.Message)
+		// FIXME (ENG-1867): RuleId arrives as empty string.
+		fmt.Fprintf(w, "%s:%d - %s - %s\n", v.FileName, v.Line, level, v.Message)
 
 		if v.Level == sdktypes.ViolationError {
 			ok = false
