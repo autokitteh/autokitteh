@@ -7,74 +7,40 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 
 	"go.uber.org/zap"
 
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 
 	"github.com/psanford/memfs"
 )
 
 //go:embed VERSION *.zip
-var zipFS embed.FS
-
-var distRegex = regexp.MustCompile(`^autokitteh-web-v(\d+\.\d+\.\d+)\.zip$`)
-
-func DistFilename() (string, error) {
-	des, err := fs.ReadDir(zipFS, ".")
-	if err != nil {
-		return "", err
-	}
-
-	des = kittehs.Filter(des, func(de fs.DirEntry) bool { return distRegex.MatchString(de.Name()) })
-	if n := len(des); n == 0 {
-		return "", sdkerrors.ErrNotFound
-	} else if n != 1 {
-		return "", fmt.Errorf("%w: found %d>1 distribution zip files", sdkerrors.ErrConflict, n)
-	}
-
-	return des[0].Name(), nil
-}
-
-func ensureVersion(l *zap.Logger, loaded string) (bool, error) {
-	bs, err := fs.ReadFile(zipFS, "VERSION")
-	if err != nil {
-		return false, fmt.Errorf("VERSION: %w", sdkerrors.ErrNotFound)
-	}
-
-	expected, _, _ := strings.Cut(string(bs), " ")
-
-	if string(expected) != loaded {
-		l.Sugar().Warnf("expected webplaftorm VERSION %q != loaded distribution version %q. Run `make ak`?", expected, loaded)
-		return false, nil
-	}
-
-	return true, nil
-}
+var distFS embed.FS
 
 // Loads the first zip file found in the embedded filesystem and
 // extracts the content under its dist/ directory in a memory filesystem.
 func LoadFS(l *zap.Logger) (fs.FS, string, error) {
-	zipFilename, err := DistFilename()
+	bs, err := fs.ReadFile(distFS, "VERSION")
 	if err != nil {
-		return nil, "", err
+		return nil, "", fmt.Errorf("VERSION: %w", err)
 	}
+
+	version, _, _ := strings.Cut(string(bs), " ")
 
 	memfs := memfs.New()
 
-	ms := distRegex.FindAllStringSubmatch(zipFilename, -1)
-	version := ms[0][1]
+	distFilename := fmt.Sprintf("autokitteh-web-v%s.zip", version)
 
-	if _, err := ensureVersion(l, version); err != nil {
-		return nil, version, err
-	}
-
-	data, err := fs.ReadFile(zipFS, zipFilename)
+	data, err := fs.ReadFile(distFS, distFilename)
 	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, "", sdkerrors.ErrNotFound
+		}
+
 		return nil, version, err
 	}
 

@@ -18,7 +18,7 @@ checksum() {
 
     echo "verifying checksum..."
 
-    sha=$(shasum -a 256 "$1" | cut -d ' ' -f 1)
+    sha=$(shasum -a 256 "$1" | awk '{ print $1 }')
 
     if [[ "${sha}" != "${EXPECTED_SHA}" ]]; then
         echo "checksum mismatch: ${sha} != ${EXPECTED_SHA}"

@@ -53,7 +53,7 @@ func (w *Svc) Start(context.Context) error {
 	webfs, version, err := webplatform.LoadFS(w.l)
 	if err != nil {
 		if errors.Is(err, sdkerrors.ErrNotFound) {
-			w.l.Warn("web platform distribution not found, web platform server disabled")
+			w.l.Warn("web platform distribution not found, web platform server disabled. Run `make ak` to build with the latest webplatform.")
 			return nil
 		}
 		return err
