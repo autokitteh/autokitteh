@@ -184,12 +184,17 @@ func checkHandlers(_ sdktypes.ProjectID, m *manifest.Manifest, resources map[str
 	var vs []*sdktypes.CheckViolation
 
 	for _, t := range m.Project.Triggers {
+		// FIXME: Is it OK to have a trigger without "Call"? There are in the tests
+		if t.Call == "" {
+			continue
+		}
+
 		fileName, handler, found := strings.Cut(t.Call, ":")
 		if !found {
 			vs = append(vs, &sdktypes.CheckViolation{
 				FileName: manifestFile,
 				Level:    sdktypes.ViolationError,
-				Message:  fmt.Sprintf(`%q - bad call definition (should be something like "handler.py:on_event"`, t.Call),
+				Message:  fmt.Sprintf(`%q - bad call definition (should be something like "handler.py:on_event")`, t.Call),
 				RuleId:   "E5",
 			})
 			continue
@@ -217,7 +222,7 @@ func checkHandlers(_ sdktypes.ProjectID, m *manifest.Manifest, resources map[str
 			continue
 		}
 
-		if !slices.Contains(exports, handler) {
+		if exports != nil && !slices.Contains(exports, handler) {
 			vs = append(vs, &sdktypes.CheckViolation{
 				FileName: manifestFile,
 				Level:    sdktypes.ViolationError,
@@ -354,8 +359,7 @@ func fileExports(fileName string, data []byte) ([]string, error) {
 	ext := path.Ext(fileName)
 	exportsFn, ok := exportsByExt[ext]
 	if !ok {
-		// TODO: Do we want to return empty slice without error?
-		return nil, fmt.Errorf("no runtime for %q", fileName)
+		return nil, nil
 	}
 
 	names, err := exportsFn(data)
