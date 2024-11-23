@@ -133,7 +133,8 @@ project:
 {
   "project": {
     "project_id": "prj_00000000000000000000000001",
-    "name": "my_project"
+    "name": "my_project",
+    "owner_id": "usr_3kthzvm101aadc4f3845e391e1"
   }
 }
 

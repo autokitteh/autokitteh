@@ -113,6 +113,7 @@ func (c *client) List(ctx context.Context, filter sdkservices.ListDeploymentsFil
 		State:               filter.State.ToProto(),
 		Limit:               filter.Limit,
 		IncludeSessionStats: filter.IncludeSessionStats,
+		OwnerId:             filter.OwnerID.String(),
 	}))
 	if err != nil {
 		return nil, rpcerrors.ToSDKError(err)

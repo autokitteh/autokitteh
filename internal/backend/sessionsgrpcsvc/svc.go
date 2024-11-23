@@ -215,6 +215,10 @@ func (s *server) List(ctx context.Context, req *connect.Request[sessionsv1.ListR
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
+	if filter.OwnerID, err = sdktypes.ParseOwnerID(req.Msg.OwnerId); err != nil {
+		return nil, sdkerrors.AsConnectError(err)
+	}
+
 	if filter.ProjectID, err = sdktypes.ParseProjectID(req.Msg.ProjectId); err != nil {
 		return nil, sdkerrors.AsConnectError(err)
 	}

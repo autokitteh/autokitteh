@@ -16,6 +16,8 @@ export class User extends Message<User> {
   userId = "";
 
   /**
+   * if email is empty, user cannot login.
+   *
    * @generated from field: string email = 2;
    */
   email = "";

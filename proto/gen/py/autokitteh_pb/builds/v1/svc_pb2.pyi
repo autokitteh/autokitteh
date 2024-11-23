@@ -20,10 +20,12 @@ class GetResponse(_message.Message):
     def __init__(self, build: _Optional[_Union[_build_pb2.Build, _Mapping]] = ...) -> None: ...
 
 class ListRequest(_message.Message):
-    __slots__ = ["limit"]
+    __slots__ = ["limit", "owner_id"]
     LIMIT_FIELD_NUMBER: _ClassVar[int]
+    OWNER_ID_FIELD_NUMBER: _ClassVar[int]
     limit: int
-    def __init__(self, limit: _Optional[int] = ...) -> None: ...
+    owner_id: str
+    def __init__(self, limit: _Optional[int] = ..., owner_id: _Optional[str] = ...) -> None: ...
 
 class ListResponse(_message.Message):
     __slots__ = ["builds"]

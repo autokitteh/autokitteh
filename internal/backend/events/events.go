@@ -6,6 +6,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authz"
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -21,14 +22,26 @@ func New(z *zap.Logger, db db.DB) sdkservices.Events {
 }
 
 func (e *events) Get(ctx context.Context, id sdktypes.EventID) (sdktypes.Event, error) {
+	if err := authz.CheckContext(ctx, id, "read:get"); err != nil {
+		return sdktypes.InvalidEvent, err
+	}
+
 	return e.db.GetEventByID(ctx, id)
 }
 
 func (e *events) List(ctx context.Context, filter sdkservices.ListEventsFilter) ([]sdktypes.Event, error) {
+	if err := authz.CheckContext(ctx, sdktypes.InvalidEventID, "read:list"); err != nil {
+		return nil, err
+	}
+
 	return e.db.ListEvents(ctx, filter)
 }
 
 func (e *events) Save(ctx context.Context, event sdktypes.Event) (sdktypes.EventID, error) {
+	if err := authz.CheckContext(ctx, sdktypes.InvalidEventID, "create:save", authz.WithData("event", event), authz.BelongsToProjectOf(event.DestinationID().AsID())); err != nil {
+		return sdktypes.InvalidEventID, err
+	}
+
 	event = event.WithNewID()
 	if event.CreatedAt() == time.Unix(0, 0).UTC() {
 		event = event.WithCreatedAt(time.Now())

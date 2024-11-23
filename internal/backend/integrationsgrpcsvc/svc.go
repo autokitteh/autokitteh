@@ -5,6 +5,7 @@ import (
 
 	"connectrpc.com/connect"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authz"
 	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/proto"
@@ -42,10 +43,18 @@ func (s *server) Get(ctx context.Context, req *connect.Request[integrationsv1.Ge
 			return nil, sdkerrors.AsConnectError(err)
 		}
 
+		if err := authz.CheckContext(ctx, id, "get", nil); err != nil {
+			return nil, sdkerrors.AsConnectError(err)
+		}
+
 		if i, err = s.integrations.GetByID(ctx, id); err != nil {
 			return nil, sdkerrors.AsConnectError(err)
 		}
 	} else {
+		if err := authz.CheckContext(ctx, sdktypes.InvalidIntegrationID, "resolve", nil); err != nil {
+			return nil, sdkerrors.AsConnectError(err)
+		}
+
 		n, err := sdktypes.StrictParseSymbol(req.Msg.Name)
 		if err != nil {
 			return nil, sdkerrors.AsConnectError(err)
@@ -64,6 +73,10 @@ func (s *server) List(ctx context.Context, req *connect.Request[integrationsv1.L
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
+	if err := authz.CheckContext(ctx, sdktypes.InvalidIntegrationID, "list", nil); err != nil {
+		return nil, sdkerrors.AsConnectError(err)
+	}
+
 	// TODO: Tags
 
 	is, err := s.integrations.List(ctx, req.Msg.NameSubstring)
@@ -74,14 +87,4 @@ func (s *server) List(ctx context.Context, req *connect.Request[integrationsv1.L
 	return connect.NewResponse(&integrationsv1.ListResponse{
 		Integrations: kittehs.Transform(is, sdktypes.ToProto),
 	}), nil
-}
-
-func (*server) Call(context.Context, *connect.Request[integrationsv1.CallRequest]) (*connect.Response[integrationsv1.CallResponse], error) {
-	// TODO
-	return nil, sdkerrors.AsConnectError(sdkerrors.ErrNotImplemented)
-}
-
-func (*server) Configure(context.Context, *connect.Request[integrationsv1.ConfigureRequest]) (*connect.Response[integrationsv1.ConfigureResponse], error) {
-	// TODO
-	return nil, sdkerrors.AsConnectError(sdkerrors.ErrNotImplemented)
 }

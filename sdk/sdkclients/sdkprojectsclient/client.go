@@ -125,8 +125,8 @@ func (c *client) GetByName(ctx context.Context, n sdktypes.Symbol) (sdktypes.Pro
 	return project, nil
 }
 
-func (c *client) List(ctx context.Context) ([]sdktypes.Project, error) {
-	resp, err := c.client.List(ctx, connect.NewRequest(&projectsv1.ListRequest{}))
+func (c *client) List(ctx context.Context, oid sdktypes.OwnerID) ([]sdktypes.Project, error) {
+	resp, err := c.client.List(ctx, connect.NewRequest(&projectsv1.ListRequest{OwnerId: oid.String()}))
 	if err != nil {
 		return nil, rpcerrors.ToSDKError(err)
 	}

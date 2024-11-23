@@ -10,6 +10,8 @@ import (
 	"go.temporal.io/sdk/workflow"
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authz"
 	"go.autokitteh.dev/autokitteh/internal/backend/configset"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
@@ -65,6 +67,10 @@ func (sch *Scheduler) Start(ctx context.Context, dispatcher sdkservices.Dispatch
 }
 
 func (sch *Scheduler) Create(ctx context.Context, tid sdktypes.TriggerID, schedule string) error {
+	if err := authz.CheckContext(ctx, tid, "write:create-schedule", authz.WithData("schedule", schedule), authz.BelongsToProjectOf(tid)); err != nil {
+		return err
+	}
+
 	l := sch.sl.With("trigger_id", tid.String())
 
 	_, err := sch.temporal.Temporal().ScheduleClient().Create(
@@ -96,6 +102,10 @@ func (sch *Scheduler) Create(ctx context.Context, tid sdktypes.TriggerID, schedu
 }
 
 func (sch *Scheduler) Delete(ctx context.Context, tid sdktypes.TriggerID) error {
+	if err := authz.CheckContext(ctx, tid, "write:delete-schedule"); err != nil {
+		return err
+	}
+
 	sl := sch.sl.With("trigger_id", tid)
 
 	scheduleHandle := sch.temporal.Temporal().ScheduleClient().GetHandle(ctx, tid.String()) // validity of scheduleID is not checked by temporal
@@ -109,6 +119,10 @@ func (sch *Scheduler) Delete(ctx context.Context, tid sdktypes.TriggerID) error 
 }
 
 func (sch *Scheduler) Update(ctx context.Context, tid sdktypes.TriggerID, schedule string) error {
+	if err := authz.CheckContext(ctx, tid, "update:update-schedule", authz.WithData("schedule", schedule)); err != nil {
+		return err
+	}
+
 	sl := sch.sl.With("trigger_id", tid)
 
 	h := sch.temporal.Temporal().ScheduleClient().GetHandle(ctx, tid.String()) // validity of scheduleID is not checked by temporal
@@ -129,6 +143,8 @@ func (sch *Scheduler) Update(ctx context.Context, tid sdktypes.TriggerID, schedu
 
 func (sch *Scheduler) activity(ctx context.Context, tid sdktypes.TriggerID) error {
 	sl := sch.sl.With("trigger_id", tid)
+
+	ctx = authcontext.SetAuthnSystemUser(ctx)
 
 	t, err := sch.triggers.Get(ctx, tid)
 	if err != nil {

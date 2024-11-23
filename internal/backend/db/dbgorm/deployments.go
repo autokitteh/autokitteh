@@ -14,21 +14,12 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-func (gdb *gormdb) withUserDeployments(ctx context.Context) *gorm.DB {
-	return gdb.withUserEntity(ctx, "deployment")
-}
-
 func (gdb *gormdb) createDeployment(ctx context.Context, d *scheme.Deployment) error {
-	createFunc := func(tx *gorm.DB, uid string) error { return tx.Create(d).Error }
-	return gormErrNotFoundToForeignKey(
-		gdb.createEntityWithOwnership(ctx, createFunc, d, &d.BuildID, d.ProjectID))
+	return gormErrNotFoundToForeignKey(gdb.db.WithContext(ctx).Create(d).Error)
 }
 
 func (gdb *gormdb) deleteDeployment(ctx context.Context, deploymentID sdktypes.UUID) error {
 	return gdb.transaction(ctx, func(tx *tx) error {
-		if err := tx.isCtxUserEntity(tx.ctx, deploymentID); err != nil {
-			return err
-		}
 		return tx.deleteDeploymentsAndDependents(ctx, []sdktypes.UUID{deploymentID})
 	})
 }
@@ -72,10 +63,6 @@ func (gdb *gormdb) updateDeploymentState(
 	var oldState int32 = 0
 
 	if err := gdb.transaction(ctx, func(tx *tx) error {
-		if err := tx.isCtxUserEntity(tx.ctx, deploymentID); err != nil {
-			return err
-		}
-
 		if err := tx.db.Model(&d).Select("state").First(&oldState).Error; err != nil {
 			return err
 		}
@@ -92,11 +79,13 @@ func (gdb *gormdb) updateDeploymentState(
 }
 
 func (gdb *gormdb) getDeployment(ctx context.Context, deploymentID sdktypes.UUID) (*scheme.Deployment, error) {
-	return getOne[scheme.Deployment](gdb.withUserDeployments(ctx), "deployment_id = ?", deploymentID)
+	return getOne[scheme.Deployment](gdb.db.WithContext(ctx), "deployment_id = ?", deploymentID)
 }
 
 func (gdb *gormdb) listDeploymentsCommonQuery(ctx context.Context, filter sdkservices.ListDeploymentsFilter) *gorm.DB {
-	q := gdb.withUserDeployments(ctx)
+	q := gdb.db.WithContext(ctx)
+
+	q = withProjectOwnerID(q, "deployments", filter.OwnerID)
 
 	if filter.BuildID.IsValid() {
 		q = q.Where("deployments.build_id = ?", filter.BuildID.UUIDValue())
@@ -160,12 +149,12 @@ func (db *gormdb) CreateDeployment(ctx context.Context, deployment sdktypes.Depl
 	now := time.Now()
 
 	d := scheme.Deployment{
-		DeploymentID: deployment.ID().UUIDValue(),
-		BuildID:      deployment.BuildID().UUIDValue(),
-		ProjectID:    scheme.UUIDOrNil(deployment.ProjectID().UUIDValue()),
-		State:        int32(deployment.State().ToProto()),
-		CreatedAt:    now,
-		UpdatedAt:    now,
+		DeploymentID:     deployment.ID().UUIDValue(),
+		BuildID:          deployment.BuildID().UUIDValue(),
+		BelongsToProject: belongsToProjectIDOf(deployment),
+		State:            int32(deployment.State().ToProto()),
+		CreatedAt:        now,
+		UpdatedAt:        now,
 	}
 	return translateError(db.createDeployment(ctx, &d))
 }

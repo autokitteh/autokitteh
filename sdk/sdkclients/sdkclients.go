@@ -15,7 +15,8 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdkclients/sdkruntimesclient"
 	"go.autokitteh.dev/autokitteh/sdk/sdkclients/sdksessionsclient"
 	"go.autokitteh.dev/autokitteh/sdk/sdkclients/sdkstoreclient"
-	sdktriggerclient "go.autokitteh.dev/autokitteh/sdk/sdkclients/sdktriggersclient"
+	"go.autokitteh.dev/autokitteh/sdk/sdkclients/sdktriggersclient"
+	"go.autokitteh.dev/autokitteh/sdk/sdkclients/sdkusersclient"
 	"go.autokitteh.dev/autokitteh/sdk/sdkclients/sdkvarsclient"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 )
@@ -36,6 +37,7 @@ type client struct {
 	store        func() sdkservices.Store
 	triggers     func() sdkservices.Triggers
 	vars         func() sdkservices.Vars
+	users        func() sdkservices.Users
 }
 
 func New(params sdkclient.Params) sdkservices.Services {
@@ -54,7 +56,8 @@ func New(params sdkclient.Params) sdkservices.Services {
 		runtimes:     kittehs.LazyCache(sdkruntimesclient.New, params),
 		sessions:     kittehs.LazyCache(sdksessionsclient.New, params),
 		store:        kittehs.LazyCache(sdkstoreclient.New, params),
-		triggers:     kittehs.LazyCache(sdktriggerclient.New, params),
+		triggers:     kittehs.LazyCache(sdktriggersclient.New, params),
+		users:        kittehs.LazyCache(sdkusersclient.New, params),
 		vars:         kittehs.LazyCache(sdkvarsclient.New, params),
 	}
 }
@@ -72,4 +75,5 @@ func (c *client) Runtimes() sdkservices.Runtimes         { return c.runtimes() }
 func (c *client) Sessions() sdkservices.Sessions         { return c.sessions() }
 func (c *client) Store() sdkservices.Store               { return c.store() }
 func (c *client) Triggers() sdkservices.Triggers         { return c.triggers() }
+func (c *client) Users() sdkservices.Users               { return c.users() }
 func (c *client) Vars() sdkservices.Vars                 { return c.vars() }

@@ -87,7 +87,7 @@ func planProject(ctx context.Context, mproj *Project, client sdkservices.Service
 
 		desired = desired.WithID(pid)
 
-		if curr.Equal(desired) {
+		if curr.WithOwnerID(sdktypes.InvalidOwnerID).Equal(desired) {
 			log.Printf("no changes needed")
 		} else {
 			log.Printf("not as desired, will update")

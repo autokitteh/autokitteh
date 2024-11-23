@@ -11,6 +11,7 @@ type ListSessionsFilter struct {
 	ProjectID    sdktypes.ProjectID
 	EventID      sdktypes.EventID
 	BuildID      sdktypes.BuildID
+	OwnerID      sdktypes.OwnerID
 	StateType    sdktypes.SessionStateType
 	CountOnly    bool
 
@@ -37,8 +38,8 @@ type Sessions interface {
 	Start(ctx context.Context, session sdktypes.Session) (sdktypes.SessionID, error)
 	Stop(ctx context.Context, sessionID sdktypes.SessionID, reason string, force bool) error
 	// List returns sessions without their data.
-	List(ctx context.Context, filter ListSessionsFilter) (ListSessionResult, error)
+	List(ctx context.Context, filter ListSessionsFilter) (*ListSessionResult, error)
 	Get(ctx context.Context, sessionID sdktypes.SessionID) (sdktypes.Session, error)
-	GetLog(ctx context.Context, filter ListSessionLogRecordsFilter) (GetLogResults, error)
+	GetLog(ctx context.Context, filter ListSessionLogRecordsFilter) (*GetLogResults, error)
 	Delete(ctx context.Context, sessionID sdktypes.SessionID) error
 }

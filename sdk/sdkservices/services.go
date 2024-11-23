@@ -13,14 +13,15 @@ type Services interface {
 }
 
 type DBServices interface {
+	Builds() Builds
+	Connections() Connections
+	Deployments() Deployments
+	Events() Events
 	Integrations() Integrations
 	Projects() Projects
-	Builds() Builds
-	Deployments() Deployments
-	Connections() Connections
 	Sessions() Sessions
-	Events() Events
 	Triggers() Triggers
+	Users() Users
 	Vars() Vars
 }
 
@@ -40,6 +41,7 @@ type ServicesStruct struct {
 	Sessions_     Sessions     `optional:"true"`
 	Store_        Store        `optional:"true"`
 	Triggers_     Triggers     `optional:"true"`
+	Users_        Users        `optional:"true"`
 	Vars_         Vars         `optional:"true"`
 }
 
@@ -58,4 +60,5 @@ func (s *ServicesStruct) Runtimes() Runtimes         { return s.Runtimes_ }
 func (s *ServicesStruct) Sessions() Sessions         { return s.Sessions_ }
 func (s *ServicesStruct) Store() Store               { return s.Store_ }
 func (s *ServicesStruct) Triggers() Triggers         { return s.Triggers_ }
+func (s *ServicesStruct) Users() Users               { return s.Users_ }
 func (s *ServicesStruct) Vars() Vars                 { return s.Vars_ }
