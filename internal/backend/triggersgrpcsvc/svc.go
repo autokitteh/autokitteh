@@ -131,10 +131,16 @@ func (s *server) List(ctx context.Context, req *connect.Request[triggersv1.ListR
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
+	oid, err := sdktypes.ParseOwnerID(msg.OwnerId)
+	if err != nil {
+		return nil, sdkerrors.AsConnectError(err)
+	}
+
 	filter := sdkservices.ListTriggersFilter{
 		ProjectID:    pid,
 		ConnectionID: cid,
 		SourceType:   stype,
+		OwnerID:      oid,
 	}
 
 	triggers, err := s.triggers.List(ctx, filter)

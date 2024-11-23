@@ -44,7 +44,7 @@ var createCmd = common.StandardCommand(&cobra.Command{
 
 		_, pid, err := r.ProjectNameOrID(ctx, project)
 		if err = common.AddNotFoundErrIfCond(err, pid.IsValid()); err != nil {
-			return common.ToExitCodeError(err, "project")
+			return common.WrapError(err, "project")
 		}
 
 		t, err := sdktypes.TriggerFromProto(&sdktypes.TriggerPB{
@@ -61,7 +61,7 @@ var createCmd = common.StandardCommand(&cobra.Command{
 		if connection != "" {
 			_, cid, err := r.ConnectionNameOrID(ctx, connection, project)
 			if err != nil {
-				return common.ToExitCodeError(err, "connection")
+				return common.WrapError(err, "connection")
 			}
 
 			t = t.WithConnectionID(cid)

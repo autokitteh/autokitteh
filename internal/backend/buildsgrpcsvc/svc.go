@@ -60,8 +60,14 @@ func (s *server) List(ctx context.Context, req *connect.Request[buildsv1.ListReq
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
+	oid, err := sdktypes.ParseOwnerID(msg.OwnerId)
+	if err != nil {
+		return nil, sdkerrors.AsConnectError(err)
+	}
+
 	filter := sdkservices.ListBuildsFilter{
-		Limit: msg.Limit,
+		Limit:   msg.Limit,
+		OwnerID: oid,
 	}
 
 	builds, err := s.builds.List(ctx, filter)

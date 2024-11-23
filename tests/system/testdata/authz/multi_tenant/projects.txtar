@@ -1,0 +1,4 @@
+
+-- test-config.yaml --
+server: 
+    opapolicy.config_path: "!multi_tenant"

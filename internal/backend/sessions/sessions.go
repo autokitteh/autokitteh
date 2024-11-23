@@ -6,7 +6,8 @@ import (
 
 	"go.uber.org/zap"
 
-	akCtx "go.autokitteh.dev/autokitteh/internal/backend/context"
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authz"
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessioncalls"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionsvcs"
@@ -65,23 +66,47 @@ func (s *sessions) StartWorkers(ctx context.Context) error {
 	return nil
 }
 
-func (s *sessions) GetLog(ctx context.Context, filter sdkservices.ListSessionLogRecordsFilter) (sdkservices.GetLogResults, error) {
+func (s *sessions) GetLog(ctx context.Context, filter sdkservices.ListSessionLogRecordsFilter) (*sdkservices.GetLogResults, error) {
+	if err := authz.CheckContext(ctx, filter.SessionID, "read:get-log", authz.WithData("filter", filter)); err != nil {
+		return nil, err
+	}
+
 	return s.svcs.DB.GetSessionLog(ctx, filter)
 }
 
 func (s *sessions) Get(ctx context.Context, sessionID sdktypes.SessionID) (sdktypes.Session, error) {
+	if err := authz.CheckContext(ctx, sessionID, "read:get"); err != nil {
+		return sdktypes.InvalidSession, err
+	}
+
 	return s.svcs.DB.GetSession(ctx, sessionID)
 }
 
 func (s *sessions) Stop(ctx context.Context, sessionID sdktypes.SessionID, reason string, force bool) error {
+	if err := authz.CheckContext(ctx, sessionID, "write:stop"); err != nil {
+		return err
+	}
+
 	return s.workflows.StopWorkflow(ctx, sessionID, reason, force)
 }
 
-func (s *sessions) List(ctx context.Context, filter sdkservices.ListSessionsFilter) (sdkservices.ListSessionResult, error) {
+func (s *sessions) List(ctx context.Context, filter sdkservices.ListSessionsFilter) (*sdkservices.ListSessionResult, error) {
+	if !filter.OwnerID.IsValid() {
+		filter.OwnerID = sdktypes.NewOwnerID(authcontext.GetAuthnInferredUserID(ctx))
+	}
+
+	if err := authz.CheckContext(ctx, sdktypes.InvalidSessionID, "list"); err != nil {
+		return nil, err
+	}
+
 	return s.svcs.DB.ListSessions(ctx, filter)
 }
 
 func (s *sessions) Delete(ctx context.Context, sessionID sdktypes.SessionID) error {
+	if err := authz.CheckContext(ctx, sessionID, "delete:delete"); err != nil {
+		return err
+	}
+
 	session, err := s.Get(ctx, sessionID)
 	if err != nil {
 		return err
@@ -102,6 +127,12 @@ func (s *sessions) Delete(ctx context.Context, sessionID sdktypes.SessionID) err
 }
 
 func (s *sessions) Start(ctx context.Context, session sdktypes.Session) (sdktypes.SessionID, error) {
+	session = authcontext.ObjectWithOwnerID(ctx, session)
+
+	if err := authz.CheckContext(ctx, sdktypes.InvalidSessionID, "create:start", authz.WithData("session", session), authz.BelongsToProject(session)); err != nil {
+		return sdktypes.InvalidSessionID, err
+	}
+
 	if session.ID().IsValid() {
 		return sdktypes.InvalidSessionID, sdkerrors.NewInvalidArgumentError("session id is not nil")
 	}
@@ -113,15 +144,6 @@ func (s *sessions) Start(ctx context.Context, session sdktypes.Session) (sdktype
 	session = session.WithNewID()
 	sid := session.ID()
 	l := s.l.With(zap.Any("session_id", sid))
-
-	ctx = akCtx.WithRequestOrginator(ctx, akCtx.SessionWorkflow)
-
-	if pid := session.ProjectID(); pid.IsValid() {
-		var err error
-		if ctx, err = akCtx.WithOwnershipOf(ctx, s.svcs.DB.GetOwnership, pid.UUIDValue()); err != nil {
-			return sdktypes.InvalidSessionID, fmt.Errorf("ownership: %w", err)
-		}
-	}
 
 	if err := s.svcs.DB.CreateSession(ctx, session); err != nil {
 		return sdktypes.InvalidSessionID, fmt.Errorf("start session: %w", err)

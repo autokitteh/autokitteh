@@ -1,0 +1,21 @@
+user anon
+
+ak project create --name p
+return code == 0
+
+ak project get p
+return code == 0
+output equals_jq .project.owner_id $DEFAULT_UID
+
+ak project list
+return code == 0
+
+ak project delete p
+return code == 0
+
+-- test-config.yaml --
+server: 
+    authhttpmiddleware.use_default_user: true
+ak:
+    extra_args: ["-j"]
+

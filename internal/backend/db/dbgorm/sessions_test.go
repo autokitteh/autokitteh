@@ -42,7 +42,7 @@ func (f *dbFixture) assertSessionsDeleted(t *testing.T, sessions ...scheme.Sessi
 }
 
 func preSessionTest(t *testing.T) *dbFixture {
-	f := newDBFixture().withUser(sdktypes.DefaultUser)
+	f := newDBFixture()
 	f.listSessionsAndAssert(t, 0) // no sessions
 	findAndAssertCount[scheme.SessionLogRecord](t, f, 0, "")
 	return f
@@ -89,8 +89,8 @@ func TestCreateSessionForeignKeys(t *testing.T) {
 	// test with existing assets
 	p := f.newProject()
 	b := f.newBuild()
-	d := f.newDeployment(b)
-	evt := f.newEvent()
+	d := f.newDeployment(b, p)
+	evt := f.newEvent(p)
 	s := f.newSession(sdktypes.SessionStateTypeCompleted, d, b, p, evt)
 
 	f.createProjectsAndAssert(t, p)

@@ -1,6 +1,8 @@
 package systest
 
 import (
+	"encoding/json"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -8,6 +10,7 @@ import (
 	"testing"
 
 	"golang.org/x/tools/txtar"
+	"gopkg.in/yaml.v2"
 )
 
 const (
@@ -16,11 +19,11 @@ const (
 )
 
 var (
-	steps = regexp.MustCompile(`^(ak|http|output|req|resp|return|wait|setenv|capture_jq)\s`)
+	steps = regexp.MustCompile(`^(ak|http|output|req|resp|return|wait|setenv|capture_jq|user)\s`)
 
 	// ak *
 	// http <get|post> *
-	actions = regexp.MustCompile(`^(ak|http\s+(get|post)|wait|setenv)\s+(.+)`)
+	actions = regexp.MustCompile(`^(ak|http\s+(get|post)|wait|setenv|user)\s+(.+)`)
 	// wait <duration> for session <session ID>
 	waitAction = regexp.MustCompile(`^wait\s+(.+)\s+(for|unless)\s+session\s+(.+)`)
 
@@ -28,7 +31,7 @@ var (
 	jqCheck = regexp.MustCompile(`^capture_jq\s+(\w+)\s+(.+)`)
 
 	// output <equals|equals_json|contains|regex> [file] *
-	akCheckOutput = regexp.MustCompile(`^output\s+(equals|equals_json|contains|regex)\s+(file\s+)?(.+|'.*')`)
+	akCheckOutput = regexp.MustCompile(`^output\s+(equals|equals_json|contains|regex|equals_jq)\s+(file\s+)?(.+|'.*')`)
 	// return code == <int>
 	akCheckReturn = regexp.MustCompile(`^return\s+code\s*==\s*(\d+)$`)
 
@@ -46,11 +49,29 @@ var (
 	httpCheckHeader = regexp.MustCompile(`^resp\s+header\s+([\w-]+)\s*==\s*(.+)`)
 )
 
-func readTestFile(t *testing.T, path string) []string {
-	a, err := txtar.ParseFile(path)
+type akTestConfig struct {
+	ExtraArgs []string `json:"extra_args" yaml:"extra_args"`
+}
+
+type testConfig struct {
+	Server    map[string]any `json:"server" yaml:"server"`
+	Exclusive bool           `json:"exclusive" yaml:"exclusive"`
+	AK        akTestConfig   `json:"ak" yaml:"ak"`
+}
+
+type testFile struct {
+	steps  []string
+	config testConfig
+	a      *txtar.Archive
+}
+
+func readTestFile(t *testing.T, path string) (*testFile, error) {
+	bs, err := fs.ReadFile(testDataFS, path)
 	if err != nil {
 		t.Fatalf("failed to load file: %v", err)
 	}
+
+	a := txtar.Parse(bs)
 
 	if len(a.Comment) == 0 {
 		t.Fatalf("nothing to do in %q: txtar comment section is empty", path)
@@ -63,6 +84,10 @@ func readTestFile(t *testing.T, path string) []string {
 		}
 	}
 
+	return parseTestFile(t, a), nil
+}
+
+func prepTestFiles(t *testing.T, a *txtar.Archive) *testFile {
 	useTempDir(t)
 	writeEmbeddedFiles(t, a.Files)
 	return parseTestFile(t, a)
@@ -103,14 +128,32 @@ func writeEmbeddedFiles(t *testing.T, fs []txtar.File) {
 	}
 }
 
-func parseTestFile(t *testing.T, a *txtar.Archive) []string {
+func parseTestFile(t *testing.T, a *txtar.Archive) *testFile {
+	var cfg testConfig
+
+	for _, f := range a.Files {
+		if f.Name == "test-config.json" {
+			if err := json.Unmarshal(f.Data, &cfg); err != nil {
+				t.Fatalf("failed to parse server config: %v", err)
+			}
+		} else if f.Name == "test-config.yaml" {
+			if err := yaml.Unmarshal(f.Data, &cfg); err != nil {
+				t.Fatalf("failed to parse server config: %v", err)
+			}
+		}
+	}
+
 	lines := strings.Split(string(a.Comment), "\n")
 	errors := 0
 	for i, line := range lines {
 		// Trim redundant whitespaces and single-line comments
 		// (but don't discard empty lines, to preserve line numbers).
 		lines[i] = strings.TrimSpace(line)
+
 		lines[i] = regexp.MustCompile(`^\s*#.*`).ReplaceAllString(line, "")
+
+		lines[i] = expandConsts(lines[i])
+
 		line = lines[i]
 
 		if line == "" {
@@ -125,7 +168,7 @@ func parseTestFile(t *testing.T, a *txtar.Archive) []string {
 			continue
 		}
 		switch match[1] {
-		case "ak", "http", "wait":
+		case "ak", "http", "wait", "setenv", "user":
 			if !actions.MatchString(line) {
 				t.Errorf("invalid action in line %d: %s", i+1, line)
 				errors++
@@ -159,5 +202,5 @@ func parseTestFile(t *testing.T, a *txtar.Archive) []string {
 		t.Fatalf("found %d test script errors", errors)
 	}
 
-	return lines
+	return &testFile{lines, cfg, a}
 }

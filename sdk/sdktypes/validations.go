@@ -89,6 +89,20 @@ func objectsSliceField[O ~struct{ object[M, T] }, M comparableMessage, T objectT
 	return nil
 }
 
+func ownerIDField(s string) error {
+	if _, err := ParseOwnerID(s); err != nil {
+		return errorForValue("owner_id", err)
+	}
+	return nil
+}
+
+func varScopeIDField(s string) error {
+	if _, err := ParseVarScopeID(s); err != nil {
+		return errorForValue("scope_id", err)
+	}
+	return nil
+}
+
 func idField[ID id[T], T idTraits](name string, s string) error {
 	if _, err := ParseID[ID](s); err != nil {
 		return errorForValue(name, err)

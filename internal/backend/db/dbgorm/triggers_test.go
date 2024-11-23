@@ -35,7 +35,7 @@ func (f *dbFixture) createProjectConnection(t *testing.T) (scheme.Project, schem
 }
 
 func preTriggerTest(t *testing.T) *dbFixture {
-	f := newDBFixture().withUser(sdktypes.DefaultUser)
+	f := newDBFixture()
 	findAndAssertCount[scheme.Trigger](t, f, 0, "") // no triggers
 	return f
 }
@@ -104,7 +104,7 @@ func TestDeleteTriggerForeignKeys(t *testing.T) {
 
 	trg := f.newTrigger(p, c)
 	f.createTriggersAndAssert(t, trg)
-	evt := f.newEvent(trg)
+	evt := f.newEvent(trg, p)
 	f.createEventsAndAssert(t, evt)
 
 	// trigger could be deleted, even if it refenced by non-deleted event
@@ -149,7 +149,7 @@ func TestDuplicatedTrigger(t *testing.T) {
 
 	p1 := f.newProject()
 	p2 := f.newProject()
-	c := f.newConnection() // trigger doesn't check for connection's projectID
+	c := f.newConnection(p1)
 	f.createProjectsAndAssert(t, p1, p2)
 	f.createConnectionsAndAssert(t, c)
 

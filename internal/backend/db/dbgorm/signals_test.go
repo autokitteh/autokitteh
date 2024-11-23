@@ -8,7 +8,6 @@ import (
 	"gorm.io/gorm"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
-	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 func (f *dbFixture) saveSignalsAndAssert(t *testing.T, signals ...scheme.Signal) {
@@ -25,7 +24,7 @@ func (f *dbFixture) assertSignalsDeleted(t *testing.T, signals ...scheme.Signal)
 }
 
 func preSignalTest(t *testing.T) *dbFixture {
-	f := newDBFixture().withUser(sdktypes.DefaultUser)
+	f := newDBFixture()
 	findAndAssertCount[scheme.Signal](t, f, 0, "") // no signals
 	return f
 }
@@ -44,11 +43,13 @@ func TestSaveSignelForeignKeys(t *testing.T) {
 
 	// prepare
 	sig := f.newSignal()
-	conn := f.newConnection()
+	p := f.newProject()
+	conn := f.newConnection(p)
 
 	sig.DestinationID = conn.ConnectionID
 	sig.ConnectionID = &conn.ConnectionID
 
+	f.createProjectsAndAssert(t, p)
 	f.createConnectionsAndAssert(t, conn)
 
 	// negative test with non-existing assets

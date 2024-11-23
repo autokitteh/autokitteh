@@ -356,3 +356,43 @@ func (r Resolver) SessionID(ctx context.Context, id string) (s sdktypes.Session,
 	err = translateError(err, s, "session", id)
 	return
 }
+
+// UserEmailOrID returns a email, based on the given email or
+// ID. If the input is empty, we return nil but not an error.
+func (r Resolver) UserEmailOrID(ctx context.Context, emailOrID string) (u sdktypes.User, uid sdktypes.UserID, err error) {
+	if emailOrID == "" {
+		return
+	}
+
+	if sdktypes.IsUserID(emailOrID) {
+		return r.UserID(ctx, emailOrID)
+	}
+
+	u, err = r.Client.Users().Get(ctx, sdktypes.InvalidUserID, emailOrID)
+	err = translateError(err, u, "user", emailOrID)
+	return
+}
+
+func (r Resolver) Owner(ctx context.Context, emailOrID string) (u sdktypes.User, oid sdktypes.OwnerID, err error) {
+	// In the future might support orgs.
+	u, uid, err := r.UserEmailOrID(ctx, emailOrID)
+	return u, sdktypes.NewOwnerID(uid), err
+}
+
+// UserID returns a user, based on the given ID.
+// If the input is empty, we return nil but not an error.
+func (r Resolver) UserID(ctx context.Context, id string) (u sdktypes.User, uid sdktypes.UserID, err error) {
+	if id == "" {
+		err = errors.New("missing user ID")
+		return
+	}
+
+	if uid, err = sdktypes.StrictParseUserID(id); err != nil {
+		err = fmt.Errorf("invalid user ID %q: %w", id, err)
+		return
+	}
+
+	u, err = r.Client.Users().Get(ctx, uid, "")
+	err = translateError(err, u, "user", id)
+	return
+}

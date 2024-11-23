@@ -10,6 +10,8 @@ import (
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authz"
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
 	"go.autokitteh.dev/autokitteh/sdk/sdkbuildfile"
@@ -30,15 +32,31 @@ func New(b Builds, telemetry *telemetry.Telemetry) sdkservices.Builds {
 }
 
 func (b *Builds) Get(ctx context.Context, id sdktypes.BuildID) (sdktypes.Build, error) {
+	if err := authz.CheckContext(ctx, id, "read:get"); err != nil {
+		return sdktypes.InvalidBuild, err
+	}
+
 	return b.DB.GetBuild(ctx, id)
 }
 
 func (b *Builds) List(ctx context.Context, filter sdkservices.ListBuildsFilter) ([]sdktypes.Build, error) {
+	if !filter.OwnerID.IsValid() {
+		filter.OwnerID = sdktypes.NewOwnerID(authcontext.GetAuthnInferredUserID(ctx))
+	}
+
+	if err := authz.CheckContext(ctx, sdktypes.InvalidBuildID, "read:list", authz.WithData("filter", filter)); err != nil {
+		return nil, err
+	}
+
 	return b.DB.ListBuilds(ctx, filter)
 }
 
 // Download implements sdkservices.Builds.
 func (b *Builds) Download(ctx context.Context, id sdktypes.BuildID) (io.ReadCloser, error) {
+	if err := authz.CheckContext(ctx, id, "read:download"); err != nil {
+		return nil, err
+	}
+
 	data, err := b.DB.GetBuildData(ctx, id)
 	if err != nil {
 		return nil, err
@@ -47,6 +65,12 @@ func (b *Builds) Download(ctx context.Context, id sdktypes.BuildID) (io.ReadClos
 }
 
 func (b *Builds) Save(ctx context.Context, build sdktypes.Build, data []byte) (sdktypes.BuildID, error) {
+	build = authcontext.ObjectWithOwnerID(ctx, build)
+
+	if err := authz.CheckContext(ctx, sdktypes.InvalidBuildID, "create:save", authz.WithData("build", build), authz.BelongsToProject(build)); err != nil {
+		return sdktypes.InvalidBuildID, err
+	}
+
 	// make sure this at least tries to pretend to be a build file.
 	if _, err := sdkbuildfile.ReadVersion(bytes.NewReader(data)); err != nil {
 		return sdktypes.InvalidBuildID, fmt.Errorf("read version: %w", err)
@@ -62,11 +86,19 @@ func (b *Builds) Save(ctx context.Context, build sdktypes.Build, data []byte) (s
 	return build.ID(), nil
 }
 
-func (b *Builds) Delete(ctx context.Context, id sdktypes.BuildID) error {
-	return b.DB.DeleteBuild(ctx, id)
+func (b *Builds) Delete(ctx context.Context, bid sdktypes.BuildID) error {
+	if err := authz.CheckContext(ctx, bid, "delete:delete"); err != nil {
+		return err
+	}
+
+	return b.DB.DeleteBuild(ctx, bid)
 }
 
 func (b *Builds) Describe(ctx context.Context, bid sdktypes.BuildID) (*sdkbuildfile.BuildFile, error) {
+	if err := authz.CheckContext(ctx, bid, "read:describe"); err != nil {
+		return nil, err
+	}
+
 	r, err := b.Download(ctx, bid)
 	if err != nil {
 		return nil, fmt.Errorf("download: %w", err)

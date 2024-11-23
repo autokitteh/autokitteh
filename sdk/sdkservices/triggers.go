@@ -10,6 +10,7 @@ type ListTriggersFilter struct {
 	ProjectID    sdktypes.ProjectID
 	ConnectionID sdktypes.ConnectionID
 	SourceType   sdktypes.TriggerSourceType
+	OwnerID      sdktypes.OwnerID
 }
 
 type Triggers interface {
