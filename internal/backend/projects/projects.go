@@ -89,7 +89,14 @@ func (ps *Projects) Build(ctx context.Context, projectID sdktypes.ProjectID) (sd
 	if err != nil {
 		return sdktypes.InvalidBuildID, err
 	}
-	vs, err := ps.Lint(ctx, projectID, resources)
+
+	// TODO: How can I know the name of the manifest from the build
+	manifestFile := "autokitteh.yaml"
+	if _, ok := resources[manifestFile]; !ok {
+		manifestFile = ""
+	}
+
+	vs, err := ps.Lint(ctx, projectID, resources, manifestFile)
 	lintErr := false
 	for _, v := range vs {
 		if v.Level == sdktypes.ViolationError {
@@ -97,6 +104,7 @@ func (ps *Projects) Build(ctx context.Context, projectID sdktypes.ProjectID) (sd
 			break
 		}
 	}
+
 	if lintErr {
 		// TODO: Do we want all the error messages in the error?
 		return sdktypes.InvalidBuildID, fmt.Errorf("lint error")
