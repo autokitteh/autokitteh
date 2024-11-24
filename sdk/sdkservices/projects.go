@@ -17,5 +17,5 @@ type Projects interface {
 	SetResources(ctx context.Context, projectID sdktypes.ProjectID, resources map[string][]byte) error
 	DownloadResources(ctx context.Context, projectID sdktypes.ProjectID) (map[string][]byte, error)
 	Export(ctx context.Context, projectID sdktypes.ProjectID) ([]byte, error)
-	Lint(ctx context.Context, projectID sdktypes.ProjectID, resources map[string][]byte) ([]*sdktypes.CheckViolation, error)
+	Lint(ctx context.Context, projectID sdktypes.ProjectID, resources map[string][]byte, manifestPath string) ([]*sdktypes.CheckViolation, error)
 }

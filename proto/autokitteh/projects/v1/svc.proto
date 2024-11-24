@@ -116,6 +116,7 @@ message ExportResponse {
 message LintRequest {
   string project_id = 1 [(buf.validate.field).string.min_len = 1];
   map<string, bytes> resources = 2;
+  string manifest_file = 3; // name of manifest file
 }
 
 message CheckViolation {

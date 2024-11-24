@@ -147,7 +147,7 @@ class ExportResponse(_message.Message):
     def __init__(self, zip_archive: _Optional[bytes] = ...) -> None: ...
 
 class LintRequest(_message.Message):
-    __slots__ = ["project_id", "resources"]
+    __slots__ = ["project_id", "resources", "manifest_file"]
     class ResourcesEntry(_message.Message):
         __slots__ = ["key", "value"]
         KEY_FIELD_NUMBER: _ClassVar[int]
@@ -157,9 +157,11 @@ class LintRequest(_message.Message):
         def __init__(self, key: _Optional[str] = ..., value: _Optional[bytes] = ...) -> None: ...
     PROJECT_ID_FIELD_NUMBER: _ClassVar[int]
     RESOURCES_FIELD_NUMBER: _ClassVar[int]
+    MANIFEST_FILE_FIELD_NUMBER: _ClassVar[int]
     project_id: str
     resources: _containers.ScalarMap[str, bytes]
-    def __init__(self, project_id: _Optional[str] = ..., resources: _Optional[_Mapping[str, bytes]] = ...) -> None: ...
+    manifest_file: str
+    def __init__(self, project_id: _Optional[str] = ..., resources: _Optional[_Mapping[str, bytes]] = ..., manifest_file: _Optional[str] = ...) -> None: ...
 
 class CheckViolation(_message.Message):
     __slots__ = ["file_name", "line", "level", "message", "rule_id"]

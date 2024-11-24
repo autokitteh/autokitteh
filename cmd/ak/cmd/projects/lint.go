@@ -2,7 +2,6 @@ package projects
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/spf13/cobra"
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
@@ -47,12 +46,6 @@ func buildResources() (map[string][]byte, error) {
 		return nil, err
 	}
 
-	data, err := os.ReadFile(lintOpts.manifestPath)
-	if err != nil {
-		return nil, err
-	}
-
-	resources["autokitteh.yaml"] = data
 	return resources, nil
 }
 
@@ -75,7 +68,7 @@ func runLint(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	vs, err := projects().Lint(ctx, projectID, resources)
+	vs, err := projects().Lint(ctx, projectID, resources, lintOpts.manifestPath)
 	if err != nil {
 		return err
 	}

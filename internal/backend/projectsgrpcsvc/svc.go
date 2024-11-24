@@ -285,7 +285,7 @@ func (s *Server) Export(ctx context.Context, req *connect.Request[projectsv1.Exp
 
 func (s *Server) Lint(ctx context.Context, req *connect.Request[projectsv1.LintRequest]) (*connect.Response[projectsv1.LintResponse], error) {
 	// TODO: Need to work with our without project
-	vs, err := s.projects.Lint(ctx, sdktypes.InvalidProjectID, req.Msg.Resources)
+	vs, err := s.projects.Lint(ctx, sdktypes.InvalidProjectID, req.Msg.Resources, req.Msg.ManifestFile)
 	if err != nil {
 		return nil, sdkerrors.AsConnectError(err)
 	}
