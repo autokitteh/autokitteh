@@ -6,12 +6,13 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap/zaptest"
 
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 )
 
 func TestLoad(t *testing.T) {
-	fs, v, err := LoadFS()
+	fs, v, err := LoadFS(zaptest.NewLogger(t))
 	if errors.Is(err, sdkerrors.ErrNotFound) {
 		t.Skip("no web platform distribution found")
 	}
