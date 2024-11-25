@@ -45,6 +45,9 @@ const (
 	// RunnerManagerServiceHealthProcedure is the fully-qualified name of the RunnerManagerService's
 	// Health RPC.
 	RunnerManagerServiceHealthProcedure = "/autokitteh.runner_manager.v1.RunnerManagerService/Health"
+	// RunnerManagerServiceCapabilitiesProcedure is the fully-qualified name of the
+	// RunnerManagerService's Capabilities RPC.
+	RunnerManagerServiceCapabilitiesProcedure = "/autokitteh.runner_manager.v1.RunnerManagerService/Capabilities"
 )
 
 // RunnerManagerServiceClient is a client for the autokitteh.runner_manager.v1.RunnerManagerService
@@ -54,6 +57,7 @@ type RunnerManagerServiceClient interface {
 	RunnerHealth(context.Context, *connect.Request[v1.RunnerHealthRequest]) (*connect.Response[v1.RunnerHealthResponse], error)
 	StopRunner(context.Context, *connect.Request[v1.StopRunnerRequest]) (*connect.Response[v1.StopRunnerResponse], error)
 	Health(context.Context, *connect.Request[v1.HealthRequest]) (*connect.Response[v1.HealthResponse], error)
+	Capabilities(context.Context, *connect.Request[v1.CapabilitiesRequest]) (*connect.Response[v1.CapabilitiesResponse], error)
 }
 
 // NewRunnerManagerServiceClient constructs a client for the
@@ -87,6 +91,11 @@ func NewRunnerManagerServiceClient(httpClient connect.HTTPClient, baseURL string
 			baseURL+RunnerManagerServiceHealthProcedure,
 			opts...,
 		),
+		capabilities: connect.NewClient[v1.CapabilitiesRequest, v1.CapabilitiesResponse](
+			httpClient,
+			baseURL+RunnerManagerServiceCapabilitiesProcedure,
+			opts...,
+		),
 	}
 }
 
@@ -96,6 +105,7 @@ type runnerManagerServiceClient struct {
 	runnerHealth *connect.Client[v1.RunnerHealthRequest, v1.RunnerHealthResponse]
 	stopRunner   *connect.Client[v1.StopRunnerRequest, v1.StopRunnerResponse]
 	health       *connect.Client[v1.HealthRequest, v1.HealthResponse]
+	capabilities *connect.Client[v1.CapabilitiesRequest, v1.CapabilitiesResponse]
 }
 
 // StartRunner calls autokitteh.runner_manager.v1.RunnerManagerService.StartRunner.
@@ -118,6 +128,11 @@ func (c *runnerManagerServiceClient) Health(ctx context.Context, req *connect.Re
 	return c.health.CallUnary(ctx, req)
 }
 
+// Capabilities calls autokitteh.runner_manager.v1.RunnerManagerService.Capabilities.
+func (c *runnerManagerServiceClient) Capabilities(ctx context.Context, req *connect.Request[v1.CapabilitiesRequest]) (*connect.Response[v1.CapabilitiesResponse], error) {
+	return c.capabilities.CallUnary(ctx, req)
+}
+
 // RunnerManagerServiceHandler is an implementation of the
 // autokitteh.runner_manager.v1.RunnerManagerService service.
 type RunnerManagerServiceHandler interface {
@@ -125,6 +140,7 @@ type RunnerManagerServiceHandler interface {
 	RunnerHealth(context.Context, *connect.Request[v1.RunnerHealthRequest]) (*connect.Response[v1.RunnerHealthResponse], error)
 	StopRunner(context.Context, *connect.Request[v1.StopRunnerRequest]) (*connect.Response[v1.StopRunnerResponse], error)
 	Health(context.Context, *connect.Request[v1.HealthRequest]) (*connect.Response[v1.HealthResponse], error)
+	Capabilities(context.Context, *connect.Request[v1.CapabilitiesRequest]) (*connect.Response[v1.CapabilitiesResponse], error)
 }
 
 // NewRunnerManagerServiceHandler builds an HTTP handler from the service implementation. It returns
@@ -153,6 +169,11 @@ func NewRunnerManagerServiceHandler(svc RunnerManagerServiceHandler, opts ...con
 		svc.Health,
 		opts...,
 	)
+	runnerManagerServiceCapabilitiesHandler := connect.NewUnaryHandler(
+		RunnerManagerServiceCapabilitiesProcedure,
+		svc.Capabilities,
+		opts...,
+	)
 	return "/autokitteh.runner_manager.v1.RunnerManagerService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case RunnerManagerServiceStartRunnerProcedure:
@@ -163,6 +184,8 @@ func NewRunnerManagerServiceHandler(svc RunnerManagerServiceHandler, opts ...con
 			runnerManagerServiceStopRunnerHandler.ServeHTTP(w, r)
 		case RunnerManagerServiceHealthProcedure:
 			runnerManagerServiceHealthHandler.ServeHTTP(w, r)
+		case RunnerManagerServiceCapabilitiesProcedure:
+			runnerManagerServiceCapabilitiesHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -186,4 +209,8 @@ func (UnimplementedRunnerManagerServiceHandler) StopRunner(context.Context, *con
 
 func (UnimplementedRunnerManagerServiceHandler) Health(context.Context, *connect.Request[v1.HealthRequest]) (*connect.Response[v1.HealthResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("autokitteh.runner_manager.v1.RunnerManagerService.Health is not implemented"))
+}
+
+func (UnimplementedRunnerManagerServiceHandler) Capabilities(context.Context, *connect.Request[v1.CapabilitiesRequest]) (*connect.Response[v1.CapabilitiesResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("autokitteh.runner_manager.v1.RunnerManagerService.Capabilities is not implemented"))
 }

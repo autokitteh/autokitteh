@@ -116,8 +116,8 @@ func New(cfg *Config, l *zap.Logger, getLocalAddr func() string) (*sdkruntimes.R
 		if len(cfg.RemoteRunnerEndpoints) == 0 {
 			return nil, errors.New("remote runner is enabled but no runner endpoints provided")
 		}
-		if err := configureRemoteRunnerManager(RemoteRuntimeConfig{
-			ManagerAddress: cfg.RemoteRunnerEndpoints,
+		if err := configureRemoteRunnerManager(l, RemoteRuntimeConfig{
+			ManagerAddress: strings.Split(cfg.RemoteRunnerEndpoints, ","),
 			WorkerAddress:  cfg.WorkerAddress,
 		}); err != nil {
 			return nil, fmt.Errorf("configure remote runner manager: %w", err)

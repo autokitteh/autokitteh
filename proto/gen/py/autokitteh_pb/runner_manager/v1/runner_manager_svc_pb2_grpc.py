@@ -34,6 +34,11 @@ class RunnerManagerServiceStub(object):
                 request_serializer=autokitteh_dot_runner__manager_dot_v1_dot_runner__manager__svc__pb2.HealthRequest.SerializeToString,
                 response_deserializer=autokitteh_dot_runner__manager_dot_v1_dot_runner__manager__svc__pb2.HealthResponse.FromString,
                 )
+        self.Capabilities = channel.unary_unary(
+                '/autokitteh.runner_manager.v1.RunnerManagerService/Capabilities',
+                request_serializer=autokitteh_dot_runner__manager_dot_v1_dot_runner__manager__svc__pb2.CapabilitiesRequest.SerializeToString,
+                response_deserializer=autokitteh_dot_runner__manager_dot_v1_dot_runner__manager__svc__pb2.CapabilitiesResponse.FromString,
+                )
 
 
 class RunnerManagerServiceServicer(object):
@@ -63,6 +68,12 @@ class RunnerManagerServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def Capabilities(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_RunnerManagerServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -85,6 +96,11 @@ def add_RunnerManagerServiceServicer_to_server(servicer, server):
                     servicer.Health,
                     request_deserializer=autokitteh_dot_runner__manager_dot_v1_dot_runner__manager__svc__pb2.HealthRequest.FromString,
                     response_serializer=autokitteh_dot_runner__manager_dot_v1_dot_runner__manager__svc__pb2.HealthResponse.SerializeToString,
+            ),
+            'Capabilities': grpc.unary_unary_rpc_method_handler(
+                    servicer.Capabilities,
+                    request_deserializer=autokitteh_dot_runner__manager_dot_v1_dot_runner__manager__svc__pb2.CapabilitiesRequest.FromString,
+                    response_serializer=autokitteh_dot_runner__manager_dot_v1_dot_runner__manager__svc__pb2.CapabilitiesResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -161,5 +177,22 @@ class RunnerManagerService(object):
         return grpc.experimental.unary_unary(request, target, '/autokitteh.runner_manager.v1.RunnerManagerService/Health',
             autokitteh_dot_runner__manager_dot_v1_dot_runner__manager__svc__pb2.HealthRequest.SerializeToString,
             autokitteh_dot_runner__manager_dot_v1_dot_runner__manager__svc__pb2.HealthResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def Capabilities(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/autokitteh.runner_manager.v1.RunnerManagerService/Capabilities',
+            autokitteh_dot_runner__manager_dot_v1_dot_runner__manager__svc__pb2.CapabilitiesRequest.SerializeToString,
+            autokitteh_dot_runner__manager_dot_v1_dot_runner__manager__svc__pb2.CapabilitiesResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

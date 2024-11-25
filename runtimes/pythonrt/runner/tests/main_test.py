@@ -45,6 +45,7 @@ def test_start():
     context = MagicMock()
     resp = runner.Start(req, context)
 
+    resp = runner.Start(req, None)
     assert resp.error == ""
     assert not context.abort.called
 

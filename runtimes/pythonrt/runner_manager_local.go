@@ -115,7 +115,7 @@ func (l *localRunnerManager) Start(ctx context.Context, sessionID sdktypes.Sessi
 
 	runnerAddr := fmt.Sprintf("127.0.0.1:%d", r.port)
 	log.Debug("dialing runner", zap.String("addr", runnerAddr))
-	client, err := dialRunner(runnerAddr)
+	client, err := dialRunner(ctx, runnerAddr)
 	if err != nil {
 		if err := r.Close(); err != nil {
 			log.Warn("close runner", zap.Error(err))

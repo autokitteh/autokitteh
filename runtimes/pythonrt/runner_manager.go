@@ -48,8 +48,8 @@ type Healther interface {
 	Health(ctx context.Context, in *userCode.RunnerHealthRequest, opts ...grpc.CallOption) (*userCode.RunnerHealthResponse, error)
 }
 
-func waitForServer(name string, h Healther, timeout time.Duration) error {
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+func waitForServer(ctx context.Context, name string, h Healther, timeout time.Duration) error {
+	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	start := time.Now()
 	var req userCode.RunnerHealthRequest
@@ -67,16 +67,17 @@ func waitForServer(name string, h Healther, timeout time.Duration) error {
 	return fmt.Errorf("%s not ready after %v", name, timeout)
 }
 
-func dialRunner(addr string) (*RunnerClient, error) {
+func dialRunner(ctx context.Context, addr string, is ...grpc.UnaryClientInterceptor) (*RunnerClient, error) {
 	creds := insecure.NewCredentials()
-	conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(creds))
+
+	conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(creds), grpc.WithChainUnaryInterceptor(is...))
 	if err != nil {
 		return nil, err
 	}
 
 	c := RunnerClient{userCode.NewRunnerServiceClient(conn), conn}
 
-	if err := waitForServer("runner", &c, 10*time.Second); err != nil {
+	if err := waitForServer(ctx, "runner", &c, 30*time.Second); err != nil {
 		connCloseErr := conn.Close()
 		return nil, errors.Join(err, connCloseErr)
 	}

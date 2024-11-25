@@ -4,26 +4,36 @@ package autokitteh.runner_manager.v1;
 
 message ContainerConfig {
   string image = 1;
-  // TBD by @efiShtain
+}
+
+message UserCode {
+  bytes build_artifact = 1;
 }
 
 // TODO: Will become Start once we split to files
 // Tell runner manager to start a runner
 message StartRunnerRequest {
-  ContainerConfig container_config = 1;
+  oneof runner_config {
+    ContainerConfig container_config = 1;
+    UserCode user_code = 2;
+  }
+  // ContainerConfig container_config = 1;
 
   // user code as tar archive
-  bytes build_artifact = 2;
+  // bytes build_artifact = 2;
   // vars from manifest, secrets and connections
   map<string, string> vars = 3;
 
   string worker_address = 4;
+
+  string session_id = 5;
 }
 
 message StartRunnerResponse {
   string runner_id = 1;
-  string runner_address = 2;
-  string error = 3;
+  string runner_token = 2;
+  string runner_address = 3;
+  string error = 4;
 }
 
 message RunnerHealthRequest {
@@ -49,9 +59,17 @@ message HealthResponse {
   string error = 1;
 }
 
+message CapabilitiesRequest {}
+message CapabilitiesResponse {
+  string type = 1; // Docker, Firecracker, etc...
+  uint32 max_runners = 2;
+  bool can_build = 3;
+}
+
 service RunnerManagerService {
   rpc StartRunner(StartRunnerRequest) returns (StartRunnerResponse) {}
   rpc RunnerHealth(RunnerHealthRequest) returns (RunnerHealthResponse) {}
   rpc StopRunner(StopRunnerRequest) returns (StopRunnerResponse) {}
   rpc Health(HealthRequest) returns (HealthResponse) {}
+  rpc Capabilities(CapabilitiesRequest) returns (CapabilitiesResponse) {}
 }
