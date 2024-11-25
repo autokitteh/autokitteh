@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { HealthRequest, HealthResponse, RunnerHealthRequest, RunnerHealthResponse, StartRunnerRequest, StartRunnerResponse, StopRunnerRequest, StopRunnerResponse } from "./runner_manager_svc_pb.js";
+import { CapabilitiesRequest, CapabilitiesResponse, HealthRequest, HealthResponse, RunnerHealthRequest, RunnerHealthResponse, StartRunnerRequest, StartRunnerResponse, StopRunnerRequest, StopRunnerResponse } from "./runner_manager_svc_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -46,6 +46,15 @@ export const RunnerManagerService = {
       name: "Health",
       I: HealthRequest,
       O: HealthResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * @generated from rpc autokitteh.runner_manager.v1.RunnerManagerService.Capabilities
+     */
+    capabilities: {
+      name: "Capabilities",
+      I: CapabilitiesRequest,
+      O: CapabilitiesResponse,
       kind: MethodKind.Unary,
     },
   }

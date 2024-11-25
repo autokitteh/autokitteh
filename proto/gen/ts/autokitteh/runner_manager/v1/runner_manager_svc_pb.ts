@@ -11,8 +11,6 @@ import { Message, proto3 } from "@bufbuild/protobuf";
  */
 export class ContainerConfig extends Message<ContainerConfig> {
   /**
-   * TBD by @efiShtain
-   *
    * @generated from field: string image = 1;
    */
   image = "";
@@ -46,6 +44,43 @@ export class ContainerConfig extends Message<ContainerConfig> {
 }
 
 /**
+ * @generated from message autokitteh.runner_manager.v1.UserCode
+ */
+export class UserCode extends Message<UserCode> {
+  /**
+   * @generated from field: bytes build_artifact = 1;
+   */
+  buildArtifact = new Uint8Array(0);
+
+  constructor(data?: PartialMessage<UserCode>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "autokitteh.runner_manager.v1.UserCode";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "build_artifact", kind: "scalar", T: 12 /* ScalarType.BYTES */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UserCode {
+    return new UserCode().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UserCode {
+    return new UserCode().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UserCode {
+    return new UserCode().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: UserCode | PlainMessage<UserCode> | undefined, b: UserCode | PlainMessage<UserCode> | undefined): boolean {
+    return proto3.util.equals(UserCode, a, b);
+  }
+}
+
+/**
  * TODO: Will become Start once we split to files
  * Tell runner manager to start a runner
  *
@@ -53,18 +88,25 @@ export class ContainerConfig extends Message<ContainerConfig> {
  */
 export class StartRunnerRequest extends Message<StartRunnerRequest> {
   /**
-   * @generated from field: autokitteh.runner_manager.v1.ContainerConfig container_config = 1;
+   * @generated from oneof autokitteh.runner_manager.v1.StartRunnerRequest.runner_config
    */
-  containerConfig?: ContainerConfig;
+  runnerConfig: {
+    /**
+     * @generated from field: autokitteh.runner_manager.v1.ContainerConfig container_config = 1;
+     */
+    value: ContainerConfig;
+    case: "containerConfig";
+  } | {
+    /**
+     * @generated from field: autokitteh.runner_manager.v1.UserCode user_code = 2;
+     */
+    value: UserCode;
+    case: "userCode";
+  } | { case: undefined; value?: undefined } = { case: undefined };
 
   /**
    * user code as tar archive
-   *
-   * @generated from field: bytes build_artifact = 2;
-   */
-  buildArtifact = new Uint8Array(0);
-
-  /**
+   * bytes build_artifact = 2;
    * vars from manifest, secrets and connections
    *
    * @generated from field: map<string, string> vars = 3;
@@ -76,6 +118,11 @@ export class StartRunnerRequest extends Message<StartRunnerRequest> {
    */
   workerAddress = "";
 
+  /**
+   * @generated from field: string session_id = 5;
+   */
+  sessionId = "";
+
   constructor(data?: PartialMessage<StartRunnerRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -84,10 +131,11 @@ export class StartRunnerRequest extends Message<StartRunnerRequest> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "autokitteh.runner_manager.v1.StartRunnerRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "container_config", kind: "message", T: ContainerConfig },
-    { no: 2, name: "build_artifact", kind: "scalar", T: 12 /* ScalarType.BYTES */ },
+    { no: 1, name: "container_config", kind: "message", T: ContainerConfig, oneof: "runner_config" },
+    { no: 2, name: "user_code", kind: "message", T: UserCode, oneof: "runner_config" },
     { no: 3, name: "vars", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 4, name: "worker_address", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "session_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): StartRunnerRequest {
@@ -117,12 +165,17 @@ export class StartRunnerResponse extends Message<StartRunnerResponse> {
   runnerId = "";
 
   /**
-   * @generated from field: string runner_address = 2;
+   * @generated from field: string runner_token = 2;
+   */
+  runnerToken = "";
+
+  /**
+   * @generated from field: string runner_address = 3;
    */
   runnerAddress = "";
 
   /**
-   * @generated from field: string error = 3;
+   * @generated from field: string error = 4;
    */
   error = "";
 
@@ -135,8 +188,9 @@ export class StartRunnerResponse extends Message<StartRunnerResponse> {
   static readonly typeName = "autokitteh.runner_manager.v1.StartRunnerResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "runner_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "runner_address", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "error", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "runner_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "runner_address", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "error", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): StartRunnerResponse {
@@ -375,6 +429,88 @@ export class HealthResponse extends Message<HealthResponse> {
 
   static equals(a: HealthResponse | PlainMessage<HealthResponse> | undefined, b: HealthResponse | PlainMessage<HealthResponse> | undefined): boolean {
     return proto3.util.equals(HealthResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message autokitteh.runner_manager.v1.CapabilitiesRequest
+ */
+export class CapabilitiesRequest extends Message<CapabilitiesRequest> {
+  constructor(data?: PartialMessage<CapabilitiesRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "autokitteh.runner_manager.v1.CapabilitiesRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CapabilitiesRequest {
+    return new CapabilitiesRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CapabilitiesRequest {
+    return new CapabilitiesRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CapabilitiesRequest {
+    return new CapabilitiesRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: CapabilitiesRequest | PlainMessage<CapabilitiesRequest> | undefined, b: CapabilitiesRequest | PlainMessage<CapabilitiesRequest> | undefined): boolean {
+    return proto3.util.equals(CapabilitiesRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message autokitteh.runner_manager.v1.CapabilitiesResponse
+ */
+export class CapabilitiesResponse extends Message<CapabilitiesResponse> {
+  /**
+   * Docker, Firecracker, etc...
+   *
+   * @generated from field: string type = 1;
+   */
+  type = "";
+
+  /**
+   * @generated from field: uint32 max_runners = 2;
+   */
+  maxRunners = 0;
+
+  /**
+   * @generated from field: bool can_build = 3;
+   */
+  canBuild = false;
+
+  constructor(data?: PartialMessage<CapabilitiesResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "autokitteh.runner_manager.v1.CapabilitiesResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "max_runners", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 3, name: "can_build", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CapabilitiesResponse {
+    return new CapabilitiesResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CapabilitiesResponse {
+    return new CapabilitiesResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CapabilitiesResponse {
+    return new CapabilitiesResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: CapabilitiesResponse | PlainMessage<CapabilitiesResponse> | undefined, b: CapabilitiesResponse | PlainMessage<CapabilitiesResponse> | undefined): boolean {
+    return proto3.util.equals(CapabilitiesResponse, a, b);
   }
 }
 
