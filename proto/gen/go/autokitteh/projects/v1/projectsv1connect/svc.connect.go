@@ -302,7 +302,7 @@ func NewProjectsServiceHandler(svc ProjectsServiceHandler, opts ...connect.Handl
 
 // UnimplementedProjectsServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedProjectsServiceHandler struct{}
-										   
+
 func (UnimplementedProjectsServiceHandler) Create(context.Context, *connect.Request[v1.CreateRequest]) (*connect.Response[v1.CreateResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("autokitteh.projects.v1.ProjectsService.Create is not implemented"))
 }
