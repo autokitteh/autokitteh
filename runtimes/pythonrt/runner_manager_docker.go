@@ -19,23 +19,23 @@ type DockerRuntimeConfig struct {
 	LogBuildCode          bool
 }
 
-type dockerRunnerManager struct {
+type DockerRunnerManager struct {
 	logger                *zap.Logger
-	client                *dockerClient
+	client                *DockerClient
 	runnerIDToContainerID map[string]string
 	mu                    *sync.Mutex
 	workerAddressProvider func() string
 }
 
-func configureDockerRunnerManager(log *zap.Logger, cfg DockerRuntimeConfig) error {
+func NewDockerRunnerManager(log *zap.Logger, cfg DockerRuntimeConfig) (*DockerRunnerManager, error) {
 	dc, err := NewDockerClient(log, cfg.LogRunnerCode, cfg.LogBuildCode)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	_, err = dc.ensureNetwork()
+	_, err = dc.EnsureNetwork()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	log.Info(fmt.Sprintf("docker connected and synced succesffully, there are %d active runners on network %s", dc.ActiveRunnersCount(), networkName))
@@ -43,24 +43,22 @@ func configureDockerRunnerManager(log *zap.Logger, cfg DockerRuntimeConfig) erro
 	// we don't reconnect to existing runners, we start new ones
 	// so in case server started and there are some runners running
 	// we stop them
-	if len(dc.activeRunnerIDs) > 0 {
-		log.Info("Stopping orphand runners")
-		for rid := range dc.activeRunnerIDs {
-			if err := dc.StopRunner(context.Background(), rid); err != nil {
-				log.Warn(fmt.Sprintf("failed stopping runner %s: %s", rid, err.Error()))
-				continue
-			}
+	dc.CleanupOnStart()
 
-			log.Debug(fmt.Sprintf("stopped runner: %s", rid))
-		}
-	}
-
-	drm := &dockerRunnerManager{
+	drm := &DockerRunnerManager{
 		logger:                log,
 		client:                dc,
 		runnerIDToContainerID: map[string]string{},
 		mu:                    new(sync.Mutex),
 		workerAddressProvider: cfg.WorkerAddressProvider,
+	}
+	return drm, nil
+}
+
+func configureDockerRunnerManager(log *zap.Logger, cfg DockerRuntimeConfig) error {
+	drm, err := NewDockerRunnerManager(log, cfg)
+	if err != nil {
+		return err
 	}
 
 	configuredRunnerType = runnerTypeDocker
@@ -82,7 +80,7 @@ func createStartCommand(entrypoint, workerAddress, runnerID string) []string {
 	}
 }
 
-func (rm *dockerRunnerManager) Start(ctx context.Context, sessionID sdktypes.SessionID, buildArtifacts []byte, vars map[string]string) (string, *RunnerClient, error) {
+func (rm *DockerRunnerManager) Start(ctx context.Context, sessionID sdktypes.SessionID, buildArtifacts []byte, vars map[string]string) (string, *RunnerClient, error) {
 	if len(buildArtifacts) == 0 {
 		return "", nil, errors.New("no build artifacts")
 	}
@@ -113,7 +111,7 @@ func (rm *dockerRunnerManager) Start(ctx context.Context, sessionID sdktypes.Ses
 	}
 
 	runnerAddr := fmt.Sprintf("127.0.0.1:%s", port)
-	client, err := dialRunner(runnerAddr)
+	client, err := dialRunner(ctx, runnerAddr)
 	if err != nil {
 
 		if err := rm.client.StopRunner(ctx, cid); err != nil {
@@ -127,7 +125,7 @@ func (rm *dockerRunnerManager) Start(ctx context.Context, sessionID sdktypes.Ses
 	rm.mu.Unlock()
 	return runnerID, client, nil
 }
-func (rm *dockerRunnerManager) RunnerHealth(ctx context.Context, runnerID string) error {
+func (rm *DockerRunnerManager) RunnerHealth(ctx context.Context, runnerID string) error {
 	rm.mu.Lock()
 	cid, ok := rm.runnerIDToContainerID[runnerID]
 	rm.mu.Unlock()
@@ -147,7 +145,7 @@ func (rm *dockerRunnerManager) RunnerHealth(ctx context.Context, runnerID string
 	return nil
 }
 
-func (rm *dockerRunnerManager) Stop(ctx context.Context, runnerID string) error {
+func (rm *DockerRunnerManager) Stop(ctx context.Context, runnerID string) error {
 	rm.mu.Lock()
 	cid, ok := rm.runnerIDToContainerID[runnerID]
 	rm.mu.Unlock()
@@ -158,4 +156,4 @@ func (rm *dockerRunnerManager) Stop(ctx context.Context, runnerID string) error 
 
 	return rm.client.StopRunner(ctx, cid)
 }
-func (*dockerRunnerManager) Health(ctx context.Context) error { return nil }
+func (*DockerRunnerManager) Health(ctx context.Context) error { return nil }
