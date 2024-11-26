@@ -86,12 +86,16 @@ func (ps *Projects) GetByID(ctx context.Context, pid sdktypes.ProjectID) (sdktyp
 	return ps.DB.GetProjectByID(ctx, pid)
 }
 
-func (ps *Projects) GetByName(ctx context.Context, n sdktypes.Symbol) (sdktypes.Project, error) {
-	if err := authz.CheckContext(ctx, sdktypes.InvalidProjectID, "read:resolve"); err != nil {
+func (ps *Projects) GetByName(ctx context.Context, oid sdktypes.OwnerID, n sdktypes.Symbol) (sdktypes.Project, error) {
+	if !oid.IsValid() {
+		oid = ps.GlobalSettings.DefaultOwnerFromAuthn(ctx)
+	}
+
+	if err := authz.CheckContext(ctx, sdktypes.InvalidProjectID, "read:resolve", authz.WithData("owner_id", oid)); err != nil {
 		return sdktypes.InvalidProject, err
 	}
 
-	p, err := ps.DB.GetProjectByName(ctx, n)
+	p, err := ps.DB.GetProjectByName(ctx, oid, n)
 	if err != nil {
 		return sdktypes.InvalidProject, err
 	}
@@ -121,7 +125,9 @@ func (ps *Projects) List(ctx context.Context, oid sdktypes.OwnerID) ([]sdktypes.
 }
 
 func (ps *Projects) Build(ctx context.Context, projectID sdktypes.ProjectID) (sdktypes.BuildID, error) {
-	if err := authz.CheckContext(ctx, projectID, "write:build"); err != nil {
+	// Permission is read since it's reading from the project data. A separate check will be done
+	// in the builds storage component for creation of a new build.
+	if err := authz.CheckContext(ctx, projectID, "read:build"); err != nil {
 		return sdktypes.InvalidBuildID, err
 	}
 

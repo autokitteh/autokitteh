@@ -58,7 +58,7 @@ func planProject(ctx context.Context, mproj *Project, client sdkservices.Service
 
 	var curr sdktypes.Project
 	if !opts.fromScratch {
-		curr, err = sdkerrors.IgnoreNotFoundErr(client.Projects().GetByName(ctx, name))
+		curr, err = sdkerrors.IgnoreNotFoundErr(client.Projects().GetByName(ctx, sdktypes.InvalidOwnerID, name))
 		if err != nil {
 			return nil, fmt.Errorf("get project: %w", err)
 		}

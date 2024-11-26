@@ -139,6 +139,11 @@ func runTestSteps(t *testing.T, steps []string, akPath, akAddr string, cfg *test
 
 		step = expandCapture(step)
 
+		if step == "exit" {
+			t.Log("exitting test")
+			break
+		}
+
 		// Actions: ak, http, wait.
 		if actions.MatchString(step) {
 			// Before starting a new action, if there's a pending HTTP

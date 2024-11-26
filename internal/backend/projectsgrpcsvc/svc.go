@@ -131,6 +131,11 @@ func (s *Server) Get(ctx context.Context, req *connect.Request[projectsv1.GetReq
 		return toResponse(s.projects.GetByID(ctx, pid))
 	}
 
+	oid, err := sdktypes.ParseOwnerID(msg.OwnerId)
+	if err != nil {
+		return nil, sdkerrors.AsConnectError(err)
+	}
+
 	n, err := sdktypes.StrictParseSymbol(msg.Name)
 	if err != nil {
 		return nil, sdkerrors.AsConnectError(err)
@@ -142,7 +147,7 @@ func (s *Server) Get(ctx context.Context, req *connect.Request[projectsv1.GetReq
 		return nil, sdkerrors.AsConnectError(fmt.Errorf("missing name"))
 	}
 
-	return toResponse(s.projects.GetByName(ctx, n))
+	return toResponse(s.projects.GetByName(ctx, oid, n))
 }
 
 func (s *Server) List(ctx context.Context, req *connect.Request[projectsv1.ListRequest]) (*connect.Response[projectsv1.ListResponse], error) {

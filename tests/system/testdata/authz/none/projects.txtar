@@ -9,13 +9,27 @@ output equals_jq .project.owner_id $DEFAULT_UID
 
 ak project list
 return code == 0
+output equals_jq .[].name p
+
+ak project list --owner $ZUMI_UID
+return code == 0
+output equals null
+
+ak project download p
+return code == 0
+
+ak project export p
+return code == 0
 
 ak project delete p
+return code == 0
+
+ak project list
 return code == 0
 
 -- test-config.yaml --
 server: 
     authhttpmiddleware.use_default_user: true
 ak:
-    extra_args: ["-j"]
+    extra_args: ["-j", "--array_json_list"]
 

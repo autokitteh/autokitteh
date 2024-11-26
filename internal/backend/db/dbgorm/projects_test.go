@@ -81,7 +81,7 @@ func TestGetProjects(t *testing.T) {
 	assert.Equal(t, p, *project)
 
 	// test getProjectByName
-	project, err = f.gormdb.getProjectByName(f.ctx, p.Name)
+	project, err = f.gormdb.getProjectByName(f.ctx, sdktypes.InvalidOwnerID, p.Name)
 	assert.NoError(t, err)
 	assert.Equal(t, p, *project)
 
@@ -93,7 +93,7 @@ func TestGetProjects(t *testing.T) {
 	assert.ErrorIs(t, err, gorm.ErrRecordNotFound)
 
 	// test getProjectByName after delete
-	_, err = f.gormdb.getProjectByName(f.ctx, p.Name)
+	_, err = f.gormdb.getProjectByName(f.ctx, sdktypes.InvalidOwnerID, p.Name)
 	assert.ErrorIs(t, err, gorm.ErrRecordNotFound)
 }
 

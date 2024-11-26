@@ -8,6 +8,6 @@ test_if_unauthn_allowed if {
 	not authz.allow with input as {}
 }
 
-test_if_authn_allowed if {
-	authz.allow with input as {"user_id": "meow"}
+test_if_authn_read_allowed if {
+	authz.allow with input as {"user_id": "meow", "action_type": "read"}
 }
