@@ -53,7 +53,7 @@ type DB interface {
 	GetProjectByID(context.Context, sdktypes.ProjectID) (sdktypes.Project, error)
 
 	// Returns sdkerrors.ErrNotFound if not found.
-	GetProjectByName(context.Context, sdktypes.Symbol) (sdktypes.Project, error)
+	GetProjectByName(context.Context, sdktypes.OwnerID, sdktypes.Symbol) (sdktypes.Project, error)
 
 	ListProjects(context.Context, sdktypes.OwnerID) ([]sdktypes.Project, error)
 

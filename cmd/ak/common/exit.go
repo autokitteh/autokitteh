@@ -14,7 +14,6 @@ import (
 const (
 	GenericFailureExitCode     = 1
 	NotFoundExitCode           = 44
-	NotAMemberExitCode         = NotFoundExitCode
 	FailedPreconditionExitCode = 42
 	UnauthroizedExitCode       = 43
 	UnauthenticatedExitCode    = 41
@@ -75,10 +74,10 @@ func WrapError(err error, whats ...string) error {
 	switch {
 	case errors.Is(err, sdkerrors.ErrNotFound):
 		// Replace "not found" with "<whats> not found".
-		return fmt.Errorf("%s not found", strings.Join(whats, " "))
+		return fmt.Errorf("%s: %w", strings.Join(whats, " "), sdkerrors.ErrNotFound)
 	case errors.As(err, resolver.NotFoundErrorType):
 		// Replace "<type> [name] not found" with "<whats> not found".
-		return fmt.Errorf("%s not found", strings.Join(whats, " "))
+		return fmt.Errorf("%s: %w", strings.Join(whats, " "), sdkerrors.ErrNotFound)
 	case errors.Is(err, sdkerrors.ErrFailedPrecondition):
 		// Replace "failed precondition" with "failed precondition: <whats>".
 		return fmt.Errorf("%w: %s", err, strings.Join(whats, " "))

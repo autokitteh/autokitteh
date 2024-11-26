@@ -119,8 +119,16 @@ func (gdb *gormdb) getProject(ctx context.Context, projectID sdktypes.UUID) (*sc
 	return getOne[scheme.Project](gdb.db.WithContext(ctx), "project_id = ?", projectID)
 }
 
-func (gdb *gormdb) getProjectByName(ctx context.Context, projectName string) (*scheme.Project, error) {
-	return getOne[scheme.Project](gdb.db.WithContext(ctx), "name = ?", projectName)
+func (gdb *gormdb) getProjectByName(ctx context.Context, oid sdktypes.OwnerID, projectName string) (*scheme.Project, error) {
+	q := "name = ?"
+	qargs := []any{projectName}
+
+	if oid.IsValid() {
+		q += " AND owner_user_id = ?"
+		qargs = append(qargs, oid.UUIDValue())
+	}
+
+	return getOne[scheme.Project](gdb.db.WithContext(ctx), q, qargs...)
 }
 
 func (gdb *gormdb) listProjects(ctx context.Context, oid sdktypes.OwnerID) ([]scheme.Project, error) {
@@ -179,8 +187,8 @@ func (db *gormdb) GetProjectByID(ctx context.Context, pid sdktypes.ProjectID) (s
 	return schemaToProject(db.getProject(ctx, pid.UUIDValue()))
 }
 
-func (db *gormdb) GetProjectByName(ctx context.Context, ph sdktypes.Symbol) (sdktypes.Project, error) {
-	return schemaToProject(db.getProjectByName(ctx, ph.String()))
+func (db *gormdb) GetProjectByName(ctx context.Context, oid sdktypes.OwnerID, ph sdktypes.Symbol) (sdktypes.Project, error) {
+	return schemaToProject(db.getProjectByName(ctx, oid, ph.String()))
 }
 
 func (db *gormdb) ListProjects(ctx context.Context, oid sdktypes.OwnerID) ([]sdktypes.Project, error) {

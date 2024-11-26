@@ -4,6 +4,7 @@ import rego.v1
 
 use_authn_for_default_list_filter_owner := false
 
+# is user authenticated?
 authn if input.user_id != ""
 
 default allow := false
@@ -15,13 +16,21 @@ allow if {
 	input.action_type in ["read", "delete", "write"]
 }
 
-# allow to create a project only if the user is the owner.
+#
+# Projects
+#
+
+# allow to create and update a project only if the user is the owner.
 allow if {
 	authn
 	input.kind == "prj"
 	input.action in ["create", "update"]
 	input.data.project.owner_id == input.user_id
 }
+
+#
+# Builds
+#
 
 # allow to save a build only if the user is the owner.
 allow if {

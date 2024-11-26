@@ -333,7 +333,7 @@ func (r Resolver) projectByName(ctx context.Context, name string) (p sdktypes.Pr
 		return
 	}
 
-	p, err = r.Client.Projects().GetByName(ctx, n)
+	p, err = r.Client.Projects().GetByName(ctx, sdktypes.InvalidOwnerID, n)
 	err = translateError(err, p, "project", name)
 	pid = p.ID()
 	return

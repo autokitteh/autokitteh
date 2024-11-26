@@ -99,10 +99,11 @@ func (c *client) GetByID(ctx context.Context, pid sdktypes.ProjectID) (sdktypes.
 	return project, nil
 }
 
-func (c *client) GetByName(ctx context.Context, n sdktypes.Symbol) (sdktypes.Project, error) {
+func (c *client) GetByName(ctx context.Context, oid sdktypes.OwnerID, n sdktypes.Symbol) (sdktypes.Project, error) {
 	resp, err := c.client.Get(ctx, connect.NewRequest(
 		&projectsv1.GetRequest{
-			Name: n.String(),
+			Name:    n.String(),
+			OwnerId: oid.String(),
 		},
 	))
 	if err != nil {

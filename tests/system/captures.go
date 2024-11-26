@@ -46,6 +46,11 @@ func expandCapture(s string) string {
 
 func expandConsts(s string) string {
 	return os.Expand(s, func(key string) string {
-		return consts[key]
+		if v, ok := consts[key]; ok {
+			return v
+		}
+
+		// make it to expandCapture.
+		return "$" + key
 	})
 }

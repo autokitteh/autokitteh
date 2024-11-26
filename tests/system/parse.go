@@ -19,7 +19,7 @@ const (
 )
 
 var (
-	steps = regexp.MustCompile(`^(ak|http|output|req|resp|return|wait|setenv|capture_jq|user)\s`)
+	steps = regexp.MustCompile(`^(?:(ak|http|output|req|resp|return|wait|setenv|capture_jq|user)\s)|(exit)$`)
 
 	// ak *
 	// http <get|post> *
@@ -168,6 +168,8 @@ func parseTestFile(t *testing.T, a *txtar.Archive) *testFile {
 			continue
 		}
 		switch match[1] {
+		case "exit":
+			// nop
 		case "ak", "http", "wait", "setenv", "user":
 			if !actions.MatchString(line) {
 				t.Errorf("invalid action in line %d: %s", i+1, line)
