@@ -206,9 +206,6 @@ class Runner(pb.runner_rpc.RunnerService):
         try:
             result = call.fn(*call.args, **call.kw)
         except Exception as e:
-            # NOTE: display_err(call.fn, e)
-            # This emits weird additional data that the users will not want
-            # to see and confuse them.
             display_err(call.fn, e)
             err = e
 
