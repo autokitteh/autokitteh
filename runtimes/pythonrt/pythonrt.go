@@ -370,12 +370,35 @@ func (py *pySvc) call(ctx context.Context, val sdktypes.Value, args []sdktypes.V
 	defer cancel()
 
 	reply, err := py.runner.ActivityReply(ctx, &req)
-	switch {
-	case err != nil:
-		py.log.Warn("activity reply error", zap.Error(err))
-	case reply.Error != "":
-		py.log.Warn("activity reply error", zap.String("reply error", reply.Error))
+	if err != nil || reply.Error != "" {
+		var error string
+		if err != nil {
+			error = err.Error()
+		} else {
+			error = reply.Error
+		}
+
+		py.log.Warn("activity reply error", zap.String("reply error", error))
+		// Stop the run
+		req := newDoneFromError(py.runnerID, error)
+		py.channels.done <- req
 	}
+}
+
+func newDoneFromError(runnerID string, error string) *pbUserCode.DoneRequest {
+	req := pbUserCode.DoneRequest{
+		RunnerId: runnerID,
+		Result: &pbValues.Value{
+			Custom: &pbValues.Custom{
+				Value: &pbValues.Value{
+					Nothing: &pbValues.Nothing{},
+				},
+				Data: nil,
+			},
+		},
+		Error: error,
+	}
+	return &req
 }
 
 // initialCall handles initial call from autokitteh, it does the message loop with Python.
