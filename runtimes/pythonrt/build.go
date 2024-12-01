@@ -74,13 +74,12 @@ func (py *pySvc) Build(ctx context.Context, fsys fs.FS, path string, values []sd
 	art = art.WithCompiledData(compiledData)
 
 	exports, err := findExports(py.log, fsys)
-	if err == nil {
-		art = art.WithExports(exports)
-	} else {
-		py.log.Warn("can't get exports", zap.Error(err))
-
+	if err != nil {
+		py.log.Error("get exports", zap.Error(err))
+		return sdktypes.InvalidBuildArtifact, err
 	}
 
+	art = art.WithExports(exports)
 	return art, nil
 }
 
