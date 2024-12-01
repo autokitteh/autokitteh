@@ -194,14 +194,12 @@ class Runner(pb.runner_rpc.RunnerService):
 
     def Execute(self, request: pb.runner.ExecuteRequest, context: grpc.ServicerContext):
         with self.lock:
-            call = self.activity_calls.pop() if self.activity_calls else None
+            call = self.activity_calls[-1] if self.activity_calls else None
 
         if call is None:
             context.abort(grpc.StatusCode.INVALID_ARGUMENT, "no pending activity calls")
 
-        log.info(
-            "calling %s, args=%r, kw=%r", full_func_name(call.fn), call.args, call.kw
-        )
+        log.info("calling %s", full_func_name(call.fn))
         result = err = None
         try:
             result = call.fn(*call.args, **call.kw)
@@ -267,7 +265,7 @@ class Runner(pb.runner_rpc.RunnerService):
 
     def start_activity(self, fn, args, kw) -> Future:
         fn_name = full_func_name(fn)
-        log.info("calling %s, args=%r, kw=%r", fn_name, args, kw)
+        log.info("calling %s", fn_name)
         call = Call(fn, args, kw, Future())
         with self.lock:
             self.activity_calls.append(call)
@@ -280,7 +278,7 @@ class Runner(pb.runner_rpc.RunnerService):
                 kwargs={k: safe_wrap(v) for k, v in kw.items()},
             ),
         )
-        log.info("activity: sending %r", req)
+        log.info("activity: sending")
         resp = self.worker.Activity(req)
         if resp.error:
             raise ActivityError(resp.error)
@@ -288,7 +286,7 @@ class Runner(pb.runner_rpc.RunnerService):
         return call.fut
 
     def on_event(self, fn, event):
-        log.info("on_event: start: %r", event)
+        log.info("on_event: start")
 
         # TODO: This is similar to Execute, merge?
         err = result = None
@@ -298,12 +296,11 @@ class Runner(pb.runner_rpc.RunnerService):
             display_err(fn, e)
             err = e
 
-        log.info("on_event: end: result=%r, err=%r", result, err)
+        log.info("on_event: end: err=%r", err)
         req = pb.handler.DoneRequest(
             runner_id=self.id,
         )
 
-        log.info("on_event: end: result=%r, err=%r", result, err)
         if err:
             req.error = str(err)
             tb = exc_traceback(err)
@@ -312,11 +309,9 @@ class Runner(pb.runner_rpc.RunnerService):
             req.result.custom.data = pickle.dumps(result, protocol=0)
             req.result.custom.value.CopyFrom(safe_wrap(result))
 
-        log.info("DONE: sending")
         resp = self.worker.Done(req)
-        log.info("DONE: sent")
         if resp.Error:
-            log.error("on_event: done error: %r", resp.error)
+            log.error("on_event: done send error: %r", resp.error)
 
     def syscall(self, fn, args, kw):
         return self.syscalls.call(fn, args, kw)
