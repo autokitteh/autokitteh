@@ -1,3 +1,5 @@
+"""Initialize a Gemini generative AI client, based on an AutoKitteh connection."""
+
 import os
 
 import google.generativeai as genai
