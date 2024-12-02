@@ -29,7 +29,6 @@ def gemini_client(connection: str, **kwargs) -> genai.GenerativeModel:
 
     # Set the API key, if possible.
     api_key = os.getenv(connection + "__api_key")
-
     if not api_key:
         raise ConnectionInitError(connection)
 
