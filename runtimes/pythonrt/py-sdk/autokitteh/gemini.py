@@ -12,7 +12,14 @@ def gemini_client(connection: str, **kwargs) -> genai.GenerativeModel:
     """Initialize a genai client, based on an AutoKitteh connection.
 
     API reference:
-    https://github.com/google-gemini/generative-ai-python/blob/main/docs/api/google/generativeai/GenerativeModel.md
+    - https://ai.google.dev/gemini-api/docs
+    - https://github.com/google-gemini/generative-ai-python/blob/main/docs/api/google/generativeai/GenerativeModel.md
+
+    Code samples:
+    - https://ai.google.dev/gemini-api/docs#explore-the-api
+    - https://ai.google.dev/gemini-api/docs/text-generation?lang=python
+    - https://github.com/google-gemini/generative-ai-python/tree/main/samples
+    - https://github.com/google-gemini/cookbook
 
     Args:
         connection: AutoKitteh connection name.
