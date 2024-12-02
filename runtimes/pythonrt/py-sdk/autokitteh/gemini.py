@@ -33,6 +33,4 @@ def gemini_client(connection: str, **kwargs) -> genai.GenerativeModel:
         raise ConnectionInitError(connection)
 
     genai.configure(api_key=api_key)
-
-    # Create and return the GenerativeModel instance
     return genai.GenerativeModel(**kwargs)
