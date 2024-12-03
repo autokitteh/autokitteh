@@ -7,6 +7,7 @@ import re
 
 from google.auth.exceptions import RefreshError
 from google.auth.transport.requests import Request
+import google.generativeai as genai
 import google.oauth2.credentials as credentials
 import google.oauth2.service_account as service_account
 from googleapiclient.discovery import build
@@ -130,6 +131,41 @@ def google_forms_client(connection: str, **kwargs):
     ]
     creds = google_creds("googleforms", connection, default_scopes, **kwargs)
     return build("forms", "v1", credentials=creds, **kwargs)
+
+
+def google_gemini_client(connection: str, **kwargs) -> genai.GenerativeModel:
+    """Initialize a genai client, based on an AutoKitteh connection.
+
+    API reference:
+    - https://ai.google.dev/gemini-api/docs
+    - https://github.com/google-gemini/generative-ai-python/blob/main/docs/api/google/generativeai/GenerativeModel.md
+
+    Code samples:
+    - https://ai.google.dev/gemini-api/docs#explore-the-api
+    - https://ai.google.dev/gemini-api/docs/text-generation?lang=python
+    - https://github.com/google-gemini/generative-ai-python/tree/main/samples
+    - https://github.com/google-gemini/cookbook
+
+    Args:
+        connection: AutoKitteh connection name.
+
+    Returns:
+        An initialized GenerativeModel instance.
+
+    Raises:
+        ValueError: AutoKitteh connection name is invalid.
+        ConnectionInitError: AutoKitteh connection was not initialized yet.
+
+    """
+    check_connection_name(connection)
+
+    # Set the API key, if possible.
+    api_key = os.getenv(connection + "__api_key")
+    if not api_key:
+        raise ConnectionInitError(connection)
+
+    genai.configure(api_key=api_key)
+    return genai.GenerativeModel(**kwargs)
 
 
 def google_sheets_client(connection: str, **kwargs):
