@@ -133,7 +133,7 @@ def google_forms_client(connection: str, **kwargs):
     return build("forms", "v1", credentials=creds, **kwargs)
 
 
-def google_gemini_client(connection: str, **kwargs) -> genai.GenerativeModel:
+def gemini_client(connection: str, **kwargs) -> genai.GenerativeModel:
     """Initialize a genai client, based on an AutoKitteh connection.
 
     API reference:
