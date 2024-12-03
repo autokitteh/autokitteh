@@ -5,6 +5,8 @@ var Tables = []any{
 	&Connection{},
 	&Deployment{},
 	&Event{},
+	&Org{},
+	&OrgMember{},
 	&Ownership{},
 	&Project{},
 	&Secret{},

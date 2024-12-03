@@ -317,9 +317,10 @@ func (db *gormdb) CreateSession(ctx context.Context, session sdktypes.Session) e
 		return err
 	}
 
-	now := time.Now()
-
 	s := scheme.Session{
+		Base:  based(ctx),
+		Owned: ownedBy(session),
+
 		SessionID:        session.ID().UUIDValue(),
 		BuildID:          uuidPtrOrNil(session.BuildID()),
 		ProjectID:        uuidPtrOrNil(session.ProjectID()),
@@ -329,9 +330,6 @@ func (db *gormdb) CreateSession(ctx context.Context, session sdktypes.Session) e
 		CurrentStateType: int(sdktypes.SessionStateTypeCreated.ToProto()),
 		Inputs:           kittehs.Must1(json.Marshal(session.Inputs())),
 		Memo:             kittehs.Must1(json.Marshal(session.Memo())),
-		Owned:            ownedBy(session),
-		CreatedAt:        now,
-		UpdatedAt:        now,
 	}
 	return translateError(db.createSession(ctx, &s))
 }

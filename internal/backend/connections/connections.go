@@ -27,7 +27,13 @@ type Connections struct {
 func New(c Connections) sdkservices.Connections { return &c }
 
 func (c *Connections) Create(ctx context.Context, conn sdktypes.Connection) (sdktypes.ConnectionID, error) {
-	if err := authz.CheckContext(ctx, conn.ProjectID(), "write:create-connection", authz.WithData("connection", conn), authz.BelongsToProject(conn)); err != nil {
+	if err := authz.CheckContext(
+		ctx,
+		conn.ProjectID(),
+		"write:create-connection",
+		authz.WithData("connection", conn),
+		authz.WithAssociationWithID("project", conn.ProjectID()),
+	); err != nil {
 		return sdktypes.InvalidConnectionID, err
 	}
 

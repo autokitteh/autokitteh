@@ -67,7 +67,13 @@ func (sch *Scheduler) Start(ctx context.Context, dispatcher sdkservices.Dispatch
 }
 
 func (sch *Scheduler) Create(ctx context.Context, tid sdktypes.TriggerID, schedule string) error {
-	if err := authz.CheckContext(ctx, tid, "write:create-schedule", authz.WithData("schedule", schedule), authz.BelongsToProjectOf(tid)); err != nil {
+	if err := authz.CheckContext(
+		ctx,
+		tid,
+		"write:create-schedule",
+		authz.WithData("schedule", schedule),
+		authz.WithAssociationWithID("trigger", tid),
+	); err != nil {
 		return err
 	}
 

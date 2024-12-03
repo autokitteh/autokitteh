@@ -28,9 +28,9 @@ var createCmd = common.StandardCommand(&cobra.Command{
 		defer cancel()
 
 		r := resolver.Resolver{Client: common.Client()}
-		_, oid, err := r.Owner(ctx, owner)
+		owid, err := r.Owner(ctx, owner)
 
-		p := sdktypes.NewProject().WithName(nameSym).WithOwnerID(oid)
+		p := sdktypes.NewProject().WithName(nameSym).WithOwnerID(owid)
 
 		id, err := projects().Create(ctx, p)
 		if err != nil {

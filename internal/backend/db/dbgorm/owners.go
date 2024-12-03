@@ -11,17 +11,19 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-func (gdb *gormdb) getRecordOwner(
-	ctx context.Context,
-	m interface{ IDFieldName() string },
-	id interface{ UUIDValue() uuid.UUID },
-) (sdktypes.OwnerID, error) {
+type (
+	idFieldNamer   interface{ IDFieldName() string }
+	getProjectIDer interface{ GetProjectID() sdktypes.ProjectID }
+	uuidValuer     interface{ UUIDValue() uuid.UUID }
+)
+
+func (gdb *gormdb) getRecordOwner(ctx context.Context, m idFieldNamer, id uuidValuer) (sdktypes.OwnerID, error) {
 	var o scheme.Owned
 
 	err := gdb.db.WithContext(ctx).
 		Model(m).
 		Where(fmt.Sprintf("%s = ?", m.IDFieldName()), id.UUIDValue()).
-		Select("owner_user_id").
+		Select("owner_user_id", "owner_org_id").
 		First(&o).
 		Error
 	if err != nil {
@@ -34,10 +36,10 @@ func (gdb *gormdb) getRecordOwner(
 func (gdb *gormdb) getRecordProjectOwner(
 	ctx context.Context,
 	m interface {
-		IDFieldName() string
-		GetProjectID() sdktypes.ProjectID // ensure this record actually has a project id.
+		idFieldNamer
+		getProjectIDer
 	},
-	id interface{ UUIDValue() uuid.UUID },
+	id uuidValuer,
 ) (sdktypes.OwnerID, error) {
 	var p scheme.BelongsToProject
 
@@ -73,13 +75,15 @@ func (gdb *gormdb) GetOwner(ctx context.Context, id sdktypes.ID) (sdktypes.Owner
 		return gdb.getRecordProjectOwner(ctx, scheme.Event{}, id)
 	case sdktypes.UserIDKind:
 		return sdktypes.NewOwnerID(sdktypes.FromID[sdktypes.UserID](id)), nil
+	case sdktypes.OrgIDKind:
+		return sdktypes.NewOwnerID(sdktypes.FromID[sdktypes.OrgID](id)), nil
 	default:
 		return sdktypes.InvalidOwnerID, sdkerrors.NewInvalidArgumentError("unhandled id kind")
 	}
 }
 
 func (gdb *gormdb) GetProjectID(ctx context.Context, id sdktypes.ID) (sdktypes.ProjectID, error) {
-	var m interface{ IDFieldName() string }
+	var m idFieldNamer
 
 	// Only records that project is mandatory in them.
 	switch id.Kind() {

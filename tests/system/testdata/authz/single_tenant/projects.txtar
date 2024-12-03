@@ -15,6 +15,9 @@ user gizmo
 ak project create --name pg
 return code == 0
 
+
+exit
+
 # make sure gizmo is its owner
 ak project get pg -f
 return code == 0

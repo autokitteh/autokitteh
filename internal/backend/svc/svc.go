@@ -48,7 +48,8 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/logger"
 	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
 	"go.autokitteh.dev/autokitteh/internal/backend/oauth"
-	"go.autokitteh.dev/autokitteh/internal/backend/policy"
+	"go.autokitteh.dev/autokitteh/internal/backend/orgs"
+	"go.autokitteh.dev/autokitteh/internal/backend/orgsgrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/policy/opapolicy"
 	"go.autokitteh.dev/autokitteh/internal/backend/projects"
 	"go.autokitteh.dev/autokitteh/internal/backend/projectsgrpcsvc"
@@ -146,12 +147,9 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 			fx.Provide(authhttpmiddleware.AuthorizationHeaderExtractor),
 		),
 		Component("users", configset.Empty, fx.Provide(users.New)),
+		Component("orgs", configset.Empty, fx.Provide(orgs.New)),
 		Component("opapolicy", opapolicy.Configs, fx.Provide(opapolicy.New)),
 		Component("authz", configset.Empty, fx.Provide(authz.NewPolicyCheckFunc)),
-
-		fx.Provide(func(p policy.DecideFunc) (*authz.GlobalSettings, error) {
-			return authz.GetGlobals(context.Background(), p)
-		}),
 
 		Component(
 			"temporalclient",
@@ -256,6 +254,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		fx.Invoke(dispatchergrpcsvc.Init),
 		fx.Invoke(eventsgrpcsvc.Init),
 		fx.Invoke(usersgrpcsvc.Init),
+		fx.Invoke(orgsgrpcsvc.Init),
 		fx.Invoke(integrationsgrpcsvc.Init),
 		fx.Invoke(oauth.Init),
 		fx.Invoke(projectsgrpcsvc.Init),

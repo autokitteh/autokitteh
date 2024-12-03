@@ -12,10 +12,17 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/builds"
 	"go.autokitteh.dev/autokitteh/internal/backend/policy/opapolicy/opapolicytest"
 	"go.autokitteh.dev/autokitteh/internal/backend/projects"
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkbuildfile"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
+
+var testUser = kittehs.Must1(sdktypes.UserFromProto(&sdktypes.UserPB{
+	UserId:      kittehs.Must1(sdktypes.ParseUserID("usr_3vser000000000000000000666")).String(),
+	DisplayName: "test",
+	Email:       "test@example.com",
+}))
 
 func TestAuthzSingleTenant(t *testing.T) {
 	db, ctx := opapolicytest.InitAuthzTest(t, "!single_tenant")
@@ -50,7 +57,7 @@ func TestAuthzSingleTenant(t *testing.T) {
 
 	// ALLOW: Save with associated project which belongs to another user user.
 
-	pid, err = psvc.Create(authcontext.SetAuthnUser(ctx, authusers.TestUser), sdktypes.NewProject())
+	pid, err = psvc.Create(authcontext.SetAuthnUser(ctx, testUser), sdktypes.NewProject())
 	b = sdktypes.NewBuild().WithID(id).WithProjectID(pid)
 
 	id, err = bsvc.Save(ctx, b, sdkbuildfile.EmptyBuildFileData)
@@ -68,7 +75,7 @@ func TestAuthzSingleTenant(t *testing.T) {
 
 	// ALLOW: Get with test user.
 
-	_, err = bsvc.Get(authcontext.SetAuthnUser(ctx, authusers.TestUser), id)
+	_, err = bsvc.Get(authcontext.SetAuthnUser(ctx, testUser), id)
 	assert.NoError(t, err)
 }
 
@@ -105,7 +112,7 @@ func TestAuthzMultiTenant(t *testing.T) {
 
 	// DENY: Save with associated project which belongs to another user user.
 
-	pid, err = psvc.Create(authcontext.SetAuthnUser(ctx, authusers.TestUser), sdktypes.NewProject())
+	pid, err = psvc.Create(authcontext.SetAuthnUser(ctx, testUser), sdktypes.NewProject())
 	if assert.NoError(t, err) {
 		b = sdktypes.NewBuild().WithID(id).WithProjectID(pid)
 		_, err = bsvc.Save(ctx, b, sdkbuildfile.EmptyBuildFileData)
@@ -119,6 +126,6 @@ func TestAuthzMultiTenant(t *testing.T) {
 
 	// DENY: Get with test user.
 
-	_, err = bsvc.Get(authcontext.SetAuthnUser(ctx, authusers.TestUser), id)
+	_, err = bsvc.Get(authcontext.SetAuthnUser(ctx, testUser), id)
 	assert.ErrorIs(t, err, sdkerrors.ErrUnauthorized)
 }

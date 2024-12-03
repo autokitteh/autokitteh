@@ -22,7 +22,7 @@ func TestGetOwner(t *testing.T) {
 	sid := sdktypes.NewSessionID()
 
 	uid := sdktypes.NewUserID()
-	oid := sdktypes.NewOwnerID(uid)
+	uowid := sdktypes.NewOwnerID(uid)
 
 	db, err := dbgorm.New(zap.NewNop(), &dbgorm.Config{})
 	require.NoError(t, err)
@@ -32,14 +32,14 @@ func TestGetOwner(t *testing.T) {
 	require.NoError(t, db.Connect(ctx))
 	require.NoError(t, db.Setup(ctx))
 
-	require.NoError(t, db.CreateProject(ctx, sdktypes.NewProject().WithName(sdktypes.NewSymbol("test")).WithID(pid).WithOwnerID(oid)))
-	require.NoError(t, db.SaveBuild(ctx, sdktypes.NewBuild().WithOwnerID(oid).WithID(bid), []byte("meow")))
+	require.NoError(t, db.CreateProject(ctx, sdktypes.NewProject().WithName(sdktypes.NewSymbol("test")).WithID(pid).WithOwnerID(uowid)))
+	require.NoError(t, db.SaveBuild(ctx, sdktypes.NewBuild().WithOwnerID(uowid).WithID(bid), []byte("meow")))
 	require.NoError(t, db.CreateConnection(ctx, sdktypes.NewConnection(cid).WithName(sdktypes.NewSymbol("test")).WithIntegrationID(sdktypes.NewIntegrationID()).WithProjectID(pid)))
 	require.NoError(t, db.CreateTrigger(ctx, sdktypes.NewTrigger(sdktypes.NewSymbol("test")).WithProjectID(pid).WithID(tid).WithConnectionID(cid)))
 	require.NoError(t, db.CreateDeployment(ctx, sdktypes.NewDeployment(did, pid, bid)))
 
 	loc := kittehs.Must1(sdktypes.ParseCodeLocation("foo.py:moo"))
-	require.NoError(t, db.CreateSession(ctx, sdktypes.NewSession(bid, loc, nil, nil).WithID(sid).WithOwnerID(oid)))
+	require.NoError(t, db.CreateSession(ctx, sdktypes.NewSession(bid, loc, nil, nil).WithID(sid).WithOwnerID(uowid)))
 	ids := []sdktypes.ID{
 		pid,
 		bid,
@@ -53,9 +53,9 @@ func TestGetOwner(t *testing.T) {
 
 	for _, id := range ids {
 		t.Run(id.String(), func(t *testing.T) {
-			toid, err := db.GetOwner(ctx, id)
+			tuowid, err := db.GetOwner(ctx, id)
 			if assert.NoError(t, err) {
-				assert.Equal(t, oid.String(), toid.String())
+				assert.Equal(t, uowid.String(), tuowid.String())
 			}
 		})
 	}

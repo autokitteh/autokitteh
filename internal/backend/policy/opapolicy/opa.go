@@ -3,7 +3,6 @@ package opapolicy
 import (
 	"bytes"
 	"context"
-	"embed"
 	_ "embed"
 	"fmt"
 	"io/fs"
@@ -13,6 +12,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/configs/opa_bundles"
 	"go.autokitteh.dev/autokitteh/internal/backend/configset"
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
@@ -22,9 +22,6 @@ import (
 	"github.com/open-policy-agent/opa/sdk"
 	sdktest "github.com/open-policy-agent/opa/sdk/test"
 )
-
-//go:embed bundles/*
-var bundlesFS embed.FS
 
 const defaultConfig = "single_tenant"
 
@@ -53,7 +50,7 @@ type opa struct {
 func startBundleServer(name string) (*sdktest.Server, error) {
 	path := "bundles/" + name
 
-	des, err := fs.ReadDir(bundlesFS, path)
+	des, err := fs.ReadDir(opa_bundles.FS, path)
 	if err != nil {
 		return nil, fmt.Errorf("read bundle %q: %w", name, err)
 	}
@@ -65,7 +62,7 @@ func startBundleServer(name string) (*sdktest.Server, error) {
 			continue
 		}
 
-		bs, err := fs.ReadFile(bundlesFS, filepath.Join(path, de.Name()))
+		bs, err := fs.ReadFile(opa_bundles.FS, filepath.Join(path, de.Name()))
 		if err != nil {
 			return nil, fmt.Errorf("read bundle %q: %w", name, err)
 		}

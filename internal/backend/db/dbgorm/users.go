@@ -16,6 +16,10 @@ func (gdb *gormdb) GetUser(ctx context.Context, id sdktypes.UserID, email string
 
 	q := gdb.db.WithContext(ctx)
 
+	if !id.IsValid() && email == "" {
+		return sdktypes.InvalidUser, sdkerrors.NewInvalidArgumentError("missing id or email")
+	}
+
 	if id.IsValid() {
 		q = q.Where("user_id = ?", id.UUIDValue())
 	}
@@ -42,6 +46,8 @@ func (gdb *gormdb) CreateUser(ctx context.Context, u sdktypes.User) (sdktypes.Us
 	}
 
 	user := scheme.User{
+		Base: based(ctx),
+
 		UserID:      uid.UUIDValue(),
 		Email:       u.Email(),
 		DisplayName: u.DisplayName(),
@@ -61,11 +67,15 @@ func (gdb *gormdb) UpdateUser(ctx context.Context, u sdktypes.User) error {
 		return sdkerrors.NewInvalidArgumentError("missing uid")
 	}
 
+	data := updatedBaseColumns(ctx)
+	data["display_name"] = u.DisplayName()
+	data["disabled"] = u.Disabled()
+
 	return translateError(
 		gdb.db.WithContext(ctx).
 			Model(&scheme.User{}).
-			Update("display_name", u.DisplayName()).Update("disabled", u.Disabled()).
 			Where("user_id = ?", u.ID().UUIDValue()).
+			Updates(data).
 			Error,
 	)
 }

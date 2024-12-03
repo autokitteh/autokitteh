@@ -47,6 +47,10 @@ func GetAuthnInferredUserID(ctx context.Context) sdktypes.UserID {
 	return GetAuthnUserID(ctx)
 }
 
+func GetAuthnInferredOwnerID(ctx context.Context) sdktypes.OwnerID {
+	return sdktypes.NewOwnerID(GetAuthnInferredUserID(ctx))
+}
+
 func SetAuthnSystemUser(ctx context.Context) context.Context {
 	return SetAuthnUser(ctx, authusers.SystemUser)
 }

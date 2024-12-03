@@ -3,7 +3,6 @@ package dbgorm
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"gorm.io/gorm"
 
@@ -67,7 +66,10 @@ func (gdb *gormdb) updateDeploymentState(
 			return err
 		}
 
-		if err := tx.db.Model(&d).Update("state", int32(state.ToProto())).Error; err != nil {
+		data := updatedBaseColumns(ctx)
+		data["state"] = int32(state.ToProto())
+
+		if err := tx.db.Model(&d).Updates(data).Error; err != nil {
 			return err
 		}
 		return nil
@@ -146,15 +148,13 @@ func (db *gormdb) CreateDeployment(ctx context.Context, deployment sdktypes.Depl
 		return err
 	}
 
-	now := time.Now()
-
 	d := scheme.Deployment{
-		DeploymentID:     deployment.ID().UUIDValue(),
-		BuildID:          deployment.BuildID().UUIDValue(),
+		Base:             based(ctx),
 		BelongsToProject: belongsToProjectIDOf(deployment),
-		State:            int32(deployment.State().ToProto()),
-		CreatedAt:        now,
-		UpdatedAt:        now,
+
+		DeploymentID: deployment.ID().UUIDValue(),
+		BuildID:      deployment.BuildID().UUIDValue(),
+		State:        int32(deployment.State().ToProto()),
 	}
 	return translateError(db.createDeployment(ctx, &d))
 }

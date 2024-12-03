@@ -2,8 +2,6 @@ package authz
 
 import rego.v1
 
-use_authn_for_default_list_filter_owner := false
-
 # is user authenticated?
 authn if input.user_id != ""
 

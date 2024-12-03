@@ -31,6 +31,34 @@ func New(b Builds, telemetry *telemetry.Telemetry) sdkservices.Builds {
 	return &b
 }
 
+func (b *Builds) Save(ctx context.Context, build sdktypes.Build, data []byte) (sdktypes.BuildID, error) {
+	build = authcontext.ObjectWithOwnerID(ctx, build)
+
+	if err := authz.CheckContext(
+		ctx,
+		sdktypes.InvalidBuildID,
+		"create:save",
+		authz.WithData("build", build),
+		authz.WithAssociationWithID("project", build.ProjectID()),
+	); err != nil {
+		return sdktypes.InvalidBuildID, err
+	}
+
+	// make sure this at least tries to pretend to be a build file.
+	if _, err := sdkbuildfile.ReadVersion(bytes.NewReader(data)); err != nil {
+		return sdktypes.InvalidBuildID, fmt.Errorf("read version: %w", err)
+	}
+
+	build = build.WithNewID().WithCreatedAt(time.Now())
+
+	if err := b.DB.SaveBuild(ctx, build, data); err != nil {
+		return sdktypes.InvalidBuildID, err
+	}
+
+	buildsCreatedCounter.Add(ctx, 1)
+	return build.ID(), nil
+}
+
 func (b *Builds) Get(ctx context.Context, id sdktypes.BuildID) (sdktypes.Build, error) {
 	if err := authz.CheckContext(ctx, id, "read:get"); err != nil {
 		return sdktypes.InvalidBuild, err
@@ -62,28 +90,6 @@ func (b *Builds) Download(ctx context.Context, id sdktypes.BuildID) (io.ReadClos
 		return nil, err
 	}
 	return io.NopCloser(bytes.NewReader(data)), nil
-}
-
-func (b *Builds) Save(ctx context.Context, build sdktypes.Build, data []byte) (sdktypes.BuildID, error) {
-	build = authcontext.ObjectWithOwnerID(ctx, build)
-
-	if err := authz.CheckContext(ctx, sdktypes.InvalidBuildID, "create:save", authz.WithData("build", build), authz.BelongsToProject(build)); err != nil {
-		return sdktypes.InvalidBuildID, err
-	}
-
-	// make sure this at least tries to pretend to be a build file.
-	if _, err := sdkbuildfile.ReadVersion(bytes.NewReader(data)); err != nil {
-		return sdktypes.InvalidBuildID, fmt.Errorf("read version: %w", err)
-	}
-
-	build = build.WithNewID().WithCreatedAt(time.Now())
-
-	if err := b.DB.SaveBuild(ctx, build, data); err != nil {
-		return sdktypes.InvalidBuildID, err
-	}
-
-	buildsCreatedCounter.Add(ctx, 1)
-	return build.ID(), nil
 }
 
 func (b *Builds) Delete(ctx context.Context, bid sdktypes.BuildID) error {

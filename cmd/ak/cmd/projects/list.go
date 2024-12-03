@@ -19,12 +19,12 @@ var listCmd = common.StandardCommand(&cobra.Command{
 
 		r := resolver.Resolver{Client: common.Client()}
 
-		_, oid, err := r.Owner(ctx, owner)
+		owid, err := r.Owner(ctx, owner)
 		if err != nil {
 			return common.WrapError(err, "owner")
 		}
 
-		ps, err := projects().List(ctx, oid)
+		ps, err := projects().List(ctx, owid)
 		err = common.AddNotFoundErrIfCond(err, len(ps) > 0)
 		if err = common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "projects"); err == nil {
 			common.RenderList(ps)

@@ -11,8 +11,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	"go.autokitteh.dev/autokitteh/config"
 )
 
 const (
@@ -92,7 +90,7 @@ func waitForSession(akPath, akAddr, step string) (string, error) {
 	}
 
 	// Check the session state with the AK client.
-	args := append(config.ServiceUrlArg(akAddr), "session", "get", id)
+	args := append(serviceUrlArg(akAddr), "session", "get", id)
 	startTime := time.Now()
 
 	sessionFound := false
@@ -115,13 +113,13 @@ func waitForSession(akPath, akAddr, step string) (string, error) {
 	// error handling
 	text := fmt.Sprintf("session %s not done after %s", id, duration)
 
-	args = append(config.ServiceUrlArg(akAddr), "event", "list", "--integration=http")
+	args = append(serviceUrlArg(akAddr), "event", "list", "--integration=http")
 	result, err := runClient(akPath, args)
 	if err == nil {
 		text += fmt.Sprintf("\nEvent list:\n%s", result.output)
 	}
 
-	args = append(config.ServiceUrlArg(akAddr), "session", "list", "-J")
+	args = append(serviceUrlArg(akAddr), "session", "list", "-J")
 	result, err = runClient(akPath, args)
 	if err == nil {
 		text += fmt.Sprintf("\n---\nSession list:\n%s", result.output)
@@ -151,4 +149,8 @@ func setEnv(args string) error {
 	}
 
 	return nil
+}
+
+func serviceUrlArg(akAddr string) []string {
+	return []string{"--config", "http.service_url=http://" + akAddr}
 }

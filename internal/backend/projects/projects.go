@@ -24,12 +24,11 @@ import (
 type Projects struct {
 	fx.In
 
-	Z              *zap.Logger
-	DB             db.DB
-	Builds         sdkservices.Builds
-	Runtimes       sdkservices.Runtimes
-	Integrations   sdkservices.Integrations
-	GlobalSettings *authz.GlobalSettings
+	Z            *zap.Logger
+	DB           db.DB
+	Builds       sdkservices.Builds
+	Runtimes     sdkservices.Runtimes
+	Integrations sdkservices.Integrations
 }
 
 func New(p Projects, telemetry *telemetry.Telemetry) sdkservices.Projects {
@@ -88,7 +87,7 @@ func (ps *Projects) GetByID(ctx context.Context, pid sdktypes.ProjectID) (sdktyp
 
 func (ps *Projects) GetByName(ctx context.Context, oid sdktypes.OwnerID, n sdktypes.Symbol) (sdktypes.Project, error) {
 	if !oid.IsValid() {
-		oid = ps.GlobalSettings.DefaultOwnerFromAuthn(ctx)
+		oid = authcontext.GetAuthnInferredOwnerID(ctx)
 	}
 
 	if err := authz.CheckContext(ctx, sdktypes.InvalidProjectID, "read:resolve", authz.WithData("owner_id", oid)); err != nil {
@@ -109,7 +108,7 @@ func (ps *Projects) GetByName(ctx context.Context, oid sdktypes.OwnerID, n sdkty
 
 func (ps *Projects) List(ctx context.Context, oid sdktypes.OwnerID) ([]sdktypes.Project, error) {
 	if !oid.IsValid() {
-		oid = ps.GlobalSettings.DefaultOwnerFromAuthn(ctx)
+		oid = authcontext.GetAuthnInferredOwnerID(ctx)
 	}
 
 	if err := authz.CheckContext(

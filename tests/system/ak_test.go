@@ -19,7 +19,6 @@ package systest
 
 import (
 	"context"
-	"embed"
 	"fmt"
 	"io/fs"
 	"strings"
@@ -33,9 +32,6 @@ const (
 	rootDir     = "testdata"
 	stopTimeout = 3 * time.Second
 )
-
-//go:embed testdata/*
-var testDataFS embed.FS
 
 func TestSuite(t *testing.T) {
 	akPath := setUpSuite(t)

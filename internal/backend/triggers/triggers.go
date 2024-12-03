@@ -28,7 +28,13 @@ func New(l *zap.Logger, db db.DB, scheduler *scheduler.Scheduler) sdkservices.Tr
 }
 
 func (m *triggers) Create(ctx context.Context, trigger sdktypes.Trigger) (sdktypes.TriggerID, error) {
-	if err := authz.CheckContext(ctx, trigger.ProjectID(), "write:create-trigger", authz.WithData("trigger", trigger), authz.BelongsToProject(trigger)); err != nil {
+	if err := authz.CheckContext(
+		ctx,
+		trigger.ProjectID(),
+		"write:create-trigger",
+		authz.WithData("trigger", trigger),
+		authz.WithAssociationWithID("project", trigger.ProjectID()),
+	); err != nil {
 		return sdktypes.InvalidTriggerID, err
 	}
 
@@ -75,7 +81,13 @@ func (m *triggers) Create(ctx context.Context, trigger sdktypes.Trigger) (sdktyp
 }
 
 func (m *triggers) Update(ctx context.Context, trigger sdktypes.Trigger) error {
-	if err := authz.CheckContext(ctx, trigger.ID(), "update:update", authz.WithData("trigger", trigger), authz.BelongsToProject(trigger)); err != nil {
+	if err := authz.CheckContext(
+		ctx,
+		trigger.ID(),
+		"update:update",
+		authz.WithData("trigger", trigger),
+		authz.WithAssociationWithID("project", trigger.ProjectID()),
+	); err != nil {
 		return err
 	}
 

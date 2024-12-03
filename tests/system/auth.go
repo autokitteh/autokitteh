@@ -4,28 +4,27 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/google/uuid"
+
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authjwttokens"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 var (
-	userNames = []string{"zumi", "gizmo", "midnight", "pepurr"}
+	users = []struct {
+		name string
+		org  string
+	}{
+		{"zumi", "cats"}, // <-- first user is used by default by the test.
+		{"gizmo", "cats"},
+		{"shoogy", "dogs"},
+		{"bonny", "dogs"},
+	}
 
-	users = kittehs.Transform(userNames, func(name string) sdktypes.User {
-		return sdktypes.NewUser(name + "@localhost").WithID(sdktypes.NewTestUserID(name)).WithDisplayName(name)
-	})
+	seedCommands []string
 
-	seedCommand = strings.Join(kittehs.Transform(users, func(u sdktypes.User) string {
-		return fmt.Sprintf(
-			`insert into users(user_id,email,display_name) values (%q,%q,%q)`,
-			u.ID().UUIDValue().String(),
-			u.Email(),
-			u.DisplayName(),
-		)
-	}), ";") + ";"
-
-	tokens = make(map[string]string)
+	tokens = make(map[string]string, len(users))
 
 	token = "INVALID_TOKEN"
 )
@@ -33,15 +32,50 @@ var (
 func init() {
 	js := kittehs.Must1(authjwttokens.New(authjwttokens.Configs.Test))
 
-	for _, u := range users {
-		consts[strings.ToUpper(u.DisplayName()+"_uid")] = u.ID().String()
+	orgs := make(map[string]uuid.UUID)
 
-		tokens[u.DisplayName()] = kittehs.Must1(js.Create(u))
+	for _, u := range users {
+		uu := sdktypes.NewUser(fmt.Sprintf("%s@%s.org", u.name, u.org)).
+			WithDisplayName(u.name).
+			WithID(sdktypes.NewTestUserID(u.name))
+
+		consts[strings.ToUpper(u.name+"_uid")] = uu.ID().String()
+
+		seedCommands = append(seedCommands, fmt.Sprintf(
+			`insert into users(user_id,email,display_name,created_by) values (%q,%q,%q,%q)`,
+			uu.ID().UUIDValue(),
+			uu.Email(),
+			uu.DisplayName(),
+			uu.ID().UUIDValue(),
+		))
+
+		oid, ok := orgs[u.org]
+		if !ok {
+			orgs[u.org] = kittehs.Must1(uuid.NewV7())
+
+			consts[strings.ToUpper(u.org+"_oid")] = orgs[u.org].String()
+
+			seedCommands = append(seedCommands, fmt.Sprintf(
+				`insert into orgs(org_id,name,created_by) values (%q,%q,%q)`,
+				uuid.New(),
+				u.org,
+				uu.ID().UUIDValue(),
+			))
+		}
+
+		seedCommands = append(seedCommands, fmt.Sprintf(
+			`insert into org_members(org_id,user_id,created_by) values (%q,%q,%q)`,
+			uu.ID().UUIDValue(),
+			oid,
+			uu.ID().UUIDValue(),
+		))
+
+		tokens[u.name] = kittehs.Must1(js.Create(uu))
 	}
 
 	tokens["anon"] = ""
 
-	token = tokens[userNames[0]]
+	token = tokens[users[0].name]
 }
 
 func setUser(name string) error {

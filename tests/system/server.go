@@ -32,7 +32,7 @@ func startAKServer(ctx context.Context, akPath string, userCfg map[string]any) (
 		"http.addr":                           ":0",
 		"http.addr_filename":                  serverHTTPAddrFile, // In the test's temporary directory.
 		"authhttpmiddleware.use_default_user": "false",
-		"db.seed_commands":                    seedCommand,
+		"db.seed_commands":                    strings.Join(seedCommands, ";") + ";",
 	}
 
 	maps.Copy(cfgMap, userCfg)

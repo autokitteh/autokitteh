@@ -3,8 +3,8 @@ package authz
 import "go.autokitteh.dev/autokitteh/sdk/sdktypes"
 
 type checkCfg struct {
-	data                 map[string]any
-	belongsToProjectOfID sdktypes.ID
+	data         map[string]any
+	associations map[string]sdktypes.ID
 }
 
 // Set arbitrary data in check context.
@@ -23,11 +23,16 @@ func WithData(k string, v any) func(*checkCfg) {
 // This will cause the checker to automatically deduce with project it belongs
 // to based on the ID. For example: when creating a new event, the project will
 // be deduced from the event destination id.
-func BelongsToProjectOf(id sdktypes.ID) func(*checkCfg) {
-	return func(cfg *checkCfg) { cfg.belongsToProjectOfID = id }
-}
+func WithAssociationWithID(name string, id sdktypes.ID) func(*checkCfg) {
+	if id == nil || !id.IsValid() {
+		return func(*checkCfg) {}
+	}
 
-// Same as `BelongsToProjectOf`, but extracts the project ID from the object.
-func BelongsToProject[T interface{ ProjectID() sdktypes.ProjectID }](obj T) func(*checkCfg) {
-	return func(cfg *checkCfg) { cfg.belongsToProjectOfID = obj.ProjectID() }
+	return func(cfg *checkCfg) {
+		if cfg.associations == nil {
+			cfg.associations = make(map[string]sdktypes.ID)
+		}
+
+		cfg.associations[name] = id
+	}
 }

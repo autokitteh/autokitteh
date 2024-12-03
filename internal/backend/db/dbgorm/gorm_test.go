@@ -252,7 +252,6 @@ func findAndAssertOne[T any](t *testing.T, f *dbFixture, schemaObj T, where stri
 
 // check obj is soft-deleted in gorm
 func assertSoftDeleted[T any](t *testing.T, f *dbFixture, m T) {
-	// check that object is not found without unscoped (due to deleted_at)
 	res := f.db.First(&m)
 	require.ErrorIs(t, res.Error, gorm.ErrRecordNotFound)
 
@@ -287,8 +286,9 @@ func (f *dbFixture) newSession(args ...any) scheme.Session {
 		// CurrentStateType: int(st.ToProto()),
 		Inputs:     datatypes.JSON([]byte("{}")),
 		Entrypoint: "loc",
-		CreatedAt:  now,
-		UpdatedAt:  now,
+		Base: scheme.Base{
+			CreatedAt: now,
+		},
 	}
 	for _, a := range args {
 		switch a := a.(type) {
@@ -315,9 +315,9 @@ func (f *dbFixture) newSessionLogRecord() scheme.SessionLogRecord {
 
 func (f *dbFixture) newBuild(args ...any) scheme.Build {
 	b := scheme.Build{
-		BuildID:   newTestID(),
-		Data:      []byte{},
-		CreatedAt: now,
+		BuildID: newTestID(),
+		Data:    []byte{},
+		Base:    scheme.Base{CreatedAt: now},
 	}
 	for _, a := range args {
 		switch a := a.(type) {
@@ -332,8 +332,7 @@ func (f *dbFixture) newDeployment(args ...any) scheme.Deployment {
 	d := scheme.Deployment{
 		DeploymentID: newTestID(),
 		State:        int32(sdktypes.DeploymentStateUnspecified.ToProto()),
-		CreatedAt:    now,
-		UpdatedAt:    now,
+		Base:         scheme.Base{CreatedAt: now},
 	}
 	for _, a := range args {
 		switch a := a.(type) {
@@ -423,11 +422,11 @@ func (f *dbFixture) newConnection(args ...any) scheme.Connection {
 func (f *dbFixture) newEvent(args ...any) scheme.Event {
 	f.eventSequence = f.eventSequence + 1
 	e := scheme.Event{
-		EventID:   newTestID(),
-		CreatedAt: now,
-		Seq:       uint64(f.eventSequence),
-		Data:      kittehs.Must1(json.Marshal(struct{}{})),
-		Memo:      kittehs.Must1(json.Marshal(struct{}{})),
+		EventID: newTestID(),
+		Base:    scheme.Base{CreatedAt: now},
+		Seq:     uint64(f.eventSequence),
+		Data:    kittehs.Must1(json.Marshal(struct{}{})),
+		Memo:    kittehs.Must1(json.Marshal(struct{}{})),
 	}
 	for _, a := range args {
 		switch a := a.(type) {

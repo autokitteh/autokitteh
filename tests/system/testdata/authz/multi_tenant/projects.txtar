@@ -121,7 +121,6 @@ ak project export test
 return code == $RC_UNAUTHN
 
 -- test-config.yaml --
-exclusive: true
 server: 
     opapolicy.config_path: "!multi_tenant"
 ak:

@@ -44,11 +44,12 @@ func (db *gormdb) SaveBuild(ctx context.Context, build sdktypes.Build, data []by
 	}
 
 	b := scheme.Build{
+		Base:  based(ctx),
+		Owned: ownedBy(build),
+
 		BuildID:   build.ID().UUIDValue(),
 		ProjectID: uuidPtrOrNil(build.ProjectID()),
 		Data:      data,
-		CreatedAt: build.CreatedAt(),
-		Owned:     ownedBy(build),
 	}
 
 	return translateError(db.saveBuild(ctx, &b))

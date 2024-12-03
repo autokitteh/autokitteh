@@ -373,10 +373,34 @@ func (r Resolver) UserEmailOrID(ctx context.Context, emailOrID string) (u sdktyp
 	return
 }
 
-func (r Resolver) Owner(ctx context.Context, emailOrID string) (u sdktypes.User, oid sdktypes.OwnerID, err error) {
-	// In the future might support orgs.
-	u, uid, err := r.UserEmailOrID(ctx, emailOrID)
-	return u, sdktypes.NewOwnerID(uid), err
+func (r Resolver) Owner(ctx context.Context, owner string) (owid sdktypes.OwnerID, err error) {
+	if sdktypes.IsID(owner) {
+		return sdktypes.ParseOwnerID(owner)
+	}
+
+	if strings.Contains(owner, "@") {
+		var u sdktypes.User
+		if u, err = r.Client.Users().Get(ctx, sdktypes.InvalidUserID, owner); err == nil {
+			owid = sdktypes.NewOwnerID(u.ID())
+		}
+
+		err = translateError(err, u, "user", owner)
+		return
+	}
+
+	n, err := sdktypes.Strict(sdktypes.ParseSymbol(owner))
+	if err != nil {
+		err = fmt.Errorf("invalid owner name %q: %w", owner, err)
+		return
+	}
+
+	o, err := r.Client.Orgs().GetByName(ctx, n)
+	if err != nil {
+		err = translateError(err, o, "org", owner)
+		return
+	}
+	owid = sdktypes.NewOwnerID(o.ID())
+	return
 }
 
 // UserID returns a user, based on the given ID.

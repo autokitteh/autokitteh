@@ -96,7 +96,13 @@ func (d *deployments) Test(ctx context.Context, id sdktypes.DeploymentID) error 
 }
 
 func (d *deployments) Create(ctx context.Context, deployment sdktypes.Deployment) (sdktypes.DeploymentID, error) {
-	if err := authz.CheckContext(ctx, deployment.ProjectID(), "write:create-deployment", authz.WithData("deployment", deployment), authz.BelongsToProject(deployment)); err != nil {
+	if err := authz.CheckContext(
+		ctx,
+		deployment.ProjectID(),
+		"write:create-deployment",
+		authz.WithData("deployment", deployment),
+		authz.WithAssociationWithID("project", deployment.ProjectID()),
+	); err != nil {
 		return sdktypes.InvalidDeploymentID, err
 	}
 

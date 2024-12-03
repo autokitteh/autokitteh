@@ -143,6 +143,16 @@ type DB interface {
 	UpdateUser(ctx context.Context, user sdktypes.User) error
 
 	// -----------------------------------------------------------------------
+	CreateOrg(ctx context.Context, user sdktypes.Org) (sdktypes.OrgID, error)
+	GetOrg(ctx context.Context, oid sdktypes.OrgID, name sdktypes.Symbol) (sdktypes.Org, error)
+	UpdateOrg(ctx context.Context, org sdktypes.Org) error
+	ListOrgMembers(ctx context.Context, oid sdktypes.OrgID) ([]sdktypes.UserID, error)
+	AddOrgMember(ctx context.Context, oid sdktypes.OrgID, uid sdktypes.UserID) error
+	RemoveOrgMember(ctx context.Context, oid sdktypes.OrgID, uid sdktypes.UserID) error
+	IsOrgMember(ctx context.Context, oid sdktypes.OrgID, uid sdktypes.UserID) (bool, error)
+	GetOrgsForUser(ctx context.Context, uid sdktypes.UserID) ([]sdktypes.OrgID, error)
+
+	// -----------------------------------------------------------------------
 	SetSecret(ctx context.Context, key string, value string) error
 	GetSecret(ctx context.Context, key string) (string, error)
 	DeleteSecret(ctx context.Context, key string) error
@@ -154,6 +164,7 @@ type DB interface {
 	// -----------------------------------------------------------------------
 
 	// Get the owner id of an object.
+	// If err is nil, OwnerID woulld always be valid.
 	GetOwner(ctx context.Context, id sdktypes.ID) (sdktypes.OwnerID, error)
 
 	// Get project ID of an object.

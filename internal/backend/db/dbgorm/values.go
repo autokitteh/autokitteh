@@ -2,7 +2,6 @@ package dbgorm
 
 import (
 	"context"
-	"time"
 
 	"google.golang.org/protobuf/proto"
 
@@ -30,10 +29,16 @@ func (db *gormdb) SetValue(ctx context.Context, pid sdktypes.ProjectID, key stri
 		}
 
 		return tx.db.Save(&scheme.Value{
+			// This does not take into account if value was also previously set,
+			// so `created_by` and `updated_by` would always point to the last user
+			// that updated the user.
+			// Getting `created_by` correctly would neccessitate another query, not
+			// worth it currently.
+			Base:             based(ctx),
 			BelongsToProject: belongsToProjectID(pid),
-			Key:              key,
-			Value:            bs,
-			UpdatedAt:        time.Now().UTC(),
+
+			Key:   key,
+			Value: bs,
 		}).Error
 	}))
 }

@@ -11,7 +11,7 @@ type OwnerID struct{ id[typeid.AnyPrefix] }
 var InvalidOwnerID OwnerID
 
 type concreteOwnerID interface {
-	UserID
+	UserID | OrgID
 	ID
 }
 
@@ -39,7 +39,9 @@ func ParseOwnerID(s string) (OwnerID, error) {
 }
 
 func (e OwnerID) ToUserID() UserID { id, _ := ParseUserID(e.String()); return id }
+func (e OwnerID) ToOrgID() OrgID   { id, _ := ParseOrgID(e.String()); return id }
 
 func (e OwnerID) IsUserID() bool { return e.Kind() == UserIDKind }
+func (e OwnerID) IsOrgID() bool  { return e.Kind() == OrgIDKind }
 
 func (e OwnerID) AsID() ID { return e }

@@ -2,28 +2,13 @@ package authz
 
 import rego.v1
 
-use_authn_for_default_list_filter_owner := true
-
 #
 # Helpers
 #
 
 authn if input.user_id
 
-has_owner if input.owner_id
-
-user_is_owner if {
-	has_owner
-	input.user_id == input.owner_id
-}
-
-has_project_owner if input.data.project_owner_id
-
-user_is_project_owner if {
-	authn
-	has_project_owner
-	input.data.project_owner_id == input.user_id
-}
+user_is_owner := input.is_owner
 
 user_is_filter_owner if {
 	authn
@@ -43,12 +28,6 @@ allow if {
 	user_is_owner
 }
 
-allow if {
-	authn
-	input.action_type == "read"
-	user_is_project_owner
-}
-
 #
 # Builds
 #
@@ -61,7 +40,6 @@ allow if {
 	input.kind == "bld"
 	input.action == "save"
 	input.data.build.owner_id == input.user_id
-	input.project_owner_id == input.user_id
 }
 
 # - user is the owner of the build and there is no associated project.
@@ -69,8 +47,7 @@ allow if {
 	authn
 	input.kind == "bld"
 	input.action == "save"
-	input.data.build.owner_id == input.user_id
-	input.project_owner_id == ""
+	input.data.build.owner_id in input.member_of_org_ids
 }
 
 #
