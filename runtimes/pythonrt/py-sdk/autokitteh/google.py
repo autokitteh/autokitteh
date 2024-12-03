@@ -134,7 +134,7 @@ def google_forms_client(connection: str, **kwargs):
 
 
 def gemini_client(connection: str, **kwargs) -> genai.GenerativeModel:
-    """Initialize a genai client, based on an AutoKitteh connection.
+    """Initialize a Gemini generative AI client, based on an AutoKitteh connection.
 
     API reference:
     - https://ai.google.dev/gemini-api/docs
