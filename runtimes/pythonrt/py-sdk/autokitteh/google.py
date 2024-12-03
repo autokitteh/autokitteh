@@ -155,7 +155,6 @@ def google_gemini_client(connection: str, **kwargs) -> genai.GenerativeModel:
     Raises:
         ValueError: AutoKitteh connection name is invalid.
         ConnectionInitError: AutoKitteh connection was not initialized yet.
-
     """
     check_connection_name(connection)
 
