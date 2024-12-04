@@ -13,7 +13,6 @@ import (
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/internal/manifest"
 	"go.autokitteh.dev/autokitteh/sdk/sdkruntimes"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -82,32 +81,6 @@ func (ps *Projects) Build(ctx context.Context, projectID sdktypes.ProjectID) (sd
 
 	if fs == nil {
 		return sdktypes.InvalidBuildID, errors.New("no resources set")
-	}
-
-	// Lint before building
-	resources, err := kittehs.FSToMap(fs)
-	if err != nil {
-		return sdktypes.InvalidBuildID, err
-	}
-
-	// TODO: How can I know the name of the manifest from the build
-	manifestFile := "autokitteh.yaml"
-	if _, ok := resources[manifestFile]; !ok {
-		manifestFile = ""
-	}
-
-	vs, err := ps.Lint(ctx, projectID, resources, manifestFile)
-	lintErr := false
-	for _, v := range vs {
-		if v.Level == sdktypes.ViolationError {
-			lintErr = true
-			break
-		}
-	}
-
-	if lintErr {
-		// TODO: Do we want all the error messages in the error?
-		return sdktypes.InvalidBuildID, fmt.Errorf("lint error")
 	}
 
 	bi, err := sdkruntimes.Build(

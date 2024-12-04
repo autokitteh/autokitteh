@@ -212,10 +212,11 @@ func (c *client) Export(ctx context.Context, pid sdktypes.ProjectID) ([]byte, er
 	return resp.Msg.ZipArchive, nil
 }
 
-func (c *client) Lint(ctx context.Context, pid sdktypes.ProjectID, resources map[string][]byte) ([]*sdktypes.CheckViolation, error) {
+func (c *client) Lint(ctx context.Context, pid sdktypes.ProjectID, resources map[string][]byte, manifestFile string) ([]*sdktypes.CheckViolation, error) {
 	req := projectsv1.LintRequest{
-		ProjectId: pid.String(),
-		Resources: resources,
+		ProjectId:    pid.String(),
+		Resources:    resources,
+		ManifestFile: manifestFile,
 	}
 	resp, err := c.client.Lint(ctx, connect.NewRequest(&req))
 	if err != nil {
