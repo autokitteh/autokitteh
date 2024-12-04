@@ -87,7 +87,7 @@ func (gdb *gormdb) getDeployment(ctx context.Context, deploymentID sdktypes.UUID
 func (gdb *gormdb) listDeploymentsCommonQuery(ctx context.Context, filter sdkservices.ListDeploymentsFilter) *gorm.DB {
 	q := gdb.db.WithContext(ctx)
 
-	q = withProjectOwnerID(q, "deployments", filter.OwnerID)
+	q = withProjectOrgID(q, "deployments", filter.OrgID)
 
 	if filter.BuildID.IsValid() {
 		q = q.Where("deployments.build_id = ?", filter.BuildID.UUIDValue())

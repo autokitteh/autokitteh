@@ -42,7 +42,7 @@ func ParseBuild(b Build) (sdktypes.Build, error) {
 	build, err := sdktypes.StrictBuildFromProto(&sdktypes.BuildPB{
 		BuildId:   sdktypes.NewIDFromUUID[sdktypes.BuildID](&b.BuildID).String(),
 		ProjectId: sdktypes.NewIDFromUUID[sdktypes.ProjectID](b.ProjectID).String(),
-		OwnerId:   b.GetOwnerID().String(),
+		OrgId:     b.GetOrgID().String(),
 	})
 	if err != nil {
 		return sdktypes.InvalidBuild, fmt.Errorf("invalid record: %w", err)
@@ -136,7 +136,7 @@ func ParseProject(r Project) (sdktypes.Project, error) {
 	p, err := sdktypes.StrictProjectFromProto(&sdktypes.ProjectPB{
 		ProjectId: sdktypes.NewIDFromUUID[sdktypes.ProjectID](&r.ProjectID).String(),
 		Name:      r.Name,
-		OwnerId:   r.GetOwnerID().String(),
+		OrgId:     r.GetOrgID().String(),
 	})
 	if err != nil {
 		return sdktypes.InvalidProject, fmt.Errorf("invalid project record: %w", err)
@@ -381,7 +381,7 @@ func ParseSession(s Session) (sdktypes.Session, error) {
 		UpdatedAt:    timestamppb.New(s.UpdatedAt),
 		State:        sessionsv1.SessionStateType(s.CurrentStateType),
 		Memo:         memo,
-		OwnerId:      s.GetOwnerID().String(),
+		OrgId:        s.GetOrgID().String(),
 	})
 	if err != nil {
 		return sdktypes.InvalidSession, err
@@ -522,14 +522,6 @@ type Value struct {
 	UpdatedAt time.Time
 }
 
-// TODO: Remove after migration to new ownership is done.
-type Ownership struct {
-	EntityID   uuid.UUID `gorm:"primaryKey;type:uuid;not null"`
-	EntityType string    `gorm:"not null"`
-
-	UserID string `gorm:"not null"`
-}
-
 type User struct {
 	Base
 
@@ -570,4 +562,12 @@ type OrgMember struct {
 
 	OrgID  uuid.UUID `gorm:"primaryKey;type:uuid;not null"`
 	UserID uuid.UUID `gorm:"primaryKey;type:uuid;not null"`
+}
+
+// TODO: Remove after migration to new ownership is done.
+type Ownership struct {
+	EntityID   uuid.UUID `gorm:"primaryKey;type:uuid;not null"`
+	EntityType string    `gorm:"not null"`
+
+	UserID string `gorm:"not null"`
 }

@@ -28,9 +28,9 @@ export class Build extends Message<Build> {
   createdAt?: Timestamp;
 
   /**
-   * @generated from field: string owner_id = 4;
+   * @generated from field: string org_id = 4;
    */
-  ownerId = "";
+  orgId = "";
 
   constructor(data?: PartialMessage<Build>) {
     super();
@@ -43,7 +43,7 @@ export class Build extends Message<Build> {
     { no: 1, name: "build_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "created_at", kind: "message", T: Timestamp },
-    { no: 4, name: "owner_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "org_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Build {

@@ -907,9 +907,9 @@ export class Session extends Message<Session> {
   state = SessionStateType.UNSPECIFIED;
 
   /**
-   * @generated from field: string owner_id = 13;
+   * @generated from field: string org_id = 13;
    */
-  ownerId = "";
+  orgId = "";
 
   /**
    * These are for auditing/searches only.
@@ -941,7 +941,7 @@ export class Session extends Message<Session> {
     { no: 10, name: "created_at", kind: "message", T: Timestamp },
     { no: 11, name: "updated_at", kind: "message", T: Timestamp },
     { no: 12, name: "state", kind: "enum", T: proto3.getEnumType(SessionStateType) },
-    { no: 13, name: "owner_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 13, name: "org_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 20, name: "deployment_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 21, name: "event_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);

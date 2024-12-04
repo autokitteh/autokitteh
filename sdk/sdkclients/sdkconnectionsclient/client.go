@@ -97,7 +97,7 @@ func (c *client) List(ctx context.Context, filter sdkservices.ListConnectionsFil
 		IntegrationId: filter.IntegrationID.String(),
 		ProjectId:     filter.ProjectID.String(),
 		StatusCode:    filter.StatusCode.ToProto(),
-		OwnerId:       filter.OwnerID.String(),
+		OrgId:         filter.OrgID.String(),
 	}))
 	if err != nil {
 		return nil, rpcerrors.ToSDKError(err)

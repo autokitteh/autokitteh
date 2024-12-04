@@ -148,7 +148,7 @@ message Session {
 
   SessionStateType state = 12;
 
-  string owner_id = 13;
+  string org_id = 13;
 
   // These are for auditing/searches only.
   string deployment_id = 20;

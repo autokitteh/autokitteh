@@ -333,7 +333,7 @@ func (r Resolver) projectByName(ctx context.Context, name string) (p sdktypes.Pr
 		return
 	}
 
-	p, err = r.Client.Projects().GetByName(ctx, sdktypes.InvalidOwnerID, n)
+	p, err = r.Client.Projects().GetByName(ctx, sdktypes.InvalidOrgID, n)
 	err = translateError(err, p, "project", name)
 	pid = p.ID()
 	return
@@ -373,33 +373,23 @@ func (r Resolver) UserEmailOrID(ctx context.Context, emailOrID string) (u sdktyp
 	return
 }
 
-func (r Resolver) Owner(ctx context.Context, owner string) (owid sdktypes.OwnerID, err error) {
-	if sdktypes.IsID(owner) {
-		return sdktypes.ParseOwnerID(owner)
+func (r Resolver) Org(ctx context.Context, org string) (oid sdktypes.OrgID, err error) {
+	if sdktypes.IsID(org) {
+		return sdktypes.ParseOrgID(org)
 	}
 
-	if strings.Contains(owner, "@") {
-		var u sdktypes.User
-		if u, err = r.Client.Users().Get(ctx, sdktypes.InvalidUserID, owner); err == nil {
-			owid = sdktypes.NewOwnerID(u.ID())
-		}
-
-		err = translateError(err, u, "user", owner)
-		return
-	}
-
-	n, err := sdktypes.Strict(sdktypes.ParseSymbol(owner))
+	n, err := sdktypes.Strict(sdktypes.ParseSymbol(org))
 	if err != nil {
-		err = fmt.Errorf("invalid owner name %q: %w", owner, err)
+		err = fmt.Errorf("invalid org name %q: %w", org, err)
 		return
 	}
 
 	o, err := r.Client.Orgs().GetByName(ctx, n)
 	if err != nil {
-		err = translateError(err, o, "org", owner)
+		err = translateError(err, o, "org", org)
 		return
 	}
-	owid = sdktypes.NewOwnerID(o.ID())
+	oid = o.ID()
 	return
 }
 

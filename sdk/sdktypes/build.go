@@ -22,7 +22,7 @@ func (BuildTraits) Validate(m *BuildPB) error {
 	return errors.Join(
 		idField[BuildID]("build_id", m.BuildId),
 		idField[ProjectID]("project_id", m.ProjectId),
-		ownerIDField(m.OwnerId),
+		idField[OrgID]("org_id", m.OrgId),
 	)
 }
 func (BuildTraits) StrictValidate(m *BuildPB) error { return nil }
@@ -35,7 +35,7 @@ func NewBuild() Build { return kittehs.Must1(BuildFromProto(&BuildPB{})) }
 func (p Build) ID() (_ BuildID)          { return kittehs.Must1(ParseBuildID(p.read().BuildId)) }
 func (p Build) ProjectID() (_ ProjectID) { return kittehs.Must1(ParseProjectID(p.read().ProjectId)) }
 func (p Build) CreatedAt() time.Time     { return p.read().CreatedAt.AsTime() }
-func (p Build) OwnerID() OwnerID         { return kittehs.Must1(ParseOwnerID(p.read().OwnerId)) }
+func (p Build) OrgID() OrgID             { return kittehs.Must1(ParseOrgID(p.read().OrgId)) }
 
 func (p Build) WithID(id BuildID) Build {
 	return Build{p.forceUpdate(func(m *BuildPB) { m.BuildId = id.String() })}
@@ -53,6 +53,6 @@ func (p Build) WithCreatedAt(t time.Time) Build {
 	return Build{p.forceUpdate(func(m *BuildPB) { m.CreatedAt = timestamppb.New(t) })}
 }
 
-func (p Build) WithOwnerID(oid OwnerID) Build {
-	return Build{p.forceUpdate(func(m *BuildPB) { m.OwnerId = oid.String() })}
+func (p Build) WithOrgID(oid OrgID) Build {
+	return Build{p.forceUpdate(func(m *BuildPB) { m.OrgId = oid.String() })}
 }

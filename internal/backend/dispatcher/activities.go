@@ -60,12 +60,12 @@ func (d *Dispatcher) listWaitingSignalsActivity(ctx context.Context, dstid sdkty
 
 func (d *Dispatcher) startSessionActivity(ctx context.Context, session sdktypes.Session) (sdktypes.SessionID, error) {
 	// When starting from a dispatcher, the owner of the session is the owner of the project that the session is associated with.
-	oid, err := d.svcs.DB.GetOwner(ctx, session.ProjectID())
+	oid, err := d.svcs.DB.GetOrgIDOf(ctx, session.ProjectID())
 	if err != nil {
-		return sdktypes.InvalidSessionID, temporalclient.TranslateError(err, "get owner for %v", session.ProjectID())
+		return sdktypes.InvalidSessionID, temporalclient.TranslateError(err, "get org for %v", session.ProjectID())
 	}
 
-	session = session.WithOwnerID(oid)
+	session = session.WithOrgID(oid)
 
 	sid, err := d.svcs.Sessions.Start(authcontext.SetAuthnSystemUser(ctx), session)
 	return sid, temporalclient.TranslateError(err, "start session %v", session.ID())

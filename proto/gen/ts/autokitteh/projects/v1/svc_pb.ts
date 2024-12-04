@@ -168,11 +168,11 @@ export class GetRequest extends Message<GetRequest> {
   name = "";
 
   /**
-   * relevant only when name != "". optional - if not set, auth user is used.
+   * relevant only when name != "". optional.
    *
-   * @generated from field: string owner_id = 3;
+   * @generated from field: string org_id = 3;
    */
-  ownerId = "";
+  orgId = "";
 
   constructor(data?: PartialMessage<GetRequest>) {
     super();
@@ -184,7 +184,7 @@ export class GetRequest extends Message<GetRequest> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "owner_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "org_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetRequest {
@@ -316,9 +316,9 @@ export class UpdateResponse extends Message<UpdateResponse> {
  */
 export class ListRequest extends Message<ListRequest> {
   /**
-   * @generated from field: string owner_id = 1;
+   * @generated from field: string org_id = 1;
    */
-  ownerId = "";
+  orgId = "";
 
   constructor(data?: PartialMessage<ListRequest>) {
     super();
@@ -328,7 +328,7 @@ export class ListRequest extends Message<ListRequest> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "autokitteh.projects.v1.ListRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "owner_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: "org_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListRequest {

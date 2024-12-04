@@ -36,16 +36,16 @@ message GetRequest {
   };
 
   option (buf.validate.message).cel = {
-    id: "owner_id_with_name_only"
-    // if owner_id is empty, it is fetched from authn.
-    message: "owner_id can be specified only if name is specified"
-    expression: "this.owner_id == '' || this.name != ''"
+    id: "org_id_with_name_only"
+    // if org_id is empty, it is fetched from authn.
+    message: "org_id can be specified only if name is specified"
+    expression: "this.org_id == '' || this.name != ''"
   };
 
   string project_id = 1;
 
   string name = 2;
-  string owner_id = 3; // relevant only when name != "". optional - if not set, auth user is used.
+  string org_id = 3; // relevant only when name != "". optional.
 }
 
 message GetResponse {
@@ -67,7 +67,7 @@ message UpdateRequest {
 message UpdateResponse {}
 
 message ListRequest {
-  string owner_id = 1;
+  string org_id = 1;
 }
 
 message ListResponse {

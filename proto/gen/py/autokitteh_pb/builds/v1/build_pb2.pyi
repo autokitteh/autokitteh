@@ -6,13 +6,13 @@ from typing import ClassVar as _ClassVar, Mapping as _Mapping, Optional as _Opti
 DESCRIPTOR: _descriptor.FileDescriptor
 
 class Build(_message.Message):
-    __slots__ = ["build_id", "project_id", "created_at", "owner_id"]
+    __slots__ = ["build_id", "project_id", "created_at", "org_id"]
     BUILD_ID_FIELD_NUMBER: _ClassVar[int]
     PROJECT_ID_FIELD_NUMBER: _ClassVar[int]
     CREATED_AT_FIELD_NUMBER: _ClassVar[int]
-    OWNER_ID_FIELD_NUMBER: _ClassVar[int]
+    ORG_ID_FIELD_NUMBER: _ClassVar[int]
     build_id: str
     project_id: str
     created_at: _timestamp_pb2.Timestamp
-    owner_id: str
-    def __init__(self, build_id: _Optional[str] = ..., project_id: _Optional[str] = ..., created_at: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ..., owner_id: _Optional[str] = ...) -> None: ...
+    org_id: str
+    def __init__(self, build_id: _Optional[str] = ..., project_id: _Optional[str] = ..., created_at: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ..., org_id: _Optional[str] = ...) -> None: ...

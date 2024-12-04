@@ -17,20 +17,20 @@ type (
 	uuidValuer     interface{ UUIDValue() uuid.UUID }
 )
 
-func (gdb *gormdb) getRecordOwner(ctx context.Context, m idFieldNamer, id uuidValuer) (sdktypes.OwnerID, error) {
+func (gdb *gormdb) getRecordOwner(ctx context.Context, m idFieldNamer, id uuidValuer) (sdktypes.OrgID, error) {
 	var o scheme.Owned
 
 	err := gdb.db.WithContext(ctx).
 		Model(m).
 		Where(fmt.Sprintf("%s = ?", m.IDFieldName()), id.UUIDValue()).
-		Select("owner_user_id", "owner_org_id").
+		Select("org_id").
 		First(&o).
 		Error
 	if err != nil {
-		return sdktypes.InvalidOwnerID, translateError(err)
+		return sdktypes.InvalidOrgID, translateError(err)
 	}
 
-	return o.GetOwnerID(), nil
+	return o.GetOrgID(), nil
 }
 
 func (gdb *gormdb) getRecordProjectOwner(
@@ -40,7 +40,7 @@ func (gdb *gormdb) getRecordProjectOwner(
 		getProjectIDer
 	},
 	id uuidValuer,
-) (sdktypes.OwnerID, error) {
+) (sdktypes.OrgID, error) {
 	var p scheme.BelongsToProject
 
 	err := gdb.db.WithContext(ctx).
@@ -51,13 +51,13 @@ func (gdb *gormdb) getRecordProjectOwner(
 		First(&p).
 		Error
 	if err != nil {
-		return sdktypes.InvalidOwnerID, translateError(err)
+		return sdktypes.InvalidOrgID, translateError(err)
 	}
 
-	return p.Project.GetOwnerID(), nil
+	return p.Project.GetOrgID(), nil
 }
 
-func (gdb *gormdb) GetOwner(ctx context.Context, id sdktypes.ID) (sdktypes.OwnerID, error) {
+func (gdb *gormdb) GetOrgIDOf(ctx context.Context, id sdktypes.ID) (sdktypes.OrgID, error) {
 	switch id.Kind() {
 	case sdktypes.BuildIDKind:
 		return gdb.getRecordOwner(ctx, scheme.Build{}, id)
@@ -73,12 +73,10 @@ func (gdb *gormdb) GetOwner(ctx context.Context, id sdktypes.ID) (sdktypes.Owner
 		return gdb.getRecordProjectOwner(ctx, scheme.Deployment{}, id)
 	case sdktypes.EventIDKind:
 		return gdb.getRecordProjectOwner(ctx, scheme.Event{}, id)
-	case sdktypes.UserIDKind:
-		return sdktypes.NewOwnerID(sdktypes.FromID[sdktypes.UserID](id)), nil
 	case sdktypes.OrgIDKind:
-		return sdktypes.NewOwnerID(sdktypes.FromID[sdktypes.OrgID](id)), nil
+		return sdktypes.FromID[sdktypes.OrgID](id), nil
 	default:
-		return sdktypes.InvalidOwnerID, sdkerrors.NewInvalidArgumentError("unhandled id kind")
+		return sdktypes.InvalidOrgID, sdkerrors.NewInvalidArgumentError("unhandled id kind")
 	}
 }
 

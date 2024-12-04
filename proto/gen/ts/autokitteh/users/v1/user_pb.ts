@@ -32,6 +32,13 @@ export class User extends Message<User> {
    */
   disabled = false;
 
+  /**
+   * org to use for projects, if not otherwise specified.
+   *
+   * @generated from field: string default_org_id = 6;
+   */
+  defaultOrgId = "";
+
   constructor(data?: PartialMessage<User>) {
     super();
     proto3.util.initPartial(data, this);
@@ -44,6 +51,7 @@ export class User extends Message<User> {
     { no: 2, name: "email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "disabled", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 6, name: "default_org_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): User {

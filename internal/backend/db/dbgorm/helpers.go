@@ -23,23 +23,13 @@ func uuidPtrOrNil(o interface{ UUIDValue() uuid.UUID }) *uuid.UUID {
 	return &v
 }
 
-func ownedBy(o interface{ OwnerID() sdktypes.OwnerID }) scheme.Owned {
-	uuid := o.OwnerID().UUIDValue()
-
-	r := scheme.Owned{OwnerID: uuid}
-
-	if o.OwnerID().IsUserID() {
-		r.OwnerUserID = uuid
-	} else if o.OwnerID().IsOrgID() {
-		r.OwnerOrgID = uuid
-	}
-
-	return r
+func ownedBy(o interface{ OrgID() sdktypes.OrgID }) scheme.Owned {
+	return scheme.Owned{OrgID: o.OrgID().UUIDValue()}
 }
 
-func withOwnerID(q *gorm.DB, oid sdktypes.OwnerID) *gorm.DB {
+func withOrgID(q *gorm.DB, oid sdktypes.OrgID) *gorm.DB {
 	if oid.IsValid() {
-		return q.Where("owner_id = ?", oid.UUIDValue())
+		return q.Where("org_id = ?", oid.UUIDValue())
 	}
 
 	return q
@@ -55,14 +45,14 @@ func belongsToProjectIDOf(o interface{ ProjectID() sdktypes.ProjectID }) scheme.
 	return belongsToProjectID(o.ProjectID())
 }
 
-func withProjectOwnerID(q *gorm.DB, targetTableName string, oid sdktypes.OwnerID) *gorm.DB {
+func withProjectOrgID(q *gorm.DB, targetTableName string, oid sdktypes.OrgID) *gorm.DB {
 	if !oid.IsValid() {
 		return q
 	}
 
 	q = q.Preload("Project")
 	q = q.Joins(fmt.Sprintf("JOIN projects ON projects.project_id = %s.project_id", targetTableName))
-	q = q.Where("projects.owner_id = ?", oid.UUIDValue())
+	q = q.Where("projects.org_id = ?", oid.UUIDValue())
 
 	return q
 }

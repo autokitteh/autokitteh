@@ -8,7 +8,7 @@ import (
 )
 
 var listCmd = common.StandardCommand(&cobra.Command{
-	Use:     "list [--owner owner] [--fail]",
+	Use:     "list [--org org-name-or-id] [--fail]",
 	Short:   "List all projects",
 	Aliases: []string{"ls", "l"},
 	Args:    cobra.NoArgs,
@@ -19,12 +19,12 @@ var listCmd = common.StandardCommand(&cobra.Command{
 
 		r := resolver.Resolver{Client: common.Client()}
 
-		owid, err := r.Owner(ctx, owner)
+		oid, err := r.Org(ctx, org)
 		if err != nil {
-			return common.WrapError(err, "owner")
+			return common.WrapError(err, "org")
 		}
 
-		ps, err := projects().List(ctx, owid)
+		ps, err := projects().List(ctx, oid)
 		err = common.AddNotFoundErrIfCond(err, len(ps) > 0)
 		if err = common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "projects"); err == nil {
 			common.RenderList(ps)
@@ -37,5 +37,5 @@ func init() {
 	// Command-specific flags.
 	common.AddFailIfNotFoundFlag(listCmd)
 
-	listCmd.Flags().StringVarP(&owner, "owner", "o", "", "project owner email or id")
+	listCmd.Flags().StringVarP(&org, "org", "o", "", "project org name or id")
 }

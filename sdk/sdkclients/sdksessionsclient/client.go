@@ -116,7 +116,7 @@ func (c *client) List(ctx context.Context, filter sdkservices.ListSessionsFilter
 		PageSize:     filter.PageSize,
 		Skip:         filter.Skip,
 		PageToken:    filter.PageToken,
-		OwnerId:      filter.OwnerID.String(),
+		OrgId:        filter.OrgID.String(),
 	}))
 	if err != nil {
 		return nil, rpcerrors.ToSDKError(err)

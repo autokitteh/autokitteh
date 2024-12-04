@@ -47,7 +47,7 @@ func (ps *Projects) Create(ctx context.Context, project sdktypes.Project) (sdkty
 		return sdktypes.InvalidProjectID, err
 	}
 
-	project = authcontext.ObjectWithOwnerID(ctx, project)
+	project = authcontext.ObjectWithOrgID(ctx, project)
 
 	if err := authz.CheckContext(ctx, sdktypes.InvalidProjectID, "create:create", authz.WithData("project", project)); err != nil {
 		return sdktypes.InvalidProjectID, err
@@ -85,12 +85,12 @@ func (ps *Projects) GetByID(ctx context.Context, pid sdktypes.ProjectID) (sdktyp
 	return ps.DB.GetProjectByID(ctx, pid)
 }
 
-func (ps *Projects) GetByName(ctx context.Context, oid sdktypes.OwnerID, n sdktypes.Symbol) (sdktypes.Project, error) {
+func (ps *Projects) GetByName(ctx context.Context, oid sdktypes.OrgID, n sdktypes.Symbol) (sdktypes.Project, error) {
 	if !oid.IsValid() {
-		oid = authcontext.GetAuthnInferredOwnerID(ctx)
+		oid = authcontext.GetAuthnInferredOrgID(ctx)
 	}
 
-	if err := authz.CheckContext(ctx, sdktypes.InvalidProjectID, "read:resolve", authz.WithData("owner_id", oid)); err != nil {
+	if err := authz.CheckContext(ctx, sdktypes.InvalidProjectID, "read:resolve", authz.WithData("org_id", oid)); err != nil {
 		return sdktypes.InvalidProject, err
 	}
 
@@ -106,16 +106,16 @@ func (ps *Projects) GetByName(ctx context.Context, oid sdktypes.OwnerID, n sdkty
 	return p, nil
 }
 
-func (ps *Projects) List(ctx context.Context, oid sdktypes.OwnerID) ([]sdktypes.Project, error) {
+func (ps *Projects) List(ctx context.Context, oid sdktypes.OrgID) ([]sdktypes.Project, error) {
 	if !oid.IsValid() {
-		oid = authcontext.GetAuthnInferredOwnerID(ctx)
+		oid = authcontext.GetAuthnInferredOrgID(ctx)
 	}
 
 	if err := authz.CheckContext(
 		ctx,
 		sdktypes.InvalidProjectID,
 		"read:list",
-		authz.WithData("filter", map[string]string{"owner_id": oid.String()}),
+		authz.WithData("filter", map[string]string{"org_id": oid.String()}),
 	); err != nil {
 		return nil, err
 	}

@@ -29,7 +29,7 @@ func (SessionTraits) Validate(m *SessionPB) error {
 		idField[SessionID]("session_id", m.SessionId),
 		objectField[CodeLocation]("entrypoint", m.Entrypoint),
 		valuesMapField("inputs", m.Inputs),
-		ownerIDField(m.OwnerId),
+		idField[OrgID]("org_id", m.OrgId),
 	)
 }
 
@@ -61,7 +61,7 @@ func (p Session) DeploymentID() DeploymentID {
 func (p Session) EventID() EventID         { return kittehs.Must1(ParseEventID(p.read().EventId)) }
 func (p Session) BuildID() BuildID         { return kittehs.Must1(ParseBuildID(p.read().BuildId)) }
 func (p Session) ProjectID() ProjectID     { return kittehs.Must1(ParseProjectID(p.read().ProjectId)) }
-func (p Session) OwnerID() OwnerID         { return kittehs.Must1(ParseOwnerID(p.read().OwnerId)) }
+func (p Session) OrgID() OrgID             { return kittehs.Must1(ParseOrgID(p.read().OrgId)) }
 func (p Session) EntryPoint() CodeLocation { return forceFromProto[CodeLocation](p.read().Entrypoint) }
 func (p Session) Memo() map[string]string  { return p.read().Memo }
 func (p Session) Inputs() map[string]Value {
@@ -115,8 +115,8 @@ func (s Session) WithEndpoint(ep CodeLocation) Session {
 	return Session{s.forceUpdate(func(pb *SessionPB) { pb.Entrypoint = ToProto(ep) })}
 }
 
-func (s Session) WithOwnerID(oid OwnerID) Session {
-	return Session{s.forceUpdate(func(pb *SessionPB) { pb.OwnerId = oid.String() })}
+func (s Session) WithOrgID(oid OrgID) Session {
+	return Session{s.forceUpdate(func(pb *SessionPB) { pb.OrgId = oid.String() })}
 }
 
 func (s Session) WithID(id SessionID) Session {

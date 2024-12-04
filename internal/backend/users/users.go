@@ -36,7 +36,7 @@ func (u *users) Create(ctx context.Context, user sdktypes.User) (sdktypes.UserID
 
 func (u *users) Get(ctx context.Context, id sdktypes.UserID, email string) (sdktypes.User, error) {
 	if email == "" && !id.IsValid() {
-		id = authcontext.GetAuthnInferredUserID(ctx)
+		id = authcontext.GetAuthnUserID(ctx)
 	}
 
 	if err := authz.CheckContext(ctx, id, "read:get", authz.WithData("id", id.String()), authz.WithData("email", email)); err != nil {

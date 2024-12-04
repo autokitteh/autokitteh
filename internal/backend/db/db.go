@@ -53,9 +53,9 @@ type DB interface {
 	GetProjectByID(context.Context, sdktypes.ProjectID) (sdktypes.Project, error)
 
 	// Returns sdkerrors.ErrNotFound if not found.
-	GetProjectByName(context.Context, sdktypes.OwnerID, sdktypes.Symbol) (sdktypes.Project, error)
+	GetProjectByName(context.Context, sdktypes.OrgID, sdktypes.Symbol) (sdktypes.Project, error)
 
-	ListProjects(context.Context, sdktypes.OwnerID) ([]sdktypes.Project, error)
+	ListProjects(context.Context, sdktypes.OrgID) ([]sdktypes.Project, error)
 
 	// Returns nill, nil if no resources are set.
 	GetProjectResources(context.Context, sdktypes.ProjectID) (map[string][]byte, error)
@@ -163,9 +163,9 @@ type DB interface {
 
 	// -----------------------------------------------------------------------
 
-	// Get the owner id of an object.
-	// If err is nil, OwnerID woulld always be valid.
-	GetOwner(ctx context.Context, id sdktypes.ID) (sdktypes.OwnerID, error)
+	// Get the org id of an object.
+	// If err is nil, OrgID would always be valid.
+	GetOrgIDOf(ctx context.Context, id sdktypes.ID) (sdktypes.OrgID, error)
 
 	// Get project ID of an object.
 	GetProjectID(ctx context.Context, id sdktypes.ID) (sdktypes.ProjectID, error)

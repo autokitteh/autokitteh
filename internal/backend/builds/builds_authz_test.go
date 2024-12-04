@@ -37,7 +37,7 @@ func TestAuthzSingleTenant(t *testing.T) {
 	id, err := bsvc.Save(ctx, sdktypes.NewBuild(), sdkbuildfile.EmptyBuildFileData)
 	require.NoError(t, err)
 
-	oid, err := db.GetOwner(ctx, id)
+	oid, err := db.GetOrgIDOf(ctx, id)
 	if assert.NoError(t, err) {
 		assert.Equal(t, authusers.DefaultUser.ID(), oid.ToUserID())
 	}

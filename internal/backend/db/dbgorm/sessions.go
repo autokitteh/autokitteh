@@ -67,7 +67,7 @@ func (gdb *gormdb) getSession(ctx context.Context, sessionID sdktypes.UUID) (*sc
 func (gdb *gormdb) listSessions(ctx context.Context, f sdkservices.ListSessionsFilter) ([]scheme.Session, int64, error) {
 	q := gdb.db.WithContext(ctx)
 
-	q = withOwnerID(q, f.OwnerID)
+	q = withOrgID(q, f.OrgID)
 
 	if f.DeploymentID.IsValid() {
 		q = q.Where("deployment_id = ?", f.DeploymentID.UUIDValue())

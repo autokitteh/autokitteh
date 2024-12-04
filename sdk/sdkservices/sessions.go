@@ -11,7 +11,7 @@ type ListSessionsFilter struct {
 	ProjectID    sdktypes.ProjectID
 	EventID      sdktypes.EventID
 	BuildID      sdktypes.BuildID
-	OwnerID      sdktypes.OwnerID
+	OrgID        sdktypes.OrgID
 	StateType    sdktypes.SessionStateType
 	CountOnly    bool
 

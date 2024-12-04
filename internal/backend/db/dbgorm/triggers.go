@@ -32,7 +32,7 @@ func (gdb *gormdb) getTriggerByID(ctx context.Context, triggerID sdktypes.UUID) 
 func (gdb *gormdb) listTriggers(ctx context.Context, filter sdkservices.ListTriggersFilter) ([]scheme.Trigger, error) {
 	q := gdb.db.WithContext(ctx)
 
-	q = withProjectOwnerID(q, "triggers", filter.OwnerID)
+	q = withProjectOrgID(q, "triggers", filter.OrgID)
 
 	if filter.ProjectID.IsValid() {
 		q = q.Where("triggers.project_id = ?", filter.ProjectID.UUIDValue())

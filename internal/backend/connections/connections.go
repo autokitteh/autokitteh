@@ -89,8 +89,8 @@ func (c *Connections) Delete(ctx context.Context, id sdktypes.ConnectionID) erro
 }
 
 func (c *Connections) List(ctx context.Context, filter sdkservices.ListConnectionsFilter) ([]sdktypes.Connection, error) {
-	if !filter.OwnerID.IsValid() {
-		filter.OwnerID = sdktypes.NewOwnerID(authcontext.GetAuthnInferredUserID(ctx))
+	if !filter.OrgID.IsValid() {
+		filter.OrgID = authcontext.GetAuthnInferredOrgID(ctx)
 	}
 
 	if err := authz.CheckContext(ctx, sdktypes.InvalidConnectionID, "read:list", authz.WithData("filter", filter)); err != nil {

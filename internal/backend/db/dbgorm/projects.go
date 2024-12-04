@@ -23,7 +23,7 @@ func (gdb *gormdb) createProject(ctx context.Context, project *scheme.Project) e
 			// and we are using joins as well. First maybe a good option too, but there should be only
 			// one active user project with the same name, so COUNT is also OK
 			Model(&scheme.Project{}). // with model scope grom will add `deleted_at is NULL` to the query
-			Where("name = ? AND owner_id = ?", project.Name, project.OwnerID).Count(&count).Error; err != nil {
+			Where("name = ? AND owner_id = ?", project.Name, project.OrgID).Count(&count).Error; err != nil {
 			return err
 		}
 		if count > 0 {
@@ -120,7 +120,7 @@ func (gdb *gormdb) getProject(ctx context.Context, projectID sdktypes.UUID) (*sc
 	return getOne[scheme.Project](gdb.db.WithContext(ctx), "project_id = ?", projectID)
 }
 
-func (gdb *gormdb) getProjectByName(ctx context.Context, oid sdktypes.OwnerID, projectName string) (*scheme.Project, error) {
+func (gdb *gormdb) getProjectByName(ctx context.Context, oid sdktypes.OrgID, projectName string) (*scheme.Project, error) {
 	q := "name = ?"
 	qargs := []any{projectName}
 
@@ -132,7 +132,7 @@ func (gdb *gormdb) getProjectByName(ctx context.Context, oid sdktypes.OwnerID, p
 	return getOne[scheme.Project](gdb.db.WithContext(ctx), q, qargs...)
 }
 
-func (gdb *gormdb) listProjects(ctx context.Context, oid sdktypes.OwnerID) ([]scheme.Project, error) {
+func (gdb *gormdb) listProjects(ctx context.Context, oid sdktypes.OrgID) ([]scheme.Project, error) {
 	q := gdb.db.WithContext(ctx)
 
 	if oid.IsValid() {
@@ -190,11 +190,11 @@ func (db *gormdb) GetProjectByID(ctx context.Context, pid sdktypes.ProjectID) (s
 	return schemaToProject(db.getProject(ctx, pid.UUIDValue()))
 }
 
-func (db *gormdb) GetProjectByName(ctx context.Context, oid sdktypes.OwnerID, ph sdktypes.Symbol) (sdktypes.Project, error) {
+func (db *gormdb) GetProjectByName(ctx context.Context, oid sdktypes.OrgID, ph sdktypes.Symbol) (sdktypes.Project, error) {
 	return schemaToProject(db.getProjectByName(ctx, oid, ph.String()))
 }
 
-func (db *gormdb) ListProjects(ctx context.Context, oid sdktypes.OwnerID) ([]sdktypes.Project, error) {
+func (db *gormdb) ListProjects(ctx context.Context, oid sdktypes.OrgID) ([]sdktypes.Project, error) {
 	ps, err := db.listProjects(ctx, oid)
 	if ps == nil || err != nil {
 		return nil, translateError(err)

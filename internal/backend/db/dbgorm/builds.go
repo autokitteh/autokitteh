@@ -25,7 +25,7 @@ func (gdb *gormdb) getBuild(ctx context.Context, buildID sdktypes.UUID) (*scheme
 func (gdb *gormdb) listBuilds(ctx context.Context, filter sdkservices.ListBuildsFilter) ([]scheme.Build, error) {
 	q := gdb.db.WithContext(ctx).Order("created_at desc")
 
-	q = withOwnerID(q, filter.OwnerID)
+	q = withOrgID(q, filter.OrgID)
 
 	if filter.Limit != 0 {
 		q = q.Limit(int(filter.Limit))

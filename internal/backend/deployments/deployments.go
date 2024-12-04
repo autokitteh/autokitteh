@@ -179,8 +179,8 @@ func (d *deployments) Delete(ctx context.Context, id sdktypes.DeploymentID) erro
 }
 
 func (d *deployments) List(ctx context.Context, filter sdkservices.ListDeploymentsFilter) ([]sdktypes.Deployment, error) {
-	if !filter.OwnerID.IsValid() {
-		filter.OwnerID = sdktypes.NewOwnerID(authcontext.GetAuthnInferredUserID(ctx))
+	if !filter.OrgID.IsValid() {
+		filter.OrgID = authcontext.GetAuthnInferredOrgID(ctx)
 	}
 
 	if err := authz.CheckContext(ctx, sdktypes.InvalidDeploymentID, "read:list", authz.WithData("filter", filter)); err != nil {

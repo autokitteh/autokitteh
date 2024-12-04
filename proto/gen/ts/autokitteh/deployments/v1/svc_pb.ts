@@ -317,9 +317,9 @@ export class ListRequest extends Message<ListRequest> {
   includeSessionStats = false;
 
   /**
-   * @generated from field: string owner_id = 6;
+   * @generated from field: string org_id = 6;
    */
-  ownerId = "";
+  orgId = "";
 
   constructor(data?: PartialMessage<ListRequest>) {
     super();
@@ -334,7 +334,7 @@ export class ListRequest extends Message<ListRequest> {
     { no: 3, name: "state", kind: "enum", T: proto3.getEnumType(DeploymentState) },
     { no: 4, name: "limit", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 5, name: "include_session_stats", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 6, name: "owner_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "org_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListRequest {

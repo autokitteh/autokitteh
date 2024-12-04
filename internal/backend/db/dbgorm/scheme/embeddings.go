@@ -11,29 +11,12 @@ import (
 
 // Embed this to the model to add access control capabilities.
 type Owned struct {
-	OwnerID uuid.UUID `gorm:"index;type:uuid;not null"`
+	OrgID uuid.UUID `gorm:"index;type:uuid;not null"`
 
-	// for foreign key validations.
-	OwnerUserID uuid.UUID `gorm:"index;type:uuid;not null"`
-	OwnerOrgID  uuid.UUID `gorm:"index;type:uuid;not null"`
-
-	OwnerOrg *Org `gorm:"foreignKey:OwnerOrgID"`
-
-	// TODO: Solve issue with default user.
-	// OwnerUser *User `gorm:"foreignKey:OwnerUserID"`
+	Org *Org
 }
 
-func (o Owned) GetOwnerID() sdktypes.OwnerID {
-	if o.OwnerUserID != uuid.Nil {
-		return sdktypes.NewOwnerID(sdktypes.NewIDFromUUID[sdktypes.UserID](&o.OwnerUserID))
-	}
-
-	if o.OwnerOrgID != uuid.Nil {
-		return sdktypes.NewOwnerID(sdktypes.NewIDFromUUID[sdktypes.OrgID](&o.OwnerOrgID))
-	}
-
-	return sdktypes.InvalidOwnerID
-}
+func (o Owned) GetOrgID() sdktypes.OrgID { return sdktypes.NewIDFromUUID[sdktypes.OrgID](&o.OrgID) }
 
 // Embed this to the model to denote that it belongs to a project.
 type BelongsToProject struct {

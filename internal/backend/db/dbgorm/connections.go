@@ -77,7 +77,7 @@ func (gdb *gormdb) getConnections(ctx context.Context, ids ...sdktypes.UUID) ([]
 func (gdb *gormdb) listConnections(ctx context.Context, filter sdkservices.ListConnectionsFilter, idsOnly bool) ([]scheme.Connection, error) {
 	q := gdb.db.WithContext(ctx)
 
-	q = withProjectOwnerID(q, "connections", filter.OwnerID)
+	q = withProjectOrgID(q, "connections", filter.OrgID)
 
 	if filter.IntegrationID.IsValid() {
 		q = q.Where("integration_id = ?", filter.IntegrationID.UUIDValue())

@@ -7,4 +7,5 @@ message User {
   string email = 2; // if email is empty, user cannot login.
   string display_name = 3;
   bool disabled = 4;
+  string default_org_id = 6; // org to use for projects, if not otherwise specified.
 }

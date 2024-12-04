@@ -9,8 +9,8 @@ import (
 )
 
 type ListBuildsFilter struct {
-	OwnerID sdktypes.OwnerID `json:"owner_id"` // if empty, the current user is used.
-	Limit   uint32           `json:"limit"`
+	OrgID sdktypes.OrgID `json:"org_id"`
+	Limit uint32         `json:"limit"`
 }
 
 type Builds interface {

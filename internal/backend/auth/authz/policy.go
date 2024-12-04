@@ -74,31 +74,31 @@ func buildInput(ctx context.Context, db db.DB, id sdktypes.ID, action string, cf
 	}
 
 	if id.IsValid() {
-		// Get the resource owner.
+		// Get the resource org.
 
-		owid, err := db.GetOwner(ctx, id)
+		oid, err := db.GetOrgIDOf(ctx, id)
 		if err != nil {
-			return nil, fmt.Errorf("get owner: %w", err)
+			return nil, fmt.Errorf("get org: %w", err)
 		}
 
-		if !owid.IsValid() {
-			return nil, fmt.Errorf("could not figure out owner of the resource")
+		if !oid.IsValid() {
+			return nil, fmt.Errorf("could not figure out org of the resource")
 		}
 
-		data["resource_owner_id"] = owid.String()
+		data["resource_org_id"] = oid.String()
 	}
 
 	for name, id := range cfg.associations {
-		// In case the resource is associated with a something, we need to get that thing's owner.
+		// In case the resource is associated with a something, we need to get that thing's org.
 		// This is relevant, for example, with new builds or sessions, where they are explicitly owned
 		// but can be associated with a project. The policy needs to decide if to allow it.
 
-		owid, err := db.GetOwner(ctx, id)
+		oid, err := db.GetOrgIDOf(ctx, id)
 		if err != nil {
-			return nil, fmt.Errorf("get project owner: %w", err)
+			return nil, fmt.Errorf("get project org: %w", err)
 		}
 
-		data[fmt.Sprintf("associated_%s_owner_id", name)] = owid.String()
+		data[fmt.Sprintf("associated_%s_org_id", name)] = oid.String()
 	}
 
 	return data, nil

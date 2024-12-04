@@ -98,8 +98,8 @@ func (ws *workflows) StartWorkflow(ctx context.Context, session sdktypes.Session
 		"deployment_uuid": session.DeploymentID().UUIDValue().String(),
 		"workflow_id":     workflowID(sessionID),
 		"process_id":      fixtures.ProcessID(),
-		"owner_id":        session.OwnerID().String(),
-		"owner_uuid":      session.OwnerID().UUIDValue().String(),
+		"org_id":          session.OrgID().String(),
+		"org_uuid":        session.OrgID().UUIDValue().String(),
 	}
 
 	if session.ParentSessionID().IsValid() {

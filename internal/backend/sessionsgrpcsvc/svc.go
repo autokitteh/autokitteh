@@ -215,7 +215,7 @@ func (s *server) List(ctx context.Context, req *connect.Request[sessionsv1.ListR
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	if filter.OwnerID, err = sdktypes.ParseOwnerID(req.Msg.OwnerId); err != nil {
+	if filter.OrgID, err = sdktypes.ParseOrgID(req.Msg.OrgId); err != nil {
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
