@@ -47,3 +47,13 @@ func (p Project) WithNewID() Project { return p.WithID(NewProjectID()) }
 func (p Project) WithID(id ProjectID) Project {
 	return Project{p.forceUpdate(func(pb *ProjectPB) { pb.ProjectId = id.String() })}
 }
+
+type (
+	CheckViolation = projectv1.CheckViolation
+	ViolationLevel = projectv1.CheckViolation_Level
+)
+
+const (
+	ViolationError   ViolationLevel = projectv1.CheckViolation_LEVEL_ERROR
+	ViolationWarning ViolationLevel = projectv1.CheckViolation_LEVEL_WARNING
+)
