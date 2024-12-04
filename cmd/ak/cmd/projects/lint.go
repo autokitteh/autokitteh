@@ -1,10 +1,13 @@
 package projects
 
 import (
+	"context"
 	"fmt"
+	"os"
 
 	"github.com/spf13/cobra"
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
+	"go.autokitteh.dev/autokitteh/internal/manifest"
 	"go.autokitteh.dev/autokitteh/internal/resolver"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 
@@ -49,19 +52,45 @@ func buildResources() (map[string][]byte, error) {
 	return resources, nil
 }
 
+func findProjectID(ctx context.Context, r resolver.Resolver, manifestFile string) sdktypes.ProjectID {
+	// command line first
+	if lintOpts.projectNameOrID != "" {
+		_, pid, err := r.ProjectNameOrID(ctx, lintOpts.projectNameOrID)
+		if err == nil {
+			return pid
+		}
+	}
+
+	// pid file
+	data, err := os.ReadFile(".autokitteh/pid")
+	if err == nil {
+		_, pid, err := r.ProjectNameOrID(ctx, string(data))
+		if err == nil {
+			return pid
+		}
+	}
+
+	// Read from manifest
+	data, err = os.ReadFile(manifestFile)
+	if err == nil {
+		m, err := manifest.Read(data, manifestFile)
+		if err != nil && m.Project.Name != "" {
+			_, pid, err := r.ProjectNameOrID(ctx, string(data))
+			if err == nil {
+				return pid
+			}
+		}
+	}
+
+	return sdktypes.InvalidProjectID
+}
+
 func runLint(cmd *cobra.Command, args []string) error {
 	r := resolver.Resolver{Client: common.Client()}
 	ctx, cancel := common.LimitedContext()
 	defer cancel()
 
-	projectID := sdktypes.InvalidProjectID
-	if lintOpts.projectNameOrID != "" {
-		_, pid, err := r.ProjectNameOrID(ctx, lintOpts.projectNameOrID)
-		if err != nil {
-			return err
-		}
-		projectID = pid
-	}
+	projectID := findProjectID(ctx, r, lintOpts.manifestPath)
 
 	resources, err := buildResources()
 	if err != nil {
