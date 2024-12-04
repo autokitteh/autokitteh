@@ -269,7 +269,7 @@ def _google_creds_oauth2(integration: str, connection: str, scopes: list[str]):
     client_secret = os.getenv("GOOGLE_CLIENT_SECRET", "NOT AVAILABLE")
 
     if client_secret == "NOT AVAILABLE":
-        # Refreshes to be handled by AutoKitteh.
+        # In Docker/Cloud environments, handle token refresh through AutoKitteh
         creds = credentials.Credentials(token=token, expiry=dt, scopes=scopes)
         creds.refresh_handler = _google_refresh_handler(integration, connection)
     else:
