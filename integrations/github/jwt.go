@@ -1,7 +1,6 @@
 package github
 
 import (
-	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
@@ -17,7 +16,6 @@ import (
 
 	"go.autokitteh.dev/autokitteh/integrations/github/internal/vars"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
-	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
@@ -32,23 +30,6 @@ const (
 	// autokitteh will append those as needed.
 	enterpriseURLEnvVar = "GITHUB_ENTERPRISE_URL"
 )
-
-func (i integration) NewClient(ctx context.Context) (*github.Client, error) {
-	// Extract the connection token from the given context.
-	cid, err := sdkmodule.FunctionConnectionIDFromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-	data, err := i.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
-	if err != nil {
-		return nil, err
-	}
-	if pat := data.Get(vars.PAT); pat.IsValid() {
-		return github.NewTokenClient(ctx, pat.Value()), nil
-	} else {
-		return newClientWithInstallJWT(data)
-	}
-}
 
 // newClientWithInstallJWT returns a GitHub client that
 // uses a newly-generated GitHub app installation JWT.
@@ -127,24 +108,6 @@ func newClientFromGitHubAppID(appID int64) (*github.Client, error) {
 		}
 	}
 
-	return client, nil
-}
-
-func newAnonymousClient() (*github.Client, error) {
-	// Shared transport to reuse TCP connections.
-	enterpriseURL, err := enterpriseURL()
-	if err != nil {
-		return nil, err
-	}
-
-	// Initialize a client with the generated JWT injected into outbound requests.
-	client := github.NewClient(nil)
-	if enterpriseURL != "" {
-		client, err = client.WithEnterpriseURLs(enterpriseURL, enterpriseURL)
-		if err != nil {
-			return nil, err
-		}
-	}
 	return client, nil
 }
 
