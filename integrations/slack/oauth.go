@@ -11,6 +11,7 @@ import (
 	"go.autokitteh.dev/autokitteh/integrations/slack/api/bots"
 	"go.autokitteh.dev/autokitteh/integrations/slack/internal/vars"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
+	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
@@ -18,10 +19,12 @@ import (
 // to receive and dispatch asynchronous event notifications.
 type handler struct {
 	logger *zap.Logger
+	oauth  sdkservices.OAuth
+	vars   sdkservices.Vars
 }
 
-func NewHandler(l *zap.Logger) http.Handler {
-	return handler{logger: l}
+func NewHandler(l *zap.Logger, o sdkservices.OAuth, v sdkservices.Vars) handler {
+	return handler{logger: l, oauth: o, vars: v}
 }
 
 // ServeHTTP receives an inbound redirect request from autokitteh's OAuth

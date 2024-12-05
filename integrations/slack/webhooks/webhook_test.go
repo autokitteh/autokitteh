@@ -108,7 +108,9 @@ func TestWebhookCheckRequest(t *testing.T) {
 			r.Header.Add(api.HeaderSlackTimestamp, tt.timestampHeader)
 			r.Header.Add(api.HeaderSlackSignature, tt.signatureHeader)
 
-			got := checkRequest(w, r, zap.L(), tt.wantContentType)
+			// TODO: this will fail. needs a vars service. Mock?
+			h := handler{}
+			got := h.checkRequest(w, r, zap.L(), tt.wantContentType)
 			if diff := cmp.Diff(got, tt.want); diff != "" {
 				t.Errorf("unexpected checkRequest() return value (-want +got):\n%s", diff)
 			}

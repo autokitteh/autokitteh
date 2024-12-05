@@ -327,6 +327,7 @@ type ExchangeRequest struct {
 
 	Integration string `protobuf:"bytes,1,opt,name=integration,proto3" json:"integration,omitempty"`
 	Code        string `protobuf:"bytes,2,opt,name=code,proto3" json:"code,omitempty"`
+	ConnectionId string `protobuf:"bytes,3,opt,name=connection_id,json=connectionId,proto3" json:"connection_id,omitempty"`
 }
 
 func (x *ExchangeRequest) Reset() {

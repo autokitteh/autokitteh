@@ -62,7 +62,7 @@ func (h handler) HandleBotEvent(w http.ResponseWriter, r *http.Request) {
 	l := h.logger.With(zap.String("urlPath", BotEventPath))
 
 	// Validate and parse the inbound request.
-	body := checkRequest(w, r, l, api.ContentTypeJSON)
+	body := h.checkRequest(w, r, l, api.ContentTypeJSON)
 	if body == nil {
 		return
 	}

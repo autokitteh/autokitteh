@@ -86,7 +86,7 @@ func integrationsFXOption() fx.Option {
 				google.Start(l, muxes, svcs.Vars(), svcs.OAuth(), svcs.Dispatcher())
 				hubspot.Start(l, svcs.OAuth(), muxes)
 				jira.Start(l, muxes, svcs.Vars(), svcs.OAuth(), svcs.Dispatcher())
-				slack.Start(l, muxes, svcs.Vars(), svcs.Dispatcher())
+				slack.Start(l, muxes, svcs.OAuth(), svcs.Vars(), svcs.Dispatcher())
 				twilio.Start(l, muxes, svcs.Vars(), svcs.Dispatcher())
 				return nil
 			})

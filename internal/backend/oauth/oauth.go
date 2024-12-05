@@ -27,6 +27,7 @@ import (
 
 type oauth struct {
 	logger *zap.Logger
+	vars   sdkservices.Vars
 
 	// Configs and opts store registration data together.
 	// If we replace these in-memory maps with persistent
@@ -35,7 +36,7 @@ type oauth struct {
 	opts    map[string]map[string]string
 }
 
-func New(l *zap.Logger) sdkservices.OAuth {
+func New(l *zap.Logger, vars sdkservices.Vars) sdkservices.OAuth {
 	// TODO(ENG-112): Remove (see Register below).
 	redirectURL := fmt.Sprintf("https://%s/oauth/redirect/", os.Getenv("WEBHOOK_ADDRESS"))
 
@@ -77,6 +78,7 @@ func New(l *zap.Logger) sdkservices.OAuth {
 
 	return &oauth{
 		logger: l,
+		vars:   vars,
 		// TODO(ENG-112): Construct the following 2 maps with dynamic integration
 		// registrations, where each integration registration will call Register
 		// below (if it uses OAuth). This hard-coding is EXTREMELY TEMPORARY!
@@ -438,6 +440,12 @@ func (o *oauth) Register(ctx context.Context, intg string, cfg *oauth2.Config, o
 	return nil
 }
 
+func (o *oauth) registerConnectionConfig(cid sdktypes.ConnectionID, intg string, cfg *oauth2.Config) error {
+	cfg.RedirectURL = fmt.Sprintf("https://%s/oauth/redirect/%s", os.Getenv("WEBHOOK_ADDRESS"), intg)
+	o.configs[cid.String()] = cfg
+	return nil
+}
+
 func (o *oauth) Get(ctx context.Context, intg string) (*oauth2.Config, map[string]string, error) {
 	cfg, ok := o.configs[intg]
 	if !ok {
@@ -446,14 +454,23 @@ func (o *oauth) Get(ctx context.Context, intg string) (*oauth2.Config, map[strin
 	return cfg, o.opts[intg], nil
 }
 
-func (o *oauth) StartFlow(ctx context.Context, intg string, cid sdktypes.ConnectionID, origin string) (string, error) {
-	cfg, opts, err := o.Get(ctx, intg)
-	if err != nil {
-		return "", err
+func (o *oauth) getConfigWithConnection(ctx context.Context, intg string, cid sdktypes.ConnectionID) (*oauth2.Config, map[string]string, error) {
+	if !cid.IsValid() {
+		return nil, nil, errors.New("invalid connection ID")
 	}
 
-	if !cid.IsValid() {
-		return "", errors.New("invalid connection ID")
+	if customCfg, ok := o.configs[cid.String()]; ok {
+		return customCfg, o.opts[intg], nil
+	}
+
+	// Fallback to regular config
+	return o.Get(ctx, intg)
+}
+
+func (o *oauth) StartFlow(ctx context.Context, intg string, cid sdktypes.ConnectionID, origin string) (string, error) {
+	cfg, opts, err := o.getConfigWithConnection(ctx, intg, cid)
+	if err != nil {
+		return "", err
 	}
 
 	if origin == "" {
@@ -463,13 +480,30 @@ func (o *oauth) StartFlow(ctx context.Context, intg string, cid sdktypes.Connect
 	// Identify the relevant connection when we get an OAuth response.
 	state := strings.Replace(cid.String(), "con_", "", 1) + "_" + origin
 
-	return cfg.AuthCodeURL(state, authCode(opts)...), nil
+	if o.vars == nil || !o.isCustomOAuth(ctx, cid) {
+		return cfg.AuthCodeURL(state, authCode(opts)...), nil
+	}
+
+	// This is the custom OAuth case where each connection has its own client ID/secret.
+	// Make a copy of the config so we don't overwrite the server-wide one.
+	vs, err := o.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
+	if err != nil {
+		return "", err
+	}
+
+	cfgCopy := *cfg
+	cfgCopy.ClientID = vs.GetValueByString("clientID")
+	cfgCopy.ClientSecret = vs.GetValueByString("clientSecret")
+
+	o.registerConnectionConfig(cid, intg, &cfgCopy)
+
+	return cfgCopy.AuthCodeURL(state, authCode(opts)...), nil
 }
 
-func (o *oauth) Exchange(ctx context.Context, integration, code string) (*oauth2.Token, error) {
+func (o *oauth) Exchange(ctx context.Context, integration, code string, cid sdktypes.ConnectionID) (*oauth2.Token, error) {
 	// Convert the received temporary authorization code
 	// into a refresh token / user access token.
-	cfg, opts, err := o.Get(ctx, integration)
+	cfg, opts, err := o.getConfigWithConnection(ctx, integration, cid)
 	if err != nil {
 		return nil, fmt.Errorf("bad oauth integration name: %w", err)
 	}
@@ -489,4 +523,13 @@ func authCode(opts map[string]string) []oauth2.AuthCodeOption {
 		acos = append(acos, oauth2.SetAuthURLParam(k, v))
 	}
 	return acos
+}
+
+func (o *oauth) isCustomOAuth(ctx context.Context, cid sdktypes.ConnectionID) bool {
+	vs, err := o.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
+	if err != nil {
+		return false
+	}
+
+	return vs.GetValueByString("clientID") != "" && vs.GetValueByString("clientSecret") != ""
 }

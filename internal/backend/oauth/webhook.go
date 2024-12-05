@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
+	"strings"
 	"time"
 
 	"go.uber.org/zap"
@@ -130,7 +131,14 @@ func (s *svc) exchange(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := o.Exchange(ctx, intg, code)
+	cid, err := sdktypes.ParseConnectionID(transformState(sub[1]))
+	if err != nil {
+		l.Warn("Invalid connection ID in state parameter", zap.String("state", state))
+		abort(w, r, intg, sub[1], sub[2], "invalid connection ID")
+		return
+	}
+
+	token, err := o.Exchange(ctx, intg, code, cid)
 	if err != nil {
 		l.Warn("OAuth exchange error", zap.Error(err))
 		abort(w, r, intg, sub[1], sub[2], "OAuth exchange error")
@@ -156,4 +164,11 @@ func abort(w http.ResponseWriter, r *http.Request, intg, cid, origin, err string
 func redirect(w http.ResponseWriter, r *http.Request, intg, cid, origin, param, value string) {
 	u := fmt.Sprintf("/%s/oauth?cid=con_%s&origin=%s&%s=%s", intg, cid, origin, param, value)
 	http.Redirect(w, r, u, http.StatusFound)
+}
+
+func transformState(state string) string {
+	if state == "" {
+		return state
+	}
+	return "con_" + strings.Split(state, "_")[0]
 }
