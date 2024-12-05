@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 	"time"
@@ -117,23 +118,35 @@ func (h handler) checkRequest(w http.ResponseWriter, r *http.Request, l *zap.Log
 		return nil
 	}
 
+	kv, err := url.ParseQuery(string(b))
+	if err != nil {
+		l.Error("Failed to parse slash command's URL-encoded form",
+			zap.ByteString("body", b),
+			zap.Error(err),
+		)
+		http.Error(w, "Bad Request", http.StatusBadRequest)
+		return nil
+	}
+
 	// Try to get signing secret from any valid connection
 	var signingSecret string
-	cids, err := h.vars.FindConnectionIDs(r.Context(), h.integrationID, vars.KeyName, "")
+	cids, err := h.listConnectionIDs(r.Context(), kv.Get("api_app_id"), kv.Get("enterprise_id"), kv.Get("team_id"))
 	if err != nil {
 		l.Error("Failed to list connection IDs", zap.Error(err))
 		http.Error(w, "Bad Request", http.StatusBadRequest)
 		return nil
 	}
 	for _, cid := range cids {
-		if secret, err := h.vars.Get(r.Context(), sdktypes.NewVarScopeID(cid)); err == nil {
-			if s := secret.GetValueByString("signingSecret"); s != "" {
-				signingSecret = s
-				// TODO: I think this is wrong, because if user has both a custom OAuth and regular OAuth,
-				// we don't know which one to use, or if they have multiple custom OAuths with different signing secrets.
-				break  // Use first valid signing secret found
-			}
+		secret, err := h.vars.Get(r.Context(), sdktypes.NewVarScopeID(cid))
+		if err != nil {
+			continue
 		}
+		s := secret.GetValueByString("signingSecret")
+		if s == "" {
+			continue
+		}
+		signingSecret = s
+		break // Use first valid signing secret found
 	}
 
 	// Fall back to env var if no valid connection found
