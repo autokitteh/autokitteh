@@ -1,7 +1,6 @@
 package github
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -12,7 +11,6 @@ import (
 	"time"
 
 	"go.uber.org/zap"
-	"golang.org/x/oauth2"
 
 	"go.autokitteh.dev/autokitteh/integrations/github/internal/vars"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
@@ -143,12 +141,4 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 		Set(vars.Events, events, false).
 		Set(vars.UpdatedAt, i.UpdatedAt.Format(time.RFC3339), false).
 		Set(vars.InstallKey(appID, installID), name, false))
-}
-
-func (h handler) tokenSource(ctx context.Context, t *oauth2.Token) oauth2.TokenSource {
-	cfg, _, err := h.oauth.Get(ctx, "github")
-	if err != nil {
-		return nil
-	}
-	return cfg.TokenSource(ctx, t)
 }
