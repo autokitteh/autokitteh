@@ -64,15 +64,14 @@ func (a api) driveClient(ctx context.Context) (*drive.Service, error) {
 	}
 
 	var src oauth2.TokenSource
+	var err error
 	if data.OAuthData != "" {
-		if src, err = oauthTokenSource(ctx, data.OAuthData); err != nil {
-			return nil, err
-		}
+		src, err = oauthTokenSource(ctx, data.OAuthData)
 	} else {
 		src, err = jwtTokenSource(ctx, data.JSON)
-		if err != nil {
-			return nil, err
-		}
+	}
+	if err != nil {
+		return nil, err
 	}
 
 	svc, err := drive.NewService(ctx, option.WithTokenSource(src))
