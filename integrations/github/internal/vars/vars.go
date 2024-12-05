@@ -11,6 +11,7 @@ var (
 
 	// GitHub app (OAuth)
 	AppID     = sdktypes.NewSymbol("app_id")
+	AppName   = sdktypes.NewSymbol("app_name")
 	InstallID = sdktypes.NewSymbol("install_id")
 
 	TargetID   = sdktypes.NewSymbol("target_id")

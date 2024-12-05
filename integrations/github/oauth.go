@@ -132,6 +132,7 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 
 	c.Finalize(sdktypes.NewVars().
 		Set(vars.AppID, appID, false).
+		Set(vars.AppName, string(*i.AppSlug), false).
 		Set(vars.InstallID, installID, false).
 		Set(vars.TargetID, strconv.FormatInt(*i.TargetID, 10), false).
 		Set(vars.TargetName, name, false).
