@@ -103,6 +103,25 @@ func (s *svc) exchange(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Special case: GitHub gives us what we need for generating JWTs in the future
+	// (i.e. the GitHub app's installation ID) without exchanging the code below.
+	if intg == "github" {
+		l = l.With(
+			zap.String("setup_action", r.FormValue("setup_action")),
+			zap.String("installation_id", r.FormValue("installation_id")),
+		)
+
+		paramData, err := sdkintegrations.OAuthData{Token: nil, Params: r.URL.Query()}.Encode()
+		if err != nil {
+			abort(w, r, intg, sub[1], sub[2], "URL parameters encoding error")
+			return
+		}
+
+		l.Info("GitHub app flow successful")
+		redirect(w, r, intg, sub[1], sub[2], "oauth", paramData)
+		return
+	}
+
 	// Convert the OAuth code into a refresh token / user access token.
 	code := r.FormValue("code")
 	if code == "" {
