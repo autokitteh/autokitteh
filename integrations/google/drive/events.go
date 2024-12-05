@@ -34,7 +34,7 @@ func ConstructEvent(ctx context.Context, vars sdkservices.Vars, cids []sdktypes.
 	eventType := "file_updated"
 	if latestEvent.Removed {
 		eventType = "file_deleted"
-	} // else if
+	}
 
 	// TODO: ENG-1820 - Handle file creation events
 
