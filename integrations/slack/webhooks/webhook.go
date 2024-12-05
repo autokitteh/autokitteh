@@ -56,7 +56,7 @@ func NewHandler(l *zap.Logger, vars sdkservices.Vars, d sdkservices.Dispatcher, 
 // checkRequest checks that the given HTTP request has a valid content type and
 // a valid Slack signature, and if so it returns the request's body. Otherwise
 // it returns nil, and sends an HTTP error to the Slack platform's client.
-func checkRequest(w http.ResponseWriter, r *http.Request, l *zap.Logger, wantContentType string) []byte {
+func (h handler) checkRequest(w http.ResponseWriter, r *http.Request, l *zap.Logger, wantContentType string) []byte {
 	// "Content-Type" header.
 	gotContentType := r.Header.Get(api.HeaderContentType)
 	if gotContentType == "" || gotContentType != wantContentType {
@@ -116,7 +116,31 @@ func checkRequest(w http.ResponseWriter, r *http.Request, l *zap.Logger, wantCon
 		http.Error(w, "Bad Request", http.StatusBadRequest)
 		return nil
 	}
-	signingSecret := os.Getenv(signingSecretEnvVar)
+
+	// Try to get signing secret from any valid connection
+	var signingSecret string
+	cids, err := h.vars.FindConnectionIDs(r.Context(), h.integrationID, vars.KeyName, "")
+	if err != nil {
+		l.Error("Failed to list connection IDs", zap.Error(err))
+		http.Error(w, "Bad Request", http.StatusBadRequest)
+		return nil
+	}
+	for _, cid := range cids {
+		if secret, err := h.vars.Get(r.Context(), sdktypes.NewVarScopeID(cid)); err == nil {
+			if s := secret.GetValueByString("signingSecret"); s != "" {
+				signingSecret = s
+				// TODO: I think this is wrong, because if user has both a custom OAuth and regular OAuth,
+				// we don't know which one to use, or if they have multiple custom OAuths with different signing secrets.
+				break  // Use first valid signing secret found
+			}
+		}
+	}
+
+	// Fall back to env var if no valid connection found
+	if signingSecret == "" {
+		signingSecret = os.Getenv(signingSecretEnvVar)
+	}
+
 	if !verifySignature(signingSecret, ts, sig, b) {
 		l.Error("Slack signature verification failed")
 		http.Error(w, "Forbidden", http.StatusForbidden)

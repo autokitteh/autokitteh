@@ -60,7 +60,7 @@ func (h handler) HandleSlashCommand(w http.ResponseWriter, r *http.Request) {
 	l := h.logger.With(zap.String("urlPath", SlashCommandPath))
 
 	// Validate and parse the inbound request.
-	body := checkRequest(w, r, l, api.ContentTypeForm)
+	body := h.checkRequest(w, r, l, api.ContentTypeForm)
 	if body == nil {
 		return
 	}

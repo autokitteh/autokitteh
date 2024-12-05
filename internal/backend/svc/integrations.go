@@ -80,7 +80,7 @@ func integrationsFXOption() fx.Option {
 				gemini.Start(l, muxes)
 				google.Start(l, muxes, svcs.Vars(), svcs.OAuth(), svcs.Dispatcher())
 				jira.Start(l, muxes, svcs.Vars(), svcs.OAuth(), svcs.Dispatcher())
-				slack.Start(l, muxes, svcs.Vars(), svcs.Dispatcher())
+				slack.Start(l, muxes, svcs.OAuth(), svcs.Vars(), svcs.Dispatcher())
 				twilio.Start(l, muxes, svcs.Vars(), svcs.Dispatcher())
 				return nil
 			})
