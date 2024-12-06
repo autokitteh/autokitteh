@@ -17,7 +17,7 @@ import (
 
 const (
 	// oauthPath is the URL path for our handler to save
-	// new OAuth-based connections.
+	// new OAuth-based connections using the server's default app.
 	oauthPath = "/slack/oauth"
 
 	// customOAuthPath is the URL path for our handler to save
