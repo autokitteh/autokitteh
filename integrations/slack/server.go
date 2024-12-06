@@ -41,7 +41,7 @@ func Start(l *zap.Logger, muxes *muxes.Muxes, o sdkservices.OAuth, v sdkservices
 	// For this purpose, init webhooks are managed by the "auth" mux, which passes
 	// through AutoKitteh's auth middleware to extract the user ID from a cookie.
 	h := NewHandler(l, o, v)
-	muxes.Auth.Handle("GET "+oauthPath, h)
+	muxes.Auth.Handle("GET "+defaultOauthPath, h)
 	muxes.Auth.HandleFunc("POST "+customOAuthPath, h.handleSave)
 
 	wsh := websockets.NewHandler(l, v, d, desc)
