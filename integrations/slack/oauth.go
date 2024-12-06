@@ -19,12 +19,11 @@ import (
 // to receive and dispatch asynchronous event notifications.
 type handler struct {
 	logger *zap.Logger
-	oauth  sdkservices.OAuth
 	vars   sdkservices.Vars
 }
 
-func NewHandler(l *zap.Logger, o sdkservices.OAuth, v sdkservices.Vars) handler {
-	return handler{logger: l, oauth: o, vars: v}
+func NewHandler(l *zap.Logger, v sdkservices.Vars) handler {
+	return handler{logger: l, vars: v}
 }
 
 // ServeHTTP receives an inbound redirect request from autokitteh's OAuth
