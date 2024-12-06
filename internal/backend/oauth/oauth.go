@@ -440,10 +440,16 @@ func (o *oauth) Register(ctx context.Context, intg string, cfg *oauth2.Config, o
 	return nil
 }
 
-func (o *oauth) registerConnectionConfig(cid sdktypes.ConnectionID, intg string, cfg *oauth2.Config) error {
-	cfg.RedirectURL = fmt.Sprintf("https://%s/oauth/redirect/%s", os.Getenv("WEBHOOK_ADDRESS"), intg)
-	o.configs[cid.String()] = cfg
-	return nil
+// TODO: is this needed? if yes and only saving scopes, then this can be simplified
+func (o *oauth) saveConnectionConfig(ctx context.Context, cid sdktypes.ConnectionID, scopes []string) error {
+	vs := sdktypes.NewVars().
+		Set(sdktypes.NewSymbol("scopes"), strings.Join(scopes, ","), false)
+
+	vsl := kittehs.TransformMapToList(vs.ToMap(), func(_ sdktypes.Symbol, v sdktypes.Var) sdktypes.Var {
+		return v.WithScopeID(sdktypes.NewVarScopeID(cid))
+	})
+
+	return o.vars.Set(ctx, vsl...)
 }
 
 func (o *oauth) Get(ctx context.Context, intg string) (*oauth2.Config, map[string]string, error) {
@@ -459,12 +465,25 @@ func (o *oauth) getConfigWithConnection(ctx context.Context, intg string, cid sd
 		return nil, nil, errors.New("invalid connection ID")
 	}
 
-	if customCfg, ok := o.configs[cid.String()]; ok {
-		return customCfg, o.opts[intg], nil
+	baseCfg, opts, err := o.Get(ctx, intg)
+	if err != nil {
+		return nil, nil, err
 	}
 
-	// Fallback to regular config
-	return o.Get(ctx, intg)
+	if !o.isCustomOAuth(ctx, cid) {
+		return baseCfg, opts, nil
+	}
+
+	vs, err := o.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
+	if err != nil {
+		return nil, nil, err
+	}
+
+	cfgCopy := *baseCfg
+	cfgCopy.ClientID = vs.GetValueByString("clientID")
+	cfgCopy.ClientSecret = vs.GetValueByString("clientSecret")
+
+	return &cfgCopy, opts, nil
 }
 
 func (o *oauth) StartFlow(ctx context.Context, intg string, cid sdktypes.ConnectionID, origin string) (string, error) {
@@ -484,20 +503,12 @@ func (o *oauth) StartFlow(ctx context.Context, intg string, cid sdktypes.Connect
 		return cfg.AuthCodeURL(state, authCode(opts)...), nil
 	}
 
-	// This is the custom OAuth case where each connection has its own client ID/secret.
-	// Make a copy of the config so we don't overwrite the server-wide one.
-	vs, err := o.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
-	if err != nil {
-		return "", err
-	}
+	// err = o.saveConnectionConfig(ctx, cid, intg, cfg.Scopes)
+	// if err != nil {
+	// 	return "", err
+	// }
 
-	cfgCopy := *cfg
-	cfgCopy.ClientID = vs.GetValueByString("clientID")
-	cfgCopy.ClientSecret = vs.GetValueByString("clientSecret")
-
-	o.registerConnectionConfig(cid, intg, &cfgCopy)
-
-	return cfgCopy.AuthCodeURL(state, authCode(opts)...), nil
+	return cfg.AuthCodeURL(state, authCode(opts)...), nil
 }
 
 func (o *oauth) Exchange(ctx context.Context, integration, code string, cid sdktypes.ConnectionID) (*oauth2.Token, error) {
