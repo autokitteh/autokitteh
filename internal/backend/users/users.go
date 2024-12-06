@@ -34,16 +34,23 @@ func (u *users) Create(ctx context.Context, user sdktypes.User) (sdktypes.UserID
 	return u.db.CreateUser(ctx, user)
 }
 
-func (u *users) Get(ctx context.Context, id sdktypes.UserID, email string) (sdktypes.User, error) {
+func (u *users) Get(ctx context.Context, id sdktypes.UserID, name sdktypes.Symbol, email string) (sdktypes.User, error) {
 	if email == "" && !id.IsValid() {
 		id = authcontext.GetAuthnUserID(ctx)
 	}
 
-	if err := authz.CheckContext(ctx, id, "read:get", authz.WithData("id", id.String()), authz.WithData("email", email)); err != nil {
+	if err := authz.CheckContext(
+		ctx,
+		id,
+		"read:get",
+		authz.WithData("id", id.String()),
+		authz.WithData("email", email),
+		authz.WithData("name", name.String()),
+	); err != nil {
 		return sdktypes.InvalidUser, err
 	}
 
-	return u.db.GetUser(ctx, id, email)
+	return u.db.GetUser(ctx, id, name, email)
 }
 
 func (u *users) Update(ctx context.Context, user sdktypes.User) error {

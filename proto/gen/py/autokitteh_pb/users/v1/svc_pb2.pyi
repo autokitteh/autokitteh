@@ -19,12 +19,14 @@ class CreateResponse(_message.Message):
     def __init__(self, user_id: _Optional[str] = ...) -> None: ...
 
 class GetRequest(_message.Message):
-    __slots__ = ["user_id", "email"]
+    __slots__ = ["user_id", "email", "name"]
     USER_ID_FIELD_NUMBER: _ClassVar[int]
     EMAIL_FIELD_NUMBER: _ClassVar[int]
+    NAME_FIELD_NUMBER: _ClassVar[int]
     user_id: str
     email: str
-    def __init__(self, user_id: _Optional[str] = ..., email: _Optional[str] = ...) -> None: ...
+    name: str
+    def __init__(self, user_id: _Optional[str] = ..., email: _Optional[str] = ..., name: _Optional[str] = ...) -> None: ...
 
 class GetResponse(_message.Message):
     __slots__ = ["user"]

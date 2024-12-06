@@ -357,19 +357,33 @@ func (r Resolver) SessionID(ctx context.Context, id string) (s sdktypes.Session,
 	return
 }
 
-// UserEmailOrID returns a email, based on the given email or
-// ID. If the input is empty, we return nil but not an error.
-func (r Resolver) UserEmailOrID(ctx context.Context, emailOrID string) (u sdktypes.User, uid sdktypes.UserID, err error) {
-	if emailOrID == "" {
+func (r Resolver) User(ctx context.Context, nameEmailOrID string) (u sdktypes.User, uid sdktypes.UserID, err error) {
+	if nameEmailOrID == "" {
 		return
 	}
 
-	if sdktypes.IsUserID(emailOrID) {
-		return r.UserID(ctx, emailOrID)
+	var (
+		email string
+		name  sdktypes.Symbol
+	)
+
+	if sdktypes.IsUserID(nameEmailOrID) {
+		if uid, err = sdktypes.StrictParseUserID(nameEmailOrID); err != nil {
+			err = fmt.Errorf("invalid user ID %q: %w", nameEmailOrID, err)
+			return
+		}
+	} else if strings.Contains(nameEmailOrID, "@") {
+		email = nameEmailOrID
+	} else if name, err = sdktypes.Strict(sdktypes.ParseSymbol(nameEmailOrID)); err != nil {
+		err = fmt.Errorf("invalid user name %q: %w", nameEmailOrID, err)
+		return
 	}
 
-	u, err = r.Client.Users().Get(ctx, sdktypes.InvalidUserID, emailOrID)
-	err = translateError(err, u, "user", emailOrID)
+	u, err = r.Client.Users().Get(ctx, uid, name, email)
+	if u.IsValid() {
+		uid = u.ID()
+	}
+	err = translateError(err, u, "user", nameEmailOrID)
 	return
 }
 
@@ -390,23 +404,5 @@ func (r Resolver) Org(ctx context.Context, org string) (oid sdktypes.OrgID, err 
 		return
 	}
 	oid = o.ID()
-	return
-}
-
-// UserID returns a user, based on the given ID.
-// If the input is empty, we return nil but not an error.
-func (r Resolver) UserID(ctx context.Context, id string) (u sdktypes.User, uid sdktypes.UserID, err error) {
-	if id == "" {
-		err = errors.New("missing user ID")
-		return
-	}
-
-	if uid, err = sdktypes.StrictParseUserID(id); err != nil {
-		err = fmt.Errorf("invalid user ID %q: %w", id, err)
-		return
-	}
-
-	u, err = r.Client.Users().Get(ctx, uid, "")
-	err = translateError(err, u, "user", id)
 	return
 }

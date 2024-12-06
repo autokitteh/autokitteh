@@ -42,8 +42,9 @@ func (gdb *gormdb) CreateOrg(ctx context.Context, o sdktypes.Org) (sdktypes.OrgI
 	org := scheme.Org{
 		Base: based(ctx),
 
-		OrgID: oid.UUIDValue(),
-		Name:  o.Name().String(),
+		OrgID:       oid.UUIDValue(),
+		Name:        o.Name().String(),
+		DisplayName: o.DisplayName(),
 	}
 
 	err := gdb.db.WithContext(ctx).Create(&org).Error
@@ -57,6 +58,7 @@ func (gdb *gormdb) CreateOrg(ctx context.Context, o sdktypes.Org) (sdktypes.OrgI
 func (gdb *gormdb) UpdateOrg(ctx context.Context, o sdktypes.Org) error {
 	data := updatedBaseColumns(ctx)
 	data["name"] = o.Name().String()
+	data["display_name"] = o.DisplayName()
 
 	return translateError(
 		gdb.db.WithContext(ctx).

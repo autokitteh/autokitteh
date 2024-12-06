@@ -17,7 +17,7 @@ var getCmd = common.StandardCommand(&cobra.Command{
 		ctx, cancel := common.LimitedContext()
 		defer cancel()
 
-		u, _, err := r.UserEmailOrID(ctx, args[0])
+		u, _, err := r.User(ctx, args[0])
 		err = common.AddNotFoundErrIfCond(err, u.IsValid())
 		if err = common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "user"); err == nil {
 			common.RenderKVIfV("user", u)

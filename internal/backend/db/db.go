@@ -139,7 +139,7 @@ type DB interface {
 
 	// -----------------------------------------------------------------------
 	CreateUser(ctx context.Context, user sdktypes.User) (sdktypes.UserID, error)
-	GetUser(ctx context.Context, uid sdktypes.UserID, email string) (sdktypes.User, error)
+	GetUser(ctx context.Context, uid sdktypes.UserID, name sdktypes.Symbol, email string) (sdktypes.User, error)
 	UpdateUser(ctx context.Context, user sdktypes.User) error
 
 	// -----------------------------------------------------------------------

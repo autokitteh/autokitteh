@@ -8,6 +8,6 @@ import (
 
 type Users interface {
 	Create(ctx context.Context, user sdktypes.User) (sdktypes.UserID, error)
-	Get(ctx context.Context, id sdktypes.UserID, email string) (sdktypes.User, error)
+	Get(ctx context.Context, id sdktypes.UserID, name sdktypes.Symbol, email string) (sdktypes.User, error)
 	Update(ctx context.Context, user sdktypes.User) error
 }

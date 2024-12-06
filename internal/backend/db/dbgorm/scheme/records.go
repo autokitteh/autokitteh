@@ -525,24 +525,37 @@ type Value struct {
 type User struct {
 	Base
 
-	UserID      uuid.UUID `gorm:"primaryKey;type:uuid;not null"`
-	Email       string    `gorm:"uniqueIndex;not null"`
-	DisplayName string
-	Disabled    bool
+	UserID       uuid.UUID `gorm:"primaryKey;type:uuid;not null"`
+	Email        string    `gorm:"uniqueIndex;not null"`
+	Name         string    `gorm:"uniqueIndex;not null"`
+	DisplayName  string
+	Disabled     bool
+	DefaultOrgID uuid.UUID `gorm:"type:uuid"`
 
 	UpdatedBy uuid.UUID `gorm:"type:uuid"`
 	UpdatedAt time.Time
 }
 
-func ParseUser(r User) sdktypes.User {
-	return sdktypes.NewUser(r.Email).WithID(sdktypes.NewIDFromUUID[sdktypes.UserID](&r.UserID)).WithDisplayName(r.DisplayName).WithDisabled(r.Disabled)
+func ParseUser(r User) (sdktypes.User, error) {
+	n, err := sdktypes.StrictParseSymbol(r.Name)
+	if err != nil {
+		return sdktypes.InvalidUser, err
+	}
+
+	return sdktypes.NewUser(r.Email).
+		WithID(sdktypes.NewIDFromUUID[sdktypes.UserID](&r.UserID)).
+		WithDisplayName(r.DisplayName).
+		WithDefaultOrgID(sdktypes.NewIDFromUUID[sdktypes.OrgID](&r.DefaultOrgID)).
+		WithName(n).
+		WithDisabled(r.Disabled), nil
 }
 
 type Org struct {
 	Base
 
-	OrgID uuid.UUID `gorm:"primaryKey;type:uuid;not null"`
-	Name  string    `gorm:"uniqueIndex;not null"`
+	OrgID       uuid.UUID `gorm:"primaryKey;type:uuid;not null"`
+	Name        string    `gorm:"uniqueIndex;not null"`
+	DisplayName string
 
 	UpdatedBy uuid.UUID `gorm:"type:uuid"`
 	UpdatedAt time.Time
@@ -554,7 +567,9 @@ func ParseOrg(r Org) (sdktypes.Org, error) {
 		return sdktypes.InvalidOrg, fmt.Errorf("name: %w", err)
 	}
 
-	return sdktypes.NewOrg(n).WithID(sdktypes.NewIDFromUUID[sdktypes.OrgID](&r.OrgID)), nil
+	return sdktypes.NewOrg(n).
+		WithID(sdktypes.NewIDFromUUID[sdktypes.OrgID](&r.OrgID)).
+		WithDisplayName(r.DisplayName), nil
 }
 
 type OrgMember struct {

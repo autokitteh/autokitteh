@@ -23,12 +23,17 @@ export class User extends Message<User> {
   email = "";
 
   /**
-   * @generated from field: string display_name = 3;
+   * @generated from field: string name = 3;
+   */
+  name = "";
+
+  /**
+   * @generated from field: string display_name = 4;
    */
   displayName = "";
 
   /**
-   * @generated from field: bool disabled = 4;
+   * @generated from field: bool disabled = 5;
    */
   disabled = false;
 
@@ -49,8 +54,9 @@ export class User extends Message<User> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "disabled", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 3, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "disabled", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 6, name: "default_org_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 

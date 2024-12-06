@@ -41,9 +41,14 @@ func (u Org) WithID(id OrgID) Org {
 
 func (u Org) WithNewID() Org { return u.WithID(NewOrgID()) }
 
-func (u Org) ID() OrgID    { return kittehs.Must1(ParseOrgID(u.read().OrgId)) }
-func (u Org) Name() Symbol { return NewSymbol(u.read().Name) }
+func (u Org) ID() OrgID           { return kittehs.Must1(ParseOrgID(u.read().OrgId)) }
+func (u Org) Name() Symbol        { return NewSymbol(u.read().Name) }
+func (u Org) DisplayName() string { return u.read().DisplayName }
 
 func (u Org) WithName(n Symbol) Org {
 	return Org{u.forceUpdate(func(m *OrgPB) { m.Name = n.String() })}
+}
+
+func (u Org) WithDisplayName(n string) Org {
+	return Org{u.forceUpdate(func(m *OrgPB) { m.DisplayName = n })}
 }

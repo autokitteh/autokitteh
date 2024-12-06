@@ -5,7 +5,8 @@ package autokitteh.users.v1;
 message User {
   string user_id = 1;
   string email = 2; // if email is empty, user cannot login.
-  string display_name = 3;
-  bool disabled = 4;
+  string name = 3;
+  string display_name = 4;
+  bool disabled = 5;
   string default_org_id = 6; // org to use for projects, if not otherwise specified.
 }

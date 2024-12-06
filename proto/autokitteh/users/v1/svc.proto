@@ -16,6 +16,7 @@ message CreateResponse {
 message GetRequest {
   string user_id = 1;
   string email = 2;
+  string name = 3;
 }
 
 message GetResponse {
