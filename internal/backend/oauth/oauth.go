@@ -480,8 +480,8 @@ func (o *oauth) getConfigWithConnection(ctx context.Context, intg string, cid sd
 	}
 
 	cfgCopy := *baseCfg
-	cfgCopy.ClientID = vs.GetValueByString("clientID")
-	cfgCopy.ClientSecret = vs.GetValueByString("clientSecret")
+	cfgCopy.ClientID = vs.GetValueByString("client_id")
+	cfgCopy.ClientSecret = vs.GetValueByString("client_secret")
 
 	return &cfgCopy, opts, nil
 }
@@ -541,6 +541,6 @@ func (o *oauth) isCustomOAuth(ctx context.Context, cid sdktypes.ConnectionID) bo
 	if err != nil {
 		return false
 	}
-
-	return vs.GetValueByString("clientID") != "" && vs.GetValueByString("clientSecret") != ""
+	
+	return vs.GetValueByString("client_id") != "" && vs.GetValueByString("client_secret") != ""
 }
