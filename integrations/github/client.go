@@ -88,7 +88,7 @@ func connTest(i *integration) sdkintegrations.OptFn {
 		if pat := vs.Get(vars.PAT); pat.IsValid() {
 			gh = github.NewClient(nil).WithAuthToken(vs.GetValue(vars.PAT))
 		} else {
-			gh, err = i.newClientWithInstallJWT(vs)
+			gh, err = newClientWithInstallJWT(vs)
 			if err != nil {
 				return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), nil
 			}
