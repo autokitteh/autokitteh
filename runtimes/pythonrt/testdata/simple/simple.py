@@ -13,7 +13,7 @@ HOME, USER = getenv("HOME"), getenv("USER")
 def greet(event):
     display(f"simple: HOME: {HOME}")  # From environment
     display(f"simple: USER: {USER}")  # From 'var' in manifest
-    display(f"simple: event: {event!r}")
+    printer(event)
 
     body = event.data.body.bytes
     display(f"BODY: {body!r}")
@@ -23,4 +23,4 @@ def greet(event):
 
 @autokitteh.activity
 def printer(event):
-    print(event)
+    print(f"simple: event: {event!r}")

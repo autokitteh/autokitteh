@@ -82,7 +82,7 @@ class AKCall:
 
             raise ValueError(f"{func!r} is not callable (user bug at {file}:{lnum}?)")
 
-        log.info("__call__: %s, args=%r, kw=%r", full_func_name(func), args, kw)
+        log.info("__call__: %s", full_func_name(func))
         if func in AK_FUNCS:
             if self.in_activity and func is sleep:
                 return func(*args, **kw)

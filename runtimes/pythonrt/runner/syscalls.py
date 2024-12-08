@@ -23,16 +23,8 @@ class SysCalls:
         self.runner_id = runner_id
         self.worker: rpc.WorkerStub = worker
 
-        self.ak_funcs = {
-            "next_event": self.ak_next_event,
-            "sleep": self.ak_sleep,
-            "start": self.ak_start,
-            "subscribe": self.ak_subscribe,
-            "unsubscribe": self.ak_unsubscribe,
-        }
-
     def call(self, fn, args, kw):
-        method = self.ak_funcs.get(fn.__name__)
+        method = getattr(self, "ak_" + fn.__name__, None)
         if method is None:
             raise ValueError(f"unknown ak function: {fn.__name__!r}")
         return method(args, kw)
