@@ -3,8 +3,9 @@ package authz
 import "go.autokitteh.dev/autokitteh/sdk/sdktypes"
 
 type checkCfg struct {
-	data         map[string]any
-	associations map[string]sdktypes.ID
+	data                       map[string]any
+	associations               map[string]sdktypes.ID
+	convertForbiddenToNotFound bool
 }
 
 // Set arbitrary data in check context.
@@ -36,3 +37,5 @@ func WithAssociationWithID(name string, id sdktypes.ID) func(*checkCfg) {
 		cfg.associations[name] = id
 	}
 }
+
+func WithConvertForbiddenToNotFound(cfg *checkCfg) { cfg.convertForbiddenToNotFound = true }

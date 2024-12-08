@@ -44,6 +44,11 @@ func NewPolicyCheckFunc(l *zap.Logger, db db.DB, decide policy.DecideFunc) Check
 
 		if !decision {
 			l.Warn("authz opa decision: denied", zap.Any("input", input), zap.Any("result", result))
+
+			if cfg.convertForbiddenToNotFound {
+				return sdkerrors.ErrNotFound
+			}
+
 			return sdkerrors.ErrUnauthorized
 		}
 
@@ -86,6 +91,8 @@ func buildInput(ctx context.Context, db db.DB, id sdktypes.ID, action string, cf
 		}
 
 		data["resource_org_id"] = oid.String()
+
+		data["user_is_resource_org_member"] = kittehs.ContainedIn(uoids...)(oid)
 	}
 
 	for name, id := range cfg.associations {

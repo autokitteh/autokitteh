@@ -327,13 +327,24 @@ func (r Resolver) projectByID(ctx context.Context, id string) (p sdktypes.Projec
 }
 
 func (r Resolver) projectByName(ctx context.Context, name string) (p sdktypes.Project, pid sdktypes.ProjectID, err error) {
+	org, proj, ok := strings.Cut(name, ".")
+	if !ok {
+		org, proj = "", name
+	}
+
 	var n sdktypes.Symbol
-	if n, err = sdktypes.Strict(sdktypes.ParseSymbol(name)); err != nil {
+	if n, err = sdktypes.Strict(sdktypes.ParseSymbol(proj)); err != nil {
 		err = fmt.Errorf("invalid project name %q: %w", name, err)
 		return
 	}
 
-	p, err = r.Client.Projects().GetByName(ctx, sdktypes.InvalidOrgID, n)
+	var oid sdktypes.OrgID
+	oid, err = r.Org(ctx, org)
+	if err != nil {
+		return
+	}
+
+	p, err = r.Client.Projects().GetByName(ctx, oid, n)
 	err = translateError(err, p, "project", name)
 	pid = p.ID()
 	return
@@ -388,6 +399,10 @@ func (r Resolver) User(ctx context.Context, nameEmailOrID string) (u sdktypes.Us
 }
 
 func (r Resolver) Org(ctx context.Context, org string) (oid sdktypes.OrgID, err error) {
+	if org == "" {
+		return
+	}
+
 	if sdktypes.IsID(org) {
 		return sdktypes.ParseOrgID(org)
 	}

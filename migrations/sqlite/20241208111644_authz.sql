@@ -104,14 +104,14 @@ INSERT INTO `new_vars` (`var_id`, `name`, `value`, `is_secret`, `integration_id`
 DROP TABLE `vars`;
 -- rename temporary table "new_vars" to "vars"
 ALTER TABLE `new_vars` RENAME TO `vars`;
--- create index "idx_vars_var_id" to table: "vars"
-CREATE INDEX `idx_vars_var_id` ON `vars` (`var_id`);
 -- create index "idx_vars_project_id" to table: "vars"
 CREATE INDEX `idx_vars_project_id` ON `vars` (`project_id`);
 -- create index "idx_vars_integration_id" to table: "vars"
 CREATE INDEX `idx_vars_integration_id` ON `vars` (`integration_id`);
 -- create index "idx_vars_name" to table: "vars"
 CREATE INDEX `idx_vars_name` ON `vars` (`name`);
+-- create index "idx_vars_var_id" to table: "vars"
+CREATE INDEX `idx_vars_var_id` ON `vars` (`var_id`);
 -- create "new_events" table
 CREATE TABLE `new_events` (
   `created_by` uuid NOT NULL,
@@ -139,22 +139,22 @@ INSERT INTO `new_events` (`created_at`, `event_id`, `destination_id`, `integrati
 DROP TABLE `events`;
 -- rename temporary table "new_events" to "events"
 ALTER TABLE `new_events` RENAME TO `events`;
--- create index "idx_events_destination_id" to table: "events"
-CREATE INDEX `idx_events_destination_id` ON `events` (`destination_id`);
+-- create index "idx_events_event_id" to table: "events"
+CREATE UNIQUE INDEX `idx_events_event_id` ON `events` (`event_id`);
 -- create index "idx_events_project_id" to table: "events"
 CREATE INDEX `idx_events_project_id` ON `events` (`project_id`);
 -- create index "idx_events_deleted_at" to table: "events"
 CREATE INDEX `idx_events_deleted_at` ON `events` (`deleted_at`);
--- create index "idx_event_type_seq" to table: "events"
-CREATE INDEX `idx_event_type_seq` ON `events` (`event_type`);
--- create index "idx_events_integration_id" to table: "events"
-CREATE INDEX `idx_events_integration_id` ON `events` (`integration_id`);
--- create index "idx_events_connection_id" to table: "events"
-CREATE INDEX `idx_events_connection_id` ON `events` (`connection_id`);
--- create index "idx_events_event_id" to table: "events"
-CREATE UNIQUE INDEX `idx_events_event_id` ON `events` (`event_id`);
 -- create index "idx_event_type" to table: "events"
 CREATE INDEX `idx_event_type` ON `events` (`event_type`);
+-- create index "idx_events_connection_id" to table: "events"
+CREATE INDEX `idx_events_connection_id` ON `events` (`connection_id`);
+-- create index "idx_events_integration_id" to table: "events"
+CREATE INDEX `idx_events_integration_id` ON `events` (`integration_id`);
+-- create index "idx_events_destination_id" to table: "events"
+CREATE INDEX `idx_events_destination_id` ON `events` (`destination_id`);
+-- create index "idx_event_type_seq" to table: "events"
+CREATE INDEX `idx_event_type_seq` ON `events` (`event_type`);
 -- create index "idx_events_trigger_id" to table: "events"
 CREATE INDEX `idx_events_trigger_id` ON `events` (`trigger_id`);
 -- create "new_values" table
@@ -222,6 +222,8 @@ INSERT INTO `new_sessions` (`created_at`, `session_id`, `build_id`, `project_id`
 DROP TABLE `sessions`;
 -- rename temporary table "new_sessions" to "sessions"
 ALTER TABLE `new_sessions` RENAME TO `sessions`;
+-- create index "idx_sessions_build_id" to table: "sessions"
+CREATE INDEX `idx_sessions_build_id` ON `sessions` (`build_id`);
 -- create index "idx_sessions_org_id" to table: "sessions"
 CREATE INDEX `idx_sessions_org_id` ON `sessions` (`org_id`);
 -- create index "idx_sessions_deleted_at" to table: "sessions"
@@ -234,8 +236,6 @@ CREATE INDEX `idx_sessions_event_id` ON `sessions` (`event_id`);
 CREATE INDEX `idx_sessions_deployment_id` ON `sessions` (`deployment_id`);
 -- create index "idx_sessions_project_id" to table: "sessions"
 CREATE INDEX `idx_sessions_project_id` ON `sessions` (`project_id`);
--- create index "idx_sessions_build_id" to table: "sessions"
-CREATE INDEX `idx_sessions_build_id` ON `sessions` (`build_id`);
 -- create "new_deployments" table
 CREATE TABLE `new_deployments` (
   `created_by` uuid NOT NULL,
@@ -248,8 +248,8 @@ CREATE TABLE `new_deployments` (
   `updated_at` datetime NULL,
   `deleted_at` datetime NULL,
   PRIMARY KEY (`deployment_id`),
-  CONSTRAINT `fk_deployments_build` FOREIGN KEY (`build_id`) REFERENCES `builds` (`build_id`) ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT `fk_deployments_project` FOREIGN KEY (`project_id`) REFERENCES `projects` (`project_id`) ON UPDATE NO ACTION ON DELETE NO ACTION
+  CONSTRAINT `fk_deployments_project` FOREIGN KEY (`project_id`) REFERENCES `projects` (`project_id`) ON UPDATE NO ACTION ON DELETE NO ACTION,
+  CONSTRAINT `fk_deployments_build` FOREIGN KEY (`build_id`) REFERENCES `builds` (`build_id`) ON UPDATE NO ACTION ON DELETE NO ACTION
 );
 -- copy rows from old table "deployments" to new temporary table "new_deployments"
 INSERT INTO `new_deployments` (`created_at`, `project_id`, `deployment_id`, `build_id`, `state`, `updated_at`, `deleted_at`) SELECT `created_at`, `project_id`, `deployment_id`, `build_id`, `state`, `updated_at`, `deleted_at` FROM `deployments`;
@@ -351,8 +351,6 @@ DROP INDEX `idx_deployments_project_id`;
 DROP INDEX `idx_deployments_deleted_at`;
 -- reverse: create "new_deployments" table
 DROP TABLE `new_deployments`;
--- reverse: create index "idx_sessions_build_id" to table: "sessions"
-DROP INDEX `idx_sessions_build_id`;
 -- reverse: create index "idx_sessions_project_id" to table: "sessions"
 DROP INDEX `idx_sessions_project_id`;
 -- reverse: create index "idx_sessions_deployment_id" to table: "sessions"
@@ -365,6 +363,8 @@ DROP INDEX `idx_sessions_current_state_type`;
 DROP INDEX `idx_sessions_deleted_at`;
 -- reverse: create index "idx_sessions_org_id" to table: "sessions"
 DROP INDEX `idx_sessions_org_id`;
+-- reverse: create index "idx_sessions_build_id" to table: "sessions"
+DROP INDEX `idx_sessions_build_id`;
 -- reverse: create "new_sessions" table
 DROP TABLE `new_sessions`;
 -- reverse: create index "idx_users_name" to table: "users"
@@ -389,32 +389,32 @@ DROP INDEX `idx_values_project_id`;
 DROP TABLE `new_values`;
 -- reverse: create index "idx_events_trigger_id" to table: "events"
 DROP INDEX `idx_events_trigger_id`;
--- reverse: create index "idx_event_type" to table: "events"
-DROP INDEX `idx_event_type`;
--- reverse: create index "idx_events_event_id" to table: "events"
-DROP INDEX `idx_events_event_id`;
--- reverse: create index "idx_events_connection_id" to table: "events"
-DROP INDEX `idx_events_connection_id`;
--- reverse: create index "idx_events_integration_id" to table: "events"
-DROP INDEX `idx_events_integration_id`;
 -- reverse: create index "idx_event_type_seq" to table: "events"
 DROP INDEX `idx_event_type_seq`;
+-- reverse: create index "idx_events_destination_id" to table: "events"
+DROP INDEX `idx_events_destination_id`;
+-- reverse: create index "idx_events_integration_id" to table: "events"
+DROP INDEX `idx_events_integration_id`;
+-- reverse: create index "idx_events_connection_id" to table: "events"
+DROP INDEX `idx_events_connection_id`;
+-- reverse: create index "idx_event_type" to table: "events"
+DROP INDEX `idx_event_type`;
 -- reverse: create index "idx_events_deleted_at" to table: "events"
 DROP INDEX `idx_events_deleted_at`;
 -- reverse: create index "idx_events_project_id" to table: "events"
 DROP INDEX `idx_events_project_id`;
--- reverse: create index "idx_events_destination_id" to table: "events"
-DROP INDEX `idx_events_destination_id`;
+-- reverse: create index "idx_events_event_id" to table: "events"
+DROP INDEX `idx_events_event_id`;
 -- reverse: create "new_events" table
 DROP TABLE `new_events`;
+-- reverse: create index "idx_vars_var_id" to table: "vars"
+DROP INDEX `idx_vars_var_id`;
 -- reverse: create index "idx_vars_name" to table: "vars"
 DROP INDEX `idx_vars_name`;
 -- reverse: create index "idx_vars_integration_id" to table: "vars"
 DROP INDEX `idx_vars_integration_id`;
 -- reverse: create index "idx_vars_project_id" to table: "vars"
 DROP INDEX `idx_vars_project_id`;
--- reverse: create index "idx_vars_var_id" to table: "vars"
-DROP INDEX `idx_vars_var_id`;
 -- reverse: create "new_vars" table
 DROP TABLE `new_vars`;
 -- reverse: create index "idx_projects_org_id" to table: "projects"

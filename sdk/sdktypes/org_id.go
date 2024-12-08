@@ -20,6 +20,6 @@ var InvalidOrgID OrgID
 func NewOrgID() OrgID       { return newID[OrgID]() }
 func IsOrgID(s string) bool { return IsIDOf[userIDTraits](s) }
 
-func NewTestOrgID(email string) OrgID {
-	return kittehs.Must1(ParseOrgID(newNamedIDString(email, OrgIDKind)))
+func NewTestOrgID(name string) OrgID {
+	return kittehs.Must1(ParseOrgID(newNamedIDString(name, OrgIDKind)))
 }

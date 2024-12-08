@@ -37,27 +37,50 @@ func init() {
 	for _, u := range users {
 		uu := sdktypes.NewUser(fmt.Sprintf("%s@%s.org", u.name, u.org)).
 			WithDisplayName(u.name).
+			WithName(sdktypes.NewSymbol(u.name)).
 			WithID(sdktypes.NewTestUserID(u.name))
 
 		consts[strings.ToUpper(u.name+"_uid")] = uu.ID().String()
 
+		personalOrgID := sdktypes.NewTestOrgID(u.name + "org")
+
 		seedCommands = append(seedCommands, fmt.Sprintf(
-			`insert into users(user_id,email,display_name,created_by) values (%q,%q,%q,%q)`,
+			`insert into users(user_id,name,email,display_name,created_by,default_org_id) values (%q,%q,%q,%q,%q,%q)`,
 			uu.ID().UUIDValue(),
+			uu.Name().String(),
 			uu.Email(),
 			uu.DisplayName(),
+			uu.ID().UUIDValue(),
+			personalOrgID.UUIDValue(),
+		))
+
+		consts[strings.ToUpper(u.name+"_oid")] = personalOrgID.String()
+
+		seedCommands = append(seedCommands, fmt.Sprintf(
+			`insert into orgs(org_id,name,created_by) values (%q,%q,%q)`,
+			personalOrgID.UUIDValue(),
+			u.name+"_personal",
+			uu.ID().UUIDValue(),
+		))
+
+		seedCommands = append(seedCommands, fmt.Sprintf(
+			`insert into org_members(org_id,user_id,created_by) values (%q,%q,%q)`,
+			personalOrgID.UUIDValue(),
+			uu.ID().UUIDValue(),
 			uu.ID().UUIDValue(),
 		))
 
 		oid, ok := orgs[u.org]
 		if !ok {
-			orgs[u.org] = kittehs.Must1(uuid.NewV7())
+			sdkOrgID := sdktypes.NewTestOrgID(u.org)
+			oid = sdkOrgID.UUIDValue()
+			orgs[u.org] = oid
 
-			consts[strings.ToUpper(u.org+"_oid")] = orgs[u.org].String()
+			consts[strings.ToUpper(u.org+"_oid")] = sdkOrgID.String()
 
 			seedCommands = append(seedCommands, fmt.Sprintf(
 				`insert into orgs(org_id,name,created_by) values (%q,%q,%q)`,
-				uuid.New(),
+				oid,
 				u.org,
 				uu.ID().UUIDValue(),
 			))
@@ -65,8 +88,8 @@ func init() {
 
 		seedCommands = append(seedCommands, fmt.Sprintf(
 			`insert into org_members(org_id,user_id,created_by) values (%q,%q,%q)`,
-			uu.ID().UUIDValue(),
 			oid,
+			uu.ID().UUIDValue(),
 			uu.ID().UUIDValue(),
 		))
 

@@ -23,7 +23,7 @@ func (gdb *gormdb) createProject(ctx context.Context, project *scheme.Project) e
 			// and we are using joins as well. First maybe a good option too, but there should be only
 			// one active user project with the same name, so COUNT is also OK
 			Model(&scheme.Project{}). // with model scope grom will add `deleted_at is NULL` to the query
-			Where("name = ? AND owner_id = ?", project.Name, project.OrgID).Count(&count).Error; err != nil {
+			Where("name = ? AND org_id = ?", project.Name, project.OrgID).Count(&count).Error; err != nil {
 			return err
 		}
 		if count > 0 {
@@ -125,7 +125,7 @@ func (gdb *gormdb) getProjectByName(ctx context.Context, oid sdktypes.OrgID, pro
 	qargs := []any{projectName}
 
 	if oid.IsValid() {
-		q += " AND owner_user_id = ?"
+		q += " AND org_id = ?"
 		qargs = append(qargs, oid.UUIDValue())
 	}
 
@@ -136,7 +136,7 @@ func (gdb *gormdb) listProjects(ctx context.Context, oid sdktypes.OrgID) ([]sche
 	q := gdb.db.WithContext(ctx)
 
 	if oid.IsValid() {
-		q = q.Where("owner_user_id = ?", oid.UUIDValue())
+		q = q.Where("org_id = ?", oid.UUIDValue())
 	}
 
 	var ps []scheme.Project

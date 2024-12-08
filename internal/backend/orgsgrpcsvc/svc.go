@@ -17,8 +17,6 @@ import (
 
 type server struct {
 	orgs sdkservices.Orgs
-
-	orgsv1connect.UnimplementedOrgsServiceHandler
 }
 
 var _ orgsv1connect.OrgsServiceHandler = (*server)(nil)
@@ -50,40 +48,35 @@ func (s *server) Create(ctx context.Context, req *connect.Request[orgsv1.CreateR
 	return connect.NewResponse(&orgsv1.CreateResponse{OrgId: oid.String()}), nil
 }
 
-func (s *server) GetByID(ctx context.Context, req *connect.Request[orgsv1.GetRequest]) (*connect.Response[orgsv1.GetResponse], error) {
+func (s *server) Get(ctx context.Context, req *connect.Request[orgsv1.GetRequest]) (*connect.Response[orgsv1.GetResponse], error) {
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	oid, err := sdktypes.ParseOrgID(msg.OrgId)
-	if err != nil {
-		return nil, sdkerrors.AsConnectError(err)
-	}
+	var o sdktypes.Org
 
-	o, err := s.orgs.GetByID(ctx, oid)
-	if err != nil {
-		return nil, sdkerrors.AsConnectError(err)
-	}
+	if req.Msg.OrgId != "" {
+		oid, err := sdktypes.ParseOrgID(msg.OrgId)
+		if err != nil {
+			return nil, sdkerrors.AsConnectError(err)
+		}
 
-	return connect.NewResponse(&orgsv1.GetResponse{Org: o.ToProto()}), nil
-}
+		if o, err = s.orgs.GetByID(ctx, oid); err != nil {
+			return nil, sdkerrors.AsConnectError(err)
+		}
+	} else if req.Msg.Name != "" {
+		n, err := sdktypes.ParseSymbol(msg.Name)
+		if err != nil {
+			return nil, sdkerrors.AsConnectError(err)
+		}
 
-func (s *server) GetByName(ctx context.Context, req *connect.Request[orgsv1.GetRequest]) (*connect.Response[orgsv1.GetResponse], error) {
-	msg := req.Msg
-
-	if err := proto.Validate(msg); err != nil {
-		return nil, sdkerrors.AsConnectError(err)
-	}
-	n, err := sdktypes.ParseSymbol(msg.Name)
-	if err != nil {
-		return nil, sdkerrors.AsConnectError(err)
-	}
-
-	o, err := s.orgs.GetByName(ctx, n)
-	if err != nil {
-		return nil, sdkerrors.AsConnectError(err)
+		if o, err = s.orgs.GetByName(ctx, n); err != nil {
+			return nil, sdkerrors.AsConnectError(err)
+		}
+	} else {
+		return nil, sdkerrors.NewInvalidArgumentError("either org ID or name must be provided")
 	}
 
 	return connect.NewResponse(&orgsv1.GetResponse{Org: o.ToProto()}), nil
@@ -198,4 +191,29 @@ func (s *server) GetOrgsForUser(ctx context.Context, req *connect.Request[orgsv1
 	return connect.NewResponse(&orgsv1.GetOrgsForUserResponse{
 		OrgIds: kittehs.TransformToStrings(oids),
 	}), nil
+}
+
+func (s *server) IsMember(ctx context.Context, req *connect.Request[orgsv1.IsMemberRequest]) (*connect.Response[orgsv1.IsMemberResponse], error) {
+	msg := req.Msg
+
+	if err := proto.Validate(msg); err != nil {
+		return nil, sdkerrors.AsConnectError(err)
+	}
+
+	uid, err := sdktypes.ParseUserID(msg.UserId)
+	if err != nil {
+		return nil, sdkerrors.AsConnectError(err)
+	}
+
+	oid, err := sdktypes.ParseOrgID(msg.OrgId)
+	if err != nil {
+		return nil, sdkerrors.AsConnectError(err)
+	}
+
+	member, err := s.orgs.IsMember(ctx, oid, uid)
+	if err != nil {
+		return nil, sdkerrors.AsConnectError(err)
+	}
+
+	return connect.NewResponse(&orgsv1.IsMemberResponse{IsMember: member}), nil
 }

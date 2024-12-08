@@ -103,7 +103,7 @@ func setUpTest(t *testing.T, akPath string, cfg map[string]any) string {
 
 	// Start the AK server.
 	ctx := context.Background()
-	svc, addr, err := startAKServer(ctx, akPath, cfg)
+	svc, addr, err := startAKServer(t, ctx, akPath, cfg)
 	if err != nil {
 		t.Fatalf("start AK server error: %v", err)
 	}

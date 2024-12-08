@@ -146,8 +146,8 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 			fx.Provide(authhttpmiddleware.New),
 			fx.Provide(authhttpmiddleware.AuthorizationHeaderExtractor),
 		),
-		Component("users", configset.Empty, fx.Provide(users.New)),
 		Component("orgs", configset.Empty, fx.Provide(orgs.New)),
+		Component("users", configset.Empty, fx.Provide(users.New)),
 		Component("opapolicy", opapolicy.Configs, fx.Provide(opapolicy.New)),
 		Component("authz", configset.Empty, fx.Provide(authz.NewPolicyCheckFunc)),
 

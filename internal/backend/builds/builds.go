@@ -32,7 +32,19 @@ func New(b Builds, telemetry *telemetry.Telemetry) sdkservices.Builds {
 }
 
 func (b *Builds) Save(ctx context.Context, build sdktypes.Build, data []byte) (sdktypes.BuildID, error) {
-	build = authcontext.ObjectWithOrgID(ctx, build)
+	if !build.OrgID().IsValid() {
+		// If there is an associated project id, default to the project's org id.
+		if pid := build.ProjectID(); pid.IsValid() {
+			oid, err := b.DB.GetOrgIDOf(ctx, pid)
+			if err != nil {
+				return sdktypes.InvalidBuildID, err
+			}
+
+			build = build.WithOrgID(oid)
+		} else {
+			build = authcontext.ObjectWithOrgID(ctx, build)
+		}
+	}
 
 	if err := authz.CheckContext(
 		ctx,
@@ -60,7 +72,7 @@ func (b *Builds) Save(ctx context.Context, build sdktypes.Build, data []byte) (s
 }
 
 func (b *Builds) Get(ctx context.Context, id sdktypes.BuildID) (sdktypes.Build, error) {
-	if err := authz.CheckContext(ctx, id, "read:get"); err != nil {
+	if err := authz.CheckContext(ctx, id, "read:get", authz.WithConvertForbiddenToNotFound); err != nil {
 		return sdktypes.InvalidBuild, err
 	}
 
@@ -81,7 +93,7 @@ func (b *Builds) List(ctx context.Context, filter sdkservices.ListBuildsFilter) 
 
 // Download implements sdkservices.Builds.
 func (b *Builds) Download(ctx context.Context, id sdktypes.BuildID) (io.ReadCloser, error) {
-	if err := authz.CheckContext(ctx, id, "read:download"); err != nil {
+	if err := authz.CheckContext(ctx, id, "read:download", authz.WithConvertForbiddenToNotFound); err != nil {
 		return nil, err
 	}
 
@@ -101,7 +113,7 @@ func (b *Builds) Delete(ctx context.Context, bid sdktypes.BuildID) error {
 }
 
 func (b *Builds) Describe(ctx context.Context, bid sdktypes.BuildID) (*sdkbuildfile.BuildFile, error) {
-	if err := authz.CheckContext(ctx, bid, "read:describe"); err != nil {
+	if err := authz.CheckContext(ctx, bid, "read:describe", authz.WithConvertForbiddenToNotFound); err != nil {
 		return nil, err
 	}
 

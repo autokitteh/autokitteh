@@ -2,12 +2,15 @@ package users
 
 import (
 	"context"
+	"fmt"
 
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authz"
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
+	"go.autokitteh.dev/autokitteh/internal/backend/orgs"
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -31,7 +34,38 @@ func (u *users) Create(ctx context.Context, user sdktypes.User) (sdktypes.UserID
 		return sdktypes.InvalidUserID, err
 	}
 
-	return u.db.CreateUser(ctx, user)
+	var uid sdktypes.UserID
+
+	err := u.db.Transaction(ctx, func(db db.DB) error {
+		// TODO: user or org name might already be taken, figure out a new org name.
+
+		var oid sdktypes.OrgID
+
+		if !user.DefaultOrgID().IsValid() {
+			orgName := kittehs.Must1(sdktypes.ParseSymbol(fmt.Sprintf("%s_org", user.Name())))
+			org := sdktypes.NewOrg(orgName).WithDisplayName(fmt.Sprintf("%s's Personal Org", user.DisplayName()))
+
+			var err error
+			if oid, err = orgs.Create(ctx, db, org); err != nil {
+				return fmt.Errorf("create personal org: %w", err)
+			}
+		}
+
+		uid, err := db.CreateUser(ctx, user.WithNewID().WithDefaultOrgID(oid))
+		if err != nil {
+			return err
+		}
+
+		if oid.IsValid() {
+			if err := orgs.AddMember(ctx, db, oid, uid); err != nil {
+				return fmt.Errorf("add as member to personal org: %w", err)
+			}
+		}
+
+		return nil
+	})
+
+	return uid, err
 }
 
 func (u *users) Get(ctx context.Context, id sdktypes.UserID, name sdktypes.Symbol, email string) (sdktypes.User, error) {
