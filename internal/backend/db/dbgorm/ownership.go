@@ -23,6 +23,7 @@ func (gdb *gormdb) GetOwnership(ctx context.Context, entityID sdktypes.UUID) (sd
 
 	uid, err := sdktypes.NewIDFromUUIDString[sdktypes.UserID](o.UserID)
 	if err != nil {
+		// TODO: remove this second parse once we upgrade all users to new format
 		uid, err = sdktypes.ParseUserID(o.UserID)
 		if err != nil {
 			return sdktypes.InvalidUser, err
