@@ -111,6 +111,14 @@ func NewIDFromUUID[ID id[T], T idTraits](uuid *UUID) ID {
 	return ID(id[T]{tid: typeid.Must(typeid.FromUUIDBytes[typeid.TypeID[T]](uuid[:]))})
 }
 
+func NewIDFromUUIDString[ID id[T], T idTraits](str string) (ID, error) {
+	uuidUUID, err := uuid.Parse(str)
+	if err != nil {
+		return ID{}, err
+	}
+	return NewIDFromUUID[ID](&uuidUUID), nil
+}
+
 func ParseID[ID id[T], T idTraits](s string) (ID, error) {
 	var zero ID
 
