@@ -22,11 +22,11 @@ import pb.autokitteh.user_code.v1.runner_svc_pb2_grpc as runner_rpc
 import pb.autokitteh.user_code.v1.user_code_pb2 as pb_user_code
 import pb.autokitteh.values.v1.values_pb2 as pb_values
 import values
+from audit import make_audit_hook
+from autokitteh import AttrDict, connections
 from call import AKCall, full_func_name
 from grpc_reflection.v1alpha import reflection
 from syscalls import SysCalls
-
-from autokitteh import AttrDict, connections
 
 SERVER_GRACE_TIMEOUT = 3  # seconds
 
@@ -192,6 +192,11 @@ class Runner(runner_rpc.RunnerService):
 
         fix_http_body(event)
         event = AttrDict(event)
+
+        # Warn on I/O outside an activity. Should come after importing the user module
+        hook = make_audit_hook(ak_call, self.code_dir)
+        sys.addaudithook(hook)
+
         self.executor.submit(self.on_event, fn, event)
 
         return pb_runner.StartResponse()
