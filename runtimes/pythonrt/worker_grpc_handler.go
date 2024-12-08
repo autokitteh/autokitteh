@@ -32,6 +32,7 @@ type workerGRPCHandler struct {
 
 	runnerIDsToRuntime map[string]*pySvc
 	mu                 *sync.Mutex
+	log                *zap.Logger
 }
 
 var w = workerGRPCHandler{
@@ -40,6 +41,7 @@ var w = workerGRPCHandler{
 }
 
 func ConfigureWorkerGRPCHandler(l *zap.Logger, mux *http.ServeMux) {
+	w.log = l
 	srv := grpc.NewServer()
 	userCode.RegisterHandlerServiceServer(srv, &w)
 	path := fmt.Sprintf("/%s/", userCode.HandlerService_ServiceDesc.ServiceName)
@@ -85,6 +87,7 @@ func (s *workerGRPCHandler) IsActiveRunner(ctx context.Context, req *userCode.Is
 
 	_, ok := w.runnerIDsToRuntime[req.RunnerId]
 	if !ok {
+		w.log.Error("unknwon runner ID", zap.String("id", req.RunnerId))
 		return &userCode.IsActiveRunnerResponse{Error: "unknown runner ID"}, nil
 	}
 
@@ -93,6 +96,7 @@ func (s *workerGRPCHandler) IsActiveRunner(ctx context.Context, req *userCode.Is
 
 func (s *workerGRPCHandler) Log(ctx context.Context, req *userCode.LogRequest) (*userCode.LogResponse, error) {
 	if req.Level == "" {
+		w.log.Error("empty log level")
 		return nil, status.Error(codes.InvalidArgument, "empty level")
 	}
 
@@ -100,6 +104,7 @@ func (s *workerGRPCHandler) Log(ctx context.Context, req *userCode.LogRequest) (
 	runner, ok := w.runnerIDsToRuntime[req.RunnerId]
 	w.mu.Unlock()
 	if !ok {
+		w.log.Error("unknwon runner ID", zap.String("id", req.RunnerId))
 		return &userCode.LogResponse{Error: "unknown runner ID"}, nil
 	}
 
@@ -122,6 +127,7 @@ func (s *workerGRPCHandler) Print(ctx context.Context, req *userCode.PrintReques
 	runner, ok := w.runnerIDsToRuntime[req.RunnerId]
 	w.mu.Unlock()
 	if !ok {
+		w.log.Error("unknwon runner ID", zap.String("id", req.RunnerId))
 		return &userCode.PrintResponse{Error: "unknown runner ID"}, nil
 	}
 
@@ -144,6 +150,7 @@ func (s *workerGRPCHandler) Done(ctx context.Context, req *userCode.DoneRequest)
 	runner, ok := w.runnerIDsToRuntime[req.RunnerId]
 	w.mu.Unlock()
 	if !ok {
+		w.log.Error("unknwon runner ID", zap.String("id", req.RunnerId))
 		return &userCode.DoneResponse{}, nil
 	}
 
@@ -157,6 +164,7 @@ func (s *workerGRPCHandler) Activity(ctx context.Context, req *userCode.Activity
 	runner, ok := w.runnerIDsToRuntime[req.RunnerId]
 	w.mu.Unlock()
 	if !ok {
+		w.log.Error("unknwon runner ID", zap.String("id", req.RunnerId))
 		return &userCode.ActivityResponse{Error: "unknown runner ID"}, nil
 	}
 
@@ -196,6 +204,7 @@ func (s *workerGRPCHandler) Sleep(ctx context.Context, req *userCode.SleepReques
 	runner, ok := w.runnerIDsToRuntime[req.RunnerId]
 	w.mu.Unlock()
 	if !ok {
+		w.log.Error("unknwon runner ID", zap.String("id", req.RunnerId))
 		return &userCode.SleepResponse{Error: "unknown runner ID"}, nil
 	}
 
@@ -222,6 +231,7 @@ func (s *workerGRPCHandler) StartSession(ctx context.Context, req *userCode.Star
 	runner, ok := w.runnerIDsToRuntime[req.RunnerId]
 	w.mu.Unlock()
 	if !ok {
+		w.log.Error("unknwon runner ID", zap.String("id", req.RunnerId))
 		return &userCode.StartSessionResponse{
 			Error: "Unknown runner id",
 		}, nil
@@ -269,6 +279,7 @@ func (s *workerGRPCHandler) Subscribe(ctx context.Context, req *userCode.Subscri
 	runner, ok := w.runnerIDsToRuntime[req.RunnerId]
 	w.mu.Unlock()
 	if !ok {
+		w.log.Error("unknwon runner ID", zap.String("id", req.RunnerId))
 		return &userCode.SubscribeResponse{Error: "unknown runner ID"}, nil
 	}
 
@@ -292,9 +303,11 @@ func (s *workerGRPCHandler) Subscribe(ctx context.Context, req *userCode.Subscri
 
 func (s *workerGRPCHandler) NextEvent(ctx context.Context, req *userCode.NextEventRequest) (*userCode.NextEventResponse, error) {
 	if len(req.SignalIds) == 0 {
+		w.log.Error("empty signal ID")
 		return nil, status.Error(codes.InvalidArgument, "at least one signal ID required")
 	}
 	if req.TimeoutMs < 0 {
+		w.log.Error("bad timeout", zap.Int64("timeout", req.TimeoutMs))
 		return nil, status.Error(codes.InvalidArgument, "timeout < 0")
 	}
 
@@ -302,6 +315,7 @@ func (s *workerGRPCHandler) NextEvent(ctx context.Context, req *userCode.NextEve
 	runner, ok := w.runnerIDsToRuntime[req.RunnerId]
 	w.mu.Unlock()
 	if !ok {
+		w.log.Error("unknwon runner ID", zap.String("id", req.RunnerId))
 		return &userCode.NextEventResponse{Error: "unknown runner ID"}, nil
 	}
 
@@ -350,6 +364,7 @@ func (s *workerGRPCHandler) Unsubscribe(ctx context.Context, req *userCode.Unsub
 	runner, ok := w.runnerIDsToRuntime[req.RunnerId]
 	w.mu.Unlock()
 	if !ok {
+		w.log.Error("unknwon runner ID", zap.String("id", req.RunnerId))
 		return &userCode.UnsubscribeResponse{Error: "Unknown runner id"}, nil
 	}
 
@@ -405,6 +420,7 @@ func (s *workerGRPCHandler) RefreshOAuthToken(ctx context.Context, req *userCode
 	runner, ok := w.runnerIDsToRuntime[req.RunnerId]
 	w.mu.Unlock()
 	if !ok {
+		w.log.Error("unknwon runner ID", zap.String("id", req.RunnerId))
 		return &userCode.RefreshResponse{Error: "unknown runner ID"}, nil
 	}
 
