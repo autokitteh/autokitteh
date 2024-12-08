@@ -14,6 +14,7 @@ if __name__ == "__main__":
     for path in args.code_dir.glob("*.py"):
         if path.name[0] == ".":
             continue
+
         entries = loader.exports(args.code_dir, path.name)
         for name in entries:
             exports.append(
