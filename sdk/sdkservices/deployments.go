@@ -12,7 +12,7 @@ type ListDeploymentsFilter struct {
 	State               sdktypes.DeploymentState
 	Limit               uint32
 	IncludeSessionStats bool
-	OwnerID             sdktypes.OwnerID
+	OrgID               sdktypes.OrgID
 }
 
 type Deployments interface {

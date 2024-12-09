@@ -53,9 +53,9 @@ type DB interface {
 	GetProjectByID(context.Context, sdktypes.ProjectID) (sdktypes.Project, error)
 
 	// Returns sdkerrors.ErrNotFound if not found.
-	GetProjectByName(context.Context, sdktypes.OwnerID, sdktypes.Symbol) (sdktypes.Project, error)
+	GetProjectByName(context.Context, sdktypes.OrgID, sdktypes.Symbol) (sdktypes.Project, error)
 
-	ListProjects(context.Context, sdktypes.OwnerID) ([]sdktypes.Project, error)
+	ListProjects(context.Context, sdktypes.OrgID) ([]sdktypes.Project, error)
 
 	// Returns nill, nil if no resources are set.
 	GetProjectResources(context.Context, sdktypes.ProjectID) (map[string][]byte, error)
@@ -139,8 +139,18 @@ type DB interface {
 
 	// -----------------------------------------------------------------------
 	CreateUser(ctx context.Context, user sdktypes.User) (sdktypes.UserID, error)
-	GetUser(ctx context.Context, uid sdktypes.UserID, email string) (sdktypes.User, error)
+	GetUser(ctx context.Context, uid sdktypes.UserID, name sdktypes.Symbol, email string) (sdktypes.User, error)
 	UpdateUser(ctx context.Context, user sdktypes.User) error
+
+	// -----------------------------------------------------------------------
+	CreateOrg(ctx context.Context, user sdktypes.Org) (sdktypes.OrgID, error)
+	GetOrg(ctx context.Context, oid sdktypes.OrgID, name sdktypes.Symbol) (sdktypes.Org, error)
+	UpdateOrg(ctx context.Context, org sdktypes.Org) error
+	ListOrgMembers(ctx context.Context, oid sdktypes.OrgID) ([]sdktypes.UserID, error)
+	AddOrgMember(ctx context.Context, oid sdktypes.OrgID, uid sdktypes.UserID) error
+	RemoveOrgMember(ctx context.Context, oid sdktypes.OrgID, uid sdktypes.UserID) error
+	IsOrgMember(ctx context.Context, oid sdktypes.OrgID, uid sdktypes.UserID) (bool, error)
+	GetOrgsForUser(ctx context.Context, uid sdktypes.UserID) ([]sdktypes.OrgID, error)
 
 	// -----------------------------------------------------------------------
 	SetSecret(ctx context.Context, key string, value string) error
@@ -153,8 +163,9 @@ type DB interface {
 
 	// -----------------------------------------------------------------------
 
-	// Get the owner id of an object.
-	GetOwner(ctx context.Context, id sdktypes.ID) (sdktypes.OwnerID, error)
+	// Get the org id of an object.
+	// If err is nil, OrgID would always be valid.
+	GetOrgIDOf(ctx context.Context, id sdktypes.ID) (sdktypes.OrgID, error)
 
 	// Get project ID of an object.
 	GetProjectID(ctx context.Context, id sdktypes.ID) (sdktypes.ProjectID, error)

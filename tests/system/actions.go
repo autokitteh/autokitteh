@@ -5,8 +5,6 @@ import (
 	"errors"
 	"strings"
 	"testing"
-
-	"go.autokitteh.dev/autokitteh/config"
 )
 
 type akResult struct {
@@ -32,7 +30,7 @@ func runAction(t *testing.T, akPath, akAddr, step string, cfg *testConfig) (any,
 	case "setenv":
 		return nil, setEnv(strings.TrimSpace(strings.TrimPrefix(step, match[1])))
 	case "ak":
-		args := append(config.ServiceUrlArg(akAddr), cfg.AK.ExtraArgs...)
+		args := append(serviceUrlArg(akAddr), cfg.AK.ExtraArgs...)
 		args = append(args, splitToArgs(match[3])...)
 		return runClient(akPath, args)
 	case "http get", "http post":

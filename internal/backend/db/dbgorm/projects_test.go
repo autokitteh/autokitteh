@@ -19,7 +19,7 @@ func (f *dbFixture) createProjectsAndAssert(t *testing.T, projects ...scheme.Pro
 }
 
 func (f *dbFixture) listProjectsAndAssert(t *testing.T, expected int) []scheme.Project {
-	projects, err := f.gormdb.listProjects(f.ctx, sdktypes.InvalidOwnerID)
+	projects, err := f.gormdb.listProjects(f.ctx, sdktypes.InvalidOrgID)
 	assert.NoError(t, err)
 	assert.Equal(t, expected, len(projects))
 	return projects
@@ -81,7 +81,7 @@ func TestGetProjects(t *testing.T) {
 	assert.Equal(t, p, *project)
 
 	// test getProjectByName
-	project, err = f.gormdb.getProjectByName(f.ctx, sdktypes.InvalidOwnerID, p.Name)
+	project, err = f.gormdb.getProjectByName(f.ctx, sdktypes.InvalidOrgID, p.Name)
 	assert.NoError(t, err)
 	assert.Equal(t, p, *project)
 
@@ -93,7 +93,7 @@ func TestGetProjects(t *testing.T) {
 	assert.ErrorIs(t, err, gorm.ErrRecordNotFound)
 
 	// test getProjectByName after delete
-	_, err = f.gormdb.getProjectByName(f.ctx, sdktypes.InvalidOwnerID, p.Name)
+	_, err = f.gormdb.getProjectByName(f.ctx, sdktypes.InvalidOrgID, p.Name)
 	assert.ErrorIs(t, err, gorm.ErrRecordNotFound)
 }
 

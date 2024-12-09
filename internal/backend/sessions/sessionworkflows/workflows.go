@@ -91,15 +91,21 @@ func (ws *workflows) StartWorkflow(ctx context.Context, session sdktypes.Session
 
 	l := ws.l.Sugar().With("session_id", sessionID)
 
+	oid, err := ws.svcs.DB.GetOrgIDOf(ctx, session.ProjectID())
+	if err != nil {
+		return fmt.Errorf("get org id: %w", err)
+	}
+
 	memo := map[string]string{
+		"process_id":      fixtures.ProcessID(),
 		"session_id":      sessionID.Value().String(),
 		"session_uuid":    sessionID.UUIDValue().String(),
 		"deployment_id":   session.DeploymentID().String(),
 		"deployment_uuid": session.DeploymentID().UUIDValue().String(),
-		"workflow_id":     workflowID(sessionID),
-		"process_id":      fixtures.ProcessID(),
-		"owner_id":        session.OwnerID().String(),
-		"owner_uuid":      session.OwnerID().UUIDValue().String(),
+		"project_id":      session.ProjectID().String(),
+		"project_uuid":    session.ProjectID().UUIDValue().String(),
+		"org_id":          oid.String(),
+		"org_uuid":        oid.UUIDValue().String(),
 	}
 
 	if session.ParentSessionID().IsValid() {

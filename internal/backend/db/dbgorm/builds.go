@@ -25,7 +25,7 @@ func (gdb *gormdb) getBuild(ctx context.Context, buildID sdktypes.UUID) (*scheme
 func (gdb *gormdb) listBuilds(ctx context.Context, filter sdkservices.ListBuildsFilter) ([]scheme.Build, error) {
 	q := gdb.db.WithContext(ctx).Order("created_at desc")
 
-	q = withOwnerID(q, filter.OwnerID)
+	q = withOrgID(q, filter.OrgID)
 
 	if filter.Limit != 0 {
 		q = q.Limit(int(filter.Limit))
@@ -44,11 +44,10 @@ func (db *gormdb) SaveBuild(ctx context.Context, build sdktypes.Build, data []by
 	}
 
 	b := scheme.Build{
-		BuildID:   build.ID().UUIDValue(),
-		ProjectID: uuidPtrOrNil(build.ProjectID()),
-		Data:      data,
-		CreatedAt: build.CreatedAt(),
-		Owned:     ownedBy(build),
+		Base:             based(ctx),
+		BelongsToProject: belongsToProjectID(build.ProjectID()),
+		BuildID:          build.ID().UUIDValue(),
+		Data:             data,
 	}
 
 	return translateError(db.saveBuild(ctx, &b))

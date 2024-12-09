@@ -38,10 +38,11 @@ func (c *client) Create(ctx context.Context, u sdktypes.User) (sdktypes.UserID, 
 	return sdktypes.ParseUserID(resp.Msg.UserId)
 }
 
-func (c *client) Get(ctx context.Context, uid sdktypes.UserID, email string) (sdktypes.User, error) {
+func (c *client) Get(ctx context.Context, uid sdktypes.UserID, name sdktypes.Symbol, email string) (sdktypes.User, error) {
 	resp, err := c.client.Get(ctx, connect.NewRequest(&usersv1.GetRequest{
 		UserId: uid.String(),
 		Email:  email,
+		Name:   name.String(),
 	}))
 	if err != nil {
 		return sdktypes.InvalidUser, rpcerrors.ToSDKError(err)

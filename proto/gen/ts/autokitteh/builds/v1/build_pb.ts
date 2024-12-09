@@ -16,8 +16,6 @@ export class Build extends Message<Build> {
   buildId = "";
 
   /**
-   * optional
-   *
    * @generated from field: string project_id = 2;
    */
   projectId = "";
@@ -26,11 +24,6 @@ export class Build extends Message<Build> {
    * @generated from field: google.protobuf.Timestamp created_at = 3;
    */
   createdAt?: Timestamp;
-
-  /**
-   * @generated from field: string owner_id = 4;
-   */
-  ownerId = "";
 
   constructor(data?: PartialMessage<Build>) {
     super();
@@ -43,7 +36,6 @@ export class Build extends Message<Build> {
     { no: 1, name: "build_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "created_at", kind: "message", T: Timestamp },
-    { no: 4, name: "owner_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Build {

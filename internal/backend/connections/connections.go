@@ -27,7 +27,13 @@ type Connections struct {
 func New(c Connections) sdkservices.Connections { return &c }
 
 func (c *Connections) Create(ctx context.Context, conn sdktypes.Connection) (sdktypes.ConnectionID, error) {
-	if err := authz.CheckContext(ctx, conn.ProjectID(), "write:create-connection", authz.WithData("connection", conn), authz.BelongsToProject(conn)); err != nil {
+	if err := authz.CheckContext(
+		ctx,
+		conn.ProjectID(),
+		"write:create-connection",
+		authz.WithData("connection", conn),
+		authz.WithAssociationWithID("project", conn.ProjectID()),
+	); err != nil {
 		return sdktypes.InvalidConnectionID, err
 	}
 
@@ -83,8 +89,8 @@ func (c *Connections) Delete(ctx context.Context, id sdktypes.ConnectionID) erro
 }
 
 func (c *Connections) List(ctx context.Context, filter sdkservices.ListConnectionsFilter) ([]sdktypes.Connection, error) {
-	if !filter.OwnerID.IsValid() {
-		filter.OwnerID = sdktypes.NewOwnerID(authcontext.GetAuthnInferredUserID(ctx))
+	if !filter.OrgID.IsValid() {
+		filter.OrgID = authcontext.GetAuthnInferredOrgID(ctx)
 	}
 
 	if err := authz.CheckContext(ctx, sdktypes.InvalidConnectionID, "read:list", authz.WithData("filter", filter)); err != nil {

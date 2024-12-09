@@ -20,6 +20,6 @@ var InvalidUserID UserID
 func NewUserID() UserID      { return newID[UserID]() }
 func IsUserID(s string) bool { return IsIDOf[userIDTraits](s) }
 
-func NewTestUserID(email string) UserID {
-	return kittehs.Must1(ParseUserID(newNamedIDString(email, UserIDKind)))
+func NewTestUserID(name string) UserID {
+	return kittehs.Must1(ParseUserID(newNamedIDString(name, UserIDKind)))
 }

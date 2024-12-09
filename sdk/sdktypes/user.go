@@ -19,10 +19,16 @@ type UserTraits struct{}
 func (UserTraits) Validate(m *UserPB) error {
 	return errors.Join(
 		idField[UserID]("user_id", m.UserId),
+		idField[OrgID]("default_org_id", m.DefaultOrgId),
+		symbolField("name", m.Name),
 	)
 }
 
-func (UserTraits) StrictValidate(m *UserPB) error { return nil }
+func (UserTraits) StrictValidate(m *UserPB) error {
+	return errors.Join(
+		mandatory("name", m.Name),
+	)
+}
 
 func UserFromProto(m *UserPB) (User, error) { return FromProto[User](m) }
 
@@ -40,6 +46,8 @@ func (u User) ID() UserID          { return kittehs.Must1(ParseUserID(u.read().U
 func (u User) Email() string       { return u.read().Email }
 func (u User) Disabled() bool      { return u.read().Disabled }
 func (u User) DisplayName() string { return u.read().DisplayName }
+func (u User) Name() Symbol        { return kittehs.Must1(ParseSymbol(u.read().Name)) }
+func (u User) DefaultOrgID() OrgID { return kittehs.Must1(ParseOrgID(u.read().DefaultOrgId)) }
 
 func (u User) WithDisplayName(n string) User {
 	return User{u.forceUpdate(func(m *UserPB) { m.DisplayName = n })}
@@ -47,4 +55,12 @@ func (u User) WithDisplayName(n string) User {
 
 func (u User) WithDisabled(b bool) User {
 	return User{u.forceUpdate(func(m *UserPB) { m.Disabled = b })}
+}
+
+func (u User) WithDefaultOrgID(oid OrgID) User {
+	return User{u.forceUpdate(func(m *UserPB) { m.DefaultOrgId = oid.String() })}
+}
+
+func (u User) WithName(n Symbol) User {
+	return User{u.forceUpdate(func(m *UserPB) { m.Name = n.String() })}
 }

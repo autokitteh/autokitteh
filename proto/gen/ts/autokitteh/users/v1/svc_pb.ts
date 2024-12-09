@@ -86,6 +86,8 @@ export class CreateResponse extends Message<CreateResponse> {
  */
 export class GetRequest extends Message<GetRequest> {
   /**
+   * at least one of these fields must be set.
+   *
    * @generated from field: string user_id = 1;
    */
   userId = "";
@@ -94,6 +96,11 @@ export class GetRequest extends Message<GetRequest> {
    * @generated from field: string email = 2;
    */
   email = "";
+
+  /**
+   * @generated from field: string name = 3;
+   */
+  name = "";
 
   constructor(data?: PartialMessage<GetRequest>) {
     super();
@@ -105,6 +112,7 @@ export class GetRequest extends Message<GetRequest> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetRequest {

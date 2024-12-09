@@ -9,6 +9,9 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
+
+	"github.com/google/uuid"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authloginhttpsvc/web"
@@ -17,6 +20,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authusers"
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -193,7 +197,7 @@ func (a *svc) newSuccessLoginHandler(ctx context.Context, ld *loginData) http.Ha
 		return newErrHandler("email required for login", http.StatusBadRequest)
 	}
 
-	u, err := a.Users.Get(authcontext.SetAuthnSystemUser(ctx), sdktypes.InvalidUserID, ld.Email)
+	u, err := a.Users.Get(authcontext.SetAuthnSystemUser(ctx), sdktypes.InvalidUserID, sdktypes.InvalidSymbol, ld.Email)
 	if err != nil && !errors.Is(err, sdkerrors.ErrNotFound) {
 		sl.With("err", err).Errorf("failed getting user by email: %v", err)
 		return newErrHandler("internal server error", http.StatusInternalServerError)
@@ -222,6 +226,9 @@ func (a *svc) newSuccessLoginHandler(ctx context.Context, ld *loginData) http.Ha
 		}
 
 		u := sdktypes.NewUser(ld.Email).WithDisplayName(ld.DisplayName)
+
+		// TODO: Replace this with a meaningful implementation.
+		u = u.WithName(kittehs.Must1(sdktypes.ParseSymbol(strings.ReplaceAll(uuid.NewString(), "-", ""))))
 
 		if uid, err = a.Users.Create(authcontext.SetAuthnSystemUser(ctx), u); err != nil {
 			sl.With("err", err).Errorf("failed creating user: %v", err)

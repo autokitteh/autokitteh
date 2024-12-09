@@ -10,10 +10,10 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-var name, owner string
+var name, org string
 
 var createCmd = common.StandardCommand(&cobra.Command{
-	Use:     "create [--name project-name] [--owner owner-email-or-id]",
+	Use:     "create [--name project-name] [--org org-name-or-id]",
 	Short:   "Create new project",
 	Aliases: []string{"c"},
 	Args:    cobra.NoArgs,
@@ -28,9 +28,9 @@ var createCmd = common.StandardCommand(&cobra.Command{
 		defer cancel()
 
 		r := resolver.Resolver{Client: common.Client()}
-		_, oid, err := r.Owner(ctx, owner)
+		oid, err := r.Org(ctx, org)
 
-		p := sdktypes.NewProject().WithName(nameSym).WithOwnerID(oid)
+		p := sdktypes.NewProject().WithName(nameSym).WithOrgID(oid)
 
 		id, err := projects().Create(ctx, p)
 		if err != nil {
@@ -44,5 +44,5 @@ var createCmd = common.StandardCommand(&cobra.Command{
 
 func init() {
 	createCmd.Flags().StringVarP(&name, "name", "n", "", "project name")
-	createCmd.Flags().StringVarP(&owner, "owner", "o", "", "project owner email or id")
+	createCmd.Flags().StringVarP(&org, "org", "o", "", "project org name or id")
 }

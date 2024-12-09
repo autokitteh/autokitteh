@@ -104,9 +104,8 @@ func TestCreateSessionForeignKeys(t *testing.T) {
 
 	s2 := f.newSession(sdktypes.SessionStateTypeCompleted)
 
-	s2.BuildID = &p.ProjectID // no such buildID, since it's a projectID
+	s2.BuildID = p.ProjectID // no such buildID, since it's a projectID
 	assert.ErrorIs(t, f.gormdb.createSession(f.ctx, &s2), gorm.ErrForeignKeyViolated)
-	s2.BuildID = nil
 
 	s2.DeploymentID = &p.ProjectID // no such deploymentID, since it's a projectID
 	assert.ErrorIs(t, f.gormdb.createSession(f.ctx, &s2), gorm.ErrForeignKeyViolated)

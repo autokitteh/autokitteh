@@ -131,7 +131,7 @@ func (s *Server) Get(ctx context.Context, req *connect.Request[projectsv1.GetReq
 		return toResponse(s.projects.GetByID(ctx, pid))
 	}
 
-	oid, err := sdktypes.ParseOwnerID(msg.OwnerId)
+	oid, err := sdktypes.ParseOrgID(msg.OrgId)
 	if err != nil {
 		return nil, sdkerrors.AsConnectError(err)
 	}
@@ -155,7 +155,7 @@ func (s *Server) List(ctx context.Context, req *connect.Request[projectsv1.ListR
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	oid, err := sdktypes.ParseOwnerID(req.Msg.OwnerId)
+	oid, err := sdktypes.ParseOrgID(req.Msg.OrgId)
 	if err != nil {
 		return nil, sdkerrors.AsConnectError(err)
 	}

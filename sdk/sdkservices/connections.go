@@ -10,7 +10,7 @@ type ListConnectionsFilter struct {
 	IntegrationID sdktypes.IntegrationID
 	ProjectID     sdktypes.ProjectID
 	StatusCode    sdktypes.StatusCode
-	OwnerID       sdktypes.OwnerID
+	OrgID         sdktypes.OrgID
 }
 
 type Connections interface {

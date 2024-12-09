@@ -9,12 +9,16 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-func (gdb *gormdb) GetUser(ctx context.Context, id sdktypes.UserID, email string) (sdktypes.User, error) {
+func (gdb *gormdb) GetUser(ctx context.Context, id sdktypes.UserID, name sdktypes.Symbol, email string) (sdktypes.User, error) {
 	if id == authusers.DefaultUser.ID() {
 		return authusers.DefaultUser, nil
 	}
 
 	q := gdb.db.WithContext(ctx)
+
+	if !id.IsValid() && email == "" && !name.IsValid() {
+		return sdktypes.InvalidUser, sdkerrors.NewInvalidArgumentError("missing id, email or name")
+	}
 
 	if id.IsValid() {
 		q = q.Where("user_id = ?", id.UUIDValue())
@@ -24,13 +28,17 @@ func (gdb *gormdb) GetUser(ctx context.Context, id sdktypes.UserID, email string
 		q = q.Where("email = ?", email)
 	}
 
+	if name.IsValid() {
+		q = q.Where("name = ?", name.String())
+	}
+
 	var r scheme.User
 	err := q.First(&r).Error
 	if err != nil {
 		return sdktypes.InvalidUser, translateError(err)
 	}
 
-	return scheme.ParseUser(r), nil
+	return scheme.ParseUser(r)
 }
 
 func (gdb *gormdb) CreateUser(ctx context.Context, u sdktypes.User) (sdktypes.UserID, error) {
@@ -42,10 +50,14 @@ func (gdb *gormdb) CreateUser(ctx context.Context, u sdktypes.User) (sdktypes.Us
 	}
 
 	user := scheme.User{
-		UserID:      uid.UUIDValue(),
-		Email:       u.Email(),
-		DisplayName: u.DisplayName(),
-		Disabled:    u.Disabled(),
+		Base: based(ctx),
+
+		UserID:       uid.UUIDValue(),
+		Email:        u.Email(),
+		DisplayName:  u.DisplayName(),
+		Disabled:     u.Disabled(),
+		Name:         u.Name().String(),
+		DefaultOrgID: u.DefaultOrgID().UUIDValue(),
 	}
 
 	err := gdb.db.WithContext(ctx).Create(&user).Error
@@ -61,11 +73,17 @@ func (gdb *gormdb) UpdateUser(ctx context.Context, u sdktypes.User) error {
 		return sdkerrors.NewInvalidArgumentError("missing uid")
 	}
 
+	data := updatedBaseColumns(ctx)
+	data["display_name"] = u.DisplayName()
+	data["name"] = u.Name()
+	data["disabled"] = u.Disabled()
+	data["default_org_id"] = u.DefaultOrgID().UUIDValue()
+
 	return translateError(
 		gdb.db.WithContext(ctx).
 			Model(&scheme.User{}).
-			Update("display_name", u.DisplayName()).Update("disabled", u.Disabled()).
 			Where("user_id = ?", u.ID().UUIDValue()).
+			Updates(data).
 			Error,
 	)
 }

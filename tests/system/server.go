@@ -7,6 +7,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"testing"
 	"time"
 
 	"go.autokitteh.dev/autokitteh/backend/svc"
@@ -22,7 +23,11 @@ const (
 // Start the AK server, as an in-process goroutine rather than a separate
 // subprocess (to support breakpoint debugging, and measure test coverage),
 // unless the environment variable AK_SYSTEST_USE_PROC_SVC is set to "true".
-func startAKServer(ctx context.Context, akPath string, userCfg map[string]any) (svc.Service, string, error) {
+func startAKServer(t *testing.T, ctx context.Context, akPath string, userCfg map[string]any) (svc.Service, string, error) {
+	for _, sc := range seedCommands {
+		t.Logf("seed command: %s", sc)
+	}
+
 	runOpts := svc.RunOptions{Mode: "test"}
 
 	cfgMap := map[string]any{
@@ -32,7 +37,7 @@ func startAKServer(ctx context.Context, akPath string, userCfg map[string]any) (
 		"http.addr":                           ":0",
 		"http.addr_filename":                  serverHTTPAddrFile, // In the test's temporary directory.
 		"authhttpmiddleware.use_default_user": "false",
-		"db.seed_commands":                    seedCommand,
+		"db.seed_commands":                    strings.Join(seedCommands, ";") + ";",
 	}
 
 	maps.Copy(cfgMap, userCfg)

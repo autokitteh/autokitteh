@@ -53,7 +53,13 @@ func (v *Vars) SetConnections(conns sdkservices.Connections) { v.conns = conns }
 // Do not change this behavior - it's useful, even though it's unexpected.
 func (v *Vars) Set(ctx context.Context, vs ...sdktypes.Var) error {
 	for _, va := range vs {
-		if err := authz.CheckContext(ctx, va.ScopeID(), "write:set-var", authz.WithData("var", va), authz.BelongsToProjectOf(va.ScopeID())); err != nil {
+		if err := authz.CheckContext(
+			ctx,
+			va.ScopeID(),
+			"write:set-var",
+			authz.WithData("var", va),
+			authz.WithAssociationWithID("scope", va.ScopeID()),
+		); err != nil {
 			return err
 		}
 	}

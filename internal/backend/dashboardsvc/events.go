@@ -110,7 +110,7 @@ func (s *svc) event(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	projects, err := s.Projects().List(r.Context(), sdktypes.InvalidOwnerID)
+	projects, err := s.Projects().List(r.Context(), sdktypes.InvalidOrgID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

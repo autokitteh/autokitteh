@@ -24,12 +24,6 @@ var (
 		UserId:      kittehs.Must1(sdktypes.ParseUserID("usr_3vser000000000000000000001")).String(),
 		DisplayName: "default",
 	}))
-
-	TestUser = kittehs.Must1(sdktypes.UserFromProto(&sdktypes.UserPB{
-		UserId:      kittehs.Must1(sdktypes.ParseUserID("usr_3vser000000000000000000666")).String(),
-		DisplayName: "test",
-		Email:       "test@example.com",
-	}))
 )
 
 func IsInternalUserID(id sdktypes.UserID) bool {

@@ -72,15 +72,16 @@ func (db *gormdb) SaveEvent(ctx context.Context, event sdktypes.Event) error {
 	}
 
 	e := scheme.Event{
-		EventID:          event.ID().UUIDValue(),
-		DestinationID:    event.DestinationID().UUIDValue(),
-		ConnectionID:     uuidPtrOrNil(connectionID),
-		TriggerID:        uuidPtrOrNil(event.DestinationID().ToTriggerID()),
-		EventType:        event.Type(),
-		Data:             kittehs.Must1(json.Marshal(event.Data())),
-		Memo:             kittehs.Must1(json.Marshal(event.Memo())),
-		CreatedAt:        event.CreatedAt(),
+		Base:             based(ctx),
 		BelongsToProject: belongsToProjectID(pid),
+
+		EventID:       event.ID().UUIDValue(),
+		DestinationID: event.DestinationID().UUIDValue(),
+		ConnectionID:  uuidPtrOrNil(connectionID),
+		TriggerID:     uuidPtrOrNil(event.DestinationID().ToTriggerID()),
+		EventType:     event.Type(),
+		Data:          kittehs.Must1(json.Marshal(event.Data())),
+		Memo:          kittehs.Must1(json.Marshal(event.Memo())),
 	}
 
 	if connectionID.IsValid() { // only if exists

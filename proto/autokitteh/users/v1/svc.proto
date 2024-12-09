@@ -14,8 +14,10 @@ message CreateResponse {
 }
 
 message GetRequest {
+  // at least one of these fields must be set.
   string user_id = 1;
   string email = 2;
+  string name = 3;
 }
 
 message GetResponse {

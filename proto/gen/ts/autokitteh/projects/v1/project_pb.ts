@@ -21,9 +21,9 @@ export class Project extends Message<Project> {
   name = "";
 
   /**
-   * @generated from field: string owner_id = 4;
+   * @generated from field: string org_id = 4;
    */
-  ownerId = "";
+  orgId = "";
 
   constructor(data?: PartialMessage<Project>) {
     super();
@@ -35,7 +35,7 @@ export class Project extends Message<Project> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "owner_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "org_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Project {

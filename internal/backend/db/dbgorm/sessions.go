@@ -67,7 +67,7 @@ func (gdb *gormdb) getSession(ctx context.Context, sessionID sdktypes.UUID) (*sc
 func (gdb *gormdb) listSessions(ctx context.Context, f sdkservices.ListSessionsFilter) ([]scheme.Session, int64, error) {
 	q := gdb.db.WithContext(ctx)
 
-	q = withOwnerID(q, f.OwnerID)
+	q = withOrgID(q, f.OrgID)
 
 	if f.DeploymentID.IsValid() {
 		q = q.Where("deployment_id = ?", f.DeploymentID.UUIDValue())
@@ -317,21 +317,17 @@ func (db *gormdb) CreateSession(ctx context.Context, session sdktypes.Session) e
 		return err
 	}
 
-	now := time.Now()
-
 	s := scheme.Session{
+		Base:             based(ctx),
+		BelongsToProject: belongsToProjectID(session.ProjectID()),
 		SessionID:        session.ID().UUIDValue(),
-		BuildID:          uuidPtrOrNil(session.BuildID()),
-		ProjectID:        uuidPtrOrNil(session.ProjectID()),
+		BuildID:          session.BuildID().UUIDValue(),
 		DeploymentID:     uuidPtrOrNil(session.DeploymentID()),
 		EventID:          uuidPtrOrNil(session.EventID()),
 		Entrypoint:       session.EntryPoint().CanonicalString(),
 		CurrentStateType: int(sdktypes.SessionStateTypeCreated.ToProto()),
 		Inputs:           kittehs.Must1(json.Marshal(session.Inputs())),
 		Memo:             kittehs.Must1(json.Marshal(session.Memo())),
-		Owned:            ownedBy(session),
-		CreatedAt:        now,
-		UpdatedAt:        now,
 	}
 	return translateError(db.createSession(ctx, &s))
 }

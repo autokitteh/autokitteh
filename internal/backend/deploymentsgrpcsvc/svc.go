@@ -58,11 +58,11 @@ func (s *server) List(ctx context.Context, req *connect.Request[deploymentsv1.Li
 	}
 	filter := sdkservices.ListDeploymentsFilter{Limit: req.Msg.Limit}
 
-	oid, err := sdktypes.ParseOwnerID(req.Msg.OwnerId) // Optional
+	oid, err := sdktypes.ParseOrgID(req.Msg.OrgId) // Optional
 	if err != nil {
 		return nil, sdkerrors.AsConnectError(err)
 	}
-	filter.OwnerID = oid
+	filter.OrgID = oid
 
 	bid, err := sdktypes.ParseBuildID(msg.BuildId)
 	if err != nil {

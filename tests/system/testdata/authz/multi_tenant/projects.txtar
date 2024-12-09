@@ -1,57 +1,42 @@
 user zumi
 
-# create a project for zumi
+# create a project for zumi in zumi's personal org.
 ak project create --name pz
 return code == 0
 
-# make sure zumi is its owner
+# make sure zumi is a member of zumi's personal org
 ak project get pz -f
 return code == 0
-output equals_jq .project.owner_id $ZUMI_UID
-capture_jq pz_pid .project_id
+output equals_jq .project.org_id $ZUMI_OID
+capture_jq pz_pid .project.project_id
 
-ak project get $pz_pid -f
+ak project get zumi_org.pz
 return code == 0
-output equals_jq .project.owner_id $ZUMI_UID
 
 user gizmo
 
-# create a project for gizmo
-ak project create --name pg
+# create a project for gizmo in cat's org.
+ak project create --name pg --org $CATS_OID
 return code == 0
 capture_jq pg_pid .project_id
 
-# make sure gizmo is its owner
-ak project get pg -f
-return code == 0
-output equals_jq .project.owner_id $GIZMO_UID
-
 ak project get $pg_pid -f
 return code == 0
-output equals_jq .project.owner_id $GIZMO_UID
+output equals_jq .project.org_id $CATS_OID
 
-# gizmo and zumi should not be able to see each other's projects.
+# zumi should be able to see gizmo's project
 user zumi
-ak project get pg -f
-return code == $RC_NOT_FOUND
-
 ak project get $pg_pid -f
-return code == $RC_NOT_FOUND
+return code == 0
 
+# gizmo should not be able to see zumi's project
 user gizmo
-ak project get pz -f
-return code == $RC_NOT_FOUND
-
 ak project get $pz_pid -f
 return code == $RC_NOT_FOUND
 
-# gizmo cannot create a project owned by zumi and vise versa
+# gizmo cannot create a project on zumi's org
 user gizmo
-ak project create --owner $ZUMI_UID
-return code == $RC_UNAUTHZ
-
-user zumi
-ak project create --owner $GIZMO_UID
+ak project create --org $ZUMI_OID
 return code == $RC_UNAUTHZ
 
 # zumi sees only her projects by default
@@ -62,12 +47,10 @@ output equals_jq .[].name pz
 
 # zumi cannot see gizmo's projects
 user zumi
-ak project list --owner $GIZMO_UID
+ak project list --org $GIZMO_OID
 return code == $RC_UNAUTHZ
 
-exit
-
-# zumi can build, download and export and download their own project
+# zumi can build, download and export their own project
 user zumi
 ak project build pz --file main.star
 return code == 0
@@ -75,22 +58,22 @@ return code == 0
 ak project download pz -f
 return code == 0
 
-ak project download pz -f
+ak project export pz
 return code == 0
 
 # zumi can build, download and export gizmo's project
-ak project build pg --file main.star
+ak project build cats.pg --file main.star
 return code == 0
 
-ak project download pg -f
+ak project download cats.pg -f
 return code == 0
 
-ak project export pg
+ak project export cats.pg
 return code == 0
 
 # zumi can delete both her and gizmo's projects
 user zumi
-ak project delete pg
+ak project delete cats.pg
 return code == 0
 
 ak project delete pz
@@ -121,9 +104,6 @@ ak project export test
 return code == $RC_UNAUTHN
 
 -- test-config.yaml --
-exclusive: true
-server: 
-    opapolicy.config_path: "!multi_tenant"
 ak:
     extra_args: ["-j", "--array_json_list"]
 

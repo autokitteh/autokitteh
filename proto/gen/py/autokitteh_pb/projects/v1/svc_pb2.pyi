@@ -31,14 +31,14 @@ class DeleteResponse(_message.Message):
     def __init__(self) -> None: ...
 
 class GetRequest(_message.Message):
-    __slots__ = ["project_id", "name", "owner_id"]
+    __slots__ = ["project_id", "name", "org_id"]
     PROJECT_ID_FIELD_NUMBER: _ClassVar[int]
     NAME_FIELD_NUMBER: _ClassVar[int]
-    OWNER_ID_FIELD_NUMBER: _ClassVar[int]
+    ORG_ID_FIELD_NUMBER: _ClassVar[int]
     project_id: str
     name: str
-    owner_id: str
-    def __init__(self, project_id: _Optional[str] = ..., name: _Optional[str] = ..., owner_id: _Optional[str] = ...) -> None: ...
+    org_id: str
+    def __init__(self, project_id: _Optional[str] = ..., name: _Optional[str] = ..., org_id: _Optional[str] = ...) -> None: ...
 
 class GetResponse(_message.Message):
     __slots__ = ["project"]
@@ -57,10 +57,10 @@ class UpdateResponse(_message.Message):
     def __init__(self) -> None: ...
 
 class ListRequest(_message.Message):
-    __slots__ = ["owner_id"]
-    OWNER_ID_FIELD_NUMBER: _ClassVar[int]
-    owner_id: str
-    def __init__(self, owner_id: _Optional[str] = ...) -> None: ...
+    __slots__ = ["org_id"]
+    ORG_ID_FIELD_NUMBER: _ClassVar[int]
+    org_id: str
+    def __init__(self, org_id: _Optional[str] = ...) -> None: ...
 
 class ListResponse(_message.Message):
     __slots__ = ["projects"]

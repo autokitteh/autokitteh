@@ -122,11 +122,11 @@ func (s *server) List(ctx context.Context, req *connect.Request[connectionsv1.Li
 	}
 	f.StatusCode = code
 
-	oid, err := sdktypes.ParseOwnerID(req.Msg.OwnerId) // Optional
+	oid, err := sdktypes.ParseOrgID(req.Msg.OrgId) // Optional
 	if err != nil {
 		return nil, sdkerrors.AsConnectError(err)
 	}
-	f.OwnerID = oid
+	f.OrgID = oid
 
 	cs, err := s.connections.List(ctx, f)
 	if err != nil {

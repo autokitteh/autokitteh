@@ -327,13 +327,24 @@ func (r Resolver) projectByID(ctx context.Context, id string) (p sdktypes.Projec
 }
 
 func (r Resolver) projectByName(ctx context.Context, name string) (p sdktypes.Project, pid sdktypes.ProjectID, err error) {
+	org, proj, ok := strings.Cut(name, ".")
+	if !ok {
+		org, proj = "", name
+	}
+
 	var n sdktypes.Symbol
-	if n, err = sdktypes.Strict(sdktypes.ParseSymbol(name)); err != nil {
+	if n, err = sdktypes.Strict(sdktypes.ParseSymbol(proj)); err != nil {
 		err = fmt.Errorf("invalid project name %q: %w", name, err)
 		return
 	}
 
-	p, err = r.Client.Projects().GetByName(ctx, sdktypes.InvalidOwnerID, n)
+	var oid sdktypes.OrgID
+	oid, err = r.Org(ctx, org)
+	if err != nil {
+		return
+	}
+
+	p, err = r.Client.Projects().GetByName(ctx, oid, n)
 	err = translateError(err, p, "project", name)
 	pid = p.ID()
 	return
@@ -357,42 +368,56 @@ func (r Resolver) SessionID(ctx context.Context, id string) (s sdktypes.Session,
 	return
 }
 
-// UserEmailOrID returns a email, based on the given email or
-// ID. If the input is empty, we return nil but not an error.
-func (r Resolver) UserEmailOrID(ctx context.Context, emailOrID string) (u sdktypes.User, uid sdktypes.UserID, err error) {
-	if emailOrID == "" {
+func (r Resolver) User(ctx context.Context, nameEmailOrID string) (u sdktypes.User, uid sdktypes.UserID, err error) {
+	if nameEmailOrID == "" {
 		return
 	}
 
-	if sdktypes.IsUserID(emailOrID) {
-		return r.UserID(ctx, emailOrID)
+	var (
+		email string
+		name  sdktypes.Symbol
+	)
+
+	if sdktypes.IsUserID(nameEmailOrID) {
+		if uid, err = sdktypes.StrictParseUserID(nameEmailOrID); err != nil {
+			err = fmt.Errorf("invalid user ID %q: %w", nameEmailOrID, err)
+			return
+		}
+	} else if strings.Contains(nameEmailOrID, "@") {
+		email = nameEmailOrID
+	} else if name, err = sdktypes.Strict(sdktypes.ParseSymbol(nameEmailOrID)); err != nil {
+		err = fmt.Errorf("invalid user name %q: %w", nameEmailOrID, err)
+		return
 	}
 
-	u, err = r.Client.Users().Get(ctx, sdktypes.InvalidUserID, emailOrID)
-	err = translateError(err, u, "user", emailOrID)
+	u, err = r.Client.Users().Get(ctx, uid, name, email)
+	if u.IsValid() {
+		uid = u.ID()
+	}
+	err = translateError(err, u, "user", nameEmailOrID)
 	return
 }
 
-func (r Resolver) Owner(ctx context.Context, emailOrID string) (u sdktypes.User, oid sdktypes.OwnerID, err error) {
-	// In the future might support orgs.
-	u, uid, err := r.UserEmailOrID(ctx, emailOrID)
-	return u, sdktypes.NewOwnerID(uid), err
-}
-
-// UserID returns a user, based on the given ID.
-// If the input is empty, we return nil but not an error.
-func (r Resolver) UserID(ctx context.Context, id string) (u sdktypes.User, uid sdktypes.UserID, err error) {
-	if id == "" {
-		err = errors.New("missing user ID")
+func (r Resolver) Org(ctx context.Context, org string) (oid sdktypes.OrgID, err error) {
+	if org == "" {
 		return
 	}
 
-	if uid, err = sdktypes.StrictParseUserID(id); err != nil {
-		err = fmt.Errorf("invalid user ID %q: %w", id, err)
+	if sdktypes.IsID(org) {
+		return sdktypes.ParseOrgID(org)
+	}
+
+	n, err := sdktypes.Strict(sdktypes.ParseSymbol(org))
+	if err != nil {
+		err = fmt.Errorf("invalid org name %q: %w", org, err)
 		return
 	}
 
-	u, err = r.Client.Users().Get(ctx, uid, "")
-	err = translateError(err, u, "user", id)
+	o, err := r.Client.Orgs().GetByName(ctx, n)
+	if err != nil {
+		err = translateError(err, o, "org", org)
+		return
+	}
+	oid = o.ID()
 	return
 }

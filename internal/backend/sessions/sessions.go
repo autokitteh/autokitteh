@@ -91,8 +91,8 @@ func (s *sessions) Stop(ctx context.Context, sessionID sdktypes.SessionID, reaso
 }
 
 func (s *sessions) List(ctx context.Context, filter sdkservices.ListSessionsFilter) (*sdkservices.ListSessionResult, error) {
-	if !filter.OwnerID.IsValid() {
-		filter.OwnerID = sdktypes.NewOwnerID(authcontext.GetAuthnInferredUserID(ctx))
+	if !filter.OrgID.IsValid() {
+		filter.OrgID = authcontext.GetAuthnInferredOrgID(ctx)
 	}
 
 	if err := authz.CheckContext(ctx, sdktypes.InvalidSessionID, "list"); err != nil {
@@ -127,9 +127,13 @@ func (s *sessions) Delete(ctx context.Context, sessionID sdktypes.SessionID) err
 }
 
 func (s *sessions) Start(ctx context.Context, session sdktypes.Session) (sdktypes.SessionID, error) {
-	session = authcontext.ObjectWithOwnerID(ctx, session)
-
-	if err := authz.CheckContext(ctx, sdktypes.InvalidSessionID, "create:start", authz.WithData("session", session), authz.BelongsToProject(session)); err != nil {
+	if err := authz.CheckContext(
+		ctx,
+		sdktypes.InvalidSessionID,
+		"create:start",
+		authz.WithData("session", session),
+		authz.WithAssociationWithID("project", session.ProjectID()),
+	); err != nil {
 		return sdktypes.InvalidSessionID, err
 	}
 

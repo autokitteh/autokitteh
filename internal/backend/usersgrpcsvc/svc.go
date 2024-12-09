@@ -61,7 +61,12 @@ func (s *server) Get(ctx context.Context, req *connect.Request[usersv1.GetReques
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	u, err := s.users.Get(ctx, uid, msg.Email)
+	n, err := sdktypes.ParseSymbol(msg.Name)
+	if err != nil {
+		return nil, sdkerrors.AsConnectError(err)
+	}
+
+	u, err := s.users.Get(ctx, uid, n, msg.Email)
 	if err != nil {
 		return nil, sdkerrors.AsConnectError(err)
 	}

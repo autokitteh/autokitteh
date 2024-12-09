@@ -34,17 +34,17 @@ func GetAuthnUserID(ctx context.Context) sdktypes.UserID {
 	return GetAuthnUser(ctx).ID()
 }
 
-// Use this function to fill default owner id for queries.
+// Use this function to fill default org id for queries.
 // In such queries we do not need to query for system users, but all users.
-// If the user is not authenticated, it will return InvalidOwnerID.
-// If the user is a system user, it will return InvalidOwnerID.
+// If the user is not authenticated, it will return InvalidOrg	ID.
+// If the user is a system user, it will return InvalidOrgID.
 // Otherwise, will return the user's id.
-func GetAuthnInferredUserID(ctx context.Context) sdktypes.UserID {
+func GetAuthnInferredOrgID(ctx context.Context) sdktypes.OrgID {
 	if IsAuthnSystemUser(ctx) {
-		return sdktypes.InvalidUserID
+		return sdktypes.InvalidOrgID
 	}
 
-	return GetAuthnUserID(ctx)
+	return GetAuthnUser(ctx).DefaultOrgID()
 }
 
 func SetAuthnSystemUser(ctx context.Context) context.Context {
@@ -57,19 +57,19 @@ func IsAuthnSystemUser(ctx context.Context) bool {
 
 // If `o` has an owner, return unmodified.
 // Otherwise, set the owner to the authenticated user.
-func ObjectWithOwnerID[O interface {
-	OwnerID() sdktypes.OwnerID
-	WithOwnerID(sdktypes.OwnerID) O
+func ObjectWithOrgID[O interface {
+	OrgID() sdktypes.OrgID
+	WithOrgID(sdktypes.OrgID) O
 }](ctx context.Context, o O) O {
-	if o.OwnerID().IsValid() {
+	if o.OrgID().IsValid() {
 		return o
 	}
 
-	uid := GetAuthnInferredUserID(ctx)
+	oid := GetAuthnInferredOrgID(ctx)
 
-	if !uid.IsValid() {
-		sdklogger.DPanic("no owner id")
+	if !oid.IsValid() {
+		sdklogger.DPanic("no org id")
 	}
 
-	return o.WithOwnerID(sdktypes.NewOwnerID(uid))
+	return o.WithOrgID(oid)
 }

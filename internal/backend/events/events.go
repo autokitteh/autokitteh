@@ -38,7 +38,13 @@ func (e *events) List(ctx context.Context, filter sdkservices.ListEventsFilter) 
 }
 
 func (e *events) Save(ctx context.Context, event sdktypes.Event) (sdktypes.EventID, error) {
-	if err := authz.CheckContext(ctx, sdktypes.InvalidEventID, "create:save", authz.WithData("event", event), authz.BelongsToProjectOf(event.DestinationID().AsID())); err != nil {
+	if err := authz.CheckContext(
+		ctx,
+		sdktypes.InvalidEventID,
+		"create:save",
+		authz.WithData("event", event),
+		authz.WithAssociationWithID("destination", event.DestinationID().AsID()),
+	); err != nil {
 		return sdktypes.InvalidEventID, err
 	}
 

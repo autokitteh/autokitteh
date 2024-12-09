@@ -3,6 +3,7 @@ package dbgorm
 import (
 	"context"
 	"fmt"
+	"maps"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -76,7 +77,7 @@ func (gdb *gormdb) getConnections(ctx context.Context, ids ...sdktypes.UUID) ([]
 func (gdb *gormdb) listConnections(ctx context.Context, filter sdkservices.ListConnectionsFilter, idsOnly bool) ([]scheme.Connection, error) {
 	q := gdb.db.WithContext(ctx)
 
-	q = withProjectOwnerID(q, "connections", filter.OwnerID)
+	q = withProjectOrgID(q, "connections", filter.OrgID)
 
 	if filter.IntegrationID.IsValid() {
 		q = q.Where("integration_id = ?", filter.IntegrationID.UUIDValue())
@@ -102,12 +103,14 @@ func (db *gormdb) CreateConnection(ctx context.Context, conn sdktypes.Connection
 	}
 
 	c := scheme.Connection{
-		ConnectionID:     conn.ID().UUIDValue(),
-		IntegrationID:    uuidPtrOrNil(conn.IntegrationID()),
+		Base:             based(ctx),
 		BelongsToProject: belongsToProjectIDOf(conn),
-		Name:             conn.Name().String(),
-		StatusCode:       int32(conn.Status().Code().ToProto()),
-		StatusMessage:    conn.Status().Message(),
+
+		ConnectionID:  conn.ID().UUIDValue(),
+		IntegrationID: uuidPtrOrNil(conn.IntegrationID()),
+		Name:          conn.Name().String(),
+		StatusCode:    int32(conn.Status().Code().ToProto()),
+		StatusMessage: conn.Status().Message(),
 	}
 
 	return translateError(db.createConnection(ctx, &c))
@@ -130,6 +133,9 @@ func (db *gormdb) UpdateConnection(ctx context.Context, conn sdktypes.Connection
 		data["status_code"] = int32(conn.Status().Code().ToProto())
 		data["status_message"] = conn.Status().Message()
 	}
+
+	maps.Copy(data, updatedBaseColumns(ctx))
+
 	if len(data) == 0 {
 		return nil
 	}

@@ -15,7 +15,7 @@ message GetResponse {
 
 message ListRequest {
   uint32 limit = 1;
-  string owner_id = 2;
+  string org_id = 2;
 }
 
 message ListResponse {

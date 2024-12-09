@@ -61,7 +61,7 @@ func newTokensMiddleware(next http.Handler, deps Deps) http.HandlerFunc {
 					}
 
 					// make sure the user exists.
-					u, err = deps.Users.Get(authcontext.SetAuthnSystemUser(r.Context()), u.ID(), "")
+					u, err = deps.Users.Get(authcontext.SetAuthnSystemUser(r.Context()), u.ID(), sdktypes.InvalidSymbol, "")
 					if err != nil {
 						http.Error(w, "unknown user", http.StatusUnauthorized)
 						return
@@ -98,7 +98,7 @@ func newSessionsMiddleware(next http.Handler, sessions authsessions.Store, users
 			}
 
 			if session != nil {
-				u, err := users.Get(authcontext.SetAuthnSystemUser(ctx), session.UserID, "")
+				u, err := users.Get(authcontext.SetAuthnSystemUser(ctx), session.UserID, sdktypes.InvalidSymbol, "")
 				if err != nil {
 					http.Error(w, "invalid user", http.StatusUnauthorized)
 					return

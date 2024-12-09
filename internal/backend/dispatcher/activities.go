@@ -51,6 +51,7 @@ type sessionData struct {
 	CodeLocation sdktypes.CodeLocation
 	Trigger      sdktypes.Trigger
 	Connection   sdktypes.Connection
+	OrgID        sdktypes.OrgID
 }
 
 func (d *Dispatcher) listWaitingSignalsActivity(ctx context.Context, dstid sdktypes.EventDestinationID) ([]*types.Signal, error) {
@@ -59,14 +60,6 @@ func (d *Dispatcher) listWaitingSignalsActivity(ctx context.Context, dstid sdkty
 }
 
 func (d *Dispatcher) startSessionActivity(ctx context.Context, session sdktypes.Session) (sdktypes.SessionID, error) {
-	// When starting from a dispatcher, the owner of the session is the owner of the project that the session is associated with.
-	oid, err := d.svcs.DB.GetOwner(ctx, session.ProjectID())
-	if err != nil {
-		return sdktypes.InvalidSessionID, temporalclient.TranslateError(err, "get owner for %v", session.ProjectID())
-	}
-
-	session = session.WithOwnerID(oid)
-
 	sid, err := d.svcs.Sessions.Start(authcontext.SetAuthnSystemUser(ctx), session)
 	return sid, temporalclient.TranslateError(err, "start session %v", session.ID())
 }
@@ -107,6 +100,12 @@ func (d *Dispatcher) getEventSessionDataActivity(ctx context.Context, event sdkt
 	if len(ts) == 0 {
 		sl.Infof("no triggers for event %v", eid)
 		return nil, nil
+	}
+
+	oid, err := d.svcs.DB.GetOrgIDOf(ctx, dstid)
+	if err != nil {
+		sl.With("err", err).Errorf("get org id for %v: %v", dstid, err)
+		return nil, temporalclient.TranslateError(err, "get org id for %v", dstid)
 	}
 
 	pid, err := d.svcs.DB.GetProjectID(ctx, dstid)
@@ -196,7 +195,7 @@ func (d *Dispatcher) getEventSessionDataActivity(ctx context.Context, event sdkt
 
 		cl := t.CodeLocation()
 		for _, dep := range deployments {
-			sds = append(sds, sessionData{Deployment: dep, CodeLocation: cl, Trigger: t, Connection: c})
+			sds = append(sds, sessionData{Deployment: dep, CodeLocation: cl, Trigger: t, Connection: c, OrgID: oid})
 			sl.Infof("relevant deployment %v found for %v", dep.ID(), eid)
 		}
 	}

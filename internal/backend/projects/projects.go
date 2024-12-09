@@ -24,12 +24,11 @@ import (
 type Projects struct {
 	fx.In
 
-	Z              *zap.Logger
-	DB             db.DB
-	Builds         sdkservices.Builds
-	Runtimes       sdkservices.Runtimes
-	Integrations   sdkservices.Integrations
-	GlobalSettings *authz.GlobalSettings
+	Z            *zap.Logger
+	DB           db.DB
+	Builds       sdkservices.Builds
+	Runtimes     sdkservices.Runtimes
+	Integrations sdkservices.Integrations
 }
 
 func New(p Projects, telemetry *telemetry.Telemetry) sdkservices.Projects {
@@ -48,7 +47,7 @@ func (ps *Projects) Create(ctx context.Context, project sdktypes.Project) (sdkty
 		return sdktypes.InvalidProjectID, err
 	}
 
-	project = authcontext.ObjectWithOwnerID(ctx, project)
+	project = authcontext.ObjectWithOrgID(ctx, project)
 
 	if err := authz.CheckContext(ctx, sdktypes.InvalidProjectID, "create:create", authz.WithData("project", project)); err != nil {
 		return sdktypes.InvalidProjectID, err
@@ -79,20 +78,16 @@ func (ps *Projects) Update(ctx context.Context, project sdktypes.Project) error 
 }
 
 func (ps *Projects) GetByID(ctx context.Context, pid sdktypes.ProjectID) (sdktypes.Project, error) {
-	if err := authz.CheckContext(ctx, pid, "read:get"); err != nil {
+	if err := authz.CheckContext(ctx, pid, "read:get", authz.WithConvertForbiddenToNotFound); err != nil {
 		return sdktypes.InvalidProject, err
 	}
 
 	return ps.DB.GetProjectByID(ctx, pid)
 }
 
-func (ps *Projects) GetByName(ctx context.Context, oid sdktypes.OwnerID, n sdktypes.Symbol) (sdktypes.Project, error) {
+func (ps *Projects) GetByName(ctx context.Context, oid sdktypes.OrgID, n sdktypes.Symbol) (sdktypes.Project, error) {
 	if !oid.IsValid() {
-		oid = ps.GlobalSettings.DefaultOwnerFromAuthn(ctx)
-	}
-
-	if err := authz.CheckContext(ctx, sdktypes.InvalidProjectID, "read:resolve", authz.WithData("owner_id", oid)); err != nil {
-		return sdktypes.InvalidProject, err
+		oid = authcontext.GetAuthnInferredOrgID(ctx)
 	}
 
 	p, err := ps.DB.GetProjectByName(ctx, oid, n)
@@ -100,23 +95,23 @@ func (ps *Projects) GetByName(ctx context.Context, oid sdktypes.OwnerID, n sdkty
 		return sdktypes.InvalidProject, err
 	}
 
-	if err := authz.CheckContext(ctx, p.ID(), "read:get"); err != nil {
+	if err := authz.CheckContext(ctx, p.ID(), "read:get", authz.WithConvertForbiddenToNotFound); err != nil {
 		return sdktypes.InvalidProject, err
 	}
 
 	return p, nil
 }
 
-func (ps *Projects) List(ctx context.Context, oid sdktypes.OwnerID) ([]sdktypes.Project, error) {
+func (ps *Projects) List(ctx context.Context, oid sdktypes.OrgID) ([]sdktypes.Project, error) {
 	if !oid.IsValid() {
-		oid = ps.GlobalSettings.DefaultOwnerFromAuthn(ctx)
+		oid = authcontext.GetAuthnInferredOrgID(ctx)
 	}
 
 	if err := authz.CheckContext(
 		ctx,
 		sdktypes.InvalidProjectID,
 		"read:list",
-		authz.WithData("filter", map[string]string{"owner_id": oid.String()}),
+		authz.WithData("filter", map[string]string{"org_id": oid.String()}),
 	); err != nil {
 		return nil, err
 	}
@@ -127,7 +122,7 @@ func (ps *Projects) List(ctx context.Context, oid sdktypes.OwnerID) ([]sdktypes.
 func (ps *Projects) Build(ctx context.Context, projectID sdktypes.ProjectID) (sdktypes.BuildID, error) {
 	// Permission is read since it's reading from the project data. A separate check will be done
 	// in the builds storage component for creation of a new build.
-	if err := authz.CheckContext(ctx, projectID, "read:build"); err != nil {
+	if err := authz.CheckContext(ctx, projectID, "write:build"); err != nil {
 		return sdktypes.InvalidBuildID, err
 	}
 

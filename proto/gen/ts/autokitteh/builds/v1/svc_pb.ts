@@ -91,9 +91,9 @@ export class ListRequest extends Message<ListRequest> {
   limit = 0;
 
   /**
-   * @generated from field: string owner_id = 2;
+   * @generated from field: string org_id = 2;
    */
-  ownerId = "";
+  orgId = "";
 
   constructor(data?: PartialMessage<ListRequest>) {
     super();
@@ -104,7 +104,7 @@ export class ListRequest extends Message<ListRequest> {
   static readonly typeName = "autokitteh.builds.v1.ListRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "limit", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
-    { no: 2, name: "owner_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "org_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListRequest {
