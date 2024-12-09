@@ -13,17 +13,24 @@ type Config struct {
 	LogBuildCode      bool `koanf:"log_build_code"`
 
 	RunnerType string `koanf:"runner_type"`
+
+	CPUPerContainer      float32 `koanf:"cpu_per_container"`
+	MemoryPerContainerMB uint32  `koanf:"memory_per_container_mb"`
 }
 
 var Configs = configset.Set[Config]{
 	Default: &Config{
-		RunnerType: "local",
+		RunnerType:           "local",
+		CPUPerContainer:      0.5,
+		MemoryPerContainerMB: 128,
 	},
 	Test: &Config{
 		LazyLoadLocalVEnv: true,
 	},
 	Dev: &Config{
-		LogRunnerCode: true,
-		LogBuildCode:  true,
+		LogRunnerCode:        true,
+		LogBuildCode:         true,
+		CPUPerContainer:      1.0,
+		MemoryPerContainerMB: 128,
 	},
 }
