@@ -309,6 +309,21 @@ func New(l *zap.Logger) sdkservices.OAuth {
 					"offline_access",
 				},
 			},
+			"salesforce": {
+				ClientID:     os.Getenv("SALESFORCE_CLIENT_ID"),
+				ClientSecret: os.Getenv("SALESFORCE_CLIENT_SECRET"),
+				Endpoint: oauth2.Endpoint{
+					// https://help.salesforce.com/s/articleView?id=sf.remoteaccess_oauth_endpoints.htm&type=5
+					AuthURL:  "https://login.salesforce.com/services/oauth2/authorize",
+					TokenURL: "https://login.salesforce.com/services/oauth2/token",
+				},
+				RedirectURL: redirectURL + "salesforce",
+				Scopes: []string{
+					// https://help.salesforce.com/s/articleView?id=sf.remoteaccess_oauth_tokens_scopes.htm&type=5
+					// TODO(ENG-1832): narrow down scopes.
+					"full",
+				},
+			},
 
 			// Based on:
 			// https://api.slack.com/apps/A05F30M6W3H
