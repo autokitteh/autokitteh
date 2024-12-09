@@ -21,7 +21,7 @@ type Config struct {
 var Configs = configset.Set[Config]{
 	Default: &Config{
 		RunnerType:           "local",
-		CPUPerContainer:      0.5,
+		CPUPerContainer:      1.0,
 		MemoryPerContainerMB: 128,
 	},
 	Test: &Config{
