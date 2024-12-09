@@ -102,8 +102,10 @@ func New(cfg *Config, l *zap.Logger, getLocalAddr func() string) (*sdkruntimes.R
 			return nil, errors.New("worker address is required for docker runner")
 		}
 		if err := configureDockerRunnerManager(l, DockerRuntimeConfig{
-			LogRunnerCode: cfg.LogRunnerCode,
-			LogBuildCode:  cfg.LogBuildCode,
+			LogRunnerCode:        cfg.LogRunnerCode,
+			LogBuildCode:         cfg.LogBuildCode,
+			CPUPerContainer:      cfg.CPUPerContainer,
+			MemoryPerContainerMB: cfg.MemoryPerContainerMB,
 			WorkerAddressProvider: func() string {
 				_, port, _ := net.SplitHostPort(getLocalAddr())
 				return fmt.Sprintf("%s:%s", cfg.WorkerAddress, port)
