@@ -110,6 +110,14 @@ def killIfStartWasntCalled(runner):
         os._exit(1)
 
 
+def abort_with_exception(context, status, err):
+    io = StringIO()
+    print(err, file=io)
+    for line in format_exception(err):
+        io.write(line)
+    context.abort(status, io.getvalue())
+
+
 class Runner(runner_rpc.RunnerService):
     def __init__(self, id, worker, code_dir, server):
         self.id = id
@@ -136,7 +144,7 @@ class Runner(runner_rpc.RunnerService):
         try:
             exports = list(loader.exports(self.code_dir, request.file_name))
         except OSError as err:
-            context.abort(grpc.StatusCode.INVALID_ARGUMENT, str(err))
+            abort_with_exception(context, grpc.StatusCode.INVALID_ARGUMENT, err)
 
         return pb_runner.ExportsResponse(exports=exports)
 
@@ -245,7 +253,7 @@ class Runner(runner_rpc.RunnerService):
             call_id, result = pickle.loads(resp.data)
         except Exception as err:
             log.exception(f"can't decode data: pickle: {err}")
-            context.abort(grpc.StatusCode.INTERNAL, f"result pickle: {err}")
+            abort_with_exception(context, grpc.StatusCode.INTERNAL, err)
 
         with self.lock:
             fut = self.replies.pop(call_id, None)
