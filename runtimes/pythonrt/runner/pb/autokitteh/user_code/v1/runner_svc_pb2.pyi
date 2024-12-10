@@ -13,13 +13,25 @@ class ExportsRequest(_message.Message):
     file_name: str
     def __init__(self, file_name: _Optional[str] = ...) -> None: ...
 
+class Export(_message.Message):
+    __slots__ = ["file", "line", "name", "args"]
+    FILE_FIELD_NUMBER: _ClassVar[int]
+    LINE_FIELD_NUMBER: _ClassVar[int]
+    NAME_FIELD_NUMBER: _ClassVar[int]
+    ARGS_FIELD_NUMBER: _ClassVar[int]
+    file: str
+    line: int
+    name: str
+    args: _containers.RepeatedScalarFieldContainer[str]
+    def __init__(self, file: _Optional[str] = ..., line: _Optional[int] = ..., name: _Optional[str] = ..., args: _Optional[_Iterable[str]] = ...) -> None: ...
+
 class ExportsResponse(_message.Message):
     __slots__ = ["exports", "error"]
     EXPORTS_FIELD_NUMBER: _ClassVar[int]
     ERROR_FIELD_NUMBER: _ClassVar[int]
-    exports: _containers.RepeatedScalarFieldContainer[str]
+    exports: _containers.RepeatedCompositeFieldContainer[Export]
     error: str
-    def __init__(self, exports: _Optional[_Iterable[str]] = ..., error: _Optional[str] = ...) -> None: ...
+    def __init__(self, exports: _Optional[_Iterable[_Union[Export, _Mapping]]] = ..., error: _Optional[str] = ...) -> None: ...
 
 class StartRequest(_message.Message):
     __slots__ = ["entry_point", "event"]

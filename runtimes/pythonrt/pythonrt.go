@@ -16,6 +16,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/internal/xdg"
+	pbModule "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/module/v1"
 	pbUserCode "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/user_code/v1"
 	pbValues "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/values/v1"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
@@ -178,14 +179,23 @@ var pyModuleFunc = kittehs.Must1(sdktypes.ModuleFunctionFromProto(&sdktypes.Modu
 	},
 }))
 
-func entriesToValues(xid sdktypes.ExecutorID, entries []string) (map[string]sdktypes.Value, error) {
+func entriesToValues(xid sdktypes.ExecutorID, entries []*pbUserCode.Export) (map[string]sdktypes.Value, error) {
 	values := make(map[string]sdktypes.Value)
-	for _, name := range entries {
-		fn, err := sdktypes.NewFunctionValue(xid, name, nil, nil, pyModuleFunc)
+	for _, export := range entries {
+		modPB := sdktypes.ModuleFunctionPB{
+			Input: make([]*pbModule.FunctionField, len(export.Args)),
+		}
+
+		for i, name := range export.Args {
+			modPB.Input[i].Name = name
+		}
+
+		modFunc := kittehs.Must1(sdktypes.ModuleFunctionFromProto(&modPB))
+		fn, err := sdktypes.NewFunctionValue(xid, export.Name, nil, nil, modFunc)
 		if err != nil {
 			return nil, err
 		}
-		values[name] = fn
+		values[export.Name] = fn
 	}
 
 	return values, nil
