@@ -112,17 +112,37 @@ func printViolationJSONPretty(w io.Writer, v *projectsv1.CheckViolation) {
 	enc.Encode(m) //nolint:errcheck
 }
 
+const maxFiles = 1024
+
 func runLint(cmd *cobra.Command, args []string) error {
 	r := resolver.Resolver{Client: common.Client()}
 	ctx, cancel := common.LimitedContext()
 	defer cancel()
+
+	w := cmd.OutOrStdout()
+	printViolation := printViolationText
+	if cmd.Flags().Lookup("json").Changed {
+		printViolation = printViolationJSON
+	} else if cmd.Flags().Lookup("nice_json").Changed {
+		printViolation = printViolationJSONPretty
+	}
+	manifestFile := path.Base(lintOpts.manifestPath)
 
 	resources, err := buildResources()
 	if err != nil {
 		return err
 	}
 
-	manifestFile := path.Base(lintOpts.manifestPath)
+	if len(resources) > maxFiles {
+		v := projectsv1.CheckViolation{
+			FileName: manifestFile,
+			Level:    projectsv1.CheckViolation_LEVEL_WARNING,
+			Message:  "outdated manifest",
+		}
+		printViolation(w, &v)
+		return fmt.Errorf("too many files (%d > %d)", len(resources), maxFiles)
+	}
+
 	m, err := getManifest(resources, manifestFile)
 	if err != nil {
 		return err
@@ -132,14 +152,6 @@ func runLint(cmd *cobra.Command, args []string) error {
 	projectNameOrID, err := findProjectNameOrID(lintOpts.projectNameOrID, projectDir, m)
 	if err != nil {
 		return err
-	}
-
-	w := cmd.OutOrStdout()
-	printViolation := printViolationText
-	if cmd.Flags().Lookup("json").Changed {
-		printViolation = printViolationJSON
-	} else if cmd.Flags().Lookup("nice_json").Changed {
-		printViolation = printViolationJSONPretty
 	}
 
 	_, projectID, err := r.ProjectNameOrID(ctx, projectNameOrID)
