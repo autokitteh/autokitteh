@@ -1,6 +1,7 @@
 package projects
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -83,11 +84,32 @@ func findProjectNameOrID(projectNameOrID string, projectDir string, m *manifest.
 	return "", fmt.Errorf("can't determine project name or ID")
 }
 
-func printViolation(w io.Writer, v *projectsv1.CheckViolation) {
-	// TODO: JSON?
+// We can't use common.Render since it's a different text representation
+func printViolationText(w io.Writer, v *projectsv1.CheckViolation) {
 	level := levelName(v.Level)
 	// FIXME (ENG-1867): RuleId arrives as empty string.
 	fmt.Fprintf(w, "%s:%d - %s - %s\n", v.FileName, v.Line, level, v.Message)
+}
+
+func violation2map(v *projectsv1.CheckViolation) map[string]any {
+	return map[string]any{
+		"file":    v.FileName,
+		"line":    v.Line,
+		"level":   levelName(v.Level),
+		"message": v.Message,
+	}
+}
+
+func printViolationJSON(w io.Writer, v *projectsv1.CheckViolation) {
+	m := violation2map(v)
+	json.NewEncoder(w).Encode(m)
+}
+
+func printViolationJSONPretty(w io.Writer, v *projectsv1.CheckViolation) {
+	m := violation2map(v)
+	enc := json.NewEncoder(w)
+	enc.SetIndent("", "  ")
+	enc.Encode(m)
 }
 
 func runLint(cmd *cobra.Command, args []string) error {
@@ -113,6 +135,13 @@ func runLint(cmd *cobra.Command, args []string) error {
 	}
 
 	w := cmd.OutOrStdout()
+	printViolation := printViolationText
+	if cmd.Flags().Lookup("json").Changed {
+		printViolation = printViolationJSON
+	} else if cmd.Flags().Lookup("nice_json").Changed {
+		printViolation = printViolationJSONPretty
+	}
+
 	_, projectID, err := r.ProjectNameOrID(ctx, projectNameOrID)
 	switch err {
 	case sdkerrors.ErrNotFound: // new project
