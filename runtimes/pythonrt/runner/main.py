@@ -1,3 +1,6 @@
+# Must be first import
+import filter_warnings  # noqa: F401
+
 import builtins
 import json
 import os

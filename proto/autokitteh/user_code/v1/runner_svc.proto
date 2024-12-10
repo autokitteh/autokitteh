@@ -9,14 +9,21 @@ message ExportsRequest {
   string file_name = 1;
 }
 
+message Export {
+  string file = 1;
+  uint32 line = 2;
+  string name = 3;
+  repeated string args = 4;
+}
+
 message ExportsResponse {
-  repeated string exports = 1;
+  repeated Export exports = 1;
   string error = 2;
 }
 
 message StartRequest {
   string entry_point = 1; // "main.py:on_event"
-  Event event = 2;
+  autokitteh.user_code.v1.Event event = 2;
 }
 
 message ExecuteRequest {
@@ -26,12 +33,12 @@ message ExecuteRequest {
 message ExecuteResponse {
   autokitteh.values.v1.Value result = 1;
   string error = 2;
-  repeated Frame traceback = 3;
+  repeated autokitteh.user_code.v1.Frame traceback = 3;
 }
 
 message StartResponse {
   string error = 1;
-  repeated Frame traceback = 2;
+  repeated autokitteh.user_code.v1.Frame traceback = 2;
 }
 
 message ActivityReplyRequest {

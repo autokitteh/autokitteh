@@ -136,6 +136,7 @@ func findExports(log *zap.Logger, fsys fs.FS) ([]sdktypes.BuildExport, error) {
 	for i, e := range exports {
 		loc, err := sdktypes.CodeLocationFromProto(&sdktypes.CodeLocationPB{
 			Path: e.File,
+			Col:  e.Line,
 			Name: e.Name,
 		})
 		if err != nil {
@@ -150,5 +151,7 @@ func findExports(log *zap.Logger, fsys fs.FS) ([]sdktypes.BuildExport, error) {
 
 type Export struct {
 	File string
+	Line uint32
 	Name string
+	Args []string
 }
