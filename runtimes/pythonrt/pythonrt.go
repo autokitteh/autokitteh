@@ -187,7 +187,9 @@ func entriesToValues(xid sdktypes.ExecutorID, entries []*pbUserCode.Export) (map
 		}
 
 		for i, name := range export.Args {
-			modPB.Input[i].Name = name
+			modPB.Input[i] = &pbModule.FunctionField{
+				Name: name,
+			}
 		}
 
 		modFunc := kittehs.Must1(sdktypes.ModuleFunctionFromProto(&modPB))
