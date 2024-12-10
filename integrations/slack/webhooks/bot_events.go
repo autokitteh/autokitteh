@@ -21,6 +21,7 @@ var BotEventHandlers = map[string]BotEventHandler{
 	"app_mention": events.AppMentionHandler,
 	// TODO: app_rate_limit
 	// TODO: app_uninstalled
+	"app_home_opened": events.AppHomeOpenHandler,
 
 	"channel_archive": events.ChannelGroupHandler,
 	"channel_created": events.ChannelCreatedHandler,
