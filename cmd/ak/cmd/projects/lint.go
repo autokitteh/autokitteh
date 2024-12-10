@@ -2,6 +2,7 @@ package projects
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"path"
 	"strings"
@@ -82,6 +83,13 @@ func findProjectNameOrID(projectNameOrID string, projectDir string, m *manifest.
 	return "", fmt.Errorf("can't determine project name or ID")
 }
 
+func printViolation(w io.Writer, v *projectsv1.CheckViolation) {
+	// TODO: JSON?
+	level := levelName(v.Level)
+	// FIXME (ENG-1867): RuleId arrives as empty string.
+	fmt.Fprintf(w, "%s:%d - %s - %s\n", v.FileName, v.Line, level, v.Message)
+}
+
 func runLint(cmd *cobra.Command, args []string) error {
 	r := resolver.Resolver{Client: common.Client()}
 	ctx, cancel := common.LimitedContext()
@@ -104,6 +112,7 @@ func runLint(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	w := cmd.OutOrStdout()
 	_, projectID, err := r.ProjectNameOrID(ctx, projectNameOrID)
 	switch err {
 	case sdkerrors.ErrNotFound: // new project
@@ -115,7 +124,12 @@ func runLint(cmd *cobra.Command, args []string) error {
 				return err
 			}
 			if len(actions) > 0 {
-				return fmt.Errorf("outdated manifest")
+				v := projectsv1.CheckViolation{
+					FileName: manifestFile,
+					Level:    projectsv1.CheckViolation_LEVEL_WARNING,
+					Message:  "outdated manifest",
+				}
+				printViolation(w, &v)
 			}
 		}
 	}
@@ -125,15 +139,9 @@ func runLint(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	w := cmd.OutOrStdout()
-
 	ok := true
 	for _, v := range vs {
-		level := levelName(v.Level)
-		// TODO: JSON?
-		// FIXME (ENG-1867): RuleId arrives as empty string.
-		fmt.Fprintf(w, "%s:%d - %s - %s\n", v.FileName, v.Line, level, v.Message)
-
+		printViolation(w, v)
 		if v.Level == sdktypes.ViolationError {
 			ok = false
 		}
