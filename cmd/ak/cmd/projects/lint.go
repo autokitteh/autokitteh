@@ -1,14 +1,16 @@
 package projects
 
 import (
-	"context"
 	"fmt"
 	"os"
+	"path"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
 	"go.autokitteh.dev/autokitteh/internal/manifest"
 	"go.autokitteh.dev/autokitteh/internal/resolver"
+	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 
 	projectsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/projects/v1"
@@ -52,37 +54,32 @@ func buildResources() (map[string][]byte, error) {
 	return resources, nil
 }
 
-func findProjectID(ctx context.Context, r resolver.Resolver, manifestFile string) sdktypes.ProjectID {
-	// command line first
-	if lintOpts.projectNameOrID != "" {
-		_, pid, err := r.ProjectNameOrID(ctx, lintOpts.projectNameOrID)
-		if err == nil {
-			return pid
-		}
+func getManifest(resources map[string][]byte, manifestFile string) (*manifest.Manifest, error) {
+	data := resources[manifestFile]
+	if data == nil {
+		return nil, nil
 	}
 
-	// pid file
-	data, err := os.ReadFile(".autokitteh/pid")
+	return manifest.Read(data, manifestFile)
+}
+
+func findProjectNameOrID(projectNameOrID string, projectDir string, m *manifest.Manifest) (string, error) {
+	if projectNameOrID != "" {
+		return projectNameOrID, nil
+	}
+
+	// Try pid file
+	pidFile := path.Join(projectDir, ".autokitteh", "pid")
+	data, err := os.ReadFile(pidFile)
 	if err == nil {
-		_, pid, err := r.ProjectNameOrID(ctx, string(data))
-		if err == nil {
-			return pid
-		}
+		return strings.TrimSpace(string(data)), nil
 	}
 
-	// Read from manifest
-	data, err = os.ReadFile(manifestFile)
-	if err == nil {
-		m, err := manifest.Read(data, manifestFile)
-		if err != nil && m.Project.Name != "" {
-			_, pid, err := r.ProjectNameOrID(ctx, string(data))
-			if err == nil {
-				return pid
-			}
-		}
+	if m != nil {
+		return m.Project.Name, nil
 	}
 
-	return sdktypes.InvalidProjectID
+	return "", fmt.Errorf("can't determine project name or ID")
 }
 
 func runLint(cmd *cobra.Command, args []string) error {
@@ -90,14 +87,40 @@ func runLint(cmd *cobra.Command, args []string) error {
 	ctx, cancel := common.LimitedContext()
 	defer cancel()
 
-	projectID := findProjectID(ctx, r, lintOpts.manifestPath)
-
 	resources, err := buildResources()
 	if err != nil {
 		return err
 	}
 
-	vs, err := projects().Lint(ctx, projectID, resources, lintOpts.manifestPath)
+	manifestFile := path.Base(lintOpts.manifestPath)
+	m, err := getManifest(resources, manifestFile)
+	if err != nil {
+		return err
+	}
+
+	projectDir := path.Base(lintOpts.manifestPath)
+	projectNameOrID, err := findProjectNameOrID(lintOpts.projectNameOrID, projectDir, m)
+	if err != nil {
+		return err
+	}
+
+	_, projectID, err := r.ProjectNameOrID(ctx, projectNameOrID)
+	switch err {
+	case sdkerrors.ErrNotFound: // new project
+		// no need to check
+	case nil: // Existing project
+		if m != nil { // Check that manifest is not outdated
+			actions, err := manifest.Plan(ctx, m, common.Client(), manifest.WithLogger(emptyLog))
+			if err != nil {
+				return err
+			}
+			if len(actions) > 0 {
+				return fmt.Errorf("outdated manifest")
+			}
+		}
+	}
+
+	vs, err := projects().Lint(ctx, projectID, resources, manifestFile)
 	if err != nil {
 		return err
 	}
@@ -132,3 +155,5 @@ func levelName(level projectsv1.CheckViolation_Level) string {
 	const prefix = "LEVEL_"
 	return name[len(prefix):]
 }
+
+func emptyLog(string) {}

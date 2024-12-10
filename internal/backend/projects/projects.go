@@ -268,7 +268,6 @@ func findConnection(id sdktypes.ConnectionID, conns []sdktypes.Connection) (sdkt
 }
 
 func (ps *Projects) Lint(ctx context.Context, projectID sdktypes.ProjectID, resources map[string][]byte, manifestFile string) ([]*sdktypes.CheckViolation, error) {
-
 	data, ok := resources[manifestFile]
 	if !ok {
 		var err error
@@ -278,11 +277,11 @@ func (ps *Projects) Lint(ctx context.Context, projectID sdktypes.ProjectID, reso
 		}
 	}
 
-	manifest, err := manifest.Read(data, manifestFile)
+	m, err := manifest.Read(data, manifestFile)
 	if err != nil {
 		return nil, err
 	}
 
-	violations := Validate(projectID, manifest, resources)
+	violations := Validate(projectID, m, resources)
 	return violations, nil
 }
