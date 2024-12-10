@@ -102,14 +102,14 @@ func violation2map(v *projectsv1.CheckViolation) map[string]any {
 
 func printViolationJSON(w io.Writer, v *projectsv1.CheckViolation) {
 	m := violation2map(v)
-	json.NewEncoder(w).Encode(m)
+	json.NewEncoder(w).Encode(m) //nolint:errcheck
 }
 
 func printViolationJSONPretty(w io.Writer, v *projectsv1.CheckViolation) {
 	m := violation2map(v)
 	enc := json.NewEncoder(w)
 	enc.SetIndent("", "  ")
-	enc.Encode(m)
+	enc.Encode(m) //nolint:errcheck
 }
 
 func runLint(cmd *cobra.Command, args []string) error {
