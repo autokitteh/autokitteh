@@ -42,22 +42,19 @@ func Build(rts sdkservices.Runtimes, srcFS fs.FS, paths []string, syms []sdktype
 	return b, nil
 }
 
-func BuildProject(pid sdktypes.ProjectID, dirPaths, filePaths []string) (sdktypes.BuildID, error) {
-	ctx, cancel := LimitedContext()
-	defer cancel()
-
+func CollectUploads(dirPaths, filePaths []string) (map[string][]byte, error) {
 	uploads := make(map[string][]byte)
 	for _, path := range append(dirPaths, filePaths...) {
 		fi, err := os.Stat(path)
 		if err != nil {
-			return sdktypes.InvalidBuildID, NewExitCodeError(NotFoundExitCode, err)
+			return nil, NewExitCodeError(NotFoundExitCode, err)
 		}
 
 		// Upload an entire directory tree.
 		if fi.IsDir() {
 			err := filepath.WalkDir(path, walk(path, uploads))
 			if err != nil {
-				return sdktypes.InvalidBuildID, err
+				return nil, err
 			}
 			continue
 		}
@@ -65,9 +62,21 @@ func BuildProject(pid sdktypes.ProjectID, dirPaths, filePaths []string) (sdktype
 		// Upload a single file.
 		contents, err := os.ReadFile(path)
 		if err != nil {
-			return sdktypes.InvalidBuildID, err
+			return nil, err
 		}
 		uploads[fi.Name()] = contents
+	}
+
+	return uploads, nil
+}
+
+func BuildProject(pid sdktypes.ProjectID, dirPaths, filePaths []string) (sdktypes.BuildID, error) {
+	ctx, cancel := LimitedContext()
+	defer cancel()
+
+	uploads, err := CollectUploads(dirPaths, filePaths)
+	if err != nil {
+		return sdktypes.InvalidBuildID, err
 	}
 
 	// Communicate with the server in 2 steps.
