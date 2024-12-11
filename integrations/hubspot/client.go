@@ -13,7 +13,6 @@ import (
 type integration struct{ vars sdkservices.Vars }
 
 var (
-	apiKey        = sdktypes.NewSymbol("api_key")
 	authType      = sdktypes.NewSymbol("authType")
 	integrationID = sdktypes.NewIntegrationIDFromName("hubspot")
 )
@@ -44,14 +43,27 @@ func New(cvars sdkservices.Vars) sdkservices.Integration {
 	)
 }
 
-// TODO: implement
-func connStatus(_ *integration) sdkintegrations.OptFn {
+func connStatus(i *integration) sdkintegrations.OptFn {
 	return sdkintegrations.WithConnectionStatus(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
-		return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
+		if !cid.IsValid() {
+			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
+		}
+
+		vs, err := i.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
+		if err != nil {
+			return sdktypes.InvalidStatus, err
+		}
+
+		at := vs.Get(authType)
+		if !at.IsValid() || at.Value() == "" {
+			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
+		}
+
+		return sdktypes.NewStatus(sdktypes.StatusCodeOK, "Using OAuth 2.0"), nil
 	})
 }
 
-// TODO: implement
+// TODO(INT-105): Implement
 func connTest(_ *integration) sdkintegrations.OptFn {
 	return sdkintegrations.WithConnectionTest(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
 		return sdktypes.NewStatus(sdktypes.StatusCodeOK, "OK"), nil
