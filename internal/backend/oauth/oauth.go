@@ -285,6 +285,18 @@ func New(l *zap.Logger) sdkservices.OAuth {
 				},
 			},
 
+			"hubspot": {
+				ClientID:     os.Getenv("HUBSPOT_CLIENT_ID"),
+				ClientSecret: os.Getenv("HUBSPOT_CLIENT_SECRET"),
+				Endpoint: oauth2.Endpoint{
+					AuthURL: "https://app.hubspot.com/oauth/authorize",
+					TokenURL: "https://api.hubapi.com/oauth/v1/token",
+				},
+				RedirectURL: redirectURL + "hubspot",
+				// TODO: add other scopes
+				Scopes: []string{"crm.objects.contacts.read", "crm.objects.contacts.write"},
+			},
+
 			"jira": {
 				// TODO(ENG-965): From new-connection form instead of env vars.
 				ClientID:     os.Getenv("JIRA_CLIENT_ID"),
