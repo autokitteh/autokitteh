@@ -29,8 +29,8 @@ func AppHomeOpenHandler(l *zap.Logger, w http.ResponseWriter, body []byte, cb *C
         }
     }
 
-    j := &appHomeOpenContainer{}
-    if err := json.Unmarshal(body, j); err != nil {
+    var j appHomeOpenContainer
+    if err := json.Unmarshal(body, &j); err != nil {
         invalidEventError(l, w, body, err)
         return nil
     }
