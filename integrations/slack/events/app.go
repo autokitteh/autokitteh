@@ -50,17 +50,18 @@ func AppMentionHandler(l *zap.Logger, w http.ResponseWriter, body []byte, cb *Ca
 // https://api.slack.com/surfaces/app-home
 func AppHomeOpenedHandler(l *zap.Logger, w http.ResponseWriter, body []byte, cb *Callback) any {
 	// Parse and return the inner event details.
-	var eventData map[string]any
-	if err := json.Unmarshal(body, &eventData); err != nil {
+	var event map[string]any
+	if err := json.Unmarshal(body, &event); err != nil {
 		invalidEventError(l, w, body, err)
 		return nil
 	}
 
-	event, ok := eventData["event"]; ok
+	innerEvent, ok := event["event"]
 	if !ok {
-		l.Warn("Event field not found in the Slack event app_home_opened", zap.ByteString("event", eventData))
+		l.Warn("Event key not found in the JSON for app_home_opened event",
+			zap.ByteString("json_body", body))
 		return nil
 	}
 
-	return event
+	return innerEvent
 }
