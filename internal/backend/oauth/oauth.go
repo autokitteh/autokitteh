@@ -285,6 +285,8 @@ func New(l *zap.Logger) sdkservices.OAuth {
 				},
 			},
 
+			// Based on:
+			// https://developers.hubspot.com/beta-docs/guides/apps/authentication/working-with-oauth
 			"hubspot": {
 				ClientID:     os.Getenv("HUBSPOT_CLIENT_ID"),
 				ClientSecret: os.Getenv("HUBSPOT_CLIENT_SECRET"),
