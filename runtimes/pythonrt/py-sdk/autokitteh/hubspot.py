@@ -1,4 +1,4 @@
-"""Initialize a Hubspot client, based on an AutoKitteh connection."""
+"""Initialize a HubSpot client, based on an AutoKitteh connection."""
 
 import os
 
