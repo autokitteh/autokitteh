@@ -9,7 +9,7 @@ from .errors import ConnectionInitError, OAuthRefreshError
 
 
 def hubspot_client(connection: str, **kwargs) -> HubSpot:
-    """Initialize a Hubspot client, based on an AutoKitteh connection.
+    """Initialize a HubSpot client, based on an AutoKitteh connection.
 
     Args:
         connection: AutoKitteh connection name.
