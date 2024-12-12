@@ -13,7 +13,7 @@ import (
 type integration struct{ vars sdkservices.Vars }
 
 var (
-	authType      = sdktypes.NewSymbol("authType")
+	authType      = sdktypes.NewSymbol("auth_type")
 	integrationID = sdktypes.NewIntegrationIDFromName("hubspot")
 )
 
