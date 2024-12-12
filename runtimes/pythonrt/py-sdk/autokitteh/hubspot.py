@@ -15,7 +15,7 @@ def hubspot_client(connection: str, **kwargs) -> HubSpot:
         connection: AutoKitteh connection name.
 
     Returns:
-        Hubspot SDK client.
+        HubSpot SDK client.
 
     Raises:
         ValueError: AutoKitteh connection name is invalid.
