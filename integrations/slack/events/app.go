@@ -56,12 +56,11 @@ func AppHomeOpenedHandler(l *zap.Logger, w http.ResponseWriter, body []byte, cb 
 		return nil
 	}
 
-	if event, ok := eventData["event"]; ok {
-		return event
+	event, ok := eventData["event"]; ok
+	if !ok {
+		l.Warn("Event field not found in the Slack event app_home_opened", zap.ByteString("event", eventData))
+		return nil
 	}
 
-	l.Warn("Event key not found in the JSON for app_home_opened event",
-		zap.ByteString("json_body", body),
-	)
-	return nil
+	return event
 }
