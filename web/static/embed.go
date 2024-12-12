@@ -53,7 +53,7 @@ var GoogleSheetsWebContent embed.FS
 var HTTPWebContent embed.FS
 
 //go:embed hubspot/connect
-var HubspotWebContent embed.FS
+var HubSpotWebContent embed.FS
 
 //go:embed jira/connect
 var JiraWebContent embed.FS
