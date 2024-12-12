@@ -16,7 +16,7 @@ const (
 	oauthPath = "/hubspot/oauth"
 )
 
-// Start initializes all the HTTP handlers of the Hubspot integration.
+// Start initializes all the HTTP handlers of the HubSpot integration.
 // This includes connection UIs and initialization webhooks.
 func Start(l *zap.Logger, o sdkservices.OAuth, muxes *muxes.Muxes) {
 	// Connection UI.
