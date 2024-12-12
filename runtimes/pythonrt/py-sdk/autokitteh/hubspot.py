@@ -20,6 +20,7 @@ def hubspot_client(connection: str, **kwargs) -> HubSpot:
     Raises:
         ValueError: AutoKitteh connection name is invalid.
         ConnectionInitError: AutoKitteh connection was not initialized yet.
+        OAuthRefreshError: OAuth token refresh failed.
     """
     check_connection_name(connection)
 
