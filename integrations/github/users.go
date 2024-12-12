@@ -24,7 +24,7 @@ func (i integration) getUser(ctx context.Context, args []sdktypes.Value, kwargs 
 	var gh *github.Client
 	if owner == "" {
 		// According to github docs, this endpoint requires no permissions.
-		gh, err = i.newAnonymousClient()
+		gh, err = newAnonymousClient()
 	} else {
 		gh, err = i.NewClient(ctx)
 	}
@@ -64,7 +64,7 @@ func (i integration) searchUsers(ctx context.Context, args []sdktypes.Value, kwa
 	var gh *github.Client
 	if owner == "" {
 		// According to github docs, this endpoint requires no permissions.
-		gh, err = i.newAnonymousClient()
+		gh, err = newAnonymousClient()
 	} else {
 		gh, err = i.NewClient(ctx)
 	}
