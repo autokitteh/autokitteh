@@ -228,7 +228,7 @@ func checkRequest(w http.ResponseWriter, r *http.Request, l *zap.Logger) bool {
 	}
 
 	if !strings.HasPrefix(auth, "Bearer ") {
-		l.Warn("invalid authorization header in Google push notification", zap.String("authorization", auth))
+		l.Warn("invalid authorization header in Google push notification")
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return false
 	}
@@ -257,8 +257,7 @@ func checkRequest(w http.ResponseWriter, r *http.Request, l *zap.Logger) bool {
 		return key, nil
 	})
 	if err != nil {
-		l.Error("failed to parse JWT in Google push notification",
-			zap.Error(err), zap.String("jwt", auth), zap.Any("pub_keys", rsaPublicKeys))
+		l.Error("failed to parse JWT in Google push notification", zap.Error(err))
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return false
 	}
