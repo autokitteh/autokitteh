@@ -39,6 +39,12 @@ var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.Integrati
 	},
 }))
 
+const (
+	// pubsubTopicEnvVar is the name of an environment variable that
+	// contains the GCP Pub/Sub topic name for Google Forms notifications.
+	pubsubTopicEnvVar = "GOOGLE_FORMS_PUBSUB_TOPIC"
+)
+
 func New(cvars sdkservices.Vars) sdkservices.Integration {
 	return sdkintegrations.NewIntegration(
 		desc,
@@ -160,11 +166,6 @@ func jwtTokenSource(ctx context.Context, data string) (oauth2.TokenSource, error
 	return cfg.TokenSource(ctx), nil
 }
 
-const (
-	// TODO(ENG-1203): Make this configurable! Env var?
-	topic = "projects/autokitteh-gapis-integration/topics/forms-notifications"
-)
-
 func (a api) getForm(ctx context.Context) (*forms.Form, error) {
 	formID, client, err := a.formsIDAndClient(ctx)
 	if err != nil {
@@ -207,7 +208,7 @@ func (a api) watchesCreate(ctx context.Context, e WatchEventType) (*forms.Watch,
 		Watch: &forms.Watch{
 			EventType: string(e),
 			Target: &forms.WatchTarget{
-				Topic: &forms.CloudPubsubTopic{TopicName: topic},
+				Topic: &forms.CloudPubsubTopic{TopicName: os.Getenv(pubsubTopicEnvVar)},
 			},
 		},
 	}).Do()

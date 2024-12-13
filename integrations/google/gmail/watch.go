@@ -3,6 +3,7 @@ package gmail
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 
 	"go.uber.org/zap"
@@ -15,8 +16,9 @@ import (
 )
 
 const (
-	// TODO(ENG-1203): Make this configurable! Env var?
-	topic = "projects/autokitteh-gapis-integration/topics/gmail-api-push"
+	// pubsubTopicEnvVar is the name of an environment variable that
+	// contains the GCP Pub/Sub topic name for Gmail notifications.
+	pubsubTopicEnvVar = "GMAIL_PUBSUB_TOPIC"
 )
 
 // UpdateWatch creates or updates a push notification watch on the user's mailbox.
@@ -57,7 +59,9 @@ func (a api) watch(ctx context.Context) (*gmail.WatchResponse, error) {
 		return nil, err
 	}
 
-	resp, err := client.Users.Watch("me", &gmail.WatchRequest{TopicName: topic}).Do()
+	resp, err := client.Users.Watch("me", &gmail.WatchRequest{
+		TopicName: os.Getenv(pubsubTopicEnvVar),
+	}).Do()
 	if err != nil {
 		return nil, err
 	}
