@@ -51,7 +51,7 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	req, err := http.NewRequest("GET", "https://api.hubapi.com/crm/v3/owners/", nil)
 	if err != nil {
 		l.Error("Failed to create HTTP request", zap.Error(err))
-		c.AbortServerError("request creation error") 
+		c.AbortServerError("request creation error")
 		return
 	}
 
