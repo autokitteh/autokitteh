@@ -21,7 +21,7 @@ const (
 func Start(l *zap.Logger, o sdkservices.OAuth, muxes *muxes.Muxes) {
 	// Connection UI.
 	uiPath := "GET " + desc.ConnectionURL().Path + "/"
-	muxes.NoAuth.Handle(uiPath, http.FileServer(http.FS(static.HubspotWebContent)))
+	muxes.NoAuth.Handle(uiPath, http.FileServer(http.FS(static.HubSpotWebContent)))
 
 	// Init webhooks save connection vars (via "c.Finalize" calls), so they need
 	// to have an authenticated user context, so the DB layer won't reject them.
