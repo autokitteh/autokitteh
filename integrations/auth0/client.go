@@ -24,7 +24,8 @@ var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.Integrati
 	Description:   "Auth0 is an identity platform that provides authentication and authorization services.",
 	LogoUrl:       "/static/images/auth0.svg",
 	UserLinks: map[string]string{
-		"Auth0": "https://auth0.com/",
+		"1 Auth0 API reference": "https://auth0.com/docs/api/management/v2",
+		"2 Python client API":   "https://auth0-python.readthedocs.io/en/latest/",
 	},
 	ConnectionUrl: "/auth0/connect",
 	ConnectionCapabilities: &sdktypes.ConnectionCapabilitiesPB{
@@ -39,6 +40,7 @@ func New(cvars sdkservices.Vars) sdkservices.Integration {
 		sdkmodule.New(),
 		connStatus(i),
 		connTest(i),
+		sdkintegrations.WithConnectionConfigFromVars(cvars),
 	)
 }
 

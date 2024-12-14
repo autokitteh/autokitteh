@@ -10,26 +10,23 @@ def auth0_client(connection: str, **kwargs) -> Auth0:
     """Initialize an Auth0 client, based on an AutoKitteh connection.
 
     API reference:
-    https://auth0.com/docs/libraries/auth0-python
+    https://auth0-python.readthedocs.io/en/latest/
 
     Args:
         connection: AutoKitteh connection name.
 
     Returns:
         Auth0 SDK client.
+
+    Raises:
+        ConnectionInitError: If the connection is not initialized.
+        ValueError: If the connection name is invalid.
     """
     check_connection_name(connection)
 
     token = os.getenv(connection + "__oauth_AccessToken")
-    print("token", token)
-
-    # for key in os.environ:
-    #     print(key, os.environ[key])
 
     if not token:
         raise ConnectionInitError(connection)
 
-    # TODO: Get domain from connection.
-    domain = "dev-u4mwzrvhp856wtpc.us.auth0.com"
-
-    return Auth0(domain, token)
+    return Auth0(os.getenv("AUTH0_DOMAIN"), token)

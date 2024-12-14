@@ -85,8 +85,8 @@ func New(l *zap.Logger) sdkservices.OAuth {
 				ClientID:     os.Getenv("AUTH0_CLIENT_ID"),
 				ClientSecret: os.Getenv("AUTH0_CLIENT_SECRET"),
 				Endpoint: oauth2.Endpoint{
-					AuthURL:  "https://dev-u4mwzrvhp856wtpc.us.auth0.com/oauth/authorize",
-					TokenURL: "https://dev-u4mwzrvhp856wtpc.us.auth0.com/oauth/token",
+					AuthURL:  fmt.Sprintf("https://%s/oauth/authorize", os.Getenv("AUTH0_DOMAIN")),
+					TokenURL: fmt.Sprintf("https://%s/oauth/token", os.Getenv("AUTH0_DOMAIN")),
 				},
 				RedirectURL: redirectURL + "auth0",
 				Scopes: []string{
@@ -374,7 +374,8 @@ func New(l *zap.Logger) sdkservices.OAuth {
 
 		opts: map[string]map[string]string{
 			"auth0": {
-				"audience":   "https://dev-u4mwzrvhp856wtpc.us.auth0.com/api/v2/",
+				// TODO: audience URL (from env var).
+				"audience":   fmt.Sprintf("https://%s/api/v2/", os.Getenv("AUTH0_DOMAIN")),
 				"grant_type": "client_credentials",
 			},
 			"gmail": {
