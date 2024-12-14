@@ -22,6 +22,7 @@ import (
 	"go.autokitteh.dev/autokitteh/integrations/google/gmail"
 	"go.autokitteh.dev/autokitteh/integrations/google/sheets"
 	"go.autokitteh.dev/autokitteh/integrations/grpc"
+	"go.autokitteh.dev/autokitteh/integrations/hubspot"
 	"go.autokitteh.dev/autokitteh/integrations/redis"
 	"go.autokitteh.dev/autokitteh/integrations/slack"
 	"go.autokitteh.dev/autokitteh/integrations/twilio"
@@ -66,6 +67,7 @@ func integrationsFXOption() fx.Option {
 		integration("gemini", configset.Empty, gemini.New),
 		integration("google", configset.Empty, google.New),
 		integration("grpc", configset.Empty, grpc.New),
+		integration("hubspot", configset.Empty, hubspot.New),
 		integration("jira", configset.Empty, jira.New),
 		integration("redis", configset.Empty, redis.New),
 		integration("sheets", configset.Empty, sheets.New),
@@ -82,6 +84,7 @@ func integrationsFXOption() fx.Option {
 				github.Start(l, muxes, svcs.Vars(), svcs.OAuth(), svcs.Dispatcher())
 				gemini.Start(l, muxes)
 				google.Start(l, muxes, svcs.Vars(), svcs.OAuth(), svcs.Dispatcher())
+				hubspot.Start(l, svcs.OAuth(), muxes)
 				jira.Start(l, muxes, svcs.Vars(), svcs.OAuth(), svcs.Dispatcher())
 				slack.Start(l, muxes, svcs.Vars(), svcs.Dispatcher())
 				twilio.Start(l, muxes, svcs.Vars(), svcs.Dispatcher())
