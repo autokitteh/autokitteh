@@ -1,3 +1,6 @@
+# Must be first import
+import filter_warnings  # noqa: F401
+
 import builtins
 import json
 import os
@@ -18,6 +21,7 @@ import loader
 import log
 import pb
 import values
+from audit import make_audit_hook
 from autokitteh import AttrDict, connections
 from call import AKCall, full_func_name
 from grpc_reflection.v1alpha import reflection
@@ -188,6 +192,11 @@ class Runner(pb.runner_rpc.RunnerService):
 
         fix_http_body(event)
         event = AttrDict(event)
+
+        # Warn on I/O outside an activity. Should come after importing the user module
+        hook = make_audit_hook(ak_call, self.code_dir)
+        sys.addaudithook(hook)
+
         self.executor.submit(self.on_event, fn, event)
 
         return pb.runner.StartResponse()

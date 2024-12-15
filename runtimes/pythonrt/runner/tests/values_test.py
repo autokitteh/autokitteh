@@ -1,10 +1,11 @@
-import pb.autokitteh.values.v1.values_pb2 as pb
-from values import wrap, unwrap
 from collections import namedtuple
-from datetime import datetime, timedelta, UTC
-import pytest
-import google.protobuf.timestamp_pb2 as timestamp_pb2
+from datetime import UTC, datetime, timedelta
+
 import google.protobuf.duration_pb2 as duration_pb2
+import google.protobuf.timestamp_pb2 as timestamp_pb2
+import pb.autokitteh.values.v1.values_pb2 as pb
+import pytest
+from values import unwrap, wrap
 
 
 def intv(n):
@@ -12,27 +13,29 @@ def intv(n):
 
 
 wrap_test_cases = [
-    (None, pb.Value(nothing=pb.Nothing())),
-    (True, pb.Value(boolean=pb.Boolean(v=True))),
-    (False, pb.Value(boolean=pb.Boolean(v=False))),
-    (1, intv(1)),
-    (1.0, pb.Value(float=pb.Float(v=1.0))),
-    ("meow", pb.Value(string=pb.String(v="meow"))),
-    (
+    pytest.param(None, pb.Value(nothing=pb.Nothing()), id="None"),
+    pytest.param(True, pb.Value(boolean=pb.Boolean(v=True)), id="True"),
+    pytest.param(False, pb.Value(boolean=pb.Boolean(v=False)), id="False"),
+    pytest.param(1, intv(1), id="int"),
+    pytest.param(1.0, pb.Value(float=pb.Float(v=1.0)), id="float"),
+    pytest.param("meow", pb.Value(string=pb.String(v="meow")), id="str"),
+    pytest.param(
         [1, 2, 3],
         pb.Value(
             list=pb.List(
                 vs=[intv(1), intv(2), intv(3)],
             ),
         ),
+        id="list",
     ),
-    (
+    pytest.param(
         set([1, 2, 3]),
         pb.Value(
             set=pb.Set(vs=[intv(1), intv(2), intv(3)]),
         ),
+        id="set",
     ),
-    (
+    pytest.param(
         {"a": 1, "b": 2},
         pb.Value(
             dict=pb.Dict(
@@ -48,8 +51,9 @@ wrap_test_cases = [
                 ],
             )
         ),
+        id="dict",
     ),
-    (
+    pytest.param(
         namedtuple("Point", ["y", "x"])(2, 1),
         pb.Value(
             struct=pb.Struct(
@@ -60,12 +64,14 @@ wrap_test_cases = [
                 },
             )
         ),
+        id="namedtuple",
     ),
-    (
+    pytest.param(
         timedelta(days=1),
         pb.Value(duration=pb.Duration(v=duration_pb2.Duration(seconds=86400))),
+        id="timedelta",
     ),
-    (
+    pytest.param(
         datetime.fromtimestamp(1663595726).astimezone(tz=UTC),
         pb.Value(
             time=pb.Time(
@@ -75,6 +81,7 @@ wrap_test_cases = [
                 )
             )
         ),
+        id="datetime",
     ),
 ]
 

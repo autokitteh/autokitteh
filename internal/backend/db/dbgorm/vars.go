@@ -22,7 +22,7 @@ func (gdb *gormdb) withUserVars(ctx context.Context) *gorm.DB {
 func (gdb *gormdb) setVar(ctx context.Context, vr *scheme.Var) error {
 	vr.VarID = vr.ScopeID // just ensure
 
-	uid := authcontext.GetAuthnUser(ctx).ID().String()
+	uid := authcontext.GetAuthnUser(ctx).ID().UUIDValue().String()
 
 	return gdb.transaction(ctx, func(tx *tx) error {
 		db := tx.db
