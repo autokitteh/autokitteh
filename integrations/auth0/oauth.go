@@ -70,7 +70,7 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check response status code
+	// Check response status code.
 	if resp.StatusCode != http.StatusOK {
 		l.Error("Auth0 API request failed",
 			zap.Int("status_code", resp.StatusCode),
