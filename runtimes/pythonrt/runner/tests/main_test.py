@@ -12,7 +12,6 @@ import sys
 from concurrent.futures import Future
 from subprocess import run
 from unittest.mock import MagicMock
-from uuid import uuid4
 
 import main
 import pb.autokitteh.user_code.v1.runner_svc_pb2 as runner_pb
@@ -61,12 +60,11 @@ def test_execute():
         server=None,
     )
 
-    call_id = uuid4().hex
-    runner.calls[call_id] = (sub, [1, 7], {})
-    req = runner_pb.ExecuteRequest(data=call_id.encode())
+    runner.activity_calls.append(main.Call(sub, [1, 7], {}, Future()))
+    req = runner_pb.ExecuteRequest()
     resp = runner.Execute(req, None)
     assert resp.error == ""
-    call_id, value = pickle.loads(resp.result.custom.data)
+    value = pickle.loads(resp.result.custom.data)
     assert value == -6
 
 
@@ -77,15 +75,14 @@ def test_activity_reply():
         code_dir=workflows.simple,
         server=None,
     )
-    call_id = uuid4().hex
     fut = Future()
-    runner.replies[call_id] = fut
+    runner.activity_calls.append(main.Call(print, (), {}, fut))
     value = 42
     req = runner_pb.ActivityReplyRequest(
         result=pb_values.Value(
             custom=pb_values.Custom(
                 executor_id=runner.id,
-                data=pickle.dumps((call_id, value), protocol=0),
+                data=pickle.dumps(value, protocol=0),
                 value=main.safe_wrap(value),
             ),
         )
