@@ -18,7 +18,8 @@ const (
 type BotEventHandler = func(*zap.Logger, http.ResponseWriter, []byte, *events.Callback) any
 
 var BotEventHandlers = map[string]BotEventHandler{
-	"app_mention": events.AppMentionHandler,
+	"app_home_opened": events.AppHomeOpenedHandler,
+	"app_mention":     events.AppMentionHandler,
 	// TODO: app_rate_limit
 	// TODO: app_uninstalled
 
