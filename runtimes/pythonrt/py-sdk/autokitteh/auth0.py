@@ -25,7 +25,6 @@ def auth0_client(connection: str, **kwargs) -> Auth0:
     check_connection_name(connection)
 
     token = os.getenv(connection + "__oauth_AccessToken")
-
     if not token:
         raise ConnectionInitError(connection)
 
