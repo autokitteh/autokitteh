@@ -24,6 +24,14 @@ Module contents
 Submodules
 ----------
 
+autokitteh.asana module
+---------------------------
+
+.. automodule:: autokitteh.asana
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 autokitteh.atlassian module
 ---------------------------
 
@@ -64,6 +72,14 @@ autokitteh.decorators module
    :undoc-members:
    :show-inheritance:
 
+autokitteh.discord module
+----------------------------
+
+.. automodule:: autokitteh.discord
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 autokitteh.errors module
 ------------------------
 
@@ -96,6 +112,14 @@ autokitteh.google module
    :undoc-members:
    :show-inheritance:
 
+autokitteh.hubspot module
+------------------------
+
+.. automodule:: autokitteh.hubspot
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 autokitteh.openai module
 ------------------------
 
@@ -112,18 +136,19 @@ autokitteh.packages module
    :undoc-members:
    :show-inheritance:
 
-autokitteh.redis module
-------------------------
-
-.. automodule:: autokitteh.redis
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
 autokitteh.slack module
 -----------------------
 
 .. automodule:: autokitteh.slack
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+autokitteh.twilio module
+-----------------------
+
+.. automodule:: autokitteh.twilio
    :members:
    :undoc-members:
    :show-inheritance:
