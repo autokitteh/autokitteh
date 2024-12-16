@@ -25,7 +25,7 @@ Submodules
 ----------
 
 autokitteh.asana module
----------------------------
+-----------------------
 
 .. automodule:: autokitteh.asana
    :members:
@@ -113,7 +113,7 @@ autokitteh.google module
    :show-inheritance:
 
 autokitteh.hubspot module
-------------------------
+-------------------------
 
 .. automodule:: autokitteh.hubspot
    :members:
@@ -129,7 +129,7 @@ autokitteh.openai module
    :show-inheritance:
 
 autokitteh.packages module
-------------------------
+--------------------------
 
 .. automodule:: autokitteh.packages
    :members:
@@ -146,7 +146,7 @@ autokitteh.slack module
    :show-inheritance:
 
 autokitteh.twilio module
------------------------
+------------------------
 
 .. automodule:: autokitteh.twilio
    :members:
