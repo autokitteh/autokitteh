@@ -48,7 +48,7 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Test the OAuth token's usability and get authoritative installation details.
-	req, err := http.NewRequest("GET", fmt.Sprintf("https://%s/api/v2/roles", os.Getenv("AUTH0_DOMAIN")), nil)
+	req, err := http.NewRequest("GET", fmt.Sprintf("https://%s/api/v2/roles", os.Getenv(domain.String())), nil)
 	if err != nil {
 		l.Error("Failed to create HTTP request", zap.Error(err))
 		c.AbortServerError("request creation error")
@@ -82,6 +82,6 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	c.Finalize(sdktypes.NewVars(data.ToVars()...).
-		Append(sdktypes.NewVar(domain).SetValue(os.Getenv("AUTH0_DOMAIN"))).
+		Append(sdktypes.NewVar(domain).SetValue(os.Getenv(domain.String()))).
 		Append(sdktypes.NewVar(authType).SetValue(integrations.OAuth)))
 }

@@ -3,6 +3,7 @@ package auth0
 import (
 	"context"
 
+	"go.autokitteh.dev/autokitteh/integrations"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
@@ -60,8 +61,11 @@ func connStatus(i *integration) sdkintegrations.OptFn {
 		if !at.IsValid() || at.Value() == "" {
 			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
 		}
+		if at.Value() == integrations.OAuth {
+			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "Using OAuth 2.0"), nil
+		}
 
-		return sdktypes.NewStatus(sdktypes.StatusCodeOK, "Using OAuth 2.0"), nil
+		return sdktypes.NewStatus(sdktypes.StatusCodeError, "Bad auth type"), nil
 	})
 }
 
