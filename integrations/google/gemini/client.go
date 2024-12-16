@@ -3,6 +3,8 @@ package gemini
 import (
 	"context"
 
+	"go.autokitteh.dev/autokitteh/integrations"
+	"go.autokitteh.dev/autokitteh/integrations/google/internal/vars"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
@@ -13,6 +15,8 @@ import (
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
 )
+
+type integration struct{ vars sdkservices.Vars }
 
 var integrationID = sdktypes.NewIntegrationIDFromName("googlegemini")
 
@@ -34,12 +38,40 @@ var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.Integrati
 }))
 
 func New(cvars sdkservices.Vars) sdkservices.Integration {
+	i := &integration{vars: cvars}
 	return sdkintegrations.NewIntegration(
 		desc,
 		sdkmodule.New( /* No exported functions for Starlark */ ),
+		connStatus(i),
 		connTest(cvars),
 		sdkintegrations.WithConnectionConfigFromVars(cvars),
 	)
+}
+
+// connStatus is an optional connection status check provided by
+// the integration to AutoKitteh. The possible results are "Init
+// required" (the connection is not usable yet) and "Initialized".
+func connStatus(i *integration) sdkintegrations.OptFn {
+	return sdkintegrations.WithConnectionStatus(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
+		if !cid.IsValid() {
+			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
+		}
+
+		vs, err := i.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
+		if err != nil {
+			return sdktypes.InvalidStatus, err
+		}
+
+		at := vs.Get(vars.AuthType)
+		if !at.IsValid() || at.Value() == "" {
+			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
+		}
+
+		if at.Value() == integrations.BotToken {
+			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "Initialized"), nil
+		}
+		return sdktypes.NewStatus(sdktypes.StatusCodeError, "Bad auth type"), nil
+	})
 }
 
 // connTest is an optional connection test provided by the integration

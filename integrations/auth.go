@@ -10,4 +10,5 @@ const (
 	OAuth      = "oauth"
 	PAT        = "pat"
 	SocketMode = "socketMode" // Slack integration only
+	BotToken   = "botToken"   // Gemini integration only
 )
