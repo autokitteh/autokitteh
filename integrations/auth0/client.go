@@ -14,6 +14,7 @@ type integration struct{ vars sdkservices.Vars }
 
 var (
 	authType      = sdktypes.NewSymbol("auth_type")
+	domain        = sdktypes.NewSymbol("domain")
 	integrationID = sdktypes.NewIntegrationIDFromName("auth0")
 )
 

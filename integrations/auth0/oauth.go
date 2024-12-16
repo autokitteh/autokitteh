@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 
+	"go.autokitteh.dev/autokitteh/integrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 	"go.uber.org/zap"
@@ -46,7 +48,7 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Test the OAuth token's usability and get authoritative installation details.
-	req, err := http.NewRequest("GET", "https://dev-u4mwzrvhp856wtpc.us.auth0.com/api/v2/users", nil)
+	req, err := http.NewRequest("GET", fmt.Sprintf("https://%s/api/v2/roles", os.Getenv("AUTH0_DOMAIN")), nil)
 	if err != nil {
 		l.Error("Failed to create HTTP request", zap.Error(err))
 		c.AbortServerError("request creation error")
@@ -78,6 +80,8 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		c.AbortBadRequest("Auth0 API request failed")
 		return
 	}
-	l.Debug("vars", zap.Any("vars", sdktypes.NewVars(data.ToVars()...)))
-	c.Finalize(sdktypes.NewVars(data.ToVars()...))
+
+	c.Finalize(sdktypes.NewVars(data.ToVars()...).
+		Append(sdktypes.NewVar(domain).SetValue(os.Getenv("AUTH0_DOMAIN"))).
+		Append(sdktypes.NewVar(authType).SetValue(integrations.OAuth)))
 }

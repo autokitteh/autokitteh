@@ -25,7 +25,8 @@ def auth0_client(connection: str, **kwargs) -> Auth0:
     check_connection_name(connection)
 
     token = os.getenv(connection + "__oauth_AccessToken")
-    if not token:
+    domain = os.getenv(connection + "__domain")
+    if not token or not domain:
         raise ConnectionInitError(connection)
 
-    return Auth0(os.getenv("AUTH0_DOMAIN"), token)
+    return Auth0(domain, token)
