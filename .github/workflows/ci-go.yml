@@ -92,8 +92,6 @@ jobs:
         run: make bin/ak test-sessions
 
   verify-docker-builds:
-    needs:
-      - static-analysis
     runs-on: ubuntu-latest
     timeout-minutes: 30
     if: github.ref != 'refs/heads/main'
