@@ -422,7 +422,7 @@ if __name__ == "__main__":
         raise SystemExit(f"error: {err}")
 
     # Support importing local files
-    # sys.path.append(str(args.code_dir))
+    sys.path.append(str(args.code_dir))
 
     chan = grpc.insecure_channel(args.worker_address)
     worker = pb.handler_rpc.HandlerServiceStub(chan)
