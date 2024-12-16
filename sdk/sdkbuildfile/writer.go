@@ -7,11 +7,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"maps"
 	"path/filepath"
 	"sort"
 	"strings"
-
-	"golang.org/x/exp/maps"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -46,7 +45,7 @@ func write(tw *tar.Writer, name string, size int64, r io.Reader) error {
 }
 
 func writeBuildData(tw *tar.Writer, root string, data map[string][]byte) error {
-	ks := maps.Keys(data)
+	ks := kittehs.IterToSlice(maps.Keys(data))
 	sort.Strings(ks)
 
 	for _, k := range ks {

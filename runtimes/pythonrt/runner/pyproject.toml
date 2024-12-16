@@ -1,11 +1,9 @@
 [project]
 name = "runner"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
-	"grpcio ~= 1.66",
-	# TODO: Newest version conflicts with google-generativeai
-	"grpcio-reflection ~= 1.66",
-	#"grpcio-reflection ~= 1.31",
+	"grpcio ~= 1.68",
+	"grpcio-reflection ~= 1.68",
 ]
 
 [project.optional-dependencies]
@@ -14,21 +12,20 @@ all = [
 	"ruff ~= 0.7",
 	"pytest ~= 8.3",
 
-	# AK Environment
+	# Integrations
 	"asana ~= 5.0",
 	"atlassian-python-api ~= 3.41",
 	"boto3 ~= 1.35",
 	"discord.py ~= 2.4",
-	"google-api-python-client ~= 2.144",
+	"google-api-python-client ~= 2.155",
 	"google-auth-httplib2 ~= 0.2",
 	"google-auth-oauthlib ~= 1.2",
-	#"google-generativeai == 0.7.2",
-	"jira ~= 3.8",
-	"openai ~= 1.44",
-	"PyGithub ~= 2.4",
-	"redis ~= 5.0",
-	"slack-sdk ~= 3.32",
-	"twilio ~= 9.3",
+	"google-generativeai ~= 0.8",
+	"hubspot-api-client ~= 11.1",
+	"openai ~= 1.57",
+	"PyGithub @ git+https://github.com/PyGithub/PyGithub.git@b5f8f078f2b7fc0db6a041499c7a05b0bc7e750d",
+	"slack-sdk ~= 3.33",
+	"twilio ~= 9.4",
 
 	# General
 	"beautifulsoup4 ~= 4.12",

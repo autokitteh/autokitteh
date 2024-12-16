@@ -23,7 +23,7 @@ import (
 )
 
 var (
-	//go:embed runner
+	//go:embed all:runner
 	runnerPyCode embed.FS
 
 	//go:embed all:py-sdk

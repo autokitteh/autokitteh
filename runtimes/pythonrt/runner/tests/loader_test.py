@@ -1,13 +1,13 @@
 import ast
 import json
+from textwrap import dedent
 from unittest.mock import MagicMock
-
-import pytest
-from autokitteh import AttrDict
-from conftest import workflows, clear_module_cache
 
 import call
 import loader
+import pytest
+from autokitteh import AttrDict
+from conftest import clear_module_cache, workflows
 
 
 def test_load_code():
@@ -63,7 +63,13 @@ def test_transform(code, transformed):
 def test_exports():
     code_dir, file_name = workflows.simple, "program.py"
     exports = list(loader.exports(code_dir, file_name))
-    assert exports == ["on_event"]
+    expected = {
+        "file": file_name,
+        "line": 6,
+        "name": "on_event",
+        "args": ["event"],
+    }
+    assert exports == [expected]
 
 
 def test_multi_file():
@@ -83,3 +89,55 @@ def test_multi_file():
     event = AttrDict({"data": json.dumps({"user": "joe", "action": "login"})})
     fn(event)  # Make sure it runs without error.
     assert runner.call_in_activity.call_count == 2
+
+
+def test_class_args():
+    code = """
+    class Player:
+        def move(self, dx, dy):
+            self.x += dx
+            self.y += dy
+
+        def __init__(self, x, y):
+            self.x, self.y = x, y
+    """
+    tree = ast.parse(dedent(code))
+    node = tree.body[0]
+    args = loader.class_args(node)
+    assert args == ["x", "y"]
+
+
+fn_args_cases = [
+    pytest.param(
+        """
+        def fn():
+            pass
+        """,
+        [],
+        id="no args",
+    ),
+    pytest.param(
+        """
+        def inc(n):
+            return n + 1
+        """,
+        ["n"],
+        id="single argument",
+    ),
+    pytest.param(
+        """
+        def add(a, b, **kw):
+            return a + b
+        """,
+        ["a", "b", "kw"],
+        id="kw",
+    ),
+]
+
+
+@pytest.mark.parametrize("code, args", fn_args_cases)
+def test_fn_args(code, args):
+    code = dedent(code)
+    tree = ast.parse(code)
+    out = loader.fn_args(tree.body[0])
+    assert out == args

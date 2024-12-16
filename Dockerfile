@@ -37,7 +37,10 @@ EOF
 # runtime dependencies for the application.
 FROM python:3.11-slim AS pydeps
 
+RUN apt update -y && apt install git -y
+
 WORKDIR /runner
+
 COPY ./runtimes/pythonrt/runner/pyproject.toml pyproject.toml
 RUN python -m pip install .[all]
 
