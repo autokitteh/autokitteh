@@ -432,7 +432,8 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktyp
 		return sdktypes.InvalidValue, fmt.Errorf("can't convert: %w", err)
 	}
 
-	py.log.Info("event", zap.Any("keys", maps.Keys(event)))
+	keys := kittehs.IterToSlice(maps.Keys(event))
+	py.log.Info("event", zap.Any("keys", keys))
 
 	eventData, err := json.Marshal(event)
 	if err != nil {
