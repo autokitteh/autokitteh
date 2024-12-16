@@ -19,3 +19,10 @@ When AutoKitteh runs your workflows it'll install this library automatically.
 ```
 python -m pip install autokitteh
 ```
+
+## Building the Documentation
+
+Online documentation is at https://autokitteh.readthedocs.io
+The documentation is at the `docs` directory.
+
+To make sure readthedocs have all the required dependencies, run `gen-reqs.py` in the `docs` directory and commit `requirements.txt`
