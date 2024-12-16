@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 	"io/fs"
+	"maps"
 	"strings"
 
-	"golang.org/x/exp/maps"
 	"google.golang.org/protobuf/proto"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
@@ -50,7 +50,7 @@ func Build(ctx context.Context, fs fs.FS, mainPath string) (sdktypes.BuildArtifa
 
 	return sdktypes.BuildArtifactFromProto(
 		&sdktypes.BuildArtifactPB{
-			Exports: kittehs.Transform(maps.Keys(exports), func(key string) *sdktypes.BuildExportPB {
+			Exports: kittehs.Transform(kittehs.IterToSlice(maps.Keys(exports)), func(key string) *sdktypes.BuildExportPB {
 				sym := kittehs.Must1(sdktypes.ParseSymbol(key))
 				return sdktypes.NewBuildExport().WithSymbol(sym).ToProto()
 			}),
