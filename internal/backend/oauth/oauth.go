@@ -81,6 +81,23 @@ func New(l *zap.Logger) sdkservices.OAuth {
 		// registrations, where each integration registration will call Register
 		// below (if it uses OAuth). This hard-coding is EXTREMELY TEMPORARY!
 		configs: map[string]*oauth2.Config{
+			"auth0": {
+				ClientID:     os.Getenv("AUTH0_CLIENT_ID"),
+				ClientSecret: os.Getenv("AUTH0_CLIENT_SECRET"),
+				Endpoint: oauth2.Endpoint{
+					AuthURL:  fmt.Sprintf("https://%s/oauth/authorize", os.Getenv("AUTH0_DOMAIN")),
+					TokenURL: fmt.Sprintf("https://%s/oauth/token", os.Getenv("AUTH0_DOMAIN")),
+				},
+				RedirectURL: redirectURL + "auth0",
+				Scopes: []string{
+					"openid",
+					"profile",
+					"email",
+					"read:users", // For reading user data
+					"read:users_app_metadata",
+					"offline_access", // For refresh tokens
+				},
+			},
 			"confluence": {
 				// TODO(ENG-965): From new-connection form instead of env vars.
 				ClientID:     os.Getenv("CONFLUENCE_CLIENT_ID"),
@@ -378,6 +395,11 @@ func New(l *zap.Logger) sdkservices.OAuth {
 		},
 
 		opts: map[string]map[string]string{
+			"auth0": {
+				// TODO: audience URL (from env var).
+				"audience":   fmt.Sprintf("https://%s/api/v2/", os.Getenv("AUTH0_DOMAIN")),
+				"grant_type": "client_credentials",
+			},
 			"gmail": {
 				"access_type": "offline", // oauth2.AccessTypeOffline
 				"prompt":      "consent", // oauth2.ApprovalForce
