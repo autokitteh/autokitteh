@@ -65,7 +65,7 @@ func (w *Svc) Start(context.Context) error {
 	fsrv := http.FileServer(http.FS(webfs))
 
 	srv := &http.Server{
-		Addr: fmt.Sprintf("0.0.0.0:%d", w.Config.Port),
+		Addr: fmt.Sprintf("http://localhost:%d", w.Config.Port),
 		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// If path actually exists in fs, serve it.
 			if f, _ := webfs.Open(strings.TrimPrefix(r.URL.Path, "/")); f != nil {
