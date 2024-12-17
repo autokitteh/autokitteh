@@ -927,7 +927,7 @@ type ExportResponse struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Zip of the mainfest + files
+	// Zip of the manifest + files
 	ZipArchive []byte `protobuf:"bytes,1,opt,name=zip_archive,json=zipArchive,proto3" json:"zip_archive,omitempty"`
 }
 
