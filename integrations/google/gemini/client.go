@@ -67,7 +67,7 @@ func connStatus(i *integration) sdkintegrations.OptFn {
 			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
 		}
 
-		if at.Value() == integrations.BotToken {
+		if at.Value() == integrations.APIKey {
 			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "Initialized"), nil
 		}
 		return sdktypes.NewStatus(sdktypes.StatusCodeError, "Bad auth type"), nil
