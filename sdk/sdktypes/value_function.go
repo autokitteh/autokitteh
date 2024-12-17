@@ -74,10 +74,10 @@ func init() {
 type FunctionFlag string
 
 const (
-	PrivilegedFunctionFlag FunctionFlag = "privileged" // pass workflow context.
-	PureFunctionFlag        FunctionFlag = "pure"        // do not run in an activity.
-	ConstFunctionFlag       FunctionFlag = "const"       // result is serialized in data.
-	DisableAutoHeartbeat    FunctionFlag = "noheartbeat" // disable auto heartbeat.
+	PrivilegedFunctionFlag FunctionFlag = "privileged"  // pass workflow context.
+	PureFunctionFlag       FunctionFlag = "pure"        // do not run in an activity.
+	ConstFunctionFlag      FunctionFlag = "const"       // result is serialized in data.
+	DisableAutoHeartbeat   FunctionFlag = "noheartbeat" // disable auto heartbeat.
 )
 
 func (ff FunctionFlag) String() string { return string(ff) }
