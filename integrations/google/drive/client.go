@@ -64,7 +64,6 @@ func (a api) driveClient(ctx context.Context) (*drive.Service, error) {
 	}
 
 	var src oauth2.TokenSource
-	var err error
 	if data.OAuthData != "" {
 		src, err = oauthTokenSource(ctx, data.OAuthData)
 	} else {
