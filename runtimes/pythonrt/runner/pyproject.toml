@@ -1,6 +1,6 @@
 [project]
 name = "runner"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
 	"grpcio ~= 1.68",
 	"grpcio-reflection ~= 1.68",
@@ -15,6 +15,7 @@ all = [
 	# Integrations
 	"asana ~= 5.0",
 	"atlassian-python-api ~= 3.41",
+	"auth0 ~= 4.7",
 	"boto3 ~= 1.35",
 	"discord.py ~= 2.4",
 	"google-api-python-client ~= 2.155",
