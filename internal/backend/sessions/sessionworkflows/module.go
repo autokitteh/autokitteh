@@ -12,7 +12,7 @@ import (
 
 func (w *sessionWorkflow) newModule() sdkexecutor.Executor {
 	flags := sdkmodule.WithFlags(
-		sdktypes.PureFunctionFlag,        // no need to run in an activity, we must have it in the workflow.
+		sdktypes.PureFunctionFlag,       // no need to run in an activity, we must have it in the workflow.
 		sdktypes.PrivilegedFunctionFlag, // provide workflow context.
 	)
 
