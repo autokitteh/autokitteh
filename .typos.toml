@@ -1,0 +1,2 @@
+[files]
+extend-exclude = ["proto/gen/", "descope-web-component.js", "vanilla-jsoneditor.js", "dashboardsvc/render_list.go", "runtimes/pythonrt/build_test.go"]
