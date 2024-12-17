@@ -13,7 +13,7 @@ import (
 func (w *sessionWorkflow) newModule() sdkexecutor.Executor {
 	flags := sdkmodule.WithFlags(
 		sdktypes.PureFunctionFlag,        // no need to run in an activity, we must have it in the workflow.
-		sdktypes.PrivilidgedFunctionFlag, // provide workflow context.
+		sdktypes.PrivilegedFunctionFlag, // provide workflow context.
 	)
 
 	return fixtures.NewBuiltinExecutor(

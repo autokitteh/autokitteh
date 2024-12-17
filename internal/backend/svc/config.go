@@ -65,7 +65,7 @@ func LoadConfig(envVarPrefix string, confmapvs map[string]any, yamlPath string) 
 	if envVarPrefix != "" {
 		// Env variables should have the following convention to support hierarchical keys:
 		// PREFIX_PARENT1__CHILD1__REQUIRED_KEY_NAME
-		// meaning heirarchy is separated by `__` and the name it self use one `_``.
+		// meaning hierarchy is separated by `__` and the name it self use one `_``.
 		if err := k.Load(env.Provider(envVarPrefix, "__", func(s string) string {
 			return strings.ToLower(strings.TrimPrefix(s, envVarPrefix))
 		}), nil); err != nil {

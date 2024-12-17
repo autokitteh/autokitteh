@@ -101,7 +101,7 @@ func (w *sessionWorkflow) cleanupSignals(ctx workflow.Context) {
 	for signalID := range w.lastReadEventSeqForSignal {
 		if err := w.ws.svcs.DB.RemoveSignal(goCtx, signalID); err != nil {
 			// No need to to any handling in case of an error, it won't be used again
-			// at most we would have db garabge we can clear up later with background jobs
+			// at most we would have db garbage we can clear up later with background jobs
 			w.l.Sugar().With("signalID", signalID, "err", err).Warnf("failed removing signal %v, err: %v", signalID, err)
 		}
 	}

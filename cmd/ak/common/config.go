@@ -43,7 +43,7 @@ func readServerURL() (ret *url.URL, err error) {
 	u := sdkclient.DefaultLocalURL
 	if _, err = cfg.Get(config.ServiceUrlConfigKey, &u); err != nil {
 		return
-	} // if not overriden by config, then url will remain default
+	} // if not overridden by config, then url will remain default
 
 	if ret, err = url.Parse(u); err != nil {
 		return
