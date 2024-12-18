@@ -16,8 +16,6 @@ import (
 	"google.golang.org/api/option"
 )
 
-type integration struct{ vars sdkservices.Vars }
-
 var integrationID = sdktypes.NewIntegrationIDFromName("googlegemini")
 
 var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
@@ -38,11 +36,10 @@ var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.Integrati
 }))
 
 func New(cvars sdkservices.Vars) sdkservices.Integration {
-	i := &integration{vars: cvars}
 	return sdkintegrations.NewIntegration(
 		desc,
 		sdkmodule.New( /* No exported functions for Starlark */ ),
-		connStatus(i),
+		connStatus(cvars),
 		connTest(cvars),
 		sdkintegrations.WithConnectionConfigFromVars(cvars),
 	)
@@ -51,13 +48,13 @@ func New(cvars sdkservices.Vars) sdkservices.Integration {
 // connStatus is an optional connection status check provided by
 // the integration to AutoKitteh. The possible results are "Init
 // required" (the connection is not usable yet) and "Initialized".
-func connStatus(i *integration) sdkintegrations.OptFn {
+func connStatus(cvars sdkservices.Vars) sdkintegrations.OptFn {
 	return sdkintegrations.WithConnectionStatus(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
 		if !cid.IsValid() {
 			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
 		}
 
-		vs, err := i.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
+		vs, err := cvars.Get(ctx, sdktypes.NewVarScopeID(cid))
 		if err != nil {
 			return sdktypes.InvalidStatus, err
 		}
