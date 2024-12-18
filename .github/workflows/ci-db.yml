@@ -1,9 +1,8 @@
-name: CI - GORM
+name: CI - DB
 
 on:
   pull_request:
-    paths:
-      - "internal/backend/db/dbgorm/**"
+    paths: ["internal/backend/db/dbgorm/**"]
 
 jobs:
   test-gorm:
