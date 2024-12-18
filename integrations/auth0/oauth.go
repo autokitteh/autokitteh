@@ -17,6 +17,10 @@ type handler struct {
 	logger *zap.Logger
 }
 
+const (
+	domainEnvVarName = "AUTH0_DOMAIN"
+)
+
 func NewHandler(l *zap.Logger) http.Handler {
 	return handler{logger: l}
 }
@@ -47,9 +51,15 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-
 	// Test the OAuth token's usability and get authoritative installation details.
-	req, err := http.NewRequest("GET", fmt.Sprintf("https://%s/api/v2/roles", os.Getenv("AUTH0_DOMAIN")), nil)
+	d := os.Getenv(domainEnvVarName)
+	if d == "" {
+		l.Error("Missing Auth0 domain env var")
+		c.AbortBadRequest("missing Auth0 domain env var")
+		return
+	}
+
+	req, err := http.NewRequest("GET", fmt.Sprintf("https://%s/api/v2/roles", d), nil)
 	if err != nil {
 		l.Error("Failed to create HTTP request", zap.Error(err))
 		c.AbortServerError("request creation error")
@@ -83,6 +93,6 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	c.Finalize(sdktypes.NewVars(data.ToVars()...).
-		Append(sdktypes.NewVar(domain).SetValue(os.Getenv("AUTH0_DOMAIN"))).
+		Append(sdktypes.NewVar(domain).SetValue(d)).
 		Append(sdktypes.NewVar(authType).SetValue(integrations.OAuth)))
 }
