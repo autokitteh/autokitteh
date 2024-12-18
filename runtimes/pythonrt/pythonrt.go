@@ -8,6 +8,7 @@ import (
 	"maps"
 	"net"
 	"path"
+	"slices"
 	"strings"
 	"time"
 
@@ -432,7 +433,7 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktyp
 		return sdktypes.InvalidValue, fmt.Errorf("can't convert: %w", err)
 	}
 
-	keys := kittehs.IterToSlice(maps.Keys(event))
+	keys := slices.Collect(maps.Keys(event))
 	py.log.Info("event", zap.Any("keys", keys))
 
 	eventData, err := json.Marshal(event)
