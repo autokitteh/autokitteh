@@ -65,7 +65,7 @@ func (d *Dispatcher) Dispatch(ctx context.Context, event sdktypes.Event, opts *s
 
 	sl := d.sl.With("event_id", eid)
 
-	sl.Infof("event %v saved", eid)
+	sl.Infof("event saved: %v", eid)
 
 	memo := map[string]string{
 		"event_id":         eid.String(),
@@ -91,7 +91,9 @@ func (d *Dispatcher) Dispatch(ctx context.Context, event sdktypes.Event, opts *s
 		return sdktypes.InvalidEventID, fmt.Errorf("failed starting workflow: %w", err)
 	}
 
-	sl.With("run", r).Infof("started dispatcher workflow %v for %v", r, eid)
+	sl.Desugar().Info("started dispatcher workflow for event: "+eid.String(),
+		zap.Any("workflow_id", r.GetID()),
+		zap.Any("run_id", r.GetRunID()))
 
 	return eid, nil
 }
