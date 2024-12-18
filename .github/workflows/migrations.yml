@@ -5,7 +5,7 @@ name: CI - Migration Files
 on:
   pull_request:
     paths:
-      - .github/workflows/ci-migrations.yml
+      - .github/workflows/migrations.yml
       - internal/backend/db/dbgorm/scheme/**
 
 jobs:

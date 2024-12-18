@@ -3,7 +3,7 @@ name: CI - Shell
 on:
   pull_request:
     paths:
-      - .github/workflows/ci-shell.yml
+      - .github/workflows/shell.yml
       - "**.sh"
 
 jobs:

@@ -3,7 +3,7 @@ name: CI - Manifest Schema
 on:
   pull_request:
     paths:
-      - .github/workflows/ci-manifest.yml
+      - .github/workflows/manifest.yml
       - docs/autokitteh.yaml
       - internal/manifest/manifest.go
       - manifest.schema.yaml

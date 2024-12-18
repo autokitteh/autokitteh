@@ -6,7 +6,7 @@ name: CI - Proto
 on:
   pull_request:
     paths:
-      - .github/workflows/ci-proto.yml
+      - .github/workflows/proto.yml
       - proto/**
 
 jobs:
