@@ -91,6 +91,29 @@ jobs:
       - name: Session tests
         run: make bin/ak test-sessions
 
+  verify-docker-builds:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    if: github.ref != 'refs/heads/main'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Setup version info
+        run: |
+          # These are consumed in the Dockerfile.
+          echo "${GITHUB_REF#refs/tags/}" > .version
+          echo "${GITHUB_SHA}" > .commit
+      - name: Verify Image Builds
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          platforms: linux/amd64
+          tags: autokitteh:latest
+          push: false
+          provenance: false
+
   publish_docker_image:
     needs:
       - test-sessions

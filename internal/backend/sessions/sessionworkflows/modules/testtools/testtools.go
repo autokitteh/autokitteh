@@ -23,14 +23,14 @@ var (
 	// A soft error is a regular call error, can be interpreted as regular integration error.
 	errTestSoft = errors.New("soft test error")
 
-	// A hard eror is intended to be a simulated infrastructure error to trigger a retry.
+	// A hard error is intended to be a simulated infrastructure error to trigger a retry.
 	ErrTestHard = sdkerrors.NewRetryableErrorf("hard test error")
 )
 
 func New() sdkexecutor.Executor {
 	return fixtures.NewBuiltinExecutor(
 		ExecutorID,
-		sdkmodule.ExportFunction("freeze", freeze, sdkmodule.WithFlags(sdktypes.PureFunctionFlag, sdktypes.PrivilidgedFunctionFlag)),
+		sdkmodule.ExportFunction("freeze", freeze, sdkmodule.WithFlags(sdktypes.PureFunctionFlag, sdktypes.PrivilegedFunctionFlag)),
 		sdkmodule.ExportFunction("fail_activity", failActivity, sdkmodule.WithFlags(sdktypes.DisableAutoHeartbeat)),
 		sdkmodule.ExportFunction("fail_workflow", failWorkflow, sdkmodule.WithFlags(sdktypes.PureFunctionFlag)),
 	)

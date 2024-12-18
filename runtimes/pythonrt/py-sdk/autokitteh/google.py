@@ -307,7 +307,7 @@ def _google_refresh_handler(integration: str, connection: str) -> callable:
 
     Returns:
         Generated function (based on the input) to return a fresh access token
-        and its expiry date. Overriden by AutoKitteh to keep the Google client
+        and its expiry date. Overridden by AutoKitteh to keep the Google client
         secret hidden from workflows, and unused in local development.
     """
 

@@ -11,7 +11,7 @@ output equals file expected_output_1st_deploy.txt
 # Redeploy the same manifest.
 ak manifest deploy my_project/manifest.yaml
 return code == 0
-output equals file expected_output_2nd_deploy.txt
+output equals file expected_output_second_deploy.txt
 
 # Negative test: deploy project with nonexistent files and directories.
 ak manifest deploy my_project/manifest.yaml --file bad_filename
@@ -65,7 +65,7 @@ project:
 [exec] create_deployment: created "dep_00000000000000000000000005"
 [exec] activate_deployment: activated
 
--- expected_output_2nd_deploy.txt --
+-- expected_output_second_deploy.txt --
 [plan] project "my_project": found, id="prj_00000000000000000000000001"
 [plan] project "my_project": no changes needed
 [plan] project "my_project": found 0 connections

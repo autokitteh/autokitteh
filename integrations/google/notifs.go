@@ -309,7 +309,7 @@ func fetchGoogleCerts() (map[string]*rsa.PublicKey, error) {
 
 	// Parse JSON.
 	if err := json.Unmarshal(body, &certs); err != nil {
-		return nil, fmt.Errorf("error unmarshaling Google OAuth certs: %w", err)
+		return nil, fmt.Errorf("error unmarshalling Google OAuth certs: %w", err)
 	}
 
 	cachedPublicKeys = make(map[string]*rsa.PublicKey)

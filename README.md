@@ -116,7 +116,7 @@ $ ak version
 ## Recommended Dev Tools
 
 - gofumpt
-- gotestsum (used by Makefile intead of "go test" if detected)
+- gotestsum (used by Makefile instead of "go test" if detected)
 - jq (for advanced output formatting)
 - atlasgo (for new DB migrations)
 - nodejs >= 20 (only if updating the UI)

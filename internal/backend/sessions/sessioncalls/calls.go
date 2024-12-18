@@ -136,7 +136,7 @@ func (cs *calls) Call(wctx workflow.Context, params *CallParams) (sdktypes.Sessi
 	if fnvf.HasFlag(sdktypes.PureFunctionFlag) {
 		goCtx := temporalclient.NewWorkflowContextAsGOContext(wctx)
 
-		if fnvf.HasFlag(sdktypes.PrivilidgedFunctionFlag) {
+		if fnvf.HasFlag(sdktypes.PrivilegedFunctionFlag) {
 			goCtx = sessioncontext.WithWorkflowContext(goCtx, wctx)
 		}
 
@@ -179,7 +179,7 @@ func (cs *calls) Call(wctx workflow.Context, params *CallParams) (sdktypes.Sessi
 
 				uniqueTaskQueueName := uniqueWorkerCallTaskQueueName()
 				if uniqueTaskQueueName == "" {
-					return sdktypes.InvalidSessionCallAttemptResult, errors.New("local session worker for activities is not registerd")
+					return sdktypes.InvalidSessionCallAttemptResult, errors.New("local session worker for activities is not registered")
 				}
 
 				cfg := cs.config.uniqueActivityConfig()
