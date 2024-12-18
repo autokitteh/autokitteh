@@ -55,7 +55,7 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	d := os.Getenv(domainEnvVarName)
 	if d == "" {
 		l.Error("Missing Auth0 domain env var")
-		c.AbortBadRequest("missing Auth0 domain env var")
+		c.AbortBadRequest("unknown Auth0 domain")
 		return
 	}
 
