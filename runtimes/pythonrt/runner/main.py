@@ -21,7 +21,8 @@ import loader
 import log
 import pb
 import values
-from audit import make_audit_hook
+
+# from audit import make_audit_hook  # TODO(ENG-1893): uncomment this.
 from autokitteh import AttrDict, connections
 from call import AKCall, full_func_name
 from syscalls import SysCalls
