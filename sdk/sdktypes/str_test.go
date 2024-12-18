@@ -47,7 +47,7 @@ func TestStr(t *testing.T) {
 	assert.NotEqual(t, n, nn)
 }
 
-// If this test fails, the hash function changed. This will cause incompability with existing data.
+// If this test fails, the hash function changed. This will cause incompatibility with existing data.
 func TestStableStringHash(t *testing.T) {
 	n := kittehs.Must1(sdktypes.ParseSymbol("test"))
 	assert.Equal(t, "e1b996a9b8f4e2ca87565411d377817dcecc4b7114ad4b0b6dcc42093b592c74", n.Hash())

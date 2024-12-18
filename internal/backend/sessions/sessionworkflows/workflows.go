@@ -234,7 +234,7 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 			ws.errored(dwctx, sid, err, prints)
 
 			if _, ok := sdktypes.FromError(err); ok {
-				// User level error (convertable to ProgramError).
+				// User level error (convertible to ProgramError).
 				l.Info("session workflow program error")
 				sessionsProgramErrorsCounter.Add(metricsCtx, 1)
 

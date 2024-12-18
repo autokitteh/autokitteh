@@ -32,7 +32,7 @@ func TestSaveBuild(t *testing.T) {
 	f := preBuildTest(t)
 
 	b := f.newBuild()
-	// test saveBuid
+	// test saveBuild
 	f.saveBuildsAndAssert(t, b)
 }
 

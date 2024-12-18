@@ -1,6 +1,6 @@
 [project]
 name = 'autokitteh'
-version = '0.3.7'
+version = '0.3.8'
 description = 'AutoKitteh Python SDK'
 readme = 'README.md'
 license = {file = 'LICENSE'}
@@ -16,6 +16,7 @@ all = [
 	# Integrations
 	"asana ~= 5.0",
 	"atlassian-python-api ~= 3.41",
+	"auth0-python ~= 4.7",
 	"boto3 ~= 1.35",
 	"discord.py ~= 2.4",
 	"google-api-python-client ~= 2.155",

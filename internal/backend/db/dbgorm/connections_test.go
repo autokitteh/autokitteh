@@ -31,7 +31,7 @@ func preConnectionTest(t *testing.T) *dbFixture {
 }
 
 func TestCreateConnection(t *testing.T) {
-	// test createConneciton without any dependencies, since they are soft-foreign keys and could be nil
+	// test createConnection without any dependencies, since they are soft-foreign keys and could be nil
 	f := preConnectionTest(t)
 
 	c := f.newConnection()
@@ -67,7 +67,7 @@ func TestCreateConnectionForeignKeys(t *testing.T) {
 }
 
 func TestCreateConnectionSameName(t *testing.T) {
-	// test createConneciton without any dependencies, since they are soft-foreign keys and could be nil
+	// test createConnection without any dependencies, since they are soft-foreign keys and could be nil
 	f := preConnectionTest(t)
 
 	// test createConnection with the same name
@@ -79,7 +79,7 @@ func TestCreateConnectionSameName(t *testing.T) {
 	f.createConnectionsAndAssert(t, c1)
 	assert.ErrorIs(t, f.gormdb.createConnection(f.ctx, &c2), gorm.ErrDuplicatedKey)
 
-	// should fail, since conneciton belong to the same project
+	// should fail, since connection belong to the same project
 	p1 := f.newProject()
 	f.createProjectsAndAssert(t, p1)
 	c3 := f.newConnection(p1, connName)

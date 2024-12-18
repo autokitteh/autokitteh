@@ -138,7 +138,7 @@ func setupDB(config *gormkitteh.Config) *gorm.DB {
 			PreferSimpleProtocol: true, // disables implicit prepared statement usage. By default pgx automatically uses the extended protocol
 		})
 	default:
-		log.Fatalf("unsuppported DBtype - <%s>", config.Type)
+		log.Fatalf("unsupported DBtype - <%s>", config.Type)
 	}
 
 	logger := logger.New(

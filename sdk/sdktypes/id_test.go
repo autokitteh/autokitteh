@@ -62,7 +62,7 @@ func TestID(t *testing.T) {
 	assert.NotEqual(t, zero, pid2)
 }
 
-// If this test fails, the hash function changed. This will cause incompability with existing data.
+// If this test fails, the hash function changed. This will cause incompatibility with existing data.
 func TestStableIDHash(t *testing.T) {
 	id := kittehs.Must1(ParseProjectID(pidStr))
 	assert.Equal(t, testHash, id.Hash())

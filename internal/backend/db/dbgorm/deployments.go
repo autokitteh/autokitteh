@@ -119,7 +119,7 @@ func (gdb *gormdb) listDeploymentsCommonQuery(ctx context.Context, filter sdkser
 func (db *gormdb) listDeploymentsWithStats(ctx context.Context, filter sdkservices.ListDeploymentsFilter) ([]scheme.DeploymentWithStats, error) {
 	q := db.listDeploymentsCommonQuery(ctx, filter)
 
-	// explcitly set model, since DeploymentWithStats is Deployment
+	// explicitly set model, since DeploymentWithStats is Deployment
 	q = q.Model(scheme.Deployment{}).Select(`
 	deployments.*, 
 	COUNT(case when sessions.current_state_type = ? then 1 end) AS created,
@@ -130,7 +130,7 @@ func (db *gormdb) listDeploymentsWithStats(ctx context.Context, filter sdkservic
 	`, int32(sdktypes.SessionStateTypeCreated.ToProto()), // Note:
 		int32(sdktypes.SessionStateTypeRunning.ToProto()),   // sdktypes.SessionStateTypeCreated.ToProto() is a sessionsv1.SessionStateType
 		int32(sdktypes.SessionStateTypeError.ToProto()),     // which is an type alias to int32. But since it's a different type then int32
-		int32(sdktypes.SessionStateTypeCompleted.ToProto()), // postgress won't allow it to be inserted to bigint column,
+		int32(sdktypes.SessionStateTypeCompleted.ToProto()), // PostgreSQL won't allow it to be inserted to bigint column,
 		int32(sdktypes.SessionStateTypeStopped.ToProto())).  // therefore we need to cust it to int32
 		Joins(`LEFT JOIN sessions on deployments.deployment_id = sessions.deployment_id
 	AND sessions.deleted_at IS NULL`).
