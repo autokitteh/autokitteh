@@ -11,7 +11,7 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-// specialied version of findAndAssertOne in order to exclude var.ID from the comparison
+// specialized version of findAndAssertOne in order to exclude var.ID from the comparison
 func findAndAssertOneVar(t *testing.T, f *dbFixture, v scheme.Var) {
 	vr := findAndAssertCount[scheme.Var](t, f, 1, "var_id = ? and name = ?", v.ScopeID, v.Name)[0]
 	require.Equal(t, v, vr)

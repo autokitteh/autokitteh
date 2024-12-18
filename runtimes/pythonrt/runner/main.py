@@ -340,7 +340,7 @@ class Runner(pb.runner_rpc.RunnerService):
             self.worker.Print(req)
         except grpc.RpcError as err:
             if err.code() == grpc.StatusCode.UNAVAILABLE or grpc.StatusCode.CANCELLED:
-                log.error("grpc canclled or unavailable, killing self")
+                log.error("grpc cancelled or unavailable, killing self")
                 self.server.stop(SERVER_GRACE_TIMEOUT)
             log.error("print: %s", err)
 
@@ -422,7 +422,7 @@ if __name__ == "__main__":
         raise SystemExit(f"error: {err}")
 
     # Support importing local files
-    # sys.path.append(str(args.code_dir))
+    sys.path.append(str(args.code_dir))
 
     chan = grpc.insecure_channel(args.worker_address)
     worker = pb.handler_rpc.HandlerServiceStub(chan)

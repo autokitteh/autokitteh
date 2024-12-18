@@ -37,7 +37,7 @@ func New() sdkexecutor.Executor {
 		// TODO: consider implementing only this as a higher level
 		//       module and somehow when `time.now` called in a starlark builtin
 		//       library, redirect here.
-		sdkmodule.ExportFunction("now", now, sdkmodule.WithFlags(sdktypes.PureFunctionFlag, sdktypes.PrivilidgedFunctionFlag)),
+		sdkmodule.ExportFunction("now", now, sdkmodule.WithFlags(sdktypes.PureFunctionFlag, sdktypes.PrivilegedFunctionFlag)),
 	)
 }
 

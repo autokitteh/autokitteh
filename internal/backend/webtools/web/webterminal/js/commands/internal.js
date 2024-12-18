@@ -23,7 +23,7 @@ define([], () => {
         error_codes: {
           H01: {
             code: 'H01',
-            details: 'cannnot find command or command doesn\'t have a manual...'
+            details: 'cannot find command or command doesn\'t have a manual...'
           }
         },
 

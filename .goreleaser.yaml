@@ -19,6 +19,21 @@ builds:
       - amd64
       - arm64
 
+brews:
+  - name: autokitteh
+    description: "Durable workflow automation made simple"
+    homepage: "https://autokitteh.com"
+    url_template: "https://github.com/autokitteh/autokitteh/releases/download/{{ .Version }}/{{ .ArtifactName }}"
+    license: "Apache-2.0"
+    install: |
+      bin.install "ak"
+    test: |
+      system "#{bin}/ak --version"
+    repository:
+      owner: autokitteh
+      name: homebrew-tap
+      branch: main
+
 source:
   enabled: false
 

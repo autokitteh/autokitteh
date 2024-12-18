@@ -92,7 +92,7 @@ func TestCreateBuildWithOwnership(t *testing.T) {
 	f.saveBuildsAndAssert(t, b2)
 	assert.NoError(t, f.gormdb.isCtxUserEntity(f.ctx, b2.BuildID))
 
-	// different user - unathorized to create build for the project owned by another user
+	// different user - unauthorized to create build for the project owned by another user
 	f.withUser(u2)
 	assert.ErrorIs(t, f.gormdb.saveBuild(f.ctx, &b2), sdkerrors.ErrUnauthorized)
 }
@@ -141,7 +141,7 @@ func TestCreateConnectionWithOwnership(t *testing.T) {
 	f.createConnectionsAndAssert(t, c2)
 	assert.NoError(t, f.gormdb.isCtxUserEntity(f.ctx, c2.ConnectionID))
 
-	// different user - unathorized to create connection for the project owned by another user
+	// different user - unauthorized to create connection for the project owned by another user
 	f.withUser(u2)
 	assert.ErrorIs(t, f.gormdb.createConnection(f.ctx, &c2), sdkerrors.ErrUnauthorized)
 }
@@ -200,7 +200,7 @@ func TestCreateSessionWithOwnership(t *testing.T) {
 	s7 := f.newSession(b)
 	assert.ErrorIs(t, f.gormdb.createSession(f.ctx, &s7), sdkerrors.ErrUnauthorized)
 
-	// and this cannot be overrided by providing one of the entities owned by the same user
+	// and this cannot be overridden by providing one of the entities owned by the same user
 	b2 := f.newBuild()
 	f.saveBuildsAndAssert(t, b2)
 	s8 := f.newSession(b2, d)
@@ -227,7 +227,7 @@ func TestCreateEventWithOwnership(t *testing.T) {
 	f.createEventsAndAssert(t, e2)
 	assert.NoError(t, f.gormdb.isCtxUserEntity(f.ctx, e2.EventID))
 
-	// different user - unathorized to create event with connection owned by another user
+	// different user - unauthorized to create event with connection owned by another user
 	f.withUser(u2)
 	assert.ErrorIs(t, f.gormdb.saveEvent(f.ctx, &e2), sdkerrors.ErrUnauthorized)
 }
@@ -244,7 +244,7 @@ func TestCreateTriggerWithOwnership(t *testing.T) {
 	// different user
 	f.withUser(u2)
 
-	// user not owning any of project, env, connecion
+	// user not owning any of project, env, connection
 	t2 := f.newTrigger(p, c)
 	assert.ErrorIs(t, f.gormdb.createTrigger(f.ctx, &t2), sdkerrors.ErrUnauthorized)
 

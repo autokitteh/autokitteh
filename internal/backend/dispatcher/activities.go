@@ -206,7 +206,7 @@ func (d *Dispatcher) getEventSessionDataActivity(ctx context.Context, event sdkt
 		}
 
 		var c sdktypes.Connection
-		if cid := t.ConnectionID(); cid.IsValid() { // only if this trigger has conneciton defined
+		if cid := t.ConnectionID(); cid.IsValid() { // only if this trigger has connection defined
 			c, err = d.svcs.Connections.Get(ctx, t.ConnectionID())
 			if err != nil {
 				sl.With("err", err).Errorf("could not fetch connection %v: %v", t.ConnectionID(), err)
