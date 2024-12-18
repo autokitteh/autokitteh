@@ -9,6 +9,7 @@ import (
 	"io"
 	"maps"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 
@@ -45,7 +46,7 @@ func write(tw *tar.Writer, name string, size int64, r io.Reader) error {
 }
 
 func writeBuildData(tw *tar.Writer, root string, data map[string][]byte) error {
-	ks := kittehs.IterToSlice(maps.Keys(data))
+	ks := slices.Collect(maps.Keys(data))
 	sort.Strings(ks)
 
 	for _, k := range ks {

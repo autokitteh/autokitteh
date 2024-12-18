@@ -8,6 +8,7 @@ import (
 	"encoding/xml"
 	"io"
 	"maps"
+	"slices"
 
 	"golang.org/x/tools/txtar"
 	"gopkg.in/yaml.v3"
@@ -30,7 +31,7 @@ var (
 		"txtar":       ParseTxTar,
 	}
 
-	Extensions              = kittehs.IterToSlice(maps.Keys(Parsers))
+	Extensions              = slices.Collect(maps.Keys(Parsers))
 	ExtensionsWithDotPrefix = kittehs.Transform(Extensions, func(s string) string { return "." + s })
 )
 
