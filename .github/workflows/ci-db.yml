@@ -7,7 +7,7 @@ on:
 
 jobs:
   test-gorm:
-    name: GORM
+    name: GORM tests
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -18,5 +18,5 @@ jobs:
         with:
           go-version-file: go.mod
 
-      - name: Run GORM tests on all engines
+      - name: Run on all engines
         run: make test-dbgorm
