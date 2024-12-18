@@ -91,7 +91,7 @@ func (d *Dispatcher) Dispatch(ctx context.Context, event sdktypes.Event, opts *s
 		return sdktypes.InvalidEventID, fmt.Errorf("failed starting workflow: %w", err)
 	}
 
-	sl.Desugar().Info("started dispatcher workflow",
+	sl.Desugar().Info("started dispatcher workflow for event: "+eid.String(),
 		zap.Any("workflow_id", r.GetID()),
 		zap.Any("run_id", r.GetRunID()))
 
