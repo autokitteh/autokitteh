@@ -1,14 +1,13 @@
-name: Continuous Integration - Proto
+# https://github.com/marketplace/actions/buf-action
+# https://buf.build/docs/ci-cd/github-actions/
+
+name: CI - Proto
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - "proto/**"
   pull_request:
     paths:
-      - "proto/**"
+      - .github/workflows/ci-proto.yml
+      - proto/**
 
 jobs:
   make:
@@ -26,18 +25,23 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+
       - name: Set up Buf
-        uses: bufbuild/buf-setup-action@v1
+        uses: bufbuild/buf-action@v1
         with:
-          github_token: ${{ github.token }}
+          github_token: ${{github.token}}
+          setup_only: true
+
       # Create inline comments when detecting violations in PRs
       # (not a replacement for linting in the Makefile).
       - name: Run Buf lint
         uses: bufbuild/buf-lint-action@v1
         with:
           input: proto
+
       - name: Run make
         run: make -C proto
+
       - name: Detect uncommitted stub changes
         run: |
           git add -N .

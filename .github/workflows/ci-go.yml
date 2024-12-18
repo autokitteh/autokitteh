@@ -20,7 +20,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11" # Should be in sync with runtimes/pythonrt/pythonrt.go:minPyVersion
+          python-version: "3.12"
 
       - name: Install gotestsum
         run: go install gotest.tools/gotestsum@latest
@@ -84,7 +84,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12" # Should be in sync with runtimes/pythonrt/pythonrt.go:minPyVersion
+          python-version: "3.12"
 
       - name: Session tests
         run: make bin/ak test-sessions

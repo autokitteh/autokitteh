@@ -1,14 +1,12 @@
-name: Validate Migration Files
+# https://github.com/marketplace/actions/atlas-ci-action
+
+name: CI - Migration Files
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - "internal/backend/db/dbgorm/scheme/**"
   pull_request:
     paths:
-      - "internal/backend/db/dbgorm/scheme/**"
+      - .github/workflows/ci-migrations.yml
+      - internal/backend/db/dbgorm/scheme/**
 
 jobs:
   validate:
@@ -22,8 +20,10 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
+
       - uses: ariga/setup-atlas@v0
         name: Setup Atlas
+
       - name: Validate Sqlite Migrations
         run: |
           OUTPUT=$(atlas migrate diff --env sqlite)
@@ -33,6 +33,7 @@ jobs:
               echo $OUTPUT
               exit 1
           fi
+
       - name: Validate Postgres Migrations
         run: |
           OUTPUT=$(atlas migrate diff --env postgres)

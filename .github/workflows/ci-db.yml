@@ -2,7 +2,9 @@ name: CI - DB
 
 on:
   pull_request:
-    paths: ["internal/backend/db/dbgorm/**"]
+    paths:
+      - .github/workflows/ci-db.yml
+      - internal/backend/db/dbgorm/**
 
 jobs:
   test-gorm:
