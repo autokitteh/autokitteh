@@ -85,7 +85,7 @@ func (t Trigger) GetKey() string {
 	what := ""
 
 	if t.Schedule != nil {
-		what = "schdule:" + *t.Schedule
+		what = "schedule:" + *t.Schedule
 	} else if t.Webhook != nil {
 		what = "webhook"
 	} else if t.ConnectionKey != nil {

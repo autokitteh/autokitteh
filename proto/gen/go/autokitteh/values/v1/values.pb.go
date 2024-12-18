@@ -701,7 +701,7 @@ type Function struct {
 	ExecutorId string       `protobuf:"bytes,1,opt,name=executor_id,json=executorId,proto3" json:"executor_id,omitempty"`
 	Name       string       `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
 	Desc       *v1.Function `protobuf:"bytes,3,opt,name=desc,proto3" json:"desc,omitempty"`
-	// Data that is transfered along with the function itself.
+	// Data that is transferred along with the function itself.
 	// This can be used by the function implementing the name
 	// above, to store data in its internal scope.
 	Data  []byte   `protobuf:"bytes,4,opt,name=data,proto3" json:"data,omitempty"`

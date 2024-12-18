@@ -158,7 +158,7 @@ func ensureUserAccessToEntitiesWithOwnerships(db *gorm.DB, uid string, ids ...sd
 }
 
 func (gdb *gormdb) isUserEntity(ctx context.Context, uid string, ids ...sdktypes.UUID) error {
-	if akCtx.RequestOrginator(ctx) == akCtx.User { // enforce only on user-orginated requests
+	if akCtx.RequestOrginator(ctx) == akCtx.User { // enforce only on user-originated requests
 		return gdb.owner.EnsureUserAccessToEntities(ctx, gdb.db, uid, ids...)
 	}
 	return nil

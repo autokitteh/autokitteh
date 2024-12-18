@@ -1,0 +1,2 @@
+[files]
+extend-exclude = ["descope-web-component.js", "vanilla-jsoneditor.js", "internal/backend/dashboardsvc/render_list.go", "runtimes/pythonrt/build_test.go"]

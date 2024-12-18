@@ -44,11 +44,11 @@ const (
 	runnerTypeNotConfigured runnerType = "not_configured"
 )
 
-type Healther interface {
+type Healthier interface {
 	Health(ctx context.Context, in *userCode.RunnerHealthRequest, opts ...grpc.CallOption) (*userCode.RunnerHealthResponse, error)
 }
 
-func waitForServer(name string, h Healther, timeout time.Duration) error {
+func waitForServer(name string, h Healthier, timeout time.Duration) error {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 	start := time.Now()

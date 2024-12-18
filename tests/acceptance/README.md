@@ -34,7 +34,7 @@ types.
 
 See the `triggers` section in the [autokitteh.yaml](./autokitteh.yaml) file.
 
-Note tha all entry-point handler functions print the received event, but they
+Note that all entry-point handler functions print the received event, but they
 don't use the event's data payload.
 
 ## API Calls as Manual Runs

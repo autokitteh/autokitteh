@@ -52,7 +52,7 @@ func WithConnectionConfigFromVars(cvars sdkservices.Vars) OptFn {
 }
 
 // NewIntegration creates a new integration, augmenting the given `desc` with
-// the members defintion from `mod`.
+// the members definition from `mod`.
 func NewIntegration(
 	desc sdktypes.Integration,
 	mod sdkmodule.Module,

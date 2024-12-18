@@ -123,7 +123,7 @@ func New(cfg *Config, l *zap.Logger, getLocalAddr func() string) (*sdkruntimes.R
 		}); err != nil {
 			return nil, fmt.Errorf("configure remote runner manager: %w", err)
 		}
-		l.Info("remote runner configued")
+		l.Info("remote runner configured")
 	default:
 		if err := configureLocalRunnerManager(l,
 			LocalRunnerManagerConfig{
@@ -226,7 +226,7 @@ func loadSyscall(values map[string]sdktypes.Value) (sdktypes.Value, error) {
 }
 
 // entryPointFileName strips the handler from the entry point
-// "porgram.py:on_event" -> "program.py"
+// "program.py:on_event" -> "program.py"
 func entryPointFileName(entryPoint string) string {
 	i := strings.Index(entryPoint, ":")
 	if i > 0 {

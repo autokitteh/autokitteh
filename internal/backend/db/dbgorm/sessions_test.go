@@ -24,7 +24,7 @@ func (f *dbFixture) createSessionsAndAssert(t *testing.T, sessions ...scheme.Ses
 func (f *dbFixture) listSessionsAndAssert(t *testing.T, expected int64) []scheme.Session {
 	flt := sdkservices.ListSessionsFilter{
 		CountOnly: false,
-		StateType: sdktypes.SessionStateTypeUnspecified, // fetch all sesssions
+		StateType: sdktypes.SessionStateTypeUnspecified, // fetch all sessions
 	}
 
 	sessions, cnt, err := f.gormdb.listSessions(f.ctx, flt)
@@ -164,7 +164,7 @@ func TestListSessionsCountOnly(t *testing.T) {
 
 	flt := sdkservices.ListSessionsFilter{
 		CountOnly: true,
-		StateType: sdktypes.SessionStateTypeUnspecified, // fetch all sesssions
+		StateType: sdktypes.SessionStateTypeUnspecified, // fetch all sessions
 	}
 
 	sessions, cnt, err := f.gormdb.listSessions(f.ctx, flt)
@@ -178,7 +178,7 @@ func TestListSessionsNoSessionsCountOnly(t *testing.T) {
 
 	flt := sdkservices.ListSessionsFilter{
 		CountOnly: true,
-		StateType: sdktypes.SessionStateTypeUnspecified, // fetch all sesssions
+		StateType: sdktypes.SessionStateTypeUnspecified, // fetch all sessions
 	}
 
 	sessions, cnt, err := f.gormdb.listSessions(f.ctx, flt)
@@ -198,7 +198,7 @@ func TestListPaginatedSession(t *testing.T) {
 
 	flt := sdkservices.ListSessionsFilter{
 		CountOnly:         false,
-		StateType:         sdktypes.SessionStateTypeUnspecified, // fetch all sesssions
+		StateType:         sdktypes.SessionStateTypeUnspecified, // fetch all sessions
 		PaginationRequest: sdktypes.PaginationRequest{PageSize: 1},
 	}
 

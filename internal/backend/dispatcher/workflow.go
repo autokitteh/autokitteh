@@ -136,7 +136,7 @@ func (d *Dispatcher) signalWorkflows(wctx workflow.Context, event sdktypes.Event
 
 		match, err := event.Matches(signal.Filter)
 		if err != nil {
-			sl.Infof("inavlid signal filter: %v", err)
+			sl.Infof("invalid signal filter: %v", err)
 			continue
 		}
 

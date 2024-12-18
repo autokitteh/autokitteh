@@ -184,7 +184,7 @@ func (v Value) ToStringValuesMap() (map[string]Value, error) {
 func (v Value) Unwrap() (any, error)     { return UnwrapValue(v) }
 func (v Value) UnwrapInto(dst any) error { return UnwrapValueInto(dst, v) }
 
-// An unwrapper that is alway safe to serialize to string afterwards.
+// An unwrapper that is always safe to serialize to string afterwards.
 var valueStringUnwrapper = ValueWrapper{
 	SafeForJSON: true,
 	Preunwrap: func(v Value) (Value, error) {
