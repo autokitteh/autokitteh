@@ -24,7 +24,6 @@ import values
 from audit import make_audit_hook
 from autokitteh import AttrDict, connections
 from call import AKCall, full_func_name
-from grpc_reflection.v1alpha import reflection
 from syscalls import SysCalls
 
 SERVER_GRACE_TIMEOUT = 3  # seconds
@@ -236,6 +235,17 @@ class Runner(pb.runner_rpc.RunnerService):
     def ActivityReply(
         self, request: pb.runner.ActivityReplyRequest, context: grpc.ServicerContext
     ):
+        if request.error and not request.result.custom.data:
+            req = pb.handler.DoneRequest(
+                runner_id=self.id,
+                error=request.error,
+            )
+            resp = self.worker.Done(req)
+            if resp.error:
+                log.error("on_event: done send error: %r", resp.error)
+
+            return pb.runner.ActivityReplyResponse(error=request.error)
+
         result = None
         try:
             result = pickle.loads(request.result.custom.data)
@@ -442,12 +452,6 @@ if __name__ == "__main__":
     runner = Runner(args.runner_id, worker, args.code_dir, server)
     # rpc.add_RunnerServicer_to_server(runner, server)
     pb.runner_rpc.add_RunnerServiceServicer_to_server(runner, server)
-    services = (
-        # pb.DESCRIPTOR.services_by_name["Runner"].full_name,
-        pb.runner.DESCRIPTOR.services_by_name["RunnerService"].full_name,
-        reflection.SERVICE_NAME,
-    )
-    reflection.enable_server_reflection(services, server)
 
     server.add_insecure_port(f"[::]:{args.port}")
     server.start()
