@@ -192,9 +192,10 @@ class Runner(pb.runner_rpc.RunnerService):
         fix_http_body(event)
         event = AttrDict(event)
 
-        # Warn on I/O outside an activity. Should come after importing the user module
-        hook = make_audit_hook(ak_call, self.code_dir)
-        sys.addaudithook(hook)
+        # TODO(ENG-1893): Disabled temporarily due to issues with HubSpot client - need to investigate.
+        # # Warn on I/O outside an activity. Should come after importing the user module
+        # hook = make_audit_hook(ak_call, self.code_dir)
+        # sys.addaudithook(hook)
 
         self.executor.submit(self.on_event, fn, event)
 
