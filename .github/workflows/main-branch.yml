@@ -1,19 +1,13 @@
-# See also "main-branch.yml" and "relase.yml" for Docker images.
+# See also "manual-docker-image.yml" and "release.yml" for Docker images.
 # https://github.com/marketplace/actions/configure-aws-credentials-action-for-github-actions
 # https://github.com/marketplace/actions/amazon-ecr-login-action-for-github-actions
 # https://github.com/marketplace/actions/build-and-push-docker-images
 
-name: manual_docker_image
-
-run-name: Publish image autokitteh:${{inputs.version}} to ECR
+name: Main Branch
 
 on:
-  workflow_dispatch:
-    inputs:
-      version:
-        type: string
-        required: true
-        description: version to push
+  push:
+    branches: [main]
 
 jobs:
   publish-docker-image:
@@ -26,6 +20,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Setup version info
+        run: |
+          # These are consumed in the Dockerfile.
+          echo "${GITHUB_REF_NAME}" > .version
+          echo "${GITHUB_SHA}" > .commit
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -46,6 +46,6 @@ jobs:
         with:
           context: .
           platforms: linux/amd64
-          tags: ${{steps.login-ecr.outputs.registry}}/autokitteh:${{inputs.version}}
+          tags: ${{steps.login-ecr.outputs.registry}}/autokitteh:latest
           push: true
           provenance: false

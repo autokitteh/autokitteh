@@ -1,18 +1,13 @@
-name: DBGorm tests (all supported engines)
+name: CI - GORM
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - "internal/backend/db/dbgorm/**"
   pull_request:
     paths:
       - "internal/backend/db/dbgorm/**"
 
 jobs:
-  validate:
-    name: DBGorm tests
+  test-gorm:
+    name: GORM
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -22,5 +17,6 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
-      - name: Run DBGorm tests on all engines
+
+      - name: Run GORM tests on all engines
         run: make test-dbgorm

@@ -1,14 +1,8 @@
-name: Continuous Integration - Shell
+name: CI - Shell
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - "**.sh"
   pull_request:
-    paths:
-      - "**.sh"
+    paths: ["**.sh"]
 
 jobs:
   shellcheck:
