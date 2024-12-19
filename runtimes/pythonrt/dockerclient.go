@@ -36,13 +36,26 @@ type dockerClient struct {
 	logBuildProcess bool
 	logRunner       bool
 	logger          *zap.Logger
+	cpuNano         int64
+	memoryMB        int64
 }
 
-func NewDockerClient(logger *zap.Logger, logRunner, logBuildProcess bool) (*dockerClient, error) {
+func NewDockerClient(logger *zap.Logger, logRunner, logBuildProcess bool, cpuPerContainer float32, memoryPerContainer uint32) (*dockerClient, error) {
 	apiClient, err := client.NewClientWithOpts(client.FromEnv)
 	if err != nil {
 		return nil, err
 	}
+
+	if cpuPerContainer < 0.1 {
+		return nil, errors.New("cpu per container must be at least 0.1")
+	}
+
+	if memoryPerContainer < 64 {
+		return nil, errors.New("memory per container must be at least 64 MB")
+	}
+
+	cpuNano := int64(cpuPerContainer * 100_000_000)
+	memoryMB := int64(memoryPerContainer) * 1024 * 1024
 
 	dc := &dockerClient{
 		client:          apiClient,
@@ -53,6 +66,8 @@ func NewDockerClient(logger *zap.Logger, logRunner, logBuildProcess bool) (*dock
 		logger:          logger,
 		logBuildProcess: logBuildProcess,
 		logRunner:       logRunner,
+		cpuNano:         cpuNano, // 0.5 CPUs (in nanoseconds)
+		memoryMB:        memoryMB,
 	}
 
 	if err := dc.SyncCurrentState(); err != nil {
@@ -93,6 +108,11 @@ func (d *dockerClient) StartRunner(ctx context.Context, runnerImage string, sess
 	for k, v := range vars {
 		envVars = append(envVars, k+"="+v)
 	}
+
+	resources := container.Resources{
+		NanoCPUs: d.cpuNano,  // 0.5 CPUs (in nanoseconds)
+		Memory:   d.memoryMB, // 128 MB
+	}
 	resp, err := d.client.ContainerCreate(ctx,
 		&container.Config{
 			Image: runnerImage,
@@ -106,9 +126,11 @@ func (d *dockerClient) StartRunner(ctx context.Context, runnerImage string, sess
 			WorkingDir: "/workflow",
 		},
 		&container.HostConfig{
-			NetworkMode:  container.NetworkMode(networkName),
-			PortBindings: nat.PortMap{internalRunnerPort: []nat.PortBinding{{HostIP: "0.0.0.0"}}},
-			Tmpfs:        map[string]string{"/tmp": "size=64m"},
+			NetworkMode:    container.NetworkMode(networkName),
+			PortBindings:   nat.PortMap{internalRunnerPort: []nat.PortBinding{{HostIP: "0.0.0.0"}}},
+			Tmpfs:          map[string]string{"/tmp": "size=64m"},
+			Resources:      resources,
+			ReadonlyRootfs: true,
 		}, nil, nil, "")
 
 	if err != nil {
