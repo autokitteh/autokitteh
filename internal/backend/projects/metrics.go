@@ -8,5 +8,5 @@ import (
 var projectsCreatedCounter metric.Int64Counter
 
 func initMetrics(t *telemetry.Telemetry) {
-	projectsCreatedCounter, _ = t.NewCounter("projects.created", "Created prjects counter")
+	projectsCreatedCounter, _ = t.NewCounter("projects.created", "Created projects counter")
 }

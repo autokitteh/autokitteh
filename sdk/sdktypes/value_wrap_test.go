@@ -401,7 +401,7 @@ func TestUnwrapIntoKitchenSink(t *testing.T) {
 			T time.Time
 		}
 		Timestamp1 struct {
-			time.Time // embeeded time.Time, anonymous struct
+			time.Time // embedded time.Time, anonymous struct
 		}
 		Timestamp2 TS // embedded time.Time
 	}

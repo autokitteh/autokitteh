@@ -1,0 +1,18 @@
+# https://github.com/crate-ci/typos/blob/master/docs/github-action.md
+
+name: Typos
+
+on: [pull_request]
+
+jobs:
+  run:
+    name: Spell check with Typos
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v4
+
+    - name: Check spelling
+      uses: crate-ci/typos@master
+      with:
+        config: ./.typos.toml

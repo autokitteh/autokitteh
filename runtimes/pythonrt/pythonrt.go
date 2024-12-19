@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"net"
 	"path"
+	"slices"
 	"strings"
 	"time"
 
@@ -15,7 +17,9 @@ import (
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/internal/xdg"
-	userCode "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/user_code/v1"
+	pbModule "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/module/v1"
+	pbUserCode "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/user_code/v1"
+	pbValues "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/values/v1"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkruntimes"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -46,9 +50,9 @@ type logMessage struct {
 }
 
 type comChannels struct {
-	done     chan *userCode.DoneRequest
+	done     chan *pbUserCode.DoneRequest
 	err      chan string
-	request  chan *userCode.ActivityRequest
+	request  chan *pbUserCode.ActivityRequest
 	print    chan *logMessage
 	log      chan *logMessage
 	callback chan *callbackMessage
@@ -120,7 +124,7 @@ func New(cfg *Config, l *zap.Logger, getLocalAddr func() string) (*sdkruntimes.R
 		}); err != nil {
 			return nil, fmt.Errorf("configure remote runner manager: %w", err)
 		}
-		l.Info("remote runner configued")
+		l.Info("remote runner configured")
 	default:
 		if err := configureLocalRunnerManager(l,
 			LocalRunnerManagerConfig{
@@ -150,9 +154,9 @@ func newSvc(cfg *Config, l *zap.Logger) (sdkservices.Runtime, error) {
 		log:       l,
 		firstCall: true,
 		channels: comChannels{
-			done:     make(chan *userCode.DoneRequest, 1),
+			done:     make(chan *pbUserCode.DoneRequest, 1),
 			err:      make(chan string, 1),
-			request:  make(chan *userCode.ActivityRequest, 1),
+			request:  make(chan *pbUserCode.ActivityRequest, 1),
 			print:    make(chan *logMessage, 1),
 			log:      make(chan *logMessage, 1),
 			callback: make(chan *callbackMessage, 1),
@@ -176,14 +180,25 @@ var pyModuleFunc = kittehs.Must1(sdktypes.ModuleFunctionFromProto(&sdktypes.Modu
 	},
 }))
 
-func entriesToValues(xid sdktypes.ExecutorID, entries []string) (map[string]sdktypes.Value, error) {
+func entriesToValues(xid sdktypes.ExecutorID, entries []*pbUserCode.Export) (map[string]sdktypes.Value, error) {
 	values := make(map[string]sdktypes.Value)
-	for _, name := range entries {
-		fn, err := sdktypes.NewFunctionValue(xid, name, nil, nil, pyModuleFunc)
+	for _, export := range entries {
+		modPB := sdktypes.ModuleFunctionPB{
+			Input: make([]*pbModule.FunctionField, len(export.Args)),
+		}
+
+		for i, name := range export.Args {
+			modPB.Input[i] = &pbModule.FunctionField{
+				Name: name,
+			}
+		}
+
+		modFunc := kittehs.Must1(sdktypes.ModuleFunctionFromProto(&modPB))
+		fn, err := sdktypes.NewFunctionValue(xid, export.Name, nil, nil, modFunc)
 		if err != nil {
 			return nil, err
 		}
-		values[name] = fn
+		values[export.Name] = fn
 	}
 
 	return values, nil
@@ -212,7 +227,7 @@ func loadSyscall(values map[string]sdktypes.Value) (sdktypes.Value, error) {
 }
 
 // entryPointFileName strips the handler from the entry point
-// "porgram.py:on_event" -> "program.py"
+// "program.py:on_event" -> "program.py"
 func entryPointFileName(entryPoint string) string {
 	i := strings.Index(entryPoint, ":")
 	if i > 0 {
@@ -292,7 +307,7 @@ func (py *pySvc) Run(
 	}()
 
 	py.fileName = entryPointFileName(mainPath)
-	req := userCode.ExportsRequest{
+	req := pbUserCode.ExportsRequest{
 		FileName: py.fileName,
 	}
 
@@ -349,42 +364,54 @@ func pyLevelToZap(level string) zapcore.Level {
 }
 
 func (py *pySvc) call(ctx context.Context, val sdktypes.Value, args []sdktypes.Value, kw map[string]sdktypes.Value) {
-	fn := val.GetFunction()
-
-	reply := func(req *userCode.ActivityReplyRequest) {
-		if req.Error != "" {
-			py.log.Warn("activity reply error", zap.String("error", req.Error))
-		}
-
-		req.Data = fn.Data()
-
-		ctx, cancel := context.WithTimeout(ctx, time.Second)
-		defer cancel()
-
-		reply, err := py.runner.ActivityReply(ctx, req)
-		switch {
-		case err != nil:
-			py.log.Warn("activity reply error", zap.Error(err))
-		case reply.Error != "":
-			py.log.Warn("activity reply error", zap.String("reply error", reply.Error))
-		}
-	}
-
-	if !val.IsFunction() {
-		reply(&userCode.ActivityReplyRequest{Error: fmt.Sprintf("%#v is not a function", val)})
-		return
-	}
+	var req pbUserCode.ActivityReplyRequest
 
 	out, err := py.cbs.Call(py.ctx, py.runID, val, args, kw)
-	if err == nil && !out.IsBytes() {
-		err = fmt.Errorf("call output not bytes: %#v", out)
-	}
-	if err != nil {
-		reply(&userCode.ActivityReplyRequest{Error: err.Error()})
-		return
+	switch {
+	case err != nil:
+		py.log.Warn("activity reply error", zap.Error(err))
+		req.Error = err.Error()
+	case !out.IsCustom():
+		py.log.Error("activity reply value not Custom", zap.Any("value", out))
+		req.Error = fmt.Sprintf("activity reply not custom (%v)", out)
+	default:
+		req.Result = out.ToProto()
+		req.Result.Custom.ExecutorId = py.xid.String()
 	}
 
-	reply(&userCode.ActivityReplyRequest{Result: out.GetBytes().Value()})
+	ctx, cancel := context.WithTimeout(ctx, time.Second)
+	defer cancel()
+
+	reply, err := py.runner.ActivityReply(ctx, &req)
+	if err != nil || reply.Error != "" {
+		var error string
+		if err != nil {
+			error = err.Error()
+		} else {
+			error = reply.Error
+		}
+
+		py.log.Warn("activity reply error", zap.String("reply error", error))
+		// Stop the run
+		req := newDoneFromError(py.runnerID, error)
+		py.channels.done <- req
+	}
+}
+
+func newDoneFromError(runnerID string, error string) *pbUserCode.DoneRequest {
+	req := pbUserCode.DoneRequest{
+		RunnerId: runnerID,
+		Result: &pbValues.Value{
+			Custom: &pbValues.Custom{
+				Value: &pbValues.Value{
+					Nothing: &pbValues.Nothing{},
+				},
+				Data: nil,
+			},
+		},
+		Error: error,
+	}
+	return &req
 }
 
 // initialCall handles initial call from autokitteh, it does the message loop with Python.
@@ -406,16 +433,17 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktyp
 		return sdktypes.InvalidValue, fmt.Errorf("can't convert: %w", err)
 	}
 
-	py.log.Info("event", zap.Any("keys", kittehs.TransformMapToList(event, func(k string, v any) string { return k })))
+	keys := slices.Collect(maps.Keys(event))
+	py.log.Info("event", zap.Any("keys", keys))
 
 	eventData, err := json.Marshal(event)
 	if err != nil {
 		return sdktypes.InvalidValue, fmt.Errorf("marshal event: %w", err)
 	}
 
-	req := userCode.StartRequest{
+	req := pbUserCode.StartRequest{
 		EntryPoint: fmt.Sprintf("%s:%s", py.fileName, funcName),
-		Event: &userCode.Event{
+		Event: &pbUserCode.Event{
 			Data: eventData,
 		},
 	}
@@ -435,7 +463,7 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktyp
 				py.log.Debug("health check loop stopped")
 				return
 			case <-time.After(10 * time.Second):
-				healthReq := userCode.RunnerHealthRequest{}
+				healthReq := pbUserCode.RunnerHealthRequest{}
 
 				resp, err := py.runner.Health(ctx, &healthReq)
 				if err != nil { // no network/lost packet.load? for sanity check the state locally via IPC/signals
@@ -457,7 +485,7 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktyp
 	}()
 
 	// Wait for client Done message
-	var done *userCode.DoneRequest
+	var done *pbUserCode.DoneRequest
 	for {
 		select {
 		case healthErr := <-runnerHealthChan:
@@ -479,8 +507,16 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktyp
 
 			if r.CallInfo != nil {
 				fnName = r.CallInfo.Function
-				args = kittehs.Transform(r.CallInfo.Args, func(s string) sdktypes.Value { return sdktypes.NewStringValue(s) })
-				kw = kittehs.TransformMap(r.CallInfo.Kwargs, func(k, v string) (string, sdktypes.Value) { return k, sdktypes.NewStringValue(v) })
+				args = kittehs.Transform(r.CallInfo.Args, func(v *pbValues.Value) sdktypes.Value {
+					// TODO(ENG-1838): What if there's an error?
+					val, _ := sdktypes.ValueFromProto(v)
+					return val
+				})
+				kw = kittehs.TransformMap(r.CallInfo.Kwargs, func(k string, v *pbValues.Value) (string, sdktypes.Value) {
+					// TODO(ENG-1838): What if there's an error?
+					val, _ := sdktypes.ValueFromProto(v)
+					return k, val
+				})
 			}
 
 			// it was already checked before we got here
@@ -512,7 +548,8 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktyp
 				return sdktypes.InvalidValue, perr.ToError()
 			}
 
-			return sdktypes.NewBytesValue(done.Result), nil
+			done.Result.Custom.ExecutorId = py.xid.String()
+			return sdktypes.ValueFromProto(done.Result)
 		case <-ctx.Done():
 			return sdktypes.InvalidValue, fmt.Errorf("context expired - %w", ctx.Err())
 		}
@@ -534,7 +571,7 @@ func (py *pySvc) drainPrints(ctx context.Context) {
 	}
 }
 
-func (py *pySvc) tracebackToLocation(traceback []*userCode.Frame) []sdktypes.CallFrame {
+func (py *pySvc) tracebackToLocation(traceback []*pbUserCode.Frame) []sdktypes.CallFrame {
 	frames := make([]sdktypes.CallFrame, len(traceback))
 	for i, f := range traceback {
 		var err error
@@ -591,7 +628,7 @@ func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 	}()
 
 	// If we're here, it's an activity call
-	req := userCode.ExecuteRequest{
+	req := pbUserCode.ExecuteRequest{
 		Data: fn.Data(),
 	}
 	resp, err := py.runner.Execute(ctx, &req)
@@ -602,5 +639,6 @@ func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 		return sdktypes.InvalidValue, fmt.Errorf("%s", resp.Error)
 	}
 
-	return sdktypes.NewBytesValue(resp.Result), nil
+	resp.Result.Custom.ExecutorId = py.xid.String()
+	return sdktypes.ValueFromProto(resp.Result)
 }

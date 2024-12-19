@@ -115,7 +115,7 @@ func (w *sessionWorkflow) subscribe(ctx context.Context, args []sdktypes.Value, 
 	})
 
 	if connection.IsValid() && trigger.IsValid() {
-		return sdktypes.InvalidValue, errors.New("ambigous source name - matching both a connection and a trigger")
+		return sdktypes.InvalidValue, errors.New("ambiguous source name - matching both a connection and a trigger")
 	}
 
 	var did sdktypes.EventDestinationID

@@ -4,6 +4,7 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 from pathlib import Path
 import sys
+import tomllib
 
 sdk_dir = Path(__file__).parent.parent.absolute()
 sys.path.insert(0, str(sdk_dir))  # Add the project root to the path
@@ -14,7 +15,10 @@ sys.path.insert(0, str(sdk_dir))  # Add the project root to the path
 project = "autokitteh"
 copyright = "2024, AutoKitteh"
 author = "AutoKitteh"
-release = "0.3.5"
+project_file = sdk_dir / "pyproject.toml"
+with project_file.open("rb") as fp:
+    data = tomllib.load(fp)
+    release = data["project"]["version"]
 
 
 # -- General configuration ---------------------------------------------------

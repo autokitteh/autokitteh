@@ -109,6 +109,5 @@ share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
-# MANIFEST
-MANIFEST
+# MANIFEST (disabled because it mistakenly affects "manifest*.*" too)
 .venv

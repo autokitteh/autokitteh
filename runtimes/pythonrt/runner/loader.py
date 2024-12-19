@@ -103,6 +103,26 @@ def load_code(root_path: Path, ak_call, module_name: str):
         sys.meta_path.pop(0)
 
 
+def fn_args(node):
+    """Return list of arguments to fn (AST)."""
+    args = [a.arg for a in node.args.args]
+    if node.args.kwarg:
+        args.append(node.args.kwarg.arg)
+
+    return args
+
+
+def class_args(node):
+    for n in node.body:
+        if not isinstance(n, ast.FunctionDef):
+            continue
+        if n.name != "__init__":
+            continue
+
+        args = fn_args(n)
+        return args[1:]  # Remove self
+
+
 def exports(code_dir, file_name):
     """Returns an iterator of functions & classes defined in file_name."""
     full_path = code_dir / file_name
@@ -114,4 +134,10 @@ def exports(code_dir, file_name):
         if not isinstance(node, (ast.FunctionDef, ast.ClassDef)):
             continue
 
-        yield node.name
+        args = fn_args(node) if isinstance(node, ast.FunctionDef) else class_args(node)
+        yield {
+            "file": str(file_name),
+            "line": node.lineno,
+            "name": node.name,
+            "args": args,
+        }

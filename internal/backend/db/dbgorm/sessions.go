@@ -246,7 +246,7 @@ func (gdb *gormdb) getSessionCallSpec(ctx context.Context, sessionID sdktypes.UU
 	return &r, nil
 }
 
-func countCallAttemps(db *gorm.DB, sessionID sdktypes.UUID, seq uint32) (uint32, error) {
+func countCallAttempts(db *gorm.DB, sessionID sdktypes.UUID, seq uint32) (uint32, error) {
 	var n int64
 	if err := db.Model(&scheme.SessionCallAttempt{}).
 		Where("session_id = ? AND seq = ?", sessionID, seq).Count(&n).Error; err != nil {
@@ -261,7 +261,7 @@ func (gdb *gormdb) startSessionCallAttempt(ctx context.Context, sessionID sdktyp
 		if err := tx.isCtxUserEntity(tx.ctx, sessionID); err != nil {
 			return err
 		}
-		if attempt, err = countCallAttemps(tx.db, sessionID, seq); err != nil {
+		if attempt, err = countCallAttempts(tx.db, sessionID, seq); err != nil {
 			return err
 		}
 

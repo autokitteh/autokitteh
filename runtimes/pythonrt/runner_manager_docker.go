@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/google/uuid"
+	"go.jetify.com/typeid"
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -100,7 +100,11 @@ func (rm *dockerRunnerManager) Start(ctx context.Context, sessionID sdktypes.Ses
 		return "", nil, fmt.Errorf("build image: %w", err)
 	}
 
-	runnerID := fmt.Sprintf("runner-%s", uuid.NewString())
+	rid, err := typeid.WithPrefix("runner")
+	if err != nil {
+		return "", nil, err
+	}
+	runnerID := rid.String()
 	cmd := createStartCommand("/runner/main.py", rm.workerAddressProvider(), runnerID)
 
 	cid, port, err := rm.client.StartRunner(ctx, containerName, sessionID, cmd, vars)

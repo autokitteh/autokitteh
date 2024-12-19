@@ -11,7 +11,6 @@ from datetime import timedelta
 import grpc
 import log
 import pb.autokitteh.user_code.v1.handler_svc_pb2 as pb
-import pb.autokitteh.user_code.v1.handler_svc_pb2_grpc as rpc
 from autokitteh import AttrDict
 
 
@@ -22,7 +21,7 @@ class SyscallError(Exception):
 class SysCalls:
     def __init__(self, runner_id, worker, log):
         self.runner_id = runner_id
-        self.worker: rpc.WorkerStub = worker
+        self.worker = worker
         self.log = log
 
     def ak_start(self, loc: str, data: dict = None, memo: dict = None) -> str:

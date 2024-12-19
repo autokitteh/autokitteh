@@ -8,7 +8,7 @@ export PYTHONPATH=$(PWD)/py-sdk
 
 test: test-py test-go
 
-ci: deps test-py
+ci: deps test-py check-sdk-docs-requirements
 
 test-py:
 	cd runner && $(MAKE) test
@@ -29,6 +29,11 @@ deploy-simple:
 run-simple:
 	go run ./testdata/trigger_webhook.go
 
+test-simple: deploy-simple run-simple
+	ak session log --prints-only --no-timestamps
+	sleep 3
+	ak session list -j | jq .state
+
 deploy-issues:
 	ak deploy -m ./testdata/issues/autokitteh.yaml -d ./testdata/issues/
 
@@ -48,3 +53,8 @@ clean-dbs:
 	rm -f $(cfg_dir)/*sql*
 
 test-workflow: deploy-workflow run
+
+check-sdk-docs-requirements:
+	cd py-sdk/docs && ./gen-reqs.py
+	git add -N .
+	git diff --name-only --exit-code

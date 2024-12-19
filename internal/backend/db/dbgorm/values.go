@@ -25,7 +25,7 @@ func (db *gormdb) SetValue(ctx context.Context, pid sdktypes.ProjectID, key stri
 		return sdkerrors.NewInvalidArgumentError("value too large > %d bytes", maxValueSize)
 	}
 
-	uid := authcontext.GetAuthnUser(ctx).ID().String()
+	uid := authcontext.GetAuthnUser(ctx).ID().UUIDValue().String()
 
 	return translateError(db.transaction(ctx, func(tx *tx) error {
 		db := tx.db

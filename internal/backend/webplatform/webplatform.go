@@ -50,10 +50,10 @@ func (w *Svc) Start(context.Context) error {
 		return nil
 	}
 
-	webfs, version, err := webplatform.LoadFS()
+	webfs, version, err := webplatform.LoadFS(w.l)
 	if err != nil {
 		if errors.Is(err, sdkerrors.ErrNotFound) {
-			w.l.Warn("web platform distribution not found, web platform server disabled")
+			w.l.Warn("web platform distribution not found, web platform server disabled. Run `make ak` to build with the latest webplatform.")
 			return nil
 		}
 		return err
@@ -65,7 +65,7 @@ func (w *Svc) Start(context.Context) error {
 	fsrv := http.FileServer(http.FS(webfs))
 
 	srv := &http.Server{
-		Addr: fmt.Sprintf("0.0.0.0:%d", w.Config.Port),
+		Addr: fmt.Sprintf("localhost:%d", w.Config.Port),
 		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// If path actually exists in fs, serve it.
 			if f, _ := webfs.Open(strings.TrimPrefix(r.URL.Path, "/")); f != nil {

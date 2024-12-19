@@ -21,9 +21,14 @@ func (gdb *gormdb) GetOwnership(ctx context.Context, entityID sdktypes.UUID) (sd
 		return sdktypes.InvalidUser, err
 	}
 
-	uid, err := sdktypes.ParseUserID(o.UserID)
+	uid, err := sdktypes.NewIDFromUUIDString[sdktypes.UserID](o.UserID)
 	if err != nil {
-		return sdktypes.InvalidUser, err
+		// TODO: remove this second parse once we upgrade all users to new format
+		uid, err = sdktypes.ParseUserID(o.UserID)
+		if err != nil {
+			return sdktypes.InvalidUser, err
+		}
+		gdb.z.Warn(fmt.Sprintf("found old format user id %s. need to update ownerships table", o.UserID))
 	}
 
 	return gdb.GetUserByID(ctx, uid)
@@ -91,7 +96,7 @@ func (gdb *gormdb) createEntityWithOwnership(
 		return errors.New("unknown user")
 	}
 
-	uid := u.ID().String()
+	uid := u.ID().UUIDValue().String()
 	ownerships := prepareOwnershipForEntities1(uid, model)
 
 	var idsToVerifyOwnership []sdktypes.UUID
@@ -153,14 +158,14 @@ func ensureUserAccessToEntitiesWithOwnerships(db *gorm.DB, uid string, ids ...sd
 }
 
 func (gdb *gormdb) isUserEntity(ctx context.Context, uid string, ids ...sdktypes.UUID) error {
-	if akCtx.RequestOrginator(ctx) == akCtx.User { // enforce only on user-orginated requests
+	if akCtx.RequestOrginator(ctx) == akCtx.User { // enforce only on user-originated requests
 		return gdb.owner.EnsureUserAccessToEntities(ctx, gdb.db, uid, ids...)
 	}
 	return nil
 }
 
 func (gdb *gormdb) isCtxUserEntity(ctx context.Context, ids ...sdktypes.UUID) error {
-	uid := authcontext.GetAuthnUser(ctx).ID().String()
+	uid := authcontext.GetAuthnUser(ctx).ID().UUIDValue().String()
 	return gdb.isUserEntity(ctx, uid, ids...)
 }
 
@@ -183,7 +188,7 @@ func withUserEntity(ctx context.Context, gdb *gormdb, entity string, uid string)
 
 // gormdb user+entity scoped godm db + logging
 func (gdb *gormdb) withUserEntity(ctx context.Context, entity string) *gorm.DB {
-	user := authcontext.GetAuthnUser(ctx).ID().String() // NOTE: ignore possible error
+	user := authcontext.GetAuthnUser(ctx).ID().UUIDValue().String() // NOTE: ignore possible error
 	return gdb.owner.JoinUserEntity(ctx, gdb.db.WithContext(ctx), entity, user)
 }
 
