@@ -200,6 +200,7 @@ func New(l *zap.Logger) sdkservices.OAuth {
 					forms.FormsResponsesReadonlyScope,
 					sheets.SpreadsheetsScope,
 					// Restricted.
+
 					// drive.DriveScope, // See ENG-1701
 					gmail.GmailModifyScope,
 					gmail.GmailSettingsBasicScope,
