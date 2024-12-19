@@ -1,6 +1,7 @@
 package authloginhttpsvc
 
 import (
+	"context"
 	"errors"
 	"net/http"
 
@@ -11,7 +12,7 @@ import (
 
 const githubLoginPath = "/auth/github/login"
 
-func registerGithubOAuthRoutes(mux *http.ServeMux, cfg oauth2Config, onSuccess func(*loginData) http.Handler) error {
+func registerGithubOAuthRoutes(mux *http.ServeMux, cfg oauth2Config, onSuccess func(context.Context, *loginData) http.Handler) error {
 	if cfg.ClientID == "" {
 		return errors.New("github login is enabled, but missing GITHUB_CLIENT_ID")
 	}
@@ -34,7 +35,9 @@ func registerGithubOAuthRoutes(mux *http.ServeMux, cfg oauth2Config, onSuccess f
 	mux.Handle(githubLoginPath, github.StateHandler(cfg.cookieConfig(), github.LoginHandler(&oauth2Config, nil)))
 
 	githubOnSuccess := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		gu, err := github.UserFromContext(r.Context())
+		ctx := r.Context()
+
+		gu, err := github.UserFromContext(ctx)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -51,7 +54,7 @@ func registerGithubOAuthRoutes(mux *http.ServeMux, cfg oauth2Config, onSuccess f
 			DisplayName:  *gu.Name,
 		}
 
-		onSuccess(&ld).ServeHTTP(w, r)
+		onSuccess(ctx, &ld).ServeHTTP(w, r)
 	})
 
 	mux.Handle("/auth/github/callback", github.StateHandler(cfg.cookieConfig(), github.CallbackHandler(&oauth2Config, githubOnSuccess, nil)))

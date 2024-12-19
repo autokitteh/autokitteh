@@ -11,6 +11,8 @@ const (
 	defaultOutput = "build.akb"
 )
 
+var project string
+
 var buildCmd = common.StandardCommand(&cobra.Command{
 	Use:     "build",
 	Short:   "Project resource builds: upload, download, get, list, describe, delete",

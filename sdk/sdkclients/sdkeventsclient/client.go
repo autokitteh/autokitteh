@@ -69,6 +69,7 @@ func (c *client) List(ctx context.Context, filter sdkservices.ListEventsFilter) 
 			DestinationId: filter.DestinationID.String(),
 			MaxResults:    uint32(filter.Limit),
 			Order:         string(filter.Order),
+			ProjectId:     filter.ProjectID.String(),
 		},
 	))
 	if err != nil {
