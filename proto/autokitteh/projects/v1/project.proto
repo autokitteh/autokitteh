@@ -5,4 +5,5 @@ package autokitteh.projects.v1;
 message Project {
   string project_id = 1;
   string name = 2;
+  string org_id = 4;
 }

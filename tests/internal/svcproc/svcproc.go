@@ -14,19 +14,15 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 )
 
-const (
-	httpAddrFile = "ak_server_addr.txt"
-)
-
 type svcProc struct {
 	binPath string
-	cfg     *svc.Config
+	cfg     map[string]any
 	ropts   svc.RunOptions
 	cmd     *exec.Cmd
 	wait    chan svc.ShutdownSignal
 }
 
-func NewSvcProc(binPath string, cfg *svc.Config, ropts svc.RunOptions) (svc.Service, error) {
+func NewSvcProc(binPath string, cfg map[string]any, ropts svc.RunOptions) (svc.Service, error) {
 	if ropts.TemporalClient != nil {
 		return nil, sdkerrors.ErrNotImplemented
 	}
@@ -39,25 +35,14 @@ func NewSvcProc(binPath string, cfg *svc.Config, ropts svc.RunOptions) (svc.Serv
 }
 
 func (s *svcProc) Start(ctx context.Context) error {
-	// TODO: Pass user configuration to executable.
-	var allowDefaultUser bool
-	_, _ = s.cfg.Get("authhttpmiddleware.use_default_user", &allowDefaultUser)
+	args := []string{"up", "--mode", string(s.ropts.Mode)}
 
-	var seedCommands string
-	_, _ = s.cfg.Get("db.seed_commands", &seedCommands)
+	for k, v := range s.cfg {
+		args = append(args, "--config", k+"="+fmt.Sprint(v))
+	}
 
-	s.cmd = exec.Command(
-		s.binPath, "up",
-		"--mode", string(s.ropts.Mode),
+	s.cmd = exec.Command(s.binPath, args...)
 
-		"--config", "db.type=sqlite",
-		"--config", "db.dsn=file:autokitteh.sqlite", // In the test's temporary directory.
-
-		"--config", "http.addr=:0",
-		"--config", "http.addr_filename="+httpAddrFile, // In the test's temporary directory.
-		"--config", fmt.Sprintf("authhttpmiddleware.use_default_user=%t", allowDefaultUser),
-		"--config", fmt.Sprintf("db.seed_commands=%s", seedCommands),
-	)
 	// Use same system group to kill ak + all children (temporal, etc.)
 	s.cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	s.cmd.Stdout = os.Stdout

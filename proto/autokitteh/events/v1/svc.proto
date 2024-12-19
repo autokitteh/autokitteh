@@ -49,6 +49,8 @@ message ListRequest {
 
   // see GetRequest.json_values.
   bool json_values = 6;
+
+  string project_id = 7;
 }
 
 message ListResponse {

@@ -8,6 +8,7 @@ import (
 )
 
 type ListEventsFilter struct {
+	ProjectID         sdktypes.ProjectID
 	IntegrationID     sdktypes.IntegrationID
 	DestinationID     sdktypes.EventDestinationID
 	EventType         string

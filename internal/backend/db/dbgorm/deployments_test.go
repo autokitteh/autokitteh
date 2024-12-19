@@ -3,6 +3,7 @@ package dbgorm
 import (
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
 
@@ -31,6 +32,14 @@ func (f *dbFixture) listDeploymentsAndAssert(t *testing.T, expected int) []schem
 	return deployments
 }
 
+func (f *dbFixture) createProjectBuild(t *testing.T) (scheme.Project, scheme.Build) {
+	p := f.newProject()
+	b := f.newBuild()
+	f.createProjectsAndAssert(t, p)
+	f.saveBuildsAndAssert(t, b)
+	return p, b
+}
+
 func listDeploymentsWithStatsAndAssert(t *testing.T, f *dbFixture, expected int) []scheme.DeploymentWithStats {
 	flt := sdkservices.ListDeploymentsFilter{
 		State:               sdktypes.DeploymentStateUnspecified,
@@ -57,14 +66,17 @@ func (f *dbFixture) assertDeploymentState(t *testing.T, id sdktypes.UUID, state 
 }
 
 func preDeploymentTest(t *testing.T) *dbFixture {
-	f := newDBFixture().withUser(sdktypes.DefaultUser)
+	f := newDBFixture()
 	f.listDeploymentsAndAssert(t, 0) // no deployments
 	return f
 }
 
 func createBuildAndDeployment(t *testing.T, f *dbFixture) (scheme.Build, scheme.Deployment) {
 	b := f.newBuild()
-	d := f.newDeployment(b)
+	p := f.newProject()
+	f.createProjectsAndAssert(t, p)
+
+	d := f.newDeployment(b, p)
 	f.saveBuildsAndAssert(t, b)
 	f.createDeploymentsAndAssert(t, d)
 	return b, d
@@ -95,11 +107,11 @@ func TestCreateDeploymentsForeignKeys(t *testing.T) {
 
 	// use existing user-owned buildID as fake unexisting projectID
 	d3 := f.newDeployment(b)
-	d3.ProjectID = &b.BuildID // no such projectID, since it's a buildID
+	d3.ProjectID, _ = uuid.NewV7() // no such projectID, since it's a buildID
 	assert.ErrorIs(t, f.gormdb.createDeployment(f.ctx, &d3), gorm.ErrForeignKeyViolated)
 
 	// test with existing assets
-	d3.ProjectID = &p.ProjectID
+	d3.ProjectID = p.ProjectID
 	f.createDeploymentsAndAssert(t, d3)
 }
 

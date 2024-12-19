@@ -41,11 +41,11 @@ var listCmd = common.StandardCommand(&cobra.Command{
 		}
 
 		if project != "" {
-			p, _, err := r.ProjectNameOrID(ctx, project)
-			if err = common.AddNotFoundErrIfCond(err, p.IsValid()); err != nil {
+			pid, err := r.ProjectNameOrID(ctx, project)
+			if err = common.AddNotFoundErrIfCond(err, pid.IsValid()); err != nil {
 				return common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "project")
 			}
-			f.ProjectID = p.ID()
+			f.ProjectID = pid
 		}
 
 		if eventID != "" {
