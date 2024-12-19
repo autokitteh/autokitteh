@@ -144,8 +144,8 @@ func TestSetSecretVar(t *testing.T) {
 		secrets: s,
 	}
 
-	expecteValue := "value"
-	va := sdktypes.NewVar(sdktypes.NewSymbol("test")).SetValue(expecteValue).SetSecret(true)
+	expectedValue := "value"
+	va := sdktypes.NewVar(sdktypes.NewSymbol("test")).SetValue(expectedValue).SetSecret(true)
 	expectedSecretKey := varSecretKey(va)
 	err := v.Set(context.TODO(), va)
 
@@ -153,7 +153,7 @@ func TestSetSecretVar(t *testing.T) {
 	require.Equal(t, sCallCounter, 1, "should call secrets service set function")
 	require.Equal(t, dbCallCounter, 1, "should call db set var")
 	require.Equal(t, actualSecretKey, expectedSecretKey)
-	require.Equal(t, actualSecretValue, expecteValue)
+	require.Equal(t, actualSecretValue, expectedValue)
 }
 
 func TestSetMultipleSecretVar(t *testing.T) {

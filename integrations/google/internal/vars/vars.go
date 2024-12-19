@@ -16,7 +16,7 @@ type Vars struct {
 }
 
 var (
-	AuthType = sdktypes.NewSymbol("authType")
+	AuthType = sdktypes.NewSymbol("auth_type")
 
 	OAuthData = sdktypes.NewSymbol("OAuthData")
 	JSON      = sdktypes.NewSymbol("JSON")

@@ -27,6 +27,26 @@ type appMentionContainer struct {
 	Event *AppMentionEvent `json:"event"`
 }
 
+// https://api.slack.com/events/app_home_opened
+// https://api.slack.com/surfaces/app-home
+func AppHomeOpenedHandler(l *zap.Logger, w http.ResponseWriter, body []byte, cb *Callback) any {
+	// Parse and return the inner event details.
+	var event map[string]any
+	if err := json.Unmarshal(body, &event); err != nil {
+		invalidEventError(l, w, body, err)
+		return nil
+	}
+
+	innerEvent, ok := event["event"]
+	if !ok {
+		l.Warn("Event field not found in the Slack event app_home_opened",
+			zap.ByteString("json_body", body))
+		return nil
+	}
+
+	return innerEvent
+}
+
 // https://api.slack.com/events/app_mention
 func AppMentionHandler(l *zap.Logger, w http.ResponseWriter, body []byte, cb *Callback) any {
 	// Ignore self-triggered events.

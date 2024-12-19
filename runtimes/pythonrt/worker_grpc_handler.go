@@ -87,7 +87,7 @@ func (s *workerGRPCHandler) IsActiveRunner(ctx context.Context, req *userCode.Is
 
 	_, ok := w.runnerIDsToRuntime[req.RunnerId]
 	if !ok {
-		w.log.Error("unknwon runner ID", zap.String("id", req.RunnerId))
+		w.log.Error("unknown runner ID", zap.String("id", req.RunnerId))
 		return &userCode.IsActiveRunnerResponse{Error: "unknown runner ID"}, nil
 	}
 
@@ -104,7 +104,7 @@ func (s *workerGRPCHandler) Log(ctx context.Context, req *userCode.LogRequest) (
 	runner, ok := w.runnerIDsToRuntime[req.RunnerId]
 	w.mu.Unlock()
 	if !ok {
-		w.log.Error("unknwon runner ID", zap.String("id", req.RunnerId))
+		w.log.Error("unknown runner ID", zap.String("id", req.RunnerId))
 		return &userCode.LogResponse{Error: "unknown runner ID"}, nil
 	}
 
@@ -127,7 +127,7 @@ func (s *workerGRPCHandler) Print(ctx context.Context, req *userCode.PrintReques
 	runner, ok := w.runnerIDsToRuntime[req.RunnerId]
 	w.mu.Unlock()
 	if !ok {
-		w.log.Error("unknwon runner ID", zap.String("id", req.RunnerId))
+		w.log.Error("unknown runner ID", zap.String("id", req.RunnerId))
 		return &userCode.PrintResponse{Error: "unknown runner ID"}, nil
 	}
 
@@ -150,7 +150,7 @@ func (s *workerGRPCHandler) Done(ctx context.Context, req *userCode.DoneRequest)
 	runner, ok := w.runnerIDsToRuntime[req.RunnerId]
 	w.mu.Unlock()
 	if !ok {
-		w.log.Error("unknwon runner ID", zap.String("id", req.RunnerId))
+		w.log.Error("unknown runner ID", zap.String("id", req.RunnerId))
 		return &userCode.DoneResponse{}, nil
 	}
 
@@ -164,7 +164,7 @@ func (s *workerGRPCHandler) Activity(ctx context.Context, req *userCode.Activity
 	runner, ok := w.runnerIDsToRuntime[req.RunnerId]
 	w.mu.Unlock()
 	if !ok {
-		w.log.Error("unknwon runner ID", zap.String("id", req.RunnerId))
+		w.log.Error("unknown runner ID", zap.String("id", req.RunnerId))
 		return &userCode.ActivityResponse{Error: "unknown runner ID"}, nil
 	}
 
@@ -204,7 +204,7 @@ func (s *workerGRPCHandler) Sleep(ctx context.Context, req *userCode.SleepReques
 	runner, ok := w.runnerIDsToRuntime[req.RunnerId]
 	w.mu.Unlock()
 	if !ok {
-		w.log.Error("unknwon runner ID", zap.String("id", req.RunnerId))
+		w.log.Error("unknown runner ID", zap.String("id", req.RunnerId))
 		return &userCode.SleepResponse{Error: "unknown runner ID"}, nil
 	}
 
@@ -231,7 +231,7 @@ func (s *workerGRPCHandler) StartSession(ctx context.Context, req *userCode.Star
 	runner, ok := w.runnerIDsToRuntime[req.RunnerId]
 	w.mu.Unlock()
 	if !ok {
-		w.log.Error("unknwon runner ID", zap.String("id", req.RunnerId))
+		w.log.Error("unknown runner ID", zap.String("id", req.RunnerId))
 		return &userCode.StartSessionResponse{
 			Error: "Unknown runner id",
 		}, nil
@@ -279,7 +279,7 @@ func (s *workerGRPCHandler) Subscribe(ctx context.Context, req *userCode.Subscri
 	runner, ok := w.runnerIDsToRuntime[req.RunnerId]
 	w.mu.Unlock()
 	if !ok {
-		w.log.Error("unknwon runner ID", zap.String("id", req.RunnerId))
+		w.log.Error("unknown runner ID", zap.String("id", req.RunnerId))
 		return &userCode.SubscribeResponse{Error: "unknown runner ID"}, nil
 	}
 
@@ -315,7 +315,7 @@ func (s *workerGRPCHandler) NextEvent(ctx context.Context, req *userCode.NextEve
 	runner, ok := w.runnerIDsToRuntime[req.RunnerId]
 	w.mu.Unlock()
 	if !ok {
-		w.log.Error("unknwon runner ID", zap.String("id", req.RunnerId))
+		w.log.Error("unknown runner ID", zap.String("id", req.RunnerId))
 		return &userCode.NextEventResponse{Error: "unknown runner ID"}, nil
 	}
 
@@ -364,7 +364,7 @@ func (s *workerGRPCHandler) Unsubscribe(ctx context.Context, req *userCode.Unsub
 	runner, ok := w.runnerIDsToRuntime[req.RunnerId]
 	w.mu.Unlock()
 	if !ok {
-		w.log.Error("unknwon runner ID", zap.String("id", req.RunnerId))
+		w.log.Error("unknown runner ID", zap.String("id", req.RunnerId))
 		return &userCode.UnsubscribeResponse{Error: "Unknown runner id"}, nil
 	}
 
@@ -420,7 +420,7 @@ func (s *workerGRPCHandler) RefreshOAuthToken(ctx context.Context, req *userCode
 	runner, ok := w.runnerIDsToRuntime[req.RunnerId]
 	w.mu.Unlock()
 	if !ok {
-		w.log.Error("unknwon runner ID", zap.String("id", req.RunnerId))
+		w.log.Error("unknown runner ID", zap.String("id", req.RunnerId))
 		return &userCode.RefreshResponse{Error: "unknown runner ID"}, nil
 	}
 

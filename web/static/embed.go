@@ -52,8 +52,14 @@ var GoogleSheetsWebContent embed.FS
 //go:embed i/http/connect
 var HTTPWebContent embed.FS
 
+//go:embed hubspot/connect
+var HubSpotWebContent embed.FS
+
 //go:embed jira/connect
 var JiraWebContent embed.FS
+
+//go:embed auth0/connect
+var Auth0WebContent embed.FS
 
 //go:embed slack/connect
 var SlackWebContent embed.FS

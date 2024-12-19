@@ -1,14 +1,16 @@
 package github
 
 import (
-	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
+	"os"
 	"strconv"
+	"strings"
+	"time"
 
-	"github.com/google/go-github/v60/github"
 	"go.uber.org/zap"
-	"golang.org/x/oauth2"
 
 	"go.autokitteh.dev/autokitteh/integrations/github/internal/vars"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
@@ -46,100 +48,98 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 
 	_, data, err := sdkintegrations.GetOAuthDataFromURL(r.URL)
 	if err != nil {
-		l.Warn("Invalid data in OAuth redirect request", zap.Error(err))
-		c.AbortBadRequest("invalid data parameter")
+		l.Warn("invalid data in OAuth redirect request", zap.Error(err))
+		c.AbortBadRequest("invalid data in OAuth redirect request")
 		return
 	}
 
 	// Parse and validate the results.
-	v := data.Params.Get("installation_id")
-	if v == "" {
-		l.Warn("Missing installation ID in OAuth redirect request")
-		c.AbortBadRequest("missing GitHub installation ID")
+	setupAction := data.Params.Get("setup_action")
+	l = l.With(zap.String("setup_action", setupAction))
+	switch setupAction {
+	case "":
+		l.Warn("missing GitHub app setup action in OAuth redirect request")
+		c.AbortBadRequest("missing GitHub app setup action")
+		return
+	case "request":
+		l.Warn("GitHub app installation by non-org admin")
+		c.AbortBadRequest("you need to be a GitHub org admin to approve this")
 		return
 	}
 
-	l = l.With(zap.String("installation_id", v))
+	installID := data.Params.Get("installation_id")
+	l = l.With(zap.String("installation_id", installID))
+	if installID == "" {
+		l.Warn("missing GitHub app installation ID in OAuth redirect request")
+		c.AbortBadRequest("missing GitHub app installation ID")
+		return
+	}
 
-	id, err := strconv.ParseInt(v, 10, 64)
+	iid, err := strconv.ParseInt(installID, 10, 64)
 	if err != nil {
-		l.Warn("Invalid GitHub installation ID in OAuth redirect request",
-			zap.String("setupAction", r.FormValue("setup_action")),
-		)
-		c.AbortBadRequest("invalid GitHub installation ID")
+		l.Warn("invalid GitHub app installation ID in OAuth redirect request")
+		c.AbortBadRequest("invalid GitHub app installation ID")
 		return
 	}
 
-	// Test the OAuth token's usability and get authoritative installation details:
-	// https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/generating-a-user-access-token-for-a-github-app
-	// https://docs.github.com/en/rest/apps/installations#list-app-installations-accessible-to-the-user-access-token
-	ctx := r.Context()
-	src := h.tokenSource(ctx, data.Token)
-	gh := github.NewClient(oauth2.NewClient(ctx, src))
-	u, err := enterpriseURL()
+	// Get authoritative installation details.
+	appID := os.Getenv("GITHUB_APP_ID")
+
+	aid, err := strconv.ParseInt(appID, 10, 64)
 	if err != nil {
-		l.Warn("GitHub enterprise URL error", zap.Error(err))
-		c.AbortBadRequest("token source")
+		l.Warn("invalid GitHub app ID", zap.Error(err))
+		c.AbortBadRequest("invalid GitHub app ID")
 		return
-	}
-	if u != "" {
-		gh, err = gh.WithEnterpriseURLs(u, u)
-		if err != nil {
-			l.Warn("GitHub enterprise URL error", zap.String("url", u), zap.Error(err))
-			c.AbortBadRequest(err.Error())
-			return
-		}
 	}
 
-	// TODO: Support pagination.
-	is, _, err := gh.Apps.ListUserInstallations(ctx, &github.ListOptions{})
+	gh, err := newClientFromGitHubAppID(aid)
 	if err != nil {
-		l.Warn("OAuth user token source error", zap.Error(err))
-		c.AbortBadRequest("list installations error")
+		l.Warn("failed to initialize GitHub app client", zap.Error(err))
+		c.AbortBadRequest("failed to initialize GitHub app client")
 		return
 	}
-	foundInstallation := false
-	var i *github.Installation
-	for _, i = range is {
-		if i.ID == nil || *i.ID != id {
-			continue
-		}
-		l.Debug("Verified new GitHub app installation",
-			zap.Stringp("repositorySelection", i.RepositorySelection),
-			zap.Int64p("targetID", i.TargetID),
-			zap.Stringp("targetName", i.Account.Login),
-			zap.Stringp("targetType", i.TargetType),
-		)
-		foundInstallation = true
-		break
+
+	i, _, err := gh.Apps.GetInstallation(r.Context(), iid)
+	if err != nil {
+		l.Warn("failed to get GitHub app installation details", zap.Error(err))
+		c.AbortBadRequest("failed to get GitHub app installation details")
+		return
 	}
-	if !foundInstallation {
-		l.Warn("GitHub app installation details not found")
+
+	if i.ID == nil || *i.ID != iid {
+		l.Warn("GitHub app installation details not found", zap.Any("installation", i))
 		c.AbortBadRequest("GitHub app installation details not found")
 		return
 	}
 
-	if i.AppID == nil || i.ID == nil || i.Account == nil || i.Account.Login == nil {
+	if i.Account == nil || i.Account.Login == nil {
 		l.Warn("GitHub app installation details missing required fields")
 		c.AbortBadRequest("GitHub app installation details missing required fields")
 		return
 	}
 
-	appID := strconv.FormatInt(*i.AppID, 10)
-	installID := strconv.FormatInt(*i.ID, 10)
-	user := string(*i.Account.Login)
+	name := string(*i.Account.Login)
+
+	events := fmt.Sprintf("%s", i.Events)
+	events = events[1 : len(events)-1]
+
+	perms, err := json.Marshal(i.Permissions)
+	if err != nil {
+		perms = []byte(err.Error())
+	}
+	ps := strings.ReplaceAll(string(perms[1:len(perms)-1]), `"`, "")
+	ps = strings.ReplaceAll(ps, ",", " ")
 
 	c.Finalize(sdktypes.NewVars().
-		Set(vars.AuthType, "oauth", false).
 		Set(vars.AppID, appID, false).
+		Set(vars.AppName, string(*i.AppSlug), false).
 		Set(vars.InstallID, installID, false).
-		Set(vars.InstallKey(appID, installID), user, false))
-}
-
-func (h handler) tokenSource(ctx context.Context, t *oauth2.Token) oauth2.TokenSource {
-	cfg, _, err := h.oauth.Get(ctx, "github")
-	if err != nil {
-		return nil
-	}
-	return cfg.TokenSource(ctx, t)
+		Set(vars.TargetID, strconv.FormatInt(*i.TargetID, 10), false).
+		Set(vars.TargetName, name, false).
+		Set(vars.TargetType, string(*i.TargetType), false).
+		Set(vars.RepoSelection, string(*i.RepositorySelection), false).
+		Set(vars.Permissions, ps, false).
+		Set(vars.Events, events, false).
+		Set(vars.UpdatedAt, i.UpdatedAt.Format(time.RFC3339), false).
+		Set(vars.InstallKey(appID, installID), name, false))
 }

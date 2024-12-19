@@ -29,7 +29,7 @@ type Artifact struct {
 
 	Requirements []*Requirement `protobuf:"bytes,1,rep,name=requirements,proto3" json:"requirements,omitempty"`
 	Exports      []*Export      `protobuf:"bytes,2,rep,name=exports,proto3" json:"exports,omitempty"`
-	// Runtime specific build output. This essentialy the "executable".
+	// Runtime specific build output. This essentially the "executable".
 	// Map structure for convenience. Intended to use as a filesystem -
 	// each entry will be stored as a different file in a persistent store.
 	// This means that each key must be a relative path, no '..' or '.' allowed.

@@ -13,7 +13,7 @@ import (
 
 var initCmd = common.StandardCommand(&cobra.Command{
 	Use:     "init <connection name or ID>",
-	Short:   "Initiailize connection",
+	Short:   "Initialize connection",
 	Aliases: []string{"i"},
 	Args:    cobra.ExactArgs(1),
 

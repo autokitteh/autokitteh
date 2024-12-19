@@ -9,7 +9,7 @@ import (
 )
 
 var listCmd = common.StandardCommand(&cobra.Command{
-	Use:     "list [-p project] [-e env] [-c conection] [--fail]",
+	Use:     "list [-p project] [-e env] [-c connection] [--fail]",
 	Short:   "List all event triggers",
 	Aliases: []string{"ls"},
 	Args:    cobra.NoArgs,
