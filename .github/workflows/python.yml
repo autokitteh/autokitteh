@@ -1,13 +1,9 @@
-name: Continuous Integration - Python
+name: CI - Python
 
-on:
-  push:
-    branches:
-      - main
-  pull_request:
+on: [pull_request]
 
 jobs:
-  build-and-test-python:
+  build-and-test:
     name: Build + unit tests
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -17,7 +13,8 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12" # Should be in sync with runtimes/pythonrt/pythonrt.go:minPyVersion
+          python-version: "3.12"
+
       - name: Test
         run: cd runtimes/pythonrt && make ci
 
@@ -35,6 +32,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12" # Should be in sync with runtimes/pythonrt/pythonrt.go:minPyVersion
-      - name: Python Session tests
+          python-version: "3.12"
+
+      - name: Python session tests
         run: PYTHON=only make bin/ak test-sessions

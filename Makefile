@@ -65,11 +65,6 @@ bin: bin/ak
 bin/ak:
 	$(GO) build --tags "${TAGS}" -o "$@" -ldflags="$(LDFLAGS)" $(GO_BUILD_OPTS) ./cmd/$(shell basename $@)
 
-.PHONY: build
-build:
-	mkdir -p $(OUTDIR)
-	$(GO) build $(GO_BUILD_OPTS) ./...
-
 .PHONY: debug
 debug:
 	DEBUG=1 make bin
@@ -86,7 +81,7 @@ golangci_lint=$(shell which golangci-lint)
 $(OUTDIR)/tools/golangci-lint:
 	mkdir -p $(OUTDIR)/tools
 ifeq ($(golangci_lint),)
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b "$(OUTDIR)/tools" v1.60.3
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b "$(OUTDIR)/tools" v1.62.2
 else
 	ln -fs $(golangci_lint) $(OUTDIR)/tools/golangci-lint
 endif
