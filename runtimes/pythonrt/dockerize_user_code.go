@@ -57,6 +57,11 @@ func prepareUserCode(code []byte, gzipped bool) (string, error) {
 			continue
 		}
 
+		dir := path.Dir(path.Join(workflowDir, file))
+		if err := os.MkdirAll(dir, 0o750); err != nil {
+			return "", err
+		}
+
 		if file == "requirements.txt" {
 			hasRequirementsFile = true
 			if err := os.WriteFile(path.Join(workflowDir, "user_requirements.txt"), content, 0o777); err != nil {
