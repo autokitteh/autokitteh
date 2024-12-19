@@ -109,8 +109,13 @@ func (s *server) Exchange(ctx context.Context, req *connect.Request[oauthv1.Exch
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
+	cid, err := sdktypes.StrictParseConnectionID(req.Msg.ConnectionId)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+
 	// Return the exchanged OAuth token, based on the authorization code.
-	token, err := s.impl.Exchange(ctx, req.Msg.Integration, req.Msg.Code)
+	token, err := s.impl.Exchange(ctx, req.Msg.Integration, req.Msg.Code, cid)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeUnknown, err)
 	}

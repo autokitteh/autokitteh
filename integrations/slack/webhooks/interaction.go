@@ -171,7 +171,7 @@ func (h handler) HandleInteraction(w http.ResponseWriter, r *http.Request) {
 	l := h.logger.With(zap.String("urlPath", InteractionPath))
 
 	// Validate and parse the inbound request.
-	body := checkRequest(w, r, l, api.ContentTypeForm)
+	body := h.checkRequest(w, r, l, api.ContentTypeForm)
 	if body == nil {
 		return
 	}
