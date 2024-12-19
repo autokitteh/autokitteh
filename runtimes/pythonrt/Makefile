@@ -29,6 +29,11 @@ deploy-simple:
 run-simple:
 	go run ./testdata/trigger_webhook.go
 
+test-simple: deploy-simple run-simple
+	ak session log --prints-only --no-timestamps
+	sleep 3
+	ak session list -j | jq .state
+
 deploy-issues:
 	ak deploy -m ./testdata/issues/autokitteh.yaml -d ./testdata/issues/
 
